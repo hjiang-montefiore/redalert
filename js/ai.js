@@ -152,6 +152,20 @@ const WORTH = {
   missilesilo: 2400, nukesilo: 2600, airbase: 1200, navalyard: 1000,
   lab: 800, barracks: 700, radar: 700, power: 500, depot: 350,
   silo: 150, sonararray: 200,
+  /* A structure with no gun would fall through worthOf() to 250, or - for a
+     cat:"defense" entry - to 40% of its cost, and price the enemy's entire
+     electronic defence somewhere below a service depot. What it actually costs
+     them to lose it is the electronic defence of their whole base, or, for the
+     KPA station, everybody's precision missions. It is also already the thing
+     a SEAD shooter steers toward, so the raid planner should agree with the
+     shooter rather than argue with it. Kept at or just under the radar dome's
+     700 for the jamming sites, because a station that can only defend its own
+     ground is worth less to kill than the radar that sees yours - and well
+     above it for the arrays, which are the most expensive structures in the
+     game and blind a theatre when they die. */
+  lpar_n: 2400, lpar_p: 2400, lpar_c: 2400, lpar_r: 2400,
+  ewsite_p: 800, ewsite_c: 750, ewsite_n: 600, ewsite_r: 550,
+  ewsite_p2: 900, ewsite_k: 650,
 };
 function worthOf(key) {
   if (WORTH[key] !== undefined) return WORTH[key];
@@ -826,11 +840,16 @@ function makeCommander() {
         seenB.set(e.id, { id: e.id, own: oi, tx: e.tx, ty: e.ty, x: e.x, y: e.y, ref: e,
                           key: e.def.id, cost: e.def.cost || 300, t: now, gone: false });
       }
-      if (e.def.radar && G.emitting && G.emitting(e)) d.sawRadar = true;
+      /* An emitter is an emitter. A jamming station announces itself exactly
+         as a radar does - louder, in fact - and it is the single thing a Wild
+         Weasel is bought for. Latching on def.jam as well is what makes the
+         electronic-warfare block respond to a station the way it already
+         responds to a dome. */
+      if ((e.def.radar || e.def.jam) && G.emitting && G.emitting(e)) d.sawRadar = true;
       return;
     }
     if (e.layer === "sub") d.sawSub = true;
-    if (e.def.radar && G.emitting && G.emitting(e)) d.sawRadar = true;
+    if ((e.def.radar || e.def.jam) && G.emitting && G.emitting(e)) d.sawRadar = true;
     if (e.def.stealth) d.sawStealth = true;
     if (e.armor === "heavy") d.sawHeavy = true;
     /* `ref` is the entity itself, and it is only ever handed to a weapon while
@@ -1170,7 +1189,13 @@ function makeCommander() {
       if (!g) {
         /* an air-defence work does not stop a ground wave; it is a reason not
            to send the gunships, which is the air block's business */
-        if (BUILDINGS[r.key] && BUILDINGS[r.key].cat === "defense") a.aa += 1;
+        /* Counted an air-defence work only if it can actually shoot at an
+           aircraft. This used to count ANY gunless defence, which was harmless
+           while the sonar array was the only one - and would not be now, since
+           it would tell the commander to hold its gunships back from a base
+           with no extra SAM in it. aaProfile() reads the published target set
+           and answers properly. */
+        if (BUILDINGS[r.key] && aaProfile(r.key) > 0) a.aa += 1;
         continue;
       }
       const w = g.hard * 0.75 + g.soft * 0.25;
@@ -2875,6 +2900,50 @@ function makeCommander() {
       else if (P.countBuilding("depot") < 1 && P.cash > 2000) tryB("depot");
       else if (nRef < (D.econ >= 1.2 ? 4 : 3) && can("refinery") && P.cash > 3500) tryB("refinery");
       else if (nPower < 4 && P.cash > 5000) tryB("power");
+      /* ---- the electronic order of battle ----
+         Both families sit HERE, at the end of the once-only ladder, and both
+         are capped at one. Not in the threat-scaled defence roll below: that
+         builds a PROPORTION of each emplacement against a shortfall in an arm,
+         has no concept of a cap, and the single most important fact about a
+         jamming station is that a second one does nothing - G.jamAgainst and
+         G.jamAt take the WORST bubble over a point and never the sum. And not
+         before nPower < 4 either: these draw 45 to 130 against a power plant's
+         120, so a commander that bought one on a thin grid would brown out its
+         own base and, through needPower, the new structure with it.
+
+         Gated on D.radar, the same doctrine knob the electronic-warfare block
+         at the unit end already uses, so a Recruit and a Regular never buy
+         one. structureFor() returns null where a nation has no such structure
+         in this period - which is everybody before the 1980s, the PLA and the
+         ROC before the 2000s, the KPA on the array axis for ever, and everyone
+         but the KPA and PACT on the satellite axis. lockReason() then refuses
+         it a second time through the fac gate, so the honest answer arrives
+         twice over and neither path can leak. */
+      else if (D.radar && P.tech >= 2 && nRadar >= 1 && P.cash > 2200 &&
+               (function () {
+                 for (const sr of ["ewsite", "gpsjam"]) {
+                   const id = structureFor(P.faction, sr, P.era);
+                   if (!id) continue;
+                   /* countBuilding sees placed structures and readyCount sees
+                      one that is built and waiting for ground; without both,
+                      the window between the two buys a second station. */
+                   if (P.countBuilding(id) + P.readyCount("building", id) > 0) continue;
+                   if (P.cash < P.factionCost(BUILDINGS[id]) + 600) continue;
+                   /* try the next srole rather than giving up: a PACT
+                      commander in e20 owns both an SPN-4 and a Murmansk-BN
+                      slot, and a failed siting on one must not block the
+                      other. */
+                   if (tryB(id)) return true;
+                 }
+                 return false;
+               })()) { /* enqueued above */ }
+      else if (D.radar && P.tech >= 3 && nLab >= 1 && P.cash > 4200 &&
+               (function () {
+                 const id = structureFor(P.faction, "lpar", P.era);
+                 if (!id) return false;
+                 if (P.countBuilding(id) + P.readyCount("building", id) > 0) return false;
+                 return tryB(id);
+               })()) { /* enqueued above */ }
       /* ---- saturated: money is not the constraint any more ----
          Both commanders used to pin at their storage ceiling from about the
          half-hour mark and stay there for the rest of the game, throwing away
@@ -3287,7 +3356,14 @@ function makeCommander() {
     /* -------- ARTILLERY: counter-battery + shoot-and-scoot -------- */
     for (const u of P.units) {
       if (u.dead || !u.isIndirect || !u.isIndirect()) continue;
-      if (D.radar && u.stance !== "counterbattery" && attackWave.indexOf(u) < 0)
+      /* NOT the ballistic launchers. srbm_* rounds carry indirect:true, so
+         isIndirect() is true of every TEL we own, and this used to stamp the
+         counter-battery stance on them - which sends a 3,400-credit launcher
+         driving at an enemy launcher plot in nine-second bursts, and generates
+         a fresh ballistic contact of its own on the way for the enemy array to
+         plot. A TEL answers the ballistic-launcher block, not this one. */
+      if (D.radar && u.def.role !== "tel" && u.stance !== "counterbattery" &&
+          attackWave.indexOf(u) < 0)
         u.stance = "counterbattery";
       /* Displace after a few salvos so we are not there when the reply lands.
          Counted per salvo, on the edge. It used to add 0.02 per think tick and

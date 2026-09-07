@@ -264,6 +264,13 @@ var Game = (function () {
       const scan = (list) => {
         for (const u of list) {
           if (u.dead || u === shooter || u.carried) continue;
+          /* Pre-existing defect, closed here because these arrays make it
+             worth much more: this loop is handed p.buildings as well as
+             p.units and had neither a buildProgress nor a powered guard,
+             where G.radarCovers and G.recomputeFog both have one. A radar
+             dome already fed air tracks from its foundations; a 32-radarQ
+             array would have fed much better ones. */
+          if (u.kind === "building" && (u.buildProgress < 1 || !u.powered)) continue;
           const q = u.def.radarQ !== undefined ? u.def.radarQ : (u.def.radar ? u.def.radar * 1.6 : 0);
           if (!q) continue;
           const du = U.dist(u.x, u.y, target.x, target.y) / CFG.TILE;
@@ -800,6 +807,13 @@ var Game = (function () {
      Returns a multiplier on the jammer's strength. */
   function genContest(radarDef, jammerDef) {
     if (typeof eraIndex !== "function") return 1;
+    /* rules.js stamps from:"e50" on every structure that was never given a
+       real service date, and marks the ones it invented. Running a
+       generational contest against an invented 1950 gave an e80 jammer
+       1.7^3 = 4.91x against a radar dome, a SAM site or an airbase - a
+       fabricated bonus, and the single largest number in this whole
+       subsystem. Either side undated means no contest. */
+    if ((radarDef && radarDef.eraStamped) || (jammerDef && jammerDef.eraStamped)) return 1;
     const r = eraIndex(radarDef && radarDef.from ? radarDef.from : "e20");
     const j = eraIndex(jammerDef && jammerDef.from ? jammerDef.from : "e20");
     const gap = r - j;                       // positive: the radar is newer
@@ -811,22 +825,61 @@ var Game = (function () {
   }
   G.genContest = genContest;
 
+  /* ---- who is actually on the air ----
+     jamAgainst(), jamAt() and gpsJamAt() each have to walk BOTH object kinds
+     now, and a vehicle and a structure are switched off for different reasons.
+     A vehicle is off when it is dead, riding inside a transport, or parked on
+     a ramp with its pods stowed - that is G.emitting(). A structure is off
+     while it is still scaffolding, and off again the instant the grid browns
+     out: a jamming station is a transmitter hall and the largest single load
+     on its plot, so an unpowered one is a shed. */
+  G.jamming = function (e) {
+    if (!e || e.dead) return false;
+    if (e.kind === "building") return e.buildProgress >= 1 && e.powered !== false;
+    return G.emitting(e);
+  };
+
   /* Jamming felt by one specific radar platform, taking the generational
-     contest between that radar and each jammer into account. */
+     contest between that radar and each jammer into account.
+     Units and structures are walked in two explicit loops rather than over a
+     concatenation of the two arrays, for exactly the reason G.radarCovers()
+     splits them: this runs once per radar per fog rebuild and again for every
+     radar-laid shot, and allocating a throwaway array in here would be felt. */
   G.jamAgainst = function (victim, radarEnt) {
     const rd = radarEnt && radarEnt.def;
     let worst = 0;
     for (const o of G.players) {
       if (o === victim || G.allied(victim, o) || o.defeated) continue;
       const fac = FACTIONS[o.faction] || {};
+      const ecm = fac.ecm || 1;
       for (const u of o.units) {
         if (u.dead || u.carried || !u.def.jam) continue;
         if (!G.emitting(u)) continue;                  // parked jammer is off
         const R = u.def.jam * CFG.TILE;
         const d = U.dist(u.x, u.y, radarEnt.x, radarEnt.y);
         if (d > R) continue;
-        let k = (1 - d / R) * (u.def.jamPower || 1) * (fac.ecm || 1);
+        let k = (1 - d / R) * (u.def.jamPower || 1) * ecm;
         k *= genContest(rd, u.def);
+        if (k > worst) worst = k;
+      }
+      /* ---- and the fixed sites ----
+         Until now not one of the twenty-eight structures carried `jam`, and a
+         building that did would have done nothing at all: both of these
+         functions walked o.units and stopped. A jamming station cannot follow
+         the battle and cannot be built within reach of anybody else's base -
+         CFG.BUILD_RADIUS is 11 tiles from your own structures - so it never
+         blinds an enemy radar dome sitting at home. What it does is deny the
+         spectrum over YOUR ground: it burns down the picture of every radar
+         platform that comes to you, which is the AEW aircraft, the radar
+         vehicle and the Aegis hull offshore. */
+      for (const b of o.buildings) {
+        if (!b.def.jam) continue;                      // cheapest possible reject
+        if (!G.jamming(b)) continue;                   // scaffolding, or no power
+        const R = b.def.jam * CFG.TILE;
+        const d = U.dist(b.x, b.y, radarEnt.x, radarEnt.y);
+        if (d > R) continue;
+        let k = (1 - d / R) * (b.def.jamPower || 1) * ecm;
+        k *= genContest(rd, b.def);
         if (k > worst) worst = k;
       }
     }
@@ -842,6 +895,7 @@ var Game = (function () {
     for (const o of G.players) {
       if (o === victim || G.allied(victim, o) || o.defeated) continue;
       const fac = FACTIONS[o.faction] || {};
+      const ecm = fac.ecm || 1;
       for (const u of o.units) {
         if (u.dead || u.carried || !u.def.jam) continue;
         if (!G.emitting(u)) continue;                  // parked jammer is off
@@ -849,7 +903,21 @@ var Game = (function () {
         const d = U.dist(u.x, u.y, x, y);
         if (d > R) continue;
         /* falls off toward the edge of the bubble */
-        const k = (1 - d / R) * (u.def.jamPower || 1) * (fac.ecm || 1);
+        const k = (1 - d / R) * (u.def.jamPower || 1) * ecm;
+        if (k > worst) worst = k;
+      }
+      /* This is where a fixed site earns its price. jamAt() is keyed on the
+         SHOOTER's position, so a station standing in the middle of your own
+         base degrades every radar-laid shot fired from inside its bubble - the
+         tank column that has driven into your yard, the SPAAG hosing at your
+         helicopters, the destroyer in your bay. */
+      for (const b of o.buildings) {
+        if (!b.def.jam) continue;
+        if (!G.jamming(b)) continue;
+        const R = b.def.jam * CFG.TILE;
+        const d = U.dist(b.x, b.y, x, y);
+        if (d > R) continue;
+        const k = (1 - d / R) * (b.def.jamPower || 1) * ecm;
         if (k > worst) worst = k;
       }
     }
@@ -859,6 +927,85 @@ var Game = (function () {
     let eccm = vf.eccm || 1;
     if (victim.upgrades && victim.upgrades.eccm) eccm *= 1.55;
     return worst / eccm;
+  };
+
+  /* ---- satellite navigation denial, which is a different war ----
+     Jamming a radar and jamming GPS are not the same act and must not share a
+     number. A radar jammer fights a transmitter that is looking for it and
+     hopping to get away; a GPS jammer sits on a band that has not moved since
+     1978 and shouts down a receiver listening for about a hundred attowatts
+     from twenty thousand kilometres up. That is why the second is so much
+     easier than the first, and why an army that cannot build a decent radar
+     jammer can still close an adversary's airspace with one.
+
+     Its own field, its own hardening term (FACTIONS.*.gpsHard - keyed military
+     GPS and a null-steering antenna on the munition, not radar ECCM), and
+     deliberately NOT multiplied by fac.ecm, which measures how good a nation's
+     radar electronic attack is and has nothing to say about brute noise in a
+     known band. Deliberately outside genContest too: a radar jammer goes stale
+     because radars learn to hop, and the L1 band has not moved in fifty years.
+
+     Same worst-bubble-never-the-sum rule as the other two, for the same
+     physical reason: a receiver is denied by the loudest interferer over it. */
+  G.gpsJamAt = function (victim, x, y) {
+    let worst = 0;
+    for (const o of G.players) {
+      if (o === victim || G.allied(victim, o) || o.defeated) continue;
+      for (const u of o.units) {
+        if (u.dead || u.carried || !u.def.gpsJam) continue;
+        if (!G.emitting(u)) continue;
+        const R = u.def.gpsJam * CFG.TILE;
+        const d = U.dist(u.x, u.y, x, y);
+        if (d > R) continue;
+        const k = (1 - d / R) * (u.def.gpsPower || 1);
+        if (k > worst) worst = k;
+      }
+      for (const b of o.buildings) {
+        if (!b.def.gpsJam) continue;
+        if (!G.jamming(b)) continue;
+        const R = b.def.gpsJam * CFG.TILE;
+        const d = U.dist(b.x, b.y, x, y);
+        if (d > R) continue;
+        const k = (1 - d / R) * (b.def.gpsPower || 1);
+        if (k > worst) worst = k;
+      }
+    }
+    if (!worst) return 0;
+    const vf = FACTIONS[victim.faction] || {};
+    return worst / (vf.gpsHard || 1);
+  };
+
+  /* ---- strategic early warning: the ballistic back-plot ----
+     A second sensor, not a bigger first one. G.radarCovers answers "can this
+     side lay a shot into that square", and every consumer of that - fire
+     control, the fog, the AI's target sweeps - would have inherited a
+     thirty-tile bubble for free had this been folded into it. `ew` answers one
+     narrow question, "was a BALLISTIC round fired from there", and
+     G.updateCounterBattery is its only caller. It lifts no fog (G.recomputeFog
+     reads def.radar), feeds no shooter (G.airTrack reads radarQ) and touches
+     neither fcMul nor jamMul in combat.js.
+
+     Two arrays cover the UNION of their circles. That is the opposite of a
+     jammer, where G.jamAt takes the WORST bubble and a second set adds
+     nothing - and it is not an inconsistency: coverage is a yes/no question
+     and the answer is yes if any one array holds it, while jamming is a
+     strength and two of them do not add.
+
+     The early-out matters. updateCounterBattery runs every tick over up to
+     sixty contacts times every player, and each call would otherwise be an
+     O(buildings) scan that itself calls G.jamAgainst, which is O(players x
+     units). Almost every player in almost every match owns no `ew` structure
+     at all, and this returns false for them without touching a thing. */
+  G.ewCovers = function (p, x, y) {
+    if (!p || !p.buildings || !p.buildings.length) return false;
+    for (const b of p.buildings) {
+      if (!b.def.ew) continue;
+      if (b.dead || b.buildProgress < 1 || !b.powered) continue;   // a dark array is a pyramid
+      if (U.dist2(b.x, b.y, x, y) >= Math.pow(b.def.ew * CFG.TILE, 2)) continue;
+      if (G.jamAgainst(p, b) > 0.55) continue;    // burned through, same 0.55 as every radar
+      return true;
+    }
+    return false;
   };
 
   G.radarCovers = function (p, x, y) {
@@ -886,31 +1033,94 @@ var Game = (function () {
      contact; a radar that covers it plots the firing point after a delay,
      with a little scatter. This is what makes shoot-and-scoot matter.     */
   G.cbContacts = [];
-  G.reportIndirectFire = function (shooter) {
+  /* `w` is the weapon that fired, and it is what separates a howitzer from a
+     ballistic launcher. A counter-battery radar back-plots a shell; only a
+     strategic early-warning array back-plots a boost-phase plume, and the two
+     have to be told apart at the moment of firing. The test is exact rather
+     than heuristic: rules.js records the invariant that the six srbm_* rounds
+     are the only weapons in the game carrying indirect:true, and they are the
+     only indirect rounds that fly as a missile rather than an arc. The
+     argument is optional, so a one-argument call still works.
+
+     A ballistic launch is plotted faster and held longer than a gun contact,
+     and both numbers are earned. Faster, because the signature is a
+     boost-phase plume rather than the acoustic and radar scraps of a shell.
+     Longer, because the plot is only worth anything if something can reach the
+     launcher: a TEL reloads in 55 to 95 seconds, so a fix arriving two seconds
+     after launch and living for twenty-eight lands while the vehicle is still
+     standing on its firing point. (Deploy time is NOT the argument - the
+     modern launchers this will actually be plotting are out of their firing
+     point in three to four and a half seconds. The reload is.) */
+  G.reportIndirectFire = function (shooter, w) {
     if (!shooter || !shooter.owner) return;
+    const ball = !!(w && w.indirect && w.proj === "missile");
     G.cbContacts.push({
       x: shooter.x, y: shooter.y, owner: shooter.owner,
       t: G.time, plotted: false, unit: shooter,
+      ballistic: ball, wname: (w && w.name) || null,
+      delay: ball ? 2.0 : 5.0,
+      life:  ball ? 28.0 : 17.0,
     });
-    if (G.cbContacts.length > 60) G.cbContacts.shift();
+    /* The buffer used to evict the OLDEST contact whatever it was. Every arc
+       round leaves a contact, so a gun line or a 240 mm rocket burst could
+       push a two-second-old, not-yet-plotted ballistic contact out before
+       updateCounterBattery ever reached it - silently deleting the one event
+       this whole family exists to catch. Drop the oldest NON-ballistic one
+       first, and only fall back to the plain shift if they are all ballistic. */
+    if (G.cbContacts.length > 60) {
+      let i = G.cbContacts.findIndex(c => !c.ballistic);
+      G.cbContacts.splice(i >= 0 ? i : 0, 1);
+    }
   };
+  let lastBallisticBanner = -99;
   G.updateCounterBattery = function () {
+    /* Defaults only. reportIndirectFire stamps a delay and a life on every
+       contact now, because a gun battery and a ballistic launcher are not
+       plotted on the same clock. These two are the fallback for a contact that
+       arrived without them - an old save, or a one-argument caller. */
     const PLOT_DELAY = 5.0, LIFE = 17.0;
     for (let i = G.cbContacts.length - 1; i >= 0; i--) {
       const c = G.cbContacts[i];
-      if (G.time - c.t > LIFE) { G.cbContacts.splice(i, 1); continue; }
-      if (c.plotted || G.time - c.t < PLOT_DELAY) continue;
+      if (G.time - c.t > (c.life || LIFE)) { G.cbContacts.splice(i, 1); continue; }
+      if (c.plotted || G.time - c.t < (c.delay || PLOT_DELAY)) continue;
       /* who has radar over the firing point? */
       for (const p of G.players) {
         if (p === c.owner || G.allied(p, c.owner) || p.defeated) continue;
-        if (!G.radarCovers(p, c.x, c.y)) continue;
+        /* A gun battery is plotted by radar. A ballistic launch may ALSO be
+           plotted by a strategic early-warning array, which is the only thing
+           in the game that reaches past a radar dome's 22 tiles to the 24-31 a
+           launcher shoots from. Artillery contacts are untouched: the `ew`
+           circle does nothing whatsoever against a howitzer. */
+        if (!G.radarCovers(p, c.x, c.y) &&
+            !(c.ballistic && G.ewCovers && G.ewCovers(p, c.x, c.y))) continue;
         c.plotted = true;
         c.by = p;
-        /* the plot is not perfect: scatter it by up to a tile */
-        c.px = c.x + (G.rng() - 0.5) * CFG.TILE * 2;
-        c.py = c.y + (G.rng() - 0.5) * CFG.TILE * 2;
+        /* the plot is not perfect: scatter it by up to a tile. A back-plot
+           from a boost-phase track is a better answer than one extrapolated
+           from a shell in flight, so an array halves it. */
+        const sc = c.ballistic ? 1.0 : 2.0;
+        c.px = c.x + (G.rng() - 0.5) * CFG.TILE * sc;
+        c.py = c.y + (G.rng() - 0.5) * CFG.TILE * sc;
         if (p === G.human) {
-          G.alert("COUNTER-BATTERY PLOT — ENEMY GUNS LOCATED", "good");
+          if (c.ballistic) {
+            /* Not "ENEMY GUNS LOCATED", which is what this said for every
+               contact and is simply false for a Hwasong; and not
+               Threat.reportLaunch either, whose subtitle reads "<name>
+               INBOUND" - the round has already landed by the time this fires,
+               and the name we hold is the launcher's, not the missile's.
+               Rate-limited, because a present-day TEL duel reloads every 55 to
+               95 seconds and a tier-3 banner every half minute for the rest of
+               a match is not a warning, it is wallpaper. */
+            G.alert("BALLISTIC LAUNCH BACK-PLOTTED", "good");
+            if (typeof Threat !== "undefined" && Threat.fire &&
+                G.time - lastBallisticBanner > 20) {
+              lastBallisticBanner = G.time;
+              Threat.fire(3, "BALLISTIC LAUNCH BACK-PLOTTED",
+                          (c.wname || "LAUNCHER") .toUpperCase() + " SITE FIXED");
+            }
+          } else {
+            G.alert("COUNTER-BATTERY PLOT \u2014 ENEMY GUNS LOCATED", "good");
+          }
           G.pingEvent(c.px, c.py);
         }
         break;
@@ -919,7 +1129,12 @@ var Game = (function () {
   };
   /* fresh plots this player can shoot at */
   G.cbTargets = function (p) {
-    return G.cbContacts.filter(c => c.plotted && c.by === p && G.time - c.t < 17);
+    /* the contact's own lifetime, not a repeated literal - a ballistic plot
+       is held for 28 seconds because that is how long it takes to get
+       something onto the launcher, and hard-coding 17 here silently threw
+       eleven of them away. */
+    return G.cbContacts.filter(c => c.plotted && c.by === p &&
+                                    G.time - c.t < (c.life || 17));
   };
 
   /* ---------------- strategic weapons ---------------- */
@@ -1004,6 +1219,18 @@ var Game = (function () {
     else if (!G.fogEnabled || G.fog[(wy / CFG.TILE | 0) * G.map.W + (wx / CFG.TILE | 0)] === 2)
       mul = 1.0;                                           // seen by eye
     else mul = m.blindMul !== undefined ? m.blindMul : 2.6; // called into the dark
+    /* ---- satellite navigation denial at the AIMPOINT ----
+       Measured where the round arrives, not where it was fired: what a GPS
+       jammer attacks is the receiver in the munition on its terminal run, and
+       the station standing over the target is the one that gets to do it. This
+       is the answer to the mission that does not care whether you can see the
+       target - the cruise missile with cep 0.35 and blindMul 1.1 that navigates
+       itself onto a set of coordinates. Deny the coordinates and it is an
+       unguided rocket with a long range. Nothing else in here touches an
+       observed shot; this does, because eyes on the target do not put the
+       satellites back. */
+    const gps = G.gpsJamAt ? G.gpsJamAt(p, wx, wy) : 0;
+    if (gps > 0.15) mul *= 1 + 2.2 * gps;
     return (m.cep || 1.2) * CFG.TILE * mul;
   };
   G.callFireSupport = function (p, key, wx, wy) {
@@ -1014,8 +1241,19 @@ var Game = (function () {
     if (!p.support) p.support = {};
     p.support[key] = G.time + m.cooldown;
     const scatter = G.supportScatter(p, key, wx, wy);
-    if (p === G.human) G.alert(m.name.toUpperCase() + " \u2014 ROUNDS INBOUND", "good");
-    else { G.alert(m.name.toUpperCase() + " \u2014 INBOUND", "bad"); G.pingEvent(wx, wy); }
+    /* Jamming is invisible by nature and satellite denial is worse: without
+       this line the defender's station never announces itself and the attacker
+       reads a mission landing 200 metres off as bad luck. Both ends are told. */
+    const gpsJ = G.gpsJamAt ? G.gpsJamAt(p, wx, wy) : 0;
+    if (p === G.human) {
+      G.alert(m.name.toUpperCase() + " \u2014 ROUNDS INBOUND", "good");
+      if (gpsJ > 0.15)
+        G.alert("SATELLITE NAVIGATION DENIED OVER TARGET \u2014 ROUNDS WILL SCATTER", "bad");
+    } else if (gpsJ > 0.15 && G.human && !G.allied(p, G.human)) {
+      G.alert("OUR JAMMING IS SPOILING THEIR PRECISION MISSION", "good");
+    }
+    if (p !== G.human)
+      { G.alert(m.name.toUpperCase() + " \u2014 INBOUND", "bad"); G.pingEvent(wx, wy); }
     /* a mission is a number of impacts spread around the aimpoint, not a
        single explosion: a battery fires a pattern */
     const n = m.rounds || 1;

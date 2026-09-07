@@ -407,10 +407,27 @@ class Unit {
   }
   pickCounterBatteryPlot() {
     const list = this.game.cbTargets ? this.game.cbTargets(this.owner) : [];
+    /* A REACHABLE plot. This took the nearest one unconditionally, and
+       bombard() then drives toward anything out of range - so a plot the gun
+       could never reach became an order to march at it in nine-second bursts.
+       That was survivable while every plot was inside a radar dome's 22 tiles;
+       it is not now that a strategic array plots launchers at 24 to 31, which
+       is past the longest artillery in the game (mrl240 at 26.5) and well past
+       a battery sited inside CFG.BUILD_RADIUS of its own conyard. If we cannot
+       shoot it, we do not take it. */
+    let range = 0;
+    for (const k of this.def.weapons) {
+      const w0 = WEAPONS[k];
+      if (w0 && (w0.proj === "arc" || w0.indirect)) { range = this.weaponRange(w0); break; }
+    }
+    if (!range) return null;
     let best = null, bd = Infinity;
     for (const c of list) {
-      if (c.serviced && this.game.time - c.serviced < 8) continue;
+      /* serviced holds for the contact's own life, not a flat 8 s, or a
+         28-second ballistic plot is re-taken three times over */
+      if (c.serviced && this.game.time - c.serviced < Math.max(8, (c.life || 17) * 0.5)) continue;
       const d = U.dist2(this.x, this.y, c.px, c.py);
+      if (d > range * range) continue;
       if (d < bd) { bd = d; best = c; }
     }
     if (best) best.serviced = this.game.time;

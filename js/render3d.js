@@ -826,7 +826,7 @@ var Render3D = (function () {
       trim.position.y = hM - 0.6;
       tpl.add(trim);
       /* faction rooftop fixture */
-      if (def.cat !== "defense" && def.id !== "wall") {
+      if (def.cat !== "defense" && def.id !== "wall" && !def.bare) {
         const fx = archFixture(A0, def, team);
         fx.position.y = hM;
         tpl.add(fx);
@@ -842,7 +842,7 @@ var Render3D = (function () {
         } catch (e3) {}
       }
       eraRestyle(tpl, E);
-      const ef0 = eraFixture(E, def);
+      const ef0 = def.bare ? null : eraFixture(E, def);
       if (ef0) { ef0.position.y = roofHeightOf(tpl, def.w * TILE_M, def.h * TILE_M); tpl.add(ef0); }
       prepModel(tpl);
       tpl.scale.multiplyScalar(CFG.BLD_SCALE);
@@ -854,12 +854,21 @@ var Render3D = (function () {
        gun metal read the same for everyone, so they keep their own palette. */
     prepModel(tpl);
     const A = archOf(team);
-    if (def.cat !== "defense") restyle(tpl, A);
+    /* `bare` is the opt-out, and the strategic radar arrays and the fixed
+       jamming sites are the first structures to use it. They are drawn whole
+       and to scale, and all three of the layers below are actively wrong on
+       them: restyle() repaints a phased-array face into a national wall
+       colour, archFixture() bolts a white radome and a yagi mast onto the top
+       of a PAVE PAWS, and eraFixture() at e80 drapes a camouflage net sized to
+       the plot - 49 metres square on a 3x3 - straight across the array faces.
+       A national early-warning array is the same Raytheon concrete for
+       everybody who bought one. */
+    if (def.cat !== "defense" && !def.bare) restyle(tpl, A);
     const wrap = new THREE.Group();
     tpl.rotation.x = -Math.PI / 2;
     wrap.add(tpl);
     const bb = new THREE.Box3().setFromObject(wrap);
-    if (def.cat !== "defense" && def.id !== "wall") {
+    if (def.cat !== "defense" && def.id !== "wall" && !def.bare) {
       const fx = archFixture(A, def, team);
       fx.position.y = Math.max(1, bb.max.y);
       wrap.add(fx);
@@ -880,7 +889,7 @@ var Render3D = (function () {
     }
     /* period materials and rooftop kit, layered over the faction styling */
     eraRestyle(wrap, E);
-    const ef = eraFixture(E, def);
+    const ef = def.bare ? null : eraFixture(E, def);
     if (ef) {
       ef.position.y = Math.max(0.5, roofHeightOf(wrap, def.w * TILE_M, def.h * TILE_M));
       ef.traverse(o => {
@@ -2033,9 +2042,25 @@ var Render3D = (function () {
                                    : "RADAR " + r.toFixed(0) + "t");
         else ring(e, d.radar, "rgba(255,90,70,0.75)", null, "RADAR BLINDED");
       }
-      if (d.jam) ring(e, d.jam, "rgba(200,120,255,0.9)", "rgba(170,90,230,0.09)",
-                      "JAMMING " + d.jam + "t");
+      /* A jamming bubble that is still scaffolding, or that has browned out,
+         is not a bubble - G.jamming() says so and the ring must agree, or a
+         half-built station advertises coverage it is not providing. */
+      const live = !G.jamming || G.jamming(e);
+      if (d.jam) ring(e, d.jam, live ? "rgba(200,120,255,0.9)" : "rgba(140,110,160,0.55)",
+                      live ? "rgba(170,90,230,0.09)" : null,
+                      live ? "JAMMING " + d.jam + "t" : "JAMMING OFFLINE");
+      /* satellite denial is a separate bubble on a separate axis and it is
+         usually the WIDER of the two. Without this ring the KPA station shows
+         the player only the number it was deliberately given for being bad at
+         radar. */
+      if (d.gpsJam) ring(e, d.gpsJam, live ? "rgba(255,200,90,0.9)" : "rgba(170,150,90,0.5)",
+                         live ? "rgba(230,180,70,0.09)" : null,
+                         live ? "GPS DENIAL " + d.gpsJam + "t" : "GPS DENIAL OFFLINE");
       if (d.sonar) ring(e, d.sonar, "rgba(120,255,200,0.7)", null, "SONAR " + d.sonar + "t");
+      /* the ballistic back-plot circle, drawn so a commander can see whether
+         the ground a launcher is shooting from is inside it */
+      if (d.ew) ring(e, d.ew, "rgba(255,140,120,0.8)", "rgba(230,110,90,0.05)",
+                     "LAUNCH BACK-PLOT " + d.ew + "t");
     }
   }
 

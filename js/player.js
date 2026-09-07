@@ -96,9 +96,27 @@ class Player {
         return "ABOVE TECH CEILING (TECH " + this.techCap + ")";
       if (def.needTech && this.tech < def.needTech) return "REQUIRES TECH " + def.needTech;
     }
-    /* not yet invented, or long since retired */
-    if (typeof inEra === "function" && !isUpgrade && def.cat !== "building" &&
-        def.cat !== "defense" && !inEra(def, this.era || CUR_ERA)) {
+    /* An army that never operated the thing cannot buy it. `fac` on a
+       STRUCTURE is new - all twenty-eight belonged to everybody until the
+       strategic early-warning arrays and the fixed jamming sites - and it
+       reads exactly the way it already does on a unit. Tested here rather than
+       only in the sidebar because the AI reaches the queue through
+       enqueue() -> lockReason() and never through the menu. */
+    if (def.fac !== undefined && def.fac !== "both" && def.fac !== this.faction)
+      return "NOT IN SERVICE WITH THIS ARMY";
+    /* not yet invented, or long since retired.
+       Structures are exempt from the era window as a class, and have to be:
+       rules.js stamps from:"e50" on every one of them, so an era test against
+       that stamp is a test against nothing. The exception is a structure that
+       declares an `srole` - the opt-in for a family whose members have real
+       service dates and real national owners - and the blanket stamp cannot
+       forge that field, because the stamp only ever writes `from`. When the
+       stamping workstream lands and every structure carries an honest date the
+       two cat tests come out and this reduces to the line the units use. */
+    const structDated = def.srole !== undefined;
+    if (typeof inEra === "function" && !isUpgrade &&
+        (structDated || (def.cat !== "building" && def.cat !== "defense")) &&
+        !inEra(def, this.era || CUR_ERA)) {
       const from = def.from !== undefined ? eraIndex(def.from) : 0;
       return eraIndex(this.era || CUR_ERA) < from ? "NOT YET IN SERVICE" : "WITHDRAWN FROM SERVICE";
     }

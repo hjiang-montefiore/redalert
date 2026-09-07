@@ -179,7 +179,10 @@ var Combat = (function () {
     /* A launcher announces itself the same way a gun battery does - a ballistic
        round leaves a bigger signature than a howitzer, not a smaller one. */
     if ((w.proj === "arc" || w.indirect) && game.reportIndirectFire)
-      game.reportIndirectFire(shooter);
+      /* the weapon, not just the shooter: without it every contact is
+         untagged, no launch is ever ballistic, and the whole back-plot is
+         dead code with nothing to say so. This is the only call site. */
+      game.reportIndirectFire(shooter, w);
     effects.push({ t: "flash", x: shooter.x, y: shooter.y - alt(shooter),
                    life: 0.08, max: 0.08, big: w.dmg > 100,
                    ang: shooter.def && shooter.def.turret ? shooter.tang : shooter.ang });

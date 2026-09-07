@@ -62,6 +62,17 @@ var UI = (function () {
       for (const id in BUILDINGS) {
         const d = BUILDINGS[id];
         if (d.cat !== tab || d.undeployable) continue;
+        /* The first faction-gated and era-gated STRUCTURES in the game. A KPA
+           commander has no strategic early-warning array of any kind and is
+           not shown a card for one; a 1950s sidebar does not carry a 1980
+           array. Both filters are applied HERE rather than in the era filter
+           further down, because that one passes every building through
+           unconditionally - and it has to, since rules.js stamps from:"e50" on
+           all the rest and testing it there would empty the menu. Structures
+           without an `srole` are untouched and behave exactly as before. */
+        if (d.fac !== undefined && d.fac !== "both" && d.fac !== p.faction) continue;
+        if (d.srole !== undefined && typeof inEra === "function" &&
+            !inEra(d, p.era || CUR_ERA)) continue;
         out.push({ id, def: d, kind: tab });
       }
       if (tab === "building") {
@@ -400,6 +411,19 @@ var UI = (function () {
       rows.push("SIGNATURE " + d.rcs + lo);
     }
     if (d.jam) rows.push("JAMMING " + d.jam + " tiles");
+    /* def.radar is a coverage RADIUS in tiles and no card ever said so, which
+       was survivable while the radar dome was the only structure carrying one
+       and is not now that five more do. Named apart from the radarQ row above
+       it, which is a detection quality against rcs 1.0 and a different scale
+       entirely. */
+    if (d.radar && d.radar !== true) rows.push("RADAR COVER " + d.radar + " tiles");
+    /* the headline of the array family, named for what it does rather than for
+       the field: "EW 30" tells a player nothing. */
+    if (d.ew) rows.push("LAUNCH BACK-PLOT " + d.ew + " tiles");
+    /* and the KPA's whole reason to exist. Without this row the GPS station
+       advertises its deliberately near-worthless 6-tile radar number and hides
+       its 16-tile one. */
+    if (d.gpsJam) rows.push("GPS DENIAL " + d.gpsJam + " tiles");
     if (d.sonar) rows.push("SONAR " + d.sonar + " tiles");
     if (d.quiet !== undefined) {
       const lbl = d.quiet <= 0.28 ? "very quiet" : d.quiet <= 0.5 ? "quiet"
@@ -2244,8 +2268,24 @@ var UI = (function () {
           const j = G.jamAgainst(G.human, u);
           if (j > worst) { worst = j; where = u; }
         }
+        /* Satellite denial is invisible to the loop above, which asks each of
+           our own RADARS how badly it is being jammed. A GPS jammer does not
+           touch a radar; it denies the ground our base stands on. Probed at
+           the conyard, which is where the base is. */
+        let gps = 0;
+        if (G.gpsJamAt) {
+          const hq = G.human.buildings.find(b => !b.dead && b.def.id === "conyard")
+                  || G.human.buildings.find(b => !b.dead);
+          if (hq) gps = G.gpsJamAt(G.human, hq.x, hq.y);
+        }
         const sp = el2.querySelector("span");
-        if (worst > 0.55) {
+        if (gps > 0.15 && gps >= worst) {
+          el2.style.display = ""; el2.style.color = "#ffd24a";
+          sp.textContent = "GPS DENIED " + Math.round(gps * 100) + "%";
+          el2.title = "A hostile jammer is denying satellite navigation over your base. " +
+                      "Precision missions called onto this ground will scatter. " +
+                      "Destroy the jammer.";
+        } else if (worst > 0.55) {
           el2.style.display = ""; el2.style.color = "#ff6a5a";
           sp.textContent = "RADAR JAMMED";
           el2.title = "A hostile jammer has switched your radar picture off here. " +

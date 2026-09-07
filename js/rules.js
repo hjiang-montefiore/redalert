@@ -1003,6 +1003,299 @@ UNITS.cruiser_n.radar = 15;   UNITS.cruiser_p.radar = 14;   UNITS.cruiser_c.rada
 UNITS.carrier_n.radar = 16;   UNITS.carrier_p.radar = 14;   UNITS.carrier_c.radar = 16;
 UNITS.spaag_n.radar = 8;      UNITS.spaag_p.radar = 8;      UNITS.spaag_c.radar = 8;
 
+/* ============ STRATEGIC EARLY WARNING AND FIXED ELECTRONIC WARFARE ============
+
+   Two new families, and the first faction-gated STRUCTURES in the game. Three
+   fields on a BUILDINGS entry are new and all three are read in exactly the
+   places listed here, so a fourth family can be added later without touching
+   an engine file again:
+
+     fac      the army that operated the thing. player.js lockReason() refuses
+              it to anybody else and ui.js never draws the card, exactly the
+              way both already work for a UNIT.
+     srole    what job it does, and the opt-in for era gating. Structures are
+              exempt from inEra() as a class because rules.js stamps
+              from:"e50" on all of them; `srole` is a field that blanket stamp
+              cannot forge, so an entry carrying one is held to its real
+              service window. structureFor() also indexes on it.
+     bare     render3d.js runs neither restyle() nor archFixture() nor
+              eraFixture() over this model. A national radar array is the same
+              Raytheon concrete for everybody who bought it, and the period
+              rooftop kit is actively wrong here: the e80 fixture is a
+              camouflage net sized to the plot, which on a 3x3 is 49 m square
+              and lands ON the array faces, and the e00/e20 fixture is a white
+              radome, which is the one thing a phased array is not.
+
+   THE LADDER IS THE HISTORY AND THE GAPS ARE THE POINT.
+
+     strategic array   NATO e80  PACT e80  PLA e00  ROC e20  KPA never
+     radar jamming     NATO e80  PACT e80  PLA e00  ROC e00  KPA never
+     satellite denial  KPA  e00  PACT e20  everybody else never
+
+   In 1980 exactly two armies on this map could see a ballistic launch, which
+   is how it was. The KPA has a launcher in four eras and no way to see
+   anybody else's, and gets instead the one axis it is genuinely good at.
+   Nobody at all has any of this in the 1950s or the 1960s.
+
+   THREE DATES WORTH THE OWNER'S EYE, all following the agreed ladder rather
+   than the game's own era table, and all a one-word edit either way:
+     Leshan was operational in February 2013 and Murmansk-BN entered service
+     in 2014, both of which fall inside e00 ("2000s-10s") by ERA_INFO; the
+     agreed ladder puts them in e20 and that is what is written here.
+     The SPN-2/SPN-4 and the AN/TLQ-17A are 1970s equipment, which is e60 by
+     ERA_INFO; the agreed ladder puts them at e80 and that is what is written
+     here, dated to the period of widest fielded service - SPN-30 from the
+     1980s, Traffic Jam in Grenada in 1983 and Desert Storm in 1991.
+   ========================================================================= */
+Object.assign(BUILDINGS, {
+
+  /* ------------------- strategic early-warning arrays ------------------- */
+
+  /* WHAT `ew` IS AND WHAT IT IS NOT. `radar` is the general picture: it lifts
+     fog, sharpens fire control and answers G.radarCovers. `ew` is a second,
+     narrower sensor read in exactly one place - G.updateCounterBattery - and
+     it answers one question, whether a BALLISTIC round was fired from that
+     square. It lifts no fog, feeds no shooter and is worth nothing at all to
+     a commander nobody is shooting ballistic missiles at.
+
+     WHY THIRTY TILES. The launchers reach 24.0 (srbm_early) to 31.0
+     (srbm_p2), the radar dome reaches 22, and CFG.BUILD_RADIUS is 11 - so a
+     TEL firing into your base from 27 tiles is usually outside the dome's
+     circle and the counter-battery plot simply never happens. Thirty tiles
+     centred on your own base closes that and leaves a Pershing II at
+     absolute maximum range still able to beat it.
+
+     IT IS NOT AN INTERCEPT. A ballistic round covers 27 tiles in about 1.3
+     seconds and the plot lands at 2.0. The warning always arrives after the
+     impact. What the plot buys is the LAUNCHER: a TEL deploys in 3 to 9
+     seconds and reloads in 55 to 95, so a fix that lands two seconds after
+     launch and lives for twenty-eight lands while the vehicle is still on
+     its firing point. Interception is a PAC-3 or an S-400 battery's job and
+     the descs say so.
+
+     radarQ is a second-order benefit and is described as one. G.radarReach is
+     radarQ * rcs^0.25 and G.airTrack then multiplies by FACTIONS[].datalink,
+     so against a stealth airframe at rcs 0.004 a NATO array holds it at
+     32*0.25*1.00 = 8.0 tiles against the prereq radar dome's 6.5 - about a
+     tile and a half, standing in the same base. Worth having, not worth a
+     headline, and no card claims otherwise.
+
+     hp is in the strategic-silo band, not the radar dome's. combat.js triples
+     anti-radiation damage against an emitter, so a 210-point HARM lands 630 -
+     at 1,400 a single four-round Weasel pass deleted the most expensive
+     structure in the game. At 2,000 it survives one package and dies to two,
+     which is the loop these are priced for. */
+
+  lpar_n: { name:"PAVE PAWS Array", full:"AN/FPS-115 PAVE PAWS", cat:"building",
+    fac:"nato", srole:"lpar", bare:true, from:"e80",
+    service:"1980", confidence:"high",
+    cost:2800, time:34, w:3, h:3, hp:2000, armor:"structure",
+    power:-110, sight:6, tech:3, prereq:["lab","radar"], needPower:true,
+    radar:26, radarQ:32, ew:30,
+    desc:"Two thirty-one-metre octagonal faces of 1,792 UHF elements, raked twenty degrees " +
+         "back on a concrete pyramid. Otis Air Force Base, April 1980. This is not a bigger " +
+         "radar dome: what it adds is a thirty-tile BALLISTIC BACK-PLOT that fixes the launch " +
+         "point of any ballistic round fired at you, two seconds after launch. It will not " +
+         "intercept the round - that is what a Patriot battery is for, and by the time this " +
+         "array speaks the round is already down. It will get you the launcher before it has " +
+         "packed up and driven away. A second array widens the ground covered; it does not " +
+         "deepen it. And it transmits: every anti-radiation missile in the theatre triples " +
+         "its damage against this building, and it joins your radar dome and your SAM sites " +
+         "in the class every Wild Weasel is bought to hunt." },
+
+  lpar_p: { name:"Daryal Array", full:"5N79 Daryal (NATO: Pechora)", cat:"building",
+    fac:"pact", srole:"lpar", bare:true, from:"e80",
+    service:"1984", confidence:"high",
+    cost:3000, time:44, w:3, h:3, hp:2200, armor:"structure",
+    power:-130, sight:6, tech:3, prereq:["lab","radar"], needPower:true,
+    radar:24, radarQ:28, ew:32,
+    desc:"A bistatic pair - a forty-metre transmitter and a separate eighty-metre receiver - " +
+         "at the end of a line that began with the Dnestr Hen House sets in 1971 and ends " +
+         "with Voronezh in 2006. Pechora, Komi, 1984; Gabala the year after. The longest " +
+         "ballistic BACK-PLOT in this war at thirty-two tiles, and the shortest air-search " +
+         "picture of the four, which is the trade the real machines made: enormous apertures " +
+         "and antique processing. It will fix a launcher for you two seconds after the round " +
+         "is away. Getting that plot to a shooter is a separate problem this army has never " +
+         "solved." },
+
+  lpar_c: { name:"Strategic LPAR", full:"Large phased-array EW radar, Type 7010 lineage",
+    cat:"building", fac:"pla", srole:"lpar", bare:true, from:"e00",
+    service:"1976 / 2000s", confidence:"medium",
+    cost:2900, time:36, w:3, h:3, hp:2000, armor:"structure",
+    power:-115, sight:6, tech:3, prereq:["lab","radar"], needPower:true,
+    radar:25, radarQ:30, ew:30,
+    desc:"The Type 7010 was cut into a mountainside at Huangyangshan, went into service in " +
+         "1976 and tracked Skylab coming down in 1979. It was one experimental set in a hill; " +
+         "the network that replaced it is a 2000s programme, and that is when this becomes " +
+         "something a commander can buy. Thirty tiles of ballistic BACK-PLOT: a launch inside " +
+         "that circle gives up the launcher's position two seconds after it fires. It will " +
+         "not stop the round. It also holds a low-observable airframe a little further out " +
+         "than a radar dome does - about a tile, which is worth having and is not why you " +
+         "are buying it." },
+
+  lpar_r: { name:"Leshan PAVE PAWS", full:"AN/FPS-115 PAVE PAWS, Leshan", cat:"building",
+    fac:"roc", srole:"lpar", bare:true, from:"e20",
+    service:"2013", confidence:"high",
+    cost:3600, time:40, w:3, h:3, hp:2000, armor:"structure",
+    power:-110, sight:6, tech:3, prereq:["lab","radar"], needPower:true,
+    radar:26, radarQ:32, ew:30,
+    desc:"The same Raytheon array the Americans built, single-faced, on a 2,620-metre ridge " +
+         "in Hsinchu County. Approved in 2000, contracted in 2005 after a two-year suspension " +
+         "over the overrun, accepted in 2012, operational in February 2013, and at about 1.4 " +
+         "billion dollars the most expensive radar ever built - which is the price on this " +
+         "card. Thirty tiles of ballistic BACK-PLOT. It fires nothing and it stops nothing. " +
+         "It tells you where the launcher is standing, two seconds after it shoots, and for " +
+         "an army with no ballistic launcher of its own that has to be enough." },
+
+  /* ------------------------ fixed jamming sites ------------------------- */
+
+  /* Three things are true of every entry below and every card says all three,
+     because none of them is guessable from the numbers.
+
+     1. IT DEFENDS. CFG.BUILD_RADIUS is 11 tiles from your own structures, so
+        a station built in your base can never reach anybody else's. What it
+        reaches is the air and ground over YOUR plot: it burns down the picture
+        of any radar platform that comes to you, and because G.jamAt() is keyed
+        on the SHOOTER's position it blunts every radar-laid shot fired from
+        inside the bubble.
+     2. TWO OF THEM DO NOTHING. G.jamAgainst() and G.jamAt() take the WORST
+        bubble over a point and never the sum. A second station on the same
+        ground is money set on fire.
+     3. IT IS A BEACON. combat.js makes anything with def.jam an EMITTER and
+        entities.js weights an emitter at 0.06x distance for a shooter carrying
+        an anti-radiation missile. Site it inside the SAM belt, not outside it.
+
+     jamPower IS CALIBRATED FOR THE CROSS-ERA CASE, which is the one that bites:
+     the game lets each side pick its era independently. Peak effect is
+     jamPower * FACTIONS[jammer].ecm / FACTIONS[victim].eccm, times genContest.
+     At the top of this family that is 0.72 * 0.95 / 1.20 = 0.57 against a NATO
+     set of the same generation - so k > 0.55 only inside 20 per cent of the
+     radius, about two and a half tiles. A radar platform has to fly right over
+     the station to be switched off, and only a genuine generational gap
+     switches one off at range. The existing jamming VEHICLES sit at jamPower
+     0.85 to 0.9 and blind a contemporary set outright at close range; the fixed
+     site trades that punch for a bubble half again as wide and for never being
+     caught out of position, which is the honest difference between a truck and
+     a transmitter hall. */
+
+  ewsite_n: { name:"Electronic Attack Shelter", full:"AN/TLQ-17A ground electronic attack site",
+    cat:"building", fac:"nato", srole:"ewsite", bare:true, from:"e80",
+    service:"1970s", confidence:"high",
+    cost:1250, time:16, w:2, h:2, hp:900, armor:"structure",
+    power:-70, sight:6, tech:2, prereq:["radar"], needPower:true,
+    jam:10.0, jamPower:0.55,
+    desc:"A transportable shelter, a guyed mast and one broadband array - and that is the " +
+         "whole station, because American electronic attack has lived in the air since the " +
+         "EB-66: Prowler 1971 (Navy to 2015, Marine Corps to 2019), Compass Call 1983, " +
+         "Growler 2009. The ground half was Traffic Jam, fielded in the mid-1970s and taken " +
+         "to Grenada and Desert Storm, and the Army then disbanded most of its ground " +
+         "electronic warfare in the 1990s and did not begin rebuilding until after 2015 - so " +
+         "this is still the 1980s shelter in the 2020s and a modern radar walks through it. " +
+         "It denies the spectrum over your own ground only: it cannot reach their base. A " +
+         "second one adds nothing, because only the strongest bubble over a point counts. " +
+         "And it emits, so anti-radiation missiles come for it first." },
+
+  ewsite_p: { name:"SPN-4 Jamming Station", full:"SPN-4 front-aviation jamming station",
+    cat:"building", fac:"pact", srole:"ewsite", bare:true, from:"e80",
+    service:"1970s-80s", confidence:"high",
+    cost:1500, time:19, w:2, h:2, hp:950, armor:"structure",
+    power:-95, sight:6, tech:2, prereq:["radar"], needPower:true,
+    jam:14.0, jamPower:0.72,
+    desc:"Trough reflectors on a common turntable, screaming across the bands that airborne " +
+         "fire-control and side-looking radars work in. The SPN-2 and SPN-4 of the 1970s and " +
+         "the SPN-30 that followed them were built to meet NATO air power at the forward " +
+         "edge, they were relocatable sets emplaced on a prepared site for months at a time, " +
+         "and they are the strongest fixed jamming anywhere. The widest bubble in the game. " +
+         "It blinds radar platforms that come to YOU and ruins radar-laid shooting from " +
+         "inside it; it cannot reach their base. A second station buys nothing. It is a HARM " +
+         "magnet: site it inside your SAM belt." },
+
+  ewsite_c: { name:"Electronic Countermeasures Station",
+    full:"PLA fixed electronic countermeasures site",
+    cat:"building", fac:"pla", srole:"ewsite", bare:true, from:"e00",
+    service:"1970s / 2018", confidence:"high",
+    cost:1600, time:20, w:2, h:2, hp:950, armor:"structure",
+    power:-100, sight:6, tech:2, prereq:["radar"], needPower:true,
+    jam:13.0, jamPower:0.58,
+    desc:"Two rotatable log-periodic arrays on a hardened hall. The PLA has run fixed " +
+         "electronic countermeasures units under its Fourth Department since the 1970s; what " +
+         "can be pointed at is newer and it is on the map - in April 2018 the US Defense " +
+         "Department confirmed communications and radar jamming equipment installed on " +
+         "Mischief Reef and Fiery Cross Reef. It wins the spectrum over your own ground " +
+         "before the shooting starts, and cannot reach theirs. Only the strongest bubble over " +
+         "a point counts, so one is enough. Anything carrying an anti-radiation missile comes " +
+         "for it first." },
+
+  ewsite_r: { name:"Electronic Warfare Post", full:"ICEFCOM fixed electronic warfare post",
+    cat:"building", fac:"roc", srole:"ewsite", bare:true, from:"e00",
+    service:"2017", confidence:"medium",
+    cost:1400, time:18, w:2, h:2, hp:900, armor:"structure",
+    power:-75, sight:6, tech:2, prereq:["radar"], needPower:true,
+    jam:9.5, jamPower:0.50,
+    desc:"American equipment, revetted, on an island that has fortified everything for " +
+         "seventy years. Taiwan's electronic warfare units were gathered under the " +
+         "Information, Communications and Electronic Force Command on 29 June 2017, often " +
+         "described as a fourth service; before that the visible fleet was airborne and " +
+         "small, the C-130HE Tien Ken of the 1990s. There is no Taiwanese strategic jamming " +
+         "programme and this does not pretend to be one - a modest, well-protected, purely " +
+         "defensive bubble over your own ground, and the weakest station in the game. One " +
+         "only; the sum of two is not a thing." },
+
+  /* --------------------- satellite navigation denial -------------------- */
+
+  /* Jamming a radar and jamming GPS are not the same act and must not share a
+     number. A radar jammer fights a transmitter that is looking for it and
+     hopping to get away; a GPS jammer sits on a band that has not moved since
+     1978 and shouts down a receiver listening for about a hundred attowatts
+     from twenty thousand kilometres up. That is why the second is so much
+     easier than the first, why an army that cannot build a decent radar jammer
+     can still do it well, and why North Korea - behind on every other sensor
+     axis in this game - is the one nation whose jamming has repeatedly closed
+     an adversary's airspace in peacetime.
+
+     So it has its own field (gpsJam radius, gpsPower strength), its own
+     hardening term (FACTIONS.*.gpsHard, which is keyed military GPS and a
+     null-steering antenna on the round, not radar ECCM), and it is deliberately
+     outside genContest. Same worst-bubble-never-the-sum rule as the other two,
+     for the same physical reason. It is read by G.supportScatter, so an off-map
+     precision mission called onto ground you have denied scatters badly, and
+     ui.js and render3d.js both show the bubble and the effect. */
+
+  ewsite_k: { name:"GPS Jamming Station", full:"KPA satellite navigation jamming site",
+    cat:"building", fac:"kpa", srole:"gpsjam", bare:true, from:"e00",
+    service:"2010", confidence:"high",
+    cost:900, time:13, w:2, h:2, hp:800, armor:"structure",
+    power:-45, sight:5, tech:2, prereq:["radar"], needPower:true,
+    jam:6.0, jamPower:0.35, gpsJam:16.0, gpsPower:1.00,
+    desc:"A truck backed into a revetment under camouflage netting, and four little crossed " +
+         "dipoles on a stick. Against radar it is nearly worthless: it never switches a " +
+         "contemporary set off at any range, it only degrades one within about three tiles. " +
+         "Against satellite navigation it is the widest and most effective station in the " +
+         "game, and that is not a balance decision - North Korea jammed GPS over the South in " +
+         "August 2010, in March 2011, from 28 April to 13 May 2012 (about 1,016 aircraft and " +
+         "254 vessels affected) and from 31 March to 5 April 2016 (about 1,000 aircraft and " +
+         "700 vessels), from sites near Kaesong and Haeju. Precision missions called onto " +
+         "your base scatter badly. One is enough; and it still emits, so it still draws the " +
+         "anti-radiation missiles." },
+
+  ewsite_p2: { name:"Murmansk-BN Station", full:"Murmansk-BN HF jamming complex, with Pole-21",
+    cat:"building", fac:"pact", srole:"gpsjam", bare:true, from:"e20",
+    service:"2014", confidence:"high",
+    cost:2200, time:27, w:2, h:2, hp:1000, armor:"structure",
+    power:-110, sight:7, tech:3, prereq:["radar","lab"], needPower:true,
+    jam:6.0, jamPower:0.40, gpsJam:12.0, gpsPower:0.90,
+    desc:"In service 2014 and genuinely emplaced: telescopic masts of some thirty-two metres " +
+         "carrying wire curtains, at Kaliningrad, in Crimea and on Kamchatka. Read carefully, " +
+         "because the name is more famous than the job - Murmansk-BN jams the HF " +
+         "COMMUNICATIONS band, not radar, and the 5,000 km quoted for it is a Russian claim. " +
+         "Against a radar picture it does almost nothing and this card will not pretend " +
+         "otherwise. What it denies is the other half of the spectrum, and a separate " +
+         "GNSS-jamming set (Pole-21, fielded around 2016, mounted on mast infrastructure) is " +
+         "emplaced on the same ground: precision missions called onto your base lose their " +
+         "coordinates. Pair it with an SPN-4 - they are two machines doing two jobs and they " +
+         "do combine, which nothing else in this family does." },
+});
+
 /* ============================ STRATEGIC WEAPONS ============================ */
 Object.assign(BUILDINGS, {
   missilesilo: { name:"Missile Silo", cat:"defense", cost:3500, time:40, w:2, h:2, hp:1200, armor:"structure",
@@ -1374,6 +1667,20 @@ FACTIONS.pla.ecm  = 1.12;  FACTIONS.pla.eccm  = 1.15;
 FACTIONS.pact.ecm = 0.95;  FACTIONS.pact.eccm = 0.85;   // strong emitters, softer to SEAD
 FACTIONS.kpa.ecm  = 0.55;  FACTIONS.kpa.eccm  = 0.55;   // analogue army
 FACTIONS.roc.ecm  = 1.05;  FACTIONS.roc.eccm  = 1.10;
+
+/* ---- how hard this army's guided weapons are to spoof off a satellite fix ----
+   The counterpart of eccm, and deliberately NOT the same number: keyed military
+   GPS and a null-steering antenna on the round are a different question from
+   whether your radars hop frequency, and an army can be good at one and hopeless
+   at the other. NATO shoots SAASM and M-code through controlled-reception-pattern
+   antennas; Taiwan buys the same kit a block behind; China navigates on a
+   constellation of its own; Russia has GLONASS and puts inertial mid-course on
+   the rounds that matter; and most of what the KPA fires rides a civil receiver. */
+FACTIONS.nato.gpsHard = 1.35;
+FACTIONS.roc.gpsHard  = 1.20;
+FACTIONS.pla.gpsHard  = 1.15;
+FACTIONS.pact.gpsHard = 1.05;
+FACTIONS.kpa.gpsHard  = 0.85;
 FACTIONS.nato.bonus += " Strongest electronic warfare and SEAD.";
 FACTIONS.pla.bonus  += " Near-peer electronic warfare and SEAD.";
 FACTIONS.kpa.bonus  += " Almost no electronic warfare: its radars are loud and easy to kill.";
@@ -2373,7 +2680,15 @@ for (var _eu in UNITS) {
 }
 for (var _eb in BUILDINGS) {
   var _bb = BUILDINGS[_eb];
-  if (_bb.from === undefined) _bb.from = "e50";     // structures are era-agnostic
+  /* `eraStamped` marks a structure that was given a date it never earned, and
+     G.genContest() reads it. Without the mark the contest was measuring every
+     jammer in the game against a fabricated 1950 service date: an e80 jamming
+     vehicle scored 1.7^3 = 4.91x against a radar dome, a SAM site or an
+     airbase, because this loop had told it they were all built in 1950. A
+     structure that carries a real `from` - the strategic arrays and the fixed
+     jamming sites below are the first that do - is not marked and is contested
+     honestly. */
+  if (_bb.from === undefined) { _bb.from = "e50"; _bb.eraStamped = true; }
 }
 
 /* ==================================================================
@@ -2633,6 +2948,31 @@ function unitsFor(fac, role, era) {
     if ((u.fac === fac || u.fac === "both") && inEra(u, e)) out.push(list[i]);
   }
   return out;
+}
+
+/* ---- the structure a faction uses for a job, in this period ----
+   unitFor() answers this for UNITS off the ROLES index. Structures never needed
+   it: all twenty-eight of them were available to every army in every era, so
+   nothing ever had to choose. The strategic early-warning array and the fixed
+   jamming site are the first that are not - they carry `fac` and a real `from`,
+   and something has to pick Taiwan's PAVE PAWS rather than NATO's, and the
+   Murmansk-BN rather than the SPN-4 beside it. Returns null far more often than
+   it returns a string, and null is the correct answer rather than a gap to fill:
+   there is no North Korean early-warning array, no Chinese one before the 2000s
+   and no Taiwanese one before 2013. Linear over BUILDINGS on purpose - the table
+   is thirty-eight entries and this is read a few times a minute by one
+   commander, not once a frame by all of them. */
+function structureFor(fac, srole, era) {
+  var e = era || CUR_ERA, best = null, bestFrom = -1;
+  for (var k in BUILDINGS) {
+    var b = BUILDINGS[k];
+    if (b.srole !== srole) continue;
+    if (b.fac !== undefined && b.fac !== "both" && b.fac !== fac) continue;
+    if (!inEra(b, e)) continue;
+    var f = b.from !== undefined ? eraIndex(b.from) : 0;
+    if (f > bestFrom) { bestFrom = f; best = k; }
+  }
+  return best;
 }
 
 /* ---- advancing a generation ----
