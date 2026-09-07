@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><pre id="o"></pre>
+<script src="../js/util.js"></script><script src="../js/config.js"></script>
+<script src="../js/facts.js"></script><script src="../js/rules.js"></script>
+<script src="../js/eras.js"></script><script src="../js/heavyair.js"></script>
+<script src="../js/generations.js"></script>
+<script>
+var L=[];function p(){L.push([].slice.call(arguments).join(" "));}
+try{
+p("TILE",CFG.TILE,"STEALTH_ACQ",CFG.STEALTH_ACQ);
+p("--- naval units, own radar vs cued gun range ---");
+var n=0;
+for(var u in UNITS){var d=UNITS[u];if(d.cat!=="naval")continue;
+ var ws=d.weapons||[],g=null;
+ for(var j=0;j<ws.length;j++){var w=WEAPONS[ws[j]];if(w&&w.proj==="shell"){g=w;break;}}
+ if(!g)continue; n++;
+ if(n<=22)p(u,"from="+d.from,"radar="+(d.radar||0),"sight="+(d.sight||0),"gun r="+g.range,
+   (d.radar||0)>=g.range?"OK":"SHORT by "+((g.range-(d.radar||0)).toFixed(1)));
+}
+p("total naval gun hulls:",n);
+p("--- e50 aa/sam role units ---");
+for(var u2 in UNITS){var d2=UNITS[u2];
+ if(d2.role!=="aa"&&d2.role!=="sam")continue;
+ if(typeof inEra==="function"&&!inEra(d2,"e50"))continue;
+ var r=0,ws2=d2.weapons||[];for(var j2=0;j2<ws2.length;j2++){var w2=WEAPONS[ws2[j2]];if(w2&&w2.tgt&&w2.tgt.air&&w2.range>r)r=w2.range;}
+ p(" ",u2,"radar="+(d2.radar||0),"radarQ="+(d2.radarQ===undefined?"-":d2.radarQ),"maxAAr="+r);
+}
+p("--- radarDependence-ish: AA weapons that lose jamMul (cue=false) ---");
+var cnt=0;for(var k in WEAPONS){var w3=WEAPONS[k];if(w3.tgt&&w3.tgt.air&&!(w3.tgt.ground||w3.tgt.sea))cnt++;}
+p("pure-AA weapons (never stamped cue):",cnt);
+}catch(e){p("ERR "+e.message+"\n"+e.stack);}
+document.getElementById("o").textContent=L.join("\n");
+</script>

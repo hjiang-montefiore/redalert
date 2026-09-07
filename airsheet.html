@@ -1,0 +1,122 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Airframe contact sheet</title>
+<style>
+  body { margin:0; background:#151a1e; color:#cfd6da;
+         font:12px/1.3 "IBM Plex Mono",ui-monospace,monospace; }
+  #grid { display:grid; gap:2px; padding:6px; }
+  .cell { position:relative; background:#1d2429; }
+  .cell canvas { display:block; }
+  .cap { position:absolute; left:3px; bottom:2px; right:3px; font-size:9px;
+         color:#8fa0a8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cap b { color:#e0e6ea; font-weight:500; }
+  .err { color:#ff7a6b; }
+</style>
+<div id="grid"></div>
+<script src="js/three.min.js"></script>
+<script src="js/models3d.js"></script>
+<script src="js/air3d_era.js"></script>
+<script src="js/air_specs.js"></script>
+<script src="js/rotor3d.js"></script>
+<script src="js/rotor_specs.js"></script>
+<script src="js/armour3d.js"></script>
+<script src="js/armour_specs.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  var only   = params.get("era");          // e50 | e60 | ... | all
+  var CELL   = +(params.get("cell") || 250);
+  var COLS   = +(params.get("cols") || 5);
+  var VIEW   = params.get("view") || "top"; // top | iso
+
+  var ALL = {};
+  var _s;
+  for (_s in (window.AIRFRAMES || {})) ALL[_s] = AIRFRAMES[_s];
+  for (_s in (window.ROTORCRAFT || {})) if (!ALL[_s]) ALL[_s] = ROTORCRAFT[_s];
+  var ids = Object.keys(ALL);
+  if (only && only !== "all") ids = ids.filter(function (id) { return ALL[id].era === only; });
+  var pick = params.get("ids");
+  if (pick) {
+    var want = pick.split(",");
+    ids = want.filter(function (id) { return ALL[id]; });
+  }
+  ids.sort(function (a, b) {
+    var A = ALL[a], B = ALL[b];
+    return (A.era || "").localeCompare(B.era || "") ||
+           (A.fac || "").localeCompare(B.fac || "") ||
+           (A.role || "").localeCompare(B.role || "");
+  });
+
+  var grid = document.getElementById("grid");
+  grid.style.gridTemplateColumns = "repeat(" + COLS + ", " + CELL + "px)";
+
+  ids.forEach(function (id) {
+    var P = ALL[id];
+    var cell = document.createElement("div");
+    cell.className = "cell";
+    cell.style.width = CELL + "px";
+    cell.style.height = CELL + "px";
+    grid.appendChild(cell);
+
+    var cap = document.createElement("div");
+    cap.className = "cap";
+    cell.appendChild(cap);
+
+    var renderer, scene, cam, model;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(CELL, CELL);
+      renderer.setClearColor(0x1d2429, 1);
+      if (THREE.sRGBEncoding !== undefined) renderer.outputEncoding = THREE.sRGBEncoding;
+      cell.insertBefore(renderer.domElement, cap);
+
+      scene = new THREE.Scene();
+      scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+      var key = new THREE.DirectionalLight(0xffffff, 1.05);
+      key.position.set(0.6, 0.9, 1.4); scene.add(key);
+      var rim = new THREE.DirectionalLight(0x9fc0e0, 0.42);
+      rim.position.set(-0.8, -0.5, 0.4); scene.add(rim);
+
+      /* drawn in native model space: +X nose, +Y left, +Z up */
+      model = (P.kind === "rotor" ? Rotor3D : Airframe3D)
+                .build(THREE, Models3D, { team: 0x3f8fd0 }, P);
+      scene.add(model);
+
+      var bb = new THREE.Box3().setFromObject(model);
+      var sz = new THREE.Vector3(); bb.getSize(sz);
+      var ctr = new THREE.Vector3(); bb.getCenter(ctr);
+      var reach = Math.max(sz.x, sz.y, sz.z) * 0.58;
+
+      cam = new THREE.OrthographicCamera(-reach, reach, reach, -reach, -reach * 12, reach * 12);
+      if (VIEW === "iso") {
+        cam.up.set(0, 0, 1);
+        cam.position.set(ctr.x - reach * 1.1, ctr.y + reach * 1.5, ctr.z + reach * 1.15);
+      } else if (VIEW === "side") {
+        cam.up.set(0, 0, 1);
+        cam.position.set(ctr.x, ctr.y + reach * 3, ctr.z);
+      } else {
+        /* plan view: nose up the page */
+        cam.up.set(1, 0, 0);
+        cam.position.set(ctr.x, ctr.y, ctr.z + reach * 3);
+      }
+      cam.lookAt(ctr);
+      cam.updateProjectionMatrix();
+      renderer.render(scene, cam);
+
+      var tri = renderer.info.render.triangles;
+      cap.innerHTML = "<b>" + (P.designation || id) + "</b> · " + (P.era || "?") + " " +
+        (P.kind === "rotor"
+          ? (P.config + " " + P.blades + "bl " + P.body + "/" + P.gear)
+          : ((P.planform || "?") + " " + (P.sweep || 0) + "° " +
+             (P.intake || "?") + "/" + (P.tail || "?"))) + " · " + tri + "t";
+      if (!tri) cap.className = "cap err";
+    } catch (e) {
+      cap.className = "cap err";
+      cap.textContent = id + " — " + e.message;
+    }
+  });
+
+  window.__sheetCount = ids.length;
+  window.__sheetReady = true;
+})();
+</script>

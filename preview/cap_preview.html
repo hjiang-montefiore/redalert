@@ -1,0 +1,58 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#20303a;overflow:hidden}canvas{display:block}</style></head>
+<body>
+<script src="../js/three.min.js"></script>
+<script src="../js/models3d.js"></script>
+<script>var UNIT_MODELS={},BLD_MODELS={};</script>
+<script src="cap_capitals.js"></script>
+<script>
+var W=1500,H=960;
+var renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(W,H);renderer.setPixelRatio(1);document.body.appendChild(renderer.domElement);
+var scene=new THREE.Scene();scene.background=new THREE.Color(0x2b4250);
+var hemi=new THREE.HemisphereLight(0xbcd6e8,0x33404a,0.85);scene.add(hemi);
+var dir=new THREE.DirectionalLight(0xfff2e0,1.5);dir.position.set(-80,140,60);scene.add(dir);
+var dir2=new THREE.DirectionalLight(0x9fc0d8,0.5);dir2.position.set(90,60,-70);scene.add(dir2);
+var water=new THREE.Mesh(new THREE.PlaneGeometry(3000,3000).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x24404f,roughness:0.35,metalness:0.1}));
+water.position.y=0;scene.add(water);
+var keys=["destroyer_n","destroyer_p","destroyer_c","cruiser_n","cruiser_p","cruiser_c"];
+var groups={},errs=[];
+keys.forEach(function(k,i){
+  try{
+    var g=UNIT_MODELS[k].build(THREE,Models3D,{team:"#c8322f"});
+    var wrap=new THREE.Group();g.rotation.x=-Math.PI/2;wrap.add(g);
+    wrap.position.set(i*400,0,0);scene.add(wrap);groups[k]=wrap;
+  }catch(e){errs.push(k+": "+e.message);}
+});
+window.__errs=errs;
+function frame(i,mode){
+  var k=keys[i],L=UNIT_MODELS[k].len,cx=i*400;
+  var cam=new THREE.PerspectiveCamera(32,(W/3)/(H/2),1,4000);
+  if(mode==="top"){cam.position.set(cx,L*2.0,0.1);cam.up.set(0,0,-1);}
+  else if(mode==="side"){cam.position.set(cx,L*0.14,L*2.0);cam.up.set(0,1,0);}
+  else {cam.position.set(cx-L*0.95,L*0.95,L*1.55);cam.up.set(0,1,0);}
+  cam.lookAt(cx,L*0.03,0);
+  return cam;
+}
+window.sheet=function(mode){
+  renderer.setScissorTest(true);
+  var cw=W/3,ch=H/2;
+  for(var i=0;i<6;i++){
+    var col=i%3,row=(i/3)|0;
+    var x=col*cw,y=H-(row+1)*ch;
+    renderer.setViewport(x,y,cw,ch);renderer.setScissor(x,y,cw,ch);
+    renderer.render(scene,frame(i,mode));
+  }
+  renderer.setScissorTest(false);
+  return errs.join(" | ");
+};
+window.solo=function(i,mode){
+  renderer.setScissorTest(false);renderer.setViewport(0,0,W,H);
+  var k=keys[i],L=UNIT_MODELS[k].len,cx=i*400;
+  var cam=new THREE.PerspectiveCamera(30,W/H,1,4000);
+  if(mode==="top"){cam.position.set(cx,L*1.25,0.1);cam.up.set(0,0,-1);}
+  else if(mode==="side"){cam.position.set(cx,L*0.09,L*1.25);cam.up.set(0,1,0);}
+  else{cam.position.set(cx-L*0.6,L*0.5,L*0.95);cam.up.set(0,1,0);}
+  cam.lookAt(cx,L*0.04,0);
+  renderer.render(scene,cam);return 1;
+};
+</script></body></html>

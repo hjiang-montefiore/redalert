@@ -1,0 +1,2671 @@
+/* ============ rules.js — weapons, structures, units ============
+   Every combat value lives here so balance is one file, not scattered.
+   range/minRange/aoe are in TILES. reload/burstDelay in SECONDS.
+   proj types: bullet(hitscan tracer) shell(fast ballistic) rocket(slow, unguided)
+               missile(guided, interceptable) arc(indirect, lobbed) bomb(released from air)
+               torpedo(underwater) depth(depth charge)                                     */
+
+var WEAPONS = {
+  /* ---------- small arms ---------- */
+  rifle:      { name:"5.56mm rifle", dmg:11, warhead:"bullet", range:5.0, reload:1.10, burst:3, burstDelay:0.07,
+                acc:0.72, proj:"bullet", speed:0, suppress:5, tgt:{ground:1,air:0,sea:1,sub:0} },
+  lmg:        { name:"7.62mm GPMG", dmg:9, warhead:"bullet", range:5.6, reload:1.9, burst:8, burstDelay:0.055,
+                acc:0.60, proj:"bullet", speed:0, suppress:11, tgt:{ground:1,air:0,sea:1,sub:0} },
+  sniper:     { name:"12.7mm anti-materiel", dmg:95, warhead:"bullet", range:9.5, reload:3.6, burst:1,
+                acc:0.94, proj:"bullet", speed:0, suppress:22, tgt:{ground:1,air:0,sea:1,sub:0} },
+  atgm_inf:   { name:"Javelin ATGM", dmg:130, warhead:"heat", range:7.2, minRange:1.2, reload:5.2, burst:1,
+                acc:0.86, proj:"missile", speed:340, aoe:0.7, suppress:14, tgt:{ground:1,air:0,sea:1,sub:0} },
+  manpad:     { name:"Stinger MANPADS", dmg:110, warhead:"flak", range:7.8, reload:4.6, burst:1,
+                acc:0.80, proj:"missile", speed:520, aoe:0.6, tgt:{ground:0,air:1,sea:0,sub:0} },
+  mortar:     { name:"81mm mortar", dmg:60, warhead:"frag", range:9.0, minRange:2.6, reload:5.0, burst:1,
+                acc:0.42, proj:"arc", speed:180, aoe:1.5, suppress:34, tgt:{ground:1,air:0,sea:1,sub:0} },
+
+  /* ---------- vehicle guns ---------- */
+  hmg:        { name:"12.7mm HMG", dmg:13, warhead:"bullet", range:5.4, reload:1.6, burst:6, burstDelay:0.07,
+                acc:0.66, proj:"bullet", speed:0, suppress:9, tgt:{ground:1,air:0,sea:1,sub:0} },
+  autocannon: { name:"25mm autocannon", dmg:22, warhead:"bullet", range:6.4, reload:2.2, burst:5, burstDelay:0.10,
+                acc:0.70, proj:"shell", speed:620, suppress:12, tgt:{ground:1,air:0,sea:1,sub:0} },
+  gun_light:  { name:"76mm rifled gun", dmg:60, warhead:"cannon", range:6.6, reload:3.1, burst:1,
+                acc:0.78, proj:"shell", speed:700, aoe:0.5, suppress:14, tgt:{ground:1,air:0,sea:1,sub:0} },
+  gun_105:    { name:"105mm rifled gun", dmg:105, warhead:"cannon", range:7.4, reload:4.0, burst:1,
+                acc:0.80, proj:"shell", speed:780, aoe:0.7, suppress:18, tgt:{ground:1,air:0,sea:1,sub:0} },
+  /* The M256 120mm smoothbore, standard on every M1A1 and M1A2. Slightly
+     lower raw figure than the 125mm, but paired with a DU long rod and a
+     far better fire control - the ammoQ and fireCtrl doctrine terms are
+     where the Western advantage actually lives. */
+  gun_120:    { name:"M256 120mm smoothbore", dmg:158, warhead:"cannon", range:8.0, reload:4.3, burst:1,
+                acc:0.83, proj:"shell", speed:860, aoe:0.9, suppress:24,
+                tgt:{ground:1,air:0,sea:1,sub:0} },
+  gun_125:    { name:"125mm smoothbore", dmg:165, warhead:"cannon", range:8.2, reload:5.0, burst:1,
+                acc:0.82, proj:"shell", speed:860, aoe:0.9, suppress:24, tgt:{ground:1,air:0,sea:1,sub:0} },
+  howitzer:   { name:"155mm howitzer", dmg:150, warhead:"frag", range:15.5, minRange:4.0, reload:8.5, burst:1,
+                acc:0.34, proj:"arc", speed:210, aoe:2.6, suppress:60, tgt:{ground:1,air:0,sea:1,sub:0} },
+  mlrs:       { name:"227mm rocket pod", dmg:70, warhead:"frag", range:14.0, minRange:3.5, reload:14.0, burst:12, burstDelay:0.16,
+                acc:0.22, proj:"arc", speed:260, aoe:2.0, suppress:40, tgt:{ground:1,air:0,sea:1,sub:0} },
+  spaag:      { name:"35mm twin AA", dmg:26, warhead:"flak", range:7.0, reload:1.7, burst:6, burstDelay:0.07,
+                acc:0.62, proj:"shell", speed:900, aoe:0.5, tgt:{ground:1,air:1,sea:0,sub:0} },
+  atgm_veh:   { name:"TOW-2 launcher", dmg:150, warhead:"heat", range:8.4, minRange:1.5, reload:6.0, burst:1,
+                acc:0.88, proj:"missile", speed:330, aoe:0.8, tgt:{ground:1,air:0,sea:1,sub:0} },
+  sam_veh:    { name:"SAM launcher", dmg:150, warhead:"flak", range:11.0, reload:5.5, burst:2, burstDelay:0.5,
+                acc:0.84, proj:"missile", speed:600, aoe:0.9, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* ---- mobile area air defence ----
+     The SAM Site above is the FIXED tier: emplaced, wired to the grid, and it
+     stays where it was built. The roster has never had the tier below it - the
+     launcher that shoots and then moves before the reply arrives, which is the
+     whole reason the S-300 family rewrote Western air planning. Three
+     generations, because the capability genuinely arrived in three steps.
+     Every round here is kept INSIDE the static site's 14.0 on purpose: the
+     emplacement is still the better and cheaper shooter, and what the vehicle
+     buys is that it follows the army and does not go cold in a brownout.
+     `abm` is the single-round kill probability against a BALLISTIC body, read
+     by combat.js layer 1. Only a system built for that shot carries the field. */
+  sam_area1:  { name:"first-generation area SAM", dmg:175, warhead:"flak", range:10.6, reload:9.5, burst:1,
+                acc:0.70, proj:"missile", speed:560, aoe:1.0, tgt:{ground:0,air:1,sea:0,sub:0} },
+  sam_area2:  { name:"long-range area SAM", dmg:215, warhead:"flak", range:12.5, reload:7.5, burst:2, burstDelay:0.7,
+                acc:0.86, proj:"missile", speed:640, aoe:1.1, abm:0.30, tgt:{ground:0,air:1,sea:0,sub:0} },
+  sam_area3:  { name:"hit-to-kill area SAM", dmg:240, warhead:"flak", range:13.6, reload:6.5, burst:2, burstDelay:0.6,
+                acc:0.90, proj:"missile", speed:700, aoe:1.2, abm:0.75, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* Taiwan's is the odd one: a real hit-to-kill interceptor with a fraction of
+     the reach, because it is built to survive an opening barrage rather than
+     to cover a theatre. The short range is the design, not a shortfall. */
+  sam_tk3:    { name:"Tien Kung III", dmg:210, warhead:"flak", range:11.8, reload:7.0, burst:2, burstDelay:0.6,
+                acc:0.90, proj:"missile", speed:690, aoe:1.1, abm:0.62, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* Paraded 2010, tested 2011-2017, assessed operational around 2017. It is
+     laid out like an S-300 and is stated here as one whose radar, numbers and
+     reliability nobody outside the country has ever verified - so it engages,
+     and it misses. That is the honest way to stat an unverified system. */
+  sam_pongae: { name:"Pongae-5", dmg:200, warhead:"flak", range:12.6, reload:9.0, burst:2, burstDelay:0.8,
+                acc:0.74, proj:"missile", speed:600, aoe:1.1, abm:0.30, tgt:{ground:0,air:1,sea:0,sub:0} },
+
+  /* ---------- naval ---------- */
+  navgun_57:  { name:"57mm naval gun", dmg:38, warhead:"he", range:7.2, reload:1.5, burst:3, burstDelay:0.22,
+                acc:0.72, proj:"shell", speed:700, aoe:0.7, tgt:{ground:1,air:1,sea:1,sub:0} },
+  navgun_127: { name:"127mm naval gun", dmg:120, warhead:"he", range:11.0, reload:4.2, burst:2, burstDelay:0.5,
+                acc:0.66, proj:"shell", speed:720, aoe:1.5, suppress:30, tgt:{ground:1,air:0,sea:1,sub:0} },
+  navgun_203: { name:"203mm main battery", dmg:230, warhead:"he", range:17.0, minRange:3.0, reload:11.0, burst:3, burstDelay:0.45,
+                acc:0.40, proj:"arc", speed:250, aoe:3.0, suppress:70, tgt:{ground:1,air:0,sea:1,sub:0} },
+  ssm:        { name:"Harpoon SSM", dmg:260, warhead:"he", range:13.5, minRange:2.0, reload:13.0, burst:2, burstDelay:0.9,
+                acc:0.90, proj:"missile", speed:420, aoe:1.6, tgt:{ground:1,air:0,sea:1,sub:0} },
+  sam_ship:   { name:"Standard SAM", dmg:170, warhead:"flak", range:12.0, reload:4.0, burst:2, burstDelay:0.4,
+                acc:0.86, proj:"missile", speed:640, aoe:1.0, tgt:{ground:0,air:1,sea:0,sub:0} },
+  torpedo:    { name:"heavyweight torpedo", dmg:340, warhead:"he", range:9.0, minRange:1.0, reload:12.0, burst:2, burstDelay:1.2,
+                acc:0.88, proj:"torpedo", speed:150, aoe:1.4, tgt:{ground:0,air:0,sea:1,sub:1} },
+  depthchg:   { name:"ASW depth charge", dmg:190, warhead:"he", range:4.2, reload:6.5, burst:3, burstDelay:0.5,
+                acc:0.60, proj:"depth", speed:120, aoe:1.8, tgt:{ground:0,air:0,sea:0,sub:1} },
+  ciws:       { name:"20mm CIWS", dmg:0, warhead:"flak", range:4.6, reload:0.55, acc:1, proj:"none",
+                intercept:true, tgt:{ground:0,air:0,sea:0,sub:0} },
+
+  /* ---------- aircraft ---------- */
+  hellfire:   { name:"AGM-114 Hellfire", dmg:145, warhead:"heat", range:6.6, reload:2.4, burst:1,
+                acc:0.90, proj:"missile", speed:400, aoe:1.0, ammo:1, tgt:{ground:1,air:0,sea:1,sub:0} },
+  chaingun:   { name:"30mm chain gun", dmg:20, warhead:"bullet", range:4.6, reload:1.4, burst:6, burstDelay:0.06,
+                acc:0.68, proj:"shell", speed:640, suppress:16, ammo:0.34, tgt:{ground:1,air:0,sea:1,sub:0} },
+  aam:        { name:"AIM-120 AMRAAM", dmg:200, warhead:"flak", range:9.5, reload:3.0, burst:1,
+                acc:0.88, proj:"missile", speed:700, aoe:0.8, ammo:1, tgt:{ground:0,air:1,sea:0,sub:0} },
+  jdam:       { name:"500lb guided bomb", dmg:330, warhead:"he", range:2.6, reload:1.0, burst:2, burstDelay:0.35,
+                acc:0.92, proj:"bomb", speed:0, aoe:2.4, suppress:80, ammo:2, tgt:{ground:1,air:0,sea:1,sub:0} },
+  airtorp:    { name:"ASW torpedo", dmg:260, warhead:"he", range:4.0, reload:5.0, burst:1,
+                acc:0.85, proj:"torpedo", speed:160, aoe:1.2, ammo:1, tgt:{ground:0,air:0,sea:1,sub:1} },
+
+  /* ---------- static defences ---------- */
+  nest_mg:    { name:"emplaced 7.62mm", dmg:10, warhead:"bullet", range:6.0, reload:1.7, burst:9, burstDelay:0.05,
+                acc:0.68, proj:"bullet", speed:0, suppress:13, tgt:{ground:1,air:0,sea:1,sub:0} },
+  at_gun:     { name:"100mm AT gun", dmg:140, warhead:"cannon", range:8.6, reload:4.6, burst:1,
+                acc:0.85, proj:"shell", speed:840, aoe:0.6, tgt:{ground:1,air:0,sea:1,sub:0} },
+  aa_battery: { name:"twin 40mm AA", dmg:34, warhead:"flak", range:9.0, reload:1.5, burst:5, burstDelay:0.08,
+                acc:0.70, proj:"shell", speed:920, aoe:0.6, tgt:{ground:0,air:1,sea:0,sub:0} },
+  sam_site:   { name:"Patriot SAM site", dmg:230, warhead:"flak", range:14.0, reload:5.0, burst:2, burstDelay:0.6,
+                acc:0.90, proj:"missile", speed:680, aoe:1.2, tgt:{ground:0,air:1,sea:0,sub:0} },
+  coast_gun:  { name:"152mm coastal gun", dmg:210, warhead:"he", range:13.5, minRange:2.0, reload:7.5, burst:2, burstDelay:0.6,
+                acc:0.62, proj:"shell", speed:640, aoe:2.0, tgt:{ground:1,air:0,sea:1,sub:0} },
+  bunker_how: { name:"emplaced 155mm", dmg:145, warhead:"frag", range:16.0, minRange:4.5, reload:9.0, burst:1,
+                acc:0.36, proj:"arc", speed:210, aoe:2.6, suppress:60, tgt:{ground:1,air:0,sea:1,sub:0} },
+};
+
+/* ---------------------------------------------------------------- STRUCTURES */
+var BUILDINGS = {
+  conyard: { name:"Construction Yard", cat:"building", cost:0, time:0, w:3, h:3, hp:2400, armor:"structure",
+    power:0, sight:8, tech:1, base:true, undeployable:true,
+    desc:"Mobile HQ, deployed. Anchors your build radius and produces all structures." },
+
+  power: { name:"Power Plant", cat:"building", cost:400, time:9, w:2, h:2, hp:850, armor:"structure",
+    power:+120, sight:4, tech:1, prereq:["conyard"],
+    desc:"Diesel generator hall. Supplies 120 MW. Brownouts cripple production and shut down radar and SAM sites." },
+
+  refinery: { name:"Ore Refinery", cat:"building", cost:1500, time:20, w:3, h:2, hp:1300, armor:"structure",
+    power:-40, sight:6, tech:1, prereq:["conyard"], freeUnit:"harvester", storage:2500,
+    desc:"Processes raw ore into credits and ships with one Harvester. Also stores 2,500 credits." },
+
+  barracks: { name:"Barracks", cat:"building", cost:500, time:11, w:2, h:2, hp:900, armor:"structure",
+    power:-25, sight:5, tech:1, prereq:["conyard"], produces:"infantry",
+    desc:"Trains infantry. Additional barracks speed up the queue." },
+
+  factory: { name:"War Factory", cat:"building", cost:2000, time:26, w:3, h:3, hp:1500, armor:"structure",
+    power:-60, sight:5, tech:1, prereq:["conyard","power"], produces:"vehicle",
+    desc:"Assembles armoured vehicles. Requires a functioning power grid." },
+
+  navalyard: { name:"Naval Yard", cat:"building", cost:1800, time:24, w:3, h:3, hp:1400, armor:"structure",
+    power:-50, sight:6, tech:1, prereq:["conyard"], produces:"naval", shore:true,
+    /* A yard that can build a destroyer can obviously mend one. Without this
+       a damaged ship had nowhere in the world to go: the service depot is a
+       land building two tiles wide and no hull can reach it. */
+    repair:true, repairSea:true,
+    desc:"Slipway for warships. Builds and repairs: bring a damaged hull alongside and it is put right. MUST be laid down on a shoreline with open water to seaward." },
+
+  airbase: { name:"Airbase", cat:"building", cost:1700, time:22, w:3, h:3, hp:1200, armor:"structure",
+    power:-55, sight:7, tech:2, prereq:["conyard","radar"], produces:"aircraft", pads:4,
+    desc:"Hardened strip with four revetments. Aircraft must return here to rearm and refuel." },
+
+  sonararray: { name:"Coastal Sonar Array", cat:"defense", cost:800, time:14, w:2, h:2, hp:700,
+    armor:"structure", power:-30, sight:5, tech:2, prereq:["conyard","navalyard"], sonar:11,
+    shore:true,
+    desc:"A seabed hydrophone array cabled ashore. It cannot shoot at anything, but it " +
+         "hears submarines across the approaches to your coast - and a boat you can see " +
+         "is a boat your escorts can kill." },
+
+  radar: { name:"Radar Dome", cat:"building", cost:1000, time:15, w:2, h:2, hp:900, armor:"structure",
+    power:-50, sight:11, tech:1, prereq:["conyard","power"], radar:true,
+    desc:"Air-search and battlefield surveillance radar. Enables the minimap, reveals submarines and unlocks Tech II." },
+
+  lab: { name:"Research Lab", cat:"building", cost:1800, time:24, w:2, h:2, hp:1000, armor:"structure",
+    power:-70, sight:5, tech:1, prereq:["radar"], lab:true,
+    desc:"Procurement and R&D. Unlocks the Tech II and Tech III equipment programmes and combat upgrades." },
+
+  depot: { name:"Service Depot", cat:"building", cost:900, time:14, w:3, h:2, hp:1000, armor:"structure",
+    power:-25, sight:5, tech:1, prereq:["factory"], repair:true,
+    desc:"Field workshop. Repairs any vehicle that drives onto the pad, for a modest cost in credits." },
+
+  derrick: { name:"Oil Derrick", cat:"building", cost:700, time:12, w:2, h:2, hp:700, armor:"structure",
+    power:-10, sight:4, tech:1, prereq:["conyard"], oilNode:true, oilRate:0.55,
+    desc:"Pumps crude from a surveyed oil node. Fuel feeds every vehicle, ship and aircraft you build." },
+
+  silo: { name:"Storage Silo", cat:"building", cost:350, time:7, w:2, h:2, hp:600, armor:"structure",
+    power:-10, sight:3, tech:1, prereq:["refinery"], storage:3000,
+    desc:"Holds a further 3,000 credits. Overflowing ore is money burned." },
+
+  /* ---------------- defences ---------------- */
+  wall: { name:"Concrete Barrier", cat:"defense", cost:40, time:0.5, w:1, h:1, hp:500, armor:"wall",
+    power:0, sight:1, tech:1, prereq:["conyard"], line:true,
+    desc:"Cheap hard cover. Stops vehicles, funnels infantry, absorbs shells that would hit something expensive." },
+
+/* ---------------- field obstacles ----------------
+   Emplaced by a Combat Engineer where the fighting is, not built from the
+   base. Each one does something mechanically different, so which you lay is
+   a real decision rather than a cosmetic one:
+
+     blocks      "vehicle"  tracks and wheels cannot pass, infantry can
+                 "all"      nothing on the ground gets through
+     crossSpeed  what fraction of its speed a unit that CAN cross keeps
+     cover       protection given to infantry standing on the tile
+     crushable   a vehicle drives over it, destroying it and slowing itself
+   ------------------------------------------------------ */
+  sandbag: { name:"Sandbag Wall", cat:"defense", cost:25, time:4, w:1, h:1, hp:320, armor:"wall",
+    power:0, sight:1, tech:1, prereq:["barracks"], line:true,
+    obstacle:true, engineerOnly:true, blocks:"vehicle", crossSpeed:0.45, cover:CFG.COVER_HEAVY,
+    desc:"Stops vehicles and gives your own infantry a hard fighting position. Riflemen behind " +
+         "sandbags are much harder to kill; anything on tracks has to go round." },
+  dragonteeth: { name:"Dragon's Teeth", cat:"defense", cost:60, time:7, w:1, h:1, hp:900, armor:"wall",
+    power:0, sight:1, tech:1, prereq:["barracks"], line:true,
+    obstacle:true, engineerOnly:true, blocks:"vehicle", crossSpeed:1.0, cover:0,
+    desc:"Concrete pyramids. Absolutely impassable to vehicles and very hard to shift, but " +
+         "infantry walk between them freely and get no cover from them." },
+  razorwire: { name:"Razor Wire", cat:"defense", cost:20, time:3, w:1, h:1, hp:120, armor:"wall",
+    power:0, sight:1, tech:1, prereq:["barracks"], line:true,
+    obstacle:true, engineerOnly:true, blocks:"none", crossSpeed:0.22, cover:0, crushable:true,
+    desc:"Does nothing to a tank, which simply crushes it. To infantry it is close to a wall: " +
+         "a squad crossing wire is barely moving and completely exposed while it does." },
+  tankditch: { name:"Anti-Tank Ditch", cat:"defense", cost:45, time:6, w:1, h:1, hp:600, armor:"wall",
+    power:0, sight:1, tech:1, prereq:["barracks"], line:true,
+    obstacle:true, engineerOnly:true, blocks:"vehicle", crossSpeed:0.55, cover:CFG.COVER_LIGHT,
+    desc:"A cut too steep for tracks. Infantry drop in and scramble out slowly, with the lip " +
+         "giving them some protection while they do." },
+
+  nest: { name:"Machine-Gun Nest", cat:"defense", cost:400, time:7, w:1, h:1, hp:600, armor:"structure",
+    power:-15, sight:6, tech:1, prereq:["barracks"], weapons:["nest_mg"],
+    desc:"Sandbagged GPMG position. Shreds infantry, useless against armour." },
+
+  atpost: { name:"Anti-Tank Gun", cat:"defense", cost:800, time:11, w:1, h:1, hp:750, armor:"structure",
+    power:-25, sight:8, tech:1, prereq:["factory"], weapons:["at_gun"], turret:true,
+    desc:"Dug-in 100mm gun in a rotating mount. The cheapest way to stop a tank column." },
+
+  flak: { name:"AA Battery", cat:"defense", cost:850, time:12, w:2, h:2, hp:800, armor:"structure",
+    power:-35, sight:9, tech:2, prereq:["radar"], weapons:["aa_battery"], turret:true,
+    desc:"Radar-directed twin 40mm. Denies low-level airspace over your base." },
+
+  sam: { name:"SAM Site", cat:"defense", cost:1500, time:18, w:2, h:2, hp:850, armor:"structure",
+    power:-70, sight:14, tech:3, prereq:["lab"], weapons:["sam_site"], turret:true, needPower:true,
+    desc:"Long-range surface-to-air battery. Goes cold the instant the grid browns out." },
+
+  coastal: { name:"Coastal Battery", cat:"defense", cost:1400, time:17, w:2, h:2, hp:1100, armor:"structure",
+    power:-30, sight:13, tech:2, prereq:["navalyard"], weapons:["coast_gun"], turret:true,
+    desc:"Casemated 152mm guns that outrange most warships. Blind to aircraft." },
+
+  arty: { name:"Howitzer Emplacement", cat:"defense", cost:1900, time:22, w:2, h:2, hp:900, armor:"structure",
+    power:-50, sight:6, tech:3, prereq:["lab"], weapons:["bunker_how"], turret:true,
+    desc:"Fixed 155mm battery. Enormous reach, long minimum range, and it needs spotters to shoot at anything." },
+};
+
+/* ---------------------------------------------------------------- UPGRADES */
+var UPGRADES = {
+  tech2:  { name:"Tech II Procurement", cost:2000, oil:40, time:35, prereq:["lab"], tech:2,
+            desc:"Unlocks second-generation equipment: MBTs, SPAAG, aviation and the missile fleet." },
+  tech3:  { name:"Tech III Procurement", cost:3500, oil:90, time:55, prereq:["lab"], needTech:2, tech:3,
+            desc:"Unlocks top-line hardware: heavy armour, MLRS, strike aircraft, cruisers and carriers." },
+  ap:     { name:"Tungsten Penetrators", cost:1500, oil:25, time:40, prereq:["lab"],
+            desc:"+18% damage from every kinetic gun in the army." },
+  armor:  { name:"Composite Armour Kits", cost:1600, oil:30, time:45, prereq:["lab"],
+            desc:"+20% hit points on all vehicles and warships." },
+  eccm:   { name:"Frequency Agility", cost:1400, oil:35, time:40, prereq:["lab","radar"],
+    tech:2, needTech:2,
+    desc:"Frequency-hopping and side-lobe cancellation across every radar you own. " +
+         "It does not stop a jammer, it makes one work far harder: your radar picture " +
+         "survives inside a jamming bubble that would otherwise switch it off, and your " +
+         "radar-guided weapons keep their solution." },
+
+  optics: { name:"Thermal Optics", cost:1200, oil:20, time:35, prereq:["lab"],
+            desc:"+15% weapon range and +25% sight range across the force. Reveals hidden units sooner." },
+  drive:  { name:"Powerpack Overhaul", cost:1100, oil:20, time:30, prereq:["lab"],
+            desc:"+15% movement speed for vehicles, +10% for warships." },
+};
+
+/* ---------------------------------------------------------------- FACTIONS
+   Two real-world force structures. NATO fields fewer, costlier, better-optics
+   platforms; the Eastern pattern fields cheaper, tougher, more numerous kit.   */
+var FACTIONS = {
+  nato: { id:"nato", name:"NATO EXPEDITIONARY FORCE", short:"NATO",
+          bonus:"Superior optics (+8% weapon range, +6% accuracy). Costlier hardware.",
+          rangeMul:1.08, accMul:1.06, costMul:1.06, hpMul:1.0, buildMul:1.0 },
+  pact: { id:"pact", name:"EASTERN COALITION", short:"EAST",
+          bonus:"Mass production (-8% unit cost, -10% build time, +8% vehicle HP).",
+          rangeMul:1.0, accMul:1.0, costMul:0.92, hpMul:1.08, buildMul:0.90 },
+  pla:  { id:"pla", name:"PEOPLE'S LIBERATION ARMY", short:"PLA",
+          bonus:"Industrial base (-14% build time, +12% supply throughput). Fuel-hungry fleet.",
+          rangeMul:1.02, accMul:1.02, costMul:0.97, hpMul:1.03, buildMul:0.86, supplyMul:1.12, fuelMul:1.12 },
+
+  /* Quantity has a quality all its own: obsolete kit, terrible fire control,
+     and the densest artillery park on earth.                                */
+  kpa:  { id:"kpa", name:"KOREAN PEOPLE'S ARMY", short:"KPA",
+          bonus:"Mass mobilisation: -32% unit cost, -26% build time, huge artillery. " +
+                "Obsolete optics (-16% range, -14% accuracy) and thin armour.",
+          rangeMul:0.84, accMul:0.86, costMul:0.68, hpMul:0.90, buildMul:0.74,
+          supplyMul:0.9, fuelMul:1.0 },
+
+  /* A small, wealthy force that buys the best of everything and fights on
+     ground it has fortified for decades.                                    */
+  roc:  { id:"roc", name:"REPUBLIC OF CHINA ARMY", short:"ROC",
+          bonus:"Premium hardware: +14% weapon range, +10% accuracy, +12% structure HP, " +
+                "cheap defences. Everything costs 28% more and builds 18% slower.",
+          rangeMul:1.14, accMul:1.10, costMul:1.28, hpMul:1.06, buildMul:1.18,
+          supplyMul:1.0, fuelMul:0.95, structHpMul:1.12, defenseCostMul:0.7 },
+};
+
+/* ---------------------------------------------------------------- UNITS
+   speed  : tiles per second      turn/tturn : radians per second
+   sight  : tiles                 r          : collision radius, px
+   mass   : crushing weight, tonnes-ish      layer : ground|air|sea|sub
+   Stats are scaled from real platform performance, not copied verbatim.        */
+var UNITS = {
+
+/* ============================ INFANTRY ============================ */
+  rifle_n: { fac:"nato", role:"rifle", name:"Rifle Squad", full:"Rifle Squad, M4A1", cat:"infantry",
+    cost:150, oil:0, time:5, hp:115, armor:"infantry", speed:1.05, turn:7, sight:6.0, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1,
+    desc:"Four riflemen with 5.56mm carbines. Cheap, expendable, and the only thing that can hold ground." },
+  rifle_p: { fac:"pact", role:"rifle", name:"Motor Rifle Squad", full:"Motor Rifle Squad, AK-74M", cat:"infantry",
+    cost:135, oil:0, time:4.5, hp:125, armor:"infantry", speed:1.05, turn:7, sight:5.6, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1,
+    desc:"Conscript rifle section. Slightly tougher and cheaper than its NATO counterpart, slightly blinder." },
+
+  mg_n: { fac:"nato", role:"mg", name:"MG Team", full:"Weapons Team, M240B", cat:"infantry",
+    cost:280, oil:0, time:7, hp:110, armor:"infantry", speed:0.82, turn:6, sight:6.2, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"Belt-fed GPMG on a tripod. Long bursts pin infantry in place — suppressed troops shoot back badly." },
+  mg_p: { fac:"pact", role:"mg", name:"PK Team", full:"Weapons Team, PKM", cat:"infantry",
+    cost:255, oil:0, time:6.5, hp:118, armor:"infantry", speed:0.82, turn:6, sight:5.8, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"7.62x54R general-purpose machine gun team. Area denial against dismounts." },
+
+  at_n: { fac:"nato", role:"at", name:"Javelin Team", full:"AT Team, FGM-148 Javelin", cat:"infantry",
+    cost:400, oil:0, time:9, hp:105, armor:"infantry", speed:0.88, turn:6, sight:7.2, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1,
+    desc:"Fire-and-forget top-attack ATGM. Devastating on armour, helpless up close inside arming distance." },
+  at_p: { fac:"pact", role:"at", name:"Kornet Team", full:"AT Team, 9M133 Kornet", cat:"infantry",
+    cost:370, oil:0, time:8.5, hp:110, armor:"infantry", speed:0.88, turn:6, sight:7.0, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1,
+    desc:"Wire-free laser-beam-riding ATGM. Cheaper than Javelin; the gunner must hold the beam on target." },
+
+  aa_n: { fac:"nato", role:"aa", name:"Stinger Team", full:"MANPADS Team, FIM-92 Stinger", cat:"infantry",
+    cost:350, oil:0, time:8, hp:100, armor:"infantry", speed:0.9, turn:6, sight:8.0, r:6, mass:0.1,
+    layer:"ground", weapons:["manpad"], prereq:["barracks"], tech:1,
+    desc:"Shoulder-launched IR SAM. Cannot engage ground targets at all — screen it with riflemen." },
+  aa_p: { fac:"pact", role:"aa", name:"Igla Team", full:"MANPADS Team, 9K338 Igla-S", cat:"infantry",
+    cost:325, oil:0, time:7.5, hp:105, armor:"infantry", speed:0.9, turn:6, sight:7.8, r:6, mass:0.1,
+    layer:"ground", weapons:["manpad"], prereq:["barracks"], tech:1,
+    desc:"IR-homing MANPADS with a proximity fuse. Strictly anti-air." },
+
+  mortar_n: { fac:"nato", role:"mortar", name:"Mortar Team", full:"Mortar Section, M252 81mm", cat:"infantry",
+    cost:480, oil:0, time:11, hp:100, armor:"infantry", speed:0.72, turn:6, sight:5.0, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:2, deploy:true,
+    desc:"Indirect fire beyond direct-fire range, but it cannot see for itself and cannot shoot close in." },
+  mortar_p: { fac:"pact", role:"mortar", name:"Podnos Team", full:"Mortar Section, 2B14 82mm", cat:"infantry",
+    cost:450, oil:0, time:10, hp:105, armor:"infantry", speed:0.72, turn:6, sight:5.0, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:2, deploy:true,
+    desc:"82mm light mortar. Lobs frag over walls and into trench lines." },
+
+  sniper_n: { fac:"nato", role:"sniper", name:"Sniper Team", full:"Sniper Team, M107", cat:"infantry",
+    cost:700, oil:0, time:14, hp:90, armor:"infantry", speed:0.78, turn:6, sight:10.5, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"Anti-materiel rifle. One shot removes an infantryman. Excellent spotter for artillery." },
+  sniper_p: { fac:"pact", role:"sniper", name:"Marksman Team", full:"Sniper Team, OSV-96", cat:"infantry",
+    cost:660, oil:0, time:13, hp:92, armor:"infantry", speed:0.78, turn:6, sight:10.0, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"12.7mm anti-materiel rifle. Long reach, glacial rate of fire." },
+
+  engineer: { fac:"both", role:"engineer", name:"Combat Engineer", cat:"infantry",
+    cost:500, oil:0, time:10, hp:95, armor:"infantry", speed:0.95, turn:7, sight:5, r:6, mass:0.1,
+    layer:"ground", weapons:[], prereq:["barracks"], tech:1, engineer:true,
+    desc:"Unarmed. Enters a damaged friendly structure to fully restore it, or an enemy structure to CAPTURE it." },
+  medic: { fac:"both", role:"medic", name:"Combat Medic", cat:"infantry",
+    cost:320, oil:0, time:8, hp:95, armor:"infantry", speed:0.98, turn:7, sight:5, r:6, mass:0.1,
+    layer:"ground", weapons:[], prereq:["barracks"], tech:2, heal:14,
+    desc:"Unarmed. Continuously treats wounded infantry within two tiles. Keeps veteran squads alive." },
+
+/* ============================ VEHICLES ============================ */
+  harvester: { fac:"both", role:"harvester", name:"Ore Hauler", cat:"vehicle",
+    cost:1100, oil:8, time:16, hp:1000, armor:"light", speed:1.05, turn:1.7, sight:5, r:14, mass:40,
+    layer:"ground", weapons:[], prereq:["refinery"], tech:1, harvester:true,
+    desc:"Armoured mining truck. Carries 700 credits of ore per run. Your entire war rests on these." },
+
+  mcv: { fac:"both", role:"mcv", name:"Mobile Construction Vehicle", cat:"vehicle",
+    cost:3000, oil:30, time:40, hp:1300, armor:"light", speed:0.95, turn:1.4, sight:6, r:16, mass:55,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, deployTo:"conyard",
+    desc:"Unfolds into a second Construction Yard. The only way to build a forward base or an expansion." },
+
+  recon_n: { fac:"nato", role:"recon", name:"Humvee", full:"M1151 HMMWV (armed)", cat:"vehicle",
+    cost:400, oil:5, time:7, hp:340, armor:"light", speed:2.85, turn:3.2, sight:9.5, r:11, mass:5,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
+    desc:"Fast wheeled scout with a ring-mounted .50 cal. Finds the enemy; dies to anything that finds it back." },
+  recon_p: { fac:"pact", role:"recon", name:"BRDM-2", full:"BRDM-2 Scout Car", cat:"vehicle",
+    cost:370, oil:5, time:6.5, hp:380, armor:"light", speed:2.7, turn:3.0, sight:9.0, r:11, mass:7,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.2,
+    desc:"Amphibious-hulled 4x4 recon car with a KPVT heavy machine gun." },
+
+  ifv_n: { fac:"nato", role:"ifv", name:"Bradley IFV", full:"M2A3 Bradley", cat:"vehicle",
+    cost:900, oil:10, time:14, hp:820, armor:"light", speed:1.75, turn:2.0, sight:7.5, r:14, mass:30,
+    layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.8, cargo:5,
+    desc:"25mm Bushmaster IFV carrying five dismounts. Kills light armour, carries the infantry that hold ground." },
+  ifv_p: { fac:"pact", role:"ifv", name:"BMP-3", full:"BMP-3 IFV", cat:"vehicle",
+    cost:850, oil:10, time:13, hp:880, armor:"light", speed:1.8, turn:2.0, sight:7.0, r:14, mass:19,
+    layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.8, cargo:6,
+    desc:"Low-slung IFV with a 100mm/30mm combination mount. Carries six and swims across rivers." },
+
+  lt_n: { fac:"nato", role:"lighttank", name:"Stryker MGS", full:"M1128 Mobile Gun System", cat:"vehicle",
+    cost:750, oil:9, time:12, hp:700, armor:"light", speed:2.1, turn:2.4, sight:7.5, r:13, mass:20,
+    layer:"ground", weapons:["gun_light"], prereq:["factory"], tech:1, turret:true, tturn:1.6,
+    desc:"Wheeled 105mm assault gun. Quick to reposition, thin-skinned in a stand-up fight." },
+  lt_p: { fac:"pact", role:"lighttank", name:"Sprut-SD", full:"2S25 Sprut-SD", cat:"vehicle",
+    cost:720, oil:9, time:11.5, hp:740, armor:"light", speed:2.0, turn:2.4, sight:7.2, r:13, mass:18,
+    layer:"ground", weapons:["gun_light"], prereq:["factory"], tech:1, turret:true, tturn:1.6,
+    desc:"Airborne tank destroyer mounting a full 125mm gun on a paper-thin hull." },
+
+  mbt_n: { fac:"nato", role:"mbt", name:"M1A2 Abrams", full:"M1A2 SEP v3", cat:"vehicle",
+    cost:1500, oil:22, time:22, hp:1750, armor:"heavy", speed:1.55, turn:1.5, sight:8.0, r:16, mass:62,
+    layer:"ground", weapons:["gun_120"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.5, crush:true,
+    desc:"Main battle tank. M256 120mm smoothbore firing depleted-uranium long rods, Chobham composite front, gas-turbine drive, and hunter-killer thermal sights that see through night and dust." },
+  mbt_p: { fac:"pact", role:"mbt", name:"T-90A", full:"T-90A MBT", cat:"vehicle",
+    cost:1400, oil:20, time:20, hp:1820, armor:"heavy", speed:1.6, turn:1.6, sight:7.4, r:15, mass:47,
+    layer:"ground", weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true,
+    desc:"125mm smoothbore with an autoloader and reactive armour. Hits harder, aims slower, costs less." },
+
+  hvy_n: { from:"e20", fac:"nato", role:"heavy", name:"M1A2C Trophy", full:"M1A2C w/ Trophy APS", cat:"vehicle",
+    cost:2400, oil:38, time:32, hp:2450, armor:"heavy", speed:1.4, turn:1.35, sight:8.5, r:18, mass:70,
+    layer:"ground", weapons:["gun_120"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.5, crush:true, aps:0.45,
+    desc:"Upgraded Abrams with an active protection system: a 45% chance to hard-kill any incoming missile." },
+  hvy_p: { fac:"pact", role:"heavy", name:"T-14 Armata", full:"T-14 Armata MBT", cat:"vehicle",
+    cost:2300, oil:36, time:30, hp:2550, armor:"heavy", speed:1.5, turn:1.4, sight:8.0, r:18, mass:55,
+    layer:"ground", weapons:["gun_125"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.4, crush:true, aps:0.40,
+    desc:"Unmanned turret, crew in an armoured capsule, Afganit APS. Fast for its weight and very hard to kill." },
+
+  atgmv_n: { from:"e60", fac:"nato", role:"tankdestroyer", name:"Stryker ATGM", full:"M1134 ATGM Vehicle", cat:"vehicle",
+    cost:1100, oil:14, time:16, hp:620, armor:"light", speed:2.0, turn:2.2, sight:8.6, r:13, mass:19,
+    layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
+    desc:"Twin TOW-2B launcher. Outranges every tank gun; folds instantly if anything reaches it." },
+  atgmv_p: { from:"e60", fac:"pact", role:"tankdestroyer", name:"Khrizantema-S", full:"9P157-2 Khrizantema-S", cat:"vehicle",
+    cost:1050, oil:14, time:15, hp:680, armor:"light", speed:2.0, turn:2.2, sight:8.4, r:13, mass:20,
+    layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
+    desc:"Radar-guided ATGM carrier that can engage through smoke and dust." },
+
+  spaag_n: { fac:"nato", role:"spaag", name:"Gepard", full:"Flakpanzer Gepard 1A2", cat:"vehicle",
+    cost:1000, oil:14, time:15, hp:800, armor:"light", speed:1.65, turn:1.9, sight:9.5, r:14, mass:47,
+    layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6,
+    desc:"Twin radar-laid 35mm. Shreds helicopters and can level infantry in a pinch." },
+  spaag_p: { fac:"pact", role:"spaag", name:"Tunguska", full:"2S6M Tunguska", cat:"vehicle",
+    cost:1050, oil:15, time:15, hp:850, armor:"light", speed:1.6, turn:1.9, sight:9.5, r:14, mass:34,
+    layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6,
+    desc:"Guns-and-missiles air defence vehicle. The bane of low-flying attack helicopters." },
+
+  spg_n: { fac:"nato", role:"spg", name:"M109 Paladin", full:"M109A7 Paladin", cat:"vehicle",
+    cost:1500, oil:20, time:22, hp:780, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:39,
+    layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
+    desc:"155mm self-propelled howitzer. Fires far past its own eyesight — it needs a spotter to be useful." },
+  spg_p: { fac:"pact", role:"spg", name:"Msta-S", full:"2S19 Msta-S", cat:"vehicle",
+    cost:1450, oil:20, time:21, hp:820, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:42,
+    layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
+    desc:"152mm SPH with a long tube and a heavy shell. Same doctrine, same blind spot." },
+
+  mlrs_n: { fac:"nato", role:"mlrs", name:"M270 MLRS", full:"M270A2 MLRS", cat:"vehicle",
+    cost:2200, oil:34, time:30, hp:700, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:25,
+    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
+    desc:"Twelve 227mm rockets in one ripple. Erases a base block, then reloads for fourteen seconds." },
+  mlrs_p: { fac:"pact", role:"mlrs", name:"BM-30 Smerch", full:"9A52 Smerch MRL", cat:"vehicle",
+    cost:2100, oil:32, time:29, hp:720, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:44,
+    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
+    desc:"300mm rocket artillery. Enormous beaten zone, catastrophic against massed infantry." },
+
+  repair: { fac:"both", role:"repair", name:"Recovery Vehicle", full:"Armoured Recovery Vehicle", cat:"vehicle",
+    cost:800, oil:10, time:12, hp:900, armor:"light", speed:1.5, turn:1.7, sight:5, r:14, mass:50,
+    layer:"ground", weapons:[], prereq:["factory","depot"], tech:1, repairRate:26,
+    desc:"Field-repairs friendly vehicles within two tiles. Keeps an armoured push alive far from base." },
+
+  /* The fleet had no equivalent of the recovery vehicle and no yard that
+     would take a damaged hull, so a battered destroyer stayed battered for
+     the rest of the match. Every real navy keeps a tender with the group for
+     exactly this reason. */
+  repair_sea: { fac:"both", role:"repair_sea", name:"Repair Tender", full:"Salvage and Repair Tender", cat:"naval",
+    cost:1100, oil:14, time:16, hp:1250, armor:"light", speed:2.1, turn:1.2, sight:6.5, r:20, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard"], tech:1, repairRate:30, oiler:true,
+    desc:"Repairs friendly ships within a few hundred metres and tops up their bunkers. A task group that has to sail home to be mended is a task group out of the war." },
+
+/* ============================ AIRCRAFT ============================ */
+  helo_n: { fac:"nato", role:"gunship", name:"AH-64 Apache", full:"AH-64E Apache Guardian", cat:"aircraft",
+    cost:1600, oil:26, time:22, hp:620, armor:"air", speed:3.6, turn:2.2, sight:9.5, r:16, mass:0,
+    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:8,
+    desc:"Attack helicopter. Hovers to shoot, engages armour with Hellfires, must land to rearm. Dead meat over SPAAG." },
+  helo_p: { fac:"pact", role:"gunship", name:"Mi-28 Havoc", full:"Mi-28N Night Hunter", cat:"aircraft",
+    cost:1550, oil:25, time:21, hp:680, armor:"air", speed:3.5, turn:2.2, sight:9.0, r:16, mass:0,
+    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:8,
+    desc:"Armoured gunship built to absorb hits. Same doctrine as the Apache, tougher, slightly blinder." },
+
+  trans_n: { fac:"nato", role:"transport", name:"Black Hawk", full:"UH-60M Black Hawk", cat:"aircraft",
+    cost:900, oil:14, time:14, hp:520, armor:"air", speed:4.2, turn:2.4, sight:8, r:15, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:8, ammo:0,
+    desc:"Lifts eight infantry over water, cliffs and defences. Air-assault straight into an undefended flank." },
+  trans_p: { fac:"pact", role:"transport", name:"Mi-8 Hip", full:"Mi-8AMTSh Terminator", cat:"aircraft",
+    cost:850, oil:13, time:13, hp:580, armor:"air", speed:4.0, turn:2.4, sight:8, r:15, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:10, ammo:0,
+    desc:"Heavy-lift assault helicopter carrying ten. Slower than the Black Hawk, carries more." },
+
+  fighter_n: { fac:"nato", role:"fighter", name:"F-16 Falcon", full:"F-16C Block 52", cat:"aircraft",
+    cost:1400, oil:30, time:20, hp:420, armor:"air", speed:8.5, turn:1.9, sight:11, r:15, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    desc:"Air superiority fighter. Only engages aircraft. Makes a pass, then returns to the strip to rearm." },
+  fighter_p: { fac:"pact", role:"fighter", name:"MiG-29 Fulcrum", full:"MiG-29S Fulcrum-C", cat:"aircraft",
+    cost:1350, oil:29, time:19, hp:440, armor:"air", speed:8.8, turn:2.0, sight:10.5, r:15, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    desc:"Fast interceptor with excellent instantaneous turn. Short legs — it is always going home." },
+
+  bomber_n: { fac:"nato", role:"cas", name:"A-10 Thunderbolt II", full:"A-10C Thunderbolt II", cat:"aircraft",
+    cost:2000, oil:40, time:28, hp:760, armor:"air", speed:5.6, turn:1.5, sight:9, r:17, mass:0,
+    layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6,
+    desc:"Close air support. Titanium bathtub, 30mm gun and guided bombs. Slow enough for AA to hurt it." },
+  bomber_p: { fac:"pact", role:"cas", name:"Su-25 Frogfoot", full:"Su-25SM3 Frogfoot", cat:"aircraft",
+    cost:1900, oil:38, time:27, hp:800, armor:"air", speed:5.8, turn:1.5, sight:8.5, r:17, mass:0,
+    layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6,
+    desc:"Armoured ground-attack jet. Delivers heavy ordnance onto a base block and runs for home." },
+
+/* ============================ NAVAL ============================ */
+  boat_n: { fac:"nato", role:"patrol", name:"Mk VI Patrol Boat", cat:"naval",
+    cost:500, oil:6, time:9, hp:520, armor:"light", speed:3.4, turn:2.2, sight:8.5, r:13, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
+    desc:"Fast inshore patrol craft. Scouts coastline, chases transports, dies to anything serious." },
+  boat_p: { fac:"pact", role:"patrol", name:"Project 21630 Gunboat", cat:"naval",
+    cost:470, oil:6, time:8.5, hp:560, armor:"light", speed:3.2, turn:2.2, sight:8.0, r:13, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
+    desc:"Shallow-draught river gunboat. Cheap hull for screening and scouting." },
+
+  corvette_n: { fac:"nato", role:"corvette", name:"LCS Corvette", full:"Littoral Combat Ship", cat:"naval",
+    cost:1200, oil:16, time:16, hp:1150, armor:"light", speed:2.9, turn:1.7, sight:9.5, r:17, mass:0,
+    layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:2.0,
+    desc:"Fast littoral combatant with a 57mm rapid-fire mount that can also engage helicopters." },
+  corvette_p: { fac:"pact", role:"corvette", name:"Project 22160 Corvette", cat:"naval",
+    cost:1150, oil:16, time:15, hp:1220, armor:"light", speed:2.8, turn:1.7, sight:9.0, r:17, mass:0,
+    layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:2.0,
+    desc:"Patrol corvette built for endurance. A 57mm gun and a very tough hull for the price." },
+
+  missileboat_n: { fac:"nato", role:"missileboat", name:"Harpoon Missile Boat", cat:"naval",
+    cost:1500, oil:22, time:19, hp:900, armor:"light", speed:3.0, turn:1.8, sight:9, r:16, mass:0,
+    layer:"sea", weapons:["ssm"], prereq:["navalyard","radar"], tech:2,
+    desc:"Anti-ship missile craft. Kills capital ships and shore targets from beyond gun range — if nothing intercepts." },
+  missileboat_p: { fac:"pact", role:"missileboat", name:"Molniya Missile Boat", full:"Project 1241 Molniya", cat:"naval",
+    cost:1450, oil:21, time:18, hp:950, armor:"light", speed:3.1, turn:1.8, sight:8.5, r:16, mass:0,
+    layer:"sea", weapons:["ssm"], prereq:["navalyard","radar"], tech:2,
+    desc:"Missile cutter carrying heavy anti-ship rounds. Glass cannon — strike first or die." },
+
+  destroyer_n: { fac:"nato", role:"destroyer", name:"Arleigh Burke DDG", full:"DDG-51 Flight IIA", cat:"naval",
+    cost:2200, oil:34, time:28, hp:2100, armor:"heavy", speed:2.4, turn:1.2, sight:11, r:20, mass:0,
+    layer:"sea", weapons:["navgun_127","sam_ship","depthchg"], prereq:["navalyard","radar"], tech:2,
+    turret:true, tturn:1.4, ciws:0.55, sonar:7,
+    desc:"Aegis destroyer: 127mm gun, area SAM cover, sonar that finds submarines, and CIWS that swats missiles." },
+  destroyer_p: { fac:"pact", role:"destroyer", name:"Sovremenny DDG", full:"Project 956 Sovremenny", cat:"naval",
+    cost:2150, oil:33, time:27, hp:2250, armor:"heavy", speed:2.3, turn:1.2, sight:10.5, r:20, mass:0,
+    layer:"sea", weapons:["navgun_127","sam_ship","depthchg"], prereq:["navalyard","radar"], tech:2,
+    turret:true, tturn:1.4, ciws:0.48, sonar:7,
+    desc:"Heavy gun-and-missile destroyer. Tougher hull, slightly less capable fire control than the Burke." },
+
+  cruiser_n: { fac:"nato", role:"cruiser", name:"Ticonderoga CG", full:"CG-47 Ticonderoga", cat:"naval",
+    cost:3400, oil:60, time:42, hp:2900, armor:"heavy", speed:2.0, turn:0.9, sight:12, r:23, mass:0,
+    layer:"sea", weapons:["navgun_203","sam_ship"], prereq:["navalyard","lab"], tech:3,
+    turret:true, tturn:1.0, ciws:0.6, shoreBombard:true,
+    desc:"Guided-missile cruiser. Naval gunfire support that flattens a coastal base from 17 tiles out." },
+  cruiser_p: { fac:"pact", role:"cruiser", name:"Slava CG", full:"Project 1164 Slava", cat:"naval",
+    cost:3300, oil:58, time:41, hp:3050, armor:"heavy", speed:1.95, turn:0.9, sight:11.5, r:23, mass:0,
+    layer:"sea", weapons:["navgun_203","sam_ship"], prereq:["navalyard","lab"], tech:3,
+    turret:true, tturn:1.0, ciws:0.5, shoreBombard:true,
+    desc:"Missile cruiser with a heavy main battery. Anchors a fleet and shells anything on the coast." },
+
+  sub_n: { fac:"nato", role:"sub", name:"Los Angeles SSN", full:"SSN-688 Los Angeles", cat:"naval",
+    cost:2400, oil:40, time:30, hp:1250, armor:"light", speed:2.2, turn:1.1, sight:8.5, r:17, mass:0,
+    layer:"sub", weapons:["torpedo"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    layNet:6,
+    desc:"Nuclear attack boat. Invisible unless it fires or an ASW sonar finds it. Torpedoes gut capital ships. " +
+         "Carries six TRAPS-type acoustic nodes and can lay a barrier across water it does not intend to sit in." },
+  sub_p: { fac:"pact", role:"sub", name:"Kilo SSK", full:"Project 636 Kilo", cat:"naval",
+    cost:2250, oil:37, time:28, hp:1180, armor:"light", speed:2.1, turn:1.1, sight:8.0, r:17, mass:0,
+    layer:"sub", weapons:["torpedo"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    layNet:4,
+    desc:"Diesel-electric 'Black Hole' — extremely quiet, cheap, and lethal to anything on the surface. " +
+         "Carries four Garmoniya-type seabed stations: fewer than a Virginia, and shorter-lived." },
+
+  lst: { fac:"both", role:"transport_sea", name:"Landing Craft", full:"LCAC Air-Cushion Landing Craft", cat:"naval",
+    cost:900, oil:12, time:14, hp:900, armor:"light", speed:2.8, turn:1.6, sight:6.5, r:18, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard"], tech:1, cargo:6, amphib:true,
+    desc:"Carries six vehicles or infantry across water and drives them straight up onto the beach." },
+
+  carrier_n: { fac:"nato", role:"carrier", name:"Nimitz CVN", full:"CVN-68 Nimitz", cat:"naval",
+    cost:5000, oil:110, time:60, hp:4200, armor:"heavy", speed:1.6, turn:0.6, sight:14, r:30, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.65, carrier:4, storage:0,
+    desc:"Supercarrier. Launches and rearms four strike aircraft at sea, projecting air power anywhere on the map." },
+  carrier_p: { fac:"pact", role:"carrier", name:"Kuznetsov CV", full:"Project 1143.5 Kuznetsov", cat:"naval",
+    cost:4800, oil:105, time:58, hp:4400, armor:"heavy", speed:1.6, turn:0.6, sight:13, r:30, mass:0,
+    layer:"sea", weapons:["sam_ship"], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.55, carrier:3,
+    desc:"Heavy aviation cruiser: three aircraft plus its own SAM battery and a very heavy hull." },
+};
+
+
+/* ======================= AERIAL REFUELLING =======================
+   A tanker does not really hand out fuel: it moves where "home" is. Every
+   aircraft breaks off when its fuel drops under the reserve it needs to reach
+   the nearest place it can land, and a tanker orbiting forward becomes that
+   place - so the fighters it supports hold their reserve later, fight longer,
+   and go back to the fight afterwards instead of back to the airfield.
+
+     tanker      units of fuel it can give away before it must cycle home
+                 (an aircraft holds 100, so 380 is four or five top-ups)
+     refuelRate  units per second across the boom
+
+   Three armies here operate tankers and two do not. The KPA has never had one
+   and the ROC has no dedicated tanker either, so neither gets the option -
+   their fighters live inside their own combat radius, which is exactly the
+   constraint those air forces actually have.
+   ================================================================= */
+Object.assign(UNITS, {
+  tanker_n: { from:"e50", fac:"nato", role:"tanker", name:"KC-46 Pegasus", full:"Boeing KC-46A Pegasus", cat:"aircraft",
+    cost:3200, oil:70, time:40, hp:760, armor:"air", speed:4.4, turn:0.9, sight:9, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
+    radius:150, tanker:420, refuelRate:16, rcs:5.2,
+    desc:"Unarmed, enormous and the most valuable thing you will ever put in the air. Park it " +
+         "behind the line and your fighters stop flying home to refuel; park it too far forward " +
+         "and you lose the whole air campaign in one interception." },
+  tanker_p: { fac:"pact", role:"tanker", name:"Il-78 Midas", full:"Ilyushin Il-78M Midas", cat:"aircraft",
+    cost:3000, oil:72, time:40, hp:790, armor:"air", speed:4.2, turn:0.85, sight:8.5, r:23, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
+    radius:140, tanker:400, refuelRate:14, rcs:5.6, from:"e80",
+    desc:"Three-point probe-and-drogue tanker on the Il-76 airframe. Fewer of them than the " +
+         "other side has, and slower, but it does the same job: it turns a short-legged " +
+         "interceptor into something that can stay where it is needed." },
+  tanker_c: { fac:"pla", role:"tanker", name:"YY-20", full:"Xian YY-20 (Y-20U)", cat:"aircraft",
+    cost:3100, oil:71, time:40, hp:800, armor:"air", speed:4.3, turn:0.88, sight:8.8, r:23, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
+    radius:145, tanker:410, refuelRate:15, rcs:5.4, from:"e00",
+    desc:"China spent thirty years unable to refuel in the air and the whole force was built " +
+         "around that limit. The YY-20 removes it, and is the single aircraft that turns a " +
+         "regional air force into one with reach." },
+});
+
+/* ================= mobile air defence and ballistic launchers =================
+   Two classes the roster has never had. The SAM Site building is the FIXED
+   tier and stays exactly as it is; what goes here is the tier below it, the
+   launcher that shoots and then moves before the reply arrives. The ballistic
+   launchers are the on-map, targetable, killable form of a power the game has
+   only ever had as an off-map fire mission.
+
+   Both fire proj:"missile" rather than proj:"arc" on purpose: the layered
+   defence in combat.js is only entered for a guided round, so an arc ballistic
+   missile would be strictly uninterceptable and the new SAM would have nothing
+   to do. They carry indirect:true instead, and the handful of arc-gated
+   behaviours are widened to read it. */
+Object.assign(UNITS, {
+  sam_n: { fac:"nato", role:"sam", name:"Patriot PAC-3", full:"MIM-104F Patriot PAC-3 MSE", cat:"vehicle",
+    cost:2650, oil:38, time:33, hp:600, armor:"light", speed:1.10, turn:1.1, sight:13.2, r:16, mass:36,
+    layer:"ground", weapons:["sam_area3"], prereq:["factory","radar","lab"], tech:3, turret:true, tturn:0.6,
+    deploy:true, deploySec:5.5, radar:13, radarQ:20, rounds:12, from:"e20",
+    desc:"Sixteen hit-to-kill rounds on a towed launching station: no warhead at all, just a " +
+         "tungsten ring and a closing speed. It is the best anti-ballistic shot in the game and " +
+         "the slowest thing in the class into and out of action - the radar is a separate trailer " +
+         "and the battery cannot fight until both are sited." },
+  sam_p: { fac:"pact", role:"sam", name:"S-400 Triumf", full:"S-400 Triumf, 5P85TE2 TEL", cat:"vehicle",
+    cost:2600, oil:38, time:32, hp:640, armor:"light", speed:1.25, turn:1.2, sight:13.2, r:16, mass:40,
+    layer:"ground", weapons:["sam_area3"], prereq:["factory","radar","lab"], tech:3, turret:true, tturn:0.6,
+    deploy:true, deploySec:4.0, radar:13, radarQ:18, rounds:4, from:"e20",
+    desc:"Four cold-launch tubes on an eight-wheeled tractor, five minutes into action and five " +
+         "minutes out. Russian ground-based air defence is the one domain where this army is " +
+         "genuinely ahead of NATO, and the reach here is the longest in the class." },
+  sam_c: { fac:"pla", role:"sam", name:"HQ-9B", full:"HQ-9B on Taian TAS-5380", cat:"vehicle",
+    cost:2550, oil:36, time:31, hp:630, armor:"light", speed:1.25, turn:1.2, sight:13.2, r:16, mass:38,
+    layer:"ground", weapons:["sam_area3"], prereq:["factory","radar","lab"], tech:3, turret:true, tturn:0.6,
+    deploy:true, deploySec:4.5, radar:13, radarQ:20, rounds:4, from:"e20",
+    desc:"Laid out to follow the S-300 because that is what China bought in 1993 and studied; the " +
+         "planar-array radar on top of it is not. The end of a road that began with a fixed " +
+         "S-75 site outside Beijing and forty years of having no answer at all." },
+  sam_r: { fac:"roc", role:"sam", name:"Sky Bow III", full:"Tien Kung III mobile launcher", cat:"vehicle",
+    cost:2900, oil:34, time:34, hp:560, armor:"light", speed:1.25, turn:1.2, sight:11.6, r:15, mass:28,
+    layer:"ground", weapons:["sam_tk3"], prereq:["factory","radar","lab"], tech:3, turret:true, tturn:0.7,
+    deploy:true, deploySec:4.5, radar:11, radarQ:17, rounds:4, from:"e20",
+    desc:"The shortest reach in its class and the only one Taiwan built itself. Sky Bow I and II " +
+         "are silo batteries in hillsides that cannot move; this one can, which on an island " +
+         "that expects to be shot at first is worth more than another fifty kilometres." },
+  sam_k: { fac:"kpa", role:"sam", name:"Pongae-5", full:"Pongae-5 (KN-06) area SAM", cat:"vehicle",
+    cost:2200, oil:30, time:30, hp:560, armor:"light", speed:1.15, turn:1.1, sight:12.2, r:16, mass:36,
+    layer:"ground", weapons:["sam_pongae"], prereq:["factory","radar","lab"], tech:3, turret:true, tturn:0.7,
+    deploy:true, deploySec:6.0, radar:11, radarQ:9, rounds:4, from:"e20",
+    desc:"Paraded 2010, fired in 2011, 2013, 2016 and 2017, and judged to be in service around " +
+         "2017 - every one of those dates is an outside assessment. It is shaped like an S-300 " +
+         "and its radar, its numbers and its reliability are all unverified, so it shoots and " +
+         "mostly misses. Unreachable by re-equipping: this army is capped at 1990." },
+  tel_n: { fac:"nato", role:"tel", name:"HIMARS / PrSM", full:"M142 HIMARS with M1130 PrSM", cat:"vehicle",
+    cost:2900, oil:48, time:34, hp:520, armor:"light", speed:1.55, turn:1.4, sight:5.0, r:15, mass:16,
+    layer:"ground", weapons:["srbm_mod"], prereq:["factory","lab","radar"], tech:3, turret:false,
+    deploy:true, deploySec:3.0, rounds:2, from:"e20",
+    desc:"Two rounds in one pod on the same five-ton truck that fires the rocket artillery. NATO " +
+         "has had no dedicated ballistic launcher since INF eliminated Pershing II in 1988, and " +
+         "this is the consequence: fast, small, cheap, and it leaves with the battery." },
+  tel_p: { fac:"pact", role:"tel", name:"Iskander-M", full:"9K720 Iskander-M, 9P78-1 TEL", cat:"vehicle",
+    cost:3200, oil:58, time:38, hp:580, armor:"light", speed:1.30, turn:1.0, sight:5.0, r:17, mass:42,
+    layer:"ground", weapons:["srbm_mod"], prereq:["factory","lab","radar"], tech:3, turret:false,
+    deploy:true, deploySec:4.0, rounds:2, from:"e20",
+    desc:"Two rounds under one hinged cover, a depressed flight path and a terminal manoeuvre, " +
+         "which is why an ordinary air-defence system gets almost nothing at it. Fifteen years " +
+         "late because INF destroyed its predecessor and the replacement programme went with it." },
+  tel_c: { fac:"pla", role:"tel", name:"DF-16", full:"DF-16 (CSS-11) on a 10x10 TEL", cat:"vehicle",
+    cost:3300, oil:60, time:39, hp:570, armor:"light", speed:1.25, turn:0.95, sight:5.0, r:17, mass:46,
+    layer:"ground", weapons:["srbm_mod"], prereq:["factory","lab","radar"], tech:3, turret:false,
+    deploy:true, deploySec:4.5, rounds:1, from:"e20",
+    desc:"One round, ten wheels and a separating manoeuvring re-entry vehicle. The PLA had no " +
+         "mobile ballistic missile at all before 1992 and now has the largest conventional " +
+         "force of them anywhere, which is the sharpest change of any army in this game." },
+  tel_k: { fac:"kpa", role:"tel", name:"Hwasong-11Ga", full:"KN-23 / Hwasong-11Ga tracked TEL", cat:"vehicle",
+    cost:2800, oil:52, time:36, hp:600, armor:"light", speed:1.20, turn:0.95, sight:5.0, r:17, mass:44,
+    layer:"ground", weapons:["srbm_mod"], prereq:["factory","lab","radar"], tech:3, turret:false,
+    deploy:true, deploySec:4.5, rounds:2, from:"e20",
+    desc:"First fired in May 2019 and in service from about 2021: an Iskander in outline, flying " +
+         "the same depressed manoeuvring path, on tracks. This army has the deepest missile " +
+         "inventory of the five and the worst of everything else - and it cannot re-equip to " +
+         "reach this, so it must start here." },
+  nato_e60_sam: {"fac":"nato","role":"sam","cat":"vehicle","layer":"ground","name":"SP-HAWK","full":"M727 Self-Propelled Improved HAWK","cost":1900,"oil":26,"time":24,"hp":540,"armor":"light","speed":1.35,"turn":1.3,"sight":10.4,"r":15,"mass":18,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1969","confidence":"high","desc":"Three MIM-23 rounds on an open frame on a tracked cargo hull. The first Western area SAM that could move at all - the Nike sites it replaced took days to build.","turret":true,"tturn":0.7,"deploy":true,"radar":9,"radarQ":12,"rounds":3},
+  pact_e60_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"2K11 Krug","full":"2K11 Krug, 2P24 launcher","cost":2050,"oil":28,"time":26,"hp":640,"armor":"light","speed":1.30,"turn":1.2,"sight":10.4,"r":16,"mass":30,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1965","confidence":"high","desc":"Two ramjet missiles on a tracked launcher: the first genuinely mobile long-range SAM anywhere, and it belonged to the field army rather than to the air defence troops.","turret":true,"tturn":0.7,"deploy":true,"radar":9,"radarQ":11,"rounds":2},
+  pla_e60_sam: {"fac":"pla","role":"sam","cat":"vehicle","layer":"ground","name":"HQ-2 (SP)","full":"HQ-2B on a Type 63 tracked chassis","cost":1750,"oil":24,"time":24,"hp":520,"armor":"light","speed":1.10,"turn":1.0,"sight":10.4,"r":16,"mass":22,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e80","service":"1967","confidence":"medium","desc":"A Chinese S-75 on one rail on a tracked hull: mobile in the crudest sense, one round, and a 1950s missile underneath. China's first SAM kill was scored by a fixed Soviet site over Beijing in 1959.","turret":true,"tturn":0.5,"deploy":true,"radar":8,"radarQ":9,"rounds":1},
+  nato_e80_sam: {"fac":"nato","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot PAC-2","full":"MIM-104C Patriot, M901 launching station","cost":2450,"oil":34,"time":31,"hp":580,"armor":"light","speed":1.05,"turn":1.0,"sight":12.1,"r":16,"mass":34,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e80","to":"e80","service":"1984","confidence":"high","desc":"Four sealed canisters on a semitrailer behind an eight-wheeled tractor. Under an hour into action, which is fast for the West and slow beside the thing it was built to answer.","turret":true,"tturn":0.5,"deploy":true,"deploySec":6.0,"radar":12,"radarQ":18,"rounds":4},
+  pact_e80_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"S-300PS","full":"S-300PS, 5P85S TEL","cost":2500,"oil":36,"time":30,"hp":630,"armor":"light","speed":1.25,"turn":1.2,"sight":12.1,"r":16,"mass":42,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e80","to":"e80","service":"1982","confidence":"high","desc":"Four vertical cold-launch tubes on an eight-wheeled tractor, five minutes into action. A gas generator throws the round clear before the motor lights, and the five minutes is the design point that rewrote Western air planning.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.0,"radar":12,"radarQ":16,"rounds":4},
+  pact_e90_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"S-300PM","full":"S-300PM / PMU-1, 5P85SE TEL","cost":2550,"oil":36,"time":30,"hp":630,"armor":"light","speed":1.25,"turn":1.2,"sight":12.1,"r":16,"mass":42,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e90","to":"e90","service":"1993","confidence":"high","desc":"The same launcher with the 48N6 round in it. Exported hard through the 1990s because it was one of very few things this industry could still sell.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.0,"radar":12,"radarQ":16,"rounds":4},
+  nato_e90_sam: {"fac":"nato","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot GEM","full":"MIM-104D Patriot PAC-2 GEM","cost":2500,"oil":34,"time":31,"hp":580,"armor":"light","speed":1.05,"turn":1.0,"sight":12.1,"r":16,"mass":34,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e90","to":"e90","service":"1994","confidence":"high","desc":"The guidance-enhanced round, bought because the 1991 engagements against Scuds went less well than the first press conferences said they had.","turret":true,"tturn":0.5,"deploy":true,"deploySec":6.0,"radar":12,"radarQ":19,"rounds":4},
+  pla_e90_sam: {"fac":"pla","role":"sam","cat":"vehicle","layer":"ground","name":"S-300PMU","full":"S-300PMU, imported","cost":2700,"oil":36,"time":31,"hp":620,"armor":"light","speed":1.25,"turn":1.2,"sight":12.1,"r":16,"mass":42,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e90","to":"e90","service":"1993","confidence":"high","desc":"Bought, not built. China had nothing modern in this class from the 1960s until the Russian sale in 1993, and the HQ-9 that followed is visibly what was learned from it.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.5,"radar":12,"radarQ":15,"rounds":4},
+  nato_e00_sam: {"fac":"nato","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot PAC-3","full":"MIM-104E Patriot PAC-3","cost":2650,"oil":38,"time":33,"hp":600,"armor":"light","speed":1.10,"turn":1.1,"sight":13.2,"r":16,"mass":36,"weapons":["sam_area3"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2001","confidence":"high","desc":"Sixteen hit-to-kill rounds per launcher, no warhead worth the name, and the first Western system built to hit a ballistic missile rather than to hope.","turret":true,"tturn":0.6,"deploy":true,"deploySec":5.5,"radar":13,"radarQ":20,"rounds":12},
+  pact_e00_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"S-300PMU-2","full":"S-300PMU-2 Favorit","cost":2600,"oil":38,"time":32,"hp":640,"armor":"light","speed":1.25,"turn":1.2,"sight":13.2,"r":16,"mass":42,"weapons":["sam_area3"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2001","confidence":"high","desc":"The last of the S-300 line before the S-400 took the name and the money. Same launcher, longer round, and by now a genuine anti-ballistic capability.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.0,"radar":13,"radarQ":18,"rounds":4},
+  pla_e00_sam: {"fac":"pla","role":"sam","cat":"vehicle","layer":"ground","name":"HQ-9","full":"HQ-9 on Taian TAS-5380","cost":2500,"oil":36,"time":31,"hp":630,"armor":"light","speed":1.25,"turn":1.2,"sight":13.2,"r":16,"mass":38,"weapons":["sam_area3"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2003","confidence":"medium","desc":"Chinese air defence's first modern mobile battery. Laid out like the S-300 it followed; the planar-array radar is not. HQ-16 (2011) and HQ-22 (2016) fill in below it.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.5,"radar":13,"radarQ":19,"rounds":4},
+  roc_e00_sam: {"fac":"roc","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot GEM+","full":"MIM-104D PAC-2 GEM+ (MADS)","cost":2900,"oil":36,"time":34,"hp":570,"armor":"light","speed":1.05,"turn":1.0,"sight":12.1,"r":16,"mass":34,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"1998","confidence":"high","desc":"Three fire units bought as the Modified Air Defense System and delivered from 1997. Taiwan's first mobile area SAM of any kind, and a purchase rather than a capability - Sky Bow I and II are hillside silos that cannot move.","turret":true,"tturn":0.5,"deploy":true,"deploySec":6.0,"radar":12,"radarQ":18,"rounds":4},
+  nato_e50_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"MGM-5 Corporal","full":"MGM-5 Corporal guided missile","cost":2600,"oil":46,"time":36,"hp":440,"armor":"light","speed":0.85,"turn":0.8,"sight":5.0,"r":16,"mass":12,"weapons":["srbm_early"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1955","confidence":"high","desc":"A slim white finned rocket on a towed erector with a convoy of vans behind it. Liquid-fuelled, radio-commanded, and a battalion of two hundred and fifty men to fire one round.","turret":false,"deploy":true,"deploySec":9.0,"rounds":1},
+  pact_e50_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"R-11 Scud-A","full":"R-11 (8K11) on the 8U218 erector","cost":2500,"oil":44,"time":35,"hp":520,"armor":"light","speed":1.00,"turn":0.9,"sight":5.0,"r":16,"mass":40,"weapons":["srbm_early"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1957","confidence":"high","desc":"One fat missile on an erector welded to a wartime heavy assault-gun hull. Crude, and the ancestor of every launcher in this role.","turret":false,"deploy":true,"deploySec":8.0,"rounds":1},
+  nato_e60_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"Pershing 1a","full":"MGM-31A Pershing 1a, M790 erector-launcher","cost":2900,"oil":50,"time":37,"hp":500,"armor":"light","speed":1.15,"turn":1.0,"sight":5.0,"r":17,"mass":20,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e60","to":"e60","service":"1969","confidence":"high","desc":"Solid-fuelled, and the wheeled erector cut the reaction time hard against the tracked launcher it replaced. The divisional weapon alongside it was MGM-52 Lance.","turret":false,"deploy":true,"deploySec":6.0,"rounds":1},
+  pact_e60_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Scud-B","full":"R-17 Elbrus on the 9P117 Uragan","cost":2700,"oil":48,"time":36,"hp":540,"armor":"light","speed":1.25,"turn":0.95,"sight":5.0,"r":17,"mass":37,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e60","to":"e80","service":"1962","confidence":"high","desc":"The archetype of the whole class and the shape everything else is measured against. A 985kg warhead and a CEP of about 450 metres: this is an area weapon aimed at a city or an airfield, not at a vehicle.","turret":false,"deploy":true,"deploySec":6.0,"rounds":1},
+  nato_e80_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"Pershing II","full":"MGM-31B Pershing II","cost":3400,"oil":62,"time":40,"hp":520,"armor":"light","speed":1.20,"turn":0.95,"sight":5.0,"r":17,"mass":38,"weapons":["srbm_p2"],"prereq":["factory","lab","radar"],"tech":3,"from":"e80","to":"e80","service":"1983","confidence":"high","desc":"Radar area-correlation terminal guidance and a CEP around thirty metres, which made it the most accurate ballistic missile of its generation by a distance. Every one was destroyed between 1988 and 1991 under the INF Treaty, which is why NATO has fired its ballistic rounds out of a rocket launcher ever since.","turret":false,"deploy":true,"deploySec":6.0,"rounds":1},
+  pact_e80_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Tochka","full":"OTR-21 Tochka, 9P129 launcher","cost":2900,"oil":50,"time":36,"hp":540,"armor":"light","speed":1.45,"turn":1.1,"sight":5.0,"r":16,"mass":18,"weapons":["srbm_short"],"prereq":["factory","lab","radar"],"tech":3,"from":"e80","to":"e80","service":"1976","confidence":"high","desc":"Much shorter reach than a Scud and far better accuracy, which is the whole trade. Amphibious, fast, and it moves the moment the round is away. The off-map SUPPORT power of the same name is this weapon fired from somebody else's map.","turret":false,"deploy":true,"deploySec":4.0,"rounds":1},
+  kpa_e80_tel: {"fac":"kpa","role":"tel","cat":"vehicle","layer":"ground","name":"Hwasong-5","full":"Hwasong-5 (Scud-B derivative)","cost":2400,"oil":44,"time":34,"hp":540,"armor":"light","speed":1.20,"turn":0.95,"sight":5.0,"r":17,"mass":37,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e80","to":"e80","service":"1985","confidence":"medium","desc":"A Scud-B reverse-engineered from examples obtained by way of Egypt, in series production from about 1985. The start of the deepest ballistic inventory of the five armies here.","turret":false,"deploy":true,"deploySec":6.5,"rounds":1},
+  nato_e90_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"M270 / ATACMS","full":"M270 MLRS with MGM-140 ATACMS Block I","cost":2800,"oil":50,"time":34,"hp":700,"armor":"light","speed":1.30,"turn":1.3,"sight":5.0,"r":16,"mass":25,"weapons":["srbm_atacms"],"prereq":["factory","lab","radar"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"Two missiles in place of twelve rockets, in the launcher the battery already owns. First fired in January 1991 and the reason the United States never built another dedicated erector after INF.","turret":true,"tturn":0.8,"deploy":true,"deploySec":3.0,"rounds":2},
+  pact_e90_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Tochka-U","full":"OTR-21 Tochka-U","cost":2950,"oil":50,"time":36,"hp":540,"armor":"light","speed":1.45,"turn":1.1,"sight":5.0,"r":16,"mass":18,"weapons":["srbm_short"],"prereq":["factory","lab","radar"],"tech":3,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"All this army had that was new. The Oka was destroyed under INF and the Iskander that should have replaced it slipped fifteen years, so the 1990s force is a 1976 missile with a better warhead.","turret":false,"deploy":true,"deploySec":4.0,"rounds":1},
+  pla_e90_tel: {"fac":"pla","role":"tel","cat":"vehicle","layer":"ground","name":"DF-15","full":"DF-15 (M-9) on a WS2400 TEL","cost":3100,"oil":56,"time":38,"hp":560,"armor":"light","speed":1.25,"turn":0.95,"sight":5.0,"r":17,"mass":42,"weapons":["srbm_scud"],"prereq":["factory","lab","radar"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"The missile fired into the sea off Keelung and Kaohsiung during the 1995-96 Strait crisis. The PLA had no mobile ballistic missile of any kind before the DF-11 in 1992; this is where that force begins.","turret":false,"deploy":true,"deploySec":5.0,"rounds":1},
+  kpa_e90_tel: {"fac":"kpa","role":"tel","cat":"vehicle","layer":"ground","name":"Hwasong-6","full":"Hwasong-6 (Scud-C derivative)","cost":2500,"oil":46,"time":35,"hp":540,"armor":"light","speed":1.20,"turn":0.95,"sight":5.0,"r":17,"mass":37,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"medium","desc":"Five hundred kilometres bought by throwing away two hundred kilogrammes of warhead and accepting a miss distance of one to two kilometres. That trade is the design, and it is why this army's missiles are aimed at cities. This is as far as it can go - it cannot re-equip past 1990.","turret":false,"deploy":true,"deploySec":6.5,"rounds":1},
+  nato_e00_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"HIMARS / ATACMS","full":"M142 HIMARS with M57 ATACMS Unitary","cost":2850,"oil":48,"time":33,"hp":520,"armor":"light","speed":1.55,"turn":1.4,"sight":5.0,"r":15,"mass":16,"weapons":["srbm_atacms"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2004","confidence":"high","desc":"One round, a 227kg unitary warhead in place of 950 bomblets, and a wheeled truck that can be flown in. Fast into action and faster out of it.","turret":false,"deploy":true,"deploySec":3.0,"rounds":1},
+  pact_e00_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Iskander-M","full":"9K720 Iskander-M, 9P78-1 TEL","cost":3200,"oil":58,"time":38,"hp":580,"armor":"light","speed":1.30,"turn":1.0,"sight":5.0,"r":17,"mass":42,"weapons":["srbm_mod"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2006","confidence":"high","desc":"Two rounds under a shared hinged cover, a depressed flight path and a terminal manoeuvre. Twenty years late, because the treaty that killed the Oka killed the programme with it.","turret":false,"deploy":true,"deploySec":4.0,"rounds":2},
+  pla_e00_tel: {"fac":"pla","role":"tel","cat":"vehicle","layer":"ground","name":"DF-15B","full":"DF-15B on a WS2400 TEL","cost":3300,"oil":58,"time":38,"hp":560,"armor":"light","speed":1.25,"turn":0.95,"sight":5.0,"r":17,"mass":42,"weapons":["srbm_mod"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2006","confidence":"medium","desc":"A separating manoeuvring re-entry vehicle drops the miss distance from hundreds of metres to single figures. The same launcher as 1995 with a completely different weapon on it.","turret":false,"deploy":true,"deploySec":5.0,"rounds":1},
+  kpa_e00_tel: {"fac":"kpa","role":"tel","cat":"vehicle","layer":"ground","name":"KN-02 Toksa","full":"KN-02 Toksa (OTR-21 derivative)","cost":2600,"oil":46,"time":34,"hp":530,"armor":"light","speed":1.40,"turn":1.1,"sight":5.0,"r":16,"mass":18,"weapons":["srbm_short"],"prereq":["factory","lab"],"tech":3,"from":"e00","to":"e00","service":"2007","confidence":"medium","desc":"A reverse-engineered Tochka and this army's first accurate solid-fuelled battlefield missile - short, quick, and aimed at a target rather than at a map square. Reachable only by starting here: the KPA cannot re-equip past 1990.","turret":false,"deploy":true,"deploySec":4.5,"rounds":1},
+});
+
+/* ======================= MINE WARFARE =======================
+   Mines are older than every period this game covers and every army in it
+   has always used them, so like the landing craft and the fleet oiler these
+   are shared rather than duplicated five ways. A minelayer carries a finite
+   load and must go home for more; a clearing vehicle is slow, lightly armed
+   and exists only to walk in front of everything else.
+
+     layMines    how many it carries
+     mineSea     lays moored sea mines instead of anti-tank mines
+     mineDetect  tiles at which it reveals hostile mines
+     mineClear   tiles within which it destroys them
+     layNet      bottom acoustic nodes a submarine carries (see sonarnet.js)
+
+   layNet is the same shape of field on a very different object. A node kills
+   nothing, runs out of battery in four minutes, and is laid by a submarine
+   through a torpedo tube in the Mk 60 CAPTOR / Mk 67 SLMM tradition. It is
+   emphatically NOT shared five ways the way mines are. Nothing before the
+   2000s has it at all: the deployable seabed field begins with the American
+   Advanced Deployable System (1997-2006, cancelled) and matures as TRAPS,
+   Russia fields Garmoniya seabed stations from the 2010s and China markets
+   the Underwater Great Wall from 2015. The KPA and Taiwan never get it - a
+   1950s Romeo at quiet 1.00 has no business laying a sensor network and
+   Taiwan's two Hai Lung boats cannot lay anything - and those gaps are
+   content, not defects to be patched.
+   ========================================================== */
+Object.assign(UNITS, {
+  minelayer: { fac:"both", role:"minelayer", name:"Minelayer", full:"Armoured Mine-Laying Vehicle", cat:"vehicle",
+    cost:700, oil:8, time:14, hp:620, armor:"light", speed:1.45, turn:1.8, sight:4.5, r:14, mass:26,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, layMines:10, mineDetect:2.2,
+    desc:"Scatters anti-tank mines behind it. Ten to a load, then back to base for more. " +
+         "A minefield does not have to kill anything to be worth laying \u2014 it decides where the enemy may drive." },
+  mineclear: { fac:"both", role:"mineclear", name:"Mine Clearer", full:"Mine-Clearing Vehicle (plough and flail)", cat:"vehicle",
+    cost:900, oil:10, time:16, hp:820, armor:"light", speed:1.25, turn:1.6, sight:5.0, r:14, mass:34,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, mineDetect:3.4, mineClear:1.7, mineClearRate:1.0,
+    desc:"Finds mines further off than anything else and destroys them as it goes. Slow, thinly armed, " +
+         "and the vehicle you put at the front of a column when you suspect the ground has been seeded." },
+
+  navminelayer: { fac:"both", role:"navminelayer", name:"Mine Transport", full:"Naval Minelayer", cat:"naval",
+    cost:1100, oil:14, time:18, hp:900, armor:"light", speed:2.6, turn:1.7, sight:7.0, r:16, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, layMines:10, mineSea:true, mineDetect:2.6,
+    desc:"Rolls moored mines off the stern. A sea mine will not sink a carrier by itself, but a channel " +
+         "that might be mined is a channel a fleet has to route around or sweep first." },
+  minesweeper: { fac:"both", role:"minesweeper", name:"Minesweeper", full:"Mine Countermeasures Vessel", cat:"naval",
+    cost:1300, oil:16, time:20, hp:780, armor:"light", speed:2.3, turn:1.6, sight:8.0, r:15, mass:0,
+    layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, mineDetect:5.0, mineClear:2.2, mineClearRate:1.2,
+    desc:"Hunts and destroys sea mines ahead of the fleet. Without one, a mined approach has to be taken " +
+         "by driving ships through it and finding out." },
+});
+
+/* ============================ PLA ROSTER ============================ */
+Object.assign(UNITS, {
+  rifle_c: { fac:"pla", role:"rifle", name:"Infantry Squad", full:"Rifle Squad, QBZ-191", cat:"infantry",
+    cost:140, oil:0, time:4.4, hp:120, armor:"infantry", speed:1.07, turn:7, sight:5.8, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1,
+    desc:"Well-drilled rifle squad with modern bullpup carbines and good digital comms." },
+  mg_c: { fac:"pla", role:"mg", name:"QJY Weapons Team", full:"Weapons Team, QJY-201", cat:"infantry",
+    cost:265, oil:0, time:6.6, hp:114, armor:"infantry", speed:0.82, turn:6, sight:6.0, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"Squad support machine gun team. Suppresses dismounted infantry across open ground." },
+  at_c: { fac:"pla", role:"at", name:"Red Arrow Team", full:"AT Team, HJ-12 Red Arrow", cat:"infantry",
+    cost:385, oil:0, time:8.7, hp:108, armor:"infantry", speed:0.88, turn:6, sight:7.1, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1,
+    desc:"Fire-and-forget top-attack ATGM in the Javelin class. Ambush weapon, useless in the open." },
+  aa_c: { fac:"pla", role:"aa", name:"FN-6 Team", full:"MANPADS Team, FN-6", cat:"infantry",
+    cost:335, oil:0, time:7.7, hp:102, armor:"infantry", speed:0.9, turn:6, sight:7.9, r:6, mass:0.1,
+    layer:"ground", weapons:["manpad"], prereq:["barracks"], tech:1,
+    desc:"IR-homing shoulder SAM with a four-element seeker. Strictly anti-air." },
+  mortar_c: { fac:"pla", role:"mortar", name:"PP-87 Mortar Team", full:"Mortar Section, PP-87 82mm", cat:"infantry",
+    cost:460, oil:0, time:10.2, hp:103, armor:"infantry", speed:0.72, turn:6, sight:5.0, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:2, deploy:true,
+    desc:"82mm mortar section. Cheap indirect fire that still needs someone else's eyes." },
+  sniper_c: { fac:"pla", role:"sniper", name:"QBU Sniper Team", full:"Sniper Team, QBU-10", cat:"infantry",
+    cost:670, oil:0, time:13.2, hp:91, armor:"infantry", speed:0.78, turn:6, sight:10.2, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"12.7mm anti-materiel rifle. Kills infantry outright and spots for the guns." },
+
+  recon_c: { fac:"pla", role:"recon", name:"Mengshi Scout", full:"CSK-131 Mengshi", cat:"vehicle",
+    cost:385, oil:5, time:6.6, hp:360, armor:"light", speed:2.8, turn:3.1, sight:9.2, r:11, mass:6,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.3,
+    desc:"Protected 4x4 scout with a remote weapon station. Fast eyes for the armoured push." },
+  ifv_c: { fac:"pla", role:"ifv", name:"ZBD-04A", full:"ZBD-04A IFV", cat:"vehicle",
+    cost:870, oil:10, time:13.4, hp:850, armor:"light", speed:1.78, turn:2.0, sight:7.2, r:14, mass:24,
+    layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.8, cargo:6,
+    desc:"Tracked IFV with a 100mm gun-launcher and a 30mm autocannon. Carries six dismounts." },
+  lt_c: { fac:"pla", role:"lighttank", name:"ZTQ-15 Black Panther", full:"ZTQ-15 Light Tank", cat:"vehicle",
+    cost:735, oil:9, time:11.7, hp:760, armor:"light", speed:2.05, turn:2.4, sight:7.4, r:13, mass:35,
+    layer:"ground", weapons:["gun_light"], prereq:["factory"], tech:1, turret:true, tturn:1.6,
+    desc:"Highland light tank: a 105mm gun on a hull light enough for soft ground and mountain roads." },
+  mbt_c: { fac:"pla", role:"mbt", name:"Type 99A", full:"ZTZ-99A MBT", cat:"vehicle",
+    cost:1450, oil:21, time:21, hp:1800, armor:"heavy", speed:1.6, turn:1.55, sight:7.8, r:16, mass:58,
+    layer:"ground", weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4, crush:true,
+    desc:"125mm smoothbore, autoloader, welded composite turret. The backbone of the armoured corps." },
+  hvy_c: { fac:"pla", role:"heavy", name:"Type 99A2 GL5", full:"ZTZ-99A2 w/ GL5 APS", cat:"vehicle",
+    cost:2350, oil:37, time:31, hp:2500, armor:"heavy", speed:1.45, turn:1.4, sight:8.2, r:18, mass:60,
+    layer:"ground", weapons:["gun_125"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.45, crush:true, aps:0.42,
+    desc:"Up-armoured Type 99 with the GL5 active protection system. Hard-kills 42% of incoming missiles." },
+  atgmv_c: { from:"e80", fac:"pla", role:"tankdestroyer", name:"AFT-10", full:"AFT-10 ATGM Carrier", cat:"vehicle",
+    cost:1080, oil:14, time:15.5, hp:650, armor:"light", speed:2.0, turn:2.2, sight:8.5, r:13, mass:22,
+    layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
+    desc:"Fibre-optic guided missile carrier that can shoot from behind a ridge line." },
+  spaag_c: { fac:"pla", role:"spaag", name:"PGZ-09", full:"PGZ-09 SPAAG", cat:"vehicle",
+    cost:1020, oil:14, time:15, hp:820, armor:"light", speed:1.62, turn:1.9, sight:9.5, r:14, mass:35,
+    layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6,
+    desc:"Twin 35mm radar-directed AA on a tracked hull. Clears the sky over a moving column." },
+  spg_c: { fac:"pla", role:"spg", name:"PLZ-05", full:"PLZ-05 155mm SPH", cat:"vehicle",
+    cost:1470, oil:20, time:21.5, hp:800, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:35,
+    layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
+    desc:"155mm/52 self-propelled howitzer with a long tube and an autoloader." },
+  mlrs_c: { fac:"pla", role:"mlrs", name:"PHL-03", full:"PHL-03 300mm MRL", cat:"vehicle",
+    cost:2150, oil:33, time:29.5, hp:710, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:43,
+    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
+    desc:"Twelve 300mm rockets. One salvo saturates a grid square and everything standing in it." },
+
+  helo_c: { fac:"pla", role:"gunship", name:"Z-10", full:"Z-10ME Attack Helicopter", cat:"aircraft",
+    cost:1570, oil:25, time:21.5, hp:640, armor:"air", speed:3.55, turn:2.2, sight:9.2, r:16, mass:0,
+    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:8,
+    desc:"Narrow-profile attack helicopter with mast-mounted sight and HJ-10 missiles." },
+  trans_c: { fac:"pla", role:"transport", name:"Z-20", full:"Z-20 Transport Helicopter", cat:"aircraft",
+    cost:880, oil:14, time:13.5, hp:545, armor:"air", speed:4.1, turn:2.4, sight:8, r:15, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:9, ammo:0,
+    desc:"Medium-lift helicopter carrying nine. Flies infantry over the front line and onto an objective." },
+  fighter_c: { fac:"pla", role:"fighter", name:"J-10C", full:"J-10C Vigorous Dragon", cat:"aircraft",
+    cost:1380, oil:29, time:19.5, hp:430, armor:"air", speed:8.7, turn:1.95, sight:10.8, r:15, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    desc:"Multirole fighter flying air-superiority loadout with AESA radar and PL-15 missiles." },
+  bomber_c: { fac:"pla", role:"cas", name:"JH-7A", full:"JH-7A Flying Leopard", cat:"aircraft",
+    cost:1950, oil:39, time:27.5, hp:780, armor:"air", speed:5.7, turn:1.5, sight:8.8, r:17, mass:0,
+    layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6,
+    desc:"Two-seat strike fighter hauling guided bombs onto hardened targets." },
+
+  boat_c: { fac:"pla", role:"patrol", name:"Type 022 Houbei", cat:"naval",
+    cost:485, oil:6, time:8.7, hp:540, armor:"light", speed:3.5, turn:2.3, sight:8.2, r:13, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
+    desc:"Wave-piercing catamaran missile boat, here in its gun-armed patrol fit. Very fast." },
+  corvette_c: { fac:"pla", role:"corvette", name:"Type 056 Jiangdao", cat:"naval",
+    cost:1175, oil:16, time:15.5, hp:1190, armor:"light", speed:2.85, turn:1.7, sight:9.2, r:17, mass:0,
+    layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:2.0,
+    desc:"Light frigate built in quantity for coastal defence. A 76mm mount and a solid hull." },
+  missileboat_c: { fac:"pla", role:"missileboat", name:"Type 022 (YJ-83)", cat:"naval",
+    cost:1470, oil:21, time:18.5, hp:920, armor:"light", speed:3.2, turn:1.85, sight:8.8, r:16, mass:0,
+    layer:"sea", weapons:["ssm"], prereq:["navalyard","radar"], tech:2,
+    desc:"Eight YJ-83 anti-ship missiles on a stealth catamaran. Fires, then runs before the reply lands." },
+  destroyer_c: { fac:"pla", role:"destroyer", name:"Type 052D Luyang III", cat:"naval",
+    cost:2180, oil:33, time:27.5, hp:2180, armor:"heavy", speed:2.35, turn:1.2, sight:10.8, r:20, mass:0,
+    layer:"sea", weapons:["navgun_127","sam_ship","depthchg"], prereq:["navalyard","radar"], tech:2,
+    turret:true, tturn:1.4, ciws:0.52, sonar:7,
+    desc:"AESA-equipped destroyer with 64 VLS cells, a 130mm gun, towed sonar and a CIWS mount." },
+  cruiser_c: { fac:"pla", role:"cruiser", name:"Type 055 Renhai", cat:"naval",
+    cost:3450, oil:59, time:42, hp:3000, armor:"heavy", speed:2.05, turn:0.9, sight:12, r:23, mass:0,
+    layer:"sea", weapons:["navgun_203","sam_ship"], prereq:["navalyard","lab"], tech:3,
+    turret:true, tturn:1.0, ciws:0.62, shoreBombard:true,
+    desc:"112-cell guided missile cruiser. The heaviest surface combatant afloat and a superb shore bombardment platform." },
+  sub_c: { fac:"pla", role:"sub", name:"Type 039A Yuan", cat:"naval",
+    cost:2300, oil:38, time:29, hp:1210, armor:"light", speed:2.15, turn:1.1, sight:8.2, r:17, mass:0,
+    layer:"sub", weapons:["torpedo"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    layNet:4,
+    desc:"Air-independent-propulsion attack submarine. Sits silent on a shipping lane and empties its tubes. " +
+         "Carries four Underwater Great Wall nodes — a programme marketed since 2015 and taken seriously." },
+  carrier_c: { fac:"pla", role:"carrier", name:"Type 003 Fujian", cat:"naval",
+    cost:4900, oil:108, time:59, hp:4300, armor:"heavy", speed:1.6, turn:0.6, sight:13.5, r:30, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.6, carrier:4,
+    desc:"Catapult-equipped supercarrier. Four aircraft rearm and refuel at sea, wherever you sail it." },
+});
+
+/* ============================ LOGISTICS ============================
+   Supply trucks are the spine of the whole force. Without them, an armoured
+   push runs dry two thirds of the way to the objective and stops dead.       */
+Object.assign(UNITS, {
+  supply_n: { fac:"nato", role:"supply", name:"HEMTT Supply Truck", full:"M977 HEMTT", cat:"vehicle",
+    cost:700, oil:6, time:11, hp:600, armor:"light", speed:1.9, turn:2.0, sight:6, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:900, supplyRange:5.0,
+    desc:"Rolling fuel and ammunition point. Refuels and rearms anything within five tiles, then drives back to a depot to reload." },
+  supply_p: { fac:"pact", role:"supply", name:"KamAZ Supply Truck", full:"KamAZ-6350", cat:"vehicle",
+    cost:650, oil:6, time:10, hp:640, armor:"light", speed:1.95, turn:2.0, sight:6, r:14, mass:15,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:900, supplyRange:5.0,
+    desc:"8x8 logistics truck hauling fuel bladders and ammunition pallets to the forward edge." },
+  supply_c: { fac:"pla", role:"supply", name:"Shaanxi Supply Truck", full:"SX2306 Logistics Truck", cat:"vehicle",
+    cost:660, oil:6, time:9.5, hp:630, armor:"light", speed:1.95, turn:2.0, sight:6, r:14, mass:15,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:1000, supplyRange:5.2,
+    desc:"High-mobility logistics truck. Carries a heavier load than its NATO equivalent." },
+
+  oiler: { from:"e50", fac:"both", role:"oiler", name:"Fleet Oiler", full:"Replenishment Oiler", cat:"naval",
+    cost:1300, oil:10, time:18, hp:1400, armor:"light", speed:2.0, turn:1.0, sight:7, r:22, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard"], tech:2, supply:2000, supplyRange:6.0,
+    desc:"Underway replenishment ship. Keeps a fleet fuelled and armed far from any friendly port — fragile, and worth killing." },
+});
+
+/* ============================ SENSORS & STEALTH ============================
+   RADAR: units and structures with a `radar` value project a sensor bubble.
+   Firing at a target that lies outside your own eyesight is far more accurate
+   inside friendly radar coverage than blind (see Combat.sensorFactor).
+   STEALTH: low-observable airframes defeat radar-guided missiles outright a
+   fraction of the time, and cannot be acquired at full range.                */
+Object.assign(WEAPONS, {
+  aam_lo:   { name:"AIM-260 (LO)", dmg:230, warhead:"flak", range:11.0, reload:2.8, burst:1,
+              acc:0.92, proj:"missile", speed:760, aoe:0.8, ammo:1, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* What fits in a fighter's internal bay. A Raptor really does carry two
+     1000lb JDAM or eight small-diameter bombs alongside its missiles; giving it
+     nothing at all against the ground made the most expensive fighter in the
+     game useless the moment the sky was clear. Deliberately weak - one light
+     pass - so it is a target of opportunity, not a substitute for a bomber. */
+  sdb:      { name:"small-diameter bomb", dmg:210, warhead:"he", range:2.4, reload:2.0, burst:2,
+              burstDelay:0.3, acc:0.90, proj:"bomb", speed:0, aoe:1.6, suppress:45, ammo:1,
+              tgt:{ground:1,air:0,sea:1,sub:0} },
+  jdam_hvy: { name:"2000lb JDAM", dmg:520, warhead:"he", range:3.0, reload:1.2, burst:2, burstDelay:0.4,
+              acc:0.94, proj:"bomb", speed:0, aoe:3.4, suppress:110, ammo:2, tgt:{ground:1,air:0,sea:1,sub:0} },
+  alcm:     { name:"KD-20 cruise missile", dmg:430, warhead:"he", range:9.0, minRange:2.0, reload:7.0, burst:1,
+              acc:0.90, proj:"missile", speed:360, aoe:2.6, suppress:70, ammo:1, tgt:{ground:1,air:0,sea:1,sub:0} },
+});
+
+Object.assign(UNITS, {
+  /* ---- radar vehicles: mobile sensor coverage for the whole force ---- */
+  radarv_n: { from:"e80", fac:"nato", role:"radarv", name:"TPQ-53 Radar", full:"AN/TPQ-53 Radar Vehicle", cat:"vehicle",
+    cost:1200, oil:12, time:16, hp:520, armor:"light", speed:1.7, turn:1.8, sight:9, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:15, turret:true, tturn:0.9,
+    desc:"Mobile phased-array radar. Projects a 15-tile sensor bubble: artillery, SAMs and missile boats firing inside it hit far more often. Unarmed and fragile — keep it behind the line." },
+  radarv_p: { fac:"pact", role:"radarv", name:"Zoopark-1", full:"1L219 Zoopark-1 Radar", cat:"vehicle",
+    cost:1150, oil:12, time:15, hp:560, armor:"light", speed:1.65, turn:1.8, sight:9, r:14, mass:15,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:14.5, turret:true, tturn:0.9,
+    desc:"Tracked counter-battery radar. Extends accurate fire support across the front and spots for the guns." },
+  radarv_c: { from:"e90", fac:"pla", role:"radarv", name:"SLC-2 Radar", full:"SLC-2 Artillery Radar", cat:"vehicle",
+    cost:1150, oil:12, time:14.5, hp:540, armor:"light", speed:1.7, turn:1.8, sight:9, r:14, mass:15,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:15.5, turret:true, tturn:0.9,
+    desc:"Truck-mounted array with the widest coverage of its class. The backbone of PLA fire control." },
+
+  /* ---- stealth fighters: radar-guided missiles struggle to hold a lock ---- */
+  stealth_n: { fac:"nato", role:"stealthfighter", name:"F-22 Raptor", full:"F-22A Raptor", cat:"aircraft",
+    cost:2600, oil:48, time:34, hp:520, armor:"air", speed:9.6, turn:2.4, sight:12.5, r:16, mass:0,
+    layer:"air", weapons:["aam_lo","sdb"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6, stealth:0.65,
+    desc:"Low-observable air dominance fighter. 65% of radar-guided missiles lose the lock, and SAMs cannot engage it until it is close. Supercruise makes it the fastest thing in the sky. Carries a pair of small-diameter bombs in the side bays for targets of opportunity - not a strike aircraft, but not helpless over a ground target either." },
+  stealth_p: { fac:"pact", role:"stealthfighter", name:"Su-57 Felon", full:"Su-57 Felon", cat:"aircraft",
+    cost:2450, oil:46, time:32, hp:600, armor:"air", speed:9.4, turn:2.7, sight:11.5, r:16, mass:0,
+    layer:"air", weapons:["aam_lo","sdb"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6, stealth:0.22,
+    desc:"Fifth-generation fighter, but only frontally low-observable — the engine faces and shaping fall well short of true VLO, so it defeats far fewer missiles than a Raptor. Compensates with thrust vectoring: the best turn rate in the game." },
+  stealth_c: { fac:"pla", role:"stealthfighter", name:"J-20 Mighty Dragon", full:"J-20A Mighty Dragon", cat:"aircraft",
+    cost:2500, oil:47, time:32, hp:540, armor:"air", speed:9.5, turn:2.3, sight:12.0, r:16, mass:0,
+    layer:"air", weapons:["aam_lo","sdb"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6, stealth:0.60,
+    desc:"Long-range stealth interceptor with canard-delta agility and a deep internal weapons bay." },
+
+  /* ---- stealth bombers: the base-killers ---- */
+  sbomber_n: { fac:"nato", role:"stealthbomber", name:"B-2 Spirit", full:"B-2A Spirit", cat:"aircraft",
+    cost:4200, oil:90, time:52, hp:900, armor:"air", speed:5.2, turn:1.2, sight:11, r:22, mass:0,
+    layer:"air", weapons:["jdam_hvy"], prereq:["airbase","lab"], tech:3, jet:true, ammo:8, stealth:0.75,
+    desc:"Flying-wing strategic bomber. Practically invisible to missiles — 75% of them never acquire it — and it removes a base block per pass. Enormously expensive and slow to replace. Its magazine used to hold four, which at two rounds a pass is two bombs for a 4,200-credit aircraft that flies halfway across the map to deliver them; the real thing carries sixteen." },
+  /* No other nation fields an operational stealth bomber, so the Eastern and
+     PLA heavy-bomber slots go to real in-service aircraft that solve the same
+     problem differently: raw speed, and standoff range.                      */
+  sbomber_p: { fac:"pact", role:"heavybomber", name:"Tu-160M Blackjack", full:"Tu-160M Blackjack", cat:"aircraft",
+    cost:3800, oil:95, time:50, hp:1150, armor:"air", speed:9.8, turn:0.85, sight:10.5, r:24, mass:0,
+    layer:"air", weapons:["jdam_hvy"], prereq:["airbase","lab"], tech:3, jet:true, ammo:8,
+    desc:"The largest and fastest combat aircraft ever built — supersonic, swing-wing and heavily armoured, but NOT stealthy. It survives by crossing defended airspace faster than the SAMs can solve the problem." },
+  sbomber_c: { fac:"pla", role:"heavybomber", name:"H-6N", full:"Xian H-6N", cat:"aircraft",
+    cost:3500, oil:80, time:46, hp:880, armor:"air", speed:4.4, turn:1.0, sight:12.5, r:22, mass:0,
+    layer:"air", weapons:["alcm"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
+    desc:"Standoff cruise-missile carrier. No stealth and slow, but it never has to enter the threat ring: it launches heavy air-launched cruise missiles from nine tiles out. The missiles themselves can be shot down by CIWS." },
+});
+
+/* radar fits on existing platforms */
+UNITS.destroyer_n.radar = 12; UNITS.destroyer_p.radar = 11; UNITS.destroyer_c.radar = 12;
+UNITS.cruiser_n.radar = 15;   UNITS.cruiser_p.radar = 14;   UNITS.cruiser_c.radar = 15.5;
+UNITS.carrier_n.radar = 16;   UNITS.carrier_p.radar = 14;   UNITS.carrier_c.radar = 16;
+UNITS.spaag_n.radar = 8;      UNITS.spaag_p.radar = 8;      UNITS.spaag_c.radar = 8;
+
+/* ============================ STRATEGIC WEAPONS ============================ */
+Object.assign(BUILDINGS, {
+  missilesilo: { name:"Missile Silo", cat:"defense", cost:3500, time:40, w:2, h:2, hp:1200, armor:"structure",
+    power:-90, sight:6, tech:3, prereq:["lab","radar"], needPower:true,
+    superweapon: { key:"conv", label:"BALLISTIC MISSILE", charge:240, dmg:950, aoe:5.0,
+                   warhead:"he", flight:7, alert:"MISSILE LAUNCH DETECTED" },
+    desc:"Hardened silo holding a conventional ballistic missile. Charges over four minutes, then flattens a base block anywhere on the map. Needs steady power." },
+  nukesilo: { name:"Strategic Silo", cat:"defense", cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
+    power:-150, sight:7, tech:3, prereq:["lab","missilesilo"], needPower:true,
+    superweapon: { key:"nuke", label:"NUCLEAR MISSILE", charge:420, dmg:3200, aoe:9.0,
+                   warhead:"nuclear", flight:10, nuke:true, alert:"NUCLEAR LAUNCH DETECTED" },
+    desc:"Nuclear-tipped ICBM. Seven minutes to charge, and the strike erases everything inside nine tiles. Both sides are warned the moment it flies." },
+});
+BUILDINGS.radar.radar = 22;
+BUILDINGS.airbase.radar = 11;
+BUILDINGS.sam.radar = 15;
+BUILDINGS.flak.radar = 9;
+
+/* ==================== KOREAN PEOPLE'S ARMY (KPA) ====================
+   Doctrine: overwhelm with numbers and shells. Almost everything is a
+   1960s-70s design kept in service by sheer stubbornness, so the kit is
+   cheap and plentiful but out-ranged and out-aimed by anything modern.
+   The exception is the artillery, which is genuinely fearsome.           */
+Object.assign(UNITS, {
+  rifle_k: { fac:"kpa", role:"rifle", name:"Infantry Squad", full:"Rifle Squad, Type 88", cat:"infantry",
+    cost:95, oil:0, time:3.2, hp:112, armor:"infantry", speed:1.08, turn:7, sight:5.0, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1,
+    desc:"Conscript riflemen with helical-magazine Kalashnikov copies. Individually poor; there are simply always more of them." },
+  mg_k: { fac:"kpa", role:"mg", name:"Type 73 Team", full:"Weapons Team, Type 73 LMG", cat:"infantry",
+    cost:185, oil:0, time:4.8, hp:108, armor:"infantry", speed:0.82, turn:6, sight:5.2, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"Belt-or-magazine fed light machine gun. Crude, cheap, and perfectly adequate at pinning infantry." },
+  at_k: { fac:"kpa", role:"at", name:"Bulsae Team", full:"AT Team, Bulsae-3 ATGM", cat:"infantry",
+    cost:275, oil:0, time:6.4, hp:104, armor:"infantry", speed:0.86, turn:6, sight:6.4, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1,
+    desc:"Locally built Kornet derivative. The one modern-ish weapon in the infantry inventory." },
+  aa_k: { fac:"kpa", role:"aa", name:"HT-16PGJ Team", full:"MANPADS Team, HT-16PGJ", cat:"infantry",
+    cost:245, oil:0, time:5.6, hp:100, armor:"infantry", speed:0.9, turn:6, sight:7.0, r:6, mass:0.1,
+    layer:"ground", weapons:["manpad"], prereq:["barracks"], tech:1,
+    desc:"Igla-pattern shoulder SAM. Numerous enough that low-flying aircraft still die over KPA ground." },
+  mortar_k: { fac:"kpa", role:"mortar", name:"82mm Mortar Team", full:"Mortar Section, Type 63 82mm", cat:"infantry",
+    cost:320, oil:0, time:7.0, hp:102, armor:"infantry", speed:0.72, turn:6, sight:4.6, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:1, deploy:true,
+    desc:"Available at Tech I, unlike everyone else's. Indirect fire from the opening minutes of the war." },
+  sniper_k: { fac:"kpa", role:"sniper", name:"Designated Marksman", full:"Marksman Team, SVD", cat:"infantry",
+    cost:520, oil:0, time:10, hp:88, armor:"infantry", speed:0.78, turn:6, sight:8.8, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"Dragunov-armed marksman. Shorter reach than a true anti-materiel team, but cheap." },
+
+  recon_k: { fac:"kpa", role:"recon", name:"M-1992 Scout", full:"M-1992 Armoured Car", cat:"vehicle",
+    cost:250, oil:4, time:4.6, hp:300, armor:"light", speed:2.6, turn:3.0, sight:7.8, r:11, mass:6,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.0,
+    desc:"Light 4x4 scout car with a heavy machine gun. Blind by modern standards but disposable." },
+  ifv_k: { fac:"kpa", role:"ifv", name:"VTT-323", full:"VTT-323 APC", cat:"vehicle",
+    cost:560, oil:8, time:9, hp:700, armor:"light", speed:1.7, turn:2.0, sight:6.0, r:14, mass:13,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:1.7, cargo:8,
+    desc:"Tracked box on a Type 63 chassis carrying eight. Armed with only a machine gun — it is a bus, not a fighting vehicle." },
+  lt_k: { fac:"kpa", role:"lighttank", name:"PT-85 Shin'heung", full:"PT-85 Light Tank", cat:"vehicle",
+    cost:480, oil:6, time:8, hp:560, armor:"light", speed:2.2, turn:2.5, sight:6.4, r:13, mass:20,
+    layer:"ground", weapons:["gun_light"], prereq:["factory"], tech:1, turret:true, tturn:1.5,
+    desc:"Amphibious light tank with an 85mm gun. Fast, thin, and cheap enough to lose in quantity." },
+  mbt_k: { fac:"kpa", role:"mbt", name:"Chonma-ho", full:"Chonma-ho V MBT", cat:"vehicle",
+    cost:850, oil:14, time:13, hp:1320, armor:"heavy", speed:1.55, turn:1.5, sight:6.2, r:15, mass:40,
+    layer:"ground", weapons:["gun_125"], prereq:["factory"], tech:1, turret:true, tturn:1.15, crush:true,
+    desc:"T-62 derivative with a bigger gun bolted on. Available at Tech I and barely half the price of a modern MBT — but its fire control is a generation behind." },
+  hvy_k: { fac:"kpa", role:"heavy", name:"Songun-ho", full:"Songun-915 MBT", cat:"vehicle",
+    cost:1500, oil:24, time:21, hp:1950, armor:"heavy", speed:1.5, turn:1.4, sight:6.8, r:17, mass:50,
+    layer:"ground", weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.25, crush:true,
+    desc:"The best tank the KPA fields: reactive armour, an ATGM box and a 125mm gun. Reaches the field at Tech II, when everyone else is still fielding their first MBTs." },
+  atgmv_k: { from:"e80", fac:"kpa", role:"tankdestroyer", name:"Bulsae-4", full:"Bulsae-4 ATGM Carrier", cat:"vehicle",
+    cost:820, oil:11, time:12, hp:580, armor:"light", speed:1.9, turn:2.1, sight:7.4, r:13, mass:15,
+    layer:"ground", weapons:["atgm_veh"], prereq:["factory"], tech:1, turret:true, tturn:1.3,
+    desc:"Missile launcher on an APC hull, available early. Cheap enough to screen every approach with them." },
+  spaag_k: { fac:"kpa", role:"spaag", name:"M-1989 Flak", full:"M-1989 Twin 37mm SPAAG", cat:"vehicle",
+    cost:640, oil:9, time:10, hp:660, armor:"light", speed:1.6, turn:1.9, sight:7.6, r:14, mass:26,
+    layer:"ground", weapons:["spaag"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
+    desc:"Optically laid twin 37mm. No radar, so it is far less accurate than a Gepard — but it costs a third as much and arrives at Tech I." },
+  /* the KPA's real weapon */
+  spg_k: { fac:"kpa", role:"spg", name:"M-1978 Koksan", full:"M-1978 Koksan 170mm SPG", cat:"vehicle",
+    cost:1250, oil:16, time:18, hp:640, armor:"light", speed:1.15, turn:1.3, sight:4.8, r:15, mass:40,
+    layer:"ground", weapons:["koksan"], prereq:["factory"], tech:1, turret:true, tturn:0.7,
+    desc:"A 170mm gun on an open mount with no crew protection whatsoever. It outranges every other artillery piece in the game and is available from Tech I. It cannot defend itself at all." },
+  mlrs_k: { fac:"kpa", role:"mlrs", name:"M1991 240mm MRL", full:"M1991 240mm Rocket Launcher", cat:"vehicle",
+    cost:1450, oil:20, time:20, hp:600, armor:"light", speed:1.3, turn:1.3, sight:5.0, r:15, mass:30,
+    layer:"ground", weapons:["mrl240"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.8,
+    desc:"Twenty-two 240mm rockets. Shorter ranged and less accurate than an MLRS, but it saturates a whole grid square and costs far less." },
+  supply_k: { fac:"kpa", role:"supply", name:"Supply Truck", full:"Sungri-58 Truck", cat:"vehicle",
+    cost:420, oil:4, time:6.5, hp:520, armor:"light", speed:1.85, turn:2.0, sight:5.4, r:14, mass:9,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:720, supplyRange:4.4,
+    desc:"Ageing cargo truck hauling fuel drums and shell crates. Smaller load than a HEMTT, half the price." },
+  radarv_k: { from:"e90", fac:"kpa", role:"radarv", name:"Counter-Battery Radar", full:"M-1992 Radar Vehicle", cat:"vehicle",
+    cost:1050, oil:10, time:14, hp:470, armor:"light", speed:1.6, turn:1.7, sight:8.0, r:14, mass:14,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:12.5, turret:true, tturn:0.9,
+    desc:"Elderly artillery-locating radar. Smaller bubble than its rivals, but it is what makes the Koksan park lethal instead of merely loud." },
+
+  helo_k: { fac:"kpa", role:"gunship", name:"Mi-24 Hind", full:"Mi-24D Hind", cat:"aircraft",
+    cost:1150, oil:20, time:16, hp:700, armor:"air", speed:3.3, turn:2.0, sight:7.6, r:17, mass:0,
+    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:7,
+    desc:"Gunship and troop carrier in one heavily armoured airframe. Slow and easy to hit, but it soaks punishment other helicopters cannot." },
+  trans_k: { fac:"kpa", role:"transport", name:"Mi-2 / An-2 Lift", full:"An-2 Colt", cat:"aircraft",
+    cost:520, oil:8, time:8, hp:420, armor:"air", speed:3.4, turn:2.6, sight:7.0, r:15, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:10, ammo:0,
+    desc:"A fabric-skinned biplane used to sneak commandos over the line. Absurdly cheap, carries ten, and its tiny radar signature is a genuine historical quirk." },
+  fighter_k: { fac:"kpa", role:"fighter", name:"MiG-29 Fulcrum", full:"MiG-29 (9-13)", cat:"aircraft",
+    cost:1250, oil:26, time:17, hp:400, armor:"air", speed:8.4, turn:1.9, sight:9.0, r:15, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    desc:"The only genuinely capable fighter in the inventory, and there are very few of them. Everything else in the air force is a MiG-21." },
+  bomber_k: { fac:"kpa", role:"cas", name:"Su-25 Frogfoot", full:"Su-25K Frogfoot", cat:"aircraft",
+    cost:1500, oil:32, time:22, hp:760, armor:"air", speed:5.6, turn:1.5, sight:7.8, r:17, mass:0,
+    layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6,
+    desc:"Armoured ground-attack jet flying unguided ordnance. Cheap for its weight class, and blind compared to a NATO A-10." },
+
+  boat_k: { fac:"kpa", role:"patrol", name:"Chaho Gunboat", full:"Chaho-class Gunboat", cat:"naval",
+    cost:340, oil:5, time:6, hp:460, armor:"light", speed:3.3, turn:2.3, sight:7.2, r:13, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.3,
+    desc:"Small rocket-armed patrol boat. The KPA navy is mostly these, and there are hundreds of them." },
+  corvette_k: { fac:"kpa", role:"corvette", name:"Nampo Corvette", full:"Nampo-class Corvette", cat:"naval",
+    cost:880, oil:12, time:12, hp:1050, armor:"light", speed:2.8, turn:1.7, sight:7.8, r:17, mass:0,
+    layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:1.9,
+    desc:"Coastal gun corvette. Cheap hull, no air-search radar worth the name." },
+  missileboat_k: { fac:"kpa", role:"missileboat", name:"Soju Missile Boat", full:"Soju-class Missile Boat", cat:"naval",
+    cost:1080, oil:16, time:14, hp:820, armor:"light", speed:3.1, turn:1.85, sight:7.4, r:16, mass:0,
+    layer:"sea", weapons:["ssm"], prereq:["navalyard","radar"], tech:2,
+    desc:"Styx-derivative anti-ship missiles on a small hull. Fires first or dies — but you can afford three for the price of one Harpoon boat." },
+  sub_k: { fac:"kpa", role:"sub", name:"Romeo-class SSK", full:"Project 633 Romeo", cat:"naval",
+    cost:1500, oil:26, time:20, hp:900, armor:"light", speed:1.85, turn:1.0, sight:6.6, r:16, mass:0,
+    layer:"sub", weapons:["torpedo"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    desc:"A 1950s Soviet design built under licence. Noisy and slow, so ASW finds it easily — but the KPA operates a great many of them." },
+  lst_k: { fac:"kpa", role:"transport_sea", name:"Hantae Landing Ship", full:"Hantae-class LST", cat:"naval",
+    cost:620, oil:8, time:10, hp:820, armor:"light", speed:2.4, turn:1.5, sight:5.8, r:18, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard"], tech:1, cargo:6, amphib:true,
+    desc:"Basic landing ship. Slower than an LCAC, far cheaper, and carries just as much." },
+});
+
+/* ==================== REPUBLIC OF CHINA ARMY (ROC) ====================
+   Doctrine: a small, wealthy, technically excellent force that expects to
+   fight outnumbered on prepared ground. Superb missiles and fire control,
+   expensive everything, and defences at a discount.                      */
+Object.assign(UNITS, {
+  rifle_r: { fac:"roc", role:"rifle", name:"Infantry Squad", full:"Rifle Squad, T91", cat:"infantry",
+    cost:190, oil:0, time:6, hp:120, armor:"infantry", speed:1.05, turn:7, sight:6.6, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1,
+    desc:"Well-equipped volunteer riflemen with modern optics and body armour. Expensive per man, and there are never enough of them." },
+  mg_r: { fac:"roc", role:"mg", name:"T74 Weapons Team", full:"Weapons Team, T74 GPMG", cat:"infantry",
+    cost:340, oil:0, time:8, hp:116, armor:"infantry", speed:0.82, turn:6, sight:6.8, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"Locally built general-purpose machine gun on a tripod with a thermal sight." },
+  at_r: { fac:"roc", role:"at", name:"Javelin Team", full:"AT Team, FGM-148 Javelin", cat:"infantry",
+    cost:480, oil:0, time:10, hp:110, armor:"infantry", speed:0.88, turn:6, sight:7.8, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1,
+    desc:"Imported top-attack ATGM, held in quantity precisely for beach defence. The best infantry anti-armour weapon available." },
+  aa_r: { fac:"roc", role:"aa", name:"Stinger Team", full:"MANPADS Team, FIM-92 Stinger", cat:"infantry",
+    cost:400, oil:0, time:8.5, hp:104, armor:"infantry", speed:0.9, turn:6, sight:8.4, r:6, mass:0.1,
+    layer:"ground", weapons:["manpad"], prereq:["barracks"], tech:1,
+    desc:"Shoulder-launched SAM with excellent seeker discrimination. Layered under the Sky Bow umbrella." },
+  mortar_r: { fac:"roc", role:"mortar", name:"T75 Mortar Team", full:"Mortar Section, T75 81mm", cat:"infantry",
+    cost:560, oil:0, time:12, hp:106, armor:"infantry", speed:0.72, turn:6, sight:5.4, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:2, deploy:true,
+    desc:"Computer-laid 81mm mortar section with digital fire control." },
+  sniper_r: { fac:"roc", role:"sniper", name:"Sniper Team", full:"Sniper Team, T93", cat:"infantry",
+    cost:790, oil:0, time:15, hp:94, armor:"infantry", speed:0.78, turn:6, sight:11.2, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"The longest-sighted infantry unit in the game. An outstanding spotter for the guns." },
+
+  recon_r: { fac:"roc", role:"recon", name:"CM-32 Yunpao", full:"CM-32 Clouded Leopard", cat:"vehicle",
+    cost:520, oil:6, time:9, hp:420, armor:"light", speed:2.75, turn:3.0, sight:10.2, r:12, mass:22,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
+    desc:"Indigenous 8x8 with a remote weapon station and excellent sensors — the best scout car in the game, and priced accordingly." },
+  ifv_r: { fac:"roc", role:"ifv", name:"CM-34 Yunpao", full:"CM-34 30mm IFV", cat:"vehicle",
+    cost:1120, oil:11, time:16, hp:820, armor:"light", speed:1.9, turn:2.1, sight:8.2, r:14, mass:24,
+    layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.9, cargo:6,
+    desc:"CM-32 hull with a stabilised 30mm Bushmaster turret, carrying six. Fast on roads, well-sighted, expensive." },
+  lt_r: { fac:"roc", role:"lighttank", name:"M60A3 TTS", full:"M60A3 TTS", cat:"vehicle",
+    cost:820, oil:10, time:13, hp:900, armor:"heavy", speed:1.45, turn:1.6, sight:8.0, r:14, mass:52,
+    layer:"ground", weapons:["gun_105"], prereq:["factory"], tech:1, turret:true, tturn:1.4, crush:true,
+    desc:"An old hull with a genuinely good thermal sight and a 105mm gun. Counts as heavy armour at Tech I — the ROC's early-game trump card." },
+  mbt_r: { fac:"roc", role:"mbt", name:"CM-11 Brave Tiger", full:"CM-11 Brave Tiger", cat:"vehicle",
+    cost:1650, oil:22, time:24, hp:1680, armor:"heavy", speed:1.5, turn:1.5, sight:8.6, r:16, mass:50,
+    layer:"ground", weapons:["gun_105"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.6, crush:true,
+    desc:"M60 hull married to an M1 turret and fire control. Not the toughest MBT, but it acquires and hits first — which usually settles it." },
+  hvy_r: { from:"e20", fac:"roc", role:"heavy", name:"M1A2T Abrams", full:"M1A2T Abrams", cat:"vehicle",
+    cost:2750, oil:42, time:36, hp:2400, armor:"heavy", speed:1.4, turn:1.35, sight:9.0, r:18, mass:66,
+    layer:"ground", weapons:["gun_120"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.55, crush:true, aps:0.35,
+    desc:"The export Abrams, delivered with modern armour and optics. The most expensive tank in the game and the best-sighted." },
+  atgmv_r: { from:"e80", fac:"roc", role:"tankdestroyer", name:"CM-32 TOW", full:"CM-32 ATGM Carrier", cat:"vehicle",
+    cost:1280, oil:14, time:17, hp:600, armor:"light", speed:2.1, turn:2.2, sight:9.4, r:13, mass:22,
+    layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
+    desc:"Wheeled TOW-2B carrier with a mast sight — it can engage from behind a ridge and never expose the hull." },
+  spaag_r: { fac:"roc", role:"spaag", name:"Antelope AD", full:"Antelope Air Defence System", cat:"vehicle",
+    cost:1300, oil:15, time:17, hp:740, armor:"light", speed:1.85, turn:2.0, sight:10.5, r:14, mass:14,
+    layer:"ground", weapons:["sam_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6, radar:10,
+    desc:"Chaparral-successor firing Sky Sword missiles from a Humvee-class chassis. A true SAM vehicle rather than a gun system: longer reach than any rival SPAAG, and it carries its own radar." },
+  spg_r: { fac:"roc", role:"spg", name:"M109A6 Paladin", full:"M109A6 Paladin", cat:"vehicle",
+    cost:1800, oil:22, time:26, hp:780, armor:"light", speed:1.35, turn:1.5, sight:6.2, r:15, mass:29,
+    layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
+    desc:"Digitised 155mm howitzer with autonomous laying. Same shell as everyone else's, delivered more accurately." },
+  mlrs_r: { fac:"roc", role:"mlrs", name:"Thunderbolt-2000", full:"RT-2000 Thunderbolt", cat:"vehicle",
+    cost:2450, oil:34, time:32, hp:700, armor:"light", speed:1.35, turn:1.35, sight:6.0, r:15, mass:22,
+    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.85,
+    desc:"Indigenous multiple rocket launcher built to break up landing craft at the waterline. Accurate for its class." },
+  supply_r: { fac:"roc", role:"supply", name:"Supply Truck", full:"M977 HEMTT", cat:"vehicle",
+    cost:880, oil:7, time:13, hp:600, armor:"light", speed:1.9, turn:2.0, sight:6.2, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:1000, supplyRange:5.4,
+    desc:"Imported heavy logistics truck with the largest supply pool available." },
+  radarv_r: { from:"e90", fac:"roc", role:"radarv", name:"AN/TPQ-37 Radar", full:"AN/TPQ-37 Firefinder", cat:"vehicle",
+    cost:1420, oil:13, time:18, hp:520, armor:"light", speed:1.65, turn:1.7, sight:9.6, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:17.5, turret:true, tturn:0.9,
+    desc:"Long-range counter-battery radar — the widest sensor bubble in the game. It is how a smaller force out-shoots a bigger one." },
+
+  helo_r: { fac:"roc", role:"gunship", name:"AH-64E Apache", full:"AH-64E Apache Guardian", cat:"aircraft",
+    cost:1850, oil:28, time:25, hp:620, armor:"air", speed:3.6, turn:2.2, sight:10.2, r:16, mass:0,
+    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:8,
+    desc:"Latest-block Apache with the mast-mounted radar. Superb sensors, eye-watering price." },
+  trans_r: { fac:"roc", role:"transport", name:"UH-60M Black Hawk", full:"UH-60M Black Hawk", cat:"aircraft",
+    cost:1050, oil:15, time:16, hp:540, armor:"air", speed:4.2, turn:2.4, sight:8.4, r:15, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:8, ammo:0,
+    desc:"Standard medium-lift helicopter, used to reposition infantry along the coast faster than a landing can develop." },
+  fighter_r: { fac:"roc", role:"fighter", name:"F-16V Viper", full:"F-16V Block 70", cat:"aircraft",
+    cost:1950, oil:33, time:26, hp:440, armor:"air", speed:8.6, turn:2.0, sight:12.5, r:15, mass:0,
+    layer:"air", weapons:["aam_lo"], prereq:["airbase"], tech:2, jet:true, ammo:5,
+    desc:"AESA-radar Viper firing the same advanced missile as a Raptor. Not stealthy, but it sees further than anything else that is not." },
+  bomber_r: { fac:"roc", role:"cas", name:"F-CK-1 Ching-kuo", full:"F-CK-1C Ching-kuo", cat:"aircraft",
+    cost:2100, oil:36, time:29, hp:560, armor:"air", speed:7.2, turn:1.8, sight:9.6, r:16, mass:0,
+    layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6,
+    desc:"Indigenous Defence Fighter in the strike role — far faster over the target than an A-10, with a lighter bomb load." },
+
+  boat_r: { fac:"roc", role:"patrol", name:"Kuang Hua VI", full:"Kuang Hua VI Missile Boat", cat:"naval",
+    cost:640, oil:7, time:10, hp:500, armor:"light", speed:3.6, turn:2.4, sight:8.6, r:13, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
+    desc:"Fast stealth-shaped inshore boat. The quickest hull in the game — built to sortie from a cave and run." },
+  corvette_r: { fac:"roc", role:"corvette", name:"Tuo Chiang", full:"Tuo Chiang-class Corvette", cat:"naval",
+    cost:1550, oil:18, time:19, hp:1050, armor:"light", speed:3.3, turn:1.9, sight:10.2, r:17, mass:0,
+    layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:2.1, radar:9,
+    desc:"Stealth catamaran corvette — the 'carrier killer'. Very fast, carries its own radar, and thinly protected." },
+  missileboat_r: { fac:"roc", role:"missileboat", name:"Hsiung Feng Boat", full:"HF-III Missile Craft", cat:"naval",
+    cost:1850, oil:24, time:22, hp:880, armor:"light", speed:3.2, turn:1.9, sight:9.6, r:16, mass:0,
+    layer:"sea", weapons:["ssm"], prereq:["navalyard","radar"], tech:2, radar:9,
+    desc:"Supersonic Hsiung Feng III anti-ship missiles. The longest reach of any missile boat, and it spots for itself." },
+  destroyer_r: { fac:"roc", role:"destroyer", name:"Kee Lung DDG", full:"Kee Lung-class Destroyer", cat:"naval",
+    cost:2600, oil:36, time:32, hp:1950, armor:"heavy", speed:2.35, turn:1.2, sight:11.5, r:20, mass:0,
+    layer:"sea", weapons:["navgun_127","sam_ship","depthchg"], prereq:["navalyard","radar"], tech:2,
+    turret:true, tturn:1.4, ciws:0.5, sonar:7.5, radar:13,
+    desc:"Ex-Kidd-class air defence destroyer. Older hull, excellent area SAM coverage — the shield the rest of the fleet hides behind." },
+  sub_r: { fac:"roc", role:"sub", name:"Hai Lung SSK", full:"Hai Lung-class Submarine", cat:"naval",
+    cost:2550, oil:38, time:31, hp:1150, armor:"light", speed:2.0, turn:1.05, sight:8.4, r:17, mass:0,
+    layer:"sub", weapons:["torpedo"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    desc:"Zwaardvis-derived diesel boat, meticulously maintained. Only a handful exist and each one is irreplaceable." },
+  lst_r: { fac:"roc", role:"transport_sea", name:"LCU Landing Craft", full:"Landing Craft, Utility", cat:"naval",
+    cost:980, oil:12, time:15, hp:900, armor:"light", speed:2.6, turn:1.6, sight:6.8, r:18, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard"], tech:1, cargo:6, amphib:true,
+    desc:"Utility landing craft. The ROC is built to repel landings rather than mount them, so this is a workmanlike hull." },
+});
+
+/* faction-specific weapons */
+Object.assign(WEAPONS, {
+  koksan: { name:"170mm gun", dmg:200, warhead:"frag", range:20.0, minRange:6.0, reload:13.0, burst:1,
+            acc:0.24, proj:"arc", speed:230, aoe:2.8, suppress:75, tgt:{ground:1,air:0,sea:1,sub:0} },
+  mrl240: { name:"240mm rocket pod", dmg:62, warhead:"frag", range:12.5, minRange:3.0, reload:15.0,
+            burst:16, burstDelay:0.13, acc:0.16, proj:"arc", speed:240, aoe:2.2, suppress:45,
+            tgt:{ground:1,air:0,sea:1,sub:0} },
+});
+
+
+/* ==================== ELECTRONIC WARFARE ====================
+   Two coupled systems:
+   SEAD  - anti-radiation missiles home on emitting radars. They do crushing
+           damage to anything with a `radar` fit and little to anything else,
+           so they are a scalpel for prying open an air-defence network.
+   ECM   - jammers project a bubble that blinds hostile radar inside it. Fire
+           directed into a jammed area falls back to blind accuracy, and
+           radar-guided missiles launched from inside it degrade badly.
+   NATO and the PLA field airborne jammers and the deepest SEAD inventories;
+   the Eastern Coalition relies on powerful but ground-bound systems.        */
+Object.assign(WEAPONS, {
+  harm:    { name:"AGM-88 HARM", dmg:210, warhead:"he", range:10.5, minRange:1.5, reload:6.0, burst:1,
+             acc:0.88, proj:"missile", speed:520, aoe:1.4, ammo:1, antiRadiation:true,
+             tgt:{ground:1,air:0,sea:1,sub:0} },
+  arm_kh:  { name:"Kh-31P ARM", dmg:230, warhead:"he", range:10.0, minRange:1.5, reload:6.6, burst:1,
+             acc:0.84, proj:"missile", speed:560, aoe:1.5, ammo:1, antiRadiation:true,
+             tgt:{ground:1,air:0,sea:1,sub:0} },
+  arm_yj:  { name:"YJ-91 ARM", dmg:220, warhead:"he", range:10.8, minRange:1.5, reload:6.2, burst:1,
+             acc:0.87, proj:"missile", speed:540, aoe:1.4, ammo:1, antiRadiation:true,
+             tgt:{ground:1,air:0,sea:1,sub:0} },
+  arm_gnd: { name:"ground-launched ARM", dmg:180, warhead:"he", range:12.0, minRange:2.5, reload:9.0, burst:1,
+             acc:0.86, proj:"missile", speed:480, aoe:1.3, antiRadiation:true,
+             tgt:{ground:1,air:0,sea:1,sub:0} },
+});
+
+Object.assign(UNITS, {
+  /* ---- airborne electronic attack ---- */
+  ew_n: { fac:"nato", role:"ewair", name:"EA-18G Growler", full:"EA-18G Growler", cat:"aircraft",
+    cost:2800, oil:44, time:32, hp:520, armor:"air", speed:7.6, turn:1.9, sight:12.5, r:16, mass:0,
+    layer:"air", weapons:["harm"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
+    jam:9.5, jamPower:1.0, radar:10,
+    desc:"Airborne electronic attack. Its jamming pods blind every hostile radar within nine tiles, and it carries HARM to kill the emitters that keep transmitting. The single most disruptive aircraft in the game." },
+  ew_c: { fac:"pla", role:"ewair", name:"J-16D", full:"Shenyang J-16D", cat:"aircraft",
+    cost:2700, oil:42, time:31, hp:560, armor:"air", speed:7.8, turn:1.9, sight:12.0, r:16, mass:0,
+    layer:"air", weapons:["arm_yj"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
+    jam:9.0, jamPower:0.95, radar:10,
+    desc:"Electronic-attack Flanker with wingtip jamming pods and the gun deleted to save weight. China's answer to the Growler, and very nearly its equal." },
+
+  /* ---- ground-based jammers ---- */
+  ewv_n: { from:"e80", fac:"nato", role:"ewveh", name:"Prophet EW", full:"AN/MLQ-44 Prophet", cat:"vehicle",
+    cost:1500, oil:14, time:19, hp:560, armor:"light", speed:1.8, turn:1.9, sight:9, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, jam:7.5, jamPower:0.85, radar:9,
+    turret:true, tturn:0.9,
+    desc:"Signals-intelligence and jamming vehicle. Parks behind the line and blinds hostile radar over the approach, which collapses enemy long-range accuracy." },
+  ewv_c: { from:"e00", fac:"pla", role:"ewveh", name:"CHL-906 Jammer", full:"CHL-906 EW Vehicle", cat:"vehicle",
+    cost:1450, oil:14, time:18, hp:580, armor:"light", speed:1.8, turn:1.9, sight:9, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, jam:7.8, jamPower:0.85, radar:9,
+    turret:true, tturn:0.9,
+    desc:"Truck-mounted communications and radar jammer. The PLA fields these in quantity to win the spectrum before the shooting starts." },
+  ewv_p: { from:"e60", fac:"pact", role:"ewveh", name:"Krasukha-4", full:"1RL257 Krasukha-4", cat:"vehicle",
+    cost:1650, oil:16, time:21, hp:640, armor:"light", speed:1.5, turn:1.6, sight:8.5, r:15, mass:20,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, jam:8.5, jamPower:0.9, radar:8,
+    turret:true, tturn:0.7,
+    desc:"Heavy ground-based jammer with a huge dish — genuinely formidable, and the Eastern Coalition's main answer to Western air power. Slow, conspicuous, and it cannot follow the air battle the way a Growler can." },
+
+  /* ---- SEAD strike aircraft (defence suppression as a mission) ---- */
+  sead_n: { fac:"nato", role:"sead", name:"F-16CJ Wild Weasel", full:"F-16CJ Block 50 SEAD", cat:"aircraft",
+    cost:1900, oil:34, time:24, hp:430, armor:"air", speed:8.6, turn:2.0, sight:11.5, r:15, mass:0,
+    layer:"air", weapons:["harm"], prereq:["airbase","radar"], tech:2, jet:true, ammo:4,
+    desc:"Wild Weasel: hunts radars for a living. HARM does triple damage to anything emitting, and almost nothing to anything else — bring it to break a SAM belt, not to fight a war." },
+  sead_c: { fac:"pla", role:"sead", name:"J-16 SEAD", full:"Shenyang J-16 (YJ-91)", cat:"aircraft",
+    cost:1950, oil:35, time:25, hp:470, armor:"air", speed:8.2, turn:1.9, sight:11.0, r:16, mass:0,
+    layer:"air", weapons:["arm_yj"], prereq:["airbase","radar"], tech:2, jet:true, ammo:4,
+    desc:"Heavy multirole Flanker in the defence-suppression role, carrying anti-radiation missiles for the same job." },
+  sead_p: { fac:"pact", role:"sead", name:"Su-24M SEAD", full:"Su-24M (Kh-31P)", cat:"aircraft",
+    cost:1850, oil:36, time:25, hp:500, armor:"air", speed:7.4, turn:1.6, sight:10.0, r:16, mass:0,
+    layer:"air", weapons:["arm_kh"], prereq:["airbase","radar"], tech:2, jet:true, ammo:3,
+    desc:"Swing-wing strike aircraft carrying Kh-31P. Fewer shots and shorter legs than a Weasel, but the missile itself is fast and hard to dodge." },
+});
+
+/* digital-war doctrine: how well a faction fights in the spectrum */
+/* ---- Gulf-War doctrine model ----
+   thermal   : fraction of the force with working thermal sights
+   fireCtrl   : stabilisation and fire control — accuracy on the move, first shot
+   ammoQ      : penetrator quality against heavy armour (DU vs export steel)
+   carousel   : Soviet-pattern autoloader carries rounds in the crew compartment,
+                so a penetration often detonates the whole load                */
+FACTIONS.nato.thermal = 1.00; FACTIONS.nato.fireCtrl = 1.12; FACTIONS.nato.ammoQ = 1.14;
+FACTIONS.pla.thermal  = 0.90; FACTIONS.pla.fireCtrl  = 1.11; FACTIONS.pla.ammoQ  = 1.13;
+FACTIONS.roc.thermal  = 0.95; FACTIONS.roc.fireCtrl  = 1.06; FACTIONS.roc.ammoQ  = 1.04;
+FACTIONS.pact.thermal = 0.55; FACTIONS.pact.fireCtrl = 0.86; FACTIONS.pact.ammoQ = 0.94;
+FACTIONS.kpa.thermal  = 0.15; FACTIONS.kpa.fireCtrl  = 0.62; FACTIONS.kpa.ammoQ  = 0.74;
+FACTIONS.pact.carousel = 0.55; FACTIONS.kpa.carousel = 0.70; FACTIONS.pla.carousel = 0.30;
+FACTIONS.nato.bonus += " Thermal sights and stabilised fire control: fights at night and in sandstorm.";
+FACTIONS.pact.bonus += " Autoloader carousels detonate catastrophically when penetrated.";
+FACTIONS.kpa.bonus += " Optical sights only — nearly blind after dark.";
+
+
+/* ---- relative standing ----
+   NATO and the PLA are peers: the best equipment on the map, and a fight
+   between them should be close. Everyone else is behind them by a margin
+   that reflects the real gap rather than a token one.
+     Taiwan  - capable crews and modern optics, but a mainline tank built on
+               an M48 hull, small numbers, and a very high unit cost.
+     East    - numerous and cheap, one generation back in fire control and
+               optics, and carrying ammunition in the crew compartment.
+     KPA     - a 1960s army with 1960s sights.                              */
+FACTIONS.nato.accMul = 1.07; FACTIONS.nato.hpMul = 1.03;
+FACTIONS.pla.accMul  = 1.06; FACTIONS.pla.hpMul  = 1.06;
+FACTIONS.roc.accMul  = 0.99; FACTIONS.roc.hpMul  = 0.95;
+FACTIONS.pact.accMul = 0.94; FACTIONS.pact.hpMul = 0.95;
+FACTIONS.kpa.accMul  = 0.84; FACTIONS.kpa.hpMul  = 0.86;
+
+FACTIONS.nato.ecm = 1.15;  FACTIONS.nato.eccm = 1.20;   // best jammers, best hardening
+FACTIONS.pla.ecm  = 1.12;  FACTIONS.pla.eccm  = 1.15;
+FACTIONS.pact.ecm = 0.95;  FACTIONS.pact.eccm = 0.85;   // strong emitters, softer to SEAD
+FACTIONS.kpa.ecm  = 0.55;  FACTIONS.kpa.eccm  = 0.55;   // analogue army
+FACTIONS.roc.ecm  = 1.05;  FACTIONS.roc.eccm  = 1.10;
+FACTIONS.nato.bonus += " Strongest electronic warfare and SEAD.";
+FACTIONS.pla.bonus  += " Near-peer electronic warfare and SEAD.";
+FACTIONS.kpa.bonus  += " Almost no electronic warfare: its radars are loud and easy to kill.";
+
+
+/* ==================================================================
+   GENERATIONAL AIR COMBAT
+
+   Radar detection range scales with the FOURTH ROOT of radar cross
+   section - halving detection range needs a sixteen-fold reduction in
+   RCS. That single fact is why a fifth-generation fighter can kill a
+   third-generation one that never sees it coming, and it is modelled
+   here literally:   detection = radarQ * rcs^0.25
+
+     rcs    : radar cross section relative to a MiG-21 (= 1.0)
+     radarQ : this radar's reach in tiles against an rcs 1.0 target
+     gen    : generation, shown in the UI
+
+   Two peer stealth fighters cancel out - an F-22 and a J-20 detect one
+   another at roughly the same short range and end up in a knife fight.
+   What breaks the tie is OFF-BOARD radar: an AWACS or an Aegis ship
+   sees far better than any fighter nose, and a good datalink hands that
+   track to the shooter. Winning the air war means winning the sensor war.
+   ================================================================== */
+var AIR = {
+  /* ---- third generation: no real radar, huge return ---- */
+  fighter_k: { gen:3.0, rcs:1.00, radarQ: 5.0 },
+  bomber_k:  { gen:3.0, rcs:1.50, radarQ: 2.0 },
+  helo_k:    { gen:3.0, rcs:0.90, radarQ: 2.0 },
+  trans_k:   { gen:2.5, rcs:1.30, radarQ: 1.5 },
+
+  /* ---- fourth generation ---- */
+  fighter_n: { gen:4.0, rcs:0.55, radarQ:12.0 },
+  fighter_p: { gen:4.0, rcs:0.85, radarQ: 9.0 },
+  fighter_c: { gen:4.5, rcs:0.50, radarQ:14.0 },
+  fighter_r: { gen:4.5, rcs:0.50, radarQ:15.0 },
+  bomber_n:  { gen:3.5, rcs:1.40, radarQ: 2.5 },
+  bomber_p:  { gen:3.5, rcs:1.50, radarQ: 2.0 },
+  bomber_c:  { gen:3.5, rcs:1.20, radarQ: 5.0 },
+  bomber_r:  { gen:4.0, rcs:0.70, radarQ:10.0 },
+  helo_n:    { gen:4.0, rcs:0.75, radarQ: 6.0 },
+  helo_p:    { gen:3.5, rcs:0.85, radarQ: 3.0 },
+  helo_c:    { gen:4.0, rcs:0.80, radarQ: 4.0 },
+  helo_r:    { gen:4.0, rcs:0.75, radarQ: 6.0 },
+  trans_n:   { gen:4.0, rcs:0.90, radarQ: 1.5 },
+  trans_p:   { gen:3.5, rcs:1.10, radarQ: 1.5 },
+  trans_c:   { gen:4.0, rcs:0.95, radarQ: 1.5 },
+  trans_r:   { gen:4.0, rcs:0.90, radarQ: 1.5 },
+  ew_n:      { gen:4.5, rcs:0.60, radarQ:16.0 },
+  ew_c:      { gen:4.5, rcs:0.70, radarQ:15.0 },
+  sead_n:    { gen:4.0, rcs:0.55, radarQ:13.0 },
+  sead_c:    { gen:4.5, rcs:0.65, radarQ:14.0 },
+  sead_p:    { gen:3.5, rcs:1.10, radarQ: 7.0 },
+
+  /* ---- fifth generation: near-peer, and near-blind to each other ---- */
+  stealth_n: { gen:5.0, rcs:0.0050, radarQ:22.0 },
+  stealth_c: { gen:5.0, rcs:0.0080, radarQ:21.0 },
+  stealth_p: { gen:4.8, rcs:0.1300, radarQ:18.0 },
+  sbomber_n: { gen:5.0, rcs:0.0030, radarQ: 8.0 },
+  sbomber_p: { gen:3.5, rcs:2.5000, radarQ: 6.0 },
+  sbomber_c: { gen:3.5, rcs:3.0000, radarQ: 5.0 },
+};
+/* ---- combat radius, in tiles ----
+   Relative ranges are true to the real aircraft, compressed to the map so
+   that reach is a real planning constraint. The MiG-21's notoriously short
+   legs and the B-2's intercontinental reach both survive the compression. */
+var AIR_RADIUS = {
+  fighter_k: 22, bomber_k: 28, helo_k: 20, trans_k: 26,
+  fighter_n: 40, fighter_p: 30, fighter_c: 40, fighter_r: 42,
+  bomber_n:  34, bomber_p:  28, bomber_c:  40, bomber_r:  30,
+  helo_n:    24, helo_p:    22, helo_c:    23, helo_r:    24,
+  trans_n:   34, trans_p:   30, trans_c:   33, trans_r:   34,
+  ew_n:      38, ew_c:      40, sead_n:    38, sead_c:    40, sead_p: 32,
+  stealth_n: 48, stealth_c: 52, stealth_p: 46,
+  sbomber_n: 95, sbomber_p: 90, sbomber_c: 75,
+  awacs_n:   70, awacs_c:   65, awacs_p:   60, awacs_r: 55,
+};
+for (var _ak in AIR) if (UNITS[_ak]) Object.assign(UNITS[_ak], AIR[_ak]);
+
+
+/* North Korea flies MiG-21s, not Fulcrums. Correcting the roster. */
+Object.assign(UNITS.fighter_k, {
+  name: "MiG-21bis Fishbed", full: "MiG-21bis / Chengdu J-7",
+  cost: 700, oil: 18, time: 11, hp: 300, speed: 8.0, turn: 2.0, sight: 6.2, ammo: 2,
+  desc: "A 1960s day fighter whose ranging radar can barely pick out a bomber, still the " +
+        "backbone of the KPAF. Against a modern AESA it is shot down by a missile fired " +
+        "from an aircraft its pilot never detected.",
+});
+
+/* ---- off-board sensors: the platforms that actually win the air war ---- */
+Object.assign(UNITS, {
+  awacs_n: { fac:"nato", role:"awacs", name:"E-3G Sentry", full:"Boeing E-3G Sentry AWACS",
+    cat:"aircraft", cost:3400, oil:70, time:34, hp:620, armor:"air", speed:4.2, turn:0.9,
+    sight:16, r:26, mass:0, layer:"air", weapons:[], prereq:["airbase","radar","lab"], tech:3,
+    jet:true, ammo:0, radar:14, radarQ:40, rcs:3.2, gen:3.5, awacs:true,
+    desc:"Rotodome early warning on a 707. The biggest antenna in the sky, so nothing sees " +
+         "further — but the APY-2 array itself dates from 1977 and Block 40/45 modernised the " +
+         "mission computers, not the radar. Unarmed, slow, and the most valuable thing up there." },
+  awacs_c: { fac:"pla", role:"awacs", name:"KJ-500", full:"Shaanxi KJ-500 AEW&C",
+    cat:"aircraft", cost:3300, oil:68, time:33, hp:600, armor:"air", speed:4.0, turn:0.9,
+    sight:15, r:25, mass:0, layer:"air", weapons:[], prereq:["airbase","radar","lab"], tech:3,
+    jet:true, ammo:0, radar:13, radarQ:41, rcs:3.4, gen:4.5, awacs:true,
+    desc:"Fixed three-face AESA in a dorsal disc: the sensor half of China's counter-stealth " +
+         "answer. It cannot shoot, but it tells the J-20s exactly where to look." },
+  awacs_p: { fac:"pact", role:"awacs", name:"A-50U Mainstay", full:"Beriev A-50U Mainstay",
+    cat:"aircraft", cost:3200, oil:72, time:34, hp:600, armor:"air", speed:3.9, turn:0.8,
+    sight:13, r:26, mass:0, layer:"air", weapons:[], prereq:["airbase","radar","lab"], tech:3,
+    jet:true, ammo:0, radar:11, radarQ:27, rcs:3.6, gen:3.5, awacs:true,
+    desc:"Mainstay's radar struggles against ground clutter and its datalink is a voice radio " +
+         "in practice. It sees a long way, but the picture reaches the shooters slowly." },
+  awacs_r: { fac:"roc", role:"awacs", name:"E-2K Hawkeye", full:"Northrop E-2K Hawkeye 2000",
+    cat:"aircraft", cost:3000, oil:60, time:31, hp:520, armor:"air", speed:4.4, turn:1.0,
+    sight:14, r:22, mass:0, layer:"air", weapons:[], prereq:["airbase","radar","lab"], tech:3,
+    jet:true, ammo:0, radar:12, radarQ:33, rcs:2.6, gen:4.0, awacs:true,
+    desc:"Carrier-sized early warning aircraft covering the whole Strait from over the island. " +
+         "Taiwan's air defence is built around keeping these flying." },
+});
+
+/* ---- surface and ground radars as off-board sensors ----
+   An Aegis ship's SPY array is a far better air-search radar than any
+   fighter nose, which is why a surface group can cue fighters onto
+   contacts they cannot see themselves. Same units as above.          */
+var SURFACE_RADAR = {
+  /* detection quality against a low-observable target. The Type 346B is a
+     newer array than SPY-1, and China has invested heavily in ground-based
+     counter-stealth radar (VHF/UHF sets such as JY-27A and YLC-8B), so its
+     land radars are not a generation behind either. */
+  /* ship values live in the NAVY refit block below, which runs later and is
+     the single authority for hull statistics - duplicating them here meant
+     the two disagreed and the later one silently won. */
+  radarv_n: 22, radarv_c: 22, radarv_p: 15, radarv_k: 11, radarv_r: 20,
+  sam_veh_n: 16, sam_veh_c: 16, sam_veh_p: 13,
+  ewv_n: 14, ewv_c: 14, ewv_p: 12,
+};
+for (var _sk in SURFACE_RADAR) if (UNITS[_sk]) UNITS[_sk].radarQ = SURFACE_RADAR[_sk];
+/* def.radar is used as a RADIUS IN TILES by G.radarCovers, so a boolean here
+   silently becomes a one-tile picture - the radar dome was providing almost
+   no coverage at all. These are real coverage radii. */
+if (BUILDINGS.radar) { BUILDINGS.radar.radar = 22; BUILDINGS.radar.radarQ = 26; }
+if (BUILDINGS.sam)   BUILDINGS.sam.radarQ = 15;
+if (BUILDINGS.flak)  BUILDINGS.flak.radarQ = 8;
+
+/* ---- datalink: how well an off-board track reaches the shooter ----
+   The digital half of the war. NATO fuses every sensor into one picture;
+   the Eastern bloc still largely passes a track over the radio. */
+for (var _rk in AIR_RADIUS) if (UNITS[_rk]) UNITS[_rk].radius = AIR_RADIUS[_rk];
+
+FACTIONS.nato.datalink = 1.00;
+FACTIONS.pla.datalink  = 0.88;
+FACTIONS.roc.datalink  = 0.85;
+FACTIONS.pact.datalink = 0.45;
+FACTIONS.kpa.datalink  = 0.10;
+
+
+/* ==================================================================
+   CARRIER AIR WINGS
+
+   A carrier is an airbase that sails. You build the hull, then buy the
+   wing that flies off it - but only aircraft that are actually carrier
+   aircraft. A tailhook, a strengthened nose gear and folding wings are
+   not retrofits: no F-22, A-10 or B-2 has ever flown off a deck, and
+   they never will here either.
+   ================================================================== */
+Object.assign(UNITS, {
+  cfighter_n: { fac:"nato", role:"cfighter", name:"F/A-18E Super Hornet",
+    full:"Boeing F/A-18E Super Hornet", cat:"aircraft",
+    cost:1650, oil:34, time:19, hp:470, armor:"air", speed:8.0, turn:2.0, sight:9.6, r:16, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:5,
+    gen:4.5, rcs:0.45, radarQ:15.0, radius:36, carrierOnly:false, carrierCapable:true,
+    /* The roster's only NATO deck fighter, so it stands in for the whole Hornet
+       family that has flown off American decks since 1983. Without a `from` the
+       default pass below stamps it e20 and every era carrier fell back to
+       helicopters. e50 and e60 remain a genuine roster gap - there is no
+       Skyhawk or Phantom to give Forrestal and Enterprise. */
+    from:"e80",
+    desc:"The workhorse of a US carrier air wing. Slightly slower and shorter-legged than a " +
+         "land-based fighter, because a tailhook and folding wings cost weight - the price " +
+         "of being able to operate from anywhere the fleet can sail." },
+  cstealth_n: { from:"e20", fac:"nato", role:"cstealth", name:"F-35C Lightning II",
+    full:"Lockheed Martin F-35C", cat:"aircraft",
+    cost:2900, oil:58, time:28, hp:510, armor:"air", speed:8.2, turn:1.9, sight:11.5, r:15, mass:0,
+    layer:"air", weapons:["aam_lo"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
+    gen:5.0, rcs:0.0090, radarQ:21.0, radius:44, stealth:0.62, carrierCapable:true,
+    desc:"Carrier-capable stealth fighter with the largest wing of the F-35 family for slow " +
+         "approach speeds. Its sensor fusion makes it a scout as much as a shooter: what it " +
+         "sees, the whole battle group sees." },
+  cawacs_n: { from:"e50", fac:"nato", role:"cawacs", name:"E-2D Advanced Hawkeye",
+    full:"Northrop Grumman E-2D", cat:"aircraft",
+    cost:3000, oil:60, time:31, hp:520, armor:"air", speed:4.4, turn:1.0, sight:14, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:3, jet:true, ammo:0,
+    radar:12, radarQ:33, rcs:2.6, gen:4.5, radius:55, awacs:true, carrierCapable:true,
+    desc:"The carrier's own eyes. Its UHF radar was built specifically to find low-observable " +
+         "targets that fighter radars miss, and it feeds them straight to the group." },
+
+  cfighter_c: { fac:"pla", role:"cfighter", name:"J-15 Flying Shark",
+    full:"Shenyang J-15", cat:"aircraft",
+    cost:1700, oil:36, time:20, hp:500, armor:"air", speed:7.8, turn:1.9, sight:9.4, r:17, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    gen:4.0, rcs:0.80, radarQ:12.0, radius:34, carrierCapable:true,
+    /* deck-qualified from 2013, in time for Liaoning and Shandong */
+    from:"e00",
+    desc:"A heavy Flanker derivative flown from Chinese decks. Powerful and long-ranged for a " +
+         "carrier aircraft, but heavy enough that ski-jump launches cost it fuel or weapons." },
+  cstealth_c: { from:"e20", fac:"pla", role:"cstealth", name:"J-35",
+    full:"Shenyang J-35 (carrier)", cat:"aircraft",
+    cost:2850, oil:57, time:28, hp:495, armor:"air", speed:8.4, turn:2.0, sight:11.0, r:15, mass:0,
+    layer:"air", weapons:["aam_lo"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
+    gen:5.0, rcs:0.0130, radarQ:19.0, radius:42, stealth:0.58, carrierCapable:true,
+    desc:"China's carrier-borne stealth fighter, sized between an F-35 and an F-22. Public " +
+         "detail is thin, so its exact signature here is an estimate rather than a fact." },
+
+  cfighter_p: { fac:"pact", role:"cfighter", name:"Su-33 Flanker-D",
+    full:"Sukhoi Su-33", cat:"aircraft",
+    cost:1600, oil:38, time:20, hp:520, armor:"air", speed:7.6, turn:1.8, sight:8.8, r:17, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    gen:4.0, rcs:0.95, radarQ:9.5, radius:30, carrierCapable:true,
+    /* accepted into service 1998, which is Kuznetsov's own air group */
+    from:"e90",
+    desc:"Navalised Flanker launching off a ski-jump, which means it flies with reduced fuel " +
+         "or reduced weapons and never both. No radar-guided missile capability worth the name." },
+  cfighter_k: { from:"e20", fac:"kpa", role:"cfighter", name:"MiG-29K",
+    full:"MiG-29K (notional)", cat:"aircraft",
+    cost:1500, oil:34, time:19, hp:450, armor:"air", speed:7.9, turn:2.0, sight:8.6, r:16, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:3,
+    gen:4.0, rcs:0.90, radarQ:9.0, radius:28, carrierCapable:true,
+    desc:"North Korea operates no carriers at all; this exists only so a KPA commander who " +
+         "somehow captures a deck has something to put on it." },
+});
+/* land-based aircraft that genuinely do operate from decks */
+["helo_n", "helo_r", "trans_n", "trans_r", "helo_c", "trans_c", "helo_p", "trans_p"]
+  .forEach(function (k) { if (UNITS[k]) UNITS[k].carrierCapable = true; });
+
+
+/* ==================================================================
+   NAVAL WARFARE - REAL SYSTEMS, REAL GAPS
+
+   A warship is a layered system, not a hit-point bar with a gun. Every
+   hull below is described by what it actually carries: a main gun, an
+   anti-ship missile, an area SAM, a close-in weapon system, torpedoes,
+   and - the thing that really kills submarines - an embarked helicopter.
+
+   The capability gaps are the honest ones:
+     * NATO and the PLA field true area-air-defence ships with deep VLS
+       magazines and modern phased arrays.
+     * The Russian surface fleet is a 1980s force. Slava carries her
+       anti-ship missiles in sixteen fixed deck tubes she cannot reload
+       at sea, her air defence is not networked, and her ASW depends on
+       rocket launchers rather than a helicopter with a dipping sonar.
+     * North Korea has no navy in the blue-water sense at all. It is a
+       coastal defence force: fast attack craft, shore-launched missiles
+       and a fleet of 1950s-design submarines.
+     * Taiwan's surface combatants are recycled 1980s American hulls with
+       no VLS. Its strength is small, fast, modern missile craft close to
+       its own coast - not fleet action.
+   ================================================================== */
+
+Object.assign(WEAPONS, {
+  /* ---- guns ---- */
+  navgun_mk45: { name:"Mk 45 Mod 4 127mm", dmg:125, warhead:"he", range:11.5, reload:3.6, burst:2,
+    burstDelay:0.45, acc:0.80, proj:"shell", speed:720, aoe:0.9,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"cannon" },
+  navgun_ak130: { name:"AK-130 twin 130mm", dmg:150, warhead:"he", range:10.2, reload:4.6, burst:4,
+    burstDelay:0.30, acc:0.68, proj:"shell", speed:700, aoe:1.0,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"cannon" },
+  navgun_pj38: { name:"H/PJ-38 130mm", dmg:132, warhead:"he", range:11.2, reload:3.8, burst:2,
+    burstDelay:0.42, acc:0.78, proj:"shell", speed:720, aoe:0.9,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"cannon" },
+  navgun_76: { name:"OTO 76mm Super Rapid", dmg:52, warhead:"he", range:8.0, reload:1.2, burst:4,
+    burstDelay:0.16, acc:0.74, proj:"shell", speed:700, aoe:0.5,
+    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:"shot" },
+
+  /* ---- anti-ship missiles ---- */
+  ssm_harpoon: { name:"RGM-84 Harpoon", dmg:265, warhead:"he", range:14.0, minRange:2.0, reload:13.0,
+    burst:2, burstDelay:0.9, acc:0.86, proj:"missile", speed:13, aoe:1.5,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  ssm_nsm: { name:"Naval Strike Missile", dmg:280, warhead:"he", range:16.0, minRange:2.0, reload:14.0,
+    burst:2, burstDelay:0.9, acc:0.90, proj:"missile", speed:13, aoe:1.5, stealthy:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  ssm_yj18: { name:"YJ-18 SSM", dmg:300, warhead:"he", range:17.0, minRange:2.0, reload:15.0,
+    burst:2, burstDelay:0.8, acc:0.85, proj:"missile", speed:15, aoe:1.6,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  ssm_oniks: { name:"P-800 Oniks", dmg:320, warhead:"he", range:15.0, minRange:2.5, reload:19.0,
+    burst:1, acc:0.74, proj:"missile", speed:17, aoe:1.7,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  ssm_hf3: { name:"Hsiung Feng III", dmg:285, warhead:"he", range:15.0, minRange:2.0, reload:15.0,
+    burst:2, burstDelay:0.9, acc:0.84, proj:"missile", speed:16, aoe:1.5,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  ssm_kn01: { name:"KN-01 coastal SSM", dmg:200, warhead:"he", range:9.5, minRange:1.5, reload:17.0,
+    burst:1, acc:0.58, proj:"missile", speed:11, aoe:1.2,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+
+  /* ---- area air defence ---- */
+  sam_sm2: { name:"SM-2/SM-6 Standard", dmg:185, warhead:"flak", range:14.5, reload:3.2, burst:2,
+    burstDelay:0.35, acc:0.90, proj:"missile", speed:22,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"missile" },
+  sam_hhq9: { name:"HHQ-9B", dmg:180, warhead:"flak", range:14.0, reload:3.4, burst:2,
+    burstDelay:0.35, acc:0.87, proj:"missile", speed:22,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"missile" },
+  sam_shtil: { name:"9M317 Shtil-1", dmg:165, warhead:"flak", range:11.0, reload:5.0, burst:1,
+    acc:0.72, proj:"missile", speed:19,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"missile" },
+  sam_sm1: { name:"SM-1MR Standard", dmg:150, warhead:"flak", range:10.5, reload:5.2, burst:1,
+    acc:0.74, proj:"missile", speed:19,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"missile" },
+
+  /* ---- close-in weapon systems: the last line against a sea-skimmer ---- */
+  ciws_phalanx: { name:"Mk 15 Phalanx CIWS", dmg:60, warhead:"flak", range:3.2, reload:0.9, burst:8,
+    burstDelay:0.05, acc:0.80, proj:"tracer", speed:940,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"shot" },
+  ciws_ak630: { name:"AK-630 CIWS", dmg:52, warhead:"flak", range:2.8, reload:1.1, burst:8,
+    burstDelay:0.05, acc:0.66, proj:"tracer", speed:900,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"shot" },
+  ciws_pj11: { name:"H/PJ-11 CIWS", dmg:58, warhead:"flak", range:3.0, reload:0.95, burst:9,
+    burstDelay:0.05, acc:0.77, proj:"tracer", speed:930,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"shot" },
+
+  /* ---- torpedoes ----
+     Speed is PIXELS per second, as everywhere else in this table. A warship
+     makes 1.6-3.6 tiles/sec, which is 51-115 px/s, so a torpedo has to run
+     above that to catch one and still stay well below a missile's 330-700.
+     These were authored on the tiles/sec scale instead: a Mk 48 at 8 covered
+     a quarter of a tile a second and was outrun by the boat that fired it. */
+  torp_mk48: { name:"Mk 48 ADCAP", dmg:380, warhead:"he", range:10.5, minRange:1.0, reload:11.0,
+    burst:2, burstDelay:1.2, acc:0.90, proj:"torpedo", speed:160, aoe:1.2,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+  torp_ugst: { name:"UGST Fizik", dmg:350, warhead:"he", range:9.0, minRange:1.0, reload:13.0,
+    burst:2, burstDelay:1.4, acc:0.78, proj:"torpedo", speed:150, aoe:1.2,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+  torp_yu6: { name:"Yu-6 torpedo", dmg:355, warhead:"he", range:9.6, minRange:1.0, reload:12.0,
+    burst:2, burstDelay:1.3, acc:0.84, proj:"torpedo", speed:160, aoe:1.2,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+  torp_sut: { name:"SUT torpedo", dmg:300, warhead:"he", range:7.5, minRange:1.0, reload:15.0,
+    burst:1, acc:0.72, proj:"torpedo", speed:136, aoe:1.1,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+  torp_53: { name:"53-65 torpedo", dmg:250, warhead:"he", range:5.5, minRange:0.8, reload:19.0,
+    burst:1, acc:0.52, proj:"torpedo", speed:120, aoe:1.0,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+
+  /* ---- anti-submarine ---- */
+  asw_mk54: { name:"Mk 54 lightweight torpedo", dmg:215, warhead:"he", range:6.5, reload:7.0,
+    burst:1, acc:0.88, proj:"torpedo", speed:180, aoe:0.8,
+    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:"missile" },
+  asw_yu7: { name:"Yu-7 lightweight torpedo", dmg:205, warhead:"he", range:6.2, reload:7.4,
+    burst:1, acc:0.84, proj:"torpedo", speed:180, aoe:0.8,
+    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:"missile" },
+  asw_rbu: { name:"RBU-6000 rocket mortar", dmg:170, warhead:"he", range:3.6, reload:6.0, burst:6,
+    burstDelay:0.18, acc:0.46, proj:"arc", speed:12, aoe:1.4,
+    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:"cannon" },
+
+  /* ---- naval electronic warfare ---- */
+  decoy_chaff: { name:"Nulka / chaff decoy", dmg:0, warhead:"bullet", range:0.1, reload:20, burst:1,
+    acc:0.1, proj:"none", tgt:{ground:0,air:0,sea:0,sub:0} },
+});
+
+/* ---- refit every hull with its real armament and capability ----
+   vls    : vertical launch cells - magazine depth and how fast a ship can
+            put missiles in the air. Slava famously has none.
+   helo   : embarked helicopters - the single biggest ASW multiplier
+   sonar  : hull/towed array reach, in tiles
+   quiet  : acoustic signature; lower is harder to find                  */
+var NAVY = {
+  /* ================= NATO ================= */
+  boat_n:        { weapons:["hmg"], sonar:0, vls:0, helo:0, radarQ:4 },
+  corvette_n:    { weapons:["navgun_76","ssm_nsm","ciws_phalanx"], sonar:6.0, vls:8, helo:1,
+                   radarQ:14, ciws:0.45 },
+  missileboat_n: { weapons:["ssm_harpoon","ciws_phalanx"], sonar:0, vls:0, helo:0, radarQ:9 },
+  destroyer_n:   { weapons:["navgun_mk45","sam_sm2","ssm_harpoon","asw_mk54","ciws_phalanx"],
+                   sonar:9.5, vls:96, helo:2, radarQ:34, ciws:0.72 },
+  cruiser_n:     { weapons:["navgun_mk45","sam_sm2","ssm_harpoon","asw_mk54","ciws_phalanx"],
+                   sonar:9.0, vls:122, helo:2, radarQ:40, ciws:0.78 },
+  carrier_n:     { weapons:["ciws_phalanx"], sonar:5.0, vls:0, helo:2, radarQ:20, ciws:0.65 },
+
+  /* ================= PLA ================= */
+  boat_c:        { weapons:["hmg"], sonar:0, vls:0, helo:0, radarQ:4 },
+  corvette_c:    { weapons:["navgun_76","ssm_yj18","ciws_pj11"], sonar:6.2, vls:8, helo:1,
+                   radarQ:13, ciws:0.44 },
+  missileboat_c: { weapons:["ssm_yj18"], sonar:0, vls:0, helo:0, radarQ:8 },
+  destroyer_c:   { weapons:["navgun_pj38","sam_hhq9","ssm_yj18","asw_yu7","ciws_pj11"],
+                   sonar:8.8, vls:64, helo:1, radarQ:32, ciws:0.66 },
+  cruiser_c:     { weapons:["navgun_pj38","sam_hhq9","ssm_yj18","asw_yu7","ciws_pj11"],
+                   sonar:9.2, vls:112, helo:2, radarQ:41, ciws:0.72 },
+  carrier_c:     { weapons:["ciws_pj11"], sonar:4.5, vls:0, helo:2, radarQ:19, ciws:0.60 },
+
+  /* ================= EASTERN BLOC =================
+     A 1980s fleet. Deck-mounted anti-ship missiles that cannot be reloaded
+     at sea, air defence that is not networked across the group, and ASW
+     that still leans on rocket mortars instead of a helicopter. */
+  boat_p:        { weapons:["hmg"], sonar:0, vls:0, helo:0, radarQ:4 },
+  corvette_p:    { weapons:["navgun_76","ssm_oniks","ciws_ak630"], sonar:4.6, vls:0, helo:0,
+                   radarQ:9, ciws:0.34 },
+  missileboat_p: { weapons:["ssm_oniks"], sonar:0, vls:0, helo:0, radarQ:7 },
+  destroyer_p:   { weapons:["navgun_ak130","sam_shtil","ssm_oniks","asw_rbu","ciws_ak630"],
+                   sonar:6.4, vls:0, helo:1, radarQ:18, ciws:0.42 },
+  cruiser_p:     { weapons:["navgun_ak130","sam_shtil","ssm_oniks","asw_rbu","ciws_ak630"],
+                   sonar:6.0, vls:0, helo:1, radarQ:21, ciws:0.46 },
+  carrier_p:     { weapons:["sam_shtil","ciws_ak630"], sonar:4.0, vls:0, helo:1,
+                   radarQ:14, ciws:0.44 },
+
+  /* ================= NORTH KOREA =================
+     Not a navy in the fleet sense: a coastal defence force of fast attack
+     craft and very old submarines that cannot operate far from home. */
+  boat_k:        { weapons:["hmg"], sonar:0, vls:0, helo:0, radarQ:2.5 },
+  corvette_k:    { weapons:["navgun_76","ssm_kn01"], sonar:2.4, vls:0, helo:0, radarQ:5, ciws:0 },
+  missileboat_k: { weapons:["ssm_kn01"], sonar:0, vls:0, helo:0, radarQ:4 },
+
+  /* ================= TAIWAN =================
+     Recycled 1980s American destroyers with no VLS, offset by genuinely
+     modern light missile craft operating under shore-based cover. */
+  boat_r:        { weapons:["hmg"], sonar:0, vls:0, helo:0, radarQ:5 },
+  corvette_r:    { weapons:["navgun_76","ssm_hf3"], sonar:3.2, vls:0, helo:0, radarQ:12, ciws:0.30 },
+  missileboat_r: { weapons:["ssm_hf3"], sonar:0, vls:0, helo:0, radarQ:9 },
+  destroyer_r:   { weapons:["navgun_mk45","sam_sm1","ssm_hf3","asw_mk54","ciws_phalanx"],
+                   sonar:7.0, vls:0, helo:2, radarQ:26, ciws:0.58 },
+};
+for (var _nk in NAVY) if (UNITS[_nk]) Object.assign(UNITS[_nk], NAVY[_nk]);
+
+/* ---- honest hull statistics ----
+   The Eastern bloc and North Korean hulls are not simply cheaper versions
+   of the same ship. They are older, less survivable and less capable. */
+Object.assign(UNITS.corvette_p, { cost:1050, hp:1080, speed:2.7, sight:7.4,
+  desc:"Project 22160 was built as a cheap patrol ship and it shows: a gun, a " +
+       "handful of missiles bolted on, no area air defence and no helicopter. " +
+       "Adequate for policing a coastline, outmatched by anything built to fight." });
+Object.assign(UNITS.destroyer_p, { cost:2000, hp:2050, speed:2.25, sight:8.4,
+  desc:"Sovremenny dates from the mid-1980s. Her twin 130mm mounts hit hard and her " +
+       "Sunburn missiles are genuinely dangerous, but the air-defence system is not " +
+       "networked with the rest of the group and much of the class has been laid up " +
+       "for want of working boilers." });
+Object.assign(UNITS.cruiser_p, { cost:3100, hp:2900, speed:1.9, sight:9.0,
+  desc:"Slava carries sixteen enormous anti-ship missiles in fixed deck tubes she " +
+       "cannot reload at sea - a single alpha strike and the ship is a gun platform. " +
+       "Impressive silhouette, 1979 combat system." });
+Object.assign(UNITS.carrier_p, { cost:4600, hp:4100, speed:1.5, sight:11.5,
+  desc:"Kuznetsov launches from a ski-jump rather than a catapult, which costs her " +
+       "aircraft fuel or weapons on every sortie, and she has spent more of her life " +
+       "under repair than at sea." });
+
+Object.assign(UNITS.corvette_k, { cost:620, hp:700, speed:2.7, sight:5.2,
+  name:"Nampo-class Patrol Craft",
+  desc:"A coastal patrol craft with an elderly gun and a pair of short-ranged missiles. " +
+       "North Korea's surface fleet exists to defend its own harbours and cannot " +
+       "operate beyond sight of the coast." });
+Object.assign(UNITS.missileboat_k, { cost:760, hp:560, speed:3.2, sight:5.0,
+  desc:"A Soju hull carrying an ageing Styx derivative. Fast, cheap, numerous, and " +
+       "reliant on getting close enough that a modern warship kills it first." });
+Object.assign(UNITS.boat_k, { cost:280, hp:380, speed:3.4, sight:4.6,
+  desc:"A gun boat. There are a great many of them, which is the entire doctrine: " +
+       "swarm anything that comes close to the coast and accept the losses." });
+
+Object.assign(UNITS.destroyer_r, { cost:2500, hp:1850, speed:2.3, sight:8.6,
+  desc:"Kee Lung is an ex-US Kidd-class hull laid down in the 1970s for the Shah of " +
+       "Iran. Powerful for her age and well armed for air defence, but she has no " +
+       "vertical launch cells at all, so her missile capacity is fixed by her rails." });
+Object.assign(UNITS.corvette_r, { cost:1450, hp:980, speed:3.4, sight:7.8,
+  desc:"Tuo Chiang is a modern stealth catamaran and the one genuinely current warship " +
+       "in the fleet - fast, low-signature and heavily armed for its tonnage, but with " +
+       "no endurance and no air defence beyond its own gun." });
+
+
+/* ==================================================================
+   SUBMARINES - NUCLEAR, DIESEL, AND WHAT ACTUALLY FINDS THEM
+
+   Two things separate submarines, and neither is hit points.
+
+   PROPULSION. A nuclear boat (SSN/SSBN) has unlimited endurance and real
+   speed; it never has to come up. A diesel-electric boat (SSK) is slow
+   and must eventually recharge, but running on batteries it is the
+   quietest thing in the ocean - which is why a modern AIP diesel is
+   harder to find than a nuclear attack boat, not easier.
+
+   ACOUSTICS. `quiet` is the acoustic signature: lower is harder to
+   detect. Detection range against a boat scales with that signature, so
+   a 1950s Romeo is found from four times further away than a Kilo.
+
+   ROLE. An SSN hunts. An SSBN does not fight ships at all - it carries
+   ballistic missiles and its whole job is to not be found.
+   ================================================================== */
+var SUBS = {
+  /* id: [propulsion, quiet, sonar, notes] */
+  sub_n: { nuclear:true,  quiet:0.30, sonar:11.0, speed:2.5, weapons:["torp_mk48"], radarQ:6 },
+  sub_c: { nuclear:false, quiet:0.26, sonar:8.0,  speed:1.9, weapons:["torp_yu6"],  radarQ:5, aip:true },
+  sub_p: { nuclear:false, quiet:0.24, sonar:7.2,  speed:1.8, weapons:["torp_ugst"], radarQ:4 },
+  sub_r: { nuclear:false, quiet:0.44, sonar:6.0,  speed:1.8, weapons:["torp_sut"],  radarQ:4 },
+  sub_k: { nuclear:false, quiet:1.00, sonar:2.6,  speed:1.6, weapons:["torp_53"],   radarQ:2 },
+};
+for (var _sb in SUBS) if (UNITS[_sb]) Object.assign(UNITS[_sb], SUBS[_sb]);
+
+Object.assign(UNITS.sub_n, {
+  name:"Los Angeles SSN", full:"SSN-688i Los Angeles",
+  desc:"Nuclear attack submarine. Unlimited endurance, genuine speed submerged, and a " +
+       "sonar suite that usually hears the other boat first. The improved 688i hulls are " +
+       "quiet, though a modern diesel sitting still on batteries is quieter." });
+Object.assign(UNITS.sub_p, {
+  name:"Kilo SSK", full:"Project 636.3 Improved Kilo",
+  desc:"NATO nicknamed the Kilo the Black Hole for a reason: on batteries it is " +
+       "extraordinarily quiet. It is also slow, short-legged and must eventually snorkel, " +
+       "so it is a superb ambusher and a poor pursuer." });
+Object.assign(UNITS.sub_c, {
+  name:"Type 039A Yuan SSK", full:"Type 039A/B Yuan-class",
+  desc:"Air-independent propulsion lets this boat stay down for weeks without snorkelling, " +
+       "combining a diesel's quietness with something close to a nuclear boat's patience." });
+Object.assign(UNITS.sub_r, {
+  name:"Hai Lung SSK", full:"Hai Lung-class (Zwaardvis)",
+  desc:"A Dutch design from the 1980s and one of only two operational combat submarines " +
+       "Taiwan possesses. Serviceable, thoroughly dated, and impossible to replace - no " +
+       "other country would sell." });
+Object.assign(UNITS.sub_k, {
+  name:"Romeo-class SSK", full:"Type 033 / Project 613 Romeo",
+  cost:900, hp:700,
+  desc:"A 1950s Soviet design built under licence and still in front-line service. It is " +
+       "enormously loud, slow, and can be tracked by any modern sonar long before its " +
+       "torpedoes are in range. It exists in numbers, which is the only argument for it." });
+
+/* ---- strategic and cruise-missile submarines ---- */
+Object.assign(UNITS, {
+  ssbn_n: { from:"e60", fac:"nato", role:"ssbn", name:"Ohio SSBN", full:"SSBN-726 Ohio-class", cat:"naval",
+    cost:6200, oil:140, time:70, hp:2600, armor:"heavy", speed:2.0, turn:0.5, sight:6, r:26, mass:0,
+    layer:"sub", weapons:["torp_mk48"], prereq:["navalyard","lab","radar"], tech:3,
+    nuclear:true, quiet:0.22, sonar:10.0, radarQ:5, ssbn:true,
+    desc:"Ballistic missile submarine. It does not fight surface groups and it does not " +
+         "want to be seen - its entire purpose is to remain undetected while holding a " +
+         "strategic weapon at readiness. Twenty-four launch tubes, and the quietest hull " +
+         "the US ever built." },
+  ssbn_p: { from:"e60", fac:"pact", role:"ssbn", name:"Borei SSBN", full:"Project 955A Borei-A", cat:"naval",
+    cost:6000, oil:145, time:70, hp:2700, armor:"heavy", speed:2.0, turn:0.5, sight:5.5, r:26, mass:0,
+    layer:"sub", weapons:["torp_ugst"], prereq:["navalyard","lab","radar"], tech:3,
+    nuclear:true, quiet:0.30, sonar:8.0, radarQ:4, ssbn:true,
+    desc:"The one part of the Russian fleet that is genuinely modern and genuinely well " +
+         "funded, because it carries the deterrent. Quieter than anything else the yard " +
+         "builds, though still not an Ohio." },
+  ssbn_c: { from:"e00", fac:"pla", role:"ssbn", name:"Type 094 Jin SSBN", full:"Type 094A Jin-class", cat:"naval",
+    cost:5900, oil:142, time:69, hp:2600, armor:"heavy", speed:1.95, turn:0.5, sight:5.5, r:26, mass:0,
+    layer:"sub", weapons:["torp_yu6"], prereq:["navalyard","lab","radar"], tech:3,
+    nuclear:true, quiet:0.62, sonar:7.0, radarQ:4, ssbn:true,
+    desc:"China's sea-based deterrent. Capable and steadily improving, but acoustically " +
+         "the noisiest boat in this class of ship - Western assessments have long held " +
+         "that the Jin is easier to track than the Soviet boats of forty years ago." },
+  ssgn_n: { from:"e00", fac:"nato", role:"ssgn", name:"Ohio SSGN", full:"SSGN-726 (converted)", cat:"naval",
+    cost:5200, oil:125, time:62, hp:2500, armor:"heavy", speed:2.1, turn:0.55, sight:6, r:26, mass:0,
+    layer:"sub", weapons:["torp_mk48","ssm_harpoon"], prereq:["navalyard","lab"], tech:3,
+    nuclear:true, quiet:0.24, sonar:10.0, radarQ:5, layNet:6,
+    desc:"Four Ohio hulls had their ballistic tubes converted to carry 154 Tomahawks. " +
+         "It is a submerged missile magazine that can empty a small war's worth of " +
+         "cruise missiles into a coastline without ever surfacing." },
+  ssgn_p: { from:"e60", fac:"pact", role:"ssgn", name:"Oscar II SSGN", full:"Project 949A Antey", cat:"naval",
+    cost:4900, oil:130, time:60, hp:2900, armor:"heavy", speed:2.0, turn:0.45, sight:5.5, r:28, mass:0,
+    layer:"sub", weapons:["torp_ugst","ssm_oniks"], prereq:["navalyard","lab"], tech:3,
+    nuclear:true, quiet:0.55, sonar:6.6, radarQ:4,
+    desc:"An enormous double-hulled boat built around twenty-four anti-ship missiles, " +
+         "designed for one job: killing an American carrier group. Survivable, heavily " +
+         "armed, and loud enough that finding it was never the hard part." },
+});
+
+/* ---- ASW helicopters: what actually kills a submarine ---- */
+Object.assign(UNITS, {
+  asw_helo_n: { from:"e60", fac:"nato", role:"aswhelo", name:"MH-60R Seahawk", full:"Sikorsky MH-60R",
+    cat:"aircraft", cost:1400, oil:26, time:16, hp:380, armor:"air", speed:3.4, turn:2.4,
+    sight:8.5, r:13, mass:0, layer:"air", weapons:["asw_mk54"], prereq:["airbase"], tech:2,
+    ammo:4, radius:24, sonar:9.5, rcs:0.75, radarQ:9, gen:4.5, carrierCapable:true,
+    desc:"Dipping sonar, sonobuoys and lightweight torpedoes. A surface group without one " +
+         "of these is close to blind against a modern submarine; with one, a diesel boat " +
+         "that has been localised rarely escapes." },
+  asw_helo_c: { from:"e00", fac:"pla", role:"aswhelo", name:"Z-9C / Z-20F", full:"Harbin Z-9C",
+    cat:"aircraft", cost:1300, oil:24, time:15, hp:340, armor:"air", speed:3.3, turn:2.4,
+    sight:7.8, r:12, mass:0, layer:"air", weapons:["asw_yu7"], prereq:["airbase"], tech:2,
+    ammo:3, radius:22, sonar:8.0, rcs:0.80, radarQ:7, gen:4.0, carrierCapable:true,
+    desc:"China's shipborne ASW helicopter. Competent and increasingly numerous, though " +
+         "its sonar and processing lag a generation behind the Seahawk." },
+  asw_helo_p: { from:"e60", fac:"pact", role:"aswhelo", name:"Ka-27 Helix", full:"Kamov Ka-27PL",
+    cat:"aircraft", cost:1200, oil:26, time:15, hp:360, armor:"air", speed:3.1, turn:2.2,
+    sight:6.8, r:12, mass:0, layer:"air", weapons:["asw_rbu"], prereq:["airbase"], tech:2,
+    ammo:3, radius:20, sonar:6.2, rcs:0.85, radarQ:5, gen:3.5, carrierCapable:true,
+    desc:"Coaxial-rotor ASW helicopter dating from 1981. It still flies from Russian decks " +
+         "because there is no replacement, and its sensors are of their era." },
+  asw_helo_r: { from:"e80", fac:"roc", role:"aswhelo", name:"S-70C(M) Thunderhawk", full:"Sikorsky S-70C(M)-1/2",
+    cat:"aircraft", cost:1350, oil:25, time:16, hp:360, armor:"air", speed:3.3, turn:2.3,
+    sight:8.0, r:13, mass:0, layer:"air", weapons:["asw_mk54"], prereq:["airbase"], tech:2,
+    ammo:3, radius:22, sonar:8.6, rcs:0.78, radarQ:8, gen:4.0, carrierCapable:true,
+    desc:"Taiwan's Seahawk derivative, flown from its frigates. Well suited to hunting " +
+         "diesel boats in the shallow, noisy water of the Strait." },
+});
+
+
+/* ---- radar cross section of surface ships ----
+   Relative to a conventional 1980s destroyer (= 1.0). Superstructure shaping
+   is the single biggest lever a designer has: an angled, enclosed topside
+   with no exposed clutter returns a fraction of what a Slava's forest of
+   deck launchers, masts and radar dishes puts back. Detection range scales
+   with the fourth root of this, and it also drives how easily an incoming
+   missile can hold a lock. */
+var SHIP_RCS = {
+  /* NATO: shaped topsides across the board */
+  boat_n:0.30, corvette_n:0.10, missileboat_n:0.28, destroyer_n:0.55,
+  cruiser_n:0.85, carrier_n:2.6,
+  /* PLA: newer hulls are well shaped, older ones less so */
+  boat_c:0.22, corvette_c:0.40, missileboat_c:0.16, destroyer_c:0.50,
+  cruiser_c:0.60, carrier_c:2.6,
+  /* Eastern bloc: 1980s topsides covered in deck launchers and dishes */
+  boat_p:0.55, corvette_p:0.75, missileboat_p:0.50, destroyer_p:1.30,
+  cruiser_p:1.70, carrier_p:2.9,
+  /* North Korea: small, but no shaping whatsoever */
+  boat_k:0.50, corvette_k:0.85, missileboat_k:0.60,
+  /* Taiwan: an old destroyer and a genuinely stealthy catamaran */
+  boat_r:0.30, corvette_r:0.12, missileboat_r:0.26, destroyer_r:1.15,
+};
+for (var _rc in SHIP_RCS) if (UNITS[_rc]) UNITS[_rc].rcs = SHIP_RCS[_rc];
+
+/* ---- soft kill ----
+   Chaff, decoys and off-board jammers seduce a missile away rather than
+   shooting it down. Modern western and Chinese ships carry good ones; the
+   North Korean fleet carries essentially none. */
+var SOFTKILL = {
+  corvette_n:0.30, destroyer_n:0.34, cruiser_n:0.34, carrier_n:0.26, missileboat_n:0.20,
+  corvette_c:0.26, destroyer_c:0.29, cruiser_c:0.31, carrier_c:0.24, missileboat_c:0.16,
+  corvette_p:0.14, destroyer_p:0.17, cruiser_p:0.18, carrier_p:0.15, missileboat_p:0.10,
+  corvette_r:0.24, destroyer_r:0.22, missileboat_r:0.16,
+  corvette_k:0.04, missileboat_k:0.03, boat_k:0.0,
+};
+for (var _sk2 in SOFTKILL) if (UNITS[_sk2]) UNITS[_sk2].softkill = SOFTKILL[_sk2];
+
+
+/* ---- submarine-launched land attack ----
+   A ballistic missile submarine that can only fire torpedoes is a very
+   expensive torpedo boat. The whole reason these hulls exist is to hold a
+   target ashore at risk from under water, so they get a land-attack missile:
+   slow to reload, long-ranged, and fired while submerged. */
+Object.assign(WEAPONS, {
+  slbm_n: { name:"Trident II D5 (conventional)", dmg:900, warhead:"he", range:22.0,
+    minRange:3.0, reload:165, burst:1, acc:0.82, proj:"missile", speed:16, aoe:4.2,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  slbm_p: { name:"Bulava (conventional)", dmg:840, warhead:"he", range:20.0,
+    minRange:3.0, reload:172, burst:1, acc:0.74, proj:"missile", speed:16, aoe:4.0,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  slbm_c: { name:"JL-2 (conventional)", dmg:780, warhead:"he", range:19.5,
+    minRange:3.0, reload:180, burst:1, acc:0.76, proj:"missile", speed:16, aoe:3.8,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  tlam_n: { name:"BGM-109 Tomahawk", dmg:320, warhead:"he", range:19.0, minRange:2.5,
+    reload:20, burst:2, burstDelay:1.1, acc:0.90, proj:"missile", speed:13, aoe:2.0,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+});
+
+/* ---- road-mobile ballistic missiles ----
+   The on-map, targetable, killable form of a power the game has only ever had
+   off-map (SUPPORT.tochka, js/rules.js:2173). These fire proj:"missile" and NOT
+   proj:"arc", because the whole layered-defence block in combat.js is entered
+   only for a guided round: an arc round would be strictly uninterceptable and
+   the new SAM would have nothing to do. Firing as a missile costs the counter-
+   battery contact and the ready-round decrement, both of which are arc-gated,
+   so each round carries `indirect:true` and the four gates are widened to read
+   it - see the integration list.
+
+   Ranges are on the LIVE scale, not the authored one. generations.js:292-305
+   rewrote the artillery through R(metres) - mlrs 23.2, howitzer 20.4, koksan
+   25.7, mrl240 26.5 - and never migrated sam_site or the slbm block, which is
+   why a Trident still says 22.0. A launcher that cannot out-shoot an M270 has
+   no reason to exist, so this family runs 24.0 to 31.0. */
+Object.assign(WEAPONS, {
+  srbm_early: { name:"MGM-5 / R-11 class", dmg:430, warhead:"he", range:24.0, minRange:8.0, reload:95, burst:1,
+    acc:0.12, proj:"missile", speed:620, aoe:3.0, suppress:90, indirect:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  srbm_short: { name:"OTR-21 class", dmg:400, warhead:"he", range:26.0, minRange:8.0, reload:55, burst:1,
+    acc:0.80, proj:"missile", speed:700, aoe:2.2, suppress:80, indirect:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  /* A plain Scud is a big, hot, non-manoeuvring airframe on a predictable
+     parabola and Patriot did engage them in 1991, so 0.45 - not the SLBM's
+     0.12 - is both the accurate figure and the one that makes the new SAM
+     mean something. See MISSILE_PROFILE. */
+  srbm_scud:  { name:"R-17 class", dmg:470, warhead:"he", range:27.0, minRange:8.0, reload:80, burst:1,
+    acc:0.30, proj:"missile", speed:680, aoe:3.2, suppress:95, indirect:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  srbm_atacms:{ name:"MGM-140 ATACMS", dmg:440, warhead:"he", range:28.5, minRange:8.0, reload:60, burst:1,
+    acc:0.88, proj:"missile", speed:700, aoe:2.4, suppress:80, indirect:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  /* The most accurate ballistic missile of its generation, by a distance, and
+     the only weapon in this file deleted by a treaty rather than by obsolescence.
+     `to:"e80"` on the unit is the INF Treaty and the desc says so. */
+  srbm_p2:    { name:"MGM-31B Pershing II", dmg:520, warhead:"he", range:31.0, minRange:8.0, reload:95, burst:1,
+    acc:0.90, proj:"missile", speed:730, aoe:2.6, suppress:95, indirect:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  srbm_mod:   { name:"9K720 class", dmg:520, warhead:"he", range:30.0, minRange:8.0, reload:58, burst:1,
+    acc:0.90, proj:"missile", speed:720, aoe:2.6, suppress:90, indirect:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+});
+
+if (UNITS.ssbn_n) UNITS.ssbn_n.weapons = ["slbm_n", "torp_mk48"];
+if (UNITS.ssbn_p) UNITS.ssbn_p.weapons = ["slbm_p", "torp_ugst"];
+if (UNITS.ssbn_c) UNITS.ssbn_c.weapons = ["slbm_c", "torp_yu6"];
+/* the converted Ohio is a submerged cruise-missile magazine, so it gets the
+   deep Tomahawk load rather than a pair of Harpoons */
+if (UNITS.ssgn_n) UNITS.ssgn_n.weapons = ["tlam_n", "torp_mk48", "ssm_harpoon"];
+
+
+/* ==================================================================
+   THE RADAR PICTURE
+
+   Radar is not one building. It is a network, and the player should be
+   able to invest in it from several directions:
+
+     a fixed radar dome        cheap, large, but it cannot move
+     a mobile radar vehicle    follows the advance, dies to a HARM
+     an Aegis-type warship     the best surface radar there is
+     an early warning aircraft the largest picture on the map, and the
+                               most fragile thing carrying it
+
+   def.radar is the COVERAGE RADIUS in tiles - how much of the map this
+   platform puts under a fire-control-quality picture. def.radarQ is
+   DETECTION QUALITY against a low-observable target, which is a
+   different question and scales with the fourth root of RCS.
+
+   An airborne radar looks down from altitude and sees vastly further
+   than anything on the surface, so the AEW aircraft dominate this list
+   by a wide margin - which is exactly why they are worth escorting. */
+var RADAR_COVERAGE = {
+  /* airborne early warning - the largest picture available to anyone */
+  awacs_n: 34, awacs_c: 32, cawacs_n: 30, awacs_r: 28, awacs_p: 24,
+
+  /* Area air defence radars.
+     A flat Western advantage here would be wrong. SPY-1 on Ticonderoga and on
+     Burke Flight IIA is a PASSIVE phased array designed in the 1980s; the US
+     Navy only gets a true modern AESA at sea with SPY-6 on Flight III. The
+     Type 346B on a Type 055 is a newer dual-band active array, and by radar
+     hardware alone it is at least the equal of what it faces. Where the US
+     advantage is real is integration - Link-16 and cooperative engagement
+     have decades of operational maturity behind them - and that is modelled
+     separately by FACTIONS.*.datalink, not by crippling Chinese antennas. */
+  cruiser_c: 23, cruiser_n: 22, destroyer_n: 20, destroyer_c: 19, destroyer_r: 15,
+  /* 1980s Soviet sets: capable, but not networked area defence */
+  cruiser_p: 14, destroyer_p: 11,
+  carrier_n: 18, carrier_c: 17, carrier_p: 13,
+
+  /* electronic attack aircraft carry excellent receivers */
+  ew_n: 16, ew_c: 15,
+
+  /* a modern fighter with an AESA contributes a forward slice of the
+     picture over the datalink - narrow compared with an AEW aircraft,
+     but real, and a reason to keep a combat air patrol up */
+  /* Chinese fighter AESA is current-generation and fielded in quantity; the
+     APG-77 is a 1990s design on a small fleet. Treat them as peers. */
+  stealth_n: 11, stealth_c: 11, stealth_p: 8,
+  cstealth_n: 10, cstealth_c: 9,
+  fighter_n: 6, fighter_c: 7, fighter_r: 7, fighter_p: 4, cfighter_n: 7,
+  sead_n: 7, sead_c: 7,
+  fighter_k: 1.5,          // a MiG-21 ranging set contributes almost nothing
+};
+/* Anything with a probe or a receptacle can take fuel from a tanker. That is
+   fixed-wing jets: a helicopter needs a specially fitted tanker and none of
+   these carry the kit, and a tanker cannot refuel itself. */
+for (var _rf in UNITS) {
+  var _u2 = UNITS[_rf];
+  if (_u2.cat === "aircraft" && _u2.jet && !_u2.tanker && !_u2.hover) _u2.refuelable = true;
+}
+for (var _rcv in RADAR_COVERAGE) if (UNITS[_rcv]) UNITS[_rcv].radar = RADAR_COVERAGE[_rcv];
+/* Every airborne early-warning aircraft carries an electronic warfare suite -
+   that is half of what the airframe is for - but none of them had a jam value,
+   so they were pure receivers. Scale the jamming off the radar fit, which is
+   the same aerial farm doing the work. Must run after RADAR_COVERAGE has been
+   applied below, because that is where these aircraft finally get their
+   radar figure - reading it any earlier finds nothing. */
+for (var _wk in UNITS) {
+  var _w = UNITS[_wk];
+  if ((_w.role === "awacs" || _w.role === "cawacs") && _w.radar && !_w.jam)
+    _w.jam = Math.round(_w.radar * 0.42 * 10) / 10;
+}
+
+
+
+/* ==================================================================
+   MISSILE FLIGHT PROFILES
+
+   Not every missile is the same problem. What decides whether a ship
+   can kill an inbound round is how it flies, and how fast:
+
+     skim      sea-skimmer. Hugs the surface, so the defender's radar
+               horizon hides it until it is close - little warning, but
+               a subsonic one is a fair target once seen.
+     cruise    a subsonic land-attack missile at medium altitude. Long
+               ranged and accurate, and the easiest thing on this list
+               to shoot down, because it is slow and clearly visible.
+     loft      climbs, cruises high, then dives supersonically on the
+               target. The terminal sprint is what makes it hard.
+     ballistic a submarine-launched or theatre ballistic weapon. It
+               arrives almost vertically at enormous speed and a
+               close-in gun system has essentially no chance.
+     pop       a short-ranged direct-attack round: a SAM, an air-to-air
+               missile or an ATGM. These are the interceptors, not the
+               intercepted.
+
+   `intercept` scales every hard-kill roll against the round. Lower is
+   harder to stop. It is a separate axis from speed on purpose: an NSM
+   is subsonic but shaped to be hard to see, while an Oniks is easy to
+   see and simply too fast to engage.
+   ================================================================== */
+var MISSILE_PROFILE = {
+  /* --- anti-ship --- */
+  ssm_harpoon: { profile:"skim",   intercept:1.00 },
+  ssm_nsm:     { profile:"skim",   intercept:0.72 },   // low-observable airframe
+  ssm_yj18:    { profile:"loft",   intercept:0.55 },   // subsonic cruise, supersonic sprint
+  ssm_oniks:   { profile:"loft",   intercept:0.45 },   // Mach 2.5 the whole way
+  ssm_hf3:     { profile:"loft",   intercept:0.60 },
+  ssm_kn01:    { profile:"skim",   intercept:1.45 },   // a 1960s Styx derivative
+  ssm:         { profile:"skim",   intercept:1.00 },
+
+  /* --- land attack --- */
+  tlam_n:      { profile:"cruise", intercept:1.55 },   // slow and visible
+  slbm_n:      { profile:"ballistic", intercept:0.12 },
+  slbm_p:      { profile:"ballistic", intercept:0.16 },
+  slbm_c:      { profile:"ballistic", intercept:0.18 },
+
+  /* --- anti-radiation --- */
+  harm:        { profile:"loft",   intercept:0.70 },
+  arm_kh:      { profile:"loft",   intercept:0.80 },
+  arm_yj:      { profile:"loft",   intercept:0.75 },
+  arm_gnd:     { profile:"loft",   intercept:0.90 },
+
+  /* --- interceptors and direct-attack rounds --- */
+  sam_sm2:     { profile:"pop", intercept:0.60 },
+  sam_hhq9:    { profile:"pop", intercept:0.62 },
+  sam_shtil:   { profile:"pop", intercept:0.85 },
+  sam_sm1:     { profile:"pop", intercept:0.85 },
+  sam_ship:    { profile:"pop", intercept:0.70 },
+  sam_veh:     { profile:"pop", intercept:0.75 },
+  aam:         { profile:"pop", intercept:0.55 },
+  aam_lo:      { profile:"pop", intercept:0.45 },
+  atgm:        { profile:"pop", intercept:1.10 },
+
+  /* --- mobile area air defence: the interceptors, not the intercepted --- */
+  sam_area1:   { profile:"pop", intercept:0.85 },
+  sam_area2:   { profile:"pop", intercept:0.65 },
+  sam_area3:   { profile:"pop", intercept:0.55 },
+  sam_tk3:     { profile:"pop", intercept:0.60 },
+  sam_pongae:  { profile:"pop", intercept:0.72 },
+
+  /* --- road-mobile ballistic missiles ---
+     Deliberately NOT the slbm band above. A Trident re-entry body at 0.12 is a
+     strategic weapon and is meant to be unanswerable; a theatre round is a
+     smaller, slower, lower problem that Patriot really did engage in 1991. The
+     split inside the family is the one that matters: a plain Scud does not
+     manoeuvre and sits at 0.45, while an Iskander, a KN-23, a DF-15B and a
+     Pershing II fly depressed and pull in the terminal phase, so they sit at
+     0.28-0.30 - close to the SLBM band without pretending to be one. */
+  srbm_early:  { profile:"ballistic", intercept:0.55 },
+  srbm_short:  { profile:"ballistic", intercept:0.40 },
+  srbm_scud:   { profile:"ballistic", intercept:0.45 },
+  srbm_atacms: { profile:"ballistic", intercept:0.42 },
+  srbm_p2:     { profile:"ballistic", intercept:0.30 },
+  srbm_mod:    { profile:"ballistic", intercept:0.28 },
+};
+for (var _mp in MISSILE_PROFILE) if (WEAPONS[_mp]) Object.assign(WEAPONS[_mp], MISSILE_PROFILE[_mp]);
+
+/* ---- flight speed ----
+   Projectile speed is in PIXELS per second and a tile is 32px, so a tank
+   shell at 860 is about 27 tiles/sec. The ship-launched weapons were authored
+   on a different scale entirely - a Harpoon at 13px/s is 0.4 tiles/sec, slower
+   than the ship it is chasing, and it expired long before covering its own
+   range. In practice no warship ever fired a missile. These are relative to
+   the shell: subsonic sea-skimmers around Mach 0.8, supersonic rounds three
+   times that, interceptors faster still. */
+var MISSILE_SPEED = {
+  ssm_harpoon: 120, ssm_nsm: 118, ssm_kn01: 100, ssm: 120,     // subsonic
+  tlam_n:      112,                                             // subsonic cruise
+  ssm_yj18:    300, ssm_oniks: 330, ssm_hf3: 310,               // supersonic
+  slbm_n:      760, slbm_p: 720, slbm_c: 700,                   // ballistic terminal
+  sam_sm2:     620, sam_hhq9: 610, sam_shtil: 520, sam_sm1: 520,
+  sam_ship:    600, sam_veh: 600,
+  atgm:        210,
+  sam_area1:   560, sam_area2: 640, sam_area3: 700,
+  sam_tk3:     690, sam_pongae: 600,
+  srbm_early:  620, srbm_short: 700, srbm_scud: 680,
+  srbm_atacms: 700, srbm_p2:    730, srbm_mod:  720,
+};
+for (var _ms in MISSILE_SPEED) if (WEAPONS[_ms]) WEAPONS[_ms].speed = MISSILE_SPEED[_ms];
+/* any guided round still on the old scale gets a sane subsonic speed */
+for (var _mz in WEAPONS) {
+  var _z = WEAPONS[_mz];
+  if (_z.proj === "missile" && _z.speed < 60) _z.speed = 130;
+}
+/* anything guided that was not named above still needs a profile */
+for (var _mw in WEAPONS) {
+  var _w = WEAPONS[_mw];
+  if (_w.proj !== "missile" || _w.profile) continue;
+  _w.profile = _w.range >= 12 ? "cruise" : "pop";
+  if (_w.intercept === undefined) _w.intercept = 1.0;
+}
+
+
+/* ---- fixed launchers versus vertical launch ----
+   A vertical launch cell is reloaded from a magazine below decks. A fixed
+   deck tube is not: what is in the tubes when the ship sails is what she has.
+   The Eastern bloc ships and the smaller missile craft carry their rounds
+   this way, which is why a Slava's first salvo is terrifying and her second
+   does not exist. */
+var FIXED_MAGAZINE = {
+  cruiser_p:     { ssm_oniks: 16 },   // sixteen P-1000 in deck tubes
+  destroyer_p:   { ssm_oniks: 8 },    // Sovremenny: two quad mounts
+  corvette_p:    { ssm_oniks: 4 },
+  missileboat_p: { ssm_oniks: 4 },
+  missileboat_k: { ssm_kn01: 4 },
+  corvette_k:    { ssm_kn01: 4 },
+  missileboat_r: { ssm_hf3: 4 },
+  corvette_r:    { ssm_hf3: 8 },
+  missileboat_n: { ssm_harpoon: 8 },
+  missileboat_c: { ssm_yj18: 8 },
+  /* Oscar II carries twenty-four, and cannot reload submerged either */
+  ssgn_p:        { ssm_oniks: 24 },
+};
+for (var _fm in FIXED_MAGAZINE) if (UNITS[_fm]) UNITS[_fm].magazine = FIXED_MAGAZINE[_fm];
+
+
+/* ==================================================================
+   ERAS
+
+   The game can be fought in any of six periods from the early Cold War
+   to the present. A unit declares a SERVICE WINDOW rather than a single
+   era, because the interesting fact about a lot of this equipment is how
+   long it stayed in the field: a T-55 or a B-52 spans five decades, and
+   pretending it belongs to one of them would lose that.
+
+     from   first era the platform is available in
+     to     last era it is still fielded (omitted = still in service)
+
+   Anything with no window at all is treated as present-day only, so an
+   untagged unit can never leak into a 1950s battle by accident.
+   ================================================================== */
+var ERAS = ["e50", "e60", "e80", "e90", "e00", "e20"];
+var ERA_INFO = {
+  e50: { name: "1950s",      full: "Early Cold War",   tag: "jets, first guided missiles, WWII holdovers" },
+  e60: { name: "1960s-70s",  full: "Cold War",         tag: "ATGMs arrive, SAMs mature, helicopters go to war" },
+  e80: { name: "1980s",      full: "Late Cold War",    tag: "thermal sights, composite armour, fourth-generation fighters" },
+  e90: { name: "1990s",      full: "Gulf War era",     tag: "GPS, precision munitions, the first true stealth" },
+  e00: { name: "2000s-10s",  full: "Networked warfare", tag: "datalinks, AESA radar, unmanned systems" },
+  e20: { name: "2020s",      full: "Present day",      tag: "the roster the game ships with" },
+};
+function eraIndex(k) { var i = ERAS.indexOf(k); return i < 0 ? ERAS.length - 1 : i; }
+
+/* Is this definition fielded in the given era? */
+function inEra(def, era) {
+  if (!def) return false;
+  var cur = eraIndex(era);
+  var from = def.from !== undefined ? eraIndex(def.from) : ERAS.length - 1;
+  var to = def.to !== undefined ? eraIndex(def.to) : ERAS.length - 1;
+  return cur >= from && cur <= to;
+}
+
+/* Everything already in the roster is present-day equipment unless the era
+   content below says otherwise. Support units that have no meaningful
+   generational identity - a bulldozer, a fuel truck, a construction rig -
+   are available throughout, because every army has always had them.
+
+   WHAT WENT WRONG HERE, recorded so it is not repeated. Not one unit in this
+   file was written with a from: tag, so the loop underneath is the only thing
+   that dates any of them, and its default is "e20". Where eras.js supplies
+   proper per-era variants that is harmless - unitFor() picks the era unit and
+   the present-day one surfaces only in the 2020s. Where eras.js supplies
+   nothing, the role simply vanished from five of the six periods. Measured at
+   runtime before this change, a NATO commander could field 58 roles in e20,
+   40 in e90, 39 in e80, 37 in e60 and 33 in e50: twenty-five of fifty-eight
+   missing from the earliest setting, and every faction worse - the PLA had 24
+   roles in e50 against 53 in e20. A 1980s battle had no mortars, no
+   machine-gun teams, no snipers, no medics, no recovery vehicles, no radar or
+   EW vehicles, no patrol boats and no fleet oiler. That is not a period
+   difference; it is a set of missing mechanics, and it amputated the game's
+   headline feature in five of its six settings.
+
+   THE TEST FOR THIS LIST. A role belongs here only if the capability ran the
+   whole length of the game in every one of the five armies AND the
+   generational difference does not survive the zoom. The seven added below
+   pass it. An 81mm mortar section, a belt-fed machine-gun team, a sniper
+   pair, a company aidman, an armoured recovery vehicle, a fleet workshop and
+   a fast gun-armed inshore boat were all in the hands of all five of these
+   armies in 1950 and are all still there today: between an M1 mortar and an
+   M252 there is a few hundred metres of range and a round a minute, between
+   an M32 on a Sherman hull and an M88A2 there is winch tonnage, and between a
+   Project 183 and a Mk VI there is a diesel. One honest caveat: the
+   present-day sniper units are 12.7mm anti-materiel rifles and that weapon
+   class really is late (Barrett M82, 1989) - what is being dated here is the
+   role, one team that removes individuals at distance and carries the best
+   eyes on the field, not the rifle. Denying every 1950s army a sniper is the
+   larger error by a wide margin.
+
+   WHAT DOES NOT BELONG HERE. Where a capability genuinely arrives at a date -
+   an ATGM carrier, a ground jammer, a ballistic-missile submarine, a
+   counter-battery radar, a fleet oiler for four of the five navies - the unit
+   carries an explicit from: instead, because a stealth bomber in Korea is the
+   same mistake as no mortars in 1985, only louder. And where an army never
+   had the thing at all, it gets nothing: the KPA has no destroyer, no AWACS
+   and no carrier fighter in any era, Taiwan has no ballistic missile and no
+   ground jammer, and those gaps are content, not defects to be patched. */
+var ERA_TIMELESS = ["harvester", "mcv", "engineer", "supply", "transport_sea",
+                    "minelayer", "mineclear", "navminelayer", "minesweeper",
+                    "mortar", "mg", "sniper", "medic", "repair", "repair_sea",
+                    "patrol"];
+for (var _eu in UNITS) {
+  var _e = UNITS[_eu];
+  if (_e.from !== undefined) continue;
+  if (ERA_TIMELESS.indexOf(_e.role) >= 0) { _e.from = "e50"; continue; }
+  _e.from = "e20";
+}
+for (var _eb in BUILDINGS) {
+  var _bb = BUILDINGS[_eb];
+  if (_bb.from === undefined) _bb.from = "e50";     // structures are era-agnostic
+}
+
+/* ==================================================================
+   OFF-MAP FIRE SUPPORT
+
+   Missions flown or fired from outside the battlefield. They cost FUEL
+   rather than cash, because what you are buying is somebody else's
+   sortie or somebody else's magazine, and fuel is the resource a player
+   has to take ground to get.
+
+     oil       barrels per mission
+     cooldown  seconds before it can be called again
+     flight    seconds between the call and the first impact
+     rounds    impacts in the mission - a battery fires a pattern
+     cep       nominal scatter in tiles, multiplied up when called blind
+     blindMul  how badly it scatters with no observation: a cruise missile
+               navigating itself barely cares, unguided rockets very much do
+   ================================================================== */
+var SUPPORT = {
+  arclight: { fac:"nato", name:"Arc Light", full:"B-52 heavy bomber pass",
+    oil:110, cooldown:210, flight:9, rounds:9, spacing:0.22, cep:2.2, blindMul:2.2,
+    dmg:150, aoe:2.0, warhead:"he", tech:3, prereq:["airbase","radar"], from:"e50",
+    desc:"A cell of heavy bombers walks a carpet of iron across a strip of ground. " +
+         "Enormously destructive over an area and completely indiscriminate about " +
+         "what happens to be standing in it." },
+  bat_tot: { fac:"nato", name:"MLRS Battery TOT", full:"M270 time-on-target mission",
+    oil:55, cooldown:105, flight:5, rounds:6, spacing:0.14, cep:1.1, blindMul:2.4,
+    dmg:130, aoe:1.7, warhead:"frag", tech:2, prereq:["radar"], from:"e80",
+    desc:"An off-map rocket battery fires so that every round arrives at once. " +
+         "Devastating against troops in the open and against soft vehicles." },
+  tlam_strike: { fac:"nato", name:"Tomahawk Salvo", full:"BGM-109 land-attack strike",
+    oil:95, cooldown:180, flight:14, rounds:3, spacing:0.9, cep:0.35, blindMul:1.1,
+    dmg:300, aoe:1.6, warhead:"he", tech:3, prereq:["radar","lab"], from:"e90",
+    desc:"Cruise missiles navigating themselves to a set of coordinates. Slow to " +
+         "arrive, but it does not care whether you can see the target." },
+  spectre: { fac:"nato", name:"AC-130 Gunship", full:"AC-130 fire support loiter",
+    oil:70, cooldown:150, flight:6, rounds:14, spacing:0.42, cep:0.6, blindMul:1.8,
+    dmg:70, aoe:0.9, warhead:"cannon", tech:3, prereq:["airbase"], from:"e60",
+    desc:"A transport aircraft with artillery in the side, circling and shooting. " +
+         "Precise and relentless against ground targets, and helpless against " +
+         "anything carrying a radar-guided missile." },
+
+  phl16: { fac:"pla", name:"PHL-16 Battery", full:"PHL-16 long-range rocket mission",
+    oil:60, cooldown:110, flight:6, rounds:8, spacing:0.16, cep:1.0, blindMul:2.2,
+    dmg:135, aoe:1.8, warhead:"frag", tech:2, prereq:["radar"], from:"e00",
+    desc:"A modular long-range rocket battery firing from well behind the line. " +
+         "China built these in numbers so that this mission is always available." },
+  cj10: { fac:"pla", name:"CJ-10 Salvo", full:"CJ-10 land-attack cruise missile",
+    oil:95, cooldown:180, flight:13, rounds:3, spacing:0.9, cep:0.4, blindMul:1.15,
+    dmg:290, aoe:1.6, warhead:"he", tech:3, prereq:["radar","lab"], from:"e00",
+    desc:"China's answer to the Tomahawk. Navigates itself, so fog is no defence, " +
+         "but it is subsonic and a well-found air defence will engage it." },
+  h6_pass: { fac:"pla", name:"H-6 Bomber Pass", full:"H-6 medium bomber strike",
+    oil:100, cooldown:200, flight:10, rounds:7, spacing:0.24, cep:2.0, blindMul:2.2,
+    dmg:145, aoe:1.9, warhead:"he", tech:3, prereq:["airbase","radar"], from:"e60",
+    desc:"A licence-built Tu-16 lineage still in front-line service, dropping iron " +
+         "across a strip of ground." },
+
+  grad_tot: { fac:"pact", name:"Grad Battery", full:"BM-21 Grad saturation mission",
+    oil:45, cooldown:95, flight:5, rounds:12, spacing:0.10, cep:2.4, blindMul:3.0,
+    dmg:85, aoe:1.6, warhead:"frag", tech:1, prereq:[], from:"e60",
+    desc:"Forty rockets at once from over the horizon. Wildly inaccurate and cheap " +
+         "enough not to care: the doctrine is to drown a grid square, not hit a target." },
+  tochka: { fac:"pact", name:"Tochka Strike", full:"OTR-21 Tochka ballistic missile",
+    oil:90, cooldown:190, flight:8, rounds:1, cep:1.4, blindMul:1.6,
+    dmg:420, aoe:2.4, warhead:"he", tech:3, prereq:["radar","lab"], from:"e80",
+    desc:"A single short-range ballistic missile. It arrives too fast to intercept " +
+         "with anything the battlefield carries." },
+  tu22: { fac:"pact", name:"Tu-22M Strike", full:"Tu-22M Backfire bomber pass",
+    oil:105, cooldown:205, flight:10, rounds:7, spacing:0.24, cep:2.1, blindMul:2.3,
+    dmg:150, aoe:2.0, warhead:"he", tech:3, prereq:["airbase","radar"], from:"e60",
+    desc:"A supersonic bomber making one pass. Loud, sudden, and very difficult to " +
+         "do anything about once the rounds are released." },
+
+  mrl240: { fac:"kpa", name:"240mm MRL Barrage", full:"M1991 240mm rocket barrage",
+    oil:35, cooldown:80, flight:5, rounds:14, spacing:0.09, cep:3.2, blindMul:3.4,
+    dmg:70, aoe:1.5, warhead:"frag", tech:1, prereq:[], from:"e60",
+    desc:"The one thing the KPA has in genuinely frightening quantity. Hopelessly " +
+         "inaccurate, dirt cheap, and there is always another battery." },
+  koksan_msn: { fac:"kpa", name:"Koksan Mission", full:"M-1978 Koksan 170mm mission",
+    oil:50, cooldown:120, flight:7, rounds:4, spacing:0.5, cep:2.2, blindMul:3.0,
+    dmg:150, aoe:1.5, warhead:"he", tech:2, prereq:[], from:"e80",
+    desc:"A very long-ranged gun firing from deep behind the line. Slow, inaccurate, " +
+         "and able to reach places nothing else in the inventory can." },
+
+  thunderbolt: { fac:"roc", name:"Thunderbolt-2000", full:"RT-2000 rocket mission",
+    oil:55, cooldown:105, flight:5, rounds:7, spacing:0.15, cep:1.3, blindMul:2.3,
+    dmg:125, aoe:1.7, warhead:"frag", tech:2, prereq:["radar"], from:"e00",
+    desc:"An indigenous rocket system built specifically to break up a landing on " +
+         "the beaches. Short-ranged, and that is the point." },
+  hf2e: { fac:"roc", name:"Hsiung Feng IIE", full:"HF-2E land-attack cruise missile",
+    oil:95, cooldown:185, flight:13, rounds:2, spacing:1.0, cep:0.45, blindMul:1.2,
+    dmg:290, aoe:1.6, warhead:"he", tech:3, prereq:["radar","lab"], from:"e00",
+    desc:"Taiwan's only real deep-strike weapon, and the programme it has been " +
+         "least willing to discuss." },
+};
+for (var _sp in SUPPORT) { SUPPORT[_sp].id = _sp; SUPPORT[_sp].cat = "support"; }
+
+/* ---- ammunition carried ----
+   Indirect fire and heavy launchers carry a finite number of rounds. A gun
+   that has shot off its ready rounds is not destroyed, it is simply out of
+   the fight until somebody brings it more - which is what makes a supply
+   line worth attacking and worth defending. Direct-fire weapons are not
+   modelled this way: a tank carries enough main gun rounds for a battle. */
+var ROUNDS = {
+  spg: 14, mlrs: 8, mortar: 18, atgmv: 10, heavy: 0,
+};
+for (var _ru in UNITS) {
+  var _r = UNITS[_ru];
+  if (_r.rounds !== undefined) continue;
+  var n = ROUNDS[_r.role];
+  if (n) _r.rounds = n;
+}
+/* a supply truck or a service depot replenishes them */
+if (BUILDINGS.depot) BUILDINGS.depot.resupply = true;
+
+/* ---- garrisonable structures ----
+   A civilian building on built-up ground can be occupied by infantry, who
+   then fight from inside it with real protection and a better view. Clearing
+   them out needs something that can burn or blast the structure rather than
+   shoot at the men in it - which is what makes a town expensive to take. */
+Object.assign(BUILDINGS, {
+  /* The wreck a civilian block leaves behind. It still blocks the ground and
+     still gives cover, but nobody can fight from it until an engineer has put
+     a roof back on. */
+  civrubble: { name:"Collapsed Block", cat:"civilian", cost:0, time:0, w:2, h:2, hp:260,
+    armor:"structure", power:0, sight:2, neutral:true, rubble:true, restoresTo:"civblock",
+    from:"e50",
+    desc:"What is left after the building came down. It blocks the street and " +
+         "gives cover to anyone crouching behind it, but it cannot be occupied. " +
+         "Send an engineer to make it habitable again." },
+  civblock: { name:"Civilian Block", cat:"civilian", cost:0, time:0, w:2, h:2, hp:900,
+    armor:"structure", power:0, sight:6, neutral:true, garrison:5, from:"e50",
+    desc:"An ordinary building somebody used to live in. Infantry can occupy it and " +
+         "fight from the windows: small arms barely touch them in there, but fire or " +
+         "high explosive brings the whole thing down on top of them." },
+});
+
+/* Index units by role for the AI and for faction filtering.
+   Rebuildable, because the era rosters in eras.js are merged into UNITS after
+   this file has already run - without a re-index none of them would exist as
+   far as unitFor() is concerned. */
+var ROLES = {};
+/* ---------------------------------------------------------------------------
+   Capabilities an army did not actually have
+   ---------------------------------------------------------------------------
+   The era rosters record honest gaps: the PLA had no airborne early warning
+   aircraft before the KJ-2000, the Soviet Union never fielded a low-observable
+   fighter, Russia laid down no new destroyers in the 2000s. Those gaps were
+   written into the tables as placeholder entries named "NONE".
+
+   A placeholder must not be purchasable. Left in the roster it becomes a real
+   unit with a real price, so an army could buy the very capability it is
+   recorded as lacking. They are deleted instead, which makes unitFor() fall
+   through to whatever older equipment is still in service — or return nothing
+   at all, which is the correct answer when the army simply had none.        */
+function isPhantomUnit(def) {
+  if (!def) return false;
+  var n = String(def.name || "").trim().toLowerCase();
+  if (n === "none" || n === "n/a" || n === "nil" || n === "-" || n === "\u2014") return true;
+  /* "none new", "none in service", "none operational" and the like */
+  if (/^none\b/.test(n)) return true;
+  var f = String(def.full || "").trim().toLowerCase();
+  if (f === "none" || /^no\s+(soviet|chinese|russian|operational|such)\b/.test(f)) return true;
+  return false;
+}
+
+function purgePhantomUnits() {
+  var gone = [], k, i;
+  for (k in UNITS) {
+    if (!Object.prototype.hasOwnProperty.call(UNITS, k)) continue;
+    if (isPhantomUnit(UNITS[k])) { gone.push({ id: k, def: UNITS[k] }); }
+  }
+  for (i = 0; i < gone.length; i++) delete UNITS[gone[i].id];
+
+  /* "No new destroyers" is not the same as "no destroyers". Where an army
+     already fielded this capability in an earlier period, the placeholder
+     only recorded a pause in procurement, so the previous generation stays
+     in service instead of vanishing. Where there is nothing earlier, the
+     army genuinely never had it and the gap is left open. */
+  for (i = 0; i < gone.length; i++) {
+    var g = gone[i], best = null, bestFrom = -1;
+    for (k in UNITS) {
+      if (!Object.prototype.hasOwnProperty.call(UNITS, k)) continue;
+      var u = UNITS[k];
+      if (u.role !== g.def.role) continue;
+      if (u.fac !== g.def.fac && u.fac !== "both") continue;
+      var f = u.from !== undefined ? eraIndex(u.from) : 0;
+      if (f >= eraIndex(g.def.from)) continue;          // not earlier
+      if (f > bestFrom) { bestFrom = f; best = u; }
+    }
+    if (!best) continue;                                 // never had one
+    var need = eraIndex(g.def.from);
+    var have = best.to !== undefined ? eraIndex(best.to) : ERAS.length - 1;
+    if (have < need) best.to = ERAS[need];
+  }
+  return gone.map(function (x) { return x.id; });
+}
+
+function reindexRoles() {
+  purgePhantomUnits();
+  ROLES = {};
+  for (var _k in UNITS) {
+    var _u = UNITS[_k]; _u.id = _k;
+    /* Every rotorcraft must carry the hover flag. Seven anti-submarine
+       helicopters - the Seahawk, the Ka-27 Helix, the Z-9C and the Thunderhawk
+       among them - were missing it, which mattered in three places at once:
+       they were refused an escort's flight deck, they were put on the
+       fixed-wing fuel clock, and they were given a landing-run capture radius
+       instead of a hover one. Deriving it from the role means a new rotary
+       unit cannot be added without it again. */
+    if (_u.cat === "aircraft" && !_u.hover &&
+        /gunship$|^transport$|aswhelo|scouthelo|heavylift/.test(_u.role || ""))
+      _u.hover = true;
+    /* The same omission one field over: an ASW helicopter exists to fly from a
+       deck, but only the four hand-written ones carry the flag - the
+       era-generated airframes do not, which shuts them out of a carrier. */
+    if (_u.cat === "aircraft" && !_u.carrierCapable && /aswhelo/.test(_u.role || ""))
+      _u.carrierCapable = true;
+    (ROLES[_u.role] = ROLES[_u.role] || []).push(_k);
+  }
+  for (var _b in BUILDINGS) BUILDINGS[_b].id = _b;
+  for (var _w in WEAPONS) WEAPONS[_w].id = _w;
+  return ROLES;
+}
+reindexRoles();
+
+/* returns the unit id a faction fields for a given role */
+/* The era a battle is being fought in. Set by Game.init from the setup
+   screen; defaults to the present so anything that does not care still
+   behaves exactly as it did before eras existed. */
+var CUR_ERA = "e20";
+function setEra(e) { CUR_ERA = (ERAS.indexOf(e) >= 0) ? e : "e20"; }
+
+/* Returns the unit id a faction fields for a role IN THE CURRENT ERA.
+   Where a faction fielded several generations of the same role, the newest
+   one available is chosen - which is what an army would do. */
+function unitFor(fac, role, era) {
+  var e = era || CUR_ERA;
+  var list = ROLES[role] || [];
+  var best = null, bestFrom = -1;
+  for (var i = 0; i < list.length; i++) {
+    var u = UNITS[list[i]];
+    if (u.fac !== fac && u.fac !== "both") continue;
+    if (!inEra(u, e)) continue;
+    var f = u.from !== undefined ? eraIndex(u.from) : 0;
+    if (f > bestFrom) { bestFrom = f; best = list[i]; }
+  }
+  return best;
+}
+/* every id a faction can field for a role in this era, newest last */
+function unitsFor(fac, role, era) {
+  var e = era || CUR_ERA;
+  var list = ROLES[role] || [], out = [];
+  for (var i = 0; i < list.length; i++) {
+    var u = UNITS[list[i]];
+    if ((u.fac === fac || u.fac === "both") && inEra(u, e)) out.push(list[i]);
+  }
+  return out;
+}
+
+/* ---- advancing a generation ----
+   A commander can re-equip mid-battle, moving the whole force one period
+   forward. It is expensive in cash, fuel and time - re-equipping an army is
+   supposed to be a serious commitment - and it gets dearer each step, so
+   starting in 1950 and racing to the present is a real investment rather
+   than a formality. Units already built are not retro-fitted: what changes
+   is what the factories will produce from now on. */
+var ERA_STEP = {
+  e50: { cost: 2600, oil: 60,  time: 42 },
+  e60: { cost: 3200, oil: 75,  time: 48 },
+  e80: { cost: 3900, oil: 95,  time: 54 },
+  e90: { cost: 4600, oil: 115, time: 60 },
+  e00: { cost: 5400, oil: 140, time: 66 },
+};
+/* ---- who can actually re-equip ----
+   Advancing a generation assumes an army that procures new equipment. Not
+   every army does. North Korea's ground and air forces are still built around
+   1960s Soviet designs and it cannot buy replacements; Taiwan can buy, but
+   only what the United States is willing to sell and only slowly; the Russian
+   ground forces re-equip in fits and starts. So the cost of advancing is not
+   the same for everyone, and the KPA in particular is capped short of the
+   present day however much money it makes. */
+var ERA_REACH = {
+  nato: { cap: "e20", costMul: 1.00 },
+  pla:  { cap: "e20", costMul: 1.00 },   // the fastest modernisation of the five
+  roc:  { cap: "e20", costMul: 1.45 },   // can buy, but pays dearly and waits
+  pact: { cap: "e20", costMul: 1.25 },   // uneven procurement, long gaps
+  kpa:  { cap: "e90", costMul: 1.90 },   // cannot buy replacements at all
+};
+
+function nextEra(k) {
+  var i = ERAS.indexOf(k);
+  return (i >= 0 && i < ERAS.length - 1) ? ERAS[i + 1] : null;
+}

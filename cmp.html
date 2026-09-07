@@ -1,0 +1,107 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Model comparison</title>
+<style>body{margin:0;background:#12161a;color:#9fb0b8;font:12px ui-monospace,monospace}
+#g{display:grid;gap:2px;padding:4px}.c{position:relative;background:#1b2127}
+.l{position:absolute;left:5px;bottom:3px;font-size:11px;color:#cfe0e8}</style>
+<div id="g"></div>
+<script src="js/util.js"></script><script src="js/config.js"></script>
+<script src="js/rules.js"></script><script src="js/eras.js"></script>
+<script src="js/three.min.js"></script><script src="js/models3d.js"></script>
+<script src="js/units3d.js"></script><script src="js/units3d_salvage.js"></script>
+<script src="js/units3d_final.js"></script><script src="js/units3d_subs.js"></script>
+<script src="js/units3d_air2.js"></script><script src="js/units3d_ew.js"></script>
+<script src="js/civ3d.js"></script><script src="js/models3d_hd.js"></script>
+<script src="js/defences3d.js"></script><script src="js/models3d_east.js"></script>
+<script src="js/air3d_era.js"></script><script src="js/air_specs.js"></script>
+<script src="js/rotor3d.js"></script><script src="js/rotor_specs.js"></script>
+<script src="js/asw_helo_fit.js"></script>
+<script src="js/armour3d.js"></script>
+<script src="js/armour_specs.js"></script>
+<script src="js/infantry3d.js"></script>
+<script src="js/infantry_specs.js"></script>
+<script src="js/warship3d.js"></script>
+<script src="js/warship_specs.js"></script>
+<script src="js/sub3d_era.js"></script>
+<script src="js/sub_specs.js"></script>
+<script src="js/hero/destroyer_n.js"></script>
+<script src="js/hero/nato_e50_carrier.js"></script>
+<script src="js/hero/kpa_e50_mbt.js"></script>
+<script src="js/hero/nato_e80_fighter.js"></script>
+<script src="js/hero/nato_e00_stealthfighter.js"></script>
+<script src="js/hero/pact_e60_fighter.js"></script>
+<script src="js/hero/kpa_e90_missileboat.js"></script>
+<script src="js/hero/nato_e90_mbt.js"></script>
+<script src="js/hero/nato_e60_mbt.js"></script>
+<script src="js/hero/stealth_c.js"></script>
+<script src="js/hero/mbt_c.js"></script>
+<script src="js/hero/pact_e80_mbt.js"></script>
+<script src="js/hero/pla_e00_mbt.js"></script>
+<script src="js/hero/nato_e50_fighter.js"></script>
+<script src="js/hero/pact_e90_fighter.js"></script>
+<script src="js/hero/sub_n.js"></script>
+<script src="js/hero/pact_e60_cruiser.js"></script>
+<script src="js/hero/roc_e80_destroyer.js"></script>
+<script src="js/hero/pla_e00_destroyer.js"></script>
+<script src="js/mine_objects.js"></script>
+<script src="js/mine_veh_layer.js"></script>
+<script src="js/mine_ship_layer.js"></script>
+<script src="js/mine_veh_clear.js"></script>
+<script src="js/mine_ship_sweeper.js"></script>
+<script src="js/repairship3d.js"></script>
+<!-- mobile air defence and ballistic launchers -->
+<script src="js/sam3d.js"></script>
+<script src="js/tel3d.js"></script>
+<script>
+(function(){
+  var p=new URLSearchParams(location.hash.replace(/^#/,""));
+  var ids=(p.get("ids")||"fighter_n,nato_e80_fighter").split(",");
+  var S=+(p.get("cell")||460), COLS=+(p.get("cols")||2);
+  var g=document.getElementById("g");
+  g.style.gridTemplateColumns="repeat("+COLS+","+S+"px)";
+  ids.forEach(function(id){
+    var c=document.createElement("div"); c.className="c";
+    c.style.width=S+"px"; c.style.height=S+"px"; g.appendChild(c);
+    var lab=document.createElement("div"); lab.className="l"; c.appendChild(lab);
+    try{
+      var r=new THREE.WebGLRenderer({antialias:true});
+      r.setSize(S,S); r.setClearColor(0x1b2127,1);
+      if(THREE.sRGBEncoding!==undefined) r.outputEncoding=THREE.sRGBEncoding;
+      if(THREE.ACESFilmicToneMapping!==undefined){r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.05;}
+      c.insertBefore(r.domElement,lab);
+      var sc=new THREE.Scene();
+      sc.add(new THREE.AmbientLight(0xffffff,0.5));
+      var k=new THREE.DirectionalLight(0xfff2dd,1.4);k.position.set(0.7,1.2,0.9);sc.add(k);
+      var f=new THREE.DirectionalLight(0xa8c4e0,0.5);f.position.set(-0.9,0.4,-0.7);sc.add(f);
+      var m=UNIT_MODELS[id];
+      if(!m){lab.textContent=id+" — NO MODEL";return;}
+      var mo=m.build(THREE,Models3D,{team:0x3f7fd0});
+      sc.add(mo);
+      var bb=new THREE.Box3().setFromObject(mo),sz=new THREE.Vector3(),ct=new THREE.Vector3();
+      bb.getSize(sz);bb.getCenter(ct);
+      var reach=Math.max(sz.x,sz.y,sz.z)*0.62;
+      var cam=new THREE.OrthographicCamera(-reach,reach,reach,-reach,-reach*20,reach*20);
+      cam.up.set(0,0,1);
+      var V=p.get("view")||"iso";
+      if(V==="side")       cam.position.set(ct.x, ct.y+reach*3, ct.z+reach*0.10);
+      else if(V==="front") cam.position.set(ct.x+reach*3, ct.y+reach*0.05, ct.z+reach*0.55);
+      else                 cam.position.set(ct.x+reach*1.35, ct.y+reach*1.15, ct.z+reach*0.95);
+      cam.lookAt(ct);cam.updateMatrixWorld(true);
+      var inv=new THREE.Matrix4().copy(cam.matrixWorld).invert(),v=new THREE.Vector3();
+      var a=1e9,b=-1e9,cc=1e9,d=-1e9;
+      for(var x=0;x<2;x++)for(var y=0;y<2;y++)for(var z=0;z<2;z++){
+        v.set(x?bb.max.x:bb.min.x,y?bb.max.y:bb.min.y,z?bb.max.z:bb.min.z).applyMatrix4(inv);
+        a=Math.min(a,v.x);b=Math.max(b,v.x);cc=Math.min(cc,v.y);d=Math.max(d,v.y);}
+      var h=Math.max((b-a)*0.5,(d-cc)*0.5)*1.08;
+      cam.left=-h;cam.right=h;cam.top=h;cam.bottom=-h;cam.updateProjectionMatrix();
+      r.render(sc,cam);
+      var tri=r.info.render.triangles, mesh=0, tex=0, seen={};
+      mo.traverse(function(o){ if(!o.isMesh)return; mesh++;
+        var ms=Array.isArray(o.material)?o.material:[o.material];
+        ms.forEach(function(mm){ if(mm&&!seen[mm.uuid]){seen[mm.uuid]=1; if(mm.map)tex++;} }); });
+      lab.textContent=id+"  "+tri+"t  "+mesh+" parts  "+tex+" tex";
+    }catch(e){ lab.textContent=id+" — "+e.message; }
+  });
+  window.__done=true;
+})();
+</script>

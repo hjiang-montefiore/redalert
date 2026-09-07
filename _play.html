@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OPERATION IRONFRONT — Modern Warfare RTS</title>
+<link rel="stylesheet" href="css/style.css?v=202609061743">
+</head>
+<body>
+
+<div id="menu" class="screen">
+  <div class="menu-box">
+    <h1>OPERATION <span>IRONFRONT</span></h1>
+    <p class="tag">Modern combined-arms warfare &mdash; skirmish vs. the machine &nbsp;&middot;&nbsp; build P2609060726</span></p>
+    <div class="sect"><h2>The opposition</h2>
+      <div class="grid2">
+      <div class="row"><label>Opponents</label><select id="opt-opponents">
+        <option value="1" selected>1 enemy commander</option>
+        <option value="2">2 enemies &mdash; free-for-all</option>
+        <option value="3">3 enemies &mdash; free-for-all</option>
+        <option value="2t">1 ally vs 2 enemies</option>
+        <option value="4">4 enemies &mdash; last stand</option>
+        <option value="5">5 enemies &mdash; hopeless</option>
+      </select></div>
+      <div class="row"><label>Doctrine</label><select id="opt-pers">
+        <option value="mixed" selected>Mixed &mdash; each picks its own</option>
+        <option value="balanced">Combined Arms</option>
+        <option value="turtle">Fortress &mdash; digs in, heavy defences</option>
+        <option value="rusher">Shock &mdash; early relentless attacks</option>
+        <option value="airpower">Air Doctrine &mdash; rushes airbases</option>
+        <option value="naval">Blue Water &mdash; fleet-first</option>
+        <option value="artillery">Gun Line &mdash; artillery heavy</option>
+        <option value="boomer">Industrial &mdash; booms then overwhelms</option>
+      </select></div>
+      <div class="row"><label>Commander</label><select id="opt-diff">
+        <option value="recruit">Recruit &mdash; digs in, rarely attacks</option>
+        <option value="regular" selected>Regular &mdash; balanced, ground-focused</option>
+        <option value="veteran">Veteran &mdash; combined arms, fields radar</option>
+        <option value="elite">Elite &mdash; fast tech, stealth &amp; silos</option>
+        <option value="commander">Commander &mdash; relentless, big economy</option>
+        <option value="warlord">Warlord &mdash; overwhelming, no mercy</option>
+      </select></div>
+      <div class="row"><label>Enemy economy</label><select id="opt-handi">
+        <option value="0.75">Starved &mdash; 75% of what its haulers earn</option>
+        <option value="1" selected>Even &mdash; same rules as you</option>
+        <option value="1.4">Favoured &mdash; 140%</option>
+        <option value="2">Overwhelming &mdash; 200%</option>
+      </select></div>
+      </div>
+    </div>
+    <div class="sect wide"><h2>Order of battle</h2>
+      <div class="phead"><span></span><span class="me">You</span><span class="them">Enemy</span></div>
+      <div class="prow"><label>Faction</label>
+        <div class="me" id="fac-slot-me"></div>
+        <div class="them" id="fac-slot-them"></div>
+      </div>
+      <div class="prow"><label>Era</label>
+        <div class="me"><select id="opt-era"></select></div>
+        <div class="them"><select id="opt-aera"></select></div>
+      </div>
+      <div class="prow"><label>Era ceiling</label>
+        <div class="me"><select id="opt-peracap"></select></div>
+        <div class="them"><select id="opt-aeracap"></select></div>
+      </div>
+      <div class="prow"><label>Tech start</label>
+        <div class="me"><select id="opt-ptech">
+        <option value="1" selected>Tech I &mdash; research it yourself</option>
+        <option value="2">Tech II &mdash; MBTs &amp; aviation unlocked</option>
+        <option value="3">Tech III &mdash; everything unlocked</option>
+      </select></div>
+        <div class="them"><select id="opt-atech">
+        <option value="1" selected>Tech I</option>
+        <option value="2">Tech II</option>
+        <option value="3">Tech III</option>
+      </select></div>
+      </div>
+      <div class="prow"><label>Tech ceiling</label>
+        <div class="me"><select id="opt-pcap">
+        <option value="1">Tech I &mdash; no research beyond the basics</option>
+        <option value="2">Tech II &mdash; no strategic weapons or stealth</option>
+        <option value="3" selected>Tech III &mdash; no ceiling</option>
+      </select></div>
+        <div class="them"><select id="opt-acap">
+        <option value="1">Tech I</option>
+        <option value="2">Tech II</option>
+        <option value="3" selected>Tech III</option>
+      </select></div>
+      </div>
+      <div class="prow"><label>Services</label>
+        <div class="me"><select id="opt-parms">
+        <option value="all" selected>Combined arms &mdash; everything</option>
+        <option value="noair">No air force</option>
+        <option value="nonavy">No navy</option>
+        <option value="ground">Ground war only</option>
+      </select></div>
+        <div class="them"><select id="opt-aarms">
+        <option value="all" selected>Combined arms &mdash; everything</option>
+        <option value="noair">No air force</option>
+        <option value="nonavy">No navy</option>
+        <option value="ground">Ground war only</option>
+      </select></div>
+      </div>
+      <div id="fac-blurb" class="blurb"></div>
+    </div>
+    <div class="sect"><h2>The ground</h2>
+      <div class="grid2">
+      <div class="row"><label>Terrain</label><select id="opt-map">
+        <option value="plains">Open Plains &mdash; armour country</option>
+        <option value="river" selected>River Valley &mdash; chokepoints</option>
+        <option value="highland">Highlands &mdash; elevation warfare</option>
+      </select></div>
+      <div class="row"><label>Ore density</label><select id="opt-res">
+        <option value="0.6">Sparse &mdash; every field contested</option>
+        <option value="1" selected>Standard</option>
+        <option value="1.6">Abundant &mdash; long, big battles</option>
+      </select></div>
+      <div class="row"><label>Weather</label><select id="opt-weather">
+        <option value="clear" selected>Clear &mdash; no visibility penalty</option>
+        <option value="dynamic">Dynamic &mdash; rolls through the battle</option>
+        <option value="overcast">Overcast</option>
+        <option value="rain">Rain squalls</option>
+        <option value="night">Night &mdash; thermal sights decide it</option>
+        <option value="sandstorm">Sandstorm &mdash; near-blind without thermals</option>
+      </select></div>
+      <div class="row"><label>Fog of war</label><select id="opt-fog"><option value="1" selected>On</option><option value="0">Off</option></select></div>
+      <div class="row"><label>Your position</label><select id="opt-startpos"><option value="-1" selected>Random</option></select></div>
+      <div class="row"><label>Map seed</label><input id="opt-seed" type="text" value=""></div>
+      </div>
+    </div>
+    <div class="sect"><h2>Rules and display</h2>
+      <div class="grid2">
+      <div class="row"><label>Starting funds</label><select id="opt-cash">
+        <option value="5000">Light &mdash; $5,000</option>
+        <option value="10000" selected>Standard &mdash; $10,000</option>
+        <option value="20000">Heavy &mdash; $20,000</option>
+      </select></div>
+      <div class="row"><label>Strategic weapons</label><select id="opt-super">
+        <option value="1" selected>Enabled &mdash; missile &amp; nuclear silos</option>
+        <option value="0">Disabled &mdash; conventional war</option>
+      </select></div>
+      <div class="row"><label>Renderer</label><select id="opt-3d"><option value="1" selected>3D battlefield (WebGL)</option><option value="0">Classic 2.5D</option></select></div>
+      <div class="row"><label>Camera pan</label><select id="opt-pan">
+        <option value="follow" selected>Map follows the mouse</option>
+        <option value="push">Classic edge scroll (inverted)</option>
+      </select></div>
+      </div>
+    </div>
+
+                                                                                                    <button id="btn-start">DEPLOY</button>
+    <div class="hint">
+      <b>Controls</b> &mdash; LMB select / drag box &middot; RMB move &amp; attack &middot;
+      <b>A</b>+click attack-move &middot; <b>S</b> stop &middot; <b>G</b> guard &middot; <b>F</b> hold fire<br>
+      <b>Ctrl+0-9</b> set group &middot; <b>0-9</b> recall &middot; <b>Tab</b> cycle tabs &middot;
+      <b>Space</b> next thing needing you &middot; <b>C</b> counter-battery &middot; <b>Del</b> sell &middot; <b>D</b> deploy MCV &middot; <b>U</b> unload &middot; <b>H</b> home &middot; <b>Q/E</b> rotate &middot; <b>Shift+P</b> flip pan &middot; <b>Shift+0-9</b> camera bookmark &middot; <b>Tab</b> cycle sub-group &middot; <b>Shift+RMB</b> queue waypoints &middot; <b>Esc</b> menu &middot; wheel to zoom, MMB/edge to pan
+    </div>
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <canvas id="cv"></canvas>
+
+  <div id="topbar">
+    <div class="res" id="r-cash"><i class="ic-cash"></i><span>0</span></div>
+    <div class="res" id="r-oil"><i class="ic-oil"></i><span>0</span></div>
+    <div class="res" id="r-power"><i class="ic-pow"></i><span>0/0</span></div>
+    <div class="res" id="r-tech"><i class="ic-tech"></i><span>TECH I</span></div>
+    <div class="spacer"></div>
+    <div class="res" id="r-ew" style="display:none"><span></span></div>
+    <div class="res" id="r-weather" title="Visibility conditions"><span>CLEAR</span></div>
+    <div class="res" id="r-clock"><span>00:00</span></div>
+    <div class="res btn" id="r-pause">II</div>
+    <div class="res btn" id="r-speed">1x</div>
+  </div>
+
+  <div id="side">
+    <canvas id="mm" width="196" height="196"></canvas>
+    <div id="mm-legend"><span id="mm-power">POWER OK</span></div>
+    <div id="tabs">
+      <div class="tab sel" data-q="building" title="Structures"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V9l6-4 6 4v12M9 21v-5h4v5M17 21V12l4-2v11M3 21h18"/></svg><b>Build</b><i class="qb"></i></div>
+      <div class="tab" data-q="defense" title="Defences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8.3 8 9 4.5-.7 8-4 8-9V6zM12 9v5M9.5 11.5h5"/></svg><b>Defence</b><i class="qb"></i></div>
+      <div class="tab" data-q="infantry" title="Infantry"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM9 21v-5l-2-3 2-4h6l2 4-2 3v5M6 10l4-2"/></svg><b>Infantry</b><i class="qb"></i></div>
+      <div class="tab" data-q="vehicle" title="Vehicles"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16h14v-3H3zM6 10h8l2 3M9 19a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM17 19a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM15 11h6"/></svg><b>Vehicle</b><i class="qb"></i></div>
+      <div class="tab" data-q="aircraft" title="Aircraft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 13.5 9 22 12.5v2L13.5 13 13 19l3 2v1l-4-1.5L8 22v-1l3-2-.5-6L2 14.5v-2L10.5 9z"/></svg><b>Air</b><i class="qb"></i></div>
+      <div class="tab" data-q="support" title="Support: off-map fire missions, paid for in fuel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 11v2"/></svg><b>Support</b><i class="qb"></i></div>
+    </div>
+    <div id="cards"></div>
+    <div id="swbar" style="display:none"></div>
+    <div id="erabar" title="Re-equip the whole force one generation forward"></div>
+    <div id="cmds">
+      <div class="cmd" id="c-repair" title="Repair structures (M)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 3.5a5.5 5.5 0 0 0-6.9 6.9L3 16.1V21h4.9l5.7-5.7a5.5 5.5 0 0 0 6.9-6.9l-3.1 3.1-2.9-.8-.8-2.9z"/></svg>
+        <span>REPAIR</span></div>
+      <div class="cmd" id="c-sell" title="Sell structures (Del)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16l-1.3 12.1a2 2 0 0 1-2 1.9H7.3a2 2 0 0 1-2-1.9zM9 4h6l1 2H8zM10 10v7M14 10v7"/></svg>
+        <span>SELL</span></div>
+    </div>
+    <div id="selinfo"></div>
+  </div>
+
+  <div id="pausemenu" class="hidden">
+    <div class="pm-box">
+      <h2>PAUSED</h2>
+      <div id="pm-info"></div>
+      <button id="pm-resume">RESUME</button>
+      <button id="pm-save">SAVE GAME</button>
+      <button id="pm-load">LOAD GAME</button>
+      <button id="pm-quit" class="danger">QUIT TO MENU</button>
+      <div class="pm-hint">Esc closes this menu &middot; the battle is frozen while it is open</div>
+    </div>
+  </div>
+  <div id="tooltip"></div>
+  <div id="attn"></div>
+  <div id="alerts"></div>
+  <div id="endscreen" class="hidden"><div class="end-box"><h2 id="end-title"></h2><p id="end-sub"></p><button onclick="location.reload()">RETURN TO MENU</button></div></div>
+</div>
+
+<div id="errbox" style="display:none;position:fixed;left:10px;top:40px;z-index:99;max-width:640px;
+background:rgba(60,8,8,.94);border:1px solid #ff6b52;color:#ffd6cc;font:12px/1.5 monospace;
+padding:10px 14px;white-space:pre-wrap;pointer-events:none"></div>
+<script>
+window.__errs = [];
+window.addEventListener("error", function (e) {
+  var box = document.getElementById("errbox");
+  var msg = (e.message || "script error") + "\n  " +
+    ((e.filename || "").split("/").pop() || "?") + ":" + (e.lineno || "?");
+  if (window.__errs.indexOf(msg) < 0) window.__errs.push(msg);
+  box.textContent = "GAME ERROR — send this to the developer:\n" + window.__errs.slice(0, 6).join("\n");
+  box.style.display = "block";
+});
+</script>
+<script src="js/util.js?v=202609061743"></script>
+<script src="js/config.js?v=202609061743"></script>
+<script src="js/facts.js?v=202609061743"></script>
+<script src="js/rules.js?v=202609061743"></script>
+  <script src="js/eras.js?v=202609061743"></script>
+<script src="js/heavyair.js?v=202609061743"></script>
+<script src="js/generations.js?v=202609061743"></script>
+<script src="js/geodata.js?v=202609061743"></script>
+<script src="js/audio.js?v=202609061743"></script>
+  <script src="js/threat.js?v=202609061743"></script>
+<script src="js/map.js?v=202609061743"></script>
+<script src="js/path.js?v=202609061743"></script>
+<script src="js/combat.js?v=202609061743"></script>
+<script src="js/mines.js?v=202609061743"></script>
+<script src="js/sonarnet.js?v=202609061743"></script>
+<script src="js/entities.js?v=202609061743"></script>
+<script src="js/player.js?v=202609061743"></script>
+<script src="js/ai.js?v=202609061743"></script>
+<script src="js/sprites.js?v=202609061743"></script>
+<script src="js/spriteart.js?v=202609061743"></script>
+<script src="js/spriteart_hd.js?v=202609061743"></script>
+<script src="js/three.min.js"></script>
+<script src="js/render.js?v=202609061743"></script>
+<script src="js/models3d.js?v=202609061743"></script>
+<script src="js/units3d.js?v=202609061743"></script>
+<script src="js/units3d_salvage.js?v=202609061743"></script>
+<script src="js/units3d_final.js?v=202609061743"></script>
+  <script src="js/units3d_subs.js?v=202609061743"></script>
+  <script src="js/units3d_air2.js?v=202609061743"></script>
+  <script src="js/units3d_ew.js?v=202609061743"></script>
+  <script src="js/civ3d.js?v=202609061743"></script>
+<script src="js/models3d_hd.js?v=202609061743"></script>
+<script src="js/defences3d.js?v=202609061743"></script>
+<script src="js/obstacles3d.js?v=202609061743"></script>
+<script src="js/models3d_east.js?v=202609061743"></script>
+<script src="js/air3d_era.js?v=202609061743"></script>
+<script src="js/air_specs.js?v=202609061743"></script>
+<script src="js/rotor3d.js?v=202609061743"></script>
+<script src="js/rotor_specs.js?v=202609061743"></script>
+<script src="js/armour3d.js?v=202609061743"></script>
+<script src="js/armour_specs.js?v=202609061743"></script>
+<script src="js/warship3d.js?v=202609061743"></script>
+<script src="js/warship_specs.js?v=202609061743"></script>
+<script src="js/infantry3d.js?v=202609061743"></script>
+<script src="js/infantry_specs.js?v=202609061743"></script>
+<!-- mine warfare and the naval helicopter fit -->
+<script src="js/mine_veh_layer.js?v=202609061743"></script>
+<script src="js/mine_veh_clear.js?v=202609061743"></script>
+<script src="js/mine_ship_layer.js?v=202609061743"></script>
+<script src="js/mine_ship_sweeper.js?v=202609061743"></script>
+<!-- the naval recovery vehicle -->
+<script src="js/repairship3d.js?v=202609061743"></script>
+<!-- mobile air defence and ballistic launchers -->
+<script src="js/sam3d.js?v=202609061743"></script>
+<script src="js/tel3d.js?v=202609061743"></script>
+<script src="js/mine_objects.js?v=202609061743"></script>
+<script src="js/sonarnet_objects.js?v=202609061743"></script>
+<script src="js/asw_helo_fit.js?v=202609061743"></script>
+<script src="js/sub3d_era.js?v=202609061743"></script>
+<script src="js/sub_specs.js?v=202609061743"></script>
+<!-- hand-built hero models: loaded last so they override the parametric builders -->
+<script src="js/hero/kpa_e50_mbt.js?v=202609061743"></script>
+<script src="js/hero/mbt_c.js?v=202609061743"></script>
+<script src="js/hero/nato_e00_stealthfighter.js?v=202609061743"></script>
+<script src="js/hero/nato_e50_fighter.js?v=202609061743"></script>
+<script src="js/hero/nato_e60_mbt.js?v=202609061743"></script>
+<script src="js/hero/nato_e80_fighter.js?v=202609061743"></script>
+<script src="js/hero/nato_e90_mbt.js?v=202609061743"></script>
+<script src="js/hero/pact_e60_fighter.js?v=202609061743"></script>
+<script src="js/hero/pact_e80_mbt.js?v=202609061743"></script>
+<script src="js/hero/pact_e90_fighter.js?v=202609061743"></script>
+<script src="js/hero/pla_e00_mbt.js?v=202609061743"></script>
+<script src="js/hero/stealth_c.js?v=202609061743"></script>
+<script src="js/hero/destroyer_n.js?v=202609061743"></script>
+<script src="js/hero/kpa_e90_missileboat.js?v=202609061743"></script>
+<script src="js/hero/nato_e50_carrier.js?v=202609061743"></script>
+<script src="js/hero/pact_e60_cruiser.js?v=202609061743"></script>
+<script src="js/hero/pla_e00_destroyer.js?v=202609061743"></script>
+<script src="js/hero/roc_e80_destroyer.js?v=202609061743"></script>
+<script src="js/hero/sub_n.js?v=202609061743"></script>
+<script src="js/bloom3d.js?v=202609061743"></script>
+<script src="js/fx3d.js?v=202609061743"></script>
+<script src="js/render3d.js?v=202609061743"></script>
+<script src="js/icons3d.js?v=202609061743"></script>
+<script src="js/ui.js?v=202609061743"></script>
+<script src="js/save.js?v=202609061743"></script>
+<script src="js/game.js?v=202609061743"></script>
+<script src="js/main.js?v=202609061743"></script>
+
+<!-- ======== AI WATCH: a diagnostic recorder for this play session ======== -->
+<div id="aiwatch" style="position:fixed;right:8px;top:8px;z-index:99998;background:rgba(6,8,10,.86);
+     color:#8fd0ff;font:11px ui-monospace,Menlo,monospace;padding:8px 10px;border:1px solid #2a3a48;
+     border-radius:4px;max-width:330px;max-height:56vh;overflow:auto;white-space:pre-wrap;pointer-events:auto">
+  <b style="color:#ffd27a">AI WATCH</b>  <span style="opacity:.7">[W] hide · [L] copy log</span><br><span id="aiw"></span>
+</div>
+<script>
+window.addEventListener("load", function () {
+  var set = function (i, v) { var e = document.getElementById(i); if (e) e.value = v; };
+  /* ---- the requested match ---- */
+  set("opt-map", "normandy");
+  set("opt-fac", "nato");   set("opt-ptech", "3"); set("opt-era",  "e20"); set("opt-peracap", "e20");
+  set("opt-foe", "pact");   set("opt-atech", "1"); set("opt-aera", "e50"); set("opt-aeracap", "e80");
+  set("opt-diff", "elite"); set("opt-opponents", "1"); set("opt-handi", "1");
+  set("opt-fog", "1"); set("opt-3d", "1");
+
+  /* ---- the recorder ---------------------------------------------------
+     Samples the enemy commander twice a second and writes a line only when
+     something CHANGES, so the log is a history of decisions rather than a
+     wall of telemetry. Everything here is read-only. */
+  var log = [], last = {}, t0 = 0, panel = document.getElementById("aiw"), box = document.getElementById("aiwatch");
+  window.__AIWATCH = log;
+  function push(s) {
+    var line = String(Math.round(Game.time)).padStart(4) + "s  " + s;
+    log.push(line);
+    if (log.length > 400) log.shift();
+  }
+  function bearing(a) { return Math.round((a * 180 / Math.PI + 360)) % 360; }
+
+  setInterval(function () {
+    if (typeof Game === "undefined" || !Game.players || Game.players.length < 2) return;
+    var P = Game.players[1];
+    if (!P) return;
+    var it = (typeof AI !== "undefined" && AI.intelOf) ? AI.intelOf(P) : null;
+    var army = P.units.filter(function (u) { return !u.dead && u.def.weapons.length && u.layer === "ground" && !u.def.harvester; });
+    var harv = P.units.filter(function (u) { return !u.dead && u.def.harvester; }).length;
+    var idle = army.filter(function (u) { return u.order.type === "idle"; }).length;
+
+    var now = {
+      era: P.era, tech: P.tech, harv: harv, army: army.length, idle: idle,
+      cash: Math.round(P.cash / 500) * 500, oil: Math.round(P.oil / 25) * 25,
+      blds: P.buildings.filter(function (b) { return !b.dead; }).length,
+      axis: it && it.axes && it.axes.length ? bearing(it.axes[it.axes.length - 1].a !== undefined ? it.axes[it.axes.length - 1].a : it.axes[it.axes.length - 1]) : null,
+      aim: it && it.aim ? (it.aim.id || "?") : null,
+      knownB: it ? it.buildings : 0, knownU: it ? it.units : 0, graves: it ? it.graves : 0
+    };
+    if (!t0) { t0 = 1; push("match begins — enemy: PACT, 1950s equipment, tech I, ceiling 1980s, ELITE"); }
+
+    if (now.era !== last.era)   push("ERA        " + (last.era || "-") + " -> " + now.era + "   (re-equipped a generation)");
+    if (now.tech !== last.tech) push("TECH       " + (last.tech || "-") + " -> " + now.tech);
+    if (now.axis !== null && now.axis !== last.axis) push("ATTACK     new approach bearing " + now.axis + " deg");
+    if (now.aim && now.aim !== last.aim) push("OBJECTIVE  now attacking " + now.aim);
+    if (now.graves > (last.graves || 0)) push("LOST A WAVE  graves remembered = " + now.graves + " (will avoid that lane)");
+    if (Math.abs(now.harv - (last.harv || 0)) >= 1) push("ECONOMY    harvesters " + (last.harv || 0) + " -> " + now.harv);
+    if (now.blds !== last.blds) push("BASE       buildings " + (last.blds || 0) + " -> " + now.blds);
+    /* the things that would indicate a PROBLEM */
+    if (now.army >= 6 && now.idle === now.army && last.idleWarn !== Game.time - (Game.time % 60))
+      { push("!! STALL    " + now.army + " combat units all idle"); now.idleWarn = Game.time - (Game.time % 60); }
+    if (now.harv === 0 && Game.time > 120 && (last.harv || 0) > 0) push("!! ECONOMY  no harvesters left");
+    if (now.knownB === 0 && Game.time > 240) push("!! BLIND    has still found none of your buildings");
+
+    last = now;
+    panel.textContent = log.slice(-14).join("\n") +
+      "\n---------------------------------------\n" +
+      "era " + now.era + "  tech " + now.tech + "  army " + now.army + " (" + now.idle + " idle)\n" +
+      "harv " + now.harv + "  cash " + now.cash + "  oil " + now.oil + "\n" +
+      "it knows: " + now.knownB + " of your buildings, " + now.knownU + " units";
+  }, 500);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "w" || e.key === "W") box.style.display = box.style.display === "none" ? "block" : "none";
+    if (e.key === "l" || e.key === "L") {
+      var txt = log.join("\n");
+      navigator.clipboard && navigator.clipboard.writeText(txt);
+      console.log(txt);
+      Game.alert("AI LOG COPIED — paste it back to your assistant", "good");
+    }
+  });
+
+  /* start the match */
+  setTimeout(function () { document.getElementById("btn-start").click(); }, 120);
+});
+</script>
+</body>
+</html>

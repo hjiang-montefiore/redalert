@@ -1,0 +1,1265 @@
+/* ============ game.js — simulation core ============ */
+var Game = (function () {
+  const G = {};
+
+  G.init = function (opts) {
+    G.opts = opts;
+    /* the period this battle is fought in, before anything reads the roster */
+    G.era = (typeof ERAS !== "undefined" && ERAS.indexOf(opts.era) >= 0) ? opts.era : "e20";
+    /* The two sides start in their own periods. A 1950s army defending against
+       a present-day expedition is the fight the era system exists to allow, and
+       it was impossible while both sides were pinned to one starting era. */
+    G.eraAI = (typeof ERAS !== "undefined" && ERAS.indexOf(opts.eraAI) >= 0) ? opts.eraAI : G.era;
+    /* CUR_ERA is only the fallback for code with no player in hand, so it
+       follows the human - every real lookup goes through p.era. */
+    if (typeof setEra === "function") setEra(G.era);
+    G.rng = U.mulberry32(opts.seed);
+    G.map = GameMap.build(opts.theatre, opts.seed, opts.resources || 1,
+      { starts: (opts.roster && opts.roster.length) || 2 });
+    G.time = 0;
+    G.speed = 1;
+    G.paused = false;
+    G.over = false;
+    G.entities = [];
+    G.grid = new U.SpatialGrid(G.map.W * CFG.TILE, G.map.H * CFG.TILE, CFG.TILE * 2);
+    G.deferred = [];
+    G.fogT = 0;
+    G.eventX = 0; G.eventY = 0;
+    /* weather: fixed if the player chose one, otherwise it rolls */
+    G.weatherKey = opts.weather && opts.weather !== "dynamic" ? opts.weather : "clear";
+    G.weatherLock = !!(opts.weather && opts.weather !== "dynamic");
+    G.weatherT = CFG.WEATHER_MIN;
+    G.weatherBlend = 1;
+    if (typeof Threat !== "undefined") Threat.init(G);
+
+    Combat.reset();
+
+    /* ---- roster: one human plus any number of AI commanders ---- */
+    const roster = opts.roster && opts.roster.length ? opts.roster : [
+      { faction: opts.factionHuman, ai: false, team: 1 },
+      { faction: opts.factionAI, ai: true, team: 2, diff: opts.diff, handicap: opts.aiHandicap },
+    ];
+    G.players = roster.map((r, i) =>
+      new Player(G, i, r.faction, opts.cash, !!r.ai));
+    G.human = G.players.find(p => !p.isAI) || G.players[0];
+    G.ai = G.players.find(p => p.isAI) || null;      // legacy: "the" AI
+    roster.forEach((r, i) => {
+      const p = G.players[i];
+      p.team = r.team || (i + 1);
+      p.diff = r.diff || opts.diff;
+      p.personality = r.personality || "balanced";
+      p.handicap = r.handicap || 1;
+      /* The pre-battle Economy setting is a multiplier on what this commander's
+         haulers bring home - the one place income can be scaled without
+         inventing credits. On "Even" it is exactly 1 and the label is true. */
+      p.harvestMul = r.handicap || 1;
+      p.label = r.label || (p.isAI ? "AI " + i : "YOU");
+    });
+
+    /* pre-battle rules: starting tech, service restrictions, AI economy handicap */
+    const armsBan = (mode) => {
+      const b = {};
+      if (mode === "noair" || mode === "ground") b.aircraft = true;
+      if (mode === "nonavy" || mode === "ground") b.naval = true;
+      return b;
+    };
+    for (const p of G.players) {
+      const isHuman = p === G.human;
+      p.banned = armsBan(isHuman ? opts.armsHuman : opts.armsAI);
+      if (!opts.superweapons) p.banned.superweapon = true;
+      p.tech = (isHuman ? opts.techHuman : opts.techAI) || 1;
+      /* the highest tier this commander may ever reach. A ceiling below the
+         starting tier would be contradictory, so it is raised to meet it. */
+      p.techCap = Math.max(p.tech, (isHuman ? opts.capHuman : opts.capAI) || 3);
+      /* each commander advances generations independently from the battle's
+         starting period, up to the ceiling the battle was set with */
+      p.era = isHuman ? G.era : G.eraAI;
+      /* Each side carries its own era ceiling, the same way the tech tier cap
+         is already split. A single shared ceiling made it impossible to set up
+         the asymmetric fights the era system exists for — a modern expedition
+         against an army frozen in the 1970s, say. */
+      const wantCap = isHuman ? opts.eraCapHuman : opts.eraCapAI;
+      p.eraCap = (typeof ERAS !== "undefined" && ERAS.indexOf(wantCap) >= 0)
+        ? wantCap
+        : ((typeof ERAS !== "undefined" && ERAS.indexOf(opts.eraCap) >= 0) ? opts.eraCap : "e20");
+      if (eraIndex(p.eraCap) < eraIndex(p.era)) p.eraCap = p.era;
+      for (let t = 2; t <= p.tech; t++) p.upgrades["tech" + t] = true;
+    }
+
+    if (typeof Mines !== "undefined") Mines.init(G);
+    if (typeof SonarNet !== "undefined") SonarNet.init(G);
+    G.obs = new Map();                     // tile index -> field obstacle
+
+    /* occupancy: which tiles are covered by structures (index into entities or 0) */
+    G.occ = new Int32Array(G.map.W * G.map.H);
+    /* bumped whenever a structure is placed or removed, so cached lookups
+       that depend on occupancy (harvester docks) know to recompute */
+    G.occStamp = 1;
+    /* Per-battle caches keyed on G.time. A new battle resets G.time to 0, so
+       any cache stamped during the previous battle looks infinitely fresh
+       (time - stamp goes negative) and is never rebuilt - which left
+       harvesters searching the previous map's ore positions. */
+    G._oreIdx = null;
+    G.cbContacts = [];
+
+    /* fog: 0 unseen, 1 explored, 2 visible — per human player only */
+    G.fog = new Uint8Array(G.map.W * G.map.H);
+    G.fogEnabled = opts.fog;
+    if (!opts.fog) G.fog.fill(2);
+
+    /* ---- civilian structures ----
+       Neutral buildings standing in the towns, owned by nobody, that infantry
+       can occupy and fight from. They belong to a bystander player so that
+       ownership checks, targeting and the occupancy grid all work unchanged. */
+    G.neutral = new Player(G, -1, G.players[0].faction, 0, false);
+    G.neutral.isNeutral = true;
+    G.neutral.label = "CIVILIAN";
+    G.neutral.team = 0;
+    G.neutral.cash = 0;
+    /* civilian structures are nobody's colour: a neutral concrete grey, so
+       they never read as belonging to a side until somebody occupies one */
+    G.neutral.color = { main: "#8b8f92", dark: "#5d6164", light: "#b4b8bb" };
+    for (const site of (G.map.civSites || [])) {
+      const b = G.placeBuilding(G.neutral, "civblock", site.x, site.y, true);
+      if (b) b.neutral = true;
+    }
+
+    /* ---- who deploys where ----
+       The human may claim a specific position on the map; everyone else is
+       dealt the remaining ones in a shuffled order so the same choice does
+       not produce the same neighbours every time. */
+    const nS = G.map.starts.length;
+    const order = [];
+    for (let i = 0; i < nS; i++) order.push(i);
+    const want = opts.startPos;
+    let mine = 0;
+    if (typeof want === "number" && want >= 0 && want < nS) mine = want;
+    else mine = Math.floor(G.rng() * nS);
+    order.splice(order.indexOf(mine), 1);
+    for (let i = order.length - 1; i > 0; i--) {          // deterministic shuffle
+      const j = Math.floor(G.rng() * (i + 1));
+      const t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    order.unshift(mine);
+    G.startOrder = order;
+    /* the human's actual deployment site. Anything that needs "where is the
+       player's base" must use this, not starts[0] - the player may have
+       chosen a different position, or been dealt a random one. */
+    G.humanStart = G.map.starts[order[0]];
+
+    /* deploy every commander */
+    for (let i = 0; i < G.players.length; i++) {
+      const p = G.players[i], s = G.map.starts[order[i % nS]];
+      p.startIndex = order[i % nS];
+      p.startName = (THEATRES[opts.theatre] && THEATRES[opts.theatre].startNames &&
+                     THEATRES[opts.theatre].startNames[p.startIndex]) || null;
+      p.homeX = s.x * CFG.TILE; p.homeY = s.y * CFG.TILE;
+      const cy = G.placeBuilding(p, "conyard", s.x - 1, s.y - 1, true);
+      /* free starting force */
+      const mk = (role, dx, dy) => {
+        const id = unitFor(p.faction, role);
+        if (id) G.spawnUnitAt(p, id, (s.x + dx) * CFG.TILE, (s.y + dy) * CFG.TILE);
+      };
+      mk("rifle", -3, 2); mk("rifle", 3, 2); mk("recon", 0, 4);
+    }
+
+    AI.reset();
+    for (const p of G.players)
+      if (p.isAI) AI.create(G, p, p.diff || opts.diff, p.personality);
+    /* opening intel: a generous explored zone around your deployment */
+    if (G.fogEnabled) {
+      const s0 = G.map.starts[G.startOrder ? G.startOrder[0] : 0], R = 16, R2 = R * R;
+      for (let y = Math.max(0, s0.y - R); y <= Math.min(G.map.H - 1, s0.y + R); y++)
+        for (let x = Math.max(0, s0.x - R); x <= Math.min(G.map.W - 1, s0.x + R); x++)
+          if ((x - s0.x) * (x - s0.x) + (y - s0.y) * (y - s0.y) <= R2)
+            G.fog[y * G.map.W + x] = 1;
+    }
+    G.recomputeFog();
+    return G;
+  };
+
+  /* ---------------- weather ---------------- */
+  G.weather = function () { return CFG.WEATHER[G.weatherKey] || CFG.WEATHER.clear; };
+  G.updateWeather = function (dt) {
+    if (G.weatherLock) return;
+    G.weatherT -= dt;
+    if (G.weatherT > 0) return;
+    const keys = Object.keys(CFG.WEATHER);
+    /* clear weather is the most common state; the rest roll in and out */
+    const roll = G.rng();
+    const next = roll < 0.40 ? "clear"
+      : roll < 0.60 ? "overcast"
+      : roll < 0.78 ? "night"
+      : roll < 0.92 ? "rain" : "sandstorm";
+    if (next !== G.weatherKey) {
+      G.weatherKey = next;
+      const w = G.weather();
+      G.alert("WEATHER: " + w.name +
+        (w.vis < 0.7 ? " — VISIBILITY DEGRADED" : ""), w.vis < 0.7 ? "bad" : "good");
+    }
+    G.weatherT = CFG.WEATHER_MIN + G.rng() * (CFG.WEATHER_MAX - CFG.WEATHER_MIN);
+  };
+  /* how far this unit can actually see, given weather and its sight fit */
+  G.visionMul = function (unit) {
+    const w = G.weather();
+    if (w.vis >= 1) return 1;
+    const fac = FACTIONS[unit.owner.faction] || {};
+    /* thermal sights claw back most of what the weather takes away */
+    let th = unit.def.thermal !== undefined ? unit.def.thermal : (fac.thermal || 0.5);
+    /* dismounts rarely carry the sights their vehicles do */
+    if (unit.cat === "infantry") th *= 0.6;
+    /* a steep curve: a full thermal fit recovers nearly all of the loss,
+       a partial fit recovers little. This is the 1991 asymmetry. */
+    const recovery = w.thermalEdge * Math.pow(U.clamp(th, 0, 1), 1.6);
+    return w.vis + (1 - w.vis) * recovery;
+  };
+
+  /* ---------------- air search radar ----------------
+     Radar range against a given target scales with the fourth root of its
+     radar cross section. A shooter may use its own nose radar, or a track
+     handed to it over the datalink by any friendly radar that can see the
+     target - which is how AWACS and Aegis decide a fight between two
+     stealth fighters that cannot see each other.                         */
+  function rcsOf(e) {
+    if (e.def.rcs !== undefined) return e.def.rcs;
+    /* fall back to the older stealth figure so nothing goes undetectable */
+    if (e.def.stealth) return Math.max(0.004, Math.pow(1 - e.def.stealth, 3));
+    return e.layer === "air" ? 1.0 : 1.4;
+  }
+  G.rcsOf = rcsOf;
+  /* how far one sensor can see one target, in tiles */
+  function radarReach(sensor, target) {
+    const q = sensor.def.radarQ !== undefined ? sensor.def.radarQ
+            : (sensor.def.radar ? sensor.def.radar * 1.6 : 0);
+    if (!q) return 0;
+    return q * Math.pow(rcsOf(target), 0.25);
+  }
+  G.radarReach = radarReach;
+
+  /* The best track available to `shooter` on `target`, in tiles of range from
+     the SHOOTER. Organic radar counts fully; an off-board track counts only
+     as well as the faction's datalink carries it. */
+  G.airTrack = function (shooter, target) {
+    const d = U.dist(shooter.x, shooter.y, target.x, target.y) / CFG.TILE;
+    /* organic nose radar */
+    if (radarReach(shooter, target) >= d) return true;
+
+    const fac = FACTIONS[shooter.owner.faction] || {};
+    const dl = fac.datalink !== undefined ? fac.datalink : 0.5;
+    if (dl < 0.05) return false;
+
+    /* off-board: any friendly sensor that holds the track, degraded by how
+       well this side actually shares it */
+    for (const p of G.players) {
+      if (p !== shooter.owner && !G.allied(shooter.owner, p)) continue;
+      const scan = (list) => {
+        for (const u of list) {
+          if (u.dead || u === shooter || u.carried) continue;
+          const q = u.def.radarQ !== undefined ? u.def.radarQ : (u.def.radar ? u.def.radar * 1.6 : 0);
+          if (!q) continue;
+          const du = U.dist(u.x, u.y, target.x, target.y) / CFG.TILE;
+          if (radarReach(u, target) < du) continue;         // that sensor cannot see it
+          /* a shared track is usable, but a poor datalink shrinks how far
+             from the sensor the shooter may act on it */
+          if (du <= radarReach(u, target) * dl) return true;
+        }
+        return false;
+      };
+      if (scan(p.units)) return true;
+      if (scan(p.buildings)) return true;
+    }
+    return false;
+  };
+
+  /* ---------------- alliances ----------------
+     Same team number = allies. Everyone else is a legitimate target.      */
+  G.allied = function (a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    return a.team !== undefined && a.team === b.team;
+  };
+  G.enemiesOf = function (p) {
+    return G.players.filter(o => o !== p && !o.defeated && !G.allied(p, o));
+  };
+
+  /* ---------------- deferred callbacks (burst fire scheduling) ---------------- */
+  G.defer = function (delay, fn) { G.deferred.push({ t: G.time + delay, fn }); };
+
+  /* ---------------- entity management ---------------- */
+  G.spawnUnitAt = function (p, defId, x, y) {
+    /* nudge spawn off occupied / impassable tiles */
+    const layer = UNITS[defId].layer;
+    if (layer !== "air") {
+      let tx = U.clamp((x / CFG.TILE) | 0, 0, G.map.W - 1);
+      let ty = U.clamp((y / CFG.TILE) | 0, 0, G.map.H - 1);
+      if (!GameMap.passable(G.map, tx, ty, layer) || G.tileBlocked(tx, ty, null)) {
+        const spot = Path.nearest(G.map, tx, ty, layer, (a, b) => G.tileBlocked(a, b, null), 10);
+        if (spot) { x = spot.x * CFG.TILE + 16; y = spot.y * CFG.TILE + 16; }
+      }
+    }
+    const u = new Unit(G, defId, p, x, y);
+    G.entities.push(u); p.units.push(u);
+    return u;
+  };
+
+  /* spawn from the correct production structure with rally point */
+  /* the id this commander currently fields for a role, in its own era */
+  G.unitOf = function (p, role) { return unitFor(p.faction, role, p.era || CUR_ERA); };
+
+  G.spawnUnit = function (p, defId) {
+    const def = UNITS[defId];
+    const srcId = def.cat === "infantry" ? "barracks" : def.cat === "aircraft" ? "airbase" :
+                  def.cat === "naval" ? "navalyard" : "factory";
+    /* A commander with several factories nominates one as primary, and new
+       units come out of that one - so reinforcements appear where they are
+       wanted rather than wherever the pathfinder happens to pick. */
+    let src = null;
+    if (p.primary && p.primary[srcId]) {
+      const pb = p.primary[srcId];
+      if (!pb.dead && pb.buildProgress >= 1 && pb.def.id === srcId) src = pb;
+    }
+    if (!src) src = G.nearestBuilding(p, srcId, p.homeX, p.homeY);
+    /* a carrier is an airbase that sails: if there is no strip, or its decks
+       are the only free ramp, deliver the aircraft to the ship instead */
+    let deck = null;
+    if (def.cat === "aircraft" && def.carrierCapable) {
+      let padsFree = 0;
+      if (src) {
+        let used = 0;
+        for (const e of p.units) if (!e.dead && e.layer === "air" && e.padOn === src) used++;
+        padsFree = (src.def.pads || 0) - used;
+      }
+      if (!src || padsFree <= 0) {
+        let bd = Infinity;
+        for (const sh of p.units) {
+          if (sh.dead || !sh.def.carrier) continue;
+          let used = 0;
+          for (const e of p.units) if (!e.dead && e.layer === "air" && e.padOn === sh) used++;
+          if (used >= sh.def.carrier) continue;
+          const d = U.dist2(sh.x, sh.y, p.homeX, p.homeY);
+          if (d < bd) { bd = d; deck = sh; }
+        }
+      }
+    }
+    if (!src && !deck) { p.earn(p.factionCost(def)); return null; }
+
+    let sx, sy;
+    if (def.cat === "naval") {
+      /* find open water beside the yard */
+      const spot = Path.nearest(G.map, src.tx + ((src.def.w / 2) | 0), src.ty + src.def.h, "sea", null, 8) ||
+                   Path.nearest(G.map, src.tx, src.ty, "sea", null, 10);
+      if (!spot) { p.earn(p.factionCost(def)); return null; }
+      sx = spot.x * CFG.TILE + 16; sy = spot.y * CFG.TILE + 16;
+    } else if (def.cat === "aircraft") {
+      const host = deck || src;
+      sx = host.x; sy = host.y;
+    } else {
+      const spot = Path.nearest(G.map, src.tx + ((src.def.w / 2) | 0), src.ty + src.def.h, "ground",
+        (tx, ty) => G.tileBlocked(tx, ty, null), 7);
+      sx = spot ? spot.x * CFG.TILE + 16 : src.x;
+      sy = spot ? spot.y * CFG.TILE + 16 : src.y + src.def.h * CFG.TILE;
+    }
+    const u = G.spawnUnitAt(p, defId, sx, sy);
+    p.stats.built++;
+    /* a new airframe starts shut down on its ramp, not orbiting */
+    if (u && def.cat === "aircraft") {
+      u.padOn = deck || src;
+      u.parked = true;
+      u.order = { type: "parked" };
+    }
+    /* A warship with a flight deck sails with its air complement aboard, and
+       that complement belongs to the ship. Lose an aircraft and the deck stays
+       empty until the ship goes home for another - which is the whole
+       logistical point of embarking aircraft rather than basing them ashore.
+       An era carrier spells its deck `carrier` and has no `helo` at all, so
+       gating on `helo` delivered the one hull built to operate aircraft empty. */
+    if (u && def.cat === "naval" && (def.helo || def.carrier)) G.embarkComplement(u);
+
+    /* move to rally */
+    if (src.rally && def.cat !== "aircraft")
+      u.give({ type: "move", x: src.rally.x, y: src.rally.y });
+    return u;
+  };
+
+  /* ---- which airframes can work from a deck ----
+     rules.js tags the present-day roster by hand, but eras.js is merged after
+     that pass has run, so no era aircraft carried the flag at all - not even
+     the ASW helicopters that exist purely to fly off ships. The geometry table
+     already separates real rotorcraft from the aeroplanes filed under the same
+     roles (An-2, Po-2, C-46 and Il-76 are kind:"wing"), so no second
+     hand-written list is needed. */
+  for (const _id in UNITS) {
+    const _d = UNITS[_id];
+    if (_d.cat !== "aircraft" || _d.carrierCapable) continue;
+    const _spec = (typeof ROTORCRAFT !== "undefined") ? ROTORCRAFT[_id] : null;
+    if (_d.role === "aswhelo" || (_spec && _spec.kind !== "wing")) _d.carrierCapable = true;
+  }
+  /* an id only if that machine can actually operate from a deck: whatever is
+     put on one has to be allowed to land back on it by G.findPad */
+  function deckLegal(id) { return (id && UNITS[id] && UNITS[id].carrierCapable) ? id : null; }
+
+  /* What a navy puts in ONE deck spot, on this ship, in its owner's period.
+     An escort's hangar takes a helicopter and nothing else. A carrier is an
+     air wing: fighters fill the deck and the last spot is the ASW helicopter
+     every real deck sails with for plane-guard and submarine work. This used
+     to answer "a helicopter" whoever asked, which is why a supercarrier put to
+     sea as a very expensive helicopter pad. */
+  G.deckAircraftFor = function (host, slot) {
+    const p = host && host.owner ? host.owner : host;      // a bare player still works
+    if (!p) return null;
+    const era = p.era || G.era;
+    const helo = deckLegal(unitFor(p.faction, "aswhelo", era)) ||
+                 deckLegal(unitFor(p.faction, "transport", era));
+    if (!host || !host.def || !host.def.carrier) return helo;
+    /* The deck is filled with the workhorse rather than the exquisite machine -
+       a wing is mostly Super Hornets - and a stealth fighter or a Hawkeye can
+       still be bought onto a spare spot by hand. */
+    const fighter = deckLegal(unitFor(p.faction, "cfighter", era)) ||
+                    deckLegal(unitFor(p.faction, "cstealth", era));
+    /* No naval air arm this period: she sails as a helicopter carrier, which
+       is exactly what Moskva and her kind actually were. */
+    if (!fighter) return helo;
+    const slots = host.deckSlots ? host.deckSlots() : 1;
+    return (slot >= slots - 1 && helo) ? helo : fighter;
+  };
+
+  /* Fill every empty deck slot. Used when the ship is delivered, and again
+     whenever it is alongside a naval yard. Returns how many it took on. */
+  G.embarkComplement = function (ship, charge) {
+    if (!ship || ship.dead || !ship.deckSlots) return 0;
+    const slots = ship.deckSlots();
+    if (!slots) return 0;
+    let have = ship.wing().length;
+    if (have >= slots) return 0;
+    let made = 0;
+    while (have < slots) {
+      /* Ask per spot rather than once for the whole deck, and ask for the spot
+         that is actually empty: lose the helicopter and the next machine craned
+         aboard is a helicopter, lose a fighter and it is a fighter. The price
+         below then follows the airframe instead of always being a helicopter's. */
+      const id = G.deckAircraftFor(ship, ship.wing().some(u => u.def.hover) ? 0 : slots - 1);
+      if (!id || !UNITS[id]) break;
+      if (charge) {
+        const cost = Math.round((UNITS[id].cost || 0) * 0.6);   // airframe only
+        if (ship.owner.cash < cost) break;
+        ship.owner.cash -= cost;
+      }
+      const h = G.spawnUnitAt(ship.owner, id, ship.x, ship.y);
+      if (!h) break;
+      h.padOn = ship; h.parked = true; h.order = { type: "parked" };
+      have++; made++;
+    }
+    return made;
+  };
+
+  /* ---------------- construction ---------------- */
+  G.canPlace = function (p, defId, tx, ty) {
+    const def = BUILDINGS[defId];
+    if (tx < 0 || ty < 0 || tx + def.w > G.map.W || ty + def.h > G.map.H) return false;
+    let touchesShoreWater = false, anyLand = false;
+    for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++) {
+      const t = G.map.terrain[y * G.map.W + x];
+      if (G.occ[y * G.map.W + x]) return false;
+      /* never pave an ore field — except a derrick, which must sit on its node */
+      if (!def.oilNode && G.map.ore[y * G.map.W + x] > 25) return false;
+      if (def.shore) {
+        if (t === T.WATER) touchesShoreWater = true; else anyLand = true;
+        if (t === T.ROCK || t === T.TREE) return false;
+      } else {
+        if (!CFG.TERRAIN[t].pass || t === T.TREE) return false;
+      }
+      /* no units standing in the footprint */
+      let blocked = false;
+      G.grid.query(x * CFG.TILE + 16, y * CFG.TILE + 16, 20, (e) => {
+        if (e.dead || e.kind !== "unit" || e.layer !== "ground" || e.carried) return;
+        /* The engineer doing the emplacing is standing right there by
+           definition, and must not veto its own work. */
+        if (e === G._placer) return;
+        blocked = true;
+      });
+      if (blocked) return false;
+    }
+    if (def.shore && !(touchesShoreWater && anyLand)) return false;
+    /* oil derricks only on surveyed nodes */
+    if (def.oilNode) {
+      let onNode = false;
+      for (const n of G.map.oilNodes)
+        if (!n.taken && n.x >= tx && n.x < tx + def.w && n.y >= ty && n.y < ty + def.h) onNode = true;
+      if (!onNode) return false;
+    }
+    /* must be inside build radius (conyard deploys anywhere; derricks pipeline
+       to any surveyed node; a field obstacle is emplaced by an engineer
+       wherever the fighting is, which is the entire point of it) */
+    if (!def.base && !def.oilNode && !def.obstacle &&
+        !p.inBaseRadius(tx + def.w / 2, ty + def.h / 2)) return false;
+    return true;
+  };
+
+  G.bumpOcc = function () { G.occStamp = (G.occStamp || 0) + 1; };
+
+  G.placeBuilding = function (p, defId, tx, ty, instant) {
+    G.bumpOcc();
+    const def = BUILDINGS[defId];
+    const b = new Building(G, defId, p, tx, ty);
+    b.buildProgress = instant ? 1 : 0;
+    G.entities.push(b); p.buildings.push(b);
+    for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++) {
+      G.occ[y * G.map.W + x] = b.id;
+      /* G.occ only stores an entity id, and the movement and cover code needs
+         the obstacle itself every tick - so obstacles get their own index */
+      if (def.obstacle) G.obs.set(y * G.map.W + x, b);
+    }
+    if (def.oilNode)
+      for (const n of G.map.oilNodes)
+        if (n.x >= tx && n.x < tx + def.w && n.y >= ty && n.y < ty + def.h) n.taken = true;
+    if (def.freeUnit && instant !== "captured") {
+      /* refinery ships with a harvester */
+      G.defer(0.5, () => {
+        if (!b.dead) G.spawnUnitAt(p, def.freeUnit,
+          (tx + def.w / 2) * CFG.TILE, (ty + def.h + 1) * CFG.TILE);
+      });
+    }
+    return b;
+  };
+
+  G.captureBuilding = function (b, newOwner) {
+    const old = b.owner;
+    old.buildings.splice(old.buildings.indexOf(b), 1);
+    b.owner = newOwner;
+    newOwner.buildings.push(b);
+    /* a structure with a commander's name on it is not unclaimed any more:
+       leaving the flag set left a captured block that no gun would fire at */
+    b.neutral = false;
+    b.hp = Math.max(b.hp, b.maxHp * 0.5);
+    G.alert(old === G.human ? "STRUCTURE CAPTURED BY ENEMY" : "ENEMY STRUCTURE CAPTURED", old === G.human ? "bad" : "good");
+    G.pingEvent(b.x, b.y);
+  };
+
+  G.sellBuilding = function (b) {
+    if (b.dead) return;
+    b.owner.earn(b.def.cost * CFG.SELL_REFUND * (b.hp / b.maxHp));
+    G.removeBuilding(b);
+    Sfx.play("sell");
+  };
+
+  /* Hand a structure to another commander - used when infantry occupy a
+     civilian building, and when an engineer captures one. */
+  G.reassignBuilding = function (b, p) {
+    const from = b.owner;
+    if (from && from.buildings) {
+      const i = from.buildings.indexOf(b);
+      if (i >= 0) from.buildings.splice(i, 1);
+    }
+    b.owner = p;
+    p.buildings.push(b);
+    /* The renderer caches one model instance per building, keyed on the
+       owner's colour, but nothing told it the owner had changed - so a
+       captured structure kept flying the previous owner's colours and the
+       player had no way to see what they had just taken. */
+    b.reskin = true;
+    return b;
+  };
+
+  G.removeBuilding = function (b) {
+    G.bumpOcc();
+    /* clear a primary nomination pointing at this structure */
+    if (b.owner && b.owner.primary) {
+      for (const k in b.owner.primary) if (b.owner.primary[k] === b) b.owner.primary[k] = null;
+    }
+    b.dead = true;
+    for (let y = b.ty; y < b.ty + b.def.h; y++)
+      for (let x = b.tx; x < b.tx + b.def.w; x++) {
+        if (G.occ[y * G.map.W + x] === b.id) G.occ[y * G.map.W + x] = 0;
+        if (G.obs.get(y * G.map.W + x) === b) G.obs.delete(y * G.map.W + x);
+      }
+    /* a destroyed or sold derrick frees its oil node for whoever takes the
+       ground next — otherwise the site is dead for the rest of the match */
+    if (b.def.oilNode) {
+      for (const n of G.map.oilNodes) {
+        if (n.x >= b.tx && n.x < b.tx + b.def.w &&
+            n.y >= b.ty && n.y < b.ty + b.def.h) n.taken = false;
+      }
+    }
+  };
+
+  G.onDeath = function (e) {
+    if (e.kind === "building") {
+      /* A civilian block that comes down leaves a wreck rather than clean
+         ground: it still blocks the street, and an engineer can put a roof
+         back on it later. */
+      const rubbleId = (e.def.cat === "civilian" && !e.def.rubble) ? "civrubble" : null;
+      const rtx = e.tx, rty = e.ty;
+      G.removeBuilding(e);
+      if (rubbleId && BUILDINGS[rubbleId] && G.neutral) {
+        const r = G.placeBuilding(G.neutral, rubbleId, rtx, rty, true);
+        if (r) r.hp = r.maxHp;
+      }
+      if (e.owner === G.human) { G.alert(e.def.name.toUpperCase() + " LOST", "bad"); Sfx.play("explode_big"); }
+      else if (!e.owner.isAI || e.owner === G.ai) Sfx.play("explode_big");
+      G.pingEvent(e.x, e.y);
+    } else {
+      if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; Combat.kill(G, c, null); }
+      if (e.owner === G.human && e.def.harvester) G.alert("ORE HAULER LOST", "bad");
+      Sfx.play(e.cat === "infantry" ? "die_inf" : "explode");
+    }
+  };
+
+  /* ---------------- queries ---------------- */
+  /* An airborne sensor only works airborne. A radar aircraft shut down on its
+     ramp has its rotodome stationary and its crew on the ground - it should
+     not be lighting up half the map from inside the hangar. The same is true
+     of a jammer. Ground and naval emitters are unaffected. */
+  G.emitting = function (u) {
+    if (!u || u.dead || u.carried) return false;
+    if (u.layer !== "air") return true;
+    return !u.parked && !(u.order && u.order.type === "parked");
+  };
+
+  /* The nearest friendly tanker that is airborne, still has fuel to give, and
+     is closer than u's own ramp. This is the whole aerial-refuelling
+     mechanism: it makes reserveFuel() and the RTB decision measure distance to
+     the TANKER rather than to the airfield. */
+  G.nearestTanker = function (u) {
+    if (!u || !u.def.refuelable) return null;
+    let best = null, bd = Infinity;
+    for (const t of u.owner.units) {
+      if (t === u || t.dead || t.carried) continue;
+      if (!t.def.tanker || t.offload <= 0) continue;
+      if (t.parked || (t.order && t.order.type === "parked")) continue;
+      const d = U.dist2(u.x, u.y, t.x, t.y);
+      if (d < bd) { bd = d; best = t; }
+    }
+    return best;
+  };
+
+  G.obstacleAt = function (tx, ty) {
+    if (!G.obs) return null;
+    const o = G.obs.get(ty * G.map.W + tx);
+    return (o && !o.dead) ? o : null;
+  };
+  G.tileBlocked = function (tx, ty, forUnit) {
+    const id = G.occ[ty * G.map.W + tx];
+    if (!id) return false;
+    if (forUnit && forUnit.layer === "air") return false;
+    /* A field obstacle blocks selectively. Dragon's teeth stop a tank dead and
+       let a rifle squad walk between them; wire is the other way round. Without
+       this every obstacle would be an impassable wall to everybody, which is
+       the whole difference between an obstacle and a building. */
+    const o = G.obstacleAt(tx, ty);
+    if (o && forUnit) {
+      const blocks = o.def.blocks || "all";
+      if (blocks === "none") return false;
+      if (blocks === "vehicle") return forUnit.cat !== "infantry";
+    }
+    return true;
+  };
+  G.nearestBuilding = function (p, defId, x, y) {
+    let best = null, bd = Infinity;
+    for (const b of p.buildings) {
+      if (b.dead || b.def.id !== defId || b.buildProgress < 1) continue;
+      const d = U.dist2(x, y, b.x, b.y);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
+  };
+  /* ---- ore index ----
+     Harvesters used to scan the whole grid every time they wanted a field.
+     That is 20k tiles per query; with six commanders it was the hottest loop
+     in the game. Ore lives in a coarse bucket index instead, rebuilt lazily. */
+  const ORE_CELL = 6;                                  // tiles per bucket
+  G._oreIdx = null;
+  function buildOreIndex() {
+    const map = G.map;
+    const cw = Math.ceil(map.W / ORE_CELL), ch = Math.ceil(map.H / ORE_CELL);
+    const cells = new Array(cw * ch);
+    for (let i = 0; i < cells.length; i++) cells[i] = null;
+    for (let y = 0; y < map.H; y++) for (let x = 0; x < map.W; x++) {
+      if (map.ore[y * map.W + x] < 20) continue;
+      const ci = ((y / ORE_CELL) | 0) * cw + ((x / ORE_CELL) | 0);
+      (cells[ci] || (cells[ci] = [])).push(x, y);
+    }
+    G._oreIdx = { cw, ch, cells, stamp: G.time };
+  }
+  G.invalidateOre = function () { if (G._oreIdx) G._oreIdx.stamp = -1; };
+
+  G.nearestOre = function (tx, ty, p) {
+    const map = G.map;
+    if (!G._oreIdx || G.time - G._oreIdx.stamp > 8) buildOreIndex();
+    const idx = G._oreIdx, cw = idx.cw, ch = idx.ch;
+    const foes = G.enemiesOf(p);
+    const cx0 = (tx / ORE_CELL) | 0, cy0 = (ty / ORE_CELL) | 0;
+    let best = null, bd = Infinity;
+    /* expanding ring search: stop as soon as no closer bucket can beat the best */
+    for (let r = 0; r < Math.max(cw, ch); r++) {
+      if (best && (r - 1) * ORE_CELL * (r - 1) * ORE_CELL > bd) break;
+      let scanned = false;
+      for (let cy = cy0 - r; cy <= cy0 + r; cy++) {
+        if (cy < 0 || cy >= ch) continue;
+        for (let cx = cx0 - r; cx <= cx0 + r; cx++) {
+          if (cx < 0 || cx >= cw) continue;
+          if (r > 0 && Math.max(Math.abs(cx - cx0), Math.abs(cy - cy0)) !== r) continue;
+          const list = idx.cells[cy * cw + cx];
+          if (!list) continue;
+          scanned = true;
+          for (let k = 0; k < list.length; k += 2) {
+            const x = list[k], y = list[k + 1], i = y * map.W + x;
+            if (map.ore[i] < 20 || G.occ[i]) continue;
+            /* Nobody routes a hauler to ore they have never laid eyes on.
+               This used to read `p === G.human`, so only the player was held to
+               it: an AI hauler picked the best tile on the whole map from the
+               first second, through fog, on ground nothing of its had visited. */
+            if (G.fogEnabled && !G.explored(p, i)) continue;
+            let d = U.dist2(tx, ty, x, y);
+            for (const f of foes)
+              if (U.dist2(x, y, f.homeX / CFG.TILE, f.homeY / CFG.TILE) < 18 * 18) { d *= 9; break; }
+            if (d < bd) { bd = d; best = { x, y }; }
+          }
+        }
+      }
+      if (!scanned && r > Math.max(cw, ch) / 2 && !best) break;
+    }
+    return best;
+  };
+  /* Airbase pad or deck for an aircraft to land on. `claim` writes the result
+     back as the airframe's home ramp; without it this is a pure query, which
+     is all the bingo-fuel reserve ever wanted from it. */
+  G.findPad = function (u, claim) {
+    /* What a given host can offer THIS airframe. A carrier's deck takes
+       anything carrier-capable; an escort's flight deck takes a rotor and
+       nothing else - a destroyer cannot recover a fixed-wing aircraft.
+       def.helo had been sitting on twelve ships since they were written, and
+       the build tooltip had been promising "EMBARKS 2 HELICOPTERS" the whole
+       time, but the old blanket carrier-capable gate skipped every ship for a
+       helicopter without the flag - including the deck it was standing on. */
+    const rotary = !!(u && u.def.hover);
+    const deckOK = !u || u.def.carrierCapable;
+    const slotsOn = (h) => h.kind === "building"
+      ? (h.buildProgress >= 1 ? (h.def.pads || 0) : 0)
+      : ((h.def.carrier || 0) > 0 ? (deckOK ? h.def.carrier : 0)
+                                  : (rotary ? (h.def.helo || 0) : 0));
+    const usedOn = (h) => {
+      let n = 0;
+      for (const e of u.owner.units)
+        if (!e.dead && e.layer === "air" && e !== u && e.padOn === h) n++;
+      return n;
+    };
+    /* An aircraft goes home to where it is BASED, not to whatever ramp happens
+       to be nearest this frame. Home is an assignment - the player's, or the
+       one the airframe was delivered to. This runs once a tick per airframe
+       out of reserveFuel(), so the moment a ship's helicopter drifted closer
+       to a shore airfield than to its own deck it was re-homed there for good:
+       the ship read her hangar as empty and bought a replacement, and no
+       recall to the ship survived to the next tick. */
+    const home = u && u.padOn && !u.padOn.dead ? u.padOn : null;
+    if (home) {
+      const hs = slotsOn(home);
+      if (hs > 0 && usedOn(home) < hs) return { x: home.x, y: home.y, host: home };
+    }
+    let best = null, bd = Infinity;
+    for (const b of u.owner.buildings) {
+      if (b.dead || !slotsOn(b)) continue;
+      if (usedOn(b) >= slotsOn(b)) continue;
+      const d = U.dist2(u.x, u.y, b.x, b.y);
+      if (d < bd) { bd = d; best = { x: b.x, y: b.y, host: b }; }
+    }
+    for (const s of u.owner.units) {
+      if (s.dead) continue;
+      const slots = slotsOn(s);
+      if (!slots || usedOn(s) >= slots) continue;
+      const d = U.dist2(u.x, u.y, s.x, s.y);
+      if (d < bd) { bd = d; best = { x: s.x, y: s.y, host: s }; }
+    }
+    /* Only an aircraft that is actually going there claims the slot. This used
+       to fire on every call, and a wing therefore reshuffled its home bases
+       thirty times a second. */
+    if (claim && best && u) u.padOn = best.host;
+    return best;
+  };
+
+  /* ---------------- sensors ----------------
+     Any friendly platform with a `radar` fit projects a coverage bubble.
+     Fire directed into that bubble is far more accurate than blind fire.   */
+  /* ---- electronic warfare ----
+     Strength of hostile jamming over a point, 0..~1.5. A jammer's own faction
+     doctrine scales its output; the victim's doctrine hardens against it.   */
+  /* ---- the generational contest ----
+     Jamming is not a flat effect. A jammer built to defeat the radars of its
+     own day struggles against a set two generations newer, which hops
+     frequencies it was never designed to follow; and a modern jammer walks
+     straight through an old radar. So the outcome depends on which of the two
+     is the newer machine, not merely on how close the jammer is.
+     Returns a multiplier on the jammer's strength. */
+  function genContest(radarDef, jammerDef) {
+    if (typeof eraIndex !== "function") return 1;
+    const r = eraIndex(radarDef && radarDef.from ? radarDef.from : "e20");
+    const j = eraIndex(jammerDef && jammerDef.from ? jammerDef.from : "e20");
+    const gap = r - j;                       // positive: the radar is newer
+    if (gap === 0) return 1;
+    /* each generation of advantage roughly halves the jamming that gets
+       through; each generation behind roughly doubles it */
+    return gap > 0 ? Math.pow(0.55, Math.min(3, gap))
+                   : Math.pow(1.7, Math.min(3, -gap));
+  }
+  G.genContest = genContest;
+
+  /* Jamming felt by one specific radar platform, taking the generational
+     contest between that radar and each jammer into account. */
+  G.jamAgainst = function (victim, radarEnt) {
+    const rd = radarEnt && radarEnt.def;
+    let worst = 0;
+    for (const o of G.players) {
+      if (o === victim || G.allied(victim, o) || o.defeated) continue;
+      const fac = FACTIONS[o.faction] || {};
+      for (const u of o.units) {
+        if (u.dead || u.carried || !u.def.jam) continue;
+        if (!G.emitting(u)) continue;                  // parked jammer is off
+        const R = u.def.jam * CFG.TILE;
+        const d = U.dist(u.x, u.y, radarEnt.x, radarEnt.y);
+        if (d > R) continue;
+        let k = (1 - d / R) * (u.def.jamPower || 1) * (fac.ecm || 1);
+        k *= genContest(rd, u.def);
+        if (k > worst) worst = k;
+      }
+    }
+    if (!worst) return 0;
+    const vf = FACTIONS[victim.faction] || {};
+    let eccm = vf.eccm || 1;
+    if (victim.upgrades && victim.upgrades.eccm) eccm *= 1.55;
+    return worst / eccm;
+  };
+
+  G.jamAt = function (victim, x, y) {
+    let worst = 0;
+    for (const o of G.players) {
+      if (o === victim || G.allied(victim, o) || o.defeated) continue;
+      const fac = FACTIONS[o.faction] || {};
+      for (const u of o.units) {
+        if (u.dead || u.carried || !u.def.jam) continue;
+        if (!G.emitting(u)) continue;                  // parked jammer is off
+        const R = u.def.jam * CFG.TILE;
+        const d = U.dist(u.x, u.y, x, y);
+        if (d > R) continue;
+        /* falls off toward the edge of the bubble */
+        const k = (1 - d / R) * (u.def.jamPower || 1) * (fac.ecm || 1);
+        if (k > worst) worst = k;
+      }
+    }
+    if (!worst) return 0;
+    const vf = FACTIONS[victim.faction] || {};
+    /* national hardening, multiplied by whatever the commander has researched */
+    let eccm = vf.eccm || 1;
+    if (victim.upgrades && victim.upgrades.eccm) eccm *= 1.55;
+    return worst / eccm;
+  };
+
+  G.radarCovers = function (p, x, y) {
+    /* Each radar is judged on its own: a modern set may still hold the picture
+       through a bubble that has already blinded an older one beside it. */
+    for (const u of p.units) {
+      if (u.dead || u.carried || !u.def.radar) continue;
+      if (!G.emitting(u)) continue;                    // parked radar is off
+      if (U.dist2(u.x, u.y, x, y) >= Math.pow(u.def.radar * CFG.TILE, 2)) continue;
+      if (G.jamAgainst(p, u) > 0.55) continue;          // this set is burned through
+      return true;
+    }
+    for (const b of p.buildings) {
+      if (b.dead || !b.def.radar || b.buildProgress < 1) continue;
+      if (!b.powered) continue;
+      if (U.dist2(b.x, b.y, x, y) >= Math.pow(b.def.radar * CFG.TILE, 2)) continue;
+      if (G.jamAgainst(p, b) > 0.55) continue;
+      return true;
+    }
+    return false;
+  };
+
+  /* ---------------- counter-battery ----------------
+     Firing indirect gives your position away. Every arcing shot leaves a
+     contact; a radar that covers it plots the firing point after a delay,
+     with a little scatter. This is what makes shoot-and-scoot matter.     */
+  G.cbContacts = [];
+  G.reportIndirectFire = function (shooter) {
+    if (!shooter || !shooter.owner) return;
+    G.cbContacts.push({
+      x: shooter.x, y: shooter.y, owner: shooter.owner,
+      t: G.time, plotted: false, unit: shooter,
+    });
+    if (G.cbContacts.length > 60) G.cbContacts.shift();
+  };
+  G.updateCounterBattery = function () {
+    const PLOT_DELAY = 5.0, LIFE = 17.0;
+    for (let i = G.cbContacts.length - 1; i >= 0; i--) {
+      const c = G.cbContacts[i];
+      if (G.time - c.t > LIFE) { G.cbContacts.splice(i, 1); continue; }
+      if (c.plotted || G.time - c.t < PLOT_DELAY) continue;
+      /* who has radar over the firing point? */
+      for (const p of G.players) {
+        if (p === c.owner || G.allied(p, c.owner) || p.defeated) continue;
+        if (!G.radarCovers(p, c.x, c.y)) continue;
+        c.plotted = true;
+        c.by = p;
+        /* the plot is not perfect: scatter it by up to a tile */
+        c.px = c.x + (G.rng() - 0.5) * CFG.TILE * 2;
+        c.py = c.y + (G.rng() - 0.5) * CFG.TILE * 2;
+        if (p === G.human) {
+          G.alert("COUNTER-BATTERY PLOT — ENEMY GUNS LOCATED", "good");
+          G.pingEvent(c.px, c.py);
+        }
+        break;
+      }
+    }
+  };
+  /* fresh plots this player can shoot at */
+  G.cbTargets = function (p) {
+    return G.cbContacts.filter(c => c.plotted && c.by === p && G.time - c.t < 17);
+  };
+
+  /* ---------------- strategic weapons ---------------- */
+  /* Area damage with falloff at a point on the map. One routine for every
+     kind of off-map ordnance - a missile silo, an artillery mission, a
+     bomber pass - so they all behave consistently and there is one place to
+     change how a blast falls off. */
+  G.areaStrike = function (wx, wy, dmg, aoeTiles, warhead, opts) {
+    opts = opts || {};
+    const w = { dmg, warhead: warhead || "he", aoe: aoeTiles,
+                tgt: { ground: 1, air: 0, sea: 1, sub: 0 } };
+    Combat.addEffect({ t: "boom", x: wx, y: wy,
+      r: aoeTiles * CFG.TILE * (opts.nuke ? 1.1 : 0.8),
+      life: opts.nuke ? 1.6 : 0.9, max: opts.nuke ? 1.6 : 0.9, nuke: !!opts.nuke });
+    const R = aoeTiles * CFG.TILE;
+    G.grid.query(wx, wy, R + 40, (e) => {
+      /* aircraft in flight ride out a ground burst; ones on the ramp do not */
+      if (e.dead || e.targetLayer() === "air") return;
+      if (opts.owner && (e.owner === opts.owner || G.allied(opts.owner, e.owner))) {
+        if (!opts.friendlyFire) return;
+      }
+      const d = U.dist(wx, wy, e.x, e.y) - (e.r || 8);
+      if (d > R) return;
+      const f = U.clamp(1 - Math.max(0, d) / R, 0, 1);
+      Combat.applyDamage(G, e, dmg * (0.35 + 0.65 * f), w, null);
+    });
+    Sfx.play(opts.nuke || aoeTiles > 3 ? "explode_big" : "explode");
+  };
+
+  G.launchSuperweapon = function (b, wx, wy) {
+    const sw = b.def.superweapon;
+    if (!sw || b.swCharge < 1) return false;
+    b.swCharge = 0;
+    /* both sides are warned — there is no surprise nuclear strike */
+    UI.alert(sw.alert + (b.owner === G.human ? " — OUTBOUND" : " — INBOUND"),
+             b.owner === G.human ? "good" : "bad");
+    if (typeof Threat !== "undefined") Threat.reportLaunch(sw.alert, b.owner === G.human);
+    else Sfx.play("alarm");
+    if (b.owner !== G.human) G.pingEvent(wx, wy);
+    G.defer(sw.flight, () => {
+      const w = { dmg: sw.dmg, warhead: sw.warhead, aoe: sw.aoe, tgt: { ground: 1, air: 0, sea: 1, sub: 0 } };
+      G.areaStrike(wx, wy, sw.dmg, sw.aoe, sw.warhead, { nuke: !!sw.nuke, friendlyFire: true });
+      if (sw.nuke) {
+        /* fallout: a second, weaker pulse a moment later */
+        G.defer(1.2, () => {
+          G.grid.query(wx, wy, sw.aoe * CFG.TILE, (e) => {
+            if (e.dead || e.targetLayer() === "air") return;
+            Combat.applyDamage(G, e, sw.dmg * 0.18, w, null);
+          });
+        });
+      }
+    });
+    return true;
+  };
+
+  /* ---------------- off-map fire support ----------------
+     Missions flown or fired from outside the map. They are paid for in fuel
+     rather than cash, come on a cooldown, and arrive after a time of flight -
+     so calling one is a commitment made ahead of the moment it lands. What
+     the player can see determines how well it lands: a mission called onto
+     ground your radar covers is accurate, one called into the dark scatters. */
+  G.supportReady = function (p, key) {
+    const m = SUPPORT[key];
+    if (!m) return "NO SUCH MISSION";
+    if (m.fac !== "both" && m.fac !== p.faction) return "NOT AVAILABLE";
+    const pe = p.era || CUR_ERA;
+    if (typeof inEra === "function" && !inEra(m, pe))
+      return eraIndex(pe) < eraIndex(m.from || "e50") ? "NOT YET IN SERVICE" : "WITHDRAWN";
+    if (m.tech && p.tech < m.tech) return "REQUIRES TECH " + m.tech;
+    for (const rq of (m.prereq || []))
+      if (!p.hasBuilding(rq)) return "REQUIRES " + BUILDINGS[rq].name.toUpperCase();
+    if (p.oil < m.oil) return "INSUFFICIENT FUEL (" + Math.floor(p.oil) + "/" + m.oil + " bbl)";
+    const until = (p.support && p.support[key]) || 0;
+    if (G.time < until) return "READY IN " + Math.ceil(until - G.time) + "s";
+    return null;
+  };
+  /* how far a mission scatters from the aimpoint, in pixels */
+  G.supportScatter = function (p, key, wx, wy) {
+    const m = SUPPORT[key];
+    let mul = 1;
+    if (G.radarCovers(p, wx, wy)) mul = 0.35;              // observed and plotted
+    else if (!G.fogEnabled || G.fog[(wy / CFG.TILE | 0) * G.map.W + (wx / CFG.TILE | 0)] === 2)
+      mul = 1.0;                                           // seen by eye
+    else mul = m.blindMul !== undefined ? m.blindMul : 2.6; // called into the dark
+    return (m.cep || 1.2) * CFG.TILE * mul;
+  };
+  G.callFireSupport = function (p, key, wx, wy) {
+    const why = G.supportReady(p, key);
+    if (why) return why;
+    const m = SUPPORT[key];
+    p.spendOil(m.oil);
+    if (!p.support) p.support = {};
+    p.support[key] = G.time + m.cooldown;
+    const scatter = G.supportScatter(p, key, wx, wy);
+    if (p === G.human) G.alert(m.name.toUpperCase() + " \u2014 ROUNDS INBOUND", "good");
+    else { G.alert(m.name.toUpperCase() + " \u2014 INBOUND", "bad"); G.pingEvent(wx, wy); }
+    /* a mission is a number of impacts spread around the aimpoint, not a
+       single explosion: a battery fires a pattern */
+    const n = m.rounds || 1;
+    for (let i = 0; i < n; i++) {
+      const delay = m.flight + i * (m.spacing || 0.35);
+      const ax = wx + (G.rng() - 0.5) * scatter * 2;
+      const ay = wy + (G.rng() - 0.5) * scatter * 2;
+      G.defer(delay, () => G.areaStrike(ax, ay, m.dmg, m.aoe, m.warhead,
+        { owner: p, friendlyFire: !!m.friendlyFire }));
+    }
+    return null;
+  };
+
+  /* ---------------- alerts ---------------- */
+
+  /* ---- acoustic signature ----
+     A boat's own noise sets how far away a sonar can hear it. A 1950s Romeo
+     is audible from four times the range of a modern Kilo sitting quiet, and
+     a boat running hard is far louder than one creeping. */
+  /* How long a boat stays localised after it shoots. A torpedo launch gives a
+     bearing whoever fires it, but a noisy old diesel boat stays held far longer
+     than a modern one that can slip away between reloads. */
+  G.firedWindow = function (sub) {
+    return U.clamp(4 * (sub.def.quiet !== undefined ? sub.def.quiet : 0.5) / 0.35, 3, 9);
+  };
+  G.justFired = function (sub) {
+    return !!sub.recentlyFired && (G.time - sub.recentlyFired) < G.firedWindow(sub);
+  };
+
+  G.acousticOf = function (sub) {
+    let q = sub.def.quiet !== undefined ? sub.def.quiet : 0.5;
+    /* speed through the water is the single biggest term in radiated noise */
+    if (sub.moving) q *= sub.def.nuclear ? 1.9 : 2.4;
+    /* a diesel boat forced to snorkel is briefly very loud indeed */
+    if (!sub.def.nuclear && !sub.def.aip && sub.fuelMax && sub.fuel < 25) q *= 2.2;
+    /* having just fired gives the position away outright */
+    /* Ordered to run silent. Speed through the water is the biggest term in
+       radiated noise and the boat has already given up two thirds of it (see
+       speedMul); this is the rest of the trade. It is the counter to a
+       barrier that a player can actually find: a Kilo creeping at 0.24 x 0.70
+       is heard by a node at 0.54 tiles while reading that node's own downlink
+       at 1.8, so a careful boat can map a barrier without being fixed by it. */
+    if (sub.stance === "quiet") q *= 0.70;
+    if (G.justFired(sub)) q *= 6;
+    return q;
+  };
+
+  /* submarine detection: sonar ships and aircraft, coastal sonar, or a firing
+     wake. Detection range scales with the target's own radiated noise. */
+  G.canSeeSub = function (p, sub) {
+    if (sub.owner === p) return true;
+    if (G.allied(sub.owner, p)) return true;
+    if (G.justFired(sub)) return true;
+    /* A laid acoustic barrier. This is a READ, not a search. SonarNet.update()
+       does the one scan per tick, over submarines only - the sole class of
+       object a node can hear at all - and stamps the answer on the boat as
+       _netHold[playerIdx] = the time the fix expires. TWO nodes must hold the
+       same boat at once for that stamp to exist, because a single
+       omnidirectional hydrophone gives a datum and not a bearing, and the
+       reach that produced it was scaled by the same Math.min(2.2, acousticOf)
+       term the two loops below use. So the cost this feature adds to a
+       function called once per weapon per candidate per tick by every
+       acquiring hull, and once per entity per frame by both renderers, is one
+       array lookup and one numeric compare. */
+    if (sub._netHold && sub._netHold[p.idx] > G.time) return true;
+    const q = G.acousticOf(sub);
+    for (const u of p.units) {
+      if (u.dead || !u.def.sonar) continue;
+      /* a dipping sonar on a helicopter is the most effective sensor there is */
+      const reach = u.def.sonar * (u.layer === "air" ? 1.15 : 1) * Math.min(2.2, q);
+      if (U.dist(u.x, u.y, sub.x, sub.y) < reach * CFG.TILE) return true;
+    }
+    for (const b of p.buildings) {
+      if (b.dead || !b.def.sonar) continue;
+      if (U.dist(b.x, b.y, sub.x, sub.y) < b.def.sonar * Math.min(2.2, q) * CFG.TILE) return true;
+    }
+    return false;
+  };
+  /* Has this player's side ever overlooked this tile? The human has the fog
+     array; an AI commander keeps its own explored map, and any player without a
+     commander (the neutral owner, a human seat) is unrestricted exactly as
+     before, so this can never change an existing behaviour by accident. */
+  G.explored = function (p, i) {
+    if (p === G.human) return !G.fogEnabled || G.fog[i] !== 0;
+    const lk = (typeof AI !== "undefined" && AI.lookOf) ? AI.lookOf(p) : null;
+    return lk ? lk[i] !== 0 : true;
+  };
+  G.visibleTo = function (p, e) {
+    if (e.owner === p) return true;
+    if (p === G.human) {
+      if (!G.fogEnabled) return true;
+      return G.fog[e.ty * G.map.W + e.tx] === 2;
+    }
+    /* AI: symmetric check against its own units' sight */
+    for (const u of p.units) {
+      if (u.dead) continue;
+      if (U.dist2(u.x, u.y, e.x, e.y) < Math.pow(u.sightR() * CFG.TILE, 2)) return true;
+    }
+    for (const b of p.buildings) {
+      if (b.dead) continue;
+      if (U.dist2(b.x, b.y, e.x, e.y) < Math.pow(b.sightR() * CFG.TILE, 2)) return true;
+    }
+    return false;
+  };
+
+  /* ---------------- fog of war ---------------- */
+  G.recomputeFog = function () {
+    if (!G.fogEnabled) return;
+    const map = G.map, fog = G.fog;
+    for (let i = 0; i < fog.length; i++) if (fog[i] === 2) fog[i] = 1;
+    const reveal = (cx, cy, r) => {
+      const r2 = r * r;
+      const x0 = Math.max(0, cx - r | 0), x1 = Math.min(map.W - 1, cx + r | 0);
+      const y0 = Math.max(0, cy - r | 0), y1 = Math.min(map.H - 1, cy + r | 0);
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const dx = x - cx, dy = y - cy;
+        if (dx * dx + dy * dy <= r2) fog[y * map.W + x] = 2;
+      }
+    };
+    for (const u of G.human.units) if (!u.dead && !u.carried) reveal(u.tx, u.ty, u.sightR());
+    for (const b of G.human.buildings) if (!b.dead) reveal(b.tx + b.def.w / 2, b.ty + b.def.h / 2, b.sightR());
+
+    /* ---- radar lifts the fog ----
+       A radar picture is the main reason to build a dome, keep an AEW aircraft
+       up, or sail an Aegis ship forward: it shows you what is out there long
+       before anything of yours can see it. Jamming is the counter - a radar
+       sitting inside a hostile electronic-attack bubble has its reach cut
+       down, and a strong enough bubble blinds it completely. */
+    const radarReveal = (ent, cx, cy, r) => {
+      if (!r) return;
+      const jam = G.jamAgainst(G.human, ent);
+      if (jam > 0.55) return;                       // burned through: no picture at all
+      const eff = jam > 0.15 ? r * Math.max(0.15, 1 - jam) : r;
+      reveal(cx, cy, eff);
+    };
+    for (const u of G.human.units) {
+      if (u.dead || u.carried || !u.def.radar) continue;
+      radarReveal(u, u.tx, u.ty, u.def.radar);
+    }
+    for (const b of G.human.buildings) {
+      if (b.dead || !b.def.radar || b.buildProgress < 1 || !b.powered) continue;
+      radarReveal(b, b.tx + b.def.w / 2, b.ty + b.def.h / 2, b.def.radar);
+    }
+  };
+
+  /* ---------------- sorties ----------------
+     Launching costs nothing. What constrains a mission is the airframe: a
+     jet carries a finite amount of time on station and has to come home for
+     fuel and ordnance. A helicopter is not on that clock. */
+  G.sortieCost = function () { return 0; };
+  /* how long this airframe can stay out, in seconds */
+  G.enduranceOf = function (u) {
+    if (!u.def.jet) return Infinity;
+    const burn = u.airBurn ? u.airBurn() : CFG.FUEL_BURN_AIR;
+    return burn > 0 ? u.fuelMax / burn : Infinity;
+  };
+  /* Launch one aircraft on an order. Returns a reason string on failure. */
+  G.launchSortie = function (u, order) {
+    if (!u || u.dead || u.layer !== "air") return "NOT AN AIRCRAFT";
+    /* Do not sell the player a sortie the aircraft cannot fly. An air
+       superiority fighter told to strike a tank would previously take off,
+       charge the fuel, discover it carries nothing that can hit the ground,
+       and come home - having achieved nothing and said nothing. */
+    if (order && order.type === "attack" && order.target && !u.canTarget(order.target))
+      return u.def.name.toUpperCase() + " CANNOT ENGAGE THAT TARGET";
+    if (u.ammoMax && u.ammo <= 0.05) return "REARMING";
+    if (u.fuel < u.reserveFuel()) return "REFUELLING";
+    u.parked = false;
+    u.give(order);
+    return null;
+  };
+
+  G.alert = function (msg, cls) { UI.alert(msg, cls); };
+  G.pingEvent = function (x, y) { G.eventX = x; G.eventY = y; };
+
+  /* ---------------- main tick ---------------- */
+  G.tick = function (dt) {
+    if (G.paused || G.over) return;
+    G.time += dt;
+
+    /* deferred fire callbacks */
+    for (let i = G.deferred.length - 1; i >= 0; i--) {
+      if (G.deferred[i].t <= G.time) {
+        const d = G.deferred[i];
+        G.deferred.splice(i, 1);
+        d.fn();
+      }
+    }
+
+    /* rebuild the spatial grid */
+    G.grid.clear();
+    /* Cargo inside a transport is off the board and must not be in the grid;
+       a squad manning a building is emphatically on it, and has to be findable
+       or nothing can ever shoot at it - which is what the garrison damage table
+       in combat.js exists to resolve. */
+    for (const e of G.entities)
+      if (!e.dead && (!e.carried || e.garrisonIn)) G.grid.insert(e);
+
+    /* ore regrowth from seed tiles */
+    const map = G.map;
+    if (((G.time * 10) | 0) % 10 === 0) {
+      for (let i = 0; i < map.ore.length; i++) {
+        if (map.oreSeed[i] && map.ore[i] < map.oreMax[i])
+          map.ore[i] = Math.min(map.oreMax[i], map.ore[i] + CFG.ORE_REGROW);
+      }
+    }
+
+    G.updateWeather(dt);
+    if (typeof Threat !== "undefined") Threat.update(dt);
+    G.updateCounterBattery();
+    for (const p of G.players) {
+      p.updateQueues(dt); p.updateEraAdvance(dt); p.updateFuelPurchase(dt);
+    }
+    for (const e of G.entities) e.update(dt);
+    if (typeof Mines !== "undefined") Mines.update(G, dt);
+    if (typeof SonarNet !== "undefined") SonarNet.update(G, dt);
+    Combat.update(G, dt);
+    AI.update(dt);
+
+    /* sweep dead */
+    for (let i = G.entities.length - 1; i >= 0; i--) {
+      const e = G.entities[i];
+      if (e.dead) {
+        G.entities.splice(i, 1);
+        const arr = e.kind === "unit" ? e.owner.units : e.owner.buildings;
+        const j = arr.indexOf(e);
+        if (j >= 0) arr.splice(j, 1);
+      }
+    }
+
+    G.fogT -= dt;
+    if (G.fogT <= 0) { G.fogT = CFG.FOG_UPDATE; G.recomputeFog(); }
+
+    G.checkVictory();
+  };
+
+  G.checkVictory = function () {
+    for (const p of G.players) {
+      if (p.defeated) continue;
+      const alive = p.buildings.some(b => !b.dead) ||
+                    p.units.some(u => !u.dead && (u.def.deployTo || u.def.harvester));
+      if (!alive) {
+        p.defeated = true;
+        if (p === G.human) G.alert("YOUR FORCES HAVE BEEN DESTROYED", "bad");
+        else G.alert((p.label || "AI") + " ELIMINATED", "good");
+      }
+    }
+    /* the war ends when only one team is left standing */
+    const liveTeams = new Set();
+    for (const p of G.players) if (!p.defeated) liveTeams.add(p.team);
+    if (G.human.defeated) { G.over = true; UI.endGame(false); return; }
+    if (liveTeams.size <= 1 && !G.over) { G.over = true; UI.endGame(true); }
+  };
+
+  return G;
+})();

@@ -1,0 +1,162 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Unit thumbnail renderer</title>
+<style>body{margin:0;background:#0e1216;color:#8fa0a8;font:12px monospace}#log{padding:8px}</style>
+<div id="log">idle</div>
+<script src="js/util.js"></script>
+<script src="js/config.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/eras.js"></script>
+<script src="js/three.min.js"></script>
+<script src="js/models3d.js"></script>
+<script src="js/units3d.js"></script>
+<script src="js/units3d_salvage.js"></script>
+<script src="js/units3d_final.js"></script>
+<script src="js/units3d_subs.js"></script>
+<script src="js/units3d_air2.js"></script>
+<script src="js/units3d_ew.js"></script>
+<script src="js/civ3d.js"></script>
+<script src="js/models3d_hd.js"></script>
+<script src="js/defences3d.js"></script>
+<script src="js/models3d_east.js"></script>
+<script src="js/air3d_era.js"></script>
+<script src="js/air_specs.js"></script>
+<script src="js/rotor3d.js"></script>
+<script src="js/rotor_specs.js"></script>
+<script src="js/armour3d.js"></script>
+<script src="js/armour_specs.js"></script>
+<script src="js/warship3d.js"></script>
+<script src="js/warship_specs.js"></script>
+<script src="js/infantry3d.js"></script>
+<script src="js/infantry_specs.js"></script>
+<script src="js/heavyair.js"></script>
+<script>
+/* Renders one thumbnail per unit using the same model-resolution rule the
+   battlefield renderer uses, so what appears in the encyclopedia is exactly
+   what appears on the map. */
+(function () {
+  var SIZE = 224;
+  var TEAM = { nato: 0x3f7fd0, pact: 0xc4483a, pla: 0xd08a2a,
+               roc: 0x2aa39a, kpa: 0x7f9440, both: 0x8a9098 };
+
+  var cv = document.createElement("canvas");
+  cv.width = SIZE; cv.height = SIZE;
+  var renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true,
+                                           preserveDrawingBuffer: true });
+  renderer.setSize(SIZE, SIZE, false);
+  renderer.setClearColor(0x000000, 0);
+  if (THREE.sRGBEncoding !== undefined) renderer.outputEncoding = THREE.sRGBEncoding;
+  if (THREE.ACESFilmicToneMapping !== undefined) {
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+  }
+
+  var scene = new THREE.Scene();
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  var key = new THREE.DirectionalLight(0xfff2dd, 1.35); key.position.set(0.7, 1.2, 0.9);
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0xa8c4e0, 0.55); fill.position.set(-0.9, 0.4, -0.7);
+  scene.add(fill);
+  var rim = new THREE.DirectionalLight(0xffffff, 0.4); rim.position.set(-0.3, -0.8, 0.6);
+  scene.add(rim);
+
+  function modelKeyFor(def) {
+    var own = def.cat === "infantry" ? "inf_" + def.role : def.id;
+    if (UNIT_MODELS[own]) return own;
+    var peers = (typeof ROLES !== "undefined" && ROLES[def.role]) || [];
+    for (var i = 0; i < peers.length; i++) {
+      var p = UNITS[peers[i]];
+      if (!p || p.cat !== def.cat) continue;
+      var k = p.cat === "infantry" ? "inf_" + p.role : peers[i];
+      if (UNIT_MODELS[k]) return k;
+    }
+    return null;
+  }
+
+  function shoot(def) {
+    var k = modelKeyFor(def);
+    if (!k) return null;
+    var tpl;
+    try {
+      tpl = UNIT_MODELS[k].build(THREE, Models3D, { team: TEAM[def.fac] || 0x8a9098 });
+    } catch (e) { return null; }
+    if (!tpl) return null;
+
+    var root = new THREE.Group();
+    root.add(tpl);
+    scene.add(root);
+
+    var bb = new THREE.Box3().setFromObject(root);
+    var sz = new THREE.Vector3(); bb.getSize(sz);
+    var ctr = new THREE.Vector3(); bb.getCenter(ctr);
+    var reach = Math.max(sz.x, sz.y, sz.z) * 0.62;
+    if (!isFinite(reach) || reach <= 0) { scene.remove(root); return null; }
+
+    var cam = new THREE.OrthographicCamera(-reach, reach, reach, -reach, -reach * 20, reach * 20);
+    cam.up.set(0, 0, 1);
+    /* a three-quarter view from the front left, the angle a recognition
+       silhouette is normally drawn from */
+    cam.position.set(ctr.x + reach * 1.35, ctr.y + reach * 1.15, ctr.z + reach * 0.95);
+    cam.lookAt(ctr);
+    cam.updateMatrixWorld(true);
+
+    /* Fit the frustum to where the model actually lands on screen rather than
+       to its longest axis, so a tall thin soldier and a long low ship both
+       fill the frame instead of floating in it. */
+    var inv = new THREE.Matrix4().copy(cam.matrixWorld).invert();
+    var v = new THREE.Vector3();
+    var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (var cx = 0; cx < 2; cx++) for (var cy = 0; cy < 2; cy++) for (var cz = 0; cz < 2; cz++) {
+      v.set(cx ? bb.max.x : bb.min.x, cy ? bb.max.y : bb.min.y, cz ? bb.max.z : bb.min.z);
+      v.applyMatrix4(inv);
+      if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
+      if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y;
+    }
+    var halfW = Math.max(1e-3, (maxX - minX) * 0.5), halfH = Math.max(1e-3, (maxY - minY) * 0.5);
+    var half = Math.max(halfW, halfH) * 1.10;          /* a little air all round */
+    cam.left = -half; cam.right = half; cam.top = half; cam.bottom = -half;
+    cam.updateProjectionMatrix();
+
+    renderer.render(scene, cam);
+    var url;
+    try { url = cv.toDataURL("image/webp", 0.88); } catch (e) { url = null; }
+    if (!url || url.length < 200 || url.indexOf("image/webp") < 0) url = cv.toDataURL("image/png");
+
+    scene.remove(root);
+    root.traverse(function (o) {
+      if (o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+      if (o.material) {
+        var ms = Array.isArray(o.material) ? o.material : [o.material];
+        ms.forEach(function (m) { try { m.dispose(); } catch (e) {} });
+      }
+    });
+    return url;
+  }
+
+  var ids = Object.keys(UNITS);
+  var out = {}, i = 0, failed = [];
+  var log = document.getElementById("log");
+
+  function step() {
+    var t0 = performance.now();
+    while (i < ids.length && performance.now() - t0 < 90) {
+      var def = UNITS[ids[i]];
+      var u = shoot(def);
+      if (u) out[ids[i]] = u; else failed.push(ids[i]);
+      i++;
+    }
+    log.textContent = i + " / " + ids.length + "  rendered " +
+                      Object.keys(out).length + "  failed " + failed.length;
+    if (i < ids.length) setTimeout(step, 0);
+    else {
+      window.__thumbs = out;
+      window.__failed = failed;
+      window.__done = true;
+      log.textContent = "DONE " + Object.keys(out).length + " thumbnails, " +
+                        failed.length + " failed";
+    }
+  }
+  setTimeout(step, 60);
+  window.__ids = ids;
+})();
+</script>

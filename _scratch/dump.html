@@ -1,0 +1,36 @@
+<!doctype html><meta charset="utf-8"><pre id="o"></pre>
+<script src="../js/util.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/facts.js"></script>
+<script src="../js/rules.js"></script>
+<script src="../js/eras.js"></script>
+<script src="../js/heavyair.js"></script>
+<script src="../js/generations.js"></script>
+<script>
+var L=[];function p(){L.push([].slice.call(arguments).join(" "));}
+try{
+CFG.CUE_OPTICAL=5.5;
+p("WEAPONS",Object.keys(WEAPONS).length,"UNITS",Object.keys(UNITS).length,"BUILDINGS",Object.keys(BUILDINGS).length);
+// replicate the proposed cue pass
+var cue={};
+for(var u in UNITS){var ud=UNITS[u],ws=ud.weapons||[];
+ for(var j=0;j<ws.length;j++){var w=WEAPONS[ws[j]];
+  if(!w||w.antiRadiation||!w.tgt)continue;
+  if(!w.tgt.ground&&!w.tgt.sea)continue;
+  if(ud.cat==="naval"&&w.proj==="shell"){cue[ws[j]]=1;continue;}
+  if(w.proj==="missile"&&w.tgt.sea&&w.range>CFG.CUE_OPTICAL*1.6)cue[ws[j]]=1;
+ }}
+p("cued weapons total:",Object.keys(cue).length);
+// how many weapons are air-capable and would now be EXEMPT from jamMul
+var air=0,airCued=0,tot=0;
+for(var k in WEAPONS){var w=WEAPONS[k];tot++;if(w.tgt&&w.tgt.air){air++;if(cue[k])airCued++;}}
+p("air-capable weapons:",air,"of which cued:",airCued);
+// radarDependence replication? find it
+p("sample cued:",Object.keys(cue).slice(0,15).join(", "));
+p("BUILDINGS.radar.from",BUILDINGS.radar.from,"sam",BUILDINGS.sam.from,"flak",BUILDINGS.flak.from);
+p("sam radarQ",BUILDINGS.sam.radarQ,"radar",BUILDINGS.sam.radar);
+// era coverage: units per era with radar
+var eras=["e50","e60","e80","e90","e00","e20"];
+}catch(e){p("ERR "+e.message+"\n"+e.stack);}
+document.getElementById("o").textContent=L.join("\n");
+</script>
