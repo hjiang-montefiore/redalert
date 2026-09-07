@@ -12,7 +12,9 @@ V = sys.argv[1]
 s = open("index.html").read()
 s = re.sub(r'(src="js/[A-Za-z0-9_/]+\.js)(\?v=\d+)?"',    r'\1?v=' + V + '"', s)
 s = re.sub(r'(href="css/[A-Za-z0-9_/]+\.css)(\?v=\d+)?"', r'\1?v=' + V + '"', s)
-s = re.sub(r'(<span id="buildid">)[^<]*',                   r'\1' + V, s)
+# \1 followed by a digit is read as an octal escape, so \1 + "202609071436"
+# became \120 = "P" and stamped "P2609071436". \g<1> is unambiguous.
+s = re.sub(r'(<span id="buildid">)[^<]*',                   r'\g<1>' + V, s)
 open("index.html", "w").write(s)
 PY
 echo "stamped build $V"

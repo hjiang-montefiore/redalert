@@ -1242,6 +1242,26 @@ class Unit {
       if (!autoTargetable(e)) return;
       if (!this.canTarget(e)) return;
       /* low-observable airframes cannot be acquired at full range */
+      /* A surface mount cannot shoot at an aeroplane it cannot reach, so it
+         has no business asking whether anybody holds a track on one. acquire()
+         scans to sightR() * 1.25, and a naval hull's sight is widened to match
+         its LONGEST weapon - an anti-ship missile - so an LCS whose 76mm
+         reaches 8.0 tiles was interrogating airTrack about every airframe
+         inside 20.5 tiles, every tick, for ever, and being silently refused.
+         120 surface shooters carry that phantom band; the missile boat has
+         14.8 tiles of it around a 3.2-tile Phalanx. That artefact, not any
+         missing radar, is the bulk of a measured 87.2% airTrack denial rate
+         (879 of 1008 calls in a 20-minute e20 battle), and none of it was ever
+         a real engagement. Aircraft are deliberately exempt: a fighter must
+         still acquire a distant bogey and close on it. */
+      if (this.layer !== "air" && e.targetLayer() === "air") {
+        let airReach = 0;
+        for (const k of (this.def.weapons || [])) {
+          const w2 = WEAPONS[k];
+          if (w2 && w2.tgt && w2.tgt.air) airReach = Math.max(airReach, this.weaponRange(w2));
+        }
+        if (U.dist(this.x, this.y, e.x, e.y) > airReach) return;
+      }
       /* an aircraft can only be engaged if somebody actually holds a track
          on it - your own radar, or a friendly sensor over the datalink */
       /* An engagement beyond visual range needs somebody to be holding a
@@ -1254,7 +1274,7 @@ class Unit {
       const VISUAL = 11;
       const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
             ((this.def.role === "aa" || this.def.role === "sam") &&
-             this.weaponRange(WEAPONS[this.def.weapons[0]]) / CFG.TILE > VISUAL);
+             ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
       /* A parked airframe is not a radar track, it is a thing sitting in the
          open, so it goes down the ordinary visual branch instead. */
       if (e.targetLayer() === "air" && this.game.airTrack && needsTrack) {
@@ -2207,7 +2227,7 @@ class Building {
       const VISUAL = 11;
       const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
             ((this.def.role === "aa" || this.def.role === "sam") &&
-             this.weaponRange(WEAPONS[this.def.weapons[0]]) / CFG.TILE > VISUAL);
+             ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
       /* A parked airframe is not a radar track, it is a thing sitting in the
          open, so it goes down the ordinary visual branch instead. */
       if (e.targetLayer() === "air" && this.game.airTrack && needsTrack) {
