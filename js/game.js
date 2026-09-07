@@ -14,8 +14,17 @@ var Game = (function () {
        follows the human - every real lookup goes through p.era. */
     if (typeof setEra === "function") setEra(G.era);
     G.rng = U.mulberry32(opts.seed);
+    /* A battle may be fought on a bigger theatre than the 144x144 default.
+       CFG.MAP_W is updated to match because render.js sizes the ground texture
+       from it (PPT = 3072 / max(MAP_W, MAP_H)) and would otherwise paint a
+       288-tile map at the detail budget of a 144-tile one. Everything else in
+       the engine already reads G.map.W / G.map.H. The value rides in opts, so
+       save.js - which stores G.opts wholesale and re-inits from it - carries
+       the map size through a save and reload with no change of its own. */
+    const mapSize = U.clamp(Math.round(opts.mapSize || CFG.MAP_W), 96, 384);
+    CFG.MAP_W = mapSize; CFG.MAP_H = mapSize;
     G.map = GameMap.build(opts.theatre, opts.seed, opts.resources || 1,
-      { starts: (opts.roster && opts.roster.length) || 2 });
+      { starts: (opts.roster && opts.roster.length) || 2, size: mapSize });
     G.time = 0;
     G.speed = 1;
     G.paused = false;

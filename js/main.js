@@ -164,6 +164,7 @@
       armsAI: pick("opt-aarms", "all"),
       superweapons: pick("opt-super", "1") === "1",
       resources: parseFloat(pick("opt-res", "1")),
+      mapSize: parseInt(pick("opt-mapsize", String(CFG.MAP_W)), 10),
       aiHandicap: parseFloat(pick("opt-handi", "1")),
     };
 
