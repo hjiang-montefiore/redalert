@@ -1872,6 +1872,45 @@ class Unit {
       }
     }
 
+    /* ---- high-value airborne assets keep out of the rings ----
+       An early-warning aircraft, a tanker or a transport carries nothing that
+       can shoot back, and an electronic-attack aircraft holding its rounds is
+       in the same position. Real planning gives these a station BEHIND the
+       forward edge, outside every plotted missile engagement zone, because
+       losing one costs more than the sortie it was supporting. Measured before
+       this: an E-3 ordered to orbit over a Patriot flew to 0.4 tiles and died.
+
+       The ring is drawn only from batteries this commander can SEE, so the
+       aircraft is not being given a free plot of the enemy's air defence - it
+       routes around what it knows and can still be caught by what it does not.
+       Deliberately NOT applied to fighters and strike aircraft: penetrating a
+       defended area is their job, and a player who orders it means it. */
+    const defenceless = !this.def.weapons.length ||
+                        (this.allWeaponsHeld && this.allWeaponsHeld());
+    if (defenceless && this.game.standoffPoint &&
+        (o.type === "move" || o.type === "attackmove" || o.type === "cap")) {
+      const margin = 1.5 + (this.def.jam ? 0 : 1.0);   // a jammer may sit closer
+      /* Anchor the walk-back at HOME, not at the aircraft. Computed from the
+         current position the station moves every time the aircraft does: it
+         backs out of the ring, the route then reads clear, it turns in again,
+         and it oscillates across the threat edge - measured, that drove an E-3
+         from a 12.3-tile hold to a 6.2-tile one, i.e. deeper in than doing
+         nothing. Anchored at home the station is a fixed point on the corridor
+         and the aircraft simply flies to it and stays. */
+      const hx = this.owner.homeX, hy = this.owner.homeY;
+      const sp = this.game.standoffPoint(this.owner, hx, hy, o.x, o.y, margin);
+      if (sp.held) {
+        if (!this.warnedRing && this.owner === this.game.human) {
+          this.warnedRing = true;
+          this.game.alert(this.def.name.toUpperCase() +
+                          " \u2014 HOLDING SHORT OF AIR DEFENCE", "bad");
+        }
+        if (this.flyTo(sp.x, sp.y, dt)) this.moving = false;
+        return;
+      }
+      this.warnedRing = false;
+    }
+
     if (o.type === "move") {
       if (this.flyTo(o.x, o.y, dt) && !this.nextOrder()) this.order = { type: "hover" };
     } else if (o.type === "attackmove") {
@@ -1890,9 +1929,36 @@ class Unit {
       const range = this.weaponRange(w);
       const dist = U.dist(this.x, this.y, t.x, t.y);
       if (this.def.jet) {
-        /* jets fly attack passes */
-        this.flyTo(t.x, t.y, dt);
-        if (dist < range) this.tryFire(wi, t);
+        /* ---- a pass, or a shot from outside? ----
+           A bomb has to be delivered over the target and a gun has to be
+           pointed at it, so those aircraft fly the pass they always did. A
+           MISSILE does not: an anti-radiation round is fired from as far out
+           as it will reach and the aircraft turns away, which is the entire
+           reason the weapon exists. Before this, every jet flew straight at
+           whatever it was attacking and fired when it happened to be inside
+           range - so an EA-18G with a 10.5-tile HARM closed to 6.7 tiles of a
+           Patriot and was shot down, having thrown away the four tiles of
+           standoff it was carrying. Helicopters already held at 0.8 of range;
+           this is the same rule applied to the aircraft that ought to have had
+           it first.
+
+           0.88 rather than 0.8: an anti-radiation shot is taken at the edge,
+           and the extra fraction is most of a tile of Patriot envelope. */
+        const standoff = (w.proj === "missile" || w.antiRadiation) && !w.bomb;
+        if (standoff) {
+          if (dist > range * 0.88) this.flyTo(t.x, t.y, dt);
+          else {
+            /* On station and inside launch parameters: hold the nose on it to
+               shoot, then break away rather than drifting onto the target. */
+            this.ang = U.turnToward(this.ang, Math.atan2(t.y - this.y, t.x - this.x),
+                                    this.def.turn * dt);
+            this.tryFire(wi, t);
+            if (this.ammoMax && this.ammo <= 0.05) this.order = this.afterAttack(o);
+          }
+        } else {
+          this.flyTo(t.x, t.y, dt);
+          if (dist < range) this.tryFire(wi, t);
+        }
       } else {
         /* helicopters hold at 80% range and hover-fire */
         if (dist > range * 0.8) this.flyTo(t.x, t.y, dt);

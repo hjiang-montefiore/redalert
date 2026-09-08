@@ -9598,3 +9598,43 @@ for (var _tw in WEAPONS) {
   if (WEAPONS.mrl240) WEAPONS.mrl240.rocket = true;
   if (WEAPONS.asw_rbu) WEAPONS.asw_rbu.rocket = true;
 })();
+
+/* ---- an anti-radiation missile has to outrange the battery it hunts ----
+   Measured before this pass, every ARM in the game was outranged by the worst
+   SAM of its own decade: Shrike 8.6 against SP-HAWK 10.6, HARM 9.6 against
+   Patriot PAC-2 12.5, HARM 10.5 against the 14.0 of a Patriot site. A Wild
+   Weasel therefore had to fly INSIDE the envelope to take its shot, which is
+   the exact opposite of what the weapon is for, and the measured result was a
+   dead Growler at 6.7 tiles.
+
+   The floor is applied from e80 and NOT before, because the history is the
+   point. The AGM-45 Shrike of 1965 reached about 40 km against an SA-2 that
+   reached 45; Wild Weasel crews really did have to go in under the missile and
+   really did take the losses. The AGM-88 HARM of 1985 reaches about 150 km,
+   comfortably past the tactical SAMs of its day, and the AARGM-ER of the 2010s
+   about 300. So the 1960s remain a knife fight and the modern era is a standoff
+   duel, which is what actually happened.
+
+   Applied as a FLOOR rather than an assignment so an already-longer round is
+   left alone, and only to rounds that do damage - a jamming pod keeps its own
+   reach. */
+(function () {
+  var ARM_FLOOR = { e80: 14.5, e90: 14.5, e00: 15.5, e20: 16.0 };
+  var seen = {};
+  for (var _au in UNITS) {
+    var _u = UNITS[_au];
+    if (!_u || (_u.role !== "sead" && _u.role !== "ewair")) continue;
+    var floor = ARM_FLOOR[_u.from || "e20"];
+    if (!floor) continue;                       /* e50/e60 stay outranged */
+    var ws = _u.weapons || [];
+    for (var _i = 0; _i < ws.length; _i++) {
+      var _w = WEAPONS[ws[_i]];
+      if (!_w || !_w.antiRadiation || !(_w.dmg > 0)) continue;
+      if (_w.range < floor) { _w.range = floor; seen[ws[_i]] = floor; }
+    }
+  }
+  /* the three hand-written present-day rounds, which no era unit carries */
+  if (WEAPONS.harm   && WEAPONS.harm.range   < 16.0) WEAPONS.harm.range   = 16.0;
+  if (WEAPONS.arm_yj && WEAPONS.arm_yj.range < 15.8) WEAPONS.arm_yj.range = 15.8;
+  if (WEAPONS.arm_kh && WEAPONS.arm_kh.range < 15.6) WEAPONS.arm_kh.range = 15.6;
+})();

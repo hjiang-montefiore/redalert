@@ -1336,6 +1336,124 @@ var Game = (function () {
      array; an AI commander keeps its own explored map, and any player without a
      commander (the neutral owner, a human seat) is unrestricted exactly as
      before, so this can never change an existing behaviour by accident. */
+  /* ================= AIR DEFENCE THREAT RINGS =================
+     Real air planning starts by drawing the enemy's missile engagement zones
+     on the chart and routing around them. Nothing in this engine did that: an
+     aircraft flew at whatever it was pointed at and discovered the SAM by
+     being shot down. Measured before this existed: an E-3 Sentry ordered to
+     orbit over a Patriot flew to 0.4 tiles and died, and it carries no weapon
+     at all - a 3,400-credit airframe whose entire job is to see.
+
+     THE RING IS ONLY AS REAL AS THE OWNER'S PICTURE. Both tests below go
+     through G.visibleTo, so a commander routes around the batteries it has
+     actually seen and blunders into the ones it has not - the human off G.fog,
+     an AI off its own look grid. Nobody gets a free plot of the other side's
+     air defence, which is the whole point. */
+  const AAREACH = {};
+  G.airDefenceReach = function (def) {
+    if (!def) return 0;
+    const key = def.id || def.name;
+    if (key && AAREACH[key] !== undefined) return AAREACH[key];
+    let reach = 0;
+    for (const wk of (def.weapons || [])) {
+      const w = WEAPONS[wk];
+      if (!w || !w.tgt || !w.tgt.air) continue;
+      if (w.range > reach) reach = w.range;
+    }
+    if (key) AAREACH[key] = reach;
+    return reach;
+  };
+
+  /* How deep inside somebody's air-defence envelope this point is, in tiles.
+     0 means clear. Positive is the depth of penetration past the ring edge,
+     so a caller can hold station just outside by pushing back that far. Only
+     hostiles the owner can SEE are counted, and only ones that can actually
+     reach the altitude band this aircraft flies in. */
+  G.airThreatAt = function (owner, x, y, margin) {
+    if (!owner) return 0;
+    const m = margin || 0;                       // inflate every ring by this
+    let worst = 0;
+    for (const o of G.players) {
+      if (o === owner || G.allied(owner, o) || o.defeated) continue;
+      const scan = (list, isBld) => {
+        for (const e of list) {
+          if (e.dead || e.carried) continue;
+          if (isBld && e.buildProgress < 1) continue;
+          /* Plan against the catalogue figure with a buffer, the way a real
+             threat ring is drawn. The published range is not what the battery
+             actually reaches: weaponRange() multiplies by the owner's faction
+             rangeMul (nato 1.08, roc 1.14) and again by 1.15 if they hold the
+             optics upgrade, so a 14-tile site can engage at 17.4. An aircraft
+             cannot know which upgrades an enemy bought, and should not be told
+             - so it assumes the worst plausible case instead. */
+          const reach = G.airDefenceReach(e.def) * 1.25;
+          if (!reach) continue;
+          if (!G.visibleTo(owner, e)) continue;      // not on our chart, not on our route
+          const d = U.dist(x, y, e.x, e.y) / CFG.TILE;
+          const deep = reach + m - d;
+          if (deep > worst) worst = deep;
+        }
+      };
+      scan(o.units, false);
+      scan(o.buildings, true);
+    }
+    return worst;
+  };
+
+  /* The nearest point on the way to (tx,ty) that is NOT inside a ring the
+     owner knows about, given a margin. Returns the original point when the
+     route is clear, so the common case costs one airThreatAt call. Walks the
+     approach back toward the aircraft rather than sideways: an orbit short of
+     the threat is what an early-warning aircraft actually flies, and it keeps
+     the geometry legible to a player watching it. */
+  G.standoffPoint = function (owner, fx, fy, tx, ty, margin) {
+    const m = margin === undefined ? 1.5 : margin;
+    /* airThreatAt returns 0 when clear and a POSITIVE depth when inside, so the
+       margin has to inflate the ring inside the test rather than be added to
+       its result - added outside, a clear point scores 0 + 1.5 > 0 and every
+       route in the game reads as threatened. That was the first cut of this
+       function and it pinned an E-3 to its own runway. */
+    if (!G.airThreatAt(owner, tx, ty, m)) return { x: tx, y: ty, held: false };
+    const dx = tx - fx, dy = ty - fy;
+    const len = Math.hypot(dx, dy);
+    if (len < 1) return { x: fx, y: fy, held: true };
+    /* Walk the approach back toward the aircraft in twentieths and take the
+       furthest point that is clear, so the station is as far forward as the
+       threat allows rather than merely somewhere safe. */
+    for (let k = 0.95; k > 0.02; k -= 0.05) {
+      const px = fx + dx * k, py = fy + dy * k;
+      if (!G.airThreatAt(owner, px, py, m)) return { x: px, y: py, held: true };
+    }
+    /* Already inside somebody's envelope, and every point on the approach is
+       too. Holding here is not good enough - the owner asked for aircraft that
+       "try to avoid them as much as possible" - so egress: run directly away
+       from the battery that has the deepest hold on us until the ring lets go.
+       That is what a crew told they are being tracked actually does. */
+    let bx = 0, by = 0, worstDeep = 0;
+    for (const o of G.players) {
+      if (o === owner || G.allied(owner, o) || o.defeated) continue;
+      const scan = (list, isBld) => {
+        for (const e of list) {
+          if (e.dead || e.carried) continue;
+          if (isBld && e.buildProgress < 1) continue;
+          const reach = G.airDefenceReach(e.def) * 1.25;
+          if (!reach || !G.visibleTo(owner, e)) continue;
+          const deep = reach + m - U.dist(fx, fy, e.x, e.y) / CFG.TILE;
+          if (deep > worstDeep) { worstDeep = deep; bx = e.x; by = e.y; }
+        }
+      };
+      scan(o.units, false);
+      scan(o.buildings, true);
+    }
+    if (worstDeep > 0) {
+      const ax = fx - bx, ay = fy - by;
+      const al = Math.hypot(ax, ay) || 1;
+      const run = (worstDeep + 1) * CFG.TILE;
+      return { x: fx + ax / al * run, y: fy + ay / al * run, held: true, egress: true };
+    }
+    return { x: fx, y: fy, held: true };
+  };
+
   G.explored = function (p, i) {
     if (p === G.human) return !G.fogEnabled || G.fog[i] !== 0;
     const lk = (typeof AI !== "undefined" && AI.lookOf) ? AI.lookOf(p) : null;
