@@ -442,7 +442,21 @@ var UI = (function () {
        the deck code was making */
     if (d.carrier) rows.push("AIR WING " + d.carrier + " AIRCRAFT");
     else if (d.helo) rows.push("EMBARKS " + d.helo + " HELICOPTER" + (d.helo > 1 ? "S" : ""));
-    if (d.awacs) rows.push('<span class="alt">AIRBORNE EARLY WARNING</span>');
+    if (d.awacs || d.role === "awacs" || d.role === "cawacs")
+      rows.push('<span class="alt">AIRBORNE EARLY WARNING</span>');
+    /* Say what a tanker does AND what it does not do, where the player is
+       deciding whether to spend three thousand credits on one. It buys time on
+       station and sortie rate, not radius: the break-off point is
+       Math.max(reserveFuel(), fuelMax * 0.40) and the flat 40% floor is
+       unconditionally the larger of the two. Measured on the largest map in the
+       game, an A-10 at 77 tiles out - further than one ever normally gets - the
+       distance reserve is 35.0 with a tanker 9 tiles away and 11.1 without one,
+       and the aircraft turns for home at 40 either way. */
+    if (d.tanker) {
+      rows.push('<span class="alt">AERIAL TANKER \u2014 ' + d.tanker +
+                " units of offload</span>");
+      rows.push('<span class="warn">EXTENDS TIME ON STATION, NOT COMBAT RADIUS</span>');
+    }
     if (d.carrierCapable) rows.push("CARRIER CAPABLE");
     if (d.thermal !== undefined) rows.push("THERMAL FIT " + Math.round(d.thermal * 100) + "%");
     /* hangar state, so "why can I not build this" is always visible */
@@ -523,10 +537,19 @@ var UI = (function () {
       return h;
     }
     for (const u of wing) {
-      const ready = u.parked && u.fuel >= u.reserveFuel() && (!u.ammoMax || u.ammo > 0.05);
+      /* A tanker is not ready until the thing it exists to give away is back
+         aboard. The engine holds it on the ramp for the 16.2s the boom takes to
+         refill, but this panel counted only fuel and ordnance - so it said
+         READY, counted the aircraft in SELECT READY and launched it with 16 of
+         420 units of offload, and the player watched a "ready" tanker refuel
+         nobody. The panel now says what the engine is actually doing. */
+      const boomLow = !!(u.offloadMax && u.offload < u.offloadMax - 1);
+      const ready = u.parked && u.fuel >= u.reserveFuel() &&
+                    (!u.ammoMax || u.ammo > 0.05) && !boomLow;
       const state = !u.parked ? "AIRBORNE"
         : (u.ammoMax && u.ammo <= 0.05) ? "REARMING"
-        : (u.fuel < u.reserveFuel()) ? "REFUELLING" : "READY";
+        : (u.fuel < u.reserveFuel()) ? "REFUELLING"
+        : boomLow ? "REPLENISHING" : "READY";
       /* time on station, which is what actually limits a mission */
       const end = G.enduranceOf(u);
       const endTxt = end === Infinity ? "\u221e" : Math.round(end) + "s";
@@ -534,7 +557,9 @@ var UI = (function () {
            '" data-air="' + u.id + '" title="' + (u.def.full || u.def.name) +
            " \u00b7 combat radius " + (u.def.radius || "-") + " tiles" +
            " \u00b7 endurance " + endTxt +
-           (u.ammoMax ? " \u00b7 ordnance " + u.ammo.toFixed(0) + "/" + u.ammoMax : "") + '">' +
+           (u.ammoMax ? " \u00b7 ordnance " + u.ammo.toFixed(0) + "/" + u.ammoMax : "") +
+           (u.offloadMax ? " \u00b7 boom " + Math.round(u.offload) + "/" + u.offloadMax +
+                           " units of fuel to give away" : "") + '">' +
            '<canvas class="hi" width="34" height="21" data-thumb="' + u.def.id + '"></canvas>' +
            '<span class="hn">' + u.def.name + "</span>" +
            '<span class="hs ' + state.toLowerCase() + '">' + state + "</span>" +
@@ -550,7 +575,8 @@ var UI = (function () {
     const ship = b.kind === "unit";
     h += '<div class="hbtns">' +
       '<div class="hb" data-hact="all">SELECT READY (' + parked.filter(u =>
-        u.fuel >= u.reserveFuel() && (!u.ammoMax || u.ammo > 0.05)).length + ")</div>" +
+        u.fuel >= u.reserveFuel() && (!u.ammoMax || u.ammo > 0.05) &&
+        !(u.offloadMax && u.offload < u.offloadMax - 1)).length + ")</div>" +
       '<div class="hb' + (n ? "" : " off") + (sortieMode === "strike" ? " arm" : "") +
         '" data-hact="strike">STRIKE' + (n ? " (" + n + ")" : "") + "</div>" +
       '<div class="hb' + (n ? "" : " off") + (sortieMode === "cap" ? " arm" : "") +
@@ -602,8 +628,10 @@ var UI = (function () {
           "Shift-click one to fly it yourself."
         : "Shift-click an aircraft to select it and command " +
           "it directly. Launching is free. A jet has a finite time on " +
-          "station and returns here for fuel and ordnance; a helicopter is not " +
-          "on that clock and only comes back when the ordnance is gone.") + "</div>";
+          "station and returns here for fuel and ordnance \u2014 or, if a tanker " +
+          "is on station closer than this ramp, goes to the boom instead and " +
+          "then back to what it was doing. A helicopter is not on that clock, " +
+          "cannot use a boom, and only comes back when the ordnance is gone.") + "</div>";
     h += "</div>";
     return h;
   }
@@ -986,7 +1014,8 @@ var UI = (function () {
     h += '<div class="hhint">' + (
       airCmdMode === "cap"    ? "Click a point to patrol over it. RMB or Esc cancels."
     : airCmdMode === "strike" ? "Click a target to strike it. RMB or Esc cancels."
-    : "BASE (R) sends them home to refuel and rearm. PATROL (Y) holds a point " +
+    : "BASE (R) sends them home to refuel and rearm, and right-clicking a base " +
+      "or a deck sends them to THAT one. PATROL (Y) holds a point " +
       "and engages what comes. STRIKE (T) aims a run.") + "</div>";
     return h;
   }
@@ -1306,6 +1335,17 @@ var UI = (function () {
       if (e.vet !== undefined && e.kind === "unit")
         h += '<div class="stat">RANK <i class="vet">' + CFG.VET_NAME[e.vet] + "</i></div>";
       if (e.fuelMax) h += '<div class="stat">FUEL <i>' + Math.round(e.fuel) + "%</i></div>";
+      /* A tanker's own tanks are not the interesting number. Selecting one used
+         to show FUEL 100% with an empty boom - true about the wrong tank, and
+         the reason a working tanker and a useless one looked identical. */
+      if (e.offloadMax) {
+        const pct = e.offload / e.offloadMax;
+        h += '<div class="stat' + (pct < 0.15 ? " warn" : "") + '">BOOM <i>' +
+             Math.round(e.offload) + "/" + e.offloadMax + "</i></div>";
+        const joined = e.owner.units.filter(u2 => !u2.dead && u2.order &&
+          u2.order.type === "tank" && u2.order.target === e).length;
+        h += '<div class="stat">RECEIVERS <i>' + joined + " joined</i></div>";
+      }
       if (e.ammoMax) h += '<div class="stat">ORDNANCE <i>' + (e.ammo).toFixed(1) + "/" + e.ammoMax + "</i></div>";
       if (e.roundsMax) h += '<div class="stat' + (e.rounds === 0 ? " warn" : "") +
         '">ROUNDS <i>' + e.rounds + "/" + e.roundsMax + "</i></div>";
@@ -2074,18 +2114,65 @@ var UI = (function () {
     }
     if (target && target.owner === G.human) {
       /* friendly interactions: enter transport / capture / repair pad */
+      /* ---- what a right-click near your own airfield is actually aimed at ----
+         Right-clicking your own airbase, or a deck the aircraft can operate
+         from, is an order to land on THAT one. It used to fall through to a
+         plain move, so the aircraft flew to the coordinates under its own
+         strip and hovered over it instead of shutting down on it.
+
+         That test used to read the entity pickAt() returned, and pickAt gives
+         every UNIT a deliberate 14-pixel bonus over whatever it is standing on
+         ("a unit standing on a structure must win the click", above) and draws
+         an airborne machine 34*z pixels above its ground point. So the click
+         resolved to the Falcon parked on the ramp, or to the rifle squad dug in
+         beside the strip - a unit with no `pads` and no deck - and the recall
+         dropped out of the chain as a plain move to the coordinates under the
+         runway. Measured on a 9x11 sweep of right-clicks around a friendly
+         airbase with an E-3 selected: 60 of 99 clicks lost with three aircraft
+         on the ramp, 75 of 99 with four rifle squads beside it, 55 of 99 with
+         an EMPTY ramp and four tanks parked nearby, and on a carrier deck only
+         the single pixel at the centre of the hull answered at all.
+
+         So resolve the landing host from the WORLD POINT, not from whichever
+         entity won the pick: if the click landed on a friendly ramp, or on a
+         deck this airframe can use, that is the host whoever happens to be
+         standing on it. Per unit rather than on `target` itself, because an
+         engineer right-clicking the same pixel is asking to enter the building
+         and a ground unit must still get its plain move. */
+      const landingHost = (u) => {
+        if (u.layer !== "air") return null;
+        const fits = (h) => !h || h.dead || h.owner !== G.human ? false
+          : h.kind === "building"
+            ? !!(h.def.pads && h.buildProgress >= 1)
+            : !!(u.def.carrierCapable && (h.def.carrier || (u.def.hover && h.def.helo)));
+        if (fits(target)) return target;
+        /* an airframe shut down on a ramp IS that ramp, as far as another
+           aircraft is concerned - this is the carrier case, where the deck is
+           a moving hull and the parked sprite is all there is to click */
+        if (target.kind === "unit" && target.layer === "air" && target.padOn &&
+            (target.parked || (target.order && target.order.type === "parked")) &&
+            fits(target.padOn)) return target.padOn;
+        /* nobody useful was picked: ask what is under the point on the ground */
+        const tx = Math.floor(wx / CFG.TILE), ty = Math.floor(wy / CFG.TILE);
+        for (const b of G.human.buildings)
+          if (fits(b) && tx >= b.tx && ty >= b.ty &&
+              tx < b.tx + b.def.w && ty < b.ty + b.def.h) return b;
+        for (const s2 of G.human.units)
+          if (fits(s2) && U.dist(wx, wy, s2.x, s2.y) <= Math.max(s2.r, CFG.TILE)) return s2;
+        return null;
+      };
+      /* A recall used to be the one order in the game that said nothing at all:
+         every other route home raises a toast (BASE, the hangar arrow, the
+         hangar RECALL), while this one played the same click a move plays. A
+         taken recall and a lost recall were indistinguishable at the moment of
+         the click, which is exactly why this shipped as a bug report. */
+      let sentHome = 0, airMoved = 0;
       for (const u of units) {
-        /* Right-clicking your own airbase, or a deck the aircraft can operate
-           from, is an order to land on THAT one. It used to fall through to a
-           plain move, so the aircraft flew to the coordinates under its own
-           strip and hovered over it instead of shutting down on it. */
-        if (u.layer === "air" &&
-            (target.kind === "building"
-              ? target.def.pads
-              : (u.def.carrierCapable &&
-                 (target.def.carrier || (u.def.hover && target.def.helo))))) {
-          u.padOn = target; u.parked = false;
+        const host = landingHost(u);
+        if (host) {
+          u.padOn = host; u.parked = false;
           u.give({ type: "rtb" }, shift);
+          sentHome++;
         }
         else if (target.kind === "unit" && target.def.cargo && !target.def.carrier && u.cat === "infantry")
           u.give({ type: "enter", target });
@@ -2093,8 +2180,16 @@ var UI = (function () {
           u.give({ type: "enter", target });
         else if (target.kind === "building" && u.def.engineer)
           u.give({ type: "enter", target });
-        else u.give({ type: "move", x: wx, y: wy }, shift);
+        else { u.give({ type: "move", x: wx, y: wy }, shift); if (u.layer === "air") airMoved++; }
       }
+      if (sentHome)
+        alert(sentHome === 1 ? "RETURNING TO BASE"
+                             : sentHome + " AIRCRAFT RETURNING TO BASE", "good");
+      /* and say why, when the answer is no. An aircraft right-clicked onto a
+         friendly structure that is not a ramp gets a move, which is a
+         defensible order and an invisible one. */
+      else if (airMoved && target.kind === "building")
+        alert("NOT A LANDING SURFACE \u2014 MOVING THERE", "bad");
       Sfx.play("order");
       return;
     }

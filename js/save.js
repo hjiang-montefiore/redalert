@@ -14,6 +14,30 @@ var SaveGame = (function () {
     for (let i = 0; i < map.ore.length; i++) {
       if (Math.abs(map.ore[i] - map.oreMax[i] / 1.35) > 1) oreDelta.push(i, Math.round(map.ore[i]));
     }
+    /* ---- the ramp an airframe belongs to ----
+       padOn is an entity REFERENCE and cannot travel in JSON, so it was simply
+       dropped: every aircraft came out of a load belonging to no base at all.
+       A PARKED one repairs itself on the first tick (updateAir's parked branch
+       re-finds a host when padOn is missing) but an AIRBORNE one never does,
+       because only the rtb and parked branches ever claim a pad - and an
+       airborne aircraft is in neither. So the one airframe whose entire job is
+       to be up when the game is saved, the AEW, reloaded homeless: absent from
+       Building.wing(), therefore absent from the hangar list, therefore
+       unreachable by the hangar's own RECALL button, which walks wing().
+       Measured on a 4-pad base with one E-3 up and two Falcons on the ramp:
+       hangar 3/4 before the save, 0/4 after the load, and RECALL moved nothing.
+
+       Both lists below are rebuilt in array order on load, so the reference
+       travels as a plain index into one of them - pb into buildings, pu into
+       units. Guessing the nearest free ramp instead would re-home a ship's
+       helicopter to a shore airfield and, on an over-stacked ramp, let an
+       airborne aircraft claim the last slot out from under one that was
+       physically sitting on it. */
+    const bl = G.entities.filter(e => e.kind === "building" && !e.dead);
+    const ul = G.entities.filter(e => e.kind === "unit" && !e.dead);
+    const bIdx = new Map(), uIdx = new Map();
+    bl.forEach((b, i) => bIdx.set(b, i));
+    ul.forEach((u, i) => uIdx.set(u, i));
     return {
       v: 1,
       savedAt: new Date().toISOString(),
@@ -48,8 +72,10 @@ var SaveGame = (function () {
         homeX: p.homeX, homeY: p.homeY,
         queues: serializeQueues(p.queues),
       })),
-      units: G.entities.filter(e => e.kind === "unit" && !e.dead).map(u => ({
+      units: ul.map(u => ({
         d: u.def.id, o: u.owner.idx, x: Math.round(u.x), y: Math.round(u.y),
+        pb: u.padOn && bIdx.has(u.padOn) ? bIdx.get(u.padOn) : undefined,
+        pu: u.padOn && uIdx.has(u.padOn) ? uIdx.get(u.padOn) : undefined,
         a: +u.ang.toFixed(3), ta: +u.tang.toFixed(3),
         hp: Math.round(u.hp), vet: u.vet, xp: Math.round(u.xp || 0),
         fuel: Math.round(u.fuel), ammo: +(u.ammo || 0).toFixed(2),
@@ -59,7 +85,7 @@ var SaveGame = (function () {
         mn: u.minesMax ? u.mines : undefined,
         nt: u.netMax ? u.net : undefined,
       })),
-      buildings: G.entities.filter(e => e.kind === "building" && !e.dead).map(b => ({
+      buildings: bl.map(b => ({
         d: b.def.id, o: b.owner.idx, tx: b.tx, ty: b.ty,
         hp: Math.round(b.hp), prog: +b.buildProgress.toFixed(3),
         rep: !!b.repairing, sw: +(b.swCharge || 0).toFixed(3),
@@ -222,21 +248,30 @@ var SaveGame = (function () {
       }
     });
 
-    /* buildings first so occupancy is right before units land */
-    for (const sb of d.buildings) {
+    /* buildings first so occupancy is right before units land.
+       Both arrays are kept index-aligned with the records they came from - a
+       record that cannot be rebuilt leaves a hole rather than shifting every
+       index after it - because the pb/pu ramp references are indices into
+       exactly these two lists. */
+    const bref = [], uref = [];
+    for (let bi = 0; bi < d.buildings.length; bi++) {
+      const sb = d.buildings[bi];
       const p = G.players[sb.o];
       if (!p || !BUILDINGS[sb.d]) continue;
       const b = G.placeBuilding(p, sb.d, sb.tx, sb.ty, "restored");
+      bref[bi] = b;
       b.hp = sb.hp; b.buildProgress = sb.prog;
       b.repairing = !!sb.rep;
       b.swCharge = sb.sw !== undefined ? sb.sw : b.swCharge;
       b.tang = sb.ta || 0;
       b.rally = { x: sb.rx, y: sb.ry };
     }
-    for (const su of d.units) {
+    for (let ui = 0; ui < d.units.length; ui++) {
+      const su = d.units[ui];
       const p = G.players[su.o];
       if (!p || !UNITS[su.d]) continue;
       const u = G.spawnUnitAt(p, su.d, su.x, su.y);
+      uref[ui] = u;
       u.x = su.x; u.y = su.y;                 // exact, no spawn nudging
       u.ang = su.a; u.tang = su.ta;
       u.hp = su.hp; u.vet = su.vet || 0; u.xp = su.xp || 0;
@@ -249,6 +284,24 @@ var SaveGame = (function () {
       if (su.nt !== undefined) u.net = su.nt;
       u.order = su.ord || { type: "idle" };
     }
+
+    /* Put every aircraft back on the ramp it was actually based on, now that
+       both lists exist - a deck is a unit, so this cannot run inside the loop
+       above. Anything a save from before this change left unassigned falls
+       back to claiming a free pad, parked airframes first so one that is
+       physically sitting on a ramp is never evicted by one that is airborne. */
+    for (let ui = 0; ui < d.units.length; ui++) {
+      const su = d.units[ui], u = uref[ui];
+      if (!u) continue;
+      const host = su.pb !== undefined ? bref[su.pb]
+                 : su.pu !== undefined ? uref[su.pu] : null;
+      if (host && !host.dead) u.padOn = host;
+    }
+    for (const pass of [true, false])
+      for (const p2 of G.players)
+        for (const u2 of p2.units)
+          if (!u2.dead && u2.layer === "air" && !u2.padOn && !!u2.parked === pass)
+            G.findPad(u2, true);
 
     /* After the players exist, because owner and seen are player INDICES. An
        older save carries neither key and both restore as empty - no

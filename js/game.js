@@ -1406,7 +1406,12 @@ var Game = (function () {
   G.sortieCost = function () { return 0; };
   /* how long this airframe can stay out, in seconds */
   G.enduranceOf = function (u) {
-    if (!u.def.jet) return Infinity;
+    /* Test the HOVER flag, not the jet flag - the same correction reserveFuel()
+       already carries. A turboprop is not a helicopter: the AC-130 and the
+       C-130 burn fuel and do have to land, but this line called them endless
+       and printed an infinite endurance in the hangar tooltip for an aircraft
+       that runs dry and falls out of the sky. */
+    if (u.def.hover) return Infinity;
     const burn = u.airBurn ? u.airBurn() : CFG.FUEL_BURN_AIR;
     return burn > 0 ? u.fuelMax / burn : Infinity;
   };
@@ -1421,6 +1426,10 @@ var Game = (function () {
       return u.def.name.toUpperCase() + " CANNOT ENGAGE THAT TARGET";
     if (u.ammoMax && u.ammo <= 0.05) return "REARMING";
     if (u.fuel < u.reserveFuel()) return "REFUELLING";
+    /* A tanker with an empty boom can fly, but it cannot do the one thing it
+       is for. The hangar used to launch it anyway and the player got a "ready"
+       tanker that refuelled nobody. */
+    if (u.offloadMax && u.offload < u.offloadMax - 1) return "REPLENISHING";
     u.parked = false;
     u.give(order);
     return null;

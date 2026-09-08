@@ -363,7 +363,17 @@ class Unit {
         this.offload = Math.min(this.offloadMax, this.offload + 26 * dt);
       else if (!this.parked && this.offload <= 0 && this.order.type !== "rtb" &&
                this.order.type !== "land" && this.order.type !== "parked") {
-        this.order = { type: "rtb" };
+        /* An empty boom sends the tanker home; it does not end its tour. This
+           wrote a bare rtb, so the station was thrown away - the aircraft
+           landed, filled up, found no `then` on the order and shut down on the
+           ramp for good with 420 units it would never deliver. Measured: six
+           fighters on a 42-tile patrol drained the boom at t=48s and the tanker
+           then sat parked for 844 of the remaining 852s, full, while the wing
+           flew 42 tiles home to refuel one at a time. Carry the station through
+           the turnaround, exactly as the bingo-fuel rtb in updateAir() does. */
+        const back = (this.order.type === "cap" || this.order.type === "attackmove")
+          ? { type: this.order.type, x: this.order.x, y: this.order.y } : null;
+        this.order = back ? { type: "rtb", then: back } : { type: "rtb" };
         if (this.owner === this.game.human)
           this.game.alert(this.def.name.toUpperCase() + " \u2014 OFFLOAD EMPTY, RETURNING", "bad");
       }
@@ -418,12 +428,24 @@ class Unit {
     if (this.layer === "air" && !this.def.hover && this.fuelMax && this.fuel <= 0 && !this.parked) {
       this.fuelOut = (this.fuelOut || 0) + dt;
       if (this.fuelOut > 4) {
+        /* This used to be an `he` round, and CFG.DMG.he.air is 0.00 - the air
+           armour class is immune to blast by design - so applyDamage returned
+           at its `dmg <= 0.5` guard and NOTHING happened. Meanwhile this block
+           runs every tick, so the game announced the destruction of an aircraft
+           the player could still see flying, once every four seconds, for ever
+           (UI.alert only suppresses an identical string for 4000ms). Measured:
+           an E-3G at fuel 0.00 flew on for another 46.7s, hp unchanged at 639,
+           shouting that it was down. Kill it outright with a warhead the class
+           actually takes, and say it once. */
+        if (!this.fuelDead) {
+          this.fuelDead = true;
+          if (this.owner === this.game.human)
+            this.game.alert(this.def.name.toUpperCase() + " DOWN — FUEL EXHAUSTION", "bad");
+        }
         Combat.applyDamage(this.game, this, this.hp + 1,
-          { warhead: "he", dmg: this.hp + 1 }, null);
-        if (this.owner === this.game.human)
-          this.game.alert(this.def.name.toUpperCase() + " DOWN — FUEL EXHAUSTION", "bad");
+          { warhead: "flak", dmg: this.hp + 1 }, null);
       }
-    } else if (this.fuelOut) this.fuelOut = 0;
+    } else if (this.fuelOut) { this.fuelOut = 0; this.fuelDead = false; }
     /* passive refuel inside own base radius or near a depot/yard */
     if (this.fuelMax && this.fuel < this.fuelMax && this.layer !== "air") {
       if (this.cat === "naval") {
@@ -1813,15 +1835,39 @@ class Unit {
       const standing = (o.type === "cap" || o.type === "attackmove")
         ? { type: o.type, x: o.x, y: o.y }
         : (o.cap && o.resume) ? { type: "cap", x: o.resume.x, y: o.resume.y } : null;
+      /* A strike is an `attack` order carrying a `resume` point and NO `cap`
+         flag - which is exactly what the airbase STRIKE panel and the STRIKE
+         button issue - so `standing` above was null for every strike ever
+         flown. The tank branch then completed with { type:"cap", x:this.x,
+         y:this.y } and the aircraft orbited the boom for the rest of the match.
+         Measured: a bomber_n sent at a target 62 tiles out hit it once at
+         t=41s, tanked at t=63s, and then flew a 41-second tank/cap cycle over
+         open ground for the remaining 240s - never back to the target, never
+         home, draining the tanker the whole time. Carry the attack itself
+         across the boom; afterAttack() already handles a target that died while
+         the aircraft was taking fuel. */
+      const resume = standing ||
+        (o.type === "attack" && o.target && !o.target.dead
+          ? { type: "attack", target: o.target, resume: o.resume, cap: o.cap, auto: o.auto }
+          : null);
       const tanker = this.game.nearestTanker ? this.game.nearestTanker(this) : null;
       const pad2 = this.game.findPad ? this.game.findPad(this) : null;
       const padD = pad2 ? U.dist2(this.x, this.y, pad2.x, pad2.y) : Infinity;
       if (tanker && !dryAmmo && U.dist2(this.x, this.y, tanker.x, tanker.y) < padD) {
         /* fuel only - an aircraft out of ordnance has to go home regardless,
            because a tanker carries no bombs */
-        this.order = standing ? { type: "tank", target: tanker, then: standing }
-                              : { type: "tank", target: tanker };
+        this.order = resume ? { type: "tank", target: tanker, then: resume }
+                            : { type: "tank", target: tanker };
       } else {
+        /* Deliberately `standing`, not `resume`: coming home ENDS a strike, and
+           a tanker is what turns one sortie into a sustained one. That is the
+           whole reason to buy the aircraft, so the asymmetry is the feature -
+           break off to a boom and you go back to the target, break off to the
+           ramp and the sortie is over. Measured what happens if this line
+           resumes an attack too: the bomber rearms and returns for ever, 11
+           passes and 125,644 damage on a target 62 tiles out with NO tanker
+           against 8 passes with one, i.e. the STRIKE button becomes an
+           unlimited bombardment and the tanker becomes worthless. */
         this.order = standing ? { type: "rtb", then: standing } : { type: "rtb" };
       }
     }
@@ -1885,7 +1931,14 @@ class Unit {
       this.serviceOnPad(pad.host, dt);
       /* Readiness is fuel and ordnance. Repair carries on while it sits
          there, so a battered squadron is never grounded by an empty treasury. */
-      if (this.fuel >= this.fuelMax - 1 && this.ammo >= this.ammoMax - 0.05) {
+      /* Readiness for a tanker includes the thing it exists to give away. Its
+         own tanks fill at 22/s and are full 2.9s after touchdown; the boom
+         refills at 26/s and needs 16.2s for a full 420. Releasing it on fuel
+         alone put it back on station with a quarter of a load - measured across
+         one 900s run it left with 420, 420, 341, 268, 205, 190, 115 - so it
+         decayed to one top-up per round trip and the wing flew home anyway. */
+      if (this.fuel >= this.fuelMax - 1 && this.ammo >= this.ammoMax - 0.05 &&
+          (!this.offloadMax || this.offload >= this.offloadMax - 1)) {
         if (o.then) { this.parked = false; this.order = o.then; }
         else {
           /* nothing to do: shut down on the ramp rather than orbit and
@@ -1923,7 +1976,13 @@ class Unit {
            it does not continue it. */
         if (this.owner === this.game.human)
           this.game.alert(this.def.name.toUpperCase() + " \u2014 TANKER DRY, GOING HOME", "bad");
-        this.order = { type: "rtb" };
+        /* Going home because the boom ran dry is a turnaround like any other:
+           the standing order has to survive it, or one dry tanker permanently
+           ends the patrol or the strike of every aircraft joined on it and they
+           all park. This bare rtb, not the offload-empty one, is what made a
+           tanker measurably WORSE than no tanker at all - 62.9% on station
+           against 74.3% with none. */
+        this.order = o.then ? { type: "rtb", then: o.then } : { type: "rtb" };
       }
     } else if (o.type === "cap") {
       /* Combat air patrol: hold over a point, engage what comes into reach,
