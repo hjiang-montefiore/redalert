@@ -780,6 +780,59 @@ function makeCommander() {
         });
       }
     }
+    /* ---- electronic support measures ----
+       A radar that is transmitting announces its own position. You do not need
+       to see the dish, or get an echo back off it: you only have to hear it,
+       and two receivers on different bearings fix it. That is the entire basis
+       of suppression of enemy air defences, and this file already said so at
+       noteSighting - "an emitting radar announces itself, that is what
+       electronic support measures are for" - while providing no way to do it.
+
+       The measured consequence: a Wild Weasel launches only when pickEmitter
+       hands it a target, pickEmitter can only offer what has been SEEN, and
+       over a 25-minute battle between two Elite commanders that happened ONCE.
+       367 of 368 launch decisions ended with the aircraft on the ramp. An
+       anti-radiation squadron that never flies is a 1,900-credit ornament.
+
+       Honest on both counts the owner cares about. It reads ONLY entities that
+       G.emitting() says are actually radiating, so a set switched off is
+       silent and safe - which is the real counter-play, and one the engine
+       already models. And it is not free: the listener must itself carry a
+       radar or be a dedicated collector, exactly as in life.
+
+       Range is 1.9x the emitter's own reach because detection is one-way. A
+       radar must pay for the round trip out and back off the target, so a
+       passive receiver hears it from far outside the range at which that radar
+       could ever see YOU - which is why the shooter gets to stand off. */
+    (function esmSweep() {
+      const listeners = [];
+      for (const u of P.units) {
+        if (u.dead || u.carried) continue;
+        if (u.def.radar || u.def.radarQ || u.def.role === "ewair" ||
+            u.def.role === "sead" || u.def.awacs) listeners.push(u);
+      }
+      for (const b of P.buildings) {
+        if (b.dead || b.buildProgress < 1) continue;
+        if (b.def.radar) listeners.push(b);
+      }
+      if (!listeners.length) return;
+      for (const o of G.players) {
+        if (o === P || G.allied(P, o) || o.defeated) continue;
+        const heed = (e, isBld) => {
+          if (e.dead || e.carried) return;
+          if (isBld && e.buildProgress < 1) return;
+          const def = e.def;
+          if (!def || !(def.radar || def.jam)) return;
+          if (!G.emitting || !G.emitting(e)) return;     // silent set, silent plot
+          const loud = (def.radar || def.jam) * 1.9;
+          for (const l of listeners) {
+            if (U.dist(l.x, l.y, e.x, e.y) / CFG.TILE <= loud) { noteSighting(e, now); return; }
+          }
+        };
+        for (const u of o.units) heed(u, false);
+        for (const b of o.buildings) heed(b, true);
+      }
+    })();
     digest(now);
     forgetStale(now);
     pruneHypotheses();
@@ -3200,8 +3253,17 @@ function makeCommander() {
        One AEW aircraft is worth more than a squadron: it sees low-observable
        targets no fighter radar will find and hands the track to every shooter
        on the datalink. A commander with any air force at all wants one. */
+    /* No cash floor here. tryBuildUnit already refuses below 60% of the price
+       and again below the tech savings plan, so `P.cash > 3600` on a 3,400
+       airframe was a second, stricter test of the same thing - and a measured
+       one: over 25 minutes of Elite play it passed 15% of the time while the
+       real affordability floor of 2,040 passed far more often. Worse, cash and
+       nAir are anti-correlated in time - early there are 12,000 credits and no
+       aircraft, later there are aircraft and no spare cash - so the two gates
+       were rarely open together and the commander fielded NO early warning at
+       all in a full battle. Same flaw that once kept SAM and TEL unbuildable. */
     if (D.air && P.tech >= 3 && P.hasBuilding("airbase") && P.hasBuilding("lab") &&
-        fielded("aircraft", d => d.awacs) < 1 && queueLen("aircraft") < 2 && P.cash > 3600) {
+        fielded("aircraft", d => d.awacs) < 1 && queueLen("aircraft") < 2) {
       if (tryBuildUnit("awacs")) return;
     }
 
@@ -3238,13 +3300,23 @@ function makeCommander() {
          one that G.emitting() says is radiating. */
       const dR2 = dossier[rival ? rival.idx : -1];
       const foeRadar = !!(dR2 && dR2.sawRadar);
+      /* Three independent attempts, not an else-if ladder. `else if` tests the
+         CONDITION, not whether the purchase happened, so a commander that
+         wanted a jamming vehicle and could not have one - wrong era for its
+         army, or the savings plan holding the money - stopped the chain dead
+         and never considered a Weasel or a Growler at all. Each now stands on
+         its own and the first that actually SUCCEEDS ends the think, which
+         keeps the one-purchase-a-tick discipline the rest of this file uses.
+         The cash floors are gone for the reason given at the AEW block above:
+         tryBuildUnit owns affordability. */
       if (foeRadar) {
-        if (fielded("vehicle", d => d.jam) < 1 && queueLen("vehicle") < 3 && P.cash > 1700)
-          tryBuildUnit("ewveh");
-        else if (P.tech >= 2 && nAir >= 1 && fielded("aircraft", d => d.role === "sead") < 1 &&
-                 queueLen("aircraft") < 2 && P.cash > 2200) tryBuildUnit("sead");
-        else if (D.stealth && P.tech >= 3 && nAir >= 1 && fielded("aircraft", d => d.role === "ewair") < 1 &&
-                 queueLen("aircraft") < 2 && P.cash > 3200) tryBuildUnit("ewair");
+        if (fielded("vehicle", d => d.jam) < 1 && queueLen("vehicle") < 3 &&
+            tryBuildUnit("ewveh")) return;
+        if (P.tech >= 2 && nAir >= 1 && fielded("aircraft", d => d.role === "sead") < 1 &&
+            queueLen("aircraft") < 2 && tryBuildUnit("sead")) return;
+        if (D.stealth && P.tech >= 3 && nAir >= 1 &&
+            fielded("aircraft", d => d.role === "ewair") < 1 &&
+            queueLen("aircraft") < 2 && tryBuildUnit("ewair")) return;
       }
     }
 
@@ -4666,8 +4738,17 @@ function makeCommander() {
       if (d < bd) { bd = d; best = e; }
     }
     if (best) return best;
+    /* Ask the DEF what radiates, rather than naming two structures. The hard
+       list said "radar" or "sam" and nothing else, so a Weasel would not fly
+       against a flak battery with its own set, and - once the strategic arrays
+       and the fixed jamming sites were added - it ignored the lpar_* and
+       ewsite_* buildings entirely. Those are the emitters an anti-radiation
+       missile exists to kill, and they were the one target class it could not
+       see. Reading def.radar || def.jam also means any emitter added later is
+       covered without editing this list again. */
     for (const r of seenB.values()) {
-      if (r.gone || (r.key !== "radar" && r.key !== "sam")) continue;
+      const bd2 = BUILDINGS[r.key];
+      if (r.gone || !bd2 || !(bd2.radar || bd2.jam)) continue;
       if (!r.ref || r.ref.dead || !a.canTarget(r.ref)) continue;
       const d = U.dist2(a.x, a.y, r.x, r.y);
       if (d < bd) { bd = d; best = r.ref; }
