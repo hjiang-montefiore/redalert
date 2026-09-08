@@ -715,6 +715,33 @@ var UI = (function () {
     return selection.filter(u => u.kind === "unit" && u.owner === G.human &&
                                  (u.minesMax > 0 || u.netMax > 0));
   }
+  /* ---- what a held round needs from the player ----
+     Two gestures, and naming the wrong one is worse than naming none. */
+  function releasePanel(list) {
+    const e = list[0];
+    if (!e || e.kind !== "unit" || !e.manualWeapon) return "";
+    const held = (e.def.weapons || []).filter(k => WEAPONS[k] && e.manualWeapon(WEAPONS[k]));
+    if (!held.length) return "";
+    const w0 = WEAPONS[held[0]];
+    const how = w0.nuke
+      ? "CTRL + RIGHT-CLICK THE AIMPOINT TWICE TO RELEASE"
+      : e.isIndirect()
+      ? "CTRL + RIGHT-CLICK A MAP POINT<br>OR RIGHT-CLICK A TARGET YOU CAN SEE"
+      : "RIGHT-CLICK THE EMITTER<br>CTRL + RIGHT-CLICK WILL BE REFUSED";
+    let h = '<div class="stat warn">RELEASE <i>' +
+            (held.length === e.def.weapons.length
+              ? "HELD" : "HELD " + held.length + "/" + e.def.weapons.length) +
+            "</i></div>";
+    h += '<span style="font-size:9.5px">' + (w0.name || "").toUpperCase() +
+         " DOES NOT FIRE UNLESS ORDERED<br>" + how +
+         (list.length > 1 ? "<br>" + list.length + " SELECTED" : "") + "</span>";
+    return h;
+  }
+  function selectedHeld() {
+    return selection.filter(u => u.kind === "unit" && u.owner === G.human && !u.dead &&
+                                 u.allWeaponsHeld && u.allWeaponsHeld());
+  }
+
   function selectedSweepers() {
     return selection.filter(u => u.kind === "unit" && u.owner === G.human &&
                                  (u.def.mineClear || u.def.mineDetect));
@@ -907,8 +934,33 @@ var UI = (function () {
       Combat.addEffect({ t: "text", x: wp.x, y: wp.y, s: "PATROL", life: 1.0, max: 1.0, c: "#8fd05f" });
     } else {
       const tgt = pickAt(mx, my, true);
-      let n = 0;
+      const foe = tgt && tgt.owner !== G.human && !G.allied(G.human, tgt.owner);
+      /* With nothing hostile under the cursor this order becomes an attackmove,
+         and an attackmove fires only through acquire() - which is the authority
+         a held round does not have. Partitioned per aircraft rather than tested
+         with every(), so a mixed flight commits the airframes that can shoot
+         and holds the ones that cannot, and reports both. A jammer is the one
+         exception worth flying anyway: its bubble is positional, so it goes on
+         patrol instead of being refused. */
+      let hd = 0, jm = 0;
+      const fly = [];
       for (const u of air) {
+        if (!foe && u.allWeaponsHeld && u.allWeaponsHeld()) {
+          if (u.def.jam) { u.parked = false; u.give({ type: "cap", x: wp.x, y: wp.y }); jm++; }
+          else hd++;
+          continue;
+        }
+        fly.push(u);
+      }
+      if (!fly.length) {
+        alert((hd ? hd + " HELD \u2014 RIGHT-CLICK THE EMITTER, NOT THE GROUND" : "") +
+              (hd && jm ? " \u00b7 " : "") +
+              (jm ? jm + " JAMMER" + (jm === 1 ? "" : "S") + " ON PATROL" : ""),
+              hd ? "bad" : "good");
+        airCmdMode = null; refreshSelInfo(); return true;
+      }
+      let n = 0;
+      for (const u of fly) {
         u.parked = false;
         if (tgt && tgt.owner !== G.human && !G.allied(G.human, tgt.owner) && u.canTarget(tgt)) {
           u.give({ type: "attack", target: tgt }); n++;
@@ -916,7 +968,9 @@ var UI = (function () {
           u.give({ type: "attackmove", x: wp.x, y: wp.y }); n++;
         }
       }
-      alert(n + " AIRCRAFT COMMITTED", "good");
+      alert(n + " AIRCRAFT COMMITTED" +
+            (hd ? " \u00b7 " + hd + " HELD, NAME THE EMITTER" : "") +
+            (jm ? " \u00b7 " + jm + " JAMMING" : ""), "good");
       Combat.addEffect({ t: "text", x: wp.x, y: wp.y, s: "STRIKE", life: 1.0, max: 1.0, c: "#ff8a6b" });
     }
     Sfx.play("order");
@@ -1037,7 +1091,7 @@ var UI = (function () {
     const b = sortieHost;
     if (!b || b.dead || !sortieMode) return false;
     const sel = pickSet(b);
-    let sent = 0, fail = null, unable = 0;
+    let sent = 0, fail = null, unable = 0, held = 0;
     for (const id of Array.from(sel)) {
       const u = b.wing().find(x => x.id === id);
       if (!u || !u.parked) { sel.delete(id); continue; }
@@ -1045,6 +1099,13 @@ var UI = (function () {
          its place in the flight, rather than burning fuel to find out */
       if (sortieMode === "strike" && target && !target.dead &&
           target.owner !== G.human && !u.canTarget(target)) { unable++; continue; }
+      /* An armed sweep with no named target is an order to acquire on the way,
+         and a held round may not acquire. The aircraft keeps its place in the
+         flight rather than burning the fuel to find that out - the same
+         courtesy the canTarget test two lines above already extends. */
+      const named = target && !target.dead && target.owner !== G.human;
+      if (sortieMode === "strike" && !named &&
+          u.allWeaponsHeld && u.allWeaponsHeld()) { held++; continue; }
       const order = sortieMode === "strike"
         ? (target && !target.dead && target.owner !== G.human
             ? { type: "attack", target, resume: { x: b.x, y: b.y } }
@@ -1061,7 +1122,9 @@ var UI = (function () {
       Sfx.play("order");
     } else if (unable) {
       alert(unable + " AIRCRAFT CANNOT ENGAGE THAT TARGET", "bad");
-    } else if (fail) alert(fail, "bad");
+    }
+    else if (held) alert(held + " AIRCRAFT HELD \u2014 NAME THE EMITTER", "bad");
+    else if (fail) alert(fail, "bad");
     sortieMode = null; sortieHost = null;
     refreshSelInfo();
     return sent > 0;
@@ -1179,6 +1242,7 @@ var UI = (function () {
       if (lay1.length) h += minePanel(lay1);
       const swp1 = selectedSweepUnits();
       if (swp1.length && !lay1.length) h += sweepPanel();
+      if (e.kind === "unit" && e.owner === G.human) h += releasePanel([e]);
       h += introBlock(e);
       const air1 = selectedAircraft();
       if (air1.length) h += airOrderPanel(air1);
@@ -1241,6 +1305,8 @@ var UI = (function () {
       if (layN.length) h += minePanel(layN);
       const swpN = selectedSweepUnits();
       if (swpN.length && !layN.length) h += sweepPanel();
+      const heldN = selectedHeld();
+      if (heldN.length) h += releasePanel(heldN);
       const airN = selectedAircraft();
       if (airN.length) h += airOrderPanel(airN);
       el.innerHTML = h;
@@ -1435,12 +1501,24 @@ var UI = (function () {
       if (k === "f") { for (const u of selection) if (u.kind === "unit" && u.owner === G.human) u.stance = u.stance === "hold" ? "guard" : "hold"; }
       if (k === "c") {
         /* counter-battery stance: guns answer plotted enemy artillery themselves */
-        let n = 0;
+        let n = 0, hc = 0;
         for (const u of selection) {
           if (u.kind !== "unit" || u.owner !== G.human || !u.isIndirect || !u.isIndirect()) continue;
+          /* A launcher whose only indirect round is held is not a counter-
+             battery gun: entities.js asks isIndirect(true) in that branch and
+             would find nothing to shoot with, so setting the stance would be a
+             button that lies about what it did. Toggling OFF is still allowed,
+             so a stance set before this change can be cleared. */
+          if (!u.isIndirect(true)) {
+            if (u.stance === "counterbattery") { u.stance = "guard"; n++; }
+            else hc++;
+            continue;
+          }
           u.stance = u.stance === "counterbattery" ? "guard" : "counterbattery";
           n++;
         }
+        if (hc) G.alert(hc + " LAUNCHER" + (hc === 1 ? "" : "S") +
+          " HELD \u2014 A BALLISTIC ROUND NEEDS A FIRE MISSION", "bad");
         if (n) G.alert(selection.find(u => u.stance === "counterbattery")
           ? "COUNTER-BATTERY STANCE — " + n + " GUN" + (n === 1 ? "" : "S")
           : "COUNTER-BATTERY OFF", "good");
@@ -1984,6 +2062,18 @@ var UI = (function () {
   }
 
   function issueAttackMove(mx, my, shift) {
+    /* An attack-move is a standing authority to engage what you meet, which is
+       precisely what a held round does not have. The order is still given -
+       the vehicle should still advance - but the player is told once why it
+       will arrive with full pylons, rather than concluding the weapon is
+       broken. Throttled so a column of six says it once. */
+    const heldAM = selection.filter(u => u.kind === "unit" && u.owner === G.human &&
+                                         !u.dead && u.allWeaponsHeld && u.allWeaponsHeld());
+    if (heldAM.length && G.time - (issueAttackMove._warn || -99) > 20) {
+      issueAttackMove._warn = G.time;
+      alert(heldAM.length + (heldAM.length === 1 ? " UNIT" : " UNITS") +
+            " WILL NOT FIRE ON AN ATTACK-MOVE \u2014 NAME THE TARGET", "bad");
+    }
     const wp = Render.unproject(mx, my);
     for (const u of selection) if (u.kind === "unit" && u.owner === G.human)
       u.give({ type: "attackmove", x: wp.x, y: wp.y }, shift);
@@ -2083,8 +2173,13 @@ var UI = (function () {
       else if (u.fuelMax && u.fuel < 22) { lowFuel++; fuelRef = fuelRef || u; }
       if (u.isBroken && u.isBroken()) { broken++; brokenRef = brokenRef || u; }
       if (u.def.harvester && u.order.type === "idle") { idleHarv++; harvRef = harvRef || u; }
+      /* A launcher waiting for a fire mission is not an idle unit, it is a
+         unit doing exactly what it is for. Tested on the loadout rather than
+         on the stance, because save.js restores a saved stance over the
+         constructor's default and F can change it either way. */
       else if (!u.def.harvester && u.def.weapons.length && u.order.type === "idle" &&
-               u.stance !== "hold") { idleUnits++; idleRef = idleRef || u; }
+               u.stance !== "hold" &&
+               !(u.allWeaponsHeld && u.allWeaponsHeld())) { idleUnits++; idleRef = idleRef || u; }
     }
     if (dry) add(78, "ammo", dry + " UNIT" + (dry > 1 ? "S" : "") + " OUT OF ORDNANCE",
                  dryRef.x, dryRef.y, dryRef);

@@ -3497,6 +3497,20 @@ function makeCommander() {
          is wasted. */
       const sweep = airSweepPoint();
       if (!sweep) continue;
+      /* An armed sweep is an order to acquire, and a held round may not
+         acquire, so a Weasel flown out on one burns the fuel and lands full.
+         An electronic-attack aircraft is the opposite case: its jamming bubble
+         asks only that it be airborne and not parked, so it is worth flying
+         with every round on the rail - but NOT over the objective, which is
+         where the enemy air defence is. Stood off at 45% of the way there, the
+         same shape as the AWACS branch above; ew_n's bubble is 9.5 tiles, so a
+         partial advance still covers the approach. */
+      if (a.allWeaponsHeld && a.allWeaponsHeld()) {
+        if (a.def.jam) a.give({ type: "cap",
+                                x: P.homeX + (sweep.x - P.homeX) * 0.45,
+                                y: P.homeY + (sweep.y - P.homeY) * 0.45 });
+        continue;
+      }
       a.give(a.def.role === "fighter"
         ? { type: "cap", x: sweep.x, y: sweep.y }
         : { type: "attackmove", x: sweep.x, y: sweep.y });
@@ -4623,7 +4637,51 @@ function makeCommander() {
      have is a memory the caller flies an armed sweep to it instead. It used to
      walk the enemy's real unit list, which is how a fighter could be vectored
      onto an aircraft nobody had detected. */
+  /* ---- defence suppression ----
+     An anti-radiation round is held, so acquire() will not pick a radar up for
+     it any more and an armed sweep is a flight that lands with full pylons. The
+     commander has to NAME the emitter, which is the only thing this aircraft
+     was ever bought for - HARM does triple damage to a radar fit and next to
+     nothing to anything else.
+
+     An emitter is a thing that RADIATES, not a thing with a particular role.
+     `role:"aa"` is thirty MANPADS teams and optically-directed towed guns with
+     no set at all, and role "spaag" - nineteen of twenty-three of which carry
+     one - would have been left out entirely. def.radar || def.jam is the test
+     combat.js's own damage table uses and the test acquire() uses; using it
+     here means the three cannot disagree.
+
+     Contacts only: trackedEntity() is the honest-sensor gate every other branch
+     in this function uses. The building fallback reads r.ref directly, which is
+     what warAim() already does for structures - stated plainly rather than
+     claimed to be a tracked contact, because it is not one. */
+  function pickEmitter(a) {
+    let best = null, bd = Infinity;
+    for (const r of seenU.values()) {
+      if (r.layer !== "ground") continue;
+      const e = trackedEntity(r);
+      if (!e || !e.def || !(e.def.radar || e.def.jam)) continue;
+      if (!a.canTarget(e)) continue;              // commanded question: held rounds count
+      const d = U.dist2(a.x, a.y, e.x, e.y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (best) return best;
+    for (const r of seenB.values()) {
+      if (r.gone || (r.key !== "radar" && r.key !== "sam")) continue;
+      if (!r.ref || r.ref.dead || !a.canTarget(r.ref)) continue;
+      const d = U.dist2(a.x, a.y, r.x, r.y);
+      if (d < bd) { bd = d; best = r.ref; }
+    }
+    return best;
+  }
   function pickAirTarget(a) {
+    /* TERMINAL, not a fall-through. Role "sead" is neither "fighter" nor "cas",
+       so it fell into the gunship branch and could come back with an enemy MBT
+       or a refinery - and ai.js then issues a COMMANDED attack order, which
+       releases, so the AI would have put anti-radiation missiles into tanks at
+       0.35x. Returning null instead drops it to the sweep branch, where AI-2
+       holds it on the ramp. */
+    if (a.def.role === "sead" || a.def.role === "ewair") return pickEmitter(a);
     if (a.def.role === "fighter") {
       let best = null, bd = Infinity;
       for (const r of seenU.values()) {
@@ -4700,6 +4758,16 @@ function makeCommander() {
     if (!threat) return;
     for (const u of army) {
       if (attackWave.indexOf(u) >= 0) continue;
+      /* Marked auto, so it is a reflex and not a release. Ask the automatic
+         question before handing the order out, or it arrives, engage() finds no
+         weapon it may use and drops the unit to idle, and this block hands it
+         out again on the next think.
+         For HELD rounds this guard is unreachable - groundArmy() already
+         excludes aircraft, sam and tel - and it is kept for a pre-existing bug
+         instead: the seenU scan above filters on armed and distance but not on
+         LAYER, so an enemy aircraft near the base hands an attack order to
+         every idle ground unit and trades order for idle every think. */
+      if (!u.canTarget(threat, true)) continue;
       if (u.order.type === "idle" || u.order.type === "guard")
         u.give({ type: "attack", target: threat, auto: true });
     }

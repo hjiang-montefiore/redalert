@@ -88,7 +88,30 @@ var SaveGame = (function () {
       return { type: o.type, x0: Math.round(o.x0), y0: Math.round(o.y0),
                x1: Math.round(o.x1), y1: Math.round(o.y1) };
     }
-    if (o.x !== undefined) return { type: o.type, x: Math.round(o.x), y: Math.round(o.y) };
+    /* A fire mission is more than a point.
+       `release` is the player's authority and has to survive a save, or a
+       launcher comes back holding a bombard order it may not shoot: bombard()
+       finds no weapon it is allowed to use and drops to idle without a word.
+       `wi` names the mount, and a saved minelaying mission that lost it would
+       reload as a high-explosive ripple onto the ground picked for a belt.
+       `nuke` is the confirmed nuclear release; without it a restored warhead
+       mission silently becomes a conventional one it cannot fire.
+       `until` is carried for a bug of its own, and this fixes it: dropped, the
+       reload compares `this.game.time > undefined`, which is false for ever, so
+       EVERY restored bombard order from any gun ran indefinitely. After this
+       they all expire, including missions saved longer ago than their window,
+       which drop to idle on the first tick after load. That is a real change
+       to existing artillery in existing saves and belongs in the commit note.
+       An older save carries none of these keys and reads as no release - the
+       launcher waits for a fresh order, which is the safe side to be wrong on. */
+    if (o.x !== undefined) {
+      const l = { type: o.type, x: Math.round(o.x), y: Math.round(o.y) };
+      if (o.release) l.release = true;
+      if (o.nuke) l.nuke = true;
+      if (o.wi !== undefined) l.wi = o.wi;
+      if (o.until !== undefined) l.until = Math.round(o.until);
+      return l;
+    }
     return { type: o.type };
   }
   function serializeQueues(qs) {

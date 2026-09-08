@@ -54,7 +54,12 @@ class Unit {
     this.suppress = 0;
     this.moving = false; this.path = null; this.pathI = 0;
     this.order = { type: "idle" };
-    this.stance = "guard";                     // guard | hold | aggressive
+    /* A platform whose every round waits on an order has nothing it can do by
+       itself, so it comes off the ramp held rather than on guard - which is the
+       stance the player would set by hand anyway. Only a DEFAULT: F toggles it,
+       and save.js restores whatever was saved over the top of it, which is why
+       the IDLE UNITS nag is fixed at the nag rather than relying on this. */
+    this.stance = this.allWeaponsHeld() ? "hold" : "guard";   // guard | hold | aggressive
     this.cooldowns = d.weapons.map(() => 0);
     this.burst = d.weapons.map(() => 0);
     this.dead = false;
@@ -189,6 +194,28 @@ class Unit {
     this.setOrder(order);
   }
   setOrder(order) {
+    /* ---- weapon release ----
+       Some rounds are fired only when a commander says so: an anti-radiation
+       missile with a six-second reload that does triple damage to a radar fit
+       and next to nothing to anything else, and a ballistic round of which a
+       launcher owns one or two and waits between fifty-five and ninety-five
+       seconds for the next. The token that says a shot was ORDERED is stamped
+       here and nowhere else, and it is POSITIVE: an order carries release, or
+       it does not.
+
+       That direction is the whole design. give() -> setOrder() is the only way
+       an order reaches a unit from a commander - the player through ui.js, the
+       AI through ai.js - and every order this file raises for itself is
+       assigned straight to this.order and never comes through here: the seven
+       auto sites, retaliate(), the counter-battery plot, afterAttack().
+
+       Only `attack` and `bombard` release, because only those two name what is
+       to be shot - a thing, or a piece of ground. Attack-move in particular is
+       a standing authority to engage whatever you meet, which is precisely
+       what a held round must not have. `auto` is honoured even here, for the
+       one commanded order that is explicitly a reflex: ai.js defendBase. */
+    if (order && !order.auto &&
+        (order.type === "attack" || order.type === "bombard")) order.release = true;
     /* any order other than the group move that set it releases the pace cap */
     if (!(order && order.type === "move")) this.groupSpeed = 0;
     this.order = order;
@@ -206,7 +233,12 @@ class Unit {
   retaliate(shooter) {
     if (this.stance === "hold") return;
     if (this.order.type !== "idle" && this.order.type !== "guard") return;
-    if (!this.canTarget(shooter)) return;
+    /* Being shot at is not an order. A Weasel under small-arms fire does not
+       answer with an anti-radiation missile and a launcher under counter-
+       battery fire does not answer with a ballistic round it owns two of. The
+       AUTOMATIC question rather than a blanket refusal, so a hull that also
+       carries a gun still turns and uses the gun. */
+    if (!this.canTarget(shooter, true)) return;
     this.order = { type: "attack", target: shooter, auto: true };
   }
   /* ---- the layer a unit PRESENTS to a weapon, which is not always the one
@@ -231,11 +263,24 @@ class Unit {
   armorClass() {
     return (this.layer === "air" && this.targetLayer() === "ground") ? "light" : this.armor;
   }
-  canTarget(t) {
+  /* Two different questions, and conflating them breaks this in one direction
+     or the other.
+       canTarget(t)       - "if I ORDER you, can you hit it?"  Held rounds count.
+       canTarget(t, true) - "would you pick this up YOURSELF?" Held rounds do not.
+     Every caller outside this file asks the first, and asks it BEFORE the order
+     exists. Inside this file, acquire() and retaliate() ask the second - and
+     that is what stops a hull acquiring a target it would then have no weapon
+     it may use against, which is what makes engage()'s pickWeapon -1 branch
+     unreachable in that state and is why no guard is added there. */
+  canTarget(t, auto) {
     if (!t || t.dead) return false;
     const tl = t.targetLayer();
     for (let i = 0; i < this.def.weapons.length; i++) {
       const w = WEAPONS[this.def.weapons[i]];
+      /* manualWeapon, not holdsFire: the caller has already said which question
+         this is, and this.order is the wrong thing to read here because every
+         command-path caller asks before the order exists. */
+      if (auto && this.manualWeapon(w)) continue;
       if (Combat && w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
@@ -392,15 +437,66 @@ class Unit {
     if (this.mag && this.cat === "naval" && !this.dead) this.reloadAtYard(dt);
   }
 
+  /* ---- held rounds ----
+     Two levels, and both are needed. `manual` on the WEAPON travels with the
+     round onto every hull that mounts it, so a future hull carrying a gun and
+     a HARM keeps the gun and holds the missile. `noAuto` on the UNIT holds the
+     whole loadout of a platform that has no business choosing its own targets,
+     and is derived by role at the tail of generations.js so that 39 hulls
+     across six periods are covered without editing generated JSON by hand.
+
+     A NUCLEAR round is a third case and is not merely `manual`: it needs an
+     order that named a piece of GROUND and was confirmed. See holdsFire.
+
+     Deliberately NOT keyed on `antiRadiation`: 29 weapons carry it and several
+     in eras.js are jamming and SIGINT payloads with a damage number attached -
+     one is literally named "none (jamming and SIGINT payloads)" - so that flag
+     names a doctrine, not a trigger discipline. */
+  manualWeapon(w) { return !!(w && (w.manual || w.nuke || this.def.noAuto)); }
+  /* Has an order released it? Read off this.order rather than passed down as
+     an argument, because this.order IS the order the shot is being taken under
+     at every place a weapon is chosen - and an argument is exactly the thing
+     the last attempt forgot to read. */
+  released() { const o = this.order; return !!(o && o.release); }
+  /* Leave this mount alone on this shot.
+     A warhead needs more than release: a bombard order, released, and marked
+     `nuke` - a token written in exactly two places, the two-stage confirmation
+     in ui.js and driveNuclear() in ai.js. That is what stops a right-click on
+     an enemy tank from putting a kilotonne into it, and it is enforced in the
+     engine rather than in the interface. */
+  holdsFire(w) {
+    if (w && w.nuke) {
+      const o = this.order;
+      return !(o && o.release === true && o.type === "bombard" && o.nuke === true);
+    }
+    return this.manualWeapon(w) && !this.released();
+  }
+  /* Nothing aboard fires unprompted, so there is nothing this platform can do
+     on its own. Drives the spawn stance, the idle nag and the UI refusals. An
+     unarmed hull answers false: a lorry is not being held, it is a lorry. */
+  allWeaponsHeld() {
+    const ws = this.def.weapons;
+    if (!ws || !ws.length) return false;
+    for (let i = 0; i < ws.length; i++)
+      if (!this.manualWeapon(WEAPONS[ws[i]])) return false;
+    return true;
+  }
   /* Indirect fire used to mean exactly one thing - a lobbed "arc" round - and
      that was fine while artillery was the only long-range ground weapon. A
      ballistic launcher fires proj:"missile" so that the air-defence layers in
      combat.js can engage it at all, and it is still artillery in every way
      that matters here: it shoots over the horizon, it needs a firing point,
      and it displaces afterwards. `indirect` says so explicitly. */
-  isIndirect() {
+  /* isIndirect()     - is this an indirect shooter at all?  forceFire and the
+                        AI siege filters ask this, and a launcher must answer
+                        yes or Ctrl+RMB refuses the one gesture that fires it.
+     isIndirect(true) - is it one it may use UNPROMPTED?  A launcher whose only
+                        round is held answers no, which is what shuts the
+                        counter-battery stance. */
+  isIndirect(auto) {
     for (const k of this.def.weapons) {
       const w = WEAPONS[k];
+      if (auto && this.manualWeapon(w)) continue;
       if (w && (w.proj === "arc" || w.indirect)) return true;
     }
     return false;
@@ -436,10 +532,33 @@ class Unit {
   /* fire on a map position: how artillery answers a counter-battery plot */
   bombard(o, dt) {
     if (this.game.time > o.until) { this.order = { type: "idle" }; return; }
+    /* ---- which mount answers this fire mission ----
+       A launcher may carry two lobbed rounds - the high-explosive ripple it was
+       built around, and a cargo round that puts an anti-tank minefield on the
+       map - and nothing chooses between them on its own initiative. The ORDER
+       names the mount through o.wi; the fallback scan refuses a dispenser
+       outright and refuses anything currently held.
+
+       The named mount is validated rather than trusted: a hand-edited or
+       corrupted order must not be able to aim a direct-fire gun at a map point.
+
+       The refusal of w.scatter in the fallback is what closes the counter-
+       battery stance, runSiege, driveLaunchers and forceFire in one line - all
+       four issue a bombard with no wi, so all four get the HE round and a
+       launcher can never sow a belt across the road its own wave is using. */
     let wi = -1;
-    for (let i = 0; i < this.def.weapons.length; i++) {
-      const w0 = WEAPONS[this.def.weapons[i]];
-      if (w0 && (w0.proj === "arc" || w0.indirect)) { wi = i; break; }
+    if (o.wi !== undefined) {
+      const wN = WEAPONS[this.def.weapons[o.wi]];
+      if (wN && (wN.proj === "arc" || wN.indirect || wN.scatter) && !this.holdsFire(wN))
+        wi = o.wi;
+    }
+    if (wi < 0) {
+      for (let i = 0; i < this.def.weapons.length; i++) {
+        const w0 = WEAPONS[this.def.weapons[i]];
+        if (!w0 || w0.scatter) continue;          // never on the gun's own initiative
+        if (this.holdsFire(w0)) continue;
+        if (w0.proj === "arc" || w0.indirect) { wi = i; break; }
+      }
     }
     if (wi < 0) { this.order = { type: "idle" }; return; }
     const w = WEAPONS[this.def.weapons[wi]];
@@ -921,7 +1040,13 @@ class Unit {
       this.updateEnter(dt);
     } else if (o.type === "idle" || o.type === "guard") {
       /* counter-battery gunners answer plotted enemy artillery on their own */
-      if (this.stance === "counterbattery" && this.isIndirect()) {
+      /* Counter-battery is a standing authority to shell a plot nobody has
+         looked at - it calls no acquire() at all - which is exactly what a held
+         round may not have. It matters for the AI as much as the player:
+         ai.js puts every isIndirect unit into this stance the moment it owns a
+         radar. A gun that ALSO carries an ordinary arc round still answers
+         plots with that round, because isIndirect(true) still finds it. */
+      if (this.stance === "counterbattery" && this.isIndirect(true)) {
         const plot = this.pickCounterBatteryPlot();
         if (plot) {
           this.order = { type: "bombard", x: plot.px, y: plot.py, until: this.game.time + 9 };
@@ -1123,6 +1248,13 @@ class Unit {
       if (i === primary) continue;
       const w = WEAPONS[this.def.weapons[i]];
       if (!w) continue;
+      /* A secondary mount is fired with nobody choosing it - that is what this
+         function is - so a held round needs the same release the primary
+         needed. Without this a hull given an ordinary attack order would fire
+         every held round it carried as a free extra alongside its gun. Under a
+         RELEASED order holdsFire is false and it does fire, which is correct:
+         the player named the target. */
+      if (this.holdsFire(w)) continue;
       if (w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
@@ -1152,6 +1284,21 @@ class Unit {
     let best = -1, bestScore = -1;
     for (let i = 0; i < this.def.weapons.length; i++) {
       const w = WEAPONS[this.def.weapons[i]];
+      /* ---- THE SKIP ----
+         A held round is not a candidate unless an order released it. This is
+         the statement the previous design omitted: it threaded an `auto`
+         parameter through five call sites and never read it, so a Wild Weasel
+         carrying a gun and a HARM still scored the HARM first - 210 damage at
+         0.88 over a 6.0 reload is 30.8 expected damage a second, pickWeapon
+         takes the highest - and launched at the first thing it drove past.
+         Every fire path in this file reaches a weapon through this loop:
+         engage(), updateGarrison(), both updateAir branches and Building
+         defensive fire. One line closes all five.
+         A Building reaches this through Unit.prototype.pickWeapon.call and has
+         no order, so released() is a flat false and a structure never fires a
+         held round. No BUILDINGS entry mounts one, so every existing
+         emplacement is bit-for-bit what it was. */
+      if (this.holdsFire(w)) continue;
       if (w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
@@ -1247,7 +1394,15 @@ class Unit {
      A SEAD shooter weights emitters far above anything else. */
   acquire() {
     const R = this.sightR() * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
-    const sead = this.def.weapons.some(k => WEAPONS[k] && WEAPONS[k].antiRadiation);
+    /* A Weasel weights an emitter a hundredfold below - 0.06 against 6 - but
+       only for a round it may actually fire. acquire() is the automatic
+       question by definition, so a held ARM contributes nothing to it;
+       otherwise a mixed hull is dragged across the map toward a radar it is
+       then going to shoot with its cannon. */
+    const sead = this.def.weapons.some(k => {
+      const w = WEAPONS[k];
+      return w && w.antiRadiation && !this.manualWeapon(w);
+    });
     let best = null, bd = Infinity;
     this.game.grid.query(this.x, this.y, R, (e) => {
       if (e.dead || e.owner === this.owner || this.game.allied(this.owner, e.owner)) return;
@@ -1257,7 +1412,16 @@ class Unit {
          level it unprompted. Once somebody garrisons it, it stops being
          neutral and becomes a legitimate target like any other. */
       if (!autoTargetable(e)) return;
-      if (!this.canTarget(e)) return;
+      /* The automatic question. This one call is the gate behind attackmove,
+         idle/guard, the garrison windows, air attackmove, CAP, strip alert and
+         hover - all seven reach a target only through here. Because a held
+         round is invisible to it, a hull can never be handed an automatic
+         order against something only a held round could reach.
+         This matters far more than the designs assumed: a launcher's sight is
+         21 to 31 tiles after generations.js rewrites it, not the 5.0 on the
+         card, so idle/guard and attackmove were LIVE auto-fire paths for every
+         TEL in the game. */
+      if (!this.canTarget(e, true)) return;
       /* low-observable airframes cannot be acquired at full range */
       /* A surface mount cannot shoot at an aeroplane it cannot reach, so it
          has no business asking whether anybody holds a track on one. acquire()
@@ -1867,6 +2031,13 @@ class Unit {
     /* nothing queued: keep station where the contact was rather than quitting */
     if (this.ammoMax && this.ammo <= 0.05) return { type: "rtb" };
     if (this.fuel < Math.max(this.reserveFuel(), this.fuelMax * 0.40)) return { type: "rtb" };
+    /* A station-keeping attackmove only works because acquire() finds the next
+       contact. An airframe whose every round is held cannot acquire, so that
+       order is inert and - worse - the AI air loop re-tasks only hover, parked
+       and idle, so a Weasel that killed one emitter loitered with three
+       missiles for the rest of the sortie. Hover instead: it is the same
+       station, and it is a state both the AI and the player can act on. */
+    if (this.allWeaponsHeld && this.allWeaponsHeld()) return { type: "hover" };
     return { type: "attackmove", x: this.x, y: this.y };
   }
 
@@ -2111,10 +2282,23 @@ class Building {
      of the grid can ask without first testing what kind it is. */
   targetLayer() { return this.layer; }
   armorClass() { return this.armor; }
-  canTarget(t) {
+  /* `auto` is accepted and ignored, and the comment says so honestly rather
+     than claiming parity: a structure has no order, so released() is a flat
+     false and its answer is the automatic one either way - a held round
+     emplaced in a building would be invisible to the commanded question too.
+     Academic today: nothing in BUILDINGS mounts one, and the eras/generations
+     derivation walks UNITS only, so no structure can ever acquire noAuto. No
+     new sensor is consulted here, which is what keeps _behtest [7] an
+     assertion about weapons and not about visibility. */
+  canTarget(t, auto) {
     if (!t || t.dead || !this.def.weapons) return false;
     return this.pickWeapon(t) >= 0;
   }
+  /* pickWeapon is borrowed wholesale from Unit and now asks holdsFire on every
+     mount, so these have to exist here or the first defensive tick throws. */
+  manualWeapon(w) { return Unit.prototype.manualWeapon.call(this, w); }
+  released() { return false; }
+  holdsFire(w) { return this.manualWeapon(w); }
   pickWeapon(t) { return Unit.prototype.pickWeapon.call(this, t); }
   weaponRange(w) { return Unit.prototype.weaponRange.call(this, w); }
   sightR() { return this.def.sight * (this.owner.upgrades.optics ? 1.25 : 1); }
@@ -2186,7 +2370,7 @@ class Building {
          way the gun has to stop rather than finish the job. Mobile shooters
          already do this in engage(), which idles when pickWeapon returns -1. */
       if (!this.focus || this.focus.dead || !autoTargetable(this.focus) ||
-          !this.canTarget(this.focus) ||
+          !this.canTarget(this.focus, true) ||
           U.dist(this.x, this.y, this.focus.x, this.focus.y) > this.weaponRange(WEAPONS[d.weapons[0]]) * 1.1) {
         this.focus = this.acquire();
       }
@@ -2231,7 +2415,9 @@ class Building {
          vacant block straight through and the turret spent its war levelling
          the village across the road. */
       if (!autoTargetable(e)) return;
-      if (!this.canTarget(e)) return;
+      /* the automatic question, said out loud - a turret choosing its own
+         target is the same act as a column choosing one on the march */
+      if (!this.canTarget(e, true)) return;
       /* an aircraft can only be engaged if somebody actually holds a track
          on it - your own radar, or a friendly sensor over the datalink */
       /* An engagement beyond visual range needs somebody to be holding a

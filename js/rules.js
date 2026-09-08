@@ -682,13 +682,16 @@ Object.assign(UNITS, {
          "2017 - every one of those dates is an outside assessment. It is shaped like an S-300 " +
          "and its radar, its numbers and its reliability are all unverified, so it shoots and " +
          "mostly misses. Unreachable by re-equipping: this army is capped at 1990." },
-  tel_n: { fac:"nato", role:"tel", name:"HIMARS / PrSM", full:"M142 HIMARS with M1130 PrSM", cat:"vehicle",
+  tel_n: { fac:"nato", role:"tel", name:"HIMARS / PrSM", full:"M142 HIMARS with PrSM", cat:"vehicle",
     cost:2900, oil:48, time:34, hp:520, armor:"light", speed:1.55, turn:1.4, sight:5.0, r:15, mass:16,
     layer:"ground", weapons:["srbm_mod"], prereq:["factory","lab","radar"], tech:3, turret:false,
     deploy:true, deploySec:3.0, rounds:2, from:"e20",
     desc:"Two rounds in one pod on the same five-ton truck that fires the rocket artillery. NATO " +
          "has had no dedicated ballistic launcher since INF eliminated Pershing II in 1988, and " +
-         "this is the consequence: fast, small, cheap, and it leaves with the battery." },
+         "this is the consequence: fast, small, cheap, and it leaves with the battery. It is " +
+         "also conventional-only, and so is every launcher NATO fields: INF destroyed Pershing " +
+         "II, France dismantled Hades by 1997, and neither ATACMS nor PrSM has ever carried a " +
+         "nuclear warhead. NATO's nuclear release in this theatre is the Strategic Silo." },
   tel_p: { fac:"pact", role:"tel", name:"Iskander-M", full:"9K720 Iskander-M, 9P78-1 TEL", cat:"vehicle",
     cost:3200, oil:58, time:38, hp:580, armor:"light", speed:1.30, turn:1.0, sight:5.0, r:17, mass:42,
     layer:"ground", weapons:["srbm_mod"], prereq:["factory","lab","radar"], tech:3, turret:false,
@@ -1571,16 +1574,16 @@ Object.assign(WEAPONS, {
    the Eastern Coalition relies on powerful but ground-bound systems.        */
 Object.assign(WEAPONS, {
   harm:    { name:"AGM-88 HARM", dmg:210, warhead:"he", range:10.5, minRange:1.5, reload:6.0, burst:1,
-             acc:0.88, proj:"missile", speed:520, aoe:1.4, ammo:1, antiRadiation:true,
+             acc:0.88, proj:"missile", speed:520, aoe:1.4, ammo:1, antiRadiation:true, manual:true,
              tgt:{ground:1,air:0,sea:1,sub:0} },
   arm_kh:  { name:"Kh-31P ARM", dmg:230, warhead:"he", range:10.0, minRange:1.5, reload:6.6, burst:1,
-             acc:0.84, proj:"missile", speed:560, aoe:1.5, ammo:1, antiRadiation:true,
+             acc:0.84, proj:"missile", speed:560, aoe:1.5, ammo:1, antiRadiation:true, manual:true,
              tgt:{ground:1,air:0,sea:1,sub:0} },
   arm_yj:  { name:"YJ-91 ARM", dmg:220, warhead:"he", range:10.8, minRange:1.5, reload:6.2, burst:1,
-             acc:0.87, proj:"missile", speed:540, aoe:1.4, ammo:1, antiRadiation:true,
+             acc:0.87, proj:"missile", speed:540, aoe:1.4, ammo:1, antiRadiation:true, manual:true,
              tgt:{ground:1,air:0,sea:1,sub:0} },
   arm_gnd: { name:"ground-launched ARM", dmg:180, warhead:"he", range:12.0, minRange:2.5, reload:9.0, burst:1,
-             acc:0.86, proj:"missile", speed:480, aoe:1.3, antiRadiation:true,
+             acc:0.86, proj:"missile", speed:480, aoe:1.3, antiRadiation:true, manual:true,
              tgt:{ground:1,air:0,sea:1,sub:0} },
 });
 
@@ -2339,29 +2342,29 @@ Object.assign(WEAPONS, {
    no reason to exist, so this family runs 24.0 to 31.0. */
 Object.assign(WEAPONS, {
   srbm_early: { name:"MGM-5 / R-11 class", dmg:430, warhead:"he", range:24.0, minRange:8.0, reload:95, burst:1,
-    acc:0.12, proj:"missile", speed:620, aoe:3.0, suppress:90, indirect:true,
+    acc:0.12, proj:"missile", speed:620, aoe:3.0, suppress:90, indirect:true, manual:true,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   srbm_short: { name:"OTR-21 class", dmg:400, warhead:"he", range:26.0, minRange:8.0, reload:55, burst:1,
-    acc:0.80, proj:"missile", speed:700, aoe:2.2, suppress:80, indirect:true,
+    acc:0.80, proj:"missile", speed:700, aoe:2.2, suppress:80, indirect:true, manual:true,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   /* A plain Scud is a big, hot, non-manoeuvring airframe on a predictable
      parabola and Patriot did engage them in 1991, so 0.45 - not the SLBM's
      0.12 - is both the accurate figure and the one that makes the new SAM
      mean something. See MISSILE_PROFILE. */
   srbm_scud:  { name:"R-17 class", dmg:470, warhead:"he", range:27.0, minRange:8.0, reload:80, burst:1,
-    acc:0.30, proj:"missile", speed:680, aoe:3.2, suppress:95, indirect:true,
+    acc:0.30, proj:"missile", speed:680, aoe:3.2, suppress:95, indirect:true, manual:true,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   srbm_atacms:{ name:"MGM-140 ATACMS", dmg:440, warhead:"he", range:28.5, minRange:8.0, reload:60, burst:1,
-    acc:0.88, proj:"missile", speed:700, aoe:2.4, suppress:80, indirect:true,
+    acc:0.88, proj:"missile", speed:700, aoe:2.4, suppress:80, indirect:true, manual:true,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   /* The most accurate ballistic missile of its generation, by a distance, and
      the only weapon in this file deleted by a treaty rather than by obsolescence.
      `to:"e80"` on the unit is the INF Treaty and the desc says so. */
   srbm_p2:    { name:"MGM-31B Pershing II", dmg:520, warhead:"he", range:31.0, minRange:8.0, reload:95, burst:1,
-    acc:0.90, proj:"missile", speed:730, aoe:2.6, suppress:95, indirect:true,
+    acc:0.90, proj:"missile", speed:730, aoe:2.6, suppress:95, indirect:true, manual:true,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   srbm_mod:   { name:"9K720 class", dmg:520, warhead:"he", range:30.0, minRange:8.0, reload:58, burst:1,
-    acc:0.90, proj:"missile", speed:720, aoe:2.6, suppress:90, indirect:true,
+    acc:0.90, proj:"missile", speed:720, aoe:2.6, suppress:90, indirect:true, manual:true,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
 });
 

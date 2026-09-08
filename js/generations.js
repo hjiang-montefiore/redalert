@@ -614,6 +614,36 @@
     if (_ug.cat === "aircraft" && _ug.jet && !_ug.tanker && !_ug.hover) _ug.refuelable = true;
   }
 
+  /* ---- weapon release across the whole roster ----
+     Derived rather than written into generated JSON, the same way w.rocket is
+     derived in eras.js, and placed at the tail of the LAST data file so it sees
+     everything rules.js, eras.js and heavyair.js between them created.
+
+     Measured, not assumed: 19 tel (every one hand-written in rules.js), 12
+     sead and 8 ewair - 39 hulls, and every single one carries exactly one
+     weapon. So a per-weapon flag would be sufficient today; `noAuto` on the
+     unit is what stays correct the day somebody hangs a shared round on an
+     ordinary fighter. If a Wild Weasel is ever given a Sidewinder as well, drop
+     noAuto from that def and rely on the per-weapon `manual` flag - which is
+     exactly why both levels exist.
+
+     telnuc is listed here so that Phase 4's launchers inherit the same rule
+     from the same line rather than from a second mechanism.
+
+     sead  - fired at an emitter a commander chose, never at what a patrol
+             drove past.
+     ewair - the real weapon is the jamming bubble, which asks only that the
+             aircraft be airborne and not parked (game.js: G.emitting reads
+             u.parked and the order type, and nothing about stance), so holding
+             the missile costs these airframes nothing they were bought for.
+     tel / telnuc - one or two rounds and a 55-to-95 second reload. */
+  var HELD_ROLES = { sead: 1, ewair: 1, tel: 1, telnuc: 1 };
+  var nHeld = 0;
+  for (var _hu in UNITS) {
+    var _hd = UNITS[_hu];
+    if (_hd && HELD_ROLES[_hd.role]) { _hd.noAuto = true; nHeld++; }
+  }
+
   if (typeof console !== "undefined" && console.log)
     console.log("[generations] armour on " + nArm + " vehicles, penetration on " +
                 nPen + " guns, ranges rebuilt, sight raised on " + nSight +
