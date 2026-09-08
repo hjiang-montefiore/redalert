@@ -48,7 +48,39 @@ var Mines = (function () {
   var LAND = { dmg: 200, r: 0.55, arm: 3.0, warhead: "heat", aoe: 0.5 };
   var SEA  = { dmg: 1200, r: 0.85, arm: 4.0, warhead: "he", aoe: 0.7 };
 
-  function init(G) { G.mines = []; }
+  /* ---- how many one side may have in the ground at once ----
+     A mine does not expire and nothing in this file will ever delete one, so
+     the only honest brake on a weapon that puts eight in the ground per rocket
+     is a refusal to lay the next one. Note what this does NOT do: it never
+     removes an existing mine. Trimming the oldest to make room would be
+     self-destruct wearing a different coat, and it is forbidden.
+
+     update() runs unthrottled every tick and does one spatial query per ARMED
+     mine plus a pass of every detector against every mine, so the term that
+     grows is O(detectors x mines).
+
+     300 per player - 1200 in a four-way game - sits an order of magnitude below
+     where the simulation cost matters, and leaves headroom for the term nobody
+     measured: render3d syncMines() builds one shadow-casting group per mine
+     visible to the human, every frame, with no instancing and no distance
+     culling. That is plausibly the binding constraint rather than the spatial
+     scan, and this constant is the single dial to turn if it bites. Games today
+     hold 20 to 31 mines, so this is two orders above what the game does now,
+     and about forty rocket missions: nobody reaches it by accident. Shared with
+     sea mines, because it counts what a PLAYER owns. */
+  var CAP = 300;
+  var capWarnT = -1e9;
+
+  function countOwned(G, owner) {
+    var n = 0;
+    if (!G.mines) return 0;
+    for (var i = 0; i < G.mines.length; i++)
+      if (!G.mines[i].dead && G.mines[i].owner === owner) n++;
+    return n;
+  }
+  function roomFor(G, owner) { return countOwned(G, owner) < CAP; }
+
+  function init(G) { G.mines = []; capWarnT = -1e9; }
 
   /* Can this mine hurt that entity? Weight is the whole mechanism: an
      anti-tank mine needs a vehicle on top of it, and a moored sea mine
@@ -62,8 +94,33 @@ var Mines = (function () {
     return e.cat !== "infantry";
   }
 
+  /* opts, all optional:
+       dmg, r     override the warhead and the trigger radius
+       arm        override the ARMING delay - the seconds before the mine wakes
+                  up. A mine thrown out of a rocket has to right itself, and at
+                  the LAND default of 3.0 a launcher could drop a live field on
+                  a column already inside the footprint, turning an area-denial
+                  weapon into a direct-fire one. THIS IS AN ARMING DELAY AND NOT
+                  A LIFETIME. Nothing in this file expires.
+       quiet      lay without the boom and the banner. A dispensing round puts
+                  eight down in ONE frame, and eight booms with eight "MINE
+                  LAID" lines on top of each other is not a minefield going in,
+                  it is a rendering fault.
+     Returns the mine, or null if the ceiling refused it, so the caller can keep
+     the round on the rack rather than spend it on nothing. */
   function lay(G, owner, x, y, sea, opts) {
     var base = sea ? SEA : LAND;
+    /* The hard stop, here as well as at the order point, because this is the
+       only door into G.mines and a ceiling any future caller can walk past is
+       not a ceiling. Throttled, so eight refused submunitions do not produce
+       eight banners. */
+    if (!roomFor(G, owner)) {
+      if (owner === G.human && G.time - capWarnT > 8) {
+        capWarnT = G.time;
+        G.alert("MINEFIELD CEILING \u2014 " + CAP + " MINES ALREADY IN THE GROUND", "bad");
+      }
+      return null;
+    }
     var m = {
       id: NEXT++,
       x: x, y: y,
@@ -74,14 +131,15 @@ var Mines = (function () {
       r: (opts && opts.r) || base.r,
       warhead: base.warhead,
       aoe: base.aoe,
-      armIn: base.arm,
+      armIn: (opts && opts.arm) || base.arm,
       armed: false,
       dead: false,
       /* players who have spotted it; the owner always has */
       seen: [owner],
     };
     G.mines.push(m);
-    if (typeof Combat !== "undefined" && Combat.addEffect) {
+    if (!(opts && opts.quiet) &&
+        typeof Combat !== "undefined" && Combat.addEffect) {
       /* Something visibly happens where the mine goes in. Without this a mine
          simply materialised and the vehicle looked like it had done nothing. */
       Combat.addEffect({ t: "boom", x: x, y: y, r: sea ? 9 : 6,
@@ -253,6 +311,7 @@ var Mines = (function () {
   }
   function restore(G, arr) {
     G.mines = [];
+    capWarnT = -1e9;
     if (!arr || !arr.length) return;
     var maxId = 0;
     for (var i = 0; i < arr.length; i++) {
@@ -273,6 +332,7 @@ var Mines = (function () {
   }
 
   return { init: init, lay: lay, update: update, visibleTo: visibleTo,
+           CAP: CAP, countOwned: countOwned, roomFor: roomFor,
            forRender: forRender, countNear: countNear, tileMined: tileMined,
            detonate: detonate, threatens: threatens,
            snapshot: snapshot, restore: restore };

@@ -609,6 +609,45 @@
      Re-derived here rather than moved, because the same rule has to hold for
      anything a later pass adds and because rules.js's copy is still correct
      for the aircraft that exist when it runs. */
+  /* ---- a cargo round flies as far as the round it shares a pod with ----
+     Derived LAST, from the finished figure, for the same reason optics are.
+     Hand-writing a range would have produced a third set of artillery figures
+     quietly diverging from the two that already exist.
+
+     rangeMul is on the WEAPON, not a constant here: a 155mm cargo shell gives
+     up more to base-bleed HE than a cargo rocket gives up to a unitary one, and
+     the e80-e00 M109 and M270 share the SAME era range figure (ART_ERA_M keys
+     mlrs and spg identically), so without a per-round multiplier the card's
+     claim that the gun round reaches less far would have been false in every
+     era but e20. minRange is inherited unchanged: what stops a launcher
+     shooting into its own lap is the launcher, not the payload.
+
+     A cargo round must always be APPENDED to a unit's weapons array, never
+     prepended: generations.js writes u.weapons[0] when it substitutes a private
+     weapon, and bombard()'s fallback scan walks forward looking for the first
+     round it is allowed to fire. */
+  for (var _sd in UNITS) {
+    var _su = UNITS[_sd];
+    if (!_su || !_su.weapons || _su.weapons.length < 2) continue;
+    var _host = WEAPONS[_su.weapons[0]];
+    if (!_host) continue;
+    for (var _sq = 1; _sq < _su.weapons.length; _sq++) {
+      var _sk = _su.weapons[_sq], _sw = WEAPONS[_sk];
+      if (!_sw || !_sw.scatter) continue;
+      /* Clone once. The domain pass above may already have given this unit its
+         own copy, in which case the key already carries the unit's name. */
+      if (_sk.indexOf("__" + _sd) < 0) {
+        var _pk = privateWeapon(_sd, _sk);
+        if (!_pk) continue;
+        _su.weapons = _su.weapons.slice();
+        _su.weapons[_sq] = _pk;
+        _sk = _pk;
+      }
+      WEAPONS[_sk].range = Math.round(_host.range * (WEAPONS[_sk].rangeMul || 0.92) * 10) / 10;
+      WEAPONS[_sk].minRange = _host.minRange || 3.0;
+    }
+  }
+
   for (var _rfg in UNITS) {
     var _ug = UNITS[_rfg];
     if (_ug.cat === "aircraft" && _ug.jet && !_ug.tanker && !_ug.hover) _ug.refuelable = true;

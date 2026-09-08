@@ -492,6 +492,7 @@ var UI = (function () {
      airborne could not be given any of them. */
   let airCmdMode = null;    // null | "cap" | "strike"
   let mineMode = false;     // armed: the next map click lays a mine
+  let scatMode = false;     // armed: the next map click sows a minefield by rocket
   let obsMode = null;       // armed: the next map click emplaces this obstacle
   /* armed: the next DRAG on the map marks out an area to work automatically */
   let areaMode = null;      // null | "lay" | "sweep"
@@ -742,6 +743,99 @@ var UI = (function () {
                                  u.allWeaponsHeld && u.allWeaponsHeld());
   }
 
+  /* A launcher with a mine pod, or a howitzer with RAAMS in the ready rack.
+     Deliberately NOT folded into selectedLayers(), which selects on minesMax
+     and drives the autolay box order - an M270 does not crawl along a belt
+     rolling mines off the tailgate. */
+  function selectedDispensers() {
+    return selection.filter(u => u.kind === "unit" && u.owner === G.human &&
+                                 !u.dead && u.dispMax > 0 &&
+                                 u.scatterIndex && u.scatterIndex() >= 0);
+  }
+
+  function scatterPanel(list) {
+    const left = list.reduce((n, u) => n + u.disp, 0);
+    const cap  = list.reduce((n, u) => n + u.dispMax, 0);
+    const u0 = list[0], w = WEAPONS[u0.def.weapons[u0.scatterIndex()]];
+    const per = (w && w.scatter) || 0;
+    const rng = w ? (u0.weaponRange(w) / CFG.TILE).toFixed(1) : "?";
+    const held = (typeof Mines !== "undefined") ? Mines.countOwned(G, G.human) : 0;
+    const room = (typeof Mines !== "undefined") ? Mines.CAP : 0;
+    let h = '<div class="hbtns"><div class="hb' +
+            (left ? (scatMode ? " arm" : "") : " off") +
+            '" data-mact="scatter">SCATTER MINES (' + left + "/" + cap + ")</div></div>";
+    h += '<div class="hhint">' + (scatMode
+      ? "Click the ground to sow it. One round puts about " + per +
+        " anti-tank mines down where it lands, out to " + rng +
+        " tiles. Shift-click to queue a belt. RMB or Esc cancels."
+      : "L sows a minefield \u2014 " + per + " mines a round, " + left +
+        " aboard. The mines do not expire, they are invisible until the enemy " +
+        "fields a detector, and they never trigger on your own vehicles. Reach is " +
+        rng + " tiles, SHORTER than the range ring, which shows the high-explosive " +
+        "round. " + (w && w.rocket
+          ? "This is a rocket and can be intercepted \u2014 but only if the enemy has " +
+            "air defence standing on the ground you aim at, which a minefield usually " +
+            "is not. "
+          : "This is a gun round: nothing in the game can intercept it. ") +
+        "CTRL+RIGHT-CLICK still fires the high-explosive mission. " +
+        "FIELD " + held + "/" + room + " MINES IN THE GROUND.") + "</div>";
+    return h;
+  }
+
+  function scatterClick(mx, my, shift) {
+    if (!scatMode) return false;
+    const L = selectedDispensers().filter(u => u.disp > 0);
+    if (!L.length) { scatMode = false; refreshSelInfo(); return true; }
+    if (typeof Mines !== "undefined" && !Mines.roomFor(G, G.human)) {
+      G.alert("MINEFIELD CEILING \u2014 " + Mines.CAP + " MINES ALREADY IN THE GROUND", "bad");
+      scatMode = false; refreshSelInfo(); return true;
+    }
+    const wp = Render.unproject(mx, my);
+    /* Refuse a point the cargo round cannot reach. Without this bombard()
+       closes to 85% of weapon range on its own initiative, and the player's
+       launcher drives onto the approach he was trying to fence - and the range
+       ring shows the HE round, so he has no way to know. */
+    const inR = L.filter(u => {
+      const w2 = WEAPONS[u.def.weapons[u.scatterIndex()]];
+      const d = U.dist(u.x, u.y, wp.x, wp.y);
+      return d <= u.weaponRange(w2) && d >= (w2.minRange || 0) * CFG.TILE;
+    });
+    if (!inR.length) {
+      G.alert("OUT OF REACH FOR A CARGO ROUND \u2014 MOVE UP FIRST", "bad");
+      return true;
+    }
+    /* Two launchers on one aim point is one field's worth of ground and two
+       racks spent, because tileMined refuses the second stick. Fan them. */
+    inR.forEach((u, i) => {
+      const a2 = (i / inR.length) * Math.PI * 2;
+      const off = i === 0 ? 0 : CFG.TILE * 3.0;
+      u.give({ type: "bombard", wi: u.scatterIndex(),
+               x: wp.x + Math.cos(a2) * off, y: wp.y + Math.sin(a2) * off,
+               until: G.time + 25 }, shift);
+    });
+    Combat.addEffect({ t: "text", x: wp.x, y: wp.y, s: "MINEFIELD",
+                       life: 0.9, max: 0.9, c: "#c8b06a" });
+    if (G.pingEvent) G.pingEvent(wp.x, wp.y);
+    G.alert(inR.length + (inR.length === 1 ? " LAUNCHER SOWING" : " LAUNCHERS SOWING") +
+          (inR.length < L.length ? " \u00b7 " + (L.length - inR.length) + " OUT OF REACH" : ""),
+          "good");
+    Sfx.play("order");
+    if (!shift) { scatMode = false; refreshSelInfo(); }
+    return true;
+  }
+
+  function scatterOrder() {
+    const L = selectedDispensers();
+    if (!L.length) return;
+    if (!L.some(u => u.disp > 0)) {
+      G.alert("NO MINE ROUNDS ABOARD \u2014 RETURN TO BASE", "bad"); return;
+    }
+    scatMode = !scatMode;
+    mineMode = false;
+    Sfx.play("click");
+    refreshSelInfo();
+  }
+
   function selectedSweepers() {
     return selection.filter(u => u.kind === "unit" && u.owner === G.human &&
                                  (u.def.mineClear || u.def.mineDetect));
@@ -804,6 +898,7 @@ var UI = (function () {
         const act = btn.dataset.mact;
         if (act === "area") areaOrder("lay");
         else if (act === "sweep") areaOrder("sweep");
+        else if (act === "scatter") scatterOrder();
         else mineOrder();
       });
     });
@@ -1243,13 +1338,15 @@ var UI = (function () {
       const swp1 = selectedSweepUnits();
       if (swp1.length && !lay1.length) h += sweepPanel();
       if (e.kind === "unit" && e.owner === G.human) h += releasePanel([e]);
+      const dsp1 = selectedDispensers();
+      if (dsp1.length) h += scatterPanel(dsp1);
       h += introBlock(e);
       const air1 = selectedAircraft();
       if (air1.length) h += airOrderPanel(air1);
       el.innerHTML = h;
       if (e.ramp && e.ramp()) bindHangar(e, el);
       if (air1.length) bindAirOrders(el);
-      if (lay1.length || swp1.length) bindMineOrders(el);
+      if (lay1.length || swp1.length || selectedDispensers().length) bindMineOrders(el);
       if (eng1.length) bindObstacles(el);
       const pb = el.querySelector(".pribtn");
       if (pb) pb.addEventListener("mousedown", (ev) => {
@@ -1307,6 +1404,8 @@ var UI = (function () {
       if (swpN.length && !layN.length) h += sweepPanel();
       const heldN = selectedHeld();
       if (heldN.length) h += releasePanel(heldN);
+      const dspN = selectedDispensers();
+      if (dspN.length) h += scatterPanel(dspN);
       const airN = selectedAircraft();
       if (airN.length) h += airOrderPanel(airN);
       el.innerHTML = h;
@@ -1314,7 +1413,7 @@ var UI = (function () {
         selectSubgroup(c.dataset.uid);
       }));
       if (airN.length) bindAirOrders(el);
-      if (layN.length || swpN.length) bindMineOrders(el);
+      if (layN.length || swpN.length || selectedDispensers().length) bindMineOrders(el);
       if (engN.length) bindObstacles(el);
     }
   }
@@ -1375,6 +1474,7 @@ var UI = (function () {
         /* an armed mine or aircraft order takes the next click */
         if (obsMode && obsClick(mx, my, e.shiftKey)) return;
         if (mineMode && mineClick(mx, my, e.shiftKey)) return;
+        if (scatMode && scatterClick(mx, my, e.shiftKey)) return;
         /* an armed aircraft order takes the next click */
         if (airCmdMode && airCmdClick(mx, my)) return;
         /* a pending sortie takes the next click as its target */
@@ -1397,6 +1497,7 @@ var UI = (function () {
         if (areaMode) { areaMode = null; areaDrag = null; refreshSelInfo(); G.alert("CANCELLED"); return; }
         if (obsMode) { obsMode = null; refreshSelInfo(); G.alert("CANCELLED"); return; }
         if (mineMode) { mineMode = false; refreshSelInfo(); G.alert("MINE LAYING CANCELLED"); return; }
+        if (scatMode) { scatMode = false; refreshSelInfo(); G.alert("FIRE MISSION CANCELLED"); return; }
         if (airCmdMode) { airCmdMode = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
         if (pendingSupport) { pendingSupport = null; refreshCards(); G.alert("FIRE MISSION CANCELLED"); return; }
         if (sortieMode) { cancelSortie(); G.alert("SORTIE CANCELLED"); return; }
@@ -1551,6 +1652,7 @@ var UI = (function () {
       if (k === "escape" && areaMode) { areaMode = null; areaDrag = null; refreshSelInfo(); G.alert("CANCELLED"); return; }
       if (k === "escape" && obsMode) { obsMode = null; refreshSelInfo(); G.alert("CANCELLED"); return; }
       if (k === "escape" && mineMode) { mineMode = false; refreshSelInfo(); G.alert("MINE LAYING CANCELLED"); return; }
+      if (k === "escape" && scatMode) { scatMode = false; refreshSelInfo(); G.alert("FIRE MISSION CANCELLED"); return; }
       if (k === "escape" && airCmdMode) { airCmdMode = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
       if (k === "escape" && sortieMode) { cancelSortie(); G.alert("SORTIE CANCELLED"); return; }
       if (k === "escape") {
@@ -1574,6 +1676,7 @@ var UI = (function () {
       if (k === "u") unloadSelection();
       /* aircraft orders from the keyboard as well as the panel */
       if (k === "m" && selectedLayers().length) { mineOrder(); return; }
+      if (k === "l" && selectedDispensers().length) { scatterOrder(); return; }
       if (k === "r" && selectedAircraft().length) { airOrder("rtb"); return; }
       if (k === "y" && selectedAircraft().length) { airOrder("cap"); return; }
       if (k === "t" && selectedAircraft().length) { airOrder("strike"); return; }

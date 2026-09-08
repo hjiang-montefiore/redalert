@@ -446,8 +446,9 @@ var UNITS = {
 
   spg_n: { fac:"nato", role:"spg", name:"M109 Paladin", full:"M109A7 Paladin", cat:"vehicle",
     cost:1500, oil:20, time:22, hp:780, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:39,
-    layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
-    desc:"155mm self-propelled howitzer. Fires far past its own eyesight — it needs a spotter to be useful." },
+    layer:"ground", weapons:["howitzer","scat_raams"], dispenser:8,
+    prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
+    desc:"155mm self-propelled howitzer. Fires far past its own eyesight — it needs a spotter to be useful. It is also NATO's only way to sow a minefield: M741 RAAMS, nine M73 anti-tank mines in a cargo shell, in service since 1982." },
   spg_p: { fac:"pact", role:"spg", name:"Msta-S", full:"2S19 Msta-S", cat:"vehicle",
     cost:1450, oil:20, time:21, hp:820, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:42,
     layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
@@ -456,11 +457,16 @@ var UNITS = {
   mlrs_n: { fac:"nato", role:"mlrs", name:"M270 MLRS", full:"M270A2 MLRS", cat:"vehicle",
     cost:2200, oil:34, time:30, hp:700, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:25,
     layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
-    desc:"Twelve 227mm rockets in one ripple. Erases a base block, then reloads for fourteen seconds." },
+    desc:"Twelve 227mm rockets in one ripple. Erases a base block, then reloads for fourteen seconds. " +
+         "It cannot sow a minefield. The US Army never fielded an MLRS scatterable-mine rocket, and the " +
+         "European AT2 round that did the job in the 1990s has been withdrawn, so NATO's rocket artillery " +
+         "no longer carries mines at all — the 155mm RAAMS shell does it instead, shorter and smaller but " +
+         "impossible to intercept." },
   mlrs_p: { fac:"pact", role:"mlrs", name:"BM-30 Smerch", full:"9A52 Smerch MRL", cat:"vehicle",
     cost:2100, oil:32, time:29, hp:720, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:44,
-    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
-    desc:"300mm rocket artillery. Enormous beaten zone, catastrophic against massed infantry." },
+    layer:"ground", weapons:["mlrs","scat_ptm3"], dispenser:6,
+    prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
+    desc:"300mm rocket artillery. Enormous beaten zone, catastrophic against massed infantry. It also sows anti-tank minefields by rocket, which this army has done without a break since the BM-27 Uragan fired the 9M27K2 in 1977." },
 
   repair: { fac:"both", role:"repair", name:"Recovery Vehicle", full:"Armoured Recovery Vehicle", cat:"vehicle",
     cost:800, oil:10, time:12, hp:900, armor:"light", speed:1.5, turn:1.7, sight:5, r:14, mass:50,
@@ -792,6 +798,80 @@ Object.assign(UNITS, {
          "by driving ships through it and finding out." },
 });
 
+/* ==================== SCATTERABLE-MINE AMMUNITION ====================
+   Named OUTSIDE the w_<era>_<fac>_<role> scheme on purpose: generations.js
+   rescales anything matching that pattern through ART_ERA_M, and a cargo
+   round's range is derived from its HOST's finished figure instead.
+
+   Every one carries `tgt` with all four layers cleared. That is not decoration
+   - it is what makes the weapon invisible to pickWeapon, fireOtherMounts,
+   canHurtLayer and Building.canTarget, so the only way it fires is an order
+   naming its index. dmg is 0 for the same reason.
+
+   The numbers are playable, not scaled, and it is worth saying why: this map
+   runs at roughly 1.4 km to the tile, so a real AT2 footprint of 300 m by 150
+   would be a fifth of a tile - smaller than one mine's own trigger radius.
+
+     scatter    mines this round puts in the ground
+     scatterR   radius in tiles, stretched 1.6:1 along the flight axis
+     rangeMul   fraction of the HOST round's finished range
+     mineDmg    per-mine damage. 130 against LAND's 200: a scattered mine lies
+                on the surface at whatever attitude it landed in. Against a
+                modern MBT that is about 374 points (22%) where a hand-laid one
+                takes 576 (34%); against an IFV 328 (42%) against 504 (64%).
+                A mobility-kill weapon, and it should be.
+     mineArm    6.0 seconds. The LAND default of 3.0 would let a launcher drop a
+                live field on a column already inside the footprint. THIS IS AN
+                ARMING DELAY, NOT A LIFETIME. Nothing here expires.            */
+Object.assign(WEAPONS, {
+  /* --- rocket-delivered. eras.js stamps rocket:true on any arc round carried
+     by an mlrs unit, so these are eligible for the arcRocket interception gate.
+     In practice that gate engages only when something of the enemy's is
+     standing within the round's own lethal radius of the aim point, because
+     coverAt returns null on empty ground - and a minefield is sown on ground
+     the enemy is NOT standing on. Stated honestly here and on the panel: the
+     round is interceptable, but do not promise a defence that will not turn
+     up. --- */
+  scat_at2: { name:"AT2 scatterable mine rocket", dmg:0, warhead:"he",
+    range:18.0, minRange:3.5, reload:26, burst:1, acc:0.55, proj:"arc",
+    speed:250, aoe:1.4, scatter:8, scatterR:2.2, rangeMul:0.92,
+    mineDmg:130, mineR:0.5, mineArm:6.0, tgt:{ground:0,air:0,sea:0,sub:0} },
+  /* A 110mm LARS rocket is a smaller round on a smaller launcher. */
+  scat_at2_lars: { name:"DM-711 AT2 mine rocket (110mm)", dmg:0, warhead:"he",
+    range:16.0, minRange:3.0, reload:22, burst:1, acc:0.52, proj:"arc",
+    speed:250, aoe:1.2, scatter:6, scatterR:1.8, rangeMul:0.85,
+    mineDmg:125, mineR:0.5, mineArm:6.0, tgt:{ground:0,air:0,sea:0,sub:0} },
+  scat_ptm3: { name:"9M55K4 mine-laying rocket", dmg:0, warhead:"he",
+    range:18.0, minRange:3.5, reload:26, burst:1, acc:0.55, proj:"arc",
+    speed:250, aoe:1.4, scatter:8, scatterR:2.4, rangeMul:0.92,
+    mineDmg:130, mineR:0.5, mineArm:6.0, tgt:{ground:0,air:0,sea:0,sub:0} },
+  /* A 122mm cargo rocket carries less and the launcher carries more of them.
+     The designation is deliberately generic: the PLA capability is not in
+     doubt, the round numbering is poorly attested, and the Type 84 proper is a
+     dedicated mine-scattering VEHICLE rather than a round for the Type 81. */
+  scat_cn122: { name:"122mm cargo mine rocket", dmg:0, warhead:"he",
+    range:18.0, minRange:3.5, reload:22, burst:1, acc:0.52, proj:"arc",
+    speed:250, aoe:1.2, scatter:6, scatterR:1.9, rangeMul:0.92,
+    mineDmg:120, mineR:0.5, mineArm:6.0, tgt:{ground:0,air:0,sea:0,sub:0} },
+  scat_cn300: { name:"PHL-03 mine-laying rocket", dmg:0, warhead:"he",
+    range:18.0, minRange:3.5, reload:26, burst:1, acc:0.55, proj:"arc",
+    speed:250, aoe:1.4, scatter:8, scatterR:2.4, rangeMul:0.92,
+    mineDmg:130, mineR:0.5, mineArm:6.0, tgt:{ground:0,air:0,sea:0,sub:0} },
+
+  /* --- gun-delivered. NOT registered in ROCKET_ROLES, so nothing intercepts
+     it: nobody shoots down a 155mm shell. It carries half what a rocket does
+     over half the footprint, reaches four fifths as far, and reloads faster.
+     That is the honest trade for being unstoppable.
+     M718 and M741 are BOTH RAAMS - the anti-armour family, nine mines each,
+     M70 in the M718 and M73 in the M741. ADAM (M692/M731) is the ANTI-PERSONNEL
+     family and has no place here at all, because Mines.threatens() refuses
+     infantry outright. --- */
+  scat_raams: { name:"M741 RAAMS 155mm cargo shell", dmg:0, warhead:"he",
+    range:16.0, minRange:3.5, reload:16, burst:1, acc:0.62, proj:"arc",
+    speed:210, aoe:1.0, scatter:5, scatterR:1.2, rangeMul:0.80,
+    mineDmg:150, mineR:0.5, mineArm:6.0, tgt:{ground:0,air:0,sea:0,sub:0} },
+});
+
 /* ============================ PLA ROSTER ============================ */
 Object.assign(UNITS, {
   rifle_c: { fac:"pla", role:"rifle", name:"Infantry Squad", full:"Rifle Squad, QBZ-191", cat:"infantry",
@@ -853,8 +933,9 @@ Object.assign(UNITS, {
     desc:"155mm/52 self-propelled howitzer with a long tube and an autoloader." },
   mlrs_c: { fac:"pla", role:"mlrs", name:"PHL-03", full:"PHL-03 300mm MRL", cat:"vehicle",
     cost:2150, oil:33, time:29.5, hp:710, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:43,
-    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
-    desc:"Twelve 300mm rockets. One salvo saturates a grid square and everything standing in it." },
+    layer:"ground", weapons:["mlrs","scat_cn300"], dispenser:6,
+    prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
+    desc:"Twelve 300mm rockets. One salvo saturates a grid square and everything standing in it. Also fires a cargo round that lays an anti-tank minefield; Chinese designations for these are poorly attested in open sources, the capability is not." },
 
   helo_c: { fac:"pla", role:"gunship", name:"Z-10", full:"Z-10ME Attack Helicopter", cat:"aircraft",
     cost:1570, oil:25, time:21.5, hp:640, armor:"air", speed:3.55, turn:2.2, sight:9.2, r:16, mass:0,

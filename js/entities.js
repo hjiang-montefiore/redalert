@@ -73,6 +73,12 @@ class Unit {
     this.unsupplied = 0;                 // seconds out of contact with supply
     this.ammoMax = d.ammo || 0; this.ammo = this.ammoMax;  // aircraft ordnance
     this.minesMax = d.layMines || 0; this.mines = this.minesMax;
+    /* Cargo rockets or cargo shells on an artillery piece. A launcher is not a
+       minelayer and must not be offered a minelayer's orders: ui.js picks the
+       LAY MINE / MINE AN AREA panel off minesMax, and an M270 given an autolay
+       box would try to drive the belt. Same shape as layNet - a different
+       payload on a different hull, with its own counter. */
+    this.dispMax = d.dispenser || 0; this.disp = this.dispMax;
     /* Bottom acoustic nodes for a barrier. Nothing in the roster carries both
        these and mines, which is exactly what lets one set of laying orders
        serve both payloads instead of a parallel copy of itself. */
@@ -124,7 +130,9 @@ class Unit {
       return true;
     }
     if (typeof Mines === "undefined") return false;
-    Mines.lay(this.game, this.owner, x, y, !!this.def.mineSea);
+    /* Mines.lay now refuses at the per-player ceiling. The round stays on the
+       rack: a mine that cannot go in the ground has not been spent. */
+    if (!Mines.lay(this.game, this.owner, x, y, !!this.def.mineSea)) return false;
     this.mines--;
     return true;
   }
@@ -501,6 +509,19 @@ class Unit {
     }
     return false;
   }
+  /* ---- the cargo mount, or -1 ----
+     Read by the UI and by the AI, because nothing else can find it: pickWeapon
+     skips a mount whose tgt clears every layer, so engage(), fireOtherMounts()
+     and Building.canTarget are all blind to it, and bombard()'s fallback scan
+     refuses w.scatter outright. The ONLY way this weapon fires is an order
+     naming this index. */
+  scatterIndex() {
+    for (let i = 0; i < this.def.weapons.length; i++) {
+      const w = WEAPONS[this.def.weapons[i]];
+      if (w && w.scatter) return i;
+    }
+    return -1;
+  }
   pickCounterBatteryPlot() {
     const list = this.game.cbTargets ? this.game.cbTargets(this.owner) : [];
     /* A REACHABLE plot. This took the nearest one unconditionally, and
@@ -601,6 +622,31 @@ class Unit {
       if (this.rounds <= 0) return;
       this.rounds--;
     }
+    /* ---- a cargo round is paid for before it leaves the tube ----
+       Deliberately BELOW the ready-round test: a dry gun must return there,
+       before anything else is spent. */
+    if (w.scatter) {
+      if (this.dispMax && this.disp <= 0) {
+        if (this.owner === this.game.human)
+          this.game.alert(this.def.name.toUpperCase() + " \u2014 NO MINE ROUNDS ABOARD", "bad");
+        this.order = { type: "idle" };
+        return;
+      }
+      /* Asked before the rocket flies as well as inside Mines.lay, so a
+         commander whose field is already full keeps the round on the rack
+         instead of watching a rocket land and do nothing. */
+      if (typeof Mines !== "undefined" && !Mines.roomFor(this.game, this.owner)) {
+        if (this.owner === this.game.human)
+          this.game.alert("MINEFIELD CEILING \u2014 " + Mines.CAP +
+                          " MINES ALREADY IN THE GROUND", "bad");
+        this.order = { type: "idle" };
+        return;
+      }
+      this.disp--;
+      if (this.disp === 0 && this.owner === this.game.human)
+        this.game.alert(this.def.name.toUpperCase() +
+                        " \u2014 MINE RACK EMPTY, RETURN TO BASE", "bad");
+    }
     Combat.fire(this.game, this, w, {
       x: o.x, y: o.y, layer: "ground", dead: false, armor: "structure",
       def: {}, owner: null, r: 0, tx: (o.x / CFG.TILE) | 0, ty: (o.y / CFG.TILE) | 0,
@@ -608,6 +654,14 @@ class Unit {
     /* rationing also slows the rate of fire: rounds are being husbanded */
     this.cooldowns[wi] = w.reload / CFG.VET_ROF[this.vet] *
       (1 + 0.55 * (this.supplyStrain ? this.supplyStrain() : 0));
+    /* ---- one rocket, one field ----
+       bombard() has no fire-once semantics: it re-enters every tick until
+       o.until and fires again as soon as the cooldown clears. A 90-second
+       window against a 26-second reload is FOUR rockets from one click, three
+       of which land on ground tileMined has already refused. A minefield
+       mission ends when the round is away; a queued belt is one click a stick,
+       which is what the panel promises. */
+    if (w.scatter) { if (!this.nextOrder()) this.order = { type: "idle" }; return; }
     /* A submarine that shoots announces itself. Stamp the moment of firing
        here rather than inferring it afterwards from the cooldown: the old
        inference tested the decaying cooldown against a hard-coded 11 seconds,

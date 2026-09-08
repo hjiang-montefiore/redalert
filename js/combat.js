@@ -544,6 +544,15 @@ var Combat = (function () {
       t: "boom", x: p.tx, y: p.ty, r: Math.max(10, aoe),
       life: 0.45, max: 0.45, water: isWater(game, p.tx, p.ty) && p.type !== "torpedo",
     });
+    /* ---- a cargo round opens instead of exploding ----
+       Return here: above the damage block, above suppressAt, and above the
+       SonarNet blast below, which would otherwise let a warhead-less carrier
+       landing in water blow friendly acoustic nodes. The boom above is kept -
+       it is the airburst - and everything else is skipped, because splash()
+       has no friendly-fire concept and would stamp lastHitBy on everything
+       under the footprint, sending the whole field after a launcher twenty
+       tiles away. */
+    if (w.scatter) { scatterMines(game, p); return; }
     if (w.suppress) suppressAt(game, p.tx, p.ty, (w.aoe || 1) * 1.6, w.suppress, p.owner);
     /* Anything that goes off in the water breaks what is floating in it. The
        radius is the weapon's OWN aoe rather than a flat number, which makes
@@ -558,6 +567,66 @@ var Combat = (function () {
       if (aoe > 12) splash(game, p.tx, p.ty, p.dmg, w, p.shooter, 0.55, p.target);
     } else {
       splash(game, p.tx, p.ty, p.dmg, w, p.shooter, 1.0);
+    }
+  }
+
+  /* ---- putting a minefield down from the air ----
+     A dispensing round ejects its cargo along the terminal leg of the
+     trajectory, so the footprint is an ellipse lying ALONG the flight axis and
+     not a circle. p.x0,p.y0 is the launch point, recorded for every round in
+     fire(), so the azimuth costs nothing.
+
+     The points are a Vogel spiral - the sunflower packing - rather than uniform
+     random, because uniform random clumps: at eight points in a 2.2-tile disc
+     two land inside a mine's own trigger radius often enough to matter, and the
+     second of those is a submunition bought for nothing. A small jitter takes
+     the pattern back off looking machined.
+
+     Everything about the field is an ordinary Mines.lay: invisible to the enemy
+     until a detector finds it, fires once, never triggers on its owner or an
+     ally, and DOES NOT EXPIRE. There is no clock here, and nothing in this file
+     or in mines.js removes a mine that has been laid. */
+  function scatterMines(game, p) {
+    const w = p.w;
+    if (typeof Mines === "undefined" || !p.owner || !game.map) return;
+    const n = Math.max(1, w.scatter | 0);
+    const R = (w.scatterR || 1.8) * CFG.TILE;
+    const ang = Math.atan2(p.ty - p.y0, p.tx - p.x0);
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    const GOLD = 2.39996323;                       // 137.5 degrees
+    let laid = 0, refused = false, lost = 0;
+    for (let i = 0; i < n; i++) {
+      const rr = Math.sqrt((i + 0.5) / n) * R;
+      const th = i * GOLD;
+      let lx = Math.cos(th) * rr * 1.6, ly = Math.sin(th) * rr;   // 1.6:1 along the axis
+      lx += (game.rng() - 0.5) * CFG.TILE * 0.45;
+      ly += (game.rng() - 0.5) * CFG.TILE * 0.45;
+      const x = p.tx + lx * ca - ly * sa;
+      const y = p.ty + lx * sa + ly * ca;
+      const tx = (x / CFG.TILE) | 0, ty = (y / CFG.TILE) | 0;
+      if (tx < 0 || ty < 0 || tx >= game.map.W || ty >= game.map.H) { lost++; continue; }
+      /* A submunition in water or on ground no tank can drive is a submunition
+         lost, which is what dispersion IS. It is not a laid mine being taken
+         away - nothing here removes one. */
+      if (!GameMap.passable(game.map, tx, ty, "ground")) { lost++; continue; }
+      /* Two mines on one tile is one mine spent for nothing, and _behtest [4]
+         asserts that invariant across the whole map. tileMined sees the
+         submunition laid a moment ago, so a stick cannot double up on itself. */
+      if (Mines.tileMined(game, p.owner, x, y, false)) { lost++; continue; }
+      if (!Mines.lay(game, p.owner, x, y, false,
+                     { dmg: w.mineDmg, r: w.mineR, arm: w.mineArm || 6.0, quiet: true })) {
+        refused = true; break;                     // the ceiling: spend nothing more
+      }
+      laid++;
+    }
+    /* One line for the whole stick, and it reports the zero case too - a round
+       that lands on water, on rock, or on ground already mined is exactly when
+       the player most needs to be told why nothing happened. */
+    if (p.owner === game.human) {
+      const s = refused ? "FIELD FULL" : laid ? laid + " MINES SOWN"
+              : lost ? "NO MINEABLE GROUND" : "NOTHING SOWN";
+      effects.push({ t: "text", x: p.tx, y: p.ty - 16, s: s,
+                     life: 1.2, max: 1.2, c: laid ? "#c8b06a" : "#ffb45c" });
     }
   }
 
