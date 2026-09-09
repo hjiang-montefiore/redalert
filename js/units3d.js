@@ -2096,7 +2096,7 @@ UNIT_MODELS["repair"] = {
   }
 };
 UNIT_MODELS["supply_n"] = {
-  len: 10.2,
+  len: 10.35,
   build: function (THREE, M, C) {
     var g = new THREE.Group();
     var seed = 90210077;
@@ -2148,47 +2148,59 @@ UNIT_MODELS["supply_n"] = {
     B(0.3, 2.3, 0.45, bodyMat, 5.05, 0, 0.95);
     B(1.5, 0.5, 0.65, bodyMat, 0.3, -1.05, 0.72);
     B(1.1, 0.45, 0.55, bodyMat, 0.4, 1.05, 0.7);
-    // flat-faced 2-man cab
-    B(1.6, 2.3, 1.15, bodyMat, 4.25, 0, 1.72);
-    B(1.3, 2.2, 0.75, bodyMat, 4.1, 0, 2.67);
-    B(1.45, 2.3, 0.08, bodyMat, 4.08, 0, 3.08);
-    B(0.06, 2.05, 0.6, glassMat, 4.73, 0, 2.68).rotation.y = -0.12;
-    B(1.0, 0.03, 0.5, glassMat, 4.0, 1.16, 2.62);
-    B(1.0, 0.03, 0.5, glassMat, 4.0, -1.16, 2.62);
-    B(0.05, 1.6, 0.7, grilleMat, 5.06, 0, 1.75);
-    B(0.12, 0.28, 0.18, steelMat, 5.05, 0.95, 2.2);
-    B(0.12, 0.28, 0.18, steelMat, 5.05, -0.95, 2.2);
+    /* M977 HEMTT cab. 10.17 x 2.44 x 2.57 m: a LOW cab behind a real bonnet,
+       on very big wheels - not a tall cab-over. Two things were wrong. The
+       roof stood at 3.12 m, 21% over, so it read as a European cab-over
+       lorry; and the whole cab sat so far forward that BOTH front wheels ended
+       up behind it, with a 0.60 m stub of bonnet in front. On an M977 the
+       tight front pair straddles the cab - the hood ends over the first axle
+       and the cab's back wall stands over the second - and the 3.81 m of bare
+       frame starts behind the cab. The cab body's floor is set at 1.30 m so
+       it clears the tops of the 1.30 m tyres instead of swallowing them. */
+    B(1.60, 2.34, 1.22, bodyMat, 3.00, 0, 1.91);            // cab body, 2.20 - 3.80
+    B(1.66, 2.34, 0.08, bodyMat, 2.98, 0, 2.53);            // roof, top exactly on 2.57
+    B(1.35, 2.20, 0.66, bodyMat, 4.48, 0, 1.56);            // bonnet, 3.80 - 5.15
+    B(0.06, 2.05, 0.66, glassMat, 3.79, 0, 2.18).rotation.y = -0.16;
+    B(1.10, 0.03, 0.5, glassMat, 3.00, 1.18, 2.16);
+    B(1.10, 0.03, 0.5, glassMat, 3.00, -1.18, 2.16);
+    B(0.05, 1.6, 0.72, grilleMat, 5.13, 0, 1.55);
+    B(0.12, 0.28, 0.18, steelMat, 5.10, 0.95, 1.34);
+    B(0.12, 0.28, 0.18, steelMat, 5.10, -0.95, 1.34);
     var s;
     for (s = -1; s <= 1; s += 2) {
-      Cy(0.02, 0.55, 5, darkMat, 4.85, s * 1.28, 2.8, "z");
-      B(0.05, 0.2, 0.32, darkMat, 4.85, s * 1.3, 3.08);
+      Cy(0.02, 0.50, 5, darkMat, 3.75, s * 1.26, 2.30, "z");
+      B(0.05, 0.2, 0.32, darkMat, 3.75, s * 1.28, 2.58);
     }
     // behind-cab kit: exhaust stack, air cleaner, vertical spare
-    Cy(0.07, 1.5, 8, steelMat, 3.35, -0.95, 2.55, "z");
-    B(0.2, 0.16, 0.12, darkMat, 3.35, -0.95, 3.32);
-    Cy(0.26, 0.9, 12, darkMat, 3.32, 0.6, 2.5, "y");
-    Cy(0.62, 0.4, 16, darkMat, 3.18, -0.25, 2.35, "x");
-    Cy(0.2, 0.44, 10, steelMat, 3.18, -0.25, 2.35, "x");
+    Cy(0.07, 1.35, 8, steelMat, 2.05, -1.05, 2.30, "z");
+    B(0.2, 0.16, 0.12, darkMat, 2.05, -1.05, 3.04);
+    Cy(0.24, 0.85, 12, darkMat, 2.05, 0.85, 2.20, "z");
+    Cy(0.62, 0.4, 16, darkMat, 2.00, -0.25, 2.28, "x");
+    Cy(0.2, 0.44, 10, steelMat, 2.00, -0.25, 2.28, "x");
+    /* The bed starts behind the cab's new position, so the headboard, the
+       deck, the rails, the stakes and the load all shift aft with it. The
+       deck loses 1.2 m in the process, which is the right direction: an M977
+       carries a bed a good deal shorter than the 8.1 m slab that was here. */
     // cargo deck with rails and headboard
-    B(0.08, 2.44, 1.0, bodyMat, 2.95, 0, 2.1);
-    B(8.1, 2.44, 0.14, bodyMat, -1.05, 0, 1.55);
-    B(8.1, 0.07, 0.28, bodyMat, -1.05, 1.185, 1.78);
-    B(8.1, 0.07, 0.28, bodyMat, -1.05, -1.185, 1.78);
+    B(0.08, 2.44, 1.0, bodyMat, 1.74, 0, 2.05);
+    B(6.9, 2.44, 0.14, bodyMat, -1.65, 0, 1.55);
+    B(6.9, 0.07, 0.28, bodyMat, -1.65, 1.185, 1.78);
+    B(6.9, 0.07, 0.28, bodyMat, -1.65, -1.185, 1.78);
     var i;
     for (i = 0; i < 5; i++) {
-      B(0.07, 0.07, 0.5, bodyMat, 2.4 - i * 1.7, 1.185, 1.85);
-      B(0.07, 0.07, 0.5, bodyMat, 2.4 - i * 1.7, -1.185, 1.85);
+      B(0.07, 0.07, 0.5, bodyMat, 1.4 - i * 1.55, 1.185, 1.85);
+      B(0.07, 0.07, 0.5, bodyMat, 1.4 - i * 1.55, -1.185, 1.85);
     }
     // strapped pallets
-    B(1.7, 2.0, 1.05, cargoMat, 1.9, 0, 2.15);
-    B(0.07, 2.06, 1.11, darkMat, 2.3, 0, 2.15);
-    B(0.07, 2.06, 1.11, darkMat, 1.5, 0, 2.15);
-    B(1.4, 1.9, 0.85, cargoMat, 0.25, 0, 2.05);
-    B(0.07, 1.96, 0.91, darkMat, 0.25, 0, 2.05);
-    B(1.1, 0.88, 0.7, cargoMat, -1.25, 0.52, 1.97);
-    B(1.1, 0.88, 0.7, cargoMat, -1.25, -0.52, 1.97);
-    B(0.07, 2.0, 0.76, darkMat, -1.25, 0, 1.97);
-    Cy(0.22, 2.1, 10, cargoMat, -2.15, 0, 1.82, "y");
+    B(1.7, 2.0, 1.05, cargoMat, 0.85, 0, 2.15);
+    B(0.07, 2.06, 1.11, darkMat, 1.25, 0, 2.15);
+    B(0.07, 2.06, 1.11, darkMat, 0.45, 0, 2.15);
+    B(1.4, 1.9, 0.85, cargoMat, -0.40, 0, 2.05);
+    B(0.07, 1.96, 0.91, darkMat, -0.40, 0, 2.05);
+    B(1.1, 0.88, 0.7, cargoMat, -1.65, 0.52, 1.97);
+    B(1.1, 0.88, 0.7, cargoMat, -1.65, -0.52, 1.97);
+    B(0.07, 2.0, 0.76, darkMat, -1.65, 0, 1.97);
+    Cy(0.22, 2.1, 10, cargoMat, -2.45, 0, 1.82, "y");
     // fuel drums aft, with rib rings
     var dx = [-3.0, -3.7, -4.4], dyy = [0.55, -0.55], a, b;
     for (a = 0; a < 3; a++) for (b = 0; b < 2; b++) {
@@ -2200,20 +2212,38 @@ UNIT_MODELS["supply_n"] = {
     Cy(0.17, 0.55, 10, bodyMat, -4.75, -0.8, 1.9, "z");
     B(1.6, 0.16, 0.16, bodyMat, -4.0, -0.8, 2.22);
     B(1.1, 0.12, 0.12, bodyMat, -3.9, -0.8, 2.05);
-    // 8 big single tires + hubs
-    var ax = [3.5, 2.0, -2.3, -3.8];
+    /* 8x8 on the HEMTT's own axle stations, which are NOT even quarters:
+       1.52 m inside the front pair, 3.81 m of bare frame amidships, 1.52 m
+       inside the rear bogie, and a long 1.8 m tail behind the last axle.
+       16.00R20 singles, 1.30 m across. Each wheel is a GROUP named
+       "roadwheel" so render3d.js can turn it, carrying a bolt ring off the
+       axis because a smooth cylinder spinning on its own axis shows
+       nothing at all. */
+    var ax = [3.55, 2.03, -1.78, -3.30];
+    var hbolt = new THREE.CylinderGeometry(0.045, 0.045, 0.52, 6), bi, bang;
     for (a = 0; a < 4; a++) for (s = -1; s <= 1; s += 2) {
-      Cy(0.66, 0.46, 18, darkMat, ax[a], s * 0.99, 0.66);
-      Cy(0.2, 0.5, 10, steelMat, ax[a], s * 1.0, 0.66);
+      var W = new THREE.Group();
+      W.name = "roadwheel";
+      W.position.set(ax[a], s * 0.99, 0.65);
+      g.add(W);
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.46, 18), darkMat));
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.5, 10), steelMat));
+      for (bi = 0; bi < 5; bi++) {
+        bang = bi / 5 * Math.PI * 2;
+        var bo = new THREE.Mesh(hbolt, steelMat);
+        bo.position.set(Math.cos(bang) * 0.36, 0, Math.sin(bang) * 0.36);
+        W.add(bo);
+      }
     }
-    B(0.04, 0.5, 0.45, darkMat, -4.5, 0.95, 0.35);
-    B(0.04, 0.5, 0.45, darkMat, -4.5, -0.95, 0.35);
+    B(0.04, 0.5, 0.45, darkMat, -4.05, 0.95, 0.35);
+    B(0.04, 0.5, 0.45, darkMat, -4.05, -0.95, 0.35);
     B(0.1, 0.25, 0.12, darkMat, -5.08, 0.9, 1.3);
     B(0.1, 0.25, 0.12, darkMat, -5.08, -0.9, 1.3);
-    Cy(0.014, 1.4, 5, darkMat, 3.5, 1.05, 3.7, "z");
+    Cy(0.014, 1.4, 5, darkMat, 3.30, 1.05, 3.15, "z");
     // team ID on cab doors
-    B(0.5, 0.03, 0.4, teamMat, 4.3, 1.17, 1.95);
-    B(0.5, 0.03, 0.4, teamMat, 4.3, -1.17, 1.95);
+    B(0.5, 0.03, 0.4, teamMat, 3.00, 1.19, 1.90);
+    B(0.5, 0.03, 0.4, teamMat, 3.00, -1.19, 1.90);
+
     return g;
   }
 };
@@ -2329,10 +2359,28 @@ UNIT_MODELS["supply_p"] = {
     B(0.06, 2.42, 1.22, tarpMat, 2.24, 0, 2.42);
     B(0.06, 2.42, 1.22, tarpMat, -4.44, 0, 2.42);
     // 8 wheels + hubs, mudflaps
-    var ax = [3.55, 2.05, -2.15, -3.6], a;
+    /* KamAZ-6350 Mustang. Russian 8x8 military trucks do NOT use the HEMTT's
+       symmetric two-tight-pairs layout: the two front axles both steer and
+       stand well apart, then a long gap, then a TIGHT rear tandem. The
+       published wheelbase is 2000 + 2840 + 1320 mm, which is what this is,
+       and it is free faction differentiation that happens to be the truth -
+       NATO reads as 2 + gap + 2, the Russian truck as spread front and tight
+       rear. 425/85R21 tyres compute to 1.26 m across, not the 1.16 built
+       here. Each wheel is a GROUP named "roadwheel" so render3d.js turns it,
+       with a bolt ring off the axis. */
+    var ax = [3.40, 1.40, -1.45, -2.77], a;
+    var kbolt = new THREE.CylinderGeometry(0.042, 0.042, 0.46, 6), kb, kba;
     for (a = 0; a < 4; a++) for (s = -1; s <= 1; s += 2) {
-      Cy(0.58, 0.4, 18, darkMat, ax[a], s * 1.03, 0.58);
-      Cy(0.18, 0.44, 10, steelMat, ax[a], s * 1.04, 0.58);
+      var KW = new THREE.Group(); KW.name = "roadwheel";
+      KW.position.set(ax[a], s * 1.03, 0.63); g.add(KW);
+      KW.add(new THREE.Mesh(new THREE.CylinderGeometry(0.63, 0.63, 0.42, 18), darkMat));
+      KW.add(new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.46, 10), steelMat));
+      for (kb = 0; kb < 5; kb++) {
+        kba = kb / 5 * Math.PI * 2;
+        var kbo = new THREE.Mesh(kbolt, steelMat);
+        kbo.position.set(Math.cos(kba) * 0.34, 0, Math.sin(kba) * 0.34);
+        KW.add(kbo);
+      }
     }
     B(0.04, 0.45, 0.4, darkMat, -4.25, 0.95, 0.3);
     B(0.04, 0.45, 0.4, darkMat, -4.25, -0.95, 0.3);
@@ -2463,10 +2511,26 @@ UNIT_MODELS["supply_c"] = {
     // spare under rear frame
     Cy(0.55, 0.32, 14, darkMat, -4.35, 0, 0.6, "z");
     // 8 wheels + hubs
+    /* Axle STATIONS deliberately left alone: js/armour_specs.js calls this
+       vehicle a "Shaanxi SX2306 6x6" with wheels:3 while this model builds
+       four axles and js/rules.js says only "SX2306 Logistics Truck", so the
+       project contradicts itself about the axle COUNT - which matters far more
+       at RTS zoom than the spacing does. That has to be resolved from a source
+       before anyone respaces it. What is not in doubt is that the wheels
+       should turn: each is now a GROUP named "roadwheel" with a bolt ring. */
     var ax = [3.6, 2.1, -2.2, -3.65];
+    var sbolt = new THREE.CylinderGeometry(0.04, 0.04, 0.48, 6), sb, sba;
     for (a = 0; a < 4; a++) for (s = -1; s <= 1; s += 2) {
-      Cy(0.58, 0.4, 18, darkMat, ax[a], s * 1.03, 0.58);
-      Cy(0.18, 0.44, 10, steelMat, ax[a], s * 1.04, 0.58);
+      var SW = new THREE.Group(); SW.name = "roadwheel";
+      SW.position.set(ax[a], s * 1.03, 0.58); g.add(SW);
+      SW.add(new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.40, 18), darkMat));
+      SW.add(new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.44, 10), steelMat));
+      for (sb = 0; sb < 5; sb++) {
+        sba = sb / 5 * Math.PI * 2;
+        var sbo = new THREE.Mesh(sbolt, steelMat);
+        sbo.position.set(Math.cos(sba) * 0.33, 0, Math.sin(sba) * 0.33);
+        SW.add(sbo);
+      }
     }
     B(0.04, 0.45, 0.4, darkMat, -4.3, 0.95, 0.3);
     B(0.04, 0.45, 0.4, darkMat, -4.3, -0.95, 0.3);
@@ -3702,7 +3766,7 @@ BLD_MODELS["def_arty"] = {
 
 /* ---- pack abb58670 ---- */
 UNIT_MODELS["atgmv_n"] = {
-  len: 6.95,
+  len: 7.05,
   build: function (THREE, M, C) {
     var g = new THREE.Group();
     var seed = 11;
@@ -3755,64 +3819,84 @@ UNIT_MODELS["atgmv_n"] = {
       (parent || g).add(m);
       return m;
     }
-    // Faceted 8x8 hull, sharply sloped bow. Roof 2.30 m, belly 0.60 m.
+    /* LAV III hull, the same one lt_n rides on and it must measure the same:
+       6.95 x 2.72 m, belly 0.53 m, roof 2.28 m, two-stage raked glacis, flat
+       full-width ramp wall aft.
+       SECTIONS RUN NOSE TO TAIL AND THAT ORDER IS LOAD-BEARING. M.loft winds
+       its quads (a, c, b): with sections in ASCENDING x every face normal
+       comes out pointing INWARD, and this hull is drawn with a single-sided
+       material, so the old ascending list rendered the whole vehicle inside
+       out - back faces only, roof see-through, interior walls lit. Running
+       the list from the bow aft flips the winding and the hull is solid.
+       (lt_n has always been written this way.) */
     var hull = new THREE.Mesh(M.loft(THREE, [
-      { x: -3.45, w: 1.1, h: 0.68, zc: 1.46, sq: 0.85 },
-      { x: -3.0, w: 1.22, h: 0.8, zc: 1.5, sq: 0.85 },
-      { x: -1.9, w: 1.25, h: 0.85, zc: 1.45, sq: 0.88 },
-      { x: 1.3, w: 1.25, h: 0.85, zc: 1.45, sq: 0.88 },
-      { x: 2.3, w: 1.2, h: 0.72, zc: 1.55, sq: 0.85 },
-      { x: 3.0, w: 1.0, h: 0.45, zc: 1.5, sq: 0.82 },
-      { x: 3.45, w: 0.55, h: 0.16, zc: 1.28, sq: 0.8 }
+      { x: 3.475, w: 0.95, h: 0.24, zc: 0.86, sq: 0.42 },
+      { x: 3.15, w: 1.20, h: 0.46, zc: 1.10, sq: 0.38 },
+      { x: 2.45, w: 1.32, h: 0.74, zc: 1.34, sq: 0.34 },
+      { x: 2.05, w: 1.34, h: 0.875, zc: 1.405, sq: 0.30 },
+      { x: -2.90, w: 1.34, h: 0.875, zc: 1.405, sq: 0.30 },
+      { x: -3.30, w: 1.28, h: 0.82, zc: 1.40, sq: 0.32 },
+      { x: -3.475, w: 1.16, h: 0.72, zc: 1.38, sq: 0.36 }
     ], 12), bodyMat);
     g.add(hull);
-    // Rear ramp with hinge bar
-    bx(0.06, 2.15, 1.3, -3.47, 0, 1.47, trimMat);
-    bx(0.06, 1.9, 0.1, -3.45, 0, 0.86, darkMat);
-    // Eight wheels: tire, hub, cap
-    var wxs = [2.45, 1.45, -1.0, -2.15];
-    var tireGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.34, 18);
-    var hubGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.36, 12);
-    var capGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.38, 8);
-    var i, s;
+    // Rear ramp with hinge bar; M.loft caps neither end, so the bow lip gets
+    // a plate over its open ring the same way the stern does.
+    bx(0.07, 2.36, 1.50, -3.47, 0, 1.38, trimMat);
+    bx(0.05, 1.90, 0.10, -3.52, 0, 0.70, darkMat);
+    bx(0.08, 1.98, 0.56, 3.46, 0, 0.86, bodyMat);
+    /* Eight 12.00R20 tyres, 1.13 m across, on the Piranha III stations:
+       1.39 m inside each pair and 2.36 m of bare flank between them, the
+       group sitting aft of hull centre. Every wheel is a GROUP named
+       "roadwheel" so render3d.js turns it, with a bolt ring off the axis -
+       a smooth cylinder spinning about its own axis shows nothing. */
+    var wxs = [2.30, 0.91, -1.45, -2.84];
+    var tireGeo = new THREE.CylinderGeometry(0.565, 0.565, 0.32, 18);
+    var hubGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.36, 12);
+    var boltGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.38, 6);
+    var i, s, b, ba;
     for (i = 0; i < 4; i++) {
       for (s = -1; s <= 1; s += 2) {
-        var tire = new THREE.Mesh(tireGeo, darkMat);
-        tire.position.set(wxs[i], s * 1.19, 0.55);
-        g.add(tire);
-        var hub = new THREE.Mesh(hubGeo, trimMat);
-        hub.position.set(wxs[i], s * 1.19, 0.55);
-        g.add(hub);
-        var cap = new THREE.Mesh(capGeo, steelMat);
-        cap.position.set(wxs[i], s * 1.19, 0.55);
-        g.add(cap);
+        var W = new THREE.Group();
+        W.name = "roadwheel";
+        W.position.set(wxs[i], s * 1.19, 0.565);
+        g.add(W);
+        W.add(new THREE.Mesh(tireGeo, darkMat));
+        W.add(new THREE.Mesh(hubGeo, trimMat));
+        for (b = 0; b < 5; b++) {
+          ba = b / 5 * Math.PI * 2;
+          var bo = new THREE.Mesh(boltGeo, steelMat);
+          bo.position.set(Math.cos(ba) * 0.33, 0, Math.sin(ba) * 0.33);
+          W.add(bo);
+        }
       }
     }
     // Fender strips, stowage racks, id panels
     for (s = -1; s <= 1; s += 2) {
-      bx(5.9, 0.2, 0.06, -0.2, s * 1.26, 1.68, trimMat);
-      bx(0.9, 0.14, 0.42, 0.4, s * 1.28, 1.98, trimMat);
-      bx(0.7, 0.14, 0.38, -0.7, s * 1.28, 1.96, darkMat);
-      bx(0.8, 0.14, 0.4, -1.8, s * 1.28, 1.98, trimMat);
-      bx(0.7, 0.03, 0.3, 2.35, s * 1.22, 1.78, teamMat);
+      bx(6.0, 0.16, 0.06, -0.2, s * 1.35, 1.70, trimMat);
+      bx(0.9, 0.12, 0.42, 0.4, s * 1.36, 2.00, trimMat);
+      bx(0.7, 0.12, 0.38, -0.7, s * 1.36, 1.98, darkMat);
+      bx(0.8, 0.12, 0.4, -1.8, s * 1.36, 2.00, trimMat);
+      bx(0.7, 0.03, 0.3, 2.20, s * 1.31, 1.80, teamMat);
     }
     // Bow: bumper, headlights, smoke tubes
-    bx(0.1, 1.9, 0.24, 3.42, 0, 1.22, trimMat);
+    bx(0.12, 2.05, 0.26, 3.45, 0, 0.92, trimMat);
     for (s = -1; s <= 1; s += 2) {
-      bx(0.14, 0.24, 0.14, 3.18, s * 0.78, 1.62, trimMat);
-      bx(0.03, 0.18, 0.1, 3.26, s * 0.78, 1.62, lensMat);
+      bx(0.14, 0.24, 0.14, 3.20, s * 0.80, 1.32, trimMat);
+      bx(0.03, 0.18, 0.1, 3.28, s * 0.80, 1.32, lensMat);
       for (i = 0; i < 3; i++) {
-        var st = cyl(0.04, 0.04, 0.3, 2.9, s * (0.92 + i * 0.1), 2.02, steelMat, g, "x", 8);
+        var st = cyl(0.04, 0.04, 0.3, 2.60, s * (1.00 + i * 0.1), 2.10, steelMat, g, "x", 8);
         st.rotation.z = s * (0.3 + i * 0.25);
         st.rotation.y = -0.5;
       }
     }
     // Roof furniture: driver hatch, commander hatch ring, periscopes, exhaust
-    bx(0.55, 0.5, 0.06, 1.9, 0.6, 2.32, trimMat);
-    cyl(0.32, 0.32, 0.06, 0.6, -0.5, 2.32, trimMat, g, "z", 16);
-    bx(0.12, 0.3, 0.08, 2.25, 0.6, 2.33, darkMat);
-    bx(0.12, 0.3, 0.08, 0.15, -0.5, 2.33, darkMat);
-    bx(0.95, 0.26, 0.2, 0.5, -1.16, 1.95, darkMat);
+    bx(0.55, 0.5, 0.06, 1.9, 0.6, 2.30, trimMat);
+    cyl(0.32, 0.32, 0.06, 0.6, -0.5, 2.30, trimMat, g, "z", 16);
+    bx(0.12, 0.3, 0.08, 1.55, 0.6, 2.31, darkMat);
+    bx(0.12, 0.3, 0.08, 0.15, -0.5, 2.31, darkMat);
+    bx(0.95, 0.26, 0.2, 0.5, -1.28, 1.95, darkMat);
+
+
     // Whip antennas aft
     var a1 = cyl(0.012, 0.012, 1.3, -3.1, 0.95, 2.95, steelMat, g, "z", 6);
     a1.rotation.x = 0.12;
@@ -3821,7 +3905,9 @@ UNIT_MODELS["atgmv_n"] = {
     // Elevated twin-TOW launcher (M1134 signature) --------------------
     var turret = new THREE.Group();
     turret.name = "turret";
-    turret.position.set(-1.15, 0, 2.3);
+    turret.position.set(-1.15, 0, 2.28);
+
+
     g.add(turret);
     cyl(0.5, 0.55, 0.14, 0, 0, 0.07, trimMat, turret, "z", 18);
     bx(0.34, 0.3, 0.62, 0, 0, 0.44, bodyMat, turret);
@@ -3932,18 +4018,22 @@ UNIT_MODELS["atgmv_p"] = {
       return t;
     }
     // BMP-3 hull: long flat bow, low silhouette. Roof 1.74 m.
+    /* This IS a BMP-3, hull for hull: 7.14 m long and about 3.2 m wide. It
+       was built 6.70 m long, 0.44 m shorter than ifv_p, which is the same
+       chassis standing next to it in the same army - park the two together
+       and they were visibly different vehicles. */
     var hull = new THREE.Mesh(M.loft(THREE, [
-      { x: -3.35, w: 1.3, h: 0.5, zc: 1.2, sq: 0.88 },
-      { x: -2.9, w: 1.42, h: 0.58, zc: 1.14, sq: 0.9 },
-      { x: -1.6, w: 1.42, h: 0.62, zc: 1.12, sq: 0.9 },
-      { x: 1.2, w: 1.42, h: 0.62, zc: 1.12, sq: 0.9 },
-      { x: 2.4, w: 1.38, h: 0.46, zc: 1.26, sq: 0.88 },
-      { x: 3.35, w: 1.1, h: 0.1, zc: 1.34, sq: 0.85 }
+      { x: 3.57, w: 1.1, h: 0.1, zc: 1.34, sq: 0.85 },
+      { x: 2.5, w: 1.42, h: 0.46, zc: 1.26, sq: 0.88 },
+      { x: 1.2, w: 1.46, h: 0.62, zc: 1.12, sq: 0.9 },
+      { x: -1.6, w: 1.46, h: 0.62, zc: 1.12, sq: 0.9 },
+      { x: -3.05, w: 1.46, h: 0.58, zc: 1.14, sq: 0.9 },
+      { x: -3.57, w: 1.34, h: 0.50, zc: 1.20, sq: 0.88 }
     ], 12), bodyMat);
     g.add(hull);
-    bx(0.06, 2.3, 0.95, -3.36, 0, 1.2, trimMat);
-    track(1.32, 6.2, 0.95, 0.44, 6, 0.31, 4.7);
-    track(-1.32, 6.2, 0.95, 0.44, 6, 0.31, 4.7);
+    bx(0.06, 2.4, 0.95, -3.58, 0, 1.2, trimMat);
+    track(1.33, 6.6, 0.95, 0.46, 6, 0.32, 4.30);
+    track(-1.33, 6.6, 0.95, 0.46, 6, 0.32, 4.30);
     var i, s;
     // Glacis rib, headlights, splash board
     var rib = bx(0.07, 2.2, 0.1, 2.55, 0, 1.56, trimMat);
@@ -3961,9 +4051,9 @@ UNIT_MODELS["atgmv_p"] = {
     bx(0.9, 1.1, 0.04, -1.55, 0, 1.75, trimMat);
     // Fender ends and mudflaps
     for (s = -1; s <= 1; s += 2) {
-      bx(0.4, 0.44, 0.05, 3.1, s * 1.32, 1.02, trimMat);
-      bx(0.3, 0.44, 0.05, -3.2, s * 1.32, 1.02, trimMat);
-      bx(0.55, 0.03, 0.4, 2.5, s * 1.36, 1.28, teamMat);
+      bx(0.4, 0.44, 0.05, 3.3, s * 1.33, 1.02, trimMat);
+      bx(0.3, 0.44, 0.05, -3.4, s * 1.33, 1.02, trimMat);
+      bx(0.55, 0.03, 0.4, 2.5, s * 1.37, 1.28, teamMat);
     }
     // Whip antenna
     var ant = cyl(0.012, 0.012, 1.25, -3.0, 0.85, 2.35, steelMat, g, "z", 6);
@@ -3995,16 +4085,19 @@ UNIT_MODELS["atgmv_p"] = {
     var mast = new THREE.Group();
     mast.position.set(-0.62, 0, 0.55);
     turret.add(mast);
-    cyl(0.055, 0.07, 1.1, 0, 0, 0.55, steelMat, mast, "z", 10);
-    cyl(0.038, 0.038, 0.55, 0, 0, 1.3, steelMat, mast, "z", 8);
+    /* Published travel height with the mast up is 3.4 m. The old mast put the
+       radar at 4.46 m, which made a BMP-3 derivative the tallest ground
+       vehicle in the roster - taller than the Msta-S and the Smerch. */
+    cyl(0.055, 0.07, 0.62, 0, 0, 0.31, steelMat, mast, "z", 10);
+    cyl(0.038, 0.038, 0.30, 0, 0, 0.60, steelMat, mast, "z", 8);
     var dgeo = new THREE.CylinderGeometry(0.34, 0.44, 0.1, 18);
     dgeo.rotateZ(Math.PI / 2);
     var dishm = new THREE.Mesh(dgeo, trimMat);
-    dishm.position.set(0.06, 0, 1.62);
+    dishm.position.set(0.06, 0, 0.62);
     dishm.scale.set(1, 1, 1.25);
     mast.add(dishm);
-    cyl(0.018, 0.018, 0.38, 0.28, 0, 1.62, steelMat, mast, "x", 6);
-    bx(0.08, 0.08, 0.08, 0.48, 0, 1.62, darkMat, mast);
+    cyl(0.018, 0.018, 0.38, 0.28, 0, 0.62, steelMat, mast, "x", 6);
+    bx(0.08, 0.08, 0.08, 0.48, 0, 0.62, darkMat, mast);
     return g;
   }
 };
@@ -4435,16 +4528,21 @@ UNIT_MODELS["spaag_p"] = {
     }
     // GM-352 chassis. Roof 1.72 m.
     var hull = new THREE.Mesh(M.loft(THREE, [
-      { x: -3.9, w: 1.32, h: 0.5, zc: 1.2, sq: 0.88 },
-      { x: -2.6, w: 1.46, h: 0.6, zc: 1.12, sq: 0.9 },
-      { x: 1.6, w: 1.46, h: 0.6, zc: 1.12, sq: 0.9 },
+      { x: 3.9, w: 1.02, h: 0.12, zc: 1.36, sq: 0.85 },
       { x: 2.9, w: 1.4, h: 0.46, zc: 1.26, sq: 0.88 },
-      { x: 3.9, w: 1.02, h: 0.12, zc: 1.36, sq: 0.85 }
+      { x: 1.6, w: 1.46, h: 0.6, zc: 1.12, sq: 0.9 },
+      { x: -2.6, w: 1.46, h: 0.6, zc: 1.12, sq: 0.9 },
+      { x: -3.9, w: 1.32, h: 0.5, zc: 1.2, sq: 0.88 }
     ], 12), bodyMat);
     g.add(hull);
     bx(0.06, 2.3, 0.92, -3.91, 0, 1.2, trimMat);
-    track(1.46, 7.2, 1.0, 0.48, 6, 0.36, 5.5);
-    track(-1.46, 7.2, 1.0, 0.48, 6, 0.36, 5.5);
+    /* 2S6M: hull 3.24 m wide on a 4.7 m track base with six 670 mm wheels.
+       The 5.5 m span at 1.10 m pitch was Western running gear and 3.64 m was
+       12% over the published width. The GM-352 air-defence chassis does run
+       visibly spaced wheels, unlike the T-72/80 family, so the 0.94 m pitch
+       that comes out of this is correct and should not be tightened further. */
+    track(1.30, 7.2, 1.0, 0.46, 6, 0.335, 4.70);
+    track(-1.30, 7.2, 1.0, 0.46, 6, 0.335, 4.70);
     var i, s;
     // Bow splash rib, headlights, mudflaps
     var rib = bx(0.07, 1.9, 0.1, 3.1, 0, 1.56, trimMat);
@@ -4452,9 +4550,9 @@ UNIT_MODELS["spaag_p"] = {
     for (s = -1; s <= 1; s += 2) {
       bx(0.14, 0.2, 0.14, 3.5, s * 0.75, 1.5, trimMat);
       bx(0.03, 0.14, 0.1, 3.58, s * 0.75, 1.5, lensMat);
-      bx(0.42, 0.46, 0.05, 3.6, s * 1.46, 1.06, trimMat);
-      bx(0.32, 0.46, 0.05, -3.7, s * 1.46, 1.06, trimMat);
-      bx(0.6, 0.03, 0.36, 2.9, s * 1.4, 1.28, teamMat);
+      bx(0.42, 0.44, 0.05, 3.6, s * 1.30, 1.06, trimMat);
+      bx(0.32, 0.44, 0.05, -3.7, s * 1.30, 1.06, trimMat);
+      bx(0.6, 0.03, 0.36, 2.9, s * 1.32, 1.28, teamMat);
     }
     // Driver hatch and engine deck
     bx(0.55, 0.45, 0.06, 2.5, 0.6, 1.7, trimMat);
@@ -4485,7 +4583,7 @@ UNIT_MODELS["spaag_p"] = {
     // Missile banks: 4 canisters each side, 2 wide x 2 high, canted out
     for (s = -1; s <= 1; s += 2) {
       var bank = new THREE.Group();
-      bank.position.set(-0.4, s * 1.28, 0.6);
+      bank.position.set(-0.4, s * 1.14, 0.6);
       bank.rotation.y = -0.16;
       bank.rotation.z = s * 0.07;
       turret.add(bank);
@@ -4742,8 +4840,6 @@ UNIT_MODELS["recon_n"] = {
 
     // chassis pan
     P(B(3.6, 1.7, 0.14, plainMat), 0, 0, 0.5);
-    // flat wide bonnet
-    P(B(1.55, 2.16, 0.46, hullMat), 1.5, 0, 0.8);
     P(B(0.06, 1.7, 0.3, rubberMat), 2.28, 0, 0.84);        // grille inset
     P(B(0.18, 2.2, 0.2, plainMat), 2.38, 0, 0.62);          // bumper
     // brush guard
@@ -4752,25 +4848,51 @@ UNIT_MODELS["recon_n"] = {
     [-0.8, 0, 0.8].forEach(function (yy) { P(B(0.04, 0.05, 0.56, steelMat), 2.47, yy, 0.93); });
     // cab (armored doors read through the texture seams)
     P(B(1.8, 2.2, 0.75, hullMat), -0.15, 0, 0.925);
-    var ws = P(B(0.05, 1.9, 0.86, glassMat), 0.57, 0, 1.44); ws.rotation.y = -0.42;
-    P(B(1.45, 2.2, 0.1, hullMat), -0.33, 0, 1.86);          // roof
-    P(B(1.32, 0.05, 0.5, glassMat), -0.32, 1.06, 1.55);     // side glass
-    P(B(1.32, 0.05, 0.5, glassMat), -0.32, -1.06, 1.55);
-    P(B(0.05, 1.9, 0.5, glassMat), -1.02, 0, 1.55);         // rear glass
-    [[0.38, 1.04], [0.38, -1.04], [-1.0, 1.04], [-1.0, -1.04]].forEach(function (p) {
-      P(B(0.09, 0.09, 0.62, plainMat), p[0], p[1], 1.56);   // pillars
+    /* The HMMWV windscreen is laid back about 43 degrees from vertical -
+       that rake is half of what the shape says at any distance. It only fits
+       if the bonnet runs further aft and the roof starts further back, so
+       both move with it. */
+    P(B(1.72, 2.16, 0.46, hullMat), 1.44, 0, 0.8);
+    var ws = P(B(0.05, 1.9, 1.10, glassMat), 0.47, 0, 1.45); ws.rotation.y = -0.75;
+    P(B(1.32, 2.2, 0.1, hullMat), -0.42, 0, 1.86);          // roof
+    P(B(1.20, 0.05, 0.5, glassMat), -0.44, 1.06, 1.55);     // side glass
+    P(B(1.20, 0.05, 0.5, glassMat), -0.44, -1.06, 1.55);
+    P(B(0.05, 1.9, 0.5, glassMat), -1.05, 0, 1.55);         // rear glass
+    [[0.30, 1.04, -0.75], [0.30, -1.04, -0.75], [-1.03, 1.04, 0], [-1.03, -1.04, 0]].forEach(function (p) {
+      var pl = P(B(0.09, 0.09, p[2] ? 1.10 : 0.62, plainMat), p[0], p[1], p[2] ? 1.45 : 1.56);
+      pl.rotation.y = p[2];                                 // pillars
     });
+
+
     // rear cargo bed with tarp roll and jerry cans
     P(B(1.25, 2.2, 0.72, hullMat), -1.7, 0, 0.98);
     P(B(1.0, 1.7, 0.26, plainMat), -1.75, 0, 1.47);
     P(B(0.2, 0.34, 0.42, plainMat), -2.2, 0.8, 1.55);
     P(B(0.2, 0.34, 0.42, plainMat), -2.2, -0.8, 1.55);
-    // big black tyres + hubs + fender flares
-    [[1.65, 0.95], [1.65, -0.95], [-1.65, 0.95], [-1.65, -0.95]].forEach(function (p) {
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.465, 0.465, 0.33, 18), rubberMat), p[0], p[1], 0.465);
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.38, 12), plainMat), p[0], p[1], 0.465);
+    /* 37x12.5R16.5 run-flats, 0.93 m across, on the real 3.30 m wheelbase.
+       Each is a GROUP named "roadwheel" so render3d.js can turn it, with a
+       bolt ring off the axis - a smooth cylinder spinning about its own
+       axis shows nothing at all. */
+    var hbolt = new THREE.CylinderGeometry(0.032, 0.032, 0.40, 6);
+    [[1.65, 0.92], [1.65, -0.92], [-1.65, 0.92], [-1.65, -0.92]].forEach(function (p) {
+      var W = new THREE.Group(); W.name = "roadwheel";
+      W.position.set(p[0], p[1], 0.465); g.add(W);
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.465, 0.465, 0.32, 18), rubberMat));
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.38, 12), plainMat));
+      for (var b = 0; b < 5; b++) {
+        var ba = b / 5 * Math.PI * 2;
+        var bo = new THREE.Mesh(hbolt, steelMat);
+        bo.position.set(Math.cos(ba) * 0.27, 0, Math.sin(ba) * 0.27);
+        W.add(bo);
+      }
+      /* Track comes in to the real 1.84 m, but the fender flares stay out at
+         1.12: 2.16 m is the width of a bare M998 and an up-armoured M1151
+         with the B-kit measures about 2.3 m over its doors and flares, which
+         is what this model's own header says. */
       P(B(1.05, 0.14, 0.06, hullMat), p[0], p[1] > 0 ? 1.12 : -1.12, 1.05);
     });
+
+
     // headlights
     P(cylX(0.09, 0.05, glassMat, 10), 2.3, 0.85, 1.0);
     P(cylX(0.09, 0.05, glassMat, 10), 2.3, -0.85, 1.0);
@@ -4867,11 +4989,36 @@ UNIT_MODELS["recon_p"] = {
     [0.4, -0.4].forEach(function (yy) {
       var wp = P(B(0.05, 0.42, 0.3, glassMat), 2.02, yy, 1.68); wp.rotation.y = -0.6;
     });
-    // wheels: 4 big run-flats
+    /* 13.00-18 run-flats, 1.14 m across, on the real 3.10 m wheelbase.
+       GROUPS named "roadwheel" so render3d.js turns them; the bolt ring off
+       the axis is the only part of a spinning cylinder the eye can see. */
+    var bbolt = new THREE.CylinderGeometry(0.038, 0.038, 0.44, 6);
     [[1.55, 1.0], [1.55, -1.0], [-1.55, 1.0], [-1.55, -1.0]].forEach(function (p) {
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.57, 0.57, 0.36, 18), rubberMat), p[0], p[1], 0.57);
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.42, 12), plainMat), p[0], p[1], 0.57);
+      var W = new THREE.Group(); W.name = "roadwheel";
+      W.position.set(p[0], p[1], 0.57); g.add(W);
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.57, 0.57, 0.36, 18), rubberMat));
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.42, 12), plainMat));
+      for (var b = 0; b < 5; b++) {
+        var ba = b / 5 * Math.PI * 2;
+        var bo = new THREE.Mesh(bbolt, steelMat);
+        bo.position.set(Math.cos(ba) * 0.33, 0, Math.sin(ba) * 0.33);
+        W.add(bo);
+      }
     });
+    /* THE FOUR BELLY WHEELS. This is the BRDM-2's one unmistakable feature
+       and the game's own facts.js cites it: chain-driven 700 mm wheels that
+       drop out of the belly to claw across a trench. Stowed they sit up
+       under the hull with their lower arcs proud of the belly line, which
+       is exactly the dark gap the eye reads between the big road wheels.
+       They do NOT drive on the road, so they are not "roadwheel" groups. */
+    [0.62, -0.62].forEach(function (bx2) {
+      [0.72, -0.72].forEach(function (by) {
+        P(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.16, 12), rubberMat), bx2, by, 0.72);
+        P(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.20, 8), plainMat), bx2, by, 0.72);
+      });
+    });
+
+
     // mud flaps behind rear wheels
     P(B(0.05, 0.3, 0.28, rubberMat), -2.2, 1.0, 0.4);
     P(B(0.05, 0.3, 0.28, rubberMat), -2.2, -1.0, 0.4);
@@ -4908,11 +5055,16 @@ UNIT_MODELS["recon_p"] = {
 };
 
 // ---------------------------------------------------------------------------
-// CSK-131 Mengshi armoured 4x4. 5.4 x 2.5 x ~2.1 m. Angular protected cab,
-// sloped V nose, remote weapon station with sensor head.
+// CSK-131 Mengshi armoured 4x4. 5.00 x 2.10 x ~2.10 m, wheelbase 3.30 m,
+// 335/80R20 tyres 1.06 m across - the figures js/armour_specs.js already
+// carries for this key. It is a Humvee-class scout and has to read as one:
+// long for its width, L/W about 2.4. Built 5.27 x 2.60 it read as an MRAP
+// twice its weight. Angular protected cab, sloped V nose, remote weapon
+// station with sensor head. (armour_specs says wheelR 0.45; the model's 0.53
+// is the correct 335/80R20 radius and should not be trimmed to match it.)
 // ---------------------------------------------------------------------------
 UNIT_MODELS["recon_c"] = {
-  len: 5.4,
+  len: 5.0,
   build: function (THREE, M, C) {
     var g = new THREE.Group();
     function paint(base) {
@@ -4956,52 +5108,69 @@ UNIT_MODELS["recon_c"] = {
     function cylX(r, l, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, s || 12), m); o.rotation.z = -Math.PI / 2; return o; }
     function cylZ(rt, rb, h, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s || 14), m); o.rotation.x = Math.PI / 2; return o; }
 
+    /* CSK-131 Mengshi: 5.00 m long, 2.10 m WIDE, 2.10 m high, wheelbase
+       3.30 m, 335/80R20 tyres 1.06 m across. It is a Humvee-class 4x4 and
+       has to read as one - long for its width, L/W about 2.4. Built 2.5 m
+       across it read as an MRAP twice its weight. */
     // chassis pan
-    P(B(4.0, 1.8, 0.14, plainMat), 0, 0, 0.56);
+    P(B(4.0, 1.55, 0.14, plainMat), 0, 0, 0.56);
     // bonnet and angled nose plate
-    P(B(1.4, 2.3, 0.5, hullMat), 1.62, 0, 0.9);
-    var np = P(B(0.05, 2.3, 0.56, hullMat), 2.4, 0, 0.9); np.rotation.y = -0.38;
-    P(B(0.06, 1.5, 0.26, rubberMat), 2.3, 0, 0.72);         // grille
-    P(B(0.2, 2.4, 0.24, plainMat), 2.55, 0, 0.6);           // bumper
+    P(B(1.4, 1.92, 0.5, hullMat), 1.52, 0, 0.9);
+    var np = P(B(0.05, 1.92, 0.56, hullMat), 2.24, 0, 0.9); np.rotation.y = -0.38;
+    P(B(0.06, 1.3, 0.26, rubberMat), 2.14, 0, 0.72);        // grille
+    P(B(0.2, 2.02, 0.24, plainMat), 2.33, 0, 0.6);          // bumper
     // brush guard
-    P(B(0.04, 2.0, 0.05, steelMat), 2.62, 0, 1.1);
-    [-0.85, 0, 0.85].forEach(function (yy) { P(B(0.04, 0.05, 0.5, steelMat), 2.62, yy, 0.88); });
+    P(B(0.04, 1.7, 0.05, steelMat), 2.41, 0, 1.1);
+    [-0.72, 0, 0.72].forEach(function (yy) { P(B(0.04, 0.05, 0.5, steelMat), 2.41, yy, 0.88); });
     // armored crew cab (4-door)
-    P(B(2.5, 2.36, 0.85, hullMat), -0.37, 0, 1.05);
-    var ws = P(B(0.05, 2.0, 0.85, glassMat), 0.68, 0, 1.57); ws.rotation.y = -0.49;
-    P(B(2.1, 2.36, 0.12, hullMat), -0.55, 0, 2.0);          // roof
-    P(B(1.8, 0.05, 0.42, glassMat), -0.5, 1.16, 1.7);       // side glass strips
-    P(B(1.8, 0.05, 0.42, glassMat), -0.5, -1.16, 1.7);
-    [[0.45, 1.14], [0.45, -1.14], [-1.55, 1.14], [-1.55, -1.14]].forEach(function (p) {
+    P(B(2.5, 1.98, 0.85, hullMat), -0.4, 0, 1.05);
+    var ws = P(B(0.05, 1.7, 0.85, glassMat), 0.65, 0, 1.57); ws.rotation.y = -0.49;
+    P(B(2.1, 1.98, 0.12, hullMat), -0.58, 0, 2.0);          // roof
+    P(B(1.8, 0.05, 0.42, glassMat), -0.52, 0.97, 1.7);      // side glass strips
+    P(B(1.8, 0.05, 0.42, glassMat), -0.52, -0.97, 1.7);
+    [[0.42, 0.95], [0.42, -0.95], [-1.58, 0.95], [-1.58, -0.95]].forEach(function (p) {
       P(B(0.1, 0.1, 0.55, plainMat), p[0], p[1], 1.7);      // pillars
     });
     // rear cargo box with stowage
-    P(B(0.95, 2.36, 0.8, hullMat), -2.15, 0, 1.02);
-    P(B(0.75, 1.8, 0.3, plainMat), -2.15, 0, 1.57);
-    // wheels
-    [[1.7, 1.0], [1.7, -1.0], [-1.7, 1.0], [-1.7, -1.0]].forEach(function (p) {
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.53, 0.53, 0.36, 18), rubberMat), p[0], p[1], 0.53);
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.42, 12), plainMat), p[0], p[1], 0.53);
-      P(B(1.15, 0.14, 0.06, hullMat), p[0], p[1] > 0 ? 1.2 : -1.2, 1.16);
+    P(B(0.95, 1.98, 0.8, hullMat), -2.10, 0, 1.02);
+    P(B(0.75, 1.5, 0.3, plainMat), -2.10, 0, 1.57);
+    /* wheels on the real 3.30 m wheelbase. GROUPS named "roadwheel" so
+       render3d.js turns them, each with a bolt ring off the axis - a smooth
+       cylinder spinning about its own axis shows nothing. */
+    var mbolt = new THREE.CylinderGeometry(0.035, 0.035, 0.42, 6);
+    [[1.65, 0.87], [1.65, -0.87], [-1.65, 0.87], [-1.65, -0.87]].forEach(function (p) {
+      var W = new THREE.Group(); W.name = "roadwheel";
+      W.position.set(p[0], p[1], 0.53); g.add(W);
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.53, 0.53, 0.32, 18), rubberMat));
+      W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.38, 12), plainMat));
+      for (var b = 0; b < 5; b++) {
+        var ba = b / 5 * Math.PI * 2;
+        var bo = new THREE.Mesh(mbolt, steelMat);
+        bo.position.set(Math.cos(ba) * 0.30, 0, Math.sin(ba) * 0.30);
+        W.add(bo);
+      }
+      P(B(1.15, 0.14, 0.06, hullMat), p[0], p[1] > 0 ? 1.0 : -1.0, 1.16);
     });
     // running boards
-    P(B(2.3, 0.16, 0.05, plainMat), -0.35, 1.22, 0.55);
-    P(B(2.3, 0.16, 0.05, plainMat), -0.35, -1.22, 0.55);
+    P(B(2.3, 0.14, 0.05, plainMat), -0.4, 0.99, 0.55);
+    P(B(2.3, 0.14, 0.05, plainMat), -0.4, -0.99, 0.55);
     // roof rack rails
-    P(B(2.0, 0.05, 0.07, steelMat), -0.55, 1.05, 2.12);
-    P(B(2.0, 0.05, 0.07, steelMat), -0.55, -1.05, 2.12);
+    P(B(2.0, 0.05, 0.07, steelMat), -0.58, 0.86, 2.12);
+    P(B(2.0, 0.05, 0.07, steelMat), -0.58, -0.86, 2.12);
     // headlights, mirrors, antennas
-    P(cylX(0.08, 0.05, glassMat, 10), 2.44, 0.9, 1.12);
-    P(cylX(0.08, 0.05, glassMat, 10), 2.44, -0.9, 1.12);
+    P(cylX(0.08, 0.05, glassMat, 10), 2.28, 0.76, 1.12);
+    P(cylX(0.08, 0.05, glassMat, 10), 2.28, -0.76, 1.12);
     [1, -1].forEach(function (s) {
-      P(B(0.04, 0.05, 0.35, steelMat), 0.7, s * 1.24, 1.6);
-      P(B(0.12, 0.03, 0.2, glassMat), 0.7, s * 1.27, 1.78);
+      P(B(0.04, 0.05, 0.35, steelMat), 0.68, s * 1.03, 1.6);
+      P(B(0.12, 0.03, 0.2, glassMat), 0.68, s * 1.06, 1.78);
     });
-    P(cylZ(0.012, 0.012, 1.4, steelMat, 6), -1.5, 0.95, 2.76);
-    P(cylZ(0.012, 0.012, 1.1, steelMat, 6), -1.5, -0.95, 2.61);
+    P(cylZ(0.012, 0.012, 1.4, steelMat, 6), -1.52, 0.82, 2.76);
+    P(cylZ(0.012, 0.012, 1.1, steelMat, 6), -1.52, -0.82, 2.61);
     // team identification plates on the front doors
-    P(B(0.45, 0.03, 0.3, teamMat), 0.1, 1.19, 1.15);
-    P(B(0.45, 0.03, 0.3, teamMat), 0.1, -1.19, 1.15);
+    P(B(0.45, 0.03, 0.3, teamMat), 0.1, 1.00, 1.15);
+    P(B(0.45, 0.03, 0.3, teamMat), 0.1, -1.00, 1.15);
+
+
     // remote weapon station
     var T = new THREE.Group(); T.name = "turret"; T.position.set(-0.55, 0, 2.06); g.add(T);
     P(cylZ(0.22, 0.24, 0.12, hullMat, 16), 0, 0, 0.06, T);  // slewing ring
@@ -5017,9 +5186,18 @@ UNIT_MODELS["recon_c"] = {
 };
 
 // ---------------------------------------------------------------------------
-// M2A3 Bradley IFV. 6.55 x 3.6 x 2.98 m. Tall boxy hull, sloped upper sides,
-// side skirts, 6 road wheels, 25mm turret offset LEFT with TOW box on its
-// left cheek, commander's independent viewer.
+// M2A3 Bradley IFV. 6.55 m long, 3.60 m over the skirts (3.20 over the bare
+// hull), 2.98 m over the commander's viewer; hull roof 1.95, ground clearance
+// 0.43. Boxy hull, sloped upper side plates over the sponsons, segmented side
+// skirts, SIX road wheels about 0.62 m across on 0.66 m centres -- they very
+// nearly touch, and the 3.9 m they fill is the whole of the track on the
+// ground -- three return rollers under the skirts, drive sprocket FORWARD and
+// raised clear of the wheel line, idler aft. The 25 mm turret is offset to the
+// vehicle's RIGHT (the driver and the crawl-through passage are on the left),
+// which in this space is -Y, and the twin TOW-2 launcher hangs on the turret's
+// LEFT cheek. Inside the turret the COMMANDER sits on the right of the gun
+// with the A3 independent viewer beside him, and the GUNNER on the left with
+// the sight head over him.
 // ---------------------------------------------------------------------------
 UNIT_MODELS["ifv_n"] = {
   len: 6.55,
@@ -5066,103 +5244,176 @@ UNIT_MODELS["ifv_n"] = {
     function cylX(r, l, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, s || 12), m); o.rotation.z = -Math.PI / 2; return o; }
     function cylZ(rt, rb, h, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s || 14), m); o.rotation.x = Math.PI / 2; return o; }
 
-    // central hull: tall side profile with the long Bradley glacis
-    g.add(new THREE.Mesh(M.slab(THREE, [
-      [2.9, 0.45], [3.27, 0.95], [1.5, 2.2], [-3.2, 2.2], [-3.27, 0.5]
-    ], 2.5, "xz"), hullMat));
+    /* Central hull: side elevation, extruded across. M.slab(..., "xz") extrudes
+       along -Y FROM the drawing plane (js/mine_veh_layer.js:462 says so in its
+       own comment), so the body has to be shifted back by half its thickness or
+       it sits entirely on the vehicle's right - which is what it did: the hull
+       measured y[-2.59, +0.09], 1.25 m off centre, the left track had no hull
+       above it and the right skirt was buried inside it. The outline is drawn
+       0.08 inside the finished size because ExtrudeGeometry bevels it outwards
+       by 5% of its smaller dimension, and the roof comes down from 2.20 to the
+       real 1.93. */
+    var hull = new THREE.Mesh(M.slab(THREE, [
+      [2.80, 0.50], [3.19, 0.90], [1.40, 1.87], [-3.14, 1.87], [-3.19, 0.56]
+    ], 2.5, "xz"), hullMat);
+    hull.position.y = 1.25;
+    g.add(hull);
     // sponsons over the tracks + sloped upper side plates
     [1, -1].forEach(function (s) {
-      P(B(5.9, 0.55, 0.7, hullMat), -0.3, s * 1.52, 1.65);
-      var sp = P(B(5.9, 0.6, 0.05, hullMat), -0.3, s * 1.51, 2.1);
+      P(B(5.9, 0.55, 0.70, hullMat), -0.30, s * 1.52, 1.40);
+      var sp = P(B(5.9, 0.60, 0.05, hullMat), -0.30, s * 1.51, 1.85);
       sp.rotation.x = -s * 0.35;
-      // side skirts covering the upper track run
-      P(B(5.8, 0.05, 0.75, hullMat), -0.25, s * 1.76, 0.97);
-      // track band and running gear
-      P(B(6.2, 0.5, 0.6, trackMat), -0.15, s * 1.48, 0.65);
-      [2.3, 1.35, 0.4, -0.55, -1.5, -2.45].forEach(function (wx) {
-        P(new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.3, 16), trackMat), wx, s * 1.48, 0.33);
-        P(new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.34, 10), plainMat), wx, s * 1.48, 0.33);
+      /* Side skirts: five separate panels with the joins showing, hung just
+         inboard of the sponson lip so the lip lays a shadow line along the
+         flank. They stop short of the sprocket, as they do on the vehicle. */
+      for (var sk = 0; sk < 5; sk++) {
+        P(B(1.02, 0.05, 0.55, hullMat), -2.65 + sk * 1.08, s * 1.74, 0.62);
+      }
+      /* Track: a lower and an upper run from idler to sprocket rather than one
+         solid slab, so the road wheels between them are visible at all. The
+         upper run is raked because the sprocket rides 0.20 m higher. */
+      P(B(5.58, 0.53, 0.09, trackMat), 0.01, s * 1.48, 0.045);
+      var up = P(B(5.58, 0.53, 0.09, trackMat), 0.01, s * 1.48, 0.80);
+      up.rotation.y = -0.036;
+      /* Three return rollers a side under the skirt line, carrying the upper
+         run. armour_specs.js records rollers:3 for this vehicle and the real
+         Bradley has them; nothing in this model ever built one. */
+      [-1.40, 0.00, 1.40].forEach(function (rx) {
+        P(new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.30, 8), trackMat), rx, s * 1.48, 0.68);
       });
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.24, 14), trackMat), 2.95, s * 1.48, 0.55); // drive sprocket
-      P(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.24, 14), trackMat), -2.95, s * 1.48, 0.5); // idler
+      /* Six road wheels 0.62 m across on 0.66 centres: they very nearly touch,
+         which is the Bradley's own running gear and not the evenly spaced six
+         this model had. Each is a GROUP named "roadwheel" so render3d.js turns
+         it, and each carries a ring of four bolts off the axle - a smooth
+         cylinder rotating about its own axis shows nothing at all. */
+      [1.45, 0.79, 0.13, -0.53, -1.19, -1.85].forEach(function (wx) {
+        var W = new THREE.Group(); W.name = "roadwheel";
+        W.position.set(wx, s * 1.48, 0.31);
+        W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.31, 0.30, 12), trackMat));
+        W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.34, 8), plainMat));
+        for (var b = 0; b < 4; b++) {
+          var ba = b / 4 * Math.PI * 2 + 0.4;
+          var bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.36, 5), plainMat);
+          bolt.position.set(Math.cos(ba) * 0.19, 0, Math.sin(ba) * 0.19);
+          W.add(bolt);
+        }
+        g.add(W);
+      });
+      // drive sprocket FORWARD and raised clear of the wheel line, with teeth
+      var SP = new THREE.Group(); SP.name = "roadwheel";
+      SP.position.set(2.80, s * 1.48, 0.66);
+      SP.add(new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.26, 12), steelMat));
+      for (var t = 0; t < 8; t++) {
+        var ta = t / 8 * Math.PI * 2;
+        var tooth = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.22, 0.09), steelMat);
+        tooth.position.set(Math.cos(ta) * 0.28, 0, Math.sin(ta) * 0.28);
+        tooth.rotation.y = -ta;
+        SP.add(tooth);
+      }
+      g.add(SP);
+      // idler aft
+      var ID = new THREE.Group(); ID.name = "roadwheel";
+      ID.position.set(-2.78, s * 1.48, 0.42);
+      ID.add(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.28, 12), trackMat));
+      ID.add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.32, 8), plainMat));
+      for (var b2 = 0; b2 < 4; b2++) {
+        var ba2 = b2 / 4 * Math.PI * 2;
+        var bo2 = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.34, 5), plainMat);
+        bo2.position.set(Math.cos(ba2) * 0.17, 0, Math.sin(ba2) * 0.17);
+        ID.add(bo2);
+      }
+      g.add(ID);
     });
     // stowed trim vane plate proud of the glacis
-    var vane = P(B(1.3, 2.3, 0.05, plainMat), 2.42, 0, 1.66); vane.rotation.y = 0.615;
-    // headlight clusters and tow shackles
-    [0.85, -0.85].forEach(function (yy) {
-      P(B(0.14, 0.3, 0.16, plainMat), 3.02, yy, 1.32);
-      P(cylX(0.06, 0.05, glassMat, 10), 3.11, yy, 1.32);
-      P(B(0.12, 0.14, 0.1, steelMat), 3.05, yy * 0.6, 0.75);
-    });
-    // raised engine deck panel front right
-    P(B(1.3, 1.0, 0.08, hullMat), 1.9, -0.6, 2.24);
+    var vane = P(B(1.30, 2.30, 0.05, plainMat), 2.36, 0, 1.42); vane.rotation.y = 0.545;
+    /* The engine deck is at the FRONT RIGHT, beside the driver, and the
+       driver's hatch at the front left: that pair is why the turret behind
+       them had to move to starboard, so both of them belong on the model.
+       The small lamp housings that used to sit here as well were a second,
+       redundant cluster - the finished one with its brush guard is built
+       further down this function - so they are gone. */
+    P(B(1.40, 1.15, 0.08, hullMat), 2.05, -0.60, 1.91);
+    P(cylZ(0.27, 0.27, 0.07, plainMat, 14), 2.30, 0.72, 1.93);
     // rear ramp frame lip
-    P(B(0.06, 2.3, 1.5, hullMat), -3.29, 0, 1.35);
+    P(B(0.06, 2.30, 1.35, hullMat), -3.24, 0, 1.20);
     // team identification plates on the skirts
-    P(B(0.5, 0.04, 0.35, teamMat), 1.8, 1.79, 1.0);
-    P(B(0.5, 0.04, 0.35, teamMat), 1.8, -1.79, 1.0);
+    P(B(0.50, 0.04, 0.32, teamMat), 1.80, 1.79, 0.80);
+    P(B(0.50, 0.04, 0.32, teamMat), 1.80, -1.79, 0.80);
 
     // Headlight clusters and tow shackles: both sit right on the front plate
     // and are the first things you see in a photograph of the vehicle.
     var lampGlass = new THREE.MeshStandardMaterial({ color: 0xd8d2bc, roughness: 0.25,
       metalness: 0.1, emissive: 0x3a3524, emissiveIntensity: 0.35 });
     [1, -1].forEach(function (s2) {
-      // rectangular housing with a brush guard, one each side of the glacis
-      P(B(0.30, 0.62, 0.52, hullMat), 3.02, s2 * 1.30, 1.28);
+      /* One cluster a side, seated against the shorter 1.94 m glacis instead
+         of the old 2.20 m one - everything here dropped 0.12 m with the roof
+         and came back 0.10 m towards the plate it bolts to. */
+      P(B(0.30, 0.62, 0.52, hullMat), 2.92, s2 * 1.30, 1.16);
       var hl = P(new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.10, 14), lampGlass),
-                 3.19, s2 * 1.44, 1.30);
+                 3.09, s2 * 1.44, 1.18);
       hl.rotation.z = -Math.PI / 2;
       var bl = P(new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.10, 12), lampGlass),
-                 3.19, s2 * 1.13, 1.30);
+                 3.09, s2 * 1.13, 1.18);
       bl.rotation.z = -Math.PI / 2;
       // guard bars across the front of the housing
       for (var gb = 0; gb < 2; gb++) {
-        P(B(0.05, 0.60, 0.05, steelMat), 3.21, s2 * 1.30, 1.10 + gb * 0.36);
+        P(B(0.05, 0.60, 0.05, steelMat), 3.11, s2 * 1.30, 0.98 + gb * 0.36);
       }
       // towing shackle on the lower front plate
       var sh = P(new THREE.Mesh(new THREE.TorusGeometry(0.20, 0.055, 6, 12), steelMat),
-                 3.06, s2 * 0.72, 0.52);
+                 3.02, s2 * 0.72, 0.74);
       sh.rotation.y = Math.PI / 2;
-      P(B(0.16, 0.14, 0.16, steelMat), 2.96, s2 * 0.72, 0.52);
+      P(B(0.16, 0.14, 0.16, steelMat), 2.92, s2 * 0.72, 0.74);
     });
     // Turret offset to the vehicle's RIGHT of centreline. The M2's driver sits
     // front left with the powerpack beside him, which pushes the turret ring
     // to starboard — clearly visible in any head-on photograph of a Bradley.
     // Model space is +Y left, so that is a negative offset.
-    var T = new THREE.Group(); T.name = "turret"; T.position.set(0.3, -0.45, 2.2); g.add(T);
-    P(cylZ(0.8, 0.82, 0.12, hullMat, 20), 0, 0, 0.05, T);   // race ring
-    P(B(1.7, 1.5, 0.55, hullMat), 0, 0, 0.35, T);           // turret box
-    var tf = P(B(0.05, 1.5, 0.65, hullMat), 0.78, 0, 0.36, T); tf.rotation.y = -0.59;
-    P(B(0.35, 0.5, 0.4, plainMat), 0.95, 0.1, 0.45, T);     // mantlet
-    P(cylX(0.038, 2.2, steelMat, 10), 2.15, 0.1, 0.5, T);   // 25mm M242
-    P(cylX(0.055, 0.14, steelMat, 8), 3.28, 0.1, 0.5, T);   // muzzle
-    P(cylX(0.02, 0.6, steelMat, 8), 1.35, -0.22, 0.45, T);  // M240 coax
+    var T = new THREE.Group(); T.name = "turret"; T.position.set(0.15, -0.30, 1.95); g.add(T);
+    P(cylZ(0.80, 0.84, 0.10, hullMat, 20), 0, 0, 0.04, T);  // race ring
+    P(B(1.80, 1.45, 0.60, hullMat), 0, 0, 0.36, T);         // turret box, roof at 2.61
+    var tf = P(B(0.05, 1.45, 0.70, hullMat), 0.83, 0, 0.37, T); tf.rotation.y = -0.59;
+    P(B(0.35, 0.50, 0.40, plainMat), 1.00, 0.05, 0.42, T);  // mantlet
+    /* M242 Bushmaster. The complete weapon is about 2.58 m and roughly 2.03 m
+       of that is barrel; 2.18 m of tube from the mantlet face puts the muzzle
+       0.14 m past the nose and no further. It used to reach 0.38 m past, and
+       since render3d.js scales by MEASURED x extent every centimetre of
+       overhang shrinks the hull it is measured against. */
+    P(cylX(0.038, 2.18, steelMat, 10), 2.05, 0.05, 0.46, T);
+    P(cylX(0.055, 0.12, steelMat, 8), 3.20, 0.05, 0.46, T); // muzzle
+    P(cylX(0.020, 0.60, steelMat, 8), 1.30, -0.26, 0.42, T); // M240C coax, right of the gun
     // TOW launcher box on the LEFT cheek
-    var tow = new THREE.Group(); tow.position.set(0.0, 0.95, 0.55); tow.rotation.y = -0.12; T.add(tow);
-    P(B(1.15, 0.42, 0.5, plainMat), 0, 0, 0, tow);
-    P(cylX(0.13, 0.05, trackMat, 12), 0.58, 0.1, 0, tow);
-    P(cylX(0.13, 0.05, trackMat, 12), 0.58, -0.1, 0, tow);
-    // commander cupola + independent viewer + gunner sight
-    P(cylZ(0.28, 0.3, 0.14, hullMat, 16), -0.35, -0.35, 0.66, T);
-    P(cylZ(0.1, 0.1, 0.22, plainMat, 10), -0.5, 0.35, 0.72, T);
-    P(B(0.24, 0.22, 0.2, plainMat), -0.5, 0.35, 0.9, T);
-    P(B(0.02, 0.14, 0.1, glassMat), -0.37, 0.35, 0.9, T);
-    P(B(0.35, 0.4, 0.2, plainMat), 0.4, 0.38, 0.68, T);
-    P(B(0.02, 0.26, 0.12, glassMat), 0.59, 0.38, 0.7, T);
+    var tow = new THREE.Group(); tow.position.set(-0.05, 0.94, 0.42); tow.rotation.y = -0.12; T.add(tow);
+    P(B(1.35, 0.44, 0.50, plainMat), 0, 0, 0, tow);
+    P(cylX(0.13, 0.05, trackMat, 12), 0.68, 0.11, 0, tow);
+    P(cylX(0.13, 0.05, trackMat, 12), 0.68, -0.11, 0, tow);
+    /* Roof furniture. A Bradley's COMMANDER sits on the RIGHT of the main
+       armament and the gunner on the LEFT, which is why the sight head is on
+       the turret's left roof. The cupola and the sight were already on the
+       correct sides; only the A3 commander's independent viewer was on the
+       wrong one, standing over the gunner instead of beside the commander.
+       It moves across to starboard. The viewer's head at 2.97 m is what the
+       quoted overall height of 2.98 m is measured to. */
+    P(cylZ(0.28, 0.30, 0.12, hullMat, 16), -0.42, -0.34, 0.70, T);
+    P(cylZ(0.10, 0.10, 0.20, plainMat, 10), -0.10, -0.40, 0.74, T);
+    P(B(0.24, 0.22, 0.20, plainMat), -0.10, -0.40, 0.92, T);
+    P(B(0.02, 0.14, 0.10, glassMat), 0.03, -0.40, 0.92, T);
+    P(B(0.35, 0.40, 0.22, plainMat), 0.42, 0.40, 0.72, T);
+    P(B(0.02, 0.26, 0.12, glassMat), 0.61, 0.40, 0.74, T);
     // smoke launchers on the turret front corners
     [1, -1].forEach(function (s) {
       for (var i = 0; i < 3; i++) {
         var sm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.28, 8), steelMat);
         sm.rotation.z = -Math.PI / 2; sm.rotation.y = -0.6;
-        P(sm, 0.72, s * (0.45 + i * 0.11), 0.62, T);
+        P(sm, 0.76, s * (0.42 + i * 0.11), 0.56, T);
       }
     });
     // bustle rack rails + antennas
-    P(B(0.05, 1.3, 0.05, steelMat), -0.95, 0, 0.62, T);
-    P(B(0.6, 0.05, 0.05, steelMat), -0.62, 0.65, 0.62, T);
-    P(B(0.6, 0.05, 0.05, steelMat), -0.62, -0.65, 0.62, T);
-    P(cylZ(0.012, 0.012, 1.3, steelMat, 6), -0.85, 0.55, 1.3, T);
-    P(cylZ(0.012, 0.012, 1.1, steelMat, 6), -0.85, -0.55, 1.2, T);
+    P(B(0.05, 1.30, 0.05, steelMat), -1.00, 0, 0.58, T);
+    P(B(0.60, 0.05, 0.05, steelMat), -0.68, 0.63, 0.58, T);
+    P(B(0.60, 0.05, 0.05, steelMat), -0.68, -0.63, 0.58, T);
+    P(cylZ(0.012, 0.012, 1.10, steelMat, 6), -0.88, 0.55, 1.15, T);
+    P(cylZ(0.012, 0.012, 0.90, steelMat, 6), -0.88, -0.55, 1.05, T);
     return g;
   }
 };
@@ -5218,8 +5469,8 @@ UNIT_MODELS["ifv_p"] = {
 
     // low hull with sharply pointed bow
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: 3.57, w: 0.5, h: 0.1, zc: 1.1 },
-      { x: 3.0, w: 1.1, h: 0.22, zc: 1.05 },
+      { x: 3.57, w: 0.95, h: 0.12, zc: 1.10 },
+      { x: 3.0, w: 1.35, h: 0.26, zc: 1.05 },
       { x: 2.2, w: 1.5, h: 0.38, zc: 1.0, sq: 0.85 },
       { x: 1.0, w: 1.58, h: 0.45, zc: 1.0, sq: 0.9 },
       { x: -2.2, w: 1.58, h: 0.45, zc: 1.0, sq: 0.9 },
@@ -5231,9 +5482,24 @@ UNIT_MODELS["ifv_p"] = {
     // running gear
     [1, -1].forEach(function (s) {
       P(B(6.4, 0.5, 0.34, trackMat), 0, s * 1.33, 0.46);
-      [2.45, 1.5, 0.55, -0.4, -1.35, -2.3].forEach(function (wx) {
-        P(new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.3, 16), trackMat), wx, s * 1.33, 0.32);
-        P(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.34, 10), plainMat), wx, s * 1.33, 0.32);
+      /* BMP-3: six 670 mm wheels with about 4.06 m of track on the ground, so
+         the pitch is 0.81 m and the wheels very nearly touch. At 0.95 they
+         were spread over 4.75 m of a 7.14 m hull, which is Western spacing on
+         a Soviet chassis and throws away one of the few cues that reads at
+         forty pixels. Each is a GROUP named "roadwheel" so render3d.js turns
+         it, with a bolt ring off the axle - a smooth cylinder spinning about
+         its own axis shows nothing at all. */
+      [2.03, 1.22, 0.41, -0.41, -1.22, -2.03].forEach(function (wx) {
+        var W = new THREE.Group(); W.name = "roadwheel";
+        W.position.set(wx, s * 1.33, 0.335); g.add(W);
+        W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.335, 0.335, 0.30, 14), trackMat));
+        W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.34, 10), plainMat));
+        for (var b = 0; b < 4; b++) {
+          var ba = b / 4 * Math.PI * 2 + 0.4;
+          var bo = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.36, 5), plainMat);
+          bo.position.set(Math.cos(ba) * 0.20, 0, Math.sin(ba) * 0.20);
+          W.add(bo);
+        }
       });
       P(new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.24, 14), trackMat), -2.95, s * 1.33, 0.45); // rear drive
       P(new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.24, 14), trackMat), 2.95, s * 1.33, 0.45);  // idler
@@ -5258,21 +5524,33 @@ UNIT_MODELS["ifv_p"] = {
     // team identification plates on the hull flanks
     P(B(0.5, 0.04, 0.3, teamMat), 1.5, 1.56, 1.05);
     P(B(0.5, 0.04, 0.3, teamMat), 1.5, -1.56, 1.05);
+    /* The two bow PKTs. A BMP-3 seats three men abreast behind that glacis -
+       driver in the middle, a bow gunner outboard each side - and nothing
+       else in the roster has a machine gun firing out of the front corners of
+       the hull. The hatches for them were already modelled; the guns were not. */
+    P(cylX(0.022, 0.60, steelMat, 8), 3.45, 0.60, 1.08);
+    P(cylX(0.022, 0.60, steelMat, 8), 3.45, -0.60, 1.08);
     // round centre turret: 100mm 2A70 + 30mm 2A72 coax
     var T = new THREE.Group(); T.name = "turret"; T.position.set(0.15, 0, 1.42); g.add(T);
     P(cylZ(1.0, 1.05, 0.16, hullMat, 20), 0, 0, 0.08, T);   // race ring
     var dome = new THREE.Mesh(new THREE.SphereGeometry(1.0, 20, 12), hullMat);
-    dome.scale.set(1, 1, 0.45);
+    dome.scale.set(1, 1, 0.62);   // roof at 2.28 m; a BMP-3's is 2.30
     P(dome, -0.05, 0, 0.16, T);
     P(B(0.4, 0.55, 0.35, plainMat), 0.8, 0, 0.28, T);       // mantlet
-    /* the 2A70's muzzle overhangs the bow in every photograph of a BMP-3;
-           it used to stop half a metre short and never broke the outline */
-        P(cylX(0.09, 2.90, steelMat, 12), 2.45, 0, 0.32, T);
-        P(cylX(0.10, 0.14, steelMat, 10), 3.95, 0, 0.32, T);
-        P(cylX(0.030, 2.60, steelMat, 8), 2.60, -0.24, 0.30, T);   // stubby 100mm
-    P(cylX(0.085, 0.12, steelMat, 10), 2.95, 0, 0.32, T);   // muzzle collar
-    P(cylX(0.028, 2.35, steelMat, 8), 2.18, -0.24, 0.3, T); // thin 30mm coax
-    P(cylX(0.018, 0.7, steelMat, 8), 1.3, 0.3, 0.3, T);     // PKT
+    /* ONE 100 mm and ONE 30 mm, not two of each. A patch left this turret
+       carrying TWO overlapping 30 mm coax tubes (r .030 x 2.60 and r .028 x
+       2.35, both at y -0.24) and an orphaned muzzle collar stranded halfway
+       down the 2A70, which is why the gun group read as a blur; the block's
+       indentation was broken in the same edit.
+       The 2A70 is a SHORT low-pressure gun and the 2A72 is a long thin one:
+       on a BMP-3 the 30 mm muzzle stands level with or slightly AHEAD of the
+       fat 100 mm one, and that offset pair is the gun group's signature.
+       ifv_c, which carries the same Chinese-built armament, already draws it
+       that way round. */
+    P(cylX(0.09, 2.55, steelMat, 12), 2.28, 0, 0.32, T);    // 100mm 2A70
+    P(cylX(0.10, 0.14, steelMat, 10), 3.62, 0, 0.32, T);    // 2A70 muzzle
+    P(cylX(0.030, 2.75, steelMat, 8), 2.58, -0.24, 0.30, T);// 30mm 2A72, reaching past it
+    P(cylX(0.018, 0.7, steelMat, 8), 1.3, 0.3, 0.3, T);     // coax PKT
     // sights and commander hatch dome
     P(B(0.3, 0.28, 0.2, plainMat), 0.32, 0.38, 0.52, T);
     P(B(0.02, 0.18, 0.1, glassMat), 0.48, 0.38, 0.54, T);
@@ -5341,9 +5619,18 @@ UNIT_MODELS["ifv_c"] = {
     function cylZ(rt, rb, h, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s || 14), m); o.rotation.x = Math.PI / 2; return o; }
 
     // boxy central hull, side profile slab
-    g.add(new THREE.Mesh(M.slab(THREE, [
+    /* M.slab(pts, t, "xz") extrudes along -Y FROM the drawing plane, so a slab
+       handed straight to a Mesh is never centred: this hull sat ENTIRELY on
+       the vehicle's right, hanging past the right sponson with nothing at all
+       above the left track, which is why the model measured 4.07 m wide against
+       a real 3.20. The track() helper lower in this same file has always
+       re-centred its own slab exactly this way; the hulls never did. */
+    var hullGeo = M.slab(THREE, [
       [3.2, 0.4], [3.75, 0.85], [1.7, 1.6], [-3.55, 1.6], [-3.75, 1.3], [-3.7, 0.45]
-    ], 2.3, "xz"), hullMat));
+    ], 2.3, "xz");
+    hullGeo.computeBoundingBox();
+    hullGeo.translate(0, -(hullGeo.boundingBox.max.y + hullGeo.boundingBox.min.y) / 2, 0);
+    g.add(new THREE.Mesh(hullGeo, hullMat));
     // sponsons over the tracks
     P(B(6.1, 0.5, 0.65, hullMat), -0.65, 1.4, 1.28);
     P(B(6.1, 0.5, 0.65, hullMat), -0.65, -1.4, 1.28);
@@ -5356,8 +5643,8 @@ UNIT_MODELS["ifv_c"] = {
       }
     }
     // flank applique panels on the crew section
-    P(B(2.2, 0.06, 0.5, plainMat), 1.1, 1.68, 1.2);
-    P(B(2.2, 0.06, 0.5, plainMat), 1.1, -1.68, 1.2);
+    P(B(2.2, 0.06, 0.5, plainMat), 1.1, 1.57, 1.2);
+    P(B(2.2, 0.06, 0.5, plainMat), 1.1, -1.57, 1.2);
     // lower hull tub + running gear
     P(B(6.8, 2.2, 0.5, plainMat), -0.2, 0, 0.62);
     [1, -1].forEach(function (s) {
@@ -5378,8 +5665,8 @@ UNIT_MODELS["ifv_c"] = {
     P(cylX(0.06, 0.05, glassMat, 10), 3.6, -0.7, 1.05);
     P(cylZ(0.012, 0.012, 1.5, steelMat, 6), -3.0, 0.9, 2.35);
     // team identification plates
-    P(B(0.5, 0.04, 0.3, teamMat), -0.6, 1.66, 1.3);
-    P(B(0.5, 0.04, 0.3, teamMat), -0.6, -1.66, 1.3);
+    P(B(0.5, 0.04, 0.3, teamMat), -0.6, 1.59, 1.3);
+    P(B(0.5, 0.04, 0.3, teamMat), -0.6, -1.59, 1.3);
     // round twin-gun turret
     var T = new THREE.Group(); T.name = "turret"; T.position.set(0.4, 0, 1.6); g.add(T);
     P(cylZ(0.95, 1.08, 0.5, hullMat, 20), 0, 0, 0.25, T);   // tapered drum
@@ -5404,12 +5691,17 @@ UNIT_MODELS["ifv_c"] = {
 };
 
 // ---------------------------------------------------------------------------
-// M1128 Stryker MGS. Hull 6.95 x 2.72 m. 8 big wheels in two clearly
-// separated pairs of axles, slab hull, low unmanned turret with a long
-// overhanging 105mm and pepperpot muzzle brake.
+// M1128 Stryker MGS on the LAV III / Piranha III 8x8. Hull 6.95 x 2.72 m,
+// roof 2.28, ground clearance 0.53. Eight 12.00R20 tyres 1.13 m across on
+// axle stations of 1.39 / 2.36 / 1.39 m -- a tight pair, 2.36 m of bare
+// flank, a tight pair -- with the whole group set AFT of hull centre, about
+// 1.17 m of bow overhang against 0.64 m at the tail. Evenly spaced axles on
+// the hull centre are what makes an 8x8 read as generic; that grouping is
+// what says Stryker. Slab hull, low unmanned turret with a long overhanging
+// M68A2 105 mm, bore evacuator and pepperpot muzzle brake.
 // ---------------------------------------------------------------------------
 UNIT_MODELS["lt_n"] = {
-  len: 6.95,
+  len: 9.45,
   build: function (THREE, M, C) {
     var g = new THREE.Group();
     function paint(base) {
@@ -5453,58 +5745,99 @@ UNIT_MODELS["lt_n"] = {
     function cylX(r, l, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, s || 12), m); o.rotation.z = -Math.PI / 2; return o; }
     function cylZ(rt, rb, h, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s || 14), m); o.rotation.x = Math.PI / 2; return o; }
 
-    // slab hull with big sloped glacis
+    /* LAV III hull. 6.95 x 2.72 m over the tyres, belly 0.53 m, roof 2.28 m.
+       The bow is NOT a point: it is a two-stage raked glacis 1.6 m wide at
+       the lip, and the stern is a flat full-width ramp wall. M.loft caps
+       neither end, so each open ring gets a plate over it. */
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: 3.47, w: 0.55, h: 0.22, zc: 1.05 },
-      { x: 2.85, w: 1.05, h: 0.5, zc: 1.2, sq: 0.8 },
-      { x: 1.7, w: 1.32, h: 0.73, zc: 1.3, sq: 0.85 },
-      { x: -2.7, w: 1.32, h: 0.73, zc: 1.3, sq: 0.85 },
-      { x: -3.25, w: 1.18, h: 0.65, zc: 1.25, sq: 0.8 },
-      { x: -3.47, w: 0.85, h: 0.45, zc: 1.15 }
+      { x: 3.475, w: 0.95, h: 0.24, zc: 0.86, sq: 0.42 },
+      { x: 3.15, w: 1.20, h: 0.46, zc: 1.10, sq: 0.38 },
+      { x: 2.45, w: 1.32, h: 0.74, zc: 1.34, sq: 0.34 },
+      { x: 2.05, w: 1.34, h: 0.875, zc: 1.405, sq: 0.30 },
+      { x: -2.90, w: 1.34, h: 0.875, zc: 1.405, sq: 0.30 },
+      { x: -3.30, w: 1.28, h: 0.82, zc: 1.40, sq: 0.32 },
+      { x: -3.475, w: 1.16, h: 0.72, zc: 1.38, sq: 0.36 }
     ], 16), hullMat));
-    // 8 big wheels: two clearly separated axle pairs
-    [2.35, 1.15, -0.95, -2.15].forEach(function (wx) {
+    P(B(0.08, 1.98, 0.56, hullMat), 3.46, 0, 0.86);          // bow lip plate
+    P(B(0.07, 2.36, 1.50, hullMat), -3.47, 0, 1.38);         // rear ramp wall
+    P(B(0.05, 1.90, 0.10, plainMat), -3.52, 0, 0.70);        // ramp hinge bar
+    /* 8x8 on the Piranha III / LAV III axle stations: 1.39 m inside the
+       front pair, 2.36 m of bare flank amidships, 1.39 m inside the rear
+       pair, and the whole group sits AFT of hull centre - 1.17 m of bow
+       overhang against 0.64 m at the tail. Even pairs on the hull centre
+       read as a generic 8x8; this spacing is what says Stryker. Tyres are
+       12.00R20, 1.13 m across. Each wheel is a GROUP named "roadwheel" so
+       render3d.js can turn it, and carries a bolt ring off the axis because
+       a smooth cylinder spinning about its own axis shows nothing at all. */
+    var boltGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.38, 6);
+    [2.30, 0.91, -1.45, -2.84].forEach(function (wx) {
       [1, -1].forEach(function (s) {
-        P(new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.36, 18), rubberMat), wx, s * 1.16, 0.52);
-        P(new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.42, 12), plainMat), wx, s * 1.16, 0.52);
+        var W = new THREE.Group(); W.name = "roadwheel";
+        W.position.set(wx, s * 1.19, 0.565); g.add(W);
+        W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.565, 0.565, 0.32, 18), rubberMat));
+        W.add(new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.36, 12), plainMat));
+        for (var b = 0; b < 5; b++) {
+          var ba = b / 5 * Math.PI * 2;
+          var bo = new THREE.Mesh(boltGeo, steelMat);
+          bo.position.set(Math.cos(ba) * 0.33, 0, Math.sin(ba) * 0.33);
+          W.add(bo);
+        }
       });
     });
-    // driver hatch, engine deck lip, mirrors
-    P(cylZ(0.24, 0.24, 0.06, plainMat, 14), 2.3, 0.6, 2.02);
-    P(B(1.2, 1.1, 0.06, hullMat), 2.1, -0.55, 2.04);
+
+
+    /* Driver's hatch front LEFT, engine deck lip front right - the correct
+       Stryker layout - both seated on the flat part of the roof. The new
+       glacis does not reach roof height until x 2.05, so anything pinned at
+       x 2.1-2.35 hangs in the air over it; they move aft to where the roof
+       actually is. */
+    P(cylZ(0.24, 0.24, 0.06, plainMat, 14), 1.85, 0.62, 2.27);
+    P(B(0.95, 1.10, 0.06, hullMat), 1.50, -0.55, 2.29);
     [1, -1].forEach(function (s) {
-      P(B(0.04, 0.05, 0.35, steelMat), 2.85, s * 1.3, 1.95);
-      P(B(0.12, 0.03, 0.18, glassMat), 2.85, s * 1.33, 2.12);
+      P(B(0.04, 0.05, 0.35, steelMat), 3.0, s * 1.32, 2.02);
+      P(B(0.12, 0.03, 0.18, glassMat), 3.0, s * 1.35, 2.19);
     });
     // headlight boxes and tow points on the bow
-    [0.75, -0.75].forEach(function (yy) {
-      P(B(0.12, 0.28, 0.14, plainMat), 3.35, yy, 1.35);
-      P(cylX(0.055, 0.04, glassMat, 10), 3.43, yy, 1.35);
+    [0.78, -0.78].forEach(function (yy) {
+      P(B(0.12, 0.28, 0.14, plainMat), 3.35, yy, 1.25);
+      P(cylX(0.055, 0.04, glassMat, 10), 3.43, yy, 1.25);
     });
-    // flank stowage baskets on the rear half
-    P(B(2.0, 0.1, 0.4, plainMat), -1.8, 1.36, 1.75);
-    P(B(2.0, 0.1, 0.4, plainMat), -1.8, -1.36, 1.75);
-    P(B(0.9, 0.1, 0.35, plainMat), -3.0, 1.3, 1.7);
-    P(B(0.9, 0.1, 0.35, plainMat), -3.0, -1.3, 1.7);
+    // fender lip over the wheel arches, then the flank stowage baskets
+    P(B(6.0, 0.14, 0.06, plainMat), -0.2, 1.34, 1.70);
+    P(B(6.0, 0.14, 0.06, plainMat), -0.2, -1.34, 1.70);
+    P(B(2.0, 0.1, 0.4, plainMat), -1.8, 1.34, 1.98);
+    P(B(2.0, 0.1, 0.4, plainMat), -1.8, -1.34, 1.98);
+    P(B(0.9, 0.1, 0.35, plainMat), -3.0, 1.30, 1.92);
+    P(B(0.9, 0.1, 0.35, plainMat), -3.0, -1.30, 1.92);
     // antennas
-    P(cylZ(0.012, 0.012, 1.5, steelMat, 6), -3.1, 0.8, 2.75);
-    P(cylZ(0.012, 0.012, 1.2, steelMat, 6), -3.1, -0.8, 2.6);
+    P(cylZ(0.012, 0.012, 1.5, steelMat, 6), -3.1, 0.8, 3.00);
+    P(cylZ(0.012, 0.012, 1.2, steelMat, 6), -3.1, -0.8, 2.85);
     // team identification plates on the forward flanks
-    P(B(0.5, 0.04, 0.35, teamMat), 1.6, 1.31, 1.5);
-    P(B(0.5, 0.04, 0.35, teamMat), 1.6, -1.31, 1.5);
+    P(B(0.5, 0.04, 0.35, teamMat), 1.6, 1.33, 1.62);
+    P(B(0.5, 0.04, 0.35, teamMat), 1.6, -1.33, 1.62);
+
+
     // low unmanned MGS turret with the long overhanging 105mm
-    var T = new THREE.Group(); T.name = "turret"; T.position.set(0.3, 0, 2.03); g.add(T);
+    var T = new THREE.Group(); T.name = "turret"; T.position.set(0.3, 0, 2.28); g.add(T);
+
+
     P(cylZ(0.75, 0.78, 0.1, hullMat, 20), 0, 0, 0.05, T);
     P(B(1.9, 1.5, 0.4, hullMat), -0.2, 0, 0.3, T);          // flat crown
     var tf = P(B(0.05, 1.5, 0.48, hullMat), 0.85, 0, 0.28, T); tf.rotation.y = -0.6;
     P(B(0.8, 1.2, 0.35, hullMat), -1.05, 0, 0.35, T);       // autoloader bustle
     P(B(0.4, 0.45, 0.32, plainMat), 0.9, 0, 0.44, T);       // mantlet
-    P(cylX(0.058, 3.5, steelMat, 12), 2.85, 0, 0.48, T);    // 105mm M68A1 tube
+    /* M68A2 105 mm, L/52: 5.46 m of tube with about 4.6-4.9 m of it forward
+       of the trunnion, so the muzzle stands roughly 2.5 m past the bow. Only
+       3.9 m protruded before and the gun read short and stubby on a 6.95 m
+       hull, when a disproportionately long overhanging 105 is half of what an
+       M1128 looks like. The bore evacuator STAYS: the M68 family keeps its
+       fume extractor and js/armour_specs.js records evac:true for this key. */
+    P(cylX(0.058, 4.2, steelMat, 12), 3.20, 0, 0.48, T);    // 105mm M68A2 tube
     P(cylX(0.07, 0.9, steelMat, 12), 1.65, 0, 0.48, T);     // thermal sleeve
     P(cylX(0.085, 0.5, steelMat, 12), 2.6, 0, 0.48, T);     // bore evacuator
-    P(cylX(0.09, 0.45, steelMat, 12), 4.75, 0, 0.48, T);    // pepperpot brake
-    P(cylX(0.1, 0.05, rubberMat, 12), 4.62, 0, 0.48, T);    // brake ring
-    P(cylX(0.1, 0.05, rubberMat, 12), 4.88, 0, 0.48, T);
+    P(cylX(0.09, 0.45, steelMat, 12), 5.45, 0, 0.48, T);    // pepperpot brake
+    P(cylX(0.1, 0.05, rubberMat, 12), 5.32, 0, 0.48, T);    // brake ring
+    P(cylX(0.1, 0.05, rubberMat, 12), 5.58, 0, 0.48, T);
     // sight head and smoke tubes
     P(B(0.3, 0.35, 0.22, plainMat), 0.2, 0.5, 0.56, T);
     P(B(0.02, 0.22, 0.12, glassMat), 0.36, 0.5, 0.58, T);
@@ -5569,9 +5902,18 @@ UNIT_MODELS["lt_p"] = {
     function cylZ(rt, rb, h, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s || 14), m); o.rotation.x = Math.PI / 2; return o; }
 
     // very low thin hull, side profile slab
-    g.add(new THREE.Mesh(M.slab(THREE, [
+    /* M.slab(pts, t, "xz") extrudes along -Y FROM the drawing plane, so a slab
+       handed straight to a Mesh is never centred: this hull sat ENTIRELY on
+       the vehicle's right, hanging past the right sponson with nothing at all
+       above the left track, which is why the model measured 3.72 m wide against
+       a real 3.15. The track() helper lower in this same file has always
+       re-centred its own slab exactly this way; the hulls never did. */
+    var hullGeo = M.slab(THREE, [
       [3.0, 0.35], [3.47, 0.62], [1.5, 1.28], [-3.35, 1.28], [-3.6, 0.95], [-3.4, 0.35]
-    ], 2.1, "xz"), hullMat));
+    ], 2.1, "xz");
+    hullGeo.computeBoundingBox();
+    hullGeo.translate(0, -(hullGeo.boundingBox.max.y + hullGeo.boundingBox.min.y) / 2, 0);
+    g.add(new THREE.Mesh(hullGeo, hullMat));
     // sponsons over the tracks
     P(B(6.6, 0.52, 0.5, hullMat), -0.2, 1.31, 1.03);
     P(B(6.6, 0.52, 0.5, hullMat), -0.2, -1.31, 1.03);
@@ -5676,13 +6018,22 @@ UNIT_MODELS["lt_c"] = {
     function cylZ(rt, rb, h, m, s) { var o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s || 14), m); o.rotation.x = Math.PI / 2; return o; }
 
     // angular hull, side profile slab
-    g.add(new THREE.Mesh(M.slab(THREE, [
+    /* M.slab(pts, t, "xz") extrudes along -Y FROM the drawing plane, so a slab
+       handed straight to a Mesh is never centred: this hull sat ENTIRELY on
+       the vehicle's right, hanging past the right sponson with nothing at all
+       above the left track, which is why the model measured 3.97 m wide against
+       a real 3.30. The track() helper lower in this same file has always
+       re-centred its own slab exactly this way; the hulls never did. */
+    var hullGeo = M.slab(THREE, [
       [3.45, 0.45], [3.9, 0.85], [1.9, 1.62], [-3.35, 1.62], [-3.6, 1.15], [-3.45, 0.45]
-    ], 2.2, "xz"), hullMat));
+    ], 2.2, "xz");
+    hullGeo.computeBoundingBox();
+    hullGeo.translate(0, -(hullGeo.boundingBox.max.y + hullGeo.boundingBox.min.y) / 2, 0);
+    g.add(new THREE.Mesh(hullGeo, hullMat));
     // sponsons and side skirts
     [1, -1].forEach(function (s) {
       P(B(6.05, 0.55, 0.6, hullMat), -0.52, s * 1.375, 1.32);
-      P(B(5.8, 0.05, 0.5, hullMat), -0.4, s * 1.66, 0.8);   // skirt
+      P(B(5.8, 0.05, 0.5, hullMat), -0.4, s * 1.60, 0.8);   // skirt
       // running gear: 6 road wheels
       P(B(6.6, 0.5, 0.4, trackMat), -0.1, s * 1.4, 0.5);
       [2.6, 1.5, 0.4, -0.7, -1.8, -2.9].forEach(function (wx) {
@@ -5702,8 +6053,8 @@ UNIT_MODELS["lt_c"] = {
       P(cylX(0.05, 0.04, glassMat, 10), 3.63, yy, 1.15);
     });
     // team identification plates on the skirts
-    P(B(0.5, 0.04, 0.3, teamMat), 1.6, 1.69, 0.85);
-    P(B(0.5, 0.04, 0.3, teamMat), 1.6, -1.69, 0.85);
+    P(B(0.5, 0.04, 0.3, teamMat), 1.6, 1.63, 0.85);
+    P(B(0.5, 0.04, 0.3, teamMat), 1.6, -1.63, 0.85);
     // angular welded turret with bustle
     var T = new THREE.Group(); T.name = "turret"; T.position.set(-0.3, 0, 1.62); g.add(T);
     P(cylZ(0.8, 0.85, 0.1, hullMat, 20), 0, 0, 0.05, T);    // race ring
@@ -6419,19 +6770,25 @@ UNIT_MODELS["spg_n"] = {
 
     // hull
     put(M.loft(THREE, [
-      { x: -3.30, w: 1.26, h: 0.56, zc: 1.06, sq: 0.85 },
-      { x: -2.80, w: 1.35, h: 0.64, zc: 1.10, sq: 0.85 },
-      { x: 2.30, w: 1.35, h: 0.64, zc: 1.10, sq: 0.85 },
+      { x: 3.30, w: 1.08, h: 0.14, zc: 1.60, sq: 0.80 },
       { x: 3.05, w: 1.30, h: 0.40, zc: 1.34, sq: 0.85 },
-      { x: 3.30, w: 1.08, h: 0.14, zc: 1.60, sq: 0.80 }
+      { x: 2.30, w: 1.35, h: 0.64, zc: 1.10, sq: 0.85 },
+      { x: -2.80, w: 1.35, h: 0.64, zc: 1.10, sq: 0.85 },
+      { x: -3.30, w: 1.26, h: 0.56, zc: 1.06, sq: 0.85 }
     ], 14), bodyM, 0, 0, 0);
 
     // tracks, road wheels, fenders, travel-lock legs
     [-1, 1].forEach(function (s) {
       put(new THREE.BoxGeometry(6.5, 0.60, 0.56), darkM, -0.05, s * 1.62, 0.52);
       put(new THREE.BoxGeometry(6.8, 0.66, 0.06), bodyM, -0.05, s * 1.62, 0.86);
+      /* Seven road wheels on 0.64 centres. The M109's wheels are close enough
+         to touch - the seven of them fill the track on the ground almost end
+         to end - and that tight packing, against the Abrams' seven big spaced
+         ones, is most of what tells the two hulls apart from the side. The
+         wheels themselves are unchanged: it was the 0.82 m spacing that was
+         wrong, spreading the running gear over 4.9 m of a 6.6 m hull. */
       for (var i = 0; i < 7; i++) {
-        var wx = -2.45 + i * 0.82;
+        var wx = -1.92 + i * 0.64;
         put(new THREE.CylinderGeometry(0.31, 0.31, 0.66, 14), darkM, wx, s * 1.62, 0.33);
         put(new THREE.CylinderGeometry(0.13, 0.13, 0.70, 10), steelM, wx, s * 1.62, 0.33);
       }
@@ -6503,11 +6860,11 @@ UNIT_MODELS["spg_p"] = {
 
     // T-80 hull, low profile
     put(M.loft(THREE, [
-      { x: -3.50, w: 1.02, h: 0.48, zc: 0.95, sq: 0.85 },
-      { x: -2.90, w: 1.12, h: 0.54, zc: 0.99, sq: 0.85 },
-      { x: 2.40, w: 1.12, h: 0.54, zc: 0.99, sq: 0.85 },
+      { x: 3.50, w: 0.88, h: 0.12, zc: 1.41, sq: 0.80 },
       { x: 3.15, w: 1.06, h: 0.34, zc: 1.19, sq: 0.85 },
-      { x: 3.50, w: 0.88, h: 0.12, zc: 1.41, sq: 0.80 }
+      { x: 2.40, w: 1.12, h: 0.54, zc: 0.99, sq: 0.85 },
+      { x: -2.90, w: 1.12, h: 0.54, zc: 0.99, sq: 0.85 },
+      { x: -3.50, w: 1.02, h: 0.48, zc: 0.95, sq: 0.85 }
     ], 14), bodyM, 0, 0, 0);
 
     // tracks: 6 big road wheels, rear drive sprocket, rubber side skirts
@@ -6515,7 +6872,10 @@ UNIT_MODELS["spg_p"] = {
       put(new THREE.BoxGeometry(6.6, 0.56, 0.55), darkM, 0, s * 1.41, 0.50);
       put(new THREE.BoxGeometry(6.5, 0.05, 0.55), bodyM, 0, s * 1.68, 1.00);
       for (var i = 0; i < 6; i++) {
-        var wx = -2.6 + i * 1.04;
+        /* T-80 running gear: 670 mm wheels at 860 mm pitch, so they very
+           nearly touch. The 1.04 m pitch spread six wheels over 5.2 m of a
+           7.0 m hull and made the Msta read as a Western chassis. */
+        var wx = -2.15 + i * 0.86;
         put(new THREE.CylinderGeometry(0.34, 0.34, 0.62, 14), darkM, wx, s * 1.41, 0.34);
         put(new THREE.CylinderGeometry(0.15, 0.15, 0.66, 10), steelM, wx, s * 1.41, 0.34);
       }
@@ -6529,11 +6889,11 @@ UNIT_MODELS["spg_p"] = {
     // big rounded turret with rear bustle conveyor
     var T = new THREE.Group(); T.name = "turret"; T.position.set(0.2, 0, 1.52); G.add(T);
     put(M.loft(THREE, [
-      { x: -2.05, w: 0.85, h: 0.38, zc: 0.50, sq: 0.60 },
-      { x: -1.30, w: 1.42, h: 0.55, zc: 0.55, sq: 0.65 },
-      { x: 0.70, w: 1.48, h: 0.55, zc: 0.55, sq: 0.65 },
+      { x: 1.85, w: 0.60, h: 0.28, zc: 0.50, sq: 0.60 },
       { x: 1.50, w: 1.05, h: 0.45, zc: 0.52, sq: 0.60 },
-      { x: 1.85, w: 0.60, h: 0.28, zc: 0.50, sq: 0.60 }
+      { x: 0.70, w: 1.48, h: 0.55, zc: 0.55, sq: 0.65 },
+      { x: -1.30, w: 1.42, h: 0.55, zc: 0.55, sq: 0.65 },
+      { x: -2.05, w: 0.85, h: 0.38, zc: 0.50, sq: 0.60 }
     ], 14), bodyM, 0, 0, 0, T);
     put(new THREE.BoxGeometry(0.45, 2.2, 0.42), darkM, -2.25, 0, 0.55, T);
     put(new THREE.CylinderGeometry(0.35, 0.38, 0.24, 14), bodyM, -0.4, 0.72, 1.14, T);
@@ -6673,18 +7033,24 @@ UNIT_MODELS["mlrs_n"] = {
 
     // Bradley-derived hull
     put(M.loft(THREE, [
-      { x: -3.42, w: 0.98, h: 0.50, zc: 1.00, sq: 0.88 },
-      { x: -2.90, w: 1.00, h: 0.55, zc: 1.02, sq: 0.88 },
+      { x: 3.42, w: 0.95, h: 0.30, zc: 1.25, sq: 0.85 },
       { x: 2.60, w: 1.00, h: 0.55, zc: 1.02, sq: 0.88 },
-      { x: 3.42, w: 0.95, h: 0.30, zc: 1.25, sq: 0.85 }
+      { x: -2.90, w: 1.00, h: 0.55, zc: 1.02, sq: 0.88 },
+      { x: -3.42, w: 0.98, h: 0.50, zc: 1.00, sq: 0.88 }
     ], 14), bodyM, 0, 0, 0);
 
     // tracks with 6 road wheels
     [-1, 1].forEach(function (s) {
       put(new THREE.BoxGeometry(6.6, 0.50, 0.54), darkM, 0, s * 1.23, 0.50);
       put(new THREE.BoxGeometry(6.7, 0.56, 0.06), bodyM, 0, s * 1.23, 0.84);
+      /* Six road wheels a side on the M993 carrier (js/armour_specs.js says
+         wheels:6 and that is right for the M270), grouped aft with the wider
+         gap forward to the raised drive sprocket the way a Bradley-derived
+         chassis is laid out. At 1.0 m centres they were spread over 5.0 m of
+         a 7.07 m hull with daylight between every pair, which is the same
+         defect this pass corrected on the Bradley itself. */
       for (var i = 0; i < 6; i++) {
-        var wx = -2.5 + i * 1.0;
+        var wx = -2.30 + i * 0.80;
         put(new THREE.CylinderGeometry(0.30, 0.30, 0.56, 14), darkM, wx, s * 1.23, 0.32);
         put(new THREE.CylinderGeometry(0.13, 0.13, 0.60, 10), steelM, wx, s * 1.23, 0.32);
       }
@@ -6693,29 +7059,39 @@ UNIT_MODELS["mlrs_n"] = {
       put(new THREE.BoxGeometry(0.7, 0.5, 0.06), bodyM, 3.3, s * 1.23, 1.12);
     });
 
-    // armoured cab at bow with 2 windows
-    put(new THREE.BoxGeometry(1.5, 2.5, 1.05), bodyM, 2.6, 0, 2.10);
-    put(new THREE.BoxGeometry(0.04, 0.95, 0.60), glassM, 3.36, 0.66, 2.30);
-    put(new THREE.BoxGeometry(0.04, 0.95, 0.60), glassM, 3.36, -0.66, 2.30);
-    put(new THREE.BoxGeometry(1.0, 2.3, 0.10), bodyM, 2.5, 0, 2.68);
+    /* Armoured cab at the bow. An M270 stands 2.59 m to the top of a stowed
+       launcher and the cab roof is just under that; this cab used to reach
+       2.73 m on its own and the launcher behind it 3.76 m, so the vehicle was
+       a quarter taller than the real one and read as a covered lorry. */
+    put(new THREE.BoxGeometry(1.5, 2.5, 1.00), bodyM, 2.6, 0, 1.98);
+    put(new THREE.BoxGeometry(0.04, 0.95, 0.58), glassM, 3.36, 0.66, 2.16);
+    put(new THREE.BoxGeometry(0.04, 0.95, 0.58), glassM, 3.36, -0.66, 2.16);
+    put(new THREE.BoxGeometry(1.0, 2.3, 0.10), bodyM, 2.5, 0, 2.53);
     put(new THREE.BoxGeometry(0.12, 0.18, 0.12), steelM, 3.40, 1.0, 1.55);
     put(new THREE.BoxGeometry(0.12, 0.18, 0.12), steelM, 3.40, -1.0, 1.55);
-    var an = put(new THREE.CylinderGeometry(0.012, 0.012, 1.5, 5), gunM, 2.1, 1.1, 3.4); an.rotation.x = Math.PI / 2;
+    var an = put(new THREE.CylinderGeometry(0.012, 0.012, 1.5, 5), gunM, 2.1, 1.1, 3.33); an.rotation.x = Math.PI / 2;
 
     // the whole rear: one huge armoured launcher box, elevated
-    var T = new THREE.Group(); T.name = "turret"; T.position.set(-0.75, 0, 1.62); G.add(T);
-    put(new THREE.CylinderGeometry(0.85, 0.95, 0.30, 16), bodyM, 0, 0, -0.05, T);
-    var E = new THREE.Group(); E.rotation.y = -0.16; T.add(E);
-    put(new THREE.BoxGeometry(4.0, 2.7, 1.75), bodyM, 0.85, 0, 0.75, E);
-    put(new THREE.BoxGeometry(0.03, 2.5, 1.55), darkM, 2.845, 0, 0.75, E);
-    put(new THREE.BoxGeometry(0.05, 1.15, 1.45), bodyM, 2.88, 0.62, 0.75, E);
-    put(new THREE.BoxGeometry(0.05, 1.15, 1.45), bodyM, 2.88, -0.62, 0.75, E);
+    var T = new THREE.Group(); T.name = "turret"; T.position.set(-0.75, 0, 1.50); G.add(T);
+    put(new THREE.CylinderGeometry(0.85, 0.95, 0.30, 16), bodyM, 0, 0, -0.02, T);
+    /* Only a shallow rake in travel. A launcher-loader module sits level on
+       the deck and elevates to nearly sixty degrees to fire; a couple of
+       degrees is enough to hinge the shadow without making it a permanent
+       erector. The rake matters to the height as much as the box does: a 4 m
+       module raked 9 degrees lifts its front corner 0.32 m, which is how the
+       old launcher reached 3.76 m on a vehicle whose published travel height
+       is 2.59 m. */
+    var E = new THREE.Group(); E.rotation.y = -0.04; T.add(E);
+    put(new THREE.BoxGeometry(4.0, 2.7, 0.95), bodyM, 0.85, 0, 0.50, E);
+    put(new THREE.BoxGeometry(0.03, 2.5, 0.82), darkM, 2.845, 0, 0.50, E);
+    put(new THREE.BoxGeometry(0.05, 1.15, 0.78), bodyM, 2.88, 0.62, 0.50, E);
+    put(new THREE.BoxGeometry(0.05, 1.15, 0.78), bodyM, 2.88, -0.62, 0.50, E);
     [-1, 1].forEach(function (s) {
-      for (var i = 0; i < 3; i++) put(new THREE.BoxGeometry(0.35, 0.06, 1.8), bodyM, -0.5 + i * 1.3, s * 1.37, 0.75, E);
+      for (var i = 0; i < 3; i++) put(new THREE.BoxGeometry(0.35, 0.06, 1.00), bodyM, -0.5 + i * 1.3, s * 1.37, 0.50, E);
     });
-    put(new THREE.BoxGeometry(3.2, 0.28, 0.22), bodyM, 0.5, 0, 1.72, E);
-    put(new THREE.BoxGeometry(0.7, 0.02, 0.5), teamM, 2.1, 1.39, 0.75, E);
-    put(new THREE.BoxGeometry(0.7, 0.02, 0.5), teamM, 2.1, -1.39, 0.75, E);
+    put(new THREE.BoxGeometry(3.2, 0.28, 0.14), bodyM, 0.20, 0, 1.00, E);
+    put(new THREE.BoxGeometry(0.7, 0.02, 0.5), teamM, 2.1, 1.39, 0.50, E);
+    put(new THREE.BoxGeometry(0.7, 0.02, 0.5), teamM, 2.1, -1.39, 0.50, E);
     return G;
   }
 };
@@ -6851,7 +7227,6 @@ UNIT_MODELS["mlrs_c"] = {
     var gunM = new THREE.MeshStandardMaterial({ color: 0x2f322c, metalness: 0.4, roughness: 0.5 });
     var steelM = new THREE.MeshStandardMaterial({ color: 0x565b52, metalness: 0.85, roughness: 0.35 });
     var glassM = new THREE.MeshStandardMaterial({ color: 0x18242c, metalness: 0.5, roughness: 0.25 });
-    var faceM = new THREE.MeshStandardMaterial({ map: tubeFace(), metalness: 0.3, roughness: 0.6 });
     var teamM = new THREE.MeshStandardMaterial({ color: C.team, metalness: 0.2, roughness: 0.6 });
     function put(geo, mat, x, y, z, p) { var m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); (p || G).add(m); return m; }
 
@@ -6870,12 +7245,19 @@ UNIT_MODELS["mlrs_c"] = {
       put(new THREE.BoxGeometry(0.06, 0.45, 0.40), darkM, -4.55, s * 1.27, 0.34);
     });
 
-    // angular cab with raked windshield
+    /* WS2400: a licence-built MAZ-543, and the MAZ-543's one unmistakable
+       feature is that it has TWO separate forward-control cabs with the engine
+       bay between them, so head-on its face is split. Drawn as one full-width
+       cab this was a correct Smerch pack on the wrong lorry - and mlrs_p, the
+       vehicle it shares a chassis with, already draws the split. */
     put(new THREE.BoxGeometry(2.1, 2.9, 1.00), bodyM, 4.85, 0, 1.60);
-    put(new THREE.BoxGeometry(1.7, 2.9, 0.90), bodyM, 4.65, 0, 2.55);
-    var ws = put(new THREE.BoxGeometry(0.05, 2.5, 0.75), glassM, 5.45, 0, 2.60); ws.rotation.y = -0.25;
-    put(new THREE.BoxGeometry(0.8, 0.04, 0.5), glassM, 4.5, 1.46, 2.55);
-    put(new THREE.BoxGeometry(0.8, 0.04, 0.5), glassM, 4.5, -1.46, 2.55);
+    put(new THREE.BoxGeometry(1.9, 1.05, 0.42), bodyM, 4.60, 0, 2.31);   // engine bay between the cabs
+    [-1, 1].forEach(function (cs) {
+      put(new THREE.BoxGeometry(1.7, 0.90, 0.90), bodyM, 4.65, cs * 0.98, 2.55);
+      var wsc = put(new THREE.BoxGeometry(0.05, 0.80, 0.72), glassM, 5.43, cs * 0.98, 2.60);
+      wsc.rotation.y = -0.25;
+      put(new THREE.BoxGeometry(0.8, 0.04, 0.5), glassM, 4.5, cs * 1.44, 2.55);
+    });
     put(new THREE.BoxGeometry(0.3, 2.9, 0.45), bodyM, 5.75, 0, 0.85);
     put(new THREE.BoxGeometry(0.12, 0.2, 0.14), steelM, 5.91, 1.1, 1.30);
     put(new THREE.BoxGeometry(0.12, 0.2, 0.14), steelM, 5.91, -1.1, 1.30);
@@ -6895,15 +7277,31 @@ UNIT_MODELS["mlrs_c"] = {
       ram.rotation.set(0, -0.55, -Math.PI / 2);
     });
     var E = new THREE.Group(); E.rotation.y = -0.12; T.add(E);
-    put(new THREE.BoxGeometry(7.2, 2.4, 1.5), bodyM, 0.7, 0, 0.60, E);
-    put(new THREE.BoxGeometry(2.4, 2.5, 0.25), bodyM, -1.4, 0, -0.12, E);
+    /* The PHL-03 is the Smerch, tube for tube: TWELVE exposed 300 mm tubes in
+       two rows of six in an open frame. This was drawn as a sealed box with
+       the twelve muzzles PAINTED on two end-cap planes, so at any zoom the PLA
+       rocket launcher read as a container lorry parked beside the Pact one -
+       and the single most identifiable thing about a heavy MRL is that you can
+       count the tubes. There was no budget reason for the cheat either: the
+       model measured 1,320 triangles against a hand-finished band of 4,400. */
+    put(new THREE.BoxGeometry(2.4, 2.3, 0.30), bodyM, -1.5, 0, 0.15, E);
+    put(new THREE.BoxGeometry(7.2, 0.06, 1.10), bodyM, 0.7, 1.12, 0.60, E);
+    put(new THREE.BoxGeometry(7.2, 0.06, 1.10), bodyM, 0.7, -1.12, 0.60, E);
+    put(new THREE.BoxGeometry(7.2, 2.30, 0.06), bodyM, 0.7, 0, 1.02, E);
     [-1, 1].forEach(function (s) {
-      for (var i = 0; i < 3; i++) put(new THREE.BoxGeometry(0.3, 0.05, 1.6), bodyM, -1.6 + i * 2.3, s * 1.22, 0.60, E);
+      for (var i = 0; i < 3; i++) put(new THREE.BoxGeometry(0.26, 0.07, 1.18), bodyM, -1.6 + i * 2.3, s * 1.15, 0.60, E);
     });
-    var f1 = put(new THREE.PlaneGeometry(2.3, 1.35), faceM, -2.91, 0, 0.60, E);
-    f1.rotation.set(Math.PI / 2, -Math.PI / 2, 0);
-    var f2 = put(new THREE.PlaneGeometry(2.3, 1.35), faceM, 4.31, 0, 0.60, E);
-    f2.rotation.set(Math.PI / 2, Math.PI / 2, 0);
+    for (var rr = 0; rr < 2; rr++) {
+      for (var jj = 0; jj < 6; jj++) {
+        var ty2 = -0.9 + jj * 0.36, tz2 = 0.42 + rr * 0.36;
+        var tb2 = put(new THREE.CylinderGeometry(0.16, 0.16, 7.2, 10), bodyM, 0.7, ty2, tz2, E);
+        tb2.rotation.z = -Math.PI / 2;
+        var e1 = put(new THREE.CircleGeometry(0.135, 12), darkM, -2.905, ty2, tz2, E);
+        e1.rotation.y = -Math.PI / 2;
+        var e2 = put(new THREE.CircleGeometry(0.135, 12), darkM, 4.305, ty2, tz2, E);
+        e2.rotation.y = Math.PI / 2;
+      }
+    }
     return G;
   }
 };
@@ -6958,18 +7356,52 @@ UNIT_MODELS["mbt_n"] = {
       m.rotation.x = Math.PI / 2; m.position.set(px, py, pz); parent.add(m); return m;
     }
     function gear(o) {
-      var s, i, w, hb, sp, id;
+      var s, i, sp, id;
       var wgeo = new THREE.CylinderGeometry(o.r, o.r, 0.5, 16);
       var hgeo = new THREE.CylinderGeometry(o.r * 0.4, o.r * 0.4, 0.54, 10);
       var sgeo = new THREE.CylinderGeometry(o.r * 0.85, o.r * 0.85, 0.46, 12);
       for (s = -1; s <= 1; s += 2) {
-        bx(g, o.tl, o.tw, 0.78, o.tx, o.ty * s, 0.53, darkMat);
+        /* TWO track runs, not one slab. A single box 0.78 m deep swallowed the
+           road wheels whole - from abeam the tank stood on a black bar with
+           nothing turning in it - and every photograph of an Abrams or a T-90
+           shows the wheels under the skirts. The lower run also puts the
+           vehicle ON the ground: the wheels were seated at o.r + 0.1 and
+           render3d.js only snaps a belly that has gone BELOW zero, so every
+           tank built by this helper hovered 0.10 m with its shadow detached. */
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.06, darkMat);
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.81, darkMat);
         for (i = 0; i < o.n; i++) {
-          w = new THREE.Mesh(wgeo, darkMat); w.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(w);
-          hb = new THREE.Mesh(hgeo, gunMat); hb.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(hb);
+          /* GROUP named "roadwheel": render3d.js turns those at the vehicle's
+             real speed, and nothing in this file was ever named, so no wheel
+             in it has ever moved. The bolt ring is what makes the turn read -
+             a smooth cylinder rotating about its own axis shows nothing. */
+          var rw = new THREE.Group(); rw.name = "roadwheel";
+          rw.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1);
+          rw.add(new THREE.Mesh(wgeo, darkMat));
+          rw.add(new THREE.Mesh(hgeo, gunMat));
+          for (var bi = 0; bi < 4; bi++) {
+            var ba = bi / 4 * Math.PI * 2 + 0.4;
+            var bolt = new THREE.Mesh(
+              new THREE.CylinderGeometry(o.r * 0.08, o.r * 0.08, 0.56, 5), gunMat);
+            bolt.position.set(Math.cos(ba) * o.r * 0.62, 0, Math.sin(ba) * o.r * 0.62);
+            rw.add(bolt);
+          }
+          g.add(rw);
         }
-        sp = new THREE.Mesh(sgeo, darkMat); sp.position.set(o.sx, o.ty * s, 0.46); g.add(sp);
-        id = new THREE.Mesh(sgeo, darkMat); id.position.set(o.ix, o.ty * s, 0.46); g.add(id);
+        sp = new THREE.Group(); sp.name = "roadwheel"; sp.position.set(o.sx, o.ty * s, 0.46);
+        sp.add(new THREE.Mesh(sgeo, darkMat));
+        id = new THREE.Group(); id.name = "roadwheel"; id.position.set(o.ix, o.ty * s, 0.46);
+        id.add(new THREE.Mesh(sgeo, darkMat));
+        for (var ti = 0; ti < 6; ti++) {
+          var tang = ti / 6 * Math.PI * 2;
+          var tth = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.28, 0.4, o.r * 0.24), gunMat);
+          tth.position.set(Math.cos(tang) * o.r * 0.8, 0, Math.sin(tang) * o.r * 0.8);
+          tth.rotation.y = -tang; sp.add(tth);
+          var tth2 = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.2, 0.4, o.r * 0.2), gunMat);
+          tth2.position.set(Math.cos(tang) * o.r * 0.55, 0, Math.sin(tang) * o.r * 0.55);
+          id.add(tth2);
+        }
+        g.add(sp); g.add(id);
         /* Side skirts are not one continuous plate. Photographs of an Abrams
            or a T-90 show a row of separate armoured panels with clear vertical
            joins, each hanging to about half wheel height — one of the strongest
@@ -6984,11 +7416,11 @@ UNIT_MODELS["mbt_n"] = {
       }
     }
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -3.95, w: 1.5, h: 0.4, zc: 1.0, sq: 0.85 },
-      { x: -3.5, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
-      { x: 1.7, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
+      { x: 3.95, w: 1.35, h: 0.14, zc: 0.68, sq: 0.85 },
       { x: 3.2, w: 1.62, h: 0.34, zc: 0.92, sq: 0.85 },
-      { x: 3.95, w: 1.35, h: 0.14, zc: 0.68, sq: 0.85 }
+      { x: 1.7, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
+      { x: -3.5, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
+      { x: -3.95, w: 1.5, h: 0.4, zc: 1.0, sq: 0.85 }
     ], 10), hullMat));
     gear({ n: 7, r: 0.33, x0: -2.5, dx: 0.82, tx: -0.1, tl: 7.3, tw: 0.66, ty: 1.48, sx: -3.2, ix: 3.2, sl: 6.7, scx: 0.1, sh: 0.6, sz: 0.95, st: 0.05, sy: 1.83 });
     bx(g, 0.08, 2.4, 0.65, -3.97, 0, 1.05, darkMat);
@@ -6996,13 +7428,20 @@ UNIT_MODELS["mbt_n"] = {
     bx(g, 0.2, 0.16, 0.2, 3.9, 0.55, 0.75, gunMat); bx(g, 0.2, 0.16, 0.2, 3.9, -0.55, 0.75, gunMat);
     var dh = czu(g, 0.3, 0.05, 2.55, 0, 1.44, hullMat); dh.rotation.y = 0.35;
     var tur = new THREE.Group(); tur.name = "turret"; tur.position.set(0.2, 0, 1.5); g.add(tur);
+    /* Turret shell top at 2.44 m over the ground, which is the published height
+       of an M1A2 to the top of the turret. M.loft treats h as HALF-height, so
+       the shell topped out at zc + h = 0.40 + 0.40 = 0.80 -> 2.30 m and the
+       tank read flatter than it is; it now reaches 0.47 + 0.47 = 0.94 -> 2.44.
+       The commander's weapon station above it is what the 2.89 m overall
+       figure is measured to. The 2.2 x 2.4 plate is an interior roof panel,
+       not the crown, and follows the shell up. */
     tur.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -1.9, w: 1.3, h: 0.34, zc: 0.36, sq: 0.9 },
-      { x: -0.3, w: 1.62, h: 0.4, zc: 0.4, sq: 0.9 },
-      { x: 0.7, w: 1.55, h: 0.4, zc: 0.4, sq: 0.9 },
-      { x: 1.6, w: 0.6, h: 0.26, zc: 0.34, sq: 0.9 }
+      { x: 1.6, w: 0.6, h: 0.30, zc: 0.40, sq: 0.9 },
+      { x: 0.7, w: 1.55, h: 0.47, zc: 0.47, sq: 0.9 },
+      { x: -0.3, w: 1.62, h: 0.47, zc: 0.47, sq: 0.9 },
+      { x: -1.9, w: 1.3, h: 0.40, zc: 0.42, sq: 0.9 }
     ], 10), turMat));
-    bx(tur, 2.2, 2.4, 0.06, -0.35, 0, 0.72, turMat);
+    bx(tur, 2.2, 2.4, 0.06, -0.35, 0, 0.86, turMat);
     bx(tur, 0.45, 0.8, 0.45, 1.72, 0, 0.38, turMat);
     cyx(tur, 0.085, 3.9, 3.75, 0, 0.4, gunMat);
     cyx(tur, 0.125, 0.6, 4.4, 0, 0.4, gunMat);
@@ -7084,18 +7523,52 @@ UNIT_MODELS["hvy_n"] = {
       m.rotation.x = Math.PI / 2; m.position.set(px, py, pz); parent.add(m); return m;
     }
     function gear(o) {
-      var s, i, w, hb, sp, id;
+      var s, i, sp, id;
       var wgeo = new THREE.CylinderGeometry(o.r, o.r, 0.5, 16);
       var hgeo = new THREE.CylinderGeometry(o.r * 0.4, o.r * 0.4, 0.54, 10);
       var sgeo = new THREE.CylinderGeometry(o.r * 0.85, o.r * 0.85, 0.46, 12);
       for (s = -1; s <= 1; s += 2) {
-        bx(g, o.tl, o.tw, 0.78, o.tx, o.ty * s, 0.53, darkMat);
+        /* TWO track runs, not one slab. A single box 0.78 m deep swallowed the
+           road wheels whole - from abeam the tank stood on a black bar with
+           nothing turning in it - and every photograph of an Abrams or a T-90
+           shows the wheels under the skirts. The lower run also puts the
+           vehicle ON the ground: the wheels were seated at o.r + 0.1 and
+           render3d.js only snaps a belly that has gone BELOW zero, so every
+           tank built by this helper hovered 0.10 m with its shadow detached. */
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.06, darkMat);
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.81, darkMat);
         for (i = 0; i < o.n; i++) {
-          w = new THREE.Mesh(wgeo, darkMat); w.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(w);
-          hb = new THREE.Mesh(hgeo, gunMat); hb.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(hb);
+          /* GROUP named "roadwheel": render3d.js turns those at the vehicle's
+             real speed, and nothing in this file was ever named, so no wheel
+             in it has ever moved. The bolt ring is what makes the turn read -
+             a smooth cylinder rotating about its own axis shows nothing. */
+          var rw = new THREE.Group(); rw.name = "roadwheel";
+          rw.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1);
+          rw.add(new THREE.Mesh(wgeo, darkMat));
+          rw.add(new THREE.Mesh(hgeo, gunMat));
+          for (var bi = 0; bi < 4; bi++) {
+            var ba = bi / 4 * Math.PI * 2 + 0.4;
+            var bolt = new THREE.Mesh(
+              new THREE.CylinderGeometry(o.r * 0.08, o.r * 0.08, 0.56, 5), gunMat);
+            bolt.position.set(Math.cos(ba) * o.r * 0.62, 0, Math.sin(ba) * o.r * 0.62);
+            rw.add(bolt);
+          }
+          g.add(rw);
         }
-        sp = new THREE.Mesh(sgeo, darkMat); sp.position.set(o.sx, o.ty * s, 0.46); g.add(sp);
-        id = new THREE.Mesh(sgeo, darkMat); id.position.set(o.ix, o.ty * s, 0.46); g.add(id);
+        sp = new THREE.Group(); sp.name = "roadwheel"; sp.position.set(o.sx, o.ty * s, 0.46);
+        sp.add(new THREE.Mesh(sgeo, darkMat));
+        id = new THREE.Group(); id.name = "roadwheel"; id.position.set(o.ix, o.ty * s, 0.46);
+        id.add(new THREE.Mesh(sgeo, darkMat));
+        for (var ti = 0; ti < 6; ti++) {
+          var tang = ti / 6 * Math.PI * 2;
+          var tth = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.28, 0.4, o.r * 0.24), gunMat);
+          tth.position.set(Math.cos(tang) * o.r * 0.8, 0, Math.sin(tang) * o.r * 0.8);
+          tth.rotation.y = -tang; sp.add(tth);
+          var tth2 = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.2, 0.4, o.r * 0.2), gunMat);
+          tth2.position.set(Math.cos(tang) * o.r * 0.55, 0, Math.sin(tang) * o.r * 0.55);
+          id.add(tth2);
+        }
+        g.add(sp); g.add(id);
         /* Side skirts are not one continuous plate. Photographs of an Abrams
            or a T-90 show a row of separate armoured panels with clear vertical
            joins, each hanging to about half wheel height — one of the strongest
@@ -7110,11 +7583,11 @@ UNIT_MODELS["hvy_n"] = {
       }
     }
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -3.95, w: 1.5, h: 0.4, zc: 1.0, sq: 0.85 },
-      { x: -3.5, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
-      { x: 1.7, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
+      { x: 3.95, w: 1.35, h: 0.14, zc: 0.68, sq: 0.85 },
       { x: 3.2, w: 1.62, h: 0.34, zc: 0.92, sq: 0.85 },
-      { x: 3.95, w: 1.35, h: 0.14, zc: 0.68, sq: 0.85 }
+      { x: 1.7, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
+      { x: -3.5, w: 1.62, h: 0.55, zc: 1.0, sq: 0.85 },
+      { x: -3.95, w: 1.5, h: 0.4, zc: 1.0, sq: 0.85 }
     ], 10), hullMat));
     gear({ n: 7, r: 0.33, x0: -2.5, dx: 0.82, tx: -0.1, tl: 7.3, tw: 0.66, ty: 1.48, sx: -3.2, ix: 3.2, sl: 6.8, scx: 0.1, sh: 0.8, sz: 0.88, st: 0.08, sy: 1.84 });
     bx(g, 0.08, 2.4, 0.65, -3.97, 0, 1.05, darkMat);
@@ -7123,13 +7596,20 @@ UNIT_MODELS["hvy_n"] = {
     bx(g, 0.2, 0.16, 0.2, 3.9, 0.55, 0.75, gunMat); bx(g, 0.2, 0.16, 0.2, 3.9, -0.55, 0.75, gunMat);
     var dh = czu(g, 0.3, 0.05, 2.55, 0, 1.44, hullMat); dh.rotation.y = 0.35;
     var tur = new THREE.Group(); tur.name = "turret"; tur.position.set(0.2, 0, 1.5); g.add(tur);
+    /* Turret shell top at 2.44 m over the ground, which is the published height
+       of an M1A2 to the top of the turret. M.loft treats h as HALF-height, so
+       the shell topped out at zc + h = 0.40 + 0.40 = 0.80 -> 2.30 m and the
+       tank read flatter than it is; it now reaches 0.47 + 0.47 = 0.94 -> 2.44.
+       The commander's weapon station above it is what the 2.89 m overall
+       figure is measured to. The 2.2 x 2.4 plate is an interior roof panel,
+       not the crown, and follows the shell up. */
     tur.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -1.9, w: 1.3, h: 0.34, zc: 0.36, sq: 0.9 },
-      { x: -0.3, w: 1.62, h: 0.4, zc: 0.4, sq: 0.9 },
-      { x: 0.7, w: 1.55, h: 0.4, zc: 0.4, sq: 0.9 },
-      { x: 1.6, w: 0.6, h: 0.26, zc: 0.34, sq: 0.9 }
+      { x: 1.6, w: 0.6, h: 0.30, zc: 0.40, sq: 0.9 },
+      { x: 0.7, w: 1.55, h: 0.47, zc: 0.47, sq: 0.9 },
+      { x: -0.3, w: 1.62, h: 0.47, zc: 0.47, sq: 0.9 },
+      { x: -1.9, w: 1.3, h: 0.40, zc: 0.42, sq: 0.9 }
     ], 10), turMat));
-    bx(tur, 2.2, 2.4, 0.06, -0.35, 0, 0.72, turMat);
+    bx(tur, 2.2, 2.4, 0.06, -0.35, 0, 0.86, turMat);
     bx(tur, 0.45, 0.8, 0.45, 1.72, 0, 0.38, turMat);
     cyx(tur, 0.085, 3.9, 3.75, 0, 0.4, gunMat);
     cyx(tur, 0.125, 0.6, 4.4, 0, 0.4, gunMat);
@@ -7221,18 +7701,52 @@ UNIT_MODELS["mbt_p"] = {
       m.rotation.x = Math.PI / 2; m.position.set(px, py, pz); parent.add(m); return m;
     }
     function gear(o) {
-      var s, i, w, hb, sp, id;
+      var s, i, sp, id;
       var wgeo = new THREE.CylinderGeometry(o.r, o.r, 0.5, 16);
       var hgeo = new THREE.CylinderGeometry(o.r * 0.4, o.r * 0.4, 0.54, 10);
       var sgeo = new THREE.CylinderGeometry(o.r * 0.85, o.r * 0.85, 0.46, 12);
       for (s = -1; s <= 1; s += 2) {
-        bx(g, o.tl, o.tw, 0.72, o.tx, o.ty * s, 0.5, darkMat);
+        /* TWO track runs, not one slab. A single box 0.72 m deep swallowed the
+           road wheels whole - from abeam the tank stood on a black bar with
+           nothing turning in it - and every photograph of an Abrams or a T-90
+           shows the wheels under the skirts. The lower run also puts the
+           vehicle ON the ground: the wheels were seated at o.r + 0.1 and
+           render3d.js only snaps a belly that has gone BELOW zero, so every
+           tank built by this helper hovered 0.10 m with its shadow detached. */
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.06, darkMat);
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.88, darkMat);
         for (i = 0; i < o.n; i++) {
-          w = new THREE.Mesh(wgeo, darkMat); w.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(w);
-          hb = new THREE.Mesh(hgeo, gunMat); hb.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(hb);
+          /* GROUP named "roadwheel": render3d.js turns those at the vehicle's
+             real speed, and nothing in this file was ever named, so no wheel
+             in it has ever moved. The bolt ring is what makes the turn read -
+             a smooth cylinder rotating about its own axis shows nothing. */
+          var rw = new THREE.Group(); rw.name = "roadwheel";
+          rw.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1);
+          rw.add(new THREE.Mesh(wgeo, darkMat));
+          rw.add(new THREE.Mesh(hgeo, gunMat));
+          for (var bi = 0; bi < 4; bi++) {
+            var ba = bi / 4 * Math.PI * 2 + 0.4;
+            var bolt = new THREE.Mesh(
+              new THREE.CylinderGeometry(o.r * 0.08, o.r * 0.08, 0.56, 5), gunMat);
+            bolt.position.set(Math.cos(ba) * o.r * 0.62, 0, Math.sin(ba) * o.r * 0.62);
+            rw.add(bolt);
+          }
+          g.add(rw);
         }
-        sp = new THREE.Mesh(sgeo, darkMat); sp.position.set(o.sx, o.ty * s, 0.46); g.add(sp);
-        id = new THREE.Mesh(sgeo, darkMat); id.position.set(o.ix, o.ty * s, 0.46); g.add(id);
+        sp = new THREE.Group(); sp.name = "roadwheel"; sp.position.set(o.sx, o.ty * s, 0.46);
+        sp.add(new THREE.Mesh(sgeo, darkMat));
+        id = new THREE.Group(); id.name = "roadwheel"; id.position.set(o.ix, o.ty * s, 0.46);
+        id.add(new THREE.Mesh(sgeo, darkMat));
+        for (var ti = 0; ti < 6; ti++) {
+          var tang = ti / 6 * Math.PI * 2;
+          var tth = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.28, 0.4, o.r * 0.24), gunMat);
+          tth.position.set(Math.cos(tang) * o.r * 0.8, 0, Math.sin(tang) * o.r * 0.8);
+          tth.rotation.y = -tang; sp.add(tth);
+          var tth2 = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.2, 0.4, o.r * 0.2), gunMat);
+          tth2.position.set(Math.cos(tang) * o.r * 0.55, 0, Math.sin(tang) * o.r * 0.55);
+          id.add(tth2);
+        }
+        g.add(sp); g.add(id);
         /* Side skirts are not one continuous plate. Photographs of an Abrams
            or a T-90 show a row of separate armoured panels with clear vertical
            joins, each hanging to about half wheel height — one of the strongest
@@ -7247,12 +7761,14 @@ UNIT_MODELS["mbt_p"] = {
       }
     }
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -3.43, w: 1.5, h: 0.4, zc: 0.92, sq: 0.85 },
-      { x: -3.0, w: 1.58, h: 0.48, zc: 0.94, sq: 0.85 },
+      { x: 3.43, w: 1.32, h: 0.15, zc: 0.62, sq: 0.85 },
       { x: 1.6, w: 1.58, h: 0.48, zc: 0.94, sq: 0.85 },
-      { x: 3.43, w: 1.32, h: 0.15, zc: 0.62, sq: 0.85 }
+      { x: -3.0, w: 1.58, h: 0.48, zc: 0.94, sq: 0.85 },
+      { x: -3.43, w: 1.5, h: 0.4, zc: 0.92, sq: 0.85 }
     ], 10), hullMat));
-    gear({ n: 6, r: 0.37, x0: -2.2, dx: 0.88, tx: 0, tl: 6.5, tw: 0.64, ty: 1.55, sx: -2.95, ix: 2.95, sl: 6.2, scx: 0.1, sh: 0.5, sz: 0.9, st: 0.05, sy: 1.87 });
+    /* Published width of a T-90A over its side skirts is 3.78 m; the track
+       centreline and the skirt line here were carrying it out to 3.89. */
+    gear({ n: 6, r: 0.37, x0: -2.2, dx: 0.88, tx: 0, tl: 6.5, tw: 0.60, ty: 1.52, sx: -2.95, ix: 2.95, sl: 6.2, scx: 0.1, sh: 0.5, sz: 0.9, st: 0.05, sy: 1.81 });
     var k, sgn, eb;
     for (k = 0; k < 3; k++) {
       for (sgn = -1; sgn <= 1; sgn += 2) {
@@ -7268,40 +7784,71 @@ UNIT_MODELS["mbt_p"] = {
     bx(g, 0.14, 0.2, 0.14, 3.3, 1.0, 1.15, gunMat); bx(g, 0.14, 0.2, 0.14, 3.3, -1.0, 1.15, gunMat);
     var dh = czu(g, 0.28, 0.05, 2.35, 0, 1.28, hullMat); dh.rotation.y = 0.34;
     var tur = new THREE.Group(); tur.name = "turret"; tur.position.set(0.3, 0, 1.4); g.add(tur);
-    var dome = new THREE.Mesh(new THREE.SphereGeometry(1.15, 24, 14), turMat);
-    dome.scale.set(1.15, 1.0, 0.5); dome.position.z = 0.12; tur.add(dome);
-    var a, r2;
-    for (a = -1.2; a <= 1.21; a += 0.3) {
-      eb = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.34, 0.42), turMat);
-      eb.rotation.order = "ZYX"; eb.rotation.y = -0.5; eb.rotation.z = a;
-      eb.position.set(Math.cos(a) * 1.22, Math.sin(a) * 1.22, 0.2); tur.add(eb);
+    /* T-90A, not T-90 obr.1992. The A model of 2004 is precisely the variant
+       that dropped the T-72B cast dome for a WELDED turret - js/eras.js says
+       so of this very unit ("Welded turret replacing the cast one") - and a
+       cast dome here made the tank a T-72 wearing a T-90 label.
+       The sections carry sq 0.42 rather than 0.9 on purpose: a superellipse
+       at sq 0.9 is very nearly an ellipse, its half-width collapses to zero
+       at the crown, and a flat roof plate laid on one floats clear of it with
+       daylight all round. At 0.42 the cross-section is a rounded rectangle,
+       so a welded roof panel sits ON it and the ERA cassettes bolt to a real
+       flank. M.loft caps neither end and turMat is single sided, so the front
+       and rear rings get plates or you look straight into the turret. */
+    tur.add(new THREE.Mesh(M.loft(THREE, [
+      { x: 1.25, w: 0.60, h: 0.26, zc: 0.42, sq: 0.42 },
+      { x: 0.85, w: 1.02, h: 0.36, zc: 0.42, sq: 0.42 },
+      { x: 0.10, w: 1.16, h: 0.40, zc: 0.42, sq: 0.42 },
+      { x: -0.90, w: 1.14, h: 0.40, zc: 0.42, sq: 0.42 },
+      { x: -1.36, w: 0.96, h: 0.34, zc: 0.42, sq: 0.42 }
+    ], 12), turMat));
+    bx(tur, 2.60, 2.00, 0.06, -0.20, 0, 0.78, turMat);      // welded roof plate
+    bx(tur, 0.06, 1.96, 0.72, -1.37, 0, 0.42, turMat);      // rear plate over the open ring
+    bx(tur, 0.06, 1.24, 0.56, 1.26, 0, 0.42, turMat);       // front plate over the open ring
+    var a, brow;
+    /* The Kontakt-5 "bird beak": one heavy ERA wedge on each cheek, flaring
+       out and forward off the mantlet. It has to break the turret surface to
+       exist at all - at x 0.88 the shell is 1.00 m out, so the wedge is set
+       at 1.02 and stands 0.19 m proud, its tail merging into the cheek. */
+    for (sgn = -1; sgn <= 1; sgn += 2) {
+      brow = bx(tur, 1.00, 0.34, 0.48, 0.88, 1.02 * sgn, 0.50, turMat);
+      brow.rotation.z = 0.42 * sgn;
     }
-    bx(tur, 0.24, 0.22, 0.22, 1.15, 0.5, 0.33, darkMat);
-    bx(tur, 0.24, 0.22, 0.22, 1.15, -0.5, 0.33, darkMat);
-    bx(tur, 0.06, 0.12, 0.12, 1.28, 0.5, 0.35, gunMat);
-    bx(tur, 0.06, 0.12, 0.12, 1.28, -0.5, 0.35, gunMat);
-    bx(tur, 0.5, 0.5, 0.4, 1.2, 0, 0.22, turMat);
+    /* and the row of small ERA cassettes along the top of each cheek, each
+       one seated ON the flank at z 0.68 where the shell measures 1.09-1.13 */
+    for (sgn = -1; sgn <= 1; sgn += 2) {
+      for (a = 0; a < 4; a++) {
+        eb = bx(tur, 0.30, 0.26, 0.13, 0.30 - a * 0.36, (1.11 - a * 0.005) * sgn, 0.68, turMat);
+        eb.rotation.z = 0.10 * sgn;
+      }
+    }
+    // Shtora-1 dazzlers, out on the cheeks where they can be seen
+    bx(tur, 0.24, 0.22, 0.22, 1.12, 0.72, 0.36, darkMat);
+    bx(tur, 0.24, 0.22, 0.22, 1.12, -0.72, 0.36, darkMat);
+    bx(tur, 0.06, 0.12, 0.12, 1.26, 0.72, 0.38, gunMat);
+    bx(tur, 0.06, 0.12, 0.12, 1.26, -0.72, 0.38, gunMat);
+    bx(tur, 0.5, 0.6, 0.44, 1.20, 0, 0.36, turMat);         // mantlet
     cyx(tur, 0.08, 4.7, 3.55, 0, 0.3, gunMat);
     cyx(tur, 0.115, 0.55, 3.5, 0, 0.3, gunMat);
     cyx(tur, 0.1, 0.12, 2.1, 0, 0.3, darkMat);
-    bx(tur, 0.3, 0.35, 0.35, 0.9, -0.6, 0.5, darkMat);
-    czu(tur, 0.3, 0.18, -0.4, 0.45, 0.7, turMat);
-    czu(tur, 0.26, 0.04, -0.4, 0.45, 0.82, gunMat);
-    bx(tur, 0.32, 0.28, 0.2, 0.5, 0.35, 0.66, turMat);
-    bx(tur, 0.03, 0.2, 0.12, 0.68, 0.35, 0.68, darkMat);
+    bx(tur, 0.3, 0.35, 0.35, 0.85, -1.00, 0.52, darkMat);
+    czu(tur, 0.3, 0.18, -0.4, 0.45, 0.90, turMat);
+    czu(tur, 0.26, 0.04, -0.4, 0.45, 1.02, gunMat);
+    bx(tur, 0.32, 0.28, 0.2, 0.5, 0.35, 0.90, turMat);
+    bx(tur, 0.03, 0.2, 0.12, 0.68, 0.35, 0.92, darkMat);
     var sn = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 10), gunMat);
-    sn.position.set(-1.05, 0, 0.62); tur.add(sn);
-    bx(tur, 0.5, 1.2, 0.35, -1.25, 0, 0.3, darkMat);
-    czu(tur, 0.012, 1.2, -0.9, -0.7, 1.1, darkMat, 6);
+    sn.position.set(-1.05, 0, 0.86); tur.add(sn);
+    bx(tur, 0.5, 1.2, 0.35, -1.62, 0, 0.42, darkMat);
+    czu(tur, 0.012, 1.2, -0.9, -0.7, 1.45, darkMat, 6);
     var sm, q;
     for (q = 0; q < 3; q++) {
-      sm = czu(tur, 0.04, 0.35, 0.55 + q * 0.12, 0.95 - q * 0.06, 0.35, gunMat, 8);
+      sm = czu(tur, 0.04, 0.35, 0.55 + q * 0.12, 1.06 - q * 0.06, 0.35, gunMat, 8);
       sm.rotation.z = 0.6; sm.rotation.x = 1.1;
-      sm = czu(tur, 0.04, 0.35, 0.55 + q * 0.12, -0.95 + q * 0.06, 0.35, gunMat, 8);
+      sm = czu(tur, 0.04, 0.35, 0.55 + q * 0.12, -1.06 + q * 0.06, 0.35, gunMat, 8);
       sm.rotation.z = -0.6; sm.rotation.x = 1.1;
     }
-    bx(tur, 0.6, 0.04, 0.28, -0.2, 1.12, 0.28, teamMat);
-    bx(tur, 0.6, 0.04, 0.28, -0.2, -1.12, 0.28, teamMat);
+    bx(tur, 0.6, 0.04, 0.28, -0.2, 1.17, 0.28, teamMat);
+    bx(tur, 0.6, 0.04, 0.28, -0.2, -1.17, 0.28, teamMat);
     return g;
   }
 };
@@ -7354,18 +7901,52 @@ UNIT_MODELS["hvy_p"] = {
       m.rotation.x = Math.PI / 2; m.position.set(px, py, pz); parent.add(m); return m;
     }
     function gear(o) {
-      var s, i, w, hb, sp, id;
+      var s, i, sp, id;
       var wgeo = new THREE.CylinderGeometry(o.r, o.r, 0.5, 16);
       var hgeo = new THREE.CylinderGeometry(o.r * 0.4, o.r * 0.4, 0.54, 10);
       var sgeo = new THREE.CylinderGeometry(o.r * 0.85, o.r * 0.85, 0.46, 12);
       for (s = -1; s <= 1; s += 2) {
-        bx(g, o.tl, o.tw, 0.78, o.tx, o.ty * s, 0.53, darkMat);
+        /* TWO track runs, not one slab. A single box 0.78 m deep swallowed the
+           road wheels whole - from abeam the tank stood on a black bar with
+           nothing turning in it - and every photograph of an Abrams or a T-90
+           shows the wheels under the skirts. The lower run also puts the
+           vehicle ON the ground: the wheels were seated at o.r + 0.1 and
+           render3d.js only snaps a belly that has gone BELOW zero, so every
+           tank built by this helper hovered 0.10 m with its shadow detached. */
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.06, darkMat);
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.81, darkMat);
         for (i = 0; i < o.n; i++) {
-          w = new THREE.Mesh(wgeo, darkMat); w.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(w);
-          hb = new THREE.Mesh(hgeo, gunMat); hb.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(hb);
+          /* GROUP named "roadwheel": render3d.js turns those at the vehicle's
+             real speed, and nothing in this file was ever named, so no wheel
+             in it has ever moved. The bolt ring is what makes the turn read -
+             a smooth cylinder rotating about its own axis shows nothing. */
+          var rw = new THREE.Group(); rw.name = "roadwheel";
+          rw.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1);
+          rw.add(new THREE.Mesh(wgeo, darkMat));
+          rw.add(new THREE.Mesh(hgeo, gunMat));
+          for (var bi = 0; bi < 4; bi++) {
+            var ba = bi / 4 * Math.PI * 2 + 0.4;
+            var bolt = new THREE.Mesh(
+              new THREE.CylinderGeometry(o.r * 0.08, o.r * 0.08, 0.56, 5), gunMat);
+            bolt.position.set(Math.cos(ba) * o.r * 0.62, 0, Math.sin(ba) * o.r * 0.62);
+            rw.add(bolt);
+          }
+          g.add(rw);
         }
-        sp = new THREE.Mesh(sgeo, darkMat); sp.position.set(o.sx, o.ty * s, 0.46); g.add(sp);
-        id = new THREE.Mesh(sgeo, darkMat); id.position.set(o.ix, o.ty * s, 0.46); g.add(id);
+        sp = new THREE.Group(); sp.name = "roadwheel"; sp.position.set(o.sx, o.ty * s, 0.46);
+        sp.add(new THREE.Mesh(sgeo, darkMat));
+        id = new THREE.Group(); id.name = "roadwheel"; id.position.set(o.ix, o.ty * s, 0.46);
+        id.add(new THREE.Mesh(sgeo, darkMat));
+        for (var ti = 0; ti < 6; ti++) {
+          var tang = ti / 6 * Math.PI * 2;
+          var tth = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.28, 0.4, o.r * 0.24), gunMat);
+          tth.position.set(Math.cos(tang) * o.r * 0.8, 0, Math.sin(tang) * o.r * 0.8);
+          tth.rotation.y = -tang; sp.add(tth);
+          var tth2 = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.2, 0.4, o.r * 0.2), gunMat);
+          tth2.position.set(Math.cos(tang) * o.r * 0.55, 0, Math.sin(tang) * o.r * 0.55);
+          id.add(tth2);
+        }
+        g.add(sp); g.add(id);
         /* Side skirts are not one continuous plate. Photographs of an Abrams
            or a T-90 show a row of separate armoured panels with clear vertical
            joins, each hanging to about half wheel height — one of the strongest
@@ -7380,15 +7961,21 @@ UNIT_MODELS["hvy_p"] = {
       }
     }
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -4.35, w: 1.55, h: 0.42, zc: 1.1, sq: 0.85 },
-      { x: -3.9, w: 1.66, h: 0.55, zc: 1.12, sq: 0.85 },
-      { x: 2.2, w: 1.66, h: 0.55, zc: 1.12, sq: 0.85 },
+      { x: 4.35, w: 1.35, h: 0.16, zc: 0.78, sq: 0.85 },
       { x: 3.3, w: 1.66, h: 0.4, zc: 1.05, sq: 0.85 },
-      { x: 4.35, w: 1.35, h: 0.16, zc: 0.78, sq: 0.85 }
+      { x: 2.2, w: 1.66, h: 0.55, zc: 1.12, sq: 0.85 },
+      { x: -3.9, w: 1.66, h: 0.55, zc: 1.12, sq: 0.85 },
+      { x: -4.35, w: 1.55, h: 0.42, zc: 1.1, sq: 0.85 }
     ], 10), hullMat));
-    gear({ n: 7, r: 0.35, x0: -2.5, dx: 0.8, tx: -0.05, tl: 7.8, tw: 0.68, ty: 1.6, sx: -3.5, ix: 3.5, sl: 7.4, scx: -0.1, sh: 0.75, sz: 0.88, st: 0.06, sy: 1.92 });
-    bx(g, 0.7, 0.07, 0.8, 3.6, 1.9, 0.95, darkMat);
-    bx(g, 0.7, 0.07, 0.8, 3.6, -1.9, 0.95, darkMat);
+    /* The T-14 does NOT run the T-72 family's close-packed six. It carries
+       SEVEN 700 mm wheels on an 8.7 m hull with a full 300 mm of daylight
+       between them - the pitch is a metre, not 0.8 - and that spacing is the
+       clearest thing separating an Armata from the T-90 parked beside it.
+       Width comes back to the published 3.5 m at the same time; the fender
+       lip was putting the vehicle at 3.99. */
+    gear({ n: 7, r: 0.35, x0: -2.9, dx: 1.0, tx: -0.05, tl: 7.8, tw: 0.60, ty: 1.45, sx: -3.5, ix: 3.5, sl: 7.4, scx: -0.1, sh: 0.75, sz: 0.88, st: 0.06, sy: 1.62 });
+    bx(g, 0.7, 0.07, 0.8, 3.6, 1.7, 0.95, darkMat);
+    bx(g, 0.7, 0.07, 0.8, 3.6, -1.7, 0.95, darkMat);
     bx(g, 0.08, 2.4, 0.6, -4.36, 0, 1.15, darkMat);
     czu(g, 0.28, 0.05, 2.9, -0.6, 1.7, hullMat);
     czu(g, 0.28, 0.05, 2.9, 0, 1.7, hullMat);
@@ -7482,18 +8069,52 @@ UNIT_MODELS["mbt_c"] = {
       m.rotation.x = Math.PI / 2; m.position.set(px, py, pz); parent.add(m); return m;
     }
     function gear(o) {
-      var s, i, w, hb, sp, id;
+      var s, i, sp, id;
       var wgeo = new THREE.CylinderGeometry(o.r, o.r, 0.5, 16);
       var hgeo = new THREE.CylinderGeometry(o.r * 0.4, o.r * 0.4, 0.54, 10);
       var sgeo = new THREE.CylinderGeometry(o.r * 0.85, o.r * 0.85, 0.46, 12);
       for (s = -1; s <= 1; s += 2) {
-        bx(g, o.tl, o.tw, 0.75, o.tx, o.ty * s, 0.52, darkMat);
+        /* TWO track runs, not one slab. A single box 0.75 m deep swallowed the
+           road wheels whole - from abeam the tank stood on a black bar with
+           nothing turning in it - and every photograph of an Abrams or a T-90
+           shows the wheels under the skirts. The lower run also puts the
+           vehicle ON the ground: the wheels were seated at o.r + 0.1 and
+           render3d.js only snaps a belly that has gone BELOW zero, so every
+           tank built by this helper hovered 0.10 m with its shadow detached. */
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.06, darkMat);
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.88, darkMat);
         for (i = 0; i < o.n; i++) {
-          w = new THREE.Mesh(wgeo, darkMat); w.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(w);
-          hb = new THREE.Mesh(hgeo, gunMat); hb.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(hb);
+          /* GROUP named "roadwheel": render3d.js turns those at the vehicle's
+             real speed, and nothing in this file was ever named, so no wheel
+             in it has ever moved. The bolt ring is what makes the turn read -
+             a smooth cylinder rotating about its own axis shows nothing. */
+          var rw = new THREE.Group(); rw.name = "roadwheel";
+          rw.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1);
+          rw.add(new THREE.Mesh(wgeo, darkMat));
+          rw.add(new THREE.Mesh(hgeo, gunMat));
+          for (var bi = 0; bi < 4; bi++) {
+            var ba = bi / 4 * Math.PI * 2 + 0.4;
+            var bolt = new THREE.Mesh(
+              new THREE.CylinderGeometry(o.r * 0.08, o.r * 0.08, 0.56, 5), gunMat);
+            bolt.position.set(Math.cos(ba) * o.r * 0.62, 0, Math.sin(ba) * o.r * 0.62);
+            rw.add(bolt);
+          }
+          g.add(rw);
         }
-        sp = new THREE.Mesh(sgeo, darkMat); sp.position.set(o.sx, o.ty * s, 0.46); g.add(sp);
-        id = new THREE.Mesh(sgeo, darkMat); id.position.set(o.ix, o.ty * s, 0.46); g.add(id);
+        sp = new THREE.Group(); sp.name = "roadwheel"; sp.position.set(o.sx, o.ty * s, 0.46);
+        sp.add(new THREE.Mesh(sgeo, darkMat));
+        id = new THREE.Group(); id.name = "roadwheel"; id.position.set(o.ix, o.ty * s, 0.46);
+        id.add(new THREE.Mesh(sgeo, darkMat));
+        for (var ti = 0; ti < 6; ti++) {
+          var tang = ti / 6 * Math.PI * 2;
+          var tth = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.28, 0.4, o.r * 0.24), gunMat);
+          tth.position.set(Math.cos(tang) * o.r * 0.8, 0, Math.sin(tang) * o.r * 0.8);
+          tth.rotation.y = -tang; sp.add(tth);
+          var tth2 = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.2, 0.4, o.r * 0.2), gunMat);
+          tth2.position.set(Math.cos(tang) * o.r * 0.55, 0, Math.sin(tang) * o.r * 0.55);
+          id.add(tth2);
+        }
+        g.add(sp); g.add(id);
         /* Side skirts are not one continuous plate. Photographs of an Abrams
            or a T-90 show a row of separate armoured panels with clear vertical
            joins, each hanging to about half wheel height — one of the strongest
@@ -7508,10 +8129,10 @@ UNIT_MODELS["mbt_c"] = {
       }
     }
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -3.8, w: 1.48, h: 0.4, zc: 0.95, sq: 0.85 },
-      { x: -3.3, w: 1.56, h: 0.5, zc: 1.0, sq: 0.85 },
+      { x: 3.8, w: 1.3, h: 0.15, zc: 0.66, sq: 0.85 },
       { x: 2.0, w: 1.56, h: 0.5, zc: 1.0, sq: 0.85 },
-      { x: 3.8, w: 1.3, h: 0.15, zc: 0.66, sq: 0.85 }
+      { x: -3.3, w: 1.56, h: 0.5, zc: 1.0, sq: 0.85 },
+      { x: -3.8, w: 1.48, h: 0.4, zc: 0.95, sq: 0.85 }
     ], 10), hullMat));
     gear({ n: 6, r: 0.37, x0: -2.2, dx: 0.88, tx: 0, tl: 6.9, tw: 0.64, ty: 1.52, sx: -3.15, ix: 3.05, sl: 6.5, scx: 0, sh: 0.55, sz: 0.92, st: 0.05, sy: 1.84 });
     var k, sgn, eb;
@@ -7613,18 +8234,52 @@ UNIT_MODELS["hvy_c"] = {
       m.rotation.x = Math.PI / 2; m.position.set(px, py, pz); parent.add(m); return m;
     }
     function gear(o) {
-      var s, i, w, hb, sp, id;
+      var s, i, sp, id;
       var wgeo = new THREE.CylinderGeometry(o.r, o.r, 0.5, 16);
       var hgeo = new THREE.CylinderGeometry(o.r * 0.4, o.r * 0.4, 0.54, 10);
       var sgeo = new THREE.CylinderGeometry(o.r * 0.85, o.r * 0.85, 0.46, 12);
       for (s = -1; s <= 1; s += 2) {
-        bx(g, o.tl, o.tw, 0.75, o.tx, o.ty * s, 0.52, darkMat);
+        /* TWO track runs, not one slab. A single box 0.75 m deep swallowed the
+           road wheels whole - from abeam the tank stood on a black bar with
+           nothing turning in it - and every photograph of an Abrams or a T-90
+           shows the wheels under the skirts. The lower run also puts the
+           vehicle ON the ground: the wheels were seated at o.r + 0.1 and
+           render3d.js only snaps a belly that has gone BELOW zero, so every
+           tank built by this helper hovered 0.10 m with its shadow detached. */
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.06, darkMat);
+        bx(g, o.tl, o.tw, 0.12, o.tx, o.ty * s, 0.88, darkMat);
         for (i = 0; i < o.n; i++) {
-          w = new THREE.Mesh(wgeo, darkMat); w.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(w);
-          hb = new THREE.Mesh(hgeo, gunMat); hb.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1); g.add(hb);
+          /* GROUP named "roadwheel": render3d.js turns those at the vehicle's
+             real speed, and nothing in this file was ever named, so no wheel
+             in it has ever moved. The bolt ring is what makes the turn read -
+             a smooth cylinder rotating about its own axis shows nothing. */
+          var rw = new THREE.Group(); rw.name = "roadwheel";
+          rw.position.set(o.x0 + i * o.dx, o.ty * s, o.r + 0.1);
+          rw.add(new THREE.Mesh(wgeo, darkMat));
+          rw.add(new THREE.Mesh(hgeo, gunMat));
+          for (var bi = 0; bi < 4; bi++) {
+            var ba = bi / 4 * Math.PI * 2 + 0.4;
+            var bolt = new THREE.Mesh(
+              new THREE.CylinderGeometry(o.r * 0.08, o.r * 0.08, 0.56, 5), gunMat);
+            bolt.position.set(Math.cos(ba) * o.r * 0.62, 0, Math.sin(ba) * o.r * 0.62);
+            rw.add(bolt);
+          }
+          g.add(rw);
         }
-        sp = new THREE.Mesh(sgeo, darkMat); sp.position.set(o.sx, o.ty * s, 0.46); g.add(sp);
-        id = new THREE.Mesh(sgeo, darkMat); id.position.set(o.ix, o.ty * s, 0.46); g.add(id);
+        sp = new THREE.Group(); sp.name = "roadwheel"; sp.position.set(o.sx, o.ty * s, 0.46);
+        sp.add(new THREE.Mesh(sgeo, darkMat));
+        id = new THREE.Group(); id.name = "roadwheel"; id.position.set(o.ix, o.ty * s, 0.46);
+        id.add(new THREE.Mesh(sgeo, darkMat));
+        for (var ti = 0; ti < 6; ti++) {
+          var tang = ti / 6 * Math.PI * 2;
+          var tth = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.28, 0.4, o.r * 0.24), gunMat);
+          tth.position.set(Math.cos(tang) * o.r * 0.8, 0, Math.sin(tang) * o.r * 0.8);
+          tth.rotation.y = -tang; sp.add(tth);
+          var tth2 = new THREE.Mesh(new THREE.BoxGeometry(o.r * 0.2, 0.4, o.r * 0.2), gunMat);
+          tth2.position.set(Math.cos(tang) * o.r * 0.55, 0, Math.sin(tang) * o.r * 0.55);
+          id.add(tth2);
+        }
+        g.add(sp); g.add(id);
         /* Side skirts are not one continuous plate. Photographs of an Abrams
            or a T-90 show a row of separate armoured panels with clear vertical
            joins, each hanging to about half wheel height — one of the strongest
@@ -7642,12 +8297,14 @@ UNIT_MODELS["hvy_c"] = {
       }
     }
     g.add(new THREE.Mesh(M.loft(THREE, [
-      { x: -3.8, w: 1.48, h: 0.4, zc: 0.95, sq: 0.85 },
-      { x: -3.3, w: 1.56, h: 0.5, zc: 1.0, sq: 0.85 },
+      { x: 3.8, w: 1.3, h: 0.15, zc: 0.66, sq: 0.85 },
       { x: 2.0, w: 1.56, h: 0.5, zc: 1.0, sq: 0.85 },
-      { x: 3.8, w: 1.3, h: 0.15, zc: 0.66, sq: 0.85 }
+      { x: -3.3, w: 1.56, h: 0.5, zc: 1.0, sq: 0.85 },
+      { x: -3.8, w: 1.48, h: 0.4, zc: 0.95, sq: 0.85 }
     ], 10), hullMat));
-    gear({ n: 6, r: 0.37, x0: -2.2, dx: 0.88, tx: 0, tl: 6.9, tw: 0.64, ty: 1.52, sx: -3.15, ix: 3.05, sl: 6.5, scx: 0, sh: 0.7, sz: 0.9, st: 0.1, sy: 1.85 });
+    /* Published width of a ZTZ-99 is 3.4-3.5 m; the extra applique row was
+       carrying this hull out to 3.88. */
+    gear({ n: 6, r: 0.37, x0: -2.2, dx: 0.88, tx: 0, tl: 6.9, tw: 0.60, ty: 1.48, sx: -3.15, ix: 3.05, sl: 6.5, scx: 0, sh: 0.7, sz: 0.9, st: 0.1, sy: 1.70 });
     var k, sgn, eb;
     for (k = 0; k < 2; k++) {
       for (sgn = -1; sgn <= 1; sgn += 2) {
@@ -7671,14 +8328,22 @@ UNIT_MODELS["hvy_c"] = {
     wg1.rotation.order = "ZYX"; wg1.rotation.x = 0.35; wg1.rotation.z = -0.7;
     var wg2 = bx(tur, 1.7, 0.12, 0.72, 1.2, -0.6, 0.35, turMat);
     wg2.rotation.order = "ZYX"; wg2.rotation.x = -0.35; wg2.rotation.z = 0.7;
-    var ap1 = bx(tur, 0.06, 0.34, 0.4, 0.85, 1.15, 0.85, darkMat); ap1.rotation.z = -0.55;
-    var ap2 = bx(tur, 0.06, 0.34, 0.4, 0.85, -1.15, 0.85, darkMat); ap2.rotation.z = 0.55;
-    var ap3 = bx(tur, 0.06, 0.34, 0.4, -1.65, 1.15, 0.85, darkMat); ap3.rotation.z = 2.6;
-    var ap4 = bx(tur, 0.06, 0.34, 0.4, -1.65, -1.15, 0.85, darkMat); ap4.rotation.z = -2.6;
-    bx(tur, 0.1, 0.1, 0.3, 0.85, 1.1, 0.7, gunMat);
-    bx(tur, 0.1, 0.1, 0.3, 0.85, -1.1, 0.7, gunMat);
-    bx(tur, 0.1, 0.1, 0.3, -1.6, 1.1, 0.7, gunMat);
-    bx(tur, 0.1, 0.1, 0.3, -1.6, -1.1, 0.7, gunMat);
+    /* GL5 is not Trophy. Trophy is a pair of flat radar panels flush on the
+       turret cheeks; GL5 is four CHUNKY rotating launcher drums at the turret
+       corners, each with two fat countermeasure tubes pointing out and
+       slightly down. Drawn as four thin canted plates on posts the PLA heavy
+       read as an Abrams with Trophy, which is exactly the convergence that has
+       to go. They sit low, close to roof level - they are not on masts. */
+    var gq, gx, gy, gdr;
+    for (gq = 0; gq < 4; gq++) {
+      gx = (gq < 2) ? 0.85 : -1.60;
+      gy = (gq % 2 ? 1 : -1) * 1.10;
+      bx(tur, 0.16, 0.16, 0.16, gx, gy, 0.74, gunMat);            // short pedestal
+      gdr = bx(tur, 0.34, 0.40, 0.34, gx, gy, 0.94, darkMat);     // launcher drum
+      gdr.rotation.z = (gq < 2 ? -0.5 : 2.6) * (gy > 0 ? 1 : -1);
+      cyx(tur, 0.075, 0.30, gx + (gq < 2 ? 0.26 : -0.26), gy + 0.10, 0.98, gunMat, 10);
+      cyx(tur, 0.075, 0.30, gx + (gq < 2 ? 0.26 : -0.26), gy - 0.10, 0.98, gunMat, 10);
+    }
     bx(tur, 0.28, 0.26, 0.4, -0.5, 0.85, 0.9, darkMat);
     cyx(tur, 0.09, 0.12, -0.32, 0.85, 0.98, darkMat);
     czu(tur, 0.12, 0.4, -0.4, -0.35, 0.9, gunMat);
