@@ -2931,12 +2931,25 @@ var ROLES = {};
    at all, which is the correct answer when the army simply had none.        */
 function isPhantomUnit(def) {
   if (!def) return false;
-  var n = String(def.name || "").trim().toLowerCase();
+  /* Strip surrounding parentheses before testing. A roster author writing a
+     gap naturally writes "(none)" or "(effectively none)", and neither form
+     matched: three placeholders survived the purge and were BUYABLE - a
+     645-credit US light tank whose own full name is "No US light tank in
+     service after 1996", a 1,290-credit missile boat reading "No US Navy
+     missile craft after 1993", and a 950-credit air-defence vehicle for the
+     "US Army short-range air defence gap, roughly 1994-2021". The data had
+     recorded those gaps correctly and the game sold them anyway. */
+  var n = String(def.name || "").trim().toLowerCase().replace(/^\((.*)\)$/, "$1").trim();
   if (n === "none" || n === "n/a" || n === "nil" || n === "-" || n === "\u2014") return true;
-  /* "none new", "none in service", "none operational" and the like */
-  if (/^none\b/.test(n)) return true;
-  var f = String(def.full || "").trim().toLowerCase();
+  /* "none new", "none in service", "none operational", "effectively none" */
+  if (/^none\b/.test(n) || /^(effectively|essentially|virtually|practically)\s+none\b/.test(n)) return true;
+  var f = String(def.full || "").trim().toLowerCase().replace(/^\((.*)\)$/, "$1").trim();
   if (f === "none" || /^no\s+(soviet|chinese|russian|operational|such)\b/.test(f)) return true;
+  /* "No US light tank in service after 1996" - the nation is the subject, so
+     the earlier list of adjectives could never cover every army. Match the
+     shape instead: "no <anything> in service / after / since / between". */
+  if (/^no\b.*\b(in service|after \d{4}|since \d{4}|between \d{4})/.test(f)) return true;
+  if (/\bgap\b.*\d{4}/.test(f)) return true;
   return false;
 }
 
