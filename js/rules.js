@@ -2792,82 +2792,28 @@ for (var _eb in BUILDINGS) {
                navigating itself barely cares, unguided rockets very much do
    ================================================================== */
 var SUPPORT = {
-  arclight: { fac:"nato", name:"Arc Light", full:"B-52 heavy bomber pass",
-    oil:110, cooldown:210, flight:9, rounds:9, spacing:0.22, cep:2.2, blindMul:2.2,
-    dmg:150, aoe:2.0, warhead:"he", tech:3, prereq:["airbase","radar"], from:"e50",
-    desc:"A cell of heavy bombers walks a carpet of iron across a strip of ground. " +
-         "Enormously destructive over an area and completely indiscriminate about " +
-         "what happens to be standing in it." },
-  bat_tot: { fac:"nato", name:"MLRS Battery TOT", full:"M270 time-on-target mission",
-    oil:55, cooldown:105, flight:5, rounds:6, spacing:0.14, cep:1.1, blindMul:2.4,
-    dmg:130, aoe:1.7, warhead:"frag", tech:2, prereq:["radar"], from:"e80",
-    desc:"An off-map rocket battery fires so that every round arrives at once. " +
-         "Devastating against troops in the open and against soft vehicles." },
-  tlam_strike: { fac:"nato", name:"Tomahawk Salvo", full:"BGM-109 land-attack strike",
-    oil:95, cooldown:180, flight:14, rounds:3, spacing:0.9, cep:0.35, blindMul:1.1,
-    dmg:300, aoe:1.6, warhead:"he", tech:3, prereq:["radar","lab"], from:"e90",
-    desc:"Cruise missiles navigating themselves to a set of coordinates. Slow to " +
-         "arrive, but it does not care whether you can see the target." },
-  spectre: { fac:"nato", name:"AC-130 Gunship", full:"AC-130 fire support loiter",
-    oil:70, cooldown:150, flight:6, rounds:14, spacing:0.42, cep:0.6, blindMul:1.8,
-    dmg:70, aoe:0.9, warhead:"cannon", tech:3, prereq:["airbase"], from:"e60",
-    desc:"A transport aircraft with artillery in the side, circling and shooting. " +
-         "Precise and relentless against ground targets, and helpless against " +
-         "anything carrying a radar-guided missile." },
+  /* ---- off-map fire support: REMOVED at the owner's request ----
+     Fourteen powers used to live here - Arc Light, MLRS time-on-target,
+     Tomahawk and CJ-10 salvos, an AC-130 loiter, Tochka, Grad, Koksan and the
+     rest - fired from outside the map, paid for in fuel rather than cash, on a
+     cooldown.
 
-  phl16: { fac:"pla", name:"PHL-16 Battery", full:"PHL-16 long-range rocket mission",
-    oil:60, cooldown:110, flight:6, rounds:8, spacing:0.16, cep:1.0, blindMul:2.2,
-    dmg:135, aoe:1.8, warhead:"frag", tech:2, prereq:["radar"], from:"e00",
-    desc:"A modular long-range rocket battery firing from well behind the line. " +
-         "China built these in numbers so that this mission is always available." },
-  cj10: { fac:"pla", name:"CJ-10 Salvo", full:"CJ-10 land-attack cruise missile",
-    oil:95, cooldown:180, flight:13, rounds:3, spacing:0.9, cep:0.4, blindMul:1.15,
-    dmg:290, aoe:1.6, warhead:"he", tech:3, prereq:["radar","lab"], from:"e00",
-    desc:"China's answer to the Tomahawk. Navigates itself, so fog is no defence, " +
-         "but it is subsonic and a well-found air defence will engage it." },
-  h6_pass: { fac:"pla", name:"H-6 Bomber Pass", full:"H-6 medium bomber strike",
-    oil:100, cooldown:200, flight:10, rounds:7, spacing:0.24, cep:2.0, blindMul:2.2,
-    dmg:145, aoe:1.9, warhead:"he", tech:3, prereq:["airbase","radar"], from:"e60",
-    desc:"A licence-built Tu-16 lineage still in front-line service, dropping iron " +
-         "across a strip of ground." },
+     The table is kept and left EMPTY rather than deleted outright, because
+     every consumer already handles the empty case correctly and none of them
+     needs editing: ui.js builds the support tab by iterating this object, so
+     it now yields no cards; ai.js iterates it the same way and calls nothing;
+     and G.supportReady in game.js already opens with `if (!m) return "NO SUCH
+     MISSION"`. Emptying it therefore removes the feature at one site instead
+     of unpicking fifteen.
 
-  grad_tot: { fac:"pact", name:"Grad Battery", full:"BM-21 Grad saturation mission",
-    oil:45, cooldown:95, flight:5, rounds:12, spacing:0.10, cep:2.4, blindMul:3.0,
-    dmg:85, aoe:1.6, warhead:"frag", tech:1, prereq:[], from:"e60",
-    desc:"Forty rockets at once from over the horizon. Wildly inaccurate and cheap " +
-         "enough not to care: the doctrine is to drown a grid square, not hit a target." },
-  tochka: { fac:"pact", name:"Tochka Strike", full:"OTR-21 Tochka ballistic missile",
-    oil:90, cooldown:190, flight:8, rounds:1, cep:1.4, blindMul:1.6,
-    dmg:420, aoe:2.4, warhead:"he", tech:3, prereq:["radar","lab"], from:"e80",
-    desc:"A single short-range ballistic missile. It arrives too fast to intercept " +
-         "with anything the battlefield carries." },
-  tu22: { fac:"pact", name:"Tu-22M Strike", full:"Tu-22M Backfire bomber pass",
-    oil:105, cooldown:205, flight:10, rounds:7, spacing:0.24, cep:2.1, blindMul:2.3,
-    dmg:150, aoe:2.0, warhead:"he", tech:3, prereq:["airbase","radar"], from:"e60",
-    desc:"A supersonic bomber making one pass. Loud, sudden, and very difficult to " +
-         "do anything about once the rounds are released." },
+     It also closes a report the owner made earlier: being hit by what looked
+     like a silo strike from an enemy that had no silo. A Tomahawk or CJ-10
+     salvo needed only a radar to call, arrived with 290-300 damage over a
+     1.6-tile area, and read exactly like a superweapon to the player on the
+     receiving end. With these gone, a strategic strike now always means an
+     actual Strategic Silo standing on the map.
 
-  mrl240: { fac:"kpa", name:"240mm MRL Barrage", full:"M1991 240mm rocket barrage",
-    oil:35, cooldown:80, flight:5, rounds:14, spacing:0.09, cep:3.2, blindMul:3.4,
-    dmg:70, aoe:1.5, warhead:"frag", tech:1, prereq:[], from:"e60",
-    desc:"The one thing the KPA has in genuinely frightening quantity. Hopelessly " +
-         "inaccurate, dirt cheap, and there is always another battery." },
-  koksan_msn: { fac:"kpa", name:"Koksan Mission", full:"M-1978 Koksan 170mm mission",
-    oil:50, cooldown:120, flight:7, rounds:4, spacing:0.5, cep:2.2, blindMul:3.0,
-    dmg:150, aoe:1.5, warhead:"he", tech:2, prereq:[], from:"e80",
-    desc:"A very long-ranged gun firing from deep behind the line. Slow, inaccurate, " +
-         "and able to reach places nothing else in the inventory can." },
-
-  thunderbolt: { fac:"roc", name:"Thunderbolt-2000", full:"RT-2000 rocket mission",
-    oil:55, cooldown:105, flight:5, rounds:7, spacing:0.15, cep:1.3, blindMul:2.3,
-    dmg:125, aoe:1.7, warhead:"frag", tech:2, prereq:["radar"], from:"e00",
-    desc:"An indigenous rocket system built specifically to break up a landing on " +
-         "the beaches. Short-ranged, and that is the point." },
-  hf2e: { fac:"roc", name:"Hsiung Feng IIE", full:"HF-2E land-attack cruise missile",
-    oil:95, cooldown:185, flight:13, rounds:2, spacing:1.0, cep:0.45, blindMul:1.2,
-    dmg:290, aoe:1.6, warhead:"he", tech:3, prereq:["radar","lab"], from:"e00",
-    desc:"Taiwan's only real deep-strike weapon, and the programme it has been " +
-         "least willing to discuss." },
+     To restore them, revert this commit - the definitions are in git. */
 };
 for (var _sp in SUPPORT) { SUPPORT[_sp].id = _sp; SUPPORT[_sp].cat = "support"; }
 
