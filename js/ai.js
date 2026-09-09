@@ -999,8 +999,33 @@ function makeCommander() {
       }
     }
     for (const [id, r] of seenU) {
+      /* ---- how long a sighting is worth keeping ----
+         This used to delete every ground contact at tau * 2.5 = 65 seconds
+         flat, which quietly defeated the `memory` difficulty trait entirely:
+         DIFF gives recruit 30s and warlord 600s, and every commander from
+         regular upward actually remembered 65. A Warlord kept NINE TIMES less
+         than its own row claimed.
+
+         The consequence was the thing the owner kept reporting - an AI that
+         never answers what it is fighting. foeArms() weighs sightings up to
+         D.memory old and hands the result to counterMix(), but the records
+         were already deleted, so the armour share read 0.00 in EVERY sample of
+         a 61-sample live-battle measurement while the infantry share reached
+         1.00. The commander genuinely saw the tanks, forgot them a minute
+         later, and rebuilt its counter from an empty plot.
+
+         This is memory of what it actually saw - not new information, and not
+         a cheat. A human player who watched a tank company roll past five
+         minutes ago also still knows it is out there.
+
+         Air keeps the short window on purpose: an aeroplane has left by the
+         time the track is a minute old, so an old air contact is worse than
+         no contact. tau * 2.5 stays as the FLOOR so a Recruit is not made
+         worse than it is today. */
       const tau = r.layer === "air" ? 9 : (r.harvester ? 60 : 26);
-      if (now - r.t > tau * 2.5) seenU.delete(id);
+      const keep = Math.max(tau * 2.5,
+                            (D.memory || 90) * (r.layer === "air" ? 0.25 : 1));
+      if (now - r.t > keep) seenU.delete(id);
     }
   }
 
