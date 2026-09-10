@@ -567,11 +567,173 @@
     giveWeapon(uidA, west ? "maverick" : "kh29");
     giveWeapon(uidA, "gau8", "chaingun");
   }
+  /* ======================================================================
+     FAULT 05b - one missile, every IFV, every army, every decade
+     ======================================================================
+     The loop that used to stand here read `if (role === "ifv")` and handed
+     out a TOW-2. There is no era test and no national test in that line, so
+     all 47 IFVs in the game carried the same 1983 American launcher: an M3
+     Half-track and a BTR-152 rolled onto a 1950s map with a weapon at 850 mm
+     of penetration and 8.8 tiles of reach, against a T-34/85 whose gun
+     derives 248 mm at 6.1. The battle taxi out-ranged the tank by two and a
+     half tiles and hit it three times as hard, which is why armour felt
+     pointless in the early eras.
+
+     It was also invisible to the quality pass. The DOMAIN loop above runs
+     around line 431 and this assignment ran at 570, so every weapon handed
+     out down here skipped faction scaling entirely - a North Korean VTT-323
+     fired its TOW at the same 0.86 as an American Bradley, despite
+     kpa.guided being 0.46. The assignment below applies that multiplier
+     itself rather than relying on a pass that has already gone by.
+
+     The table is deliberately full of holes. A Warrior carried a 30 mm
+     RARDEN and no anti-tank missile for its entire service life, the WCSP
+     upgrade that would have changed it was cancelled in 2021, and a VBCI
+     carries a 25 mm and nothing else. Those armies do not get a missile
+     here, because they did not have one. */
+  WEAPONS.atgm_sagger = {
+    /* 9M14 Malyutka / AT-3. MCLOS: the operator flies the missile down a
+       wire on a thumbstick for the whole 26-second flight, while being shot
+       at. That is the weapon - a big warhead the crew usually misses with,
+       and useless inside the 500 m it takes to gather the round. */
+    name: "9M14 Malyutka (AT-3)", dmg: 120, warhead: "heat", pen: 400,
+    range: R(3000), reload: 16.0, burst: 1, acc: 0.40, minRange: 2.0,
+    proj: "missile", speed: 115, aoe: 0.5, suppress: 10,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.atgm_konkurs = {
+    /* 9M113 Konkurs / AT-5, 1974. SACLOS - the gunner holds the crosshair
+       and the launcher flies it. The generational jump is accuracy, not
+       warhead. */
+    name: "9M113 Konkurs (AT-5)", dmg: 145, warhead: "heat", pen: 600,
+    range: R(4000), reload: 9.5, burst: 1, acc: 0.78, minRange: 1.6,
+    proj: "missile", speed: 200, aoe: 0.55, suppress: 12,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.atgm_milan = {
+    /* MILAN 2, 1984. An excellent warhead on a short wire: 2000 m, half a
+       TOW's reach. German and French AT is potent but has to come close. */
+    name: "MILAN 2", dmg: 140, warhead: "heat", pen: 800,
+    range: R(2000), reload: 8.0, burst: 1, acc: 0.84, minRange: 0.9,
+    proj: "missile", speed: 200, aoe: 0.5, suppress: 11,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.atgm_bastion = {
+    /* 9M117 Bastion, fired through the BMP-3's own 100 mm tube and guided by
+       riding a laser beam rather than trailing a wire - no wire to break and
+       no reel to limit it, but the launcher must keep the beam on target. */
+    name: "9M117 Bastion (gun-launched)", dmg: 150, warhead: "heat", pen: 600,
+    range: R(4000), reload: 11.0, burst: 1, acc: 0.80, minRange: 1.2,
+    proj: "missile", speed: 300, aoe: 0.55, suppress: 12,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.atgm_hj73 = {
+    /* HJ-73 is a reverse-engineered Sagger and inherits its vice. */
+    name: "HJ-73 (Red Arrow 73)", dmg: 118, warhead: "heat", pen: 420,
+    range: R(3000), reload: 16.0, burst: 1, acc: 0.42, minRange: 2.0,
+    proj: "missile", speed: 120, aoe: 0.5, suppress: 10,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.atgm_hj8 = {
+    /* HJ-8, 1984 - the first Chinese ATGM in the TOW class rather than a
+       copy of something older. */
+    name: "HJ-8 (Red Arrow 8)", dmg: 150, warhead: "heat", pen: 800,
+    range: R(4000), reload: 9.0, burst: 1, acc: 0.80, minRange: 1.2,
+    proj: "missile", speed: 220, aoe: 0.55, suppress: 12,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.atgm_spike = {
+    /* Spike LR, fielded on the Puma as MELLS from 2019. Imaging infrared and
+       fire-and-forget: the gunner does not have to sit still watching the
+       missile fly, which is the real change and the reason it reloads fast
+       here rather than the warhead being much better. */
+    name: "Spike LR (MELLS)", dmg: 160, warhead: "heat", pen: 900,
+    range: R(4000), reload: 7.5, burst: 1, acc: 0.90, minRange: 0.9,
+    proj: "missile", speed: 180, aoe: 0.6, suppress: 13,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.atgm_bulsae3 = {
+    /* Bulsae-3 is a Kornet worked out from the outside. The launcher is
+       credible; kpa.guided at 0.46 is what decides whether it hits. */
+    name: "Bulsae-3", dmg: 150, warhead: "heat", pen: 850,
+    range: R(4500), reload: 10.0, burst: 1, acc: 0.72, minRange: 1.2,
+    proj: "missile", speed: 250, aoe: 0.55, suppress: 12,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.tow2b = {
+    /* TOW-2B Aero, 1992. Flies over the target and fires down through the
+       roof. The engine has no top-attack aspect for a direct-fire weapon, so
+       that shows up here as penetration rather than as an aspect pick. */
+    name: "TOW-2B Aero", dmg: 165, warhead: "heat", pen: 900,
+    range: R(4500), reload: 8.0, burst: 1, acc: 0.88, minRange: 1.6,
+    proj: "missile", speed: 330, aoe: 0.6, suppress: 13,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+
+  var IFV_ATGM = {
+    /* e50 - nobody at all. The missile-armed IFV had not been invented; a
+       Saracen, an M59 and a BTR-152 are boxes with a machine gun. */
+
+    /* e60 - the Soviets, alone. This is the entire point of the BMP-1 and
+       the reason it frightened NATO in 1973: nobody else had one. */
+    pact_e60_ifv: "atgm_sagger",
+
+    /* e80 - the West catches up, unevenly. */
+    nato_e80_ifv: "tow_bradley",     /* M2 Bradley, TOW-2, 1983 */
+    pact_e80_ifv: "atgm_konkurs",    /* BMP-2 */
+    deu_e80_ifv:  "atgm_milan",      /* Marder 1A2, MILAN on the roof */
+    pla_e80_ifv:  "atgm_hj73",       /* Type 86 is a BMP-1 */
+    kpa_e80_ifv:  "atgm_sagger",     /* VTT-323, a generation behind */
+    /* gbr Warrior, fra AMX-10P and roc CM-21 carry no missile. */
+
+    /* e90 */
+    nato_e90_ifv: "tow_bradley",
+    pact_e90_ifv: "atgm_bastion",    /* BMP-3 fires it through the 100mm */
+    deu_e90_ifv:  "atgm_milan",
+    pla_e90_ifv:  "atgm_hj8",        /* WZ-551 - the real jump */
+    kpa_e90_ifv:  "atgm_sagger",
+    roc_e90_ifv:  "tow_bradley",     /* American supply */
+
+    /* e00 */
+    nato_e00_ifv: "tow2b",
+    pact_e00_ifv: "atgm_bastion",
+    pla_e00_ifv:  "atgm_hj8",
+    kpa_e00_ifv:  "atgm_konkurs",
+    roc_e00_ifv:  "tow_bradley",
+    /* deu Puma is built for MELLS but did not carry it until 2019, and the
+       VBCI and Warrior have nothing to give. */
+
+    /* e20 */
+    ifv_n: "tow2b",
+    ifv_p: "atgm_bastion",
+    ifv_g: "atgm_spike",             /* Puma, MELLS at last */
+    ifv_c: "atgm_hj8",
+    ifv_k: "atgm_bulsae3",
+    ifv_r: "tow2b",
+    /* ifv_b Warrior and ifv_f VBCI still carry no anti-tank missile. */
+  };
+
+  var nATGM = 0;
   for (var uidB in UNITS) {
     var uB = UNITS[uidB];
     if (!uB || uB.role !== "ifv") continue;
-    /* a Western IFV carries a missile; a BMP carries one too, and did first */
-    giveWeapon(uidB, "tow_bradley");
+    var wantB = IFV_ATGM[uidB];
+    if (!wantB || !WEAPONS[wantB]) continue;
+    /* Scale it here. The DOMAIN pass has already run, so a weapon attached
+       at this point would otherwise never see its army's guided multiplier. */
+    var facB = facOf(uB), eraB = uB.from || "e20";
+    var gB = dmul(facB, eraB, "guided");
+    var widB = wantB;
+    if (gB !== 1) {
+      var pwB = privateWeapon(uidB, wantB);
+      if (pwB) {
+        widB = pwB;
+        WEAPONS[pwB].acc = Math.max(0.20, Math.min(0.98,
+          +(WEAPONS[wantB].acc * gB).toFixed(3)));
+      }
+    }
+    giveWeapon(uidB, widB);
+    nATGM++;
   }
   /* An Apache carries sixteen Hellfires. `ammo` on a WEAPON is the cost of
      one shot drawn from the aircraft's own pool, not the size of the
