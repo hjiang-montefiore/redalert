@@ -49,6 +49,21 @@ var Warship3D = (function () {
     darkgrey: { hull: 0x353c43, sup: 0x3e464d, deck: 0x252a2f },
     bluegrey: { hull: 0x3f5769, sup: 0x486277, deck: 0x2b3a47 },
     green:    { hull: 0x3f4b34, sup: 0x49563d, deck: 0x2a3123 },
+    /* Royal Navy, BS 381C 507B home-fleet grey - darker and bluer than USN
+       haze - and Marine Nationale grey, which is lighter and warmer than both.
+       Germany honestly reuses `darkgrey`: Bundesmarine hulls really are close
+       to the Eastern-bloc tone and inventing a scheme to keep the four Western
+       navies symmetrical would be the opposite of the point.
+       NOTE hullTex() below seeds the weathering RNG off the SCHEME NAME'S
+       LENGTH (`rngOf(camo.length * 9173 + 41)`), so two schemes with the same
+       number of characters give every hull in both navies an identical rust
+       pattern. These two are 9 and 6 deliberately; the existing four are 4, 5,
+       8 and 8.
+       These are declared and currently INERT: warship_specs.js has no rows for
+       the new hulls yet, so modelKeyFor borrows a peer and that peer's `camo`.
+       The schemes go live with the Tier-2 spec rows, not before. */
+    rnavygrey: { hull: 0x5d6a74, sup: 0x67757f, deck: 0x3d464d },
+    frgrey:    { hull: 0x6e7e8b, sup: 0x7a8a97, deck: 0x47535c },
   };
 
   /* pull a neutral fitting part way toward the scheme, so a dark navy's

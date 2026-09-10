@@ -235,6 +235,18 @@ CFG.FACTION_COLORS = {
   pla:  { main: "#e0a33c", dark: "#6b4a1a", light: "#ffd98c" },
   kpa:  { main: "#b0413a", dark: "#4d1d18", light: "#e8968c" },
   roc:  { main: "#3fb08a", dark: "#175040", light: "#96e6c9" },
+  /* Every `main` value must be UNIQUE across this table — render3d.js
+     archOf() identifies a faction's architecture by matching it. The Western
+     four are all blue-family and would be unreadable together, so: US blue,
+     British dark red (the historical map colour), French light blue, German
+     field grey. NOTE a pre-existing hazard this makes worse: CFG.shiftHue
+     below rotates a duplicate commander's palette by 42 degrees per
+     duplicate, and with eight entries packed into the wheel a second British
+     commander's shifted `main` can land near another nation's and archOf will
+     silently hand it that nation's architecture. Worth a follow-up. */
+  gbr:  { main: "#8f3f5c", dark: "#421a2b", light: "#d692ac" },
+  fra:  { main: "#5f7fd6", dark: "#293a6b", light: "#a8bcf5" },
+  deu:  { main: "#7a8a72", dark: "#343d31", light: "#c2cfba" },
 };
 /* rotate a palette entry's hue so duplicate factions stay tellable apart */
 CFG.shiftHue = function (col, deg) {

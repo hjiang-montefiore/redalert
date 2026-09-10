@@ -13,7 +13,12 @@
   }
   /* faction pickers are generated from the rules so new armies appear here
      automatically — order controls which one is preselected */
-  const FAC_ORDER = ["nato", "pact", "pla", "kpa", "roc"].filter(k => FACTIONS[k]);
+  /* Keep "nato" FIRST and keep "pact" in the list. _behtest.html drives this
+     real menu and never sets opt-fac or opt-foe, so the suite inherits
+     facOptions("nato") and facOptions("pact") below. Reordering silently
+     changes which army the regression runs as. */
+  const FAC_ORDER = ["nato", "gbr", "fra", "deu", "pact", "pla", "kpa", "roc"]
+    .filter(k => FACTIONS[k]);
   const facOptions = (sel) => FAC_ORDER.map(k =>
     '<option value="' + k + '"' + (k === sel ? " selected" : "") + '>' +
     FACTIONS[k].name + "</option>").join("");

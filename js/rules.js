@@ -272,8 +272,20 @@ var UPGRADES = {
    Two real-world force structures. NATO fields fewer, costlier, better-optics
    platforms; the Eastern pattern fields cheaper, tougher, more numerous kit.   */
 var FACTIONS = {
-  nato: { id:"nato", name:"NATO EXPEDITIONARY FORCE", short:"NATO",
-          bonus:"Superior optics (+8% weapon range, +6% accuracy). Costlier hardware.",
+  /* The key `nato` is HISTORICAL and now means the UNITED STATES. It is kept
+     because 182 unit ids, six hero-model filenames in js/hero/, and the `d:`
+     field of every entity in every save file ever written are built on it —
+     1009 occurrences across 45 files. Only name/short/bonus change. If a
+     genuine multinational alliance is ever wanted alongside these four
+     national armies, add a NEW key for it; do not rename this one.
+     The roster was already American in all but name — Abrams, Bradley,
+     Paladin, MLRS, Raptor, Spirit, Nimitz — so it becomes the United States
+     and Britain, France and Germany join it. The B-2, B-52, AC-130 and F-22
+     then fall out as American-only with no special casing. */
+  nato: { id:"nato", name:"UNITED STATES ARMED FORCES", short:"USA",
+          bonus:"Superior optics (+8% weapon range, +7% accuracy). Costlier hardware. " +
+                "The only army here with strategic bombers, a fifth-generation " +
+                "air-superiority fighter, a fixed-wing gunship, and carriers in numbers.",
           rangeMul:1.08, accMul:1.06, costMul:1.06, hpMul:1.0, buildMul:1.0 },
   pact: { id:"pact", name:"EASTERN COALITION", short:"EAST",
           bonus:"Mass production (-8% unit cost, -10% build time, +8% vehicle HP).",
@@ -297,6 +309,56 @@ var FACTIONS = {
                 "cheap defences. Everything costs 28% more and builds 18% slower.",
           rangeMul:1.14, accMul:1.10, costMul:1.28, hpMul:1.06, buildMul:1.18,
           supplyMul:1.0, fuelMul:0.95, structHpMul:1.12, defenseCostMul:0.7 },
+
+  /* Small, expensive, and the best-trained gunnery on the board. Chobham was
+     invented at FVRDE Chobham and given to the Americans: the M1 fielded it in
+     1980, Challenger 1 in 1983, and both first fought with it in the same week
+     of February 1991. 386 Challenger 2 built for the British Army, 227 still in
+     the fleet by 2021, 148 to be upgraded to Challenger 3 and the rest retired —
+     that is what "buys very few of everything" means. */
+  gbr:  { id:"gbr", name:"BRITISH ARMED FORCES", short:"UK",
+          bonus:"The best gunnery here: +12% accuracy, +10% weapon range, and " +
+                "Chobham armour from 1983 (+8% vehicle HP). Very few of everything — " +
+                "costs 24% more and builds 22% slower. Invented the steam catapult, " +
+                "the angled deck and STOVL; flies off a ski-jump anyway since 1978. " +
+                "Land-based nuclear weapons gone by 1993, the WE.177 free-fall bomb " +
+                "withdrawn in 1998, and Trident at sea the only British deterrent since.",
+          rangeMul:1.10, accMul:1.12, costMul:1.24, hpMul:1.08, buildMul:1.22,
+          supplyMul:0.95, fuelMul:0.95 },
+
+  /* Sovereign where it counts and honest about where it is not: the HK416F is
+     the service rifle, the carrier's AEW aircraft is an American E-2C, and
+     Milan, HOT and Roland are Franco-German while Aster is Franco-Italian.
+     What IS wholly French is the warhead, the reactor, the airframes and
+     Exocet. French armour chose mobility over protection outright and never
+     went back: AMX-13 at 15 t, AMX-30 at 36, Leclerc at 56 where a Challenger 2
+     is over 60. */
+  fra:  { id:"fra", name:"FRENCH ARMED FORCES", short:"FRANCE",
+          bonus:"The only nuclear deterrent in NATO answerable to no one else — " +
+                "at sea since 1971 and in the air since 1986, including off a " +
+                "carrier deck. Light, fast armour that traded protection away on " +
+                "purpose (-6% vehicle HP) and a missile industry that sells to the " +
+                "world. Flies on a satellite constellation it does not own.",
+          rangeMul:1.04, accMul:1.03, costMul:1.10, hpMul:0.94, buildMul:1.02,
+          supplyMul:1.0, fuelMul:0.92 },
+
+  /* Zeiss optics and the gun the Abrams borrowed — the L7 was British and
+     Germany licence-built it, but the Rheinmetall Rh-120 L/44 went the other
+     way and became the American M256 in 1985. A defensive army fighting on its
+     own ground: Article 87a limits the Bundeswehr to defence, Article 26 bans
+     preparing a war of aggression, and out-of-area deployment has needed a
+     Bundestag mandate since 1994. Slowest procurement in the game. */
+  deu:  { id:"deu", name:"BUNDESWEHR", short:"GERMANY",
+          bonus:"Zeiss optics and the best fire control on the board (+12% weapon " +
+                "range, +10% accuracy) on armour that set the export standard " +
+                "(+7% vehicle HP). Hardened positions (+15% structure HP, defences " +
+                "28% cheaper) and the finest gun-based air defence ever fielded. " +
+                "Procures more slowly than anyone (+26% build time). No carrier, no " +
+                "cruiser, no nuclear weapon of its own, no strategic bomber since " +
+                "1945, and no surface-to-surface missile beyond the divisional " +
+                "rocket launcher since 1992.",
+          rangeMul:1.12, accMul:1.10, costMul:1.16, hpMul:1.07, buildMul:1.26,
+          supplyMul:0.94, fuelMul:0.90, structHpMul:1.15, defenseCostMul:0.72 },
 };
 
 /* ---------------------------------------------------------------- UNITS
@@ -435,10 +497,10 @@ var UNITS = {
     layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
     desc:"Radar-guided ATGM carrier that can engage through smoke and dust." },
 
-  spaag_n: { fac:"nato", role:"spaag", name:"Gepard", full:"Flakpanzer Gepard 1A2", cat:"vehicle",
+  spaag_n: { fac:"nato", role:"spaag", name:"M-SHORAD", full:"Stryker A1 IM-SHORAD", cat:"vehicle",
     cost:1000, oil:14, time:15, hp:800, armor:"light", speed:1.65, turn:1.9, sight:9.5, r:14, mass:47,
     layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6,
-    desc:"Twin radar-laid 35mm. Shreds helicopters and can level infantry in a pinch." },
+    desc:"Stinger and Hellfire on a Stryker with a 30mm cannon, fielded in 2021 to close a short-range air-defence gap the US Army had left open since the Vulcan and Chaparral went in the 1990s. The Gepard that used to stand here was West German." },
   spaag_p: { fac:"pact", role:"spaag", name:"Tunguska", full:"2S6M Tunguska", cat:"vehicle",
     cost:1050, oil:15, time:15, hp:850, armor:"light", speed:1.6, turn:1.9, sight:9.5, r:14, mass:34,
     layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6,
@@ -1633,6 +1695,501 @@ Object.assign(UNITS, {
     desc:"Utility landing craft. The ROC is built to repel landings rather than mount them, so this is a workmanlike hull." },
 });
 
+/* ==================================================================
+   THE BUNDESWEHR — present-day roster (key `deu`, suffix `_g`)
+
+   Founded 12 November 1955 and, for its first decade, equipped almost
+   entirely with American and British hand-me-downs. What it built for
+   itself afterwards it built very well: the Leopard line, the Rh-120
+   that became the American M256 in 1985, the Gepard, the PzH 2000.
+
+   The gaps below are deliberate and are the faction. Germany has no
+   carrier and no carrier air wing (Graf Zeppelin was launched in 1938,
+   never completed, scuttled at Stettin in 1945, raised by the Soviets
+   in 1946 and expended as a Baltic weapons target in 1947), no nuclear
+   propulsion and no nuclear weapon of its own, no strategic bomber
+   since 1945, no dedicated escort jammer, no AWACS of its own (the
+   Geilenkirchen E-3As are NATO-owned and Luxembourg-registered), no
+   light tank since the mid-1970s, no active protection system in
+   service, and — since the Lance went in 1992 — nothing ballistic
+   beyond the divisional rocket launcher. None of these are placeholders
+   to be filled later.
+
+   What it does NOT lack, and what two earlier drafts got wrong: deep
+   strike aviation. The Tornado IDS has been the Luftwaffe's
+   interdiction aircraft since 1981 and has carried Taurus KEPD 350, a
+   German-owned stand-off cruise missile, since 2005.
+   ================================================================== */
+Object.assign(WEAPONS, {
+  /* Named OUTSIDE the w_<era>_<fac>_<role> pattern on purpose: the era
+     normaliser in generations.js rewrites the range of anything matching it
+     to a per-era constant, which would flatten both of the two German guns
+     whose reach is the point of them. */
+  gun_120_l55: { name:"120mm Rh-120 L/55 smoothbore", dmg:162, warhead:"cannon", range:8.2,
+                 reload:4.3, burst:1, acc:0.82, proj:"shell", speed:880, aoe:0.9, suppress:24,
+                 tgt:{ground:1,air:0,sea:1,sub:0} },
+  pzh2000_l52: { name:"155mm L/52 (PzH 2000)", dmg:158, warhead:"frag", range:24.6, minRange:5.0,
+                 reload:6.4, burst:1, acc:0.34, proj:"arc", speed:220, aoe:2.7, suppress:64,
+                 tgt:{ground:1,air:0,sea:1,sub:0} },
+  hot_jaguar:  { name:"HOT-2 (Jagdpanzer Jaguar 1)", dmg:118, warhead:"heat", range:9.6, minRange:1.1,
+                 reload:6.2, burst:1, acc:0.74, proj:"missile", speed:260, aoe:0.8, suppress:16,
+                 tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+  tow_wiesel:  { name:"TOW-2A (Wiesel 1 TOW)", dmg:145, warhead:"heat", range:8.4, minRange:1.1,
+                 reload:7.4, burst:1, acc:0.80, proj:"missile", speed:230, aoe:0.8, suppress:16,
+                 tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+  taurus_kepd: { name:"Taurus KEPD 350", dmg:360, warhead:"he", range:9.6, minRange:2.4,
+                 reload:7.2, burst:1, acc:0.92, proj:"missile", speed:340, aoe:2.4, suppress:70,
+                 ammo:1, stealthy:0.55, tgt:{ground:1,air:0,sea:1,sub:0},
+                 profile:"pop", intercept:0.6 },
+});
+
+Object.assign(UNITS, {
+  rifle_g: { fac:"deu", role:"rifle", name:"Panzergrenadiergruppe", full:"Rifle Section, Gewehr G36A2", cat:"infantry",
+    cost:175, oil:0, time:6, hp:118, armor:"infantry", speed:1.04, turn:7, sight:6.2, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1,
+    desc:"Conscription was suspended in 2011 and the Bundeswehr has been an all-volunteer force since, which is why there are never many sections and each one is expensive. The G36 has been standard since 1997; the G95A1 (HK416A8) was selected to replace it and deliveries only began in 2023, so the rifle in the section is still a G36." },
+  mg_g: { from:"e50", fac:"deu", role:"mg", name:"MG3 Weapons Team", full:"Weapons Team, MG3 7.62mm", cat:"infantry",
+    cost:320, oil:0, time:8, hp:114, armor:"infantry", speed:0.82, turn:6, sight:6.6, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"The same gun for seventy years: the MG42 rebarrelled for 7.62mm NATO as the MG1 in 1958, refined into the MG3 in 1968, and still in the field when the MG5 began replacing it in 2015. Roughly 1,200 rounds a minute, which is the highest cyclic rate of any general-purpose machine gun in service anywhere." },
+  at_g: { fac:"deu", role:"at", name:"MELLS Team", full:"AT Team, MELLS (Spike LR2)", cat:"infantry",
+    cost:470, oil:0, time:10, hp:108, armor:"infantry", speed:0.87, turn:6, sight:7.6, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1,
+    desc:"Israeli Spike bought off the shelf and fielded from 2012 as MELLS, after thirty years of MILAN. Fire-and-forget with a fibre-optic man-in-the-loop option, and the longest infantry anti-armour reach of the four Western armies here. Panzerfaust 3 remains the short-range answer." },
+  aa_g: { from:"e90", fac:"deu", role:"aa", name:"Fliegerfaust 2", full:"MANPADS Team, Fliegerfaust 2 Stinger", cat:"infantry",
+    cost:380, oil:0, time:8.5, hp:102, armor:"infantry", speed:0.90, turn:6, sight:8.2, r:6, mass:0.1,
+    layer:"ground", weapons:["manpad"], prereq:["barracks"], tech:1,
+    desc:"Germany adopted the Stinger as Fliegerfaust 2 in 1992, eleven years behind the US Army. Before it the Heer had the Fliegerfaust 1, a Redeye with a seeker that could only chase a jet from behind." },
+  mortar_g: { from:"e50", fac:"deu", role:"mortar", name:"Moerser Section", full:"Mortar Section, 120mm Moerser", cat:"infantry",
+    cost:545, oil:0, time:12, hp:104, armor:"infantry", speed:0.72, turn:6, sight:5.4, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:2, deploy:true,
+    desc:"81mm from 1956, then the 120mm Tampella from the mid-1960s, and from 2013 the same tube in the turret of a Wiesel 2 leichter Moerser. The heaviest company mortar of the four Western armies here and the only one that ended up armoured." },
+  sniper_g: { from:"e20", fac:"deu", role:"sniper", name:"Scharfschuetzentrupp", full:"Sniper Team, G29 (.338 Lapua)", cat:"infantry",
+    cost:780, oil:0, time:15, hp:92, armor:"infantry", speed:0.78, turn:6, sight:11.0, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"The Bundeswehr had no dedicated sniper rifle and no sniper school for forty-three years — the trade was politically unwelcome in the post-war army. The G22 arrived in 1998 after Bosnia made the omission untenable; the G29 in .338 Lapua Magnum followed in 2016." },
+  supply_g: { fac:"deu", role:"supply", name:"Supply Truck", full:"MAN gl 7t milGL", cat:"vehicle",
+    cost:850, oil:7, time:13, hp:600, armor:"light", speed:1.85, turn:2.0, sight:6.2, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:950, supplyRange:5.2,
+    desc:"Unimog and MAN trucks, armoured cab, and a logistics branch sized for a defensive war fought at home. Germany can sustain a corps on its own ground and struggles to sustain a brigade a long way from it, which is what supplyMul 0.94 is." },
+
+  recon_g: { from:"e00", fac:"deu", role:"recon", name:"Fennek", full:"Spaehwagen Fennek", cat:"vehicle",
+    cost:500, oil:6, time:9, hp:400, armor:"light", speed:2.70, turn:3.0, sight:10.4, r:12, mass:10,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
+    desc:"A Dutch-German 4x4 built around one idea: an observation head on a telescopic mast that lifts a thermal imager and a laser rangefinder 1.5 m above the roof, so the vehicle watches from behind cover it never has to leave. Fielded 2003. The Luchs it replaced was an 8x8 with a rear driver that could reverse at full speed." },
+  ifv_g: { fac:"deu", role:"ifv", name:"Puma", full:"Schuetzenpanzer Puma S1", cat:"vehicle",
+    cost:1240, oil:12, time:17, hp:900, armor:"light", speed:1.85, turn:2.1, sight:8.8, r:14, mass:43,
+    layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:2.0, cargo:6,
+    desc:"The most heavily protected IFV in service anywhere, and it carries six rather than the eight the Marder did, because the protection took the space. Unmanned turret with a 30mm MK 30-2/ABM firing airburst rounds. Fielded 2015 and famously unreliable in its first years; the S1 standard is the fix." },
+  mbt_g: { fac:"deu", role:"mbt", name:"Leopard 2A7V", full:"Leopard 2A7V", cat:"vehicle",
+    cost:1780, oil:24, time:26, hp:1780, armor:"heavy", speed:1.45, turn:1.45, sight:9.2, r:16, mass:66,
+    layer:"ground", weapons:["gun_120_l55"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.6, crush:true,
+    desc:"The gun is the point. Rheinmetall designed the Rh-120, the United States licence-built it as the M256 in 1985, and an Abrams has fired a German gun ever since. The L/55 barrel arrived on the 2A6 in 2001. No active protection system: Trophy was contracted for the 2A8 in 2023 and nothing has been delivered, which is why Germany has no tech-3 heavy armour in this game." },
+  atgmv_g: { from:"e00", fac:"deu", role:"tankdestroyer", name:"Wiesel 1 TOW", full:"Wiesel 1 TOW", cat:"vehicle",
+    cost:900, oil:8, time:12, hp:330, armor:"light", speed:2.15, turn:2.6, sight:8.8, r:12, mass:5,
+    layer:"ground", weapons:["tow_wiesel"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.5,
+    desc:"A tracked vehicle weighing under three tonnes with a TOW launcher on the roof, built so that two of them fit in a CH-53. It is the airborne brigade's anti-armour weapon and it dies to anything that sees it first. Germany has fielded no full-size tank destroyer since the Jaguar went in the mid-2000s." },
+  spaag_g: { fac:"deu", role:"spaag", name:"Ozelot", full:"LeFlaSys Ozelot (ASRAD)", cat:"vehicle",
+    cost:980, oil:11, time:14, hp:400, armor:"light", speed:2.00, turn:2.4, sight:9.6, r:13, mass:5,
+    layer:"ground", weapons:["manpad"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.8, radar:4.0,
+    desc:"Four Stingers on a Wiesel 2, and it is a placeholder for something that is not there. Germany fielded the finest gun-based air defence ever built — the Gepard, twin 35mm with separate search and tracking radars, engaging on the move, in service 1976 — and retired the vehicle in 2010 and the whole army air defence branch in 2012. Skyranger 30 was contracted in 2024 and is not in service. Ozelot cannot engage a ground target at all." },
+  spg_g: { from:"e90", fac:"deu", role:"spg", name:"PzH 2000", full:"Panzerhaubitze 2000 A2", cat:"vehicle",
+    cost:1950, oil:24, time:28, hp:820, armor:"light", speed:1.35, turn:1.5, sight:6.4, r:15, mass:56,
+    layer:"ground", weapons:["pzh2000_l52"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.95,
+    desc:"A 155mm L/52 with a fully automatic magazine: three rounds in under ten seconds, and it will put all three on the same point at the same moment. In service 1998 and still the longest-reaching tube gun any of these four armies fields. It fires SMArt 155, a German sensor-fuzed top-attack cargo round, since about 2000 — but no scatterable mine round, because Germany destroyed its AT-2 stocks under the Ottawa Convention." },
+  mlrs_g: { from:"e00", fac:"deu", role:"mlrs", name:"MARS II", full:"Mittleres Artillerieraketensystem II", cat:"vehicle",
+    cost:2350, oil:33, time:31, hp:700, armor:"light", speed:1.30, turn:1.35, sight:5.6, r:15, mass:25,
+    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.85,
+    desc:"The M270 with a European fire control, guided rockets only since the cluster warheads were destroyed under the 2008 Convention on Cluster Munitions. It is the longest-ranged thing the Bundeswehr owns: since the Lance was withdrawn in 1992 Germany has fielded nothing ballistic at all, and this launcher is where the German fire plan stops." },
+  sam_g: { from:"e20", fac:"deu", role:"sam", name:"Patriot PAC-3", full:"MIM-104F Patriot PAC-3 MSE", cat:"vehicle",
+    cost:2700, oil:38, time:34, hp:600, armor:"light", speed:1.05, turn:1.05, sight:13.6, r:16, mass:36,
+    layer:"ground", weapons:["sam_area3"], prereq:["factory","radar","lab"], tech:3, turret:true, tturn:0.6,
+    deploy:true, deploySec:5.5, radar:13, radarQ:20, rounds:12,
+    desc:"The Luftwaffe has run Patriot since 1989 and operates one of the largest fleets outside the United States. IRIS-T SLM, the German-built medium-range system, was fielded to Ukraine in 2022 before the Bundeswehr had a single battery of its own — the export order came first, which is a recurring German procurement story." },
+  radarv_g: { from:"e00", fac:"deu", role:"radarv", name:"COBRA", full:"COBRA counter-battery radar", cat:"vehicle",
+    cost:1400, oil:13, time:18, hp:520, armor:"light", speed:1.60, turn:1.7, sight:9.4, r:14, mass:17,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:17, turret:true, tturn:0.9,
+    desc:"A phased array that backtracks incoming shells to the tube that fired them: up to forty batteries located in two minutes, across a hundred-kilometre front. Fielded 2007, and it is the first counter-battery radar Germany ever had — the Bundeswehr fought the whole Cold War without one." },
+
+  helo_g: { from:"e00", fac:"deu", role:"gunship", name:"Tiger UHT", full:"Eurocopter Tiger UHT", cat:"aircraft",
+    cost:1720, oil:26, time:24, hp:580, armor:"air", speed:3.5, turn:2.3, sight:9.8, r:16, mass:0,
+    layer:"air", weapons:["atgm_veh"], prereq:["airbase"], tech:2, hover:true, ammo:8,
+    desc:"The only attack helicopter in the game with no gun at all: the German Tiger was ordered as a pure anti-armour machine and the chin turret was deleted to save weight, a decision Afghanistan made everyone regret. It carries PARS 3 LR, a fire-and-forget imaging-infrared missile that is one of the few genuinely German guided weapons of its generation, alongside HOT-3." },
+  trans_g: { from:"e00", fac:"deu", role:"transport", name:"NH90 TTH", full:"NHIndustries NH90 TTH", cat:"aircraft",
+    cost:980, oil:15, time:15, hp:510, armor:"air", speed:4.1, turn:2.4, sight:8.0, r:15, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:8, ammo:0,
+    desc:"Fly-by-wire, composite airframe, and twenty years between contract and a usable aircraft. It replaced the UH-1D, which the Heeresflieger flew from 1967 to 2021 — fifty-four years. The CH-53G, in service since 1972, still does the heavy lifting." },
+  fighter_g: { from:"e00", fac:"deu", role:"fighter", name:"Eurofighter", full:"Eurofighter Typhoon Tranche 3", cat:"aircraft",
+    cost:1750, oil:32, time:25, hp:430, armor:"air", speed:8.8, turn:2.1, sight:11.4, r:15, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    desc:"Supersonic without reheat, and it out-turns almost anything. Fielded 2004 after a development that began in 1983. The radar is still a mechanically scanned CAPTOR-M on the German fleet: the ECRS Mk1 AESA is in flight test and has not reached a squadron. Germany ordered 35 F-35A in 2022 for the nuclear-sharing role, with deliveries expected from 2026 — so there is no German fifth-generation fighter here." },
+  bomber_g: { from:"e00", fac:"deu", role:"cas", name:"Tornado IDS", full:"Panavia Tornado IDS (Taurus)", cat:"aircraft",
+    cost:2250, oil:42, time:30, hp:620, armor:"air", speed:7.6, turn:1.6, sight:9.4, r:17, mass:0,
+    layer:"air", weapons:["taurus_kepd","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
+    desc:"Swing-wing, two crew, built to cross the inner-German border at 60 metres in weather nobody else would fly in. Germany bought 324 IDS and 35 ECR. Since 2005 it has carried Taurus KEPD 350, a stealthy 500 km stand-off missile that is German-owned and German-built — which is why the claim that Germany has no long-range strike aviation is wrong. What Germany has not had since 1945 is a strategic bomber." },
+  sead_g: { from:"e90", fac:"deu", role:"sead", name:"Tornado ECR", full:"Panavia Tornado ECR", cat:"aircraft",
+    cost:2000, oil:35, time:25, hp:520, armor:"air", speed:7.7, turn:1.7, sight:11.0, r:16, mass:0,
+    layer:"air", weapons:["harm"], prereq:["airbase","radar"], tech:2, jet:true, ammo:4,
+    desc:"An emitter locating system in the nose and HARM under the wing. Thirty-five aircraft, delivered from 1990, and they flew the Luftwaffe's first combat missions since 1945 over Kosovo in 1999. Note what it is not: the ECR kills radars, it does not blind them. Germany has never fielded a dedicated escort jammer of any kind." },
+  tanker_g: { from:"e20", fac:"deu", role:"tanker", name:"A330 MRTT", full:"Airbus A330 MRTT (MMF)", cat:"aircraft",
+    cost:3100, oil:68, time:39, hp:740, armor:"air", speed:4.3, turn:0.9, sight:9, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
+    radius:145, tanker:400, refuelRate:15, rcs:5.2,
+    desc:"Germany had no aerial tanker at all until 2004 and owns none outright now. These belong to the Multinational MRTT Fleet, an NSPA-owned pool shared by six nations, carried on the Netherlands military register and based at Eindhoven. It is a real capability held on somebody else's terms, which is the German air force in one aircraft." },
+  airlift_g: { from:"e20", fac:"deu", role:"airlift", name:"A400M Atlas", full:"Airbus A400M Atlas", cat:"aircraft",
+    cost:1750, oil:44, time:25, hp:700, armor:"air", speed:3.6, turn:1.4, sight:8, r:20, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:1, jet:false, ammo:0,
+    radius:70, cargo:9, rcs:3.4, gen:4, radarQ:0,
+    desc:"Four counter-rotating turboprops, a 37-tonne load, and it still lands on dirt. It replaced the Transall C-160, which the Luftwaffe flew from 1968 to 2021. The programme ran years late and billions over, and the aircraft that came out of it is the best tactical airlifter in the world." },
+});
+
+
+/* ==================================================================
+   BRITISH ARMED FORCES — the present day, e20
+   ------------------------------------------------------------------
+   Small, expensive and gunnery-first: 148 Challenger hulls, fourteen
+   Archer systems, three Wedgetails, nine Astutes. The gaps here are
+   real and several of them are recent losses rather than things
+   Britain never had:
+     sead   — ALARM was withdrawn in 2013 and nothing replaced it. There
+              is no anti-radiation missile in British service; SEAD is an
+              allied-provided capability. NO ENTRY, deliberately.
+     ewair  — Britain has never operated a jamming aircraft. Airseeker
+              (RC-135W, 2014) collects and does not jam. NO ENTRY.
+     tel    — Lance left in 1993 with the last British Army surface-to-
+              surface missile. M270 was bought without ATACMS, so the
+              Royal Artillery's longest reach is a GMLRS rocket.
+     tankdestroyer — Striker/Swingfire withdrew in 2005 and the Ajax
+              Overwatch ATGM variant was never fielded.
+     heavybomber / stealthbomber / gunshipair — none, and none since the
+              last Vulcan retired in 1984.
+     cas    — no dedicated close air support aircraft since the Harrier
+              went in 2010 and Tornado GR4 in 2019. bomber_b is the
+              air-superiority fighter carrying Brimstone, and the name
+              on the card says so.
+   NAVGUN in generations.js already carries a gbr row for the 4.5in Mk 8;
+   it only substitutes into weapons matching /OTO 76mm/, so it stays dead
+   code until the British escorts are authored.
+   ================================================================== */
+Object.assign(WEAPONS, {
+  /* gun_120_rifled and howitzer_52 are named OUTSIDE the w_<era>_<fac>_<role>
+     pattern deliberately — the era normaliser in generations.js would flatten
+     the ranges that are the point of them. */
+  gun_120_rifled: { name:"120mm L30A1 rifled", dmg:158, warhead:"cannon", range:8.1, reload:4.8, burst:1,
+                acc:0.84, proj:"shell", speed:840, aoe:1.2, suppress:26, tgt:{ground:1,air:0,sea:1,sub:0} },
+  ct40:       { name:"40mm CTAS cased-telescoped", dmg:38, warhead:"bullet", range:6.8, reload:2.4, burst:3, burstDelay:0.12,
+                acc:0.80, proj:"shell", speed:650, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0} },
+  howitzer_52:{ name:"155mm 52-calibre howitzer", dmg:150, warhead:"frag", range:17.2, minRange:4.2, reload:7.4, burst:1,
+                acc:0.34, proj:"arc", speed:230, aoe:2.6, suppress:60, tgt:{ground:1,air:0,sea:1,sub:0} },
+  hvm:        { name:"Starstreak HVM", dmg:130, warhead:"cannon", range:6.8, reload:2.4, burst:3, burstDelay:0.05,
+                acc:0.88, proj:"missile", speed:1300, aoe:0, tgt:{ground:0,air:1,sea:0,sub:0} },
+  sam_camm:   { name:"CAMM soft-launch active SAM", dmg:205, warhead:"flak", range:10.4, reload:4.8, burst:2, burstDelay:0.35,
+                acc:0.91, proj:"missile", speed:680, aoe:0.9, tgt:{ground:0,air:1,sea:0,sub:0} },
+});
+
+Object.assign(UNITS, {
+  rifle_b: { fac:"gbr", role:"rifle", name:"Rifle Section", full:"Rifle Section, L85A3", cat:"infantry",
+    cost:150, oil:0, time:5, hp:115, armor:"infantry", speed:1.05, turn:7, sight:6.0, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1,
+    desc:"Eight men, bullpup rifles and a section of two fireteams. The L85A3 is the third rebuild of a rifle first issued in 1987 - flat-top rail, lighter upper, and finally a reputation it does not have to apologise for." },
+  at_b: { fac:"gbr", role:"at", name:"NLAW / Javelin", full:"AT Team, NLAW and FGM-148 Javelin", cat:"infantry",
+    cost:390, oil:0, time:9, hp:105, armor:"infantry", speed:0.88, turn:6, sight:7.2, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1,
+    desc:"Javelin for the long shot, NLAW for everything else. NLAW has no seeker at all: the gunner tracks the target for a few seconds, fires, and the missile flies a metre above the tank and detonates downward through the roof. Nothing to jam, and 20,000 of them went to Ukraine." },
+  aa_b: { fac:"gbr", role:"aa", name:"Starstreak Team", full:"HVM Team, Starstreak and Martlet LMM", cat:"infantry",
+    cost:400, oil:0, time:8, hp:100, armor:"infantry", speed:0.9, turn:6, sight:8.0, r:6, mass:0.1,
+    layer:"ground", weapons:["hvm"], prereq:["barracks"], tech:1,
+    desc:"The fastest surface-to-air missile in the world, above Mach 4, riding a laser beam so there is no seeker to decoy and nothing to jam. Three tungsten darts and no proximity fuse - it must hit. Short reach, and strictly anti-air." },
+  recon_b: { fac:"gbr", role:"recon", name:"Jackal", full:"Jackal 2 MWMIK / Foxhound", cat:"vehicle",
+    cost:400, oil:5, time:7, hp:330, armor:"light", speed:2.95, turn:3.3, sight:9.5, r:11, mass:7,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
+    desc:"Air-sprung, open-topped and fast, on the argument that seeing and hearing the ambush beats surviving it. Foxhound is the opposite bet - a fully protected pod - and the Army fields both because it never settled the question." },
+  ifv_b: { fac:"gbr", role:"ifv", name:"Warrior", full:"FV510 Warrior", cat:"vehicle",
+    cost:870, oil:10, time:14, hp:840, armor:"light", speed:1.72, turn:2.0, sight:7.2, r:14, mass:32,
+    layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.7, cargo:6,
+    desc:"Thirty-eight years old and unmodernised. The Rarden cannon is manually stabilised and cannot be fired accurately on the move; the turret upgrade that would have fixed that was cancelled in 2021 after a decade and 430 million pounds. It also carries no anti-tank missile, so it cannot fight armour at all." },
+  lt_b: { from:"e20", fac:"gbr", role:"lighttank", name:"Ajax", full:"Ajax reconnaissance vehicle", cat:"vehicle",
+    cost:820, oil:11, time:13, hp:760, armor:"light", speed:1.95, turn:2.3, sight:9.8, r:13, mass:38,
+    layer:"ground", weapons:["ct40"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.7,
+    desc:"A 38-tonne reconnaissance vehicle with a stabilised 40mm cased-telescoped cannon and the best sensor fit in the British Army - it is meant to find, not to be found. Ordered in 2014, halted twice when vibration and noise injured crews, and only declared initially operational in 2025." },
+  mbt_b: { fac:"gbr", role:"mbt", name:"Challenger 2", full:"Challenger 2", cat:"vehicle",
+    cost:1500, oil:22, time:22, hp:1820, armor:"heavy", speed:1.38, turn:1.4, sight:8.0, r:16, mass:64,
+    layer:"ground", weapons:["gun_120_rifled"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4, crush:true,
+    desc:"The last rifled tank gun in NATO, kept because the British Army will not give up the HESH round - which means one country in the world makes its ammunition. Dorchester armour that has never been defeated frontally, a 1998 fire-control system, and a fleet down to 148 hulls." },
+  hvy_b: { from:"e20", fac:"gbr", role:"heavy", name:"Challenger 3", full:"Challenger 3 (in service 2027)", cat:"vehicle",
+    cost:2400, oil:38, time:32, hp:2400, armor:"heavy", speed:1.45, turn:1.4, sight:8.6, r:18,
+    mass:66, layer:"ground", weapons:["gun_120"], prereq:["factory","lab"], tech:3,
+    turret:true, tturn:1.5, crush:true, aps:0.45,
+    desc:"148 Challenger 2 hulls rebuilt with a new turret, modular armour, Trophy active protection and - finally - a 120mm smoothbore, ending fifty years of British rifled tank guns and putting the fleet on NATO ammunition. First deliveries 2025; it is NOT yet in service, with an in-service date of 2027." },
+  spaag_b: { fac:"gbr", role:"spaag", name:"Stormer HVM", full:"Stormer HVM", cat:"vehicle",
+    cost:980, oil:13, time:15, hp:700, armor:"light", speed:1.9, turn:2.1, sight:9.2, r:13, mass:13,
+    layer:"ground", weapons:["hvm"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.8,
+    desc:"Eight Starstreak on tracks, cued by a passive infrared sight that never emits - so an anti-radiation missile has nothing to home on. It has no gun and no ground capability whatsoever: it cannot defend itself against infantry, and its ceiling is a third of a Tunguska's." },
+  spg_b: { fac:"gbr", role:"spg", name:"Archer", full:"Archer FH77BW L5 155mm", cat:"vehicle",
+    cost:1550, oil:20, time:22, hp:640, armor:"light", speed:2.1, turn:2.0, sight:5.5, r:15, mass:34,
+    layer:"ground", weapons:["howitzer_52"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.7,
+    desc:"A wheeled, fully automatic 52-calibre gun bought from Sweden in 2024 after 32 AS-90s went to Ukraine. It fires from the cab without anyone leaving it and is moving again in thirty seconds - shoot-and-scoot in the literal sense. Fourteen systems. The AS-90 it partly replaces entered service in 1993 and was never upgraded." },
+  mlrs_b: { fac:"gbr", role:"mlrs", name:"M270 MLRS", full:"M270A2 with GMLRS", cat:"vehicle",
+    cost:2200, oil:34, time:30, hp:700, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:25,
+    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
+    desc:"The Royal Artillery's longest reach, and it is a rocket. Britain bought M270 without ATACMS and has fielded no surface-to-surface missile since Lance left in 1993, so where the US launcher can reach 300km this one stops at the end of a GMLRS trajectory. It sows no mines." },
+  helo_b: { fac:"gbr", role:"gunship", name:"Apache AH-64E", full:"AH-64E Apache (British Army)", cat:"aircraft",
+    cost:1650, oil:26, time:22, hp:620, armor:"air", speed:3.6, turn:2.2, sight:9.5, r:16, mass:0,
+    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:8,
+    desc:"Fifty new-build AH-64Es replacing the licence-built AH.1, fully operational from 2024. Manned-unmanned teaming, uprated engines, and a folding rotor so it can go to sea on a carrier or an assault ship - which is how Britain intends to use it." },
+  trans_b: { fac:"gbr", role:"transport", name:"Chinook HC6A", full:"Boeing Chinook HC.6A", cat:"aircraft",
+    cost:1250, oil:20, time:18, hp:700, armor:"air", speed:4.2, turn:1.9, sight:7.6, r:17, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:14, ammo:0,
+    desc:"Britain lifts with a tandem-rotor heavy, not a utility helicopter: roughly twice a Black Hawk's load, digital cockpit, and the most fought-over airframe in every British operation since the Falklands. There have never been enough of them." },
+  fighter_b: { fac:"gbr", role:"fighter", name:"Typhoon FGR4", full:"Eurofighter Typhoon FGR.4", cat:"aircraft",
+    cost:1450, oil:31, time:20, hp:440, armor:"air", speed:8.8, turn:2.2, sight:10.5, r:15, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    desc:"Supercruise, canard-delta agility and Meteor - a ramjet missile with the longest no-escape zone in NATO. Against that, it still flies a mechanically scanned Captor-M radar: the ECRS Mk2 active array is funded but not in service, so the best missile in Europe is cued by the oldest radar in its class." },
+  bomber_b: { fac:"gbr", role:"cas", name:"Typhoon (strike fit)", full:"Typhoon FGR.4 with Brimstone 3 and Paveway IV", cat:"aircraft",
+    cost:1900, oil:38, time:26, hp:440, armor:"air", speed:8.4, turn:2.1, sight:9.5, r:16, mass:0,
+    layer:"air", weapons:["jdam"], prereq:["airbase","lab"], tech:3, jet:true, ammo:5,
+    desc:"Say this plainly: Britain has had no dedicated close air support aircraft since the Harrier went in 2010 and Tornado GR4 in 2019. The mission is now flown by the air-superiority fighter carrying Brimstone - a millimetre-wave missile precise enough to take one moving vehicle out of a convoy - and there is no armoured gun platform behind it." },
+  sam_b: { fac:"gbr", role:"sam", name:"Sky Sabre", full:"Sky Sabre (Land Ceptor, CAMM)", cat:"vehicle",
+    cost:2100, oil:28, time:26, hp:520, armor:"light", speed:1.4, turn:1.3, sight:11.5, r:15, mass:20,
+    layer:"ground", weapons:["sam_camm"], prereq:["factory","radar","lab"], tech:3, turret:false,
+    deploy:true, deploySec:5.0, radar:11, radarQ:17, rounds:8,
+    desc:"Eight soft-launched active-radar missiles that can turn onto a target behind the launcher, a Giraffe radar and a fire-control system that can hold twenty-four engagements at once - a genuine generational jump over the Rapier it replaced in 2021. But its reach is about 25km. Britain has had no long-range or anti-ballistic air defence of any kind since Bloodhound retired in 1991." },
+  stealth_b: { fac:"gbr", role:"stealthfighter", name:"F-35B Lightning", full:"F-35B Lightning (617 Sqn)", cat:"aircraft",
+    cost:2600, oil:48, time:34, hp:500, armor:"air", speed:9.2, turn:2.3, sight:12.2, r:16, mass:0,
+    layer:"air", weapons:["aam_lo","sdb"], prereq:["airbase","lab"], tech:3, jet:true, ammo:5, stealth:0.62,
+    desc:"The short take-off and vertical landing variant, in British service since 2018, flown by the RAF and the Fleet Air Arm from the same squadrons. The lift fan is what lets it operate from a ramp-equipped carrier with no catapult, and it is also what costs it fuel and bay volume - the B has the shortest legs and the smallest magazine of the three variants." },
+  awacs_b: { from:"e20", fac:"gbr", role:"awacs", name:"E-7 Wedgetail AEW1", full:"Boeing E-7A Wedgetail AEW.1", cat:"aircraft",
+    cost:3400, oil:70, time:34, hp:600, armor:"air", speed:4.3, turn:0.9, sight:15.5, r:26, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar","lab"], tech:3, jet:true, ammo:0,
+    radarQ:42, rcs:2.8, gen:4.5, awacs:true,
+    desc:"A fixed dorsal MESA array instead of a rotating dome: it can stare electronically in one direction while still scanning, which a rotodome cannot. Three aircraft, cut from five, entering service from 2025 - and Britain went without any airborne early warning of its own from the Sentry's retirement in 2021 until they arrived." },
+  airlift_b: { from:"e20", fac:"gbr", role:"airlift", name:"A400M Atlas", full:"Airbus A400M Atlas C.1", cat:"aircraft",
+    cost:2000, oil:48, time:26, hp:740, armor:"air", speed:3.9, turn:1.2, sight:8, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, jet:false, ammo:0, cargo:14, radius:95, rcs:4.4,
+    desc:"Eight-bladed scimitar propellers, jet-like speed, and it lands on the dirt strip a C-17 cannot use while carrying more than twice a Hercules. Twenty-two of them replaced the entire C-130 fleet in 2023, alongside eight C-17s for anything tank-sized." },
+  tanker_b: { from:"e20", fac:"gbr", role:"tanker", name:"Voyager KC3", full:"Airbus Voyager KC.3 (A330 MRTT)", cat:"aircraft",
+    cost:3100, oil:68, time:39, hp:740, armor:"air", speed:4.4, turn:0.9, sight:9, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
+    radius:145, tanker:400, refuelRate:15, rcs:5.0,
+    desc:"Probe-and-drogue only - no boom - so it can refuel British and European aircraft but not an American one without a probe, which is a real coalition constraint. Fourteen aircraft held under a PFI contract, part of which flies as an airline in peacetime." },
+
+  /* ---- the four era-spanning infantry and logistics roles ----
+     These have no era entries anywhere in the roster: mg, mortar, sniper and
+     supply are authored once here with from:"e50" and carry every era. The
+     British land package covered e50-e00 and the modern package covered the
+     present day, and both recorded these four as owed rather than absent —
+     without them this army has no machine-gun team, no mortar, no sniper and
+     no supply truck in ANY era, which is not a historical gap. */
+  mg_b: { from:"e50", fac:"gbr", role:"mg", name:"GPMG (SF) Team", full:"Weapons Team, L7A2 GPMG in the sustained-fire role", cat:"infantry",
+    cost:290, oil:0, time:7, hp:112, armor:"infantry", speed:0.82, turn:6, sight:6.4, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"The same gun since 1961 — the FN MAG, built at Enfield as the L7 and still the section and sustained-fire machine gun sixty years later. On the C2 tripod with a dial sight it shoots indirect onto a map reference at 1,800 metres, which almost no other army still teaches." },
+  mortar_b: { from:"e50", fac:"gbr", role:"mortar", name:"Mortar Section", full:"Mortar Section, L16A2 81mm", cat:"infantry",
+    cost:495, oil:0, time:11, hp:100, armor:"infantry", speed:0.72, turn:6, sight:5.2, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:2, deploy:true,
+    desc:"The L16 of 1965 is the most widely copied mortar in the world and the Americans adopted it themselves as the M252. Britain went no heavier: there is no 120mm in the British infantry battalion, so the mortar line stops at 81mm and the weight of fire beyond it belongs to the guns." },
+  sniper_b: { from:"e60", fac:"gbr", role:"sniper", name:"Sniper Pair", full:"Sniper Pair, L115A3 (.338 Lapua)", cat:"infantry",
+    cost:720, oil:0, time:14, hp:90, armor:"infantry", speed:0.78, turn:6, sight:10.8, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"An unbroken sniping tradition, and the trade was never allowed to lapse the way it was in some armies. The L42A1 of 1970 was a rebarrelled wartime Lee-Enfield; the L96 followed in 1985 and the .338 L115A3 in 2007, with which the longest confirmed sniper kill of its day was made at 2,475 metres." },
+  supply_b: { fac:"gbr", role:"supply", name:"MAN SV", full:"MAN SV 9t Support Vehicle", cat:"vehicle",
+    cost:740, oil:6, time:11, hp:590, armor:"light", speed:1.88, turn:2.0, sight:6.0, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:880, supplyRange:5.0,
+    desc:"Fuel, ammunition and water forward, then back to the depot. British logistics is built to move a brigade a long way rather than to sustain a corps, and it leans on chartered shipping to do it — which is what supplyMul 0.95 records." },
+});
+
+/* ==================================================================
+   FRENCH ARMED FORCES — the present day (e20), suffix _f
+   ==================================================================
+   Sovereign where it counts and honest about where it is not. The HK416F
+   is a German rifle, the carrier's early-warning aircraft is an American
+   E-2C and the Tigre's missile is a Hellfire because the European Trigat
+   was cancelled; what is wholly French is the warhead, the reactor, the
+   airframe and the missile industry that built Exocet, Aster, SCALP and
+   the AASM.
+
+   THE EMPTY SLOTS, every one of them deliberate:
+     tel    — EMPTY, and the single most important structural difference
+              from the American roster. Hades was accepted in 1992, put
+              into store in 1993 without ever standing alert, and
+              dismantled by 1997. France never bought ATACMS with its
+              M270s and has no PrSM equivalent, so since 1997 there has
+              been no French mobile ballistic launcher of any kind,
+              nuclear or conventional.
+     sead   — EMPTY. ARMAT left service with the Jaguar in the 2000s and
+              was never replaced. France has no anti-radiation missile.
+     ewair  — ew_f is FILLED but carries jam:0 on purpose. Archange is
+              three business jets full of receivers replacing the C-160
+              Gabriel; France has never operated an electronic-attack
+              aircraft and has no programme for one. Treat the role as
+              functionally empty and read the card.
+     heavybomber / stealthbomber / gunshipair / stealthfighter /
+     cstealth — none, ever. France declined the JSF outright, FCAS has
+              not flown a demonstrator, and the Charles de Gaulle air
+              group is Rafale M only. hbomber_f WAS written by the roster
+              as the Rafale B carrying ASMP-A, and it is left out here for
+              the same reason the Vulcan is left off the British roster:
+              strategic bombers are American-only in this game, and a
+              two-seat fighter with one stand-off missile is not a bomber
+              whatever role it would have to occupy. France's airborne
+              deterrent is on the faction card instead. Restoring it means
+              pasting back hbomber_f and the five fra_e**_heavybomber era
+              entries from the France roster documents; nothing else
+              depends on them.
+     heavy  — EMPTY. No French tank heavier than the Leclerc and no
+              hard-kill active protection on any French vehicle: Galix is
+              a smoke and decoy dispenser.
+     tankdestroyer — EMPTY. VAB Méphisto withdrew in the 2010s and the
+              anti-tank missile moved onto the EBRC Jaguar, which sits in
+              the lighttank slot as a reconnaissance vehicle.
+     ewveh  — EMPTY. French ground electronic-warfare units exist but no
+              vehicle in the Prophet or Krasukha class is publicly
+              identified by designation and in-service date, so nothing is
+              claimed rather than inventing one.
+     minelaying — France signed Ottawa in 1997 and Oslo in 2008. There is
+              no French cargo-mine shell or rocket, so neither spg_f nor
+              mlrs_f carries a dispenser, unlike their American opposites.
+   mg_f, mortar_f, sniper_f and supply_f carry NO `from`, so the
+   ERA_TIMELESS stamp gives them e50 and this army has a machine-gun team,
+   a mortar section, a sniper pair and a supply truck in every era. Their
+   cards name what held the role in the earlier decades.
+   cfighter_f and cawacs_f are carrier aviation and are authored here
+   rather than with the navies: game.js fills a deck from unitFor(fac,
+   "cfighter"), so a French hull sails with an empty deck until they
+   exist.
+   ================================================================== */
+Object.assign(UNITS, {
+/* -------- infantry -------- */
+  rifle_f: { fac:"fra", role:"rifle", name:"Groupe de combat", full:"Groupe de combat, HK416F", cat:"infantry",
+    cost:155, oil:0, time:5, hp:115, armor:"infantry", speed:1.05, turn:7, sight:6.2, r:6, mass:0.1,
+    layer:"ground", weapons:["rifle"], prereq:["barracks"], tech:1, from:"e20",
+    desc:"France retired the FAMAS in 2017 after thirty-seven years and bought a German rifle, because no French factory had built a service rifle since the Manufacture de Saint-Etienne closed. 117,000 HK416F, plus the FELIN sight and radio kit on top." },
+  mg_f: { fac:"fra", role:"mg", name:"MAG 58 Team", full:"Equipe mitrailleuse, MAG 58 7,62mm", cat:"infantry",
+    cost:280, oil:0, time:7, hp:110, armor:"infantry", speed:0.82, turn:6, sight:6.2, r:6, mass:0.1,
+    layer:"ground", weapons:["lmg"], prereq:["barracks"], tech:1,
+    desc:"Era-spanning: the AA-52 held this role from 1952 and the Belgian MAG replaced it from the 2000s. Same weapon as the British GPMG and the American M240 - the one place where the three armies genuinely share a gun." },
+  at_f: { fac:"fra", role:"at", name:"MMP Team", full:"Equipe antichar, MMP / Akeron MP", cat:"infantry",
+    cost:410, oil:0, time:9, hp:105, armor:"infantry", speed:0.88, turn:6, sight:7.4, r:6, mass:0.1,
+    layer:"ground", weapons:["atgm_inf"], prereq:["barracks"], tech:1, from:"e20",
+    desc:"Fire-and-forget top-attack, plus a fibre-optic link that lets the gunner watch the missile's own seeker and re-aim or abort in flight - something Javelin cannot do. In service 2017, twenty-one years after Javelin, and it replaced a wire-guided MILAN that was still front-line until then." },
+  aa_f: { fac:"fra", role:"aa", name:"Mistral Team", full:"Equipe SATCP, Mistral 3", cat:"infantry",
+    cost:355, oil:0, time:8, hp:100, armor:"infantry", speed:0.9, turn:6, sight:8.0, r:6, mass:0.1,
+    layer:"ground", weapons:["manpad"], prereq:["barracks"], tech:1, from:"e20",
+    desc:"Mistral 3 (2019) has an imaging seeker that can take a drone or a cruise missile against a hot background. Heavier than a Stinger, harder-hitting, tripod-launched rather than shoulder-fired, and for most French brigades it is the entire air defence." },
+  mortar_f: { fac:"fra", role:"mortar", name:"MO 120 RT Section", full:"Section mortier, MO 120 RT 120mm", cat:"infantry",
+    cost:520, oil:0, time:12, hp:100, armor:"infantry", speed:0.68, turn:6, sight:5.0, r:6, mass:0.1,
+    layer:"ground", weapons:["mortar"], prereq:["barracks"], tech:2, deploy:true, rounds:16,
+    desc:"A rifled 120mm towed mortar - not the smoothbore 81mm every other army calls a mortar section. Spin-stabilised bombs out to 13 km with artillery accuracy, at the cost of a 582 kg weapon that needs a vehicle to move. France has used it as light artillery since 1973 and still does, and the Brandt 81mm and 120mm before it go back to the 1930s - which is why this section carries every era." },
+  sniper_f: { fac:"fra", role:"sniper", name:"Hecate II Team", full:"Equipe tireur d'elite, PGM Hecate II", cat:"infantry",
+    cost:700, oil:0, time:14, hp:90, armor:"infantry", speed:0.78, turn:6, sight:10.5, r:6, mass:0.1,
+    layer:"ground", weapons:["sniper"], prereq:["barracks","radar"], tech:2, stealthMove:true,
+    desc:"12.7mm anti-materiel rifle, French-designed and in service since 1993. Kills equipment as readily as people out past 1,800 m. The trade never lapsed: a scoped MAS 36 in the 1950s, the FR-F1 in 7.5mm from 1966 and the FR-F2 from 1984 carry the earlier eras." },
+
+/* -------- vehicles -------- */
+  recon_f: { fac:"fra", role:"recon", name:"VBL Ultima", full:"Panhard VBL Ultima", cat:"vehicle",
+    cost:400, oil:5, time:7, hp:330, armor:"light", speed:2.85, turn:3.3, sight:9.5, r:11, mass:5,
+    layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4, from:"e20",
+    desc:"A five-tonne armoured car, smaller than a Humvee and actually armoured, rebuilt in 2021 to run to 2035 because its replacement keeps slipping. Amphibious, air-portable, and now carrying more weight than the chassis was ever designed for." },
+  ifv_f: { fac:"fra", role:"ifv", name:"VBCI", full:"Nexter VBCI 25mm", cat:"vehicle",
+    cost:920, oil:11, time:14, hp:850, armor:"light", speed:1.92, turn:2.2, sight:7.5, r:14, mass:32,
+    layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.8, cargo:9, from:"e20",
+    desc:"Eight wheels, thirty-two tonnes, 100 km/h, nine dismounts. France went wheeled where America and Germany went tracked, on the argument that its wars are 3,000 km away and getting there matters more than cross-country speed. Behind it the Scorpion programme's Griffon carries the rest of the infantry with a remote weapon station and no turret." },
+  lt_f: { fac:"fra", role:"lighttank", name:"EBRC Jaguar", full:"EBRC Jaguar, 40mm CTA and MMP", cat:"vehicle",
+    cost:820, oil:10, time:13, hp:730, armor:"light", speed:2.15, turn:2.5, sight:8.2, r:13, mass:25,
+    layer:"ground", weapons:["gun_light"], prereq:["factory"], tech:1, turret:true, tturn:1.7, from:"e20",
+    desc:"A 40mm cased-telescoped cannon, developed jointly with Britain, plus two MMP missiles in the same turret - so one vehicle covers everything from a drone to a tank. It replaced the AMX-10 RC and the Sagaie from 2022. Twenty-five tonnes on six wheels: it dies to anything that hits it, and it is the reconnaissance regiment's only gun." },
+  mbt_f: { fac:"fra", role:"mbt", name:"Leclerc XLR", full:"Leclerc XLR (Scorpion standard)", cat:"vehicle",
+    cost:1520, oil:22, time:22, hp:1700, armor:"heavy", speed:1.72, turn:1.65, sight:8.0, r:16, mass:58,
+    layer:"ground", weapons:["gun_120"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.7, crush:true, from:"e20",
+    desc:"The only Western tank with a bustle autoloader: three crew, 22 ready rounds, six a minute, and a hull four tonnes lighter than an Abrams on a 1,500 hp hyperbar diesel that makes it the fastest MBT in the game. XLR (2022) adds the Scorpion battle-management net, remote weapon station and belly and cage armour. Two hundred are being rebuilt out of 406 ever built, on a line that closed in 2008 - France cannot make another one." },
+  spaag_f: { fac:"fra", role:"spaag", name:"Crotale NG", full:"Crotale NG, VT-1", cat:"vehicle",
+    cost:1000, oil:14, time:15, hp:640, armor:"light", speed:1.25, turn:1.4, sight:9.5, r:14, mass:15,
+    layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.4, from:"e20",
+    desc:"Pulse-Doppler search, TWT tracker, TV and IR channels, eight VT-1 missiles. It belongs to the air force and defends airfields. The Armee de Terre gave up Roland in the late 2000s and has had no vehicle-mounted short-range air defence since - Mistral teams and towed 20mm guns are the whole of it, which Ukraine has made look like a serious mistake." },
+  spg_f: { fac:"fra", role:"spg", name:"CAESAR", full:"CAESAR 155mm 52-cal on 6x6", cat:"vehicle",
+    cost:1250, oil:14, time:17, hp:460, armor:"light", speed:2.35, turn:2.6, sight:5.5, r:14, mass:18,
+    layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.7,
+    deploy:true, deploySec:4, from:"e20",
+    desc:"A 52-calibre 155 bolted to an eighteen-tonne lorry with an unarmoured cab - a different idea from a tracked SPG, not a cheaper one. In action in sixty seconds, out again in sixty, 40 km with a base-bleed shell, and it fits inside an A400M. It cannot take a single fragment, and both halves of that bargain have been proved in Ukraine. It cannot lay a minefield: France signed Ottawa and Oslo and has no cargo-mine shell." },
+  mlrs_f: { fac:"fra", role:"mlrs", name:"LRU", full:"Lance-Roquettes Unitaire (M270 GMLRS)", cat:"vehicle",
+    cost:2200, oil:34, time:30, hp:700, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:25,
+    layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.8, from:"e20",
+    desc:"Thirteen launchers. That is the whole of French rocket artillery: 55 M270s cut to 13 rebuilt for the GPS-guided unitary rocket, the cluster stock destroyed under Oslo, and a replacement not due until the late 2020s. Accurate to metres at 70 km, and there is almost none of it. No mine-laying rocket - France has never had one." },
+  /* NOT IN THE ROSTER DOCUMENT AND ADDED HERE. The France package entered
+     SAMP/T at e00 and then wrote no present-day sam row, which would have
+     left France the only Western army in the game with an area SAM in 2011
+     and none in 2025 — and its own gap list never claims the slot is empty.
+     SAMP/T is in service, went to Ukraine in 2023, and the Aster 30 B1NT
+     round entered service in 2025, so the honest present-day entry is the
+     same system, upgraded. */
+  sam_f: { fac:"fra", role:"sam", name:"SAMP/T Mamba", full:"SAMP/T with Aster 30 B1NT", cat:"vehicle",
+    cost:2750, oil:38, time:34, hp:580, armor:"light", speed:1.2, turn:1.1, sight:13.6, r:16, mass:34,
+    layer:"ground", weapons:["sam_area3"], prereq:["factory","radar","lab"], tech:3, turret:false,
+    deploy:true, deploySec:5.0, radar:13, radarQ:19, rounds:8, from:"e20",
+    desc:"The only long-range surface-to-air missile in service anywhere that was designed in Europe. Eight Aster 30 in vertical cells on a lorry, an Arabel or GF300 radar, and a terminal stage that steers on side thrusters and pulls 60 g in the last instant instead of on fins alone. Competitive with PAC-3 against aircraft and shorter-ranged ballistic missiles, and there are only about eight batteries - one of which went to Ukraine in 2023." },
+  radarv_f: { fac:"fra", role:"radarv", name:"COBRA", full:"COBRA counter-battery radar", cat:"vehicle",
+    cost:1200, oil:12, time:16, hp:500, armor:"light", speed:1.6, turn:1.7, sight:9, r:14, mass:18,
+    layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
+    radar:14, radarQ:20, from:"e20",
+    desc:"Franco-German-British phased array that back-plots a shell to the gun that fired it. Ten in French service. Before it, the French army had battlefield surveillance radars and no counter-battery capability at all." },
+  supply_f: { fac:"fra", role:"supply", name:"PPLOG", full:"Porteur Polyvalent Logistique", cat:"vehicle",
+    cost:700, oil:6, time:11, hp:600, armor:"light", speed:1.9, turn:2, sight:6, r:14, mass:16,
+    layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:900, supplyRange:5,
+    desc:"Armoured-cab 8x8 flatrack lorry. Moves the ammunition that CAESAR fires faster than anyone can bring it forward." },
+
+/* -------- air -------- */
+  helo_f: { fac:"fra", role:"gunship", name:"Tigre HAD", full:"Airbus Helicopters Tigre HAD", cat:"aircraft",
+    cost:1550, oil:25, time:22, hp:590, armor:"air", speed:3.6, turn:2.5, sight:9.4, r:16, mass:0,
+    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:8,
+    gen:4.0, rcs:0.55, radarQ:4.0, radius:22, from:"e20",
+    desc:"Six tonnes against the Apache's ten: quicker, quieter, shorter-legged, and with no mast-mounted radar - the Tigre must expose itself to find a target where a Longbow Apache does not. Hellfire II because the European Trigat missile it was designed around was cancelled." },
+  trans_f: { fac:"fra", role:"transport", name:"NH90 Caiman", full:"NHIndustries NH90 TTH Caiman", cat:"aircraft",
+    cost:950, oil:15, time:15, hp:530, armor:"air", speed:4.1, turn:2.4, sight:8, r:15, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:12, ammo:0,
+    gen:4.5, rcs:0.85, radarQ:1.5, radius:32, from:"e20",
+    desc:"Composite airframe, fly-by-wire with no mechanical reversion, fourteen to twenty troops. Fifteen years late and expensive enough that too few were bought, so the Puma of 1970 flew beside it into the 2020s." },
+  fighter_f: { fac:"fra", role:"fighter", name:"Rafale", full:"Dassault Rafale, standard F4", cat:"aircraft",
+    cost:1480, oil:31, time:21, hp:450, armor:"air", speed:8.8, turn:2.2, sight:11.2, r:15, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:6,
+    gen:4.5, rcs:0.70, radarQ:15.0, radius:42, refuelable:true, from:"e20",
+    desc:"Close-coupled canard delta, RBE2 AESA, and SPECTRA - a self-protection suite that finds and jams threats on its own instead of relying on an escort, which matters enormously to an air force that has no jamming aircraft at all. Omnirole: one airframe does the fighter, strike, reconnaissance and nuclear jobs. Not stealthy, and never meant to be." },
+  bomber_f: { fac:"fra", role:"cas", name:"Mirage 2000D RMV", full:"Mirage 2000D RMV", cat:"aircraft",
+    cost:1750, oil:35, time:25, hp:520, armor:"air", speed:7.2, turn:1.8, sight:9, r:17, mass:0,
+    layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:5,
+    gen:4.0, rcs:1.10, radarQ:4.0, radius:32, refuelable:true, from:"e20",
+    desc:"Fifty airframes rebuilt in 2021 to carry a gun pod, the Hammer glide bomb and MICA, keeping them flying to 2035. It is the closest thing France has to a close-support aircraft, and it is a 1990s two-seat bomber with no armour: there has never been a French A-10 and there is no plan for one." },
+  ew_f: { fac:"fra", role:"ewair", name:"Archange", full:"Dassault Falcon 8X Archange (CUGE)", cat:"aircraft",
+    cost:2600, oil:44, time:31, hp:480, armor:"air", speed:6.4, turn:1.4, sight:13.5, r:18, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","lab"], tech:3, jet:true, ammo:0,
+    jam:0, jamPower:0, radar:12, radarQ:22, gen:4.5, rcs:1.2, radius:60, refuelable:true, noAuto:true, from:"e20",
+    desc:"Read this slot honestly: France has never operated an electronic-attack aircraft, and Archange is not one either. It is three business jets full of receivers that find, locate and fingerprint hostile emitters, replacing the C-160 Gabriel from 2025. It jams nothing and carries nothing - and since ARMAT left service France has had no anti-radiation missile to hand the targets to. Every French package into a defended area borrows American Growlers." },
+  awacs_f: { fac:"fra", role:"awacs", name:"E-3F Sentry", full:"Boeing E-3F SDA", cat:"aircraft",
+    cost:3400, oil:70, time:34, hp:620, armor:"air", speed:4.2, turn:0.9, sight:16, r:26, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar","lab"], tech:3,
+    jet:true, ammo:0, radar:14, radarQ:38, rcs:3.2, gen:3.5, radius:65, awacs:true, refuelable:true, from:"e20",
+    desc:"Four aircraft, bought outright in 1991 so that France could see the air picture without asking the NATO pool, and upgraded again in 2025. The APY-2 antenna underneath is still the 1977 design. Four airframes is the entire national capability: two in depot and the picture goes dark." },
+  cfighter_f: { fac:"fra", role:"cfighter", name:"Rafale M", full:"Dassault Rafale M, standard F4", cat:"aircraft",
+    cost:1550, oil:32, time:20, hp:450, armor:"air", speed:8.7, turn:2.2, sight:10.4, r:16, mass:0,
+    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:5,
+    gen:4.5, rcs:0.70, radarQ:15.0, radius:38, carrierCapable:true, refuelable:true, radar:7, from:"e20",
+    desc:"The first Rafale variant to enter service, in 2001, four years before the air force got one. A jump strut, a single nose wheel and an arrestor hook on the same airframe - France is the only country outside the United States operating catapult-launched conventional carrier fighters, and this is the only aircraft type its carrier flies." },
+  cawacs_f: { fac:"fra", role:"cawacs", name:"E-2C Hawkeye", full:"Northrop Grumman E-2C Hawkeye 2000", cat:"aircraft",
+    cost:2900, oil:58, time:30, hp:500, armor:"air", speed:4.3, turn:1.0, sight:13, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:3, jet:true, ammo:0,
+    radar:26, radarQ:28, rcs:2.6, gen:4.0, radius:52, awacs:true, carrierCapable:true, from:"e20",
+    desc:"Three aircraft, bought from the United States in 1998 because nothing European exists that can do this off a deck. The reason a French carrier group can see past its own horizon at all. E-2D on order for the late 2020s." },
+  airlift_f: { fac:"fra", role:"airlift", name:"A400M Atlas", full:"Airbus A400M Atlas", cat:"aircraft",
+    cost:2200, oil:54, time:29, hp:780, armor:"air", speed:3.9, turn:1.3, sight:8.5, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase"], tech:2, jet:false, ammo:0,
+    gen:4.0, rcs:4.2, radarQ:0, radius:90, cargo:14, magazine:2, from:"e20",
+    desc:"Thirty-seven tonnes of payload on eight-bladed scimitar propellers - jet-speed cruise, dirt-strip landing, and the only aircraft that fills the gap between a Hercules and a C-17. Fourteen years late and ruinously expensive, and the sole reason France can put an armoured vehicle into the Sahel without asking Washington for the lift." },
+  tanker_f: { fac:"fra", role:"tanker", name:"A330 MRTT Phenix", full:"Airbus A330 MRTT Phenix", cat:"aircraft",
+    cost:3300, oil:72, time:41, hp:790, armor:"air", speed:4.4, turn:0.9, sight:9, r:22, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
+    radius:150, tanker:440, refuelRate:16, rcs:5.4, gen:4, from:"e20",
+    desc:"Boom and hose on one airframe, and it carries freight and casualties as well. It replaced eleven sixty-year-old C-135FRs on which the entire airborne deterrent depended - the most consequential French air force purchase of the decade, and the fleet is still only around fifteen aircraft." },
+});
+
 /* faction-specific weapons */
 Object.assign(WEAPONS, {
   koksan: { name:"170mm gun", dmg:200, warhead:"frag", range:20.0, minRange:6.0, reload:13.0, burst:1,
@@ -1725,10 +2282,19 @@ FACTIONS.pla.thermal  = 0.90; FACTIONS.pla.fireCtrl  = 1.11; FACTIONS.pla.ammoQ 
 FACTIONS.roc.thermal  = 0.95; FACTIONS.roc.fireCtrl  = 1.06; FACTIONS.roc.ammoQ  = 1.04;
 FACTIONS.pact.thermal = 0.55; FACTIONS.pact.fireCtrl = 0.86; FACTIONS.pact.ammoQ = 0.94;
 FACTIONS.kpa.thermal  = 0.15; FACTIONS.kpa.fireCtrl  = 0.62; FACTIONS.kpa.ammoQ  = 0.74;
+FACTIONS.gbr.thermal  = 1.00; FACTIONS.gbr.fireCtrl  = 1.16; FACTIONS.gbr.ammoQ  = 1.10;
+FACTIONS.deu.thermal  = 1.00; FACTIONS.deu.fireCtrl  = 1.18; FACTIONS.deu.ammoQ  = 1.14;
+FACTIONS.fra.thermal  = 0.95; FACTIONS.fra.fireCtrl  = 1.06; FACTIONS.fra.ammoQ  = 1.08;
+/* No carousel entry for any of the three. Britain has never fielded an
+   autoloader. The Leclerc has one, but it is a BUSTLE magazine behind a blast
+   door with blowout panels — the precise opposite of what `carousel` models. */
 FACTIONS.pact.carousel = 0.55; FACTIONS.kpa.carousel = 0.70; FACTIONS.pla.carousel = 0.30;
 FACTIONS.nato.bonus += " Thermal sights and stabilised fire control: fights at night and in sandstorm.";
 FACTIONS.pact.bonus += " Autoloader carousels detonate catastrophically when penetrated.";
 FACTIONS.kpa.bonus += " Optical sights only — nearly blind after dark.";
+FACTIONS.gbr.bonus += " The longest recorded tank-on-tank kill, and crews trained to take it.";
+FACTIONS.deu.bonus += " The Abrams fires a German gun: the Rh-120, adopted as the M256 in 1985.";
+FACTIONS.fra.bonus += " Armour that chose speed over protection and never went back.";
 
 
 /* ---- relative standing ----
@@ -1745,12 +2311,21 @@ FACTIONS.pla.accMul  = 1.06; FACTIONS.pla.hpMul  = 1.06;
 FACTIONS.roc.accMul  = 0.99; FACTIONS.roc.hpMul  = 0.95;
 FACTIONS.pact.accMul = 0.94; FACTIONS.pact.hpMul = 0.95;
 FACTIONS.kpa.accMul  = 0.84; FACTIONS.kpa.hpMul  = 0.86;
+/* This block OVERWRITES the FACTIONS table values above. A faction absent here
+   keeps its table value while everyone else's is replaced, which is a silent
+   inconsistency — so the three new armies restate theirs, unchanged. */
+FACTIONS.gbr.accMul  = 1.12; FACTIONS.gbr.hpMul  = 1.08;
+FACTIONS.deu.accMul  = 1.10; FACTIONS.deu.hpMul  = 1.07;
+FACTIONS.fra.accMul  = 1.03; FACTIONS.fra.hpMul  = 0.94;
 
 FACTIONS.nato.ecm = 1.15;  FACTIONS.nato.eccm = 1.20;   // best jammers, best hardening
 FACTIONS.pla.ecm  = 1.12;  FACTIONS.pla.eccm  = 1.15;
 FACTIONS.pact.ecm = 0.95;  FACTIONS.pact.eccm = 0.85;   // strong emitters, softer to SEAD
 FACTIONS.kpa.ecm  = 0.55;  FACTIONS.kpa.eccm  = 0.55;   // analogue army
 FACTIONS.roc.ecm  = 1.05;  FACTIONS.roc.eccm  = 1.10;
+FACTIONS.gbr.ecm  = 1.10;  FACTIONS.gbr.eccm  = 1.14;
+FACTIONS.fra.ecm  = 1.10;  FACTIONS.fra.eccm  = 1.08;   // Thales EW is genuinely strong
+FACTIONS.deu.ecm  = 1.05;  FACTIONS.deu.eccm  = 1.10;
 
 /* ---- how hard this army's guided weapons are to spoof off a satellite fix ----
    The counterpart of eccm, and deliberately NOT the same number: keyed military
@@ -1765,6 +2340,15 @@ FACTIONS.roc.gpsHard  = 1.20;
 FACTIONS.pla.gpsHard  = 1.15;
 FACTIONS.pact.gpsHard = 1.05;
 FACTIONS.kpa.gpsHard  = 0.85;
+FACTIONS.gbr.gpsHard  = 1.30;   // keyed M-code, on somebody else's terms
+FACTIONS.deu.gpsHard  = 1.15;
+/* France is the weakest of the Western four here and the reason is NOT that it
+   was denied a receiver — French forces use military-code GPS and the AASM
+   Hammer is a French GPS/INS weapon in heavy use. It is that France depends on
+   a constellation it does not own and does not control, and Galileo's PRS came
+   late. Where France IS sovereign in space — Helios, CSO, Syracuse — it is a
+   strength Britain and Germany do not have, and that belongs on a card. */
+FACTIONS.fra.gpsHard  = 1.10;
 FACTIONS.nato.bonus += " Strongest electronic warfare and SEAD.";
 FACTIONS.pla.bonus  += " Near-peer electronic warfare and SEAD.";
 FACTIONS.kpa.bonus  += " Almost no electronic warfare: its radars are loud and easy to kill.";
@@ -1819,6 +2403,47 @@ var AIR = {
   sead_c:    { gen:4.5, rcs:0.65, radarQ:14.0 },
   sead_p:    { gen:3.5, rcs:1.10, radarQ: 7.0 },
 
+  /* ---- the Bundeswehr's five aircraft ----
+     The Typhoon radar figure is deliberately short of the American and
+     Taiwanese AESA numbers: the German fleet still flies the mechanically
+     scanned CAPTOR-M, and the ECRS Mk1 array is in flight test, not on a
+     squadron. The Tiger UHT has no mast-mounted radar at all. */
+  fighter_g: { gen:4.5, rcs:0.45, radarQ:13.5 },
+  bomber_g:  { gen:3.5, rcs:1.30, radarQ: 4.0 },
+  sead_g:    { gen:3.5, rcs:1.20, radarQ: 5.0 },
+  helo_g:    { gen:4.0, rcs:0.70, radarQ: 2.0 },
+  trans_g:   { gen:4.0, rcs:0.85, radarQ: 1.5 },
+
+  /* ---- the British five ----
+     bomber_b is the same Typhoon airframe in a strike fit, so it carries the
+     same figures as fighter_b. Both sit below the American and Taiwanese
+     numbers for one reason: the RAF fleet still flies the mechanically
+     scanned CAPTOR-M, and the ECRS Mk2 active array is funded and not in
+     service. There is no sead_b and no ew_b — see the roster comment. */
+  fighter_b: { gen:4.5, rcs:0.60, radarQ:11.0 },
+  bomber_b:  { gen:4.5, rcs:0.60, radarQ:11.0 },
+  helo_b:    { gen:4.0, rcs:0.75, radarQ: 6.0 },
+  trans_b:   { gen:4.0, rcs:1.10, radarQ: 1.5 },
+  stealth_b: { gen:5.0, rcs:0.0080, radarQ:20.0 },
+
+  /* ---- the French seven ----
+     The Rafale's RBE2 is the one ACTIVE array of the three European
+     fighters here — fitted from 2013, where the RAF and the Luftwaffe are
+     still flying mechanically scanned CAPTOR-M — so fighter_f sits above
+     fighter_b and fighter_g and below the American and Taiwanese numbers
+     only on fleet size and integration, not on the antenna. Nothing here
+     is low-observable: France skipped the fifth generation entirely, and
+     the lowest rcs on this list is a canard delta with a coating.
+     ew_f carries a high radarQ and jam:0 — Archange listens and does not
+     jam, which is the whole point of the entry. */
+  fighter_f:  { gen:4.5, rcs:0.70, radarQ:15.0 },
+  cfighter_f: { gen:4.5, rcs:0.70, radarQ:15.0 },
+  bomber_f:   { gen:4.0, rcs:1.10, radarQ: 4.0 },
+  helo_f:     { gen:4.0, rcs:0.55, radarQ: 4.0 },
+  trans_f:    { gen:4.5, rcs:0.85, radarQ: 1.5 },
+  ew_f:       { gen:4.5, rcs:1.20, radarQ:22.0 },
+  cawacs_f:   { gen:4.0, rcs:2.60, radarQ:28.0 },
+
   /* ---- fifth generation: near-peer, and near-blind to each other ---- */
   stealth_n: { gen:5.0, rcs:0.0050, radarQ:22.0 },
   stealth_c: { gen:5.0, rcs:0.0080, radarQ:21.0 },
@@ -1838,6 +2463,11 @@ var AIR_RADIUS = {
   helo_n:    24, helo_p:    22, helo_c:    23, helo_r:    24,
   trans_n:   34, trans_p:   30, trans_c:   33, trans_r:   34,
   ew_n:      38, ew_c:      40, sead_n:    38, sead_c:    40, sead_p: 32,
+  fighter_g: 38, bomber_g:  34, sead_g:    34, helo_g:    22, trans_g: 32,
+  fighter_b: 38, bomber_b:  36, helo_b:    24, trans_b:   30, stealth_b: 40,
+  awacs_b:   66,
+  fighter_f: 42, cfighter_f: 38, bomber_f: 32, helo_f: 22, trans_f: 32,
+  ew_f:      60, awacs_f:    65, cawacs_f: 52, airlift_f: 90,
   stealth_n: 48, stealth_c: 52, stealth_p: 46,
   sbomber_n: 95, sbomber_p: 90, sbomber_c: 75,
   awacs_n:   70, awacs_c:   65, awacs_p:   60, awacs_r: 55,
@@ -1896,6 +2526,14 @@ var SURFACE_RADAR = {
      the single authority for hull statistics - duplicating them here meant
      the two disagreed and the later one silently won. */
   radarv_n: 22, radarv_c: 22, radarv_p: 15, radarv_k: 11, radarv_r: 20,
+  /* COBRA locates up to forty batteries in two minutes across a hundred-
+     kilometre front - the widest counter-battery coverage in the game. */
+  radarv_g: 22,
+  /* The same Franco-German-British array, and France took ten of them.
+     Before COBRA arrived in 2008 the French army had battlefield
+     surveillance sets and no counter-battery capability at all, which is
+     why the AuF1 batteries in Bosnia were largely shooting blind. */
+  radarv_f: 20,
   sam_veh_n: 16, sam_veh_c: 16, sam_veh_p: 13,
   ewv_n: 14, ewv_c: 14, ewv_p: 12,
 };
@@ -1917,6 +2555,9 @@ FACTIONS.pla.datalink  = 0.88;
 FACTIONS.roc.datalink  = 0.85;
 FACTIONS.pact.datalink = 0.45;
 FACTIONS.kpa.datalink  = 0.10;
+FACTIONS.gbr.datalink  = 0.92;   // full Link 16; Bowman and Morpheus were not successes
+FACTIONS.fra.datalink  = 0.88;
+FACTIONS.deu.datalink  = 0.85;   // first-rate equipment, late networked warfare (D-LBO)
 
 
 /* ==================================================================
@@ -2113,6 +2754,42 @@ Object.assign(WEAPONS, {
   asw_rbu: { name:"RBU-6000 rocket mortar", dmg:170, warhead:"he", range:3.6, reload:6.0, burst:6,
     burstDelay:0.18, acc:0.46, proj:"arc", speed:12, aoe:1.4,
     tgt:{ground:0,air:0,sea:0,sub:1}, sfx:"cannon" },
+
+  /* ---- European naval ordnance ----
+     Named OUTSIDE the w_<era>_<fac>_<role> pattern so the era-range normaliser
+     at the foot of generations.js leaves the figures alone. The differences
+     are the identity: Britain buys the heavy gun and the heavyweight torpedo,
+     France buys the missile and sells it to everyone else, Germany buys the
+     last-ditch interceptor and a wire-guided fish tuned for shallow water.
+     Aster is Franco-Italian and CAMM is British; RAM is German-American and
+     Germany put it to sea first, on the Type 143A in 1992. */
+  sam_aster15: { name:"Aster 15", dmg:190, warhead:"flak", range:10.8, reload:3.6, burst:2,
+    burstDelay:0.35, acc:0.90, proj:"missile", speed:660,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"missile" },
+  sam_aster30: { name:"Aster 30", dmg:200, warhead:"flak", range:15.0, reload:3.4, burst:2,
+    burstDelay:0.35, acc:0.92, proj:"missile", speed:700,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"missile" },
+  sam_ram: { name:"RIM-116 RAM", dmg:120, warhead:"flak", range:4.6, reload:1.8, burst:2,
+    burstDelay:0.30, acc:0.88, proj:"missile", speed:640,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"missile" },
+  ssm_exocet: { name:"MM40 Exocet Block 3", dmg:250, warhead:"he", range:15.0, minRange:2.0,
+    reload:13.5, burst:2, burstDelay:0.9, acc:0.88, proj:"missile", speed:122, aoe:1.4,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  torp_spearfish: { name:"Spearfish Mod 1", dmg:390, warhead:"he", range:11.0, minRange:1.0,
+    reload:11.5, burst:2, burstDelay:1.2, acc:0.90, proj:"torpedo", speed:170, aoe:1.2,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+  torp_f21: { name:"F21 Artemis", dmg:370, warhead:"he", range:10.0, minRange:1.0,
+    reload:12.0, burst:2, burstDelay:1.3, acc:0.88, proj:"torpedo", speed:160, aoe:1.2,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+  torp_dm2a4: { name:"DM2A4 Seehecht", dmg:340, warhead:"he", range:9.5, minRange:0.8,
+    reload:12.5, burst:2, burstDelay:1.3, acc:0.92, proj:"torpedo", speed:150, aoe:1.1,
+    tgt:{ground:0,air:0,sea:1,sub:1}, sfx:"missile" },
+  asw_stingray: { name:"Sting Ray Mod 1", dmg:200, warhead:"he", range:6.4, reload:7.0,
+    burst:1, acc:0.90, proj:"torpedo", speed:180, aoe:0.8,
+    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:"missile" },
+  asw_mu90: { name:"MU90 Impact", dmg:205, warhead:"he", range:6.6, reload:7.2,
+    burst:1, acc:0.89, proj:"torpedo", speed:185, aoe:0.8,
+    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:"missile" },
 
   /* ---- naval electronic warfare ---- */
   decoy_chaff: { name:"Nulka / chaff decoy", dmg:0, warhead:"bullet", range:0.1, reload:20, burst:1,
@@ -2348,6 +3025,134 @@ Object.assign(UNITS, {
 });
 
 
+/* ============ BRITISH, FRENCH AND GERMAN NAVIES - the present day ============
+   Three fleets that are not each other and are not the United States Navy, and
+   the differences are in the FIELDS, not only in the prose:
+
+     Britain  small carriers and the best ASW in the game. `sonar` on a Type 23
+              with Sonar 2087 beats every hull afloat here including the
+              American destroyer, and `quiet` on an Astute is bettered only by
+              a boomer and by the German 212A.
+     France   the only nuclear carrier outside the US Navy (`nuclear` on a
+              carrier appears exactly twice in this table), the only European
+              deck with fixed-wing AEW, and Exocet on everything.
+     Germany  NO CARRIER, NO CRUISER, NO NUCLEAR ANYTHING - four `carrier`
+              roles and two submarine roles that are permanently empty. What
+              it has instead is `aip` on the quietest boat in the game, mines
+              on that boat (`layMines` + `mineSea`, a Baltic weapon nobody else
+              here carries under water) and the best minesweeper afloat.
+
+   British escorts carry `navgun_76` deliberately: the NAVGUN loop in
+   generations.js substitutes the 4.5in Mk 8 into any British weapon named
+   "OTO 76mm", which is what makes that row live rather than dead code. France
+   and Germany fall through and keep the 76 mm, which is what their ships
+   actually mount. */
+Object.assign(UNITS, {
+  /* -------------------------------- BRITAIN -------------------------------- */
+  boat_b: { from:"e20", fac:"gbr", role:"patrol", name:"River Batch 2 OPV", full:"HMS Forth (P222), River-class Batch 2", cat:"naval",
+    cost:540, oil:6, time:9, hp:640, armor:"light", speed:2.7, turn:1.9, sight:8.8, r:13, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4, sonar:1.0,
+    desc:"Ninety metres and two thousand tonnes for a 30 mm gun and a flight deck - an ocean-going constabulary hull, not a warship, and slower than the American Mk VI it stands opposite. Britain has never operated a missile-armed fast attack craft and does not now; the small end of the Royal Navy is patrol work, and this is honestly what it looks like." },
+  corvette_b: { from:"e20", fac:"gbr", role:"corvette", name:"Type 23 Duke", full:"Type 23 Duke-class frigate, Sea Ceptor fit", cat:"naval",
+    cost:1290, oil:17, time:17, hp:1120, armor:"light", speed:2.9, turn:1.7, sight:9.8, r:17, mass:0,
+    layer:"sea", weapons:["navgun_76","sam_camm","asw_stingray"], prereq:["navalyard"], tech:1,
+    turret:true, tturn:2.0, sonar:11.0, ciws:0.46,
+    desc:"Designed in the 1980s as a cheap towed-array hull to sit quietly in the Atlantic and listen, and still the best submarine hunter in this game: Sonar 2087 is a low-frequency active-passive array with no equal in any other fleet here. Harpoon was withdrawn in 2023 with nothing to replace it, so a British frigate now has a gun, a short-range SAM and a torpedo, and nothing at all with which to sink a ship beyond the horizon. Type 26 and Type 31 are building; neither is in service." },
+  destroyer_b: { from:"e20", fac:"gbr", role:"destroyer", name:"Type 45 Daring DDG", full:"HMS Daring (D32), Type 45 Daring-class", cat:"naval",
+    cost:2280, oil:35, time:29, hp:1980, armor:"heavy", speed:2.5, turn:1.2, sight:11.6, r:20, mass:0,
+    layer:"sea", weapons:["navgun_76","sam_aster30","sam_aster15"], prereq:["navalyard","radar"], tech:2,
+    turret:true, tturn:1.4, ciws:0.58, sonar:6.4,
+    desc:"SAMPSON on a mast at 27 metres and Aster 30 beneath it: the best air-defence ship in Europe and, on a good day, in the world - six of them, and often two at sea. It was built with no anti-ship missile whatsoever and had none for fourteen years, until NSM began appearing in 2023-24; the propulsion plant tripped repeatedly in warm water and every hull has been through a power-improvement refit. Superb at one job, thin everywhere else." },
+  sub_b: { from:"e20", fac:"gbr", role:"sub", name:"Astute SSN", full:"HMS Astute (S119), Astute-class", cat:"naval",
+    cost:2520, oil:42, time:31, hp:1230, armor:"light", speed:2.4, turn:1.1, sight:8.6, r:17, mass:0,
+    layer:"sub", weapons:["torp_spearfish"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    nuclear:true, quiet:0.25, sonar:11.2, radarQ:6, layNet:5,
+    desc:"A reactor core that never needs refuelling in the boat's life, Spearfish, Tomahawk out of the same tubes, and an acoustic signature the Royal Navy will not discuss. Seven boats for a fleet that had thirty attack submarines in 1980 - the recurring British answer, which is to buy the best article in the world and then buy four of it." },
+  ssbn_b: { from:"e90", fac:"gbr", role:"ssbn", name:"Vanguard SSBN", full:"HMS Vanguard (S28), Vanguard-class", cat:"naval",
+    cost:6100, oil:138, time:70, hp:2520, armor:"heavy", speed:1.95, turn:0.5, sight:6, r:26, mass:0,
+    layer:"sub", weapons:["slbm_b"], prereq:["navalyard","lab","radar"], tech:3,
+    nuclear:true, quiet:0.23, sonar:9.6, radarQ:5, ssbn:true,
+    desc:"Four boats holding the only British nuclear weapon of any kind. The RAF's WE.177 free-fall bomb went in 1998 and the WE.177A nuclear depth bomb left the ships and helicopters in 1992, so since then the deterrent is this hull and nothing else - one boat at sea, always, unbroken since HMS Resolution sailed on 30 June 1969, the longest continuous deterrent patrol of any nuclear power." },
+  carrier_b: { from:"e20", fac:"gbr", role:"carrier", name:"Queen Elizabeth CV", full:"HMS Queen Elizabeth (R08), Queen Elizabeth-class", cat:"naval",
+    cost:4150, oil:88, time:53, hp:3300, armor:"heavy", speed:1.6, turn:0.6, sight:13, r:30, mass:0,
+    layer:"sea", weapons:[], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.5, carrier:3, storage:0,
+    desc:"Sixty-five thousand tonnes, two islands, a ski-jump and no catapult - so it flies F-35B and nothing else, and can never operate a fixed-wing early-warning aircraft. Britain invented the steam catapult, the angled deck and the mirror landing sight, gave all three to the United States Navy, and then built a carrier that uses none of them. Two ships, and for years not enough escorts to screen one." },
+  cstealth_b: { from:"e20", fac:"gbr", role:"cstealth", name:"F-35B Lightning", full:"Lockheed Martin F-35B Lightning II", cat:"aircraft",
+    cost:1780, oil:34, time:22, hp:440, armor:"air", speed:7.9, turn:2.1, sight:11.0, r:16, mass:0,
+    layer:"air", weapons:["aam_lo"], prereq:["airbase"], tech:3, jet:true, ammo:4,
+    gen:5, rcs:0.16, radarQ:17, radius:34, carrierCapable:true, refuelable:true, radar:8,
+    desc:"The only fifth-generation aircraft that flies from a ski-jump, and the reason the Queen Elizabeth class exists in the shape it does. Op Fortis in 2021 put British and American F-35Bs on the same British deck and took the group to the Pacific. Short legs compared with the carrier variants, a lift fan where the fuel would otherwise be, and a British squadron count that is still in the low tens." },
+  asw_helo_b: { from:"e20", fac:"gbr", role:"aswhelo", name:"Merlin HM2", full:"AgustaWestland Merlin HM2", cat:"aircraft",
+    cost:1520, oil:28, time:17, hp:420, armor:"air", speed:3.2, turn:2.2, sight:8.8, r:13, mass:0,
+    layer:"air", weapons:["asw_stingray"], prereq:["airbase"], tech:2,
+    ammo:4, radius:26, sonar:10.4, rcs:0.9, radarQ:10, gen:4.5, carrierCapable:true,
+    desc:"Three engines, a fourteen-tonne airframe and the Blue Kestrel radar - the heaviest shipborne ASW helicopter in the West, and paired with a Type 23's towed array it is the other half of the best anti-submarine system in this game. The Wildcat HMA2 flies the light end from frigate decks; the Crowsnest radar bag on a Merlin replaced the Sea King ASaC7 in the airborne early-warning role in 2021, badly and late." },
+
+  /* -------------------------------- FRANCE --------------------------------- */
+  boat_f: { from:"e20", fac:"fra", role:"patrol", name:"Patrouilleur Outre-mer", full:"Auguste Benebig (P780), POM class", cat:"naval",
+    cost:500, oil:6, time:9, hp:560, armor:"light", speed:2.8, turn:2.0, sight:8.4, r:13, mass:0,
+    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4, sonar:0.9,
+    desc:"Eighty metres for the overseas territories, delivered from 2023 - France polices more ocean than anyone here except the United States and needs cheap hulls to do it. Like the Royal Navy, the Marine Nationale has never bought a missile-armed fast attack craft; it built them by the dozen for export as La Combattante and sold every one." },
+  corvette_f: { from:"e20", fac:"fra", role:"corvette", name:"FREMM Aquitaine", full:"Aquitaine (D650), FREMM multi-mission frigate", cat:"naval",
+    cost:1340, oil:18, time:17, hp:1180, armor:"light", speed:2.9, turn:1.7, sight:9.8, r:17, mass:0,
+    layer:"sea", weapons:["navgun_76","sam_aster15","ssm_exocet"], prereq:["navalyard"], tech:1,
+    turret:true, tturn:2.0, sonar:9.2, ciws:0.44,
+    desc:"Six thousand tonnes on a shaped hull with a variable-depth sonar aft, Aster 15 in Sylver cells, Exocet on the beam and - on the ASW hulls - the naval cruise missile MdCN, which no other European escort carries. The frigate France sells: Morocco, Egypt and Greece all bought it. Not quite a British towed array, and considerably better armed." },
+  destroyer_f: { from:"e20", fac:"fra", role:"destroyer", name:"Horizon DDG", full:"Forbin (D620), Horizon-class air-defence destroyer", cat:"naval",
+    cost:2240, oil:34, time:28, hp:2020, armor:"heavy", speed:2.4, turn:1.2, sight:11.2, r:20, mass:0,
+    layer:"sea", weapons:["navgun_76","sam_aster30","ssm_exocet"], prereq:["navalyard","radar"], tech:2,
+    turret:true, tturn:1.4, ciws:0.56, sonar:6.8,
+    desc:"The same PAAMS system as a Type 45, under a rotating EMPAR instead of SAMPSON, on a hull France and Italy designed together after Britain walked out of the three-nation Horizon programme in 1999. Two ships. Unlike the Type 45 it went to sea with an anti-ship missile from the first day, because it is French and Exocet is the point." },
+  sub_f: { from:"e20", fac:"fra", role:"sub", name:"Suffren SSN", full:"Suffren (Q284), Barracuda-class", cat:"naval",
+    cost:2460, oil:41, time:30, hp:1210, armor:"light", speed:2.35, turn:1.1, sight:8.4, r:17, mass:0,
+    layer:"sub", weapons:["torp_f21"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    nuclear:true, quiet:0.26, sonar:10.6, radarQ:5, layNet:4,
+    desc:"France's second generation of nuclear attack boat and a very large step from the Rubis it replaces: pump-jet propulsion, a diver lock-out, and from 2022 the MdCN cruise missile fired from the torpedo tubes, which makes France the second country in the world with a submarine land-attack missile of its own design. Six boats replacing six boats, built at Cherbourg with a French reactor and a French torpedo." },
+  ssbn_f: { from:"e90", fac:"fra", role:"ssbn", name:"Le Triomphant SSBN", full:"Le Triomphant (S616), Triomphant-class", cat:"naval",
+    cost:6050, oil:140, time:70, hp:2540, armor:"heavy", speed:1.95, turn:0.5, sight:6, r:26, mass:0,
+    layer:"sub", weapons:["slbm_f"], prereq:["navalyard","lab","radar"], tech:3,
+    nuclear:true, quiet:0.24, sonar:9.4, radarQ:5, ssbn:true,
+    desc:"Four boats carrying the M51, and the only strategic weapon in NATO that answers to nobody outside its own capital - the missile, the warhead, the reactor and the boat are all French. France has kept a boat at sea since Le Redoutable's first patrol in 1972 and is the only nuclear power here with a second, airborne leg it also owns outright, including one flown off a carrier deck." },
+  carrier_f: { from:"e20", fac:"fra", role:"carrier", name:"Charles de Gaulle CVN", full:"Charles de Gaulle (R91)", cat:"naval",
+    cost:4400, oil:96, time:55, hp:3400, armor:"heavy", speed:1.55, turn:0.6, sight:13.4, r:30, mass:0,
+    layer:"sea", weapons:["sam_aster15"], prereq:["navalyard","lab","airbase"], tech:3,
+    ciws:0.52, carrier:3, nuclear:true, storage:0,
+    desc:"The only nuclear-powered aircraft carrier outside the United States Navy, and the only carrier in the world besides an American one with catapults, arrestor wires and a fixed-wing early-warning aircraft. Forty-two thousand tonnes, two K15 reactors from the SSBN programme, a flight deck that had to be lengthened before the E-2C could use it, and one ship - when she is in refit France has no carrier at all. Rafale M off this deck carries ASMP-A: nuclear strike from the sea, which nobody else here can do." },
+  asw_helo_f: { from:"e20", fac:"fra", role:"aswhelo", name:"NH90 NFH Caiman", full:"NHIndustries NH90 NFH Caiman Marine", cat:"aircraft",
+    cost:1430, oil:26, time:16, hp:395, armor:"air", speed:3.3, turn:2.3, sight:8.4, r:13, mass:0,
+    layer:"air", weapons:["asw_mu90"], prereq:["airbase"], tech:2,
+    ammo:4, radius:24, sonar:9.6, rcs:0.82, radarQ:9, gen:4.5, carrierCapable:true,
+    desc:"Fly-by-wire, a composite airframe and a folding tail for a frigate hangar, with the FLASH dipping sonar and MU90 beneath it. Late, expensive and shared with Germany, Italy and the Netherlands - the European pattern. It replaced the Lynx Mk4, which had served since 1979 and whose retirement left a gap the fleet felt." },
+
+  /* -------------------------------- GERMANY -------------------------------- */
+  corvette_g: { from:"e20", fac:"deu", role:"corvette", name:"K130 Braunschweig", full:"Braunschweig-class (Type 130) corvette, Batch 2", cat:"naval",
+    cost:1180, oil:15, time:16, hp:980, armor:"light", speed:3.0, turn:1.9, sight:9.0, r:17, mass:0,
+    layer:"sea", weapons:["navgun_76","sam_ram","ssm_exocet"], prereq:["navalyard"], tech:1,
+    turret:true, tturn:2.0, sonar:2.4, ciws:0.5,
+    desc:"Eighteen hundred tonnes, a shaped topside, two RAM launchers, four RBS15 and no sonar worth the name - a Baltic ship built to fight from the coast, not to hunt submarines in the Atlantic. It is also now the SMALLEST combatant Germany owns: the last Gepard-class fast attack craft paid off in 2016 and the navy that operated thirty missile boats through the Cold War cannot buy a cheap hull any more." },
+  destroyer_g: { from:"e20", fac:"deu", role:"destroyer", name:"Sachsen F124", full:"Sachsen (F219), Type 124 air-defence frigate", cat:"naval",
+    cost:2150, oil:33, time:28, hp:2060, armor:"heavy", speed:2.35, turn:1.2, sight:11.0, r:20, mass:0,
+    layer:"sea", weapons:["navgun_76","sam_sm2","sam_ram"], prereq:["navalyard","radar"], tech:2,
+    turret:true, tturn:1.4, ciws:0.54, sonar:7.4,
+    desc:"APAR - four fixed active phased-array faces, and one of the few radars in the world in the class of SPY-1 and SAMPSON - over SM-2 and ESSM. Three ships, and Germany has no others like them: the newest German class, the Type 125 Baden-Wurttemberg of 2019, is a seven-thousand-tonne stabilisation frigate with a 127 mm gun, no towed array and no anti-submarine torpedoes at all, and cannot escort anything against a submarine. There is no German cruiser and there never has been." },
+  sub_g: { from:"e20", fac:"deu", role:"sub", name:"Type 212A", full:"U-31 (S181), Type 212A", cat:"naval",
+    cost:2050, oil:30, time:26, hp:820, armor:"light", speed:1.9, turn:1.3, sight:7.4, r:15, mass:0,
+    layer:"sub", weapons:["torp_dm2a4"], prereq:["navalyard","radar"], tech:2, submerged:true,
+    nuclear:false, aip:true, quiet:0.20, sonar:8.8, radarQ:3, layMines:8, mineSea:true,
+    desc:"Nine polymer-electrolyte fuel cells, a non-magnetic hull and weeks submerged without ever coming up for air - the quietest submarine in this game, and it is not nuclear. Eighteen hundred tonnes against an Astute's seven thousand: it cannot cross an ocean and does not need to, because its water is the Baltic and the North Sea, where it can sit on a shoal a nuclear boat cannot enter and lay mines across a strait. Six boats. The Type 212CD was contracted in 2021; the first German one is expected around 2032 and none has been delivered." },
+  asw_helo_g: { from:"e20", fac:"deu", role:"aswhelo", name:"Sea Lynx Mk88A", full:"Westland Sea Lynx Mk88A", cat:"aircraft",
+    cost:1240, oil:24, time:15, hp:340, armor:"air", speed:3.4, turn:2.4, sight:7.6, r:12, mass:0,
+    layer:"air", weapons:["asw_mu90"], prereq:["airbase"], tech:2,
+    ammo:3, radius:20, sonar:7.4, rcs:0.74, radarQ:7, gen:4.0, carrierCapable:true,
+    desc:"A British airframe of 1981, rebuilt in the 1990s, and still the German navy's only shipborne ASW helicopter more than forty years on. The NH90 Sea Tiger was ordered in 2020 to replace it and deliveries have barely begun. Germany had no shipborne ASW helicopter at all before 1981." },
+  minesweeper_g: { from:"e90", fac:"deu", role:"minesweeper", name:"Frankenthal MCMV", full:"Frankenthal-class (Type 332) mine hunter", cat:"naval",
+    cost:1420, oil:17, time:21, hp:760, armor:"light", speed:2.2, turn:1.6, sight:8.4, r:15, mass:0,
+    layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1,
+    mineDetect:8.0, mineClear:3.4, mineClearRate:2.0, sonar:3.2,
+    desc:"Mine countermeasures is the one branch of naval warfare where Germany genuinely leads, and it has for fifty years: the Troika system of 1981 put one manned control ship in charge of three unmanned Seehund sweep drones, which is the first operational unmanned minesweeping anywhere. The Frankenthal hull is non-magnetic, hunts with a variable-depth sonar and puts a Pinguin drone down the wire to kill what it finds. The Baltic is the most heavily mined sea in Europe and this is why." },
+});
+
+
 /* ---- radar cross section of surface ships ----
    Relative to a conventional 1980s destroyer (= 1.0). Superstructure shaping
    is the single biggest lever a designer has: an angled, enclosed topside
@@ -2369,6 +3174,13 @@ var SHIP_RCS = {
   boat_k:0.50, corvette_k:0.85, missileboat_k:0.60,
   /* Taiwan: an old destroyer and a genuinely stealthy catamaran */
   boat_r:0.30, corvette_r:0.12, missileboat_r:0.26, destroyer_r:1.15,
+  /* Britain, France and Germany. The La Fayette of 1996 was the first warship
+     in the world designed for a low signature and the number says so; the
+     FREMM, the K130 and the Type 45 are shaped too, while a Type 23 is a
+     1980s hull with the clutter tidied up rather than a stealth design. */
+  boat_b:0.30, corvette_b:0.45, destroyer_b:0.30, carrier_b:2.2,
+  boat_f:0.28, corvette_f:0.18, destroyer_f:0.26, carrier_f:2.1,
+  corvette_g:0.16, destroyer_g:0.34,
 };
 for (var _rc in SHIP_RCS) if (UNITS[_rc]) UNITS[_rc].rcs = SHIP_RCS[_rc];
 
@@ -2382,6 +3194,9 @@ var SOFTKILL = {
   corvette_p:0.14, destroyer_p:0.17, cruiser_p:0.18, carrier_p:0.15, missileboat_p:0.10,
   corvette_r:0.24, destroyer_r:0.22, missileboat_r:0.16,
   corvette_k:0.04, missileboat_k:0.03, boat_k:0.0,
+  corvette_b:0.32, destroyer_b:0.36, carrier_b:0.27,
+  corvette_f:0.33, destroyer_f:0.34, carrier_f:0.26,
+  corvette_g:0.30, destroyer_g:0.31,
 };
 for (var _sk2 in SOFTKILL) if (UNITS[_sk2]) UNITS[_sk2].softkill = SOFTKILL[_sk2];
 
@@ -2400,6 +3215,25 @@ Object.assign(WEAPONS, {
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   slbm_c: { name:"JL-2 (conventional)", dmg:780, warhead:"he", range:19.5,
     minRange:3.0, reload:180, burst:1, acc:0.76, proj:"missile", speed:16, aoe:3.8,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  /* Britain fires the SAME missile as the United States - Trident II D5, drawn
+     from the common pool at King's Bay - and builds only the warhead and the
+     boat, which is why this row is a relabelled D5 and says so. France built
+     the entire chain itself and the M51 is a separate design. The two 1960s
+     rows exist because HMS Resolution (1967) and Le Redoutable (1971) were
+     real: Polaris A3 and M20 are shorter-ranged and far less accurate than
+     what replaced them, and that gap across thirty years is the point. */
+  slbm_b: { name:"Trident II D5 (British warhead)", dmg:900, warhead:"he", range:22.0,
+    minRange:3.0, reload:165, burst:1, acc:0.82, proj:"missile", speed:16, aoe:4.2,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  slbm_f: { name:"M51 (conventional)", dmg:860, warhead:"he", range:21.0,
+    minRange:3.0, reload:170, burst:1, acc:0.80, proj:"missile", speed:16, aoe:4.0,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  slbm_polaris: { name:"Polaris A3TK (Chevaline)", dmg:700, warhead:"he", range:17.0,
+    minRange:3.0, reload:190, burst:1, acc:0.55, proj:"missile", speed:16, aoe:4.4,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  slbm_m20: { name:"M20 (conventional)", dmg:680, warhead:"he", range:16.0,
+    minRange:3.0, reload:195, burst:1, acc:0.50, proj:"missile", speed:16, aoe:4.4,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   tlam_n: { name:"BGM-109 Tomahawk", dmg:320, warhead:"he", range:19.0, minRange:2.5,
     reload:20, burst:2, burstDelay:1.1, acc:0.90, proj:"missile", speed:13, aoe:2.0,
@@ -2452,6 +3286,8 @@ Object.assign(WEAPONS, {
 if (UNITS.ssbn_n) UNITS.ssbn_n.weapons = ["slbm_n", "torp_mk48"];
 if (UNITS.ssbn_p) UNITS.ssbn_p.weapons = ["slbm_p", "torp_ugst"];
 if (UNITS.ssbn_c) UNITS.ssbn_c.weapons = ["slbm_c", "torp_yu6"];
+if (UNITS.ssbn_b) UNITS.ssbn_b.weapons = ["slbm_b", "torp_spearfish"];
+if (UNITS.ssbn_f) UNITS.ssbn_f.weapons = ["slbm_f", "torp_f21"];
 /* the converted Ohio is a submerged cruise-missile magazine, so it gets the
    deep Tomahawk load rather than a pair of Harpoons */
 if (UNITS.ssgn_n) UNITS.ssgn_n.weapons = ["tlam_n", "torp_mk48", "ssm_harpoon"];
@@ -2507,6 +3343,14 @@ var RADAR_COVERAGE = {
   cstealth_n: 10, cstealth_c: 9,
   fighter_n: 6, fighter_c: 7, fighter_r: 7, fighter_p: 4, cfighter_n: 7,
   sead_n: 7, sead_c: 7,
+  /* MESA is the newest AEW array in NATO service. The Typhoon figure is
+     deliberately below fighter_n's 6 — Captor-M is mechanically scanned. */
+  awacs_b: 33, stealth_b: 9, fighter_b: 5,
+  /* Four E-3F, bought outright in 1991 so that France could see the air
+     picture without asking the NATO pool, and the only non-American
+     carrier-based fixed-wing AEW anywhere sits under cawacs_f. ew_f is a
+     receiver, so it earns a collection radius and no jamming. */
+  awacs_f: 32, cawacs_f: 28, ew_f: 16, fighter_f: 7, cfighter_f: 7,
   fighter_k: 1.5,          // a MiG-21 ranging set contributes almost nothing
 };
 /* Anything with a probe or a receptacle can take fuel from a tanker. That is
@@ -2586,6 +3430,24 @@ var MISSILE_PROFILE = {
   sam_sm1:     { profile:"pop", intercept:0.85 },
   sam_ship:    { profile:"pop", intercept:0.70 },
   sam_veh:     { profile:"pop", intercept:0.75 },
+  /* Starstreak has no proximity fuse and no seeker: three tungsten darts on a
+     laser beam at above Mach 4. Nothing to decoy, and almost nothing catches
+     it — hence the 0.15. CAMM is soft-launched and actively guided. */
+  hvm:         { profile:"pop", intercept:0.15 },
+  sam_camm:    { profile:"pop", intercept:0.70 },
+  /* European naval rounds. Aster 30 is a hit-to-kill round with a lateral
+     thruster ring at the centre of gravity and is genuinely hard to spoof;
+     RAM is the last-ditch layer and is meant to be shot at. Exocet is a
+     subsonic sea-skimmer with no shaping - the round every navy learned to
+     stop, and the one that taught them why they had to. */
+  sam_aster15: { profile:"pop", intercept:0.62 },
+  sam_aster30: { profile:"pop", intercept:0.55 },
+  sam_ram:     { profile:"pop", intercept:0.68 },
+  ssm_exocet:  { profile:"skim", intercept:0.95 },
+  slbm_b:      { profile:"ballistic", intercept:0.12 },
+  slbm_f:      { profile:"ballistic", intercept:0.14 },
+  slbm_polaris:{ profile:"ballistic", intercept:0.20 },
+  slbm_m20:    { profile:"ballistic", intercept:0.22 },
   aam:         { profile:"pop", intercept:0.55 },
   aam_lo:      { profile:"pop", intercept:0.45 },
   atgm:        { profile:"pop", intercept:1.10 },
@@ -2629,6 +3491,10 @@ var MISSILE_SPEED = {
   slbm_n:      760, slbm_p: 720, slbm_c: 700,                   // ballistic terminal
   sam_sm2:     620, sam_hhq9: 610, sam_shtil: 520, sam_sm1: 520,
   sam_ship:    600, sam_veh: 600,
+  sam_camm:    680, hvm:     1300,
+  sam_aster15: 660, sam_aster30: 700, sam_ram: 640,
+  ssm_exocet:  122,
+  slbm_b: 760, slbm_f: 740, slbm_polaris: 700, slbm_m20: 690,
   atgm:        210,
   sam_area1:   560, sam_area2: 640, sam_area3: 700,
   sam_tk3:     690, sam_pongae: 600,
@@ -3046,6 +3912,9 @@ var ERA_REACH = {
   roc:  { cap: "e20", costMul: 1.45 },   // can buy, but pays dearly and waits
   pact: { cap: "e20", costMul: 1.25 },   // uneven procurement, long gaps
   kpa:  { cap: "e90", costMul: 1.90 },   // cannot buy replacements at all
+  gbr:  { cap: "e20", costMul: 1.30 },   // buys the best, in tiny numbers, slowly
+  fra:  { cap: "e20", costMul: 1.15 },   // sovereign industry, and it keeps building
+  deu:  { cap: "e20", costMul: 1.35 },   // the slowest procurement of the four
 };
 
 function nextEra(k) {

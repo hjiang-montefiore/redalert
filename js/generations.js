@@ -59,6 +59,21 @@
     pact: [ 185,  270,  430,  500,  580,  620 ],
     pla:  [ 115,  190,  300,  450,  600,  700 ],
     kpa:  [ 115,  185,  265,  300,  340,  365 ],
+    /*         1950  1960  1980  1990  2000  2020 */
+    /* Britain: 20-pdr, then the L7 105 — a BRITISH gun, designed at ROF
+       Nottingham after the T-54 in the Budapest embassy compound in 1956, that
+       West Germany and the US both licence-built. Then the rifled L11 and L30.
+       A two-piece-charge rifled gun is a step behind a smoothbore for pure
+       penetration, which is why Challenger 3 is being given one. */
+    gbr:  [ 190,  280,  440,  530,  660,  700 ],
+    /* Germany: licence-built the British L7, then sent the Rh-120 L/44 the
+       other way and it became the American M256 in 1985. From the 1990s it is
+       the SAME GUN as the Abrams fires, so e90 matches nato exactly; the +10 at
+       e00/e20 is the L/55 on the Leopard 2A6 in 2001. */
+    deu:  [ 185,  275,  470,  570,  730,  790 ],
+    /* France: the CN-105-F1 was competitive in 1966; the smoothbore CN120-26 on
+       the Leclerc is good but never got a depleted-uranium round. */
+    fra:  [ 180,  270,  400,  480,  620,  680 ],
     roc:  [ 130,  190,  290,  350,  400,  440 ],
   };
 
@@ -77,6 +92,20 @@
     pact: [ 164,  197,  459,  525,  590,  640 ],
     pla:  [  70,  156,  197,  369,  541,  640 ],
     kpa:  [  70,  156,  189,  230,  271,  291 ],
+    /* Britain built the thickest steel in the world (Centurion, then Chieftain
+       at 55 t) and then invented the composite that replaced it. The 1980s jump
+       is Chobham arriving on Challenger 1 in 1983, not gradual improvement. */
+    gbr:  [ 165,  225,  500,  585,  675,  715 ],
+    /* Germany: Leopard 1 was deliberately thin (1965, 40 t — the same bet France
+       made). Leopard 2 in 1979 reverses it, and the A5 wedge in 1995 fixes the
+       early turret face. */
+    deu:  [ 150,  175,  475,  560,  655,  700 ],
+    /* France never reversed the bet, and the 1980s column is the sharpest number
+       in this whole feature: France's 1980s tank is the AMX-30B2, a 1966 design
+       with a cast turret front around 80 mm and NO composite element at any
+       point in its life. It skipped the first composite generation entirely and
+       waited for the Leclerc in 1992. */
+    fra:  [ 110,  140,  200,  430,  545,  600 ],
     roc:  [  70,  148,  172,  213,  238,  262 ],
   };
 
@@ -230,6 +259,15 @@
 
   var AT_BY_FAC = {
     nato: JAV,
+    /* Britain genuinely bought the American weapon — this is a purchase, not an
+       indigenous system, and the card should say so. */
+    gbr:  JAV,
+    /* MILAN was Euromissile, Aérospatiale and MBB: the one place a shared row
+       between France and Germany is correct rather than lazy. */
+    fra:  { name: "Akeron MP (MMP)", range: R(4000), dmg: 140, pen: 900,
+            belly: true, reload: 7.0, minRange: 1.0 },
+    deu:  { name: "MELLS (Spike LR2)", range: R(5500), dmg: 145, pen: 950,
+            belly: true, reload: 7.2, minRange: 1.2 },
     roc:  JAV,
     pact: KOR,
     /* HJ-12 is China's Javelin: fire-and-forget, top attack, shorter */
@@ -252,6 +290,12 @@
             belly: false, reload: 8.0 },
     kpa:  { name: "Bulsae-4", range: R(5000), dmg: 140, pen: 720,
             belly: false, reload: 10.0, acc: 0.68 },
+    gbr:  { name: "Javelin, Overwatch mount", range: R(4500), dmg: 148, pen: 900,
+            belly: true, reload: 7.2 },
+    fra:  { name: "HOT-3 / Akeron MP", range: R(4300), dmg: 148, pen: 900,
+            belly: false, reload: 7.4 },
+    deu:  { name: "PARS 3 LR (Trigat-LR)", range: R(7000), dmg: 155, pen: 950,
+            belly: true, reload: 7.6 },
   };
 
   /* Clone the shared launcher for each army that carries it, the same way
@@ -346,7 +390,8 @@
 
      So each army is scored per domain rather than given one global level.
      1.00 is the NATO standard of that decade. Above 1.00 means genuinely
-     better, and two of these armies are, in exactly one domain each.
+     better, and five of these armies are — the Pact and Germany in two
+     domains each, Britain, France and the PLA in one apiece.
 
      These multipliers only bite from the 1990s onward - before that the
      Warsaw Pact really was a peer and the model should say so.            */
@@ -356,6 +401,19 @@
     pact: { optics:0.72, guided:0.68, a2a:0.90, airdef:1.15, arty:1.05, naval:0.72 },
     pla:  { optics:0.92, guided:0.90, a2a:0.95, airdef:1.00, arty:1.05, naval:0.95 },
     kpa:  { optics:0.52, guided:0.46, a2a:0.50, airdef:0.66, arty:1.00, naval:0.48 },
+    /* Britain: world-class ASW (Type 23 with Sonar 2087, and the Astute) and
+       first-rate optics, but a small artillery park and too few escorts for two
+       carriers. */
+    gbr:  { optics:1.02, guided:0.98, a2a:1.00, airdef:0.85, arty:0.90, naval:1.00 },
+    /* France: the missile industry is where it leads rather than merely keeps
+       up — Exocet, Crotale, Aster, SCALP, MdCN. Land-based air defence likewise. */
+    fra:  { optics:0.94, guided:1.06, a2a:0.96, airdef:1.00, arty:0.92, naval:0.90 },
+    /* Germany: the best optics in the game, and the best gun-based air defence
+       ever fielded — twin 35 mm Oerlikon KDA with SEPARATE search and tracking
+       radars, engaging on the move, in service 1976. The navy is a Baltic navy:
+       superb AIP submarines and mine warfare, no carrier, no cruiser, no
+       long-range naval strike. */
+    deu:  { optics:1.06, guided:0.96, a2a:0.94, airdef:1.05, arty:0.94, naval:0.72 },
     roc:  { optics:0.92, guided:0.88, a2a:0.88, airdef:0.82, arty:0.86, naval:0.72 },
   };
   /* how much of the gap is felt in each period: none in the 1950s, all of it
@@ -497,11 +555,15 @@
     }
     if (u.weapons.indexOf(wid) < 0) u.weapons.unshift(wid);
   }
+  var WEST_CAS = { nato:1, roc:1, gbr:1, fra:1, deu:1 };
   /* every CAS airframe in every era, not just the modern pair */
   for (var uidA in UNITS) {
     var uA = UNITS[uidA];
     if (!uA || uA.role !== "cas") continue;
-    var west = uA.fac === "nato" || uA.fac === "roc";
+    /* Set membership, not a literal pair — a British, French or German Tornado
+       or Rafale was being handed a Soviet Kh-29 by falling off the end of this
+       test. Add any new Western army here. */
+    var west = !!WEST_CAS[uA.fac];
     giveWeapon(uidA, west ? "maverick" : "kh29");
     giveWeapon(uidA, "gau8", "chaingun");
   }
@@ -556,6 +618,20 @@
     pla:  { name: "H/PJ-26 76mm",       dmg: 51, acc: 0.83 },
     kpa:  { name: "57mm twin, manual",  dmg: 34, acc: 0.62, range: 6.4 },
     roc:  { name: "OTO 76mm Super Rapid", dmg: 52, acc: 0.85 },
+    /* Britain never bought the Italian gun for its escorts: the 4.5 inch Mk 8
+       is heavier and slower-firing, built for naval gunfire support. */
+    gbr:  { name: "4.5in Mk 8 (114mm)", dmg: 62, acc: 0.82, range: 9.2 },
+    /* NO fra AND NO deu ENTRY, deliberately, and this is a correction to two
+       design packages. The K130 corvette and the F124 Sachsen really do mount
+       the OTO Melara 76 mm (the F125 is the outlier, with a 127 mm), and modern
+       French escorts — Horizon, FREMM, FDI — mount the 76 mm Super Rapid too.
+       The 100 mm Mod 68 CADAM was correct for 1968 to the 1990s only, and
+       NAVGUN has no era dimension, so a flat French override would put a 1970s
+       gun on every modern French hull. Fall-through is the right answer for
+       both nations; put the CADAM on the era units' own weapons if it is
+       wanted. PRECONDITION for the British row: this loop only substitutes into
+       weapons whose name matches /OTO 76mm/, so a new British escort must be
+       authored carrying navgun_76 or this row is dead code. */
   };
   for (var uidN in UNITS) {
     var uN = UNITS[uidN];
