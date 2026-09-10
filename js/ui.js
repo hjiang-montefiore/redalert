@@ -1160,7 +1160,7 @@ var UI = (function () {
           selection.push(u); u.selected = true;
           Render.setCam(u.x, u.y);
           refreshSelInfo();
-          Sfx.play("click");
+          Sfx.select(u);
           return;
         }
         if (!u.parked) return;
@@ -1483,7 +1483,7 @@ var UI = (function () {
         u.selected = true; selection.push(u); n++;
       }
       if (n) {
-        Sfx.play("click");
+        Sfx.select(t);          /* every match shares t's def, so t names the class */
         alert(n + " \u00d7 " + t.def.name.toUpperCase() + " SELECTED", "good");
       }
       refreshSelInfo();
@@ -1772,6 +1772,7 @@ var UI = (function () {
           selection = live;
           for (const s2 of selection) s2.selected = true;
           subIdx = -1;
+          Sfx.select(live);     /* recalling a control group was silent until now */
           if (dbl && live.length) Render.setCam(live[0].x, live[0].y);   // double-tap centres
           refreshSelInfo();
         }
@@ -1926,11 +1927,13 @@ var UI = (function () {
     if (!shift) clearSel();
     if (e && e.owner === G.human) {
       if (shift && e.selected) { e.selected = false; selection.splice(selection.indexOf(e), 1); }
-      else if (!e.selected) { e.selected = true; selection.push(e); Sfx.play("click"); }
+      else if (!e.selected) { e.selected = true; selection.push(e); Sfx.select(e); }
     } else if (e && !shift) {
       /* hostile or neutral: single view-only selection for intel */
       e.selected = true; selection = [e];
-      Sfx.play("click");
+      /* clicking an enemy is a LOOK, not a command: its own quiet two-tone, so
+         an intel peek never sounds like you just took charge of something */
+      Sfx.play("sel_intel");
     }
     refreshSelInfo();
   }
@@ -1968,7 +1971,9 @@ var UI = (function () {
       }
     }
     /* prefer combat units: drop buildings from mixed box selections automatically */
-    if (selection.length) Sfx.play("click");
+    /* ONE cue for the whole box, whatever its size - Sfx.select picks it from
+       the most numerous class in the selection */
+    Sfx.select(selection);
     refreshSelInfo();
   }
 
@@ -2033,7 +2038,7 @@ var UI = (function () {
     }
     const firing = guns.length - dry;
     if (firing) {
-      Sfx.play("order");
+      Sfx.play("ack_atk");
       G.pingEvent(wp.x, wp.y);
       alert(firing + (firing === 1 ? " GUN" : " GUNS") + " ON FIRE MISSION" +
             (dry ? "  (" + dry + " OUT OF ROUNDS)" : ""), "good");
@@ -2097,7 +2102,7 @@ var UI = (function () {
         Combat.addEffect({ t: "text", x: target.x, y: target.y - 20, s: "ENGAGE",
                            life: 0.7, max: 0.7, c: "#ff8a6b" });
       }
-      if (eng.length || shooters) { Sfx.play("order"); return; }
+      if (eng.length || shooters) { Sfx.play("ack_atk"); return; }
       /* Nothing in the selection could storm it and nothing could shoot it -
          a column of tanks right-clicked onto a neutral civilian block, say.
          This used to return anyway, so the click was swallowed whole: no
@@ -2319,7 +2324,7 @@ var UI = (function () {
     for (const e of selection) if (keep.indexOf(e) < 0) e.selected = false;
     selection = keep;
     refreshSelInfo();
-    Sfx.play("click");
+    Sfx.select(keep);           /* Tab narrows the group - say what is left */
   }
   function cycleSubgroup() {
     const ids = [];
@@ -2414,8 +2419,8 @@ var UI = (function () {
     Render.setCam(a.x, a.y);
     if (a.ref && a.ref.owner === G.human) {
       clearSel(); a.ref.selected = true; selection.push(a.ref); refreshSelInfo();
-    }
-    Sfx.play("click");
+      Sfx.select(a.ref);
+    } else Sfx.play("click");   /* a camera jump that selected nothing stays a plain UI blip */
   }
   function renderAttention() {
     const box = document.getElementById("attn");

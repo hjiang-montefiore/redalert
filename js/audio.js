@@ -966,6 +966,54 @@ var Sfx = (function () {
     o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + atk + dec + 0.04);
   }
 
+  /* ==================== SELECTION ACKNOWLEDGEMENTS ====================
+     Selecting a unit used to play "click" - the same 900 Hz square as a build
+     button - so the audio told you that a click had registered and nothing
+     about WHAT you now had under command. These six cues carry the class
+     instead, separated by centre of gravity rather than by melody, because
+     that is what survives a firefight: a hatch clank at 190 Hz, a squad radio
+     squelch at 2.1 kHz and an avionics chirp sweeping to 1.56 kHz are told
+     apart under a barrage where three tunes in the same octave would not be.
+
+     Be honest about how far that goes. Measured by band energy the six do NOT
+     land in six places - they land in three families. The heavy pair
+     (armour, structure) sit almost entirely below 180 Hz and are close
+     together; infantry, ship, support and the enemy-intel cue all put most
+     of their energy in 420-900 Hz; only the aircraft chirp stands alone, at
+     0.9-1.8 kHz. Within a family it is DURATION and TEXTURE that separate
+     them - 47 ms of filtered noise against 164 ms of two clean tones - not
+     pitch. That is a real difference and a player does learn it, but the
+     claim to defend is "three obvious families, told apart inside a family by
+     length", not "six unmistakable timbres".
+
+     LENGTH, measured off render() at -50 dB: infantry 47 ms, armour 52 ms,
+     air 62 ms, support 42 ms, structure 79 ms, ship 164 ms - against the old
+     click's 28 ms. These fire on every click of the game, so anything with a
+     musical tail would smear the moment a player drags four boxes in a row.
+
+     VARIATION: three variants per class, round-robin, applied as a +-5.5%
+     pitch shift on every partial at once. That is wide enough to stop a
+     re-clicked squad machine-gunning one tone and far narrower than the gaps
+     BETWEEN classes (the nearest pair, sea 640 Hz and infantry 620 Hz, differ
+     in timbre and tail rather than pitch), so the class identity survives the
+     variation. selPin lets an offline render nail a specific variant. */
+  var SELVARY = [1.0, 0.945, 1.058];
+  var selRR = {}, selPin = -1;
+  function selV(k) {
+    if (selPin >= 0) return selPin % SELVARY.length;
+    var i = selRR[k] || 0;
+    selRR[k] = (i + 1) % SELVARY.length;
+    return i;
+  }
+
+  /* a bandpassed noise tick: the click of a mechanism, not a tone */
+  function tick(ac, o, t, f, q, dec, lvl) {
+    var n = noiseSrc(ac, 1), b = bp(ac, f, q), g = gainNode(ac, 0);
+    burst(g.gain, t, 0.002, dec, lvl);
+    n.connect(b); b.connect(g); g.connect(o);
+    startNoise(n, t, dec + 0.02);
+  }
+
   var cues = {
     /* fallbacks for call sites that do not know which weapon fired */
     shot:    function (ac, o, t) { emitGun(ac, o, t, specOf("lmg"), here(0.75)); },
@@ -980,7 +1028,113 @@ var Sfx = (function () {
     die_inf: function (ac, o, t) { emitImpact(ac, o, t, "flesh", 0.5, here(0.7)); },
 
     click:     function (ac, o, t) { beep(ac, o, t, "square", 900, 0, 0.002, 0.04, 0.16); },
-    order:     function (ac, o, t) { beep(ac, o, t, "sine", 700, 1050, 0.004, 0.09, 0.20); },
+
+    /* ---- selection, by class. Durations are the audible ones, measured. ---- */
+
+    /* INFANTRY 47 ms - a handset keyed: squelch break, then a short blip.
+       Highest centre of gravity of the ground classes, which is why a squad
+       reads as light the instant you hear it. */
+    sel_inf: function (ac, o, t) {
+      var v = SELVARY[selV("inf")];
+      tick(ac, o, t, 2100 * v, 7, 0.045, 0.13);
+      beep(ac, o, t + 0.012, "square", 620 * v, 0, 0.002, 0.05, 0.11);
+    },
+
+    /* ARMOUR / VEHICLE 52 ms - a hatch clank. The square drops 190->118 Hz
+       in 60 ms for the mass, and a 1.5 kHz Q9 noise band on top is the steel.
+       Deliberately the lowest-pitched of the mobile classes. */
+    sel_veh: function (ac, o, t) {
+      var v = SELVARY[selV("veh")];
+      beep(ac, o, t, "square", 190 * v, 118 * v, 0.002, 0.075, 0.20);
+      tick(ac, o, t, 1500 * v, 9, 0.065, 0.10);
+    },
+
+    /* AIRCRAFT 62 ms - avionics: a sine sweeping UP 880->1560 Hz with a thin
+       6 kHz hiss. The only RISING cue in the set, which is what identifies
+       it, and the only one whose energy sits in the 0.9-1.8 kHz band - alone
+       there, so it is the easiest of the six to pick out.
+
+       It is not, as this comment first claimed, the cue with energy above
+       5 kHz: the 6.2 kHz tick runs at 0.05 against the tone's 0.17 and
+       measures as nothing. The brightest cues in the game are `order` and
+       `ack_atk`, which is the right way round - an order acknowledgement
+       should cut, and it must never be mistaken for a selection. */
+    sel_air: function (ac, o, t) {
+      var v = SELVARY[selV("air")];
+      beep(ac, o, t, "sine", 880 * v, 1560 * v, 0.004, 0.085, 0.17);
+      tick(ac, o, t + 0.004, 6200 * v, 2.2, 0.035, 0.05);
+    },
+
+    /* SHIP 164 ms - a sonar ping with a hull echo 70 ms behind it, 9 dB down.
+       The longest of the six on purpose: ships are selected in ones and twos,
+       never in the twelve-click bursts that land units get, so the tail costs
+       nothing and the echo is what makes it read as "at sea". */
+    sel_sea: function (ac, o, t) {
+      var v = SELVARY[selV("sea")];
+      beep(ac, o, t, "sine", 640 * v, 596 * v, 0.006, 0.19, 0.19);
+      beep(ac, o, t + 0.07, "sine", 640 * v, 596 * v, 0.006, 0.13, 0.07);
+    },
+
+    /* SUPPORT / UNARMED 42 ms - harvester, engineer, medic, MCV. A soft
+       triangle fifth at 0.12 peak against armour's 0.20: it is quieter and
+       duller than every armed class, so "this thing cannot shoot" is carried
+       by the level and the timbre, not by a tune you have to learn. */
+    sel_sup: function (ac, o, t) {
+      var v = SELVARY[selV("sup")];
+      beep(ac, o, t, "triangle", 430 * v, 0, 0.004, 0.055, 0.12);
+      beep(ac, o, t + 0.006, "triangle", 645 * v, 0, 0.004, 0.045, 0.07);
+    },
+
+    /* STRUCTURE 79 ms - concrete. 124 Hz falling to 96 with a lowpassed
+       noise body: immobile, heavy, nothing to order about. */
+    sel_bld: function (ac, o, t) {
+      var v = SELVARY[selV("bld")];
+      beep(ac, o, t, "triangle", 124 * v, 96 * v, 0.003, 0.11, 0.22);
+      var n = noiseSrc(ac, 1), f = lpf(ac, 320, 0.8), g = gainNode(ac, 0);
+      burst(g.gain, t, 0.003, 0.085, 0.16);
+      n.connect(f); f.connect(g); g.connect(o);
+      startNoise(n, t, 0.10);
+    },
+
+    /* HOSTILE / NEUTRAL INTEL 86 ms - clicking an enemy is a look, not a
+       command, so it has to sit UNDER every friendly cue.
+
+       The first draft set both partials to 0.09, which is the lowest
+       scheduled gain of the ten cues, and claimed that made it the quietest.
+       It did not. Every other selection cue is one tone plus filtered noise;
+       this one is two bare squares, and a square at 0.09 carries its odd
+       harmonics unfiltered into the limiter - so measured at the OUTPUT it
+       came back at 0.055 peak, second loudest of the ten and level with
+       sel_sea. Scheduled gain is not loudness once the shapes differ.
+       0.055 here, and a low-pass on the pair so the harmonics stop
+       arriving whole. */
+    sel_intel: function (ac, o, t) {
+      var g = gainNode(ac, 1), f = lpf(ac, 2600, 0.7);
+      g.connect(f); f.connect(o);
+      beep(ac, g, t, "square", 1180, 0, 0.002, 0.035, 0.055);
+      beep(ac, g, t + 0.055, "square", 780, 0, 0.002, 0.045, 0.055);
+    },
+
+    /* ORDER ACCEPTED 56 ms - rebuilt, same name, so all 30-odd order sites
+       get it without touching them. Two clipped rising ticks: the shortest cue
+       in the game and the only one built out of pure transients, so an order
+       can never be mistaken for a selection even when the two land 200 ms
+       apart. The old sine sweep shared its 700-1050 Hz range and its 90 ms
+       envelope with half the UI. */
+    order: function (ac, o, t) {
+      var v = SELVARY[selV("ack")];
+      beep(ac, o, t, "square", 980 * v, 0, 0.001, 0.026, 0.13);
+      beep(ac, o, t + 0.036, "square", 1320 * v, 0, 0.001, 0.030, 0.13);
+    },
+
+    /* ATTACK ORDER ACCEPTED 40 ms - a falling sawtooth with a bite of noise
+       across it. Ordering a column to engage is not the same event as ordering
+       it to walk, and it is the one order worth hearing over a battle. */
+    ack_atk: function (ac, o, t) {
+      var v = SELVARY[selV("atk")];
+      beep(ac, o, t, "sawtooth", 700 * v, 470 * v, 0.002, 0.055, 0.15);
+      tick(ac, o, t + 0.002, 900, 3.0, 0.05, 0.09);
+    },
     build:     function (ac, o, t) { beep(ac, o, t, "triangle", 420, 640, 0.006, 0.11, 0.18); },
     ready:     function (ac, o, t) {
       [660, 880, 1100].forEach(function (f, i) { beep(ac, o, t + i * 0.09, "triangle", f, 0, 0.01, 0.12, 0.22); });
@@ -1143,6 +1297,50 @@ var Sfx = (function () {
     try { fn(ctx, bus, ctx.currentTime + 0.002); } catch (e) { fail(e); }
   }
 
+  /* ---- one sound per selection, whatever its size ----
+     Twelve units must not fire twelve cues. The rule: the WHOLE selection gets
+     ONE cue, chosen by the most numerous class in it, so a nine-tank column
+     with a stray medic sounds like armour. On an exact tie the heavier class
+     wins (armour > air > sea > infantry > support > structure), because in a
+     mixed box what you most need to know is the heaviest thing you just picked
+     up. play()'s own 60 ms per-name gate then catches the rare double call.
+
+     Selection is a UI event, not a thing happening on the map, so it is NOT
+     positional: play() only spatialises the six diegetic names (shot, cannon,
+     missile, explode, explode_big, die_inf) and routes everything else to
+     uiBus flat and dry. A cue that panned to wherever the unit stood would be
+     quieter for the units furthest from the camera - exactly backwards, since
+     those are the ones you are least sure about. */
+  var SEL_RANK = { sel_veh: 6, sel_air: 5, sel_sea: 4, sel_inf: 3, sel_sup: 2, sel_bld: 1 };
+  function selClass(e) {
+    if (!e || e.dead) return null;
+    if (e.kind === "building") return "sel_bld";
+    var d = e.def || {};
+    /* Unarmed only demotes GROUND units. An unarmed aircraft is still an
+       aircraft and an unarmed hull is still a ship - domain beats armament
+       there, because knowing a thing is airborne matters more than knowing it
+       cannot shoot. On the ground it is the other way round: harvester,
+       engineer, medic and MCV behave nothing like a tank. */
+    if ((e.cat === "infantry" || e.cat === "vehicle") && (!d.weapons || !d.weapons.length))
+      return "sel_sup";
+    return e.cat === "infantry" ? "sel_inf"
+         : e.cat === "aircraft" ? "sel_air"
+         : e.cat === "naval"    ? "sel_sea"
+         : "sel_veh";
+  }
+  function select(sel) {
+    if (!enabled) return;
+    var list = (sel && sel.length !== undefined) ? sel : (sel ? [sel] : []);
+    var tally = {}, best = null, bn = 0, i, c, n;
+    for (i = 0; i < list.length; i++) {
+      c = selClass(list[i]);
+      if (!c) continue;
+      n = tally[c] = (tally[c] || 0) + 1;
+      if (n > bn || (n === bn && SEL_RANK[c] > SEL_RANK[best])) { bn = n; best = c; }
+    }
+    if (best) play(best);
+  }
+
   /* ========================= WIRING INTO THE GAME =========================
      audio.js loads before combat.js, so the hooks are installed lazily the
      first time the graph is asked for. Nothing outside this file changes. */
@@ -1298,6 +1496,8 @@ var Sfx = (function () {
     } else sp = here(1);
 
     det = true; detSeed = spec.seed === undefined ? 20260821 : spec.seed;
+    /* pin the round-robin so a render measures the variant it asked for */
+    selPin = spec.variant === undefined ? -1 : (spec.variant | 0);
     try {
       var chain = spatialChain(oc, gainNode(oc, 1), sp, bus.sfx);
       if (spec.weapon) {
@@ -1313,7 +1513,7 @@ var Sfx = (function () {
       } else if (spec.cue && cues[spec.cue]) {
         cues[spec.cue](oc, bus.ui, 0.02);
       }
-    } finally { det = false; }
+    } finally { det = false; selPin = -1; }
     return oc.startRendering();
   }
 
@@ -1363,6 +1563,7 @@ var Sfx = (function () {
     /* the surface the rest of js/ already uses */
     play: play, ensure: ensure, setIntensity: setIntensity, duck: duck,
     /* new, all optional */
+    select: select, selClass: selClass,
     weapon: weapon, impact: impact, boom: boom,
     updateEngines: updateEngines, stopEngines: stopEngines,
     render: render, describe: describe, stats: stats,
