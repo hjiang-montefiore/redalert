@@ -589,6 +589,50 @@ try{
         "hp "+Math.round(hpAfter)+" -> "+Math.round(b.hp));
   })();
 
+  /* ====== BUG 29: the commander answers what it can SEE ======
+     "the ai should be trained since I don't see the difference since the
+     route is always the same and no adjustments for the observation".
+     counterMix() reads foeArms(), which is built from seenU - the honest
+     sensor record, not the enemy's roster - so the test shows the AI a tank
+     corps, then drowns it in infantry, and asks whether the shopping list
+     moves. Shares are normalised, so adding infantry moves sInf up and
+     sArmour down without waiting out D.memory. */
+  log("\n[29] DOES THE AI ADAPT TO WHAT IT SEES");
+  (function(){
+    var it0 = AI.intelOf(E);
+    if(!it0){ chk("the enemy seat is run by a commander", false, "no brain"); return; }
+    var home = tile(E,"ground",4);
+    if(!home){ chk("adaptation scenario built", false, "no ground"); return; }
+
+    /* a tank corps, parked where the commander's own sensors will find it */
+    var shown=[];
+    for(var i=0;i<8;i++){ var u=spawn(P,"hvy_n",home,(i%4),(i<4?0:1)); if(u) shown.push(u); }
+    if(shown.length<4){ chk("adaptation scenario built", false, "spawned "+shown.length); return; }
+    tick(240);
+    var a1 = AI.intelOf(E).arms, m1 = AI.intelOf(E).mix;
+    chk("the commander sees the armour with its own sensors", a1.armour > 0.5,
+        "armour="+a1.armour.toFixed(2)+" sArmour="+a1.sArmour.toFixed(2));
+
+    var at1 = m1.inf.at||0, td1 = m1.veh.tankdestroyer||0, mg1 = m1.inf.mg||0;
+
+    /* now swamp the picture with infantry */
+    for(var i=0;i<34;i++){ var r=spawn(P,"rifle_n",home,(i%9)-4,(i<9?2:(i<18?3:(i<27?4:5)))); if(r) shown.push(r); }
+    tick(240);
+    var a2 = AI.intelOf(E).arms, m2 = AI.intelOf(E).mix;
+    chk("the picture shifts toward infantry", a2.sInf > a1.sInf && a2.sArmour < a1.sArmour,
+        "sInf "+a1.sInf.toFixed(2)+" -> "+a2.sInf.toFixed(2)+
+        ", sArmour "+a1.sArmour.toFixed(2)+" -> "+a2.sArmour.toFixed(2));
+
+    var at2 = m2.inf.at||0, td2 = m2.veh.tankdestroyer||0, mg2 = m2.inf.mg||0;
+    chk("anti-tank weight falls when the armour share falls", at2 < at1 && td2 < td1,
+        "AT team "+at1.toFixed(3)+" -> "+at2.toFixed(3)+
+        ", tank destroyer "+td1.toFixed(3)+" -> "+td2.toFixed(3));
+    chk("anti-infantry weight rises instead", mg2 > mg1,
+        "MG "+mg1.toFixed(3)+" -> "+mg2.toFixed(3));
+    chk("the two shopping lists are not the same list",
+        JSON.stringify(m1) !== JSON.stringify(m2), "");
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }
