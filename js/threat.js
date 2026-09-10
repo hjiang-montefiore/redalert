@@ -45,11 +45,100 @@ var Threat = (function () {
 
   function init(game) {
     G = game; seen = {}; dmgWindow = []; intensity = 0;
+    awT = { unit: -99, base: -99, loss: -99 };
     shake = 0; flash = 0; banner = null; bannerT = 0;
   }
 
-  /* called from combat whenever the human player loses hit points */
-  function reportDamage(amount) { dmgWindow.push({ t: G ? G.time : 0, a: amount }); }
+  /* ================= ATTACK WARNING =================
+     Rate limits in seconds, and they are the whole design. A base under
+     sustained fire is exactly the case that must not machine-gun the alert:
+     a tank platoon puts a round into a structure about every 2.5s, so
+     anything under ten seconds is a stuttering klaxon rather than a warning.
+     These sit ON TOP of the per-cue gaps play() already enforces (6s on
+     threat_high, 2.5s on threat_med), and are stricter than both. */
+  const AW = { unit: 22, base: 12, loss: 8 };
+  let awT = { unit: -99, base: -99, loss: -99 };
+
+  /* ESCALATION. Three rungs that differ in KIND and not merely in volume, so
+     the player can tell them apart with the game window behind another one:
+
+       unit  a cue and nothing else. Being shot at is the job. No banner, no
+             edge flash, no shake - a firefight must not stop the player
+             reading their own build queue.
+       base  fire(2): amber klaxon, edge flash and a banner naming the
+             structure. Buildings cannot withdraw, so this rung means "go
+             and look now".
+       loss  fire(3): the strategic cue, full red flash and screen shake -
+             the same treatment a B-2 crossing the line gets. Losing a
+             refinery IS a strategic event for a player's economy.
+
+     Everything routes through fire() rather than calling Sfx directly, so
+     the banner, the flash, the shake and the mix duck stay in the one place
+     that already owns them. */
+  /* A barrier is not a base. wall, sandbag, dragonteeth, razorwire and
+     tankditch are all cat:"defense" BUILDINGS the player lays by the dozen,
+     they are the most-shot structures in the game, and they are expendable by
+     design - razor wire dies to one burst and then the next segment takes
+     fire. Routed to the `base` rung, a wall line being chewed through fired
+     an amber klaxon, an edge flash and a camera shake every twelve seconds
+     for as long as the chewing lasted; on the loss rung one dead sandbag got
+     the full red flash and maximum shake, which is what a nuclear launch
+     gets. threat.js's own first line is "routine skirmishing should feel
+     routine".
+
+     armor === "wall" is the discriminator rather than a list of ids, so a
+     barrier added later is covered without touching this. A barrier still
+     gets its minimap marker - the player should see where the line is being
+     cut - it just does not get the klaxon. */
+  function isBarrier(e) {
+    return !!(e && e.kind === "building" && e.def && e.def.armor === "wall");
+  }
+
+  function alertFor(kind, e, now) {
+    if (kind === "base" && isBarrier(e)) return;       // marker only
+    if (now - awT[kind] < AW[kind]) return;
+    awT[kind] = now;
+    const nm = (e && e.def && e.def.name ? e.def.name : "UNIT").toUpperCase();
+    if (kind === "unit") Sfx.play("under_fire");        // cue only, no drama
+    else fire(2, "BASE UNDER ATTACK", nm + " TAKING FIRE");
+  }
+
+  /* called from combat whenever the human player loses hit points.
+     Several hundred calls a second in a real engagement, so past the window
+     push everything here is a compare and one field write. The per-object
+     gate lives ON the object - no map, no scan: a squad under machine-gun
+     fire is ONE marker on the minimap, not forty. */
+  function reportDamage(amount, e) {
+    const now = G ? G.time : 0;
+    dmgWindow.push({ t: now, a: amount });
+    /* _pingT === undefined, not (e._pingT || -99): at G.time 0 - the first
+       tick of a match, and every load of a fresh save - a stored 0 is falsy,
+       the fallback fires, and the gate lets every single round through. */
+    if (!e || !G || (e._pingT !== undefined && now - e._pingT < 3)) return;
+    e._pingT = now;
+    const kind = e.kind === "building" ? "base" : "unit";
+    if (G.pingEvent) G.pingEvent(e.x, e.y, kind);
+    alertFor(kind, e, now);
+  }
+
+  /* a structure of the human player's is gone. game.js is the only caller,
+     because it is the only place that knows whether it was destroyed or
+     taken. The marker is ALWAYS placed - losing four buildings in a rush
+     must leave four crosses on the minimap - and only the audio and the
+     banner are rate limited. */
+  function reportLoss(e, taken) {
+    if (!G) return;
+    const now = G.time;
+    if (G.pingEvent) G.pingEvent(e.x, e.y, "loss");
+    /* A dead barrier is a marker and nothing else. Losing one segment of
+       razor wire is not a strategic event and must not be dressed as one. */
+    if (isBarrier(e)) return;
+    if (now - awT.loss < AW.loss) return;
+    awT.loss = now;
+    const nm = (e && e.def && e.def.name ? e.def.name : "STRUCTURE").toUpperCase();
+    fire(3, nm + (taken ? " CAPTURED" : " LOST"),
+         taken ? "ENEMY ENGINEERS INSIDE THE WIRE" : "POSITION MARKED ON MINIMAP");
+  }
 
   function fire(tier, text, sub) {
     if (tier >= 3) {
@@ -106,7 +195,7 @@ var Threat = (function () {
         } else {
           fire(2, u.def.name.toUpperCase() + " CONTACT", u.def.full || "");
         }
-        if (G.pingEvent) G.pingEvent(u.x, u.y);
+        if (G.pingEvent) G.pingEvent(u.x, u.y, "note");   // already gated on visibleTo
       }
     }
 
@@ -117,7 +206,7 @@ var Threat = (function () {
   }
 
   return {
-    init, update, tierOf, reportDamage, reportLaunch, fire,
+    init, update, tierOf, reportDamage, reportLoss, reportLaunch, fire,
     get intensity() { return intensity; },
     get shake() { return shake; },
     get flash() { return flash; },

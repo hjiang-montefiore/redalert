@@ -633,6 +633,53 @@ try{
         JSON.stringify(m1) !== JSON.stringify(m2), "");
   })();
 
+  /* ====== BUG 30: the minimap says we are under attack, proportionately ======
+     "when we have attacks the mini map should have warning sign and audio
+     effect". The ring has to express several attacks at once, fade them on
+     their own clocks, and NOT dress a dead sandbag as a strategic event. */
+  log("\n[30] ATTACK WARNING");
+  (function(){
+    if(!Game.pingEvent || !Game.recentEvents){ chk("event ring exists", false, "missing"); return; }
+    Game.events = [];
+    Game.pingEvent(10,10,"unit"); Game.pingEvent(20,20,"base"); Game.pingEvent(30,30,"loss");
+    chk("the ring holds several attacks at once", Game.recentEvents().length===3,
+        Game.recentEvents().length+" markers");
+
+    /* Each kind fades on its own clock, not one flat life. Identify OUR three
+       by position: the match is live and the game pings its own events while
+       these ticks run, so counting kinds would count those too. */
+    tick(Math.round(3.2/CFG.DT));
+    var at=function(x,y){ return Game.recentEvents().some(function(e){return e.x===x&&e.y===y;}); };
+    chk("a unit ping expires before a lost building", !at(10,10) && at(30,30),
+        "unit@2.5s gone="+(!at(10,10))+", loss@6s kept="+at(30,30));
+
+    /* a base assault must not evict the loss markers that matter */
+    Game.events=[]; Game.pingEvent(5,5,"loss");
+    for(var i=0;i<20;i++) Game.pingEvent(40+i,40,"unit");
+    var kept=Game.recentEvents().filter(function(e){return e.k==="loss";}).length;
+    chk("twenty unit pings do not push out the lost building", kept===1,
+        "loss markers surviving = "+kept+" of 1, ring="+Game.recentEvents().length);
+
+    /* the escalation must grade the structure */
+    if(typeof Threat!=="undefined" && Threat.reportLoss){
+      var spot=tile(P,"ground",9);
+      var sb = spot && Game.placeBuilding(P,"sandbag",spot.x,spot.y,true);
+      var rf = spot && Game.placeBuilding(P,"power",spot.x+3,spot.y+3,true);
+      if(sb&&rf){
+        Threat.shake=0; Threat.flash=0;
+        Threat.reportLoss(sb,false);
+        var shakeWall=Threat.shake||0;
+        Threat.shake=0; Threat.flash=0;
+        Threat.reportLoss(rf,false);
+        var shakeBldg=Threat.shake||0;
+        chk("a dead sandbag does not shake the screen", shakeWall===0,
+            "sandbag shake="+shakeWall.toFixed(2));
+        chk("a dead power plant does", shakeBldg>0.5,
+            "power plant shake="+shakeBldg.toFixed(2));
+      } else chk("barrier grading scenario built", false, "placeBuilding failed");
+    }
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }

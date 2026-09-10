@@ -34,6 +34,8 @@ var Game = (function () {
     G.deferred = [];
     G.fogT = 0;
     G.eventX = 0; G.eventY = 0;
+    /* the recent-event ring the minimap warning reads; see G.pingEvent */
+    G.events = [];
     /* weather: fixed if the player chose one, otherwise it rolls */
     G.weatherKey = opts.weather && opts.weather !== "dynamic" ? opts.weather : "clear";
     G.weatherLock = !!(opts.weather && opts.weather !== "dynamic");
@@ -558,8 +560,23 @@ var Game = (function () {
        an order the player gave by hand - which is right in general and wrong
        here, because nobody hand-orders an attack on a building they own. */
     G.dropOrdersAgainst(b, newOwner);
-    G.alert(old === G.human ? "STRUCTURE CAPTURED BY ENEMY" : "ENEMY STRUCTURE CAPTURED", old === G.human ? "bad" : "good");
-    G.pingEvent(b.x, b.y);
+    /* A capture the human neither suffered nor carried out - two AI
+       commanders trading a block behind the fog - used to ping anyway, and
+       shift+space would then fly the camera to a structure the player has
+       never laid eyes on. A warning system must not be a map hack.
+
+       Losing one of yours is Threat's banner, for the same reason as onDeath:
+       G.alert("...", "bad") already sounds `alarm`, so both would announce
+       the same capture twice. Taking one of theirs is a good-news toast,
+       which Threat has no rung for and should not have. */
+    if (old === G.human) {
+      const T = (typeof Threat !== "undefined" && Threat.reportLoss) ? Threat : null;
+      if (T) T.reportLoss(b, true);
+      else { G.alert("STRUCTURE CAPTURED BY ENEMY", "bad"); G.pingEvent(b.x, b.y, "loss"); }
+    } else {
+      G.alert("ENEMY STRUCTURE CAPTURED", "good");
+      if (newOwner === G.human || G.visibleTo(G.human, b)) G.pingEvent(b.x, b.y, "note");
+    }
   };
 
   /* Cancel every standing engagement against `b` held by `owner` and its
@@ -657,9 +674,32 @@ var Game = (function () {
         const r = G.placeBuilding(G.neutral, rubbleId, rtx, rty, true);
         if (r) r.hp = r.maxHp;
       }
-      if (e.owner === G.human) { G.alert(e.def.name.toUpperCase() + " LOST", "bad"); Sfx.play("explode_big"); }
-      else if (!e.owner.isAI || e.owner === G.ai) Sfx.play("explode_big");
-      G.pingEvent(e.x, e.y);
+      const mine = e.owner === G.human;
+      if (mine || !e.owner.isAI || e.owner === G.ai) Sfx.play("explode_big");
+      /* Losing a structure is the top rung of the warning. An enemy block
+         coming down where the player cannot see it is not a warning at all,
+         and pinging it would turn the marker into a fog reveal.
+
+         One event, one announcement. G.alert with class "bad" already plays
+         `alarm` at ui.js:2635, so running it alongside Threat.reportLoss told
+         the player the same thing twice, in two widgets, with two different
+         sounds - a toast reading "POWER PLANT LOST" with an alarm, and a
+         banner reading "POWER PLANT LOST" with threat_high, a red flash and a
+         shake. Threat owns this one: its banner carries the sub-line and it
+         places the minimap marker. The toast is the fallback for a build with
+         no Threat module, and stays for the barriers Threat deliberately
+         passes over, which would otherwise die silently. */
+      if (mine) {
+        const T = (typeof Threat !== "undefined" && Threat.reportLoss) ? Threat : null;
+        const barrier = e.def && e.def.armor === "wall";
+        if (T && !barrier) T.reportLoss(e, false);
+        else {
+          G.alert(e.def.name.toUpperCase() + " LOST", "bad");
+          G.pingEvent(e.x, e.y, "loss");
+        }
+      } else if (G.visibleTo(G.human, e)) {
+        G.pingEvent(e.x, e.y, "note");
+      }
     } else {
       if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; Combat.kill(G, c, null); }
       if (e.owner === G.human && e.def.harvester) G.alert("ORE HAULER LOST", "bad");
@@ -1601,7 +1641,70 @@ var Game = (function () {
   };
 
   G.alert = function (msg, cls) { UI.alert(msg, cls); };
-  G.pingEvent = function (x, y) { G.eventX = x; G.eventY = y; };
+  /* ---------------- recent events: what the minimap warns about ----------
+     The old pingEvent kept exactly one position and no time, so it could say
+     "something happened, over there" and nothing else. Three attacks at once
+     collapsed into one point, and a ping from ten minutes ago looked as
+     urgent as one from this second. It now keeps a short DATED list with a
+     KIND, which is what the minimap marker and its audio grade off.
+
+       "note"  a plot the player made or was told about - own fire mission,
+               counter-battery fix, a strategic contact. Informational.
+       "unit"  something of the player's is being shot at.
+       "base"  a STRUCTURE of the player's is being shot at. Worse: buildings
+               cannot withdraw and the ground they hold is the player's base.
+       "loss"  a structure of the player's is gone - destroyed or captured.
+
+     COST. This is reached from Combat.applyDamage, which in a battalion
+     action runs several hundred times a second, so there is no sort, no
+     filter and no allocation beyond the one event object: a push, and
+     pruning that only ever looks at the head of the array. EV_MAX 12 caps
+     the ring - a dozen markers is already more than anyone can read on a
+     196px minimap - and EV_LIFE 6 is the longest any marker lives, so the
+     array is a handful of entries even under sustained fire. */
+  /* Each kind fades on its own clock, and the ring has to prune on the SAME
+     clock or the two disagree. A flat six-second life meant a `unit` marker
+     that stopped drawing at 2.5s went on holding a slot for another 3.5 -
+     so in the one situation this feature exists for, a base assault with a
+     dozen units and several structures under fire, the ring filled with
+     invisible entries and evicted the `loss` markers that actually mattered.
+     These must stay equal to EV_STYLE in render.js:1325. */
+  const EV_LIFE = { note: 3.0, unit: 2.5, base: 4.0, loss: 6.0 };
+  const EV_MAX = 12;
+  G.eventLife = EV_LIFE;                     // render.js reads this to stay in step
+  function evLife(k) { const v = EV_LIFE[k]; return v === undefined ? 3.0 : v; }
+  /* Drop everything past its own life. Entries are in push order but their
+     lives differ, so a stale one can sit behind a fresh one and this cannot
+     be a shift-from-the-head loop any more. */
+  function evPrune(ev, now) {
+    let w = 0;
+    for (let i = 0; i < ev.length; i++)
+      if (now - ev[i].t <= evLife(ev[i].k)) ev[w++] = ev[i];
+    ev.length = w;
+  }
+  G.pingEvent = function (x, y, kind) {
+    G.eventX = x; G.eventY = y;              // legacy: the shift+space camera jump
+    const ev = G.events || (G.events = []), now = G.time;
+    evPrune(ev, now);
+    /* Still full of live markers: give up the one with the least life left
+       rather than the oldest, so a fading unit ping yields to a lost
+       refinery instead of the other way round. */
+    if (ev.length >= EV_MAX) {
+      let worst = 0, least = Infinity;
+      for (let i = 0; i < ev.length; i++) {
+        const left = evLife(ev[i].k) - (now - ev[i].t);
+        if (left < least) { least = left; worst = i; }
+      }
+      ev.splice(worst, 1);
+    }
+    ev.push({ x: x, y: y, t: now, k: kind || "note" });
+  };
+  /* what is still worth drawing, oldest first. The minimap is the only caller. */
+  G.recentEvents = function () {
+    const ev = G.events || (G.events = []), now = G.time;
+    evPrune(ev, now);
+    return ev;
+  };
 
   /* ---------------- main tick ---------------- */
   G.tick = function (dt) {

@@ -1292,6 +1292,157 @@ var Render = (function () {
   }
 
   /* ============ minimap ============ */
+  /* ============ attack warnings on the minimap ============
+     COLOUR AND CONTRAST. The minimap ground runs the whole palette: fogged
+     water is #050705 and the sand on hormuz and kuwait is near-white, so any
+     single flat colour reads on one end and vanishes on the other. Every
+     stroke here is therefore drawn TWICE - an opaque near-black casing at
+     lineWidth+1.6 first, then the colour on top. That is the trick a road
+     symbol on aerial imagery uses, and with a twelve-marker cap it costs at
+     most twenty-four extra strokes on a 196px canvas.
+
+       kind   colour    life   what it is
+       note   #5ac8ff   3.0s   a plot: own fire mission, counter-battery fix,
+                               a strategic contact already in sight. Cyan is
+                               the game's own "friendly information" colour
+                               (Threat.flashColor uses it for own launches).
+       unit   #ffc042   2.5s   one of your units is being shot at. Amber, the
+                               same warning colour the HUD already uses for
+                               weather and low power.
+       base   #ff8a3c   4.0s   one of your STRUCTURES is being shot at.
+       loss   #ff3324   6.0s   a structure of yours is destroyed or captured.
+
+     It PULSES rather than blinks. A blink caught in its off phase is a
+     warning that was not given; an expanding, fading ring is legible at
+     every instant of its life, which matters because the player looks at the
+     minimap at a moment of their choosing and not of ours.
+
+     WHAT IT MUST NOT DO. Nothing here is fog-tested, because nothing here is
+     fog-sensitive: the ping call sites hand this only the player's own
+     losses and plots the player already holds. The gating lives at the call
+     sites in game.js and threat.js, which is the only place that knows
+     whose event it was. */
+  const EV_STYLE = {
+    note: { c: "#5ac8ff", life: 3.0, r0: 2.0, r1: 6.5, w: 1.2, rings: 1, mark: 0 },
+    unit: { c: "#ffc042", life: 2.5, r0: 2.5, r1: 9.0, w: 1.4, rings: 1, mark: 1 },
+    base: { c: "#ff8a3c", life: 4.0, r0: 3.0, r1: 13.0, w: 1.8, rings: 2, mark: 2 },
+    loss: { c: "#ff3324", life: 6.0, r0: 3.5, r1: 17.0, w: 2.0, rings: 2, mark: 3 },
+  };
+
+  /* one path, stroked as casing then colour */
+  function cased(mctx, path, col, w, a) {
+    mctx.globalAlpha = a * 0.9;
+    mctx.strokeStyle = "rgba(2,4,3,0.95)"; mctx.lineWidth = w + 1.6;
+    path(); mctx.stroke();
+    mctx.globalAlpha = a;
+    mctx.strokeStyle = col; mctx.lineWidth = w;
+    path(); mctx.stroke();
+  }
+
+  /* THE EDGE INDICATOR.
+     The whole map is always on the minimap, so an arrow pinned to the
+     minimap's own border would never once fire - there is no such thing as
+     an event off the minimap. What the player actually misses is an attack
+     outside the CAMERA, and the camera is already drawn here as the view
+     quad. So the chevron sits on that quad's edge, where the line from the
+     centre of the view out to the event leaves it, pointing the way the
+     camera has to travel. One glance gives a heading, and one drag acts on
+     it. Because the quad and the event are both in the rotated minimap
+     space, the heading stays true at any camera yaw.
+
+     The maths is a ray/segment clip against four edges with D = event minus
+     view-centre left UNNORMALISED, so the crossing parameter t is in units
+     of D: t >= 1 means the event is inside the view and needs no chevron at
+     all. That is the inside test and the edge point in one pass, no
+     point-in-polygon call. */
+  function edgeChevron(mctx, q, px, py, col, a) {
+    const cx = (q[0].x + q[1].x + q[2].x + q[3].x) * 0.25;
+    const cy = (q[0].y + q[1].y + q[2].y + q[3].y) * 0.25;
+    const dx = px - cx, dy = py - cy;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.001) return;
+    let best = -1;
+    for (let i = 0; i < 4; i++) {
+      const A = q[i], B = q[(i + 1) & 3];
+      const ex = B.x - A.x, ey = B.y - A.y;
+      const den = dx * ey - dy * ex;
+      if (den > -1e-6 && den < 1e-6) continue;      // parallel
+      const t = ((A.x - cx) * ey - (A.y - cy) * ex) / den;
+      const s = ((A.x - cx) * dy - (A.y - cy) * dx) / den;
+      if (t > 0 && s >= 0 && s <= 1 && (best < 0 || t < best)) best = t;
+    }
+    if (best < 0 || best >= 1) return;              // event is inside the view
+    const nx = dx / len, ny = dy / len;
+    /* tip 2.2px outside the frame line, 5px of shaft behind it, 4px half
+       span - a chevron small enough to sit on a 196px minimap without being
+       mistaken for a unit and large enough to give an unambiguous heading */
+    const tx = cx + dx * best + nx * 2.2, ty = cy + dy * best + ny * 2.2;
+    const bx = tx - nx * 5.0, by = ty - ny * 5.0;
+    const ox = -ny * 4.0, oy = nx * 4.0;
+    cased(mctx, function () {
+      mctx.beginPath();
+      mctx.moveTo(bx + ox, by + oy); mctx.lineTo(tx, ty); mctx.lineTo(bx - ox, by - oy);
+    }, col, 2.0, a);
+  }
+
+  /* Called from both minimap paths - the 2D one below and drawMinimapFrom,
+     which is what render3d delegates to - so one implementation serves both
+     renderers. Drawn inside the rotated transform, with the entity dots, so
+     a marker sits on the ground it refers to. */
+  function drawEventMarkers(mctx, S, quad) {
+    if (!G.recentEvents) return;
+    const ev = G.recentEvents();
+    if (!ev.length) return;
+    const now = G.time;
+    mctx.save();
+    mctx.lineCap = "round"; mctx.lineJoin = "round";
+    for (let i = 0; i < ev.length; i++) {
+      const e = ev[i], st = EV_STYLE[e.k] || EV_STYLE.note;
+      const f = (now - e.t) / st.life;
+      if (f < 0 || f > 1) continue;
+      const px = (e.x / CFG.TILE) * S, py = (e.y / CFG.TILE) * S;
+      /* Ease-out on the radius so the ring leaps off the point and then
+         slows: the motion is spent in the first half second, which is exactly
+         when it is recruiting the eye.
+         The FADE is flat then linear, not squared. A squared fade was tried
+         first and measured wrong on a screenshot - at 1.6s an amber "unit
+         under fire" marker was down to alpha 0.13 and simply not there, so a
+         2.5s marker was really a one-second one. It now holds full strength
+         for 60% of its life and fades over the last 40%, which is what makes
+         the stated durations in EV_STYLE mean what they say. */
+      const g = 1 - (1 - f) * (1 - f), a = f < 0.6 ? 1 : (1 - f) / 0.4;
+      for (let k = 0; k < st.rings; k++) {
+        const kf = g - k * 0.24;
+        if (kf <= 0) continue;
+        const r = st.r0 + (st.r1 - st.r0) * kf, ka = a * (k ? 0.5 : 1);
+        if (ka < 0.04) continue;
+        cased(mctx, function () { mctx.beginPath(); mctx.arc(px, py, r, 0, 6.2832); },
+              st.c, st.w, ka);
+      }
+      /* A static glyph under the moving ring. Motion finds the marker, the
+         glyph says what it is - and unlike the ring it is still there at the
+         end of the marker's life. The worst case gets the loudest glyph. */
+      if (st.mark === 3) {
+        const d = 4.2;
+        cased(mctx, function () {
+          mctx.beginPath();
+          mctx.moveTo(px - d, py - d); mctx.lineTo(px + d, py + d);
+          mctx.moveTo(px + d, py - d); mctx.lineTo(px - d, py + d);
+        }, st.c, 2.0, a);
+      } else if (st.mark === 2) {
+        cased(mctx, function () { mctx.beginPath(); mctx.arc(px, py, 1.9, 0, 6.2832); },
+              st.c, 2.2, a);
+      } else if (st.mark === 1) {
+        cased(mctx, function () { mctx.beginPath(); mctx.arc(px, py, 1.2, 0, 6.2832); },
+              st.c, 1.6, a);
+      }
+      /* only the three attack kinds earn a direction cue; a note is
+         information the player asked for and already knows where to find */
+      if (st.mark && quad && quad.length === 4) edgeChevron(mctx, quad, px, py, st.c, a);
+    }
+    mctx.restore();
+  }
+
   function drawMinimap(mm) {
     const mctx = mm.getContext("2d");
     const map = G.map, S = mm.width / map.W;
@@ -1332,6 +1483,14 @@ var Render = (function () {
       mctx.fillStyle = "#4d6047"; mctx.font = "9px sans-serif"; mctx.textAlign = "center";
       mctx.fillText(G.human.hasBuilding("radar") ? "RADAR OFFLINE — LOW POWER" : "NO RADAR", mm.width / 2, 12);
     }
+    /* last, and over the low-power wash, for the reason given in
+       drawMinimapFrom. This minimap never rotates, so its own frustum corners
+       are the quad the chevron clips against. */
+    drawEventMarkers(mctx, S, [
+      { x: c0.x / CFG.TILE * S, y: c0.y / CFG.TILE * S },
+      { x: c1.x / CFG.TILE * S, y: c1.y / CFG.TILE * S },
+      { x: c2.x / CFG.TILE * S, y: c2.y / CFG.TILE * S },
+      { x: c3.x / CFG.TILE * S, y: c3.y / CFG.TILE * S }]);
   }
 
   /* ---- services for the 3D renderer ---- */
@@ -1447,6 +1606,27 @@ var Render = (function () {
       mctx.fillStyle = "#4d6047"; mctx.font = "9px sans-serif"; mctx.textAlign = "center";
       mctx.fillText(G.human.hasBuilding("radar") ? "RADAR OFFLINE" : "NO RADAR", mm.width / 2, 12);
     }
+    /* ---- attack markers sit on top of EVERYTHING, the blackout included ----
+       The wash above is 25% black. Drawing the warning underneath it took the
+       marker from #ff3324 to #bf2620 and cost it most of its punch at the one
+       moment it matters most - because the grid going down is very often the
+       grid going down BECAUSE something is shelling the power plant. So the
+       rotation is re-applied for this pass alone and the markers go last:
+       three extra canvas state calls for a cue that must never be missed.
+       Position still comes from the rotated frame, so each marker lands on
+       the ground it refers to and the chevron still points where the camera
+       has to go. */
+    if (viewYaw !== undefined && viewYaw !== null) {
+      mctx.save();
+      mctx.translate(mm.width / 2, mm.height / 2);
+      mctx.rotate(rot);
+      mctx.translate(-mm.width / 2, -mm.height / 2);
+    }
+    drawEventMarkers(mctx, S, quad ? quad.map(function (q) {
+      return { x: U.clamp(q.x / CFG.TILE, 0, map.W) * S,
+               y: U.clamp(q.y / CFG.TILE, 0, map.H) * S };
+    }) : null);
+    if (viewYaw !== undefined && viewYaw !== null) mctx.restore();
   }
 
   return {

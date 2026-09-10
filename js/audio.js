@@ -1149,6 +1149,39 @@ var Sfx = (function () {
       for (var i = 0; i < 2; i++) beep(ac, o, t + i * 0.25, "sawtooth", 440, 620, 0.01, 0.22, 0.18);
     },
 
+    /* ---- "you are being shot at" ----
+       Deliberately built without noise. Every combat sound in this file is
+       noise plus a transient, so a warning made the same way disappears into
+       the battle it is warning about. This is two clean square pulses a
+       fourth apart - 760 and 570Hz, the interval a European two-tone siren
+       uses - over a short sine thump that gives it weight without reading as
+       an explosion. 0.44s of scheduled nodes and 0.26s actually audible,
+       measured offline - it fires while the player is already doing
+       something else and must not sit on top of them. play() holds it to one
+       every 9 seconds, the longest gap in that table.
+
+       And it ducks, which the first draft did not. Every other warning pulls
+       the mix down to cut through - threat_med 0.55 over 1.2s, threat_high
+       0.35 over 2.6, launch_ballistic 0.4 over 3.0 - and this was the only
+       one without, while also being the quietest of them and the ONLY one
+       that fires while a firefight is at its loudest, which is precisely
+       when it is needed. A gentle 0.7 over 0.7s: enough to clear a window
+       for it, far short of the drama the strategic cues are allowed. */
+    under_fire: function (ac, o, t) {
+      duck(0.70, 0.7);
+      [760, 570].forEach(function (f, i) {
+        var t2 = t + i * 0.17;
+        var ov = osc(ac, "square", f), fl = lpf(ac, 2200, 0.9), g = gainNode(ac, 0);
+        burst(g.gain, t2, 0.004, 0.13, 0.22);
+        ov.connect(fl); fl.connect(g); g.connect(o);
+        ov.start(t2); ov.stop(t2 + 0.22);
+      });
+      var sb = osc(ac, "sine", 96), sg = gainNode(ac, 0);
+      sb.frequency.exponentialRampToValueAtTime(58, t + 0.34);
+      burst(sg.gain, t, 0.012, 0.34, 0.34);
+      sb.connect(sg); sg.connect(o); sb.start(t); sb.stop(t + 0.44);
+    },
+
     /* ---------- threat-scaled cues ----------
        Routine contact stays quiet on purpose. The heavy cues are reserved for
        things that genuinely change the shape of the battle, so that hearing
@@ -1281,6 +1314,9 @@ var Sfx = (function () {
     resume();
     var now = performance.now();
     var gap = /^threat_high|^launch_ballistic/.test(name) ? 6000
+            /* the attack warning is the one cue a losing player hears most,
+               so it gets the longest gap in the table */
+            : /^under_fire/.test(name) ? 9000
             : /^threat_med|^stealth_pass|^lock_warn/.test(name) ? 2500 : 60;
     if (lastCue[name] && now - lastCue[name] < gap) return;
     lastCue[name] = now;
