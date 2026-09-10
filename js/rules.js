@@ -631,12 +631,12 @@ var UNITS = {
     turret:true, tturn:1.0, ciws:0.5, shoreBombard:true,
     desc:"Missile cruiser with a heavy main battery. Anchors a fleet and shells anything on the coast." },
 
-  sub_n: { fac:"nato", role:"sub", name:"Los Angeles SSN", full:"SSN-688 Los Angeles", cat:"naval",
+  sub_n: { fac:"nato", role:"sub", name:"Virginia SSN", full:"SSN-774 Virginia class, Block IV/V", cat:"naval",
     cost:2400, oil:40, time:30, hp:1250, armor:"light", speed:2.2, turn:1.1, sight:8.5, r:17, mass:0,
     layer:"sub", weapons:["torpedo"], prereq:["navalyard","radar"], tech:2, submerged:true,
     layNet:6,
-    desc:"Nuclear attack boat. Invisible unless it fires or an ASW sonar finds it. Torpedoes gut capital ships. " +
-         "Carries six TRAPS-type acoustic nodes and can lay a barrier across water it does not intend to sit in." },
+    desc:"The boat the United States is actually building. Photonics masts instead of a periscope, a hull designed for the littorals as much as the deep ocean, and enough of them to replace the Los Angeles fleet one for one - which the three Seawolfs were far too expensive to do." +
+         "Carries six TRAPS-type acoustic nodes and can lay a barrier across water it does not intend to sit in." , quiet:0.3 },
   sub_p: { fac:"pact", role:"sub", name:"Kilo SSK", full:"Project 636 Kilo", cat:"naval",
     cost:2250, oil:37, time:28, hp:1180, armor:"light", speed:2.1, turn:1.1, sight:8.0, r:17, mass:0,
     layer:"sub", weapons:["torpedo"], prereq:["navalyard","radar"], tech:2, submerged:true,
@@ -2930,10 +2930,12 @@ var SUBS = {
 for (var _sb in SUBS) if (UNITS[_sb]) Object.assign(UNITS[_sb], SUBS[_sb]);
 
 Object.assign(UNITS.sub_n, {
-  name:"Los Angeles SSN", full:"SSN-688i Los Angeles",
-  desc:"Nuclear attack submarine. Unlimited endurance, genuine speed submerged, and a " +
-       "sonar suite that usually hears the other boat first. The improved 688i hulls are " +
-       "quiet, though a modern diesel sitting still on batteries is quieter." });
+  name:"Virginia SSN", full:"SSN-774 Virginia class, Block IV/V",
+  desc:"The boat the United States is actually building. Photonics masts instead of a " +
+       "periscope, a hull meant for the littorals as much as the deep ocean, and enough " +
+       "of them to replace the Los Angeles fleet one for one - which the three Seawolfs " +
+       "were far too expensive to do. A modern diesel sitting still on batteries is " +
+       "still quieter." });
 Object.assign(UNITS.sub_p, {
   name:"Kilo SSK", full:"Project 636.3 Improved Kilo",
   desc:"NATO nicknamed the Kilo the Black Hole for a reason: on batteries it is " +
@@ -2957,7 +2959,7 @@ Object.assign(UNITS.sub_k, {
 
 /* ---- strategic and cruise-missile submarines ---- */
 Object.assign(UNITS, {
-  ssbn_n: { from:"e60", fac:"nato", role:"ssbn", name:"Ohio SSBN", full:"SSBN-726 Ohio-class", cat:"naval",
+  ssbn_n: { from:"e80", fac:"nato", role:"ssbn", name:"Ohio SSBN", full:"SSBN-726 Ohio-class", cat:"naval",
     cost:6200, oil:140, time:70, hp:2600, armor:"heavy", speed:2.0, turn:0.5, sight:6, r:26, mass:0,
     layer:"sub", weapons:["torp_mk48"], prereq:["navalyard","lab","radar"], tech:3,
     nuclear:true, quiet:0.22, sonar:10.0, radarQ:5, ssbn:true,
