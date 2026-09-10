@@ -1385,10 +1385,14 @@ function makeCommander() {
       /* And fewer of these. The light tank's 76mm makes 624 mm against a 705
          plate - ratio 0.885, PARTIAL PENETRATION, so a 60-damage gun arrives
          as about 36 against eighteen hundred hit points, standing in the open
-         to do it. The IFV is less wrong than it looks, since its first weapon
-         is a TOW and not the autocannon, but it duplicates the tank destroyer
-         on a hull that is also carrying a rifle section - so against a tank
-         corps the credits belong on the dedicated carrier. The old dice put a
+         to do it. The IFV is less wrong than it looks WHERE IT CARRIES A
+         MISSILE, and since generations.js stopped handing a TOW-2 to all 47
+         of them that is 23 of 47: a Bradley or a BMP-2 duplicates the tank
+         destroyer on a hull also carrying a rifle section, while a Warrior, a
+         VBCI or anything at all in the 1950s brings only an autocannon to the
+         exchange. Either way the credits belong on the dedicated carrier
+         against a tank corps, so the discount stands - and is if anything too
+         gentle for the armies with no missile at all. The old dice put a
          fifth of the vehicle queue into the pair of them unconditionally. */
       veh.ifv       *= 1 - 0.35 * armour * grip;
       veh.lighttank *= 1 - 0.70 * armour * grip;
