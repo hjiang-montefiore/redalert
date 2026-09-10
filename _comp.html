@@ -326,8 +326,11 @@ window.addEventListener("load", function () {
   set("opt-map",  M.map  || "fulda");
   set("opt-fac",  M.fac  || "nato"); set("opt-ptech","3"); set("opt-era",  M.era||"e80"); set("opt-peracap", M.era||"e80");
   set("opt-foe",  M.foe  || "pact"); set("opt-atech","3"); set("opt-aera", M.era||"e80"); set("opt-aeracap", M.era||"e80");
-  set("opt-diff", M.diff || "commander"); set("opt-opponents","1"); set("opt-handi","1");
+  set("opt-diff", M.diff || "commander"); set("opt-pers", M.pers || "mixed"); set("opt-opponents","1"); set("opt-handi","1");
   set("opt-fog","1"); set("opt-3d","0");
+  set("opt-cash", M.cash || "20000");   /* economy must not be the binding constraint */
+  set("opt-res",  M.res  || "1.6");     /* abundant ore, so the match runs long */
+  set("opt-seed", M.seed || "compA");
 
   var out = document.getElementById("tout"), lines = [];
   var HDR = ["harvester","mbt","heavy","lighttank","tankdestroyer","ifv","spg","mlrs","aa","spaag","sam","at","rifle","mg","cas","fighter"];
@@ -345,8 +348,13 @@ window.addEventListener("load", function () {
     var blds = 0, fac = 0, ref = 0;
     for (var j=0;j<P.buildings.length;j++){ var b=P.buildings[j]; if(b.dead) continue; blds++;
       if (b.def.id==="factory") fac++; if (b.def.id==="refinery") ref++; }
+    var bk = {};
+    for (var k2=0;k2<P.buildings.length;k2++){ var bb=P.buildings[k2]; if(bb.dead) continue;
+      bk[bb.def.id]=(bk[bb.def.id]||0)+1; }
+    var bl=[]; for (var kk in bk) bl.push(kk+":"+bk[kk]);
+    bl.sort();
     return o.join("") + " |" + String(Math.round(P.cash/100)*100).padStart(6) +
-           String(blds).padStart(4) + String(fac).padStart(3) + String(ref).padStart(3);
+           String(blds).padStart(4) + "  " + bl.join(" ");
   }
 
   try { document.getElementById("btn-start").click(); } catch (e) { out.textContent = "START FAILED " + e; return; }
@@ -362,7 +370,7 @@ window.addEventListener("load", function () {
     AI.create(Game, h, P0DIFF, M.pers0 || null);
   } catch (e) { lines.push("P0 brain failed: " + e); }
 
-  var LIMIT = M.limit || 1500, SAMPLE = 150, next = SAMPLE;
+  var LIMIT = M.limit || 1500, SAMPLE = 500, next = SAMPLE;
   var hdr = "  t  " + SH.join("") + " |  cash bld fc rf";
   lines.push("MATCH " + (M.fac||"nato") + " vs " + (M.foe||"pact") + "  " + (M.era||"e80") +
              "  " + (M.map||"fulda") + "  diff=" + (M.diff||"commander"));

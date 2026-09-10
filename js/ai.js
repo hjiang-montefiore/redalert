@@ -3041,11 +3041,48 @@ function makeCommander() {
       }
     }
 
-    /* -------- DEFENSES (scale with threat) -------- */
+    /* -------- DEFENSES (scale with threat) --------
+       `wanted` used to read (2 + time/200) and nothing else: one more
+       emplacement every two hundred seconds, for ever, whatever was actually
+       happening on the map. Measured over twenty-five minutes on Fulda at
+       Commander, that produced ten emplacements and the SEVEN power plants
+       needed to run them - seventeen of twenty-six structures were concrete
+       and generators - against one war factory, two refineries and a six-man
+       army.
+
+       It starves the army by construction rather than by accident.
+       updateQueues() in player.js walks this.queues in declaration order and
+       each queue takes min(payment, remaining, cash) - building and defense
+       are declared before vehicle, so whatever they are still paying for has
+       first call on every credit that arrives. A works queue that is never
+       empty means the vehicle queue is never funded, which is why the first
+       two MBTs of a thirty-minute match arrived at t=1800 and why every wave
+       looked the same: it was the same handful of infantry each time.
+
+       So the line answers the threat that has actually been SEEN - foeArms()
+       is the fog-honest reading, not a peek at the enemy's roster - with a
+       slow floor for the threat that has not, and a ceiling tied to
+       production. Three plus two per war factory: a commander may not wall in
+       ground it has no industry to hold, and the way to earn a bigger wall is
+       to build the factory first. */
+    const armyNow = groundArmy().length;
+    const wantNow = (groundConnected ? D.waveSize : Math.max(6, (D.waveSize * 0.7) | 0)) +
+                    Math.floor(G.time / 240) * 2;
+    /* An army at half strength needs tanks, not a thicker wall - but the
+       floor under that rule is the doctrine's, not a flat number. Fortress
+       runs defenceBias 3.0 and a Fortress that builds two emplacements is not
+       one, so the always-allowed minimum scales with the same knob: six for
+       Fortress, three for a Gun Line, two for Shock and for everyone else.
+       Past that floor an under-strength army stops the concrete. */
+    const armyShort = nFac >= 1 && armyNow < wantNow * 0.5;
+    const defFloor = Math.max(2, Math.round(2 * (D.defenceBias || 1)));
     if (!dq.items.length && !dq.ready.length && P.cash > 1000 && !mineShort) {
       const nDef = P.buildings.filter(b => !b.dead && b.cat === "defense").length;
-      const wanted = Math.round((2 + Math.floor(G.time / 200) + (D.aggro >= 1.3 ? 2 : 0))
-                                * (D.defenceBias || 1));
+      const fa0 = foeArms();
+      const threat = fa0.seen + fa0.air * 0.6;
+      const wanted = (armyShort && nDef >= defFloor) ? 0 : Math.round(
+        Math.min(2 + threat * 0.45 + G.time / 600,
+                 3 + nFac * 2 + (D.aggro >= 1.3 ? 1 : 0)) * (D.defenceBias || 1));
       if (nDef < wanted) {
         /* The same defect as the army roll, in the other direction: this was
            a G.rng() against fixed thresholds, so a commander being raided by
