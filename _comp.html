@@ -1,4 +1,33 @@
 <!DOCTYPE html>
+<!-- ===================================================================
+     _comp.html - WHAT EACH COMMANDER ACTUALLY BUILDS
+
+     A headless probe for the AI's economy and unit mix. It starts a match,
+     attaches a brain to player 0 as well (game.js:177 only calls AI.create
+     for isAI seats, so the human chair otherwise sits still and the match is
+     decided in five minutes by an opponent walking into an empty base), then
+     drives the simulation itself with Game.tick(CFG.DT) and prints the LIVE
+     composition of both sides every few minutes.
+
+     Live, not cumulative. Reading purchase totals instead is what produced
+     the "17 harvesters to 2 MBTs" figure that sent an earlier diagnosis the
+     wrong way: warAim() hunts haulers on purpose, so a high harvester count
+     is mostly replacement, not hoarding.
+
+     This is the harness that found the defence-spend bug - ten emplacements
+     and seven power plants against a six-man army, because building and
+     defense are funded ahead of vehicle in updateQueues().
+
+     Run:
+       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+         --headless=new --disable-gpu --no-sandbox --use-gl=swiftshader \
+         --enable-unsafe-swiftshader --virtual-time-budget=2000000 \
+         --dump-dom "file://$PWD/_comp.html"
+     then read the element with id="tout".
+
+     Override the match by setting window.__MATCH before load: keys are
+     map, fac, foe, era, diff, diff0, pers, pers0, cash, res, seed, limit.
+     =================================================================== -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
