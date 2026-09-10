@@ -1323,7 +1323,7 @@ var Render = (function () {
      sites in game.js and threat.js, which is the only place that knows
      whose event it was. */
   const EV_STYLE = {
-    note: { c: "#5ac8ff", life: 3.0, r0: 2.0, r1: 6.5, w: 1.2, rings: 1, mark: 0 },
+    note: { c: "#5ac8ff", life: 3.0, r0: 2.0, r1: 7.5, w: 1.8, rings: 1, mark: 0 },
     unit: { c: "#ffc042", life: 2.5, r0: 2.5, r1: 9.0, w: 1.4, rings: 1, mark: 1 },
     base: { c: "#ff8a3c", life: 4.0, r0: 3.0, r1: 13.0, w: 1.8, rings: 2, mark: 2 },
     loss: { c: "#ff3324", life: 6.0, r0: 3.5, r1: 17.0, w: 2.0, rings: 2, mark: 3 },
@@ -1332,7 +1332,10 @@ var Render = (function () {
   /* one path, stroked as casing then colour */
   function cased(mctx, path, col, w, a) {
     mctx.globalAlpha = a * 0.9;
-    mctx.strokeStyle = "rgba(2,4,3,0.95)"; mctx.lineWidth = w + 1.6;
+    /* PROPORTIONAL, not w + 1.6. A fixed addition is right on a 2px cross and
+       swamps a 1.2px ring: the informational marker measured 8 pixels of its
+       own colour at its widest, most of the stroke being casing. */
+    mctx.strokeStyle = "rgba(2,4,3,0.95)"; mctx.lineWidth = w * 1.9;
     path(); mctx.stroke();
     mctx.globalAlpha = a;
     mctx.strokeStyle = col; mctx.lineWidth = w;
@@ -1410,7 +1413,13 @@ var Render = (function () {
          2.5s marker was really a one-second one. It now holds full strength
          for 60% of its life and fades over the last 40%, which is what makes
          the stated durations in EV_STYLE mean what they say. */
-      const g = 1 - (1 - f) * (1 - f), a = f < 0.6 ? 1 : (1 - f) / 0.4;
+      /* The 0.15 floor is what guarantees something is drawn on the opening
+         frame. It used to start at exactly 0, so kf was 0, the only ring a
+         `note` has was skipped and - having no static glyph - it drew nothing
+         at all. G.time is frozen while the game is paused, so a fire mission
+         plotted just before a pause left an empty minimap for as long as the
+         player sat there reading it. */
+      const g = 0.15 + 0.85 * (1 - (1 - f) * (1 - f)), a = f < 0.6 ? 1 : (1 - f) / 0.4;
       for (let k = 0; k < st.rings; k++) {
         const kf = g - k * 0.24;
         if (kf <= 0) continue;
@@ -1436,9 +1445,12 @@ var Render = (function () {
         cased(mctx, function () { mctx.beginPath(); mctx.arc(px, py, 1.2, 0, 6.2832); },
               st.c, 1.6, a);
       }
-      /* only the three attack kinds earn a direction cue; a note is
-         information the player asked for and already knows where to find */
-      if (st.mark && quad && quad.length === 4) edgeChevron(mctx, quad, px, py, st.c, a);
+      /* Only the two STRUCTURE rungs earn a direction cue. A note is
+         information the player asked for; and a unit ping is one of a dozen
+         in a real engagement, so a chevron each would put twelve arrows on a
+         196px canvas for something whose marker is already drawn, in full, at
+         its true position. */
+      if (st.mark >= 2 && quad && quad.length === 4) edgeChevron(mctx, quad, px, py, st.c, a);
     }
     mctx.restore();
   }
@@ -1622,9 +1634,13 @@ var Render = (function () {
       mctx.rotate(rot);
       mctx.translate(-mm.width / 2, -mm.height / 2);
     }
+    /* UNCLAMPED, unlike the frustum outline above and unlike drawMinimap's
+       corners: clamping each corner to the map box independently shrinks a
+       rotated view below the ground that is actually on screen, and the
+       chevron would then fire for an attack the player is already looking at.
+       The two minimap paths now hand this the same thing. */
     drawEventMarkers(mctx, S, quad ? quad.map(function (q) {
-      return { x: U.clamp(q.x / CFG.TILE, 0, map.W) * S,
-               y: U.clamp(q.y / CFG.TILE, 0, map.H) * S };
+      return { x: (q.x / CFG.TILE) * S, y: (q.y / CFG.TILE) * S };
     }) : null);
     if (viewYaw !== undefined && viewYaw !== null) mctx.restore();
   }

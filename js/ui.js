@@ -1926,8 +1926,16 @@ var UI = (function () {
     const e = pickAt(input.mx, input.my, true);
     if (!shift) clearSel();
     if (e && e.owner === G.human) {
-      if (shift && e.selected) { e.selected = false; selection.splice(selection.indexOf(e), 1); }
+      if (shift && e.selected) {
+        e.selected = false; selection.splice(selection.indexOf(e), 1);
+        Sfx.play("sel_drop");     /* pruning the group is a selection change too */
+      }
       else if (!e.selected) { e.selected = true; selection.push(e); Sfx.select(e); }
+      /* Re-clicking the unit you already hold is the commonest "did that
+         register?" click in the game and used to be the one click that
+         answered with nothing. play()'s 60 ms per-name gate collapses an
+         accidental double, so saying it again is free. */
+      else Sfx.select(e);
     } else if (e && !shift) {
       /* hostile or neutral: single view-only selection for intel */
       e.selected = true; selection = [e];
@@ -1970,9 +1978,10 @@ var UI = (function () {
         u.selected = true; selection.push(u);
       }
     }
-    /* prefer combat units: drop buildings from mixed box selections automatically */
     /* ONE cue for the whole box, whatever its size - Sfx.select picks it from
-       the most numerous class in the selection */
+       the most numerous class in the selection. (The comment that used to sit
+       here said buildings were dropped from a mixed box. They never were:
+       this loop walks G.human.units, so a box never contained one.) */
     Sfx.select(selection);
     refreshSelInfo();
   }
@@ -2102,7 +2111,10 @@ var UI = (function () {
         Combat.addEffect({ t: "text", x: target.x, y: target.y - 20, s: "ENGAGE",
                            life: 0.7, max: 0.7, c: "#ff8a6b" });
       }
-      if (eng.length || shooters) { Sfx.play("ack_atk"); return; }
+      /* The effect layer above already tells CAPTURE from ENGAGE; the audio
+         did not. Engineers sent into a neutral block fire nothing at all, so
+         it gets the ordinary order acknowledgement. */
+      if (eng.length || shooters) { Sfx.play(shooters ? "ack_atk" : "order"); return; }
       /* Nothing in the selection could storm it and nothing could shoot it -
          a column of tanks right-clicked onto a neutral civilian block, say.
          This used to return anyway, so the click was swallowed whole: no
@@ -2281,7 +2293,10 @@ var UI = (function () {
     for (const u of selection) if (u.kind === "unit" && u.owner === G.human)
       u.give({ type: "attackmove", x: wp.x, y: wp.y }, shift);
     Combat.addEffect({ t: "text", x: wp.x, y: wp.y, s: "ATTACK MOVE", life: 0.8, max: 0.8, c: "#ff8a6b" });
-    Sfx.play("order");
+    /* An attack-move is the standing authority to engage what you meet - this
+       function's own comment says so - and it is the commonest offensive order
+       in the game. It sounded like a walk. */
+    Sfx.play("ack_atk");
   }
 
   function tryPlace() {
@@ -2324,7 +2339,13 @@ var UI = (function () {
     for (const e of selection) if (keep.indexOf(e) < 0) e.selected = false;
     selection = keep;
     refreshSelInfo();
-    Sfx.select(keep);           /* Tab narrows the group - say what is left */
+    /* Tab narrows the group - say what is left. Honestly: cycleSubgroup walks
+       distinct def.ids, so cycling tank -> IFV -> SPG plays one cue three
+       times, and two presses inside play()'s 60 ms gate make the second
+       silent. It informs when the selection spans CATEGORIES, which is the
+       less common reason to press the key; the panel is what tells you which
+       type you landed on. */
+    Sfx.select(keep);
   }
   function cycleSubgroup() {
     const ids = [];
@@ -2417,10 +2438,16 @@ var UI = (function () {
     if (!a) return;
     if (a.kind === "ready") { selectTab(a.text.indexOf("STRUCT") >= 0 ? "building" : curTab); }
     Render.setCam(a.x, a.y);
+    /* attn is rebuilt on a timer, so the unit that wanted you can be dead by
+       the time you press the key. Keying the fallback on "did a cue actually
+       play" rather than on "was there a reference" is what stops that case
+       being silent - which is what the previous version did. */
+    let said = null;
     if (a.ref && a.ref.owner === G.human) {
       clearSel(); a.ref.selected = true; selection.push(a.ref); refreshSelInfo();
-      Sfx.select(a.ref);
-    } else Sfx.play("click");   /* a camera jump that selected nothing stays a plain UI blip */
+      said = Sfx.select(a.ref);
+    }
+    if (!said) Sfx.play("click");   /* a jump that selected nothing is a plain UI blip */
   }
   function renderAttention() {
     const box = document.getElementById("attn");
@@ -2622,7 +2649,7 @@ var UI = (function () {
 
   /* ---------- alerts & endgame ---------- */
   let lastAlert = { msg: "", t: 0 };
-  function alert(msg, cls) {
+  function alert(msg, cls, quiet) {
     const now = performance.now();
     if (msg === lastAlert.msg && now - lastAlert.t < 4000) return;
     lastAlert = { msg, t: now };
@@ -2632,7 +2659,12 @@ var UI = (function () {
     const box = document.getElementById("alerts");
     if (!box) return;                       // no alert rail: say nothing, break nothing
     box.appendChild(el);
-    if (cls === "bad") Sfx.play("alarm");
+    /* `quiet` is for a line whose event has already been announced somewhere
+       louder, or deliberately not announced at all - a lost barrier, or the
+       second structure lost inside Threat's gate. The rail still logs it in
+       red; it just does not stack `alarm` on top of `threat_high`, and does
+       not machine-gun the klaxon as a wall line comes apart. */
+    if (cls === "bad" && !quiet) Sfx.play("alarm");
     setTimeout(() => el.remove(), 7000);
     while (box.children && box.children.length > 6 && box.firstChild) box.firstChild.remove();
   }

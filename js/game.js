@@ -571,7 +571,7 @@ var Game = (function () {
        which Threat has no rung for and should not have. */
     if (old === G.human) {
       const T = (typeof Threat !== "undefined" && Threat.reportLoss) ? Threat : null;
-      if (T) T.reportLoss(b, true);
+      if (T) { if (!T.reportLoss(b, true)) G.alert("STRUCTURE CAPTURED BY ENEMY", "bad", true); }
       else { G.alert("STRUCTURE CAPTURED BY ENEMY", "bad"); G.pingEvent(b.x, b.y, "loss"); }
     } else {
       G.alert("ENEMY STRUCTURE CAPTURED", "good");
@@ -691,9 +691,14 @@ var Game = (function () {
          passes over, which would otherwise die silently. */
       if (mine) {
         const T = (typeof Threat !== "undefined" && Threat.reportLoss) ? Threat : null;
-        const barrier = e.def && e.def.armor === "wall";
-        if (T && !barrier) T.reportLoss(e, false);
-        else {
+        /* Threat places the marker and decides whether this is worth a banner.
+           It says so, and the toast fills the gap it leaves - QUIETLY. The
+           previous version sent every barrier down the toast branch, so each
+           dead wall segment fired `alarm` on a 60 ms gate and painted a red
+           strategic cross: the two things the barrier rule exists to stop. */
+        if (T) {
+          if (!T.reportLoss(e, false)) G.alert(e.def.name.toUpperCase() + " LOST", "bad", true);
+        } else {
           G.alert(e.def.name.toUpperCase() + " LOST", "bad");
           G.pingEvent(e.x, e.y, "loss");
         }
@@ -703,6 +708,11 @@ var Game = (function () {
     } else {
       if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; Combat.kill(G, c, null); }
       if (e.owner === G.human && e.def.harvester) G.alert("ORE HAULER LOST", "bad");
+      /* A destroyed unit leaves a mark. The damage path pings once every three
+         seconds per object and that marker lives 2.5s, so a company wiped out
+         off-screen could otherwise leave the minimap blank by the time the
+         player looked at it. No sound: the rungs above own that. */
+      if (e.owner === G.human && G.pingEvent) G.pingEvent(e.x, e.y, "unit");
       Sfx.play(e.cat === "infantry" ? "die_inf" : "explode");
     }
   };
@@ -1640,7 +1650,7 @@ var Game = (function () {
     return null;
   };
 
-  G.alert = function (msg, cls) { UI.alert(msg, cls); };
+  G.alert = function (msg, cls, quiet) { UI.alert(msg, cls, quiet); };
   /* ---------------- recent events: what the minimap warns about ----------
      The old pingEvent kept exactly one position and no time, so it could say
      "something happened, over there" and nothing else. Three attacks at once

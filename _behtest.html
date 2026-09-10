@@ -680,6 +680,72 @@ try{
     }
   })();
 
+  /* ============ [31] WHAT THE WARNING MUST NOT DO ============
+     [30] above proves the ring holds several attacks, keeps the worst one and
+     does not shake the screen for a sandbag. These are the other half: the
+     cases where the right answer is silence, plus the two places the marker
+     has to reach - the alert rail and the minimap's pixels. */
+  log("\n[31] THE WARNING'S QUIET HALF");
+  (function(){
+    var evs   = function(){ return (Game.recentEvents?Game.recentEvents():[]).slice(); };
+    var kinds = function(){ return evs().map(function(e){return e.k;}).join(","); };
+    var clr   = function(){ Game.events.length = 0; };
+    var g2 = tile(P,"ground",6);
+    if(!g2){ chk("quiet-half scenario built", false, "no ground"); return; }
+    var u2 = spawn(P,"mbt_n",g2,0,0), f2 = spawn(E,"mbt_p",g2,6,0);
+    if(!u2||!f2){ chk("quiet-half scenario built", false, "spawn"); return; }
+
+    clr(); Threat.reportDamage(40,u2,f2);
+    chk("an enemy round on our tank marks the map", kinds()==="unit", kinds());
+    clr(); u2._pingT = undefined; Threat.reportDamage(40,u2,u2);
+    chk("our own splash on our own tank does not", evs().length===0, kinds());
+
+    /* a dead unit leaves a mark of its own */
+    var u3 = spawn(P,"mbt_n",g2,2,2);
+    if(u3){ clr(); Game.onDeath(u3);
+      chk("a unit destroyed off-screen still leaves a marker", kinds()==="unit", kinds()); }
+
+    /* the log survives the gate, without a second klaxon */
+    var pw = Game.placeBuilding(P,"power",g2.x+4,g2.y+4,true);
+    var wl = Game.placeBuilding(P,"wall", g2.x+7,g2.y+4,true);
+    if(pw&&wl){
+      Game.time += 30;
+      chk("a lost power plant is announced", Threat.reportLoss(pw,false)===true,
+          Threat.banner?Threat.banner.text:"no banner");
+      var pw2 = Game.placeBuilding(P,"power",g2.x+4,g2.y+8,true);
+      if(pw2) chk("a second loss inside the gate is NOT announced - the caller logs it",
+                  Threat.reportLoss(pw2,false)===false, "");
+      clr();
+      chk("a lost wall is marked in orange, not as a strategic loss",
+          Threat.reportLoss(wl,false)===false && kinds()==="base", kinds());
+    }
+
+    /* and the marker reaches the pixels, including on its opening frame */
+    (function(){
+      var mm=document.createElement("canvas"); mm.width=196; mm.height=196;
+      function px(hex){ Render2D.drawMinimapFrom(mm,Game,null,null);
+        var d=mm.getContext("2d").getImageData(0,0,196,196).data, n=0, v=parseInt(hex,16);
+        for(var i=0;i<d.length;i+=4) if(((d[i]<<16)|(d[i+1]<<8)|d[i+2])===v) n++;
+        return n; }
+      clr();
+      var empty = px("5ac8ff");
+      Game.pingEvent(60*32,60*32,"note");
+      var first = px("5ac8ff");
+      chk("a marker is on the minimap on the very frame it is made",
+          empty===0 && first>=10, empty+"px -> "+first+"px");
+      var tw=Game.time; Game.time=tw+4; var gone=px("5ac8ff"); Game.time=tw;
+      chk("and gone when its life is spent", gone===0, gone+"px");
+      clr();
+    })();
+
+    /* selection audio classifies without making a sound */
+    var r2=spawn(P,"rifle_n",g2,1,7), h2=spawn(P,"harvester",g2,3,7);
+    if(r2&&h2) chk("a rifle squad and an ore hauler are not the same cue",
+        Sfx.selClass(r2)==="sel_inf" && Sfx.selClass(h2)==="sel_sup",
+        Sfx.selClass(r2)+" / "+Sfx.selClass(h2));
+    chk("a dead reference names no class", Sfx.selClass({dead:true,cat:"vehicle"})===null, "");
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }

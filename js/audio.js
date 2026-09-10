@@ -1106,21 +1106,42 @@ var Sfx = (function () {
        harmonics unfiltered into the limiter - so measured at the OUTPUT it
        came back at 0.055 peak, second loudest of the ten and level with
        sel_sea. Scheduled gain is not loudness once the shapes differ.
-       0.055 here, and a low-pass on the pair so the harmonics stop
-       arriving whole. */
+       Lowpassed, and down to 0.040 scheduled, which measures 0.030 peak at
+       the output - below sel_sup 0.033 and sel_inf 0.037, the two quietest
+       friendly cues. At 0.055 it still measured 0.042 and was louder than
+       four of the six things it is supposed to sit under. */
     sel_intel: function (ac, o, t) {
       var g = gainNode(ac, 1), f = lpf(ac, 2600, 0.7);
       g.connect(f); f.connect(o);
-      beep(ac, g, t, "square", 1180, 0, 0.002, 0.035, 0.055);
-      beep(ac, g, t + 0.055, "square", 780, 0, 0.002, 0.045, 0.055);
+      beep(ac, g, t, "square", 1180, 0, 0.002, 0.035, 0.040);
+      beep(ac, g, t + 0.055, "square", 780, 0, 0.002, 0.045, 0.040);
     },
 
-    /* ORDER ACCEPTED 56 ms - rebuilt, same name, so all 30-odd order sites
-       get it without touching them. Two clipped rising ticks: the shortest cue
-       in the game and the only one built out of pure transients, so an order
-       can never be mistaken for a selection even when the two land 200 ms
-       apart. The old sine sweep shared its 700-1050 Hz range and its 90 ms
-       envelope with half the UI. */
+    /* DROPPED FROM THE SELECTION 37 ms - shift-clicking a unit OUT of the
+       group changed what the player commands and made no sound whatever,
+       which is the one selection edit where the hand is faster than the eye.
+       One falling triangle, no noise, quieter than every cue that ADDS
+       something (0.026 peak against sel_sup's 0.033, the quietest of those):
+       the group got smaller, and that is all it has to say. */
+    sel_drop: function (ac, o, t) {
+      beep(ac, o, t, "triangle", 560, 330, 0.003, 0.05, 0.10);
+    },
+
+    /* ORDER ACCEPTED 56 ms - rebuilt, same name, so all 23 order sites get it
+       without touching them.
+
+       Two clipped square taps, 36 ms apart. What separates it from every
+       selection cue is not pitch - it shares the 0.9-1.8 kHz band with
+       sel_air - but SHAPE: an order is a PAIR of taps with silence between
+       them, a selection is one continuous event. That is the discriminator to
+       defend, and it holds even when the two land 200 ms apart.
+
+       Two things the first version of this comment claimed and the render
+       does not support: it is not the shortest cue in the game (click 28 ms
+       and ack_atk 40 ms are both shorter), and it is not built out of
+       transients - it is two oscillators, no noise at all. ack_atk is the one
+       with the noise transient. The old sine sweep it replaced shared its
+       700-1050 Hz range and its 90 ms envelope with half the UI. */
     order: function (ac, o, t) {
       var v = SELVARY[selV("ack")];
       beep(ac, o, t, "square", 980 * v, 0, 0.001, 0.026, 0.13);
@@ -1133,7 +1154,10 @@ var Sfx = (function () {
     ack_atk: function (ac, o, t) {
       var v = SELVARY[selV("atk")];
       beep(ac, o, t, "sawtooth", 700 * v, 470 * v, 0.002, 0.055, 0.15);
-      tick(ac, o, t + 0.002, 900, 3.0, 0.05, 0.09);
+      /* the noise band moves with the tone. It used to be a hard-coded 900,
+         so two of the three variants differed by less than the round-off of
+         the other cues and the promised variation was half a promise. */
+      tick(ac, o, t + 0.002, 900 * v, 3.0, 0.05, 0.09);
     },
     build:     function (ac, o, t) { beep(ac, o, t, "triangle", 420, 640, 0.006, 0.11, 0.18); },
     ready:     function (ac, o, t) {
@@ -1347,7 +1371,13 @@ var Sfx = (function () {
      uiBus flat and dry. A cue that panned to wherever the unit stood would be
      quieter for the units furthest from the camera - exactly backwards, since
      those are the ones you are least sure about. */
-  var SEL_RANK = { sel_veh: 6, sel_air: 5, sel_sea: 4, sel_inf: 3, sel_sup: 2, sel_bld: 1 };
+  /* The rank only ever decides an exact tie - three tanks and three ships in
+     one box. AIRCRAFT sit above armour in it, which is not what "the heaviest
+     thing wins" would give: the tie-break is for the class whose being
+     UNNOTICED costs the most, and a stray fighter swept into a ground box is
+     flown over the enemy's SAM belt by the next move order, while a stray
+     tank in an air group merely arrives late. */
+  var SEL_RANK = { sel_air: 6, sel_veh: 5, sel_sea: 4, sel_inf: 3, sel_sup: 2, sel_bld: 1 };
   function selClass(e) {
     if (!e || e.dead) return null;
     if (e.kind === "building") return "sel_bld";
@@ -1364,8 +1394,14 @@ var Sfx = (function () {
          : e.cat === "naval"    ? "sel_sea"
          : "sel_veh";
   }
+  /* Returns the cue name it played, or null if the selection held nothing it
+     could name - an empty list, or a reference to something already dead.
+     A caller that must make SOME sound needs to know which happened: the
+     attention-jump key selects a unit that may have died since the list was
+     scored, and keying its fallback on "was there a reference" rather than on
+     "did a cue play" left that key silent. */
   function select(sel) {
-    if (!enabled) return;
+    if (!enabled) return null;
     var list = (sel && sel.length !== undefined) ? sel : (sel ? [sel] : []);
     var tally = {}, best = null, bn = 0, i, c, n;
     for (i = 0; i < list.length; i++) {
@@ -1374,7 +1410,9 @@ var Sfx = (function () {
       n = tally[c] = (tally[c] || 0) + 1;
       if (n > bn || (n === bn && SEL_RANK[c] > SEL_RANK[best])) { bn = n; best = c; }
     }
-    if (best) play(best);
+    if (!best) return null;
+    play(best);
+    return best;
   }
 
   /* ========================= WIRING INTO THE GAME =========================

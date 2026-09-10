@@ -865,7 +865,10 @@ var Combat = (function () {
     e._lastWarhead = w.warhead;
     e.hp -= dmg;
     /* what the player is absorbing drives how tense the mix gets */
-    if (typeof Threat !== "undefined" && e.owner === game.human) Threat.reportDamage(dmg, e);
+    /* the shooter goes with it: the player's own artillery landing short is
+       not an enemy attack, and warning about it teaches the player to ignore
+       the warning */
+    if (typeof Threat !== "undefined" && e.owner === game.human) Threat.reportDamage(dmg, e, shooter);
     e.lastHitAt = game.time;
     e.lastHitBy = shooter || null;
 

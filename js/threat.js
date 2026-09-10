@@ -46,6 +46,7 @@ var Threat = (function () {
   function init(game) {
     G = game; seen = {}; dmgWindow = []; intensity = 0;
     awT = { unit: -99, base: -99, loss: -99 };
+    awP = { unit: null, base: null, loss: null };
     shake = 0; flash = 0; banner = null; bannerT = 0;
   }
 
@@ -58,6 +59,25 @@ var Threat = (function () {
      threat_high, 2.5s on threat_med), and are stricter than both. */
   const AW = { unit: 22, base: 12, loss: 8 };
   let awT = { unit: -99, base: -99, loss: -99 };
+  let awP = { unit: null, base: null, loss: null };
+
+  /* WHEN, AND ALSO WHERE. A purely global gate meant that once one unit
+     somewhere had taken fire, an attack opening on the far side of the map
+     was silent for the next twenty-two seconds - and a second front is
+     precisely the thing a warning system exists to announce. A hit more than
+     thirty tiles from the last one of its kind is a different battle and
+     re-arms the cue at a third of the interval; anything closer is the same
+     engagement grinding on, and stays quiet. */
+  function gate(kind, x, y, now) {
+    const wait = now - awT[kind], p = awP[kind];
+    if (wait < AW[kind]) {
+      const D = (typeof CFG !== "undefined" ? CFG.TILE : 32) * 30;
+      const far = !p || Math.hypot(x - p.x, y - p.y) > D;
+      if (!far || wait < AW[kind] / 3) return false;
+    }
+    awT[kind] = now; awP[kind] = { x: x, y: y };
+    return true;
+  }
 
   /* ESCALATION. Three rungs that differ in KIND and not merely in volume, so
      the player can tell them apart with the game window behind another one:
@@ -96,8 +116,7 @@ var Threat = (function () {
 
   function alertFor(kind, e, now) {
     if (kind === "base" && isBarrier(e)) return;       // marker only
-    if (now - awT[kind] < AW[kind]) return;
-    awT[kind] = now;
+    if (!gate(kind, e.x, e.y, now)) return;
     const nm = (e && e.def && e.def.name ? e.def.name : "UNIT").toUpperCase();
     if (kind === "unit") Sfx.play("under_fire");        // cue only, no drama
     else fire(2, "BASE UNDER ATTACK", nm + " TAKING FIRE");
@@ -108,13 +127,21 @@ var Threat = (function () {
      push everything here is a compare and one field write. The per-object
      gate lives ON the object - no map, no scan: a squad under machine-gun
      fire is ONE marker on the minimap, not forty. */
-  function reportDamage(amount, e) {
+  function reportDamage(amount, e, shooter) {
     const now = G ? G.time : 0;
     dmgWindow.push({ t: now, a: amount });
+    if (!e || !G) return;
+    /* The player's own MLRS landing short, or a nuke of theirs - every
+       superweapon sets friendlyFire - is not an attack on them. applyDamage
+       knows who fired and nothing else does, which is why the shooter is
+       passed in. Without this a fire mission of your own puts amber markers
+       and an under_fire cue across your own base. */
+    if (shooter && shooter.owner &&
+        (shooter.owner === G.human || G.allied(G.human, shooter.owner))) return;
     /* _pingT === undefined, not (e._pingT || -99): at G.time 0 - the first
        tick of a match, and every load of a fresh save - a stored 0 is falsy,
        the fallback fires, and the gate lets every single round through. */
-    if (!e || !G || (e._pingT !== undefined && now - e._pingT < 3)) return;
+    if (e._pingT !== undefined && now - e._pingT < 3) return;
     e._pingT = now;
     const kind = e.kind === "building" ? "base" : "unit";
     if (G.pingEvent) G.pingEvent(e.x, e.y, kind);
@@ -126,18 +153,29 @@ var Threat = (function () {
      taken. The marker is ALWAYS placed - losing four buildings in a rush
      must leave four crosses on the minimap - and only the audio and the
      banner are rate limited. */
+  /* Returns TRUE only when it actually announced the loss with a banner and
+     a cue. The caller needs that: with the toast removed from the Threat path
+     there is nothing else keeping the log, so a second structure lost inside
+     the eight-second gate would go by with no banner AND no line in the alert
+     rail. game.js prints a quiet toast - the rail entry without the klaxon -
+     whenever this comes back false. */
   function reportLoss(e, taken) {
-    if (!G) return;
+    if (!G) return false;
     const now = G.time;
-    if (G.pingEvent) G.pingEvent(e.x, e.y, "loss");
-    /* A dead barrier is a marker and nothing else. Losing one segment of
-       razor wire is not a strategic event and must not be dressed as one. */
-    if (isBarrier(e)) return;
-    if (now - awT.loss < AW.loss) return;
-    awT.loss = now;
+    /* A dead barrier is a marker and nothing else, and an ORANGE one: losing
+       a segment of razor wire must not paint the red cross that means the
+       refinery has gone. */
+    if (G.pingEvent) G.pingEvent(e.x, e.y, isBarrier(e) ? "base" : "loss");
+    if (isBarrier(e)) return false;
+    if (!gate("loss", e.x, e.y, now)) return false;
     const nm = (e && e.def && e.def.name ? e.def.name : "STRUCTURE").toUpperCase();
-    fire(3, nm + (taken ? " CAPTURED" : " LOST"),
+    /* A machine-gun nest is a serious loss, not a strategic one. The rung is
+       graded off what the thing cost to put there. */
+    const d = e.def || {};
+    const tier = (d.cat === "defense" && (d.cost || 0) < 900) ? 2 : 3;
+    fire(tier, nm + (taken ? " CAPTURED" : " LOST"),
          taken ? "ENEMY ENGINEERS INSIDE THE WIRE" : "POSITION MARKED ON MINIMAP");
+    return true;
   }
 
   function fire(tier, text, sub) {
