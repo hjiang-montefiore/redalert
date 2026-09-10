@@ -649,10 +649,10 @@ var UNITS = {
     layer:"sea", weapons:[], prereq:["navalyard"], tech:1, cargo:6, amphib:true,
     desc:"Carries six vehicles or infantry across water and drives them straight up onto the beach." },
 
-  carrier_n: { fac:"nato", role:"carrier", name:"Nimitz CVN", full:"CVN-68 Nimitz", cat:"naval",
+  carrier_n: { fac:"nato", role:"carrier", name:"Gerald R. Ford CVN", full:"USS Gerald R. Ford (CVN-78)", cat:"naval",
     cost:5000, oil:110, time:60, hp:4200, armor:"heavy", speed:1.6, turn:0.6, sight:14, r:30, mass:0,
     layer:"sea", weapons:[], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.65, carrier:4, storage:0,
-    desc:"Supercarrier. Launches and rearms four strike aircraft at sea, projecting air power anywhere on the map." },
+    desc:"Commissioned in 2017 and the first new American carrier design since the Nimitz of 1975. Electromagnetic catapults instead of steam, a smaller island moved aft, and a sortie rate a third higher than the class she replaces." },
   carrier_p: { fac:"pact", role:"carrier", name:"Kuznetsov CV", full:"Project 1143.5 Kuznetsov", cat:"naval",
     cost:4800, oil:105, time:58, hp:4400, armor:"heavy", speed:1.6, turn:0.6, sight:13, r:30, mass:0,
     layer:"sea", weapons:["sam_ship"], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.55, carrier:3,
