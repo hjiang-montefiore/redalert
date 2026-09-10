@@ -703,9 +703,301 @@ yangtze: {
   starts: [[120.9,31.15], [120.4,32.35], [121.3,30.85], [121.45,32.05]],
   startNames: ["TAIHU LINE", "SUBEI STAGING", "HANGZHOU BAY", "QIDONG"],
 },
+
+/* ------------------------------------------------------------------ */
+donbas: {
+  name: "DONBAS — SEA OF AZOV",
+  brief: "Steppe with nothing on it: 270 km of black earth where a tank is seen " +
+         "at four kilometres and the only cover is the towns. The Donetsk Ridge " +
+         "tops out at 367 m and the spoil heaps beside every pithead are the rest " +
+         "of the high ground - man-made, a hundred metres up, and each one an " +
+         "observation post over the whole plain. Five rivers cut it - the Donets " +
+         "across the north, the Don widest of all in the east, the Kalmius " +
+         "running the full depth to Mariupol - but none of them is a line you " +
+         "can hold on its own. The Azov behind them is nowhere deeper than " +
+         "14 m, shallow enough to land on anywhere.",
+  /* 36.3-39.9E x 46.6-49.2N. At 47.9N a degree of longitude is 74.7 km, so
+     3.6 x 2.6 degrees is 269 x 289 km - very nearly square on the ground,
+     which is what a square tile grid wants. */
+  bbox: [36.30, 46.60, 39.90, 49.20],
+  seaLevel: true,
+  land: [
+    /* One landmass wrapping the Sea of Azov on three sides: the Ukrainian
+       north shore, the Don delta at the head of Taganrog Bay, and the Kuban
+       shore south of it. The sea itself opens out of the bottom edge toward
+       Kerch, which is off the map. */
+    [[36.30,49.20],[39.90,49.20],
+     /* east edge down through Rostov oblast to the Kuban */
+     [39.90,46.60],
+     /* Kuban shore: Yeysk peninsula and the Dolzhanskaya spit */
+     [38.15,46.60],[38.05,46.66],[38.28,46.73],[38.50,46.68],[38.85,46.72],
+     /* south shore of Taganrog Bay, running up to the Don delta */
+     [39.05,46.85],[39.20,47.00],[39.35,47.06],
+     /* north side of the delta, then west along the bay's north shore */
+     [39.30,47.16],[39.10,47.20],[39.00,47.19],[38.93,47.17],[38.86,47.22],
+     /* the Mius liman: a drowned estuary reaching 8 km inland behind Taganrog */
+     [38.78,47.28],[38.70,47.24],[38.40,47.15],[38.10,47.08],[37.85,47.05],
+     /* Mariupol, then the Bilosarai spit reaching SSW into the sea */
+     [37.60,47.06],[37.40,46.98],[37.32,46.86],[37.22,46.92],
+     /* Berdiansk, and its spit - the only shelter on 200 km of open coast */
+     [37.05,46.87],[36.85,46.80],[36.80,46.64],[36.72,46.78],
+     [36.50,46.74],[36.30,46.72]],
+  ],
+  ridges: [
+    /* Donetskyi Kryazh. 367 m at Mohyla Mechetna: not a mountain, but on
+       steppe this flat the crest line owns every approach to Luhansk. */
+    { pts:[[37.30,48.60],[38.00,48.45],[38.60,48.35],[39.20,48.20],[39.80,48.05]], w:0.16, h:2 },
+    /* Pryazovska upland - 324 m at Belmak-Mohyla, the watershed the Kalmius
+       and the Mius both run off */
+    { pts:[[36.30,47.62],[36.90,47.56],[37.40,47.50],[37.90,47.55]], w:0.14, h:2 },
+    /* chalk bluffs of the Donets right bank at Sviatohirsk: 100 m of cliff
+       on the defender's side of the river */
+    { pts:[[37.20,49.02],[37.70,48.96],[38.20,48.92]], w:0.06, h:1 },
+    /* Don right bank above Rostov */
+    { pts:[[39.40,47.40],[39.70,47.36],[39.90,47.38]], w:0.06, h:1 },
+    /* --- terykony: colliery spoil heaps ---
+       Each of these is one waste tip, 60-130 m of shale piled beside a
+       pithead over eighty years, and there are several hundred of them in
+       the coalfield. w is deliberately about one tile across, so they
+       rasterise as single knolls rather than as ranges - the only high
+       ground on this map that a bulldozer made. */
+    { pts:[[37.62,47.92],[37.70,47.90]], w:0.030, h:2 },   // Petrovskyi, SW Donetsk
+    { pts:[[38.06,48.11],[38.14,48.08]], w:0.030, h:2 },   // Khanzhonkove, E Makiivka
+    { pts:[[37.96,48.39],[38.04,48.37]], w:0.030, h:2 },   // Nikitivka, N Horlivka
+    { pts:[[38.28,48.17],[38.36,48.15]], w:0.028, h:2 },   // Yenakiieve, S tips
+    { pts:[[38.62,48.00],[38.70,47.98]], w:0.028, h:2 },   // Chystiakove anthracite
+    { pts:[[38.92,48.10],[39.00,48.08]], w:0.028, h:2 },   // Khrustalnyi
+    { pts:[[38.32,48.84],[38.40,48.82]], w:0.028, h:2 },   // Lysychansk
+    { pts:[[37.26,48.08],[37.34,48.06]], w:0.028, h:2 },   // Selydove
+    { pts:[[37.06,48.44],[37.14,48.42]], w:0.028, h:2 },   // Dobropillia
+    { pts:[[38.50,48.58],[38.58,48.56]], w:0.028, h:2 },   // Pervomaisk
+  ],
+  rivers: [
+    /* Siverskyi Donets - enters at Izium, leaves past Stanytsia Luhanska.
+       60-100 m wide and fordable in places, so it delays an army rather
+       than stopping one. */
+    { pts:[[37.25,49.20],[37.56,49.03],[37.85,48.95],[38.10,48.90],[38.45,48.93],
+           [38.80,48.83],[39.20,48.75],[39.50,48.66],[39.90,48.55]], w:0.013 },
+    /* Mius. Small, but its west bank is a 60 m scarp for 100 km - the Mius
+       Front held from 1941 to 1943 on exactly that. */
+    { pts:[[38.35,48.30],[38.55,48.05],[38.70,47.80],[38.86,47.56],[38.82,47.35],
+           [38.78,47.25]], w:0.008 },
+    /* Kalmius: Donetsk's water, and the only through-valley to Mariupol */
+    { pts:[[37.86,48.10],[37.75,47.80],[37.65,47.50],[37.58,47.20],[37.55,47.07]], w:0.007 },
+    /* Don - navigable to the sea, and the eastern boundary of the theatre */
+    { pts:[[39.90,47.35],[39.72,47.26],[39.55,47.18],[39.42,47.11],[39.22,47.06]], w:0.018 },
+    /* Krynka, feeding the Mius */
+    { pts:[[38.15,48.10],[38.35,47.95],[38.52,47.82]], w:0.006 },
+  ],
+  /* the delta reedbeds, the Donets floodplain and the Azov coastal lagoons */
+  marsh: [
+    [39.30,47.08,5.0],   // Don delta
+    [37.85,48.96,4.0],   // Donets floodplain at Lyman
+    [38.35,46.78,4.0],   // Yeysk plavni
+    [36.88,46.86,3.0],   // Berdiansk lagoons
+    [37.45,47.02,2.5],   // Kalmius mouth
+  ],
+  cities: [
+    [37.80,48.00,6.5],   // Donetsk
+    [37.96,48.05,4.0],   // Makiivka
+    [38.05,48.33,3.5],   // Horlivka
+    [38.21,48.23,2.5],   // Yenakiieve
+    [38.40,48.34,2.0],   // Debaltseve
+    [37.55,47.10,5.0],   // Mariupol - the port and the steel works
+    [39.32,48.57,4.5],   // Luhansk
+    [39.72,47.23,6.0],   // Rostov-on-Don, the largest city on the map
+    [38.93,47.22,3.5],   // Taganrog
+    [37.55,48.73,3.5],   // Kramatorsk
+    [37.60,48.86,3.0],   // Sloviansk
+    [38.00,48.60,2.5],   // Bakhmut
+    [38.49,48.95,3.0],   // Sievierodonetsk
+    [38.43,48.91,2.5],   // Lysychansk
+    [36.79,46.76,3.0],   // Berdiansk
+    [37.50,47.60,2.0],   // Volnovakha
+    [37.18,48.28,2.5],   // Pokrovsk
+    [38.27,46.71,2.5],   // Yeysk
+  ],
+  /* coal, and one steel plant. The Donbas is a coalfield first: anthracite
+     in the east, coking coal in the west. */
+  ore: [[37.85,48.05,1.3],[38.10,48.30,1.2],[38.60,48.10,1.2],[38.95,48.15,1.1],
+        [38.45,48.88,1.1],[37.20,48.35,1.2],[39.75,48.05,1.0],[37.60,47.15,1.0],
+        [36.60,47.55,0.9],[39.65,47.32,0.9]],
+  /* Dnipro-Donets basin gas and coal-bed methane. No oilfield here worth the
+     name - the derricks are on gas. */
+  /* Coal-bed methane at working pitheads, which is where the gas actually is
+     in this basin - the producing Dnipro-Donets fields are all northwest of
+     this frame. Three nodes in the first draft sat on open farmland behind
+     Taganrog, north of Rostov and at Berdiansk, on neither gas nor coal. */
+  oil: [[37.45,48.95],[38.60,48.98],[39.55,48.30],[37.90,48.45],[38.30,48.28],
+        [38.95,48.62],[37.62,48.18]],
+  /* AZOV LITTORAL was 44 km from the water it is named for - far enough that
+     the sea is 22 tiles outside the base radius at size 144, so a commander
+     deploying there would never see it. Moved down onto the shore. */
+  starts: [[37.25,48.50],[39.00,48.40],[37.55,47.18],[39.55,47.60]],
+  startNames: ["POKROVSK STEPPE", "LUHANSK APPROACHES", "AZOV LITTORAL", "DON CROSSINGS"],
+},
+
+/* ------------------------------------------------------------------ */
+cuba: {
+  name: "FLORIDA STRAITS — OCTOBER 1962",
+  brief: "October 1962, and 150 km of open water lies between Florida and " +
+         "Cuba: nothing crosses it but ships and aircraft, and a ground war " +
+         "over the Straits only " +
+         "begins once something has been put ashore. Cuba's cover is the Sierra " +
+         "del Rosario, whose blind limestone valleys hid the San Cristobal " +
+         "R-12 sites; the " +
+         "Florida shore has no high ground at all - the Everglades is swamp at " +
+         "sea level, a place to fly and sail from rather than to manoeuvre on.",
+  /* 85.3-79.4W x 21.2-26.6N. At 23.9N a degree of longitude is 102 km, so
+     5.9 x 5.4 degrees is 604 x 600 km - square on the ground, which is what
+     a square tile grid wants. The frame has to reach Cabo San Antonio at
+     84.95W: cut the cape off and Cuba's Caribbean coast becomes a landlocked
+     lake, and a fleet built at Cienfuegos could never reach the Straits.
+     Key West to the nearest Cuban shore is 145 km of the middle of it - the
+     "ninety miles" of the period. Havana to Key West is 171. */
+  bbox: [-85.30, 21.20, -79.40, 26.60],
+  seaLevel: true,
+  land: [
+    /* Western Cuba, north coast east to west and back along the south. The
+       island is 40 km wide at Guanahacabibes and 150 km at Havana, so there
+       is no depth to defend in: every airfield is inside naval gun range of
+       one coast or the other. */
+    [[-79.40,22.62],[-79.75,22.72],[-80.10,22.85],[-80.45,23.05],[-80.80,23.15],
+     [-81.10,23.18],[-81.35,23.20],[-81.55,23.06],[-81.80,23.05],[-82.10,23.10],
+     [-82.38,23.16],[-82.60,23.05],[-82.80,23.02],[-83.15,22.95],[-83.50,22.85],
+     [-83.90,22.70],[-84.20,22.55],[-84.50,22.35],[-84.75,22.18],[-84.95,22.02],
+     /* Cabo San Antonio - the western tip, and the only way round the island */
+     [-84.99,21.85],[-84.80,21.85],[-84.50,21.90],[-84.20,21.96],[-83.85,22.06],
+     [-83.50,22.10],[-83.15,22.22],[-82.85,22.45],[-82.55,22.65],[-82.30,22.70],
+     [-82.00,22.62],[-81.70,22.50],[-81.40,22.28],
+     /* Bahia de Cochinos: a 30 km inlet with swamp on both shoulders and one
+        road out of it. The only place on this coast a landing craft gets deep
+        inland, and the only place a defender has to hold to stop one. */
+     [-81.25,22.06],[-81.18,22.29],[-81.10,22.05],
+     [-80.90,22.06],[-80.60,22.04],[-80.45,22.08],[-80.20,21.93],[-79.90,21.80],
+     [-79.60,21.75],[-79.40,21.72]],
+    /* Isla de la Juventud - a 50 km island in the Golfo de Batabano */
+    [[-83.05,21.85],[-82.75,21.95],[-82.55,21.80],[-82.62,21.55],[-82.90,21.52],
+     [-83.08,21.65]],
+    /* Archipielago de los Canarreos, screening the south coast */
+    [[-82.50,21.62],[-81.90,21.60],[-81.48,21.62],[-81.46,21.56],[-81.92,21.55],
+     [-82.52,21.57]],
+    /* Sabana-Camaguey cays, screening the Sagua la Grande approaches */
+    [[-80.20,22.95],[-79.80,22.88],[-79.60,22.82],[-79.62,22.78],[-79.85,22.83],
+     [-80.22,22.90]],
+    /* Cay Sal - a speck of British Bahamian sand halfway across the Straits,
+       and the only land between the two coasts */
+    [[-80.42,23.72],[-80.34,23.74],[-80.33,23.67],[-80.41,23.66]],
+    /* South Florida. The Atlantic coastal ridge is a sand bar 5 km wide and
+       6 m high carrying every city on the east coast; everything behind it is
+       Everglades. There is no other dry ground on this side of the map. */
+    [[-82.20,26.60],[-80.04,26.60],[-80.06,26.45],[-80.10,26.25],[-80.13,25.95],
+     [-80.19,25.75],[-80.28,25.58],[-80.36,25.45],[-80.48,25.30],[-80.60,25.20],
+     [-80.85,25.15],[-81.10,25.12],[-81.20,25.28],[-81.35,25.48],[-81.52,25.70],
+     [-81.70,25.92],[-81.82,26.10],[-81.95,26.30],[-82.10,26.45]],
+    /* The Keys: 200 km of coral islets, nowhere more than a kilometre or two
+       wide, carrying one road and one airfield worth the name. At 4 km a tile
+       they rasterise as a broken chain - which is what they are. */
+    /* Key Largo, NE tip down to Tavernier. The first draft of this ran the
+       other diagonal - the mirror image - and every point on the real island
+       tested as water. */
+    [[-80.25,25.33],[-80.48,25.02],[-80.54,24.98],[-80.31,25.29]],
+    [[-80.70,24.96],[-81.05,24.73],[-81.13,24.75],[-80.75,25.00]],
+    [[-81.20,24.72],[-81.60,24.60],[-81.83,24.52],[-81.87,24.59],[-81.62,24.66],
+     [-81.22,24.79]],
+    /* Dry Tortugas - the western anchor of the Keys, and a seaplane anchorage */
+    [[-82.94,24.65],[-82.82,24.67],[-82.83,24.59],[-82.95,24.60]],
+  ],
+  ridges: [
+    /* Cordillera de Guaniguanico - Sierra de los Organos and Sierra del
+       Rosario. 699 m at Pan de Guajaibon, limestone mogotes, blind valleys:
+       the San Cristobal MRBM sites sat in them and the U-2 still found them. */
+    { pts:[[-84.10,22.30],[-83.75,22.50],[-83.45,22.62],[-83.15,22.78],[-82.95,22.85]], w:0.11, h:3 },
+    /* Alturas Habana-Matanzas - low limestone, but it overlooks Mariel and
+       the whole north-coast oil belt */
+    { pts:[[-82.30,22.95],[-81.95,22.95],[-81.65,22.90],[-81.40,22.85]], w:0.10, h:1 },
+    /* Sierra del Escambray - 1140 m at Pico San Juan, the highest ground on
+       the map and guerrilla country in 1958 and again in 1960-65 */
+    { pts:[[-80.30,21.95],[-80.05,22.05],[-79.80,22.00],[-79.60,21.90]], w:0.14, h:3 },
+    /* Alturas de Santa Clara, the rise the Remedios IRBM site backed onto */
+    { pts:[[-80.35,22.55],[-80.05,22.45],[-79.75,22.40]], w:0.10, h:1 },
+    /* Nothing at all on the Florida side. The highest natural ground in the
+       whole of south Florida is about 6 m, so there is no ridge to give it. */
+  ],
+  rivers: [
+    /* Shark River Slough - the Everglades drains as sheet flow, and this is
+       the one channel of it deep enough to stop a vehicle */
+    { pts:[[-80.95,25.45],[-81.08,25.34],[-81.18,25.22]], w:0.010 },
+    /* Rio Sagua la Grande, the port road up to the Sagua missile site */
+    { pts:[[-80.10,22.55],[-80.08,22.72],[-80.05,22.82]], w:0.008 },
+    /* Rio Hatiguanico, draining the Zapata */
+    { pts:[[-81.55,22.40],[-81.85,22.45],[-82.10,22.52]], w:0.008 },
+  ],
+  /* Both shores are swamp, which is the joke of the theatre: two of the
+     largest wetlands in the hemisphere face each other across the Straits,
+     and neither is ground an army can cross. */
+  marsh: [
+    [-80.75,25.55,7.5],  // Everglades, central
+    [-80.95,25.30,6.5],  // Shark River slough
+    [-80.58,25.90,6.0],  // northern Everglades / conservation areas
+    [-80.38,26.42,5.0],  // Loxahatchee, conservation area 1
+    [-81.45,26.35,4.5],  // Corkscrew / Immokalee slough
+    [-81.35,25.80,5.0],  // Big Cypress
+    [-81.55,22.35,6.0],  // Cienaga de Zapata
+    [-81.85,22.45,5.0],  // Zapata, western lobe
+    [-82.30,22.62,4.0],  // Batabano mangrove
+    [-80.05,22.80,3.5],  // Sagua coastal mangrove
+    [-84.70,22.05,3.0],  // Guanahacabibes mangrove
+  ],
+  cities: [
+    [-82.38,23.13,5.0],  // Havana
+    [-80.19,25.77,4.5],  // Miami
+    [-81.58,23.05,2.5],  // Matanzas
+    [-79.97,22.40,3.0],  // Santa Clara - the MiG-21 base
+    [-80.45,22.15,2.5],  // Cienfuegos
+    [-83.70,22.42,2.5],  // Pinar del Rio
+    [-81.78,24.55,2.0],  // Key West - Boca Chica and the submarine base
+    [-82.75,23.00,2.0],  // Mariel, where the missiles were landed
+    [-81.20,23.04,2.0],  // Cardenas
+    [-83.05,22.72,1.8],  // San Cristobal - MRBM site
+    [-82.69,22.93,1.8],  // Guanajay - IRBM site
+    [-80.08,22.80,1.8],  // Sagua la Grande - MRBM site
+    [-79.55,22.50,1.5],  // Remedios - IRBM site
+    [-80.38,25.47,2.0],  // Homestead AFB
+    [-80.14,26.12,2.5],  // Fort Lauderdale
+    [-80.09,26.36,2.0],  // Boca Raton
+    [-81.79,26.14,2.0],  // Naples
+    [-81.03,24.76,1.5],  // Marathon - on the drawn key, not beside it
+    [-82.29,22.72,1.5],  // Batabano
+    [-82.80,21.88,1.5],  // Nueva Gerona
+    [-79.98,21.88,1.5],  // Trinidad - inland of the drawn shore
+  ],
+  /* Cuban copper and marble; Florida's Lake Belt limestone. Nickel is the
+     real Cuban wealth but those mines are at Moa, 700 km east and off this
+     map, so nothing here is worth the war on its own. */
+  ore: [[-83.95,22.58,1.3],[-83.40,22.58,1.1],[-82.60,22.90,1.0],[-81.50,22.95,1.0],
+        [-80.20,22.55,1.1],[-80.10,21.95,1.0],[-80.45,25.72,1.2],[-81.30,25.75,0.9],
+        [-82.85,21.75,0.9],[-84.55,22.20,0.8],[-81.60,26.38,0.9]],
+  /* The Havana-Varadero heavy oil belt on the Cuban north coast, and the
+     Sunniland trend under the Big Cypress. Both are real producing ground. */
+  oil: [[-82.15,23.04],[-81.95,23.02],[-81.65,23.00],[-81.30,23.00],[-83.30,22.85],
+        [-81.20,25.82],[-81.42,25.88]],
+  /* Two a side, and the order matters. game.js:139 deals starts as
+     [humanChoice, ...shuffle(rest)] rather than taking starts[0] and
+     starts[1], so a 1v1 draws an unordered pair at random from all four. The
+     first draft put THREE of the four on Cuba, which made a same-island
+     pairing more likely than a crossing - on the one map whose entire premise
+     is that the armies cannot reach each other. Two and two is the best a
+     theatre can do about it from here: it cannot force an alternating deal,
+     but it takes the same-island chance from 1 in 2 down to 1 in 3, and the
+     brief no longer claims a guarantee the engine does not give. */
+  starts: [[-80.38,25.58],[-82.40,22.92],[-81.72,26.32],[-80.15,22.42]],
+  startNames: ["HOMESTEAD", "HAVANA", "FORT MYERS", "LAS VILLAS"],
+},
 };
 
 /* order shown in the menu */
 var THEATRE_LIST = ["taiwan", "korea", "hormuz", "kuwait", "normandy",
                      "fulda", "ngp", "suwalki", "baltic",
-                     "northcape", "ussuri", "yangtze"];
+                     "northcape", "ussuri", "yangtze",
+                     "donbas", "cuba"];
