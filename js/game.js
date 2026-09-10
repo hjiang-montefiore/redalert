@@ -547,8 +547,50 @@ var Game = (function () {
        leaving the flag set left a captured block that no gun would fire at */
     b.neutral = false;
     b.hp = Math.max(b.hp, b.maxHp * 0.5);
+    /* The renderer caches one model instance per building keyed on the owner's
+       colour. reassignBuilding() below has always raised this flag; this path
+       never did, so an engineer capture left the structure flying the previous
+       owner's colours and the player could not see what they had just taken. */
+    b.reskin = true;
+    /* And stop shooting at it. autoTargetable() only rejects NEUTRAL
+       buildings, so a captured one stayed a legal target for the very army
+       that had just taken it, and the attack handler deliberately preserves
+       an order the player gave by hand - which is right in general and wrong
+       here, because nobody hand-orders an attack on a building they own. */
+    G.dropOrdersAgainst(b, newOwner);
     G.alert(old === G.human ? "STRUCTURE CAPTURED BY ENEMY" : "ENEMY STRUCTURE CAPTURED", old === G.human ? "bad" : "good");
     G.pingEvent(b.x, b.y);
+  };
+
+  /* Cancel every standing engagement against `b` held by `owner` and its
+     allies - the current order, anything queued behind it, and a turret's
+     acquired focus. Called whenever a structure changes hands, so it covers
+     an engineer capture, a civilian block being garrisoned, and a garrison
+     emptying out again. Other commanders keep their orders: the building is
+     still hostile to them. */
+  G.dropOrdersAgainst = function (b, owner) {
+    if (!b || !owner) return;
+    const stops = (o) => o && (o.type === "attack" || o.type === "bombard") && o.target === b;
+    for (const p of G.players) {
+      if (p !== owner && !G.allied(p, owner)) continue;
+      for (const u of p.units) {
+        if (u.dead) continue;
+        if (u.orders && u.orders.length) u.orders = u.orders.filter(o => !stops(o));
+        if (stops(u.order)) {
+          /* Send it back to the ground it was working, not to idle - a unit
+             that was attack-moving through should carry on through. */
+          u.order = u.order.resume
+            ? { type: "attackmove", x: u.order.resume.x, y: u.order.resume.y }
+            : (u.nextOrder() ? u.order : { type: u.layer === "air" ? "hover" : "idle" });
+        }
+        if (u.focus === b) u.focus = null;
+      }
+      for (const s of p.buildings) {
+        if (s.dead) continue;
+        if (stops(s.order)) s.order = { type: "idle" };
+        if (s.focus === b) s.focus = null;
+      }
+    }
   };
 
   G.sellBuilding = function (b) {
@@ -573,6 +615,11 @@ var Game = (function () {
        captured structure kept flying the previous owner's colours and the
        player had no way to see what they had just taken. */
     b.reskin = true;
+    /* Same reasoning as captureBuilding: whoever now owns it should stop
+       shooting at it. p may be G.neutral here (a civilian block emptying
+       out), and a neutral structure is already rejected by autoTargetable,
+       so the sweep is a no-op in that direction rather than wrong. */
+    G.dropOrdersAgainst(b, p);
     return b;
   };
 

@@ -531,6 +531,64 @@ try{
     }
   })();
 
+  /* ====== BUG 28: an engineer capture changes the flag AND stops the guns ======
+     Reported from play: "after the engineer captured the enemy building, the
+     colour does not change and our units still attack the captured building."
+     Two separate defects behind one symptom. reassignBuilding() raised the
+     renderer's reskin flag but captureBuilding() never did, so the structure
+     kept the old owner's colours. And autoTargetable() only rejects NEUTRAL
+     buildings, so a captured one stayed a legal target - while the attack
+     handler deliberately preserves a hand-given order, which is correct in
+     general and wrong the moment the thing becomes yours. */
+  log("\n[28] ENGINEER CAPTURE");
+  (function(){
+    /* Everything goes down next to the building. Put the shooters at the far
+       end of the map and the test measures pathfinding instead of the bug. */
+    var spot = tile(P,"ground",14);
+    if(!spot){ chk("capture scenario built", false, "no open ground"); return; }
+    var b = Game.placeBuilding(E,"power",spot.x,spot.y,true);
+    if(!b){ chk("capture scenario built", false, "placeBuilding failed"); return; }
+    b.hp = b.maxHp;
+
+    /* three of ours shooting it, one by hand and two that picked it up */
+    var shooters=[];
+    for(var i=0;i<3;i++){
+      var u=spawn(P,"mbt_n",spot,3+i,3);
+      if(u){ u.give({type:"attack", target:b}); if(i>0) u.order.auto=true; shooters.push(u); }
+    }
+    var eng = spawn(P,"engineer",spot,-2,-2);
+    if(!eng || !shooters.length){ chk("capture scenario built", false, "spawn failed"); return; }
+
+    tick(90);
+    var aimedBefore=0;
+    for(var i=0;i<shooters.length;i++)
+      if(!shooters[i].dead && shooters[i].order.type==="attack" && shooters[i].order.target===b) aimedBefore++;
+    chk("our units are shooting the enemy building", aimedBefore>=1,
+        aimedBefore+" of "+shooters.length+" aimed at it");
+
+    var wasReskin = !!b.reskin;
+    /* ui.js:2086 - an engineer sent at a structure is given "enter", and
+       updateEnter() at entities.js:2272 does the capturing. */
+    eng.give({type:"enter", target:b});
+    for(var i=0;i<4000 && b.owner!==P && !b.dead && !eng.dead; i++) Game.tick(CFG.DT);
+
+    chk("the engineer takes the building", b.owner===P && !b.dead,
+        "owner="+(b.owner===P?"ours":"theirs")+" dead="+b.dead);
+    chk("the flag changes - renderer told to reskin", !!b.reskin && !wasReskin,
+        "reskin="+b.reskin);
+
+    tick(60);
+    var stillAimed=0;
+    for(var i=0;i<shooters.length;i++)
+      if(!shooters[i].dead && shooters[i].order.type==="attack" && shooters[i].order.target===b) stillAimed++;
+    chk("our units stop attacking what we just captured", stillAimed===0,
+        stillAimed+" still aimed at it");
+
+    var hpAfter=b.hp; tick(150);
+    chk("and the captured building stops taking our fire", b.hp>=hpAfter-1 && !b.dead,
+        "hp "+Math.round(hpAfter)+" -> "+Math.round(b.hp));
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }
