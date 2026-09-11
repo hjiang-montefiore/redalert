@@ -174,6 +174,20 @@ var Combat = (function () {
       p.z = 46; p.eta = 0.7;
       p.x0 = p.x; p.y0 = p.y;
     }
+    /* ---- ejected from a submerged tube ----
+       Keyed on the weapon and on the shooter being under water: the same
+       missile fired from a silo ashore is not cold launched in any sense the
+       player can see, and a hot-launched Soviet round must not get this even
+       from a submarine. alt() returns 0 for a sub - there is no negative z
+       anywhere else in the projectile system - so the start depth is set
+       here rather than derived. */
+    if (w.coldLaunch && shooter.layer === "sub") {
+      p.subLaunch = 0;
+      p.zLaunch = -7;                          // about a boat's depth, in z units
+      p.z = p.zLaunch;
+      p.wet = true;
+      p.zBoost = 0; p.zBoostT = 0;
+    }
     projectiles.push(p);
     /* indirect fire is loud: it leaves a counter-battery contact */
     /* A launcher announces itself the same way a gun battery does - a ballistic
@@ -433,6 +447,65 @@ var Combat = (function () {
       }
 
       let arrived = false;
+      /* ---- COLD LAUNCH: out of the tube, up through the water, then light ----
+         A Trident is not fired, it is EJECTED. A gas generator at the bottom
+         of the tube pushes the missile out while the boat is still deep; it
+         coasts up through the water with no flame at all, breaks the surface
+         inside a spray dome, and only then does the first stage light, in the
+         air. That unlit coast and the late ignition are the whole reason a
+         submarine launch looks like nothing else.
+
+         None of it could be expressed before this. Height for a guided round
+         is a pure function of HORIZONTAL progress - `done`, measured from
+         x0,y0, recomputed from scratch every tick below - so a round that
+         does not move horizontally has done = 0 for ever and there was no
+         code path in which z could rise while x and y stood still. Hence a
+         real phase rather than a tweak: it runs BEFORE the homing branch,
+         holds the round over the boat, and drives z itself.
+
+         It is keyed on the WEAPON, not on the hull, because cold launch is
+         not universal. The R-27 and the whole R-29 family are a hot wet
+         start - the tube floods and the motor lights inside it, so the
+         missile breaks the surface already burning - and the R-11FM fired
+         from the surface off an elevator in the fin. Only a weapon that
+         declares coldLaunch gets this. */
+      if (p.subLaunch !== undefined) {
+        const L = p.subLaunch;                 // seconds elapsed in the phase
+        p.subLaunch = L + dt;
+        const WET = 1.05, AIR = 0.85;          // coast to the surface, then climb
+        if (L < WET) {
+          /* the coast. Decelerating, because the gas charge is spent and the
+             missile is carrying its own way up through the water. */
+          const f = L / WET;
+          p.z = p.zLaunch * (1 - f * (2 - f));
+          p.wet = true;
+        } else if (L < WET + AIR) {
+          if (p.wet) {
+            /* THE BREACH. The one moment the player should catch. */
+            p.wet = false;
+            effects.push({ t: "boom", x: p.x, y: p.y, r: 9, life: 0.75, max: 0.75,
+                           water: true });
+            if (typeof Sfx !== "undefined" && Sfx.play) Sfx.play("water", p.x, p.y);
+          }
+          p.z = (L - WET) / AIR * 26;
+        } else {
+          /* hand back to the flight model. The profile below computes z from
+             done, which is ~0 here, so without a decaying carry the round
+             would snap from 26 back to the deck. zBoost is that carry. */
+          p.zBoost = 26; p.zBoostT = 1.6;
+          p.subLaunch = undefined;
+        }
+        if (p.subLaunch !== undefined) {
+          /* p.age is incremented at the top of this loop, so the round still
+             ages out normally; everything else - homing, the flight profile,
+             the trail, arrival - is simply not reached while it is climbing
+             vertically over the boat. The three defence layers above run as
+             usual and correctly decline to engage: they gate on RANGE TO GO,
+             which is still the full distance to the target, so a round cannot
+             use the phase to slip past an interceptor. */
+          continue;
+        }
+      }
       if (p.type === "arc" || p.type === "bomb") {
         const t = U.clamp(p.age / p.eta, 0, 1);
         p.x = U.lerp(p.x0, p.tx, t); p.y = U.lerp(p.y0, p.ty, t);
@@ -468,6 +541,15 @@ var Combat = (function () {
             }
           } else {
             p.z = Math.max(0, p.z - 20 * dt);
+          }
+          /* What is left of the climb off the launch, bled away over a second
+             and a half. Without it a cold-launched round drops from 26 to
+             whatever the profile says at done ~ 0 - which for every profile
+             here is nearly the deck - in one tick, and the pitch-over reads
+             as the missile falling back into the sea it just left. */
+          if (p.zBoostT > 0) {
+            p.zBoostT -= dt;
+            p.z += p.zBoost * Math.max(0, p.zBoostT) / 1.6;
           }
         }
         if (p.type === "torpedo" || p.type === "missile")

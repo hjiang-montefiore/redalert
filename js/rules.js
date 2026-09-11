@@ -3232,13 +3232,13 @@ for (var _sk2 in SOFTKILL) if (UNITS[_sk2]) UNITS[_sk2].softkill = SOFTKILL[_sk2
    target ashore at risk from under water, so they get a land-attack missile:
    slow to reload, long-ranged, and fired while submerged. */
 Object.assign(WEAPONS, {
-  slbm_n: { name:"Trident II D5 (conventional)", dmg:900, warhead:"he", range:22.0,
+  slbm_n: { name:"Trident II D5 (conventional)", coldLaunch:true, dmg:900, warhead:"he", range:22.0,
     minRange:3.0, reload:165, burst:1, acc:0.82, proj:"missile", speed:16, aoe:4.2,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
-  slbm_p: { name:"Bulava (conventional)", dmg:840, warhead:"he", range:20.0,
+  slbm_p: { name:"Bulava (conventional)", coldLaunch:true, dmg:840, warhead:"he", range:20.0,
     minRange:3.0, reload:172, burst:1, acc:0.74, proj:"missile", speed:16, aoe:4.0,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
-  slbm_c: { name:"JL-2 (conventional)", dmg:780, warhead:"he", range:19.5,
+  slbm_c: { name:"JL-2 (conventional)", coldLaunch:true, dmg:780, warhead:"he", range:19.5,
     minRange:3.0, reload:180, burst:1, acc:0.76, proj:"missile", speed:16, aoe:3.8,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   /* Britain fires the SAME missile as the United States - Trident II D5, drawn
@@ -3248,16 +3248,16 @@ Object.assign(WEAPONS, {
      rows exist because HMS Resolution (1967) and Le Redoutable (1971) were
      real: Polaris A3 and M20 are shorter-ranged and far less accurate than
      what replaced them, and that gap across thirty years is the point. */
-  slbm_b: { name:"Trident II D5 (British warhead)", dmg:900, warhead:"he", range:22.0,
+  slbm_b: { name:"Trident II D5 (British warhead)", coldLaunch:true, dmg:900, warhead:"he", range:22.0,
     minRange:3.0, reload:165, burst:1, acc:0.82, proj:"missile", speed:16, aoe:4.2,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
-  slbm_f: { name:"M51 (conventional)", dmg:860, warhead:"he", range:21.0,
+  slbm_f: { name:"M51 (conventional)", coldLaunch:true, dmg:860, warhead:"he", range:21.0,
     minRange:3.0, reload:170, burst:1, acc:0.80, proj:"missile", speed:16, aoe:4.0,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
-  slbm_polaris: { name:"Polaris A3TK (Chevaline)", dmg:700, warhead:"he", range:17.0,
+  slbm_polaris: { name:"Polaris A3TK (Chevaline)", coldLaunch:true, dmg:700, warhead:"he", range:17.0,
     minRange:3.0, reload:190, burst:1, acc:0.55, proj:"missile", speed:16, aoe:4.4,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
-  slbm_m20: { name:"M20 (conventional)", dmg:680, warhead:"he", range:16.0,
+  slbm_m20: { name:"M20 (conventional)", coldLaunch:true, dmg:680, warhead:"he", range:16.0,
     minRange:3.0, reload:195, burst:1, acc:0.50, proj:"missile", speed:16, aoe:4.4,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   tlam_n: { name:"BGM-109 Tomahawk", dmg:320, warhead:"he", range:19.0, minRange:2.5,
@@ -3696,6 +3696,8 @@ Object.assign(WEAPONS, {
      warhead, CEP near two kilometres. A Yankee had to come close inshore to
      hold anything, which is why it was trailed out of the Barents as routine.
      Shortest and least accurate of the three by design. */
+  /* no coldLaunch: hot wet start - see the note above. It breaks the surface
+     already burning, so it must NOT get the ejected-and-unlit sequence. */
   slbm_r27: { name:"R-27 (conventional)", dmg:660, warhead:"he", range:14.5,
     minRange:3.0, reload:200, burst:1, acc:0.42, proj:"missile", speed:700, aoe:4.6,
     profile:"ballistic", intercept:0.26, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
@@ -3704,7 +3706,7 @@ Object.assign(WEAPONS, {
      Typhoon is the size it is - the boat was built around it, not the reverse
      - and the production line was at Yuzhmash in Ukraine, so the class died
      with the Union that paid for it. */
-  slbm_r39: { name:"R-39 (conventional)", dmg:820, warhead:"he", range:19.0,
+  slbm_r39: { name:"R-39 (conventional)", coldLaunch:true, dmg:820, warhead:"he", range:19.0,
     minRange:3.0, reload:185, burst:1, acc:0.62, proj:"missile", speed:730, aoe:4.2,
     profile:"ballistic", intercept:0.18, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
   /* R-29RM / R-29RMU2 Sineva (SS-N-23 Skiff, 1986 / 2007): liquid-fuelled,
@@ -3712,6 +3714,7 @@ Object.assign(WEAPONS, {
      Soviet Union ever put in a boat - astro-inertial with a satellite update
      on the Sineva, CEP around 500 m, and a 2008 test that flew 11,547 km.
      Accuracy close to a Trident, throw-weight and reach below it. */
+  /* no coldLaunch: the whole R-29 family is a hot wet start, like the R-27. */
   slbm_sineva: { name:"R-29RM Sineva (conventional)", dmg:800, warhead:"he", range:19.5,
     minRange:3.0, reload:178, burst:1, acc:0.72, proj:"missile", speed:740, aoe:4.0,
     profile:"ballistic", intercept:0.17, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
@@ -3759,7 +3762,7 @@ Object.assign(WEAPONS, {
      fires a missile ten years from its first test flight. Cold launched, like
      every French SLBM from M1 to M51: gas generator, unlit coast, first stage
      after it breaches. There is no French exception to record. */
-  slbm_m45: { name:"M45 (conventional)", dmg:780, warhead:"he", range:19.0,
+  slbm_m45: { name:"M45 (conventional)", coldLaunch:true, dmg:780, warhead:"he", range:19.0,
     minRange:3.0, reload:178, burst:1, acc:0.70, proj:"missile", speed:720, aoe:4.1,
     profile:"ballistic", intercept:0.17, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
 
@@ -3782,7 +3785,7 @@ Object.assign(WEAPONS, {
      be a missile nobody could ever fire. The single tube is modelled the
      right way instead - see the magazine below, which holds ONE round and
      needs a naval yard to put another in the tube. */
-  slbm_pk1: { name:"Pukguksong-1 (conventional)", dmg:520, warhead:"he", range:15.0,
+  slbm_pk1: { name:"Pukguksong-1 (conventional)", coldLaunch:true, dmg:520, warhead:"he", range:15.0,
     minRange:3.0, reload:200, burst:1, acc:0.70, proj:"missile", speed:660, aoe:3.4,
     profile:"ballistic", intercept:0.38, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
 });
