@@ -3263,6 +3263,46 @@ Object.assign(WEAPONS, {
   tlam_n: { name:"BGM-109 Tomahawk", dmg:320, warhead:"he", range:19.0, minRange:2.5,
     reload:20, burst:2, burstDelay:1.1, acc:0.90, proj:"missile", speed:13, aoe:2.0,
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+
+  /* ---- Tomahawk from an ATTACK boat, which is not the same magazine ----
+     Los Angeles, Seawolf and Virginia all carried only a torpedo with
+     tgt.ground 0, so not one of them could touch a target ashore - while
+     nato_e80_sub's own description talked about "twelve vertical Tomahawk
+     tubes forward" and nato_e00_sub's about "Tomahawk capacity to 40". The
+     text described a weapon the unit did not have.
+
+     They do not all get the same row, because the magazine is the whole
+     difference between these boats and the reason the SSGN exists at all.
+     Three ways to carry the same missile:
+
+     FROM A TORPEDO TUBE. Every round competes with a Mk 48 for one of a
+     handful of tubes, and reloading a 21-foot missile into a tube at sea is
+     slow. This is how Tomahawk went to sea in 1983 and it is the ONLY way a
+     Seawolf can do it - eight 660 mm tubes and no vertical launcher, ever.
+     Matches the Astute's tube-launched row at reload 32.
+
+     FROM DEDICATED VERTICAL TUBES. Twelve of them forward of the sail, on
+     the 688i from USS Providence (SSN-719, 1985) and on Virginia Blocks I-IV.
+     They do not compete with the torpedo room at all, which is the point.
+
+     FROM THE PAYLOAD MODULE. Virginia Block V adds a 25 m section with four
+     more tubes of seven, taking the boat to about forty rounds. Deep enough
+     to salvo.
+
+     The converted Ohio SSGN keeps the deepest magazine in the game at
+     reload 20 and a pair per salvo - 154 missiles - and none of these
+     touches it. An attack boat is a Tomahawk carrier; the SSGN is a Tomahawk
+     magazine that happens to float. */
+  tlam_n_tube: { name:"BGM-109 Tomahawk (torpedo tube)", dmg:320, warhead:"he",
+    range:19.0, minRange:2.5, reload:32, burst:1, acc:0.90, proj:"missile",
+    speed:13, aoe:2.0, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  tlam_n_vls: { name:"BGM-109 Tomahawk (12 vertical tubes)", dmg:320, warhead:"he",
+    range:19.0, minRange:2.5, reload:26, burst:1, acc:0.90, proj:"missile",
+    speed:13, aoe:2.0, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  tlam_n_vpm: { name:"BGM-109 Tomahawk (Virginia Payload Module)", dmg:320,
+    warhead:"he", range:19.0, minRange:2.5, reload:23, burst:2, burstDelay:1.1,
+    acc:0.90, proj:"missile", speed:13, aoe:2.0,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
 });
 
 /* ---- road-mobile ballistic missiles ----
@@ -3316,6 +3356,11 @@ if (UNITS.ssbn_f) UNITS.ssbn_f.weapons = ["slbm_f", "torp_f21"];
 /* the converted Ohio is a submerged cruise-missile magazine, so it gets the
    deep Tomahawk load rather than a pair of Harpoons */
 if (UNITS.ssgn_n) UNITS.ssgn_n.weapons = ["tlam_n", "torp_mk48", "ssm_harpoon"];
+/* The e20 Virginia is a Block IV/V hull by its own `full` string, so it gets
+   the payload module. This assignment has to live HERE rather than on the row
+   at the top of the file: the SUBS table at rules.js:2924 rewrites sub_n's
+   weapons wholesale, so editing the definition at :636 changes nothing. */
+if (UNITS.sub_n) UNITS.sub_n.weapons = ["tlam_n_vpm", "torp_mk48"];
 
 
 /* ==================================================================
@@ -3438,6 +3483,9 @@ var MISSILE_PROFILE = {
 
   /* --- land attack --- */
   tlam_n:      { profile:"cruise", intercept:1.55 },   // slow and visible
+  tlam_n_tube: { profile:"cruise", intercept:1.55 },
+  tlam_n_vls:  { profile:"cruise", intercept:1.55 },
+  tlam_n_vpm:  { profile:"cruise", intercept:1.55 },
   slbm_n:      { profile:"ballistic", intercept:0.12 },
   slbm_p:      { profile:"ballistic", intercept:0.16 },
   slbm_c:      { profile:"ballistic", intercept:0.18 },
@@ -3512,6 +3560,7 @@ for (var _mp in MISSILE_PROFILE) if (WEAPONS[_mp]) Object.assign(WEAPONS[_mp], M
 var MISSILE_SPEED = {
   ssm_harpoon: 120, ssm_nsm: 118, ssm_kn01: 100, ssm: 120,     // subsonic
   tlam_n:      112,                                             // subsonic cruise
+  tlam_n_tube: 112, tlam_n_vls: 112, tlam_n_vpm: 112,
   ssm_yj18:    300, ssm_oniks: 330, ssm_hf3: 310,               // supersonic
   slbm_n:      760, slbm_p: 720, slbm_c: 700,                   // ballistic terminal
   sam_sm2:     620, sam_hhq9: 610, sam_shtil: 520, sam_sm1: 520,
