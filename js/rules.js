@@ -2592,7 +2592,19 @@ Object.assign(UNITS, {
     desc:"Carrier-capable stealth fighter with the largest wing of the F-35 family for slow " +
          "approach speeds. Its sensor fusion makes it a scout as much as a shooter: what it " +
          "sees, the whole battle group sees." },
-  cawacs_n: { from:"e50", fac:"nato", role:"cawacs", name:"E-2D Advanced Hawkeye",
+  /* from:"e50" is an AVAILABILITY date, not a service date - there is no era
+     chain for carrier AEW, so this row has to be buildable from the first era
+     a carrier exists. eraStamped says so out loud, because G.genContest()
+     reads `from` as if it were real and this is the only modern aircraft in
+     the game carrying a 1950 stamp. Unmarked it scored 4.91x jamming against
+     itself - the largest penalty in the subsystem, handed to the aircraft
+     whose APY-9 was built specifically to be hard to jam - while the FRENCH
+     E-2C beside it, an older machine with no stamp, took 1.00x. The newer
+     radar was four times easier to jam than the older one.
+
+     Same mark, same reason, as the structures at the foot of this file: a
+     date a unit never earned must not be fed to the generational contest. */
+  cawacs_n: { from:"e50", eraStamped:true, fac:"nato", role:"cawacs", name:"E-2D Advanced Hawkeye",
     full:"Northrop Grumman E-2D", cat:"aircraft",
     cost:3000, oil:60, time:31, hp:520, armor:"air", speed:4.4, turn:1.0, sight:14, r:22, mass:0,
     layer:"air", weapons:[], prereq:["airbase","radar"], tech:3, jet:true, ammo:0,
