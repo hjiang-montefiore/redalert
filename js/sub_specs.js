@@ -5,8 +5,10 @@
    -- render3d.js sizes a boat straight off UNIT_MODELS[id].len, so a wrong
    number here is a wrong-sized boat on the map, not just a wrong drawing.
 
-   The ten generic boats (sub_n, sub_p, ssbn_n ...) are NOT here;
-   units3d_subs.js still owns those and this file never touches them.
+   The ten boats units3d_subs.js owns (sub_n, sub_p, sub_c, sub_k, sub_r,
+   ssbn_n, ssbn_p, ssbn_c, ssgn_n, ssgn_p) are NOT here and this file never
+   touches them. sub_g IS here, because it is NOT one of those ten: the
+   present-day Type 212A had a row in neither file and fell through to sub_n.
 
    hull    cigar | teardrop | fat | fleetboat | midget
    sail    step | slab | tower | faired | fat | low
@@ -120,7 +122,8 @@ var SUBS = {
     planes:"bow", stern:"cruciform", screws:2, prop:"screw", deckGun:false, missileDeck:false,
     skin:"plate", camo:"black"},
   /* Short fat Albacore teardrop, fin well forward, and the only boat here
-     with four X-arranged control surfaces around a single screw. */
+     with four X-arranged control surfaces around a single screw - until the
+     German Type 212A rows above, which share the arrangement. */
   roc_e80_sub: {era:"e80", fac:"roc", designation:"Hai Lung class (Zwaardvis-derived)",
     len:66.9, beam:8.4, hull:"teardrop", sail:"slab", sailFrac:0.38, sailLen:11, sailH:5.5,
     planes:"sail", stern:"xtail", screws:1, prop:"screw", deckGun:false, missileDeck:false,
@@ -137,6 +140,63 @@ var SUBS = {
     len:66.9, beam:8.4, hull:"teardrop", sail:"slab", sailFrac:0.38, sailLen:11, sailH:5.5,
     planes:"sail", stern:"xtail", screws:1, prop:"screw", deckGun:false, missileDeck:false,
     skin:"smooth", camo:"black"},
+
+  /* ------------------------------------------------------------- DEU */
+  /* Every German boat was falling through modelKeyFor()'s peer scan to sub_n
+     and being drawn AND SIZED as a 110-metre American Los Angeles - the hero
+     hull in js/hero/sub_n.js, which loads last and wins, whatever the unit is
+     called on the card. A 43-metre Type 205 at two and a half times its real
+     length, with a nuclear boat's silhouette, for the one navy whose entire
+     identity is that its submarines are tiny, non-nuclear and built for fifty
+     metres of Baltic. After the Sang-o these are the shortest hulls in the
+     set, which is the whole point. (gbr and fra fall through the same way and
+     are NOT fixed here; that is a three-navy pass of its own.) */
+
+  /* 234 tonnes on 34.7 m - a wartime Type XXIII raised from the mud in 1956.
+     One shaft, a tiny low fairwater, and two bow tubes whose torpedoes were
+     loaded from outside the pressure hull. */
+  deu_e50_sub: {era:"e50", fac:"deu", designation:"Type XXIII (U-Hai, S170)",
+    len:34.7, beam:3.02, hull:"midget", sail:"low", sailFrac:0.42, sailLen:4.4, sailH:2.6,
+    planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"plate", camo:"black"},
+  /* 43.5 m on 4.6 m of beam: a short blunt teardrop with a small low fin well
+     forward, one shaft, and the amagnetic steel hull that corroded. */
+  deu_e60_sub: {era:"e60", fac:"deu", designation:"Type 205 (U-1, S180)",
+    len:43.5, beam:4.6, hull:"teardrop", sail:"low", sailFrac:0.34, sailLen:6.2, sailH:3.4,
+    planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"plate", camo:"black"},
+  /* The 205 stretched five metres on the same beam - 48.6 m, still one shaft,
+     still a low fin, with the mine belts faired along the casing. */
+  deu_e80_sub: {era:"e80", fac:"deu", designation:"Type 206 (U-13, S192)",
+    len:48.6, beam:4.6, hull:"teardrop", sail:"low", sailFrac:0.34, sailLen:6.8, sailH:3.6,
+    planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"plate", camo:"black"},
+  /* The 206A refit is a sonar, a fire-control system and a torpedo: the same
+     48.6 m hull, and nothing about the work shows on the outside. */
+  deu_e90_sub: {era:"e90", fac:"deu", designation:"Type 206A (U-15, S194)",
+    len:48.6, beam:4.6, hull:"teardrop", sail:"low", sailFrac:0.34, sailLen:6.8, sailH:3.6,
+    planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"plate", camo:"black"},
+  /* 56 m and suddenly 7 m of beam, because nine fuel cells and a metal-hydride
+     store have to go somewhere - and an X-tail, with the forward planes on the
+     FIN rather than the hull, which is the 212A's most recognisable feature
+     after the stern. Amagnetic steel takes a smooth paint finish, not anechoic
+     tile: this boat buys its quiet from the machinery, not from rubber. */
+  deu_e00_sub: {era:"e00", fac:"deu", designation:"Type 212A (U-31, S181)",
+    len:56.0, beam:7.0, hull:"teardrop", sail:"low", sailFrac:0.30, sailLen:8.0, sailH:4.2,
+    planes:"sail", stern:"xtail", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"smooth", camo:"black"},
+  /* The e20 hull is the SAME boat as the e00 one - six 212As and no seventh
+     class, the 212CD being contracted and undelivered - so this row is
+     identical rather than invented forward. sub_g is not one of the ten boats
+     units3d_subs.js owns either, so without it the present-day German boat had
+     a hull in neither file. */
+  sub_g: {era:"e20", fac:"deu", designation:"Type 212A (U-31, S181)",
+    len:56.0, beam:7.0, hull:"teardrop", sail:"low", sailFrac:0.30, sailLen:8.0, sailH:4.2,
+    planes:"sail", stern:"xtail", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"smooth", camo:"black"},
+
+  /* ------------------------------------------------------------- KPA */
 
   /* ------------------------------------------------------------- KPA */
   /* Long parallel-sided cigar with a blunt rounded bow and a low stepped

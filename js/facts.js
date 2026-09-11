@@ -200,7 +200,7 @@ var FACTS = {
     note:"A pump-jet propulsor and considerable quieting effort make this the best-funded " +
          "part of the Russian fleet - it carries the sea leg of the deterrent.",
     confidence:"medium" },
-  ssbn_c: { name:"Type 094A Jin-class", origin:"China", service:"2007",
+  ssbn_c: { name:"Type 094 Jin-class (094A from 2018)", origin:"China", service:"2007",
     crew:"~120", weight_t:11000, speed_kmh:"~37 submerged", range_km:"unlimited",
     armament:"12 JL-2 / JL-3 ballistic missile tubes, torpedo tubes",
     note:"China's sea-based deterrent. US Navy assessments have repeatedly described it as " +
@@ -227,7 +227,7 @@ var FACTS = {
     armament:"SUT torpedoes, Harpoon",
     note:"Two boats, both from the 1980s, and no country has been willing to sell Taiwan " +
          "replacements - which is why it is now building its own.", confidence:"high" },
-  sub_k: { name:"Type 033 / Project 613 Romeo", origin:"Soviet Union, built in China and DPRK",
+  sub_k: { name:"Type 033 / Project 633 Romeo", origin:"Soviet Union, built in China and DPRK",
     service:"1957", crew:54, weight_t:1830, speed_kmh:"~24 submerged", range_km:"~26000 surfaced",
     armament:"533mm torpedoes, mines",
     note:"A 1950s design still in front-line North Korean service. Extremely loud by any " +

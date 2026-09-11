@@ -2947,11 +2947,14 @@ Object.assign(UNITS.sub_c, {
        "combining a diesel's quietness with something close to a nuclear boat's patience." });
 Object.assign(UNITS.sub_r, {
   name:"Hai Lung SSK", full:"Hai Lung-class (Zwaardvis)",
-  desc:"A Dutch design from the 1980s and one of only two operational combat submarines " +
-       "Taiwan possesses. Serviceable, thoroughly dated, and impossible to replace - no " +
-       "other country would sell." });
+  desc:"A Dutch design from the 1980s and the only two operational combat submarines " +
+       "Taiwan possesses. Serviceable, thoroughly dated, and impossible to buy a " +
+       "replacement for - no other country would sell - so Taiwan is building its own: " +
+       "Hai Kun (SS-711) launched 28 September 2023 and is still in sea trials, not yet " +
+       "delivered. She will carry Mk 48 and Harpoon and no land-attack weapon, because " +
+       "Taiwan has never had one under water and still does not." });
 Object.assign(UNITS.sub_k, {
-  name:"Romeo-class SSK", full:"Type 033 / Project 613 Romeo",
+  name:"Romeo-class SSK", full:"Type 033 / Project 633 Romeo",
   cost:900, hp:700,
   desc:"A 1950s Soviet design built under licence and still in front-line service. It is " +
        "enormously loud, slow, and can be tracked by any modern sonar long before its " +
@@ -2967,14 +2970,22 @@ Object.assign(UNITS, {
          "want to be seen - its entire purpose is to remain undetected while holding a " +
          "strategic weapon at readiness. Twenty-four launch tubes, and the quietest hull " +
          "the US ever built." },
-  ssbn_p: { from:"e60", fac:"pact", role:"ssbn", name:"Borei SSBN", full:"Project 955A Borei-A", cat:"naval",
+  /* from:"e00" and not "e60". K-535 Yuriy Dolgorukiy commissioned 10 January
+     2013; the 955A this row is named for is Knyaz Vladimir of 12 June 2020;
+     and the Bulava it fires was not accepted into service until 2018, after a
+     test record that lost roughly half of its first fourteen launches - the
+     9 December 2009 failure is the spiral that was photographed over northern
+     Norway. js/facts.js already records service 2013 for this id. The Soviet
+     boomers that hold e60, e80 and e90 are the Yankee, the Typhoon and the
+     Delta IV, added at the foot of eras.js. */
+  ssbn_p: { from:"e00", fac:"pact", role:"ssbn", name:"Borei SSBN", full:"Project 955A Borei-A", cat:"naval",
     cost:6000, oil:145, time:70, hp:2700, armor:"heavy", speed:2.0, turn:0.5, sight:5.5, r:26, mass:0,
     layer:"sub", weapons:["torp_ugst"], prereq:["navalyard","lab","radar"], tech:3,
     nuclear:true, quiet:0.30, sonar:8.0, radarQ:4, ssbn:true,
     desc:"The one part of the Russian fleet that is genuinely modern and genuinely well " +
          "funded, because it carries the deterrent. Quieter than anything else the yard " +
          "builds, though still not an Ohio." },
-  ssbn_c: { from:"e00", fac:"pla", role:"ssbn", name:"Type 094 Jin SSBN", full:"Type 094A Jin-class", cat:"naval",
+  ssbn_c: { from:"e00", fac:"pla", role:"ssbn", name:"Type 094 Jin SSBN", full:"Type 094 Jin-class (094A from 2018)", cat:"naval",
     cost:5900, oil:142, time:69, hp:2600, armor:"heavy", speed:1.95, turn:0.5, sight:5.5, r:26, mass:0,
     layer:"sub", weapons:["torp_yu6"], prereq:["navalyard","lab","radar"], tech:3,
     nuclear:true, quiet:0.62, sonar:7.0, radarQ:4, ssbn:true,
@@ -2988,7 +2999,14 @@ Object.assign(UNITS, {
     desc:"Four Ohio hulls had their ballistic tubes converted to carry 154 Tomahawks. " +
          "It is a submerged missile magazine that can empty a small war's worth of " +
          "cruise missiles into a coastline without ever surfacing." },
-  ssgn_p: { from:"e60", fac:"pact", role:"ssgn", name:"Oscar II SSGN", full:"Project 949A Antey", cat:"naval",
+  /* from:"e80", not "e60": Project 949 Granit (K-525 Arkhangelsk) commissioned
+     30 December 1980 and Project 949A Antey (K-148 Krasnodar) 30 September
+     1986, which js/facts.js already records. The Soviet cruise-missile boats
+     of the 1960s were the Juliett, the Echo II and the Charlie, and none of
+     them is in this game - so pact correctly has NO ssgn in e60, and that is
+     a result rather than a hole. The weapons array is set at the foot of this
+     file: twenty-four P-700 Granit, not a P-800 Oniks from twenty years later. */
+  ssgn_p: { from:"e80", fac:"pact", role:"ssgn", name:"Oscar II SSGN", full:"Project 949A Antey", cat:"naval",
     cost:4900, oil:130, time:60, hp:2900, armor:"heavy", speed:2.0, turn:0.45, sight:5.5, r:28, mass:0,
     layer:"sub", weapons:["torp_ugst","ssm_oniks"], prereq:["navalyard","lab"], tech:3,
     nuclear:true, quiet:0.55, sonar:6.6, radarQ:4,
@@ -3105,12 +3123,17 @@ Object.assign(UNITS, {
     layer:"sea", weapons:["navgun_76","sam_aster30","ssm_exocet"], prereq:["navalyard","radar"], tech:2,
     turret:true, tturn:1.4, ciws:0.56, sonar:6.8,
     desc:"The same PAAMS system as a Type 45, under a rotating EMPAR instead of SAMPSON, on a hull France and Italy designed together after Britain walked out of the three-nation Horizon programme in 1999. Two ships. Unlike the Type 45 it went to sea with an anti-ship missile from the first day, because it is French and Exocet is the point." },
-  sub_f: { from:"e20", fac:"fra", role:"sub", name:"Suffren SSN", full:"Suffren (Q284), Barracuda-class", cat:"naval",
+  sub_f: { from:"e20", fac:"fra", role:"sub", name:"Suffren SSN", full:"Suffren (S635), Barracuda-class", cat:"naval",
     cost:2460, oil:41, time:30, hp:1210, armor:"light", speed:2.35, turn:1.1, sight:8.4, r:17, mass:0,
     layer:"sub", weapons:["torp_f21"], prereq:["navalyard","radar"], tech:2, submerged:true,
     nuclear:true, quiet:0.26, sonar:10.6, radarQ:5, layNet:4,
     desc:"France's second generation of nuclear attack boat and a very large step from the Rubis it replaces: pump-jet propulsion, a diver lock-out, and from 2022 the MdCN cruise missile fired from the torpedo tubes, which makes France the second country in the world with a submarine land-attack missile of its own design. Six boats replacing six boats, built at Cherbourg with a French reactor and a French torpedo." },
-  ssbn_f: { from:"e90", fac:"fra", role:"ssbn", name:"Le Triomphant SSBN", full:"Le Triomphant (S616), Triomphant-class", cat:"naval",
+  /* from:"e00", not "e90". The hull commissioned 21 March 1997, but the M51
+     it carries here did not fly until 9 November 2006 and did not go on
+     patrol until Le Terrible in 2010; Le Triomphant was not converted until
+     her 2016-18 refit. eras.js fra_e90_ssbn holds the same boat with the M45
+     she actually sailed with, so the 1990s are not left empty. */
+  ssbn_f: { from:"e00", fac:"fra", role:"ssbn", name:"Le Triomphant SSBN", full:"Le Triomphant (S616), Triomphant-class", cat:"naval",
     cost:6050, oil:140, time:70, hp:2540, armor:"heavy", speed:1.95, turn:0.5, sight:6, r:26, mass:0,
     layer:"sub", weapons:["slbm_f"], prereq:["navalyard","lab","radar"], tech:3,
     nuclear:true, quiet:0.24, sonar:9.4, radarQ:5, ssbn:true,
@@ -3539,6 +3562,215 @@ var FIXED_MAGAZINE = {
   ssgn_p:        { ssm_oniks: 24 },
 };
 for (var _fm in FIXED_MAGAZINE) if (UNITS[_fm]) UNITS[_fm].magazine = FIXED_MAGAZINE[_fm];
+
+
+/* ==================================================================
+   SUBMARINE ORDNANCE FOR THE OTHER SEVEN NAVIES
+
+   WHY THIS BLOCK IS DOWN HERE AND NOT IN THE LAND-ATTACK BLOCK ABOVE.
+   The natural home for these rows is the "submarine-launched land attack"
+   Object.assign a few hundred lines up, next to slbm_n and tlam_n. They are
+   here instead because that block is being rewritten at the same time by the
+   work on the American boats, and a merge conflict in the middle of a weapon
+   table is expensive. Fold them back in once that has landed.
+
+   The cost of sitting here is that both post-processing loops have already
+   run: MISSILE_PROFILE and MISSILE_SPEED are applied above, and so are the
+   two catch-alls that give an unnamed guided round profile "cruise" and a
+   flat 130 px/s. Nothing below would be caught by either, which is exactly
+   the trap: an SLBM left to the catch-all comes out as a subsonic cruise
+   missile at intercept 1.0, and combat.js gates its whole ballistic path on
+   profile === "ballistic". So every row here carries profile, intercept and
+   speed INLINE. Do not delete them on the grounds that the tables handle it.
+   ================================================================== */
+Object.assign(WEAPONS, {
+
+  /* ---------------------------------------------------------- pact ----
+     The Oscar's real missile, and the reason it loses its coastline.
+     P-700 Granit (3M45, SS-N-19 Shipwreck, in service 1983) is seven tonnes
+     of missile built for one target - an American carrier group - fired
+     twenty-four at a time from tubes angled at 40 degrees between a Project
+     949A's two hulls, 550-625 km at Mach 1.6 under a 750 kg conventional
+     warhead, with a salvo that talked to itself. A secondary mode against a
+     fixed target ashore existed on paper; it was never used in that role and
+     it is not modelled here, so tgt.ground is 0. Russia's submarine
+     land-attack round is the Kalibr below, and it reaches an Oscar only
+     through the Project 949AM refit, which has not delivered a boat.
+
+     Note for whoever tidies the surface fleet: three OTHER weapons in this
+     game are already called P-700 Granit and none of them agrees with this
+     one - w_e90_pact_cruiser has tgt.ground 1, and the two carrier rows are
+     warhead "flak" and cannot engage a ship at all. Left alone deliberately;
+     they are surface ships and out of a submarine audit's scope. */
+  ssm_granit: { name:"P-700 Granit", dmg:380, warhead:"he", range:16.5, minRange:2.5,
+    reload:26.0, burst:1, acc:0.72, proj:"missile", speed:300, aoe:2.0,
+    profile:"loft", intercept:0.40, tgt:{ground:0,air:0,sea:1,sub:0}, sfx:"missile" },
+
+  /* 3M-14 Kalibr, and it is late. First combat use 7 October 2015, twenty-six
+     rounds from four Caspian Flotilla SURFACE ships. The first submarine shot
+     in anger was 8 December 2015: B-237 Rostov-na-Donu, a Project 636.3
+     Varshavyanka, four rounds from the eastern Mediterranean at Raqqa, with
+     Krasnodar, Kolpino and Velikiy Novgorod repeating it through 2017. That is
+     the whole of it, which is why this round appears on pact_e00_sub and sub_p
+     and on nothing earlier: the P-5 Shaddock of 1959 was nuclear-only with a
+     CEP in kilometres and the RK-55 Granat of 1987 went to the INF Treaty.
+     burst 1 and a long reload against the Tomahawk's paired shots, because a
+     Kilo fires Kalibr out of six torpedo tubes off an eighteen-weapon rack and
+     an Ohio SSGN fires it out of 154 dedicated canisters.
+
+     There is already a weapon in this game called Kalibr - the Buyan-M's
+     "8 x Kalibr or Oniks in VLS" era row, w_e00_pact_missileboat. That row is
+     a mixed VLS fit modelled as a supersonic anti-ship loft; this one is the
+     3M-14 land-attack round specifically, and it is subsonic. */
+  tlam_p: { name:"3M-14 Kalibr", dmg:315, warhead:"he", range:19.0, minRange:2.5,
+    reload:34, burst:1, acc:0.88, proj:"missile", speed:112, aoe:2.0,
+    profile:"cruise", intercept:1.50, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+
+  /* The Soviet deterrent before the Borei. ssbn_p is a Project 955A firing a
+     Bulava, so it moves to e00 where it belongs - but taking it out of e60,
+     e80 and e90 without putting the real boats in would leave the navy that
+     had more ballistic-missile submarines at sea than anyone holding nothing,
+     which is the larger error. These three are genuinely different weapons.
+
+     LAUNCH METHOD, because it is not uniform and the American cold-launch
+     sequence is being built right now. R-39 on the Typhoon is COLD launched:
+     a powder gas accumulator throws it clear, it coasts up unlit, and the
+     first stage lights after it breaches - the same sequence as Bulava,
+     Trident, M51 and JL-2. R-27 on the Yankee and the whole R-29 family on
+     the Deltas are NOT: the tube is flooded and the motor lights inside it, a
+     hot wet start, and the missile breaks the surface already burning.
+     Earlier still, R-11FM (1955) and R-13 (1961) on the Golf and Hotel were
+     fired from the SURFACE off an elevator inside the fin. Three methods in
+     one navy and only one of them is the American one.
+
+     R-27 (4K10, SS-N-6 Serb, 1968): 2,400 km against Polaris A3's 4,600, one
+     warhead, CEP near two kilometres. A Yankee had to come close inshore to
+     hold anything, which is why it was trailed out of the Barents as routine.
+     Shortest and least accurate of the three by design. */
+  slbm_r27: { name:"R-27 (conventional)", dmg:660, warhead:"he", range:14.5,
+    minRange:3.0, reload:200, burst:1, acc:0.42, proj:"missile", speed:700, aoe:4.6,
+    profile:"ballistic", intercept:0.26, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  /* R-39 (3M65, SS-N-20 Sturgeon, 1983): ninety tonnes, the heaviest SLBM any
+     navy has fielded, ten warheads, 8,300 km. The missile is the reason the
+     Typhoon is the size it is - the boat was built around it, not the reverse
+     - and the production line was at Yuzhmash in Ukraine, so the class died
+     with the Union that paid for it. */
+  slbm_r39: { name:"R-39 (conventional)", dmg:820, warhead:"he", range:19.0,
+    minRange:3.0, reload:185, burst:1, acc:0.62, proj:"missile", speed:730, aoe:4.2,
+    profile:"ballistic", intercept:0.18, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  /* R-29RM / R-29RMU2 Sineva (SS-N-23 Skiff, 1986 / 2007): liquid-fuelled,
+     which the West gave up on at sea, and the most ACCURATE missile the
+     Soviet Union ever put in a boat - astro-inertial with a satellite update
+     on the Sineva, CEP around 500 m, and a 2008 test that flew 11,547 km.
+     Accuracy close to a Trident, throw-weight and reach below it. */
+  slbm_sineva: { name:"R-29RM Sineva (conventional)", dmg:800, warhead:"he", range:19.5,
+    minRange:3.0, reload:178, burst:1, acc:0.72, proj:"missile", speed:740, aoe:4.0,
+    profile:"ballistic", intercept:0.17, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+
+  /* ----------------------------------------------------------- gbr ----
+     Britain buys the SAME missile off the same American line - 65 Block III
+     TLAM-C ordered November 1995, Block IV TLAM-E from 2008 - so damage,
+     range and accuracy are tlam_n's and this row exists to carry the one real
+     difference. Every British Tomahawk has been fired from a 21-inch TORPEDO
+     TUBE: no Royal Navy submarine has ever had a vertical launch system, and
+     those tubes are shared with the Spearfish, so what you load is what you
+     do not have room for. One round at a time and a long reload, against an
+     Ohio SSGN putting pairs out of dedicated cells. First firing HMS
+     Splendid, 9 November 1998 on the US east coast range; first shot in anger
+     from the same boat over Kosovo in March 1999, HMS Triumph over Libya in
+     2011. tgt.sea is 1 because every land-attack row in this file carries it;
+     it is this file's shorthand for "reaches a surface target", not a claim
+     that the Royal Navy has a submarine anti-ship missile. It does not. */
+  tlam_b: { name:"BGM-109 Tomahawk (tube-launched)", dmg:320, warhead:"he", range:19.0,
+    minRange:2.5, reload:32, burst:1, acc:0.90, proj:"missile", speed:112, aoe:2.0,
+    profile:"cruise", intercept:1.55, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+
+  /* ----------------------------------------------------------- fra ----
+     MdCN is the ONLY land-attack weapon a French submarine has ever carried
+     and it arrived very late. The naval cruise missile went to sea on a FREMM
+     around 2017 and was fired in anger at Syria on 14 April 2018, but the
+     submarine round - boosted clear of a 533 mm tube inside a capsule before
+     the turbojet lights - was not launched from a boat until Suffren fired
+     one at the Biscarrosse range on 20 October 2020, and Suffren was not
+     admitted to active service until 3 June 2022. Thirty-nine years after
+     Tomahawk went to sea on a Los Angeles, which is why no French hull before
+     sub_f carries it: the Narval, the Daphne, the Agosta and both marks of
+     Rubis genuinely could not touch a target ashore. About 1,000 km against a
+     Tomahawk's 1,600, carried in ones and twos among the torpedoes. Named
+     tlam_f to sit with tlam_n, tlam_b and tlam_p rather than inventing a
+     prefix that appears nowhere else in this table. */
+  tlam_f: { name:"MdCN naval cruise missile", dmg:300, warhead:"he", range:17.5,
+    minRange:2.5, reload:26, burst:1, acc:0.90, proj:"missile", speed:112, aoe:1.9,
+    profile:"cruise", intercept:1.55, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+  /* The missile the file was missing entirely. Le Triomphant commissioned on
+     21 March 1997 with sixteen M45 - the M4 airframe under the hardened TN 75
+     warhead, 6,000 km, six bodies - and M51 did not fly until 9 November 2006
+     or go on patrol until Le Terrible in 2010; Le Triomphant herself was not
+     converted until the 2016-18 refit. Without this row a 1990s French boomer
+     fires a missile ten years from its first test flight. Cold launched, like
+     every French SLBM from M1 to M51: gas generator, unlit coast, first stage
+     after it breaches. There is no French exception to record. */
+  slbm_m45: { name:"M45 (conventional)", dmg:780, warhead:"he", range:19.0,
+    minRange:3.0, reload:178, burst:1, acc:0.70, proj:"missile", speed:720, aoe:4.1,
+    profile:"ballistic", intercept:0.17, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+
+  /* ----------------------------------------------------------- kpa ----
+     North Korea's one demonstrated submarine-launched land-attack round, and
+     the reason kpa_e00_sub exists at all. The Pukguksong-1 (KN-11) was
+     ejected from the Sinpo-class Gorae and flew about 500 km on 24 August
+     2016, after a barge ejection campaign and a run of failures through 2015
+     and 2016. One hull, one tube, and never a deterrent patrol - so it is the
+     shortest-ranged missile in the SLBM family here and by a distance the
+     least accurate once the DPRK guidance multiplier in generations.js has
+     been applied to it. Cold launched: gas generator, unlit coast, first
+     stage above the surface, which is exactly what the released photographs
+     show and why the barge ejection programme came first.
+
+     NOT `manual`. Every other slbm_* row fires on acquisition, and a held
+     round on a submarine is unreachable in this build: the map-point gesture
+     in ui.js is gated on isIndirect(), which needs indirect:true, and the
+     AI's only bombard path iterates tel units. A manual SLBM on a boat would
+     be a missile nobody could ever fire. The single tube is modelled the
+     right way instead - see the magazine below, which holds ONE round and
+     needs a naval yard to put another in the tube. */
+  slbm_pk1: { name:"Pukguksong-1 (conventional)", dmg:520, warhead:"he", range:15.0,
+    minRange:3.0, reload:200, burst:1, acc:0.70, proj:"missile", speed:660, aoe:3.4,
+    profile:"ballistic", intercept:0.38, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+});
+
+/* Chevaline was a British penetration-aid front end fitted to Polaris A3 from
+   1982 and to nothing else on earth, and slbm_polaris is shared with
+   nato_e60_ssbn - an American Lafayette, which fired Polaris A3 and then
+   Poseidon C3. So the shared row carried a British-only designation onto a US
+   hull AND put a 1982 warhead on a 1967 boat. The plain name is correct for
+   both; gbr_e60_ssbn's own desc already tells the Chevaline story. */
+if (WEAPONS.slbm_polaris) WEAPONS.slbm_polaris.name = "Polaris A3";
+
+/* ---- present-day boats, by navy ----
+   Era hulls are refitted in eras.js, because they do not exist yet here. */
+
+/* pact: the Kilo gets the round B-237 Rostov-na-Donu really fired, appended
+   rather than prepended because the torpedo is correctly this boat's primary
+   weapon and generations.js rewrites weapons[0] when it clones. The Oscar
+   trades a P-800 Oniks it never carried for the P-700 Granit it was built
+   around - and with it loses the ability to engage anything ashore, which is
+   the accurate answer rather than a gap. */
+if (UNITS.sub_p)  UNITS.sub_p.weapons  = ["torp_ugst", "tlam_p"];
+if (UNITS.ssgn_p) { UNITS.ssgn_p.weapons = ["torp_ugst", "ssm_granit"];
+                    UNITS.ssgn_p.magazine = { ssm_granit: 24 }; }
+
+/* gbr: the Astute's own desc has always said "Spearfish, Tomahawk out of the
+   same tubes" and the weapon list had one torpedo. */
+if (UNITS.sub_b)  UNITS.sub_b.weapons  = ["torp_spearfish", "tlam_b"];
+
+/* fra: sub_f's desc has claimed MdCN since it was written - "which makes
+   France the second country in the world with a submarine land-attack missile
+   of its own design". The missile is real and this row supplies it. The
+   ordinal in that desc is not: the United States had Tomahawk at sea in 1983
+   and the Soviet Union the indigenous RK-55 Granat from 1984, so France is
+   third at best. Left as prose for the owner to cut rather than silently
+   rewritten here. */
+if (UNITS.sub_f)  UNITS.sub_f.weapons  = ["torp_f21", "tlam_f"];
 
 
 /* ==================================================================

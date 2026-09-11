@@ -10325,6 +10325,116 @@ Object.assign(UNITS, {
 
 });
 
+/* ==================================================================
+   SUBMARINES: ERA HULLS AND THE SOVIET AND FRENCH BOOMER CHAINS
+
+   Placed here, at the foot of the file and BEFORE reindexRoles() below, for
+   two reasons. The units have to exist before the roster is re-indexed or
+   they can never be built; and every row this block touches is a generated
+   one with a quoted key, so editing the loadouts through a table keeps the
+   whole change in one place and lets any single navy be dropped by deleting
+   its lines rather than by unpicking a 400-character literal.
+
+   Every weapon id referenced here is authored in rules.js, which has already
+   run. Nothing below invents an id.
+   ================================================================== */
+
+/* ---- era hulls that were carrying the wrong loadout ---- */
+(function () {
+  var REFIT = {
+    /* pact. Project 636.3 Varshavyanka, in service 2014, and the class that
+       fired the first Russian submarine Kalibr in anger on 8 December 2015.
+       js/facts.js says this hull carries "Kalibr cruise missiles on Project
+       636.3" and js/sub_specs.js says "Kalibr fires from the torpedo tubes";
+       the weapon list said one torpedo with tgt.ground 0. e00 is the first
+       era in which any submarine of this navy can strike a target ashore,
+       and that is the correct date - e50, e60, e80 and e90 stay empty. */
+    pact_e00_sub: { add: ["tlam_p"] },
+
+    /* gbr. HMS Astute commissioned 27 August 2010 with Tomahawk Block IV as a
+       primary weapon; her own desc says "Spearfish, Tomahawk, and the Sonar
+       2076 array". The e90 Trafalgar is deliberately NOT given one: Britain's
+       first Tomahawk was fired on 9 November 1998, fourteen months from the
+       end of a decade the row represents from 1990, and from a Swiftsure
+       rather than a Trafalgar. The desc says so. */
+    gbr_e00_sub: { add: ["tlam_b"] },
+
+    /* kpa. The unit is called an experimental ballistic missile submarine,
+       sub_specs.js gives it missileDeck:true with the note that "the single
+       SLBM tube rides in the sail itself", and its one weapon was NAMED
+       "1x vertical launch tube for Pukguksong-1 S" while being a torpedo that
+       could not reach land and COULD engage a submerged submarine, which a
+       vertical missile tube cannot. Appended rather than made primary: this
+       row also fills the KPA's only attack-submarine slot in e00 and still
+       has to behave like a submarine. One tube and no reload at sea, so the
+       magazine holds exactly one round - the boat shoots once and has to go
+       home to a naval yard for another. */
+    kpa_e00_sub: { add: ["slbm_pk1"], set: { magazine: { slbm_pk1: 1 } } },
+
+    /* pla. The desc opens "Air-independent propulsion using a Stirling
+       engine, which lets the boat stay submerged for weeks instead of days"
+       and the row had no aip flag, so game.js multiplied its signature by 2.2
+       whenever it had to snorkel and ui.js printed DIESEL-ELECTRIC on the
+       card. Its own e20 successor sub_c already carries the flag, and so does
+       deu_e00_sub, so there is nothing new here but the token. */
+    pla_e00_sub: { set: { aip: true } },
+  };
+  for (var rid in REFIT) {
+    var ru = UNITS[rid]; if (!ru) continue;
+    var spec = REFIT[rid];
+    if (spec.add) {
+      ru.weapons = (ru.weapons || []).slice();
+      for (var ra = 0; ra < spec.add.length; ra++)
+        if (ru.weapons.indexOf(spec.add[ra]) < 0 && WEAPONS[spec.add[ra]])
+          ru.weapons.push(spec.add[ra]);
+    }
+    if (spec.set) for (var rk in spec.set) ru[rk] = spec.set[rk];
+  }
+
+  /* Two weapon NAMES that were cut off mid-word at the generator's
+     forty-two-character ceiling, both on rows no other unit shares. The
+     Sinpo's said "1x vertical launch tube for Pukguksong-1 S" while being a
+     torpedo; it is a torpedo, so it now says so, and the missile above is the
+     launch tube. The GUPPY's ended on an unbalanced parenthesis. */
+  if (WEAPONS.w_e00_kpa_sub) WEAPONS.w_e00_kpa_sub.name = "533mm bow tubes, Romeo-derived hull";
+  if (WEAPONS.w_e60_roc_sub) WEAPONS.w_e60_roc_sub.name = "533mm tubes, training loadout only";
+})();
+
+/* ---- the boomer chains that were standing on one hull ---- */
+Object.assign(UNITS, {
+
+  /* ============ SOVIET STRATEGIC SUBMARINES, 1967 to 2013 ============
+     ssbn_p is a Project 955A Borei-A firing a Bulava, so rules.js moves it to
+     e00 where it belongs: K-535 Yuriy Dolgorukiy commissioned 10 January 2013,
+     the 955A the name claims is Knyaz Vladimir of 12 June 2020, and the Bulava
+     was not accepted into service until 2018 after losing roughly half of its
+     first fourteen test launches. js/facts.js already records service 2013 for
+     that id. Without these three rows that correction would leave the navy
+     with the largest ballistic-missile submarine force ever built holding
+     nothing at sea in e60, e80 and e90, which is the worse error.
+
+     Windows do not overlap: Yankee e60 only, Typhoon e80 only, Delta IV e90
+     only, ssbn_p from e00. unitFor() picks by highest from-index and would
+     otherwise make a to:"e00" on the Delta dead data nobody can build.
+
+     No torpedoes, matching nato_e60_ssbn, gbr_e60_ssbn and fra_e60_ssbn,
+     none of which carries one either. No 3D rows: modelKeyFor() borrows the
+     Ohio hull, which is what those three already do. */
+  pact_e60_ssbn: { fac:"pact", role:"ssbn", cat:"naval", layer:"sub", name:"Yankee I SSBN", full:"Project 667A Navaga (K-137)", cost:3400, oil:78, time:48, hp:1560, armor:"heavy", speed:1.95, turn:0.5, sight:5.0, r:26, mass:0, weapons:["slbm_r27"], prereq:["navalyard","lab","radar"], tech:3, from:"e60", to:"e60", service:"1967", confidence:"high", sonar:5.4, quiet:0.58, radarQ:3, nuclear:true, ssbn:true, desc:"K-137 commissioned 5 November 1967: the first Soviet boat laid out like a Polaris submarine, sixteen tubes in the hull abaft the fin instead of three standing inside it. Thirty-four built. The R-27 reaches 2,400 km against Polaris A3's 4,600, so a Yankee had to patrol close off the American coast to hold anything worth holding, and she was loud enough that the US Navy trailed her out of the Barents as routine. Both facts are the argument for the Delta that replaced her and for the Arctic bastion that followed: if the missile reaches far enough, the boat never has to leave water your own navy controls." },
+  pact_e80_ssbn: { fac:"pact", role:"ssbn", cat:"naval", layer:"sub", name:"Typhoon SSBN", full:"Project 941 Akula (TK-208)", cost:4400, oil:105, time:58, hp:2400, armor:"heavy", speed:1.85, turn:0.42, sight:5.2, r:28, mass:0, weapons:["slbm_r39"], prereq:["navalyard","lab","radar"], tech:3, from:"e80", to:"e80", service:"1981", confidence:"high", sonar:6.2, quiet:0.46, radarQ:3, nuclear:true, ssbn:true, desc:"Commissioned 12 December 1981 and still the largest submarine ever built: forty-eight thousand tonnes submerged, two pressure hulls side by side inside one outer casing with the twenty R-39 tubes between them forward of the fin. Built to sit under the Arctic ice where the Northern Fleet could defend her, break up through it and shoot, which is why the sail and casing are reinforced and no Western boomer's are. Six built. The R-39 line was at Yuzhmash in Ukraine, so when the Union ended the missile ended, and the class went with it." },
+  pact_e90_ssbn: { fac:"pact", role:"ssbn", cat:"naval", layer:"sub", name:"Delta IV SSBN", full:"Project 667BDRM Delfin (K-51)", cost:3900, oil:95, time:54, hp:1900, armor:"heavy", speed:1.9, turn:0.5, sight:5.1, r:26, mass:0, weapons:["slbm_sineva"], prereq:["navalyard","lab","radar"], tech:3, from:"e90", to:"e90", service:"1984", confidence:"high", sonar:6.6, quiet:0.40, radarQ:3, nuclear:true, ssbn:true, desc:"Seven boats commissioned 1984 to 1992, and the deterrent that actually went to sea through the 1990s while the Typhoons lay alongside for want of missiles and the Borei was still a drawing. The hump abaft the fin is the sixteen tubes. The R-29RM is liquid-fuelled, which the West gave up on at sea, and it is also the most accurate missile the Soviet Union ever put in a submarine - astro-inertial, CEP around 500 m; the Sineva reworking flew 11,547 km on test in 2008. Six are still on patrol." },
+
+  /* ============ THE FRENCH DETERRENT IN THE 1990s ============
+     ssbn_f carries the M51 and rules.js moves it to e00 for the same reason:
+     M51 first flew on 9 November 2006 and did not go on patrol until Le
+     Terrible in 2010, while Le Triomphant commissioned on 21 March 1997 with
+     sixteen M45. This row is the same boat one missile generation earlier,
+     which is what makes that correction a fix rather than an amputation. The
+     name is distinguished from ssbn_f's the way fra_e90_sub and fra_e00_sub
+     distinguish Rubis from Amethyste. */
+  fra_e90_ssbn: { fac:"fra", role:"ssbn", cat:"naval", layer:"sub", name:"Le Triomphant (M45)", full:"Le Triomphant (S616), Triomphant-class with M45", cost:5900, oil:136, time:68, hp:2480, armor:"heavy", speed:1.95, turn:0.5, sight:5.8, r:26, mass:0, weapons:["slbm_m45"], prereq:["navalyard","lab","radar"], tech:3, from:"e90", to:"e90", service:"1997", confidence:"high", sonar:9.0, quiet:0.26, radarQ:5, nuclear:true, ssbn:true, desc:"Commissioned 21 March 1997 and on patrol the same year with sixteen M45 - the M4 airframe under the hardened TN 75 warhead, six thousand kilometres, six bodies. M51 does not exist yet: it first flew in 2006, went on patrol aboard Le Terrible in 2010, and Le Triomphant herself was not converted until the 2016-18 refit, so a 1990s French boomer firing M51 was ten years ahead of the missile's first test. The Redoutable class did not all leave at once either - L'Inflexible stayed on patrol until 2008." },
+});
+
 /* The era rosters are merged after rules.js has already indexed the roster,
    so the index has to be rebuilt or none of these units can be found. Every
    era unit is also tagged so nothing here leaks into a present-day battle. */

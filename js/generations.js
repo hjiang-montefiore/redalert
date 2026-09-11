@@ -937,6 +937,105 @@
     }
   }
 
+  /* ---- a European submarine never fired an American torpedo ----
+     The era rows for four navies share ONE w_eNN_nato_sub weapon each, and
+     three of the five are United States hardware worn by British, French and
+     German hulls: "Mk 48 ADCAP" in e80 - a torpedo none of the three ever
+     bought - "Eight 660mm torpedo tubes" in e90, which is a Seawolf and a
+     calibre unique to that class, and "Four 533mm tubes" in e00, which is a
+     Virginia. A 450-tonne Type 206 firing a Mk 48, and a 500-tonne Type 206A
+     with Seawolf tubes, are the worst of it.
+
+     The Royal Navy carried the Mk 8** straight-runner into the 1980s - HMS
+     Conqueror sank the General Belgrano on 2 May 1982 with two hits from a
+     salvo of three, the homing Tigerfish having been judged unreliable - then
+     Tigerfish, then Spearfish from 1992. France ran the L5 and the wire-guided
+     F17 Mod 2 and now the F21 Artemis. Germany has never bought a submarine
+     torpedo from anybody: G7e, then the DM2 line, then the DM2A4 Seehecht
+     that rules.js already gives sub_g.
+
+     IDENTITY ONLY. Nothing here touches damage, range, accuracy or reload -
+     the shared era curve is left exactly where it was authored, and the
+     numbers are measured identical before and after. Runs at the tail so the
+     domain pass has already cloned; where it has, the clone is renamed in
+     place rather than cloned a second time, so no id gains a doubled suffix.
+     e50 is the exception that needs privateWeapon(): DOMAIN_BITE is 0.00 in
+     the 1950s, so w_e50_nato_sub is never cloned and all four navies are
+     still sharing one live object. */
+  var EURO_TORP = {
+    gbr_e50_sub: "Six bow and two stern 21in tubes, Mk 8**",
+    gbr_e60_sub: "Six bow 21in tubes, Mk 8** and Mk 23",
+    gbr_e80_sub: "Five 21in tubes, Mk 24 Tigerfish",
+    gbr_e90_sub: "Five 21in tubes, Tigerfish then Spearfish",
+    gbr_e00_sub: "Six 21in tubes, Spearfish Mod 1",
+    fra_e50_sub: "Six bow and two stern 550mm tubes",
+    fra_e60_sub: "Twelve 550mm tubes, no reloads",
+    fra_e80_sub: "Four 550mm bow tubes, L5 Mod 3",
+    fra_e90_sub: "Four 533mm tubes, F17 Mod 2",
+    fra_e00_sub: "Four 533mm tubes, F17 Mod 2",
+    deu_e50_sub: "Two 533mm bow tubes, G7e, no reload",
+    deu_e60_sub: "Eight 533mm bow tubes, no reloads",
+    deu_e80_sub: "Eight 533mm bow tubes, DM2 Seeaal",
+    deu_e90_sub: "Eight 533mm bow tubes, DM2A3",
+    deu_e00_sub: "Six 533mm tubes, DM2A4 Seehecht",
+  };
+  var nTorp = 0;
+  for (var uidT in EURO_TORP) {
+    var uT = UNITS[uidT];
+    if (!uT || !uT.weapons) continue;
+    for (var qT = 0; qT < uT.weapons.length; qT++) {
+      var widT = uT.weapons[qT];
+      if (widT.indexOf("_nato_sub") < 0) continue;
+      var pT = widT;
+      if (widT.indexOf("__" + uidT) !== widT.length - uidT.length - 2) {
+        pT = privateWeapon(uidT, widT);
+        if (!pT) continue;
+        uT.weapons = uT.weapons.slice();
+        uT.weapons[qT] = pT;
+      }
+      WEAPONS[pT].name = EURO_TORP[uidT];
+      nTorp++;
+    }
+  }
+
+  /* ---- fixed magazines have to survive the private-weapon rename ----
+     rules.js keys FIXED_MAGAZINE by the SHARED weapon id - ssm_oniks,
+     ssm_granit, ssm_kn01, ssm_hf3, ssm_yj18 - because at the moment it runs
+     that is the id in the unit's array. The domain pass above then hands
+     every naval hull its own clone, so a Slava's array reads
+     ssm_oniks__cruiser_p and an Oscar's ssm_granit__ssgn_p while the magazine
+     is still filed under the bare name. entities.js reads
+     this.def.magazine[this.def.weapons[wi]], gets undefined, and skips the
+     decrement entirely.
+
+     Measured before this loop existed: TEN of the eleven declared magazines
+     were dead. Only missileboat_n still ran dry, because its Harpoon happened
+     never to be cloned. The Oscar's twenty-four Granit, the Slava's sixteen
+     P-1000 and every Osa's four Styx were infinite, the MISSILE TUBES EMPTY
+     alert could not fire for any of them, and reloadAtYard() - the whole
+     "steam home and rearm alongside" loop - reads the same key and had never
+     run either. The comment in rules.js says a Slava's second salvo does not
+     exist. It did.
+
+     The "__" in the prefix test matters: it stops a short key matching a
+     longer unrelated one. */
+  var nMag = 0;
+  for (var _mu in UNITS) {
+    var _md = UNITS[_mu];
+    if (!_md || !_md.magazine || !_md.weapons) continue;
+    var _nm = {}, _mfix = false;
+    for (var _mk in _md.magazine) {
+      var _hit = _mk;
+      if (_md.weapons.indexOf(_mk) < 0) {
+        for (var _mw = 0; _mw < _md.weapons.length; _mw++) {
+          if (_md.weapons[_mw].indexOf(_mk + "__") === 0) { _hit = _md.weapons[_mw]; _mfix = true; break; }
+        }
+      }
+      _nm[_hit] = _md.magazine[_mk];
+    }
+    if (_mfix) { _md.magazine = _nm; nMag++; }
+  }
+
   var HELD_ROLES = { sead: 1, ewair: 1, tel: 1, telnuc: 1 };
   var nHeld = 0;
   for (var _hu in UNITS) {
