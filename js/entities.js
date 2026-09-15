@@ -716,11 +716,59 @@ class Unit {
   }
 
   /* ---- generic ground / naval brain ---- */
+  /* ---- a move order that is going nowhere ----
+     Generalised from the scouting fix, because the fault was never specific
+     to scouts: a unit whose route is blocked by traffic, or which oscillates
+     against a wall, or whose path was valid when it was issued and is not any
+     more, keeps grinding toward a goal it will not reach. stepAlong() only
+     reports failure when Path.find cannot produce a route AT ALL; a route
+     that exists and cannot be walked looks identical to one being walked.
+
+     So: measure the range to the aim point, look again ten seconds later, and
+     if it has not closed by a tenth of the leg, act. Closing re-arms the
+     window, so a long march is checked repeatedly rather than punished for
+     being long.
+
+     What "act" means differs by owner, and this is the part worth being
+     careful about. An AI unit drops the order - the commander re-tasks it on
+     its next sweep, which is what the scouting change already relies on. A
+     unit the PLAYER ordered does NOT get its order cancelled: being second-
+     guessed by the pathfinder is infuriating and the player may be holding a
+     unit against a wall deliberately. It gets its cached path thrown away and
+     one forced re-plan, which fixes the stale-route case without overriding
+     anybody. If it is still stuck after that it keeps trying, silently, as it
+     always did. */
+  stalledOnMove(px, py, dt) {
+    const g = this.game, now = g.time;
+    const d = U.dist(this.x, this.y, px, py);
+    if (this._mvCk === undefined || this._mvGx !== px || this._mvGy !== py) {
+      this._mvGx = px; this._mvGy = py; this._mvD0 = d; this._mvCk = now + 10;
+      return false;
+    }
+    if (now < this._mvCk) return false;
+    const gained = (this._mvD0 === undefined ? d : this._mvD0) - d;
+    if (gained > Math.max(CFG.TILE * 1.2, (this._mvD0 || d) * 0.1)) {
+      this._mvD0 = d; this._mvCk = now + 10;        // making way
+      return false;
+    }
+    this._mvD0 = d; this._mvCk = now + 10;
+    return true;
+  }
+
   updateGeneric(dt) {
     const o = this.order;
     this.moving = false;
 
     if (o.type === "move") {
+      if (this.stalledOnMove(o.x, o.y, dt)) {
+        if (this.owner && this.owner.isAI) {
+          /* the commander will give it something else to do */
+          this.path = null;
+          if (!this.nextOrder()) this.order = { type: "idle" };
+          return;
+        }
+        this.path = null; this.repathT = 0;           // one forced re-plan
+      }
       const arrived = this.stepAlong(o.x, o.y, dt);
       if (arrived) this.groupSpeed = 0;
       /* A loaded transport sent to a shore it cannot itself enter beaches as
@@ -1989,7 +2037,47 @@ class Unit {
       /* the hold is only released if the ramp goes out from under it - a deck
          that has sailed on, or a base destroyed while it was being serviced */
       if (o.down && dp > capture * 2) o.down = false;
-      if (!o.down && dp > capture) { this.flyTo(px, py, dt); return; }
+      if (!o.down && dp > capture) {
+        /* ---- THE CIRCUIT: an aeroplane cannot land from inside its own turn ----
+           flyTo turns at def.turn rad/s while flying at def.speed, so no
+           airframe can turn inside a circle of radius speed/turn. 205 of the
+           219 fixed-wing types in this game have a turn radius LARGER than
+           this 2.2-tile capture ring - an F-15E 3.5 tiles, a B-52H 8.6 - so an
+           aircraft that reaches bingo while it is already over its own field
+           spirals round the strip at its own turn radius and can never touch
+           it. Nothing had caught it because nothing used to come home from
+           close in: a straight-in recovery from twenty tiles flies THROUGH the
+           ring on the way past. Swept offline over every fixed-wing type in
+           the game at 1..16 tiles and twelve headings - 42,048 recoveries -
+           2,478 of them, 5.9%, never land at all. In a match that is not a
+           stall, it is a loss: the aircraft orbits its own runway until the
+           tanks are dry and then falls out of the sky. Measured, a Weasel that
+           hit bingo two tiles from the field orbited between 3.0 and 5.6 tiles
+           from t=81.6 to t=112 and was destroyed four tiles from the runway.
+           So fly the circuit an aeroplane actually flies: extend until there
+           is room to turn in, then come down the approach. The same 42,048
+           recoveries with this rule: 0 failures, worst case 23.4s for a B-52.
+           A band with hysteresis rather than a waypoint, because a waypoint
+           needs a capture test of its own and has exactly the same problem. */
+        if (!this.def.hover) {
+          const turnR = this.def.speed / Math.max(0.001, this.def.turn);  // tiles
+          const dpT = dp / CFG.TILE;
+          if (dpT < turnR * 1.05) o.extend = true;       // no room to turn in
+          else if (dpT > turnR * 2.2) o.extend = false;  // established: come home
+          if (o.extend) {
+            /* WINGS LEVEL, on the current heading - NOT a radial out from the
+               field. Steering away from the pad is still steering and it
+               spirals just as happily as steering toward it; written that way
+               first, it lost all eight airframes in the probe instead of four.
+               Flying straight is what breaks the circle, because the distance
+               then opens without a turn being needed at all. */
+            this.flyTo(this.x + Math.cos(this.ang) * CFG.TILE * 40,
+                       this.y + Math.sin(this.ang) * CFG.TILE * 40, dt);
+            return;
+          }
+        }
+        this.flyTo(px, py, dt); return;
+      }
       o.down = true;
       this.x = px; this.y = py;                  // on the ramp, not over it
       this.moving = false;                       // engines off, so no fuel burn
@@ -2128,6 +2216,45 @@ class Unit {
           this.order = { type: "attack", target: foe, auto: true };
         }
       }
+      /* ---- NOTHING SERVICEABLE STAYS ON THE APRON ----
+         (owner) "we need to make sure all the fix wing aircraft cannot hanger.
+         they must move or patrol."
+         The rtb branch above ends a turnaround with { type: "parked" } and a
+         note saying it shuts down rather than orbit and burn the fuel it just
+         took on. For a commander with a brain that was survivable, because
+         ai.js re-tasks anything parked on its next think; for the PLAYER it is
+         terminal, and it is why an air force bought with four thousand credits
+         an airframe reads as a bill. Measured on a seat with no AI - eight
+         fixed-wing aircraft, one airbase, no orders given, 300 s: 2,400 of
+         2,400 airframe-seconds on the apron and 0 tiles flown. Not most of it.
+         All of it.
+         A patrol is not a sortie, and the distinction is the whole reason this
+         is safe to do automatically. patrolStation() is computed from our OWN
+         buildings and knows nothing whatever about the enemy, so what launches
+         here is a barrier patrol over ground we already hold. The strip-alert
+         rule immediately above still governs shooting: a bomber does not go
+         hunting because nobody told it to, and "a sortie is the player's
+         decision" is untouched.
+         THE OFF SWITCH IS THE ONE THAT ALREADY EXISTS. F sets stance "hold",
+         which strip alert and engage() have always obeyed; a player who wants
+         an airframe on the ramp presses it. And a helicopter is excluded
+         outright - a pad is where a helicopter belongs, it burns no fuel
+         sitting there, and the owner said so.
+         Four things are asked before it goes: it is serviceable (full tanks,
+         full pylons, and enough of the airframe left to be worth risking),
+         it has a reason to be airborne at all (a weapon, a radar or a jammer -
+         a transport and a tanker wait to be given a task, which is what
+         ai.js's air loop has always said of them), and it is not held. */
+      if (this.parked && !this.def.hover && this.stance !== "hold" &&
+          !this.def.tanker && !this.def.cargo &&
+          (this.def.weapons.length || this.def.awacs || this.def.jam) &&
+          this.fuel >= this.fuelMax - 1 &&
+          (!this.ammoMax || this.ammo >= this.ammoMax - 0.05) &&
+          this.hp >= this.maxHp * 0.5) {
+        const st = this.patrolStation();
+        this.parked = false;
+        this.order = { type: "move", x: st.x, y: st.y };
+      }
     } else { /* hover/idle */
       this.parked = false;
       if (this.def.hover && this.stance !== "hold") {
@@ -2135,8 +2262,38 @@ class Unit {
         if (foe) { this.order = { type: "attack", target: foe, auto: true }; return; }
       }
       /* head home once there is only enough fuel left to get there and land */
-      if (this.fuel < Math.max(this.reserveFuel(), this.fuelMax * 0.40))
+      if (this.fuel < Math.max(this.reserveFuel(), this.fuelMax * 0.40)) {
         this.order = { type: "rtb" };
+      } else if (!this.def.hover) {
+        /* ---- A FIXED-WING AIRCRAFT CANNOT HOLD STATION ----
+           (owner) "all the fix wing aircraft cannot hanger. they must move or
+           patrol." This branch was where that was being broken, and it was
+           breaking it in the air rather than on the apron: "hover" and "idle"
+           called no flyTo at all, so an aeroplane given one simply STOPPED,
+           mid-air, at zero groundspeed, with this.moving left true at the top
+           of updateAir so the tanks drained anyway. Measured on an F-15E put
+           on {type:"hover"}: 0.0 tiles of path flown in 13 s and 20 of 100
+           fuel gone; at the 40% floor it turned for home, landed, parked, and
+           on a seat with no AI it was still sitting there 187 s later with
+           full tanks and full pylons. That is the loop the owner is reporting,
+           and it runs identically for the player's own aircraft and the
+           machine's.
+           A helicopter is the opposite case and is deliberately untouched: it
+           CAN hold station, airBurn() returns 0 for def.hover so it costs
+           nothing to do it, and the owner drew that distinction himself.
+           So the jet flies a racetrack about the point where the hold began
+           instead - the same CFG.CAP_RADIUS orbit the cap branch flies, and
+           measured against it: 1,493 tiles of path for 9.4 tiles of net
+           displacement over 180 s. The order type does NOT change, because
+           "hover" is the re-taskable state three other places depend on:
+           ai.js's sortie loop and driveWave() both test it, and afterAttack()
+           returns it on purpose so a Weasel with held rounds stays somewhere
+           the commander can find it. */
+        if (o.hx === undefined) { o.hx = this.x; o.hy = this.y; }
+        o.orbit = (o.orbit || 0) + dt * 0.9;
+        const R = CFG.CAP_RADIUS * CFG.TILE;
+        this.flyTo(o.hx + Math.cos(o.orbit) * R, o.hy + Math.sin(o.orbit) * R, dt);
+      }
     }
   }
 
@@ -2152,6 +2309,33 @@ class Unit {
     const heal = this.maxHp * 0.05 * dt;
     if (this.owner.cash > 1 && this.owner.spend(heal * 0.12))
       this.hp = Math.min(this.maxHp, this.hp + heal);
+  }
+
+  /* ---- where a fixed-wing aircraft holds when nobody has given it a job ----
+     Over our OWN ground, and chosen without one single fact about the enemy:
+     the friendly structure standing furthest from the ramp this aircraft flew
+     off, which is the forward edge of what we hold. A barrier patrol there
+     covers the approach to everything behind it and cannot be mistaken for a
+     strike, and because it reads no seenB, no seenU and no look grid it is
+     fog-honest by construction rather than by inspection - there is nothing in
+     it to be dishonest WITH. A commander whose only structure is the yard he
+     started in orbits his own field, which is what base defence means. */
+  patrolStation() {
+    const pad = this.game.findPad ? this.game.findPad(this) : null;
+    const hx = pad ? pad.x : this.owner.homeX, hy = pad ? pad.y : this.owner.homeY;
+    let fx = hx, fy = hy, fd = 0;
+    for (const b of this.owner.buildings) {
+      if (b.dead || b.buildProgress < 1) continue;
+      const d = U.dist2(b.x, b.y, hx, hy);
+      if (d > fd) { fd = d; fx = b.x; fy = b.y; }
+    }
+    /* Seven tenths of the way out, not over it. This one is a judgement and
+       not a measurement, and it is stated as such: the furthest structure a
+       commander owns is very often a derrick standing in no-man's land, and
+       an unordered patrol has no business orbiting the contested line. At 0.7
+       the racetrack - CFG.CAP_RADIUS is another 3.2 tiles of it - still covers
+       the approach to the forward edge while sitting in our own depth. */
+    return { x: hx + (fx - hx) * 0.7, y: hy + (fy - hy) * 0.7 };
   }
 
   /* Fuel burn tuned so the airframe runs dry at ~1.18x a round trip to its

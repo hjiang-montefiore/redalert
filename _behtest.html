@@ -431,12 +431,34 @@ try{
     for(var i=0;i<4000;i++){ Game.tick(CFG.DT); tt+=CFG.DT;
       if(jet.parked || jet.order.type==="parked"){ landed=true; break; } }
     chk("jet actually lands instead of orbiting", landed, "after "+tt.toFixed(1)+"s");
+    /* Held on the ramp for the service cycle. A serviceable fixed-wing aircraft
+       does not sit on its pad any more - the owner asked for precisely that,
+       "all the fix wing aircraft cannot hanger, they must move or patrol" - so
+       the airframe has to be HELD to be serviced and watched, and stance "hold"
+       (F in the interface) is the switch that does it. Without this line the
+       jet is airborne on a patrol long before the 1500s are up and the HP and
+       rearm cases below would be measuring an aeroplane that had left. */
+    jet.stance = "hold";
     tick(1500);
     chk("parked jet recovers HP", jet.hp>hp0+1,
         "hp "+Math.round(hp0)+" -> "+Math.round(jet.hp)+"/"+jet.maxHp);
     chk("parked jet rearms", jet.ammo>=jet.ammoMax-0.1, "ammo "+jet.ammo.toFixed(1)+"/"+jet.ammoMax);
-    chk("parked jet sits on its pad", U.dist(jet.x,jet.y,ab.x,ab.y)<32*2.5,
+    /* A SERVICEABLE jet does not sit on its pad any more. The owner asked for
+       precisely that - "all the fix wing aircraft cannot hanger, they must move
+       or patrol" - so the assertion that used to guard the old behaviour now
+       guards the SWITCH for it: stance "hold", which is F in the interface and
+       is the same control that holds a Weasel's rounds. Held, the airframe
+       stays on the ramp through a full service cycle; released, it goes. Both
+       halves are tested, because either one alone can silently rot. */
+    chk("a HELD jet sits on its pad", U.dist(jet.x,jet.y,ab.x,ab.y)<32*2.5,
         "d="+(U.dist(jet.x,jet.y,ab.x,ab.y)/32).toFixed(1)+"t");
+    jet.stance = "guard";
+    tick(60);
+    chk("a serviceable jet does NOT sit on its pad",
+        !jet.parked && jet.order.type!=="parked",
+        "order="+jet.order.type+" parked="+jet.parked);
+    /* put it back where the next case expects to find it */
+    jet.stance="hold"; jet.x=ab.x; jet.y=ab.y; jet.parked=true; jet.order={type:"parked"};
     window.__JET=jet;
   })();
 

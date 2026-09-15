@@ -823,6 +823,81 @@
     if (SHOT_COST[wname] !== undefined) WEAPONS[wz].ammo = SHOT_COST[wname];
   }
   /* magazines, in sorties-worth of shots */
+  /* ======================================================================
+     FAULT 14 - the strike fighter with nothing to strike with
+     ======================================================================
+     Resolved loadouts, not source lines: every F-35 row in the game carried
+     ONE air-to-air missile and no ground-capable mount at all.
+
+       cstealth_n  F-35C Lightning II   aam_lo                 g=0
+       cstealth_b  F-35B Lightning      aam_lo__cstealth_b     g=0
+       cstealth_c  J-35 (carrier)       aam_lo__cstealth_c     g=0
+       nato_e00_stealthfighter  F-35    w_e00_..._stealthfighter (AIM-120) g=0
+
+     The F-22 beside them already carries aam_lo + sdb, and the comment on sdb
+     says why: "giving it nothing at all against the ground made the most
+     expensive fighter in the game useless the moment the sky was clear." The
+     F-35 had the same hole and a worse case for it - Lockheed Martin and the
+     USAF F-35A fact sheet both describe a multirole STRIKE fighter, the type
+     that replaced the Harrier in the RAF and the USMC and is replacing the
+     F-16 and the A-10's share of the tasking. This is the third time the same
+     defect has been found here (the IFVs, then the American attack boats): the
+     description promised a capability the weapon list did not deliver.
+
+     What goes in the bay is published. The internal stations of the F-35A and
+     F-35C take two AIM-120 and two 2,000 lb GBU-31 JDAM; the B's bay is
+     shorter because the lift fan takes the volume, so it takes two 1,000 lb
+     GBU-32 instead. That is the whole clean-configuration load, and it maps
+     onto this engine exactly: a pool of 4, an AMRAAM costing 1 and a bomb pair
+     costing 2 as a burst of two, gives two missiles and one two-bomb pass.
+     jdam_hvy on the B-2 is already read this way - pool 8, cost 2, burst 2 =
+     the sixteen JDAM of two rotary launchers - so this follows the file.
+
+     J-35: China publishes no internal-bay weapons list, so the aircraft gets
+     the light glide bomb the roster already has rather than an invented store,
+     and its row already says out loud that its figures are estimates.
+
+     F-117: a separate and starker case. Its generated weapon is NAMED "Two
+     900 kg laser-guided bombs (GBU-10/GBU-" and masked tgt{ground:0,air:1} -
+     an air-to-air laser-guided bomb on an aeroplane the USAF fact sheet gives
+     no air-to-air weapon and no gun at all. The e90 row is worse: the same
+     airframe, renamed "AIM-260 (LO)". Both are re-masked to the ground and
+     sea they were built for; nothing else about them changes. */
+  WEAPONS.jdam_int = { name: "2x GBU-31 JDAM (internal bay)", dmg: 400, warhead: "he",
+    range: 3.0, reload: 2.4, burst: 2, burstDelay: 0.45, acc: 0.93, proj: "bomb",
+    speed: 0, aoe: 3.0, suppress: 95, ammo: 2, tgt: { ground: 1, air: 0, sea: 1, sub: 0 } };
+  WEAPONS.jdam_int_b = { name: "2x GBU-32 JDAM (short bay)", dmg: 300, warhead: "he",
+    range: 3.0, reload: 2.4, burst: 2, burstDelay: 0.45, acc: 0.93, proj: "bomb",
+    speed: 0, aoe: 2.4, suppress: 78, ammo: 2, tgt: { ground: 1, air: 0, sea: 1, sub: 0 } };
+
+  /* keyed by unit id, because the three variants do not carry the same bomb */
+  var BAY = { cstealth_n: "jdam_int", nato_e00_stealthfighter: "jdam_int",
+              cstealth_b: "jdam_int_b", cstealth_c: "sdb" };
+  var nBay = 0;
+  for (var bu in BAY) {
+    var bd = UNITS[bu];
+    if (!bd || !bd.weapons) continue;
+    var has = false;
+    for (var bq = 0; bq < bd.weapons.length; bq++) {
+      var bw = WEAPONS[bd.weapons[bq]];
+      if (bw && bw.tgt && bw.tgt.ground) { has = true; break; }
+    }
+    if (has) continue;                       // already armed for the ground
+    bd.weapons = bd.weapons.concat([BAY[bu]]);
+    nBay++;
+  }
+
+  /* the Nighthawk's bombs, re-masked onto the ground they were built for */
+  var F117 = ["w_e80_nato_stealthfighter", "w_e90_nato_stealthfighter"];
+  for (var fq = 0; fq < F117.length; fq++) {
+    var fw = WEAPONS[F117[fq]];
+    if (!fw) continue;
+    fw.name = "GBU-10/GBU-27 laser-guided bomb";
+    fw.warhead = "he"; fw.proj = "bomb"; fw.speed = 0; fw.range = 2.8;
+    fw.burst = 2; fw.burstDelay = 0.5; fw.aoe = 3.0; fw.suppress = 95;
+    fw.tgt = { ground: 1, air: 0, sea: 1, sub: 0 };
+  }
+
   var POOL = { cas: 8, gunship: 10, fighter: 5, sead: 4, cfighter: 5,
                stealthfighter: 4, heavybomber: 6, stealthbomber: 5 };
   for (var uz in UNITS) {

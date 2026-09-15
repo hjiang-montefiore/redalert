@@ -3989,7 +3989,16 @@ function makeCommander() {
         a.give({ type: "cap", x: ox, y: oy });
         continue;
       }
-      if (!(a.ammo > a.ammoMax * 0.6)) continue;
+      /* `a.ammoMax &&` is not decoration. Three aircraft in the game declare
+         weapons and no ammunition pool at all - nato_e00_gunshipair,
+         nato_e60_gunshipair and nato_e80_gunshipair, the AC-130 - and for
+         those ammoMax is 0, so this test asked 0 > 0, answered no, and
+         `continue`d. Every gunship this commander ever bought was refused a
+         sortie on the grounds that it was out of ammunition it does not carry.
+         Measured over a 900 s battle: 10.4% of one side's entire fixed-wing
+         airframe-second budget was an AC-130 sitting on the apron for that
+         reason, second only to the frozen-hover bug. */
+      if (a.ammoMax && !(a.ammo > a.ammoMax * 0.6)) continue;
       /* enough in the tanks to get there and get home, the same reserve the
          airframe applies to itself when it decides to scramble */
       if (a.fuel < a.reserveFuel()) continue;

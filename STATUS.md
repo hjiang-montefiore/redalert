@@ -34,10 +34,10 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 - [ ] (workflows stopped - designs salvaged, applying them by hand)
 
-- [~] Era chains - 40 roles where one machine stands in for every decade
+- [~] Era chains - designs and reviews salvaged, assembling by hand
 - [x] The scout that parks in your construction yard
 - [x] The navy is too weak - a prereq deadlock, not the dice roll I blamed
-- [~] Fixed-wing aircraft must not hangar; F-35, B-52 and AC-130 ordnance
+- [x] Fixed-wing aircraft must not hangar; F-35, B-52 and AC-130 ordnance
 - [~] Aircraft flee a detected SAM; EW aircraft engage radars automatically
 
 ## Queued
