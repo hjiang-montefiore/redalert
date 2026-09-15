@@ -38,7 +38,8 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 - [x] The scout that parks in your construction yard
 - [x] The navy is too weak - a prereq deadlock, not the dice roll I blamed
 - [x] Fixed-wing aircraft must not hangar; F-35, B-52 and AC-130 ordnance
-- [~] Aircraft flee a detected SAM; EW aircraft engage radars automatically (agent designing)
+- [!] Aircraft flee a detected SAM; EW aircraft engage radars automatically
+      (design written and REVERTED - it did not work when measured; see below)
 
 ## Queued
 
@@ -49,6 +50,13 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 - [ ] British, French and German 3D models - they borrow American hulls
 
 ## Known and not yet addressed
+
+- [!] SEAD design reverted: the strike aircraft still flew to 1.1 tiles of a
+      known SAM and died, and the SEAD aircraft fired 0 rounds. The one part
+      that DID work is worth re-doing on its own - every sead/ewair hull spawns
+      on stance "hold" because generations.js sets noAuto on those roles, which
+      also bars them from strip alert and patrol launch, so they sit on the ramp
+      until hand-ordered.
 
 - [!] The AA Battery scores zero on both intercept layers
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`
