@@ -15,6 +15,34 @@
 
    C-130 HERCULES. The airlifter. It does not fight; it delivers.
 
+   XIAN H-6. The same story as the Buff, told by the other side, and the
+   reason it belongs in this file rather than in eras.js with the rest of the
+   Chinese roster: one airframe, a Tu-16 first flown in China on 27 September
+   1959, still the PLAAF's strategic aircraft sixty-five years later, and what
+   changed across those decades is not how hard it hits but from how far away.
+   1969 is free-fall bombs over the target; 1986 is two enormous liquid-fuelled
+   anti-ship missiles launched from outside a task group's guns; 2009 is a
+   cruise-missile rail that never approaches anything. Before this the game had
+   exactly one H-6, the H-6N of 2019, and the whole sixty-year arc was invisible.
+   e50 is EMPTY on purpose: two Soviet Tu-16s arrived in 1958 and the first
+   Chinese-assembled aircraft flew in 1959, but the type did not enter PLAAF
+   service until 1969 and there was no bomber force before that.
+
+
+   XIAN H-6. The same story as the Buff, told by the other side, and the
+   reason it belongs in this file rather than in eras.js with the rest of the
+   Chinese roster: one airframe, a Tu-16 first flown in China on 27 September
+   1959, still the PLAAF's strategic aircraft sixty-five years later, and what
+   changed across those decades is not how hard it hits but from how far away.
+   1969 is free-fall bombs over the target; 1986 is two enormous liquid-fuelled
+   anti-ship missiles launched from outside a task group's guns; 2009 is a
+   cruise-missile rail that never approaches anything. Before this the game had
+   exactly one H-6, the H-6N of 2019, and the whole sixty-year arc was invisible.
+   e50 is EMPTY on purpose: two Soviet Tu-16s arrived in 1958 and the first
+   Chinese-assembled aircraft flew in 1959, but the type did not enter PLAAF
+   service until 1969 and there was no bomber force before that.
+
+
    Loaded after eras.js so it can add to the roster and reindex.            */
 
 (function () {
@@ -106,6 +134,26 @@
                   reload: 3.0, burst: 1, acc: 0.95, proj: "missile", speed: 300,
                   aoe: 1.2, suppress: 40, ammo: 1,
                   tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+
+    /* ---- what the H-6 carried, decade by decade ----
+       The first two are the same weapon class as the B-52's first two and are
+       deliberately given the same short reach: to use either, the aeroplane
+       has to be over or nearly over the thing it is attacking. */
+    h6_bombs:   { name: "Free-fall bomb load", dmg: 130, warhead: "he", range: 2.2,
+                  reload: 1.1, burst: 5, burstDelay: 0.24, acc: 0.58, proj: "bomb",
+                  speed: 0, aoe: 3.2, suppress: 140, ammo: 5,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+    /* YJ-6 / C-601: a Silkworm scaled up and hung under a wing. Two rounds,
+       each with a half-tonne warhead, launched from about 100 km - which in
+       1986 was genuinely outside a task group's reach. It is also liquid
+       fuelled, subsonic and flies high before it dives, so a ship that sees
+       it coming has a real chance: the low intercept figure is the weapon's
+       own weakness, not a balance adjustment. */
+    yj6_c601:   { name: "YJ-6 (C-601) anti-ship missile", dmg: 340, warhead: "he",
+                  range: 8.6, minRange: 2.0, reload: 9.0, burst: 1, acc: 0.70,
+                  proj: "missile", speed: 280, aoe: 2.2, suppress: 60, ammo: 1,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+                  sfx: "missile", profile: "loft", intercept: 0.40 },
   };
   for (var wk in W) if (!WEAPONS[wk]) WEAPONS[wk] = W[wk];
 
@@ -123,6 +171,30 @@
       fac: "nato", role: "gunshipair", cat: "aircraft", armor: "air", layer: "air",
       mass: 0, jet: false, turn: 1.5, sight: 10, r: 20,
       prereq: ["airbase", "radar"], tech: 2, rcs: 3.4, radarQ: 2, gen: 3,
+    }, o);
+  }
+  /* The H-6 shares the B-52's shape of problem and none of its size: half the
+     span, two engines buried in the wing roots, and a glazed navigator's nose
+     until the H-6K replaced it with a radome. Higher radar cross-section than
+     a Buff relative to its size and a far worse self-defence fit, so it lives
+     or dies on the reach of what it carries. */
+  function badger(o) {
+    return Object.assign({
+      fac: "pla", role: "heavybomber", cat: "aircraft", armor: "air", layer: "air",
+      mass: 0, jet: true, turn: 0.9, sight: 9, r: 24,
+      prereq: ["airbase", "lab"], tech: 3, rcs: 5.2, radarQ: 2, gen: 2.5,
+    }, o);
+  }
+  /* The H-6 shares the B-52's shape of problem and none of its size: half the
+     span, two engines buried in the wing roots, and a glazed navigator's nose
+     until the H-6K replaced it with a radome. Higher radar cross-section than
+     a Buff relative to its size and a far worse self-defence fit, so it lives
+     or dies on the reach of what it carries. */
+  function badger(o) {
+    return Object.assign({
+      fac: "pla", role: "heavybomber", cat: "aircraft", armor: "air", layer: "air",
+      mass: 0, jet: true, turn: 0.9, sight: 9, r: 24,
+      prereq: ["airbase", "lab"], tech: 3, rcs: 5.2, radarQ: 2, gen: 2.5,
     }, o);
   }
   function herc(o) {
@@ -224,6 +296,80 @@
       desc: "The gunship with a missile rail. Precision munitions off the wing and " +
             "a howitzer out of the side door — but it still has to loiter in the " +
             "open to use either." }),
+
+    /* ---- H-6: sixty-five years of the same aeroplane ----
+       e50 is empty. The H-6 did not enter PLAAF service until 1969, and the
+       KD-20 of the last two rows is the SAME missile on both, because it is:
+       what the H-6N adds over the H-6K is a refuelling probe and a recess for
+       an air-launched ballistic missile, not a better cruise missile. */
+    pla_e60_heavybomber: badger({
+      name: "H-6A", full: "Xian H-6A, free-fall nuclear bomber",
+      cost: 2900, oil: 78, time: 40, hp: 760, speed: 4.3, ammo: 5, radius: 62,
+      weapons: ["h6_bombs"], from: "e60", to: "e60",
+      service: "1969", confidence: "high",
+      desc: "China's strategic bomber force in one aircraft type. Nine tonnes of " +
+            "bombs in the bay and no way to deliver any of it without flying over " +
+            "the target, which against the air defences of its own decade is a " +
+            "one-way proposition. Its whole claim is that it carried the country's " +
+            "first air-dropped nuclear weapon." }),
+    pla_e80_heavybomber: badger({
+      name: "H-6D", full: "Xian H-6D with two YJ-6 (C-601)",
+      cost: 3200, oil: 82, time: 43, hp: 800, speed: 4.3, ammo: 2, radius: 66,
+      weapons: ["yj6_c601"], from: "e80", to: "e90",
+      service: "1986", confidence: "high",
+      desc: "The moment the aeroplane stopped having to overfly anything. A " +
+            "sea-search radar under the nose and one enormous anti-ship missile " +
+            "under each wing: first flight 29 August 1981, live firing at the end " +
+            "of 1983, in PLA Naval Air Force service from 1986. It is the whole of " +
+            "Chinese maritime strike for the next fifteen years, which is why the " +
+            "row runs to e90 - nothing replaced it until the cruise-missile fits." }),
+    pla_e00_heavybomber: badger({
+      name: "H-6K", full: "Xian H-6K with KD-20 cruise missiles",
+      cost: 3400, oil: 78, time: 45, hp: 850, speed: 4.4, ammo: 4, radius: 78,
+      weapons: ["alcm"], from: "e00", to: "e00",
+      service: "2009", confidence: "high", rcs: 3.4, radarQ: 4, gen: 3.5,
+      desc: "The rebuild that bought the airframe another forty years: the glazed " +
+            "nose replaced by a radome, Russian D-30 turbofans for range, a glass " +
+            "cockpit, and six pylons for cruise missiles. First flight 5 January " +
+            "2007, in service October 2009. It launches from outside every " +
+            "surface-to-air system on the map and turns for home." }),
+
+    /* ---- H-6: sixty-five years of the same aeroplane ----
+       e50 is empty. The H-6 did not enter PLAAF service until 1969, and the
+       KD-20 of the last two rows is the SAME missile on both, because it is:
+       what the H-6N adds over the H-6K is a refuelling probe and a recess for
+       an air-launched ballistic missile, not a better cruise missile. */
+    pla_e60_heavybomber: badger({
+      name: "H-6A", full: "Xian H-6A, free-fall nuclear bomber",
+      cost: 2900, oil: 78, time: 40, hp: 760, speed: 4.3, ammo: 5, radius: 62,
+      weapons: ["h6_bombs"], from: "e60", to: "e60",
+      service: "1969", confidence: "high",
+      desc: "China's strategic bomber force in one aircraft type. Nine tonnes of " +
+            "bombs in the bay and no way to deliver any of it without flying over " +
+            "the target, which against the air defences of its own decade is a " +
+            "one-way proposition. Its whole claim is that it carried the country's " +
+            "first air-dropped nuclear weapon." }),
+    pla_e80_heavybomber: badger({
+      name: "H-6D", full: "Xian H-6D with two YJ-6 (C-601)",
+      cost: 3200, oil: 82, time: 43, hp: 800, speed: 4.3, ammo: 2, radius: 66,
+      weapons: ["yj6_c601"], from: "e80", to: "e90",
+      service: "1986", confidence: "high",
+      desc: "The moment the aeroplane stopped having to overfly anything. A " +
+            "sea-search radar under the nose and one enormous anti-ship missile " +
+            "under each wing: first flight 29 August 1981, live firing at the end " +
+            "of 1983, in PLA Naval Air Force service from 1986. It is the whole of " +
+            "Chinese maritime strike for the next fifteen years, which is why the " +
+            "row runs to e90 - nothing replaced it until the cruise-missile fits." }),
+    pla_e00_heavybomber: badger({
+      name: "H-6K", full: "Xian H-6K with KD-20 cruise missiles",
+      cost: 3400, oil: 78, time: 45, hp: 850, speed: 4.4, ammo: 4, radius: 78,
+      weapons: ["alcm"], from: "e00", to: "e00",
+      service: "2009", confidence: "high", rcs: 3.4, radarQ: 4, gen: 3.5,
+      desc: "The rebuild that bought the airframe another forty years: the glazed " +
+            "nose replaced by a radome, Russian D-30 turbofans for range, a glass " +
+            "cockpit, and six pylons for cruise missiles. First flight 5 January " +
+            "2007, in service October 2009. It launches from outside every " +
+            "surface-to-air system on the map and turns for home." }),
 
     /* ---- C-130: the airlifter ---- */
     nato_e50_airlift: herc({

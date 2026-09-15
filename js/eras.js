@@ -9065,7 +9065,7 @@ Object.assign(UNITS, {
   pla_e50_rifle: {"fac":"pla","role":"rifle","cat":"infantry","layer":"ground","name":"Type 56 Squad","full":"Rifle Squad, Type 56 assault rifle","cost":65,"oil":0,"time":4,"hp":60,"armor":"infantry","speed":0.92,"turn":7,"sight":3.5,"r":6,"mass":0.1,"weapons":["w_e50_pla_rifle"],"prereq":["barracks"],"tech":1,"from":"e50","to":"e50","service":"1956","confidence":"high","desc":"A straight AK-47 copy produced at Factory 626 from 1956. Before it the squad carried the Type 53 carbine (Mosin M44 copy) and a magpie's nest of captured Japanese, US lend-lease and Nationalist weapons - Korean-War PLA squads had no common cartridge, which is a real and crippling logistics fact worth reflecting in a 19"},
   pla_e50_at: {"fac":"pla","role":"at","cat":"infantry","layer":"ground","name":"Type 56 RPG Team","full":"AT Team, Type 56 40mm rocket launcher (RPG-2)","cost":175,"oil":0,"time":7,"hp":55,"armor":"infantry","speed":0.76,"turn":6,"sight":4.3,"r":6,"mass":0.1,"weapons":["w_e50_pla_at"],"prereq":["barracks"],"tech":1,"from":"e50","to":"e50","service":"1956","confidence":"high","desc":"Licence RPG-2. Effective range against a moving tank is barely 100-150m and the warhead struggles past 180mm of steel. This is an ambush weapon for close country only. The earlier Type 51 90mm launcher (a copy of the US M20 super bazooka, 1951) served alongside it."},
   pla_e50_mbt: {"fac":"pla","role":"mbt","cat":"vehicle","layer":"ground","name":"T-34-85","full":"T-34-85 medium tank (Soviet-supplied)","cost":665,"oil":10,"time":16,"hp":935,"armor":"heavy","speed":1.38,"turn":1.55,"sight":4.7,"r":16,"mass":58,"weapons":["w_e50_pla_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e50","to":"e50","service":"1950","confidence":"high","desc":"The actual backbone of the PLA armoured force for most of the decade - roughly 1,800 delivered from 1950. Wartime-generation armour with no night sights and no stabiliser. If you are modelling 1950-1958 China, this is the tank, not the Type 59.","turret":true,"tturn":1.4,"crush":true},
-  pla_e50_heavy: {"fac":"pla","role":"heavy","cat":"vehicle","layer":"ground","name":"IS-2","full":"IS-2 heavy tank (Soviet-supplied)","cost":1080,"oil":17,"time":24,"hp":1300,"armor":"heavy","speed":1.25,"turn":1.4,"sight":4.9,"r":18,"mass":60,"weapons":["w_e50_pla_heavy"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1950","confidence":"medium","desc":"A small number - on the order of 60 - were transferred with the Korean War aid packages, along with ISU-122/ISU-152 assault guns. Slow-firing with separate-loading ammunition, roughly three rounds a minute. Used as a breakthrough gun, never in quantity.","turret":true,"tturn":1.45,"crush":true,"aps":0.42},
+  pla_e50_heavy: {"fac":"pla","role":"heavy","cat":"vehicle","layer":"ground","name":"IS-2","full":"IS-2 heavy tank (Soviet-supplied)","cost":1080,"oil":17,"time":24,"hp":1300,"armor":"heavy","speed":1.25,"turn":1.4,"sight":4.9,"r":18,"mass":60,"weapons":["w_e50_pla_heavy"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1950","confidence":"medium","desc":"A small number - on the order of 60 - were transferred with the Korean War aid packages, along with ISU-122/ISU-152 assault guns. Slow-firing with separate-loading ammunition, roughly three rounds a minute. Used as a breakthrough gun, never in quantity.","turret":true,"tturn":1.45,"crush":true},
   pla_e50_ifv: {"fac":"pla","role":"ifv","cat":"vehicle","layer":"ground","name":"Type 56 APC","full":"Type 56 armoured personnel carrier (BTR-152)","cost":400,"oil":5,"time":11,"hp":440,"armor":"light","speed":1.53,"turn":2,"sight":4.3,"r":14,"mass":24,"weapons":["w_e50_pla_ifv"],"prereq":["factory"],"tech":1,"from":"e50","to":"e50","service":"1958","confidence":"medium","desc":"A copy of the Soviet BTR-152: an open-topped armoured truck on a ZIS-151 chassis, not an IFV in any sense. It carries infantry to the edge of the battle and offers splinter protection and nothing else. Exact Chinese production start dates are thinly sourced.","turret":true,"tturn":1.8,"cargo":6},
   pla_e50_spg: {"fac":"pla","role":"spg","cat":"vehicle","layer":"ground","name":"SU-76M","full":"SU-76M self-propelled gun (Soviet-supplied)","cost":675,"oil":9,"time":17,"hp":415,"armor":"light","speed":1.16,"turn":1.5,"sight":3.3,"r":15,"mass":35,"weapons":["w_e50_pla_spg"],"prereq":["factory","radar"],"tech":2,"from":"e50","to":"e50","service":"1950","confidence":"high","desc":"Open-topped, thinly armoured, hated by its crews wherever it served. Used heavily in Korea as direct-fire infantry support. Chinese self-propelled artillery does not appear as an indigenous product until 1970.","turret":true,"tturn":0.9},
   pla_e50_mlrs: {"fac":"pla","role":"mlrs","cat":"vehicle","layer":"ground","name":"BM-13 Katyusha","full":"BM-13-16 132mm multiple rocket launcher","cost":990,"oil":15,"time":23,"hp":370,"armor":"light","speed":1.12,"turn":1.3,"sight":3.3,"r":15,"mass":43,"weapons":["w_e50_pla_mlrs"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1951","confidence":"high","desc":"Soviet-supplied and used by dedicated PLA rocket artillery divisions in Korea from 1951. Wildly inaccurate individually, devastating by the battalion. Chinese-built tube rocket artillery arrives with the Type 63 in 1963.","turret":true,"tturn":0.8},
@@ -9087,14 +9087,14 @@ Object.assign(UNITS, {
   pla_e60_mlrs: {"fac":"pla","role":"mlrs","cat":"vehicle","layer":"ground","name":"Type 63 107mm","full":"Type 63 107mm 12-tube multiple rocket launcher","cost":1225,"oil":19,"time":24,"hp":455,"armor":"light","speed":1.17,"turn":1.3,"sight":3.9,"r":15,"mass":43,"weapons":["w_e60_pla_mlrs"],"prereq":["factory","lab"],"tech":3,"from":"e60","to":"e60","service":"1963","confidence":"high","desc":"One of the most widely proliferated weapons ever built. Light enough to be broken down and carried by men or mules, which is precisely why it spread to every insurgency on earth. Short-ranged at about 8km but genuinely useful, and still fired in wars today.","turret":true,"tturn":0.8},
   pla_e60_spaag: {"fac":"pla","role":"spaag","cat":"vehicle","layer":"ground","name":"Type 63 37mm SPAAG","full":"Type 63 twin 37mm self-propelled AA gun","cost":580,"oil":8,"time":12,"hp":525,"armor":"light","speed":1.46,"turn":1.9,"sight":6.7,"r":14,"mass":35,"weapons":["w_e60_pla_spaag"],"prereq":["factory","radar"],"tech":2,"from":"e60","to":"e60","service":"1965","confidence":"medium","desc":"Twin 37mm on a T-34 chassis with optical sights only - no radar, no director. Against a fast jet it is a hope rather than a system. Built in modest numbers. Radar-directed Chinese SPAAG does not arrive until the late 1980s.","turret":true,"tturn":2.6,"radar":5.6},
   pla_e60_aa: {"fac":"pla","role":"aa","cat":"infantry","layer":"ground","name":"HQ-2","full":"HQ-2 (Hongqi-2) surface-to-air missile","cost":190,"oil":0,"time":6,"hp":65,"armor":"infantry","speed":0.81,"turn":6,"sight":5.5,"r":6,"mass":0.1,"weapons":["w_e60_pla_aa"],"prereq":["barracks"],"tech":1,"from":"e60","to":"e60","service":"1967","confidence":"high","desc":"The Chinese-developed S-75 derivative, and the PLA's principal air defence missile for the next thirty years. Its combat record is real: HQ-2 and its HQ-1 predecessor downed several US and Taiwanese reconnaissance drones and five ROCAF U-2s over the mainland during the 1960s. Fixed sites, long emplacement times, and co"},
-  pla_e60_recon: {"fac":"pla","role":"recon","cat":"vehicle","layer":"ground","name":"BJ212 / Type 62","full":"Beijing BJ212 command car; Type 62 in the armoured recce role","cost":220,"oil":3,"time":5,"hp":230,"armor":"light","speed":2.52,"turn":3.1,"sight":6.4,"r":11,"mass":6,"weapons":["w_e60_pla_recon"],"prereq":["factory"],"tech":1,"from":"e60","to":"e60","service":"1965","confidence":"medium","desc":"There was no dedicated PLA reconnaissance vehicle in this era. Divisional reconnaissance rode in unarmoured jeeps or used Type 62 light tanks. Reconnaissance doctrine was dismounted and slow.","turret":true,"tturn":2.3},
+  pla_e60_recon: {"fac":"pla","role":"recon","cat":"vehicle","layer":"ground","name":"BJ212 / Type 62","full":"Beijing BJ212 command car; Type 62 in the armoured recce role","cost":220,"oil":3,"time":5,"hp":230,"armor":"light","speed":2.52,"turn":3.1,"sight":6.4,"r":11,"mass":6,"weapons":["w_e60_pla_recon"],"prereq":["factory"],"tech":1,"from":"e60","to":"e80","service":"1965","confidence":"medium","desc":"There was no dedicated PLA reconnaissance vehicle in this era. Divisional reconnaissance rode in unarmoured jeeps or used Type 62 light tanks. Reconnaissance doctrine was dismounted and slow.","turret":true,"tturn":2.3},
   pla_e60_fighter: {"fac":"pla","role":"fighter","cat":"aircraft","layer":"air","name":"J-6","full":"Shenyang J-6 (licence MiG-19S)","cost":785,"oil":17,"time":16,"hp":275,"armor":"air","speed":7.83,"turn":1.95,"sight":7.6,"r":15,"mass":0,"weapons":["w_e60_pla_fighter"],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"1964","confidence":"high","desc":"The PLAAF's numerical mainstay for over twenty years and built in roughly 4,500 examples - more than the Soviets built MiG-19s. First Chinese flight was 1958 but the early aircraft were unairworthy; reliable production only from 1963. Short-legged, no useful radar in most variants, and by the 1970s hopelessly outclasse","jet":true,"ammo":2,"radar":4.9,"radius":38,"rcs":0.6},
   pla_e60_cas: {"fac":"pla","role":"cas","cat":"aircraft","layer":"air","name":"Q-5","full":"Nanchang Q-5 Fantan","cost":1110,"oil":22,"time":23,"hp":500,"armor":"air","speed":5.13,"turn":1.5,"sight":6.2,"r":17,"mass":0,"weapons":["w_e60_pla_cas"],"prereq":["airbase","lab"],"tech":3,"from":"e60","to":"e60","service":"1970","confidence":"high","desc":"A MiG-19 airframe rebuilt with a solid nose and an internal bomb bay - China's first indigenous attack aircraft. No radar, no guided weapons, visual bombing only. It fought in the 1979 Vietnam border war and stayed in service until around 2017, which is a very long life for an aircraft this limited.","jet":true,"ammo":3,"radius":38,"rcs":1.2},
   pla_e60_gunship: {"fac":"pla","role":"gunship","cat":"aircraft","layer":"air","name":"NONE","full":"no attack helicopter in PLA service","cost":895,"oil":14,"time":18,"hp":410,"armor":"air","speed":3.2,"turn":2.2,"sight":6.4,"r":16,"mass":0,"weapons":["w_e60_pla_gunship"],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"n/a","confidence":"high","desc":"China had no armed helicopter capability in this era and would not have a real one for another forty years. Armed Z-5s were improvised and negligible. This is one of the largest single capability gaps in the whole PLA history - the US fielded the AH-1 Cobra in 1967.","ammo":5,"hover":true,"radius":22,"rcs":0.8},
   pla_e60_transport: {"fac":"pla","role":"transport","cat":"aircraft","layer":"air","name":"Z-5","full":"Harbin Z-5 (licence Mi-4)","cost":500,"oil":8,"time":11,"hp":350,"armor":"air","speed":3.69,"turn":2.4,"sight":5.6,"r":15,"mass":0,"weapons":[],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"1963","confidence":"high","desc":"Licence Mi-4, series production from 1963, around 550 built. Piston-engined, underpowered at altitude, which mattered greatly on the Tibetan plateau and the Indian border. PLA helicopter lift in this era was tiny by any Western standard.","ammo":0,"hover":true,"cargo":9,"radius":31,"rcs":0.95},
   pla_e60_corvette: {"fac":"pla","role":"corvette","cat":"naval","layer":"sea","name":"Jiangnan class","full":"Type 065 Jiangnan-class frigate","cost":670,"oil":9,"time":13,"hp":760,"armor":"light","speed":2.57,"turn":1.7,"sight":6.4,"r":17,"mass":0,"weapons":["w_e60_pla_corvette"],"prereq":["navalyard"],"tech":1,"from":"e60","to":"e60","service":"1966","confidence":"medium","desc":"Five ships, the first frigates designed in China rather than assembled from Soviet kits. Gun-armed only, no SAM, no missile. Designed for coastal escort against a Nationalist navy, not for anything further out.","turret":true,"tturn":2,"sonar":4.3,"ciws":0.35,"rcs":0.6},
   pla_e60_destroyer: {"fac":"pla","role":"destroyer","cat":"naval","layer":"sea","name":"Type 051 Luda","full":"Type 051 Luda-class destroyer","cost":1245,"oil":19,"time":23,"hp":1395,"armor":"heavy","speed":2.12,"turn":1.2,"sight":7.6,"r":20,"mass":0,"weapons":["w_e60_pla_destroyer"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e60","service":"1971","confidence":"high","desc":"Lead ship Jinan commissioned 1971. China's first indigenous destroyer and a substantial step - but its air defence was 37mm and 57mm guns for its entire early life, which made it essentially defenceless against aircraft. Seventeen were built over twenty years and they served into the 2010s.","turret":true,"tturn":1.4,"sonar":6.2,"radar":13.3,"ciws":0.53,"rcs":0.6},
-  pla_e60_missileboat: {"fac":"pla","role":"missileboat","cat":"naval","layer":"sea","name":"Type 021 Huangfeng","full":"Type 021 missile boat (Osa-I derivative)","cost":840,"oil":12,"time":15,"hp":590,"armor":"light","speed":2.88,"turn":1.85,"sight":6.2,"r":16,"mass":0,"weapons":["w_e60_pla_missileboat"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e60","service":"1965","confidence":"medium","desc":"With the smaller Type 024 Houku (Komar copy, 1966), these gave the PLAN its first anti-ship missile capability. Doctrine was swarm attack from island cover in the littoral - a lot of small cheap hulls each carrying a heavy punch. That doctrine survives directly into the Type 022 of the 2000s.","sonar":0,"rcs":0.6},
+  pla_e60_missileboat: {"fac":"pla","role":"missileboat","cat":"naval","layer":"sea","name":"Type 021 Huangfeng","full":"Type 021 missile boat (Osa-I derivative)","cost":840,"oil":12,"time":15,"hp":590,"armor":"light","speed":2.88,"turn":1.85,"sight":6.2,"r":16,"mass":0,"weapons":["w_e60_pla_missileboat"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e80","service":"1965","confidence":"medium","desc":"With the smaller Type 024 Houku (Komar copy, 1966), these gave the PLAN its first anti-ship missile capability. Doctrine was swarm attack from island cover in the littoral - a lot of small cheap hulls each carrying a heavy punch. That doctrine survives directly into the Type 022 of the 2000s.","sonar":0,"rcs":0.6},
   pla_e60_sub: {"fac":"pla","role":"sub","cat":"naval","layer":"sub","name":"Type 033 Romeo","full":"Type 033 submarine (Project 633 Romeo-class)","cost":1310,"oil":22,"time":24,"hp":775,"armor":"light","speed":1.71,"turn":1.1,"sight":5.7,"r":17,"mass":0,"weapons":["w_e60_pla_sub"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e60","service":"1962","confidence":"high","desc":"Built in China from 1962 in very large numbers - on the order of 84 hulls, more than the Soviets built. Loud, short-endurance and by the 1970s already easy prey for Western ASW, but they gave the PLAN a submarine force in being. Some remained in service into the 2000s.","sonar":5.6,"quiet":0.41},
   pla_e60_awacs: {"fac":"pla","role":"awacs","cat":"aircraft","layer":"air","name":"NONE","full":"KJ-1 testbed only, never operational","cost":1880,"oil":39,"time":27,"hp":385,"armor":"air","speed":3.6,"turn":0.9,"sight":10.5,"r":25,"mass":0,"weapons":[],"prereq":["airbase","radar","lab"],"tech":3,"from":"e60","to":"e60","service":"n/a","confidence":"high","desc":"The KJ-1 programme fitted a rotodome to a Tu-4 in 1971. It flew, it did not work well over land clutter, and it was cancelled in 1979. No operational Chinese AEW aircraft exists until 2007. Worth including precisely because the failure is the historical fact.","jet":true,"ammo":0,"radar":22.4,"radius":61,"rcs":3.4},
   pla_e80_rifle: {"fac":"pla","role":"rifle","cat":"infantry","layer":"ground","name":"Type 81 Squad","full":"Rifle Squad, Type 81 assault rifle","cost":100,"oil":0,"time":4,"hp":95,"armor":"infantry","speed":1.02,"turn":7,"sight":4.9,"r":6,"mass":0.1,"weapons":["w_e80_pla_rifle"],"prereq":["barracks"],"tech":1,"from":"e80","to":"e80","service":"1983","confidence":"high","desc":"A genuine Chinese design rather than a copy, though clearly AK-derived, and the first PLA rifle that soldiers actually liked. Short-recoil-corrected and accurate. It was the standard rifle through the 1980s and 1990s and is still carried by reserve and militia units."},
@@ -9503,7 +9503,7 @@ Object.assign(UNITS, {
   pact_e80_aswhelo: {"fac":"pact","role":"aswhelo","cat":"aircraft","layer":"air","name":"Ka-27PL Helix","full":"Kamov Ka-27PL","cost":875,"oil":19,"time":13,"hp":285,"armor":"air","speed":2.95,"turn":2.2,"sight":5.7,"r":12,"mass":0,"weapons":["w_e80_pact_aswhelo"],"prereq":["airbase"],"tech":2,"from":"e80","to":"e80","service":"1982","confidence":"medium","desc":"The game's `asw_helo_p`. Coaxial rotors, no tail rotor, and a compact enough footprint to fit small Soviet flight decks. Still the only Russian shipborne ASW helicopter in the 2020s because no replacement was ever funded.","ammo":2,"sonar":5.2,"radius":19,"rcs":0.85},
   pact_e80_awacs: {"fac":"pact","role":"awacs","cat":"aircraft","layer":"air","name":"A-50 Mainstay","full":"Beriev A-50 Mainstay","cost":2335,"oil":53,"time":30,"hp":475,"armor":"air","speed":3.7,"turn":0.8,"sight":10.9,"r":26,"mass":0,"weapons":[],"prereq":["airbase","radar","lab"],"tech":3,"from":"e80","to":"e80","service":"1985","confidence":"medium","desc":"Ancestor of the game's `awacs_p`. Il-76 airframe with a real look-down capability, unlike the Tu-126. Still weak against ground clutter and, critically, the datalink to fighters was limited enough that in practice controllers passed vectors by voice radio.","jet":true,"ammo":0,"radar":20.2,"radius":58,"rcs":3.6},
   pact_e80_sead: {"fac":"pact","role":"sead","cat":"aircraft","layer":"air","name":"MiG-25BM","full":"MiG-25BM Foxbat-F","cost":1350,"oil":26,"time":22,"hp":395,"armor":"air","speed":7.03,"turn":1.6,"sight":8.4,"r":16,"mass":0,"weapons":["w_e80_pact_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e80","to":"e80","service":"1988","confidence":"medium","desc":"Dedicated defence-suppression Foxbat using speed and altitude to launch from outside the SAM envelope. Around forty built. The Su-24M with Kh-58 covers the same mission in larger numbers.","jet":true,"ammo":2,"radius":31,"rcs":1.1},
-  pact_e80_stealthbomber: {"fac":"pact","role":"heavybomber","cat":"aircraft","layer":"air","name":"Tu-160 Blackjack","full":"Tupolev Tu-160","cost":2775,"oil":69,"time":45,"hp":910,"armor":"air","speed":9.31,"turn":0.85,"sight":8.8,"r":24,"mass":0,"weapons":["w_e80_pact_stealthbomber"],"prereq":["airbase","lab"],"tech":3,"from":"e80","to":"e80","service":"1987","confidence":"high","desc":"Ancestor of the game's `sbomber_p`. The heaviest and fastest combat aircraft ever built — 275 tonnes, Mach 2, variable geometry. Not stealthy in any respect; its survivability argument is speed and standoff cruise missiles. The game's description of exactly this tradeoff is historically correct.","jet":true,"ammo":4,"radius":88,"rcs":2.5},
+  pact_e80_stealthbomber: {"fac":"pact","role":"heavybomber","cat":"aircraft","layer":"air","name":"Tu-160 Blackjack","full":"Tupolev Tu-160","cost":2775,"oil":69,"time":45,"hp":910,"armor":"air","speed":9.31,"turn":0.85,"sight":8.8,"r":24,"mass":0,"weapons":["w_e80_pact_stealthbomber"],"prereq":["airbase","lab"],"tech":3,"from":"e80","to":"e00","service":"1987","confidence":"high","desc":"Ancestor of the game's `sbomber_p`. The heaviest and fastest combat aircraft ever built — 275 tonnes, Mach 2, variable geometry. Not stealthy in any respect; its survivability argument is speed and standoff cruise missiles. The game's description of exactly this tradeoff is historically correct.","jet":true,"ammo":4,"radius":88,"rcs":2.5},
   pact_e80_stealthfighter: {"fac":"pact","role":"stealthfighter","cat":"aircraft","layer":"air","name":"none","full":"No Soviet low-observable aircraft existed","cost":1790,"oil":34,"time":29,"hp":475,"armor":"air","speed":8.93,"turn":2.7,"sight":9.7,"r":16,"mass":0,"weapons":["w_e80_pact_stealthfighter"],"prereq":["airbase","lab"],"tech":3,"from":"e80","to":"e80","service":"—","confidence":"high","desc":"State this plainly: the USSR never fielded a stealth aircraft. Soviet institutes produced the diffraction theory (Ufimtsev) that Lockheed used for Have Blue, but no Soviet stealth programme reached service in this era or the next two.","jet":true,"ammo":4,"radar":6.7,"radius":45,"rcs":0.6},
   pact_e90_rifle: {"fac":"pact","role":"rifle","cat":"infantry","layer":"ground","name":"Motor Rifle Squad","full":"Motor Rifle Squad, AK-74M","cost":115,"oil":0,"time":4,"hp":110,"armor":"infantry","speed":1.03,"turn":7,"sight":5.2,"r":6,"mass":0.1,"weapons":["w_e90_pact_rifle"],"prereq":["barracks"],"tech":1,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"The game's `rifle_p` exactly. Polymer furniture, side rail for optics, one rifle for all roles replacing the earlier variant spread. Adopted the year the USSR ended and still the standard rifle thirty years later."},
   pact_e90_at: {"fac":"pact","role":"at","cat":"infantry","layer":"ground","name":"Kornet Team","full":"AT Team, 9M133 Kornet","cost":320,"oil":0,"time":8,"hp":100,"armor":"infantry","speed":0.86,"turn":6,"sight":6.4,"r":6,"mass":0.1,"weapons":["w_e90_pact_at"],"prereq":["barracks"],"tech":1,"from":"e90","to":"e90","service":"1998","confidence":"high","desc":"The game's `at_p`. Beam-riding rather than wire-guided, so no wire to break and better jam resistance — but the gunner must hold the beam on target for the whole flight. No fire-and-forget, unlike Javelin. 9K115-2 Metis-M (1992) is the lighter companion."},
@@ -9763,7 +9763,7 @@ Object.assign(WEAPONS, {
  "w_e00_gbr_cas": {"name":"Brimstone and Paveway IV","dmg":296,"warhead":"he","range":2.8,"reload":1.05,"burst":2,"burstDelay":0.30,"acc":0.93,"proj":"bomb","speed":0,"aoe":1.8,"suppress":70,"ammo":2,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
  "w_e00_gbr_sead": {"name":"ALARM, withdrawn 2013 with no successor","dmg":190,"warhead":"he","range":14.0,"minRange":1.4,"reload":7.00,"burst":1,"acc":0.86,"proj":"missile","speed":480,"aoe":1.4,"ammo":1,"antiRadiation":true,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"loft","intercept":0.70},
  "w_e00_gbr_gunship": {"name":"Hellfire II and 30mm M230","dmg":138,"warhead":"heat","range":6.5,"reload":2.45,"burst":1,"acc":0.88,"proj":"missile","speed":400,"aoe":1.0,"ammo":1,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
- "w_e00_gbr_stealthfighter": {"name":"AMRAAM and ASRAAM in the bays","dmg":214,"warhead":"flak","range":10.7,"reload":2.90,"burst":1,"acc":0.89,"proj":"missile","speed":760,"aoe":0.8,"ammo":1,"tgt":{"ground":0,"air":1,"sea":0,"sub":0},"profile":"pop","intercept":0.45},
+ "w_e00_gbr_cfighter": {"name":"AIM-9L Sidewinder, cued by eye alone","dmg":152,"warhead":"flak","range":7.8,"reload":3.20,"burst":1,"acc":0.78,"proj":"missile","speed":700,"aoe":0.8,"ammo":1,"tgt":{"ground":0,"air":1,"sea":0,"sub":0},"profile":"pop","intercept":0.55}, "w_e00_gbr_stealthfighter": {"name":"AMRAAM and ASRAAM in the bays","dmg":214,"warhead":"flak","range":10.7,"reload":2.90,"burst":1,"acc":0.89,"proj":"missile","speed":760,"aoe":0.8,"ammo":1,"tgt":{"ground":0,"air":1,"sea":0,"sub":0},"profile":"pop","intercept":0.45},
 });
 
 /* ===================== BRITISH ARMED FORCES — era units, e50 to e00 =====================
@@ -9800,7 +9800,7 @@ Object.assign(UNITS, {
   gbr_e50_rifle: {"fac":"gbr","role":"rifle","cat":"infantry","layer":"ground","name":"Rifle Section","full":"British Rifle Section, L1A1 SLR","cost":70,"oil":0,"time":4,"hp":62,"armor":"infantry","speed":0.9,"turn":7,"sight":3.6,"r":6,"mass":0.1,"weapons":["w_e50_gbr_rifle"],"prereq":["barracks"],"tech":1,"from":"e50","to":"e50","service":"1957","confidence":"high","desc":"The inch-pattern FN FAL, built at Enfield and deliberately restricted to semi-automatic because the Army did not trust automatic fire from a full-power cartridge. Section automatic weapon is the Bren, rebarrelled to 7.62mm as the L4. Korea was fought with the bolt-action No.4 Lee-Enfield.","turret":false},
   gbr_e50_at: {"fac":"gbr","role":"at","cat":"infantry","layer":"ground","name":"BAT 120mm","full":"L1 BAT 120mm Battalion Anti-Tank recoilless rifle","cost":195,"oil":0,"time":7,"hp":55,"armor":"infantry","speed":0.74,"turn":6,"sight":4.3,"r":6,"mass":0.1,"weapons":["w_e50_gbr_at"],"prereq":["barracks"],"tech":1,"from":"e50","to":"e50","service":"1954","confidence":"medium","desc":"A 1,000kg wheeled recoilless gun firing HESH - a British speciality that cracks armour by shock rather than penetration. It is a battalion weapon, not a section one: at platoon level Britain still had the ENERGA rifle grenade and the last of the PIATs. MOBAT lightened it in 1962."},
   gbr_e50_mbt: {"fac":"gbr","role":"mbt","cat":"vehicle","layer":"ground","name":"Centurion Mk 3","full":"FV4007 Centurion Mk 3","cost":720,"oil":11,"time":18,"hp":980,"armor":"heavy","speed":1.2,"turn":1.4,"sight":5,"r":16,"mass":51,"weapons":["w_e50_gbr_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e50","to":"e50","service":"1948","confidence":"high","desc":"The best tank of the decade in any army. The 20-pounder is fully stabilised, which means it can shoot accurately on the move when the M48 cannot. Thirsty and short-legged - about 100km on internal fuel - which is why it always tows a monowheel fuel trailer. Rearmed with the 105mm L7 from 1959.","turret":true,"tturn":1.6,"crush":true},
-  gbr_e50_heavy: {"fac":"gbr","role":"heavy","cat":"vehicle","layer":"ground","name":"Conqueror","full":"FV214 Conqueror Heavy Gun Tank","cost":1120,"oil":19,"time":25,"hp":1420,"armor":"heavy","speed":1,"turn":1.2,"sight":5.2,"r":18,"mass":66,"weapons":["w_e50_gbr_heavy"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1955","confidence":"high","desc":"Built for one job: to out-range the IS-3 at 1,800m while the Centurions closed. 185 built, issued nine per regiment in Germany, gone by 1966. Two-piece ammunition and a hydraulic loading system that broke often. Its ranging gear and optics were excellent; everything mechanical about it was not.","turret":true,"tturn":1.2,"crush":true},
+  gbr_e50_heavy: {"fac":"gbr","role":"heavy","cat":"vehicle","layer":"ground","name":"Conqueror","full":"FV214 Conqueror Heavy Gun Tank","cost":1120,"oil":19,"time":25,"hp":1420,"armor":"heavy","speed":1,"turn":1.2,"sight":5.2,"r":18,"mass":66,"weapons":["w_e50_gbr_heavy"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e60","service":"1955","confidence":"high","desc":"Built for one job: to out-range the IS-3 at 1,800m while the Centurions closed. 185 built, issued nine per regiment in Germany, gone by 1966. Two-piece ammunition and a hydraulic loading system that broke often. Its ranging gear and optics were excellent; everything mechanical about it was not.","turret":true,"tturn":1.2,"crush":true},
   gbr_e50_lighttank: {"fac":"gbr","role":"lighttank","cat":"vehicle","layer":"ground","name":"Saladin","full":"FV601 Alvis Saladin armoured car","cost":340,"oil":4,"time":9,"hp":300,"armor":"light","speed":2.2,"turn":2.6,"sight":4.8,"r":13,"mass":11,"weapons":["w_e50_gbr_lighttank"],"prereq":["factory"],"tech":1,"from":"e50","to":"e50","service":"1958","confidence":"high","desc":"Britain answered the light tank question with a six-wheeled armoured car carrying a 76mm gun, because wheels suited colonial policing and long road moves. It has no tracks and no pretence of holding ground - it is a gun that arrives quickly. Served with a dozen armies into the 1990s.","turret":true,"tturn":1.8},
   gbr_e50_ifv: {"fac":"gbr","role":"ifv","cat":"vehicle","layer":"ground","name":"Saracen","full":"FV603 Alvis Saracen APC","cost":400,"oil":5,"time":10,"hp":380,"armor":"light","speed":1.7,"turn":2.2,"sight":4.5,"r":14,"mass":11,"weapons":["w_e50_gbr_ifv"],"prereq":["factory"],"tech":1,"from":"e50","to":"e50","service":"1953","confidence":"high","desc":"Rushed into production ahead of the Saladin it shares a chassis with, because Malaya needed a protected troop carrier immediately. Ten men, wheeled, no firing ports, no autocannon - a battlefield taxi. Still in Ulster streets thirty years later.","turret":true,"tturn":2,"cargo":6},
   gbr_e50_spg: {"fac":"gbr","role":"spg","cat":"vehicle","layer":"ground","name":"Sexton","full":"Sexton 25-pdr Self-Propelled, Ram chassis","cost":610,"oil":8,"time":15,"hp":360,"armor":"light","speed":1.2,"turn":1.5,"sight":3.3,"r":15,"mass":26,"weapons":["w_e50_gbr_spg"],"prereq":["factory","radar"],"tech":2,"from":"e50","to":"e50","service":"1943","confidence":"high","desc":"A wartime holdover kept in service to 1956 because nothing replaced it: the FV3805 self-propelled 5.5in was cancelled and Britain fielded no new SP gun until the Abbot in 1965. Open-topped, 25-pounder, fast to lay by hand. Divisional artillery in this decade is mostly towed.","turret":false},
@@ -9826,14 +9826,18 @@ Object.assign(UNITS, {
   gbr_e60_tankdestroyer: {"fac":"gbr","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"FV438 Swingfire","full":"FV438 Swingfire, twin launcher on FV432","cost":1020,"oil":12,"time":15,"hp":560,"armor":"light","speed":1.5,"turn":2,"sight":8.2,"r":13,"mass":16,"weapons":["w_e60_gbr_tankdestroyer"],"prereq":["factory","radar"],"tech":2,"from":"e60","to":"e60","service":"1969","confidence":"high","desc":"Swingfire's trick is a separated sight: the missile can be launched from behind cover and gathered onto the line of sight afterwards, and the controller can sit up to 100m away from the vehicle on a cable. Four kilometres of range, and the vehicle need never show itself.","turret":false},
   gbr_e60_sam: {"fac":"gbr","role":"sam","cat":"vehicle","layer":"ground","name":"Rapier","full":"Rapier FSA towed launcher","cost":1450,"oil":18,"time":20,"hp":420,"armor":"light","speed":0.9,"turn":1.2,"sight":8.4,"r":15,"mass":1.2,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1971","confidence":"high","desc":"'Hittile' - no proximity fuze, it is meant to strike the aircraft. Optically tracked by default with Blindfire radar added from 1979. Short-ranged point defence, not area cover; the long-range layer stays Bloodhound Mk 2 at fixed sites. The Army's Thunderbird went in 1977 with no successor.","turret":true,"tturn":1.4,"deploy":true,"deploySec":8,"radar":6,"radarQ":8,"rounds":4},
   gbr_e60_tel: {"fac":"gbr","role":"tel","cat":"vehicle","layer":"ground","name":"Lance","full":"MGM-52 Lance, 50 Missile Regiment RA","cost":2700,"oil":46,"time":35,"hp":470,"armor":"light","speed":1.5,"turn":1.1,"sight":22,"r":17,"mass":16,"weapons":["srbm_early"],"prereq":["factory","lab"],"tech":3,"from":"e60","to":"e80","service":"1976","confidence":"high","desc":"American missile, American warheads, dual-key, tracked and genuinely mobile - a great improvement on Corporal. Britain designed no battlefield ballistic missile after Blue Water was cancelled in 1962; the national deterrent went to sea in Polaris instead. Lance withdrawn 1992.","turret":false,"deploy":true,"deploySec":5,"rounds":1,"noAuto":true},
-  gbr_e60_radarv: {"fac":"gbr","role":"radarv","cat":"vehicle","layer":"ground","name":"Cymbeline","full":"FV436 with Cymbeline mortar-locating radar","cost":900,"oil":9,"time":14,"hp":470,"armor":"light","speed":1.5,"turn":1.8,"sight":7,"r":14,"mass":15,"weapons":[],"prereq":["factory","radar"],"tech":2,"from":"e60","to":"e80","service":"1975","confidence":"medium","desc":"A mortar-locating radar on an FV432 hull, and for twenty years the Royal Artillery's whole counter-battery sensor. It tracks a mortar bomb in flight and back-plots the baseplate. Against guns rather than mortars it is much weaker - that is a job Britain did not properly answer until MAMBA.","turret":true,"tturn":0.9,"radar":9,"radarQ":12},
+  gbr_e60_radarv: {"fac":"gbr","role":"radarv","cat":"vehicle","layer":"ground","name":"Cymbeline","full":"FV436 with Cymbeline mortar-locating radar","cost":900,"oil":9,"time":14,"hp":470,"armor":"light","speed":1.5,"turn":1.8,"sight":7,"r":14,"mass":15,"weapons":[],"prereq":["factory","radar"],"tech":2,"from":"e60","to":"e90","service":"1975","confidence":"medium","desc":"A mortar-locating radar on an FV432 hull, and for twenty years the Royal Artillery's whole counter-battery sensor. It tracks a mortar bomb in flight and back-plots the baseplate. Against guns rather than mortars it is much weaker - that is a job Britain did not properly answer until MAMBA.","turret":true,"tturn":0.9,"radar":9,"radarQ":12},
   gbr_e60_fighter: {"fac":"gbr","role":"fighter","cat":"aircraft","layer":"air","name":"Lightning F.6","full":"English Electric Lightning F.6","cost":830,"oil":20,"time":17,"hp":250,"armor":"air","speed":8.6,"turn":2,"sight":7,"r":15,"mass":0,"weapons":["w_e60_gbr_fighter"],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"1965","confidence":"high","desc":"Two stacked Avons and a climb rate nothing else in NATO could match - it was built to reach a Soviet bomber over the North Sea in minutes and nothing else. Notice the radius: fuel is measured in minutes, not hours. Long-range work went to Phantom FGR.2s with Spey engines from 1969.","jet":true,"ammo":2,"radar":4,"radius":20,"rcs":0.6},
   gbr_e60_cas: {"fac":"gbr","role":"cas","cat":"aircraft","layer":"air","name":"Harrier GR.1","full":"Hawker Siddeley Harrier GR.1","cost":1080,"oil":20,"time":21,"hp":420,"armor":"air","speed":4.7,"turn":1.8,"sight":6,"r":17,"mass":0,"weapons":["w_e60_gbr_cas"],"prereq":["airbase","lab"],"tech":3,"from":"e60","to":"e60","service":"1969","confidence":"high","desc":"The only vertical-takeoff combat aircraft any air force ever made work. It exists because NATO expected its runways to be cratered in the first hour: the Harrier hides in a German wood under camouflage nets and flies from a strip of matting. Small payload, short radius, unique.","jet":true,"ammo":4,"radius":22,"rcs":0.9},
   gbr_e60_gunship: {"fac":"gbr","role":"gunship","cat":"aircraft","layer":"air","name":"Scout AH.1","full":"Westland Scout AH.1 with SS.11 missiles","cost":700,"oil":11,"time":15,"hp":300,"armor":"air","speed":3,"turn":2.3,"sight":6.2,"r":16,"mass":0,"weapons":["w_e60_gbr_gunship"],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"1963","confidence":"medium","desc":"A four-seat liaison helicopter with four French wire-guided missiles bolted on and an observer aiming them through a roof sight. Britain never built a dedicated attack helicopter in the whole Cold War - the answer was always a utility airframe with missiles added.","ammo":4,"hover":true,"radius":20,"rcs":0.7},
   gbr_e60_transport: {"fac":"gbr","role":"transport","cat":"aircraft","layer":"air","name":"Wessex HU.5","full":"Westland Wessex HU.5","cost":500,"oil":8,"time":12,"hp":330,"armor":"air","speed":3.5,"turn":2.4,"sight":5.4,"r":15,"mass":0,"weapons":[],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"1964","confidence":"high","desc":"Twin-Gnome development of the Sikorsky S-58, sixteen troops, flown hard by the Commando squadrons from Borneo to Belfast. Heavy lift came from the French-British Puma HC.1 in 1971 and, later, from the Chinook.","ammo":0,"hover":true,"cargo":8,"radius":24,"rcs":0.9},
   gbr_e60_airlift: {"fac":"gbr","role":"airlift","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":false,"turn":1.4,"sight":8,"r":20,"weapons":[],"prereq":["airbase"],"tech":1,"rcs":3.6,"radarQ":0,"gen":2,"name":"Hercules C.1","full":"Lockheed C-130K Hercules C.1","cost":1300,"oil":40,"time":21,"hp":590,"speed":3,"ammo":0,"radius":60,"cargo":6,"from":"e60","to":"e80","service":"1967","confidence":"high","desc":"Bought American after the Armstrong Whitworth AW.681 was cancelled in 1965, and re-engineered with British avionics at Cambridge. Sixty-six aircraft carried every British expeditionary operation for the next forty years."},
   gbr_e60_awacs: {"fac":"gbr","role":"awacs","cat":"aircraft","layer":"air","name":"Shackleton AEW.2","full":"Avro Shackleton AEW.2, 8 Squadron","cost":1450,"oil":34,"time":26,"hp":380,"armor":"air","speed":2.5,"turn":0.9,"sight":8.8,"r":26,"mass":0,"weapons":[],"prereq":["airbase","radar","lab"],"tech":3,"from":"e60","to":"e80","service":"1972","confidence":"high","desc":"Twelve piston-engined 1950s maritime aircraft fitted with AN/APS-20 radars taken out of retired Fairey Gannets - equipment already twenty years old on the day it entered service. It was meant to last five years and lasted nineteen, because Nimrod AEW.3 failed and was cancelled in 1986.","jet":false,"ammo":0,"radar":14,"radius":70,"rcs":4,"awacs":true},
+  gbr_e80_ewair: {"fac":"gbr","role":"ewair","cat":"aircraft","layer":"air","name":"Nimrod R.1","full":"Hawker Siddeley Nimrod R.1, 51 Squadron","cost":2150,"oil":38,"time":29,"hp":480,"armor":"air","speed":4.20,"turn":1.0,"sight":11.5,"r":20,"mass":0,"weapons":[],"prereq":["airbase","lab"],"tech":3,"from":"e80","to":"e00","service":"1974","confidence":"medium","desc":"Three aircraft, and they LISTEN rather than jam - the same distinction every French Gabriel entry in this file makes, and the reason this row belongs in ewair beside them. Aerials down a Comet fuselage, a crew of twenty-nine, no MAD boom on the tail to give it away as a maritime aircraft, and a collection fit still classified. Britain's electronic ATTACK capability ended with the Canberra T.17 and 360 Squadron on 31 October 1994 and has never come back. Retired 28 June 2011; the RC-135W took over in 2014.","jet":true,"ammo":0,"radar":13,"radarQ":18,"radius":62,"rcs":3.6,"noAuto":true},
   gbr_e60_ewair: {"fac":"gbr","role":"ewair","cat":"aircraft","layer":"air","name":"Canberra T.17","full":"BAC Canberra T.17, 360 Squadron","cost":1250,"oil":20,"time":22,"hp":300,"armor":"air","speed":5.6,"turn":1.8,"sight":8,"r":16,"mass":0,"weapons":[],"prereq":["airbase","lab"],"tech":3,"from":"e60","to":"e80","service":"1966","confidence":"medium","desc":"Be honest about what this is: a jamming and chaff aircraft whose job was to train British air defences and ships, not to escort strike packages into a defended target. Britain had no equivalent of the Prowler or the Raven, and no anti-radiation missile at all until ALARM in 1991.","jet":true,"ammo":0,"radar":6,"radius":30,"rcs":1,"jam":6,"jamPower":0.7,"noAuto":true},
+  gbr_e90_tanker: {"fac":"gbr","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"weapons":[],"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":3.5,"name":"VC10 K.3","full":"Vickers VC10 K.2 and K.3, 101 Squadron","cost":3200,"oil":72,"time":38,"hp":720,"speed":4.60,"ammo":0,"radius":150,"tanker":430,"refuelRate":16,"from":"e90","to":"e90","service":"1984","confidence":"high","desc":"This band was empty, and the Victor row below it already says what filled it: five VC10 K.2 from 1984 and four K.3 from 1985, retired airliners rebuilt with three hose drums each. Probe and drogue only - no boom - so a British tanker cannot refuel an American fighter and an American tanker cannot refuel a Tornado without a pod. That coalition constraint has never gone away and is still true of the Voyager. Flown until 20 September 2013."},
+
+  gbr_e00_tanker: {"fac":"gbr","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"weapons":[],"prereq":["airbase","radar"],"tech":2,"rcs":5.2,"radarQ":0,"gen":3.8,"name":"TriStar KC.1","full":"Lockheed TriStar K.1 / KC.1, 216 Squadron","cost":3500,"oil":80,"time":40,"hp":820,"speed":4.50,"ammo":0,"radius":180,"tanker":620,"refuelRate":18,"from":"e00","to":"e00","service":"1986","confidence":"high","desc":"Nine wide-bodies bought second-hand from British Airways and Pan Am because the Falklands had shown how thin the tanker force was, and for twenty-five years the only British aircraft that could carry a squadron and its fuel to the same place. This is the air bridge to Basra and Kandahar. Withdrawn 24 March 2014; Voyager had already begun taking over in 2012."},
   gbr_e60_tanker: {"fac":"gbr","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"weapons":[],"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":3,"name":"Victor K.2","full":"Handley Page Victor K.2","cost":3000,"oil":68,"time":38,"hp":700,"speed":4.6,"ammo":0,"radius":140,"tanker":400,"refuelRate":15,"from":"e60","to":"e80","service":"1974","confidence":"high","desc":"The second V-bomber converted to tanking. Eleven Victors flew for every one Vulcan that bombed Port Stanley in 1982 - a 12,800km round trip that only existed because Britain kept a large tanker force. VC10 and TriStar tankers followed in the mid-1980s."},
   gbr_e80_rifle: {"fac":"gbr","role":"rifle","cat":"infantry","layer":"ground","name":"Rifle Section","full":"British Rifle Section, L85A1 and L86A1 LSW","cost":112,"oil":0,"time":4,"hp":90,"armor":"infantry","speed":1,"turn":7,"sight":5,"r":6,"mass":0.1,"weapons":["w_e80_gbr_rifle"],"prereq":["barracks"],"tech":1,"from":"e80","to":"e80","service":"1987","confidence":"high","desc":"Bullpup, 5.56mm, and issued with a four-power SUSAT optical sight on every rifle when other armies still had iron sights - genuinely ahead. The weapon itself was not: magazines fell out, parts broke, and it took the 1997 L85A2 rebuild by Heckler & Koch to make it reliable.","turret":false},
   gbr_e80_at: {"fac":"gbr","role":"at","cat":"infantry","layer":"ground","name":"LAW 80","full":"94mm LAW 80 disposable anti-armour weapon","cost":295,"oil":0,"time":8,"hp":85,"armor":"infantry","speed":0.83,"turn":6,"sight":9.2,"r":6,"mass":0.1,"weapons":["w_e80_gbr_at"],"prereq":["barracks"],"tech":1,"from":"e80","to":"e80","service":"1987","confidence":"high","desc":"Heavier than an AT4 at 10kg, and cleverer: a five-round 9mm spotting rifle is built in, so the firer confirms the range with a tracer strike before committing the rocket. The platoon's real tank-killer is MILAN, in service since 1978 and used to kill bunkers in the Falklands.","turret":false},
@@ -9884,7 +9888,7 @@ Object.assign(UNITS, {
   gbr_e00_spg: {"fac":"gbr","role":"spg","cat":"vehicle","layer":"ground","name":"AS-90","full":"AS-90 155mm SPG","cost":1390,"oil":19,"time":22,"hp":740,"armor":"light","speed":1.31,"turn":1.5,"sight":5.2,"r":15,"mass":45,"weapons":["w_e00_gbr_spg"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"1993","confidence":"high","desc":"Unchanged, and that is the point. The Braveheart upgrade that would have given it a 52-calibre barrel and modular charges was cancelled in 2002 after the charge system failed, so British 155mm range stayed at roughly 25km while other armies moved to 40. No British self-propelled gun entered service between 1993 and 2024.","turret":true,"tturn":0.9},
   gbr_e00_mlrs: {"fac":"gbr","role":"mlrs","cat":"vehicle","layer":"ground","name":"M270B1 GMLRS","full":"M270B1 with Guided MLRS","cost":2020,"oil":31,"time":28,"hp":670,"armor":"light","speed":1.29,"turn":1.3,"sight":5.3,"r":15,"mass":25,"weapons":["w_e00_gbr_mlrs"],"prereq":["factory","lab"],"tech":3,"from":"e00","to":"e00","service":"2007","confidence":"high","desc":"British gunners fired the first GMLRS rockets in anger in Afghanistan in 2007 and called it the 70km sniper: one GPS-guided rocket onto one compound, where the unguided M26 would have covered a grid square. The same launcher, an entirely different weapon.","turret":true,"tturn":0.8},
   gbr_e00_spaag: {"fac":"gbr","role":"spaag","cat":"vehicle","layer":"ground","name":"Stormer HVM","full":"Stormer HVM with ADAD passive sight","cost":950,"oil":13,"time":15,"hp":660,"armor":"light","speed":1.86,"turn":2.1,"sight":8.8,"r":13,"mass":13,"weapons":["w_e00_gbr_spaag"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"1997","confidence":"high","desc":"Still the only tracked air-defence vehicle in the British Army and still gunless. Where the US Army's short-range air defence collapsed to a Humvee with Stingers, Britain at least kept an armoured tracked launcher in an armoured brigade - but with a 7km ceiling, no radar and no ability to shoot back at anything on the ground.","turret":true,"tturn":2.8,"radar":0},
-  gbr_e00_radarv: {"fac":"gbr","role":"radarv","cat":"vehicle","layer":"ground","name":"MAMBA","full":"MAMBA (Saab ARTHUR) weapon locating radar","cost":1090,"oil":11,"time":16,"hp":470,"armor":"light","speed":1.70,"turn":1.8,"sight":8.4,"r":14,"mass":15,"weapons":[],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"2003","confidence":"medium","desc":"A Swedish ARTHUR on a Bv206 tracked carrier, bought as an urgent requirement for Iraq and kept. It back-plots mortar and rocket trajectories to the firing point in seconds, which is what makes counter-battery fire possible - and in Basra and Helmand it spent most of its life warning of incoming rather than directing return fire.","turret":true,"tturn":0.9,"radar":13.8},
+  gbr_e00_radarv: {"fac":"gbr","role":"radarv","cat":"vehicle","layer":"ground","name":"MAMBA","full":"MAMBA (Saab ARTHUR) weapon locating radar","cost":1090,"oil":11,"time":16,"hp":470,"armor":"light","speed":1.70,"turn":1.8,"sight":8.4,"r":14,"mass":15,"weapons":[],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e20","service":"2003","confidence":"medium","desc":"A Swedish ARTHUR on a Bv206 tracked carrier, bought as an urgent requirement for Iraq and kept. It back-plots mortar and rocket trajectories to the firing point in seconds, which is what makes counter-battery fire possible - and in Basra and Helmand it spent most of its life warning of incoming rather than directing return fire.","turret":true,"tturn":0.9,"radar":13.8},
   gbr_e00_fighter: {"fac":"gbr","role":"fighter","cat":"aircraft","layer":"air","name":"Typhoon FGR4","full":"Eurofighter Typhoon FGR.4","cost":1310,"oil":28,"time":20,"hp":420,"armor":"air","speed":8.60,"turn":2.1,"sight":10.2,"r":15,"mass":0,"weapons":["w_e00_gbr_fighter"],"prereq":["airbase"],"tech":2,"from":"e00","to":"e00","service":"2003","confidence":"high","desc":"Canard-delta, supercruise, and the best instantaneous turn of any Western fourth-generation fighter. Air-to-air only until the 2007 multirole clearance, and it kept a mechanically scanned Captor-M radar long after the F-16 and Rafale went active-array - the ECRS Mk2 AESA is still not in service. Meteor from 2018 gives it the longest-reaching air-to-air missile in NATO.","jet":true,"ammo":4,"radar":5.6,"radius":38,"rcs":0.6},
   gbr_e00_cas: {"fac":"gbr","role":"cas","cat":"aircraft","layer":"air","name":"Tornado GR4","full":"Panavia Tornado GR.4","cost":1750,"oil":34,"time":25,"hp":600,"armor":"air","speed":6.20,"turn":1.6,"sight":8.6,"r":17,"mass":0,"weapons":["w_e00_gbr_cas"],"prereq":["airbase","lab"],"tech":3,"from":"e00","to":"e00","service":"1998","confidence":"high","desc":"Two crew, terrain-following at 200 feet, and the aircraft that carried Brimstone and Paveway IV over Iraq, Afghanistan and Libya. Brimstone is the notable weapon: a millimetre-wave seeker accurate enough to hit one moving vehicle in a convoy, and repeatedly the only Western weapon cleared for targets that close to civilians. Retired in March 2019.","jet":true,"ammo":5,"radius":36,"rcs":1.1},
   gbr_e00_sead: {"fac":"gbr","role":"sead","cat":"aircraft","layer":"air","name":"Tornado GR4 / ALARM","full":"Tornado GR.4 with ALARM","cost":1690,"oil":31,"time":24,"hp":600,"armor":"air","speed":6.20,"turn":1.6,"sight":9.8,"r":16,"mass":0,"weapons":["w_e00_gbr_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e00","to":"e00","service":"1998","confidence":"high","desc":"The last British SEAD capability. ALARM was withdrawn from service in 2013 and nothing replaced it - no anti-radiation missile has been in British service since, and the RAF now relies on allied Growlers and Wild Weasels to open defended airspace. Place this entry knowing it ends mid-era.","jet":true,"ammo":3,"radar":5.0,"radius":36,"rcs":1.1},
@@ -9955,7 +9959,7 @@ Object.assign(WEAPONS, {
  "w_e90_fra_mbt": {"name":"120mm CN120-26 with 22-round autoloader","dmg":134,"warhead":"cannon","range":7.7,"reload":3.4,"burst":1,"acc":0.77,"proj":"shell","speed":860,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
  "w_e90_fra_lighttank": {"name":"105mm F2 rifled gun","dmg":62,"warhead":"cannon","range":6.6,"reload":3.4,"burst":1,"acc":0.72,"proj":"shell","speed":700,"aoe":0.5,"suppress":14,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
  "w_e90_fra_ifv": {"name":"20mm M693 F2","dmg":15,"warhead":"bullet","range":5.6,"reload":2.4,"burst":5,"burstDelay":0.1,"acc":0.63,"proj":"shell","speed":620,"suppress":12,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
- "w_e90_fra_tankdestroyer": {"name":"Four HOT-2 in a Mephisto elevating launcher","dmg":118,"warhead":"heat","range":9.5,"minRange":1.1,"reload":5.9,"burst":1,"acc":0.72,"proj":"missile","speed":260,"aoe":0.8,"suppress":16,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"intercept":1},
+ "w_e80_fra_tankdestroyer": {"name":"Four HOT-2 in a Mephisto elevating launcher","dmg":118,"warhead":"heat","range":9.5,"minRange":1.1,"reload":5.9,"burst":1,"acc":0.72,"proj":"missile","speed":260,"aoe":0.8,"suppress":16,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"intercept":1},
  "w_e90_fra_spg": {"name":"155mm 40-calibre AUF1, autoloaded","dmg":129,"warhead":"frag","range":21,"minRange":5,"reload":7.5,"burst":1,"acc":0.32,"proj":"arc","speed":210,"aoe":2.6,"suppress":60,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
  "w_e90_fra_mlrs": {"name":"12 x 227mm M26","dmg":60,"warhead":"frag","range":21.9,"minRange":5,"reload":14.84,"burst":12,"burstDelay":0.16,"acc":0.21,"proj":"arc","speed":260,"aoe":2,"suppress":40,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"rocket":true},
  "w_e90_fra_spaag": {"name":"Roland 2 command-guided SHORAD missile","dmg":62,"warhead":"flak","range":8.5,"reload":3.2,"burst":1,"acc":0.7,"proj":"missile","speed":560,"aoe":0.6,"tgt":{"ground":0,"air":1,"sea":0,"sub":0},"profile":"pop","intercept":1},
@@ -9965,7 +9969,10 @@ Object.assign(WEAPONS, {
  "w_e90_fra_fighter": {"name":"MICA EM active-radar AAM","dmg":168,"warhead":"flak","range":8.7,"reload":3.2,"burst":1,"acc":0.81,"proj":"missile","speed":700,"aoe":0.8,"ammo":1,"tgt":{"ground":0,"air":1,"sea":0,"sub":0},"profile":"pop","intercept":0.55},
  "w_e90_fra_cas": {"name":"GBU-12 with ATLIS II / PDLCT designation","dmg":268,"warhead":"he","range":2.4,"reload":1.1,"burst":2,"burstDelay":0.35,"acc":0.83,"proj":"bomb","speed":0,"aoe":2.4,"suppress":80,"ammo":2,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
  "w_e90_fra_gunship": {"name":"HOT-2, SACLOS, gunner holds the sight","dmg":108,"warhead":"heat","range":9.5,"reload":6,"burst":1,"acc":0.7,"proj":"missile","speed":260,"aoe":0.9,"ammo":1,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"intercept":1},
- "w_e90_fra_sead": {"name":"ARMAT anti-radiation missile","dmg":170,"warhead":"he","range":13.5,"minRange":1.4,"reload":6.9,"burst":1,"acc":0.76,"proj":"missile","speed":480,"aoe":1.4,"ammo":1,"antiRadiation":true,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"loft","intercept":0.7},
+ "w_e60_fra_sead": {"name":"AS.37 Martel anti-radar missile","dmg":132,"warhead":"he","range":9.6,"minRange":1.2,"reload":7.60,"burst":1,"acc":0.62,"proj":"missile","speed":460,"aoe":1.3,"ammo":1,"antiRadiation":true,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"loft","intercept":0.70},
+ "w_e80_fra_sead": {"name":"ARMAT - a Martel with a new seeker","dmg":164,"warhead":"he","range":14.5,"minRange":1.4,"reload":7.00,"burst":1,"acc":0.72,"proj":"missile","speed":480,"aoe":1.4,"ammo":1,"antiRadiation":true,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"loft","intercept":0.70},
+ "w_e50_fra_tankdestroyer": {"name":"SS.10 MCLOS wire-guided missile","dmg":72,"warhead":"heat","range":4.4,"minRange":0.9,"reload":11.00,"burst":1,"acc":0.38,"proj":"missile","speed":180,"aoe":0.6,"suppress":12,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
+ "w_e60_fra_tankdestroyer": {"name":"Four SS.11 over an FL-10 turret","dmg":98,"warhead":"heat","range":7.0,"minRange":1.2,"reload":8.40,"burst":1,"acc":0.52,"proj":"missile","speed":190,"aoe":0.7,"suppress":14,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1}, "w_e90_fra_sead": {"name":"ARMAT anti-radiation missile","dmg":170,"warhead":"he","range":13.5,"minRange":1.4,"reload":6.9,"burst":1,"acc":0.76,"proj":"missile","speed":480,"aoe":1.4,"ammo":1,"antiRadiation":true,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"loft","intercept":0.7},
  "w_e00_fra_rifle": {"name":"5.56mm FAMAS F1 with FELIN sight and datalink","dmg":10,"warhead":"bullet","range":4.9,"reload":1.06,"burst":3,"burstDelay":0.06,"acc":0.7,"proj":"bullet","speed":0,"suppress":5,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
  "w_e00_fra_at": {"name":"MMP / Akeron MP fire-and-forget ATGM","dmg":126,"warhead":"heat","range":10.4,"minRange":1.2,"reload":5.4,"burst":1,"acc":0.85,"proj":"missile","speed":300,"aoe":0.7,"suppress":14,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
  "w_e00_fra_mbt": {"name":"120mm CN120-26/52 autoloaded","dmg":148,"warhead":"cannon","range":7.9,"reload":3.3,"burst":1,"acc":0.8,"proj":"shell","speed":860,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
@@ -9999,10 +10006,16 @@ Object.assign(WEAPONS, {
        France never built a Gepard-class gun vehicle and after Roland went in
        the late 2000s the Armée de Terre had no manoeuvre SHORAD vehicle at
        all, which is why the e00 entry belongs to the air force.
-     sead, e50 / e60 / e80 — no defence-suppression aircraft and no dedicated
-       crew. ARMAT on an ordinary Jaguar in e90 is the whole of it, and when
-       the Jaguar went in the 2000s France was left with no anti-radiation
-       missile at all: the e00 and e20 slots are empty and stay empty.
+     sead, EVERY era — no defence-suppression AIRCRAFT and no dedicated crew,
+       ever. What France has instead is an anti-radiation MISSILE hung on an
+       ordinary strike aircraft, and that is a different claim with different
+       dates: AS.37 Martel adopted 1969 and in service in the early 1970s,
+       ARMAT in service 1984. The e80 band was empty on the strength of the
+       first claim while the e90 row beside it carried 1984 in its own
+       service field - right in the prose, wrong in the mechanism. e50 is
+       correctly empty, and so are e00 and e20: the Jaguar went in 2005 and
+       France has had no anti-radiation missile of any kind since. Rafale
+       does SEAD with SCALP and AASM and neither of those is an ARM.
      awacs, e50 / e60 / e80 — none. Four E-3F were ordered in 1987 and the
        first arrived in 1991.
      ewair, e50 — none. Gabriel begins with the Noratlas conversions of the
@@ -10088,7 +10101,7 @@ Object.assign(UNITS, {
   fra_e90_mbt: {"fac":"fra","role":"mbt","cat":"vehicle","layer":"ground","name":"Leclerc","full":"AMX Leclerc, serie 1","cost":1340,"oil":20,"time":22,"hp":1490,"armor":"heavy","speed":1.72,"turn":1.7,"sight":7.4,"r":16,"mass":55,"weapons":["w_e90_fra_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1992","confidence":"high","desc":"The only Western tank of its generation with a bustle autoloader, and the whole design follows from that: three crew instead of four, a 22-round magazine feeding 6 rounds a minute, and a hull seven tonnes lighter than an Abrams on a 1,500 hp hyperbar diesel. Faster and quicker to reload than an M1A2, thinner-skinned, and dependent on a machine that cannot be replaced by a tired loader when it jams."},
   fra_e90_lighttank: {"fac":"fra","role":"lighttank","cat":"vehicle","layer":"ground","name":"AMX-10 RC","full":"AMX-10 RC 6x6 heavy armoured car","cost":660,"oil":8,"time":11,"hp":600,"armor":"light","speed":2.24,"turn":2.5,"sight":7.1,"r":13,"mass":16,"weapons":["w_e90_fra_lighttank"],"prereq":["factory"],"tech":1,"from":"e90","to":"e90","service":"1981","confidence":"high","desc":"France never accepted the American conclusion that light armour was pointless. A 105mm gun on six wheels with hydropneumatic suspension and skid steering, built for colonial-distance mobility rather than a Fulda Gap tank fight. Where the US Army had nothing at all in this slot from 1996, France had these in regimental strength, and used them in Chad, the Gulf, the Balkans and Mali."},
   fra_e90_ifv: {"fac":"fra","role":"ifv","cat":"vehicle","layer":"ground","name":"AMX-10P","full":"AMX-10P with Toucan II 20mm turret","cost":700,"oil":8,"time":12,"hp":610,"armor":"light","speed":1.78,"turn":2.1,"sight":6.5,"r":14,"mass":14,"weapons":["w_e90_fra_ifv"],"prereq":["factory"],"tech":1,"from":"e90","to":"e90","service":"1973","confidence":"high","desc":"Tracked, amphibious, 20mm, eight dismounts, and 14 tonnes - less than half a Bradley. It is a 1970s vehicle that was never uparmoured, and by the 1990s its aluminium hull stopped rifle fire and very little else. Alongside it the wheeled VAB carried most of the infantry with no turret at all. The proper IFV, VBCI, is fifteen years away.","turret":true,"tturn":1.8,"cargo":8},
-  fra_e90_tankdestroyer: {"fac":"fra","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"VAB Mephisto","full":"VAB HOT / Mephisto","cost":1000,"oil":12,"time":15,"hp":540,"armor":"light","speed":2,"turn":2.2,"sight":8,"r":13,"mass":13,"weapons":["w_e90_fra_tankdestroyer"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1984","confidence":"medium","desc":"Four HOT-2 in an armoured box that rises out of the VAB's roof, fires, and drops back under cover to reload from inside - a genuinely good idea that no other NATO army copied. Wire-guided, so it must sit still through the flight. Withdrawn in the 2010s and never replaced by a dedicated vehicle.","turret":true,"tturn":1.4},
+  fra_e80_tankdestroyer: {"fac":"fra","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"VAB Mephisto","full":"VAB HOT / Mephisto","cost":1000,"oil":12,"time":15,"hp":540,"armor":"light","speed":2,"turn":2.2,"sight":8,"r":13,"mass":13,"weapons":["w_e80_fra_tankdestroyer"],"prereq":["factory","radar"],"tech":2,"from":"e80","to":"e00","service":"1984","confidence":"medium","desc":"Four HOT-2 in an armoured box that rises out of the VAB's roof, fires, and drops back under cover to reload from inside - a genuinely good idea that no other NATO army copied. Wire-guided, so it must sit still through the flight. Withdrawn in the 2010s and never replaced by a dedicated vehicle.","turret":true,"tturn":1.4},
   fra_e90_spg: {"fac":"fra","role":"spg","cat":"vehicle","layer":"ground","name":"AMX-30 AuF1","full":"155mm GCT AuF1 on AMX-30 chassis","cost":1240,"oil":16,"time":20,"hp":650,"armor":"light","speed":1.34,"turn":1.5,"sight":5.1,"r":15,"mass":42,"weapons":["w_e90_fra_spg"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1979","confidence":"high","desc":"A fully automatic 42-round loader in a very large turret: 8 rounds a minute sustained, against the M109A6's 4, and the crew never handles a shell. The price is a 42-tonne vehicle on a 1960s chassis with an underpowered engine. AuF1 fired in Bosnia in 1995. There is no French scatterable-mine shell in service, so this gun cannot sow a minefield.","turret":true,"tturn":0.9},
   fra_e90_mlrs: {"fac":"fra","role":"mlrs","cat":"vehicle","layer":"ground","name":"LRM","full":"M270 Lance-Roquettes Multiple","cost":1830,"oil":28,"time":27,"hp":625,"armor":"light","speed":1.27,"turn":1.3,"sight":5.1,"r":15,"mass":25,"weapons":["w_e90_fra_mlrs"],"prereq":["factory","lab"],"tech":3,"from":"e90","to":"e90","service":"1990","confidence":"high","desc":"The same M270 America fires, built under licence at Roanne, 55 launchers total. France bought the launcher and the M26 rocket and pointedly did not buy ATACMS - the deep-strike missile stayed American, and French rocket artillery has never had a ballistic round. Fired in Bosnia and Kosovo.","turret":true,"tturn":0.8},
   fra_e90_spaag: {"fac":"fra","role":"spaag","cat":"vehicle","layer":"ground","name":"AMX-30 Roland","full":"Roland 2 on AMX-30 chassis","cost":900,"oil":12,"time":15,"hp":720,"armor":"light","speed":1.5,"turn":1.8,"sight":8.7,"r":14,"mass":33,"weapons":["w_e90_fra_spaag"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1981","confidence":"high","desc":"A tracked all-weather SHORAD vehicle with its own search and tracking radars and ten missiles aboard - a much more capable thing than the Stinger-on-a-Humvee the US Army was reduced to in the same years. Roland 2 is the clear-and-bad-weather version. Command-guided, so one target at a time, and no gun: it cannot touch anything on the ground.","turret":true,"tturn":2.2,"radar":8},
@@ -10109,6 +10122,9 @@ Object.assign(UNITS, {
   fra_e90_transport: {"fac":"fra","role":"transport","cat":"aircraft","layer":"air","name":"AS 532 Cougar","full":"Eurocopter AS 532UL Cougar","cost":740,"oil":12,"time":13,"hp":440,"armor":"air","speed":3.9,"turn":2.4,"sight":7.2,"r":15,"mass":0,"weapons":[],"prereq":["airbase"],"tech":2,"from":"e90","to":"e90","service":"1990","confidence":"high","desc":"The stretched, better-engined Puma. Twenty-nine troops or two tonnes underslung. Alongside it the SA 330 Puma of 1970 does most of the actual work and keeps doing it into the 2020s, because the NH90 that was supposed to replace it in the 1990s arrives in 2011.","ammo":0,"hover":true,"cargo":9,"radius":30,"rcs":0.9},
   fra_e90_awacs: {"fac":"fra","role":"awacs","cat":"aircraft","layer":"air","name":"E-3F Sentry","full":"Boeing E-3F SDA (Systeme de Detection Aeroportee)","cost":3100,"oil":64,"time":33,"hp":560,"armor":"air","speed":4.12,"turn":0.9,"sight":15,"r":26,"mass":0,"weapons":[],"prereq":["airbase","radar","lab"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"Four aircraft, bought outright and flown by the Armee de l'Air rather than through the NATO pool - the point of the purchase was that France could see the air picture without asking anyone. CFM56 engines instead of the USAF's TF33. Four airframes means at most one or two orbits at a time, and that is the entire national capability.","jet":true,"ammo":0,"radar":30,"radius":66,"rcs":3.2,"refuelable":true,"awacs":true},
   fra_e90_ewair: {"fac":"fra","role":"ewair","cat":"aircraft","layer":"air","name":"C-160G Gabriel","full":"Transall C-160G Gabriel ELINT/COMINT","cost":1900,"oil":34,"time":26,"hp":520,"armor":"air","speed":3,"turn":1.3,"sight":13.5,"r":20,"mass":0,"weapons":[],"prereq":["airbase","lab"],"tech":3,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"State this plainly: France has never operated an electronic-attack aircraft. Gabriel is a listening platform - two airframes, bristling with antennas, which find and fingerprint hostile emitters and pass them on. It jams nothing and it kills nothing. There is no French Prowler, no French Growler, and no plan for one; French packages entering a defended area have always relied on American jamming.","jet":false,"ammo":0,"radar":24,"radarQ":26,"radius":52,"rcs":3.4,"gen":3,"noAuto":true},
+  fra_e60_sead: {"fac":"fra","role":"sead","cat":"aircraft","layer":"air","name":"Mirage IIIE / AS.37","full":"Dassault Mirage IIIE with AS.37 Martel","cost":1180,"oil":24,"time":20,"hp":360,"armor":"air","speed":7.0,"turn":1.9,"sight":9.4,"r":16,"mass":0,"weapons":["w_e60_fra_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e60","to":"e60","service":"1972","confidence":"low","desc":"Martel was an Anglo-French programme and the two countries bought opposite halves of it: France took AS.37, the anti-radar round, and Britain took AJ.168, the television-guided one, and bought no anti-radar missile at all until ALARM. A passive seeker with no memory mode, so a battery that shuts down defeats it. One seat, no receiver operator, no second crewman - a strike aircraft carrying an anti-radar round, which is not the same thing as a Wild Weasel. Confidence is low: the missile and the decade are solid, the squadron detail is not.","jet":true,"ammo":2,"radar":4,"radius":28,"rcs":1.3,"noAuto":true},
+
+  fra_e80_sead: {"fac":"fra","role":"sead","cat":"aircraft","layer":"air","name":"Jaguar A / ARMAT","full":"SEPECAT Jaguar A with Matra ARMAT","cost":1380,"oil":26,"time":21,"hp":410,"armor":"air","speed":7.1,"turn":1.7,"sight":10.6,"r":16,"mass":0,"weapons":["w_e80_fra_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e80","to":"e80","service":"1984","confidence":"medium","desc":"This band was empty and should not have been. ARMAT entered French service in 1984, and the e90 row beside this one carries that same 1984 in its own service field while claiming e90 in its from: tag - the date was right in the prose and wrong in the mechanism. A Martel airframe with a new broadband seeker and a 160kg warhead, hung on ordinary Jaguar A and later on the Mirage F1CT and the 2000. Still no dedicated crew and still no memory mode worth the name.","jet":true,"ammo":2,"radar":4,"radius":30,"rcs":1.2,"noAuto":true},
   fra_e90_sead: {"fac":"fra","role":"sead","cat":"aircraft","layer":"air","name":"Jaguar A / ARMAT","full":"SEPECAT Jaguar A with Martel ARMAT","cost":1420,"oil":27,"time":22,"hp":420,"armor":"air","speed":7.2,"turn":1.7,"sight":11,"r":16,"mass":0,"weapons":["w_e90_fra_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e90","to":"e90","service":"1984","confidence":"medium","desc":"Not a Wild Weasel. France never built a dedicated defence-suppression aircraft with a receiver suite and a second crewman; it built an anti-radiation missile, ARMAT, and hung it on ordinary strike aircraft - Jaguar A, and Mirage F1CT. The missile is a 1980s Martel derivative with no memory mode worth the name, so a radar that shuts down defeats it. ARMAT left service in the 2000s with the Jaguar and was never replaced: from then on France has no anti-radiation missile at all.","jet":true,"ammo":2,"radar":4,"radius":30,"rcs":1.2,"noAuto":true},
   fra_e90_airlift: {"fac":"fra","role":"airlift","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":false,"turn":1.4,"sight":8,"r":20,"prereq":["airbase"],"tech":1,"rcs":3.4,"radarQ":0,"gen":2,"name":"C-160NG Transall","full":"Transall C-160NG","cost":1350,"oil":40,"time":21,"hp":600,"speed":3,"ammo":0,"radius":58,"cargo":6,"weapons":[],"from":"e90","to":"e00","service":"1981","confidence":"high","desc":"Franco-German twin-turboprop, 16 tonnes of payload, built because neither country wanted to buy Hercules. The NG added a refuelling probe and a hose. It is the aircraft that flew every French African intervention for forty years, and by the 1990s it was already worn out - the A400M meant to replace it in 1999 does not arrive until 2013."},
   fra_e00_rifle: {"fac":"fra","role":"rifle","cat":"infantry","layer":"ground","name":"Groupe FELIN","full":"Groupe de combat FELIN, FAMAS F1","cost":150,"oil":0,"time":5,"hp":110,"armor":"infantry","speed":1.02,"turn":7,"sight":6.1,"r":6,"mass":0.1,"weapons":["w_e00_fra_rifle"],"prereq":["barracks"],"tech":1,"from":"e00","to":"e00","service":"2010","confidence":"high","desc":"FELIN is the one soldier-modernisation programme of its generation that was actually fielded in quantity - about 22,000 sets from 2010 - where the American Land Warrior was cancelled. Thermal sight on the rifle, helmet display, squad radio. It also weighs 25 kg and eats batteries, and soldiers in Mali stripped parts of it off."},
@@ -10130,6 +10146,11 @@ Object.assign(UNITS, {
   fra_e00_ewair: {"fac":"fra","role":"ewair","cat":"aircraft","layer":"air","name":"C-160G Gabriel","full":"Transall C-160G Gabriel, to 2022","cost":1950,"oil":34,"time":26,"hp":530,"armor":"air","speed":3,"turn":1.3,"sight":14,"r":20,"mass":0,"weapons":[],"prereq":["airbase","lab"],"tech":3,"from":"e00","to":"e00","service":"1989","confidence":"high","desc":"Unchanged, and still the only French airborne electronic-warfare aircraft: two Transalls that listen. It flew over Libya, Mali and the Levant locating emitters that French aircraft then had no anti-radiation missile to shoot. Retired 2022; the replacement, Archange, is also a listening aircraft.","jet":false,"ammo":0,"radar":25,"radarQ":28,"radius":52,"rcs":3.4,"gen":3,"noAuto":true},
   fra_e00_radarv: {"fac":"fra","role":"radarv","cat":"vehicle","layer":"ground","name":"COBRA","full":"COBRA counter-battery radar","cost":1180,"oil":11,"time":16,"hp":490,"armor":"light","speed":1.6,"turn":1.7,"sight":8.7,"r":14,"mass":18,"weapons":[],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"2008","confidence":"medium","desc":"Franco-German-British phased array that back-plots mortar, gun and rocket trajectories to their firing point. France took ten. Before it arrived the French army had battlefield surveillance radars - RATAC, RASIT - and no counter-battery radar at all, which is why the AuF1 batteries in Bosnia were shooting largely blind.","turret":true,"tturn":0.9,"radar":13,"radarQ":19},
   fra_e00_airlift: {"fac":"fra","role":"airlift","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":false,"turn":1.3,"sight":8.5,"r":22,"prereq":["airbase"],"tech":2,"rcs":4.2,"radarQ":0,"gen":4,"name":"A400M Atlas","full":"Airbus A400M Atlas","cost":2100,"oil":52,"time":28,"hp":760,"speed":3.9,"ammo":0,"radius":90,"cargo":14,"weapons":[],"from":"e00","to":"e00","service":"2013","confidence":"high","desc":"Thirty-seven tonnes of payload on eight-bladed scimitar propellers, fast enough to keep station in a jet stream and slow enough to land on a dirt strip - the aircraft that sits in the gap between a Hercules and a C-17, which nothing else fills. Fourteen years late, ruinously expensive, and it is the only reason France can put an armoured vehicle in the Sahel without asking Washington for a lift."},
+  fra_e60_tanker: {"fac":"fra","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":2,"name":"C-135F","full":"Boeing C-135F Stratotanker, 93e Escadre de Ravitaillement en Vol","cost":2500,"oil":60,"time":36,"hp":640,"speed":4.20,"ammo":0,"radius":120,"tanker":300,"refuelRate":11,"weapons":[],"from":"e60","to":"e60","service":"1964","confidence":"high","desc":"Twelve aircraft delivered in 1964 - the e00 row further down this block already says so in its own description, which is how the three empty bands above it were found. France has had strategic air-to-air refuelling since the year the Mirage IV went on alert, because a Mirage IV could not reach a Soviet target without one. Bought from the United States by a country that was about to walk out of NATO's integrated command, which is the paradox of the force de frappe in a single airframe. Boom-equipped, unlike every British tanker of the period."},
+
+  fra_e80_tanker: {"fac":"fra","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":2.2,"name":"C-135FR","full":"Boeing C-135FR, re-engined with CFM56","cost":2650,"oil":63,"time":37,"hp":670,"speed":4.25,"ammo":0,"radius":132,"tanker":340,"refuelRate":13,"weapons":[],"from":"e80","to":"e80","service":"1985","confidence":"high","desc":"The same surviving airframes with CFM56 turbofans in place of the original water-injected J57s: quieter, far more efficient, and with appreciably more fuel left to give away. A re-engine is the cheapest way to buy a new tanker and France did it thirty years before it bought a real one."},
+
+  fra_e90_tanker: {"fac":"fra","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":2.4,"name":"C-135FR","full":"Boeing C-135FR Stratotanker","cost":2720,"oil":64,"time":37,"hp":685,"speed":4.28,"ammo":0,"radius":136,"tanker":350,"refuelRate":13,"weapons":[],"from":"e90","to":"e90","service":"1985","confidence":"high","desc":"Unchanged and unreplaced through the whole decade, and flown over Bosnia and Kosovo. Eleven tankers is the entire national capability, the airborne leg of the deterrent sits on top of them, and France did not order a replacement until the A330 MRTT contract of 2014."},
   fra_e00_tanker: {"fac":"fra","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":2.5,"name":"C-135FR","full":"Boeing C-135FR Stratotanker","cost":2800,"oil":66,"time":38,"hp":700,"speed":4.3,"ammo":0,"radius":140,"tanker":360,"refuelRate":14,"weapons":[],"from":"e00","to":"e00","service":"1985","confidence":"high","desc":"Eleven aircraft, bought in 1964 and re-engined with CFM56 in the 1980s, and for fifty years the single point of failure in the French deterrent - a Mirage IV or a Mirage 2000N could not reach a target without one. Replaced from 2018 by the A330 MRTT Phenix. A nuclear power whose airborne leg depends on eleven sixty-year-old tankers is a real strategic fact, not a game abstraction."},
 });
 
@@ -10169,7 +10190,17 @@ Object.assign(UNITS, {
    and a Type 45 is a destroyer; `ssgn`, because British land-attack missiles
    are fired from the torpedo tubes of an attack boat; `cawacs`, because a
    ski-jump deck cannot launch a fixed-wing early-warning aircraft, which is
-   the one capability the Queen Elizabeth class genuinely lacks. */
+   `cawacs` WAS listed here as deliberately empty, on the ground that a
+   ski-jump deck cannot launch a fixed-wing early-warning aircraft. That is
+   true of an Invincible and of a Queen Elizabeth and it is NOT true of the
+   two decks above them in this same block: Eagle and Ark Royal had steam
+   catapults and flew the Skyraider AEW.1 from 1952 and the Gannet AEW.3
+   from 1960. It is also beside the point after 1982, because the answer to
+   a ski-jump is not a fixed-wing aircraft at all - it is a radar in a bag
+   on the side of a helicopter, and Britain has flown one continuously,
+   Sea King AEW.2 to AEW.2A to ASaC.7 to Crowsnest on a Merlin. Four
+   airframes, two radar families, one job: the same shape as the E-2A to
+   E-2D chain, and the reason the role now has all six bands filled. */
   gbr_e50_patrol: { fac:"gbr", role:"patrol", cat:"naval", layer:"sea", name:"Ford-class SDB", full:"Ford-class seaward defence boat", cost:235, oil:3, time:6, hp:260, armor:"light", speed:2.3, turn:2.2, sight:5.2, r:13, mass:0, weapons:["hmg"], prereq:["navalyard"], tech:1, from:"e50", to:"e50", service:"1954", confidence:"high", turret:true, tturn:2.4, sonar:1.4, rcs:0.5, desc:"Twenty small wooden-hulled boats for harbour and estuary defence, the least glamorous ships in the fleet and the only cheap hull it had. The fast attack craft of the decade were wartime MTB survivors and the Gay class of 1952. The Royal Navy never built the missile boat that half of Europe did, and never has." },
   gbr_e50_corvette: { fac:"gbr", role:"corvette", cat:"naval", layer:"sea", name:"Type 12 Whitby FF", full:"HMS Whitby (F36), Type 12 first-rate anti-submarine frigate", cost:560, oil:7, time:13, hp:600, armor:"light", speed:2.55, turn:1.7, sight:5.8, r:17, mass:0, weapons:["w_e50_nato_corvette"], prereq:["navalyard"], tech:1, from:"e50", to:"e50", service:"1956", confidence:"high", turret:true, tturn:2.0, sonar:4.2, radar:8.6, ciws:0.3, rcs:0.6, desc:"Built around one question - can it keep up with a fast submarine in an Atlantic sea state - and the answer was a very fine raised bow and thirty knots. The line runs Whitby to Rothesay to Leander and stops there: the Type 21, Type 22 and Type 23 are separate designs and the Type 23 owes the Whitby hull nothing." },
   gbr_e50_destroyer: { fac:"gbr", role:"destroyer", cat:"naval", layer:"sea", name:"Daring DD", full:"HMS Daring (D05), Daring-class", cost:1030, oil:16, time:22, hp:1080, armor:"heavy", speed:2.1, turn:1.2, sight:6.6, r:20, mass:0, weapons:["w_e50_nato_destroyer"], prereq:["navalyard","radar"], tech:2, from:"e50", to:"e50", service:"1952", confidence:"high", turret:true, tturn:1.4, sonar:5.4, radar:11.5, ciws:0.5, rcs:0.6, desc:"Eight ships, three twin 4.5in Mk 6 turrets, and officially not destroyers at all for a while - they were rated Daring-class ships because they were too large for the word. The last all-gun destroyer design Britain built. Everything after this carries a missile, and the missile in question, Sea Slug, took ten years to arrive." },
@@ -10187,6 +10218,7 @@ Object.assign(UNITS, {
   gbr_e60_ssbn: { fac:"gbr", role:"ssbn", cat:"naval", layer:"sub", name:"Resolution SSBN", full:"HMS Resolution (S22), Resolution-class", cost:3450, oil:78, time:48, hp:1520, armor:"heavy", speed:1.9, turn:0.5, sight:5.0, r:26, mass:0, weapons:["slbm_polaris"], prereq:["navalyard","lab","radar"], tech:3, from:"e60", to:"e80", service:"1967", confidence:"high", sonar:7.0, quiet:0.36, radarQ:4, nuclear:true, ssbn:true, desc:"Commissioned 2 October 1967 with sixteen Polaris A3 tubes; first patrol February 1968; and from 30 June 1969 at least one of the four has been at sea with the deterrent every single day since, which is the longest unbroken continuous-at-sea deterrence of any nuclear power. Chevaline, the British-designed penetration aid fitted from 1982, cost roughly a billion pounds and was kept secret from most of the Cabinet that paid for it." },
   gbr_e60_carrier: { fac:"gbr", role:"carrier", cat:"naval", layer:"sea", name:"Ark Royal CVA", full:"HMS Ark Royal (R09), after the 1967-70 Phantom refit", cost:2400, oil:53, time:47, hp:2150, armor:"heavy", speed:1.44, turn:0.6, sight:9.4, r:30, mass:0, weapons:["w_e60_nato_carrier"], prereq:["navalyard","lab","airbase"], tech:3, from:"e60", to:"e60", service:"1970", confidence:"high", carrier:3, sonar:2.8, radar:11.6, ciws:0.46, rcs:2.5, desc:"Phantom FG.1, Buccaneer S.2, Gannet AEW.3 - a genuine strike carrier air group with its own fixed-wing early warning, and the last one Britain would have for fifty years. The 1966 Defence Review killed the CVA-01 replacement outright; Ark Royal paid off in 1978, the Gannets went with her, and Britain lost carrier-borne airborne early warning until 1982 - a lesson it learned in the South Atlantic at cost." },
   gbr_e60_cfighter: { fac:"gbr", role:"cfighter", cat:"aircraft", layer:"air", name:"Phantom FG.1", full:"McDonnell Douglas Phantom FG.1 (F-4K)", cost:980, oil:22, time:17, hp:350, armor:"air", speed:6.6, turn:2.0, sight:7.0, r:16, mass:0, weapons:["w_e60_nato_fighter"], prereq:["airbase"], tech:2, from:"e60", to:"e60", service:"1969", confidence:"high", jet:true, ammo:4, gen:3, radar:6, radarQ:8, radius:26, rcs:1.4, carrierCapable:true, refuelable:true, desc:"An American airframe re-engined with Rolls-Royce Speys that made it fatter, slower at altitude and far more expensive, fitted with an extending nose leg so it could get off a British deck a hundred feet shorter than an American one. The Sea Vixen it replaced was a subsonic all-weather fighter with the pilot offset to port and the observer sealed in a windowless hole beside him." },
+  gbr_e50_aswhelo: { fac:"gbr", role:"aswhelo", cat:"aircraft", layer:"air", name:"Whirlwind HAS.7", full:"Westland Whirlwind HAS.7, 845 NAS", cost:560, oil:12, time:11, hp:210, armor:"air", speed:2.3, turn:2.0, sight:4.6, r:12, mass:0, weapons:["asw_mk54"], prereq:["airbase"], tech:2, from:"e50", to:"e50", service:"1957", confidence:"medium", ammo:1, radius:10, sonar:3.0, rcs:1.0, radarQ:0, gen:1.5, desc:"The first British helicopter built to hunt submarines rather than to carry people, and so short of power that it could take the dipping sonar OR the homing torpedo and not both. Squadrons therefore flew in hunter-killer pairs: one aircraft in the hover holding contact, the other circling with the weapon. The Alvis Leonides Major was a piston engine and an unreliable one - the turbine Whirlwind is 1966, by which time the Wessex above had the job." },
   gbr_e60_aswhelo: { fac:"gbr", role:"aswhelo", cat:"aircraft", layer:"air", name:"Wessex HAS.1", full:"Westland Wessex HAS.1", cost:720, oil:15, time:12, hp:250, armor:"air", speed:2.8, turn:2.2, sight:5.4, r:12, mass:0, weapons:["asw_mk54"], prereq:["airbase"], tech:2, from:"e60", to:"e60", service:"1961", confidence:"high", ammo:2, radius:14, sonar:4.4, rcs:1.0, radarQ:2, gen:2, desc:"A licence-built Sikorsky S-58 with a Napier Gazelle turbine in the nose instead of a radial piston engine - the first turbine-powered anti-submarine helicopter in service anywhere, and the aircraft that made a dipping sonar a routine part of a frigate's kit. One dunking sonar, two homing torpedoes, and a crew who had to hover on instruments over a black sea at night." },
 
   gbr_e80_patrol: { fac:"gbr", role:"patrol", cat:"naval", layer:"sea", name:"Island-class OPV", full:"HMS Jersey (P295), Island-class offshore patrol vessel", cost:370, oil:5, time:8, hp:400, armor:"light", speed:2.0, turn:1.8, sight:6.8, r:13, mass:0, weapons:["hmg"], prereq:["navalyard"], tech:1, from:"e80", to:"e80", service:"1977", confidence:"high", turret:true, tturn:2.4, sonar:0.8, rcs:0.55, desc:"A trawler hull with a 40 mm on the bow, built to sit in the North Sea in weather that would stop a warship and protect the new oil fields and the fishery limits. Nothing about it is fast or dangerous and that was the point - after the Brave boats went, Britain's small combatant is a constabulary vessel and has been ever since." },
@@ -10201,6 +10233,31 @@ Object.assign(UNITS, {
   gbr_e90_destroyer: { fac:"gbr", role:"destroyer", cat:"naval", layer:"sea", name:"Type 42 Batch 3", full:"HMS Manchester (D95), Type 42 Batch 3 destroyer", cost:1930, oil:29, time:26, hp:1840, armor:"heavy", speed:2.36, turn:1.2, sight:9.8, r:20, mass:0, weapons:["w_e90_nato_destroyer"], prereq:["navalyard","radar"], tech:2, from:"e90", to:"e90", service:"1982", confidence:"high", turret:true, tturn:1.4, sonar:7.0, radar:17.4, ciws:0.56, rcs:0.6, desc:"Four ships stretched by about sixteen metres over a Batch 1 to fix the seakeeping and the freeboard, and given the Phalanx the earlier hulls went to war without. Sea Dart stayed in service until HMS Edinburgh paid off in June 2013 - thirty-eight years of a missile designed in the 1960s, because the Type 45 that was meant to replace it was two decades late." },
   gbr_e90_sub: { fac:"gbr", role:"sub", cat:"naval", layer:"sub", name:"Trafalgar SSN", full:"HMS Trafalgar (S107), Trafalgar-class", cost:2100, oil:34, time:28, hp:1100, armor:"light", speed:2.45, turn:1.1, sight:7.8, r:17, mass:0, weapons:["w_e90_nato_sub"], prereq:["navalyard","radar"], tech:2, from:"e90", to:"e90", service:"1983", confidence:"high", sonar:9.8, quiet:0.32, radarQ:5, nuclear:true, layNet:4, desc:"Seven boats, anechoic tiles, a pump-jet propulsor instead of a screw, and the acoustic generation that let a British boat trail a Soviet one. Britain's first Tomahawk was fired over Kosovo in March 1999 by HMS Splendid, which was a Swiftsure rather than a Trafalgar. Four Upholder-class diesel boats commissioned between 1990 and 1994 and were sold to Canada almost immediately - the last conventional submarines the Royal Navy has owned." },
   gbr_e90_carrier: { fac:"gbr", role:"carrier", cat:"naval", layer:"sea", name:"Invincible (FA2)", full:"HMS Illustrious (R06) with Sea Harrier FA2", cost:2380, oil:52, time:46, hp:1900, armor:"heavy", speed:1.52, turn:0.6, sight:11.2, r:30, mass:0, weapons:["w_e90_nato_carrier"], prereq:["navalyard","lab","airbase"], tech:3, from:"e90", to:"e90", service:"1993", confidence:"high", carrier:2, sonar:3.4, radar:14.6, ciws:0.54, rcs:2.2, desc:"The same three small hulls with a far better aeroplane on them: Blue Vixen radar and AMRAAM turned the Sea Harrier from a gun-and-Sidewinder day fighter into the best beyond-visual-range interceptor in Europe for a few years. Airborne early warning is the Sea King AEW.7, later ASaC7, which flew until 2018. The ski-jump remains, so the deck can never launch a fixed-wing early-warning aircraft." },
+
+  gbr_e00_cfighter: { fac:"gbr", role:"cfighter", cat:"aircraft", layer:"air", name:"Harrier GR9", full:"BAE Systems Harrier GR.9, Joint Force Harrier", cost:1420, oil:27, time:19, hp:410, armor:"air", speed:5.5, turn:2.2, sight:8.0, r:16, mass:0, weapons:["w_e00_gbr_cfighter","w_e00_gbr_cas"], prereq:["airbase"], tech:2, from:"e00", to:"e00", service:"2006", confidence:"high", jet:true, ammo:4, gen:3.5, radar:0, radarQ:2, radius:20, rcs:0.85, carrierCapable:true, refuelable:true, desc:"This band was empty, and an empty cfighter band is not cosmetic: G.deckAircraftFor asks unitFor(fac,\"cfighter\") and then unitFor(fac,\"cstealth\"), and with both returning null a British carrier put to sea in the 2000s as a helicopter ship. What actually flew off her was this. The Sea Harrier FA2 went on 28 March 2006 and Joint Force Harrier put the RAF's GR7 and GR9 on the deck in its place - a bomber with Sidewinders and NO air-intercept radar at all, so the fleet had strike and no organic air defence of its own. The to: tag stops at e00 on purpose: the 2010 SDSR retired the whole Harrier force that November, and from 2010 to 2018 Britain had no carrier fixed-wing aircraft of any kind." },
+
+  /* ---- carrier airborne early warning, 1952 to the present ----
+     The owner's E-2 question in British form. Four airframes carrying two
+     radar families: AN/APS-20 moved bodily from the Skyraider into the
+     Gannet, then Searchwater off a Nimrod into a bag on a Sea King, then
+     Searchwater 2000, then the same aerial again on a Merlin. Every row
+     carries a real `from`, and that is a mechanical input rather than a
+     label: genContest() reads it, so the 1952 APS-20 below takes 1.7^3 =
+     4.91x from a 1980s jammer and the Crowsnest fit takes 1.00x. That is
+     the correct answer and it is the whole argument for dating a row
+     honestly instead of stamping it. Both real gaps are visible in the
+     `to` tags: Ark Royal paid off in December 1978 and the Sea King did
+     not fly until August 1982, and the ASaC.7 went in September 2018
+     three years before Crowsnest reached initial operating capability. */
+  gbr_e50_cawacs: { fac:"gbr", role:"cawacs", cat:"aircraft", layer:"air", name:"Skyraider AEW.1", full:"Douglas Skyraider AEW.1, 849 NAS", cost:880, oil:18, time:15, hp:260, armor:"air", speed:2.4, turn:1.1, sight:8.2, r:16, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e50", to:"e50", service:"1952", confidence:"medium", jet:false, ammo:0, radar:9, radarQ:4, radius:26, rcs:3.0, awacs:true, carrierCapable:true, desc:"Fifty ex-US Navy AD-4W handed over under the Mutual Defense Assistance Programme and flown by 849 Naval Air Squadron from July 1952: one piston engine, three men, and an AN/APS-20 in a bathtub radome under the belly. Britain had carrier-borne early warning eight years before it had a land-based aircraft that could do the job at all - the reverse of the usual order, and a straight consequence of owning catapult decks." },
+
+  gbr_e60_cawacs: { fac:"gbr", role:"cawacs", cat:"aircraft", layer:"air", name:"Gannet AEW.3", full:"Fairey Gannet AEW.3, 849 NAS", cost:1080, oil:21, time:17, hp:280, armor:"air", speed:2.6, turn:1.1, sight:9.0, r:16, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e60", to:"e60", service:"1960", confidence:"medium", jet:false, ammo:0, radar:12, radarQ:5, radius:30, rcs:3.2, awacs:true, carrierCapable:true, desc:"New airframe, same radar: the APS-20 sets were lifted out of the retiring Skyraiders and hung under a Gannet. That is what an era chain is for - the aeroplane changed and the antenna did not - and it is the E-2A-to-E-2D argument in British form. Flew until HMS Ark Royal paid off on 4 December 1978, and when she went the Fleet Air Arm lost airborne early warning altogether. Three and a half years later the bill for that arrived off the Falklands." },
+
+  gbr_e80_cawacs: { fac:"gbr", role:"cawacs", cat:"aircraft", layer:"air", name:"Sea King AEW.2", full:"Westland Sea King AEW.2, 849 NAS", cost:1240, oil:24, time:16, hp:300, armor:"air", speed:2.9, turn:2.1, sight:9.6, r:13, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e80", to:"e80", service:"1982", confidence:"high", jet:false, ammo:0, radar:16, radarQ:9, radius:20, rcs:2.2, awacs:true, hover:true, carrierCapable:true, desc:"Ordered in the middle of the Falklands campaign and flying eleven weeks later: a Searchwater radar taken off a Nimrod and hung on the side of a Sea King in an inflatable bag that swivels up out of the rotor wash to fly and down to look. An ugly answer to a lesson learned at the cost of ships, and the reason a ski-jump deck is not blind. A helicopter at ten thousand feet sees far less than an E-2C at twenty-five, and the radar figure here says so rather than pretending otherwise." },
+
+  gbr_e90_cawacs: { fac:"gbr", role:"cawacs", cat:"aircraft", layer:"air", name:"Sea King AEW.2A", full:"Westland Sea King AEW.2A, 849 NAS", cost:1340, oil:26, time:16, hp:310, armor:"air", speed:2.9, turn:2.1, sight:10.2, r:13, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e90", to:"e90", service:"1985", confidence:"medium", jet:false, ammo:0, radar:18, radarQ:11, radius:20, rcs:2.2, awacs:true, hover:true, carrierCapable:true, desc:"The production conversions that followed the two Falklands lash-ups, with the processing the crash programme had no time to fit. Same airframe, same bag, better picture. This is the middle link of a chain and the easiest one to leave out - which is exactly why leaving it out is what makes a roster look like it has one machine per role for forty years." },
+
+  gbr_e00_cawacs: { fac:"gbr", role:"cawacs", cat:"aircraft", layer:"air", name:"Sea King ASaC.7", full:"Westland Sea King ASaC.7, 849 NAS", cost:1520, oil:28, time:17, hp:330, armor:"air", speed:3.0, turn:2.1, sight:11.4, r:13, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e00", to:"e00", service:"2002", confidence:"high", jet:false, ammo:0, radar:21, radarQ:15, radius:22, rcs:2.2, awacs:true, hover:true, carrierCapable:true, desc:"Airborne Surveillance and Area Control - a change of job as much as of radar. Searchwater 2000 tracks vehicles and small boats over land as well as aircraft over water, and the crew control the fight instead of merely reporting it, which is why they flew over Iraq and Afghanistan from an airfield rather than a deck. Retired on 26 September 2018, three years before Crowsnest could take over." },
   gbr_e90_cfighter: { fac:"gbr", role:"cfighter", cat:"aircraft", layer:"air", name:"Sea Harrier FA2", full:"BAe Sea Harrier FA2", cost:1380, oil:26, time:19, hp:395, armor:"air", speed:5.5, turn:2.3, sight:8.6, r:16, mass:0, weapons:["w_e90_nato_fighter"], prereq:["airbase"], tech:2, from:"e90", to:"e90", service:"1993", confidence:"high", jet:true, ammo:4, gen:3.5, radar:7, radarQ:11, radius:22, rcs:0.8, carrierCapable:true, refuelable:true, desc:"Blue Vixen was a small pulse-Doppler radar of genuinely first rank, and with AMRAAM this subsonic aircraft could kill a supersonic one before it was seen. Retired in 2006 on cost grounds with no replacement, which left the Royal Navy with no fixed-wing fighter of its own for twelve years." },
   gbr_e90_aswhelo: { fac:"gbr", role:"aswhelo", cat:"aircraft", layer:"air", name:"Lynx HMA.8", full:"Westland Lynx HMA.8", cost:1150, oil:22, time:14, hp:320, armor:"air", speed:3.6, turn:2.5, sight:7.4, r:12, mass:0, weapons:["asw_stingray"], prereq:["airbase"], tech:2, from:"e90", to:"e90", service:"1994", confidence:"high", ammo:3, radius:18, sonar:6.0, rcs:0.8, radarQ:7, gen:3.5, desc:"The frigate helicopter: a 360-degree Sea Owl thermal imager in the nose, Sea Skua for small craft and Sting Ray for submarines, and the agility that came from a rigid titanium rotor head. It hunts with the ship's towed array rather than a dipping sonar of its own, which is the trade a small deck forces." },
 
@@ -10433,6 +10490,1061 @@ Object.assign(UNITS, {
      name is distinguished from ssbn_f's the way fra_e90_sub and fra_e00_sub
      distinguish Rubis from Amethyste. */
   fra_e90_ssbn: { fac:"fra", role:"ssbn", cat:"naval", layer:"sub", name:"Le Triomphant (M45)", full:"Le Triomphant (S616), Triomphant-class with M45", cost:5900, oil:136, time:68, hp:2480, armor:"heavy", speed:1.95, turn:0.5, sight:5.8, r:26, mass:0, weapons:["slbm_m45"], prereq:["navalyard","lab","radar"], tech:3, from:"e90", to:"e90", service:"1997", confidence:"high", sonar:9.0, quiet:0.26, radarQ:5, nuclear:true, ssbn:true, desc:"Commissioned 21 March 1997 and on patrol the same year with sixteen M45 - the M4 airframe under the hardened TN 75 warhead, six thousand kilometres, six bodies. M51 does not exist yet: it first flew in 2006, went on patrol aboard Le Terrible in 2010, and Le Triomphant herself was not converted until the 2016-18 refit, so a 1990s French boomer firing M51 was ten years ahead of the missile's first test. The Redoutable class did not all leave at once either - L'Inflexible stayed on patrol until 2008." },
+});
+
+/* ==================================================================
+   UNITED STATES - the six roles that were standing on one machine
+   ==================================================================
+   SIX American roles had exactly ONE row covering all six periods, and five
+   of them carried a modern machine stamped with a date it never earned - the
+   E-2D at 1950, the KC-46 at 1950, the Super Hornet at 1980, Prophet at 1980
+   and the Stryker ATGM at 1960. That is not a cosmetic problem.
+   G.genContest() in js/game.js reads `from` as a real
+   service date when it decides how much jamming a radar eats, and the
+   DOMAIN_BITE table in js/generations.js scales a unit's ordnance by the same
+   field. A 2014 aeroplane dated 1950 is scored as a 1950s aeroplane.
+
+   Each chain below is real equipment with a checked in-service date. Where a
+   band is missing it is missing on purpose and the reason is written down.
+   The rules.js rows for the six were rebased to their true dates in the same
+   pass, so nothing here overlaps them: unitFor() picks the highest `from`
+   still in era, and every window below closes before the next one opens.
+
+   No 3D rows and no js/air_specs.js rows are needed. modelKeyFor() in
+   render3d.js falls through to a same-role peer of the same category, which
+   is what the Soviet boomers above already do - and for the E-2 family in
+   particular the peer IS the same airframe. */
+Object.assign(WEAPONS, {
+
+  /* ---- the deck fighter's own armament, where it differs from the
+     land fighter of the same decade ----
+     e60 and e90 are deliberately absent: the F-4B's fit really was the
+     AIM-7/AIM-9 pair already written as w_e60_nato_fighter (the B model had
+     no gun at all), and the F/A-18C's really was the AMRAAM already written
+     as w_e90_nato_fighter. Naming a duplicate would be dishonest padding.
+     The two that ARE here are the two the Navy did differently. */
+  w_e50_nato_cfighter: { name:"Four 20mm Colt Mk 12 cannon", dmg:78, warhead:"flak", range:6.6, reload:3.9, burst:1, acc:0.60, proj:"missile", speed:700, aoe:0.8, ammo:1, tgt:{ground:0,air:1,sea:0,sub:0}, profile:"pop", intercept:0.55 },
+  /* The Tomcat is the one carrier fighter that out-ranged everything ashore.
+     AIM-54A Phoenix, six carried, guided by the AWG-9 which could track
+     twenty-four targets and shoot at six - in 1974. It is given more reach
+     than the land-based w_e80_nato_fighter (8.6) and less hit probability,
+     because the long shots mostly missed: of the handful ever fired in anger
+     the record is poor, and the missile's real value was that a formation
+     broke up rather than close. */
+  w_e80_nato_cfighter: { name:"AIM-54A Phoenix and AIM-7F Sparrow", dmg:150, warhead:"flak", range:10.4, reload:4.1, burst:1, acc:0.68, proj:"missile", speed:700, aoe:0.8, ammo:1, tgt:{ground:0,air:1,sea:0,sub:0}, profile:"pop", intercept:0.55 },
+
+  /* ---- the tank destroyer's gun, then its three missiles ----
+     The pen figure is NOT written here. generations.js keys penetration off
+     the unit's role and era (ROLE_GUN.tankdestroyer = 1.05) and clones the
+     weapon per unit to do it, so a hand-written pen would be overwritten for
+     the gun and ignored for the missiles. Damage, reach and reload are the
+     honest part and they are what is set. */
+  w_e50_nato_tankdestroyer: { name:"90mm M54 gun on an open mount", dmg:64, warhead:"cannon", range:5.8, reload:6.2, burst:1, acc:0.55, proj:"shell", speed:860, aoe:0.9, suppress:22, tgt:{ground:1,air:0,sea:1,sub:0} },
+  /* BGM-71 TOW: optically tracked, wire-guided, and the gunner must hold the
+     crosshair on the target for the whole flight. That is the weakness the
+     reload and the accuracy are standing in for - a first-generation SACLOS
+     launcher cannot move and cannot be suppressed while it shoots. */
+  w_e60_nato_tankdestroyer: { name:"BGM-71A TOW, roof mount, gunner exposed", dmg:132, warhead:"heat", range:8.6, minRange:1.5, reload:7.6, burst:1, acc:0.70, proj:"missile", speed:330, aoe:0.8, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+  /* The ITV's hammerhead puts two ready rounds and the sight on the end of a
+     mast, so the hull stays behind the crest. Faster into action than the
+     roof mount it replaced, hence the shorter reload. */
+  w_e80_nato_tankdestroyer: { name:"Two TOW-2 in an erectable hammerhead launcher", dmg:152, warhead:"heat", range:9.0, minRange:1.5, reload:6.4, burst:1, acc:0.80, proj:"missile", speed:330, aoe:0.8, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+  w_e90_nato_tankdestroyer: { name:"TOW-2A with the AN/TAS-4 thermal sight", dmg:158, warhead:"heat", range:9.3, minRange:1.5, reload:6.1, burst:1, acc:0.85, proj:"missile", speed:330, aoe:0.8, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+
+  /* ---- the heavy tank's gun ----
+     120mm M58, separate-loading: a projectile and a brass powder case handled
+     by TWO loaders. Five rounds a minute from a fresh crew and fewer after
+     that, which is the whole argument the 105mm M68 won in 1960 - the reload
+     below is the slowest tank gun the American army ever fielded. */
+  w_e50_nato_heavy: { name:"120mm M58 gun, separate-loading, two loaders", dmg:80, warhead:"cannon", range:6.9, reload:7.4, burst:1, acc:0.61, proj:"shell", speed:880, aoe:0.9, suppress:26, tgt:{ground:1,air:0,sea:1,sub:0} },
+  w_e60_nato_heavy: { name:"120mm M58 with the M103A2 fire-control update", dmg:84, warhead:"cannon", range:7.1, reload:7.0, burst:1, acc:0.64, proj:"shell", speed:880, aoe:0.9, suppress:26, tgt:{ground:1,air:0,sea:1,sub:0} },
+});
+
+Object.assign(UNITS, {
+
+  /* ============ CARRIER AIRBORNE EARLY WARNING, 1958 to 2015 ============
+     The owner's own example, and the clearest case in the game for why one
+     row cannot be six decades: E-2A of 1964 and E-2D of 2014 are the same
+     airframe family and completely different aeroplanes. The radar runs
+     AN/APS-82 -> APS-96 -> APS-125 -> APS-145 -> APY-9, valve analogue to UHF
+     active array, and the last of those was built specifically to find things
+     the ones before it could not.
+
+     `radar` here is the coverage radius in tiles and these rows keep their
+     own, because RADAR_COVERAGE in rules.js only overrides the ids listed in
+     it. `jam` is NOT set: the pass that derives an AEW aircraft's jamming
+     from its radar fit runs in rules.js, which loads before this file, so era
+     AEW rows are pure receivers - exactly as fra_e00_cawacs already is.
+     carrierCapable is what lets a hull embark them. */
+  nato_e50_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-1B Tracer", full:"Grumman WF-2 / E-1B Tracer", cost:1450, oil:30, time:26, hp:300, armor:"air", speed:3.3, turn:1.0, sight:8.4, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e50", to:"e50", service:"1958", confidence:"high", jet:true, ammo:0, radar:14.5, radarQ:4, rcs:3.4, gen:2, radius:30, awacs:true, carrierCapable:true, desc:"Eighty-eight built on the S-2 Tracker's wing and tail, with the AN/APS-82 slung in a fixed teardrop above the fuselage and the fin split into three to clear it. Piston-engined, two men in the back, and no overland look-down at all - ground clutter beats the set, so it is a picket for the seaward approaches and nothing else. It is still the first time a fleet could see past its own horizon from its own deck, which is the capability the whole line below inherits. Retired 1977." },
+  nato_e60_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2B Hawkeye", full:"Grumman E-2B Hawkeye", cost:1950, oil:40, time:27, hp:380, armor:"air", speed:3.9, turn:1.0, sight:10.6, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e60", to:"e60", service:"1969", confidence:"high", jet:true, ammo:0, radar:20.5, radarQ:8, rcs:2.6, gen:3, radius:42, awacs:true, carrierCapable:true, desc:"Forty-nine E-2As sent back to Grumman from 1969 and rebuilt around the Litton L-304 general-purpose computer, because the A model's analogue kit was unreliable enough that squadrons did not trust it. The airframe with the rotodome is the one the Navy still flies today; this is the aeroplane becoming the system. The E-2A itself of 1964 stands one role over, as nato_e60_awacs." },
+  nato_e80_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2C Hawkeye", full:"Grumman E-2C Hawkeye (AN/APS-125)", cost:2350, oil:48, time:28, hp:440, armor:"air", speed:4.1, turn:1.0, sight:11.6, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e80", to:"e80", service:"1973", confidence:"high", jet:true, ammo:0, radar:24.0, radarQ:13, rcs:2.6, gen:3.5, radius:46, awacs:true, carrierCapable:true, desc:"In service with VAW-123 in November 1973 and the variant that made the type matter: APS-120, then the APS-125 Advanced Radar Processing System from 1976 and APS-138 from 1983, each one a better answer to the same problem of picking a low aircraft out of sea return. This is the aeroplane that ran the Gulf of Sidra intercepts in 1981 and 1989 - the fighters shot, the Hawkeye decided." },
+  nato_e90_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2C Group II", full:"Grumman E-2C Group II (AN/APS-145)", cost:2550, oil:52, time:29, hp:465, armor:"air", speed:4.2, turn:1.0, sight:12.0, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e90", to:"e90", service:"1992", confidence:"high", jet:true, ammo:0, radar:26.0, radarQ:18, rcs:2.6, gen:3.8, radius:48, awacs:true, carrierCapable:true, desc:"APS-145 from 1992: the same aerial, far better clutter rejection and enough processing to hold a track overland rather than only over water. Group II Hawkeyes controlled strike packages over Iraq and the Adriatic from decks that were the only airfields anyone would give the coalition. The France beside it bought this aeroplane and nothing else in Europe can do the job - see fra_e00_cawacs." },
+  nato_e00_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2C Hawkeye 2000", full:"Northrop Grumman E-2C Hawkeye 2000", cost:2800, oil:56, time:30, hp:490, armor:"air", speed:4.3, turn:1.0, sight:12.6, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e00", to:"e00", service:"2001", confidence:"high", jet:true, ammo:0, radar:27.5, radarQ:24, rcs:2.6, gen:4.2, radius:52, awacs:true, carrierCapable:true, desc:"Delivered from 2001 and first deployed by VAW-117 in 2004. The radar is still the APS-145; what is new is the Mission Computer Upgrade and Cooperative Engagement Capability, which lets a ship fire on a track the aeroplane is holding and the ship cannot see. That is the change worth marking - the Hawkeye stops being a radar that talks and becomes part of the fleet's fire-control loop. Eight-bladed NP2000 propellers came with the same programme." },
+
+  /* ============ THE TANKER FORCE, 1953 to 2019 ============
+     The single most consequential support aircraft in the game had one row.
+     Every band below is filled because there is no period since 1948 in which
+     the United States lacked a tanker force - the question was only what it
+     flew. Note e00: no NEW tanker. The KC-X replacement ran aground twice, on
+     the 2003 lease scandal and on the overturned 2008 award, so the fleet
+     that fought the 2000s was the same KC-135R and KC-10A it had in 1991.
+     That is why the e90 row carries to:"e00" - a deliberate sixteen-year hole
+     in American tanker procurement, recorded rather than papered over. */
+  nato_e50_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-97G Stratofreighter", full:"Boeing KC-97G Stratofreighter", cost:2300, oil:55, time:33, hp:640, armor:"air", speed:3.2, turn:0.85, sight:8.4, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e50", to:"e50", service:"1953", confidence:"high", jet:true, ammo:0, radius:95, tanker:300, refuelRate:9, rcs:5.4, gen:1.5, desc:"Eight hundred and sixteen built, and the aeroplane that made the Strategic Air Command's reach real before the jet tanker existed. Piston-engined and too slow for its own customers: to pass fuel to a B-47 the tanker had to push over into a shallow dive so the bomber could stay above stalling speed, both aircraft trading altitude for the whole transfer. It works, and it is the reason the KC-135 was ordered." },
+  nato_e60_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-135A Stratotanker", full:"Boeing KC-135A Stratotanker", cost:2900, oil:64, time:37, hp:720, armor:"air", speed:4.3, turn:0.88, sight:8.8, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e60", to:"e60", service:"1957", confidence:"high", jet:true, ammo:0, radius:135, tanker:380, refuelRate:13, rcs:5.6, gen:2.5, desc:"Seven hundred and thirty-two built from 1957, and the aircraft that turned tactical aviation into something with global range. Over Vietnam the Young Tiger tracks were flown continuously and crews credit them with saving hundreds of aircraft that would otherwise have flamed out short of a runway. Underpowered on water-injected J57s, which is the single thing the 1980s re-engining fixes." },
+  nato_e80_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-10A Extender", full:"McDonnell Douglas KC-10A Extender", cost:3400, oil:76, time:42, hp:820, armor:"air", speed:4.3, turn:0.85, sight:9.0, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e80", to:"e80", service:"1981", confidence:"high", jet:true, ammo:0, radius:165, tanker:500, refuelRate:17, rcs:6.2, gen:3, desc:"Sixty aircraft on the DC-10 airframe, in service 1981 and retired in September 2024. It carries close to twice a KC-135's fuel, has a boom AND a hose for Navy receivers, can be refuelled itself, and hauls the squadron's ground crew and spares in the same trip - which is what actually let fighter wings self-deploy across an ocean. The largest single offload in this game belongs to the 1980s, and that is correct." },
+  nato_e90_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-135R Stratotanker", full:"Boeing KC-135R (CFM56)", cost:3000, oil:66, time:38, hp:740, armor:"air", speed:4.4, turn:0.88, sight:9.0, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e90", to:"e00", service:"1984", confidence:"high", jet:true, ammo:0, radius:150, tanker:400, refuelRate:14, rcs:5.6, gen:3.2, desc:"The same airframe re-engined with CFM56 from 1984: roughly a quarter more fuel to give away, half the takeoff roll, and the noise and the smoke gone. This row runs to e00 on purpose. Nothing replaced it for thirty-five years - the KC-X competition collapsed in the 2003 lease scandal and again when the 2008 award was overturned - so the tanker that fought Desert Storm is also the tanker that fought the 2000s." },
+
+  /* ============ THE CARRIER AIR WING'S FIGHTER, 1952 to 2001 ============
+     rules.js used to say in so many words that e50 and e60 were a roster gap
+     and that Forrestal and Enterprise fell back on helicopters. They did not
+     in life: the United States Navy has flown fixed-wing fighters off decks
+     continuously since 1922, and the two hulls in question are IN this game.
+
+     The weapons are shared with the land-based fighter of the same decade
+     where the fit really was the same, which is also what fra_e50_cfighter
+     and gbr_e60_cfighter already do. */
+  nato_e50_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F9F-8 Cougar", full:"Grumman F9F-8 Cougar", cost:760, oil:17, time:14, hp:300, armor:"air", speed:4.6, turn:2.3, sight:7.2, r:16, mass:0, weapons:["w_e50_nato_cfighter"], prereq:["airbase"], tech:2, from:"e50", to:"e50", service:"1952", confidence:"high", jet:true, ammo:5, gen:1.5, radar:3, radarQ:3, radius:17, rcs:1.1, carrierCapable:true, desc:"The Panther with a swept wing, which is the Navy catching up with the Sabre eighteen months late and from a moving runway. Four 20mm cannon, no radar worth the name, and a landing speed the straight-wing Panther pilots hated. It is on Forrestal's deck because the alternative - a carrier with no fighters - is the thing that was actually wrong here." },
+  nato_e60_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F-4B Phantom II", full:"McDonnell F-4B Phantom II", cost:1150, oil:26, time:18, hp:430, armor:"air", speed:7.4, turn:1.9, sight:8.6, r:16, mass:0, weapons:["w_e60_nato_fighter"], prereq:["airbase"], tech:2, from:"e60", to:"e60", service:"1961", confidence:"high", jet:true, ammo:5, gen:3, radar:6, radarQ:7, radius:27, rcs:1.6, carrierCapable:true, desc:"A Navy aeroplane first and an Air Force one afterwards - the fleet had it in 1961 and Tactical Air Command had to be argued into it. Two engines, two crew, a big APQ-72 and eight missiles, and NO gun, which is the design decision Vietnam spent five years disproving. It shares its armament row with nato_e60_fighter because the fit genuinely was the same Sparrow and Sidewinder pair." },
+  nato_e80_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F-14A Tomcat", full:"Grumman F-14A Tomcat", cost:1600, oil:34, time:21, hp:500, armor:"air", speed:7.8, turn:1.9, sight:10.4, r:16, mass:0, weapons:["w_e80_nato_cfighter"], prereq:["airbase"], tech:2, from:"e80", to:"e80", service:"1974", confidence:"high", jet:true, ammo:6, gen:3.5, radar:8, radarQ:10, radius:38, rcs:1.4, carrierCapable:true, desc:"Deck-qualified in 1974 and built around one question: how does a carrier group stop a regiment of Backfires before they release. The answer was the AWG-9, which could track twenty-four contacts and shoot at six, and six AIM-54 Phoenix - the longest-ranged air-to-air weapon anyone fielded for twenty years. It out-reaches every land-based fighter of its decade in this roster, which is the historically correct and slightly uncomfortable answer." },
+  nato_e90_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F/A-18C Hornet", full:"McDonnell Douglas F/A-18C Hornet", cost:1480, oil:31, time:19, hp:455, armor:"air", speed:7.9, turn:2.1, sight:9.4, r:16, mass:0, weapons:["w_e90_nato_fighter"], prereq:["airbase"], tech:2, from:"e90", to:"e90", service:"1987", confidence:"high", jet:true, ammo:5, gen:4, radar:6, radarQ:11, radius:30, rcs:0.9, carrierCapable:true, desc:"Shorter-legged than the Tomcat it flew beside and far more useful, because it is a fighter and a bomber in the same sortie and the deck only has so many spots. Two Hornets shot down MiG-21s on the first morning of Desert Storm while still carrying the bombs they went on to drop. Its AMRAAM row is shared with nato_e90_fighter: the missile is the same missile." },
+
+  /* ============ THE TANK DESTROYER, 1957 to 2003 ============
+     A Stryker dated 1960 was the sharpest anachronism in the American roster.
+     What the army actually fielded is a gun that ran away from tanks, then
+     thirty years of TOW on a tracked box, then TOW on a wheeled one.
+
+     Armour is NOT set by role here - generations.js keys protection off the
+     armour CLASS, which is why every one of these is armor:"light" no matter
+     how large the gun is. The M56 in particular has no armour of any kind;
+     its low hp is the whole design. */
+  nato_e50_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M56 Scorpion", full:"M56 Scorpion, 90mm self-propelled anti-tank gun", cost:560, oil:7, time:11, hp:200, armor:"light", speed:2.5, turn:2.8, sight:6.4, r:13, mass:7, weapons:["w_e50_nato_tankdestroyer"], prereq:["factory"], tech:1, from:"e50", to:"e50", service:"1957", confidence:"high", turret:false, desc:"A 90mm M54 gun, a seven-tonne tracked chassis, four men sitting in the open behind a shield, and nothing else - no roof, no sides, no turret. It exists because an airborne division had to have something that could kill a tank and could also come out of a C-130. The gun is a real gun and the vehicle is a target: anything that sees it first wins. The 173rd Airborne took them to Vietnam." },
+  nato_e60_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M113A1 TOW", full:"M113A1 with the M220 TOW launcher", cost:980, oil:12, time:14, hp:540, armor:"light", speed:1.7, turn:2.1, sight:8.0, r:13, mass:12, weapons:["w_e60_nato_tankdestroyer"], prereq:["factory","radar"], tech:2, from:"e60", to:"e60", service:"1973", confidence:"medium", turret:false, desc:"TOW entered service in 1970 and went straight onto the aluminium box the army already had ten thousand of. The launcher is bolted to the roof and the gunner stands in the hatch behind it, which is the problem: the missile flies for fifteen seconds on a wire and he has to hold the crosshair on the target for every one of them, in the open, while the tank shoots back. The M901 below is the answer to precisely that." },
+  nato_e80_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M901 ITV", full:"M901 Improved TOW Vehicle", cost:1060, oil:13, time:15, hp:600, armor:"light", speed:1.8, turn:2.1, sight:8.4, r:13, mass:12, weapons:["w_e80_nato_tankdestroyer"], prereq:["factory","radar"], tech:2, from:"e80", to:"e80", service:"1979", confidence:"high", turret:true, tturn:1.2, desc:"The hammerhead. Two ready missiles and the sight ride on the end of a mast that swings up over the hull, so the vehicle stays entirely behind the crest and only the launcher head shows - and the crew stay inside. About two and a half thousand built from 1979, and the standard anti-armour company of the Central Front. Erecting the mast takes time, which is the price of not standing in the hatch." },
+  nato_e90_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M901A1 ITV", full:"M901A1 ITV with TOW-2 and AN/TAS-4", cost:1090, oil:13, time:15, hp:610, armor:"light", speed:1.8, turn:2.1, sight:10.4, r:13, mass:12, weapons:["w_e90_nato_tankdestroyer"], prereq:["factory","radar"], tech:2, from:"e90", to:"e90", service:"1991", confidence:"medium", turret:true, tturn:1.2, desc:"The same hammerhead with TOW-2 and the AN/TAS-4 thermal sight, which is the upgrade that mattered: in the smoke and the burning oil of February 1991 it could see and the thing shooting at it could not. Its long sight range here is that thermal, not a better missile. Retired through the 1990s as the Bradley took the job over, and the Stryker ATGM of 2003 is what eventually replaced the dedicated vehicle." },
+
+  /* ============ THE HEAVY TANK, 1957 to 1974, AND THEN NOTHING ============
+     e80, e90 and e00 are EMPTY and that is the finding, not a gap to fill.
+     The United States abolished the heavy tank as a class: the M103 was the
+     last one, the 1960 decision to standardise on a single main battle tank
+     ended the line, and there has been no American heavy tank since. The
+     M1A2C in rules.js holds e20 as the modern super-heavy, which is a
+     different argument about active protection rather than a continuation of
+     this one. Britain has exactly the same shape - gbr_e50_heavy Conqueror,
+     then nothing until gbr_e90_heavy - for exactly the same reason.
+
+     armorMM is not written here either: generations.js derives it from
+     ARM_FRONT.nato and the hull's hp for anything armor:"heavy". */
+  nato_e50_heavy: { fac:"nato", role:"heavy", cat:"vehicle", layer:"ground", name:"M103", full:"M103 Heavy Tank (120mm Gun Tank M103)", cost:1150, oil:19, time:25, hp:1450, armor:"heavy", speed:1.0, turn:1.2, sight:6.8, r:18, mass:58, weapons:["w_e50_nato_heavy"], prereq:["factory","lab"], tech:3, from:"e50", to:"e50", service:"1957", confidence:"high", turret:true, tturn:1.2, crush:true, desc:"Three hundred built to answer the IS-3 at a range the Pattons could not reach, and accepted by the Army in 1957 already half obsolete. Separate-loading 120mm ammunition and two loaders to handle it, a fifty-eight-tonne hull on an engine meant for a forty-five-tonne one, and a road range that made moving it a logistics operation. The Army was glad to be rid of it; the Marine Corps kept it because a landing force wanted the gun." },
+  nato_e60_heavy: { fac:"nato", role:"heavy", cat:"vehicle", layer:"ground", name:"M103A2", full:"M103A2 Heavy Tank (USMC)", cost:1230, oil:20, time:25, hp:1500, armor:"heavy", speed:1.08, turn:1.25, sight:7.2, r:18, mass:58, weapons:["w_e60_nato_heavy"], prereq:["factory","lab"], tech:3, from:"e60", to:"e60", service:"1964", confidence:"high", turret:true, tturn:1.25, crush:true, desc:"The Marine Corps' rebuild: the M60's diesel in place of the petrol engine, which fixes the range, and better fire control, which fixes the hit probability. It served in Marine tank battalions until 1973-74 and was the last heavy tank in American service. Nothing replaced it, because the 1960 decision to field one main battle tank instead of a light-medium-heavy family had already ended the class." },
+
+  /* ============ GROUND ELECTRONIC WARFARE, 1985 to now ============
+     e50 and e60 are EMPTY. The United States Army had no divisional jamming
+     vehicle before its Combat Electronic Warfare Intelligence battalions were
+     formed in 1977-78; until then ground electronic warfare was a corps-level
+     signals intelligence activity and the jamming mission belonged to the Air
+     Force and the Navy. This roster already says so from the other side - the
+     e50 and e60 ewair rows are an AD-5Q Skyraider and an EA-6B Prowler.
+
+     Both rows below are COMMUNICATIONS jammers, not radar jammers, so their
+     jamPower is well under the Prophet's and far under a Growler's. What they
+     do to an opponent is break his ability to co-ordinate, which is a real
+     effect and a different one. */
+  nato_e80_ewveh: { fac:"nato", role:"ewveh", cat:"vehicle", layer:"ground", name:"TACJAM", full:"AN/MLQ-34 TACJAM on the M1015 carrier", cost:1250, oil:12, time:17, hp:540, armor:"light", speed:1.5, turn:1.7, sight:7.4, r:14, mass:12, weapons:[], prereq:["factory","radar"], tech:2, from:"e80", to:"e80", service:"1985", confidence:"medium", jam:5.6, jamPower:0.62, radar:6, turret:true, tturn:0.7, desc:"A tracked shelter full of receivers and transmitters, issued to the divisional CEWI battalion, whose job is to sit behind the covering force and take the other side's command net off the air. It cannot touch a fire-control radar - that is the Air Force's problem and the Prowler's - and against a Soviet regiment relying on voice on the move it is genuinely disruptive. Conspicuous the moment it transmits, like every jammer here." },
+  nato_e90_ewveh: { fac:"nato", role:"ewveh", cat:"vehicle", layer:"ground", name:"TRAFFIC JAM", full:"AN/TLQ-17A TRAFFIC JAM on the HMMWV", cost:1180, oil:11, time:15, hp:420, armor:"light", speed:2.2, turn:2.3, sight:8.0, r:14, mass:5, weapons:[], prereq:["factory","radar"], tech:2, from:"e90", to:"e90", service:"1991", confidence:"medium", jam:6.0, jamPower:0.66, radar:6, turret:true, tturn:0.8, desc:"The same trade on a Humvee: a lighter, faster and completely unarmoured jammer that can keep up with a brigade instead of a division. Used through Desert Storm against Iraqi command nets. Nothing about it survives being found - five tonnes, canvas doors - so it lives or dies on shooting and moving, which is the way every emitter in this game should be handled." },
+});
+
+/* ==================================================================
+   THE SOVIET AND RUSSIAN ERA CHAINS
+
+   Placed here, at the foot of the file and BEFORE reindexRoles() below, for
+   the same reason the boomer chains above are: the units have to exist before
+   the roster is re-indexed or they can never be built.
+
+   WHAT WAS MEASURED. Eleven pact roles were standing on ONE row covering all
+   six periods, and four of those rows are machines that did not exist for most
+   of the span they were being fielded in - 9P157-2 Khrizantema-S (2005) dated
+   e60, 1RL257 Krasukha-4 (2014) dated e60, Ka-27PL (1981) dated e60. That date
+   is not a label. js/game.js genContest() reads `from` to decide who wins the
+   jamming duel, and js/generations.js DOMAIN_BITE scales every weapon a unit
+   carries by it: pact guided accuracy is multiplied by 0.968 at e60 and by
+   0.712 at e00, so a 2005 missile dated 1965 was firing 36% more accurately
+   than the same missile dated honestly.
+
+   Every weapon id below is authored below. Nothing here invents an id, and
+   nothing here needs a 3D row: render3d.js modelKeyFor() borrows a same-role,
+   same-category peer, which is what the ssbn chain above already relies on.
+   ================================================================== */
+
+Object.assign(WEAPONS, {
+
+  /* ---- ANTI-TANK MISSILE CARRIERS ----
+     e50 has no row and must not have one. The Soviet Army had no anti-tank
+     guided missile of any kind until the 3M6 Shmel of 1960; the 9K11 Malyutka
+     was accepted on 16 September 1963. Before that the anti-tank weapon was a
+     towed gun or an assault gun, and this game already gives the pact both
+     (pact_e50_spg is an SU-100). An empty band is the correct answer. */
+
+  /* 9M14 off a 9P110: six rails on a BRDM-1, MCLOS, and the operator flies
+     the missile the whole way with a thumb joystick while the target shoots
+     back. Accuracy is deliberately the worst of any guided round in the game:
+     Egyptian and Syrian crews in October 1973 were the best-trained Malyutka
+     operators ever fielded and still scored somewhere near a quarter of shots,
+     and untrained crews scored almost nothing. Its 500 m arming distance is
+     the minRange, and it is why a Malyutka carrier is helpless the moment
+     anything closes. */
+  "w_e60_pact_tankdestroyer": {
+    "name": "6 x 9M14 MCLOS from a pop-up rack", "dmg": 78, "warhead": "heat",
+    "range": 6.2, "minRange": 1.2, "reload": 6.5, "burst": 1, "acc": 0.52,
+    "proj": "missile", "speed": 340, "aoe": 0.7, "suppress": 14,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 },
+    "profile": "pop", "intercept": 1
+  },
+  /* 9M114 Kokon off a 9P149: radio-command SACLOS instead of a wire, which is
+     what lets it fly at 345-400 m/s instead of 120, and twelve rounds in an
+     automatic loader instead of six on rails. 5 km against the Konkurs team's
+     4, so it sits between w_e80_pact_at (6.6) and the Western atgm_veh (8.4).
+     The radio link is the weakness and the reason Rtut-class jamming matters
+     in both directions. */
+  "w_e80_pact_tankdestroyer": {
+    "name": "9M114 supersonic radio-command ATGM", "dmg": 120, "warhead": "heat",
+    "range": 7.4, "minRange": 1.3, "reload": 5.4, "burst": 1, "acc": 0.74,
+    "proj": "missile", "speed": 400, "aoe": 0.8, "suppress": 16,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 },
+    "profile": "pop", "intercept": 1
+  },
+
+  /* ---- THE FORGER'S ARMAMENT ----
+     The Yak-38 had no radar at all, only a ranging set, so it could not carry
+     a radar-guided missile and never did. Two R-60 on the outer pylons and a
+     GSh-23L in a pod on an inner one, and the pods and the missiles compete
+     for the same four hardpoints as the bombs. Deliberately far below
+     w_e60_pact_fighter (a MiG-21 at 7.8 tiles): a land-based fighter of the
+     same decade beats this aircraft in every column. */
+  "w_e60_pact_cfighter": {
+    "name": "2 x R-60 IR and a GSh-23L pod", "dmg": 88, "warhead": "flak",
+    "range": 5.2, "reload": 4.2, "burst": 1, "acc": 0.58, "proj": "missile",
+    "speed": 700, "aoe": 0.8, "ammo": 1,
+    "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 },
+    "profile": "pop", "intercept": 0.55
+  },
+  /* Yak-38M: new R-28V-300 and RD-38 engines, which bought back some of the
+     payload the Forger lost to hot-day vertical takeoffs, and the R-60M. Still
+     no radar. The literal reads 0.68 rather than the 0.63 the hardware would
+     suggest because DOMAIN_BITE is measured, not guessed: at 0.63 this 1985
+     aircraft resolved to 0.540 against the 1976 aircraft's 0.556 - the upgrade
+     came out worse than the thing it replaced. 0.68 resolves to 0.583. */
+  "w_e80_pact_cfighter": {
+    "name": "2 x R-60M IR and a GSh-23L pod", "dmg": 100, "warhead": "flak",
+    "range": 5.8, "reload": 4.0, "burst": 1, "acc": 0.68, "proj": "missile",
+    "speed": 700, "aoe": 0.8, "ammo": 1,
+    "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 },
+    "profile": "pop", "intercept": 0.55
+  },
+
+  /* ---- KIEV'S OWN BATTERY ----
+     Follows w_e60_pact_carrier and w_e90_pact_carrier: the carrier's weapon
+     row in this game is its self-defence, tgt.air only, and the air group is
+     modelled by carrier:3 rather than by this. Four twin P-500 Bazalt
+     launchers forward of the island with a reload magazine below, plus two
+     SA-N-3 Goblet - the Kiev was a cruiser that happened to have a deck, and
+     it spent the hangar volume to be one. */
+  "w_e80_pact_carrier": {
+    "name": "8 x P-500 Bazalt and SA-N-3 Goblet", "dmg": 118, "warhead": "flak",
+    "range": 9.8, "reload": 5.6, "burst": 1, "acc": 0.62, "proj": "missile",
+    "speed": 520, "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 },
+    "sfx": "missile", "profile": "pop", "intercept": 0.85
+  },
+
+  /* ---- THE HORMONE'S SONAR ----
+     Same shape as w_e80_pact_aswhelo, weaker in every column. A Ka-25PL dips
+     an OKA-2 sonar and carries ONE AT-1 torpedo or a pair of depth charges in
+     a shallow internal bay - the airframe was sized to fit a cruiser's lift,
+     and the weapons bay is what paid for it. */
+  "w_e60_pact_aswhelo": {
+    "name": "Dipping sonar and one AT-1 torpedo", "dmg": 96, "warhead": "he",
+    "range": 2.6, "reload": 7.4, "burst": 5, "burstDelay": 0.2, "acc": 0.32,
+    "proj": "arc", "speed": 12, "aoe": 1.2,
+    "tgt": { "ground": 0, "air": 0, "sea": 0, "sub": 1 }, "sfx": "cannon"
+  },
+
+  /* ---- THE LAST SOVIET HEAVY GUN ----
+     The same 122 mm as the T-10, but the M-62-T2S has a bore evacuator and a
+     two-plane stabiliser, which is the difference between a gun that can only
+     be fired from a halt and one that can be laid on the move. It is still
+     two-piece ammunition into a 1950s breech: about three rounds a minute,
+     and that number is the whole argument against the heavy tank. */
+  "w_e60_pact_heavy": {
+    "name": "122mm M-62-T2S stabilised gun", "dmg": 78, "warhead": "cannon",
+    "range": 6.4, "reload": 6.2, "burst": 1, "acc": 0.62, "proj": "shell",
+    "speed": 860, "aoe": 0.9, "suppress": 26,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 }
+  },
+});
+
+Object.assign(UNITS, {
+
+  /* ============ TANK DESTROYERS, 1963 to the present ============
+     atgmv_p is a 9P157-2 Khrizantema-S, which js/facts.js already dates to
+     2005, so rules.js moves it to e00 where it belongs. These two rows are
+     what the Soviet Army actually had in the meantime. The IT-1 "Drakon" of
+     1968 - a T-62 hull with the gun deleted and a 3M7 launcher in its place -
+     is the road not taken here: about 220 built, in service barely two years,
+     and withdrawn because a tank destroyer that cannot also fight a tank with
+     a gun turned out to be a bad trade. The BRDM carriers are what the army
+     was issued in quantity, and they are what these rows are.
+
+     Windows do not overlap. unitFor() picks by highest from-index and breaks a
+     tie by ROLES index order, which is insertion order and not something to
+     rely on, so every row here closes before the next one opens. */
+  pact_e60_tankdestroyer: { fac:"pact", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"9P110 Malyutka", full:"9P110, six 9M14 Malyutka on a BRDM-1", cost:620, oil:8, time:12, hp:330, armor:"light", speed:2.30, turn:2.6, sight:7.0, r:13, mass:6, weapons:["w_e60_pact_tankdestroyer"], prereq:["factory","radar"], tech:2, turret:false, from:"e60", to:"e60", service:"1963", confidence:"high", desc:"A BRDM-1 scout car with the roof cut out and a six-rail launcher that rises through it, produced from 1963. The missile is flown to the target by hand on a joystick and takes most of half a minute to get there at 120 m/s, during which the operator cannot move, cannot take cover and cannot look at anything else - and inside 500 m the missile has not armed. That is the whole character of the first ATGM generation: enormous reach for 1963, and almost useless against anything that is already close. The 9P122 on a BRDM-2 followed in 1969 and the 9P133 in 1971." },
+  pact_e80_tankdestroyer: { fac:"pact", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"9P149 Shturm-S", full:"9P149 Shturm-S on the MT-LB", cost:980, oil:12, time:15, hp:520, armor:"light", speed:1.90, turn:2.2, sight:8.0, r:13, mass:12, weapons:["w_e80_pact_tankdestroyer"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, from:"e80", to:"e90", service:"1979", confidence:"high", desc:"In service 1979: an MT-LB carrying a single retractable pedestal launcher fed by an automatic loader with twelve 9M114 below deck. The missile is radio-commanded rather than wire-guided, which is what lets it fly supersonic and reach 5 km, and the launcher drops back under armour to reload. It cannot fire on the move. The window runs to e90 on purpose - the Russian Army of the 1990s bought no new tank destroyer at all, and the Shturm-S simply stayed in the inventory, which is where the Ataka-armed 9P149M found it." },
+
+  /* ============ AERIAL REFUELLING, 1955 to the present ============
+     tanker_p is an Il-78M and its from:"e80" is already right: the Il-78
+     entered service in 1984. What was missing is that the Soviet Union had
+     been refuelling in the air for thirty years by then. The Council of
+     Ministers decree of 26 May 1954 ordered refuelling systems for the Tu-16
+     and the M-4, the first air-to-air fuel transfer was made on 11 July 1955,
+     and a 3MS-2 tanker regiment was still flying in 1994.
+
+     Both rows are deliberately WORSE than a Western tanker of the same decade
+     and not by a token amount. Soviet tanking was built to extend a strategic
+     bomber force a few hundred kilometres, not to hold a fighter screen up all
+     day, and the fleet was small. Read the refuelRate figures against
+     gbr_e50_tanker's 12 and tanker_n's 16. */
+  pact_e50_tanker: { fac:"pact", role:"tanker", cat:"aircraft", layer:"air", name:"Tu-16Z", full:"Tupolev Tu-16Z wing-to-wing tanker", cost:2400, oil:56, time:33, hp:560, armor:"air", speed:4.60, turn:0.9, sight:8.5, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0, radius:90, tanker:240, refuelRate:9, rcs:4.2, gen:2, from:"e50", to:"e50", service:"1957", confidence:"medium", desc:"The first Soviet tanker, and the strangest refuelling method any air force has used: not a boom and not a drogue behind the tail but a hose streamed from the tanker's RIGHT wingtip, which the receiver caught with its LEFT one and drew into its own wing. Two large jets flying formation close enough to hand each other a cable. It worked, it was dangerous, and it would only ever refuel another Tu-16 or a MiG-19 - so the low tanker and refuelRate figures here are the aircraft, not a handicap. Probe-and-drogue Tu-16N followed for the Tu-22." },
+  pact_e60_tanker: { fac:"pact", role:"tanker", cat:"aircraft", layer:"air", name:"3MS-2 Bison", full:"Myasishchev 3MS-2, M-4 converted to tanker", cost:2900, oil:66, time:37, hp:700, armor:"air", speed:4.30, turn:0.85, sight:8.5, r:23, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0, radius:130, tanker:360, refuelRate:12, rcs:5.4, gen:2.5, from:"e60", to:"e60", service:"1958", confidence:"medium", desc:"A strategic bomber that could not reach America converted into the tanker that let the rest of the fleet try. The refuelling unit and an extra 3,600 litres go in the bomb bay and it streams a hose and drogue, transferring up to forty tonnes at 4,000 km from base. Long-Range Aviation flew these until 1994 - which means the Soviet heavy tanker force was, for thirty-six years, a bomber nobody wanted with a hose in its bomb bay." },
+
+  /* ============ CARRIER FIGHTERS, 1976 to the present ============
+     e50 is EMPTY and that is the correct answer. No Soviet ship ever operated
+     a fixed-wing aircraft before the Kiev in 1976; the e60 row above it,
+     Project 1123 Moskva, is a helicopter cruiser and its own desc says so.
+
+     cfighter_p is a Su-33 and its from:"e90" is right - accepted into service
+     in 1998, which js/facts.js records. These two rows are the Forger, and the
+     Forger is the point: for twenty-two years Soviet naval fixed-wing aviation
+     was a VTOL light attack aircraft with no radar that could barely lift a
+     useful load off a hot deck, and the game should say so rather than put a
+     Flanker on a 1976 deck. */
+  pact_e60_cfighter: { fac:"pact", role:"cfighter", cat:"aircraft", layer:"air", name:"Yak-38 Forger", full:"Yakovlev Yak-38 (Yak-36M)", cost:820, oil:20, time:15, hp:300, armor:"air", speed:5.40, turn:1.7, sight:5.6, r:15, mass:0, weapons:["w_e60_pact_cfighter"], prereq:["airbase"], tech:2, jet:true, ammo:2, gen:2.5, rcs:1.20, radarQ:0, radius:14, carrierCapable:true, from:"e60", to:"e60", service:"1976", confidence:"high", desc:"Accepted 11 August 1976 and at sea aboard Kiev the same year. Three engines, two of them lift jets that are dead weight in cruise, no radar, and a combat radius nearer a hundred kilometres than the Su-33's six hundred - on a hot day in the Indian Ocean a Forger came off the deck with fuel or with weapons and not with both. The automatic ejection system fired the seat for the pilot if the aircraft departed in the hover, which tells you how the type was regarded. A hundred and forty-three built." },
+  pact_e80_cfighter: { fac:"pact", role:"cfighter", cat:"aircraft", layer:"air", name:"Yak-38M", full:"Yakovlev Yak-38M", cost:880, oil:21, time:15, hp:320, armor:"air", speed:5.60, turn:1.75, sight:5.8, r:15, mass:0, weapons:["w_e80_pact_cfighter"], prereq:["airbase"], tech:2, jet:true, ammo:2, gen:2.8, rcs:1.20, radarQ:0, radius:16, carrierCapable:true, from:"e80", to:"e80", service:"1985", confidence:"high", desc:"State tests completed in 1985 and fifty built. New R-28V-300 and RD-38 engines recovered some of the payload the Forger lost to vertical takeoff, and the short rolling takeoff recovered more - but there is still no radar, so there is still no radar-guided missile, and in 1985 that is a fighter which cannot engage anything it has not seen with its own eyes. The Su-27K that would fix all of this first touched a deck in November 1989." },
+
+  /* ============ THE 1980s DECK ============
+     Measured: the pact carrier line ran Moskva (e60), nothing at all (e80),
+     Kuznetsov (e90) - and the 1980s hole is the decade the Soviet Navy had
+     FOUR of these in commission. Without it the two Forger rows above have
+     nowhere to fly from in the period they were built for.
+
+     Kiev 28 December 1975, Minsk 1978, Novorossiysk 1982, Baku 1987. The row
+     is dated to Novorossiysk because 1982 is unambiguously e80 and because she
+     commissioned with sixteen Yak-38M and eighteen Ka-27 aboard. */
+  pact_e80_carrier: { fac:"pact", role:"carrier", cat:"naval", layer:"sea", name:"Project 1143 Kiev", full:"Project 1143 Krechyet (Novorossiysk)", cost:3400, oil:78, time:52, hp:3150, armor:"heavy", speed:1.42, turn:0.6, sight:9.4, r:30, mass:0, weapons:["w_e80_pact_carrier"], prereq:["navalyard","lab","airbase"], tech:3, carrier:3, sonar:3.2, radar:10.5, ciws:0.38, rcs:2.9, from:"e80", to:"e80", service:"1982", confidence:"high", desc:"A heavy aviation cruiser: an angled flight deck down the port side and a cruiser's missile battery on the forecastle, because Soviet doctrine would not spend forty thousand tonnes on aviation alone and the Montreux Convention would not let a ship called an aircraft carrier through the Turkish Straits. Both halves suffer for it - the Bazalt launchers eat the hangar, and the air group is a VTOL that cannot use the deck's length. Four built; all four were gone by 1993, two of them sold to China and one to India." },
+
+  /* ============ SHIPBORNE ASW HELICOPTERS, 1968 to the present ============
+     asw_helo_p is a Ka-27PL, which js/facts.js dates to 1981, and it was
+     nonetheless dated from:"e60" - so a 1981 helicopter was flying in the
+     1960s, AND it collided with pact_e80_aswhelo, the same aircraft, in e80.
+     Measured before this change: unitFor("pact","aswhelo","e80") had two
+     candidates at the same from-index and resolved on ROLES insertion order.
+     rules.js now starts asw_helo_p at e90, where pact_e80_aswhelo's window
+     closes, and this row is what the navy actually flew before either.
+
+     No hover or carrierCapable field: reindexRoles() derives both from the
+     aswhelo role, and its comment says that is the point. */
+  pact_e60_aswhelo: { fac:"pact", role:"aswhelo", cat:"aircraft", layer:"air", name:"Ka-25PL Hormone-A", full:"Kamov Ka-25PL", cost:720, oil:16, time:12, hp:245, armor:"air", speed:2.75, turn:2.2, sight:4.8, r:11, mass:0, weapons:["w_e60_pact_aswhelo"], prereq:["airbase"], tech:2, ammo:1, sonar:3.6, radius:14, rcs:0.90, gen:2.5, from:"e60", to:"e60", service:"1968", confidence:"high", desc:"The helicopter the Moskva above was built to carry fourteen of, and the first Soviet shipborne ASW aircraft worth the name. Coaxial rotors so it needs no tail rotor and folds into a cruiser's lift; an OKA-2 dipping sonar, a search radar under the nose, and a bay deep enough for exactly one AT-1 torpedo. Endurance was short and the sonar had to be dipped, listened on and hauled up again for every sample, so localising a submarine took a pair of aircraft and a long time. Replaced by the Ka-27 from 1981." },
+
+  /* ============ THE LAST SOVIET HEAVY TANK ============
+     e80, e90 and e00 are EMPTY on purpose and this is the clearest
+     realism-over-symmetry case in the whole pact roster. The Soviet Army did
+     not replace the heavy tank; it abolished the category. Heavy tanks were
+     out of front-line service by 1967, the T-64 and the T-72 made the
+     distinction meaningless, and nothing stood in this slot again until the
+     T-14 of the 2010s that hvy_p already is. The gap between pact_e50_heavy
+     and hvy_p is not a hole in the data. It is sixty years of Soviet and
+     Russian armour policy, and the only row missing from it is this one.
+
+     NOTE, and it is not this row's to fix: pact_e50_heavy carries aps:0.40
+     and pla_e50_heavy carries aps:0.42, which js/combat.js reads as a chance
+     to defeat an incoming missile. A T-10 of 1953 and an IS-2 of 1944 have an
+     active protection system because the generator copied the field down from
+     hvy_p and hvy_c. This row does not take it. */
+  pact_e60_heavy: { fac:"pact", role:"heavy", cat:"vehicle", layer:"ground", name:"T-10M", full:"T-10M (Object 272) Heavy Tank", cost:1140, oil:18, time:25, hp:1420, armor:"heavy", speed:1.32, turn:1.4, sight:5.2, r:18, mass:50, weapons:["w_e60_pact_heavy"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.35, crush:true, from:"e60", to:"e60", service:"1957", confidence:"high", desc:"Accepted 26 September 1957 and built at Kirov until 1966: a stabilised 122 mm, two 14.5 mm KPVT, infrared night sights and fifty tonnes of cast armour. It is a genuinely better tank than the T-10 beside it and it is also the end of the line - by the time the last one left the factory the category had no job left, because a T-62's smoothbore firing APFSDS did to armour what a heavy tank's gun did, from a hull half the weight that could keep up with the advance. Held in reserve until 1993 and never replaced." },
+});
+
+/* ================= PLA — THE CHAINS THAT WERE STANDING ON ONE ROW =================
+   Five Chinese roles were being fought in six decades by a single machine, and
+   in three of them that machine post-dates the eras it was covering. Measured
+   with unitFor("pla", role, era) before this block was written:
+
+     tankdestroyer  AFT-10 from e80. The HJ-10 fibre-optic missile it carries
+       first appeared in public in 2014, so a 1985 battle was fought with a
+       2014 weapon - and because DOMAIN_BITE in generations.js scales ordnance
+       by the unit's `from`, that 2014 missile was also being handed 1980s
+       ordnance quality. The date is a mechanical input, not a label.
+     tanker         YY-20 from e00. The Y-20U entered service in 2021.
+     missileboat    a hole at e80 and e90, between the Huangfeng of 1965 and
+       the Houbei of 2004 - and e80 is the decade the PLAN had a hundred and
+       twenty Huangfeng in commission.
+     aswhelo        nothing at all before e00, in a navy that bought thirteen
+       Super Frelons in 1977-78 and had the Z-8 in PLANAF service in 1989.
+     recon          a hole at e80 alone, because the BJ212 / Type 62 row was
+       closed at e60 while the WZ-551 recce vehicle that follows it is a
+       1990s machine. Nothing new was procured; the jeeps stayed.
+
+   WHAT STAYS EMPTY, and why the emptiness is the answer rather than a gap:
+
+     tankdestroyer, e50 / e60 - the PLA had no vehicle-mounted anti-tank
+       MISSILE of any kind until the HJ-73, a Malyutka copy adopted in 1979.
+       Anti-tank work before that was the towed Type 56 85mm and Type 73
+       100mm guns and the recoilless rifle, which are the `at` and `spg`
+       roles in this game and not this one. Two empty eras.
+     tanker, e50 / e60 / e80 - China could not refuel in the air at all. The
+       H-6U first flew in 1990 and made its first successful transfer in 1993.
+       Three empty eras, and they are the largest single fact about the reach
+       of the PLAAF for its first forty years: every combat radius in the
+       e50, e60 and e80 Chinese roster is the aircraft's own and nothing else.
+     aswhelo, e50 / e60 - no anti-submarine helicopter, and until the Luda
+       conversions of the late 1980s no flight deck to fly one from.
+     heavybomber - built, but in heavyair.js beside the B-52, because the H-6
+       tells the same story with the same airframe: what changed over sixty
+       years is not how hard it hits but from how far away.
+
+   WEAPONS. The ids follow the w_<era>_<fac>_<role> pattern, which means the
+   era-range pass at the foot of generations.js REWRITES `range` on the three
+   tankdestroyer rounds to AT_ERA_M for their era - 9.1 tiles at e80, 10.1 at
+   e90 and at e00. The literals are written at those values so the file says
+   what the game will actually do; the naval and ASW rounds are not in that
+   pass and stand as written. Every id used below is authored here or already
+   in rules.js. None is invented: entities.js dereferences w.tgt with no
+   guard, so a dangling id throws on the first target evaluation.        */
+Object.assign(WEAPONS, {
+ /* HJ-73 is a 9M14 Malyutka copy and the accuracy figure is the point of the
+    entry. It is MCLOS: the gunner flies the missile onto the target with a
+    thumb stick for the whole thirty-second flight, and it cruises at about
+    115 m/s, so a moving tank at long range is very nearly unhittable. The
+    SACLOS HJ-73B that fixed this is a 1980s rebuild and is not this row. */
+ "w_e80_pla_tankdestroyer": {"name":"HJ-73 MCLOS wire-guided missile","dmg":112,"warhead":"heat","range":9.1,"minRange":1.5,"reload":9.2,"burst":1,"acc":0.48,"proj":"missile","speed":180,"aoe":0.7,"suppress":14,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
+ /* The PTZ-89's gun is NOT stabilised, which is why a 120mm smoothbore that
+    out-penetrates every Chinese tank gun of its decade carries a lower
+    accuracy than the missiles either side of it: the vehicle has to stop to
+    shoot. Being a gun round it is also the one entry in this role that
+    cannot be shot down, so it has no intercept field. */
+ "w_e90_pla_tankdestroyer": {"name":"120mm smoothbore, unstabilised","dmg":152,"warhead":"cannon","range":10.1,"reload":7.4,"burst":1,"acc":0.70,"proj":"shell","speed":860,"aoe":0.9,"suppress":26,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* HJ-9 rides a laser beam rather than a wire, so the launcher is free of the
+    spool and the missile flies at roughly twice the Malyutka's speed. */
+ "w_e00_pla_tankdestroyer": {"name":"HJ-9 laser beam-riding ATGM","dmg":150,"warhead":"heat","range":10.1,"minRange":1.4,"reload":7.2,"burst":1,"acc":0.80,"proj":"missile","speed":300,"aoe":0.8,"suppress":16,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1.15},
+ /* Six C-801 in three twin box launchers. A solid-fuel sea-skimmer replacing
+    the liquid-fuelled SY-1 of the e60 boat: half the reach on paper, but it
+    flies at five metres instead of a hundred and fifty and it is the first
+    Chinese anti-ship missile a ship's radar has real trouble seeing. */
+ "w_e90_pla_missileboat": {"name":"6 x YJ-8 anti-ship missiles","dmg":228,"warhead":"he","range":15.2,"minRange":1.8,"reload":16.5,"burst":2,"burstDelay":0.8,"acc":0.72,"proj":"missile","speed":300,"aoe":1.6,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"sfx":"missile","profile":"loft","intercept":0.55},
+ /* Depth charges, and that is not an economy: China had no air-dropped
+    homing ASW torpedo until the Yu-7 of the mid-1990s, so a 1980s PLAN
+    helicopter had to fly over the contact and drop on it. Short reach, poor
+    accuracy, and a submarine that hears it coming has time to move. */
+ "w_e80_pla_aswhelo": {"name":"Depth charges","dmg":150,"warhead":"he","range":2.6,"reload":8.4,"burst":2,"burstDelay":0.5,"acc":0.40,"proj":"arc","speed":60,"aoe":1.6,"tgt":{"ground":0,"air":0,"sea":0,"sub":1},"sfx":"cannon"},
+});
+Object.assign(UNITS, {
+  /* ---- the anti-tank chain, 1979 to the present ----
+     Four machines and four different answers to the same problem, which is
+     why this is a chain rather than one row with a moved date. */
+  pla_e80_tankdestroyer: {"fac":"pla","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"Type 63 (HJ-73)","full":"Type 63 / YW531 carrier with the HJ-73 launcher","cost":760,"oil":9,"time":13,"hp":505,"armor":"light","speed":1.58,"turn":2.0,"sight":6.2,"r":13,"mass":13,"weapons":["w_e80_pla_tankdestroyer"],"prereq":["factory"],"tech":1,"from":"e80","to":"e80","service":"1979","confidence":"medium","desc":"The PLA's first vehicle-mounted anti-tank missile: a Malyutka copy adopted in 1979 and bolted to the roof of the Type 63 carrier that was already in every mechanised regiment. The missile is the firm date here and the mounting is the common one; Chinese practice was to fit HJ-73 to whatever hull was to hand, and open sources are not consistent about which carrier got which. Manual command guidance means the gunner has to keep the target and the missile in the same eyepiece for half a minute, so it is a weapon for a prepared position rather than a moving fight.","turret":false},
+  pla_e90_tankdestroyer: {"fac":"pla","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"PTZ-89","full":"PTZ-89 (Type 89) 120mm self-propelled anti-tank gun","cost":1120,"oil":14,"time":17,"hp":740,"armor":"light","speed":1.75,"turn":1.9,"sight":7.2,"r":15,"mass":31,"weapons":["w_e90_pla_tankdestroyer"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"Designed by Factory 447 in the early 1980s, in service from 1989, about a hundred built to 1995 and formally retired on 3 November 2015. It exists because the PLA spent the 1970s and 1980s unable to kill a modern Soviet tank with a tank: the answer was to put a 120mm smoothbore that out-penetrated every Chinese tank gun of the decade on a light tracked hull and accept that the hull could be opened by autocannon. The gun is not stabilised, so it stops to shoot.","turret":true,"tturn":1.2},
+  pla_e00_tankdestroyer: {"fac":"pla","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"AFT-9","full":"AFT-9 (HJ-9 Red Arrow 9) missile carrier on the WZ-550","cost":1040,"oil":12,"time":15,"hp":610,"armor":"light","speed":2.2,"turn":2.4,"sight":8.2,"r":13,"mass":11,"weapons":["w_e00_pla_tankdestroyer"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"1999","confidence":"high","desc":"A retractable four-round launcher on a WZ-550 wheeled hull, first deployed in the late 1990s and shown publicly in 1999. Laser beam-riding rather than wire-guided, so the missile is twice as fast as the HJ-73 and the vehicle can reverse off the crest the moment the round hits. This is the vehicle the AFT-10 replaced, not the vehicle the AFT-10 was.","turret":true,"tturn":1.3},
+
+  /* ---- the tanker that made the PLAAF a long-range air force ----
+     One row for one aircraft, and three empty eras in front of it. */
+  pla_e90_tanker: {"fac":"pla","role":"tanker","cat":"aircraft","layer":"air","name":"H-6U","full":"Xian H-6U / HY-6 probe-and-drogue tanker","cost":2400,"oil":55,"time":32,"hp":700,"armor":"air","speed":4.4,"turn":0.85,"sight":8.0,"r":22,"mass":0,"weapons":[],"prereq":["airbase","radar"],"tech":2,"from":"e90","to":"e00","service":"1997","confidence":"medium","desc":"A bomber with the bomb bay full of fuel and a hose pod under each wing. First flight 1990, first successful transfer 1993, and a pair flew over Tiananmen escorted by four J-8D on 1 October 1999. Around twenty exist. It is small - a Tu-16 gives away perhaps a third of what a Y-20U carries - and it is probe-and-drogue only, so it can refuel a J-8D or a J-10 and nothing else in the inventory. Before it, no Chinese aircraft had ever taken fuel in the air.","jet":true,"ammo":0,"radius":100,"tanker":260,"refuelRate":11,"rcs":5.0,"gen":2.5},
+
+  /* ---- the missile boats: a hull that stayed, then a hull that replaced it ----
+     The e60 Huangfeng row is extended to e80 rather than duplicated, because
+     nothing new arrived: by 1985 the PLAN had a hundred and twenty of them. */
+  pla_e90_missileboat: {"fac":"pla","role":"missileboat","cat":"naval","layer":"sea","name":"Type 037-II Houjian","full":"Type 037-II Houjian-class missile boat","cost":1180,"oil":17,"time":17,"hp":780,"armor":"light","speed":2.72,"turn":1.75,"sight":6.8,"r":16,"mass":0,"weapons":["w_e90_pla_missileboat"],"prereq":["navalyard","radar"],"tech":2,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"Six boats delivered from 1991, all of them to the Hong Kong squadron. Twice the displacement of a Huangfeng and slower for it, but it carries six C-801 sea-skimmers instead of four SY-1 - a solid-fuel missile that flies at five metres against a liquid-fuelled one that flies at a hundred and fifty, which is the difference between a contact a ship can engage and one it finds out about when it hits.","sonar":0,"rcs":0.6},
+
+  /* ---- anti-submarine helicopters: French airframe, Chinese weapon ----
+     e50 and e60 stay empty. The PLAN had no ASW helicopter and no deck. */
+  pla_e80_aswhelo: {"fac":"pla","role":"aswhelo","cat":"aircraft","layer":"air","name":"SA 321Ja Super Frelon","full":"Aerospatiale SA 321Ja Super Frelon, PLA Navy","cost":960,"oil":20,"time":14,"hp":330,"armor":"air","speed":2.7,"turn":1.9,"sight":6.0,"r":12,"mass":0,"weapons":["w_e80_pla_aswhelo"],"prereq":["airbase"],"tech":2,"from":"e80","to":"e80","service":"1977","confidence":"medium","desc":"Thirteen aircraft bought from France in 1977-78, and for a decade the whole of Chinese anti-submarine aviation. It has the airframe for the job - three engines, a boat hull, hours on task - and almost none of the equipment: a search radar, no dipping sonar worth the name, and depth charges rather than a homing torpedo, because China had no air-dropped ASW torpedo until the 1990s. It also had nowhere to land at sea until the Luda conversions of the late 1980s.","ammo":2,"radius":22,"sonar":4.4,"rcs":1.05,"radarQ":4,"gen":2.5},
+  pla_e90_aswhelo: {"fac":"pla","role":"aswhelo","cat":"aircraft","layer":"air","name":"Z-8","full":"Changhe Z-8, licence-built Super Frelon","cost":1080,"oil":21,"time":14,"hp":345,"armor":"air","speed":2.8,"turn":2.0,"sight":6.4,"r":12,"mass":0,"weapons":["asw_yu7"],"prereq":["airbase"],"tech":2,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"The same aircraft built in China: first flight 11 December 1985, PLANAF service in August 1989, formally certified on 12 November 1994, and only fifteen to twenty made because the gearbox and the rotor head were harder to copy than the shape. What it adds over the imported Frelon is the Yu-7, a licensed Mk 46 pattern and the first homing torpedo a Chinese aircraft could drop.","ammo":2,"radius":22,"sonar":5.6,"rcs":1.0,"radarQ":5,"gen":3},
+});
+
+/* ==================================================================
+   THREE ERA CHAINS THAT WERE STANDING ON ONE MACHINE
+   Germany, North Korea and Taiwan, authored here for the same reason the
+   submarine block above is here: the rows have to exist before
+   reindexRoles() runs or unitFor() can never see them, and every weapon id
+   below is either authored in this block or already live in rules.js /
+   eras.js. Nothing here invents an id and nothing here invents a machine.
+
+   Why it matters mechanically and not only cosmetically: DOMAIN_BITE in
+   js/generations.js scales every weapon a unit carries by the unit's own
+   `from` era (0.00 in e50 through 1.00 in e20), and G.genContest in
+   js/game.js reads `from` when a radar meets a jammer. A back-dated row is
+   therefore fighting with the wrong decade's ordnance, and a back-dated
+   sensor is contested as if it were that old.
+   ================================================================== */
+Object.assign(WEAPONS, {
+ /* 40 mm Bofors L/70, the single mount a German coastal minesweeper carried.
+    It is self-defence against aircraft and nothing else - these hulls exist
+    to sweep, and the sweep is the mineClear field, not this gun. */
+ "w_e80_deu_minesweeper": {"name":"40 mm Bofors L/70","dmg":22,"warhead":"he","range":6.2,"reload":1.7,"burst":4,"burstDelay":0.2,"acc":0.58,"proj":"shell","speed":700,"aoe":0.5,"tgt":{"ground":1,"air":1,"sea":1,"sub":0},"sfx":"shot"},
+ /* SU-100: the 100 mm D-10S in a fixed casemate. Same barrel as the D-10T of
+    the T-55 above, one generation earlier and with no turret to traverse, so
+    it hits as hard and lays far more slowly. */
+ "w_e50_kpa_tankdestroyer": {"name":"100 mm D-10S in a fixed casemate","dmg":88,"warhead":"cannon","range":6.5,"reload":7.2,"burst":1,"acc":0.58,"proj":"shell","speed":860,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* Susong-po, the North Korean 9M14 Malyutka. MCLOS: the gunner flies the
+    missile onto the target with a thumb stick for the whole 20-odd seconds of
+    flight, which is why the accuracy is the worst of any anti-tank missile in
+    this game and why the Bulsae-2 that replaced it was worth having. */
+ "w_e60_kpa_tankdestroyer": {"name":"Susong-po (9M14 Malyutka), MCLOS","dmg":78,"warhead":"heat","range":8.0,"minRange":1.4,"reload":7.6,"burst":1,"acc":0.50,"proj":"missile","speed":260,"aoe":0.8,"suppress":16,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
+ /* Mk 44 and early Mk 46 off a 500MD's stub pylons - one torpedo, sometimes
+    two, and a towed magnetic anomaly detector to find something to drop it
+    on. Speed is written at its final value: the sweep at the foot of this
+    file multiplies any torpedo under 60 by twenty, and 180 is already there. */
+ "w_e80_roc_aswhelo": {"name":"Mk 44 / Mk 46 lightweight torpedo","dmg":168,"warhead":"he","range":5.4,"reload":8.4,"burst":1,"acc":0.74,"proj":"torpedo","speed":180,"aoe":0.8,"tgt":{"ground":0,"air":0,"sea":0,"sub":1},"sfx":"missile"},
+});
+
+Object.assign(UNITS, {
+
+  /* ============ BUNDESWEHR ARTILLERY RADAR, 1968 to 2004 ============
+     radarv_g said COBRA was "the first counter-battery radar Germany ever
+     had - the Bundeswehr fought the whole Cold War without one", and that is
+     simply not what happened. Three machines came before it, and the honest
+     part of the story is that none of them did COBRA's job: Green Archer
+     watches a mortar bomb arc over and works back, RATAC watches things move
+     on the ground. A radar that back-plots a gun shell to its battery is
+     genuinely new in 2004 - the Cold War claim is not.
+
+     e50 is left EMPTY on purpose. The Bundeswehr was founded on 12 November
+     1955 and Green Archer was procured in 1968; there was nothing in between. */
+  deu_e60_radarv: { fac:"deu", role:"radarv", cat:"vehicle", layer:"ground", name:"Green Archer", full:"M113 A1 G Green Archer (FA No. 8 Mk 2)", cost:620, oil:7, time:11, hp:430, armor:"light", speed:1.60, turn:1.8, sight:6.0, r:13, mass:12, weapons:[], prereq:["factory","radar"], tech:2, from:"e60", to:"e60", service:"1968", confidence:"high", radar:9.5, radarQ:8, turret:true, tturn:0.9, desc:"A British EMI mortar-locating radar on a rebuilt M113 - the exhaust was re-routed so it would not sit in the beam. Procured in 1968 for the divisional observation battalions and not retired until the 1990s. It watches a bomb come over the top of its arc and works backwards to the tube, which is why it is good against mortars and poor against a flat-trajectory gun, and why the Bundeswehr still had no answer to a Soviet artillery group.", },
+  deu_e80_radarv: { fac:"deu", role:"radarv", cat:"vehicle", layer:"ground", name:"ABRA / RATAC", full:"M113 ABRA, Artillerie-Beobachtungsradar RATAC", cost:820, oil:8, time:13, hp:450, armor:"light", speed:1.60, turn:1.8, sight:7.2, r:13, mass:13, weapons:[], prereq:["factory","radar"], tech:2, from:"e80", to:"e80", service:"1976", confidence:"high", radar:12, radarQ:12, turret:true, tturn:0.9, desc:"Sixty-two M113 hulls fitted between 1976 and 1978 with RATAC, a Franco-German battlefield radar on a six-metre telescopic mast. Be clear about what it is: it finds and tracks things that MOVE - vehicles, troops, a river crossing - and walks the divisional artillery onto them. It does not locate a firing battery. Germany's artillery in this decade sees the enemy coming and still cannot see who is shelling it.", },
+  deu_e90_radarv: { fac:"deu", role:"radarv", cat:"vehicle", layer:"ground", name:"RATAC-S", full:"M113 ABRA with RATAC-S", cost:980, oil:9, time:15, hp:470, armor:"light", speed:1.60, turn:1.75, sight:8.0, r:13, mass:13, weapons:[], prereq:["factory","radar"], tech:2, from:"e90", to:"e90", service:"1990s", confidence:"medium", radar:14, radarQ:16, turret:true, tturn:0.9, desc:"Thirty-five new vehicles from the 1990s with a solid-state RATAC-S: further reach, better resolution and into action in a fraction of the time, which on a battlefield where the counter-battery clock is running is most of the value. Still a surveillance radar rather than a shell tracker. ABRA stayed in service until it was finally replaced in 2022-24, nearly fifty years after the first one.", },
+
+  /* ============ GERMAN MINE WARFARE, 1957 to 1993 ============
+     minesweeper_g's own text says "the one branch of naval warfare where
+     Germany genuinely leads, and it has for fifty years" and then dates the
+     first hull to the 1990s, and cites the Troika of 1981 as a fact about a
+     ship the roster did not contain. Fifty years of leadership needs the
+     fifty years in it. Only the 1980s row is authored here, and the
+     1950s and 1960s bands are deliberately NOT filled: rules.js holds a
+     faction-agnostic `minesweeper` at from:"e50" that every navy can build,
+     so a Lindau row dated e50 would tie with it on eraIndex 0 and lose the
+     tie on insertion order - dead data nobody could ever build. The Lindau is
+     in this row regardless, because the Type 351 IS six converted Lindau
+     hulls. */
+  deu_e80_minesweeper: { fac:"deu", role:"minesweeper", cat:"naval", layer:"sea", name:"Troika (Type 351)", full:"Type 351 Ulm-class Troika control ship and Seehund drones", cost:1120, oil:13, time:17, hp:600, armor:"light", speed:2.1, turn:1.6, sight:7.2, r:15, mass:0, weapons:["w_e80_deu_minesweeper"], prereq:["navalyard"], tech:1, from:"e80", to:"e80", service:"1979", confidence:"high", mineDetect:4.0, mineClear:3.0, mineClearRate:1.9, sonar:1.6, desc:"Six Lindau hulls converted from 1979 into control ships, each steering three unmanned Seehund drones by radio ahead of itself. The drones carry the magnetic and acoustic gear and take the explosion; the crew stays in clear water astern. It is the first operational unmanned minesweeping anywhere in the world, it is German, and it is 1979 - a good twenty-five years before unmanned surface vessels became a thing anyone talked about. The clearance rate is the drones', not the ship's.", },
+
+  /* ============ KPA ANTI-ARMOUR VEHICLES, 1954 to 2018 ============
+     atgmv_k was the Bulsae-4, an eight-tube fibre-optic launcher first
+     paraded in 2018, carrying from:"e80". Rebased to e20 in rules.js; these
+     two rows are what the KPA actually had before it, and they are both
+     Soviet designs because that is the honest answer for this army. There is
+     no Bulsae-2 or Bulsae-3 CARRIER row: both are shoulder and tripod weapons
+     in this roster already (kpa_e80_at, kpa_e00_at), the vehicle mountings
+     are thinly sourced, and inventing one to fill e00 is exactly the mistake
+     the Bulsae-4's old date was. The BRDM-2 simply stays in service, which is
+     what an army with no money does. */
+  kpa_e50_tankdestroyer: { fac:"kpa", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"SU-100", full:"SU-100 tank destroyer", cost:480, oil:7, time:11, hp:520, armor:"light", speed:1.30, turn:1.5, sight:3.9, r:15, mass:32, weapons:["w_e50_kpa_tankdestroyer"], prereq:["factory"], tech:1, from:"e50", to:"e50", service:"1954", confidence:"medium", turret:true, tturn:0.8, desc:"A 100 mm gun in a fixed casemate on a T-34 hull, delivered with the post-war Soviet rearmament after the KPA armoured force had been destroyed. No turret: the whole vehicle turns to lay the gun, so it fights from an ambush position and nowhere else. Still in North Korean hands seventy years later, playing the enemy in exercise footage, which says as much about this army as any figure in the table.", },
+  kpa_e60_tankdestroyer: { fac:"kpa", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"Susong-po BRDM-2", full:"9P133 BRDM-2 with Susong-po (9M14 Malyutka)", cost:560, oil:8, time:10, hp:430, armor:"light", speed:2.05, turn:2.3, sight:5.2, r:13, mass:7, weapons:["w_e60_kpa_tankdestroyer"], prereq:["factory"], tech:1, from:"e60", to:"e00", service:"1970s", confidence:"low", turret:true, tturn:1.3, desc:"Six Malyutka rails that rise out of the roof of an amphibious scout car, built in North Korea as the Susong-po. The missile is flown by hand for its whole flight, so a moving target at long range is close to unhittable and the crew has to sit still and exposed while it flies. It spans four eras here not because anything improved but because nothing replaced it: the KPA's next purpose-built missile carrier is the Bulsae-4 of 2018. Numbers are an outside estimate and the introduction date is not documented.", },
+
+  /* ============ ROC ANTI-ARMOUR VEHICLES, 1952 to the present ============
+     atgmv_r was a "CM-32 TOW" dated e80. No such vehicle exists - the Yunpao
+     family is CM-32 / CM-33 / CM-34 and none of them is a TOW carrier - and
+     the CM-32 itself is a 2000s design, so the row was an invented machine on
+     an impossible date. rules.js now holds the real present-day carrier, the
+     M1167 HMMWV with ITAS, at e20. These three rows are the sixty years
+     before it, and every one of them is a real vehicle in ROC service. */
+  roc_e50_tankdestroyer: { fac:"roc", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M18 Hellcat", full:"M18 GMC Hellcat tank destroyer", cost:430, oil:5, time:10, hp:330, armor:"light", speed:2.35, turn:2.6, sight:4.6, r:14, mass:18, weapons:["w_e50_roc_mbt"], prereq:["factory"], tech:1, from:"e50", to:"e60", service:"1952", confidence:"high", turret:true, tturn:1.9, desc:"Two hundred and forty-three arrived in the first US military aid batch in 1952 and became the backbone of the armoured force. It is the fastest tracked fighting vehicle of its generation and it is open-topped with armour a rifle round can trouble - the doctrine is to arrive somewhere before the enemy expects it, shoot, and be gone. Withdrawn through the 1970s; survivors were dug in on the offshore islands as fixed coastal guns, which is where several still sit.", },
+  roc_e80_tankdestroyer: { fac:"roc", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M113A1 TOW", full:"M113A1 with BGM-71 TOW launcher", cost:820, oil:9, time:13, hp:520, armor:"light", speed:1.85, turn:2.2, sight:7.2, r:13, mass:12, weapons:["w_e80_roc_at"], prereq:["factory","radar"], tech:2, from:"e80", to:"e80", service:"1980s", confidence:"medium", turret:true, tturn:1.4, desc:"A TOW launcher bolted through the roof hatch of an M113 - the ROC Army's anti-armour carrier and still in service today. Wire-guided and manually tracked: the gunner has to hold the crosshair on the target for the whole flight, standing up in an open hatch, which on an open beach is a short career. The Marine Corps fielded the same missile properly enclosed on the CM-25, an amphibious CM-21 with buoyancy foam in the spaced armour.", },
+  roc_e90_tankdestroyer: { fac:"roc", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"CM-25 TOW", full:"CM-25 (CM-21 hull) with BGM-71E TOW-2A", cost:1020, oil:11, time:15, hp:580, armor:"light", speed:1.90, turn:2.2, sight:8.4, r:13, mass:14, weapons:["w_e90_roc_at"], prereq:["factory","radar"], tech:2, from:"e90", to:"e00", service:"1990s", confidence:"medium", turret:true, tturn:1.4, desc:"The Marine Corps vehicle, a CM-21 hull with the spaced armour filled with polystyrene so it will swim ashore, carrying TOW-2A with a tandem warhead that defeats the reactive armour the PLA started bolting to its tanks in this decade. Twenty years of ROC anti-armour is one missile getting a better warhead on the same wire, which is the whole procurement story of an island buying from one supplier.", },
+
+  /* ============ ROC ANTI-SUBMARINE HELICOPTERS, 1980 to the present ============
+     asw_helo_r is the S-70C(M) Thunderhawk, ordered in 1983 and delivered
+     around 1990, and it carried from:"e80". It is rebased to e90 in rules.js.
+     This row is what actually flew the ASW mission in the 1980s, and it is a
+     genuinely different machine - a two-tonne light helicopter with a towed
+     magnetic detector and no dipping sonar at all, hunting from the deck of a
+     1940s destroyer. */
+  roc_e80_aswhelo: { fac:"roc", role:"aswhelo", cat:"aircraft", layer:"air", name:"500MD/ASW Defender", full:"Hughes 500MD/ASW Defender", cost:640, oil:11, time:10, hp:205, armor:"air", speed:3.05, turn:2.8, sight:5.6, r:12, mass:0, weapons:["w_e80_roc_aswhelo"], prereq:["airbase"], tech:2, from:"e80", to:"e80", service:"1980", confidence:"high", ammo:1, radius:12, sonar:3.4, rcs:0.5, radarQ:4, gen:3, desc:"Twelve ordered in 1977, landed in Taiwan on 4 March 1980 and worked up to operational by the end of 1983, flying off Gearing and Sumner-class destroyers that were already forty years old. A Bendix RDR-1300 in an offset nose radome, a towed ASQ-81 magnetic anomaly detector and one Mk 44 or Mk 46 under the belly. No dipping sonar and no sonobuoys: it is a weapon carrier that has to be told where to look, so the ship is still doing the hunting. Five were lost in accidents. The survivors were pushed aside into a light squadron in 1991 when the Thunderhawks arrived.", },
+});
+
+/* ==================================================================
+   UNITED STATES - the six roles that were standing on one machine
+   ==================================================================
+   SIX American roles had exactly ONE row covering all six periods, and five
+   of them carried a modern machine stamped with a date it never earned - the
+   E-2D at 1950, the KC-46 at 1950, the Super Hornet at 1980, Prophet at 1980
+   and the Stryker ATGM at 1960. That is not a cosmetic problem.
+   G.genContest() in js/game.js reads `from` as a real
+   service date when it decides how much jamming a radar eats, and the
+   DOMAIN_BITE table in js/generations.js scales a unit's ordnance by the same
+   field. A 2014 aeroplane dated 1950 is scored as a 1950s aeroplane.
+
+   Each chain below is real equipment with a checked in-service date. Where a
+   band is missing it is missing on purpose and the reason is written down.
+   The rules.js rows for the six were rebased to their true dates in the same
+   pass, so nothing here overlaps them: unitFor() picks the highest `from`
+   still in era, and every window below closes before the next one opens.
+
+   No 3D rows and no js/air_specs.js rows are needed. modelKeyFor() in
+   render3d.js falls through to a same-role peer of the same category, which
+   is what the Soviet boomers above already do - and for the E-2 family in
+   particular the peer IS the same airframe. */
+Object.assign(WEAPONS, {
+
+  /* ---- the deck fighter's own armament, where it differs from the
+     land fighter of the same decade ----
+     e60 and e90 are deliberately absent: the F-4B's fit really was the
+     AIM-7/AIM-9 pair already written as w_e60_nato_fighter (the B model had
+     no gun at all), and the F/A-18C's really was the AMRAAM already written
+     as w_e90_nato_fighter. Naming a duplicate would be dishonest padding.
+     The two that ARE here are the two the Navy did differently. */
+  w_e50_nato_cfighter: { name:"Four 20mm Colt Mk 12 cannon", dmg:78, warhead:"flak", range:6.6, reload:3.9, burst:1, acc:0.60, proj:"missile", speed:700, aoe:0.8, ammo:1, tgt:{ground:0,air:1,sea:0,sub:0}, profile:"pop", intercept:0.55 },
+  /* The Tomcat is the one carrier fighter that out-ranged everything ashore.
+     AIM-54A Phoenix, six carried, guided by the AWG-9 which could track
+     twenty-four targets and shoot at six - in 1974. It is given more reach
+     than the land-based w_e80_nato_fighter (8.6) and less hit probability,
+     because the long shots mostly missed: of the handful ever fired in anger
+     the record is poor, and the missile's real value was that a formation
+     broke up rather than close. */
+  w_e80_nato_cfighter: { name:"AIM-54A Phoenix and AIM-7F Sparrow", dmg:150, warhead:"flak", range:10.4, reload:4.1, burst:1, acc:0.68, proj:"missile", speed:700, aoe:0.8, ammo:1, tgt:{ground:0,air:1,sea:0,sub:0}, profile:"pop", intercept:0.55 },
+
+  /* ---- the tank destroyer's gun, then its three missiles ----
+     The pen figure is NOT written here. generations.js keys penetration off
+     the unit's role and era (ROLE_GUN.tankdestroyer = 1.05) and clones the
+     weapon per unit to do it, so a hand-written pen would be overwritten for
+     the gun and ignored for the missiles. Damage, reach and reload are the
+     honest part and they are what is set. */
+  w_e50_nato_tankdestroyer: { name:"90mm M54 gun on an open mount", dmg:64, warhead:"cannon", range:5.8, reload:6.2, burst:1, acc:0.55, proj:"shell", speed:860, aoe:0.9, suppress:22, tgt:{ground:1,air:0,sea:1,sub:0} },
+  /* BGM-71 TOW: optically tracked, wire-guided, and the gunner must hold the
+     crosshair on the target for the whole flight. That is the weakness the
+     reload and the accuracy are standing in for - a first-generation SACLOS
+     launcher cannot move and cannot be suppressed while it shoots. */
+  w_e60_nato_tankdestroyer: { name:"BGM-71A TOW, roof mount, gunner exposed", dmg:132, warhead:"heat", range:8.6, minRange:1.5, reload:7.6, burst:1, acc:0.70, proj:"missile", speed:330, aoe:0.8, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+  /* The ITV's hammerhead puts two ready rounds and the sight on the end of a
+     mast, so the hull stays behind the crest. Faster into action than the
+     roof mount it replaced, hence the shorter reload. */
+  w_e80_nato_tankdestroyer: { name:"Two TOW-2 in an erectable hammerhead launcher", dmg:152, warhead:"heat", range:9.0, minRange:1.5, reload:6.4, burst:1, acc:0.80, proj:"missile", speed:330, aoe:0.8, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+  w_e90_nato_tankdestroyer: { name:"TOW-2A with the AN/TAS-4 thermal sight", dmg:158, warhead:"heat", range:9.3, minRange:1.5, reload:6.1, burst:1, acc:0.85, proj:"missile", speed:330, aoe:0.8, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0}, profile:"pop", intercept:1 },
+
+  /* ---- the heavy tank's gun ----
+     120mm M58, separate-loading: a projectile and a brass powder case handled
+     by TWO loaders. Five rounds a minute from a fresh crew and fewer after
+     that, which is the whole argument the 105mm M68 won in 1960 - the reload
+     below is the slowest tank gun the American army ever fielded. */
+  w_e50_nato_heavy: { name:"120mm M58 gun, separate-loading, two loaders", dmg:80, warhead:"cannon", range:6.9, reload:7.4, burst:1, acc:0.61, proj:"shell", speed:880, aoe:0.9, suppress:26, tgt:{ground:1,air:0,sea:1,sub:0} },
+  w_e60_nato_heavy: { name:"120mm M58 with the M103A2 fire-control update", dmg:84, warhead:"cannon", range:7.1, reload:7.0, burst:1, acc:0.64, proj:"shell", speed:880, aoe:0.9, suppress:26, tgt:{ground:1,air:0,sea:1,sub:0} },
+});
+
+Object.assign(UNITS, {
+
+  /* ============ CARRIER AIRBORNE EARLY WARNING, 1958 to 2015 ============
+     The owner's own example, and the clearest case in the game for why one
+     row cannot be six decades: E-2A of 1964 and E-2D of 2014 are the same
+     airframe family and completely different aeroplanes. The radar runs
+     AN/APS-82 -> APS-96 -> APS-125 -> APS-145 -> APY-9, valve analogue to UHF
+     active array, and the last of those was built specifically to find things
+     the ones before it could not.
+
+     `radar` here is the coverage radius in tiles and these rows keep their
+     own, because RADAR_COVERAGE in rules.js only overrides the ids listed in
+     it. `jam` is NOT set: the pass that derives an AEW aircraft's jamming
+     from its radar fit runs in rules.js, which loads before this file, so era
+     AEW rows are pure receivers - exactly as fra_e00_cawacs already is.
+     carrierCapable is what lets a hull embark them. */
+  nato_e50_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-1B Tracer", full:"Grumman WF-2 / E-1B Tracer", cost:1450, oil:30, time:26, hp:300, armor:"air", speed:3.3, turn:1.0, sight:8.4, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e50", to:"e50", service:"1958", confidence:"high", jet:true, ammo:0, radar:14.5, radarQ:4, rcs:3.4, gen:2, radius:30, awacs:true, carrierCapable:true, desc:"Eighty-eight built on the S-2 Tracker's wing and tail, with the AN/APS-82 slung in a fixed teardrop above the fuselage and the fin split into three to clear it. Piston-engined, two men in the back, and no overland look-down at all - ground clutter beats the set, so it is a picket for the seaward approaches and nothing else. It is still the first time a fleet could see past its own horizon from its own deck, which is the capability the whole line below inherits. Retired 1977." },
+  nato_e60_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2B Hawkeye", full:"Grumman E-2B Hawkeye", cost:1950, oil:40, time:27, hp:380, armor:"air", speed:3.9, turn:1.0, sight:10.6, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e60", to:"e60", service:"1969", confidence:"high", jet:true, ammo:0, radar:20.5, radarQ:8, rcs:2.6, gen:3, radius:42, awacs:true, carrierCapable:true, desc:"Forty-nine E-2As sent back to Grumman from 1969 and rebuilt around the Litton L-304 general-purpose computer, because the A model's analogue kit was unreliable enough that squadrons did not trust it. The airframe with the rotodome is the one the Navy still flies today; this is the aeroplane becoming the system. The E-2A itself of 1964 stands one role over, as nato_e60_awacs." },
+  nato_e80_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2C Hawkeye", full:"Grumman E-2C Hawkeye (AN/APS-125)", cost:2350, oil:48, time:28, hp:440, armor:"air", speed:4.1, turn:1.0, sight:11.6, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e80", to:"e80", service:"1973", confidence:"high", jet:true, ammo:0, radar:24.0, radarQ:13, rcs:2.6, gen:3.5, radius:46, awacs:true, carrierCapable:true, desc:"In service with VAW-123 in November 1973 and the variant that made the type matter: APS-120, then the APS-125 Advanced Radar Processing System from 1976 and APS-138 from 1983, each one a better answer to the same problem of picking a low aircraft out of sea return. This is the aeroplane that ran the Gulf of Sidra intercepts in 1981 and 1989 - the fighters shot, the Hawkeye decided." },
+  nato_e90_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2C Group II", full:"Grumman E-2C Group II (AN/APS-145)", cost:2550, oil:52, time:29, hp:465, armor:"air", speed:4.2, turn:1.0, sight:12.0, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e90", to:"e90", service:"1992", confidence:"high", jet:true, ammo:0, radar:26.0, radarQ:18, rcs:2.6, gen:3.8, radius:48, awacs:true, carrierCapable:true, desc:"APS-145 from 1992: the same aerial, far better clutter rejection and enough processing to hold a track overland rather than only over water. Group II Hawkeyes controlled strike packages over Iraq and the Adriatic from decks that were the only airfields anyone would give the coalition. The France beside it bought this aeroplane and nothing else in Europe can do the job - see fra_e00_cawacs." },
+  nato_e00_cawacs: { fac:"nato", role:"cawacs", cat:"aircraft", layer:"air", name:"E-2C Hawkeye 2000", full:"Northrop Grumman E-2C Hawkeye 2000", cost:2800, oil:56, time:30, hp:490, armor:"air", speed:4.3, turn:1.0, sight:12.6, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:3, from:"e00", to:"e00", service:"2001", confidence:"high", jet:true, ammo:0, radar:27.5, radarQ:24, rcs:2.6, gen:4.2, radius:52, awacs:true, carrierCapable:true, desc:"Delivered from 2001 and first deployed by VAW-117 in 2004. The radar is still the APS-145; what is new is the Mission Computer Upgrade and Cooperative Engagement Capability, which lets a ship fire on a track the aeroplane is holding and the ship cannot see. That is the change worth marking - the Hawkeye stops being a radar that talks and becomes part of the fleet's fire-control loop. Eight-bladed NP2000 propellers came with the same programme." },
+
+  /* ============ THE TANKER FORCE, 1953 to 2019 ============
+     The single most consequential support aircraft in the game had one row.
+     Every band below is filled because there is no period since 1948 in which
+     the United States lacked a tanker force - the question was only what it
+     flew. Note e00: no NEW tanker. The KC-X replacement ran aground twice, on
+     the 2003 lease scandal and on the overturned 2008 award, so the fleet
+     that fought the 2000s was the same KC-135R and KC-10A it had in 1991.
+     That is why the e90 row carries to:"e00" - a deliberate sixteen-year hole
+     in American tanker procurement, recorded rather than papered over. */
+  nato_e50_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-97G Stratofreighter", full:"Boeing KC-97G Stratofreighter", cost:2300, oil:55, time:33, hp:640, armor:"air", speed:3.2, turn:0.85, sight:8.4, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e50", to:"e50", service:"1953", confidence:"high", jet:true, ammo:0, radius:95, tanker:300, refuelRate:9, rcs:5.4, gen:1.5, desc:"Eight hundred and sixteen built, and the aeroplane that made the Strategic Air Command's reach real before the jet tanker existed. Piston-engined and too slow for its own customers: to pass fuel to a B-47 the tanker had to push over into a shallow dive so the bomber could stay above stalling speed, both aircraft trading altitude for the whole transfer. It works, and it is the reason the KC-135 was ordered." },
+  nato_e60_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-135A Stratotanker", full:"Boeing KC-135A Stratotanker", cost:2900, oil:64, time:37, hp:720, armor:"air", speed:4.3, turn:0.88, sight:8.8, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e60", to:"e60", service:"1957", confidence:"high", jet:true, ammo:0, radius:135, tanker:380, refuelRate:13, rcs:5.6, gen:2.5, desc:"Seven hundred and thirty-two built from 1957, and the aircraft that turned tactical aviation into something with global range. Over Vietnam the Young Tiger tracks were flown continuously and crews credit them with saving hundreds of aircraft that would otherwise have flamed out short of a runway. Underpowered on water-injected J57s, which is the single thing the 1980s re-engining fixes." },
+  nato_e80_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-10A Extender", full:"McDonnell Douglas KC-10A Extender", cost:3400, oil:76, time:42, hp:820, armor:"air", speed:4.3, turn:0.85, sight:9.0, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e80", to:"e80", service:"1981", confidence:"high", jet:true, ammo:0, radius:165, tanker:500, refuelRate:17, rcs:6.2, gen:3, desc:"Sixty aircraft on the DC-10 airframe, in service 1981 and retired in September 2024. It carries close to twice a KC-135's fuel, has a boom AND a hose for Navy receivers, can be refuelled itself, and hauls the squadron's ground crew and spares in the same trip - which is what actually let fighter wings self-deploy across an ocean. The largest single offload in this game belongs to the 1980s, and that is correct." },
+  nato_e90_tanker: { fac:"nato", role:"tanker", cat:"aircraft", layer:"air", name:"KC-135R Stratotanker", full:"Boeing KC-135R (CFM56)", cost:3000, oil:66, time:38, hp:740, armor:"air", speed:4.4, turn:0.88, sight:9.0, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, from:"e90", to:"e00", service:"1984", confidence:"high", jet:true, ammo:0, radius:150, tanker:400, refuelRate:14, rcs:5.6, gen:3.2, desc:"The same airframe re-engined with CFM56 from 1984: roughly a quarter more fuel to give away, half the takeoff roll, and the noise and the smoke gone. This row runs to e00 on purpose. Nothing replaced it for thirty-five years - the KC-X competition collapsed in the 2003 lease scandal and again when the 2008 award was overturned - so the tanker that fought Desert Storm is also the tanker that fought the 2000s." },
+
+  /* ============ THE CARRIER AIR WING'S FIGHTER, 1952 to 2001 ============
+     rules.js used to say in so many words that e50 and e60 were a roster gap
+     and that Forrestal and Enterprise fell back on helicopters. They did not
+     in life: the United States Navy has flown fixed-wing fighters off decks
+     continuously since 1922, and the two hulls in question are IN this game.
+
+     The weapons are shared with the land-based fighter of the same decade
+     where the fit really was the same, which is also what fra_e50_cfighter
+     and gbr_e60_cfighter already do. */
+  nato_e50_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F9F-8 Cougar", full:"Grumman F9F-8 Cougar", cost:760, oil:17, time:14, hp:300, armor:"air", speed:4.6, turn:2.3, sight:7.2, r:16, mass:0, weapons:["w_e50_nato_cfighter"], prereq:["airbase"], tech:2, from:"e50", to:"e50", service:"1952", confidence:"high", jet:true, ammo:5, gen:1.5, radar:3, radarQ:3, radius:17, rcs:1.1, carrierCapable:true, desc:"The Panther with a swept wing, which is the Navy catching up with the Sabre eighteen months late and from a moving runway. Four 20mm cannon, no radar worth the name, and a landing speed the straight-wing Panther pilots hated. It is on Forrestal's deck because the alternative - a carrier with no fighters - is the thing that was actually wrong here." },
+  nato_e60_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F-4B Phantom II", full:"McDonnell F-4B Phantom II", cost:1150, oil:26, time:18, hp:430, armor:"air", speed:7.4, turn:1.9, sight:8.6, r:16, mass:0, weapons:["w_e60_nato_fighter"], prereq:["airbase"], tech:2, from:"e60", to:"e60", service:"1961", confidence:"high", jet:true, ammo:5, gen:3, radar:6, radarQ:7, radius:27, rcs:1.6, carrierCapable:true, desc:"A Navy aeroplane first and an Air Force one afterwards - the fleet had it in 1961 and Tactical Air Command had to be argued into it. Two engines, two crew, a big APQ-72 and eight missiles, and NO gun, which is the design decision Vietnam spent five years disproving. It shares its armament row with nato_e60_fighter because the fit genuinely was the same Sparrow and Sidewinder pair." },
+  nato_e80_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F-14A Tomcat", full:"Grumman F-14A Tomcat", cost:1600, oil:34, time:21, hp:500, armor:"air", speed:7.8, turn:1.9, sight:10.4, r:16, mass:0, weapons:["w_e80_nato_cfighter"], prereq:["airbase"], tech:2, from:"e80", to:"e80", service:"1974", confidence:"high", jet:true, ammo:6, gen:3.5, radar:8, radarQ:10, radius:38, rcs:1.4, carrierCapable:true, desc:"Deck-qualified in 1974 and built around one question: how does a carrier group stop a regiment of Backfires before they release. The answer was the AWG-9, which could track twenty-four contacts and shoot at six, and six AIM-54 Phoenix - the longest-ranged air-to-air weapon anyone fielded for twenty years. It out-reaches every land-based fighter of its decade in this roster, which is the historically correct and slightly uncomfortable answer." },
+  nato_e90_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F/A-18C Hornet", full:"McDonnell Douglas F/A-18C Hornet", cost:1480, oil:31, time:19, hp:455, armor:"air", speed:7.9, turn:2.1, sight:9.4, r:16, mass:0, weapons:["w_e90_nato_fighter"], prereq:["airbase"], tech:2, from:"e90", to:"e90", service:"1987", confidence:"high", jet:true, ammo:5, gen:4, radar:6, radarQ:11, radius:30, rcs:0.9, carrierCapable:true, desc:"Shorter-legged than the Tomcat it flew beside and far more useful, because it is a fighter and a bomber in the same sortie and the deck only has so many spots. Two Hornets shot down MiG-21s on the first morning of Desert Storm while still carrying the bombs they went on to drop. Its AMRAAM row is shared with nato_e90_fighter: the missile is the same missile." },
+
+  /* ============ THE TANK DESTROYER, 1957 to 2003 ============
+     A Stryker dated 1960 was the sharpest anachronism in the American roster.
+     What the army actually fielded is a gun that ran away from tanks, then
+     thirty years of TOW on a tracked box, then TOW on a wheeled one.
+
+     Armour is NOT set by role here - generations.js keys protection off the
+     armour CLASS, which is why every one of these is armor:"light" no matter
+     how large the gun is. The M56 in particular has no armour of any kind;
+     its low hp is the whole design. */
+  nato_e50_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M56 Scorpion", full:"M56 Scorpion, 90mm self-propelled anti-tank gun", cost:560, oil:7, time:11, hp:200, armor:"light", speed:2.5, turn:2.8, sight:6.4, r:13, mass:7, weapons:["w_e50_nato_tankdestroyer"], prereq:["factory"], tech:1, from:"e50", to:"e50", service:"1957", confidence:"high", turret:false, desc:"A 90mm M54 gun, a seven-tonne tracked chassis, four men sitting in the open behind a shield, and nothing else - no roof, no sides, no turret. It exists because an airborne division had to have something that could kill a tank and could also come out of a C-130. The gun is a real gun and the vehicle is a target: anything that sees it first wins. The 173rd Airborne took them to Vietnam." },
+  nato_e60_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M113A1 TOW", full:"M113A1 with the M220 TOW launcher", cost:980, oil:12, time:14, hp:540, armor:"light", speed:1.7, turn:2.1, sight:8.0, r:13, mass:12, weapons:["w_e60_nato_tankdestroyer"], prereq:["factory","radar"], tech:2, from:"e60", to:"e60", service:"1973", confidence:"medium", turret:false, desc:"TOW entered service in 1970 and went straight onto the aluminium box the army already had ten thousand of. The launcher is bolted to the roof and the gunner stands in the hatch behind it, which is the problem: the missile flies for fifteen seconds on a wire and he has to hold the crosshair on the target for every one of them, in the open, while the tank shoots back. The M901 below is the answer to precisely that." },
+  nato_e80_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M901 ITV", full:"M901 Improved TOW Vehicle", cost:1060, oil:13, time:15, hp:600, armor:"light", speed:1.8, turn:2.1, sight:8.4, r:13, mass:12, weapons:["w_e80_nato_tankdestroyer"], prereq:["factory","radar"], tech:2, from:"e80", to:"e80", service:"1979", confidence:"high", turret:true, tturn:1.2, desc:"The hammerhead. Two ready missiles and the sight ride on the end of a mast that swings up over the hull, so the vehicle stays entirely behind the crest and only the launcher head shows - and the crew stay inside. About two and a half thousand built from 1979, and the standard anti-armour company of the Central Front. Erecting the mast takes time, which is the price of not standing in the hatch." },
+  nato_e90_tankdestroyer: { fac:"nato", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"M901A1 ITV", full:"M901A1 ITV with TOW-2 and AN/TAS-4", cost:1090, oil:13, time:15, hp:610, armor:"light", speed:1.8, turn:2.1, sight:10.4, r:13, mass:12, weapons:["w_e90_nato_tankdestroyer"], prereq:["factory","radar"], tech:2, from:"e90", to:"e90", service:"1991", confidence:"medium", turret:true, tturn:1.2, desc:"The same hammerhead with TOW-2 and the AN/TAS-4 thermal sight, which is the upgrade that mattered: in the smoke and the burning oil of February 1991 it could see and the thing shooting at it could not. Its long sight range here is that thermal, not a better missile. Retired through the 1990s as the Bradley took the job over, and the Stryker ATGM of 2003 is what eventually replaced the dedicated vehicle." },
+
+  /* ============ THE HEAVY TANK, 1957 to 1974, AND THEN NOTHING ============
+     e80, e90 and e00 are EMPTY and that is the finding, not a gap to fill.
+     The United States abolished the heavy tank as a class: the M103 was the
+     last one, the 1960 decision to standardise on a single main battle tank
+     ended the line, and there has been no American heavy tank since. The
+     M1A2C in rules.js holds e20 as the modern super-heavy, which is a
+     different argument about active protection rather than a continuation of
+     this one. Britain has exactly the same shape - gbr_e50_heavy Conqueror,
+     then nothing until gbr_e90_heavy - for exactly the same reason.
+
+     armorMM is not written here either: generations.js derives it from
+     ARM_FRONT.nato and the hull's hp for anything armor:"heavy". */
+  nato_e50_heavy: { fac:"nato", role:"heavy", cat:"vehicle", layer:"ground", name:"M103", full:"M103 Heavy Tank (120mm Gun Tank M103)", cost:1150, oil:19, time:25, hp:1450, armor:"heavy", speed:1.0, turn:1.2, sight:6.8, r:18, mass:58, weapons:["w_e50_nato_heavy"], prereq:["factory","lab"], tech:3, from:"e50", to:"e50", service:"1957", confidence:"high", turret:true, tturn:1.2, crush:true, desc:"Three hundred built to answer the IS-3 at a range the Pattons could not reach, and accepted by the Army in 1957 already half obsolete. Separate-loading 120mm ammunition and two loaders to handle it, a fifty-eight-tonne hull on an engine meant for a forty-five-tonne one, and a road range that made moving it a logistics operation. The Army was glad to be rid of it; the Marine Corps kept it because a landing force wanted the gun." },
+  nato_e60_heavy: { fac:"nato", role:"heavy", cat:"vehicle", layer:"ground", name:"M103A2", full:"M103A2 Heavy Tank (USMC)", cost:1230, oil:20, time:25, hp:1500, armor:"heavy", speed:1.08, turn:1.25, sight:7.2, r:18, mass:58, weapons:["w_e60_nato_heavy"], prereq:["factory","lab"], tech:3, from:"e60", to:"e60", service:"1964", confidence:"high", turret:true, tturn:1.25, crush:true, desc:"The Marine Corps' rebuild: the M60's diesel in place of the petrol engine, which fixes the range, and better fire control, which fixes the hit probability. It served in Marine tank battalions until 1973-74 and was the last heavy tank in American service. Nothing replaced it, because the 1960 decision to field one main battle tank instead of a light-medium-heavy family had already ended the class." },
+
+  /* ============ GROUND ELECTRONIC WARFARE, 1985 to now ============
+     e50 and e60 are EMPTY. The United States Army had no divisional jamming
+     vehicle before its Combat Electronic Warfare Intelligence battalions were
+     formed in 1977-78; until then ground electronic warfare was a corps-level
+     signals intelligence activity and the jamming mission belonged to the Air
+     Force and the Navy. This roster already says so from the other side - the
+     e50 and e60 ewair rows are an AD-5Q Skyraider and an EA-6B Prowler.
+
+     Both rows below are COMMUNICATIONS jammers, not radar jammers, so their
+     jamPower is well under the Prophet's and far under a Growler's. What they
+     do to an opponent is break his ability to co-ordinate, which is a real
+     effect and a different one. */
+  nato_e80_ewveh: { fac:"nato", role:"ewveh", cat:"vehicle", layer:"ground", name:"TACJAM", full:"AN/MLQ-34 TACJAM on the M1015 carrier", cost:1250, oil:12, time:17, hp:540, armor:"light", speed:1.5, turn:1.7, sight:7.4, r:14, mass:12, weapons:[], prereq:["factory","radar"], tech:2, from:"e80", to:"e80", service:"1985", confidence:"medium", jam:5.6, jamPower:0.62, radar:6, turret:true, tturn:0.7, desc:"A tracked shelter full of receivers and transmitters, issued to the divisional CEWI battalion, whose job is to sit behind the covering force and take the other side's command net off the air. It cannot touch a fire-control radar - that is the Air Force's problem and the Prowler's - and against a Soviet regiment relying on voice on the move it is genuinely disruptive. Conspicuous the moment it transmits, like every jammer here." },
+  nato_e90_ewveh: { fac:"nato", role:"ewveh", cat:"vehicle", layer:"ground", name:"TRAFFIC JAM", full:"AN/TLQ-17A TRAFFIC JAM on the HMMWV", cost:1180, oil:11, time:15, hp:420, armor:"light", speed:2.2, turn:2.3, sight:8.0, r:14, mass:5, weapons:[], prereq:["factory","radar"], tech:2, from:"e90", to:"e90", service:"1991", confidence:"medium", jam:6.0, jamPower:0.66, radar:6, turret:true, tturn:0.8, desc:"The same trade on a Humvee: a lighter, faster and completely unarmoured jammer that can keep up with a brigade instead of a division. Used through Desert Storm against Iraqi command nets. Nothing about it survives being found - five tonnes, canvas doors - so it lives or dies on shooting and moving, which is the way every emitter in this game should be handled." },
+});
+
+/* ==================================================================
+   THE SOVIET AND RUSSIAN ERA CHAINS
+
+   Placed here, at the foot of the file and BEFORE reindexRoles() below, for
+   the same reason the boomer chains above are: the units have to exist before
+   the roster is re-indexed or they can never be built.
+
+   WHAT WAS MEASURED. Eleven pact roles were standing on ONE row covering all
+   six periods, and four of those rows are machines that did not exist for most
+   of the span they were being fielded in - 9P157-2 Khrizantema-S (2005) dated
+   e60, 1RL257 Krasukha-4 (2014) dated e60, Ka-27PL (1981) dated e60. That date
+   is not a label. js/game.js genContest() reads `from` to decide who wins the
+   jamming duel, and js/generations.js DOMAIN_BITE scales every weapon a unit
+   carries by it: pact guided accuracy is multiplied by 0.968 at e60 and by
+   0.712 at e00, so a 2005 missile dated 1965 was firing 36% more accurately
+   than the same missile dated honestly.
+
+   Every weapon id below is authored below. Nothing here invents an id, and
+   nothing here needs a 3D row: render3d.js modelKeyFor() borrows a same-role,
+   same-category peer, which is what the ssbn chain above already relies on.
+   ================================================================== */
+
+Object.assign(WEAPONS, {
+
+  /* ---- ANTI-TANK MISSILE CARRIERS ----
+     e50 has no row and must not have one. The Soviet Army had no anti-tank
+     guided missile of any kind until the 3M6 Shmel of 1960; the 9K11 Malyutka
+     was accepted on 16 September 1963. Before that the anti-tank weapon was a
+     towed gun or an assault gun, and this game already gives the pact both
+     (pact_e50_spg is an SU-100). An empty band is the correct answer. */
+
+  /* 9M14 off a 9P110: six rails on a BRDM-1, MCLOS, and the operator flies
+     the missile the whole way with a thumb joystick while the target shoots
+     back. Accuracy is deliberately the worst of any guided round in the game:
+     Egyptian and Syrian crews in October 1973 were the best-trained Malyutka
+     operators ever fielded and still scored somewhere near a quarter of shots,
+     and untrained crews scored almost nothing. Its 500 m arming distance is
+     the minRange, and it is why a Malyutka carrier is helpless the moment
+     anything closes. */
+  "w_e60_pact_tankdestroyer": {
+    "name": "6 x 9M14 MCLOS from a pop-up rack", "dmg": 78, "warhead": "heat",
+    "range": 6.2, "minRange": 1.2, "reload": 6.5, "burst": 1, "acc": 0.52,
+    "proj": "missile", "speed": 340, "aoe": 0.7, "suppress": 14,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 },
+    "profile": "pop", "intercept": 1
+  },
+  /* 9M114 Kokon off a 9P149: radio-command SACLOS instead of a wire, which is
+     what lets it fly at 345-400 m/s instead of 120, and twelve rounds in an
+     automatic loader instead of six on rails. 5 km against the Konkurs team's
+     4, so it sits between w_e80_pact_at (6.6) and the Western atgm_veh (8.4).
+     The radio link is the weakness and the reason Rtut-class jamming matters
+     in both directions. */
+  "w_e80_pact_tankdestroyer": {
+    "name": "9M114 supersonic radio-command ATGM", "dmg": 120, "warhead": "heat",
+    "range": 7.4, "minRange": 1.3, "reload": 5.4, "burst": 1, "acc": 0.74,
+    "proj": "missile", "speed": 400, "aoe": 0.8, "suppress": 16,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 },
+    "profile": "pop", "intercept": 1
+  },
+
+  /* ---- THE FORGER'S ARMAMENT ----
+     The Yak-38 had no radar at all, only a ranging set, so it could not carry
+     a radar-guided missile and never did. Two R-60 on the outer pylons and a
+     GSh-23L in a pod on an inner one, and the pods and the missiles compete
+     for the same four hardpoints as the bombs. Deliberately far below
+     w_e60_pact_fighter (a MiG-21 at 7.8 tiles): a land-based fighter of the
+     same decade beats this aircraft in every column. */
+  "w_e60_pact_cfighter": {
+    "name": "2 x R-60 IR and a GSh-23L pod", "dmg": 88, "warhead": "flak",
+    "range": 5.2, "reload": 4.2, "burst": 1, "acc": 0.58, "proj": "missile",
+    "speed": 700, "aoe": 0.8, "ammo": 1,
+    "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 },
+    "profile": "pop", "intercept": 0.55
+  },
+  /* Yak-38M: new R-28V-300 and RD-38 engines, which bought back some of the
+     payload the Forger lost to hot-day vertical takeoffs, and the R-60M. Still
+     no radar. The literal reads 0.68 rather than the 0.63 the hardware would
+     suggest because DOMAIN_BITE is measured, not guessed: at 0.63 this 1985
+     aircraft resolved to 0.540 against the 1976 aircraft's 0.556 - the upgrade
+     came out worse than the thing it replaced. 0.68 resolves to 0.583. */
+  "w_e80_pact_cfighter": {
+    "name": "2 x R-60M IR and a GSh-23L pod", "dmg": 100, "warhead": "flak",
+    "range": 5.8, "reload": 4.0, "burst": 1, "acc": 0.68, "proj": "missile",
+    "speed": 700, "aoe": 0.8, "ammo": 1,
+    "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 },
+    "profile": "pop", "intercept": 0.55
+  },
+
+  /* ---- KIEV'S OWN BATTERY ----
+     Follows w_e60_pact_carrier and w_e90_pact_carrier: the carrier's weapon
+     row in this game is its self-defence, tgt.air only, and the air group is
+     modelled by carrier:3 rather than by this. Four twin P-500 Bazalt
+     launchers forward of the island with a reload magazine below, plus two
+     SA-N-3 Goblet - the Kiev was a cruiser that happened to have a deck, and
+     it spent the hangar volume to be one. */
+  "w_e80_pact_carrier": {
+    "name": "8 x P-500 Bazalt and SA-N-3 Goblet", "dmg": 118, "warhead": "flak",
+    "range": 9.8, "reload": 5.6, "burst": 1, "acc": 0.62, "proj": "missile",
+    "speed": 520, "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 },
+    "sfx": "missile", "profile": "pop", "intercept": 0.85
+  },
+
+  /* ---- THE HORMONE'S SONAR ----
+     Same shape as w_e80_pact_aswhelo, weaker in every column. A Ka-25PL dips
+     an OKA-2 sonar and carries ONE AT-1 torpedo or a pair of depth charges in
+     a shallow internal bay - the airframe was sized to fit a cruiser's lift,
+     and the weapons bay is what paid for it. */
+  "w_e60_pact_aswhelo": {
+    "name": "Dipping sonar and one AT-1 torpedo", "dmg": 96, "warhead": "he",
+    "range": 2.6, "reload": 7.4, "burst": 5, "burstDelay": 0.2, "acc": 0.32,
+    "proj": "arc", "speed": 12, "aoe": 1.2,
+    "tgt": { "ground": 0, "air": 0, "sea": 0, "sub": 1 }, "sfx": "cannon"
+  },
+
+  /* ---- THE LAST SOVIET HEAVY GUN ----
+     The same 122 mm as the T-10, but the M-62-T2S has a bore evacuator and a
+     two-plane stabiliser, which is the difference between a gun that can only
+     be fired from a halt and one that can be laid on the move. It is still
+     two-piece ammunition into a 1950s breech: about three rounds a minute,
+     and that number is the whole argument against the heavy tank. */
+  "w_e60_pact_heavy": {
+    "name": "122mm M-62-T2S stabilised gun", "dmg": 78, "warhead": "cannon",
+    "range": 6.4, "reload": 6.2, "burst": 1, "acc": 0.62, "proj": "shell",
+    "speed": 860, "aoe": 0.9, "suppress": 26,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 }
+  },
+});
+
+Object.assign(UNITS, {
+
+  /* ============ TANK DESTROYERS, 1963 to the present ============
+     atgmv_p is a 9P157-2 Khrizantema-S, which js/facts.js already dates to
+     2005, so rules.js moves it to e00 where it belongs. These two rows are
+     what the Soviet Army actually had in the meantime. The IT-1 "Drakon" of
+     1968 - a T-62 hull with the gun deleted and a 3M7 launcher in its place -
+     is the road not taken here: about 220 built, in service barely two years,
+     and withdrawn because a tank destroyer that cannot also fight a tank with
+     a gun turned out to be a bad trade. The BRDM carriers are what the army
+     was issued in quantity, and they are what these rows are.
+
+     Windows do not overlap. unitFor() picks by highest from-index and breaks a
+     tie by ROLES index order, which is insertion order and not something to
+     rely on, so every row here closes before the next one opens. */
+  pact_e60_tankdestroyer: { fac:"pact", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"9P110 Malyutka", full:"9P110, six 9M14 Malyutka on a BRDM-1", cost:620, oil:8, time:12, hp:330, armor:"light", speed:2.30, turn:2.6, sight:7.0, r:13, mass:6, weapons:["w_e60_pact_tankdestroyer"], prereq:["factory","radar"], tech:2, turret:false, from:"e60", to:"e60", service:"1963", confidence:"high", desc:"A BRDM-1 scout car with the roof cut out and a six-rail launcher that rises through it, produced from 1963. The missile is flown to the target by hand on a joystick and takes most of half a minute to get there at 120 m/s, during which the operator cannot move, cannot take cover and cannot look at anything else - and inside 500 m the missile has not armed. That is the whole character of the first ATGM generation: enormous reach for 1963, and almost useless against anything that is already close. The 9P122 on a BRDM-2 followed in 1969 and the 9P133 in 1971." },
+  pact_e80_tankdestroyer: { fac:"pact", role:"tankdestroyer", cat:"vehicle", layer:"ground", name:"9P149 Shturm-S", full:"9P149 Shturm-S on the MT-LB", cost:980, oil:12, time:15, hp:520, armor:"light", speed:1.90, turn:2.2, sight:8.0, r:13, mass:12, weapons:["w_e80_pact_tankdestroyer"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, from:"e80", to:"e90", service:"1979", confidence:"high", desc:"In service 1979: an MT-LB carrying a single retractable pedestal launcher fed by an automatic loader with twelve 9M114 below deck. The missile is radio-commanded rather than wire-guided, which is what lets it fly supersonic and reach 5 km, and the launcher drops back under armour to reload. It cannot fire on the move. The window runs to e90 on purpose - the Russian Army of the 1990s bought no new tank destroyer at all, and the Shturm-S simply stayed in the inventory, which is where the Ataka-armed 9P149M found it." },
+
+  /* ============ AERIAL REFUELLING, 1955 to the present ============
+     tanker_p is an Il-78M and its from:"e80" is already right: the Il-78
+     entered service in 1984. What was missing is that the Soviet Union had
+     been refuelling in the air for thirty years by then. The Council of
+     Ministers decree of 26 May 1954 ordered refuelling systems for the Tu-16
+     and the M-4, the first air-to-air fuel transfer was made on 11 July 1955,
+     and a 3MS-2 tanker regiment was still flying in 1994.
+
+     Both rows are deliberately WORSE than a Western tanker of the same decade
+     and not by a token amount. Soviet tanking was built to extend a strategic
+     bomber force a few hundred kilometres, not to hold a fighter screen up all
+     day, and the fleet was small. Read the refuelRate figures against
+     gbr_e50_tanker's 12 and tanker_n's 16. */
+  pact_e50_tanker: { fac:"pact", role:"tanker", cat:"aircraft", layer:"air", name:"Tu-16Z", full:"Tupolev Tu-16Z wing-to-wing tanker", cost:2400, oil:56, time:33, hp:560, armor:"air", speed:4.60, turn:0.9, sight:8.5, r:22, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0, radius:90, tanker:240, refuelRate:9, rcs:4.2, gen:2, from:"e50", to:"e50", service:"1957", confidence:"medium", desc:"The first Soviet tanker, and the strangest refuelling method any air force has used: not a boom and not a drogue behind the tail but a hose streamed from the tanker's RIGHT wingtip, which the receiver caught with its LEFT one and drew into its own wing. Two large jets flying formation close enough to hand each other a cable. It worked, it was dangerous, and it would only ever refuel another Tu-16 or a MiG-19 - so the low tanker and refuelRate figures here are the aircraft, not a handicap. Probe-and-drogue Tu-16N followed for the Tu-22." },
+  pact_e60_tanker: { fac:"pact", role:"tanker", cat:"aircraft", layer:"air", name:"3MS-2 Bison", full:"Myasishchev 3MS-2, M-4 converted to tanker", cost:2900, oil:66, time:37, hp:700, armor:"air", speed:4.30, turn:0.85, sight:8.5, r:23, mass:0, weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0, radius:130, tanker:360, refuelRate:12, rcs:5.4, gen:2.5, from:"e60", to:"e60", service:"1958", confidence:"medium", desc:"A strategic bomber that could not reach America converted into the tanker that let the rest of the fleet try. The refuelling unit and an extra 3,600 litres go in the bomb bay and it streams a hose and drogue, transferring up to forty tonnes at 4,000 km from base. Long-Range Aviation flew these until 1994 - which means the Soviet heavy tanker force was, for thirty-six years, a bomber nobody wanted with a hose in its bomb bay." },
+
+  /* ============ CARRIER FIGHTERS, 1976 to the present ============
+     e50 is EMPTY and that is the correct answer. No Soviet ship ever operated
+     a fixed-wing aircraft before the Kiev in 1976; the e60 row above it,
+     Project 1123 Moskva, is a helicopter cruiser and its own desc says so.
+
+     cfighter_p is a Su-33 and its from:"e90" is right - accepted into service
+     in 1998, which js/facts.js records. These two rows are the Forger, and the
+     Forger is the point: for twenty-two years Soviet naval fixed-wing aviation
+     was a VTOL light attack aircraft with no radar that could barely lift a
+     useful load off a hot deck, and the game should say so rather than put a
+     Flanker on a 1976 deck. */
+  pact_e60_cfighter: { fac:"pact", role:"cfighter", cat:"aircraft", layer:"air", name:"Yak-38 Forger", full:"Yakovlev Yak-38 (Yak-36M)", cost:820, oil:20, time:15, hp:300, armor:"air", speed:5.40, turn:1.7, sight:5.6, r:15, mass:0, weapons:["w_e60_pact_cfighter"], prereq:["airbase"], tech:2, jet:true, ammo:2, gen:2.5, rcs:1.20, radarQ:0, radius:14, carrierCapable:true, from:"e60", to:"e60", service:"1976", confidence:"high", desc:"Accepted 11 August 1976 and at sea aboard Kiev the same year. Three engines, two of them lift jets that are dead weight in cruise, no radar, and a combat radius nearer a hundred kilometres than the Su-33's six hundred - on a hot day in the Indian Ocean a Forger came off the deck with fuel or with weapons and not with both. The automatic ejection system fired the seat for the pilot if the aircraft departed in the hover, which tells you how the type was regarded. A hundred and forty-three built." },
+  pact_e80_cfighter: { fac:"pact", role:"cfighter", cat:"aircraft", layer:"air", name:"Yak-38M", full:"Yakovlev Yak-38M", cost:880, oil:21, time:15, hp:320, armor:"air", speed:5.60, turn:1.75, sight:5.8, r:15, mass:0, weapons:["w_e80_pact_cfighter"], prereq:["airbase"], tech:2, jet:true, ammo:2, gen:2.8, rcs:1.20, radarQ:0, radius:16, carrierCapable:true, from:"e80", to:"e80", service:"1985", confidence:"high", desc:"State tests completed in 1985 and fifty built. New R-28V-300 and RD-38 engines recovered some of the payload the Forger lost to vertical takeoff, and the short rolling takeoff recovered more - but there is still no radar, so there is still no radar-guided missile, and in 1985 that is a fighter which cannot engage anything it has not seen with its own eyes. The Su-27K that would fix all of this first touched a deck in November 1989." },
+
+  /* ============ THE 1980s DECK ============
+     Measured: the pact carrier line ran Moskva (e60), nothing at all (e80),
+     Kuznetsov (e90) - and the 1980s hole is the decade the Soviet Navy had
+     FOUR of these in commission. Without it the two Forger rows above have
+     nowhere to fly from in the period they were built for.
+
+     Kiev 28 December 1975, Minsk 1978, Novorossiysk 1982, Baku 1987. The row
+     is dated to Novorossiysk because 1982 is unambiguously e80 and because she
+     commissioned with sixteen Yak-38M and eighteen Ka-27 aboard. */
+  pact_e80_carrier: { fac:"pact", role:"carrier", cat:"naval", layer:"sea", name:"Project 1143 Kiev", full:"Project 1143 Krechyet (Novorossiysk)", cost:3400, oil:78, time:52, hp:3150, armor:"heavy", speed:1.42, turn:0.6, sight:9.4, r:30, mass:0, weapons:["w_e80_pact_carrier"], prereq:["navalyard","lab","airbase"], tech:3, carrier:3, sonar:3.2, radar:10.5, ciws:0.38, rcs:2.9, from:"e80", to:"e80", service:"1982", confidence:"high", desc:"A heavy aviation cruiser: an angled flight deck down the port side and a cruiser's missile battery on the forecastle, because Soviet doctrine would not spend forty thousand tonnes on aviation alone and the Montreux Convention would not let a ship called an aircraft carrier through the Turkish Straits. Both halves suffer for it - the Bazalt launchers eat the hangar, and the air group is a VTOL that cannot use the deck's length. Four built; all four were gone by 1993, two of them sold to China and one to India." },
+
+  /* ============ SHIPBORNE ASW HELICOPTERS, 1968 to the present ============
+     asw_helo_p is a Ka-27PL, which js/facts.js dates to 1981, and it was
+     nonetheless dated from:"e60" - so a 1981 helicopter was flying in the
+     1960s, AND it collided with pact_e80_aswhelo, the same aircraft, in e80.
+     Measured before this change: unitFor("pact","aswhelo","e80") had two
+     candidates at the same from-index and resolved on ROLES insertion order.
+     rules.js now starts asw_helo_p at e90, where pact_e80_aswhelo's window
+     closes, and this row is what the navy actually flew before either.
+
+     No hover or carrierCapable field: reindexRoles() derives both from the
+     aswhelo role, and its comment says that is the point. */
+  pact_e60_aswhelo: { fac:"pact", role:"aswhelo", cat:"aircraft", layer:"air", name:"Ka-25PL Hormone-A", full:"Kamov Ka-25PL", cost:720, oil:16, time:12, hp:245, armor:"air", speed:2.75, turn:2.2, sight:4.8, r:11, mass:0, weapons:["w_e60_pact_aswhelo"], prereq:["airbase"], tech:2, ammo:1, sonar:3.6, radius:14, rcs:0.90, gen:2.5, from:"e60", to:"e60", service:"1968", confidence:"high", desc:"The helicopter the Moskva above was built to carry fourteen of, and the first Soviet shipborne ASW aircraft worth the name. Coaxial rotors so it needs no tail rotor and folds into a cruiser's lift; an OKA-2 dipping sonar, a search radar under the nose, and a bay deep enough for exactly one AT-1 torpedo. Endurance was short and the sonar had to be dipped, listened on and hauled up again for every sample, so localising a submarine took a pair of aircraft and a long time. Replaced by the Ka-27 from 1981." },
+
+  /* ============ THE LAST SOVIET HEAVY TANK ============
+     e80, e90 and e00 are EMPTY on purpose and this is the clearest
+     realism-over-symmetry case in the whole pact roster. The Soviet Army did
+     not replace the heavy tank; it abolished the category. Heavy tanks were
+     out of front-line service by 1967, the T-64 and the T-72 made the
+     distinction meaningless, and nothing stood in this slot again until the
+     T-14 of the 2010s that hvy_p already is. The gap between pact_e50_heavy
+     and hvy_p is not a hole in the data. It is sixty years of Soviet and
+     Russian armour policy, and the only row missing from it is this one.
+
+     NOTE, and it is not this row's to fix: pact_e50_heavy carries aps:0.40
+     and pla_e50_heavy carries aps:0.42, which js/combat.js reads as a chance
+     to defeat an incoming missile. A T-10 of 1953 and an IS-2 of 1944 have an
+     active protection system because the generator copied the field down from
+     hvy_p and hvy_c. This row does not take it. */
+  pact_e60_heavy: { fac:"pact", role:"heavy", cat:"vehicle", layer:"ground", name:"T-10M", full:"T-10M (Object 272) Heavy Tank", cost:1140, oil:18, time:25, hp:1420, armor:"heavy", speed:1.32, turn:1.4, sight:5.2, r:18, mass:50, weapons:["w_e60_pact_heavy"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.35, crush:true, from:"e60", to:"e60", service:"1957", confidence:"high", desc:"Accepted 26 September 1957 and built at Kirov until 1966: a stabilised 122 mm, two 14.5 mm KPVT, infrared night sights and fifty tonnes of cast armour. It is a genuinely better tank than the T-10 beside it and it is also the end of the line - by the time the last one left the factory the category had no job left, because a T-62's smoothbore firing APFSDS did to armour what a heavy tank's gun did, from a hull half the weight that could keep up with the advance. Held in reserve until 1993 and never replaced." },
+});
+
+/* ================= PLA — THE CHAINS THAT WERE STANDING ON ONE ROW =================
+   Five Chinese roles were being fought in six decades by a single machine, and
+   in three of them that machine post-dates the eras it was covering. Measured
+   with unitFor("pla", role, era) before this block was written:
+
+     tankdestroyer  AFT-10 from e80. The HJ-10 fibre-optic missile it carries
+       first appeared in public in 2014, so a 1985 battle was fought with a
+       2014 weapon - and because DOMAIN_BITE in generations.js scales ordnance
+       by the unit's `from`, that 2014 missile was also being handed 1980s
+       ordnance quality. The date is a mechanical input, not a label.
+     tanker         YY-20 from e00. The Y-20U entered service in 2021.
+     missileboat    a hole at e80 and e90, between the Huangfeng of 1965 and
+       the Houbei of 2004 - and e80 is the decade the PLAN had a hundred and
+       twenty Huangfeng in commission.
+     aswhelo        nothing at all before e00, in a navy that bought thirteen
+       Super Frelons in 1977-78 and had the Z-8 in PLANAF service in 1989.
+     recon          a hole at e80 alone, because the BJ212 / Type 62 row was
+       closed at e60 while the WZ-551 recce vehicle that follows it is a
+       1990s machine. Nothing new was procured; the jeeps stayed.
+
+   WHAT STAYS EMPTY, and why the emptiness is the answer rather than a gap:
+
+     tankdestroyer, e50 / e60 - the PLA had no vehicle-mounted anti-tank
+       MISSILE of any kind until the HJ-73, a Malyutka copy adopted in 1979.
+       Anti-tank work before that was the towed Type 56 85mm and Type 73
+       100mm guns and the recoilless rifle, which are the `at` and `spg`
+       roles in this game and not this one. Two empty eras.
+     tanker, e50 / e60 / e80 - China could not refuel in the air at all. The
+       H-6U first flew in 1990 and made its first successful transfer in 1993.
+       Three empty eras, and they are the largest single fact about the reach
+       of the PLAAF for its first forty years: every combat radius in the
+       e50, e60 and e80 Chinese roster is the aircraft's own and nothing else.
+     aswhelo, e50 / e60 - no anti-submarine helicopter, and until the Luda
+       conversions of the late 1980s no flight deck to fly one from.
+     heavybomber - built, but in heavyair.js beside the B-52, because the H-6
+       tells the same story with the same airframe: what changed over sixty
+       years is not how hard it hits but from how far away.
+
+   WEAPONS. The ids follow the w_<era>_<fac>_<role> pattern, which means the
+   era-range pass at the foot of generations.js REWRITES `range` on the three
+   tankdestroyer rounds to AT_ERA_M for their era - 9.1 tiles at e80, 10.1 at
+   e90 and at e00. The literals are written at those values so the file says
+   what the game will actually do; the naval and ASW rounds are not in that
+   pass and stand as written. Every id used below is authored here or already
+   in rules.js. None is invented: entities.js dereferences w.tgt with no
+   guard, so a dangling id throws on the first target evaluation.        */
+Object.assign(WEAPONS, {
+ /* HJ-73 is a 9M14 Malyutka copy and the accuracy figure is the point of the
+    entry. It is MCLOS: the gunner flies the missile onto the target with a
+    thumb stick for the whole thirty-second flight, and it cruises at about
+    115 m/s, so a moving tank at long range is very nearly unhittable. The
+    SACLOS HJ-73B that fixed this is a 1980s rebuild and is not this row. */
+ "w_e80_pla_tankdestroyer": {"name":"HJ-73 MCLOS wire-guided missile","dmg":112,"warhead":"heat","range":9.1,"minRange":1.5,"reload":9.2,"burst":1,"acc":0.48,"proj":"missile","speed":180,"aoe":0.7,"suppress":14,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
+ /* The PTZ-89's gun is NOT stabilised, which is why a 120mm smoothbore that
+    out-penetrates every Chinese tank gun of its decade carries a lower
+    accuracy than the missiles either side of it: the vehicle has to stop to
+    shoot. Being a gun round it is also the one entry in this role that
+    cannot be shot down, so it has no intercept field. */
+ "w_e90_pla_tankdestroyer": {"name":"120mm smoothbore, unstabilised","dmg":152,"warhead":"cannon","range":10.1,"reload":7.4,"burst":1,"acc":0.70,"proj":"shell","speed":860,"aoe":0.9,"suppress":26,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* HJ-9 rides a laser beam rather than a wire, so the launcher is free of the
+    spool and the missile flies at roughly twice the Malyutka's speed. */
+ "w_e00_pla_tankdestroyer": {"name":"HJ-9 laser beam-riding ATGM","dmg":150,"warhead":"heat","range":10.1,"minRange":1.4,"reload":7.2,"burst":1,"acc":0.80,"proj":"missile","speed":300,"aoe":0.8,"suppress":16,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1.15},
+ /* Six C-801 in three twin box launchers. A solid-fuel sea-skimmer replacing
+    the liquid-fuelled SY-1 of the e60 boat: half the reach on paper, but it
+    flies at five metres instead of a hundred and fifty and it is the first
+    Chinese anti-ship missile a ship's radar has real trouble seeing. */
+ "w_e90_pla_missileboat": {"name":"6 x YJ-8 anti-ship missiles","dmg":228,"warhead":"he","range":15.2,"minRange":1.8,"reload":16.5,"burst":2,"burstDelay":0.8,"acc":0.72,"proj":"missile","speed":300,"aoe":1.6,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"sfx":"missile","profile":"loft","intercept":0.55},
+ /* Depth charges, and that is not an economy: China had no air-dropped
+    homing ASW torpedo until the Yu-7 of the mid-1990s, so a 1980s PLAN
+    helicopter had to fly over the contact and drop on it. Short reach, poor
+    accuracy, and a submarine that hears it coming has time to move. */
+ "w_e80_pla_aswhelo": {"name":"Depth charges","dmg":150,"warhead":"he","range":2.6,"reload":8.4,"burst":2,"burstDelay":0.5,"acc":0.40,"proj":"arc","speed":60,"aoe":1.6,"tgt":{"ground":0,"air":0,"sea":0,"sub":1},"sfx":"cannon"},
+});
+Object.assign(UNITS, {
+  /* ---- the anti-tank chain, 1979 to the present ----
+     Four machines and four different answers to the same problem, which is
+     why this is a chain rather than one row with a moved date. */
+  pla_e80_tankdestroyer: {"fac":"pla","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"Type 63 (HJ-73)","full":"Type 63 / YW531 carrier with the HJ-73 launcher","cost":760,"oil":9,"time":13,"hp":505,"armor":"light","speed":1.58,"turn":2.0,"sight":6.2,"r":13,"mass":13,"weapons":["w_e80_pla_tankdestroyer"],"prereq":["factory"],"tech":1,"from":"e80","to":"e80","service":"1979","confidence":"medium","desc":"The PLA's first vehicle-mounted anti-tank missile: a Malyutka copy adopted in 1979 and bolted to the roof of the Type 63 carrier that was already in every mechanised regiment. The missile is the firm date here and the mounting is the common one; Chinese practice was to fit HJ-73 to whatever hull was to hand, and open sources are not consistent about which carrier got which. Manual command guidance means the gunner has to keep the target and the missile in the same eyepiece for half a minute, so it is a weapon for a prepared position rather than a moving fight.","turret":false},
+  pla_e90_tankdestroyer: {"fac":"pla","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"PTZ-89","full":"PTZ-89 (Type 89) 120mm self-propelled anti-tank gun","cost":1120,"oil":14,"time":17,"hp":740,"armor":"light","speed":1.75,"turn":1.9,"sight":7.2,"r":15,"mass":31,"weapons":["w_e90_pla_tankdestroyer"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"Designed by Factory 447 in the early 1980s, in service from 1989, about a hundred built to 1995 and formally retired on 3 November 2015. It exists because the PLA spent the 1970s and 1980s unable to kill a modern Soviet tank with a tank: the answer was to put a 120mm smoothbore that out-penetrated every Chinese tank gun of the decade on a light tracked hull and accept that the hull could be opened by autocannon. The gun is not stabilised, so it stops to shoot.","turret":true,"tturn":1.2},
+  pla_e00_tankdestroyer: {"fac":"pla","role":"tankdestroyer","cat":"vehicle","layer":"ground","name":"AFT-9","full":"AFT-9 (HJ-9 Red Arrow 9) missile carrier on the WZ-550","cost":1040,"oil":12,"time":15,"hp":610,"armor":"light","speed":2.2,"turn":2.4,"sight":8.2,"r":13,"mass":11,"weapons":["w_e00_pla_tankdestroyer"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"1999","confidence":"high","desc":"A retractable four-round launcher on a WZ-550 wheeled hull, first deployed in the late 1990s and shown publicly in 1999. Laser beam-riding rather than wire-guided, so the missile is twice as fast as the HJ-73 and the vehicle can reverse off the crest the moment the round hits. This is the vehicle the AFT-10 replaced, not the vehicle the AFT-10 was.","turret":true,"tturn":1.3},
+
+  /* ---- the tanker that made the PLAAF a long-range air force ----
+     One row for one aircraft, and three empty eras in front of it. */
+  pla_e90_tanker: {"fac":"pla","role":"tanker","cat":"aircraft","layer":"air","name":"H-6U","full":"Xian H-6U / HY-6 probe-and-drogue tanker","cost":2400,"oil":55,"time":32,"hp":700,"armor":"air","speed":4.4,"turn":0.85,"sight":8.0,"r":22,"mass":0,"weapons":[],"prereq":["airbase","radar"],"tech":2,"from":"e90","to":"e00","service":"1997","confidence":"medium","desc":"A bomber with the bomb bay full of fuel and a hose pod under each wing. First flight 1990, first successful transfer 1993, and a pair flew over Tiananmen escorted by four J-8D on 1 October 1999. Around twenty exist. It is small - a Tu-16 gives away perhaps a third of what a Y-20U carries - and it is probe-and-drogue only, so it can refuel a J-8D or a J-10 and nothing else in the inventory. Before it, no Chinese aircraft had ever taken fuel in the air.","jet":true,"ammo":0,"radius":100,"tanker":260,"refuelRate":11,"rcs":5.0,"gen":2.5},
+
+  /* ---- the missile boats: a hull that stayed, then a hull that replaced it ----
+     The e60 Huangfeng row is extended to e80 rather than duplicated, because
+     nothing new arrived: by 1985 the PLAN had a hundred and twenty of them. */
+  pla_e90_missileboat: {"fac":"pla","role":"missileboat","cat":"naval","layer":"sea","name":"Type 037-II Houjian","full":"Type 037-II Houjian-class missile boat","cost":1180,"oil":17,"time":17,"hp":780,"armor":"light","speed":2.72,"turn":1.75,"sight":6.8,"r":16,"mass":0,"weapons":["w_e90_pla_missileboat"],"prereq":["navalyard","radar"],"tech":2,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"Six boats delivered from 1991, all of them to the Hong Kong squadron. Twice the displacement of a Huangfeng and slower for it, but it carries six C-801 sea-skimmers instead of four SY-1 - a solid-fuel missile that flies at five metres against a liquid-fuelled one that flies at a hundred and fifty, which is the difference between a contact a ship can engage and one it finds out about when it hits.","sonar":0,"rcs":0.6},
+
+  /* ---- anti-submarine helicopters: French airframe, Chinese weapon ----
+     e50 and e60 stay empty. The PLAN had no ASW helicopter and no deck. */
+  pla_e80_aswhelo: {"fac":"pla","role":"aswhelo","cat":"aircraft","layer":"air","name":"SA 321Ja Super Frelon","full":"Aerospatiale SA 321Ja Super Frelon, PLA Navy","cost":960,"oil":20,"time":14,"hp":330,"armor":"air","speed":2.7,"turn":1.9,"sight":6.0,"r":12,"mass":0,"weapons":["w_e80_pla_aswhelo"],"prereq":["airbase"],"tech":2,"from":"e80","to":"e80","service":"1977","confidence":"medium","desc":"Thirteen aircraft bought from France in 1977-78, and for a decade the whole of Chinese anti-submarine aviation. It has the airframe for the job - three engines, a boat hull, hours on task - and almost none of the equipment: a search radar, no dipping sonar worth the name, and depth charges rather than a homing torpedo, because China had no air-dropped ASW torpedo until the 1990s. It also had nowhere to land at sea until the Luda conversions of the late 1980s.","ammo":2,"radius":22,"sonar":4.4,"rcs":1.05,"radarQ":4,"gen":2.5},
+  pla_e90_aswhelo: {"fac":"pla","role":"aswhelo","cat":"aircraft","layer":"air","name":"Z-8","full":"Changhe Z-8, licence-built Super Frelon","cost":1080,"oil":21,"time":14,"hp":345,"armor":"air","speed":2.8,"turn":2.0,"sight":6.4,"r":12,"mass":0,"weapons":["asw_yu7"],"prereq":["airbase"],"tech":2,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"The same aircraft built in China: first flight 11 December 1985, PLANAF service in August 1989, formally certified on 12 November 1994, and only fifteen to twenty made because the gearbox and the rotor head were harder to copy than the shape. What it adds over the imported Frelon is the Yu-7, a licensed Mk 46 pattern and the first homing torpedo a Chinese aircraft could drop.","ammo":2,"radius":22,"sonar":5.6,"rcs":1.0,"radarQ":5,"gen":3},
 });
 
 /* The era rosters are merged after rules.js has already indexed the roster,

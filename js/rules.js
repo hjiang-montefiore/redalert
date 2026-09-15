@@ -493,11 +493,28 @@ var UNITS = {
     layer:"ground", weapons:["gun_125"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.4, crush:true, aps:0.40,
     desc:"Unmanned turret, crew in an armoured capsule, Afganit APS. Fast for its weight and very hard to kill." },
 
-  atgmv_n: { from:"e60", fac:"nato", role:"tankdestroyer", name:"Stryker ATGM", full:"M1134 ATGM Vehicle", cat:"vehicle",
+  /* The Stryker entered service in 2002 and the M1134 in 2003 - js/facts.js
+     already records service 2003 for this id - so from:"e00", not e60. The
+     four earlier bands are in eras.js: M56 Scorpion 1957, M113A1 TOW 1973,
+     M901 ITV 1979, M901A1 ITV 1991. */
+  atgmv_n: { from:"e00", fac:"nato", role:"tankdestroyer", name:"Stryker ATGM", full:"M1134 ATGM Vehicle", cat:"vehicle",
     cost:1100, oil:14, time:16, hp:620, armor:"light", speed:2.0, turn:2.2, sight:8.6, r:13, mass:19,
     layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
     desc:"Twin TOW-2B launcher. Outranges every tank gun; folds instantly if anything reaches it." },
-  atgmv_p: { from:"e60", fac:"pact", role:"tankdestroyer", name:"Khrizantema-S", full:"9P157-2 Khrizantema-S", cat:"vehicle",
+  /* KHRIZANTEMA-S IS A 2005 MACHINE AND WAS DATED 1960. js/facts.js already
+     records service 2005 for this id, so the roster and the fact table
+     disagreed by forty years. The date is read by generations.js: pact guided
+     accuracy is multiplied by 0.968 at e60 and by 0.712 at e00, and the
+     measured resolved accuracy moves 0.774 -> 0.570. A 2005 missile dated 1965
+     was shooting 36% better than its own decade allows.
+
+     Moving it forward would leave four empty bands, which is the larger error,
+     so eras.js now carries the two carriers the army actually had: 9P110
+     Malyutka on a BRDM-1 from 1963 and 9P149 Shturm-S on an MT-LB from 1979.
+     e50 stays empty and must: the Soviet Army had no guided anti-tank missile
+     of any kind until the 3M6 Shmel of 1960, and the 9K11 Malyutka was not
+     accepted until 16 September 1963. */
+  atgmv_p: { from:"e00", fac:"pact", role:"tankdestroyer", name:"Khrizantema-S", full:"9P157-2 Khrizantema-S", cat:"vehicle",
     cost:1050, oil:14, time:15, hp:680, armor:"light", speed:2.0, turn:2.2, sight:8.4, r:13, mass:20,
     layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
     desc:"Radar-guided ATGM carrier that can engage through smoke and dust." },
@@ -682,7 +699,13 @@ var UNITS = {
    constraint those air forces actually have.
    ================================================================= */
 Object.assign(UNITS, {
-  tanker_n: { from:"e50", fac:"nato", role:"tanker", name:"KC-46 Pegasus", full:"Boeing KC-46A Pegasus", cat:"aircraft",
+  /* First KC-46A delivered to McConnell AFB in January 2019, so from:"e20".
+     It used to read e50 - a 2019 aeroplane refuelling Sabres over Korea -
+     because it was the only American tanker in the game. The chain that
+     replaces that stamp is in eras.js: KC-97G 1953, KC-135A 1957, KC-10A
+     1981, KC-135R 1984. The United States has flown a tanker force since
+     1948 and there is no band where it had none. */
+  tanker_n: { from:"e20", fac:"nato", role:"tanker", name:"KC-46 Pegasus", full:"Boeing KC-46A Pegasus", cat:"aircraft",
     cost:3200, oil:70, time:40, hp:760, armor:"air", speed:4.4, turn:0.9, sight:9, r:22, mass:0,
     layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
     radius:150, tanker:420, refuelRate:16, rcs:5.2,
@@ -699,7 +722,15 @@ Object.assign(UNITS, {
   tanker_c: { fac:"pla", role:"tanker", name:"YY-20", full:"Xian YY-20 (Y-20U)", cat:"aircraft",
     cost:3100, oil:71, time:40, hp:800, armor:"air", speed:4.3, turn:0.88, sight:8.8, r:23, mass:0,
     layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
-    radius:145, tanker:410, refuelRate:15, rcs:5.4, from:"e00",
+    radius:145, tanker:410, refuelRate:15, rcs:5.4,
+    /* The Y-20U entered service in 2021, so e00 was a fifteen-year back-date on
+       the one aircraft in this roster whose arrival is itself the story. The
+       earlier tanker is the H-6U in eras.js: first flight 1990, first transfer
+       1993, in the 1999 National Day flypast with four J-8D behind it. Before
+       that China had no aerial refuelling at all, so e50, e60 and e80 are
+       deliberately empty and every Chinese combat radius in those three eras
+       is the aircraft's own. */
+    from:"e20",
     desc:"China spent thirty years unable to refuel in the air and the whole force was built " +
          "around that limit. The YY-20 removes it, and is the single aircraft that turns a " +
          "regional air force into one with reach." },
@@ -986,7 +1017,15 @@ Object.assign(UNITS, {
     cost:2350, oil:37, time:31, hp:2500, armor:"heavy", speed:1.45, turn:1.4, sight:8.2, r:18, mass:60,
     layer:"ground", weapons:["gun_125"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.45, crush:true, aps:0.42,
     desc:"Up-armoured Type 99 with the GL5 active protection system. Hard-kills 42% of incoming missiles." },
-  atgmv_c: { from:"e80", fac:"pla", role:"tankdestroyer", name:"AFT-10", full:"AFT-10 ATGM Carrier", cat:"vehicle",
+  /* The HJ-10 fibre-optic missile this vehicle carries first appeared in public
+     in 2014, so from:"e80" put a 2014 weapon in a 1985 battle - and because
+     DOMAIN_BITE in generations.js scales every round a unit carries by the
+     unit's `from`, it was simultaneously being given 1980s ordnance quality.
+     eras.js now carries the three machines that actually held this role:
+     the HJ-73 carrier of 1979, the PTZ-89 gun of 1989 and the AFT-9 of 1999.
+     e50 and e60 stay empty because the PLA had no vehicle-mounted anti-tank
+     missile of any kind before the HJ-73. */
+  atgmv_c: { from:"e20", fac:"pla", role:"tankdestroyer", name:"AFT-10", full:"AFT-10 ATGM Carrier", cat:"vehicle",
     cost:1080, oil:14, time:15.5, hp:650, armor:"light", speed:2.0, turn:2.2, sight:8.5, r:13, mass:22,
     layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
     desc:"Fibre-optic guided missile carrier that can shoot from behind a ridge line." },
@@ -1516,10 +1555,17 @@ Object.assign(UNITS, {
     cost:1500, oil:24, time:21, hp:1950, armor:"heavy", speed:1.5, turn:1.4, sight:6.8, r:17, mass:50,
     layer:"ground", weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.25, crush:true,
     desc:"The best tank the KPA fields: reactive armour, an ATGM box and a 125mm gun. Reaches the field at Tech II, when everyone else is still fielding their first MBTs." },
-  atgmv_k: { from:"e80", fac:"kpa", role:"tankdestroyer", name:"Bulsae-4", full:"Bulsae-4 ATGM Carrier", cat:"vehicle",
+  /* M-2018: eight sealed tubes on the M-2010 6x6 APC hull, fibre-optic
+     command guidance off a video seeker, first paraded 2018 and in serial
+     production since. It is the newest ground system the KPA has and dating it
+     e80 made a 2018 launcher fight as a 1980s one - DOMAIN_BITE scales its
+     missile by the unit's from-era, so it was drawing 1980s guided-weapon
+     quality at 0.35 bite instead of 2020s at 1.00. The 1950s to 2000s bands
+     are the SU-100 and the Susong-po BRDM-2 in eras.js. */
+  atgmv_k: { from:"e20", fac:"kpa", role:"tankdestroyer", name:"Bulsae-4", full:"Bulsae-4 (M-2018) ATGM carrier", cat:"vehicle",
     cost:820, oil:11, time:12, hp:580, armor:"light", speed:1.9, turn:2.1, sight:7.4, r:13, mass:15,
     layer:"ground", weapons:["atgm_veh"], prereq:["factory"], tech:1, turret:true, tturn:1.3,
-    desc:"Missile launcher on an APC hull, available early. Cheap enough to screen every approach with them." },
+    desc:"Eight tubes in a rotating box on a shortened BTR-80 copy, steering the missile down a fibre-optic link off a nose camera so the launcher can shoot from cover at something it cannot see directly. The only genuinely modern anti-armour system this army fields, and the one piece of KPA ground equipment whose combat performance is not a guess - Ukraine has been destroying them since 2024." },
   spaag_k: { fac:"kpa", role:"spaag", name:"M-1989 Flak", full:"M-1989 Twin 37mm SPAAG", cat:"vehicle",
     cost:640, oil:9, time:10, hp:660, armor:"light", speed:1.6, turn:1.9, sight:7.6, r:14, mass:26,
     layer:"ground", weapons:["spaag"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
@@ -1631,10 +1677,16 @@ Object.assign(UNITS, {
     cost:2750, oil:42, time:36, hp:2400, armor:"heavy", speed:1.4, turn:1.35, sight:9.0, r:18, mass:66,
     layer:"ground", weapons:["gun_120"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.55, crush:true, aps:0.35,
     desc:"The export Abrams, delivered with modern armour and optics. The most expensive tank in the game and the best-sighted." },
-  atgmv_r: { from:"e80", fac:"roc", role:"tankdestroyer", name:"CM-32 TOW", full:"CM-32 ATGM Carrier", cat:"vehicle",
+  /* There is no CM-32 TOW. The Yunpao family runs CM-32 / CM-33 / CM-34 with
+     remote weapon stations and a 30 mm turret; the ROC Army's current ATGM
+     carrier is the M1167 HMMWV with the M41A7 ITAS launcher, which is a
+     2010s-2020s re-equipment of the M966/M113A1 TOW fleet. Dated e20 for that
+     reason - the earlier bands are held by the M18, the M113A1 TOW and the
+     CM-25 in eras.js, not by this vehicle. */
+  atgmv_r: { from:"e20", fac:"roc", role:"tankdestroyer", name:"M1167 TOW", full:"M1167 HMMWV, M41A7 ITAS TOW", cat:"vehicle",
     cost:1280, oil:14, time:17, hp:600, armor:"light", speed:2.1, turn:2.2, sight:9.4, r:13, mass:22,
     layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
-    desc:"Wheeled TOW-2B carrier with a mast sight — it can engage from behind a ridge and never expose the hull." },
+    desc:"An armoured-cab Humvee with the improved target acquisition system: a thermal sight with its own laser rangefinder that finds and hands over a target far beyond the range of the missile, so the gunner shoots from a reverse slope and moves. Light enough to be hidden anywhere on a small island and thin enough that anything which sees it first wins." },
   spaag_r: { fac:"roc", role:"spaag", name:"Antelope AD", full:"Antelope Air Defence System", cat:"vehicle",
     cost:1300, oil:15, time:17, hp:740, armor:"light", speed:1.85, turn:2.0, sight:10.5, r:14, mass:14,
     layer:"ground", weapons:["sam_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6, radar:10,
@@ -1651,10 +1703,10 @@ Object.assign(UNITS, {
     cost:880, oil:7, time:13, hp:600, armor:"light", speed:1.9, turn:2.0, sight:6.2, r:14, mass:16,
     layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:1000, supplyRange:5.4,
     desc:"Imported heavy logistics truck with the largest supply pool available." },
-  radarv_r: { from:"e90", fac:"roc", role:"radarv", name:"AN/TPQ-37 Radar", full:"AN/TPQ-37 Firefinder", cat:"vehicle",
+  radarv_r: { from:"e80", fac:"roc", role:"radarv", name:"AN/TPQ-37 Radar", full:"AN/TPQ-37 Firefinder", cat:"vehicle",
     cost:1420, oil:13, time:18, hp:520, armor:"light", speed:1.65, turn:1.7, sight:9.6, r:14, mass:16,
     layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:17.5, turret:true, tturn:0.9,
-    desc:"Long-range counter-battery radar — the widest sensor bubble in the game. It is how a smaller force out-shoots a bigger one." },
+    desc:"Long-range counter-battery radar — the widest sensor bubble in the game. It is how a smaller force out-shoots a bigger one. Four sets bought from the United States in 1986, which is why this row starts in the 1980s and not the 1990s: Taiwan has been able to back-plot PLA tube artillery across the Strait and the offshore islands since then, and had nothing that could before." },
 
   helo_r: { fac:"roc", role:"gunship", name:"AH-64E Apache", full:"AH-64E Apache Guardian", cat:"aircraft",
     cost:1850, oil:28, time:25, hp:620, armor:"air", speed:3.6, turn:2.2, sight:10.2, r:16, mass:0,
@@ -1814,7 +1866,7 @@ Object.assign(UNITS, {
   radarv_g: { from:"e00", fac:"deu", role:"radarv", name:"COBRA", full:"COBRA counter-battery radar", cat:"vehicle",
     cost:1400, oil:13, time:18, hp:520, armor:"light", speed:1.60, turn:1.7, sight:9.4, r:14, mass:17,
     layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:17, turret:true, tturn:0.9,
-    desc:"A phased array that backtracks incoming shells to the tube that fired them: up to forty batteries located in two minutes, across a hundred-kilometre front. Fielded 2007, and it is the first counter-battery radar Germany ever had — the Bundeswehr fought the whole Cold War without one." },
+    desc:"A phased array that backtracks incoming shells to the tube that fired them: up to forty batteries located in two minutes, across a hundred-kilometre front. Delivered from 2004 under a trilateral OCCAR programme — twelve German sets of twenty-nine built, alongside ten French and seven British. It is not the first artillery radar the Bundeswehr owned: Green Archer rode an M113 from 1968 and RATAC from 1976. It is the first that back-plots a ballistic trajectory to the firing point instead of watching a mortar arc, and the first that can do it to a whole artillery group at once." },
 
   helo_g: { from:"e00", fac:"deu", role:"gunship", name:"Tiger UHT", full:"Eurocopter Tiger UHT", cat:"aircraft",
     cost:1720, oil:26, time:24, hp:580, armor:"air", speed:3.5, turn:2.3, sight:9.8, r:16, mass:0,
@@ -1859,8 +1911,13 @@ Object.assign(UNITS, {
      sead   — ALARM was withdrawn in 2013 and nothing replaced it. There
               is no anti-radiation missile in British service; SEAD is an
               allied-provided capability. NO ENTRY, deliberately.
-     ewair  — Britain has never operated a jamming aircraft. Airseeker
-              (RC-135W, 2014) collects and does not jam. NO ENTRY.
+     ewair  — ew_b IS Airseeker (RC-135W, delivered from November 2013),
+              and it COLLECTS rather than jams. That is the same reading
+              ew_f Archange and the four French Gabriel rows already get,
+              and one role cannot be scored two ways. What Britain no
+              longer has is electronic ATTACK: the Canberra T.17 of 360
+              Squadron jammed, it is in eras.js with jam:6, and it went on
+              31 October 1994. Nothing has replaced THAT.
      tel    — Lance left in 1993 with the last British Army surface-to-
               surface missile. M270 was bought without ATACMS, so the
               Royal Artillery's longest reach is a GMLRS rocket.
@@ -1972,6 +2029,16 @@ Object.assign(UNITS, {
     cost:2000, oil:48, time:26, hp:740, armor:"air", speed:3.9, turn:1.2, sight:8, r:22, mass:0,
     layer:"air", weapons:[], prereq:["airbase"], tech:2, jet:false, ammo:0, cargo:14, radius:95, rcs:4.4,
     desc:"Eight-bladed scimitar propellers, jet-like speed, and it lands on the dirt strip a C-17 cannot use while carrying more than twice a Hercules. Twenty-two of them replaced the entire C-130 fleet in 2023, alongside eight C-17s for anything tank-sized." },
+  cawacs_b: { from:"e20", fac:"gbr", role:"cawacs", name:"Crowsnest", full:"Merlin HM2 with Crowsnest AEW", cat:"aircraft",
+    cost:1750, oil:32, time:19, hp:420, armor:"air", speed:3.0, turn:2.1, sight:12.4, r:13, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","radar"], tech:3, jet:false, ammo:0,
+    radar:24, radarQ:18, rcs:2.4, gen:4.5, radius:26, awacs:true, hover:true, carrierCapable:true,
+    desc:"The same Searchwater 2000 aerial the Sea King carried, in a roll-on bag that fits any of thirty Merlin HM2 when the job calls for it - ten kits rather than ten aircraft. Initial operating capability in 2021, in time to sail with HMS Queen Elizabeth and three years after the Sea King it replaced was retired. A helicopter radar is not an E-2D, and the figures here say so: this is the capability the Queen Elizabeth class is SHORT of, not one it does without." },
+  ew_b: { from:"e20", fac:"gbr", role:"ewair", name:"Airseeker R.1", full:"Boeing RC-135W Rivet Joint, 51 Squadron", cat:"aircraft",
+    cost:2900, oil:52, time:31, hp:560, armor:"air", speed:4.2, turn:0.9, sight:13.0, r:20, mass:0,
+    layer:"air", weapons:[], prereq:["airbase","lab"], tech:3, jet:true, ammo:0,
+    radar:15, radarQ:22, rcs:3.6, gen:4.0, radius:70, noAuto:true,
+    desc:"Three airframes converted from KC-135R tankers, delivered from November 2013 and flown under a co-operative programme that puts RAF crews in American aircraft and American crews in these. It COLLECTS and does not jam - which is the entry the French Gabriel and Archange already get in this roster, so the same reading applies here. Britain's last JAMMING aircraft was the Canberra T.17, and 360 Squadron disbanded on 31 October 1994." },
   tanker_b: { from:"e20", fac:"gbr", role:"tanker", name:"Voyager KC3", full:"Airbus Voyager KC.3 (A330 MRTT)", cat:"aircraft",
     cost:3100, oil:68, time:39, hp:740, armor:"air", speed:4.4, turn:0.9, sight:9, r:22, mass:0,
     layer:"air", weapons:[], prereq:["airbase","radar"], tech:2, jet:true, ammo:0,
@@ -2244,7 +2311,16 @@ Object.assign(UNITS, {
     desc:"Electronic-attack Flanker with wingtip jamming pods and the gun deleted to save weight. China's answer to the Growler, and very nearly its equal." },
 
   /* ---- ground-based jammers ---- */
-  ewv_n: { from:"e80", fac:"nato", role:"ewveh", name:"Prophet EW", full:"AN/MLQ-44 Prophet", cat:"vehicle",
+  /* Prophet Block I was fielded from 2003-04, not 1980, so from:"e00" - it
+     covers e00 and e20, which is right, because Prophet is still the Army's
+     ground SIGINT/EW vehicle while TLS-BCT works its way through test.
+     eras.js adds TACJAM for e80 and TRAFFIC JAM for e90. e50 and e60 stay
+     EMPTY on purpose: the Army had no divisional jamming vehicle before its
+     first Combat Electronic Warfare Intelligence battalions stood up in
+     1977-78, and until then the jamming mission belonged to the Air Force and
+     the Navy - which is what the EB-66, the EA-6A and the EF-111 in this same
+     roster already say. */
+  ewv_n: { from:"e00", fac:"nato", role:"ewveh", name:"Prophet EW", full:"AN/MLQ-44 Prophet", cat:"vehicle",
     cost:1500, oil:14, time:19, hp:560, armor:"light", speed:1.8, turn:1.9, sight:9, r:14, mass:16,
     layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, jam:7.5, jamPower:0.85, radar:9,
     turret:true, tturn:0.9,
@@ -2254,7 +2330,30 @@ Object.assign(UNITS, {
     layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, jam:7.8, jamPower:0.85, radar:9,
     turret:true, tturn:0.9,
     desc:"Truck-mounted communications and radar jammer. The PLA fields these in quantity to win the spectrum before the shooting starts." },
-  ewv_p: { from:"e60", fac:"pact", role:"ewveh", name:"Krasukha-4", full:"1RL257 Krasukha-4", cat:"vehicle",
+  /* KRASUKHA-4 IS A 2014 MACHINE AND WAS DATED 1960. Ordered 11 September
+     2007, factory tests complete 2009, serial production 2011, first delivery
+     to the Ministry of Defence November 2013, formally introduced 2014 - which
+     is e00 by ERA_INFO. The old from:"e60" was not a label. genContest() reads
+     it: dated e60 this vehicle took x0.166 against an e00 or e20 radar, six
+     times weaker than it should be, and a fabricated x1.000 against 1960s
+     radar it could never meet. At e00 it takes x1.000 against its
+     contemporaries, x0.550 against a 2020s set and x2.890 against an 80s one.
+
+     THE EARLIER BANDS STAY EMPTY, and the ladder at the head of the building
+     table in this file is why: "radar jamming NATO e80 PACT e80 PLA e00 ROC
+     e00 KPA never ... Nobody at all has any of this in the 1950s or the
+     1960s." The pact's e80 radar jamming is already in this game as ewsite_p,
+     the SPN-4 station - and a set "emplaced on a prepared site for months at a
+     time", as its own desc puts it, is a building and not a vehicle. Putting
+     an SPN in here as well would count the same hardware twice.
+
+     Considered and rejected for e80: SPR-2 "Rtut-B", VNII Gradient, accepted
+     1985 on a BTR-70. Real, dated and mobile - but it jams radio proximity
+     FUZES, and `jam` in this game is radar. That would be a worse lie than
+     the one being removed. The R-330 "Mandat" family and the R-934B Sinitsa
+     have no in-service year in open sources, and the fra ewveh band in
+     eras.js is already left empty for exactly that reason. */
+  ewv_p: { from:"e00", fac:"pact", role:"ewveh", name:"Krasukha-4", full:"1RL257 Krasukha-4", cat:"vehicle",
     cost:1650, oil:16, time:21, hp:640, armor:"light", speed:1.5, turn:1.6, sight:8.5, r:15, mass:20,
     layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, jam:8.5, jamPower:0.9, radar:8,
     turret:true, tturn:0.7,
@@ -2580,12 +2679,14 @@ Object.assign(UNITS, {
     cost:1650, oil:34, time:19, hp:470, armor:"air", speed:8.0, turn:2.0, sight:9.6, r:16, mass:0,
     layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:5,
     gen:4.5, rcs:0.45, radarQ:15.0, radius:36, carrierOnly:false, carrierCapable:true,
-    /* The roster's only NATO deck fighter, so it stands in for the whole Hornet
-       family that has flown off American decks since 1983. Without a `from` the
-       default pass below stamps it e20 and every era carrier fell back to
-       helicopters. e50 and e60 remain a genuine roster gap - there is no
-       Skyhawk or Phantom to give Forrestal and Enterprise. */
-    from:"e80",
+    /* No longer standing in for the whole family: this row is the Super Hornet
+       and only the Super Hornet. IOC September 2001, first combat cruise with
+       VFA-115 in 2002, so from:"e00", and it covers e00 and e20 because the
+       E/F is still the fleet fighter today. The four earlier decks are in
+       eras.js - F9F-8 Cougar 1952, F-4B Phantom II 1961, F-14A Tomcat 1974,
+       F/A-18C Hornet 1987 - which closes the e50 and e60 gap this comment
+       used to record: Forrestal and Enterprise now have aeroplanes. */
+    from:"e00",
     desc:"The workhorse of a US carrier air wing. Slightly slower and shorter-legged than a " +
          "land-based fighter, because a tailhook and folding wings cost weight - the price " +
          "of being able to operate from anywhere the fleet can sail." },
@@ -2597,19 +2698,23 @@ Object.assign(UNITS, {
     desc:"Carrier-capable stealth fighter with the largest wing of the F-35 family for slow " +
          "approach speeds. Its sensor fusion makes it a scout as much as a shooter: what it " +
          "sees, the whole battle group sees." },
-  /* from:"e50" is an AVAILABILITY date, not a service date - there is no era
-     chain for carrier AEW, so this row has to be buildable from the first era
-     a carrier exists. eraStamped says so out loud, because G.genContest()
-     reads `from` as if it were real and this is the only modern aircraft in
-     the game carrying a 1950 stamp. Unmarked it scored 4.91x jamming against
-     itself - the largest penalty in the subsystem, handed to the aircraft
-     whose APY-9 was built specifically to be hard to jam - while the FRENCH
-     E-2C beside it, an older machine with no stamp, took 1.00x. The newer
-     radar was four times easier to jam than the older one.
+  /* THE ERA CHAIN NOW EXISTS, so the 1950 stamp and the eraStamped escape
+     hatch are both gone. This row is the E-2D: AN/APY-9 UHF AESA, first flight
+     2007, IOC October 2014, first operational deployment March 2015 with
+     VAW-125 aboard Theodore Roosevelt. from:"e20" is now the truth.
 
-     Same mark, same reason, as the structures at the foot of this file: a
-     date a unit never earned must not be fed to the generational contest. */
-  cawacs_n: { from:"e50", eraStamped:true, fac:"nato", role:"cawacs", name:"E-2D Advanced Hawkeye",
+     What the mark was covering: carrier AEW had ONE row for six decades, so
+     that row had to be buildable in 1950, and G.genContest() - which reads
+     `from` as a real service date - then scored the E-2D as a 1950s radar and
+     handed it 1.7^3 = 4.91x jamming, the largest penalty in the subsystem, to
+     the aircraft whose APY-9 was designed to be hard to jam. eraStamped bought
+     it a flat 1.00x, which was the right patch for a missing chain and the
+     wrong answer for a radar. It now reads e20 and takes 0.55^3 = 0.166x from
+     an e80 jammer, 0.55 from an e00 one, 1.00 only from its own generation.
+
+     The five earlier bands are in eras.js: E-1B Tracer 1958, E-2B 1969,
+     E-2C 1973, E-2C Group II 1992, E-2C Hawkeye 2000 in 2001. */
+  cawacs_n: { from:"e20", fac:"nato", role:"cawacs", name:"E-2D Advanced Hawkeye",
     full:"Northrop Grumman E-2D", cat:"aircraft",
     cost:3000, oil:60, time:31, hp:520, armor:"air", speed:4.4, turn:1.0, sight:14, r:22, mass:0,
     layer:"air", weapons:[], prereq:["airbase","radar"], tech:3, jet:true, ammo:0,
@@ -2643,13 +2748,14 @@ Object.assign(UNITS, {
     from:"e90",
     desc:"Navalised Flanker launching off a ski-jump, which means it flies with reduced fuel " +
          "or reduced weapons and never both. No radar-guided missile capability worth the name." },
-  cfighter_k: { from:"e20", fac:"kpa", role:"cfighter", name:"MiG-29K",
-    full:"MiG-29K (notional)", cat:"aircraft",
-    cost:1500, oil:34, time:19, hp:450, armor:"air", speed:7.9, turn:2.0, sight:8.6, r:16, mass:0,
-    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:3,
-    gen:4.0, rcs:0.90, radarQ:9.0, radius:28, carrierCapable:true,
-    desc:"North Korea operates no carriers at all; this exists only so a KPA commander who " +
-         "somehow captures a deck has something to put on it." },
+  /* There is no kpa carrier fighter, and there never was one to date. North
+     Korea has never operated an aircraft carrier, has never been sold the
+     MiG-29K, and flies early-model land-based MiG-29s it can barely keep
+     airworthy. The row that used to sit here was a designation invented so the
+     slot would not be empty, and its own description admitted it: "this exists
+     only so a KPA commander who somehow captures a deck has something to put
+     on it." Germany and Taiwan have no cfighter either and the game is
+     content; an empty band is the honest answer. */
 });
 /* land-based aircraft that genuinely do operate from decks */
 ["helo_n", "helo_r", "trans_n", "trans_r", "helo_c", "trans_c", "helo_p", "trans_p"]
@@ -3047,18 +3153,30 @@ Object.assign(UNITS, {
     ammo:3, radius:22, sonar:8.0, rcs:0.80, radarQ:7, gen:4.0, carrierCapable:true,
     desc:"China's shipborne ASW helicopter. Competent and increasingly numerous, though " +
          "its sonar and processing lag a generation behind the Seahawk." },
-  asw_helo_p: { from:"e60", fac:"pact", role:"aswhelo", name:"Ka-27 Helix", full:"Kamov Ka-27PL",
+  /* TWO FAULTS IN ONE FIELD. This row is a Ka-27PL and js/facts.js records
+     service 1981 for it, so from:"e60" put a 1981 helicopter in the 1960s. And
+     pact_e80_aswhelo in eras.js is the SAME aircraft with to:"e80", so both
+     sat at from-index 2 in e80 - unitFor() compares with `f > bestFrom`,
+     strictly greater, and the winner was therefore decided by ROLES insertion
+     order, which is UNITS enumeration order and not something to rely on.
+     Starting here at e90, where that row's window closes, removes both.
+     pact_e60_aswhelo below is the Ka-25PL Hormone-A of 1968 - the helicopter
+     Moskva was built to carry fourteen of - and e50 stays empty because the
+     navy had no shipborne ASW helicopter before it. */
+  asw_helo_p: { from:"e90", fac:"pact", role:"aswhelo", name:"Ka-27 Helix", full:"Kamov Ka-27PL",
     cat:"aircraft", cost:1200, oil:26, time:15, hp:360, armor:"air", speed:3.1, turn:2.2,
     sight:6.8, r:12, mass:0, layer:"air", weapons:["asw_rbu"], prereq:["airbase"], tech:2,
     ammo:3, radius:20, sonar:6.2, rcs:0.85, radarQ:5, gen:3.5, carrierCapable:true,
     desc:"Coaxial-rotor ASW helicopter dating from 1981. It still flies from Russian decks " +
          "because there is no replacement, and its sensors are of their era." },
-  asw_helo_r: { from:"e80", fac:"roc", role:"aswhelo", name:"S-70C(M) Thunderhawk", full:"Sikorsky S-70C(M)-1/2",
+  asw_helo_r: { from:"e90", fac:"roc", role:"aswhelo", name:"S-70C(M) Thunderhawk", full:"Sikorsky S-70C(M)-1/2",
     cat:"aircraft", cost:1350, oil:25, time:16, hp:360, armor:"air", speed:3.3, turn:2.3,
     sight:8.0, r:13, mass:0, layer:"air", weapons:["asw_mk54"], prereq:["airbase"], tech:2,
     ammo:3, radius:22, sonar:8.6, rcs:0.78, radarQ:8, gen:4.0, carrierCapable:true,
     desc:"Taiwan's Seahawk derivative, flown from its frigates. Well suited to hunting " +
-         "diesel boats in the shallow, noisy water of the Strait." },
+         "diesel boats in the shallow, noisy water of the Strait. Ordered in 1983 and " +
+         "delivered around 1990; the 501st Squadron's Hughes 500MD/ASW stood the ASW " +
+         "watch before it, off the decks of 1940s American destroyers." },
 });
 
 
