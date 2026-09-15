@@ -32,8 +32,10 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Running now
 
+- [ ] (workflows stopped - designs salvaged, applying them by hand)
+
 - [~] Era chains - 40 roles where one machine stands in for every decade
-- [~] The scout that parks in your construction yard
+- [x] The scout that parks in your construction yard
 - [~] The navy is too weak
 - [~] Fixed-wing aircraft must not hangar; F-35, B-52 and AC-130 ordnance
 - [~] Aircraft flee a detected SAM; EW aircraft engage radars automatically

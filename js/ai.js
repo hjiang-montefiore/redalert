@@ -247,6 +247,12 @@ function makeCommander() {
   let aimRvT = -1;               // warAim's review is memoised on the game tick
   let waveBook = null;           // hit points the current wave was committed with
   let oreSites = null;           // where the ore is, surveyed once
+  /* ---- ground the scouts could not get to ----
+     Coarse cell -> the time it may be aimed at again. The same shape as
+     aimShy above and kept for the same reason: a goal that has already failed
+     must stop winning the next auction, or the commander re-issues it for the
+     rest of the battle. */
+  const scoutShy = new Map();
   const roleCool = {};           // role -> time a role this era cannot field may be re-asked
   let intelT = 0, lastDigest = 0;
   let hypo = [];                 // unexamined start positions: where they might be
@@ -411,7 +417,7 @@ function makeCommander() {
     gunHard = null; gunSoft = null; gunVer = -1; seenVer = 0;
     lastAxes = []; lastAimId = null; siegeAt = null; siegeNeed = 0;
     armsCache = null; armsT = -1e9; survey = null; surveyT = -1e9;
-    aimShy.clear(); aimRvT = -1; waveBook = null; oreSites = null;
+    aimShy.clear(); scoutShy.clear(); aimRvT = -1; waveBook = null; oreSites = null;
     /* A restarted match must not price its first tanker off the previous
        battle's sortie rate, buy its first workshop against the previous
        battle's casualty rate, or site a belt against a minefield that was on
@@ -3548,17 +3554,90 @@ function makeCommander() {
     driveMines(mineShort);
 
     /* -------- SCOUTING -------- */
+    /* ---- re-tasking, not a lottery every D.scoutT ----
+       Somewhere worth looking rather than a uniformly random point on the map
+       is scoutGoal's job. This block's job is making sure a scout is actually
+       DOING it, and it used to fire once every 24 to 70 seconds and hand one
+       goal to the first recon whose order happened to read "idle". Three
+       faults, all measured on river at Commander over fifteen minutes:
+         - ONE scout was tasked per tick, so a commander paying for three of
+           them - D.scouts is 3 from Commander up - drove one and garaged two.
+           Measured: three Humvees between them logged 2,420 unit-seconds IDLE
+           against 21 seconds of movement;
+         - a scout that finished its drive stood where it stopped until the
+           clock came round, and since the old goal was a point seven tiles
+           BEYOND an enemy building, it stood there INSIDE THE ENEMY BASE. That
+           is the light armed truck the owner watched arrive at his
+           construction yard and achieve nothing;
+         - and "idle" is not the only way a scout ends up with nothing to do. A
+           unit rolls off the factory floor carrying a rally-point MOVE, and if
+           that rally point sits on an occupied tile stepAlong() never reports
+           arrival - it counts arrival only within 0.8 tiles of the aim POINT -
+           so the order never ends and the unit is never idle again. Measured
+           on the other seat of the same battle: 1,326 unit-seconds held inside
+           a move order that could not finish, three scouts pressed against a
+           one-tile goal, and an explored map that stood at 18.1% of the
+           theatre after fifteen minutes.
+       So the sweep runs every four seconds, re-tasks every scout with nothing
+       useful to do, and abandons a goal that has outlived its travel budget. */
     if (scoutT <= 0) {
-      scoutT = D.scoutT || 32;
-      /* Somewhere worth looking, rather than a uniformly random point on the
-         map. The old version threw a dart at the whole theatre - and since
-         nothing was ever learned from where it landed, it did not matter.
-         Now: unexamined deployment sites first, because that is where an enemy
-         base actually is; then the stalest ground, weighted against the drive. */
-      const scout = unitsOf("recon").find(u => u.order.type === "idle");
-      if (scout) {
+      scoutT = 4;
+      const now = G.time;
+      for (const scout of unitsOf("recon")) {
+        /* A scout that stops to shoot is not scouting, and a 340-hit-point
+           truck with one machine gun loses that exchange anyway: 249 of the
+           measured run's unit-seconds went on auto-acquired attacks. "hold" is
+           the one flag that shuts both doors - acquire() from idle in
+           updateGeneric, and retaliate() when it is hit. */
+        if (scout.stance !== "hold") scout.stance = "hold";
+        /* ---- shot at: report and withdraw ----
+           The report needs no new machinery because it is already made:
+           digest() pushes an alarm at the vehicle's position for every window
+           in which it was hit, noteSighting has written down whatever it could
+           see, and a gun that is a structure is now in seenB - which is what
+           puts that ground out of bounds for the next bid through exposureAt.
+           What was missing is the withdrawal. Fourteen tiles back down the
+           bearing to our own home, at most once every six seconds, and the
+           goal it was pursuing dies with it. */
+        if (scout.lastHitAt && now - scout.lastHitAt < 6) {
+          if (!scout._runT || now - scout._runT > 6) {
+            scout._runT = now; scout._scoutEnd = 0; scout._scoutGoal = null;
+            const a = Math.atan2(P.homeY - scout.y, P.homeX - scout.x);
+            scout.give({ type: "move", x: scout.x + Math.cos(a) * CFG.TILE * 14,
+                                       y: scout.y + Math.sin(a) * CFG.TILE * 14 });
+          }
+          continue;
+        }
+        if (scout.order.type === "move" && now < (scout._scoutEnd || 0)) continue;
+        /* ---- did the last goal work? ----
+           stepAlong() reports "arrived" the instant Path.find cannot produce a
+           route at all, so an unreachable goal comes back as a finished trip in
+           nought seconds and the identical bid wins again on the next sweep.
+           Measured without this: two scouts re-ordered onto the same cross-map
+           tile twenty-four times in forty seconds, neither of them moving. The
+           order ended, the vehicle is still where it started and it is nowhere
+           near the goal - that is the only evidence available that the ground
+           cannot be got to, and it buys the cell two minutes of refusal. */
+        const from = scout._scoutFrom, was = scout._scoutGoal;
+        if (was && from &&
+            U.dist(scout.x, scout.y, from.x, from.y) < CFG.TILE * 3 &&
+            U.dist(scout.x, scout.y, was.x, was.y) > CFG.TILE * 4)
+          scoutShy.set(shyKey(was.x, was.y), now + 120);
         const goal = scoutGoal(scout);
-        if (goal) scout.give({ type: "move", x: goal.x, y: goal.y });
+        if (!goal) continue;
+        /* The travel budget, which is also where D.scoutT keeps its meaning:
+           the straight-line leg at the vehicle's own speed, doubled for terrain
+           and traffic, and never shorter than the difficulty's own re-think
+           interval. recon_n makes 2.85 tiles a second, so a 40-tile leg is
+           allowed 38 seconds at Commander and 70 at Recruit. Past that the goal
+           is unreachable or no longer worth it, and the scout is given another
+           one instead of leaning on it for the rest of the match. */
+        const trip = U.dist(scout.x, scout.y, goal.x, goal.y) / CFG.TILE;
+        scout._scoutEnd = now + Math.max(D.scoutT || 32,
+                          10 + trip / Math.max(0.6, scout.def.speed) * 2);
+        scout._scoutFrom = { x: scout.x, y: scout.y };
+        scout._scoutGoal = goal;
+        scout.give({ type: "move", x: goal.x, y: goal.y });
       }
     }
 
@@ -4619,9 +4698,11 @@ function makeCommander() {
        2 ore fields away from our own patch. map.ore is published terrain every
          player can see, so this is not a peek at anything - and where there is
          ore there are haulers, which objectives() prices above anything else.
-       3 past a structure we have seen but never looked behind. One remembered
+       3 ABEAM a structure we have seen, not past it. One remembered
          outbuilding is nearly always the edge of a base whose middle we have
-         never seen, and the middle is where the refinery is.
+         never seen - but the middle is the one part of it we never have to
+         drive into to find, because it is bracketed by what we already hold.
+         What is genuinely unknown is what lies to either SIDE of it.
        4 the corridor the next wave has to walk down, so its defences are
          priced before the wave pays for them rather than after.
        5 only then the stalest ground - which is where we used to start, and is
@@ -4643,9 +4724,72 @@ function makeCommander() {
     }
     return out;
   }
+  /* ---- what a scout may look at, and from how far ----
+     intelSweep() paints the look grid and runs noteContact() at the unit's own
+     sightR(), so a Humvee standing eight tiles off a position writes down
+     exactly what one parked on the construction yard would: the same tiles,
+     the same structures, and the same prune of the hypothesis. The last eight
+     tiles bought no information at all and cost the vehicle. recon_n sees 9.5
+     tiles, so the standoff is sightR - 1.5 - margin for the pathfinder, which
+     only reports arrival within 0.8 tiles of the aim POINT.
+
+     SCOUT_DANGER is where the scout stops volunteering. The four emplacements
+     that carry a ground weapon price out, against a soft-skinned truck at
+     hardShare 0.15, at nest 24.5, coastal 23.1, atpost 11.4 and arty 5.8 hit
+     points a second; recon_n has 340. Two a second is therefore "nothing is
+     really shooting at this" - nearly three minutes of standing there - while
+     one machine-gun nest is twelve times over the line and kills the vehicle
+     in fourteen seconds. And the gate is honest in both directions:
+     exposureAt() is stamped from seenB alone, so it reads zero over ground
+     whose guns we have never seen and the FIRST approach to an unexamined
+     position is exactly as bold as it ever was. What it refuses is the SECOND
+     one - the drive back into a base we have already found and already been
+     shot out of, which is the one the owner kept watching. */
+  const SCOUT_HS = 0.15, SCOUT_DANGER = 2.0, SHY_CELL = 4;
+  /* One key per four-tile cell, which is the same grain the threat field is
+     stamped on: a refusal finer than that would be re-derived a tile away and
+     the loop would simply shuffle sideways. */
+  function shyKey(x, y) {
+    return (((y / CFG.TILE / SHY_CELL) | 0) << 10) | ((x / CFG.TILE / SHY_CELL) | 0);
+  }
   function scoutGoal(scout) {
     const now = G.time, T2 = CFG.TILE, M = G.map;
-    if (hypo.length) return { x: (hypo[0].x + 0.5) * T2, y: (hypo[0].y + 0.5) * T2 };
+    for (const [k, v] of scoutShy) if (v < now) scoutShy.delete(k);
+    const fireAt = (x, y) => exposureAt(x, y, SCOUT_HS);
+    const stand = Math.max(4, scout.sightR() - 1.5);
+    /* Look at it from OUTSIDE: walk back down the bearing we would be coming
+       in on until the vantage point is both reachable and out of the fire we
+       know about. Returning null is a real answer - it says every way of
+       looking at that place from a distance is already covered - and the bid
+       loop below then picks somewhere else worth the drive. */
+    const standoff = (x, y) => {
+      const a = Math.atan2(scout.y - y, scout.x - x);
+      for (let d = stand; d <= stand + 14; d += 3.5) {
+        const px = x + Math.cos(a) * d * T2, py = y + Math.sin(a) * d * T2;
+        const tx = (px / T2) | 0, ty = (py / T2) | 0;
+        if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) continue;
+        if (!GameMap.passable(M, tx, ty, "ground")) continue;
+        if (fireAt(px, py) > SCOUT_DANGER) continue;
+        if ((scoutShy.get(shyKey(px, py)) || 0) > now) continue;
+        return { x: px, y: py };
+      }
+      return null;
+    };
+    /* An unexamined deployment site is still the first thing worth looking at,
+       because that is where a base is - but it is LOOKED AT, not driven onto.
+       This line used to return the start tile itself, and a start tile is
+       precisely where the enemy construction yard stands. Measured: the first
+       order either commander ever gave a scout was a cross-map drive onto the
+       opposing conyard - 54 tiles on river, 82 on plains - and on river the
+       Humvee closed to one tile of an enemy structure and died there.
+       pruneHypotheses() strikes the site off on staleness < 90 and staleness
+       is written by the same paint() at the same sightR(), so the standoff
+       prunes the hypothesis exactly as the suicide run did - and leaves a
+       vehicle alive to examine the next one. */
+    if (hypo.length) {
+      const g = standoff((hypo[0].x + 0.5) * T2, (hypo[0].y + 0.5) * T2);
+      if (g) return g;
+    }
     const read = D.read === undefined ? 1 : D.read;
     if (read > 0.2) {
       let best = null, bs = -Infinity;
@@ -4653,32 +4797,78 @@ function makeCommander() {
         const tx = (x / T2) | 0, ty = (y / T2) | 0;
         if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) return;
         if (!GameMap.passable(M, tx, ty, "ground")) return;
-        const age = Math.min(600, staleness(tx, ty, now));
-        if (age < 45) return;                        // somebody just looked
+        /* tried this cell and could not get to it */
+        if ((scoutShy.get(shyKey(x, y)) || 0) > now) return;
+        const raw = staleness(tx, ty, now);
+        if (raw < 45) return;                        // somebody just looked
+        /* A goal standing on a footprint is a goal that is never REACHED:
+           stepAlong() counts arrival only within 0.8 tiles of the aim point,
+           so a move order onto an occupied tile never ends. G.occ is consulted
+           ONLY for ground we have actually overlooked - reading it over unseen
+           ground would be a peek at a building nobody has laid eyes on - and
+           the travel budget in the dispatch covers the rest. */
+        if (raw < 1e8 && G.occ && G.occ[ty * M.W + tx]) return;
         const trip = U.dist(scout.x, scout.y, x, y) / T2;
-        const s = age * w - trip * 6;
+        if (trip < 5) return;                        // already inside our own eyes
+        const f = fireAt(x, y);
+        if (f > SCOUT_DANGER) return;
+        /* ---- the unknown outranks the merely old ----
+           Ground never once overlooked and ground overlooked ten minutes ago
+           both clamped to 600 here, so the scorer could not tell them apart -
+           and since a known ore field is a FIXED point that goes stale again
+           every few minutes, the tour degenerated into an orbit of the same
+           three fields. Measured with the flat clamp: one commander's scouts
+           drove 1,954 unit-seconds between minute 7 and minute 15 and added
+           half a per cent of explored map. Virgin ground is now worth 900
+           against a re-look's ceiling of 300, which is a search again: a
+           second look at a place we have already been has to be nearly
+           seventy tiles closer before it wins. */
+        const age = raw > 1e8 ? 900 : Math.min(300, raw);
+        const s = age * w - trip * 6 - f * 40;
         if (s > bs) { bs = s; best = { x, y }; }
       };
       if (!oreSites) oreSites = surveyOre();
       for (const s of oreSites) bid(s.x, s.y, 1.6);
+      /* ---- along the edge, not through the middle ----
+         This bid used to be a point SEVEN TILES BEYOND every structure already
+         seen, on the line from our own home through it. That is an order to
+         drive a 400-credit scout car past the thing it has already found and
+         into whatever is standing behind it, and it cannot learn anything by
+         doing so: we can see that building - its being in seenB is what says
+         so. Turned through ninety degrees it becomes reconnaissance. Six tiles
+         abeam walks the scout along the face of a position and off its flanks,
+         which is where the second refinery, the outlying derrick and the gap
+         in the gun line actually are; both flanks are offered, so the scorer
+         takes the side we have not already been down. */
       for (const r of seenB.values()) {
         if (r.gone) continue;
         const dx = r.x - P.homeX, dy = r.y - P.homeY;
         const len = Math.hypot(dx, dy) || 1;
-        bid(r.x + dx / len * T2 * 7, r.y + dy / len * T2 * 7, 1.3);
+        const ax = -dy / len * T2 * 6, ay = dx / len * T2 * 6;
+        bid(r.x + ax, r.y + ay, 1.3);
+        bid(r.x - ax, r.y - ay, 1.3);
       }
       if (aim) for (let f = 0.35; f <= 0.86; f += 0.25)
         bid(P.homeX + (aim.x - P.homeX) * f, P.homeY + (aim.y - P.homeY) * f, 1.1);
       if (best) return best;
     }
+    /* A Recruit's whole behaviour, and everybody's last resort: darts at the
+       map. They go through the same three gates now - not on a footprint we
+       have seen, not under fire we have seen, and far enough off to be worth
+       the drive. */
     let goal = null, bestS = -Infinity;
     for (let n = 0; n < 60; n++) {
       const tx = (G.rng() * M.W) | 0, ty = (G.rng() * M.H) | 0;
       if (!GameMap.passable(M, tx, ty, "ground")) continue;
-      const age = Math.min(600, staleness(tx, ty, now));
-      const trip = U.dist(scout.x, scout.y, (tx + 0.5) * T2, (ty + 0.5) * T2) / T2;
-      const sc = age / (1 + trip * 0.05);
-      if (sc > bestS) { bestS = sc; goal = { x: (tx + 0.5) * T2, y: (ty + 0.5) * T2 }; }
+      const x = (tx + 0.5) * T2, y = (ty + 0.5) * T2;
+      if ((scoutShy.get(shyKey(x, y)) || 0) > now) continue;
+      const raw = staleness(tx, ty, now);
+      if (raw < 1e8 && G.occ && G.occ[ty * M.W + tx]) continue;
+      if (fireAt(x, y) > SCOUT_DANGER) continue;
+      const trip = U.dist(scout.x, scout.y, x, y) / T2;
+      if (trip < 5) continue;
+      const sc = (raw > 1e8 ? 900 : Math.min(300, raw)) / (1 + trip * 0.05);
+      if (sc > bestS) { bestS = sc; goal = { x, y }; }
     }
     return goal;
   }
