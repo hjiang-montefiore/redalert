@@ -9,7 +9,9 @@
 #
 #  Sections:
 #    REQUESTS   every thing asked for, and whether it is done, running or queued
-#    RUNNING    live agent workflows with real progress and whether they moved
+#    RUNNING    live agent workflows: agents returned, still out, and launched.
+#               The launched count GROWS - these are pipelines, so a design
+#               agent that finishes spawns its own reviewers. It is not a total.
 #    MACHINE    load and browser count, because these decide how fast anything is
 #    RECENT     the last commits, newest first
 # ============================================================================
@@ -46,6 +48,19 @@ else
 import json, os, sys, time
 WF = sys.argv[1]
 now = time.time()
+# The journal never records the workflow's name, but the script it ran is kept
+# on disk beside it and its filename does: ironfront-fixed-wing-wf_7258...js.
+# A hash is not a status report.
+NAMES = {}
+sdir = os.path.normpath(os.path.join(WF, '..', '..', 'workflows', 'scripts'))
+try:
+    for f in os.listdir(sdir):
+        if not f.endswith('.js'): continue
+        i = f.rfind('-wf_')
+        if i < 0: continue
+        NAMES[f[i+1:-3]] = f[:i]
+except Exception:
+    pass
 rows = []
 for d in sorted(os.listdir(WF)):
     p = os.path.join(WF, d, 'journal.jsonl')
@@ -86,18 +101,19 @@ for d in sorted(os.listdir(WF)):
     elif live: state = 'RUN'
     elif jage > 900: state = 'STALL'
     else: state = 'idle'
-    rows.append((state, name or d[:14], done, started, live, fresh, jage))
+    rows.append((state, NAMES.get(d) or name or d[:14], done, started, live, fresh, jage))
 if not rows:
     print('  nothing running')
 for state, name, done, started, live, fresh, jage in rows:
     if state == 'done': continue
     col = '\033[33m' if state == 'RUN' else ('\033[31m' if state == 'STALL' else '\033[90m')
-    bar = ''
-    if started:
-        n = int(12.0 * done / max(started, 1))
-        bar = '[' + '#' * n + '.' * (12 - n) + ']'
-    print('  %s%-5s\033[0m %-34s %s %d/%d agents  live %d  last wrote %ss ago'
-          % (col, state, name[:34], bar, done, started, live, fresh))
+    # No progress bar. These run as a PIPELINE: each design agent that finishes
+    # spawns its own reviewers, so the number launched keeps growing and a bar
+    # drawn against it reads far too optimistic - 2 of 6 launched looked like a
+    # third done when the run was really 13 agents and 15% through. Report the
+    # three numbers that are actually known and let them speak.
+    print('  %s%-5s\033[0m %-30s %2d returned, %2d still out, %2d launched   last wrote %ss ago'
+          % (col, state, name[:30], done, max(0, started - done), started, fresh))
     if state == 'STALL':
         idle = fresh if fresh >= 0 else jage
         print('        \033[31mno agent has written in %d min. Usually a poll loop -' % (idle // 60))
