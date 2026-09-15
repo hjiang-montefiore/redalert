@@ -895,6 +895,53 @@ try{
     }
   })();
 
+  /* ====== BUG 35: a SEAD aircraft is allowed to be in the air ======
+     Holding FIRE and staying on the GROUND are different things. noAuto on
+     roles sead/ewair made allWeaponsHeld() true, which spawned every Weasel
+     and Growler on stance "hold" - and stance hold is the gate on strip alert
+     and on the patrol launch, so they never left the ramp. */
+  log("\n[35] SEAD AIRCRAFT GET OFF THE RAMP");
+  (function(){
+    var t=tile(P,"ground",5);
+    if(!t){ chk("sead scenario built", false, "no ground"); return; }
+    var CASES=[["sead_n","Wild Weasel (sead)",true],
+               ["ew_n","Growler (ewair)",true],
+               ["tel_n","ballistic launcher (ground)",false]];
+    var any=false;
+    for (var i=0;i<CASES.length;i++){
+      var id=CASES[i][0], nm=CASES[i][1], shouldFly=CASES[i][2];
+      if(!UNITS[id]) continue;
+      var u=spawn(P,id,t,i*2,0);
+      if(!u) continue;
+      any=true;
+      if (shouldFly){
+        chk(nm+" does not spawn grounded on hold", u.stance!=="hold", "stance="+u.stance);
+        /* and its round is still held - the release gate must be untouched */
+        var held=true;
+        for (var j=0;j<u.def.weapons.length;j++){
+          var w=WEAPONS[u.def.weapons[j]];
+          if (w && !u.manualWeapon(w)) held=false;
+        }
+        chk(nm+" still cannot fire unasked", held && u.acquire()===null,
+            "all mounts manual="+held+", acquire="+(u.acquire()===null?"null":"a target"));
+      } else {
+        chk(nm+" still holds, as it should", u.stance==="hold", "stance="+u.stance);
+      }
+    }
+    if(!any) chk("sead units exist", false, "no sead_n/ew_n/tel_n in the roster");
+
+    /* does one actually leave the apron? */
+    var air=spawn(P,"sead_n",t,6,0) || spawn(P,"ew_n",t,6,0);
+    if(air){
+      air.parked=true; air.fuel=air.fuelMax; air.ammo=air.ammoMax; air.hp=air.maxHp;
+      air.order={type:"parked"};
+      var left=false;
+      for(var k=0;k<900 && !left;k++){ Game.tick(CFG.DT); if(!air.parked) left=true; }
+      chk("and it launches on its own", left,
+          left ? "airborne after "+(k/30).toFixed(1)+"s" : "still parked after 30s");
+    }
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }

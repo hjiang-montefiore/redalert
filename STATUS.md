@@ -51,12 +51,12 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Known and not yet addressed
 
-- [!] SEAD design reverted: the strike aircraft still flew to 1.1 tiles of a
-      known SAM and died, and the SEAD aircraft fired 0 rounds. The one part
-      that DID work is worth re-doing on its own - every sead/ewair hull spawns
-      on stance "hold" because generations.js sets noAuto on those roles, which
-      also bars them from strip alert and patrol launch, so they sit on the ramp
-      until hand-ordered.
+- [!] SEAD, partly done. SEAD aircraft now get OFF THE RAMP (committed and
+      measured). Still outstanding from that design and NOT implemented:
+      aircraft fleeing a plotted SAM envelope, and EW aircraft engaging a
+      radiating emitter automatically. Both failed measurement and were
+      reverted - a strike aircraft flew to 1.1 tiles of a 14-tile ring and
+      died, and the SEAD aircraft fired 0 rounds.
 
 - [!] The AA Battery scores zero on both intercept layers
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`

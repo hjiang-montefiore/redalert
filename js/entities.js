@@ -59,7 +59,25 @@ class Unit {
        stance the player would set by hand anyway. Only a DEFAULT: F toggles it,
        and save.js restores whatever was saved over the top of it, which is why
        the IDLE UNITS nag is fixed at the nag rather than relying on this. */
-    this.stance = this.allWeaponsHeld() ? "hold" : "guard";   // guard | hold | aggressive
+    /* ---- holding FIRE is not the same as staying on the GROUND ----
+       The reasoning above is sound for a ballistic launcher: a TEL should sit
+       until somebody releases it, and "hold" is the stance a player would set
+       by hand. It is wrong for an AIRCRAFT, and it grounded the whole SEAD
+       force. generations.js:1118 stamps noAuto on roles sead and ewair, that
+       makes manualWeapon() true, that makes allWeaponsHeld() true, and this
+       line then spawned every Wild Weasel and every Growler on stance "hold".
+       Stance hold is also the gate on strip alert (:2210) and on the patrol
+       launch that exists so nothing serviceable sits on the apron (:2248), so
+       a SEAD aircraft never left the ramp for the player OR the AI unless it
+       was hand-ordered off it.
+
+       Nothing about firing changes. An aircraft on "guard" still cannot shoot
+       an anti-radiation round unasked, because acquire() asks canTarget(e,
+       true) and that skips a manual mount (:288) - the release gate the owner
+       asked for is a separate mechanism and is untouched. What changes is that
+       the airframe is allowed to be in the air. A ground launcher keeps the
+       old default, which is what it was written for. */
+    this.stance = (this.allWeaponsHeld() && this.layer !== "air") ? "hold" : "guard";
     this.cooldowns = d.weapons.map(() => 0);
     this.burst = d.weapons.map(() => 0);
     this.dead = false;
