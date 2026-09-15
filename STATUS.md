@@ -51,12 +51,12 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Known and not yet addressed
 
-- [!] SEAD, partly done. SEAD aircraft now get OFF THE RAMP (committed and
-      measured). Still outstanding from that design and NOT implemented:
-      aircraft fleeing a plotted SAM envelope, and EW aircraft engaging a
-      radiating emitter automatically. Both failed measurement and were
-      reverted - a strike aircraft flew to 1.1 tiles of a 14-tile ring and
-      died, and the SEAD aircraft fired 0 rounds.
+- [!] SEAD: two of three done. Aircraft get off the ramp, and a TRANSITING
+      aircraft now routes round a SAM ring it can see while a commanded attack
+      still presses on. STILL NOT IMPLEMENTED: an EW aircraft engaging a
+      radiating emitter automatically - acquire() cannot pick up a manual
+      mount, so it needs a second narrow path, and the one that was written
+      fired 0 rounds when measured.
 
 - [!] The AA Battery scores zero on both intercept layers
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`

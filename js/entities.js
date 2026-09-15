@@ -778,7 +778,15 @@ class Unit {
     this.moving = false;
 
     if (o.type === "move") {
-      if (this.stalledOnMove(o.x, o.y, dt)) {
+      /* A scout is not handled here AT ALL. ai.js's scouting sweep owns recon
+         units and does strictly more than this can: it writes the refused cell
+         into scoutShy so the next bid cannot hand back the same goal. Two
+         stall detectors on one unit is one too many and the specific one knows
+         more - running both took test 34 from two distinct goals in thirty
+         seconds back down to one, because this one cleared the order before
+         the scouting sweep could record WHY it failed. */
+      const scoutOwned = this.def.role === "recon" && this.owner && this.owner.isAI;
+      if (!scoutOwned && this.stalledOnMove(o.x, o.y, dt)) {
         if (this.owner && this.owner.isAI) {
           /* the commander will give it something else to do */
           this.path = null;
@@ -1953,7 +1961,30 @@ class Unit {
        defended area is their job, and a player who orders it means it. */
     const defenceless = !this.def.weapons.length ||
                         (this.allWeaponsHeld && this.allWeaponsHeld());
-    if (defenceless && this.game.standoffPoint &&
+    /* ---- and an ARMED aircraft that is merely passing through ----
+       (owner) "when our aircraft units spot the dead threat like sam ... it
+       should fleet the area."
+
+       The paragraph above is right that penetrating a defended area is a
+       strike aircraft's job and that a player who orders it means it. But it
+       drew the line around the AIRFRAME, and the line belongs around the
+       ORDER. A Hornet told to attack a battery is doing its job. The same
+       Hornet told to fly from one side of the map to the other, whose
+       shortest route happens to clip a SAM ring, is not doing anything at
+       all - it is dying in transit for nothing.
+
+       o.release is the token that separates them and it already exists:
+       setOrder stamps it on a NON-AUTO attack or bombard (entities.js:226)
+       and on nothing else. So a commanded attack presses on exactly as
+       before, and a move or a combat air patrol - which name no target -
+       routes around what it can see. Aggressive stance is the off switch a
+       player already has on the F key.
+
+       attackmove is deliberately NOT included for an armed aircraft: it means
+       advance and engage, which is a fight the player asked for. */
+    const transiting = (o.type === "move" || o.type === "cap") &&
+                       !o.release && this.stance !== "aggressive";
+    if ((defenceless || transiting) && this.game.standoffPoint &&
         (o.type === "move" || o.type === "attackmove" || o.type === "cap")) {
       const margin = 1.5 + (this.def.jam ? 0 : 1.0);   // a jammer may sit closer
       /* Anchor the walk-back at HOME, not at the aircraft. Computed from the
