@@ -364,8 +364,14 @@ window.addEventListener("load", function () {
   set("opt-seed", M.seed || "compA");
 
   var out = document.getElementById("tout"), lines = [];
-  var HDR = ["harvester","mbt","heavy","lighttank","tankdestroyer","ifv","spg","mlrs","aa","spaag","sam","at","rifle","mg","cas","fighter"];
-  var SH  = ["hrv","mbt","hvy","lt ","td ","ifv","spg","mlr","aa ","spa","sam","at ","rfl","mg ","cas","ftr"];
+  /* Ground, air, and THE FLEET. The naval roles were missing, so a water-map
+     run printed sixteen ground columns and no hulls at all - which made it
+     impossible to see the one thing a naval match exists to show. */
+  var HDR = ["harvester","mbt","heavy","lighttank","tankdestroyer","ifv","spg","mlrs",
+             "aa","spaag","sam","at","rifle","mg","cas","fighter",
+             "patrol","corvette","destroyer","cruiser","missileboat","sub","carrier"];
+  var SH  = ["hrv","mbt","hvy","lt ","td ","ifv","spg","mlr","aa ","spa","sam","at ","rfl","mg ","cas","ftr",
+             "pat","cor","des","cru","mbt2","sub","cv "];
 
   function snap(P) {
     var r = {}, live = P.units;

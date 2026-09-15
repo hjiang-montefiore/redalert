@@ -36,7 +36,7 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 - [~] Era chains - 40 roles where one machine stands in for every decade
 - [x] The scout that parks in your construction yard
-- [~] The navy is too weak
+- [x] The navy is too weak - a prereq deadlock, not the dice roll I blamed
 - [~] Fixed-wing aircraft must not hangar; F-35, B-52 and AC-130 ordnance
 - [~] Aircraft flee a detected SAM; EW aircraft engage radars automatically
 

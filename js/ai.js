@@ -242,6 +242,7 @@ function makeCommander() {
   let siegeAt = null;            // the emplacement the guns are currently taking apart
   let siegeNeed = 0;             // when we last wanted tube artillery and had none
   let armsCache = null, armsT = -1e9;   // the other side's order of battle, memoised
+  let seaCache = null, seaT = -1e9;     // ...and what of it is afloat
   let survey = null, surveyT = -1e9;    // the plot, priced
   const aimShy = new Map();      // objective id -> the time it may be tried again
   let aimRvT = -1;               // warAim's review is memoised on the game tick
@@ -416,7 +417,8 @@ function makeCommander() {
        against the previous one's order of battle */
     gunHard = null; gunSoft = null; gunVer = -1; seenVer = 0;
     lastAxes = []; lastAimId = null; siegeAt = null; siegeNeed = 0;
-    armsCache = null; armsT = -1e9; survey = null; surveyT = -1e9;
+    armsCache = null; armsT = -1e9; seaCache = null; seaT = -1e9;
+    survey = null; surveyT = -1e9;
     aimShy.clear(); scoutShy.clear(); aimRvT = -1; waveBook = null; oreSites = null;
     /* A restarted match must not price its first tanker off the previous
        battle's sortie rate, buy its first workshop against the previous
@@ -1294,6 +1296,225 @@ function makeCommander() {
     }
     armsCache = a; armsT = now;
     return a;
+  }
+
+  /* ---- what is on the water ----
+     foeArms() above throws every hull away on the line `if (r.layer !==
+     "ground") continue`, with the comment "hulls are the navy's problem". The
+     navy never got a problem of its own: the fleet block in think() rolled
+     G.rng() against six fixed thresholds and not one term in that expression
+     came from the picture, which is the identical defect the ground queues
+     were fixed for. This is the reading the sea side never had.
+
+     Measured before this existed, on baltic at Commander with both seats on
+     Blue Water doctrine: the fleet came out as 8 patrol boats and 20
+     corvettes, with no destroyer, no submarine, no missile boat and no
+     cruiser bought in twenty-five minutes - and 22,500 credits still in the
+     bank at the end. The patrol boat is a 500-credit hull carrying an hmg: 13
+     damage at 5.4 tiles, no sonar, no air weapon, no missile. So that was a
+     28-hull fleet with no anti-air, no anti-submarine and no anti-ship
+     capability in it at all.
+
+     Same discipline as foeArms and nothing looser: seenU, seenB and the
+     dossier. `role` is what a recognition manual gives you the moment a hull
+     is in view, and digest() has written it down at contact since the picture
+     was written, so calling a contact a missile boat is not a peek at
+     anybody's object list. */
+  function foeSea() {
+    const now = G.time;
+    if (seaCache && now - seaT < 1.9) return seaCache;
+    const mem = Math.max(14, D.memory || 90);
+    const s = { surf: 0, sub: 0, missile: 0, capital: 0, air: 0, coast: 0, seen: 0,
+                sSub: 0, sMissile: 0, sCapital: 0, t: now };
+    for (const r of seenU.values()) {
+      const age = now - r.t;
+      if (age > mem) continue;
+      const w = 1 - age / mem;          // a sighting is worth less the older it is
+      /* An aircraft is a naval contact too, and the most dangerous one: a
+         hull's only answer to it is the area SAM the destroyer and the cruiser
+         carry, and the corvette's gun. It is counted here as well as in
+         foeArms because the two readings answer different questions - that one
+         asks what the wave will meet, this one asks what the fleet will meet. */
+      if (r.layer === "air") { s.air += w; continue; }
+      if (r.layer !== "sea" && r.layer !== "sub") continue;
+      if (r.harvester || !r.armed) continue;     // a landing craft is an objective
+      if (r.layer === "sub") { s.sub += w; continue; }
+      s.surf += w;
+      if (r.role === "missileboat") s.missile += w;
+      else if (r.role === "destroyer" || r.role === "cruiser" ||
+               r.role === "carrier") s.capital += w;
+    }
+    /* The submerged boat is the one contact a sighting cannot be relied on to
+       produce, because it is under water and our sonar may never have held it.
+       A torpedo in one of our own hulls is the other way it reaches the plot,
+       and digest() has recorded that as dossier.sawSub since the picture was
+       written. The anti-submarine helicopter block already buys on exactly
+       this flag; the fleet reads the same flag rather than inventing a second
+       rule for the same fact, and it stays fog-honest for the same reason. */
+    const dR = dossier[rival ? rival.idx : -1];
+    if (dR && dR.sawSub) s.sub = Math.max(s.sub, 1);
+    /* A coastal battery is a reason to bring reach rather than hulls: it is
+       13.5 tiles and it is on the plot by key like every other structure. */
+    for (const r of seenB.values()) if (!r.gone && r.key === "coastal") s.coast += 1;
+    s.seen = s.surf + s.sub;
+    const n = Math.max(1, s.seen), ns = Math.max(1, s.surf);
+    s.sSub     = U.clamp(s.sub / n, 0, 1);
+    s.sMissile = U.clamp(s.missile / ns, 0, 1);
+    s.sCapital = U.clamp(s.capital / ns, 0, 1);
+    seaCache = s; seaT = now;
+    return s;
+  }
+
+  /* ---- what to put to sea against what we can see ----
+     counterMix() answers a GROUND picture and cannot answer this one: armour,
+     infantry, artillery and a gun line are not what a fleet meets. The sea
+     asks four different questions, and every one of them has a different hull
+     as its answer. Read off the tables, at the present day, for NATO:
+
+       - a SUBMARINE is answered by sonar and a homing torpedo. The destroyer
+         has asw_mk54 at 215 damage and sonar 9.5, the cruiser the same; our
+         own boat carries torp_mk48 at 380. The corvette has sonar 6 and NO
+         anti-submarine weapon at all, and the patrol boat has neither. Against
+         a boat, three quarters of the old dice bought hulls that cannot shoot
+         back at it.
+       - an AIRCRAFT is answered by the area SAM. sam_sm2 is 185 damage at 14.5
+         tiles and only the destroyer, the cruiser and the carrier carry one;
+         the corvette brings navgun_76 at 8 tiles and a Phalanx at 3.2. The
+         missile boat and the patrol boat carry nothing that can engage an
+         aircraft whatever.
+       - a MISSILE BOAT is answered by point defence and by getting there
+         first: ssm_harpoon reaches 14 tiles, which outranges every gun afloat,
+         so the exchange is decided before a gun bears. ciws_phalanx is the
+         only thing that shoots a missile down, and the corvette, destroyer and
+         cruiser carry it.
+       - a CAPITAL SHIP - destroyer, cruiser, carrier - is answered by the
+         anti-ship missile and the torpedo rather than by another gun: 2,100
+         to 2,900 hit points do not fall to navgun_mk45 at 125 a round in any
+         reasonable time, and torp_mk48 arrives at 380.
+
+     The floor underneath the counter terms is deliberately NOT the old dice
+     mixture. That mixture could not be built at all for the first ten minutes
+     of a battle: the destroyer, the submarine and the missile boat each need a
+     Radar Dome and the cruiser needs a Research Lab, while the naval yard goes
+     up well before either on a split map. Measured on baltic, the losing seat
+     spent 599 naval think ticks being refused "REQUIRES RADAR DOME" or
+     "REQUIRES RESEARCH LAB" and bought not one ship in twenty-five minutes
+     while owning a yard - because the cascade picks ONE branch per tick and a
+     refused branch simply wastes the tick. buildToward() is what fixes that:
+     a role it cannot field this era is cooled for twenty seconds and the
+     shortfall redistributes to the next one, so the queue never stalls on a
+     prereq it does not have yet.
+
+     `grip` is D.read, exactly as on the ground side: a Recruit reads less and
+     acts on none of it, and puts the standing mixture to sea. */
+  function navalMix(s) {
+    /* The standing mixture. The corvette is the general-purpose hull and the
+       only real warship a navy can field before it owns a Radar Dome, so it
+       carries the early fleet on its own. */
+    const mix = { corvette: 0.40, patrol: P.tech >= 2 ? 0.06 : 0.28 };
+    if (P.tech >= 2) { mix.destroyer = 0.26; mix.sub = 0.16; mix.missileboat = 0.12; }
+    if (P.tech >= 3) mix.cruiser = 0.10;
+    const grip = D.read === undefined ? 1 : D.read;
+    if (grip <= 0) return mix;                 // a Recruit sails the standing mixture
+
+    const air = U.clamp(s.air / 3, 0, 1);
+    const add = (k, v) => { mix[k] = (mix[k] || 0) + v; };
+
+    if (s.sSub > 0.10) {
+      /* Sonar and a torpedo, and nothing else in the roster has both. */
+      if (P.tech >= 2) add("destroyer", 0.30 * s.sSub * grip);
+      if (P.tech >= 2) add("sub", 0.18 * s.sSub * grip);
+      if (P.tech >= 3) add("cruiser", 0.10 * s.sSub * grip);
+      /* and stop buying hulls that cannot engage it: the patrol boat has no
+         sonar at all and the missile boat's ssm cannot be fired at a boat */
+      mix.patrol *= 1 - 0.80 * s.sSub * grip;
+      if (mix.missileboat) mix.missileboat *= 1 - 0.50 * s.sSub * grip;
+    }
+
+    if (air > 0) {
+      /* The area SAM rides on the destroyer and the cruiser, and on nothing
+         else afloat. The corvette's gun is the cheap second answer. */
+      if (P.tech >= 2) add("destroyer", 0.26 * air * grip);
+      if (P.tech >= 3) add("cruiser", 0.12 * air * grip);
+      add("corvette", 0.12 * air * grip);
+      mix.patrol *= 1 - 0.70 * air * grip;
+      if (mix.missileboat) mix.missileboat *= 1 - 0.40 * air * grip;
+    }
+
+    if (s.sMissile > 0.20) {
+      /* Their missile outranges our guns, so the answer is point defence and
+         our own missile - not more gun hulls. */
+      add("corvette", 0.14 * s.sMissile * grip);
+      if (P.tech >= 2) add("missileboat", 0.16 * s.sMissile * grip);
+      if (P.tech >= 2) add("destroyer", 0.10 * s.sMissile * grip);
+      mix.patrol *= 1 - 0.80 * s.sMissile * grip;
+    }
+
+    if (s.sCapital > 0.20) {
+      /* Two thousand-odd hit points behind a gun duel is a bad trade; the
+         missile and the torpedo are the answer. */
+      if (P.tech >= 2) add("missileboat", 0.20 * s.sCapital * grip);
+      if (P.tech >= 2) add("sub", 0.20 * s.sCapital * grip);
+      if (P.tech >= 3) add("cruiser", 0.10 * s.sCapital * grip);
+      mix.patrol *= 1 - 0.80 * s.sCapital * grip;
+    }
+
+    /* A coastal battery reaches 13.5 tiles and a naval gun reaches 11.5, so a
+       gun line on the beach is taken apart from outside its envelope or not at
+       all: the submarine's land-attack round reaches 19. */
+    if (s.coast > 0 && P.tech >= 3) add("sub", 0.14 * U.clamp(s.coast / 3, 0, 1) * grip);
+
+    /* The same guard the ground mixture carries, for the same reason: a fleet
+       of nothing but missile boats has no sonar, no SAM and 900 hit points a
+       hull, and loses to anything that closes with it. A third of the fleet
+       stays general-purpose however many counter terms have stacked. */
+    let tot = 0;
+    for (const k in mix) tot += mix[k];
+    const genKeys = P.tech >= 2 ? ["corvette", "destroyer"] : ["corvette", "patrol"];
+    let base = 0;
+    for (const k of genKeys) base += mix[k] || 0;
+    if (tot > 0 && base < tot * 0.35) {
+      const share = (tot * 0.35 - base) / genKeys.length;
+      for (const k of genKeys) if (mix[k] !== undefined) mix[k] += share;
+    }
+    return mix;
+  }
+
+  /* ---- the unit of account for a fleet cap ----
+     What one hull OF THE MIXTURE WE INTEND costs. The cap below used to count
+     hulls, and a hull is not a unit of fighting power: a patrol boat is 500
+     credits of machine gun and a cruiser is 3,400 credits of gun, area SAM and
+     homing torpedo. Pricing the cap against the mixture keeps the numbers 6
+     and 9 meaning exactly what they were written to mean - six warships, nine
+     warships - while making it impossible to satisfy them with a crowd of
+     gunboats, which is what the count let happen.
+
+     A role this navy cannot field is left out of the average rather than
+     priced at zero or at somebody else's price, so the yardstick is always the
+     cost of a hull this particular navy would really build. Germany owns no
+     cruiser and no carrier in any era, so neither appears in Germany's
+     yardstick and neither is ever bought - the same answer the build path
+     gives, arrived at the same way. */
+  function hullYardstick(mix) {
+    let sum = 0, w = 0;
+    for (const role in mix) {
+      if (!(mix[role] > 0)) continue;
+      const id = unitFor(P.faction, role, P.era);
+      /* The same test buildToward() makes, and it has to be the same one. A
+         yardstick that prices a destroyer we are not allowed to build yet
+         makes every corvette look cheap against it, and the cap then admits
+         far more gunboats than it was ever meant to: measured on baltic, a
+         yardstick that priced the intended mixture rather than the buildable
+         one let the fleet run to 41 corvettes and 6 patrol boats - 31,500
+         credits of gunboats - and the naval bill then delayed the very Radar
+         Dome that would have unlocked the destroyer. Pricing what the yard can
+         cut TODAY keeps the cap honest, and the yardstick rises of its own
+         accord the moment the dome goes up, which re-opens the cap and lets
+         the real warships in. */
+      if (!id || !UNITS[id] || P.lockReason(UNITS[id])) continue;
+      sum += mix[role] * P.factionCost(UNITS[id]); w += mix[role];
+    }
+    return w > 0 ? sum / w : 900;
   }
 
   /* ---- is our own gun good enough, or do we need a shaped charge? ----
@@ -3467,9 +3688,11 @@ function makeCommander() {
     if (nYard >= 1 && queueLen("naval") < 2) {
       /* landing craft first on split maps */
       if (!groundConnected && fielded("naval", d => d.amphib) < 2 && P.cash > 1200) tryBuildUnit("transport_sea");
-      /* The tender is bought before the dice cascade, because a hull that does
-         not sink is worth more than the next corvette, and it is bought on a
-         measurement rather than on a roll. */
+      /* The tender is bought ahead of the fleet mixture, because a hull that
+         does not sink is worth more than the next corvette, and it is bought
+         on a measurement rather than on a roll. There is no roll left below it
+         to be bought ahead of, but the ordering still matters: it is outside
+         the cap, so a tender never costs the fleet a warship's slot. */
       if (wantTender() && tryBuildUnit("repair_sea")) return;
       /* The cap counted landing craft, the oiler, the minesweeper and the
          tender itself, so buying any one of them silently cost the fleet a
@@ -3478,8 +3701,37 @@ function makeCommander() {
       const ships = P.units.filter(u => !u.dead && (u.layer === "sea" || u.layer === "sub") &&
         u.def.weapons.length && !u.def.amphib && !u.def.supply && !u.def.repairRate &&
         u.def.role !== "minesweeper" && u.def.role !== "navminelayer");
-      if (ships.length < Math.round((groundConnected ? 6 : 9) * (D.navalBias || 1))) {
-        const r = G.rng();
+      /* The fleet we intend, and the cap measured against it. The cap used to
+         be `ships.length`, a count of hulls, and a hull is not a unit of
+         fighting power. Measured on baltic at Commander with Blue Water on
+         both seats: 8 patrol boats and 20 corvettes filled a cap of 27 by
+         about the sixteenth minute, after which this block never ran again for
+         the rest of the match - so the destroyer, the submarine, the missile
+         boat and the cruiser were never bought at all, and the commander
+         finished the battle sitting on 22,500 credits with nothing left it was
+         allowed to spend them on. Counting in hulls OF THE MIXTURE instead
+         keeps "six warships" meaning six warships and stops a crowd of
+         gunboats from standing in for a fleet. */
+      const mix = navalMix(foeSea());
+      const ref = hullYardstick(mix);
+      let fleetValue = 0;
+      for (const u of ships) fleetValue += P.factionCost(u.def) / ref;
+      let capN = Math.round((groundConnected ? 6 : 9) * (D.navalBias || 1));
+      /* ---- the dome before the fleet ----
+         The destroyer, the submarine and the missile boat all list `radar` in
+         their prereq and the cruiser lists `lab`, while the naval yard goes up
+         far earlier than either - on a split theatre it is bought before the
+         Radar Dome in the build ladder outright. Until the dome is up this
+         yard can cut nothing but corvettes and patrol boats, so every credit
+         spent here buys a gunboat AND delays the 1,000-credit structure that
+         would buy a warship: measured on baltic, the building queue took
+         15,269 credits against the fleet's 34,243 and the dome did not appear
+         until the twenty-fifth minute. A screening force is what a fleet
+         should be at that point, so the cap is one until the dome is standing
+         - four hulls, which is also exactly the strength the naval wave
+         launcher needs before it will sail. */
+      if (P.tech >= 2 && !P.hasBuilding("radar")) capN = Math.min(capN, 4);
+      if (fleetValue < capN) {
         /* a carrier with an empty deck is a very expensive target: fill it */
         const decks = P.units.reduce((n, u) => n + (!u.dead && u.def.carrier ? u.def.carrier : 0), 0);
         if (decks > 0) {
@@ -3488,12 +3740,16 @@ function makeCommander() {
             if (tryBuildUnit("cstealth") || tryBuildUnit("cfighter")) return;
           }
         }
-        if (r < 0.3) tryBuildUnit("corvette");
-        else if (r < 0.5 && P.tech >= 2) tryBuildUnit("destroyer");
-        else if (r < 0.65 && P.tech >= 2) tryBuildUnit("sub");
-        else if (r < 0.8 && P.tech >= 2) tryBuildUnit("missileboat");
-        else if (P.tech >= 3 && r < 0.9) tryBuildUnit("cruiser");
-        else tryBuildUnit("patrol");
+        /* A shortfall picker against a reading of the water, not a ladder of
+           dice. buildToward() builds the role furthest below its intended
+           share, which converges on the mixture from wherever the fleet
+           actually is and recovers after losses - and, decisively here, it
+           cools a role the era or the nation cannot field and redistributes
+           the shortfall instead of wasting the tick on a prereq it does not
+           own yet. Germany has no cruiser and no carrier in any era and grows
+           neither: unitFor() answers null, the role is cooled, and the share
+           goes to the hulls Germany does build. */
+        buildToward(mix, ships, "naval");
       }
     }
 
