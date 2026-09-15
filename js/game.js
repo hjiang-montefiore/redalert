@@ -1271,6 +1271,47 @@ var Game = (function () {
     if (typeof Threat !== "undefined") Threat.reportLaunch(sw.alert, b.owner === G.human);
     else Sfx.play("alarm");
     if (b.owner !== G.human) G.pingEvent(wx, wy);
+
+    /* ---- something has to leave the silo ----
+       A strategic launch was a banner, a klaxon and, sw.flight seconds later,
+       a crater. The missile itself never existed: no round was created, no
+       door opened, nothing climbed. The most expensive thing in the game went
+       off with less to look at than a machine-gun burst.
+
+       Deliberately COSMETIC. The damage model is the deferred areaStrike
+       below and is untouched - a real projectile here would either double the
+       damage or hand the layered interception in combat.js a round it was
+       never balanced against, and a silently interceptable superweapon is a
+       balance change, not an animation.
+
+       Built from `boom` and `flash`, which are the only two effect kinds BOTH
+       renderers draw (render3d.js:1369/1438, render.js:1086/1082) - `trail`
+       is 2D-only and `turrettoss` is 3D-only, so neither would show for half
+       the players. Effects carry no z, so height is baked into y the way
+       combat.js already does it at :474 with `y: p.y - p.z`. */
+    (function () {
+      const cx = b.x, cy = b.y - 6;
+      const eff = (typeof Combat !== "undefined" && Combat.addEffect)
+        ? Combat.addEffect : null;
+      if (!eff) return;
+      /* ignition: the flame front under the missile, and the door */
+      eff({ t: "flash", x: cx, y: cy, life: 0.5, max: 0.5, big: true, ang: -Math.PI / 2 });
+      eff({ t: "boom", x: cx, y: cy + 4, r: 7, life: 0.9, max: 0.9 });
+      /* the climb. Eleven puffs over 1.4s, rising and spreading - the round
+         is out of sight long before the warhead arrives, which is right: a
+         ballistic missile is visible for a few seconds and then it is weather. */
+      for (let i = 0; i < 11; i++) {
+        G.defer(0.09 * i, () => {
+          const f = i / 10;
+          eff({ t: "boom", x: cx + (i % 2 ? 2 : -2) * f, y: cy - 30 * f * f - 6 * f,
+                r: 6 - 3.4 * f, life: 0.7 + 0.5 * f, max: 0.7 + 0.5 * f });
+        });
+      }
+      /* the exhaust cloud the launch leaves sitting on the pad */
+      for (let i = 0; i < 4; i++)
+        G.defer(0.18 * i, () => eff({ t: "boom", x: cx + (i - 1.5) * 5, y: cy + 5,
+                                      r: 5.5, life: 1.6, max: 1.6 }));
+    })();
     G.defer(sw.flight, () => {
       const w = { dmg: sw.dmg, warhead: sw.warhead, aoe: sw.aoe, tgt: { ground: 1, air: 0, sea: 1, sub: 0 } };
       G.areaStrike(wx, wy, sw.dmg, sw.aoe, sw.warhead, { nuke: !!sw.nuke, friendlyFire: true });

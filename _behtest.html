@@ -802,6 +802,37 @@ try{
     Game.fogEnabled = wasFog;
   })();
 
+  /* ====== BUG 33: a strategic launch is visible ======
+     "also silo has no missle launch animation." It was a banner, a klaxon
+     and a crater sw.flight seconds later; no round was ever created. */
+  log("\n[33] THE SILO ACTUALLY LAUNCHES");
+  (function(){
+    var spot=tile(P,"ground",7);
+    if(!spot){ chk("silo scenario built", false, "no ground"); return; }
+    var silo=Game.placeBuilding(P,"missilesilo",spot.x,spot.y,true);
+    if(!silo){ chk("silo scenario built", false, "placeBuilding failed"); return; }
+    silo.buildProgress=1; silo.swCharge=1;
+    /* it needs the grid, which test 32 may have pulled down */
+    for(var i=0;i<4;i++){ var pb=Game.placeBuilding(P,"power",spot.x+3+i*3,spot.y+4,true);
+      if(pb) pb.buildProgress=1; }
+    var before=(Combat.effects||[]).length;
+    var ok=Game.launchSuperweapon(silo, spot.x*32+400, spot.y*32);
+    chk("the silo fires", ok===true, "launchSuperweapon returned "+ok);
+    var atOnce=(Combat.effects||[]).length-before;
+    chk("something leaves the pad immediately", atOnce>=2,
+        atOnce+" effects on the frame of launch");
+    /* the climb is deferred over ~1.4s */
+    var peak=atOnce;
+    for(var k=0;k<60;k++){ Game.tick(CFG.DT);
+      var n=(Combat.effects||[]).length-0; if(n>peak) peak=n; }
+    chk("and it climbs - more follows over the next second", peak>atOnce,
+        "peak "+peak+" effects during the climb");
+    /* the damage model must be untouched: no projectile was created */
+    var proj=(Combat.projectiles||[]).filter(function(p){return p.shooter===silo;}).length;
+    chk("no real round was spawned - the animation is cosmetic", proj===0,
+        proj+" projectiles from the silo");
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }
