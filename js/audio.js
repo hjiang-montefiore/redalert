@@ -1633,11 +1633,139 @@ var Sfx = (function () {
   }
   function volume(v) { userVol = clamp(v, 0, 1); applyMix(); }
 
+  /* ====================== SPOKEN ACKNOWLEDGEMENT ======================
+     The owner: "the unit audio has the sound but no answer voice like MCV
+     reporting / Ore miner working."
+
+     Right - the class cues say WHAT you picked up, and nothing ever answered.
+     That answering voice is half of what makes a unit feel crewed, and this
+     game had none.
+
+     ZERO ASSET FILES is a hard rule here, so a recorded voice line is out.
+     speechSynthesis is the way round it: it ships inside the browser, needs
+     no file, and is the only way to get real words into this project. It is
+     deliberately NOT routed through the Web Audio graph - the utterance queue
+     is its own output - so it is volume-matched by hand against userVol and
+     silenced with the rest when the player mutes.
+
+     Lines are per ROLE where the role has an identity worth hearing (a
+     harvester, an engineer, a construction vehicle, a ship) and per CLASS
+     otherwise, because fifty-eight roles of bespoke dialogue is a liability,
+     not a feature. Pitch and rate shift by class so an infantry section and a
+     destroyer do not sound like the same rating reading from the same card. */
+  var VOX = {
+    /* role lines - the ones the owner named, and their obvious siblings */
+    mcv:        ["Construction vehicle ready", "MCV reporting", "Standing by to deploy"],
+    harvester:  ["Ore miner working", "Hauler reporting", "Running the ore"],
+    engineer:   ["Engineer reporting", "Ready to work"],
+    medic:      ["Medic up", "Corpsman reporting"],
+    repair:     ["Recovery vehicle ready", "Workshop standing by"],
+    supply:     ["Supply section reporting", "Loaded and ready"],
+    oiler:      ["Oiler on station"],
+    tanker:     ["Tanker on station", "Ready to pass fuel"],
+    awacs:      ["Picture is clear", "Radar on line", "Scope is up"],
+    cawacs:     ["Picture is clear", "Scope is up"],
+    ewair:      ["Jammers ready", "Electronic attack ready"],
+    sead:       ["Wild Weasel ready", "Hunting radars"],
+    recon:      ["Scout reporting", "Eyes forward"],
+    engineer2:  ["Ready"],
+    sniper:     ["In position", "Overwatch set"],
+    mlrs:       ["Battery ready", "Rockets loaded"],
+    spg:        ["Gun line ready", "Battery is laid"],
+    tel:        ["Launcher ready", "Awaiting release"],
+    ssbn:       ["Boat is ready", "Tubes are ready"],
+    ssgn:       ["Boat is ready"],
+    sub:        ["Running quiet", "Boat is ready"],
+    minelayer:  ["Layer ready"],
+    mineclear:  ["Clearing party ready"],
+  };
+  /* fall back by class, so every unit answers something */
+  var VOX_CLASS = {
+    sel_inf: ["Yes sir", "Ready", "Section reporting", "Awaiting orders"],
+    sel_veh: ["Crew ready", "Standing by", "Engine running"],
+    sel_air: ["Airborne", "On station", "Ready for tasking"],
+    sel_sea: ["Bridge reporting", "Ship is ready", "Standing by"],
+    sel_sup: ["Reporting", "Standing by"],
+    sel_bld: [],                                  // a building does not speak
+  };
+  var VOX_ORDER = {
+    sel_inf: ["Moving", "On our way", "Acknowledged"],
+    sel_veh: ["Moving out", "On our way"],
+    sel_air: ["Wilco", "Rolling in", "En route"],
+    sel_sea: ["Coming about", "Making way"],
+    sel_sup: ["Moving"],
+    sel_bld: [],
+  };
+  /* class colouring: an infantry section is not a destroyer */
+  var VOX_TONE = {
+    sel_inf: { pitch: 1.06, rate: 1.12 },
+    sel_veh: { pitch: 0.94, rate: 1.00 },
+    sel_air: { pitch: 1.00, rate: 1.16 },
+    sel_sea: { pitch: 0.84, rate: 0.92 },
+    sel_sup: { pitch: 1.00, rate: 1.02 },
+  };
+  var voxOn = true, voxT = 0, voxN = 0, voxVoice = null, voxTried = false;
+
+  function voxPick(list) {
+    if (!list || !list.length) return null;
+    voxN = (voxN + 1) % 1000;
+    return list[voxN % list.length];
+  }
+  /* One English voice, chosen once. getVoices() is empty until the engine has
+     loaded them, which is asynchronous in every browser that implements it -
+     hence the retry rather than a single lookup at startup. */
+  function voxSelect(syn) {
+    if (voxVoice || voxTried) return voxVoice;
+    var vs = [];
+    try { vs = syn.getVoices() || []; } catch (e) { return null; }
+    if (!vs.length) return null;               // not loaded yet, try again later
+    voxTried = true;
+    for (var i = 0; i < vs.length; i++)
+      if (/^en[-_]/i.test(vs[i].lang || "") && !/novelty|whisper/i.test(vs[i].name || ""))
+        { voxVoice = vs[i]; break; }
+    if (!voxVoice) voxVoice = vs[0];
+    return voxVoice;
+  }
+
+  /* e is the unit; kind is "select" or "order". Returns the line, or null. */
+  function vox(e, kind) {
+    if (!enabled || !voxOn || !e || e.dead) return null;
+    var syn = (typeof window !== "undefined") && window.speechSynthesis;
+    if (!syn) return null;
+    /* Rate limit hard. This fires on every click and a voice that talks over
+       itself is worse than silence - 1.6s is about one line. */
+    var now = (typeof performance !== "undefined" && performance.now)
+      ? performance.now() / 1000 : Date.now() / 1000;
+    if (now - voxT < 1.6) return null;
+    var cls = selClass(e);
+    if (!cls || cls === "sel_bld") return null;
+    var role = (e.def && e.def.role) || "";
+    var line = kind === "order" ? voxPick(VOX_ORDER[cls])
+                                : (voxPick(VOX[role]) || voxPick(VOX_CLASS[cls]));
+    if (!line) return null;
+    voxT = now;
+    try {
+      var u = new window.SpeechSynthesisUtterance(line);
+      var tone = VOX_TONE[cls] || { pitch: 1, rate: 1 };
+      u.pitch = tone.pitch; u.rate = tone.rate;
+      u.volume = clamp(userVol, 0, 1) * 0.85;
+      var v = voxSelect(syn); if (v) u.voice = v;
+      /* never let a backlog build: one line at a time */
+      try { syn.cancel(); } catch (e2) {}
+      syn.speak(u);
+    } catch (e3) { return null; }
+    return line;
+  }
+  function voxEnabled(on) {
+    voxOn = !!on;
+    if (!voxOn) { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  }
+
   return {
     /* the surface the rest of js/ already uses */
     play: play, ensure: ensure, setIntensity: setIntensity, duck: duck,
     /* new, all optional */
-    select: select, selClass: selClass,
+    select: select, selClass: selClass, vox: vox, voxEnabled: voxEnabled,
     weapon: weapon, impact: impact, boom: boom,
     updateEngines: updateEngines, stopEngines: stopEngines,
     render: render, describe: describe, stats: stats,

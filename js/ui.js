@@ -1930,12 +1930,12 @@ var UI = (function () {
         e.selected = false; selection.splice(selection.indexOf(e), 1);
         Sfx.play("sel_drop");     /* pruning the group is a selection change too */
       }
-      else if (!e.selected) { e.selected = true; selection.push(e); Sfx.select(e); }
+      else if (!e.selected) { e.selected = true; selection.push(e); Sfx.select(e); Sfx.vox(e, "select"); }
       /* Re-clicking the unit you already hold is the commonest "did that
          register?" click in the game and used to be the one click that
          answered with nothing. play()'s 60 ms per-name gate collapses an
          accidental double, so saying it again is free. */
-      else Sfx.select(e);
+      else { Sfx.select(e); Sfx.vox(e, "select"); }
     } else if (e && !shift) {
       /* hostile or neutral: single view-only selection for intel */
       e.selected = true; selection = [e];
@@ -1983,6 +1983,10 @@ var UI = (function () {
        here said buildings were dropped from a mixed box. They never were:
        this loop walks G.human.units, so a box never contained one.) */
     Sfx.select(selection);
+    /* ONE voice for the box as well, and it speaks for the unit whose class
+       won the cue - so a box of eleven riflemen and one MCV answers as
+       infantry, which is what you actually picked up. */
+    if (selection.length) Sfx.vox(selection[0], "select");
     refreshSelInfo();
   }
 
@@ -2208,6 +2212,8 @@ var UI = (function () {
       else if (airMoved && target.kind === "building")
         alert("NOT A LANDING SURFACE \u2014 MOVING THERE", "bad");
       Sfx.play("order");
+      /* and the crew answers. One voice for the group, rate limited in vox(). */
+      if (selection.length) Sfx.vox(selection[0], "order");
       return;
     }
     /* ---- plain move, as a formation ----
