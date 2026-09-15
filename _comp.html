@@ -26,7 +26,9 @@
      then read the element with id="tout".
 
      Override the match by setting window.__MATCH before load: keys are
-     map, fac, foe, era, diff, diff0, pers, pers0, cash, res, seed, limit.
+     map, fac, foe, era, diff, diff0, pers, pers0, cash, res, seed, limit,
+     sample. It runs 900 game-seconds by default - see the note on LIMIT
+     below for why, and raise it only when a question needs the long tail.
      =================================================================== -->
 <html lang="en">
 <head>
@@ -399,7 +401,14 @@ window.addEventListener("load", function () {
     AI.create(Game, h, P0DIFF, M.pers0 || null);
   } catch (e) { lines.push("P0 brain failed: " + e); }
 
-  var LIMIT = M.limit || 1500, SAMPLE = 500, next = SAMPLE;
+  /* 900s, not 1500. A match is 45,000 full simulation ticks at 1500s and
+     agents run this a dozen times per design across seeds and maps, so the
+     length of this line is most of what a measurement costs. Every decisive
+     difference this harness has actually shown - the defence-spend bug, the
+     naval prereq deadlock, the composition change - was visible by t=900;
+     the last 600 seconds only confirmed what the middle already said. Pass
+     limit in __MATCH when a specific question genuinely needs the long tail. */
+  var LIMIT = M.limit || 900, SAMPLE = M.sample || 300, next = SAMPLE;
   var hdr = "  t  " + SH.join("") + " |  cash bld fc rf";
   lines.push("MATCH " + (M.fac||"nato") + " vs " + (M.foe||"pact") + "  " + (M.era||"e80") +
              "  " + (M.map||"fulda") + "  diff=" + (M.diff||"commander"));
@@ -408,7 +417,7 @@ window.addEventListener("load", function () {
 
   function batch() {
     var guard = 0;
-    while (Game.time < next && guard++ < 4000 && !Game.over) Game.tick(CFG.DT);
+    while (Game.time < next && guard++ < 12000 && !Game.over) Game.tick(CFG.DT);
     if (Game.time >= next) {
       lines.push("");
       lines.push("P0 " + String(Math.round(Game.time)).padStart(4) + " " + row(Game.players[0]));
