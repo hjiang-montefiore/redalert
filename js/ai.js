@@ -3864,7 +3864,36 @@ function makeCommander() {
           }
           continue;
         }
-        if (scout.order.type === "move" && now < (scout._scoutEnd || 0)) continue;
+        /* ---- ten seconds to show progress, or pick something else ----
+           The travel budget below is a CEILING on a trip that is going
+           normally; it is the wrong instrument for a trip that is going
+           nowhere. An unroutable goal is already cheap to detect - Path.find
+           fails, stepAlong reports arrival at once, and the sweep four seconds
+           later sees a scout that never left. But a goal that routes and then
+           makes no headway - blocked by traffic, oscillating against a wall,
+           pathing round an obstacle that has since closed - held the scout for
+           the whole 32-to-70-second budget with nothing to show.
+
+           So: measure the range to the goal when it is issued, and look again
+           ten seconds later. If it has not closed by a tenth of the leg, the
+           goal is not being reached and something else is worth more than
+           leaning on it. Closing normally re-arms the window, so a long drive
+           is checked repeatedly rather than abandoned for being long. */
+        if (scout.order.type === "move" && now < (scout._scoutEnd || 0)) {
+          const g0 = scout._scoutGoal;
+          if (!g0 || now < (scout._scoutCk || 0)) continue;
+          const d = U.dist(scout.x, scout.y, g0.x, g0.y);
+          const gained = (scout._scoutD0 || d) - d;
+          if (gained > Math.max(CFG.TILE * 1.5, (scout._scoutD0 || d) * 0.1)) {
+            scout._scoutD0 = d; scout._scoutCk = now + 10;   // moving: carry on
+            continue;
+          }
+          /* stalled. Put the cell out of bounds for a while so the next bid
+             does not simply hand back the same one, and fall through to be
+             re-tasked now rather than in half a minute. */
+          scoutShy.set(shyKey(g0.x, g0.y), now + 60);
+          scout._scoutEnd = 0; scout._scoutGoal = null;
+        }
         /* ---- did the last goal work? ----
            stepAlong() reports "arrived" the instant Path.find cannot produce a
            route at all, so an unreachable goal comes back as a finished trip in
@@ -3893,6 +3922,8 @@ function makeCommander() {
                           10 + trip / Math.max(0.6, scout.def.speed) * 2);
         scout._scoutFrom = { x: scout.x, y: scout.y };
         scout._scoutGoal = goal;
+        scout._scoutD0 = U.dist(scout.x, scout.y, goal.x, goal.y);
+        scout._scoutCk = now + 10;          // first progress check
         scout.give({ type: "move", x: goal.x, y: goal.y });
       }
     }

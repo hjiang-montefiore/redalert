@@ -833,6 +833,46 @@ try{
         proj+" projectiles from the silo");
   })();
 
+  /* ====== BUG 34: a scout that is getting nowhere picks something else ======
+     "if the impossible goal, then we should switch to the another goal in 10s"
+     An unroutable goal was already cheap to spot. A goal that ROUTES and then
+     makes no headway held the scout for the whole 32-70s travel budget. */
+  log("\n[34] TEN SECONDS TO SHOW PROGRESS");
+  (function(){
+    var E2=Game.players[1];
+    var brain=(typeof AI!=="undefined"&&AI.intelOf)?AI.intelOf(E2):null;
+    if(!brain){ chk("the enemy seat has a commander", false, "no brain"); return; }
+    var t=tile(E2,"ground",4);
+    if(!t){ chk("scout scenario built", false, "no ground"); return; }
+    var sc=spawn(E2,"recon_p",t,0,0) || spawn(E2,"recon_n",t,0,0);
+    if(!sc){ chk("scout scenario built", false, "spawn failed"); return; }
+    /* wall it in so every goal routes but nothing is reachable */
+    var M=Game.map, walled=0;
+    for(var dx=-2;dx<=2;dx++) for(var dy=-2;dy<=2;dy++){
+      if(Math.abs(dx)<2 && Math.abs(dy)<2) continue;
+      var b=Game.placeBuilding(E2,"wall",t.x+dx,t.y+dy,true);
+      if(b){ b.buildProgress=1; walled++; }
+    }
+    chk("the scout is boxed in", walled>=8, walled+" wall segments placed");
+    var goals=[], lastKey=null, t0=Game.time;
+    for(var k=0;k<900;k++){            // 30 seconds at 30 Hz
+      Game.tick(CFG.DT);
+      if(sc.dead) break;
+      var o=sc.order;
+      if(o && o.type==="move"){
+        var key=Math.round(o.x)+","+Math.round(o.y);
+        if(key!==lastKey){ lastKey=key; goals.push({t:Game.time-t0, k:key}); }
+      }
+    }
+    chk("it is given more than one goal in thirty seconds", goals.length>=2,
+        goals.length+" distinct goals: "+goals.map(function(g){return g.t.toFixed(0)+"s";}).join(", "));
+    if(goals.length>=2){
+      var gap=goals[1].t-goals[0].t;
+      chk("and it switches inside about ten seconds", gap<=16,
+          "first switch after "+gap.toFixed(1)+"s (budget alone would be 32s+)");
+    }
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }
