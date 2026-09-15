@@ -1329,10 +1329,44 @@ var Render3D = (function () {
       p._m3.position.set(gx2m(p.x), y, gx2m(p.y));
       if (vx || vy || vz) FX3D.orient(p._m3, vx, vy, vz, dt, G.time);
 
+      /* ---- a cold-launched round is UNLIT until it breaches ----
+         combat.js gives the round p.subLaunch while it is climbing out of the
+         tube and p.wet while it is still under water. The whole point of the
+         sequence is that a gas generator throws the missile clear and the
+         first stage does not light until it is in the air - so while it is wet
+         it must show no flame and lay no smoke. Without this the flight model
+         was right and the picture was wrong: a burning missile crawling up
+         through the sea, which is the opposite of what a cold launch looks
+         like. orient() only ever writes scale and opacity on these two meshes,
+         never .visible, so toggling it here does not fight the animator. */
+      if (p._m3 && p.subLaunch !== undefined) {
+        const fl = p._m3.getObjectByName("flame"), co = p._m3.getObjectByName("core");
+        if (fl) fl.visible = !p.wet;
+        if (co) co.visible = !p.wet;
+        if (p.wet) {
+          /* the disturbance the missile drags up with it */
+          if (!p._bubT || p._bubT <= 0) {
+            p._bubT = 0.09;
+            const b2 = new THREE.Mesh(new THREE.CircleGeometry(0.5, 10),
+              fxMaterial(0xcfe6f2, 0.42));
+            b2.rotation.x = -Math.PI / 2;
+            b2.position.set(gx2m(p.x), 0.5, gx2m(p.y));
+            b2.userData = { life: 0.9, max: 0.9, grow: 2.4, kind: "wake" };
+            three.scene.add(b2); fxMeshes.push(b2);
+          } else p._bubT -= dt;
+        }
+      } else if (p._m3 && p._coldDone !== 1 && p.zBoostT > 0) {
+        /* handed back to normal flight: make sure the plume is on again */
+        p._coldDone = 1;
+        const fl2 = p._m3.getObjectByName("flame"), co2 = p._m3.getObjectByName("core");
+        if (fl2) fl2.visible = true;
+        if (co2) co2.visible = true;
+      }
+
       /* trails: rocket smoke above water, bubble wake below it */
       p._smokeT -= dt;
       if (p._smokeT <= 0) {
-        if (p.type === "missile") {
+        if (p.type === "missile" && !(p.subLaunch !== undefined && p.wet)) {
           p._smokeT = 0.035;
           const puff = new THREE.Mesh(new THREE.SphereGeometry(0.7, 6, 5),
             fxMaterial(0xb9bec4, 0.5));

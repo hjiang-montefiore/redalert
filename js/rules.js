@@ -156,14 +156,17 @@ var BUILDINGS = {
     power:-55, sight:7, tech:2, prereq:["conyard","radar"], produces:"aircraft", pads:4,
     desc:"Hardened strip with four revetments. Aircraft must return here to rearm and refuel." },
 
-  sonararray: { name:"Coastal Sonar Array", cat:"defense", cost:800, time:14, w:2, h:2, hp:700,
+  /* An unpowered hydrophone array does not hear. */
+  sonararray: { name:"Coastal Sonar Array", cat:"defense", cost:800, time:14, w:2, h:2, hp:700, needPower:true,
     armor:"structure", power:-30, sight:5, tech:2, prereq:["conyard","navalyard"], sonar:11,
     shore:true,
     desc:"A seabed hydrophone array cabled ashore. It cannot shoot at anything, but it " +
          "hears submarines across the approaches to your coast - and a boat you can see " +
          "is a boat your escorts can kill." },
 
-  radar: { name:"Radar Dome", cat:"building", cost:1000, time:15, w:2, h:2, hp:900, armor:"structure",
+  /* needPower, like the SAM and the jamming stations. It draws 50 and its
+     whole output is a radar picture; a dome on a dead grid is a dish. */
+  radar: { name:"Radar Dome", cat:"building", cost:1000, time:15, w:2, h:2, hp:900, armor:"structure", needPower:true,
     power:-50, sight:11, tech:1, prereq:["conyard","power"], radar:true,
     desc:"Air-search and battlefield surveillance radar. Enables the minimap, reveals submarines and unlocks Tech II." },
 
@@ -228,7 +231,9 @@ var BUILDINGS = {
     power:-25, sight:8, tech:1, prereq:["factory"], weapons:["at_gun"], turret:true,
     desc:"Dug-in 100mm gun in a rotating mount. The cheapest way to stop a tank column." },
 
-  flak: { name:"AA Battery", cat:"defense", cost:850, time:12, w:2, h:2, hp:800, armor:"structure",
+  /* The SAM beside it has always declared needPower and this never did,
+     though it is the same grid and the same radar director. */
+  flak: { name:"AA Battery", cat:"defense", cost:850, time:12, w:2, h:2, hp:800, armor:"structure", needPower:true,
     power:-35, sight:9, tech:2, prereq:["radar"], weapons:["aa_battery"], turret:true,
     desc:"Radar-directed twin 40mm. Denies low-level airspace over your base." },
 

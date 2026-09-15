@@ -746,6 +746,62 @@ try{
     chk("a dead reference names no class", Sfx.selClass({dead:true,cat:"vehicle"})===null, "");
   })();
 
+  /* ====== BUG 32: a brownout takes the radar picture with it ======
+     "when lower power, the rador, jammer, silo and sam should not work and the
+     war fog should dominate and we can only see the sight of buiding and unit
+     instead of rador enhancement."
+     The minimap has always gone dark on low power - render.js:1461 prints
+     "RADAR OFFLINE - LOW POWER" - but the FOG did not, so the map stayed
+     peeled open while the panel said the radar was down. */
+  log("\n[32] LOW POWER BLINDS THE RADAR");
+  (function(){
+    var spot = tile(P,"ground",6);
+    if(!spot){ chk("power scenario built", false, "no ground"); return; }
+    var wasFog = Game.fogEnabled;
+    Game.fogEnabled = true;
+    var dome = Game.placeBuilding(P,"radar",spot.x,spot.y,true);
+    if(!dome){ chk("power scenario built", false, "no dome"); Game.fogEnabled=wasFog; return; }
+    dome.buildProgress = 1;
+    function lit(){ Game.recomputeFog();
+      var n=0, f=Game.fog; for(var i=0;i<f.length;i++) if(f[i]===2) n++; return n; }
+
+    /* plenty of power */
+    var pwr=[];
+    for(var i=0;i<6;i++){ var b=Game.placeBuilding(P,"power",spot.x+3+i*3,spot.y+4,true);
+      if(b){ b.buildProgress=1; pwr.push(b); } }
+    var up = Game.human.powerRatio();
+    var tilesUp = lit();
+    chk("with the grid up the dome lifts the fog", up>=1 && tilesUp>0,
+        "powerRatio "+up.toFixed(2)+", "+tilesUp+" tiles revealed");
+    chk("the dome is powered and its guns/sets are live", dome.powered===true, "");
+
+    /* Brown it out. Kill EVERY power source this player has, not just the six
+       this test built: the suite shares one match, so earlier sections leave
+       their own plants standing and killing only ours left the grid at 9.60
+       and the test measuring nothing. */
+    for(var i=0;i<Game.human.buildings.length;i++){
+      var pb=Game.human.buildings[i];
+      if(!pb.dead && pb.def.power > 0) pb.dead = true;
+    }
+    var down = Game.human.powerRatio();
+    var tilesDown = lit();
+    chk("the grid is actually down", down<1, "powerRatio "+down.toFixed(2));
+    chk("the radar picture collapses", tilesDown < tilesUp,
+        tilesUp+" tiles -> "+tilesDown+" tiles");
+    chk("the dome reports itself unpowered", dome.powered===false, "");
+    chk("but we can still see by eye - sight is not lost", tilesDown > 0,
+        tilesDown+" tiles still lit by unit and building sight");
+
+    /* the other things the owner named */
+    var sam = Game.placeBuilding(P,"sam",spot.x,spot.y+7,true);
+    var silo = Game.placeBuilding(P,"missilesilo",spot.x+4,spot.y+7,true);
+    if(sam){ sam.buildProgress=1;
+      chk("a SAM site on a dead grid does not work", sam.powered===false, ""); }
+    if(silo){ silo.buildProgress=1;
+      chk("a silo on a dead grid does not work", silo.powered===false, ""); }
+    Game.fogEnabled = wasFog;
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }

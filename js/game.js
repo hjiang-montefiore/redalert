@@ -1608,8 +1608,31 @@ var Game = (function () {
       if (u.dead || u.carried || !u.def.radar) continue;
       radarReveal(u, u.tx, u.ty, u.def.radar);
     }
+    /* ---- and the grid carries all of it ----
+       A radar picture is the first thing a brownout costs you. The minimap has
+       always known this - render.js:1461 tests powerRatio() and prints "RADAR
+       OFFLINE - LOW POWER" across a dark panel - but the FOG did not, so the
+       map stayed peeled open while the panel said the radar was down. The
+       player was looking at two widgets contradicting each other.
+
+       The `!b.powered` test below was there all along and did nothing, because
+       powered is `!def.needPower || ratio >= 1` and the Radar Dome never
+       declared needPower. The airbase and the AA battery did not either. So
+       the test passed for exactly the structures it existed to stop.
+
+       Gated on the ratio directly, so it covers every structure that lifts fog
+       rather than only the ones that remembered to ask. What survives a
+       brownout is what the units and buildings can SEE - sightR(), their own
+       eyes - which is the honest picture and the one the AI has always been
+       held to: Building.sightR() at entities.js:2483 is def.sight with no
+       radar term at all, so an AI commander has never had radar-extended fog
+       lifting in the first place. This closes that asymmetry in the one
+       direction that was open. Vehicles keep their sets: a radar vehicle
+       carries its own generator and is not on the base grid. */
+    const gridUp = G.human.powerRatio() >= 1;
     for (const b of G.human.buildings) {
       if (b.dead || !b.def.radar || b.buildProgress < 1 || !b.powered) continue;
+      if (!gridUp) continue;
       radarReveal(b, b.tx + b.def.w / 2, b.ty + b.def.h / 2, b.def.radar);
     }
   };
