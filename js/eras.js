@@ -7634,7 +7634,7 @@ Object.assign(WEAPONS, {
   "intercept": 1
  },
  "w_e60_pact_corvette": {
-  "name": "2 x RBU-6000",
+  "name": "2 x twin 57mm AK-725",
   "dmg": 29,
   "warhead": "he",
   "range": 6.6,
@@ -7654,7 +7654,7 @@ Object.assign(WEAPONS, {
   "sfx": "shot"
  },
  "w_e60_pact_destroyer": {
-  "name": "2 x M-1 Volna SAM",
+  "name": "2 x twin 76mm AK-726",
   "dmg": 84,
   "warhead": "he",
   "range": 8.4,
@@ -7667,7 +7667,7 @@ Object.assign(WEAPONS, {
   "aoe": 1,
   "tgt": {
    "ground": 1,
-   "air": 0,
+   "air": 1,
    "sea": 1,
    "sub": 0
   },
@@ -7739,7 +7739,7 @@ Object.assign(WEAPONS, {
  "w_e60_pact_carrier": {
   "name": "14 x Ka-25 ASW helicopters",
   "dmg": 92,
-  "warhead": "flak",
+  "warhead": "he",
   "range": 9,
   "reload": 6,
   "burst": 1,
@@ -7748,9 +7748,9 @@ Object.assign(WEAPONS, {
   "speed": 520,
   "tgt": {
    "ground": 0,
-   "air": 1,
-   "sea": 0,
-   "sub": 0
+   "air": 0,
+   "sea": 1,
+   "sub": 1
   },
   "sfx": "missile",
   "profile": "pop",
@@ -8488,7 +8488,7 @@ Object.assign(WEAPONS, {
   "intercept": 1
  },
  "w_e90_pact_corvette": {
-  "name": "RBU-6000",
+  "name": "76mm AK-176",
   "dmg": 45,
   "warhead": "he",
   "range": 7.7,
@@ -8568,10 +8568,28 @@ Object.assign(WEAPONS, {
   },
   "sfx": "missile"
  },
+  /* ---- the systems the inverted masks had been standing in for ----
+     Each of these hulls carried exactly ONE weapon, and that weapon's target
+     mask was doing a job it was never named for: Granit was the Kuznetsov's
+     "air defence", an ASW air group was the Moskva's, and a rocket mortar was
+     the Grisha's gun. Correcting the masks leaves a real hole in each ship, so
+     the system that actually filled it goes in beside it. */
+  "sam_kinzhal": { "name": "3K95 Kinzhal (SA-N-9)", "dmg": 96, "warhead": "flak",
+    "range": 8.2, "reload": 2.6, "burst": 2, "burstDelay": 0.4, "acc": 0.74,
+    "proj": "missile", "speed": 640, "profile": "pop", "intercept": 0.9,
+    "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 } },
+  "sam_shtorm": { "name": "M-11 Shtorm (SA-N-3)", "dmg": 104, "warhead": "flak",
+    "range": 7.4, "reload": 6.2, "burst": 1, "acc": 0.55,
+    "proj": "missile", "speed": 600, "profile": "pop", "intercept": 0.72,
+    "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 } },
+  "sam_volna": { "name": "2 x M-1 Volna (SA-N-1)", "dmg": 88, "warhead": "flak",
+    "range": 7.0, "reload": 6.8, "burst": 1, "acc": 0.50,
+    "proj": "missile", "speed": 600, "profile": "pop", "intercept": 0.66,
+    "tgt": { "ground": 0, "air": 1, "sea": 0, "sub": 0 } },
  "w_e90_pact_carrier": {
   "name": "12 x P-700 Granit under the deck",
   "dmg": 142,
-  "warhead": "flak",
+  "warhead": "he",
   "range": 10.6,
   "reload": 5.3,
   "burst": 1,
@@ -8580,8 +8598,8 @@ Object.assign(WEAPONS, {
   "speed": 520,
   "tgt": {
    "ground": 0,
-   "air": 1,
-   "sea": 0,
+   "air": 0,
+   "sea": 1,
    "sub": 0
   },
   "sfx": "missile",
@@ -8998,7 +9016,7 @@ Object.assign(WEAPONS, {
  "w_e00_pact_carrier": {
   "name": "P-700 Granit",
   "dmg": 157,
-  "warhead": "flak",
+  "warhead": "he",
   "range": 10.9,
   "reload": 5.1,
   "burst": 1,
@@ -9007,8 +9025,8 @@ Object.assign(WEAPONS, {
   "speed": 520,
   "tgt": {
    "ground": 0,
-   "air": 1,
-   "sea": 0,
+   "air": 0,
+   "sea": 1,
    "sub": 0
   },
   "sfx": "missile",
@@ -9473,12 +9491,12 @@ Object.assign(UNITS, {
   pact_e60_cas: {"fac":"pact","role":"cas","cat":"aircraft","layer":"air","name":"Su-17 Fitter","full":"Sukhoi Su-17M Fitter-C","cost":1085,"oil":22,"time":22,"hp":510,"armor":"air","speed":5.22,"turn":1.5,"sight":5.9,"r":17,"mass":0,"weapons":["w_e60_pact_cas"],"prereq":["airbase","lab"],"tech":3,"from":"e60","to":"e60","service":"1970","confidence":"high","desc":"Swing-wing fighter-bomber, the mainstay of frontal aviation's ground-attack force. Not an armoured CAS aircraft — it delivers ordnance in a fast pass and leaves. The Su-7B (1961) is the earlier, less capable version of the same idea.","jet":true,"ammo":3,"radius":26,"rcs":1.5},
   pact_e60_gunship: {"fac":"pact","role":"gunship","cat":"aircraft","layer":"air","name":"Mi-24 Hind","full":"Mil Mi-24A / Mi-24D Hind","cost":885,"oil":14,"time":17,"hp":435,"armor":"air","speed":3.15,"turn":2.2,"sight":6.3,"r":16,"mass":0,"weapons":["w_e60_pact_gunship"],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"1972","confidence":"high","desc":"Not an attack helicopter in the AH-1 sense — it carries eight troops as well as guns, a flying IFV that the Soviets thought would deliver assault infantry onto an objective. Heavily armoured, very fast for a helicopter, clumsy in a turn. Mi-4AV (1967) is the crude armed conversion that preceded it.","ammo":5,"hover":true,"radius":21,"rcs":0.85},
   pact_e60_transport: {"fac":"pact","role":"transport","cat":"aircraft","layer":"air","name":"Mi-8 Hip","full":"Mil Mi-8T Hip","cost":485,"oil":7,"time":11,"hp":370,"armor":"air","speed":3.6,"turn":2.4,"sight":5.6,"r":15,"mass":0,"weapons":[],"prereq":["airbase"],"tech":2,"from":"e60","to":"e60","service":"1967","confidence":"high","desc":"Turbine assault transport carrying 24 troops, and the most-produced helicopter in history. Same platform as the game's `trans_p` — a 1967 airframe still in first-line service in the 2020s, the best longevity example in the Eastern roster. Mi-6 (1959) is the heavy-lift companion.","ammo":0,"hover":true,"cargo":10,"radius":28,"rcs":1.1},
-  pact_e60_corvette: {"fac":"pact","role":"corvette","cat":"naval","layer":"sea","name":"Project 1124 Grisha","full":"Project 1124 Grisha-class small ASW ship","cost":600,"oil":9,"time":12,"hp":690,"armor":"light","speed":2.43,"turn":1.7,"sight":5.2,"r":17,"mass":0,"weapons":["w_e60_pact_corvette"],"prereq":["navalyard"],"tech":1,"from":"e60","to":"e60","service":"1970","confidence":"high","desc":"Coastal ASW corvette built to hold the approaches to the Soviet bastions against NATO submarines. Project 159 Petya (1961) is the earlier and simpler equivalent.","turret":true,"tturn":2,"sonar":3.2,"ciws":0.27,"rcs":0.75},
-  pact_e60_destroyer: {"fac":"pact","role":"destroyer","cat":"naval","layer":"sea","name":"Project 61 Kashin","full":"Project 61 Kashin-class destroyer","cost":1140,"oil":19,"time":22,"hp":1310,"armor":"heavy","speed":2.03,"turn":1.2,"sight":5.9,"r":20,"mass":0,"weapons":["w_e60_pact_destroyer"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e60","service":"1962","confidence":"high","desc":"The world's first major warship with all-gas-turbine propulsion — four engines, distinctive twin funnel pairs. No meaningful anti-ship missile in the original fit. The first Soviet destroyer designed around missiles rather than guns.","turret":true,"tturn":1.4,"sonar":4.5,"radar":7.7,"ciws":0.34,"rcs":1.3},
+  pact_e60_corvette: {"fac":"pact","role":"corvette","cat":"naval","layer":"sea","name":"Project 1124 Grisha","full":"Project 1124 Grisha-class small ASW ship","cost":600,"oil":9,"time":12,"hp":690,"armor":"light","speed":2.43,"turn":1.7,"sight":5.2,"r":17,"mass":0,"weapons":["w_e60_pact_corvette","asw_rbu"],"prereq":["navalyard"],"tech":1,"from":"e60","to":"e60","service":"1970","confidence":"high","desc":"Coastal ASW corvette built to hold the approaches to the Soviet bastions against NATO submarines. Project 159 Petya (1961) is the earlier and simpler equivalent.","turret":true,"tturn":2,"sonar":3.2,"ciws":0.27,"rcs":0.75},
+  pact_e60_destroyer: {"fac":"pact","role":"destroyer","cat":"naval","layer":"sea","name":"Project 61 Kashin","full":"Project 61 Kashin-class destroyer","cost":1140,"oil":19,"time":22,"hp":1310,"armor":"heavy","speed":2.03,"turn":1.2,"sight":5.9,"r":20,"mass":0,"weapons":["w_e60_pact_destroyer","sam_volna"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e60","service":"1962","confidence":"high","desc":"The world's first major warship with all-gas-turbine propulsion — four engines, distinctive twin funnel pairs. No meaningful anti-ship missile in the original fit. The first Soviet destroyer designed around missiles rather than guns.","turret":true,"tturn":1.4,"sonar":4.5,"radar":7.7,"ciws":0.34,"rcs":1.3},
   pact_e60_cruiser: {"fac":"pact","role":"cruiser","cat":"naval","layer":"sea","name":"Project 58 Kynda","full":"Project 58 Grozny-class missile cruiser","cost":1765,"oil":33,"time":34,"hp":1855,"armor":"heavy","speed":1.71,"turn":0.9,"sight":6.3,"r":23,"mass":0,"weapons":["w_e60_pact_cruiser"],"prereq":["navalyard","lab"],"tech":3,"from":"e60","to":"e60","service":"1962","confidence":"high","desc":"First Soviet missile cruiser, with a genuinely enormous salvo for 1962. No practical reload at sea and very little air defence depth. Project 1134A Kresta II (1969) rebalances toward ASW.","turret":true,"tturn":1,"sonar":4.2,"radar":9.8,"ciws":0.37,"rcs":1.7},
   pact_e60_missileboat: {"fac":"pact","role":"missileboat","cat":"naval","layer":"sea","name":"Project 205 Osa","full":"Project 205 Osa-class missile boat","cost":825,"oil":12,"time":15,"hp":610,"armor":"light","speed":2.79,"turn":1.8,"sight":5.9,"r":16,"mass":0,"weapons":["w_e60_pact_missileboat"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e60","service":"1961","confidence":"high","desc":"Four missiles on a 200-tonne hull; roughly 400 built and exported to everyone. The predecessor Project 183R Komar sank the Israeli destroyer Eilat in October 1967 — the first sinking of a warship by a guided anti-ship missile — and reorganised every navy's thinking about small combatants overnight.","sonar":0,"rcs":0.6},
   pact_e60_sub: {"fac":"pact","role":"sub","cat":"naval","layer":"sub","name":"Project 641 Foxtrot","full":"Project 641 Foxtrot-class attack submarine","cost":1285,"oil":21,"time":23,"hp":755,"armor":"light","speed":1.62,"turn":1.1,"sight":5.6,"r":17,"mass":0,"weapons":["w_e60_pact_sub"],"prereq":["navalyard","radar"],"tech":2,"from":"e60","to":"e60","service":"1958","confidence":"high","desc":"Long-range diesel-electric boat, three shafts. Four of these were the boats hunted during the Cuban Missile Crisis, one carrying a nuclear torpedo. Noisy by later standards but very long-legged.","sonar":5,"quiet":0.37},
-  pact_e60_carrier: {"fac":"pact","role":"carrier","cat":"naval","layer":"sea","name":"Project 1123 Moskva","full":"Project 1123 Moskva-class helicopter cruiser","cost":2620,"oil":60,"time":48,"hp":2625,"armor":"heavy","speed":1.35,"turn":0.6,"sight":8,"r":30,"mass":0,"weapons":["w_e60_pact_carrier"],"prereq":["navalyard","lab","airbase"],"tech":3,"from":"e60","to":"e60","service":"1967","confidence":"high","desc":"Half cruiser, half flight deck, built to hunt Polaris submarines rather than project air power — and it handled badly in a sea. The Soviets never built a catapult carrier; Project 1143 Kiev (1975) with Yak-38 Forger VTOL is the next step, and the Yak-38 was short-ranged, could barely lift a useful load, and killed a nu","carrier":3,"sonar":2.8,"radar":9.1,"ciws":0.35,"rcs":2.9},
+  pact_e60_carrier: {"fac":"pact","role":"carrier","cat":"naval","layer":"sea","name":"Project 1123 Moskva","full":"Project 1123 Moskva-class helicopter cruiser","cost":2620,"oil":60,"time":48,"hp":2625,"armor":"heavy","speed":1.35,"turn":0.6,"sight":8,"r":30,"mass":0,"weapons":["w_e60_pact_carrier","sam_shtorm"],"prereq":["navalyard","lab","airbase"],"tech":3,"from":"e60","to":"e60","service":"1967","confidence":"high","desc":"Half cruiser, half flight deck, built to hunt Polaris submarines rather than project air power — and it handled badly in a sea. The Soviets never built a catapult carrier; Project 1143 Kiev (1975) with Yak-38 Forger VTOL is the next step, and the Yak-38 was short-ranged, could barely lift a useful load, and killed a nu","carrier":3,"sonar":2.8,"radar":9.1,"ciws":0.35,"rcs":2.9},
   pact_e60_awacs: {"fac":"pact","role":"awacs","cat":"aircraft","layer":"air","name":"Tu-126 Moss","full":"Tupolev Tu-126","cost":1825,"oil":41,"time":28,"hp":385,"armor":"air","speed":3.51,"turn":0.8,"sight":9.1,"r":26,"mass":0,"weapons":[],"prereq":["airbase","radar","lab"],"tech":3,"from":"e60","to":"e60","service":"1965","confidence":"high","desc":"Real, but be candid: almost no look-down capability over land because the radar could not separate a target from ground clutter, so it was useful over water and the Arctic and close to worthless over Europe. Only nine built.","jet":true,"ammo":0,"radar":16.8,"radius":57,"rcs":3.6},
   pact_e60_sead: {"fac":"pact","role":"sead","cat":"aircraft","layer":"air","name":"Su-17M (Kh-28)","full":"Sukhoi Su-17M carrying Kh-28 (AS-9 Kyle)","cost":1055,"oil":21,"time":21,"hp":320,"armor":"air","speed":6.66,"turn":1.6,"sight":7,"r":16,"mass":0,"weapons":["w_e60_pact_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e60","to":"e60","service":"1973","confidence":"medium","desc":"First Soviet air-launched anti-radiation capability. Liquid-fuelled with a storable but toxic propellant that made ground handling genuinely hazardous, and the seeker had to be tuned to a specific radar band before takeoff. A crude Wild Weasel by American standards. Exact in-service year is not firmly documented in ope","jet":true,"ammo":2,"radius":30,"rcs":1.1},
   pact_e80_rifle: {"fac":"pact","role":"rifle","cat":"infantry","layer":"ground","name":"Motor Rifle Squad","full":"Motor Rifle Squad, AK-74","cost":100,"oil":0,"time":4,"hp":100,"armor":"infantry","speed":1,"turn":7,"sight":4.7,"r":6,"mass":0.1,"weapons":["w_e80_pact_rifle"],"prereq":["barracks"],"tech":1,"from":"e80","to":"e80","service":"1974","confidence":"high","desc":"Small-calibre high-velocity round adopted after the Soviets studied the M16. Lighter ammunition load, flatter trajectory, notorious wounding behaviour. The squad now rides a BMP-2."},
@@ -9519,11 +9537,11 @@ Object.assign(UNITS, {
   pact_e90_cas: {"fac":"pact","role":"cas","cat":"aircraft","layer":"air","name":"Su-25 Frogfoot","full":"Sukhoi Su-25 Frogfoot","cost":1635,"oil":33,"time":25,"hp":710,"armor":"air","speed":5.68,"turn":1.5,"sight":7.8,"r":17,"mass":0,"weapons":["w_e90_pact_cas"],"prereq":["airbase","lab"],"tech":3,"from":"e90","to":"e90","service":"1981","confidence":"high","desc":"Unchanged and heavily used in Chechnya. Su-25T / Su-39, the version with a real targeting system, was built in single figures.","jet":true,"ammo":5,"radius":28,"rcs":1.5},
   pact_e90_gunship: {"fac":"pact","role":"gunship","cat":"aircraft","layer":"air","name":"Ka-50 Black Shark","full":"Kamov Ka-50","cost":1335,"oil":22,"time":20,"hp":605,"armor":"air","speed":3.43,"turn":2.2,"sight":8.3,"r":16,"mass":0,"weapons":["w_e90_pact_gunship"],"prereq":["airbase"],"tech":2,"from":"e90","to":"e90","service":"1995","confidence":"medium","desc":"Single-seat coaxial attack helicopter with an ejection seat — no other production helicopter has one. Formally adopted in 1995, but roughly a dozen were built and the single-crew workload concept was judged a failure, which is why the two-seat Ka-52 replaced it. Mi-24 remains the actual gunship in service.","ammo":7,"hover":true,"radius":22,"rcs":0.85},
   pact_e90_transport: {"fac":"pact","role":"transport","cat":"aircraft","layer":"air","name":"Mi-8 Hip","full":"Mil Mi-8MT / Mi-17","cost":730,"oil":11,"time":12,"hp":515,"armor":"air","speed":3.92,"turn":2.4,"sight":7.4,"r":15,"mass":0,"weapons":[],"prereq":["airbase"],"tech":2,"from":"e90","to":"e90","service":"1967","confidence":"high","desc":"Unchanged. Mi-26 continues in the heavy-lift role.","ammo":0,"hover":true,"cargo":10,"radius":30,"rcs":1.1},
-  pact_e90_corvette: {"fac":"pact","role":"corvette","cat":"naval","layer":"sea","name":"Project 1124 Grisha","full":"Project 1124 Grisha-class small ASW ship","cost":905,"oil":14,"time":14,"hp":960,"armor":"light","speed":2.65,"turn":1.7,"sight":6.8,"r":17,"mass":0,"weapons":["w_e90_pact_corvette"],"prereq":["navalyard"],"tech":1,"from":"e90","to":"e90","service":"1970","confidence":"high","desc":"No new Russian corvette class enters service in the 1990s at all. Project 20380 Steregushchiy is not laid down until 2001. The light forces simply age.","turret":true,"tturn":2,"sonar":4.2,"ciws":0.32,"rcs":0.75},
+  pact_e90_corvette: {"fac":"pact","role":"corvette","cat":"naval","layer":"sea","name":"Project 1124 Grisha","full":"Project 1124 Grisha-class small ASW ship","cost":905,"oil":14,"time":14,"hp":960,"armor":"light","speed":2.65,"turn":1.7,"sight":6.8,"r":17,"mass":0,"weapons":["w_e90_pact_corvette","asw_rbu"],"prereq":["navalyard"],"tech":1,"from":"e90","to":"e90","service":"1970","confidence":"high","desc":"No new Russian corvette class enters service in the 1990s at all. Project 20380 Steregushchiy is not laid down until 2001. The light forces simply age.","turret":true,"tturn":2,"sonar":4.2,"ciws":0.32,"rcs":0.75},
   pact_e90_destroyer: {"fac":"pact","role":"destroyer","cat":"naval","layer":"sea","name":"Project 956 Sovremenny","full":"Project 956 Sovremenny-class destroyer","cost":1720,"oil":28,"time":25,"hp":1825,"armor":"heavy","speed":2.21,"turn":1.2,"sight":7.7,"r":20,"mass":0,"weapons":["w_e90_pact_destroyer"],"prereq":["navalyard","radar"],"tech":2,"from":"e90","to":"e90","service":"1980","confidence":"high","desc":"The last Russian hull commissioned in 1994; two more were completed for China. This is the last destroyer-sized surface combatant Russia has commissioned to this day — the type is never replaced in any subsequent era, a real and permanent gap.","turret":true,"tturn":1.4,"sonar":5.9,"radar":10.1,"ciws":0.39,"rcs":1.3},
   pact_e90_cruiser: {"fac":"pact","role":"cruiser","cat":"naval","layer":"sea","name":"Pyotr Velikiy","full":"Project 11442 Pyotr Velikiy (Kirov-class)","cost":2665,"oil":50,"time":39,"hp":2580,"armor":"heavy","speed":1.86,"turn":0.9,"sight":8.3,"r":23,"mass":0,"weapons":["w_e90_pact_cruiser"],"prereq":["navalyard","lab"],"tech":3,"from":"e90","to":"e90","service":"1998","confidence":"high","desc":"Fourth and final Kirov, laid down in 1986 and finished twelve years later only because the hull was too far advanced to scrap. Slava-class cruisers continue in service alongside.","turret":true,"tturn":1,"sonar":5.5,"radar":12.9,"ciws":0.43,"rcs":1.7},
   pact_e90_sub: {"fac":"pact","role":"sub","cat":"naval","layer":"sub","name":"Project 636 Kilo","full":"Project 636 Improved Kilo-class","cost":1935,"oil":32,"time":26,"hp":1050,"armor":"light","speed":1.76,"turn":1.1,"sight":7.4,"r":17,"mass":0,"weapons":["w_e90_pact_sub"],"prereq":["navalyard","radar"],"tech":2,"from":"e90","to":"e90","service":"1997","confidence":"medium","desc":"The game's `sub_p` designation. Quieter machinery and improved combat system over Project 877. Important caveat: Project 636 boats in the 1990s were export builds — the Russian Navy's own Project 636.3 boats do not commission until 2014. Project 971U Akula-II (Vepr, 1996) is the one genuinely modern nuclear boat of the","sonar":6.6,"quiet":0.27},
-  pact_e90_carrier: {"fac":"pact","role":"carrier","cat":"naval","layer":"sea","name":"Admiral Kuznetsov","full":"Project 1143.5 Admiral Kuznetsov","cost":3955,"oil":90,"time":55,"hp":3650,"armor":"heavy","speed":1.47,"turn":0.6,"sight":10.6,"r":30,"mass":0,"weapons":["w_e90_pact_carrier"],"prereq":["navalyard","lab","airbase"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"The game's `carrier_p`. Ski-jump, no catapults, and a heavy anti-ship missile battery under the deck that eats hangar volume — a hybrid 'heavy aviation cruiser' rather than a carrier, partly so it could legally transit the Turkish Straits. Chronically unreliable boilers from the start.","carrier":3,"sonar":3.7,"radar":12,"ciws":0.41,"rcs":2.9},
+  pact_e90_carrier: {"fac":"pact","role":"carrier","cat":"naval","layer":"sea","name":"Admiral Kuznetsov","full":"Project 1143.5 Admiral Kuznetsov","cost":3955,"oil":90,"time":55,"hp":3650,"armor":"heavy","speed":1.47,"turn":0.6,"sight":10.6,"r":30,"mass":0,"weapons":["w_e90_pact_carrier","sam_kinzhal"],"prereq":["navalyard","lab","airbase"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"The game's `carrier_p`. Ski-jump, no catapults, and a heavy anti-ship missile battery under the deck that eats hangar volume — a hybrid 'heavy aviation cruiser' rather than a carrier, partly so it could legally transit the Turkish Straits. Chronically unreliable boilers from the start.","carrier":3,"sonar":3.7,"radar":12,"ciws":0.41,"rcs":2.9},
   pact_e90_sead: {"fac":"pact","role":"sead","cat":"aircraft","layer":"air","name":"Su-24M SEAD","full":"Sukhoi Su-24M carrying Kh-31P","cost":1590,"oil":31,"time":24,"hp":445,"armor":"air","speed":7.25,"turn":1.6,"sight":9.2,"r":16,"mass":0,"weapons":["w_e90_pact_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e90","to":"e90","service":"1991","confidence":"medium","desc":"The game's `sead_p`. The Kh-31P is fast enough (around Mach 3) that a SAM crew has very little warning — the US bought derivatives as supersonic target drones because nothing Western matched the profile. Fewer shots and shorter range than an F-16CJ with HARM.","jet":true,"ammo":3,"radius":32,"rcs":1.1},
   pact_e90_awacs: {"fac":"pact","role":"awacs","cat":"aircraft","layer":"air","name":"A-50 Mainstay","full":"Beriev A-50 Mainstay","cost":2750,"oil":62,"time":32,"hp":535,"armor":"air","speed":3.82,"turn":0.8,"sight":12,"r":26,"mass":0,"weapons":[],"prereq":["airbase","radar","lab"],"tech":3,"from":"e90","to":"e90","service":"1985","confidence":"high","desc":"Unchanged, and the fleet shrinks steadily through the decade as airframes go unserviced.","jet":true,"ammo":0,"radar":22.1,"radius":59,"rcs":3.6},
   pact_e90_stealthfighter: {"fac":"pact","role":"stealthfighter","cat":"aircraft","layer":"air","name":"none","full":"MiG 1.44 and Su-47 were prototypes only","cost":2105,"oil":40,"time":30,"hp":535,"armor":"air","speed":9.21,"turn":2.7,"sight":10.6,"r":16,"mass":0,"weapons":["w_e90_pact_stealthfighter"],"prereq":["airbase","lab"],"tech":3,"from":"e90","to":"e90","service":"—","confidence":"high","desc":"Neither aircraft entered service or came close. MiG 1.44 flew twice in 2000 and the programme died; Su-47 Berkut was a forward-swept-wing technology demonstrator, one airframe. Any roster that gives 1990s Russia a stealth aircraft is inventing it.","jet":true,"ammo":4,"radar":7.4,"radius":45,"rcs":0.13},
@@ -9547,7 +9565,7 @@ Object.assign(UNITS, {
   pact_e00_destroyer: {"fac":"pact","role":"destroyer","cat":"naval","layer":"sea","name":"none new","full":"No new Russian destroyer class since 1994","cost":1900,"oil":31,"time":26,"hp":1970,"armor":"heavy","speed":2.23,"turn":1.2,"sight":8.1,"r":20,"mass":0,"weapons":["w_e00_pact_destroyer"],"prereq":["navalyard","radar"],"tech":2,"from":"e00","to":"e00","service":"—","confidence":"high","desc":"State this plainly. The frigate programmes — Project 11356R Admiral Grigorovich (2016) and Project 22350 Admiral Gorshkov (2018) — are the real modern surface combatants, and Gorshkov is a good ship. But the Lider destroyer programme was never funded and the Sovremenny and Udaloy hulls are what remain. The game's `dest","turret":true,"tturn":1.4,"sonar":6.2,"radar":10.7,"ciws":0.41,"rcs":1.3},
   pact_e00_sub: {"fac":"pact","role":"sub","cat":"naval","layer":"sub","name":"Project 636.3 Improved Kilo","full":"Project 636.3 Varshavyanka","cost":2140,"oil":35,"time":27,"hp":1135,"armor":"light","speed":1.78,"turn":1.1,"sight":7.8,"r":17,"mass":0,"weapons":["w_e00_pact_sub"],"prereq":["navalyard","radar"],"tech":2,"from":"e00","to":"e00","service":"2014","confidence":"medium","desc":"The game's `sub_p`. Very quiet, cheap by submarine standards, and built quickly — six for the Black Sea Fleet in four years. Project 885 Yasen (Severodvinsk, 2013) is the modern nuclear boat: twenty years on the slipway, and by Western accounts genuinely quiet.","sonar":7,"quiet":0.25},
   pact_e00_cruiser: {"fac":"pact","role":"cruiser","cat":"naval","layer":"sea","name":"Project 1164 Slava","full":"Project 1164 Atlant / Slava-class","cost":2945,"oil":55,"time":40,"hp":2785,"armor":"heavy","speed":1.88,"turn":0.9,"sight":8.7,"r":23,"mass":0,"weapons":["w_e00_pact_cruiser"],"prereq":["navalyard","lab"],"tech":3,"from":"e00","to":"e00","service":"1982","confidence":"high","desc":"Unchanged apart from partial refits. Pyotr Velikiy likewise; Admiral Nakhimov entered a modernisation in 1999 that is still not complete.","turret":true,"tturn":1,"sonar":5.8,"radar":13.6,"ciws":0.45,"rcs":1.7},
-  pact_e00_carrier: {"fac":"pact","role":"carrier","cat":"naval","layer":"sea","name":"Admiral Kuznetsov","full":"Project 1143.5 Admiral Kuznetsov","cost":4370,"oil":100,"time":57,"hp":3935,"armor":"heavy","speed":1.49,"turn":0.6,"sight":11.2,"r":30,"mass":0,"weapons":["w_e00_pact_carrier"],"prereq":["navalyard","lab","airbase"],"tech":3,"from":"e00","to":"e00","service":"1991","confidence":"high","desc":"Deployed to Syria in 2016 — the only combat deployment. Two aircraft, a MiG-29K and a Su-33, were lost to arresting-gear failures, after which the air group operated from a land base. MiG-29K (2013) supplements the Su-33 on the deck.","carrier":3,"sonar":3.9,"radar":12.6,"ciws":0.43,"rcs":2.9},
+  pact_e00_carrier: {"fac":"pact","role":"carrier","cat":"naval","layer":"sea","name":"Admiral Kuznetsov","full":"Project 1143.5 Admiral Kuznetsov","cost":4370,"oil":100,"time":57,"hp":3935,"armor":"heavy","speed":1.49,"turn":0.6,"sight":11.2,"r":30,"mass":0,"weapons":["w_e00_pact_carrier","sam_kinzhal"],"prereq":["navalyard","lab","airbase"],"tech":3,"from":"e00","to":"e00","service":"1991","confidence":"high","desc":"Deployed to Syria in 2016 — the only combat deployment. Two aircraft, a MiG-29K and a Su-33, were lost to arresting-gear failures, after which the air group operated from a land base. MiG-29K (2013) supplements the Su-33 on the deck.","carrier":3,"sonar":3.9,"radar":12.6,"ciws":0.43,"rcs":2.9},
   pact_e00_awacs: {"fac":"pact","role":"awacs","cat":"aircraft","layer":"air","name":"A-50U Mainstay","full":"Beriev A-50U","cost":3040,"oil":68,"time":33,"hp":575,"armor":"air","speed":3.86,"turn":0.8,"sight":12.6,"r":26,"mass":0,"weapons":[],"prereq":["airbase","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2011","confidence":"high","desc":"The game's `awacs_p`. Digital processing replacing the analogue set, better crew stations, longer endurance. Fewer than ten converted. A-100 Premier, the AESA successor, has been in development since 2004 and is not in service.","jet":true,"ammo":0,"radar":23.3,"radius":60,"rcs":3.6},
   pact_e00_sead: {"fac":"pact","role":"sead","cat":"aircraft","layer":"air","name":"Su-24M SEAD","full":"Sukhoi Su-24M (Kh-31P)","cost":1760,"oil":34,"time":25,"hp":480,"armor":"air","speed":7.33,"turn":1.6,"sight":9.7,"r":16,"mass":0,"weapons":["w_e00_pact_sead"],"prereq":["airbase","radar"],"tech":2,"from":"e00","to":"e00","service":"1991","confidence":"medium","desc":"Still the game's `sead_p`. The Su-34 progressively takes over the mission with the same missile family from the mid-2010s.","jet":true,"ammo":3,"radius":32,"rcs":1.1},
   pact_e00_stealthfighter: {"fac":"pact","role":"stealthfighter","cat":"aircraft","layer":"air","name":"none in service","full":"Su-57 flying but not yet delivered","cost":2330,"oil":44,"time":31,"hp":575,"armor":"air","speed":9.31,"turn":2.7,"sight":11.2,"r":16,"mass":0,"weapons":["w_e00_pact_stealthfighter"],"prereq":["airbase","lab"],"tech":3,"from":"e00","to":"e00","service":"—","confidence":"high","desc":"The T-50 prototype first flew in January 2010 and the type was widely publicised, but no serial aircraft reached a Russian regiment in this era — the first production airframe crashed in December 2019 before delivery. Do not field a Su-57 before 2020.","jet":true,"ammo":5,"radar":7.8,"radius":46,"rcs":0.6},
