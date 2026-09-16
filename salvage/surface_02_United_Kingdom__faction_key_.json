@@ -1,0 +1,360 @@
+{
+ "navy": "United Kingdom (faction key `gbr`) \u2014 SURFACE FLEET ONLY, all six eras. Submarines (gbr_e50_sub \u2026 sub_b) and the SSBNs (gbr_e60_ssbn, ssbn_b) were excluded as owned by the other two workflows.\n\nMEASURED under jsc (bundle = stub `var window=this;` + js/util.js js/config.js js/facts.js js/rules.js js/eras.js js/heavyair.js js/generations.js). 26 `gbr` hulls with layer:\"sea\" exist; 21 of them are warships proper (5 carriers, 2 cruisers, 5 destroyers, 5 frigates/\"corvettes\", 5 patrol) and they are defined in two places: eras.js lines 10173-10211 (e50-e00, one Object.assign block headed \"ROYAL NAVY - era units\") and rules.js lines 3054-3090 (e20).\n\nTHE HEADLINE. Britain's air-defence line \u2014 Sea Slug, Sea Dart, Sea Wolf, Sea Viper/Aster \u2014 is the thing the brief asked about, and the game has ONE of the four. Measured: of the 26 British sea hulls, 12 can engage an aircraft at all, and of those 12, ten are engaging with a dual-purpose GUN or a carrier air-wing abstraction. Exactly two hulls carry a real ship SAM, both of them in e20 (destroyer_b with Aster 30 + Aster 15, corvette_b with CAMM). Every era hull from 1962 to 2009 \u2014 County, Tiger, Type 42 Batch 1, Type 42 Batch 3, Invincible, Type 45 \u2014 has NO surface-to-air missile. The Type 45 Daring of e00 (gbr_e00_destroyer), the ship the brief singles out, resolves to a single American \"Mk 45 Mod 4 127mm\" with tgt {ground:1,air:0,sea:1,sub:0}. In the e00 era the best air-defence ship in Europe cannot shoot at an aeroplane.\n\nTHE SECOND HEADLINE. Thirteen of the 21 warships resolve to an AMERICAN weapon name. This is the IFV defect verbatim, transplanted to the sea. Measured names on British hulls: \"Three 127mm/54 Mk 42 single mounts\" (Daring 1952), \"Nine 203mm/55 Mk 16 rapid-fire guns\" (Swiftsure \u2014 the Des Moines 8in autoloader, on a ship whose own desc says triple 6in), \"Terrier and Talos SAM launchers\" (HMS Tiger, missiles the Royal Navy never owned, and with air:0 so it is not even a SAM), \"Mk 13 launcher for SM-1MR and Harpoon\" (HMS Broadsword \u2014 the Oliver Hazard Perry's launcher), \"Two 127mm/54 Mk 45\" (Type 42 Sheffield), \"One 57mm Mk 110\" (Type 23 with Sonar 2087 \u2014 the American LCS gun), and worst of all \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomahawk\" on HMS Manchester, a Type 42 Batch 3.\n\nLAND ATTACK \u2014 and here the game is RIGHT, which matters. No British surface warship has ever fired a land-attack cruise missile. RN Tomahawk is submarine-only: first British TLAM shot was HMS Splendid in 1998, from a torpedo tube, and it has stayed that way through Trafalgar and Astute. Neither destroyer_b nor gbr_e00_destroyer nor either Type 23 carries a land-attack round, and the eras.js block comment says so explicitly (\"`ssgn`, because British land-attack missiles are fired from the torpedo tubes of an attack boat\"). That is sound and should be left alone. The British contribution to the fight ashore is naval gunfire, and the game supports it: every British naval gun row measured carries ground:1, so a 4.5in can shell a beach \u2014 which is the real history (roughly 8,000 rounds of 4.5in fired in support of the land battle in the Falklands, HMS Glamorgan, Arrow, Alacrity, Avenger and the Type 42s taking turns on the gun line). The one place the prose breaks the rule is that Type 42 Batch 3 weapon NAME, which advertises Tomahawk on a British surface ship. That is precisely the Los Angeles defect: a name promising a capability the navy never had.\n\nTHE FALKLANDS TEST. Take the 1982 task group as the game models it. HMS Invincible fights with a Phalanx and nothing else \u2014 she went to war with a twin Sea Dart launcher and 22 rounds forward and no Phalanx at all (that came in the 1982-83 refit). HMS Sheffield fights with two American 5in guns and has no Sea Dart, on a class whose entire reason for existing is Sea Dart and whose own description in the file says \"Sea Dart also shot down more aircraft than anything else in the British inventory that year\". HMS Broadsword fights with a Perry's Mk 13 launcher and has no Sea Wolf and no Exocet, on a class whose description says \"two Sea Wolf launchers, four Exocet and two Lynx\". Not one ship in the 1982 order of battle is armed with what it was armed with.\n\nWHAT IS SOUND. The roster SHAPE is right and was clearly thought about: no missileboat row in any era (the Royal Navy never operated a missile-armed fast attack craft, and the Brave boats were torpedo boats gone by 1970); no cruiser from e80 (HMS Blake paid off in 1979 and nothing replaced her); no fixed-wing AEW deck. Every service date checks out against real commissioning \u2014 Daring 1952, Whitby 1956, Tiger 1959, Brave Borderer 1960, Devonshire 1962, Leander 1963, Ark Royal post-Phantom-refit 1970, Sheffield 1975, Jersey 1976-77, Broadsword 1979, Invincible 1980, Leeds Castle 1981, Manchester 1982, Norfolk 1990, Sea Harrier FA2 1993, Tyne 2003, Sonar 2087 2006, Daring 2009, Queen Elizabeth 2017. I found NO anachronistic hull. Every anachronism in this fleet is in the weapon, not the date. The sonar figures are the British specialisation stated in numbers and they are the best in the game (corvette_b 11.0 and gbr_e00_corvette 10.6 are ranks 1 and 2 among all surface ships of all eight navies). The NAVGUN loop in generations.js has a deliberate `gbr` row that turns `navgun_76` into the 4.5in Mk 8 so a British escort never fires an OTO Melara; it currently fires on only three hulls and my edits put it to work on five more. And the e20 pair is genuinely excellent: corvette_b has gun + CAMM + Sting Ray and NO anti-ship missile, which is exactly right after Harpoon was withdrawn in 2023, and destroyer_b has Aster 30 + Aster 15 and no torpedo, which is exactly right because a Type 45 has no torpedo tubes fitted.",
+ "inventory": "EVERY BRITISH SURFACE HULL, RESOLVED UNDER JSC (baseline, before any edit). Format: id | era window | name | full | service | hp/speed/sight | resolved weapon ids -> \"name\" [tgt mask g=ground a=air s=sea u=sub].\n\n--- e50 ---\ngbr_e50_patrol | e50-e50 | Ford-class SDB | Ford-class seaward defence boat | 1954 | hp260 spd2.30 sight5.8 | hmg -> \"12.7mm HMG\" [g1a0s1u0]\ngbr_e50_corvette | e50-e50 | Type 12 Whitby FF | HMS Whitby (F36), Type 12 first-rate anti-submarine frigate | 1956 | hp600 spd2.55 sight6.3 (sonar4.2 radar8.6) | w_e50_nato_corvette -> \"Two twin 76mm/50 Mk 33\" [g1a1s1u0 rng5.9 dmg22]\ngbr_e50_destroyer | e50-e50 | Daring DD | HMS Daring (D05), Daring-class | 1952 | hp1080 spd2.10 sight8.9 (sonar5.4 radar11.5) | w_e50_nato_destroyer -> \"Three 127mm/54 Mk 42 single mounts\" [g1a0s1u0 rng8.5 dmg53]\ngbr_e50_cruiser | e50-e50 | Swiftsure CL | HMS Swiftsure (08), Swiftsure/Minotaur-class light cruiser | 1944 | hp1490 spd1.75 sight8.9 (sonar4.2 radar11.8) | w_e50_nato_cruiser -> \"Nine 203mm/55 Mk 16 rapid-fire guns in thr\" [g1a0s1u0 rng8.5 dmg53]\ngbr_e50_carrier | e50-e50 | Audacious CV | HMS Ark Royal (R09) and HMS Eagle (R05), Audacious-class | 1951 | hp1840 spd1.40 sight8.0 carrier3 | w_e50_nato_carrier -> \"Air wing of ~90 aircraft\" [g0a1s0u0 rng2.4 dmg25]\n\n--- e60 ---\ngbr_e60_patrol | e60-e60 | Brave-class FPB | HMS Brave Borderer (P1011), Brave-class fast patrol boat | 1960 | hp280 spd3.50 sight9.4 (sonar 0) | hmg -> \"12.7mm HMG\" [g1a0s1u0]; torpedo -> \"heavyweight torpedo\" [g0a0s1u1 rng9.0 dmg340]\ngbr_e60_corvette | e60-e60 | Leander FF | HMS Leander (F109), Leander-class frigate | 1963 | hp740 spd2.65 sight6.8 (sonar5.0 radar9.8) | w_e60_nato_corvette -> \"One 127mm/54 Mk 42\" [g1a1s1u0 rng6.6 dmg29]\ngbr_e60_destroyer | e60-e60 | County DLG | HMS Devonshire (D02), County-class guided missile destroyer | 1962 | hp1330 spd2.15 sight9.8 (sonar6.2 radar13.4) | w_e60_nato_destroyer -> \"Two 127mm/54 Mk 42\" [g1a0s1u0 rng9.4 dmg70]\ngbr_e60_cruiser | e60-e60 | Tiger CL | HMS Tiger (C20), Tiger-class light cruiser | 1959 | hp1830 spd1.82 sight9.8 (sonar5.0 radar13.6) | w_e60_nato_cruiser -> \"Terrier and Talos SAM launchers\" [g1a0s1u0 rng9.4 dmg70 warhead \"he\"]\ngbr_e60_carrier | e60-e60 | Ark Royal CVA | HMS Ark Royal (R09), after the 1967-70 Phantom refit | 1970 | hp2150 spd1.44 sight9.4 carrier3 | w_e60_nato_carrier -> \"Air wing of ~90 aircraft\" [g0a1s0u0 rng2.6 dmg34]\n\n--- e80 ---\ngbr_e80_patrol | e80-e80 | Island-class OPV | HMS Jersey (P295), Island-class offshore patrol vessel | 1977 | hp400 spd2.00 sight6.8 | hmg -> \"12.7mm HMG\" [g1a0s1u0]\ngbr_e80_corvette | e80-e80 | Type 22 Broadsword | HMS Broadsword (F88), Type 22 Batch 1 frigate | 1979 | hp930 spd2.78 sight8.2 (sonar6.4 radar13.5) | w_e80_nato_corvette -> \"Mk 13 launcher for SM-1MR and Harpoon\" [g1a1s1u0 rng7.3 dmg38]\ngbr_e80_destroyer | e80-e80 | Type 42 Sheffield | HMS Sheffield (D80), Type 42 Batch 1 destroyer | 1975 | hp1610 spd2.30 sight10.9 (sonar6.6 radar16.0) | w_e80_nato_destroyer -> \"Two 127mm/54 Mk 45\" [g1a0s1u0 rng10.5 dmg93]\ngbr_e80_carrier | e80-e80 | Invincible CVS | HMS Invincible (R05), Invincible-class | 1980 | hp1760 spd1.50 sight10.4 carrier2 | w_e80_nato_carrier -> \"Mk 15 Phalanx CIWS\" [g0a1s0u0 rng2.9 dmg44]\n\n--- e90 ---\ngbr_e90_patrol | e90-e90 | Castle-class OPV | HMS Leeds Castle (P258), Castle-class offshore patrol vessel | 1981 | hp470 spd2.20 sight7.4 | hmg -> \"12.7mm HMG\" [g1a0s1u0]\ngbr_e90_corvette | e90-e90 | Type 23 Duke | HMS Norfolk (F230), Type 23 Duke-class frigate | 1990 | hp1040 spd2.86 sight9.0 (sonar8.4 radar16.4) | w_e90_nato_corvette (cloned twice, NAVGUN-substituted) -> \"4.5in Mk 8 (114mm)\" [g1a1s1u0 rng9.2 dmg62]\ngbr_e90_destroyer | e90-e90 | Type 42 Batch 3 | HMS Manchester (D95), Type 42 Batch 3 destroyer | 1982 | hp1840 spd2.36 sight11.5 (sonar7.0 radar17.4) | w_e90_nato_destroyer -> \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha\" [g1a0s1u0 rng11.0 dmg108]\ngbr_e90_carrier | e90-e90 | Invincible (FA2) | HMS Illustrious (R06) with Sea Harrier FA2 | 1993 | hp1900 spd1.52 sight11.3 carrier2 | w_e90_nato_carrier -> \"Mk 15 Phalanx CIWS\" [g0a1s0u0 rng3.1 dmg52]\n\n--- e00 ---\ngbr_e00_patrol | e00-e00 | River Batch 1 OPV | HMS Tyne (P281), River-class Batch 1 | 2003 | hp530 spd2.40 sight8.1 | hmg -> \"12.7mm HMG\" [g1a0s1u0]\ngbr_e00_corvette | e00-e00 | Type 23 (Sonar 2087) | Type 23 frigate with Sonar 2087 low-frequency active towed array | 2006 | hp1090 spd2.87 sight9.5 (sonar10.6 radar17.2) | w_e00_nato_corvette -> \"One 57mm Mk 110\" [g1a1s1u0 rng7.9 dmg49]\ngbr_e00_destroyer | e00-e00 | Type 45 Daring | HMS Daring (D32), Type 45 destroyer | 2009 | hp1960 spd2.42 sight11.9 (sonar6.2 radar19.6 rcs0.35) | w_e00_nato_destroyer -> \"Mk 45 Mod 4 127mm\" [g1a0s1u0 rng11.4 dmg119]\ngbr_e00_carrier | e00-e00 | Queen Elizabeth CV | HMS Queen Elizabeth (R08) | 2017 | hp3120 spd1.58 sight12.9 carrier3 | w_e00_nato_carrier -> \"Air wing of 75+ aircraft\" [g0a1s0u0 rng3.2 dmg57]\n\n--- e20 (rules.js) ---\nboat_b | e20- | River Batch 2 OPV | HMS Forth (P222), River-class Batch 2 | hp640 spd2.70 sight8.9 | hmg -> \"12.7mm HMG\" [g1a0s1u0]\ncorvette_b | e20- | Type 23 Duke | Type 23 Duke-class frigate, Sea Ceptor fit | hp1120 spd2.90 sight10.9 (sonar11.0) | navgun_76 (NAVGUN-substituted) -> \"4.5in Mk 8 (114mm)\" [g1a1s1u0 rng9.2 dmg62]; sam_camm -> \"CAMM soft-launch active SAM\" [g0a1s0u0 rng10.4 dmg205]; asw_stingray -> \"Sting Ray Mod 1\" [g0a0s0u1 rng6.4 dmg200]\ndestroyer_b | e20- | Type 45 Daring DDG | HMS Daring (D32), Type 45 Daring-class | hp1980 spd2.50 sight15.5 (sonar6.4) | navgun_76 -> \"4.5in Mk 8 (114mm)\" [g1a1s1u0 rng9.2 dmg62]; sam_aster30 -> \"Aster 30\" [g0a1s0u0 rng15.0 dmg200]; sam_aster15 -> \"Aster 15\" [g0a1s0u0 rng10.8 dmg190]\ncarrier_b | e20- | Queen Elizabeth CV | HMS Queen Elizabeth (R08), Queen Elizabeth-class | hp3300 spd1.60 sight13.1 carrier3 ciws0.5 | weapons: [] (none)\n\nMEASURED CAPABILITY MATRIX, 26 British sea hulls, weapon tgt masks only:\n  BEFORE: air=12  sea=20  sub=2  ground=20\n  AFTER my edits: air=18  sea=20  sub=7  ground=19\n(the one ground loss is deliberate: the Type 22 Batch 1 loses its gun because it never had one; the five sub gains are Limbo and Sting Ray going onto the ASW frigates that are described as ASW frigates.)\n\nROSTER SHAPE, measured across all eight navies: gbr has carrier+corvette+destroyer+patrol in every era, cruiser in e50 and e60 only, ssbn from e60, and NO missileboat in any era. Amphibious, minelaying, minesweeping, oiler and repair hulls are faction-neutral (`both`), so nothing is missing there.",
+ "findings": [
+  {
+   "severity": "fatal",
+   "kind": "area-air-defence",
+   "unit": "gbr_e00_destroyer (Type 45 Daring, service 2009)",
+   "whatTheGameHas": "One weapon, w_e00_nato_destroyer, resolving to \"Mk 45 Mod 4 127mm\" with tgt {ground:1,air:0,sea:1,sub:0}. No Aster of any kind. Measured: the ship cannot engage an aircraft at all. The desc on the same row says \"SAMPSON at the masthead and Aster beneath it give an air-defence capability at the top of the world\".",
+   "whatIsReal": "HMS Daring commissioned 23 July 2009 with PAAMS/Sea Viper: SAMPSON multifunction array at 27 m, S1850M long-range radar, and a 48-cell Sylver A50 farm holding Aster 15 (30 km) and Aster 30 (120 km). First Aster 30 firing 2010, first multi-target salvo 2011. The gun is a 4.5in Mk 8 Mod 1, not an American Mk 45.",
+   "fix": "Replace the loadout with navgun_76 + sam_aster30 + sam_aster15 \u2014 exactly what the e20 destroyer_b already carries, because it is exactly the same ship. navgun_76 becomes the 4.5in Mk 8 automatically through the gbr row of the NAVGUN loop in generations.js."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity-and-false-land-attack",
+   "unit": "gbr_e90_destroyer (Type 42 Batch 3, HMS Manchester, service 1982)",
+   "whatTheGameHas": "w_e90_nato_destroyer, resolving to a weapon literally named \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha[wk]\", warhead \"he\", proj \"shell\", tgt {ground:1,air:0,sea:1,sub:0}. An Arleigh Burke's magazine on a British Type 42; it names SM-2 and cannot shoot at aircraft, and it names Tomahawk on a surface ship of a navy that has never fired one.",
+   "whatIsReal": "HMS Manchester commissioned 16 December 1982. Type 42 Batch 3: one 4.5in Mk 8, twin-arm Sea Dart GWS.30 launcher, two Phalanx, two triple STWS tubes. No vertical launch system of any kind, ever; no Standard missile; and no surface-launched Tomahawk in Royal Navy service in any year \u2014 British TLAM is submarine-only, first fired by HMS Splendid in 1998 from a torpedo tube. Sea Dart served until HMS Edinburgh paid off on 6 June 2013.",
+   "fix": "Replace with navgun_76 + sam_seadart + ciws_phalanx. This is the same class of defect as the Los Angeles carrying only a torpedo while its prose boasts of Tomahawk tubes, running the other way: prose-grade capability asserted in a weapon name that the navy never possessed."
+  },
+  {
+   "severity": "fatal",
+   "kind": "area-air-defence",
+   "unit": "gbr_e80_destroyer (Type 42 Batch 1, HMS Sheffield, service 1975)",
+   "whatTheGameHas": "w_e80_nato_destroyer -> \"Two 127mm/54 Mk 45\", tgt {ground:1,air:0,sea:1,sub:0}. No Sea Dart. The desc on the same row opens \"Sea Dart on a hull cut short to a price\" and closes \"Sea Dart also shot down more aircraft than anything else in the British inventory that year, which is the whole argument about this class in one sentence\".",
+   "whatIsReal": "HMS Sheffield commissioned 16 February 1975. One 4.5in Mk 8 forward, twin Sea Dart GWS.30 launcher with 22 rounds, no CIWS as built. Sea Dart is a semi-active ramjet missile good to 40+ nmi and is credited with the largest share of the British missile kills of 1982.",
+   "fix": "Replace with navgun_76 + sam_seadart. Keep the class's known weakness in the missile's own stats (acc 0.80, not higher) rather than in its absence: Sea Dart worked against a high or medium target and was poor close inshore, which is how Coventry was lost on 25 May 1982."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity-desc-vs-loadout",
+   "unit": "gbr_e80_corvette (Type 22 Batch 1, HMS Broadsword, service 1979)",
+   "whatTheGameHas": "w_e80_nato_corvette -> \"Mk 13 launcher for SM-1MR and Harpoon\", tgt {ground:1,air:1,sea:1,sub:0}. That is the single-arm launcher of the Oliver Hazard Perry class. The desc on the same row says \"The first Royal Navy escort designed with no medium gun at all - two Sea Wolf launchers, four Exocet and two Lynx, and an anti-submarine suite that was the best in NATO outside the American fleet.\" The loadout contains none of those four things and does contain a gun.",
+   "whatIsReal": "HMS Broadsword commissioned 3 May 1979. Two six-round Sea Wolf GWS.25 launchers, four MM38 Exocet in single canisters forward, two Lynx HAS.2, two triple STWS-1 tubes (Mk 46, then Sting Ray from 1983), Type 2016 sonar, and no medium gun whatever. She never carried a Standard missile or a Harpoon.",
+   "fix": "Replace with sam_seawolf + ssm_exocet38 + asw_stingray, and give her NO gun. The missing gun is the point of the class and the absence should be visible in the loadout, not papered over with an American mount."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity",
+   "unit": "gbr_e60_cruiser (Tiger CL, HMS Tiger, service 1959)",
+   "whatTheGameHas": "w_e60_nato_cruiser -> a weapon named \"Terrier and Talos SAM launchers\" with warhead \"he\", proj \"shell\" and tgt {ground:1,air:0,sea:1,sub:0}. Two American surface-to-air missiles, on a British cruiser that never carried either, in a row that is mechanically a gun and cannot engage an aircraft.",
+   "whatIsReal": "HMS Tiger commissioned 18 March 1959. Two twin 6in QF Mk N5 fully automatic mountings and three twin 3in/70 Mk 6 \u2014 the finest gun mountings the Royal Navy ever installed and so unreliable that Tiger and Blake were rebuilt as helicopter cruisers between 1965 and 1972 instead. The Royal Navy never operated Terrier or Talos in any ship in any year.",
+   "fix": "Replace with a new literal row w_e60_gbr_cruiser: \"Two twin 6in QF Mk N5 and three twin 3in/70\", air:1 (the 3in/70 was a dual-purpose mount) and a low acc of 0.50 to carry the unreliability that actually ended the class."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity-desc-vs-loadout",
+   "unit": "gbr_e50_cruiser (Swiftsure CL, service 1944)",
+   "whatTheGameHas": "w_e50_nato_cruiser -> \"Nine 203mm/55 Mk 16 rapid-fire guns in thr[ee triples]\". That is the Des Moines-class autoloading 8in \u2014 the heaviest cruiser gun the United States ever built. The desc two fields away says \"Triple 6in turrets and enough armour to matter\".",
+   "whatIsReal": "HMS Swiftsure commissioned 22 June 1944. Nine 6in (152 mm) BL Mk XXIII in three triple turrets, hand-worked, plus ten 4in QF Mk XVI. Britain never built an 8in gun cruiser after the County class of 1928 and none was in service in the 1950s.",
+   "fix": "Replace with a new literal row w_e50_gbr_cruiser: \"Nine 6in BL Mk XXIII in three triples\", tgt air:0 \u2014 the Mk XXIII was a surface mounting with no anti-air role, which is a real and interesting difference from the Tiger that follows it."
+  },
+  {
+   "severity": "fatal",
+   "kind": "area-air-defence",
+   "unit": "gbr_e60_destroyer (County DLG, HMS Devonshire, service 1962)",
+   "whatTheGameHas": "w_e60_nato_destroyer -> \"Two 127mm/54 Mk 42\", tgt {ground:1,air:0,sea:1,sub:0}. A unit whose full name is \"County-class guided missile destroyer\" carries no missile of any kind and cannot engage an aircraft. The desc says \"Six thousand tonnes to carry one Sea Slug launcher\".",
+   "whatIsReal": "HMS Devonshire commissioned 15 November 1962. Two twin 4.5in QF Mk 6, one twin Sea Slug GWS.1 launcher aft with a magazine running most of the hull, two quad Sea Cat, one Wessex helicopter. Sea Slug is a beam rider: the ship must hold a radar beam on the target and the missile crawls up it, which works against a high bomber and not against anything low or crossing.",
+   "fix": "Replace with w_e60_gbr_destroyer (\"Two twin 4.5in QF Mk 6\") + sam_seaslug, where sam_seaslug is authored with acc 0.58, reload 11.0 and intercept 1.05 so that its limitations are in its statistics. Do NOT add Sea Cat: GWS.20-24 was on almost every British hull from 1962 and has no undisputed Falklands kill; a system that did not work is better modelled as no weapon than as a weak one."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity-and-asw-gap",
+   "unit": "gbr_e00_corvette (Type 23 with Sonar 2087, service 2006)",
+   "whatTheGameHas": "w_e00_nato_corvette -> \"One 57mm Mk 110\", tgt {ground:1,air:1,sea:1,sub:0}. The Mk 110 is the Bofors 57 mm of the American Littoral Combat Ship and the Legend-class cutter; no British warship has ever mounted one. And the hull carries sonar 10.6, the second-highest surface figure in the entire game, with NO weapon that can attack a submarine \u2014 the desc calls it \"the single best anti-submarine sensor in this game\".",
+   "whatIsReal": "Sonar 2087 entered service on HMS Westminster in 2006 and was fitted to eight of the sixteen Type 23s. Their fit in that decade: one 4.5in Mk 8, 32-cell Sea Wolf GWS.26 VLS, eight Harpoon Block 1C (fitted from 1994), two twin Magazine Torpedo Launch System tubes firing Sting Ray, and a Merlin or Lynx.",
+   "fix": "Replace with navgun_76 + sam_seawolf + ssm_harpoon + asw_stingray. Note that ship-launched ASW is thin across this whole game \u2014 measured, only 2 of 26 British sea hulls and a small minority of all era hulls anywhere can attack a submarine \u2014 but it costs Britain more than anyone, because ASW is the one thing this navy is stated to be best at."
+  },
+  {
+   "severity": "major",
+   "kind": "desc-vs-loadout",
+   "unit": "gbr_e90_corvette (Type 23 Duke, HMS Norfolk, service 1990)",
+   "whatTheGameHas": "One weapon, correctly resolving to \"4.5in Mk 8 (114mm)\" via the NAVGUN gbr substitution. The desc says \"Diesel-electric drive for silent running, a 4.5in Mk 8, Sea Wolf, Harpoon and a Lynx.\" Three of the four named systems are absent, and the hull has sonar 8.4 with no anti-submarine weapon.",
+   "whatIsReal": "HMS Norfolk commissioned 1 June 1990. 4.5in Mk 8, 32-cell vertical Sea Wolf GWS.26, two quad Harpoon Block 1C, Sting Ray from the MTLS tubes, Type 2031Z then 2087 towed array, one Lynx HMA.8.",
+   "fix": "Append sam_seawolf + ssm_harpoon + asw_stingray to the existing gun. The gun itself is already right and should be left alone."
+  },
+  {
+   "severity": "major",
+   "kind": "area-air-defence",
+   "unit": "gbr_e80_carrier (Invincible CVS, service 1980)",
+   "whatTheGameHas": "w_e80_nato_carrier -> \"Mk 15 Phalanx CIWS\" and nothing else. So the e80 Invincible has the close-in gun she did not have in 1980-82 and lacks the area missile she did have. The desc discusses the ski-jump, the Australian sale and the Sea King AEW.2 and never mentions Sea Dart.",
+   "whatIsReal": "HMS Invincible commissioned 11 July 1980 with a twin-arm Sea Dart GWS.30 launcher on the forecastle and 22 rounds \u2014 she was designed as a Sea Dart ship and called a through-deck cruiser partly on that basis. Phalanx was fitted in the 1982-83 post-Falklands refit, i.e. after the war and part-way through this era window. Sea Dart came out of Invincible in the 1999 refit to lengthen the flight deck.",
+   "fix": "Replace with sam_seadart + ciws_phalanx \u2014 both, because the e80 window spans 1980-1989 and the ship had the missile throughout and the gun for most of it. Add sam_seadart to gbr_e90_carrier as well, since Illustrious and Ark Royal kept their launchers into the late 1990s."
+  },
+  {
+   "severity": "major",
+   "kind": "desc-vs-loadout-and-anachronism",
+   "unit": "gbr_e50_destroyer (Daring DD, service 1952)",
+   "whatTheGameHas": "w_e50_nato_destroyer -> \"Three 127mm/54 Mk 42 single mounts\", tgt {ground:1,air:0,sea:1,sub:0}. The desc on the same row says \"Eight ships, three twin 4.5in Mk 6 turrets\".",
+   "whatIsReal": "HMS Daring commissioned 8 March 1952 with three twin 4.5in QF Mk 6 \u2014 a dual-purpose mounting with remote power control. Separately the substituted weapon is an anachronism on its own terms: the American 5in/54 Mk 42 did not enter service until 1955, three years after this hull's own service date.",
+   "fix": "Replace with a new literal w_e50_gbr_destroyer: \"Three twin 4.5in QF Mk 6\", air:1 because the Mk 6 was a genuine DP mounting. That single change also fixes the anachronism."
+  },
+  {
+   "severity": "major",
+   "kind": "desc-vs-loadout",
+   "unit": "gbr_e60_corvette (Leander FF, HMS Leander, service 1963)",
+   "whatTheGameHas": "w_e60_nato_corvette -> \"One 127mm/54 Mk 42\". The desc says \"A twin 4.5in forward, a hangar and a Wasp aft\". No ASW weapon on a hull with sonar 5.0.",
+   "whatIsReal": "HMS Leander commissioned 27 March 1963. One twin 4.5in QF Mk 6 forward, one Limbo Mk 10 three-barrelled ASW mortar aft, a Wasp HAS.1 with a homing torpedo, Seacat. The class was rebuilt three different ways in the 1970s for Exocet, Ikara or Sea Wolf as money allowed \u2014 which the desc already says correctly.",
+   "fix": "Replace with w_e60_gbr_corvette + asw_limbo. Limbo is worth authoring rather than borrowing asw_rbu: putting a Soviet RBU-6000 on a Leander would be the same defect this audit is about."
+  },
+  {
+   "severity": "major",
+   "kind": "asw-gap",
+   "unit": "gbr_e50_corvette (Type 12 Whitby FF, service 1956)",
+   "whatTheGameHas": "w_e50_nato_corvette -> \"Two twin 76mm/50 Mk 33\", tgt {ground:1,air:1,sea:1,sub:0}. The unit's own full name is \"HMS Whitby (F36), Type 12 first-rate anti-submarine frigate\" and it cannot attack a submarine. The Mk 33 is the American 3in/50 twin, which no Royal Navy escort mounted.",
+   "whatIsReal": "HMS Whitby commissioned 10 July 1956. One twin 4.5in QF Mk 6 forward, one twin 40 mm Bofors STAAG aft, and TWO Limbo Mk 10 mortars \u2014 the anti-submarine armament is the entire reason the class exists and it is the thing that is missing.",
+   "fix": "Replace with w_e50_gbr_corvette + asw_limbo."
+  },
+  {
+   "severity": "major",
+   "kind": "anti-ship-missile-gap",
+   "unit": "whole fleet, e80 through e00",
+   "whatTheGameHas": "Measured: not one British hull in any era carries an anti-ship missile. The only ship-killing weapons in the fleet are guns and one 1958 torpedo boat.",
+   "whatIsReal": "From 1973 to 2023 a Royal Navy escort essentially always had one. MM38 Exocet went into the County class from 1973, the Type 21 Amazons, the Type 22 Batch 1s and the Exocet-converted Leanders. Harpoon Block 1C replaced it on the Type 22 Batch 3 and the Type 23 from the early 1990s and was withdrawn in 2023 with no replacement. The gap in the real timeline is at both ends \u2014 before 1973 and after 2023 \u2014 and the game has flattened it into one continuous absence.",
+   "fix": "ssm_exocet38 (a new MM38 row, 42 km and anti-ship only, distinct from the existing ssm_exocet which is the 180 km MM40 Block 3) on the Type 22; ssm_harpoon on both Type 23s. Leave the e20 corvette_b with nothing, because 2023 is when Harpoon went, and its desc already says exactly that."
+  },
+  {
+   "severity": "minor",
+   "kind": "carrier-air-wing-figures",
+   "unit": "gbr_e50_carrier, gbr_e60_carrier, gbr_e00_carrier",
+   "whatTheGameHas": "\"Air wing of ~90 aircraft\" on the Audacious class and on the 1970 Ark Royal, and \"Air wing of 75+ aircraft\" on Queen Elizabeth. These are the shared American carrier rows.",
+   "whatIsReal": "HMS Eagle's air group ran around 60 machines at its largest. The 1970 post-refit Ark Royal embarked roughly 39: 12 Phantom FG.1, 14 Buccaneer S.2, 4 Gannet AEW.3, a Gannet COD, 6 Sea King and 2 Wessex. Queen Elizabeth's design load is 24 F-35B plus about 14 helicopters; Op Fortis in 2021 sailed with 18 F-35B, eight of them American. Separately the Audacious class carried sixteen 4.5in QF Mk VI in eight twin turrets, a substantial gun battery the game does not represent at all.",
+   "fix": "Not proposed as an edit here. The carrier weapon rows are a shared abstraction used by every faction, and changing them reaches well outside the British fleet. Recorded so the owner knows the numbers are American."
+  },
+  {
+   "severity": "minor",
+   "kind": "patrol-armament",
+   "unit": "gbr_e50_patrol, gbr_e80_patrol, gbr_e90_patrol, gbr_e00_patrol, boat_b",
+   "whatTheGameHas": "All five carry the shared `hmg`, \"12.7mm HMG\". Each desc names a different and larger gun: the Island class \"a 40 mm on the bow\", the River Batch 1 \"A 20 mm gun\", the River Batch 2 \"a 30 mm gun and a flight deck\".",
+   "whatIsReal": "Ford class: one 40 mm Bofors and one 20 mm Oerlikon. Island and Castle: one 40 mm/60 Mk 9. River Batch 1: one 20 mm Oerlikon. River Batch 2: one 30 mm DS30M Mk 2.",
+   "fix": "Not proposed. `hmg` is the game-wide patrol-boat abstraction and every navy's small craft use it; changing it for Britain alone would create an inconsistency rather than remove one. Worth a single desc softening if the owner cares, not a loadout change."
+  },
+  {
+   "severity": "minor",
+   "kind": "weapon-plausibility",
+   "unit": "gbr_e60_patrol (Brave-class FPB, service 1960)",
+   "whatTheGameHas": "The shared `torpedo` row, \"heavyweight torpedo\", dmg 340, range 9.0, tgt {ground:0,air:0,sea:1,sub:1}. The hull has sonar 0.",
+   "whatIsReal": "Brave Borderer and Brave Swordsman, launched 1958, carried two 21in tubes firing the wartime Mk VIII* \u2014 an anti-ship torpedo, straight-running, with no anti-submarine capability. dmg 340 is the same figure the game gives a DM2A4 Seehecht. And a boat with no sonar cannot find a submarine to shoot at in the first place, so sub:1 is inert as well as wrong.",
+   "fix": "Not proposed as an edit \u2014 `torpedo` is shared with fra_e60_patrol, deu_e50_patrol and deu_e60_patrol, so a private clone would be needed and the gain is small. Recorded."
+  },
+  {
+   "severity": "minor",
+   "kind": "desc-vs-loadout",
+   "unit": "destroyer_b (Type 45, e20)",
+   "whatTheGameHas": "navgun_76 + sam_aster30 + sam_aster15, no anti-ship missile. The desc says \"It was built with no anti-ship missile whatsoever and had none for fourteen years, until NSM began appearing in 2023-24\".",
+   "whatIsReal": "The Naval Strike Missile interim fit went first to the Type 23s (HMS Somerset and HMS Sutherland in 2023-24) and is being spread across a handful of Type 45s. A small minority of hulls carry it.",
+   "fix": "Not proposed. The desc already hedges with \"began appearing\", and giving every Type 45 an NSM would overstate a fit that only a few ships have. Recorded as a prose/loadout tension that is currently on the right side of the line."
+  },
+  {
+   "severity": "minor",
+   "kind": "misleading-source-comment",
+   "unit": "js/eras.js, the ROYAL NAVY era-units block header",
+   "whatTheGameHas": "The header asserts that every British hull must point at a `w_e**_nato_<role>` id because \"those ids are 784 LITERAL rows at the head of this file, not generated, so a British corvette invented with a `w_e50_gbr_corvette` would dereference undefined on its first target evaluation and throw\".",
+   "whatIsReal": "Measured: 66 distinct `w_e**_gbr_*` literal weapon rows already exist in the same file \u2014 w_e50_gbr_rifle, w_e50_gbr_mbt, w_e00_gbr_sead and so on. The namespace is in daily use for the British land and air forces. The real constraint is only that a new id must be WRITTEN, not that it cannot exist. As it stands the comment reads as a justification for a defect rather than a description of one.",
+   "fix": "Correct the paragraph to say what is actually true: the naval rows point at the American ids because nobody has yet authored British ones, and where the ordnance is the identity a British row should be written \u2014 which is exactly what the file already does for the 4.5in Mk 8, Sting Ray, Spearfish and Trident."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "land-attack",
+   "unit": "the entire British surface fleet, all six eras",
+   "whatTheGameHas": "No land-attack missile on any British surface warship in any era. destroyer_b and gbr_e00_destroyer have none; both Type 23s have none; the eras.js block comment states the reason under `ssgn`.",
+   "whatIsReal": "Correct, and it is one of the sharpest facts about this navy. The Royal Navy has never fired a surface-launched land-attack cruise missile. Tomahawk is carried and fired only by the attack submarines \u2014 HMS Splendid fired the first British TLAM in 1998, and the capability passed from Trafalgar to Astute through the torpedo tubes. This is the right answer under realism-over-symmetry: Britain simply does not have what an Arleigh Burke has, and the roster should keep saying so.",
+   "fix": "None. Do not add a land-attack round to any British surface hull. The only correction needed is removing the false Tomahawk claim from the Type 42 Batch 3 weapon NAME, which is listed as a separate fatal finding above."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "naval-gunfire-support",
+   "unit": "every British gun-armed hull",
+   "whatTheGameHas": "Measured: every British naval gun row carries tgt ground:1, so a 4.5in can shell a target ashore.",
+   "whatIsReal": "Correct, and it is the British land-attack contribution. Roughly eight thousand 4.5in rounds were fired in support of the land battle in the Falklands, from Glamorgan, Arrow, Alacrity, Avenger, Ambuscade, Antrim and the Type 42s working a nightly gun line. Naval gunfire IS land attack and the game already knows it.",
+   "fix": "None. Preserved through my edits: every replacement British gun row keeps ground:1. The one deliberate loss is the Type 22 Batch 1, which drops to ground:0 because it genuinely had no medium gun and genuinely could not take a turn on the gun line."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "roster-shape",
+   "unit": "missileboat (all eras) and cruiser (e80 onward)",
+   "whatTheGameHas": "No `missileboat` row for gbr in any era, and no `cruiser` row from e80.",
+   "whatIsReal": "Both correct and both explained in the file. The Royal Navy has never operated a missile-armed fast attack craft; its last fast boats were the two Brave-class torpedo boats, gone by 1970, and after that the small end of the fleet is constabulary work \u2014 which the Ford, Island, Castle and River descs all say in their own words. HMS Blake, the last cruiser, paid off in 1979 and nothing replaced her; an Invincible is a carrier whatever the Treasury called it and a Type 45 is a destroyer.",
+   "fix": "None. This is realism-over-symmetry working exactly as intended and should not be 'filled in'."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "service-dates",
+   "unit": "all 21 British surface warships",
+   "whatTheGameHas": "A `service` field on every era hull.",
+   "whatIsReal": "Checked one by one against real commissioning: Daring 1952, Eagle 1951 (Audacious class), Ford class 1954, Whitby 1956, Tiger 1959, Brave Borderer 1960, Devonshire 1962, Leander 1963, Ark Royal post-Phantom-refit 1970, Sheffield 1975, Jersey 1976-77 (Island class), Broadsword 1979, Invincible 1980, Leeds Castle 1981, Manchester 1982, Norfolk 1990, Sea Harrier FA2 1993, Tyne 2003, Sonar 2087 2006, Daring 2009, Queen Elizabeth 2017. Not one is wrong, and the from:/to: windows sit correctly against them.",
+   "fix": "None. Worth stating plainly because the brief warned that an earlier audit missed units with no service field: I checked the ones without it too \u2014 the five e20 hulls in rules.js carry from:\"e20\" and no service string, and all five are present-day ships in current commission, so there is nothing to catch."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "sonar-specialisation",
+   "unit": "corvette_b and gbr_e00_corvette",
+   "whatTheGameHas": "sonar 11.0 and 10.6 \u2014 measured as ranks 1 and 2 among all surface ships of all eight navies, ahead of the American destroyer_n at 9.5.",
+   "whatIsReal": "Correct and deliberate. Sonar 2087 is a low-frequency active and passive towed array with no equal in another European fleet, fitted to eight of sixteen Type 23s from 2006, and paired with a Merlin HM2 it is the best anti-submarine system in this game. generations.js also gives gbr a naval domain multiplier of 1.00 \u2014 level with the United States and above France at 0.90 and Germany at 0.72 \u2014 with a comment naming the Type 23 and the Astute as the reason.",
+   "fix": "None to the sensor. But the sensor deserves a weapon behind it \u2014 see the gbr_e00_corvette and gbr_e90_corvette findings \u2014 because a hull that detects better than anyone and cannot shoot is a specialisation the player never gets to use."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "gun-identity",
+   "unit": "corvette_b, destroyer_b, gbr_e90_corvette",
+   "whatTheGameHas": "All three resolve to \"4.5in Mk 8 (114mm)\", dmg 62, range 9.2, acc 0.82, tgt {ground:1,air:1,sea:1,sub:0} \u2014 not an OTO Melara, even though two of them are authored carrying navgun_76.",
+   "whatIsReal": "Correct, and it is the NAVGUN loop at the tail of generations.js doing its job: a gbr row substitutes the 4.5 inch Mk 8 into any British weapon whose name matches /OTO 76mm/. Britain never bought the Italian gun for its escorts \u2014 the Mk 8 is heavier and slower-firing and built for naval gunfire support, which is exactly the comment already in the file. The Mk 8 entered service on HMS Bristol in 1971, so it is right for everything from the Type 42 onward and wrong for anything before it, which is why my edits author separate e50 and e60 rows rather than extending this loop backwards.",
+   "fix": "None. My edits deliberately route five more British hulls (both Type 42s, both e00/e90 Type 23s, the Type 45) through navgun_76 so the NAVGUN gbr row covers eight hulls instead of three."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "capability-absence",
+   "unit": "destroyer_b (Type 45, e20)",
+   "whatTheGameHas": "No anti-submarine weapon. Measured: destroyer_b cannot attack a submarine.",
+   "whatIsReal": "Correct. The Type 45 has no torpedo tubes fitted \u2014 the Magazine Torpedo Launch System was designed in and left out. Its anti-submarine capability is the embarked Merlin or Wildcat, not the ship. An audit that 'fixed' this by handing the Daring a Sting Ray would be inventing a capability to balance a roster.",
+   "fix": "None. Leave it exactly as it is."
+  }
+ ],
+ "edits": [
+  {
+   "file": "js/rules.js",
+   "why": "Author the British ship-SAM line, the 1970s Exocet and the Limbo mortar. All five sit in the existing \"European naval ordnance\" block, which is the place this file already reserves for ordnance that IS the national identity (the 4.5in Mk 8, Spearfish, Sting Ray). Sea Slug, Sea Dart, Sea Wolf and Aster are four different weapons that replaced one another for reasons, and a single shared row would erase the whole argument. Sea Cat is deliberately not authored: it was on almost every British hull from 1962 and has no undisputed Falklands kill, and a system that did not work is better modelled as no weapon than as a weak one. MM38 gets its own row because the existing ssm_exocet is the MM40 Block 3 at 180 km, four times the 42 km round the 1970s ships carried, and it is anti-ship only where MM40 has a land-attack mode.",
+   "anchor": "  ssm_exocet: { name:\"MM40 Exocet Block 3\", dmg:250, warhead:\"he\", range:15.0, minRange:2.0,",
+   "exactCount": 1,
+   "newCode": "  /* ---- the four British ship SAMs, which are four different weapons ----\n     Britain fielded a new fleet air-defence system roughly every twenty years\n     and each replaced the last for a reason, so one shared row would erase the\n     whole argument. Sea Slug (HMS Devonshire, 1962) is a beam rider: the ship\n     holds a radar beam on the target and the missile crawls up it, which works\n     against a high bomber and not against anything low or crossing - six\n     thousand tonnes of County built round one launcher and a magazine running\n     most of the hull. Sea Dart (HMS Bristol 1973, Type 42 from 1975, Invincible\n     from 1980) is a semi-active ramjet good to 40+ nmi and killed more\n     Argentine aircraft in 1982 than anything else Britain had; it was also poor\n     close inshore, which is how Coventry was lost on 25 May. Sea Wolf (Type 22,\n     1979; Type 23 VLS, 1990) is not an area system at all - 6 km, command\n     line-of-sight, hit-to-kill, and its 1982 kills were A-4s and a Dagger from\n     Broadsword and Brilliant. Aster is already above, on the Type 45.\n     SEA CAT IS DELIBERATELY ABSENT. GWS.20-24 was on almost every hull from\n     1962 and has no undisputed Falklands kill to its name. A system that did\n     not work is better modelled as no weapon than as a weak one. */\n  sam_seaslug: { name:\"Sea Slug GWS.2, beam-riding\", dmg:150, warhead:\"flak\", range:9.4, reload:11.0,\n    burst:1, acc:0.58, proj:\"missile\", speed:520,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n  sam_seadart: { name:\"Sea Dart GWS.30\", dmg:200, warhead:\"flak\", range:12.8, reload:5.6, burst:2,\n    burstDelay:0.6, acc:0.80, proj:\"missile\", speed:640,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n  sam_seawolf: { name:\"Sea Wolf, command line-of-sight\", dmg:150, warhead:\"flak\", range:5.2, reload:2.6,\n    burst:2, burstDelay:0.30, acc:0.88, proj:\"missile\", speed:700,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n  /* The 1970s Exocet is not the 2010s one and the gap is a factor of four in\n     reach: MM38 is 42 km, ship-launched, anti-ship ONLY, and it is what County,\n     Type 21, Type 22 Batch 1 and the converted Leanders carried. MM40 Block 3\n     below is 180 km with a land-attack mode and belongs to the present-day\n     French escorts that mount it. */\n  ssm_exocet38: { name:\"MM38 Exocet\", dmg:210, warhead:\"he\", range:11.0, minRange:1.6,\n    reload:14.0, burst:2, burstDelay:1.0, acc:0.80, proj:\"missile\", speed:120, aoe:1.3,\n    tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\" },\n  /* Limbo Mk 10 was the British answer to the submarine from 1955 to about 1980\n     and it is on every Whitby, Rothesay and Leander in this roster. A\n     three-barrelled mortar throwing a 180 kg bomb about a thousand yards, aimed\n     by steering the ship over the contact - short, blind astern, and the reason\n     the helicopter and then the homing torpedo replaced it. Authored rather\n     than borrowing asw_rbu, because putting a Soviet RBU-6000 on a Leander is\n     the same defect this whole pass is about. */\n  asw_limbo: { name:\"Limbo Mk 10 three-barrelled mortar\", dmg:165, warhead:\"he\", range:2.4,\n    reload:9.0, burst:3, burstDelay:0.25, acc:0.62, proj:\"arc\", speed:60, aoe:1.2,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"cannon\" },\n  ssm_exocet: { name:\"MM40 Exocet Block 3\", dmg:250, warhead:\"he\", range:15.0, minRange:2.0,"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "Give the four new missiles a MISSILE_PROFILE entry so combat.js layer 1 scores them. Without it `intercept` defaults to 1 and `profile` is undefined, which is survivable but flat - and the whole point of separating these rounds is that they are not equally hard to stop. Sea Slug rides a beam and can be walked off it; Sea Dart is semi-active and was jammed and decoyed in 1982; Sea Wolf is the interceptor, not the intercepted; MM38 is a plain 1970s sea-skimmer, the round every navy learned to stop.",
+   "anchor": "  sam_aster15: { profile:\"pop\", intercept:0.62 },",
+   "exactCount": 1,
+   "newCode": "  /* Sea Slug rides a beam and can be walked off it; Sea Dart is semi-active and\n     was jammed and decoyed in 1982; Sea Wolf is the interceptor, not the\n     intercepted, and it is hit-to-kill. MM38 is a plain 1970s sea-skimmer. */\n  sam_seaslug:  { profile:\"pop\", intercept:1.05 },\n  sam_seadart:  { profile:\"pop\", intercept:0.72 },\n  sam_seawolf:  { profile:\"pop\", intercept:0.55 },\n  ssm_exocet38: { profile:\"skim\", intercept:1.05 },\n  sam_aster15: { profile:\"pop\", intercept:0.62 },"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "MISSILE_SPEED is the table that stops a ship-launched round expiring before it covers its own range - the comment above it records that a Harpoon at 13px/s was slower than the ship it was chasing. The new rounds carry a `speed` in their own row already; listing them here keeps them in the one place a later editor will look, and keeps the relative ordering explicit: Sea Slug slowest, Sea Wolf fastest, MM38 subsonic with the other sea-skimmers.",
+   "anchor": "  sam_aster15: 660, sam_aster30: 700, sam_ram: 640,",
+   "exactCount": 1,
+   "newCode": "  sam_aster15: 660, sam_aster30: 700, sam_ram: 640,\n  sam_seaslug: 520, sam_seadart: 640, sam_seawolf: 700, ssm_exocet38: 120,"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Author six British naval gun rows for e50 and e60, the two decades the NAVGUN loop cannot reach. That loop substitutes the 4.5in Mk 8 into any British weapon named /OTO 76mm/, which is correct from HMS Bristol in 1971 onward and wrong before it - NAVGUN has no era dimension, exactly the trap its own comment flags for France. The `w_e**_gbr_*` namespace is already in use: 66 British literal weapon rows exist in this file for the land and air forces, so this is in-pattern, not an invention. Naval roles are untouched by the era-range normaliser (it keys only at/tankdestroyer/gunship/aa/spaag/mlrs/spg), so these figures stand as written.",
+   "anchor": " \"w_e50_gbr_rifle\": {",
+   "exactCount": 1,
+   "newCode": " /* ---- Royal Navy gun mountings, e50 and e60 ----\n    From e80 a British escort carries `navgun_76` and the NAVGUN loop in\n    generations.js substitutes the 4.5in Mk 8, which is right from HMS Bristol\n    in 1971 onward and wrong before it - NAVGUN has no era dimension, the same\n    trap its own comment flags for France. These six rows are the two decades\n    that loop cannot reach. The twin 4.5in QF Mk 6 (1949) is the British\n    destroyer and frigate gun of the whole period - Daring, Whitby, Leander and\n    County all mount it - and it is a dual-purpose mounting with remote power\n    control, so `air` is 1. Swiftsure carries the wartime 6in BL Mk XXIII, a\n    surface gun in a hand-worked turret with no anti-air capability at all, and\n    Tiger the fully automatic QF Mk N5 6in and 3in/70 Mk 6 of 1959 - the finest\n    gun mountings the Royal Navy ever installed and so unreliable that both\n    ships were rebuilt as helicopter cruisers instead, which is what the low\n    `acc` of 0.50 is carrying. */\n \"w_e50_gbr_corvette\": {\"name\":\"One twin 4.5in QF Mk 6\",\"dmg\":34,\"warhead\":\"he\",\"range\":6.4,\"reload\":2.6,\"burst\":2,\"burstDelay\":0.5,\"acc\":0.52,\"proj\":\"shell\",\"speed\":740,\"aoe\":0.7,\"tgt\":{\"ground\":1,\"air\":1,\"sea\":1,\"sub\":0},\"sfx\":\"cannon\"},\n \"w_e50_gbr_destroyer\": {\"name\":\"Three twin 4.5in QF Mk 6\",\"dmg\":58,\"warhead\":\"he\",\"range\":8.2,\"reload\":3.4,\"burst\":3,\"burstDelay\":0.4,\"acc\":0.56,\"proj\":\"shell\",\"speed\":740,\"aoe\":0.9,\"tgt\":{\"ground\":1,\"air\":1,\"sea\":1,\"sub\":0},\"sfx\":\"cannon\"},\n \"w_e50_gbr_cruiser\": {\"name\":\"Nine 6in BL Mk XXIII in three triples\",\"dmg\":76,\"warhead\":\"he\",\"range\":9.6,\"reload\":6.4,\"burst\":3,\"burstDelay\":0.35,\"acc\":0.5,\"proj\":\"shell\",\"speed\":790,\"aoe\":1.2,\"tgt\":{\"ground\":1,\"air\":0,\"sea\":1,\"sub\":0},\"sfx\":\"cannon\"},\n \"w_e60_gbr_corvette\": {\"name\":\"One twin 4.5in QF Mk 6\",\"dmg\":38,\"warhead\":\"he\",\"range\":6.8,\"reload\":2.5,\"burst\":2,\"burstDelay\":0.5,\"acc\":0.58,\"proj\":\"shell\",\"speed\":740,\"aoe\":0.7,\"tgt\":{\"ground\":1,\"air\":1,\"sea\":1,\"sub\":0},\"sfx\":\"cannon\"},\n \"w_e60_gbr_destroyer\": {\"name\":\"Two twin 4.5in QF Mk 6\",\"dmg\":52,\"warhead\":\"he\",\"range\":8.0,\"reload\":3.2,\"burst\":2,\"burstDelay\":0.45,\"acc\":0.6,\"proj\":\"shell\",\"speed\":740,\"aoe\":0.9,\"tgt\":{\"ground\":1,\"air\":1,\"sea\":1,\"sub\":0},\"sfx\":\"cannon\"},\n \"w_e60_gbr_cruiser\": {\"name\":\"Two twin 6in QF Mk N5 and three twin 3in/70\",\"dmg\":72,\"warhead\":\"he\",\"range\":9.2,\"reload\":4.2,\"burst\":4,\"burstDelay\":0.3,\"acc\":0.5,\"proj\":\"shell\",\"speed\":790,\"aoe\":1.0,\"tgt\":{\"ground\":1,\"air\":1,\"sea\":1,\"sub\":0},\"sfx\":\"cannon\"},\n \"w_e50_gbr_rifle\": {"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e50_corvette, HMS Whitby, commissioned 10 July 1956. The unit's own full name calls it a first-rate ANTI-SUBMARINE frigate and it could not attack a submarine; its gun was the American twin 3in/50 Mk 33, which no Royal Navy escort ever mounted. Real fit: one twin 4.5in QF Mk 6 forward, one twin 40 mm Bofors STAAG aft, and two Limbo Mk 10 mortars - the ASW armament being the entire reason the class exists.",
+   "anchor": "speed:2.55, turn:1.7, sight:5.8, r:17, mass:0, weapons:[\"w_e50_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "speed:2.55, turn:1.7, sight:5.8, r:17, mass:0, weapons:[\"w_e50_gbr_corvette\",\"asw_limbo\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e50_destroyer, HMS Daring, commissioned 8 March 1952. Two faults in one field: the desc on this very row says \"three twin 4.5in Mk 6 turrets\" while the loadout said \"Three 127mm/54 Mk 42 single mounts\", and the Mk 42 did not enter American service until 1955, three years after this hull's own service date. Left gun-only on purpose: the Daring was built as a gun destroyer and I will not assert an ASW mortar fit I cannot pin down ship by ship.",
+   "anchor": "sight:6.6, r:20, mass:0, weapons:[\"w_e50_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "sight:6.6, r:20, mass:0, weapons:[\"w_e50_gbr_destroyer\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e50_cruiser, HMS Swiftsure, commissioned 22 June 1944. Carried the Des Moines-class nine-gun 8in autoloader, the heaviest cruiser battery the United States ever built, while its own desc says \"Triple 6in turrets\". Britain laid down no 8in cruiser after 1928 and had none in service. Real fit: nine 6in BL Mk XXIII in three hand-worked triples, with no anti-air role - hence air:0, which is the honest difference between this ship and the Tiger that follows it.",
+   "anchor": "speed:1.75, turn:0.9, sight:7.0, r:23, mass:0, weapons:[\"w_e50_nato_cruiser\"]",
+   "exactCount": 1,
+   "newCode": "speed:1.75, turn:0.9, sight:7.0, r:23, mass:0, weapons:[\"w_e50_gbr_cruiser\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e60_corvette, HMS Leander, commissioned 27 March 1963. Carried an American single 5in/54 Mk 42 while its own desc says \"A twin 4.5in forward\", and had no anti-submarine weapon on a hull with sonar 5.0. Real fit: one twin 4.5in QF Mk 6 forward, one Limbo Mk 10 aft, a Wasp HAS.1 with a homing torpedo.",
+   "anchor": "sight:6.8, r:17, mass:0, weapons:[\"w_e60_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "sight:6.8, r:17, mass:0, weapons:[\"w_e60_gbr_corvette\",\"asw_limbo\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e60_destroyer, HMS Devonshire, commissioned 15 November 1962. A unit whose full name is \"County-class guided missile destroyer\" had no missile and could not engage an aircraft. Sea Slug is the ship - six thousand tonnes built round one twin launcher and a magazine running most of the hull - and its limitations belong in its statistics rather than in its absence, which is why sam_seaslug carries acc 0.58, reload 11.0 and intercept 1.05. No Sea Cat and no Limbo added: Sea Cat has no undisputed Falklands kill, and I could not verify a Limbo fit on this class - the County's anti-submarine weapon was its Wessex.",
+   "anchor": "sight:7.6, r:20, mass:0, weapons:[\"w_e60_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "sight:7.6, r:20, mass:0, weapons:[\"w_e60_gbr_destroyer\",\"sam_seaslug\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e60_cruiser, HMS Tiger, commissioned 18 March 1959. Carried a weapon named \"Terrier and Talos SAM launchers\" - two American missiles the Royal Navy never operated in any ship in any year - implemented as a gun with tgt air:0, so it was not even a SAM. Real fit: two twin 6in QF Mk N5 and three twin 3in/70 Mk 6, automatic, dual-purpose, and famously unreliable.",
+   "anchor": "speed:1.82, turn:0.9, sight:8.2, r:23, mass:0, weapons:[\"w_e60_nato_cruiser\"]",
+   "exactCount": 1,
+   "newCode": "speed:1.82, turn:0.9, sight:8.2, r:23, mass:0, weapons:[\"w_e60_gbr_cruiser\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e80_corvette, HMS Broadsword, commissioned 3 May 1979. Carried the Oliver Hazard Perry's Mk 13 launcher with SM-1 and Harpoon while its own desc says \"The first Royal Navy escort designed with no medium gun at all - two Sea Wolf launchers, four Exocet and two Lynx\". The new loadout has NO GUN, deliberately: the missing 4.5in is the defining fact about the class, it is why the Type 21s and Type 42s took the Falklands gun line instead, and the absence should be visible rather than papered over with an American mount. Sting Ray rather than a Mk 46 because the torpedo entered British service in 1983, inside this era window.",
+   "anchor": "sight:8.2, r:17, mass:0, weapons:[\"w_e80_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "sight:8.2, r:17, mass:0, weapons:[\"sam_seawolf\",\"ssm_exocet38\",\"asw_stingray\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e80_destroyer, HMS Sheffield, commissioned 16 February 1975. Carried two American 5in/54 Mk 45 and no Sea Dart, on the class whose own desc ends \"Sea Dart also shot down more aircraft than anything else in the British inventory that year, which is the whole argument about this class in one sentence\". Real fit: one 4.5in Mk 8, twin Sea Dart GWS.30 with 22 rounds, and no close-in weapon system - which the desc also says and which the loadout should now reflect by having no CIWS while the Batch 3 below does.",
+   "anchor": "sight:9.0, r:20, mass:0, weapons:[\"w_e80_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "sight:9.0, r:20, mass:0, weapons:[\"navgun_76\",\"sam_seadart\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e80_carrier, HMS Invincible, commissioned 11 July 1980. The game gave her the Phalanx she did not have in 1980-82 and withheld the Sea Dart she did have. She commissioned with a twin-arm GWS.30 launcher and 22 rounds on the forecastle; Phalanx arrived in the 1982-83 post-Falklands refit, part-way through this era window, so both belong on an e80 hull. Sea Dart came out in the 1999 refit to lengthen the flight deck.",
+   "anchor": "sight:10.4, r:30, mass:0, weapons:[\"w_e80_nato_carrier\"]",
+   "exactCount": 1,
+   "newCode": "sight:10.4, r:30, mass:0, weapons:[\"sam_seadart\",\"ciws_phalanx\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e90_corvette, HMS Norfolk, commissioned 1 June 1990. The gun is already right - NAVGUN turns w_e90_nato_corvette into the 4.5in Mk 8 - so it is kept and three systems are appended instead. The desc names \"a 4.5in Mk 8, Sea Wolf, Harpoon and a Lynx\" and three of the four were missing, and the hull carried sonar 8.4 with nothing to shoot at a submarine with. Real fit: 32-cell vertical Sea Wolf GWS.26, two quad Harpoon Block 1C from 1994, Sting Ray from the Magazine Torpedo Launch System.",
+   "anchor": "sight:8.9, r:17, mass:0, weapons:[\"w_e90_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "sight:8.9, r:17, mass:0, weapons:[\"w_e90_nato_corvette\",\"sam_seawolf\",\"ssm_harpoon\",\"asw_stingray\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e90_destroyer, HMS Manchester, commissioned 16 December 1982. The worst single line in this fleet: a weapon named \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomahawk\" on a British Type 42 - an Arleigh Burke's magazine, a missile the Royal Navy never bought, and a false claim of surface-launched land attack that Britain has never had in any ship in any year. Real fit: one 4.5in Mk 8, twin Sea Dart GWS.30, two Phalanx - which the desc itself says the Batch 3 was given and the earlier hulls went to war without. Sea Dart served until HMS Edinburgh paid off on 6 June 2013.",
+   "anchor": "sight:9.8, r:20, mass:0, weapons:[\"w_e90_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "sight:9.8, r:20, mass:0, weapons:[\"navgun_76\",\"sam_seadart\",\"ciws_phalanx\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e90_carrier, HMS Illustrious with Sea Harrier FA2. The Phalanx it already has is correct for the 1990s; what is missing is the Sea Dart launcher, which the Invincible class kept until the refits of 1999-2000, i.e. for most of this era window. Appended rather than replaced so the close-in gun stays.",
+   "anchor": "sight:11.2, r:30, mass:0, weapons:[\"w_e90_nato_carrier\"]",
+   "exactCount": 1,
+   "newCode": "sight:11.2, r:30, mass:0, weapons:[\"w_e90_nato_carrier\",\"sam_seadart\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e00_corvette, the Type 23 with Sonar 2087, in service 2006. Carried \"One 57mm Mk 110\" - the Bofors gun of the American Littoral Combat Ship, which no British warship has ever mounted - and had the second-highest sonar figure of any surface ship in the game (10.6) with nothing that could attack a submarine. Real fit in that decade: 4.5in Mk 8, 32-cell Sea Wolf GWS.26, eight Harpoon Block 1C, Sting Ray from the MTLS tubes. This is the hull the whole British naval identity rests on and it should be able to use its sensor.",
+   "anchor": "sight:9.4, r:17, mass:0, weapons:[\"w_e00_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "sight:9.4, r:17, mass:0, weapons:[\"navgun_76\",\"sam_seawolf\",\"ssm_harpoon\",\"asw_stingray\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "gbr_e00_destroyer, HMS Daring, commissioned 23 July 2009 - the finding the brief asked about directly. The best air-defence ship in Europe had tgt air:0 and could not engage an aircraft, while carrying an American Mk 45 it has never mounted. The loadout becomes identical to the e20 destroyer_b because it is identically the same ship: 4.5in Mk 8 Mod 1, Aster 30 and Aster 15 in 48 Sylver A50 cells under SAMPSON at 27 metres. No anti-ship missile and no torpedo, both correct - she went to sea with no SSM at all for fourteen years, and the Magazine Torpedo Launch System was designed in and left out, so her ASW is the embarked Merlin and not the ship.",
+   "anchor": "sight:11.2, r:20, mass:0, weapons:[\"w_e00_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "sight:11.2, r:20, mass:0, weapons:[\"navgun_76\",\"sam_aster30\",\"sam_aster15\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Correct the block header, which currently justifies the defect rather than describing it. It claims a `w_e50_gbr_corvette` would dereference undefined and throw - but 66 literal `w_e**_gbr_*` rows already exist in this same file for the British land and air forces, so the namespace is in daily use and the only real requirement is that the row be written. Leaving the comment as it stands would tell the next editor that the American weapon ids are a hard constraint when they are simply what nobody has replaced yet.",
+   "anchor": "   Every hull here points at the same-era `w_e**_nato_<role>` weapon, and that\n   is deliberate rather than lazy: those ids are 784 LITERAL rows at the head of\n   this file, not generated, so a British corvette invented with a\n   `w_e50_gbr_corvette` would dereference undefined on its first target\n   evaluation and throw.",
+   "exactCount": 1,
+   "newCode": "   A hull here points at the same-era `w_e**_nato_<role>` weapon ONLY where the\n   ordnance is not the identity. Those ids are literal rows at the head of this\n   file rather than generated, so a British row has to be WRITTEN before it can\n   be referenced - but writing one is ordinary practice, not a hazard: this file\n   already carries 66 literal `w_e**_gbr_*` rows for the army and the air force.\n   Where the weapon IS the ship - the twin 4.5in Mk 6, Sea Slug, Sea Dart, Sea\n   Wolf, Limbo, the 4.5in Mk 8, Sting Ray, Aster - it gets its own row, because\n   an American 5in/54 Mk 42 on a County or a Perry's Mk 13 launcher on a Type 22\n   is not an abstraction, it is a wrong answer."
+  }
+ ],
+ "proof": "HOW EACH CLAIM WAS ESTABLISHED - measured versus inferred, kept separate.\n\nMEASURED (jsc, on the unmodified repo). Bundle built as the brief specifies: a one-line stub `var window=this;` then js/util.js js/config.js js/facts.js js/rules.js js/eras.js js/heavyair.js js/generations.js, concatenated to /private/tmp/.../scratchpad/bundle.js, then probe scripts appended and run under /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc. Every loadout, weapon name, tgt mask, range, damage, hp, speed, sight, sonar, radar and service string quoted anywhere in this report was read out of the RESOLVED UNITS and WEAPONS tables after generations.js had run, never from a source line by eye. That is how the doubled clone key on gbr_e90_corvette (w_e90_nato_corvette__gbr_e90_corvette__gbr_e90_corvette) and the NAVGUN substitution to \"4.5in Mk 8 (114mm)\" were both caught - the source line says navgun/OTO and the runtime says Mk 8.\n\nMEASURED, counted rather than eyeballed:\n  - 26 gbr units with cat \"naval\" and layer \"sea\"; 34 gbr naval units in total including the boats.\n  - Capability matrix over those 26, derived from weapon tgt masks: before, air=12 sea=20 sub=2 ground=20. After the proposed edits, air=18 sea=20 sub=7 ground=19.\n  - Surface sonar ranking across all eight navies: corvette_b 11.0 first, gbr_e00_corvette 10.6 second, destroyer_n 9.5 third.\n  - 66 distinct `w_e**_gbr_*` literal weapon rows already present in eras.js, none of them naval. This is what falsifies the block comment's claim that a British naval weapon id cannot exist.\n  - Dangling reference sweep across the whole roster: 0 before, 0 after.\n  - Roster totals: 1132 units before and 1132 after (no unit invented); 1686 weapons before and 1718 after, the difference being 11 new authored rows plus the per-unit clones privateWeapon() makes for them.\n\nMEASURED, the proposed edits actually applied and run. A full copy of the repo was made to the scratchpad (never the repo itself - no file in /Users/hjiang/Desktop/redalert was written or modified at any point) and all 19 edits applied by a Python script that asserts str.count(anchor) == 1 before every substitution. All 19 anchors matched exactly once. On that patched tree, in a single shell invocation so there is no doubt which tree was being read:\n  - jsc resolved every British hull to the intended loadout. Spot checks: gbr_e00_destroyer -> \"4.5in Mk 8 (114mm)\" [g1a1s1u0] + \"Aster 30\" [g0a1s0u0 rng15.0] + \"Aster 15\" [g0a1s0u0 rng10.8]; gbr_e80_destroyer -> \"4.5in Mk 8 (114mm)\" + \"Sea Dart GWS.30\" [g0a1s0u0 rng12.8]; gbr_e80_corvette -> \"Sea Wolf, command line-of-sight\" + \"MM38 Exocet\" [g0a0s1u0 rng11.0] + \"Sting Ray Mod 1\" [g0a0s0u1], with no gun and therefore ground=0, which is the intended outcome; gbr_e60_destroyer -> \"Two twin 4.5in QF Mk 6\" + \"Sea Slug GWS.2, beam-riding\"; gbr_e60_cruiser -> \"Two twin 6in QF Mk N5 and three twin 3in/70\"; gbr_e50_cruiser -> \"Nine 6in BL Mk XXIII in three triples\".\n  - Behaviour suite, headless Chrome, foreground, --dump-dom on _behtest.html, element id=\"tout\": ==== 52 passed, 0 failed ==== , runtime errors: NONE.\n  - Load check, same Chrome line on index.html, element id=\"errbox\": empty string. Confirmed against a pristine copy in the same pass - both empty.\n  - Dangling reference sweep on the patched tree: dangling=0.\n  I attempted to re-run the behaviour suite three further times for a second confirmation and Chrome was terminated by the environment each time (exit 144, SIGTERM, after roughly ninety seconds) before it could print. The suite was progressing normally in each of those runs - the stderr shows the SwiftShader WebGL frames advancing - and the one run that completed did so on the fully patched tree. I am reporting 52/0 as measured, with the caveat that it rests on a single completed run rather than three.\n\nMEASURED from the source, quoted rather than paraphrased: the eras.js Royal Navy block header at line ~10150, the rules.js European-naval-ordnance block comment, the NAVGUN table in generations.js with its explicit gbr row and its stated precondition, and the DOMAIN table giving gbr naval:1.00.\n\nINFERRED, and flagged as such. The numeric stats I assigned to the five new weapons are judgement, not measurement: sam_seaslug at range 9.4 / dmg 150 / acc 0.58 / reload 11.0, sam_seadart at 12.8 / 200 / 0.80, sam_seawolf at 5.2 / 150 / 0.88, ssm_exocet38 at 11.0 / 210 / 0.80, asw_limbo at 2.4 / 165 / 0.62. They are set by their relationships to rows that already exist - Sea Dart between sam_area1 (10.6) and sam_aster30 (15.0) because it sits between a first-generation area SAM and a modern one; Sea Wolf just above sam_ram (4.6) because both are last-ditch point defence and Sea Wolf reaches slightly further; MM38 well below the 15.0 of MM40 Block 3 because the real gap is 42 km against 180. The intercept figures are likewise relative judgements: Sea Slug above 1.0 because a beam rider can be walked off its beam, Sea Wolf at 0.55 because it is hit-to-kill. The e50/e60 gun figures were set to sit consistently between the existing e50 and e80 naval gun rows.\n\nALSO INFERRED, and the reason for two deliberate omissions. I did not give the County class a Limbo because I could not establish that the class carried one - its anti-submarine weapon was the Wessex, and I would rather under-claim. I did not give the Daring class an ASW mortar for the same reason. Both ships are therefore left without anti-submarine capability, which may understate them slightly; that is the safer error here.\n\nWHAT I DELIBERATELY DID NOT TOUCH, so the owner knows the boundary: the American, French, German, Russian, Chinese, Korean and Taiwanese hulls; every British submarine and both SSBNs; the shared carrier air-wing weapon rows (they belong to every faction and the British air-group numbers being American is recorded as a minor finding rather than edited); the shared `hmg` and `torpedo` rows used by the patrol boats of four navies; and the NAVY refit table in rules.js, which has no British rows at all and therefore leaves the e20 hulls' authored loadouts intact.",
+ "risks": [
+  "The behaviour suite passed 52/0 on the patched tree in one completed run. Three attempted re-runs were killed by the environment at about ninety seconds (exit 144, SIGTERM) before printing, so the result rests on a single confirmation rather than three. Re-run it before committing.",
+  "gbr_e80_corvette (Type 22 Broadsword) comes out of this with tgt ground:0 across its whole loadout - it can no longer engage a land target at all. That is historically right (the class was the first RN escort with no medium gun, which is why it never took a Falklands gun-line turn) but it is a real gameplay change: a player who builds e80 British frigates loses shore bombardment from that hull. Check the AI's build weighting does not now field a ship it cannot use against a coastal base.",
+  "Five new weapon rows and six new eras.js weapon rows mean eleven ids that did not exist before. The dangling sweep is clean and the game loads, but any code path that switches on a hard-coded weapon id list - sound selection, 3D launcher geometry, the threat tables - will fall through to a default for these. I checked js/warship_specs.js and it has NO gbr rows at all, so the 3D silhouettes for British hulls are already generic and the new launchers will not appear on the models; the loadout and the picture will disagree until someone writes the British WARSHIPS rows.",
+  "asw_limbo uses proj:\"arc\" with range 2.4 tiles, which is much shorter than any other anti-submarine weapon in the game (asw_rbu is 3.6, asw_stingray 6.4). That is deliberate and historically right - Limbo threw about a thousand yards and the ship had to steer over the contact - but it may prove so short in practice that the e50 and e60 frigates never actually get a shot, in which case the Whitby and Leander are effectively still unable to prosecute a submarine. Worth watching in a real game rather than in the loadout table.",
+  "sam_seaslug deliberately carries a poor accuracy (0.58) and an intercept of 1.05, i.e. worse than average on both axes. If the owner's balance pass reads every SAM as a strict upgrade over no SAM, the County will now be MORE dangerous than before rather than more accurate to its reputation. The honest model of Sea Slug is a system that mostly did not work, and the statistics say so, but only if combat.js actually lets a poor missile miss.",
+  "The five new rules.js rows sit in the European-naval-ordnance block, which is shared ground with the French and German hulls. ssm_exocet38 in particular is a French-built missile authored for British use; if a later French pass wants an MM38 for the 1970s Aviso or the Georges Leygues it should reuse this row rather than author a second one.",
+  "I proposed no change to the carrier air-wing weapon names (\"Air wing of ~90 aircraft\" on a British 1950s carrier, \"Air wing of 75+ aircraft\" on Queen Elizabeth). These are American figures on British decks and they are wrong by roughly a factor of two, but the rows are shared across every faction's carriers and fixing them properly is a separate cross-navy job. Flagging it so it is not silently inherited as correct.",
+  "This audit covered the British surface fleet only. Several of the shared weapon rows it exposes are broken for their OWN navy as well - w_e60_nato_cruiser is named \"Terrier and Talos SAM launchers\" but implemented as a gun with air:0, and w_e90_nato_destroyer is named for a Mk 41 farm and also has air:0. Those belong to the American pass, not this one, but whoever fixes them should know that my British edits stop referencing both rows, so the American hulls will be the only consumers left."
+ ]
+}

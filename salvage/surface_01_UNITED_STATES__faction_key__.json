@@ -1,0 +1,329 @@
+{
+ "navy": "UNITED STATES (faction key `nato`) \u2014 SURFACE FLEET ONLY. 26 surface hulls across six eras (35 naval defs minus 9 sub-layer boats owned by the other workflows). Roles present: patrol, corvette (= DE/FF/FFG/LCS), destroyer, cruiser, carrier, missileboat. No amphibious warfare ship, no minelayer/minesweeper, no Iowa, no Zumwalt, no Essex/Baltimore, no Leahy/Belknap/Virginia CGN, no Kidd \u2014 the shared `both`-faction lst / navminelayer / minesweeper / oiler / repair_sea hulls are the only amphib/MCM/logistics afloat and they are common to all eight factions.\n\nEverything below was RESOLVED under jsc from a concatenation of stub + util.js + config.js + facts.js + rules.js + eras.js + heavyair.js + generations.js, i.e. after generations.js rewrites. Measured, not read off the source line. A separate grep confirmed no file loaded after generations.js writes `.weapons`, `WEAPONS[...]` or `Object.assign(UNITS...)`, so that resolution is final.\n\nTwo measured facts frame the whole audit:\n(1) `nato`'s DOMAIN row in generations.js is `naval:1.00` and every other multiplier 1.00, so \u2014 uniquely among the eight factions \u2014 no American unit ever gets a privateWeapon() clone from the domain pass. The source line in eras.js IS the final answer for this faction, and only this faction.\n(2) Every generated naval weapon id `w_<era>_nato_<role>` is CARRIED BY 2-4 NATIONS. w_e90_nato_destroyer is on the Arleigh Burke, the Type 42 Batch 3, the Cassard and the Brandenburg. So no American ship can be corrected by editing its own weapon without renaming European ones.",
+ "inventory": "RESOLVED INVENTORY \u2014 26 US surface hulls, id | era(from/to) | name | service | hp/speed/sight | sensors | resolved weapons with tgt masks.\n\n=== PATROL ===\nboat_n | e50->(open) | Mk VI Patrol Boat | svc n/a | hp520 sp3.4 sight8.5 | sonar0 radar- radarQ4 rcs0.30 vls0 helo0\n  hmg \"12.7mm HMG\" tgt{ground,sea} bullet r5.4 d13 acc0.66\n  (role `patrol` is in rules.js ERA_TIMELESS, so from:\"e50\" is stamped deliberately; unitFor returns boat_n for ALL SIX eras)\n\n=== CORVETTE / DE / FF / FFG / LCS ===\nnato_e50_corvette | e50/e50 | Dealey DE (USS Dealey DE-1006) | svc 1954 | hp600 sp2.49 sight6.3 | sonar3.6 radar-NONE ciws0.32 rcs0.6\n  w_e50_nato_corvette \"Two twin 76mm/50 Mk 33\" tgt{ground,air,sea} shell r5.9 d22 acc0.53   [SHARED with gbr_e50_corvette, fra_e50_corvette]\nnato_e60_corvette | e60/e60 | Knox FF (FF-1052) | svc 1969 | hp735 sp2.61 sight6.7 | sonar4.2 radar-NONE ciws0.36 rcs0.6\n  w_e60_nato_corvette \"One 127mm/54 Mk 42\" tgt{ground,air,sea} shell r6.6 d29 acc0.59   [SHARED with deu/fra/gbr e60 corvettes]\nnato_e80_corvette | e80/e80 | Oliver Hazard Perry FFG (FFG-7) | svc 1977 | hp910 sp2.76 sight8.0 | sonar5.0 radar-NONE ciws0.40 rcs0.6\n  w_e80_nato_corvette \"Mk 13 launcher for SM-1MR and Harpoon\" tgt{ground,air,sea} shell r7.3 d38 acc0.66   [SHARED with fra/gbr e80]\nnato_e90_corvette | e90/e90 | Oliver Hazard Perry FFG | svc 1977 | hp1025 sp2.84 sight8.7 | sonar5.5 radar-NONE ciws0.42 rcs0.1\n  w_e90_nato_corvette \"OTO 76mm Super Rapid\" tgt{ground,air,sea} shell r7.7 d45 acc0.70   [SHARED with fra/gbr e90]\nnato_e00_corvette | e00/e00 | Littoral Combat Ship (LCS-1 Freedom / LCS-2 Independence) | svc 2008 | hp1105 sp2.87 sight9.2 | sonar5.8 radar-NONE ciws0.44 rcs0.6\n  w_e00_nato_corvette \"One 57mm Mk 110\" tgt{ground,air,sea} shell r7.9 d49 acc0.73   [SHARED with deu/fra/gbr e00]\ncorvette_n | e20->(open) | LCS Corvette | svc n/a | hp1150 sp2.9 sight16.4 | sonar6.0 radar-NONE radarQ14 ciws0.45 rcs0.10 vls8 helo1\n  navgun_76 \"OTO 76mm Super Rapid\" tgt{ground,air,sea} shell r8.0 d52 acc0.74\n  ssm_nsm \"Naval Strike Missile\" tgt{ground,sea} missile r16 d280 acc0.90\n  ciws_phalanx \"Mk 15 Phalanx CIWS\" tgt{air} tracer r3.2 d60 acc0.80\n\n=== DESTROYER ===\nnato_e50_destroyer | e50/e50 | Forrest Sherman DD (DD-931) | svc 1955 | hp1090 sp2.06 sight8.9 | sonar5.7 radar12 ciws0.52 rcs0.6\n  w_e50_nato_destroyer \"Three 127mm/54 Mk 42 single mounts\" tgt{ground,sea} shell r8.5 d53 acc0.58   [SHARED with deu/fra/gbr e50 destroyers]\nnato_e60_destroyer | e60/e60 | Charles F. Adams DDG (DDG-2) | svc 1960 | hp1345 sp2.16 sight9.8 | sonar6.7 radar14 ciws0.58 rcs0.6\n  w_e60_nato_destroyer \"Two 127mm/54 Mk 42\" tgt{ground,sea} shell r9.4 d70 acc0.64   [SHARED with deu/fra/gbr e60]\nnato_e80_destroyer | e80/e80 | Spruance DD (DD-963) | svc 1975 | hp1660 sp2.28 sight10.9 | sonar8.0 radar16.8 ciws0.64 rcs0.6\n  w_e80_nato_destroyer \"Two 127mm/54 Mk 45\" tgt{ground,sea} shell r10.5 d93 acc0.71   [SHARED with deu/fra/gbr e80]\nnato_e90_destroyer | e90/e90 | Arleigh Burke DDG (DDG-51) | svc 1991 | hp1870 sp2.35 sight11.4 | sonar8.7 radar18.4 ciws0.68 rcs0.55\n  w_e90_nato_destroyer \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha\" tgt{ground,sea} proj=SHELL speed720 r11.0 d108 acc0.75   [SHARED with deu/fra/gbr e90]\nnato_e00_destroyer | e00/e00 | Arleigh Burke Flight IIA | svc 2000 | hp2015 sp2.38 sight11.8 | sonar9.2 radar19.4 ciws0.71 rcs0.6\n  w_e00_nato_destroyer \"Mk 45 Mod 4 127mm\" tgt{ground,sea} shell r11.4 d119 acc0.78   [SHARED with deu/fra/gbr e00]\ndestroyer_n | e20->(open) | Arleigh Burke DDG, DDG-51 Flight IIA | hp2100 sp2.4 sight14.9 | sonar9.5 radar20 radarQ34 ciws0.72 rcs0.55 vls96 helo2\n  navgun_mk45 \"Mk 45 Mod 4 127mm\" tgt{ground,sea} shell r11.5 d125 acc0.80\n  sam_sm2 \"SM-2/SM-6 Standard\" tgt{air} missile r14.5 d185 acc0.90\n  ssm_harpoon \"RGM-84 Harpoon\" tgt{ground,sea} missile r14 d265 acc0.86\n  asw_mk54 \"Mk 54 lightweight torpedo\" tgt{sub} torpedo r6.5 d215 acc0.88\n  ciws_phalanx \"Mk 15 Phalanx CIWS\" tgt{air} tracer r3.2 d60 acc0.80\n\n=== CRUISER ===\nnato_e50_cruiser | e50/e50 | Des Moines CA (CA-134) | svc 1948 | hp1510 sp1.72 sight8.9 | sonar5.4 radar13.2 ciws0.56 rcs0.85\n  w_e50_nato_cruiser \"Nine 203mm/55 Mk 16 rapid-fire guns in thr\" tgt{ground,sea} shell r8.5 d53 acc0.58   [SHARED with gbr_e50_cruiser Swiftsure CL, fra_e50_cruiser De Grasse CL]\nnato_e60_cruiser | e60/e60 | Long Beach CGN (CGN-9) | svc 1961 | hp1855 sp1.8 sight9.8 | sonar6.3 radar15.4 ciws0.62 rcs0.85\n  w_e60_nato_cruiser \"Terrier and Talos SAM launchers\" tgt{ground,sea} proj=SHELL speed720 r9.4 d70 acc0.64   [SHARED with gbr_e60_cruiser Tiger CL, fra_e60_cruiser Colbert CL]\nnato_e80_cruiser | e80/e80 | Ticonderoga CG (CG-47) | svc 1983 | hp2290 sp1.9 sight10.9 | sonar7.6 radar18.5 ciws0.69 rcs0.85\n  w_e80_nato_cruiser \"Two 127mm/54 Mk 45\" tgt{ground,sea} shell r10.5 d93 acc0.71   [SHARED with fra_e80_cruiser Colbert (Exocet)]\nnato_e90_cruiser | e90/e90 | Ticonderoga CG (CG-47 class) | svc 1983 | hp2580 sp1.96 sight11.0 | sonar8.3 radar20.2 ciws0.73 rcs0.85\n  w_e90_nato_cruiser \"Mk 45 Mod 4 127mm\" tgt{ground,sea} shell r11.0 d108 acc0.75   [nato-exclusive \u2014 the ONLY nato-exclusive generated naval weapon in the fleet]\nnato_e00_cruiser | *** DOES NOT EXIST *** \u2014 unitFor(\"nato\",\"cruiser\",\"e00\") returns NONE\ncruiser_n | e20->(open) | Ticonderoga CG, CG-47 | hp2900 sp2.0 sight14.9 | sonar9.0 radar22 radarQ40 ciws0.78 rcs0.85 vls122 helo2 shoreBombard:true\n  navgun_mk45 / sam_sm2 / ssm_harpoon / asw_mk54 / ciws_phalanx \u2014 identical weapon list to destroyer_n\n\n=== CARRIER ===\nnato_e50_carrier | e50/e50 | Forrestal CVA (CVA-59) | svc 1955 | hp2185 sp1.38 sight8.4 | sonar3 radar10.8 ciws0.47 rcs2.6 carrier:4\n  w_e50_nato_carrier \"Air wing of ~90 aircraft\" tgt{air} tracer r2.4 d25 acc0.58   [SHARED with gbr/fra e50 carriers]\nnato_e60_carrier | e60/e60 | Enterprise CVN (CVN-65) | svc 1961 | hp2690 sp1.44 sight9.8 | sonar3.5 radar12.6 ciws0.52 rcs2.6 carrier:4\n  w_e60_nato_carrier \"Air wing of ~90 aircraft\" tgt{air} tracer r2.6 d34 acc0.64\nnato_e80_carrier | e80/e80 | Nimitz CVN (CVN-68) | svc 1975 | hp3320 sp1.52 sight11.8 | carrier:4\n  w_e80_nato_carrier \"Mk 15 Phalanx CIWS\" tgt{air} tracer r2.9 d44 acc0.71\nnato_e90_carrier | e90/e90 | Nimitz CVN | svc 1975 | hp3740 sp1.57 sight12.9 | carrier:4\n  w_e90_nato_carrier \"Mk 15 Phalanx CIWS\" tgt{air} tracer r3.1 d52 acc0.75\nnato_e00_carrier | e00/e00 | Ronald Reagan CVN (CVN-76, Nimitz class) | svc 2003 | hp4030 sp1.58 sight13.6 | carrier:4\n  w_e00_nato_carrier \"Air wing of 75+ aircraft\" tgt{air} tracer r3.2 d57 acc0.78\ncarrier_n | e20->(open) | Gerald R. Ford CVN (CVN-78) | hp4200 sp1.6 sight14 | sonar5 radar18 radarQ20 ciws0.65 rcs2.6 carrier:4 helo2\n  ciws_phalanx \"Mk 15 Phalanx CIWS\" tgt{air} tracer r3.2 d60 acc0.80\n\n=== MISSILE BOAT ===\nnato_e80_missileboat | e80/e90 | Pegasus PHM (PHM-1) | svc 1977 | hp710 sp2.85 sight13.1 | sonar0 rcs0.6\n  w_e80_nato_missileboat \"Eight RGM-84 Harpoon\" tgt{ground,sea} missile r12.7 d196 acc0.77\n  (source `to` is e80; purgePhantomUnits() extended it to e90 after deleting the \"(none)\" nato_e90_missileboat row \u2014 mechanism working correctly)\nmissileboat_n | e20->(open) | Harpoon Missile Boat | hp900 sp3.0 sight14.4 | sonar0 radarQ9 rcs0.28, magazine {ssm_harpoon:8}\n  ssm_harpoon \"RGM-84 Harpoon\" tgt{ground,sea} missile r14 d265 acc0.86\n  ciws_phalanx \"Mk 15 Phalanx CIWS\" tgt{air} tracer r3.2 d60 acc0.80\n\n=== ERA AVAILABILITY, as unitFor() actually answers it ===\npatrol      e50..e20 all = boat_n (Mk VI)\ncorvette    e50 Dealey | e60 Knox | e80 Perry | e90 Perry | e00 LCS | e20 corvette_n\ndestroyer   e50 F.Sherman | e60 Adams | e80 Spruance | e90 Burke | e00 Burke IIA | e20 destroyer_n\ncruiser     e50 Des Moines | e60 Long Beach | e80 Tico | e90 Tico | e00 **NONE** | e20 cruiser_n\ncarrier     e50 Forrestal | e60 Enterprise | e80 Nimitz | e90 Nimitz | e00 Reagan | e20 Ford\nmissileboat e50 NONE | e60 NONE | e80 Pegasus | e90 Pegasus | e00 NONE | e20 missileboat_n\n\n=== AREA AIR DEFENCE, measured against the actual mechanic ===\ncombat.js areaSam() (line 212-248) counts a unit as an area air-defence host only if it carries a weapon with `tgt.air` AND `proj === \"missile\"`. Of the 26 US surface hulls, exactly TWO pass: cruiser_n and destroyer_n, both e20-roster. Zero in e50, e60, e80, e90, e00.\nCross-checked across all 8 factions and all 6 eras: of 176 sea-layer hulls in the game, the only era-roster ships that pass are pact_e60/e90/e00_carrier \u2014 and they pass by accident, because the Moskva's weapon \"14 x Ka-25 ASW helicopters\" was authored as proj:\"missile\", tgt:{air}. There is no era-roster ship in the game, of any navy, that was deliberately given fleet air defence.\n\n=== LAND ATTACK, measured ===\nEvery hull has SOME ground:1 weapon because every naval gun carries ground:1 \u2014 naval gunfire is modelled and modelled everywhere. The land-attack MISSILE picture is: the only ground-capable guided rounds on a US surface ship are ssm_harpoon (r14), ssm_nsm (r16) and w_e80_nato_missileboat (r12.7). `tlam_n` \"BGM-109 Tomahawk\" (r19, d320) EXISTS in the weapon table and is carried by exactly one American hull in the whole game: ssgn_n, the converted Ohio. No Burke, no Ticonderoga, no Spruance, in any era.",
+ "findings": [
+  {
+   "severity": "fatal",
+   "kind": "area-air-defence",
+   "unit": "nato_e80_cruiser, nato_e90_cruiser, nato_e90_destroyer, nato_e00_destroyer",
+   "whatTheGameHas": "MEASURED: each carries exactly one weapon, a gun with tgt {ground:1, air:0, sea:1}. nato_e80_cruiser (USS Ticonderoga CG-47, service 1983) = 'Two 127mm/54 Mk 45'. nato_e90_destroyer (USS Arleigh Burke DDG-51, service 1991) = a weapon LITERALLY NAMED '90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha' whose proj is 'shell' at 720 m/s and whose tgt mask has air:0. combat.js areaSam() requires tgt.air && proj==='missile'; not one of these four qualifies. An Aegis cruiser in this game cannot fire at an aircraft at all.",
+   "whatIsReal": "CG-47 commissioned 22 Jan 1983 with SPY-1A and two Mk 26 twin launchers holding 68 SM-2MR \u2014 the first ship in the world able to track hundreds of contacts and guide many missiles at once. CG-52 Bunker Hill (1986) replaced the arms with 122 Mk 41 cells. DDG-51 commissioned 4 July 1991 with SPY-1D and 90 Mk 41 cells. Fleet area air defence from 1983 is the single most important capability line in this navy and the game draws none of it before the e20 roster.",
+   "fix": "Append a real area SAM to each hull. The mechanism already exists and works \u2014 cruiser_n/destroyer_n use sam_sm2 and register correctly. Edits E7, E9, E10, E11 below add sam_sm2mr (a new e80/e90-honest RIM-66 SM-2MR) and sam_sm2 (e00), plus the Harpoon, ASROC-class torpedo and Phalanx each hull actually carried."
+  },
+  {
+   "severity": "fatal",
+   "kind": "desc-versus-loadout",
+   "unit": "nato_e60_cruiser (USS Long Beach CGN-9)",
+   "whatTheGameHas": "MEASURED: one weapon, id w_e60_nato_cruiser, NAME 'Terrier and Talos SAM launchers', proj 'shell', speed 720, range 9.4, tgt {ground:1, air:0, sea:1}. A weapon whose own name is two surface-to-air missile systems, which cannot engage air. The unit desc adds 'the first all-missile cruiser - built with no guns at all until Kennedy reportedly objected'.",
+   "whatIsReal": "CGN-9 commissioned 9 Sep 1961 with two Mk 10 twin Terrier launchers forward and one Mk 12 Talos aft, and NO guns whatsoever until two 5in/38 were added in 1962-63. Its entire reason for existing was long-range fleet air defence. This is the exact defect class found on the Los Angeles/Seawolf/Virginia: the prose names a capability the weapon list does not deliver.",
+   "fix": "Edit E3: append the new rules.js weapon sam_terrier ('RIM-2 Terrier / RIM-8 Talos', r10.2, proj missile, tgt air) to the unit. The gun row is left alone because w_e60_nato_cruiser is also carried by gbr_e60_cruiser (Tiger CL) and fra_e60_cruiser (Colbert) \u2014 renaming it there is a separate, wider fix."
+  },
+  {
+   "severity": "fatal",
+   "kind": "land-attack",
+   "unit": "cruiser_n, destroyer_n (and every era Burke/Ticonderoga/Spruance)",
+   "whatTheGameHas": "MEASURED: no American surface warship in any of the six eras carries tlam_n. cruiser_n = navgun_mk45, sam_sm2, ssm_harpoon, asw_mk54, ciws_phalanx. destroyer_n = the identical five. Meanwhile js/facts.js line 20 states cruiser_n's armament as '122-cell Mk 41 VLS (SM-2, Tomahawk, VLA)...' and line 23 states destroyer_n's as '96-cell Mk 41 VLS (SM-2/SM-6/ESSM/Tomahawk/VLA)'. The weapon tlam_n 'BGM-109 Tomahawk' (r19, d320, tgt {ground,sea}) is defined and works \u2014 it is carried by exactly one unit in the game, ssgn_n.",
+   "whatIsReal": "The first Tomahawk fired from a US surface ship was from USS Merrill (DD-976) in 1983 using armoured box launchers; ABLs went onto eight Spruances and onto the reactivated Iowas from 1983-84. The first Mk 41 VLS Tomahawk ship was USS Bunker Hill (CG-52) in 1986. On 17 Jan 1991 Bunker Hill, San Jacinto and Paul F. Foster opened Desert Storm with them. Since then TLAM from a Mk 41 farm has been the most-fired American weapon there is, and it is the thing a Burke or a Ticonderoga is FOR against a land target. The game's own facts table promises it and the loadout does not have it.",
+   "fix": "Edits E6, E9, E10, E11, E14 add tlam_n to nato_e80_destroyer (Spruance, ABL from 1983), nato_e90_cruiser, nato_e90_destroyer, nato_e00_destroyer, and to cruiser_n/destroyer_n in the rules.js NAVY table. Deliberately NOT added to nato_e80_cruiser: CG-47 to CG-51 had Mk 26 arm launchers that could not fire Tomahawk, and CG-47 is the hull the unit names."
+  },
+  {
+   "severity": "major",
+   "kind": "area-air-defence",
+   "unit": "nato_e60_destroyer (USS Charles F. Adams DDG-2)",
+   "whatTheGameHas": "MEASURED: one weapon 'Two 127mm/54 Mk 42', tgt {ground:1, air:0, sea:1}. Its own desc reads 'The first US destroyers designed from the keel up around a surface-to-air missile.'",
+   "whatIsReal": "DDG-2 commissioned 10 Sep 1960 with a Mk 11 twin Tartar launcher aft, two 5in/54 Mk 42 and ASROC. RIM-24 Tartar reached the fleet on this class. The ship exists because of a SAM the game does not give it.",
+   "fix": "Edit E4: append sam_tartar (new, 'RIM-24 Tartar', r8.4, proj missile, tgt air)."
+  },
+  {
+   "severity": "major",
+   "kind": "desc-versus-loadout",
+   "unit": "nato_e80_destroyer (USS Spruance DD-963)",
+   "whatTheGameHas": "MEASURED: one weapon 'Two 127mm/54 Mk 45', tgt {ground,sea}. Its own desc: 'the empty space then absorbed vertical launch cells and Tomahawk, making it the most heavily armed destroyer afloat by the end of the decade.' No VLS field, no Tomahawk, no air defence of any kind, no ASW weapon on the class built to do ASW.",
+   "whatIsReal": "DD-963 commissioned 20 Sep 1975, deliberately under-armed with growth margin. Sea Sparrow BPDMS from commissioning, Phalanx from 1980, Harpoon from 1981, ABL Tomahawk from 1983 on eight hulls, 61-cell Mk 41 on twenty-four hulls from 1986, ASROC and Mk 32 tubes throughout, two SH-60B from 1984. By 1989 it was exactly what its own card says it was.",
+   "fix": "Edit E6: append sam_seasparrow (new, point defence \u2014 explicitly NOT an area system), ssm_harpoon, asw_mk54, tlam_n, ciws_phalanx."
+  },
+  {
+   "severity": "major",
+   "kind": "desc-versus-loadout",
+   "unit": "nato_e80_corvette and nato_e90_corvette (Oliver Hazard Perry FFG-7)",
+   "whatTheGameHas": "MEASURED: nato_e80_corvette carries ONE weapon, named 'Mk 13 launcher for SM-1MR and Harpoon', proj 'shell', r7.3, tgt {ground,air,sea} \u2014 a launcher modelled as a gun, so no SM-1, no Harpoon, no area air defence. nato_e90_corvette is worse: its single weapon is a plain gun 'OTO 76mm Super Rapid' with no missile at all, so the SAME HULL LOSES its air-defence weapon between the 1980s and the 1990s. Its desc explains that the Mk 13 was removed \u2014 but in 2003, which is the e00 period, not e90.",
+   "whatIsReal": "FFG-7 commissioned 17 Dec 1977 with a Mk 13 single-arm launcher, a 40-round magazine of SM-1MR and Harpoon, one 76mm Mk 75 OTO Melara Compact (NOT the Super Rapid), one Phalanx, and two LAMPS helicopters. The Mk 13 came out class-wide in 2003-2004. Through the whole of the 1980s and 1990s the Perry is the US Navy's numerous escort and it has a missile.",
+   "fix": "Edits E5 and E8: append sam_sm1, ssm_harpoon, ciws_phalanx to both. The e90 hull keeps them because the Mk 13 removal belongs to e00, exactly as its own desc dates it."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity",
+   "unit": "corvette_n (e20 LCS)",
+   "whatTheGameHas": "MEASURED: navgun_76 'OTO 76mm Super Rapid' + ciws_phalanx. Its own desc says 'a 57mm rapid-fire mount'. js/warship_specs.js line 172 draws it with gunCal:57. And the e00 version of the same ship, nato_e00_corvette, correctly carries a weapon named 'One 57mm Mk 110'. Three places in the codebase say 57mm and the loadout says 76mm Italian.",
+   "whatIsReal": "Both LCS variants mount the BAE Mk 110 57mm. Neither has a Phalanx gun: Freedom-class carries a 21-cell Mk 49 RAM launcher, Independence-class an 11-cell SeaRAM. This is precisely the complaint generations.js makes in its own NAVGUN comment \u2014 'every navy was firing the same Italian gun' \u2014 and the NAVGUN table has no nato row, so the American case it was written about went unfixed.",
+   "fix": "Edit E13: corvette_n weapons become [navgun_57, ssm_nsm, sam_ram]. Both replacement ids already exist in WEAPONS."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity",
+   "unit": "nato_e00_carrier and carrier_n (js/warship_specs.js)",
+   "whatTheGameHas": "MEASURED, a clean transposition. warship_specs.js line 158: nato_e00_carrier \u2014 the unit whose full name is 'USS Ronald Reagan (CVN-76), Nimitz class' and whose desc says in so many words 'The Gerald R. Ford does not exist yet in this period - she was not commissioned until 2017' \u2014 is given designation:'CVN-78 Gerald R. Ford class', len:317, beam:78. Line 188: carrier_n \u2014 the unit whose full name is 'USS Gerald R. Ford (CVN-78)' \u2014 is given designation:'CVN-68 Nimitz', len:317, beam:40.8. The two rows have each other's ship, and the geometry followed: 78 m is the Ford's flight-deck width and 40.8 m is the Nimitz hull beam.",
+   "whatIsReal": "CVN-76 Ronald Reagan commissioned 12 July 2003, Nimitz class, 332.8 m, 40.8 m beam. CVN-78 Gerald R. Ford commissioned 22 July 2017, 337 m. The e00 roster explicitly and correctly refuses to have a Ford; the 3D spec table hands it one anyway.",
+   "fix": "Edit E15/E16: swap the two designations and put the right hull dimensions with each."
+  },
+  {
+   "severity": "major",
+   "kind": "anachronism",
+   "unit": "missileboat_n (e20 Harpoon Missile Boat)",
+   "whatTheGameHas": "MEASURED: missileboat_n, fac nato, from e20, cost 1500, carrying ssm_harpoon and ciws_phalanx, buildable in the present-day roster. warship_specs.js line 176 gives it designation:'PHM-1 Pegasus'. Meanwhile eras.js line 9414 contains nato_e90_missileboat named '(none)', full 'No US Navy missile craft after 1993', desc 'the US Navy chose deliberately never to operate missile boats again' \u2014 and rules.js purgePhantomUnits() correctly deletes it. And nato_e80_missileboat's own desc calls Pegasus 'the honest historical basis for the game's Harpoon Missile Boat'.",
+   "whatIsReal": "The six Pegasus-class hydrofoils decommissioned on 30 July 1993 and the US Navy has operated no missile boat since. unitFor('nato','missileboat') returns NONE for e00 \u2014 correct \u2014 and then missileboat_n for e20, which is the one era where it is most certainly wrong. The data records the gap in three places and the roster sells the capability anyway.",
+   "fix": "NO EDIT PROPOSED \u2014 this is an owner's call, and the obvious route is a trap. Renaming missileboat_n to '(none)' triggers purgePhantomUnits()'s fallback, which would find nato_e80_missileboat (from e80) and extend its `to` to e20, putting a 1977 hydrofoil in 2020. The clean fix is to delete the missileboat_n entry from rules.js outright, which leaves the US with Pegasus in e80-e90 and nothing after \u2014 exactly what the e90 placeholder says. It touches SHIP_RCS, SOFTKILL, FIXED_MAGAZINE, NAVY, warship_specs.js, units3d_final.js and spriteart.js, so it deserves its own pass."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity",
+   "unit": "every w_<era>_nato_<role> naval weapon (the IFV defect, at sea)",
+   "whatTheGameHas": "MEASURED by scanning eras.js for each id: w_e50_nato_carrier/corvette/cruiser are on 3 nations each, w_e50_nato_destroyer on 4, w_e60_nato_corvette on 4, w_e60_nato_cruiser on 3, w_e60_nato_destroyer on 4, w_e80_nato_destroyer on 4, w_e90_nato_corvette on 3, w_e90_nato_destroyer on 4, w_e00_nato_corvette on 4, w_e00_nato_destroyer on 4. Only w_e90_nato_cruiser is American-exclusive. Because the DOMAIN pass clones per-unit but COPIES THE NAME, HMS Tiger's main battery is displayed as 'Terrier and Talos SAM launchers'; HMS Manchester (Type 42 Batch 3), the Cassard and the Brandenburg all display '90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha'; the Daring, the Surcouf and the Fletcher-derived Z-1 all display 'Three 127mm/54 Mk 42 single mounts'; HMS Swiftsure and De Grasse both display 'Nine 203mm/55 Mk 16 rapid-fire guns'.",
+   "whatIsReal": "Tiger-class: two twin QF 6in Mk N5 and 3in/70. Type 42: one 4.5in Mk 8 and Sea Dart. Cassard: 100mm Mod 68 and SM-1MR. Brandenburg: 76mm OTO, Sea Sparrow VLS and two RAM mounts. This is the same defect as 'every IFV carried one 1983 American missile regardless of nation', reproduced across four navies at sea.",
+   "fix": "Structural, and outside this workflow's remit to change (it would rewrite British, French and German ships). RECORDED SO THE OWNER KNOWS. The consequence for THIS audit is a hard constraint that shaped every edit below: no American correction may touch a w_<era>_nato_<role> weapon's fields. Every edit is either an append to the American unit's own weapons array or a new American-only weapon in rules.js."
+  },
+  {
+   "severity": "major",
+   "kind": "area-air-defence",
+   "unit": "nato_e50_cruiser (Des Moines CA-134), nato_e50_destroyer (Forrest Sherman DD-931)",
+   "whatTheGameHas": "MEASURED: both carry a single weapon with tgt {ground:1, air:0, sea:1}. Neither can engage an aircraft. Note the internal contradiction: the SAME GUN, the 127mm/54 Mk 42, carries air:1 on nato_e60_corvette ('One 127mm/54 Mk 42') and air:0 on nato_e50_destroyer ('Three 127mm/54 Mk 42 single mounts'). Both cannot be right.",
+   "whatIsReal": "The Mk 42 is a dual-purpose mount \u2014 that is why the Navy bought it. Forrest Sherman commissioned 9 Nov 1955 with three of them plus four 3in/50. Des Moines commissioned 16 Nov 1948 with nine 8in/55 in the only fully automatic 8in turrets ever built, TWELVE 5in/38 in twin mounts and a heavy 3in/50 battery \u2014 an enormous anti-aircraft fit that is the whole reason a 1948 gun cruiser was still worth manning.",
+   "fix": "Edits E1 and E2. Des Moines gets aa_5in38 appended (the secondary battery, which is what engaged aircraft; the 8in main battery stays as the shared era weapon). Forrest Sherman's array is SWAPPED to a new American-only navgun_mk42 whose figures deliberately match w_e50_nato_destroyer exactly, so only the label and the air bit change \u2014 and it stops the American hull sharing a weapon with a Daring, a Surcouf and a Fletcher."
+  },
+  {
+   "severity": "major",
+   "kind": "data-error",
+   "unit": "nato_e90_corvette",
+   "whatTheGameHas": "MEASURED: rcs 0.1. Every other American era corvette is 0.6 \u2014 including nato_e80_corvette, which is the IDENTICAL Perry-class hull. 0.1 is the lowest surface radar cross-section in the game bar corvette_n, lower than the Tuo Chiang stealth catamaran (0.12), the La Fayette-derived corvette_f (0.18) and the Type 45 (0.30).",
+   "whatIsReal": "A 1977 Oliver Hazard Perry is a boxy, single-screw, flat-sided 1970s frigate with no signature shaping of any kind. rules.js's own SHIP_RCS comment is explicit that the number is driven by superstructure shaping; 0.1 is a copy of corvette_n's value that landed on the wrong row. SHIP_RCS drives both detection range (fourth root) and how easily an incoming missile holds lock, so this is not cosmetic.",
+   "fix": "Edit E12: 0.1 -> 0.6, matching the identical e80 hull."
+  },
+  {
+   "severity": "major",
+   "kind": "capability-gap",
+   "unit": "all 20 era-roster warships of all eight factions",
+   "whatTheGameHas": "MEASURED across the whole roster: zero era-roster naval units have a `helo` field and zero have `vls`. Twelve e20-roster ships have helo, six have vls. game.js:394 and entities.js:357 embark a helicopter complement only when def.helo or def.carrier is set; combat.js:352 gives a SAM host up to +50% effectiveness scaled by def.vls/220. So no warship of any navy before the present-day roster embarks a helicopter or gets magazine depth.",
+   "whatIsReal": "For the American fleet specifically: LAMPS I (SH-2 Seasprite) from 1971 on the Knox and Perry; LAMPS III (SH-60B) from 1984 on the Perry, Spruance and Ticonderoga; two SH-60B on every Ticonderoga from CG-47. rules.js's own NAVY comment calls the embarked helicopter 'the single biggest ASW multiplier'. Mk 41 VLS depth: 61 cells on 24 Spruances from 1986, 122 on CG-52 onward, 90 on DDG-51.",
+   "fix": "NO EDIT PROPOSED here \u2014 it is a whole-fleet, eight-faction change and giving it only to the Americans would be the symmetry error in reverse. Recorded with the American dates so a later pass has them."
+  },
+  {
+   "severity": "major",
+   "kind": "capability-gap",
+   "unit": "nato_e50/e60/e80/e90/e00_corvette",
+   "whatTheGameHas": "MEASURED: every American era corvette/frigate has NO `radar` field at all (19 era naval hulls across the game lack it, 17 have it \u2014 every American one lacks it). combat.js:263 closeInGuns() returns immediately on !e.def.radar, so a Perry's or a Knox's dual-purpose gun contributes nothing to air defence even though its tgt mask says air:1; and game.js:1112 skips it for radar reveal.",
+   "whatIsReal": "FFG-7 carries SPS-49, a capable long-range 2D air-search set, and an Mk 92 fire-control system; FF-1052 carries SPS-40. These ships aim their guns with radar.",
+   "fix": "NO EDIT PROPOSED \u2014 the pattern is roster-wide and the right value per hull is a judgement the owner should make. Flagged because it silently voids the air:1 bit these ships already carry."
+  },
+  {
+   "severity": "minor",
+   "kind": "capability-gap",
+   "unit": "nato_e00_cruiser",
+   "whatTheGameHas": "MEASURED: unitFor('nato','cruiser','e00') returns NONE. There is no nato_e00_cruiser row anywhere in eras.js. nato_e90_cruiser has to:'e90' and cruiser_n has from:'e20', so the 2000s have a hole. pact_e00_cruiser (Slava) exists, so this is not a roster-wide 'no cruisers in e00' design rule.",
+   "whatIsReal": "Twenty-two Ticonderogas were in commission throughout 2000-2009; the first five (Mk 26 arms) decommissioned 2004-2005 and the rest served well past 2010. The 2000s are a period when the US cruiser force was at its largest and most capable.",
+   "fix": "Either add a nato_e00_cruiser row (CG-52 class, service 1986, Mk 41 + SM-2 + TLAM) or set nato_e90_cruiser to:'e00'. The latter is a one-token change and matches what the hull actually did."
+  },
+  {
+   "severity": "minor",
+   "kind": "desc-versus-loadout",
+   "unit": "cruiser_n",
+   "whatTheGameHas": "MEASURED: desc reads 'Naval gunfire support that flattens a coastal base from 17 tiles out.' Its longest gun is navgun_mk45 at range 11.5. The number 17 is the range of navgun_203 '203mm main battery' \u2014 a weapon cruiser_n used to carry before the NAVY refit table replaced its loadout, and which is now carried by nothing at all.",
+   "whatIsReal": "An Mk 45 5in/54 firing conventional ammunition reaches about 24 km. The card promises a reach the ship does not have and quotes a number from a deleted weapon.",
+   "fix": "Reword to the real figure, or state the reach the weapon actually has. Trivial, but it is the same class of defect as the Tomahawk prose."
+  },
+  {
+   "severity": "minor",
+   "kind": "dead-data",
+   "unit": "WEAPONS: navgun_203, navgun_127, ssm, sam_ship, depthchg; UNITS: shoreBombard",
+   "whatTheGameHas": "MEASURED: those five weapons are referenced by no unit, no building and no privateWeapon clone \u2014 they are the original pre-NAVY-refit loadouts of cruiser_n, destroyer_n and missileboat_n, left behind when rules.js line 2814 Object.assign'd the NAVY table over them. Separately, `shoreBombard:true` is set on cruiser_n, cruiser_p and one other hull and is read by no code anywhere in js/.",
+   "whatIsReal": "n/a \u2014 housekeeping. Worth knowing because navgun_203's range is the source of the false '17 tiles' claim above, and because a reader of rules.js line 626 reasonably assumes shoreBombard does something.",
+   "fix": "Delete the five orphans, or leave them and note they are unreferenced. Decide whether shoreBombard should gate the bombard order or be removed."
+  },
+  {
+   "severity": "minor",
+   "kind": "data-quality",
+   "unit": "every era-roster unit in eras.js",
+   "whatTheGameHas": "MEASURED: descs are hard-truncated at exactly 320 characters. Of the 22 American naval descs, 15 end mid-sentence or mid-word: nato_e80_cruiser ends '...Note for the game - a ', nato_e00_destroyer ends '...Naval Strike Missile and Mar', nato_e50_carrier ends '...SCB-125 to take the angl', nato_e60_cruiser ends '...points directly at Aeg'.",
+   "whatIsReal": "n/a \u2014 a generation artefact, not a history error. Global to eras.js and to all eight factions.",
+   "fix": "Out of scope for this workflow; recorded with the exact cut length so whoever regenerates eras.js can raise or remove the cap."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "service-dates",
+   "unit": "all 26 US surface hulls",
+   "whatTheGameHas": "CHECKED every from:/to:/service: field against real commissioning. Des Moines 1948, Dealey 1954, Forrestal 1955, Forrest Sherman 1955, Adams 1960, Enterprise 1961, Long Beach 1961, Knox 1969, Spruance 1975, Nimitz 1975, Perry 1977, Pegasus 1977, Ticonderoga 1983, Arleigh Burke 1991, Flight IIA 2000, Reagan 2003, LCS 2008, Ford 2017 (stated in the desc).",
+   "whatIsReal": "Every one matches: CA-134 16 Nov 1948; DE-1006 3 Jun 1954; CVA-59 1 Oct 1955; DD-931 9 Nov 1955; DDG-2 10 Sep 1960; CVN-65 25 Nov 1961; CGN-9 9 Sep 1961; FF-1052 12 Apr 1969; DD-963 20 Sep 1975; CVN-68 3 May 1975; FFG-7 17 Dec 1977; PHM-1 9 Jul 1977; CG-47 22 Jan 1983; DDG-51 4 Jul 1991; DDG-79 19 Aug 2000; CVN-76 12 Jul 2003; LCS-1 8 Nov 2008; CVN-78 22 Jul 2017.",
+   "fix": "None. The dates are sound throughout, including the units that carry no explicit service field. This was checked specifically because an earlier audit is said to have missed units without a service field."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "anachronism",
+   "unit": "nato_e80_missileboat and the deleted nato_e90_missileboat",
+   "whatTheGameHas": "MEASURED: eras.js authors nato_e80_missileboat with to:'e80', and a separate nato_e90_missileboat named '(none)', full 'No US Navy missile craft after 1993'. rules.js isPhantomUnit()/purgePhantomUnits() deletes the placeholder so it cannot be bought, then finds the earlier hull in the same role and extends its `to` to e90. Resolved result: Pegasus available e80-e90, nothing after.",
+   "whatIsReal": "PHM-1 commissioned 9 July 1977, PHM-2 to PHM-6 in 1981-82, all six decommissioned 30 July 1993 \u2014 squarely inside the e90 window. The machinery produced exactly the right answer, and the placeholder row is a model of the realism-over-symmetry rule stated plainly in the data.",
+   "fix": "None. Recorded because it is the pattern the missileboat_n finding above should be fixed to match, and because the same mechanism is the reason boat_n and the '(none)' rows behave the way they do."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "identity",
+   "unit": "nato_e50_corvette, nato_e60_corvette, nato_e00_corvette, nato_e60_carrier",
+   "whatTheGameHas": "CHECKED: Dealey's 'Two twin 76mm/50 Mk 33' carries air:1 \u2014 the Mk 33 3in/50 is the postwar dual-purpose AA mount and the mask is right. Knox's 'One 127mm/54 Mk 42' carries air:1 \u2014 right. The e00 LCS carries 'One 57mm Mk 110' \u2014 the correct gun, and it is the e20 version that has it wrong. warship_specs.js gives nato_e60_carrier guns:0.",
+   "whatIsReal": "Enterprise CVN-65 was commissioned with no guns at all, the first US carrier so built; Sea Sparrow BPDMS was not added until 1967. Dealey and Knox both fought aircraft with those exact mounts.",
+   "fix": "None. Checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "identity",
+   "unit": "boat_n from:e50",
+   "whatTheGameHas": "MEASURED: role 'patrol' is listed in rules.js ERA_TIMELESS, which stamps from:'e50' on it, so the Mk VI is buildable in all six eras. This looks like a 65-year anachronism and is not one: rules.js lines 3600-3612 argue the case explicitly \u2014 'between a Project 183 and a Mk VI there is a diesel' \u2014 and contrast it with capabilities that do carry a real date.",
+   "whatIsReal": "The Mk VI entered service in 2015. The ROLE \u2014 a fast gun-armed inshore boat \u2014 was in American hands continuously from the PT boats and PGM patrol craft of the 1950s through the PCF Swift boats of 1965 and the Cyclone-class PCs of 1993.",
+   "fix": "None to the mechanism. One genuine gap worth noting separately: the US is the only faction with no era-specific patrol boats at all (gbr, fra, pact, pla, kpa, roc all have them), so an American player in 1955 builds a boat labelled 'Mk VI'. Real candidates exist if the owner wants them \u2014 PGM-type gunboat, PCF Swift 1965, Asheville-class PG 1966, Cyclone-class PC 1993."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "area-air-defence",
+   "unit": "destroyer_n, cruiser_n (e20 roster)",
+   "whatTheGameHas": "MEASURED: both carry sam_sm2 (proj missile, tgt air, r14.5) so both register as area air-defence hosts in areaSam(); vls is 96 on the Burke and 122 on the Ticonderoga; radarQ 34 and 40; sonar 9.5 and 9.0; helo 2 each; ciws 0.72 and 0.78. corvette_n has vls:8 and no SAM, so the game DOES distinguish an Aegis ship from a light escort in the present day.",
+   "whatIsReal": "96 Mk 41 cells on a Flight IIA Burke and 122 on a Ticonderoga are the exact real figures. The Aegis line is drawn correctly \u2014 in one era out of six.",
+   "fix": "None. This is the model the other five eras should be brought up to, and edits E3-E11 do that."
+  }
+ ],
+ "edits": [
+  {
+   "file": "js/rules.js",
+   "why": "Six new American naval weapons, named OUTSIDE the w_<era>_<fac>_<role> pattern. This is forced, not stylistic: every generated naval id is carried by 2-4 nations (w_e90_nato_destroyer is on the Burke, the Type 42 Batch 3, the Cassard AND the Brandenburg), so an American correction made in the weapon table renames European ships. These six are American-only and every one is dated. sam_terrier/sam_tartar/sam_seasparrow/sam_sm2mr give the era rosters the fleet air defence they have none of; navgun_mk42 and aa_5in38 give the 1950s hulls the dual-purpose batteries that were their AA. Placed immediately before the existing European naval ordnance block, whose comment already explains the naming rule.",
+   "anchor": "  /* ---- European naval ordnance ----",
+   "exactCount": 1,
+   "newCode": "  /* ---- American naval ordnance the era rosters were missing ----\n     Named OUTSIDE the w_<era>_<fac>_<role> pattern for the same reason the\n     European block below is, and for one more: every generated naval id is\n     shared by two to four navies - w_e90_nato_destroyer is carried by the\n     Arleigh Burke, the Type 42 Batch 3, the Cassard and the Brandenburg -\n     so editing one to correct an American ship silently renames three\n     European ones. These are American, dated, and carried only by American\n     hulls.\n\n     The dates are the point. Terrier went to sea on Boston in 1956 and Talos\n     on Galveston in 1958; Tartar reached the fleet on Charles F. Adams in\n     1962. All three are beam-riding or semi-active rounds that need a\n     dedicated director illuminating the target, so a ship engages two or\n     three aircraft and no more - which is the saturation problem Aegis was\n     built in 1983 to solve. SM-2MR is that answer: one SPY-1 array tracks\n     hundreds of contacts and the round flies most of the way on inertial\n     guidance, so the illuminators are needed only in the last seconds.\n     Sea Sparrow is NOT an area system and must not be read as one - it is a\n     point-defence round for the ship it is bolted to, fitted from 1967\n     because the carriers and the Spruances had nothing else. */\n  sam_terrier: { name:\"RIM-2 Terrier / RIM-8 Talos\", dmg:165, warhead:\"flak\", range:10.2,\n    reload:5.6, burst:1, acc:0.58, proj:\"missile\", speed:560,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\", profile:\"pop\", intercept:0.88 },\n  sam_tartar: { name:\"RIM-24 Tartar\", dmg:135, warhead:\"flak\", range:8.4,\n    reload:4.8, burst:1, acc:0.56, proj:\"missile\", speed:580,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\", profile:\"pop\", intercept:0.88 },\n  sam_seasparrow: { name:\"RIM-7 Sea Sparrow (BPDMS)\", dmg:120, warhead:\"flak\", range:4.8,\n    reload:2.6, burst:2, burstDelay:0.35, acc:0.70, proj:\"missile\", speed:620,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\", profile:\"pop\", intercept:0.80 },\n  sam_sm2mr: { name:\"RIM-66 SM-2MR (Aegis)\", dmg:175, warhead:\"flak\", range:12.8,\n    reload:3.4, burst:2, burstDelay:0.35, acc:0.86, proj:\"missile\", speed:620,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\", profile:\"pop\", intercept:0.65 },\n  /* Two American medium guns the generated rows could not name without\n     renaming a European ship as well. Figures deliberately MATCH the era rows\n     they stand in for, so only the label and the target mask change. The Mk 42\n     is a DUAL-PURPOSE mount - that is the correction, not the calibre: the\n     same gun already carries air:1 on the Knox row and air:0 on the Forrest\n     Sherman row, which cannot both be right. */\n  navgun_mk42: { name:\"Three 127mm/54 Mk 42\", dmg:53, warhead:\"he\", range:8.5,\n    reload:4.61, burst:2, burstDelay:0.45, acc:0.58, proj:\"shell\", speed:720, aoe:0.9,\n    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"cannon\" },\n  aa_5in38: { name:\"Twelve 127mm/38 Mk 32 secondaries\", dmg:34, warhead:\"he\", range:5.6,\n    reload:1.9, burst:4, burstDelay:0.18, acc:0.52, proj:\"shell\", speed:790, aoe:0.5,\n    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"shot\" },\n\n  /* ---- European naval ordnance ----"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E1 - Des Moines CA-134. The 8in main battery cannot engage aircraft and should not; what did was TWELVE 5in/38 in twin Mk 32 mounts plus a heavy 3in/50 battery. The main-battery weapon is left untouched because it is shared with HMS Swiftsure and De Grasse. Appended, never prepended: generations.js writes weapons[0] and bombard()'s fallback scan walks forward from it.",
+   "anchor": "\"weapons\":[\"w_e50_nato_cruiser\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e50_nato_cruiser\",\"aa_5in38\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E2 - Forrest Sherman DD-931. Swapped rather than appended, because this fixes two things at once: the Mk 42 is a dual-purpose mount and the ship could shoot at aircraft, and the shared id also put 'Three 127mm/54 Mk 42 single mounts' on a British Daring, a French T 47 Surcouf and a German Fletcher. navgun_mk42's dmg/range/reload/burst/acc/speed/aoe are copied verbatim from w_e50_nato_destroyer, so nothing about the gunnery changes - only the label and the air bit.",
+   "anchor": "\"weapons\":[\"w_e50_nato_destroyer\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"navgun_mk42\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E3 - USS Long Beach CGN-9, 1961. FATAL fix. The ship's one weapon is named 'Terrier and Talos SAM launchers' and has air:0; the desc says it was built with no guns at all. Two Mk 10 Terrier launchers forward, one Mk 12 Talos aft. The gun row is left alone because it is also carried by HMS Tiger and the Colbert.",
+   "anchor": "\"weapons\":[\"w_e60_nato_cruiser\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e60_nato_cruiser\",\"sam_terrier\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E4 - USS Charles F. Adams DDG-2, 1960. The class the desc calls 'the first US destroyers designed from the keel up around a surface-to-air missile', with no surface-to-air missile. Mk 11 twin Tartar aft.",
+   "anchor": "\"weapons\":[\"w_e60_nato_destroyer\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e60_nato_destroyer\",\"sam_tartar\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E5 - Oliver Hazard Perry FFG-7, 1977. Its weapon is NAMED 'Mk 13 launcher for SM-1MR and Harpoon' and is a gun. A Mk 13 arm with 40 rounds of SM-1MR and Harpoon, one Phalanx. sam_sm1 and ssm_harpoon and ciws_phalanx all already exist.",
+   "anchor": "\"weapons\":[\"w_e80_nato_corvette\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e80_nato_corvette\",\"sam_sm1\",\"ssm_harpoon\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E6 - USS Spruance DD-963. Its own desc says 'the empty space then absorbed vertical launch cells and Tomahawk, making it the most heavily armed destroyer afloat by the end of the decade' and the loadout is one gun. Sea Sparrow BPDMS from commissioning (point defence, deliberately the short-ranged new round and NOT an area system), Harpoon 1981, Phalanx 1980, ASROC throughout, ABL Tomahawk from 1983 - USS Merrill fired the first Tomahawk from a surface ship that year. NOTE the measured side effect: tlam_n reaches 19 tiles and generations.js's 'eyes to match the reach' pass then raises this hull's sight from 10.9 to 19.4. That is the same thing that already happens to ssgn_n, whose sight is 19.4 for exactly this reason, so it is consistent - but it is a real vision change and the owner should see it before taking the edit.",
+   "anchor": "\"weapons\":[\"w_e80_nato_destroyer\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e80_nato_destroyer\",\"sam_seasparrow\",\"ssm_harpoon\",\"asw_mk54\",\"tlam_n\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E7 - USS Ticonderoga CG-47, commissioned 22 Jan 1983. FATAL fix, and the single most important line in this fleet. Two Mk 26 twin launchers with 68 SM-2MR, two 5in/54 Mk 45, eight Harpoon, ASROC, two Phalanx, two SH-60B. Tomahawk is deliberately NOT given here: CG-47 to CG-51 carried Mk 26 arms which could not fire it, and CG-47 is the hull this row names. sam_sm2mr rather than sam_sm2 because SM-6 is 2013.",
+   "anchor": "\"weapons\":[\"w_e80_nato_cruiser\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e80_nato_cruiser\",\"sam_sm2mr\",\"ssm_harpoon\",\"asw_mk54\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E8 - Perry FFG-7 in the 1990s. As authored the SAME HULL loses its air-defence weapon going from e80 to e90, which is backwards: the Mk 13 came out class-wide in 2003-2004, which is the e00 period, exactly as this unit's own desc dates it.",
+   "anchor": "\"weapons\":[\"w_e90_nato_corvette\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e90_nato_corvette\",\"sam_sm1\",\"ssm_harpoon\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E9 - USS Arleigh Burke DDG-51, commissioned 4 July 1991. FATAL fix. SPY-1D, 90 Mk 41 cells with SM-2MR, Tomahawk and VLA, eight Harpoon on Flight I/II, one 5in/54 Mk 45, Mk 32 tubes, two Phalanx. The weapon this hull already carries is NAMED '90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha' and is a 720 m/s shell with air:0 - the prose and the mask contradict each other on the same line. That name is NOT corrected here because w_e90_nato_destroyer is also carried by the Type 42 Batch 3, the Cassard and the Brandenburg; see the shared-weapon finding.",
+   "anchor": "\"weapons\":[\"w_e90_nato_destroyer\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e90_nato_destroyer\",\"sam_sm2mr\",\"ssm_harpoon\",\"asw_mk54\",\"tlam_n\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E10 - Ticonderoga in the 1990s, CG-52 onward, all VLS. 122 Mk 41 cells carrying SM-2MR, Tomahawk and VLA; Bunker Hill was the first Mk 41 Tomahawk ship in 1986 and fired on the opening night of Desert Storm on 17 Jan 1991. This is the only generated naval weapon in the American fleet that no other nation shares, so the array is safe to extend freely.",
+   "anchor": "\"weapons\":[\"w_e90_nato_cruiser\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e90_nato_cruiser\",\"sam_sm2mr\",\"ssm_harpoon\",\"asw_mk54\",\"tlam_n\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E11 - Arleigh Burke Flight IIA, 2000. sam_sm2 rather than sam_sm2mr because SM-6 does belong to this hull's later life. Harpoon is deliberately ABSENT, which makes the loadout agree with the unit's own desc for the first time: 'Flight IIA ... deleted the Harpoon launchers, which meant that for over a decade the standard US destroyer had no dedicated anti-ship missile at all'.",
+   "anchor": "\"weapons\":[\"w_e00_nato_destroyer\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e00_nato_destroyer\",\"sam_sm2\",\"asw_mk54\",\"tlam_n\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E12 - LCS-1 Freedom and LCS-2 Independence, 2008. Freedom carries a 21-cell Mk 49 RAM launcher, Independence an 11-cell SeaRAM. Not a Phalanx gun, and not an area system - sam_ram reaches 4.6 tiles, which is local cover and nothing more. sam_ram already exists and is already used by the German K130 and F124.",
+   "anchor": "\"weapons\":[\"w_e00_nato_corvette\"],",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e00_nato_corvette\",\"sam_ram\"],"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E13 - nato_e90_corvette radar cross-section. 0.1 made a 1977 boxy single-screw Perry the stealthiest surface ship in the game bar one, stealthier than a Tuo Chiang or a Type 45, while the IDENTICAL e80 Perry hull sits at 0.6. It is a copy of corvette_n's value on the wrong row. SHIP_RCS drives detection range and missile lock, so it is not cosmetic. This anchor is the tail of the nato_e90_corvette line and is unique in the file.",
+   "anchor": "\"sonar\":5.5,\"ciws\":0.42,\"rcs\":0.1}",
+   "exactCount": 1,
+   "newCode": "\"sonar\":5.5,\"ciws\":0.42,\"rcs\":0.6}"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "E14 - the e20 LCS. Three places in this codebase already say 57mm - the unit's own desc, warship_specs.js gunCal:57, and the e00 version of the same ship carrying 'One 57mm Mk 110' - and the loadout said 76mm Italian. This is the exact case generations.js's own NAVGUN comment complains about ('every navy was firing the same Italian gun'), left unfixed for the Americans because NAVGUN has no nato row. Both replacement ids already exist.",
+   "anchor": "  corvette_n:    { weapons:[\"navgun_76\",\"ssm_nsm\",\"ciws_phalanx\"], sonar:6.0, vls:8, helo:1,\n                   radarQ:14, ciws:0.45 },",
+   "exactCount": 1,
+   "newCode": "  /* The LCS mounts the BAE Mk 110 57 mm, not the Italian 76 mm - its own card\n     already says \"57mm rapid-fire mount\" and warship_specs.js already draws\n     gunCal:57. Neither hull has a Phalanx gun either: Freedom carries a\n     21-cell Mk 49 RAM launcher and Independence an 11-cell SeaRAM. */\n  corvette_n:    { weapons:[\"navgun_57\",\"ssm_nsm\",\"sam_ram\"], sonar:6.0, vls:8, helo:1,\n                   radarQ:14, ciws:0.45 },"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "E15 - Tomahawk on the present-day Burke and Ticonderoga. facts.js has promised it in both ships' armament strings since they were written and the loadout did not have it, so the most-fired American weapon since 1991 existed in this game only aboard the converted Ohio. Same measured side effect as E6: tlam_n's 19-tile reach raises both hulls' sight from 14.9 to 19.4 through generations.js's 'eyes to match the reach' pass, matching ssgn_n's existing 19.4. If the owner would rather not hand a Burke a 19-tile sensor, the fix that fits the release-authority work already in the tree is to mark tlam_n `manual` so it is fired at a chosen target rather than acquired - that is a separate decision and is NOT part of this edit.",
+   "anchor": "  destroyer_n:   { weapons:[\"navgun_mk45\",\"sam_sm2\",\"ssm_harpoon\",\"asw_mk54\",\"ciws_phalanx\"],\n                   sonar:9.5, vls:96, helo:2, radarQ:34, ciws:0.72 },\n  cruiser_n:     { weapons:[\"navgun_mk45\",\"sam_sm2\",\"ssm_harpoon\",\"asw_mk54\",\"ciws_phalanx\"],\n                   sonar:9.0, vls:122, helo:2, radarQ:40, ciws:0.78 },",
+   "exactCount": 1,
+   "newCode": "  /* Tomahawk is the reason a Mk 41 farm is worth 96 cells. facts.js has listed\n     it in the armament of both of these ships since they were written -\n     \"96-cell Mk 41 VLS (SM-2/SM-6/ESSM/Tomahawk/VLA)\" - and the loadout did\n     not have it, so the most-fired American weapon since 1991 existed in this\n     game only aboard the converted Ohio. */\n  destroyer_n:   { weapons:[\"navgun_mk45\",\"sam_sm2\",\"ssm_harpoon\",\"asw_mk54\",\"tlam_n\",\"ciws_phalanx\"],\n                   sonar:9.5, vls:96, helo:2, radarQ:34, ciws:0.72 },\n  cruiser_n:     { weapons:[\"navgun_mk45\",\"sam_sm2\",\"ssm_harpoon\",\"asw_mk54\",\"tlam_n\",\"ciws_phalanx\"],\n                   sonar:9.0, vls:122, helo:2, radarQ:40, ciws:0.78 },"
+  },
+  {
+   "file": "js/warship_specs.js",
+   "why": "E16 - half of the transposed carrier pair. This row draws nato_e00_carrier, whose full name is 'USS Ronald Reagan (CVN-76), Nimitz class' and whose own desc says the Ford 'was not commissioned until 2017'. It was labelled CVN-78 Gerald R. Ford and given beam 78, which is the Ford's flight-deck width. Corrected to the Reagan with the real Nimitz-class hull figures (332.8 m, 40.8 m beam). The prose comment above this line describes a Ford island set 70 per cent down the deck and belongs with the OTHER row - move it if the comments are being kept in step.",
+   "anchor": "nato_e00_carrier: {era:\"e00\", fac:\"nato\", role:\"carrier\", designation:\"CVN-78 Gerald R. Ford class\", len:317, beam:78,",
+   "exactCount": 1,
+   "newCode": "nato_e00_carrier: {era:\"e00\", fac:\"nato\", role:\"carrier\", designation:\"CVN-76 Ronald Reagan, Nimitz class\", len:332.8, beam:40.8,"
+  },
+  {
+   "file": "js/warship_specs.js",
+   "why": "E17 - the other half. This row draws carrier_n, whose full name is 'USS Gerald R. Ford (CVN-78)' and which was labelled CVN-68 Nimitz. Corrected to the Ford at her real 337 m length.",
+   "anchor": "carrier_n: {era:\"e20\", fac:\"nato\", role:\"carrier\", designation:\"CVN-68 Nimitz\", len:317, beam:40.8,",
+   "exactCount": 1,
+   "newCode": "carrier_n: {era:\"e20\", fac:\"nato\", role:\"carrier\", designation:\"CVN-78 Gerald R. Ford\", len:337, beam:40.8,"
+  }
+ ],
+ "proof": "WHAT WAS MEASURED (jsc, on a concatenation of a `var window=this;` stub + js/util.js + js/config.js + js/facts.js + js/rules.js + js/eras.js + js/heavyair.js + js/generations.js, so every figure is post-generations.js):\n\nBASELINE, on the live repo:\n- 1132 units, 1686 weapons, 232 cat:\"naval\" defs, 176 layer:\"sea\".\n- 26 US surface hulls enumerated with resolved weapon ids, names, tgt masks, proj, range, dmg, acc (full listing in `inventory`).\n- Area air defence, tested against the actual rule in combat.js areaSam() (`tgt.air && proj === \"missile\"`): 2 of 26 US surface hulls pass, both e20-roster. 0 of 20 era-roster hulls. Across all eight factions, the only era-roster ships that pass are pact_e60/e90/e00_carrier, and they pass because the Moskva's \"14 x Ka-25 ASW helicopters\" was authored as proj:\"missile\", tgt:{air:1}.\n- Tomahawk: `tlam_n` is carried by exactly one American unit in the game, ssgn_n. Zero surface hulls.\n- Weapon sharing, by scanning eras.js for each generated naval id: w_e50_nato_{carrier,corvette,cruiser} 3 nations each, w_e50_nato_destroyer 4, w_e60_nato_corvette 4, w_e60_nato_cruiser 3, w_e60_nato_destroyer 4, w_e80_nato_destroyer 4, w_e90_nato_corvette 3, w_e90_nato_destroyer 4, w_e00_nato_corvette 4, w_e00_nato_destroyer 4. Only w_e90_nato_cruiser is nato-exclusive.\n- No-clone proof for nato: generations.js DOMAIN row `nato` is all 1.00, so dmul() returns exactly 1 for every era and the domain pass `continue`s before privateWeapon(). Confirmed by the resolved USED-BY lists, where w_e50_nato_* keep their shared base ids at e50 (DOMAIN_BITE.e50 = 0.00 for everyone) but gbr/fra/deu split off into __clones from e60 onward because their optics multipliers are not 1.00.\n- Finality proof: `grep -rn \"\\.weapons = \\|weapons\\.push\\|Object.assign(UNITS\"` across js/*.js and js/hero/*.js returns nothing outside rules.js, eras.js and generations.js. asw_helo_fit.js, mine_ship_layer.js, mine_ship_sweeper.js, repairship3d.js, sonarnet.js and warship_specs.js touch neither UNITS nor WEAPONS.\n- Era availability via the game's own unitFor(): cruiser e00 = NONE; missileboat e50/e60/e00 = NONE (correct) and e20 = missileboat_n (wrong); patrol = boat_n in all six eras.\n- desc truncation: exactly 320 characters; 15 of 22 US naval descs end mid-sentence.\n- helo/vls: 0 era-roster naval units have either; 12 and 6 e20-roster ones do.\n- radar field: all five US era corvettes/frigates have none, which voids their air:1 gun for closeInGuns() (combat.js:263 returns on !e.def.radar).\n- Truly dead naval weapons (no unit, no building, no privateWeapon clone): navgun_203, navgun_127, ssm, sam_ship, depthchg. navgun_203's range of 17.0 is the source of cruiser_n's false \"17 tiles\" desc claim. `shoreBombard` is read by no code in js/.\n- All 18 commissioning dates cross-checked against the from:/to:/service: fields; all correct, including the hulls with no explicit service field.\n\nPATCH VERIFICATION, on a full copy of the repo at /private/tmp/.../scratchpad/surfaudit/repo with all 17 edits applied:\n- All 18 anchors re-verified against the LIVE files with python3 str.count immediately before writing this report: every one returns exactly 1.\n- Patched build resolves cleanly under jsc: units=1132 (unchanged), weapons=1692 (+6, the new block), dangling=0 across 1209 weapon references on 1132 units.\n- All six new ids resolve with the intended figures and only onto the intended hulls: sam_terrier -> nato_e60_cruiser; sam_tartar -> nato_e60_destroyer; sam_seasparrow -> nato_e80_destroyer; sam_sm2mr -> nato_e80_cruiser, nato_e90_cruiser, nato_e90_destroyer; navgun_mk42 -> nato_e50_destroyer; aa_5in38 -> nato_e50_cruiser.\n- Area air defence after the patch: 13 US surface hulls now register, one in e60 (Long Beach), one in e60 (Adams), three in e80 (Perry, Ticonderoga, Spruance), three in e90, two in e00, three in e20.\n- Tomahawk after the patch: nato_e80_destroyer, nato_e90_cruiser, nato_e90_destroyer, nato_e00_destroyer, cruiser_n, destroyer_n.\n- BLAST RADIUS, measured by diffing a full resolved dump of all 1132 units (sight, rcs, and every weapon's id/name/range/dmg/acc/tgt) before and after: NON-US UNITS CHANGED = 0. Every changed line is one of the 26 American surface hulls.\n- js/rules.js, js/eras.js and js/warship_specs.js all parse clean under jsc after patching (`new Function(readFile(...))`). WARSHIPS resolves with 105 rows and the two carrier designations now match their units.\n- Changed-line counts vs the live repo: rules.js 60, eras.js 24, warship_specs.js 4.\n\nWHAT COULD NOT BE MEASURED: the 52-test behaviour suite did not run. Chrome was launched five times against the patched copy and every attempt exited 144 with a zero-byte dump; a trivial three-line HTML page also failed to dump within 120 s. The cause is environmental and not the patch: `ps ax` showed 224 Chrome processes and a one-minute load average of 287 (fifteen-minute 755) on a 16 GB machine, from the two concurrent submarine workflows. I am reporting this rather than dressing the jsc verification up as a suite pass. The edits are data-only appends to weapons arrays plus six new WEAPONS entries, they introduce no dangling reference, and they change nothing outside the US surface fleet \u2014 but the suite still needs to be run before these land.",
+ "risks": [
+  "THE SUITE WAS NOT RUN. Chrome could not start: 224 Chrome processes and load average 287 from the two concurrent workflows, five attempts, all exit 144 with a zero-byte dump, including on a trivial test page. Run `\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --virtual-time-budget=500000 --dump-dom \"file:///Users/hjiang/Desktop/redalert/_behtest.html\"` and read #tout before taking any of these edits. A verified patched copy is left at /private/tmp/claude-501/-Users-hjiang-Desktop-redalert/6321f229-fd3c-451c-bfae-d045a3e13cf4/scratchpad/surfaudit/repo and the idempotent patch script at .../surfaudit/sfpatch.py.",
+  "THE REPO IS MOVING UNDER US. A copy of js/rules.js I took mid-session already contained `sam_tartar` and `sam_seasparrow` definitions (named 'RIM-24B Tartar' and 'RIM-7M Sea Sparrow') that are NOT in the live file now, and the git history I see (HEAD 8d67ba2) shares no commits with the snapshot in my task brief (HEAD a62fcc9). Another workflow is writing American naval SAMs into rules.js. If `sam_tartar` or `sam_seasparrow` already exist when this patch is applied, the duplicate object keys will NOT crash - the later literal silently wins - so my figures would be discarded without any error. Grep for all six new ids before applying, and re-verify all 18 anchors with python3 str.count.",
+  "THE SCRATCHPAD IS SHARED between the concurrent workflows: a file I wrote as scratchpad/p4.js was overwritten by another agent's submarine probe, and scratchpad/patch.py was replaced by another agent's patch script mid-run. Everything of mine is namespaced under scratchpad/surfaudit/, but anything left at the top level of the scratchpad should not be trusted.",
+  "TOMAHAWK INFLATES SIGHT. generations.js's 'eyes to match the reach' pass raises a unit's sight to its longest non-arc weapon range + 0.4. tlam_n reaches 19, so every hull given it goes to sight 19.4: the Spruance from 10.9, the e90 Burke from 11.4, the e90 Ticonderoga from 11.0, the e00 Burke from 11.8, and cruiser_n/destroyer_n from 14.9. This is exactly what already happens to ssgn_n (sight 19.4 for the same reason), so it is consistent with the existing model - but a Burke that sees 19.4 tiles is a large sensor change and may move the AI's behaviour. If that is unwanted, the fix that matches the release-authority commit already in the tree is to mark tlam_n `manual`, which is a separate design decision I did not make.",
+  "THE AEGIS EDITS MAKE AMERICAN ERA SHIPS MUCH STRONGER THAN THEIR PEERS. After the patch the e80 Ticonderoga carries five weapons while the Sovremenny, the Slava, the Type 42 and the Luda each carry one. That is historically correct and is what realism-over-symmetry asks for - in 1983 an Aegis cruiser genuinely was in a class of its own - but it is a one-sided change made by a workflow that only owns one navy. The other seven fleets have the identical hole (measured: zero era-roster ships with area air defence in any navy) and should get the same treatment from their own passes before this is judged on balance.",
+  "E2 SWAPS weapons[0] on nato_e50_destroyer rather than appending. generations.js writes weapons[0] when it substitutes a private weapon and bombard()'s fallback scan walks forward from it, so index 0 is load-bearing. It is safe here because nato gets no clone at all (naval multiplier 1.00) and navgun_mk42's figures are copied verbatim from the weapon it replaces - but it is the one edit in the set that is not append-only.",
+  "NOT FIXED, DELIBERATELY, and the owner should decide: (a) missileboat_n exists in e20 when the US Navy has operated no missile boat since July 1993 and the game's own e90 '(none)' row says so - the obvious fix via the phantom mechanism BACKFIRES, because purgePhantomUnits() would then extend nato_e80_missileboat's `to` to e20 and put a 1977 hydrofoil in 2020; deleting the rules.js entry outright is the right route and touches six other files. (b) The American weapon names on European hulls (w_e90_nato_destroyer displayed on the Type 42, the Cassard and the Brandenburg) - a whole-fleet fix, not a US one. (c) No era warship of any navy has helo or vls. (d) No US era corvette has a `radar` field, which silently voids the air:1 on its gun. (e) No nato_e00_cruiser at all. (f) No Iowa with armoured box launchers in e80, no Zumwalt, no amphibious ships, and no US era patrol boats - the US is the only faction with no era-specific patrol craft, so an American player in 1955 builds a boat labelled 'Mk VI'.",
+  "FIGURES FOR THE FOUR NEW SAMs ARE JUDGEMENT, NOT MEASUREMENT. Terrier/Talos at range 10.2 acc 0.58, Tartar at 8.4/0.56, Sea Sparrow at 4.8/0.70 and SM-2MR at 12.8/0.86 were chosen to sit sensibly between the game's existing sam_area1 (10.6/0.70), sam_area2 (12.5/0.86) and sam_sm2 (14.5/0.90), and to keep the 1960s rounds clearly worse than Aegis. The ORDERING is the historical claim and I stand behind it; the exact numbers are tuning the owner should feel free to move."
+ ]
+}

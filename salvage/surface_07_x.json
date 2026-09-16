@@ -1,0 +1,68 @@
+{
+ "findings": "[]",
+ "verdict": "NEEDS_WORK",
+ "problems": [
+  {
+   "severity": "fatal",
+   "item": "js/rules.js \u2014 new `mdcn` weapon (the headline fix) is manual:true but has no indirect:true",
+   "claim": "\"New weapon `mdcn` with tgt {ground:1,...} and manual:true ... `manual` follows the release-authority rule already applied to the anti-radiation and ballistic rounds - a thousand-kilometre cruise missile is spent when a commander says so.\"",
+   "reality": "Measured under jsc on the patched tree: every manual LAND-ATTACK round in the game carries indirect:true (srbm_early, srbm_short, srbm_scud, srbm_atacms, srbm_p2, srbm_mod, w_e90_fra_tel). The ONLY manual weapons without it are the four anti-radiation rounds (harm, arm_kh, arm_yj, arm_gnd), which are deliberately emitter-only. mdcn is proj:\"missile\", indirect=false, so corvette_f.isIndirect() === false and fra_e00_corvette.isIndirect() === false (measured). Consequences, all in code: ui.js:2036-2039 forceFire() filters on u.isIndirect() and answers \"NOTHING SELECTED THAT CAN SHELL A MAP POINT\" \u2014 Ctrl+RMB, the one gesture that shells a map point, is refused on the FREMM; ui.js:751-760 releasePanel() falls to the non-indirect branch and prints \"MDCN NAVAL CRUISE MISSILE DOES NOT FIRE UNLESS ORDERED / RIGHT-CLICK THE EMITTER / CTRL + RIGHT-CLICK WILL BE REFUSED\" for a thousand-kilometre cruise missile; ai.js:3997, 4044, 4059 and the counter-battery stance (entities.js:1125, isIndirect(true)) never select it, so the AI never plots a strike with it. It fires only on a direct right-click at an already-visible target (entities.js:226 stamps order.release on a player attack order). The audit was opened because the Ohio's prose promised a capability the loadout did not deliver; this edit adds a round whose comment promises land attack and then withholds the gesture built for it. Fix: add indirect:true, as all six srbm_* rows do (js/rules.js:3262-3284)."
+  },
+  {
+   "severity": "major",
+   "item": "corvette_f (e20 FREMM) \u2014 still zero anti-submarine capability after the fix",
+   "claim": "Finding #12: \"After the fix 7 of 27 hulls can prosecute a submarine, which is the right shape.\" destroyer_f and corvette_f recorded as \"correct-as-is\", fix for corvette_f is \"+mdcn\" only.",
+   "reality": "Measured after the full patch: French e20 sea hulls with any tgt.sub weapon = 0 of 4. corvette_f keeps sonar 9.2 \u2014 the second-highest naval sonar in the game \u2014 and nothing that can reach a submarine, while its e00 twin fra_e00_corvette is given asw_mu90 by the same proposal. Every other navy's e20 destroyer/cruiser has one: destroyer_n/cruiser_n asw_mk54, destroyer_p/cruiser_p asw_rbu, destroyer_c/cruiser_c asw_yu7, destroyer_r asw_mk54, corvette_b asw_stingray. The proposal's own finding #3 names \"two MU90 tubes and an NH90\" as Horizon's real fit and then calls destroyer_f correct without them. The audit's own headline complaint \u2014 \"Sonar ratings up to 9.0 sit on ships with nothing to shoot\" \u2014 is left standing in the era band the game defaults to. asw_mu90 already exists and privateWeapon clones it per unit, so adding it costs nothing."
+  },
+  {
+   "severity": "major",
+   "item": "Undisclosed sight inflation on four French hulls, caused by the new long-range rounds",
+   "claim": "The proposal reports resolved ranges (Masurca 9.8, SM-1MR 10.4, Aster 30 14.8, Crotale 6.2, Sadral 4.4 \u2014 all of which I confirmed) but says nothing about sight anywhere in 27 findings.",
+   "reality": "generations.js:685-698 raises u.sight to (longest non-arc weapon range + 0.4), then generations.js:712-720 scales by optics. Measured clean vs patched: corvette_f 14.8 \u2192 18.6; fra_e00_corvette 9.4 \u2192 18.6; fra_e90_corvette 8.4 \u2192 12.9; fra_e00_destroyer 11.3 \u2192 14.8. 18.6 is now the highest sight of ANY sea unit in the game \u2014 next is the PLA Type 055/052D/056 at 16.7, destroyer_n at 14.9 \u2014 and it sits on a 1,210-1,340 credit corvette that out-sees a 4,400-credit Charles de Gaulle (13.0). It is conferred by a round that is manual and therefore never auto-fires, so the ship gets the reach in vision without the shot. A proposal that resolves loadouts under jsc should have resolved this too; it changes the naval scouting economy."
+  },
+  {
+   "severity": "major",
+   "item": "js/eras.js:10251 fra_e80_carrier \u2014 the duplicate-key fix promotes the factually WRONG half",
+   "claim": "Finding #15: \"Promote the winning values into the row's own fields and delete the duplicate key block. Verified under jsc: resolved name, full, service, desc and weapons are byte-identical before and after, so this is purely a readability fix.\"",
+   "reality": "The byte-identical claim is true \u2014 I confirmed under jsc that the row resolves to Clemenceau CV / \"Clemenceau (R98) with Super Etendard and ASMP\" / 1961. But the surviving desc, the one the proposal proposes to promote, reads \"from 1978 the platform for the Super Etendard carrying the ASMP nuclear missile\". ASMP entered service in 1986; the 1978 weapon was the AN 52 free-fall bomb. The DISCARDED half has it right: \"with the AN 52 free-fall nuclear bomb from 1978 and the ASMP stand-off missile from 1986\". The proposal's own text says \"ASMP at sea from 1986\" and then proposes to delete the only half of the row that says so, permanently cementing a date error of eight years \u2014 exactly the anachronism class (criterion 3) the audit exists to catch. The correct edit keeps the AN 52 / ASMP sentence from the dead half and the Clemenceau R98 / 1961 identity from the live half."
+  },
+  {
+   "severity": "major",
+   "item": "js/eras.js:10231, 10232, 10240 \u2014 three hulls flattened onto one identical battery",
+   "claim": "The audit's stated purpose includes not letting the game \"flatten a real and important difference\", and finding #20 criticises the roster for making \"an area-defence ship, a point-defence escort and a gun frigate indistinguishable\".",
+   "reality": "Measured after the patch, fra_e50_destroyer (T 47 Surcouf, cost 1000), fra_e50_cruiser (De Grasse, cost 1540) and fra_e60_cruiser (Colbert, cost 1930) all resolve to exactly navgun_127_mle48 + navgun_57 \u2014 identical weapons, identical ranges 9.6/7.2, identical sight 10.0. The real batteries differ 2.7-fold (six 127 mm on the T 47 against sixteen on De Grasse and Colbert), and the proposal's own text states that difference. Worse, fra_e60_cruiser's own desc says the cruiser role \"in this game's terms means one hull carrying the whole heavy gun battery of a navy\" \u2014 which the patch makes false, since the cheaper destroyer now carries the same battery. That is a newly created description-versus-loadout defect, the exact class (criterion 2) the audit was opened to remove. Differentiating burst/reload on a per-hull clone, or a separate sixteen-gun row, would fix it."
+  },
+  {
+   "severity": "minor",
+   "item": "Roster-wide tally: \"Hulls carrying Exocet: 3/27, all hand-written e20\"",
+   "claim": "\"MEASURED: zero of the 23 era hulls carried Exocet ... Hulls carrying Exocet: 3/27, all hand-written e20.\"",
+   "reality": "Measured on the clean tree: 2, not 3 \u2014 corvette_f and destroyer_f. carrier_f carries only sam_aster15 and boat_f only hmg. The \"zero of 23 era hulls\" half is correct. (The same probe also shows corvette_g and deu_e00_missileboat carry ssm_exocet, so the Block 3 row the new comment frames as Marine Nationale ordnance is already shared with two German hulls.)"
+  },
+  {
+   "severity": "minor",
+   "item": "mdcn added to fra_e00_corvette (service field 2012)",
+   "claim": "Criterion 3 of the audit's own brief: \"A hull or weapon appearing before it entered service\"; and the proposal's own text: MdCN was \"qualified in 2015, declared operational in 2017, and first fired in anger on 14 April 2018\".",
+   "reality": "fra_e00_corvette carries service:\"2012\" and the e00 band's other rows run 1996-2017, so putting a 2017 weapon on a 2012 row is at best the edge of the band. The proposal flags anachronisms of this shape elsewhere (La Combattante's torpedo, the e80 carrier date) and does not remark on this one. Defensible \u2014 the row's desc already names MdCN and fra_e00_patrol is a 2017 hull \u2014 but it should be stated rather than silent."
+  },
+  {
+   "severity": "minor",
+   "item": "js/rules.js new block comment \u2014 the era-range-normaliser rationale is inert",
+   "claim": "\"Named OUTSIDE the w_<era>_<fac>_<role> pattern so the era-range normaliser at the foot of generations.js leaves the figures alone.\"",
+   "reality": "generations.js:356-372 is the normaliser, and it rewrites `range` only for role3 in {at, tankdestroyer, gunship, aa, spaag, mlrs, spg}. No naval role is in that set, so a weapon named w_e80_fra_cruiser would have been untouched too. The sentence is copied verbatim from the existing European-ordnance comment at js/rules.js:2757 without re-checking whether it applies. The /OTO 76mm/ half of the same comment IS load-bearing and correct."
+  },
+  {
+   "severity": "minor",
+   "item": "asw_malafon \u2014 first proj:\"missile\" weapon in the game whose only target layer is sub",
+   "claim": "\"A rocket-boosted glider that flies 13 km ... Europe's only stand-off anti-submarine missile of its generation.\"",
+   "reality": "Every other anti-submarine round in WEAPONS is proj:\"torpedo\" (asw_mk54, asw_yu7, asw_stingray, asw_mu90, the proposed asw_l5) or proj:\"arc\" (asw_rbu, the proposed asw_mortier305). asw_malafon would be the first proj:\"missile\" round with tgt {sub:1} and nothing else. The behaviour suite stays 52/0 and combat.js applies damage generically, so nothing breaks \u2014 but it is untested ground, and intercept:1.30 with profile:\"cruise\" means combat.js's layered-defence block (entered only for guided rounds) will let an enemy ship's air defence engage an outbound anti-submarine weapon. Worth a deliberate decision rather than an inherited default."
+  }
+ ],
+ "missed": [
+  "js/eras.js fra_e00_aswhelo \u2014 the third helicopter in the same line the proposal DID audit. It resolves to w_e00_nato_aswhelo, name \"AN/AQS-22 ALFS dipping sonar\", dmg 204, range 6.4, tgt {ground:0,air:0,sea:0,sub:1}: a United States Navy SENSOR modelled as a weapon on a French NH90 NFH, which uses the Thales FLASH / HELRAS dipping sonar. The proposal flagged fra_e80_aswhelo and fra_e90_aswhelo for carrying the American asw_mk54 (both confirmed) and stopped one row short.",
+  "The proposal never resolved what generations.js:685-698 would do to its own edits. Every long-range round it adds silently rewrites the carrier hull's sight, and it reports 27 findings without the word appearing once.",
+  "The proposal never checked whether `manual` is reachable on a naval hull. entities.js:526 isIndirect(), ui.js:2038 forceFire() and ui.js:757 releasePanel() are the three readers that decide how a held round is released, and none was consulted before mdcn was written.",
+  "destroyer_f (Horizon) is left with no anti-submarine weapon although the proposal's own finding #3 lists \"two MU90 tubes and an NH90\" as Forbin's real fit; it is then recorded as \"correct-as-is\".",
+  "The `edits` array I was given is TRUNCATED \u2014 it ends mid-entry inside the La Combattante row. Only 7 edits were supplied against roughly 19 the findings imply. I counted all 7 supplied anchors (every one exactly 1) and reconstructed the remaining loadouts from the findings' `fix` fields to measure the end state and run the suite; those reconstructions are mine, not the proposal's anchors, so 12 anchors remain uncounted and MUST be re-verified with python3 str.count before anyone applies them.",
+  "Confirmed sound and worth recording: 0 dangling refs roster-wide after the full patch; all 11 new ids are new (no collision with an existing WEAPONS key); no shared weapon row is edited, and the rules.js e20 anchor `weapons:[\"navgun_76\",\"sam_aster15\",\"ssm_exocet\"], prereq:[\"navalyard\"], tech:1,` occurs exactly once (js/rules.js:3100, corvette_f) so its blast radius is one unit, not the roster; asw_mu90 added to fra_e00_corvette is cloned by privateWeapon at e00 bite 0.9, so asw_helo_f and asw_helo_g are untouched; `depthchg` really is carried by nothing at runtime (rules.js:614/619/1033/1685 put it on destroyer_n/p/c but the NAVY refit table at rules.js:2808+ rewrites those loadouts) \u2014 the proposal's claim is correct and I had to resolve it to see so; NAVGUN's fra fall-through is intact, navgun_100_fr and navgun_127_mle48 are outside /OTO 76mm/; era from:/to: windows are untouched and no role is emptied in any band; behaviour suite 52 passed / 0 failed on the patched tree, identical to the 52/0 baseline I measured first, and index.html errbox stays empty."
+ ]
+}

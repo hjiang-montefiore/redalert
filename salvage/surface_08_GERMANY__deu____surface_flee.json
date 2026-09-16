@@ -1,0 +1,360 @@
+{
+ "navy": "GERMANY (deu) \u2014 surface fleet, all six eras. Measured under jsc against clean HEAD (a62fcc9), loadouts resolved AFTER generations.js, not read off the source line.\n\n16 surface hulls: 6 destroyers (Z-1 Fletcher e50, Lutjens Type 103 e60, Bremen F122 e80, Brandenburg F123 e90, Sachsen F124 e00, Sachsen F124 e20), 3 corvettes (Koln Type 120 e60, K130 e00, K130 Batch 2 e20), 4 missile boats (Type 148 Tiger e60, Type 143 Albatros e80, Type 143A Gepard e90, Gepard late e00), 2 torpedo boats (Jaguar e50, Zobel e60), 1 mine hunter (Frankenthal Type 332, e90 onward). Plus the four faction-agnostic `both` hulls every navy shares (navminelayer, minesweeper, lst, oiler, repair_sea, all from e50).\n\nZero carriers, zero cruisers, zero nuclear ships, zero SSBNs \u2014 measured, not assumed, and CORRECT. Zero naval land-attack weapons \u2014 also correct as an intent, though five hulls quietly inherited tgt.ground 1 from shared NATO/French rounds.\n\nTHE HEADLINE: of 16 German surface hulls across six eras, only THREE carried any anti-air weapon and only two of those a missile, and both of those are e20. Every era row from 1958 to 2008 is a ONE-WEAPON stub inheriting an American weapon id. The Lutjens \u2014 Germany's first area air-defence ship \u2014 had tgt.air 0. The Sachsen F124 at e00 \u2014 the brief's own test case, \"an excellent air-defence ship and the game should show it\" \u2014 carried a single Mk 45 127 mm gun and nothing else, while the desc on the same line names \"SM-2, ESSM, RAM and Harpoon\" and explicitly says the 127 mm belongs to the Type 125, not this ship. The Brandenburg carried one weapon literally named \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha\" \u2014 the Arleigh Burke's name, truncated at 42 characters, claiming a Tomahawk Germany has never owned, behaving as a gun. That is the prompting defect reproduced exactly, on a German frigate.\n\nStructural cause: every e50-e00 naval row in eras.js for gbr, fra and deu points at the generic w_<era>_nato_<role> weapon. The defect is fleet-wide; this audit fixes Germany's share of it.\n\nProposed fix: 19 edits, all tested. 13 new German naval rounds in rules.js, 13 era rows repointed, 3 e20 rows corrected, one truncated desc completed, one quality multiplier corrected. After it, every German surface combatant from 1961 onward has the air defence and ASW it really had; no German ship carries an American or French weapon it never had; and no German ship carries a land-attack missile.",
+ "inventory": "RESOLVED AT RUNTIME UNDER jsc (clean HEAD). Format: id | era from->to | role | name | full | service | hp/speed/sight/cost/sonar | weapons with tgt mask gA/aA/sS/uU.\n\ndeu_e50_patrol | e50->e50 | patrol | Jaguar Schnellboot | Jaguar-class (Type 140) fast attack craft (torpedo) | svc 1957 | hp275 sp3.2 sight9.4 cost255 sonar0\n  - 12.7mm HMG [g1a0s1u0] dmg13 rng5.4 acc0.66 <hmg>\n  - heavyweight torpedo [g0a0s1u1] dmg340 rng9 acc0.88 <torpedo>\n\ndeu_e50_destroyer | e50->e50 | destroyer | Z-1 Fletcher | Z-1 (D170), ex-USS Anthony (DD-515), Fletcher-class | svc 1958 | hp1020 sp2.08 sight8.9 cost960 sonar4.8\n  - Three 127mm/54 Mk 42 single mounts [g1a0s1u0] dmg53 rng8.5 acc0.58 <w_e50_nato_destroyer, SHARED with nato/gbr/fra>\n\ndeu_e60_patrol | e60->e60 | patrol | Zobel Schnellboot | Zobel-class (Type 142) fast attack craft (torpedo) | svc 1962 | hp300 sp3.3 sight9.4 cost300 sonar0\n  - 12.7mm HMG [g1a0s1u0] dmg13 rng5.4 <hmg__deu_e60_patrol>\n  - heavyweight torpedo [g0a0s1u1] dmg340 rng9 <torpedo__deu_e60_patrol>\n\ndeu_e60_corvette | e60->e60 | corvette | Koln Type 120 | Koln (F220), Type 120 Koln-class frigate | svc 1961 | hp720 sp2.6 sight7.0 cost670 sonar4.0\n  - One 127mm/54 Mk 42 [g1a1s1u0] dmg29 rng6.6 acc0.586 <w_e60_nato_corvette__deu_e60_corvette>\n\ndeu_e60_destroyer | e60->e60 | destroyer | Lutjens Type 103 | Lutjens (D185), Type 103 Lutjens-class | svc 1969 | hp1300 sp2.16 sight9.8 cost1230 sonar6.0\n  - Two 127mm/54 Mk 42 [g1a0s1u0] dmg70 rng9.4 acc0.636 <w_e60_nato_destroyer__deu_e60_destroyer>\n\ndeu_e60_missileboat | e60->e60 | missileboat | Type 148 Tiger | Type 148 Tiger-class fast attack craft (West Germany) | svc 1972 | hp575 sp2.7 sight11.9 cost855 sonar0\n  - Two MM38 Exocet anti-ship missiles [g1a0s1u0] dmg148 rng11.5 acc0.681 <w_e60_nato_missileboat__deu_e60_missileboat>\n\ndeu_e80_destroyer | e80->e80 | destroyer | Bremen F122 | Bremen (F207), Type 122 Bremen-class frigate | svc 1982 | hp1600 sp2.26 sight10.8 cost1580 sonar7.4\n  - Two 127mm/54 Mk 45 [g1a0s1u0] dmg93 rng10.3 acc0.695 <w_e80_nato_destroyer__deu_e80_destroyer>\n\ndeu_e80_missileboat | e80->e80 | missileboat | Type 143 Albatros | Albatros (P6111), Type 143 and Type 143A Gepard fast attack craft | svc 1976 | hp690 sp3.0 sight13.0 cost1080 sonar0\n  - Eight RGM-84 Harpoon [g1a0s1u0] dmg196 rng12.5 acc0.737 <w_e80_nato_missileboat__deu_e80_missileboat>\n\ndeu_e90_destroyer | e90->e90 | destroyer | Brandenburg F123 | Brandenburg (F215), Type 123 Brandenburg-class frigate | svc 1994 | hp1830 sp2.32 sight11.3 cost1870 sonar8.0\n  - \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha\" [g1a0s1u0] dmg108 rng10.7 acc0.718 proj=shell aoe0.9 <w_e90_nato_destroyer__deu_e90_destroyer>\n\ndeu_e90_missileboat | e90->e90 | missileboat | Type 143A Gepard | Gepard (P6121), Type 143A with RIM-116 RAM | svc 1992 | hp780 sp3.05 sight13.7 cost1270 sonar0\n  - RGM-84 Harpoon [g1a0s1u0] dmg228 rng13.0 acc0.741 <w_e90_nato_missileboat__deu_e90_missileboat>\n\ndeu_e00_corvette | e00->e00 | corvette | K130 Braunschweig | Braunschweig (F260), Type 130 corvette | svc 2008 | hp960 sp2.95 sight9.0 cost1120 sonar2.2\n  - One 57mm Mk 110 [g1a1s1u0] dmg49 rng7.6 acc0.689 <w_e00_nato_corvette__deu_e00_corvette>\n\ndeu_e00_destroyer | e00->e00 | destroyer | Sachsen F124 | Sachsen (F219), Type 124 air-defence frigate | svc 2004 | hp2040 sp2.35 sight11.7 cost2080 sonar7.6\n  - Mk 45 Mod 4 127mm [g1a0s1u0] dmg119 rng11.0 acc0.737 <w_e00_nato_destroyer__deu_e00_destroyer>\n\ndeu_e00_missileboat | e00->e00 | missileboat | Gepard 143A (late) | Type 143A Gepard-class, final commission | svc 2008 | hp810 sp3.05 sight15.2 cost1360 sonar0\n  - MM40 Exocet Block 3 [g1a0s1u0] dmg250 rng14.4 acc0.784 <ssm_exocet__deu_e00_missileboat>\n\ncorvette_g | e20-> | corvette | K130 Braunschweig | Braunschweig-class (Type 130) corvette, Batch 2 | svc - | hp980 sp3.0 sight15.2 cost1180 sonar2.4 ciws0.5\n  - OTO 76mm Super Rapid [g1a1s1u0] dmg52 rng7.7 acc0.694 <navgun_76__corvette_g>\n  - RIM-116 RAM [g0a1s0u0] dmg120 rng4.4 acc0.774 <sam_ram__corvette_g>\n  - MM40 Exocet Block 3 [g1a0s1u0] dmg250 rng14.4 acc0.774 <ssm_exocet__corvette_g>\n\ndestroyer_g | e20-> | destroyer | Sachsen F124 | Sachsen (F219), Type 124 air-defence frigate | svc - | hp2060 sp2.35 sight14.7 cost2150 sonar7.4 ciws0.54\n  - OTO 76mm Super Rapid [g1a1s1u0] dmg52 rng7.7 acc0.694 <navgun_76__destroyer_g>\n  - SM-2/SM-6 Standard [g0a1s0u0] dmg185 rng13.9 acc0.791 <sam_sm2__destroyer_g>\n  - RIM-116 RAM [g0a1s0u0] dmg120 rng4.4 acc0.774 <sam_ram__destroyer_g>\n\nminesweeper_g | e90-> | minesweeper | Frankenthal MCMV | Frankenthal-class (Type 332) mine hunter | svc - | hp760 sp2.2 sight8.6 cost1420 sonar3.2 mineDetect8.0 mineClear3.4\n  - 57mm naval gun [g1a1s1u0] dmg38 rng7.0 acc0.689 <navgun_57__minesweeper_g>\n\nTGT-MASK SUMMARY, measured across the whole German surface fleet:\n - Can engage AIR: 3 of 16 (deu_e60_corvette and deu_e00_corvette via a dual-purpose gun; corvette_g and destroyer_g via RAM/SM-2). Lutjens, Bremen, Brandenburg, Sachsen e00, both Gepards, the Fletcher and the Frankenthal: all tgt.air 0.\n - Can engage SUB: 2 of 16, and both are torpedo boats (deu_e50_patrol, deu_e60_patrol) using the shared generic `torpedo`. Not one German frigate or destroyer in any era can attack a submarine, despite sonar values up to 8.0 and despite every one of those hulls carrying Mk 32 324 mm tubes or Bofors 375 mm in reality.\n - Claim tgt.ground 1 with a MISSILE (i.e. naval land attack): 5 of 16 \u2014 deu_e60/e80/e90_missileboat, deu_e00_missileboat, corvette_g. Germany has never had one.\n - vls / helo / radarQ fields: ZERO German hulls carry any. The NAVY refit table in rules.js covers nato, pla, pact, kpa and roc only.\n - ciws_ gun weapon: zero German hulls. CORRECT \u2014 Germany never bought Phalanx.",
+ "findings": [
+  {
+   "severity": "fatal",
+   "kind": "area-air-defence + desc-vs-loadout",
+   "unit": "deu_e00_destroyer (Sachsen F124, e00)",
+   "whatTheGameHas": "ONE weapon: \"Mk 45 Mod 4 127mm\" [g1a0s1u0] dmg119 rng11.0. tgt.air = 0. No SAM, no anti-ship missile, no ASW. Germany's only air-defence hull cannot engage an aircraft.",
+   "whatIsReal": "F219 Sachsen, commissioned 4 November 2004, three ships. APAR (four fixed X-band active phased-array faces) plus SMART-L; 1x 76 mm OTO Melara; 32-cell Mk 41 with 24 SM-2 Block IIIA and 32 ESSM quad-packed into 8 cells; 2x RAM Mk 49 21-cell; 8x RGM-84 Harpoon in two quads; 2x Mk 32 triple 324 mm with MU90; two Sea Lynx Mk88A. The row's own desc says \"SM-2, ESSM, RAM and Harpoon beneath it\" and then says the 127 mm gun is what the Type 125 has and why the Type 125 \"cannot do this job at all\" \u2014 the game gave the Sachsen the Type 125's gun and took away everything the desc names.",
+   "fix": "Replace the single gun with navgun_76, sam_sm2, sam_ram, a German anti-ship Harpoon and asw_mu90. Edit 15."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity + land-attack claim",
+   "unit": "deu_e90_destroyer (Brandenburg F123, e90)",
+   "whatTheGameHas": "ONE weapon named \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha\" \u2014 42 characters, truncated mid-word \u2014 resolving as proj=shell, aoe 0.9, [g1a0s1u0]. It is w_e90_nato_destroyer, the USS Arleigh Burke's entry, inherited whole. A German frigate advertising 96 Mk 41 cells and Tomahawk, firing a gun, unable to shoot at an aircraft.",
+   "whatIsReal": "F215 Brandenburg, commissioned 14 October 1994, four ships. 1x 76 mm OTO Melara Compatto; Mk 41 with SIXTEEN self-defence-length cells carrying RIM-7M Sea Sparrow \u2014 not SM-2, the cells are too short; 2x RAM Mk 49, the first German class designed with RAM from the drawing board; 4x MM38 Exocet; 2x twin Mk 32 324 mm; two Sea Lynx Mk88A. Germany has never possessed a Tomahawk or any other naval land-attack missile. The row's own desc says \"Sea Sparrow in a vertical launcher and two RAM mounts\".",
+   "fix": "Replace with deu_navgun_76c, deu_sam_seasparrow, sam_ram, deu_ssm_mm38, deu_asw_mk46. Edit 12."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity (foreign weapon)",
+   "unit": "deu_e80_missileboat (Type 143 Albatros, e80)",
+   "whatTheGameHas": "\"Eight RGM-84 Harpoon\" [g1a0s1u0] dmg196 rng12.5 \u2014 the USS Pegasus hydrofoil's loadout, w_e80_nato_missileboat.",
+   "whatIsReal": "P6111 Albatros, commissioned 1976, ten Type 143 boats: FOUR MM38 Exocet, TWO 76 mm OTO Melara Compatto fore and aft, two 533 mm stern tubes with DM2A1 Seeaal, mine rails. No German fast attack craft ever carried a Harpoon of any mark. The row's own desc says \"four MM38 Exocet each\" and \"The 143A traded the after 76 mm gun for a RAM launcher position\".",
+   "fix": "Replace with deu_ssm_mm38, deu_navgun_76c, deu_flak_40. Edit 11."
+  },
+  {
+   "severity": "major",
+   "kind": "desc-vs-loadout + missing point defence",
+   "unit": "deu_e90_missileboat (Type 143A Gepard, e90)",
+   "whatTheGameHas": "\"RGM-84 Harpoon\" and nothing else. No RAM. The unit's `full` field is literally \"Gepard (P6121), Type 143A with RIM-116 RAM\" and its entire desc is about RAM \u2014 \"among the first ships in the world to carry it\" \u2014 and the weapon list has no air-capable weapon at all.",
+   "whatIsReal": "Type 143A: 4x MM38 Exocet, 1x 76 mm OTO Melara forward, 1x RAM Mk 49 21-cell aft in place of the after 76 mm. RAM became operational in 1992 and these boats were first with it, which is exactly what the desc says and exactly what the loadout denies.",
+   "fix": "Replace with deu_ssm_mm38, deu_navgun_76c, sam_ram. Edit 13."
+  },
+  {
+   "severity": "major",
+   "kind": "anachronism + wrong round",
+   "unit": "deu_e00_missileboat (Gepard 143A late, e00)",
+   "whatTheGameHas": "ssm_exocet = \"MM40 Exocet Block 3\" [g1a0s1u0] dmg250 rng14.4, sole weapon. service:\"2008\".",
+   "whatIsReal": "The Type 143A carried MM38 Exocet from commissioning in 1982-84 until the last three boats paid off in November 2016 \u2014 MM40 Block 3 is a 2010s round with a land-attack mode that Germany never fitted to a Gepard. No Gepard was commissioned in 2008 either; the service field asserts a date that never happened. And the boat still has no RAM and no gun.",
+   "fix": "Replace with deu_ssm_mm38, deu_navgun_76c, sam_ram. Edit 14. The service date is flagged but not edited \u2014 see risks."
+  },
+  {
+   "severity": "major",
+   "kind": "area-air-defence + desc-vs-loadout",
+   "unit": "deu_e60_destroyer (Lutjens Type 103, e60)",
+   "whatTheGameHas": "\"Two 127mm/54 Mk 42\" and nothing else. tgt.air = 0. Germany's first area air-defence ship cannot shoot at an aircraft.",
+   "whatIsReal": "D185 Lutjens, commissioned 22 March 1969 at Bath Iron Works, three ships (Lutjens 1969, Molders 1969, Rommel 1970). Charles F. Adams hull with German modifications: two 127 mm/54 Mk 42, one Mk 13 single-arm launcher with RIM-24B Tartar (later RIM-66 SM-1MR), one Mk 112 ASROC octuple launcher, two Mk 32 triple 324 mm tubes. The row's own desc names \"Tartar, ASROC and two 127 mm\" and calls them \"the first real air-defence ships Germany ever had\".",
+   "fix": "Keep the gun \u2014 it is correct \u2014 and append deu_sam_tartar and deu_asw_asroc. Edit 8."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity + desc-vs-loadout",
+   "unit": "deu_e80_destroyer (Bremen F122, e80)",
+   "whatTheGameHas": "\"Two 127mm/54 Mk 45\" [g1a0s1u0], sole weapon. tgt.air = 0.",
+   "whatIsReal": "F207 Bremen, commissioned 7 May 1982, eight ships on a Dutch Kortenaer hull. ONE 76 mm OTO Melara Compatto \u2014 the class never carried a five-inch gun of any kind; 8x RGM-84A Harpoon in two quad launchers; one Mk 29 octuple launcher with RIM-7M Sea Sparrow from commissioning; two twin Mk 32 324 mm with Mk 46; two Sea Lynx Mk88. RAM came only in the 1990s, which the row's desc already states correctly. The desc names \"Harpoon, Sea Sparrow, two Sea Lynx and a 76 mm\" \u2014 four systems, none of them present.",
+   "fix": "Replace with deu_navgun_76c, deu_sam_seasparrow, deu_ssm_harpoon84a, deu_asw_mk46. Edit 10."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity (foreign gun) + missing ASW",
+   "unit": "deu_e60_corvette (Koln Type 120, e60)",
+   "whatTheGameHas": "\"One 127mm/54 Mk 42\" \u2014 an American automatic mount the class never had.",
+   "whatIsReal": "F220 Koln, commissioned 1961, six ships, the first warships designed and built in Germany after the war. Two 100 mm Creusot-Loire Model 1953, six 40 mm Bofors L/70, TWO 375 mm Bofors four-barrel ASW rocket launchers, four 533 mm ASW tubes. The row's own desc names \"two 100 mm French mountings and two 375 mm Bofors anti-submarine rocket launchers\".",
+   "fix": "Replace with deu_navgun_100, deu_flak_40, deu_asw_bofors375. Edit 7."
+  },
+  {
+   "severity": "major",
+   "kind": "anachronism + wrong mount",
+   "unit": "deu_e50_destroyer (Z-1 Fletcher, e50)",
+   "whatTheGameHas": "\"Three 127mm/54 Mk 42 single mounts\" [g1a0s1u0], tgt.air 0.",
+   "whatIsReal": "Z-1 (D170) is ex-USS Anthony (DD-515), a wartime Fletcher transferred in 1958. Fletchers carried FIVE 127 mm/38 calibre Mk 30 single mounts, a dual-purpose gun with a real anti-aircraft role. The Mk 42 is a 1953 automatic mount that first went to sea in USS Forrest Sherman (DD-931, 1955) and then the Charles F. Adams \u2014 it was never fitted to a Fletcher. Wrong count, wrong calibre length, wrong mount, wrong decade, and the DP capability denied.",
+   "fix": "Give Germany its own deu_navgun_127_38 with tgt.air 1. Edit 5. NOTE the shared weapon stays correct for its owner nato_e50_destroyer (Forrest Sherman really did have three Mk 42); gbr_e50_destroyer and fra_e50_destroyer inherit it and are equally wrong, out of scope here."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity (foreign gun) + desc-vs-loadout",
+   "unit": "deu_e00_corvette (K130 Braunschweig, e00)",
+   "whatTheGameHas": "\"One 57mm Mk 110\" \u2014 the Bofors gun of the American Littoral Combat Ship \u2014 as the sole weapon. No RAM, no anti-ship missile.",
+   "whatIsReal": "F260 Braunschweig, commissioned 2008. One 76 mm OTO Melara Super Rapid, two 27 mm MLG 27, two RAM Mk 49 21-cell launchers, four RBS15 Mk3, mine rails. The row's own desc names \"a 76 mm, two RAM launchers and four RBS15\".",
+   "fix": "Replace with navgun_76, sam_ram, ssm_rbs15. Edit 16."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity (wrong nation's missile)",
+   "unit": "corvette_g (K130 Braunschweig Batch 2, e20)",
+   "whatTheGameHas": "ssm_exocet = \"MM40 Exocet Block 3\", the French round, on the German corvette. Both this row's desc and the e00 row's desc say RBS15.",
+   "whatIsReal": "The K130 has carried RBS15 Mk3 (Saab, built in Germany by Diehl) since 2008 across both batches; Germany ordered RBS15 Mk4 in 2022. It has never carried an Exocet of any mark. The Mk3 is also the ONE anti-ship round in German naval service with a genuine land-attack mode, so it is the one German round that honestly keeps tgt.ground 1.",
+   "fix": "Swap ssm_exocet for a new ssm_rbs15 in rules.js. Edit 2."
+  },
+  {
+   "severity": "major",
+   "kind": "capability gap (anti-ship and ASW)",
+   "unit": "destroyer_g (Sachsen F124, e20)",
+   "whatTheGameHas": "navgun_76, sam_sm2, sam_ram. No anti-ship missile and no ASW weapon. Germany's only ocean escort cannot engage a ship or a submarine, while the American destroyer_n carries ssm_harpoon and asw_mk54 and the British corvette_b carries asw_stingray.",
+   "whatIsReal": "The Sachsen carries 8x RGM-84 Harpoon in two quad launchers and two Mk 32 triple 324 mm tubes firing MU90 Impact \u2014 asw_mu90 already exists in the weapon table and is the correct German round.",
+   "fix": "Append a German anti-ship Harpoon and asw_mu90. Edit 3."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity + desc-vs-3D-model",
+   "unit": "deu_e60_missileboat (Type 148 Tiger, e60)",
+   "whatTheGameHas": "\"Two MM38 Exocet anti-ship missiles\" and no gun. tgt.ground 1 on the missile.",
+   "whatIsReal": "Twenty craft built by CMN Cherbourg to a German requirement, first commissioned 1972. FOUR MM38 Exocet, one 76 mm OTO Melara Compatto forward, one 40 mm Bofors L/70 aft. The game already knows this: js/warship_specs.js line 63 describes this exact unit as \"76 mm OTO turret forward, four Exocet canisters in two staggered pairs amidships, 40 mm on the stern\" and gives it guns:1, gunCal:76. The 3D model spec and the weapon table disagree and the model is right.",
+   "fix": "Replace with deu_ssm_mm38 (four rounds, ground 0), deu_navgun_76c, deu_flak_40. Edit 9. Desc also truncated \u2014 Edit 18."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity (mine warfare)",
+   "unit": "minesweeper_g (Frankenthal Type 332, e90 onward)",
+   "whatTheGameHas": "navgun_57 = \"57mm naval gun\", the shared generic MCMV gun.",
+   "whatIsReal": "M1066 Frankenthal, commissioned 1992, twelve ships. One 40 mm Bofors L/70 (later replaced by 27 mm MLG 27) plus Stinger, and the Seehund and Pinguin mine-disposal drones. The class has never carried a 57 mm. This is the one hull in the German roster whose branch the codebase itself calls world-leading \u2014 rules.js says \"Mine countermeasures is the one branch of naval warfare where Germany genuinely leads\" \u2014 and it is carrying the wrong gun.",
+   "fix": "Replace navgun_57 with deu_flak_40. Edit 4."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity + missing air defence",
+   "unit": "deu_e50_patrol (Jaguar Type 140) and deu_e60_patrol (Zobel Type 142)",
+   "whatTheGameHas": "Both: \"12.7mm HMG\" [g1a0s1u0] dmg13 plus the generic heavyweight torpedo.",
+   "whatIsReal": "Forty Jaguars from 1957 and ten Zobels from 1962, both Lursen-built, both with TWO 40 mm Bofors L/70 and four 533 mm torpedo tubes. The Jaguar's own desc says \"two 40 mm and four torpedo tubes\". A Bofors L/70 is an anti-aircraft gun; a 12.7 mm HMG with tgt.air 0 is not, so the game also strips these boats of their only air defence.",
+   "fix": "Replace hmg with deu_flak_40 on both. Edits 6 and 7 (patrols)."
+  },
+  {
+   "severity": "major",
+   "kind": "quality multiplier double-counts absence",
+   "unit": "generations.js DOMAIN deu naval:0.72",
+   "whatTheGameHas": "Measured: the German Sachsen's SM-2 resolves to acc 0.791 against the American Arleigh Burke's 0.900 \u2014 the identical missile. German RAM resolves to 0.774 against a base table value of 0.880. The comment justifies 0.72 with \"no carrier, no cruiser, no long-range naval strike\".",
+   "whatIsReal": "All three justifications are ROSTER facts already modelled by absence: the German list contains no carrier hull, no cruiser hull and no land-attack round, so the game charges for them once already. Charging a second time as accuracy makes German-built systems worse than American ones at the things Germany builds \u2014 and RAM is a German requirement, developed with the United States, that went to sea on the German Type 143A in 1992 before anyone else had it, as rules.js's own comment states. 0.72 is the same figure given to the Warsaw Pact and Taiwan.",
+   "fix": "Raise to 0.90 \u2014 still below nato and gbr at 1.00, level with France \u2014 and rewrite the comment to say the gap is scale and reach, not build quality. Edit 19. OPTIONAL: it also moves the German submarines, which another workflow owns."
+  },
+  {
+   "severity": "major",
+   "kind": "land attack \u2014 right intent, wrong table",
+   "unit": "five German hulls: deu_e60/e80/e90_missileboat, deu_e00_missileboat, corvette_g",
+   "whatTheGameHas": "Every one of them carries an anti-ship missile with tgt.ground 1 inherited from a shared NATO or French round, which quietly gives the Bundesmarine a naval land-attack capability in four of six eras.",
+   "whatIsReal": "No German surface warship has ever carried a land-attack missile \u2014 no Tomahawk, no MdCN, no SCALP Naval, no Kalibr equivalent. The only German naval fire that has ever reached a shore target is a gun. The one honest exception is RBS15 Mk3 on the K130, which really does have a land-attack mode.",
+   "fix": "All new German anti-ship rounds get tgt.ground 0; ssm_rbs15 alone keeps ground 1 with a comment saying why. Built into edits 1, 9, 10, 11, 12, 13, 14, 15, 16."
+  },
+  {
+   "severity": "minor",
+   "kind": "truncated data",
+   "unit": "deu_e60_missileboat desc",
+   "whatTheGameHas": "desc is 320 characters and ends mid-word: \"...the Bundesmarine's entire concept of operations depended o\".",
+   "whatIsReal": "A generator truncation. The same artefact shows in the weapon names: about fifty weapon names in the eras.js JSON block sit at exactly 42 characters, including \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha\" (missing \"wk\") which is the one that lands on the Brandenburg.",
+   "fix": "Complete the sentence with the boat's real armament. Edit 18. The 42-character weapon-name truncation is fleet-wide and out of scope here; removing it from the German hull is enough for this audit."
+  },
+  {
+   "severity": "minor",
+   "kind": "missing hull (mine warfare)",
+   "unit": "German MCM before 1992",
+   "whatTheGameHas": "minesweeper_g starts at e90. Germany has no national mine warfare hull in e50, e60, e80 or e00, and no minelayer hull ever.",
+   "whatIsReal": "Type 320 Lindau, eighteen coastal minesweepers from 1957; the Troika system of 1981, one manned Type 351 control boat directing three unmanned Seehund drones, the first operational unmanned minesweeping anywhere; Type 343 Hameln from 1989. Minelayers: Type 457 Sachsenwald (A1437) 1968 and Steigerwald (A1438) 1969. Germany's mine rails also ran on the Type 143/143A and run on the K130.",
+   "fix": "NOT edited. The faction-agnostic `both` hulls navminelayer and minesweeper are available to Germany from e50 and cover the function; this is a texture gap, not a capability gap. Recording it so the owner can decide."
+  },
+  {
+   "severity": "minor",
+   "kind": "missing capability fields",
+   "unit": "all 16 German surface hulls",
+   "whatTheGameHas": "Zero German hulls carry vls, helo or radarQ. The NAVY refit table in rules.js covers nato, pla, pact, kpa and roc only \u2014 gbr, fra and deu hulls all get none. The comment on that table calls helo \"the single biggest ASW multiplier\".",
+   "whatIsReal": "Sachsen: 32 Mk 41 cells and two helicopters. Brandenburg: 16 cells and two helicopters. Bremen: two Sea Lynx. Koln: none. Lutjens: none.",
+   "fix": "NOT edited \u2014 it is a game-wide structural gap affecting three European navies equally, not a German identity defect, and fixing it for Germany alone would misrepresent the comparison."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "realism over symmetry \u2014 absences that are right",
+   "unit": "deu roster shape",
+   "whatTheGameHas": "Measured: zero units with role carrier, cruiser, ssbn or ssgn in any era. No corvette in e50, e80 or e90. No missile boat in e50 or e20. No patrol boat after e60. No nuclear surface ship. No naval land-attack weapon.",
+   "whatIsReal": "Every one of these is correct. Germany has never had a carrier, a cruiser, a nuclear surface ship or a naval strategic weapon. The Koln class paid off between 1982 and 1989 and nothing replaced it until the K130 in 2008 \u2014 the deu_e60_corvette desc states this and the roster honours it exactly. The Bundesmarine had no anti-ship missile of any kind until Exocet arrived on the Type 148 in 1972 \u2014 the Zobel desc states this and there is correctly no e50 missile boat. The last Gepard paid off in November 2016 \u2014 the corvette_g desc states this and there is correctly no e20 missile boat.",
+   "fix": "None. Leave every one of these absences exactly as it is. This is the realism-over-symmetry rule already applied correctly and it should be recorded as checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "close-in weapon system",
+   "unit": "all German hulls",
+   "whatTheGameHas": "No ciws_ gun weapon on any German hull in any era, while nato, pla, pact and roc hulls all carry one.",
+   "whatIsReal": "Germany never bought Phalanx or any gun CIWS for its escorts. RAM is the German close-in weapon \u2014 a German requirement co-developed with the United States, first to sea on the Type 143A in 1992 \u2014 and it is what fills that role on the Bremen (retrofit), Brandenburg, Sachsen and K130. The absence is the right answer.",
+   "fix": "None. Recorded as checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "shared weapon that is genuinely shared",
+   "unit": "deu_e60_destroyer gun",
+   "whatTheGameHas": "\"Two 127mm/54 Mk 42\" shared with nato_e60_destroyer (USS Charles F. Adams).",
+   "whatIsReal": "The Lutjens IS a Charles F. Adams \u2014 three hulls built at Bath Iron Works to the American design with German modifications, carrying the same two Mk 42 mounts. This is the one case in the German era rows where inheriting the American weapon is exactly correct, and the fix keeps it.",
+   "fix": "None \u2014 kept unchanged in edit 8, which only appends Tartar and ASROC."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "ASW helicopter coverage",
+   "unit": "deu aswhelo across eras",
+   "whatTheGameHas": "Sea Lynx Mk88 from e80, Mk88A in e90, e00 and e20, and NOTHING in e50 or e60.",
+   "whatIsReal": "Germany had no shipborne ASW helicopter at all before the Sea Lynx Mk88 arrived in 1981, which is what the asw_helo_g desc says. The Sea King Mk41 of 1974 was a search-and-rescue aircraft flown from shore. The gap in e50 and e60 is correct.",
+   "fix": "None. Recorded as checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "sonar and mine warfare figures",
+   "unit": "deu_e00_corvette / corvette_g / minesweeper_g",
+   "whatTheGameHas": "K130 sonar 2.2 and 2.4 with no ASW weapon; minesweeper_g mineDetect 8.0 and mineClear 3.4 against the generic minesweeper's 5.0 and 2.2.",
+   "whatIsReal": "The K130 has no torpedo tubes and no sonar of consequence \u2014 a Baltic ship built to fight from the coast, exactly as its desc says. And Germany's mine hunter being the best mine warfare hull in the game is right: the Type 332 is non-magnetic, hunts with a variable-depth sonar and puts a Pinguin drone down the wire.",
+   "fix": "None. Recorded as checked and sound."
+  },
+  {
+   "severity": "minor",
+   "kind": "service-date semantics",
+   "unit": "deu_e90_missileboat service:\"1992\" and deu_e80_missileboat service:\"1976\"",
+   "whatTheGameHas": "The Gepard row dates itself 1992 though the class commissioned 1982-84; the Albatros row dates itself 1976 but sits in e80 (1980s), while e60 covers 1960s-70s.",
+   "whatIsReal": "1992 is the RAM fit, not the commissioning, and the row's desc says so explicitly \u2014 a documented and defensible use of the field. The Albatros row's `full` covers \"Type 143 and Type 143A\" and the 143A commissioned 1982-84, so placing the pair in e80 is defensible. Both are noted, neither is edited.",
+   "fix": "None. Contrast with deu_e00_missileboat's service:\"2008\", which has no such justification \u2014 see that finding."
+  }
+ ],
+ "edits": [
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/rules.js",
+   "why": "EDIT 1 of 19. Adds the thirteen German naval rounds the rest of the fix needs, into the existing \"European naval ordnance\" Object.assign block where Aster, CAMM, RAM, Exocet, Spearfish, F21, DM2A4, Sting Ray and MU90 already live \u2014 the right home, and the block's own comment already explains why these ids sit outside the w_<era>_<fac>_<role> pattern. profile, intercept and speed are carried inline because MISSILE_PROFILE and MISSILE_SPEED are applied further down this same file; the fall-through at the foot would give MM38 (range 11.0) profile \"pop\", which is wrong for a sea-skimmer. Every round is tgt.ground 0 except ssm_rbs15, which states in its comment why it alone is not. Verified: resolves under jsc with no dangling reference, behaviour suite 52/0, errbox empty.",
+   "anchor": "  /* ---- naval electronic warfare ---- */",
+   "exactCount": 1,
+   "newCode": "  /* ---- German naval ordnance, 1957 to 2025 ----\n     The Bundesmarine bought a short and very specific list, and what it never\n     bought is the more interesting half. There has never been a German naval\n     land-attack weapon of any kind - no Tomahawk, no MdCN, no Kalibr\n     equivalent - so every round below is tgt.ground 0 except RBS15 Mk3, whose\n     land-attack mode is real, and the guns. If a German warship is shooting at\n     something ashore in this game it is shooting at it with a gun, and that is\n     the whole truth of the matter.\n\n     Germany also never bought Phalanx. RAM is a German requirement, developed\n     with the United States and first to sea anywhere on the Type 143A in 1992,\n     and it IS the German close-in weapon - which is why no German hull carries\n     a ciws_ round and why that absence is correct rather than missing.\n\n     Named outside the w_<era>_<fac>_<role> pattern so the era-range normaliser\n     at the foot of generations.js leaves these figures alone, and carrying\n     profile, intercept and speed inline because MISSILE_PROFILE and\n     MISSILE_SPEED are applied further down THIS file - a round added by name\n     there would need three anchors instead of one.                        */\n  deu_navgun_127_38: { name:\"Five 127mm/38 Mk 30 (Fletcher)\", dmg:44, warhead:\"he\", range:7.8,\n    reload:3.6, burst:3, burstDelay:0.40, acc:0.55, proj:\"shell\", speed:700, aoe:0.8,\n    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"cannon\" },\n  /* The Bofors L/70 is the one gun that runs the whole length of this navy:\n     the Jaguar and Zobel Schnellboote, the Koln class, the stern mount on the\n     Type 143, and the single mount on the Frankenthal mine hunters. */\n  deu_flak_40: { name:\"40 mm Bofors L/70\", dmg:17, warhead:\"flak\", range:5.6,\n    reload:1.7, burst:5, burstDelay:0.09, acc:0.52, proj:\"shell\", speed:880, aoe:0.4,\n    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"shot\" },\n  deu_navgun_100: { name:\"Two 100 mm Creusot-Loire Mle 1953\", dmg:34, warhead:\"he\", range:6.8,\n    reload:1.9, burst:3, burstDelay:0.20, acc:0.56, proj:\"shell\", speed:700, aoe:0.6,\n    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"shot\" },\n  deu_asw_bofors375: { name:\"Two 375 mm Bofors ASW rocket launchers\", dmg:150, warhead:\"he\",\n    range:3.0, reload:7.0, burst:4, burstDelay:0.20, acc:0.44, proj:\"arc\", speed:14, aoe:1.3,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"cannon\" },\n  /* Tartar on the Mk 13 single arm, and the reason the Lutjens class exists:\n     three ships delivered from Bath Iron Works in 1969-70 and the first German\n     warships able to defend anything but themselves against aircraft. */\n  deu_sam_tartar: { name:\"RIM-24B Tartar, Mk 13 launcher\", dmg:130, warhead:\"flak\", range:8.6,\n    reload:6.2, burst:1, acc:0.60, proj:\"missile\", speed:600, profile:\"pop\", intercept:0.88,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n  deu_asw_asroc: { name:\"RUR-5A ASROC, Mk 112 launcher\", dmg:190, warhead:\"he\", range:6.0,\n    minRange:1.2, reload:9.5, burst:1, acc:0.64, proj:\"arc\", speed:22, aoe:1.0,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"missile\" },\n  deu_navgun_76c: { name:\"76 mm OTO Melara Compatto\", dmg:40, warhead:\"he\", range:7.4,\n    reload:1.3, burst:4, burstDelay:0.16, acc:0.66, proj:\"shell\", speed:700, aoe:0.5,\n    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"shot\" },\n  /* MM38, not MM40 Block 3. Four rounds per boat on the Type 148 from 1972, the\n     Type 143 from 1976 and the Type 143A from 1982, and they were still MM38\n     when the last Gepard paid off in November 2016: a 42 km 1970s sea-skimmer\n     with no land-attack mode and no data link, forty years after it arrived. */\n  deu_ssm_mm38: { name:\"Four MM38 Exocet\", dmg:175, warhead:\"he\", range:11.0, minRange:1.6,\n    reload:15.0, burst:2, burstDelay:0.9, acc:0.70, proj:\"missile\", speed:118, aoe:1.4,\n    profile:\"skim\", intercept:1.10, tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\" },\n  deu_sam_seasparrow: { name:\"RIM-7M Sea Sparrow\", dmg:110, warhead:\"flak\", range:5.8,\n    reload:2.8, burst:2, burstDelay:0.35, acc:0.70, proj:\"missile\", speed:600,\n    profile:\"pop\", intercept:0.80, tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n  deu_asw_mk46: { name:\"Mk 46 in Mk 32 triple tubes\", dmg:170, warhead:\"he\", range:5.4,\n    reload:7.6, burst:1, acc:0.80, proj:\"torpedo\", speed:175, aoe:0.8,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"missile\" },\n  /* Two German classes have ever carried Harpoon and they are the Bremen and\n     the Sachsen. Neither buy included a land-attack round: the 1982 RGM-84A had\n     no such mode to include, and the Block II coastal-target mode was never\n     part of the German order. Both are tgt.ground 0 and that is deliberate. */\n  deu_ssm_harpoon84a: { name:\"Eight RGM-84A Harpoon\", dmg:200, warhead:\"he\", range:12.0,\n    minRange:1.8, reload:14.0, burst:2, burstDelay:0.9, acc:0.72, proj:\"missile\", speed:120,\n    aoe:1.5, profile:\"skim\", intercept:1.15, tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\" },\n  deu_ssm_harpoon2: { name:\"Eight RGM-84 Harpoon Block II\", dmg:250, warhead:\"he\", range:13.6,\n    minRange:2.0, reload:13.2, burst:2, burstDelay:0.9, acc:0.82, proj:\"missile\", speed:120,\n    aoe:1.5, profile:\"skim\", intercept:1.00, tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\" },\n  /* Swedish, not French. The K130 has carried RBS15 Mk3 since 2008 and Germany\n     ordered the Mk4 in 2022; it has never carried an Exocet of any mark. The\n     Mk3 is also the ONE anti-ship round in German naval service with a genuine\n     land-attack mode, which is why it alone here is tgt.ground 1. */\n  ssm_rbs15: { name:\"RBS15 Mk3\", dmg:245, warhead:\"he\", range:14.6, minRange:2.0, reload:14.0,\n    burst:2, burstDelay:0.9, acc:0.84, proj:\"missile\", speed:120, aoe:1.4,\n    profile:\"skim\", intercept:0.90, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:\"missile\" },\n\n  /* ---- naval electronic warfare ---- */"
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/rules.js",
+   "why": "EDIT 2 of 19 \u2014 corvette_g (K130 Braunschweig Batch 2, e20). Swaps the French MM40 Exocet Block 3 for RBS15 Mk3. The K130 has carried RBS15 Mk3 since 2008 and Germany ordered the Mk4 in 2022; it has never carried an Exocet. Both of this ship's descs, here and in eras.js, already say RBS15 \u2014 the loadout was the only thing saying Exocet.",
+   "anchor": "    layer:\"sea\", weapons:[\"navgun_76\",\"sam_ram\",\"ssm_exocet\"], prereq:[\"navalyard\"], tech:1,",
+   "exactCount": 1,
+   "newCode": "    layer:\"sea\", weapons:[\"navgun_76\",\"sam_ram\",\"ssm_rbs15\"], prereq:[\"navalyard\"], tech:1,"
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/rules.js",
+   "why": "EDIT 3 of 19 \u2014 destroyer_g (Sachsen F124, e20). Germany's only ocean escort could engage neither a ship nor a submarine. The real F124 carries eight RGM-84 Harpoon in two quad launchers and two Mk 32 triple 324 mm tubes firing MU90 Impact; asw_mu90 already exists in the table and is already what the German Sea Lynx drops. Harpoon is tgt.ground 0 \u2014 the German buy has never included a land-attack round.",
+   "anchor": "    layer:\"sea\", weapons:[\"navgun_76\",\"sam_sm2\",\"sam_ram\"], prereq:[\"navalyard\",\"radar\"], tech:2,",
+   "exactCount": 1,
+   "newCode": "    layer:\"sea\", weapons:[\"navgun_76\",\"sam_sm2\",\"sam_ram\",\"deu_ssm_harpoon2\",\"asw_mu90\"], prereq:[\"navalyard\",\"radar\"], tech:2,"
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/rules.js",
+   "why": "EDIT 4 of 19 \u2014 minesweeper_g (Frankenthal Type 332). The class carries one 40 mm Bofors L/70, later a 27 mm MLG 27, and has never had a 57 mm gun of any kind. This is the hull whose branch the file's own desc calls the one where Germany genuinely leads, so getting its gun right matters more here than anywhere else in the roster.",
+   "anchor": "    layer:\"sea\", weapons:[\"navgun_57\"], prereq:[\"navalyard\"], tech:1,\n    mineDetect:8.0, mineClear:3.4, mineClearRate:2.0, sonar:3.2,",
+   "exactCount": 1,
+   "newCode": "    layer:\"sea\", weapons:[\"deu_flak_40\"], prereq:[\"navalyard\"], tech:1,\n    mineDetect:8.0, mineClear:3.4, mineClearRate:2.0, sonar:3.2,"
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 5 of 19 \u2014 deu_e50_destroyer (Z-1, ex-USS Anthony DD-515). Was carrying w_e50_nato_destroyer, \"Three 127mm/54 Mk 42 single mounts\". The Mk 42 is a 1953 automatic mount that first went to sea in USS Forrest Sherman in 1955 and was never fitted to a Fletcher; Z-1 as transferred in 1958 had five 127 mm/38 Mk 30 singles, a dual-purpose gun. The old weapon also had tgt.air 0, denying the Fletcher's DP battery. The shared weapon stays correct for its owner nato_e50_destroyer and is left alone.",
+   "anchor": "weapons:[\"w_e50_nato_destroyer\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e50\", to:\"e50\", service:\"1958\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_navgun_127_38\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e50\", to:\"e50\", service:\"1958\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 6 of 19 \u2014 deu_e50_patrol (Jaguar Type 140). Was carrying the generic 12.7 mm HMG. The row's own desc says \"two 40 mm and four torpedo tubes\". A Bofors L/70 is an anti-aircraft gun, so this also restores the only air defence forty Schnellboote had.",
+   "anchor": "weapons:[\"hmg\",\"torpedo\"], prereq:[\"navalyard\"], tech:1, from:\"e50\", to:\"e50\", service:\"1957\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_flak_40\",\"torpedo\"], prereq:[\"navalyard\"], tech:1, from:\"e50\", to:\"e50\", service:\"1957\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 7 of 19 \u2014 deu_e60_patrol (Zobel Type 142). Same defect and same fix as the Jaguar: ten improved boats with two 40 mm Bofors L/70 and four 533 mm tubes, not a 12.7 mm machine gun.",
+   "anchor": "weapons:[\"hmg\",\"torpedo\"], prereq:[\"navalyard\"], tech:1, from:\"e60\", to:\"e60\", service:\"1962\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_flak_40\",\"torpedo\"], prereq:[\"navalyard\"], tech:1, from:\"e60\", to:\"e60\", service:\"1962\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 8 of 19 \u2014 deu_e60_corvette (Koln Type 120). Was carrying w_e60_nato_corvette, \"One 127mm/54 Mk 42\", an American mount the class never had. Six ships, the first warships designed and built in Germany after the war: two 100 mm Creusot-Loire Mle 1953, six 40 mm Bofors L/70, two 375 mm Bofors four-barrel ASW rocket launchers. The row's own desc already names all three. The Bofors 375 also gives this hull the anti-submarine capability every German frigate in the game lacked.",
+   "anchor": "weapons:[\"w_e60_nato_corvette\"], prereq:[\"navalyard\"], tech:1, from:\"e60\", to:\"e60\", service:\"1961\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_navgun_100\",\"deu_flak_40\",\"deu_asw_bofors375\"], prereq:[\"navalyard\"], tech:1, from:\"e60\", to:\"e60\", service:\"1961\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 9 of 19 \u2014 deu_e60_destroyer (Lutjens Type 103). The gun is KEPT unchanged and deliberately: the Lutjens IS a Charles F. Adams built at Bath Iron Works, so inheriting nato's \"Two 127mm/54 Mk 42\" is exactly right and is the one place in the German era rows where the shared weapon is correct. What was missing is the whole reason the class exists \u2014 the Mk 13 launcher with RIM-24B Tartar, later SM-1MR, and the Mk 112 ASROC. Before this the first real air-defence ship Germany ever had could not shoot at an aircraft.",
+   "anchor": "weapons:[\"w_e60_nato_destroyer\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e60\", to:\"e60\", service:\"1969\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"w_e60_nato_destroyer\",\"deu_sam_tartar\",\"deu_asw_asroc\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e60\", to:\"e60\", service:\"1969\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 10 of 19 \u2014 deu_e60_missileboat (Type 148 Tiger). Was carrying \"Two MM38 Exocet\" and no gun, with tgt.ground 1. Twenty craft, built at CMN Cherbourg to a German requirement from 1972: four MM38 Exocet, one 76 mm OTO Melara forward, one 40 mm Bofors aft. js/warship_specs.js line 63 already describes this exact unit as \"76 mm OTO turret forward, four Exocet canisters in two staggered pairs amidships, 40 mm on the stern\" \u2014 the 3D model knew and the weapon table did not. Note this row uses the JSON quoting style of its block.",
+   "anchor": "\"weapons\":[\"w_e60_nato_missileboat\"],\"prereq\":[\"navalyard\",\"radar\"],\"tech\":2,\"from\":\"e60\",\"to\":\"e60\",\"service\":\"1972\"",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"deu_ssm_mm38\",\"deu_navgun_76c\",\"deu_flak_40\"],\"prereq\":[\"navalyard\",\"radar\"],\"tech\":2,\"from\":\"e60\",\"to\":\"e60\",\"service\":\"1972\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 11 of 19 \u2014 deu_e80_destroyer (Bremen F122). Was carrying w_e80_nato_destroyer, \"Two 127mm/54 Mk 45\" \u2014 the Bremen class never carried a five-inch gun of any kind. Eight ships from 7 May 1982 on a Dutch Kortenaer hull: one 76 mm OTO Melara Compatto, eight RGM-84A Harpoon in two quad launchers, one Mk 29 octuple Sea Sparrow, two twin Mk 32 324 mm with Mk 46. The row's desc names all four and the loadout had none of them. RAM is correctly still absent \u2014 the desc says the launcher positions were built in and left empty until 1992, and this keeps that true.",
+   "anchor": "weapons:[\"w_e80_nato_destroyer\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e80\", to:\"e80\", service:\"1982\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_navgun_76c\",\"deu_sam_seasparrow\",\"deu_ssm_harpoon84a\",\"deu_asw_mk46\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e80\", to:\"e80\", service:\"1982\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 12 of 19 \u2014 deu_e80_missileboat (Type 143 Albatros). Was carrying \"Eight RGM-84 Harpoon\", the USS Pegasus hydrofoil's loadout. No German fast attack craft ever carried a Harpoon. Ten Type 143 from 1976: four MM38 Exocet, two 76 mm OTO Melara Compatto fore and aft, two 533 mm stern tubes. The row's own desc says \"four MM38 Exocet each\". Two 76 mm mounts are modelled as the one deu_navgun_76c plus the Bofors, which is as close as the one-weapon-per-mount table allows without inventing a designation.",
+   "anchor": "weapons:[\"w_e80_nato_missileboat\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e80\", to:\"e80\", service:\"1976\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_ssm_mm38\",\"deu_navgun_76c\",\"deu_flak_40\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e80\", to:\"e80\", service:\"1976\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 13 of 19 \u2014 deu_e90_destroyer (Brandenburg F123). THE headline fix. Was carrying one weapon named \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomaha\" \u2014 the Arleigh Burke's entry, truncated at 42 characters, advertising a Tomahawk Germany has never owned, behaving as a 127 mm gun, with tgt.air 0. Four ships from 14 October 1994: one 76 mm Compatto; Mk 41 with SIXTEEN self-defence-length cells carrying RIM-7M Sea Sparrow, not SM-2, because the cells are too short for it; two RAM Mk 49, the first German class designed with RAM from the drawing board; four MM38 Exocet; two twin Mk 32 324 mm. Every one of those is in the row's own desc.",
+   "anchor": "weapons:[\"w_e90_nato_destroyer\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e90\", to:\"e90\", service:\"1994\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_navgun_76c\",\"deu_sam_seasparrow\",\"sam_ram\",\"deu_ssm_mm38\",\"deu_asw_mk46\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e90\", to:\"e90\", service:\"1994\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 14 of 19 \u2014 deu_e90_missileboat (Type 143A Gepard). The unit's `full` field reads \"Gepard (P6121), Type 143A with RIM-116 RAM\" and its entire desc is about RAM, and the loadout was one American Harpoon and no air-capable weapon at all. Four MM38 Exocet, one 76 mm forward, one RAM Mk 49 aft in place of the after 76 mm \u2014 which is exactly what the e80 row's desc says the 143A traded for.",
+   "anchor": "weapons:[\"w_e90_nato_missileboat\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e90\", to:\"e90\", service:\"1992\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_ssm_mm38\",\"deu_navgun_76c\",\"sam_ram\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e90\", to:\"e90\", service:\"1992\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 15 of 19 \u2014 deu_e00_corvette (K130 Braunschweig). Was carrying \"One 57mm Mk 110\", the Bofors gun of the American Littoral Combat Ship, as its only weapon. F260 Braunschweig, commissioned 2008: one 76 mm OTO Melara Super Rapid, two RAM Mk 49, four RBS15 Mk3. The row's own desc names \"a 76 mm, two RAM launchers and four RBS15\". No ASW weapon is added and that is correct \u2014 the K130 has no torpedo tubes and no sonar of consequence, as the same desc says.",
+   "anchor": "weapons:[\"w_e00_nato_corvette\"], prereq:[\"navalyard\"], tech:1, from:\"e00\", to:\"e00\", service:\"2008\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"navgun_76\",\"sam_ram\",\"ssm_rbs15\"], prereq:[\"navalyard\"], tech:1, from:\"e00\", to:\"e00\", service:\"2008\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 16 of 19 \u2014 deu_e00_destroyer (Sachsen F124). The brief's own test case. Was carrying one \"Mk 45 Mod 4 127mm\" and nothing else, with tgt.air 0, while the row's desc names \"SM-2, ESSM, RAM and Harpoon\" and then says a 127 mm gun is what the Type 125 has and why the Type 125 cannot do this job. F219 Sachsen, commissioned 4 November 2004: 76 mm OTO Melara, 32-cell Mk 41 with 24 SM-2 Block IIIA and 32 quad-packed ESSM, two RAM Mk 49, eight RGM-84 Harpoon, two Mk 32 triple tubes with MU90. Germany's only air-defence hull can now defend something.",
+   "anchor": "weapons:[\"w_e00_nato_destroyer\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e00\", to:\"e00\", service:\"2004\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"navgun_76\",\"sam_sm2\",\"sam_ram\",\"deu_ssm_harpoon2\",\"asw_mu90\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e00\", to:\"e00\", service:\"2004\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 17 of 19 \u2014 deu_e00_missileboat (Gepard 143A late). Was carrying MM40 Exocet Block 3, a 2010s round with a land-attack mode that Germany never fitted to a Gepard. The Type 143A carried MM38 from 1982 until the last three paid off in November 2016. Restores the MM38, the 76 mm and the RAM the class actually had at the end of its life.",
+   "anchor": "weapons:[\"ssm_exocet\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e00\", to:\"e00\", service:\"2008\"",
+   "exactCount": 1,
+   "newCode": "weapons:[\"deu_ssm_mm38\",\"deu_navgun_76c\",\"sam_ram\"], prereq:[\"navalyard\",\"radar\"], tech:2, from:\"e00\", to:\"e00\", service:\"2008\""
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/eras.js",
+   "why": "EDIT 18 of 19 \u2014 deu_e60_missileboat desc, truncated mid-word at 320 characters (\"...operations depended o\"). Completes the sentence and states the armament the loadout fix restores. Verified safe: the replacement text contains no double quote and sits inside a JSON-quoted string.",
+   "anchor": "the Bundesmarine's entire concept of operations depended o",
+   "exactCount": 1,
+   "newCode": "the Bundesmarine's entire concept of operations depended on them. Four MM38 Exocet, a 76 mm OTO Melara forward and a 40 mm Bofors aft on 234 tonnes - the first anti-ship missile Germany ever put to sea, and the end of the argument for the torpedo boat."
+  },
+  {
+   "file": "/Users/hjiang/Desktop/redalert/js/generations.js",
+   "why": "EDIT 19 of 19 \u2014 OPTIONAL, and the only edit that reaches outside the surface fleet. DOMAIN deu naval was 0.72, the same figure given to the Warsaw Pact and Taiwan, and the mechanism is acc *= (0.7 + 0.3*nv) and rng *= (0.85 + 0.15*nv) \u2014 it degrades the accuracy and reach of German naval weapons. Measured before the change: the Sachsen's SM-2 resolves to acc 0.791 against the Arleigh Burke's 0.900 for the identical missile, and RAM to 0.774 against a base 0.880 \u2014 RAM being a German requirement that went to sea on a German boat first. The comment's three justifications are all roster facts already modelled by those hulls and rounds not existing, so 0.72 charged for them twice. At 0.90 the same measurements become 0.838 and 0.819: still below the United States and Britain, which is the honest relation. SEE RISKS \u2014 this also moves the German submarines, which another workflow owns.",
+   "anchor": "       superb AIP submarines and mine warfare, no carrier, no cruiser, no\n       long-range naval strike. */\n    deu:  { optics:1.06, guided:0.96, a2a:0.94, airdef:1.05, arty:0.94, naval:0.72 },",
+   "exactCount": 1,
+   "newCode": "       superb AIP submarines and mine warfare, no carrier, no cruiser, no\n       long-range naval strike.\n       The naval figure was 0.72 and that double-counted the absences. No\n       carrier, no cruiser and no land-attack round are ROSTER facts - those\n       hulls and those weapons do not exist in the German list, so the game\n       already charges for them once. Charging again as accuracy made German\n       systems worse than American ones at things Germany builds: measured\n       before this change, the Sachsen's SM-2 resolved to acc 0.791 against the\n       Arleigh Burke's 0.900 for the same missile, and RAM to 0.774 against a\n       base 0.880 - RAM being a German requirement that went to sea on a German\n       boat, the Type 143A, in 1992, before anyone else had it. 0.90 keeps\n       Germany below the United States and Britain, which is the honest\n       relation: a smaller fleet with a shorter reach, not a worse-built one. */\n    deu:  { optics:1.06, guided:0.96, a2a:0.94, airdef:1.05, arty:0.94, naval:0.90 },"
+  }
+ ],
+ "proof": "HOW IT WAS MEASURED, and what is inference.\n\nMEASURED (jsc, clean HEAD a62fcc9, loadouts resolved after generations.js has rewritten them):\n- Concatenation: `var window=this;` + js/util.js js/config.js js/facts.js js/rules.js js/eras.js js/heavyair.js js/generations.js, then probes over UNITS and WEAPONS.\n- 16 German surface hulls enumerated with era, service, hp/speed/sight/cost/sonar and every resolved weapon id, name and tgt mask. That table is the `inventory` field above and nothing in it was read off a source line.\n- Air defence census: only 3 of 16 German surface hulls can engage an aircraft, and only corvette_g and destroyer_g (both e20) do it with a missile. deu_e60_destroyer, deu_e80_destroyer, deu_e90_destroyer, deu_e00_destroyer, deu_e90_missileboat, deu_e00_missileboat, deu_e50_destroyer and minesweeper_g all resolve tgt.air 0.\n- ASW census: 2 of 16, both torpedo boats. Game-wide the figure is 12 of 176 surface hulls, and 10 of those 12 are e20 rows from the hand-written NAVY refit table in rules.js \u2014 so this is a structural property of the eras.js generator, not a German-only defect.\n- Land-attack census: 5 German hulls carry a missile with tgt.ground 1, all of them inherited from shared NATO or French rounds.\n- Naval quality multiplier: destroyer_g's sam_sm2 resolves acc 0.791; nato destroyer_n's sam_sm2 resolves acc 0.900 (unmodified base, because DOMAIN nato naval is 1.00). destroyer_g's sam_ram resolves 0.774 against base 0.880. After edit 19 the same probe gives 0.838 and 0.819.\n- vls / helo / radarQ: present on nato, pla, pact, kpa and roc e20 hulls only. Absent on every gbr, fra and deu hull and on every era row. Confirmed by field dump.\n- Truncation: `w_e90_nato_destroyer`.name is 42 characters and ends \"Tomaha\"; about fifty weapon names in the eras.js block sit at exactly 42. deu_e60_missileboat.desc is 320 characters and ends \"depended o\".\n- js/warship_specs.js line 63 describes deu_e60_missileboat as \"76 mm OTO turret forward, four Exocet canisters in two staggered pairs amidships, 40 mm on the stern\", guns:1, gunCal:76 \u2014 read directly from the file.\n- Era windows read from rules.js ERA_INFO: e50 1950s, e60 1960s-70s, e80 1980s, e90 1990s, e00 2000s-10s, e20 2020s.\n- Anchor uniqueness: all 19 anchors verified with python3 str.count against the live working tree. Every one returned exactly 1. Printed and checked, not grepped.\n\nVERIFIED AFTER PATCHING (all 19 edits applied to an isolated `git archive HEAD` export, not the repo):\n- jsc resolve: all 16 German surface hulls resolve with no missing weapon reference. Full post-patch loadout dump obtained and inspected.\n- Behaviour suite: `==== 52 passed, 0 failed ====`, `runtime errors: NONE`. Run twice \u2014 once with the 17 loadout edits, once with all 19 including the desc and DOMAIN edits. Same result both times.\n- Load check: index.html dumped headless, `id=\"errbox\"` renders as `...pointer-events:none\"></div>` \u2014 empty, still display:none.\n\nINFERRED, not measured:\n- The real-world armaments, commissioning dates and hull counts (Fletcher's five 5\"/38 Mk 30, Koln's two 100 mm Creusot-Loire and two Bofors 375 mm, Lutjens' Mk 13 Tartar and Mk 112 ASROC, Bremen's Mk 29 Sea Sparrow and two quad Harpoon, Brandenburg's sixteen self-defence-length Mk 41 cells with RIM-7M, Sachsen's 32 cells with 24 SM-2 IIIA and 32 quad-packed ESSM, the Type 143/143A/148 Exocet counts, K130's RBS15, Frankenthal's 40 mm Bofors, Lindau/Troika/Hameln and the Sachsenwald minelayers) come from my own knowledge, not from anything in this repository. I have marked their confidence by how specific I was willing to be: hull numbers and commissioning dates I stated plainly are ones I hold with high confidence; where I was less sure \u2014 the exact decommissioning years of the Type 148 Tiger class, and whether the Brandenburg class was ever fitted with rather than merely fitted for a towed array \u2014 I deliberately did not state a number and did not touch the sonar field.\n- The damage, range, reload and accuracy figures for the thirteen new weapons are game-balance choices calibrated against the existing table's neighbours (Sea Sparrow 5.8 tiles sits between RAM's 4.6 and SM-2's 14.5, matching the real ordering; Tartar 8.6 sits below the later SM-1MR's 10.5), not measurements of anything.\n- The claim that the one-weapon era-row stub is a generator artefact rather than a deliberate choice is an inference from the shape of the data: every e50-e00 naval row for nato, gbr, fra and deu points at w_<era>_nato_<role>, and only the hand-written e20 rows in rules.js have differentiated multi-weapon loadouts.",
+ "risks": [
+  "COLLISION WITH A PARALLEL WORKFLOW \u2014 edit 19 only. Raising DOMAIN deu naval from 0.72 to 0.90 in generations.js also moves every German SUBMARINE (deu_e50_sub through sub_g), which the non-American submarine audit owns. Edit 19 is separable and marked optional; edits 1-18 touch nothing below the waterline. If the submarine workflow has its own view of that multiplier, drop edit 19 and keep the rest.",
+  "THE SCRATCHPAD IS SHARED, NOT SESSION-PRIVATE. Other workflows are writing into /private/tmp/.../scratchpad and overwrote my probe files mid-run; one early measurement came back showing British weapons (sam_seaslug, asw_limbo, ssm_exocet38) that do not exist at HEAD, because a parallel gbr workflow had the working tree transiently patched when I copied it. Everything reported here was re-measured from an isolated `git archive HEAD` export in DEU_SURF_AUDIT_9931 with unique filenames. Anyone re-running this should do the same.",
+  "A gbr surface workflow appears to be adding its own MM38 Exocet as `ssm_exocet38`. My `deu_ssm_mm38` is a separate id with German figures, so the two coexist without conflict \u2014 but if both land, the owner may want to note that the same missile now has two entries, which is correct (different navies, different fits) but worth knowing.",
+  "ssm_rbs15 is added WITHOUT rows in rules.js MISSILE_PROFILE and MISSILE_SPEED, carrying profile, intercept and speed inline instead. That is deliberate and tested \u2014 the fall-through loop at the foot of rules.js skips anything that already has .profile \u2014 but if someone later adds an ssm_rbs15 row to those tables it will silently override the inline values.",
+  "ROLE NAMES ARE GAME ROLES, NOT NAVAL RATES. Koln (role corvette) and Bremen, Brandenburg and Sachsen (role destroyer) are all frigates. I did not touch the role fields: changing them would move units between build menus and tech tiers for no gain in realism, and the `full` field already states the true type on every row.",
+  "SIGHT VALUES MOVE AS A SIDE EFFECT. The 'eyes to match the reach' pass in generations.js raises a unit's sight to cover its longest weapon, so adding a 14.6-tile RBS15 to deu_e00_corvette lifts its sight from 9.0 to 14.7. This is the existing mechanism working as designed \u2014 corvette_g already sat at 15.2 for the same reason \u2014 but five German hulls do see further after the fix.",
+  "deu_e00_missileboat service:\"2008\" asserts a Gepard commissioning that never happened (the class commissioned 1982-84). I flagged it but did NOT edit it, because the e90 sibling deliberately uses 1992 for the RAM fit rather than the build date and I could not tell whether the e00 row is following that same documented convention or is simply wrong. Worth an owner decision.",
+  "I did not verify that the AI's target selection uses the full weapons array rather than weapons[0] for naval units. The behaviour suite passing and the e20 hulls already carrying three to five weapons each is strong evidence it does, but I did not read the acquire path in ai.js to confirm it, so the practical effect of the appended SAMs and ASW rounds in live play is inferred rather than observed."
+ ]
+}

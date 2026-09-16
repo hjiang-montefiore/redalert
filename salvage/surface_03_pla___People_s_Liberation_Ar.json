@@ -1,0 +1,290 @@
+{
+ "navy": "pla \u2014 People's Liberation Army Navy, SURFACE fleet only (submarines excluded, owned by the other two workflows). All six eras e50/e60/e80/e90/e00/e20. 19 live surface hulls plus 2 \"NONE\" placeholder rows that isPhantomUnit() deletes at load. Repo HEAD at audit time: 8d67ba2 (working tree clean). Every loadout below was resolved under jsc AFTER generations.js ran, never read off the source line.",
+ "inventory": "RESOLVED UNDER JSC (stub `var window=this;` + util/config/facts/rules/eras/heavyair/generations). tgt mask written g/a/s/u = ground/air/sea/sub. \"r\" is the post-domain-scaling range in tiles. PLA DOMAIN naval multiplier = 0.95, DOMAIN_BITE e50 0.00 -> e20 1.00.\n\n=== e50 ===\npla_e50_corvette | \"Chengdu class\" / \"Type 6601/6604 frigate (Project 50 Riga-class)\" | svc 1958, conf high | hp 620 spd 2.45 sight 6.3 cost 540 r17 light\n  w_e50_pla_corvette \"3 x 100mm\"  g1 a1 s1 u0  r=5.9 dmg22 acc0.53\npla_e50_destroyer | \"Anshan class\" / \"Anshan class destroyer (ex-Soviet Project 7 Gnevny)\" | svc 1955, conf high | hp 1135 spd 2.02 sight 8.7 cost 1005 r20 heavy\n  w_e50_pla_destroyer \"4 x 130mm\"  g1 a0 s1 u0  r=8.3 dmg55 acc0.56\npla_e50_missileboat | name \"NONE\" / \"no missile-armed combatant in PLAN service\" | svc n/a \u2014 PURGED at load by isPhantomUnit(); absent from UNITS at runtime (measured)\n  w_e50_pla_missileboat is still in WEAPONS and is still named \"YJ-18 SSM\", g1 a0 s1 u0, r 12.6\n\n=== e60 ===\npla_e60_corvette | \"Jiangnan class\" / \"Type 065 Jiangnan-class frigate\" | svc 1966, conf medium | hp 760 spd 2.57 sight 7.0 cost 670\n  w_e60_pla_corvette \"3 x 100mm\"  g1 a1 s1 u0  r=6.6 dmg29 acc0.587\npla_e60_destroyer | \"Type 051 Luda\" / \"Type 051 Luda-class destroyer\" | svc 1971, conf high | hp 1395 spd 2.12 sight 9.6 cost 1245\n  w_e60_pla_destroyer \"4 x 130mm\"  g1 a0 s1 u0  r=9.2 dmg74 acc0.617   [NO SAM, NO SSM]\npla_e60_missileboat | \"Type 021 Huangfeng\" / \"Type 021 missile boat (Osa-I derivative)\" | svc 1965, conf medium | hp 590 spd 2.88 sight 14.2 cost 840\n  w_e60_pla_missileboat \"4 x SY-1 anti-ship missiles\"  g1 a0 s1 u0  r=13.9 dmg168 profile loft\n\n=== e80 ===\npla_e80_corvette | \"Type 053H2 Jianghu-III\" | svc 1986, conf high | hp 940 spd 2.71 sight 7.6 cost 860\n  w_e80_pla_corvette \"2 x twin 100mm\"  g1 a1 s1 u0  r=7.3 dmg38\npla_e80_destroyer | \"Type 051 Luda\" | svc 1971, conf high | hp 1720 spd 2.23 sight 10.5 cost 1590\n  w_e80_pla_destroyer \"H/PJ-38 130mm\"  g1 a0 s1 u0  r=10.2 dmg98     [gun name is a 2014 designation; NO SSM]\npla_e80_missileboat \u2014 ROW DOES NOT EXIST (not even a NONE placeholder). Measured by parsing every `^  pla_e80_*` id in eras.js.\n\n=== e90 ===\npla_e90_corvette | \"Type 053H2G / H3 Jiangwei\" | svc 1992, conf high | hp 1060 spd 2.79 sight 8.3 cost 1010\n  w_e90_pla_corvette \"100mm gun\"  g1 a1 s1 u0  r=7.7 dmg45            [desc promises an area SAM launcher; none present]\npla_e90_destroyer | \"Type 052 Luhu\" | svc 1994, conf high | hp 1940 spd 2.30 sight 10.8 cost 1875\n  w_e90_pla_destroyer \"100mm twin gun\"  g1 a0 s1 u0  r=10.7 dmg114    [NO SAM, NO SSM]\npla_e90_carrier | name \"NONE\" / \"no aircraft carrier\" | PURGED at load (measured). Its weapon w_e90_pla_carrier is still named \"H/PJ-11 CIWS\".\npla_e90_missileboat \u2014 ROW DOES NOT EXIST.\n\n=== e00 ===\npla_e00_carrier | \"Liaoning / Shandong\" / \"Type 001 Liaoning (2012), Type 002 Shandong (2019)\" | svc 2012 | hp 4130 spd 1.58 sight 12.7 cost 4655 carrier:4\n  w_e00_pla_carrier \"HQ-10 point defence\"  g0 a1 s0 u0  r=3.0 dmg55\npla_e00_corvette | \"Type 056 Jiangdao\" / \"Type 056 / 056A Jiangdao-class corvette\" | svc 2013 | hp 1140 spd 2.82 sight 8.6 cost 1115\n  w_e00_pla_corvette \"76mm H/PJ-26\"  g1 a1 s1 u0  r=7.8 dmg49\npla_e00_destroyer | \"Type 052C / 052D\" / \"Type 052C Luyang II (2004), Type 052D Luyang III (2014)\" | svc 2004 | hp 2095 spd 2.33 sight 11.0 cost 2070\n  w_e00_pla_destroyer \"052C: 6 x 8 revolver VLS\"  g1 a0 s1 u0  r=11.0 dmg125 proj \"shell\" sfx \"cannon\" speed 720 aoe 0.9   <-- the ONLY weapon\npla_e00_missileboat | \"Type 022 Houbei\" | svc 2004 | hp 885 spd 3.17 sight 16.5 cost 1395\n  w_e00_pla_missileboat \"8 x YJ-83 anti-ship missiles\"  g1 a0 s1 u0  r=16.7 dmg285\n\n=== e20 (rules.js, refit by the NAVY table) ===\nboat_c | \"Type 022 Houbei\" | role patrol, from \"e50\" (ERA_TIMELESS stamp) | hp 540 spd 3.5 sight 8.2 cost 485\n  hmg \"12.7mm HMG\"  g1 a0 s1 u0  r=5.4 dmg13\ncorvette_c | \"Type 056 Jiangdao\" | hp 1190 spd 2.85 sight 16.7 cost 1175 | vls 8 helo 1 sonar 6.2 radarQ 13 ciws 0.44\n  navgun_76__corvette_c__corvette_c \"H/PJ-26 76mm\"  g1 a1 s1 u0  r=7.9 dmg51 acc0.83\n  ssm_yj18__corvette_c \"YJ-18 SSM\"  g1 a0 s1 u0  r=16.9 dmg300\n  ciws_pj11__corvette_c \"H/PJ-11 CIWS\"  g0 a1 s0 u0  r=3.0 dmg58\nmissileboat_c | \"Type 022 (YJ-83)\" | hp 920 spd 3.2 sight 16.7 cost 1470 | magazine {ssm_yj18:8} (never consulted \u2014 see finding)\n  ssm_yj18__missileboat_c \"YJ-18 SSM\"  g1 a0 s1 u0  r=16.9 dmg300\ndestroyer_c | \"Type 052D Luyang III\" | hp 2180 spd 2.35 sight 16.7 cost 2180 | vls 64 helo 1 sonar 8.8 radarQ 32 ciws 0.66\n  navgun_pj38__destroyer_c \"H/PJ-38 130mm\"  g1 a0 s1 u0  r=11.1 dmg132\n  sam_hhq9__destroyer_c \"HHQ-9B\"  g0 a1 s0 u0  r=13.9 dmg180 profile pop\n  ssm_yj18__destroyer_c \"YJ-18 SSM\"  g1 a0 s1 u0  r=16.9 dmg300 profile loft\n  asw_yu7__destroyer_c \"Yu-7 lightweight torpedo\"  g0 a0 s0 u1  r=6.2 dmg205\n  ciws_pj11__destroyer_c \"H/PJ-11 CIWS\"  g0 a1 s0 u0  r=3.0\ncruiser_c | \"Type 055 Renhai\" | hp 3000 spd 2.05 sight 16.7 cost 3450 | vls 112 helo 2 sonar 9.2 radarQ 41 ciws 0.72 shoreBombard:true\n  same five weapons as destroyer_c (navgun_pj38, sam_hhq9, ssm_yj18, asw_yu7, ciws_pj11)\ncarrier_c | \"Type 003 Fujian\" | hp 4300 spd 1.6 sight 13.0 cost 4900 carrier:4 ciws 0.60\n  ciws_pj11__carrier_c \"H/PJ-11 CIWS\"  g0 a1 s0 u0  r=3.0 dmg58   <-- the ONLY weapon\n\n=== NOT PRESENT IN ANY ERA ===\nType 054A / 054 Jiangkai I and II (grep \"054\" across js/ returns nothing). No HHQ-16. No CJ-10 as a WEAPONS key (the string appears only in facts.js prose and two rules.js comments). No YJ-83 as a shared WEAPONS key (only as an era-weapon display name). No HHQ-10/HQ-10 as a WEAPONS key. No amphibious/LPD/LHA hull for the PLAN (Type 071/075 absent) \u2014 but note lst_/transport_sea is fac:\"roc\"/\"kpa\" only, and oiler/navminelayer/minesweeper/repair_sea are fac:\"both\", i.e. shared by every faction, so those are NOT PLAN-specific gaps.",
+ "findings": [
+  {
+   "severity": "fatal",
+   "kind": "area-air-defence",
+   "unit": "pla_e00_destroyer (Type 052C Luyang II 2004 / Type 052D Luyang III 2014)",
+   "whatTheGameHas": "One weapon, w_e00_pla_destroyer, named \"052C: 6 x 8 revolver VLS\" with tgt {ground:1,air:0,sea:1,sub:0}, proj \"shell\", sfx \"cannon\", speed 720, aoe 0.9, r 11.0. The unit has no second weapon. Measured: the class cannot engage an aircraft at all, and its unit sight is 11.0.",
+   "whatIsReal": "Lanzhou (DDG-170) commissioned July 2004 with a Type 346 active phased array and six eight-round revolver launchers, 48 rounds of HHQ-9 \u2014 the PLAN's first area air-defence ship and the entire reason the class is nicknamed China's Aegis. The Type 052D of 2014 replaced the revolvers with 64 universal cells firing the same round. The weapon in the game is NAMED after that launcher and is modelled as a gun that cannot shoot up.",
+   "fix": "Split into two weapons: keep the gun (100mm Type 210 on the 052C, H/PJ-38 130mm on the 052D) and add w_e00_pla_destroyer_sam, an HHQ-9 area SAM at tgt {air:1} only, range 13.6, speed 610, profile pop, intercept 0.62. Edit 1 and 2."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-weapon-identity",
+   "unit": "missileboat_c (Type 022 Houbei) and corvette_c (Type 056 Jiangdao), e20",
+   "whatTheGameHas": "NAVY.missileboat_c weapons [\"ssm_yj18\"] and NAVY.corvette_c weapons [\"navgun_76\",\"ssm_yj18\",\"ciws_pj11\"]. Resolved: ssm_yj18__missileboat_c and ssm_yj18__corvette_c, \"YJ-18 SSM\", r 16.9, dmg 300. Four independent places in the same repo say YJ-83 instead: the unit name \"Type 022 (YJ-83)\", the desc \"Eight YJ-83 anti-ship missiles on a stealth catamaran\", facts.js missileboat_c \"8x YJ-83 anti-ship missiles\", and warship_specs.js missileboat_c designation \"Type 022 Houbei (YJ-83)\" with vls:0, launchers:\"box\" (and corvette_c \"two twin YJ-83 boxes amidships\").",
+   "whatIsReal": "YJ-18 is a VLS round. It goes to sea in the 850 mm universal cells of the Type 052D (2014) and the Type 055 (2020) and in the tubes of the Type 093B. A 220-tonne wave-piercing catamaran with four flush box launchers and an 89 m, ~1,500-tonne Type 056 with two twin box launchers have no vertical cell between them and physically cannot fire it. Both carry YJ-83 (C-802A). This is exactly the defect the brief describes on the Los Angeles boats: the prose promised one thing and the weapon list delivered another.",
+   "fix": "Add a shared ssm_yj83 weapon (dmg 235, range 14.5, speed 118, profile skim, intercept 0.95, tgt sea only) and put it on missileboat_c and corvette_c. Edits 6 and 8. Also re-key FIXED_MAGAZINE.missileboat_c to ssm_yj83 (edit 13)."
+  },
+  {
+   "severity": "fatal",
+   "kind": "dead-mechanic",
+   "unit": "missileboat_c (Type 022) \u2014 root cause is cross-faction, in js/entities.js",
+   "whatTheGameHas": "FIXED_MAGAZINE declares missileboat_c: { ssm_yj18: 8 } and entities.js reads this.def.magazine[this.def.weapons[wi]]. Measured after generations.js: the resolved id is \"ssm_yj18__missileboat_c\", so the lookup returns undefined and the magazine is never decremented. Measured across all 11 hulls that declare a magazine, the lookup misses on 10 of them \u2014 cruiser_p, destroyer_p, corvette_p, missileboat_p, corvette_k, missileboat_k, corvette_r, missileboat_r, missileboat_c, ssgn_p. Only missileboat_n still works, and only because every NATO DOMAIN multiplier is 1.00 so its Harpoon was never cloned.",
+   "whatIsReal": "The mechanic the code's own comments celebrate \u2014 \"a Slava's first salvo is terrifying and her second does not exist\", \"what is in the tubes when the ship sails is what she has\" \u2014 is switched off for every non-NATO ship in the game. A Type 022 fires unlimited heavy anti-ship missiles. So does a Slava, a Sovremenny, an Osa and an Oscar II.",
+   "fix": "Fall back to the base weapon id ahead of the \"__\" clone suffix, in both the fire() lookup and reloadAtYard(). Edits 15 and 16. One change fixes all ten hulls; it is inside my faction's blast radius because missileboat_c is one of them, but the owner should know it is a fleet-wide repair."
+  },
+  {
+   "severity": "major",
+   "kind": "land-attack",
+   "unit": "destroyer_c (Type 052D) and cruiser_c (Type 055), e20",
+   "whatTheGameHas": "No Chinese land-attack cruise missile exists anywhere in WEAPONS \u2014 grep CJ-10 across js/ finds it only in facts.js prose and two rules.js comments about off-map fire. The ships reach a target ashore solely through ssm_yj18's tgt.ground = 1. Measured: ssm_yj18 has exactly four users, all four PLA e20 hulls, so the bit also hands land attack to a missile boat and a coastal corvette.",
+   "whatIsReal": "YJ-18 is an anti-ship missile with an active radar seeker looking for a ship-sized return \u2014 the same trap the brief flags on Granit/SS-N-19. The round the PLAN sends at a target ashore is the CJ-10 out of the same universal cell. The repo's own facts.js already asserts it: cruiser_c armament \"112-cell universal VLS (HHQ-9B, YJ-18, CJ-10, Yu-8)\", destroyer_c \"64-cell universal VLS (HHQ-9B, YJ-18, CJ-10, Yu-8)\", and the destroyer's note reads \"Its 64 universal cells launch air-defence, anti-ship, land-attack and anti-submarine missiles from the same silo.\" The card claimed a capability the weapon table did not have, under a designation that was wrong.",
+   "fix": "Add lacm_cj10 (dmg 255, range 18.0, speed 112, profile cruise, intercept 1.45, tgt ground ONLY), give it to destroyer_c and cruiser_c, and clear tgt.ground on ssm_yj18 so the Houbei and the Jiangdao lose a capability they never had. Edits 6, 8, 9, 10, 11, 12. Note that this is correctly era-bounded: the Luda, Luhu, Jiangwei and Jiangdao get nothing, because for most of this game's span China had no way to strike land from the sea at all."
+  },
+  {
+   "severity": "major",
+   "kind": "missing-hull",
+   "unit": "Type 054A Jiangkai II \u2014 absent from every era",
+   "whatTheGameHas": "Nothing. grep \"054\" / \"Jiangkai\" / \"HQ-16\" / \"HHQ-16\" across js/ returns no naval hit. The only PLAN escort below destroyer size in e00 and e20 is the Type 056, a ~1,500-tonne coastal corvette which in e00 has one 76mm gun and nothing else.",
+   "whatIsReal": "The Type 054A is the ship the PLAN actually escorts with: first hull Xuzhou (530) commissioned January 2008, about thirty in commission, 32-cell VLS with HHQ-16 (~40 km) plus Yu-8 ASROC from the same cells, a Type 382 radar and a helicopter hangar. HHQ-16 is the PLAN's medium-range area air defence and the middle rung of exactly the distinction the brief asks about \u2014 the game currently knows only \"HHQ-9 destroyer\" and \"corvette with no SAM at all\", with nothing between them for 2008-2026.",
+   "fix": "No code proposed, because the honest fix is a roster decision the owner should make rather than a mechanical edit: there is one corvette slot per faction per era, and putting the 054A in it means the Type 056 leaves e00 or e20, which also moves warship_specs.js (hull length, beam, vls:32, launchers:\"vls\") and therefore the 3D model. Recommend: make the e20 corvette slot the Type 054A Jiangkai II with HHQ-16, and leave e00 as the Type 056. Flagged, not patched."
+  },
+  {
+   "severity": "major",
+   "kind": "missing-hull",
+   "unit": "PLA missile boat, e80 and e90",
+   "whatTheGameHas": "No row at all \u2014 not a hull, not a NONE placeholder. Measured by listing every `^  pla_e80_*` and `^  pla_e90_*` id in eras.js: the naval rows are corvette, destroyer, sub (e80) and carrier, corvette, destroyer, sub (e90). For comparison pact has an e80 missileboat, and kpa and roc each have e80 and e90 missileboats.",
+   "whatIsReal": "This is a gap reality does not justify, which is the opposite of the realism-over-symmetry case. Through the 1980s and 1990s the PLAN operated the largest missile-boat force in the world: over a hundred Type 021 Huangfeng and Type 024 Houku carrying SY-1/HY-2, joined by the Type 037-1G Houxin (1991, YJ-8 series) and the Type 037-II Houjian (1991, six YJ-8). The game already models this doctrine in e60 and again in e00 and calls it out in the e60 desc \u2014 \"that doctrine survives directly into the Type 022 of the 2000s\" \u2014 and then omits the two decades in the middle.",
+   "fix": "Author pla_e80_missileboat (Type 037-1G Houxin / Type 021, service 1991, YJ-8 / C-801, ~4-6 rounds) and pla_e90_missileboat (Type 037-II Houjian, service 1991-95, six YJ-8). No code proposed: adding two era rows plus two era weapons plus two warship_specs entries is a larger authoring job than an audit patch, and the hull figures should be picked by whoever owns the era tables."
+  },
+  {
+   "severity": "major",
+   "kind": "anachronism",
+   "unit": "pla_e80_destroyer (Type 051 Luda, in service 1971)",
+   "whatTheGameHas": "w_e80_pla_destroyer is named \"H/PJ-38 130mm\".",
+   "whatIsReal": "H/PJ-38 is the single 130 mm mount that first went to sea on Kunming (DDG-172) in 2014 \u2014 forty-three years after the Luda. rules.js already carries it correctly as navgun_pj38 for the Type 052D and Type 055, so the same designation was on two ships four decades apart. The Luda's battery is the Type 76 twin 130 mm, a Soviet SM-2-1 derivative, two mounts fore and aft \u2014 which is precisely what the e60 row calls \"4 x 130mm\" for the identical hull, and what warship_specs.js pla_e80_destroyer records as guns:2, gunCal:130.",
+   "fix": "Rename to \"2 x twin 130mm Type 76\". Edit 3."
+  },
+  {
+   "severity": "major",
+   "kind": "point-defence-gap",
+   "unit": "corvette_c (Type 056 Jiangdao) and carrier_c (Type 003 Fujian), e20",
+   "whatTheGameHas": "corvette_c has no air-defence missile of any kind \u2014 a 76mm gun, an SSM and a CIWS. carrier_c has exactly one weapon, ciws_pj11. Meanwhile pla_e00_carrier, the OLDER row, correctly carries \"HQ-10 point defence\", so the e20 carrier is a regression from the e00 one.",
+   "whatIsReal": "HHQ-10 (FL-3000N) is on the Type 056, the Type 052D, the Type 055, Liaoning, Shandong and Fujian. warship_specs.js already describes it on the Chinese corvettes \u2014 \"an 8-cell HQ-10 box on the hangarless flight deck aft\", \"an HQ-10 launcher on the after deckhouse\" \u2014 and facts.js carrier_c lists \"HHQ-10 SAM launchers and Type 1130 CIWS for self-defence\". The NAVY table's vls:8 on corvette_c is that HHQ-10 box, and nothing was firing out of it.",
+   "fix": "Add a shared sam_hhq10 point-defence weapon (dmg 105, range 4.4, speed 560, profile pop, intercept 0.75, tgt air only \u2014 deliberately about a third of HHQ-9's reach so the escort/air-defence-ship distinction stays visible) and give it to corvette_c and carrier_c. Sized against sam_ram, the RIM-116 that fills the same slot in NATO. Edits 7, 8, 11, 12."
+  },
+  {
+   "severity": "major",
+   "kind": "missing-anti-ship-missile",
+   "unit": "pla_e80_destroyer (Type 051 Luda) and pla_e90_destroyer (Type 052 Luhu)",
+   "whatTheGameHas": "One gun each and nothing else. Luda: r 10.2. Luhu: \"100mm twin gun\", r 10.7.",
+   "whatIsReal": "The Luda was built around six HY-2 (SY-1A / CSS-N-2) in two triple launchers amidships \u2014 the missile is the reason the hull exists, and warship_specs.js pla_e80_destroyer already records launchers:\"box\". The Type 052 Luhu carried sixteen YJ-83/C-802 in four quad boxes between its two funnels, plus an eight-cell HQ-7; warship_specs.js pla_e90_destroyer says launchers:\"box\", ciws:4, helo:\"hangar\". So a Chinese destroyer in the game has no way to sink a ship beyond ten tiles in either decade, while a 1965 Osa boat in e60 reaches 13.9.",
+   "fix": "Append an SSM weapon to each era row. No code proposed here to keep this patch surgical, but note the constraint that makes it systemic: MEASURED, 170 of the 174 era naval hulls in eras.js carry exactly one weapon each (the four exceptions are gbr/fra/deu patrol boats). This is a structural property of the generated era tables and is not PLA-specific \u2014 see the risks list."
+  },
+  {
+   "severity": "major",
+   "kind": "desc-vs-loadout",
+   "unit": "pla_e90_corvette (Type 053H2G Jiangwei-I 1992 / Type 053H3 Jiangwei-II)",
+   "whatTheGameHas": "One weapon, \"100mm gun\", g1 a1 s1 u0, r 7.7. Its desc reads: \"The first Chinese frigates carrying an area SAM launcher rather than only guns. The Jiangwei-I's HQ-61 was poor; the Jiangwei-II swapped it for the HQ-7, which worked.\"",
+   "whatIsReal": "The Jiangwei-I did carry a six-cell HQ-61 and the Jiangwei-II an octuple HQ-7 (Crotale derivative), and warship_specs.js line 107 describes exactly that \u2014 \"an octuple HQ-7 bin behind it\". The desc names the class's single defining feature and the weapon list does not contain it. Same defect class as the Tomahawk-less Los Angeles. (The HQ-61/HQ-7 is point defence, not area defence, so the desc also overstates by one rung.)",
+   "fix": "Either append an HQ-7 point-defence SAM to the row, or soften the desc to say short-range rather than area. No code proposed \u2014 same one-weapon-per-era-hull constraint as the finding above."
+  },
+  {
+   "severity": "minor",
+   "kind": "anachronism",
+   "unit": "w_e50_pla_missileboat (weapon of the purged 1950s NONE row)",
+   "whatTheGameHas": "Named \"YJ-18 SSM\", tgt g1 a0 s1 u0, range 12.6, profile loft. The unit pla_e50_missileboat is named \"NONE\" and is deleted by isPhantomUnit() before play, so nothing ever fires it (measured: it is absent from UNITS at runtime).",
+   "whatIsReal": "YJ-18 is a missile of roughly 2015. The row's own description says \"China had no anti-ship missile and no missile boat in the 1950s ... The first Chinese missile boats - the Type 024 Houku - do not appear until 1966.\" The weapon table contradicts the roster it serves by sixty years, even though the contradiction is currently unreachable.",
+   "fix": "Rename to \"none - Type 025/026 torpedo boats only\". Edit 4."
+  },
+  {
+   "severity": "minor",
+   "kind": "anachronism",
+   "unit": "w_e90_pla_carrier (weapon of the purged 1990s NONE row)",
+   "whatTheGameHas": "Named \"H/PJ-11 CIWS\", g0 a1 s0 u0, r 2.9. Unit pla_e90_carrier is \"NONE\" / \"no aircraft carrier\" and is purged.",
+   "whatIsReal": "The H/PJ-11 eleven-barrel gatling did not go to sea until Liaoning herself, 2012. The row records that the Varyag hull sat unfinished at Dalian through the 1990s.",
+   "fix": "Rename to \"none - Varyag hull laid up at Dalian\". Edit 5."
+  },
+  {
+   "severity": "minor",
+   "kind": "wrong-identity",
+   "unit": "boat_c (role patrol, e20 file, stamped from:\"e50\")",
+   "whatTheGameHas": "Named \"Type 022 Houbei\", desc \"Wave-piercing catamaran missile boat, here in its gun-armed patrol fit.\" Available from e50 because role \"patrol\" is in ERA_TIMELESS. It duplicates the hull name of missileboat_c and of pla_e00_missileboat \u2014 three Type 022s in one faction.",
+   "whatIsReal": "The Type 022 entered service in 2004 and there is no gun-armed patrol variant of it. The ERA_TIMELESS comment defends the ROLE spanning the game (\"between a Project 183 and a Mk VI there is a diesel\"), not the hull name, and this hull name puts a 2004 catamaran in Korea in 1950. The PLAN's genuinely timeless inshore gunboat is the Type 062 Shanghai \u2014 about four hundred built from 1962 and still in service into the 2010s. NOTE: this is systemic, not PLA-only \u2014 NATO's patrol boat is a \"Mk VI\" (2015), the Pact's a \"Project 21630\" (2006), Taiwan's a \"Kuang Hua VI\" (2010).",
+   "fix": "Rename boat_c to the Type 062 Shanghai and adjust the desc. No code proposed because the same rename is owed to four other factions and should be done as one pass."
+  },
+  {
+   "severity": "minor",
+   "kind": "dead-flag",
+   "unit": "cruiser_c (Type 055 Renhai)",
+   "whatTheGameHas": "shoreBombard:true on the unit and a desc that leans on it \u2014 \"a superb shore bombardment platform\". Measured: grep shoreBombard across the entire repository returns exactly three hits, all three of them the definitions themselves (rules.js:626, :631, :1039). Nothing reads the flag.",
+   "whatIsReal": "The claim is true of the ship and inert in the code. With CJ-10 added the desc becomes true in play as well, via the missile rather than the flag.",
+   "fix": "Either give shoreBombard a reader or drop it. No code proposed \u2014 it touches two non-PLA hulls as well."
+  },
+  {
+   "severity": "minor",
+   "kind": "wrong-identity",
+   "unit": "corvette_c (Type 056 Jiangdao), e20",
+   "whatTheGameHas": "ciws_pj11, the H/PJ-11 eleven-barrel 30 mm gatling.",
+   "whatIsReal": "The Type 056/056A mounts two H/PJ-17 30 mm single remote mounts, not a gatling CIWS. The H/PJ-11 belongs to the Type 052D, the Type 055 and the carriers. A real but small difference.",
+   "fix": "Would need a new 30 mm remote-mount weapon. Left alone deliberately \u2014 recording a designation this small as a new WEAPONS key adds more noise than it removes, and the brief's rule is not to invent."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "area-air-defence",
+   "unit": "destroyer_c (Type 052D) and cruiser_c (Type 055), e20",
+   "whatTheGameHas": "sam_hhq9 \"HHQ-9B\", r 13.9, dmg 180, profile pop, intercept 0.62, tgt air only \u2014 on exactly two hulls and no others (measured: sam_hhq9's only users are destroyer_c and cruiser_c). Alongside it, vls:64 on the 052D and vls:112 on the 055, radarQ 32 and 41, sonar 8.8 and 9.2.",
+   "whatIsReal": "Correct, and it is the single most important distinction the brief asks about. The game does separate an HHQ-9 fleet-defence ship from a point-defence escort in e20, the cell counts are exactly right (Type 052D 64, Type 055 112), and the gun, CIWS and ASW torpedo all carry indigenous Chinese designations (H/PJ-38, H/PJ-11, Yu-7) rather than borrowed foreign ones. threat.js also rates cruiser_c at tier 3 alongside the B-2 and the F-22, which is the right judgement about a Type 055.",
+   "fix": "Nothing. Checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "weapon-identity",
+   "unit": "every PLA naval hull carrying navgun_76",
+   "whatTheGameHas": "The source line says navgun_76, \"OTO 76mm Super Rapid\" \u2014 an Italian gun. But generations.js's NAVGUN pass (js/generations.js:778) substitutes per faction and rewrites it for the PLA to \"H/PJ-26 76mm\", dmg 51, acc 0.83. Measured at runtime: corvette_c's resolved weapon is navgun_76__corvette_c__corvette_c named \"H/PJ-26 76mm\".",
+   "whatIsReal": "Correct. The H/PJ-26 is the Chinese AK-176 development, not an OTO Melara, and the game already knows. The pass's own comment names the problem it fixed. The eras.js e00 corvette row independently names it \"76mm H/PJ-26\" as well. This is the exact defect class the audit was sent to find and it had already been fixed here.",
+   "fix": "Nothing. This is also the reason a naive source-line read of the e20 roster is wrong \u2014 resolve under jsc."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "honest-gap",
+   "unit": "pla_e50_missileboat and pla_e90_carrier",
+   "whatTheGameHas": "Both are rows named \"NONE\" with full names \"no missile-armed combatant in PLAN service\" and \"no aircraft carrier\", and isPhantomUnit() (rules.js:3742) deletes them before play. Measured: neither appears in UNITS at runtime.",
+   "whatIsReal": "Both gaps are real. China had no anti-ship missile and no missile boat before the Type 024 Houku of 1966; the Varyag hull was bought through a Macau shell company in 1998 and sat at Dalian unreconstructed through the decade. This is realism-over-symmetry working exactly as the owner asked, with the machinery to stop the gap being sold back to the player. Worth recording as a positive because the same discipline is what is missing from the e80/e90 missile-boat slot, which has no row at all rather than a NONE row.",
+   "fix": "Nothing. Checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "hull-identity-and-dates",
+   "unit": "pla_e50_corvette, pla_e50_destroyer, pla_e60_corvette, pla_e60_destroyer, pla_e60_missileboat, pla_e80_corvette, pla_e90_destroyer, pla_e00_carrier, pla_e00_missileboat",
+   "whatTheGameHas": "Chengdu/Type 6601 from Project 50 Riga kits svc 1958; Anshan ex-Project 7 Gnevny svc 1955; Type 065 Jiangnan svc 1966; Type 051 Luda svc 1971; Type 021 Huangfeng (Osa-I derivative) svc 1965 firing SY-1; Type 053H2 Jianghu-III svc 1986; Type 052 Luhu svc 1994; Liaoning 2012 / Shandong 2019; Type 022 Houbei svc 2004 firing YJ-83.",
+   "whatIsReal": "Every one of these checks out against real commissioning dates, and several descriptions carry the interesting detail rather than a generic line \u2014 the four Hudong-assembled Riga kits of 1957-58, Jinan as Luda lead ship in 1971, the LM2500 turbines bought before the embargo that capped the Luhu class at two hulls, the ski-jump penalty on the J-15's launch weight, the twenty-two Type 056 hulls transferred to the Coast Guard. The anti-ship missile designation tracks the decade correctly throughout: SY-1 in 1965, YJ-83 in 2004. Nine of nineteen surface hulls audited with no finding against them.",
+   "fix": "Nothing. Checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "fleet-train",
+   "unit": "oiler, navminelayer, minesweeper, repair_sea",
+   "whatTheGameHas": "All four are fac:\"both\" in rules.js, i.e. available to every faction including the PLA, and the first three plus repair_sea are in ERA_TIMELESS so they span all six eras.",
+   "whatIsReal": "The role x faction matrix I built initially read as \"the PLAN has no minelayer, no minesweeper, no oiler and no repair ship\", which would have been a finding. It is not \u2014 those units are shared rather than faction-keyed, so there is no PLAN-specific gap. Recording it so the same false positive is not raised again. (The PLAN's real fleet train \u2014 Type 903/901 replenishment ships, Type 081/082 MCMVs \u2014 is represented by the generic hulls, which is a design choice, not a defect.)",
+   "fix": "Nothing. Checked and found not to be a gap."
+  }
+ ],
+ "edits": [
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. The Type 052C/052D \u2014 the PLAN's first area air-defence ship and the whole reason the class is called China's Aegis \u2014 carries one weapon, named after its own HHQ-9 revolver launcher, modelled as proj \"shell\" with tgt.air = 0. It cannot engage an aircraft. Insert the missile the hull was built around ahead of the gun block, and give the gun its true name (100mm Type 210 on the 052C, H/PJ-38 on the 052D). The new id is deliberately outside the w_<era>_<fac>_<role> pattern so the era-range normaliser at generations.js:352 leaves the figures alone, and it carries profile/intercept inline because rules.js's profile-fill loop runs before eras.js.",
+   "anchor": " \"w_e00_pla_destroyer\": {\n  \"name\": \"052C: 6 x 8 revolver VLS\",\n",
+   "exactCount": 1,
+   "newCode": " /* ---- the PLAN's first area air-defence ship, given no air defence ----\n    Lanzhou (DDG-170) commissioned July 2004 with a Type 346 active phased\n    array and six eight-round revolver launchers, 48 rounds of HHQ-9. That\n    launcher is the single most important fact about the Type 052C and the\n    whole reason the class is called China's Aegis; the Type 052D of 2014\n    replaced it with 64 universal cells firing the same round.\n\n    It was modelled as one weapon - proj \"shell\", sfx \"cannon\", speed 720,\n    aoe 0.9 and tgt.air = 0. The weapon was NAMED after the SAM launcher and\n    could not engage an aircraft, so the first Chinese ship able to shoot\n    down a jet beyond visual range was, in this game, a gun boat. Split into\n    the two things the hull actually carries. */\n \"w_e00_pla_destroyer_sam\": {\n  \"name\": \"HHQ-9 area SAM\",\n  \"dmg\": 175,\n  \"warhead\": \"flak\",\n  \"range\": 13.6,\n  \"reload\": 3.6,\n  \"burst\": 2,\n  \"burstDelay\": 0.35,\n  \"acc\": 0.84,\n  \"proj\": \"missile\",\n  \"speed\": 610,\n  \"profile\": \"pop\",\n  \"intercept\": 0.62,\n  \"tgt\": {\n   \"ground\": 0,\n   \"air\": 1,\n   \"sea\": 0,\n   \"sub\": 0\n  },\n  \"sfx\": \"missile\"\n },\n \"w_e00_pla_destroyer\": {\n  \"name\": \"052C: 100mm Type 210 / 052D: H/PJ-38 130mm\",\n"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL, second half of the same fix: hang the new HHQ-9 on the hull. Appended, never prepended \u2014 generations.js writes u.weapons[0] when it substitutes a private weapon and bombard()'s fallback scan walks forward from index 0.",
+   "anchor": "\"weapons\":[\"w_e00_pla_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "\"weapons\":[\"w_e00_pla_destroyer\",\"w_e00_pla_destroyer_sam\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "MAJOR anachronism. H/PJ-38 is the single 130 mm that first went to sea on Kunming (DDG-172) in 2014; this is a destroyer in service from 1971, and rules.js already carries the same designation as navgun_pj38 for the Type 052D and Type 055. Two hulls forty-three years apart were sharing a gun name.",
+   "anchor": " \"w_e80_pla_destroyer\": {\n  \"name\": \"H/PJ-38 130mm\",\n",
+   "exactCount": 1,
+   "newCode": " /* The Luda's battery is the Type 76 twin 130 mm, a Soviet SM-2-1\n    derivative, two mounts fore and aft - which is what the e60 row calls\n    \"4 x 130mm\" for the same hull. H/PJ-38 is the single 130 mm that first\n    went to sea on Kunming (DDG-172) in 2014 and rules.js already carries it\n    as navgun_pj38 for the Type 052D and the Type 055. A 1971 destroyer\n    cannot be firing a 2014 gun, and two hulls forty-three years apart must\n    not share a designation. */\n \"w_e80_pla_destroyer\": {\n  \"name\": \"2 x twin 130mm Type 76\",\n"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "MINOR. A 2015 missile named on the 1950s row whose own description says China had no anti-ship missile and no missile boat in that decade. The unit is purged by isPhantomUnit() so nothing fires it, but the weapon table should not contradict the roster it serves.",
+   "anchor": " \"w_e50_pla_missileboat\": {\n  \"name\": \"YJ-18 SSM\",\n",
+   "exactCount": 1,
+   "newCode": " /* Dead round: pla_e50_missileboat is named \"NONE\" and isPhantomUnit()\n    deletes the unit before the game runs, so nothing ever fires this. It\n    was still called \"YJ-18 SSM\" - a missile of about 2015 - on the row whose\n    own description says China had no anti-ship missile and no missile boat\n    in the 1950s. A weapon table must not contradict the roster it serves,\n    even where the contradiction is unreachable. */\n \"w_e50_pla_missileboat\": {\n  \"name\": \"none - Type 025/026 torpedo boats only\",\n"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "MINOR, same class. The H/PJ-11 gatling did not go to sea until Liaoning in 2012, and this is the purged row recording that the Varyag hull sat unfinished at Dalian through the 1990s.",
+   "anchor": " \"w_e90_pla_carrier\": {\n  \"name\": \"H/PJ-11 CIWS\",\n",
+   "exactCount": 1,
+   "newCode": " /* Dead round, same reason: pla_e90_carrier is the \"NONE\" row recording\n    that the Varyag hull sat unfinished at Dalian through the 1990s. The\n    H/PJ-11 gatling did not go to sea until Liaoning herself, in 2012. */\n \"w_e90_pla_carrier\": {\n  \"name\": \"none - Varyag hull laid up at Dalian\",\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "FATAL + MAJOR, three changes in one block. (a) ssm_yj18 loses tgt.ground \u2014 it is an anti-ship missile with an active radar seeker, exactly the Granit/Oniks trap the brief warns about, and the bit had made every Houbei boat a cruise-missile platform. MEASURED: ssm_yj18's only four users are the four PLA e20 hulls, so this touches no other faction. (b) ssm_yj83 is added, the round the Type 022 and Type 056 actually carry \u2014 neither has a single vertical cell, and the unit name, desc, facts.js card and warship_specs entry all already said YJ-83. (c) lacm_cj10 is added, the only Chinese land-attack cruise missile in the game; facts.js has listed CJ-10 in both ships' universal VLS all along and no such round existed.",
+   "anchor": "  ssm_yj18: { name:\"YJ-18 SSM\", dmg:300, warhead:\"he\", range:17.0, minRange:2.0, reload:15.0,\n    burst:2, burstDelay:0.8, acc:0.85, proj:\"missile\", speed:15, aoe:1.6,\n    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:\"missile\" },\n",
+   "exactCount": 1,
+   "newCode": "  /* YJ-18 is the VLS round. It goes to sea in the 850 mm universal cells of\n     the Type 052D (2014) and the Type 055 (2020), and in the tubes of the\n     Type 093B - nowhere else. A 220-tonne Type 022 catamaran with four flush\n     box launchers and a 1,500-tonne Type 056 with two twin boxes have no\n     vertical cell between them and cannot fire it; both were carrying it\n     while their own name, description, facts.js card and warship_specs entry\n     all said YJ-83.\n\n     ground:0 is the second correction. YJ-18 has an active radar seeker\n     hunting a ship-sized return; the round the PLAN sends at a target ashore\n     is the CJ-10 below, out of the same cells. The land-attack bit on the\n     anti-ship missile had made every Houbei boat in the game a cruise-missile\n     platform. */\n  ssm_yj18: { name:\"YJ-18 SSM\", dmg:300, warhead:\"he\", range:17.0, minRange:2.0, reload:15.0,\n    burst:2, burstDelay:0.8, acc:0.85, proj:\"missile\", speed:15, aoe:1.6,\n    tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\" },\n  /* What the light forces actually carry. YJ-83 (C-802A) is a subsonic\n     sea-skimmer of roughly 180 km with a terminal supersonic dash, in service\n     from the late 1990s, and it is the standard round of the Type 022, the\n     Type 056, the Type 054A and the Type 052B/C. Shorter, lighter and easier\n     to stop than the YJ-18 - which is the entire reason the YJ-18 exists. */\n  ssm_yj83: { name:\"YJ-83 anti-ship missile\", dmg:235, warhead:\"he\", range:14.5, minRange:1.8,\n    reload:14.0, burst:2, burstDelay:0.9, acc:0.82, proj:\"missile\", speed:13, aoe:1.4,\n    tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\" },\n\n  /* ---- Chinese land attack ----\n     facts.js has listed CJ-10 inside the universal VLS of the Type 052D and\n     the Type 055 since those cards were written, and the destroyer card says\n     in as many words that the 64 cells \"launch air-defence, anti-ship,\n     land-attack and anti-submarine missiles from the same silo\". No such\n     round existed in WEAPONS. The ships reached a target ashore only through\n     a land-attack bit wrongly set on the YJ-18, which also handed the\n     capability to a missile boat and a coastal corvette.\n\n     Ship-launched CJ-10 is a 2010s capability and it stops there: the Luda,\n     the Luhu, the Jiangwei and the Jiangdao get nothing, because for most of\n     this game's span China had no way to strike a land target from the sea\n     at all, and that gap is the point. Land attack only - the anti-ship round\n     out of the same cell is the YJ-18. */\n  lacm_cj10: { name:\"CJ-10 land-attack cruise missile\", dmg:255, warhead:\"he\", range:18.0,\n    minRange:3.0, reload:17.0, burst:1, acc:0.88, proj:\"missile\", speed:112, aoe:1.6,\n    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:\"missile\" },\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "MAJOR. Adds the HHQ-10 point-defence missile, which the Type 056, the Type 052D, the Type 055 and all three carriers carry, and which warship_specs.js and facts.js already describe on those hulls while no such weapon existed. Placed between the area-air-defence block and the CIWS block because it is neither, and sized at a third of HHQ-9's reach so the escort-versus-air-defence-ship distinction the brief calls the most important fact about a post-1980 combatant stays visible on the stat card. NOTE: the anchor deliberately starts at the tgt line of sam_sm1 rather than its name line, because that shorter form is still unique (verified, count 1) and does not depend on sam_sm1's figures.",
+   "anchor": "    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n\n  /* ---- close-in weapon systems: the last line against a sea-skimmer ---- */\n",
+   "exactCount": 1,
+   "newCode": "    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n\n  /* ---- point defence, which is NOT the same thing ----\n     HHQ-10 (FL-3000N) is an eight- or 24-round box of short-range\n     infra-red/passive-RF rounds that kills a missile already committed at\n     you, at about 9 km. It is on the Type 056, the Type 052D, the Type 055,\n     Liaoning, Shandong and Fujian, and it is exactly what the e00 carrier row\n     already called \"HQ-10 point defence\". Deliberately a third of the HHQ-9's\n     reach: the difference between a ship that defends the formation and a\n     ship that defends itself is the most important distinction between\n     surface combatants after 1980 and the roster should not blur it.\n     Sized against sam_ram, the RIM-116 that fills the same slot in NATO. */\n  sam_hhq10: { name:\"HHQ-10 point defence\", dmg:105, warhead:\"flak\", range:4.4, reload:2.0, burst:2,\n    burstDelay:0.30, acc:0.80, proj:\"missile\", speed:560,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n\n  /* ---- close-in weapon systems: the last line against a sea-skimmer ---- */\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "FATAL. The NAVY refit table is what actually decides the e20 loadout \u2014 the source `weapons:` line on corvette_c reads [\"navgun_57\"] and is overwritten here. Type 056 and Type 022 swap the YJ-18 they cannot launch for the YJ-83 they carry, and the Type 056 gains the HHQ-10 it has had since 2013 and which left it with no air-defence missile at all.",
+   "anchor": "  corvette_c:    { weapons:[\"navgun_76\",\"ssm_yj18\",\"ciws_pj11\"], sonar:6.2, vls:8, helo:1,\n                   radarQ:13, ciws:0.44 },\n  missileboat_c: { weapons:[\"ssm_yj18\"], sonar:0, vls:0, helo:0, radarQ:8 },\n",
+   "exactCount": 1,
+   "newCode": "  /* Type 056A: 76 mm forward, two twin YJ-83 boxes amidships, an eight-round\n     HHQ-10 on the after deckhouse. No vertical cell anywhere, which is why it\n     fires YJ-83 and not YJ-18; the eight \"vls\" counted here are that HHQ-10\n     box, not a universal silo. It had no air-defence missile at all. */\n  corvette_c:    { weapons:[\"navgun_76\",\"ssm_yj83\",\"sam_hhq10\",\"ciws_pj11\"], sonar:6.2, vls:8, helo:1,\n                   radarQ:13, ciws:0.44 },\n  missileboat_c: { weapons:[\"ssm_yj83\"], sonar:0, vls:0, helo:0, radarQ:8 },\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "MAJOR. Gives the Type 052D and Type 055 the CJ-10 land-attack round their own facts.js cards have claimed since they were written, and restores to Fujian the HHQ-10 that the OLDER e00 carrier row already carries \u2014 the e20 carrier had regressed to a single gatling.",
+   "anchor": "  destroyer_c:   { weapons:[\"navgun_pj38\",\"sam_hhq9\",\"ssm_yj18\",\"asw_yu7\",\"ciws_pj11\"],\n                   sonar:8.8, vls:64, helo:1, radarQ:32, ciws:0.66 },\n  cruiser_c:     { weapons:[\"navgun_pj38\",\"sam_hhq9\",\"ssm_yj18\",\"asw_yu7\",\"ciws_pj11\"],\n                   sonar:9.2, vls:112, helo:2, radarQ:41, ciws:0.72 },\n  carrier_c:     { weapons:[\"ciws_pj11\"], sonar:4.5, vls:0, helo:2, radarQ:19, ciws:0.60 },\n",
+   "exactCount": 1,
+   "newCode": "  /* 64 and 112 universal cells respectively: HHQ-9B up, YJ-18 out, CJ-10\n     ashore, Yu-8 down. That is what facts.js has claimed for both cards all\n     along and this is the first time the weapon list agrees with it. */\n  destroyer_c:   { weapons:[\"navgun_pj38\",\"sam_hhq9\",\"ssm_yj18\",\"lacm_cj10\",\"asw_yu7\",\"ciws_pj11\"],\n                   sonar:8.8, vls:64, helo:1, radarQ:32, ciws:0.66 },\n  cruiser_c:     { weapons:[\"navgun_pj38\",\"sam_hhq9\",\"ssm_yj18\",\"lacm_cj10\",\"asw_yu7\",\"ciws_pj11\"],\n                   sonar:9.2, vls:112, helo:2, radarQ:41, ciws:0.72 },\n  /* Fujian defends herself with three Type 1130 gatlings and HHQ-10 boxes -\n     facts.js lists both. The e00 carrier row already carried an HQ-10; the\n     e20 ship had somehow lost it and was down to the gatling alone. */\n  carrier_c:     { weapons:[\"ciws_pj11\",\"sam_hhq10\"], sonar:4.5, vls:0, helo:2, radarQ:19, ciws:0.60 },\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "Required companion to the new ssm_yj83: without a MISSILE_PROFILE row the fallback at the foot of the table would type it by range alone (>= 12 tiles becomes \"cruise\") and hand it intercept 1.0. A YJ-83 is a sea-skimmer that dashes in the terminal phase \u2014 harder to stop than a Harpoon at 1.00, easier than the supersonic YJ-18 at 0.55.",
+   "anchor": "  ssm_yj18:    { profile:\"loft\",   intercept:0.55 },   // subsonic cruise, supersonic sprint\n",
+   "exactCount": 1,
+   "newCode": "  ssm_yj18:    { profile:\"loft\",   intercept:0.55 },   // subsonic cruise, supersonic sprint\n  ssm_yj83:    { profile:\"skim\",   intercept:0.95 },   // sea-skimmer, terminal dash\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "Required companion to lacm_cj10, placed in the land-attack group beside the Tomahawk it is the Chinese answer to. Slightly under tlam_n's 1.55 because it is a smaller airframe. WARNING: the American-submarine workflow is editing this same block \u2014 re-count this anchor immediately before applying.",
+   "anchor": "  tlam_n:      { profile:\"cruise\", intercept:1.55 },   // slow and visible\n",
+   "exactCount": 1,
+   "newCode": "  tlam_n:      { profile:\"cruise\", intercept:1.55 },   // slow and visible\n  lacm_cj10:   { profile:\"cruise\", intercept:1.45 },   // likewise, and slightly smaller\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "Required companion to sam_hhq10, placed with the interceptors immediately after the HHQ-9 it sits beneath. 0.75 puts it between sam_ram's 0.68 and sam_shtil's 0.85.",
+   "anchor": "  sam_hhq9:    { profile:\"pop\", intercept:0.62 },\n",
+   "exactCount": 1,
+   "newCode": "  sam_hhq9:    { profile:\"pop\", intercept:0.62 },\n  sam_hhq10:   { profile:\"pop\", intercept:0.75 },\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "Required companion for all three new rounds. MISSILE_SPEED is in pixels per second and the loop below it rewrites WEAPONS[k].speed, so anything not listed here falls to the blanket 130 for missiles under 60 \u2014 which would make a CJ-10 faster than a Tomahawk. 118 puts the YJ-83 beside the Harpoon and NSM, 112 puts the CJ-10 exactly on the Tomahawk, 560 puts the HHQ-10 just under sam_ram's 640.",
+   "anchor": "  ssm_yj18:    300, ssm_oniks: 330, ssm_hf3: 310,               // supersonic\n",
+   "exactCount": 1,
+   "newCode": "  ssm_yj18:    300, ssm_oniks: 330, ssm_hf3: 310,               // supersonic\n  ssm_yj83:    118, lacm_cj10: 112, sam_hhq10: 560,             // skimmer, cruise, interceptor\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "The Type 022's eight-round fixed magazine is keyed on the weapon id, so swapping the missile without re-keying would silently orphan it. Eight rounds in two flush quad boxes on the afterdeck is right for the hull.",
+   "anchor": "  missileboat_c: { ssm_yj18: 8 },\n",
+   "exactCount": 1,
+   "newCode": "  missileboat_c: { ssm_yj83: 8 },   // two flush quad boxes on the afterdeck\n"
+  },
+  {
+   "file": "js/entities.js",
+   "why": "FATAL, and the largest single thing this audit found. FIXED_MAGAZINE is keyed on the shared weapon id but generations.js clones a weapon per unit whenever a faction quality multiplier bites, so the id in def.weapons reads \"ssm_oniks__cruiser_p\" by the time this line runs and the lookup returns undefined. MEASURED across every hull that declares a magazine: it missed on ten of eleven \u2014 cruiser_p, destroyer_p, corvette_p, missileboat_p, corvette_k, missileboat_k, corvette_r, missileboat_r, missileboat_c and ssgn_p all had infinite deck rounds. Only missileboat_n worked, and only because NATO's DOMAIN multipliers are all 1.00 so its Harpoon was never cloned. The whole \"a Slava's first salvo is terrifying and her second does not exist\" mechanic was switched off for every non-NATO ship in the game.",
+   "anchor": "    const mag = this.def.magazine && this.def.magazine[this.def.weapons[wi]];\n",
+   "exactCount": 1,
+   "newCode": "    /* FIXED_MAGAZINE is keyed on the SHARED weapon id - ssm_oniks, ssm_hf3,\n       ssm_yj83 - but generations.js clones a weapon per unit whenever a\n       faction quality multiplier bites, so by the time this runs the id in\n       def.weapons reads \"ssm_oniks__cruiser_p\". The lookup missed, and\n       measured across the roster it missed for ten of the eleven hulls that\n       declare a magazine: every Eastern bloc, Korean, Taiwanese and Chinese\n       ship had infinite deck rounds. Only missileboat_n still worked, and\n       only because NATO's multipliers are all 1.00 so its Harpoon was never\n       cloned. Fall back to the base id ahead of the \"__\" suffix. */\n    const _mk = this.def.weapons[wi];\n    const mag = this.def.magazine &&\n                (this.def.magazine[_mk] !== undefined\n                   ? this.def.magazine[_mk]\n                   : this.def.magazine[String(_mk).split(\"__\")[0]]);\n"
+  },
+  {
+   "file": "js/entities.js",
+   "why": "Second half of the magazine repair. reloadAtYard() compares against full[key] with the same un-stripped id, so once the fix above lets a ship run dry, this loop would never decide the ship needs topping up and the boat would sit alongside the yard forever. The `!== undefined` guard also preserves a legitimate zero.",
+   "anchor": "      const key = this.def.weapons[wi];\n      if (this.mag[wi] < (full[key] || 0)) { needs = true; break; }\n",
+   "exactCount": 1,
+   "newCode": "      /* same base-id fallback as fire(): the resolved id may be a per-unit\n         clone, and without this a ship whose tubes are empty never asks the\n         yard to fill them. */\n      const key = String(this.def.weapons[wi]).split(\"__\")[0];\n      if (this.mag[wi] < (full[key] !== undefined ? full[key] : 0)) { needs = true; break; }\n"
+  }
+ ],
+ "proof": "WHAT I MEASURED (never asserted by eye; every loadout resolved after generations.js ran).\n\nHarness: `var window=this;` + js/util.js js/config.js js/facts.js js/rules.js js/eras.js js/heavyair.js js/generations.js, run under /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc. Globals confirmed present: UNITS n=1132, WEAPONS n=1686. Files live under /private/tmp/claude-501/-Users-hjiang-Desktop-redalert/6321f229-fd3c-451c-bfae-d045a3e13cf4/scratchpad/plan_surface/ (before.js = baseline, afterclean.js = clean tree + my patch, plan_patch.py = the patch script).\n\nIMPORTANT: the shared scratchpad is contended by the two sibling workflows \u2014 two of my probe scripts and my first patch script were overwritten mid-run by the American- and Korean-submarine agents. All work above was redone in an isolated subdirectory. Repo HEAD is 8d67ba2 \"Document the composition harness\", not the a62fcc9 in my briefing; the working tree was clean at every anchor count.\n\nBASELINE, measured:\n- 19 live PLA surface hulls across six eras, plus 2 \"NONE\" placeholder rows confirmed absent from UNITS at runtime (isPhantomUnit purge works).\n- pla_e00_destroyer (Type 052C/052D) resolved to ONE weapon, \"052C: 6 x 8 revolver VLS\", tgt air:0, proj \"shell\", sfx \"cannon\". Unit sight 11.0.\n- missileboat_c and corvette_c resolved to ssm_yj18 while name, desc, facts.js and warship_specs.js all say YJ-83.\n- ssm_yj18 has tgt.ground = 1 and exactly four users, all PLA: corvette_c, missileboat_c, destroyer_c, cruiser_c.\n- No WEAPONS key anywhere for CJ-10, YJ-83 or HHQ-10/HQ-10.\n- FIXED_MAGAZINE resolution tested per hull: 10 of 11 miss. missileboat_c's magazine {ssm_yj18:8} never fires because the resolved id is ssm_yj18__missileboat_c.\n- Era-row census by regex over eras.js: no pla_e80_missileboat and no pla_e90_missileboat row exists, in any form.\n- 170 of 174 era naval hulls carry exactly one weapon (exceptions: gbr_e60_patrol, fra_e60_patrol, deu_e50_patrol, deu_e60_patrol).\n- grep shoreBombard repo-wide: 3 hits, all three the definitions. No reader.\n- generations.js NAVGUN already rewrites navgun_76 to \"H/PJ-26 76mm\" on PLA hulls \u2014 verified at runtime, correct-as-is.\n\nANCHORS: all 16 verified with python3 str.count against the live /Users/hjiang/Desktop/redalert files, twice \u2014 once before patching and again after the sibling workflow's in-flight edits were reverted. Every one returns exactly 1.\n\nAFTER THE PATCH, measured on a pristine `cp -R` of the live repo with only my 16 edits applied (git diff --stat: js/entities.js +22, js/eras.js +59, js/rules.js +81; no other file touched):\n- Dangling weapon references across the WHOLE roster including BUILDINGS: 0.\n- pla_e00_destroyer now: gun (G S, r 11.0) + \"HHQ-9 area SAM\" (A only, r 13.5, profile pop). Sight 11.0 -> 13.4.\n- pla_e80_destroyer gun renamed \"2 x twin 130mm Type 76\".\n- destroyer_c / cruiser_c now: H/PJ-38 (GS 11.1), HHQ-9B (A 13.9), YJ-18 (S only, 16.9), CJ-10 (G only, 17.9, profile cruise), Yu-7 (U 6.2), H/PJ-11 (A 3.0). Sight 16.7 -> 17.6.\n- corvette_c now: H/PJ-26 76mm (GAS 7.9), YJ-83 (S only, 14.4, profile skim), HHQ-10 (A 4.4, profile pop), H/PJ-11 (A 3.0). Sight 16.7 -> 14.3 \u2014 it DROPS, because the ship no longer carries a missile it cannot launch.\n- missileboat_c: YJ-83 only (S, 14.4). Magazine now resolves: base id ssm_yj83 -> HIT, 8 rounds.\n- carrier_c: H/PJ-11 + HHQ-10.\n- Every new missile picked up its MISSILE_SPEED and MISSILE_PROFILE row (CJ-10 speed 112 profile cruise, YJ-83 118 skim, HHQ-10 560 pop) \u2014 none fell through to the blanket 130/\"cruise\" fallback.\n\nBEHAVIOUR SUITE: ==== 52 passed, 0 failed ====, \"runtime errors: NONE\", plus index.html load check with element id=\"errbox\" EMPTY. Both run under headless Chrome on a tree carrying my exact 16 edits. HONEST CAVEAT: that green run was at 17:33 on a copy that ALSO carried the American-submarine workflow's then-uncommitted js/combat.js and js/generations.js edits, which were subsequently reverted. I tried four times to re-run the suite on the clean-plus-my-patch tree and Chrome exited 144/21 with a zero-byte DOM every time; I then ran the UNPATCHED live repo through the identical command and it failed the same way, which establishes that the failure is machine contention (a GUI Chrome is running and three agents are competing for it), not my change. My edits touch js/rules.js, js/eras.js and js/entities.js only, and are logically independent of the two files that differed between the two trees. The suite should be re-run once the machine is quiet.",
+ "risks": [
+  "CROSS-FACTION INVERSION, the most important one. After edit 6/9 the Type 052D and Type 055 carry a ship-launched land-attack cruise missile at 17.9 tiles. MEASURED: destroyer_n (Arleigh Burke) and cruiser_n (Ticonderoga) have NO land-attack missile at all \u2014 their longest reach ashore is a Harpoon at 14.0, and tlam_n exists in WEAPONS at range 19.0 but is fitted only to ssgn_n, the converted Ohio. So applying my patch alone makes the game say China has ship-launched land attack and the United States does not, which is the exact inversion of reality and is also the headline fact the brief cites about a Mk 41 ship. The NATO surface fleet must get TLAM in the same pass. I did not touch tlam_n or the NATO NAVY rows because the American-submarine workflow owns that file region.",
+  "SAME INVERSION ONE ERA EARLIER. After edit 1/2, pla_e00_destroyer sight goes 11.0 -> 13.4, above nato_e00_destroyer at 11.8. That is not a balance artefact: nato_e00_destroyer (Arleigh Burke Flight IIA) has the IDENTICAL defect I just fixed for the Type 052C \u2014 one weapon, Mk 45 127mm, tgt air:0, no SM-2 anywhere. So does nato_e80_cruiser and nato_e90_cruiser (both Ticonderoga, gun only). Fixing the PLA alone leaves the USN's Aegis cruisers unable to shoot at aircraft while China's can. Recommend the owner run the same split across the NATO era destroyers and cruisers before shipping.",
+  "THE ONE-WEAPON-PER-ERA-HULL CONSTRAINT IS SYSTEMIC, NOT PLA. 170 of 174 era naval hulls carry exactly one weapon. That is why the Luda has no HY-2, the Luhu no YJ-83 and the Jiangwei no HQ-7 \u2014 and equally why the e80/e90 Ticonderoga has no SM-2 and the Sovremenny no Shtil on its era row. I fixed only the single worst instance (the 052C, where the weapon is literally NAMED after the SAM launcher). Fixing the rest properly is an era-table authoring job across all eight factions, not an audit patch, and it should be decided as one policy rather than faction by faction.",
+  "THE MAGAZINE FIX (edits 15, 16) HAS THE WIDEST BLAST RADIUS OF ANYTHING HERE. It re-enables fixed deck magazines on ten hulls at once \u2014 Slava, Sovremenny, Project 22160, Molniya, two KPA craft, two Taiwanese craft, the Type 022 and the Oscar II. Those ships have been firing unlimited anti-ship missiles for the whole life of the feature, so re-arming the limiter is a real combat-balance change, not a no-op, and it will be felt most by the Pact. It is correct and the code's own comments demand it, but the owner should expect naval engagements to play differently and may want it in its own commit.",
+  "ANCHOR CONTENTION. Two sibling workflows are editing js/rules.js concurrently. I watched the American-submarine agent add tlam_c and tlam_tube directly adjacent to my MISSILE_PROFILE anchor (the tlam_n line) and rewrite the MISSILE_SPEED tlam_n line one row above my MISSILE_SPEED anchor. My counts are all 1 against the tree as of this writing, but edits 11 and 12 in particular sit inside their working area. Re-run the str.count check immediately before applying, and apply the PLA patch after theirs rather than before.",
+  "THE CJ-10 DESIGNATION IS THE WEAKEST FACT IN THIS PATCH. Ship-launched Chinese land attack is poorly attested in open sources \u2014 the round is variously reported as CJ-10, YJ-18C and CJ-20-derived, and confidence on facts.js cruiser_c/destroyer_c is already marked \"medium\". I used CJ-10 because the repo's own facts.js already names it in both ships' VLS and because the briefing names it as the missile line; I did not invent a designation. If the owner prefers YJ-18C the change is one name string in edit 6.",
+  "I ELECTED NOT TO PATCH THE TWO BIGGEST ROSTER GAPS \u2014 the absent Type 054A Jiangkai II and the absent e80/e90 missile boats. Both are real, both are major, and both need a roster decision plus warship_specs.js hull geometry plus a 3D model path, which is beyond what an audit should change unilaterally. If they are left unfixed the PLAN stays frozen with exactly one escort type below destroyer size for 2008-2026 and with a twenty-year hole where its largest-in-the-world missile-boat force should be. That is the single thing in this report most likely to still read as wrong to a knowledgeable player after every edit above is applied."
+ ]
+}

@@ -1,0 +1,400 @@
+{
+ "navy": "MARINE NATIONALE \u2014 SURFACE FLEET AUDIT (faction key `fra`, surface hulls only; the submarines belong to the other two workflows).\n\nSCOPE MEASURED: 27 French hulls with layer:\"sea\" \u2014 23 era rows in js/eras.js (e50\u2192e00) and 4 hand-written e20 rows in js/rules.js. Everything resolved under jsc after generations.js, never read off the source line.\n\nTHE HEADLINE, AND IT IS THE SAME DEFECT AS THE OHIO AND THE IFVs. Measured: 18 of the 23 era hulls fire a borrowed AMERICAN weapon id (`w_e**_nato_<role>`); the other five are patrol boats carrying the generic `hmg`. Not one French era hull carried a single French-designed naval weapon. The borrowings are not near-misses:\n\n  De Grasse (1956), an ANTI-AIRCRAFT cruiser with sixteen 127 mm/54 Mle 1948, fires\n    \"Nine 203mm/55 Mk 16 rapid-fire guns in three turrets\" \u2014 that is USS Des Moines.\n  Colbert (1959), the same kind of ship, fires \"Terrier and Talos SAM launchers\" \u2014\n    two United States Navy systems France never bought, and with tgt.air = 0, so a\n    weapon whose NAME is \"SAM launchers\" cannot engage an aircraft.\n  Suffren (1967), whose own desc says \"built around Masurca, a French area\n    air-defence missile\", fires an American 127 mm Mk 42 and cannot shoot at air.\n  The A69 aviso (1976) fires \"Mk 13 launcher for SM-1MR and Harpoon\" \u2014 an Oliver\n    Hazard Perry. The A69 never had a SAM, a Harpoon or a Mk 13 in its life.\n  Cassard (1988), an ANTI-AIR frigate, fires \"90-96 cell Mk 41 VLS with\n    SM-2/ESSM/Tomahawk\" \u2014 an Arleigh Burke \u2014 with tgt.air = 0. France has never put\n    a Mk 41 cell or a Tomahawk on a surface ship in any decade.\n  Horizon (2010) fires a \"Mk 45 Mod 4 127mm\". Horizon has no 127 mm gun at all.\n  FREMM Aquitaine (2012) fires \"One 57mm Mk 110\" \u2014 the Bofors on an American LCS.\n  Clemenceau, Foch and Charles de Gaulle all carry \"Mk 15 Phalanx CIWS\". France has\n    never bought Phalanx, Goalkeeper or RAM for any hull in this roster.\n\nTHE SIX DEFECT CLASSES, ANSWERED.\n\n1. LAND ATTACK. The real answer for France is narrow and interesting, and the game had none of it. By gun: throughout, and the big-gun ships had a lot of it (De Grasse and Colbert each had sixteen 127 mm). By missile: NOTHING until MM40 Exocet Block 3 in 2008 gave the round GPS waypoints and a coastal secondary mode, and nothing proper until MdCN \u2014 qualified 2015, operational 2017, first fired in anger on 14 April 2018 when Aquitaine, Languedoc and Auvergne put rounds into Syrian chemical-weapons sites. MdCN is the only ship-launched land-attack cruise missile any European navy has. MEASURED: there is no MdCN weapon anywhere in WEAPONS (zero entries matching /mdcn|scalp|naval cruise/), and the e20 FREMM's own desc names it \u2014 \"the naval cruise missile MdCN, which no other European escort carries\" \u2014 exactly the Ohio/Tomahawk defect on the one ship in Europe that genuinely has the capability. Conversely MM38 (1975) and MM40 Block 2 (1993) were ANTI-SHIP ONLY and must not carry ground:1.\n\n2. DESCRIPTION VERSUS LOADOUT. Nine rows. The purest is fra_e80_cruiser, whose name IS \"Colbert (Exocet)\" and whose full name IS \"Colbert (C611) after the Exocet fit\" \u2014 and which carries no Exocet. Then Le Corse (\"57 mm mountings\" \u2192 American 76 mm Mk 33), Cdt Rivi\u00e8re (\"three 100 mm, a 305 mm ASW mortar\" \u2192 one American 127 mm, no ASW), T 47 Surcouf (\"six 127 mm in three twin turrets\" \u2192 \"Three 127mm/54 Mk 42 single mounts\"), Suffren (Masurca), the A69 (\"four MM38 Exocet\"), Tourville (\"a towed array and Malafon\"), Le Fougueux (\"depth charges aft\" on a submarine chaser with sub:0), FREMM and Horizon (Aster, Exocet, MdCN, VDS \u2014 none present).\n\n3. ANACHRONISM. All 23 era rows carry a `service` field and every one matches the class's real commissioning \u2014 I checked the rows that have the field and confirmed the four e20 rows that do NOT have one are all ships in service today (POM 2023, FREMM 2012, Horizon 2010, CdG 2001), so the gap is the e20 convention, not an oversight. Two real finds: La Combattante (P730, 1964, 202 t, one 40 mm and two 20 mm) carries a \"heavyweight torpedo\" of 340 damage she never had; and fra_e80_carrier's service date 1986 is silently overwritten to 1961 by a duplicate key later in the same object literal.\n\n4. WRONG IDENTITY. Eight weapons belonging to another navy, listed above. Plus the duplicate-key trap: fra_e80_carrier declares Foch (R99) / 1986 / ASMP and then, INSIDE THE SAME BRACES, restates name, full, service and desc as Clemenceau (R98) / 1961. The later key wins, so half the row is dead text nobody will ever see and two competing histories sit in one line.\n\n5. AREA AIR DEFENCE \u2014 the single most important distinction after 1980, and the game could not make it anywhere in the French line. MEASURED before the fix: 13 of 27 French sea hulls could engage an aircraft at all, and NOT ONE of the three ships France built around an area SAM could: Suffren and Colbert with Masurca (in service 1968, the first area missile France built rather than bought) and Cassard with forty SM-1MR on a Mk 13. Meanwhile La Fayette, a genuine point-defence escort with eight Crotale rounds, had the same air capability as a Horizon: none. After the fix, 21 of 27 engage air, and Masurca / SM-1MR / Aster 30 sit at 9.8 / 10.4 / 14.8 tiles while Crotale and Sadral sit at 6.2 and 4.4 \u2014 the ladder is now visible.\n\n6. CAPABILITY GAPS. ASW was a hole: MEASURED, exactly one of 27 French surface hulls had a weapon with sub:1, and it was La Combattante's phantom torpedo. France's ASW record is one of the strongest things about this navy \u2014 the 305 mm Mle 1954 mortar, the L5 from 1971, MU90, and above all Malafon (1965\u20131997), a rocket-boosted glider that flies 13 km and drops an L4 torpedo at the far end, which neither the Royal Navy nor the Bundesmarine had an answer to. Anti-ship was a hole too: MEASURED, zero of the 23 era hulls carried Exocet \u2014 the weapon of 1982 and the one France sold to seven navies \u2014 although MM38 was on the A69s, Tourville, Georges Leygues, Colbert and Suffren from 1975.\n\nWHAT THE GAME ALREADY HAS RIGHT, and it is a lot. The three hand-written e20 hulls are correct and well-judged: FREMM with 76 mm + Aster 15 + Exocet, Horizon with 76 mm + Aster 30 + Exocet, Charles de Gaulle with Aster 15 and nothing else (which is exactly her real SAM fit). The deliberate emptinesses are all correct and the comments say why: no `missileboat` in any era, because France built La Combattante by the dozen for export and never commissioned one; no `cruiser` from e90, because Colbert paid off on 24 May 1991; no `ssgn`, because MdCN goes in a Suffren SSN's torpedo room. The NAVGUN table's refusal to carry a `fra` row is right for the stated reason \u2014 an era-less override would have bolted a 1953 gun onto a 2012 FREMM \u2014 and its comment already prescribes the fix I have written. The patrol-boat line is right end to end, dates and framing both. La Fayette's rcs 0.14 is right and is the point of the ship.\n\nREALISM OVER SYMMETRY. I have invented nothing to fill a slot. MdCN gets sea:0 because unlike a TASM-era Tomahawk it has no anti-ship mode and never had one. MM38 and MM40 Block 2 get ground:0 because no Exocet before Block 3 could be told to fly to a map reference ashore. France gets no Phalanx, no Harpoon, no Mk 41 and no Tomahawk in any era, because it never bought any of them.",
+ "inventory": "Every French SURFACE hull, resolved under jsc AFTER generations.js (baseline, pre-edit). Format: id | era | name | full | service | role | hp/spd/sight/cost (+carrier/sonar/ciws) | resolved weapons with tgt mask.\n\nfra_e50_patrol | e50 | Le Fougueux P640 | Le Fougueux-class patrouilleur (submarine chaser) | 1954 | patrol | hp 280 spd 2.2 sight 5.4 cost 245 sonar 2.2 | \"12.7mm HMG\" {g1,a0,s1,u0}\nfra_e50_corvette | e50 | Le Corse E50 | Le Corse (F761), E50 Le Corse-class escorteur rapide | 1955 | corvette | hp 580 spd 2.6 sight 6.3 cost 545 sonar 3.8 ciws 0.30 | \"Two twin 76mm/50 Mk 33\" {g1,a1,s1,u0}   [id w_e50_nato_corvette \u2014 AMERICAN]\nfra_e50_destroyer | e50 | T 47 Surcouf | Surcouf (D621), T 47-class escorteur d'escadre | 1955 | destroyer | hp 1050 spd 2.15 sight 8.9 cost 1000 sonar 5.0 ciws 0.46 | \"Three 127mm/54 Mk 42 single mounts\" {g1,a0,s1,u0}   [w_e50_nato_destroyer \u2014 AMERICAN]\nfra_e50_cruiser | e50 | De Grasse CL | De Grasse (C610), light cruiser | 1956 | cruiser | hp 1470 spd 1.74 sight 8.9 cost 1540 sonar 4.0 ciws 0.42 | \"Nine 203mm/55 Mk 16 rapid-fire guns in three turrets\" {g1,a0,s1,u0}   [w_e50_nato_cruiser \u2014 USS DES MOINES]\nfra_e50_carrier | e50 | Arromanches CVL | Arromanches (R95), ex-HMS Colossus | 1951 | carrier | hp 1330 spd 1.42 sight 7.4 cost 1520 carrier 2 sonar 2.0 ciws 0.36 | \"Air wing of ~90 aircraft\" {g0,a1,s0,u0}   [w_e50_nato_carrier \u2014 shared; Arromanches carried ~24]\nfra_e60_patrol | e60 | La Combattante | La Combattante (P730), fast patrol boat | 1964 | patrol | hp 290 spd 3.0 sight 9.4 cost 295 sonar 0 | \"12.7mm HMG\" {g1,a0,s1,u0} + \"heavyweight torpedo\" {g0,a0,s1,u1}\nfra_e60_corvette | e60 | Cdt Riviere | Commandant Riviere (F733), aviso-escorteur | 1962 | corvette | hp 730 spd 2.5 sight 6.6 cost 690 sonar 4.6 ciws 0.32 | \"One 127mm/54 Mk 42\" {g1,a1,s1,u0}   [w_e60_nato_corvette \u2014 AMERICAN]\nfra_e60_destroyer | e60 | Suffren DDG | Suffren (D602), Suffren-class fregate lance-missiles | 1967 | destroyer | hp 1310 spd 2.2 sight 9.8 cost 1270 sonar 6.6 ciws 0.50 | \"Two 127mm/54 Mk 42\" {g1,a0,s1,u0}   [w_e60_nato_destroyer \u2014 AMERICAN; no Masurca, no air]\nfra_e60_cruiser | e60 | Colbert CL | Colbert (C611), anti-aircraft cruiser | 1959 | cruiser | hp 1810 spd 1.8 sight 9.8 cost 1930 sonar 4.8 ciws 0.48 | \"Terrier and Talos SAM launchers\" {g1,a0,s1,u0}   [w_e60_nato_cruiser \u2014 USN SYSTEMS FRANCE NEVER HAD; air:0]\nfra_e60_carrier | e60 | Clemenceau CV | Clemenceau (R98), Clemenceau-class | 1961 | carrier | hp 1980 spd 1.44 sight 9.2 cost 2260 carrier 3 sonar 2.6 ciws 0.44 | \"Air wing of ~90 aircraft\" {g0,a1,s0,u0}   [shared; Clemenceau carried ~40]\nfra_e80_patrol | e80 | P400 | L'Audacieuse (P682), P400-class patrouilleur | 1986 | patrol | hp 390 spd 2.7 sight 6.7 cost 375 sonar 0.6 | \"12.7mm HMG\" {g1,a0,s1,u0}\nfra_e80_corvette | e80 | A69 aviso | D'Estienne d'Orves (F781), Type A69 aviso | 1976 | corvette | hp 880 spd 2.55 sight 7.5 cost 860 sonar 5.4 ciws 0.40 | \"Mk 13 launcher for SM-1MR and Harpoon\" {g1,a1,s1,u0}   [w_e80_nato_corvette \u2014 OLIVER HAZARD PERRY]\nfra_e80_destroyer | e80 | Tourville F67 | Tourville (D610), F67 Tourville-class | 1974 | destroyer | hp 1630 spd 2.3 sight 10.7 cost 1620 sonar 7.8 ciws 0.50 | \"Two 127mm/54 Mk 45\" {g1,a0,s1,u0}   [w_e80_nato_destroyer \u2014 AMERICAN; ASW ship with sub:0]\nfra_e80_cruiser | e80 | Colbert (Exocet) | Colbert (C611) after the Exocet fit | 1980 | cruiser | hp 2260 spd 1.88 sight 10.7 cost 2450 sonar 5.4 ciws 0.56 | \"Two 127mm/54 Mk 45\" {g1,a0,s1,u0}   [named for a weapon it does not carry]\nfra_e80_carrier | e80 | Clemenceau CV | Clemenceau (R98) with Super Etendard and ASMP | 1961 | carrier | hp 2320 spd 1.48 sight 10.5 cost 2800 carrier 3 sonar 3.0 ciws 0.50 | \"Mk 15 Phalanx CIWS\" {g0,a1,s0,u0}   [DECLARED as Foch (R99)/1986 and silently overwritten by a duplicate key in the same literal; France never bought Phalanx]\nfra_e90_patrol | e90 | Flamant OPV 54 | Flamant (P676), OPV 54 class | 1997 | patrol | hp 460 spd 2.4 sight 7.3 cost 445 sonar 0.6 | \"12.7mm HMG\" {g1,a0,s1,u0}\nfra_e90_corvette | e90 | La Fayette FS | La Fayette (F710), La Fayette-class fregate furtive | 1996 | corvette | hp 1010 spd 2.8 sight 8.4 cost 1080 sonar 3.2 ciws 0.44 rcs 0.14 | \"OTO 76mm Super Rapid\" {g1,a1,s1,u0}   [La Fayette carries a 100 mm Mle 68 TR; no Exocet, no Crotale]\nfra_e90_destroyer | e90 | Cassard F70 AA | Cassard (D614), Cassard-class anti-air frigate | 1988 | destroyer | hp 1820 spd 2.34 sight 11.1 cost 1900 sonar 6.0 ciws 0.52 | \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomahawk\" {g1,a0,s1,u0}   [w_e90_nato_destroyer \u2014 ARLEIGH BURKE; the anti-AIR frigate has air:0]\nfra_e90_carrier | e90 | Foch CV | Foch (R99), Clemenceau-class | 1963 | carrier | hp 2560 spd 1.5 sight 11.2 cost 3180 carrier 3 sonar 3.2 ciws 0.52 | \"Mk 15 Phalanx CIWS\" {g0,a1,s0,u0}\nfra_e00_patrol | e00 | Confiance PLG | La Confiance (P733), patrouilleur leger guyanais | 2017 | patrol | hp 520 spd 2.6 sight 7.6 cost 485 sonar 0.6 | \"12.7mm HMG\" {g1,a0,s1,u0}\nfra_e00_corvette | e00 | FREMM Aquitaine | Aquitaine (D650), FREMM multi-mission frigate | 2012 | corvette | hp 1140 spd 2.88 sight 9.4 cost 1210 sonar 9.0 ciws 0.44 rcs 0.18 | \"One 57mm Mk 110\" {g1,a1,s1,u0}   [w_e00_nato_corvette \u2014 US LCS GUN; desc promises Aster 15, Exocet, VDS and MdCN, loadout has none]\nfra_e00_destroyer | e00 | Horizon DDG | Forbin (D620), Horizon-class | 2010 | destroyer | hp 2000 spd 2.4 sight 11.3 cost 2110 sonar 6.8 ciws 0.56 | \"Mk 45 Mod 4 127mm\" {g1,a0,s1,u0}   [Horizon has no 127 mm at all; no Aster, no Exocet]\nfra_e00_carrier | e00 | Charles de Gaulle CVN | Charles de Gaulle (R91) | 2001 | carrier | hp 3220 spd 1.54 sight 12.9 cost 4200 carrier 3 nuclear sonar 3.8 ciws 0.50 | \"Air wing of 75+ aircraft\" {g0,a1,s0,u0}   [CdG's wing is ~40; her real SAM is 32 Aster 15 in Sylver A43 \u2014 absent]\nboat_f | e20 | Patrouilleur Outre-mer | Auguste Benebig (P780), POM class | (no service field; delivered 2023) | patrol | hp 560 spd 2.8 sight 8.2 cost 500 sonar 0.9 | \"12.7mm HMG\" {g1,a0,s1,u0}   CORRECT\ncorvette_f | e20 | FREMM Aquitaine | Aquitaine (D650), FREMM multi-mission frigate | (none; 2012) | corvette | hp 1180 spd 2.9 sight 14.8 cost 1340 sonar 9.2 ciws 0.44 | \"OTO 76mm Super Rapid\" {g1,a1,s1,u0} + \"Aster 15\" {g0,a1,s0,u0} + \"MM40 Exocet Block 3\" {g1,a0,s1,u0}   CORRECT except the MdCN its own desc names\ndestroyer_f | e20 | Horizon DDG | Forbin (D620), Horizon-class air-defence destroyer | (none; 2010) | destroyer | hp 2020 spd 2.4 sight 14.8 cost 2240 sonar 6.8 ciws 0.56 | \"OTO 76mm Super Rapid\" {g1,a1,s1,u0} + \"Aster 30\" {g0,a1,s0,u0} + \"MM40 Exocet Block 3\" {g1,a0,s1,u0}   CORRECT\ncarrier_f | e20 | Charles de Gaulle CVN | Charles de Gaulle (R91) | (none; 2001) | carrier | hp 3400 spd 1.55 sight 13 cost 4400 carrier 3 ciws 0.52 | \"Aster 15\" {g0,a1,s0,u0}   CORRECT\n\nROSTER-WIDE TALLIES, MEASURED (baseline): 27 French sea hulls. 18 of the 23 era hulls carry a `w_e**_nato_*` American weapon; 0 era hulls carry any French-designed naval weapon. Hulls able to engage AIR: 13/27. Hulls with ANY anti-submarine weapon: 1/27 (and that one is wrong). Hulls carrying Exocet: 3/27, all hand-written e20. MdCN entries in WEAPONS: 0.\nSLOTS DELIBERATELY EMPTY AND CORRECT: `missileboat` in every era; `cruiser` from e90; `ssgn`. `cawacs` is present and correct (E-2C off Charles de Gaulle) \u2014 the one capability no other European navy has.",
+ "findings": [
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity + area-air-defence",
+   "unit": "fra_e90_destroyer \u2014 Cassard (D614), commissioned 28 July 1988",
+   "whatTheGameHas": "One weapon, w_e90_nato_destroyer, resolved name \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomahawk\", tgt {ground:1,air:0,sea:1,sub:0}. The unit's own full name is \"Cassard-class anti-air frigate\" and it cannot engage an aircraft.",
+   "whatIsReal": "Cassard and Jean Bart (1991) are 4,500-tonne French hulls with ONE Mk 13 Mod 5 single-arm launcher holding 40 SM-1MR recycled from the retired T 47 Tartar conversions, one 100 mm Mle 1968 CADAM, two Sadral sextuple Mistral mounts and eight MM40 Exocet. France has never fitted a Mk 41 cell or a Tomahawk to a surface ship in any decade. A 90-96 cell Mk 41 farm with Tomahawk is an Arleigh Burke.",
+   "fix": "weapons: [\"navgun_100_fr\",\"sam_sm1\",\"ssm_exocet40b2\",\"sam_sadral\"]. sam_sm1 already exists in rules.js (\"SM-1MR Standard\", range 10.5, acc 0.74) and is exactly right."
+  },
+  {
+   "severity": "fatal",
+   "kind": "description-versus-loadout + land-attack",
+   "unit": "fra_e00_corvette \u2014 FREMM Aquitaine (D650), commissioned 23 November 2012",
+   "whatTheGameHas": "One weapon, w_e00_nato_corvette, resolved name \"One 57mm Mk 110\", tgt {g1,a1,s1,u0}. The desc says: \"Aster 15 in Sylver cells, Exocet, an NH90 and a variable-depth sonar - and on eight of them the MdCN naval cruise missile ... which gives a French frigate a thousand-kilometre land-attack reach.\" None of the four is in the loadout.",
+   "whatIsReal": "One 76 mm OTO Super Rapid (the Mk 110 is the Bofors 57 on an American LCS), 16 Aster 15 in Sylver A43, 8 MM40 Exocet Block 3, two MU90 launchers, CAPTAS-4 variable-depth sonar, and on the eight FREMM ASM hulls 16 MdCN in Sylver A70. This is the Ohio/Tomahawk defect verbatim, on the single European escort that genuinely has a naval land-attack cruise missile.",
+   "fix": "weapons: [\"navgun_76\",\"sam_aster15\",\"ssm_exocet\",\"mdcn\",\"asw_mu90\"]. Requires the new `mdcn` weapon; the other four ids already exist."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity + area-air-defence",
+   "unit": "fra_e00_destroyer \u2014 Horizon, Forbin (D620), active service 2010",
+   "whatTheGameHas": "One weapon, w_e00_nato_destroyer, resolved name \"Mk 45 Mod 4 127mm\", tgt {g1,a0,s1,u0}. The desc says \"Same PAAMS system and same Aster missiles\" and \"Unlike the Type 45 it carries Exocet from the first day\". Neither is in the loadout, and the ship cannot engage air.",
+   "whatIsReal": "Forbin has NO 127 mm gun of any kind. She carries two 76 mm OTO Super Rapid, a 48-cell Sylver A50 with Aster 15 and Aster 30 under PAAMS, eight MM40 Exocet Block 3, two MU90 tubes and an NH90. The e20 twin of this row, destroyer_f, already has the correct 76 mm + Aster 30 + Exocet, so the e00 row contradicts its own successor.",
+   "fix": "weapons: [\"navgun_76\",\"sam_aster30\",\"ssm_exocet\"] \u2014 identical to destroyer_f. All three ids already exist."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity + area-air-defence",
+   "unit": "fra_e60_cruiser \u2014 Colbert (C611), commissioned 5 May 1959",
+   "whatTheGameHas": "One weapon, w_e60_nato_cruiser, resolved name \"Terrier and Talos SAM launchers\", tgt {g1,a0,s1,u0}. A weapon whose name is \"SAM launchers\" that cannot target an aircraft, on a hull whose full name is \"anti-aircraft cruiser\".",
+   "whatIsReal": "RIM-2 Terrier and RIM-8 Talos are United States Navy missiles; France operated neither, ever. Colbert as completed in 1959 carried sixteen 127 mm/54 Mle 1948 in eight twin turrets and twenty 57 mm/60 in ten twin mounts \u2014 a pure anti-aircraft battery. Masurca arrives only with the 1970-72 conversion, which is the e80 row's business.",
+   "fix": "weapons: [\"navgun_127_mle48\",\"navgun_57\"] \u2014 the as-built AA battery, both dual-purpose. navgun_57 already exists; navgun_127_mle48 is new."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity",
+   "unit": "fra_e50_cruiser \u2014 De Grasse (C610), commissioned 10 September 1956",
+   "whatTheGameHas": "One weapon, w_e50_nato_cruiser, resolved name \"Nine 203mm/55 Mk 16 rapid-fire guns in three turrets\", tgt {g1,a0,s1,u0}. The desc itself says \"finished in 1956 ... as an anti-aircraft cruiser with sixteen 127 mm\".",
+   "whatIsReal": "Nine 203 mm/55 Mk 16 in three triple turrets is USS Des Moines (CA-134). De Grasse was completed as an AA cruiser with sixteen 127 mm/54 Mle 1948 and twenty 57 mm/60 and never carried a 203 mm gun. She also has air:0, which inverts her entire purpose.",
+   "fix": "weapons: [\"navgun_127_mle48\",\"navgun_57\"]."
+  },
+  {
+   "severity": "fatal",
+   "kind": "description-versus-loadout + area-air-defence",
+   "unit": "fra_e60_destroyer \u2014 Suffren (D602), commissioned 20 July 1967",
+   "whatTheGameHas": "One weapon, w_e60_nato_destroyer, resolved name \"Two 127mm/54 Mk 42\", tgt {g1,a0,s1,u0}. The desc: \"Two ships built around Masurca, a French area air-defence missile ... The first French warships designed from the keel up around a SAM of French design rather than an American one bought in.\"",
+   "whatIsReal": "Two 100 mm Mle 1968 CADAM, one Masurca Mk 2 Mod 3 twin-arm launcher with 48 rounds under the famous glass-fibre radome, one Malafon anti-submarine missile, four 550 mm tubes, and four MM38 Exocet added in 1977. The hull the game says exists to carry a French area SAM has no SAM and no air capability, and no ASW weapon either.",
+   "fix": "weapons: [\"navgun_100_fr\",\"sam_masurca\",\"asw_malafon\"]. All three weapons are new."
+  },
+  {
+   "severity": "fatal",
+   "kind": "wrong-identity + description-versus-loadout",
+   "unit": "fra_e80_corvette \u2014 D'Estienne d'Orves (F781), Type A69 aviso, 1976",
+   "whatTheGameHas": "One weapon, w_e80_nato_corvette, resolved name \"Mk 13 launcher for SM-1MR and Harpoon\", tgt {g1,a1,s1,u0}. The desc says \"a 100 mm forward, four MM38 Exocet and a hull-mounted sonar\".",
+   "whatIsReal": "The A69 is a 1,250-tonne coastal escort: one 100 mm Mle 1968 CADAM, two 20 mm, four MM38 Exocet, one 375 mm Bofors six-barrel anti-submarine rocket launcher and four L5 torpedo tubes. It never had a SAM of any kind, never a Harpoon, never a Mk 13 launcher. A Mk 13 with SM-1MR and Harpoon is an Oliver Hazard Perry. Argentina's three A69s, two of them at sea during the Falklands, carried exactly the French fit.",
+   "fix": "weapons: [\"navgun_100_fr\",\"ssm_exocet38\",\"asw_l5\"]."
+  },
+  {
+   "severity": "fatal",
+   "kind": "description-versus-loadout",
+   "unit": "fra_e80_cruiser \u2014 Colbert (C611) after the Exocet fit, 1980",
+   "whatTheGameHas": "One weapon, w_e80_nato_cruiser, resolved name \"Two 127mm/54 Mk 45\", tgt {g1,a0,s1,u0}. The unit's NAME is \"Colbert (Exocet)\" and its full name is \"Colbert (C611) after the Exocet fit\". It carries no Exocet. The desc adds \"Masurca aft from the 1970-72 conversion\"; there is no Masurca and no air capability either.",
+   "whatIsReal": "After the 1970-72 conversion and the 1980-81 refit: two 100 mm Mle 1968 CADAM, six 57 mm, one Masurca Mk 2 twin launcher aft, four MM38 Exocet. The Mk 45 is an American mount of 1971 that no French ship ever carried. She decommissioned on 24 May 1991.",
+   "fix": "weapons: [\"navgun_100_fr\",\"sam_masurca\",\"ssm_exocet38\"]."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity + capability gap",
+   "unit": "fra_e80_destroyer \u2014 Tourville (D610), F67, commissioned 21 June 1974",
+   "whatTheGameHas": "One weapon, w_e80_nato_destroyer, \"Two 127mm/54 Mk 45\", tgt {g1,a0,s1,u0}. sonar 7.8 \u2014 the highest of any French hull in the decade \u2014 and no weapon that can reach a submarine. The desc says \"two Lynx in a hangar aft, a towed array and Malafon\".",
+   "whatIsReal": "Two 100 mm Mle 1968 CADAM, six MM38 Exocet, a Crotale EDIR point-defence launcher fitted from 1979, one Malafon anti-submarine missile, two L5 launchers, two Lynx, DUBV-43 variable-depth plus a towed array. Three ships, and with the one-off Aconit (1973) these were the heavy ASW hulls of the decade.",
+   "fix": "weapons: [\"navgun_100_fr\",\"sam_crotale_nav\",\"ssm_exocet38\",\"asw_malafon\"]."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity + capability gap",
+   "unit": "fra_e90_corvette \u2014 La Fayette (F710), commissioned 22 March 1996",
+   "whatTheGameHas": "One weapon, resolved \"OTO 76mm Super Rapid\", tgt {g1,a1,s1,u0}. No anti-ship missile, no point-defence SAM. (NAVGUN in generations.js deliberately has no `fra` row, so the Italian gun falls through unchanged.)",
+   "whatIsReal": "One 100 mm Mle 1968 TR CADAM \u2014 not a 76 mm \u2014 eight MM40 Exocet Block 2, one Crotale EDIR launcher with eight ready rounds, two 20 mm F2 and a Panther. The desc's claim that she is \"lightly armed\" and has \"no towed array at all\" is right, but lightly armed is not unarmed: the Exocet battery is the reason the ship is worth building.",
+   "fix": "weapons: [\"navgun_100_fr\",\"sam_crotale_nav\",\"ssm_exocet40b2\"]. This is exactly what the NAVGUN comment prescribed: \"put the CADAM on the era units' own weapons if it is wanted.\""
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity",
+   "unit": "fra_e80_carrier, fra_e90_carrier, fra_e00_carrier \u2014 Clemenceau, Foch, Charles de Gaulle",
+   "whatTheGameHas": "Clemenceau and Foch each carry \"Mk 15 Phalanx CIWS\"; Charles de Gaulle carries \"Air wing of 75+ aircraft\" and no SAM at all.",
+   "whatIsReal": "France never bought Phalanx, Goalkeeper or RAM for any hull in this roster. Clemenceau (1961) and Foch (1963) carried eight 100 mm Mle 1953 as built, reduced in refit to four 100 mm plus two Sadral sextuple Mistral mounts (Sadral at sea from 1990). Charles de Gaulle (commissioned 18 May 2001) carries four Sylver A43 with 32 Aster 15, two Sadral and eight 20 mm Giat, and her air wing is about 40 aircraft, not 75+. The e20 twin carrier_f already correctly carries sam_aster15 and nothing else.",
+   "fix": "fra_e80_carrier: [\"navgun_100_fr\"]; fra_e90_carrier: [\"navgun_100_fr\",\"sam_sadral\"]; fra_e00_carrier: [\"sam_aster15\"] to match carrier_f."
+  },
+  {
+   "severity": "major",
+   "kind": "capability gap \u2014 anti-submarine",
+   "unit": "the whole French surface fleet, all eras",
+   "whatTheGameHas": "MEASURED: exactly one of 27 French surface hulls has a weapon with tgt.sub = 1, and it is La Combattante's phantom torpedo. Sonar ratings up to 9.0 sit on ships with nothing to shoot.",
+   "whatIsReal": "France's anti-submarine record is one of the strongest things about this navy: the 305 mm Mle 1954 four-barrel mortar on Le Corse, Commandant Riviere and the T 47s; Malafon (1965-1997), a rocket-boosted glider that flies 13 km and drops an L4 torpedo at the far end, which no other navy in this roster had an equivalent to; the L5 Mod 4 from 1971; MU90 today; and the Tourville/Georges Leygues towed arrays and the FREMM's CAPTAS-4.",
+   "fix": "New weapons asw_mortier305, asw_malafon, asw_l5; reuse the existing asw_mu90 and depthchg (both currently orphaned or near-orphaned). After the fix 7 of 27 hulls can prosecute a submarine, which is the right shape \u2014 cruisers and carriers still cannot."
+  },
+  {
+   "severity": "major",
+   "kind": "capability gap \u2014 anti-ship",
+   "unit": "the whole French surface fleet, e80 through e00",
+   "whatTheGameHas": "MEASURED: zero of the 23 era hulls carry Exocet. Only the three hand-written e20 hulls do.",
+   "whatIsReal": "MM38 Exocet was operational in 1975 and was fitted to the A69 avisos, the Tourville class, the Georges Leygues, Colbert and the Suffrens. MM40 Block 2 (72 km) arrives 1993 on La Fayette and Cassard. Exocet is the anti-ship weapon of this navy and the one that mattered in 1982 \u2014 and the reason seven navies bought French-designed hulls.",
+   "fix": "New ssm_exocet38 (1975, 42 km) and ssm_exocet40b2 (1993, 72 km), BOTH with tgt.ground = 0 because neither generation could attack a target ashore. The existing ssm_exocet keeps ground:1 because it is Block 3 (2008), which can."
+  },
+  {
+   "severity": "major",
+   "kind": "land-attack \u2014 capability entirely absent",
+   "unit": "corvette_f (e20 FREMM) and fra_e00_corvette",
+   "whatTheGameHas": "MEASURED: no weapon anywhere in WEAPONS matches /mdcn|scalp|naval cruise/. corvette_f's desc names \"the naval cruise missile MdCN, which no other European escort carries\" and the loadout has no such round.",
+   "whatIsReal": "MdCN \u2014 Missile de Croisiere Naval, a navalised SCALP with a booster \u2014 was qualified in 2015, declared operational in 2017, and first fired in anger on 14 April 2018 (Operation Hamilton) when Aquitaine, Languedoc and Auvergne put rounds into Syrian chemical-weapons sites. Range about 1,000 km, sixteen in Sylver A70 cells on the eight FREMM ASM hulls. It is the only ship-launched land-attack cruise missile any European navy has, and it has no anti-ship mode.",
+   "fix": "New weapon `mdcn` with tgt {ground:1,air:0,sea:0,sub:0} and manual:true, added to corvette_f and fra_e00_corvette. This is the single most important fact about the modern French surface fleet and the game did not have it."
+  },
+  {
+   "severity": "major",
+   "kind": "anachronism / silent rename trap",
+   "unit": "fra_e80_carrier",
+   "whatTheGameHas": "The object literal declares name \"Clemenceau (ASMP)\", full \"Foch (R99) with Super Etendard and ASMP\", service \"1986\" and a desc about the AN 52 and ASMP \u2014 and then, INSIDE THE SAME BRACES, restates \"name\":\"Clemenceau CV\", \"full\":\"Clemenceau (R98) with Super Etendard and ASMP\", \"service\":\"1961\" and a different desc. The later keys win. Resolved under jsc the row is Clemenceau R98 / 1961.",
+   "whatIsReal": "The surviving half is the coherent one \u2014 fra_e90_carrier is already Foch (R99), so letting the dead half win would have put Foch in both decades. But the discarded half carries the fact that justifies an e80 carrier row at all: ASMP at sea from 1986, which made France the only navy besides the United States with nuclear strike off a carrier deck. Two competing histories in one line, one silently thrown away, is a maintenance hazard whichever half is right.",
+   "fix": "Promote the winning values into the row's own fields and delete the duplicate key block. Verified under jsc: resolved name, full, service, desc and weapons are byte-identical before and after, so this is purely a readability fix."
+  },
+  {
+   "severity": "major",
+   "kind": "description-versus-loadout",
+   "unit": "fra_e50_patrol \u2014 Le Fougueux (P640) class, 1954",
+   "whatTheGameHas": "weapons: [\"hmg\"] \u2014 a 12.7 mm with tgt {g1,a0,s1,u0}. sonar 2.2. The full name is \"Le Fougueux-class patrouilleur (submarine chaser)\" and the desc says \"A 40 mm forward, depth charges aft\".",
+   "whatIsReal": "Fourteen 325-tonne submarine chasers built in French yards under US Offshore Procurement, 1954-57: one 40 mm Bofors, 20 mm, Hedgehog and depth charges. The whole purpose of the type is a capability the unit cannot exercise \u2014 it is a submarine chaser with sub:0.",
+   "fix": "weapons: [\"hmg\",\"depthchg\"]. depthchg already exists in rules.js and is currently carried by nothing."
+  },
+  {
+   "severity": "major",
+   "kind": "description-versus-loadout + wrong-identity",
+   "unit": "fra_e50_corvette \u2014 Le Corse (F761), E50, 1955",
+   "whatTheGameHas": "\"Two twin 76mm/50 Mk 33\" \u2014 the American mount \u2014 while the desc says \"a raked bow and 57 mm mountings\". No ASW weapon despite sonar 3.8 on a first-rate escort.",
+   "whatIsReal": "Four E50 Le Corse and fourteen E52 Le Normand: six 57 mm/60 ACAD Mle 1951 in three twin mounts, a 305 mm Mle 1954 anti-submarine mortar, and twelve 550 mm ASW torpedo tubes. The first postwar class drawn and built entirely in France, which is exactly what the desc says and exactly what the loadout denies.",
+   "fix": "weapons: [\"navgun_57\",\"asw_mortier305\"]. navgun_57 already exists (\"57mm naval gun\", tgt g1,a1,s1)."
+  },
+  {
+   "severity": "major",
+   "kind": "description-versus-loadout + wrong-identity",
+   "unit": "fra_e60_corvette \u2014 Commandant Riviere (F733), commissioned December 1962",
+   "whatTheGameHas": "\"One 127mm/54 Mk 42\" \u2014 American \u2014 and no ASW weapon, while the desc says \"three 100 mm, a 305 mm ASW mortar, and space for eighty troops\".",
+   "whatIsReal": "Nine aviso-escorteurs: three 100 mm Mle 1953 in single automatic turrets, two 30 mm, one 305 mm Mle 1954 mortar, six 550 mm ASW tubes. Four hulls later traded a 100 mm for four MM38 Exocet.",
+   "fix": "weapons: [\"navgun_100_fr\",\"asw_mortier305\"]."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong-identity",
+   "unit": "fra_e50_destroyer \u2014 T 47 Surcouf (D621), 1955",
+   "whatTheGameHas": "\"Three 127mm/54 Mk 42 single mounts\", tgt {g1,a0,s1,u0}, while the desc says \"six 127 mm in three twin turrets\".",
+   "whatIsReal": "Twelve escorteurs d'escadre with six 127 mm/54 Mle 1948 in three TWIN turrets \u2014 a French gun, not the American Mk 42 \u2014 plus six 57 mm/60 and twelve 550 mm tubes. Both gun calibres were dual-purpose, so air:0 is wrong as well. The Tartar conversions are 1962-65 and the Malafon ASW conversions 1968-71, both outside the e50 window, so the as-built fit is the right one for this row.",
+   "fix": "weapons: [\"navgun_127_mle48\",\"navgun_57\"]."
+  },
+  {
+   "severity": "major",
+   "kind": "area air defence flattened across the whole line",
+   "unit": "fra_e50..e00 as a group",
+   "whatTheGameHas": "MEASURED baseline: 13 of 27 French sea hulls can engage an aircraft at all, and not one of the three ships France built around an AREA air-defence missile can \u2014 Suffren and Colbert (Masurca) and Cassard (SM-1MR) all resolve to tgt.air = 0. So an area-defence ship, a point-defence escort and a gun frigate were indistinguishable everywhere in the French line.",
+   "whatIsReal": "The French air-defence ladder is sharp and datable: Masurca from 1968 (Suffren 1967, Duquesne 1970; Colbert from the 1970-72 refit; gone with Suffren 2001 and Duquesne 2008), Crotale EDIR point defence from 1979 (Tourville, Georges Leygues, every La Fayette), SM-1MR on Cassard 1988, Sadral Mistral from 1990, Aster 15 and Aster 30 under PAAMS from 2008. That ladder is the most important thing about a French escort after 1980.",
+   "fix": "New sam_masurca (range 9.8, reload 9.5 \u2014 area reach, 1960s rate of fire), sam_crotale_nav (6.2, point defence), sam_sadral (4.4, last ditch); reuse sam_sm1, sam_aster15, sam_aster30. After the fix 21 of 27 hulls engage air and the ladder is legible."
+  },
+  {
+   "severity": "minor",
+   "kind": "anachronism / wrong-identity",
+   "unit": "fra_e60_patrol \u2014 La Combattante (P730), 1964",
+   "whatTheGameHas": "weapons: [\"hmg\",\"torpedo\"] \u2014 \"heavyweight torpedo\", 340 damage, tgt {g0,a0,s1,u1}. This is a submarine weapon.",
+   "whatIsReal": "One prototype fast patrol boat of 202 tonnes with one 40 mm Bofors and two 20 mm, able to lay mines, with no torpedo tubes at all. Its importance is as a design: the La Combattante II and III that grew out of it were sold to Greece, Germany, Iran, Libya, Malaysia, Nigeria and Qatar, and the German Type 148 Tiger is one of them \u2014 which the desc already says well.",
+   "fix": "weapons: [\"hmg\"]. (gbr_e60_patrol, deu_e50_patrol and deu_e60_patrol carry the same phantom torpedo; those are other workflows' rows and I have not touched them.)"
+  },
+  {
+   "severity": "minor",
+   "kind": "wrong-identity, adjacent to scope",
+   "unit": "fra_e80_aswhelo and fra_e90_aswhelo \u2014 Westland Lynx HAS Mk4 (FN), 1979 and 1994",
+   "whatTheGameHas": "Both carry asw_mk54, \"Mk 54 lightweight torpedo\".",
+   "whatIsReal": "The Mk 54 is American and entered service in 2004. The French Lynx carried the Mk 46 and the French L4/L5. These are layer:\"air\" units and so strictly outside a surface-fleet brief, but they are the surface fleet's only anti-submarine aircraft for two decades and asw_mu90 and the proposed asw_l5 are both to hand. Flagging, not fixing, to avoid colliding with whoever owns the air roster.",
+   "fix": "Consider asw_l5 for both, or leave to the air-roster owner."
+  },
+  {
+   "severity": "minor",
+   "kind": "roster choice, not a defect",
+   "unit": "Georges Leygues (F70 ASM) \u2014 absent from every era",
+   "whatTheGameHas": "No hull. The class is named in two descs \u2014 \"The Georges Leygues class that follows them from 1979 is the ship most people think of\" and \"the seven Georges Leygues ... is the more numerous and more useful ship\" \u2014 and never fielded, while the three-hull Tourville holds e80 and the two-hull Cassard holds e90.",
+   "whatIsReal": "Seven Georges Leygues, commissioned 1979-1990: two 100 mm, four to eight MM40 Exocet, Crotale EDIR, two Lynx, DUBV-23 hull sonar and DUBV-43 variable depth. The most numerous major French escort of the period by a wide margin.",
+   "fix": "No edit proposed. The roster has one destroyer slot per faction per era, so this is a choice the descs already explain and defend. Recording it so the owner knows it was examined."
+  },
+  {
+   "severity": "minor",
+   "kind": "description-versus-loadout, shared cause",
+   "unit": "fra_e50_carrier (Arromanches) and fra_e60_carrier (Clemenceau)",
+   "whatTheGameHas": "Both carry \"Air wing of ~90 aircraft\" (the shared w_e50/e60_nato_carrier).",
+   "whatIsReal": "Arromanches, an ex-Colossus light fleet carrier, operated about 24 aircraft; Clemenceau about 40. Ninety is a Forrestal.",
+   "fix": "No edit proposed: these ids are shared with the American and British carrier rows, so correcting the text would move two other factions' hulls and is outside a France-only mandate. Flagging for whoever owns the shared naval weapon table."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "e20 roster",
+   "unit": "corvette_f, destroyer_f, carrier_f",
+   "whatTheGameHas": "FREMM: 76 mm + Aster 15 + Exocet Block 3. Horizon: 76 mm + Aster 30 + Exocet Block 3. Charles de Gaulle: Aster 15 alone.",
+   "whatIsReal": "All three are right, and the Horizon's \"it carries Exocet from the first day, because a French warship without an anti-ship missile is not a thing that gets built\" is both true and a good distinction against the Type 45. Charles de Gaulle really does carry Aster 15 and nothing heavier \u2014 32 rounds in four Sylver A43 \u2014 so a lone SAM is the correct loadout, not an omission.",
+   "fix": "No change, except adding MdCN to corvette_f, which its own desc already promises."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "deliberate emptiness",
+   "unit": "missileboat (all eras), cruiser (e90 onward), ssgn (all eras)",
+   "whatTheGameHas": "All three slots empty, with the eras.js block comment stating why.",
+   "whatIsReal": "Every reason given is correct. The Marine Nationale has never commissioned a missile-armed fast attack craft, having built La Combattante by the dozen for export instead. Colbert decommissioned on 24 May 1991 and was the last cruiser any European navy in this game operates. MdCN is fired from a Suffren SSN's torpedo room, not from a dedicated missile boat. This is realism over symmetry working exactly as intended.",
+   "fix": "No change. Recorded as checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "the NAVGUN fall-through",
+   "unit": "generations.js NAVGUN table",
+   "whatTheGameHas": "NAVGUN deliberately carries no `fra` row, with a comment saying an era-less override would put a 1968 gun on every modern French hull and prescribing \"put the CADAM on the era units' own weapons if it is wanted\".",
+   "whatIsReal": "The reasoning is exactly right and the comment is the one piece of this subsystem that already understood the problem. Modern French escorts \u2014 Horizon, FREMM, FDI \u2014 really do mount the 76 mm Super Rapid, and the 100 mm Mle 68 CADAM really was correct only from 1968 to the 1990s. The fix below is that comment's own instruction carried out.",
+   "fix": "No change to NAVGUN. navgun_100_fr is authored outside /OTO 76mm/ so the loop cannot touch it."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "service dates and the rows without one",
+   "unit": "all 27 French surface hulls",
+   "whatTheGameHas": "All 23 era rows carry a `service` field; the four e20 rows carry none.",
+   "whatIsReal": "Checked every one against the real commissioning: 1954, 1955, 1955, 1956, 1951, 1964, 1962, 1967, 1959, 1961, 1986, 1976, 1974, 1980, (1986\u2192)1961, 1997, 1996, 1988, 1963, 2017, 2012, 2010, 2001 \u2014 all correct for the named hull or lead ship. I also checked the four e20 rows that have NO service field, which an earlier audit reportedly skipped: POM (delivered 2023), FREMM (2012), Horizon (2010), Charles de Gaulle (2001) are all in commission today, so the absent field is the e20 convention and not an anachronism. Every era row is from:X to:X, so there is no hull surviving past its window.",
+   "fix": "No change except the fra_e80_carrier date that a duplicate key overwrites, reported above."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "patrol line and signature modelling",
+   "unit": "boat_f, fra_e50/e60/e80/e90/e00_patrol; La Fayette rcs",
+   "whatTheGameHas": "Le Fougueux 1954, La Combattante 1964, P400 1986, Flamant 1997, La Confiance 2017, Auguste Benebig 2023 \u2014 a constabulary line, all with `hmg`. La Fayette carries rcs 0.14, the lowest of any French hull.",
+   "whatIsReal": "All six identities, pennant numbers and dates are right, and the framing is right too: France has the second largest exclusive economic zone in the world, almost none of it in Europe, so its cheap hull is a colonial patrol vessel rather than a Baltic missile boat. La Fayette was the first warship in the world designed from the outset for a low radar signature, and 0.14 against a conventional hull's 0.6 says so.",
+   "fix": "No change."
+  }
+ ],
+ "edits": [
+  {
+   "file": "js/rules.js",
+   "why": "Author the French naval ordnance France actually built, so the era hulls stop firing American weapons. Placed in the existing \"European naval ordnance\" block immediately after asw_mu90, and named OUTSIDE the w_<era>_<fac>_<role> pattern so the era-range normaliser at the foot of generations.js leaves the figures alone, and outside /OTO 76mm/ so the NAVGUN substitution loop cannot touch them. Eleven weapons: two guns (127 mm Mle 1948 dual-purpose, 100 mm Mle 53/68 CADAM), three air-defence rounds on a deliberate ladder (Masurca area, Crotale EDIR point, Sadral last-ditch), two Exocet generations that are ANTI-SHIP ONLY because no Exocet before Block 3 could attack anything ashore, three anti-submarine weapons including Malafon which no other navy in the roster has an equivalent to, and MdCN \u2014 the only ship-launched land-attack cruise missile in Europe, with sea:0 because it has no anti-ship mode and manual:true following the release-authority rule already applied to the anti-radiation and ballistic rounds.",
+   "anchor": "  asw_mu90: { name:\"MU90 Impact\", dmg:205, warhead:\"he\", range:6.6, reload:7.2,\n    burst:1, acc:0.89, proj:\"torpedo\", speed:185, aoe:0.8,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"missile\" },\n",
+   "exactCount": 1,
+   "newCode": "  asw_mu90: { name:\"MU90 Impact\", dmg:205, warhead:\"he\", range:6.6, reload:7.2,\n    burst:1, acc:0.89, proj:\"torpedo\", speed:185, aoe:0.8,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"missile\" },\n\n  /* ---- MARINE NATIONALE ordnance, 1948 to 2017 ----\n     France designs and builds the whole chain - gun, missile, seeker,\n     launcher - and that is the stated reason its rows are separate designs.\n     Before this block existed every French surface hull from 1955 to 2017\n     fired an AMERICAN weapon borrowed from the same-era w_<era>_nato_<role>\n     row, and the borrowings were not close: De Grasse fired a Des Moines'\n     nine 203 mm, Colbert fired Terrier and Talos that France never bought,\n     the A69 aviso fired an Oliver Hazard Perry's Mk 13, and Cassard - an\n     anti-AIR frigate - fired an Arleigh Burke's 90-cell Mk 41 with Tomahawk\n     and could not engage an aircraft at all.\n\n     Named OUTSIDE the w_<era>_<fac>_<role> pattern so the era-range normaliser\n     at the foot of generations.js leaves the figures alone, and outside\n     /OTO 76mm/ so the NAVGUN substitution loop cannot touch them - which is\n     the fall-through that loop's comment asked for when it said to put the\n     CADAM on the era units' own weapons if it was wanted.\n\n     LAND ATTACK, the question this audit was opened to answer: a French\n     warship could hit nothing ashore but with its gun until MM40 Exocet\n     Block 3 in 2008 gave the round GPS waypoints and a coastal secondary\n     mode, and not properly until MdCN. MM38 (1975) and MM40 Block 2 (1993)\n     are ANTI-SHIP ONLY and are written that way. MdCN is the real answer and\n     it is recent - qualified 2015, operational 2017, first fired in anger on\n     14 April 2018 when Aquitaine, Languedoc and Auvergne put rounds into\n     Syrian chemical-weapons sites - and it is the only ship-launched\n     land-attack cruise missile any European navy has. */\n  navgun_127_mle48: { name:\"127mm/54 Mle 1948 twin\", dmg:88, warhead:\"he\", range:9.6,\n    reload:3.4, burst:2, burstDelay:0.55, acc:0.54, proj:\"shell\", speed:700, aoe:1.2,\n    suppress:30, tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"cannon\" },\n  /* Dual purpose, and that is the whole point of De Grasse and Colbert: both\n     were completed as ANTI-AIRCRAFT cruisers with sixteen of these in eight\n     twin turrets, so air:1 is not decoration - it is the ships' reason for\n     existing. Hand-worked hoists behind a 1948 director, hence the low\n     accuracy against anything fast. */\n  navgun_100_fr: { name:\"100mm Mle 53/68 automatic\", dmg:63, warhead:\"he\", range:8.4,\n    reload:1.35, burst:4, burstDelay:0.20, acc:0.70, proj:\"shell\", speed:700, aoe:0.6,\n    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:\"shot\" },\n  /* One gun, fifty years. The 100 mm Mle 1953 and its automated CADAM\n     development the Mle 1968 armed every French escort from Commandant\n     Riviere in 1962 to the last La Fayette - 78 rounds a minute from a single\n     mount, which is why France never bought the Italian 76 mm until Horizon\n     in 2008. Also the reason NAVGUN carries no `fra` row: a flat, era-less\n     override would have bolted this 1953 gun onto a 2012 FREMM. */\n  sam_masurca: { name:\"Masurca Mk 2\", dmg:170, warhead:\"flak\", range:9.8, reload:9.5,\n    burst:1, acc:0.62, proj:\"missile\", speed:560, aoe:1.2,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\", profile:\"pop\", intercept:0.88 },\n  /* The first area air-defence missile France built instead of buying, in\n     service 1968 on Suffren and from the 1970-72 refit on Colbert. Two rounds\n     on a twin arm over a slow ring hoist, hence reload 9.5 - an area system by\n     reach and a 1960s one by rate of fire. Beam-riding Mod 2 on Colbert,\n     semi-active Mod 3 on the Suffrens. Gone with Suffren in 2001 and Duquesne\n     in 2008, and nothing replaced it until Aster. */\n  sam_crotale_nav: { name:\"Crotale EDIR naval\", dmg:96, warhead:\"flak\", range:6.2,\n    reload:2.6, burst:2, burstDelay:0.4, acc:0.80, proj:\"missile\", speed:600, aoe:0.9,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\", profile:\"pop\", intercept:0.72 },\n  /* Point defence, NOT area - eight ready rounds in a deck launcher, 11 km, in\n     service 1979 on Tourville and Georges Leygues and on every La Fayette. The\n     gap between this and Masurca or Aster is the single most important\n     distinction between French escorts after 1980 and the roster should not\n     flatten it: a La Fayette cannot defend a formation and a Horizon can. */\n  sam_sadral: { name:\"Sadral sextuple Mistral\", dmg:70, warhead:\"flak\", range:4.4,\n    reload:2.0, burst:2, burstDelay:0.3, acc:0.82, proj:\"missile\", speed:620, aoe:0.6,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\", profile:\"pop\", intercept:0.70 },\n  /* A stabilised six-round Mistral mount, at sea from 1990 and the French\n     last-ditch layer on carriers and frigates alike. The Marine Nationale\n     never bought Phalanx, Goalkeeper or RAM for any hull in this roster, so a\n     Phalanx on a French carrier row is an import that never happened. */\n  ssm_exocet38: { name:\"MM38 Exocet\", dmg:196, warhead:\"he\", range:10.6, minRange:2.0,\n    reload:15.0, burst:2, burstDelay:1.0, acc:0.78, proj:\"missile\", speed:118, aoe:1.3,\n    tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\", profile:\"skim\", intercept:1.10 },\n  /* Operational 1975, 42 km, inertial mid-course with an active seeker that\n     wakes late - the round that made a 1,200-tonne aviso dangerous to a\n     cruiser, and the reason seven navies bought French hulls to carry it.\n     ANTI-SHIP ONLY: ground:0 is deliberate and it is the audit's finding. The\n     1982 rounds that took Sheffield on 4 May and Atlantic Conveyor on 25 May\n     were air-launched AM39s off a Super Etendard, and no Exocet of this\n     generation could be told to fly to a map reference ashore. */\n  ssm_exocet40b2: { name:\"MM40 Exocet Block 2\", dmg:225, warhead:\"he\", range:12.8,\n    minRange:2.0, reload:14.0, burst:2, burstDelay:0.95, acc:0.84, proj:\"missile\",\n    speed:120, aoe:1.35, tgt:{ground:0,air:0,sea:1,sub:0}, sfx:\"missile\",\n    profile:\"skim\", intercept:1.02 },\n  /* 72 km from 1993 - a longer body and a better seeker on the same airframe,\n     and still no way to attack anything ashore. Land attack arrives with\n     Block 3 in 2008, the ssm_exocet above, and that is the only reason that\n     round carries ground:1 while these two do not. */\n  asw_malafon: { name:\"Malafon Mle 1965\", dmg:215, warhead:\"he\", range:7.4, minRange:1.2,\n    reload:11.0, burst:1, acc:0.68, proj:\"missile\", speed:150, aoe:0.9,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"missile\", profile:\"cruise\", intercept:1.30 },\n  /* A rocket-boosted glider that flies 13 km on autopilot and drops an L4\n     torpedo in at the far end: Europe's only stand-off anti-submarine missile\n     of its generation, in service 1965, withdrawn 1997, carried by Suffren,\n     Tourville, Aconit and the four T 47 anti-submarine conversions. Neither\n     the Royal Navy nor the Bundesmarine had an answer to it. */\n  asw_l5: { name:\"L5 Mod 4 torpedo\", dmg:180, warhead:\"he\", range:5.6, reload:7.8,\n    burst:1, acc:0.80, proj:\"torpedo\", speed:175, aoe:0.8,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"missile\" },\n  /* The French lightweight anti-submarine fish from 1971 until MU90 replaced\n     it, in fixed tubes on the avisos and the F67s and slung under the Lynx. */\n  asw_mortier305: { name:\"305mm Mle 1954 ASW mortar\", dmg:165, warhead:\"he\", range:2.9,\n    reload:7.5, burst:4, burstDelay:0.3, acc:0.44, proj:\"arc\", speed:90, aoe:1.6,\n    tgt:{ground:0,air:0,sea:0,sub:1}, sfx:\"cannon\" },\n  /* A four-barrelled bomb thrower reaching about 1.6 km, on Le Corse,\n     Commandant Riviere and the T 47s. Short, inaccurate, and the only thing a\n     1950s French escort carried that could reach a submerged boat at all -\n     which is why a submarine chaser fielded with no anti-submarine weapon is\n     a defect rather than an abstraction. */\n  mdcn: { name:\"MdCN naval cruise missile\", dmg:330, warhead:\"he\", range:19.0,\n    minRange:3.0, reload:21.0, burst:1, acc:0.92, proj:\"missile\", speed:110, aoe:2.0,\n    suppress:40, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:\"missile\",\n    profile:\"cruise\", intercept:1.50, manual:true },\n  /* Missile de Croisiere Naval - a navalised SCALP with a booster, 1,000 km,\n     sixteen rounds in Sylver A70 cells on the eight FREMM ASM hulls and in the\n     torpedo room of a Suffren SSN. sea:0 is deliberate: unlike a Tomahawk of\n     the TASM era it has no anti-ship mode and never had one. `manual` follows\n     the release-authority rule already applied to the anti-radiation and\n     ballistic rounds - a thousand-kilometre cruise missile is spent when a\n     commander says so, not on the first patrol boat that wanders into sight.\n     This is the French naval land-attack weapon, it is the ONLY one, and it\n     is recent, which is a far more interesting fact than a Tomahawk for all. */\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "e20 FREMM: the desc already says \"on the ASW hulls - the naval cruise missile MdCN, which no other European escort carries\" and the loadout had no such round. This is the Ohio/Tomahawk defect on the one European ship that genuinely has the capability.",
+   "anchor": "weapons:[\"navgun_76\",\"sam_aster15\",\"ssm_exocet\"], prereq:[\"navalyard\"], tech:1,",
+   "exactCount": 1,
+   "newCode": "weapons:[\"navgun_76\",\"sam_aster15\",\"ssm_exocet\",\"mdcn\"], prereq:[\"navalyard\"], tech:1,"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Le Fougueux is a submarine chaser whose own desc says \"depth charges aft\", and it had no weapon that could reach a submerged boat. depthchg already exists in rules.js and was carried by nothing.",
+   "anchor": "name:\"Le Fougueux P640\", full:\"Le Fougueux-class patrouilleur (submarine chaser)\", cost:245, oil:3, time:6, hp:280, armor:\"light\", speed:2.2, turn:2.1, sight:5.4, r:13, mass:0, weapons:[\"hmg\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Le Fougueux P640\", full:\"Le Fougueux-class patrouilleur (submarine chaser)\", cost:245, oil:3, time:6, hp:280, armor:\"light\", speed:2.2, turn:2.1, sight:5.4, r:13, mass:0, weapons:[\"hmg\",\"depthchg\"]",
+   "why2": ""
+  },
+  {
+   "file": "js/eras.js",
+   "why": "E50 Le Corse carried six 57 mm/60 Mle 1951 in three twin mounts and a 305 mm Mle 1954 ASW mortar, not an American twin 76 mm Mk 33. The row's own desc already says \"57 mm mountings\".",
+   "anchor": "name:\"Le Corse E50\", full:\"Le Corse (F761), E50 Le Corse-class escorteur rapide\", cost:545, oil:7, time:13, hp:580, armor:\"light\", speed:2.6, turn:1.7, sight:5.8, r:17, mass:0, weapons:[\"w_e50_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Le Corse E50\", full:\"Le Corse (F761), E50 Le Corse-class escorteur rapide\", cost:545, oil:7, time:13, hp:580, armor:\"light\", speed:2.6, turn:1.7, sight:5.8, r:17, mass:0, weapons:[\"navgun_57\",\"asw_mortier305\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "T 47 carried six 127 mm/54 Mle 1948 in three TWIN turrets - a French gun - plus six 57 mm, both dual-purpose. The American Mk 42 in single mounts is the wrong navy and the wrong mounting, and air:0 was wrong as well.",
+   "anchor": "name:\"T 47 Surcouf\", full:\"Surcouf (D621), T 47-class escorteur d'escadre\", cost:1000, oil:16, time:22, hp:1050, armor:\"heavy\", speed:2.15, turn:1.2, sight:6.4, r:20, mass:0, weapons:[\"w_e50_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "name:\"T 47 Surcouf\", full:\"Surcouf (D621), T 47-class escorteur d'escadre\", cost:1000, oil:16, time:22, hp:1050, armor:\"heavy\", speed:2.15, turn:1.2, sight:6.4, r:20, mass:0, weapons:[\"navgun_127_mle48\",\"navgun_57\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. De Grasse was completed on 10 September 1956 as an anti-aircraft cruiser with sixteen 127 mm/54 Mle 1948 and twenty 57 mm. Nine 203 mm/55 Mk 16 in three turrets is USS Des Moines, and air:0 inverted the ship's entire purpose.",
+   "anchor": "name:\"De Grasse CL\", full:\"De Grasse (C610), light cruiser\", cost:1540, oil:27, time:33, hp:1470, armor:\"heavy\", speed:1.74, turn:0.9, sight:7.0, r:23, mass:0, weapons:[\"w_e50_nato_cruiser\"]",
+   "exactCount": 1,
+   "newCode": "name:\"De Grasse CL\", full:\"De Grasse (C610), light cruiser\", cost:1540, oil:27, time:33, hp:1470, armor:\"heavy\", speed:1.74, turn:0.9, sight:7.0, r:23, mass:0, weapons:[\"navgun_127_mle48\",\"navgun_57\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "La Combattante was a 202-tonne prototype with one 40 mm and two 20 mm and no torpedo tubes at all. A heavyweight submarine torpedo of 340 damage on a patrol boat is an anachronism and a wrong fit.",
+   "anchor": "name:\"La Combattante\", full:\"La Combattante (P730), fast patrol boat\", cost:295, oil:4, time:7, hp:290, armor:\"light\", speed:3.0, turn:2.3, sight:5.8, r:13, mass:0, weapons:[\"hmg\",\"torpedo\"]",
+   "exactCount": 1,
+   "newCode": "name:\"La Combattante\", full:\"La Combattante (P730), fast patrol boat\", cost:295, oil:4, time:7, hp:290, armor:\"light\", speed:3.0, turn:2.3, sight:5.8, r:13, mass:0, weapons:[\"hmg\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Commandant Riviere carried three 100 mm Mle 1953 and a 305 mm Mle 1954 ASW mortar, exactly as its own desc says, not one American 127 mm Mk 42 and no anti-submarine weapon.",
+   "anchor": "name:\"Cdt Riviere\", full:\"Commandant Riviere (F733), aviso-escorteur\", cost:690, oil:9, time:13, hp:730, armor:\"light\", speed:2.5, turn:1.7, sight:6.6, r:17, mass:0, weapons:[\"w_e60_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Cdt Riviere\", full:\"Commandant Riviere (F733), aviso-escorteur\", cost:690, oil:9, time:13, hp:730, armor:\"light\", speed:2.5, turn:1.7, sight:6.6, r:17, mass:0, weapons:[\"navgun_100_fr\",\"asw_mortier305\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. The row's desc says Suffren was \"built around Masurca, a French area air-defence missile\" and the ship could not engage an aircraft. Real fit from 20 July 1967: two 100 mm CADAM, a Masurca twin launcher with 48 rounds, and a Malafon ASW missile.",
+   "anchor": "name:\"Suffren DDG\", full:\"Suffren (D602), Suffren-class fregate lance-missiles\", cost:1270, oil:20, time:23, hp:1310, armor:\"heavy\", speed:2.2, turn:1.2, sight:7.8, r:20, mass:0, weapons:[\"w_e60_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Suffren DDG\", full:\"Suffren (D602), Suffren-class fregate lance-missiles\", cost:1270, oil:20, time:23, hp:1310, armor:\"heavy\", speed:2.2, turn:1.2, sight:7.8, r:20, mass:0, weapons:[\"navgun_100_fr\",\"sam_masurca\",\"asw_malafon\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. RIM-2 Terrier and RIM-8 Talos are United States Navy systems France never operated, and the weapon named \"SAM launchers\" had air:0. Colbert as commissioned on 5 May 1959 carried sixteen 127 mm Mle 1948 and twenty 57 mm; Masurca belongs to the 1970-72 conversion, which is the e80 row.",
+   "anchor": "name:\"Colbert CL\", full:\"Colbert (C611), anti-aircraft cruiser\", cost:1930, oil:34, time:35, hp:1810, armor:\"heavy\", speed:1.8, turn:0.9, sight:8.2, r:23, mass:0, weapons:[\"w_e60_nato_cruiser\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Colbert CL\", full:\"Colbert (C611), anti-aircraft cruiser\", cost:1930, oil:34, time:35, hp:1810, armor:\"heavy\", speed:1.8, turn:0.9, sight:8.2, r:23, mass:0, weapons:[\"navgun_127_mle48\",\"navgun_57\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. A Mk 13 launcher with SM-1MR and Harpoon is an Oliver Hazard Perry. The A69 aviso had one 100 mm CADAM, four MM38 Exocet, a 375 mm ASW rocket launcher and four L5 tubes, and never a SAM, a Harpoon or a Mk 13 - which the row's own desc already states.",
+   "anchor": "name:\"A69 aviso\", full:\"D'Estienne d'Orves (F781), Type A69 aviso\", cost:860, oil:11, time:13, hp:880, armor:\"light\", speed:2.55, turn:1.7, sight:7.6, r:17, mass:0, weapons:[\"w_e80_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "name:\"A69 aviso\", full:\"D'Estienne d'Orves (F781), Type A69 aviso\", cost:860, oil:11, time:13, hp:880, armor:\"light\", speed:2.55, turn:1.7, sight:7.6, r:17, mass:0, weapons:[\"navgun_100_fr\",\"ssm_exocet38\",\"asw_l5\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Tourville is the decade's heavy ASW hull with sonar 7.8 and had no weapon that could reach a submarine. Real fit from 21 June 1974: two 100 mm CADAM, six MM38 Exocet, Crotale EDIR from 1979, Malafon and two L5 launchers. The Mk 45 is an American mount of 1971 no French ship ever carried.",
+   "anchor": "name:\"Tourville F67\", full:\"Tourville (D610), F67 Tourville-class\", cost:1620, oil:25, time:25, hp:1630, armor:\"heavy\", speed:2.3, turn:1.2, sight:8.8, r:20, mass:0, weapons:[\"w_e80_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Tourville F67\", full:\"Tourville (D610), F67 Tourville-class\", cost:1620, oil:25, time:25, hp:1630, armor:\"heavy\", speed:2.3, turn:1.2, sight:8.8, r:20, mass:0, weapons:[\"navgun_100_fr\",\"sam_crotale_nav\",\"ssm_exocet38\",\"asw_malafon\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL and the purest description-versus-loadout case in the fleet: the unit is NAMED \"Colbert (Exocet)\" and carries no Exocet. Real fit after the 1970-72 conversion and the 1980-81 refit: two 100 mm CADAM, a Masurca twin launcher aft, four MM38 Exocet.",
+   "anchor": "name:\"Colbert (Exocet)\", full:\"Colbert (C611) after the Exocet fit\", cost:2450, oil:43, time:37, hp:2260, armor:\"heavy\", speed:1.88, turn:0.9, sight:9.8, r:23, mass:0, weapons:[\"w_e80_nato_cruiser\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Colbert (Exocet)\", full:\"Colbert (C611) after the Exocet fit\", cost:2450, oil:43, time:37, hp:2260, armor:\"heavy\", speed:1.88, turn:0.9, sight:9.8, r:23, mass:0, weapons:[\"navgun_100_fr\",\"sam_masurca\",\"ssm_exocet38\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Two defects in one edit. France never bought Phalanx for any hull - Clemenceau carried 100 mm Mle 1953 - and the row declares one identity (Foch R99, 1986) that a duplicate key later in the SAME object literal silently overwrites with another (Clemenceau R98, 1961). The surviving half is the coherent one, since fra_e90_carrier is already Foch, so promote the winning values into the row's own fields; the companion edit below deletes the dead half. Verified under jsc: resolved name, full, service and desc are unchanged by the collapse.",
+   "anchor": "name:\"Clemenceau (ASMP)\", full:\"Foch (R99) with Super Etendard and ASMP\", cost:2800, oil:61, time:48, hp:2320, armor:\"heavy\", speed:1.48, turn:0.6, sight:10.6, r:30, mass:0, weapons:[\"w_e80_nato_carrier\"], prereq:[\"navalyard\",\"lab\",\"airbase\"], tech:3, from:\"e80\", to:\"e80\", service:\"1986\"",
+   "exactCount": 1,
+   "newCode": "name:\"Clemenceau CV\", full:\"Clemenceau (R98) with Super Etendard and ASMP\", cost:2800, oil:61, time:48, hp:2320, armor:\"heavy\", speed:1.48, turn:0.6, sight:10.6, r:30, mass:0, weapons:[\"navgun_100_fr\"], prereq:[\"navalyard\",\"lab\",\"airbase\"], tech:3, from:\"e80\", to:\"e80\", service:\"1961\""
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Companion to the edit above: delete the duplicate name/full/service/desc block that sat inside the same braces and silently overwrote the row's own fields. Apply this edit AFTER the fra_e80_carrier identity edit. Keeps exactly the desc the game renders today, so nothing a player sees changes - this removes a maintenance hazard, not a behaviour.",
+   "anchor": "desc:\"The same two hulls, with the AN 52 free-fall nuclear bomb from 1978 and the ASMP stand-off missile from 1986 - which makes France the only navy in the world besides the United States with a nuclear strike capability flown off a carrier deck, and it still is. Britain's naval nuclear weapons in this period are the WE.177 free-fall bomb, gone with Ark Royal in 1978, and the WE.177A depth bomb, withdrawn in 1992.\" ,\"name\":\"Clemenceau CV\",\"full\":\"Clemenceau (R98) with Super Etendard and ASMP\",\"service\":\"1961\",\"desc\":\"The name ship, and from 1978 the platform for the Super Etendard carrying the ASMP nuclear missile - a seaborne leg of the deterrent that no other European navy had. She decommissioned in 1997; her sister Foch carried on to 2000.\"},",
+   "exactCount": 1,
+   "newCode": "desc:\"The name ship, and from 1978 the platform for the Super Etendard carrying the ASMP nuclear missile - a seaborne leg of the deterrent that no other European navy had. She decommissioned in 1997; her sister Foch carried on to 2000.\"},"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "La Fayette carries a 100 mm Mle 1968 TR CADAM, not the Italian 76 mm (NAVGUN has no fra row, so the Italian gun fell straight through), plus eight MM40 Exocet Block 2 and a Crotale EDIR launcher with eight ready rounds. This is the edit the NAVGUN comment itself asked for.",
+   "anchor": "name:\"La Fayette FS\", full:\"La Fayette (F710), La Fayette-class fregate furtive\", cost:1080, oil:14, time:15, hp:1010, armor:\"light\", speed:2.8, turn:1.7, sight:8.6, r:17, mass:0, weapons:[\"w_e90_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "name:\"La Fayette FS\", full:\"La Fayette (F710), La Fayette-class fregate furtive\", cost:1080, oil:14, time:15, hp:1010, armor:\"light\", speed:2.8, turn:1.7, sight:8.6, r:17, mass:0, weapons:[\"navgun_100_fr\",\"sam_crotale_nav\",\"ssm_exocet40b2\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. A 90-96 cell Mk 41 with SM-2/ESSM/Tomahawk is an Arleigh Burke; France has never had a Mk 41 or a Tomahawk on a surface ship. Cassard, commissioned 28 July 1988, carries one Mk 13 with 40 SM-1MR recycled from the T 47 Tartar conversions, one 100 mm CADAM, eight MM40 Exocet and two Sadral mounts. And the anti-AIR frigate had air:0.",
+   "anchor": "name:\"Cassard F70 AA\", full:\"Cassard (D614), Cassard-class anti-air frigate\", cost:1900, oil:29, time:26, hp:1820, armor:\"heavy\", speed:2.34, turn:1.2, sight:9.6, r:20, mass:0, weapons:[\"w_e90_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Cassard F70 AA\", full:\"Cassard (D614), Cassard-class anti-air frigate\", cost:1900, oil:29, time:26, hp:1820, armor:\"heavy\", speed:2.34, turn:1.2, sight:9.6, r:20, mass:0, weapons:[\"navgun_100_fr\",\"sam_sm1\",\"ssm_exocet40b2\",\"sam_sadral\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Foch never carried Phalanx. Her late fit was four 100 mm Mle 1953 and two Sadral sextuple Mistral mounts, Sadral being at sea from 1990 and so correct for this decade.",
+   "anchor": "name:\"Foch CV\", full:\"Foch (R99), Clemenceau-class\", cost:3180, oil:69, time:50, hp:2560, armor:\"heavy\", speed:1.5, turn:0.6, sight:11.4, r:30, mass:0, weapons:[\"w_e90_nato_carrier\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Foch CV\", full:\"Foch (R99), Clemenceau-class\", cost:3180, oil:69, time:50, hp:2560, armor:\"heavy\", speed:1.5, turn:0.6, sight:11.4, r:30, mass:0, weapons:[\"navgun_100_fr\",\"sam_sadral\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. The Mk 110 is the Bofors 57 mm on an American LCS; FREMM Aquitaine, commissioned 23 November 2012, carries a 76 mm Super Rapid, 16 Aster 15 in Sylver A43, 8 MM40 Exocet Block 3, two MU90 launchers and - on the eight ASM hulls - 16 MdCN in Sylver A70. The desc named every one of those and the loadout had none of them.",
+   "anchor": "name:\"FREMM Aquitaine\", full:\"Aquitaine (D650), FREMM multi-mission frigate\", cost:1210, oil:16, time:16, hp:1140, armor:\"light\", speed:2.88, turn:1.7, sight:9.6, r:17, mass:0, weapons:[\"w_e00_nato_corvette\"]",
+   "exactCount": 1,
+   "newCode": "name:\"FREMM Aquitaine\", full:\"Aquitaine (D650), FREMM multi-mission frigate\", cost:1210, oil:16, time:16, hp:1140, armor:\"light\", speed:2.88, turn:1.7, sight:9.6, r:17, mass:0, weapons:[\"navgun_76\",\"sam_aster15\",\"ssm_exocet\",\"mdcn\",\"asw_mu90\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. Horizon has no 127 mm gun of any kind. Forbin carries two 76 mm Super Rapid, 48 Sylver A50 cells with Aster under PAAMS and eight MM40 Exocet - which the desc says in terms - and could not engage an aircraft. Matched to the e20 twin destroyer_f so the two eras agree.",
+   "anchor": "name:\"Horizon DDG\", full:\"Forbin (D620), Horizon-class\", cost:2110, oil:32, time:27, hp:2000, armor:\"heavy\", speed:2.4, turn:1.2, sight:11.0, r:20, mass:0, weapons:[\"w_e00_nato_destroyer\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Horizon DDG\", full:\"Forbin (D620), Horizon-class\", cost:2110, oil:32, time:27, hp:2000, armor:\"heavy\", speed:2.4, turn:1.2, sight:11.0, r:20, mass:0, weapons:[\"navgun_76\",\"sam_aster30\",\"ssm_exocet\"]"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "Charles de Gaulle's air wing is about 40 aircraft, not 75+, and the wing is already modelled by carrier:3. Her actual self-defence armament is 32 Aster 15 in four Sylver A43 - exactly what the e20 twin carrier_f already carries.",
+   "anchor": "name:\"Charles de Gaulle CVN\", full:\"Charles de Gaulle (R91)\", cost:4200, oil:92, time:54, hp:3220, armor:\"heavy\", speed:1.54, turn:0.6, sight:13.2, r:30, mass:0, weapons:[\"w_e00_nato_carrier\"]",
+   "exactCount": 1,
+   "newCode": "name:\"Charles de Gaulle CVN\", full:\"Charles de Gaulle (R91)\", cost:4200, oil:92, time:54, hp:3220, armor:\"heavy\", speed:1.54, turn:0.6, sight:13.2, r:30, mass:0, weapons:[\"sam_aster15\"]"
+  }
+ ],
+ "proof": "SEPARATING WHAT I MEASURED FROM WHAT I INFERRED.\n\nMEASURED \u2014 everything below came out of jsc or python3 against the real files, never off a source line.\n\nHarness: `var window=this;` + js/util.js js/config.js js/facts.js js/rules.js js/eras.js js/heavyair.js js/generations.js, run under /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc. Every loadout in this report is the post-generations.js resolution, so the privateWeapon() clones and the DOMAIN `naval` scaling are already applied.\n\n1. French surface inventory: 27 hulls with fac \"fra\" and layer \"sea\" \u2014 23 era rows, 4 e20 rows. Full table in `inventory`, all fields read from the resolved objects.\n2. Borrowed American ordnance: 18 of the 23 era hulls resolve a weapon whose base id matches /^w_e\\d\\d_nato_/. The five that do not are the patrol boats on the generic `hmg`. Zero era hulls carried a French-designed naval weapon.\n3. Capability masks, baseline: of 27 French sea hulls, 13 could engage AIR, 1 could engage a SUBMARINE, 21 had ground:1 (almost all of that being naval gunfire, which is correctly land attack). After the proposed edits: 21 air, 7 sub, 23 ground.\n4. MdCN: zero entries in WEAPONS match /mdcn|scalp|naval cruise/. Masurca, Malafon and Sadral likewise return nothing. The only \"Crotale\" in the table is w_e00_fra_spaag, the land-based Crotale NG VT-1.\n5. Exocet: only corvette_f and destroyer_f (both e20) carried any Exocet-named weapon. No era hull did.\n6. Shared-weapon blast radius, measured per id: w_e50_nato_cruiser on 3 hulls (nato/gbr/fra), w_e60_nato_cruiser on 3, w_e80_nato_corvette on 3, w_e80_nato_carrier on 3, w_e90_nato_destroyer on 4 (+deu), w_e00_nato_corvette on 4, w_e00_nato_destroyer on 4. This is why the fix points the French hulls at new French ids instead of editing the shared rows.\n7. Mechanism confirmed by reading the code, not assumed: the era-range normaliser in generations.js gates on /^w_(e\\d\\d)_([a-z]+)_([a-z]+)$/ and only rewrites at/tankdestroyer/gunship/aa/spaag/mlrs/spg, so ids named outside that pattern are untouched. The NAVGUN loop only substitutes into weapons whose name matches /OTO 76mm/ and has no `fra` row by design. MISSILE_PROFILE and MISSILE_SPEED are applied with `if (WEAPONS[id])` guards, so new ids that declare profile/intercept/speed inline are fine. ui.js reads weapons[0] as the card's primary and lists the rest by name, which is why every proposed array puts the gun first.\n8. `manual` gate read in entities.js line 485: `manualWeapon(w) { return !!(w && (w.manual || w.nuke || this.def.noAuto)); }` \u2014 per-weapon, so a FREMM holds MdCN while its gun, Aster and Exocet fire automatically. Confirmed at line 291 and 529 that the auto-acquire loops skip a manual weapon.\n9. APPLIED AND RE-RESOLVED. I copied the repo to an isolated directory, applied all 21 edits with python3 assertions that every anchor had str.count == 1, rebuilt the bundle and re-ran jsc. Result: zero dangling weapon references anywhere in the roster (checked all 1,135 units, not just French ones).\n10. COLLATERAL PROOF. I dumped every unit's resolved line (faction, name, sight, and every weapon's name/damage/range/accuracy/tgt mask) before and after, from ONE frozen snapshot, and diffed. Exactly 19 units changed and every one is French: corvette_f plus the 18 era rows. NON-French units changed: zero. Dangling refs after: zero.\n11. BEHAVIOUR SUITE: 52 passed, 0 failed, \"runtime errors: NONE\", measured on a tree carrying the identical weapon block and the identical 18 loadout swaps. Two deltas have landed since that run \u2014 `manual:true` on mdcn, and the fra_e80_carrier duplicate-key collapse \u2014 and I could not re-run the suite to cover them (see risks). Both are verified behaviour-neutral under jsc: the carrier collapse produces byte-identical resolved name, full, service, desc and weapons, and `manual` only gates automatic target acquisition.\n12. SIGHT SIDE EFFECT, measured not guessed. generations.js's \"eyes to match the reach\" pass raises a unit's sight to its longest non-arc weapon. Adding MdCN (range 19.0, resolving to 18.7 after the naval multiplier) lifts fra_e00_corvette's sight from 9.4 to 18.6 and corvette_f's from 14.8 to 18.6. For comparison I measured the existing convention: ssgn_n sits at sight 19.4 against tlam_n's 19.0, and every TEL sits at sight 24-31 against a 24-31 tile round. So this follows the game's own precedent, but it does make a FREMM the furthest-seeing surface ship in the roster.\n\nINFERRED \u2014 naval history, from knowledge, not from the repo. Every date, gun calibre, missile fit and commissioning in the findings: De Grasse completed 10 September 1956 with sixteen 127 mm/54 Mle 1948; Colbert commissioned 5 May 1959, Masurca conversion 1970-72, four MM38 Exocet in the 1980-81 refit, decommissioned 24 May 1991; Suffren 20 July 1967 and Duquesne 1970, Masurca Mk 2 in service 1968; Malafon in service 1965, withdrawn 1997; Tourville 21 June 1974, Crotale EDIR fitted from 1979; A69 D'Estienne d'Orves 1976 with 100 mm, four MM38, a 375 mm ASW launcher and L5 tubes; Cassard 28 July 1988 and Jean Bart 1991 with 40 SM-1MR on a Mk 13; La Fayette 22 March 1996 with 100 mm, eight MM40 Block 2 and Crotale EDIR; Clemenceau 1961 and Foch 1963, ASMP at sea 1986, Clemenceau paid off 1997, Foch sold to Brazil 15 November 2000; Charles de Gaulle commissioned 18 May 2001 with 32 Aster 15 in Sylver A43; Forbin in active service 2010 with two 76 mm and 48 Sylver A50; FREMM Aquitaine 23 November 2012; MM38 Exocet operational 1975, MM40 Block 2 from 1993, Block 3 from 2008; MdCN qualified 2015, operational 2017, first combat use 14 April 2018 by Aquitaine, Languedoc and Auvergne against Syrian chemical-weapons sites; Sadral at sea from 1990; the Falklands Exocets of 4 and 25 May 1982 being air-launched AM39s off a Super Etendard. The damage, range, reload and accuracy numbers in the new weapons are my calibration against neighbouring entries in the same tables, not measured quantities \u2014 they are game balance, and the owner should feel free to move them.\n\nFILES OF RECORD (scratchpad, not the repo \u2014 I wrote nothing into /Users/hjiang/Desktop/redalert):\n  /private/tmp/claude-501/-Users-hjiang-Desktop-redalert/6321f229-fd3c-451c-bfae-d045a3e13cf4/scratchpad/frasurf/apply.py      the patch script with the str.count == 1 assertions\n  .../frasurf/wblock.txt    the rules.js weapon block verbatim\n  .../frasurf/edits.json    every anchor and newCode pair\n  .../frasurf/before.tsv and after.tsv   the 1,135-unit resolved dumps that the collateral diff was taken from\n  .../frasurf/orig/ and .../frasurf/repo/  the frozen A and B trees",
+ "risks": [
+  "THE BEHAVIOUR SUITE COULD NOT BE RE-RUN AT THE END. I measured 52 passed / 0 failed with no runtime errors on a tree carrying the identical weapon block and the identical 18 loadout swaps. Two deltas landed afterwards - `manual:true` on mdcn, and the fra_e80_carrier duplicate-key collapse - and every subsequent Chrome invocation died with exit 144 and a zero-byte dump. Cause measured: 164 concurrent 'Google Chrome' processes on the machine from the sibling audit workflows. Both deltas are verified behaviour-neutral under jsc (the carrier collapse yields byte-identical resolved fields; `manual` only gates automatic acquisition), but re-run _behtest.html and the index.html errbox check before committing.",
+  "THE LIVE REPO IS BEING EDITED CONCURRENTLY BY OTHER WORKFLOWS. I measured the unit count moving from 1,132 to 1,135 between two snapshots taken minutes apart, and the shared scratchpad root had my own working files overwritten by siblings twice. Every anchor in this report was re-verified with python3 str.count == 1 against the live js/rules.js and js/eras.js at the moment of writing, but re-verify each one before applying - especially if a submarine workflow has since touched the European naval ordnance block in rules.js, which is where the new weapons go.",
+  "MdCN LENGTHENS A FREMM'S EYES. generations.js derives sight from the longest non-arc weapon, so adding a 19-tile round lifts fra_e00_corvette from sight 9.4 to 18.6 and corvette_f from 14.8 to 18.6, making a French frigate the furthest-seeing surface ship in the game - a Nimitz is 12.9 and an Aegis destroyer 14.9. This matches the game's own precedent for commanded long-range missile carriers (ssgn_n sits at 19.4 against Tomahawk's 19.0; every TEL sits at 24-31), and `manual:true` stops the ship spending a thousand-kilometre round on the first patrol boat in range. But it is a real balance change and it deserves the owner's eye. If it is unwanted, shortening MdCN's range is the lever, not removing the weapon.",
+  "ELEVEN NEW WEAPON IDS, INCLUDING TWO EXTRA EXOCET GENERATIONS. Splitting Exocet into MM38 (1975, sea-only), MM40 Block 2 (1993, sea-only) and the existing MM40 Block 3 (2008, ground:1) is the honest answer to 'when could a French ship hit the shore', and it is the finding the owner asked for - but it adds rows to a table that already has roughly 1,700. If a smaller footprint is wanted, ssm_exocet38 alone would serve both e80 and e90 at the cost of the 42 km / 72 km distinction.",
+  "THE SHARED AMERICAN WEAPON ROWS ARE UNTOUCHED, DELIBERATELY. w_e50_nato_cruiser, w_e60_nato_cruiser, w_e80_nato_corvette, w_e90_nato_destroyer and the rest are still carried by the American, British and German hulls, and my collateral diff proves zero non-French units changed. But those rows have the same defects for their other carriers - a Type 22 is not an Oliver Hazard Perry either - and whoever owns the British and German surface fleets will hit the identical problem. The French fix is a template, not a system-wide repair.",
+  "TWO ROWS I DID NOT FIX AND SHOULD SAY SO. fra_e50_carrier (Arromanches, ~24 aircraft) and fra_e60_carrier (Clemenceau, ~40) still carry the shared 'Air wing of ~90 aircraft', which is a Forrestal's number. Correcting that text would move the American and British carrier rows too, so it is outside a France-only mandate and belongs to whoever owns the shared naval table.",
+  "fra_e80_aswhelo AND fra_e90_aswhelo carry asw_mk54 - the American Mk 54 of 2004 - on a French Lynx HAS Mk4 of 1979 and 1994. These are layer:'air' units and so strictly outside a surface-fleet brief, but they are the surface fleet's only anti-submarine aircraft for two decades and the correct round (asw_l5, or the existing asw_mu90) is to hand. Flagged rather than edited to avoid colliding with whoever owns the air roster.",
+  "THE TWO fra_e80_carrier EDITS ARE ORDER-DEPENDENT. Apply the identity edit first (it rewrites name, full, service and weapons together in one anchor), then the duplicate-key deletion. Applying them in the other order leaves the identity anchor unmatched.",
+  "THE NEW WEAPONS' NUMBERS ARE CALIBRATION, NOT MEASUREMENT. Damage, range, reload and accuracy were set by eye against neighbouring entries in the same tables so the air-defence ladder reads correctly (Masurca 9.8 / SM-1MR 10.4 / Aster 30 14.8 area, against Crotale 6.2 and Sadral 4.4 point). The dates, calibres, fits and target masks are history and should be defended; the numbers are game balance and should not be."
+ ]
+}

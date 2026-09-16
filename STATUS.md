@@ -46,7 +46,10 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 - [ ] Explore/exploit - the AI learns what works instead of repeating
 - [ ] Pre-trained doctrine prior, which learning then overrides
-- [ ] Surface fleet audit - 8 navies audited, findings salvaged, not yet applied
+- [ ] Surface fleet audit - 8 navies, 31 FATAL and 64 major findings, saved in
+      salvage/ and NOT YET APPLIED. Includes four Soviet weapons with inverted
+      target masks, which is a live combat bug, and area-air-defence missing
+      from the Type 45, Type 052D, Horizon, Cassard and Sachsen.
 - [ ] Restore Britain's V-force and France's Mirage IV
 - [ ] British, French and German 3D models - they borrow American hulls
 

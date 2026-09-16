@@ -1,0 +1,299 @@
+{
+ "navy": "kpa_roc \u2014 the surface fleets of the Korean People's Navy and the Republic of China Navy, all six eras (submarines excluded; owned by sibling workflows)",
+ "inventory": "31 SURFACE HULLS, RESOLVED UNDER jsc AFTER generations.js (base.js = stub + util + config + facts + rules + eras + heavyair + generations). tgt shown as g/a/s/u.\n\n=== NORTH KOREA (kpa) \u2014 12 hulls, no destroyer, no cruiser, no carrier, no naval SAM in any era ===\nboat_k | patrol | from e50, to (open), NO service field | \"Chaho Gunboat\" / \"Chaho-class Gunboat\" | hp380 armor light spd3.4 sight5.8 cost280 rcs0.50 radarQ2.5 softkill0\n   hmg \"12.7mm HMG\" dmg13 rng5.4 g1a0s1u0\ncorvette_k | corvette | from e20 (stamped), NO service | \"Nampo-class Patrol Craft\" (name) / \"Nampo-class Corvette\" (full) | hp700 spd2.7 sight7.2 sonar2.4 rcs0.85 radarQ5 ciws0 softkill0.04 magazine{ssm_kn01:4}\n   navgun_76__corvette_k \"57mm twin, manual\" dmg34 rng6.4 g1a1s1u0   (renamed by generations.js NAVGUN.kpa)\n   ssm_kn01__corvette_k \"KN-01 coastal SSM\" dmg200 rng8.8 g1a0s1u0  intercept1.45 speed100\nmissileboat_k | missileboat | from e20, NO service | \"Soju Missile Boat\" / \"Soju-class Missile Boat\" | hp560 spd3.2 sight7.2 rcs0.60 radarQ4 softkill0.03 magazine{ssm_kn01:4}\n   ssm_kn01__missileboat_k \"KN-01 coastal SSM\" dmg200 rng8.8 g1a0s1u0\nlst_k | transport_sea | from e50 (ERA_TIMELESS), NO service | \"Hantae Landing Ship\" / \"Hantae-class LST\" | hp820 spd2.4 cargo6 amphib \u2014 UNARMED\nkpa_e50_corvette | e50-e50 | service 1949, conf medium | \"G-5 Torpedo Boat\" / \"Project G-5 motor torpedo boat\" | hp365 spd2.32 sonar1.4 rcs0.85\n   w_e50_kpa_corvette \"2x 533mm torpedoes in stern troughs\" dmg22 rng5.9 proj shell burst4 g1a1s1u0   <-- torpedo masked air:1\nkpa_e60_corvette | e60-e60 | service 1973, conf high | \"Najin-class Frigate\" | hp450 spd2.43 sonar1.7\n   w_e60_kpa_corvette__kpa_e60_corvette \"2x 100mm\" dmg29 rng6.5 g1a1s1u0\nkpa_e60_missileboat | e60-e60 | service 1968, conf medium | \"Osa-I / Komar\" / \"Project 205 Osa-I and Project 183R Komar missile boats\" | hp360 spd2.88 rcs0.60\n   w_e60_kpa_missileboat__kpa_e60_missileboat \"P-15 Termit (SS-N-2 Styx) anti-ship missil\" dmg112 rng7.7 g1a0s1u0 speed100\nkpa_e80_corvette | e80-e80 | service 1982, conf medium | \"Soho-class Frigate\" / \"Soho-class catamaran frigate\" | hp555 spd2.57 sonar2.0\n   w_e80_kpa_corvette__kpa_e80_corvette \"1x 100mm\" dmg38 rng7.1 g1a1s1u0\nkpa_e80_missileboat | e80-e80 | service 1981, conf medium | \"Soju-class\" / \"Soju-class missile boat (domestic Osa derivative)\" | hp440 spd3.04\n   w_e80_kpa_missileboat__kpa_e80_missileboat \"4x P-15 Termit (SS-N-2 Styx) anti-ship mis\" dmg148 rng8.4 g1a0s1u0\nkpa_e90_corvette | e90-e90 | service 1973, conf high | \"Najin-class Frigate\" | hp625 spd2.65 sonar2.2\n   w_e90_kpa_corvette__kpa_e90_corvette \"2x 100mm\" dmg45 rng7.3 g1a1s1u0\nkpa_e90_missileboat | e90-e90 | service 1981, conf medium | \"Soju-class\" | hp500 spd3.14\n   w_e90_kpa_missileboat__kpa_e90_missileboat \"4x SS-N-2 Styx derivatives\" dmg172 rng8.6 g1a0s1u0\nkpa_e00_missileboat | e00-e00 | service 2014, conf medium | \"Nongo-class\" / \"Nongo-class fast attack craft\" | hp540 spd3.17 rcs0.60 tech2\n   w_e00_kpa_missileboat__kpa_e00_missileboat \"Kumsong-3 (Kh-35 derivative) anti-ship mis\" dmg190 rng8.7 g1a0s1u0\n(NO kpa_e00_corvette, NO kpa era destroyer/cruiser/carrier/aswhelo/patrol in any era.)\n\n=== TAIWAN (roc) \u2014 19 hulls, no carrier, no cruiser, no frigate slot ===\nboat_r | patrol | from e50 (ERA_TIMELESS), NO service | \"Kuang Hua VI\" / \"Kuang Hua VI Missile Boat\" | hp500 spd3.6 (fastest hull in the game) sight8.6 rcs0.30 radarQ5\n   hmg \"12.7mm HMG\" dmg13 rng5.4 g1a0s1u0   <-- a \"Missile Boat\" whose only weapon is a .50 cal\ncorvette_r | corvette | from e20, NO service | \"Tuo Chiang\" / \"Tuo Chiang-class Corvette\" | hp980 spd3.4 sight14.3 sonar3.2 radar9 ciws0.30 rcs0.12 softkill0.24 magazine{ssm_hf3:8}\n   navgun_76__corvette_r \"OTO 76mm Super Rapid\" dmg52 rng7.7 g1a1s1u0\n   ssm_hf3__corvette_r \"Hsiung Feng III\" dmg285 rng14.4 g1a0s1u0 speed310 intercept0.60\n   (NO ciws_phalanx in weapons despite ciws:0.30 and warship_specs ciws:1; NO SAM)\nmissileboat_r | missileboat | from e20, NO service | \"Hsiung Feng Boat\" / \"HF-III Missile Craft\" | hp880 spd3.2 sight14.3 radar9 rcs0.26 softkill0.16 magazine{ssm_hf3:4}\n   ssm_hf3__missileboat_r \"Hsiung Feng III\" dmg285 rng14.4 g1a0s1u0\n   (warship_specs.missileboat_r models a 21.6 m \"Hai Ou class\" Dvora with HF-I boxes)\ndestroyer_r | destroyer | from e20, NO service | \"Kee Lung DDG\" / \"Kee Lung-class Destroyer\" | hp1850 armor heavy spd2.3 sight14.3 sonar7.0 radar15 ciws0.58 rcs1.15 softkill0.22 helo2 vls0\n   navgun_mk45__destroyer_r \"Mk 45 Mod 4 127mm\" dmg125 rng11 g1a0s1u0\n   sam_sm1__destroyer_r \"SM-1MR Standard\" dmg150 rng10.1 g0a1s0u0     <-- wrong missile\n   ssm_hf3__destroyer_r \"Hsiung Feng III\" dmg285 rng14.4 g1a0s1u0\n   asw_mk54__destroyer_r \"Mk 54 lightweight torpedo\" dmg215 rng6.2 g0a0s0u1\n   ciws_phalanx__destroyer_r \"Mk 15 Phalanx CIWS\" dmg60 rng3.1 g0a1s0u0\nlst_r | transport_sea | from e50, NO service | \"LCU Landing Craft\" \u2014 UNARMED\nroc_e50_corvette | e50-e50 | service ~1948, conf medium | \"Patrol Escort\" / \"PCE-842-class patrol craft escort / PC-461-class submarine chaser\"\n   w_e50_roc_corvette \"1x 3in/50\" dmg22 rng5.9 g1a1s1u0\nroc_e50_destroyer | e50-e50 | service 1947, conf high | \"Tan Yang\" / \"Tan Yang (ex-IJN Yukikaze, Kagero-class)\" | hp960 sonar4.2 radar9\n   w_e50_roc_destroyer \"US 5in/38 and 3in/50 refit\" dmg53 rng8.5 g1a0s1u0\nroc_e60_corvette | e60-e60 | service ~1948 | \"Patrol Escort\" / \"PCE-842-class / Auk-class conversions\"\n   w_e60_roc_corvette__roc_e60_corvette \"3in/50\" dmg29 rng6.6 g1a1s1u0\nroc_e60_destroyer | e60-e60 | service ~1971, conf medium | \"Gearing DD\" / \"Chao Yang-class (ex-USN Gearing-class); also Fletcher- and Allen M. Sumner-class transfers\"\n   w_e60_roc_destroyer__roc_e60_destroyer \"2x2 5in/38 Mk38\" dmg70 rng9.4 g1a0s1u0\nroc_e60_missileboat | e60-e60 | service 1978, conf medium | \"Hai Ou\" / \"Hai Ou-class fast attack craft (Dvora derivative)\" | radar6.3\n   w_e60_roc_missileboat__roc_e60_missileboat \"2x Hsiung Feng I anti-ship missile\" dmg160 rng12.2 g1a0s1u0\nroc_e80_corvette | e80-e80 | service 1978, conf medium | \"Lung Chiang PGG\" / \"Lung Chiang-class patrol gunboat, guided missile\"\n   w_e80_roc_corvette__roc_e80_corvette \"1x 76mm OTO Melara\" dmg38 rng7.2 g1a1s1u0\nroc_e80_destroyer | e80-e80 | service 1983, conf medium | \"Wu Chin III DDG\" / \"Chao Yang-class Gearing, Wu Chin III conversion\"\n   w_e80_roc_destroyer__roc_e80_destroyer \"SM-1 Standard in box launchers\" dmg93 rng10.3 g1a0s1u0   <-- SAM masked air:0\nroc_e80_missileboat | e80-e80 | service 1978 | \"Hai Ou\"\n   w_e80_roc_missileboat__roc_e80_missileboat \"2x Hsiung Feng I\" dmg211 rng13.5 g1a0s1u0\nroc_e90_corvette | e90-e90 | service 1994, conf medium | \"Chin Chiang PGG\" / \"Chin Chiang-class patrol gunboat\" | rcs0.12\n   w_e90_roc_corvette__roc_e90_corvette \"1x 40mm\" dmg45 rng7.5 g1a1s1u0\nroc_e90_destroyer | e90-e90 | service 1993, conf high | \"Cheng Kung FFG\" / \"Cheng Kung-class (Oliver Hazard Perry-class, licence-built)\"\n   w_e90_roc_destroyer__roc_e90_destroyer \"Mk13 launcher with SM-1MR\" dmg108 rng10.7 g1a0s1u0   <-- SAM masked air:0\nroc_e90_missileboat | e90-e90 | service 1978 | \"Hai Ou\"\n   w_e90_roc_missileboat__roc_e90_missileboat \"2x Hsiung Feng I\" dmg245 rng14 g1a0s1u0\nroc_e00_corvette | e00-e00 | service 2015, conf high | \"Tuo Chiang\" / \"Tuo Chiang-class stealth catamaran corvette\" | sonar3.1 radar8.7 ciws0.29\n   w_e00_roc_corvette__roc_e00_corvette \"Hsiung Feng II and III anti-ship missiles\" dmg49 rng7.6 proj shell burst4 g1a1s1u0   <-- missiles with a gun's numbers\nroc_e00_destroyer | e00-e00 | service 2005, conf high | \"Kee Lung DDG\" / \"Kee Lung-class (ex-USN Kidd-class) destroyer\" | sonar6.8 radar14.6 ciws0.57\n   w_e00_roc_destroyer__roc_e00_destroyer \"SM-2MR Block IIIA via Mk26 launchers\" dmg119 rng11 g1a0s1u0   <-- SAM masked air:0\nroc_e00_missileboat | e00-e00 | service 2010, conf high | \"Kuang Hua VI\" / \"Kuang Hua VI-class missile boat\" | radar8.7\n   w_e00_roc_missileboat__roc_e00_missileboat \"4x Hsiung Feng II anti-ship missile\" dmg271 rng14.3 g1a0s1u0\n\nSHARED HULLS BOTH NAVIES CAN BUILD (fac \"both\", from e50): lst, minesweeper (57mm naval gun), navminelayer (12.7mm HMG), oiler, repair_sea.\nQUALITY MULTIPLIERS (generations.js DOMAIN): kpa naval 0.48 (lowest of eight), roc naval 0.72. DOMAIN_BITE ramps 0.00 at e50 to 1.00 at e20.",
+ "findings": [
+  {
+   "severity": "fatal",
+   "kind": "area-air-defence / tgt mask",
+   "unit": "roc_e80_destroyer, roc_e90_destroyer, roc_e00_destroyer (weapons w_e80/e90/e00_roc_destroyer)",
+   "whatTheGameHas": "All three ROC era destroyers carry exactly one weapon, and in all three the weapon NAME is a surface-to-air missile launcher while the tgt mask is a gun's: w_e00_roc_destroyer \"SM-2MR Block IIIA via Mk26 launchers\" tgt{ground:1,air:0,sea:1,sub:0}; w_e90_roc_destroyer \"Mk13 launcher with SM-1MR\" air:0; w_e80_roc_destroyer \"SM-1 Standard in box launchers\" air:0. Measured under jsc. The Wu Chin III, the Cheng Kung and the Kee Lung therefore cannot engage an aircraft at all in era play.",
+   "whatIsReal": "The Wu Chin III conversion (four Gearings rebuilt 1983-86) put SM-1MR in box launchers aboard precisely to give the ROCN its first shipboard SAM. The eight Cheng Kung frigates (from 1993) carry a Mk 13 single-arm launcher with SM-1MR, 40 rounds. The four Kee Lungs transferred 2005-06 carry two Mk 26 twin rail launchers with SM-2MR Block IIIA and are Taiwan's ONLY area-air-defence ships. Area air defence is the single most important difference between surface combatants after 1980 and the game inverts it for every ROC hull that has it.",
+   "fix": "Flip \"air\" from 0 to 1 in the tgt block of all three weapons. Applied in edits 12, 13, 14. Scope note, MEASURED not inferred: this template defect is game-wide - every one of the 41 era destroyers and all 17 era cruisers across all eight factions is masked air:0, including nato_e90_destroyer named \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomahawk\" and pact_e60_destroyer named \"2 x M-1 Volna SAM\". I fixed only my three."
+  },
+  {
+   "severity": "major",
+   "kind": "description versus loadout",
+   "unit": "boat_r",
+   "whatTheGameHas": "full:\"Kuang Hua VI Missile Boat\", warship_specs.boat_r draws a 34.2 m faceted hull with launchers:\"box\", and the resolved weapon list is exactly one entry: hmg, \"12.7mm HMG\", dmg 13, range 5.4, tgt{g1,a0,s1,u0}. The 3D model has the missile boxes; the weapon list has a machine gun. This is the Los Angeles defect verbatim.",
+   "whatIsReal": "The Kuang Hua VI (KH-6), 31 boats delivered from 2010, carries four Hsiung Feng II anti-ship missiles and one 20 mm T-75 cannon. The game already knows this - roc_e00_missileboat is the KH-6 with \"4x Hsiung Feng II anti-ship missile\" at dmg 271 range 14.3, and its desc says \"The game's boat_r\".",
+   "fix": "The missiles cannot be added to this hull: role \"patrol\" is in rules.js ERA_TIMELESS, so boat_r is stamped from:\"e50\" and is buildable in 1950, where a 1988 Hsiung Feng II does not belong. The ROCN missile craft are missileboat_r and corvette_r, which already carry Hsiung Feng. So the loadout is right for the slot and the NAME was the lie: drop \"Missile Boat\" from full, and say in the desc that this hull is gun-armed and where the missiles live. Applied in edits 6 and 7."
+  },
+  {
+   "severity": "major",
+   "kind": "area-air-defence / wrong weapon",
+   "unit": "destroyer_r",
+   "whatTheGameHas": "weapons:[navgun_mk45, sam_sm1, ssm_hf3, asw_mk54, ciws_phalanx]. sam_sm1 is \"SM-1MR Standard\", dmg 150, range 10.5 (10.1 after the roc naval 0.72 multiplier), intercept 0.85. destroyer_r is the ONLY user of sam_sm1 in the entire roster (measured).",
+   "whatIsReal": "SM-1MR is the CHENG KUNG's missile, fired from a Mk 13. The four Kee Lung (ex-Kidd) hulls were transferred 2005-06 with SM-2MR Block IIIA and roughly 150 rounds of it. Block IIIA flies inertial with midcourse update and needs an illuminator only terminally, so one ship holds several engagements at once; every SM-1 in the air occupies a director for its whole flight. The game's own roc_e00_destroyer weapon is literally named \"SM-2MR Block IIIA via Mk26 launchers\" - the e20 base roster and the e00 era row disagree about the same four ships.",
+   "fix": "Add sam_sm2mr (SM-2MR Block IIIA: dmg 168, range 12.6, burst 2, acc 0.83, intercept 0.68, speed 580) sitting between sam_sm1 and sam_sm2 - short of the USN's SM-2/SM-6 because the fire control is Mk 74, the radar an SPS-48E, and there is no cooperative engagement. Put it on destroyer_r. Applied in edits 1, 2, 3, 5."
+  },
+  {
+   "severity": "major",
+   "kind": "description versus loadout",
+   "unit": "roc_e00_corvette (weapon w_e00_roc_corvette)",
+   "whatTheGameHas": "The Tuo Chiang's single weapon is named \"Hsiung Feng II and III anti-ship missiles\" and is a gun stat block: dmg 49, range 7.9, proj \"shell\", speed 700, burst 4, burstDelay 0.16, aoe 0.5, tgt{g1,a1,s1,u0}. Its sibling roc_e00_missileboat fires HF-II at dmg 271 range 14.3 proj \"missile\". So the ship the game calls the 'carrier killer' has less reach and a fifth of the punch of the little boat beside it, and its 'anti-ship missiles' shoot down aircraft.",
+   "whatIsReal": "Tuo Chiang (commissioned November 2015) carries eight HF-II and eight HF-III plus one OTO Melara 76 mm Super Rapid and one Phalanx Block 1B. The numbers in this block are the 76 mm - warship_specs.roc_e00_corvette agrees (guns:1, gunCal:76).",
+   "fix": "Rename the weapon to what the numbers describe, \"1x OTO Melara 76mm Super Rapid\". The class's Hsiung Feng armament is represented on the e20 hull corvette_r, which carries ssm_hf3 with an eight-round fixed magazine. Applied in edit 16. The alternative - restatting it as a missile - would strip the 76 mm's anti-air capability, which the first batch genuinely relies on."
+  },
+  {
+   "severity": "major",
+   "kind": "wrong identity",
+   "unit": "corvette_k",
+   "whatTheGameHas": "name \"Nampo-class Patrol Craft\" (set by an Object.assign at rules.js ~2923, overriding the source name \"Nampo Corvette\" at ~1561), full \"Nampo-class Corvette\", role corvette, sonar 2.4, four KN-01 in a fixed magazine. warship_specs.corvette_k: designation \"Nampo class\", len 27.7 m, guns 2 x 14.5 mm, launchers:\"none\". generations.js NAVGUN renames its gun to \"57mm twin, manual\". Three files give three different armaments and the model has no launchers for the missiles the unit carries.",
+   "whatIsReal": "The Nampo class is a ~27 m P-6-derived LANDING craft; IISS counts roughly ninety of them under amphibious lift, not under combatants. The KPN's gun corvette is the Sariwon - two hulls, about 650 tonnes, on a Soviet Tral minesweeper form, one 100 mm forward and a wall of manually laid 14.5 mm. The game already says so: kpa_e80_corvette's own desc reads \"The more numerous gun corvettes are the two Sariwon-class, themselves derived from Soviet Tral-class minesweepers.\"",
+   "fix": "Rename to Sariwon in both places (the source literal and the later Object.assign - this is the rename trap) and lengthen the hull spec from 27.7 m to 62 m. Applied in edits 9, 10, 11, 17. Keeping the small-craft doctrine intact: a Sariwon is still a coastal gun corvette, not a miniature destroyer."
+  },
+  {
+   "severity": "major",
+   "kind": "capability gap - area air defence and CIWS",
+   "unit": "corvette_r",
+   "whatTheGameHas": "weapons:[navgun_76, ssm_hf3]. The unit carries ciws:0.30 as a field and warship_specs.corvette_r declares ciws:1, but no close-in weapon is in the weapons array, so nothing fires it. No SAM of any kind, and the desc says \"no air defence beyond its own gun\".",
+   "whatIsReal": "Every Tuo Chiang carries a Mk 15 Phalanx Block 1B. More importantly the Ta Chiang batch, from PGG-619 commissioned 2021 onward, carries a 16-cell vertical launcher for TC-2N Sea Sword II - Taiwan's first home-built shipboard SAM and the first air defence on a ROCN hull that is not a recycled American destroyer. By 2026 that batch is most of the class, and e20 is the 2020s.",
+   "fix": "Add ciws_phalanx to the weapons array and add sam_tc2n (dmg 135, range 6.8, intercept 0.74 - local-area, roughly 15-30 km, so it sits between RAM at 4.4 and SM-1 at 10.5, not beside SM-2 at 14.5). Rewrite the desc clause that now contradicts the loadout. vls stays 0: those cells take one missile type, not a Mk 41 farm. Applied in edits 1, 2, 3, 4, 8."
+  },
+  {
+   "severity": "major",
+   "kind": "missing hull - anachronism by omission",
+   "unit": "kpa e20 roster (no destroyer_k exists)",
+   "whatTheGameHas": "The KPA has no destroyer in any era. rules.js states this as deliberate content: \"the KPA has no destroyer, no AWACS and no carrier fighter in any era... those gaps are content, not defects to be patched.\" The e20 KPN surface roster is boat_k, corvette_k, missileboat_k, lst_k.",
+   "whatIsReal": "That statement was true when it was written and is no longer. The Choe Hyon-class destroyer, roughly 5,000 tonnes with about 74 vertical cells, was launched 25 April 2025; the second hull Kang Kon capsized at launch in May 2025 and was righted and relaunched in June. It is the first KPN ship ever to carry area air defence and the first to carry a land-attack cruise missile. Today is September 2026. The game already half-knows: kpa_e60_corvette's desc says the Najin was \"until 2025, the largest warship North Korea had ever built\".",
+   "fix": "NO EDIT PROPOSED. Adding a whole hull plus a warship_specs entry plus a Choe Hyon weapon set is a roster decision for the owner, not a surgical correction, and it reverses a rule the file states on purpose. Flagging it so the owner can decide whether e20 now means pre-2025 or present-day. If it is added, the honest fit is a 130 mm gun, a vertical SAM, an anti-ship missile and a Hwasal-family land-attack round - and it should be one or two hulls at a punishing cost, not a buildable line."
+  },
+  {
+   "severity": "major",
+   "kind": "tgt mask absurdity",
+   "unit": "kpa_e50_corvette (weapon w_e50_kpa_corvette)",
+   "whatTheGameHas": "\"2x 533mm torpedoes in stern troughs\", tgt{ground:1,air:1,sea:1,sub:0}. A 1930s straight-running torpedo that shoots down aircraft and cannot engage a submarine. The numbers underneath are a gun's (proj \"shell\", burst 4, dmg 22, speed 700) - the era corvette template with a hand-edited name.",
+   "whatIsReal": "Project G-5 is a 17-tonne motor torpedo boat: two 533 mm torpedoes in stern troughs and one or two 12.7 mm DShK. Four of them attacked USS Juneau off Chumunjin on 2 July 1950 and three were sunk in minutes. The DShK is the only thing aboard that can point at an aeroplane, and it is not what the weapon is named for.",
+   "fix": "Set air:0 and rename to \"2x 533mm torpedoes, 12.7mm DShK for self-defence\" so the name accounts for the gun numbers underneath. sub stays 0 - a straight-runner does not hunt a submerged boat. Applied in edit 15."
+  },
+  {
+   "severity": "minor",
+   "kind": "wrong identity",
+   "unit": "missileboat_r",
+   "whatTheGameHas": "name \"Hsiung Feng Boat\", full \"HF-III Missile Craft\", one weapon ssm_hf3 with a four-round fixed magazine. warship_specs.missileboat_r models it as \"Hai Ou class\", len 21.6 m, with the comment \"Dvora-sized hull barely longer than its missiles: ... a single pair of Hsiung Feng I boxes trained aft over the transom.\"",
+   "whatIsReal": "There is no ROCN 'HF-III missile craft'. The Hsiung Feng III goes on the Tuo Chiang corvettes, the Cheng Kung frigates and the Kee Lungs. The Hai Ou (Dvora derivative, 50 built from 1978) carried two Hsiung Feng I and was withdrawn around 2012 - it cannot carry an HF-III and does not exist in e20. The real e20 ROCN missile boat is the Kuang Hua VI with four HF-II.",
+   "fix": "No edit proposed, because the clean fix collides with boat_r: the unit text and the 3D model disagree in opposite directions and resolving it properly means moving the KH-6 identity from boat_r to missileboat_r and finding a new generic gun hull for the patrol slot. Recorded so the owner can decide. If it is done, the missile should become a Hsiung Feng II (subsonic turbojet, Harpoon class) rather than HF-III, which would also stop every ROC hull firing the same supersonic round."
+  },
+  {
+   "severity": "minor",
+   "kind": "description versus loadout / land attack",
+   "unit": "boat_k",
+   "whatTheGameHas": "The source literal at rules.js ~1560 reads desc:\"Small rocket-armed patrol boat...\" but it is dead text - the NAVY Object.assign at ~2890 replaces it with \"A gun boat. There are a great many of them...\". The resolved weapon is hmg, 12.7 mm. warship_specs.boat_k declares launchers:\"rails\", so the 3D model draws the rocket rails the weapon list does not have.",
+   "whatIsReal": "The Chaho class (~27 m, from about 1974) carries a 40-tube BM-21 122 mm rocket launcher plus a 37 mm and two 14.5 mm. It is a floating Grad and it is the KPN's one genuine shore-bombardment asset - the only naval land attack North Korea has ever had that is not a 100 mm gun.",
+   "fix": "No edit proposed. role \"patrol\" is in ERA_TIMELESS so boat_k is stamped from:\"e50\", and a 122 mm rocket boat in 1950 is a worse error than a machine gun in 2020; the KPN had nothing of the sort until the 1970s. Flagging the three-way disagreement (dead source desc says rockets, live desc says gun, model draws rails) and the genuine capability that is absent from the game."
+  },
+  {
+   "severity": "minor",
+   "kind": "capability gap - anti-ship missiles",
+   "unit": "kpa_e60_corvette, kpa_e80_corvette, kpa_e90_corvette",
+   "whatTheGameHas": "Najin (e60, e90) and Soho (e80) carry guns only - \"2x 100mm\" and \"1x 100mm\". warship_specs declares launchers:\"box\" on all three, so the models draw missile boxes the weapon lists do not have.",
+   "whatIsReal": "The Najin was refitted with two P-15 Styx launchers, and also carries two RBU-1200 ASW rocket launchers and mine rails for about 30 mines. The Soho carries four Styx launchers, RBU-1200 and a helicopter platform - the only KPN ship ever to have one, which the game's own desc says.",
+   "fix": "No edit proposed, and this is a deliberate call. Each era unit gets exactly one weapon, and for a 1,500-tonne gun frigate the 100 mm is the honest choice; the Styx family is already represented in the same eras by kpa_e60/e80/e90_missileboat, which is where it matters. The as-built Najin of 1973 had no SSM at all, so the e60 row is correct as it stands. Recorded because the models disagree with the loadouts."
+  },
+  {
+   "severity": "minor",
+   "kind": "anachronism",
+   "unit": "destroyer_r (weapon navgun_mk45)",
+   "whatTheGameHas": "\"Mk 45 Mod 4 127mm\", shared verbatim with destroyer_n and cruiser_n.",
+   "whatIsReal": "The Kidd class carries the Mk 45 Mod 0/2, a 5\"/54. Mod 4 is the 62-calibre gun that entered service around 2000 and went to Burke Flight IIA late hulls and Zumwalt. Taiwan's Kee Lungs have never had it.",
+   "fix": "No edit proposed - it needs a privateWeapon clone for one cosmetic name, and generations.js does not currently clone this one. If it is worth doing, add a roc row to the NAVGUN table pattern naming it \"Mk 45 Mod 2 127mm\"."
+  },
+  {
+   "severity": "minor",
+   "kind": "anachronism",
+   "unit": "boat_r, boat_k, lst_r, lst_k",
+   "whatTheGameHas": "None of the four declares a from: or a service:, so rules.js:3627-3632 stamps them. Roles patrol and transport_sea are both in ERA_TIMELESS, so all four get from:\"e50\" and are buildable in every era from 1950. Measured: boat_r from=e50, boat_k from=e50, lst_r from=e50, lst_k from=e50; by contrast corvette_k, missileboat_k, corvette_r, missileboat_r and destroyer_r all fall through to from:\"e20\", correctly.",
+   "whatIsReal": "The Kuang Hua VI dates from 2010 and the Chaho from about 1974. The Hantae LSM is 1960s Soviet-built. A 2010 stealth fast attack craft available in the Korean War is the exact class of miss the brief asked me to look for in units with no service field.",
+   "fix": "No edit proposed. The ERA_TIMELESS rule is deliberate and documented (\"a fast gun-armed inshore boat ... between a Project 183 and a Mk VI there is a diesel\"), and the ROC and KPA have no era patrol rows to fall back on, so pinning from: would leave both navies with no inshore craft for four decades. The right fix is for the timeless slot to carry a generic identity rather than a dated one - which is what edit 6 does for boat_r's name. Flagging boat_k and the two landing ships as the same shape of issue."
+  },
+  {
+   "severity": "minor",
+   "kind": "wrong weapon / unmodelled magazine",
+   "unit": "destroyer_r",
+   "whatTheGameHas": "ssm_hf3 as the Kee Lung's anti-ship missile, and no FIXED_MAGAZINE entry, while the desc says \"she has no vertical launch cells at all, so her missile capacity is fixed by her rails\".",
+   "whatIsReal": "The Kee Lungs came across with eight RGM-84 Harpoon in two fixed quad canisters - and those genuinely cannot be reloaded at sea, which is what FIXED_MAGAZINE models. The Mk 26 rail launchers the desc refers to are the opposite case: they are fed from a rotating magazine below decks, 24 rounds forward and 44 aft, and are reloadable. So the prose is right about 'no VLS' and wrong about why.",
+   "fix": "No edit proposed in this set, to keep the change surface small. If wanted: give destroyer_r ssm_harpoon rather than ssm_hf3 and a FIXED_MAGAZINE entry of 8, and drop the \"fixed by her rails\" clause in favour of naming the canisters."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "land attack - the question the brief asked",
+   "unit": "all 19 ROC surface hulls",
+   "whatTheGameHas": "Not one ROC surface ship carries a land-attack cruise missile in any era. Measured: no weapon anywhere in the file is a ground-only cruise round for roc, and the only tgt ground:1 entries on ROC ships are naval guns and anti-ship missiles.",
+   "whatIsReal": "Correct, and it is the right answer. The Hsiung Feng family's shipborne members - HF-I (Gabriel derivative, 1978), HF-II (1988) and HF-III (supersonic ramjet, ~2007) - are all anti-ship. The land-attack member, Hsiung Feng IIE and its Hsiung Sheng extended-range successor, is a LAND-BASED system operated from ground launchers by the missile command, in service from around 2011. It has never gone to sea. Taiwan's naval land attack is 5-inch gunfire and nothing else.",
+   "fix": "Nothing. Recorded because the brief asked specifically about the Hsiung Feng land-attack cruise missile and the answer is that the game is right to withhold it from the fleet."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "land attack",
+   "unit": "all 12 KPA surface hulls",
+   "whatTheGameHas": "No KPN surface ship carries a land-attack weapon beyond its gun. The Styx/KN-01/Kumsong-3 line is masked tgt{ground:1,air:0,sea:1,sub:0} in common with every other anti-ship missile in the game.",
+   "whatIsReal": "Correct for every era in the roster. North Korea's Hwasal-1 and Hwasal-2 strategic cruise missiles are ground-launched; the first credible naval land-attack launch was from the Choe Hyon in 2025, after the roster's horizon. A Styx has an active radar or IR seeker and no terrain-following guidance and cannot hold a target ashore.",
+   "fix": "Nothing. One caveat recorded honestly: tgt ground:1 on anti-ship missiles is a game-wide convention (ssm_harpoon, ssm_oniks, ssm_yj18 all carry it), and for the Styx line and for the Hsiung Feng III it is not defensible on its own terms. I did not change it, because changing it for kpa and roc alone would make these two navies uniquely unable to shoot at a coastal target while everyone else can."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "realism over symmetry - the KPA doctrine",
+   "unit": "kpa surface roster, all eras",
+   "whatTheGameHas": "No destroyer, no cruiser, no carrier, no ASW helicopter, no naval SAM and no era patrol row in any of the six eras. The fleet is a gun boat at 280, a corvette at 620, a missile boat at 760 and an LST. softkill 0.03-0.04 against 0.22-0.24 for the ROC and 0.34 for NATO; radarQ 2.5 to 5 against 26 for the Kee Lung; ciws 0; naval quality multiplier 0.48, the lowest of the eight factions, and the DOMAIN_BITE ramp means the gap is nil in 1950 and total in 2020.",
+   "whatIsReal": "Exactly right. The KPN is a coastal-defence force of fast attack craft. It has never owned a ship with a surface-to-air missile, never operated a shipborne helicopter except the single Soho, and its doctrine is to swarm from inlets and accept the losses. kpa_e50_corvette's desc - a 17-tonne torpedo boat listed as the largest thing the navy had, four of which attacked USS Juneau on 2 July 1950 and three of which were sunk in minutes - is the best single line in the naval roster.",
+   "fix": "Nothing. Checked and sound. This is the swarming-coastal-craft doctrine the brief asked me to verify, and the game expresses it through cost, sensors, softkill and quality multipliers rather than by giving North Korea miniature destroyers."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "era identity and dates",
+   "unit": "roc destroyer slot across five eras",
+   "whatTheGameHas": "The destroyer slot rotates identity correctly by decade: Tan Yang (ex-IJN Yukikaze, service 1947) in e50; Chao Yang-class ex-USN Gearing (~1971) in e60; Wu Chin III conversion (1983) in e80; Cheng Kung, licence-built Perry (1993) in e90; Kee Lung, ex-Kidd (2005) in e00 and e20. Every service date matches the real transfer or commissioning.",
+   "whatIsReal": "All five are right, and the e90 desc naming the Chi Yang (ex-Knox, from 1993) and the Kang Ding (La Fayette, from 1996) alongside the Cheng Kung - three new frigate classes in four years - is an accurate summary of the whole decade. The roc_e80_destroyer desc is also correct that the Wu Chin III rebuilds were a direct consequence of nobody being willing to sell Taiwan new hulls.",
+   "fix": "Nothing. The only residual is that e20 has one destroyer slot and the real 2026 ROCN fleet is four Kee Lung plus eight Cheng Kung plus six Kang Ding, so the game represents the rarest of the three. That is a roster-shape limit shared with gbr, fra and deu, not a kpa_roc defect."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "anti-ship missile differentiation",
+   "unit": "ssm_kn01 vs ssm_hf3",
+   "whatTheGameHas": "ssm_kn01: dmg 200, range 9.5, acc 0.58, speed 100, profile \"skim\", intercept 1.45, with the comment \"a 1960s Styx derivative\". ssm_hf3: dmg 285, range 15.0, acc 0.84, speed 310, profile \"loft\", intercept 0.60. intercept above 1.0 means easier than baseline to shoot down.",
+   "whatIsReal": "Right, and it is exactly the axis the IFV defect destroyed elsewhere. The KN-01 is a coastal-defence round evolved from the P-15 Termit: subsonic, large, radar-bright, and killable by any modern point defence. The Hsiung Feng III is a supersonic ramjet with a lofted terminal dive. The game is not giving both navies the same missile.",
+   "fix": "Nothing. Checked and sound."
+  },
+  {
+   "severity": "correct-as-is",
+   "kind": "capability gaps that are real",
+   "unit": "mine warfare, ASW helicopters, carriers, cruisers",
+   "whatTheGameHas": "Mine warfare is covered for both navies by shared fac:\"both\" hulls available from e50 - navminelayer and minesweeper - so neither has a mine-warfare hole. The ROC has asw_helo_r and roc_e00_aswhelo (S-70C(M) Thunderhawk, camo \"rocgrey\" in asw_helo_fit.js); the KPA has none in any era. Neither navy has a carrier or a cruiser in any era.",
+   "whatIsReal": "All correct. Taiwan operates around 18-20 S-70C(M) ASW helicopters from the Cheng Kung and Kang Ding frigates; North Korea has no shipborne ASW helicopter and never has. Neither has ever had a carrier or a cruiser. Mine warfare matters enormously to both - it is the KPN's most credible capability and the ROCN's primary counter-landing tool - and the shared hulls cover it.",
+   "fix": "Nothing. Checked and sound."
+  }
+ ],
+ "edits": [
+  {
+   "file": "js/rules.js",
+   "why": "Adds the two naval SAMs Taiwan actually fields. sam_sm2mr is the Kee Lung's SM-2MR Block IIIA - the ROC's only area air defence, currently modelled as the Cheng Kung's SM-1MR. sam_tc2n is the TC-2N Sea Sword II in the Ta Chiang batch's 16-cell launcher from 2021, Taiwan's first home-built shipboard SAM. Inserted immediately after sam_sm1 so the three sit in capability order.",
+   "anchor": "  sam_sm1: { name:\"SM-1MR Standard\", dmg:150, warhead:\"flak\", range:10.5, reload:5.2, burst:1,\n    acc:0.74, proj:\"missile\", speed:19,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n",
+   "exactCount": 1,
+   "newCode": "  sam_sm1: { name:\"SM-1MR Standard\", dmg:150, warhead:\"flak\", range:10.5, reload:5.2, burst:1,\n    acc:0.74, proj:\"missile\", speed:19,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n  /* SM-1MR is the CHENG KUNG's missile - a Mk 13 single rail on a licence-built\n     Perry. It is NOT what the Kee Lung fires. The four ex-Kidd hulls came across\n     in 2005-06 with SM-2MR Block IIIA and about 150 rounds of it, and that is a\n     generation up: Block IIIA flies inertial with midcourse update and only\n     needs an illuminator for the last seconds, so one ship can hold several\n     engagements at once, where every SM-1 in the air occupies a director for\n     its whole flight. These four ships are the ONLY area air defence the ROC\n     Navy has and the reason anything else it owns can leave harbour, so the\n     distinction is the single most important fact about the Taiwanese fleet.\n     Still short of sam_sm2: the fire control is Mk 74 and the radar an SPS-48E\n     of 1970s design, there is no cooperative engagement, and no SM-6. */\n  sam_sm2mr: { name:\"SM-2MR Block IIIA\", dmg:168, warhead:\"flak\", range:12.6, reload:4.0, burst:2,\n    burstDelay:0.4, acc:0.83, proj:\"missile\", speed:20,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n  /* TC-2N Sea Sword II, the naval Sky Sword: an active-radar seeker missile\n     derived from the TC-2 air-to-air round, in a 16-cell vertical launcher on\n     the Ta Chiang batch of the Tuo Chiang class from 2021. Taiwan's first\n     home-built shipboard SAM and the first air defence of any kind on a ROCN\n     hull that is not a recycled American destroyer. Local-area, not fleet\n     area: roughly 15-30 km, so it protects the ship and what is beside her,\n     which is why it sits between RAM and SM-1 here rather than beside SM-2. */\n  sam_tc2n: { name:\"TC-2N Sea Sword II\", dmg:135, warhead:\"flak\", range:6.8, reload:4.4, burst:2,\n    burstDelay:0.35, acc:0.80, proj:\"missile\", speed:20,\n    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:\"missile\" },\n"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "MISSILE_PROFILE rows for the two new rounds. Without them the fallback loop at the tail of rules.js assigns profile by range and intercept 1.0. SM-2MR is harder to defeat than SM-1 (0.85) and easier than SM-2 (0.60); Sea Sword II is a smaller round than either.",
+   "anchor": "  sam_sm1:     { profile:\"pop\", intercept:0.85 },",
+   "exactCount": 1,
+   "newCode": "  sam_sm1:     { profile:\"pop\", intercept:0.85 },\n  sam_sm2mr:   { profile:\"pop\", intercept:0.68 },\n  sam_tc2n:    { profile:\"pop\", intercept:0.74 },"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "MISSILE_SPEED rows. Mandatory: the normalisation loop directly below sets any missile with speed under 60 to a flat 130, so a new interceptor that is not named here is slowed to sea-skimmer pace. 580 and 600 sit just under sam_sm2's 620.",
+   "anchor": "  sam_sm2:     620, sam_hhq9: 610, sam_shtil: 520, sam_sm1: 520,",
+   "exactCount": 1,
+   "newCode": "  sam_sm2:     620, sam_hhq9: 610, sam_shtil: 520, sam_sm1: 520,\n  sam_sm2mr:   580, sam_tc2n: 600,"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "The Tuo Chiang's Phalanx Block 1B was never in the weapons array even though the unit carries ciws:0.30 and warship_specs draws the mount, and the Ta Chiang batch's 16 Sea Sword II cells were absent entirely - the only new-build ROCN air defence of the decade.",
+   "anchor": "  corvette_r:    { weapons:[\"navgun_76\",\"ssm_hf3\"], sonar:3.2, vls:0, helo:0, radarQ:12, ciws:0.30 },",
+   "exactCount": 1,
+   "newCode": "  /* The Tuo Chiang mounts a Phalanx Block 1B on the after deckhouse - the unit\n     already carried ciws:0.30 and the hull spec already draws the mount, but\n     nothing was in the weapons array to fire it. The 16-cell Sea Sword II\n     launcher is the Ta Chiang batch from 2021, which by now is most of the\n     class. vls stays 0: those cells take one missile type, not a Mk 41 farm. */\n  corvette_r:    { weapons:[\"navgun_76\",\"ssm_hf3\",\"sam_tc2n\",\"ciws_phalanx\"], sonar:3.2, vls:0,\n                   helo:0, radarQ:12, ciws:0.30 },"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "The Kee Lung fires SM-2MR Block IIIA, not the Cheng Kung's SM-1MR. destroyer_r was the only user of sam_sm1 in the whole roster, so sam_sm1 is left defined and free for a Cheng Kung hull if one is ever added.",
+   "anchor": "  destroyer_r:   { weapons:[\"navgun_mk45\",\"sam_sm1\",\"ssm_hf3\",\"asw_mk54\",\"ciws_phalanx\"],",
+   "exactCount": 1,
+   "newCode": "  destroyer_r:   { weapons:[\"navgun_mk45\",\"sam_sm2mr\",\"ssm_hf3\",\"asw_mk54\",\"ciws_phalanx\"],"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "A hull called a Missile Boat whose only weapon is a 12.7 mm machine gun. The missile cannot be added because role patrol is in ERA_TIMELESS and this hull is buildable in 1950, so the name is what has to give. The comment records why, so nobody 'fixes' it by adding a 1988 missile to a 1950 boat.",
+   "anchor": "  boat_r: { fac:\"roc\", role:\"patrol\", name:\"Kuang Hua VI\", full:\"Kuang Hua VI Missile Boat\", cat:\"naval\",",
+   "exactCount": 1,
+   "newCode": "  /* Named for a missile it does not carry, and it cannot be given one: `patrol`\n     is in ERA_TIMELESS, so this hull is buildable in 1950 and a Hsiung Feng II\n     of 1988 has no business there. The ROCN missile craft are missileboat_r and\n     corvette_r; what is timeless about this slot is a fast gun boat, which the\n     ROCN has kept in commission continuously - PT boats off the Tachens in the\n     1950s, Hai Ou from 1978, the KH-6 hull today. So the gun is right and the\n     name was the lie. */\n  boat_r: { fac:\"roc\", role:\"patrol\", name:\"Kuang Hua VI\", full:\"Kuang Hua VI-class inshore patrol craft\", cat:\"naval\","
+  },
+  {
+   "file": "js/rules.js",
+   "why": "Makes the card text agree with the loadout and points the reader at the hulls that do carry Hsiung Feng, so the capability does not read as missing from the faction.",
+   "anchor": "    layer:\"sea\", weapons:[\"hmg\"], prereq:[\"navalyard\"], tech:1, turret:true, tturn:2.4,\n    desc:\"Fast stealth-shaped inshore boat. The quickest hull in the game \u2014 built to sortie from a cave and run.\" },",
+   "exactCount": 1,
+   "newCode": "    layer:\"sea\", weapons:[\"hmg\"], prereq:[\"navalyard\"], tech:1, turret:true, tturn:2.4,\n    desc:\"Fast stealth-shaped inshore boat, gun-armed only. The quickest hull in the game - built to sortie from a hardened shelter, look, and run. The Hsiung Feng rounds are on the missile boat and the Tuo Chiang, not here.\" },"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "The old clause 'no air defence beyond its own gun' becomes false the moment sam_tc2n and ciws_phalanx are on the hull - the exact desc-versus-loadout defect this audit exists to remove, in reverse. Replaced with the limits that are still true: no endurance, no towed array, and local rather than fleet air cover.",
+   "anchor": "  desc:\"Tuo Chiang is a modern stealth catamaran and the one genuinely current warship \" +\n       \"in the fleet - fast, low-signature and heavily armed for its tonnage, but with \" +\n       \"no endurance and no air defence beyond its own gun.\" });",
+   "exactCount": 1,
+   "newCode": "  desc:\"Tuo Chiang is a modern stealth catamaran and the one genuinely current warship \" +\n       \"in the fleet - fast, low-signature and heavily armed for its tonnage, but with \" +\n       \"no endurance and no sonar tail. The Ta Chiang batch from 2021 added sixteen \" +\n       \"Sea Sword II cells: local air defence, not fleet cover.\" });"
+  },
+  {
+   "file": "js/rules.js",
+   "why": "The Nampo class is an amphibious landing craft, not a corvette. The KPN gun corvette is the Sariwon, which the game's own kpa_e80_corvette description already names. This is the source literal; the name is overridden again further down the file, so both have to change (edit 10).",
+   "anchor": "  corvette_k: { fac:\"kpa\", role:\"corvette\", name:\"Nampo Corvette\", full:\"Nampo-class Corvette\", cat:\"naval\",",
+   "exactCount": 1,
+   "newCode": "  /* The Nampo class is a ~27 m P-6-derived LANDING craft - IISS counts about\n     ninety of them under amphibious lift, not under combatants. The KPN gun\n     corvette is the Sariwon, two hulls on a Soviet Tral minesweeper form with\n     a 100 mm forward and a wall of 14.5 mm. kpa_e80_corvette already says so\n     in its own description. */\n  corvette_k: { fac:\"kpa\", role:\"corvette\", name:\"Sariwon Corvette\", full:\"Sariwon-class Corvette\", cat:\"naval\","
+  },
+  {
+   "file": "js/rules.js",
+   "why": "The second half of the rename trap: this Object.assign overwrites the name set 1,360 lines earlier, so editing only the source literal would leave 'Nampo-class Patrol Craft' on the card. Verified by resolving under jsc, not by reading the source.",
+   "anchor": "  name:\"Nampo-class Patrol Craft\",",
+   "exactCount": 1,
+   "newCode": "  name:\"Sariwon-class Corvette\","
+  },
+  {
+   "file": "js/rules.js",
+   "why": "Describes the ship the unit now is: two hulls, about 650 tonnes, on a Soviet Tral minesweeper form. Keeps the closing sentence about harbour defence, which was the best thing in the old text and is still true.",
+   "anchor": "  desc:\"A coastal patrol craft with an elderly gun and a pair of short-ranged missiles. \" +\n       \"North Korea's surface fleet exists to defend its own harbours and cannot \" +\n       \"operate beyond sight of the coast.\" });",
+   "exactCount": 1,
+   "newCode": "  desc:\"Two hulls, about 650 tonnes, built on a Soviet Tral minesweeper form: one \" +\n       \"100mm forward, a wall of manually laid 14.5mm, and a pair of short-ranged \" +\n       \"missiles. North Korea's surface fleet exists to defend its own harbours and \" +\n       \"cannot operate beyond sight of the coast.\" });"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. The Kee Lung is Taiwan's only area-air-defence ship and her SM-2MR Block IIIA could not engage an aircraft: tgt air was 0. The anchor runs from the weapon id through the tgt block because a bare tgt block repeats hundreds of times in this generated file.",
+   "anchor": "\"w_e00_roc_destroyer\": {\n  \"name\": \"SM-2MR Block IIIA via Mk26 launchers\",\n  \"dmg\": 119,\n  \"warhead\": \"he\",\n  \"range\": 11.4,\n  \"reload\": 3.67,\n  \"burst\": 2,\n  \"burstDelay\": 0.45,\n  \"acc\": 0.78,\n  \"proj\": \"shell\",\n  \"speed\": 720,\n  \"aoe\": 0.9,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 0,\n   \"sea\": 1,\n   \"sub\": 0\n  },",
+   "exactCount": 1,
+   "newCode": "\"w_e00_roc_destroyer\": {\n  \"name\": \"SM-2MR Block IIIA via Mk26 launchers\",\n  \"dmg\": 119,\n  \"warhead\": \"he\",\n  \"range\": 11.4,\n  \"reload\": 3.67,\n  \"burst\": 2,\n  \"burstDelay\": 0.45,\n  \"acc\": 0.78,\n  \"proj\": \"shell\",\n  \"speed\": 720,\n  \"aoe\": 0.9,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 1,\n   \"sea\": 1,\n   \"sub\": 0\n  },"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. The Cheng Kung's Mk 13 launcher with SM-1MR - 40 rounds, the whole point of a Perry - was masked air:0 and could not shoot at aircraft.",
+   "anchor": "\"w_e90_roc_destroyer\": {\n  \"name\": \"Mk13 launcher with SM-1MR\",\n  \"dmg\": 108,\n  \"warhead\": \"he\",\n  \"range\": 11,\n  \"reload\": 3.82,\n  \"burst\": 2,\n  \"burstDelay\": 0.45,\n  \"acc\": 0.75,\n  \"proj\": \"shell\",\n  \"speed\": 720,\n  \"aoe\": 0.9,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 0,\n   \"sea\": 1,\n   \"sub\": 0\n  },",
+   "exactCount": 1,
+   "newCode": "\"w_e90_roc_destroyer\": {\n  \"name\": \"Mk13 launcher with SM-1MR\",\n  \"dmg\": 108,\n  \"warhead\": \"he\",\n  \"range\": 11,\n  \"reload\": 3.82,\n  \"burst\": 2,\n  \"burstDelay\": 0.45,\n  \"acc\": 0.75,\n  \"proj\": \"shell\",\n  \"speed\": 720,\n  \"aoe\": 0.9,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 1,\n   \"sea\": 1,\n   \"sub\": 0\n  },"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "FATAL. The Wu Chin III rebuild existed to put SM-1 aboard four 1945 Gearings - the ROCN's first shipboard SAM - and the mask said air:0.",
+   "anchor": "\"w_e80_roc_destroyer\": {\n  \"name\": \"SM-1 Standard in box launchers\",\n  \"dmg\": 93,\n  \"warhead\": \"he\",\n  \"range\": 10.5,\n  \"reload\": 4,\n  \"burst\": 2,\n  \"burstDelay\": 0.45,\n  \"acc\": 0.71,\n  \"proj\": \"shell\",\n  \"speed\": 720,\n  \"aoe\": 0.9,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 0,\n   \"sea\": 1,\n   \"sub\": 0\n  },",
+   "exactCount": 1,
+   "newCode": "\"w_e80_roc_destroyer\": {\n  \"name\": \"SM-1 Standard in box launchers\",\n  \"dmg\": 93,\n  \"warhead\": \"he\",\n  \"range\": 10.5,\n  \"reload\": 4,\n  \"burst\": 2,\n  \"burstDelay\": 0.45,\n  \"acc\": 0.71,\n  \"proj\": \"shell\",\n  \"speed\": 720,\n  \"aoe\": 0.9,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 1,\n   \"sea\": 1,\n   \"sub\": 0\n  },"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "A 1930s straight-running torpedo was masked air:1 and shot down aircraft. The numbers underneath are the era corvette gun template - burst 4, proj shell, dmg 22 - so the name is widened to account for the G-5's 12.7 mm DShK rather than the stats being rewritten. sub stays 0: a straight-runner does not hunt a submerged boat.",
+   "anchor": "\"w_e50_kpa_corvette\": {\n  \"name\": \"2x 533mm torpedoes in stern troughs\",\n  \"dmg\": 22,\n  \"warhead\": \"he\",\n  \"range\": 5.9,\n  \"reload\": 1.54,\n  \"burst\": 4,\n  \"burstDelay\": 0.16,\n  \"acc\": 0.53,\n  \"proj\": \"shell\",\n  \"speed\": 700,\n  \"aoe\": 0.5,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 1,\n   \"sea\": 1,\n   \"sub\": 0\n  },",
+   "exactCount": 1,
+   "newCode": "\"w_e50_kpa_corvette\": {\n  \"name\": \"2x 533mm torpedoes, 12.7mm DShK for self-defence\",\n  \"dmg\": 22,\n  \"warhead\": \"he\",\n  \"range\": 5.9,\n  \"reload\": 1.54,\n  \"burst\": 4,\n  \"burstDelay\": 0.16,\n  \"acc\": 0.53,\n  \"proj\": \"shell\",\n  \"speed\": 700,\n  \"aoe\": 0.5,\n  \"tgt\": {\n   \"ground\": 1,\n   \"air\": 0,\n   \"sea\": 1,\n   \"sub\": 0\n  },"
+  },
+  {
+   "file": "js/eras.js",
+   "why": "The Tuo Chiang's 'Hsiung Feng II and III anti-ship missiles' were a 76 mm gun wearing a missile's name: dmg 49 and range 7.9 against the KH-6 boat's HF-II at dmg 271 and range 14.3, proj shell, burst 4, and air:1 so the 'anti-ship missiles' shot down aircraft. warship_specs.roc_e00_corvette already declares guns:1 gunCal:76. Renamed to the gun the numbers describe; the class's Hsiung Feng armament is carried by the e20 hull corvette_r with an eight-round fixed magazine. tgt is left g1a1s1 because that is correct for a dual-purpose 76 mm.",
+   "anchor": "\"w_e00_roc_corvette\": {\n  \"name\": \"Hsiung Feng II and III anti-ship missiles\",",
+   "exactCount": 1,
+   "newCode": "\"w_e00_roc_corvette\": {\n  \"name\": \"1x OTO Melara 76mm Super Rapid\","
+  },
+  {
+   "file": "js/warship_specs.js",
+   "why": "Follows the corvette_k rename. A Sariwon is about 62 m on a Tral minesweeper form, not the 27.7 m Nampo landing craft the model was drawing. guns 2 x 14.5 mm is left alone - the Sariwon really does carry a wall of 14.5 mm, so the existing mount description still holds.",
+   "anchor": "  corvette_k: {era:\"e20\", fac:\"kpa\", role:\"corvette\", designation:\"Nampo class\", len:27.7, beam:6.7,",
+   "exactCount": 1,
+   "newCode": "  corvette_k: {era:\"e20\", fac:\"kpa\", role:\"corvette\", designation:\"Sariwon class\", len:62, beam:7.2,"
+  }
+ ],
+ "proof": "WHAT I MEASURED, and how.\n\n1. RESOLUTION HARNESS. jsc at /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc over a concatenation of `var window=this;` + js/util.js + js/config.js + js/facts.js + js/rules.js + js/eras.js + js/heavyair.js + js/generations.js. Every loadout, weapon name, tgt mask, from/to stamp and desc in the inventory above is what UNITS and WEAPONS hold AFTER generations.js rewrites them - not what the source lines say. This caught three things a source read would have missed: corvette_k's gun is renamed \"57mm twin, manual\" by the NAVGUN table in generations.js; corvette_k's name is overwritten by an Object.assign 1,360 lines after its definition; and boat_k's source desc (\"Small rocket-armed patrol boat\") is dead text replaced by the NAVY assign.\n\n2. ANCHOR UNIQUENESS. Every one of the 17 anchors verified with python3 str.count against the file, not grep. All 17 returned exactly 1. Re-verified a second time against the live repo minutes before writing this, because two sibling workflows are editing js/rules.js concurrently - the patch script asserts count==1 per anchor and applied clean on a fresh copy of the current tree (\"KPAROC PATCH APPLIED / ANCHORS STILL VALID ON LIVE REPO\").\n\n3. DANGLING REFERENCE SWEEP, PATCHED. With all 17 edits applied to a copy of the current repo, jsc walked every unit and every building and resolved each weapon id: \"dangling refs across all 1135 units = 0\". The two new weapon ids sam_sm2mr and sam_tc2n resolve on destroyer_r and corvette_r respectively, and both carry the MISSILE_PROFILE and MISSILE_SPEED rows rather than falling through to the speed-130 normaliser - confirmed by printing the resolved objects: \"SM-2MR Block IIIA dmg168 rng12.1 g0a1s0u0\" and \"TC-2N Sea Sword II dmg135 rng6.5 g0a1s0u0\". The ranges are 12.6 and 6.8 pre-multiplier; generations.js applies the roc naval quality factor 0.72 through dmul and trims them, which is the system working.\n\n4. THE FIVE eras.js FLIPS, VERIFIED POST-PATCH: w_e80_roc_destroyer \"SM-1 Standard in box launchers\" now g1a1s1u0; w_e90_roc_destroyer \"Mk13 launcher with SM-1MR\" g1a1s1u0; w_e00_roc_destroyer \"SM-2MR Block IIIA via Mk26 launchers\" g1a1s1u0; w_e50_kpa_corvette \"2x 533mm torpedoes, 12.7mm DShK for self-defence\" g1a0s1u0; w_e00_roc_corvette \"1x OTO Melara 76mm Super Rapid\" g1a1s1u0.\n\n5. BEHAVIOUR SUITE. Run on a tree carrying this exact 17-edit set: \"==== 52 passed, 0 failed ====\" and \"runtime errors: NONE\". index.html load check on the same tree: element id=\"errbox\" empty.\n\n6. HONEST CAVEAT ON ITEM 5. That suite run was against a snapshot of the repo taken earlier in this session. When I re-ran it against the current tree, headless Chrome began failing with exit 144 before producing any output. I ran a CONTROL on the UNPATCHED live repo - the same command on file:///Users/hjiang/Desktop/redalert/_behtest.html - and it fails identically with exit 144, while Chrome on about:blank succeeds with exit 0. The failure is environmental, most likely contention with the two sibling workflows also driving headless Chrome on this machine, and it is not caused by these edits. The suite should be re-run once the machine is quiet. The jsc evidence in items 3 and 4 is against the current tree and is unaffected.\n\n7. SCOPE EVIDENCE FOR THE SYSTEMIC AIR:0 CLAIM. I dumped every weapon on every destroyer, cruiser, carrier and frigate role across all eight factions. All 41 era destroyers and all 17 era cruisers carry a single weapon masked tgt air:0, including nato_e90_destroyer named \"90-96 cell Mk 41 VLS with SM-2/ESSM/Tomahawk\", pact_e60_destroyer named \"2 x M-1 Volna SAM\" and fra_e60_cruiser named \"Terrier and Talos SAM launchers\". Era corvettes and carriers are the exception and do carry air:1. That is measured, not inferred; I corrected only the three ROC instances in my scope.",
+ "risks": [
+  "CONCURRENT EDITS. js/rules.js is being modified live by the two sibling submarine workflows while I worked - between two copies taken minutes apart the roster grew from 1132 to 1135 units and ssm_granit, tlam_p and three Soviet SLBMs appeared. All 17 of my anchors re-verified at count 1 against the current file and none of my edit regions overlaps theirs, but if these are applied later they must be re-checked with python3 str.count first. My scratchpad filenames were also being clobbered by a sibling - the proof runs above were redone under a unique subdirectory once I noticed.",
+  "THE BEHAVIOUR SUITE COULD NOT BE RE-RUN ON THE CURRENT TREE. 52 passed / 0 failed and an empty errbox were measured on an earlier snapshot with this identical edit set; headless Chrome now fails with exit 144 on the patched AND unpatched repo alike. Re-run before committing.",
+  "corvette_r GAINS AIR DEFENCE. Adding sam_tc2n and ciws_phalanx makes the Taiwanese corvette able to shoot at aircraft where it previously could not. That is true of the Ta Chiang batch from 2021 and e20 is the 2020s, but it is a balance change, not just a data correction, and the owner may prefer the prototype-only reading in which the class has no SAM.",
+  "corvette_k RENAME LEAVES A STALE COMMENT. The NAVGUN block in js/generations.js justifies the Korean gun substitution with the sentence 'having Nampo-class patrol craft carry an OTO Melara is a jarring miss'. The substitution logic is unaffected - it keys on the weapon name /OTO 76mm/, not the unit name - but the prose now names a class the roster no longer has. Worth one word when someone is next in that file.",
+  "corvette_k GEOMETRY. Edit 17 changes the hull from 27.7 m to 62 m, which is a visible 3D change. The warship_specs comment above it still describes 'Crude P-6 derived patrol craft... manually worked 37 mm mounts fore and aft', which is the Nampo, not the Sariwon. I did not rewrite it because the mount description is still broadly right for a KPN coastal hull, but it should be revisited.",
+  "sam_sm1 BECOMES AN ORPHAN. After edit 5, destroyer_r no longer uses it and nothing else does. Harmless - an unused weapon definition does not crash, only a dangling reference does - and it is the correct missile for a Cheng Kung, so it is worth leaving defined rather than deleting.",
+  "I CHANGED NO FILE IN THE REPO. Everything above was applied and tested only in /private/tmp/claude-501/-Users-hjiang-Desktop-redalert/6321f229-fd3c-451c-bfae-d045a3e13cf4/scratchpad/SURF_KPAROC/live and .../tree. The applier script is at .../SURF_KPAROC/apply_kparoc.py and asserts every anchor at count 1 before writing.",
+  "ANTI-SHIP MISSILES STILL CARRY tgt ground:1 ON BOTH ROSTERS. ssm_kn01 and ssm_hf3 can bombard land. That is indefensible for a Styx derivative and for a ramjet anti-ship missile with no terrain-following guidance, but it is a game-wide convention shared by Harpoon, Oniks and YJ-18, and correcting it for these two navies alone would make them uniquely unable to engage a coastal target. Flagged, not changed - it needs a roster-wide decision.",
+  "THE 2025 KPN DESTROYER IS STILL ABSENT. The Choe Hyon class gives North Korea its first area air defence and first naval land-attack cruise missile. rules.js states the KPA's lack of a destroyer as deliberate content, and that statement predates April 2025. Needs the owner's call, not a patch."
+ ]
+}
