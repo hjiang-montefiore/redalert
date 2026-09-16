@@ -1073,15 +1073,37 @@ try{
     var far=tile(P,"ground",14);
     if(far){
       var sam3=Game.placeBuilding(E,"sam",far.x,far.y,true);
+      /* ENOUGH GENERATION TO ACTUALLY LIGHT IT. This check sat failing for a
+         long time and the cause turned out not to be the ESM picture at all:
+         by this point the suite has stacked several SAMs and a dozen
+         structures on the enemy across earlier sections, its grid could not
+         carry them, and the brownout rule - which this project added on
+         purpose, "when lower power the radar, jammer, silo and sam should not
+         work" - correctly switched the battery off. A dark SAM radiates
+         nothing and a Weasel that hears nothing is RIGHT. Build power until
+         the grid is actually up, then test the receiver. */
       for(var i=0;i<4;i++){ var p3=Game.placeBuilding(E,"power",far.x+3+i*3,far.y+4,true); if(p3) p3.buildProgress=1; }
+      for(var gp=0; gp<14 && E.powerRatio() < 1.05; gp++){
+        var pe=Game.placeBuilding(E,"power",far.x-4-gp*3,far.y+4,true);
+        if(pe) pe.buildProgress=1; else break;
+      }
+      Game.tick(CFG.DT);
       if(sam3){
         sam3.buildProgress=1;
         var blind=spawn(P,"sead_n",far,-8,0) || spawn(P,"ew_n",far,-8,0);
         if(blind){
           blind.parked=false; blind.ammo=blind.ammoMax;
           var heardAlone = Game.esmPlot ? Game.esmPlot(P).has(sam3.id) : false;
+          /* Reports WHY on a miss. The set size alone said nothing, and this
+             check has sat failing for a while behind that. */
+          var dEs = Math.hypot(blind.x-sam3.x, blind.y-sam3.y)/32;
+          var loudEs = ((sam3.def.radar||sam3.def.jam)||0) * (Game.ESM_GAIN||1.9);
           chk("a Weasel hears a radiating battery on its own receiver", heardAlone,
-              "esmPlot holds " + (Game.esmPlot?Game.esmPlot(P).size:0) + " emitters");
+              "esmPlot holds " + (Game.esmPlot?Game.esmPlot(P).size:0) + " emitters" +
+              "; ear emitting=" + Game.emitting(blind) +
+              ", sam radiating=" + Game.jamming(sam3) +
+              ", range " + dEs.toFixed(1) + " of " + loudEs.toFixed(1) + " tiles" +
+              ", ear dead=" + blind.dead);
           chk("and that is enough to engage it, unseen",
               Game.airPlotKnows ? Game.airPlotKnows(P,sam3) : false,
               "visibleTo=" + Game.visibleTo(P,sam3) + " airPlotKnows=" +

@@ -89,8 +89,13 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 - [x] The AA Battery scores on the close-in intercept layer
 - [x] "aggressive stance overrides the routing" - FIXED as a side effect of
       routing pickAirTarget by capability. It was never test isolation.
-- [!] "a Weasel hears a radiating battery on its own receiver" still fails in a
-      full run and passes in a split one. Present at HEAD before this work.
+- [x] "a Weasel hears a radiating battery on its own receiver" - CLOSED, and it
+      was never test isolation. The SAM was DARK: the suite stacks several
+      batteries and a dozen structures on the enemy across earlier sections, the
+      grid could not carry them, and the brownout rule switched the battery off.
+      A Weasel that hears nothing from an unpowered radar is right. The test
+      builds generation until the grid is up, and now reports emitting/
+      radiating/range on a miss instead of only a set size.
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`,
       which conflates the hull's service date with the set inside it. This is a
       modelling gap and needs an owner decision, not a fix from me.
