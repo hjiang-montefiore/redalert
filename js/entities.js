@@ -2031,16 +2031,29 @@ class Unit {
         this.order = resume ? { type: "tank", target: tanker, then: resume }
                             : { type: "tank", target: tanker };
       } else {
-        /* Deliberately `standing`, not `resume`: coming home ENDS a strike, and
-           a tanker is what turns one sortie into a sustained one. That is the
-           whole reason to buy the aircraft, so the asymmetry is the feature -
-           break off to a boom and you go back to the target, break off to the
-           ramp and the sortie is over. Measured what happens if this line
-           resumes an attack too: the bomber rearms and returns for ever, 11
-           passes and 125,644 damage on a target 62 tiles out with NO tanker
-           against 8 passes with one, i.e. the STRIKE button becomes an
-           unlimited bombardment and the tanker becomes worthless. */
-        this.order = standing ? { type: "rtb", then: standing } : { type: "rtb" };
+        /* ---- AN ORDER THE PLAYER GAVE SURVIVES THE TURNAROUND ----
+           (owner) "b52 and ac130 attacking the same unit wiill hanger."
+           They did, and it was deliberate: this line used `standing`, which is
+           null for a strike, so breaking off for fuel or ammunition ENDED the
+           attack. The reasoning was that a tanker should be what turns one
+           sortie into a sustained one. The cost of it, measured: a B-52H and
+           an AC-130J both ordered onto one target made a few passes each, went
+           home, rearmed, and SAT ON THE RAMP FOR EVER - the Buff parked at
+           t=100 with ammo 20 of 20 and fuel 100 of 100 while the thing it had
+           been sent to kill stood there. The player's order simply evaporated,
+           with no message and nothing to click.
+           An order is a standing instruction. It is carried across the ramp
+           the same way it is already carried across the boom, and the aircraft
+           goes back until the target is dead or the player says otherwise.
+           WHAT THIS COSTS, stated rather than discovered later: the tanker no
+           longer makes the difference between one sortie and many. What it
+           makes now is the difference between CONTINUOUS pressure and
+           intermittent pressure - the boom removes a turnaround of forty-odd
+           seconds each way, and an aircraft on the ground is an aircraft not
+           shooting. That is a smaller edge than it had, and it is an honest
+           one; the previous arrangement bought the tanker's value by throwing
+           the player's order away. */
+        this.order = resume ? { type: "rtb", then: resume } : { type: "rtb" };
       }
       /* ---- AND STOP, BECAUSE `o` IS NOW STALE ----
          (owner) "the fuel only being added when the aircraft back to base."

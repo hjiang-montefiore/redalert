@@ -1279,6 +1279,58 @@ try{
         g2c > g2d + 0.5, "E-2C genContest = "+g2c.toFixed(3)+" vs E-2D "+g2d.toFixed(3));
   })();
 
+  /* ====== BUG 41: an ordered strike survives the turnaround ====== */
+  log("\n[41] A BOMBER GOES BACK");
+  (function(){
+    /* (owner) "b52 and ac130 attacking the same unit wiill hanger." They did:
+       both made a few passes, went home to rearm, and SAT ON THE RAMP for the
+       rest of the match with full tanks and full pylons while the thing they
+       had been sent to kill stood there. Measured before: the Buff parked at
+       t=100 with ammo 20/20 and fuel 100/100, target untouched from then on. */
+    var land=tile(P,"ground",6);
+    if(!land){ chk("strike scenario built", false, "no ground"); return; }
+    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    if(ab) ab.buildProgress=1;
+    tick(2);
+    var bId=unitFor("nato","heavybomber","e20"), gId=unitFor("nato","gunshipair","e20");
+    var b=bId?Game.spawnUnitAt(P,bId,land.x*32+16,land.y*32+16):null;
+    var g=gId?Game.spawnUnitAt(P,gId,(land.x+1)*32+16,land.y*32+16):null;
+    var tgt=Game.spawnUnitAt(E,"mbt_p",(land.x+10)*32+16,land.y*32+16);
+    if(!b||!g||!tgt){ chk("strike scenario built", false, "spawn failed"); return; }
+    b.parked=false; g.parked=false; tgt.stance="hold";
+    b.fuel=b.fuelMax; g.fuel=g.fuelMax;
+    tgt.hp=tgt.maxHp=200000;                 // durable, so the sortie must cycle
+    b.give({type:"attack", target:tgt});
+    g.give({type:"attack", target:tgt});
+    var hp0=tgt.hp, bRearmed=false, gRearmed=false, bBack=false, gBack=false;
+    var roundsAfter=0;
+    for(var i=0;i<180*30;i++){ tick(1);
+      if(b.parked) bRearmed=true;
+      if(g.parked) gRearmed=true;
+      if(bRearmed && !b.parked && b.order && b.order.type==="attack") bBack=true;
+      if(gRearmed && !g.parked && g.order && g.order.type==="attack") gBack=true;
+      if(bBack || gBack){
+        var ps=Combat.projectiles||[];
+        for(var q=0;q<ps.length;q++){ var pr=ps[q];
+          if((pr.shooter===b||pr.shooter===g) && !pr._s41){ pr._s41=1; roundsAfter++; } }
+      }
+    }
+    chk("both aircraft went home to rearm", bRearmed && gRearmed,
+        "B-52 "+bRearmed+", AC-130 "+gRearmed);
+    chk("and both went BACK to the target they were given", bBack && gBack,
+        "B-52 returned="+bBack+", AC-130 returned="+gBack+
+        "  final orders "+(b.order?b.order.type:"-")+"/"+(g.order?g.order.type:"-"));
+    /* Rounds, not net hit points: the target is inside its owner's base and
+       is repaired faster than two aircraft can hurt it, so its hp actually
+       RISES over the run. What is being tested is that the sortie continues,
+       and a round leaving the aircraft after it has been home and back is
+       exactly that. */
+    chk("and they are still putting rounds on it after the turnaround",
+        roundsAfter > 0, roundsAfter+" rounds fired after coming back");
+    if(b&&!b.dead) b.dead=true; if(g&&!g.dead) g.dead=true;
+    if(tgt&&!tgt.dead) tgt.dead=true;
+  })();
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

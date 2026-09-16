@@ -3690,11 +3690,22 @@ function makeCommander() {
          quarter of an hour of a battle and could not buy a 34-barrel air
          defence vehicle, because it had eleven. Money it cannot spend is worth
          nothing; another well is worth a great deal. */
+      /* AND THE WELLS KEEP PACE. With the force ceilings on a clock, six
+         derricks is the new binding constraint: measured, a Warlord finished
+         with 40,088 credits and TWENTY-NINE barrels, which is money it cannot
+         turn into anything. It only ever builds where a spot actually exists,
+         so this is bounded by the map rather than by a number - which is what
+         bounds a player too. */
       else if (P.countBuilding("derrick") <
-                 ((P.oil < 70 && P.cash > 3500) || (eraStep && P.oil < eraStep.oil) ? 6 : 3) &&
+                 (((P.oil < 70 && P.cash > 3500) || (eraStep && P.oil < eraStep.oil) ? 6 : 3)
+                  + Math.floor(G.time / 300)) &&
                can("derrick") && findOilSpot() && P.cash > 1200) tryB("derrick");
       /* fuel and vault space are the other half of a generational step */
-      else if (eraNeedSilo && P.countBuilding("silo") < 4 && can("silo") && P.cash > 700) tryB("silo");
+      /* Storage grows with the match for the same reason the force ceilings
+         do: a bigger army burns more barrels, and a vault that stops at four
+         caps the whole thing however many wells are running. */
+      else if (P.countBuilding("silo") < 4 + Math.floor(G.time / 300) &&
+               (eraNeedSilo || P.oil < 140) && can("silo") && P.cash > 700) tryB("silo");
       else if (nYard < 1 && can("navalyard") && findShoreSpot() && P.cash > 2400 / (D.navalBias || 1)) tryB("navalyard");
       else if (nLab < 1 && nRadar >= 1 && P.cash > 1900) tryB("lab");
       else if (nAir < 1 && P.tech >= 2 && P.cash > 2600 / (D.airBias || 1)) tryB("airbase");
@@ -3712,7 +3723,8 @@ function makeCommander() {
          ramp it already owns is nearly full and there is money spare, capped
          by how much this commander cares about air power at all. */
       else if (nAir >= 1 && P.tech >= 2 && P.cash > 3200 &&
-               nAir < Math.min(4, 1 + Math.round(1.6 * (D.airBias || 1))) &&
+               nAir < Math.min(8, 1 + Math.round(1.6 * (D.airBias || 1)) +
+                               Math.floor(G.time / 360)) &&
                count(u => u.def.cat === "aircraft") >=
                  nAir * ((BUILDINGS.airbase && BUILDINGS.airbase.pads) || 4) - 1)
         tryB("airbase");
@@ -4205,10 +4217,13 @@ function makeCommander() {
          the first aeroplane is never built by anybody. A floor of two is what
          an air force keeps up regardless; the ceiling still answers to what
          has actually been seen. */
-      const wantFtr = Math.max(2, Math.min(4, humanAir));
+      /* and the same clock on every air ceiling - see the naval note */
+      const surgeA = P.oil > 120 ? Math.floor(G.time / 240) : 0;
+      const wantFtr = Math.max(2, Math.min(4, humanAir)) + surgeA;
       const canA = fighters < wantFtr && P.tech >= 2;
-      const canH = helos < 3 && P.tech >= 2;
-      const canC = P.tech >= 3 && fielded("aircraft", d => d.role === "cas") < 2;
+      const canH = helos < 3 + surgeA && P.tech >= 2;
+      const canC = P.tech >= 3 &&
+                   fielded("aircraft", d => d.role === "cas") < 2 + surgeA;
       if ((canB && tryBuildUnit("stealthbomber")) ||
           (canF && tryBuildUnit("stealthfighter")) ||
           (canA && tryBuildUnit("fighter")) ||
@@ -4260,7 +4275,27 @@ function makeCommander() {
       const ref = hullYardstick(mix);
       let fleetValue = 0;
       for (const u of ships) fleetValue += P.factionCost(u.def) / ref;
-      let capN = Math.round((groundConnected ? 6 : 9) * (D.navalBias || 1));
+      /* ---- NOTHING STOPS GROWING ----
+         (owner) "i don't want AI has any cap and make it harder than current
+         version."
+         The ground army has always grown with the match - wantSize adds two
+         every four minutes - and the fleet did not: it stopped dead at six
+         hulls, nine on water, for the whole game however rich the commander
+         got. So a Warlord with 28,000 credits banked sailed the same navy it
+         had at minute five. The fleet is on the same clock as the army now,
+         and the same is true of every air ceiling below. What still bounds it
+         is what bounds a player: ore, ramp space and slipways. */
+      /* FUEL-AWARE, and that qualification is the whole difference between a
+         harder commander and a lopsided one. Measured with the ceilings simply
+         removed: the fleet went from eleven hulls to twenty-two and the air
+         force went from four fighters, three gunships and a Weasel to TWO
+         GUNSHIPS - because at t=1500 that commander held 14,262 credits and
+         TWENTY-THREE BARRELS, and an aeroplane costs between 34 and 90. The
+         old cap was acting as a fuel budget without saying so. Growth past the
+         base ceiling is allowed while there is fuel to spare and stops when
+         there is not, so no one domain can drain the tank the others need. */
+      const surge = P.oil > 120 ? Math.floor(G.time / 240) : 0;
+      let capN = Math.round((groundConnected ? 6 : 9) * (D.navalBias || 1)) + surge * 2;
       /* ---- the dome before the fleet ----
          The destroyer, the submarine and the missile boat all list `radar` in
          their prereq and the cruiser lists `lab`, while the naval yard goes up

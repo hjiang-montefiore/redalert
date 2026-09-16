@@ -390,6 +390,7 @@ window.addEventListener("load", function () {
         var dA=null; try{ var it=AI.intelOf(P); }catch(e){}
         lines.push("");
         lines.push("P"+i+" t="+Math.round(Game.time)+"  cash="+Math.round(P.cash)+
+                   "  OIL="+Math.round(P.oil)+"/"+Math.round(P.oilCap?P.oilCap():0)+
                    "  airbases="+(c.bld.airbase||0)+"  navalyards="+(c.bld.navalyard||0)+
                    "  tech="+P.tech);
         lines.push("    AIR : "+fmt(c.air));
