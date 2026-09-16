@@ -61,13 +61,16 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Still to do, biggest first
 
-- [!] Explore/exploit - DESIGNED AND REJECTED. Two of three reviewers returned
-      BROKEN: the reward is uncentred and the drift clamp bounds q absolutely, so
-      every arm converges to the same value and the bandit never exploits -
-      exactly the 'randomness wearing a bandit's clothes' failure. Also: kills
-      count units only, so razing a base scores zero; the 'rear' axis arm is
-      mathematically unreachable; and it reads ref on a 5s liveness invariant
-      using 8s. Needs redesigning, not patching.
+- [x] Explore/exploit - SHIPPED on the third attempt. Three force postures
+      (armour / gunline / swarm) under UCB1 over PER-ARM sample means, with NO
+      centring: a constant common to all arms cancels in the argmax, and that
+      baseline is exactly what broke both earlier designs. Scored on a
+      40-second interval rather than per push, because measurement showed a
+      full match is DECIDED at t=577 having produced exactly ONE push - the
+      sample rate was the binding constraint, not the estimator, and neither
+      adversarial review had looked at it. Measured on three seeds: every
+      commander scores 9-15 intervals, tries all three arms, and separates
+      them (spread 0.12-0.56). Verified by _learn.html.
 - [x] Pre-trained doctrine prior - derived from CFG.DMG, modulating counterMix
 - [x] Surface fleet audit - APPLIED IN FULL. The first pass fixed the six hulls
       the audit files named; sweeping the rest found 34 of 58 air-defence hulls
@@ -116,6 +119,11 @@ command on this machine:
 
 then read the element `id="tout"`. Under load the full run gets killed, so it
 can be split in halves - see the note in this file's history.
+
+`_learn.html` is the learner harness, built on the same pattern: a brain on
+both seats, and it prints each commander's per-arm estimates as the match runs.
+Pass a seed with `?seed=learnB`. Use it for anything that has to be measured
+over a whole match rather than in a scenario.
 
 `_comp.html` is the match harness: it drives `Game.tick` directly with a brain
 on both seats and prints the LIVE composition of each side. It runs 900 game
