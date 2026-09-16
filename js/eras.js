@@ -9022,6 +9022,35 @@ Object.assign(WEAPONS, {
     "burstDelay": 0.35, "acc": 0.52, "proj": "bomb", "speed": 0, "aoe": 2.0,
     "suppress": 48, "ammo": 2, "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 } },
 
+  /* ---- THE AIRCRAFT THAT ACTUALLY BOMBED FROM AN AMERICAN DECK ----
+     The F-14A is correctly denied ground attack above, and that left a real
+     hole the block above could only record: withhold it and the 1980s American
+     carrier has NO strike aircraft at all, which is a bigger falsehood than
+     the one being avoided. The answer is not to arm the Tomcat. It is the
+     aeroplane whose absence created the hole.
+
+     The A-6 Intruder flew from American decks from 1963 to 1997 and was the
+     Navy's only all-weather, night, low-level attack aircraft for most of it.
+     Subsonic, ugly, no gun, no radar for air-to-air, and it could put eighteen
+     thousand pounds on a target in weather that kept everything else aboard -
+     which is why the Tomcat crews did not need to bomb and were not asked to.
+     Three rows, because it is three genuinely different aeroplanes: the A-6A
+     of Vietnam with unguided iron, the A-6E TRAM of 1979 with a turret under
+     the nose that could see and laser-designate at night, and the SWIP of 1990
+     that added Harpoon and SLAM before the type was retired in 1997. */
+  "w_e60_nato_intruder": { "name": "Twenty-eight Mk 82 on five stations", "dmg": 236,
+    "warhead": "he", "range": 2.2, "reload": 1.15, "burst": 2, "burstDelay": 0.35,
+    "acc": 0.70, "proj": "bomb", "speed": 0, "aoe": 2.8, "suppress": 96, "ammo": 2,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 } },
+  "w_e80_nato_intruder": { "name": "TRAM turret, Mk 82s and Paveway II", "dmg": 288,
+    "warhead": "he", "range": 2.5, "reload": 1.10, "burst": 2, "burstDelay": 0.35,
+    "acc": 0.86, "proj": "bomb", "speed": 0, "aoe": 2.8, "suppress": 100, "ammo": 2,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 } },
+  "w_e90_nato_intruder": { "name": "SWIP: Paveway, Harpoon and SLAM", "dmg": 312,
+    "warhead": "he", "range": 2.7, "reload": 1.08, "burst": 2, "burstDelay": 0.35,
+    "acc": 0.88, "proj": "bomb", "speed": 0, "aoe": 2.8, "suppress": 100, "ammo": 2,
+    "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 } },
+
   /* Yak-38M, 1985. The uprated R-28V-300 and the short rolling takeoff bought
      back part of what vertical launch had cost, so the load goes up by about
      half and no further. Still no radar, still a combat radius nearer a
@@ -11168,6 +11197,18 @@ Object.assign(UNITS, {
      and gbr_e60_cfighter already do. */
   nato_e50_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F9F-8 Cougar", full:"Grumman F9F-8 Cougar", cost:760, oil:17, time:14, hp:300, armor:"air", speed:4.6, turn:2.3, sight:7.2, r:16, mass:0, weapons:["w_e50_nato_cfighter","w_e50_nato_cstrike"], prereq:["airbase"], tech:2, from:"e50", to:"e50", service:"1952", confidence:"high", jet:true, ammo:5, gen:1.5, radar:3, radarQ:3, radius:17, rcs:1.1, carrierCapable:true, desc:"The Panther with a swept wing, which is the Navy catching up with the Sabre eighteen months late and from a moving runway. Four 20mm cannon, no radar worth the name, and a landing speed the straight-wing Panther pilots hated. It is on Forrestal's deck because the alternative - a carrier with no fighters - is the thing that was actually wrong here." },
   nato_e60_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F-4B Phantom II", full:"McDonnell F-4B Phantom II", cost:1150, oil:26, time:18, hp:430, armor:"air", speed:7.4, turn:1.9, sight:8.6, r:16, mass:0, weapons:["w_e60_nato_fighter","w_e60_nato_cstrike"], prereq:["airbase"], tech:2, from:"e60", to:"e60", service:"1961", confidence:"high", jet:true, ammo:5, gen:3, radar:6, radarQ:7, radius:27, rcs:1.6, carrierCapable:true, desc:"A Navy aeroplane first and an Air Force one afterwards - the fleet had it in 1961 and Tactical Air Command had to be argued into it. Two engines, two crew, a big APQ-72 and eight missiles, and NO gun, which is the design decision Vietnam spent five years disproving. It shares its armament row with nato_e60_fighter because the fit genuinely was the same Sparrow and Sidewinder pair." },
+  /* The A-6 gets its own role rather than competing with the fighter for the
+     "cfighter" slot: unitFor() answers ONE unit per faction-role-era, so an
+     Intruder written as a cfighter would simply shadow the Tomcat, and a
+     carrier would sail with no fighters at all. "cstrike" is a second deck
+     role beside "cfighter" and "cstealth", and G.deckAircraftFor gives it a
+     share of the deck the way the ASW helicopter already gets the last spot.
+     A real air wing is fighters AND attack aircraft; this is the first time
+     the game has been able to say so. */
+  nato_e60_cstrike: { fac:"nato", role:"cstrike", cat:"aircraft", layer:"air", name:"A-6A Intruder", full:"Grumman A-6A Intruder", cost:1420, oil:30, time:20, hp:470, armor:"air", speed:6.4, turn:1.7, sight:8.6, r:16, mass:0, weapons:["w_e60_nato_intruder"], prereq:["airbase"], tech:2, from:"e60", to:"e60", service:"1963", confidence:"high", jet:true, ammo:5, carrierCapable:true, refuelable:true, radius:30, rcs:1.3, gen:2, desc:"The Navy's first all-weather attack aircraft and, for thirty years, the only one that could find a target at night in bad weather and hit it. Side-by-side seating so the bombardier-navigator could work the radar with the pilot's head in the same picture. Subsonic, no gun, and no air-to-air capability whatsoever - it exists to carry eighteen thousand pounds somewhere unpleasant and come back. This is why the Tomcat crews were never asked to bomb." },
+  nato_e80_cstrike: { fac:"nato", role:"cstrike", cat:"aircraft", layer:"air", name:"A-6E TRAM", full:"Grumman A-6E TRAM Intruder", cost:1560, oil:32, time:21, hp:500, armor:"air", speed:6.5, turn:1.7, sight:9.4, r:16, mass:0, weapons:["w_e80_nato_intruder"], prereq:["airbase"], tech:2, from:"e80", to:"e80", service:"1979", confidence:"high", jet:true, ammo:5, carrierCapable:true, refuelable:true, radius:31, rcs:1.3, gen:3, desc:"TRAM is the little turret under the nose: infrared, laser designator and laser receiver, so one aeroplane could find its own target in the dark and guide its own bomb onto it. That is the whole reason the 1980s American carrier had a strike capability at all, and it is not the Tomcat - the F-14 had no cleared air-to-ground stores until LANTIRN reached the squadrons in 1996." },
+  nato_e90_cstrike: { fac:"nato", role:"cstrike", cat:"aircraft", layer:"air", name:"A-6E SWIP", full:"Grumman A-6E SWIP Intruder", cost:1680, oil:34, time:22, hp:520, armor:"air", speed:6.5, turn:1.7, sight:9.8, r:16, mass:0, weapons:["w_e90_nato_intruder"], prereq:["airbase"], tech:2, from:"e90", to:"e90", service:"1990", confidence:"high", jet:true, ammo:5, carrierCapable:true, refuelable:true, radius:31, rcs:1.3, gen:3, desc:"The Systems/Weapons Improvement Program added Harpoon, SLAM and HARM to an airframe designed in 1957, and then the wings started cracking. Retired in 1997 with nothing to replace it: the Navy handed all-weather deep strike to the F/A-18, which cannot carry as much as far, and has been arguing about that decision ever since." },
+
   nato_e80_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F-14A Tomcat", full:"Grumman F-14A Tomcat", cost:1600, oil:34, time:21, hp:500, armor:"air", speed:7.8, turn:1.9, sight:10.4, r:16, mass:0, weapons:["w_e80_nato_cfighter"], prereq:["airbase"], tech:2, from:"e80", to:"e80", service:"1974", confidence:"high", jet:true, ammo:6, gen:3.5, radar:8, radarQ:10, radius:38, rcs:1.4, carrierCapable:true, desc:"Deck-qualified in 1974 and built around one question: how does a carrier group stop a regiment of Backfires before they release. The answer was the AWG-9, which could track twenty-four contacts and shoot at six, and six AIM-54 Phoenix - the longest-ranged air-to-air weapon anyone fielded for twenty years. It out-reaches every land-based fighter of its decade in this roster, which is the historically correct and slightly uncomfortable answer." },
   nato_e90_cfighter: { fac:"nato", role:"cfighter", cat:"aircraft", layer:"air", name:"F/A-18C Hornet", full:"McDonnell Douglas F/A-18C Hornet", cost:1480, oil:31, time:19, hp:455, armor:"air", speed:7.9, turn:2.1, sight:9.4, r:16, mass:0, weapons:["w_e90_nato_fighter","w_e90_nato_cstrike"], prereq:["airbase"], tech:2, from:"e90", to:"e90", service:"1987", confidence:"high", jet:true, ammo:5, gen:4, radar:6, radarQ:11, radius:30, rcs:0.9, carrierCapable:true, desc:"Shorter-legged than the Tomcat it flew beside and far more useful, because it is a fighter and a bomber in the same sortie and the deck only has so many spots. Two Hornets shot down MiG-21s on the first morning of Desert Storm while still carrying the bombs they went on to drop. Its AMRAAM row is shared with nato_e90_fighter: the missile is the same missile." },
 

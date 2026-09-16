@@ -438,7 +438,16 @@ var Game = (function () {
        is exactly what Moskva and her kind actually were. */
     if (!fighter) return helo;
     const slots = host.deckSlots ? host.deckSlots() : 1;
-    return (slot >= slots - 1 && helo) ? helo : fighter;
+    if (slot >= slots - 1 && helo) return helo;
+    /* A REAL AIR WING IS FIGHTERS AND ATTACK AIRCRAFT. Until the "cstrike"
+       role existed this returned the fighter for every spot but the last, so
+       a deck sailed as a single squadron - and in the 1980s that squadron was
+       F-14As, which carry nothing that can touch the beach. One spot in three
+       goes to the strike aircraft where the navy HAS one; where it does not,
+       nothing changes and the deck is fighters as before. */
+    const strike = deckLegal(unitFor(p.faction, "cstrike", era));
+    if (strike && slots >= 3 && slot % 3 === 1) return strike;
+    return fighter;
   };
 
   /* Fill every empty deck slot. Used when the ship is delivered, and again

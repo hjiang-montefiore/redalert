@@ -4231,7 +4231,11 @@ function makeCommander() {
         if (decks > 0) {
           const embarked = count(u => u.layer === "air" && u.def.carrierCapable);
           if (embarked < decks && P.cash > 1800 && queueLen("aircraft") < 2) {
-            if (tryBuildUnit("cstealth") || tryBuildUnit("cfighter")) return;
+            /* cstrike last of the three on purpose: a deck wants fighters
+               before it wants bombers, and where a navy has no strike
+               aircraft this simply answers null and costs nothing. */
+            if (tryBuildUnit("cstealth") || tryBuildUnit("cfighter") ||
+                tryBuildUnit("cstrike")) return;
           }
         }
         /* A shortfall picker against a reading of the water, not a ladder of

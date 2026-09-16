@@ -44,12 +44,11 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Known data faults, recorded not swept
 
-- [!] The 1980s American carrier has no strike aircraft. The F-14A is correctly
-      withheld from ground attack (LANTIRN reached the squadrons in 1996), but
-      the A-6E Intruder that really did that job from 1963 to 1997 is not in the
-      roster at all - and G.deckAircraftFor fills a deck from the "cfighter"
-      role, so there is nowhere for it to go without a new role. The honest fix
-      is to add the Intruder, not to arm the Tomcat.
+- [x] The 1980s American carrier can strike land - A-6A, A-6E TRAM and A-6E
+      SWIP added in a new "cstrike" deck role, and G.deckAircraftFor now gives
+      one spot in three to a strike aircraft where the navy has one. An e80
+      deck sails as 2 Tomcats, 1 Intruder and an ASW helo instead of a single
+      squadron. The Tomcat is still correctly unable to bomb.
 
 - [x] Corvette air defence - 24 hulls given their real point-defence fit.
 

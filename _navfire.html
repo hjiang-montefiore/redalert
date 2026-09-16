@@ -523,6 +523,50 @@ try{
   strike("J-15 strikes armour",          "cfighter_c",        "mbt_n", 16);
 
   log("");
+  log("[N7] THE 1980s AMERICAN DECK CAN STRIKE THE BEACH");
+  (function(){
+    var eras=["e60","e80","e90"], miss=[];
+    eras.forEach(function(e){ var id=unitFor("nato","cstrike",e); if(!id) miss.push(e); });
+    chk("the Intruder exists in the eras it served", miss.length===0,
+        miss.length?("missing "+miss.join(",")):"A-6A, A-6E TRAM, A-6E SWIP");
+    /* the hole this closes: an e80 US deck with only Tomcats */
+    var f=unitFor("nato","cfighter","e80"), s2=unitFor("nato","cstrike","e80");
+    function ground(id){ var u=UNITS[id]; if(!u) return false;
+      return (u.weapons||[]).some(function(k){var w=WEAPONS[k]; return w&&(!w.tgt||w.tgt.ground);}); }
+    chk("the e80 fighter still cannot bomb, correctly", f && !ground(f),
+        f+" = "+(UNITS[f]?UNITS[f].name:"?"));
+    chk("but the e80 deck now HAS an aircraft that can", !!(s2 && ground(s2)),
+        s2+" = "+(UNITS[s2]?UNITS[s2].name:"?"));
+    chk("and it is carrier-capable", !!(s2 && UNITS[s2].carrierCapable), "deck legal");
+  })();
+  (function(){
+    /* the deck itself: it used to sail as one squadron */
+    var t=tile(P,"sea",6);
+    if(!t){ chk("carrier deck mix", false, "no water"); return; }
+    var cv=spawn(P,"nato_e80_carrier",t,0,0);
+    if(!cv){ chk("carrier deck mix", false, "no carrier"); return; }
+    var slots = cv.deckSlots?cv.deckSlots():0;
+    var kinds={};
+    /* deckAircraftFor reads the OWNER's era, not the hull's, and this harness
+       runs at e20 - where the American strike aircraft is the F-35C and there
+       is correctly no Intruder. Ask the question in the decade being tested. */
+    var wasEra=P.era; P.era="e80";
+    for (var i=0;i<slots;i++){
+      var id=Game.deckAircraftFor(cv,i);
+      if(id) kinds[UNITS[id].role]=(kinds[UNITS[id].role]||0)+1;
+    }
+    P.era=wasEra;
+    chk("an e80 deck is no longer one squadron", Object.keys(kinds).length>=2,
+        slots+" spots -> "+JSON.stringify(kinds));
+    chk("and the strike aircraft is actually on it", !!kinds.cstrike,
+        JSON.stringify(kinds));
+    if(cv&&!cv.dead) cv.dead=true;
+  })();
+
+  strike("A-6E TRAM strikes armour",   "nato_e80_cstrike", "mbt_p", 16);
+  strike("A-6A Intruder strikes",      "nato_e60_cstrike", "mbt_p", 16);
+
+  log("");
   log("==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(window.__errs.length?window.__errs.join(" | "):"NONE"));
 }catch(e){ log("HARNESS ERROR "+e.message+"\n"+e.stack); }
