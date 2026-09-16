@@ -79,7 +79,7 @@ var WEAPONS = {
 
   /* ---------- naval ---------- */
   navgun_57:  { name:"57mm naval gun", dmg:38, warhead:"he", range:7.2, reload:1.5, burst:3, burstDelay:0.22,
-                acc:0.72, proj:"shell", speed:700, aoe:0.7, tgt:{ground:1,air:1,sea:1,sub:0} },
+                acc:0.72, proj:"shell", speed:700, aoe:0.7, tgt:{ground:1,air:0,sea:1,sub:0} },
   navgun_127: { name:"127mm naval gun", dmg:120, warhead:"he", range:11.0, reload:4.2, burst:2, burstDelay:0.5,
                 acc:0.66, proj:"shell", speed:720, aoe:1.5, suppress:30, tgt:{ground:1,air:0,sea:1,sub:0} },
   navgun_203: { name:"203mm main battery", dmg:230, warhead:"he", range:17.0, minRange:3.0, reload:11.0, burst:3, burstDelay:0.45,
@@ -1943,7 +1943,13 @@ Object.assign(WEAPONS, {
                 acc:0.80, proj:"shell", speed:650, suppress:16, tgt:{ground:1,air:0,sea:1,sub:0} },
   howitzer_52:{ name:"155mm 52-calibre howitzer", dmg:150, warhead:"frag", range:17.2, minRange:4.2, reload:7.4, burst:1,
                 acc:0.34, proj:"arc", speed:230, aoe:2.6, suppress:60, tgt:{ground:1,air:0,sea:1,sub:0} },
-  hvm:        { name:"Starstreak HVM", dmg:130, warhead:"cannon", range:6.8, reload:2.4, burst:3, burstDelay:0.05,
+  /* warhead "flak" is the engine's damage class for a round that kills
+     aircraft, not a claim that Starstreak has a fragmenting warhead - it has
+     three tungsten darts and no fuse at all. It was written "cannon" for that
+     reason, and CFG.DMG.cannon.air is 0.00, so every Starstreak in the game
+     fired at an aircraft and could not scratch it. Air is this weapon's ONLY
+     target, so the whole system was inert. See the four era rows in eras.js. */
+  hvm:        { name:"Starstreak HVM", dmg:130, warhead:"flak", range:6.8, reload:2.4, burst:3, burstDelay:0.05,
                 acc:0.88, proj:"missile", speed:1300, aoe:0, tgt:{ground:0,air:1,sea:0,sub:0} },
   sam_camm:   { name:"CAMM soft-launch active SAM", dmg:205, warhead:"flak", range:10.4, reload:4.8, burst:2, burstDelay:0.35,
                 acc:0.91, proj:"missile", speed:680, aoe:0.9, tgt:{ground:0,air:1,sea:0,sub:0} },
@@ -2798,7 +2804,7 @@ Object.assign(WEAPONS, {
     tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"cannon" },
   navgun_76: { name:"OTO 76mm Super Rapid", dmg:52, warhead:"he", range:8.0, reload:1.2, burst:4,
     burstDelay:0.16, acc:0.74, proj:"shell", speed:700, aoe:0.5,
-    tgt:{ground:1,air:1,sea:1,sub:0}, sfx:"shot" },
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"shot" },
 
   /* ---- anti-ship missiles ---- */
   ssm_harpoon: { name:"RGM-84 Harpoon", dmg:265, warhead:"he", range:14.0, minRange:2.0, reload:13.0,
@@ -3230,7 +3236,7 @@ Object.assign(UNITS, {
     desc:"Four boats holding the only British nuclear weapon of any kind. The RAF's WE.177 free-fall bomb went in 1998 and the WE.177A nuclear depth bomb left the ships and helicopters in 1992, so since then the deterrent is this hull and nothing else - one boat at sea, always, unbroken since HMS Resolution sailed on 30 June 1969, the longest continuous deterrent patrol of any nuclear power." },
   carrier_b: { from:"e20", fac:"gbr", role:"carrier", name:"Queen Elizabeth CV", full:"HMS Queen Elizabeth (R08), Queen Elizabeth-class", cat:"naval",
     cost:4150, oil:88, time:53, hp:3300, armor:"heavy", speed:1.6, turn:0.6, sight:13, r:30, mass:0,
-    layer:"sea", weapons:[], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.5, carrier:3, storage:0,
+    layer:"sea", weapons:["ciws_phalanx"], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.5, carrier:3, storage:0,
     desc:"Sixty-five thousand tonnes, two islands, a ski-jump and no catapult - so it flies F-35B and nothing else, and can never operate a fixed-wing early-warning aircraft. Britain invented the steam catapult, the angled deck and the mirror landing sight, gave all three to the United States Navy, and then built a carrier that uses none of them. Two ships, and for years not enough escorts to screen one." },
   cstealth_b: { from:"e20", fac:"gbr", role:"cstealth", name:"F-35B Lightning", full:"Lockheed Martin F-35B Lightning II", cat:"aircraft",
     cost:1780, oil:34, time:22, hp:440, armor:"air", speed:7.9, turn:2.1, sight:11.0, r:16, mass:0,

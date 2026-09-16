@@ -44,6 +44,13 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Known data faults, recorded not swept
 
+- [!] Corvette anti-aircraft fire is now honestly ZERO. Twenty-five corvette gun
+      rows were masked tgt.air with an HE warhead, which deals 0.00 to an
+      aircraft - they were firing blanks and ignoring ships they could hit. The
+      mask is off, so nothing was lost that worked. But most of these ships
+      really did carry a CIWS or a short-range SAM, and giving each its real fit
+      is a pass of its own.
+
 - [!] eras.js defines TWELVE weapon keys twice - w_e60/e80_pact_tankdestroyer,
       w_e60/e80_pact_cfighter, w_e80_pact_carrier, w_e60_pact_aswhelo,
       w_e60_pact_heavy, w_e80_pla_tankdestroyer and more. The later definition
@@ -59,16 +66,20 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
       mathematically unreachable; and it reads ref on a 5s liveness invariant
       using 8s. Needs redesigning, not patching.
 - [x] Pre-trained doctrine prior - derived from CFG.DMG, modulating counterMix
-- [ ] Surface fleet audit - 8 navies, 31 FATAL and 64 major findings, saved in
-      salvage/ and NOT YET APPLIED. Includes four Soviet weapons with inverted
-      target masks, which is a live combat bug, and area-air-defence missing
-      from the Type 45, Type 052D, Horizon, Cassard and Sachsen.
+- [x] Surface fleet audit - APPLIED IN FULL. The first pass fixed the six hulls
+      the audit files named; sweeping the rest found 34 of 58 air-defence hulls
+      could not engage an aircraft at all, and 37 mounts that targeted air with
+      a warhead scoring 0.00 against it. Both closed, 41 live-fire checks.
 - [ ] Restore Britain's V-force and France's Mirage IV
 - [ ] British, French and German 3D models - they borrow American hulls
 
 ## Known and not yet addressed
 
 - [!] The AA Battery scores zero on both intercept layers
+- [!] Two behaviour tests fail in a FULL suite run and pass when it is split in
+      halves - "aggressive stance overrides the routing" and "a Weasel hears a
+      radiating battery". Verified present at HEAD before any of today's work,
+      so it is test isolation, not the code under test.
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`
 - [!] Units defaulted to an era by rules.js:3912 are not marked `eraStamped`,
       so a fabricated date is contested as if it were real
