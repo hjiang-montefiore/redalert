@@ -30,20 +30,19 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 - [x] Minimap attack warning, sign and sound
 - [x] Per-class unit selection audio
 
-## Running now
+## Everything you reported is now done
 
 - [x] Nuclear/ballistic silo countdown is GLOBAL, both sides, like Red Alert 2
-
-- [ ] (workflows stopped - designs salvaged, applying them by hand)
 
 - [x] Era chains - 40 single-machine roles down to 21
 - [x] The scout that parks in your construction yard
 - [x] The navy is too weak - a prereq deadlock, not the dice roll I blamed
 - [x] Fixed-wing aircraft must not hangar; F-35, B-52 and AC-130 ordnance
-- [!] Aircraft flee a detected SAM; EW aircraft engage radars automatically
-      (design written and REVERTED - it did not work when measured; see below)
 
-## Queued
+- [x] SEAD complete: off the ramp, transit routes round a ring, and EW aircraft
+      engage a radiating emitter automatically off a SHARED electronic picture
+
+## Still to do, biggest first
 
 - [ ] Explore/exploit - the AI learns what works instead of repeating
 - [ ] Pre-trained doctrine prior, which learning then overrides
@@ -52,10 +51,6 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 - [ ] British, French and German 3D models - they borrow American hulls
 
 ## Known and not yet addressed
-
-- [x] SEAD complete: off the ramp, transit routes round a ring, and EW
-      aircraft engage a radiating emitter automatically off a SHARED
-      electronic picture (esmPlot) that one listener feeds to the whole force.
 
 - [!] The AA Battery scores zero on both intercept layers
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`
