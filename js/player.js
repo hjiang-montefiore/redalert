@@ -22,7 +22,12 @@ class Player {
     this.tech = 1;
     this.upgrades = {};                 // ap / armor / optics / drive / tech flags
     this.units = []; this.buildings = [];
-    this.stats = { kills: 0, losses: 0, mined: 0, built: 0 };
+    /* killValue and lossValue are the priced halves of kills/losses, written
+       by Combat.kill. A count cannot tell a rifle squad from a cruiser, so a
+       learner reading `kills` learns nothing; these are what ai.js scores a
+       push on. */
+    this.stats = { kills: 0, losses: 0, mined: 0, built: 0,
+                   killValue: 0, lossValue: 0 };
     this.defeated = false;
     this.allied = false;
 

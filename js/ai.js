@@ -1828,6 +1828,197 @@ function makeCommander() {
      both sees less and acts on none of it, and builds precisely the standing
      mixture. That is a commander that does not analyse, which is what a
      Recruit is. */
+  /* ======================================================================
+     THE SECOND HALF: LEARNING WHICH FORCE ACTUALLY WORKS
+     ======================================================================
+     "can ai have some pre-trained knowledge to how mix the weapon more
+      efficiently but don't let AI to use the pre-trained knowledge entirely.
+      we should let AI to pick up their own strategy by itself with some
+      flexibility in a reasonable way"
+
+     doctrine() above is the first half and it is fixed: a training manual
+     derived from CFG.DMG that never changes during a battle. This is the
+     second half. It picks one of three FORCE POSTURES before each push, scores
+     the push on what actually happened, and moves toward whatever has been
+     paying. The prior says what a competent army of this nation and decade
+     looks like; this says what is working against THIS opponent, on THIS map,
+     today - and the two multiply.
+
+     TWO DESIGNS WERE BUILT BEFORE THIS ONE AND BOTH WERE REJECTED. Both died
+     the same way, so the reasons are worth stating where the code is:
+
+       ATTEMPT 1: the reward was uncentred and the clamp bounded the VALUE, so
+         measured over twenty waves every arm converged to the same number. A
+         bandit that cannot separate its arms is a random choice wearing a
+         bandit's clothes.
+       ATTEMPT 2: rebuilt against that, and worse. Its update applied the SAME
+         reward to EVERY arm, so an arm's estimate was a differently-smoothed
+         copy of ONE reward stream rather than an estimate of that arm at all.
+         And its baseline was a running mean over THE PUSHES THE POLICY TOOK -
+         which, once the policy commits, becomes the incumbent's own mean, so
+         the advantage collapses to noise and the incumbent decays to zero. Its
+         own two arguments contradicted each other: the non-degeneracy proof
+         needed the arms to keep being mixed, the exploitation proof showed
+         they stop being mixed.
+
+     WHY THIS ONE CANNOT DEGENERATE, which is the whole point:
+
+       q[a] is the SAMPLE MEAN of the rewards from the pushes where arm a was
+       ACTUALLY CHOSEN. Nothing else touches it. Two arms with different true
+       means therefore converge to different numbers, by the law of large
+       numbers and nothing cleverer.
+
+       THERE IS NO BASELINE AND NOTHING IS CENTRED, and that is deliberate
+       rather than an omission. Centring existed in both failed designs to
+       remove `c` - the part of a battle's outcome that belongs to the era's
+       price level, the opponent's skill, the map - and it is exactly the term
+       that broke them. It does not need removing. c is common to all three
+       arms within a match, so every q[a] converges to mu(a) + c, and argmax
+       over a is unchanged by adding the same constant to every candidate. The
+       hardest part of both previous designs was unnecessary.
+
+       Every arm stays reachable. The UCB bonus is +Infinity at n=0 and decays
+       as sqrt(ln N / n), so an arm that has not been tried is always tried,
+       and an arm that has been tried and is losing is revisited at a rate that
+       falls but never reaches zero. Attempt 1 shipped an arm no state could
+       select; this cannot have one.
+
+     WHAT IT IS ALLOWED TO KNOW - the owner's rule is "ai should have the same
+     fog like us. don't assume and make ai know everything", so every input is
+     something this commander could not fail to know:
+       killValue  what OUR OWN units destroyed. We shot it; we saw it die.
+                  Structures included, so razing a base scores.
+       lossValue  our own dead, priced. Ours unconditionally.
+       committed  what we put into the wave, from our own unit costs.
+     No enemy composition, no enemy economy, no enemy production, nothing
+     behind fog. The reward is an exchange ratio on our own ledger.
+
+     It reads NO entity references, only numbers, so none of the liveness
+     invariants in this file apply to it and it cannot hold a stale ref. */
+  const ARMS = ["armour", "gunline", "swarm"];
+  /* Each arm is a multiplier over the roles counterMix has already priced.
+     Deliberately mild - 1.35 at the top - because this is a lean on a mixture
+     the prior and the picture have already chosen, not a replacement for it.
+     A posture that overrode them would throw away the adaptation that test
+     [29] protects. */
+  const ARM_BIAS = {
+    armour:  { veh: { mbt: 1.35, heavy: 1.30, lighttank: 1.10 },
+               inf: { rifle: 0.90, at: 0.95 } },
+    gunline: { veh: { spg: 1.35, mlrs: 1.35, spaag: 1.10 },
+               inf: { mortar: 1.25, rifle: 0.90 } },
+    swarm:   { veh: { ifv: 1.20, lighttank: 1.25, mbt: 0.85 },
+               inf: { rifle: 1.30, at: 1.20, mg: 1.20 } },
+  };
+  const LEARN = { q: {}, n: {}, N: 0, arm: null, open: null, opens: 0, settles: 0, tries: 0 };
+  for (const a of ARMS) { LEARN.q[a] = 0; LEARN.n[a] = 0; }
+
+  /* UCB1. C is the exploration weight: 0.7 of a reward unit, and a reward here
+     is an exchange ratio, so a arm one whole exchange-ratio point behind is
+     still revisited for a good while. */
+  function chooseArm() {
+    let best = null, bv = -Infinity;
+    for (const a of ARMS) {
+      const n = LEARN.n[a];
+      const v = n === 0 ? Infinity
+              : LEARN.q[a] + 0.7 * Math.sqrt(Math.log(Math.max(2, LEARN.N)) / n);
+      if (v > bv) { bv = v; best = a; }
+    }
+    return best;
+  }
+
+  /* WHY THIS IS SCORED ON A CLOCK AND NOT ON A WAVE. This is the third
+     distinct reason the feature has failed, and the only one that was found by
+     MEASURING rather than by arguing.
+
+     The obvious unit of account is the push: choose a posture, send the wave,
+     score what it traded. Both earlier designs did that, and so did this one -
+     until it was run. MEASURED, brains on both seats, fulda e80 at Commander
+     with abundant ore: the match was DECIDED AT t=577 and the commander had
+     scored exactly ONE push. A per-push learner needs at least one pull of
+     each of three arms before it can compare anything at all; it never gets
+     them. The estimator was never the binding constraint. The SAMPLE RATE
+     was, and neither of the two adversarial reviews that killed the earlier
+     designs ever looked at it.
+
+     So the interval is the unit of account. That is also the more honest match
+     to what a posture actually changes: it biases PURCHASING, which is
+     continuous, not a discrete act performed once per wave.
+
+     A QUIET INTERVAL IS NOT SCORED. If nothing died either way, the interval
+     teaches nothing - and folding a stream of zeroes into every arm would drag
+     all three estimates toward zero together, which is degeneracy by a third
+     road after an uncentred reward and a shared baseline. Only intervals in
+     which something was destroyed are folded in.
+
+     THE REWARD IS SCALE-FREE: an exchange ratio against the value of our own
+     standing army. Without that, an arm pulled late in a rich match would
+     score better than one pulled early for no reason but the clock. */
+  const LEARN_INT = 40;                     // seconds of game time per sample
+
+  function learnTick() {
+    const grip = D.read === undefined ? 1 : D.read;
+    if (grip < 0.5) return;                 // a Recruit analyses nothing, so learns nothing
+    const o = LEARN.open;
+    if (!o) { learnStart(); return; }
+    if (G.time - o.t < LEARN_INT) return;
+    LEARN.tries++;
+    const killed = (P.stats.killValue || 0) - o.k;
+    const lost   = (P.stats.lossValue || 0) - o.l;
+    if (killed > 0 || lost > 0) {
+      const r = (killed - lost) / o.scale;
+      const a = o.arm;
+      if (a) {
+        LEARN.n[a] += 1; LEARN.N += 1;
+        LEARN.q[a] += (r - LEARN.q[a]) / LEARN.n[a];   // the mean of THIS arm alone
+        LEARN.settles++;
+      }
+    }
+    learnStart();
+  }
+  /* The open record carries the arm that was shaping purchases DURING the
+     interval it covers, and only then does the next posture take over - score
+     the posture that bought the army, not the one that happens to be current
+     when the interval closes. `scale` is our own standing army, priced, which
+     is ours to know unconditionally. */
+  function learnStart() {
+    let v = 0;
+    for (const u of P.units) if (!u.dead && u.def && u.def.cat !== "building")
+      v += u.def.cost || 200;
+    LEARN.opens++;
+    LEARN.open = { k: P.stats.killValue || 0, l: P.stats.lossValue || 0,
+                   t: G.time, scale: Math.max(1200, v), arm: LEARN.arm };
+    LEARN.arm = chooseArm();
+  }
+
+  /* How hard the posture leans, as a function of how much has been learned.
+     At N=0 it is 0 and counterMix is exactly what it was before this existed;
+     it reaches full weight after eight SCORED intervals. This is the "don't let
+     AI use the pre-trained knowledge entirely" half made literal: early the
+     manual decides, late the experience does, and the handover is gradual.
+     Gated on D.read so a Recruit, which analyses nothing, also learns nothing
+     and builds the standing mixture - the same gate counterMix already uses. */
+  function armWeight() {
+    const grip = D.read === undefined ? 1 : D.read;
+    if (grip < 0.5 || !LEARN.arm) return 0;
+    return Math.min(1, LEARN.N / 8) * grip;
+  }
+  /* Applied as coefficient x weight, so at weight 0 every multiplier is 1.00
+     and nothing moves. Monotonic in each role's own weight, which is what
+     keeps behaviour test [29] true: every term in counterMix is
+     coefficient x observed_share x grip, and multiplying a role by a constant
+     within a push cannot reverse the response to a changing share. */
+  function applyArm(inf, veh) {
+    const w = armWeight();
+    if (w <= 0) return;
+    const b = ARM_BIAS[LEARN.arm];
+    if (!b) return;
+    const lean = (tbl, m) => {
+      if (!m) return;
+      for (const k in m) if (tbl[k] !== undefined) tbl[k] *= 1 + (m[k] - 1) * w;
+    };
+    lean(inf, b.inf); lean(veh, b.veh);
+  }
+
   function counterMix(a) {
     const inf = { rifle: 0.42, at: 0.20, mg: 0.14, aa: 0.12, mortar: 0.12 };
     const veh = { ifv: 0.16, lighttank: 0.12 };
@@ -2013,6 +2204,10 @@ function makeCommander() {
       const need = tot * 0.35 - base, share = need / keys.length;
       for (const k of keys) if (o[k] !== undefined) o[k] += share;
     };
+    /* the learned posture, last, so it leans on a mixture the manual and the
+       picture have already agreed on - and before the guards, so a floor still
+       cannot be leaned away */
+    applyArm(inf, veh);
     guard(inf, ["rifle"]);
     guard(veh, P.tech >= 2 ? ["mbt", "ifv"] : ["ifv", "lighttank"]);
     return { inf, veh };
@@ -4231,6 +4426,10 @@ function makeCommander() {
     /* This filter was the only line in the file that has ever seen a wave
        casualty, and it threw the information away. reapWave keeps it. */
     reapWave();
+    /* One clock, one call site. Both earlier designs fired the learner from a
+       different clock than the one that reaped the wave and drifted between
+       them; this runs in think(), reads G.time, and is called nowhere else. */
+    learnTick();
     navalWave = navalWave.filter(u => !u.dead);
 
     if (waveT <= 0 && army.length >= wantSize * 0.8) {
@@ -5772,6 +5971,16 @@ function makeCommander() {
                             oilers: count(u => u.def.role === "oiler"),
                             tankers: count(u => u.def.refuelRate) },
                repair: repairLedger(),
+               /* Exposed for exactly the reason the fields around it are: so a
+                  test can see whether the learner is separating its arms, or
+                  whether every estimate has collapsed to the same number -
+                  which is how the two designs before this one were caught. */
+               learn: { arm: LEARN.arm, pushes: LEARN.N, weight: armWeight(),
+                        opens: LEARN.opens, settles: LEARN.settles, tries: LEARN.tries,
+                        openAge: LEARN.open ? (G.time - LEARN.open.t) : -1,
+                        wave: attackWave.length,
+                        q: Object.assign({}, LEARN.q),
+                        n: Object.assign({}, LEARN.n) },
                mines: { signs: mineSigns.length, seen: knownMines().length,
                         foeVeh: foeVehSeen(),
                         raidHeat: raidHeat, gap: gapSector(),

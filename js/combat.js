@@ -1037,8 +1037,18 @@ var Combat = (function () {
       shooter.xp = (shooter.xp || 0) + (e.def.cost || 100) * 0.28;
       checkVet(game, shooter);
       shooter.owner.stats.kills++;
+      /* VALUE, not a count, and it is the honest half of the pair below.
+         `kills` cannot tell a rifle squad from a Ticonderoga, so nothing can
+         be learned from it. This is also the ONLY destruction a commander can
+         claim to know about without cheating: we shot it, so we saw it die.
+         A razed structure passes through here too, which is what stops a
+         learner scoring zero for flattening a base. */
+      shooter.owner.stats.killValue =
+        (shooter.owner.stats.killValue || 0) + (e.def.cost || 100);
     }
     e.owner.stats.losses++;
+    /* our own dead, priced. Ours to know unconditionally. */
+    e.owner.stats.lossValue = (e.owner.stats.lossValue || 0) + (e.def.cost || 100);
     effects.push({
       t: "boom", x: e.x, y: e.y, r: Math.max(14, (e.r || 10) * 1.8),
       life: 0.6, max: 0.6, water: e.layer === "sea" || e.layer === "sub",
