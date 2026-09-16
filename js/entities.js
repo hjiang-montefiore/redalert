@@ -2003,7 +2003,18 @@ class Unit {
          the aircraft was taking fuel. */
       const resume = standing ||
         (o.type === "attack" && o.target && !o.target.dead
-          ? { type: "attack", target: o.target, resume: o.resume, cap: o.cap, auto: o.auto }
+          /* `release` is carried across the boom with everything else, and it
+             has to be: setOrder() (entities.js:244) is the ONLY place the token
+             is stamped, and this literal is assigned straight to this.order on
+             the hand-back, never through setOrder. Without it an aircraft whose
+             rounds are all HELD - a Weasel, and now a Valiant, a Vulcan B.2 or
+             a Mirage IV - breaks off for fuel with a released strike, tanks,
+             flies all the way back, and then finds holdsFire() true on every
+             mount and drops nothing. This does NOT widen the gate: the token is
+             copied from the order that already had it, and an order that never
+             carried release still does not. */
+          ? { type: "attack", target: o.target, resume: o.resume, cap: o.cap,
+              auto: o.auto, release: o.release }
           : null);
       const tanker = this.game.nearestTanker ? this.game.nearestTanker(this) : null;
       const pad2 = this.game.findPad ? this.game.findPad(this) : null;

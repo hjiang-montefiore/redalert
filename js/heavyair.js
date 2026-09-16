@@ -43,6 +43,67 @@
    service until 1969 and there was no bomber force before that.
 
 
+   THE V-FORCE. Valiant, Vulcan, Victor - Britain's airborne deterrent from
+   February 1955 until the Royal Navy took it to sea with Polaris on 30 June
+   1969, a handover this game already carries on the submarine side as
+   gbr_e60_ssbn, HMS Resolution. Three aeroplanes, three different endings, so
+   three different rows rather than three copies of one:
+     VALIANT, 138 Squadron at RAF Gaydon, February 1955 - the first of the
+     three and the first into combat, bombing Egyptian airfields at Suez in
+     October 1956. It dropped Britain's first air-burst atomic weapon, a Blue
+     Danube, at Maralinga on 11 October 1956, and the first British thermo-
+     nuclear device, Short Granite, over Malden Island on 15 May 1957. In 1962
+     the fleet was taken off high-level strike and handed to SACEUR for LOW
+     level, because surface-to-air missiles had made 50,000 feet untenable -
+     and low-level flying is what fatigued the rear spar. Cracks were found in
+     August 1964 and the whole fleet was grounded on 26 January 1965. So its
+     row is `to: "e50"` and stops, and it was killed by the same change in the
+     threat that the rest of this arc is about.
+     VULCAN B.2 holds e60 AND e80, two rows for two different jobs - the same
+     thing the Buff and the H-6 above already do, on a shorter arc. 1963: Blue
+     Steel, a hundred miles of stand-off. 1982: twenty-one 1,000 lb bombs and
+     an overflight of Port Stanley. That is the British arc, and it goes the
+     WRONG WAY round - reach in the sixties, none in the eighties - which is
+     the single most interesting thing about it.
+     VICTOR gets NO bomber row, and that is an answer rather than a gap. Its
+     bomber career, November 1957 to 31 December 1968, sits entirely inside two
+     bands already held by an aircraft that arrived first and left later, and
+     unitFor() returns exactly ONE airframe per faction, role and era. What the
+     Victor is in this game is what it became: gbr_e60_tanker, the tanker fleet
+     that refuelled Black Buck eleven aircraft deep.
+   WHY BRITAIN STOPS IN 1969 and the B-52 does not. Blue Steel was real and is
+   modelled - in RAF service from February 1963 on Vulcan B.2s of 617, 27 and
+   83 Squadrons and Victor B.2s of 100 and 139, launched at about 185 km at
+   Mach 2.3, the RAF's primary strategic weapon until the Polaris handover and
+   withdrawn in 1970. What Britain never got was its SUCCESSOR. Blue Steel
+   Mk.2 was cancelled in December 1959, Blue Streak in 1960, and the American
+   Skybolt on 22 December 1962 at Nassau - and it is the Skybolt cancellation
+   that made Blue Steel the deterrent by default and the submarine the only
+   way forward. So the e80 Vulcan is back to 2.2 tiles and the e90, e00 and e20
+   bands are EMPTY and stay empty: 44 Squadron, the last Vulcan bomber
+   squadron, disbanded on 21 December 1982 and 50 Squadron's Vulcan K.2 tankers
+   went on 31 March 1984.
+
+   MIRAGE IV. The airborne leg of the force de frappe, and the one nation here
+   that built the aeroplane, the warhead and the stand-off missile itself.
+   Prototype 17 June 1959; EB 1/91 Gascogne at Mont-de-Marsan on 1 October
+   1964; 62 production aircraft. It is not a strategic bomber in the B-52 sense
+   and the figures say so: a Mach 2.2 two-seat delta the size of a large
+   fighter with a combat radius near 1,240 km. The reach was bought separately
+   - twelve Boeing C-135F ordered in 1962 and delivered from 1964, plus
+   Mirage-on-Mirage buddy tanking - and it lives on fra_e60_tanker, not on the
+   bomber.
+   e50 EMPTY, and for a named reason rather than an absence: there was no
+   French warhead until Gerboise Bleue at Reggane on 13 February 1960, and the
+   jet bomber France did have in that decade, the Sud-Ouest Vautour IIB of
+   1958, was a tactical aircraft with nothing strategic to carry.
+   e00 and e20 EMPTY: the strike role left this aeroplane on 1 July 1996 and
+   passed to the two-seat Mirage 2000N and later the Rafale B, which are
+   fighter airframes carrying one missile and are on the French roster as
+   fighters and strike aircraft, not as bombers. The last Mirage IVs flew
+   strategic RECONNAISSANCE, not strike, until 23 June 2005.
+
+
    Loaded after eras.js so it can add to the roster and reindex.            */
 
 (function () {
@@ -154,6 +215,112 @@
                   proj: "missile", speed: 280, aoe: 2.2, suppress: 60, ammo: 1,
                   tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
                   sfx: "missile", profile: "loft", intercept: 0.40 },
+
+    /* ---- what the V-force carried ----
+       `manual`, NOT `nuke`. The nuke flag wants a bombard order carrying
+       nuke:true and nothing in the game raises that except the silo path, so a
+       bomb that set it could never be released at all. `manual` is the flag
+       every held round already uses - the anti-radiation missiles and the
+       ballistic launchers - and setOrder() (entities.js:244) stamps release on
+       any non-auto attack or bombard, so naming the target IS the release.
+       Left alone the aeroplane holds the weapon, which is correct for a bomb
+       that needed a Prime Minister.
+
+       `ammo: 6` against a pool of 6 on each airframe: ONE weapon a sortie,
+       then home. 6 rather than 1 because generations.js:902 floors every
+       heavybomber's pool at 6 and would otherwise hand a Valiant six Blue
+       Danubes. About 58 Blue Danubes were built and the RAF loaded one per
+       aircraft. The same arithmetic does the historical work on the Vulcan
+       B.2 below: it mounts Blue Steel AND Yellow Sun, and can only ever fire
+       one of them in a sortie, because the missile sat in a recess cut into
+       the bomb bay and the bomb could not be there at the same time. */
+    bluedanube: { name: "Blue Danube free-fall bomb", dmg: 520, warhead: "he",
+                  range: 2.2, reload: 6.0, burst: 1, acc: 0.66, proj: "bomb",
+                  speed: 0, aoe: 3.6, suppress: 260, ammo: 6, manual: true,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+    /* Yellow Sun Mk.2, in service 1961: 7,250 lb and the Red Snow warhead,
+       about 1.1 megatons against Blue Danube's ten kilotons. A hundredfold in
+       life and a forty-per-cent step here, compressed the way this file
+       already compresses range - the ORDER is what has to survive. */
+    yellowsun2: { name: "Yellow Sun Mk.2 free-fall bomb", dmg: 720, warhead: "he",
+                  range: 2.2, reload: 6.5, burst: 1, acc: 0.64, proj: "bomb",
+                  speed: 0, aoe: 4.6, suppress: 300, ammo: 6, manual: true,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+    /* AVRO BLUE STEEL, in RAF service February 1963 - 617, 27 and 83 Squadrons
+       on Vulcan B.2s, 100 and 139 on Victor B.2s - and the RAF's primary
+       strategic weapon until the Polaris handover on 30 June 1969, withdrawn
+       1970. A rocket-powered stand-off round launched at about 185 km at Mach
+       2.3 from 70,000 ft.
+       SAME dmg and aoe as Yellow Sun Mk.2 ON PURPOSE. Both carry the same Red
+       Snow warhead at about 1.1 Mt, so what Blue Steel bought was not a bigger
+       bang, it was 9.6 tiles instead of 2.2 - the delivery changed and nothing
+       else did, which is the whole point of the weapon and the reason it is
+       worth a separate mount.
+       9.6 and not more: the file's own scale puts the C-601 at 100 km on 8.6
+       tiles and ASMP below on 11.0, and 185 km sits between them. That leaves
+       it INSIDE the 10.6-tile first-generation area SAM of its own decade, and
+       that is the honest answer rather than a shortfall - the RAF thought so
+       too, which is why it wanted Skybolt's thousand miles and, refused it in
+       December 1962, went to sea instead. */
+        /* RANGE RAISED OFF THE DESIGN'S FIGURE, and for the reason eras.js already
+       applies a floor to every anti-radiation round: entities.js:2165 launches
+       a missile at 0.88 of its range, so at the proposed 9.6 a Vulcan released
+       Blue Steel at 8.45 tiles - INSIDE the 10.6-tile reach of the Bloodhound
+       and the SP-HAWK, the two area SAMs of its own decade. A stand-off weapon
+       that has to penetrate the ring it exists to avoid is not a stand-off
+       weapon, and the real figures are not close: Blue Steel flew about 185 km
+       against a Bloodhound's eighty and a HAWK's forty. 12.8 releases at 11.3,
+       outside them both, which is the whole argument for the weapon. */
+bluesteel:  { name: "Avro Blue Steel stand-off missile", dmg: 720, warhead: "he",
+                  range: 12.8, minRange: 2.5, reload: 9.5, burst: 1, acc: 0.72,
+                  proj: "missile", speed: 430, aoe: 4.6, suppress: 220, ammo: 6,
+                  manual: true, tgt: { ground: 1, air: 0, sea: 0, sub: 0 },
+                  sfx: "missile", profile: "loft", intercept: 0.45 },
+    /* Black Buck: the Vulcan's full conventional bay, twenty-one 1,000 lb
+       bombs as three sticks of seven - ammo 2 against a pool of 6. NOT manual;
+       an iron bomb needs no release authority. The accuracy is deliberately
+       the worst bomb figure in the file: the raid laid all twenty-one across
+       the Port Stanley runway at a 30-degree angle on 1 May 1982 and put
+       exactly ONE of them on it. */
+    blackbuck:  { name: "21 x 1,000lb bomb load", dmg: 140, warhead: "he",
+                  range: 2.2, reload: 1.0, burst: 7, burstDelay: 0.20, acc: 0.55,
+                  proj: "bomb", speed: 0, aoe: 3.4, suppress: 160, ammo: 2,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+
+    /* ---- what the Mirage IV carried ----
+       One weapon key for the two bombs the aeroplane actually entered service
+       with, because they are the same round twice: the AN-11 of 1964, about
+       60 kilotons, replaced from 1967 by the AN-22, about 70, roughly 700 kg
+       and carried semi-recessed in a belly fairing. One bomb, one aircraft,
+       and it has to be overhead - the problem the V-force never solved, met by
+       a country that solved it nineteen years later. */
+    an11_22:    { name: "AN-11/AN-22 free-fall bomb", dmg: 600, warhead: "he",
+                  range: 2.0, reload: 6.0, burst: 1, acc: 0.68, proj: "bomb",
+                  speed: 0, aoe: 4.0, suppress: 280, ammo: 6, manual: true,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+    /* ASMP - Air-Sol Moyenne Portee - on the Mirage IVP from 1 May 1986: a
+       ramjet at Mach 3 with the 300 kt TN 81, 80 km released from low level
+       and up to 300 km from altitude. It is what Blue Steel's successor would
+       have been, built by the country that was not refused one.
+       11.0 tiles, and read what that does rather than what it sounds like:
+       updateAir holds a missile shot at range * 0.88, so the Mirage launches
+       from 9.7 tiles. That is outside every point-defence system on the map
+       and still INSIDE the 12.5-tile long-range area SAM of its own decade.
+       A stand-off weapon is not an invulnerability spell; it beats the belt it
+       was designed against and loses to the one that came after.
+       sea:0 is deliberate and is not a handicap. ASMP is a strategic land
+       attack round and France never fitted it for anti-ship work; the French
+       anti-ship weapon is Exocet and it is already on the rows that carry it.
+       intercept 0.30 because a Mach 3 ramjet is a hard shot. */
+        /* Same correction, same reason. At 11.0 the Mirage IVP released ASMP at
+       9.68 tiles, still inside the 10.6 of a first-generation area SAM. ASMP
+       flew about 300 km and the P-model existed to carry it from outside;
+       14.6 releases at 12.9. */
+asmp:       { name: "ASMP stand-off missile", dmg: 660, warhead: "he",
+                  range: 14.6, minRange: 2.5, reload: 9.0, burst: 1, acc: 0.88,
+                  proj: "missile", speed: 470, aoe: 4.2, suppress: 200, ammo: 6,
+                  manual: true, tgt: { ground: 1, air: 0, sea: 0, sub: 0 },
+                  sfx: "missile", profile: "loft", intercept: 0.30 },
   };
   for (var wk in W) if (!WEAPONS[wk]) WEAPONS[wk] = W[wk];
 
@@ -195,6 +362,34 @@
       fac: "pla", role: "heavybomber", cat: "aircraft", armor: "air", layer: "air",
       mass: 0, jet: true, turn: 0.9, sight: 9, r: 24,
       prereq: ["airbase", "lab"], tech: 3, rcs: 5.2, radarQ: 2, gen: 2.5,
+    }, o);
+  }
+  /* A V-bomber is a Buff at two thirds scale with no defensive armament at
+     all: no tail turret, no gunner, nothing but height, speed and anti-flash
+     white paint. The RAF's answer to interception was 50,000 feet, and when
+     Powers was shot down at altitude on 1 May 1960 that answer stopped
+     working - which is why these rows carry a high radar cross-section for
+     their size and no gun anywhere. */
+  function vforce(o) {
+    return Object.assign({
+      fac: "gbr", role: "heavybomber", cat: "aircraft", armor: "air", layer: "air",
+      mass: 0, jet: true, turn: 0.7, sight: 9, r: 26,
+      prereq: ["airbase", "lab"], tech: 3, rcs: 5.2, radarQ: 2, gen: 2,
+    }, o);
+  }
+  /* The Mirage IV is shaped like nothing else in this file: a two-seat Mach
+     2.2 delta of 23.5 m and 33 tonnes - a large fighter, not a bomber - so it
+     turns twice as well as a Buff, is a quarter of the radar target, and has a
+     third of the reach. It is much the fastest aircraft in this file and it is
+     NOT fast for its decade: every e60 fighter in the game, Lightning, MiG-21,
+     Mirage IIIE and Phantom alike, is Mach 2 class and quicker still.
+     Everything the French deterrent gained in speed it paid for in range, and
+     fra_e60_tanker is where the payment was made. */
+  function mirage4(o) {
+    return Object.assign({
+      fac: "fra", role: "heavybomber", cat: "aircraft", armor: "air", layer: "air",
+      mass: 0, jet: true, turn: 1.3, sight: 9, r: 16,
+      prereq: ["airbase", "lab"], tech: 3, rcs: 2.2, radarQ: 2, gen: 3,
     }, o);
   }
   function herc(o) {
@@ -370,6 +565,121 @@
             "cockpit, and six pylons for cruise missiles. First flight 5 January " +
             "2007, in service October 2009. It launches from outside every " +
             "surface-to-air system on the map and turns for home." }),
+
+    /* ---- THE V-FORCE: three aeroplanes, three different endings ----
+       e90, e00 and e20 are EMPTY and stay empty. 44 Squadron, the last Vulcan
+       bomber squadron, disbanded on 21 December 1982; 50 Squadron's Vulcan K.2
+       tankers went on 31 March 1984; and Britain has had no bomber since. */
+    gbr_e50_heavybomber: vforce({
+      name: "Valiant B.1", full: "Vickers Valiant B.1 with Blue Danube",
+      /* 138 Squadron, RAF Gaydon, February 1955; 104 production aircraft of
+         107 built; 567 mph at 30,000 ft, slightly slower than a B-52D so 4.4
+         against its 4.6. Radius 78 against the Buff's 96. gbr_e50_tanker is
+         the SAME airframe at 110, and that is right rather than a
+         contradiction: the BK.1 gave up the bomb bay and filled the aeroplane
+         with fuel. */
+      cost: 3000, oil: 85, time: 42, hp: 760, speed: 4.4, ammo: 6, radius: 78,
+      rcs: 5.0, turn: 0.6,
+      weapons: ["bluedanube"], from: "e50", to: "e50",
+      service: "1955", confidence: "high",
+      desc: "The first of the three and the first into combat - Egyptian " +
+            "airfields, October 1956. It dropped Britain's first air-burst " +
+            "atomic bomb at Maralinga on 11 October 1956 and the first British " +
+            "thermonuclear device over Malden Island on 15 May 1957. One weapon " +
+            "a sortie, and it must be directly overhead to release it. Taken off " +
+            "high-level strike in 1962 and sent down low because the missiles " +
+            "had won that argument, it cracked its rear spars doing it and the " +
+            "whole fleet was grounded on 26 January 1965." }),
+    gbr_e60_heavybomber: vforce({
+      name: "Vulcan B.2", full: "Avro Vulcan B.2 with Blue Steel and Yellow Sun",
+      /* B.2 with 83 Squadron on 1 July 1960; 136 Vulcans built; Mach 0.96 and
+         645 mph, the fastest of the three, so 4.9. Combat range about
+         4,830 km gives 86 tiles. A delta rolls better than a Buff.
+         TWO MOUNTS, and the pool allows exactly one of them a sortie, because
+         Blue Steel sat in a recess cut into the bomb bay and the bomb could
+         not be in there with it. pickWeapon reaches for the missile at any
+         useful distance and the bomb only when the target is right underneath,
+         which is the correct order of preference for both. */
+      cost: 3400, oil: 94, time: 46, hp: 820, speed: 4.9, ammo: 6, radius: 86,
+      rcs: 5.4, turn: 0.75, r: 27, gen: 2.5,
+      weapons: ["bluesteel", "yellowsun2"], from: "e60", to: "e60",
+      service: "1960", confidence: "high",
+      desc: "Britain's deterrent in one aeroplane, and the only decade in which " +
+            "it could strike without flying over the target. Blue Steel entered " +
+            "service in February 1963 with 617 Squadron - a rocket-powered round " +
+            "released a hundred miles out with the same megaton warhead as the " +
+            "bomb it replaced. It was never enough: the RAF wanted Skybolt's " +
+            "thousand miles, Washington cancelled it in December 1962, and the " +
+            "deterrent went to sea with Polaris on 30 June 1969. The submarine " +
+            "that took it is already on this roster." }),
+    gbr_e80_heavybomber: vforce({
+      name: "Vulcan B.2 (Black Buck)", full: "Avro Vulcan B.2, conventional fit",
+      /* Same airframe, same radius, conventional bay - and a DELIBERATE
+         snapshot rather than the whole truth about the 1980s Vulcan. From 1966
+         its standing weapon was the WE.177B laydown nuclear bomb and that is
+         what it sat on QRA with until 1982; the row carries the one thing it
+         actually did in anger instead, because a second held megaton mount on
+         top of the iron bombs would be fired as a free extra by
+         fireOtherMounts under any released attack order. Said plainly in the
+         card rather than left for the reader to assume.
+         The reach that made the raid possible was not in the aeroplane: it
+         flew about 3,400 nautical miles each way from Ascension on 30 April
+         1982 on eleven Victor K.2 tankers and eighteen refuellings, and
+         gbr_e60_tanker covers e80. */
+      cost: 3300, oil: 92, time: 45, hp: 820, speed: 4.9, ammo: 6, radius: 86,
+      rcs: 5.4, turn: 0.75, r: 27, gen: 2.5,
+      weapons: ["blackbuck"], from: "e80", to: "e80",
+      service: "1982", confidence: "high",
+      desc: "Twenty-seven years old, down to its last squadrons, and sent eight " +
+            "thousand miles there and back to bomb a runway because nothing else " +
+            "could reach it. Twenty-one thousand-pounders in three sticks and an " +
+            "aiming error measured in hundreds of yards - one bomb of twenty-one " +
+            "hit. Its real job in this decade was the WE.177B nuclear bomb on " +
+            "quick-reaction alert; this is the fit it flew in anger. It cannot " +
+            "get there without a tanker, and the tanker is the third V-bomber. " +
+            "The last bomber squadron disbanded on 21 December 1982." }),
+
+    /* ---- MIRAGE IV: the force de frappe, aeroplane and warhead both French --
+       e50 EMPTY - no French warhead until Gerboise Bleue on 13 February 1960,
+       and the jet bomber of that decade, the Vautour IIB of 1958, was a
+       tactical aircraft with nothing strategic to carry. e00 and e20 EMPTY -
+       the strike role left this aeroplane on 1 July 1996 for the Mirage 2000N
+       and then the Rafale B, and the survivors flew strategic reconnaissance
+       only, to 23 June 2005. */
+    fra_e60_heavybomber: mirage4({
+      name: "Mirage IVA", full: "Dassault Mirage IVA with the AN-11/AN-22 bomb",
+      /* EB 1/91 Gascogne, Mont-de-Marsan, 1 October 1964; 62 built; Mach 2.2,
+         so 7.6 - much the fastest aircraft in this file, and still slower than
+         every fighter of its own decade. Radius 46 against a Vulcan's 86:
+         about 1,240 km hi-lo-hi, which does not reach Moscow and was never
+         expected to without the C-135F. */
+      cost: 2800, oil: 74, time: 40, hp: 520, speed: 7.6, ammo: 6, radius: 46,
+      weapons: ["an11_22"], from: "e60", to: "e60",
+      service: "1964", confidence: "high",
+      desc: "France's own bomb on France's own aeroplane, refuelled by a " +
+            "doctrine France built for it - twelve Boeing C-135F ordered in 1962 " +
+            "and Mirage-on-Mirage buddy tanking for the rest. Mach 2.2 and half " +
+            "the size of a V-bomber, which buys speed and costs range: on " +
+            "internal fuel it reaches about 1,240 km and no further. Two crew, " +
+            "one bomb under the belly - sixty kilotons as the AN-11 from 1964, " +
+            "seventy as the AN-22 from 1967 - and it has to fly over the " +
+            "target." }),
+    fra_e80_heavybomber: mirage4({
+      name: "Mirage IVP", full: "Dassault Mirage IVP with ASMP",
+      /* Eighteen converted; EB 1/91 again, 1 May 1986. The row runs to e90
+         because the strike role did: it ended on 1 July 1996, inside the 1990s
+         band, and the survivors flew reconnaissance only until 2005. */
+      cost: 3000, oil: 76, time: 42, hp: 540, speed: 7.6, ammo: 6, radius: 46,
+      radarQ: 3, gen: 3.5,
+      weapons: ["asmp"], from: "e80", to: "e90",
+      service: "1986", confidence: "high",
+      desc: "Eighteen airframes rebuilt around one missile. ASMP is a Mach 3 " +
+            "ramjet with a three-hundred-kiloton warhead that flies up to 300 km " +
+            "on its own, so the aeroplane launches and turns away instead of " +
+            "flying over. This is the weapon Britain wanted after Blue Steel and " +
+            "was refused when Skybolt was cancelled; France simply built its own " +
+            "and took twenty-two years about it. The strike role ended on 1 July " +
+            "1996 and passed to the fighters." }),
 
     /* ---- C-130: the airlifter ---- */
     nato_e50_airlift: herc({

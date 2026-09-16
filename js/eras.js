@@ -10272,11 +10272,17 @@ Object.assign(WEAPONS, {
        attack helicopter in the whole Cold War: the answer was always a
        utility airframe with missiles bolted to it, until Apache in 2004.
      stealthfighter / stealthbomber / gunshipair, e50 to e90 — none, ever.
-     heavybomber — DELIBERATELY EMPTY, and this one is a decision awaiting
-       the owner rather than a historical gap. The Vulcan was a real
-       strategic bomber carrying an independent national deterrent until
-       1984, and it contradicts the standing rule that strategic bombers are
-       American-only. Left out until the owner settles it.
+     heavybomber — SETTLED, and no longer empty. The owner lifted the
+       American-only rule by name, so the V-force is in heavyair.js beside the
+       B-52: gbr_e50 Valiant B.1 with Blue Danube, gbr_e60 Vulcan B.2 with
+       Blue Steel and Yellow Sun Mk.2, gbr_e80 Vulcan B.2 in the Black Buck
+       conventional fit. e90 onward is EMPTY and always will be - 44 Squadron
+       disbanded on 21 December 1982, 50 Squadron's Vulcan K.2 tankers went on
+       31 March 1984, and the deterrent had already gone to sea with Polaris
+       on 30 June 1969, which is gbr_e60_ssbn. The Victor gets no bomber row:
+       its whole bomber career, November 1957 to 31 December 1968, sits inside
+       two bands already held by an aircraft that arrived first and left later,
+       and gbr_e60_tanker already carries it in the role it actually ended in.
      mlrs, e50 — nothing between Land Mattress in 1945 and Honest John in
        1960, and nothing again from 1976 until MLRS was bought in 1989.
      tel, e90 onward — Lance left in 1993 and nothing replaced it. Britain
@@ -10326,7 +10332,7 @@ Object.assign(UNITS, {
   gbr_e90_tanker: {"fac":"gbr","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"weapons":[],"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":3.5,"name":"VC10 K.3","full":"Vickers VC10 K.2 and K.3, 101 Squadron","cost":3200,"oil":72,"time":38,"hp":720,"speed":4.60,"ammo":0,"radius":150,"tanker":430,"refuelRate":16,"from":"e90","to":"e90","service":"1984","confidence":"high","desc":"This band was empty, and the Victor row below it already says what filled it: five VC10 K.2 from 1984 and four K.3 from 1985, retired airliners rebuilt with three hose drums each. Probe and drogue only - no boom - so a British tanker cannot refuel an American fighter and an American tanker cannot refuel a Tornado without a pod. That coalition constraint has never gone away and is still true of the Voyager. Flown until 20 September 2013."},
 
   gbr_e00_tanker: {"fac":"gbr","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"weapons":[],"prereq":["airbase","radar"],"tech":2,"rcs":5.2,"radarQ":0,"gen":3.8,"name":"TriStar KC.1","full":"Lockheed TriStar K.1 / KC.1, 216 Squadron","cost":3500,"oil":80,"time":40,"hp":820,"speed":4.50,"ammo":0,"radius":180,"tanker":620,"refuelRate":18,"from":"e00","to":"e00","service":"1986","confidence":"high","desc":"Nine wide-bodies bought second-hand from British Airways and Pan Am because the Falklands had shown how thin the tanker force was, and for twenty-five years the only British aircraft that could carry a squadron and its fuel to the same place. This is the air bridge to Basra and Kandahar. Withdrawn 24 March 2014; Voyager had already begun taking over in 2012."},
-  gbr_e60_tanker: {"fac":"gbr","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"weapons":[],"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":3,"name":"Victor K.2","full":"Handley Page Victor K.2","cost":3000,"oil":68,"time":38,"hp":700,"speed":4.6,"ammo":0,"radius":140,"tanker":400,"refuelRate":15,"from":"e60","to":"e80","service":"1974","confidence":"high","desc":"The second V-bomber converted to tanking. Eleven Victors flew for every one Vulcan that bombed Port Stanley in 1982 - a 12,800km round trip that only existed because Britain kept a large tanker force. VC10 and TriStar tankers followed in the mid-1980s."},
+  gbr_e60_tanker: {"fac":"gbr","role":"tanker","cat":"aircraft","armor":"air","layer":"air","mass":0,"jet":true,"turn":0.9,"sight":9,"r":22,"weapons":[],"prereq":["airbase","radar"],"tech":2,"rcs":5,"radarQ":0,"gen":3,"name":"Victor K.1/K.2","full":"Handley Page Victor K.1 (1965) and K.2 (1974)","cost":3000,"oil":68,"time":38,"hp":700,"speed":4.6,"ammo":0,"radius":140,"tanker":400,"refuelRate":15,"from":"e60","to":"e80","service":"1965","confidence":"high","desc":"The third V-bomber, and the one the game keeps only as a tanker - its bomber career, November 1957 to 31 December 1968, falls entirely inside bands the Valiant and the Vulcan already hold. Converted to K.1 from 1965 because the Valiant tankers had just been grounded, and rebuilt as the K.2 from May 1974. Eleven Victors flew for every one Vulcan that bombed Port Stanley in 1982 - a 12,800km round trip that only existed because Britain kept a large tanker force. VC10 and TriStar tankers followed in the mid-1980s."},
   gbr_e80_rifle: {"fac":"gbr","role":"rifle","cat":"infantry","layer":"ground","name":"Rifle Section","full":"British Rifle Section, L85A1 and L86A1 LSW","cost":112,"oil":0,"time":4,"hp":90,"armor":"infantry","speed":1,"turn":7,"sight":5,"r":6,"mass":0.1,"weapons":["w_e80_gbr_rifle"],"prereq":["barracks"],"tech":1,"from":"e80","to":"e80","service":"1987","confidence":"high","desc":"Bullpup, 5.56mm, and issued with a four-power SUSAT optical sight on every rifle when other armies still had iron sights - genuinely ahead. The weapon itself was not: magazines fell out, parts broke, and it took the 1997 L85A2 rebuild by Heckler & Koch to make it reliable.","turret":false},
   gbr_e80_at: {"fac":"gbr","role":"at","cat":"infantry","layer":"ground","name":"LAW 80","full":"94mm LAW 80 disposable anti-armour weapon","cost":295,"oil":0,"time":8,"hp":85,"armor":"infantry","speed":0.83,"turn":6,"sight":9.2,"r":6,"mass":0.1,"weapons":["w_e80_gbr_at"],"prereq":["barracks"],"tech":1,"from":"e80","to":"e80","service":"1987","confidence":"high","desc":"Heavier than an AT4 at 10kg, and cleverer: a five-round 9mm spotting rifle is built in, so the firer confirms the range with a tracer strike before committing the rocket. The platoon's real tank-killer is MILAN, in service since 1978 and used to kill bunkers in the Falklands.","turret":false},
   gbr_e80_mbt: {"fac":"gbr","role":"mbt","cat":"vehicle","layer":"ground","name":"Challenger 1","full":"FV4030/4 Challenger 1","cost":1180,"oil":18,"time":22,"hp":1520,"armor":"heavy","speed":1.32,"turn":1.4,"sight":6.4,"r":16,"mass":62,"weapons":["w_e80_gbr_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e80","to":"e80","service":"1983","confidence":"high","desc":"Chobham composite armour, invented at Chertsey and licensed to the Americans and Germans. Britain kept the rifled 120mm when everyone else went smoothbore, because HESH is useful against buildings and the rifling gives accuracy. It won the Gulf tank-gunnery record at 5,100m.","turret":true,"tturn":1.4,"crush":true},
@@ -10521,15 +10527,20 @@ Object.assign(WEAPONS, {
      tankdestroyer, e50 / e60 / e80 / e00 — the SS.11 and ENTAC jeep mounts of
        the early period are already covered by the recon and lighttank
        entries, and VAB Méphisto withdrew in the 2010s with no replacement.
-     heavybomber — DELIBERATELY EMPTY in every era, and this one is a decision
-       rather than a historical gap. The Mirage IVA carried an independent
-       national deterrent from 1964 and the Mirage IVP carried ASMP from 1986,
-       but they are supersonic two-seat deltas, not strategic bombers, and the
-       standing rule in this game is that strategic bombers are American-only
-       — the same rule that keeps the Vulcan off the British roster. France's
-       airborne deterrent is recorded on the faction card and in these unit
-       descriptions instead. Reversing it means restoring five entries and the
-       hbomber_f row from the France roster documents.
+     heavybomber — SETTLED, and no longer empty for e60 to e90. The owner
+       lifted the American-only rule, so the Mirage IVA of 1 October 1964 with
+       the AN-11/AN-22 bomb and the Mirage IVP of 1 May 1986 with ASMP are in
+       heavyair.js beside the B-52 and the V-force. e50 is EMPTY because there
+       was no French warhead until 13 February 1960 and the jet bomber of that
+       decade, the Vautour IIB, was tactical. e00 and e20 are EMPTY because the
+       strike role left this aeroplane on 1 July 1996 for the two-seat Mirage
+       2000N and later the Rafale B, and the eighteen survivors flew strategic
+       RECONNAISSANCE only until 23 June 2005. Note that neither successor is
+       on this roster as a nuclear aircraft: fra_e90_cas is the CONVENTIONAL
+       Mirage 2000D and fra_e00_fighter is the Rafale, and hbomber_f - the
+       Rafale B with ASMP-A - is still deliberately absent, because a two-seat
+       fighter carrying one missile is a fighter. The Mirage IV is the only
+       French aircraft that was built for nothing else.
      stealthfighter / stealthbomber / gunshipair — none, ever, in any era.
      heavy — no French tank heavier than the Leclerc, and no hard-kill active
        protection on any French vehicle: Galix is smoke and decoys.

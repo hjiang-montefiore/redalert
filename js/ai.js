@@ -5614,6 +5614,23 @@ function makeCommander() {
        0.35x. Returning null instead drops it to the sweep branch, where AI-2
        holds it on the ramp. */
     if (a.def.role === "sead" || a.def.role === "ewair") return pickEmitter(a);
+    /* TERMINAL for the same reason, one role along. A strategic bomber whose
+       every round is HELD is carrying release authority the owner asked for by
+       name, and the branch below hunts the nearest harvester or heavy-armour
+       contact - so without this a commander would put a megaton Yellow Sun or
+       an AN-22 into an ore truck, and the gate would be decorative. It may
+       have the war aim and nothing else, and not a RAID: warAim() returns a
+       hauler when one scores higher than any structure, which is the same
+       wrong answer arriving by a different road. Null drops it to the sweep
+       branch, where the allWeaponsHeld guard holds it on the ramp - the same
+       treatment the Weasel already gets.
+       Gated on allWeaponsHeld so it changes nothing for the B-52 or the H-6:
+       no existing heavybomber carries a held round. */
+    if (a.def.role === "heavybomber" && a.allWeaponsHeld && a.allWeaponsHeld()) {
+      const st = warAim();
+      if (!st || st.raid || !st.ref || st.ref.dead) return null;
+      return st.ref.kind === "building" ? st.ref : null;
+    }
     /* ROUTE BY WHAT THE AIRCRAFT CAN SHOOT, NOT BY THE NAME OF ITS ROLE.
        Role "cfighter" is not sead/ewair, not "fighter" and not "cas", so every
        deck fighter in the game fell past both branches into the gunship branch

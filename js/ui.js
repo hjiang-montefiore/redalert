@@ -756,7 +756,9 @@ var UI = (function () {
       ? "CTRL + RIGHT-CLICK THE AIMPOINT TWICE TO RELEASE"
       : e.isIndirect()
       ? "CTRL + RIGHT-CLICK A MAP POINT<br>OR RIGHT-CLICK A TARGET YOU CAN SEE"
-      : "RIGHT-CLICK THE EMITTER<br>CTRL + RIGHT-CLICK WILL BE REFUSED";
+      : w0.antiRadiation
+      ? "RIGHT-CLICK THE EMITTER<br>CTRL + RIGHT-CLICK WILL BE REFUSED"
+      : "RIGHT-CLICK A TARGET YOU CAN SEE<br>CTRL + RIGHT-CLICK WILL BE REFUSED";
     let h = '<div class="stat warn">RELEASE <i>' +
             (held.length === e.def.weapons.length
               ? "HELD" : "HELD " + held.length + "/" + e.def.weapons.length) +

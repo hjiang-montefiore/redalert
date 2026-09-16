@@ -1924,7 +1924,10 @@ Object.assign(UNITS, {
      tankdestroyer — Striker/Swingfire withdrew in 2005 and the Ajax
               Overwatch ATGM variant was never fielded.
      heavybomber / stealthbomber / gunshipair — none, and none since the
-              last Vulcan retired in 1984.
+              last Vulcan retired in 1984. The V-force is not missing from
+              the game, only from this era: heavyair.js carries the Valiant
+              at e50 and the Vulcan at e60 and e80, and the Victor is
+              gbr_e60_tanker, because a tanker is what it became.
      cas    — no dedicated close air support aircraft since the Harrier
               went in 2010 and Tornado GR4 in 2019. bomber_b is the
               air-superiority fighter carrying Brimstone, and the name
@@ -2102,18 +2105,17 @@ Object.assign(UNITS, {
               aircraft and has no programme for one. Treat the role as
               functionally empty and read the card.
      heavybomber / stealthbomber / gunshipair / stealthfighter /
-     cstealth — none, ever. France declined the JSF outright, FCAS has
+     cstealth — none TODAY. France declined the JSF outright, FCAS has
               not flown a demonstrator, and the Charles de Gaulle air
-              group is Rafale M only. hbomber_f WAS written by the roster
-              as the Rafale B carrying ASMP-A, and it is left out here for
-              the same reason the Vulcan is left off the British roster:
-              strategic bombers are American-only in this game, and a
-              two-seat fighter with one stand-off missile is not a bomber
-              whatever role it would have to occupy. France's airborne
-              deterrent is on the faction card instead. Restoring it means
-              pasting back hbomber_f and the five fra_e**_heavybomber era
-              entries from the France roster documents; nothing else
-              depends on them.
+              group is Rafale M only. The heavybomber gap is now an e00
+              and e20 gap rather than a permanent one: the Mirage IV holds
+              fra_e60 to fra_e90 in heavyair.js and the strike role left it
+              on 1 July 1996. hbomber_f - the Rafale B with ASMP-A - stays
+              out, and for a reason that survived the V-force decision
+              rather than one it overturned: a two-seat fighter carrying one
+              stand-off missile is a fighter, and fighter_f already carries
+              that airframe in the role it actually flies. France's present
+              airborne deterrent is on the faction card instead.
      heavy  — EMPTY. No French tank heavier than the Leclerc and no
               hard-kill active protection on any French vehicle: Galix is
               a smoke and decoy dispenser.
