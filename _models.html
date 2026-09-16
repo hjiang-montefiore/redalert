@@ -371,6 +371,23 @@ try{
   chk("the mbt, ifv, recon and armour roles no longer borrow",
       borrow.filter(function(b){return /role=(mbt|ifv|recon|lighttank|heavy|tankdestroyer|spg|mlrs|spaag)$/.test(b);}).length===0,
       borrow.length+" left, all sam/tel/radarv by design");
+  /* the five open-topped howitzers that used to be drawn with no gun */
+  (function(){
+    var FIVE=["nato_e50_spg","roc_e50_spg","kpa_e60_spg","pla_e60_spg","roc_e60_spg"];
+    var noGun=[], ok=0;
+    FIVE.forEach(function(id){
+      var A=ARMOUR[id];
+      if(!A || A.turret==="none" || !(A.gunCal>0)){ noGun.push(id+" (spec)"); return; }
+      try{
+        var g=UNIT_MODELS[id].build(THREE, Models3D, {team:"#6a8"});
+        var n=0; g.traverse(function(){n++;});
+        if(n<6) noGun.push(id+" (only "+n+" nodes)"); else ok++;
+      }catch(e){ noGun.push(id+" ("+e.message+")"); }
+    });
+    chk("the five open-topped howitzers now carry a gun", noGun.length===0,
+        noGun.length?noGun.join(" | "):ok+" built with a mounted gun");
+  })();
+
   log("");
   log("==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(window.__errs.length?window.__errs.join(" | "):"NONE"));

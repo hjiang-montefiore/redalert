@@ -92,10 +92,10 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`,
       which conflates the hull's service date with the set inside it. This is a
       modelling gap and needs an owner decision, not a fix from me.
-- [!] Thirteen EXISTING ARMOUR rows draw a howitzer with NO BARREL: kind "open"
-      or a casemate with turret:"none" and a live gunCal, and armour3d only
-      draws a gun for a turret or a casemate. nato_e50_spg, kpa_e50_spg,
-      pact_e50_spg, pla_e50_spg and nine more.
+- [x] Five open-topped howitzers drawn with no gun - M44, M7B1 Priest, M110
+      and two 122s - given turret:"opentop", which builds the real crew tub AND
+      mounts the gun. (The first count of thirteen was wrong: the other eight
+      are casemates, and armour3d does draw a gun for those.)
 - [x] Units defaulted to e50 by the timeless-role branch are marked eraStamped
       (a guard: no timeless-role unit carries radar/radarQ/jam today, so the
       behavioural effect is nil until one does)
