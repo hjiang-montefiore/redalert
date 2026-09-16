@@ -155,6 +155,16 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 .sw.nuke.ready{border-color:#ff6a45}
 .sw.nuke.ready .swtx{color:#ffb098}
 .sw.armed{outline:1px solid #fff;background:#2a2110}
+/* An enemy silo is a clock, not a button: no pointer, cooler ground, and a
+   left edge that reads as a threat rather than an asset. */
+.sw.foe{cursor:default;background:#0d1014;border-color:#3a4a5a;border-left-width:3px}
+.sw.foe .swfill{background:rgba(90,140,190,.22)}
+.sw.foe .swtx{color:#8fb4d0}
+.sw.foe.nuke{border-color:#6a2a30;border-left-color:#c0403a;background:#140a0c}
+.sw.foe.nuke .swfill{background:rgba(200,60,50,.24)}
+.sw.foe.nuke .swtx{color:#e08a80}
+.sw.foe.ready{border-color:#ff5a3c;animation:swrdy .8s infinite}
+.sw.foe.ready .swtx{color:#ffb4a0}
 @keyframes swrdy{50%{border-color:#5a4a2a}}
 /* Re-equipping a generation is a headline decision, so it gets a bar of its
    own rather than a card at the bottom of a scrolling list. */

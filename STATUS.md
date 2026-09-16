@@ -32,6 +32,8 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Running now
 
+- [x] Nuclear/ballistic silo countdown is GLOBAL, both sides, like Red Alert 2
+
 - [ ] (workflows stopped - designs salvaged, applying them by hand)
 
 - [x] Era chains - 40 single-machine roles down to 21

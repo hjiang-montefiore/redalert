@@ -1082,6 +1082,47 @@ try{
     Game.fogEnabled=wasFog;
   })();
 
+  /* ====== BUG 38: the strategic clock is public, both ways ======
+     "the nuclear silo and silo warning/count down need to be global like
+     redalert2." The countdown existed but only for your own silo, so the
+     game told you a launch was coming and never how long you had. */
+  log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
+  (function(){
+    var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);
+    if(!mine||!theirs){ chk("silo scenario built", false, "no ground"); return; }
+    var a=Game.placeBuilding(P,"nukesilo",mine.x,mine.y,true);
+    var b=Game.placeBuilding(E,"nukesilo",theirs.x,theirs.y,true);
+    if(!a||!b){ chk("silo scenario built", false, "placeBuilding failed"); return; }
+    a.buildProgress=1; b.buildProgress=1;
+    for(var i=0;i<6;i++){
+      var p1=Game.placeBuilding(P,"power",mine.x+3+i*3,mine.y+4,true); if(p1) p1.buildProgress=1;
+      var p2=Game.placeBuilding(E,"power",theirs.x+3+i*3,theirs.y+4,true); if(p2) p2.buildProgress=1;
+    }
+    /* The suite drives Game.tick directly, so UI.frame - which is what calls
+       syncSuperweapons - never runs. Drive it explicitly. */
+    UI.refreshCards && UI.refreshCards();
+    for(var f=0;f<40;f++){ Game.tick(CFG.DT); if(UI.frame) UI.frame(CFG.DT); }
+    var box=document.getElementById("swbar");
+    chk("the strategic bar is shown", !!box && box.style.display==="flex",
+        box ? ("display="+box.style.display) : "no #swbar");
+    if(!box) return;
+    var rows=box.children.length;
+    chk("it lists BOTH silos, not just ours", rows>=2, rows+" rows");
+    var txt=box.textContent||"";
+    chk("and the enemy row is labelled as theirs", txt.indexOf("ENEMY")>=0,
+        JSON.stringify(txt.slice(0,80)));
+    /* the enemy row must not be a launch button */
+    var foeRow=null;
+    for(var r=0;r<box.children.length;r++) if(box.children[r]._foe) foeRow=box.children[r];
+    chk("the enemy row is a clock, not a button", !!foeRow && foeRow.className.indexOf("foe")>=0,
+        foeRow ? foeRow.className : "no foe row");
+    /* it counts DOWN */
+    var t1=(foeRow&&foeRow.querySelector(".swtx").textContent)||"";
+    for(var f2=0;f2<300;f2++){ Game.tick(CFG.DT); if(UI.frame) UI.frame(CFG.DT); }
+    var t2=(foeRow&&foeRow.querySelector(".swtx").textContent)||"";
+    chk("the enemy clock actually runs", t1!==t2, JSON.stringify(t1)+" -> "+JSON.stringify(t2));
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }

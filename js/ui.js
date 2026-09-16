@@ -2473,11 +2473,32 @@ var UI = (function () {
     });
   }
 
-  /* ---------- strategic weapons ---------- */
+  /* ---------- strategic weapons ----------
+     EVERY silo on the map, not only ours. A strategic weapon is the one thing
+     in this game that is not a secret: launchSuperweapon has always announced
+     an inbound to the side receiving it - "both sides are warned, there is no
+     surprise nuclear strike" - so a countdown that is visible only to the
+     owner told the player the launch was coming and never how long they had.
+     Knowing the enemy clock is the whole of the decision it creates: rush it,
+     disperse, or build the interceptor. That is how Red Alert 2 did it and the
+     owner asked for the same.
+
+     This is a deliberate exception to the fog rule and the only one in the
+     file. It is not intelligence about a position - the entry names no place
+     and clicking it does nothing - it is the clock, which both sides were
+     already told about the moment it ran out. A silo still has to be FOUND to
+     be attacked; nothing here reveals where it is. */
   function syncSuperweapons() {
     const box = document.getElementById("swbar");
     if (!box) return;
-    const silos = G.human.buildings.filter(b => !b.dead && b.def.superweapon && b.buildProgress >= 1);
+    const mine = G.human.buildings.filter(b => !b.dead && b.def.superweapon && b.buildProgress >= 1);
+    const theirs = [];
+    for (const p of G.players) {
+      if (p === G.human || p.defeated || G.allied(G.human, p)) continue;
+      for (const b of p.buildings)
+        if (!b.dead && b.def.superweapon && b.buildProgress >= 1) theirs.push(b);
+    }
+    const silos = mine.concat(theirs);
     if (!silos.length) { box.innerHTML = ""; box.style.display = "none"; return; }
     box.style.display = "flex";
     const want = silos.map(b => b.id).join(",");
@@ -2485,10 +2506,11 @@ var UI = (function () {
       box.dataset.sig = want;
       box.innerHTML = "";
       for (const b of silos) {
+        const foe = b.owner !== G.human;
         const el = document.createElement("div");
-        el.className = "sw" + (b.def.superweapon.nuke ? " nuke" : "");
+        el.className = "sw" + (b.def.superweapon.nuke ? " nuke" : "") + (foe ? " foe" : "");
         el.innerHTML = '<div class="swfill"></div><div class="swtx"></div>';
-        el.addEventListener("click", () => {
+        if (!foe) el.addEventListener("click", () => {
           if (b.dead || b.swCharge < 1) { G.alert("SILO NOT READY", "bad"); return; }
           input.launching = b;
           input.placing = null;
@@ -2496,7 +2518,8 @@ var UI = (function () {
           G.alert("SELECT TARGET — RMB CANCELS", "good");
           Sfx.play("click");
         });
-        el._b = b;
+        else el.title = "An enemy strategic weapon. The clock is public; the silo is not.";
+        el._b = b; el._foe = foe;
         box.appendChild(el);
       }
     }
@@ -2509,8 +2532,20 @@ var UI = (function () {
       el.classList.toggle("ready", ready);
       el.classList.toggle("armed", input.launching === b);
       const secs = Math.ceil((1 - pct) * b.def.superweapon.charge);
-      el.querySelector(".swtx").textContent =
-        (b.def.superweapon.nuke ? "NUCLEAR" : "BALLISTIC") + " · " + (ready ? "READY" : U.mmss(secs));
+      const kind = b.def.superweapon.nuke ? "NUCLEAR" : "BALLISTIC";
+      el.querySelector(".swtx").textContent = el._foe
+        ? ("ENEMY " + kind + " \u00b7 " + (ready ? "ARMED" : U.mmss(secs)))
+        : (kind + " \u00b7 " + (ready ? "READY" : U.mmss(secs)));
+      /* One warning per silo as the enemy clock runs down, so a player who is
+         not watching the sidebar still gets the chance to do something about
+         it. Thirty seconds is about one more production cycle. */
+      if (el._foe && !ready && secs <= 30 && !b._warn30) {
+        b._warn30 = true;
+        G.alert("ENEMY " + kind + " READY IN " + U.mmss(secs), "bad");
+        if (typeof Threat !== "undefined" && Threat.fire)
+          Threat.fire(2, "ENEMY " + kind + " ALMOST READY", U.mmss(secs) + " REMAINING");
+      }
+      if (el._foe && !ready && secs > 40) b._warn30 = false;   // re-arm after a launch
     }
   }
 
