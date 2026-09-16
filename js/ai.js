@@ -122,6 +122,252 @@ function aaProfile(key) {
   return AAG[key];
 }
 
+/* ============ the doctrine prior: what the commander knows before it has
+   learned anything ========================================================
+   counterMix() below turns the observed picture into purchase weights, and
+   every coefficient in it was chosen by hand. They are defensible numbers and
+   they are the same numbers for every army in every decade, which is the one
+   thing they cannot be. `add(inf, "at", 0.34 * armour ...)` says the infantry
+   missile is worth a third of the anti-armour response - to the KPA, whose
+   Chonma-ho makes 365 mm against a 738 mm era plate (ratio 0.49, NO
+   PENETRATION, twelve per cent of 165 damage on a five-second reload), and
+   equally to the British, who at e20 own no tank destroyer at all and answer
+   armour with the tank and the NLAW.
+
+   All of that is COMPUTABLE, off tables the player can read in the sidebar:
+   CFG.DMG, CFG.PEN_PER_DMG, PEN_NONE/PEN_FULL, the weapon table and the unit
+   costs. This is DOCTRINE, not intelligence - the same distinction gunProfile()
+   above already makes. "HEAT defeats heavy armour" is a training manual every
+   officer has; "twelve tanks are behind that ridge" is a sighting and stays in
+   seenU. Nothing here reads a map, a unit, a sighting or another player: it is
+   a function of (faction, era) and it is cached on that key.
+
+   WHAT IS PRICED, per weapon, per target class:
+     dmg x burst x acc / cycle   the sustained rate it actually puts out. Same
+                                 derivation gunProfile() uses above, so the two
+                                 readings in this file agree about the same gun.
+     CFG.dmgMult(warhead, class) the warhead matrix, unmodified.
+     the penetration model       pen against an era-typical plate, through the
+                                 identical PEN_NONE 0.72 / PEN_FULL 1.00 linear
+                                 ramp resolveArmor uses. VEHICLES ONLY:
+                                 resolveArmor returns null for infantry,
+                                 structures and aircraft, so those get the flat
+                                 matrix, exactly as in the engine.
+     w.tgt                       a flak mount is not in a tank's war and a
+                                 cannon is not in an aeroplane's. Decisive, and
+                                 invisible unless you read it.
+     accMul / rangeMul / ammoQ / costMul   OUR OWN army's published modifiers.
+                                 Value per CREDIT is the question, and NATO's
+                                 costMul 1.06 is a real tax on every purchase.
+   ...and what is deliberately NOT:
+     aspect and ricochet   CFG.ASPECT_MUL front is 1.00 by construction, so
+                           pricing the frontal arc prices the trade a PURCHASE
+                           guarantees. A flank multiplier prices a manoeuvre,
+                           and a queue cannot buy a manoeuvre.
+     area of effect        an M270 pod is aoe 2.0 with burst 12, and what that is
+                           worth depends on how the enemy is spaced - which is a
+                           sighting. So the artillery terms below keep their
+                           hand-argued reach basis and the prior never touches
+                           them.
+     suppression           the machine-gun term is argued from SUPPRESS_BREAK 86
+                           against fourteen rounds at 30 suppression each, not
+                           from damage. Damage is not what shifts a squad in
+                           cover, so a damage table cannot price the mg and must
+                           not pretend to. (It shows: the infantry modulators
+                           come out 0.88-1.24 for all eight armies - the table
+                           correctly finds nothing to say there.)
+     survivability         which is why this MODULATES and never replaces. The
+                           400-credit Javelin team is the best anti-armour value
+                           per credit in EVERY army in EVERY era, and an army of
+                           nothing but Javelin teams loses to a rifle company.
+                           The clamp below and the guard() floor at the foot of
+                           counterMix are what stop that, and both still run.
+
+   THE OUTPUT is one number per role per target class: this army's SHARE of its
+   own buyable answer to that class, over the share a typical army of the PERIOD
+   puts there. A raw per-credit figure is not comparable across categories -
+   normalised against a flat 1/N it saturates the clamp at 1.80 for `at` and
+   0.55 for `mortar` for all eight armies, which differentiates nothing. Against
+   the period mean, "every army's AT team is cheap" cancels out and what
+   survives is exactly "THIS army's missile is unusually good, its gun unusually
+   bad". An unremarkable army scores 1.00 everywhere and counterMix behaves as
+   it always has. Measured off the tables as they stand:
+
+     e20 KPA   mbt 0.57  heavy 0.55  ifv 1.80 - sixty-seven per cent of
+         everything it owns against a tank rides on shaped charges where a
+         typical army puts twenty-two, and its best anti-armour vehicle per
+         credit is the VTT-323, whose Bulsae-3 is pen 850 where the infantry
+         launcher is 700. counterMix cuts the IFV 35% against armour.
+     e20 NATO  ifv 1.35  lighttank 1.69 - the Bradley scores 30.1 per 1,000
+         credits against heavy where the Abrams scores 22.7, and brings a rifle
+         section. At e60 the same army's ifv is 0.55 (M113 ACAV, 20 mm, 0.14).
+         One constant cannot be right in both decades.
+     e60 PACT  ifv 1.80 (raw 4.18) - the BMP-1's 73 mm and Malyutka against a
+         161 mm period plate. Same 35% cut, equally wrong.
+     e20 FRA   at 1.53  mbt 1.55, tankdestroyer NONE - France answers armour
+         with the tank and the missile and owns no dedicated carrier.
+     e20 ROC   mbt 0.55 - a 440 mm gun against a 738 mm plate is ratio 0.60.
+     e20 GBR   aa 0.00  spaag 0.00 - NOT a share, a hard zero. Starstreak
+         declares warhead "cannon" (three tungsten darts, which is right) and
+         CFG.DMG.cannon.air is 0.00, so both British SHORAD mounts do literally
+         nothing to an aircraft. That belongs in eras.js, not here; until it is
+         fixed the commander should not spend on them.
+
+   COST, measured: 0.44 ms to build one faction+era including the eight-army
+   norm, once, on the first think() that needs it; 73 ns a lookup after that.
+   doctPlate walks only the five armour role lists - 37 in-era hulls at e20,
+   not 1,202 units - and doctValue touches at most eleven units.            */
+const DOCT_CLASS = ["infantry", "light", "heavy", "air", "structure"];
+/* the roles counterMix actually trades in, grouped by the question they answer.
+   A role the prior has no opinion about - spg, mlrs, sniper, radarv - is
+   deliberately absent: see the area-of-effect and reach notes above. */
+const DOCT_SET = {
+  heavy:    ["at", "tankdestroyer", "mbt", "heavy", "ifv", "lighttank"],
+  infantry: ["mg", "mortar", "rifle"],
+  air:      ["aa", "spaag"],
+  light:    ["lighttank", "at"],
+};
+const DOCT_FAC = Object.keys(FACTIONS);
+
+/* What a tank and a carrier of THIS GENERATION are protected by. Era-typical
+   and deliberately not the plate we have looked at: heatEdge() already carries
+   the observed-plate question, and keeping a sighting out of here is what lets
+   the cache key be (faction, era) and lets this table be shared between
+   commanders at module level. Measured: 161 mm at e60, 738 mm at e20 - which is
+   the see-saw generations.js describes, and the reason an answer that is right
+   in 1965 is wrong in 2020. */
+const DOCT_PLATE = {};
+function doctPlate(era) {
+  if (DOCT_PLATE[era]) return DOCT_PLATE[era];
+  const med = (a, dflt) => {
+    if (!a.length) return dflt;
+    a.sort((x, y) => x - y);
+    return a[a.length >> 1];
+  };
+  /* the same derivation armorAt() uses when a hull declares no armorMM */
+  const plate = (u) => {
+    if (u.armorMM && u.armorMM.front) return u.armorMM.front;
+    const base = CFG.ARMOR_MM[u.armor] || CFG.ARMOR_MM.light;
+    const ref  = CFG.ARMOR_HP_REF[u.armor] || 500;
+    return base.front * Math.sqrt(U.clamp((u.hp || ref) / ref, 0.3, 3.2));
+  };
+  const hv = [], lt = [];
+  for (const role of ["mbt", "heavy", "ifv", "lighttank", "recon"])
+    for (const k of (ROLES[role] || [])) {
+      const u = UNITS[k];
+      if (!u || !inEra(u, era)) continue;
+      if (u.armor === "heavy") hv.push(plate(u));
+      else if (u.armor === "light") lt.push(plate(u));
+    }
+  return (DOCT_PLATE[era] = { heavy: med(hv, 540), light: med(lt, 62) });
+}
+
+/* expected value per 1,000 credits, by role, by target class */
+function doctValue(fac, era) {
+  const f = FACTIONS[fac] || {}, aq = f.ammoQ || 1, ref = doctPlate(era);
+  const out = {};
+  for (const set in DOCT_SET) for (const role of DOCT_SET[set]) {
+    if (out[role]) continue;                 // lighttank and at are in two sets
+    const id = unitFor(fac, role, era), u = id && UNITS[id];
+    if (!u) continue;                        // this army has no such unit: none
+    const cost = Math.round((u.cost || 0) * (f.costMul || 1));
+    if (cost <= 0) continue;
+    const v = { infantry: 0, light: 0, heavy: 0, air: 0, structure: 0 };
+    for (const wk of (u.weapons || [])) {
+      const w = WEAPONS[wk];
+      if (!w || !w.tgt) continue;
+      const cyc = Math.max(0.5, (w.reload || 2) + (w.burst || 1) * (w.burstDelay || 0));
+      const acc = U.clamp((w.acc === undefined ? 0.7 : w.acc) * (f.accMul || 1), 0.03, 0.98);
+      const dps = (w.dmg || 0) * (w.burst || 1) * acc / cyc;
+      /* anchored at 1.00 for a tank gun at eight tiles, the same way
+         ASPECT_MUL anchors the frontal arc: a tiebreaker, not the argument */
+      const rch = 0.75 + 0.25 * U.clamp((w.range || 0) * (f.rangeMul || 1) / 8, 0, 3);
+      const decl = w.pen !== undefined;
+      let pen = decl ? w.pen : (w.dmg || 0) * (CFG.PEN_PER_DMG[w.warhead] || 0.5);
+      /* penOf() applies the ammunition-quality bonus only to a DERIVED figure,
+         because a declared pen is already that army's real number */
+      if (!decl && (w.warhead === "cannon" || w.warhead === "heat")) pen *= 1 + (aq - 1) * 0.6;
+      const ke = w.warhead === "cannon" || w.warhead === "heat";
+      for (const c of DOCT_CLASS) {
+        if (c === "air" ? !w.tgt.air : !w.tgt.ground) continue;
+        let x = dps * CFG.dmgMult(w.warhead, c) * rch;
+        if (c === "heavy" || c === "light") {
+          if (ke) x *= c === "heavy" ? aq : 1 + (aq - 1) * 0.5;
+          /* resolveArmor returns null for anything that is not a vehicle, so
+             infantry, structures and aircraft never reach this branch - which
+             is why they are priced off the flat matrix, exactly as in combat */
+          if (CFG.PEN_WARHEADS[w.warhead]) {
+            const r = pen / ref[c];
+            x *= r < CFG.PEN_NONE ? CFG.PEN_FAIL_MUL
+               : r < CFG.PEN_FULL ? CFG.PEN_FAIL_MUL + (1 - CFG.PEN_FAIL_MUL) *
+                                    (r - CFG.PEN_NONE) / (CFG.PEN_FULL - CFG.PEN_NONE)
+               : 1;
+          }
+        }
+        v[c] += x;
+      }
+    }
+    for (const c of DOCT_CLASS) v[c] = v[c] / cost * 1000;
+    out[role] = v;
+  }
+  return out;
+}
+
+/* What share a TYPICAL army of this period puts on each role. A mean over the
+   eight published rosters, and nothing else - it says nothing about which
+   armies are in this match or where anything is, and the same number comes out
+   whether the commander faces one opponent or five. Comparing your own army
+   against the period's armies is what a staff college teaches; it is the same
+   class of static-table reading as GUNS and AAG above. */
+const DOCT_NORM = {};
+function doctNorm(era) {
+  if (DOCT_NORM[era]) return DOCT_NORM[era];
+  const acc = {}, n = {};
+  for (const fac of DOCT_FAC) {
+    const v = doctValue(fac, era);
+    for (const c in DOCT_SET) {
+      let tot = 0;
+      for (const role of DOCT_SET[c]) if (v[role]) tot += v[role][c];
+      if (tot <= 0) continue;
+      acc[c] = acc[c] || {}; n[c] = n[c] || {};
+      for (const role of DOCT_SET[c]) if (v[role]) {
+        acc[c][role] = (acc[c][role] || 0) + v[role][c] / tot;
+        n[c][role]   = (n[c][role] || 0) + 1;
+      }
+    }
+  }
+  for (const c in acc) for (const role in acc[c]) acc[c][role] /= n[c][role];
+  return (DOCT_NORM[era] = acc);
+}
+
+/* the manual, cached on faction+era. 1.00 means unremarkable and counterMix is
+   untouched. The clamp is the variety guard: a modulator between 0.55 and 1.80
+   can shift emphasis but can never invent a role or delete one. The ONE value
+   outside it is a hard 0 - not a preference but the tgt-mask-and-matrix answer
+   "this weapon is not in that war at all", the same fact gunProfile() acts on
+   when it throws a SAM site's weapon away. */
+const DOCT = {};
+function doctrine(fac, era) {
+  const key = fac + "|" + era;
+  if (DOCT[key]) return DOCT[key];
+  const v = doctValue(fac, era), norm = doctNorm(era), out = {};
+  for (const c in DOCT_SET) {
+    out[c] = {};
+    let tot = 0;
+    for (const role of DOCT_SET[c]) if (v[role]) tot += v[role][c];
+    for (const role of DOCT_SET[c]) {
+      /* no unit for the role at all: stay neutral and let buildToward's
+         twenty-second cool-down redistribute, which is what it is for */
+      if (!v[role])        { out[c][role] = 1; continue; }
+      if (v[role][c] <= 0) { out[c][role] = 0; continue; }
+      const share = tot > 0 ? v[role][c] / tot : 0;
+      const t = (norm[c] && norm[c][role]) || share || 1;
+      out[c][role] = U.clamp(share / t, 0.55, 1.80);
+    }
+  }
+  return (DOCT[key] = out);
+}
+
 /* ---- what an objective is worth, and why that is not its price tag ----
    The old scorer valued a structure at cost/400 plus Threat.tierOf * 2 - and
    tierOf grades a BUILDING on cost as well, because nothing in its NAMED
@@ -1579,6 +1825,18 @@ function makeCommander() {
     if (P.tech >= 3) { veh.heavy = 0.13; veh.mlrs = 0.12; }
     const grip = D.read === undefined ? 1 : D.read;
     if (grip <= 0) return { inf, veh };          // a Recruit builds the standing mixture
+    /* The training manual for THIS army in THIS decade - see doctrine() above.
+       It MODULATES the hand-chosen coefficients below rather than replacing
+       them, for three reasons. Every term here is coefficient x observed share
+       x grip, so a constant factor preserves the response to the picture
+       exactly - the adaptation gets SHARPER for an unusual army, never weaker.
+       The constants know things the manual structurally cannot see:
+       suppression, reach against a prepared position, an active protection
+       system against a missile, a thin hull dying inside a defended base. And
+       an army that bought purely by value per credit would buy nothing but
+       infantry missiles and lose to a rifle company. The manual knows the
+       ammunition; these numbers know the war. */
+    const dm = doctrine(P.faction, P.era || CUR_ERA);
     const armour = a.sArmour, foot = a.sInf, light = a.sLight, guns = a.sArty;
     const air  = U.clamp(a.air / 3, 0, 1);
     const line = U.clamp(a.line / 70, 0, 1);     // ~70 dps is three or four AT guns
@@ -1596,7 +1854,7 @@ function makeCommander() {
          365, against a modern glacis of 705 to 744. Per credit nothing in the
          roster is close, it needs only a barracks and tech 1, and for the KPA
          and the ROC it is very nearly the only anti-armour weapon they own. */
-      add(inf, "at", 0.34 * armour * grip * (0.6 + 0.4 * heat));
+      add(inf, "at", 0.34 * armour * grip * (0.6 + 0.4 * heat) * dm.heavy.at);
       /* The same warhead on a chassis that can keep up with the wave, and at
          9.6 tiles it outranges every tank gun in the game and the anti-tank
          emplacement with it - but it is a LIGHT hull, so it is bought against
@@ -1605,10 +1863,12 @@ function makeCommander() {
          skin loses it. Discounted against the tech-3 heavy: combat.js rolls
          its aps 0.40-0.45 against every incoming missile and does nothing
          whatever to a long rod. */
-      add(veh, "tankdestroyer", 0.30 * armour * grip * (1 - 0.45 * aps) * (0.5 + 0.5 * heat));
+      add(veh, "tankdestroyer", 0.30 * armour * grip * (1 - 0.45 * aps) *
+                                (0.5 + 0.5 * heat) * dm.heavy.tankdestroyer);
       /* and back toward the gun exactly where the gun is the better answer */
-      if (P.tech >= 2) add(veh, "mbt", 0.16 * armour * grip * (1 - heat) + 0.10 * armour * grip * aps);
-      if (P.tech >= 3) add(veh, "heavy", 0.14 * armour * grip);
+      if (P.tech >= 2) add(veh, "mbt", (0.16 * armour * grip * (1 - heat) +
+                                        0.10 * armour * grip * aps) * dm.heavy.mbt);
+      if (P.tech >= 3) add(veh, "heavy", 0.14 * armour * grip * dm.heavy.heavy);
       /* And fewer of these. The light tank's 76mm makes 624 mm against a 705
          plate - ratio 0.885, PARTIAL PENETRATION, so a 60-damage gun arrives
          as about 36 against eighteen hundred hit points, standing in the open
@@ -1621,7 +1881,31 @@ function makeCommander() {
          against a tank corps, so the discount stands - and is if anything too
          gentle for the armies with no missile at all. The old dice put a
          fifth of the vehicle queue into the pair of them unconditionally. */
-      veh.ifv       *= 1 - 0.35 * armour * grip;
+      /* mod 1.00 is exactly the old 0.35 and 0.70. A Bradley at 1.35 (30.1 per
+         thousand credits against heavy, where the Abrams makes 22.7, and it
+         carries a rifle section) is cut 0.23; a Warrior at 0.55, whose only
+         weapon is a 25 mm autocannon making 12 mm against an 82 mm glacis, is
+         cut 0.51. The 1965 BMP-1 and the 2020 Bradley were both being cut 0.35
+         by the same line, and so was the FV432 with a GPMG. */
+      veh.ifv       *= 1 - 0.35 * armour * grip * U.clamp(2 - dm.heavy.ifv, 0.2, 1.45);
+      /* The light tank keeps the FLAT 0.70 discount it has always had, and the
+         doctrine manual is deliberately NOT consulted for it.
+
+         Two reviewers measured the modulated version and it ran backwards:
+         NATO e20 reads dm.heavy.lighttank 1.69 - which says "unusually good
+         against armour" - while a Stryker MGS is worth 11.0 per thousand
+         credits against a heavy plate, 0.17 of what NATO's best answer to a
+         tank is worth. The share normalisation is the reason. Where a role is
+         one of only two or three the army can field against a class, its
+         SHARE of that army's answer is large even when its absolute value is
+         derisory, and the light tank is exactly that case in every roster.
+         Wired in, it nearly doubled the KPA's light-tank buy - 0.040 to
+         0.079 - against a tank corps, which is the opposite of the trade the
+         line exists to prevent.
+
+         The hand constant knows the thing the table cannot see: a 76mm gun
+         standing in the open against composite armour is a bad trade whatever
+         share of the roster it represents. */
       veh.lighttank *= 1 - 0.70 * armour * grip;
     }
 
@@ -1635,10 +1919,10 @@ function makeCommander() {
          one burst does not merely break a squad, it buries the threshold - and
          CFG.ROUT_TIME then sends it running for six seconds. That is the
          mechanism, and the machine-gun team is 280 credits. */
-      add(inf, "mg", 0.22 * foot * grip);
+      add(inf, "mg", 0.22 * foot * grip * dm.infantry.mg);
       /* frag is 1.15 against infantry where bullet is 1.00, and it arrives
          over one and a half to two and a half tiles with suppression attached */
-      add(inf, "mortar", 0.14 * foot * grip);
+      add(inf, "mortar", 0.14 * foot * grip * dm.infantry.mortar);
       if (P.tech >= 2) add(veh, "spg", 0.16 * foot * grip * ab);
       if (P.tech >= 3) add(veh, "mlrs", 0.14 * foot * grip * ab);
       /* a tank gun is 0.35 against a man; the wave does not need more of them */
@@ -1683,8 +1967,13 @@ function makeCommander() {
        vehicle against an enemy with no aircraft, and flak is 0.04 against
        heavy armour, one point a shell. */
     if (air > 0) {
-      add(inf, "aa", 0.16 * air * grip);
-      add(veh, "spaag", 0.18 * air * grip);
+      /* dm.air is a hard 0, not a share, where the mount cannot damage an
+         aircraft at all: Starstreak declares warhead "cannon" - three tungsten
+         darts, which is right - and CFG.DMG.cannon.air is 0.00, so both British
+         SHORAD vehicles are worth nothing against aeroplanes. That belongs in
+         the weapon table; until it is fixed, not buying them is correct. */
+      add(inf, "aa", 0.16 * air * grip * dm.air.aa);
+      add(veh, "spaag", 0.18 * air * grip * dm.air.spaag);
     } else {
       inf.aa *= 1 - 0.5 * grip;
       if (veh.spaag) veh.spaag *= 1 - 0.5 * grip;
@@ -1698,8 +1987,8 @@ function makeCommander() {
        cheap answer to a column of carriers is the light tank rather than
        another carrier. */
     if (light > 0.40 && armour < 0.15) {
-      add(veh, "lighttank", 0.10 * light * grip);
-      add(inf, "at", 0.08 * light * grip);
+      add(veh, "lighttank", 0.10 * light * grip * dm.light.lighttank);
+      add(inf, "at", 0.08 * light * grip * dm.light.at);
     }
 
     /* A monoculture in the other direction is the failure mode of all this, so
@@ -5420,6 +5709,7 @@ function makeCommander() {
                home: intelHome(rival), aim: aim,
                graves: graves.length, axes: lastAxes.slice(), siege: siegeAt,
                arms: foeArms(), mix: counterMix(foeArms()),
+               doctrine: doctrine(P.faction, P.era || CUR_ERA),
                objectives: objectives().slice(0, 6),
                /* Exposed for the same reason `look`, `graves` and `axes`
                   already are: so a test or an overlay can see whether any of
@@ -5468,6 +5758,10 @@ return {
     for (const c of commanders) if (c.player === player) return c.intel();
     return null;
   },
+  /* the doctrine prior for any army in any decade, with no commander and no
+     game needed - it is a function of two strings and static tables */
+  doctrineOf(fac, era) { return doctrine(fac, era || CUR_ERA); },
+  doctValueOf(fac, era) { return doctValue(fac, era || CUR_ERA); },
   personalities: PERSONALITY_LIST,
   personalityName(k) { return (PERSONALITY[k] || PERSONALITY.balanced).name; },
 };

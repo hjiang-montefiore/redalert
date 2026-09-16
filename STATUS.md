@@ -42,10 +42,23 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 - [x] SEAD complete: off the ramp, transit routes round a ring, and EW aircraft
       engage a radiating emitter automatically off a SHARED electronic picture
 
+## Known data faults, recorded not swept
+
+- [!] eras.js defines TWELVE weapon keys twice - w_e60/e80_pact_tankdestroyer,
+      w_e60/e80_pact_cfighter, w_e80_pact_carrier, w_e60_pact_aswhelo,
+      w_e60_pact_heavy, w_e80_pla_tankdestroyer and more. The later definition
+      silently wins, so an edit to the first copy is invisible.
+
 ## Still to do, biggest first
 
-- [ ] Explore/exploit - the AI learns what works instead of repeating
-- [ ] Pre-trained doctrine prior, which learning then overrides
+- [!] Explore/exploit - DESIGNED AND REJECTED. Two of three reviewers returned
+      BROKEN: the reward is uncentred and the drift clamp bounds q absolutely, so
+      every arm converges to the same value and the bandit never exploits -
+      exactly the 'randomness wearing a bandit's clothes' failure. Also: kills
+      count units only, so razing a base scores zero; the 'rear' axis arm is
+      mathematically unreachable; and it reads ref on a 5s liveness invariant
+      using 8s. Needs redesigning, not patching.
+- [x] Pre-trained doctrine prior - derived from CFG.DMG, modulating counterMix
 - [ ] Surface fleet audit - 8 navies, 31 FATAL and 64 major findings, saved in
       salvage/ and NOT YET APPLIED. Includes four Soviet weapons with inverted
       target masks, which is a live combat bug, and area-air-defence missing
