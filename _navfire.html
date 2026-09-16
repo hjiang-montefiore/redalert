@@ -345,8 +345,14 @@ try{
   /* A fixed-wing aircraft will not hold still - that is deliberate, and this
      project put it there. So pin the target each tick: this measures whether
      the MOUNT works, not whether the bomber happened to loiter in reach. */
+  /* Every duel gets its OWN water. Spawning them all on one tile stacked the
+     hulls, and a bomber from an earlier duel was still alive long enough to
+     kill the next shooter - which showed up as three weapons "dealing zero"
+     that deal damage perfectly well in isolation. The test was wrong, not the
+     mount. */
+  var DUEL = 0;
   function duel(name, shooterId, targetId, secs){
-    var t = tile(P,"sea",4);
+    var t = tile(P,"sea", 4 + (DUEL++ % 11) * 3);
     var s = spawn(P, shooterId, t, 0, 0);
     var v = spawn(E, targetId, t, 2, 0);
     if(!s||!v){ chk(name,false,"spawn failed"); return; }
@@ -432,6 +438,18 @@ try{
   duel("De Grasse vs a destroyer",  "fra_e50_cruiser",   "destroyer_n", 18);
   duel("Long Beach vs a destroyer", "nato_e60_cruiser",  "destroyer_n", 18);
   duel("QE carrier defends herself","carrier_b",         "bomber_p",    12);
+
+  log("");
+  log("[N5] CORVETTES AND LIGHT CRAFT DEFEND THEMSELVES");
+  duel("Perry SM-1MR",             "nato_e80_corvette", "bomber_p", 12);
+  duel("LCS SeaRAM",               "nato_e00_corvette", "bomber_p", 12);
+  duel("Nanuchka SA-N-4 Osa-M",    "pact_e80_corvette", "bomber_n", 12);
+  duel("Tarantul AK-630",          "pact_e90_corvette", "bomber_n", 12);
+  duel("Type 056 HQ-10",           "pla_e00_corvette",  "bomber_n", 12);
+  duel("Soviet 57mm AK-725",       "pact_e60_corvette", "bomber_n", 12);
+  duel("USN twin 3in/50 Mk 33",    "nato_e50_corvette", "bomber_p", 12);
+  duel("ROC 40mm on a gunboat",    "roc_e90_corvette",  "bomber_n", 12);
+  duel("KPA light AA",             "kpa_e50_corvette",  "bomber_n", 12);
 
   log("");
   log("==== "+PASS+" passed, "+FAIL+" failed ====");

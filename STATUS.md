@@ -44,17 +44,13 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Known data faults, recorded not swept
 
-- [!] Corvette anti-aircraft fire is now honestly ZERO. Twenty-five corvette gun
-      rows were masked tgt.air with an HE warhead, which deals 0.00 to an
-      aircraft - they were firing blanks and ignoring ships they could hit. The
-      mask is off, so nothing was lost that worked. But most of these ships
-      really did carry a CIWS or a short-range SAM, and giving each its real fit
-      is a pass of its own.
+- [x] Corvette air defence - 24 hulls given their real point-defence fit.
 
-- [!] eras.js defines TWELVE weapon keys twice - w_e60/e80_pact_tankdestroyer,
-      w_e60/e80_pact_cfighter, w_e80_pact_carrier, w_e60_pact_aswhelo,
-      w_e60_pact_heavy, w_e80_pla_tankdestroyer and more. The later definition
-      silently wins, so an edit to the first copy is invisible.
+- [x] eras.js duplicate keys - CLOSED. It was not twelve scattered mistakes: a
+      476-line block was pasted twice at the foot of the file, producing ~57
+      duplicated keys at a constant 578-line offset. The two copies were
+      BYTE-IDENTICAL, so deleting the later one fixed every duplicate at once
+      and changed nothing. Verified: 0 duplicates, both suites unchanged.
 
 ## Still to do, biggest first
 

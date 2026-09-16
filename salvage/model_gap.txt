@@ -1,0 +1,124 @@
+gbr/fra/deu VEHICLES: 117   with an ARMOUR spec row: 0
+
+### DEU  (31)
+  e00  ifv         Puma                      Schuetzenpanzer Puma
+  e00  mbt         Leopard 2A6               Kampfpanzer Leopard 2A6 (L/55)
+  e50  ifv         SPz 12-3 lang             Schuetzenpanzer lang HS.30
+  e50  lighttank   M41 Walker Bulldog        M41 Walker Bulldog
+  e50  mbt         M47 Patton                M47 Patton
+  e50  recon       SPz 11-2 Kurz             Schuetzenpanzer kurz 11-2 (Hotchkiss)
+  e50  spaag       Flakpanzer M42            M42 Duster, twin 40mm
+  e50  spg         M44                       M44 155mm self-propelled howitzer
+  e60  ifv         Marder 1                  Schuetzenpanzer Marder 1
+  e60  mbt         Leopard 1                 Kampfpanzer Leopard 1
+  e60  mlrs        LARS 1                    110mm Leichtes Artillerieraketensystem 1
+  e60  radarv      Green Archer              M113 A1 G Green Archer (FA No. 8 Mk 2)
+  e60  recon       Spaehpanzer Luchs         Spaehpanzer 2 Luchs (8x8)
+  e60  sam         HAWK                      MIM-23 HAWK battery
+  e60  spaag       Flakpanzer Gepard         Flakpanzer Gepard 1A1/1A2
+  e60  spg         M109G                     M109G 155mm self-propelled howitzer
+  e60  tankdestroyerRaketenjagdpanzer 2       Raketenjagdpanzer 2 (SS.11)
+  e60  tel         MGM-29 Sergeant           MGM-29A Sergeant, dual key
+  e80  ifv         Marder 1A2                Schuetzenpanzer Marder 1A2
+  e80  mbt         Leopard 2                 Kampfpanzer Leopard 2 A0-A4
+  e80  mlrs        LARS 2                    110mm LARS 2 on MAN 7t chassis
+  e80  radarv      ABRA / RATAC              M113 ABRA, Artillerie-Beobachtungsradar RATAC
+  e80  sam         Improved HAWK             MIM-23B Improved HAWK
+  e80  spg         M109A3G                   M109A3G 155mm self-propelled howitzer
+  e80  tankdestroyerJaguar 1                  Jagdpanzer Jaguar 1 (HOT)
+  e80  tel         MGM-52 Lance              MGM-52C Lance, dual key
+  e90  ifv         Marder 1A3                Schuetzenpanzer Marder 1A3
+  e90  mbt         Leopard 2A5               Kampfpanzer Leopard 2A5
+  e90  mlrs        MARS                      Mittleres Artillerieraketensystem (M270)
+  e90  radarv      RATAC-S                   M113 ABRA with RATAC-S
+  e90  sam         Patriot PAC-2             MIM-104 Patriot PAC-2
+
+### FRA  (38)
+  e00  ifv         VBCI                      Nexter VBCI, Dragar 25mm turret
+  e00  lighttank   AMX-10 RC renove          AMX-10 RCR (renove)
+  e00  mbt         Leclerc S2                Leclerc serie 2 / SXXI
+  e00  mlrs        LRU                       Lance-Roquettes Unitaire (M270 with GMLRS)
+  e00  radarv      COBRA                     COBRA counter-battery radar
+  e00  recon       VBL                       Panhard VBL, mid-life upgrade
+  e00  sam         SAMP/T Mamba              SAMP/T with Aster 30 Block 1
+  e00  spaag       Crotale NG                Crotale NG (Armee de l'Air base defence)
+  e00  spg         CAESAR                    CAESAR 155mm 52-cal on Sherpa 6x6
+  e50  ifv         AMX-13 VTT                AMX-VTT Modele 56 (Vehicule Transport de Troupe)
+  e50  lighttank   AMX-13                    AMX-13 Modele 51 with the FL-10 oscillating turret
+  e50  mbt         M47 Patton                M47 Patton (MDAP deliveries to the Armee de Terre)
+  e50  recon       Panhard EBR               Panhard EBR-75 Modele 1951, tourelle FL-11
+  e50  spg         AMX-13 105 Auto           Obusier de 105 mm automoteur Modele 50 sur chassis A
+  e60  ifv         AMX-10P                   AMX-10P vehicule de combat d'infanterie
+  e60  lighttank   AMX-13/90                 AMX-13/90 with the 90mm CN 90 F3 in the FL-10 turret
+  e60  mbt         AMX-30                    AMX-30 char de bataille
+  e60  recon       AML-90                    Panhard AML H-90 (Auto Mitrailleuse Legere)
+  e60  spaag       AMX-13 DCA                AMX-13 DCA, bitube de 30 mm, radar Oeil Noir
+  e60  spg         155 Mk F3                 Canon de 155 mm automoteur Mk F3 sur chassis AMX-13
+  e60  tel         Pluton                    Pluton, missile nucleaire tactique sur chassis AMX-3
+  e80  ifv         AMX-10P                   AMX-10P vehicule de combat d'infanterie
+  e80  lighttank   AMX-10RC                  AMX-10RC engin blinde a roues canon
+  e80  mbt         AMX-30 B2                 AMX-30 B2
+  e80  recon       ERC-90 Sagaie             Panhard ERC-90 F4 Sagaie
+  e80  sam         Roland 2                  Roland 2 all-weather SAM on the AMX-30R chassis
+  e80  spaag       AMX-13 DCA                AMX-13 DCA, bitube de 30 mm, radar Oeil Noir
+  e80  spg         AMX-30 AuF1               AuF1, 155 mm GCT sur chassis AMX-30
+  e80  tankdestroyerVAB Mephisto              VAB HOT / Mephisto
+  e80  tel         Pluton                    Pluton, missile nucleaire tactique sur chassis AMX-3
+  e90  ifv         AMX-10P                   AMX-10P with Toucan II 20mm turret
+  e90  lighttank   AMX-10 RC                 AMX-10 RC 6x6 heavy armoured car
+  e90  mbt         Leclerc                   AMX Leclerc, serie 1
+  e90  mlrs        LRM                       M270 Lance-Roquettes Multiple
+  e90  recon       VBL                       Panhard Vehicule Blinde Leger
+  e90  spaag       AMX-30 Roland             Roland 2 on AMX-30 chassis
+  e90  spg         AMX-30 AuF1               155mm GCT AuF1 on AMX-30 chassis
+  e90  tel         Hades                     Hades short-range nuclear missile system
+
+### GBR  (48)
+  e00  heavy       Challenger 2 TES          Challenger 2 Theatre Entry Standard (Megatron)
+  e00  ifv         Warrior                   FV510 Warrior, TES fit
+  e00  lighttank   Scimitar Mk2              FV107 Scimitar Mk2 (CVR(T) rebuild)
+  e00  mbt         Challenger 2              Challenger 2
+  e00  mlrs        M270B1 GMLRS              M270B1 with Guided MLRS
+  e00  radarv      MAMBA                     MAMBA (Saab ARTHUR) weapon locating radar
+  e00  recon       Jackal                    Jackal 2 MWMIK (Supacat HMT400)
+  e00  sam         Rapier FSC                Rapier FSC (in service to 2021)
+  e00  spaag       Stormer HVM               Stormer HVM with ADAD passive sight
+  e00  spg         AS-90                     AS-90 155mm SPG
+  e50  heavy       Conqueror                 FV214 Conqueror Heavy Gun Tank
+  e50  ifv         Saracen                   FV603 Alvis Saracen APC
+  e50  lighttank   Saladin                   FV601 Alvis Saladin armoured car
+  e50  mbt         Centurion Mk 3            FV4007 Centurion Mk 3
+  e50  recon       Ferret                    Daimler FV701 Ferret Scout Car Mk 2
+  e50  sam         Bloodhound Mk 1           Bristol Bloodhound Mk 1 SAM site
+  e50  spg         Sexton                    Sexton 25-pdr Self-Propelled, Ram chassis
+  e50  tankdestroyerHornet Malkara            FV1620 Humber Hornet with Malkara ATGM
+  e50  tel         Corporal                  MGM-5 Corporal, 27 Guided Weapons Regiment RA
+  e60  ifv         FV432                     FV432 Trojan armoured personnel carrier
+  e60  lighttank   Scorpion                  FV101 Scorpion CVR(T)
+  e60  mbt         Chieftain                 FV4201 Chieftain Mk 2
+  e60  mlrs        Honest John               MGR-1 Honest John, 24 Missile Regiment RA
+  e60  radarv      Cymbeline                 FV436 with Cymbeline mortar-locating radar
+  e60  recon       Fox                       FV721 Fox CVR(W)
+  e60  sam         Rapier                    Rapier FSA towed launcher
+  e60  spg         Abbot                     FV433 Abbot 105mm Self-Propelled Gun
+  e60  tankdestroyerFV438 Swingfire           FV438 Swingfire, twin launcher on FV432
+  e60  tel         Lance                     MGM-52 Lance, 50 Missile Regiment RA
+  e80  ifv         Warrior                   FV510 Warrior MCV-80
+  e80  lighttank   Scorpion                  FV101 Scorpion CVR(T)
+  e80  mbt         Challenger 1              FV4030/4 Challenger 1
+  e80  mlrs        M270 MLRS                 M270 MLRS, 39 Regiment Royal Artillery
+  e80  recon       Scimitar                  FV107 Scimitar CVR(T)
+  e80  sam         Tracked Rapier            Tracked Rapier on M548 chassis
+  e80  spg         M109A2                    M109A2 155mm SPH in British service
+  e80  tankdestroyerStriker                   FV102 Striker, five-round Swingfire launcher
+  e90  heavy       Challenger 2              Challenger 2 (CR2)
+  e90  ifv         Warrior                   FV510 Warrior MICV
+  e90  lighttank   Scimitar                  FV107 Scimitar CVR(T)
+  e90  mbt         Challenger 1              FV4030/4 Challenger 1
+  e90  mlrs        M270 MLRS                 M270 MLRS, Royal Artillery
+  e90  recon       Land Rover WMIK           Land Rover Defender 110 Weapons Mount Installation K
+  e90  sam         Rapier FSC                Rapier Field Standard C, Royal Artillery
+  e90  spaag       Stormer HVM               FV4333 Stormer with Starstreak HVM
+  e90  spg         AS-90                     AS-90 Braveheart 155mm SPG
+  e90  tankdestroyerStriker                   FV102 Striker with Swingfire
+  e90  tel         Lance                     MGM-52C Lance, 50 Missile Regiment RA
