@@ -3698,7 +3698,24 @@ function makeCommander() {
       else if (nYard < 1 && can("navalyard") && findShoreSpot() && P.cash > 2400 / (D.navalBias || 1)) tryB("navalyard");
       else if (nLab < 1 && nRadar >= 1 && P.cash > 1900) tryB("lab");
       else if (nAir < 1 && P.tech >= 2 && P.cash > 2600 / (D.airBias || 1)) tryB("airbase");
-      else if (nAir < 2 && (D.airBias || 1) > 2 && P.cash > 3200) tryB("airbase");
+      /* ---- RAMP SPACE IS THE CEILING ON THE WHOLE AIR FORCE ----
+         (owner) "very few aircrafts."
+         An airbase has FOUR pads and this stopped at one of them for every
+         personality except Air Doctrine, so a commander's entire air arm was
+         four airframes - and the ASW helicopter, the AWACS and the Weasel take
+         three of those before a single fighter is bought. Measured on baltic
+         at Warlord: two airbases, seven aircraft, 7 of 8 pads, and 24,810
+         credits it could not spend on an aeroplane because there was nowhere
+         to put one. A player builds another airbase when the ramp is full;
+         this never did.
+         Demand-driven rather than a flat number: another strip only when the
+         ramp it already owns is nearly full and there is money spare, capped
+         by how much this commander cares about air power at all. */
+      else if (nAir >= 1 && P.tech >= 2 && P.cash > 3200 &&
+               nAir < Math.min(4, 1 + Math.round(1.6 * (D.airBias || 1))) &&
+               count(u => u.def.cat === "aircraft") >=
+                 nAir * ((BUILDINGS.airbase && BUILDINGS.airbase.pads) || 4) - 1)
+        tryB("airbase");
       else if (nFac < 2 && groundConnected && P.cash > 3000) tryB("factory");
       else if (P.countBuilding("depot") < 1 && P.cash > 2000) tryB("depot");
       else if (nRef < (D.econ >= 1.2 ? 4 : 3) && can("refinery") && P.cash > 3500) tryB("refinery");
@@ -4157,13 +4174,46 @@ function makeCommander() {
       const harvWant = Math.min(Math.round(5 * (D.econBias || 1) * (D.econ || 1)),
                                 Math.max(2, nRef * 2));
       const minedOut = count(u => u.def.harvester) >= Math.ceil(harvWant * 0.7);
-      if (minedOut && D.stealth && P.tech >= 3 && P.cash > 4000 &&
-          fielded("aircraft", d => d.role === "stealthbomber") < 1) tryBuildUnit("stealthbomber");
-      else if (minedOut && D.stealth && P.tech >= 3 && P.cash > 2800 &&
-          fielded("aircraft", d => d.role === "stealthfighter") < 2) tryBuildUnit("stealthfighter");
-      else if (fighters < Math.min(3, humanAir) && P.tech >= 2) tryBuildUnit("fighter");
-      else if (helos < 3 && P.tech >= 2) tryBuildUnit("gunship");
-      else if (P.tech >= 3 && fielded("aircraft", d => d.role === "cas") < 2) tryBuildUnit("cas");
+      /* ---- A FAILED PURCHASE MUST FALL THROUGH TO THE NEXT ONE ----
+         (owner) "too simple even for the elite or warlord... very few
+         aircrafts."
+         This was an else-if ladder in which tryBuildUnit() was NOT part of the
+         condition. So the moment the first branch's condition was true, the
+         call was made and the ladder ENDED - whether or not anything was
+         actually bought. And only NATO has a stealth bomber: pact, pla, roc,
+         gbr, fra, deu and kpa all answer null for the role. Seven armies of
+         eight therefore satisfied branch one, bought nothing, and never
+         evaluated a single branch below it - no fighter, no gunship, no CAS,
+         that tick and every tick for the rest of the match.
+         It is gated on D.stealth, which is Elite and above, so the effect was
+         INVERTED BY DIFFICULTY: a Regular skipped the dead branch and built an
+         air force, an Elite and a Warlord did not. Measured on baltic at
+         Warlord, t=1500: two airbases, 28,278 credits banked, tech 3, and an
+         air force of three ASW helicopters and one AWACS.
+         The `||` chain is the idiom this file already uses for the carrier
+         deck a few hundred lines down, and it does the right thing: a role
+         this army cannot field costs one failed lookup and the next is tried. */
+      const canB = minedOut && D.stealth && P.tech >= 3 && P.cash > 4000 &&
+                   fielded("aircraft", d => d.role === "stealthbomber") < 1;
+      const canF = minedOut && D.stealth && P.tech >= 3 && P.cash > 2800 &&
+                   fielded("aircraft", d => d.role === "stealthfighter") < 2;
+      /* ---- AND A COMMANDER KEEPS A COMBAT AIR PATROL ----
+         `humanAir` is the most enemy aircraft ever seen on the plot, and
+         Math.min(3, 0) is 0, so `fighters < 0` is false: an army that has not
+         yet been overflown never buys a fighter. Both sides start there, so
+         neither ever flew and neither ever bought - a mutual deadlock in which
+         the first aeroplane is never built by anybody. A floor of two is what
+         an air force keeps up regardless; the ceiling still answers to what
+         has actually been seen. */
+      const wantFtr = Math.max(2, Math.min(4, humanAir));
+      const canA = fighters < wantFtr && P.tech >= 2;
+      const canH = helos < 3 && P.tech >= 2;
+      const canC = P.tech >= 3 && fielded("aircraft", d => d.role === "cas") < 2;
+      if ((canB && tryBuildUnit("stealthbomber")) ||
+          (canF && tryBuildUnit("stealthfighter")) ||
+          (canA && tryBuildUnit("fighter")) ||
+          (canH && tryBuildUnit("gunship")) ||
+          (canC && tryBuildUnit("cas"))) return;
     }
 
     /* -------- STRATEGIC WEAPONS -------- */

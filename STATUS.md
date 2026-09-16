@@ -9,6 +9,10 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Reported by you, and fixed
 
+- [x] The AI built almost no aircraft at Elite and Warlord - an else-if ladder
+      that ended on a purchase it could not make, a fighter rule that deadlocked
+      at zero, and a one-airbase ceiling on the whole air force
+
 - [x] B-2, F/A-18 and Growler launched themselves and never stayed landed
 - [x] Self-launch is the EW aircraft's privilege: find the emitter, shoot it, flee
 - [x] Fuel was only added at base - the boom was chosen and then overwritten
