@@ -74,7 +74,11 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
       could not engage an aircraft at all, and 37 mounts that targeted air with
       a warhead scoring 0.00 against it. Both closed, 41 live-fire checks.
 - [ ] Restore Britain's V-force and France's Mirage IV
-- [ ] British, French and German 3D models - they borrow American hulls
+- [x] British, French and German 3D models - 93 vehicles given their own
+      ARMOUR spec rows. The 24 left borrowing are sam/tel/radarv, deliberately:
+      sam3d.js and tel3d.js hand-author those and load AFTER armour_specs.js,
+      so a row here would replace a detailed launcher with a generic tube
+      block - a regression.
 
 ## Known and not yet addressed
 
