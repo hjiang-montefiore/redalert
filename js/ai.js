@@ -1660,6 +1660,16 @@ function makeCommander() {
     const mix = { corvette: 0.40, patrol: P.tech >= 2 ? 0.06 : 0.28 };
     if (P.tech >= 2) { mix.destroyer = 0.26; mix.sub = 0.16; mix.missileboat = 0.12; }
     if (P.tech >= 3) mix.cruiser = 0.10;
+    /* A SECOND submarine line, and only for the navy that actually ran two.
+       unitFor() answers null for every faction with no `ssn` row, so this adds
+       nothing whatever to anyone else's mixture - it does not even cost them a
+       refused think tick, because the key is never written at all. The Soviet
+       and Russian fleet is the one that kept a large diesel force and a
+       nuclear attack force side by side, and here the two do different jobs:
+       the Kilo is the cheap quiet ambusher and the nuclear boat is the one
+       fast enough to chase. Part of the standing mixture rather than a counter
+       term, so a Recruit puts them to sea as well. */
+    if (P.tech >= 2 && unitFor(P.faction, "ssn", P.era)) mix.ssn = 0.10;
     const grip = D.read === undefined ? 1 : D.read;
     if (grip <= 0) return mix;                 // a Recruit sails the standing mixture
 

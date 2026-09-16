@@ -10884,6 +10884,68 @@ Object.assign(UNITS, {
    run. Nothing below invents an id.
    ================================================================== */
 
+/* ==================================================================
+   THE SOVIET AND RUSSIAN NUCLEAR ATTACK SUBMARINE
+
+   Recorded as missing and it was. Every pact boat in this file is
+   diesel-electric - Whiskey, Foxtrot, Kilo, Improved Kilo, Varshavyanka -
+   and the present-day roster's sub_p is a Kilo as well, so the navy that
+   built more nuclear attack submarines than the rest of the world put
+   together had not one of them in any period. The hole was invisible
+   because NATO's own `sub` role IS its SSN line - Nautilus, Sturgeon, Los
+   Angeles, Seawolf, Virginia - so both navies had one submarine slot and
+   the pact correctly spent its on the boat it had most of.
+
+   THIS IS A SECOND ROLE, NOT A REPLACEMENT, because the Soviet Navy ran
+   both lines side by side and the contrast is the point of having them:
+   the Kilo is slow, short-legged and extremely quiet; the nuclear boat is
+   fast, long-legged and - until 1984 - extremely loud. No faction without
+   an `ssn` row loses anything, and none is given one to keep the sheet
+   symmetrical: NATO's nuclear boats are already its `sub` role, and the
+   PLA, the KPA and Taiwan are not handed a line they did not have.
+
+   WHY THESE FIVE.
+     e50  Project 627 November. K-3 Leninsky Komsomol commissioned 4 July
+          1958, to the North Pole submerged in July 1962, thirteen hulls.
+     e60  Project 671 Victor I. K-38 commissioned 5 November 1967, the
+          a teardrop hull, one shaft, thirty-two knots.
+     e80  Project 971 Shchuka-B, Akula I. K-284 commissioned 30 December
+          1984 - the boat that ended the free ride. Project 945 Sierra
+          commissioned the same year in titanium and only four were built,
+          so the Akula is the class that belongs in the slot.
+     e90  Project 971U Akula II. K-157 Vepr, 1996 - and pact_e90_sub's own
+          desc already names it "the one genuinely modern nuclear boat"
+          while the game had no such boat to build.
+     e00  Project 885 Yasen. K-560 Severodvinsk, accepted 30 December 2013
+          and in service 17 June 2014.
+   The 2020s boat is ssn_p in rules.js, with the rest of the present day.
+
+   THEY ARE LOUD AND THAT IS NOT A PENALTY. `quiet` is a signature and
+   lower is harder to find. A November at 0.90 sits beside the Romeo's 1.00
+   because the class was tracked across oceans; the Akula's 0.44 is the
+   mid-1980s quieting leap, helped by the propeller milling machines sold
+   through Toshiba and Kongsberg and by what the Walker ring handed over -
+   a story nato_e80_sub's own desc already tells from the other side.
+
+   NO LAND ATTACK BEFORE e00, which is the line the Kilo refit below draws
+   and for the same reason: the S-10 Granat that Project 671RTM and the
+   Akula could fire from 1984 was a nuclear-armed strategic round,
+   withdrawn under the 1991 unilateral initiatives, and the conventional
+   weapon is the Kalibr. So the Yasen carries tlam_p and the four boats
+   before it carry torpedoes only.
+
+   WEAPONS ARE THE SAME-ERA PACT TORPEDO and not a new id: one navy's
+   nuclear and diesel boats in one decade fired the same 533 mm weapon, and
+   generations.js clones a private per-unit copy of it regardless.
+   ================================================================== */
+Object.assign(UNITS, {
+  pact_e50_ssn: { fac:"pact", role:"ssn", cat:"naval", layer:"sub", name:"Project 627 November", full:"Project 627 Kit (K-3 Leninsky Komsomol)", cost:1250, oil:21, time:26, hp:700, armor:"light", speed:2.25, turn:1.1, sight:4.8, r:17, mass:0, weapons:["w_e50_pact_sub"], prereq:["navalyard","radar"], tech:2, from:"e50", to:"e50", service:"1958", confidence:"high", sonar:4.6, quiet:0.90, nuclear:true, desc:"The Soviet Union's first nuclear submarine and the second in the world, four years behind Nautilus. Two shafts and thirty knots submerged - faster than the escorts hunting her - on a long fine hull with a rounded limousine bow. She was also dangerous to her own crew, with repeated steam generator failures, and loud enough that the Americans tracked the class across oceans." },
+  pact_e60_ssn: { fac:"pact", role:"ssn", cat:"naval", layer:"sub", name:"Project 671 Victor I", full:"Project 671 Yorsh (K-38)", cost:1520, oil:26, time:26, hp:860, armor:"light", speed:2.40, turn:1.1, sight:5.6, r:17, mass:0, weapons:["w_e60_pact_sub"], prereq:["navalyard","radar"], tech:2, from:"e60", to:"e60", service:"1967", confidence:"high", sonar:5.6, quiet:0.70, nuclear:true, desc:"A teardrop hull and the boat that made the Northern Fleet's attack force modern: one shaft, thirty-two knots, and a serious quieting effort that narrowed the gap without closing it. Fifteen built, then Project 671RT and 671RTM carried the line to 1992 - and the RTM of 1979 is where anechoic tiles and a real acoustic improvement arrive." },
+  pact_e80_ssn: { fac:"pact", role:"ssn", cat:"naval", layer:"sub", name:"Project 971 Akula", full:"Project 971 Shchuka-B, Akula I (K-284)", cost:1980, oil:33, time:28, hp:1080, armor:"light", speed:2.42, turn:1.1, sight:6.7, r:17, mass:0, weapons:["w_e80_pact_sub"], prereq:["navalyard","radar"], tech:2, from:"e80", to:"e80", service:"1984", confidence:"high", sonar:6.6, quiet:0.44, nuclear:true, desc:"The boat that ended the free ride. K-284 commissioned on 30 December 1984 and the US Navy found her far quieter than anything this industry had put to sea, which is the mid-1980s quieting leap the Los Angeles entry describes from the other side. Fifteen hulls, a long faired fin and a seven-bladed skewed screw. Project 945 Sierra commissioned the same year with a titanium hull and four were ever built, so the Akula is the class that matters here." },
+  pact_e90_ssn: { fac:"pact", role:"ssn", cat:"naval", layer:"sub", name:"Project 971U Akula II", full:"Project 971U (K-157 Vepr)", cost:2230, oil:37, time:29, hp:1160, armor:"light", speed:2.44, turn:1.1, sight:7.4, r:17, mass:0, weapons:["w_e90_pact_sub"], prereq:["navalyard","radar"], tech:2, from:"e90", to:"e90", service:"1996", confidence:"high", sonar:7.2, quiet:0.33, nuclear:true, desc:"Three metres of extra hull to hold a raft carrying the machinery, and by American testimony quieter at patrol speed than an improved Los Angeles. The decade's diesel boat in this game says as much itself: Project 636 in the 1990s was an export build, while this was the one genuinely modern boat the Russian Navy commissioned in ten years of having no money at all." },
+  pact_e00_ssn: { fac:"pact", role:"ssn", cat:"naval", layer:"sub", name:"Project 885 Yasen", full:"Project 885 Yasen (K-560 Severodvinsk)", cost:2560, oil:42, time:30, hp:1280, armor:"light", speed:2.45, turn:1.1, sight:7.8, r:17, mass:0, weapons:["w_e00_pact_sub","tlam_p"], prereq:["navalyard","radar"], tech:2, from:"e00", to:"e00", service:"2014", confidence:"high", sonar:8.2, quiet:0.30, nuclear:true, desc:"Twenty years on the slipway: laid down 21 December 1993, floated out 15 June 2010, accepted 30 December 2013 and in service 17 June 2014. A pumpjet, and the first Russian boat with a spherical bow array - which is why the torpedo tubes moved aft of it and angled out - plus vertical launch modules for the Kalibr. That missile is why this hull reaches a target ashore and the four before it do not: the S-10 Granat an Akula could fire from 1987 was nuclear-armed and was withdrawn, and the conventional round arrives with this boat." },
+});
+
 /* ---- era hulls that were carrying the wrong loadout ---- */
 (function () {
   var REFIT = {

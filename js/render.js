@@ -459,7 +459,35 @@ var Render = (function () {
   }
 
   /* ---------------- main draw ---------------- */
+  /* ---- THE THIRD ALERT RUNG ----
+     threat.js grades an alert in three rungs that "differ in KIND and not
+     merely in volume": the unit rung is a cue and nothing else, the base rung
+     adds an amber edge flash and a banner naming the structure, and the loss
+     rung is the red one with the shake. Only the first of the three survived
+     in this renderer - Threat.flash, Threat.banner and Threat.shake were read
+     by render3d.js and by nothing else - so a 2D commander heard two klaxons
+     that differed only in pitch and never saw which had just happened. The
+     same three fields are read below in this renderer's own idiom; nothing is
+     imported from the 3D path.
+
+     THE SHAKE OFFSETS THE PAINT, NOT THE CAMERA. cam.ix/cam.iy and unproject()
+     are what ui.js turns a click into a tile with, and drawOverlay() calls
+     unproject() to place a building ghost, so shaking those would move the
+     ground out from under a structure the player is siting. The world layer is
+     translated and the HUD layer is not, which is the same division the 3D
+     path gets for free by shaking its camera under a screen-space overlay. */
   let oreRedrawT = 0;
+  let shakeT = 0, shX = 0, shY = 0;
+  function updateShake(dt) {
+    shX = shY = 0;
+    if (typeof Threat === "undefined") return;
+    const k = Threat.shake;
+    if (!(k > 0.001)) return;
+    shakeT += dt * 34;
+    const amp = k * k * 9;                       // pixels: about nine at full
+    shX = Math.sin(shakeT * 1.7) * amp;
+    shY = Math.cos(shakeT * 1.3) * amp * 0.6;
+  }
   function draw(dt, input) {
     if (terrainDirty) renderTerrain();
     oreRedrawT += dt;
@@ -467,6 +495,10 @@ var Render = (function () {
 
     ctx.fillStyle = "#07090c";
     ctx.fillRect(0, 0, W, H);
+
+    updateShake(dt);
+    ctx.save();
+    if (shX || shY) ctx.translate(shX, shY);
 
     /* terrain blit */
     const ox = G._terrainOx;
@@ -496,7 +528,63 @@ var Render = (function () {
     drawProjectiles();
     drawEffects();
     drawFog();
+    ctx.restore();                               // the shake stops at the HUD
+
     drawOverlay(input);
+    drawThreat();
+  }
+
+  /* ---- edge flash and alert banner ---- */
+  function threatRGBA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," +
+           (n & 255) + "," + a.toFixed(3) + ")";
+  }
+  function drawThreat() {
+    if (typeof Threat === "undefined") return;
+    const f = Threat.flash;
+    if (f > 0.01) {
+      /* a vignette pulsing in from the edges rather than a wash over the map */
+      const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.30,
+                                         W / 2, H / 2, Math.max(W, H) * 0.72);
+      g.addColorStop(0, "rgba(0,0,0,0)");
+      g.addColorStop(1, threatRGBA(Threat.flashColor, f * 0.55));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      /* a hard rule top and bottom, like a warning panel lighting up */
+      ctx.fillStyle = threatRGBA(Threat.flashColor, f * 0.9);
+      ctx.fillRect(0, 0, W, 3); ctx.fillRect(0, H - 3, W, 3);
+    }
+    const b = Threat.banner;
+    if (!b) return;
+    const big = b.tier >= 3;
+    const cx = W / 2, cy = big ? H * 0.20 : H * 0.16;
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = (big ? "700 30px " : "700 21px ") +
+               "ui-monospace, SFMono-Regular, Menlo, monospace";
+    const wTxt = ctx.measureText(b.text).width;
+    const padX = 26, hBox = big ? 62 : 46;
+    ctx.fillStyle = "rgba(8,10,12,0.82)";
+    ctx.fillRect(cx - wTxt / 2 - padX, cy - hBox / 2, wTxt + padX * 2, hBox);
+    ctx.strokeStyle = big ? "#ff4020" : "#ffa02c";
+    ctx.lineWidth = big ? 2.5 : 1.5;
+    ctx.strokeRect(cx - wTxt / 2 - padX, cy - hBox / 2, wTxt + padX * 2, hBox);
+    /* hazard stripes down each side of a strategic warning */
+    if (big) {
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = i % 2 ? "#ff4020" : "#1a1c1e";
+        ctx.fillRect(cx - wTxt / 2 - padX + 4, cy - hBox / 2 + 5 + i * 9, 7, 8);
+        ctx.fillRect(cx + wTxt / 2 + padX - 11, cy - hBox / 2 + 5 + i * 9, 7, 8);
+      }
+    }
+    ctx.fillStyle = big ? "#ff6a4a" : "#ffbf62";
+    ctx.fillText(b.text, cx, cy - (b.sub ? 9 : 0));
+    if (b.sub) {
+      ctx.font = "500 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.fillStyle = "#c9cdd2";
+      ctx.fillText(b.sub, cx, cy + 14);
+    }
+    ctx.restore();
   }
 
   function visible(e) {

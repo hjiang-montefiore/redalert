@@ -3089,8 +3089,37 @@ Object.assign(UNITS.sub_k, {
        "enormously loud, slow, and can be tracked by any modern sonar long before its " +
        "torpedoes are in range. It exists in numbers, which is the only argument for it." });
 
-/* ---- strategic and cruise-missile submarines ---- */
+/* ---- strategic, cruise-missile and nuclear attack submarines ---- */
 Object.assign(UNITS, {
+  /* THE PRESENT-DAY END OF THE PACT SSN LINE, whose five earlier bands are in
+     eras.js. Without this row the chain stops in 2014 and the era the game
+     actually ships in - e20 - still has a Russian navy with no nuclear attack
+     boat at all, which is the fault as it was reported.
+
+     K-561 Kazan, the first Project 885M, commissioned 7 May 2021: a Yasen
+     shortened by about nine metres and re-equipped with Russian components
+     throughout after 2014, and by Western assessment the quietest thing this
+     industry has built. Kalibr and Oniks out of the vertical cells on top of
+     the torpedo tubes, so it carries tlam_p exactly as the e00 Yasen does.
+
+     It sits in role "ssn" and NOT in "sub", which stays the Kilo: sub_p is the
+     boat Russia has in numbers and that is the honest division. It is written
+     out in full rather than through the SUBS table above, which has already
+     run by this line - the same reason ssgn_p is written out. */
+  ssn_p: { from:"e20", fac:"pact", role:"ssn", name:"Yasen-M SSN", full:"Project 885M Yasen-M (K-561 Kazan)", cat:"naval",
+    cost:2800, oil:46, time:32, hp:1300, armor:"light", speed:2.45, turn:1.1, sight:8.2, r:17, mass:0,
+    layer:"sub", weapons:["torp_ugst","tlam_p"], prereq:["navalyard","radar"], tech:2,
+    /* 0.32, not 0.28. At 0.28 this boat was quieter than sub_n, the Virginia
+       Block IV/V at 0.30, and that is a contested claim to bake into a table
+       as fact - Western assessment puts the Virginia level with the Yasen or
+       ahead of it. Sitting just behind the Virginia says "genuinely first
+       rate" without asserting a lead nobody can demonstrate. */
+    nuclear:true, quiet:0.32, sonar:8.6, radarQ:4,
+    desc:"The one Russian submarine programme that is genuinely first rate, and there are very " +
+         "few of them - which is the whole story of this fleet: a handful of excellent boats and " +
+         "a large force of everything else. Unlimited endurance, a pumpjet, a spherical bow array " +
+         "and vertical cells for Kalibr, against a Kilo that is quieter sitting still and cannot " +
+         "chase anything." },
   ssbn_n: { from:"e80", fac:"nato", role:"ssbn", name:"Ohio SSBN", full:"SSBN-726 Ohio-class", cat:"naval",
     cost:6200, oil:140, time:70, hp:2600, armor:"heavy", speed:2.0, turn:0.5, sight:6, r:26, mass:0,
     layer:"sub", weapons:["torp_mk48"], prereq:["navalyard","lab","radar"], tech:3,
@@ -4052,7 +4081,31 @@ var ERA_TIMELESS = ["harvester", "mcv", "engineer", "supply", "transport_sea",
 for (var _eu in UNITS) {
   var _e = UNITS[_eu];
   if (_e.from !== undefined) continue;
-  if (ERA_TIMELESS.indexOf(_e.role) >= 0) { _e.from = "e50"; continue; }
+  /* A timeless role is handed a 1950 date it never earned, and the comment
+     above says so in as many words: "what is being dated here is the ROLE...
+     not the rifle". G.genContest() in game.js reads `from` as a REAL service
+     date, so an unmarked 1950 is worth 1.7^3 = x4.91 to any e80 jammer that
+     meets it and x0.166 the other way - the largest number in the subsystem,
+     and fabricated. That is exactly the case the BUILDINGS loop below already
+     guards, so it is marked here for the same reason and read in the same
+     single place.
+
+     THE e20 DEFAULT UNDERNEATH IS DELIBERATELY NOT MARKED. This file's roster
+     really is present-day equipment - the paragraph above opens by saying so -
+     so that date is a claim and not a fabrication, and it has to be contested
+     honestly. Marking it would hand a flat x1.00 back to precisely the
+     contests the era chain was built to make real: an e80 jamming vehicle
+     SHOULD take x0.166 against a 2020s radar, which is the argument made at
+     cawacs_n above when the E-2D's own eraStamped escape hatch was removed.
+
+     BEHAVIOURAL CONSEQUENCE, stated plainly: none today. All sixteen timeless
+     roles were checked and not one unit in them carries radar, radarQ or jam,
+     so none of them reaches genContest at all. This is a guard, and what it
+     guards against is the first patrol boat or minesweeper to be given a
+     surface-search set arriving with a fabricated x4.91 attached to it. */
+  if (ERA_TIMELESS.indexOf(_e.role) >= 0) {
+    _e.from = "e50"; _e.eraStamped = true; continue;
+  }
   _e.from = "e20";
 }
 for (var _eb in BUILDINGS) {

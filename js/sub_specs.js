@@ -82,6 +82,52 @@ var SUBS = {
     planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
     skin:"tiles", camo:"black"},
 
+  /* ---- the pact nuclear attack line ----
+     Six hulls with nothing in common with the diesel boats above them: long,
+     fast, double-hulled and, until the Akula, unmistakably 1960s Soviet in
+     silhouette. Without these rows sub3d_era.js has no spec to build from and
+     every one of them falls through to an American boat, the way sub_g did
+     before it was given a row. */
+  /* A very long fine cigar with a rounded limousine bow and a low rounded
+     fairwater about a third back -- and the only twin-screw nuclear boat. */
+  pact_e50_ssn: {era:"e50", fac:"pact", designation:"November-class (Project 627A, K-3)",
+    len:107.4, beam:7.9, hull:"cigar", sail:"low", sailFrac:0.33, sailLen:15, sailH:4.4,
+    planes:"bow", stern:"cruciform", screws:2, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"plate", camo:"black"},
+  /* The first Soviet teardrop: short and deep-bodied at under 9:1, with a
+     small low faired fin well forward and a single shaft. */
+  pact_e60_ssn: {era:"e60", fac:"pact", designation:"Victor I (Project 671, K-38)",
+    len:92.5, beam:10.6, hull:"teardrop", sail:"faired", sailFrac:0.30, sailLen:10.5, sailH:5.2,
+    planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"plate", camo:"black"},
+  /* Thirteen and a half metres of beam and a long high faired fin with a
+     rounded leading edge -- the broadest attack boat in the set. */
+  pact_e80_ssn: {era:"e80", fac:"pact", designation:"Akula I (Project 971 Shchuka-B)",
+    len:110.3, beam:13.6, hull:"teardrop", sail:"faired", sailFrac:0.31, sailLen:17, sailH:6.4,
+    planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"tiles", camo:"black"},
+  /* The same boat three metres longer, the extra hull holding the raft the
+     machinery now sits on. Externally indistinguishable otherwise. */
+  pact_e90_ssn: {era:"e90", fac:"pact", designation:"Akula II (Project 971U, K-157 Vepr)",
+    len:113.3, beam:13.6, hull:"teardrop", sail:"faired", sailFrac:0.30, sailLen:17, sailH:6.4,
+    planes:"bow", stern:"cruciform", screws:1, prop:"screw", deckGun:false, missileDeck:false,
+    skin:"tiles", camo:"black"},
+  /* The longest boat here by twenty-five metres, the fin further forward than
+     anything else afloat, and a pumpjet. missileDeck stays FALSE on purpose:
+     that flag in sub3d_era.js puts a launch hatch on top of the FIN, which is
+     the Gorae's arrangement and not this one -- the Yasen's cells sit abaft
+     the sail and do not break the casing line. */
+  pact_e00_ssn: {era:"e00", fac:"pact", designation:"Yasen (Project 885, K-560 Severodvinsk)",
+    len:139.2, beam:13.0, hull:"teardrop", sail:"faired", sailFrac:0.22, sailLen:13.5, sailH:6.0,
+    planes:"bow", stern:"cruciform", screws:1, prop:"pumpjet", deckGun:false, missileDeck:false,
+    skin:"tiles", camo:"black"},
+  /* The 885M is the shorter one: a Yasen taken in by nine metres, with Russian
+     equipment throughout after 2014, same beam and same pumpjet. */
+  ssn_p: {era:"e20", fac:"pact", designation:"Yasen-M (Project 885M, K-561 Kazan)",
+    len:130.0, beam:13.0, hull:"teardrop", sail:"faired", sailFrac:0.22, sailLen:13.5, sailH:6.0,
+    planes:"bow", stern:"cruciform", screws:1, prop:"pumpjet", deckGun:false, missileDeck:false,
+    skin:"tiles", camo:"black"},
+
   /* ------------------------------------------------------------- PLA */
   /* Long low stepped fairwater just forward of midships with a 100 mm on
      the casing ahead of it, over a blunt parallel-sided cigar. */

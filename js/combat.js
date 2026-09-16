@@ -272,9 +272,36 @@ var Combat = (function () {
     if (!prot || !prot.owner) return 0;
     let best = 0;
     game.grid.query(prot.x, prot.y, CFG.TILE * 9, (e) => {
-      if (e.dead || !e.owner || e.kind !== "unit") return;
+      if (e.dead || !e.owner) return;
       if (e.owner !== prot.owner && !game.allied(e.owner, prot.owner)) return;
-      if (!e.def.radar) return;                  // an unaimed gun cannot do this
+      /* A FIXED mount belongs in this layer and is its ARCHETYPE rather than
+         its exception: the land Phalanx of the C-RAM batteries that covered
+         Baghdad from 2005 is an emplacement, and so are Skyshield and MANTIS.
+         `kind !== "unit"` threw out every one of them, which is why rules.js
+         `flak` - the radar-directed twin 40mm AA Battery, which already
+         declares needPower and a Radar Dome prereq - scored ZERO here, and
+         scored zero at the area layer too because areaSam correctly asks for
+         proj:"missile" and a 40mm gun is not a missile. Excluded from both
+         layers, it intercepted nothing at all.
+
+         A structure is held to exactly the test areaSam applies to one:
+         finished, and on a grid that is still up. That stands in for the
+         `radar` field a vehicle must carry. The ONE structure that declares
+         `radar` is the Radar Dome, and there it is a boolean flag; on a unit
+         the same name is a fog-lifting RANGE IN TILES, and giving the battery
+         one would have made it reveal map and draw SEAD.
+         entities.js already refuses to let an unpowered structure fire at all,
+         and the director is the reason this one draws 35 MW.
+
+         The gun's PROFILE grading is deliberately left alone: profMul at the
+         call site already gives it 1.00 against a sea-skimmer or a cruise
+         missile, 0.70 against a lofted round and 0.15 against a re-entry
+         body. That is the honest split for a radar-laid autocannon and it is
+         not a SAM's split, which is why no number changes here. */
+      if (e.kind === "building") {
+        if (e.buildProgress < 1 || e.powered === false) return;
+      } else if (e.kind !== "unit") return;
+      else if (!e.def.radar) return;             // an unaimed gun cannot do this
       for (const k of (e.def.weapons || [])) {
         const w2 = WEAPONS[k];
         if (!w2 || !w2.tgt || !w2.tgt.air) continue;
