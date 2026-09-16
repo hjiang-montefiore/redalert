@@ -365,6 +365,33 @@ try{
     if(s&&!s.dead)s.dead=true; if(v&&!v.dead)v.dead=true;
   }
 
+  /* Same measurement over land, for aircraft striking a ground target. */
+  function strike(name, shooterId, targetId, secs){
+    var t = tile(P,"ground", 5 + (DUEL++ % 9) * 3);
+    if(!t){ chk(name,false,"no ground"); return; }
+    var s = spawn(P, shooterId, t, 0, 0);
+    var v = spawn(E, targetId, t, 2, 0);
+    if(!s||!v){ chk(name,false,"spawn failed"); return; }
+    v.stance="hold";
+    /* An airframe is delivered SHUT DOWN on its ramp - that is deliberate and
+       this project put it there - so it will never auto-acquire. Order the
+       strike, the way the commander's sortie loop does. */
+    s.give({ type:"attack", target:v });
+    var px=v.x, py=v.y, hp0=v.hp, am0=(s.ammo===undefined?-1:s.ammo);
+    for(var i=0;i<secs*30;i++){ v.x=px; v.y=py; Game.tick(CFG.DT); if(v.dead) break; }
+    var took = hp0 - (v.dead?0:v.hp);
+    var spent = am0 < 0 ? 0 : am0 - s.ammo;
+    /* Damage OR ordnance expended. The question this asks is "can this
+       aircraft attack a ground target", not "does it hit every time" - the
+       Yak-38 carries two bombs at acc 0.52, so it misses both about once in
+       four runs, which is the aeroplane being modelled correctly rather than
+       the capability being absent. Reporting both numbers keeps that honest. */
+    chk(name, took>0 || spent>0, UNITS[shooterId].name+" vs "+UNITS[targetId].name+": "+
+        hp0.toFixed(0)+" -> "+(v.dead?"DEAD":v.hp.toFixed(0))+"   "+took.toFixed(0)+
+        " damage, "+spent+" rounds expended");
+    if(s&&!s.dead)s.dead=true; if(v&&!v.dead)v.dead=true;
+  }
+
   log("[N0] THE DATA ITSELF");
   (function(){
     var ZERO={he:1,cannon:1,frag:1,nuclear:1};
@@ -450,6 +477,35 @@ try{
   duel("USN twin 3in/50 Mk 33",    "nato_e50_corvette", "bomber_p", 12);
   duel("ROC 40mm on a gunboat",    "roc_e90_corvette",  "bomber_n", 12);
   duel("KPA light AA",             "kpa_e50_corvette",  "bomber_n", 12);
+
+  log("");
+  log("[N6] A CARRIER AIR GROUP CAN REACH THE BEACH");
+  (function(){
+    var WITHHELD = { nato_e80_cfighter:"F-14A: fleet air defence until LANTIRN, 1996",
+                     fra_e60_cfighter:"F-8E(FN): Aeronavale interceptor to 1999",
+                     cfighter_p:"Su-33: air defence Flanker, bombed only in Syria 2016" };
+    var deck=[], blind=[], wrong=[];
+    for(var k in UNITS){ var u=UNITS[k];
+      if((u.role||"")!=="cfighter") continue;
+      var g=false;
+      (u.weapons||[]).forEach(function(wk){var w=WEAPONS[wk];
+        if(w && (!w.tgt || w.tgt.ground)) g=true;});
+      deck.push(k);
+      if(!g && !WITHHELD[k]) blind.push(k+" ("+u.name+")");
+      if(g && WITHHELD[k]) wrong.push(k+" ("+u.name+") -- "+WITHHELD[k]);
+    }
+    chk("every deck fighter that had ground attack, has it", blind.length===0,
+        blind.length ? blind.join("; ") : deck.length+" cfighter rows checked");
+    chk("the three that genuinely lacked it still lack it", wrong.length===0,
+        wrong.length ? wrong.join("; ") : "F-14A, F-8E(FN) and Su-33 stay air-to-air");
+  })();
+  strike("Super Hornet strikes armour",  "cfighter_n",        "mbt_p", 16);
+  strike("F-4B Phantom strikes armour",  "nato_e60_cfighter", "mbt_p", 16);
+  strike("F/A-18C strikes armour",       "nato_e90_cfighter", "mbt_p", 16);
+  strike("Sea Harrier FRS.1 strikes",    "gbr_e80_cfighter",  "mbt_p", 16);
+  strike("Super Etendard strikes",       "fra_e80_cfighter",  "mbt_p", 16);
+  strike("Yak-38 Forger strikes",        "pact_e60_cfighter", "mbt_n", 16);
+  strike("J-15 strikes armour",          "cfighter_c",        "mbt_n", 16);
 
   log("");
   log("==== "+PASS+" passed, "+FAIL+" failed ====");

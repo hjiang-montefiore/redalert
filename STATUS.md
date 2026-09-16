@@ -44,6 +44,13 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Known data faults, recorded not swept
 
+- [!] The 1980s American carrier has no strike aircraft. The F-14A is correctly
+      withheld from ground attack (LANTIRN reached the squadrons in 1996), but
+      the A-6E Intruder that really did that job from 1963 to 1997 is not in the
+      roster at all - and G.deckAircraftFor fills a deck from the "cfighter"
+      role, so there is nowhere for it to go without a new role. The honest fix
+      is to add the Intruder, not to arm the Tomcat.
+
 - [x] Corvette air defence - 24 hulls given their real point-defence fit.
 
 - [x] eras.js duplicate keys - CLOSED. It was not twelve scattered mistakes: a
@@ -72,10 +79,10 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 ## Known and not yet addressed
 
 - [!] The AA Battery scores zero on both intercept layers
-- [!] Two behaviour tests fail in a FULL suite run and pass when it is split in
-      halves - "aggressive stance overrides the routing" and "a Weasel hears a
-      radiating battery". Verified present at HEAD before any of today's work,
-      so it is test isolation, not the code under test.
+- [x] "aggressive stance overrides the routing" - FIXED as a side effect of
+      routing pickAirTarget by capability. It was never test isolation.
+- [!] "a Weasel hears a radiating battery on its own receiver" still fails in a
+      full run and passes in a split one. Present at HEAD before this work.
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`
 - [!] Units defaulted to an era by rules.js:3912 are not marked `eraStamped`,
       so a fabricated date is contested as if it were real

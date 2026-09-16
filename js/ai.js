@@ -5604,7 +5604,31 @@ function makeCommander() {
        0.35x. Returning null instead drops it to the sweep branch, where AI-2
        holds it on the ramp. */
     if (a.def.role === "sead" || a.def.role === "ewair") return pickEmitter(a);
-    if (a.def.role === "fighter") {
+    /* ROUTE BY WHAT THE AIRCRAFT CAN SHOOT, NOT BY THE NAME OF ITS ROLE.
+       Role "cfighter" is not sead/ewair, not "fighter" and not "cas", so every
+       deck fighter in the game fell past both branches into the gunship branch
+       below and was handed the nearest enemy MBT or harvester as a COMMANDED
+       attack order - the identical trap the note above records catching "sead".
+       MEASURED: an F-14A given exactly that order flew at a T-90A for thirty
+       seconds, fired nothing (canTarget is false - its only mount is air-only),
+       still held all six missiles, and timed out into a hover 6.2 tiles past
+       the target with the tank untouched at 1729 hp. Not one missile wasted -
+       one whole sortie wasted, by the most expensive airframe class there is,
+       every time the commander launched one.
+       An aircraft with nothing that can reach the ground hunts aircraft
+       instead, which for an F-14A, an F-8E(FN) or a Su-33 is exactly the job
+       those three were built for and the only one they are given here. The
+       test mirrors entities.js canTarget(): a weapon with NO tgt block at all
+       engages anything, so absence counts as capability. */
+    const airToGround = (def) => {
+      const ws = def.weapons || [];
+      for (let i = 0; i < ws.length; i++) {
+        const w = WEAPONS[ws[i]];
+        if (w && (!w.tgt || w.tgt.ground)) return true;
+      }
+      return false;
+    };
+    if (a.def.role === "fighter" || !airToGround(a.def)) {
       let best = null, bd = Infinity;
       for (const r of seenU.values()) {
         if (r.layer !== "air") continue;

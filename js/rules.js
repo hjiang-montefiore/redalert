@@ -2248,7 +2248,7 @@ Object.assign(UNITS, {
     desc:"Four aircraft, bought outright in 1991 so that France could see the air picture without asking the NATO pool, and upgraded again in 2025. The APY-2 antenna underneath is still the 1977 design. Four airframes is the entire national capability: two in depot and the picture goes dark." },
   cfighter_f: { fac:"fra", role:"cfighter", name:"Rafale M", full:"Dassault Rafale M, standard F4", cat:"aircraft",
     cost:1550, oil:32, time:20, hp:450, armor:"air", speed:8.7, turn:2.2, sight:10.4, r:16, mass:0,
-    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:5,
+    layer:"air", weapons:["aam","jdam"], prereq:["airbase"], tech:2, jet:true, ammo:5,
     gen:4.5, rcs:0.70, radarQ:15.0, radius:38, carrierCapable:true, refuelable:true, radar:7, from:"e20",
     desc:"The first Rafale variant to enter service, in 2001, four years before the air force got one. A jump strut, a single nose wheel and an arrestor hook on the same airframe - France is the only country outside the United States operating catapult-launched conventional carrier fighters, and this is the only aircraft type its carrier flies." },
   cawacs_f: { fac:"fra", role:"cawacs", name:"E-2C Hawkeye", full:"Northrop Grumman E-2C Hawkeye 2000", cat:"aircraft",
@@ -2683,7 +2683,7 @@ Object.assign(UNITS, {
   cfighter_n: { fac:"nato", role:"cfighter", name:"F/A-18E Super Hornet",
     full:"Boeing F/A-18E Super Hornet", cat:"aircraft",
     cost:1650, oil:34, time:19, hp:470, armor:"air", speed:8.0, turn:2.0, sight:9.6, r:16, mass:0,
-    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:5,
+    layer:"air", weapons:["aam","jdam"], prereq:["airbase"], tech:2, jet:true, ammo:5,
     gen:4.5, rcs:0.45, radarQ:15.0, radius:36, carrierOnly:false, carrierCapable:true,
     /* No longer standing in for the whole family: this row is the Super Hornet
        and only the Super Hornet. IOC September 2001, first combat cruise with
@@ -2731,7 +2731,7 @@ Object.assign(UNITS, {
   cfighter_c: { fac:"pla", role:"cfighter", name:"J-15 Flying Shark",
     full:"Shenyang J-15", cat:"aircraft",
     cost:1700, oil:36, time:20, hp:500, armor:"air", speed:7.8, turn:1.9, sight:9.4, r:17, mass:0,
-    layer:"air", weapons:["aam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
+    layer:"air", weapons:["aam","jdam"], prereq:["airbase"], tech:2, jet:true, ammo:4,
     gen:4.0, rcs:0.80, radarQ:12.0, radius:34, carrierCapable:true,
     /* deck-qualified from 2013, in time for Liaoning and Shandong */
     from:"e00",

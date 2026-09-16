@@ -1,0 +1,316 @@
+{
+ "stream": "deu",
+ "design": {
+  "summary": "All 31 DEU ground vehicles in salvage/model_gap.txt now have an ARMOUR row. The spec keys are the UNIT ids verbatim (js/armour3d.js:1974-1984 registers `UNIT_MODELS[id] = build(ARMOUR[id])` with no name mangling, and js/render3d.js:310 `modelKeyFor()` returns `def.id` when `UNIT_MODELS[def.id]` exists), so each row lands on exactly the unit it names and stops the current peer-borrow. Worth knowing: once a unit has its own key, `getModel()` sets `K = null` (js/render3d.js:432 \u2014 ERA_KIT only applies when `key !== def.id`), so these vehicles lose the era repaint and the bolt-on searchlight/stowage/slat kit they get today. The `camo` field is therefore the final paint, and I used it to date them honestly: `olive` for e50/e60 (gelboliv, the single Bundeswehr colour until the mid-eighties) and `twotone` for e80/e90/e00 (the three-tone NATO-Tarnanstrich, adopted 1984 \u2014 it straddles the e80 bucket, so the two pre-1984 e80 rows, Lance and Improved HAWK, are painted a few years early on purpose for column coherence). Because the era kit is gone, I put the equivalent fittings in `extras` by hand: `irlight` on the Leopard 1 (which really does carry the searchlight drum over the mantlet), `stowage` on everything turreted.\n\nThree silhouette calls worth flagging. (1) Leopard 2A4 gets `turret:\"welded\"` and the 2A5/2A6 get `turret:\"wedge\"` \u2014 that is not cosmetic, it is the real difference: the A4's turret face is a dead-vertical flat slab, and the A5 bolted the arrowhead wedge armour onto it. It also stops a Leopard 2 reading as an Abrams, which `wedge` for all of them would have done. (2) The three M113 radar vehicles get `turret:\"small\"` with `gunCal:0` rather than the `turret:\"none\"` every existing radarv row uses. A tracked radarv gets no radar load at all \u2014 `radarLoad()` is gated on `F && F.bed` (js/armour3d.js:1940), which only wheeled truck bodies have \u2014 so `turret:\"none\"` would have drawn a bare M113 with nothing on it, and the unit defs carry `turret:true, tturn:0.9` with nothing named \"turret\" for js/render3d.js:944 to rotate. A small gunless block gives the antenna head a body and makes it turn. (3) The AMX-13-style oscillating turret problem does not arise in the German block, but the equivalent one does: the Raketenjagdpanzer 2 and Jaguar 1 are turretless missile carriers, and `kind:\"casemate\"` builds the low sloped Jagdpanzer superstructure and then draws no gun because `gunCal` is 0 \u2014 which is exactly right for them.\n\nSix vehicles Germany fielded as delivered get rows that reproduce the American one rather than an invented distinct outline: M41 Walker Bulldog, M47 Patton, M42 Duster, M44, M109A3G and MARS (M270), plus Patriot PAC-2 which is the same M901-on-HEMTT as nato_e90_sam. The M109G is the exception \u2014 it is the American hull with a British L7A2 in it, so it keeps the M109 geometry but a longer tube.\n\nOne real bug found and worked around, not introduced: `nato_e50_spg` (M44) and four other rows carry `kind:\"open\"` + `turret:\"none\"` + a live `gunCal`, and js/armour3d.js:1907-1922 only draws a gun for a turret or a casemate \u2014 so those five howitzers are currently drawn with no barrel at all. My M44 row uses `turret:\"opentop\"` instead, which gives the real open crew tub AND gets the 155 mm drawn. The same latent bug affects roc_e50_spg, roc_e60_spg, pla_e60_spg and kpa_e60_spg; I did not touch them (read-only), but someone should.\n\nNothing in the DEU block is uncovered. Seven rows are marked medium and the reasons are specific, not hedging: the SPz 11-2's exact road-wheel count, the three radar vehicles' antenna form, and \u2014 the real limitation \u2014 the two HAWK rows and the Sergeant, where the data is right but `rocketPack()` will draw a generic tube block whatever I write, because it is the only mission load a `kind:\"rocket\"` row can get. Those three are still a large improvement on what happens today, which is a 1965 German HAWK battery borrowing a 15.4 m Patriot PAC-3 from the first same-role peer in ROLES.",
+  "schema_notes": "FIELD LIST, in the order every row in the table uses it:\nera, fac, role, designation, kind, len, width, height, hull, turret, turretAt, gunCal, gunLen, brake, evac, mantlet, track, wheels, wheelR, susp, rollers, sprocketFront, skirts, extras, camo.\n\nHOW I VERIFIED: I grepped js/armour3d.js for every read of every field (`grep -n \"P\\.\\(hull\\|turret\\|...\\)\"`, `grep -n 'has(\"'`, `grep -n \"\\.kind\"`, `grep -n \"P\\.role\\|role ===\"`), then read each branch. I then wrote a python validator that parses my 31 rows and rejects any value outside the sets below, any field-order drift, any key that is not a real UNIT id, any role that disagrees with the unit def in js/eras.js, and the two silent-no-op traps (a gun with no turret and no casemate; christie with rollers). It reported clean.\n\n=== FIELDS THE BUILDER ACTUALLY TESTS ===\n\nhull \u2014 HULLS table, js/armour3d.js:137-176. EXACTLY four: \"ww2\", \"modern\", \"boxy\", \"boat\". `hullTable()` line 178 falls back to `modern` for anything else, silently. For a WHEELED row hull is read only at lines 1874/1881, where \"boat\" alone changes the bow/cheek of `armouredHull` (bow .24 vs .16, cheek .30 vs .14) \u2014 every other value behaves identically.\n\nturret \u2014 buildTurret(), js/armour3d.js:573-644. EXACTLY six: \"none\" (or falsy/absent), \"cast\", \"welded\", \"wedge\", \"small\", \"opentop\". An unrecognised non-\"none\" value is the worst trap in the file: the if/else chain falls through, you get an EMPTY turret group, no roof hatch, and `addGun` then hangs a barrel in mid-air at the default mount. Nothing errors.\n  - cast: lathed near-vertical profile, scaled 1.24 in X, flat roof plate, 2 hatches.\n  - welded: box + a front face plate raked -0.32 rad, 2 hatches.\n  - wedge: body + a cheek raked -0.20 rad + a separate BUSTLE box behind with three rack bars, 2 hatches.\n  - small: a short box + a face raked -0.30 rad, 1 hatch.\n  - opentop: four walls and a floor, NO roof and NO hatch; mount sits at x:0 (not forward), so a gun on an opentop turret projects from the tub centre.\n\nmantlet \u2014 addGun(), js/armour3d.js:669-679. EXACTLY two do anything: \"cast\" (a squashed sphere) and \"slab\" (a box). \"none\" and anything else draw nothing. Only consulted when gunCal is non-zero.\n\nsusp \u2014 runningGear(), js/armour3d.js:419-420, 440, 492. EXACTLY two do anything: \"christie\" (full-radius road wheels AND return rollers forced to zero regardless of the `rollers` field) and \"bogie\" (wheels at 0.78 radius). \"torsion\" and \"none\" are inert house-style labels \u2014 they hit no branch. Wheeled rows all carry susp:\"none\" by convention; it is read nowhere for a wheeled vehicle.\n\nskirts \u2014 addSkirts(), js/armour3d.js:504-530. Tracked only (`if (!P.track) return`). \"none\"/falsy draws nothing; \"full\" draws one continuous plate per side; ANY other truthy string drops through to the 6-segment branch, so \"segmented\" is convention, not a keyword. Three values in practice: \"none\", \"full\", \"segmented\".\n\ncamo \u2014 PAINT, js/armour3d.js:20-29. EXACTLY eight: olive, green, desert, sand, twotone, darkgrey, bluegrey, white. Unknown falls back to olive (line 111). Separately, skinTex()'s SEC table (line 65) only gives disruptive blotches to twotone, green, desert, darkgrey, olive \u2014 sand, bluegrey and white come out flat.\n\nkind \u2014 only FOUR values are tested anywhere: \"rocket\" (lines 201, 372, 376, 842, 1928 \u2014 turret gets 45% of the height, truck body, and the rocket pack mission load), \"truck\" (lines 376, 842 \u2014 truck body), \"casemate\" (lines 371, 1915 \u2014 builds the assault-gun superstructure and hangs the gun off the hull), \"apc\" (line 845 \u2014 forces the armoured-hull wheeled body). \"tank\", \"wheeled\", \"open\" and \"halftrack\" appear all over the existing table and are INERT documentation. Note \"halftrack\" does not make a half-track: roc_e50_ifv draws as a fully tracked vehicle.\n\nrole \u2014 read in four places. `wheelBody()` line 843: supply/radarv/mlrs/ewveh force a truck body; line 845: ifv/spaag/atgmv/tankdestroyer/lighttank force apc-or-car. build() line 1928: role \"mlrs\" gets the rocket pack even without kind:\"rocket\". Line 1940: radarv/ewveh get radarLoad \u2014 but ONLY if `F && F.bed`, i.e. only on a wheeled truck body, which is why every tracked radarv row in the table currently renders as a featureless box. Line 1360: spaag and radarv are exempt from the automatic post-2003 wheeled slat cage.\n\nera \u2014 ERA_RANK, js/armour3d.js:828. e40,e50,e60,e70,e80,e90,e00,e10,e20; unknown scores 4. Drives wheeled tyre width (line 882), leaf springs vs dampers on trucks (era<=4), the automatic slat cage (era>=6), and the rocket pack's tube grid: era rank <=2 gives 2 rows x 8 tubes, otherwise 4 rows x 5 (line 1805).\n\nextras \u2014 addExtras(), js/armour3d.js:714-788. EXACTLY TEN keys are recognised: cupola, irlight, aaMg, smoke, era, stowage, trimvane, fueldrums, spareTrack, slat. AND the first six of those are gated on `&& T` \u2014 they are silently dropped on any row with turret:\"none\", which is most of the mlrs/sam/tel/casemate rows in the table. Only trimvane, fueldrums, spareTrack and slat work without a turret. \"netting\", \"snorkel\" and \"sideMg\" appear on dozens of existing rows and are recognised by NOTHING \u2014 pure documentation. I kept them where house style uses them and flagged them; they change no geometry. `slat` is also read by hasEx() at line 1360 to suppress the automatic wheeled slat cage.\n\nwheels \u2014 MEANS TWO DIFFERENT THINGS. Tracked (line 417): road wheels per side, floored at 3. Wheeled (line 878): NUMBER OF AXLES, clamped to 2..5 \u2014 so an 8x8 is wheels:4, a 6x6 is wheels:3. Getting this wrong is invisible; you just get the wrong number of wheels.\n\nrollers \u2014 return rollers per side (line 492), ignored entirely when susp is \"christie\".\nsprocketFront \u2014 which end the toothed drive wheel sits at (line 468).\nwheelR \u2014 road-wheel / tyre RADIUS in metres. Also sets belt width (wheelR*1.15) and the whole vertical stack for a tracked hull.\nturretAt \u2014 turret x as a FRACTION of len; +X is the nose. Also read at line 376: a value below -0.10 flips the headlamp/observation-port arrangement to the forward layout.\ngunCal \u2014 millimetres; drives barrel radius and, if 0/absent, addGun returns immediately and no barrel, mantlet, evacuator or brake is drawn.\ngunLen \u2014 metres of barrel projecting from the trunnion.\nbrake / evac \u2014 booleans; muzzle-brake block with side ports, and the bore-evacuator bulge at 62% of barrel length.\nlen / width / height \u2014 real metres over all. height is the WHOLE vehicle: hullTopZ() spends the hull's share (16% to the turret if turret:\"none\", 34% if turreted, 45% if kind:\"rocket\") and turretH() gives the rest to the turret, so an over-tall height inflates the turret, not the hull.\n\nfac and designation \u2014 read by NOTHING in armour3d.js or render3d.js. Documentation only.\n\n=== TRAPS I HAD TO DESIGN AROUND ===\n1. turret:\"none\" + a non-zero gunCal + kind that is not \"casemate\" = the gun is never drawn (build(), lines 1907-1922). Five existing rows have this \u2014 nato_e50_spg, roc_e50_spg, roc_e60_spg, pla_e60_spg, kpa_e60_spg \u2014 and all five are drawn with no barrel. My M44 row uses turret:\"opentop\" to get both the open crew tub and the 155 mm.\n2. A tracked radarv gets no radar (radarLoad is gated on a wheeled truck bed), so the three M113 rows use a gunless turret:\"small\" as the rotating antenna head.\n3. registerAll() (line 1972) skips any id already in UNIT_MODELS unless marked crude; index.html:290-291 loads sam3d.js and tel3d.js AFTER armour_specs.js and they overwrite by direct assignment. Neither registers any deu_* id, so all 31 of these rows survive to the screen.\n4. ERA_KIT in render3d.js only fires when the drawn key differs from the unit id, so a unit that gains its own row loses the era repaint and kit. Compensated for in camo and extras.",
+  "rows": [
+   {
+    "id": "deu_e00_ifv",
+    "comment": "/* Very wide slab-sided hull under full-length armour plates, and a turret so small and so low it reads as a gun mount - no hatch on it, because nobody sits up there. */",
+    "row": "  deu_e00_ifv: {era:\"e00\", fac:\"deu\", role:\"ifv\", designation:\"Schuetzenpanzer Puma\", kind:\"apc\", len:7.4, width:3.7, height:3.1, hull:\"modern\", turret:\"small\", turretAt:0, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:\"none\", track:true, wheels:6, wheelR:0.32, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"smoke\",\"cupola\",\"stowage\"], camo:\"twotone\"},",
+    "designation": "Schuetzenpanzer Puma",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e00_mbt",
+    "comment": "/* An A5's arrowhead turret with a visibly longer gun: the L/55 overhangs the nose by half a metre more than any other Leopard, and that overhang is the whole difference. */",
+    "row": "  deu_e00_mbt: {era:\"e00\", fac:\"deu\", role:\"mbt\", designation:\"Kampfpanzer Leopard 2A6 (L/55)\", kind:\"tank\", len:7.7, width:3.8, height:2.6, hull:\"modern\", turret:\"wedge\", turretAt:0, gunCal:120, gunLen:5.1, brake:false, evac:true, mantlet:\"slab\", track:true, wheels:7, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"segmented\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"twotone\"},",
+    "designation": "Kampfpanzer Leopard 2A6 (L/55)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e50_ifv",
+    "comment": "/* Remarkably low and flat for a troop carrier - the deck is barely chest high - with a one-man 20mm turret set well forward and offset to the right. */",
+    "row": "  deu_e50_ifv: {era:\"e50\", fac:\"deu\", role:\"ifv\", designation:\"Schuetzenpanzer lang HS.30 (SPz 12-3)\", kind:\"apc\", len:5.6, width:2.5, height:1.9, hull:\"boxy\", turret:\"small\", turretAt:0.08, gunCal:20, gunLen:1.7, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"stowage\",\"sideMg\"], camo:\"olive\"},",
+    "designation": "Schuetzenpanzer lang HS.30 (SPz 12-3)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e50_lighttank",
+    "comment": "/* The American light tank exactly as delivered: five small wheels under three return rollers, a flat-plated welded turret and a 76mm capped by a T-shaped blast deflector. */",
+    "row": "  deu_e50_lighttank: {era:\"e50\", fac:\"deu\", role:\"lighttank\", designation:\"M41 Walker Bulldog (US-supplied, unaltered)\", kind:\"tank\", len:5.8, width:3.2, height:2.7, hull:\"ww2\", turret:\"welded\", turretAt:0.05, gunCal:76, gunLen:3.7, brake:true, evac:true, mantlet:\"slab\", track:true, wheels:5, wheelR:0.32, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"aaMg\",\"stowage\"], camo:\"olive\"},",
+    "designation": "M41 Walker Bulldog (US-supplied, unaltered)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e50_mbt",
+    "comment": "/* The last American tank built with a bow machine gunner: a long cast turret with a pointed nose and a deep overhanging bustle, on a six-wheel Pershing-lineage hull. */",
+    "row": "  deu_e50_mbt: {era:\"e50\", fac:\"deu\", role:\"mbt\", designation:\"M47 Patton (US-supplied, unaltered)\", kind:\"tank\", len:6.4, width:3.5, height:3, hull:\"ww2\", turret:\"cast\", turretAt:0, gunCal:90, gunLen:3.9, brake:true, evac:true, mantlet:\"cast\", track:true, wheels:6, wheelR:0.33, susp:\"torsion\", rollers:5, sprocketFront:false, skirts:\"none\", extras:[\"cupola\",\"aaMg\",\"stowage\",\"spareTrack\"], camo:\"olive\"},",
+    "designation": "M47 Patton (US-supplied, unaltered)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e50_recon",
+    "comment": "/* Barely longer than a jeep but fully tracked: four little road wheels, a flat engine deck up front and a one-man 20mm turret tucked right at the back. */",
+    "row": "  deu_e50_recon: {era:\"e50\", fac:\"deu\", role:\"recon\", designation:\"Schuetzenpanzer kurz 11-2 (Hotchkiss)\", kind:\"tank\", len:4.5, width:2.3, height:2, hull:\"boxy\", turret:\"small\", turretAt:-0.12, gunCal:20, gunLen:1.7, brake:false, evac:false, mantlet:\"none\", track:true, wheels:4, wheelR:0.26, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"stowage\",\"netting\"], camo:\"olive\"},",
+    "designation": "Schuetzenpanzer kurz 11-2 (Hotchkiss)",
+    "confidence": "medium"
+   },
+   {
+    "id": "deu_e50_spaag",
+    "comment": "/* Walker Bulldog running gear with an open shielded tub where the turret should be, twin Bofors 40mm canted up and the gun crew sitting out in the weather. */",
+    "row": "  deu_e50_spaag: {era:\"e50\", fac:\"deu\", role:\"spaag\", designation:\"Flakpanzer M42 Duster, twin 40mm\", kind:\"open\", len:5.8, width:3.2, height:2.8, hull:\"ww2\", turret:\"opentop\", turretAt:-0.15, gunCal:40, gunLen:2.4, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.32, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"stowage\"], camo:\"olive\"},",
+    "designation": "M42 Duster, twin 40mm",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e50_spg",
+    "comment": "/* Tall roofless crew tub open to the sky at the back, a short fat 155mm reaching over the front deck and a recoil spade folded flat across the tail. */",
+    "row": "  deu_e50_spg: {era:\"e50\", fac:\"deu\", role:\"spg\", designation:\"M44 155mm self-propelled howitzer\", kind:\"open\", len:6.2, width:3.2, height:3.1, hull:\"boxy\", turret:\"opentop\", turretAt:-0.12, gunCal:155, gunLen:2.6, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"aaMg\",\"stowage\"], camo:\"olive\"},",
+    "designation": "M44 155mm self-propelled howitzer",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_ifv",
+    "comment": "/* Tall slab-sided troop box with a two-man 20mm turret at the centre and a second machine gun in a little remote pod of its own on the rear roof. */",
+    "row": "  deu_e60_ifv: {era:\"e60\", fac:\"deu\", role:\"ifv\", designation:\"Schuetzenpanzer Marder 1\", kind:\"apc\", len:6.8, width:3.2, height:3, hull:\"boxy\", turret:\"small\", turretAt:0, gunCal:20, gunLen:1.7, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"smoke\",\"stowage\",\"aaMg\",\"sideMg\"], camo:\"olive\"},",
+    "designation": "Schuetzenpanzer Marder 1",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_mbt",
+    "comment": "/* Seven road wheels behind segmented rubber skirts under a low rounded cast turret, with the big searchlight drum standing above the mantlet and no muzzle brake on the 105mm. */",
+    "row": "  deu_e60_mbt: {era:\"e60\", fac:\"deu\", role:\"mbt\", designation:\"Kampfpanzer Leopard 1\", kind:\"tank\", len:7.1, width:3.3, height:2.6, hull:\"modern\", turret:\"cast\", turretAt:0, gunCal:105, gunLen:4.6, brake:false, evac:true, mantlet:\"cast\", track:true, wheels:7, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"segmented\", extras:[\"cupola\",\"irlight\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"olive\"},",
+    "designation": "Kampfpanzer Leopard 1",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_mlrs",
+    "comment": "/* Two separate eighteen-tube pods sitting side by side over the rear axles of a bonneted 6x6, with an armoured shutter folded down over the windscreen. */",
+    "row": "  deu_e60_mlrs: {era:\"e60\", fac:\"deu\", role:\"mlrs\", designation:\"110mm Leichtes Artillerieraketensystem 1 (LARS 1)\", kind:\"rocket\", len:8.3, width:2.5, height:3, hull:\"boxy\", turret:\"none\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:3, wheelR:0.55, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"olive\"},",
+    "designation": "110mm Leichtes Artillerieraketensystem 1",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_radarv",
+    "comment": "/* An M113 box with nothing to shoot with: where the turret belongs there is only a squat antenna head, and it turns on its own while the vehicle stands still. */",
+    "row": "  deu_e60_radarv: {era:\"e60\", fac:\"deu\", role:\"radarv\", designation:\"M113 A1 G Green Archer (FA No. 8 Mk 2)\", kind:\"apc\", len:4.9, width:2.7, height:2.7, hull:\"boxy\", turret:\"small\", turretAt:-0.12, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"trimvane\",\"stowage\",\"netting\"], camo:\"olive\"},",
+    "designation": "M113 A1 G Green Archer (FA No. 8 Mk 2)",
+    "confidence": "medium"
+   },
+   {
+    "id": "deu_e60_recon",
+    "comment": "/* Eight big evenly spaced wheels under a long sloped amphibious hull with a trim vane on the nose, and a small 20mm turret sitting dead centre. */",
+    "row": "  deu_e60_recon: {era:\"e60\", fac:\"deu\", role:\"recon\", designation:\"Spaehpanzer 2 Luchs (8x8)\", kind:\"wheeled\", len:7.7, width:3, height:2.8, hull:\"boat\", turret:\"small\", turretAt:0, gunCal:20, gunLen:1.8, brake:false, evac:false, mantlet:\"none\", track:false, wheels:4, wheelR:0.58, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"trimvane\",\"smoke\",\"snorkel\",\"stowage\"], camo:\"olive\"},",
+    "designation": "Spaehpanzer 2 Luchs (8x8)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_sam",
+    "comment": "/* Three MIM-23 rounds on a low frame with no cab and no radar of its own - the Bundeswehr never bought the self-propelled version, so this is the towed launcher and its prime mover. */",
+    "row": "  deu_e60_sam: {era:\"e60\", fac:\"deu\", role:\"sam\", designation:\"MIM-23 HAWK, M192 towed triple launcher\", kind:\"rocket\", len:5.1, width:3.5, height:2.9, hull:\"boxy\", turret:\"none\", turretAt:-0.1, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:2, wheelR:0.5, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"olive\"},",
+    "designation": "MIM-23 HAWK, M192 towed triple launcher",
+    "confidence": "medium"
+   },
+   {
+    "id": "deu_e60_spaag",
+    "comment": "/* Leopard 1 running gear under a turret wider than the hull it sits on, the two 35mm barrels carried right out on the cheeks and a big search dish folded on the bustle. */",
+    "row": "  deu_e60_spaag: {era:\"e60\", fac:\"deu\", role:\"spaag\", designation:\"Flakpanzer Gepard 1A1\", kind:\"tank\", len:7.7, width:3.7, height:3, hull:\"modern\", turret:\"welded\", turretAt:-0.05, gunCal:35, gunLen:3.2, brake:false, evac:false, mantlet:\"none\", track:true, wheels:7, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"segmented\", extras:[\"smoke\",\"stowage\"], camo:\"olive\"},",
+    "designation": "Flakpanzer Gepard 1A1",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_spg",
+    "comment": "/* The American howitzer with a British gun in it: the same enormous box turret hung over the tail, but a far longer 155mm ending in a heavy double-baffle brake. */",
+    "row": "  deu_e60_spg: {era:\"e60\", fac:\"deu\", role:\"spg\", designation:\"M109G 155mm self-propelled howitzer\", kind:\"tank\", len:6.2, width:3.2, height:3.1, hull:\"boxy\", turret:\"welded\", turretAt:-0.15, gunCal:155, gunLen:4.8, brake:true, evac:true, mantlet:\"slab\", track:true, wheels:7, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"aaMg\",\"cupola\",\"stowage\"], camo:\"olive\"},",
+    "designation": "M109G 155mm self-propelled howitzer",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_tankdestroyer",
+    "comment": "/* A Jagdpanzer with no turret and no gun at all - a very low sharply sloped casemate barely taller than the men beside it, its missile rails folded out of sight until it shoots. */",
+    "row": "  deu_e60_tankdestroyer: {era:\"e60\", fac:\"deu\", role:\"tankdestroyer\", designation:\"Raketenjagdpanzer 2 (SS.11)\", kind:\"casemate\", len:6.4, width:3, height:2, hull:\"modern\", turret:\"none\", turretAt:0, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.33, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"olive\"},",
+    "designation": "Raketenjagdpanzer 2 (SS.11)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e60_tel",
+    "comment": "/* One very large finned rocket lying the whole length of an erector behind a 6x6 prime mover, with the firing cables running back to a separate van. */",
+    "row": "  deu_e60_tel: {era:\"e60\", fac:\"deu\", role:\"tel\", designation:\"MGM-29A Sergeant, dual key\", kind:\"rocket\", len:10.6, width:2.6, height:3.4, hull:\"boxy\", turret:\"none\", turretAt:-0.2, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:3, wheelR:0.6, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"olive\"},",
+    "designation": "MGM-29A Sergeant, dual key",
+    "confidence": "medium"
+   },
+   {
+    "id": "deu_e80_ifv",
+    "comment": "/* The same tall Marder box with the remote rear machine gun gone, so the roof behind the turret is bare except for the MILAN launcher clamped to the turret's left flank. */",
+    "row": "  deu_e80_ifv: {era:\"e80\", fac:\"deu\", role:\"ifv\", designation:\"Schuetzenpanzer Marder 1A2\", kind:\"apc\", len:6.8, width:3.2, height:3, hull:\"boxy\", turret:\"small\", turretAt:0, gunCal:20, gunLen:1.8, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"smoke\",\"stowage\",\"cupola\",\"sideMg\"], camo:\"twotone\"},",
+    "designation": "Schuetzenpanzer Marder 1A2",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e80_mbt",
+    "comment": "/* Big flat-faced slab turret standing dead vertical at the front - nothing like the Abrams wedge beside it - over seven road wheels behind heavy segmented skirts. */",
+    "row": "  deu_e80_mbt: {era:\"e80\", fac:\"deu\", role:\"mbt\", designation:\"Kampfpanzer Leopard 2 A0-A4\", kind:\"tank\", len:7.7, width:3.7, height:2.5, hull:\"modern\", turret:\"welded\", turretAt:0, gunCal:120, gunLen:4.4, brake:false, evac:true, mantlet:\"slab\", track:true, wheels:7, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"segmented\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"twotone\"},",
+    "designation": "Kampfpanzer Leopard 2 A0-A4",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e80_mlrs",
+    "comment": "/* The same two eighteen-tube pods as LARS 1, moved onto a taller blunter MAN 6x6 with an armoured cab - the launcher is unchanged and the lorry under it is not. */",
+    "row": "  deu_e80_mlrs: {era:\"e80\", fac:\"deu\", role:\"mlrs\", designation:\"110mm LARS 2 on the MAN 7t chassis\", kind:\"rocket\", len:8.7, width:2.5, height:3.1, hull:\"boxy\", turret:\"none\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:3, wheelR:0.6, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"twotone\"},",
+    "designation": "110mm LARS 2 on MAN 7t chassis",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e80_radarv",
+    "comment": "/* Short upright M113 box with a folded trim vane and no weapon anywhere on it, carrying a squat rotating antenna head over the rear deck instead of a turret. */",
+    "row": "  deu_e80_radarv: {era:\"e80\", fac:\"deu\", role:\"radarv\", designation:\"M113 ABRA, Artillerie-Beobachtungsradar RATAC\", kind:\"apc\", len:4.9, width:2.7, height:2.6, hull:\"boxy\", turret:\"small\", turretAt:-0.12, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"trimvane\",\"stowage\",\"netting\"], camo:\"twotone\"},",
+    "designation": "M113 ABRA, Artillerie-Beobachtungsradar RATAC",
+    "confidence": "medium"
+   },
+   {
+    "id": "deu_e80_sam",
+    "comment": "/* The sixties launcher again, unchanged outside: three rounds on a low frame, because the Improved HAWK upgrade went into the missile and the radars, not into this. */",
+    "row": "  deu_e80_sam: {era:\"e80\", fac:\"deu\", role:\"sam\", designation:\"MIM-23B Improved HAWK, M192 launcher\", kind:\"rocket\", len:5.1, width:3.5, height:2.9, hull:\"boxy\", turret:\"none\", turretAt:-0.1, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:2, wheelR:0.5, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"twotone\"},",
+    "designation": "MIM-23B Improved HAWK, M192 launcher",
+    "confidence": "medium"
+   },
+   {
+    "id": "deu_e80_spg",
+    "comment": "/* The same American howitzer rebuilt again - still the broad box turret hung over the tail, now with the long M185 tube and a double-baffle brake reaching well past the bow. */",
+    "row": "  deu_e80_spg: {era:\"e80\", fac:\"deu\", role:\"spg\", designation:\"M109A3G 155mm self-propelled howitzer\", kind:\"tank\", len:6.2, width:3.2, height:3.1, hull:\"boxy\", turret:\"welded\", turretAt:-0.15, gunCal:155, gunLen:5.2, brake:true, evac:true, mantlet:\"slab\", track:true, wheels:7, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"aaMg\",\"cupola\",\"stowage\",\"spareTrack\"], camo:\"twotone\"},",
+    "designation": "M109A3G 155mm self-propelled howitzer",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e80_tankdestroyer",
+    "comment": "/* Low sloped Jagdpanzer wedge with no gun anywhere on it - bolted spaced plates down each flank, and the only thing breaking the line is the retractable HOT launcher on the roof. */",
+    "row": "  deu_e80_tankdestroyer: {era:\"e80\", fac:\"deu\", role:\"tankdestroyer\", designation:\"Jagdpanzer Jaguar 1 (HOT)\", kind:\"casemate\", len:6.6, width:3.1, height:2.5, hull:\"modern\", turret:\"none\", turretAt:0, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.33, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"segmented\", extras:[\"stowage\",\"spareTrack\"], camo:\"twotone\"},",
+    "designation": "Jagdpanzer Jaguar 1 (HOT)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e80_tel",
+    "comment": "/* A tiny amphibious tracked launcher with a trim vane on the nose: the lightest thing in the table that carries a nuclear round, and it swims. */",
+    "row": "  deu_e80_tel: {era:\"e80\", fac:\"deu\", role:\"tel\", designation:\"MGM-52C Lance on the M752 self-propelled launcher, dual key\", kind:\"rocket\", len:6.5, width:2.7, height:2.6, hull:\"boat\", turret:\"none\", turretAt:-0.1, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"trimvane\",\"stowage\",\"netting\"], camo:\"twotone\"},",
+    "designation": "MGM-52C Lance, M752 SPL, dual key",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e90_ifv",
+    "comment": "/* A Marder squared off and fattened by bolt-on spaced armour over hull and turret both: wider, flatter-sided and higher-roofed than the 1A2 standing next to it. */",
+    "row": "  deu_e90_ifv: {era:\"e90\", fac:\"deu\", role:\"ifv\", designation:\"Schuetzenpanzer Marder 1A3\", kind:\"apc\", len:6.9, width:3.4, height:3, hull:\"boxy\", turret:\"small\", turretAt:0, gunCal:20, gunLen:1.8, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"smoke\",\"stowage\",\"cupola\",\"sideMg\"], camo:\"twotone\"},",
+    "designation": "Schuetzenpanzer Marder 1A3",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e90_mbt",
+    "comment": "/* The flat Leopard 2 face rebuilt into a sharp arrowhead by the bolted wedge armour, which is the one thing that tells it from an A4 at any distance at all. */",
+    "row": "  deu_e90_mbt: {era:\"e90\", fac:\"deu\", role:\"mbt\", designation:\"Kampfpanzer Leopard 2A5\", kind:\"tank\", len:7.7, width:3.8, height:2.6, hull:\"modern\", turret:\"wedge\", turretAt:0, gunCal:120, gunLen:4.4, brake:false, evac:true, mantlet:\"slab\", track:true, wheels:7, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"segmented\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"twotone\"},",
+    "designation": "Kampfpanzer Leopard 2A5",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e90_mlrs",
+    "comment": "/* The American launcher bought whole: a small armoured cab right at the nose and one boxy traversing cradle that swallows two sealed pods, on Bradley running gear under full skirts. */",
+    "row": "  deu_e90_mlrs: {era:\"e90\", fac:\"deu\", role:\"mlrs\", designation:\"Mittleres Artillerieraketensystem MARS (M270)\", kind:\"rocket\", len:7, width:3, height:2.6, hull:\"boxy\", turret:\"none\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"stowage\"], camo:\"twotone\"},",
+    "designation": "Mittleres Artillerieraketensystem (M270)",
+    "confidence": "high"
+   },
+   {
+    "id": "deu_e90_radarv",
+    "comment": "/* The same unarmed M113 as the eighties vehicle - new electronics inside, identical box outside, with the antenna head turning over the rear deck. */",
+    "row": "  deu_e90_radarv: {era:\"e90\", fac:\"deu\", role:\"radarv\", designation:\"M113 ABRA with RATAC-S\", kind:\"apc\", len:4.9, width:2.7, height:2.6, hull:\"boxy\", turret:\"small\", turretAt:-0.12, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"trimvane\",\"stowage\",\"netting\"], camo:\"twotone\"},",
+    "designation": "M113 ABRA with RATAC-S",
+    "confidence": "medium"
+   },
+   {
+    "id": "deu_e90_sam",
+    "comment": "/* A tractor and a semitrailer rather than one vehicle: four sealed canisters cranked up on the trailer behind an eight-wheeled HEMTT. The longest German row in the table. */",
+    "row": "  deu_e90_sam: {era:\"e90\", fac:\"deu\", role:\"sam\", designation:\"MIM-104 Patriot PAC-2, M901 launching station\", kind:\"rocket\", len:15.4, width:2.9, height:3.6, hull:\"boxy\", turret:\"none\", turretAt:-0.25, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:4, wheelR:0.62, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"twotone\"},",
+    "designation": "MIM-104 Patriot PAC-2",
+    "confidence": "high"
+   }
+  ],
+  "uncovered": []
+ },
+ "reviews": [
+  {
+   "reasoning": "SCHEMA LAYER: clean. I rebuilt the reader inventory independently from js/armour3d.js and ran all 31 rows through a parser.\n\n- Field names/order: all 31 rows carry exactly the 25 canonical keys in the canonical order. I parsed all 258 shipped rows in js/armour_specs.js and every one uses the identical 25-key order, so there is no drift and nothing missing. No invented field name.\n- Enum values: hull \u2208 {ww2,modern,boxy,boat} (js/armour3d.js:137-176, fallback :178), turret \u2208 {none,cast,welded,wedge,small,opentop} (:576-644), mantlet \u2208 {cast,slab} (:669,674), susp (:419-420), skirts (:504-530), camo \u2208 PAINT's eight (:20-29, fallback :111), era \u2208 ERA_RANK (:828). Zero unrecognised values on any row. No \"wedge\"/\"boat\"-style typo, no invented camo.\n- The four documented silent traps: turret:\"none\" + live gunCal + non-casemate (gun never drawn, :1906-1922) \u2014 not present on any row; kind:\"casemate\" + a turret (casemate suppressed by the else-if at :1915) \u2014 not present; susp:\"christie\" + rollers (:492) \u2014 not present; wheels-as-axles on wheeled rows (:878, clamp 2..5) \u2014 correct everywhere (Luchs 8x8 = wheels:4, LARS 6x6 = wheels:3).\n- Ids: all 31 keys are real UNIT keys, and `_u.id = _k` at js/rules.js:4231 makes modelKeyFor's `def.id` (js/render3d.js:309) resolve, so the plan's \"no name mangling\" claim holds. Every spec `role` matches its unit def's role. Enumerating every deu_* def in eras.js gives exactly 31 cat:\"vehicle\"/layer:\"ground\" units \u2014 coverage really is complete, \"uncovered: []\" is true.\n- No other file registers a deu_* ground model (sam3d.js and tel3d.js contain no \"deu_\" string at all), so registerAll (:1972) will not skip these and nothing loaded at index.html:290-291 overwrites them. The ERA_KIT loss claim is right (js/render3d.js:440, `key !== def.id`).\n- The claimed latent bug is real: nato_e50_spg, roc_e50_spg, roc_e60_spg, pla_e60_spg, kpa_e60_spg all carry kind:\"open\" + turret:\"none\" + live gunCal and get no barrel. The M44 row's turret:\"opentop\" workaround is correct and opentop is already used 26 times in the shipped table.\n- The inert tokens netting/snorkel/sideMg are genuinely read by nothing (addExtras only tests the ten keys at :716-780), but they appear 68/49/16 times in the shipped table, the plan discloses them, and they change no geometry \u2014 house style, not a defect.\n\nWHAT I COULD BREAK: not the schema, but geometry values and shipped comments that the builder provably contradicts. The HAWK pair is a genuine misrender (a 3.5 m-wide, 5.1 m-long lorry: a cab 3.26 m wide by 1.33 m long, a width/length ratio of 0.686 when no truck-body row in the whole existing table exceeds 0.471). Four more rows ship comments asserting geometry the builder cannot produce \u2014 a cab on a tracked hull, a hatchless \"small\" turret, a turret wider than its hull, a bustle-mounted dish \u2014 and two era-paired rows described as \"unchanged\" cannot render alike because ERA_RANK crosses the tube-grid boundary at :1805. All salvageable with value/comment edits, so SOUND_WITH_FIXES rather than BROKEN.",
+   "fatals": [
+    {
+     "which": "deu_e60_sam and deu_e80_sam (MIM-23 HAWK / MIM-23B Improved HAWK)",
+     "problem": "Both rows are kind:\"rocket\" + track:false, and js/armour3d.js:842 `if (P.kind === \"truck\" || P.kind === \"rocket\") return \"truck\";` forces the full lorry body \u2014 truckBody() draws a bonnet, grille, headlamps, a glazed cab with doors, handles, mirrors and wipers. Both comments say \"no cab\", which is unreachable for a wheeled kind:\"rocket\" row. The cab then scales straight off the row's own numbers: js/armour3d.js:1487 `var chw = W * 0.5 * 0.93;` and js/armour3d.js:905 `F.cabLen = Math.max(L * 0.155, Math.min(L * 0.26, 1.95));` \u2014 with len:5.1, width:3.5 that is a cab 3.26 m wide and 1.33 m long, 2.4x wider than long, on a lorry whose bed is 3.29 m wide and 2.44 m long. I parsed all 60 wheeled truck-body rows already in js/armour_specs.js: the widest-for-its-length is nato_e60_recon at width/len 0.471; these two sit at 0.686, outside anything the builder has ever been asked to draw.",
+     "correction": "Make the row the prime mover the comment actually describes: len:6.7, width:2.4, wheels:3 (the M35 6x6), and delete \"no cab\" from the comment. If instead the launcher's own 3.5 m span must be kept, set track:true and copy the shipped cabless pattern of nato_e60_sam (js/armour_specs.js, `nato_e60_sam: {... kind:\"rocket\", len:6.4, width:2.7, track:true, wheels:5 ...}`), which takes the tracked branch at js/armour3d.js:1898 and draws no cab at all."
+    },
+    {
+     "which": "deu_e60_mlrs vs deu_e80_mlrs (LARS 1 / LARS 2), and deu_e60_sam vs deu_e80_sam (HAWK / Improved HAWK)",
+     "problem": "Both pairs ship comments promising an identical launcher \u2014 \"the launcher is unchanged and the lorry under it is not\", \"the sixties launcher again, unchanged outside\". They cannot render alike. js/armour3d.js:1805 `var rows = er <= 2 ? 2 : 4, cols = er <= 2 ? 8 : 5, tilt = 0.10;` splits on ERA_RANK (js/armour3d.js:828, e60 = 2, e80 = 4), exactly between the two members of each pair: the e60 rows get a 2 x 8 block of 16 tubes and the e80 rows a 4 x 5 block of 20. The era field also changes tyre width at js/armour3d.js:882 (`er <= 3 ? 0.52 : er <= 5 ? 0.60`), so the lorries differ too.",
+     "correction": "Either set era:\"e60\" on deu_e80_mlrs and deu_e80_sam (era is a geometry field, not the roster era \u2014 the unit def's own from/to already places them in the eighties, and this is the only way to make the pack and tyres match), or strike \"unchanged\" from both e80 comments and describe the difference honestly. Do not leave a comment claiming identity the builder will visibly break."
+    },
+    {
+     "which": "deu_e00_ifv (Schuetzenpanzer Puma)",
+     "problem": "The comment says \"a turret so small and so low it reads as a gun mount - no hatch on it, because nobody sits up there\", and the row then puts \"cupola\" in extras. Both are wrong for turret:\"small\". js/armour3d.js:630 `roof = { z: th * 0.88, x: tl * 0.20, y: tw * 0.30, r: tw * 0.26, n: 1 };` followed by js/armour3d.js:646 `if (roof) {` means a \"small\" turret ALWAYS gets one roof hatch with its rim, lid and periscope block \u2014 hatchless is not a state this branch can reach. And js/armour3d.js:716 `if (has(\"cupola\") && T) {` then bolts a commander's cupola on top of it, which is precisely the crewed-turret signature the comment says the Puma does not have (its turret is unmanned).",
+     "correction": "Drop \"cupola\" from extras, leaving extras:[\"smoke\",\"stowage\"], and delete the \"no hatch on it\" clause from the comment. If a genuinely bare turret roof is wanted, no value in the schema provides one \u2014 say so instead of asserting it."
+    },
+    {
+     "which": "deu_e90_mlrs (MARS / M270)",
+     "problem": "The comment promises \"a small armoured cab right at the nose\", but the row is track:true. js/armour3d.js:1898 `if (P.track) {` takes the tracked branch (buildHull / runningGear / addSkirts) and only the else at js/armour3d.js:1902-1903 `F = wheeledChassis(THREE, M, g, P, L, W, skin);` ever reaches truckBody(), so no cab, windscreen, bonnet or door is drawn anywhere on this vehicle. What actually appears is the lofted \"boxy\" hull with the engine deck thrown forward (js/armour3d.js:376 `var fwd = P.kind === \"rocket\" || ...`) and a 20-tube rocket block; the M270's two sealed six-round pods are likewise not reachable through rocketPack.",
+     "correction": "Rewrite the comment to what the builder draws: Bradley-derived running gear under full skirts, a boxy tracked hull with the engine deck forward, and a traversing tube block over the tail. Leave the data values alone \u2014 they are correct."
+    },
+    {
+     "which": "deu_e60_spaag (Flakpanzer Gepard 1A1)",
+     "problem": "The comment claims \"a turret wider than the hull it sits on\" and \"a big search dish folded on the bustle\". Neither is producible. js/armour3d.js:568 `var tw = W * 0.36, tl = L * 0.30, th = turretH(P, L);` and js/armour3d.js:593 `var box = new THREE.Mesh(new THREE.BoxGeometry(tl * 1.7, tw * 1.9, th * 0.90), skin);` make a \"welded\" turret W*0.684 = 2.53 m across, against a deck plate of js/armour3d.js:250 `deckHalf: P.track ? W * 0.495 : bodyHalf * 0.99` = 3.66 m full beam \u2014 the turret is a metre NARROWER than the hull, and no field scales it. A bustle exists only in the \"wedge\" branch (js/armour3d.js:611 `var bustle = ...`), which \"welded\" never reaches, and no radar-dish geometry exists anywhere in armour3d.js.",
+     "correction": "Reword the comment to the silhouette the builder gives: Leopard 1 running gear and segmented skirts under a tall flat-plated welded turret with the 35 mm mount raked forward. If the Gepard must read as radar-equipped, that needs new geometry in armour3d.js, not a spec row - do not promise it in a comment."
+    },
+    {
+     "which": "The ten turretless rows carrying extras:\"stowage\" \u2014 deu_e60_mlrs, deu_e60_sam, deu_e60_tankdestroyer, deu_e60_tel, deu_e80_mlrs, deu_e80_sam, deu_e80_tankdestroyer, deu_e80_tel, deu_e90_mlrs, deu_e90_sam",
+     "problem": "The summary's stated compensation for losing ERA_KIT is \"I put the equivalent fittings in extras by hand ... stowage on everything turreted\", but these ten rows are turret:\"none\" and js/armour3d.js:755 `if (has(\"stowage\") && T) {` drops the basket silently \u2014 T is null for every one of them (build() only assigns T inside `if (P.turret && P.turret !== \"none\")`). On deu_e60_tankdestroyer the whole extras array is inert: \"stowage\" is T-gated away and \"netting\" is read by nothing. So the compensation the summary claims is a no-op on a third of the block, and the rows carry no bolt-on kit at all.",
+     "correction": "Where a bolt-on is genuinely wanted on a turretless row, use one of the four ungated keys \u2014 trimvane, fueldrums, spareTrack, slat (js/armour3d.js:760, 766, 775, 780) \u2014 exactly as deu_e80_tankdestroyer already does with \"spareTrack\". Otherwise leave the rows as they are (nato_e60_sam ships the same inert stowage) but correct the summary: on these ten rows nothing replaces the lost era kit."
+    }
+   ],
+   "verdict": "SOUND_WITH_FIXES"
+  },
+  {
+   "reasoning": "I read js/armour3d.js (HULLS 137-176, runningGear 405-500, addSkirts 504-530, buildTurret 573-644, addGun 656-700, addExtras 714-788, casemate, wheelBody 838-851, wheelFrame 875-925, truckBody 1381+, rocketPack 1797-1860, build 1898-1970, registerAll 1972-1989), js/render3d.js (modelKeyFor 307-320, getModel 437-445), js/rules.js (ROLES/reindexRoles 4157-4240), js/sam3d.js (HAWK/PAC presets 1000-1120), js/tel3d.js (2466-2510), js/units3d_salvage.js, index.html load order, and every one of the 31 deu_* unit defs in js/eras.js.\n\nWHAT HOLDS UP. The mechanical half of the spec is accurate and I could not break it: all 31 keys are real UNIT ids with matching roles; the field order matches the existing table exactly; every enum value used (hull/turret/mantlet/susp/skirts/camo/kind) is one the builder actually tests; the \"gun with turret:none and kind!=casemate draws no barrel\" trap is real (nato_e50_spg confirmed barrel-less) and the opentop workaround genuinely fires addGun; radarLoad really is gated on F && F.bed so a tracked radarv gets nothing; extras really are gated on && T for the first six keys; wheels really means axles for a wheeled row (Luchs 8x8 = 4, LARS 6x6 = 3 are right); the ERA_KIT loss on key === def.id is real. The era assignments are all correct \u2014 every one of these vehicles was in Bundeswehr service in the period claimed, and the HAWK \"Germany never bought the self-propelled version\" call is right. Most running gear is right against the real vehicles: M113 5 wheels/0 rollers/front sprocket, M109 7 wheels/0 rollers/front sprocket, Leopard 1 and 2 7 wheels/4 rollers/rear sprocket, Marder 6/3/front, M41 and M42 5/3/front, Jagdpanzer 5/3/front, M270 6/3/front with full skirts, Puma 6/front. Leopard hull lengths (7.72), widths (3.70 A4 / 3.75 A5-A6) and the L/44-vs-L/55 barrel overhang arithmetic all land within a few centimetres of the real tank.\n\nWHAT BREAKS IT. Five rows would put the wrong vehicle on screen, and three of those are regressions against models the game already has. (1) The M109G row's stated rationale \u2014 \"the American hull with a British L7A2 in it, so ... a longer tube\" \u2014 is wrong twice over: L7A2 is the 105 mm tank gun, and the repo's own unit desc for deu_e60_spg says the German change was \"a Rheinmetall wedge breech, a new muzzle brake and German optics\", while deu_e80_spg's desc says the A3G is what \"brought [it] up to the long-barrelled standard\". The M109G kept the short M126 L/23. gunLen 4.8 draws a 2.3 m overhang on a 1966 howitzer that had none, and leaves it 0.4 m from the M109A3G, when the real pair is the single most obvious German artillery silhouette change of the period. (2) deu_e90_sam today renders as sam_n, i.e. sam3d.js's hand-built Patriot M901 launching station; the new row replaces it with a generic 4x5 tube block on a lorry. The plan's justification \u2014 parity with nato_e90_sam \u2014 is false, because nato_e90_sam's ARMOUR row is dead code: index.html loads sam3d.js after armour_specs.js and sam3d reg()s nato_e90_sam directly. (3)(4) The two HAWK rows do exactly what sam3d.js's own comment forbids in writing (\"registered here rather than left to the armour_specs 'rocket' generator because the generator draws a pack of tubes on a hull, and the whole point of this decade is that there is no pack: the round lies naked on a rail\"), and a finished HAWK preset with three rails and the 5.03 m MIM-23 is already sitting in that file. They also get a bonnet, cab and windscreen from truckBody, which the row's own comment says they do not have. (5) deu_e80_tel is marked high confidence but is a kind:\"rocket\" row, so the Lance renders as a 20-tube MLRS block.\n\nOn top of that the Gepard row inflates a Leopard 1 hull to 3.7 m to chase a turret width the builder cannot produce, the camo dating ignores from\u2192to spans so the Gepard stays gelboliv into the 2000s, the Puma gets a cupola on an unmanned turret, and LARS 1 and LARS 2 will draw visibly different tube grids (era rank 2 gives 2x8, rank 4 gives 4x5) directly under a comment claiming \"the launcher is unchanged\". The core of the block \u2014 the Leopards, Marders, M113s, Jagdpanzer, M41/M47/M42/M44, Luchs, MARS \u2014 is genuinely good work and should survive with the corrections below.",
+   "verdict": "BROKEN",
+   "fatals": [
+    {
+     "which": "deu_e60_spg (M109G) \u2014 gunLen 4.8, and the plan's \"British L7A2\" rationale",
+     "problem": "The M109G did NOT have a longer tube and had nothing British in it. js/eras.js deu_e60_spg desc, the repo's own record, reads: \"a Rheinmetall wedge breech, a new muzzle brake and German optics\" \u2014 and deu_e80_spg's desc says the A3G is what \"brought [the line] up to the long-barrelled standard\". The M109G carried the standard American short 155 mm M126 (L/23), whose muzzle sits level with the bow: real M109/M109G overall length 6.19 m equals the hull length, no overhang at all. L7A2 is the Royal Ordnance 105 mm tank gun (or the GPMG), not a 155 mm howitzer. With turret \"welded\" at turretAt -0.15 the trunnion lands at x=+0.60, so gunLen 4.8 puts the muzzle 2.3 m past a nose that is 3.1 m out \u2014 a long-barrel silhouette on a 1966 vehicle \u2014 and leaves it only 0.4 m short of the M109A3G row's 5.2, erasing the one difference that identifies the pair.",
+     "correction": "deu_e60_spg: gunLen 2.5 (muzzle lands at 3.10 m, exactly the bow, which is what the short M126 looks like); keep brake:true and evac:true (the M126 has both). Leave deu_e80_spg at gunLen 5.2 (M185 L/39, real overhang 3.48 m \u2014 5.4 would be exact). Rewrite the rationale: the M109G is the American hull with a German Rheinmetall wedge breech and German optics on the SHORT tube; the long M185 tube is what arrives with the M109A3G in 1985."
+    },
+    {
+     "which": "deu_e90_sam (Patriot PAC-2) \u2014 the whole row, and the claim of parity with nato_e90_sam",
+     "problem": "This is a straight regression, built on a false premise. index.html:290 loads js/sam3d.js AFTER js/armour_specs.js, and sam3d.js:1105 does reg(\"nato_e90_sam\", 15.50, buildPatriot, PAC2) by direct assignment \u2014 so nato_e90_sam's ARMOUR row is dead code and has never been on screen. Copying it does not reproduce what nato_e90_sam looks like. Meanwhile deu_e90_sam TODAY borrows sam_n (rules.js:752, registered by sam3d.js:1091 as buildPatriot/PAC3) \u2014 a purpose-built M901 launching station. The new row replaces that with kind:\"rocket\" on a 15.4 m lorry, which build() line 1928 sends to rocketPack(), drawing an era-rank-5 grid of 4 rows x 5 tubes: twenty small tubes where four large canisters belong.",
+     "correction": "Delete the deu_e90_sam ARMOUR row and add one line to js/sam3d.js beside the existing ones: reg(\"deu_e90_sam\", 15.50, buildPatriot, PAC2). Same vehicle Germany actually bought, same builder already used for nato_e80/e90_sam, and it survives armour_specs because sam3d loads later."
+    },
+    {
+     "which": "deu_e60_sam and deu_e80_sam (MIM-23 HAWK / Improved HAWK) \u2014 kind:\"rocket\", and the comments' \"no cab\" / \"low frame\"",
+     "problem": "js/sam3d.js:1109-1113 states the project rule in writing: \"The 1960s tier. These are registered here rather than left to the armour_specs 'rocket' generator because the generator draws a pack of tubes on a hull, and the whole point of this decade is that there is no pack: the round lies naked on a rail.\" These two rows do exactly what that forbids \u2014 era rank 2 gives 2x8 = sixteen tubes on the e60 row, rank 4 gives 4x5 = twenty on the e80 row, for a launcher that carries three missiles. Worse, wheelBody() line 840 forces kind:\"rocket\" to \"truck\", so truckBody() (line 1381+) builds a chassis, bumper, grille, glazed cab and load bed \u2014 the row's own comment says \"no cab\". width:3.5 on a road lorry is also a metre over any legal truck beam and is not the M192's figure (4.88 x 2.95 m).",
+     "correction": "Delete both rows and register them in js/sam3d.js, where the finished preset already exists \u2014 HAWK at line 1054 is the three-rail M727 with the correct 5.03 m MIM-23: reg(\"deu_e60_sam\", 6.89, buildRail, HAWK) and reg(\"deu_e80_sam\", 6.89, buildRail, HAWK). If the towed M192 must be distinguished from the American self-propelled M727, clone the preset with the tracked hull stripped rather than fall back to armour_specs. If the rows must stay in armour_specs for now, at minimum set width to 2.95 and stop claiming there is no cab."
+    },
+    {
+     "which": "deu_e80_tel (MGM-52C Lance on M752) \u2014 confidence:\"high\", len 6.5",
+     "problem": "The summary names only the two HAWK rows and the Sergeant as limited by rocketPack's generic tube block, but this row is kind:\"rocket\" too, so build() line 1928 fires the same path: era rank 4 gives a 4 x 5 grid of twenty tubes on a hull that carries ONE missile on a rail. The comment (\"a tiny amphibious tracked launcher ... the lightest thing in the table that carries a nuclear round\") will be contradicted by a twenty-tube MLRS pack, and the row is marked high confidence rather than medium. The M752 is also 5.86 m long over the M548 hull, not 6.5.",
+     "correction": "len 6.5 -> 5.9, confidence high -> medium, and add it to the summary's list of rows that rocketPack cannot serve. The real fix is a single-rail build in tel3d.js or sam3d.js (buildRail already draws naked rounds on rails and would take railY:[0] with mLen 6.1, mR 0.28 for the Lance)."
+    },
+    {
+     "which": "deu_e60_tel (MGM-29A Sergeant) \u2014 kind:\"rocket\", len 10.6, wheels 3",
+     "problem": "Same generic-pack problem (era rank 2 gives sixteen tubes where one 10.5 m finned round belongs), plus a chassis error the plan did not flag: wheelFrame() line 906 sets F.cabOver = L >= 9.0, so at len 10.6 the row draws a flat-fronted forward-control lorry. The Sergeant's launching station rode an erector semitrailer behind a bonneted M52 5-ton tractor. The row also throws away a better existing option: tel3d.js:2494 already registers nato_e50_tel as buildEL(TEL_E50N), the MGM-5 Corporal on its erector trailer \u2014 and the Sergeant is the Corporal's direct replacement on that same style of erector.",
+     "correction": "Delete the row and alias it in tel3d.js to the erector builder: UNIT_MODELS[\"deu_e60_tel\"] = { len: 17.65, build: buildEL(TEL_E50N) } (or a Sergeant preset cloned from TEL_E50N with the shorter, fatter round: the Sergeant is 10.5 m x 0.79 m against the Corporal's 14 m). If the row must stay in armour_specs, drop len below 9.0 so it is not drawn as a cab-over."
+    },
+    {
+     "which": "deu_e60_spaag (Gepard) \u2014 width 3.7, and the comment \"a turret wider than the hull it sits on\"",
+     "problem": "3.71 m is the Gepard's width over the turret and radars; the HULL is the Leopard 1's, 3.25-3.27 m, and deu_e60_mbt correctly uses 3.3. In this builder `width` is the hull beam and the turret is derived FROM it: buildTurret line 566 sets tw = W*0.36 and the welded box is tw*1.9 = 0.684*W, so the turret can never be wider than the hull no matter what is written. Result: the comment's defining feature is unobtainable, and the row silently draws a Leopard 1 hull 0.4 m wider than the Leopard 1 parked beside it \u2014 a difference the eye reads immediately when both are on the map.",
+     "correction": "width 3.7 -> 3.3, matching deu_e60_mbt, since both are the same hull. Delete the \"turret wider than the hull\" and \"search dish folded on the bustle\" claims from the comment \u2014 neither is drawable. Also height 3.0 -> 3.29 (the real turret-roof figure) so the turret gets its share; hullTopZ spends 66% on the hull, so 3.0 under-builds it."
+    },
+    {
+     "which": "camo assignment across all rows whose unit def spans several eras",
+     "problem": "The summary says camo was used \"to date them honestly\" by the row's era bucket, but the unit defs carry from/to spans and getModel() builds ONE model for the unit's whole life. deu_e60_spaag (Gepard) is from:e60 to:e00 and gets olive, so a 2005 Gepard renders in gelboliv, a colour it had not worn since 1984 \u2014 and because it now owns its key, ERA_KIT no longer repaints it (render3d.js:440), which is exactly the repaint the summary says camo is compensating for. deu_e60_recon (Luchs, e60->e90) has the same problem. The stated reasoning is also wrong about its own table: \"the two pre-1984 e80 rows, Lance and Improved HAWK\" \u2014 by the service dates in js/eras.js, SEVEN of the eight e80 rows predate the 1984 Tarnanstrich (Marder 1A2 1979, Leopard 2 1979, LARS 2 1980, M113 ABRA 1976, Jaguar 1 1978, Lance 1976, I-HAWK 1978); only the M109A3G (1985) does not.",
+     "correction": "Paint by the span the unit is actually on the map for, not the bucket it starts in: deu_e60_spaag and deu_e60_recon -> twotone (both served to 2009/2010, the overwhelming majority of it in three-tone). Leave deu_e50_* and the e60 rows that end at e60 as olive. Fix the summary's count: the e80 block is painted three-tone because those vehicles served long past 1984, not because only two rows predate it."
+    },
+    {
+     "which": "deu_e00_ifv (Puma) \u2014 extras includes \"cupola\"",
+     "problem": "The row's own comment says \"no hatch on it, because nobody sits up there\" \u2014 correct, the Puma's turret is unmanned \u2014 and then asks for a cupola, which addExtras() line 719 draws as a cylinder on the turret roof whenever T exists. turret:\"small\" already adds one roof hatch of its own (buildTurret line 627, roof.n = 1), so the finished unmanned turret gets a hatch AND a commander's cupola on top of it.",
+     "correction": "extras: [\"smoke\",\"stowage\"] \u2014 drop \"cupola\". (The stray hatch from turret:\"small\" is unavoidable and worth a note rather than a claim that there is none.)"
+    },
+    {
+     "which": "deu_e60_mlrs / deu_e80_mlrs \u2014 the comment \"the launcher is unchanged and the lorry under it is not\"",
+     "problem": "rocketPack() line 1805 picks the tube grid from era rank alone: rows = er <= 2 ? 2 : 4, cols = er <= 2 ? 8 : 5. LARS 1 is e60 (rank 2) so it draws 2 rows of 8; LARS 2 is e80 (rank 4) so it draws 4 rows of 5. The two launchers will therefore look conspicuously DIFFERENT \u2014 a wide flat bank versus a tall block \u2014 directly beneath a comment asserting the pod is the same hardware, which it was (36 x 110 mm on both). The schema notes document the rule but never connect it to this claim.",
+     "correction": "There is no spec value that overrides the grid, so drop the \"launcher is unchanged\" sentence from the deu_e80_mlrs comment and say what is true \u2014 the same rockets on a new chassis, drawn with the era's generic pack \u2014 or move both LARS rows to a hand-built pod the way sam3d/tel3d handle their own decade-specific loads. Same honesty fix applies to deu_e90_mlrs, whose comment promises \"a small armoured cab right at the nose\": a tracked row never reaches truckBody, so the M270 will have no cab at all."
+    }
+   ]
+  }
+ ]
+}

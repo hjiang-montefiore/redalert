@@ -1,0 +1,378 @@
+{
+ "stream": "gbr",
+ "design": {
+  "rows": [
+   {
+    "id": "gbr_e50_mbt",
+    "designation": "FV4007 Centurion Mk 3",
+    "confidence": "high",
+    "comment": "/* Long low cast turret set well forward under full-length skirting plates, six small bogie wheels a side, the drive sprocket at the tail and a bin across the turret rear. */",
+    "row": "gbr_e50_mbt: {era:\"e50\", fac:\"gbr\", role:\"mbt\", designation:\"FV4007 Centurion Mk 3\", kind:\"tank\", len:7.8, width:3.4, height:3, hull:\"ww2\", turret:\"cast\", turretAt:0, gunCal:84, gunLen:4.2, brake:false, evac:true, mantlet:\"cast\", track:true, wheels:6, wheelR:0.3, susp:\"bogie\", rollers:4, sprocketFront:false, skirts:\"full\", extras:[\"cupola\",\"aaMg\",\"stowage\",\"spareTrack\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e50_heavy",
+    "designation": "FV214 Conqueror Heavy Gun Tank",
+    "confidence": "high",
+    "comment": "/* Eight small bogie wheels a side under the widest hull in the British list, a deep cast dome turret and a 120mm that overhangs the nose by three metres. */",
+    "row": "gbr_e50_heavy: {era:\"e50\", fac:\"gbr\", role:\"heavy\", designation:\"FV214 Conqueror Heavy Gun Tank\", kind:\"tank\", len:7.7, width:4, height:3.35, hull:\"ww2\", turret:\"cast\", turretAt:0, gunCal:120, gunLen:4.9, brake:false, evac:true, mantlet:\"cast\", track:true, wheels:8, wheelR:0.3, susp:\"bogie\", rollers:4, sprocketFront:false, skirts:\"none\", extras:[\"cupola\",\"aaMg\",\"stowage\",\"spareTrack\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e50_lighttank",
+    "designation": "FV601 Alvis Saladin armoured car",
+    "confidence": "high",
+    "comment": "/* Six road wheels and no tracks at all, under a faceted welded turret whose stubby 76mm barely reaches past the nose. */",
+    "row": "gbr_e50_lighttank: {era:\"e50\", fac:\"gbr\", role:\"lighttank\", designation:\"FV601 Alvis Saladin armoured car\", kind:\"wheeled\", len:5.3, width:2.54, height:2.4, hull:\"boxy\", turret:\"welded\", turretAt:0.05, gunCal:76, gunLen:2.1, brake:false, evac:false, mantlet:\"slab\", track:false, wheels:3, wheelR:0.55, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e50_ifv",
+    "designation": "FV603 Alvis Saracen APC",
+    "confidence": "high",
+    "comment": "/* The Saladin's six-wheel chassis with a tall slab troop box instead of a gun turret, and a tiny machine gun cupola set right forward over the first axle. */",
+    "row": "gbr_e50_ifv: {era:\"e50\", fac:\"gbr\", role:\"ifv\", designation:\"FV603 Alvis Saracen APC\", kind:\"apc\", len:5.2, width:2.54, height:2.46, hull:\"boxy\", turret:\"small\", turretAt:0.15, gunCal:7.62, gunLen:0.7, brake:false, evac:false, mantlet:\"none\", track:false, wheels:3, wheelR:0.55, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e50_spg",
+    "designation": "Sexton 25-pdr Self-Propelled, Ram chassis",
+    "confidence": "medium",
+    "comment": "/* A wartime Sherman-family hull with three bogies a side and a front sprocket, carrying a short muzzle-braked 25-pounder in a three-sided box where a turret should be. */",
+    "row": "gbr_e50_spg: {era:\"e50\", fac:\"gbr\", role:\"spg\", designation:\"Sexton 25-pdr Self-Propelled, Ram chassis\", kind:\"casemate\", len:6.1, width:2.72, height:2.44, hull:\"ww2\", turret:\"none\", turretAt:0, gunCal:88, gunLen:2.4, brake:true, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.3, susp:\"bogie\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"spareTrack\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e50_recon",
+    "designation": "Daimler FV701 Ferret Scout Car Mk 2",
+    "confidence": "high",
+    "comment": "/* Deliberately the same row as nato_e50_recon, because it is the same vehicle: a tiny four-square armoured car with a one-man machine gun turret filling most of its short roof. */",
+    "row": "gbr_e50_recon: {era:\"e50\", fac:\"gbr\", role:\"recon\", designation:\"Daimler FV701 Ferret Scout Car Mk 2\", kind:\"wheeled\", len:3.8, width:1.9, height:1.9, hull:\"boxy\", turret:\"small\", turretAt:0, gunCal:7.62, gunLen:0.6, brake:false, evac:false, mantlet:\"none\", track:false, wheels:2, wheelR:0.45, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e50_tankdestroyer",
+    "designation": "FV1620 Humber Hornet with Malkara ATGM",
+    "confidence": "medium",
+    "comment": "/* No gun and no turret \u2014 a small armoured 4x4 whose entire rear deck is one open cradle for two missiles the size of torpedoes. */",
+    "row": "gbr_e50_tankdestroyer: {era:\"e50\", fac:\"gbr\", role:\"tankdestroyer\", designation:\"FV1620 Humber Hornet with Malkara ATGM\", kind:\"wheeled\", len:5.05, width:2.2, height:2.3, hull:\"boxy\", turret:\"opentop\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:2, wheelR:0.47, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_mbt",
+    "designation": "FV4201 Chieftain Mk 2",
+    "confidence": "high",
+    "comment": "/* The lowest hull in NATO: a long shallow glacis off a near ground-level nose, a cast turret with no mantlet where the gun leaves the armour, and a searchlight box on the turret cheek. */",
+    "row": "gbr_e60_mbt: {era:\"e60\", fac:\"gbr\", role:\"mbt\", designation:\"FV4201 Chieftain Mk 2\", kind:\"tank\", len:7.5, width:3.5, height:2.9, hull:\"modern\", turret:\"cast\", turretAt:0, gunCal:120, gunLen:5.2, brake:false, evac:true, mantlet:\"none\", track:true, wheels:6, wheelR:0.3, susp:\"bogie\", rollers:3, sprocketFront:false, skirts:\"full\", extras:[\"cupola\",\"irlight\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_lighttank",
+    "designation": "FV101 Scorpion CVR(T)",
+    "confidence": "high",
+    "comment": "/* Tiny and very low: five small road wheels with no return rollers and a front sprocket, under a squat welded aluminium turret whose stubby 76mm hardly clears the nose. */",
+    "row": "gbr_e60_lighttank: {era:\"e60\", fac:\"gbr\", role:\"lighttank\", designation:\"FV101 Scorpion CVR(T)\", kind:\"tank\", len:4.8, width:2.24, height:2.1, hull:\"boxy\", turret:\"welded\", turretAt:-0.12, gunCal:76, gunLen:2, brake:false, evac:true, mantlet:\"slab\", track:true, wheels:5, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_ifv",
+    "designation": "FV432 Trojan armoured personnel carrier",
+    "confidence": "high",
+    "comment": "/* Britain's M113, in steel: a plain flat-topped box on five rollerless road wheels with nothing on the roof but a small machine gun cupola behind the driver. */",
+    "row": "gbr_e60_ifv: {era:\"e60\", fac:\"gbr\", role:\"ifv\", designation:\"FV432 Trojan armoured personnel carrier\", kind:\"apc\", len:5.25, width:2.8, height:2.29, hull:\"boxy\", turret:\"small\", turretAt:0.05, gunCal:7.62, gunLen:0.7, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_spg",
+    "designation": "FV433 Abbot 105mm Self-Propelled Gun",
+    "confidence": "high",
+    "comment": "/* A fully enclosed welded turret hung right over the tail of a short five-wheel hull, engine deck ahead of it, and a light 105mm ending in a squat multi-baffle brake. */",
+    "row": "gbr_e60_spg: {era:\"e60\", fac:\"gbr\", role:\"spg\", designation:\"FV433 Abbot 105mm Self-Propelled Gun\", kind:\"tank\", len:5.8, width:2.64, height:2.49, hull:\"boxy\", turret:\"welded\", turretAt:-0.18, gunCal:105, gunLen:3.2, brake:true, evac:true, mantlet:\"slab\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"aaMg\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_mlrs",
+    "designation": "MGR-1 Honest John, 24 Missile Regiment RA",
+    "confidence": "high",
+    "comment": "/* The American launcher exactly as the Royal Artillery received it, down to the 6x6 five-tonner under it: one enormous finned rocket on an inclined rail over the bed. */",
+    "row": "gbr_e60_mlrs: {era:\"e60\", fac:\"gbr\", role:\"mlrs\", designation:\"MGR-1 Honest John, 24 Missile Regiment RA\", kind:\"rocket\", len:8, width:2.5, height:3, hull:\"boxy\", turret:\"none\", turretAt:0, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:false, wheels:3, wheelR:0.6, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_recon",
+    "designation": "FV721 Fox CVR(W)",
+    "confidence": "high",
+    "comment": "/* Ferret-sized 4x4 made top-heavy by a real fighting turret, with the long thin RARDEN 30mm reaching a full body length past the nose. */",
+    "row": "gbr_e60_recon: {era:\"e60\", fac:\"gbr\", role:\"recon\", designation:\"FV721 Fox CVR(W)\", kind:\"wheeled\", len:4.24, width:2.13, height:2.2, hull:\"boxy\", turret:\"small\", turretAt:0, gunCal:30, gunLen:2.2, brake:false, evac:false, mantlet:\"slab\", track:false, wheels:2, wheelR:0.5, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_tankdestroyer",
+    "designation": "FV438 Swingfire, twin launcher on FV432",
+    "confidence": "high",
+    "comment": "/* An FV432 with two squat launcher bins standing where the roof hatches were \u2014 no gun, no barrel, and nothing else to tell it from a troop carrier until it fires. */",
+    "row": "gbr_e60_tankdestroyer: {era:\"e60\", fac:\"gbr\", role:\"tankdestroyer\", designation:\"FV438 Swingfire, twin launcher on FV432\", kind:\"apc\", len:5.25, width:2.8, height:2.5, hull:\"boxy\", turret:\"opentop\", turretAt:-0.12, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_tel",
+    "designation": "MGM-52 Lance, 50 Missile Regiment RA",
+    "confidence": "medium",
+    "comment": "/* Small enough to be mistaken for an APC: an amphibious M113-family hull with a boat prow and a folded trim vane, carrying its single round on a rail over the rear deck. */",
+    "row": "gbr_e60_tel: {era:\"e60\", fac:\"gbr\", role:\"tel\", designation:\"MGM-52 Lance, 50 Missile Regiment RA\", kind:\"rocket\", len:5.9, width:2.7, height:2.9, hull:\"boat\", turret:\"none\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"trimvane\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e60_radarv",
+    "designation": "FV436 with Cymbeline mortar-locating radar",
+    "confidence": "medium",
+    "comment": "/* An FV432 box with no gun anywhere on it, carrying a small square scanner housing right at the back of the roof that turns on its own while the vehicle sits still. */",
+    "row": "gbr_e60_radarv: {era:\"e60\", fac:\"gbr\", role:\"radarv\", designation:\"FV436 with Cymbeline mortar-locating radar\", kind:\"apc\", len:5.25, width:2.8, height:2.6, hull:\"boxy\", turret:\"small\", turretAt:-0.18, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"netting\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e80_mbt",
+    "designation": "FV4030/4 Challenger 1",
+    "confidence": "high",
+    "comment": "/* Much longer and flatter than the Chieftain it replaced: a broad faceted turret with a deep bustle, six big wheels behind full-length skirts, drive sprocket at the rear. */",
+    "row": "gbr_e80_mbt: {era:\"e80\", fac:\"gbr\", role:\"mbt\", designation:\"FV4030/4 Challenger 1\", kind:\"tank\", len:8.3, width:3.5, height:2.95, hull:\"modern\", turret:\"wedge\", turretAt:0.02, gunCal:120, gunLen:5.1, brake:false, evac:true, mantlet:\"none\", track:true, wheels:6, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"full\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e80_lighttank",
+    "designation": "FV101 Scorpion CVR(T)",
+    "confidence": "high",
+    "comment": "/* Unchanged after twenty years, because Britain never replaced it: five small rollerless wheels, a front sprocket and a stubby 76mm on a low welded aluminium turret. */",
+    "row": "gbr_e80_lighttank: {era:\"e80\", fac:\"gbr\", role:\"lighttank\", designation:\"FV101 Scorpion CVR(T)\", kind:\"tank\", len:4.8, width:2.24, height:2.1, hull:\"boxy\", turret:\"welded\", turretAt:-0.12, gunCal:76, gunLen:2, brake:false, evac:true, mantlet:\"slab\", track:true, wheels:5, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e80_ifv",
+    "designation": "FV510 Warrior MCV-80",
+    "confidence": "high",
+    "comment": "/* Tall square troop box with the engine deck forward and a two-man turret just aft of centre, carrying the long thin RARDEN and no missile box on the flank at all. */",
+    "row": "gbr_e80_ifv: {era:\"e80\", fac:\"gbr\", role:\"ifv\", designation:\"FV510 Warrior MCV-80\", kind:\"apc\", len:6.34, width:3.03, height:2.79, hull:\"boxy\", turret:\"small\", turretAt:-0.11, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.33, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e80_spg",
+    "designation": "M109A2 155mm SPH in British service",
+    "confidence": "high",
+    "comment": "/* The American vehicle unaltered, because that is what the Royal Artillery bought: a broad flat-sided turret over the tail of a seven-wheel rollerless hull, in NATO green. */",
+    "row": "gbr_e80_spg: {era:\"e80\", fac:\"gbr\", role:\"spg\", designation:\"M109A2 155mm SPH in British service\", kind:\"tank\", len:6.2, width:3.2, height:2.8, hull:\"boxy\", turret:\"welded\", turretAt:-0.15, gunCal:155, gunLen:5.2, brake:true, evac:true, mantlet:\"slab\", track:true, wheels:7, wheelR:0.33, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"aaMg\",\"cupola\",\"stowage\",\"spareTrack\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e80_mlrs",
+    "designation": "M270 MLRS, 39 Regiment Royal Artillery",
+    "confidence": "high",
+    "comment": "/* Bought off the shelf and not modified: armoured cab forward on a Bradley-type tracked chassis, one twelve-cell launcher box filling the whole rear deck. */",
+    "row": "gbr_e80_mlrs: {era:\"e80\", fac:\"gbr\", role:\"mlrs\", designation:\"M270 MLRS, 39 Regiment Royal Artillery\", kind:\"rocket\", len:7, width:3, height:2.6, hull:\"boxy\", turret:\"none\", turretAt:-0.2, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e80_recon",
+    "designation": "FV107 Scimitar CVR(T)",
+    "confidence": "high",
+    "comment": "/* Scorpion's hull with the stubby 76mm swapped for the long thin RARDEN \u2014 at this zoom the barrel is the only way to tell the two CVR(T)s apart. */",
+    "row": "gbr_e80_recon: {era:\"e80\", fac:\"gbr\", role:\"recon\", designation:\"FV107 Scimitar CVR(T)\", kind:\"tank\", len:4.99, width:2.24, height:2.1, hull:\"boxy\", turret:\"welded\", turretAt:-0.12, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:5, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e80_tankdestroyer",
+    "designation": "FV102 Striker, five-round Swingfire launcher",
+    "confidence": "high",
+    "comment": "/* A CVR(T) with a five-round launcher bin standing on the back of the roof where a turret would be, and no gun barrel anywhere on the vehicle. */",
+    "row": "gbr_e80_tankdestroyer: {era:\"e80\", fac:\"gbr\", role:\"tankdestroyer\", designation:\"FV102 Striker, five-round Swingfire launcher\", kind:\"apc\", len:4.83, width:2.28, height:2.2, hull:\"boxy\", turret:\"opentop\", turretAt:-0.18, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"smoke\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_recon",
+    "designation": "Land Rover Defender 110 Weapons Mount Installation Kit",
+    "confidence": "medium",
+    "comment": "/* A stripped soft-skin Land Rover, narrower than anything else on the map, with a ring-mounted heavy machine gun standing over the rear bed and a spare wheel behind the cab. */",
+    "row": "gbr_e90_recon: {era:\"e90\", fac:\"gbr\", role:\"recon\", designation:\"Land Rover Defender 110 Weapons Mount Installation Kit\", kind:\"truck\", len:4.5, width:1.8, height:2.2, hull:\"boxy\", turret:\"opentop\", turretAt:-0.12, gunCal:12.7, gunLen:1.2, brake:false, evac:false, mantlet:\"none\", track:false, wheels:2, wheelR:0.4, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"aaMg\",\"stowage\",\"netting\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_ifv",
+    "designation": "FV510 Warrior MICV",
+    "confidence": "high",
+    "comment": "/* The same square box and off-centre RARDEN turret as the eighties vehicle, with the engine deck forward and still not a missile launcher in sight. */",
+    "row": "gbr_e90_ifv: {era:\"e90\", fac:\"gbr\", role:\"ifv\", designation:\"FV510 Warrior MICV\", kind:\"apc\", len:6.34, width:3.03, height:2.79, hull:\"boxy\", turret:\"small\", turretAt:-0.11, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.33, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_lighttank",
+    "designation": "FV107 Scimitar CVR(T)",
+    "confidence": "high",
+    "comment": "/* Five little road wheels under a low welded turret, the thin RARDEN barrel reaching most of a hull length past the bow. */",
+    "row": "gbr_e90_lighttank: {era:\"e90\", fac:\"gbr\", role:\"lighttank\", designation:\"FV107 Scimitar CVR(T)\", kind:\"tank\", len:4.99, width:2.24, height:2.1, hull:\"boxy\", turret:\"welded\", turretAt:-0.12, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:5, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"cupola\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_tankdestroyer",
+    "designation": "FV102 Striker with Swingfire",
+    "confidence": "high",
+    "comment": "/* Gunless CVR(T) again, identified only by the launcher bin squatting on the rear roof. */",
+    "row": "gbr_e90_tankdestroyer: {era:\"e90\", fac:\"gbr\", role:\"tankdestroyer\", designation:\"FV102 Striker with Swingfire\", kind:\"apc\", len:4.83, width:2.28, height:2.2, hull:\"boxy\", turret:\"opentop\", turretAt:-0.18, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"smoke\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_mbt",
+    "designation": "FV4030/4 Challenger 1",
+    "confidence": "high",
+    "comment": "/* The eighties tank with nothing changed on the outside: long flat skirted hull, faceted turret with a deep bustle, rear sprocket. */",
+    "row": "gbr_e90_mbt: {era:\"e90\", fac:\"gbr\", role:\"mbt\", designation:\"FV4030/4 Challenger 1\", kind:\"tank\", len:8.3, width:3.5, height:2.95, hull:\"modern\", turret:\"wedge\", turretAt:0.02, gunCal:120, gunLen:5.1, brake:false, evac:true, mantlet:\"none\", track:true, wheels:6, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"full\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_heavy",
+    "designation": "Challenger 2 (CR2)",
+    "confidence": "high",
+    "comment": "/* Challenger 1's outline redrawn flatter and squarer \u2014 a broad wedge turret with a long bustle rack and a thermal sight box standing proud beside the gun. */",
+    "row": "gbr_e90_heavy: {era:\"e90\", fac:\"gbr\", role:\"heavy\", designation:\"Challenger 2 (CR2)\", kind:\"tank\", len:8.3, width:3.5, height:2.5, hull:\"modern\", turret:\"wedge\", turretAt:0.02, gunCal:120, gunLen:5, brake:false, evac:true, mantlet:\"none\", track:true, wheels:6, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"full\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_spg",
+    "designation": "AS-90 Braveheart 155mm SPG",
+    "confidence": "high",
+    "comment": "/* Square-shouldered turret filling the back half of a six-wheel skirted hull, engine deck forward of it, and a long braked 155mm overhanging the bow. */",
+    "row": "gbr_e90_spg: {era:\"e90\", fac:\"gbr\", role:\"spg\", designation:\"AS-90 Braveheart 155mm SPG\", kind:\"tank\", len:7.2, width:3.4, height:3, hull:\"boxy\", turret:\"welded\", turretAt:-0.15, gunCal:155, gunLen:5.2, brake:true, evac:true, mantlet:\"slab\", track:true, wheels:6, wheelR:0.33, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_mlrs",
+    "designation": "M270 MLRS, Royal Artillery",
+    "confidence": "high",
+    "comment": "/* The same American vehicle as the eighties row, because Britain bought it and never changed it. */",
+    "row": "gbr_e90_mlrs: {era:\"e90\", fac:\"gbr\", role:\"mlrs\", designation:\"M270 MLRS, Royal Artillery\", kind:\"rocket\", len:7, width:3, height:2.6, hull:\"boxy\", turret:\"none\", turretAt:-0.2, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"stowage\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_spaag",
+    "designation": "FV4333 Stormer with Starstreak HVM",
+    "confidence": "high",
+    "comment": "/* A stretched six-wheel CVR(T) with no gun at all: an open rotating mount on the rear roof carrying two banks of missile tubes either side of a sight head. */",
+    "row": "gbr_e90_spaag: {era:\"e90\", fac:\"gbr\", role:\"spaag\", designation:\"FV4333 Stormer with Starstreak HVM\", kind:\"apc\", len:5.6, width:2.76, height:2.8, hull:\"boxy\", turret:\"opentop\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:6, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"smoke\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e90_tel",
+    "designation": "MGM-52C Lance, 50 Missile Regiment RA",
+    "confidence": "medium",
+    "comment": "/* The same little amphibious launcher as 1976, still in Royal Artillery hands and still American: boat prow, trim vane, one round on a rail over the tail. */",
+    "row": "gbr_e90_tel: {era:\"e90\", fac:\"gbr\", role:\"tel\", designation:\"MGM-52C Lance, 50 Missile Regiment RA\", kind:\"rocket\", len:5.9, width:2.7, height:2.9, hull:\"boat\", turret:\"none\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"trimvane\"], camo:\"green\"},"
+   },
+   {
+    "id": "gbr_e00_recon",
+    "designation": "Jackal 2 MWMIK (Supacat HMT400)",
+    "confidence": "high",
+    "comment": "/* Very high-riding 4x4 on huge wheels with an open weapons ring over the back \u2014 no armoured box, no doors, the crew sitting out in the open behind the gun. */",
+    "row": "gbr_e00_recon: {era:\"e00\", fac:\"gbr\", role:\"recon\", designation:\"Jackal 2 MWMIK (Supacat HMT400)\", kind:\"truck\", len:5.4, width:2.1, height:2.5, hull:\"boxy\", turret:\"opentop\", turretAt:-0.12, gunCal:12.7, gunLen:1.2, brake:false, evac:false, mantlet:\"none\", track:false, wheels:2, wheelR:0.55, susp:\"none\", rollers:0, sprocketFront:false, skirts:\"none\", extras:[\"aaMg\",\"stowage\",\"netting\"], camo:\"desert\"},"
+   },
+   {
+    "id": "gbr_e00_ifv",
+    "designation": "FV510 Warrior, TES fit",
+    "confidence": "high",
+    "comment": "/* The Warrior gone square: bar armour standing off both flanks and applique blocks on the turret face, so the whole vehicle reads a foot wider than it is. */",
+    "row": "gbr_e00_ifv: {era:\"e00\", fac:\"gbr\", role:\"ifv\", designation:\"FV510 Warrior, TES fit\", kind:\"apc\", len:6.34, width:3.3, height:2.79, hull:\"boxy\", turret:\"small\", turretAt:-0.11, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:6, wheelR:0.33, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"era\",\"slat\",\"cupola\",\"smoke\",\"stowage\"], camo:\"desert\"},"
+   },
+   {
+    "id": "gbr_e00_lighttank",
+    "designation": "FV107 Scimitar Mk2 (CVR(T) rebuild)",
+    "confidence": "medium",
+    "comment": "/* The old CVR(T) turret and RARDEN on a wider rebuilt hull, in sand paint with bar armour panels hung down each flank. */",
+    "row": "gbr_e00_lighttank: {era:\"e00\", fac:\"gbr\", role:\"lighttank\", designation:\"FV107 Scimitar Mk2 (CVR(T) rebuild)\", kind:\"tank\", len:5.1, width:2.4, height:2.2, hull:\"boxy\", turret:\"welded\", turretAt:-0.12, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:\"slab\", track:true, wheels:5, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"slat\",\"cupola\",\"smoke\",\"stowage\"], camo:\"desert\"},"
+   },
+   {
+    "id": "gbr_e00_mbt",
+    "designation": "Challenger 2",
+    "confidence": "high",
+    "comment": "/* Flat broad wedge turret with a long bustle rack over a low six-wheel skirted hull, and a rifled 120mm with its fume extractor a third of the way out. */",
+    "row": "gbr_e00_mbt: {era:\"e00\", fac:\"gbr\", role:\"mbt\", designation:\"Challenger 2\", kind:\"tank\", len:8.3, width:3.5, height:2.5, hull:\"modern\", turret:\"wedge\", turretAt:0.02, gunCal:120, gunLen:5, brake:false, evac:true, mantlet:\"none\", track:true, wheels:6, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"full\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"desert\"},"
+   },
+   {
+    "id": "gbr_e00_heavy",
+    "designation": "Challenger 2 Theatre Entry Standard (Megatron)",
+    "confidence": "high",
+    "comment": "/* Challenger 2 swollen out of shape: applique blocks down both flanks and bar armour round the tail, much the widest tank in the file. */",
+    "row": "gbr_e00_heavy: {era:\"e00\", fac:\"gbr\", role:\"heavy\", designation:\"Challenger 2 Theatre Entry Standard (Megatron)\", kind:\"tank\", len:8.3, width:4.2, height:2.6, hull:\"modern\", turret:\"wedge\", turretAt:0.02, gunCal:120, gunLen:5, brake:false, evac:true, mantlet:\"none\", track:true, wheels:6, wheelR:0.35, susp:\"torsion\", rollers:4, sprocketFront:false, skirts:\"full\", extras:[\"era\",\"slat\",\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"desert\"},"
+   },
+   {
+    "id": "gbr_e00_spg",
+    "designation": "AS-90 155mm SPG",
+    "confidence": "high",
+    "comment": "/* Big square rear turret on a skirted six-wheel hull, engine deck forward, the 155mm reaching well past the nose \u2014 the same vehicle as the nineties row in sand paint. */",
+    "row": "gbr_e00_spg: {era:\"e00\", fac:\"gbr\", role:\"spg\", designation:\"AS-90 155mm SPG\", kind:\"tank\", len:7.2, width:3.4, height:3, hull:\"boxy\", turret:\"welded\", turretAt:-0.15, gunCal:155, gunLen:5.2, brake:true, evac:true, mantlet:\"slab\", track:true, wheels:6, wheelR:0.33, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"cupola\",\"aaMg\",\"smoke\",\"stowage\"], camo:\"desert\"},"
+   },
+   {
+    "id": "gbr_e00_mlrs",
+    "designation": "M270B1 with Guided MLRS",
+    "confidence": "high",
+    "comment": "/* Still the plain M270: armoured cab at the nose, one launcher box over the rear deck, full skirts \u2014 only the paint says which army owns it. */",
+    "row": "gbr_e00_mlrs: {era:\"e00\", fac:\"gbr\", role:\"mlrs\", designation:\"M270B1 with Guided MLRS\", kind:\"rocket\", len:7, width:3, height:2.6, hull:\"boxy\", turret:\"none\", turretAt:-0.2, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:6, wheelR:0.3, susp:\"torsion\", rollers:3, sprocketFront:true, skirts:\"full\", extras:[\"stowage\"], camo:\"desert\"},"
+   },
+   {
+    "id": "gbr_e00_spaag",
+    "designation": "Stormer HVM with ADAD passive sight",
+    "confidence": "high",
+    "comment": "/* Six-wheel Stormer hull with a bare gun-less roof carrying one rotating missile mount and a sight head \u2014 the only self-propelled air defence Britain ever fielded. */",
+    "row": "gbr_e00_spaag: {era:\"e00\", fac:\"gbr\", role:\"spaag\", designation:\"Stormer HVM with ADAD passive sight\", kind:\"apc\", len:5.6, width:2.76, height:2.8, hull:\"boxy\", turret:\"opentop\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:6, wheelR:0.25, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\",\"smoke\"], camo:\"desert\"},"
+   }
+  ],
+  "schema_notes": "FIELD LIST (exact order, all 25, taken from every existing row in js/armour_specs.js and confirmed by a strict JSON round-trip of all 41 of my rows against the 258 existing ones):\nera, fac, role, designation, kind, len, width, height, hull, turret, turretAt, gunCal, gunLen, brake, evac, mantlet, track, wheels, wheelR, susp, rollers, sprocketFront, skirts, extras, camo.\n\nHOW I VERIFIED: I grepped js/armour3d.js for every literal comparison against a spec field (`grep -n 'has(\"\\|hasEx(P, *\"\\|P\\.kind ===\\|P\\.turret ===\\|P\\.mantlet ===\\|P\\.susp ===\\|P\\.skirts ===\\|P\\.hull ===\\|P\\.role ===\\|P\\.era'`) and read each branch. Values below are the ones the builder actually branches on; everything else falls through to a default or is a silent no-op.\n\nhull (armour3d.js:136-176, HULLS table, `hullTable()` defaults to `modern`) \u2014 RECOGNISED: \"ww2\", \"modern\", \"boxy\", \"boat\". NOTE: HULLS is only read by buildHull(), which runs for track:true. For a WHEELED row the only thing `hull` does is armour3d.js:1874/1881 `P.hull === \"boat\"` widening the bow rake and plan-view cheek taper; every other value is identical there.\n\nturret (buildTurret, 573-641) \u2014 RECOGNISED: \"cast\", \"welded\", \"wedge\", \"small\", \"opentop\", plus \"none\"/absent. An unrecognised value produces an EMPTY turret group with a gun hanging in mid-air and no roof hatch, so this is the field to get wrong quietly.\n\nmantlet (addGun, 669-678) \u2014 RECOGNISED: \"cast\" (scaled sphere), \"slab\" (box). Anything else, \"none\" included, draws nothing.\n\nsusp (runningGear, 419-420) \u2014 RECOGNISED: \"christie\" (full-size wheels AND return rollers forced to zero), \"bogie\" (road wheels drawn at 0.78 radius). \"torsion\" and \"none\" are not tested: they are the default path. Only 4 rows in the whole existing table use \"bogie\" (roc_e50 Sherman/half-track family), which is exactly right for British Horstmann-bogie tanks, so I used it for Centurion, Conqueror, Chieftain and Sexton.\n\nskirts (addSkirts, 505-510) \u2014 \"none\"/falsy returns early; \"full\" draws one continuous plate a side; ANY other value takes the segmented branch. So \"segmented\" works, but so would a typo \u2014 I used only \"none\" and \"full\".\n\nkind \u2014 only FOUR values are tested anywhere: \"rocket\" (hullTopZ turretShare 0.45, engine deck forward, rocketPack), \"casemate\" (builds the casemate superstructure and is the ONLY way a turretless vehicle gets a gun drawn), \"truck\" (engine deck forward; wheeled truck body) and \"apc\" (wheelBody only). \"tank\", \"wheeled\", \"open\" and \"halftrack\" are documentary \u2014 for a tracked row they change nothing at all. Consequence I relied on: `kind:\"open\"` + `turret:\"none\"` + gunCal (as in nato_e50_spg / roc_e50_spg) draws NO GUN, because build() only calls addGun() for a turret or for kind:\"casemate\". That is why my Sexton is kind:\"casemate\", not kind:\"open\".\n\ncamo (PAINT, 20-28) \u2014 RECOGNISED: \"olive\", \"green\", \"desert\", \"sand\", \"twotone\", \"darkgrey\", \"bluegrey\", \"white\"; unknown falls back to olive. Only olive/green/desert/darkgrey/twotone get disruptive blotches (SEC table, line 66); \"sand\" and \"white\" come out flat. I used \"green\" for e50-e90 (deep bronze green / NATO green-black) and \"desert\" for e00 (Telic/Herrick sand).\n\nextras (addExtras, 716-783 + armourDetail:1360) \u2014 DRAWN: \"cupola\", \"irlight\", \"aaMg\", \"smoke\", \"era\", \"stowage\" (these six need a turret object; on a turretless row they are dead), \"trimvane\", \"fueldrums\", \"spareTrack\", \"slat\" (these four hang off the hull). NOT DRAWN AT ALL: \"netting\", \"snorkel\", \"sideMg\" \u2014 they appear in ~70 existing rows and are pure documentation. I kept \"netting\" on four rows purely for house-style consistency and flagged it as a no-op rather than pretending it renders.\n\nrole \u2014 tested in build() for \"mlrs\"/\"radarv\"/\"ewveh\"/\"supply\" and in wheelBody() for \"supply\"/\"radarv\"/\"mlrs\"/\"ewveh\" (-> truck) and \"ifv\"/\"spaag\"/\"atgmv\"/\"tankdestroyer\"/\"lighttank\" (-> apc or car). Two consequences I had to design around: (1) a rocket pack is drawn for kind:\"rocket\" OR role:\"mlrs\", tracked or wheeled; (2) radarLoad() only runs when there IS a truck bed, so a TRACKED radarv row draws a bare hull with no radar on it (this is already true of pact_e00_radarv and radarv_k, whose comments describe a panel that is never built). That is why gbr_e60_radarv uses turret:\"small\" with gunCal:0 \u2014 a recognised value that puts a small box on the roof, which the renderer spins because buildTurret names the group \"turret\", giving Cymbeline a scanner that actually rotates.\n\nera \u2014 ERA_RANK (armour3d.js:825) accepts e40..e20. It only affects WHEELED vehicles: tyre width, rivets vs weld bead vs applique seams, glass vs dark vision blocks, an open jeep cab at rank<=3, and automatic slat cages at rank>=6. Every era value I used is real.\n\nNUMERIC SEMANTICS I checked in the code, not assumed: `wheels` is road wheels per side when tracked (Math.max(3,n), no upper clamp, so Conqueror's 8 is fine) but AXLES when wheeled (clamped 2..5, so wheels:3 = 6x6). `wheelR` is a radius in metres. `turretAt` is a fraction of `len`, negative = rearward, and it also decides where the engine deck goes: engineDeck() puts the louvres FORWARD when turretAt < -0.10 (or kind rocket/truck). I used that deliberately \u2014 Abbot, AS-90, M109, Warrior, every CVR(T), Striker, Stormer, FV436 and FV438 all have front engines and get turretAt <= -0.11; Centurion, Conqueror, Chieftain, Challenger and Sexton have rear engines and get turretAt >= 0.\n\nHEIGHT ARITHMETIC: hullTopZ() spends `height * (1 - turretShare)` on the hull and leaves the rest for the turret, so `height` is a real constraint, not decoration. I ran the builder's own arithmetic over all 41 rows in python and confirmed no turret is clamped to the L*0.045 floor; the two tightest are the WMIK (0.37 m ring mount) and the Jackal (0.35 m), which is about right for a gun ring.\n\nREGISTRATION: armour3d.js:1972 registerAll() copies every ARMOUR key straight into UNIT_MODELS[key], so the row key MUST be the UNIT id. I extracted the 48 gbr vehicle ids from js/eras.js and confirmed all 41 of my keys are real unit ids and none is a typo. index.html loads armour_specs.js at line 277, BEFORE sam3d.js (290) and tel3d.js (291), so those hand-authored files overwrite any colliding key \u2014 none of mine collide.\n\nWHAT THE ROWS REPLACE: I reimplemented modelKeyFor()'s peer fallback in python over UNITS insertion order (rules.js then eras.js) to see what each British vehicle draws today. Every British tank, SPG, IFV, scout car and light tank currently draws a PLA vehicle \u2014 Centurion, Chieftain, Challenger 1 and Challenger 2 all render as pla_e50_mbt, a Type 59. The four tank destroyers draw nothing at all and fall through to fallbackModel(). That also told me where NOT to add a row (see `uncovered`). One more consequence: getModel() only applies the ERA_KIT repaint when `key !== def.id`, so once a unit has its own row the `camo` field is the final word and no era tint is layered over it.\n\nAPPROXIMATIONS I MADE RATHER THAN INVENTING A VALUE:\n- ATGM carriers (Hornet Malkara, FV438, Striker) use turret:\"opentop\" + gunCal:0, which is the existing house convention for a missile box (atgmv_p, atgmv_c, roc_e00_spaag) and gives a rotating open mount instead of a gun.\n- Chieftain and both Challengers use mantlet:\"none\": their guns come through a narrow aperture with no external mantlet, and the builder's only alternatives are a sphere or a slab.\n- Warrior and the CVR(T)s are pushed to turretAt -0.11/-0.12 so the engine deck lands at the front where it really is; on the FV432 I chose the cupola position over the engine deck, since the cupola is what the eye reads.\n- The WMIK and Jackal are kind:\"truck\", which gives them a chassis, bonnet, cab and load bed with the gun ring standing on the bed. The builder forces a hard-top cab above era rank 3, so both get a roof they do not really have; there is no spec value that suppresses it.\n- Return-roller counts are the one figure I am least sure of (4 for Centurion/Conqueror/Challenger, 3 for Chieftain/Warrior/AS-90, 0 for the M113 and CVR(T) families, which genuinely have none). Sources disagree and it is a sub-pixel detail at this zoom.\n- The AMX-13-style oscillating turret the brief asks about is a French problem, not a British one, so it did not arise here: the builder has no oscillating form, and nothing in the GBR block needs one.",
+  "summary": "41 ARMOUR rows for the 48 British ground vehicles, ready to paste into js/armour_specs.js. Every row was validated mechanically: exact 25-field order matching the existing table, strict JSON round-trip, no duplicate keys, every string value confirmed against a branch the builder actually tests, and the builder's own height/turret arithmetic re-run in python so nothing renders degenerate.\n\nWhat this fixes: I reimplemented render3d.js modelKeyFor()'s peer fallback over real UNITS insertion order and found the British situation is worse than reported. Centurion, Chieftain, Challenger 1 and Challenger 2 do not draw as an Abrams \u2014 they all draw as pla_e50_mbt, a Type 59. Every British SPG draws a Chinese SU-100-era vehicle, every IFV a Chinese carrier, and the four Swingfire/Malkara carriers draw nothing at all and drop to the generic fallback box.\n\nSeven units I deliberately left alone, and the reason is the same each time: the model they borrow today is already closer than anything this table can generate. gbr_e50_tel currently draws tel3d.js's hand-authored MGM-5 Corporal, which IS the vehicle \u2014 a generated row would replace a purpose-built model with a generic tube grid. All five Rapier/Bloodhound SAMs borrow sam3d.js's hand-authored M727 tracked HAWK launcher; four of the five are towed trailers or a fixed site that the builder has no body for at all (its only wheeled non-tracked option is a lorry with a cab), and the fifth, Tracked Rapier, is already well served. MAMBA rides a Bv206S, an articulated two-car tracked carrier the builder cannot express, and a tracked radarv row draws no radar at all because radarLoad() needs a truck bed.\n\nThe realism-over-symmetry rule did real work here. Britain fielded no self-propelled AA gun in any era before Stormer HVM, no battlefield ballistic missile of its own design, and no rocket artillery of its own at all \u2014 so the M109A2, M270 and Honest John rows deliberately reproduce the American vehicles unchanged rather than inventing a British silhouette, and the gbr_e50_recon Ferret row is a deliberate duplicate of nato_e50_recon because it is literally the same car. Where the builder had a limitation I worked within the schema rather than around it: Cymbeline gets turret:\"small\" with gunCal:0, which is a recognised value that puts a box on the roof and \u2014 because buildTurret names the group \"turret\" \u2014 makes the scanner actually rotate.",
+  "uncovered": [
+   "gbr_e50_tel (MGM-5 Corporal) \u2014 SKIPPED ON PURPOSE. tel3d.js hand-authors nato_e50_tel as a detailed Corporal erector-trailer, and modelKeyFor() already hands it to this unit, which is the correct vehicle. An ARMOUR row would win (armour_specs.js loads at index.html:277, tel3d.js at 291, and tel3d registers no gbr key) and would replace it with rocketPack's generic tube grid \u2014 a strict regression.",
+   "gbr_e50_sam (Bloodhound Mk 1) \u2014 a fixed site: one large ramjet missile on a static launcher shoe, with the game's own unit desc calling the mobility figure fiction. The builder's only non-tracked body is a lorry with bonnet, cab and load bed. It currently borrows sam3d.js's hand-authored M727 tracked HAWK, which is at least a period SAM launcher.",
+   "gbr_e60_sam (Rapier FSA towed launcher) \u2014 a two-wheeled trailer towed behind a Land Rover, with the optical tracker on a second trailer. wheelBody() has no trailer body and truckBody() always builds a cab; there is no way to suppress it. Modelling the tractor as if it were the launcher would be inventing a vehicle.",
+   "gbr_e80_sam (Tracked Rapier on M548) \u2014 the one British SAM that IS self-propelled, but it already borrows sam3d.js's hand-authored M727: a tracked M113-family hull with clean missile rails, which is very close. A generated row would give the right hull but replace those rails with a 20-tube block (rocketPack picks rows=4 cols=5 at era rank >= 3), which reads as a small MLRS, not a Rapier.",
+   "gbr_e90_sam and gbr_e00_sam (Rapier FSC) \u2014 same towed trailer as FSA, same reason. Britain's ground-based air defence was towed for its entire Cold War; that is a genuine national gap, not a missing row.",
+   "gbr_e00_radarv (MAMBA / Saab ARTHUR) \u2014 mounted on a Bv206S, an articulated tracked carrier of two linked cars with the antenna on the rear unit. The builder draws one rigid body. A tracked row would also render with no radar on it at all, because radarLoad() only runs when wheeledChassis() has produced a load bed (the same reason pact_e00_radarv and radarv_k render as bare boxes despite what their comments claim). It currently borrows nato_e00_radarv, a 6x6 flatbed with a tilting panel, which at least shows an antenna."
+  ]
+ },
+ "reviews": [
+  {
+   "reasoning": "I read js/armour3d.js end to end and built my own list of every field the builder reads (`grep -o 'P\\.[A-Za-z]*'`): turret, kind, track, role, hull, height, width, wheels, wheelR, turretAt, skirts, susp, mantlet, len, gunCal, extras, camo, sprocketFront, rollers, gunLen, evac, era, brake. `fac` and `designation` are never read (documentation only), exactly as in the 258 existing rows.\n\nI then mechanically validated all 41 plan rows against that list, and against the real table and unit roster.\n\nWHAT SURVIVED MY ATTACK \u2014 the rows are structurally clean:\n- I parsed all 258 existing rows: there is exactly ONE key order, 25 fields, and all 41 plan rows match it field-for-field and order-for-order. No missing field, no invented field name, no duplicate key.\n- Every string value is one the builder actually branches on: hull \u2208 {ww2,modern,boxy,boat} (HULLS, 136-176); turret \u2208 {cast(573),welded(591),wedge(602),small(621),opentop(631),none}; mantlet \u2208 {cast(669),slab(674)}; susp bogie(420)/christie(419); skirts none(505)/full(510); camo \u2208 PAINT (20-28); kind rocket/casemate/truck/apc (201,371,376,842,845,1915,1928); role tested at 843-846,1360,1928,1940,1942; era \u2208 ERA_RANK (828). I found no unrecognised value beyond `netting` (below).\n- All 41 keys are real UNIT ids in eras.js. I cross-checked every one: role matches the unit def, cat/layer are vehicle/ground, and the `designation` string matches the unit's `full` byte-for-byte on all 41. No collisions with sam3d.js or tel3d.js (neither registers any gbr_ key), so registerAll (1976) will create all 41.\n- I re-ran the builder's own arithmetic (hullTopZ/turretH/wheelFrame/wheelBody/engineDeck) over all 41 rows in python: no turret is clamped to the L*0.045 floor, no truck turret lands off its bed, and every front/rear-engine claim in the plan checks out. Gun overhang maxes at 0.43\u00d7len (gbr_e80_spg), well inside the existing distribution (median 0.174, max 0.632 for spg_p). gbr_e50_recon really is byte-identical to nato_e50_recon:260 apart from fac.\n\nWHAT I BROKE \u2014 none of it is a hard render failure, so this is SOUND_WITH_FIXES, not BROKEN. The rows will all build. But six claims in the plan's own verification are false, and two of them changed decisions:\n- The peer-fallback reimplementation is wrong. ROLES is built by reindexRoles() in rules.js:4247 over UNITS insertion order, and rules.js loads at index.html:240 BEFORE eras.js:241 \u2014 so ROLES[role][0] is always the present-day NATO unit (mbt_n rules.js:478, tel_n:789, sam_n:752, spg_n:531, ifv_n:460, recon_n:451, lt_n:469, atgmv_n:500, mlrs_n:541, radarv_n:1145, spaag_n:522, hvy_n:487), every one of which has a UNIT_MODELS entry. British armour does not draw a Type 59 today; it draws an Abrams/Bradley/Paladin. More importantly gbr_e50_tel draws tel_n (HIMARS), not tel3d's Corporal, and all five British SAMs draw sam_n (Patriot PAC-3, sam3d.js:1092), not the M727 HAWK \u2014 so Tracked Rapier was skipped on a false premise.\n- The Cymbeline \"scanner that actually rotates\" does not rotate: tang is only advanced inside the fire path (entities.js:645) and the unit declares weapons:[].\n- `netting` is a confirmed no-op on 6 rows (plan says 4), `stowage` is dead on 7 turretless rows, and the single-round Honest John and Lance render as 16- and 20-tube MLRS grids (armour3d.js:1805).",
+   "verdict": "SOUND_WITH_FIXES",
+   "fatals": [
+    {
+     "which": "schema_notes / uncovered[] \u2014 the peer-fallback reimplementation, and gbr_e80_sam in particular",
+     "problem": "The plan's model of what these units draw today is wrong, and it changed a coverage decision. ROLES is built by rules.js:4247 `(ROLES[_u.role] = ROLES[_u.role] || []).push(_k);` iterating UNITS in insertion order, and index.html loads rules.js at line 240 BEFORE eras.js at 241 \u2014 so ROLES[role][0] is always the present-day NATO unit from rules.js: mbt_n (478), tel_n (789), sam_n (752), spg_n (531), ifv_n (460), recon_n (451), lt_n (469), atgmv_n (500), mlrs_n (541), spaag_n (522), hvy_n (487). render3d.js:317 `for (const id of peers) { ... if (UNIT_MODELS[k]) return k; }` returns the first of those, and every one has a model. So (a) Centurion/Chieftain/Challenger do NOT draw pla_e50_mbt, they draw mbt_n, an M1A2 Abrams (units3d.js:7310); (b) gbr_e50_tel does NOT draw tel3d's hand-authored Corporal \u2014 it draws tel_n, the M142 HIMARS with PrSM (tel3d.js:2492), so the stated reason for skipping it ('a generated row would be a strict regression') is void; (c) all five Rapier/Bloodhound units do NOT borrow the M727 HAWK \u2014 they draw sam_n, a 15.5 m Patriot PAC-3 semitrailer (sam3d.js:1092 `reg(\"sam_n\", 15.50, buildPatriot, PAC3);`). gbr_e80_sam (Tracked Rapier on M548) was skipped as 'already well served' when it is in fact drawing a Patriot semitrailer, and it is the one British SAM the builder CAN express \u2014 a tracked M113-family hull is exactly what this table does.",
+     "correction": "Re-derive the fallback correctly, then add a gbr_e80_sam row rather than skipping it, e.g. gbr_e80_sam: {era:\"e80\", fac:\"gbr\", role:\"sam\", designation:<copy the unit def's `full` verbatim>, kind:\"rocket\", len:5.9, width:2.7, height:2.6, hull:\"boxy\", turret:\"none\", turretAt:-0.15, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:\"none\", track:true, wheels:5, wheelR:0.3, susp:\"torsion\", rollers:0, sprocketFront:true, skirts:\"none\", extras:[\"stowage\"], camo:\"green\"} \u2014 modelled on nato_e60_sam, which is the same M113-family arrangement. Also strike the 'draws a Type 59' claim from the summary and re-examine gbr_e50_tel on the true premise (it is currently a HIMARS, not a Corporal)."
+    },
+    {
+     "which": "gbr_e60_radarv \u2014 turret:\"small\" chosen to make the Cymbeline scanner rotate",
+     "problem": "The sole justification for deviating from the turret:\"none\" convention that every one of the 7 existing radarv/ewveh rows uses is false. The box is built and named \"turret\" (armour3d.js:562 `T.name = \"turret\";`) and render3d.js:972 does `rec.turret.rotation.z = -(e.tang || 0);`, but tang is only ever advanced inside the fire path: entities.js:645 `this.tang = U.turnToward(this.tang, want, (this.def.tturn || 1.5) * dt);` sits after `const want = Math.atan2(o.y - this.y, o.x - this.x);` and needs a target `o` and a weapon. The unit def declares `\"weapons\":[]`, so tang stays at the spawn value set in entities.js:44 (`this.tang = this.ang`) and the scanner never turns. The row also carries extras:[\"stowage\",\"netting\"], both of which are dead here (stowage lands on the turret, netting draws nothing), so the roof carries a static box and nothing else.",
+     "correction": "Keep turret:\"small\" if you want a box on the roof \u2014 it renders fine and is better than a bare hull \u2014 but delete the 'scanner that actually rotates' claim from schema_notes, because it is the reason given for departing from house convention and it is not true. Drop \"netting\" from the extras; either drop \"stowage\" too or accept that the row has no working extras at all."
+    },
+    {
+     "which": "gbr_e60_mlrs (Honest John) and gbr_e60_tel / gbr_e90_tel (Lance)",
+     "problem": "All three are single-round launchers whose comments describe one rocket on a rail ('one enormous finned rocket on an inclined rail over the bed'; 'carrying its single round on a rail over the rear deck'), and the unit def for gbr_e60_tel even says \"rounds\":1. What the builder actually draws is a dense multi-tube grid: armour3d.js:1805 `var rows = er <= 2 ? 2 : 4, cols = er <= 2 ? 8 : 5` \u2014 Honest John (e60, rank 2) gets 2x8 = 16 tubes, both Lance rows get 2x8 = 16 (e60) and 4x5 = 20 (e90). This is the same defect the plan cites as its reason for skipping gbr_e50_tel ('would replace it with rocketPack's generic tube grid \u2014 a strict regression'), applied inconsistently: the standard that saved the Corporal is not applied to Honest John or Lance.",
+     "correction": "Either apply the standard consistently and keep these three rows (the chassis is right and a tube grid is no worse than the HIMARS/Patriot they draw today \u2014 which is the honest justification), or drop them as you dropped the Corporal. What you cannot do is keep the skip-the-Corporal rationale in uncovered[] while shipping three rows that hit the identical limitation. State it plainly in the comment: rocketPack has no single-rail form, so the load reads as a pod."
+    },
+    {
+     "which": "gbr_e90_spaag and gbr_e00_spaag (Stormer HVM) \u2014 turret:\"opentop\" + gunCal:0",
+     "problem": "Nothing at all is drawn on top. build() (armour3d.js:1915) makes the turret group; addGun bails at line 660 `if (!P.gunCal) return;`; buildTurret's opentop branch (631-643) builds four walls and a floor and sets `roof = null`, so there is not even a hatch; and the rocketPack at 1928 only runs for kind:\"rocket\" or role:\"mlrs\", neither of which applies. role:\"spaag\" is tested nowhere except the slat suppression at 1360. The result is a bare tracked hull with an empty tub \u2014 the comment's 'two banks of missile tubes either side of a sight head' renders as nothing. This is Britain's only self-propelled air defence vehicle in the entire roster, and it will read as a gunless APC. The four ATGM carriers (gbr_e50/e60/e80/e90_tankdestroyer) have the same empty tub, which at least matches the atgmv_p/atgmv_c house convention.",
+     "correction": "For the two Stormer HVM rows, swap to kind:\"rocket\" with turret:\"none\" (and turretAt back to about -0.15, which keeps the engine deck forward via line 376). That routes through rocketPack at 1928 and draws a real elevating launcher block on a cradle instead of an empty box. Do NOT set kind:\"rocket\" while leaving turret:\"opentop\" \u2014 build() would then create two groups both named \"turret\" and findPart (render3d.js:944) would grab the empty tub and leave the launcher static."
+    },
+    {
+     "which": "extras \u2014 \"netting\" on 6 rows, \"stowage\" on 7 turretless rows",
+     "problem": "Two silent no-ops, both under-counted in schema_notes. (1) addExtras has branches for exactly ten keys \u2014 cupola(716), irlight(722), aaMg(729), smoke(735), era(746), stowage(755), trimvane(760), fueldrums(766), spareTrack(775), slat(780) \u2014 and none for \"netting\". It appears on SIX rows, not the four the plan claims: gbr_e50_tankdestroyer, gbr_e60_mlrs, gbr_e60_tankdestroyer, gbr_e60_radarv, gbr_e90_recon, gbr_e00_recon. (2) The first six branches are guarded `&& T`, so \"stowage\" is dead on every row whose turret is \"none\": gbr_e50_spg (kind:\"casemate\" \u2014 T is null there, line 1915 takes the casemate path instead), gbr_e60_mlrs, gbr_e60_tel, gbr_e80_mlrs, gbr_e90_mlrs, gbr_e90_tel, gbr_e00_mlrs. Seven rows, four of which (the mlrs rows) then have no working extra at all.",
+     "correction": "Harmless \u2014 68 existing rows carry \"netting\" \u2014 so keep them for house consistency if you like, but fix the count in schema_notes (six, not four) and mark the seven dead \"stowage\" entries explicitly. For gbr_e50_spg specifically, if you want visible stowage on the Sexton, \"spareTrack\" (775) and \"fueldrums\" (766) hang off the hull group and DO draw on a turretless row; \"stowage\" does not."
+    },
+    {
+     "which": "schema_notes \u2014 'HEIGHT ARITHMETIC: I ran the builder's own arithmetic over all 41 rows in python'",
+     "problem": "The wheeled branch was not run. The plan states 'the two tightest are the WMIK (0.37 m ring mount) and the Jackal (0.35 m), which is about right for a gun ring.' For a wheeled row hullTopZ short-circuits at armour3d.js:185 `if (!P.track) return wheelFrame(P, L, P.width || 3.0).top;`, and for a truck body wheelFrame sets `F.top = F.bedZ` (911). Re-running it: WMIK r=0.4 gives railZ=0.62, railT=0.112, bedZ=max(0.716, 0.78)=0.78, so turretH = 2.2 - 0.78 = 1.42 m, not 0.37 m; Jackal r=0.55 gives bedZ=1.0725 and turretH = 1.43 m, not 0.35 m. Roughly 4x out on both. Nothing breaks \u2014 the opentop tub comes out 1.1 m tall standing on the bed, which lands at about cab-roof height and is acceptable \u2014 but the claim that the builder's own arithmetic was re-run over all 41 rows does not hold for the three truck rows, and it is the same claim used to assert 'no turret is clamped to the L*0.045 floor'.",
+     "correction": "Re-run the check through the wheeled path (hullTopZ:185 -> wheelFrame:882-911) and restate the two figures as 1.42 m and 1.43 m. The clamp conclusion itself is correct \u2014 I verified independently that no row in the batch hits the Math.max(L*0.045, ...) floor at line 555 \u2014 but the supporting numbers in schema_notes are wrong and should not be quoted as evidence."
+    }
+   ]
+  },
+  {
+   "verdict": "SOUND_WITH_FIXES",
+   "reasoning": "I read js/armour3d.js (all 1989 lines), js/armour_specs.js, the gbr block of js/eras.js and render3d.js's modelKeyFor/turret code, and re-ran the builder's own arithmetic in python over all 41 rows rather than trusting the plan's schema notes.\n\nThe vehicle identification is, with the exceptions below, genuinely good and I could not break most of it. Every drive-sprocket end is right (rear on Centurion/Conqueror/Chieftain/Challenger, front on the whole FV430, CVR(T), Stormer, Warrior, AS-90, M109, M270 and Ram/Sexton families). Every road-wheel count I can verify is right: Centurion 6, Conqueror 8, Chieftain 6, Challenger 6, Scorpion/Scimitar/Striker 5, FV432 5, Warrior 6, Stormer 6, M109 7, M270 6, AS-90 6. susp:\"bogie\" is correct and is used on exactly the four Horstmann/VVSS vehicles that have it; return rollers are 0 on the CVR(T) and FV430 families, which is right. Dimensions check against the real vehicles: Conqueror 7.7/4.0/3.35, Chieftain 7.5/3.5/2.9, Warrior 6.34/3.03/2.79, FV432 5.25/2.8/2.29, Abbot 5.84/2.64/2.49, Scimitar 4.99/2.24/2.1, Fox 4.24/2.13/2.2, Saracen 5.23/2.54/2.46, Sexton 6.12/2.72/2.44, M270 6.97/2.97/2.59, AS-90 7.2/3.4/3.0, CR1/CR2 8.3/3.5. Era assignment is right everywhere and the designations match eras.js's own `full` strings and service dates verbatim; the deliberate gaps (no SPAAG before Stormer HVM, no British rocket artillery, no e00 tank destroyer, no e80 heavy) honour realism-over-symmetry. Ferret == nato_e50_recon is a real duplicate and I confirmed nato_e50_recon really is the Ferret. No gbr key is registered anywhere else in the codebase, so all 41 rows take effect; the M270 and Honest John rows are copied field-for-field from nato_e80_mlrs and nato_e50_mlrs, which is the right call.\n\nWhat I broke: (1) the two Land Rover/Jackal rows are the first kind:\"truck\" rows in the entire table to carry a turret and a gun, and the combination misbehaves \u2014 the plan's claimed verification figures for them (0.37 m and 0.35 m ring mounts) are wrong; the real numbers are 1.42 m and 1.43 m, and the barrel finishes inside the cab. (2) The Saladin's len is the gun-forward figure used as a hull length, with a 2.1 m gun added on top. (3) The two Lance rows use hull:\"boat\" for an M113-family chassis, contradicting the file's own M727 row on the same chassis. (4) The three cast-turret guns fall 0.7-1.5 m short of the overhang their own comments claim. (5) Two calibres are rounded into the wrong gun. Two further schema claims are false: era does NOT only affect wheeled vehicles (rocketPack calls eraR, so the two identical Lance rows draw a 2x8 tube grid at e60 and a 4x5 at e90), and kind:\"casemate\" is NOT the only way a turretless vehicle gets a gun drawn (turret:\"opentop\" + gunCal draws one, because build() calls addGun for any turret).\n\nNone of that renders a fundamentally wrong vehicle and all of it is a numeric edit, so: SOUND_WITH_FIXES.",
+   "fatals": [
+    {
+     "which": "gbr_e90_recon (Land Rover Defender 110 WMIK) and gbr_e00_recon (Jackal 2)",
+     "problem": "These are the only kind:\"truck\" rows in armour_specs.js with a turret \u2014 all 13 existing truck rows use turret:\"none\", gunCal:0 \u2014 and the combination breaks two ways. First, for a truck hullTopZ() returns wheelFrame().top, which is the BED floor, so turretH = height - bedZ = 2.2 - 0.78 = 1.42 m (WMIK) and 2.5 - 1.073 = 1.43 m (Jackal), not the 0.37/0.35 m the plan says it computed. buildTurret's opentop branch then stands 1.11 m walls in a 1.1 m square tub on the load bed of a vehicle eras.js itself calls \"a stripped Land Rover ... no armour at all\" / \"deliberately open-topped\". Second, the opentop mount sits at local x=0, so the 1.2 m barrel runs world x -0.54..+0.66 at z 1.60 on the WMIK while truckBody's cab occupies x 0.09..1.26 and z 0.78..1.83 \u2014 the muzzle ends up inside the cab, through its back panel. Jackal is identical: barrel -0.65..+0.55 at z 1.91, cab from x 0.11, z 1.07..2.15.",
+     "correction": "Move the mount aft of the cab: turretAt:-0.30 on gbr_e90_recon (mount -1.35, muzzle -0.15, cab back panel at 0.15; bed spans -2.16..-0.01) and turretAt:-0.26 on gbr_e00_recon (mount -1.40, muzzle -0.20, cab back at 0.11; bed -2.59..-0.01). The computed clearance thresholds are turretAt <= -0.233 and <= -0.188. No spec value can shorten the tub (height only feeds cabH and turretH), so either accept an armoured tub and delete the \"open weapons ring / crew sitting out in the open\" wording from both comments, or fall back to turret:\"none\", gunCal:0 as nato_e60_recon (M151) does and accept a gunless soft-skin."
+    },
+    {
+     "which": "gbr_e50_lighttank (FV601 Alvis Saladin)",
+     "problem": "len:5.3 is the Saladin's GUN-FORWARD length (5.284 m); its hull is 4.93 m. The row then adds a 2.1 m gun on top of that. buildTurret's welded branch puts the mount L*0.30*0.82 = 1.30 forward of turret centre and turretAt 0.05 puts the turret at 0.265, so the muzzle lands at 3.67 against a nose at 2.65 \u2014 a 1.02 m overhang and a 6.3 m nose-to-muzzle vehicle against a real 5.28 m. The real Saladin's 76mm clears the nose by only 0.35 m, which is exactly what the row's own comment claims (\"stubby 76mm barely reaches past the nose\"). Every other row in the set correctly uses hull length, not gun-forward length (Centurion 7.8 not 9.85, Chieftain 7.5 not 10.8), so this row breaks its own convention.",
+     "correction": "len:4.93, gunLen:1.35 \u2014 that puts the muzzle 0.35 m past the nose, the real figure, and brings the whole silhouette to 5.28 m. width 2.54 and height 2.4 are already correct and need no change."
+    },
+    {
+     "which": "gbr_e60_tel and gbr_e90_tel (MGM-52 Lance, M752 launcher)",
+     "problem": "hull:\"boat\" is wrong for an M113-family chassis. HULLS.boat pinches the nose station to 0.24 of the body half-width \u2014 a PT-76/BMP/BRDM prow \u2014 and every existing row using it is a sharp-prow amphibian. The M752 rides the M113/M548 hull, whose bow is a broad full-width sloped plate. The file's own row for the same chassis family, nato_e60_sam (M727 Improved HAWK on a tracked M113-family cargo hull \u2014 the very model the plan says these units borrow today), uses hull:\"boxy\". Separately, the plan's note that era \"only affects WHEELED vehicles\" is false: rocketPack() calls eraR(P), so these two rows, described in their comments as the same vehicle, draw a 2-row x 8-column tube grid at e60 (rank 2) and a 4 x 5 grid at e90 (rank 5).",
+     "correction": "hull:\"boxy\" on both rows, matching nato_e60_sam. extras:[\"stowage\",\"trimvane\"] still draws the trim vane \u2014 addExtras hangs it off the hull, independent of the hull table. The e60/e90 tube-grid difference cannot be suppressed from the spec, so either accept it or drop the \"same little amphibious launcher as 1976\" claim from the e90 comment."
+    },
+    {
+     "which": "gbr_e50_heavy (FV214 Conqueror), and to a lesser degree gbr_e50_mbt (Centurion Mk 3) and gbr_e60_mbt (Chieftain Mk 2)",
+     "problem": "All three cast-turret guns fall short of the overhang their own comments claim, because buildTurret's cast branch mounts the gun only W*0.30*1.06 forward of turret centre (the wedge branch uses L*0.30*0.86, which is why both Challenger rows come out correct). Conqueror: real 11.58 m gun forward on a 7.72 m hull = 3.86 m overhang; the row gives mount 1.272 + gunLen 4.9 = muzzle 6.17 against a nose at 3.85 = 2.32 m, i.e. 1.5 m short of its comment's \"overhangs the nose by three metres\". Centurion: real 2.03 m, rendered 1.38 m. Chieftain: real 3.28 m, rendered 2.56 m.",
+     "correction": "gunLen:6.4 on gbr_e50_heavy (muzzle 3.86 m past the nose, matching FV214's real 11.58 m overall), gunLen:4.85 on gbr_e50_mbt, gunLen:5.9 on gbr_e60_mbt. The Challenger, M109, AS-90, Scorpion, Scimitar and Fox rows already compute correct overhangs and need no change."
+    },
+    {
+     "which": "gbr_e50_mbt gunCal:84 and gbr_e50_spg gunCal:88",
+     "problem": "Wrong calibres for the two British guns always quoted with a decimal. The Centurion Mk 3's 20-pounder is 83.4mm \u2014 eras.js's own weapon row says \"20-pounder (83.4mm) gun, gyro-stabilised\". The Sexton's 25-pounder is 87.6mm \u2014 eras.js says \"25-pounder (87.6mm) gun-howitzer\". gunCal only sets barrel radius ((cal/1000)*0.55) so the visual delta is sub-millimetre, but \"88\" on a British self-propelled 25-pounder reads as the German 88, and both numbers contradict the game's own data for the same unit.",
+     "correction": "gunCal:83.4 on gbr_e50_mbt, gunCal:87.6 on gbr_e50_spg. Also reconsider kind:\"casemate\" on the Sexton: eras.js calls it \"Open-topped, 25-pounder, fast to lay by hand\" and casemate() builds a CLOSED box with a sloped face and a roof hatch. The plan's claim that casemate is the only way a turretless vehicle gets a gun is wrong \u2014 build() calls addGun() for ANY turret and turret:\"opentop\" sets mount {x:0, z:th*0.52}, so turret:\"opentop\" with turretAt:0.05 and the same gunCal/gunLen draws a true open-topped SP gun with the muzzle at 2.71 against a nose at 3.05. The caveat: render3d.js:1113 sets any group named \"turret\" to rotation.z = -(tang - ang), and eras.js gives gbr_e50_spg \"turret\":false so tang freezes at spawn \u2014 the open compartment would counter-rotate as the hull turns. Keeping casemate is defensible for that reason, but then the comment should stop describing \"a three-sided box\"."
+    },
+    {
+     "which": "gbr_e60_spg (FV433 Abbot) \u2014 flag for verification, medium confidence, plus two cosmetic items",
+     "problem": "wheels:5 and wheelR:0.3 look copied straight from the FV432 row, but the Abbot's hull is 5.84 m against the FV432's 5.25 m \u2014 about one road-wheel station longer, which is the usual reason a family member gains a wheel. It is the single road-wheel count in the 41 rows I could not confirm and the likeliest to be wrong; every other count checks out. Related but cosmetic: on the four susp:\"bogie\" rows runningGear draws road wheels at 0.78 x wheelR, so wheelR:0.3 gives 0.47 m diameter wheels against the Centurion's and Chieftain's real 0.61 m.",
+     "correction": "Verify the Abbot's running gear against a side view; if six stations, wheels:6. Optionally wheelR:0.38 on the four bogie rows (Centurion, Conqueror, Chieftain, Sexton) so the 0.78 scaling lands near the real 0.6 m wheel. Two further small items worth a pass: gbr_e80_mbt height 2.95 against gbr_e90_heavy/gbr_e00_mbt 2.5 gives Challenger 1 a turret 0.15 m taller than Challenger 2's when the real turrets are near identical (2.95 is the over-sight figure, 2.49 the turret-roof figure) \u2014 pick one convention for both; and extras:[\"era\"] on gbr_e00_ifv and gbr_e00_heavy labels Warrior TES and CR2 TES as carrying explosive reactive armour, which neither did (bar armour plus Chobham/applique), though addExtras's brick pattern is the only way to draw applique blocks."
+    }
+   ]
+  }
+ ]
+}
