@@ -1205,7 +1205,14 @@ try{
       var u=ramp(id);
       if(!u) return;
       if(u.r39.launched && !u.r39.scramble) stay.push(id+" self-launched");
-      if(u.r39.fired>0 && u.hp >= u.maxHp-0.5) shot.push(id+" fired "+u.r39.fired+" unprovoked");
+      /* Scrambling counts as provocation for the rounds check too. An
+         aircraft that launched on strip alert against an aeroplane already
+         overhead is legitimately airborne, and once it IS airborne it can
+         acquire like anything else - that is not the self-launch this test
+         exists to catch, and `hurt` alone missed it because being shot at and
+         missed leaves no damage. */
+      if(u.r39.fired>0 && u.hp >= u.maxHp-0.5 && !u.r39.scramble)
+        shot.push(id+" fired "+u.r39.fired+" unprovoked");
       if(!u.dead) u.dead=true;
     });
     chk("a bomber and a fighter stay on the ramp until they are sent",
@@ -1329,6 +1336,45 @@ try{
         roundsAfter > 0, roundsAfter+" rounds fired after coming back");
     if(b&&!b.dead) b.dead=true; if(g&&!g.dead) g.dead=true;
     if(tgt&&!tgt.dead) tgt.dead=true;
+  })();
+
+  /* ====== BUG 42: a fixed-wing aircraft keeps flying while it shoots ====== */
+  log("\n[42] NOTHING FIXED-WING STOPS IN MID-AIR TO SHOOT");
+  (function(){
+    /* (owner) "B52 and ac 130 should move during the attack."
+       Measured before: a B-52H flew 0.0 tiles in sixty seconds and was
+       stationary for all 1,800 frames of the engagement; an AC-130J was
+       stopped for 1,294 of them and got off 17 rounds. */
+    var land=tile(P,"ground",6);
+    if(!land){ chk("orbit scenario built", false, "no ground"); return; }
+    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    if(ab) ab.buildProgress=1;
+    tick(1);
+    var bad=[], seen=[];
+    [["heavybomber","B-52"],["gunshipair","AC-130"],["cas","CAS"]].forEach(function(pr){
+      var id=unitFor("nato",pr[0],"e20");
+      if(!id) return;
+      var u=Game.spawnUnitAt(P,id,land.x*32+16,land.y*32+16);
+      var tgt=Game.spawnUnitAt(E,"mbt_p",(land.x+10)*32+16,land.y*32+16);
+      if(!u||!tgt) return;
+      u.parked=false; u.fuel=u.fuelMax; u.ammo=u.ammoMax;
+      tgt.stance="hold"; tgt.hp=tgt.maxHp=300000;
+      u.give({type:"attack", target:tgt});
+      var path=0, px=u.x, py=u.y, still=0;
+      for(var i=0;i<45*30;i++){ tick(1);
+        var dd=Math.hypot(u.x-px,u.y-py); path+=dd;
+        /* only while it is actually prosecuting - time on the ramp rearming
+           is not hovering, and counting it hid the real number */
+        if(dd<0.3 && !u.parked && u.order && u.order.type==="attack") still++;
+        px=u.x; py=u.y;
+        if(u.dead) break; }
+      seen.push(pr[1]+" "+(path/32).toFixed(0)+"t/"+still+"f");
+      if(still > 60 || path/32 < 20) bad.push(pr[1]+": "+(path/32).toFixed(1)+
+        " tiles flown, "+still+" frames stopped while attacking");
+      if(u&&!u.dead)u.dead=true; if(tgt&&!tgt.dead)tgt.dead=true;
+    });
+    chk("a bomber, a gunship and a CAS aircraft all keep flying while engaging",
+        bad.length===0, bad.length?bad.join(" | "):seen.join("  "));
   })();
 
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");

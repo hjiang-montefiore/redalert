@@ -9,6 +9,9 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Reported by you, and fixed
 
+- [x] A B-52 flew 0.0 tiles in sixty seconds while attacking; an AC-130 hovered
+- [x] The AI worked its own corner dry and never expanded for more oil
+
 - [x] The AI built almost no aircraft at Elite and Warlord - an else-if ladder
       that ended on a purchase it could not make, a fighter rule that deadlocked
       at zero, and a one-airbase ceiling on the whole air force

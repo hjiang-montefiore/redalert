@@ -2195,7 +2195,25 @@ class Unit {
       const w = WEAPONS[this.def.weapons[wi]];
       const range = this.weaponRange(w);
       const dist = U.dist(this.x, this.y, t.x, t.y);
-      if (this.def.jet) {
+      /* ---- A FIXED-WING AIRCRAFT KEEPS FLYING WHILE IT SHOOTS ----
+         (owner) "B52 and ac 130 should move during the attack."
+         Two separate reasons they did not, and the second is the older
+         mistake. FIRST: a standoff shooter stopped dead. The branch below
+         held the nose on the target and fired without ever calling flyTo, so
+         a B-52H with a 15-tile JASSM hung motionless in the air for the whole
+         engagement - measured, forty seconds at 45.5,12.5 without moving a
+         tile. SECOND: this test was `def.jet`, and it meant to ask whether the
+         aircraft can HOVER. The AC-130 is a C-130: jet is false, so it fell
+         into the helicopter branch and hover-fired. A Hercules cannot hover.
+         It flies a PYLON TURN - a banked left orbit with the guns pointing
+         out of the side at the middle of the circle - which is the single most
+         recognisable thing about the aeroplane.
+         So: helicopters hover, a bomb is still delivered over the target
+         because that is what a bomb needs, and everything else orbits at the
+         range it is shooting from. tryFire() has no facing test, so an orbiting
+         aircraft shoots perfectly well - and an AC-130 firing out of its left
+         side while it circles is not a compromise, it is the real thing. */
+      if (!this.def.hover) {
         /* ---- a pass, or a shot from outside? ----
            A bomb has to be delivered over the target and a gun has to be
            pointed at it, so those aircraft fly the pass they always did. A
@@ -2212,19 +2230,33 @@ class Unit {
            0.88 rather than 0.8: an anti-radiation shot is taken at the edge,
            and the extra fraction is most of a tile of Patriot envelope. */
         const standoff = (w.proj === "missile" || w.antiRadiation) && !w.bomb;
-        if (standoff) {
-          if (dist > range * 0.88) this.flyTo(t.x, t.y, dt);
-          else {
-            /* On station and inside launch parameters: hold the nose on it to
-               shoot, then break away rather than drifting onto the target. */
-            this.ang = U.turnToward(this.ang, Math.atan2(t.y - this.y, t.x - this.x),
-                                    this.def.turn * dt);
-            this.tryFire(wi, t);
-            if (this.ammoMax && this.ammo <= 0.05) this.order = this.afterAttack(o);
-          }
-        } else {
-          this.flyTo(t.x, t.y, dt);
+        const overhead = w.proj === "bomb";
+        if (overhead) {
+          /* A BOMB IS DELIVERED OVER THE TARGET, AND THEN THE AEROPLANE IS
+             PAST IT. Flying AT the target meant flyTo reached its destination
+             and held there, so a CAS aircraft sat motionless on top of what it
+             was bombing - measured, 1,028 of 1,800 frames stationary. Aim
+             BEYOND it, along the run-in, so the pass carries through and out
+             the far side; the range test below drops the load as it goes over,
+             and once it is past, `dist` opens again and it comes round for
+             another. That is a bombing run rather than a hover. */
+          const bx = t.x - this.x, by = t.y - this.y;
+          const bl = Math.max(1, Math.hypot(bx, by));
+          const through = Math.max(range, 4) * CFG.TILE;
+          this.flyTo(t.x + (bx / bl) * through, t.y + (by / bl) * through, dt);
           if (dist < range) this.tryFire(wi, t);
+        } else {
+          /* everything else works a circle at the range it shoots from - the
+             standoff shooter sits at the edge of its reach, the gunship sits
+             at the edge of its guns. */
+          const hold = range * (standoff ? 0.88 : 0.80);
+          if (dist > hold * 1.06) this.flyTo(t.x, t.y, dt);
+          else this.orbitAround(t, hold, dt);
+          if (dist <= hold * 1.10) {
+            this.tryFire(wi, t);
+            if (standoff && this.ammoMax && this.ammo <= 0.05)
+              this.order = this.afterAttack(o);
+          }
         }
       } else {
         /* helicopters hold at 80% range and hover-fire */
@@ -2676,6 +2708,19 @@ class Unit {
     return { type: "attackmove", x: this.x, y: this.y };
   }
 
+  /* A banked turn around a point at a fixed radius. The aim point is set
+     ahead of the aircraft's own bearing from the target, so it is always
+     chasing a spot on the circle and never arrives - which is what keeps a
+     fixed-wing aeroplane moving while it shoots. Left-hand, because an AC-130
+     and every other side-firing gunship orbits left with the guns on the port
+     side, and because a consistent direction stops two aircraft on the same
+     target flying into each other. */
+  orbitAround(t, radius, dt) {
+    const a = Math.atan2(this.y - t.y, this.x - t.x);
+    const lead = 0.55;                       // radians ahead on the circle
+    return this.flyTo(t.x + Math.cos(a + lead) * radius,
+                      t.y + Math.sin(a + lead) * radius, dt);
+  }
   flyTo(px, py, dt) {
     const want = Math.atan2(py - this.y, px - this.x);
     this.ang = U.turnToward(this.ang, want, this.def.turn * dt);

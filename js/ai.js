@@ -907,7 +907,24 @@ function makeCommander() {
        barrels it started with: no tech 3, no generational step, nothing.
        A commander with no well at all reaches across the map for one. */
     const hx = P.homeX / 32, hy = P.homeY / 32;
-    const reach = P.countBuilding("derrick") >= 1 ? 30 : 1e9;
+    /* ---- AND IT EXPANDS FOR THE OIL ----
+       (owner) "The ai should expand and occupy the oil for its own
+       development."
+       It did not. Once a commander owned ONE derrick this dropped to a flat
+       thirty tiles of home for the rest of the match, so it worked its own
+       corner dry and then stopped - measured, a Warlord at t=1500 sitting on
+       40,088 credits and TWENTY-NINE BARRELS with nothing it could spend them
+       on, because findOilSpot() answered null and every force ceiling in the
+       file is ultimately a fuel ceiling.
+       A player does not stop at the edge of their own corner; they go and take
+       the next field, and accept that a well out there is exposed. So the
+       reach opens with the match - the commander pushes further out as it
+       develops - and a commander that is genuinely fuel-starved with money in
+       the bank reaches as far as it must, which is the state that should send
+       an army out to take ground rather than sit on cash. */
+    const own = P.countBuilding("derrick");
+    const starved = P.oil < 70 && P.cash > 3500;
+    const reach = own < 1 || starved ? 1e9 : 30 + Math.floor(G.time / 180) * 10;
     const nodes = G.map.oilNodes.filter(n => !n.taken && U.dist(n.x, n.y, hx, hy) < reach)
       .sort((a, b) => U.dist2(a.x, a.y, hx, hy) - U.dist2(b.x, b.y, hx, hy));
     for (const n of nodes) {
