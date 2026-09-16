@@ -75,11 +75,23 @@ class Player {
   hasBuilding(id) { for (const b of this.buildings) if (!b.dead && b.buildProgress >= 1 && b.def.id === id) return true; return false; }
   countBuilding(id) { let n = 0; for (const b of this.buildings) if (!b.dead && b.def.id === id) n++; return n; }
 
-  inBaseRadius(tx, ty) {
+  /* ---- A COIL OF RAZOR WIRE IS NOT A CONSTRUCTION SITE ----
+     Obstacles are exempt from the build radius in G.canPlace - an engineer
+     emplaces them wherever the fighting is, which is the entire point of them -
+     and they are pushed into `buildings` like any other structure. So they were
+     EXTENDING the radius as well as ignoring it, and a chain of 20-credit razor
+     wire reached any point on the map and let a derrick go down beside it. That
+     loophole is open to the player and the commander alike and it defeats the
+     rule outright: a field obstacle is not a base and cannot be built from.
+     A concrete barrier at 40 credits is NOT an obstacle, obeys the radius, and
+     still creeps a base outward one span at a time - which is the legitimate
+     version of the same idea and is left alone. */
+  inBaseRadius(tx, ty, radius) {
+    const R = radius || CFG.BUILD_RADIUS;
     for (const b of this.buildings) {
-      if (b.dead) continue;
+      if (b.dead || (b.def && b.def.obstacle)) continue;
       const d = U.dist(tx, ty, b.tx + b.def.w / 2, b.ty + b.def.h / 2);
-      if (d <= CFG.BUILD_RADIUS) return true;
+      if (d <= R) return true;
     }
     return false;
   }

@@ -517,11 +517,46 @@ var Game = (function () {
         if (!n.taken && n.x >= tx && n.x < tx + def.w && n.y >= ty && n.y < ty + def.h) onNode = true;
       if (!onNode) return false;
     }
-    /* must be inside build radius (conyard deploys anywhere; derricks pipeline
-       to any surveyed node; a field obstacle is emplaced by an engineer
-       wherever the fighting is, which is the entire point of it) */
-    if (!def.base && !def.oilNode && !def.obstacle &&
-        !p.inBaseRadius(tx + def.w / 2, ty + def.h / 2)) return false;
+    /* ---- AND A DERRICK IS INSIDE THE RADIUS LIKE EVERYTHING ELSE ----
+       (owner) "the ai may cheat by expand their building out of the buidling
+       scope. like they can build the oil derrick very far away from their
+       building."
+       It was not a cheat - this line exempted oilNode for EVERYBODY, so a
+       player could pipeline to any surveyed node on the map too. But the owner
+       is right about what it costs: a well that needs no base beside it makes
+       expansion free, and taking ground is the whole point of an oil field. It
+       obeys CFG.BUILD_RADIUS now, so reaching the next field means building
+       TOWARD it - which is what a player does and what a commander now has to
+       do as well.
+       The conyard still deploys anywhere, because it is what a base starts
+       from, and a field obstacle is still emplaced by an engineer wherever the
+       fighting is, which is the entire point of it. */
+    if (!def.base && !def.obstacle &&
+        !p.inBaseRadius(tx + def.w / 2, ty + def.h / 2,
+                        def.oilNode ? CFG.OIL_RADIUS : CFG.BUILD_RADIUS)) return false;
+    return true;
+  };
+
+  /* ---- unfolding a rig into a base ----
+     This lived inside the keyboard handler in ui.js and was hardcoded to
+     G.human, so the one mechanism the game itself calls "the only way to build
+     a forward base or an expansion" was available to the player and to nobody
+     else. A commander could not expand at all, which is why it sat in its
+     starting corner for the whole match. Same code, same rules, either side. */
+  G.deployRig = function (u) {
+    if (!u || u.dead || u.kind !== "unit" || !u.def.deployTo) return false;
+    const bid = u.def.deployTo, bd = BUILDINGS[bid];
+    if (!bd) return false;
+    const tx = u.tx - ((bd.w / 2) | 0), ty = u.ty - ((bd.h / 2) | 0);
+    /* clear our own footprint by momentarily ignoring the vehicle */
+    u.carried = true;
+    const ok = G.canPlace(u.owner, bid, tx, ty);
+    u.carried = false;
+    if (!ok) return false;
+    u.dead = true;
+    const b = G.placeBuilding(u.owner, bid, tx, ty, true);
+    b.hp = b.maxHp * (u.hp / u.maxHp);
+    if (u.owner === G.human) { G.alert("CONSTRUCTION YARD DEPLOYED", "good"); Sfx.play("ready"); }
     return true;
   };
 
@@ -1925,6 +1960,10 @@ var Game = (function () {
     if (typeof Threat !== "undefined") Threat.update(dt);
     G.updateCounterBattery();
     for (const p of G.players) {
+      /* the standing budget - see CFG.BASE_INCOME. Every surviving commander,
+         the same rate, no difficulty multiplier and no faction modifier: the
+         point of it is that it favours nobody. */
+      if (!p.defeated) p.earn(CFG.BASE_INCOME * dt);
       p.updateQueues(dt); p.updateEraAdvance(dt); p.updateFuelPurchase(dt);
     }
     for (const e of G.entities) e.update(dt);

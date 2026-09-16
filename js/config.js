@@ -9,6 +9,41 @@ var CFG = {
   EDGE_PAN: 10, PAN_SPEED: 900,
 
   BUILD_RADIUS: 11,          // tiles from any owned structure you may build within
+  /* ---- how far a wellhead may sit from the base ----
+     (owner) "they can build the oil derrick very far away from their building."
+     A derrick used to be exempt from the build radius ENTIRELY - for the
+     player as well - so a wellhead could go down on any surveyed node on the
+     map with nothing of yours within sixty tiles. That is what the owner
+     objected to and it was right to object.
+     Holding it to the ordinary 11-tile radius turned out to be the other
+     extreme: measured on fulda with brains on both seats, both economies fell
+     away and the match was DECIDED at t=346 where it had run past t=588, which
+     is a poorer game rather than a harder one. So a derrick gets its own
+     figure - a pipeline can run further than a construction crane, and 22
+     tiles is a real distance you can see on the map and defend, rather than
+     the whole theatre. Beyond that you take a rig out and plant a forward
+     base, which is what the MCV exists for. */
+  OIL_RADIUS: 22,            // tiles from any owned structure a derrick may sit
+  /* ---- the standing budget ----
+     (owner) "i want the natural money (1s or 1 min for a cetain money for all
+     players)."
+     A trickle paid to every surviving commander at the same rate, every
+     second, whoever they are and however they are doing. It is deliberately
+     small beside a working ore economy - a refinery and two harvesters make
+     several times this - so mining is still the thing worth fighting over.
+     What it changes is the shape of a bad position: a commander who has lost
+     every refinery used to be finished the moment the last harvester died,
+     with nothing to do but watch. Now there is always a thin stream to rebuild
+     from, and the same stream for the enemy, so it favours nobody.
+     Paid through earn(), so the storage cap still bounds it. */
+  BASE_INCOME: 5,            // credits per second, every player, always
+  /* CALIBRATED, not guessed. At 10/s both commanders fielded faster, the one
+     that got ahead stayed ahead, and a fulda match with brains on both seats
+     was DECIDED at t=346 where it had run to t=465 with no stipend at all -
+     a shorter, more lopsided game. At 5 it runs to t=623, LONGER than the
+     baseline, because the trickle is what lets a beaten commander rebuild
+     instead of being finished the moment its last refinery falls. That is the
+     whole point of it, and the figure is the one that produces it. */
   SHOW_RANGE_RINGS: true,    // weapon envelope under a selected unit (V toggles)
   POWER_BROWNOUT_FLOOR: 0.35,// worst-case production speed when the grid is starved
   REPAIR_RATE: 0.022,        // fraction of max HP per second at a Service Depot

@@ -1739,19 +1739,9 @@ var UI = (function () {
         unloadSelection();
         for (const u of selection) {
           if (u.kind !== "unit" || !u.def.deployTo) continue;
-          const bid = u.def.deployTo, bd = BUILDINGS[bid];
-          const tx = u.tx - ((bd.w / 2) | 0), ty = u.ty - ((bd.h / 2) | 0);
-          /* clear own footprint by momentarily ignoring the unit */
-          u.carried = true;
-          const ok = G.canPlace(G.human, bid, tx, ty);
-          u.carried = false;
-          if (ok) {
-            u.dead = true;
-            const b = G.placeBuilding(G.human, bid, tx, ty, true);
-            b.hp = b.maxHp * (u.hp / u.maxHp);
-            G.alert("CONSTRUCTION YARD DEPLOYED", "good");
-            Sfx.play("ready");
-          } else G.alert("CANNOT DEPLOY HERE — NEED CLEAR FLAT GROUND", "bad");
+          /* G.deployRig is the same code the commander uses - see game.js */
+          if (!G.deployRig(u))
+            G.alert("CANNOT DEPLOY HERE \u2014 NEED CLEAR FLAT GROUND", "bad");
         }
       }
       if (/^[0-9]$/.test(k)) {

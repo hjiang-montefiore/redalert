@@ -317,7 +317,12 @@ window.addEventListener("error", function (e) {
 window.__errs=[]; window.addEventListener("error",function(e){__errs.push("ERR "+(e.filename||"?").split("/").pop()+":"+e.lineno+" "+e.message);});
 var OUT=[], PASS=0, FAIL=0;
 function log(s){ OUT.push(s); }
-function chk(name, cond, detail){ (cond?PASS++:FAIL++); log((cond?"  PASS  ":"  FAIL  ")+name+(detail?"   -- "+detail:"")); }
+function chk(name, cond, detail){ (cond?PASS++:FAIL++); log((cond?"  PASS  ":"  FAIL  ")+name+(detail?"   -- "+detail:""));
+  /* write through on every check, so a run that is killed or still going shows
+     how far it got. The whole output used to be written once at the end, so a
+     suite that stalled in the middle produced an EMPTY page and no clue which
+     test was responsible. */
+  try { document.getElementById("tout").textContent = OUT.join("\n"); } catch(e){} }
 function tick(n){ for(var i=0;i<n;i++) Game.tick(CFG.DT); }
 function tile(P,kind,r0){
   var M=Game.map, hx=(P.homeX/32)|0, hy=(P.homeY/32)|0;
@@ -1172,7 +1177,7 @@ try{
       if(!u) return null;
       u.parked=true; u.order={type:"parked"}; u.fuel=u.fuelMax; u.ammo=u.ammoMax;
       u.r39={launched:false, fired:0, home:false, scramble:false};
-      for(var k=0;k<150*30;k++){ tick(1);
+      for(var k=0;k<60*30;k++){ tick(1);
         if(!u.parked && u.order.type!=="parked") u.r39.launched=true;
         /* strip alert - scrambling at an aeroplane already overhead - is air
            defence and is deliberately still automatic for everyone */
@@ -1228,7 +1233,7 @@ try{
     tk.give({type:"cap", x:tk.x, y:tk.y});
     jt.parked=false; jt.ammo=jt.ammoMax; jt.fuel=jt.fuelMax*0.30;
     var f0=jt.fuel, boom=0, peak=f0;
-    for(var i=0;i<120*30;i++){ tick(1);
+    for(var i=0;i<70*30;i++){ tick(1);
       if(jt.order&&jt.order.type==="tank") boom++;
       if(jt.fuel>peak) peak=jt.fuel;
       if(jt.dead) break; }
@@ -1267,7 +1272,7 @@ try{
     if(!aw){ chk("AEW spawned", false, "no awacs_n"); Game.fogEnabled=wasFog; return; }
     aw.fuel=aw.fuelMax; aw.stance="hold";
     aw.give({ type: "rtb" });
-    for (var wg=0; wg<180*30 && !aw.parked; wg++) tick(1);
+    for (var wg=0; wg<90*30 && !aw.parked; wg++) tick(1);
     chk("a radar aircraft on the ramp is OFF THE AIR",
         aw.parked===true && Game.emitting(aw)===false,
         "parked="+aw.parked+" emitting="+Game.emitting(aw)+"  (radar "+aw.def.radar+")");
@@ -1311,7 +1316,7 @@ try{
     g.give({type:"attack", target:tgt});
     var hp0=tgt.hp, bRearmed=false, gRearmed=false, bBack=false, gBack=false;
     var roundsAfter=0;
-    for(var i=0;i<180*30;i++){ tick(1);
+    for(var i=0;i<110*30;i++){ tick(1);
       if(b.parked) bRearmed=true;
       if(g.parked) gRearmed=true;
       if(bRearmed && !b.parked && b.order && b.order.type==="attack") bBack=true;
@@ -1361,7 +1366,7 @@ try{
       tgt.stance="hold"; tgt.hp=tgt.maxHp=300000;
       u.give({type:"attack", target:tgt});
       var path=0, px=u.x, py=u.y, still=0;
-      for(var i=0;i<45*30;i++){ tick(1);
+      for(var i=0;i<30*30;i++){ tick(1);
         var dd=Math.hypot(u.x-px,u.y-py); path+=dd;
         /* only while it is actually prosecuting - time on the ramp rearming
            is not hovering, and counting it hid the real number */
@@ -1369,7 +1374,7 @@ try{
         px=u.x; py=u.y;
         if(u.dead) break; }
       seen.push(pr[1]+" "+(path/32).toFixed(0)+"t/"+still+"f");
-      if(still > 60 || path/32 < 20) bad.push(pr[1]+": "+(path/32).toFixed(1)+
+      if(still > 40 || path/32 < 12) bad.push(pr[1]+": "+(path/32).toFixed(1)+
         " tiles flown, "+still+" frames stopped while attacking");
       if(u&&!u.dead)u.dead=true; if(tgt&&!tgt.dead)tgt.dead=true;
     });

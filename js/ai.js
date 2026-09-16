@@ -934,6 +934,212 @@ function makeCommander() {
     return null;
   }
 
+  /* ======================================================================
+     EXPANSION: BUILDING TOWARD THE OIL
+     ======================================================================
+     (owner) "The ai should expand and occupy the oil for its own development"
+     and "we need ai to expand agrresive to stop them limit to a small area".
+
+     A derrick now obeys CFG.BUILD_RADIUS like every other structure, so the
+     pipeline-to-anywhere shortcut is gone for the commander AND for the
+     player. What is left is what a player actually does: put a cheap structure
+     at the edge of what you own, which drags the radius eleven tiles further
+     out, and keep going until the field is inside it.
+
+     THE TRIGGER IS THE COMMANDER'S OWN STATE and nothing else - barrels low,
+     credits available, and no legal derrick site left in reach. That last
+     condition is what stops it wandering off while there is still oil at home.
+
+     WHY READING G.map.oilNodes IS HONEST HERE: it is static map data, not
+     another player's state - the same class of thing as knowing where the
+     water is or where the hills are. findOilSpot() above has always read it,
+     and a commander that could not see the ore on its own map would be blind
+     in a way no player is. Nothing in this block reads an enemy unit, an
+     enemy building, or an enemy's economy.
+
+     BOUNDED IN THREE WAYS, because an unbounded version chains power plants
+     across the map and parks an outpost in somebody's base:
+       - it steps toward the NEAREST unclaimed node, so the chain is the
+         shortest one that reaches oil;
+       - it will not place a stepping stone closer to an enemy structure we
+         have SEEN than to our own home, so it expands into open ground rather
+         than into a base;
+       - it stops the moment a derrick site comes into reach, because at that
+         point the cheaper thing to build is the derrick. */
+  /* Nodes that have swallowed a chain without ever yielding a derrick. On a
+     water theatre the nearest unclaimed node is very often on ANOTHER
+     LANDMASS: the chain marches to the shore, cannot cross, and goes on paying
+     350 credits a step for ever. MEASURED on baltic at Warlord before this
+     guard: TWENTY-THREE silos, ONE derrick, 58,001 credits banked and twenty
+     barrels of fuel. A node that has taken four steps and produced nothing is
+     one this commander cannot reach by building, whatever the reason, and it
+     is written off so the next one gets a turn. */
+  const expandDead = new Set();
+  let expandFor = null, expandSteps = 0;
+  const nodeKey = (n) => n.x + "," + n.y;
+
+  /* Could a derrick stand there at all, radius aside? A node in the sea or
+     under a wreck is not worth walking to. */
+  function nodeDrillable(n) {
+    const def = BUILDINGS.derrick;
+    for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++) {
+      const tx = n.x + dx, ty = n.y + dy;
+      if (tx < 0 || ty < 0 || tx + def.w > G.map.W || ty + def.h > G.map.H) continue;
+      let ok = true;
+      for (let y = ty; y < ty + def.h && ok; y++)
+        for (let x = tx; x < tx + def.w && ok; x++) {
+          const t = G.map.terrain[y * G.map.W + x];
+          if (!CFG.TERRAIN[t] || !CFG.TERRAIN[t].pass) ok = false;
+          if (G.occ[y * G.map.W + x]) ok = false;
+        }
+      if (ok) return true;
+    }
+    return false;
+  }
+
+  function expandNode() {
+    const hx = P.homeX / 32, hy = P.homeY / 32;
+    let best = null, bd = Infinity;
+    for (const n of G.map.oilNodes) {
+      if (expandDead.has(nodeKey(n))) continue;
+      /* ---- AND ONLY GROUND WE HAVE LOOKED AT ----
+         `n.taken` is set the moment ANY player puts a derrick on a node and
+         cleared when it dies, so reading it is watching a field forty tiles
+         away change hands through fog. The file already draws this line for
+         the identical class of fact - "A hauler may only be routed to ore this
+         commander has actually seen, the same rule the player's haulers obey"
+         - and this is the same rule for the same reason. A node on ground we
+         have never overlooked is not a plan, it is a guess. */
+      if (!look[n.y * G.map.W + n.x]) continue;
+      if (n.taken) continue;                 // seen, and seen to be taken
+      if (!nodeDrillable(n)) continue;
+      const d = U.dist2(n.x, n.y, hx, hy);
+      if (d < bd) { bd = d; best = n; }
+    }
+    return best;
+  }
+  /* One step is one silo. Four of them is forty-four tiles of reach, which is
+     most of a theatre; if the field is still not in hand by then it is not
+     coming by this road. */
+  function expandNoted(n) {
+    const k = nodeKey(n);
+    if (expandFor !== k) { expandFor = k; expandSteps = 0; }
+    if (++expandSteps > 4) { expandDead.add(k); expandFor = null; expandSteps = 0; }
+  }
+  /* Worth expanding at all? Fuel is what every ceiling in this file is
+     ultimately made of, so the answer is: when there are no barrels, there is
+     money, and there is nowhere legal left to drill at home. */
+  function wantsExpansion() {
+    if (P.oil > 110) return false;                 // not short: build at home
+    if (P.cash < 1400) return false;               // cannot afford the chain
+    if (findOilSpot()) return false;               // still oil in reach
+    return !!expandNode();                         // and somewhere to go
+  }
+
+  /* ---- the rig: buy one, drive it out, unfold it ----
+     Three states and no more: none in hand, one moving, one in place. It runs
+     off the commander's own holdings and the static map, exactly like
+     findOilSpot() above, and reads nothing of anybody else's. */
+  function runExpansion() {
+    const rigsAll = P.units.filter(u => !u.dead && u.def.deployTo);
+    const node0 = expandNode();
+    /* Nowhere left to go, but three thousand credits are already standing in
+       the field: a second yard at home is still production and still radius,
+       and it is a great deal better than a vehicle that does nothing. */
+    if (!node0 && rigsAll.length) { G.deployRig(rigsAll[0]); return; }
+    if (!wantsExpansion()) return;
+    const node = node0;
+    if (!node) return;
+    const rigs = rigsAll;
+    if (!rigs.length) {
+      /* none in hand: buy one, once. It is 3,000 credits and 30 barrels, so
+         it is only worth it when the field it unlocks is worth more - which
+         is what wantsExpansion() has already established. */
+      /* The rig is oil:30 and lockReason refuses it below thirty barrels, so
+         in the 0-29 band the vehicle that ends the fuel shortage is locked out
+         BY the fuel shortage. buysFuel() tops a commander up to sixty on cash
+         alone, so the answer is to wait for that rather than to ask every
+         think and be refused - and the build order above is no longer switched
+         off while we wait, which is what made the deadlock bite. */
+      const rigOil = (UNITS.mcv && UNITS.mcv.oil) || 30;
+      if (P.oil < rigOil + 2) return;
+      if (queueLen("vehicle") < 2 && P.cash > 3600) tryBuildUnit("mcv");
+      return;
+    }
+    const rig = rigs[0];
+    /* Deploy where the node comes inside a fresh conyard's radius, standing
+       off a little so the yard does not straddle the well itself. */
+    /* ---- UNFOLD WHERE IT CAN ACTUALLY DRILL ----
+       Deploying wherever the rig happened to stop put a forward yard 15 tiles
+       from the field it was sent to take - measured, a yard at (94,133) with
+       its nearest free node fifteen tiles off, which is four tiles outside
+       CFG.BUILD_RADIUS and therefore worth nothing. The rig arrives in the
+       AREA and then looks for the spot: a tile where the yard can legally
+       stand AND from which the node falls inside the new radius, with a tile
+       of margin so a rounding error does not cost the whole trip. */
+    /* Not into somebody else's base. seenB records carry x/y in world PIXELS -
+       the previous version of this test compared them against TILES, so it
+       could only fire within fourteen pixels of the map origin and was dead
+       everywhere else. Tiles on both sides now. */
+    for (const r of seenB.values()) {
+      if (!r || r.gone) continue;
+      if (U.dist(node.x, node.y, r.x / 32, r.y / 32) < 12) {
+        expandDead.add(nodeKey(node));
+        return;
+      }
+    }
+    const want = CFG.BUILD_RADIUS + 2;             // "close enough to look"
+    const d = U.dist(rig.x / 32, rig.y / 32, node.x, node.y);
+    if (d <= want) {
+      const bd = BUILDINGS[rig.def.deployTo];
+      const rx = (rig.x / 32) | 0, ry = (rig.y / 32) | 0;
+      let spot = null, sd = Infinity;
+      for (let dy = -6; dy <= 6 && !spot; dy++) for (let dx = -6; dx <= 6; dx++) {
+        const cx = rx + dx, cy = ry + dy;
+        const tx = cx - ((bd.w / 2) | 0), ty = cy - ((bd.h / 2) | 0);
+        /* would the well be inside this yard's radius? */
+        if (U.dist(cx, cy, node.x, node.y) > CFG.BUILD_RADIUS - 1) continue;
+        rig.carried = true;
+        const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
+        rig.carried = false;
+        if (!ok) continue;
+        const dd = U.dist2(cx, cy, rx, ry);
+        if (dd < sd) { sd = dd; spot = { cx, cy }; }
+      }
+      if (spot) {
+        const at = U.dist(rig.x / 32, rig.y / 32, spot.cx, spot.cy);
+        if (at < 0.8) {
+          if (G.deployRig(rig)) { expandNoted(node); return; }
+        } else {
+          rig.give({ type: "move", x: spot.cx * 32 + 16, y: spot.cy * 32 + 16 });
+          return;
+        }
+      }
+      rig._rigTries = (rig._rigTries || 0) + 1;
+      if (rig._rigTries > 20) { expandNoted(node); expandDead.add(nodeKey(node)); rig._rigTries = 0; }
+      return;
+    }
+    /* still out: drive it, and do not re-issue the same order every think */
+    const tx = node.x * 32, ty = node.y * 32;
+    const o = rig.order;
+    if (!o || o.type !== "move" || U.dist(o.x, o.y, tx, ty) > CFG.TILE * 3)
+      rig.give({ type: "move", x: tx, y: ty });
+    /* ---- AND IT HAS TO BE GETTING CLOSER ----
+       On a water theatre the nearest unclaimed node is very often on another
+       landmass. The rig drives to the shore, cannot cross, and sits there for
+       the rest of the match with three thousand credits inside it - measured,
+       exactly that: mcv:1 alive at t=1500, one conyard, one derrick. So the
+       approach is timed. Forty-five seconds without closing three tiles means
+       this field cannot be reached by driving, whatever the reason, and it is
+       written off so the next one gets a turn. */
+    const k = nodeKey(node);
+    if (rig._rigGoal !== k) { rig._rigGoal = k; rig._rigT = G.time; rig._rigD = d; }
+    else if (G.time - rig._rigT > 45) {
+      if (d > rig._rigD - 3) { expandNoted(node); expandDead.add(k); }
+      rig._rigT = G.time; rig._rigD = d;
+    }
+  }
+
   function placeReady() {
     for (const kind of ["building", "defense"]) {
       const rq = q(kind);
@@ -3713,6 +3919,19 @@ function makeCommander() {
          turn into anything. It only ever builds where a spot actually exists,
          so this is bounded by the map rather than by a number - which is what
          bounds a player too. */
+      /* ---- REACH FOR THE NEXT FIELD ----
+         Ahead of the derrick branch on purpose: that branch asks findOilSpot()
+         and answers null once the home field is worked out, and a commander
+         that stops there sits on its money for the rest of the match. This is
+         what it does instead - a storage silo at the edge of the radius on the
+         line to the nearest unclaimed node, which drags the buildable area
+         eleven tiles out and stores the barrels when they arrive. */
+      /* Expansion is NOT a rung here. It was, and as an empty branch in an
+         if/else-if ladder it TERMINATED the ladder: while wantsExpansion() was
+         true - which is exactly the fuel-starved state it exists to end - the
+         commander built no derrick, no lab, no airbase, no second factory and
+         no further refinery, for the rest of the match. It runs from think()
+         on think()'s own clock instead, where it belongs. */
       else if (P.countBuilding("derrick") <
                  (((P.oil < 70 && P.cash > 3500) || (eraStep && P.oil < eraStep.oil) ? 6 : 3)
                   + Math.floor(G.time / 300)) &&
@@ -4527,6 +4746,9 @@ function makeCommander() {
         scout.give({ type: "move", x: goal.x, y: goal.y });
       }
     }
+
+    /* expansion runs on think()'s clock like everything else here */
+    runExpansion();
 
     /* -------- ATTACK WAVES -------- */
     /* This filter was the only line in the file that has ever seen a wave

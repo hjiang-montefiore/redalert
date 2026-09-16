@@ -391,11 +391,20 @@ window.addEventListener("load", function () {
         lines.push("");
         lines.push("P"+i+" t="+Math.round(Game.time)+"  cash="+Math.round(P.cash)+
                    "  OIL="+Math.round(P.oil)+"/"+Math.round(P.oilCap?P.oilCap():0)+
-                   "  airbases="+(c.bld.airbase||0)+"  navalyards="+(c.bld.navalyard||0)+
+                   "  airbases="+(c.bld.airbase||0)+"  derricks="+(c.bld.derrick||0)+
+                   "  CONYARDS="+(c.bld.conyard||0)+"  navalyards="+(c.bld.navalyard||0)+
                    "  tech="+P.tech);
         lines.push("    AIR : "+fmt(c.air));
         lines.push("    SEA : "+fmt(c.sea));
         lines.push("    GND : "+fmt(c.gnd));
+        /* where the yards are, and how far the nearest free oil is from each */
+        var yards=[], nodes=Game.map.oilNodes.filter(function(n){return !n.taken;});
+        P.buildings.forEach(function(b){ if(b.dead||b.def.id!=="conyard")return;
+          var bd=1e9;
+          nodes.forEach(function(n){ var dd=Math.hypot(n.x-b.tx,n.y-b.ty); if(dd<bd)bd=dd; });
+          yards.push("("+b.tx+","+b.ty+") nearest free node "+(bd>1e8?"none":bd.toFixed(0)+"t"));
+        });
+        lines.push("    YARDS: "+(yards.join("  ")||"none")+"   free nodes on map = "+nodes.length);
       });
       next+=SAMPLE;
     }

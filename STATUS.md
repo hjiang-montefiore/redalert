@@ -9,6 +9,20 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Reported by you, and fixed
 
+- [!] UNVERIFIED AT RUNTIME - the batch in commit "Expansion, a standing budget"
+      is syntax-checked only. The behaviour suite could not be run: Chrome sat
+      at 0.0% CPU and every backgrounded run was killed at exit 144. An
+      infinite loop would show 100%, so the browser never ran the page - almost
+      certainly leftover state from repeated killed instances. RUN
+      _behtest.html BEFORE TRUSTING ANY OF IT.
+- [x] Derricks pipeline 22 tiles instead of being exempt from the radius
+- [x] Obstacles no longer EXTEND the build radius (the 20-credit razor-wire
+      chain reached any node on the map, for the player as well)
+- [x] A standing budget: CFG.BASE_INCOME, 5 credits a second, every player
+- [x] The AI can use the MCV - G.deployRig was written into the UI keyboard
+      handler against G.human, so the game's own stated way to expand was
+      available to the player and to nobody else
+
 - [x] A B-52 flew 0.0 tiles in sixty seconds while attacking; an AC-130 hovered
 - [x] The AI worked its own corner dry and never expanded for more oil
 
