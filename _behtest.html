@@ -1017,6 +1017,71 @@ try{
         "aggressive stance overrides the routing", false);
   })();
 
+  /* ====== BUG 37: a Weasel shoots what is radiating, unasked ====== */
+  log("\n[37] EW AIRCRAFT ENGAGES A RADIATING EMITTER");
+  (function(){
+    var land=tile(E,"ground",7), home=tile(P,"ground",4);
+    if(!land||!home){ chk("sead scenario built", false, "no ground"); return; }
+    var sam=Game.placeBuilding(E,"sam",land.x,land.y,true);
+    for(var i=0;i<5;i++){ var pb=Game.placeBuilding(E,"power",land.x+3+i*3,land.y+4,true); if(pb) pb.buildProgress=1; }
+    if(!sam){ chk("sead scenario built", false, "no sam"); return; }
+    sam.buildProgress=1; sam.hp=sam.maxHp*8; sam.maxHp=sam.hp;
+    var wasFog=Game.fogEnabled; Game.fogEnabled=false;   // make it visible
+
+    var w=spawn(P,"sead_n",land,-6,0) || spawn(P,"ew_n",land,-6,0);
+    if(!w){ chk("Weasel spawned", false, "no sead_n/ew_n"); Game.fogEnabled=wasFog; return; }
+    w.parked=false; w.ammo=w.ammoMax; w.fuel=w.fuelMax;
+    chk("acquire() still refuses it - the gate is intact", w.acquire()===null, "");
+    var t=w.seadTarget();
+    chk("but seadTarget finds the radiating SAM", t===sam,
+        t ? (t.def.name||"?") : "null");
+
+    var hp0=sam.hp, fired=0;
+    w.order={type:"hover"};
+    for(var k=0;k<2400 && !sam.dead;k++){ Game.tick(CFG.DT);
+      var ps=Combat.projectiles||[];
+      for(var q=0;q<ps.length;q++){ var pr=ps[q];
+        if(pr.shooter===w && !pr._seen){ pr._seen=1; fired++; } } }
+    chk("and it engages without being ordered", fired>0 && (sam.dead || sam.hp<hp0),
+        fired+" rounds, SAM hp "+Math.round(hp0)+" -> "+Math.round(sam.hp));
+
+    /* switching the battery off must protect it */
+    var sam2=Game.placeBuilding(E,"sam",land.x+8,land.y+6,true);
+    if(sam2){ sam2.buildProgress=1;
+      for(var b=0;b<Game.players[1].buildings.length;b++){
+        var pb2=Game.players[1].buildings[b];
+        if(!pb2.dead && pb2.def.power>0) pb2.dead=true;      // brown the grid out
+      }
+      var w2=spawn(P,"sead_n",land,-6,3) || spawn(P,"ew_n",land,-6,3);
+      if(w2){ w2.parked=false; w2.ammo=w2.ammoMax;
+        chk("a battery that is switched off is left alone",
+            w2.seadTarget()===null || w2.seadTarget()!==sam2,
+            "jamming(sam2)=" + Game.jamming(sam2) + " target=" + (w2.seadTarget()?"found":"null")); }
+    }
+    /* ---- the shared picture: one listener cues the whole force ---- */
+    Game.fogEnabled = true;                       // hide everything again
+    var far=tile(P,"ground",14);
+    if(far){
+      var sam3=Game.placeBuilding(E,"sam",far.x,far.y,true);
+      for(var i=0;i<4;i++){ var p3=Game.placeBuilding(E,"power",far.x+3+i*3,far.y+4,true); if(p3) p3.buildProgress=1; }
+      if(sam3){
+        sam3.buildProgress=1;
+        var blind=spawn(P,"sead_n",far,-8,0) || spawn(P,"ew_n",far,-8,0);
+        if(blind){
+          blind.parked=false; blind.ammo=blind.ammoMax;
+          var heardAlone = Game.esmPlot ? Game.esmPlot(P).has(sam3.id) : false;
+          chk("a Weasel hears a radiating battery on its own receiver", heardAlone,
+              "esmPlot holds " + (Game.esmPlot?Game.esmPlot(P).size:0) + " emitters");
+          chk("and that is enough to engage it, unseen",
+              Game.airPlotKnows ? Game.airPlotKnows(P,sam3) : false,
+              "visibleTo=" + Game.visibleTo(P,sam3) + " airPlotKnows=" +
+              (Game.airPlotKnows?Game.airPlotKnows(P,sam3):"n/a"));
+        }
+      }
+    }
+    Game.fogEnabled=wasFog;
+  })();
+
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }

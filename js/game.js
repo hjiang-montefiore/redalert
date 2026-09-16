@@ -930,6 +930,75 @@ var Game = (function () {
      while it is still scaffolding, and off again the instant the grid browns
      out: a jamming station is a transmitter hall and the largest single load
      on its plot, so an unpowered one is a shed. */
+  /* ---- THE SHARED ELECTRONIC PICTURE ----
+     (owner) "if you need to make an intellegence info brain to share with ew
+     aircraft or e2/e3 or argus navy, it won't be a bad idea right?"
+
+     It is the right idea, and it is the physics. A radar that transmits
+     announces itself, and it announces itself MUCH further than it can see:
+     the radar pays for the round trip out to a target and back, a receiver
+     pays one way. So a Growler hears a battery long before that battery could
+     paint the Growler, and an E-3 or an Aegis ship hears it for the whole
+     force at once. That asymmetry is the entire basis of suppression of enemy
+     air defences and the game had no expression of it.
+
+     ai.js:esmSweep has had this since the Wild Weasel work - the AI has been
+     hearing emitters at 1.9x their own reach - and the human has had nothing,
+     so a player's Growler could not hear a battery that an AI Growler standing
+     beside it could. This lifts the law out so both sides share it, and so
+     that ONE listener cues EVERY shooter.
+
+     WHO LISTENS: anything carrying a set or built to collect - the strategic
+     arrays and the radar dome (PAVE PAWS), an AEW aircraft by role, an Aegis
+     hull by its radar quality, and the SEAD and EW aircraft's own receivers.
+     WHAT IS HEARD: only what is actually ON THE AIR. G.jamming() is false for
+     an unpowered dome, a browned-out SAM and a jammer parked with its pods
+     stowed - so switching a set off hides it from the whole network, which is
+     the counter-play and is why it is worth modelling at all.
+
+     Cached half a second per player: this is asked once per SEAD aircraft per
+     tick and it is O(listeners x emitters). */
+  G.ESM_GAIN = 1.9;
+  const ESM_PLOT = [];
+  G.esmPlot = function (owner) {
+    if (!owner) return null;
+    const rec = ESM_PLOT[owner.idx];
+    if (rec && G.time - rec.t < 0.5) return rec.set;
+    const set = new Set(), ears = [];
+    for (const u of owner.units) {
+      if (u.dead || u.carried || !G.emitting(u)) continue;
+      const d = u.def;
+      if (d.radar || d.radarQ || d.awacs || d.role === "ewair" || d.role === "sead")
+        ears.push(u);
+    }
+    for (const b of owner.buildings) {
+      if (b.dead || b.buildProgress < 1 || b.powered === false) continue;
+      if (b.def.radar || b.def.radarQ) ears.push(b);
+    }
+    if (ears.length) for (const o of G.players) {
+      if (o === owner || o.defeated || G.allied(owner, o)) continue;
+      const heed = (e) => {
+        const loud = ((e.def && (e.def.radar || e.def.jam)) || 0) * G.ESM_GAIN;
+        if (!loud || !G.jamming(e)) return;
+        for (const l of ears)
+          if (U.dist(l.x, l.y, e.x, e.y) <= loud * CFG.TILE) { set.add(e.id); return; }
+      };
+      for (const u of o.units) if (!u.dead && !u.carried) heed(u);
+      for (const b of o.buildings) if (!b.dead && b.buildProgress >= 1) heed(b);
+    }
+    ESM_PLOT[owner.idx] = { t: G.time, set: set };
+    return set;
+  };
+  /* On our air picture at all? Two ways in and no third: we SEE it, or it is
+     transmitting and somebody of ours HEARS it. Stated once so the routing and
+     the shooting cannot drift apart. */
+  G.airPlotKnows = function (owner, e) {
+    if (!owner || !e || e.dead) return false;
+    if (G.visibleTo(owner, e)) return true;
+    const set = G.esmPlot(owner);
+    return !!(set && set.has(e.id));
+  };
+
   G.jamming = function (e) {
     if (!e || e.dead) return false;
     if (e.kind === "building") return e.buildProgress >= 1 && e.powered !== false;

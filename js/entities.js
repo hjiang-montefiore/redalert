@@ -773,6 +773,87 @@ class Unit {
     return true;
   }
 
+  /* ---- SEAD: a Weasel shoots what is radiating, without being asked ----
+     (owner) "the eltronic war aircraft should launch the missle to the rador
+     or sam automatically."
+
+     Why this needs its own path at all. acquire() asks canTarget(e, true), and
+     canTarget skips any mount manualWeapon() calls held (entities.js:288). An
+     anti-radiation round is held two ways over - `manual` on the round itself
+     and `noAuto` stamped on roles sead and ewair by generations.js:1118 - so
+     acquire() returns null for a Weasel in every state it can be in. It was
+     never going to fire by the ordinary route, and nothing short of widening
+     the gate would have changed that.
+
+     THE GATE IS NOT WIDENED. manualWeapon(), released(), holdsFire() and the
+     release token setOrder stamps are untouched. What happens instead is that
+     the aircraft ISSUES ITSELF the order it would otherwise have waited for:
+     an attack carrying release, which is exactly the order a player gives by
+     clicking the battery. released() then reads true, holdsFire() false, and
+     pickWeapon finds the HARM by the ordinary path. Nothing that is held today
+     becomes un-held; one specific airframe gets standing permission to name
+     one specific class of target.
+
+     FOUR THINGS IT WILL NOT SHOOT, which is where the discipline lives:
+       - anything it cannot SEE. G.visibleTo, so the fog rule is the same one
+         everything else obeys;
+       - anything that is not RADIATING. G.jamming() is false for an unpowered
+         dome, a browned-out SAM and a jammer parked with its pods stowed - so
+         switching a battery off is a real counter-play and this respects it;
+       - anything that is not part of the air-defence system. A radar or a
+         jammer that can also engage aircraft, or a pure sensor. Not an
+         airbase, not a warship, not a tank with a rangefinder;
+       - anything out of reach of the round it is actually carrying. */
+  seadTarget() {
+    const d = this.def;
+    if (d.role !== "sead" && d.role !== "ewair") return null;
+    if (this.stance === "hold" || this.parked) return null;
+    if (this.ammoMax && this.ammo < 1) return null;
+    const g = this.game;
+    if (!g.jamming || !g.visibleTo) return null;
+    /* the anti-radiation mount this airframe actually has */
+    let reach = 0;
+    for (const k of (d.weapons || [])) {
+      const w = WEAPONS[k];
+      if (w && w.antiRadiation && w.tgt && w.tgt.ground)
+        reach = Math.max(reach, this.weaponRange(w));
+    }
+    if (!reach) return null;
+    let best = null, bs = -Infinity;
+    for (const p of g.players) {
+      if (p === this.owner || g.allied(this.owner, p)) continue;
+      const look = (e) => {
+        if (e.dead || !e.def) return;
+        if (e.kind === "unit" && e.layer !== "ground") return;   // not ships, not aircraft
+        const emits = (e.def.radar || 0) + (e.def.jam || 0);
+        if (!emits) return;
+        /* part of the air-defence system: it can shoot at aircraft, or its
+           whole job is to transmit. An enemy AIRBASE carries def.radar and is
+           deliberately excluded - shooting airfields is not SEAD. */
+        const shoots = g.airDefenceReach ? g.airDefenceReach(e.def) > 0 : false;
+        const sensor = !!e.def.jam || (e.def.radar && !e.def.pads && e.cat !== "aircraft");
+        if (!shoots && !sensor) return;
+        if (e.def.pads) return;                                  // an airbase is not a SAM
+        if (!g.jamming(e)) return;                               // off the air, left alone
+        /* SEEN or HEARD. A Weasel is cued by its own receiver, by an E-2 or
+           E-3, or by an Aegis hull - one listener cues the whole force, which
+           is what the network is for. Still fog-honest: nothing enters the
+           plot that is not transmitting, and nothing transmits that is
+           switched off or on a dead grid. */
+        if (!(g.airPlotKnows ? g.airPlotKnows(this.owner, e)
+                             : g.visibleTo(this.owner, e))) return;
+        const dist = U.dist(this.x, this.y, e.x, e.y);
+        if (dist > reach * CFG.TILE) return;
+        /* prefer the one that can actually hurt us, then the closer */
+        const sc = (shoots ? 1000 : 0) + emits * 10 - dist / CFG.TILE;
+        if (sc > bs) { bs = sc; best = e; }
+      };
+      for (const u of p.units) look(u);
+      for (const b of p.buildings) if (b.buildProgress >= 1) look(b);
+    }
+    return best;
+  }
+
   updateGeneric(dt) {
     const o = this.order;
     this.moving = false;
@@ -1959,6 +2040,33 @@ class Unit {
        routes around what it knows and can still be caught by what it does not.
        Deliberately NOT applied to fighters and strike aircraft: penetrating a
        defended area is their job, and a player who orders it means it. */
+    /* ---- the Weasel takes its own shot ----
+       Ahead of the routing below on purpose: a SEAD aircraft that has found a
+       radiating battery inside its own reach is not in the envelope by
+       accident, and must not be routed away from the thing it exists to kill.
+       It issues itself the attack a player would have clicked - release and
+       all - and the ordinary attack path takes it from there.
+
+       Only when it is not already prosecuting something: an order the player
+       gave by hand outranks this, and a shot already in progress is left to
+       finish. */
+    if ((o.type === "move" || o.type === "cap" || o.type === "hover" ||
+         o.type === "idle") && !o.release) {
+      const em = this.seadTarget();
+      if (em) {
+        if (!this.warnedSead && this.owner === this.game.human) {
+          this.warnedSead = true;
+          this.game.alert(this.def.name.toUpperCase() +
+                          " \u2014 ENGAGING RADAR", "good");
+        }
+        this.parked = false;
+        this.order = { type: "attack", target: em, auto: true, release: true,
+                       resume: (o.type === "move" || o.type === "cap")
+                               ? { x: o.x, y: o.y } : null };
+        return;
+      }
+    }
+
     const defenceless = !this.def.weapons.length ||
                         (this.allWeaponsHeld && this.allWeaponsHeld());
     /* ---- and an ARMED aircraft that is merely passing through ----

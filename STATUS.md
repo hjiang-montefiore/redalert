@@ -51,12 +51,9 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Known and not yet addressed
 
-- [!] SEAD: two of three done. Aircraft get off the ramp, and a TRANSITING
-      aircraft now routes round a SAM ring it can see while a commanded attack
-      still presses on. STILL NOT IMPLEMENTED: an EW aircraft engaging a
-      radiating emitter automatically - acquire() cannot pick up a manual
-      mount, so it needs a second narrow path, and the one that was written
-      fired 0 rounds when measured.
+- [x] SEAD complete: off the ramp, transit routes round a ring, and EW
+      aircraft engage a radiating emitter automatically off a SHARED
+      electronic picture (esmPlot) that one listener feeds to the whole force.
 
 - [!] The AA Battery scores zero on both intercept layers
 - [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`
