@@ -9,6 +9,10 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Reported by you, and fixed
 
+- [x] B-2, F/A-18 and Growler launched themselves and never stayed landed
+- [x] Self-launch is the EW aircraft's privilege: find the emitter, shoot it, flee
+- [x] Fuel was only added at base - the boom was chosen and then overwritten
+
 - [x] Rocket-launched scatterable mine, persistent until triggered - no timer
 - [x] HARM and mobile ballistic missiles only fire when ordered
 - [x] PAVE radar building, jammer building, strategic early warning

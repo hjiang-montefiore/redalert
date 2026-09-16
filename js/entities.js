@@ -804,10 +804,16 @@ class Unit {
          jammer that can also engage aircraft, or a pure sensor. Not an
          airbase, not a warship, not a tank with a rangefinder;
        - anything out of reach of the round it is actually carrying. */
-  seadTarget() {
+  seadTarget(fromRamp) {
     const d = this.def;
     if (d.role !== "sead" && d.role !== "ewair") return null;
-    if (this.stance === "hold" || this.parked) return null;
+    if (this.stance === "hold") return null;
+    /* `fromRamp` asks the question a parked Weasel needs answered before it
+       decides to start engines: is there a radiating battery within reach of
+       the round I am carrying? Everything else about the test is identical -
+       it still has to be transmitting, still has to be in the plot, still has
+       to be inside the weapon. */
+    if (this.parked && !fromRamp) return null;
     if (this.ammoMax && this.ammo < 1) return null;
     const g = this.game;
     if (!g.jamming || !g.visibleTo) return null;
@@ -2036,6 +2042,23 @@ class Unit {
            unlimited bombardment and the tanker becomes worthless. */
         this.order = standing ? { type: "rtb", then: standing } : { type: "rtb" };
       }
+      /* ---- AND STOP, BECAUSE `o` IS NOW STALE ----
+         (owner) "the fuel only being added when the aircraft back to base."
+         It was. This block chose a tanker correctly - traced: tanker found at
+         1.8 tiles, ammo full, no pad at all, every condition true - and set
+         this.order to a `tank`. Then the function CARRIED ON with the local
+         `o` captured at the top of updateAir, which still said "idle", fell
+         into the hover/idle branch below, and that branch overwrote the tank
+         order with a plain rtb on the very same tick. Measured: an F-16 at 30
+         of 100 fuel, a full KC-46 two tiles away, no airbase anywhere - 0
+         ticks on the boom, straight to rtb, and it flew itself to 0.0 fuel and
+         died with 420 of offload sitting beside it.
+         It only ever bit from `idle` and `hover`, which is why it survived
+         this long: from `move` or `cap` the dispatch below does not reassign
+         unless the aircraft arrives on that frame. Those are also exactly the
+         states a patrolling aircraft is in.
+         One frame of movement is skipped and that is the whole cost. */
+      return;
     }
 
     /* ---- high-value airborne assets keep out of the rings ----
@@ -2061,6 +2084,12 @@ class Unit {
        Only when it is not already prosecuting something: an order the player
        gave by hand outranks this, and a shot already in progress is left to
        finish. */
+    /* "idle" is in this list ON PURPOSE and it is the ELECTRONIC WARFARE
+       AIRCRAFT'S ALONE. (owner) "self launching is the EW aircraft previllage
+       that they found the rador or sam and then launch the missle and flee."
+       seadTarget() returns null for every role but "sead" and "ewair", so no
+       bomber and no fighter can reach this - a B-2 and an F/A-18 sit on the
+       ramp until they are sent, which is the rest of the same report. */
     if ((o.type === "move" || o.type === "cap" || o.type === "hover" ||
          o.type === "idle") && !o.release) {
       const em = this.seadTarget();
@@ -2071,9 +2100,18 @@ class Unit {
                           " \u2014 ENGAGING RADAR", "good");
         }
         this.parked = false;
+        /* AND FLEE. A shot the player asked for resumes the mission it broke
+           off from; a shot the aircraft took on its own initiative ends with
+           it coming home, because nobody sent it out there and it has no
+           business loitering over a battery it has just fired at. That is the
+           second half of the owner's sentence and it is also what stopped a
+           Growler walking itself seventy-seven tiles across the map one
+           engagement at a time. */
         this.order = { type: "attack", target: em, auto: true, release: true,
                        resume: (o.type === "move" || o.type === "cap")
-                               ? { x: o.x, y: o.y } : null };
+                               ? { x: o.x, y: o.y } : null,
+                       then: (o.type === "move" || o.type === "cap")
+                               ? null : { type: "rtb" } };
         return;
       }
     }
@@ -2413,7 +2451,52 @@ class Unit {
          it has a reason to be airborne at all (a weapon, a radar or a jammer -
          a transport and a tanker wait to be given a task, which is what
          ai.js's air loop has always said of them), and it is not held. */
-      if (this.parked && !this.def.hover && this.stance !== "hold" &&
+      /* ---- AND IT IS THE COMMANDER'S APRON, NOT THE PLAYER'S ----
+         (owner) "b2 f18 navy ef18 are attacking automatically and don't land
+         the airbase."
+         Measured on the player's seat, no orders given, 90 s each: a B-2 spent
+         870 ticks airborne and never parked once, burning 100 fuel down to 70
+         to fly a racetrack; an F-16 flew 1,351 ticks of `move` and never came
+         down either; and a Growler launched itself, found a radiating battery,
+         and was SEVENTY-SEVEN TILES from where it started with two rounds gone
+         and a third of its fuel left. They were not failing to land - they were
+         landing and taking straight off again, for ever.
+
+         The requirement this block was written for is still met, and it is the
+         one in the sentence: "all the fix wing aircraft cannot hanger. they
+         must move or patrol" was about an aeroplane STOPPING IN MID-AIR at
+         zero groundspeed, which is what the branch below fixes and which is
+         untouched here. Launching an idle airframe off the ramp was an extra
+         inference on top of it, and for the player it takes the aircraft out
+         of their hands: a 4,200-credit strategic bomber flies an unasked
+         barrier patrol and a Weasel prosecutes a target nobody sent it at.
+
+         For a COMMANDER it stays, because a commander cannot click - though
+         even there it is belt and braces: ai.js:4464 already re-tasks anything
+         parked on its next think.
+
+         The player keeps the two things that should be automatic and are not
+         sorties: STRIP ALERT immediately above still scrambles against an
+         aeroplane already in reach, which is air defence and not a mission;
+         and an aircraft the player HAS sent somewhere still engages a
+         radiating emitter on its own, which is what was asked for and is
+         gated on the order the player gave. */
+      /* THE EW AIRCRAFT'S PRIVILEGE, and it is the only self-launch a player's
+         aircraft gets. Not a patrol - a target. It starts engines only when
+         there is a battery transmitting inside the reach of the round it is
+         carrying, and the attack it issues itself carries `then: rtb`, so the
+         whole sortie is: find the radar, shoot it, come home. */
+      if (this.parked && this.stance !== "hold" && !this.def.hover &&
+          (this.def.role === "sead" || this.def.role === "ewair") &&
+          this.fuel >= this.fuelMax - 1 &&
+          (!this.ammoMax || this.ammo >= this.ammoMax - 0.05) &&
+          this.hp >= this.maxHp * 0.5 && this.seadTarget(true)) {
+        this.parked = false;
+        this.order = { type: "hover" };
+        return;
+      }
+      if (this.parked && this.owner && this.owner.isAI &&
+          !this.def.hover && this.stance !== "hold" &&
           !this.def.tanker && !this.def.cargo &&
           (this.def.weapons.length || this.def.awacs || this.def.jam) &&
           this.fuel >= this.fuelMax - 1 &&
@@ -2556,6 +2639,14 @@ class Unit {
   afterAttack(o) {
     if (o.cap && o.resume) return { type: "cap", x: o.resume.x, y: o.resume.y };
     if (o.resume) return { type: "attackmove", x: o.resume.x, y: o.resume.y };
+    /* AND FLEE. An order that says where to go when the shooting stops is
+       obeyed - the `tank` branch has always carried `then` and this is the
+       same field. It is what the self-launched SEAD shot sets, and without it
+       a Weasel fell through to the allWeaponsHeld case below, hovered over the
+       battery it had just fired at, and was immediately handed the next
+       emitter by the same block that sent it - which is loitering, not
+       fleeing, and it is how one aircraft walked itself across the map. */
+    if (o.then) return o.then;
     if (this.nextOrder && this.orders && this.orders.length) {
       if (this.nextOrder()) return this.order;
     }

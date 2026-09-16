@@ -513,9 +513,35 @@ try{
         "d="+(U.dist(jet.x,jet.y,ab.x,ab.y)/32).toFixed(1)+"t");
     jet.stance = "guard";
     tick(60);
-    chk("a serviceable jet does NOT sit on its pad",
-        !jet.parked && jet.order.type!=="parked",
+    /* WHOSE APRON IT IS. The owner asked for both of these, five weeks apart,
+       and they are not in conflict once the second one is read precisely:
+         "all the fix wing aircraft cannot hanger. they must move or patrol"
+         "b2 f18 navy ef18 are attacking automatically and don't land the
+          airbase"
+       The first is about an aeroplane STOPPING IN MID-AIR, which is enforced
+       in updateAir's hover branch and is not what this checks. Launching an
+       idle airframe off the ramp was an inference on top of it, and for a
+       PLAYER it takes a 4,200-credit bomber out of their hands. So: a
+       commander's jet leaves, because a commander cannot click; a player's
+       stays until it is sent, because the player can. */
+    chk("a PLAYER's serviceable jet stays on its pad until it is sent",
+        jet.parked || jet.order.type==="parked",
         "order="+jet.order.type+" parked="+jet.parked);
+    (function(){
+      var eL=tile(E,"ground",5);
+      if(!eL){ chk("a COMMANDER's serviceable jet does not", false, "no ground"); return; }
+      var eab=Game.placeBuilding(E,"airbase",eL.x,eL.y,true);
+      if(eab) eab.buildProgress=1;
+      var aij=spawn(E,"fighter_p",eL,1,1) || spawn(E,"fighter_n",eL,1,1);
+      if(!aij){ chk("a COMMANDER's serviceable jet does not", false, "no AI jet"); return; }
+      aij.stance="guard"; aij.parked=true; aij.order={type:"parked"};
+      aij.fuel=aij.fuelMax; aij.ammo=aij.ammoMax; aij.hp=aij.maxHp;
+      tick(90);
+      chk("a COMMANDER's serviceable jet does not",
+          !aij.parked || aij.order.type!=="parked",
+          "order="+aij.order.type+" parked="+aij.parked);
+      if(aij&&!aij.dead) aij.dead=true;
+    })();
     /* put it back where the next case expects to find it */
     jet.stance="hold"; jet.x=ab.x; jet.y=ab.y; jet.parked=true; jet.order={type:"parked"};
     window.__JET=jet;
@@ -983,7 +1009,15 @@ try{
       var minD=9999;
       for(var k=0;k<1800 && !jet.dead;k++){ Game.tick(CFG.DT);
         var d=U.dist(jet.x,jet.y,sam.x,sam.y)/CFG.TILE; if(d<minD) minD=d; }
-      var keptOut = minD > reach*0.6;
+      /* PRESSING IN AND BEING KILLED FOR IT IS STILL PRESSING IN. This read
+         only the closest approach, so an aggressive-stance aircraft that flew
+         from 14.0 straight at the battery and was shot down at 9.8 scored as
+         "held short" - it never reached 8.4 because it was dead. Holding short
+         means standing OFF and surviving; dying inside the ring is the
+         opposite of it, and on an aggressive stance it is the expected
+         outcome. */
+      var pressedIn = minD <= reach*0.6 || (jet.dead && minD < reach);
+      var keptOut = !pressedIn;
       chk(label, keptOut===expectClear,
           "closest "+minD.toFixed(1)+" of a "+reach.toFixed(1)+"-tile ring, dead="+jet.dead);
       return minD;
@@ -1118,6 +1152,85 @@ try{
      "the nuclear silo and silo warning/count down need to be global like
      redalert2." The countdown existed but only for your own silo, so the
      game told you a launch was coming and never how long you had. */
+  /* ====== BUG 39: whose aircraft launches itself, and the boom ====== */
+  log("\n[39] THE RAMP, THE EW PRIVILEGE, AND THE BOOM");
+  (function(){
+    var base=tile(P,"ground",4);
+    if(!base){ chk("aircraft scenario built", false, "no ground"); return; }
+    var ab=Game.placeBuilding(P,"airbase",base.x,base.y,true);
+    if(ab) ab.buildProgress=1;
+    /* a radiating battery for the Weasel to find, with a grid that can light it */
+    var el=tile(E,"ground",6);
+    var sam=el?Game.placeBuilding(E,"sam",el.x,el.y,true):null;
+    if(sam) sam.buildProgress=1;
+    for(var i=0;i<10 && el;i++){ var pw=Game.placeBuilding(E,"power",el.x+3+i*2,el.y+4,true);
+      if(pw) pw.buildProgress=1; }
+    tick(2);
+
+    function ramp(id){
+      var u=Game.spawnUnitAt(P,id,(base.x+2)*32+16,(base.y+3)*32+16);
+      if(!u) return null;
+      u.parked=true; u.order={type:"parked"}; u.fuel=u.fuelMax; u.ammo=u.ammoMax;
+      u.r39={launched:false, fired:0, home:false, scramble:false};
+      for(var k=0;k<150*30;k++){ tick(1);
+        if(!u.parked && u.order.type!=="parked") u.r39.launched=true;
+        /* strip alert - scrambling at an aeroplane already overhead - is air
+           defence and is deliberately still automatic for everyone */
+        if(u.order.type==="attack" && u.order.target && u.order.target.targetLayer &&
+           u.order.target.targetLayer()==="air") u.r39.scramble=true;
+        var ps=Combat.projectiles||[];
+        for(var q=0;q<ps.length;q++){ var pr=ps[q];
+          if(pr.shooter===u && !pr._s39){ pr._s39=1; u.r39.fired++; } }
+        if(u.r39.launched && (u.parked||u.order.type==="parked"||u.order.type==="rtb"))
+          u.r39.home=true;
+        if(u.dead) break; }
+      return u;
+    }
+
+    /* (owner) "self launching is the EW aircraft previllage that they found the
+       rador or sam and then launch the missle and flee." */
+    var ew=ramp("ew_n");
+    chk("an EW aircraft launches ITSELF at a radiating battery",
+        !!ew && ew.r39.launched, ew?("launched="+ew.r39.launched):"no aircraft");
+    chk("it shoots the emitter", !!ew && ew.r39.fired>0,
+        ew?(ew.r39.fired+" rounds"):"-");
+    chk("and then it flees - the sortie ends at home", !!ew && ew.r39.home,
+        ew?("order="+(ew.order?ew.order.type:"-")):"-");
+    if(ew&&!ew.dead) ew.dead=true;
+
+    /* (owner) "b2 f18 navy ef18 are attacking automatically and don't land the
+       airbase." Everything that is NOT an EW aircraft waits to be sent. */
+    var stay=[], shot=[];
+    ["sbomber_n","cfighter_n"].forEach(function(id){
+      var u=ramp(id);
+      if(!u) return;
+      if(u.r39.launched && !u.r39.scramble) stay.push(id+" self-launched");
+      if(u.r39.fired>0 && u.hp >= u.maxHp-0.5) shot.push(id+" fired "+u.r39.fired+" unprovoked");
+      if(!u.dead) u.dead=true;
+    });
+    chk("a bomber and a fighter stay on the ramp until they are sent",
+        stay.length===0, stay.length?stay.join("; "):"B-2 and Super Hornet stay down (scrambling excepted)");
+    chk("and neither strikes anything unprovoked",
+        shot.length===0, shot.length?shot.join("; "):"0 unordered rounds");
+
+    /* (owner) "the fuel only being added when the aircraft back to base." */
+    var tk=Game.spawnUnitAt(P,"tanker_n",(base.x+6)*32+16,(base.y+6)*32+16);
+    var jt=Game.spawnUnitAt(P,"fighter_n",(base.x+8)*32+16,(base.y+6)*32+16);
+    if(!tk||!jt){ chk("a thirsty jet takes fuel from the boom", false, "spawn failed"); return; }
+    tk.parked=false; tk.offload=tk.offloadMax; tk.fuel=tk.fuelMax;
+    tk.give({type:"cap", x:tk.x, y:tk.y});
+    jt.parked=false; jt.ammo=jt.ammoMax; jt.fuel=jt.fuelMax*0.30;
+    var f0=jt.fuel, boom=0, peak=f0;
+    for(var i=0;i<120*30;i++){ tick(1);
+      if(jt.order&&jt.order.type==="tank") boom++;
+      if(jt.fuel>peak) peak=jt.fuel;
+      if(jt.dead) break; }
+    chk("a thirsty jet takes fuel from the boom, not only at base",
+        peak > f0 + 5 && boom > 0,
+        "fuel "+f0.toFixed(0)+" -> peak "+peak.toFixed(0)+", "+boom+" ticks on the boom");
+    if(tk&&!tk.dead) tk.dead=true; if(jt&&!jt.dead) jt.dead=true;
+  })();
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);
