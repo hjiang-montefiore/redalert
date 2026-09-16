@@ -100,9 +100,12 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
       A Weasel that hears nothing from an unpowered radar is right. The test
       builds generation until the grid is up, and now reports emitting/
       radiating/range on a miss instead of only a set size.
-- [!] `radarGen` / `jamGen` do not exist - the generation contest runs on `from`,
-      which conflates the hull's service date with the set inside it. This is a
-      modelling gap and needs an owner decision, not a fix from me.
+- [x] `radarGen` / `jamGen` - the electronic contest keys off the SET now, not
+      the airframe. France and Taiwan fly E-2Cs today and were being scored as
+      2020s radars; an APS-145 is dated e00 and an E-2D's APY-9 e20.
+- [x] A parked radar or jamming aircraft is off the air. G.emitting() always
+      said so and jamAt/jamAgainst/radarCovers always asked; the FOG REVEAL and
+      G.airTrack never did.
 - [x] Five open-topped howitzers drawn with no gun - M44, M7B1 Priest, M110
       and two 122s - given turret:"opentop", which builds the real crew tub AND
       mounts the gun. (The first count of thirteen was wrong: the other eight

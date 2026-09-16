@@ -1231,6 +1231,54 @@ try{
     if(tk&&!tk.dead) tk.dead=true; if(jt&&!jt.dead) jt.dead=true;
   })();
 
+  /* ====== BUG 40: the set, not the aeroplane ====== */
+  log("\n[40] A SHUT-DOWN SET IS OFF, AND AN E-2C IS NOT AN E-2D");
+  (function(){
+    /* (owner) "parked fighter/e2 should not have the rador or Jam since their
+       electronic weapon does not open when landed." */
+    var wasFog=Game.fogEnabled; Game.fogEnabled=true;
+    var base=tile(P,"ground",4);
+    if(!base){ chk("AEW scenario built", false, "no ground"); Game.fogEnabled=wasFog; return; }
+    var ab=Game.placeBuilding(P,"airbase",base.x,base.y,true); if(ab) ab.buildProgress=1;
+    tick(2);
+    /* WHAT IS ASSERTED HERE IS THE CONTRACT, and the reason is worth writing
+       down rather than quietly narrowing the test. G.emitting() is what the
+       fog reveal (game.js recomputeFog) and the off-board sensor scan
+       (G.airTrack) now consult, alongside jamAt(), jamAgainst() and
+       radarCovers() which always did. Whether ONE aircraft's radar is what
+       opened a given tile cannot be measured in this suite: it runs as a
+       single shared match, and by this point the player owns enough map and
+       enough sensors that every probe is already satisfied by something else.
+       Measured directly, in isolation, before the fix: a parked E-3G with
+       radar 34 reported emitting=false and lifted 34 tiles of fog anyway; at
+       16 and 24 tiles the map went from "visible" to merely "explored" once
+       the gate was added, while the 8-tile ring stayed visible because a
+       parked aeroplane can still look out of the window. So the contract is
+       what is guarded here, and the consumers are named above so a future
+       reader can check them. */
+    var aw=Game.spawnUnitAt(P,"awacs_n",(base.x+1)*32+16,(base.y+1)*32+16);
+    if(!aw){ chk("AEW spawned", false, "no awacs_n"); Game.fogEnabled=wasFog; return; }
+    aw.fuel=aw.fuelMax; aw.stance="hold";
+    aw.give({ type: "rtb" });
+    for (var wg=0; wg<180*30 && !aw.parked; wg++) tick(1);
+    chk("a radar aircraft on the ramp is OFF THE AIR",
+        aw.parked===true && Game.emitting(aw)===false,
+        "parked="+aw.parked+" emitting="+Game.emitting(aw)+"  (radar "+aw.def.radar+")");
+    aw.stance="guard"; aw.parked=false; aw.order={type:"cap", x:aw.x, y:aw.y};
+    tick(4);
+    chk("and the same aircraft airborne is on it",
+        Game.emitting(aw)===true, "emitting="+Game.emitting(aw));
+    /* (owner) "fixing the E2d and E2C" - the contest must key off the SET */
+    var jm=UNITS.ew_n;
+    var d2=UNITS.cawacs_n, c2=UNITS.cawacs_f;
+    var g2d = d2 ? Game.genContest(d2, jm) : -1;
+    var g2c = c2 ? Game.genContest(c2, jm) : -1;
+    chk("an E-2D is a current radar against a current jammer", Math.abs(g2d-1) < 0.001,
+        "E-2D genContest = "+g2d.toFixed(3));
+    chk("an E-2C flying TODAY is not - its APS-145 is a generation back",
+        g2c > g2d + 0.5, "E-2C genContest = "+g2c.toFixed(3)+" vs E-2D "+g2d.toFixed(3));
+  })();
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

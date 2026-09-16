@@ -273,6 +273,9 @@ var Game = (function () {
              dome already fed air tracks from its foundations; a 32-radarQ
              array would have fed much better ones. */
           if (u.kind === "building" && (u.buildProgress < 1 || !u.powered)) continue;
+          /* the same rule one layer along: a set that is not running feeds
+             nobody a firing solution either */
+          if (u.kind !== "building" && !G.emitting(u)) continue;
           const q = u.def.radarQ !== undefined ? u.def.radarQ : (u.def.radar ? u.def.radar * 1.6 : 0);
           if (!q) continue;
           const du = U.dist(u.x, u.y, target.x, target.y) / CFG.TILE;
@@ -920,8 +923,25 @@ var Game = (function () {
        fabricated bonus, and the single largest number in this whole
        subsystem. Either side undated means no contest. */
     if ((radarDef && radarDef.eraStamped) || (jammerDef && jammerDef.eraStamped)) return 1;
-    const r = eraIndex(radarDef && radarDef.from ? radarDef.from : "e20");
-    const j = eraIndex(jammerDef && jammerDef.from ? jammerDef.from : "e20");
+    /* ---- THE SET, NOT THE AEROPLANE ----
+       (owner) "fixing the E2d and E2C"
+       This contest used to key off `from`, which is the PLATFORM's service
+       date, and that conflates an airframe with the electronics inside it.
+       The E-2C and the E-2D are the same aeroplane to look at and two
+       different radars: an APS-145 of about 1990 against an APY-9 UHF
+       active array of 2014. France and Taiwan fly E-2Cs TODAY, so `from`
+       put a 1990 radar into a 2020s contest and handed it three generations
+       it never earned - the largest correction available in this subsystem,
+       in the wrong direction.
+       `radarGen` and `jamGen` are the honest date of the EQUIPMENT and
+       override the airframe when they are present. Absent, nothing changes
+       and the platform's own date is still used - which is right for the
+       overwhelming majority, where the set and the airframe are the same
+       generation. */
+    const rFrom = (radarDef && (radarDef.radarGen || radarDef.from)) || "e20";
+    const jFrom = (jammerDef && (jammerDef.jamGen || jammerDef.from)) || "e20";
+    const r = eraIndex(rFrom);
+    const j = eraIndex(jFrom);
     const gap = r - j;                       // positive: the radar is newer
     if (gap === 0) return 1;
     /* each generation of advantage roughly halves the jamming that gets
@@ -1723,8 +1743,19 @@ var Game = (function () {
       const eff = jam > 0.15 ? r * Math.max(0.15, 1 - jam) : r;
       reveal(cx, cy, eff);
     };
+    /* ---- AND THE ROTODOME HAS TO BE TURNING ----
+       (owner) "parked fighter/e2 should not have the rador or Jam since their
+       electronic weapon does not open when landed."
+       G.emitting() has said exactly this since it was written - "a radar
+       aircraft shut down on its ramp has its rotodome stationary and its crew
+       on the ground, it should not be lighting up half the map from inside the
+       hangar" - and jamAt(), jamAgainst() and radarCovers() all ask it. THIS
+       loop never did, so the one thing a parked E-3 or E-2 still did from the
+       hangar was the biggest: lift the fog. Measured on a parked E-3G, radar
+       34: emitting() false, and 34 tiles of map open anyway. */
     for (const u of G.human.units) {
       if (u.dead || u.carried || !u.def.radar) continue;
+      if (!G.emitting(u)) continue;                   // shut down on the ramp
       radarReveal(u, u.tx, u.ty, u.def.radar);
     }
     /* ---- and the grid carries all of it ----
