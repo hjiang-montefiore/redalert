@@ -924,7 +924,13 @@ class Unit {
         if (!(g.airPlotKnows ? g.airPlotKnows(this.owner, e)
                              : g.visibleTo(this.owner, e))) return;
         const dist = U.dist(this.x, this.y, e.x, e.y);
-        if (dist > reach * CFG.TILE) return;
+        /* `reach` is weaponRange(), which already ends in * CFG.TILE, so this
+           multiplied by the tile size a second time: a 17.3-tile HARM was
+           gated at 553 tiles, which on a 144-tile map refuses nothing at all -
+           measured, seadTarget() still named a battery 200 tiles away. This is
+           the ONE round the game lets an airframe loose without an order, and
+           the narrowness of the gate is the whole reason that is allowed. */
+        if (dist > reach) return;
         /* prefer the one that can actually hurt us, then the closer */
         const sc = (shoots ? 1000 : 0) + emits * 10 - dist / CFG.TILE;
         if (sc > bs) { bs = sc; best = e; }

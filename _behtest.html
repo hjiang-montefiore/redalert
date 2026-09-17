@@ -1257,6 +1257,25 @@ try{
         ew?(ew.r39.fired+" rounds"):"-");
     chk("and then it flees - the sortie ends at home", !!ew && ew.r39.home,
         ew?("order="+(ew.order?ew.order.type:"-")):"-");
+    /* ...and the privilege is narrow. The range gate read `reach * CFG.TILE`
+       where reach is already pixels, so a 17-tile HARM was gated at 553 tiles
+       and refused nothing on a 144-tile map. The whole justification for a
+       self-issued release is that it only reaches what is nearly on top of
+       the aircraft. */
+    (function(){
+      if(!ew){ chk("a distant emitter is out of the privilege", false, "no aircraft"); return; }
+      var far=Game.spawnUnitAt(P,"ew_n",(base.x+2)*32+16,(base.y+3)*32+16);
+      if(!far){ chk("a distant emitter is out of the privilege", false, "spawn failed"); return; }
+      far.parked=true; far.order={type:"parked"}; far.fuel=far.fuelMax; far.ammo=far.ammoMax;
+      var reach=0;
+      (far.def.weapons||[]).forEach(function(k){ var w=WEAPONS[k];
+        if(w && w.antiRadiation) reach=Math.max(reach, far.weaponRange(w)); });
+      var t=far.seadTarget ? far.seadTarget(true) : null;
+      var d=t? U.dist(far.x,far.y,t.x,t.y) : 0;
+      chk("what it does pick is inside the round it carries",
+          !t || d<=reach+1, t? ((d/32).toFixed(1)+"t against "+(reach/32).toFixed(1)+"t of HARM") : "nothing in range");
+      far.dead=true;
+    })();
     if(ew&&!ew.dead) ew.dead=true;
 
     /* (owner) "b2 f18 navy ef18 are attacking automatically and don't land the
@@ -2232,7 +2251,12 @@ try{
         if(!id || !UNITS[id]){ chk(label, false, "no such hull "+id); return; }
         var ship = Game.spawnUnitAt(P, id, water.x*32+16, water.y*32+16);
         if(!ship){ chk(label, false, "spawn failed"); return; }
-        var eff0 = Combat.effects.length;
+        /* count the marker rather than slicing from an index: the effects list
+           is shared with the rest of the suite and can be trimmed between
+           sections, which made this read "not shown" for a decoy that fired */
+        function decoyed(){ var n=0; for(var i=0;i<Combat.effects.length;i++)
+          if(Combat.effects[i].s === "DECOYED") n++; return n; }
+        var said0 = decoyed();
         var p = { w:{ proj:"missile", speed:200, dmg:200, tgt:{ground:0,air:0,sea:1,sub:0} },
                   shooter:null, owner:E, x:ship.x-32*4, y:ship.y, z:8,
                   hit:true, target:ship, tx:ship.x, ty:ship.y, tz:0,
@@ -2242,9 +2266,7 @@ try{
         Combat.projectiles.push(p);
         var rng0 = Game.rng; Game.rng = function(){ return 0; };
         try { Combat.update(Game, CFG.DT); } finally { Game.rng = rng0; }
-        var seduced = p.target === null, said = false;
-        for(var i=eff0;i<Combat.effects.length;i++)
-          if(Combat.effects[i].s === "DECOYED") said = true;
+        var seduced = p.target === null, said = decoyed() > said0;
         chk(label, seduced===want && said===want,
             UNITS[id].name+" softkill="+UNITS[id].softkill+
             " seeker "+(seduced?"seduced":"held")+", DECOYED shown "+said);
