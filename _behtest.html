@@ -1775,6 +1775,50 @@ try{
   })();
   }
 
+  /* ====== 46: sell and repair show their own cursor, right-click clears it ====== */
+  if (inHalf(2)) {
+  log("\n[46] A SELL OR REPAIR CURSOR, AND RIGHT-CLICK BACK TO NORMAL");
+  (function(){
+    /* (owner) "change the mouse pointer symbol to repair (wrench) and sell
+       (dollar) like red alert 2 and right click to become the normal mode." */
+    if(!UI.setSell || !UI.cursorMode){ chk("mode cursor hooks exist", false, "UI.setSell/cursorMode missing"); return; }
+    var cv=document.getElementById("cv");
+    var land=tile(P,"ground",8);
+    if(!land||!cv){ chk("cursor scenario built", false, "no ground or no #cv"); return; }
+    var b=Game.placeBuilding(P,"power",land.x,land.y,true); if(b) b.buildProgress=1;
+    if(!b){ chk("cursor scenario built", false, "placeBuilding failed"); return; }
+    tick(2);                                   // the entity list is refreshed on the tick
+    var inp=UI.input;
+    /* the point the picker itself uses for this building */
+    var sp = Render.entityScreen ? Render.entityScreen(b)
+           : { x: Render.sx(b.x,b.y), y: Render.sy(b.x,b.y,GameMap.elevAt(Game.map,b.tx,b.ty)) };
+    var away = { x: 3, y: 3 };
+    /* point the mouse and re-read the cursor now (the live refresh is paced
+       at ~7 a second, which a scripted test outruns) */
+    function at(p){ inp.hasMouse=true; inp.mx=p.x; inp.my=p.y; UI.refreshCursor(); }
+    UI.setSell(true); at(sp);
+    chk("sell mode over our building shows the dollar", UI.cursorMode()==="sell",
+        "cursor="+UI.cursorMode());
+    chk("and the style is a drawn cursor, not the crosshair", /svg/.test(String(cv.style.cursor)), String(cv.style.cursor).slice(0,30));
+    at(away);
+    chk("sell mode over open ground shows the crossed-out dollar", UI.cursorMode()==="sell-no", "cursor="+UI.cursorMode());
+    UI.setRepair(true); b.hp=b.maxHp; at(sp);
+    chk("repair mode over an undamaged building is crossed out", UI.cursorMode()==="repair-no", "cursor="+UI.cursorMode());
+    b.hp=b.maxHp*0.5; at({x:sp.x+1,y:sp.y});
+    chk("repair mode over a damaged building shows the wrench", UI.cursorMode()==="repair", "cursor="+UI.cursorMode());
+    /* a real right-click through the page's own mouse handler */
+    var rc=cv.getBoundingClientRect();
+    cv.dispatchEvent({ type:"mousedown", button:2, clientX:rc.left+sp.x, clientY:rc.top+sp.y, shiftKey:false, ctrlKey:false, metaKey:false });
+    chk("right-click leaves repair mode", !inp.repairMode && !inp.sellMode, "repair="+inp.repairMode+" sell="+inp.sellMode);
+    chk("and the cursor is back to normal", UI.cursorMode()==="" && !cv.style.cursor, "cursor='"+UI.cursorMode()+"' style='"+cv.style.cursor+"'");
+    UI.setSell(true);
+    cv.dispatchEvent({ type:"mousedown", button:2, clientX:rc.left+away.x, clientY:rc.top+away.y, shiftKey:false, ctrlKey:false, metaKey:false });
+    chk("right-click leaves sell mode too, and nothing was sold", !inp.sellMode && !b.dead && UI.cursorMode()==="",
+        "sell="+inp.sellMode+" dead="+b.dead+" cursor='"+UI.cursorMode()+"'");
+    b.dead=true;
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

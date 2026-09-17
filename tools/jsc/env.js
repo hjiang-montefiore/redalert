@@ -104,7 +104,23 @@ function __el(tag, id, value) {
     get: function () { return text; },
     set: function (v) { text = String(v); if (e.id === "tout") __tout(text); },
   });
-  e.addEventListener = function (type, fn) { if (type === "click") (e.__click = e.__click || []).push(fn); };
+  /* listeners are kept per type so a test can dispatch a real event (a
+     right-click on the map, say) through the page's own handlers */
+  e.__on = {};
+  e.addEventListener = function (type, fn) {
+    (e.__on[type] = e.__on[type] || []).push(fn);
+    if (type === "click") (e.__click = e.__click || []).push(fn);
+  };
+  e.removeEventListener = function (type, fn) {
+    var l = e.__on[type]; if (l) { var i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); }
+  };
+  e.dispatchEvent = function (ev) {
+    ev = ev || {}; ev.target = ev.target || e; ev.currentTarget = e;
+    ev.preventDefault = ev.preventDefault || function () {};
+    ev.stopPropagation = ev.stopPropagation || function () {};
+    (e.__on[ev.type] || []).slice().forEach(function (f) { f(ev); });
+    return true;
+  };
   return e;
 }
 var __els = {};

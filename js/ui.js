@@ -1526,8 +1526,12 @@ var UI = (function () {
           return;
         }
         if (input.placing) { tryPlace(); return; }
-        if (input.sellMode) { const b = pickAt(mx, my, true); if (b && b.kind === "building" && b.owner === G.human) G.sellBuilding(b); return; }
-        if (input.repairMode) { const b = pickAt(mx, my, true); if (b && b.kind === "building" && b.owner === G.human) { b.repairing = !b.repairing; } return; }
+        /* Sell and repair act on OUR STRUCTURES only, so they pick among those
+           alone: pickAt() favours units, and a tank parked in front of a
+           factory used to swallow the click - the factory could not be sold
+           or repaired from that side. The cursor reads the same picker. */
+        if (input.sellMode) { const b = ownBuildingAt(mx, my); if (b) G.sellBuilding(b); return; }
+        if (input.repairMode) { const b = ownBuildingAt(mx, my); if (b) { b.repairing = !b.repairing; } return; }
         if (input.attackMove || keys.a) { issueAttackMove(mx, my, e.shiftKey); input.attackMove = false; return; }
         /* an armed area order takes the whole drag, not just the click */
         if (areaMode) { areaDrag = { x0: mx, y0: my, x1: mx, y1: my }; return; }
@@ -1806,8 +1810,75 @@ var UI = (function () {
   function setSell(v) { input.sellMode = v; if (v) input.repairMode = false; syncCmd(); }
   function setRepair(v) { input.repairMode = v; if (v) input.sellMode = false; syncCmd(); }
   function syncCmd() {
-    document.getElementById("c-sell").classList.toggle("on", input.sellMode);
-    document.getElementById("c-repair").classList.toggle("on", input.repairMode);
+    const bs = document.getElementById("c-sell"), br = document.getElementById("c-repair");
+    if (bs) bs.classList.toggle("on", input.sellMode);
+    if (br) br.classList.toggle("on", input.repairMode);
+    modeCursor(true);
+  }
+
+  /* ---- MODE CURSORS ----
+     (owner) "change the mouse pointer symbol to repair (wrench) and sell
+     (dollar) like red alert 2 and right click to become the normal mode."
+     The map kept its crosshair in both modes, so nothing under the hand said
+     that the next click would sell a building. Drawn here as SVG - the game
+     ships no image files - in two states each, as Red Alert 2 does: the live
+     cursor over something the click will act on, and a crossed-out one
+     everywhere else. Right-click and Esc already leave both modes; the cursor
+     follows because syncCmd() refreshes it. */
+  const MODE_CURSOR = (() => {
+    const wrap = (body) => 'url("data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+      body + "</svg>") + '")';
+    const no = '<circle cx="24" cy="24" r="6.2" fill="#1b0c0a" stroke="#ff5a46" stroke-width="2"/>' +
+               '<path d="M19.8 19.8 L28.2 28.2" stroke="#ff5a46" stroke-width="2.4" stroke-linecap="round"/>';
+    /* an open-ended spanner lying top-left to bottom-right; the jaw is the hot spot */
+    const wrench = (metal) =>
+      '<g stroke="#0a0d09" stroke-width="1.6" stroke-linejoin="round">' +
+      '<path d="M12.6 14.8 L15 12.4 L27.4 24.8 A1.7 1.7 0 0 1 24.9 27.3 Z" fill="' + metal + '"/>' +
+      '<path d="M4.2 5.9 A7 7 0 1 0 12.3 3.4 L9.6 8.9 L7.2 9.4 L6.3 7.1 Z" fill="' + metal + '"/>' +
+      "</g>";
+    /* a gold coin with the dollar sign struck on it */
+    const coin = (face, rim, ink) =>
+      '<circle cx="16" cy="16" r="11.5" fill="' + face + '" stroke="' + rim + '" stroke-width="2.2"/>' +
+      '<circle cx="16" cy="16" r="8.6" fill="none" stroke="' + rim + '" stroke-width="0.8" opacity="0.7"/>' +
+      '<text x="16" y="22.2" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" ' +
+      'font-weight="700" font-size="17" fill="' + ink + '">$</text>';
+    return {
+      repair:     wrap(wrench("#dfe6ea")) + " 6 6, pointer",
+      "repair-no": wrap(wrench("#7c8588") + no) + " 6 6, not-allowed",
+      sell:       wrap(coin("#6b4e0c", "#f2c94a", "#ffe28a")) + " 16 16, pointer",
+      "sell-no":  wrap(coin("#3a3424", "#8f8466", "#b3a987") + no) + " 16 16, not-allowed",
+    };
+  })();
+  let cursorKey = "", cursorMx = -1, cursorMy = -1, cursorT = 0;
+  /* the building the next click would act on, by the same test the click uses */
+  const ownBuilding = (e) => e.kind === "building" && e.owner === G.human;
+  function ownBuildingAt(mx, my) { return pickAt(mx, my, true, ownBuilding); }
+  function modeTarget() {
+    if (!input.hasMouse) return null;
+    return ownBuildingAt(input.mx, input.my);
+  }
+  function modeCursor(force) {
+    if (!cv) return;
+    let key = "";
+    if (input.sellMode || input.repairMode) {
+      /* pickAt walks every entity, so hover is re-read only when the pointer
+         has moved, and at most about seven times a second */
+      const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+      const moved = input.mx !== cursorMx || input.my !== cursorMy;
+      if (!force && !moved && cursorKey) return;
+      if (!force && now - cursorT < 140 && cursorKey) return;
+      cursorT = now; cursorMx = input.mx; cursorMy = input.my;
+      const b = modeTarget();
+      /* repair is live over a damaged building, or one already under repair
+         so the click can switch it off; sell is live over any of ours */
+      const ok = input.sellMode ? !!b
+        : !!b && (b.repairing || b.hp < b.maxHp - 0.5);
+      key = (input.sellMode ? "sell" : "repair") + (ok ? "" : "-no");
+    }
+    if (key === cursorKey && !force) return;
+    cursorKey = key;
+    cv.style.cursor = key ? MODE_CURSOR[key] : "";
   }
   function togglePause() {
     G.paused = !G.paused;
@@ -1868,10 +1939,11 @@ var UI = (function () {
   }
 
   /* ---------- picking ---------- */
-  function pickAt(mx, my, includeBuildings) {
+  function pickAt(mx, my, includeBuildings, only) {
     let best = null, bd = Infinity;
     for (const e of G.entities) {
       if (e.dead || e.carried) continue;
+      if (only && !only(e)) continue;
       if (!includeBuildings && e.kind === "building") continue;
       let ex, ey;
       if (Render.entityScreen) {
@@ -2558,6 +2630,7 @@ var UI = (function () {
   const EDGE_DWELL = 0.18;                       // seconds
 
   function frame(dt) {
+    if (input.sellMode || input.repairMode || cursorKey) modeCursor(false);
     /* edge panning (only once the mouse has actually entered the window) */
     const m = CFG.EDGE_PAN, sp = CFG.PAN_SPEED * dt / Render.cam.z;
     let dx = 0, dy = 0;
@@ -2751,5 +2824,9 @@ var UI = (function () {
   return {
     areaRect, init, frame, alert, endGame, refreshCards, setPanMode,
            panMode: () => panMode,
+           /* for the suites: which mode cursor is showing ("" = normal) */
+           cursorMode: () => cursorKey,
+           refreshCursor: () => modeCursor(true),
+           setSell, setRepair,
            get input() { return input; }, get selection() { return selection; } };
 })();
