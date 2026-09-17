@@ -493,6 +493,24 @@ function makeCommander() {
   const aimShy = new Map();      // objective id -> the time it may be tried again
   let aimRvT = -1;               // warAim's review is memoised on the game tick
   let waveBook = null;           // hit points the current wave was committed with
+  /* ---- engagement discipline ----
+     Closure state for the reason everything above is: two commanders sharing
+     one of these would be sharing one decision. waveGate is what the current
+     body was sent to turn in on and when it left, so the next launch can tell
+     a fight to reinforce from one to re-plan. waveGateT and waveMassed are the
+     staging hold. homeward is a broken wave walking to the pad - it is no
+     longer in attackWave, so something else has to steer it. */
+  let waveGate = null;           // { tx, ty, t }: the objective this body turns in on
+  let waveGateT = 0;             // when the first of it reached its mark
+  let waveMassed = false;        // ...and whether the body has been turned in
+  let waveTurn0 = 0, waveTurn1 = 0;   // first and last turn-in of this body, for the census
+  let flankClock = 0;            // driveFlankers' own 4 Hz clock
+  let waveDefer = 0;             // launches deferred in a row on the force ratio
+  let homeward = [];             // survivors of a broken wave still being walked home
+  let homeUntil = 0;             // ...and until when
+  let engStat = engBook();       // what all of the above has done, for intel()
+  const GATE_HOLD = 22;          // seconds a staged body waits on its stragglers
+  const GATE_R = 3.5;            // tiles from its own mark that count as "there"
   let oreSites = null;           // where the ore is, surveyed once
   /* ---- ground the scouts could not get to ----
      Coarse cell -> the time it may be aimed at again. The same shape as
@@ -666,6 +684,8 @@ function makeCommander() {
     armsCache = null; armsT = -1e9; seaCache = null; seaT = -1e9;
     survey = null; surveyT = -1e9;
     aimShy.clear(); scoutShy.clear(); aimRvT = -1; waveBook = null; oreSites = null;
+    waveGate = null; waveGateT = 0; waveMassed = false; waveTurn0 = waveTurn1 = 0;
+    flankClock = 0; waveDefer = 0; homeward = []; homeUntil = 0; engStat = engBook();
     /* A restarted match must not price its first tanker off the previous
        battle's sortie rate, buy its first workshop against the previous
        battle's casualty rate, or site a belt against a minefield that was on
@@ -675,6 +695,12 @@ function makeCommander() {
     mineSigns = []; raidHeat = 0; raidT = 0; mineNext = 0;
     foeVeh = 0; foeVehT = 0;
     knownM = null; knownMT = -1e9;
+    /* The second front belongs to one battle as well: no detachment, no
+       written-off ground and no counters carried across a restart - and no
+       raid in the opening minute, when there is no surplus and nothing has
+       been seen. */
+    raidParty = []; raidTo = null; raidBook = 0; raidEnd = 0; raidNext = 60; raidTick = 0;
+    raidShy.clear(); raidDead = []; raidLog = raidLogNew();
     for (const k in roleCool) delete roleCool[k];
     intelT = 0; lastDigest = 0; aim = null;
     /* The deployment sites are on the published map - every player can see
@@ -788,6 +814,19 @@ function makeCommander() {
     scoutT -= dt;
     rivalT -= dt;
     if (rivalT <= 0) { rivalT = 25; pickRival(); }
+    /* ---- the second front ----
+       On its own clock and not inside think(): think() returns early on
+       every tick that queues a purchase, and the break-off in driveRaid() is
+       the one rule a raid may never skip. Half a think interval and never
+       under half a second, so a Veteran's party is not handled faster than a
+       Veteran thinks by more than that. Driven before it is formed, so a
+       party that broke off on this tick cannot be replaced on the same one. */
+    raidTick -= dt;
+    if (raidTick <= 0) {
+      raidTick = Math.max(0.5, (D.think || 1.6) * 0.5);
+      driveRaid();
+      formRaid();
+    }
   }
 
   /* ---------- helpers ---------- */
@@ -1900,6 +1939,74 @@ function makeCommander() {
       all++; if (u.armor === "heavy" || u.armor === "light") hv++;
     }
     return all ? hv / all : 0.6;
+  }
+
+  /* ---- how much fighting weight is standing on a piece of ground ----
+     The threat field cannot answer this. exposureAt() is stamped from seenB
+     through gunProfile(), a BUILDING lookup, so every price this commander has
+     put on an objective is a price for concrete; foeArms() reads the enemy's
+     vehicles properly and its only consumer is the build queue. A wave could
+     walk into twice its own weight of armour parked in the open and nothing
+     here would notice, because the field had no pillbox in it.
+
+     Same currency on both sides, and neither side is a peek. Ours is our own
+     units, scaled by the bar we can read exactly. Theirs is seenU: the LAST
+     SEEN position and the class written down at contact - never r.ref, never
+     trackedEntity(). Not scaled by health, because a contact seen a minute ago
+     may have been mended since; the error points toward caution.
+
+     The window is 90 seconds, not D.memory. forgetStale never drops a record
+     because the unit DIED - it cannot know - so at Commander and Warlord a
+     600-second window sums ten minutes of vehicles around the enemy base, many
+     of them wrecks by now. foeArms() survives that because it consumes shares;
+     this consumes a magnitude. Nor is it 45, one approach march: the launch
+     this reading most needs to inform is the one after a broken wave, and that
+     launch first waits out the withdrawal (up to 60 s), so a 45-second memory
+     would have forgotten the body that broke the last wave by the time the
+     next one is weighed. At 90 it still counts for something at the relaunch
+     and has faded out by the end of the two deferrals.
+
+     NO_FIGHT is one roster applied to both sides. groundArmy() already drops
+     the scout, SAM, launcher, clearer and truck from ours; air-defence hulls,
+     MANPADS and support vehicles go from both here, because what is being asked
+     is what happens to a tank company that walks into it.
+
+     FORCE_W is doctrine, not intelligence - four numbers keyed on ROLE_ARM:
+     a main battle tank 1.00, an IFV or light tank about half of one, a gun
+     0.45 (below a tank on purpose: at four tiles an SPG is not what it is at
+     twenty), a squad 0.30. */
+  const FORCE_W = { armour: 1.00, light: 0.55, arty: 0.45, inf: 0.30 };
+  const NO_FIGHT = { recon: 1, sam: 1, spaag: 1, aa: 1, tel: 1, supply: 1, repair: 1,
+                     mineclear: 1, minelayer: 1, radarv: 1, ewveh: 1, mcv: 1,
+                     engineer: 1, medic: 1 };
+  function forceW(role, armor, cat) {
+    const k = armor === "heavy" ? "armour"
+            : ROLE_ARM[role] || (cat === "infantry" ? "inf" : "light");
+    return FORCE_W[k] || 0.40;
+  }
+  function foeNear(x, y, R) {
+    const now = G.time, mem = Math.min(90, Math.max(14, D.memory || 90)), R2 = R * R;
+    let v = 0;
+    for (const r of seenU.values()) {
+      if (r.harvester || !r.armed || r.layer !== "ground" || NO_FIGHT[r.role]) continue;
+      const age = now - r.t;
+      if (age > mem || U.dist2(r.x, r.y, x, y) > R2) continue;
+      v += forceW(r.role, r.armor, r.cat) * (1 - age / mem);
+    }
+    return v;
+  }
+  function ourForce(list) {
+    let v = 0;
+    for (const u of list) {
+      if (!u || u.dead || NO_FIGHT[u.def.role]) continue;
+      v += forceW(u.def.role, u.armor, u.cat) * (u.hp / Math.max(1, u.maxHp));
+    }
+    return v;
+  }
+  function engBook() {
+    return { held: 0, staged: 0, massBody: 0, massClock: 0, spread: [], waits: 0,
+             kept: 0, defers: 0, withdrawals: 0, withdrawn: 0, pad: 0,
+             dropped: 0, handed: 0 };
   }
 
   /* ---- the casualty return ----
@@ -4121,6 +4228,16 @@ function makeCommander() {
   /* ---------- the brain ---------- */
   function think() {
     placeReady();
+    /* Several guns on one hull - see concentrate(). At the TOP of the think,
+       not beside driveWave at the bottom: a think that buys, sells or calls
+       something in returns half-way down (fifteen early `return`s, most of
+       them `... && tryBuildUnit(..)) return;`), and the fight should not
+       pause because the factory was busy. Running first changes nothing for
+       the wave drivers: driveWave, driveFlankers and defendBase only touch
+       idle, hover or guard hulls, runSiege only touches idle, guard or
+       attackmove ones plus its tubes, which concentrate() skips - and
+       concentrate() only ever touches automatic attack orders. */
+    concentrate();
 
     const nPower = P.countBuilding("power");
     const nRef = P.countBuilding("refinery");
@@ -5073,6 +5190,8 @@ function makeCommander() {
     /* This filter was the only line in the file that has ever seen a wave
        casualty, and it threw the information away. reapWave keeps it. */
     reapWave();
+    /* a broken wave is out of attackWave and walks home on its own clock */
+    steerHome();
     /* One clock, one call site. Both earlier designs fired the learner from a
        different clock than the one that reaped the wave and drifted between
        them; this runs in think(), reads G.time, and is called nowhere else. */
@@ -5591,7 +5710,124 @@ function makeCommander() {
        for the rest of the match. */
     const t = groundTarget();
     if (!t) { waveT = 12; return; }                 // look again shortly
-    attackWave = army.slice(0, D.waveSize + 6);
+
+    /* ---- a broken wave is walked home before the next one leaves ----
+       withdrawWave() pushes waveT past its own window, but the review that
+       breaks a wave can run from the groundTarget() call just above - after
+       the caller has already reset waveT - and would then sweep the survivors
+       into a new wave halfway through their retreat. */
+    if (homeward.length && G.time < homeUntil) {
+      waveT = Math.max(3, homeUntil - G.time + 1);
+      return;
+    }
+
+    /* ---- reinforce a fight, do not recall it ----
+       This re-formed attackWave from the whole army every waveTime, so a wave
+       that had just turned in on the objective was handed an attackmove back
+       out to a fresh gate - quite possibly on the far side of the position,
+       since pickApproach rotates its bearings - and a body still waiting at
+       its mark lost its hold and was marched somewhere else. With a staging
+       hold that is no longer a few seconds long, that is most relaunches at
+       the top tiers: a seventy-five second cycle against a forty-to-sixty
+       second march plus the hold.
+
+       So, against the SAME objective: a body still holding is left to finish,
+       which is seconds - the hold ends GATE_HOLD after the first arrival, and
+       this wait is capped at two holds past a full cycle so a wave stuck short
+       of its gate is re-planned rather than waited on. Once it has turned in,
+       the units already in stay on the objective and only the rest are
+       planned, as a new body with a new approach and a hold of its own. A
+       different objective re-plans everybody as before, because then the
+       forward units need the new gate as much as anyone. */
+    const g = waveGate;
+    const same = !!g && U.dist2(g.tx, g.ty, t.x, t.y) < CFG.TILE * CFG.TILE * 4;
+    if (same && !waveMassed && G.time - g.t < (D.waveTime || 150) + GATE_HOLD * 2) {
+      for (const u of attackWave)
+        if (!u.dead && u.flankTo) { waveT = 6; engStat.waits++; return; }
+    }
+    const keep = [];
+    if (same && waveMassed)
+      for (const u of attackWave) if (!u.dead && !u.flankTo) keep.push(u);
+    const body = [], room = D.waveSize + 6 - keep.length;
+    for (const u of army) {
+      if (body.length >= room) break;
+      /* `noWave` is a seam, not a feature: a detachment on another task is
+         tagged by whoever owns it and is never swept into a wave */
+      if (u.noWave || keep.indexOf(u) >= 0) continue;
+      body.push(u);
+    }
+    if (!body.length) return;
+
+    /* ---- do not walk into a body that beats us ----
+       Every gate on this path counts BODIES - the launch test is `army.length
+       >= wantSize * 0.8` - and every price on the objective is concrete, so a
+       full-strength wave was sent at twice its weight of armour exactly as
+       readily as at an empty field. Twelve tiles is the ground a defending
+       body can intervene from before the objective falls, the same order as
+       pickApproach's gate ring.
+
+       A DELAY and never a refusal, and the bound is the design: two deferrals
+       of twenty seconds - forty seconds in which the factory buys the
+       difference - and then the wave goes whatever the plot says. A commander
+       that can talk itself out of attacking is the Fortress doctrine by
+       accident, which is worse than trickling. waveT = 20 is right even for
+       Fortress: the caller has just set its 999-second clock for a launch that
+       did not happen, and a deferral is a retry, not a new cycle.
+
+       Only a fresh commitment is weighed, and fresh means NO wave is out:
+       the first launch, and the one after a withdrawal, which is the launch
+       the ninety-second window above was sized for. With units already in on
+       the objective, holding the rest back would starve a fight in progress.
+       With the last wave still in the field and the aim moved on, it is
+       worse: a deferral returns before attackWave is replaced, and think()
+       then runs driveWave() over the OLD wave at the NEW objective - the one
+       just judged too strong - so the old wave walks into it alone while the
+       fresh units wait at home. A fight that is being lost is reviewAim's to
+       break off, all at once.
+
+       Below D.read 0.35 there is no reading, and a raid is exempt - standing
+       off from a lorry to count tanks is how the lorry gets away. aggro sets
+       the tolerance: Regular goes unless outweighed 1.04:1, Warlord presses
+       on to 1.43:1. */
+    if (!keep.length && !attackWave.length && (D.read || 0) >= 0.35 &&
+        !t.raid && waveDefer < 2 &&
+        foeNear(t.x, t.y, CFG.TILE * 12) > ourForce(body) * (0.80 + 0.30 * (D.aggro || 1))) {
+      waveDefer++; engStat.defers++;
+      waveT = 20;
+      return;
+    }
+    waveDefer = 0;
+
+    /* a fresh plan: nobody carries the last body's second leg or its hold */
+    for (const u of attackWave) u.flankTo = null;
+    for (const u of body) u.flankTo = null;
+    if (waveTurn1) {
+      engStat.spread.push(Math.round((waveTurn1 - waveTurn0) * 10) / 10);
+      if (engStat.spread.length > 12) engStat.spread.shift();
+    }
+    waveGate = null; waveGateT = 0; waveMassed = false; waveTurn0 = waveTurn1 = 0;
+    planWave(body, t);
+    /* Only the gated branch writes waveGate, because only it has a hold to
+       protect. A reinforcement too small to gate, a siege or a fallback
+       leaves no record, and the NEXT launch then reads "different objective"
+       and marches the forward units back out to a fresh gate - the recall
+       this block exists to stop, on every other cycle, since a top-up after
+       a successful wave is routinely under six. It still reinforces THIS
+       fight, so it is recorded as a body that has already turned in. */
+    if (keep.length && !waveGate) {
+      waveGate = { tx: t.x, ty: t.y, t: G.time };
+      waveMassed = true;
+    }
+    if (keep.length) {
+      for (const u of keep) if (attackWave.indexOf(u) < 0) attackWave.push(u);
+      bookWave();
+      engStat.kept += keep.length;
+    }
+  }
+
+  /* the plan itself, for a body that has already been chosen */
+  function planWave(body, t) {
+    attackWave = body;
     /* ---- the supply truck no longer marches with the assault ----
        It used to be pushed into attackWave here and then handed the same
        attackmove as the tanks, which drives an unarmed 600-hit-point vehicle
@@ -5621,6 +5857,19 @@ function makeCommander() {
     /* warAim already priced this position as one we can outrange and decided
        to take it apart rather than walk into it */
     if (t.mode === "siege" && t.stand) { runSiege(t); return; }
+
+    /* A lorry is not a position. It moves, reviewAim() re-reads it every
+       think and gives it up after fifteen seconds, so a gate laid round where
+       it stood at launch is a gate round nothing - and the staging hold would
+       then stand the body off while the lorry drove away, and turn it in on
+       the spot the lorry had left, because driveWave() leaves a holder alone.
+       Straight in on the attackmove instead, and driveWave() re-aims anything
+       idle at the live track. Not through the bare branch below, which clears
+       the approach bearings the real objective still needs. */
+    if (t.raid) {
+      for (const u of attackWave) u.give({ type: "attackmove", x: t.x, y: t.y });
+      return;
+    }
 
     /* Below about a third there is no manoeuvre and no map reading either: a
        poor commander simply advances, which is what EVERY commander used to do
@@ -5681,6 +5930,11 @@ function makeCommander() {
       u.give({ type: "attackmove", x: ap.gate.x, y: ap.gate.y });
       u.flankTo = { x: t.x, y: t.y };
     }
+    /* what this body turns in on, so the next launch can tell a fight to
+       reinforce from one to re-plan. Only this branch sets flankTo, so only
+       this branch has a hold to protect; launchGroundWave() writes the record
+       itself for a gateless top-up of a fight already in progress. */
+    waveGate = { tx: t.x, ty: t.y, t: G.time };
     /* the fast and the thin-skinned come in from further round still, so the
        objective is taken from two bearings at once and the aspect multipliers -
        1.55 into the side, 2.10 into the rear - actually get collected */
@@ -5718,32 +5972,320 @@ function makeCommander() {
        is why wavePoint() only answers at D.read 1.0. It releases the instant
        the clearer dies: a wave waiting on a corpse is worse than a wave in a
        minefield. */
-    /* driveFlankers runs every FRAME, not every think, so the pathfinder is
-       looked up only once something is actually waiting at a waypoint. */
-    let waiting = false;
-    for (const u of attackWave) if (u && !u.dead && u.flankTo) { waiting = true; break; }
-    if (!waiting) return;
-    const lead = wavePoint();
+    /* ---- the wave turns in as one body ----
+       Every unit here was handed the same gate and the same flankTo, so the
+       gate has always been a rally point in everything but name; what was
+       missing was the wait. This released each unit the instant IT arrived,
+       so a column that left home together - an IFV at 1.73 tiles a second, an
+       MBT at 1.53, the clearer at 1.25, over forty-odd tiles of road - crossed
+       the start line in arrival order and met the defence in ones and twos.
+       And driveWave() never looked at flankTo at all: it handed an attackmove
+       at the OBJECTIVE to anything idle, which is exactly the state a unit is
+       in once it has reached its gate, and update() runs think() before this.
+       Any hold here was undone within one think. driveWave() now leaves a
+       unit that carries flankTo alone, and this block owns it until it turns
+       in.
+
+       "At the mark" is idle or guard - an attackmove completes to idle - or
+       still on the attackmove to its mark but inside GATE_R. The second half
+       matters: stepAlong() finishes a trip only within 0.45 of a tile of the
+       exact point, the first arrivals park on that point, and the separation
+       push acts on the mover alone, so later arrivals can be left jostling a
+       tile or two out on an order that never completes. Counted by order type
+       alone, such a body can read as a handful of arrivals indefinitely. The
+       mark is each unit's own order point, so the hook group, sent further
+       round, is staged at its own waypoint.
+
+       Released when 62% of the units still holding are at their marks, or
+       GATE_HOLD seconds after the first got there - it must never be able to
+       wait for ever on something that is not coming, and the clearer hold
+       below now has a bound of its own for the same reason. waveMassed is
+       sticky for the body: a straggler that arrives after the rest have gone
+       in follows at once rather than standing at an empty gate. The next
+       launch resets it, and so does an objective that moves during the
+       hold.
+
+       Cost: this ran every frame and scanned P.units in wavePoint() on every
+       frame the wave was marching. It now runs at 4 Hz, counts at most
+       D.waveSize + 7 units, and looks the clearer up - one indexOf on the
+       wave - only once the body has been released. A quarter of a second on
+       a release is nothing. */
+    flankClock -= dt;
+    if (flankClock > 0) return;
+    flankClock = 0.25;
+    const now = G.time, R = CFG.TILE * GATE_R, R2 = R * R;
+    let held = 0, staged = 0;
     for (const u of attackWave) {
       if (!u || u.dead || !u.flankTo) continue;
-      if (u.order.type !== "idle" && u.order.type !== "guard") continue;
+      held++;
+      if (atMark(u, R2)) staged++;
+    }
+    engStat.held = held; engStat.staged = staged;
+    if (!held) return;
+    /* ---- the objective moved while the body stood at its gate ----
+       flankTo was fixed at launch and driveWave() no longer re-aims a holder,
+       so a body whose objective reviewAim() has since dropped - written off
+       as defended, which it typically decides while this body stands at the
+       gate looking at it, or taken, or overtaken by a better one - would
+       stand out its hold and then walk into the position the commander had
+       just decided not to fight for. A siege flip keeps x and y but hands the
+       wave to runSiege(), whose guard post would otherwise read as "at the
+       mark" here and release the screen onto the emplacements. Either way
+       the hold is over: the holders go back to driveWave() or runSiege()
+       from where they stand, and the next launch re-plans. With no aim at
+       all they wait at the gate, in the wave, until there is one. */
+    if (waveGate && (!aim || (aim.mode === "siege" && aim.stand) ||
+        U.dist2(aim.x, aim.y, waveGate.tx, waveGate.ty) > CFG.TILE * CFG.TILE * 4)) {
+      for (const u of attackWave) if (u && u.flankTo) u.flankTo = null;
+      waveGate = null; waveGateT = 0; waveMassed = false;
+      engStat.dropped++; engStat.held = engStat.staged = 0;
+      return;
+    }
+    if (staged && !waveGateT) waveGateT = now;
+    if (!waveMassed) {
+      const full = staged >= Math.ceil(held * 0.62);
+      if (!full && !(waveGateT && now - waveGateT > GATE_HOLD)) return;
+      waveMassed = true;
+      if (full) engStat.massBody++; else engStat.massClock++;
+    }
+    /* The clearer paces only a body it is marching with, and for at most two
+       holds. With driveWave() no longer turning a holder in, this test is
+       final: wavePoint() answers with ANY clearer, and one bought after the
+       body left - which at D.read 1.0 is exactly when mine signs run hot, in
+       mid-march - sits at the factory or sweeps near home, every unit at the
+       gate is nearer the objective than it is, and nothing would turn in
+       until the next launch: a full waveTime, 999 s under Fortress. One with
+       the body but stuck on its attackmove, which has no stall check, would
+       do the same. waveGateT is always set here, because a release needs at
+       least one unit at its mark. */
+    let lead = wavePoint();
+    if (lead && (attackWave.indexOf(lead) < 0 || now - waveGateT > GATE_HOLD * 2)) lead = null;
+    for (const u of attackWave) {
+      if (!u || u.dead || !u.flankTo || !atMark(u, R2)) continue;
       if (lead && lead !== u && !lead.dead &&
           U.dist2(lead.x, lead.y, u.flankTo.x, u.flankTo.y) >
           U.dist2(u.x, u.y, u.flankTo.x, u.flankTo.y)) continue;
       u.give({ type: "attackmove", x: u.flankTo.x, y: u.flankTo.y });
       u.flankTo = null;
+      if (!waveTurn0) waveTurn0 = now;
+      waveTurn1 = now;
     }
+  }
+  function atMark(u, R2) {
+    const o = u.order;
+    return o.type === "idle" || o.type === "guard" ||
+           (o.type === "attackmove" && U.dist2(u.x, u.y, o.x, o.y) < R2);
   }
   function launchNavalWave(fleet) {
     navalWave = fleet.slice(0, 6);
     const t = navalTarget();
     if (t) for (const u of navalWave) u.give({ type: "attackmove", x: t.x, y: t.y });
   }
+
+  /* ---- CONCENTRATION: several guns on one hull ----
+     Unit.acquire() now prefers the wounded and the valuable, but it only runs
+     while a hull is idle, on guard or on attackmove. Once a hull has an
+     attack order, engage() holds that target until it dies - so six tanks
+     meeting three at once split two-two-two and stay split, and the HP term
+     never gets a say until something dies. That lock is the part only a
+     commander can break, and this is the commander breaking it, for guns that
+     can switch without taking a step.
+
+     WHERE THE CANDIDATES COME FROM, and why it does not cheat. They are the
+     targets the wave's own hulls are already engaging - but an engagement is
+     NOT proof of sight: retaliate() answers a shooter it never looked at, a
+     sonar platform keeps its submarine after the contact is lost, and any
+     target keeps its order after it walks into fog. So every one is put
+     through the commander's own picture first: seenU, and trackedEntity(),
+     which answers only while liveTrack() holds - the same gate pickAirTarget
+     and defendBase already use before handing a live entity to a gun - and,
+     tighter than theirs, a sighting no older than PEEK seconds. liveTrack()
+     accepts five, but intelSweep() re-stamps everything in view every 0.8,
+     so five would let this read the hit points of a hull that walked into
+     fog four seconds ago; PEEK = 1.5 is "seen on the last sweep", with room
+     for a long frame. What fails is not counted, not scored and not
+     remembered. Its class comes off the sighting record, which wrote role
+     and harvester down at contact; hit points, position and armour are read
+     off the entity only after the gate, i.e. while we are looking at it. A
+     structure the wave is shooting is recognised from seenB (our own record
+     of it, identity-checked) and simply skipped: it is not what this is for.
+     Air targets are left out entirely: a ground wave's concentration is not
+     for aircraft, whose tracks leave reach in seconds. Then each hull asked
+     to switch applies acquire()'s own gate list for itself
+     (Unit.retarget -> acqGate), so the call never reaches a gun that could
+     not have picked it up unaided.
+
+     WHAT IT DECIDES. Per target: the fire already landing on it from hulls
+     in reach, as published expected damage a second (pickWeapon's own
+     expression). A target that fire kills inside CALL_WIN seconds is COVERED
+     and is not a candidate - picking it would be choosing overkill, and
+     scoring the most nearly dead thing highest was how the first draft of
+     this chose a corpse every think and moved nobody. The rest score on
+     value per hit point still to be delivered, value being 1/roleWeight()
+     from the same table the crews use.
+     CALL_WIN = 2 s and the bias is stated rather than hidden: the estimate
+     leaves out fireCtrl, aspect and veterancy (delivered fire is HIGHER, so
+     the call closes late and leans to overkill) and turret slew, cooldowns
+     and flight time (delivered fire is LOWER inside the window). They are
+     not guaranteed to cancel; the overkill-rate census is what tunes it.
+
+     WHO MOVES. Only a hull on an automatic engagement, not routed, not a
+     tube (the siege line is runSiege's), not switched in the last three
+     seconds, and only off a target that - with this hull's fire taken away -
+     is worth less than half the call. And only a gun that can HURT the call:
+     groundArmy() includes infantry, and the published rates are an MG team at
+     49 a second into a rifle squad and 2.9 into a tank, an AT team 12.9 into
+     a tank and 4.8 into riflemen. Without a test, a wounded tank pulled every
+     MG off the infantry it exists to kill, and each one took so little off
+     the call's need that the loop went on moving the next. So a gun moves
+     only if it would put at least 0.6 of its present rate into the call -
+     0.25 when it is surplus on a target that dies without it anyway.
+     Surplus guns go FIRST: pass one takes only guns whose present target
+     stays covered once they leave it, which is the overkill control; pass
+     two applies the ordinary rule to everyone left. A single pass in wave
+     order let hulls on healthy targets fill the call before any surplus gun
+     was reached.
+     A siege screen on guard that has acquired something IS in here, and may
+     switch between two things already in its reach; it never leaves its
+     post for it, because retarget() refuses any target that would cost a
+     step.
+
+     COST, per commander per think at Veteran and above: one pass over
+     attackWave (<= D.waveSize + 7, 37 under the turtle personality) with one
+     or two Map lookups and one pickWeapon each; one pass over the at most
+     that many targets; then at most two passes over the wave, each costing a
+     hull it considers two pickWeapon calls and, if it gets that far, one
+     acqGate and one pickWeapon in retarget(), stopping when the call is
+     covered. Pass one only prices hulls whose target is already covered.
+     Worst case about seven pickWeapon calls a wave hull, ~260 a think.
+     One Map, allocated only when a wave hull is engaged. No grid query, no
+     map walk, nothing quadratic, and no A*: retarget() never goes through
+     setOrder and keeps `resume`, so no path is dropped by it and a kill
+     returns the hull to its own attackmove leg rather than to idle.  */
+  const CALL_WIN = 2, PEEK = 1.5;
+  let lastCall = null;
+  const callLog = { runs: 0, calls: 0, kept: 0, moved: 0, dry: 0, covered: 0, fog: 0, bld: 0 };
+  /* hit points the call still needs after CALL_WIN seconds of what is on it */
+  function callNeed(t, c) { return t.hp - c.dps * CALL_WIN; }
+  function callScore(t, c) {
+    const need = callNeed(t, c);
+    if (need <= 0) return -1;
+    return t.maxHp / Math.max(need, t.maxHp * 0.04) / roleWeight(c.role, c.harvester);
+  }
+  /* published expected damage a second from this hull into this target, or 0
+     when the weapon it would use is not in reach from where it stands */
+  function reachDps(u, t) {
+    const wi = u.pickWeapon(t);
+    if (wi < 0) return 0;
+    const w = WEAPONS[u.def.weapons[wi]];
+    if (!w) return 0;
+    const d = U.dist(u.x, u.y, t.x, t.y);
+    if (d > u.weaponRange(w) || d < (w.minRange || 0) * CFG.TILE) return 0;
+    return (w.dmg || 0) * (w.burst || 1) * (w.acc !== undefined ? w.acc : 0.8) *
+           CFG.dmgMult(w.warhead, t.armorClass()) / Math.max(0.4, w.reload || 1);
+  }
+  /* A hull whose automatic engagement is actually being fought. A routed one
+     keeps its attack order - runAway() never touches it - but update()
+     returns before engage(), so its fire is not landing and must not make a
+     target look covered. Carried hulls and aircraft are not this code's. */
+  function autoFight(u) {
+    const o = u && !u.dead && !u.carried && !(u.routT > 0) && u.layer !== "air" ? u.order : null;
+    return !!(o && o.type === "attack" && o.auto && !o.release && o.target);
+  }
+  function concentrate() {
+    /* Micro, on the ladder the flanking code in launchGroundWave already
+       climbs: 0.6 is Veteran. Below it a commander fights the way it always
+       has, for one compare. */
+    if ((D.micro || 0) < 0.6 || attackWave.length < 4) return;
+    const now = G.time;
+    let tally = null;
+    for (const u of attackWave) {
+      if (!autoFight(u)) continue;
+      const t = u.order.target;
+      /* a structure: our own record of it, so this reads nothing new */
+      const rb = seenB.get(t.id);
+      if (rb && rb.ref === t) { callLog.bld++; continue; }
+      /* THE FOG GATE - before anything about the target is read */
+      const rec = seenU.get(t.id);
+      if (trackedEntity(rec) !== t || now - rec.t > PEEK) {
+        /* telemetry only: a target our own gun has just killed is not a fog
+           rejection, and nothing below decides on this */
+        if (!t.dead) callLog.fog++;
+        continue;
+      }
+      if (t.targetLayer() === "air") continue;
+      if (!tally) tally = new Map();
+      let c = tally.get(t);
+      if (!c) { c = { role: rec.role, harvester: rec.harvester, dps: 0 }; tally.set(t, c); }
+      c.dps += reachDps(u, t);
+    }
+    /* The standing call is honoured only while it is in this think's gated
+       picture; otherwise it is dropped here, without reading it. */
+    if (lastCall && !(tally && tally.has(lastCall))) lastCall = null;
+    if (!tally || tally.size < 2) return;       // nobody in contact, or already on one hull
+    callLog.runs++;
+    let call = null, best = 0;
+    for (const [t, c] of tally) {
+      const s = callScore(t, c);
+      if (s < 0) { callLog.covered++; continue; }
+      if (s > best) { best = s; call = t; }
+    }
+    /* HYSTERESIS. The score moves every time the call loses hit points, and a
+       turret that re-slews every think fires less than one that does not, so
+       a standing call that is still engaged, still in the picture (it is in
+       the tally, so it passed the gate this think) and within a quarter of the
+       best is kept. */
+    if (lastCall && lastCall !== call) {
+      const s = callScore(lastCall, tally.get(lastCall));
+      if (s > 0 && s >= best * 0.75) { call = lastCall; best = s; callLog.kept++; }
+    }
+    lastCall = call;
+    if (!call) return;
+    callLog.calls++;
+    let need = callNeed(call, tally.get(call));
+    let moved = 0;
+    for (let pass = 0; pass < 2 && need > 0; pass++) {
+      for (const u of attackWave) {
+        if (need <= 0) break;
+        if (!autoFight(u)) continue;
+        const cur = u.order.target;
+        if (cur === call) continue;
+        const c = tally.get(cur);
+        if (!c) continue;                        // not in the picture: leave that gun alone
+        /* pass one prices only guns on a target that is already covered */
+        if (pass === 0 && callNeed(cur, c) > 0) continue;
+        if (u._callT && now - u._callT < 3) continue;
+        if (u.isIndirect && u.isIndirect()) continue;
+        /* what this gun would put into the call, from where it stands */
+        const gain = reachDps(u, call);
+        if (gain <= 0) continue;
+        /* what the hull's current target is worth once this gun is off it */
+        const mine = reachDps(u, cur);
+        c.dps -= mine;
+        const left = callScore(cur, c);
+        if ((pass === 0 && left >= 0) || left >= best * 0.5 ||
+            gain < mine * (left < 0 ? 0.25 : 0.6) || !u.retarget(call)) {
+          c.dps += mine;
+          continue;
+        }
+        u._callT = now;
+        need -= gain * CALL_WIN;
+        moved++;
+      }
+    }
+    callLog.moved += moved;
+    if (!moved) callLog.dry++;
+  }
   function driveWave(wave, t) {
     if (!t) return;
-    for (const u of wave)
+    for (const u of wave) {
+      /* a unit still carrying flankTo belongs to the staging hold: it is idle
+         at its gate ON PURPOSE, and an attackmove at the objective from there
+         is the trickle itself. driveFlankers() turns it in. */
+      if (u.flankTo) continue;
       if (u.order.type === "idle" || u.order.type === "hover")
         u.give({ type: "attackmove", x: t.x, y: t.y });
+    }
   }
 
   /* strategic strike aim point: the densest cluster of enemy structures,
@@ -5801,7 +6343,12 @@ function makeCommander() {
     return P.units.filter(u => !u.dead && u.cat !== "aircraft" && !u.def.harvester &&
       !u.def.supply && u.def.role !== "recon" && u.def.role !== "sam" &&
       u.def.role !== "tel" && u.def.role !== "mineclear" &&
-      u.def.weapons.length && u.layer === "ground");
+      u.def.weapons.length && u.layer === "ground" &&
+      /* A raider is out on the second front (formRaid). It is left out HERE
+         so that no caller - launchGroundWave, defendBase, startAmphib - can
+         hand it a second order: every one of them reads this list and no
+         other. raidParty is at most four long. */
+      (!raidParty.length || raidParty.indexOf(u) < 0));
   }
 
   /* ---- the plot, priced ----
@@ -5969,6 +6516,142 @@ function makeCommander() {
     return 1 - hp / waveBook.hp;
   }
 
+  /* ---- breaking off ----
+     reviewAim's second test has always known when a wave is beaten - more
+     than 55% of the hit points it was committed with are gone - and it ended
+     the engagement ON PAPER ONLY: the position was written off and attackWave
+     was left exactly as it stood, so on the next think driveWave() sent the
+     damaged, strung-out survivors at whatever warAim() picked next, alone.
+     That is the trickle with the sign reversed.
+
+     Now they leave the wave and walk home. `move`, not `attackmove`:
+     attackmove acquires every tick and turns into a fight at the first
+     contact, so a column pulling back on it stops and dies where it stood; a
+     unit on `move` steps along, and retaliate() refuses to act from any order
+     but idle or guard. Out of attackWave at once, because driveWave() would
+     re-aim anything left in it and defendBase() skips anything listed there.
+
+     Where to: the service depot. Building.update mends any VEHICLE of ours
+     within 2.4 tiles at 5% of its bar a second for 0.12 credits a hit point -
+     no order, no queue - against about 0.90 a hit point to replace the hull;
+     and with no wave out, driveRecovery() parks the workshop two tiles south
+     of that same building, where its free 2.2-tile bubble covers most of the
+     first overflow rows. So the most damaged vehicles take the ten berths
+     inside the pad's reach and infantry, which neither mends, go last. With
+     no depot the war factory is an assembly point and nothing more; with no
+     factory, the start tile is. Each unit gets a berth of its own, because
+     thirty hulls sent to one point jam, and stalledOnMove() drops a jammed AI
+     unit to idle after ten seconds without progress.
+
+     The window is the walk: the farthest survivor's straight-line distance at
+     1.3 tiles a second plus ten, never under 20 or over 60 seconds, whatever
+     the doctrine's own clock says. waveT is pushed past it so the next wave
+     forms up with the survivors instead of leaving without them - at most a
+     minute of tempo, and only after a wave has actually been beaten. On a
+     sea-split theatre nobody can walk home and nothing changes. */
+  const PAD_BERTH = [[0, 1.5], [-1, 1.5], [1, 1.5], [0, -1.5], [-1, -1.5], [1, -1.5],
+                     [-2, 0.5], [2, 0.5], [-2, -0.5], [2, -0.5]];
+  function padBerth(c, i, pad) {
+    const T = CFG.TILE;
+    if (pad && i < PAD_BERTH.length)
+      return { x: c.x + PAD_BERTH[i][0] * T, y: c.y + PAD_BERTH[i][1] * T };
+    const k = pad ? i - PAD_BERTH.length : i;
+    return { x: c.x + ((k % 5) - 2) * T, y: c.y + ((pad ? 2.5 : 2) + ((k / 5) | 0)) * T };
+  }
+  function withdrawWave() {
+    if (!groundConnected) return;
+    /* The review that breaks a wave can run before think() reaps it -
+       driveLaunchers() and the mine driver both ask warAim() first - and a
+       member that died since the last reap is usually one of the losses that
+       broke it. It still goes on the casualty return. */
+    reapWave();                    // before the survivors are counted
+    if (!attackWave.length) return;
+    const depot = G.nearestBuilding(P, "depot", P.homeX, P.homeY);
+    const shed = depot || G.nearestBuilding(P, "factory", P.homeX, P.homeY);
+    const c = shed ? { x: shed.x, y: shed.y } : { x: P.homeX, y: P.homeY };
+    const rank = u => u.cat === "infantry" ? 2 : u.hp / Math.max(1, u.maxHp);
+    const live = attackWave.filter(u => !u.dead).sort((a, b) => rank(a) - rank(b));
+    let far = 0;
+    for (let i = 0; i < live.length; i++) {
+      const u = live[i];
+      u.flankTo = null; u._homeRe = 0; u._homeT = 0;
+      u.padTo = padBerth(c, i, !!depot);
+      u.give({ type: "move", x: u.padTo.x, y: u.padTo.y });
+      if (homeward.indexOf(u) < 0) homeward.push(u);
+      far = Math.max(far, U.dist(u.x, u.y, c.x, c.y));
+    }
+    const secs = U.clamp(far / CFG.TILE / 1.3 + 10, 20, 60);
+    homeUntil = G.time + secs;
+    waveT = Math.max(waveT, secs + 2);
+    attackWave = [];
+    waveGate = null; waveGateT = 0; waveMassed = false;
+    engStat.withdrawals++; engStat.withdrawn += live.length;
+  }
+
+  /* ---- ...and the walk home ----
+     Once a think, and only while somebody is on it. A unit that has gone idle
+     short of its berth is re-ordered, because stalledOnMove() gives up on an
+     AI unit's move after ten seconds without progress. Inside twelve tiles of
+     the berth it goes on attackmove instead: that is our own base, where not
+     shooting back is no longer a virtue. Within two tiles of its berth, or
+     when the window closes, it is released to the reserve, where defendBase()
+     can call on it and the next launch can take it; anyone still on the road
+     then is switched to attackmove, so the rest of the walk is not a silent
+     one. A death on the way is a wave casualty like any other and goes on the
+     casualty return, which reapWave() can no longer see.
+
+     Two ways to go idle short of the berth are not stalls. An unreachable
+     berth - a dense base can wall one in, since canPlace leaves no gap
+     between buildings - "arrives" at once: Path.find finds no route,
+     stepAlong() reports nowhere to go, and re-ordering that is a failed
+     whole-region A* on every think until the window shuts. So an idle unit
+     is re-ordered at most every five seconds, and inside twelve tiles only
+     once: a unit that is in our own base and still cannot reach its berth
+     is handed to the reserve. And a unit somebody else has re-tasked - the
+     defence reflex, a raid - is theirs: every order this walk gives, and the
+     attackmove an engagement resumes, carries the berth exactly, so a move
+     or attackmove to any other point is another system's order. */
+  function steerHome() {
+    if (!homeward.length) return;
+    const T = CFG.TILE, now = G.time, open = now < homeUntil;
+    for (let i = homeward.length - 1; i >= 0; i--) {
+      const u = homeward[i], s = u.padTo;
+      if (u.dead) {
+        if (!u._graved) { u._graved = 1; noteGrave(u); }
+        homeward.splice(i, 1);
+        continue;
+      }
+      const o = u.order.type;
+      const lost = !s || attackWave.indexOf(u) >= 0 ||
+                   ((o === "move" || o === "attackmove") &&
+                    (u.order.x !== s.x || u.order.y !== s.y));
+      const d2 = s ? U.dist2(u.x, u.y, s.x, s.y) : 0;
+      if (lost || !open || d2 < T * T * 4) {
+        if (lost) engStat.handed++;
+        else if (d2 < T * T * 4) engStat.pad++;
+        else if (o === "move") u.give({ type: "attackmove", x: s.x, y: s.y });
+        u.padTo = null;
+        homeward.splice(i, 1);
+        continue;
+      }
+      const near = d2 < T * T * 144;
+      if (o === "idle" || o === "guard") {
+        if (near && u._homeRe) {
+          engStat.handed++;
+          u.padTo = null;
+          homeward.splice(i, 1);
+          continue;
+        }
+        if ((u._homeT || 0) > now) continue;
+        u._homeT = now + 5;
+        if (near) u._homeRe = 1;
+        u.give({ type: near ? "attackmove" : "move", x: s.x, y: s.y });
+      } else if (near && o === "move") {
+        u.give({ type: "attackmove", x: s.x, y: s.y });
+      }
+    }
+  }
+
   /* ---- a hauler in the open ----
      This used to be the first thing warAim() did: pull the harvester
      sightings and, on a flat 35% of thinks, return the FIRST one regardless of
@@ -6030,6 +6713,10 @@ function makeCommander() {
          one fresh objective per think - most of the plot within a minute at
          Warlord - against a wave that no longer existed. */
       waveBook = null;
+      /* ...and the survivors now actually leave. This used to end the
+         engagement on paper while driveWave() sent them straight on to the
+         next objective; withdrawWave() says why that was worse than staying. */
+      withdrawWave();
       return true;
     }
 
@@ -6129,6 +6816,491 @@ function makeCommander() {
     return aim;
   }
   function groundTarget() { return warAim(); }
+
+  /* ====================== THE SECOND FRONT ==========================
+     A raid: two to four fast hulls sent at the other side's ECONOMY, on an
+     axis the main wave is not using, and brought home before they turn into
+     a queue of wrecks.
+
+     What was already here is not this. raidAim() above re-aims the WHOLE
+     wave at a lorry it is looking at right now (a six-second track), for at
+     most fifteen seconds, and only when that lorry outscores every building
+     on the plot - a target of opportunity for a force that is already there.
+     Nothing in this file was ever detached from attackWave.
+
+     Why it pays in this game is one line in update(): "Every credit on both
+     sides now comes off an ore field, through a hauler, into a refinery that
+     has to survive." There is no subsidy. A hauler is 1,100 credits carrying
+     700 a run, and a dead one is income the other side goes without until it
+     has paid for another.
+
+     The rules that keep it a raid and not a leak:
+       1 SURPLUS ONLY. launchGroundWave() takes D.waveSize + 6 off the HEAD of
+         groundArmy() and think() only launches at wantSize * 0.8. The party
+         is cut from the TAIL past that cap, and only while the army without
+         it still meets both numbers - so a wave launched on this tick is the
+         identical wave, and one due later recalls the party (driveRaid).
+         And at least as many hulls as it takes stay at home, outside any
+         wave, for defendBase().
+       2 NEVER IN TWO LISTS. groundArmy() leaves the party out, so the
+         launcher, defendBase() and startAmphib() cannot see a raider at all.
+         A unit handed two orders a think goes nowhere.
+       3 ONLY WHAT WE HAVE SEEN. Targets are seenU hauler sightings no older
+         than RAID_MEM and seenB refineries and derricks off the objectives()
+         plot, looked at within RAID_SMEM. Never an enemy list, and never
+         G.map.oilNodes[].taken, which flips when anybody drills anywhere.
+       4 PRICED ON THE WAVE'S OWN FIELD: exposureAt() on the place and the
+         road, both casualty returns, and the armed contacts seen standing
+         over it in the last forty seconds.
+       5 IT LEAVES. A third of its hit points gone, live contacts it cannot
+         beat, a gun nobody had seen, or not enough fuel to get back - and the
+         place is written off in raidShy, a map of its OWN: three vehicles
+         bouncing must not tell a thirty-vehicle wave that a refinery is
+         impossible. For the same reason a raider's death goes into raidDead
+         and never into graves, which the wave's lane and siege sums read.
+
+     COST. formRaid() is a few compares until raidNext expires, and every
+     failed attempt pushes raidNext on, so the real work - one groundArmy()
+     filter, one pass over seenU, the objectives() list warAim() has already
+     cached, per-candidate exposureAt/graveWeight lookups and a P.buildings
+     walk, then ONE A* on the winner - runs at most every ten seconds per
+     commander (thirty after a failed road). driveRaid() is one pass over at
+     most four hulls, one over P.buildings and one over seenU, every half
+     second to second, and only while a party is out. Nothing is units x
+     units, and nothing walks tiles except that single A*.                  */
+  /* RAID_OUT caps the leg out; the real limit is fuel, worked out per party
+     in formRaid(). A hull burns CFG.FUEL_BURN_LAND (1.5/s, times the
+     faction's fuelMul) only while moving and refuels only within
+     BUILD_RADIUS of a structure we own, so a full tank is sixty-six seconds
+     of driving - there AND back. RAID_DWELL is time on the objective; the
+     drive is added per raid, because a fixed life strands a slow party on
+     the way in and leaves a fast one standing about. */
+  const RAID_OUT = 45, RAID_DWELL = 25, RAID_GAP = 45, RAID_RETRY = 10;
+  const RAID_FIRE = 6, RAID_CELL = 8, RAID_MEM = 120, RAID_SMEM = 360, RAID_WARN = 20;
+  /* The hulls that raid - a whitelist, not a speed floor alone. The SPAAGs
+     are among the fastest vehicles on the roster and groundArmy() admits
+     them because they carry a weapon, but several carry only an air-only
+     mount (manpad, hvm, sam_veh: tgt.ground 0); sorted fastest-first they
+     would LEAD the party, arrive, find nothing canTarget() allows and idle
+     for the whole raid. mlrs (1.30-1.35) clears a 1.30 floor as well. The
+     weapon test in formRaid() is kept on top, for an era variant whose
+     mount changes under the same role. */
+  const RAID_ROLES = { lighttank: 1, ifv: 1, tankdestroyer: 1, mbt: 1, heavy: 1 };
+  let raidParty = [];            // the detachment; never a member of attackWave
+  let raidTo = null;             // { id, own, kind, x, y, home, worth } - where it went
+  let raidBook = 0;              // hit points it set out with
+  let raidEnd = 0, raidNext = 60, raidTick = 0;
+  const raidShy = new Map();     // raid target id -> when it may be tried again
+  let raidDead = [];             // where raiders died - read by raidTarget() only
+  let raidLog = raidLogNew();    // counters for intel(); nothing decides on them
+
+  function raidLogNew() {
+    return { formed: 0, xp: 0, lost: 0,
+             end: { spent: 0, outgunned: 0, home: 0, fire: 0, dry: 0, life: 0,
+                    wave: 0, cut: 0, stuck: 0, done: 0, empty: 0, wiped: 0 },
+             skip: { army: 0, home: 0, pool: 0, target: 0, road: 0 } };
+  }
+
+  /* The two numbers the main wave needs, restated from think() the way the
+     defence block's wantNow already restates them: `launch` is the gate
+     think() asks for, `full` is at least the wave launchGroundWave() takes. */
+  function raidFloor() {
+    const want = (groundConnected ? D.waveSize : Math.max(6, (D.waveSize * 0.7) | 0)) +
+                 Math.floor(G.time / 240) * 2;
+    return { launch: want * 0.8, full: Math.max(want, D.waveSize + 6) };
+  }
+
+  /* Where a hull takes fuel: within BUILD_RADIUS of ANY structure we own, so
+     the nearest one - fuelShort()'s reference point, for fuelShort()'s
+     reason. Our own buildings only, and never a field obstacle: inBaseRadius()
+     skips wire and dragon's teeth, so a tank trap is no filling station. */
+  function raidFuelPoint(x, y) {
+    let best = null, bd = Infinity;
+    for (const b of P.buildings) {
+      if (b.dead || b.buildProgress < 1 || b.def.obstacle) continue;
+      const d = U.dist2(x, y, b.x, b.y);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best ? { x: best.x, y: best.y, b: best } : { x: P.homeX, y: P.homeY, b: null };
+  }
+
+  /* Where a returning party is actually SENT: just outside that structure's
+     footprint, on the side it is coming from. The centre is a tile the
+     building stands on. Path.find spirals the goal out to open ground, but
+     stepAlong() steers the last leg at the exact point and reports arrival
+     only within 0.45-0.8 of a tile of it, so a move there never finishes:
+     the hull presses on the wall under a move order - acquiring nothing,
+     passed over by retaliate() and defendBase() - until stalledOnMove()
+     drops it ten to twenty seconds later. That is the rally-point fault the
+     scouting sweep already met. Half the footprint plus a tile and a half is
+     still far inside BUILD_RADIUS, so the hull refuels where it stops. Our
+     own ground beside our own building; once per break-off. */
+  function raidStand(back, fx, fy) {
+    const T2 = CFG.TILE, M = G.map;
+    const half = back.b ? Math.max(back.b.def.w || 2, back.b.def.h || 2) / 2 : 1;
+    const d = U.dist(fx, fy, back.x, back.y) || 1;
+    const k = Math.min(1, (half + 1.5) * T2 / d);
+    let x = back.x + (fx - back.x) * k, y = back.y + (fy - back.y) * k;
+    const tx = U.clamp((x / T2) | 0, 0, M.W - 1), ty = U.clamp((y / T2) | 0, 0, M.H - 1);
+    const blk = G.tileBlocked ? (a, b) => G.tileBlocked(a, b, null) : null;
+    if (!GameMap.passable(M, tx, ty, "ground") || (blk && blk(tx, ty))) {
+      /* the next building along, or the water's edge: nearest open tile */
+      const s = Path.nearest(M, tx, ty, "ground", blk, 6);
+      if (s) { x = s.x * T2 + T2 / 2; y = s.y * T2 + T2 / 2; }
+    }
+    return { x, y };
+  }
+
+  /* ---- where a raid is worth sending, from what we have earned ----
+     `reach` is the straight-line budget (out plus back to fuel) the party's
+     emptiest tank allows. Every input is a record this commander's own
+     sensors wrote, our own dead, our own force, or published terrain. */
+  function raidTarget(size, fx, fy, reach) {
+    const now = G.time, T2 = CFG.TILE, M = G.map;
+    for (const [k, v] of raidShy) if (v < now) raidShy.delete(k);
+    for (let i = raidDead.length - 1; i >= 0; i--)
+      if (now - raidDead[i].t > 300) raidDead.splice(i, 1);
+    /* A SECOND axis: not where the wave is and not where it is going. The
+       first draft measured this against intelHome(), but that is a
+       cost-weighted centroid of remembered structures and a 2,600-credit
+       refinery is one of the heaviest weights pulling it onto itself - it
+       vetoed every refinery and every ore field beside one. "Somewhere the
+       wave is not" means the wave. */
+    const busy = [];
+    let wx = 0, wy = 0, wn = 0;
+    for (const u of attackWave) if (!u.dead) { wx += u.x; wy += u.y; wn++; }
+    if (wn) {
+      busy.push({ x: wx / wn, y: wy / wn });
+      if (aim) busy.push({ x: aim.x, y: aim.y });
+    }
+    /* One pass over seenU for both halves: the rival's lorries, bucketed on
+       an eight-tile cell, and every armed ground contact of the last forty
+       seconds. seenU is never pruned on a death we did not see, so the count
+       errs high - toward not going, the safe side for a raid. */
+    const cells = new Map(), guns = [];
+    for (const r of seenU.values()) {
+      if (r.layer !== "ground") continue;
+      const age = now - r.t;
+      if (r.harvester) {
+        if (r.own !== rival.idx || age > RAID_MEM) continue;
+        const k = ((r.y / T2 / RAID_CELL) | 0) * 1024 + ((r.x / T2 / RAID_CELL) | 0);
+        let c = cells.get(k);
+        if (!c) cells.set(k, c = { n: 0, sx: 0, sy: 0, t: 0 });
+        c.n++; c.sx += r.x; c.sy += r.y; if (r.t > c.t) c.t = r.t;
+      } else if (r.armed && age <= 40) guns.push(r);
+    }
+    const need = Math.ceil(size / 2) + 1;       // contacts that make it a fight
+    let best = null, bs = 0;
+    const offer = (id, x, y, worth, kind) => {
+      if (worth < 700) return;                   // not worth detaching for
+      const tx = (x / T2) | 0, ty = (y / T2) | 0;
+      if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) return;
+      if (!GameMap.passable(M, tx, ty, "ground")) return;
+      const until = raidShy.get(id);
+      if (until && until > now) return;
+      const out = U.dist(fx, fy, x, y) / T2;
+      if (out > RAID_OUT) return;
+      for (const b of busy) if (U.dist(x, y, b.x, b.y) < T2 * 12) return;
+      const back = raidFuelPoint(x, y);
+      const home = U.dist(x, y, back.x, back.y) / T2;
+      if (out + home > reach) return;
+      /* The place and the road, on the wave's own field. The party is hulls
+         by construction, so the hard column is the one that applies. */
+      let fire = exposureAt(x, y, 1);
+      for (let s = 1; s <= 3; s++)
+        fire += exposureAt(fx + (x - fx) * s / 4, fy + (y - fy) * s / 4, 1);
+      if (fire > RAID_FIRE) return;
+      /* the wave's casualty return is evidence for a raid too; the raid's own
+         is read here and nowhere else */
+      let dead = graveWeight(x, y, now) + graveWeight((fx + x) / 2, (fy + y) / 2, now);
+      for (const g of raidDead) if (U.dist(x, y, g.x, g.y) < T2 * 8) dead += 1;
+      if (dead > 2.5) return;
+      let near = 0;
+      for (const r of guns) if (U.dist(r.x, r.y, x, y) < T2 * 9) near++;
+      if (near >= need) return;
+      /* Worth per unit of RISK, not worth minus price. A wave can afford to
+         pay for an objective; a detachment cannot pay for anything, so what
+         it maximises is softness. */
+      const s = worth / (1 + fire * 0.9 + dead * 3 + near * 2) / (1 + out * 0.02);
+      if (s > bs) {
+        bs = s;
+        best = { id, own: rival.idx, kind, x, y, home, worth: Math.round(worth) };
+      }
+    };
+
+    /* 1. Where the lorries work - a PLACE, not a lorry. objectives() already
+       prices haulers off this memory at +500 a truck beside a structure; what
+       is new is sending something at the CELL, which is still where the
+       trucks are two minutes on because an ore field does not drive away. */
+    for (const [k, c] of cells)
+      offer("ore:" + k, c.sx / c.n, c.sy / c.n,
+            Math.min(3, c.n) * 1100 * (1 - (now - c.t) / RAID_MEM), "ore");
+
+    /* 2. The outlying economy, off the plot objectives() has already priced
+       and cached - no second survey. Only a refinery or a derrick, only one
+       with next to no guns on it (anything dearer is the wave's problem),
+       only the rival's - objectives() falls back to every player's plot when
+       it holds none of the rival's - and only one we have looked at lately,
+       its worth fading with the age of the look. */
+    for (const c of objectives()) {
+      if ((c.key !== "refinery" && c.key !== "derrick") || c.price > 300) continue;
+      const rec = seenB.get(c.id);
+      if (!rec || rec.gone || rec.own !== rival.idx) continue;
+      const age = now - rec.t;
+      if (age > RAID_SMEM) continue;
+      offer(c.id, c.x, c.y, c.worth * (1 - 0.5 * age / RAID_SMEM), c.key);
+    }
+    return best;
+  }
+
+  /* Break off. `shyFor` writes the place off in raidShy only - never aimShy.
+     The party drives to `back`, beside the nearest structure we own
+     (raidStand), where it refuels, and is back in groundArmy() from this
+     call on. */
+  function endRaid(shyFor, gap, back) {
+    if (raidTo && shyFor > 0) raidShy.set(raidTo.id, G.time + shyFor);
+    const to = back || { x: P.homeX, y: P.homeY };
+    for (const u of raidParty)
+      if (!u.dead) u.give({ type: "move", x: to.x, y: to.y });
+    raidParty = []; raidTo = null; raidBook = 0;
+    raidNext = G.time + gap;
+  }
+
+  function formRaid() {
+    /* Raiding is a taught skill, as the siege is at aimMode(): below Veteran
+       a commander advances and does nothing else. */
+    if ((D.read || 0) < 0.55 || !groundConnected || !rival) return;
+    if (raidParty.length || G.time < raidNext) return;
+    const now = G.time, T2 = CFG.TILE, log = raidLog;
+    raidNext = now + RAID_RETRY;                  // every failure below waits
+    const army = groundArmy();
+    const cap = D.waveSize + 6;
+    const size = U.clamp(Math.round(D.waveSize * 0.22), 2, 4);
+    /* ---- THE MAIN WAVE IS NOT WEAKENED ----
+       The first draft tested army - size against wantSize, but the wave is
+       army.slice(0, D.waveSize + 6), which is LARGER than wantSize for the
+       first twelve minutes - so at Veteran an army of 12 to 17 launched two
+       short, and short by exactly its fastest hulls. Both numbers now. */
+    if (army.length - size < raidFloor().full) { log.skip.army++; return; }
+    /* ---- AND THE BASE IS NOT EMPTIED ----
+       That floor counts a wave that is already OUT: groundArmy() keeps
+       attackWave members, and defendBase() skips every one of them. Where
+       full equals the cap - every tier, for the first twelve minutes - a
+       Commander wave of 24 across the map plus four fresh hulls at home is
+       an army of 28, which clears 28 - 4 >= 24, and the
+       tail past the cap is exactly those four: the raid would take the whole
+       reserve for a minute and a half with nothing to call it back. So as
+       many hulls as the party takes stay behind, outside any wave and not
+       riding in a landing craft. */
+    const away = new Set(attackWave);
+    let home = 0;
+    for (const u of army) if (!away.has(u) && !u.carried) home++;
+    if (home - size < size) { log.skip.home++; return; }
+    /* Only the tail past the wave cap - hulls launchGroundWave() would NOT
+       take if it ran on this tick - standing at home, nearly whole, nearly
+       full, and able to hit something on the ground. */
+    const pool = [];
+    for (let i = cap; i < army.length; i++) {
+      const u = army[i];
+      /* Aboard an LST: give() returns at once for a carried hull, and runAmphib()
+         stops once pickRival() finds a road, so it may never be put ashore. */
+      if (u.carried) continue;
+      if (!RAID_ROLES[u.def.role] || (u.def.speed || 0) < 1.3) continue;
+      if (away.has(u)) continue;
+      if (u.order.type !== "idle" && u.order.type !== "guard") continue;
+      if (u.hp < (u.maxHp || u.hp) * 0.7) continue;
+      if (u.fuelMax && u.fuel < u.fuelMax * 0.6) continue;
+      if (u.roundsMax && u.rounds < u.roundsMax * 0.5) continue;
+      /* STANDING AT HOME, as the rule says - inside the fuel umbrella, which
+         is where the tank reading above is a full one. A wave survivor walking
+         back to its berth (padTo, set by the withdrawal) is idle only between
+         that loop's re-orders; taken here it would answer to two masters. */
+      if (u.padTo || !P.inBaseRadius(u.tx, u.ty)) continue;
+      let ground = false;
+      for (const wn of u.def.weapons) {
+        const w = WEAPONS[wn];
+        if (w && (!w.tgt || w.tgt.ground) && !u.manualWeapon(w)) { ground = true; break; }
+      }
+      if (ground) pool.push(u);
+    }
+    if (pool.length < size) { log.skip.pool++; return; }
+    pool.sort((a, b) => (b.def.speed || 0) - (a.def.speed || 0));
+    const party = pool.slice(0, size);
+    let cx = 0, cy = 0, sp = 9, fuel = 100;
+    for (const u of party) {
+      cx += u.x; cy += u.y;
+      sp = Math.min(sp, Math.max(0.4, u.def.speed));
+      if (u.fuelMax) fuel = Math.min(fuel, u.fuel);
+    }
+    cx /= size; cy /= size;
+    /* Tiles of driving in the emptiest tank, twelve units held back; the
+       straight-line budget takes another 30% off for the road. The dry test
+       in driveRaid() uses the same burn, faction multiplier included. */
+    const burn = CFG.FUEL_BURN_LAND * ((FACTIONS[P.faction] || {}).fuelMul || 1);
+    const drive = Math.max(0, fuel - 12) / burn * sp;
+    const t = raidTarget(size, cx, cy, drive / 1.3);
+    if (!t) { log.skip.target++; return; }
+    /* One A* on the winner only: it is across the map and a straight line is
+       not a road. Path.find string-pulls its answer - rebuild() drops every
+       collinear step - so the number of points is the number of CORNERS:
+       forty tiles of open ground come back as two points. Each kept leg is
+       one straight run along a row, a column or a diagonal, so the road in
+       tiles is the sum of the legs, measured from the tile we start on. */
+    const sx = (cx / T2) | 0, sy = (cy / T2) | 0;
+    const tx = (t.x / T2) | 0, ty = (t.y / T2) | 0;
+    const p = Path.find(G.map, sx, sy, tx, ty, "ground", null);
+    let road = 0;
+    if (p && p.length) {
+      let px = sx, py = sy;
+      for (const s of p) { road += Math.hypot(s.x - px, s.y - py); px = s.x; py = s.y; }
+    }
+    if (!p || !p.length || U.dist(p[p.length - 1].x, p[p.length - 1].y, tx, ty) > 4 ||
+        road + t.home * 1.3 > drive) {
+      raidShy.set(t.id, now + 120);
+      raidNext = now + 30;
+      log.skip.road++;
+      return;
+    }
+    raidParty = party; raidTo = t; raidBook = 0;
+    raidEnd = now + Math.min(90, road / sp * 1.25 + RAID_DWELL);
+    for (const u of party) {
+      raidBook += u.hp;
+      u.flankTo = null;            // an old wave's hook leg is not this order
+      u._raidXp = u.xp || 0;
+      u._raidOrd = now; u._raidTries = 0;
+      u.give({ type: "attackmove", x: t.x, y: t.y });
+    }
+    log.formed++;
+  }
+
+  function driveRaid() {
+    if (!raidParty.length) return;
+    const now = G.time, T2 = CFG.TILE, log = raidLog;
+    const keep = [];
+    let hp = 0, cx = 0, cy = 0, idle = 0;
+    for (const u of raidParty) {
+      if (u.dead) {
+        raidDead.push({ x: u.x, y: u.y, t: now });
+        log.lost += P.factionCost(u.def);
+        continue;
+      }
+      keep.push(u); hp += u.hp; cx += u.x; cy += u.y;
+      /* combat.js pays a shooter xp for damage done and for kills, so the
+         delta is the work this party did - read off our own hulls */
+      const xp = u.xp || 0;
+      if (xp > (u._raidXp || 0)) { log.xp += xp - (u._raidXp || 0); u._raidXp = xp; }
+      if (u.order.type === "idle" || u.order.type === "guard") idle++;
+    }
+    if (raidDead.length > 16) raidDead.splice(0, raidDead.length - 16);
+    raidParty = keep;
+    const blame = Math.min(300, (D.waveTime || 150) * 0.9);
+    if (!keep.length) { log.end.wiped++; endRaid(blame, RAID_GAP * 1.5); return; }
+    cx /= keep.length; cy /= keep.length;
+    const back = raidFuelPoint(cx, cy);
+    const stop = (why, shyFor, gap) => {
+      log.end[why]++;
+      endRaid(shyFor, gap, raidStand(back, cx, cy));
+    };
+    /* Hurt or crowded while still inside our own base radius is the BASE
+       under attack, not the objective defended: the party is released to
+       defendBase() all the same, but the place it never reached is not
+       written off, and the census books it as "home", not as a failed raid. */
+    const atHome = U.dist(cx, cy, back.x, back.y) <= CFG.BUILD_RADIUS * T2;
+    const burn = CFG.FUEL_BURN_LAND * ((FACTIONS[P.faction] || {}).fuelMul || 1);
+    let dry = false;
+    for (const u of keep) {
+      if (!u.fuelMax) continue;
+      const sp = Math.max(0.4, u.def.speed);
+      if (u.fuel < U.dist(u.x, u.y, back.x, back.y) / T2 * 1.3 / sp * burn + 6) { dry = true; break; }
+    }
+    /* ---- the rule that makes this a raid and not a queue ----
+       waveSpent() with a far shorter fuse. A raid that is taking losses has
+       already failed - its premise was that the place was not defended - so
+       it leaves at a THIRD, where the wave holds on to 0.55. */
+    const spent = raidBook > 0 ? 1 - hp / raidBook : 0;
+    if (spent > 0.33) { stop(atHome ? "home" : "spent", atHome ? 0 : blame, RAID_GAP); return; }
+    if (dry) { stop("dry", 0, RAID_GAP); return; }
+    if (now > raidEnd) { stop("life", 0, RAID_GAP); return; }
+    if (!groundConnected || !rival || rival.idx !== raidTo.own) { stop("cut", 0, RAID_GAP); return; }
+    /* The main push is due. If the army at home cannot make up the wave
+       without the party, the party is released NOW, so the launch reads it
+       back into groundArmy(). Only when that changes something: a launch
+       that stays blocked with the party home as well is not worth a recall. */
+    if (waveT < RAID_WARN) {
+      const f = raidFloor(), ga = groundArmy().length;
+      if (ga < f.full && ga + keep.length >= f.launch) { stop("wave", 0, 20); return; }
+    }
+    /* a gun nobody had seen when the target was picked */
+    if (exposureAt(cx, cy, 1) > RAID_FIRE * 1.5) { stop("fire", blame, RAID_GAP); return; }
+    /* Outgunned: armed ground contacts in view NOW (seen within four
+       seconds; the picture refreshes every 0.8) inside nine tiles, a heavy
+       hull counted as one and a half and a foot soldier as a half. And the
+       nearest of the rival's lorries in view, as a POSITION to drive at. */
+    let foes = 0, prey = null, pd = T2 * 16;
+    for (const r of seenU.values()) {
+      if (r.layer !== "ground") continue;
+      const age = now - r.t;
+      if (age > 8) continue;
+      const d = U.dist(r.x, r.y, cx, cy);
+      if (r.harvester) {
+        if (r.own === raidTo.own && d < pd) { pd = d; prey = r; }
+      } else if (r.armed && age <= 4 && d < T2 * 9) {
+        foes += r.armor === "heavy" ? 1.5 : (r.cat === "infantry" ? 0.5 : 1);
+      }
+    }
+    if (foes >= Math.max(2, keep.length)) {
+      stop(atHome ? "home" : "outgunned", atHome ? 0 : blame, RAID_GAP);
+      return;
+    }
+    /* On the objective with nothing left in reach to shoot: follow the
+       nearest lorry in view, or finish. A structure target is finished when
+       the picture strikes it off, which happens because we are looking. */
+    if (idle === keep.length && U.dist(cx, cy, raidTo.x, raidTo.y) < T2 * 4) {
+      if (prey) {
+        raidTo.x = prey.x; raidTo.y = prey.y;
+        for (const u of keep) u._raidTries = 0;
+      } else if (raidTo.kind === "ore") { stop("empty", 60, RAID_GAP); return; }
+      else {
+        const rec = seenB.get(raidTo.id);
+        if (!rec || rec.gone) { stop("done", 0, RAID_GAP); return; }
+      }
+    }
+    /* Idle hulls short of the aim point are sent on - no more than every four
+       seconds each, and no more than four times without reaching it: give()
+       drops the path, and a hull that cannot get there would otherwise ask A*
+       for a failing search twice a second for the rest of the raid. A hull
+       that IS there clears its count. An idle hull acquires with no resume
+       point, so every kill on the objective leaves it standing wherever the
+       target died; that walk back is not a failure, and counting it ended
+       working raids as "stuck". */
+    for (const u of keep) {
+      if (u.order.type !== "idle" && u.order.type !== "guard") continue;
+      if (U.dist(u.x, u.y, raidTo.x, raidTo.y) < T2 * 3) { u._raidTries = 0; continue; }
+      if (now - (u._raidOrd || 0) < 4) continue;
+      if (++u._raidTries > 4) { stop("stuck", 120, RAID_GAP); return; }
+      u._raidOrd = now;
+      u.give({ type: "attackmove", x: raidTo.x, y: raidTo.y });
+    }
+  }
+
+  /* for intel(): inWave must read 0 on every sample */
+  function raidState() {
+    let hp = 0, inWave = 0;
+    for (const u of raidParty) {
+      if (u.dead) continue;
+      hp += u.hp;
+      if (attackWave.indexOf(u) >= 0) inWave++;
+    }
+    return { party: raidParty.length, inWave,
+             to: raidTo ? { kind: raidTo.kind, tx: (raidTo.x / CFG.TILE) | 0,
+                            ty: (raidTo.y / CFG.TILE) | 0, worth: raidTo.worth } : null,
+             spent: raidBook > 0 ? Math.round((1 - hp / raidBook) * 100) / 100 : 0,
+             life: raidParty.length ? Math.round(raidEnd - G.time) : 0,
+             next: raidParty.length ? 0 : Math.max(0, Math.round(raidNext - G.time)),
+             shy: raidShy.size, dead: raidDead.length,
+             formed: raidLog.formed, xp: Math.round(raidLog.xp), lost: raidLog.lost,
+             end: Object.assign({}, raidLog.end), skip: Object.assign({}, raidLog.skip) };
+  }
 
   /* ---- where a scout is worth sending ----
      The old goal was sixty random darts at the map scored by staleness over
@@ -6623,6 +7795,54 @@ function makeCommander() {
                             oilers: count(u => u.def.role === "oiler"),
                             tankers: count(u => u.def.refuelRate) },
                repair: repairLedger(),
+               /* The second front, exposed for the reason every field here is:
+                  whether a party ever forms, which gate stops it when it does
+                  not (skip), why each came home (end), the work it did (xp,
+                  off our own hulls) and what it cost (lost, credits). inWave
+                  must read 0 on every sample. */
+               raid: raidState(),
+               /* Exposed so a census can see target priority and concentration
+                  working, not infer them. acq/flip are the engine's count for
+                  this side's surface hulls: engagements begun, and how many of
+                  those picked something other than the old nearest-target rule
+                  would have. runs/calls/moved are concentrate(): thinks with
+                  two or more targets in the picture, thinks that named a call,
+                  hulls switched onto it. dry is calls that moved nobody (the
+                  failure mode of the first draft - it should stay well under
+                  calls), kept is hysteresis holding a standing call, covered is
+                  targets passed over because fire already on them kills them
+                  inside CALL_WIN. fog and bld are counted per HULL, not per
+                  target: fog is hulls whose live target the picture could not
+                  vouch for within PEEK (so it was not counted at all), bld is
+                  hulls shooting a structure, which this never considers. */
+               focus: Object.assign({ acq: (P.tgtStat && P.tgtStat.acq) || 0,
+                                      flip: (P.tgtStat && P.tgtStat.flip) || 0 }, callLog),
+               /* Exposed so a census can see the commander staging, deferring,
+                  reinforcing and breaking off rather than infer it from waves
+                  that quietly dissolve. spread is the seconds between the
+                  first and last turn-in of each recent body - the trickle,
+                  measured; massBody against massClock says whether bodies are
+                  released by arriving or by the clock; pad against withdrawn
+                  says how many broken-wave survivors actually reached a berth,
+                  handed how many were given up to another task or to the
+                  reserve short of it, and dropped how many holds were ended
+                  because the objective moved while the body was staging. */
+               engage: { wave: attackWave.length, held: engStat.held, staged: engStat.staged,
+                         massed: waveMassed,
+                         gateFor: waveGateT ? Math.round((G.time - waveGateT) * 10) / 10 : -1,
+                         turning: waveTurn1 ? Math.round((waveTurn1 - waveTurn0) * 10) / 10 : -1,
+                         spread: engStat.spread.slice(),
+                         massBody: engStat.massBody, massClock: engStat.massClock,
+                         waits: engStat.waits, kept: engStat.kept,
+                         defers: engStat.defers, deferNow: waveDefer,
+                         spent: Math.round(waveSpent() * 1000) / 1000,
+                         withdrawals: engStat.withdrawals, withdrawn: engStat.withdrawn,
+                         homeward: homeward.length,
+                         homeIn: homeward.length ? Math.round((homeUntil - G.time) * 10) / 10 : -1,
+                         pad: engStat.pad, handed: engStat.handed,
+                         dropped: engStat.dropped,
+                         force: Math.round(ourForce(attackWave) * 100) / 100,
+                         foeAtAim: aim ? Math.round(foeNear(aim.x, aim.y, CFG.TILE * 12) * 100) / 100 : 0 },
                /* Exposed for the reason every field around it is: a commander
                   that never puts up a second construction yard gives no clue
                   from the outside WHICH of the four gates stopped it, and the

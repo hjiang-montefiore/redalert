@@ -32,6 +32,81 @@ function releaseCivilian(b) {
     b.game.reassignBuilding(b, b.game.neutral);
 }
 
+/* ---- what a shooter would RATHER be looking at ----
+   Unit.acquire() was a nearest-target scan with two priority hooks in it: a
+   machine gun halved its squared distance to infantry, and a Wild Weasel
+   divided an emitter's by about a hundred. Everything else in the game shot
+   whatever was closest, so a tank platoon with a howitzer battery and a
+   scout car both in its gun arc killed the scout car first, and an MLRS was
+   the safest thing on the field for as long as a rifle squad stood nearer.
+   Building.acquire() had no priority at all.
+
+   The numbers multiply SQUARED distance, the only currency those scans have
+   ever scored in: 0.40 reads as "pretend it is 0.63 as far away", 1.70 as
+   "pretend it is 1.30 times further". roleWeight() === 1 is the old
+   behaviour, which is what every role not listed here still gets, so a role
+   added to eras.js later is safe and nothing here has to be revisited.
+   Every key is a live role in rules.js / eras.js.
+
+   This applies to the PLAYER's units too, deliberately. Which target a crew
+   picks inside its own arc is what the crew does, not what the commander
+   decides; making it a difficulty setting would be the kind of asymmetry the
+   fog work removed.                                                        */
+const TGT_PRIO = {
+  /* thin-skinned, outranging what it shoots at, and artillery killed is
+     damage that never arrives */
+  spg: 0.40, mlrs: 0.40, mortar: 0.45, tel: 0.40,
+  /* the sensors and the electronic fit: killing one turns off a side's fire
+     control, and the SEAD airframe is what is about to turn off ours */
+  radarv: 0.45, ewveh: 0.45, ewair: 0.45, awacs: 0.40, cawacs: 0.40, sead: 0.60,
+  /* what the war runs on. `tanker` is the AERIAL tanker, the thing that keeps
+     a strike package in the air, not a fleet oiler - that is `oiler` */
+  harvester: 0.55, supply: 0.50, repair: 0.55, repair_sea: 0.55,
+  oiler: 0.50, tanker: 0.45, mcv: 0.55, engineer: 0.60,
+  /* air defence is soft, and it is what grounds an air force */
+  sam: 0.70, aa: 0.80, spaag: 0.75,
+  /* a scout is a few hundred credits, and shooting one is how a column gets
+     led around the map; an empty lorry is not the fight either */
+  recon: 1.70, transport: 1.35, transport_sea: 1.35, airlift: 1.35,
+};
+/* The table's answer for one class of vehicle, with the documented
+   fall-through: a hauler that carries some other role is still a hauler.
+   Shared with ai.js concentrate(), which reads it off the role and harvester
+   flag its sighting record wrote down at contact, so the crew and the
+   commander rank targets from ONE table and cannot drift apart. */
+function roleWeight(role, harvester) {
+  const v = TGT_PRIO[role];
+  return typeof v === "number" ? v : (harvester ? 0.55 : 1);
+}
+/* The squared-distance multiplier for one candidate that has already passed
+   every gate in acqGate() / Building.acquire(). Everything it reads is on the
+   thing itself and in plain sight of that shooter: what class of vehicle it
+   is, and whether it is burning. A recognition manual and a pair of eyes; no
+   list belonging to another player is touched. `base` carries the caller's
+   own preference (the machine-gun factor) so the clamp bounds it too.
+
+   Clamped to [0.30, 1.90], which is 0.55 to 1.38 in real distance. A crew
+   that walks past the tank killing it to reach a more interesting target is
+   not micro, it is suicide; the clamp, and acquire() applying this only to
+   candidates already in reach, are what stop that. */
+function targetPrio(e, base) {
+  const def = e.def;
+  let p = base * (def ? roleWeight(def.role, def.harvester) : 1);
+  /* FINISH WHAT IS ALREADY DYING - focus fire with no coordination in it:
+     every shooter independently prefers the wounded one, the preference
+     grows as the target weakens, and a section converges on one hull without
+     a message passing between them. Killing a hull removes its gun from the
+     fight; the same damage spread over four removes none. The 0.60 floor
+     means this alone can never reach past a target 1.29 times as close.
+     UNITS ONLY: finishing a 40-credit concrete barrier at a tenth of its hit
+     points removes nothing, and without this test it outranked a healthy
+     tank standing nearer - every structure would have become preferred
+     simply for being damaged, which is a different mechanism with a
+     different bound and does not ride in on this one. */
+  if (e.kind === "unit" && e.maxHp > 0) p *= 0.60 + 0.40 * (e.hp / e.maxHp);
+  return p < 0.30 ? 0.30 : (p > 1.90 ? 1.90 : p);
+}
+
 /* =================================================================== UNIT */
 class Unit {
   constructor(game, defId, owner, x, y) {
@@ -1661,7 +1736,11 @@ class Unit {
   }
 
   /* pick the closest enemy this unit can actually hurt, inside sight.
-     A SEAD shooter weights emitters far above anything else. */
+     A SEAD shooter weights emitters far above anything else.
+     Among what the hull's own automatic rounds already REACH, "closest" is
+     now "closest once targetPrio() has had its say" - see the note above
+     class Unit. That preference never walks a crew toward something it
+     cannot yet hit: see THE TWO TIERS at the bottom of this method. */
   acquire() {
     const R = this.sightR() * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
     /* A Weasel weights an emitter a hundredfold below - 0.06 against 6 - but
@@ -1669,78 +1748,209 @@ class Unit {
        question by definition, so a held ARM contributes nothing to it;
        otherwise a mixed hull is dragged across the map toward a radar it is
        then going to shoot with its cannon. */
-    const sead = this.def.weapons.some(k => {
-      const w = WEAPONS[k];
-      return w && w.antiRadiation && !this.manualWeapon(w);
-    });
-    let best = null, bd = Infinity;
+    /* That flag, and how far this hull's own automatic rounds reach, are
+       sized up by the first candidate that survives every gate - not at the
+       top of the call as the .some() that used to compute the flag did. This
+       scan runs every frame for every idle, guarding and attack-moving hull,
+       and nearly always finds nothing, so the common case now does LESS work
+       than before, and a scan that does find something pays one weapon loop
+       and at most four weaponRange() calls, never one per candidate.
+       Held rounds are skipped for the reason just given: a HARM's reach is
+       not a reach this scan may act on. The reach is kept per layer the
+       target PRESENTS, with the same per-layer test canTarget() and
+       pickWeapon() apply, because a longest-mount-wins "surface" reach was
+       wrong for 36 hulls in the tables: a destroyer's 14-tile missile does
+       not put a submarine inside the reach of its 6.5-tile torpedo, and a
+       patrol boat's nine-tile torpedo does not put a lorry on the beach
+       inside the reach of its 5.4-tile gun - a harvester at 6.5 tiles
+       outscored a tank at 5.0 and walked the boat toward it. */
+    let sead = false, rG2 = -1, rSe2 = 0, rSu2 = 0, rA2 = 0;
+    /* best0 is what the scan would have picked before targetPrio() existed.
+       It is needed twice: for THE TWO TIERS below, and for the flip count, which
+       is how a census can see the preference changing anything at all. The
+       in-reach and out-of-reach bests are kept apart for the same tiers. A
+       few compares per candidate. */
+    let bestIn = null, bdIn = Infinity, bestOut = null, bdOut = Infinity;
+    let best0 = null, bd0 = Infinity;
     this.game.grid.query(this.x, this.y, R, (e) => {
-      if (e.dead || e.owner === this.owner || this.game.allied(this.owner, e.owner)) return;
-      /* An unoccupied civilian building belongs to nobody and threatens nobody.
-         It was being acquired automatically simply because its owner is the
-         neutral player, so a column driving past a village would stop and
-         level it unprompted. Once somebody garrisons it, it stops being
-         neutral and becomes a legitimate target like any other. */
-      if (!autoTargetable(e)) return;
-      /* The automatic question. This one call is the gate behind attackmove,
-         idle/guard, the garrison windows, air attackmove, CAP, strip alert and
-         hover - all seven reach a target only through here. Because a held
-         round is invisible to it, a hull can never be handed an automatic
-         order against something only a held round could reach.
-         This matters far more than the designs assumed: a launcher's sight is
-         21 to 31 tiles after generations.js rewrites it, not the 5.0 on the
-         card, so idle/guard and attackmove were LIVE auto-fire paths for every
-         TEL in the game. */
-      if (!this.canTarget(e, true)) return;
-      /* low-observable airframes cannot be acquired at full range */
-      /* A surface mount cannot shoot at an aeroplane it cannot reach, so it
-         has no business asking whether anybody holds a track on one. acquire()
-         scans to sightR() * 1.25, and a naval hull's sight is widened to match
-         its LONGEST weapon - an anti-ship missile - so an LCS whose 76mm
-         reaches 8.0 tiles was interrogating airTrack about every airframe
-         inside 20.5 tiles, every tick, for ever, and being silently refused.
-         120 surface shooters carry that phantom band; the missile boat has
-         14.8 tiles of it around a 3.2-tile Phalanx. That artefact, not any
-         missing radar, is the bulk of a measured 87.2% airTrack denial rate
-         (879 of 1008 calls in a 20-minute e20 battle), and none of it was ever
-         a real engagement. Aircraft are deliberately exempt: a fighter must
-         still acquire a distant bogey and close on it. */
-      if (this.layer !== "air" && e.targetLayer() === "air") {
-        let airReach = 0;
-        for (const k of (this.def.weapons || [])) {
-          const w2 = WEAPONS[k];
-          if (w2 && w2.tgt && w2.tgt.air) airReach = Math.max(airReach, this.weaponRange(w2));
+      /* every gate, in acqGate() below, so retarget() can ask the same ones */
+      if (!this.acqGate(e, R)) return;
+      if (rG2 < 0) {
+        let wG = null, wSe = null, wSu = null, wA = null;
+        const ws = this.def.weapons;
+        for (let i = 0; i < ws.length; i++) {
+          const w = WEAPONS[ws[i]];
+          if (!w || this.manualWeapon(w)) continue;
+          if (w.antiRadiation) sead = true;
+          /* weaponRange() is w.range times one per-owner factor, so the
+             longest card range is the longest reach */
+          const g = w.tgt;
+          if ((!g || g.ground) && (!wG || w.range > wG.range)) wG = w;
+          if ((!g || g.sea) && (!wSe || w.range > wSe.range)) wSe = w;
+          if ((!g || g.sub) && (!wSu || w.range > wSu.range)) wSu = w;
+          if ((!g || g.air) && (!wA || w.range > wA.range)) wA = w;
         }
-        if (U.dist(this.x, this.y, e.x, e.y) > airReach) return;
+        const rG = wG ? this.weaponRange(wG) : 0, rSe = wSe ? this.weaponRange(wSe) : 0;
+        const rSu = wSu ? this.weaponRange(wSu) : 0, rA = wA ? this.weaponRange(wA) : 0;
+        rG2 = rG * rG; rSe2 = rSe * rSe; rSu2 = rSu * rSu; rA2 = rA * rA;
       }
-      /* an aircraft can only be engaged if somebody actually holds a track
-         on it - your own radar, or a friendly sensor over the datalink */
-      /* An engagement beyond visual range needs somebody to be holding a
-         radar track on the target - your own set, or a friendly one over the
-         datalink. Inside visual range it does not: a Stinger is an infrared
-         missile aimed by a man looking at the aeroplane, and requiring it to
-         wait for a radar picture meant a MANPADS section could never fire at
-         all. Twelve of them killed nothing in a hundred seconds against six
-         A-10s, which read as a balance problem and was really this. */
-      const VISUAL = 11;
-      const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
-            ((this.def.role === "aa" || this.def.role === "sam") &&
-             ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
-      /* A parked airframe is not a radar track, it is a thing sitting in the
-         open, so it goes down the ordinary visual branch instead. */
-      if (e.targetLayer() === "air" && this.game.airTrack && needsTrack) {
-        if (!this.game.airTrack(this, e)) return;
-      } else if (e.def && e.def.stealth &&
-          U.dist(this.x, this.y, e.x, e.y) > R * (1 - e.def.stealth * CFG.STEALTH_ACQ)) return;
-      if (e.def && e.def.harvester) { /* juicy */ }
-      let d = U.dist2(this.x, this.y, e.x, e.y);
-      const prio = (e.cat === "infantry" && this.def.role === "mg") ? 0.5 : 1;
-      d *= prio;
+      const raw = U.dist2(this.x, this.y, e.x, e.y);
+      const tl = e.targetLayer();
+      const inReach = raw <= (tl === "air" ? rA2 : tl === "sub" ? rSu2 : tl === "sea" ? rSe2 : rG2);
+      /* a machine gun is a weapon for men in the open - the one preference
+         this scan always had, still applied at any distance */
+      const mg = (e.cat === "infantry" && this.def.role === "mg") ? 0.5 : 1;
+      let d0 = raw * mg;
+      /* WHAT it is, not merely how far away it is, and only among what this
+         hull can already hit. targetPrio() takes the machine-gun factor in and
+         clamps the product, so ONE bound covers every preference applied to an
+         in-reach candidate. The harvester preference that used to sit here as
+         an empty block marked "juicy" is inside it too, and now does something. */
+      let d = inReach ? raw * targetPrio(e, mg) : d0;
       /* radars and jammers are what a Weasel is here for */
-      if (sead) d *= (e.def && (e.def.radar || e.def.jam)) ? 0.06 : 6;
-      if (d < bd) { bd = d; best = e; }
+      if (sead) {
+        const k = (e.def && (e.def.radar || e.def.jam)) ? 0.06 : 6;
+        d *= k; d0 *= k;
+      }
+      if (inReach) { if (d < bdIn) { bdIn = d; bestIn = e; } }
+      else if (d < bdOut) { bdOut = d; bestOut = e; }
+      if (d0 < bd0) { bd0 = d0; best0 = e; }
     });
+    /* THE TWO TIERS. targetPrio() can score an in-reach candidate up to 1.9
+       times its squared distance - a scout, an empty lorry - and a single
+       ranking would then let something 1.3 times as far, and OUT of reach,
+       beat it: the hull stops shooting what it can hit and drives off, and a
+       garrison, which cannot drive, never fires at all (updateGarrison()
+       shoots only inside 1.15 of its reach). So the out-of-reach best is taken
+       only where the OLD rule would have walked to it too - best0 is out of
+       reach, which only the machine-gun and Weasel factors (both older than
+       this) or a nearer contact on a layer this hull reaches less far can
+       make happen - and even then only if no in-reach candidate now scores
+       better than it. Everywhere else an in-reach candidate wins.
+       The result is the old pick, except where targetPrio() re-ranks what
+       is already in reach or pulls something in reach ahead of a walk. */
+    const best = (bestOut && best0 === bestOut && bdOut < bdIn) ? bestOut : (bestIn || bestOut);
+    /* Counted per owner, surface hulls only: those call acquire() once per
+       engagement they start (idle, guard, attackmove), whereas a garrison
+       window and an aircraft parked on strip alert call it every tick and
+       would drown the number. Read by ai.js intel() for the commander's own
+       side and by nothing that makes a decision. */
+    if (best && this.layer !== "air" && !this.garrisonIn) {
+      const st = this.owner.tgtStat || (this.owner.tgtStat = { acq: 0, flip: 0 });
+      st.acq++;
+      if (best !== best0) st.flip++;
+    }
     return best;
+  }
+
+  /* The gates acquire() applies to one candidate, lifted out of its grid
+     callback verbatim (each bare `return` is now `return false`) so that
+     there is exactly one list of them. retarget() asks the same list; a gate
+     added here later reaches both, and the two cannot drift apart. R is the
+     acquisition radius the caller scanned with - the stealth band is cut
+     from it. The radius itself is NOT tested here, because the grid query
+     acquire() uses returns whole buckets and acquire() has always accepted
+     what they hold; retarget() tests it for itself. */
+  acqGate(e, R) {
+    if (e.dead || e.owner === this.owner || this.game.allied(this.owner, e.owner)) return false;
+    /* An unoccupied civilian building belongs to nobody and threatens nobody.
+       It was being acquired automatically simply because its owner is the
+       neutral player, so a column driving past a village would stop and
+       level it unprompted. Once somebody garrisons it, it stops being
+       neutral and becomes a legitimate target like any other. */
+    if (!autoTargetable(e)) return false;
+    /* The automatic question. This one call is the gate behind attackmove,
+       idle/guard, the garrison windows, air attackmove, CAP, strip alert and
+       hover - all seven reach a target only through here. Because a held
+       round is invisible to it, a hull can never be handed an automatic
+       order against something only a held round could reach.
+       This matters far more than the designs assumed: a launcher's sight is
+       21 to 31 tiles after generations.js rewrites it, not the 5.0 on the
+       card, so idle/guard and attackmove were LIVE auto-fire paths for every
+       TEL in the game. */
+    if (!this.canTarget(e, true)) return false;
+    /* low-observable airframes cannot be acquired at full range */
+    /* A surface mount cannot shoot at an aeroplane it cannot reach, so it
+       has no business asking whether anybody holds a track on one. acquire()
+       scans to sightR() * 1.25, and a naval hull's sight is widened to match
+       its LONGEST weapon - an anti-ship missile - so an LCS whose 76mm
+       reaches 8.0 tiles was interrogating airTrack about every airframe
+       inside 20.5 tiles, every tick, for ever, and being silently refused.
+       120 surface shooters carry that phantom band; the missile boat has
+       14.8 tiles of it around a 3.2-tile Phalanx. That artefact, not any
+       missing radar, is the bulk of a measured 87.2% airTrack denial rate
+       (879 of 1008 calls in a 20-minute e20 battle), and none of it was ever
+       a real engagement. Aircraft are deliberately exempt: a fighter must
+       still acquire a distant bogey and close on it. */
+    if (this.layer !== "air" && e.targetLayer() === "air") {
+      let airReach = 0;
+      for (const k of (this.def.weapons || [])) {
+        const w2 = WEAPONS[k];
+        if (w2 && w2.tgt && w2.tgt.air) airReach = Math.max(airReach, this.weaponRange(w2));
+      }
+      if (U.dist(this.x, this.y, e.x, e.y) > airReach) return false;
+    }
+    /* an aircraft can only be engaged if somebody actually holds a track
+       on it - your own radar, or a friendly sensor over the datalink */
+    /* An engagement beyond visual range needs somebody to be holding a
+       radar track on the target - your own set, or a friendly one over the
+       datalink. Inside visual range it does not: a Stinger is an infrared
+       missile aimed by a man looking at the aeroplane, and requiring it to
+       wait for a radar picture meant a MANPADS section could never fire at
+       all. Twelve of them killed nothing in a hundred seconds against six
+       A-10s, which read as a balance problem and was really this. */
+    const VISUAL = 11;
+    const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
+          ((this.def.role === "aa" || this.def.role === "sam") &&
+           ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
+    /* A parked airframe is not a radar track, it is a thing sitting in the
+       open, so it goes down the ordinary visual branch instead. */
+    if (e.targetLayer() === "air" && this.game.airTrack && needsTrack) {
+      if (!this.game.airTrack(this, e)) return false;
+    } else if (e.def && e.def.stealth &&
+        U.dist(this.x, this.y, e.x, e.y) > R * (1 - e.def.stealth * CFG.STEALTH_ACQ)) return false;
+    return true;
+  }
+
+  /* ---- swap the target of an engagement this hull chose for itself ----
+     For a commander that wants several guns on one hull (ai.js
+     concentrate()). Deliberately NOT give(): give() -> setOrder() nulls
+     this.path, empties the queue and builds a new order that has lost
+     `resume` - the attackmove leg the attack branch puts a hull back on when
+     its target dies. Without it a retargeted hull fell idle on every kill and
+     was re-sent at the objective through a fresh A*, which on the 144-tile
+     theatre is 186 kB of typed arrays each time. Here the standing order is
+     copied with only the target changed and assigned straight to this.order,
+     exactly the way acquire()'s own callers assign one: resume, the queue,
+     the path and the absent release all survive.
+
+     Refused unless ALL of these hold:
+       - the standing order is an automatic engagement - auto, and never
+         released - so an attack a player or a commander gave by hand is left
+         exactly as given, and no held round is ever freed by this;
+       - the new target is inside this hull's own acquisition radius and
+         passes acqGate(), the very list acquire() runs: autoTargetable, the
+         automatic canTarget (which carries the sonar test), the air-reach
+         test, the air-track rule and the stealth band. Nothing reaches a gun
+         this way that the gun could not have picked up for itself this tick;
+       - it is already inside the reach of the weapon pickWeapon() would use,
+         with engage()'s own 0.86 stand-off as the margin and a tenth over the
+         arming distance, so the hull fires from where it stands and engage()
+         takes no step for it.                                               */
+  retarget(t) {
+    const o = this.order;
+    if (!o || o.type !== "attack" || !o.auto || o.release) return false;
+    if (!t || t === o.target || this.stance === "hold") return false;
+    const R = this.sightR() * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
+    const d = U.dist(this.x, this.y, t.x, t.y);
+    if (d > R || !this.acqGate(t, R)) return false;
+    const wi = this.pickWeapon(t);
+    if (wi < 0) return false;
+    const w = WEAPONS[this.def.weapons[wi]];
+    if (!w || d > this.weaponRange(w) * 0.86 ||
+        d < (w.minRange || 0) * CFG.TILE * 1.1) return false;
+    this.order = Object.assign({}, o, { target: t });
+    return true;
   }
 
   /* ---- movement: follow A* path with hull rotation & local avoidance ---- */
@@ -3173,7 +3383,28 @@ class Building {
         if (!this.game.airTrack(this, e)) return;
       } else if (e.def && e.def.stealth &&
           U.dist(this.x, this.y, e.x, e.y) > R * (1 - e.def.stealth * CFG.STEALTH_ACQ)) return;
-      const d = U.dist2(this.x, this.y, e.x, e.y);
+      /* The same recognition manual the mobile shooters use (targetPrio,
+         above class Unit): a turret with a mortar team and a rifleman in its
+         arc should shoot the mortar team.
+         Only among candidates INSIDE R, the primary mount's reach (no armed
+         structure in the tables mounts a second weapon). grid.query() hands
+         back whole two-tile buckets, so candidates up to two tiles past R
+         along an axis, and further at the corners, do arrive here, and a plain weighted distance let one of them win: a
+         nest with a tank shooting it from 5.0 tiles picked the self-propelled
+         gun at 7.7 (59.3 x 0.40 = 23.7 against 25), dropped it next tick at
+         the 1.1R re-test, picked it again, and never fired. So an
+         out-of-range candidate is scored at the clamp ceiling, 1.9 times its
+         squared distance: every in-range candidate outranks every
+         out-of-range one, and the out-of-range ones keep their old nearest
+         order among themselves.
+         On cost: this scan runs EVERY tick for a powered, armed structure
+         holding no focus - the re-test above re-acquires the moment the focus
+         fails - but targetPrio is reached only by a candidate that has
+         survived autoTargetable and canTarget(e, true), so an emplacement with
+         an empty arc pays nothing for it. A held focus is sticky and never
+         re-scored, so there is no re-slew thrash either. */
+      const raw = U.dist2(this.x, this.y, e.x, e.y);
+      const d = raw <= R * R ? raw * targetPrio(e, 1) : raw * 1.9;
       if (d < bd) { bd = d; best = e; }
     });
     return best;
