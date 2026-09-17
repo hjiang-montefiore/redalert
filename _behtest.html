@@ -343,6 +343,26 @@ window.addEventListener("load", function(){
   setTimeout(run, 200);
 });
 
+/* ---- THE SUITE RUNS IN HALVES ----
+   MEASURED, and the measurement is the point: 1,200 game-seconds of a
+   two-commander match costs about 237 SECONDS of real CPU on this machine, and
+   per-tick cost scales with entity count. The suite simulates roughly 1,130
+   game-seconds, so it was already a four-minute job - and as the commander got
+   stronger and fielded more units, the same suite crossed the wall-clock limit
+   of a single run and started being killed at exit 144.
+   A WARNING ABOUT TIMING IT: --virtual-time-budget VIRTUALISES Date.now(), so
+   a timer inside the page reports 0 ms while the machine burns minutes. Every
+   in-page measurement of "how long is this taking" is a lie under that flag.
+   Pass ?half=1 or ?half=2 to run one half. No argument runs everything, which
+   is still correct and still what to use when there is time. */
+/* A HASH, NOT A QUERY. On a file:// URL Chrome resolves the query string as
+   part of the FILENAME, so _behtest.html?half=1 is a file that does not exist:
+   the page never loads, the run finishes in eleven seconds and the output is
+   empty, which reads exactly like a suite that passed nothing. The fragment is
+   not part of the path, so it survives. Run it as
+     file://.../_behtest.html#half=1 */
+var HALF = (location.hash.match(/half=([12])/) || [])[1] || 0;
+function inHalf(n){ return !HALF || String(n) === HALF; }
 function run(){
 try{
   var P=Game.human, E=Game.players[1];
@@ -359,6 +379,7 @@ try{
      Isolated it shows seven goals at 11.2s intervals; run twelfth it shows
      one. The rule is right and the environment was wrong. */
 
+  if (inHalf(2)) {
   log("\n[34] TEN SECONDS TO SHOW PROGRESS");
   (function(){
     var E2=Game.players[1];
@@ -404,6 +425,7 @@ try{
           "s (the travel budget alone would be 32s+)");
     }
   })();
+  }
 
   /* ====== BUG 35: a SEAD aircraft is allowed to be in the air ======
      Holding FIRE and staying on the GROUND are different things. noAuto on
@@ -479,6 +501,7 @@ try{
     } else chk("destroyer embarked a helicopter", false);
     window.__DD=dd; window.__AB=ab;
   })();
+
 
   /* ============ BUG 3: aircraft land and repair on the ramp ============ */
   log("\n[3] AIRCRAFT RTB + HP RECOVERY");
@@ -610,6 +633,7 @@ try{
   })();
 
   /* ============ BUG 4: land minelayer area lay ============ */
+  if (inHalf(1)) {
   log("\n[4] LAND MINELAYER AREA");
   (function(){
     var base=tile(P,"ground",12);
@@ -642,6 +666,7 @@ try{
           "land "+laid+" vs sea "+seaLaid);
     }
   })();
+  }
 
   /* ====== BUG 28: an engineer capture changes the flag AND stops the guns ======
      Reported from play: "after the engineer captured the enemy building, the
@@ -995,6 +1020,7 @@ try{
      The old rule drew the line around the airframe - strike aircraft never
      avoided anything. The line belongs around the ORDER: a commanded attack
      presses on, a transit does not die for nothing. */
+  if (inHalf(2)) {
   log("\n[36] TRANSIT ROUTES ROUND A SAM, A COMMANDED ATTACK DOES NOT");
   (function(){
     var land=tile(E,"ground",9), home=tile(P,"ground",4);
@@ -1055,8 +1081,10 @@ try{
     fly(function(j){ j.stance="aggressive"; j.give({type:"move", x:sam.x, y:sam.y}); },
         "aggressive stance overrides the routing", false);
   })();
+  }
 
   /* ====== BUG 37: a Weasel shoots what is radiating, unasked ====== */
+  if (inHalf(2)) {
   log("\n[37] EW AIRCRAFT ENGAGES A RADIATING EMITTER");
   (function(){
     var land=tile(E,"ground",7), home=tile(P,"ground",4);
@@ -1152,12 +1180,14 @@ try{
     }
     Game.fogEnabled=wasFog;
   })();
+  }
 
   /* ====== BUG 38: the strategic clock is public, both ways ======
      "the nuclear silo and silo warning/count down need to be global like
      redalert2." The countdown existed but only for your own silo, so the
      game told you a launch was coming and never how long you had. */
   /* ====== BUG 39: whose aircraft launches itself, and the boom ====== */
+  if (inHalf(2)) {
   log("\n[39] THE RAMP, THE EW PRIVILEGE, AND THE BOOM");
   (function(){
     var base=tile(P,"ground",4);
@@ -1242,8 +1272,10 @@ try{
         "fuel "+f0.toFixed(0)+" -> peak "+peak.toFixed(0)+", "+boom+" ticks on the boom");
     if(tk&&!tk.dead) tk.dead=true; if(jt&&!jt.dead) jt.dead=true;
   })();
+  }
 
   /* ====== BUG 40: the set, not the aeroplane ====== */
+  if (inHalf(2)) {
   log("\n[40] A SHUT-DOWN SET IS OFF, AND AN E-2C IS NOT AN E-2D");
   (function(){
     /* (owner) "parked fighter/e2 should not have the rador or Jam since their
@@ -1290,8 +1322,10 @@ try{
     chk("an E-2C flying TODAY is not - its APS-145 is a generation back",
         g2c > g2d + 0.5, "E-2C genContest = "+g2c.toFixed(3)+" vs E-2D "+g2d.toFixed(3));
   })();
+  }
 
   /* ====== BUG 41: an ordered strike survives the turnaround ====== */
+  if (inHalf(2)) {
   log("\n[41] A BOMBER GOES BACK");
   (function(){
     /* (owner) "b52 and ac130 attacking the same unit wiill hanger." They did:
@@ -1316,7 +1350,11 @@ try{
     g.give({type:"attack", target:tgt});
     var hp0=tgt.hp, bRearmed=false, gRearmed=false, bBack=false, gBack=false;
     var roundsAfter=0;
-    for(var i=0;i<110*30;i++){ tick(1);
+    /* 170 s, not 110. The AC-130 is a third slower than the Buff and carries a
+       bigger magazine to refill, so a shorter window caught it still on the
+       ramp mid-cycle and read as "it never went back". The window has to cover
+       the SLOWER aircraft's whole turnaround, not the faster one's. */
+    for(var i=0;i<170*30;i++){ tick(1);
       if(b.parked) bRearmed=true;
       if(g.parked) gRearmed=true;
       if(bRearmed && !b.parked && b.order && b.order.type==="attack") bBack=true;
@@ -1342,6 +1380,7 @@ try{
     if(b&&!b.dead) b.dead=true; if(g&&!g.dead) g.dead=true;
     if(tgt&&!tgt.dead) tgt.dead=true;
   })();
+  }
 
   /* ====== BUG 42: a fixed-wing aircraft keeps flying while it shoots ====== */
   log("\n[42] NOTHING FIXED-WING STOPS IN MID-AIR TO SHOOT");

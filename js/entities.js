@@ -2695,9 +2695,26 @@ class Unit {
     if (this.nextOrder && this.orders && this.orders.length) {
       if (this.nextOrder()) return this.order;
     }
-    /* nothing queued: keep station where the contact was rather than quitting */
-    if (this.ammoMax && this.ammo <= 0.05) return { type: "rtb" };
-    if (this.fuel < Math.max(this.reserveFuel(), this.fuelMax * 0.40)) return { type: "rtb" };
+    /* ---- AND THE MISSION SURVIVES RUNNING DRY ----
+       These two returned a BARE rtb, which loses the order the player gave at
+       the exact moment it is most normal to lose it: the aircraft has just
+       spent its ordnance on the target it was sent to. The bingo-fuel branch
+       in updateAir carries the strike home and back; this path did not, so an
+       aircraft that emptied its pylons mid-attack landed and stayed landed.
+       Measured: a B-52H came back and an AC-130J did not, over a 170-second
+       window, final orders "attack" and "parked" - the Buff hit bingo FUEL and
+       kept its mission, the gunship ran out of AMMUNITION and lost it.
+       Same rule for both now: if the target is still alive, come home, rearm,
+       and go back to it. */
+    const live = o.type === "attack" && o.target && !o.target.dead;
+    const carry = live
+      ? { type: "attack", target: o.target, resume: o.resume, cap: o.cap,
+          auto: o.auto, release: o.release }
+      : null;
+    if (this.ammoMax && this.ammo <= 0.05)
+      return carry ? { type: "rtb", then: carry } : { type: "rtb" };
+    if (this.fuel < Math.max(this.reserveFuel(), this.fuelMax * 0.40))
+      return carry ? { type: "rtb", then: carry } : { type: "rtb" };
     /* A station-keeping attackmove only works because acquire() finds the next
        contact. An airframe whose every round is held cannot acquire, so that
        order is inert and - worse - the AI air loop re-tasks only hover, parked

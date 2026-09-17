@@ -9,12 +9,9 @@ Markers: `[x]` done and committed · `[~]` running now · `[ ]` queued ·
 
 ## Reported by you, and fixed
 
-- [!] UNVERIFIED AT RUNTIME - the batch in commit "Expansion, a standing budget"
-      is syntax-checked only. The behaviour suite could not be run: Chrome sat
-      at 0.0% CPU and every backgrounded run was killed at exit 144. An
-      infinite loop would show 100%, so the browser never ran the page - almost
-      certainly leftover state from repeated killed instances. RUN
-      _behtest.html BEFORE TRUSTING ANY OF IT.
+- [x] The batch in "Expansion, a standing budget" is now VERIFIED: behaviour
+      suite 78 + 99 passed / 0 failed in halves, naval 67/0, learner 8/0,
+      models 5/0.
 - [x] Derricks pipeline 22 tiles instead of being exempt from the radius
 - [x] Obstacles no longer EXTEND the build radius (the 20-credit razor-wire
       chain reached any node on the map, for the player as well)
@@ -146,8 +143,19 @@ command on this machine:
 
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
       --headless=new --disable-gpu --no-sandbox --use-gl=swiftshader \
-      --enable-unsafe-swiftshader --virtual-time-budget=400000 \
-      --dump-dom "file://$PWD/_behtest.html"
+      --enable-unsafe-swiftshader --virtual-time-budget=900000 \
+      --dump-dom "file://$PWD/_behtest.html#half=1"
+
+RUN IT IN HALVES: append #half=1 or #half=2. A HASH, not a query string - on a
+file:// URL Chrome resolves ?half=1 as part of the FILENAME, the page never
+loads, the run finishes in eleven seconds and the output is empty, which reads
+exactly like a suite that passed nothing. Each half is about 35 seconds; the
+whole thing together had grown past what one run is allowed.
+
+AND DO NOT TIME IT FROM INSIDE THE PAGE. --virtual-time-budget VIRTUALISES
+Date.now(), so an in-page timer reports 0 ms while the machine burns four
+minutes. Every "0 ms" measurement taken that way is a lie. Time it with the
+shell's `time`.
 
 then read the element `id="tout"`. Under load the full run gets killed, so it
 can be split in halves - see the note in this file's history.
