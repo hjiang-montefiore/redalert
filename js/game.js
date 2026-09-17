@@ -1508,7 +1508,7 @@ var Game = (function () {
     const why = G.supportReady(p, key);
     if (why) return why;
     const m = SUPPORT[key];
-    p.spendOil(m.oil);
+    p.spendOil(m.oil, "support");
     if (!p.support) p.support = {};
     p.support[key] = G.time + m.cooldown;
     const scatter = G.supportScatter(p, key, wx, wy);

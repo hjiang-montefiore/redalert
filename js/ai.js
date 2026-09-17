@@ -854,6 +854,75 @@ function makeCommander() {
     return (best && bestN >= (m.rounds > 5 ? 4 : 3)) ? { x: best.x, y: best.y } : null;
   }
 
+  /* Rigs we already own, wherever they are: driving in the field, sitting on
+     the factory ramp, or still being cut. A yard that is half-built is a yard
+     coming, and counting only the ones on the map buys a second rig for a job
+     the first one is already on its way to do. */
+  let yardSpot = null, yardSpotT = -99, yardBlocked = -99, rigHoard = false;
+  const badYard = new Map();     // rim tiles a rig could not reach -> time written off
+  function rigsHeld() {
+    let n = 0;
+    for (const u of P.units) if (!u.dead && u.def.deployTo) n++;
+    return n + queuedRole("vehicle", d => !!d.deployTo);
+  }
+  /* What a rig actually costs this faction. Three separate numbers used to be
+     written down here by hand - a hoard target of cost+200, a "do I want one"
+     threshold of 3600, and a purchase gate of 3600 - and they disagreed:
+     measured, a commander hoarded to 3,380 and then needed 3,600 before it
+     would admit to wanting the thing it had just finished saving for, so it
+     sat on the money. They are all derived from the price now, and the hoard
+     is deliberately the largest of them. */
+  function rigCost() { return P.factionCost(UNITS.mcv || { cost: 3000 }); }
+  /* how many barrels a rig costs, plus a little so the purchase is not refused
+     by a rounding error the tick it becomes affordable */
+  function rigOilNeed() { return ((UNITS.mcv && UNITS.mcv.oil) || 30) + 2; }
+  /* Saving for a rig: only when one is actually wanted, the cash for it is
+     already there, and the barrels are not. Every clause is a condition that
+     lifts on its own, so the reserve cannot latch: it ends when the barrels
+     arrive, when the cash goes, when a rig is already in hand or on the ramp,
+     or when the commander stops wanting one. */
+  /* Can a rig be ordered at all, short of money and fuel? The reserve and the
+     hoard both used to hold back barrels and credits for a vehicle this
+     commander was not yet allowed to build - most pointedly before Tech II,
+     which the rig needs, so the reserve delayed the very upgrade that
+     unlocks it. */
+  function rigOrderable() {
+    const id = unitFor(P.faction, "mcv", P.era);
+    if (!id) return false;
+    const why = P.lockReason(UNITS[id]);
+    return !why || /^INSUFFICIENT/.test(why);
+  }
+  function rigSaving() {
+    /* A rig on the ramp has not paid for its barrels yet - player.js charges
+       fuel when a unit COMPLETES and refunds the whole purchase if the tank is
+       dry by then. Lifting the floor at enqueue let the forty-second build eat
+       the thirty barrels, the rig was refunded, and bought again. */
+    if (queuedRole("vehicle", d => !!d.deployTo)) return true;
+    /* Deliberately NOT `if (P.oil >= rigOilNeed()) return false`. That was the
+       whole bug: the reserve lifted the instant the barrels arrived, and the
+       barrels then went to whichever buyer asked first - which, with the
+       expansion running last in think(), was never the rig. Measured: the
+       reserve read `saving=true` at every sample and the commander still burned
+       251 barrels in 500 seconds on ships, aircraft and upgrade kits while
+       sitting on one construction yard and thirty-four thousand credits.
+       What this leaves is a FLOOR rather than a gate - oilSpare() lets anything
+       above the reserve be spent freely, so an army is never starved, it simply
+       cannot take the last thirty-two barrels out from under the rig. */
+    if (P.cash < rigCost() + 200) return false;
+    if (rigsHeld()) return false;
+    if (!rigOrderable()) return false;
+    return wantsExpansion();
+  }
+  /* May this purchase have its barrels? Everything the commander buys with
+     fuel asks here, so the reserve is one rule in one place rather than a
+     guard bolted onto whichever spend site happened to be noticed. */
+  function oilSpare(n) {
+    if (!n) return true;
+    if (!rigSaving()) return true;
+    const cutting = queuedRole("vehicle", d => !!d.deployTo);
+    return P.oil - n >= rigOilNeed() * Math.max(1, cutting);
+  }
+
   function tryBuildUnit(role) {
     const id = unitFor(P.faction, role, P.era);
     if (!id) return false;
@@ -861,14 +930,30 @@ function makeCommander() {
     if (P.lockReason(def)) return false;
     if (P.cash < P.factionCost(def) * 0.6) return false;
     /* respect the tech savings plan (harvesters & supply are always exempt) */
-    if (saveTarget > 0 && role !== "harvester" && role !== "supply" &&
-        P.cash < saveTarget + P.factionCost(def)) return false;
+    /* ...except that the rig is exempt from a hoard that is FOR the rig: the
+       hoard is cost+500 and this line asked for hoard+cost, about 6,500
+       credits, before the thing being saved for could be bought. */
+    const hoardFor = role === "mcv" && rigHoard ? 0 : saveTarget;
+    if (hoardFor > 0 && role !== "harvester" && role !== "supply" &&
+        P.cash < hoardFor + P.factionCost(def)) return false;
     /* once the cash for a step is banked the fuel is reserved too, or the
        reserve leaves a few barrels at a time in vehicles and the step is never
        legal. Only once the cash is there: an army held back for a step that
        cannot be paid for yet is worse than no step at all. */
     if (eraStep && def.oil && role !== "harvester" && role !== "supply" &&
         P.cash >= eraStep.cost && P.oil - def.oil < eraStep.oil) return false;
+    /* ---- AND THE SAME RESERVE FOR A RIG ----
+       A construction rig is oil:30, and a commander that spends every barrel
+       the moment it arrives never holds thirty at once. Measured at Warlord:
+       30,521 credits banked, EIGHT barrels, one construction yard, and it
+       wanted three more - the purchase that would have unlocked the fuel was
+       blocked by the fuel. Fuel is bought at 0.18 a second on cash alone, so
+       the barrels do come; they were simply being spent on the next rifle
+       squad first. This holds them back the way the line above holds them for
+       a generational step, and for the same reason: the thing being saved for
+       is worth more than what the money would otherwise buy this tick. */
+    if (role !== "mcv" && role !== "harvester" && role !== "supply" &&
+        !oilSpare(def.oil)) return false;
     return P.enqueue(def.cat, id);
   }
 
@@ -1026,15 +1111,193 @@ function makeCommander() {
     if (expandFor !== k) { expandFor = k; expandSteps = 0; }
     if (++expandSteps > 4) { expandDead.add(k); expandFor = null; expandSteps = 0; }
   }
-  /* Worth expanding at all? Fuel is what every ceiling in this file is
-     ultimately made of, so the answer is: when there are no barrels, there is
-     money, and there is nowhere legal left to drill at home. */
-  function wantsExpansion() {
-    if (P.oil > 110) return false;                 // not short: build at home
-    if (P.cash < 1400) return false;               // cannot afford the chain
-    if (findOilSpot()) return false;               // still oil in reach
-    return !!expandNode();                         // and somewhere to go
+  /* ---- HOW MANY CONSTRUCTION YARDS THIS COMMANDER WANTS ----
+     (owner) "it should learn how to produce more MCV to speed up their
+     construction and expand base. it is too vunlerable that only one base and
+     stick to a very small area without expansion."
+     A rig is not only an expansion, and that is the part the first version of
+     this missed. player.js prodSpeed() is `1 + (n - 1) * 0.5` over the count
+     of construction yards, so a SECOND yard builds every structure fifty per
+     cent faster and a third doubles it - and losing the only one you have ends
+     the game on the spot. Expansion, build speed and survival are the same
+     3,000-credit purchase.
+     So a rig is wanted whenever there is money spare and the commander is
+     under its yard target, rather than only when the fuel has run out. The
+     target rises with the tier - a Recruit runs one base, a Warlord runs
+     three - and with a bank that is filling faster than it empties. */
+  function yardWant() {
+    const base = 1 + Math.round(1.4 * (D.rebuild || 1));   // 2 at Regular, 4 at Warlord
+    const rich = P.cash > 9000 ? 1 : 0;
+    return Math.max(1, Math.min(4, base + rich));
   }
+  /* Worth putting a rig in the field at all? Two separate reasons, and either
+     will do: we are short of fuel and the next field is out of reach, or we
+     simply have fewer yards than we want and can afford another. */
+  let wantsT = -1, wantsV = false;
+  function wantsExpansion() {
+    if (wantsT === G.time) return wantsV;
+    wantsT = G.time;
+    return (wantsV = wantsExpansionNow());
+  }
+  function wantsExpansionNow() {
+    /* a rig in the field is a yard that has been paid for - count it, or the
+       commander buys a fourth rig while three are still driving */
+    const yards = P.countBuilding("conyard") + rigsHeld();
+    const starved = P.oil <= 110 && !findOilSpot() && !!expandNode();
+    /* One yard to two is fifty per cent off every building thereafter - the
+       cheapest multiplier in the game and worth stretching for. The third and
+       the fourth are a luxury and can wait for a fat bank. */
+    const need = yards < 2 ? rigCost() + 200 : rigCost() + 2200;
+    /* a yard we have nowhere to put is three thousand credits of statue */
+    const room = G.time - yardBlocked > 45;
+    const wantMore = yards < yardWant() && P.cash > need && P.tech >= 2 && room;
+    if (!starved && !wantMore) return false;
+    return P.cash >= 1400;
+  }
+
+  /* Put a second yard at the edge of the base rather than inside it: far
+     enough that its build radius covers new ground, close enough to be behind
+     the defences. Walks outward from home and unfolds at the first legal spot
+     that is not already inside another yard's footprint reach. */
+  /* ---- WHERE A SECOND YARD GOES ----
+     The first version of this swept a ring seven to sixteen tiles from the
+     home marker and took the first legal tile. Measured, it found NOTHING: by
+     the time a Warlord commander wants a second yard it has forty-odd
+     buildings packed around that marker, every close tile is occupied, and
+     everything past eleven is outside the build radius. The rig was bought,
+     driven nowhere, and left standing idle thirteen tiles from home for the
+     rest of the match.
+
+     So search the RIM instead of the middle - tiles near the edge of what we
+     already hold, around the buildings that are themselves farthest out. Two
+     things fall out of that: there is free ground there, and a yard on the rim
+     pushes eleven tiles of new buildable radius OUTWARD, which is the whole
+     point of the exercise. A yard in the courtyard would only add a build
+     rate; one on the rim adds somewhere to build. */
+  function rimYardSpot(rig) {
+    for (const [k, t] of badYard) if (G.time - t > 240) badYard.delete(k);
+    const bd = BUILDINGS[rig.def.deployTo];
+    const hx = P.homeX / 32, hy = P.homeY / 32;
+    /* the outermost buildings we own, which is where the rim is */
+    const rim = P.buildings
+      .filter(b => !b.dead && !b.def.obstacle && b.buildProgress >= 1)
+      .map(b => ({ x: b.tx + b.def.w / 2, y: b.ty + b.def.h / 2,
+                   d: U.dist2(b.tx, b.ty, hx, hy) }))
+      .sort((a, b) => b.d - a.d)
+      .slice(0, 6);
+    if (!rim.length) rim.push({ x: hx, y: hy, d: 0 });
+    /* What we know of the enemy, through the intel layer only: the structures
+       we have seen, and where we believe they live. A "second place to rebuild
+       from" put ten tiles in front of the defence line toward them is the
+       first thing they reach. */
+    const foeB = [];
+    for (const r of seenB.values()) if (r && !r.gone) foeB.push({ x: r.x / 32, y: r.y / 32 });
+    const eh = intelHome(rival);
+    const ehx = eh ? eh.x / 32 : 0, ehy = eh ? eh.y / 32 : 0;
+    const homeToFoe = eh ? U.dist(hx, hy, ehx, ehy) : 0;
+    let best = null, bestD = -Infinity;
+    for (const b of rim) {
+      for (let r = CFG.BUILD_RADIUS - 1; r >= 4; r -= 3) {
+        for (let a = 0; a < 16; a++) {
+          const an = a / 16 * U.PI2;
+          const cx = Math.round(b.x + Math.cos(an) * r);
+          const cy = Math.round(b.y + Math.sin(an) * r);
+          /* farther from home is better - that is what "outward" means - but
+             never closer to the enemy than home itself is */
+          let d = U.dist(cx, cy, hx, hy);
+          if (eh && U.dist(cx, cy, ehx, ehy) < homeToFoe - 2) d -= 100;
+          if (d <= bestD) continue;
+          if (badYard.has(cx + "," + cy)) continue;
+          let near = false;
+          for (const f of foeB) if (U.dist2(cx, cy, f.x, f.y) < 144) { near = true; break; }
+          if (near) continue;
+          const tx = cx - ((bd.w / 2) | 0), ty = cy - ((bd.h / 2) | 0);
+          rig.carried = true;
+          const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
+          rig.carried = false;
+          if (ok) { best = { cx, cy }; bestD = d; }
+        }
+      }
+    }
+    return best;
+  }
+  /* The search above is a few hundred canPlace calls, which is too much to
+     repeat every think for a decision that changes slowly. Hold the answer and
+     re-test only the one tile, which is cheap; re-search when it goes stale or
+     somebody builds on it. */
+  function yardSpotFor(rig) {
+    const bd = BUILDINGS[rig.def.deployTo];
+    /* a "nowhere" answer is cached too, or the search reruns every think */
+    if (!yardSpot && G.time - yardSpotT < 6) return null;
+    if (yardSpot && G.time - yardSpotT < 6) {
+      const tx = yardSpot.cx - ((bd.w / 2) | 0), ty = yardSpot.cy - ((bd.h / 2) | 0);
+      rig.carried = true;
+      const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
+      rig.carried = false;
+      if (ok) return yardSpot;
+    }
+    yardSpot = rimYardSpot(rig);
+    yardSpotT = G.time;
+    return yardSpot;
+  }
+  /* Unfold here if here is legal. G.deployRig re-tests canPlace at the rig's
+     OWN tile, which is not always the tile it was sent to - a rig that stops
+     eight tenths of a tile short rounds to the neighbour and the deploy is
+     silently refused, for ever, with the rig sitting on top of the spot it was
+     asked to build on. So offer it its own tile and the ring around it. */
+  function unfoldNear(rig) {
+    if (G.deployRig(rig)) return true;
+    const bd = BUILDINGS[rig.def.deployTo];
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const cx = rig.tx + dx, cy = rig.ty + dy;
+      const tx = cx - ((bd.w / 2) | 0), ty = cy - ((bd.h / 2) | 0);
+      rig.carried = true;
+      const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
+      rig.carried = false;
+      if (ok) { moveRig(rig, cx, cy); rig._stepped = true; return false; }
+    }
+    rig._stepped = false;
+    return false;
+  }
+  /* Give a move only if the rig is not already on its way there: give()
+     discards the path, so re-issuing the same order every think made the rig
+     re-plan every think. */
+  function moveRig(rig, cx, cy) {
+    const x = cx * 32 + 16, y = cy * 32 + 16, o = rig.order;
+    if (o && o.type === "move" && Math.abs(o.x - x) < 2 && Math.abs(o.y - y) < 2) return;
+    rig.give({ type: "move", x, y });
+  }
+  function deployAtHome(rig) {
+    const spot = yardSpotFor(rig);
+    /* Nowhere at all to put one. Say so rather than leaving the rig idle in a
+       field: wantsExpansion() reads this and stops buying rigs it cannot
+       unfold, which is what turned three thousand credits into a statue. */
+    if (!spot) { yardBlocked = G.time; return false; }
+    const at = U.dist(rig.x / 32, rig.y / 32, spot.cx + 0.5, spot.cy + 0.5);
+    if (at < 1.2) {
+      if (unfoldNear(rig)) { yardSpot = null; yardSpotT = -99; rig._homeGoal = null; return true; }
+      /* standing on it, refused, and nothing legal alongside - pick again */
+      if (!rig._stepped) { badYard.set(spot.cx + "," + spot.cy, G.time); yardSpot = null; yardSpotT = -99; }
+      return false;
+    }
+    /* Progress timer, as the node path has: a rim tile across water or behind
+       a wall of our own buildings is never reached, and without this the rig
+       drove at it for the rest of the match. Thirty seconds without closing
+       two tiles writes the tile off and the next search skips it. */
+    const k = spot.cx + "," + spot.cy;
+    if (rig._homeGoal !== k) { rig._homeGoal = k; rig._homeT = G.time; rig._homeD = at; }
+    else if (G.time - rig._homeT > 30) {
+      if (at > rig._homeD - 2) {
+        badYard.set(k, G.time); yardSpot = null; yardSpotT = -99; rig._homeGoal = null;
+        return false;
+      }
+      rig._homeT = G.time; rig._homeD = at;
+    }
+    moveRig(rig, spot.cx, spot.cy);
+    return false;
+  }
+
 
   /* ---- the rig: buy one, drive it out, unfold it ----
      Three states and no more: none in hand, one moving, one in place. It runs
@@ -1043,15 +1306,25 @@ function makeCommander() {
   function runExpansion() {
     const rigsAll = P.units.filter(u => !u.dead && u.def.deployTo);
     const node0 = expandNode();
-    /* Nowhere left to go, but three thousand credits are already standing in
-       the field: a second yard at home is still production and still radius,
-       and it is a great deal better than a vehicle that does nothing. */
-    if (!node0 && rigsAll.length) { G.deployRig(rigsAll[0]); return; }
-    if (!wantsExpansion()) return;
-    const node = node0;
-    if (!node) return;
+    /* Nowhere worth driving to, but three thousand credits are already standing
+       in the field. A yard at home is still fifty per cent on every build and
+       still a second place to rebuild from if the first one falls, so it goes
+       down - just not on top of the yard we already have, or it adds no radius
+       and shares the same shell. */
+    /* A rig that has been paid for is always driven - wantsExpansion() counts
+       it as a yard, so gating the drive on it closed the gate on the rig that
+       had just been bought the moment the bank dipped. Only the purchase asks
+       whether a yard is wanted. */
+    if (!node0) { for (const r of rigsAll) deployAtHome(r); if (rigsAll.length) return; }
+    /* Only the lead rig drives to the node; any others behind it are yards for
+       the base itself and unfold on the rim. Without this a second rig bought
+       while the first is still driving stands idle for the rest of the match -
+       which is exactly what the telemetry caught: one rig, order "idle",
+       thirteen tiles from home, tries=0, for five hundred seconds. */
+    else for (let i = 1; i < rigsAll.length; i++) deployAtHome(rigsAll[i]);
     const rigs = rigsAll;
     if (!rigs.length) {
+      if (!wantsExpansion()) return;
       /* none in hand: buy one, once. It is 3,000 credits and 30 barrels, so
          it is only worth it when the field it unlocks is worth more - which
          is what wantsExpansion() has already established. */
@@ -1061,11 +1334,24 @@ function makeCommander() {
          alone, so the answer is to wait for that rather than to ask every
          think and be refused - and the build order above is no longer switched
          off while we wait, which is what made the deadlock bite. */
-      const rigOil = (UNITS.mcv && UNITS.mcv.oil) || 30;
-      if (P.oil < rigOil + 2) return;
-      if (queueLen("vehicle") < 2 && P.cash > 3600) tryBuildUnit("mcv");
+      if (P.oil < rigOilNeed()) return;
+      /* Not `queueLen("vehicle") < 2`. A Warlord commander with five factories
+         never has a vehicle queue that short, so the rig was never enqueued at
+         all - measured, a commander with 3,847 credits and 584 barrels reading
+         wants=true saving=true and still building nothing. The queue is FIFO
+         and the rig's turn comes; what actually needs bounding is how many
+         rigs are in flight, and that is two. Three at once is nine thousand
+         credits of vehicles that cannot shoot. */
+      if (rigsHeld() < 2 && P.cash >= rigCost() + 100) tryBuildUnit("mcv");
       return;
     }
+    /* From here a node is guaranteed: a rig in hand with nowhere to take it
+       was unfolded at home on the first line of this function. What changed is
+       the ORDER - `if (!node) return;` used to sit above the purchase, so a
+       commander that wanted a second yard for the build speed alone, with no
+       well anywhere it could see, fell out before it ever asked for a rig.
+       Wanting the yard is reason enough; a field is a bonus. */
+    const node = node0;
     const rig = rigs[0];
     /* Deploy where the node comes inside a fresh conyard's radius, standing
        off a little so the yard does not straddle the well itself. */
@@ -1094,7 +1380,7 @@ function makeCommander() {
       const bd = BUILDINGS[rig.def.deployTo];
       const rx = (rig.x / 32) | 0, ry = (rig.y / 32) | 0;
       let spot = null, sd = Infinity;
-      for (let dy = -6; dy <= 6 && !spot; dy++) for (let dx = -6; dx <= 6; dx++) {
+      for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
         const cx = rx + dx, cy = ry + dy;
         const tx = cx - ((bd.w / 2) | 0), ty = cy - ((bd.h / 2) | 0);
         /* would the well be inside this yard's radius? */
@@ -1107,11 +1393,14 @@ function makeCommander() {
         if (dd < sd) { sd = dd; spot = { cx, cy }; }
       }
       if (spot) {
-        const at = U.dist(rig.x / 32, rig.y / 32, spot.cx, spot.cy);
-        if (at < 0.8) {
-          if (G.deployRig(rig)) { expandNoted(node); return; }
+        /* centre to centre: measuring to the tile CORNER meant a rig parked
+           in the middle of the right tile, arriving from the south or east,
+           read 0.9 away and was sent to the same tile again for ever */
+        const at = U.dist(rig.x / 32, rig.y / 32, spot.cx + 0.5, spot.cy + 0.5);
+        if (at < 1.2) {
+          if (unfoldNear(rig)) { expandNoted(node); return; }
         } else {
-          rig.give({ type: "move", x: spot.cx * 32 + 16, y: spot.cy * 32 + 16 });
+          moveRig(rig, spot.cx, spot.cy);
           return;
         }
       }
@@ -4127,15 +4416,46 @@ function makeCommander() {
     if (nLab >= 1 && !queueLen("upgrade")) {
       /* never hoard toward a tier this commander is not allowed to reach */
       const cap = P.techCap === undefined ? 3 : P.techCap;
-      if (P.tech < 2 && cap >= 2 && P.cash > 2100) P.enqueue("upgrade", "tech2");
-      else if (P.tech < 3 && cap >= 3 && P.oil >= 90 && P.cash > 3600) P.enqueue("upgrade", "tech3");
+      /* Upgrades are bought in barrels too - ap 25, armour 30, optics 20,
+         drive 20 - and this is where the fuel was going. Measured at Warlord:
+         one construction yard, forty thousand credits, SEVEN barrels, and a
+         steady drip of marginal kits each costing very nearly what the rig
+         that would have doubled its build rate costs. A thermal sight on one
+         tank troop does not outrank fifty per cent off every building the
+         commander will ever put up, so the kits wait for the yard. */
+      const upOil = (id) => (UPGRADES && UPGRADES[id] && UPGRADES[id].oil) || 0;
+      if (P.tech < 2 && cap >= 2 && P.cash > 2100 && oilSpare(upOil("tech2")))
+        P.enqueue("upgrade", "tech2");
+      else if (P.tech < 3 && cap >= 3 && P.oil >= 90 && P.cash > 3600)
+        P.enqueue("upgrade", "tech3");
       /* a marginal combat upgrade does not outrank a whole generation of
          equipment, and it is bought with fuel the step needs */
       else if (P.cash > 3800 && !eraStep) {
         for (const ug of ["ap", "armor", "optics", "drive"])
-          if (!P.upgrades[ug]) { P.enqueue("upgrade", ug); break; }
+          if (!P.upgrades[ug]) { if (oilSpare(upOil(ug))) P.enqueue("upgrade", ug); break; }
       }
     }
+
+    /* -------- EXPANSION --------
+       This used to run at the very bottom of think(), after tech, army, air
+       force and navy had each taken their barrels. A rig is a vehicle like any
+       other and it was always last in the queue for a reserve that never had
+       thirty-two in it. It is a construction decision, so it belongs up here
+       with the other construction decisions, ahead of the shopping. */
+    /* A commander too poor to ever bank three thousand at once never puts up a
+       second yard - and P0, measured, sat on five hundred and fifty barrels
+       with an empty bank for the whole match. Hoard for the rig exactly the way
+       a tech step is hoarded, but only while the fuel for it is actually in
+       hand, or a fuel-poor commander would stop buying an army for a vehicle it
+       still could not order. */
+    rigHoard = false;
+    if (P.countBuilding("conyard") + rigsHeld() < 2 && P.tech >= 2 && nFac >= 1 &&
+        UNITS.mcv && P.oil >= rigOilNeed() && rigOrderable() && G.time - yardBlocked > 45 &&
+        rigCost() + 500 > saveTarget) {
+      saveTarget = rigCost() + 500;
+      rigHoard = true;
+    }
+    runExpansion();
 
     /* -------- PROSPECTING --------
        A hauler may only be routed to ore this commander has actually seen, the
@@ -4748,7 +5068,6 @@ function makeCommander() {
     }
 
     /* expansion runs on think()'s clock like everything else here */
-    runExpansion();
 
     /* -------- ATTACK WAVES -------- */
     /* This filter was the only line in the file that has ever seen a wave
@@ -5706,6 +6025,11 @@ function makeCommander() {
           battle. */
     if ((D.read || 0) > 0 && waveSpent() > 0.55) {
       shy(aim.id, D.waveTime || 150);
+      /* Consume the book. Nothing else clears it until the next launch, so a
+         wiped-out wave read as 100% spent on every later think and wrote off
+         one fresh objective per think - most of the plot within a minute at
+         Warlord - against a wave that no longer existed. */
+      waveBook = null;
       return true;
     }
 
@@ -6299,6 +6623,24 @@ function makeCommander() {
                             oilers: count(u => u.def.role === "oiler"),
                             tankers: count(u => u.def.refuelRate) },
                repair: repairLedger(),
+               /* Exposed for the reason every field around it is: a commander
+                  that never puts up a second construction yard gives no clue
+                  from the outside WHICH of the four gates stopped it, and the
+                  answer was a different gate for each of two players in the
+                  same match. */
+               expand: { yards: P.countBuilding("conyard"), rigs: rigsHeld(),
+                         onMap: P.units.filter(u => !u.dead && u.def.deployTo)
+                                 .map(u => ({ order: (u.order && u.order.type) || "idle",
+                                              tx: u.tx, ty: u.ty,
+                                              home: Math.round(U.dist(u.x / 32, u.y / 32,
+                                                    P.homeX / 32, P.homeY / 32)),
+                                              tries: u._rigTries || 0 })),
+                         queued: queuedRole("vehicle", d => !!d.deployTo),
+                         want: yardWant(), wants: wantsExpansion(),
+                         saving: rigSaving(), need: rigOilNeed(),
+                         node: !!expandNode(), spot: !!findOilSpot(),
+                         save: Math.round(saveTarget),
+                         cash: Math.round(P.cash), oil: Math.round(P.oil) },
                /* Exposed for exactly the reason the fields around it are: so a
                   test can see whether the learner is separating its arms, or
                   whether every estimate has collapsed to the same number -

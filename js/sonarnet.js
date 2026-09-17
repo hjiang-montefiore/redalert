@@ -137,7 +137,7 @@ var SonarNet = (function () {
         G.alert("NO FUEL FOR A SONAR NODE (" + OIL + " BBL)", "bad");
       return null;
     }
-    owner.spendOil(OIL);
+    owner.spendOil(OIL, "sonarnet");
     var n = {
       id: NEXT++,
       x: x, y: y,

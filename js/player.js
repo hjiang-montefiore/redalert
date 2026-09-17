@@ -171,7 +171,16 @@ class Player {
   /* Draw down the fuel reserve. Never below zero: a negative reserve makes
      every downstream check (lockReason, the HUD, the AI's affordability
      maths) behave strangely. */
-  spendOil(n) {
+  spendOil(n, why) {
+    /* A ledger of where the barrels went. Balancing fuel by watching the
+       reserve number is guesswork - it only ever says "low" - and a commander
+       sitting on forty thousand credits and six barrels gives no clue which
+       of four spenders emptied it. Costs one addition per purchase. */
+    if (n > 0) {
+      if (!this.oilOut) this.oilOut = {};
+      const k = why || "other";
+      this.oilOut[k] = (this.oilOut[k] || 0) + n;
+    }
     this.oil = Math.max(0, this.oil - n);
   }
 
@@ -240,7 +249,7 @@ class Player {
     if (this.eraLockReason()) return false;
     const st = this.eraStepInfo();
     this.spend(st.cost);
-    this.spendOil(st.oil);
+    this.spendOil(st.oil, "era");
     this.eraTarget = st.to;
     this.eraProgress = st.time;
     return true;
@@ -388,7 +397,7 @@ class Player {
       /* Oil is checked when the item is queued, but it can be spent on units
          before the research finishes, so it has to be checked again here or
          the reserve goes negative. */
-      if (def.oil) this.spendOil(def.oil);
+      if (def.oil) this.spendOil(def.oil, "upgrade");
       if (def.tech) { this.tech = Math.max(this.tech, def.tech); }
       else this.upgrades[it.id] = true;
       if (def.tech) this.upgrades["tech" + def.tech] = true;
@@ -398,7 +407,7 @@ class Player {
       const def = it.def;
       if (def.oil) {
         if (this.oil < def.oil) { /* refund, fuel ran out mid-build */ this.earn(this.factionCost(def)); return; }
-        this.spendOil(def.oil);
+        this.spendOil(def.oil, def.cat === "vehicle" ? "vehicle" : def.cat || "unit");
       }
       this.game.spawnUnit(this, it.id);
       if (!this.isAI) Sfx.play("unitready");

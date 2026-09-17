@@ -394,6 +394,15 @@ window.addEventListener("load", function () {
                    "  airbases="+(c.bld.airbase||0)+"  derricks="+(c.bld.derrick||0)+
                    "  CONYARDS="+(c.bld.conyard||0)+"  navalyards="+(c.bld.navalyard||0)+
                    "  tech="+P.tech);
+        try{
+          var ex=AI.intelOf(P).expand;
+          lines.push("    EXPAND: yards="+ex.yards+" rigs="+ex.rigs+" want="+ex.want+
+                     "  wants="+ex.wants+" saving="+ex.saving+" needOil="+ex.need+
+                     "  node="+ex.node+" oreSpot="+ex.spot+" saveTarget="+ex.save);
+          var oo=P.oilOut||{}, ks=Object.keys(oo).sort(function(a,b){return oo[b]-oo[a];});
+          lines.push("    RIGS  : queued="+ex.queued+"  onMap="+JSON.stringify(ex.onMap));
+          lines.push("    OILOUT: "+(ks.length?ks.map(function(k){return k+"="+Math.round(oo[k]);}).join("  "):"none"));
+        }catch(e){ lines.push("    EXPAND: <"+e+">"); }
         lines.push("    AIR : "+fmt(c.air));
         lines.push("    SEA : "+fmt(c.sea));
         lines.push("    GND : "+fmt(c.gnd));
