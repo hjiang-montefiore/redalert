@@ -1118,9 +1118,37 @@
     if (_hd && HELD_ROLES[_hd.role]) { _hd.noAuto = true; nHeld++; }
   }
 
+  /* ---- a warship's decoys, re-derived now that the era rosters exist ----
+     Exactly the case the `refuelable` sweep above documents, and found the
+     same way. rules.js applies SOFTKILL from a table keyed by unit id at the
+     bottom of its own file, which is BEFORE eras.js has generated a single
+     historical hull: 29 ids applied, 421 era hulls left with nothing, and
+     combat.js's soft-kill layer dead in five of the game's six settings.
+
+     Run from here rather than moved, because this is the last data file and
+     therefore the first moment at which every roster - rules.js, eras.js,
+     heavyair.js and this one - actually exists. The sweep is keyed on
+     (faction, era, role) and not on ids, so anything a later pass adds is
+     covered; anything it cannot answer from e80 onward lands in
+     SOFTKILL_ERA_GAPS, and _behtest [49] fails if that list is not empty. */
+  var nDecoy = 0, nDecoyGap = 0;
+  if (typeof applyEraSoftkill === "function") {
+    nDecoyGap = applyEraSoftkill();
+    for (var _dk in UNITS)
+      if (UNITS[_dk] && UNITS[_dk].softkill !== undefined) nDecoy++;
+  }
+  /* A gap means a roster shipped with no decoy research behind it. [49] fails
+     on it, but the behaviour suite is not what most people run - so say it on
+     the console of every page as well, or a dropped table stays silent until
+     somebody happens to run the tests. */
+  if (nDecoyGap && typeof console !== "undefined" && console.warn)
+    console.warn("[generations] " + nDecoyGap + " surface hulls from e80 on " +
+                 "have no decoy rating: " + SOFTKILL_ERA_GAPS.join(", "));
+
   if (typeof console !== "undefined" && console.log)
     console.log("[generations] early warning derived on " + nAew + " airframes, " +
                 "armour on " + nArm + " vehicles, penetration on " +
                 nPen + " guns, ranges rebuilt, sight raised on " + nSight +
-                ", domain scaling on " + nDom + " weapons");
+                ", domain scaling on " + nDom + " weapons, decoy ratings on " +
+                nDecoy + " hulls");
 })();

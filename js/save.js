@@ -219,6 +219,9 @@ var SaveGame = (function () {
     G.entities.length = 0;
     for (const p of G.players) { p.units.length = 0; p.buildings.length = 0; }
     G.occ.fill(0);
+    /* the pathfinder's reachability labels are keyed on this stamp, and a
+       load empties the occupancy grid without going through removeBuilding */
+    G.bumpOcc();
     for (const n of G.map.oilNodes) n.taken = false;
 
     G.time = d.time || 0;

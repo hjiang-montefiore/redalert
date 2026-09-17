@@ -2103,6 +2103,455 @@ try{
   })();
   }
 
+  /* ====== 49: decoys exist in the eras that invented them ====== */
+  if (inHalf(2)) {
+  log("\n[49] A WARSHIP'S DECOYS ARRIVE WITH THE ERA THAT INVENTED THEM");
+  (function(){
+    /* combat.js layer 2 - chaff and decoys seduce the seeker away - reads
+       def.softkill, which rules.js applied from a table keyed by unit id while
+       it was still loading, i.e. before eras.js existed. Every one of the 421
+       era hulls therefore had nothing and the layer was dead in five of the
+       six settings. These checks guard each part of the fix: the right hulls
+       have a rating, the wrong ones still have none, a RESEARCHED nothing is
+       told apart from an UNRESEARCHED one, no roster can be added and skipped,
+       and the layer really fires for a hull that carries decoys. */
+    function sk(fac, role, era){
+      var id = unitFor(fac, role, era);
+      return (id && UNITS[id]) ? UNITS[id].softkill : undefined;
+    }
+    function has(fac, role, era, label){
+      var v = sk(fac, role, era);
+      chk(label, typeof v === "number" && v > 0, fac+" "+era+" "+role+" softkill="+v);
+    }
+    /* TWO DIFFERENT ABSENCES, and the whole design rests on telling them
+       apart. absent() is "the equipment had not been invented" - no entry at
+       all, and the sweep never reaches those eras. zero() is "researched, and
+       the answer is nothing" - an explicit 0 written into SOFTKILL_ERA. One
+       helper accepting either would read PASS on the China and North Korea
+       lines even if their researched blocks were deleted, which is the one
+       thing those two lines exist to catch. */
+    function absent(fac, role, era, label){
+      var v = sk(fac, role, era);
+      chk(label, v === undefined, fac+" "+era+" "+role+" softkill="+v);
+    }
+    function zero(fac, role, era, label){
+      var v = sk(fac, role, era);
+      chk(label, v === 0, fac+" "+era+" "+role+" softkill="+v);
+    }
+    /* the era the kit was invented in - Mk 36 SRBOC 1978, Corvus 1970,
+       Sea Gnat 1988, PK-16 early 1970s */
+    has("nato","destroyer","e80", "a 1980s US destroyer carries chaff");
+    has("gbr","corvette","e90",   "so does a 1990s British frigate");
+    has("fra","corvette","e90",   "and a La Fayette, which is what the layer is for");
+    has("pact","destroyer","e80", "a Sovremenny has PK-16, less good but real");
+    /* before the kit was invented at all */
+    absent("nato","destroyer","e50","a 1950s destroyer has none - the kit did not exist");
+    absent("nato","destroyer","e60","nor a 1960s one");
+    absent("pact","cruiser","e50",  "nor a Sverdlov");
+    /* and where a navy simply never had it: an explicit, researched zero */
+    zero("pla","destroyer","e80", "a 1980s Luda is a researched nothing - no Chinese launcher until the 1990s");
+    zero("kpa","corvette","e90",  "and the North Korean fleet is a researched nothing in every period");
+    /* ---- a fleet does not un-invent a system it already had ---- */
+    var eraOrd = ["e80","e90","e00","e20"], slid = [], slidEff = [];
+    /* Checked in the raw table value AND in what combat.js:417 actually uses,
+       which is that value scaled by the hull's own rcs. The raw number cannot
+       see a bad signature, and the signature is half of what decides which
+       ship is really the better protected. */
+    function effSk(fac, role, era){
+      var id = unitFor(fac, role, era); if (!id || !UNITS[id]) return undefined;
+      var d = UNITS[id];
+      if (typeof d.softkill !== "number") return undefined;
+      var rcs = d.rcs !== undefined ? d.rcs : 1;
+      return d.softkill ? d.softkill * U.clamp(1.35 - rcs * 0.45, 0.6, 1.6) : 0;
+    }
+    /* KNOWN, MEASURED, AND NOT A DECOY NUMBER. Several e90 rows in eras.js
+       carry the PRESENT-DAY hull's rcs instead of their own: nato_e90_corvette
+       is a 1977 Perry wearing the Littoral Combat Ship's 0.1, where the same
+       class at e80 has 0.6. It is the only one of the 40 faction/role chains
+       that inverts once scaled - the 1990s Perry reaches 0.339 against the
+       1991 Arleigh Burke's 0.320. Exempted BY NAME so that a NEW inversion
+       still fails; the rcs itself is eras.js's and belongs to its own pass. */
+    var effKnown = { "nato/corvette": 1 };
+    ["nato","pact","pla","roc","gbr","fra","deu","kpa"].forEach(function(f){
+      ["destroyer","cruiser","corvette","carrier","missileboat"].forEach(function(r){
+        var prev = -1, prevE = -1;
+        eraOrd.forEach(function(e){
+          var v = sk(f, r, e), ev = effSk(f, r, e);
+          if (typeof v !== "number") return;
+          if (prev >= 0 && v < prev - 1e-9) slid.push(f+"/"+r+"/"+e+" "+prev+"->"+v);
+          if (prevE >= 0 && ev < prevE - 1e-9 && !effKnown[f+"/"+r])
+            slidEff.push(f+"/"+r+"/"+e+" "+prevE.toFixed(3)+"->"+ev.toFixed(3));
+          prev = v; prevE = ev;
+        });
+      });
+    });
+    chk("no fleet's decoys get worse as the decades pass", slid.length===0,
+        slid.slice(0,4).join("; ") || "8 factions x 5 roles checked");
+    chk("nor once combat.js scales them by the hull's own signature", slidEff.length===0,
+        slidEff.slice(0,4).join("; ") || "40 chains, 1 named eras.js rcs exemption");
+    /* ---- and no era roster can be added and silently skipped ---- */
+    chk("a roster added to a future era cannot be silently skipped",
+        typeof SOFTKILL_ERA_GAPS !== "undefined" && SOFTKILL_ERA_GAPS.length===0,
+        (typeof SOFTKILL_ERA_GAPS === "undefined") ? "no gap list" :
+        (SOFTKILL_ERA_GAPS.slice(0,4).join("; ") || "no gaps"));
+    /* SOFTKILL_ERA_GAPS walks UNITS by each hull's OWN `from`, so a hull
+       carried forward into a later era is invisible to it. This second pass
+       audits what a player can actually put to sea instead: unitFor() for
+       every faction, role and era from e80 on. */
+    var fielded = [];
+    /* Built before the launchers existed, still in service afterwards, and
+       never refitted with one: the 1960s Type 021 Huangfeng still standing the
+       1980s watch. A NATO hull carried that far forward would have been given
+       SRBOC and would belong in the table, which is why this is a named list
+       and not a rule. */
+    var carried = { pla_e60_missileboat: 1 };
+    ["nato","pact","pla","roc","gbr","fra","deu","kpa"].forEach(function(f){
+      ["destroyer","cruiser","corvette","carrier","missileboat"].forEach(function(r){
+        eraOrd.forEach(function(e){
+          var id = unitFor(f, r, e);
+          if (!id || !UNITS[id] || carried[id]) return;
+          if (typeof UNITS[id].softkill !== "number")
+            fielded.push(f+"/"+r+"/"+e+" -> "+id);
+        });
+      });
+    });
+    chk("every surface combatant a player can field from e80 on has a rating",
+        fielded.length===0, fielded.slice(0,4).join("; ") ||
+        "160 faction/role/era slots, 1 named carry-forward");
+
+    /* ---- and the layer actually runs ----
+       Layers 1 and 3 are stood down with the engine's own flags so this
+       measures layer 2 and nothing else, and the live projectile list is
+       emptied for the duration so forcing the rng cannot disturb any round
+       another section left in the air. */
+    var water = tile(P,"sea",6);
+    if(!water){ chk("water for the decoy shot", false, "no sea tile"); return; }
+    var parked = Combat.projectiles.splice(0, Combat.projectiles.length);
+    try {
+      function shot(id, label, want){
+        if(!id || !UNITS[id]){ chk(label, false, "no such hull "+id); return; }
+        var ship = Game.spawnUnitAt(P, id, water.x*32+16, water.y*32+16);
+        if(!ship){ chk(label, false, "spawn failed"); return; }
+        var eff0 = Combat.effects.length;
+        var p = { w:{ proj:"missile", speed:200, dmg:200, tgt:{ground:0,air:0,sea:1,sub:0} },
+                  shooter:null, owner:E, x:ship.x-32*4, y:ship.y, z:8,
+                  hit:true, target:ship, tx:ship.x, ty:ship.y, tz:0,
+                  speed:200, type:"missile", dead:false, age:0.5,
+                  x0:ship.x-32*4, y0:ship.y, maxTravel:4000, eta:1,
+                  samCheck:true, intCheck:true };
+        Combat.projectiles.push(p);
+        var rng0 = Game.rng; Game.rng = function(){ return 0; };
+        try { Combat.update(Game, CFG.DT); } finally { Game.rng = rng0; }
+        var seduced = p.target === null, said = false;
+        for(var i=eff0;i<Combat.effects.length;i++)
+          if(Combat.effects[i].s === "DECOYED") said = true;
+        chk(label, seduced===want && said===want,
+            UNITS[id].name+" softkill="+UNITS[id].softkill+
+            " seeker "+(seduced?"seduced":"held")+", DECOYED shown "+said);
+        var k = Combat.projectiles.indexOf(p); if(k>=0) Combat.projectiles.splice(k,1);
+        ship.dead = true;
+      }
+      shot(unitFor("nato","destroyer","e80"),
+           "the soft-kill layer fires for a hull that has decoys", true);
+      shot(unitFor("nato","destroyer","e50"),
+           "and never for one that has none", false);
+    } finally {
+      Combat.projectiles.push.apply(Combat.projectiles, parked);
+    }
+  })();
+  }
+
+  /* ====== [50] THE GEOMETRY OF A BOMB RUN, IN NUMBERS ======
+     The carry-through in updateAir's overhead branch was computed in the wrong
+     units - a value already in pixels multiplied by CFG.TILE again, 83 tiles
+     of overshoot on a 2.6-tile bomb - and it showed nowhere on the screen,
+     because the aim point is collinear with the aircraft and the target, so
+     the magnitude never reaches the heading. The full argument is in the
+     comment on that branch.
+     Which is exactly why the branch had no test: [42] asks only that the
+     aeroplane is not stationary, and EVERY value of the carry-through passes
+     that, the broken one included. A track measurement cannot see this bug.
+     So one check here reads the carry-through directly off the aim point
+     handed to flyTo, and the rest pin the pass itself: keep flying, cross the
+     target inside the reach of its own bomb, stay in its neighbourhood, keep
+     the load coming off.
+     Measured on the patched tree: 0 frames stopped, 8 passes and 208 tiles
+     flown in 40 s, median closest approach 0.06 tiles against 3.24 tiles of
+     bomb, carry-through a flat 4.0 tiles, furthest 12.0 tiles - which is
+     where it started - and 31 rounds delivered. Reverting js/entities.js:2561
+     to the broken units was run as a mutation: the carry-through check reads
+     103.7 tiles and fails, [42] still passes, and every other number in this
+     block is unchanged digit for digit, which is the point. */
+  if (inHalf(1)) {
+  log("\n[50] A BOMB RUN CROSSES THE TARGET AND STAYS OVER IT");
+  (function(){
+    var land=tile(P,"ground",6);
+    if(!land){ chk("bomb-run scenario built", false, "no ground"); return; }
+    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    if(ab) ab.buildProgress=1;
+    tick(1);
+    /* A B-2 carries ONE mount and it is a bomb, so pickWeapon cannot take the
+       branch away: an A-10 holds a 13.1-tile Maverick as well and flies the
+       standoff orbit instead, which is a different piece of code. */
+    var u=Game.spawnUnitAt(P,"sbomber_n",land.x*32+16,land.y*32+16);
+    var tgt=Game.spawnUnitAt(E,"mbt_p",(land.x+12)*32+16,land.y*32+16);
+    if(!u||!tgt){ chk("bomb-run scenario built", false, "spawn failed"); return; }
+    var w0=WEAPONS[u.def.weapons[0]];
+    if(!w0||w0.proj!=="bomb"){ chk("the B-2 is on its bomb", false, u.def.weapons.join(",")); return; }
+    u.parked=false; tgt.stance="hold"; tgt.hp=tgt.maxHp=3000000;
+    var reach=u.weaponRange(w0)/32;
+    /* READ THE CARRY-THROUGH OFF THE AIM POINT. The branch aims at
+           t + through * unit(t - aircraft),
+       so the distance from the aim point to the target IS `through`, in
+       pixels, and that is the number the units bug got wrong. Nothing else
+       can see it - it is collinear, so it leaves no mark on the track. The
+       override is an INSTANCE property on this one airframe, so the rest of
+       the suite flies on the prototype exactly as before, and the aeroplane
+       is killed at the end of the block. */
+    var origFly=u.flyTo, carry=[];
+    u.flyTo=function(px,py,dt){
+      var o=this.order;
+      if(o && o.type==="attack" && o.target===tgt)
+        carry.push(Math.hypot(px-tgt.x, py-tgt.y)/32);
+      return origFly.call(this,px,py,dt);
+    };
+    u.give({type:"attack", target:tgt});
+    /* Fuel and ordnance are topped up every frame on purpose: what is measured
+       here is the AUTOPILOT. A turnaround inside the window is [41] and [43]'s
+       subject and would only add noise to these numbers. */
+    var px=u.x, py=u.y, path=0, still=0, rounds=0, maxD=0;
+    var lastD=Math.hypot(u.x-tgt.x,u.y-tgt.y), closing=true, caps=[];
+    for(var i=0;i<40*30;i++){ tick(1);
+      if(u.dead) break;
+      u.fuel=u.fuelMax; u.ammo=u.ammoMax;
+      var dd=Math.hypot(u.x-px,u.y-py); path+=dd; px=u.x; py=u.y;
+      var ot=u.order&&u.order.type;
+      if(dd<0.3 && !u.parked && ot==="attack") still++;
+      var d=Math.hypot(u.x-tgt.x,u.y-tgt.y);
+      if(ot==="attack" && d>maxD) maxD=d;
+      /* a PASS is one crossing of closest approach: the range stops shrinking
+         and starts opening again, which is the aeroplane going over the top */
+      if(closing && d>lastD+0.01){ closing=false; caps.push(lastD/32); }
+      else if(!closing && d<lastD-0.01) closing=true;
+      lastD=d;
+      var ps=Combat.projectiles||[];
+      for(var q=0;q<ps.length;q++){ var pr=ps[q];
+        if(pr.shooter===u && !pr._s50){ pr._s50=1; rounds++; } }
+    }
+    function median(a){ var s=a.slice().sort(function(x,y){return x-y;});
+      return s.length?s[s.length>>1]:99; }
+    var med=median(caps), mc=median(carry);
+    chk("it never stops in mid-air to bomb", still<10, still+" frames stopped");
+    chk("it flies repeated passes rather than one run and away",
+        caps.length>=4, caps.length+" passes in 40 s, "+(path/32).toFixed(0)+
+        " tiles flown (8 and 208 measured)");
+    chk("and the pass crosses inside the reach of its own bomb",
+        med<=reach, "median closest approach "+med.toFixed(2)+"t against "+reach.toFixed(2)+"t of bomb");
+    /* THE UNITS CHECK, and the only one here that can fail on the bug. A
+       2.6-tile bomb multiplied by the tile size twice asks to carry through
+       83 tiles - most of a 144-tile map; this B-2 reads 103.7. Four is the
+       floor the branch means. */
+    chk("it aims a few tiles beyond the target, not eighty-three",
+        carry.length>50 && mc<8,
+        carry.length+" aim points, median carry-through "+mc.toFixed(1)+
+        "t (4.0 measured; 103.7 with the units bug back in)");
+    chk("and it stays in the target's neighbourhood between passes",
+        maxD/32 < 24, "furthest while prosecuting "+(maxD/32).toFixed(1)+
+        "t (12.0 measured, and 12.0 is where it started; a live 83-tile "+
+        "carry-through reads 88)");
+    chk("and the load keeps coming off", rounds>=12, rounds+" rounds in 40 s (31 measured)");
+    u.flyTo=origFly;
+    if(u&&!u.dead) u.dead=true; if(tgt&&!tgt.dead) tgt.dead=true;
+  })();
+  }
+
+  /* ====== 51: the pathfinder's reachability labels ====== */
+  if (inHalf(1)) {
+  log("\n[51] A ROOM WITH ONE DOOR, AND THEN NO DOOR");
+  (function(){
+    /* Path.find labels every tile with the piece of ground it belongs to, so a
+       goal it cannot reach is refused without expanding anything. The labels
+       are only safe if they are thrown away the instant a structure changes
+       the shape of the ground - so this walks into a room through its one
+       door, bricks the door up, and tries again. A route that still walked in
+       would mean the cache had gone stale; a search that flooded the map would
+       mean the labels were not being used at all.
+       The counts below are of blockFn CALLS, not of milliseconds: the suite
+       runs under a virtualised clock, so work done is the only honest measure
+       of how much cheaper the answer got. */
+    var M=Game.map, W=M.W, H=M.H;
+    var RW=9, RH=7, rx=0, ry=0;
+    function clearPatch(w,h){
+      for(var y=4;y<H-h-4;y++) for(var x=4;x<W-w-4;x++){
+        var good=true;
+        for(var j=0;j<h&&good;j++) for(var i=0;i<w;i++)
+          if(!GameMap.passable(M,x+i,y+j,"ground")||Game.tileBlocked(x+i,y+j,null)){ good=false; break; }
+        if(good) return {x:x,y:y};
+      }
+      return null;
+    }
+    var p=clearPatch(15,13);
+    if(!p){ chk("open ground for the pathfinder test", false, "none on this map"); return; }
+    rx=p.x+3; ry=p.y+3;
+    var built=[];
+    function wall(x,y){ var b=Game.placeBuilding(P,"nest",x,y,true); if(b){ b.buildProgress=1; built.push(b); } return b; }
+    function unwall(b){ var i=built.indexOf(b); if(i>=0) built.splice(i,1); if(b&&!b.dead) Game.removeBuilding(b); }
+    var probes=0;
+    function blk(tx,ty){ probes++; return Game.tileBlocked(tx,ty,null); }
+    function inRoom(pt){ return !!pt && pt.x>rx && pt.x<rx+RW-1 && pt.y>ry && pt.y<ry+RH-1; }
+    /* a route comes back string-pulled, so expand it into single tile steps
+       and check every one: never onto a blocked tile, and never a diagonal
+       squeezed between two blocked orthogonals */
+    function walk(sx,sy,path,layer,bf){
+      layer=layer||"ground";
+      var shut=function(a,b){ return !GameMap.passable(M,a,b,layer)||(bf?bf(a,b):false); };
+      var out={ok:true,why:"clean",steps:0,inside:0,end:null,door:false};
+      if(!path||!path.length){ out.why="no route"; return out; }
+      var x=sx,y=sy,guard=0;
+      for(var k=0;k<path.length;k++){
+        while((x!==path[k].x||y!==path[k].y)&&guard++<4000){
+          var dx=(path[k].x>x)-(path[k].x<x), dy=(path[k].y>y)-(path[k].y<y), nx=x+dx, ny=y+dy;
+          if(shut(nx,ny)){ out.ok=false; out.why="walks through "+nx+","+ny; return out; }
+          if(dx&&dy&&(shut(nx,y)||shut(x,ny))){
+            out.ok=false; out.why="cuts the corner at "+nx+","+ny; return out; }
+          x=nx; y=ny; out.steps++;
+          if(x>rx&&x<rx+RW-1&&y>ry&&y<ry+RH-1) out.inside++;
+          if(x===rx+4&&y===ry) out.door=true;
+        }
+      }
+      out.end={x:x,y:y};
+      return out;
+    }
+
+    /* the room: a solid ring of gun nests with one tile left out */
+    var dx0=rx+4, dy0=ry;
+    for(var i=0;i<RW;i++){ if(!(rx+i===dx0)) wall(rx+i,ry); wall(rx+i,ry+RH-1); }
+    for(var j=1;j<RH-1;j++){ wall(rx,ry+j); wall(rx+RW-1,ry+j); }
+    var sx=rx+4, sy=ry-2, gx=rx+4, gy=ry+3;
+    chk("the test room went up with one door in it",
+        built.length===RW*2+(RH-2)*2-1, built.length+" of "+(RW*2+(RH-2)*2-1)+" walls");
+
+    probes=0;
+    var pa=Path.find(M,sx,sy,gx,gy,"ground",blk), openProbes=probes;
+    var wa=walk(sx,sy,pa,"ground",blk);
+    chk("a route in through the one door is found",
+        !!pa && wa.end && wa.end.x===gx && wa.end.y===gy && wa.door,
+        (pa?("ends "+(wa.end?wa.end.x+","+wa.end.y:"?")+" door="+wa.door+" steps="+wa.steps):"null")+" probes="+openProbes);
+    chk("and it never walks through a wall or cuts a corner", wa.ok, wa.why);
+
+    /* the classic corner: both orthogonals shut, so the diagonal is shut too */
+    var cx=p.x+2, cy=p.y+11;
+    wall(cx+1,cy); wall(cx,cy+1);
+    var pc=Path.find(M,cx,cy,cx+1,cy+1,"ground",blk);
+    var wc=walk(cx,cy,pc,"ground",blk);
+    chk("a tank does not squeeze diagonally between two buildings",
+        !!pc && wc.ok && wc.steps>=3, (pc?("steps="+wc.steps+" "+wc.why):"null"));
+
+    /* brick the door up */
+    var plug=wall(dx0,dy0);
+    probes=0;
+    var pb=Path.find(M,sx,sy,gx,gy,"ground",blk), shutProbes=probes;
+    var wb=walk(sx,sy,pb,"ground",blk);
+    chk("with the door bricked up nothing gets in - the label was invalidated",
+        !!plug && (!pb || (wb.ok && wb.inside===0)),
+        (pb?("steps="+wb.steps+" inside="+wb.inside+" "+wb.why):"null")+" probes="+shutProbes);
+    chk("and the refusal costs a handful of tests, not a map-wide flood",
+        shutProbes<3000, shutProbes+" blockFn calls vs "+openProbes+" for the open door");
+
+    /* ---- AN ORDER THE OLD PATHFINDER OBEYED MUST STILL BE OBEYED ----
+       The goal TILE is illegal in itself - open water, rock, a footprint - and
+       the nearest ground of our own piece is far further away than the
+       fourteen tiles the spiral ever looked. The old code asked only "is there
+       ANY legal tile within fourteen of the goal", found one on the far side
+       of the barrier and walked as far towards it as it could. Refusing there
+       instead is not a cheap answer, it is a LOST ORDER: Unit.stepAlong reads
+       a null path as "arrived", so the unit completes the order standing
+       still. Measured by replaying a real match: 110 of 11,730 calls on
+       taiwan. The route must come back, must stay inside the sealed room, and
+       must still cost a handful of tests. */
+    var farG=null;
+    for(var fy=1; fy<H-1 && !farG; fy++) for(var fx=1; fx<W-1; fx++){
+      if(Math.max(Math.abs(fx-gx),Math.abs(fy-gy))<20) continue;
+      if(GameMap.passable(M,fx,fy,"ground")) continue;          // the goal tile must be illegal
+      if(!(GameMap.passable(M,fx+1,fy,"ground")||GameMap.passable(M,fx-1,fy,"ground")||
+           GameMap.passable(M,fx,fy+1,"ground")||GameMap.passable(M,fx,fy-1,"ground"))) continue;
+      farG={x:fx,y:fy}; break;                                   // ...with legal ground beside it
+    }
+    probes=0;
+    var far=farG?Path.find(M,gx,gy,farG.x,farG.y,"ground",blk):null;
+    var farProbes=probes, wf=walk(gx,gy,far,"ground",blk);
+    chk("an order onto ground it cannot reach is obeyed, not silently dropped",
+        !!farG && !!far && wf.ok && wf.steps===wf.inside && inRoom(wf.end),
+        farG ? ((far?("steps="+wf.steps+" inside="+wf.inside+" ends "+(wf.end?wf.end.x+","+wf.end.y:"?")+" "+wf.why):"NULL")+
+                " goal "+farG.x+","+farG.y+" impassable, "+
+                Math.max(Math.abs(farG.x-gx),Math.abs(farG.y-gy))+" tiles off")
+              : "no impassable tile 20+ tiles away on this map");
+    chk("and that answer is cheap too", farProbes<3000, farProbes+" blockFn calls");
+
+    /* ---- THE OTHER LABEL SET ----
+       Six of the seven callers pass no blockFn at all, and for them a
+       structure is not a wall: the commander routes supply and probes
+       coastlines straight through its own base on purpose. Those callers get
+       TERRAIN-only labels, so the sealed room must not exist for them. */
+    var pn=Path.find(M,sx,sy,gx,gy,"ground",null), wn=walk(sx,sy,pn,"ground",null);
+    chk("with no blockFn the labels are terrain only, so the walls are not there",
+        !!pn && wn.ok && wn.end && wn.end.x===gx && wn.end.y===gy,
+        pn?("ends "+(wn.end?wn.end.x+","+wn.end.y:"?")+" steps="+wn.steps+" "+wn.why):"null");
+
+    /* ---- AFLOAT ----
+       The sea layer has its own labels. Whatever they say, the search must
+       agree with them: joined water means the route arrives, separate water
+       means it does not. */
+    var w1=tile(P,"sea",4), w2=tile(E,"sea",4);
+    if(w1&&w2){
+      var comp=Path.components(M,"sea");
+      var joined=!!(comp && comp[w1.y*W+w1.x] && comp[w1.y*W+w1.x]===comp[w2.y*W+w2.x]);
+      var ps=Path.find(M,w1.x,w1.y,w2.x,w2.y,"sea",blk), ws=walk(w1.x,w1.y,ps,"sea",blk);
+      var landed=!!(ws.end && ws.end.x===w2.x && ws.end.y===w2.y);
+      chk("a sea route is legal and says the same thing as the sea labels",
+          !!ps && ws.ok && landed===joined,
+          "joined="+joined+" arrived="+landed+" steps="+ws.steps+" "+ws.why);
+    } else chk("a sea route is legal and says the same thing as the sea labels",
+               false, "no water within reach of either home on this map");
+
+    /* ---- THE WRITE POINT A LOAD USES ----
+       SaveGame.load does not go through removeBuilding: it empties the
+       occupancy grid itself and then calls G.bumpOcc(), which is the only
+       thing that tells the labels the ground has changed. Do exactly that to
+       the room's own tiles, both ways. */
+    var saved=[];
+    for(var i5=0;i5<built.length;i5++){
+      var k5=built[i5].ty*W+built[i5].tx;
+      saved.push([k5,Game.occ[k5]]); Game.occ[k5]=0;
+    }
+    Game.bumpOcc();
+    var po=Path.find(M,sx,sy,gx,gy,"ground",blk), wo=walk(sx,sy,po,"ground",blk);
+    chk("an occupancy wipe outside removeBuilding is honoured once bumpOcc fires",
+        !!po && wo.ok && wo.end && wo.end.x===gx && wo.end.y===gy,
+        po?("steps="+wo.steps+" "+wo.why):"null");
+    for(var i6=0;i6<saved.length;i6++) Game.occ[saved[i6][0]]=saved[i6][1];
+    Game.bumpOcc();
+    var pr=Path.find(M,sx,sy,gx,gy,"ground",blk), wr=walk(sx,sy,pr,"ground",blk);
+    chk("and putting the grid back seals the room again",
+        !pr || (wr.ok && wr.inside===0),
+        pr?("steps="+wr.steps+" inside="+wr.inside+" "+wr.why):"null");
+
+    /* take the brick out again: the labels must come back the other way */
+    unwall(plug);
+    var pd=Path.find(M,sx,sy,gx,gy,"ground",blk);
+    var wd=walk(sx,sy,pd,"ground",blk);
+    chk("take the brick out and the way in is open again",
+        !!pd && wd.ok && wd.end && wd.end.x===gx && wd.end.y===gy && wd.door,
+        pd?("steps="+wd.steps+" door="+wd.door+" "+wd.why):"null");
+
+    while(built.length){ var b=built.pop(); if(!b.dead) Game.removeBuilding(b); }
+    var pe=Path.find(M,sx,sy,gx,gy,"ground",blk), we=walk(sx,sy,pe,"ground",blk);
+    chk("and with the room pulled down the ground is clear again",
+        !!pe && we.ok && we.end && we.end.x===gx && we.end.y===gy,
+        pe?("steps="+we.steps+" "+we.why):"null");
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

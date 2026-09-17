@@ -2555,10 +2555,62 @@ class Unit {
              BEYOND it, along the run-in, so the pass carries through and out
              the far side; the range test below drops the load as it goes over,
              and once it is past, `dist` opens again and it comes round for
-             another. That is a bombing run rather than a hover. */
+             another. That is a bombing run rather than a hover.
+
+             ---- AND THE CARRY-THROUGH IS MEASURED IN PIXELS ----
+             (agents) "the bomb run overshoots by a factor of 32." It did, as
+             arithmetic: `Math.max(range, 4) * CFG.TILE` took `range`, which
+             weaponRange() has ALREADY multiplied by CFG.TILE, and multiplied
+             it by the tile size a second time. A 2.6-tile JDAM asks for 83
+             pixels of carry-through and was handed 2,656 - 83 tiles past the
+             target. The 4 is a tile figure standing inside a pixel
+             expression, and it is unreachable: any real range in pixels is
+             larger than 4.
+
+             Note which arm wins once the units are right, because it is the
+             opposite one. All 116 bomb mounts in the game carry between 1.8
+             and 4.2 tiles, and only three clear the four-tile floor: the
+             French AASM Hammer at 4.2, in its base entry and the two
+             unit-specific variants the Rafale CAS and fighter fits carry. So
+             for 113 of the 116 the carry-through is the flat four tiles and
+             `range` is vestigial here. Tuning a bomb's reach will NOT move
+             the pass geometry; this line is the place to change if that is
+             ever wanted.
+
+             It changed nothing on the screen, and that is worth writing down
+             so nobody builds on a false premise. The aim point is
+                 T + through * unit(T - P)
+             and the vector from the aircraft to it is
+                 (T - P) * (1 + through / |T - P|),
+             a POSITIVE MULTIPLE of (T - P). So the heading flyTo takes is the
+             heading to the target for every positive `through`, and flyTo's
+             return value - the only other thing the magnitude could reach - is
+             discarded on this line. Measured in jsc over six bomb-carrying
+             airframes at eight run-in bearings each, 60 s on a durable target:
+             the 32x value, the corrected value, and the aim point removed
+             altogether (flyTo straight at the target) deliver 170.8 / 170.8 /
+             171.0 rounds summed over the six, and fly the same tracks to
+             floating-point noise.
+
+             So this is a units fix and not a flight-model change - but it has
+             to be made, because `through` is one refactor away from being
+             live. Latch the run-in axis instead of recomputing it every frame
+             and the aim point stops being collinear at once; 83 tiles of carry
+             would then fly a bomber off the map. That latch WAS tried and
+             measured in four sizes, and every size lost. Pure pursuit puts the
+             aeroplane exactly over the target - median closest approach 0.05
+             to 0.09 tiles - because it is aimed AT it; a latched leg has a
+             lateral error at the target of roughly
+                 2 * turnRadius * through / legLength,
+             which is 1.5 to 2.4 tiles against bombs that reach 2.2 to 3.0.
+             The totals: 170.8 rounds and 89% of passes inside the bomb's own
+             reach for pursuit, against 100.3 / 79%, 99.4 / 80% and 79.0 / 76%
+             for setup legs of two, three and four turn radii, and 38.5 / 14%
+             with no setup leg at all. Pure pursuit is the better bomb run and
+             it stays. [50] reads this number back off flyTo and pins it. */
           const bx = t.x - this.x, by = t.y - this.y;
           const bl = Math.max(1, Math.hypot(bx, by));
-          const through = Math.max(range, 4) * CFG.TILE;
+          const through = Math.max(range, 4 * CFG.TILE);
           this.flyTo(t.x + (bx / bl) * through, t.y + (by / bl) * through, dt);
           if (dist < range) this.tryFire(wi, t);
         } else {

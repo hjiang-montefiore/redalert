@@ -541,7 +541,6 @@ function makeCommander() {
      Closure state for the reason the picture is: two commanders sharing a
      flood fill would be harmless, sharing a picket route or a job table would
      be sharing one staff. */
-  let gndComp = null, seaComp = null;   // terrain connectivity, once a battle
   let reconGrid = null;          // the search grid's representative tiles
   let rivalPath = null;          // the last ground route pickRival() planned, tiles
   let scoutLog = scoutLogNew();  // counters for intel(); nothing decides on them
@@ -11107,36 +11106,13 @@ function makeCommander() {
 
   /* ---- which ground joins which ----
      Terrain never changes at runtime, so the answer is computed once a battle
-     per layer. Four-way, because Path.find refuses a diagonal step through a
-     blocked orthogonal and is therefore exactly as connected as this. 0 means
-     impassable. Uint16: a 144 map cannot hold 65,535 separate pieces. */
+     per layer - and it is computed by Path, which needs exactly the same
+     labels to refuse a goal it cannot reach. One flood fill, one array, and
+     no way for the commander's picture of the map to drift from the routes it
+     is actually given. 0 means impassable. */
   function compOf(layer) {
     if (layer === "air") return null;
-    const sea = layer !== "ground";
-    const have = sea ? seaComp : gndComp;
-    if (have) return have;
-    const M = G.map, W = M.W, H = M.H, N = W * H, ly = sea ? "sea" : "ground";
-    const lab = new Uint16Array(N), stack = new Int32Array(N);
-    let id = 0;
-    for (let i = 0; i < N; i++) {
-      if (lab[i] || !GameMap.passable(M, i % W, (i / W) | 0, ly)) continue;
-      id = Math.min(65535, id + 1);
-      let sp = 0;
-      stack[sp++] = i; lab[i] = id;
-      while (sp) {
-        const c = stack[--sp], cx = c % W, cy = (c / W) | 0;
-        for (let d = 0; d < 4; d++) {
-          const nx = cx + (d === 0 ? 1 : d === 1 ? -1 : 0);
-          const ny = cy + (d === 2 ? 1 : d === 3 ? -1 : 0);
-          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-          const j = ny * W + nx;
-          if (lab[j] || !GameMap.passable(M, nx, ny, ly)) continue;
-          lab[j] = id; stack[sp++] = j;
-        }
-      }
-    }
-    if (sea) seaComp = lab; else gndComp = lab;
-    return lab;
+    return Path.components(G.map, layer === "ground" ? "ground" : "sea");
   }
   /* the piece a unit is standing on; a unit on a bridge end or a shore tile
      reads its neighbour's. 0 = unknown, and unknown filters nothing. */
@@ -11575,7 +11551,7 @@ function makeCommander() {
   /* A new battle is a new map: the flood fills, the grid, the pump field, the
      route, the posts and the detailed hulls all belong to the old one. */
   function reconReset() {
-    gndComp = null; seaComp = null; reconGrid = null; rivalPath = null;
+    reconGrid = null; rivalPath = null;
     postList = null; postT = -1e9; scoutLog = scoutLogNew();
     firstFound = -1; firstProd = -1; oneWayT = 0; fieldReset();
     seaRef = null; seaLostT = -1e9; airRef = null; airLostT = -1e9;

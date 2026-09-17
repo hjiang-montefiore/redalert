@@ -3384,7 +3384,12 @@ for (var _rc in SHIP_RCS) if (UNITS[_rc]) UNITS[_rc].rcs = SHIP_RCS[_rc];
 /* ---- soft kill ----
    Chaff, decoys and off-board jammers seduce a missile away rather than
    shooting it down. Modern western and Chinese ships carry good ones; the
-   North Korean fleet carries essentially none. */
+   North Korean fleet carries essentially none.
+
+   THIS TABLE IS THE PRESENT-DAY ROSTER ONLY. It is keyed by unit id, and the
+   loop under it runs while rules.js is still loading - before eras.js has
+   defined a single historical hull. The historical fits are in SOFTKILL_ERA
+   underneath, applied by a sweep that runs after every roster exists. */
 var SOFTKILL = {
   corvette_n:0.30, destroyer_n:0.34, cruiser_n:0.34, carrier_n:0.26, missileboat_n:0.20,
   corvette_c:0.26, destroyer_c:0.29, cruiser_c:0.31, carrier_c:0.24, missileboat_c:0.16,
@@ -3396,6 +3401,202 @@ var SOFTKILL = {
   corvette_g:0.30, destroyer_g:0.31,
 };
 for (var _sk2 in SOFTKILL) if (UNITS[_sk2]) UNITS[_sk2].softkill = SOFTKILL[_sk2];
+
+/* ---- soft kill across the historical rosters ----
+
+   WHAT WAS BROKEN, MEASURED. The table above is keyed by unit id and applied
+   by the loop above, which runs while rules.js is still loading - and eras.js,
+   which defines every historical hull, is loaded AFTER rules.js on all six
+   pages in the project. Counted at runtime before this change: all 29 ids in
+   SOFTKILL found their unit, and not one of the 421 era hulls carried a decoy
+   rating - "NONE" for e50, e60, e80, e90 and e00 across all four playable
+   factions and all five naval roles. combat.js layer 2, the middle of the
+   three-layer ship defence, therefore did nothing whatever in five of the
+   game's six settings: a 1990 Type 23 and a 1983 Ticonderoga had the same
+   soft kill as a rowing boat.
+
+   E50 AND E60 CARRY NOTHING, AND THAT IS CORRECT. DO NOT "FIX" IT. An offboard
+   decoy launcher is a dated piece of equipment, not a permanent property of
+   being a warship. The US Mk 33 RBOC dates from about 1970 and the Mk 36 SRBOC
+   that actually equipped the fleet from 1978-80; the Royal Navy's Corvus is a
+   1970 fit and Sea Gnat a 1988 one; the Soviet PK-16 is early 1970s and PK-10
+   late 1980s; the French Syllex is 1970s and Sagaie 1985; China fields no
+   decoy launcher worth the name until the 1990s hulls. A Forrest Sherman of
+   1955, a Kotlin of 1955 or a Daring of 1952 had no such system aboard in any
+   form. So the table below STARTS AT e80 on purpose, and the absence of an
+   e50 or e60 block is a researched finding, not an omission.
+
+   AN EXPLICIT 0 MEANS "RESEARCHED, AND IT IS NOTHING": a Type 051 Luda through
+   the whole 1980s, a 47-tonne Hai Ou, the entire North Korean navy in every
+   period. That is the realism rule this project runs on - a fleet with no such
+   system gets nothing, and a fleet a generation behind gets less. A MISSING
+   entry from e80 onward is a hole in the research instead, and
+   applyEraSoftkill() records every one of them in SOFTKILL_ERA_GAPS so that a
+   future era roster cannot be added and silently skipped. _behtest [49]
+   asserts that list is empty.
+
+   The numbers are the quality of the FIT. combat.js scales them again by the
+   hull's rcs - there is less real return for a missile to prefer over the
+   decoy on a shaped topside - so a La Fayette gets its second helping there
+   and does not need it written in twice here. Every chain below is monotone
+   non-decreasing into its own present-day figure in SOFTKILL, which [49] also
+   checks: no fleet un-invents a system it already had.
+
+   ONE ANOMALY IN THAT SCALING IS RECORDED HERE SO THE NEXT READER DOES NOT
+   CHASE IT BACK TO THIS TABLE. It is eras.js's data, not a decoy number.
+   Several e90 rows there carry the PRESENT-DAY hull's rcs instead of their
+   own: nato_e90_corvette is a 1977 Oliver Hazard Perry wearing the Littoral
+   Combat Ship's 0.1, while the same class one era earlier has 0.6, and
+   roc_e90_corvette, roc_e90_missileboat and pla_e90_corvette show the same
+   pattern. Measured across all 40 faction/role chains that produces exactly
+   one inversion in the value combat.js actually uses: the 1990s Perry reaches
+   0.339 against the 1991 Arleigh Burke's 0.320. Before this change every one
+   of those hulls sat at zero and the quirk was invisible. Correcting it means
+   editing rcs in a GENERATED file, which also moves radar detection
+   (game.js:235) and missile accuracy (combat.js:73), so it belongs in its own
+   measured pass rather than in a decoy change. [49] checks the scaled value
+   too and knows this one chain by name; any NEW inversion fails. */
+var SOFTKILL_ROLES = { destroyer:1, cruiser:1, corvette:1, carrier:1, missileboat:1 };
+var SOFTKILL_ERA = {
+  /* UNITED STATES. Mk 36 SRBOC over AN/SLQ-32 is fleet-wide by the early
+     1980s, so the capability arrives already good; the 1990s bring SLQ-32(V)3
+     and better rounds, and Nulka - an active decoy that hovers and flies the
+     false target away from the ship rather than blooming a cloud beside it -
+     reaches the fleet from 1999. Held UNDER the present-day 0.34 rather than
+     at it: USS Stark took two Exocets in May 1987 with her EW suite quiet and
+     not one round of chaff fired, which is what the fit was worth in practice.
+     The Pegasus hydrofoil is a 240-tonne boat with room for almost none of it. */
+  nato: { e80:{ destroyer:0.26, cruiser:0.27, corvette:0.24, carrier:0.20, missileboat:0.12 },
+          e90:{ destroyer:0.29, cruiser:0.30, corvette:0.26, carrier:0.22 },
+          e00:{ destroyer:0.32, corvette:0.28, carrier:0.25 } },
+
+  /* BRITAIN. The 1980s fit is Corvus, a 1970 eight-barrel chaff mortar over
+     UAA-1 ESM, and the Falklands is the honest record of what it was worth:
+     Ambuscade's chaff did seduce an Exocet on 25 May 1982 - which then found
+     Atlantic Conveyor behind her - while Sheffield was hit on 4 May with her
+     ESM blanked for a satellite call. Sea Gnat from 1988-90 is the real step,
+     because DLF-3 puts an offboard radar decoy in the water rather than a puff
+     of chaff, and it is still the basis of the Type 45 and Type 23 fit. */
+  gbr: { e80:{ destroyer:0.18, corvette:0.20, carrier:0.16 },
+         e90:{ destroyer:0.26, corvette:0.28, carrier:0.22 },
+         e00:{ destroyer:0.33, corvette:0.30, carrier:0.25 } },
+
+  /* FRANCE. The country that built Exocet understands what beats it. Syllex
+     in the 1970s, then Dagaie from about 1982 and Sagaie from 1985 - a proper
+     multi-round infrared and radar launcher years before most of NATO. The
+     1980s aviso is the exception and the reason its figure is low: twelve
+     hundred tonnes built to a price, with a 100 mm and a hull sonar and not
+     much else. The 1996 La Fayette is the pairing this game models best -
+     Dagaie Mk2 on the first hull in the world designed for a low signature. */
+  fra: { e80:{ destroyer:0.18, cruiser:0.17, corvette:0.14, carrier:0.16 },
+         e90:{ destroyer:0.26, corvette:0.30, carrier:0.21 },
+         e00:{ destroyer:0.32, corvette:0.32, carrier:0.25 } },
+
+  /* GERMANY. Bremen F122 commissioned in 1982 with Mk 36 SRBOC from the start,
+     and the Type 143 boats carried the Buck Hot Dog and Silver Dog launchers -
+     decoys on a four-hundred-tonne craft, which is a German preoccupation
+     because the Baltic approaches give a missile boat no sea room to run. MASS,
+     the multi-spectral launcher Rheinmetall built, arrives with the Sachsen
+     class in 2003-05 and is as good as anything afloat, which is why e00 sits
+     within a point of the present-day figure: it is the same equipment. */
+  deu: { e80:{ destroyer:0.24, missileboat:0.14 },
+         e90:{ destroyer:0.27, missileboat:0.18 },
+         e00:{ destroyer:0.30, corvette:0.29, missileboat:0.18 } },
+
+  /* THE EASTERN BLOC. PK-16 chaff rockets are aboard Slava, Sovremenny and
+     Kiev through the 1980s and PK-10 arrives late in the decade, so the
+     hardware is real - but there is no active offboard decoy in Soviet or
+     Russian service at any point, and the ESM that decides WHEN to fire never
+     approached SLQ-32. The present-day figures already put this fleet at about
+     half of NATO's; the era chain holds that ratio rather than inventing a
+     better past. The 1990s are the decade the fleet stopped going to sea, so
+     the step is small and lands on the new hulls only. */
+  pact: { e80:{ destroyer:0.12, cruiser:0.13, corvette:0.09, carrier:0.10, missileboat:0.06 },
+          e90:{ destroyer:0.14, cruiser:0.15, corvette:0.10, carrier:0.12 },
+          e00:{ cruiser:0.16, corvette:0.13, carrier:0.13, missileboat:0.09 } },
+
+  /* CHINA. A REAL GAP, AND IT STAYS. The 1980s PLAN is the Luda and the
+     Jianghu, whose air defence is 37 mm and 57 mm guns and whose own unit
+     descriptions in eras.js say they were essentially defenceless - there is
+     no Chinese decoy launcher on them to record, so e80 is an explicit 0. The
+     first real fit arrives with the 1990s hulls, the Type 052 Luhu and the
+     Jiangwei, and it is early work. By the Type 052C of 2004 and the Type 056
+     the launchers are modern and integrated with an AESA set, which is the
+     whole story of this navy in one column. The Houjian missile boat of 1991
+     carries nothing; the Type 022 catamaran of 2004 does. */
+  pla: { e80:{ destroyer:0, corvette:0 },
+         e90:{ destroyer:0.14, corvette:0.12, missileboat:0 },
+         e00:{ destroyer:0.24, corvette:0.21, carrier:0.19, missileboat:0.12 } },
+
+  /* TAIWAN. Everything here is American, which is also the constraint: the
+     Wu Chin III conversion of 1983-86 put US combat systems and chaff on
+     forty-year-old Gearing hulls, and that is the only 1980s ROC ship with any
+     of it - the two Lung Chiang gunboats and the 47-tonne Hai Ou have none and
+     never did. The licence-built Perry of 1993 brings Mk 36 and SLQ-32 aboard
+     properly, the ex-Kidd of 2005 is the same equipment on a better platform,
+     and the Tuo Chiang of 2015 pairs chaff with a faceted catamaran. */
+  roc: { e80:{ destroyer:0.14, corvette:0, missileboat:0 },
+         e90:{ destroyer:0.20, corvette:0.08, missileboat:0 },
+         e00:{ destroyer:0.21, corvette:0.22, missileboat:0.10 } },
+
+  /* NORTH KOREA. Nothing, in every period, and the zeroes are the point. The
+     present-day figures in SOFTKILL are already 0.04 and 0.03 - the residue of
+     a handful of improvised fits on the newest hulls - and there is nothing
+     behind them. A Najin of 1973, a Soju of 1981 and the Nongo of 2014 have no
+     decoy launcher of any kind. This is the realism rule working as intended:
+     the gap is content, and it is not to be balanced away. */
+  kpa: { e80:{ corvette:0, missileboat:0 },
+         e90:{ corvette:0, missileboat:0 },
+         e00:{ missileboat:0 } },
+};
+
+/* Faction/era/role combinations from e80 onward that reached the sweep with no
+   table entry AND no hand-written value. Empty is the only acceptable state;
+   _behtest [49] fails if it is not. */
+var SOFTKILL_ERA_GAPS = [];
+
+/* Applied by a SWEEP OVER UNITS keyed on (fac, from, role) rather than by a
+   list of ids, so a hull added to any future era roster, in any file, is
+   covered the moment it exists - which is precisely what the id-keyed loop
+   above could not do. Never overwrites a value already set, so rules.js's own
+   present-day table stays the authority for e20 and the function is safe to
+   call more than once. Called from the tail of generations.js, the last data
+   file, because that is the first moment at which every roster exists. */
+function applyEraSoftkill() {
+  SOFTKILL_ERA_GAPS.length = 0;
+  /* the decade the equipment was invented; anything earlier is a real absence */
+  var first = ERAS.indexOf("e80");
+  for (var _sek in UNITS) {
+    var _sed = UNITS[_sek];
+    if (!_sed || _sed.cat !== "naval" || _sed.layer !== "sea") continue;
+    if (!SOFTKILL_ROLES[_sed.role]) continue;
+    var _see = _sed.from || "e20";
+    var _sei = ERAS.indexOf(_see);
+    if (_sei < 0) {
+      /* AN ERA KEY NOBODY REGISTERED - a typo in `from`, or a roster added to
+         eras.js without its key being added to ERAS at the bottom of this
+         file. It must NOT fall into the "too early to have any" branch below:
+         indexOf returns -1 for it, and -1 is smaller than every real index, so
+         an entire unregistered roster would go to sea with no decoys and no
+         complaint. That is the exact failure this sweep exists to prevent, so
+         it is recorded as a gap instead of skipped. */
+      SOFTKILL_ERA_GAPS.push(_sed.fac + "/" + _see + "/" + _sed.role +
+                             " (" + _sek + ") - era key not in ERAS");
+      continue;
+    }
+    if (_sei < first) continue;   /* e50 and e60 carried none */
+    var _seb = SOFTKILL_ERA[_sed.fac];
+    var _sev = (_seb && _seb[_see]) ? _seb[_see][_sed.role] : undefined;
+    if (_sev === undefined) {
+      /* e20 hulls are answered by SOFTKILL above; anything else is a hole */
+      if (_sed.softkill === undefined)
+        SOFTKILL_ERA_GAPS.push(_sed.fac + "/" + _see + "/" + _sed.role + " (" + _sek + ")");
+      continue;
+    }
+    if (_sed.softkill === undefined) _sed.softkill = _sev;
+  }
+  return SOFTKILL_ERA_GAPS.length;
+}
 
 
 /* ---- submarine-launched land attack ----

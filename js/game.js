@@ -106,6 +106,17 @@ var Game = (function () {
     /* bumped whenever a structure is placed or removed, so cached lookups
        that depend on occupancy (harvester docks) know to recompute */
     G.occStamp = 1;
+    /* ...and the pathfinder's reachability labels are rebuilt off the same
+       stamp. The probe says whether a tile is shut to EVERY ground unit, which
+       is what a label may assume: a structure's footprint is, a field obstacle
+       is not (wire stops nobody, dragon's teeth stop only vehicles), and a
+       tile whose obstacle is already dead is read as open because guessing
+       open only costs a search that succeeds anyway. Guessing shut could
+       refuse a route that exists, and that would strand a unit. */
+    if (typeof Path !== "undefined" && Path.setBlockProbe)
+      Path.setBlockProbe(
+        function (i) { return G.occ[i] !== 0 && !G.obs.has(i); },
+        function () { return G.occStamp | 0; });
     /* Per-battle caches keyed on G.time. A new battle resets G.time to 0, so
        any cache stamped during the previous battle looks infinitely fresh
        (time - stamp goes negative) and is never rebuilt - which left
