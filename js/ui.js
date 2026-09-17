@@ -364,7 +364,10 @@ var UI = (function () {
         if (!pc) { pc = document.createElement("div"); pc.className = "pct"; card.appendChild(pc); }
         pc.textContent = "READY";
       }
-      if (qn > 1) {
+      /* (owner) "if the number is 1 it should show 1 instead of nothing" -
+         a single order is still an order, and a blank corner read as "nothing
+         queued" on a card whose bar had not started moving yet */
+      if (qn >= 1) {
         if (!qn2) { qn2 = document.createElement("div"); qn2.className = "qn"; card.appendChild(qn2); }
         qn2.textContent = "x" + qn;
       } else if (qn2) qn2.remove();

@@ -1819,6 +1819,35 @@ try{
   })();
   }
 
+  /* ====== 47: a single queued item shows its count ====== */
+  if (inHalf(2)) {
+  log("\n[47] ONE ITEM IN THE QUEUE SHOWS x1");
+  (function(){
+    /* (owner) "when unit in the production queue, if the number is 1 it
+       should show 1 instead of nothing" - the same corner badge serves
+       every build tab, so test it on whichever tab is showing */
+    UI.refreshCards && UI.refreshCards();
+    var card=null, q=null;
+    document.querySelectorAll(".card").forEach(function(c){
+      if(card || !c.dataset) return;
+      var k=c.dataset.kind, qq=P.queues[k==="upgrade"?"upgrade":k];
+      if(qq && (UNITS[c.dataset.id]||BUILDINGS[c.dataset.id])) { card=c; q=qq; }
+    });
+    if(!card){ chk("a build card is on the bar", false, "no .card with a queue"); return; }
+    var id=card.dataset.id, def=UNITS[id]||BUILDINGS[id];
+    var saved=q.items.slice(), savedR=(q.ready||[]).slice();
+    q.items.length=0; if(q.ready) q.ready.length=0;
+    function badge(){ var b=card.querySelector(".qn"); return b ? b.textContent : ""; }
+    q.items.push({ id:id, def:def, paid:0 }); UI.frame(CFG.DT);
+    chk("one queued shows x1", badge()==="x1", card.dataset.kind+" "+id+" badge='"+badge()+"'");
+    q.items.push({ id:id, def:def, paid:0 }); UI.frame(CFG.DT);
+    chk("two queued shows x2", badge()==="x2", "badge='"+badge()+"'");
+    q.items.length=0; UI.frame(CFG.DT);
+    chk("an empty queue shows nothing", badge()==="", "badge='"+badge()+"'");
+    q.items.push.apply(q.items,saved); if(q.ready) q.ready.push.apply(q.ready,savedR);
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

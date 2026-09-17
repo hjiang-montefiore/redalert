@@ -72,12 +72,18 @@ function __el(tag, id, value) {
     add: function (c) { return this.appendChild(c); },
     removeChild: function (c) { var i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); return c; },
     insertBefore: function (c) { this.children.push(c); return c; },
-    remove: function () {}, replaceChildren: function () { this.children = []; },
+    remove: function () {
+      var par = this.parentNode;
+      if (par && par.children) { var i = par.children.indexOf(this); if (i >= 0) par.children.splice(i, 1); }
+      this.parentNode = null; this.parentElement = null;
+    },
+    replaceChildren: function () { this.children = []; },
     setAttribute: function (k, v) { this[k] = v; }, getAttribute: function (k) { return this[k] === undefined ? null : this[k]; },
     removeAttribute: function () {}, hasAttribute: function () { return false; },
     addEventListener: function () {}, removeEventListener: function () {}, dispatchEvent: function () {},
     focus: function () {}, blur: function () {}, click: function () { if (this.onclick) this.onclick({ isTrusted: false }); (this.__click || []).forEach(function (f) { f({ isTrusted: false, preventDefault: function () {} }); }); },
-    querySelector: function (q) { return __qs(q); }, querySelectorAll: function () { return []; },
+    querySelector: function (q) { return __find(this, q, true); },
+    querySelectorAll: function (q) { return __find(this, q, false); },
     getBoundingClientRect: function () { return { left: 0, top: 0, right: 1280, bottom: 800, width: 1280, height: 800 }; },
     getContext: function (k) { return k === "2d" ? __ctx2d() : null; },
     toDataURL: function () { return "data:,"; }, closest: function () { return null; }, contains: function () { return false; },
@@ -88,6 +94,7 @@ function __el(tag, id, value) {
     get: function () { return inner; },
     set: function (v) {
       inner = String(v); __registerIds(inner);
+      if (inner === "") e.children = [];          // clearing a container drops its children
       if (e.tagName === "SELECT") {
         var opts = inner.match(/<option\b[^>]*>/gi) || [], val = "";
         for (var i = 0; i < opts.length; i++) {
@@ -130,6 +137,51 @@ function __orphanParent() { return __orphan; }
 /* "#id" finds a registered element; anything else (".cls", "#id span") gets a
    stand-in whose writes go nowhere - the HUD writes through selectors every
    frame and a null there would stop the page */
+/* A very small selector engine: ".cls", "tag" and "#id" are real lookups
+   over appended children; anything else answers with a stand-in (single) or
+   an empty list (all), which is what the pages tolerate. */
+function __hasClass(el, c) {
+  return (" " + (el.className || "") + " ").indexOf(" " + c + " ") >= 0 ||
+         (el.classList && el.classList.contains && el.classList.contains(c));
+}
+function __walk(root, fn, seen) {
+  var kids = (root && root.children) || [];
+  for (var i = 0; i < kids.length; i++) {
+    var k = kids[i]; if (!k || seen.indexOf(k) >= 0) continue;
+    seen.push(k);
+    if (fn(k)) return true;
+    if (__walk(k, fn, seen)) return true;
+  }
+  return false;
+}
+function __find(root, q, single) {
+  q = String(q || "").trim();
+  var m = q.match(/^\.([\w-]+)$/), t = q.match(/^([a-zA-Z][\w-]*)$/), id = q.match(/^#([\w-]+)$/);
+  if (!m && !t && !id) return single ? __el("div") : [];
+  var out = [];
+  var test = m ? function (k) { return __hasClass(k, m[1]); }
+           : t ? function (k) { return String(k.tagName).toLowerCase() === t[1].toLowerCase(); }
+           : function (k) { return k.id === id[1]; };
+  var roots = root ? [root] : [__body].concat(Object.keys(__els).map(function (k) { return __els[k]; }));
+  var seen = [];
+  for (var r = 0; r < roots.length; r++) {
+    if (!root && test(roots[r]) && out.indexOf(roots[r]) < 0) { out.push(roots[r]); if (single) break; }
+    if (__walk(roots[r], function (k) { if (test(k) && out.indexOf(k) < 0) { out.push(k); return single; } return false; }, seen)) break;
+  }
+  if (single) {
+    if (out[0]) return out[0];
+    if (id) return __els[id[1]] || null;
+    /* An element the page built with createElement is fully known here, so
+       "not found" is a real null (the build cards test for their badge that
+       way). Page markup and innerHTML content are not parsed into children,
+       so a miss inside those gets a stand-in, as before. */
+    var name = m ? m[1] : t[1];
+    if (root && root.__dyn && String(root.innerHTML || "").indexOf(name) < 0) return null;
+    return __el("div");
+  }
+  out.forEach = Array.prototype.forEach;
+  return out;
+}
 function __qs(q) {
   q = String(q || "");
   var m = q.match(/^#([\w-]+)$/);
@@ -159,12 +211,12 @@ var __body = __el("body");
 var document = {
   readyState: "complete", body: __body, documentElement: __el("html"), head: __el("head"), hidden: false,
   getElementById: function (id) { return __els[id] || null; },
-  createElement: function (t) { return __el(t); },
+  createElement: function (t) { var e = __el(t); e.__dyn = true; return e; },
   createElementNS: function (ns, t) { return __el(t); },
   createTextNode: function (t) { return { textContent: t }; },
   createDocumentFragment: function () { return __el("fragment"); },
   querySelector: function (q) { return __qs(q); },
-  querySelectorAll: function () { return []; },
+  querySelectorAll: function (q) { return __find(null, q, false); },
   getElementsByTagName: function () { return []; },
   addEventListener: function (t, f) { (__listeners["doc:" + t] = __listeners["doc:" + t] || []).push(f); },
   removeEventListener: function () {},
