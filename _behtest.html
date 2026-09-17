@@ -2071,6 +2071,38 @@ try{
   })();
   }
 
+  /* ====== 48: a mine clearer actually clears ====== */
+  if (inHalf(2)) {
+  log("\n[48] A MINE CLEARER CLEARS, INCLUDING A LANE THROUGH OUR OWN FIELD");
+  (function(){
+    /* (owner) "miner sweep cannot sweep the mine but only see the mine."
+       It could: a friendly mine was skipped outright, and our own mines are
+       always visible, so a clearer parked on one sat there for ever. */
+    var id=unitFor("nato","mineclear","e20");
+    if(!id||!UNITS[id]){ chk("a mine clearer exists", false, String(id)); return; }
+    function run(owner, drive, label, want){
+      var t=tile(P,"ground",7);
+      if(!t){ chk(label, false, "no ground"); return; }
+      var u=Game.spawnUnitAt(P,id,t.x*32+16,t.y*32+16);
+      var mx=(t.x+1)*32+16, my=t.y*32+16;
+      var m=Mines.lay(Game,owner,mx,my,false,null);
+      if(!u||!m){ chk(label, false, "spawn/lay failed"); return; }
+      if(drive) u.give({type:"move", x:mx, y:my}); else { u.order={type:"idle"}; u.breachT=-1e9; }
+      for(var i=0;i<30*25 && Game.mines.indexOf(m)>=0 && !u.dead;i++){
+        tick(1);
+        if(!drive){ u.order={type:"idle"}; u.breachT=-1e9; }   // held still, never ordered
+      }
+      var gone=Game.mines.indexOf(m)<0;
+      chk(label, gone===want, "cleared="+gone+" clearT="+(m.clearT||0).toFixed(2)+
+          " dist="+(U.dist(u.x,u.y,mx,my)/32).toFixed(2)+"t");
+      if(!u.dead)u.dead=true; if(!gone) m.dead=true;
+    }
+    run(E, true,  "an enemy mine is cleared", true);
+    run(P, true,  "driven through our own field, it lifts a lane", true);
+    run(P, false, "but a clearer standing idle does not disarm our own mines", false);
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

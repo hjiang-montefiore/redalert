@@ -218,12 +218,31 @@ var Mines = (function () {
         if (u.dead || u.carried) continue;
         var det = u.def.mineDetect || 0, clr = u.def.mineClear || 0;
         if (!det && !clr) continue;
+        var ord = u.order && u.order.type;
+        if (ord === "move" || ord === "attackmove") u.breachT = G.time;
         var reach = Math.max(det, clr) * CFG.TILE;
         for (var k = list.length - 1; k >= 0; k--) {
           var mm = list[k];
           if (mm.dead) continue;
-          if (mm.owner === p || G.allied(mm.owner, p)) continue;
           if (mm.sea !== (u.layer === "sea")) continue;
+          /* ---- OUR OWN FIELDS CAN BE BREACHED ----
+             (owner) "miner sweep cannot sweep the mine but only see the mine."
+             A friendly mine was skipped outright, so a clearer parked on top of
+             one sat there for ever - measured, clearT 0.00 at 0.41 tiles - and
+             since we always see our own mines it read as "it can see it and
+             will not touch it". Mines here are persistent until something
+             triggers them, so with no way to lift them a field laid across
+             one's own line of advance was permanent.
+             A friendly mine is lifted only while the machine is being DRIVEN
+             through it: a clearer sitting in the base does not quietly disarm
+             the perimeter it is parked behind. A hostile mine is still lifted
+             whatever the clearer happens to be doing. */
+          if (mm.owner === p || G.allied(mm.owner, p)) {
+            /* ...and for ten seconds after the drive ends, or a clearer sent
+               onto the last mine of a lane would stop a breath short of
+               lifting it (2.2 seconds of work, and arriving ends the order) */
+            if (G.time - (u.breachT || -1e9) > 10) continue;
+          }
           var d = U.dist(u.x, u.y, mm.x, mm.y);
           if (det && d <= det * CFG.TILE) spot(mm, p);
           if (clr && d <= clr * CFG.TILE) {
