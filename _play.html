@@ -397,7 +397,7 @@ window.addEventListener("load", function () {
   });
 
   /* start the match */
-  setTimeout(function () { document.getElementById("btn-start").click(); }, 120);
+  setTimeout(function () { (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click()); }, 120);
 });
 </script>
 </body>

@@ -577,7 +577,10 @@ var Game = (function () {
     if (def.oilNode)
       for (const n of G.map.oilNodes)
         if (n.x >= tx && n.x < tx + def.w && n.y >= ty && n.y < ty + def.h) n.taken = true;
-    if (def.freeUnit && instant !== "captured") {
+    /* ...and not on a load either: the hauler that came with the refinery is
+       already in the save as a unit of its own, so this handed out one more
+       per refinery on every load (measured 1 -> 2 -> 3 over two loads). */
+    if (def.freeUnit && instant !== "captured" && instant !== "restored") {
       /* refinery ships with a harvester */
       G.defer(0.5, () => {
         if (!b.dead) G.spawnUnitAt(p, def.freeUnit,
@@ -1973,6 +1976,19 @@ var Game = (function () {
     AI.update(dt);
 
     /* sweep dead */
+    G.sweepDead();
+
+    G.fogT -= dt;
+    if (G.fogT <= 0) { G.fogT = CFG.FOG_UPDATE; G.recomputeFog(); }
+
+    G.checkVictory();
+  };
+
+  /* ---- clearing the board ----
+     Lifted out of the tick so a surrender can take a beaten army off the map
+     the moment it is beaten. The match may be decided at the end of that same
+     tick, and a tick that never runs again never sweeps. */
+  G.sweepDead = function () {
     for (let i = G.entities.length - 1; i >= 0; i--) {
       const e = G.entities[i];
       if (e.dead) {
@@ -1982,29 +1998,167 @@ var Game = (function () {
         if (j >= 0) arr.splice(j, 1);
       }
     }
-
-    G.fogT -= dt;
-    if (G.fogT <= 0) { G.fogT = CFG.FOG_UPDATE; G.recomputeFog(); }
-
-    G.checkVictory();
   };
 
+  /* ---- a beaten commander stands down ----
+     Its army does not fight on as a rump with nobody giving it orders, and it
+     is not blown up either, because nobody shot it. The troops lay down their
+     arms and are marched off the field: no kill is credited to anyone, no
+     wreck is left and nothing is added to its losses. The installations are
+     wrecked by their own crews on the way out - the denial demolition every
+     army carries out on ground it is giving up - which also hands the ground
+     back to whoever holds the field. Two things are deliberately left alone:
+     an occupied civilian block goes back to the town (or to an ally still
+     inside it), and minefields and sonar barriers stay where they were laid,
+     because a mine does not know the war is over.
+     Only what the player can SEE is shown going. A capitulation is public news
+     and the alert rail says so, but a surrender behind the fog must not paint
+     the enemy's base onto the map. The player's own defeat ends the match, so
+     G.checkVictory never calls this for the human seat. */
+  G.surrender = function (p) {
+    if (!p) return 0;
+    const shown = (e) => !!G.human && G.human !== p && G.visibleTo(G.human, e);
+    let n = 0, labels = 0, loud = false;
+    for (const u of p.units) {
+      if (u.dead) continue;
+      if (labels < 24 && !u.carried && shown(u)) {
+        Combat.addEffect({ t: "text", x: u.x, y: u.y - 26, s: "SURRENDERED",
+                           life: 2.4, max: 2.4, c: "#e6e2d3" });
+        labels++;
+      }
+      u.dead = true;
+      n++;
+    }
+    for (const b of p.buildings.slice()) {
+      if (b.dead) continue;
+      if (b.def.neutral) {
+        const g = b.garrison || [];
+        for (let i = g.length - 1; i >= 0; i--) if (!g[i] || g[i].dead) g.splice(i, 1);
+        if (g.length) G.reassignBuilding(b, g[0].owner);
+        else if (typeof releaseCivilian === "function") releaseCivilian(b);
+        continue;
+      }
+      if (shown(b)) {
+        Combat.addEffect({ t: "boom", x: b.x, y: b.y, r: Math.max(20, (b.r || 20) * 1.6),
+                           life: 0.9, max: 0.9 });
+        loud = true;
+      }
+      G.removeBuilding(b);
+      n++;
+    }
+    /* a side that has capitulated builds nothing more, even if a harness
+       stands it back up */
+    for (const k in p.queues) {
+      const q = p.queues[k];
+      q.items.length = 0; q.prog = 0;
+      if (Array.isArray(q.ready)) q.ready.length = 0;
+    }
+    if (loud) Sfx.play("explode_big");
+    p.stats.surrendered = (p.stats.surrendered || 0) + n;
+    G.sweepDead();
+    return n;
+  };
+
+  /* ---------------- victory ----------------
+     (owner) "the victory condition is eliminating all production building."
+     A commander is beaten when nothing it owns can produce anything. What
+     produces is read off the data by Player.isProduction(), never listed here:
+     the construction yard and the four unit factories today, and any
+     structure added later with the same flags. A power plant, a radar dome, a
+     ring of guns, a silo or a fleet of ore haulers is something a side HAS -
+     none of it can replace a single loss, so none of it keeps a side in the
+     war. The rule this replaces needed every building of any kind gone, so a
+     commander with one coil of razor wire left could not be beaten.
+
+     The three calls the rule itself does not settle:
+       - A structure still unfolding counts. It is paid for and placed, it
+         finishes on its own clock with no yard behind it, and it can be shot
+         while it does: a half-built factory is a factory nobody has destroyed.
+       - A construction rig on the road counts, for CFG.RIG_GRACE seconds. It
+         is a yard in transit and unfolds almost anywhere, so losing the base
+         while one is out is not the end - but a rig parked in a corner for the
+         rest of the match is not a war either.
+       - A beaten commander surrenders; see G.surrender.
+
+     p.defeated and G.over keep their meanings - the census and the suites
+     read both. */
   G.checkVictory = function () {
     for (const p of G.players) {
       if (p.defeated) continue;
-      const alive = p.buildings.some(b => !b.dead) ||
-                    p.units.some(u => !u.dead && (u.def.deployTo || u.def.harvester));
-      if (!alive) {
-        p.defeated = true;
-        if (p === G.human) G.alert("YOUR FORCES HAVE BEEN DESTROYED", "bad");
-        else G.alert((p.label || "AI") + " ELIMINATED", "good");
+      const mine = p === G.human;
+      const prod = p.productionBuildings();
+      const n = prod.length;
+      /* ---- DOWN TO THE LAST ONE ----
+         Said once per fall, not once per tick: the warning is armed by
+         holding two or more and spent by dropping to one, so a side that
+         rebuilds and loses the spare again is told again. Every commander
+         starts on a single yard, so a seat that has never held two is never
+         warned for merely starting. */
+      if (n >= 2) p.prodArmed = true;
+      else if (n === 1 && p.prodArmed) {
+        p.prodArmed = false;
+        if (mine) {
+          const rigs = p.productionRigs().length;
+          G.alert("LAST PRODUCTION FACILITY — IF THE " + prod[0].def.name.toUpperCase() +
+                  " FALLS, " + (rigs ? "A RIG HAS " + Math.round(CFG.RIG_GRACE) + "s TO UNFOLD"
+                                     : "THE BATTLE IS LOST"), "bad");
+          G.pingEvent(prod[0].x, prod[0].y, "note");
+        }
+      }
+      if (n > 0) { p.rigDeadline = null; p.rigWarned = false; continue; }
+
+      const rigs = p.productionRigs();
+      if (rigs.length) {
+        /* the clock starts the first tick nothing is standing, and a save
+           carries it (save.js) so a reload cannot reset it */
+        if (typeof p.rigDeadline !== "number") {
+          p.rigDeadline = G.time + CFG.RIG_GRACE;
+          p.rigWarned = false;
+          if (mine) {
+            G.alert("ALL PRODUCTION FACILITIES LOST — UNFOLD A CONSTRUCTION RIG WITHIN " +
+                    Math.round(CFG.RIG_GRACE) + " SECONDS", "bad");
+            G.pingEvent(rigs[0].x, rigs[0].y, "note");
+          }
+        }
+        const left = p.rigDeadline - G.time;
+        if (left > 0) {
+          if (mine && left <= 30 && !p.rigWarned) {
+            p.rigWarned = true;
+            G.alert(Math.ceil(left) + " SECONDS TO UNFOLD A CONSTRUCTION RIG", "bad");
+          }
+          continue;
+        }
+        p.defeatWhy = "rig";
+      } else p.defeatWhy = "destroyed";
+
+      p.defeated = true;
+      p.rigDeadline = null;
+      if (mine) {
+        G.alert(p.defeatWhy === "rig"
+          ? "NO CONSTRUCTION YARD UNFOLDED IN TIME — THE BATTLE IS LOST"
+          : "ALL YOUR PRODUCTION FACILITIES HAVE BEEN DESTROYED", "bad");
+      } else {
+        /* The same words either way: saying a rig ran out of time would tell
+           the player the enemy had one, somewhere they may never have looked. */
+        G.alert((p.label || "AI") + " SURRENDERS — ALL PRODUCTION FACILITIES DESTROYED",
+                G.allied(G.human, p) ? "bad" : "good");
+        G.surrender(p);
       }
     }
     /* the war ends when only one team is left standing */
     const liveTeams = new Set();
     for (const p of G.players) if (!p.defeated) liveTeams.add(p.team);
-    if (G.human.defeated) { G.over = true; UI.endGame(false); return; }
-    if (liveTeams.size <= 1 && !G.over) { G.over = true; UI.endGame(true); }
+    if (G.human.defeated) {
+      G.over = true;
+      UI.endGame(false, G.human.defeatWhy === "rig"
+        ? "NO CONSTRUCTION YARD WAS UNFOLDED IN TIME"
+        : "ALL YOUR PRODUCTION FACILITIES WERE DESTROYED");
+      return;
+    }
+    if (liveTeams.size <= 1 && !G.over) {
+      G.over = true;
+      UI.endGame(true, "EVERY ENEMY PRODUCTION FACILITY DESTROYED");
+    }
   };
 
   return G;

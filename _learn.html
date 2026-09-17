@@ -361,7 +361,7 @@ window.addEventListener("load", function () {
   var SEED=(location.search.match(/seed=([A-Za-z0-9]+)/)||[])[1]||"learnA";
   set("opt-seed",SEED);
   var out=document.getElementById("tout"), lines=[];
-  try { document.getElementById("btn-start").click(); }
+  try { (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click()); }
   catch(e){ out.textContent="START FAILED "+e; return; }
   /* a brain on BOTH seats, or the match is decided in five minutes by an
      opponent walking into an empty base and the learner sees one push */

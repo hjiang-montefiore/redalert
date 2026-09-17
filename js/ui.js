@@ -1822,10 +1822,19 @@ var UI = (function () {
     document.getElementById("r-pause").textContent = ">";
     const info = document.getElementById("pm-info");
     const slot = SaveGame.peek(SaveGame.KEY);
-    const enemies = G.players.filter(p => p.isAI && !p.defeated).length;
+    /* an allied commander is not one left to beat */
+    const enemies = G.players.filter(p => p.isAI && !p.defeated && !G.allied(G.human, p)).length;
+    /* The victory rule, where a player can find it in the middle of a battle.
+       The facility names come off the same flag G.checkVictory reads, so the
+       sentence cannot drift away from the rule it states. */
+    const held = G.human.productionBuildings().length;
+    const kinds = Object.keys(BUILDINGS).filter(k => Player.isProduction(BUILDINGS[k]))
+      .map(k => BUILDINGS[k].name.toLowerCase()).join(", ");
     info.innerHTML =
       "<b>" + G.map.name + "</b><br>" +
       "elapsed " + U.mmss(G.time) + " &middot; " + enemies + " enemy commander" + (enemies === 1 ? "" : "s") + " left<br>" +
+      "<b>victory</b>: destroy every enemy production facility (" + kinds + ") &middot; you hold " +
+      held + "<br>" +
       (slot ? "saved game: " + new Date(slot.savedAt).toLocaleString() : "no saved game");
     document.getElementById("pm-load").disabled = !slot;
     document.getElementById("pausemenu").classList.remove("hidden");
@@ -2701,12 +2710,25 @@ var UI = (function () {
     setTimeout(() => el.remove(), 7000);
     while (box.children && box.children.length > 6 && box.firstChild) box.firstChild.remove();
   }
-  function endGame(won) {
+  function endGame(won, why) {
     if (!G) return;
     const es = document.getElementById("endscreen");
     es.classList.remove("hidden");
     document.getElementById("end-title").textContent = won ? "VICTORY" : "DEFEAT";
     document.getElementById("end-title").style.color = won ? "#8fd05f" : "#d05a45";
+    /* What decided it, above the numbers. The rule is not the one most players
+       assume - power, guns and haulers do not keep a side in the war - and a
+       result that does not say why reads as arbitrary. The line is created on
+       first use, so the end-box markup in index.html needs no change. */
+    const sub = document.getElementById("end-sub");
+    let wy = document.getElementById("end-why");
+    if (!wy && sub && sub.parentNode) {
+      wy = document.createElement("p");
+      wy.id = "end-why";
+      wy.style.cssText = "margin-bottom:10px;color:#c9d8bf;letter-spacing:2px";
+      sub.parentNode.insertBefore(wy, sub);
+    }
+    if (wy) wy.textContent = why || "";
     const s = G.human.stats;
     document.getElementById("end-sub").textContent =
       "TIME " + U.mmss(G.time) + " · KILLS " + s.kills + " · LOSSES " + s.losses +

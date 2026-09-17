@@ -394,7 +394,7 @@ window.addEventListener("load", function () {
            String(blds).padStart(4) + "  " + bl.join(" ");
   }
 
-  try { document.getElementById("btn-start").click(); } catch (e) { out.textContent = "START FAILED " + e; return; }
+  try { (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click()); } catch (e) { out.textContent = "START FAILED " + e; return; }
 
   /* Give player 0 a brain too. game.js:177 only calls AI.create for isAI
      seats, so the human chair otherwise sits still and the match is decided

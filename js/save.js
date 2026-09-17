@@ -68,6 +68,13 @@ var SaveGame = (function () {
         upgrades: Object.assign({}, p.upgrades),
         banned: Object.assign({}, p.banned),
         defeated: p.defeated,
+        /* The rig countdown is an absolute game time, and G.time comes back
+           from this file, so it travels as it is. Dropped, every reload would
+           hand a side down to its last rig a fresh two minutes. */
+        rigDl: typeof p.rigDeadline === "number" ? +p.rigDeadline.toFixed(2) : undefined,
+        /* and the two once-only warnings with it, or a reload repeats them */
+        rigW: p.rigWarned ? 1 : undefined,
+        pArm: p.prodArmed ? 1 : undefined,
         stats: Object.assign({}, p.stats),
         homeX: p.homeX, homeY: p.homeY,
         queues: serializeQueues(p.queues),
@@ -231,6 +238,11 @@ var SaveGame = (function () {
       p.upgrades = sp.upgrades || {};
       p.banned = sp.banned || {};
       p.defeated = !!sp.defeated;
+      /* an older save has no countdown; the clock then starts on the first
+         tick with nothing standing, which is where it would have started */
+      p.rigDeadline = typeof sp.rigDl === "number" ? sp.rigDl : null;
+      p.rigWarned = !!sp.rigW;
+      p.prodArmed = !!sp.pArm;
       p.stats = sp.stats || p.stats;
       p.homeX = sp.homeX; p.homeY = sp.homeY;
       for (const k in sp.queues) {
@@ -261,6 +273,13 @@ var SaveGame = (function () {
       const b = G.placeBuilding(p, sb.d, sb.tx, sb.ty, "restored");
       bref[bi] = b;
       b.hp = sb.hp; b.buildProgress = sb.prog;
+      /* A structure saved half-built has to go on building. Its clock is a
+         G.defer closure and a closure does not travel in JSON, so it used to
+         come back frozen at the saved fraction for good: unable to produce, and
+         - since an unfolding factory keeps a side in the war (G.checkVictory) -
+         a side nobody could beat without finding and shooting it. G.time is
+         already restored, so the restarted clock runs on the saved one. */
+      if (b.buildProgress < 1) resumeConstruction(G, b);
       b.repairing = !!sb.rep;
       b.swCharge = sb.sw !== undefined ? sb.sw : b.swCharge;
       b.tang = sb.ta || 0;
@@ -313,6 +332,21 @@ var SaveGame = (function () {
     if (d.fog && G.fogEnabled) bytesFromAtob(d.fog, G.fog);
     G.recomputeFog();
     return { ok: true, game: G };
+  }
+  /* The same clock the structure was started on: ui.js tryPlace for the
+     player (1.5/T a second, 0.1 s steps), ai.js constructionStart for a
+     commander (1/T a second, 0.12 s steps). */
+  function resumeConstruction(G, b) {
+    const p = b.owner, ai = !!p.isAI;
+    const T = Math.max(ai ? 1 : 0.5, p.factionTime(b.def));
+    const every = ai ? 0.12 : 0.1, inc = 0.1 / T * (ai ? 1.2 : 1.5);
+    const step = () => {
+      if (b.dead) return;
+      b.buildProgress = Math.min(1, b.buildProgress + inc);
+      if (b.buildProgress < 1) G.defer(every, step);
+      else if (!ai) Render.markDirty();
+    };
+    G.defer(every, step);
   }
   function defOf(kind, id) {
     if (kind === "upgrade") { const u = UPGRADES[id]; if (u) u._key = id; return u; }

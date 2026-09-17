@@ -131,8 +131,30 @@
   }
 
   let raf = 0, lastT = 0, acc = 0;
+  /* a briefing is up and the battle behind it is still being raised */
+  let briefing = false;
 
-  function start() {
+  /* ---- who sees the deployment briefing ----
+     Only a person who pressed DEPLOY. Every harness page drives this same
+     function with a scripted click() and some read Game on the very next
+     line (_aicensus.html takes Game.players[0] at once), so for them the
+     battle must exist by the time click() returns, exactly as before. A
+     scripted click is an untrusted event and a real one never is, which is
+     the one difference between the two that needs nothing from the page.
+     A page can still ask for the briefing with #loadscreen (add #loadhold to
+     keep it up for a screenshot) or refuse it with #noloadscreen, and a page
+     without the briefing's script and markup - every harness page today -
+     never gets it at all. */
+  function wantBriefing(ev) {
+    if (typeof LoadScreen === "undefined" || !LoadScreen.available()) return false;
+    const h = location.hash || "";
+    if (/[#&]noloadscreen\b/.test(h)) return false;
+    if (/[#&]loadscreen\b/.test(h)) return true;
+    return !!(ev && ev.isTrusted);
+  }
+
+  function start(ev) {
+    if (briefing) return;
     const pv = document.getElementById("opt-pan");
     if (pv && UI.setPanMode) UI.setPanMode(pv.value);
     const seedStr = document.getElementById("opt-seed").value.trim();
@@ -210,30 +232,79 @@
     menu.classList.add("hidden");
     gameEl.classList.remove("hidden");
 
-    Game.init(opts);
+    /* ---- raising the battle ----
+       This was one run inside the click, which is why nothing reached the
+       screen between DEPLOY and a finished battlefield. The same work as
+       steps, in the same order, can still run back to back - the harness
+       path, identical in effect to what it replaced - or be spaced out by
+       the briefing, which lets the browser paint between them. */
     const want3d = (document.getElementById("opt-3d") || { value: "1" }).value === "1";
-    let ok3d = false;
-    if (want3d && window.THREE) {
-      try { Render3D.init(document.getElementById("cv"), Game); Render = Render3D; ok3d = true; }
-      catch (e) { console.error("3D init failed, falling back to 2D:", e); }
-    }
-    if (!ok3d) {
-      Render = Render2D;
-      const g3 = document.getElementById("cv3d");
-      if (g3) g3.style.display = "none";
-      Render.init(document.getElementById("cv"), Game);
-    }
-    UI.init(Game);
-    Game.alert(Game.map.name + " — " + FACTIONS[fac].short + " DEPLOYMENT", "good");
-    const foes = Game.players.filter(p => p.isAI && !Game.allied(Game.human, p));
-    if (foes.length > 1)
-      Game.alert(foes.length + " HOSTILE COMMANDERS: " +
-        foes.map(p => FACTIONS[p.faction].short + " (" + AI.personalityName(p.personality) + ")").join(", "), "bad");
-    Game.alert("BUILD POWER, THEN A REFINERY. HARVESTERS FUND THE WAR.");
+    const raiseRenderer = () => {
+      let ok3d = false;
+      if (want3d && window.THREE) {
+        try { Render3D.init(document.getElementById("cv"), Game); Render = Render3D; ok3d = true; }
+        catch (e) { console.error("3D init failed, falling back to 2D:", e); }
+      }
+      if (!ok3d) {
+        Render = Render2D;
+        const g3 = document.getElementById("cv3d");
+        if (g3) g3.style.display = "none";
+        Render.init(document.getElementById("cv"), Game);
+      }
+    };
+    const announce = () => {
+      Game.alert(Game.map.name + " — " + FACTIONS[fac].short + " DEPLOYMENT", "good");
+      const foes = Game.players.filter(p => p.isAI && !Game.allied(Game.human, p));
+      if (foes.length > 1)
+        Game.alert(foes.length + " HOSTILE COMMANDERS: " +
+          foes.map(p => FACTIONS[p.faction].short + " (" + AI.personalityName(p.personality) + ")").join(", "), "bad");
+      Game.alert("BUILD POWER, THEN A REFINERY. HARVESTERS FUND THE WAR.");
+    };
+    const begin = () => {
+      lastT = performance.now(); acc = 0;
+      cancelAnimationFrame(raf);
+      loop(lastT);
+    };
+    const deployNow = () => {
+      Game.init(opts);
+      raiseRenderer();
+      UI.init(Game);
+      announce();
+      begin();
+    };
 
-    lastT = performance.now(); acc = 0;
-    cancelAnimationFrame(raf);
-    loop(lastT);
+    if (!wantBriefing(ev)) { deployNow(); return; }
+
+    /* The battle clock starts when the briefing goes, not when the world is
+       ready: a commander that spent the briefing building would be ahead of
+       a player who spent it reading. The alerts wait too, or they would
+       fade out behind the screen. The world is drawn once while still
+       covered, so the reveal does not open on a frame spent compiling. */
+    briefing = true;
+    try {
+      LoadScreen.run({
+        opts,
+        /* the opening alerts name every doctrine in a multi-way war, and a
+           doctrine the player picked is no secret; otherwise it stays hidden */
+        doctrine: persSel !== "mixed" || nEnemies > 1,
+        stages: [
+          { label: "Surveying the theatre", weight: 40,
+            run: () => { Game.init(opts); LoadScreen.adopt(Game.players); } },
+          { label: want3d && window.THREE ? "Raising the 3D battlefield" : "Drawing the battlefield",
+            weight: 32, run: raiseRenderer },
+          { label: "Issuing equipment", weight: 16, run: () => UI.init(Game) },
+          { label: "Final checks", weight: 12,
+            run: () => { try { Render.draw(0, UI.input); } catch (e) { /* the loop reports it */ } } },
+        ],
+        onReveal: () => { briefing = false; announce(); begin(); },
+        onAbort: () => { briefing = false; },
+      });
+    } catch (e) {
+      /* the briefing could not even be put up: deploy the way it always did */
+      console.error("loading screen failed, deploying without it:", e);
+      briefing = false;
+      deployNow();
+    }
   }
 
   /* a loaded save replaces the live Game object: re-point the renderer and UI */

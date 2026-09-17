@@ -339,7 +339,7 @@ window.addEventListener("load", function(){
   var set=function(id,v){var el=document.getElementById(id); if(el) el.value=v;};
   set("opt-map","hormuz"); set("opt-era","e20"); set("opt-aera","e20");
   set("opt-cash","200000"); set("opt-seed","btest"); set("opt-fog","0"); set("opt-3d","0");
-  document.getElementById("btn-start").click();
+  (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click());
   setTimeout(run, 200);
 });
 
@@ -366,6 +366,18 @@ function inHalf(n){ return !HALF || String(n) === HALF; }
 function run(){
 try{
   var P=Game.human, E=Game.players[1];
+  /* ---- THE SHARED MATCH IS NOT ALLOWED TO END ----
+     Every section plays in one match, and several fly strike packages over the
+     enemy base. Measured on a half-2 run, [36] and [37] had taken its yard, its
+     barracks, its airbase and its war factory by t=450 and left it a single
+     naval yard. Under the old rule a seat with any building at all stood, so it
+     never mattered; under the production rule the enemy surrenders when that
+     last yard goes, Game.over stops Game.tick, and every later section measures
+     a frozen board. So the tick's own check is held off for the suite, and [44]
+     exercises the real rule, kept here, on seats of its own. None of the other
+     sections reads p.defeated or Game.over. */
+  var suiteCheckVictory = Game.checkVictory;
+  Game.checkVictory = function(){};
   var sea=tile(P,"sea",4), land=tile(P,"ground",5);
   var eSea=tile(E,"sea",4);
   P.cash=200000; E.cash=200000; P.oil=9000; E.oil=9000;
@@ -1477,6 +1489,279 @@ try{
   })();
   }
 
+  /* ====== [44] the war is lost with the last production facility ======
+     (owner) "the victory condition is eliminating all production building."
+     The real rule is exercised here, on seats of its own and on a roster of its
+     own. P and E are taken off the roster while it runs: the suite has flown
+     strike packages over E's base by now, and the rule must not be the thing
+     that ends the shared match (see the hold at the top of run()). Two keeper
+     seats on teams of their own stand throughout, so no scenario can leave one
+     team alive and set Game.over - except the last three, which are about how
+     the match ends, record the end screen and put Game.over back. No tick
+     runs while the test roster is in. */
+  if (inHalf(2)) {
+  log("\n[44] VICTORY IS THE LAST PRODUCTION FACILITY");
+  (function(){
+    var check=suiteCheckVictory;
+    if(typeof Player.isProduction!=="function" || !Game.surrender || !Game.sweepDead ||
+       typeof CFG.RIG_GRACE!=="number" || typeof check!=="function"){
+      chk("the production victory rule exists", false, "missing"); return; }
+    var M=Game.map, heard=[], seats=[], used={}, roster=Game.players;
+    var realAlert=Game.alert, realHuman=Game.human, over0=Game.over;
+    function said(re){ return heard.filter(function(m){ return re.test(m); }).length; }
+    function restore(){
+      Game.alert=realAlert; Game.human=realHuman;
+      seats.forEach(function(X){
+        X.buildings.slice().forEach(function(b){ if(!b.dead) Game.removeBuilding(b); });
+        X.units.forEach(function(u){ u.dead=true; });
+      });
+      Game.players=roster;
+      Game.sweepDead();
+    }
+    function seat(team){
+      var X=new Player(Game, roster.length+seats.length, E.faction, 0, true);
+      X.team=team; X.label="TEST SEAT "+team; X.era=E.era; X.banned={};
+      X.homeX=E.homeX; X.homeY=E.homeY;
+      Game.players.push(X); seats.push(X);
+      return X;
+    }
+    /* a clear 3x3 of land - a yard's footprint, so anything smaller fits -
+       held apart from every other spot this test has taken */
+    function ground(){
+      var hx=(P.homeX/32)|0, hy=(P.homeY/32)|0;
+      for(var r=16;r<80;r+=2) for(var a=0;a<40;a++){
+        var an=a/40*6.283, x=(hx+Math.cos(an)*r)|0, y=(hy+Math.sin(an)*r)|0;
+        if(x<3||y<3||x>=M.W-6||y>=M.H-6||used[x+","+y]) continue;
+        if(!Game.canPlace(P,"conyard",x,y)) continue;
+        for(var i=-3;i<=3;i++) for(var j=-3;j<=3;j++) used[(x+i)+","+(y+j)]=1;
+        return {x:x,y:y};
+      }
+      return null;
+    }
+    function put(X,id,s,dx,dy,prog){
+      var b=Game.placeBuilding(X,id,s.x+(dx||0),s.y+(dy||0),true);
+      if(b && prog!==undefined) b.buildProgress=prog;
+      return b;
+    }
+    function at(X,id,s,dx,dy){
+      if(!id||!UNITS[id]) return null;
+      return Game.spawnUnitAt(X,id,(s.x+1+(dx||0))*32+16,(s.y+1+(dy||0))*32+16);
+    }
+    function dead(list){ return list.every(function(e){ return !e || e.dead; }); }
+    var tankId=Game.unitOf(E,"mbt"); if(!tankId||!UNITS[tankId]) tankId="mbt_p";
+    var rifleId=Game.unitOf(E,"rifle"); if(!rifleId||!UNITS[rifleId]) rifleId="rifle_p";
+    try {
+      Game.players=[];
+      Game.alert=function(m){ heard.push(String(m)); };
+      /* ---- the set is read off the data, and agrees with the queues ---- */
+      var ids=Object.keys(BUILDINGS).filter(function(k){ return Player.isProduction(BUILDINGS[k]); }).sort();
+      chk("the production facilities are the yard and the four factories",
+          ids.join(",")==="airbase,barracks,conyard,factory,navalyard", ids.join(","));
+      /* prodSpeed() names its buildings by id. Ask it, one building at a time,
+         which ones feed each queue, and hold that against the flag. */
+      var kinds=Object.keys(P.queues), drift=[];
+      var feeds=function(id,kind){
+        var k2 = kind==="upgrade" ? "building" : kind;      // updateQueues runs research on the yard
+        return Player.prototype.prodSpeed.call({
+          countBuilding:function(q){ return q===id?1:0; }, powerRatio:function(){ return 2; }
+        }, k2) > 0;
+      };
+      kinds.forEach(function(kind){
+        var by=Object.keys(BUILDINGS).filter(function(id){ return feeds(id,kind); });
+        if(!by.length) drift.push(kind+": nothing feeds it");
+        by.forEach(function(id){
+          if(!Player.isProduction(BUILDINGS[id])) drift.push(kind+": "+id+" feeds it unflagged");
+          var unitQ = kind!=="building" && kind!=="defense" && kind!=="upgrade";
+          if(unitQ && BUILDINGS[id].produces!==kind) drift.push(kind+": "+id+" produces "+BUILDINGS[id].produces);
+        });
+      });
+      ids.forEach(function(id){
+        if(!kinds.some(function(kind){ return feeds(id,kind); })) drift.push(id+" feeds no queue");
+      });
+      chk("the flag and the production queues agree", drift.length===0,
+          drift.length ? drift.join("; ") : kinds.join(","));
+
+      var s1=ground(), s2=ground(), s3=ground(), s4=ground(), s5=ground(),
+          s6=ground(), s7=ground(), s8=ground(), s9=ground();
+      var k1=ground(), k2=ground();
+      if(!k2){ chk("victory scenario built", false, "not enough clear ground"); return; }
+      put(seat(81),"conyard",k1); put(seat(82),"conyard",k2);
+      check();
+      chk("two keepers on a roster of their own: nobody is beaten, the match runs",
+          !Game.over && seats.every(function(X){ return !X.defeated; }), "over="+Game.over);
+
+      /* ---- no production: beaten, and the rest surrenders ---- */
+      var A=seat(91);
+      var aPow=put(A,"power",s1), aNest=put(A,"nest",s1,2,0);
+      var aTank=at(A,tankId,s2), aHaul=at(A,"harvester",s2,1,1);
+      var civ=null, sq=null;
+      for(var ci=0; ci<Game.neutral.buildings.length; ci++){
+        var cb=Game.neutral.buildings[ci];
+        if(!cb.dead && cb.def.id==="civblock" && !(cb.garrison||[]).length){ civ=cb; break; }
+      }
+      if(civ){
+        sq=Game.spawnUnitAt(A,rifleId,civ.x,civ.y+40);
+        if(!sq || !sq.enterGarrison(civ)) civ=null;
+      }
+      var kills0=P.stats.kills+E.stats.kills;
+      check();
+      chk("a power plant, a gun nest, a tank and a hauler do not keep a side in the war",
+          A.defeated===true, "defeated="+A.defeated+" production="+A.productionBuildings().length);
+      chk("the match itself goes on", !Game.over, "over="+Game.over);
+      chk("its forces surrender rather than fight on as a rump",
+          dead([aPow,aNest,aTank,aHaul,sq]) && A.units.length===0 &&
+          A.buildings.filter(function(b){ return !b.dead; }).length===0,
+          "units="+A.units.length+" buildings="+A.buildings.length+" surrendered="+A.stats.surrendered);
+      chk("nobody is credited with a kill and nothing is booked as a loss",
+          P.stats.kills+E.stats.kills===kills0 && A.stats.losses===0, "losses="+A.stats.losses);
+      chk("the ground is given back", Game.occ[s1.y*M.W+s1.x]===0 && Game.occ[s1.y*M.W+s1.x+2]===0, "");
+      if(civ) chk("an occupied civilian block goes back to the town, standing",
+                  !civ.dead && civ.owner===Game.neutral && civ.neutral===true,
+                  "owner="+(civ.owner&&civ.owner.label)+" dead="+civ.dead);
+      chk("and the rail says who and why",
+          said(/TEST SEAT 91 SURRENDERS/)===1 && said(/PRODUCTION FACILITIES DESTROYED/)>=1, heard.join(" | "));
+
+      /* ---- one production facility: still in the war ---- */
+      var B=seat(92);
+      var bBar=put(B,"barracks",s3), bNest=put(B,"nest",s3,2,0), bTank=at(B,tankId,s3,1,2);
+      check();
+      chk("one barracks keeps a side in the war", !B.defeated && !bTank.dead,
+          "production="+B.productionBuildings().length);
+      var B2=seat(93), half=put(B2,"factory",s4,0,0,0.25);
+      check();
+      chk("so does a war factory still unfolding", !B2.defeated, "buildProgress "+half.buildProgress);
+      Game.removeBuilding(bBar);
+      check();
+      chk("and losing that barracks is losing the war", B.defeated && bNest.dead && bTank.dead,
+          "defeated="+B.defeated);
+
+      /* ---- a rig on the road: a reprieve, not a refuge ---- */
+      var C=seat(94), rig=at(C,"mcv",s5), cTank=at(C,tankId,s6);
+      check();
+      var dl=C.rigDeadline;
+      chk("a rig on the road keeps a side in the war for now",
+          !C.defeated && typeof dl==="number" && Math.abs(dl-(Game.time+CFG.RIG_GRACE))<0.01,
+          "defeated="+C.defeated+" deadline="+dl+" now="+Game.time.toFixed(1));
+      check();
+      chk("asking again does not restart the clock", C.rigDeadline===dl, C.rigDeadline+" vs "+dl);
+      /* the countdown has to survive a save, or a reload hands out a fresh one */
+      try {
+        var res=SaveGame.save(Game,"ironfront.test44");
+        if(res.ok){
+          var snap=JSON.parse(localStorage.getItem("ironfront.test44"));
+          var rec=snap.players[Game.players.indexOf(C)];     // the test roster is what is saved
+          chk("a save carries the rig countdown", !!rec && Math.abs(rec.rigDl-dl)<0.05,
+              "saved "+(rec&&rec.rigDl));
+        } else log("  (save not checked: "+res.error+")");
+      } catch(e){ log("  (save not checked: "+e.message+")"); }
+      try { localStorage.removeItem("ironfront.test44"); } catch(e){}
+      C.rigDeadline=Game.time-0.01;                  // the grace has run out
+      check();
+      chk("a rig kept on the road past the grace does not keep the side in the war",
+          C.defeated && rig.dead && cTank.dead, "defeated="+C.defeated+" why="+C.defeatWhy);
+
+      var D=seat(95), rig2=at(D,"mcv",s7);
+      check();
+      var started=typeof D.rigDeadline==="number";
+      var unfolded=Game.deployRig(rig2);
+      check();
+      chk("a rig that unfolds in time ends the countdown",
+          started && unfolded && !D.defeated && D.rigDeadline===null && D.productionBuildings().length===1,
+          "started="+started+" unfolded="+unfolded+" deadline="+D.rigDeadline);
+
+      /* ---- the warning: once, when down to the last one ---- */
+      var W=seat(96), wYard=put(W,"conyard",s8), wBar=put(W,"barracks",s9);
+      var V=seat(97), vs=ground(), vYard=vs ? put(V,"conyard",vs) : null;
+      heard.length=0;
+      var before=-1, after=-1, fresh=-1;
+      Game.human=W;
+      try {
+        check(); check();
+        before=said(/LAST PRODUCTION FACILITY/);
+        Game.removeBuilding(wBar);
+        for(var i=0;i<6;i++) check();
+        after=said(/LAST PRODUCTION FACILITY/);
+        if(vYard){
+          Game.human=V;
+          for(i=0;i<3;i++) check();
+          fresh=said(/LAST PRODUCTION FACILITY/)-after;
+        }
+      } finally { Game.human=realHuman; }
+      chk("holding two, nobody is warned", before===0, before+" warnings");
+      chk("down to the last one, the player is warned once and not every tick",
+          after===1 && !W.defeated, after+" warnings: "+heard.join(" | "));
+      if(vYard) chk("a side is not warned merely for starting on one yard", fresh===0, fresh+" warnings");
+
+      /* ---- how the match ends: the player's defeat, and the player's victory ----
+         The keepers cannot hold these open - a beaten player ends the match on
+         its own, and the victory runs on a roster of two - so the end screen is
+         swapped for a recorder and Game.over is put back after each. The rig
+         seat and the last enemy are only seated when their turn comes: seated
+         earlier, the checks above would have started the rig's clock (without
+         a word, since it was not the player's) and beaten the enemy already. */
+      var ends=[], realEnd=UI.endGame, full=Game.players, lost=null, timedOut=null, won=null;
+      var wTank=at(W,tankId,s9), H=null, hRig=null, L=null, grace=-1, reminded=-1;
+      heard.length=0;
+      UI.endGame=function(w,y){ ends.push([w,String(y||"")]); };
+      try {
+        Game.human=W;
+        Game.removeBuilding(wYard);
+        check();
+        lost={over:Game.over, ends:ends.slice()};
+        Game.over=over0; ends.length=0;
+        var hs=ground();
+        if(hs){ H=seat(98); hRig=at(H,"mcv",hs); }
+        if(hRig){
+          Game.human=H;
+          check(); check();
+          grace=said(/UNFOLD A CONSTRUCTION RIG WITHIN/);
+          H.rigDeadline=Game.time+20;                  // twenty seconds left
+          check(); check();
+          reminded=said(/SECONDS TO UNFOLD A CONSTRUCTION RIG/);
+          H.rigDeadline=Game.time-0.01;                // none left
+          check();
+          timedOut={over:Game.over, ends:ends.slice()};
+          Game.over=over0; ends.length=0;
+        }
+        if(vYard){
+          L=seat(99); at(L,tankId,s2);
+          Game.human=V; Game.players=[V,L];
+          check();
+          won={over:Game.over, ends:ends.slice()};
+        }
+      } finally {
+        Game.players=full; Game.human=realHuman; UI.endGame=realEnd; Game.over=over0;
+      }
+      chk("losing the last one ends the player's war, and the end screen says why",
+          !!lost && lost.over===true && W.defeated===true && lost.ends.length===1 &&
+          lost.ends[0][0]===false && /ALL YOUR PRODUCTION FACILITIES WERE DESTROYED/.test(lost.ends[0][1]),
+          lost ? "over="+lost.over+" ends="+JSON.stringify(lost.ends) : "not run");
+      chk("the rail says so too, and the player's own army is not marched off",
+          said(/ALL YOUR PRODUCTION FACILITIES HAVE BEEN DESTROYED/)===1 && !!wTank && !wTank.dead,
+          heard.join(" | "));
+      if(hRig){
+        chk("down to a rig, the player is told the clock is running, once", grace===1, grace+" alerts");
+        chk("and reminded once near the end, not every tick", reminded===1, reminded+" reminders");
+        chk("a rig that never unfolds loses the war, and the end screen says why",
+            !!timedOut && timedOut.over===true && H.defeated===true && H.defeatWhy==="rig" &&
+            timedOut.ends.length===1 && timedOut.ends[0][0]===false &&
+            /NO CONSTRUCTION YARD WAS UNFOLDED IN TIME/.test(timedOut.ends[0][1]),
+            timedOut ? "ends="+JSON.stringify(timedOut.ends) : "not run");
+      }
+      if(vYard) chk("beating the last enemy is victory, and the end screen says why",
+          !!won && won.over===true && !!L && L.defeated===true && !V.defeated && won.ends.length===1 &&
+          won.ends[0][0]===true && /EVERY ENEMY PRODUCTION FACILITY DESTROYED/.test(won.ends[0][1]),
+          won ? "ends="+JSON.stringify(won.ends) : "not run");
+    } finally { restore(); }
+
+    tick(2);
+    chk("the real seats were never touched, and the match carries on",
+        !Game.over && !P.defeated && !E.defeated && Game.players===roster &&
+        roster.every(function(X){ return seats.indexOf(X)<0; }),
+        "over="+Game.over+" seats="+Game.players.length);
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);
@@ -1514,6 +1799,7 @@ try{
     chk("the enemy clock actually runs", t1!==t2, JSON.stringify(t1)+" -> "+JSON.stringify(t2));
   })();
 
+  Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   log("runtime errors: "+(__errs.length? "\n  "+__errs.slice(0,12).join("\n  ") : "NONE"));
 }catch(e){ log("HARNESS CRASH: "+e.message+"\n"+String(e.stack).split("\n").slice(0,6).join("\n")); }

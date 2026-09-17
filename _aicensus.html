@@ -363,7 +363,7 @@ window.addEventListener("load", function () {
   set("opt-fog","1"); set("opt-3d","0"); set("opt-cash","20000"); set("opt-res","1.6");
   set("opt-seed",qp("seed","aiA"));
   var out=document.getElementById("tout"), lines=[];
-  try{ document.getElementById("btn-start").click(); }catch(e){ out.textContent="START FAILED "+e; return; }
+  try{ (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click()); }catch(e){ out.textContent="START FAILED "+e; return; }
   try{ var h=Game.players[0]; h.isAI=true; AI.create(Game,h,qp("diff","elite"),null); }
   catch(e){ lines.push("P0 brain failed: "+e); }
   function census(P){
@@ -407,6 +407,12 @@ window.addEventListener("load", function () {
           lines.push("    RIGS  : queued="+ex.queued+"  onMap="+JSON.stringify(ex.onMap));
           lines.push("    OILOUT: "+(ks.length?ks.map(function(k){return k+"="+Math.round(oo[k]);}).join("  "):"none"));
         }catch(e){ lines.push("    EXPAND: <"+e+">"); }
+        try{ var it3=AI.intelOf(P);
+          lines.push("    SCOUT : seenBuildings="+it3.buildings+" seenUnits="+it3.units+
+                     " objectivesKnown="+(it3.objectives||[]).length+" alarms="+it3.alarms+
+                     " waveOpens="+(it3.learn&&it3.learn.opens)+" arm="+(it3.learn&&it3.learn.arm));
+        }catch(e){ lines.push("    SCOUT : <"+e+">"); }
+        lines.push("    BLD : "+fmt(c.bld));
         lines.push("    AIR : "+fmt(c.air));
         lines.push("    SEA : "+fmt(c.sea));
         lines.push("    GND : "+fmt(c.gnd));

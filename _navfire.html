@@ -334,7 +334,7 @@ window.addEventListener("load", function(){
   var set=function(id,v){var el=document.getElementById(id); if(el) el.value=v;};
   set("opt-map","hormuz"); set("opt-era","e20"); set("opt-aera","e20");
   set("opt-cash","200000"); set("opt-seed","btest"); set("opt-fog","0"); set("opt-3d","0");
-  document.getElementById("btn-start").click();
+  (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click());
   setTimeout(run, 200);
 });
 

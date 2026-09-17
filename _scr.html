@@ -324,7 +324,7 @@ window.addEventListener("load",function(){
   var set=function(i,v){var e=document.getElementById(i); if(e) e.value=v;};
   set("opt-map","normandy"); set("opt-cash","300000"); set("opt-diff","elite");
   set("opt-seed","scr"); set("opt-fog","0"); set("opt-3d","0"); set("opt-opponents","1");
-  document.getElementById("btn-start").click();
+  (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click());
   setTimeout(function(){
     AI.reset();
     var o=[], P=Game.human, E=Game.players[1];

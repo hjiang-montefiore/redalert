@@ -44,6 +44,17 @@ var CFG = {
      baseline, because the trickle is what lets a beaten commander rebuild
      instead of being finished the moment its last refinery falls. That is the
      whole point of it, and the figure is the one that produces it. */
+  /* ---- how long a rig on its own keeps a side in the war ----
+     (owner) "the victory condition is eliminating all production building."
+     A construction rig on the road is a yard in transit, so a commander whose
+     base falls while one is out is not beaten yet - but only for this long.
+     A rig makes about 0.95 tiles a second and unfolds on almost any clear 3x3
+     of land, so two minutes is over a hundred tiles of driving to find ground:
+     enough to get out from under an attack or off a landing craft, not enough
+     to park in a corner and hold the match hostage. G.checkVictory reads it,
+     and so do the in-game alerts; the pre-battle hint in index.html says "two
+     minutes" in words, so change that line with this one. */
+  RIG_GRACE: 120,            // seconds a side holding only rigs has to unfold one
   SHOW_RANGE_RINGS: true,    // weapon envelope under a selected unit (V toggles)
   POWER_BROWNOUT_FLOOR: 0.35,// worst-case production speed when the grid is starved
   REPAIR_RATE: 0.022,        // fraction of max HP per second at a Service Depot

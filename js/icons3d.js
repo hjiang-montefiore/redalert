@@ -128,5 +128,8 @@ var Icons3D = (function () {
   }
 
   function clear() { cache = {}; }
-  return { get, clear };
+  /* model and prep are the same builder and colour fix the thumbnails use,
+     handed out so the loading screen can turn a live model on a stand
+     instead of blowing up an 88-pixel bitmap. */
+  return { get, clear, model: makeModel, prep };
 })();

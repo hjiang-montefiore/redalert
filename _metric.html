@@ -327,7 +327,7 @@ window.addEventListener("load",function(){
   set("opt-cash",q.get("cash")||"10000"); set("opt-diff",q.get("diff")||"elite");
   set("opt-seed",q.get("seed")||"base"); set("opt-fog","1"); set("opt-3d","0");
   set("opt-opponents", new URLSearchParams(location.search).get("opp")||"2"); set("opt-handi","1"); set("opt-pers",q.get("pers")||"balanced");
-  document.getElementById("btn-start").click();
+  (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click());
   /* head-to-head: re-seat the two commanders at different difficulties, which
      the pre-battle menu cannot express (it applies one setting to everybody) */
   var qq=new URLSearchParams(location.search);

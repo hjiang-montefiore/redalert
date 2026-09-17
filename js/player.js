@@ -29,6 +29,9 @@ class Player {
     this.stats = { kills: 0, losses: 0, mined: 0, built: 0,
                    killValue: 0, lossValue: 0 };
     this.defeated = false;
+    /* the game time a side holding nothing but rigs is beaten at; null while
+       a production facility stands. See G.checkVictory. */
+    this.rigDeadline = null;
     this.allied = false;
 
     /* five parallel production queues, RA2 style: one per tab */
@@ -74,6 +77,29 @@ class Player {
 
   hasBuilding(id) { for (const b of this.buildings) if (!b.dead && b.buildProgress >= 1 && b.def.id === id) return true; return false; }
   countBuilding(id) { let n = 0; for (const b of this.buildings) if (!b.dead && b.def.id === id) n++; return n; }
+
+  /* ---- WHAT A PRODUCTION FACILITY IS ----
+     The victory rule (G.checkVictory) turns on this, so it is read off the
+     structure table rather than written down as a list of ids. Two flags, and
+     they are the two halves of prodSpeed() and G.spawnUnit():
+       def.produces  the unit queue a factory feeds - barracks, war factory,
+                     naval yard, airbase. The rally-point code already reads it.
+       def.base      the construction yard. The structure, defence and research
+                     queues all run on its count in prodSpeed(), and it is what
+                     a rig unfolds into.
+     A structure added later with either flag is a production facility with no
+     change here. prodSpeed() still names its buildings by id, so _behtest [44]
+     checks that the flags and that mapping have not drifted apart. */
+  static isProduction(def) { return !!(def && (def.base || def.produces)); }
+  /* standing production facilities, finished or still unfolding */
+  productionBuildings() {
+    return this.buildings.filter(b => !b.dead && Player.isProduction(b.def));
+  }
+  /* rigs on the road - or in a hold - that would unfold into one */
+  productionRigs() {
+    return this.units.filter(u => !u.dead && u.def.deployTo &&
+                                  Player.isProduction(BUILDINGS[u.def.deployTo]));
+  }
 
   /* ---- A COIL OF RAZOR WIRE IS NOT A CONSTRUCTION SITE ----
      Obstacles are exempt from the build radius in G.canPlace - an engineer

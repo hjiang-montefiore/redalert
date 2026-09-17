@@ -329,7 +329,7 @@ window.addEventListener("load",function(){
   set("opt-diff","elite"); set("opt-opponents","1"); set("opt-handi","1");
   set("opt-fog","1"); set("opt-3d","0");
   set("opt-seed", new URLSearchParams(location.search).get("seed")||"play1");
-  document.getElementById("btn-start").click();
+  (window.IRONFRONT_SYNC_START = true, document.getElementById("btn-start").click());
   setTimeout(function(){
     var o=[], P=Game.players[1], H=Game.human, log=[], last={};
     function bear(a){ return Math.round((a*180/Math.PI+360))%360; }
