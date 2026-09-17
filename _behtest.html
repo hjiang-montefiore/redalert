@@ -1421,6 +1421,62 @@ try{
         bad.length===0, bad.length?bad.join(" | "):seen.join("  "));
   })();
 
+  /* ====== BUG 43: a bomber holding less than one release goes home ====== */
+  if (inHalf(2)) {
+  log("\n[43] A BOMBER WITH A PART-LOAD GOES HOME, NOT ROUND AND ROUND");
+  (function(){
+    /* (owner) "the b2 has remaining 2 bombs and not strike."
+       A JDAM release costs 2 of magazine. A sortie launched before the rearm
+       finished carried a fraction; at 1.6 tryFire refused, the RTB test was
+       ammo <= 0.05, and the panel rounded 1.6 up to "2". The 1990s B-2 carries
+       3 and was left holding 1 after every first pass. */
+    var land=tile(P,"ground",6);
+    if(!land){ chk("part-load scenario built", false, "no ground"); return; }
+    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    if(ab) ab.buildProgress=1;
+    tick(1);
+    [["sbomber_n",1.6,"B-2 (today) launched holding 1.6"],
+     ["nato_e90_stealthbomber",-1,"B-2 (1990s) with a full load of 3"]].forEach(function(cs){
+      if(!UNITS[cs[0]]){ chk(cs[2]+": unit exists", false, cs[0]); return; }
+      var u=Game.spawnUnitAt(P,cs[0],land.x*32+16,land.y*32+16);
+      var tgt=Game.spawnUnitAt(E,"mbt_p",(land.x+10)*32+16,land.y*32+16);
+      if(!u||!tgt){ chk(cs[2]+": scenario built", false, "spawn failed"); return; }
+      u.parked=false; u.fuel=u.fuelMax; u.ammo = cs[1] >= 0 ? cs[1] : u.ammoMax;
+      tgt.stance="hold"; tgt.hp=tgt.maxHp=300000;
+      u.give({type:"attack", target:tgt});
+      var loiter=0, wentHome=false, refilled=false, dropAfter=false, kept=false, last=u.ammo;
+      for(var i=0;i<30*150;i++){ tick(1);
+        if(u.dead) break;
+        var ot=u.order&&u.order.type;
+        /* the bug: prosecuting an attack with less than one release aboard */
+        if(ot==="attack" && !u.parked && u.ordnanceDry()) loiter++;
+        if(!wentHome && (ot==="rtb"||ot==="land"||u.parked)){
+          wentHome=true;
+          var th=u.order&&u.order.then;
+          kept = !!(th && th.target===tgt) || !!(u.order&&u.order.target===tgt);
+        }
+        if(u.parked && u.order && u.order.then && u.order.then.target===tgt) kept=true;
+        if(wentHome && u.ammo >= u.ammoMax-0.05) refilled=true;
+        if(refilled && u.ammo < last-0.5) { dropAfter=true; break; }
+        last=u.ammo;
+      }
+      chk(cs[2]+": it does not orbit the target with nothing it can drop",
+          loiter<30, loiter+" frames attacking while dry (ammo "+u.ammo.toFixed(2)+")");
+      chk(cs[2]+": it turns for home and keeps the target",
+          wentHome && kept, "home="+wentHome+" kept="+kept);
+      chk(cs[2]+": it rearms, comes back and bombs it",
+          dropAfter, "refilled="+refilled+" ammo="+u.ammo.toFixed(2)+" order="+(u.order&&u.order.type));
+      if(u&&!u.dead)u.dead=true; if(tgt&&!tgt.dead)tgt.dead=true;
+    });
+    /* the panel never shows a bomb that is not there */
+    var pu=Game.spawnUnitAt(P,"sbomber_n",land.x*32+16,land.y*32+16);
+    if(pu){ pu.ammo=1.6;
+      chk("1.6 of magazine counts as dry, not as two bombs",
+          pu.ordnanceDry() && Math.floor(pu.ammo+0.01)===1, "dry="+pu.ordnanceDry());
+      pu.dead=true; }
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

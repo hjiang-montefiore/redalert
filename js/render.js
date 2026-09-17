@@ -1103,7 +1103,7 @@ var Render = (function () {
     if (u.owner === G.human && sel) {
       let msg = null;
       if (u.fuelMax && u.fuel < 25) msg = "FUEL";
-      if (u.ammoMax && u.ammo < 1) msg = msg ? "FUEL+AMMO" : "AMMO";
+      if (u.ordnanceDry && u.ordnanceDry()) msg = msg ? "FUEL+AMMO" : "AMMO";
       if (msg) {
         ctx.fillStyle = "#ff9a5c"; ctx.font = Math.round(8 * z) + "px sans-serif"; ctx.textAlign = "center";
         ctx.fillText("LOW " + msg, X, Y + (u.r + 14) * z);

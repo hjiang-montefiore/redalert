@@ -3107,7 +3107,7 @@ function makeCommander() {
       if (u.parked || u.order.type === "parked") continue;
       up++;
       const ot = u.order.type;
-      if ((ot === "rtb" || ot === "tank") && (!u.ammoMax || u.ammo > 0.05)) cut++;
+      if ((ot === "rtb" || ot === "tank") && !u.ordnanceDry()) cut++;
     }
     /* about four think ticks of memory: long enough to smooth one sortie
        cycle, short enough to follow a change of objective */

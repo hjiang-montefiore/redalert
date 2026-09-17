@@ -545,9 +545,9 @@ var UI = (function () {
          nobody. The panel now says what the engine is actually doing. */
       const boomLow = !!(u.offloadMax && u.offload < u.offloadMax - 1);
       const ready = u.parked && u.fuel >= u.reserveFuel() &&
-                    (!u.ammoMax || u.ammo > 0.05) && !boomLow;
+                    !u.ordnanceDry() && !boomLow;
       const state = !u.parked ? "AIRBORNE"
-        : (u.ammoMax && u.ammo <= 0.05) ? "REARMING"
+        : u.ordnanceDry() ? "REARMING"
         : (u.fuel < u.reserveFuel()) ? "REFUELLING"
         : boomLow ? "REPLENISHING" : "READY";
       /* time on station, which is what actually limits a mission */
@@ -557,7 +557,7 @@ var UI = (function () {
            '" data-air="' + u.id + '" title="' + (u.def.full || u.def.name) +
            " \u00b7 combat radius " + (u.def.radius || "-") + " tiles" +
            " \u00b7 endurance " + endTxt +
-           (u.ammoMax ? " \u00b7 ordnance " + u.ammo.toFixed(0) + "/" + u.ammoMax : "") +
+           (u.ammoMax ? " \u00b7 ordnance " + Math.floor(u.ammo + 0.01) + "/" + u.ammoMax : "") +
            (u.offloadMax ? " \u00b7 boom " + Math.round(u.offload) + "/" + u.offloadMax +
                            " units of fuel to give away" : "") + '">' +
            '<canvas class="hi" width="34" height="21" data-thumb="' + u.def.id + '"></canvas>' +
@@ -575,7 +575,7 @@ var UI = (function () {
     const ship = b.kind === "unit";
     h += '<div class="hbtns">' +
       '<div class="hb" data-hact="all">SELECT READY (' + parked.filter(u =>
-        u.fuel >= u.reserveFuel() && (!u.ammoMax || u.ammo > 0.05) &&
+        u.fuel >= u.reserveFuel() && !u.ordnanceDry() &&
         !(u.offloadMax && u.offload < u.offloadMax - 1)).length + ")</div>" +
       '<div class="hb' + (n ? "" : " off") + (sortieMode === "strike" ? " arm" : "") +
         '" data-hact="strike">STRIKE' + (n ? " (" + n + ")" : "") + "</div>" +
@@ -1196,7 +1196,7 @@ var UI = (function () {
         if (act === "all") {
           sel.clear();
           for (const u of b.onRamp())
-            if (u.fuel >= u.reserveFuel() && (!u.ammoMax || u.ammo > 0.05)) sel.add(u.id);
+            if (u.fuel >= u.reserveFuel() && !u.ordnanceDry()) sel.add(u.id);
           sortieMode = null;
         } else {
           if (!sel.size) return;
@@ -1413,7 +1413,7 @@ var UI = (function () {
         g2.n++;
         g2.hp = Math.min(g2.hp, e.hp / e.maxHp);
         g2.vet = Math.max(g2.vet, e.vet || 0);
-        if (e.ammoMax && e.ammo <= 0.05) g2.dry++;
+        if (e.ammoMax && e.ordnanceDry && e.ordnanceDry()) g2.dry++;
         if (e.roundsMax && e.rounds === 0) g2.dry++;
         if (e.isOutOfSupply && e.isOutOfSupply()) g2.unsup = (g2.unsup || 0) + 1;
         if (e.fuelMax && e.fuel < 22) g2.lowFuel++;
@@ -2391,7 +2391,7 @@ var UI = (function () {
     let dryRef = null, fuelRef = null, brokenRef = null, harvRef = null, idleRef = null;
     for (const u of p.units) {
       if (u.dead || u.carried) continue;
-      if (u.ammoMax && u.ammo <= 0.05) { dry++; dryRef = dryRef || u; }
+      if (u.ammoMax && u.ordnanceDry()) { dry++; dryRef = dryRef || u; }
       else if (u.fuelMax && u.fuel < 22) { lowFuel++; fuelRef = fuelRef || u; }
       if (u.isBroken && u.isBroken()) { broken++; brokenRef = brokenRef || u; }
       if (u.def.harvester && u.order.type === "idle") { idleHarv++; harvRef = harvRef || u; }

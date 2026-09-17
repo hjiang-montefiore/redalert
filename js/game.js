@@ -1847,7 +1847,7 @@ var Game = (function () {
        and come home - having achieved nothing and said nothing. */
     if (order && order.type === "attack" && order.target && !u.canTarget(order.target))
       return u.def.name.toUpperCase() + " CANNOT ENGAGE THAT TARGET";
-    if (u.ammoMax && u.ammo <= 0.05) return "REARMING";
+    if (u.ordnanceDry()) return "REARMING";
     if (u.fuel < u.reserveFuel()) return "REFUELLING";
     /* A tanker with an empty boom can fly, but it cannot do the one thing it
        is for. The hangar used to launch it anyway and the player got a "ready"

@@ -1817,7 +1817,7 @@ var Render3D = (function () {
       /* logistics and morale state, readable at any zoom without selecting */
       if (e.kind === "unit" && e.owner === G.human) {
         const marks = [];
-        if (e.ammoMax && e.ammo <= 0.05) marks.push(["#ff6b52", "\u25b2"]);        // dry
+        if (e.ammoMax && e.ordnanceDry && e.ordnanceDry()) marks.push(["#ff6b52", "\u25b2"]);        // dry
         else if (e.fuelMax && e.fuel < 22) marks.push(["#e8a33c", "\u25b2"]);      // low fuel
         if (e.isBroken && e.isBroken()) marks.push(["#ff8a5c", "!!"]);
         else if (e.isPinned && e.isPinned()) marks.push(["#ffcf4d", "!"]);

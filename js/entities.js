@@ -1510,7 +1510,7 @@ class Unit {
      engage it. A destroyer carries a gun, an area SAM, an anti-ship missile,
      a lightweight ASW torpedo and a CIWS; which one it reaches for depends
      on what it is shooting at and how far away that thing is. */
-  pickWeapon(t) {
+  pickWeapon(t, anyAmmo) {
     const subVisible = t.layer !== "sub" || this.game.canSeeSub(this.owner, t);
     if (!subVisible) return -1;
     /* gate on the layer the target presents and score against the armour the
@@ -1536,6 +1536,10 @@ class Unit {
          held round. No BUILDINGS entry mounts one, so every existing
          emplacement is bit-for-bit what it was. */
       if (this.holdsFire(w)) continue;
+      /* a pylon that is empty is not a choice - without this the best-scoring
+         mount was picked every tick, tryFire refused it, and a cheaper mount
+         that could still fire was never tried */
+      if (!anyAmmo && this.ammoMax && !this.canAfford(w)) continue;
       if (w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
@@ -1564,10 +1568,39 @@ class Unit {
     return best;
   }
 
+  /* ---- CAN IT STILL DROP ANYTHING? ----
+     (owner) "the b2 has remaining 2 bombs and not strike."
+     A 2000lb JDAM costs two points of magazine a pass and the magazine is
+     refilled continuously on the ramp, so a sortie launched before the rearm
+     finished carries a fraction - 5.6, say - and after two passes holds 1.6.
+     tryFire refused that (1.6 is less than a pass), but "empty, go home" was
+     `ammo <= 0.05`, so the bomber was neither able to bomb nor allowed to go
+     and rearm, and orbited the target for the rest of the sortie while the
+     panel rounded 1.6 up and showed two bombs. The 1990s B-2 carries 3 at 2 a
+     pass and hit it on every sortie. "Dry" now means what it has to mean:
+     not enough left for a single release of anything that actually uses the
+     magazine. A gun costs nothing per burst and is ignored here, as it always
+     was - an aeroplane whose bombs are gone goes home even if the cannon
+     still works. */
+  canAfford(w) { return !this.ammoMax || this.ammo >= (w.ammo || 1) - 0.01; }
+  ordnanceDry() {
+    if (!this.ammoMax) return false;
+    let spends = false;
+    for (const id of this.def.weapons) {
+      const w = WEAPONS[id];
+      if (!w || !(w.ammo > 0)) continue;
+      spends = true;
+      if (this.canAfford(w)) return false;
+    }
+    return spends ? true : this.ammo < 0.99;
+  }
+
   tryFire(wi, t) {
     if (this.cooldowns[wi] > 0) return;
     const w = WEAPONS[this.def.weapons[wi]];
-    if (this.ammoMax && this.ammo < (w.ammo || 1)) return;   // aircraft out of ordnance
+    /* guarded on ammoMax: a Building borrows this method through
+       Unit.prototype.tryFire.call and has no magazine and no canAfford */
+    if (this.ammoMax && !this.canAfford(w)) return;          // aircraft out of ordnance
     /* Fixed deck launchers hold what they hold. A Slava carries sixteen
        enormous anti-ship missiles in tubes she cannot reload at sea, so once
        they are gone she is a gun platform for the rest of the battle - which
@@ -1980,8 +2013,8 @@ class Unit {
        tanks, so nothing on a quiet patrol ever loiters itself to death. */
     const bingo = Math.max(this.reserveFuel(), this.fuelMax * 0.40);
     const dry = !this.def.hover && this.fuel < bingo;
-    const dryAmmo = !!(this.ammoMax && this.ammo <= 0.05);
-    const needRTB = (this.ammoMax && this.ammo <= 0.05) || dry;
+    const dryAmmo = this.ordnanceDry();
+    const needRTB = dryAmmo || dry;
     /* "tank" must be in this list. Without it the check fired every tick while
        an aircraft was actually taking fuel - fuel is below the bingo figure by
        definition at that moment - and reissued the order from scratch, which
@@ -2190,8 +2223,14 @@ class Unit {
       const wi = this.pickWeapon(t);
       /* Losing the contact is not a reason to go home. A sonar or radar track
          that flickers should send the aircraft back to searching, not end the
-         sortie - it still has fuel and ordnance. */
-      if (wi < 0) { this.order = this.afterAttack(o); return; }
+         sortie - it still has fuel and ordnance. Being unable to PAY for the
+         round that would hit it is: that is a trip to the ramp, and the target
+         is carried so the aircraft comes back to it. */
+      if (wi < 0) {
+        const short = !!this.ammoMax && this.pickWeapon(t, true) >= 0;
+        this.order = this.afterAttack(o, short);
+        return;
+      }
       const w = WEAPONS[this.def.weapons[wi]];
       const range = this.weaponRange(w);
       const dist = U.dist(this.x, this.y, t.x, t.y);
@@ -2254,7 +2293,7 @@ class Unit {
           else this.orbitAround(t, hold, dt);
           if (dist <= hold * 1.10) {
             this.tryFire(wi, t);
-            if (standoff && this.ammoMax && this.ammo <= 0.05)
+            if (standoff && this.ordnanceDry())
               this.order = this.afterAttack(o);
           }
         }
@@ -2681,7 +2720,7 @@ class Unit {
   }
 
   /* what an aircraft does when its target dies or its track is lost */
-  afterAttack(o) {
+  afterAttack(o, short) {
     if (o.cap && o.resume) return { type: "cap", x: o.resume.x, y: o.resume.y };
     if (o.resume) return { type: "attackmove", x: o.resume.x, y: o.resume.y };
     /* AND FLEE. An order that says where to go when the shooting stops is
@@ -2711,7 +2750,7 @@ class Unit {
       ? { type: "attack", target: o.target, resume: o.resume, cap: o.cap,
           auto: o.auto, release: o.release }
       : null;
-    if (this.ammoMax && this.ammo <= 0.05)
+    if (short || this.ordnanceDry())
       return carry ? { type: "rtb", then: carry } : { type: "rtb" };
     if (this.fuel < Math.max(this.reserveFuel(), this.fuelMax * 0.40))
       return carry ? { type: "rtb", then: carry } : { type: "rtb" };
