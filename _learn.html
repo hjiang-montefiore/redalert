@@ -378,7 +378,7 @@ window.addEventListener("load", function () {
       "  q={a:"+fmt(l.q.armour)+",g:"+fmt(l.q.gunline)+",s:"+fmt(l.q.swarm)+"}"+
       "  arm="+String(l.arm).padEnd(7)+" w="+l.weight.toFixed(2);
   }
-  var LIMIT=2400, SAMPLE=200, next=SAMPLE;
+  var LIMIT=+((location.search.match(/limit=(\d+)/)||[])[1]||2400), SAMPLE=+((location.search.match(/sample=(\d+)/)||[])[1]||200), next=SAMPLE;
   lines.push("LEARNER OVER A FULL MATCH  fulda e80 nato-vs-pact commander, brains on both seats");
   function batch(){
     var guard=0;
@@ -419,6 +419,10 @@ window.addEventListener("load", function () {
       lines.push("==== "+PASS+" passed, "+FAIL+" failed ====   seed="+SEED);
       out.textContent=lines.join("\n")+"\nEND t="+Math.round(Game.time)+
                       (Game.over?" decided":" time")+"\n==DONE==";
+  /* done: stop the live game loop. --dump-dom waits out the whole virtual-time
+     budget, and every frame until then still ticks and draws the match - with
+     the AI's 100+ building bases that turned a one-minute run into hours. */
+  window.requestAnimationFrame=function(){ return 0; }; if (window.Game) Game.paused=true;
       return;
     }
     setTimeout(batch,0);

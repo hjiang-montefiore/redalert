@@ -327,6 +327,24 @@ var Game = (function () {
   /* the id this commander currently fields for a role, in its own era */
   G.unitOf = function (p, role) { return unitFor(p.faction, role, p.era || CUR_ERA); };
 
+  /* Free water reachable from (sx,sy) by the orthogonal steps Path.find
+     allows around a blocked corner, counted up to `limit` tiles. */
+  function seaRoom(sx, sy, limit) {
+    const M = G.map, W = M.W, H = M.H;
+    const seen = new Set([sy * W + sx]), stack = [sy * W + sx];
+    while (stack.length && seen.size < limit) {
+      const i = stack.pop(), x = i % W, y = (i / W) | 0;
+      for (let d = 0; d < 4 && seen.size < limit; d++) {
+        const nx = x + (d === 0 ? 1 : d === 1 ? -1 : 0), ny = y + (d === 2 ? 1 : d === 3 ? -1 : 0);
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const j = ny * W + nx;
+        if (seen.has(j) || !GameMap.passable(M, nx, ny, "sea") || G.tileBlocked(nx, ny, null)) continue;
+        seen.add(j); stack.push(j);
+      }
+    }
+    return seen.size;
+  }
+
   G.spawnUnit = function (p, defId) {
     const def = UNITS[defId];
     const srcId = def.cat === "infantry" ? "barracks" : def.cat === "aircraft" ? "airbase" :
@@ -362,14 +380,31 @@ var Game = (function () {
         }
       }
     }
-    if (!src && !deck) { p.earn(p.factionCost(def)); return null; }
+    if (!src && !deck) { p.refund(p.factionCost(def)); return null; }
 
     let sx, sy;
     if (def.cat === "naval") {
-      /* find open water beside the yard */
-      const spot = Path.nearest(G.map, src.tx + ((src.def.w / 2) | 0), src.ty + src.def.h, "sea", null, 8) ||
+      /* ---- find OPEN water beside the yard ----
+         (engine fix, every player alike) The ring search took the first sea
+         tile with no occupancy test, and a naval yard stands half in the
+         water, so that was usually the yard's own slipway; spawnUnitAt()
+         then nudged the hull to the nearest free tile, which can be a
+         one-tile pocket between the yard and the beach - diagonal steps
+         past a blocked corner are forbidden (Path.find), so nothing leaves
+         it. Measured in a jsc probe of taiwan: all of P0's landing craft and
+         corvettes sat on one such tile from t=192 to t=720, six sailings,
+         nobody landed. Now: free water that opens onto at least 24 tiles of
+         free water, then any free water, then the old answer. Cost: a flood
+         of at most 24 tiles per candidate, once per ship built. */
+      const cx0 = src.tx + ((src.def.w / 2) | 0), cy0 = src.ty + src.def.h;
+      const busy = (a, b) => G.tileBlocked(a, b, null);
+      const shut = (a, b) => busy(a, b) || seaRoom(a, b, 24) < 24;
+      const spot = Path.nearest(G.map, cx0, cy0, "sea", shut, 8) ||
+                   Path.nearest(G.map, src.tx, src.ty, "sea", shut, 10) ||
+                   Path.nearest(G.map, cx0, cy0, "sea", busy, 8) ||
+                   Path.nearest(G.map, cx0, cy0, "sea", null, 8) ||
                    Path.nearest(G.map, src.tx, src.ty, "sea", null, 10);
-      if (!spot) { p.earn(p.factionCost(def)); return null; }
+      if (!spot) { p.refund(p.factionCost(def)); return null; }
       sx = spot.x * CFG.TILE + 16; sy = spot.y * CFG.TILE + 16;
     } else if (def.cat === "aircraft") {
       const host = deck || src;
@@ -662,9 +697,11 @@ var Game = (function () {
 
   G.sellBuilding = function (b) {
     if (b.dead) return;
+    /* a sale is income: into a full vault it pays nothing (Player.earn) */
     b.owner.earn(b.def.cost * CFG.SELL_REFUND * (b.hp / b.maxHp));
     G.removeBuilding(b);
-    Sfx.play("sell");
+    /* the player hears their own sales, not the enemy's */
+    if (b.owner === G.human) Sfx.play("sell");
   };
 
   /* Hand a structure to another commander - used when infantry occupy a
@@ -845,8 +882,11 @@ var Game = (function () {
   }
   G.invalidateOre = function () { if (G._oreIdx) G._oreIdx.stamp = -1; };
 
-  G.nearestOre = function (tx, ty, p) {
+  /* `skip`: tile index -> game time, the ore this hauler found no route to
+     (updateHarvester); optional, and empty for everybody else */
+  G.nearestOre = function (tx, ty, p, skip) {
     const map = G.map;
+    const noGo = skip && skip.size ? skip : null;
     if (!G._oreIdx || G.time - G._oreIdx.stamp > 8) buildOreIndex();
     const idx = G._oreIdx, cw = idx.cw, ch = idx.ch;
     const foes = G.enemiesOf(p);
@@ -867,6 +907,7 @@ var Game = (function () {
           for (let k = 0; k < list.length; k += 2) {
             const x = list[k], y = list[k + 1], i = y * map.W + x;
             if (map.ore[i] < 20 || G.occ[i]) continue;
+            if (noGo && noGo.get(i) > G.time) continue;
             /* Nobody routes a hauler to ore they have never laid eyes on.
                This used to read `p === G.human`, so only the player was held to
                it: an AI hauler picked the best tile on the whole map from the

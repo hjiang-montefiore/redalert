@@ -151,6 +151,32 @@ var CFG = {
      derrick, and it is paid for - so taking the oil is still the thing to do. */
   FUEL_BUY_RATE: 0.18,       // barrels per second when no derrick is pumping
   FUEL_BUY_PRICE: 9,         // credits per bought barrel
+  /* --- bulk import ---
+     The purchase above is a lifeline and it is FLAT: 0.18 barrels a second
+     whatever the side owns. Measured with brains on both seats at Warlord:
+     on taiwan P0 banked 28,000-37,500 credits from t=750 with four and then
+     five refineries and six to seventeen barrels; on baltic a side sat on
+     30-40k with six to twenty. Equipment costs about one barrel per 45-70
+     credits (an MBT is 1,500 and 22, a fighter 1,400 and 30, a destroyer
+     2,200 and 34), so 0.18 a second turns at most ~11 credits a second of
+     income into anything with an engine - a rich side could buy nothing
+     but rifles and concrete.
+     So a side with a full bank also imports in bulk through its refineries,
+     the only structures equipped to receive crude: 0.12 barrels a second for
+     each refinery beyond the first, at most three, at 25 credits a barrel,
+     while the bank holds 5,000 and the tanks hold under 250. EVERY player
+     gets it on the same terms, the human included (player.js
+     updateFuelPurchase).
+     Owning the oil stays clearly better: the whole import network at its
+     largest - four refineries, 0.36 bulk plus the 0.18 lifeline - is 0.54
+     barrels a second, less than ONE derrick's 0.55, and it is paid for by
+     the barrel (9 credits a second at full rate) where the derrick is 700
+     credits once; at import prices a derrick pays for itself in 51 seconds. */
+  FUEL_BULK_RATE: 0.12,      // barrels per second per refinery beyond the first
+  FUEL_BULK_MAX: 3,          // refineries that count toward it
+  FUEL_BULK_PRICE: 25,       // credits per imported barrel
+  FUEL_BULK_BANK: 5000,      // only a side with this much banked imports
+  FUEL_BULK_CEIL: 250,       // ...and only while its tanks hold less than this
 
   /* --- fuel burn per second, by layer --- */
   FUEL_BURN_AIR: 2.6, FUEL_BURN_SEA: 1.1, FUEL_BURN_LAND: 1.5,

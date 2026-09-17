@@ -320,7 +320,7 @@ class Unit {
     /* any order other than the group move that set it releases the pace cap */
     if (!(order && order.type === "move")) this.groupSpeed = 0;
     this.order = order;
-    this.path = null; this.pathI = 0;
+    this.path = null; this.pathI = 0; this.pathFail = null;
     if (order.type === "move" || order.type === "attackmove") {
       this.guardX = order.x; this.guardY = order.y;
     }
@@ -1977,13 +1977,28 @@ class Unit {
     if (stopDist && U.dist(this.x, this.y, px, py) <= stopDist) return true;
 
     this.repathT -= dt;
+    /* ---- a failed search is remembered until the next repath ----
+       A goal with no route left path null, and `!this.path` then re-ran the
+       whole A* on the very next tick - thirty map-wide floods a second for
+       every unit chasing something it cannot reach. Measured in a profile of
+       the behaviour suite: 83% of all CPU inside Path.find, called from
+       engage() -> stepAlong(). The haulers had grown their own guard for this
+       (updateHarvester); this is the general one. Same goal, same answer,
+       until the ordinary repath interval says look again. */
+    if (!this.path && this.pathFail && this.repathT > 0 &&
+        this.pathFail.x === gtx && this.pathFail.y === gty) return true;
     if (!this.path || this.repathT <= 0) {
       const gm = this.game;
       this.path = Path.find(map, this.tx, this.ty, gtx, gty, this.layer,
         (tx, ty) => gm.tileBlocked(tx, ty, this));
       this.pathI = 0;
       this.repathT = 2.2 + this.game.rng() * 0.8;
-      if (!this.path || !this.path.length) return true;   // nowhere to go
+      if (!this.path || !this.path.length) {             // nowhere to go
+        this.path = null;
+        this.pathFail = { x: gtx, y: gty };
+        return true;
+      }
+      this.pathFail = null;
     }
 
     /* current waypoint */
@@ -2086,7 +2101,15 @@ class Unit {
   updateHarvester(dt) {
     const o = this.order;
     this.moving = false;
-    if (o.type === "move") { if (this.stepAlong(o.x, o.y, dt)) this.order = { type: "harvest" }; return; }
+    if (o.type === "move") {
+      if (this.stepAlong(o.x, o.y, dt)) {
+        this.order = { type: "harvest" };
+        /* sent somewhere new: the ore-miss rest and write-offs belong to the
+           old ground, and a player's right-click is not held for a minute */
+        this.oreWait = 0; this.oreMiss = 0; this.oreRest = 0; this.oreNoGo = null; this.oreT = null;
+      }
+      return;
+    }
     if (o.type !== "harvest" && o.type !== "return") this.order = { type: "harvest" };
 
     if (this.order.type === "harvest") {
@@ -2097,15 +2120,56 @@ class Unit {
       if (map.ore[i] > 1) {
         const take = Math.min(CFG.HARVEST_RATE * dt, map.ore[i], CFG.HARVEST_LOAD - this.load);
         map.ore[i] -= take; this.load += take;
+        this.oreRest = 0;                  // scooping again: the next miss rests 8 s
         return;
       }
       /* find nearest ore tile */
+      /* ---- ore no route reaches ----
+         (engine fix, every player alike) nearestOre() never asked whether a
+         tile can be REACHED, and the generator lays ore on passable tiles
+         walled in by rock. stepAlong() then finds no path, reports "nowhere
+         to go", and the hauler stood beside the pocket for the rest of the
+         battle - and because its path stayed null it re-ran a full A* flood
+         (up to 17,600 tiles on a 144 map) on EVERY tick. Measured in a jsc
+         smoke run of fulda: four of one seat's six haulers parked on one tile
+         next to such a pocket from t=240 to t=300 with their loads frozen,
+         and that seat's income fell to 34-73 cr/s. The tile is now written
+         off for THIS hauler for 90 s (a hauler boxed in by buildings must not
+         blacklist a field the others can reach), and three misses in a row
+         rest the search for 8 s instead of flooding the map 30 times a
+         second. The miss writes off the pocket, not one tile (a field
+         holds 60-120 tiles and one tile per round never exhausted it), and
+         each run of misses doubles the rest - 8, 16, 32, 60 s - until the
+         hauler scoops again. */
+      if (this.oreWait > 0) {
+        this.oreWait -= dt;
+        /* resting with a load: deliver it rather than sit on it */
+        if (this.load > 40) this.order = { type: "return" };
+        return;
+      }
       if (!this.oreT || map.ore[this.oreT.y * map.W + this.oreT.x] < 1 || (this.oreRetryT -= dt) < 0) {
-        this.oreT = this.game.nearestOre(this.tx, this.ty, this.owner);
+        this.oreT = this.game.nearestOre(this.tx, this.ty, this.owner, this.oreNoGo);
         this.oreRetryT = 3;
         if (!this.oreT) { this.order = this.load > 40 ? { type: "return" } : { type: "idle" }; return; }
       }
-      this.stepAlong(this.oreT.x * CFG.TILE + 16, this.oreT.y * CFG.TILE + 16, dt);
+      const orx = this.oreT.x * CFG.TILE + 16, ory = this.oreT.y * CFG.TILE + 16;
+      if (this.stepAlong(orx, ory, dt) && !this.path &&
+          U.dist(this.x, this.y, orx, ory) > CFG.TILE * 1.2) {
+        const ng = this.oreNoGo || (this.oreNoGo = new Map());
+        if (ng.size > 64) for (const [k, t] of ng) if (t <= this.game.time) ng.delete(k);
+        if (ng.size > 400) ng.clear();
+        const until = this.game.time + 90, ox = this.oreT.x, oy = this.oreT.y;
+        for (let yy = Math.max(0, oy - 3); yy <= Math.min(map.H - 1, oy + 3); yy++)
+          for (let xx = Math.max(0, ox - 3); xx <= Math.min(map.W - 1, ox + 3); xx++)
+            if (map.ore[yy * map.W + xx] >= 20) ng.set(yy * map.W + xx, until);
+        this.oreT = null;
+        this.oreMiss = (this.oreMiss || 0) + 1;
+        if (this.oreMiss >= 3) {
+          this.oreMiss = 0;
+          this.oreRest = Math.min(60, (this.oreRest || 4) * 2);
+          this.oreWait = this.oreRest;
+        }
+      } else if (this.oreMiss) this.oreMiss = 0;
     } else { /* return */
       const rf = this.game.nearestBuilding(this.owner, "refinery", this.x, this.y);
       if (!rf) { this.order = { type: "idle" }; return; }
@@ -2149,6 +2213,9 @@ class Unit {
         }
         this.owner.earn(gain);
         this.owner.stats.mined += gain;
+        /* what was DELIVERED, vault or no vault - a statistic only (the AI's
+           income estimate reads it; mined stays what was credited) */
+        this.owner.stats.hauled = (this.owner.stats.hauled || 0) + carried;
         this.load = 0;
         this.order = { type: "harvest" };
       } else this.stepAlong(dockX, dockY, dt);

@@ -511,6 +511,25 @@ function makeCommander() {
   let engStat = engBook();       // what all of the above has done, for intel()
   const GATE_HOLD = 22;          // seconds a staged body waits on its stragglers
   const GATE_R = 3.5;            // tiles from its own mark that count as "there"
+  /* ---- when to go, what to go for, and when to come home ----
+     Closure state for the reason everything above is: two commanders sharing
+     one of these would be sharing one estimate of the enemy. launchGate(),
+     foeField(), commitNow(), staggerWave() and defendBase() explain each. */
+  let foeMemo = null, foeMemoT = -1;    // foeField(), memoised on the game tick
+  let foePeak = 0, foePeakT = 0;        // the most enemy fighting weight shown us at once, fading
+  const prodPeakOf = {};                // rival idx -> most of its production on the plot at once
+  let fortMemo = 0, fortT = -1;         // fire on the war aim as fighting weight, per tick
+  let lastLaunchT = 0;                  // when a body was last actually planned
+  let launchWhy = "";                   // which launchGate() rule let the pending launch go
+  let wasCommit = false;                // commitNow() on the previous think, for the census
+  let defT = 0;                         // defendBase()'s own clock
+  let baseW = 0, baseT = -1e9, baseX = 0, baseY = 0;   // enemy weight last seen at our works
+  let baseHomeW = 0;                    // ...and what we had standing there to meet it
+  let baseCoreW = 0;                    // ...of which within 16 tiles of production or at home
+  let recallNext = 0;                   // the earliest the wave may be pulled home again
+  let prodOneT = 0;                     // since when the rival has shown exactly one production building
+  let waveEtaEnd = 0;                   // when the staggered body should all be at its gate
+  let warLog = warBook();               // what all of this has done, for intel()
   let oreSites = null;           // where the ore is, surveyed once
   /* ---- ground the scouts could not get to ----
      Coarse cell -> the time it may be aimed at again. The same shape as
@@ -518,6 +537,15 @@ function makeCommander() {
      must stop winning the next auction, or the commander re-issues it for the
      rest of the battle. */
   const scoutShy = new Map();
+  /* ---- the reconnaissance plan's memory (see RECONNAISSANCE) ----
+     Closure state for the reason the picture is: two commanders sharing a
+     flood fill would be harmless, sharing a picket route or a job table would
+     be sharing one staff. */
+  let gndComp = null, seaComp = null;   // terrain connectivity, once a battle
+  let reconGrid = null;          // the search grid's representative tiles
+  let rivalPath = null;          // the last ground route pickRival() planned, tiles
+  let scoutLog = scoutLogNew();  // counters for intel(); nothing decides on them
+  let firstFound = -1, firstProd = -1;  // when the rival, and its production, went on the plot
   const roleCool = {};           // role -> time a role this era cannot field may be re-asked
   let intelT = 0, lastDigest = 0;
   let hypo = [];                 // unexamined start positions: where they might be
@@ -640,10 +668,16 @@ function makeCommander() {
       D = Object.assign({}, D, PERSONALITY[personality].mods);
       P.personality = personality;
     }
-    /* One byte a tile for the whole theatre: 144x144 is 20 kB per commander,
-       which is nothing, and it is what lets the commander tell ground it has
-       cleared from ground it has simply never visited. */
-    look = new Uint8Array(G.map.W * G.map.H);
+    /* Two bytes a tile for the whole theatre: 144x144 is 41 kB per
+       commander, which is nothing, and it is what lets the commander tell
+       ground it has cleared from ground it has simply never visited. It was
+       one byte, and the stamp (game time / 4) saturated at t=1020: from
+       there every staleness() read now-1020, forgetStale() never struck a
+       structure off, and every freshness test in the file went dead in a
+       match past seventeen minutes (the elite census runs 1,500 s).
+       G.explored() and every other reader test only `!== 0` or subtract
+       b * 4, so nothing else changes. */
+    look = new Uint16Array(G.map.W * G.map.H);
     /* ---- the deployment survey ----
        A force knows the ground it deploys onto, including the resource it was
        deployed there to work. The human is handed precisely this: the opening
@@ -686,6 +720,12 @@ function makeCommander() {
     aimShy.clear(); scoutShy.clear(); aimRvT = -1; waveBook = null; oreSites = null;
     waveGate = null; waveGateT = 0; waveMassed = false; waveTurn0 = waveTurn1 = 0;
     flankClock = 0; waveDefer = 0; homeward = []; homeUntil = 0; engStat = engBook();
+    /* nor an estimate of the enemy, a production count or a recall clock */
+    foeMemo = null; foeMemoT = -1; foePeak = 0; foePeakT = 0; fortMemo = 0; fortT = -1;
+    for (const k in prodPeakOf) delete prodPeakOf[k];
+    lastLaunchT = 0; launchWhy = ""; wasCommit = false; defT = 0;
+    baseW = 0; baseT = -1e9; baseHomeW = 0; baseCoreW = 0; recallNext = 0; prodOneT = 0; waveEtaEnd = 0;
+    warLog = warBook();
     /* A restarted match must not price its first tanker off the previous
        battle's sortie rate, buy its first workshop against the previous
        battle's casualty rate, or site a belt against a minefield that was on
@@ -695,14 +735,34 @@ function makeCommander() {
     mineSigns = []; raidHeat = 0; raidT = 0; mineNext = 0;
     foeVeh = 0; foeVehT = 0;
     knownM = null; knownMT = -1e9;
+    /* The force budget, the landing and the combined operation belong to one
+       battle as well: no theatre reading, no fuel claim, no hold on a hull
+       and no fleet marker carried across a restart. */
+    theatreNow = { land: true, coast: false, sea: false, key: "", t: -1e9 };
+    armShare = { gnd: 0.6, air: 0.3, sea: 0.1 };
+    oilClaim = null; fbCache = null; fbT = -1; armFieldKey = ""; fieldArms = null;
+    splitSince = -1;
+    booked = []; bookDecT = -1;
+    for (const k of ARM_KEYS) {
+      demandT[k] = -1e9; wantOil[k] = 0; claimBar[k] = 0; armPaid[k] = 0; armBled[k] = 0;
+    }
+    for (const k in holdFrom) delete holdFrom[k];
+    for (const k in holdBar) delete holdBar[k];
+    forceStat = forceStatNew();
+    navAim = null; opReady = false; opSt = null; opStId = null; opStT = -1e9; opHit.clear();
     /* The second front belongs to one battle as well: no detachment, no
        written-off ground and no counters carried across a restart - and no
        raid in the opening minute, when there is no surplus and nothing has
        been seen. */
     raidParty = []; raidTo = null; raidBook = 0; raidEnd = 0; raidNext = 60; raidTick = 0;
     raidShy.clear(); raidDead = []; raidLog = raidLogNew();
+    /* the reconnaissance plan and the oil picture belong to one battle and
+       one map */
+    reconReset(); oilReset();
     for (const k in roleCool) delete roleCool[k];
     intelT = 0; lastDigest = 0; aim = null;
+    /* the plan's income average, budget and survey belong to one battle */
+    macro = macroBook();
     /* The deployment sites are on the published map - every player can see
        where the start positions are. Which of them the enemy actually took is
        not, so they are ranked as hypotheses, nearest first, and struck off as
@@ -715,7 +775,10 @@ function makeCommander() {
     /* earlyRush was declared on the rusher doctrine and never read, so a
        Shock commander opened exactly like everyone else. */
     waveT = D.earlyRush ? 26 : 60;
-    scoutT = 20;
+    /* The start sites are on the published map from the first frame, so the
+       car that comes with the deployment sets out once the first picture has
+       been taken rather than twenty seconds into the battle. */
+    scoutT = 3 + P.idx * 0.3;
     attackWave = []; navalWave = []; phase = "build";
     amphib = { state: "idle", lsts: [], beach: null, staging: null };
     rival = null;
@@ -755,11 +818,12 @@ function makeCommander() {
          is amphibious before it has looked at the ground builds a fleet it did
          not need and never marches. */
       const at = intelHome(rival);
-      if (!at) groundConnected = true;
+      if (!at) { groundConnected = true; rivalPath = null; }
       else {
         const a = { x: (P.homeX / CFG.TILE) | 0, y: (P.homeY / CFG.TILE) | 0 };
         const b = { x: (at.x / CFG.TILE) | 0, y: (at.y / CFG.TILE) | 0 };
         const path = Path.find(G.map, a.x, a.y, b.x, b.y, "ground", null);
+        rivalPath = path && path.length ? path : null;    // the picket's route
         if (path && path.length) {
           const end = path[path.length - 1];
           groundConnected = U.dist(end.x, end.y, b.x, b.y) < 6;
@@ -826,6 +890,23 @@ function makeCommander() {
       raidTick = Math.max(0.5, (D.think || 1.6) * 0.5);
       driveRaid();
       formRaid();
+    }
+    /* ---- the eyes ----
+       Off think() for the reason the raid is: think() returns early on every
+       tick that queues a purchase, and a scout under fire or running dry must
+       not wait for a quiet factory. Every two seconds; scoutT is the clock. */
+    if (scoutT <= 0) { scoutT = 2; driveScouts(); }
+    /* ---- the production we cannot lose ----
+       (victory rule) a side with no live production building is beaten.
+       defendBase() used to run on the last line of think(), after fifteen
+       early `return`s on purchase ticks, so on any tick that bought an
+       aircraft, a SAM or a truck nobody looked at the base at all. It has
+       its own clock now, one think interval, like the raid driver, and
+       reads a fresh groundArmy() rather than a list made before the launch. */
+    defT -= dt;
+    if (defT <= 0) {
+      defT = D.think || 1.6;
+      defendBase(groundArmy());
     }
   }
 
@@ -898,6 +979,14 @@ function makeCommander() {
      coming, and counting only the ones on the map buys a second rig for a job
      the first one is already on its way to do. */
   let yardSpot = null, yardSpotT = -99, yardBlocked = -99, rigHoard = false;
+  /* ---- PEACE ----
+     A commander that builds, watches and defends but sends nothing out: no
+     ground wave, no landing, no bombardment group, no raid, no sortie, no
+     launcher or silo shot. For a scripted sandbox - the mechanics suites run
+     every section inside one match, and once this commander learned to build
+     and attack properly it overran the idle scripted base by t~450 and ended
+     the match under the production victory rule. Set by AI.setPeace(). */
+  let atPeace = false;
   const badYard = new Map();     // rim tiles a rig could not reach -> time written off
   function rigsHeld() {
     let n = 0;
@@ -962,11 +1051,402 @@ function makeCommander() {
     return P.oil - n >= rigOilNeed() * Math.max(1, cutting);
   }
 
+  /* ================= FORCE BUDGET: army, navy, air force =================
+     (owner) "ai should scout and expand quickly and develop quickly with
+     different army, navy, airforce mixed wisely."
+
+     NOTHING DECIDED THE SPLIT BEFORE THIS. think() walks its blocks in a fixed
+     order - army, AEW, logistics, ASW, EW, SAM, TEL, sensors, air force, navy -
+     and each asks tryBuildUnit() for whatever its own ceiling allows. Barrels
+     are charged when a unit COMPLETES and lockReason() only asks whether the
+     reserve holds the price today, so the split between the three services was
+     whatever happened to be cheapest on the tick the fuel arrived.
+
+     MEASURED, taiwan at Warlord, both seats AI: from t=750 P0 held 28,140 to
+     37,500 credits - the storage ceiling - and SIX to seventeen barrels. On a
+     water theatre cash is not the constraint; fuel is, and it arrives at 0.18
+     a second off the purchase line. A fighter is 30 barrels and a corvette 16.
+     The air block runs first and is refused for fuel; the navy block then buys
+     a corvette the moment the reserve passes 16, so the fighter is never
+     reachable: P0 finished with ONE fighter, seven corvettes, five patrol boats
+     and no destroyer, having put 143 barrels into ground vehicles for an army
+     that could never leave its island - five of them supply trucks.
+
+     THREE PIECES:
+       1. THE THEATRE, off what the map allows. groundConnected (pickRival's
+          clock) says whether there is a land route to where we believe the
+          enemy lives; readTheatre() adds whether that place is on the water
+          and whether a hull from our own water can reach it. A land theatre
+          is ground-first; a water theatre is navy and air first, with a small
+          ground share for home defence and the landing force. An arm this
+          nation cannot field in this decade takes no share at all - a force
+          may simply lack a system.
+       2. THE STANDING FORCE IN BARRELS, per service, fielded plus on order.
+          Barrels because that is the resource the mix goes wrong on; infantry
+          costs none and is never held back by any of this.
+       3. A CLAIM. The service furthest below its share that has asked for
+          something in the last twelve seconds reserves the price of what it
+          asked for, and the other two may not spend below it - the rig
+          reserve's pattern (oilSpare) applied between services. Use it or
+          lose it: a service sitting on a met reserve for CLAIM_TTL seconds
+          without buying is barred from claiming for 45, so one held back for
+          some other reason cannot starve the other two.
+
+     COMMITTED FUEL. A queued unit's barrels are only deducted when it
+     completes, and if they have gone by then the purchase is refunded and its
+     build time is lost. Two services racing for one reserve did exactly that.
+     A purchase must fit into the fuel not already promised to the queues,
+     which is what a player does by reading the number before clicking.
+
+     counterMix(), navalMix() and the air block's own ceilings still decide
+     WHAT each service buys; this decides only which service gets the next
+     barrel. Below D.read 0.35 there is no budget and nothing changes.
+
+     FOG: our own units, queues, reserve and yard; published terrain; and
+     intelHome(), which is our plot, the last contact or a published start
+     position, in that order.
+
+     COST: forceBook() is one pass over our own units and three short queues,
+     memoised on the tick. readTheatre() runs every five seconds and is a
+     string compare; its two ring scans and one sea A* run only when the key
+     changes - rival, the believed home moving six tiles, a land route opening
+     or closing, our yard - which is a handful of times a battle. */
+  const CLAIM_TTL = 40;          // seconds a met reserve may sit unspent
+  const ARM_KEYS = ["sea", "air", "gnd"];
+  let theatreNow = { land: true, coast: false, sea: false, key: "", t: -1e9 };
+  let armShare = { gnd: 0.6, air: 0.3, sea: 0.1 };
+  let oilClaim = null;           // { arm, oil, full }: the service holding the next barrels
+  const demandT = { gnd: -1e9, air: -1e9, sea: -1e9 };   // when each service last asked
+  const wantOil = { gnd: 0, air: 0, sea: 0 };            // ...and for how many barrels
+  const claimBar = { gnd: 0, air: 0, sea: 0 };           // may not claim again before
+  const holdFrom = {};           // role -> { t0, seen }: a fuel hold on that role
+  const holdBar = {};            // role -> no fuel hold before this time
+  let fbCache = null, fbT = -1;  // forceBook(), memoised on the tick
+  let armFieldKey = "", fieldArms = null;   // which services this army owns, per period
+  let splitSince = -1;           // since when groundConnected has read false (runAmphib)
+  let forceStat = forceStatNew();
+  function forceStatNew() {
+    return { held: { gnd: 0, air: 0, sea: 0 }, claims: { gnd: 0, air: 0, sea: 0 },
+             lapsed: 0, holds: 0, holdOut: 0, seaA: 0, opAir: 0, swing: 0,
+             trips: 0, boarded: 0, landed: 0, noBeach: 0, noHard: 0, dry: 0 };
+  }
+
+  /* Which service a purchase belongs to. The economy and the supply chain
+     belong to none: a hauler, a rig, a truck, a workshop, a tender, an oiler
+     and a tanker are bought on their own measured rules and are never held
+     back here. A helicopter that hunts submarines is the fleet's, and so is
+     anything built to live on a deck. */
+  function armOf(def) {
+    if (!def || def.harvester || def.deployTo || def.supply ||
+        def.repairRate || def.refuelRate) return null;
+    if (def.cat === "naval") return "sea";
+    if (def.cat === "aircraft") {
+      const r = def.role;
+      return (r === "aswhelo" || r === "cfighter" || r === "cstealth" || r === "cstrike")
+        ? "sea" : "air";
+    }
+    if (def.cat === "vehicle" || def.cat === "infantry") return "gnd";
+    return null;
+  }
+  /* Does this army own the service at all, in this decade, in this battle?
+     unitFor() answers null where a nation never fielded the role, and the
+     pre-battle restrictions can take a whole service away. */
+  function armFieldable() {
+    const key = P.faction + ":" + (P.era || CUR_ERA);
+    if (key === armFieldKey && fieldArms) return fieldArms;
+    const any = (roles) => roles.some(r => !!unitFor(P.faction, r, P.era));
+    const ban = P.banned || {};
+    fieldArms = { air: !ban.aircraft && any(["fighter", "gunship", "cas"]),
+                  sea: !ban.naval && any(["corvette", "patrol", "destroyer", "missileboat", "sub"]) };
+    armFieldKey = key;
+    return fieldArms;
+  }
+  function readTheatre() {
+    const now = G.time, th = theatreNow, M = G.map, T2 = CFG.TILE;
+    if (now - th.t < 5) return th;
+    th.t = now;
+    const at = rival ? intelHome(rival) : null;
+    const yard = G.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
+    const key = (rival ? rival.idx : "-") + "|" +
+                (at ? ((at.x / T2 / 6) | 0) + "," + ((at.y / T2 / 6) | 0) : "-") + "|" +
+                (groundConnected ? 1 : 0) + "|" + (yard ? yard.id : "-");
+    if (key !== th.key) {
+      th.key = key;
+      th.land = groundConnected;
+      th.coast = false; th.sea = false;
+      if (at) {
+        /* is where they live on the water at all */
+        const coast = Path.nearest(M, U.clamp((at.x / T2) | 0, 0, M.W - 1),
+                                   U.clamp((at.y / T2) | 0, 0, M.H - 1), "sea", null, 12);
+        th.coast = !!coast;
+        /* and can a hull from OUR water get there. Without a yard, the water
+           a yard could go on: findShoreSpot() looks forty tiles out. */
+        const from = yard
+          ? Path.nearest(M, (yard.x / T2) | 0, (yard.y / T2) | 0, "sea", null, 6)
+          : Path.nearest(M, (P.homeX / T2) | 0, (P.homeY / T2) | 0, "sea", null, 40);
+        if (coast && from) {
+          forceStat.seaA++;
+          const p = Path.find(M, from.x, from.y, coast.x, coast.y, "sea", null);
+          const end = p && p.length ? p[p.length - 1] : null;
+          th.sea = !!end && Math.abs(end.x - coast.x) + Math.abs(end.y - coast.y) <= 4;
+        }
+      }
+    }
+    readShares();
+    return th;
+  }
+  /* The split, in barrels. Land theatre: the army is the main effort and the
+     air force its cover, the fleet a token unless it can reach them. Water
+     theatre: the fleet and the air force ARE the war, and the army is home
+     defence plus whatever the landing craft can carry. The personality knobs
+     lean on it by their square root, so Air Doctrine's 3.0 is a 1.7x lean and
+     not a pure air force. */
+  function readShares() {
+    const th = theatreNow, fa = armFieldable();
+    let g, a, s;
+    if (th.land) { g = 0.58; a = 0.30; s = th.sea ? 0.12 : 0.04; }
+    else         { g = 0.12; a = 0.38; s = th.sea ? 0.50 : 0.10; }
+    a *= Math.sqrt(D.airBias || 1);
+    s *= Math.sqrt(D.navalBias || 1);
+    /* Attrition. A service losing most of what it fields is feeding a fight
+       it is not winning, and the next barrel is worth more elsewhere - a
+       fighter force being shot down is better answered by the fleet's area
+       SAM than by the next fighter. Up to a 35% cut, from half the recent
+       arrivals lost to nine tenths, and only once sixty barrels have arrived
+       so one early loss decides nothing. Read D.read-scaled: a commander that
+       analyses nothing does not notice. */
+    const damp = (k) => {
+      if (armPaid[k] < 60) return 1;
+      const r = armBled[k] / armPaid[k];
+      return 1 - 0.35 * (D.read || 0) * U.clamp((r - 0.5) / 0.4, 0, 1);
+    };
+    g *= damp("gnd"); a *= damp("air"); s *= damp("sea");
+    if (!fa.air) a = 0;
+    if (!fa.sea) s = 0;
+    const t = g + a + s;
+    armShare = t > 0 ? { gnd: g / t, air: a / t, sea: s / t } : { gnd: 1, air: 0, sea: 0 };
+  }
+  /* Barrels standing in each service, fielded plus on order.
+     A deck's own air wing is left out: embarkComplement() puts it aboard with
+     the hull and charges no fuel for it, so counting it would book barrels
+     nobody spent - seven free Seahawks on taiwan would have read as 175. It is
+     told apart at FIRST SIGHT, while it still sits on the ship it came with;
+     an airframe bought at an airbase is on the strip then, and a helicopter
+     that later lands on a frigate must not flicker in and out of the book.
+     The same pass keeps the ATTRITION ledger: barrels that arrived (first
+     sight) and barrels that were lost (booked last pass, gone now), both
+     decayed with a five-minute half-life. readShares() reads it. */
+  let booked = [];               // our fielded units the book counted last pass
+  let bookStamp = 0, bookDecT = -1;
+  const armPaid = { gnd: 0, air: 0, sea: 0 };
+  const armBled = { gnd: 0, air: 0, sea: 0 };
+  function forceBook() {
+    if (fbCache && fbT === G.time) return fbCache;
+    const now = G.time;
+    const dec = bookDecT < 0 ? 1 : Math.pow(0.5, (now - bookDecT) / 300);
+    bookDecT = now;
+    for (const k of ARM_KEYS) { armPaid[k] *= dec; armBled[k] *= dec; }
+    const stamp = ++bookStamp;
+    const b = { gnd: 0, air: 0, sea: 0 };
+    const next = [];
+    for (const u of P.units) {
+      if (u.dead || !u.def || !u.def.oil) continue;
+      if (u._fbFree === undefined)
+        u._fbFree = !!(u.layer === "air" && u.padOn && u.padOn.kind === "unit");
+      if (u._fbFree) continue;
+      const k = armOf(u.def);
+      if (!k) continue;
+      b[k] += u.def.oil;
+      if (u._fbS === undefined) { armPaid[k] += u.def.oil; u._fbK = k; u._fbO = u.def.oil; }
+      u._fbS = stamp;
+      next.push(u);
+    }
+    for (const u of booked) if (u._fbS !== stamp) armBled[u._fbK] += u._fbO;
+    booked = next;
+    for (const kind of ["vehicle", "aircraft", "naval"]) {
+      const qq = q(kind);
+      if (!qq) continue;
+      for (const it of qq.items) {
+        const k = armOf(it.def);
+        if (k && it.def.oil) b[k] += it.def.oil;
+      }
+    }
+    fbCache = b; fbT = G.time;
+    return b;
+  }
+  /* barrels already promised to the queues, upgrades included: an upgrade's
+     fuel is taken at completion without a refund, so it empties the reserve
+     under whatever unit is queued behind it */
+  function committedOil() {
+    let n = 0;
+    for (const kind of ["vehicle", "aircraft", "naval", "upgrade"]) {
+      const qq = q(kind);
+      if (!qq) continue;
+      for (const it of qq.items) n += (it.def && it.def.oil) || 0;
+    }
+    return n;
+  }
+  /* A service asked for barrels it could not have. The claim is the CHEAPEST
+     thing it asked for this think: that is the purchase which will actually
+     land first - the air block asks for the fighter (30) before the gunship
+     (26) and takes whichever the reserve reaches - and a service behind its
+     share only needs its next purchase protected, not its dearest. Measured
+     in the first draft, the AEW block's 70-barrel AWACS named the price and
+     the fleet sat behind a reserve no aeroplane ever used. */
+  function noteDemand(arm, oil) {
+    if (!arm) return;
+    const now = G.time;
+    if (demandT[arm] !== now || oil < wantOil[arm]) wantOil[arm] = oil;
+    demandT[arm] = now;
+  }
+  /* A purchase refused for fuel is demand only if fuel is ALL that stops it.
+     lockReason() tests the reserve before ramp space, and tryBuildUnit() tests
+     cash and the hoard after it, so an airframe with no hangar, or anything
+     the bank cannot pay for, would otherwise claim barrels it could never
+     use. */
+  /* A support airframe never names the claim: the AWACS (70-72 bbl), the
+     stealth bomber (90), the EW aircraft (44) and the Weasel (34-36) are
+     bought on their own rules, and as the cheapest ask of a think they held
+     every other service's fuel back until the reserve reached them - up to
+     500 s at the bought 0.18 a second. */
+  const SUPPORT_ASK = { awacs: 1, stealthbomber: 1, ewair: 1, sead: 1 };
+  function demandable(def, role) {
+    if (SUPPORT_ASK[role]) return false;
+    const cost = P.factionCost(def);
+    if (P.cash < cost * 0.6) return false;
+    const hoardFor = role === "mcv" && rigHoard ? 0 : saveTarget;
+    if (hoardFor > 0 && P.cash < hoardFor + cost) return false;
+    if (def.cat === "aircraft" && P.airSpaceLeft(def) <= q("aircraft").items.length) return false;
+    return true;
+  }
+  /* once a think, before anything is bought */
+  function oilBudget() {
+    const now = G.time;
+    if ((D.read || 0) < 0.35) { oilClaim = null; return; }
+    const bk = forceBook();
+    const tot = bk.gnd + bk.air + bk.sea;
+    const inc = oilIncome(), free = P.oil - committedOil();
+    let best = null, bg = 0.03;
+    for (const k of ARM_KEYS) {
+      if (!(armShare[k] > 0) || now - demandT[k] > 12 || claimBar[k] > now) continue;
+      /* a price more than 240 s of income away is not a claim (fuelHold()
+         draws its line at 300 for a single hull): at the bought 0.18 a
+         second a destroyer from an empty tank is 189 s, an AWACS 389 */
+      if (wantOil[k] > free && (inc <= 0 || (wantOil[k] - free) / inc > 240)) continue;
+      /* the holder keeps it unless another service is clearly further behind */
+      const gap = armShare[k] - (tot > 0 ? bk[k] / tot : 0) +
+                  (oilClaim && oilClaim.arm === k ? 0.05 : 0);
+      if (gap > bg) { bg = gap; best = k; }
+    }
+    if (!best) { oilClaim = null; return; }
+    if (!oilClaim || oilClaim.arm !== best) {
+      oilClaim = { arm: best, oil: wantOil[best], full: 0 };
+      forceStat.claims[best]++;
+    } else oilClaim.oil = wantOil[best];
+    if (free >= oilClaim.oil) {
+      if (!oilClaim.full) oilClaim.full = now;
+      else if (now - oilClaim.full > CLAIM_TTL) {
+        claimBar[best] = now + 45; oilClaim = null; forceStat.lapsed++;
+      }
+    } else oilClaim.full = 0;
+  }
+  /* may this service spend n barrels now */
+  function armOilOk(arm, n) {
+    if (!arm || !n || (D.read || 0) < 0.35) return true;
+    const free = P.oil - committedOil();
+    if (free < n) return false;
+    if (!oilClaim || oilClaim.arm === arm) return true;
+    return free - n >= oilClaim.oil;
+  }
+  /* ---- saving for the hull the mixture actually asked for ----
+     buildToward() cooled a role for twenty seconds on ANY lockReason, and
+     "INSUFFICIENT FUEL" is one. On a fuel-starved theatre that cools the
+     destroyer (34 bbl), the submarine (40) and the missile boat (22) in turn
+     until the reserve reaches the corvette's 16, which is then bought - and
+     the next destroyer is refused the same way. That is the taiwan fleet:
+     navalMix() asks for a quarter of it in destroyers from tech 2 and got
+     none. So the role at the top of the shortfall is WAITED FOR, and the
+     claim above reserves the barrels meanwhile. How long is priced off what
+     is actually coming in: at the purchase line's 0.18 a second a destroyer
+     from an empty reserve is 190 seconds away, so a flat two-minute wait
+     would give up on it every time. The wait is 1.3 times the time to the
+     price, 40 seconds at least and 90 + 150*read at most, and a price more
+     than five minutes away is not waited for at all. Past the wait it cools
+     as before, the cheaper hull gets its turn, and the same role may not be
+     waited on again for a minute - a price the reserve cannot reach does not
+     freeze a service. */
+  function oilIncome() {
+    let r = (P.buysFuel() ? (CFG.FUEL_BUY_RATE || 0.18) : 0) +
+            (P.bulkFuelRate ? P.bulkFuelRate() : 0);
+    const mul = (FACTIONS[P.faction] || {}).supplyMul || 1;
+    for (const b of P.buildings)
+      if (!b.dead && b.buildProgress >= 1 && b.def.oilNode) r += (b.def.oilRate || 0) * mul;
+    return r;
+  }
+  function fuelHold(role, def) {
+    const now = G.time, read = D.read || 0;
+    if (read < 0.55 || !def || !def.oil) return false;
+    if (holdBar[role] > now) return false;
+    if (!demandable(def, role)) return false;
+    const h = holdFrom[role];
+    if (!h || now - h.seen > 10) {
+      const inc = oilIncome();
+      const eta = inc > 0 ? Math.max(0, def.oil - (P.oil - committedOil())) / inc : 1e9;
+      if (eta > 300) return false;                 // nothing, or too little, is coming
+      holdFrom[role] = { t0: now, seen: now, lim: U.clamp(30 + eta * 1.3, 40, 90 + 150 * read) };
+      noteDemand(armOf(def), def.oil);
+      forceStat.holds++;
+      return true;
+    }
+    noteDemand(armOf(def), def.oil);
+    h.seen = now;
+    if (now - h.t0 <= h.lim) return true;
+    delete holdFrom[role];
+    holdBar[role] = now + 60;
+    forceStat.holdOut++;
+    return false;
+  }
+  /* The growth clock the ground army has always had, for a service the budget
+     says is behind - not only for a commander swimming in fuel. `P.oil > 120`
+     is precisely false on the theatre where the fleet and the air force are
+     the whole war (measured: 6 to 33 barrels for all of taiwan), so neither
+     ceiling grew there once. The claim is what keeps the growth affordable. */
+  function armSurge(arm) {
+    const bk = forceBook(), tot = bk.gnd + bk.air + bk.sea;
+    const behind = (D.read || 0) >= 0.35 && tot > 0 && bk[arm] / tot < armShare[arm];
+    return (P.oil > 120 || behind) ? Math.floor(G.time / 240) : 0;
+  }
+  function forceIntel() {
+    const bk = forceBook(), tot = bk.gnd + bk.air + bk.sea;
+    const r2 = (v) => Math.round(v * 100) / 100;
+    const fs = forceStat;
+    return { land: theatreNow.land, coast: theatreNow.coast, sea: theatreNow.sea,
+             share: { gnd: r2(armShare.gnd), air: r2(armShare.air), sea: r2(armShare.sea) },
+             have: { gnd: tot ? r2(bk.gnd / tot) : 0, air: tot ? r2(bk.air / tot) : 0,
+                     sea: tot ? r2(bk.sea / tot) : 0 },
+             bbl: { gnd: bk.gnd, air: bk.air, sea: bk.sea },
+             bled: { gnd: armPaid.gnd ? r2(armBled.gnd / armPaid.gnd) : 0,
+                     air: armPaid.air ? r2(armBled.air / armPaid.air) : 0,
+                     sea: armPaid.sea ? r2(armBled.sea / armPaid.sea) : 0 },
+             claim: oilClaim ? { arm: oilClaim.arm, oil: oilClaim.oil } : null,
+             free: Math.round(P.oil - committedOil()),
+             held: Object.assign({}, fs.held), claims: Object.assign({}, fs.claims),
+             lapsed: fs.lapsed, holds: fs.holds, holdOut: fs.holdOut, seaA: fs.seaA,
+             op: { phase: opPhase(), toH: Math.round(waveT), wave: attackWave.length,
+                   fleet: navalWave.length, navAim: navAim, air: fs.opAir, swing: fs.swing },
+             amphib: { state: amphib.state, trips: fs.trips, boarded: fs.boarded,
+                       landed: fs.landed, noBeach: fs.noBeach, noHard: fs.noHard, dry: fs.dry } };
+  }
+
   function tryBuildUnit(role) {
     const id = unitFor(P.faction, role, P.era);
     if (!id) return false;
     const def = UNITS[id];
-    if (P.lockReason(def)) return false;
+    const why = P.lockReason(def);
+    /* refused for fuel alone is DEMAND, and the force budget needs to hear it
+       - but only once the cash and the hoard below have had their say */
+    const dry = !!why && def.oil > 0 && why.indexOf("INSUFFICIENT FUEL") === 0;
+    if (why && !dry) return false;
     if (P.cash < P.factionCost(def) * 0.6) return false;
     /* respect the tech savings plan (harvesters & supply are always exempt) */
     /* ...except that the rig is exempt from a hoard that is FOR the rig: the
@@ -975,6 +1455,10 @@ function makeCommander() {
     const hoardFor = role === "mcv" && rigHoard ? 0 : saveTarget;
     if (hoardFor > 0 && role !== "harvester" && role !== "supply" &&
         P.cash < hoardFor + P.factionCost(def)) return false;
+    if (dry) {
+      if (demandable(def, role)) noteDemand(armOf(def), def.oil);
+      return false;
+    }
     /* once the cash for a step is banked the fuel is reserved too, or the
        reserve leaves a few barrels at a time in vehicles and the step is never
        legal. Only once the cash is there: an army held back for a step that
@@ -993,7 +1477,102 @@ function makeCommander() {
        is worth more than what the money would otherwise buy this tick. */
     if (role !== "mcv" && role !== "harvester" && role !== "supply" &&
         !oilSpare(def.oil)) return false;
-    return P.enqueue(def.cat, id);
+    /* ---- the force budget: which service gets the next barrel ---- */
+    const arm = def.oil ? armOf(def) : null;
+    /* Air defence at home answers the enemy's air force, not our ground
+       share: booked as ground, a water theatre's 0.12 share never let it
+       claim, and the SAM that the 38% air push makes the enemy's peakAir ask
+       for could only be bought out of another service's leftovers. It keeps
+       the committed-fuel test and skips the claim. */
+    const homeAD = role === "sam" || role === "spaag";
+    if (arm && !(homeAD ? P.oil - committedOil() >= def.oil : armOilOk(arm, def.oil))) {
+      /* counted only when the CLAIM is what stopped it, not an empty tank */
+      if (P.oil - committedOil() >= def.oil) forceStat.held[arm]++;
+      if (demandable(def, role)) noteDemand(arm, def.oil);
+      return false;
+    }
+    const ok = P.enqueue(def.cat, id);
+    if (ok) {
+      delete holdFrom[role];
+      /* served: the promise now sits in the queue, where committedOil() keeps
+         it safe, and the next think re-reads who is furthest behind */
+      if (arm && oilClaim && oilClaim.arm === arm) oilClaim = null;
+    }
+    return ok;
+  }
+
+  /* ---- the factory door stays open ----
+     G.spawnUnit starts its search for open ground at (tx + w/2, ty + h) of the
+     war factory or barracks nearest home, and a refinery's free hauler is put
+     down at row ty + h + 1. Nothing kept those tiles free, and the base
+     sealed its own doors: in a jsc probe of taiwan P0's only factory at
+     (22,49) was ringed by two power plants, the barracks and the yard by
+     t~150, and 13-15 vehicles - seven haulers, four trucks, the only rig -
+     sat in a two-tile pocket until t=600; on fulda two 3,000-credit rigs
+     stood boxed in by the yard, both factories, the refinery and a nest from
+     t=210 to past t=330. With the build plan now putting far more structures
+     next to production, every siting helper asks this as well.
+     Rejects a footprint over the two rows in front of a ground production
+     building (one tile wider each side) or in front of a refinery, and a new
+     ground production building whose own door does not open onto at least
+     24 tiles of open ground (doorFlood, with the new footprint counted as
+     built). The last is the korea fault in the integration smoke run: P0's
+     factory door fell on impassable shore, the engine's Path.nearest put
+     every vehicle on the one open tile beside it - walled by the yard, the
+     factory and the water - and P0 landed 33k by t=600 against P1's 260k.
+     Cost: O(our production buildings + refineries) per candidate, asked only
+     after canPlace has said yes, plus a flood of at most 24 tiles for a
+     production candidate. */
+  function keepsLanes(defId, tx, ty) {
+    const def = BUILDINGS[defId];
+    if (!def || def.oilNode) return true;
+    const x1 = tx + def.w - 1, y1 = ty + def.h - 1;
+    for (const b of P.buildings) {
+      if (b.dead) continue;
+      const bd = b.def;
+      let ax0, ax1;
+      if (bd.produces === "infantry" || bd.produces === "vehicle") { ax0 = b.tx - 1; ax1 = b.tx + bd.w; }
+      else if (bd.id === "refinery") { ax0 = b.tx; ax1 = b.tx + bd.w - 1; }
+      else continue;
+      const ay0 = b.ty + bd.h, ay1 = ay0 + 1;
+      if (tx <= ax1 && x1 >= ax0 && ty <= ay1 && y1 >= ay0) return false;
+    }
+    if (def.produces === "infantry" || def.produces === "vehicle")
+      return doorFlood(def, tx, ty, 24) >= 24;
+    return true;
+  }
+  /* Open ground reachable from where the engine puts a new unit down
+     (G.spawnUnit: the nearest unbuilt tile to (tx + w/2, ty + h) within 7),
+     flooded four-way up to `limit` tiles. `def, tx, ty` may be a planned
+     footprint, counted as built. */
+  function doorFlood(def, tx, ty, limit) {
+    const M = G.map, W = M.W, H = M.H;
+    const inFoot = (x, y) => x >= tx && x < tx + def.w && y >= ty && y < ty + def.h;
+    const open = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !inFoot(x, y) &&
+                           !G.occ[y * W + x] && GameMap.passable(M, x, y, "ground");
+    let sx = tx + ((def.w / 2) | 0), sy = ty + def.h;
+    if (!open(sx, sy)) {
+      const n = Path.nearest(M, U.clamp(sx, 0, W - 1), U.clamp(sy, 0, H - 1), "ground",
+                             (a, b) => inFoot(a, b) || !!G.occ[b * W + a], 7);
+      if (!n) return 0;
+      sx = n.x; sy = n.y;
+    }
+    const seen = new Set([sy * W + sx]), stack = [sy * W + sx];
+    while (stack.length && seen.size < limit) {
+      const i = stack.pop(), x = i % W, y = (i / W) | 0;
+      for (let d = 0; d < 4 && seen.size < limit; d++) {
+        const nx = x + (d === 0 ? 1 : d === 1 ? -1 : 0), ny = y + (d === 2 ? 1 : d === 3 ? -1 : 0);
+        const j = ny * W + nx;
+        if (seen.has(j) || !open(nx, ny)) continue;
+        seen.add(j); stack.push(j);
+      }
+    }
+    return seen.size;
+  }
+  /* every base-builder candidate: not on a free oil pad (padNo), not across
+     a door (keepsLanes) */
+  function siteOK(defId, tx, ty) {
+    return !padNo(defId, tx, ty) && keepsLanes(defId, tx, ty);
   }
 
   /* choose a legal placement spot near a base anchor, spiralling outward */
@@ -1006,24 +1585,47 @@ function makeCommander() {
         const ang = G.rng() * U.PI2;
         const tx = (ax + Math.cos(ang) * r) | 0;
         const ty = (ay + Math.sin(ang) * r) | 0;
-        if (G.canPlace(P, defId, tx, ty)) return { tx, ty };
+        /* never on a free well's pad or across a door (siteOK) */
+        if (G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) return { tx, ty };
       }
     }
     return null;
   }
   /* naval yard needs shoreline: walk the coast near home */
   function findShoreSpot() {
-    const map = G.map;
+    /* Same answer, a fraction of the work. This walked every other tile of
+       the theatre through canPlace - ~5,000 calls, each a footprint of
+       spatial-grid queries and a pass over our buildings - on every think the
+       naval rung was reached, and then discarded anything past 40 tiles. Only
+       that box is searched now, nearer-than-best first, and a footprint with
+       no water or no land in it (which canPlace refuses on the shoreline test)
+       is skipped before canPlace is asked. Same parity and order, so the same
+       spot comes back. */
+    const map = G.map, W = map.W;
+    const bdef = BUILDINGS.navalyard, fw = bdef.w, fh = bdef.h;
+    const WATER = (typeof T !== "undefined" && T.WATER !== undefined) ? T.WATER : 0;
     const hx = (P.homeX / CFG.TILE) | 0, hy = (P.homeY / CFG.TILE) | 0;
-    let best = null, bd = Infinity;
-    for (let y = 1; y < map.H - 3; y += 2) for (let x = 1; x < map.W - 3; x += 2) {
-      if (!G.canPlace(P, "navalyard", x, y)) continue;
-      const d = U.dist2(x, y, hx, hy);
-      if (d < bd) { bd = d; best = { tx: x, ty: y }; }
-    }
-    return best && bd < 40 * 40 ? best : null;
+    let best = null, bd = 40 * 40;
+    let y0 = Math.max(1, hy - 40); if (!(y0 & 1)) y0++;
+    let x0 = Math.max(1, hx - 40); if (!(x0 & 1)) x0++;
+    for (let y = y0; y < map.H - 3 && y <= hy + 40; y += 2)
+      for (let x = x0; x < map.W - 3 && x <= hx + 40; x += 2) {
+        const d = U.dist2(x, y, hx, hy);
+        if (d >= bd) continue;
+        let wet = false, dry = false;
+        for (let yy = y; yy < y + fh && yy < map.H; yy++)
+          for (let xx = x; xx < x + fw && xx < W; xx++) {
+            if (map.terrain[yy * W + xx] === WATER) wet = true; else dry = true;
+          }
+        if (!wet || !dry) continue;
+        /* never over a coastal well (taiwan P0's node is on the coast) or a door */
+        if (!G.canPlace(P, "navalyard", x, y) || padClash("navalyard", x, y) ||
+            !keepsLanes("navalyard", x, y)) continue;
+        bd = d; best = { tx: x, ty: y };
+      }
+    return best;
   }
-  function findOilSpot() {
+  function findOilSpot(peek) {
     /* Nearest free node, preferring our own half of the theatre but not
        confined to it. The old flat 30-tile cap meant a commander whose only
        near node was an unbuildable shoreline sliver - and there is one on
@@ -1046,16 +1648,708 @@ function makeCommander() {
        develops - and a commander that is genuinely fuel-starved with money in
        the bank reaches as far as it must, which is the state that should send
        an army out to take ground rather than sit on cash. */
-    const own = P.countBuilding("derrick");
-    const starved = P.oil < 70 && P.cash > 3500;
-    const reach = own < 1 || starved ? 1e9 : 30 + Math.floor(G.time / 180) * 10;
-    const nodes = G.map.oilNodes.filter(n => !n.taken && U.dist(n.x, n.y, hx, hy) < reach)
-      .sort((a, b) => U.dist2(a.x, a.y, hx, hy) - U.dist2(b.x, b.y, hx, hy));
-    for (const n of nodes) {
-      for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++)
-        if (G.canPlace(P, "derrick", n.x + dx, n.y + dy)) return { tx: n.x + dx, ty: n.y + dy };
+    /* ---- THE REACH IS THE RULE, AND THE PICTURE IS OUR OWN ----
+       The clock-driven reach that used to sit here (30 tiles, plus ten every
+       three minutes, measured from HOME) is gone. G.canPlace already holds a
+       derrick to CFG.OIL_RADIUS of a structure we own, which is the same limit
+       the player has; the extra ring only ever threw away a node that a
+       forward yard had legally brought inside the pipe.
+       It also read `n.taken` on every node on the map and never asked whether
+       anybody of ours had looked - a field forty tiles off changing hands
+       through fog. oilSite() below reads the commander's own node memory
+       instead (noteOil), and canPlace stays the final word, exactly as the
+       player's red placement ghost is. */
+    return oilSite(peek);
+  }
+
+  /* ======================================================================
+     THE OIL PICTURE, AND WHY THE FIRST WELL NEVER WENT DOWN
+     ======================================================================
+     Measured, taiwan at Warlord, both seats AI: P0's construction yard stood
+     SEVEN tiles from a free node for the whole match and it finished at
+     t=1200 with ZERO derricks, 37,500 credits and seven barrels. expandNode()
+     answered true and findOilSpot() answered false at every sample from t=150
+     to t=450, and by t=600 even expandNode() had stopped seeing it - the node
+     was still free (`n.taken` false) but no longer drillable.
+     Two faults, both ours, neither the map's:
+       - The node sits on the coast and only ONE of its four 2x2 footprints is
+         dry land. canPlace refuses a footprint when ANY ground unit is in the
+         spatial-grid cells around it (a 20-pixel query over 64-pixel cells, so
+         up to three tiles out), and the commander parks its own infantry,
+         supply trucks and rally points in its own base. One footprint, a base
+         full of idle troops: never placeable. A player selects the squad and
+         moves it; shoveOff() does exactly that, and moves the rally point that
+         keeps refilling the spot.
+       - findSpot() drops power plants and silos on random legal tiles within
+         twenty-six of the yard, and nothing stopped it covering the node's
+         pad. padClash() keeps our own structures - and a production
+         building's rally point - off every free pad we know about, and
+         sellOffPad() sells a cheap structure of ours that already sits on
+         one, which is what a player does when the silo went down in the wrong
+         place.
+     And for the fog rule: node state is REMEMBERED from what our own sensors
+     saw (noteOil), never read live off the map. Positions of nodes we have
+     overlooked are map knowledge; whether somebody has drilled one since we
+     last looked is not. */
+  let nodeMem = null;            // per oil node: what we last saw there
+  let oilMemT = -99;             // when the picture was last refreshed
+  let oilSpotT = -1, oilSpotV = null;   // oilSite() memoised on the game tick
+  let oilShoveT = -99;           // the last time we cleared a pad of our own pieces
+  let stepPlan = null, stepNext = 0;    // the guard post going out toward a field
+  const stepTries = new Map();   // node index -> posts already put down toward it
+  const oilLog = { why: "", firstWell: -1, wells: 0, shoves: 0, rally: 0, pads: 0,
+                   refused: 0, busy: 0, sold: 0, posts: 0, forward: 0, stalls: 0, stranded: 0,
+                   prospects: 0 };
+  /* Structures cheap enough to sell for the ground under them. Production,
+     refineries, the radar and the lab are never on it. */
+  const PAD_SELL = { silo: 1, power: 1, nest: 1, atpost: 1, wall: 1, flak: 1 };
+
+  /* Refreshed on its own 1.5-second clock by whoever asks first, so it needs
+     no hook in think(). peek never refreshes: the census reads through it and
+     must not change what the commander knows or does. Cost: one grid query of
+     twelve tiles per node (four to twelve nodes a theatre). */
+  function oilMem(peek) {
+    if (!peek && (!nodeMem || G.time - oilMemT >= 1.5 || G.time < oilMemT)) {
+      oilMemT = G.time;
+      noteOil();
     }
+    return nodeMem;
+  }
+  function noteOil() {
+    const N = G.map.oilNodes, TL = CFG.TILE, now = G.time, W = G.map.W;
+    if (!nodeMem || nodeMem.length !== N.length)
+      nodeMem = N.map(() => ({ seen: false, taken: false, open: true, mine: false,
+                               own: false, t: -1, deny: 0 }));
+    /* our own wells we know about without looking */
+    for (let i = 0; i < N.length; i++) nodeMem[i].own = false;
+    for (const b of P.buildings) {
+      if (b.dead || !b.def.oilNode) continue;
+      for (let i = 0; i < N.length; i++) {
+        const n = N[i];
+        if (n.x >= b.tx && n.x < b.tx + b.def.w && n.y >= b.ty && n.y < b.ty + b.def.h)
+          nodeMem[i].own = true;
+      }
+    }
+    for (let i = 0; i < N.length; i++) {
+      const n = N[i], m = nodeMem[i];
+      if (m.own) { m.seen = true; m.taken = true; m.mine = true; m.open = true; m.t = now; continue; }
+      /* our well died - we were told; what stands there now we have not seen */
+      if (m.mine) { m.mine = false; m.taken = false; }
+      const idx = n.y * W + n.x;
+      if (!look || !look[idx]) continue;
+      /* Stamp 1 is the deployment survey (init) or the first eight seconds -
+         before anybody could have finished a twelve-second derrick. */
+      if (m.t < 0 && look[idx] === 1) {
+        m.seen = true; m.taken = false; m.open = nodeGround(n); m.t = 0;
+      }
+      /* a sensor of ours on it right now: the grid is asked rather than the
+         look stamp, which is four-second coarse and says nothing of who is
+         still watching */
+      const cx = (n.x + 0.5) * TL, cy = (n.y + 0.5) * TL;
+      let eyes = false;
+      G.grid.query(cx, cy, TL * 12, (e) => {
+        if (eyes || e.dead || e.owner !== P || e.carried || !e.sightR) return;
+        if (e.kind === "building" && e.buildProgress < 1) return;
+        const r = e.sightR() * TL;
+        if (U.dist2(e.x, e.y, cx, cy) <= r * r) eyes = true;
+      });
+      if (!eyes) continue;
+      m.seen = true; m.t = now;
+      m.taken = n.taken;
+      m.open = nodeDrillable(n);
+    }
+  }
+  function nodeKnownFree(i) {
+    const m = nodeMem && nodeMem[i];
+    return !!m && m.seen && !m.taken && !(m.deny > G.time);
+  }
+  /* terrain alone - what the map says, which is fair to know */
+  function footGround(tx, ty) {
+    const dw = BUILDINGS.derrick.w, dh = BUILDINGS.derrick.h;
+    if (tx < 0 || ty < 0 || tx + dw > G.map.W || ty + dh > G.map.H) return false;
+    for (let y = ty; y < ty + dh; y++) for (let x = tx; x < tx + dw; x++) {
+      const t = G.map.terrain[y * G.map.W + x];
+      if (!CFG.TERRAIN[t] || !CFG.TERRAIN[t].pass || t === T.TREE) return false;
+    }
+    return true;
+  }
+  function nodeGround(n) {
+    for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++)
+      if (footGround(n.x + dx, n.y + dy)) return true;
+    return false;
+  }
+  /* Would a structure of ours at (tx,ty) sit on the 3x3 pad of a free node we
+     know about, or park its production rally inside the blocking zone around
+     one? The zone is 4.5 tiles: canPlace's unit query reaches three tiles out
+     through the 64-pixel grid cells, and a squad is a tile across. Cost: a
+     dozen rectangle tests, and callers ask it only after canPlace said yes. */
+  function padClash(defId, tx, ty) {
+    const def = BUILDINGS[defId], mem = oilMem(true);
+    if (!def || def.oilNode || !mem) return false;
+    const N = G.map.oilNodes;
+    const rally = def.produces && def.produces !== "aircraft";
+    const rx = tx + def.w / 2, ry = ty + def.h + 1.5;
+    for (let i = 0; i < N.length && i < mem.length; i++) {
+      const m = mem[i];
+      if (!m.seen || m.taken) continue;
+      const n = N[i];
+      if (tx <= n.x + 1 && tx + def.w - 1 >= n.x - 1 &&
+          ty <= n.y + 1 && ty + def.h - 1 >= n.y - 1) return true;
+      if (rally && Math.abs(rx - (n.x + 0.5)) < 4.5 && Math.abs(ry - (n.y + 0.5)) < 4.5) return true;
+    }
+    return false;
+  }
+  /* the base builder's copy, counted for the census */
+  function padNo(defId, tx, ty) {
+    if (!padClash(defId, tx, ty)) return false;
+    oilLog.pads++;
+    return true;
+  }
+  /* within R tiles of an enemy structure we have SEEN (seenB is in pixels;
+     civilian blocks, own < 0, are not a base) */
+  function nearFoe(tx, ty, R) {
+    for (const r of seenB.values())
+      if (r && !r.gone && r.own >= 0 && U.dist(tx, ty, r.x / CFG.TILE, r.y / CFG.TILE) < R) return true;
+    return false;
+  }
+  /* (No well cap: the build plan drills wherever canPlace allows - the map
+     bounds a player the same way.) */
+  /* Can shoveOff() actually move this piece? The same test it applies. */
+  function shovable(u) {
+    const t = u.order && u.order.type;
+    if (u.def.deployTo || u === prospect || u.flankTo) return false;
+    if (attackWave.indexOf(u) >= 0 || raidParty.indexOf(u) >= 0) return false;
+    if (u.def.harvester) return t === "idle" || t === "harvest";
+    return t === "idle" || t === "guard" || t === "move";
+  }
+
+  function oilSite(peek) {
+    if (oilSpotT === G.time) return oilSpotV;
+    const v = oilSiteNow(peek);
+    if (!peek) { oilSpotT = G.time; oilSpotV = v; }
+    return v;
+  }
+  /* Nearest remembered-free node inside the pipe, footprint by footprint.
+     Cost: an inBaseRadius per node (fifty structures) to throw out the ones
+     out of reach, then at most four canPlace calls per node that is left -
+     usually one or two nodes - memoised on the tick. */
+  function oilSiteNow(peek) {
+    const mem = oilMem(peek);
+    if (!mem) return null;
+    const N = G.map.oilNodes, now = G.time;
+    const dw = BUILDINGS.derrick.w, dh = BUILDINGS.derrick.h;
+    const hx = P.homeX / CFG.TILE, hy = P.homeY / CFG.TILE;
+    const cand = [];
+    for (let i = 0; i < N.length; i++) {
+      if (!nodeKnownFree(i)) continue;
+      if (!P.inBaseRadius(N[i].x + 0.5, N[i].y + 0.5, CFG.OIL_RADIUS + 1.5)) continue;
+      cand.push(i);
+    }
+    if (!cand.length) { if (!peek) oilLog.why = "none"; return null; }
+    cand.sort((a, b) => U.dist2(N[a].x, N[a].y, hx, hy) - U.dist2(N[b].x, N[b].y, hx, hy));
+    let why = "reach", crowdSpot = null;
+    for (const i of cand) {
+      const n = N[i];
+      let crowd = null, cfoot = null, bfoot = null, inReach = false;
+      for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++) {
+        const tx = n.x + dx, ty = n.y + dy;
+        if (!P.inBaseRadius(tx + dw / 2, ty + dh / 2, CFG.OIL_RADIUS)) continue;
+        inReach = true;
+        if (G.canPlace(P, "derrick", tx, ty)) {
+          if (!peek) oilLog.why = "ok";
+          return { tx, ty, node: i };
+        }
+        if (!crowd) {
+          const c = liftedPlace(tx, ty);
+          /* a crowd we can clear is moved (shoveOff); one we cannot - a
+             hauler on a return, a unit on a job, a rig passing through - is
+             only passing, and the ground under it is good */
+          if (c && c.every(shovable)) { crowd = c; cfoot = { tx, ty }; }
+          else if (c && !bfoot) bfoot = { tx, ty, lifted: c };
+        }
+      }
+      if (!inReach) continue;
+      if (crowd) {
+        /* Legal but for our own pieces. Measured on taiwan with this code:
+           the one dry footprint of P0's coastal well was covered by P0's own
+           hauler, mining the ore field that touches the pad, at every
+           four-second sample from t=90 to t=160. Idle troops are moved now;
+           the hauler only once the derrick is built and waiting (placeReady),
+           since a move order is all it takes - updateHarvester turns a
+           finished move back into "harvest" by itself. The crowded site is
+           still an answer, so the rung queues the well. */
+        why = "crowded";
+        if (!peek) shoveOff(i, crowd, false);
+        if (!crowdSpot) crowdSpot = { tx: cfoot.tx, ty: cfoot.ty, node: i, crowded: true, lifted: crowd };
+        continue;
+      }
+      if (bfoot && !crowd) {
+        /* Our own traffic on the pad, not a refusal. Measured in a jsc probe
+           of taiwan: P1's one dry footprint, six tiles from its yard, lies on
+           its haulers' road to the field beside it and was blocked at half
+           of all 10 s samples from t=70 to t=330. Each time, the node read
+           "refused" and was written off for 60 s, the ready derrick was
+           refunded into a 70 s cool-down, and the write-off read as
+           `starved` and bought oil-expedition rigs: firstWell 300. Now the
+           well is queued and placeReady waits twelve thinks for a gap
+           (oilShoveT), nothing written off. */
+        why = "busy";
+        if (!peek) { oilShoveT = now; oilLog.busy++; }
+        if (!crowdSpot) crowdSpot = { tx: bfoot.tx, ty: bfoot.ty, node: i, crowded: true, lifted: bfoot.lifted };
+        continue;
+      }
+      if (peek) { why = "refused"; continue; }
+      if (P.oil < 200 && sellOffPad(i)) { why = "sold"; mem[i].deny = now + 2; oilShoveT = now; continue; }
+      /* The ground says no with our own pieces out of the way: drilled under
+         fog, a wreck, a foreign vehicle. Believe it for a minute - a sensor
+         passing will correct the picture sooner. */
+      why = "refused";
+      mem[i].deny = now + 60;
+      oilLog.refused++;
+    }
+    if (!peek) oilLog.why = why;
+    return crowdSpot;
+  }
+  /* Is the only thing wrong with this footprint our own units standing on it?
+     Lifts them exactly the way the rig lifts itself (carried), asks the
+     rule, and puts them back. Returns the pieces to move, or false. */
+  function liftedPlace(tx, ty) {
+    const lifted = [];
+    const dw = BUILDINGS.derrick.w, dh = BUILDINGS.derrick.h;
+    for (let y = ty; y < ty + dh; y++) for (let x = tx; x < tx + dw; x++)
+      G.grid.query(x * CFG.TILE + 16, y * CFG.TILE + 16, 20, (e) => {
+        if (e.dead || e.kind !== "unit" || e.layer !== "ground" || e.carried) return;
+        if (e.owner !== P) return;
+        e.carried = true;
+        lifted.push(e);
+      });
+    if (!lifted.length) return false;
+    const ok = G.canPlace(P, "derrick", tx, ty);
+    for (const e of lifted) e.carried = false;
+    return ok ? lifted : false;
+  }
+  /* Six tiles off the well, away from it, onto open ground - what a player
+     does with a box-select and a right-click. Only pieces doing nothing more
+     important than standing: an attacking unit is left alone, and a hauler
+     only when `haul` says the derrick is waiting for the ground. Rally points
+     inside the zone move with them, or the next squad off the ramp walks
+     straight back onto the pad. */
+  function shoveOff(i, lifted, haul) {
+    const m = nodeMem[i], key = haul ? "shoveH" : "shoveT";
+    if (m[key] !== undefined && G.time - m[key] < 4) return;
+    m[key] = G.time;
+    let moved = 0;
+    const n = G.map.oilNodes[i], TL = CFG.TILE, M = G.map;
+    const cx = (n.x + 0.5) * TL, cy = (n.y + 0.5) * TL;
+    for (const u of lifted) {
+      /* never a rig (moveRig re-issues its route), the prospector, or a wave
+         or raid member staging on a move: those leave the pad on their own */
+      if (!shovable(u)) continue;
+      if (u.def.harvester && !haul) continue;
+      let a = Math.atan2(u.y - cy, u.x - cx);
+      if (Math.abs(u.x - cx) < 2 && Math.abs(u.y - cy) < 2) a = G.rng() * U.PI2;
+      const gx = U.clamp(((cx + Math.cos(a) * TL * 6) / TL) | 0, 1, M.W - 2);
+      const gy = U.clamp(((cy + Math.sin(a) * TL * 6) / TL) | 0, 1, M.H - 2);
+      const s = GameMap.passable(M, gx, gy, "ground") && !G.tileBlocked(gx, gy, null)
+        ? { x: gx, y: gy }
+        : Path.nearest(M, gx, gy, "ground", (x, y) => G.tileBlocked(x, y, null), 4);
+      if (!s) continue;
+      u.give({ type: "move", x: (s.x + 0.5) * TL, y: (s.y + 0.5) * TL });
+      oilLog.shoves++; moved++;
+    }
+    for (const b of P.buildings) {
+      if (b.dead || !b.def.produces || b.def.produces === "aircraft" || !b.rally) continue;
+      if (Math.abs(b.rally.x - cx) > TL * 4.5 || Math.abs(b.rally.y - cy) > TL * 4.5) continue;
+      const off = (Math.max(b.def.w, b.def.h) / 2 + 1.5) * TL;
+      let best = null, bd = -1;
+      for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const rx = b.x + dx * off, ry = b.y + dy * off;
+        const tx = (rx / TL) | 0, ty = (ry / TL) | 0;
+        if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) continue;
+        if (!GameMap.passable(M, tx, ty, "ground") || G.tileBlocked(tx, ty, null)) continue;
+        const d = Math.max(Math.abs(rx - cx), Math.abs(ry - cy)) >= TL * 4.5 ? 1e9 : U.dist2(rx, ry, cx, cy);
+        if (d > bd) { bd = d; best = { x: rx, y: ry }; }
+      }
+      if (best) { b.rally = best; oilLog.rally++; moved++; }
+    }
+    /* placeReady waits for a pad only while something is really being
+       cleared */
+    if (moved) oilShoveT = G.time;
+  }
+  /* A cheap structure of ours on a free pad that is otherwise drillable:
+     sell it (half its price back) and drill. A well is 0.55 barrels a second
+     for good; a silo is storage and a nest is 400 credits. Never a building
+     whose loss browns the base out, and never storage the bank is using. */
+  function sellOffPad(i) {
+    if (!G.sellBuilding) return false;
+    const n = G.map.oilNodes[i], W = G.map.W;
+    const dw = BUILDINGS.derrick.w, dh = BUILDINGS.derrick.h;
+    for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++) {
+      const tx = n.x + dx, ty = n.y + dy;
+      if (!footGround(tx, ty)) continue;
+      if (!P.inBaseRadius(tx + dw / 2, ty + dh / 2, CFG.OIL_RADIUS)) continue;
+      const ids = new Set();
+      for (let y = ty; y < ty + dh; y++) for (let x = tx; x < tx + dw; x++) {
+        const o = G.occ[y * W + x];
+        if (o) ids.add(o);
+      }
+      if (!ids.size) continue;
+      const mine = [];
+      for (const b of P.buildings) if (!b.dead && ids.has(b.id)) mine.push(b);
+      if (mine.length !== ids.size) continue;      // not all ours: not ours to clear
+      let ok = true;
+      for (const b of mine) {
+        if (!PAD_SELL[b.def.id]) { ok = false; break; }
+        if (b.def.power > 0 && P.powerOut() - b.def.power < P.powerUse() * 1.1) { ok = false; break; }
+        if (b.def.storage && P.cash > P.storageCap() - b.def.storage - 500) { ok = false; break; }
+      }
+      if (!ok) continue;
+      for (const b of mine) G.sellBuilding(b);
+      oilLog.sold += mine.length;
+      return true;
+    }
+    return false;
+  }
+  function oilPlaced(spot) {
+    oilSpotT = -1;
+    if (oilLog.firstWell < 0) oilLog.firstWell = Math.round(G.time);
+    oilLog.wells++;
+    const m = spot && spot.node !== undefined && nodeMem ? nodeMem[spot.node] : null;
+    if (m) { m.seen = true; m.taken = true; m.mine = true; m.t = G.time; }
+  }
+
+  /* ---- A GUARD POST TOWARD THE NEXT FIELD ----
+     (owner) "ai should scout and expand quickly."
+     A derrick needs a structure of ours within CFG.OIL_RADIUS (22 tiles), so
+     a field up to OIL_RADIUS + BUILD_RADIUS - 3 = 30 tiles from the edge of
+     the base is ONE emplacement away: an anti-tank gun put down eleven tiles
+     out on the line to it brings the well inside the pipe and then guards it.
+     That is what a player does with a well just out of reach, and it costs
+     800 credits where the only road this file had was a 3,000-credit,
+     30-barrel, forty-second rig. Measured on kuwait: P0's nearest free node
+     sat at 21-22 tiles for the whole match and no derrick ever went down.
+     Bounded: once every ten seconds, at most two posts per field, never
+     within twelve tiles of an enemy structure we have seen, and only when the
+     defence queue is empty (so the threat-scaled builder is not starved).
+     Cost: one pass over the nodes, one over our structures, and at most
+     twenty-five canPlace calls. */
+  function oilOutpost() {
+    if (G.time < stepNext) return false;
+    stepNext = G.time + 10;
+    const mem = oilMem();
+    if (!mem) return false;
+    const id = P.hasBuilding("factory") ? "atpost" : (P.hasBuilding("barracks") ? "nest" : null);
+    if (!id || failCool[id] > G.time) return false;
+    const dq = q("defense");
+    if (dq.items.length || dq.ready.length) return false;
+    const def = BUILDINGS[id];
+    if (P.cash < P.factionCost(def) + 700) return false;
+    const N = G.map.oilNodes, hx = P.homeX / CFG.TILE, hy = P.homeY / CFG.TILE;
+    const far = CFG.OIL_RADIUS + CFG.BUILD_RADIUS - 3;
+    let bi = -1, bd = Infinity;
+    for (let i = 0; i < N.length; i++) {
+      const n = N[i];
+      if (!nodeKnownFree(i) || !mem[i].open || (stepTries.get(i) || 0) >= 2) continue;
+      if (expandDead.has(nodeKey(n))) continue;
+      const nx = n.x + 0.5, ny = n.y + 0.5;
+      if (P.inBaseRadius(nx, ny, CFG.OIL_RADIUS - 0.5)) continue;   // the derrick rung's
+      if (!P.inBaseRadius(nx, ny, far)) continue;                   // a rig's
+      if (nearFoe(n.x, n.y, 12)) continue;
+      const d = U.dist2(n.x, n.y, hx, hy);
+      if (d < bd) { bd = d; bi = i; }
+    }
+    if (bi < 0) return false;
+    const n = N[bi], wx = n.x + 0.5, wy = n.y + 0.5;
+    let src = null, sd = Infinity;
+    for (const b of P.buildings) {
+      if (b.dead || b.def.obstacle) continue;
+      const d = U.dist2(b.tx + b.def.w / 2, b.ty + b.def.h / 2, wx, wy);
+      if (d < sd) { sd = d; src = b; }
+    }
+    if (!src) return false;
+    const sx = src.tx + src.def.w / 2, sy = src.ty + src.def.h / 2;
+    const L = Math.sqrt(sd) || 1, ux = (wx - sx) / L, uy = (wy - sy) / L;
+    let spot = null, part = null;
+    for (let r = CFG.BUILD_RADIUS - 1; r >= 4 && !spot; r -= 1.5) {
+      for (const s of [0, 1.5, -1.5, 3, -3]) {
+        const cx = sx + ux * r - uy * s, cy = sy + uy * r + ux * s;
+        const tx = Math.floor(cx - def.w / 2 + 0.5), ty = Math.floor(cy - def.h / 2 + 0.5);
+        if (!G.canPlace(P, id, tx, ty) || padClash(id, tx, ty)) continue;
+        const toWell = U.dist(tx + def.w / 2, ty + def.h / 2, wx, wy);
+        if (toWell <= CFG.OIL_RADIUS - 1.5) { spot = { tx, ty }; break; }
+        if (!part && toWell < L - 3) part = { tx, ty };
+      }
+    }
+    spot = spot || part;
+    if (!spot || !P.enqueue("defense", id)) return false;
+    stepPlan = { id, tx: spot.tx, ty: spot.ty, t: G.time };
+    stepTries.set(bi, (stepTries.get(bi) || 0) + 1);
+    oilLog.posts++;
+    return true;
+  }
+
+  /* Placing the post: the planned tile or one beside it. A unit crossing the
+     tile at the moment the gun is ready (seen in testing) must not send it
+     back to the perimeter, so a blocked plan waits up to three thinks before
+     placeReady falls back to the ordinary siting (its refund needs four). */
+  function stepReady(id) {
+    return !!stepPlan && stepPlan.id === id && G.time - stepPlan.t < 90 &&
+           (stepPlan.miss || 0) < 3;
+  }
+  function stepSpot(id) {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const tx = stepPlan.tx + dx, ty = stepPlan.ty + dy;
+      if (!G.canPlace(P, id, tx, ty) || padClash(id, tx, ty)) continue;
+      stepPlan = null;
+      return { tx, ty };
+    }
+    stepPlan.miss = (stepPlan.miss || 0) + 1;
     return null;
+  }
+
+  /* ---- THE STRANDED RIG ----
+     Measured on taiwan at Warlord: P0's rig stood at (94,122) from t=600 to
+     t=1200 - "move", "idle", "move", "move", "idle" - eighty-two tiles from
+     home, and P1's at (24,23) from t=900 to t=1200. A rig in hand blocks the
+     purchase of the next one (runExpansion buys only when none is held), so
+     NEITHER commander put up another yard for the rest of the match, with
+     28,000 to 37,500 credits banked and a yard target of four.
+     A rig is a base that has not been put down yet. One that has not moved a
+     tile and a half in forty-five seconds unfolds where it stands - or on
+     the nearest legal ground within four tiles - unless that is within twelve
+     tiles of an enemy structure we have seen. A yard eighty tiles out is
+     still +50% on every structure (player.js prodSpeed), still a build radius
+     of its own, and under the production rule still a reason the side is not
+     beaten. Cost: nothing while rigs move; a stalled rig costs at most
+     eighty canPlace calls every three seconds, and there are at most two. */
+  function rigStrand(rigs) {
+    for (const r of rigs) {
+      if (r.dead) continue;
+      const moved = r._wdT === undefined ||
+                    U.dist(r.x, r.y, r._wdX, r._wdY) > CFG.TILE * 1.5;
+      if (moved) { r._wdX = r.x; r._wdY = r.y; r._wdT = G.time; }
+      if (!r._wdGo) {
+        if (moved || G.time - r._wdT < 45) continue;
+        r._wdGo = true; r._wdN = 0; oilLog.stalls++;
+      }
+      if (G.time - (r._wdTry || -99) < 3) continue;
+      r._wdTry = G.time;
+      const bdef = BUILDINGS[r.def.deployTo];
+      /* not in front of a base we know about, and not for ever */
+      if (nearFoe(r.tx, r.ty, 12) || ++r._wdN > 12) {
+        r._wdGo = false; r._wdT = G.time; r._wdX = r.x; r._wdY = r.y;
+        continue;
+      }
+      const ox = r.tx - ((bdef.w / 2) | 0), oy = r.ty - ((bdef.h / 2) | 0);
+      if (!padClash(r.def.deployTo, ox, oy) && keepsLanes(r.def.deployTo, ox, oy) &&
+          G.deployRig(r)) {
+        oilLog.stranded++;
+        yardSpot = null; yardSpotT = -99;
+        continue;
+      }
+      let spot = null, sd = Infinity;
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const dd = dx * dx + dy * dy;
+        if (!dd || dd >= sd) continue;
+        const cx = r.tx + dx, cy = r.ty + dy;
+        const tx = cx - ((bdef.w / 2) | 0), ty = cy - ((bdef.h / 2) | 0);
+        if (padClash(r.def.deployTo, tx, ty) || !keepsLanes(r.def.deployTo, tx, ty)) continue;
+        r.carried = true;
+        const ok = G.canPlace(P, r.def.deployTo, tx, ty);
+        r.carried = false;
+        if (ok) { sd = dd; spot = { cx, cy }; }
+      }
+      if (spot) moveRig(r, spot.cx, spot.cy);
+    }
+  }
+  /* Where a rig sent for a field unfolds, held for six seconds a search: the
+     search is up to 169 canPlace calls and this used to run it every think. */
+  function rigSpotFor(rig, node, reachD, box) {
+    const bdef = BUILDINGS[rig.def.deployTo];
+    const key = nodeKey(node) + ":" + reachD;
+    const c = rig._spot;
+    if (c && c.key === key && G.time - c.t < 6) return c.cx === null ? null : c;
+    const rx = (rig.x / CFG.TILE) | 0, ry = (rig.y / CFG.TILE) | 0;
+    let best = null, sd = Infinity;
+    for (let dy = -box; dy <= box; dy++) for (let dx = -box; dx <= box; dx++) {
+      const cx = rx + dx, cy = ry + dy;
+      /* would the well be inside this yard's reach? */
+      if (U.dist(cx, cy, node.x, node.y) > reachD) continue;
+      const dd = U.dist2(cx, cy, rx, ry) + U.dist2(cx, cy, node.x, node.y) * 0.02;
+      if (dd >= sd) continue;
+      const tx = cx - ((bdef.w / 2) | 0), ty = cy - ((bdef.h / 2) | 0);
+      if (padClash(rig.def.deployTo, tx, ty) || !keepsLanes(rig.def.deployTo, tx, ty)) continue;
+      rig.carried = true;
+      const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
+      rig.carried = false;
+      if (ok) { sd = dd; best = { cx, cy }; }
+    }
+    rig._spot = { key, t: G.time, cx: best ? best.cx : null, cy: best ? best.cy : null };
+    return best ? rig._spot : null;
+  }
+
+  /* ---- PROSPECTING FOR OIL ----
+     (owner) "ai should scout and expand quickly."
+     With node state read only from our own sensors, a commander whose nearest
+     well lies outside its opening survey does not know it is there - and the
+     player does not either: the explored zone round a human start is sixteen
+     tiles. Measured off the theatre data at seed aiA, the nearest node is
+     beyond the sixteen-tile survey for kuwait starts 0, 2 and 3 (22, 25, 21
+     tiles), taiwan start 1 (32), normandy start 1 (35), ngp start 3 (26),
+     suwalki start 3 (30) and baltic start 3 (23). The old findOilSpot read
+     those nodes straight off the map; now somebody has to go and look.
+     So while the commander knows of NO usable well, one idle line unit - not
+     a scout car, which the scouting sweep owns, and never a hauler, rig,
+     truck or gun that is doing a job - walks to the nearest unexplored ground
+     on rings round home, ring by ring outward. It is a search pattern over
+     our own `look` map and never reads a node position. It stops the moment
+     a usable well is known, and walks home if it is far out.
+     Cost: a pass over our units to pick the walker, and at most 288 ring
+     points of array lookups, once every six seconds at Warlord - and nothing
+     at all while a well is known. */
+  let prospect = null, prospectGoal = null, prospectGoT = 0, prospectD = 0, prospectT = 0;
+  const prospectShy = new Map();
+  const PROSPECT_SKIP = { harvester: 1, mcv: 1, recon: 1, supply: 1, minelayer: 1,
+                          mineclear: 1, repair: 1, radarv: 1, ewveh: 1, aa: 1, spaag: 1,
+                          mortar: 1, spg: 1, mlrs: 1, tel: 1, sam: 1, engineer: 1,
+                          medic: 1, sniper: 1 };
+  const pKey = (x, y) => (((y / CFG.TILE / 4) | 0) << 10) | ((x / CFG.TILE / 4) | 0);
+  function oilProspect() {
+    if (G.time < prospectT) return;
+    prospectT = G.time + Math.max(5, (D.scoutT || 30) / 3);
+    const mem = oilMem();
+    if (!mem) return;
+    const N = G.map.oilNodes, TL = CFG.TILE;
+    for (let i = 0; i < N.length; i++) {
+      if (!nodeKnownFree(i) || !mem[i].open || expandDead.has(nodeKey(N[i]))) continue;
+      if (nearFoe(N[i].x, N[i].y, 12)) continue;
+      prospectEnd();
+      return;
+    }
+    if (prospect && (prospect.dead || prospect.carried)) { prospect = null; prospectGoal = null; }
+    if (prospect) {
+      const o = prospect.order || {}, t = o.type;
+      const mine = prospectGoal && t === "move" &&
+                   Math.abs(o.x - prospectGoal.x) < TL * 2 && Math.abs(o.y - prospectGoal.y) < TL * 2;
+      if (mine) {
+        /* thirty seconds without closing two tiles: not reachable from here */
+        if (G.time - prospectGoT < 30) return;
+        const d = U.dist(prospect.x, prospect.y, prospectGoal.x, prospectGoal.y) / TL;
+        if (d < prospectD - 2) { prospectGoT = G.time; prospectD = d; return; }
+        prospectShy.set(pKey(prospectGoal.x, prospectGoal.y), G.time + 240);
+      } else if (t !== "idle" && t !== "guard") {
+        prospect = null;                       // somebody else has given it a job
+      } else if (prospectGoal) {
+        /* Back to idle with the goal still unseen: entities.js turns an AI
+           move that cannot finish into idle (nowhere to go, or stalledOnMove
+           after 10-20 s) before the thirty-second test above can run, and
+           prospectSpot() would hand back the same shore-side tile every six
+           seconds - a whole-landmass Path.find each time on taiwan. */
+        const gx = (prospectGoal.x / TL) | 0, gy = (prospectGoal.y / TL) | 0;
+        if (!look[gy * G.map.W + gx]) prospectShy.set(pKey(prospectGoal.x, prospectGoal.y), G.time + 240);
+      }
+      prospectGoal = null;
+    }
+    if (!prospect) prospect = pickProspector();
+    if (!prospect) return;
+    const g = prospectSpot(prospect);
+    if (!g) { prospectEnd(); prospectT = G.time + 30; return; }
+    prospect.give({ type: "move", x: g.x, y: g.y });
+    prospectGoal = g; prospectGoT = G.time;
+    prospectD = U.dist(prospect.x, prospect.y, g.x, g.y) / TL;
+    oilLog.prospects++;
+  }
+  function prospectEnd() {
+    const u = prospect;
+    prospect = null; prospectGoal = null;
+    if (!u || u.dead || u.carried) return;
+    const t = u.order && u.order.type;
+    if ((t === "idle" || t === "guard") &&
+        U.dist(u.x, u.y, P.homeX, P.homeY) > CFG.TILE * 14)
+      u.give({ type: "move", x: P.homeX + CFG.TILE * 3, y: P.homeY + CFG.TILE * 3 });
+  }
+  function pickProspector() {
+    let best = null, bs = -Infinity;
+    for (const u of P.units) {
+      if (u.dead || u.carried || u.layer !== "ground" || u.flankTo) continue;
+      const d = u.def;
+      if (PROSPECT_SKIP[d.role] || d.deployTo || d.harvester || d.supply) continue;
+      if (!d.weapons || !d.weapons.length) continue;
+      const t = u.order && u.order.type;
+      if (t !== "idle" && t !== "guard") continue;
+      if (attackWave.indexOf(u) >= 0 || raidParty.indexOf(u) >= 0) continue;
+      /* fast and cheap: the walk is the job, not the fight */
+      const s = (d.speed || 1) + (d.cat === "vehicle" ? 0.5 : 0) - (d.cost || 0) / 4000;
+      if (s > bs) { bs = s; best = u; }
+    }
+    return best;
+  }
+  function prospectSpot(u) {
+    const M = G.map, W = M.W, TL = CFG.TILE;
+    const hx = (P.homeX / TL) | 0, hy = (P.homeY / TL) | 0;
+    const eh = rival ? intelHome(rival) : null;
+    /* The first ring with unexplored ground and the two beyond it, scored by
+       the walk plus two tiles a ring: nearest-in-the-innermost-ring zig-zagged
+       across the base (a jsc trace walked ~150 tiles, 33 south then 52 north,
+       before seeing a node 32 tiles out). */
+    let best = null, bs = Infinity, rFirst = 0;
+    for (let r = 12; r <= 56 && (!rFirst || r <= rFirst + 8); r += 4) {
+      for (let a = 0; a < 24; a++) {
+        const an = (a / 24) * U.PI2;
+        const tx = (hx + Math.cos(an) * r) | 0, ty = (hy + Math.sin(an) * r) | 0;
+        if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) continue;
+        if (look[ty * W + tx] !== 0) continue;
+        if (!GameMap.passable(M, tx, ty, "ground")) continue;
+        const x = (tx + 0.5) * TL, y = (ty + 0.5) * TL;
+        const s = U.dist(x, y, u.x, u.y) / TL + (rFirst ? 2 * (r - rFirst) : 0);
+        if (s >= bs) continue;
+        if ((prospectShy.get(pKey(x, y)) || 0) > G.time) continue;
+        if (eh && U.dist(x, y, eh.x, eh.y) < TL * 20) continue;
+        if (exposureAt(x, y, 0.3) > 2) continue;
+        if (nearFoe(tx, ty, 14)) continue;
+        bs = s; best = { x, y };
+      }
+      if (best && !rFirst) rFirst = r;
+    }
+    return best;
+  }
+
+  /* a new battle is a new map: no node picture, no posts, no walker */
+  function oilReset() {
+    nodeMem = null; oilMemT = -99; oilSpotT = -1; oilSpotV = null; oilShoveT = -99;
+    stepPlan = null; stepNext = 0; stepTries.clear();
+    for (const k in oilLog) oilLog[k] = k === "why" ? "" : k === "firstWell" ? -1 : 0;
+    prospect = null; prospectGoal = null; prospectGoT = 0; prospectD = 0; prospectT = 0;
+    prospectShy.clear();
+  }
+
+  /* the census view of all of the above - reads, never refreshes */
+  function oilIntel() {
+    const N = G.map.oilNodes;
+    let seen = 0, free = 0, reach = 0, mine = 0;
+    if (nodeMem) for (let i = 0; i < N.length && i < nodeMem.length; i++) {
+      const m = nodeMem[i];
+      if (!m.seen) continue;
+      seen++;
+      if (m.mine) mine++;
+      else if (!m.taken) {
+        free++;
+        if (P.inBaseRadius(N[i].x + 0.5, N[i].y + 0.5, CFG.OIL_RADIUS)) reach++;
+      }
+    }
+    const buy = (P.buysFuel && P.buysFuel() ? CFG.FUEL_BUY_RATE : 0) +
+                (P.bulkFuelRate ? P.bulkFuelRate() : 0);
+    const inn = P.oilIn || {};
+    return { wells: P.countBuilding("derrick"), firstWell: oilLog.firstWell,
+             placed: oilLog.wells, nodes: N.length, seen, free, reach, mine,
+             why: oilLog.why, shoves: oilLog.shoves, rally: oilLog.rally,
+             pads: oilLog.pads, refused: oilLog.refused, busy: oilLog.busy, sold: oilLog.sold,
+             posts: oilLog.posts, forward: oilLog.forward,
+             prospects: oilLog.prospects, prospecting: !!prospect,
+             stalls: oilLog.stalls, stranded: oilLog.stranded,
+             buyRate: Math.round(buy * 100) / 100,
+             bought: Math.round(inn.buy || 0), bulk: Math.round(inn.bulk || 0),
+             oil: Math.round(P.oil) };
   }
 
   /* ======================================================================
@@ -1121,22 +2415,57 @@ function makeCommander() {
     return false;
   }
 
-  function expandNode() {
+  /* ---- a well a rig can serve ----
+     A rig is built at home and drives; a yard it unfolds pipes CFG.OIL_RADIUS.
+     So a well is an expedition target only if some tile of our home landmass
+     lies within OIL_RADIUS - 3 of it (the approach's own stand-off). The
+     approach timer below wrote such a field off only after a rig had made
+     the trip: in a jsc probe of taiwan P0 bought five rigs (150 barrels,
+     15,000 credits) for wells on the far side of the strait, and each one
+     stalled on its own south-west shore and unfolded there. Terrain only
+     (compOf, the recon module's once-a-battle flood fill), cached per node.
+     Cost: at most a 39x39 read per node, once a battle. */
+  const pipeLand = new Map();
+  let pipeLab = null;
+  function nodeServable(n) {
+    const lab = compOf("ground");
+    if (!lab) return true;
+    const home = compAt(lab, P.homeX, P.homeY);
+    if (!home) return true;
+    if (pipeLab !== lab) { pipeLab = lab; pipeLand.clear(); }
+    const k = nodeKey(n) + ":" + home;
+    let v = pipeLand.get(k);
+    if (v !== undefined) return v;
+    v = false;
+    const R = CFG.OIL_RADIUS - 3, W = G.map.W, H = G.map.H;
+    for (let dy = -R; dy <= R && !v; dy++) for (let dx = -R; dx <= R; dx++) {
+      if (dx * dx + dy * dy > R * R) continue;
+      const x = n.x + dx, y = n.y + dy;
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      if (lab[y * W + x] === home) { v = true; break; }
+    }
+    pipeLand.set(k, v);
+    return v;
+  }
+  function expandNode(peek) {
     const hx = P.homeX / 32, hy = P.homeY / 32;
     let best = null, bd = Infinity;
-    for (const n of G.map.oilNodes) {
+    const N = G.map.oilNodes, mem = oilMem(peek);
+    for (let i = 0; mem && i < N.length; i++) {
+      const n = N[i];
       if (expandDead.has(nodeKey(n))) continue;
       /* ---- AND ONLY GROUND WE HAVE LOOKED AT ----
          `n.taken` is set the moment ANY player puts a derrick on a node and
-         cleared when it dies, so reading it is watching a field forty tiles
-         away change hands through fog. The file already draws this line for
-         the identical class of fact - "A hauler may only be routed to ore this
-         commander has actually seen, the same rule the player's haulers obey"
-         - and this is the same rule for the same reason. A node on ground we
-         have never overlooked is not a plan, it is a guess. */
-      if (!look[n.y * G.map.W + n.x]) continue;
-      if (n.taken) continue;                 // seen, and seen to be taken
-      if (!nodeDrillable(n)) continue;
+         cleared when it dies, so reading it live is watching a field forty
+         tiles away change hands through fog. This used to gate on `look`
+         and then read the live flag anyway; it reads what our own sensors
+         last saw there now (noteOil), the same rule the haulers obey. */
+      if (!nodeKnownFree(i) || !mem[i].open) continue;
+      /* Already inside the pipe: that well is the derrick rung's, and a
+         3,000-credit rig driven to it is a yard where none was needed. */
+      if (P.inBaseRadius(n.x + 0.5, n.y + 0.5, CFG.OIL_RADIUS - 1)) continue;
+      /* ...and one a yard on our own ground could pipe to */
+      if (!nodeServable(n)) continue;
       const d = U.dist2(n.x, n.y, hx, hy);
       if (d < bd) { bd = d; best = n; }
     }
@@ -1165,9 +2494,18 @@ function makeCommander() {
      target rises with the tier - a Recruit runs one base, a Warlord runs
      three - and with a bank that is filling faster than it empties. */
   function yardWant() {
-    const base = 1 + Math.round(1.4 * (D.rebuild || 1));   // 2 at Regular, 4 at Warlord
-    const rich = P.cash > 9000 ? 1 : 0;
-    return Math.max(1, Math.min(4, base + rich));
+    const base = 1 + Math.round(1.4 * (D.rebuild || 1));   // 2 at Regular, 5 at Warlord
+    /* No ceiling - (owner) "i don't want AI has any cap" - and under the
+       victory rule a yard is a production building as well as fifty per cent
+       on every build. Banked money buys more of them: one per 9,000 and one
+       more once it has idled a minute (macro.idle). yardBlocked still stops
+       the purchase when there is nowhere to unfold one, which is what bounds
+       a player. Not while the plan reads fuel short (fuelOK): a rig is 30
+       barrels, and a jsc probe of korea had P1 put 180 barrels into rigs and
+       58 into combat vehicles by t=600 with 30k banked. */
+    const rich = (macro.plan && !macro.plan.fuelOK) ? 0
+      : Math.floor(P.cash / 9000) + (macro.idle > 60 ? 1 : 0);
+    return Math.max(1, base + rich);
   }
   /* Worth putting a rig in the field at all? Two separate reasons, and either
      will do: we are short of fuel and the next field is out of reach, or we
@@ -1182,14 +2520,18 @@ function makeCommander() {
     /* a rig in the field is a yard that has been paid for - count it, or the
        commander buys a fourth rig while three are still driving */
     const yards = P.countBuilding("conyard") + rigsHeld();
-    const starved = P.oil <= 110 && !findOilSpot() && !!expandNode();
+    const starved = P.oil <= 110 && !findOilSpot(true) && !!expandNode(true);
     /* One yard to two is fifty per cent off every building thereafter - the
        cheapest multiplier in the game and worth stretching for. The third and
        the fourth are a luxury and can wait for a fat bank. */
     const need = yards < 2 ? rigCost() + 200 : rigCost() + 2200;
     /* a yard we have nowhere to put is three thousand credits of statue */
     const room = G.time - yardBlocked > 45;
-    const wantMore = yards < yardWant() && P.cash > need && P.tech >= 2 && room;
+    /* the third yard and on wait for the fuel to feed them: wantsExpansion()
+       also holds rigSaving()'s 32-barrel reserve out of every combat purchase
+       for as long as it reads true (the starved oil expedition stays open) */
+    const wantMore = yards < yardWant() && P.cash > need && P.tech >= 2 && room &&
+                     (yards < 2 || !macro.plan || macro.plan.fuelOK);
     if (!starved && !wantMore) return false;
     return P.cash >= 1400;
   }
@@ -1219,7 +2561,12 @@ function makeCommander() {
     const hx = P.homeX / 32, hy = P.homeY / 32;
     /* the outermost buildings we own, which is where the rim is */
     const rim = P.buildings
-      .filter(b => !b.dead && !b.def.obstacle && b.buildProgress >= 1)
+      /* The rim of the BASE: not the creep barriers (def.line), and not a
+         refinery out at a far field - "behind the defences" is near home. A
+         yard unfolded at the end of such a chain stood 93 tiles from home in
+         a jsc smoke run of fulda. 24 tiles is two build radii. */
+      .filter(b => !b.dead && !b.def.obstacle && !b.def.line && b.buildProgress >= 1 &&
+                   U.dist2(b.tx, b.ty, hx, hy) <= 24 * 24)
       .map(b => ({ x: b.tx + b.def.w / 2, y: b.ty + b.def.h / 2,
                    d: U.dist2(b.tx, b.ty, hx, hy) }))
       .sort((a, b) => b.d - a.d)
@@ -1254,7 +2601,9 @@ function makeCommander() {
           rig.carried = true;
           const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
           rig.carried = false;
-          if (ok) { best = { cx, cy }; bestD = d; }
+          if (ok && !padClash(rig.def.deployTo, tx, ty) && keepsLanes(rig.def.deployTo, tx, ty)) {
+            best = { cx, cy }; bestD = d;
+          }
         }
       }
     }
@@ -1285,8 +2634,14 @@ function makeCommander() {
      silently refused, for ever, with the rig sitting on top of the spot it was
      asked to build on. So offer it its own tile and the ring around it. */
   function unfoldNear(rig) {
-    if (G.deployRig(rig)) return true;
     const bd = BUILDINGS[rig.def.deployTo];
+    /* Never across a free oil pad or a factory door - its own tile included.
+       A rig that stops within 1.2 tiles of a pad-free spot is on the
+       neighbouring tile, and a 3x3 yard there can overlap a free pad by a
+       row: the fault taiwan P0 had (its only node under its own structures). */
+    const ox = rig.tx - ((bd.w / 2) | 0), oy = rig.ty - ((bd.h / 2) | 0);
+    if (!padClash(rig.def.deployTo, ox, oy) && keepsLanes(rig.def.deployTo, ox, oy) &&
+        G.deployRig(rig)) return true;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       if (!dx && !dy) continue;
       const cx = rig.tx + dx, cy = rig.ty + dy;
@@ -1294,7 +2649,9 @@ function makeCommander() {
       rig.carried = true;
       const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
       rig.carried = false;
-      if (ok) { moveRig(rig, cx, cy); rig._stepped = true; return false; }
+      if (ok && !padClash(rig.def.deployTo, tx, ty) && keepsLanes(rig.def.deployTo, tx, ty)) {
+        moveRig(rig, cx, cy); rig._stepped = true; return false;
+      }
     }
     rig._stepped = false;
     return false;
@@ -1343,8 +2700,64 @@ function makeCommander() {
      off the commander's own holdings and the static map, exactly like
      findOilSpot() above, and reads nothing of anybody else's. */
   function runExpansion() {
-    const rigsAll = P.units.filter(u => !u.dead && u.def.deployTo);
+    /* nobody knows where the next well is: go and look (oilProspect) */
+    oilProspect();
+    let rigsAll = P.units.filter(u => !u.dead && u.def.deployTo);
+    /* ---- no yard left: unfold where it stands ----
+       Under the victory rule an undeployed rig keeps a beaten side alive only
+       for CFG.RIG_GRACE, so a rig in hand with no yard standing does not
+       drive to an oil node or round the rim - it unfolds on the spot when the
+       spot is legal (a yard obeys no build radius), and only otherwise goes
+       looking for ground. */
+    if (!P.countBuilding("conyard") && rigsAll.length) {
+      for (const r of rigsAll) {
+        if (unfoldNear(r)) { macro.relief++; continue; }
+        if (!r._stepped) deployAtHome(r);
+      }
+      return;
+    }
+    /* A rig that has stopped going anywhere unfolds where it is (rigStrand);
+       while it does, nothing below may give it another order. The home rigs
+       are watched too: on fulda two of them stood boxed in beside the yard
+       for two minutes. */
+    if (rigsAll.length) {
+      rigStrand(rigsAll);
+      rigsAll = rigsAll.filter(u => !u.dead && !u._wdGo);
+    }
+    /* ---- the second yard unfolds at home ----
+       A rig bought while one yard stands and the tank is not dry (the same 110
+       barrels wantsExpansionNow() calls starved) is the build rate and the
+       second production site, not an oil expedition: in a jsc smoke run of
+       fulda at Standard funds both rigs bought at t=240 drove 80-93 tiles west
+       and the second yard stood at t=440, while the one yard put up 34
+       structures in 480 s. Decided once per rig; handed back to the node logic
+       below if there is no ground for it at home. */
+    let homeRig = false;
+    for (const r of rigsAll) {
+      if (r._homeYard === undefined)
+        r._homeYard = P.countBuilding("conyard") === 1 && P.oil > 110;
+      if (!r._homeYard) continue;
+      deployAtHome(r);
+      if (G.time - yardBlocked < 1) r._homeYard = false;
+      else homeRig = true;
+    }
+    /* a rig bound for a field is still driven while a home rig unfolds -
+       left without orders it stood where it was built, and rigStrand
+       unfolded it there 45 s later */
+    if (homeRig) {
+      rigsAll = rigsAll.filter(r => !r._homeYard);
+      if (!rigsAll.length) return;
+    }
     const node0 = expandNode();
+    /* ---- A SECOND RIG WHILE THE FIRST IS STILL DRIVING ----
+       The purchase below runs only when no rig is in hand, so a Warlord that
+       wants four yards got them one forty-second build and one drive at a
+       time - measured on taiwan, one yard all match with 37,500 banked. A
+       bank that covers two rigs and a margin buys the second now; rigsHeld()
+       counts the queue, so it is never a third. Not while the mining fleet is
+       short (haulersOK): a rig at the head of the vehicle queue starves it. */
+    if (rigsAll.length === 1 && rigsHeld() < 2 && P.cash >= 2 * rigCost() + 1500 &&
+        P.oil >= rigOilNeed() + 10 && haulersOK() && wantsExpansion()) tryBuildUnit("mcv");
     /* Nowhere worth driving to, but three thousand credits are already standing
        in the field. A yard at home is still fifty per cent on every build and
        still a second place to rebuild from if the first one falls, so it goes
@@ -1381,7 +2794,7 @@ function makeCommander() {
          and the rig's turn comes; what actually needs bounding is how many
          rigs are in flight, and that is two. Three at once is nine thousand
          credits of vehicles that cannot shoot. */
-      if (rigsHeld() < 2 && P.cash >= rigCost() + 100) tryBuildUnit("mcv");
+      if (rigsHeld() < 2 && P.cash >= rigCost() + 100 && haulersOK()) tryBuildUnit("mcv");
       return;
     }
     /* From here a node is guaranteed: a rig in hand with nowhere to take it
@@ -1413,38 +2826,51 @@ function makeCommander() {
         return;
       }
     }
-    const want = CFG.BUILD_RADIUS + 2;             // "close enough to look"
+    /* ---- CLOSE ENOUGH TO DRILL, NOT CLOSE ENOUGH TO TOUCH ----
+       A derrick needs a structure within CFG.OIL_RADIUS (22), not
+       CFG.BUILD_RADIUS (11). This used to walk the rig to thirteen tiles and
+       then insist on a yard within ten of the well, and on a water theatre
+       the last ten tiles are very often a channel: measured on taiwan, P0's
+       rig stood at (94,122), nine tiles short of the well at (94,131), for
+       six hundred seconds. A yard within BUILD_RADIUS+1 is still the first
+       choice - its own radius then covers the well and the post that
+       guards it - but once the rig stalls (thirty seconds short of its spot,
+       twenty searches with nothing legal, or the approach timer below) any
+       legal ground within OIL_RADIUS-3 of the well will do. */
+    const nk = nodeKey(node);
+    const near = rig._rigNear === nk;
+    const reachD = near ? CFG.OIL_RADIUS - 3 : CFG.BUILD_RADIUS + 1;
+    const want = reachD + 2;                       // "close enough to look"
     const d = U.dist(rig.x / 32, rig.y / 32, node.x, node.y);
     if (d <= want) {
-      const bd = BUILDINGS[rig.def.deployTo];
-      const rx = (rig.x / 32) | 0, ry = (rig.y / 32) | 0;
-      let spot = null, sd = Infinity;
-      for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
-        const cx = rx + dx, cy = ry + dy;
-        const tx = cx - ((bd.w / 2) | 0), ty = cy - ((bd.h / 2) | 0);
-        /* would the well be inside this yard's radius? */
-        if (U.dist(cx, cy, node.x, node.y) > CFG.BUILD_RADIUS - 1) continue;
-        rig.carried = true;
-        const ok = G.canPlace(P, rig.def.deployTo, tx, ty);
-        rig.carried = false;
-        if (!ok) continue;
-        const dd = U.dist2(cx, cy, rx, ry);
-        if (dd < sd) { sd = dd; spot = { cx, cy }; }
-      }
+      const spot = rigSpotFor(rig, node, reachD, near ? 4 : 6);
       if (spot) {
         /* centre to centre: measuring to the tile CORNER meant a rig parked
            in the middle of the right tile, arriving from the south or east,
            read 0.9 away and was sent to the same tile again for ever */
         const at = U.dist(rig.x / 32, rig.y / 32, spot.cx + 0.5, spot.cy + 0.5);
         if (at < 1.2) {
-          if (unfoldNear(rig)) { expandNoted(node); return; }
+          if (unfoldNear(rig)) { expandNoted(node); oilLog.forward++; return; }
+          /* refused on the spot and nothing alongside: search again */
+          if (!rig._stepped) rig._spot = null;
         } else {
+          const sk = spot.cx + "," + spot.cy;
+          if (rig._spotK !== sk) { rig._spotK = sk; rig._spotT = G.time; }
+          else if (G.time - rig._spotT > 30) {
+            rig._spotK = null; rig._spot = null;
+            if (!near) rig._rigNear = nk;
+            else rig._rigTries = (rig._rigTries || 0) + 5;
+          }
           moveRig(rig, spot.cx, spot.cy);
           return;
         }
       }
       rig._rigTries = (rig._rigTries || 0) + 1;
-      if (rig._rigTries > 20) { expandNoted(node); expandDead.add(nodeKey(node)); rig._rigTries = 0; }
+      if (rig._rigTries > 20) {
+        rig._rigTries = 0;
+        if (!near) rig._rigNear = nk;
+        else { expandNoted(node); expandDead.add(nk); rig._rigNear = null; }
+      }
       return;
     }
     /* still out: drive it, and do not re-issue the same order every think */
@@ -1463,7 +2889,11 @@ function makeCommander() {
     const k = nodeKey(node);
     if (rig._rigGoal !== k) { rig._rigGoal = k; rig._rigT = G.time; rig._rigD = d; }
     else if (G.time - rig._rigT > 45) {
-      if (d > rig._rigD - 3) { expandNoted(node); expandDead.add(k); }
+      if (d > rig._rigD - 3) {
+        /* not closing - but a yard that can pipe to it need not reach it */
+        if (d <= CFG.OIL_RADIUS - 1 && rig._rigNear !== k) rig._rigNear = k;
+        else { expandNoted(node); expandDead.add(k); }
+      }
       rig._rigT = G.time; rig._rigD = d;
     }
   }
@@ -1475,21 +2905,44 @@ function makeCommander() {
       const id = rq.ready[0].id;
       let spot = null;
       if (id === "navalyard") spot = findShoreSpot();
-      else if (id === "derrick") spot = findOilSpot();
+      else if (id === "derrick") {
+        spot = findOilSpot();
+        /* legal but for our own pieces: clear them - haulers too, now that
+           the well is built - and put it down on a later think */
+        if (spot && spot.crowded) { shoveOff(spot.node, spot.lifted, true); spot = null; }
+      }
+      /* a creep barrier goes on the line to the plan's ore field */
+      else if (id === "wall" && macro.creepTo) spot = creepSpot();
+      /* the guard post oilOutpost() put on the line to a well */
+      else if (BUILDINGS[id].cat === "defense" && stepReady(id)) spot = stepSpot(id);
       else if (BUILDINGS[id].cat === "defense") {
-        /* defences face the enemy */
-        const anchor = P.buildings.find(b => !b.dead && b.def.id === "conyard");
+        /* Defences face the enemy - from the production building (or
+           refinery) with the least cover nearest the trouble (defAnchor), not
+           always from the first yard: under the victory rule a war factory on
+           the far side of the base is a life. A superweapon and a barrier
+           stay by the yard. */
+        const dd = BUILDINGS[id];
+        const guard = dd.weapons && dd.weapons.length && !dd.superweapon ? defAnchor() : null;
+        const anchor = guard || P.buildings.find(b => !b.dead && b.def.id === "conyard");
         spot = anchor ? findSpotToward(id, anchor) : findSpot(id, null);
-      } else spot = findSpot(id, P.buildings.find(b => !b.dead && b.def.id === "conyard"));
+        if (spot && guard) macro.guarded++;
+      } else spot = macroSpot(id) ||
+                    findSpot(id, P.buildings.find(b => !b.dead && b.def.id === "conyard"));
       if (spot) {
         G.placeBuilding(P, id, spot.tx, spot.ty, false);
+        if (id === "derrick") oilPlaced(spot);
         constructionStart(P, id, spot);
         P.consumeReady(kind, id); rq.failN = 0;
       } else {
         /* refund anything that can't find ground after a few tries — never jam the queue */
         rq.failN = (rq.failN || 0) + 1;
-        if (rq.failN >= (id === "navalyard" || id === "derrick" ? 1 : 4)) {
-          P.earn(P.factionCost(BUILDINGS[id])); P.consumeReady(kind, id); rq.failN = 0;
+        /* a well whose pad is only crowded by our own pieces, or whose silo was
+           just sold, is being cleared (shoveOff, sellOffPad): give it twelve
+           thinks before the refund and the seventy-second cool-down. A creep
+           barrier with no ground is refunded at once, like a naval yard. */
+        const oilWait = G.time - oilShoveT < 8 ? 12 : 1;
+        if (rq.failN >= (id === "navalyard" || id === "wall" ? 1 : id === "derrick" ? oilWait : 4)) {
+          P.refund(P.factionCost(BUILDINGS[id])); P.consumeReady(kind, id); rq.failN = 0;
           failCool[id] = G.time + 70;          // stop retrying a spot that does not exist
         }
       }
@@ -1510,7 +2963,7 @@ function makeCommander() {
         const ang = Math.atan2(dy, dx) + spread;
         const tx = (anchor.tx + Math.cos(ang) * r) | 0;
         const ty = (anchor.ty + Math.sin(ang) * r) | 0;
-        if (G.canPlace(P, defId, tx, ty)) return { tx, ty };
+        if (G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) return { tx, ty };
       }
     }
     return findSpot(defId, anchor);
@@ -1541,7 +2994,7 @@ function makeCommander() {
        must still stamp as 1 or the commander decides it has never seen its own
        start position - which is exactly what happened: nothing was explored
        until t=4s, and the harvesters had nowhere they were allowed to go. */
-    const now = G.time, stamp = Math.max(1, Math.min(255, (now / 4) | 0));
+    const now = G.time, stamp = Math.max(1, Math.min(65535, (now / 4) | 0));
     const W = G.map.W, H = G.map.H;
     /* mark ground as overlooked, so the commander can tell "nothing there"
        from "never been looked at" - the difference between a safe flank and
@@ -1731,7 +3184,9 @@ function makeCommander() {
                       role: e.def.role, harvester: !!e.def.harvester,
                       armed: !!(e.def.weapons && e.def.weapons.length),
                       armor: e.armor, cat: e.cat,
-                      plate: (e.def.armorMM && e.def.armorMM.front) || 0, t: now });
+                      plate: (e.def.armorMM && e.def.armorMM.front) || 0,
+                      /* its published air-defence reach, as the plate is */
+                      aa: G.airDefenceReach ? G.airDefenceReach(e.def) : 0, t: now });
   }
 
   /* Being shot at is intelligence, and it is the only kind that arrives without
@@ -1773,11 +3228,19 @@ function makeCommander() {
         if (by.armor === "heavy") d.sawHeavy = true;
         d.lastX = by.x; d.lastY = by.y; d.lastT = now;
       }
-      /* a hauler under fire runs for the refinery instead of standing there */
-      if (e.def.harvester && !e.dead) {
-        const rf = G.nearestBuilding(P, "refinery", e.x, e.y);
-        if (rf) e.give({ type: "move", x: rf.x, y: rf.y });
-      }
+      /* A hauler under fire runs for the refinery instead of standing there -
+         as a RETURN, the hauler's own way to a dock. This was a move to
+         rf.x/rf.y, the refinery's centre, inside the footprint: stepAlong()
+         never reports arriving within 0.8 tiles of it and updateHarvester()
+         leaves a move only on arrival, so every hauler ever shot at stood
+         beside its refinery for the rest of the battle. Measured in a jsc
+         smoke run of fulda at t=300: all four of one seat's haulers parked
+         1-2 tiles off the refinery holding 700 each, 2,100 credits mined in
+         five minutes. A return delivers what it carries and goes back to
+         work by itself. */
+      if (e.def.harvester && !e.dead && e.order.type !== "return" &&
+          G.nearestBuilding(P, "refinery", e.x, e.y))
+        e.give({ type: "return" });
     };
     for (const u of P.units) if (!u.dead) bump(u);
     for (const b of P.buildings) if (!b.dead) bump(b);
@@ -2874,9 +4337,17 @@ function makeCommander() {
        whose army happens to match its intended mixture building nothing at
        all, which the dice - for all their faults - never did. */
     gaps.sort((x, y) => (y.gap - x.gap) || (want[y.role] - want[x.role]));
+    let fuelSeen = false;
     for (let i = 0; i < gaps.length && i < 4; i++) {
       const id = unitFor(P.faction, gaps[i].role, P.era);
-      if (!id || !UNITS[id] || P.lockReason(UNITS[id])) {
+      const why = id && UNITS[id] ? P.lockReason(UNITS[id]) : "NONE";
+      if (why) {
+        /* the best role this service can build but for fuel is waited for,
+           not cooled - see fuelHold() */
+        if (!fuelSeen && why.indexOf("INSUFFICIENT FUEL") === 0) {
+          fuelSeen = true;
+          if (fuelHold(gaps[i].role, UNITS[id])) return false;
+        }
         roleCool[gaps[i].role] = now + 20; continue;
       }
       if (tryBuildUnit(gaps[i].role)) return true;
@@ -2964,6 +4435,7 @@ function makeCommander() {
      stops two launchers putting their rounds on the same plot of ground. */
   let telFired = [];
   function driveLaunchers() {
+    if (atPeace) return;
     const tels = unitsOf("tel");
     if (!tels.length) return;
     const now = G.time;
@@ -3323,8 +4795,14 @@ function makeCommander() {
     if (read < 0.3) return false;         // a Recruit's logistics stay bad on purpose
     if (mineShort) return false;          // the mining fleet still has first call
 
-    /* ---- ground: the supply truck ---- */
-    if (queueLen("vehicle") < 3) {
+    /* ---- ground: the supply truck ----
+       Not on a split theatre. The army at home stands inside inBaseRadius and
+       is in supply already, and the only force that is ever out - a landing -
+       is across water no truck can drive over: logisticsStation() would order
+       it at the wave every think, and a route that does not exist is a failed
+       whole-landmass Path.find each time. Measured on taiwan: five trucks,
+       thirty barrels, and the army never left its island. */
+    if (queueLen("vehicle") < 3 && groundConnected) {
       const trucks = count(u => u.def.supply && u.cat === "vehicle");
       const s = supplyBill();
       const stranded = fuelShort(attackWave);
@@ -3398,8 +4876,10 @@ function makeCommander() {
     const T = CFG.TILE, read = D.read || 0;
     if (read < 0.3) return;
 
-    /* ---- the supply truck, with the wave and not in it ---- */
-    if (attackWave.length) {
+    /* ---- the supply truck, with the wave and not in it ----
+       Only where the wave can be driven to: on a split theatre the wave is a
+       landing on the far shore (see buying reach, above). */
+    if (attackWave.length && groundConnected) {
       let cx = 0, cy = 0, n = 0;
       for (const u of attackWave) { if (!u.dead) { cx += u.x; cy += u.y; n++; } }
       if (n) {
@@ -3714,7 +5194,9 @@ function makeCommander() {
     }
 
     let sx, sy;
-    if (w > 0) {
+    /* a landed wave across water is out of a workshop's reach: it waits at
+       the shed rather than failing a route to the far shore every think */
+    if (w > 0 && groundConnected) {
       sx = cx / w; sy = cy / w;
       if (gt && n) {
         const mean = sumD / n, d = U.dist(sx, sy, gt.x, gt.y);
@@ -4171,7 +5653,7 @@ function makeCommander() {
 
     /* ---- buy one ---- */
     const nDef = P.buildings.filter(b => !b.dead && b.buildProgress >= 1 &&
-                                    b.cat === "defense").length;
+                                    b.cat === "defense" && !b.def.line).length;
     const fa = foeArms();
     if (!mineShort && layers.length < (rd >= 1.0 ? 2 : 1) && !queueLen("vehicle") &&
         P.hasBuilding("factory") && nDef >= 2 && P.cash > 1600 &&
@@ -4225,6 +5707,758 @@ function makeCommander() {
     }
   }
 
+  /* ================= MACRO: the mine, the industry and the bank =================
+     (owner) "ai should scout and expand quickly and develop quickly", "i don't
+     want AI has any cap", "more aggresive to expand its economy and production
+     units".
+
+     MEASURED (census, Warlord, e20 NATO v PACT, both seats AI, $20,000 purse):
+       - fulda, korea, kuwait: every seat still on ONE barracks and ONE war
+         factory at t=450, and the bank under 1,000 credits in all eighteen
+         land samples. The second factory sat behind `P.cash > 3000` and a
+         dozen rungs above it, and a commander that spends every credit as it
+         arrives never holds 3,000 - the rung was unreachable by construction.
+         The only other source of industry was the `saturated` branch, which
+         wanted the bank at 90% of its ceiling for 45 s.
+       - korea P1 and kuwait P0 NEVER BUILT A FACTORY and were destroyed at
+         t=462 and t=492. A hauler is a vehicle and is cut in the war factory,
+         so with no factory the second hauler never came; `starving` (one
+         hauler, under 2,200 banked) then shut the whole build order, the
+         factory included. A deadlock with a 1,500-credit way out that the
+         ladder never took.
+       - haulers were bought only with an EMPTY vehicle queue. While the army is
+         under strength buildToward keeps one or two vehicles queued, so on a
+         land theatre that queue is never empty: fulda P0 ran two haulers and
+         kuwait P0 ONE for the whole battle. On taiwan, where the army froze at
+         full strength and the queue emptied, the same code bought eight.
+       - silos were bought on `P.oil < 140`. A silo stores CREDITS (storage
+         3000), not barrels, and the reserve is under 140 from the first
+         purchase on: korea P0 had four silos at t=300 with 939 credits banked.
+       - taiwan: 37,500 credits at t=1050 is exactly the vault (4,000 + five
+         refineries + seven silos). Both seats sat at the ceiling with 6-33
+         barrels, no derrick and fuel at 0.18 a second, and the only spend-down
+         (`saturated`) built barracks for an army that could not cross.
+
+     So the build order is a PLAN rather than a ladder of bank balances:
+       INCOME is measured - credits actually landed, averaged over 45 s - and
+         the industry is sized to it: at Warlord one more war factory for every
+         38 cr/s past the first 40, barracks at a slower rate. From the e20
+         NATO/PACT tables a factory at full speed drains ~70 cr/s and ~0.9 bbl/s,
+         a barracks ~42 cr/s and no fuel, an airbase ~80 cr/s and ~1.6 bbl/s.
+       A BUDGET, not the bank, pays for growth. The building queue has first
+         call on every credit that arrives (updateQueues walks the queues in
+         declaration order), so a bank-balance gate either never opens or,
+         once open, lets the works queue starve the army. Growth draws on a
+         bucket filled at 55% of income (40% below Veteran); the rest is the
+         army's. The opening rungs do not draw on it.
+       IDLE MONEY is the spend-down trigger: a bank above max(2,500, 35% of the
+         vault) that would take more than 90 s to run down at the rate it is
+         falling. While it idles the budget is bypassed and every target grows
+         with the time it has idled: industry, yards (yardWant), guns at the
+         production buildings, refineries (a refinery is a vault, a hauler and
+         a fuel dock), and a larger army to buy.
+       FUEL bounds the industry that burns it: past the second factory, and past
+         the first airbase and naval yard, another line needs 0.35 bbl/s of
+         fuel income per line, or 45 barrels in hand per line.
+       THE MINE: a refinery ships with a hauler and costs 1,500 against a
+         hauler's 1,100, and is sited AT a seen ore field rather than wherever a
+         random spiral round the yard lands - init() records the nearest ore at
+         19-26 tiles from an AI start, so a yard-side refinery doubles every
+         trip. Three haulers a refinery from Commander up, two below, and no
+         flat fleet cap; haulers standing idle with no ore stop both.
+       HAULERS that are shot at RETURN (digest) instead of being moved onto the
+         refinery's centre pixel, which they never reached: in a jsc smoke run
+         of fulda all four of one seat's haulers stood beside the refinery with
+         700 aboard at t=300. unstickHaulers() catches any other move that a
+         hauler cannot finish, and spreadHaulers() moves haulers off a crowded
+         field onto one beside another of our refineries. (Engine, every
+         player: updateHarvester() now writes off an ore tile it has no route
+         to, instead of parking beside it and re-flooding A* every tick.)
+       CREEP: a field beyond building reach is brought into it by a chain of
+         40-credit Concrete Barriers (macroPlan, creepSpot), then gets its
+         refinery like any other.
+       SPREAD (victory rule: no production building, no army): production is
+         placed at the yard holding the least of it and not in front of home;
+         guns go to the production building with the least cover.
+
+     Cost: econTick and macroPlan are O(units + buildings) per think. The ore
+     survey is one pass over the ore layer every 20 s (20,736 reads on a 144
+     map); the field table is fields x (our structures + seen structures) every
+     6 s; the shore and drill-site answers are cached 30 s and 4 s; the siting
+     searches run once per placement, at most ~100 canPlace calls.          */
+  let macro = macroBook();
+  function macroBook() {
+    return { inc: 0, t: -1, mined: 0, cash: 0, slope: 0, idle: 0, budget: 0,
+             plan: null, fields: null, fieldsT: -1e9, anyOre: false,
+             ftab: null, ftabT: -1e9, shore: null, shoreT: -1e9,
+             oilSp: null, oilT: -1e9, creepTo: null, creepDead: new Map(),
+             last: "", n: {}, sited: 0, crept: 0, creepN: 0, spread: 0, guarded: 0,
+             headed: 0, restarted: 0, starved: 0, relief: 0, yards: 0, unstuck: 0,
+             spreadT: 0, spreadN: 0, doorT: 0, unsealed: 0, sealed: 0, nominated: 0 };
+  }
+  /* (isProdDef / isProd - what the victory rule counts - are defined once,
+     beside the war aim, off Player.isProduction) */
+  /* A creep reaches for fields within this many tiles of home. Without it a
+     chain hopped field to field across the map - barriers 90 tiles west of
+     home by t=400 in a jsc smoke run of fulda - with a refinery at each end
+     that nothing could defend. Sixty tiles is most of a 144 theatre's half. */
+  const CREEP_HOME = 60;
+  /* an ore block's own 8-tile cell: stable while its centroid drifts */
+  function fieldKey(f) { return ((f.x / 8) | 0) + "," + ((f.y / 8) | 0); }
+
+  function econTick() {
+    const m = macro, now = G.time;
+    /* What the haulers LANDED, not what the vault credited: stats.mined
+       counts only the part under the ceiling, and a Heavy purse sits above a
+       4,000 vault for the first minutes - a probe read mined 0 at t=120 with
+       haulers working, and the plan sized industry to 5 cr/s. stats.hauled
+       (entities.js, a statistic only) is the delivery itself. */
+    const mined = (P.stats && P.stats.hauled) || 0;
+    if (m.t < 0 || now < m.t) {
+      m.t = now; m.mined = mined; m.cash = P.cash; m.inc = CFG.BASE_INCOME || 0;
+      /* a Heavy purse is growth money from the first minute; a Light one is
+         spent on the opening alone */
+      m.budget = 500 + Math.max(0, P.cash - 5000) * 0.35;
+      return;
+    }
+    const dt = now - m.t;
+    if (dt < 0.25) return;
+    const got = Math.max(0, mined - m.mined) / dt + (CFG.BASE_INCOME || 0);
+    m.inc += (got - m.inc) * Math.min(1, dt / 45);
+    m.slope += ((P.cash - m.cash) / dt - m.slope) * Math.min(1, dt / 20);
+    const floor = Math.max(2500, P.storageCap() * 0.35);
+    const runway = m.slope < -1 ? P.cash / -m.slope : 1e9;
+    if (P.cash > floor && runway > 90) m.idle += dt;
+    else m.idle = Math.max(0, m.idle - dt * 2);
+    /* never more growth owed than the bank plus 2,500: a purse spent on the
+       army must not leave a claim on the next ten thousand of income - but
+       never less than a rig and a margin either, or the second yard (3,000)
+       could never be paid from the budget by a commander that spends as it
+       earns (probe: budget 1,199-2,830 with cash 0-1,122 from t=200 to 400,
+       and no rig bought) */
+    const share = (D.econ || 1) >= 1 ? 0.55 : 0.4;
+    m.budget = Math.min(9000, Math.max(rigCost() + 500, P.cash + 2500), m.budget + dt * m.inc * share);
+    m.t = now; m.mined = mined; m.cash = P.cash;
+  }
+
+  /* ---- the ore this commander has seen ----
+     8x8-tile blocks of ore on ground in the look grid - the same rule the
+     haulers obey. anyOre is the prospecting question ("is there ANY seen,
+     unbuilt ore at all") and replaces a per-think walk of the whole layer. */
+  function oreFields(maxAge) {
+    const m = macro;
+    if (m.fields && G.time - m.fieldsT < (maxAge || 20)) return m.fields;
+    const M = G.map, W = M.W, H = M.H, B = 8;
+    const bw = Math.ceil(W / B), bh = Math.ceil(H / B), nb = bw * bh;
+    const amt = new Float32Array(nb), sx = new Float32Array(nb), sy = new Float32Array(nb);
+    let any = false;
+    for (let y = 0; y < H; y++) {
+      const row = y * W, by = ((y / B) | 0) * bw;
+      for (let x = 0; x < W; x++) {
+        const i = row + x, o = M.ore[i];
+        if (o < 20 || !look[i]) continue;
+        if (!G.occ[i]) any = true;
+        const k = by + ((x / B) | 0);
+        amt[k] += o; sx[k] += x * o; sy[k] += y * o;
+      }
+    }
+    const out = [];
+    for (let k = 0; k < nb; k++)
+      if (amt[k] >= 600) out.push({ x: sx[k] / amt[k] + 0.5, y: sy[k] / amt[k] + 0.5, amt: amt[k] });
+    m.fields = out; m.fieldsT = G.time; m.anyOre = any;
+    return out;
+  }
+  /* Which field wants a refinery: not already served by one of ours, not
+     within 14 tiles of a HOSTILE structure we have SEEN (seenB, never the
+     enemy's lists), and either inside building reach now (inReach) or up to
+     44 tiles beyond it, within CREEP_HOME of home and on our own side of the
+     believed front (outReach, the creep target). A field that a creep or a
+     refinery could not get to is left alone for 150 s (creepDead). */
+  function fieldTable() {
+    const m = macro;
+    if (m.ftab && G.time - m.ftabT < 6) return m.ftab;
+    for (const [k, t] of m.creepDead) if (t < G.time) m.creepDead.delete(k);
+    const fields = oreFields();
+    /* "our side" only on evidence: with no enemy structure seen, intelHome()
+       is an unexamined start position, and a guess must not wall a commander
+       off from its only field (fulda smoke run: 30-tile hauls to t=540 and no
+       creep, because the nearest hypothesis lay beyond the field) */
+    const eh = rival && intelB(r => r.own === rival.idx && !r.gone).length ? intelHome(rival) : null;
+    const ehx = eh ? eh.x / CFG.TILE : 0, ehy = eh ? eh.y / CFG.TILE : 0;
+    const hx = P.homeX / CFG.TILE, hy = P.homeY / CFG.TILE;
+    const refs = [], own = [], foe = [];
+    for (const b of P.buildings) {
+      if (b.dead || b.def.obstacle) continue;
+      const cx = b.tx + b.def.w / 2, cy = b.ty + b.def.h / 2;
+      own.push(cx, cy);
+      if (b.def.id === "refinery") refs.push(cx, cy);
+    }
+    /* hostile structures only: seenB also remembers the civilian blocks
+       (owner -1), and one town block beside a field vetoed both of a
+       commander's fields in a fulda smoke run */
+    for (const r of seenB.values()) {
+      if (!r || r.gone) continue;
+      const o = G.players[r.own];
+      if (!o || o === P || G.allied(P, o)) continue;
+      foe.push(r.x / CFG.TILE, r.y / CFG.TILE);
+    }
+    let inReach = null, outReach = null, served = 0, bi = Infinity, bo = Infinity;
+    for (const f of fields) {
+      let sv = false;
+      for (let i = 0; i < refs.length && !sv; i += 2)
+        if (U.dist2(refs[i], refs[i + 1], f.x, f.y) < 81) sv = true;
+      if (sv) { served++; continue; }
+      if (m.creepDead.has(fieldKey(f))) continue;
+      let hot = false;
+      for (let i = 0; i < foe.length && !hot; i += 2)
+        if (U.dist2(foe[i], foe[i + 1], f.x, f.y) < 196) hot = true;
+      if (hot) continue;
+      let d2 = Infinity;
+      for (let i = 0; i < own.length; i += 2) {
+        const dd = U.dist2(own[i], own[i + 1], f.x, f.y);
+        if (dd < d2) d2 = dd;
+      }
+      const d = Math.sqrt(d2), s = d - Math.min(4, f.amt / 5000);
+      if (d <= CFG.BUILD_RADIUS + 4) { if (s < bi) { bi = s; inReach = f; } }
+      else if (d <= CFG.BUILD_RADIUS + 44 && s < bo &&
+               U.dist2(f.x, f.y, hx, hy) <= CREEP_HOME * CREEP_HOME &&
+               !(eh && U.dist2(f.x, f.y, ehx, ehy) < U.dist2(f.x, f.y, hx, hy))) {
+        bo = s; outReach = f;
+      }
+    }
+    m.ftab = { inReach, outReach, served, n: fields.length };
+    m.ftabT = G.time;
+    return m.ftab;
+  }
+  function shoreOK() {
+    const m = macro;
+    if (G.time - m.shoreT > 30) { m.shore = findShoreSpot(); m.shoreT = G.time; }
+    return !!m.shore;
+  }
+  function oilSpotOK() {
+    const m = macro;
+    if (G.time - m.oilT > 4) { m.oilSp = findOilSpot(); m.oilT = G.time; }
+    return !!m.oilSp;
+  }
+  /* Power AHEAD of demand. powerRatio() counts finished buildings only, so a
+     lab and an airbase finishing together browned the base out, and a brownout
+     is production at as little as 35%. Plants and loads already standing,
+     rising, queued or waiting for ground all count, plus the next draw. */
+  function powerAhead(extra) {
+    let out = 0, use = extra || 0;
+    for (const b of P.buildings) {
+      if (b.dead) continue;
+      const p = b.def.power || 0;
+      if (p > 0) out += p; else use -= p;
+    }
+    for (const kind of ["building", "defense"]) {
+      const qq = q(kind);
+      for (const list of [qq.items, qq.ready])
+        for (const it of (list || [])) {
+          const p = (it.def && it.def.power) || 0;
+          if (p > 0) out += p; else use -= p;
+        }
+    }
+    return use <= 0 ? 9 : out / use;
+  }
+  /* A hauler is cut in the war factory like a tank and the queue is FIFO.
+     This moves the order just placed in front of everything that has not
+     started. updateQueues pays only the head, so the player's way to the same
+     queue - cancel the unstarted orders (a refund of the nothing they have
+     paid) and order them again - costs exactly what this does. */
+  /* In front of the head too, when the head is not a hauler and has had less
+     than half its price: a probe caught `mcv:552|harvester:0` from t=360 to
+     t=420 with the bank at 0 - the rig at items[0] was paid only from what the
+     building queue left, and the hauler behind it never started. That is
+     done exactly as the player does it: the head is cancelled - what it had
+     paid comes back (Player.refund) and its progress is lost - and ordered
+     again behind the new one. Keeping `paid` on a displaced item would be a
+     production hold the player does not have. Only items[0] is ever paid, so
+     everything behind it is unstarted. */
+  function headOfLine(kind) {
+    const qq = q(kind), it = qq.items;
+    if (it.length < 2) return false;
+    const mine = it.pop();
+    const h = it[0];
+    const at = h && !h.def.harvester && h.paid < P.factionCost(h.def) * 0.5 ? 0 : 1;
+    if (at === 0 && h.paid > 0) {
+      P.refund(h.paid);
+      h.paid = 0; qq.prog = 0;
+      macro.restarted++;
+    }
+    it.splice(at, 0, mine);
+    macro.headed++;
+    return true;
+  }
+
+  /* ---- a hauler holding a move it cannot finish earns nothing ----
+     updateHarvester() leaves a move order only when stepAlong() reports
+     arriving within 0.8 tiles of the point, and a point inside a footprint
+     or behind a wall never arrives. Ten seconds without closing a tile and a
+     half, and the hauler goes back to its own work: a return if it carries
+     anything, the field if not. O(units) per think. */
+  function unstickHaulers() {
+    const now = G.time;
+    for (const u of P.units) {
+      if (u.dead || !u.def.harvester) continue;
+      const o = u.order;
+      if (!o || o.type !== "move") { u._mvK = null; continue; }
+      const k = Math.round(o.x) + "," + Math.round(o.y);
+      const d = U.dist(u.x, u.y, o.x, o.y);
+      if (u._mvK !== k) { u._mvK = k; u._mvT = now; u._mvD = d; continue; }
+      if (now - u._mvT < 10) continue;
+      if (d < u._mvD - CFG.TILE * 1.5) { u._mvT = now; u._mvD = d; continue; }
+      u._mvK = null;
+      u._spreadNo = now + 120;          // and spreadHaulers leaves it alone
+      u.give({ type: u.load > 40 ? "return" : "harvest" });
+      macro.unstuck++;
+    }
+  }
+
+  /* ---- haulers go where the ore is, not where the other haulers are ----
+     nearestOre() is asked from the hauler's own position, so a fleet stays on
+     the field it found first: in a jsc smoke run of fulda six of one seat's
+     seven haulers worked a 10,000-credit field by its first refinery while a
+     53,000-credit field lay beside its third, and income sat at 34-73 cr/s
+     (part of that was the walled-in ore tile fixed in updateHarvester). Every
+     8 s, count the haulers working each field that has a refinery of ours
+     beside it, give each field one hauler per 5,000 credits it holds (two to
+     seven), and send one lightly loaded hauler from the most over-subscribed
+     field to the one with the most room. Cost: fields x refineries plus
+     haulers x served fields, every 8 s. */
+  function spreadHaulers() {
+    const m = macro;
+    if (G.time < m.spreadT) return;
+    m.spreadT = G.time + 8;
+    const fields = oreFields();
+    if (fields.length < 2) return;
+    const refs = [];
+    for (const b of P.buildings)
+      if (!b.dead && b.def.id === "refinery" && b.buildProgress >= 1) refs.push(b);
+    if (refs.length < 2) return;
+    const sv = [];
+    for (const f of fields) {
+      for (const r of refs) {
+        if (U.dist2(r.tx + 1.5, r.ty + 1, f.x, f.y) >= 100) continue;
+        sv.push({ f, n: 0, cap: U.clamp(Math.round(f.amt / 5000), 2, 7), who: [] });
+        break;
+      }
+    }
+    if (sv.length < 2) return;
+    for (const u of P.units) {
+      if (u.dead || !u.def.harvester || u.order.type !== "harvest") continue;
+      const px = u.oreT ? u.oreT.x : u.tx, py = u.oreT ? u.oreT.y : u.ty;
+      let best = null, bd = 64;
+      for (const x of sv) {
+        const d = U.dist2(px, py, x.f.x, x.f.y);
+        if (d < bd) { bd = d; best = x; }
+      }
+      if (best) { best.n++; best.who.push(u); }
+    }
+    let hi = null, lo = null;
+    for (const x of sv) {
+      if (x.n > x.cap && (!hi || x.n - x.cap > hi.n - hi.cap)) hi = x;
+      if (x.n < x.cap && (!lo || x.cap - x.n > lo.cap - lo.n)) lo = x;
+    }
+    if (!hi || !lo) return;
+    /* never the same hauler twice in a minute, and never one whose last
+       move could not be finished - a hauler boxed in by buildings was being
+       sent and reverted forty times in five minutes */
+    let pick = null;
+    for (const u of hi.who) {
+      if (u._spreadNo > G.time) continue;
+      if (!pick || u.load < pick.load) pick = u;
+    }
+    if (!pick || pick.load > 350) return;     // a nearly full hauler finishes its run
+    pick._spreadNo = G.time + 60;
+    pick.oreT = null;                          // or it walks back to the old field's tile
+    pick.give({ type: "move", x: lo.f.x * CFG.TILE, y: lo.f.y * CFG.TILE });
+    m.spreadN++;
+  }
+
+  function macroPlan(nRef, nFac, nBar, nAir, nYard, nRadar) {
+    const m = macro;
+    const e = (D.econ || 1) * (D.econBias || 1);
+    let harvIdle = 0, harvN = 0, planes = 0;
+    for (const u of P.units) {
+      if (u.dead) continue;
+      if (u.def.harvester) {
+        harvN++;
+        /* No ore reachable: updateHarvester drops to idle, or holds a harvest
+           order with no ore target, and in either case carries nothing - for
+           fifteen seconds running, and not while it is resting after a miss
+           (oreWait). A probe counted one hauler walled into a two-tile pocket
+           as "no ore" for 70% of samples, and that one hauler stopped every
+           hauler purchase and every refinery the plan wanted. */
+        const lost = !u.load && !(u.oreWait > 0) &&
+                     (u.order.type === "idle" || (u.order.type === "harvest" && !u.oreT));
+        if (!lost) u._noOreT = 0;
+        else if (!u._noOreT) u._noOreT = G.time;
+        else if (G.time - u._noOreT > 15) harvIdle++;
+      } else if (u.def.cat === "aircraft") planes++;
+    }
+    let wells = 0, docks = 0, prod = 0;
+    for (const b of P.buildings) {
+      if (b.dead) continue;
+      if (isProdDef(b.def)) prod++;
+      if (b.buildProgress < 1) continue;
+      if (b.def.oilNode) wells++;
+      else if (b.def.id === "refinery") docks++;
+    }
+    /* the lifeline purchase plus the bulk import (player.js bulkFuelRate,
+       every player alike: +0.12 bbl/s a refinery past the first, three at
+       most, while the bank holds 5,000) - the rate right now */
+    const buying = P.buysFuel ? P.buysFuel() : false;
+    const buyRate = (buying ? (CFG.FUEL_BUY_RATE || 0) : 0) + (P.bulkFuelRate ? P.bulkFuelRate() : 0);
+    /* no ore to be had: none seen and unbuilt at all, or half the fleet
+       standing with nothing it can reach */
+    const noOre = (m.fields !== null && !m.anyOre) || (harvN > 0 && harvIdle * 2 >= harvN);
+    const fuelInc = wells * ((BUILDINGS.derrick && BUILDINGS.derrick.oilRate) || 0.55) + buyRate;
+    /* A reserve is a reason for one more line only if it is deep for the
+       lines already standing: in a jsc smoke run of fulda a flat 90-barrel
+       test let a fifth factory go up on one derrick, and the tank was at 29
+       a minute later. */
+    const lines = nFac + nAir + nYard;
+    const fuelOK = P.oil > 45 * Math.max(2, lines) || fuelInc >= 0.35 * Math.max(1, lines);
+    const rich = m.idle > 15;
+    const richN = rich ? 1 + Math.floor((m.idle - 15) / 45) : 0;
+    const step = 55 / Math.max(0.5, D.econ || 1);      // 38 cr/s at Warlord, 79 at Recruit
+    const inc = m.inc;
+    const ft = fieldTable();
+    let fac, bar;
+    if (groundConnected) {
+      fac = 1 + Math.floor(Math.max(0, inc - 40) / step) + richN;
+      bar = 1 + Math.floor(Math.max(0, inc - 60) / (step * 1.6)) + (rich ? 1 : 0);
+    } else {
+      /* across water the factory still cuts haulers, rigs, air defence and the
+         landing force, and the barracks the troops for it - but the industry
+         that fights is afloat and airborne */
+      fac = 1 + (rich ? 1 : 0);
+      bar = 1 + (rich ? 1 : 0);
+    }
+    if (!fuelOK) fac = Math.min(fac, Math.max(nFac, 2));
+    const ab = D.airBias || 1, nb = D.navalBias || 1;
+    const pads = (BUILDINGS.airbase && BUILDINGS.airbase.pads) || 4;
+    /* ramp space is the ceiling on the air force: four pads a base */
+    const rampFull = nAir >= 1 && planes >= nAir * pads - 1;
+    let air = 0;
+    if (P.tech >= 2 && nRadar >= 1) {
+      air = 1;
+      if (!groundConnected || ab > 1)
+        air += Math.floor(Math.max(0, inc - 70) * ab / (step * 2));
+      if (fuelOK) air += richN;
+      else air = Math.min(air, Math.max(nAir, 1));
+      /* a full ramp always asks for one more base, fuel or not - the
+         airframes already exist and need somewhere to land */
+      if (rampFull) air = Math.max(air, nAir + 1);
+    }
+    let nav = 0;
+    /* On a land theatre a yard is worth building only where a hull from our
+       water can reach their coast (theatreNow.sea, FORCE BUDGET's one sea
+       A*): a probe of fulda built a naval yard on inland water at t~300 -
+       1,800 credits for ships that reach nothing. */
+    if ((!groundConnected || ((nb > 1 || inc > 150 || rich) && theatreNow.sea)) && shoreOK()) {
+      if (!groundConnected)
+        nav = 1 + Math.floor(Math.max(0, inc - 60) * nb / (step * 2)) + (fuelOK ? richN : 0);
+      else nav = 1 + (nb > 1 && fuelOK ? richN : 0);
+      if (!fuelOK) nav = Math.min(nav, Math.max(nYard, 1));
+    }
+    /* A refinery for every seen field in reach that nobody of ours works, paced
+       by the clock (Warlord: a third at ~100 s, a fourth at ~200 s) unless no
+       refinery of ours stands at ore at all; one more while the money idles.
+       Haulers standing idle do NOT hold this back: a refinery at a different,
+       reachable field is the cure for unreachable ore. */
+    const perRef = e >= 1.3 ? 3 : 2;
+    const refClock = 2 + Math.floor(G.time * e / 150);
+    let ref = 2;
+    if (ft.inReach)
+      ref = Math.max(2, ft.served === 0 ? nRef + 1 : Math.min(nRef + 1, refClock));
+    /* While money idles a refinery is also a vault and - up to the bulk
+       import's four - a fuel dock, but only while fuel is actually short or
+       the vault actually full, and never faster than the clock plus the idle
+       time allows: unbounded, an idle seat in a jsc smoke run of taiwan put
+       up eighteen refineries by t=540. */
+    const dockShort = !fuelOK && !!P.bulkFuelRate && nRef < 1 + (CFG.FUEL_BULK_MAX || 0);
+    /* (the vault reason only while fuel is fine: with fuel short a bigger
+       vault banks money the army cannot spend - the trap the plan already
+       refuses for silos) */
+    if (rich && !noOre && (dockShort || (fuelOK && P.cash > P.storageCap() * 0.8)))
+      ref = Math.max(ref, Math.min(nRef + 1, refClock + richN));
+    /* ---- and when the ore is out of reach, reach for it ----
+       Measured in a jsc smoke run of fulda: one seat's nearest seen field was
+       38 tiles from its yard, both refineries went up at home, and its haulers
+       had landed 700 credits by t=180 against 7,000 for the seat whose
+       refinery stood at its field. A Concrete Barrier is 40 credits, half a
+       second, no power, and - not being an obstacle - obeys the build radius
+       and extends it, which player.js calls "the legitimate version of the
+       same idea". A chain of them toward the field (spotToward, up to ten
+       tiles a step) brings it into reach, and the refinery rung then puts a
+       refinery on it. Only toward a field on our side of the believed front
+       and clear of anything seen. */
+    const creep = nRef >= 1 && !ft.inReach && !!ft.outReach &&
+                  (ft.served === 0 || nRef < refClock);
+    m.creepTo = creep ? ft.outReach : null;
+    /* Across water the surplus would be vehicles that cannot cross burning the
+       fuel the fleet and the air arm need: in a jsc smoke run of taiwan an
+       idle seat spent 244 barrels on vehicles and flew nothing from its
+       airbase. */
+    const surplus = rich && groundConnected ? 4 + 2 * richN : 0;
+    /* Haulers for the docks that stand at ore, not for every dock: a refinery
+       bought as a vault or a fuel dock ships its own hauler and needs no more
+       (thirty-eight haulers on the same fields in that run, eating fuel).
+       Never fewer than two docks' worth. */
+    const harv = perRef * Math.max(2, Math.min(nRef, ft.served + 1));
+    return (m.plan = { fac, bar, air, nav, ref, perRef, harv, harvN, noOre, prod, rich, richN, surplus,
+                       fuelInc: Math.round(fuelInc * 100) / 100, fuelOK, harvIdle,
+                       field: !!ft.inReach, far: !!ft.outReach, served: ft.served,
+                       creep, rampFull });
+  }
+
+  /* ---- siting ---- */
+  /* the legal spot nearest a point, in rings outward from it */
+  function spotNear(id, fx, fy, R) {
+    const def = BUILDINGS[id];
+    const ox = Math.round(fx - def.w / 2), oy = Math.round(fy - def.h / 2);
+    if (G.canPlace(P, id, ox, oy) && siteOK(id, ox, oy)) return { tx: ox, ty: oy };
+    for (let r = 1; r <= R; r++) {
+      const n = 6 + r * 2, a0 = G.rng() * U.PI2;
+      for (let a = 0; a < n; a++) {
+        const an = a0 + a / n * U.PI2;
+        const tx = Math.round(ox + Math.cos(an) * r), ty = Math.round(oy + Math.sin(an) * r);
+        if (G.canPlace(P, id, tx, ty) && siteOK(id, tx, ty)) return { tx, ty };
+      }
+    }
+    return null;
+  }
+  /* the legal spot furthest out along the line from our nearest structure to a
+     point: where a new structure drags the build radius toward it */
+  function spotToward(id, fx, fy) {
+    let src = null, sd = Infinity;
+    for (const b of P.buildings) {
+      if (b.dead || b.def.obstacle) continue;
+      const d = U.dist2(b.tx + b.def.w / 2, b.ty + b.def.h / 2, fx, fy);
+      if (d < sd) { sd = d; src = b; }
+    }
+    if (!src) return null;
+    const def = BUILDINGS[id];
+    const sx = src.tx + src.def.w / 2, sy = src.ty + src.def.h / 2;
+    const L = Math.sqrt(sd) || 1, ux = (fx - sx) / L, uy = (fy - sy) / L;
+    for (let s = Math.min(L, CFG.BUILD_RADIUS - 1); s >= 2; s -= 1.5) {
+      for (const off of [0, 1.5, -1.5, 3, -3]) {
+        const cx = sx + ux * s - uy * off, cy = sy + uy * s + ux * off;
+        const tx = Math.round(cx - def.w / 2), ty = Math.round(cy - def.h / 2);
+        if (G.canPlace(P, id, tx, ty) && siteOK(id, tx, ty)) return { tx, ty };
+      }
+    }
+    return null;
+  }
+  /* Which yard a structure goes beside. Production goes to the yard holding
+     the least production, so one lost yard is not the whole war; everything
+     else to the least crowded yard, which is where findSpot still finds
+     ground. A yard nearer the trouble than home is last choice. */
+  function yardAnchor(prod) {
+    const yards = [];
+    for (const b of P.buildings)
+      if (!b.dead && b.def.id === "conyard" && b.buildProgress >= 1) yards.push(b);
+    if (yards.length < 2) return yards[0] || null;
+    const trouble = bearing();
+    const homeT = trouble ? U.dist(P.homeX, P.homeY, trouble.x, trouble.y) : 0;
+    let best = null, bestS = Infinity;
+    for (const y of yards) {
+      let s = 0;
+      for (const b of P.buildings) {
+        if (b.dead || b === y || b.def.obstacle) continue;
+        if (U.dist2(b.tx, b.ty, y.tx, y.ty) > 169) continue;
+        s += prod ? (isProdDef(b.def) ? 4 : 0.2) : 1;
+      }
+      if (trouble && U.dist(y.x, y.y, trouble.x, trouble.y) < homeT - CFG.TILE * 6)
+        s += prod ? 9 : 3;
+      if (s < bestS) { bestS = s; best = y; }
+    }
+    return best;
+  }
+  /* ---- which building gets the next gun ----
+     One rule from two designs (this module's defAnchor and the war stream's
+     prodAnchor): the production building - or refinery - nearest the trouble
+     (bearing()), passed over while it already has guns beside it. Each gun
+     within seven tiles counts as twelve tiles further away, scaled by what
+     losing the building costs (a yard 1.5, other production 1, a refinery
+     0.6), so the next gun covers the next building rather than thickening
+     the same one, and a rush arrives at a factory that has one. With no
+     trouble known the guns simply spread by cover. placeReady() hands the
+     answer to findSpotToward(). COST: guns x (production + refineries), once
+     per emplacement placed. */
+  function defAnchor() {
+    const guns = [];
+    for (const b of P.buildings)
+      if (!b.dead && b.def.cat === "defense" && b.def.weapons && b.def.weapons.length &&
+          !b.def.superweapon) guns.push(b);
+    const trouble = bearing(), T2 = CFG.TILE, R2 = 49 * T2 * T2;
+    let best = null, bestS = Infinity;
+    for (const b of P.buildings) {
+      if (b.dead || b.buildProgress < 1) continue;
+      const w = isProdDef(b.def) ? (b.def.base ? 1.5 : 1) : b.def.id === "refinery" ? 0.6 : 0;
+      if (!w) continue;
+      let n = 0;
+      for (const g of guns) if (U.dist2(g.x, g.y, b.x, b.y) < R2) n++;
+      const s = (trouble ? U.dist(b.x, b.y, trouble.x, trouble.y) / T2 : 0) + n * 12 / w;
+      if (s < bestS) { bestS = s; best = b; }
+    }
+    return best;
+  }
+  function macroSpot(id) {
+    const def = BUILDINGS[id];
+    if (!def || def.shore || def.oilNode) return null;
+    if (id === "refinery") {
+      const f = fieldTable().inReach;
+      if (f) {
+        const s = spotNear(id, f.x, f.y, 7) || spotToward(id, f.x, f.y);
+        macro.ftabT = -1e9;
+        if (s) {
+          /* too far off the field to serve it: take the spot, but stop
+             buying refineries for that field for a while */
+          if (U.dist(s.tx + 1.5, s.ty + 1, f.x, f.y) >= 9) macro.creepDead.set(fieldKey(f), G.time + 150);
+          else macro.sited++;
+          return s;
+        }
+        macro.creepDead.set(fieldKey(f), G.time + 150);
+      }
+    }
+    const a = yardAnchor(isProdDef(def));
+    if (!a) return null;
+    const s = findSpot(id, a);
+    if (s && isProdDef(def) && a !== P.buildings.find(b => !b.dead && b.def.id === "conyard"))
+      macro.spread++;
+    return s;
+  }
+  /* the next barrier of a creep, or nothing - and a creep with no ground left
+     on its line writes that field off for a while */
+  function creepSpot() {
+    const f = macro.creepTo;
+    if (!f) return null;
+    const s = spotToward("wall", f.x, f.y);
+    if (s) { macro.crept++; macro.ftabT = -1e9; }
+    else { macro.creepDead.set(fieldKey(f), G.time + 150); macro.ftabT = -1e9; }
+    return s;
+  }
+  /* The mining fleet stands at 60% of the plan or better (six at most is
+     asked): until it does, a rig does not take the head of the vehicle
+     queue. A probe had a 3,000-credit rig at items[0] with three haulers
+     against a plan of six and the bank at 0 for two minutes. */
+  function haulersOK() {
+    const p = macro.plan;
+    return !p || p.harvN >= Math.min(6, Math.ceil(p.harv * 0.6));
+  }
+
+  /* ---- a door that was built shut is opened ----
+     keepsLanes() keeps new structures off the doors, but ground closed before
+     it - a yard unfolded alongside, a derrick on its node, an older layout -
+     can still hold the spawn tile in a pocket; HEAD trapped 11 vehicles on
+     taiwan by t=600, and the integration smoke run caught korea P0 spawning
+     every vehicle into a one-tile pocket (40 sealed checks by t=600). Every
+     twelve seconds the war factory and the barracks the engine actually
+     spawns from (the nominated primary, else the one nearest home -
+     G.spawnUnit) are flood-filled over open ground for up to 120 tiles. A
+     smaller pocket is answered the way a player answers it: first by
+     nominating another building of the kind whose door is open (the
+     primary-building order, ui.js), else by selling the cheapest structure
+     of OURS that walls the pocket (G.sellBuilding, half back) - never
+     production, a refinery, the radar or the lab, never a plant the grid
+     needs, never storage the bank is using - at most one sale a minute.
+     COST: one flood of at most 120 tiles per kind every twelve seconds, and
+     one per other building of the kind only while the door is shut. */
+  const DOOR_SELL = { silo: 1, power: 1, nest: 1, atpost: 1, wall: 1, flak: 1, depot: 1 };
+  let doorSellT = 0;
+  function unsealDoors() {
+    const m = macro, now = G.time;
+    if (now < m.doorT) return;
+    m.doorT = now + 12;
+    const M = G.map, W = M.W, H = M.H, LIMIT = 120;
+    for (const kind of ["factory", "barracks"]) {
+      const pr = P.primary && P.primary[kind];
+      const src = pr && !pr.dead && pr.buildProgress >= 1 ? pr : G.nearestBuilding(P, kind, P.homeX, P.homeY);
+      if (!src) continue;
+      if (doorFlood(src.def, src.tx, src.ty, LIMIT) >= LIMIT) continue;
+      m.sealed++;
+      let alt = null;
+      for (const b of P.buildings) {
+        if (b.dead || b === src || b.def.id !== kind || b.buildProgress < 1) continue;
+        if (doorFlood(b.def, b.tx, b.ty, LIMIT) >= LIMIT) { alt = b; break; }
+      }
+      if (alt) {
+        if (!P.primary) P.primary = {};
+        P.primary[kind] = alt;
+        m.nominated++;
+        continue;
+      }
+      if (now < doorSellT || !G.sellBuilding) continue;
+      /* what walls the pocket: the same flood, collecting the buildings it
+         runs into */
+      const sx0 = src.tx + ((src.def.w / 2) | 0), sy0 = src.ty + src.def.h;
+      const open = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !G.occ[y * W + x] &&
+                             GameMap.passable(M, x, y, "ground");
+      let sx = sx0, sy = sy0;
+      if (!open(sx, sy)) {
+        const n = Path.nearest(M, U.clamp(sx, 0, W - 1), U.clamp(sy, 0, H - 1), "ground",
+                               (a, b) => !!G.occ[b * W + a], 7);
+        if (!n) continue;
+        sx = n.x; sy = n.y;
+      }
+      const seen = new Set([sy * W + sx]), stack = [sy * W + sx], walls = new Set();
+      while (stack.length) {
+        const i = stack.pop(), x = i % W, y = (i / W) | 0;
+        for (let d = 0; d < 4; d++) {
+          const nx = x + (d === 0 ? 1 : d === 1 ? -1 : 0), ny = y + (d === 2 ? 1 : d === 3 ? -1 : 0);
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const j = ny * W + nx;
+          if (seen.has(j)) continue;
+          if (open(nx, ny)) { seen.add(j); stack.push(j); }
+          else if (G.occ[j]) walls.add(G.occ[j]);
+        }
+      }
+      let pick = null;
+      for (const b of P.buildings) {
+        if (b.dead || !walls.has(b.id) || !DOOR_SELL[b.def.id]) continue;
+        if (b.def.power > 0 && P.powerOut() - b.def.power < P.powerUse() * 1.1) continue;
+        if (b.def.storage && P.cash > P.storageCap() - b.def.storage - 500) continue;
+        if (!pick || (b.def.cost || 0) < (pick.def.cost || 0)) pick = b;
+      }
+      if (!pick) continue;
+      G.sellBuilding(pick);
+      doorSellT = now + 60;
+      m.unsealed++;
+    }
+  }
+
+  function macroState() {
+    const m = macro, p = m.plan || {};
+    return { inc: Math.round(m.inc * 10) / 10, slope: Math.round(m.slope),
+             idle: Math.round(m.idle), budget: Math.round(m.budget), cap: P.storageCap(),
+             want: { fac: p.fac, bar: p.bar, air: p.air, nav: p.nav, ref: p.ref,
+                     harv: p.harv, perRef: p.perRef },
+             have: { fac: P.countBuilding("factory"), bar: P.countBuilding("barracks"),
+                     air: P.countBuilding("airbase"), nav: P.countBuilding("navalyard"),
+                     ref: P.countBuilding("refinery"), yard: P.countBuilding("conyard"),
+                     der: P.countBuilding("derrick"), prod: p.prod || 0,
+                     harv: count(u => u.def.harvester) },
+             rich: !!p.rich, richN: p.richN || 0, surplus: p.surplus || 0,
+             fuelInc: p.fuelInc || 0, fuelOK: !!p.fuelOK, harvIdle: p.harvIdle || 0,
+             field: !!p.field, far: !!p.far, served: p.served || 0, creep: !!p.creep,
+             fields: m.fields ? m.fields.length : 0,
+             inReach: m.ftab && m.ftab.inReach ? [Math.round(m.ftab.inReach.x), Math.round(m.ftab.inReach.y)] : null,
+             outReach: m.ftab && m.ftab.outReach ? [Math.round(m.ftab.outReach.x), Math.round(m.ftab.outReach.y)] : null,
+             creepTo: m.creepTo ? [Math.round(m.creepTo.x), Math.round(m.creepTo.y)] : null,
+             noGo: m.creepDead.size,
+             last: m.last, built: Object.assign({}, m.n),
+             sited: m.sited, crept: m.crept, creepN: m.creepN, spread: m.spread,
+             guarded: m.guarded,
+             headed: m.headed, restarted: m.restarted, starved: m.starved, relief: m.relief,
+             yardBuys: m.yards, unstuck: m.unstuck, hauled: m.spreadN,
+             harvN: p.harvN || 0, noOre: !!p.noOre, sealed: m.sealed, unsealed: m.unsealed,
+             nominated: m.nominated,
+             landed: Math.round((P.stats && P.stats.hauled) || 0) };
+  }
+
   /* ---------- the brain ---------- */
   function think() {
     placeReady();
@@ -4249,6 +6483,9 @@ function makeCommander() {
     const nAir = P.countBuilding("airbase");
     const nYard = P.countBuilding("navalyard");
     const bq = q("building"), dq = q("defense");
+    /* the force budget is read before anything is bought - see FORCE BUDGET */
+    readTheatre();
+    oilBudget();
 
     /* -------- RE-EQUIP PLAN --------
        Decided before anything is bought, so the rest of the tick knows there
@@ -4300,141 +6537,182 @@ function makeCommander() {
                               Math.max(2, nRef * 2));
     const mineShort = nRef >= 1 && harv < Math.ceil(harvWant * 0.6);
     const harvFloor = Math.min(2, Math.max(1, nRef * 2));
-    const starving = nRef >= 1 && harv < harvFloor && P.cash < 2200;
-    if (!bq.items.length && !bq.ready.length && !starving) {
+    /* -------- THE BUILD PLAN (see MACRO) --------
+       One structure a tick, as before. What changed:
+         - past the opening every rung asks macroPlan(), and growth is paid
+           from macro.budget or from idle money - never "is the bank above N",
+           which a commander that spends as it earns never is;
+         - a purchase that FAILS falls through to the next rung (`cond &&
+           tryB()`), where the old ladder ended on the condition alone;
+         - the `saturated` branch is gone. It needed the bank at 90% of the
+           vault for 45 s and then built factories only on a connected map -
+           on taiwan it built six barracks for an army that could not cross.
+           Idle money now grows every target instead, on any theatre. */
+    econTick();
+    const plan = macroPlan(nRef, nFac, nBar, nAir, nYard, nRadar);
+    /* `starving` holds only once a war factory stands, because the factory is
+       where a hauler is cut: korea P1 and kuwait P0 (one hauler, no factory,
+       0-425 credits) shut their own build order - factory included - for the
+       rest of the battle and were destroyed by t=492. And a refinery is still
+       built while starving: it ships with a hauler and is paid through the
+       building queue, which is funded before the vehicle queue.
+       The floor is half the plan's fleet, not two: a probe held three
+       haulers against a plan of six with the bank at 0 while the plan's
+       ungated rungs (power ahead, lab, derrick) took every credit, so the
+       hauler never started. Not when there is no ore to be had. */
+    const starving = nRef >= 1 && nFac >= 1 && P.cash < 2200 && !plan.noOre &&
+                     harv < Math.max(harvFloor, Math.ceil(plan.harv * 0.5));
+    if (starving) macro.starved++;
+    if (!bq.items.length && !bq.ready.length) {
       const can = (id) => !(failCool[id] > G.time);
-      const tryB = (id) => can(id) && P.enqueue("building", id);
-      if (P.powerRatio() < 1.15) tryB("power");
-      else if (nRef < 1) tryB("refinery");
-      else if (nBar < 1) tryB("barracks");
-      else if (nPower < 2) tryB("power");
-      else if (nFac < 1) tryB("factory");
-      else if (!groundConnected && nYard < 1 && can("navalyard") && findShoreSpot() && P.cash > 1600) tryB("navalyard");
-      else if (nRef < 2 && can("refinery") && P.cash > (mineShort ? 1200 : 1800)) tryB("refinery");
-      else if (nRadar < 1 && P.cash > 1400) tryB("radar");
-      /* ---- fuel is the other economy ----
-         Three derricks was a flat cap, and a commander with a full bank and an
-         empty fuel reserve simply stopped buying anything that costs barrels.
-         Measured: a fully developed Warlord sat on 25,237 credits for the last
-         quarter of an hour of a battle and could not buy a 34-barrel air
-         defence vehicle, because it had eleven. Money it cannot spend is worth
-         nothing; another well is worth a great deal. */
-      /* AND THE WELLS KEEP PACE. With the force ceilings on a clock, six
-         derricks is the new binding constraint: measured, a Warlord finished
-         with 40,088 credits and TWENTY-NINE barrels, which is money it cannot
-         turn into anything. It only ever builds where a spot actually exists,
-         so this is bounded by the map rather than by a number - which is what
-         bounds a player too. */
-      /* ---- REACH FOR THE NEXT FIELD ----
-         Ahead of the derrick branch on purpose: that branch asks findOilSpot()
-         and answers null once the home field is worked out, and a commander
-         that stops there sits on its money for the rest of the match. This is
-         what it does instead - a storage silo at the edge of the radius on the
-         line to the nearest unclaimed node, which drags the buildable area
-         eleven tiles out and stores the barrels when they arrive. */
-      /* Expansion is NOT a rung here. It was, and as an empty branch in an
-         if/else-if ladder it TERMINATED the ladder: while wantsExpansion() was
-         true - which is exactly the fuel-starved state it exists to end - the
-         commander built no derrick, no lab, no airbase, no second factory and
-         no further refinery, for the rest of the match. It runs from think()
-         on think()'s own clock instead, where it belongs. */
-      else if (P.countBuilding("derrick") <
-                 (((P.oil < 70 && P.cash > 3500) || (eraStep && P.oil < eraStep.oil) ? 6 : 3)
-                  + Math.floor(G.time / 300)) &&
-               can("derrick") && findOilSpot() && P.cash > 1200) tryB("derrick");
-      /* fuel and vault space are the other half of a generational step */
-      /* Storage grows with the match for the same reason the force ceilings
-         do: a bigger army burns more barrels, and a vault that stops at four
-         caps the whole thing however many wells are running. */
-      else if (P.countBuilding("silo") < 4 + Math.floor(G.time / 300) &&
-               (eraNeedSilo || P.oil < 140) && can("silo") && P.cash > 700) tryB("silo");
-      else if (nYard < 1 && can("navalyard") && findShoreSpot() && P.cash > 2400 / (D.navalBias || 1)) tryB("navalyard");
-      else if (nLab < 1 && nRadar >= 1 && P.cash > 1900) tryB("lab");
-      else if (nAir < 1 && P.tech >= 2 && P.cash > 2600 / (D.airBias || 1)) tryB("airbase");
-      /* ---- RAMP SPACE IS THE CEILING ON THE WHOLE AIR FORCE ----
-         (owner) "very few aircrafts."
-         An airbase has FOUR pads and this stopped at one of them for every
-         personality except Air Doctrine, so a commander's entire air arm was
-         four airframes - and the ASW helicopter, the AWACS and the Weasel take
-         three of those before a single fighter is bought. Measured on baltic
-         at Warlord: two airbases, seven aircraft, 7 of 8 pads, and 24,810
-         credits it could not spend on an aeroplane because there was nowhere
-         to put one. A player builds another airbase when the ramp is full;
-         this never did.
-         Demand-driven rather than a flat number: another strip only when the
-         ramp it already owns is nearly full and there is money spare, capped
-         by how much this commander cares about air power at all. */
-      else if (nAir >= 1 && P.tech >= 2 && P.cash > 3200 &&
-               nAir < Math.min(8, 1 + Math.round(1.6 * (D.airBias || 1)) +
-                               Math.floor(G.time / 360)) &&
-               count(u => u.def.cat === "aircraft") >=
-                 nAir * ((BUILDINGS.airbase && BUILDINGS.airbase.pads) || 4) - 1)
-        tryB("airbase");
-      else if (nFac < 2 && groundConnected && P.cash > 3000) tryB("factory");
-      else if (P.countBuilding("depot") < 1 && P.cash > 2000) tryB("depot");
-      else if (nRef < (D.econ >= 1.2 ? 4 : 3) && can("refinery") && P.cash > 3500) tryB("refinery");
-      else if (nPower < 4 && P.cash > 5000) tryB("power");
-      /* ---- the electronic order of battle ----
-         Both families sit HERE, at the end of the once-only ladder, and both
-         are capped at one. Not in the threat-scaled defence roll below: that
-         builds a PROPORTION of each emplacement against a shortfall in an arm,
-         has no concept of a cap, and the single most important fact about a
-         jamming station is that a second one does nothing - G.jamAgainst and
-         G.jamAt take the WORST bubble over a point and never the sum. And not
-         before nPower < 4 either: these draw 45 to 130 against a power plant's
-         120, so a commander that bought one on a thin grid would brown out its
-         own base and, through needPower, the new structure with it.
-
-         Gated on D.radar, the same doctrine knob the electronic-warfare block
-         at the unit end already uses, so a Recruit and a Regular never buy
-         one. structureFor() returns null where a nation has no such structure
-         in this period - which is everybody before the 1980s, the PLA and the
-         ROC before the 2000s, the KPA on the array axis for ever, and everyone
-         but the KPA and PACT on the satellite axis. lockReason() then refuses
-         it a second time through the fac gate, so the honest answer arrives
-         twice over and neither path can leak. */
-      else if (D.radar && P.tech >= 2 && nRadar >= 1 && P.cash > 2200 &&
-               (function () {
-                 for (const sr of ["ewsite", "gpsjam"]) {
-                   const id = structureFor(P.faction, sr, P.era);
-                   if (!id) continue;
-                   /* countBuilding sees placed structures and readyCount sees
-                      one that is built and waiting for ground; without both,
-                      the window between the two buys a second station. */
-                   if (P.countBuilding(id) + P.readyCount("building", id) > 0) continue;
-                   if (P.cash < P.factionCost(BUILDINGS[id]) + 600) continue;
-                   /* try the next srole rather than giving up: a PACT
-                      commander in e20 owns both an SPN-4 and a Murmansk-BN
-                      slot, and a failed siting on one must not block the
-                      other. */
-                   if (tryB(id)) return true;
-                 }
-                 return false;
-               })()) { /* enqueued above */ }
-      else if (D.radar && P.tech >= 3 && nLab >= 1 && P.cash > 4200 &&
-               (function () {
-                 const id = structureFor(P.faction, "lpar", P.era);
-                 if (!id) return false;
-                 if (P.countBuilding(id) + P.readyCount("building", id) > 0) return false;
-                 return tryB(id);
-               })()) { /* enqueued above */ }
-      /* ---- saturated: money is not the constraint any more ----
-         Both commanders used to pin at their storage ceiling from about the
-         half-hour mark and stay there for the rest of the game, throwing away
-         every credit earned after that, because the build list stopped at two
-         factories and three refineries. Fifty-seven percent of games never
-         resolved. Once the bank has been full for a while the caps come off:
-         more production, more storage, and D.rebuild - another knob that was
-         declared on every difficulty and never read - decides how far. */
-      else if (saturated > 45) {
-        const push = 2 + Math.round(2 * (D.rebuild || 1));
-        if (nFac < push && groundConnected) tryB("factory");
-        else if (nBar < Math.max(2, push - 1)) tryB("barracks");
-        else if (nAir < 2 && P.tech >= 2 && can("airbase")) tryB("airbase");
-        else if (P.countBuilding("silo") < 4 && can("silo")) tryB("silo");
-        else if (nRef < 5 && can("refinery")) tryB("refinery");
-        else if (nPower < 7) tryB("power");
+      const tryB = (id, why) => {
+        if (!can(id) || !P.enqueue("building", id)) return false;
+        macro.last = id + ":" + why;
+        macro.n[why] = (macro.n[why] || 0) + 1;
+        if (id === "derrick") macro.oilT = -1e9;
+        if (id === "navalyard") macro.shoreT = -1e9;
+        return true;
+      };
+      /* growth: out of the budget, or free while the bank idles */
+      const grow = (id, why, share) => {
+        const cost = P.factionCost(BUILDINGS[id]) * (share || 1);
+        if (!plan.rich && macro.budget < cost) return false;
+        if (!tryB(id, why)) return false;
+        macro.budget = Math.max(0, macro.budget - cost);
+        return true;
+      };
+      /* The growth structures compete on SHORTFALL, not on rung order: as a
+         fixed ladder the factory rung, whose target grows while money idles,
+         took every slot - a jsc smoke run of fulda reached five war factories,
+         one barracks, no lab and no airbase by t=480. Largest (want-have)/want
+         first; a refinery at a field and the second factory get a lead. A
+         purchase the budget refuses falls through to the next. */
+      const growPick = () => {
+        const c = [];
+        const add = (id, why, have, want, share, lead) => {
+          if (have < want) c.push({ id, why, share, gap: (want - have) / want + (lead || 0) });
+        };
+        add("factory", "industry", nFac, plan.fac, 1, nFac < 2 ? 0.3 : 0);
+        add("refinery", plan.field ? "field" : "dock", nRef, plan.ref,
+            plan.field ? 0.5 : 1, plan.field ? 0.7 : 0);
+        add("airbase", plan.rampFull ? "ramp" : "air", nAir, plan.air, 1 / (D.airBias || 1));
+        add("barracks", "industry", nBar, plan.bar, 1);
+        if (nYard < plan.nav && shoreOK())
+          add("navalyard", "sea", nYard, plan.nav, 1 / (D.navalBias || 1));
+        c.sort((a, b) => b.gap - a.gap);
+        for (const x of c) if (grow(x.id, x.why, x.share)) return true;
+        return false;
+      };
+      /* Veteran and up open without bank gates. Recruit and Regular keep
+         them, so the bottom of the table still opens like a beginner. */
+      const hard = (D.econ || 1) >= 1;
+      if (starving) {
+        if (P.powerRatio() < 1.15) tryB("power", "brownout");
+        else if (nRef < 3) tryB("refinery", "starving");
       }
+      else if (
+        (P.powerRatio() < 1.15 && tryB("power", "brownout")) ||
+        (nRef < 1 && tryB("refinery", "open")) ||
+        (nBar < 1 && tryB("barracks", "open")) ||
+        (powerAhead(nFac < 1 ? 60 : 55) < 1.2 && tryB("power", "ahead")) ||
+        (nFac < 1 && tryB("factory", "open")) ||
+        /* ---- THE FIRST WELL, EARLY ----
+           The derrick rung sat behind the second refinery and the radar dome
+           and asked for 1,200 in the bank; on fulda, korea and kuwait the
+           losing side read oreSpot=true at every sample to t=450 and never
+           drilled (cash 0 at t=150, 300 and 450). A 700-credit well is 0.55
+           barrels a second for good - three times the bought ration - so the
+           first one goes down straight after the war factory. The building
+           queue is paid first, so a thin bank only means the next 700
+           credits go to the well. */
+        (P.countBuilding("derrick") < 1 && P.cash > 300 && oilSpotOK() && tryB("derrick", "well1")) ||
+        (nRef < 2 && (hard || P.cash > 1200) && tryB("refinery", "open")) ||
+        (!groundConnected && nYard < 1 && shoreOK() && tryB("navalyard", "sea")) ||
+        (nRadar < 1 && (hard || P.cash > 1400) && tryB("radar", "open")) ||
+        /* no refinery of ours stands at ore and one can now be put there: the
+           whole mining fleet is driving the long way, so this outranks the
+           budget (fulda smoke run: 30-tile hauls and 9,100 mined by t=390
+           while the lab and the airbase went first) */
+        (plan.field && plan.served === 0 && nRef < plan.ref && tryB("refinery", "field")) ||
+        (nFac < 2 && plan.fac >= 2 && grow("factory", "industry")) ||
+        /* ---- fuel is the other economy ----
+           Derricks were capped at three, then at six plus the clock, and a
+           commander with a full bank and an empty tank stopped buying anything
+           that costs barrels. A drill site that exists is always worth 700:
+           findOilSpot() answers only for legal ground, which is what bounds a
+           player too. */
+        ((hard || P.cash > 700) && oilSpotOK() && tryB("derrick", "oil")) ||
+        /* ...and a well just out of reach gets a guard post on the line to it
+           (oilOutpost: one 800-credit gun instead of a 3,000-credit rig; on
+           its own ten-second clock, two posts a well at most) */
+        (P.cash > 1500 && oilOutpost() && !!(macro.n.post = (macro.n.post || 0) + 1)) ||
+        /* the lab: at once below Tech II (it is the road to it), otherwise once
+           the second factory stands, the money idles or four minutes are up */
+        (nLab < 1 && nRadar >= 1 &&
+         (hard ? (P.tech < 2 || nFac >= 2 || plan.rich || G.time > 240) : P.cash > 1900) &&
+         tryB("lab", "tech")) ||
+        /* ---- RAMP SPACE IS THE CEILING ON THE WHOLE AIR FORCE ----
+           (owner) "very few aircrafts." An airbase has four pads; plan.air
+           adds one whenever the ramp it owns is nearly full, and grows with
+           income across water and while the money idles, fuel permitting. */
+        growPick() ||
+        /* A silo stores CREDITS. It was bought on P.oil < 140, true from the
+           first purchase on - korea P0 held four at t=300 with 939 banked.
+           Now when the vault is too small for an era step, or nearly full
+           while the money IS being spent (a lump sum is coming). Idle money
+           gains nothing from a bigger vault: allowed then, an idle seat on
+           taiwan built sixty-three silos and banked 186,000 by t=900. */
+        ((eraNeedSilo || (!plan.rich && P.cash > P.storageCap() * 0.75)) &&
+         tryB("silo", "vault")) ||
+        (P.countBuilding("depot") < 1 && (nFac >= 2 || G.time > 300) &&
+         (plan.rich || P.cash > 2000) && tryB("depot", "repair")) ||
+        /* ---- the electronic order of battle ----
+           Both families sit HERE, at the end of the plan, and both are capped
+           at one. Not in the threat-scaled defence roll below: that builds a
+           PROPORTION of each emplacement against a shortfall in an arm, has no
+           concept of a cap, and the single most important fact about a jamming
+           station is that a second one does nothing - G.jamAgainst and G.jamAt
+           take the WORST bubble over a point and never the sum. These draw 45
+           to 130 against a power plant's 120, which powerAhead() now answers
+           before they are ordered.
+
+           Gated on D.radar, the same doctrine knob the electronic-warfare block
+           at the unit end already uses, so a Recruit and a Regular never buy
+           one. structureFor() returns null where a nation has no such structure
+           in this period - which is everybody before the 1980s, the PLA and the
+           ROC before the 2000s, the KPA on the array axis for ever, and everyone
+           but the KPA and PACT on the satellite axis. lockReason() then refuses
+           it a second time through the fac gate, so the honest answer arrives
+           twice over and neither path can leak. */
+        (D.radar && P.tech >= 2 && nRadar >= 1 && P.cash > 2200 &&
+         (function () {
+           for (const sr of ["ewsite", "gpsjam"]) {
+             const id = structureFor(P.faction, sr, P.era);
+             if (!id) continue;
+             /* countBuilding sees placed structures and readyCount sees
+                one that is built and waiting for ground; without both,
+                the window between the two buys a second station. */
+             if (P.countBuilding(id) + P.readyCount("building", id) > 0) continue;
+             if (P.cash < P.factionCost(BUILDINGS[id]) + 600) continue;
+             /* try the next srole rather than giving up: a PACT
+                commander in e20 owns both an SPN-4 and a Murmansk-BN
+                slot, and a failed siting on one must not block the
+                other. */
+             if (tryB(id, "ew")) return true;
+           }
+           return false;
+         })()) ||
+        (D.radar && P.tech >= 3 && nLab >= 1 && P.cash > 4200 &&
+         (function () {
+           const id = structureFor(P.faction, "lpar", P.era);
+           if (!id) return false;
+           if (P.countBuilding(id) + P.readyCount("building", id) > 0) return false;
+           return tryB(id, "ew");
+         })()) ||
+        /* idle money and nothing else to build: a plant ahead of the next
+           few loads (1.6 built eight spare plants on taiwan) */
+        (plan.rich && powerAhead(0) < 1.35 && tryB("power", "surplus"))
+      ) { /* enqueued above */ }
     }
 
     /* -------- DEFENSES (scale with threat) --------
@@ -4470,15 +6748,47 @@ function makeCommander() {
        one, so the always-allowed minimum scales with the same knob: six for
        Fortress, three for a Gun Line, two for Shock and for everyone else.
        Past that floor an under-strength army stops the concrete. */
-    const armyShort = nFac >= 1 && armyNow < wantNow * 0.5;
+    /* ...unless the bank is idling: then money is not what the army lacks,
+       and the wall is an oil-free place to put it */
+    const armyShort = nFac >= 1 && armyNow < wantNow * 0.5 && !plan.rich;
     const defFloor = Math.max(2, Math.round(2 * (D.defenceBias || 1)));
-    if (!dq.items.length && !dq.ready.length && P.cash > 1000 && !mineShort) {
-      const nDef = P.buildings.filter(b => !b.dead && b.cat === "defense").length;
+    /* ---- the rush ----
+       (measured) the land theatres were decided at ~460 s by an early wave
+       arriving at a base with no emplacement, because this block waited for
+       1,000 credits and a full mining fleet and then built nothing while the
+       army was under half strength. The side being rushed held 0-114
+       credits at the time (fulda P1 0/0/0 at t=150/300/450, korea P1
+       0/0/114), so no bank floor at all while a real force has been at our
+       works in the last 45 s (underThreat): the defence queue is paid before
+       the unit queues, so a queued nest is funded from the next 400 credits
+       that arrive. The mine rule and the half-strength rule are waived too,
+       and the gun is sited at the production building nearest the trouble
+       (defAnchor). */
+    const hitHome = underThreat();
+    let defShort = false;
+    if (!dq.items.length && !dq.ready.length && (hitHome || P.cash > 1000) &&
+        (!mineShort || hitHome)) {
+      /* barriers (def.line) are not emplacements: a creep toward the ore
+         must not stand in for a gun */
+      const nDef = P.buildings.filter(b => !b.dead && b.cat === "defense" && !b.def.line).length;
       const fa0 = foeArms();
       const threat = fa0.seen + fa0.air * 0.6;
-      const wanted = (armyShort && nDef >= defFloor) ? 0 : Math.round(
-        Math.min(2 + threat * 0.45 + G.time / 600,
-                 3 + nFac * 2 + (D.aggro >= 1.3 ? 1 : 0)) * (D.defenceBias || 1));
+      /* ---- guns at every production building ----
+         Under the victory rule a side with no production building left is
+         beaten, so the ceiling counts what there is to lose - one more for
+         every two production buildings past the first two - and placeReady
+         puts each gun beside the production building with the least cover.
+         While the bank idles the wall grows too, one more per 45 s idle
+         (plan.richN) - taiwan sat on 37,500 credits and 6-33 barrels, and an
+         emplacement costs no fuel. One per production building was too many
+         once the plan builds barracks by income: 24 emplacements by t=480 in
+         the integration smoke run of fulda (two per step had given nineteen
+         in the macro stream's). */
+      const wanted = (armyShort && nDef >= defFloor && !hitHome) ? 0 : Math.round(
+        Math.min(2 + threat * 0.45 + G.time / 600 + plan.richN,
+                 3 + nFac * 2 + (D.aggro >= 1.3 ? 1 : 0) +
+                 Math.floor(Math.max(0, plan.prod - 2) / 2) + plan.richN) * (D.defenceBias || 1));
+      defShort = nDef < wanted;
       if (nDef < wanted) {
         /* The same defect as the army roll, in the other direction: this was
            a G.rng() against fixed thresholds, so a commander being raided by
@@ -4504,25 +6814,46 @@ function makeCommander() {
         for (const c of cand) if (c.ok) tot += c.w;
         let pickDef = null, bestGap = 0.02;
         for (const c of cand) {
-          if (!c.ok || tot <= 0) continue;
+          /* an emplacement with no ground left is refunded by placeReady and
+             written off for 70 s (failCool); asking for it again at once
+             builds, fails and refunds into a vault that may be full, which is
+             money thrown away - and an idle bank now asks often */
+          if (!c.ok || tot <= 0 || failCool[c.id] > G.time) continue;
           const have = P.buildings.filter(b => !b.dead && b.def.id === c.id).length;
           const gap = c.w / tot - (nDef ? have / nDef : 0) +
                       (jit ? (G.rng() - 0.5) * jit : 0);
           if (gap > bestGap) { bestGap = gap; pickDef = c.id; }
         }
         if (pickDef) P.enqueue("defense", pickDef);
-        else if (P.hasBuilding("factory")) P.enqueue("defense", "atpost");
+        else if (P.hasBuilding("factory") && !(failCool.atpost > G.time)) P.enqueue("defense", "atpost");
       }
     }
+    /* -------- CREEPING TOWARD THE ORE (see macroPlan) --------
+       One barrier at a time through the defence queue, and only after the
+       defence roll has had its turn: enqueued ahead of it, the half-second
+       wall was re-ordered on every think and the roll - which wants an empty
+       queue - never ran while a creep was on. Not while the base is under
+       attack. */
+    if (plan.creep && !defShort && !hitHome && !dq.items.length && !dq.ready.length &&
+        P.cash > 150 && P.enqueue("defense", "wall")) macro.creepN++;
 
     /* -------- TECH SAVINGS PLAN --------
        after the opening, hoard cash for the lab and the tech programmes
        instead of bleeding everything into tier-1 units                    */
     saveTarget = 0;
     if (!mineShort && G.time > 330 / ((D.techBias || 1) * (D.tech || 1))) {
-      if (nLab < 1 && nRadar >= 1) saveTarget = 1900;
+      /* The LAB is a structure and the building queue is paid first, so from
+         Veteran up the plan simply orders it: the 1,900 held here froze every
+         unit purchase (taiwan P0, t=300: saveTarget 1900 with 1,570 banked)
+         while the old rung waited for the same 1,900. Recruit and Regular keep
+         the hoard, because their lab rung still asks the bank. The programmes
+         are UPGRADES and the upgrade queue is walked last, so they keep their
+         float; Tech III comes on the tier's clock, 720/D.tech (424 s at
+         Warlord), rather than a flat 720. */
+      if (nLab < 1 && nRadar >= 1 && (D.econ || 1) < 1) saveTarget = 1900;
       else if (nLab >= 1 && P.tech < 2 && !queueLen("upgrade")) saveTarget = 2100;
-      else if (nLab >= 1 && P.tech < 3 && P.oil > 90 && !queueLen("upgrade") && G.time > 720) saveTarget = 3600;
+      else if (nLab >= 1 && P.tech < 3 && P.oil > 90 && !queueLen("upgrade") &&
+               G.time > 720 / Math.max(0.5, D.tech || 1)) saveTarget = 3600;
     }
     /* a generational step is hoarded for exactly like a tech programme, with a
        margin so the production queues cannot shave the last few hundred
@@ -4549,7 +6880,15 @@ function makeCommander() {
          equipment, and it is bought with fuel the step needs */
       else if (P.cash > 3800 && !eraStep) {
         for (const ug of ["ap", "armor", "optics", "drive"])
-          if (!P.upgrades[ug]) { if (oilSpare(upOil(ug))) P.enqueue("upgrade", ug); break; }
+          /* The four kits are armour, gun, sight and engine for the ground
+             force, and on a water theatre that force cannot reach the enemy.
+             They queue behind a fleet or an air force that is short of its
+             share - measured in the harness, a 25-barrel penetrator kit was
+             bought while the fleet held a claim for a 12-barrel landing craft. */
+          if (!P.upgrades[ug]) {
+            if (oilSpare(upOil(ug)) && armOilOk("gnd", upOil(ug))) P.enqueue("upgrade", ug);
+            break;
+          }
       }
     }
 
@@ -4573,6 +6912,30 @@ function makeCommander() {
       rigHoard = true;
     }
     runExpansion();
+    /* ---- no yard left: the rig IS the base ----
+       With no yard the building queue stops outright (prodSpeed counts
+       yards), and under the victory rule a side with no production building
+       is beaten. The one structure still within reach is the one a rig
+       unfolds into: first in line at the factory, unfolded where it stands. */
+    /* ---- and the second yard as soon as the money is there ----
+       A second yard is fifty per cent on every structure after it and a second
+       place to build production (the victory rule). runExpansion() asks for
+       one only through wantsExpansion() and at the BACK of the vehicle queue,
+       and with a Heavy purse the money was gone into the army before the rig's
+       turn came: in a jsc smoke run of fulda both seats still had one yard at
+       t=480 after opening on 20,000. */
+    const yardsNow = P.countBuilding("conyard") + rigsHeld();
+    const byBudget = !plan.rich && macro.budget >= rigCost();
+    /* ...but not ahead of the mining fleet (haulersOK), except as relief */
+    if (nFac >= 1 &&
+        (yardsNow === 0 ||
+         (yardsNow < 2 && haulersOK() && (plan.rich || byBudget || P.cash > rigCost() + 1500) &&
+          G.time - yardBlocked > 45)) &&
+        tryBuildUnit("mcv")) {
+      headOfLine("vehicle");
+      if (yardsNow === 0) macro.relief++; else macro.yards++;
+      if (byBudget) macro.budget -= rigCost();
+    }
 
     /* -------- PROSPECTING --------
        A hauler may only be routed to ore this commander has actually seen, the
@@ -4582,10 +6945,13 @@ function makeCommander() {
        prospects - it drives a hauler at the nearest ground nobody has looked
        at yet. That is searching, not seeing. */
     if (nRef >= 1) {
-      let knowOre = false;
+      /* Answered by the survey's own pass (oreFields: same test - seen, at
+         least 20, not built over) instead of a walk of the ore layer every
+         think. A "none" is re-asked after 4 s, so ore that has just come into
+         view is not prospected past. */
+      oreFields(macro.anyOre ? 20 : 4);
+      const knowOre = macro.anyOre;
       const M = G.map;
-      for (let i = 0; i < M.ore.length && !knowOre; i++)
-        if (M.ore[i] >= 20 && look[i] !== 0 && !G.occ[i]) knowOre = true;
       if (!knowOre) {
         const idleHarv = P.units.find(u => !u.dead && u.def.harvester &&
           (u.order.type === "idle" || u.order.type === "harvest") && !u.load);
@@ -4615,7 +6981,10 @@ function makeCommander() {
        The honest way out is the one the player has - sell something. A silo
        with nothing to store, or a power plant beyond the current load, is
        worth more as the 50% refund that puts a hauler back on the ore. */
-    if (harv <= (nRef >= 2 ? 1 : 0) && P.cash < 1100 && !queueLen("vehicle") && nRef >= 1) {
+    /* ...and a hauler already on order (ECONOMY UNITS orders the last one
+       on any bank) is exactly what the sale is for, so it does not stop it */
+    if (harv <= (nRef >= 2 ? 1 : 0) && P.cash < 1100 && nRef >= 1 &&
+        queueLen("vehicle") <= queuedRole("vehicle", d => !!d.harvester)) {
       const spare = [];
       for (const b of P.buildings) {
         if (b.dead || b.buildProgress < 1) continue;
@@ -4650,10 +7019,46 @@ function makeCommander() {
        development they came out POORER and one tech tier behind. A better
        commander is one that mines harder, which is also the only honest way
        to be richer than the player. */
-    const harvCap = Math.round(5 * (D.econBias || 1) * (D.econ || 1));
-    if (harv < nRef * 2 && harv < harvCap && !queueLen("vehicle") &&
-        P.cash > (harv === 0 ? 200 : 900))
-      P.enqueue("vehicle", "harvester");
+    /* ---- sized to the docks, and first in line ----
+       `!queueLen("vehicle")` let a hauler be ordered only into an EMPTY vehicle
+       queue, and while the army is under strength buildToward keeps one or two
+       vehicles in it: fulda P0 ran two haulers and kuwait P0 ONE for the whole
+       battle, while taiwan - army frozen at strength, queue empty - bought
+       eight. Now: one on order at a time, moved to the head of the queue,
+       plan.harv (plan.perRef a dock that stands at ore - three from Commander
+       up) and no flat fleet cap, none while there is no ore to be had
+       (plan.noOre: none seen at all, or half the fleet standing with nothing
+       it can reach - one walled-in hauler no longer stops the purchase). A
+       factory has to exist, or the order sits in a queue that never moves. */
+    unstickHaulers();
+    spreadHaulers();
+    unsealDoors();
+    /* While money idles and fuel is short another hauler only adds credits
+       that cannot be spent (above the vault they are discarded) and takes 8
+       barrels from the army: a jsc probe of korea had P1 put 184 barrels into
+       33 haulers, and 58 into combat vehicles, by t=600 with 30k banked. The
+       fleet is held where it stands, never under two docks' worth. */
+    const harvTarget = plan.rich && !plan.fuelOK
+      ? Math.min(plan.harv, Math.max(2 * plan.perRef, harv)) : plan.harv;
+    /* past the first two, a hauler (8 barrels) leaves the rig reserve alone -
+       on korea the second yard waited at 10 barrels while haulers took them */
+    if (nRef >= 1 && nFac >= 1 && !plan.noOre && harv < harvTarget &&
+        !queuedRole("vehicle", d => !!d.harvester) &&
+        /* the last hauler is ordered on any bank: the queue pays as the
+           money comes (kuwait smoke run: P1 held 0 haulers and 0 credits
+           from t=450 to t=600 and never ordered one) */
+        (harv < 2 || P.cash > 500) &&
+        (harv < 2 || oilSpare((UNITS.harvester && UNITS.harvester.oil) || 8)) &&
+        P.enqueue("vehicle", "harvester"))
+      headOfLine("vehicle");
+
+    /* -------- EYES --------
+       "recon" appeared on no build list in this file once, so the commander
+       never scouted at all; then it was bought only inside the army gate and
+       counted without the queue. reconShort() counts the ramp and leaves the
+       dry ones out. After the haulers, so a scout never takes a harvester's
+       place at the head of the vehicle queue. */
+    if (nFac >= 1 && queueLen("vehicle") < 2 && reconShort(mineShort)) tryBuildUnit("recon");
 
     /* -------- ARMY COMPOSITION -------- */
     /* Scouts are excluded: a reconnaissance vehicle that gets swept into the
@@ -4662,7 +7067,13 @@ function makeCommander() {
     const wantSize = (groundConnected ? D.waveSize : Math.max(6, (D.waveSize * 0.7) | 0)) +
       Math.floor(G.time / 240) * 2;
 
-    if (army.length < wantSize) {
+    /* plan.surplus: while the bank idles, buy past the launch size. The wave
+       still launches on wantSize, so a richer commander does not wait longer. */
+    /* ...and nothing new for the army while the mine is gone and the bank
+       is empty: the infantry queue is paid before the vehicle queue, and a
+       rifle squad ordered now is the hauler that never comes */
+    const noMine = nRef >= 1 && nFac >= 1 && harv < 2 && P.cash < 1100 && !plan.noOre;
+    if (army.length < wantSize + plan.surplus && !noMine) {
       /* Both queues used to be a G.rng() against fixed thresholds and not one
          term in either expression came from the picture, so the same mixture
          went out against a tank corps, a militia and a fortified line. It is
@@ -4680,12 +7091,8 @@ function makeCommander() {
       }
       if (queueLen("infantry") < 2) buildToward(mix.inf, army, "infantry");
       if (queueLen("vehicle") < 2 && nFac >= 1) buildToward(mix.veh, army, "vehicle");
-      /* Eyes. The scouting block below looks for a unit of role "recon" and
-         "recon" appeared on no build list in the file, so there was never one
-         to find and the commander has never scouted at all. It did not need to
-         while it could read the enemy's object lists directly; it does now. */
-      if (unitsOf("recon").length < (D.scouts || 1) && queueLen("vehicle") < 2)
-        tryBuildUnit("recon");
+      /* Eyes are bought above this gate now - see EYES. Inside it, none was
+         bought while the army stood at strength. */
       /* The supply truck used to be bought here, at one per six of army and
          inside this `army.length < wantSize` gate. Three defects, and the gate
          was the worst of them: once the army reached strength no truck was
@@ -4702,7 +7109,7 @@ function makeCommander() {
          What is left here is the field workshop, which belongs on this side of
          the gate: it is bought only while the army is under strength, so it is
          never bought INSTEAD of the tanks it exists to mend. */
-      if (!mineShort && wantRecovery(army) && tryBuildUnit("repair")) return;
+      if (!mineShort && groundConnected && wantRecovery(army) && tryBuildUnit("repair")) return;
     }
 
     /* -------- RE-EQUIP --------
@@ -4731,6 +7138,10 @@ function makeCommander() {
         /* a fire mission is one bombardment and costs 35-110 barrels; a step
            is the whole army. Fuel promised to the step is not burned here. */
         if (eraStep && P.cash >= eraStep.cost && P.oil - m.oil < eraStep.oil) continue;
+        /* fuel a queued hull has been promised is not burned here either
+           (committedOil, FORCE BUDGET): spent between enqueue and completion
+           it refunds the hull and loses its build time */
+        if (P.oil - committedOil() < m.oil) continue;
         if (G.supportReady(P, key)) continue;
         const spot = bestStrikePoint(m);
         if (!spot) continue;
@@ -4891,27 +7302,47 @@ function makeCommander() {
          an air force keeps up regardless; the ceiling still answers to what
          has actually been seen. */
       /* and the same clock on every air ceiling - see the naval note */
-      const surgeA = P.oil > 120 ? Math.floor(G.time / 240) : 0;
+      const surgeA = armSurge("air");
       const wantFtr = Math.max(2, Math.min(4, humanAir)) + surgeA;
       const canA = fighters < wantFtr && P.tech >= 2;
       const canH = helos < 3 + surgeA && P.tech >= 2;
       const canC = P.tech >= 3 &&
                    fielded("aircraft", d => d.role === "cas") < 2 + surgeA;
+      /* ---- the fighter is waited for, not undercut ----
+         Under a fuel trickle the `||` chain buys whatever the reserve reaches
+         first, and the gunship (26 bbl) is always reached before the fighter
+         (30). Measured in the harness at 0.58 bbl/s: four gunships filled the
+         only airbase's four pads and no fighter was ever bought, so the air
+         force had nothing that could contest the sky. The fighter the ceiling
+         asks for is held for, like the destroyer (fuelHold), and the cheaper
+         airframes wait behind it for that bounded time. A hold is not a
+         purchase: the chain answers false and the think goes on. */
+      let airHold = false;
+      const holdFighter = () => {
+        const id = unitFor(P.faction, "fighter", P.era), def = id ? UNITS[id] : null;
+        const why = def ? P.lockReason(def) : null;
+        airHold = !!(why && why.indexOf("INSUFFICIENT FUEL") === 0 && fuelHold("fighter", def));
+        return false;
+      };
       if ((canB && tryBuildUnit("stealthbomber")) ||
           (canF && tryBuildUnit("stealthfighter")) ||
-          (canA && tryBuildUnit("fighter")) ||
-          (canH && tryBuildUnit("gunship")) ||
-          (canC && tryBuildUnit("cas"))) return;
+          (canA && (tryBuildUnit("fighter") || holdFighter())) ||
+          (!airHold && canH && tryBuildUnit("gunship")) ||
+          (!airHold && canC && tryBuildUnit("cas"))) return;
     }
 
     /* -------- STRATEGIC WEAPONS -------- */
     if (D.superweapon && P.tech >= 3 && nLab >= 1 && !dq.items.length && !dq.ready.length) {
-      if (!P.hasBuilding("missilesilo") && P.cash > 3800) P.enqueue("defense", "missilesilo");
-      else if (P.hasBuilding("missilesilo") && !P.hasBuilding("nukesilo") &&
+      /* countBuilding for "none yet": hasBuilding sees finished structures
+         only, so a silo still rising read as no silo and another was ordered
+         each time the defence queue emptied - three missile silos inside two
+         minutes on an idle bank in a jsc smoke run of taiwan. */
+      if (!P.countBuilding("missilesilo") && P.cash > 3800) P.enqueue("defense", "missilesilo");
+      else if (P.hasBuilding("missilesilo") && !P.countBuilding("nukesilo") &&
                P.cash > 6400 && P.oil > 160) P.enqueue("defense", "nukesilo");
     }
     for (const b of P.buildings) {
-      if (b.dead || !b.def.superweapon || b.swCharge < 1) continue;
+      if (atPeace || b.dead || !b.def.superweapon || b.swCharge < 1) continue;
       const t = pickStrikeTarget();
       if (t) G.launchSuperweapon(b, t.x, t.y);
     }
@@ -4919,7 +7350,10 @@ function makeCommander() {
     /* -------- NAVY -------- */
     if (nYard >= 1 && queueLen("naval") < 2) {
       /* landing craft first on split maps */
-      if (!groundConnected && fielded("naval", d => d.amphib) < 2 && P.cash > 1200) tryBuildUnit("transport_sea");
+      /* Lift for the landing force startAmphib() will actually embark: six a
+         hull, up to three hulls. Two carried twelve of a twenty-six-man army. */
+      const liftWant = Math.min(3, Math.max(2, Math.ceil(army.length / 6)));
+      if (!groundConnected && fielded("naval", d => d.amphib) < liftWant && P.cash > 1200) tryBuildUnit("transport_sea");
       /* The tender is bought ahead of the fleet mixture, because a hull that
          does not sink is worth more than the next corvette, and it is bought
          on a measurement rather than on a roll. There is no roll left below it
@@ -4967,7 +7401,7 @@ function makeCommander() {
          old cap was acting as a fuel budget without saying so. Growth past the
          base ceiling is allowed while there is fuel to spare and stops when
          there is not, so no one domain can drain the tank the others need. */
-      const surge = P.oil > 120 ? Math.floor(G.time / 240) : 0;
+      const surge = armSurge("sea");
       let capN = Math.round((groundConnected ? 6 : 9) * (D.navalBias || 1)) + surge * 2;
       /* ---- the dome before the fleet ----
          The destroyer, the submarine and the missile boat all list `radar` in
@@ -5065,124 +7499,10 @@ function makeCommander() {
     logisticsStation();
     driveMines(mineShort);
 
-    /* -------- SCOUTING -------- */
-    /* ---- re-tasking, not a lottery every D.scoutT ----
-       Somewhere worth looking rather than a uniformly random point on the map
-       is scoutGoal's job. This block's job is making sure a scout is actually
-       DOING it, and it used to fire once every 24 to 70 seconds and hand one
-       goal to the first recon whose order happened to read "idle". Three
-       faults, all measured on river at Commander over fifteen minutes:
-         - ONE scout was tasked per tick, so a commander paying for three of
-           them - D.scouts is 3 from Commander up - drove one and garaged two.
-           Measured: three Humvees between them logged 2,420 unit-seconds IDLE
-           against 21 seconds of movement;
-         - a scout that finished its drive stood where it stopped until the
-           clock came round, and since the old goal was a point seven tiles
-           BEYOND an enemy building, it stood there INSIDE THE ENEMY BASE. That
-           is the light armed truck the owner watched arrive at his
-           construction yard and achieve nothing;
-         - and "idle" is not the only way a scout ends up with nothing to do. A
-           unit rolls off the factory floor carrying a rally-point MOVE, and if
-           that rally point sits on an occupied tile stepAlong() never reports
-           arrival - it counts arrival only within 0.8 tiles of the aim POINT -
-           so the order never ends and the unit is never idle again. Measured
-           on the other seat of the same battle: 1,326 unit-seconds held inside
-           a move order that could not finish, three scouts pressed against a
-           one-tile goal, and an explored map that stood at 18.1% of the
-           theatre after fifteen minutes.
-       So the sweep runs every four seconds, re-tasks every scout with nothing
-       useful to do, and abandons a goal that has outlived its travel budget. */
-    if (scoutT <= 0) {
-      scoutT = 4;
-      const now = G.time;
-      for (const scout of unitsOf("recon")) {
-        /* A scout that stops to shoot is not scouting, and a 340-hit-point
-           truck with one machine gun loses that exchange anyway: 249 of the
-           measured run's unit-seconds went on auto-acquired attacks. "hold" is
-           the one flag that shuts both doors - acquire() from idle in
-           updateGeneric, and retaliate() when it is hit. */
-        if (scout.stance !== "hold") scout.stance = "hold";
-        /* ---- shot at: report and withdraw ----
-           The report needs no new machinery because it is already made:
-           digest() pushes an alarm at the vehicle's position for every window
-           in which it was hit, noteSighting has written down whatever it could
-           see, and a gun that is a structure is now in seenB - which is what
-           puts that ground out of bounds for the next bid through exposureAt.
-           What was missing is the withdrawal. Fourteen tiles back down the
-           bearing to our own home, at most once every six seconds, and the
-           goal it was pursuing dies with it. */
-        if (scout.lastHitAt && now - scout.lastHitAt < 6) {
-          if (!scout._runT || now - scout._runT > 6) {
-            scout._runT = now; scout._scoutEnd = 0; scout._scoutGoal = null;
-            const a = Math.atan2(P.homeY - scout.y, P.homeX - scout.x);
-            scout.give({ type: "move", x: scout.x + Math.cos(a) * CFG.TILE * 14,
-                                       y: scout.y + Math.sin(a) * CFG.TILE * 14 });
-          }
-          continue;
-        }
-        /* ---- ten seconds to show progress, or pick something else ----
-           The travel budget below is a CEILING on a trip that is going
-           normally; it is the wrong instrument for a trip that is going
-           nowhere. An unroutable goal is already cheap to detect - Path.find
-           fails, stepAlong reports arrival at once, and the sweep four seconds
-           later sees a scout that never left. But a goal that routes and then
-           makes no headway - blocked by traffic, oscillating against a wall,
-           pathing round an obstacle that has since closed - held the scout for
-           the whole 32-to-70-second budget with nothing to show.
-
-           So: measure the range to the goal when it is issued, and look again
-           ten seconds later. If it has not closed by a tenth of the leg, the
-           goal is not being reached and something else is worth more than
-           leaning on it. Closing normally re-arms the window, so a long drive
-           is checked repeatedly rather than abandoned for being long. */
-        if (scout.order.type === "move" && now < (scout._scoutEnd || 0)) {
-          const g0 = scout._scoutGoal;
-          if (!g0 || now < (scout._scoutCk || 0)) continue;
-          const d = U.dist(scout.x, scout.y, g0.x, g0.y);
-          const gained = (scout._scoutD0 || d) - d;
-          if (gained > Math.max(CFG.TILE * 1.5, (scout._scoutD0 || d) * 0.1)) {
-            scout._scoutD0 = d; scout._scoutCk = now + 10;   // moving: carry on
-            continue;
-          }
-          /* stalled. Put the cell out of bounds for a while so the next bid
-             does not simply hand back the same one, and fall through to be
-             re-tasked now rather than in half a minute. */
-          scoutShy.set(shyKey(g0.x, g0.y), now + 60);
-          scout._scoutEnd = 0; scout._scoutGoal = null;
-        }
-        /* ---- did the last goal work? ----
-           stepAlong() reports "arrived" the instant Path.find cannot produce a
-           route at all, so an unreachable goal comes back as a finished trip in
-           nought seconds and the identical bid wins again on the next sweep.
-           Measured without this: two scouts re-ordered onto the same cross-map
-           tile twenty-four times in forty seconds, neither of them moving. The
-           order ended, the vehicle is still where it started and it is nowhere
-           near the goal - that is the only evidence available that the ground
-           cannot be got to, and it buys the cell two minutes of refusal. */
-        const from = scout._scoutFrom, was = scout._scoutGoal;
-        if (was && from &&
-            U.dist(scout.x, scout.y, from.x, from.y) < CFG.TILE * 3 &&
-            U.dist(scout.x, scout.y, was.x, was.y) > CFG.TILE * 4)
-          scoutShy.set(shyKey(was.x, was.y), now + 120);
-        const goal = scoutGoal(scout);
-        if (!goal) continue;
-        /* The travel budget, which is also where D.scoutT keeps its meaning:
-           the straight-line leg at the vehicle's own speed, doubled for terrain
-           and traffic, and never shorter than the difficulty's own re-think
-           interval. recon_n makes 2.85 tiles a second, so a 40-tile leg is
-           allowed 38 seconds at Commander and 70 at Recruit. Past that the goal
-           is unreachable or no longer worth it, and the scout is given another
-           one instead of leaning on it for the rest of the match. */
-        const trip = U.dist(scout.x, scout.y, goal.x, goal.y) / CFG.TILE;
-        scout._scoutEnd = now + Math.max(D.scoutT || 32,
-                          10 + trip / Math.max(0.6, scout.def.speed) * 2);
-        scout._scoutFrom = { x: scout.x, y: scout.y };
-        scout._scoutGoal = goal;
-        scout._scoutD0 = U.dist(scout.x, scout.y, goal.x, goal.y);
-        scout._scoutCk = now + 10;          // first progress check
-        scout.give({ type: "move", x: goal.x, y: goal.y });
-      }
-    }
+    /* -------- SCOUTING --------
+       Not here any more. It sat below fifteen purchase `return`s, so any think
+       that bought something left the scouts unmanaged; driveScouts() runs from
+       update() on its own clock. */
 
     /* expansion runs on think()'s clock like everything else here */
 
@@ -5198,11 +7518,41 @@ function makeCommander() {
     learnTick();
     navalWave = navalWave.filter(u => !u.dead);
 
-    if (waveT <= 0 && army.length >= wantSize * 0.8) {
-      if (groundConnected) { waveT = D.waveTime; launchGroundWave(army); }
-      else if (amphib.state === "idle") { waveT = D.waveTime; startAmphib(army); }
+    /* WHEN TO GO is launchGate()'s question now: the old count is its
+       `full` rule and no longer the only one. foeField() is read on every
+       think so a contact we watch die is struck off while its sighting is
+       still live. Finishing them (commitNow) shortens the cycle: a body
+       leaves within seconds and reinforcements follow every twenty - but
+       not straight back out after a recall (recallWave pushes waveT to 30
+       and recallNext a minute out; the clamp used to cut that to 6 on the
+       next think, so the recalled wave left again at once and was recalled
+       again a minute later). */
+    foeField();
+    const wCommit = commitNow();
+    if (wCommit && !wasCommit) warLog.commits++;
+    wasCommit = wCommit;
+    if (wCommit && G.time >= recallNext - 30 && waveT > (attackWave.length ? 20 : 6))
+      waveT = attackWave.length ? 20 : 6;
+    /* The gate is read from the combined operation's prep window on, so its
+       H-hour (opReady) and the launch agree on what "a launch is due" means.
+       COST: launchGate() is one pass over the army; foeField() and aimFort()
+       are memoised on the tick. */
+    const wGate = waveT <= Math.min(22, (D.waveTime || 150) * 0.3) ? launchGate(army) : null;
+    opReady = !!(wGate && wGate.go);
+    if (waveT <= 0 && wGate && wGate.go) {
+      launchWhy = wGate.why;
+      if (groundConnected) { waveT = wCommit ? 20 : D.waveTime; launchGroundWave(army); }
+      else if (amphib.state === "idle") {
+        waveT = D.waveTime;
+        /* a landing that did not start - no beach, no loading hard, a lorry
+           for an aim - is tried again shortly, as launchGroundWave() does
+           when it has no target, not a whole cycle later */
+        if (!startAmphib(army)) waveT = 12;
+      }
     }
-    if (!groundConnected) runAmphib();
+    /* a landing in progress is finished even if the reading of the ground
+       changed under it; runAmphib() returns at once when there is none */
+    runAmphib();
     /* naval bombardment group */
     /* A countermeasures vessel is not a member of a bombardment group, and
        neither is a tender or an oiler. navgun_57 makes the minesweeper pass
@@ -5211,8 +7561,25 @@ function makeCommander() {
     const fleet = P.units.filter(u => !u.dead && (u.layer === "sea" || u.layer === "sub") &&
       u.def.weapons.length && !u.def.supply && !u.def.repairRate &&
       u.def.role !== "minesweeper" && u.def.role !== "navminelayer" &&
-      navalWave.indexOf(u) < 0);
-    if (fleet.length >= 4 && G.rng() < 0.3) launchNavalWave(fleet);
+      navalWave.indexOf(u) < 0 &&
+      /* the hull detailed as eyes (seaScout) is not a bombardment hull */
+      !u._scout);
+    /* ---- when the bombardment group goes ----
+       The thirty-percent roll is kept, and G.rng() is drawn on exactly the
+       ticks it always was, so the seeded stream the replay depends on does
+       not move. What is ADDED is the operation: the moment a supporting
+       station appears that the group is not already pointed at, it goes -
+       including a group that is already at sea, which `fleet` excludes, since
+       only this call can re-point a hull that is not idle. navAim is a marker
+       and not a clock, so this fires once per change of objective. */
+    const nop = opFocus();
+    const nst = nop ? opSeaStation(nop) : null;
+    const roll = fleet.length >= 4 ? G.rng() < 0.3 : false;
+    const swing = !!(nst && navAim !== nst.id && (navalWave.length || fleet.length >= 4));
+    if (roll || swing) {
+      if (swing) forceStat.swing++;
+      launchNavalWave(fleet);
+    }
 
     /* ---- air sorties ----
        This asked for order type "hover", and nothing ever puts an aircraft
@@ -5223,6 +7590,8 @@ function makeCommander() {
        whole match, and the air force existed only as a bill. */
     for (const a of P.units) {
       if (a.dead || a.layer !== "air") continue;
+      /* the airframe detailed as eyes (airScout) is flown by driveScouts */
+      if (a._scout) continue;
       const idle = a.order.type === "hover" || a.order.type === "parked" ||
                    a.order.type === "idle";
       if (!idle) continue;
@@ -5310,8 +7679,9 @@ function makeCommander() {
     driveRecovery(gt);
     driveTender(nt);
 
-    /* defence reflex: anything hostile near home pulls idle army in */
-    defendBase(army);
+    /* The defence reflex runs on its own clock in update() now (defendBase),
+       so a tick that returned early on a purchase no longer leaves the base
+       unwatched. */
   }
 
   /* ================= amphibious operations ================= */
@@ -5389,84 +7759,276 @@ function makeCommander() {
     return null;
   }
 
+  /* ---- the landing, made to work ----
+     MEASURED, taiwan at Warlord: no ground contact in 1,200 seconds. One
+     seat's attackWave read twelve from t=600 to the end while its landing
+     craft never lost a man; the other seat's never left zero. Four defects,
+     all in the two functions that used to stand here:
+       - the craft were parked at (yard.x, yard.y + 2 tiles) and the troops
+         walked at them. updateEnter() boards a passenger only within r + r +
+         10 pixels of the craft's CENTRE - 34 for a rifle squad - and a hull
+         two tiles off the beach is 48 from the nearest dry ground, so a load
+         completed only when a craft happened to sit against the shore;
+       - at the deadline everybody in the plan who was NOT aboard was handed an
+         attackmove at the objective across the water and pushed into
+         attackWave. Nothing on a split theatre replaces or withdraws that wave
+         (launchGroundWave never runs; withdrawWave returns at once), so they
+         stood on our own beach for the rest of the match - skipped by
+         defendBase() for being wave members, and re-ordered by driveWave() on
+         every think into a route that does not exist: a failed Path.find is a
+         whole-landmass expansion plus a scan of every tile on the map, once
+         per stranded unit per think;
+       - a passenger that never boarded kept its `enter` order and followed its
+         craft along the coast when it sailed;
+       - the clock was `timer -= 1.6` per call and the call is once per think,
+         so a Warlord's seventy-five-second loading window was forty-two
+         seconds and a Recruit's two hundred and twenty.
+     Now each craft berths on a HARD - a water tile touching our own dry
+     ground, parked a third of a tile off its centre toward the land, so the
+     hull ends within about twenty pixels of the beach whichever way it came
+     in. Only a passenger SEEN aboard and now ashore joins the wave; everybody
+     else is stood down where they are. The run-in is the engine's own
+     `unloadAt` move - the order the player's landing uses - so the craft
+     beaches as close as the water allows and puts its troops onto the nearest
+     ground to the landing point. Every deadline is game time.
+     FOG: our own craft, troops and yard, the published coastline, and the aim
+     and beach that warAim() and findBeach() already chose off the plot. */
+  function loadingHards(yard, n) {
+    const M = G.map, T2 = CFG.TILE, W = M.W;
+    const cx = (yard.x / T2) | 0, cy = (yard.y / T2) | 0;
+    const out = [];
+    const O4 = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    for (let r = 1; r <= 9 && out.length < n; r++) {
+      for (let dy = -r; dy <= r && out.length < n; dy++) {
+        for (let dx = -r; dx <= r && out.length < n; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const wx = cx + dx, wy = cy + dy;
+          if (wx < 1 || wy < 1 || wx >= W - 1 || wy >= M.H - 1) continue;
+          if (M.terrain[wy * W + wx] !== T.WATER || G.occ[wy * W + wx]) continue;
+          let land = null;
+          for (const o of O4) {
+            const lx = wx + o[0], ly = wy + o[1];
+            if (!GameMap.passable(M, lx, ly, "ground") || G.occ[ly * W + lx]) continue;
+            land = o; break;
+          }
+          if (!land) continue;
+          let clash = false;
+          for (const h of out)
+            if (Math.abs(h.tx - wx) + Math.abs(h.ty - wy) < 3) { clash = true; break; }
+          if (clash) continue;
+          out.push({ tx: wx, ty: wy,
+                     x: (wx + 0.5 + land[0] * 0.33) * T2,
+                     y: (wy + 0.5 + land[1] * 0.33) * T2 });
+        }
+      }
+    }
+    return out;
+  }
+  /* a passenger that never got aboard stays home, rather than following a
+     craft that has sailed */
+  function standDown(plan) {
+    for (const u of plan)
+      if (!u.dead && !u.carried && u.order && u.order.type === "enter") u.give({ type: "idle" });
+  }
+  /* long enough to cross at the slowest craft's speed, with room for the
+     engine re-planning a stalled hull */
+  function sailTime() {
+    const b = amphib.beach;
+    let far = 0, spd = 9;
+    for (const l of amphib.lsts) {
+      far = Math.max(far, U.dist(l.x, l.y, b.seaX, b.seaY));
+      spd = Math.min(spd, l.def.speed || 2.8);
+    }
+    return U.clamp(far / CFG.TILE / Math.max(0.5, spd) * 1.8 + 30, 45, 240);
+  }
+  /* Where the escort stands: four tiles to seaward of the landing water.
+     Hulls are one movement layer with the craft and push them apart, and a
+     craft only unloads within 4.5 tiles of its landing point - a fleet parked
+     ON the landing water shoves the craft out of that ring. Four tiles off,
+     a 76 mm or 5-inch gun still covers the beach. */
+  function escortStation(b) {
+    const M = G.map, T2 = CFG.TILE;
+    const dx = b.seaX - b.landX, dy = b.seaY - b.landY;
+    const dl = Math.hypot(dx, dy) || 1;
+    const ex = U.clamp(((b.seaX + dx / dl * T2 * 4) / T2) | 0, 0, M.W - 1);
+    const ey = U.clamp(((b.seaY + dy / dl * T2 * 4) / T2) | 0, 0, M.H - 1);
+    const at = M.terrain[ey * M.W + ex] === T.WATER ? { x: ex, y: ey }
+             : Path.nearest(M, ex, ey, "sea", null, 4);
+    return at ? { x: (at.x + 0.5) * T2, y: (at.y + 0.5) * T2 } : { x: b.seaX, y: b.seaY };
+  }
+
   function startAmphib(army) {
+    if (atPeace) return false;
+    const now = G.time;
     const lsts = P.units.filter(u => !u.dead && u.def.amphib);
-    if (!lsts.length) return;
+    if (!lsts.length) return false;
     /* the beach is chosen against a KNOWN aim, so the landing keeps marching
-       at the objective it was planned for even if the aim later moves */
+       at the objective it was planned for even if the aim later moves - and
+       never against a lorry, which will not be there when the craft are */
     const obj = warAim();
-    if (!obj) return;
+    if (!obj || obj.raid) return false;
     const beach = findBeach(obj);
-    if (!beach) return;
-    /* staging point: sea near our own shore */
+    if (!beach) { forceStat.noBeach++; return false; }
     const yard = G.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
-    if (!yard) return;
+    if (!yard) return false;
+    const craft = lsts.slice(0, 3);
+    const hards = loadingHards(yard, craft.length);
+    if (!hards.length) { forceStat.noHard++; return false; }
+    craft.length = Math.min(craft.length, hards.length);
     amphib.state = "loading";
-    amphib.lsts = lsts.slice(0, 3);
+    amphib.lsts = craft;
     amphib.beach = beach;
     amphib.obj = obj;
-    amphib.cargoPlan = army.filter(u => u.layer === "ground" && !u.def.supply)
-      .slice(0, amphib.lsts.length * 6);
-    /* bring boats to shore near the yard; troops walk to them */
-    for (const l of amphib.lsts) l.give({ type: "move", x: yard.x, y: yard.y + CFG.TILE * 2 });
-    for (let i = 0; i < amphib.cargoPlan.length; i++) {
-      const u = amphib.cargoPlan[i];
-      const l = amphib.lsts[i % amphib.lsts.length];
-      u.give({ type: "enter", target: l });
+    amphib.station = escortStation(beach);
+    amphib.aboard = new Set();
+    amphib.until = now + 75;             // then go with what is aboard
+    amphib.reT = now + 5;
+    /* A craft can come home still loaded. Its passengers are part of this
+       landing, and its hold has less room. */
+    const plan = [];
+    const left = [];
+    for (const l of craft) {
+      for (const u of l.cargo) { amphib.aboard.add(u.id); plan.push(u); }
+      left.push(Math.max(0, (l.def.cargo || 6) - l.cargo.length));
     }
-    amphib.timer = 75;                     // give loading over a minute, then go with what we have
+    let room = 0;
+    for (const n of left) room += n;
+    const h0 = hards[0];
+    const fresh = army.filter(u => u.layer === "ground" && !u.def.supply && !u.carried &&
+        !u.noWave && attackWave.indexOf(u) < 0 && homeward.indexOf(u) < 0)
+      .sort((a, b) => U.dist2(a.x, a.y, h0.x, h0.y) - U.dist2(b.x, b.y, h0.x, h0.y))
+      .slice(0, room);
+    for (let i = 0; i < craft.length; i++) {
+      craft[i]._hard = hards[i];
+      craft[i].give({ type: "move", x: hards[i].x, y: hards[i].y });
+    }
+    /* round-robin into the holds that have room */
+    let k = 0;
+    for (const u of fresh) {
+      let tries = 0;
+      while (left[k] <= 0 && tries < craft.length) { k = (k + 1) % craft.length; tries++; }
+      if (left[k] <= 0) break;
+      u.give({ type: "enter", target: craft[k] });
+      plan.push(u);
+      left[k]--;
+      k = (k + 1) % craft.length;
+    }
+    amphib.cargoPlan = plan;
+    forceStat.trips++;
+    return true;
   }
 
   function runAmphib() {
+    /* ---- on a split theatre the only wave is a landed one ----
+       groundConnected is read off where we BELIEVE the enemy lives, and that
+       belief moves: a published start position at t=0, then the last contact,
+       then the plot. A wave launched overland while the belief said "walk" is
+       left on our own island when it flips, and nothing on a split theatre
+       ever replaces or withdraws it - so it stood there for the match, kept
+       out of the landing and out of defendBase(), re-routed every think at a
+       shore it cannot cross. It is released to the reserve instead. The dead
+       stay for reapWave(); a unit in a fight is left to finish it.
+       Only once the split reading has held for thirty seconds: pickRival()
+       re-derives it every 25 s off the believed home, and a last contact in a
+       bay reads "no land route" for one period on a land theatre - which
+       would idle a live overland assault on the spot. And the book goes with
+       the prune, or waveSpent() reads the released hulls as casualties and
+       reviewAim() writes the landing's objective off. */
+    if (groundConnected) splitSince = -1;
+    else if (splitSince < 0) splitSince = G.time;
+    if (!groundConnected && attackWave.length && G.time - splitSince > 30) {
+      let kept = 0, cut = 0;
+      for (const u of attackWave) {
+        if (!u || u.dead || u._landed) { attackWave[kept++] = u; continue; }
+        u.flankTo = null; u._goAt = 0; cut++;
+        const ot = u.order && u.order.type;
+        if (ot === "attackmove" || ot === "move" || ot === "guard") u.give({ type: "idle" });
+      }
+      attackWave.length = kept;
+      if (cut) {
+        if (kept) bookWave(); else waveBook = null;
+        waveGate = null; waveGateT = 0; waveMassed = false;
+      }
+    }
     if (amphib.state === "idle") return;
+    const now = G.time, T2 = CFG.TILE, b = amphib.beach;
     amphib.lsts = amphib.lsts.filter(l => !l.dead);
-    if (!amphib.lsts.length) { amphib.state = "idle"; return; }
-    amphib.timer -= 1.6;
+    const plan = (amphib.cargoPlan || []).filter(u => !u.dead);
+    amphib.cargoPlan = plan;
+    if (!amphib.lsts.length || !b) { standDown(plan); amphib.state = "idle"; return; }
+    const seen = amphib.aboard || (amphib.aboard = new Set());
+    for (const u of plan) if (u.carried) seen.add(u.id);
+    const loaded = amphib.lsts.reduce((n, l) => n + l.cargo.length, 0);
 
     if (amphib.state === "loading") {
-      const loaded = amphib.lsts.reduce((n, l) => n + l.cargo.length, 0);
-      const plan = (amphib.cargoPlan || []).filter(u => !u.dead);
-      const allAboard = plan.length > 0 && plan.every(u => u.carried || u.dead);
-      if (allAboard || amphib.timer <= 0 || loaded >= amphib.lsts.length * 5) {
-        if (loaded === 0) { amphib.state = "idle"; return; }
-        amphib.state = "sailing";
+      /* stalledOnMove() drops an AI move that makes no headway for ten
+         seconds; a craft left short of its hard is sent on again */
+      if (now > (amphib.reT || 0)) {
+        amphib.reT = now + 5;
         for (const l of amphib.lsts)
-          l.give({ type: "move", x: amphib.beach.seaX, y: amphib.beach.seaY });
-        /* escort: any idle warships come along */
-        for (const s2 of P.units) {
-          if (s2.dead || s2.layer !== "sea" || s2.def.amphib || !s2.def.weapons.length) continue;
-          if (s2.order.type === "idle")
-            s2.give({ type: "attackmove", x: amphib.beach.seaX, y: amphib.beach.seaY });
-        }
+          if (l._hard && l.order.type === "idle" &&
+              U.dist(l.x, l.y, l._hard.x, l._hard.y) > T2 * 0.6)
+            l.give({ type: "move", x: l._hard.x, y: l._hard.y });
       }
-    } else if (amphib.state === "sailing") {
-      let anyClose = false, allIdle = true;
+      let full = true;
+      for (const l of amphib.lsts) if (l.cargo.length < (l.def.cargo || 6)) { full = false; break; }
+      const waiting = plan.some(u => !u.carried && u.order && u.order.type === "enter");
+      if (!full && waiting && now <= amphib.until) return;
+      standDown(plan);
+      if (loaded === 0) { amphib.state = "idle"; forceStat.dry++; return; }
+      amphib.state = "sailing";
+      forceStat.boarded += loaded;
+      amphib.until = now + sailTime();
+      amphib.reT = now + 5;
       for (const l of amphib.lsts) {
-        const d = U.dist(l.x, l.y, amphib.beach.seaX, amphib.beach.seaY);
-        if (d < CFG.TILE * 3.5) {
-          anyClose = true;
-          if (l.cargo.length) { l.unload(); }
-        }
-        if (l.order.type !== "idle") allIdle = false;
+        if (l.cargo.length) l.give({ type: "move", x: b.landX, y: b.landY, unloadAt: true });
+        else if (l._hard) l.give({ type: "move", x: l._hard.x, y: l._hard.y });
       }
-      if (anyClose || amphib.timer < -40) {
-        /* troops ashore: attack */
-        const t = amphib.obj || groundTarget();
-        for (const l of amphib.lsts) if (!l.cargo.length && anyClose) l.give({ type: "move", x: P.homeX, y: P.homeY });
-        let joined = false;
-        /* six units off a landing craft are the last force in the game that
-           should be sent at a position the main body has decided to shell */
-        if (t) for (const u of (amphib.cargoPlan || []))
-          if (!u.dead && !u.carried) {
-            if (t.mode === "siege" && t.stand) u.give({ type: "guard", x: t.stand.x, y: t.stand.y });
-            else u.give({ type: "attackmove", x: t.x, y: t.y });
-            if (attackWave.indexOf(u) < 0) { attackWave.push(u); joined = true; }
-          }
-        /* re-book, or a landing joining mid-assault raises the denominator
-           after the fact and masks a wave that is in fact losing */
-        if (joined) bookWave();
-        if (amphib.lsts.every(l => !l.cargo.length) || amphib.timer < -60) amphib.state = "idle";
+      /* escort: any idle warships come along, to the escort station */
+      const es = amphib.station || { x: b.seaX, y: b.seaY };
+      for (const s2 of P.units) {
+        if (s2.dead || s2.layer !== "sea" || s2.def.amphib || !s2.def.weapons.length || s2._scout) continue;
+        if (s2.order.type === "idle")
+          s2.give({ type: "attackmove", x: es.x, y: es.y });
       }
+      return;
+    }
+
+    /* ---- sailing ---- */
+    if (now > (amphib.reT || 0)) {
+      amphib.reT = now + 5;
+      for (const l of amphib.lsts) {
+        if (!l.cargo.length || l.order.type !== "idle") continue;
+        /* dropped short: within the old 4.5-tile test of the water we were
+           aiming at is close enough to put them off; otherwise go on */
+        if (U.dist(l.x, l.y, b.seaX, b.seaY) < T2 * 4.5) l.unload(b.landX, b.landY);
+        else l.give({ type: "move", x: b.landX, y: b.landY, unloadAt: true });
+      }
+    }
+    /* ashore: only a passenger that was actually aboard */
+    const o = amphib.obj;
+    const t = o && !(o.ref && o.ref.dead) ? o : groundTarget();
+    let joined = false;
+    for (const u of plan) {
+      if (u.carried || !seen.has(u.id) || attackWave.indexOf(u) >= 0) continue;
+      /* six units off a landing craft are the last force in the game that
+         should be sent at a position the main body has decided to shell */
+      if (t) {
+        if (t.mode === "siege" && t.stand) u.give({ type: "guard", x: t.stand.x, y: t.stand.y });
+        else u.give({ type: "attackmove", x: t.x, y: t.y });
+      }
+      u._landed = true;
+      attackWave.push(u);
+      joined = true;
+      forceStat.landed++;
+    }
+    /* re-book, or a landing joining mid-assault raises the denominator after
+       the fact and masks a wave that is in fact losing */
+    if (joined) bookWave();
+    if (amphib.lsts.every(l => !l.cargo.length) || now > amphib.until) {
+      for (const l of amphib.lsts)
+        if (l._hard) l.give({ type: "move", x: l._hard.x, y: l._hard.y });
+      amphib.state = "idle";
     }
   }
 
@@ -5687,8 +8249,18 @@ function makeCommander() {
       }
       if (u.order.type === "idle" || u.order.type === "guard" ||
           u.order.type === "attackmove") {
-        if (U.dist(u.x, u.y, t.stand.x, t.stand.y) > CFG.TILE * 4 || u.order.type !== "guard")
+        /* setOrder() writes the guard post (guardX/guardY) only for move and
+           attackmove, so a guard order given to a hull on an attackmove at the
+           OBJECTIVE kept that post, and the guard branch's drift-back rule
+           walked the siege screen into the emplacements it was posted to stand
+           off from - and, being re-ordered every think while more than four
+           tiles out, dropped its path every think on the way. The post is
+           written here, and a hull already posted there is left alone. */
+        const posted = u.order.type === "guard" && u.guardX === t.stand.x && u.guardY === t.stand.y;
+        if (!posted) {
           u.give({ type: "guard", x: t.stand.x, y: t.stand.y });
+          u.guardX = t.stand.x; u.guardY = t.stand.y;
+        }
       }
     }
     /* the guns that are NOT in the wave help too - there is no reason to keep
@@ -5702,6 +8274,7 @@ function makeCommander() {
   }
 
   function launchGroundWave(army) {
+    if (atPeace) return;
     /* Find the objective BEFORE committing anybody to it. The army used to be
        moved into attackWave first and the target looked up afterwards, so a
        tick with no target left every one of those units sitting in the wave
@@ -5790,7 +8363,7 @@ function makeCommander() {
        the tolerance: Regular goes unless outweighed 1.04:1, Warlord presses
        on to 1.43:1. */
     if (!keep.length && !attackWave.length && (D.read || 0) >= 0.35 &&
-        !t.raid && waveDefer < 2 &&
+        !t.raid && waveDefer < 2 && !commitNow() &&
         foeNear(t.x, t.y, CFG.TILE * 12) > ourForce(body) * (0.80 + 0.30 * (D.aggro || 1))) {
       waveDefer++; engStat.defers++;
       waveT = 20;
@@ -5807,6 +8380,7 @@ function makeCommander() {
     }
     waveGate = null; waveGateT = 0; waveMassed = false; waveTurn0 = waveTurn1 = 0;
     planWave(body, t);
+    warLog.go[launchWhy || "?"] = (warLog.go[launchWhy || "?"] || 0) + 1;
     /* Only the gated branch writes waveGate, because only it has a hold to
        protect. A reinforcement too small to gate, a siege or a fallback
        leaves no record, and the NEXT launch then reads "different objective"
@@ -5828,6 +8402,8 @@ function makeCommander() {
   /* the plan itself, for a body that has already been chosen */
   function planWave(body, t) {
     attackWave = body;
+    lastLaunchT = G.time; warLog.plans++; waveEtaEnd = 0;
+    for (const u of body) { u._goAt = 0; u._mark = null; }
     /* ---- the supply truck no longer marches with the assault ----
        It used to be pushed into attackWave here and then handed the same
        attackmove as the tanks, which drives an unarmed 600-hit-point vehicle
@@ -5946,6 +8522,72 @@ function makeCommander() {
       const wp = flankPoint(ap.gate, t, side, 5 + 7 * skill);
       for (const u of sorted.slice(0, cut)) u.give({ type: "attackmove", x: wp.x, y: wp.y });
     }
+    staggerWave();
+  }
+
+  /* ---- time on target ----
+     (measured) bodies were released by the clock and never by mass -
+     massBody 0 against massClock 1 to 3 on every land theatre - and the
+     first-to-last turn-in spread was 47 to 75 s. The hold in driveFlankers()
+     waits GATE_HOLD = 22 s after the FIRST arrival, and a column that leaves
+     home together does not arrive together: an IFV makes 1.73 tiles a second
+     and a GPMG team 0.82, so over a fifty-tile approach the team is 32 s
+     behind the carrier before the road bends once. 62% of the body can never
+     be at the gate inside 22 s of the first vehicle, the clock always fires,
+     and every straggler then turns in alone as it arrives: the trickle,
+     re-created by the hold that was written to end it.
+     A player sends the slow elements first, and so does this. Each hull's
+     straight-line time to its OWN mark (the hook group's is further round)
+     at its own road speed; the body is timed to arrive at the 80th
+     percentile of those; every hull that would be more than three seconds
+     early is held at home, idle, until its own departure time, and
+     driveFlankers() sends it on. The slowest fifth leave at once and are
+     late, which is what the hold is for. No hull waits more than
+     STAGGER_MAX, so a fast body never idles at home a minute behind one slow
+     team. An idle hull at home still acquires and still answers fire; it is
+     in attackWave, so neither driveWave() (it carries flankTo) nor
+     defendBase() gives it anything else to do.
+     Why idle and not guard: setOrder() writes the guard post only for move
+     and attackmove, so a guard given after the attackmove to the gate would
+     walk the hull to the gate on its drift-back rule.
+     COST: one pass over the body per launch and one sort of at most
+     D.waveSize + 7 numbers. No path, no A*. */
+  const STAGGER_MAX = 45;
+  function staggerWave() {
+    const now = G.time, T2 = CFG.TILE, eta = [];
+    for (const u of attackWave) {
+      if (u) u._goAt = 0;                        // the clearer joins after planWave's reset
+      if (!u || u.dead || u.carried || !u.flankTo) continue;
+      const o = u.order;
+      if (o.type !== "attackmove") continue;
+      u._mark = { x: o.x, y: o.y };
+      /* a hull with a dry tank does not set the pace: its ETA held every
+         other hull the full STAGGER_MAX */
+      const sm = u.speedMul();
+      if (!(sm > 0)) continue;
+      const sp = Math.max(0.3, (u.def.speed || 1) * sm);
+      /* only a hull standing at home is held: a survivor re-planned onto a
+         new objective, or a raider just recalled, does not idle in the
+         enemy's ground for up to 45 s */
+      eta.push({ u, t: U.dist(u.x, u.y, o.x, o.y) / T2 / sp, home: P.inBaseRadius(u.tx, u.ty) });
+    }
+    if (eta.length < 4) return;
+    const ts = eta.map(e => e.t).sort((a, b) => a - b);
+    const arrive = ts[Math.min(ts.length - 1, Math.floor(ts.length * 0.8))];
+    /* roads, bends and traffic stretch every leg, and by different amounts,
+       so the hold stays open a third longer than the plan (holdEnd below) */
+    waveEtaEnd = now + Math.min(90, arrive * 1.35 + 10);
+    let n = 0, most = 0;
+    for (const e of eta) {
+      const wait = Math.min(STAGGER_MAX, arrive - e.t);
+      if (wait < 3 || !e.home) continue;
+      e.u._goAt = now + wait;
+      e.u.give({ type: "idle" });
+      n++;
+      if (wait > most) most = wait;
+    }
+    warLog.staggered += n;
+    warLog.lastWait = Math.round(most);
   }
 
   /* second leg: once a hooking unit reaches its waypoint, turn it in */
@@ -6016,8 +8658,23 @@ function makeCommander() {
     const now = G.time, R = CFG.TILE * GATE_R, R2 = R * R;
     let held = 0, staged = 0;
     for (const u of attackWave) {
-      if (!u || u.dead || !u.flankTo) continue;
+      if (!u || u.dead) continue;
+      if (!u.flankTo) { u._goAt = 0; continue; }
       held++;
+      /* Time on target (staggerWave): a hull still waiting at home is part
+         of the body and is not at its mark. When its time comes it leaves for
+         its own gate - or, if the body has already turned in, straight for
+         the objective, since there is nobody left at the gate to wait with. */
+      if (u._goAt) {
+        if (now < u._goAt) continue;
+        u._goAt = 0;
+        if (waveMassed) {
+          /* a late departure is not a turn-in: ENGAGE.spread is not stretched */
+          u.give({ type: "attackmove", x: u.flankTo.x, y: u.flankTo.y });
+          u.flankTo = null; held--;
+        } else if (u._mark) u.give({ type: "attackmove", x: u._mark.x, y: u._mark.y });
+        continue;
+      }
       if (atMark(u, R2)) staged++;
     }
     engStat.held = held; engStat.staged = staged;
@@ -6036,6 +8693,17 @@ function makeCommander() {
        all they wait at the gate, in the wave, until there is one. */
     if (waveGate && (!aim || (aim.mode === "siege" && aim.stand) ||
         U.dist2(aim.x, aim.y, waveGate.tx, waveGate.ty) > CFG.TILE * CFG.TILE * 4)) {
+      /* A hull still waiting at home for its departure (staggerWave) leaves
+         the wave: with no gate - and perhaps no aim - it would stand idle
+         there inside attackWave, where neither driveWave() nor defendBase()
+         gives it anything to do. The book follows, or waveSpent() reads the
+         released hulls as losses. */
+      const before = attackWave.length;
+      attackWave = attackWave.filter(u => {
+        if (u && u._goAt) { u._goAt = 0; u.flankTo = null; return false; }
+        return true;
+      });
+      if (attackWave.length !== before) bookWave();
       for (const u of attackWave) if (u && u.flankTo) u.flankTo = null;
       waveGate = null; waveGateT = 0; waveMassed = false;
       engStat.dropped++; engStat.held = engStat.staged = 0;
@@ -6044,7 +8712,12 @@ function makeCommander() {
     if (staged && !waveGateT) waveGateT = now;
     if (!waveMassed) {
       const full = staged >= Math.ceil(held * 0.62);
-      if (!full && !(waveGateT && now - waveGateT > GATE_HOLD)) return;
+      /* The hold lasts at least GATE_HOLD past the first arrival and, for a
+         staggered body, until a third past its planned arrival - never more
+         than a minute past the first arrival, so it cannot wait for ever on
+         something that is not coming. */
+      const holdEnd = Math.min(waveGateT + 60, Math.max(waveGateT + GATE_HOLD, waveEtaEnd));
+      if (!full && !(waveGateT && now > holdEnd)) return;
       waveMassed = true;
       if (full) engStat.massBody++; else engStat.massClock++;
     }
@@ -6061,7 +8734,7 @@ function makeCommander() {
     let lead = wavePoint();
     if (lead && (attackWave.indexOf(lead) < 0 || now - waveGateT > GATE_HOLD * 2)) lead = null;
     for (const u of attackWave) {
-      if (!u || u.dead || !u.flankTo || !atMark(u, R2)) continue;
+      if (!u || u.dead || !u.flankTo || u._goAt || !atMark(u, R2)) continue;
       if (lead && lead !== u && !lead.dead &&
           U.dist2(lead.x, lead.y, u.flankTo.x, u.flankTo.y) >
           U.dist2(u.x, u.y, u.flankTo.x, u.flankTo.y)) continue;
@@ -6073,13 +8746,230 @@ function makeCommander() {
   }
   function atMark(u, R2) {
     const o = u.order;
+    /* Fighting at the gate is being at the gate. An arrival that acquires
+       something on its last few tiles holds an attack order, not an
+       attackmove, and was never counted - so the body read short and went
+       on the clock. Half as far again as GATE_R, from the mark it was given. */
+    if (o.type === "attack" && o.auto && u._mark)
+      return U.dist2(u.x, u.y, u._mark.x, u._mark.y) < R2 * 2.25;
     return o.type === "idle" || o.type === "guard" ||
            (o.type === "attackmove" && U.dist2(u.x, u.y, o.x, o.y) < R2);
   }
+  /* ================= COMBINED OPERATIONS =================
+     (owner) "make a lot of combination army, air force, navy together to
+     attack."
+
+     The three services were launched by three unrelated pieces of code.
+     launchGroundWave() went at warAim(); launchNavalWave() went at
+     navalTarget(), whose first rule is the first remembered naval yard in Map
+     insertion order anywhere on the map; and each aircraft asked
+     pickAirTarget(), whose gunship branch hands out the nearest heavy contact
+     TO THE AIRCRAFT. Three answers, three places, and no timing.
+
+     AN OPERATION is the objective warAim() has already chosen - off the plot,
+     with the hysteresis it already carries - plus a WINDOW in which the fleet
+     and the air force are pointed at it too. No new objective chooser, and
+     the ground arm is not touched: it is already on the aim.
+
+       form     nothing coordinated; the fleet hunts the enemy yard and the air
+                force hunts for itself, as before.
+       prep     the last min(22, 0.3 x waveTime) seconds before a launch that
+                is actually due (opReady): the fleet swings onto a firing
+                station off the objective and every strike airframe that
+                launches is handed the gun covering it. Air and sea are
+                released EARLY - the ground wave is never held LATE, because
+                a hold is a stall waiting for an arm that may never come.
+       assault  for min(45, 0.6 x waveTime) seconds after the wave is booked.
+                A WINDOW and not a latch: attackWave is never emptied between
+                launches, so "a wave exists" would be true all match and the
+                prep phase would never be seen again.
+       landing  on a water theatre, while the craft load and sail: the fleet
+                takes station four tiles off the beach (escortStation) and the
+                air force works over the guns covering the landing point as
+                well as the objective.
+
+     It pays off through machinery already here: objectives() prices an
+     objective as its worth minus the fire covering it, and reviewAim() case 3
+     walks a besieging wave in once that price falls under 35% of the prize,
+     so a gun killed from the air during prep turns a siege into a storm.
+
+     ABSENT SERVICES degrade to today's code: no water within reach of the
+     objective answers null and navalTarget() runs its old rules; no air force
+     means nothing asks opAir(); Recruit (read 0) coordinates nothing.
+
+     FOG: warAim() and the beach off the plot; seenB filtered to the rival as
+     objectives() filters it, with r.ref touched only for .dead and to ask OUR
+     aircraft canTarget() - the convention pickEmitter() documents; seenU only
+     through trackedEntity(); gunProfile() off the published tables; the
+     coastline through Path.nearest. No enemy roster, cash or production.
+
+     RELEASE AUTHORITY: opAir() refuses any airframe carrying a single held
+     round, because the sortie loop issues a commanded attack and a commanded
+     attack releases. HARM and ballistic rounds stay where the owner put them.
+
+     COST: opPhase() is O(1). opAir() walks seenB and seenU once per idle
+     strike airframe per think inside a window - the gunship branch below
+     already walks seenU the same way. opSeaStation() is one ring scan,
+     memoised on the objective. The limit, stated: only an airframe that is
+     idle is re-tasked, so one mid-sortie keeps its target until it is home;
+     a strike aircraft with nothing held on radar already sweeps to the aim. */
+  const OP_R = 8;                // tiles: armour "standing on" the objective
+  const OP_SEA = 9;              // tiles: navalTarget()'s own sea-reach figure
+  let navAim = null;             // what the bombardment group was last pointed at
+  let opReady = false;           // think(): a launch is actually due
+  let opSt = null, opStId = null, opStT = -1e9;   // the firing station, memoised on the aim
+  const opHit = new Map();       // structure id -> when an airframe was last sent at it
+
+  function opPhase() {
+    if ((D.read || 0) < 0.35) return "none";
+    if (amphib.state === "loading" || amphib.state === "sailing") return "landing";
+    const now = G.time, cyc = D.waveTime || 150;
+    if (attackWave.length && waveBook && now - waveBook.t < Math.min(45, cyc * 0.6)) return "assault";
+    if (opReady && waveT <= Math.min(22, cyc * 0.3)) return "prep";
+    return "form";
+  }
+  /* The operation: the phase and the one objective. A raid is not an
+     operation - a lorry held for fifteen seconds is not worth swinging a
+     fleet onto. */
+  function opFocus() {
+    const p = opPhase();
+    if (p === "none" || p === "form") return null;
+    if (p === "landing") {
+      const b = amphib.beach, o = amphib.obj;
+      if (!b || !o) return null;
+      const es = amphib.station || { x: b.seaX, y: b.seaY };
+      return { t: o, phase: p, at: { x: b.landX, y: b.landY },
+               sea: { id: "beach:" + o.id + ":" + b.tx + "," + b.ty, key: "beach",
+                      x: es.x, y: es.y } };
+    }
+    const t = warAim();
+    if (!t || t.raid) return null;
+    return { t: t, phase: p, at: t, sea: null };
+  }
+  /* What an airframe is worth flying IN SUPPORT, and nothing else: the guns
+     that cover the objective (or the beach) by objectives()' own garrison
+     test - gunProfile() range, not a flat radius, since the envelopes run
+     from a nest's 6.0 tiles to a howitzer bunker's 16.0 - and live armour
+     standing on it. Null means nothing there is worth suppressing, and the
+     caller carries on exactly as it did. */
+  function opAir(a, op) {
+    const ws = a.def.weapons || [];
+    for (let i = 0; i < ws.length; i++)
+      if (a.manualWeapon && a.manualWeapon(WEAPONS[ws[i]])) return null;
+    const rid = rival ? rival.idx : -1;
+    const pts = op.at === op.t ? [op.t] : [op.at, op.t];
+    /* Every idle strike airframe launches from the same ramp, so a score
+       that depends only on the building type sent all of them at the same
+       emplacement. A gun another airframe was sent at in the last 20 s is
+       taken only when nothing else covers the objective, and nearer guns
+       rank a little higher. */
+    const now = G.time;
+    if (opHit.size > 64) for (const [k, t0] of opHit) if (now - t0 > 60) opHit.delete(k);
+    let best = null, bv = 0, spare = null, sv = 0;
+    for (const r of seenB.values()) {
+      if (r.gone || !r.ref || r.ref.dead || (rid >= 0 && r.own !== rid)) continue;
+      const g = gunProfile(r.key);
+      if (!g) continue;                          // no ground weapon: not in this war
+      const R2 = Math.pow(g.range * CFG.TILE, 2);
+      let covers = false;
+      for (const p of pts) if (U.dist2(r.x, r.y, p.x, p.y) < R2) { covers = true; break; }
+      if (!covers || !a.canTarget(r.ref, true)) continue;
+      const v = (g.hard + g.soft) / (1 + U.dist(a.x, a.y, r.x, r.y) / CFG.TILE * 0.05);
+      if (now - (opHit.get(r.id) || -1e9) < 20) { if (v > sv) { sv = v; spare = r; } continue; }
+      if (v > bv) { bv = v; best = r; }
+    }
+    const gun = best || spare;
+    if (gun) { opHit.set(gun.id, now); return gun.ref; }
+    const RA = Math.pow(OP_R * CFG.TILE, 2);
+    let bd = Infinity;
+    for (const r of seenU.values()) {
+      if (r.layer !== "ground" || r.harvester || (rid >= 0 && r.own !== rid)) continue;
+      let near = false;
+      for (const p of pts) if (U.dist2(r.x, r.y, p.x, p.y) < RA) { near = true; break; }
+      if (!near) continue;
+      const e = trackedEntity(r);
+      if (!e || !(e.armor === "heavy" || e.armor === "light")) continue;
+      if (!a.canTarget(e, true)) continue;
+      const d = U.dist2(a.x, a.y, e.x, e.y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    return best;
+  }
+  /* The fleet's firing station: the beach during a landing, otherwise the
+     nearest water to the objective that (a) our hulls can shoot from - no
+     further out than the longest ground-capable gun afloat, since OP_SEA's
+     nine tiles is past navgun_57's 7.2 - and (b) our fleet can sail to from
+     the yard, by one sea A* (readTheatre's test). Rivers are carved on
+     taiwan, korea and fulda; without (b) driveWave() re-issued a failing
+     route to every idle hull every think inside a window. No such water
+     means an inland objective this service cannot support, and the answer is
+     null: navalTarget() keeps its old rules. Memoised per objective for 60 s,
+     so a fleet that grows re-asks. */
+  function opSeaStation(op) {
+    if (op.sea) return op.sea;
+    const t = op.t;
+    if (opStId === t.id && G.time - opStT < 60) return opSt;
+    opStId = t.id; opStT = G.time; opSt = null;
+    const M = G.map, T2 = CFG.TILE;
+    let reach = 0;
+    for (const u of P.units) {
+      if (u.dead || u.cat !== "naval" || !u.def.weapons) continue;
+      for (const wn of u.def.weapons) {
+        const w = WEAPONS[wn];
+        if (!w || (w.tgt && !w.tgt.ground) || (u.manualWeapon && u.manualWeapon(w))) continue;
+        if (w.range > reach) reach = w.range;
+      }
+    }
+    const R = Math.min(OP_SEA, Math.floor(reach) - 1);
+    if (R < 2) return null;
+    const tx = U.clamp((t.x / T2) | 0, 0, M.W - 1);
+    const ty = U.clamp((t.y / T2) | 0, 0, M.H - 1);
+    const sp = Path.nearest(M, tx, ty, "sea", null, R);
+    if (!sp) return null;
+    const yard = G.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
+    const from = yard ? Path.nearest(M, (yard.x / T2) | 0, (yard.y / T2) | 0, "sea", null, 6) : null;
+    if (!from) return null;
+    if (Math.abs(from.x - sp.x) + Math.abs(from.y - sp.y) > 4) {
+      forceStat.seaA++;
+      const p = Path.find(M, from.x, from.y, sp.x, sp.y, "sea", null);
+      const end = p && p.length ? p[p.length - 1] : null;
+      if (!end || Math.abs(end.x - sp.x) + Math.abs(end.y - sp.y) > 4) return null;
+    }
+    opSt = { id: "op:" + t.id, key: "opstation", x: (sp.x + 0.5) * T2, y: (sp.y + 0.5) * T2 };
+    return opSt;
+  }
+
+  /* The bombardment group. Three fixes, two of them ones launchGroundWave has
+     already had:
+       - the objective is found BEFORE anybody is committed to it; this used to
+         assign navalWave and then look the target up, so a tick with no
+         target left the hulls in the list with no order at all;
+       - it TOPS UP rather than re-slicing. `fleet` at the call site excludes
+         everybody already in navalWave, so `navalWave = fleet.slice(0, 6)`
+         with a group at sea raised a second group out of the leftovers and
+         orphaned the first, which then had no driver at all;
+       - no flat six. (owner) "i don't want AI has any cap": three quarters of
+         the armed fleet sails, at least six, and the rest screens home.
+     A hull already on an attackmove to this point is left alone, so a group
+     on station is not re-pathed every time the roll comes up; so is one in an
+     engagement, and one on a plain move, which is somebody else's order - the
+     oiler rendezvous in logisticsStation(). Either comes back idle, and
+     driveWave() points it at the station then. */
   function launchNavalWave(fleet) {
-    navalWave = fleet.slice(0, 6);
+    if (atPeace) return;
     const t = navalTarget();
-    if (t) for (const u of navalWave) u.give({ type: "attackmove", x: t.x, y: t.y });
+    if (!t) return;
+    const cap = Math.max(6, Math.ceil((navalWave.length + fleet.length) * 0.75));
+    if (navalWave.length < cap)
+      navalWave = navalWave.concat(fleet.slice(0, cap - navalWave.length));
+    navAim = t.id === undefined ? null : t.id;
+    for (const u of navalWave) {
+      if (u.dead) continue;
+      const o = u.order;
+      if (o.type === "attack" || o.type === "move") continue;
+      if (o.type === "attackmove" && U.dist(o.x, o.y, t.x, t.y) < CFG.TILE * 3) continue;
+      u.give({ type: "attackmove", x: t.x, y: t.y });
+    }
   }
 
   /* ---- CONCENTRATION: several guns on one hull ----
@@ -6164,7 +9054,22 @@ function makeCommander() {
      returns the hull to its own attackmove leg rather than to idle.  */
   const CALL_WIN = 2, PEEK = 1.5;
   let lastCall = null;
-  const callLog = { runs: 0, calls: 0, kept: 0, moved: 0, dry: 0, covered: 0, fog: 0, bld: 0 };
+  /* bldRuns/bldCalls/bldDry: thinks with ONE contact where only hulls on
+     concrete could be moved - kept apart so `dry` still measures calls
+     between contacts */
+  const callLog = { runs: 0, calls: 0, kept: 0, moved: 0, dry: 0, covered: 0, fog: 0, bld: 0,
+                   offBld: 0, bldRuns: 0, bldCalls: 0, bldDry: 0 };
+  /* ---- how much better the call must be ----
+     (measured) 226 calls moved two hulls in the elite census, and 190 of 194
+     calls were dry on korea. A gun on a target that its move would leave
+     uncovered was only moved when that target, without it, scored under HALF
+     the call - i.e. the call had to be twice as attractive, which between two
+     healthy hulls of the same class never happens (1.14 against 1.00 for a
+     tank already taking two guns' fire). Focus fire is the case where the
+     call is merely clearly better: 1.3 moves a gun off a fresh tank onto one
+     at 60% (2.08 against 1.00) or onto any gun, and keeps two near-equal
+     targets from trading guns every think. */
+  const CALL_GAIN = 1.3;
   /* hit points the call still needs after CALL_WIN seconds of what is on it */
   function callNeed(t, c) { return t.hp - c.dps * CALL_WIN; }
   function callScore(t, c) {
@@ -6174,13 +9079,16 @@ function makeCommander() {
   }
   /* published expected damage a second from this hull into this target, or 0
      when the weapon it would use is not in reach from where it stands */
-  function reachDps(u, t) {
+  function reachDps(u, t, pad) {
     const wi = u.pickWeapon(t);
     if (wi < 0) return 0;
     const w = WEAPONS[u.def.weapons[wi]];
     if (!w) return 0;
     const d = U.dist(u.x, u.y, t.x, t.y);
-    if (d > u.weaponRange(w) || d < (w.minRange || 0) * CFG.TILE) return 0;
+    /* `pad` is retarget()'s margin: a gain priced at the full range was a
+       gun retarget() then refused between 0.86 and 1.0 of it */
+    if (d > u.weaponRange(w) * (pad || 1) ||
+        d < (w.minRange || 0) * CFG.TILE * (pad ? 1.1 : 1)) return 0;
     return (w.dmg || 0) * (w.burst || 1) * (w.acc !== undefined ? w.acc : 0.8) *
            CFG.dmgMult(w.warhead, t.armorClass()) / Math.max(0.4, w.reload || 1);
   }
@@ -6198,13 +9106,20 @@ function makeCommander() {
        has, for one compare. */
     if ((D.micro || 0) < 0.6 || attackWave.length < 4) return;
     const now = G.time;
-    let tally = null;
+    let tally = null, onBld = null;
     for (const u of attackWave) {
       if (!autoFight(u)) continue;
       const t = u.order.target;
       /* a structure: our own record of it, so this reads nothing new */
       const rb = seenB.get(t.id);
-      if (rb && rb.ref === t) { callLog.bld++; continue; }
+      if (rb && rb.ref === t) {
+        callLog.bld++;
+        /* a direct-fire hull on a structure that does not shoot back may be
+           offered an armed contact below; a gun position is never left */
+        if (!gunProfile(rb.key) && !(u.isIndirect && u.isIndirect()))
+          (onBld || (onBld = [])).push(u);
+        continue;
+      }
       /* THE FOG GATE - before anything about the target is read */
       const rec = seenU.get(t.id);
       if (trackedEntity(rec) !== t || now - rec.t > PEEK) {
@@ -6216,14 +9131,16 @@ function makeCommander() {
       if (t.targetLayer() === "air") continue;
       if (!tally) tally = new Map();
       let c = tally.get(t);
-      if (!c) { c = { role: rec.role, harvester: rec.harvester, dps: 0 }; tally.set(t, c); }
+      if (!c) { c = { role: rec.role, harvester: rec.harvester, armed: rec.armed, dps: 0 }; tally.set(t, c); }
       c.dps += reachDps(u, t);
     }
     /* The standing call is honoured only while it is in this think's gated
        picture; otherwise it is dropped here, without reading it. */
     if (lastCall && !(tally && tally.has(lastCall))) lastCall = null;
-    if (!tally || tally.size < 2) return;       // nobody in contact, or already on one hull
-    callLog.runs++;
+    /* nobody in contact, or already on one hull with nobody on concrete */
+    if (!tally || (tally.size < 2 && !onBld)) return;
+    const soloBld = tally.size < 2;
+    if (soloBld) callLog.bldRuns++; else callLog.runs++;
     let call = null, best = 0;
     for (const [t, c] of tally) {
       const s = callScore(t, c);
@@ -6241,7 +9158,7 @@ function makeCommander() {
     }
     lastCall = call;
     if (!call) return;
-    callLog.calls++;
+    if (soloBld) callLog.bldCalls++; else callLog.calls++;
     let need = callNeed(call, tally.get(call));
     let moved = 0;
     for (let pass = 0; pass < 2 && need > 0; pass++) {
@@ -6257,13 +9174,13 @@ function makeCommander() {
         if (u._callT && now - u._callT < 3) continue;
         if (u.isIndirect && u.isIndirect()) continue;
         /* what this gun would put into the call, from where it stands */
-        const gain = reachDps(u, call);
+        const gain = reachDps(u, call, 0.86);
         if (gain <= 0) continue;
         /* what the hull's current target is worth once this gun is off it */
         const mine = reachDps(u, cur);
         c.dps -= mine;
         const left = callScore(cur, c);
-        if ((pass === 0 && left >= 0) || left >= best * 0.5 ||
+        if ((pass === 0 && left >= 0) || left * CALL_GAIN > best ||
             gain < mine * (left < 0 ? 0.25 : 0.6) || !u.retarget(call)) {
           c.dps += mine;
           continue;
@@ -6273,8 +9190,26 @@ function makeCommander() {
         moved++;
       }
     }
+    /* Hulls putting rounds into concrete that does not shoot while an ARMED
+       contact stands in their reach (measured: 845 hull-samples on
+       structures against 194 runs in one korea census, and none of them was
+       ever offered the call). Same terms as above - at least 0.6 of the
+       gun's present rate must go into the call from where it stands, and
+       retarget() applies acquire()'s own gates - so an MG team leaves a
+       barracks for a rifle squad and a tank gun stays on the factory. */
+    if (onBld && need > 0 && tally.get(call).armed) {
+      for (const u of onBld) {
+        if (need <= 0) break;
+        if (!autoFight(u) || (u._callT && now - u._callT < 3)) continue;
+        const gain = reachDps(u, call, 0.86);
+        if (gain <= 0 || gain < reachDps(u, u.order.target) * 0.6 || !u.retarget(call)) continue;
+        u._callT = now;
+        need -= gain * CALL_WIN;
+        moved++; callLog.offBld++;
+      }
+    }
     callLog.moved += moved;
-    if (!moved) callLog.dry++;
+    if (!moved) { if (soloBld) callLog.bldDry++; else callLog.dry++; }
   }
   function driveWave(wave, t) {
     if (!t) return;
@@ -6384,11 +9319,23 @@ function makeCommander() {
     for (const r of pool) if (coldableGun(r.key)) coldable++;
 
     const R6 = Math.pow(6 * CFG.TILE, 2), R10 = Math.pow(10 * CFG.TILE, 2);
+    /* THE VICTORY RULE. A production building is worth its WORTH row and
+       then some, and more the fewer of them we know of: with five on the plot
+       each is 1.3x plus PROD_BONUS, with two 1.75x, with the last one 2.5x -
+       a construction yard is then 6,400 against a refinery's 2,600 and the
+       wave goes for the win rather than the economy. Once commitNow() holds,
+       everything that is not production is worth half, so nothing else
+       outbids it. The count is the rival's, off our own plot. */
+    const nProd = foeField().prod;
+    const prodMul = 1 + 1.5 / Math.max(1, nProd);
+    const endgame = commitNow();
     const read = D.read === undefined ? 1 : D.read;
     const out = [];
     for (const r of pool) {
       let worth = worthOf(r.key);
       if (r.key === "power") worth += Math.min(4, coldable) * 260;
+      if (isProd(r.key)) worth = worth * prodMul + PROD_BONUS;
+      else if (endgame) worth *= 0.5;
       let dps = 0, reach = 0;
       for (const o of pool) {
         const d2 = U.dist2(r.x, r.y, o.x, o.y);
@@ -6452,6 +9399,13 @@ function makeCommander() {
   function aimMode(c, army) {
     if (!c) return "storm";
     if ((D.read || 0) < 0.55) return "storm";      // siege is a taught skill
+    /* A siege line is a ground manoeuvre from OUR side of the objective:
+       siegePoint() stands it on the line home, and on a split theatre that
+       line crosses the water, so the stand can snap to our own shore and
+       runSiege() would guard the landed troops at a point they cannot reach -
+       a failed route per unit per think. A landing has no tube line to bring;
+       it storms. */
+    if (!groundConnected) return "storm";
     if (c.price < c.worth * 0.45) return "storm";  // cheap enough to walk into
     let tubes = 0, reach = 0;
     for (const u of army) {
@@ -6574,7 +9528,7 @@ function makeCommander() {
     let far = 0;
     for (let i = 0; i < live.length; i++) {
       const u = live[i];
-      u.flankTo = null; u._homeRe = 0; u._homeT = 0;
+      u.flankTo = null; u._homeRe = 0; u._homeT = 0; u._goAt = 0;
       u.padTo = padBerth(c, i, !!depot);
       u.give({ type: "move", x: u.padTo.x, y: u.padTo.y });
       if (homeward.indexOf(u) < 0) homeward.push(u);
@@ -6664,7 +9618,9 @@ function makeCommander() {
      of opportunity and not a war aim, and it is never written off - a hauler
      that got away is not a strongpoint. */
   function raidAim(best) {
-    const hv = intelU(r => r.harvester, 6);
+    /* a rig on the road is a production building not yet put down; a lorry
+       is not worth breaking off the last building for */
+    const hv = intelU(r => (r.harvester && !commitNow()) || r.role === "mcv", 6);
     if (!hv.length) return null;
     const hs = ourHardShare();
     const read = D.read === undefined ? 1 : D.read;
@@ -6674,13 +9630,14 @@ function makeCommander() {
       if (!e) continue;
       const price = exposureAt(r.x, r.y, hs) * DWELL / HP_CR * read;
       const travel = U.dist(P.homeX, P.homeY, r.x, r.y) / CFG.TILE;
-      const s = (1800 - price) / (1 + travel * 0.045);
+      const s = (raidWorth(r) - price) / (1 + travel * 0.045);
       if (s > ps) { ps = s; pick = { r, e }; }
     }
     if (!pick || ps <= 0) return null;
     if (best && best.score >= ps) return null;
-    return { id: pick.r.id, x: pick.e.x, y: pick.e.y, ref: pick.e, key: "harvester",
-             t: G.time, mode: "raid", raid: true, worth: 1800, price: 0,
+    const rig = pick.r.role === "mcv";
+    return { id: pick.r.id, x: pick.e.x, y: pick.e.y, ref: pick.e, key: rig ? "mcv" : "harvester",
+             t: G.time, mode: "raid", raid: true, worth: raidWorth(pick.r), price: 0,
              score: ps, stand: null };
   }
 
@@ -6693,12 +9650,19 @@ function makeCommander() {
       const r = seenU.get(aim.id);
       if (!r || !trackedEntity(r)) return true;    // lost the track: it is gone
       aim.x = r.x; aim.y = r.y;                    // lorries move
-      return held > 15;
+      return held > (aim.key === "mcv" ? 30 : 15);
     }
     /* 1. gone - taken, or looked at and not there. forgetStale has already
           decided this properly; there is nothing to add. */
     const rec = seenB.get(aim.id);
     if (!rec || rec.gone || (aim.ref && aim.ref.dead)) return true;
+    /* Finishing them (commitNow). The last production building we know of
+       is held on to - a heavier loss before breaking off, no write-off for
+       being defended, no expiry - and any other aim is dropped at once so
+       warAim() can take it. */
+    const endgame = commitNow();
+    const holdOn = endgame && isProd(aim.key);
+    if (endgame && !holdOn) return true;
 
     /* 2. the wave is losing. Whatever is on that position, it is not coming
           down to what is left - and the NEXT wave must not be sent at it
@@ -6706,7 +9670,7 @@ function makeCommander() {
           dropped. This is the line that stops the commander feeding the same
           three tanks into the same three anti-tank guns for the rest of the
           battle. */
-    if ((D.read || 0) > 0 && waveSpent() > 0.55) {
+    if ((D.read || 0) > 0 && waveSpent() > (holdOn ? 0.8 : 0.55)) {
       shy(aim.id, D.waveTime || 150);
       /* Consume the book. Nothing else clears it until the next launch, so a
          wiped-out wave read as 100% spent on every later think and wrote off
@@ -6731,8 +9695,10 @@ function makeCommander() {
           aim.stand = siegePoint(c);
           return false;
         }
-        shy(aim.id, (D.waveTime || 150) * 0.8);
-        return true;
+        if (!holdOn) {
+          shy(aim.id, (D.waveTime || 150) * 0.8);
+          return true;
+        }
       }
       /* the reverse: the guns have done their work and the emplacements that
          made this a siege are off the plot. Walk in and take it. */
@@ -6743,7 +9709,7 @@ function makeCommander() {
     }
 
     /* 4. the hold expires. */
-    if (held >= (D.waveTime || 150) * 0.6) return true;
+    if (held >= (D.waveTime || 150) * 0.6 && !holdOn) return true;
 
     /* ...and only then, a materially better objective. 1.35x plus a flat 250
        credits, and never inside AIM_MIN seconds of the last change. Two
@@ -6798,6 +9764,9 @@ function makeCommander() {
       }
       pick = soft || any;
     }
+    /* finishing them: the best-scoring production building on the list,
+       whatever its price - it is the win */
+    if (commitNow()) for (const c of list) if (isProd(c.key)) { pick = c; break; }
     /* a hauler in the open beats a building only if it actually beats it */
     const raid = raidAim(pick);
     if (raid) { aim = raid; return aim; }
@@ -6817,6 +9786,256 @@ function makeCommander() {
   }
   function groundTarget() { return warAim(); }
 
+  /* ================= THE VICTORY RULE, AND WHEN TO GO ====================
+     A side is beaten when it has no live production building left - a
+     construction yard, barracks, war factory, airbase or naval yard
+     (Player.isProduction: def.base || def.produces; the lab is not one) -
+     with CFG.RIG_GRACE for a rig that has not deployed. That makes those structures the war aim in a way no
+     refinery is: everything else is attrition, these are the win.
+
+     Everything below reads the plot (seenB, seenU), our own force and our
+     own clock. Nothing reads an enemy list, bank or queue. "The enemy is down
+     to its last production building" is a BELIEF - the one we have looked at
+     is the only one we know of - which is exactly what a player acts on. */
+  const PROD_BONUS = 400, FORT_DPS = 35, RIG_WORTH = 2600;
+  /* The one definition every stream reads: the engine's own, so the aim,
+     the commit, the defence and the siting cannot drift from the rule that
+     decides the match. A lab counted here once kept commitNow() off while a
+     rival stood on its last factory and a known lab. */
+  function isProdDef(d) {
+    if (!d) return false;
+    return typeof Player !== "undefined" && Player.isProduction
+      ? Player.isProduction(d) : !!(d.base || d.produces);
+  }
+  function isProd(key) { return isProdDef(BUILDINGS[key]); }
+  /* ---- what we know of the other side's fighting weight ----
+     foeNear() answers "what is standing HERE" on a 90-second window, which
+     is right for a deferral at the gate. A launch asks a different question
+     - is our army heavier than theirs - and theirs is wherever it is. So:
+     every armed ground contact of the rival seen in the last 150 s, in the
+     same FORCE_W currency, fading with age; and the most we have ever been
+     shown at once, on a four-minute half-life, because an army we saw and
+     cannot see now has not gone home. A record we were LOOKING at when it
+     died - its sighting under five seconds old, the liveTrack() window every
+     gun in this file uses - is struck off for good (foeDead), which is the
+     only honest way to count our kills against their strength.
+     The same pass counts the rival's production on the plot and how much of
+     its works we have looked at lately (cover): a launch on the enemy's
+     weight is only as good as the look it was counted on.
+     COST: one pass over seenU and one over seenB (a look-grid read per
+     structure), memoised on the tick. */
+  function foeField(peek) {
+    const now = G.time;
+    /* peek (intel() only): the last think's memo, and nothing written */
+    if (foeMemo && (foeMemoT === now || peek)) return foeMemo;
+    if (peek) return null;
+    const rid = rival ? rival.idx : -1;
+    let w = 0;
+    for (const r of seenU.values()) {
+      if (r.own !== rid || r.harvester || !r.armed || r.layer !== "ground" || NO_FIGHT[r.role]) continue;
+      if (r.foeDead) continue;
+      const age = now - r.t;
+      if (age <= 5 && r.ref && r.ref.dead) {
+        /* we watched it die: it comes off the strongest army we remember as
+           well, so a wave that broke itself on our base can be answered */
+        r.foeDead = true;
+        foePeak = Math.max(0, foePeak - forceW(r.role, r.armor, r.cat));
+        continue;
+      }
+      if (age > 150) continue;
+      w += forceW(r.role, r.armor, r.cat) * (1 - age / 300);
+    }
+    foePeak *= Math.pow(0.5, (now - (foePeakT || now)) / 240);
+    foePeakT = now;
+    if (w > foePeak) foePeak = w;
+    /* cover: the share of their works we know of that a sensor of ours has
+       had IN VIEW in the last 45 s (seenB's t is refreshed on every
+       sighting). A structure we have not looked at lately is where an army we
+       have not counted can be standing. The first draft asked the look grid
+       for 150 s, and the opening scout pass alone then read cover 1 with the
+       army 0.45-0.77 seen of a real 2.1-2.7 - a stale glance let an
+       8-body wave leave at t~180. */
+    let lastLook = -1e9, prod = 0, nB = 0, fresh = 0;
+    for (const r of seenB.values()) {
+      if (r.own !== rid || r.gone) continue;
+      if (r.t > lastLook) lastLook = r.t;
+      if (isProd(r.key)) prod++;
+      nB++;
+      if (now - r.t < 45) fresh++;
+    }
+    if (rid >= 0 && prod > (prodPeakOf[rid] || 0)) prodPeakOf[rid] = prod;
+    if (prod !== 1) prodOneT = 0; else if (!prodOneT) prodOneT = now;
+    const cover = nB ? fresh / nB : 0;
+    foeMemo = { w, est: Math.max(w, foePeak), look: lastLook, prod, cover, nB,
+                peak: rid >= 0 ? (prodPeakOf[rid] || 0) : 0 };
+    foeMemoT = now;
+    return foeMemo;
+  }
+  /* ---- have we got them? ----
+     The rival's production on the plot is down to one, and we know that is
+     not merely all we have ever seen of it: either the plot once held two
+     or more at the same time, or every deployment site has been examined
+     and we have looked at their works in the last two minutes. From here the
+     commander stops attriting and finishes: that building is the aim, a
+     body leaves as soon as there is one, the hold does not expire and the
+     wave takes heavier losses before it breaks off (reviewAim). Ground
+     theatres only: a landing is not a way to hurry. The count has to have
+     read one for eight seconds: forgetStale() can strike a structure off for
+     a sweep when its footprint is overlooked and its centre is not, and a
+     one-sweep "last building" would send whatever is at home. */
+  function commitNow(peek) {
+    if ((D.read || 0) < 0.35 || !groundConnected || !rival) return false;
+    const ff = foeField(peek);
+    if (!ff || ff.prod !== 1 || !prodOneT || G.time - prodOneT < 8) return false;
+    /* The second path - never two at once on the plot - wants a real look:
+       after ten minutes, at least three of their structures known, most of
+       them in view in the last 45 s, every start examined. A probe of
+       kuwait read commit at t=300 on one seen yard (every start examined)
+       while the rival stood on six production buildings, and a commit
+       launches everything at minBody, lifts the home hold and halves every
+       other objective. */
+    return ff.peak >= 2 ||
+           (G.time > 600 && ff.nB >= 3 && ff.cover >= 0.8 && !hypo.length &&
+            G.time - ff.look < 120);
+  }
+  /* The fire on the war aim, as fighting weight. One emplacement puts out
+     about what one tank does - a GPMG nest some 29 a second into infantry,
+     an anti-tank gun some 23 into armour - so FORT_DPS of fire is one. */
+  function aimFort(peek) {
+    const now = G.time;
+    if (fortT === now || peek) return fortMemo;
+    fortT = now; fortMemo = 0;
+    if (aim && !aim.raid) {
+      const c = aimCand(aim.id);
+      if (c) fortMemo = (c.dps || 0) / FORT_DPS;
+    }
+    return fortMemo;
+  }
+  /* ---- WHEN TO GO ----
+     (measured) the launch test was `army.length >= wantSize * 0.8`, and
+     wantSize = D.waveSize + 2 * floor(t / 240) grows with the CLOCK. A
+     commander whose army shrank - two broken waves - faced a bar that rose
+     while it fell, and one never launched again in 1,500 s. And a commander
+     that could see its enemy had nothing waited for the same twenty bodies
+     as one looking at a tank corps: every land theatre was decided at
+     ~460 s by whichever side reached the count first.
+     The bar is relative to what this commander can field and what it has
+     SEEN now, with the old count kept:
+       full   the old test, unchanged - a full wave always goes
+       edge   our fighting weight beats theirs by a doctrine margin R -
+              Warlord 1.37, Elite 1.58, Regular 1.76, Fortress 1.9 - plus the
+              fire on the objective, after the first three minutes. THEIRS is
+              everything we have seen (foeField().est), half a tank for each
+              production building we know of, and - for the share of their
+              works NOT in view in the last 45 s - an army 0.6 the size of
+              our own, because an enemy we have not looked at is assumed to
+              have done nearly as well as we have. Solved for our weight that
+              is ours >= (R*seen + fort) / (1 - 0.6*R*(1-cover)): at Warlord
+              about 1.5x what we saw on a full look and 2.3x on a half look;
+              below half a look (or for a defensive doctrine) there is no
+              edge at all. (In a smoke run one side had seen 1.8 of a real
+              5.0 - what was seen alone is not an estimate.) It punishes a
+              greedy opponent we have actually scouted, and it lets a
+              beaten-down army go again once it is heavier than what beat it
+       stall  none for 2.5 wave cycles (the first counted from t=300) and at
+              least 0.9 of their seen weight: a stalemate is broken, not sat
+              out, and an army that plateaued under `full` still goes
+       end    commitNow(): their last production building, now
+     with a floor of bodies (35% of a wave, 4 to 10) under all but `full`,
+     so a three-tank "wave" is never sent. Held back (`home`) while a real
+     enemy force is at our works and we do not outweigh it there three to
+     one - the launch would take the hulls fighting it - unless we are
+     finishing them. Below D.read 0.35 there is no reading and on a
+     sea-split theatre a landing is not a probe: only `full` applies.
+     COST: ourForce() over the list; foeField() and aimFort() are memoised. */
+  function launchGate(army, peek) {
+    const now = G.time, n = army.length;
+    const base = groundConnected ? D.waveSize : Math.max(6, (D.waveSize * 0.7) | 0);
+    const full = (base + Math.floor(now / 240) * 2) * 0.8;
+    const minBody = U.clamp(Math.round(D.waveSize * 0.35), 4, 10);
+    const ff = foeField(peek), fort = aimFort(peek);
+    if (!ff) return null;
+    const ours = ourForce(army);
+    const R = U.clamp(2.0 - 0.3 * (D.aggro || 1), 1.2, 1.9);
+    const est = ff.est + 0.5 * ff.prod;
+    const den = 1 - 0.6 * R * (1 - ff.cover);
+    const bar = den > 0.05 ? Math.max(minBody * 0.4, (est * R + fort) / den) : Infinity;
+    let go = false, why = "";
+    if (n >= full) { go = true; why = "full"; }
+    else if ((D.read || 0) >= 0.35 && groundConnected && n >= minBody) {
+      /* `edge` needs a real look: half their known works in view within 45 s.
+         With nothing seen the prior term cancels and the bar is the body
+         floor alone, so without this a commander that had looked at nothing
+         went at 3.2. Not for a defensive doctrine (Fortress, aggro 0.35). */
+      const looked = ff.cover >= 0.5 && (D.aggro || 1) >= 0.5;
+      /* a commander that has never launched is stalled too, once the match
+         is old enough: an army that plateaued under `full` (smoke run: 16-17
+         bodies against 19.2-22.4, cash 0) otherwise never went at all */
+      const since = lastLaunchT > 0 ? now - lastLaunchT : now - 300;
+      if (commitNow(peek)) { go = true; why = "end"; }
+      else if (now > 180 && looked && ours >= bar) { go = true; why = "edge"; }
+      else if (since > (D.waveTime || 150) * 2.5 &&
+               n >= minBody + 2 && ours >= est * 0.9 + fort * 0.5) { go = true; why = "stall"; }
+    }
+    /* A launch takes every hull at home, including the ones fighting there.
+       Finishing them is exempt - but not inside a minute of a recall, or the
+       recalled wave is turned straight round (recallWave). Only a force at
+       the CORE holds it (within 16 tiles of production, or at home): with
+       yards spread across the map some outlying refinery is nearly always
+       being poked, and in the integration smoke run of korea that held a
+       42-body army at home in two samples of four. */
+    if (go && (why !== "end" || now < recallNext) &&
+        now - baseT < 15 && baseCoreW >= 1.2 && baseCoreW * 3 > baseHomeW) {
+      go = false; why = "home";
+    }
+    return { go, why, n, full, minBody, ours, bar, est, fort, cover: ff.cover };
+  }
+  /* a real force has been at our works in the last 45 s */
+  function underThreat() {
+    return G.time - baseT < 45 && baseW >= 0.5;
+  }
+  /* A lorry is 1,100 credits carrying 700. A rig is a production building
+     that has not been put down yet - with the enemy's last known one it is
+     very nearly the whole war. */
+  function raidWorth(r) {
+    if (r.role !== "mcv") return 1800;
+    return foeField().prod <= 1 ? RIG_WORTH * 1.6 : RIG_WORTH;
+  }
+  /* (which production building gets the next emplacement is defAnchor(),
+     in MACRO: one rule for the two designs that wanted it) */
+  function warBook() {
+    return { plans: 0, go: {}, commits: 0, staggered: 0, lastWait: 0,
+             recalls: 0, recalled: 0, raidSurplus: 0, raidLull: 0 };
+  }
+  /* for intel(): read-only. foeField() writes the peaks, prodOneT and
+     foeDead and aimFort() restarts the objectives survey, so the census
+     reads the last think's memos (peek) and never computes them - four
+     intelOf() calls a sample must not change what they measure. */
+  function warState() {
+    const ff = foeField(true), g = ff && launchGate(groundArmy(), true);
+    const r2 = (v) => Math.round(v * 100) / 100;
+    const logs = { plans: warLog.plans, go: Object.assign({}, warLog.go), commits: warLog.commits,
+                   staggered: warLog.staggered, lastWait: warLog.lastWait,
+                   recalls: warLog.recalls, recalled: warLog.recalled,
+                   raidSurplus: warLog.raidSurplus, raidLull: warLog.raidLull,
+                   offBld: callLog.offBld };
+    if (!g) return Object.assign({ gate: "n/a" }, logs);
+    return { gate: g.why || "shut", n: g.n, full: r2(g.full), minBody: g.minBody,
+             ours: r2(g.ours), bar: g.bar < 1e9 ? r2(g.bar) : -1, est: r2(g.est),
+             seen: r2(ff.w), cover: r2(ff.cover),
+             fort: r2(g.fort), lookAge: ff.look > -1e8 ? Math.round(G.time - ff.look) : -1,
+             prod: ff.prod, prodPeak: ff.peak, commit: commitNow(true),
+             waveT: Math.round(waveT),
+             sinceLaunch: lastLaunchT ? Math.round(G.time - lastLaunchT) : -1,
+             base: { w: r2(baseW), core: r2(baseCoreW), home: r2(baseHomeW),
+                     age: baseT > -1e8 ? Math.round(G.time - baseT) : -1 },
+             plans: warLog.plans, go: Object.assign({}, warLog.go), commits: warLog.commits,
+             staggered: warLog.staggered, lastWait: warLog.lastWait,
+             recalls: warLog.recalls, recalled: warLog.recalled,
+             raidSurplus: warLog.raidSurplus, raidLull: warLog.raidLull,
+             offBld: callLog.offBld };
+  }
+
   /* ====================== THE SECOND FRONT ==========================
      A raid: two to four fast hulls sent at the other side's ECONOMY, on an
      axis the main wave is not using, and brought home before they turn into
@@ -6835,11 +10054,11 @@ function makeCommander() {
      has paid for another.
 
      The rules that keep it a raid and not a leak:
-       1 SURPLUS ONLY. launchGroundWave() takes D.waveSize + 6 off the HEAD of
-         groundArmy() and think() only launches at wantSize * 0.8. The party
-         is cut from the TAIL past that cap, and only while the army without
-         it still meets both numbers - so a wave launched on this tick is the
-         identical wave, and one due later recalls the party (driveRaid).
+       1 NEVER SHORT A LAUNCH. A party goes when the army without it still
+         passes launchGate() on its own merits (a surplus), or when no wave
+         is out and no launch could use it now (a lull); driveRaid() recalls
+         a lull party the moment it becomes the difference between launching
+         and not.
          And at least as many hulls as it takes stay at home, outside any
          wave, for defendBase().
        2 NEVER IN TWO LISTS. groundArmy() leaves the party out, so the
@@ -6901,14 +10120,8 @@ function makeCommander() {
              skip: { army: 0, home: 0, pool: 0, target: 0, road: 0 } };
   }
 
-  /* The two numbers the main wave needs, restated from think() the way the
-     defence block's wantNow already restates them: `launch` is the gate
-     think() asks for, `full` is at least the wave launchGroundWave() takes. */
-  function raidFloor() {
-    const want = (groundConnected ? D.waveSize : Math.max(6, (D.waveSize * 0.7) | 0)) +
-                 Math.floor(G.time / 240) * 2;
-    return { launch: want * 0.8, full: Math.max(want, D.waveSize + 6) };
-  }
+  /* raidFloor() lived here: the launch count restated. The raid gate asks
+     launchGate() itself now, so the two cannot disagree. */
 
   /* Where a hull takes fuel: within BUILD_RADIUS of ANY structure we own, so
      the nearest one - fuelShort()'s reference point, for fuelShort()'s
@@ -7050,6 +10263,16 @@ function makeCommander() {
       if (age > RAID_SMEM) continue;
       offer(c.id, c.x, c.y, c.worth * (1 - 0.5 * age / RAID_SMEM), c.key);
     }
+    /* 3. A construction rig on the road. Under the victory rule an undeployed
+       rig is a production building that has not been put down yet; it is
+       unarmed and it is their expansion. Only a sighting under twenty
+       seconds old - a rig moves - and at the place it was seen. */
+    for (const r of seenU.values()) {
+      if (r.role !== "mcv" || r.own !== rival.idx || r.layer !== "ground" || r.foeDead) continue;
+      const age = now - r.t;
+      if (age > 20) continue;
+      offer("rig:" + r.id, r.x, r.y, raidWorth(r) * (1 - age / 40), "rig");
+    }
     return best;
   }
 
@@ -7067,6 +10290,7 @@ function makeCommander() {
   }
 
   function formRaid() {
+    if (atPeace) return;
     /* Raiding is a taught skill, as the siege is at aimMode(): below Veteran
        a commander advances and does nothing else. */
     if ((D.read || 0) < 0.55 || !groundConnected || !rival) return;
@@ -7074,33 +10298,24 @@ function makeCommander() {
     const now = G.time, T2 = CFG.TILE, log = raidLog;
     raidNext = now + RAID_RETRY;                  // every failure below waits
     const army = groundArmy();
-    const cap = D.waveSize + 6;
-    const size = U.clamp(Math.round(D.waveSize * 0.22), 2, 4);
-    /* ---- THE MAIN WAVE IS NOT WEAKENED ----
-       The first draft tested army - size against wantSize, but the wave is
-       army.slice(0, D.waveSize + 6), which is LARGER than wantSize for the
-       first twelve minutes - so at Veteran an army of 12 to 17 launched two
-       short, and short by exactly its fastest hulls. Both numbers now. */
-    if (army.length - size < raidFloor().full) { log.skip.army++; return; }
-    /* ---- AND THE BASE IS NOT EMPTIED ----
-       That floor counts a wave that is already OUT: groundArmy() keeps
-       attackWave members, and defendBase() skips every one of them. Where
-       full equals the cap - every tier, for the first twelve minutes - a
-       Commander wave of 24 across the map plus four fresh hulls at home is
-       an army of 28, which clears 28 - 4 >= 24, and the
-       tail past the cap is exactly those four: the raid would take the whole
-       reserve for a minute and a half with nothing to call it back. So as
-       many hulls as the party takes stay behind, outside any wave and not
-       riding in a landing craft. */
+    const want = U.clamp(Math.round(D.waveSize * 0.22), 2, 4);
+    /* Not while finishing them - everything goes at the last building - and
+       not while our own works are under attack. */
+    if (commitNow() || now - baseT < 20) { log.skip.army++; return; }
+    /* ---- THE BASE IS NOT EMPTIED ----
+       groundArmy() keeps attackWave members, and defendBase() skips every
+       one of them, so the hulls actually at home are counted here and as many
+       as the party takes stay behind, outside any wave and not riding in a
+       landing craft. */
     const away = new Set(attackWave);
     let home = 0;
     for (const u of army) if (!away.has(u) && !u.carried) home++;
-    if (home - size < size) { log.skip.home++; return; }
-    /* Only the tail past the wave cap - hulls launchGroundWave() would NOT
-       take if it ran on this tick - standing at home, nearly whole, nearly
-       full, and able to hit something on the ground. */
+    /* Any hull at home, not only the tail past the wave cap: the party leaves
+       groundArmy() the moment it forms, so no launcher can take it twice, and
+       whether the wave can spare it is the gate below. Standing at home,
+       nearly whole, nearly full, and able to hit something on the ground. */
     const pool = [];
-    for (let i = cap; i < army.length; i++) {
+    for (let i = 0; i < army.length; i++) {
       const u = army[i];
       /* Aboard an LST: give() returns at once for a carried hull, and runAmphib()
          stops once pickRival() finds a road, so it may never be put ashore. */
@@ -7123,9 +10338,35 @@ function makeCommander() {
       }
       if (ground) pool.push(u);
     }
-    if (pool.length < size) { log.skip.pool++; return; }
+    /* A party of two or three when that is what is standing at home: the
+       fast-hull whitelist is short, and (smoke run) a four-hull party was
+       refused on the pool on almost every attempt. */
+    const size = Math.min(want, pool.length);
+    if (size < 2) { log.skip.pool++; return; }
+    if (home - size < size) { log.skip.home++; return; }
     pool.sort((a, b) => (b.def.speed || 0) - (a.def.speed || 0));
     const party = pool.slice(0, size);
+    /* ---- A SURPLUS, OR A LULL ----
+       (measured) the gate was `army - size >= max(wantSize, D.waveSize + 6)`,
+       thirty and more at Warlord, and no army ever got there: skip.army on
+       every attempt, no raid formed in any census. What the rule is FOR is
+       that a party never shorts a launching wave, and launchGate() answers
+       that directly. A party may go when:
+         surplus  the army without it still passes the gate on its own
+                  merits (full or edge), or
+         lull     no wave is out and no launch can use it now: the launch is
+                  not due inside RAID_WARN + 25 s, or the gate is shut with
+                  the party at home anyway.
+       A lull party is recalled by driveRaid() the moment it becomes the
+       difference between launching and not. */
+    const inParty = new Set(party);
+    const rest = [];
+    for (const u of army) if (!inParty.has(u)) rest.push(u);
+    const gRest = launchGate(rest);
+    const surplus = gRest.go && (gRest.why === "full" || gRest.why === "edge");
+    const lull = !surplus && !attackWave.length &&
+                 (waveT > RAID_WARN + 25 || !launchGate(army).go);
+    if (!surplus && !lull) { log.skip.army++; return; }
     let cx = 0, cy = 0, sp = 9, fuel = 100;
     for (const u of party) {
       cx += u.x; cy += u.y;
@@ -7171,6 +10412,7 @@ function makeCommander() {
       u.give({ type: "attackmove", x: t.x, y: t.y });
     }
     log.formed++;
+    if (surplus) warLog.raidSurplus++; else warLog.raidLull++;
   }
 
   function driveRaid() {
@@ -7227,8 +10469,8 @@ function makeCommander() {
        back into groundArmy(). Only when that changes something: a launch
        that stays blocked with the party home as well is not worth a recall. */
     if (waveT < RAID_WARN) {
-      const f = raidFloor(), ga = groundArmy().length;
-      if (ga < f.full && ga + keep.length >= f.launch) { stop("wave", 0, 20); return; }
+      const ga = groundArmy();
+      if (!launchGate(ga).go && launchGate(ga.concat(keep)).go) { stop("wave", 0, 20); return; }
     }
     /* a gun nobody had seen when the target was picked */
     if (exposureAt(cx, cy, 1) > RAID_FIRE * 1.5) { stop("fire", blame, RAID_GAP); return; }
@@ -7242,7 +10484,7 @@ function makeCommander() {
       const age = now - r.t;
       if (age > 8) continue;
       const d = U.dist(r.x, r.y, cx, cy);
-      if (r.harvester) {
+      if (r.harvester || r.role === "mcv") {
         if (r.own === raidTo.own && d < pd) { pd = d; prey = r; }
       } else if (r.armed && age <= 4 && d < T2 * 9) {
         foes += r.armor === "heavy" ? 1.5 : (r.cat === "infantry" ? 0.5 : 1);
@@ -7370,125 +10612,1156 @@ function makeCommander() {
   function shyKey(x, y) {
     return (((y / CFG.TILE / SHY_CELL) | 0) << 10) | ((x / CFG.TILE / SHY_CELL) | 0);
   }
-  function scoutGoal(scout) {
-    const now = G.time, T2 = CFG.TILE, M = G.map;
+  /* ========================== RECONNAISSANCE ===========================
+     (owner) "ai should scout and expand quickly and develop quickly."
+     (owner) "ai should have the same fog like us. don't assume and make ai
+     know everything."
+
+     What the scouts were doing, and why each piece below exists:
+
+       - THEY RAN DRY AND STAYED THERE. A ground hull burns CFG.FUEL_BURN_LAND
+         (1.5/s x fuelMul) whenever it moves and refuels only inside
+         CFG.BUILD_RADIUS of a structure we own, so a Humvee's full tank is
+         about sixty-seven seconds of driving - some 170 tiles on good going.
+         Goals were priced on staleness and distance and never on fuel: a first
+         leg of 40 to 70 tiles to the enemy start (kuwait 40, fulda 41, korea
+         70) and then the ore-block tour ended with the car at zero wherever it
+         happened to be. A dry scout is still alive, so it still counted
+         against D.scouts and was never replaced. Every goal is now priced out
+         AND back, a scout turns for refuelling ground while it can still reach
+         it, and a dry one is written off as a fixed post so the purchase
+         replaces it.
+       - THEY WERE SKIPPED. The sweep sat at the foot of think(), below fifteen
+         `... && tryBuildUnit(..)) return;` lines, so any think that bought an
+         aircraft, a hull or a launcher left every scout unmanaged. It runs off
+         update() on its own clock now, the way the raid driver does.
+       - THEY WERE BOUGHT BEHIND THE ARMY GATE and counted without the queue,
+         so none was bought while the army was at strength and two on the ramp
+         read as none: korea P0 held four recon against a target of three at
+         t=300.
+       - THEY NEVER LOOKED FOR OIL. expandNode() takes only a node whose tile
+         this commander has overlooked - the player's own fog rule - and the
+         goal list was start sites, ore blocks, the flanks of seen structures
+         and the lane to the objective. A node away from ore was found by
+         accident or not at all: taiwan P1 read node=false for the whole
+         1,200 s battle with a free node 32 tiles from its yard. The search
+         grid below reaches ground none of those families does, weighted to
+         the band a rig can drive to.
+       - THEY NEVER WENT BACK. After the first look at the enemy start a
+         remembered structure re-entered the auction at 1.3 x a ceiling of 300
+         against 1.6 x 900 for any unvisited ore block, so the barracks and the
+         factory put up after minute one were first seen when the wave got
+         there (fulda: one or two objectives known at t=150 and t=300). Under
+         the defeat rule a production building IS the war aim, so it is looked
+         at again on a timer - D.scoutT x RELOOK_K, 72 s at Warlord and 280 s
+         at Recruit - which is also what keeps seenU, and so counterMix(),
+         supplied with what is standing around it.
+       - THEY COULD NOT CROSS WATER AND NOTHING ELSE LOOKED. Taiwan: both seats
+         held seenUnits=0 for 1,200 s. A ground goal is now filtered to the
+         scout's own landmass (one terrain flood fill a battle), and where the
+         rival cannot be walked to, one surface hull and - when the ramp can
+         spare one - one aircraft are detailed as eyes.
+       - THREE SCOUTS DID ONE JOB. All of them ran the same auction, so the
+         first bid of the battle sent every scout at the same start site. Now
+         one FINDS (start sites, then the enemy's production on the timer, then
+         the ground around it), one PROSPECTS (the expansion band and the oil
+         already seen), one PICKETS (the narrowest point of the route the enemy
+         has to use, held for POST_HOLD seconds at a time), and a place another
+         scout is already driving to is not bid.
+
+     FOG. What is priced here is terrain (published), our own units and
+     buildings, the look grid our own sensors painted, and the seenB / seenU
+     plot - nothing else. An oil node exists for this code only once its tile
+     has been overlooked, its occupant is known only from seenB, and the only
+     footprints a goal is kept off are our OWN (G.occ is read for our own
+     building ids and nothing else - the earlier test read today's enemy
+     occupancy off a look up to four seconds old). The scout sees exactly what its own sightR() lets
+     intelSweep() write down; nothing here writes the picture.
+
+     COST. driveScouts() runs every two seconds: one pass over P.units and
+     P.buildings, per-scout arithmetic, and scoutGoal() only for a scout that
+     needs a task - a few times a minute each. scoutGoal() is at most ~324
+     search cells x (five look reads and a few compares), with a cheap score
+     cut-off before the dearer tests, plus the plot, the ore blocks and the
+     oil nodes: tens of thousands of operations, not per frame and never
+     units x units. The two flood fills (ground and sea, 20,736 tiles each)
+     and the cell table are built once a battle. The pump field - a bucket
+     Dijkstra over the same tiles, ~2e5 compares - is rebuilt when the pumps
+     change, at most every fifteen seconds and at least every sixty, and for
+     the sea only while a sea scout exists. The picket's route is the
+     A* pickRival() already runs every 25 s, cached, and its choke is
+     re-measured once a minute over at most ~40 route points x 14 tiles.   */
+  const RECON_CELL = 8;          // tiles per search cell: 18 x 18 over a 144 map
+  const POST_HOLD = 45;          // seconds a picket watches from its post
+  const RELOOK_K = 4;            // production is re-examined every D.scoutT x this
+  const CLAIM_R = 10;            // tiles: two scouts closer than a sight radius overlap
+  const CELL_DX = [0, -3, 3, -3, 3], CELL_DY = [0, -3, -3, 3, 3];
+  /* Air defence on a CONTACT is the catalogue reach written down at contact
+     (noteSighting: G.airDefenceReach off the published table), drawn the way
+     the engine draws its own threat ring - 1.25x plus a 2.5-tile margin. A
+     class table here missed corvettes and carriers (10.6) and under-ringed
+     SPAAG (10.8) and MANPADS (10.2) once generations.js rebuilt the ranges.
+     Structures use aaProfile() off the same table. */
+  /* ...and the surface gun and missile reach of a hull, by class: patrol hmg
+     5.4, corvette 57 mm 7.2, destroyer 127 mm 11, missile boat SSM 13.5,
+     cruiser 203 mm 17 */
+  const SEA_R = { patrol: 7, corvette: 9, destroyer: 12, missileboat: 15, cruiser: 18 };
+  /* how much each kind of look is worth to each job */
+  const SCOUT_WT = {
+    find:     { relook: 1.5, abeam: 1.3, ore: 1.0, oil: 0.6, cell: 1.0, lane: 1.1, post: 0 },
+    prospect: { relook: 0.5, abeam: 0.6, ore: 1.4, oil: 1.6, cell: 1.3, lane: 0.3, post: 0 },
+    picket:   { relook: 0.3, abeam: 0.3, ore: 0.3, oil: 0.5, cell: 0.3, lane: 0.3, post: 1 },
+    sea:      { relook: 1.5, abeam: 1.2, ore: 0,   oil: 0.4, cell: 1.0, lane: 1.0, post: 0 },
+    air:      { relook: 1.6, abeam: 1.3, ore: 0.5, oil: 0.8, cell: 1.0, lane: 1.0, post: 0 },
+  };
+  const FUEL_EDGE = { ground: 9, sea: 6, air: 0 };   // tiles inside which a hull tops up
+
+  function scoutLogNew() {
+    return { sweeps: 0, runs: 0, refuels: 0, stalls: 0, unreach: 0, none: 0,
+             stranded: 0, posts: 0, seaTasked: 0, airTasked: 0, airFreed: 0, oneway: 0,
+             jobs: {}, fam: {} };
+  }
+  /* (a structure whose loss takes a production queue away is isProd(),
+     defined once beside the war aim) */
+  /* The rival's production as the plot has it - for the targeting code as much
+     as for the re-look timer. */
+  function prodSeen() {
+    const out = [], rid = rival ? rival.idx : -1;
+    for (const r of seenB.values())
+      if (!r.gone && r.own >= 0 && (rid < 0 || r.own === rid) && isProd(r.key)) out.push(r);
+    return out;
+  }
+  /* ---- every oil node this commander has actually overlooked ----
+     With what its own sensors say about it: `ours` off our own buildings,
+     `foe` off a remembered derrick standing on it, `age` off the look grid.
+     A node on ground nobody of ours has looked at is not in the list at all,
+     and G.map.oilNodes[].taken - which flips when ANY player drills anywhere -
+     is never read. This is the list the expansion code should plan from. */
+  function oilKnown() {
+    const out = [], M = G.map, W = M.W, now = G.time;
+    if (!look) return out;
+    const dd = BUILDINGS.derrick || { w: 2, h: 2 };
+    for (const n of M.oilNodes) {
+      const b = look[n.y * W + n.x];
+      if (!b) continue;
+      let ours = false, foe = false;
+      for (const o of P.buildings) {
+        if (o.dead || o.def.id !== "derrick") continue;
+        if (n.x >= o.tx && n.x < o.tx + o.def.w && n.y >= o.ty && n.y < o.ty + o.def.h) { ours = true; break; }
+      }
+      if (!ours) for (const r of seenB.values()) {
+        if (r.gone || r.key !== "derrick") continue;
+        if (n.x >= r.tx && n.x < r.tx + dd.w && n.y >= r.ty && n.y < r.ty + dd.h) { foe = true; break; }
+      }
+      out.push({ x: n.x, y: n.y, age: now - b * 4, ours, foe });
+    }
+    return out;
+  }
+
+  /* ---- which ground joins which ----
+     Terrain never changes at runtime, so the answer is computed once a battle
+     per layer. Four-way, because Path.find refuses a diagonal step through a
+     blocked orthogonal and is therefore exactly as connected as this. 0 means
+     impassable. Uint16: a 144 map cannot hold 65,535 separate pieces. */
+  function compOf(layer) {
+    if (layer === "air") return null;
+    const sea = layer !== "ground";
+    const have = sea ? seaComp : gndComp;
+    if (have) return have;
+    const M = G.map, W = M.W, H = M.H, N = W * H, ly = sea ? "sea" : "ground";
+    const lab = new Uint16Array(N), stack = new Int32Array(N);
+    let id = 0;
+    for (let i = 0; i < N; i++) {
+      if (lab[i] || !GameMap.passable(M, i % W, (i / W) | 0, ly)) continue;
+      id = Math.min(65535, id + 1);
+      let sp = 0;
+      stack[sp++] = i; lab[i] = id;
+      while (sp) {
+        const c = stack[--sp], cx = c % W, cy = (c / W) | 0;
+        for (let d = 0; d < 4; d++) {
+          const nx = cx + (d === 0 ? 1 : d === 1 ? -1 : 0);
+          const ny = cy + (d === 2 ? 1 : d === 3 ? -1 : 0);
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const j = ny * W + nx;
+          if (lab[j] || !GameMap.passable(M, nx, ny, ly)) continue;
+          lab[j] = id; stack[sp++] = j;
+        }
+      }
+    }
+    if (sea) seaComp = lab; else gndComp = lab;
+    return lab;
+  }
+  /* the piece a unit is standing on; a unit on a bridge end or a shore tile
+     reads its neighbour's. 0 = unknown, and unknown filters nothing. */
+  function compAt(lab, x, y) {
+    const W = G.map.W, H = G.map.H;
+    const tx = (x / CFG.TILE) | 0, ty = (y / CFG.TILE) | 0;
+    for (let r = 0; r <= 1; r++)
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        const nx = tx + dx, ny = ty + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const c = lab[ny * W + nx];
+        if (c) return c;
+      }
+    return 0;
+  }
+  /* ---- the search grid ----
+     One representative tile per cell and layer - the passable tile nearest
+     the cell's middle - found once. -1 where the layer has no tile at all. */
+  function reconCells() {
+    if (reconGrid) return reconGrid;
+    const M = G.map, C = RECON_CELL, W = M.W;
+    const pick = (x0, y0, x1, y1, mx, my, layer) => {
+      let best = -1, bd = 1e9;
+      for (let y = Math.max(1, y0); y < Math.min(M.H - 1, y1); y++)
+        for (let x = Math.max(1, x0); x < Math.min(W - 1, x1); x++) {
+          if (!GameMap.passable(M, x, y, layer)) continue;
+          const d = (x - mx) * (x - mx) + (y - my) * (y - my);
+          if (d < bd) { bd = d; best = y * W + x; }
+        }
+      return best;
+    };
+    reconGrid = [];
+    for (let y0 = 0; y0 < M.H; y0 += C) for (let x0 = 0; x0 < W; x0 += C) {
+      const x1 = Math.min(W, x0 + C), y1 = Math.min(M.H, y0 + C);
+      const mx = (x0 + x1) >> 1, my = (y0 + y1) >> 1;
+      reconGrid.push({ cx: mx, cy: my, g: pick(x0, y0, x1, y1, mx, my, "ground"),
+                       s: pick(x0, y0, x1, y1, mx, my, "sea") });
+    }
+    return reconGrid;
+  }
+  /* What a look at a cell is worth, off five sample tiles: ground nobody has
+     ever overlooked is worth 900, the same figure the old bid gave virgin
+     ground, scaled a little by how much of the cell it is; a cell we have
+     seen is worth its age, capped at 300, and nothing inside 45 s. */
+  function cellNews(c, now) {
+    const M = G.map, W = M.W;
+    let unseen = 0, oldest = 0;
+    for (let k = 0; k < 5; k++) {
+      const x = U.clamp(c.cx + CELL_DX[k], 0, W - 1), y = U.clamp(c.cy + CELL_DY[k], 0, M.H - 1);
+      const b = look[y * W + x];
+      if (!b) unseen++;
+      else { const a = now - b * 4; if (a > oldest) oldest = a; }
+    }
+    if (unseen) return 900 * (0.5 + 0.1 * unseen);
+    return oldest < 45 ? 0 : Math.min(300, oldest);
+  }
+
+  /* ---- fuel: where a hull can top up, and what a leg costs ----
+     The same rules the engine applies to everybody: a ground hull refuels
+     inside CFG.BUILD_RADIUS of any structure of ours that is not a field
+     obstacle, a ship within eight tiles of a naval yard, an aeroplane on its
+     own ramp. The ground list is thinned to one structure per six-tile block. */
+  let fuelAt = { ground: [], sea: [], air: [] };
+  function refreshAnchors() {
+    const g = [], s = [], a = [], seen = new Set();
+    for (const b of P.buildings) {
+      if (b.dead || b.buildProgress < 1 || !b.def || b.def.obstacle) continue;
+      if (b.def.produces === "naval") s.push(b);
+      if (b.def.produces === "aircraft") a.push(b);
+      const k = ((b.ty / 6) | 0) * 1024 + ((b.tx / 6) | 0);
+      if (seen.has(k)) continue;
+      seen.add(k); g.push(b);
+    }
+    fuelAt = { ground: g, sea: s, air: a };
+  }
+  function fuelKey(s) { return s.layer === "air" ? "air" : s.cat === "naval" ? "sea" : "ground"; }
+  function nearestFuel(key, x, y) {
+    let best = null, bd = Infinity;
+    for (const b of fuelAt[key]) {
+      const d = U.dist2(x, y, b.x, b.y);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best ? { b: best, d: Math.sqrt(bd) / CFG.TILE } : null;
+  }
+  /* ---- how far the pumps are, by the road the hull will actually take ----
+     Priced first on the straight line, and measured on korea that was wrong
+     by the whole margin: the outbound leg to the enemy start ran 1.1x the
+     crow's distance, the leg home from the cell beyond it 1.6x, and the car
+     that had turned for home at 45 fuel, 68 tiles out, ran dry 14 tiles short
+     of the refuelling edge. The road between the two korean starts is 100
+     tiles against 70 straight; this field puts the enemy start 90 seconds
+     from our pumps at speed 1, which a Humvee (2.85 t/s, 1.5 fuel/s) cannot
+     go out to and come back from on one tank - and now knows it cannot.
+     So: a multi-source Dijkstra from every tile where the layer tops up,
+     costed as Path.find costs a step - the step over the terrain speed, no
+     corner cutting - which makes the value "seconds at speed 1", and a leg's
+     fuel is value / speed x burn. Dial's bucket queue on integer tenths over a
+     per-tile cost table built once a battle: typed arrays and int stacks, no
+     heap, no per-node allocation. Measured under jsc on korea and fulda,
+     2-9 ms a build once warm. Rebuilt when the set of pumps changes, at most
+     every fifteen seconds, and every sixty regardless - a pump lost makes the
+     old field optimistic, a pump gained only makes it cautious. */
+  const FIELD_NB = 128, FIELD_INF = 65535;
+  const homeField = { ground: null, sea: null }, fieldCost = { ground: null, sea: null };
+  const fieldT = { ground: -1e9, sea: -1e9 }, fieldSig = { ground: -1, sea: -1 };
+  let fieldBk = null;
+  function fieldReset() {
+    homeField.ground = homeField.sea = null;
+    fieldCost.ground = fieldCost.sea = null;
+    fieldT.ground = fieldT.sea = -1e9;
+    fieldSig.ground = fieldSig.sea = -1;
+  }
+  function costOf(key) {
+    if (fieldCost[key]) return fieldCost[key];
+    const M = G.map, W = M.W, N = W * M.H, ly = key === "sea" ? "sea" : "ground";
+    const c = new Uint8Array(N);
+    for (let i = 0; i < N; i++) {
+      const x = i % W, y = (i / W) | 0;
+      if (!GameMap.passable(M, x, y, ly)) continue;
+      c[i] = Math.max(1, Math.min(90, Math.round(10 / Math.max(0.15, GameMap.speedAt(M, x, y, ly)))));
+    }
+    return (fieldCost[key] = c);
+  }
+  function fieldOf(key) {
+    if (key === "air") return null;
+    const now = G.time, anchors = fuelAt[key];
+    let sig = anchors.length * 7919;
+    for (const b of anchors) sig = (sig * 31 + b.id) % 1000000007;
+    const have = homeField[key], age = now - fieldT[key];
+    if (have && age < 60 && (sig === fieldSig[key] || age < 15)) return have;
+    fieldT[key] = now; fieldSig[key] = sig;
+    const M = G.map, W = M.W, H = M.H, cost = costOf(key);
+    const dist = have || (homeField[key] = new Uint16Array(W * H));
+    dist.fill(FIELD_INF);
+    if (!fieldBk) { fieldBk = []; for (let i = 0; i < FIELD_NB; i++) fieldBk.push([]); }
+    for (const bk of fieldBk) bk.length = 0;
+    const R = FUEL_EDGE[key], MASK = FIELD_NB - 1;
+    let pending = 0;
+    for (const b of anchors) {
+      const cx = b.tx + b.def.w / 2, cy = b.ty + b.def.h / 2;
+      const y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.min(H - 1, Math.ceil(cy + R));
+      const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(W - 1, Math.ceil(cx + R));
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const i = y * W + x;
+        if (dist[i] === 0 || !cost[i] || (x - cx) * (x - cx) + (y - cy) * (y - cy) > R * R) continue;
+        dist[i] = 0; fieldBk[0].push(i); pending++;
+      }
+    }
+    const relax = (j, nd) => {
+      if (nd >= dist[j]) return;
+      dist[j] = nd; fieldBk[nd & MASK].push(j); pending++;
+    };
+    for (let cur = 0; pending > 0 && cur < FIELD_INF - FIELD_NB; cur++) {
+      const bk = fieldBk[cur & MASK];
+      while (bk.length) {
+        const i = bk.pop(); pending--;
+        if (dist[i] !== cur) continue;              // improved since it was queued
+        const cx = i % W;
+        const cL = cx > 0 ? cost[i - 1] : 0, cR = cx < W - 1 ? cost[i + 1] : 0;
+        const cU = i >= W ? cost[i - W] : 0, cD = i < (H - 1) * W ? cost[i + W] : 0;
+        let c;
+        if (cL) relax(i - 1, cur + cL);
+        if (cR) relax(i + 1, cur + cR);
+        if (cU) relax(i - W, cur + cU);
+        if (cD) relax(i + W, cur + cD);
+        /* a diagonal only past two open orthogonals, as Path.find allows */
+        if (cL && cU && (c = cost[i - W - 1])) relax(i - W - 1, cur + ((c * 1.414 + 0.5) | 0));
+        if (cR && cU && (c = cost[i - W + 1])) relax(i - W + 1, cur + ((c * 1.414 + 0.5) | 0));
+        if (cL && cD && (c = cost[i + W - 1])) relax(i + W - 1, cur + ((c * 1.414 + 0.5) | 0));
+        if (cR && cD && (c = cost[i + W + 1])) relax(i + W + 1, cur + ((c * 1.414 + 0.5) | 0));
+      }
+    }
+    return dist;
+  }
+  /* seconds-at-speed-1 from this point to the pumps; Infinity if none reach */
+  function homeTime(key, x, y) {
+    if (key === "air") {
+      const nf = nearestFuel("air", x, y);
+      return nf ? nf.d : U.dist(x, y, P.homeX, P.homeY) / CFG.TILE;
+    }
+    const f = fieldOf(key);
+    const tx = U.clamp((x / CFG.TILE) | 0, 0, G.map.W - 1), ty = U.clamp((y / CFG.TILE) | 0, 0, G.map.H - 1);
+    const v = f[ty * G.map.W + tx];
+    return v === FIELD_INF ? Infinity : v / 10;
+  }
+  function burnOf(s) {
+    const mul = (FACTIONS[P.faction] || {}).fuelMul || 1;
+    if (s.layer === "air") return (s.airBurn ? s.airBurn() : CFG.FUEL_BURN_AIR) * mul;
+    return (s.cat === "naval" ? CFG.FUEL_BURN_SEA : CFG.FUEL_BURN_LAND) * mul;
+  }
+  /* Fuel for `t` seconds-at-speed-1 of driving: the listed speed, never more
+     than the hull is making right now (supply strain slows a car that has been
+     out a while), a fifth on top and eight in hand. */
+  function fuelFor(s, t) {
+    const burn = burnOf(s);
+    if (!burn || !s.fuelMax) return 0;
+    const sm = s.speedMul ? s.speedMul() : 1;
+    const sp = Math.max(0.3, s.def.speed * U.clamp(sm || 1, 0.6, 1));
+    return Math.max(0, t) / sp * burn * 1.2 + 8;
+  }
+  function fuelOk(s, x, y, trip) {
+    if (!s.fuelMax || !burnOf(s)) return true;
+    const key = fuelKey(s);
+    const back = homeTime(key, x, y);
+    if (back === Infinity) return false;
+    /* an aeroplane turns for home at forty per cent on its own, so the leg out
+       has to come out of what is above that - or above the distance reserve,
+       if the goal is further out than forty per cent will carry it back */
+    if (key === "air")
+      return s.fuel >= fuelFor(s, trip) + Math.max(s.fuelMax * 0.4, fuelFor(s, back));
+    /* the leg out: at least the straight line with a margin, and at least the
+       difference between the two ends' distances home, which the road cannot
+       beat (triangle inequality on the field) */
+    const here = homeTime(key, s.x, s.y);
+    const out = Math.max(trip * 1.15, here === Infinity ? 0 : Math.abs(back - here));
+    return s.fuel >= fuelFor(s, out + back);
+  }
+  /* Home by the field's own gradient, not the crow's line to the nearest
+     building: from the car's tile, step to the cheapest neighbour until the
+     pumps, and drive there. A few hundred compares. */
+  function goRefuel(s, nf) {
+    const T = CFG.TILE, key = fuelKey(s), M = G.map, W = M.W;
+    let x, y;
+    const f = fieldOf(key);
+    let tx = U.clamp((s.x / T) | 0, 0, W - 1), ty = U.clamp((s.y / T) | 0, 0, M.H - 1);
+    if (f && f[ty * W + tx] !== FIELD_INF) {
+      for (let n = 0; n < 400 && f[ty * W + tx] > 0; n++) {
+        let bx = tx, by = ty, bv = f[ty * W + tx];
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = tx + dx, ny = ty + dy;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= M.H) continue;
+          const v = f[ny * W + nx];
+          if (v < bv) { bv = v; bx = nx; by = ny; }
+        }
+        if (bx === tx && by === ty) break;
+        tx = bx; ty = by;
+      }
+      x = (tx + 0.5) * T; y = (ty + 0.5) * T;
+    } else {
+      if (!nf) return;
+      const b = nf.b, d = Math.max(1, U.dist(s.x, s.y, b.x, b.y));
+      const k = Math.min(d, Math.max(1, FUEL_EDGE[key] - 3) * T) / d;
+      x = b.x + (s.x - b.x) * k; y = b.y + (s.y - b.y) * k;
+    }
+    const o = s.order;
+    /* give() drops the path, so the same order is not handed out twice */
+    if (o && o.type === "move" && U.dist(o.x, o.y, x, y) < T * 3) return;
+    s.give({ type: "move", x, y });
+  }
+  function clearGoal(s) { s._scoutEnd = 0; s._scoutGoal = null; s._postUntil = 0; }
+  let oneWayT = 0;               // the next time a car may be spent on a one-way look
+  function rivalOnPlot() {
+    const rid = rival ? rival.idx : -1;
+    for (const r of seenB.values())
+      if (!r.gone && r.own >= 0 && (rid < 0 || r.own === rid)) return true;
+    return false;
+  }
+
+  /* ---- the picket's posts ----
+     The route pickRival() planned to where we believe the rival lives, walked
+     in two-tile steps between a quarter and three-fifths of the way, measuring
+     how much passable ground lies across it within seven tiles either side.
+     The narrowest place is where anything coming has to pass, and the post is
+     three tiles back from it on our side so the gap is watched rather than
+     blocked. The second post is the route at 55%, further forward. Terrain and
+     our own belief about their home; nothing else. */
+  let postList = null, postT = -1e9;
+  function picketPosts() {
+    if (postList && G.time - postT < 60) return postList;
+    postT = G.time; postList = [];
+    const path = rivalPath, M = G.map, T2 = CFG.TILE;
+    if (!path || path.length < 1) return postList;
+    const hx = P.homeX / T2, hy = P.homeY / T2;
+    const segs = [];
+    let px = hx, py = hy, total = 0;
+    for (const q of path) {
+      const L = U.dist(px, py, q.x, q.y);
+      if (L > 0.01) { segs.push({ x0: px, y0: py, x1: q.x, y1: q.y, L }); total += L; }
+      px = q.x; py = q.y;
+    }
+    if (total < 16) return postList;
+    let acc = 0, bestS = Infinity, choke = null, fwd = null;
+    for (const sg of segs) {
+      const ux = (sg.x1 - sg.x0) / sg.L, uy = (sg.y1 - sg.y0) / sg.L;
+      for (let t = 0; t < sg.L; t += 2) {
+        const frac = (acc + t) / total;
+        if (frac < 0.25 || frac > 0.6) continue;
+        const x = sg.x0 + ux * t, y = sg.y0 + uy * t;
+        let wide = 1;
+        for (let side = -1; side <= 1; side += 2)
+          for (let k = 1; k <= 7; k++) {
+            if (!GameMap.passable(M, Math.round(x - uy * k * side), Math.round(y + ux * k * side), "ground")) break;
+            wide++;
+          }
+        const sc = wide + Math.abs(frac - 0.4) * 4;
+        if (sc < bestS) { bestS = sc; choke = { x, y }; }
+        if (!fwd && frac >= 0.55) fwd = { x, y };
+      }
+      acc += sg.L;
+    }
+    const place = (p, back) => {
+      const dx = hx - p.x, dy = hy - p.y, L = Math.hypot(dx, dy) || 1;
+      const tx = Math.round(p.x + dx / L * back), ty = Math.round(p.y + dy / L * back);
+      const n = GameMap.passable(M, tx, ty, "ground") ? { x: tx, y: ty }
+              : Path.nearest(M, tx, ty, "ground", null, 3);
+      if (!n) return;
+      const wx = (n.x + 0.5) * T2, wy = (n.y + 0.5) * T2;
+      if (exposureAt(wx, wy, SCOUT_HS) > SCOUT_DANGER) return;
+      postList.push({ x: wx, y: wy });
+    };
+    if (choke) place(choke, 3);
+    if (fwd && (!choke || U.dist(fwd.x, fwd.y, choke.x, choke.y) > 8)) place(fwd, 0);
+    return postList;
+  }
+
+  /* ---- who scouts, and at what ----
+     Ground scouts by the order they were built, so a job does not hop from car
+     to car. Where the rival cannot be walked to, the ground's work is the home
+     landmass: its oil and its coast. */
+  function jobFor(i, n) {
+    if (!groundConnected) return i === 1 ? "picket" : "prospect";
+    if (n <= 1 || i === 0) return "find";
+    if (i === 1) return "prospect";
+    if (i === 2) return "picket";
+    return i % 2 ? "prospect" : "find";
+  }
+  /* One surface hull is detailed as eyes where the rival is across water, or
+     where the fleet is big enough to spare one: the cheapest armed hull that
+     is fast (a destroyer at 2.3 is not a scout) and not in a naval wave.
+     Designated rather than bought - the fleet buys hulls anyway - and kept
+     until it dies. The naval-wave filter in think() leaves it out. */
+  /* Not a hull that is in a fight. Measured on taiwan with no such test:
+     seven hulls detailed in 720 s, every one of them killed by enemy
+     corvettes - one seven seconds after it was named, thirty tiles out in the
+     wake of a naval wave it had been sailing with, and the next taken on the
+     spot in waters the enemy was raiding. So: not on an attack order, not hit
+     in the last thirty seconds, seven-tenths of its hull or better, and after
+     a loss the job waits a minute. */
+  let seaRef = null, seaLostT = -1e9, airRef = null, airLostT = -1e9;
+  function seaScout() {
+    let cur = null, best = null, bc = Infinity, armed = 0;
+    const now = G.time;
+    if (seaRef && (seaRef.dead || seaRef._scout !== "sea")) {
+      if (seaRef.dead) seaLostT = now;
+      seaRef = null;
+    }
+    for (const u of P.units) {
+      if (u.dead || u.cat !== "naval" || u.layer !== "sea") continue;
+      if (u._scout === "sea") { cur = u; continue; }
+      const d = u.def;
+      if (!d.weapons.length || d.amphib || d.supply || d.repairRate || d.carrier) continue;
+      if (d.role === "minesweeper" || d.role === "navminelayer") continue;
+      armed++;
+      if (d.speed < 2.4 || d.role === "destroyer" || d.role === "cruiser" ||
+          navalWave.indexOf(u) >= 0) continue;
+      const o = u.order.type;
+      if (o !== "idle" && o !== "guard" && o !== "move") continue;
+      if ((u.lastHitAt && now - u.lastHitAt < 30) || u.hp < u.maxHp * 0.7) continue;
+      const c = P.factionCost(d);
+      if (c < bc) { bc = c; best = u; }
+    }
+    if (cur) return (seaRef = cur);
+    if (!D.navy || (D.read || 0) < 0.35 || !best || now - seaLostT < 60) return null;
+    if (groundConnected && armed < 4) return null;
+    best._scout = "sea"; scoutLog.seaTasked++;
+    return (seaRef = best);
+  }
+  /* An aircraft is detailed only when the ground cannot do the job: the rival
+     is across water, or more than one start is still unexamined, or nothing
+     of theirs is on the plot at all after the first minute and a half. The
+     cheapest airframe the ramp can spare - a second gunship, a second ASW
+     helicopter, a third fighter. Never the AEW aircraft, a tanker, a Weasel or
+     a bomber, and never the only one of its kind. Released back to the sortie
+     loop the moment it is not wanted. */
+  function wantAirEyes() {
+    if (!D.air || (D.read || 0) < 0.35) return false;
+    if (!groundConnected || hypo.length > 1) return true;
+    if (!rivalOnPlot()) return G.time > 90;
+    /* The ground cannot keep the production picture fresh when the enemy
+       base is beyond a car's round trip (korea): a look three timers old is
+       an air job until it is fresh again. */
+    const due = (D.scoutT || 32) * RELOOK_K * 3;
+    for (const r of prodSeen()) if (G.time - r.t > due) return true;
+    return false;
+  }
+  function airScout() {
+    let cur = null;
+    const pool = [], n = {};
+    if (airRef && (airRef.dead || airRef._scout !== "air")) {
+      if (airRef.dead) airLostT = G.time;
+      airRef = null;
+    }
+    for (const u of P.units) {
+      if (u.dead || u.layer !== "air") continue;
+      if (u._scout === "air") { cur = u; continue; }
+      n[u.def.role] = (n[u.def.role] || 0) + 1;
+      pool.push(u);
+    }
+    const want = wantAirEyes();
+    if (cur) {
+      if (want || G.time - (cur._scoutSince || 0) < 60) return (airRef = cur);
+      cur._scout = null; cur._scoutJob = null; clearGoal(cur);
+      /* Home first, THEN weapons free. Handing the stance back where the
+         airframe happened to be left a released scout gunship hovering over
+         the enemy's base on "guard", and it opened a one-aircraft attack on
+         whatever was nearest - measured, a Hind took a construction yard
+         from eleven tiles on a commander held at peace. rtb carries it back
+         to its own ramp, where guard is what it should be. */
+      if (!cur.parked) cur.give({ type: "rtb" });
+      if (cur.stance === "hold" && cur.def.weapons.length &&
+          !(cur.allWeaponsHeld && cur.allWeaponsHeld())) cur.stance = "guard";
+      scoutLog.airFreed++;
+      return null;
+    }
+    if (!want || G.time - airLostT < 90) return null;
+    let best = null, bv = Infinity;
+    for (const u of pool) {
+      const r = u.def.role;
+      let v;
+      if (r === "transport" && u.def.hover) v = 0;
+      else if (r === "gunship" && u.def.hover && n.gunship >= 2) v = 1;
+      else if (r === "aswhelo" && n.aswhelo >= 2) v = 2;
+      else if (r === "fighter" && n.fighter >= 3) v = 3;
+      else continue;
+      const o = u.order.type;
+      if (o !== "parked" && o !== "hover" && o !== "idle") continue;   // flying a sortie
+      if (u.fuelMax && !u.def.hover && u.fuel < u.fuelMax - 1) continue;
+      if (u.hp < u.maxHp * 0.6 || (u.lastHitAt && G.time - u.lastHitAt < 30)) continue;
+      if (v < bv) { bv = v; best = u; }
+    }
+    if (!best) return null;
+    best._scout = "air"; best._scoutSince = G.time; scoutLog.airTasked++;
+    return (airRef = best);
+  }
+
+  /* A new battle is a new map: the flood fills, the grid, the pump field, the
+     route, the posts and the detailed hulls all belong to the old one. */
+  function reconReset() {
+    gndComp = null; seaComp = null; reconGrid = null; rivalPath = null;
+    postList = null; postT = -1e9; scoutLog = scoutLogNew();
+    firstFound = -1; firstProd = -1; oneWayT = 0; fieldReset();
+    seaRef = null; seaLostT = -1e9; airRef = null; airLostT = -1e9;
+  }
+  function driveScouts() {
+    if (!look || !P || !G.map) return;
+    const now = G.time;
+    scoutLog.sweeps++;
     for (const [k, v] of scoutShy) if (v < now) scoutShy.delete(k);
-    const fireAt = (x, y) => exposureAt(x, y, SCOUT_HS);
-    const stand = Math.max(4, scout.sightR() - 1.5);
-    /* Look at it from OUTSIDE: walk back down the bearing we would be coming
-       in on until the vantage point is both reachable and out of the fire we
-       know about. Returning null is a real answer - it says every way of
-       looking at that place from a distance is already covered - and the bid
-       loop below then picks somewhere else worth the drive. */
-    const standoff = (x, y) => {
-      const a = Math.atan2(scout.y - y, scout.x - x);
-      for (let d = stand; d <= stand + 14; d += 3.5) {
-        const px = x + Math.cos(a) * d * T2, py = y + Math.sin(a) * d * T2;
-        const tx = (px / T2) | 0, ty = (py / T2) | 0;
-        if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) continue;
-        if (!GameMap.passable(M, tx, ty, "ground")) continue;
-        if (fireAt(px, py) > SCOUT_DANGER) continue;
-        if ((scoutShy.get(shyKey(px, py)) || 0) > now) continue;
-        return { x: px, y: py };
+    refreshAnchors();
+    /* when the rival first went on the plot, and when its production did */
+    if (firstProd < 0 && rival) {
+      for (const r of seenB.values()) {
+        if (r.gone || r.own !== rival.idx) continue;
+        if (firstFound < 0) firstFound = Math.round(now);
+        if (isProd(r.key)) { firstProd = Math.round(now); break; }
+      }
+    }
+    const ground = [];
+    for (const u of P.units)
+      if (!u.dead && !u.carried && u.layer === "ground" && u.def.role === "recon") ground.push(u);
+    const sea = seaScout(), air = airScout();
+    const claimed = [];
+    const held = (u) => {
+      if (u && u._scoutGoal) claimed.push({ x: u._scoutGoal.x, y: u._scoutGoal.y, by: u });
+    };
+    for (const u of ground) held(u);
+    held(sea); held(air);
+    const live = ground.filter(u => !u._stranded);
+    for (const u of ground)
+      tendScout(u, u._stranded ? "post" : jobFor(live.indexOf(u), live.length), claimed, now);
+    if (sea) tendScout(sea, "sea", claimed, now);
+    if (air) tendScout(air, "air", claimed, now);
+  }
+
+  /* ---- one scout, one sweep ----
+     The re-tasking rules are the ones the sweep in think() carried, and so is
+     their history, measured on river at Commander over fifteen minutes: ONE
+     scout used to be tasked a tick, so three Humvees logged 2,420
+     unit-seconds idle against 21 of movement; a scout that finished its drive
+     stood where it stopped, inside the enemy base; and a rally-point move onto
+     an occupied tile never ends, which held 1,326 unit-seconds and left 18.1%
+     of the theatre explored after fifteen minutes. Hence: every scout with
+     nothing useful to do is re-tasked, a goal that has outlived its travel
+     budget or shown no progress in ten seconds is dropped, and a goal that
+     came back as an instant "arrival" without the vehicle moving is put out
+     of bounds. */
+  function tendScout(s, job, claimed, now) {
+    const T = CFG.TILE, key = fuelKey(s);
+    s._scoutJob = job;
+    /* A scout that stops to shoot is not scouting, and a 340-hit-point truck
+       with one machine gun loses that exchange anyway: 249 of the measured
+       run's unit-seconds went on auto-acquired attacks. "hold" shuts both
+       doors - acquire() from idle and retaliate() when hit - and on an
+       aircraft it also keeps the ramp's own auto-launch off it. */
+    if (s.stance !== "hold") s.stance = "hold";
+    /* ---- shot at: report, withdraw, and do not come straight back ----
+       digest() has already pushed the alarm and noteSighting has written down
+       whatever was in view. The ground it was shot on is put out of bounds for
+       ninety seconds and the goal for two minutes: exposureAt() only knows
+       guns we have SEEN, so without this the next bid sent the car straight
+       back to whatever unseen gun had just hit it. */
+    if (s.lastHitAt && now - s.lastHitAt < 6) {
+      if (!s._runT || now - s._runT > 6) {
+        s._runT = now;
+        if (s._scoutGoal) scoutShy.set(shyKey(s._scoutGoal.x, s._scoutGoal.y), now + 120);
+        scoutShy.set(shyKey(s.x, s.y), now + 90);
+        clearGoal(s);
+        s._scoutEnd = now + 8;             // the withdrawal is not re-tasked at once
+        scoutLog.runs++;
+        /* Away from the shooter where the picture holds it - a live track, or
+           a structure on the plot - and toward home; home alone otherwise.
+           Measured on taiwan, straight for home ran two withdrawing boats back
+           past the corvette that had just hit them. */
+        let ax = P.homeX - s.x, ay = P.homeY - s.y;
+        const hl = Math.hypot(ax, ay) || 1;
+        ax /= hl; ay /= hl;
+        const by = s.lastHitBy;
+        let at = null;
+        if (by && by.kind === "building") { const rb = seenB.get(by.id); if (rb && !rb.gone) at = rb; }
+        else if (by) at = trackedEntity(seenU.get(by.id));
+        if (at) {
+          const bx = s.x - at.x, byy = s.y - at.y, bl = Math.hypot(bx, byy) || 1;
+          ax = ax * 0.5 + bx / bl * 1.5; ay = ay * 0.5 + byy / bl * 1.5;
+        }
+        const a = Math.atan2(ay, ax);
+        s.give({ type: "move", x: s.x + Math.cos(a) * T * 14, y: s.y + Math.sin(a) * T * 14 });
+      }
+      return;
+    }
+    /* ---- fuel ---- */
+    if (key !== "air" && s.fuelMax && burnOf(s)) {
+      const nf = nearestFuel(key, s.x, s.y);
+      const inside = key === "ground" ? P.inBaseRadius(s.tx, s.ty) : !!(nf && nf.d < 8);
+      if (s.fuel < 1 && !inside) {
+        /* Dry and out of reach of a refill. It still sees, so it stays where it
+           is as a post, and it no longer counts as a scout - reconShort()
+           replaces it. A supply truck passing by brings it back. */
+        if (!s._stranded) { s._stranded = true; scoutLog.stranded++; }
+        clearGoal(s);
+        return;
+      }
+      s._stranded = false;
+      if (s._refuel) {
+        if (inside && s.fuel >= s.fuelMax - 3) s._refuel = false;
+        else { if (!inside && nf) goRefuel(s, nf); return; }
+      } else if (!inside && nf && !(s._scoutGoal && s._scoutGoal.oneway) &&
+                 s.fuel < fuelFor(s, Math.min(homeTime(key, s.x, s.y), 1e4)) + 6) {
+        s._refuel = true; clearGoal(s); scoutLog.refuels++;
+        goRefuel(s, nf);
+        return;
+      }
+    }
+    if (key === "air") {
+      /* the airframe is flying itself home or taking fuel: leave it to it */
+      const t = s.order.type;
+      if (t === "rtb" || t === "land" || t === "tank") return;
+      if (t === "parked" && s.fuelMax && !s.def.hover && s.fuel < s.fuelMax - 1) return;
+    }
+    const g = s._scoutGoal;
+    if (g && g.oneway && (s.order.type !== "move" || U.dist(s.x, s.y, g.x, g.y) < T * 2)) g.oneway = false;
+    /* ---- a picket on its post watches ---- */
+    if (g && g.fam === "post" && s.order.type !== "move" &&
+        U.dist(s.x, s.y, g.x, g.y) < T * 2.5) {
+      if (!s._postUntil) { s._postUntil = now + POST_HOLD; scoutLog.posts++; }
+      if (now < s._postUntil) return;
+    }
+    s._postUntil = 0;
+    /* ---- ten seconds to show progress, or pick something else ----
+       The travel budget is a ceiling on a trip that is going normally and the
+       wrong instrument for one that is going nowhere: traffic, a wall, a path
+       round something that has since closed, an aircraft held short of a SAM
+       ring. Closing by a tenth of the leg re-arms the window. */
+    if (s.order.type === "move" && now < (s._scoutEnd || 0)) {
+      if (!g || now < (s._scoutCk || 0)) return;
+      const d = U.dist(s.x, s.y, g.x, g.y);
+      const gained = (s._scoutD0 || d) - d;
+      if (gained > Math.max(T * 1.5, (s._scoutD0 || d) * 0.1)) {
+        s._scoutD0 = d; s._scoutCk = now + 10;
+        return;
+      }
+      scoutShy.set(shyKey(g.x, g.y), now + 60);
+      scoutLog.stalls++;
+      clearGoal(s);
+    }
+    /* ---- did the last goal work? ----
+       stepAlong() reports "arrived" the instant Path.find has no route at all,
+       so an unreachable goal came back as a finished trip in nought seconds
+       and won the next sweep again - measured, two scouts re-ordered onto one
+       tile twenty-four times in forty seconds. Not asked of an aircraft,
+       which is never unreachable and whose "from" is the ramp it landed on. */
+    const from = s._scoutFrom, was = s._scoutGoal;
+    if (key !== "air" && was && from &&
+        U.dist(s.x, s.y, from.x, from.y) < T * 3 &&
+        U.dist(s.x, s.y, was.x, was.y) > T * 4) {
+      scoutShy.set(shyKey(was.x, was.y), now + 120);
+      scoutLog.unreach++;
+    }
+    for (let i = claimed.length - 1; i >= 0; i--) if (claimed[i].by === s) claimed.splice(i, 1);
+    /* An empty auction is not re-run for six seconds: a sea scout whose yard
+       is gone (every fuelOk fails, for good), a car topping up at home or a
+       late game with hundreds of contacts made it 1e5-3e5 compares a scout
+       every two seconds. */
+    if (now < (s._noGoalT || 0)) return;
+    const goal = scoutGoal(s, job, claimed);
+    if (!goal) {
+      scoutLog.none++;
+      s._noGoalT = now + 6;
+      clearGoal(s);
+      /* nothing worth the fuel: an aircraft goes back to its ramp rather than
+         hanging over wherever its last look was */
+      if (key === "air" && s.order.type === "hover") s.give({ type: "rtb" });
+      return;
+    }
+    /* The travel budget, which is also where D.scoutT keeps its meaning: the
+       straight leg at the hull's own speed, doubled for terrain and traffic,
+       and never shorter than the difficulty's own re-think interval. */
+    const trip = U.dist(s.x, s.y, goal.x, goal.y) / T;
+    s._scoutEnd = now + Math.max(D.scoutT || 32, 10 + trip / Math.max(0.6, s.def.speed) * 2);
+    s._scoutFrom = { x: s.x, y: s.y };
+    s._scoutGoal = goal;
+    s._scoutD0 = trip * T;
+    s._scoutCk = now + 10;
+    if (goal.post !== undefined) s._lastPost = goal.post;
+    claimed.push({ x: goal.x, y: goal.y, by: s });
+    scoutLog.jobs[job] = (scoutLog.jobs[job] || 0) + 1;
+    scoutLog.fam[goal.fam] = (scoutLog.fam[goal.fam] || 0) + 1;
+    s.give({ type: "move", x: goal.x, y: goal.y });
+  }
+
+  /* ---- where a scout is worth sending ----
+     The old goal was sixty random darts scored by staleness over the drive,
+     and on 144x144 the stalest passable tile is reliably an empty corner. What
+     reconnaissance is FOR is candidate objectives and the approaches to them,
+     so the families are, in the order a finder meets them:
+       hypo    unexamined deployment sites - LOOKED AT, not driven onto. The
+               old line returned the start tile itself, which is where the
+               enemy construction yard stands; the first order either side ever
+               gave a scout was a drive onto it, and on river the Humvee closed
+               to one tile of it and died. From a standoff the same paint()
+               prunes the hypothesis and the vehicle lives.
+       relook  the rival's production on the D.scoutT x RELOOK_K timer
+       abeam   six tiles either side of a hostile structure, not past it: one
+               remembered outbuilding is the edge of a base whose middle we
+               never need to drive into - what is unknown is its flanks.
+               Civilian blocks are not a base and no longer bid.
+       ore     ore blocks away from our own patch (map.ore is published
+               terrain; where there is ore there are haulers)
+       oil     oil nodes already seen and not ours, gone stale: still free,
+               or somebody's derrick
+       cell    the search grid - ground none of the above reaches
+       lane    the corridor the next wave has to walk down
+       post    the picket's watch posts
+     and only then the darts, which are also a Recruit's whole behaviour.
+     SCOUT_DANGER is where a scout stops volunteering, read off the threat
+     field (seen guns only), so the FIRST approach to an unexamined position is
+     as bold as ever and what is refused is the drive back into a base we have
+     already been shot out of. An aircraft reads remembered air defence
+     instead, which the ground field deliberately leaves out. */
+  function scoutGoal(s, job, claimed) {
+    const now = G.time, T2 = CFG.TILE, M = G.map, W = M.W;
+    const layer = s.layer === "air" ? "air" : s.cat === "naval" ? "sea" : "ground";
+    const lab = compOf(layer);
+    const myC = lab ? compAt(lab, s.x, s.y) : 0;
+    const wt = SCOUT_WT[job] || SCOUT_WT.find;
+    let aa = null;
+    if (layer === "air") {
+      aa = [];
+      for (const r of seenB.values()) {
+        if (r.gone) continue;
+        const R = aaProfile(r.key);
+        if (R) aa.push({ x: r.x, y: r.y, r2: Math.pow((R + 2) * T2, 2) });
+      }
+      for (const r of seenU.values()) {
+        const R = r.aa ? r.aa * 1.25 + 2.5 : 0;
+        if (R && now - r.t <= 120) aa.push({ x: r.x, y: r.y, r2: Math.pow(R * T2, 2) });
+      }
+    }
+    /* ---- and guns that move ----
+       exposureAt() is stamped from structures alone, so a scout used to drive
+       its standoff straight into the garrison that had been standing beside
+       the building it was looking at. Measured on taiwan: one seat detailed
+       eleven surface hulls as eyes in 960 s and was hit fifteen times. An
+       armed contact seen in the last 45 s vetoes the ground within its reach
+       of where it was last seen - its own layer only, off the class written
+       down at contact, never the live entity. The scout's sight (8.5-9.5) is
+       about that reach, so it can still watch what it will not approach. */
+    const hot = aa || [];
+    if (!aa) for (const r of seenU.values()) {
+      if (!r.armed || r.harvester || now - r.t > 45 || r.layer !== layer) continue;
+      const R = layer === "sea" ? (SEA_R[r.role] || 10) : r.cat === "infantry" ? 6 : 8;
+      hot.push({ x: r.x, y: r.y, r2: R * R * T2 * T2 });
+    }
+    const fireAt = (x, y) => {
+      for (const a of hot) if (U.dist2(x, y, a.x, a.y) < a.r2) return 1e3;
+      return aa ? 0 : exposureAt(x, y, SCOUT_HS);
+    };
+    const tripK = layer === "air" ? 4 : 6;
+    const ownIds = new Set();
+    for (const b of P.buildings) if (!b.dead) ownIds.add(b.id);
+    const stand = Math.max(4, s.sightR() - 1.5);
+    const reachable = (tx, ty) => {
+      if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) return false;
+      if (layer === "air") return true;
+      if (!GameMap.passable(M, tx, ty, layer)) return false;
+      return !myC || lab[ty * W + tx] === myC;
+    };
+    const taken = (x, y) => {
+      const R2 = CLAIM_R * CLAIM_R * T2 * T2;
+      for (const c of claimed) if (c.by !== s && U.dist2(c.x, c.y, x, y) < R2) return true;
+      return false;
+    };
+    /* Look at it from OUTSIDE, and from somewhere that still sees it: five
+       bearings about the line we would come in on, at the standoff and then
+       closer. The old walk went back to stand + 14, which is outside sight -
+       from there the target is never overlooked, the hypothesis is never
+       struck off, and the same goal was handed back every sweep. Null is a
+       real answer: every vantage on that place is covered, unreachable, or
+       refused. */
+    const standoff = (x, y, st) => {
+      const a0 = Math.atan2(s.y - y, s.x - x);
+      for (let k = 0; k < 5; k++) {
+        const a = a0 + (k === 0 ? 0 : (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.6);
+        for (let d = st || stand; d >= 4; d -= 2) {
+          const px = x + Math.cos(a) * d * T2, py = y + Math.sin(a) * d * T2;
+          if (!reachable((px / T2) | 0, (py / T2) | 0)) continue;
+          if (fireAt(px, py) > SCOUT_DANGER) continue;
+          if ((scoutShy.get(shyKey(px, py)) || 0) > now) continue;
+          return { x: px, y: py };
+        }
       }
       return null;
     };
-    /* An unexamined deployment site is still the first thing worth looking at,
-       because that is where a base is - but it is LOOKED AT, not driven onto.
-       This line used to return the start tile itself, and a start tile is
-       precisely where the enemy construction yard stands. Measured: the first
-       order either commander ever gave a scout was a cross-map drive onto the
-       opposing conyard - 54 tiles on river, 82 on plains - and on river the
-       Humvee closed to one tile of an enemy structure and died there.
-       pruneHypotheses() strikes the site off on staleness < 90 and staleness
-       is written by the same paint() at the same sightR(), so the standoff
-       prunes the hypothesis exactly as the suicide run did - and leaves a
-       vehicle alive to examine the next one. */
-    if (hypo.length) {
-      const g = standoff((hypo[0].x + 0.5) * T2, (hypo[0].y + 0.5) * T2);
-      if (g) return g;
+    if ((job === "find" || job === "sea" || job === "air") && hypo.length) {
+      for (const h of hypo) {
+        const g = standoff((h.x + 0.5) * T2, (h.y + 0.5) * T2);
+        if (!g || taken(g.x, g.y)) continue;
+        const trip = U.dist(s.x, s.y, g.x, g.y) / T2;
+        if (!fuelOk(s, g.x, g.y, trip)) {
+          /* ---- the one-way look ----
+             Where the enemy start is beyond a round trip - korea, 90 s by
+             road - and nothing of the rival is on the plot yet, the car
+             still goes, once every four minutes, if the tank carries it
+             THERE. What it sees is the base, the production and the first
+             garrison; on the way back it runs dry wherever the road leaves
+             it, which is on the enemy's own approach, and stays as a post
+             while reconShort() buys the next car. 400 credits for the
+             order of battle is the trade a player makes too. */
+          /* Only the last unexamined site, and only from the pumps: there the
+             road out IS the field value, where from mid-map the straight line
+             is a poor bound on it - measured on kuwait, a car sent on from
+             its first empty start ran dry short of the second. */
+          if (job !== "find" || layer !== "ground" || hypo.length !== 1 ||
+              now < oneWayT || rivalOnPlot()) continue;
+          const back = homeTime("ground", g.x, g.y);
+          if (back === Infinity || homeTime("ground", s.x, s.y) > 1) continue;
+          if (s.fuel < fuelFor(s, back)) continue;
+          oneWayT = now + 240;
+          g.oneway = true;
+          scoutLog.oneway++;
+        }
+        g.fam = "hypo";
+        return g;
+      }
     }
     const read = D.read === undefined ? 1 : D.read;
     if (read > 0.2) {
       let best = null, bs = -Infinity;
-      const bid = (x, y, w) => {
+      const bid = (x, y, value, w, fam, post) => {
+        if (!(value > 0) || !(w > 0)) return;
         const tx = (x / T2) | 0, ty = (y / T2) | 0;
-        if (tx < 1 || ty < 1 || tx >= M.W - 1 || ty >= M.H - 1) return;
-        if (!GameMap.passable(M, tx, ty, "ground")) return;
-        /* tried this cell and could not get to it */
+        if (!reachable(tx, ty)) return;
+        const trip = U.dist(s.x, s.y, x, y) / T2;
+        if (trip < 5 && post === undefined) return;     // already inside our own eyes
+        const sc0 = value * w - trip * tripK;
+        if (sc0 <= bs) return;                          // cannot win: skip the dearer tests
         if ((scoutShy.get(shyKey(x, y)) || 0) > now) return;
-        const raw = staleness(tx, ty, now);
-        if (raw < 45) return;                        // somebody just looked
-        /* A goal standing on a footprint is a goal that is never REACHED:
-           stepAlong() counts arrival only within 0.8 tiles of the aim point,
-           so a move order onto an occupied tile never ends. G.occ is consulted
-           ONLY for ground we have actually overlooked - reading it over unseen
-           ground would be a peek at a building nobody has laid eyes on - and
-           the travel budget in the dispatch covers the rest. */
-        if (raw < 1e8 && G.occ && G.occ[ty * M.W + tx]) return;
-        const trip = U.dist(scout.x, scout.y, x, y) / T2;
-        if (trip < 5) return;                        // already inside our own eyes
+        /* a goal on one of OUR footprints is never reached; anybody else's
+           is found by the stall and unreachable tests, not by reading G.occ */
+        if (layer !== "air" && ownIds.has(G.occ[ty * W + tx])) return;
+        if (taken(x, y)) return;
         const f = fireAt(x, y);
         if (f > SCOUT_DANGER) return;
-        /* ---- the unknown outranks the merely old ----
-           Ground never once overlooked and ground overlooked ten minutes ago
-           both clamped to 600 here, so the scorer could not tell them apart -
-           and since a known ore field is a FIXED point that goes stale again
-           every few minutes, the tour degenerated into an orbit of the same
-           three fields. Measured with the flat clamp: one commander's scouts
-           drove 1,954 unit-seconds between minute 7 and minute 15 and added
-           half a per cent of explored map. Virgin ground is now worth 900
-           against a re-look's ceiling of 300, which is a search again: a
-           second look at a place we have already been has to be nearly
-           seventy tiles closer before it wins. */
-        const age = raw > 1e8 ? 900 : Math.min(300, raw);
-        const s = age * w - trip * 6 - f * 40;
-        if (s > bs) { bs = s; best = { x, y }; }
+        if (!fuelOk(s, x, y, trip)) return;
+        const sc = sc0 - f * 40;
+        if (sc > bs) { bs = sc; best = { x, y, fam }; if (post !== undefined) best.post = post; }
       };
-      if (!oreSites) oreSites = surveyOre();
-      for (const s of oreSites) bid(s.x, s.y, 1.6);
-      /* ---- along the edge, not through the middle ----
-         This bid used to be a point SEVEN TILES BEYOND every structure already
-         seen, on the line from our own home through it. That is an order to
-         drive a 400-credit scout car past the thing it has already found and
-         into whatever is standing behind it, and it cannot learn anything by
-         doing so: we can see that building - its being in seenB is what says
-         so. Turned through ninety degrees it becomes reconnaissance. Six tiles
-         abeam walks the scout along the face of a position and off its flanks,
-         which is where the second refinery, the outlying derrick and the gap
-         in the gun line actually are; both flanks are offered, so the scorer
-         takes the side we have not already been down. */
+      const ageAt = (x, y) => {
+        const raw = staleness((x / T2) | 0, (y / T2) | 0, now);
+        return raw > 1e8 ? 900 : raw < 45 ? 0 : Math.min(300, raw);
+      };
+      /* Hostile works, coarse: a prospect is not sent to count wells inside
+         somebody's base. Off seenB only, civilian blocks excluded. */
+      const foeCell = new Set();
+      const rid = rival ? rival.idx : -1;
       for (const r of seenB.values()) {
-        if (r.gone) continue;
-        const dx = r.x - P.homeX, dy = r.y - P.homeY;
-        const len = Math.hypot(dx, dy) || 1;
-        const ax = -dy / len * T2 * 6, ay = dx / len * T2 * 6;
-        bid(r.x + ax, r.y + ay, 1.3);
-        bid(r.x - ax, r.y - ay, 1.3);
+        if (r.gone || r.own < 0) continue;
+        const cx = (r.tx / RECON_CELL) | 0, cy = (r.ty / RECON_CELL) | 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+          foeCell.add((cy + dy) * 256 + (cx + dx));
       }
-      if (aim) for (let f = 0.35; f <= 0.86; f += 0.25)
-        bid(P.homeX + (aim.x - P.homeX) * f, P.homeY + (aim.y - P.homeY) * f, 1.1);
+      /* The expansion band: measured from the nearest yard we own, because a
+         rig can set out from any of them. Full weight to 45 tiles, easing to
+         three-tenths at 87. */
+      const yards = [];
+      for (const b of P.buildings) if (!b.dead && b.def.id === "conyard") yards.push(b);
+      if (!yards.length) yards.push({ x: P.homeX, y: P.homeY });
+      const band = (x, y) => {
+        let d = Infinity;
+        for (const b of yards) d = Math.min(d, U.dist(x, y, b.x, b.y));
+        d /= T2;
+        let w = d <= 45 ? 1 : Math.max(0.3, 1 - (d - 45) / 60);
+        const k = (((y / T2) / RECON_CELL) | 0) * 256 + (((x / T2) / RECON_CELL) | 0);
+        if (foeCell.has(k)) w *= 0.3;
+        return w;
+      };
+      const home = intelHome(rival);
+      const toward = (x, y) => home
+        ? 1 + 0.5 * Math.max(0, 1 - U.dist(x, y, home.x, home.y) / (60 * T2)) : 1;
+
+      if (wt.post > 0) {
+        const posts = picketPosts();
+        for (let i = 0; i < posts.length; i++)
+          bid(posts[i].x, posts[i].y, s._lastPost === i && posts.length > 1 ? 450 : 1000,
+              wt.post, "post", i);
+      }
+      if (wt.relook > 0) {
+        const relookT = (D.scoutT || 32) * RELOOK_K;
+        for (const r of seenB.values()) {
+          if (r.gone || r.own < 0 || (rid >= 0 && r.own !== rid)) continue;
+          const prod = isProd(r.key);
+          if (!prod && r.key !== "refinery" && r.key !== "derrick") continue;
+          const age = now - r.t;
+          if (age < relookT) continue;
+          /* Closer than the plain standoff: forgetStale() tests the
+             footprint's TOP-LEFT tile, and from sightR-1.5 off the centre on
+             the far diagonal of a 3x3 that corner is not painted - a
+             production building destroyed out of view was never struck off
+             and the finder came back to the ghost from that side. sightR-3
+             paints the corner and still notes the centre. */
+          const g = standoff(r.x, r.y, Math.max(4, s.sightR() - 3));
+          /* Due is due: a production building past its timer outbids virgin
+             ground (900 x at most 1.5 toward the rival), and the longer it
+             waits the more it outbids it. Measured with 300 + 2 x age it lost
+             to the cells around the enemy base until the look was five minutes
+             old - prodAge read 187 to 314 s against a 72 s timer. */
+          if (g) bid(g.x, g.y, (1000 + Math.min(600, (age - relookT) * 4)) * (prod ? 1 : 0.6),
+                     wt.relook, "relook");
+        }
+      }
+      if (wt.abeam > 0) {
+        for (const r of seenB.values()) {
+          if (r.gone || r.own < 0) continue;
+          const dx = r.x - P.homeX, dy = r.y - P.homeY;
+          const len = Math.hypot(dx, dy) || 1;
+          const ax = -dy / len * T2 * 6, ay = dx / len * T2 * 6;
+          bid(r.x + ax, r.y + ay, ageAt(r.x + ax, r.y + ay), wt.abeam, "abeam");
+          bid(r.x - ax, r.y - ay, ageAt(r.x - ax, r.y - ay), wt.abeam, "abeam");
+        }
+      }
+      if (wt.ore > 0 && layer !== "sea") {
+        if (!oreSites) oreSites = surveyOre();
+        for (const o of oreSites)
+          bid(o.x, o.y, ageAt(o.x, o.y), wt.ore * (job === "prospect" ? band(o.x, o.y) : 1), "ore");
+      }
+      if (wt.oil > 0) {
+        /* a node somebody has drilled is the relook family's business */
+        for (const n of oilKnown()) {
+          if (n.ours || n.foe || n.age < 90) continue;
+          const nx = (n.x + 0.5) * T2, ny = (n.y + 0.5) * T2;
+          const g = standoff(nx, ny);
+          if (g) bid(g.x, g.y, Math.min(300, n.age),
+                     wt.oil * (job === "prospect" ? band(nx, ny) : 1), "oil");
+        }
+      }
+      if (wt.cell > 0) {
+        const gl = layer === "air" ? compOf("ground") : null;
+        const homeC = gl ? compAt(gl, P.homeX, P.homeY) : 0;
+        for (const c of reconCells()) {
+          let t;
+          if (layer === "air") t = c.cy * W + c.cx;
+          else t = layer === "sea" ? c.s : c.g;
+          if (t < 0) continue;
+          const v = cellNews(c, now);
+          if (v <= 0) continue;
+          const x = (t % W + 0.5) * T2, y = (((t / W) | 0) + 0.5) * T2;
+          let w = wt.cell * (job === "prospect" ? band(x, y) : toward(x, y));
+          /* the aircraft's ground is the ground no car of ours can reach */
+          if (gl) {
+            if (c.g < 0) w *= groundConnected ? 0.4 : 0.8;
+            else if (homeC && gl[c.g] !== homeC) w *= 1.6;
+          }
+          bid(x, y, v, w, "cell");
+        }
+      }
+      if (aim && wt.lane > 0)
+        for (let f = 0.35; f <= 0.86; f += 0.25) {
+          const x = P.homeX + (aim.x - P.homeX) * f, y = P.homeY + (aim.y - P.homeY) * f;
+          bid(x, y, ageAt(x, y), wt.lane, "lane");
+        }
       if (best) return best;
     }
-    /* A Recruit's whole behaviour, and everybody's last resort: darts at the
-       map. They go through the same three gates now - not on a footprint we
-       have seen, not under fire we have seen, and far enough off to be worth
-       the drive. */
+    /* A Recruit's whole behaviour, and everybody's last resort: darts, through
+       the same gates - reachable, not a footprint we can see, not under fire
+       we have seen, worth the drive, and affordable in fuel. */
     let goal = null, bestS = -Infinity;
     for (let n = 0; n < 60; n++) {
       const tx = (G.rng() * M.W) | 0, ty = (G.rng() * M.H) | 0;
-      if (!GameMap.passable(M, tx, ty, "ground")) continue;
+      if (!reachable(tx, ty)) continue;
       const x = (tx + 0.5) * T2, y = (ty + 0.5) * T2;
       if ((scoutShy.get(shyKey(x, y)) || 0) > now) continue;
       const raw = staleness(tx, ty, now);
-      if (raw < 1e8 && G.occ && G.occ[ty * M.W + tx]) continue;
+      if (layer !== "air" && ownIds.has(G.occ[ty * W + tx])) continue;
       if (fireAt(x, y) > SCOUT_DANGER) continue;
-      const trip = U.dist(scout.x, scout.y, x, y) / T2;
+      const trip = U.dist(s.x, s.y, x, y) / T2;
       if (trip < 5) continue;
       const sc = (raw > 1e8 ? 900 : Math.min(300, raw)) / (1 + trip * 0.05);
-      if (sc > bestS) { bestS = sc; goal = { x, y }; }
+      if (sc <= bestS || taken(x, y) || !fuelOk(s, x, y, trip)) continue;
+      bestS = sc; goal = { x, y, fam: "dart" };
     }
     return goal;
+  }
+  /* ---- how many cars ----
+     D.scouts, counted with the ones on the ramp and without the dry ones, and
+     never more than two over it however many have run dry. The third waits
+     for the three-minute mark or a fat bank - the land theatres are decided
+     by ~460-490 s and the opening money is the army's. Across water one car is
+     enough: its ground is the home landmass, and the sea and the air carry
+     the rest. Harvesters first, unless we have no eyes at all. */
+  function reconShort(mineShort) {
+    let live = 0, all = 0;
+    for (const u of P.units) {
+      if (u.dead || u.def.role !== "recon") continue;
+      all++;
+      if (!u._stranded) live++;
+    }
+    const held = live + queuedRole("vehicle", d => d.role === "recon");
+    let want = D.scouts || 1;
+    if (!groundConnected) want = 1;
+    else if (want > 2 && G.time < 180 && P.cash < 2500) want = 2;
+    if (held >= want || all >= want + 2) return false;
+    return !mineShort || held === 0;
+  }
+  /* what the reconnaissance is doing, for intel(); nothing decides on it */
+  function reconState() {
+    const now = G.time;
+    let seen = 0;
+    const N = look ? look.length : 0;
+    for (let i = 0; i < N; i++) if (look[i]) seen++;
+    let oilSeen = 0, oilFree = 0, oilFoe = 0;
+    for (const n of oilKnown()) {
+      oilSeen++;
+      if (n.foe) oilFoe++; else if (!n.ours) oilFree++;
+    }
+    const prod = prodSeen();
+    let prodAge = 0;
+    for (const r of prod) prodAge = Math.max(prodAge, now - r.t);
+    const eyes = { ground: 0, dry: 0, refuel: 0, sea: 0, air: 0 }, jobsNow = {};
+    for (const u of P.units) {
+      if (u.dead) continue;
+      const scout = u.def.role === "recon" && u.layer === "ground";
+      if (scout) { eyes.ground++; if (u._stranded) eyes.dry++; if (u._refuel) eyes.refuel++; }
+      if (u._scout === "sea") eyes.sea++;
+      if (u._scout === "air") eyes.air++;
+      if ((scout || u._scout) && u._scoutJob) jobsNow[u._scoutJob] = (jobsNow[u._scoutJob] || 0) + 1;
+    }
+    return { explored: N ? Math.round(seen / N * 1000) / 1000 : 0,
+             hypo: hypo.length, found: firstFound, prodFound: firstProd,
+             prod: prod.length, prodAge: Math.round(prodAge),
+             oilSeen, oilFree, oilFoe, eyes, jobsNow,
+             posts: postList ? postList.length : 0, shy: scoutShy.size,
+             log: Object.assign({}, scoutLog, { jobs: Object.assign({}, scoutLog.jobs),
+                                                fam: Object.assign({}, scoutLog.fam) }) };
   }
   /* ---- acoustic barriers ----
      Laid from this commander's own remembered picture and nothing else: only
@@ -7512,7 +11785,7 @@ function makeCommander() {
       const dm = dat[dat.length - 1];
       let best = null, bd = Infinity;
       for (const u of P.units) {
-        if (u.dead || !u.def.sonar) continue;
+        if (u.dead || !u.def.sonar || u._scout) continue;
         if (u.order.type !== "idle" && u.order.type !== "guard") continue;
         const dd = U.dist2(u.x, u.y, dm.x, dm.y);
         if (dd < bd) { bd = dd; best = u; }
@@ -7566,6 +11839,12 @@ function makeCommander() {
   /* The fleet's objective, off the plot rather than off the enemy's real
      building list. A naval yard we have seen is worth crossing the map for. */
   function navalTarget() {
+    /* Naval gunfire support: the fleet's objective is the operation's
+       whenever the water reaches it - see COMBINED OPERATIONS. Outside the
+       window, or for an inland objective, the rules below are untouched and a
+       remembered naval yard is still what the group hunts. */
+    const op = opFocus();
+    if (op) { const st = opSeaStation(op); if (st) return st; }
     for (const r of seenB.values())
       if (!r.gone && (r.key === "navalyard" || r.key === "coastal")) return r;
     let best = null, bd = Infinity;
@@ -7630,6 +11909,7 @@ function makeCommander() {
     return best;
   }
   function pickAirTarget(a) {
+    if (atPeace) return null;
     /* TERMINAL, not a fall-through. Role "sead" is neither "fighter" nor "cas",
        so it fell into the gunship branch and could come back with an enemy MBT
        or a refinery - and ai.js then issues a COMMANDED attack order, which
@@ -7689,6 +11969,19 @@ function makeCommander() {
       }
       return best;
     }
+    /* ---- the air half of a combined operation ----
+       After the three terminal branches above, which are already right - the
+       Weasel goes for an emitter, a bomber with held rounds needs a named
+       structure, a fighter takes the air contact it holds - and before the
+       gunship branch, which is the one that wanders: it hands out the
+       nearest heavy contact TO THE AIRCRAFT, anywhere on the map. opAir()
+       answers null when there is nothing on the objective worth suppressing,
+       and then everything below runs as it always did. */
+    const op = opFocus();
+    if (op) {
+      const s = opAir(a, op);
+      if (s) { forceStat.opAir++; return s; }
+    }
     if (a.def.role !== "cas") {
       /* gunships hunt armour and haulers, and only ones actually on the plot */
       let best = null, bd = Infinity;
@@ -7709,6 +12002,10 @@ function makeCommander() {
   }
   /* where an airframe should sweep when nothing is held on radar */
   function airSweepPoint() {
+    /* at peace nothing is swept: pickAirTarget() answers null there, and the
+       sortie loop's fallback is an ARMED sweep over the objective - measured,
+       a Hind sent that way took the scripted base's construction yard */
+    if (atPeace) return null;
     const t = aim || intelHome(rival);
     return t ? { x: t.x, y: t.y } : null;
   }
@@ -7722,56 +12019,185 @@ function makeCommander() {
      own rather than the start position - a commander whose refinery is being
      eaten across the map used to notice nothing at all, because homeX/homeY is
      the tile the battle began on. */
+  /* THE VICTORY RULE changes what this defends. A side with no live
+     production building is beaten, so:
+       - every contact is scored by what it is and by how close it stands to
+         a production building of ours (2.5x inside ten tiles, 1.6x inside
+         sixteen), not taken in Map order - and an engineer counts, armed or
+         not, because it takes a factory without firing a shot;
+       - ground and air are chosen separately, so a hull that cannot touch an
+         aircraft is handed the tank instead of nothing (the old single
+         threat traded order for idle every think over an overflight);
+       - the enemy's fighting weight at our CORE (within sixteen tiles of
+         production, or at home) is summed against what stands there to meet
+         it - reserve within thirty tiles plus our guns in reach, one
+         FORT_DPS of fire counting as a tank - and when it is the heavier by
+         a fifth (and is a real force, or we have only one or two production
+         buildings left) the wave and the raid party come HOME (recallWave),
+         unless the wave is within fourteen tiles of the enemy's own last
+         production building, which is a race we are about to win. A force
+         at an outlying well or refinery is the reserve's, not the wave's;
+       - an alarm with nothing visible behind it pushes the reserve only if
+         it is at our works. It used to answer the hottest alarm anywhere,
+         which includes our own wave being shot at across the map, and fed
+         the reserve to the front one hull at a time. The newest eighty are
+         read, because a heavy fight writes hundreds.
+     COST, per think: our buildings once; the live tracks in seenU, each
+     against our production (a handful) and, only if not already near it,
+     our buildings; the reserve once; our guns once while under attack. */
   function defendBase(army) {
-    let threat = null;
-    /* being shot at is the loudest thing that can happen */
-    let hot = null, hotK = 0;
-    for (const a of alarms) {
-      const k = (a.tier || 1) * (1 - (G.time - a.t) / 25);
-      if (k > hotK) { hotK = k; hot = a; }
-    }
+    const now = G.time, T2 = CFG.TILE;
+    const prods = [];
+    for (const b of P.buildings)
+      if (!b.dead && b.buildProgress >= 1 && isProd(b.def.id)) prods.push(b);
+    const prodGap = (x, y) => {
+      let d2 = Infinity;
+      for (const b of prods) { const d = U.dist2(x, y, b.x, b.y); if (d < d2) d2 = d; }
+      return d2 < Infinity ? Math.sqrt(d2) / T2 : 1e9;
+    };
+    const HOME2 = 484 * T2 * T2, WORK2 = 196 * T2 * T2;
+    const atWorks = (x, y, dp) => {
+      if (dp < 16 || U.dist2(x, y, P.homeX, P.homeY) < HOME2) return true;
+      for (const b of P.buildings)
+        if (!b.dead && U.dist2(x, y, b.x, b.y) < WORK2) return true;
+      return false;
+    };
+    const inWave = new Set(attackWave);
+    let gT = null, gS = 0, aT = null, aS = 0, foeW = 0, fx = 0, fy = 0;
+    let coreW = 0, cx = 0, cy = 0;
     for (const r of seenU.values()) {
-      if (!r.armed) continue;
+      if (!r.armed && r.role !== "engineer") continue;
       const e = trackedEntity(r);
       if (!e) continue;
-      let near = U.dist(e.x, e.y, P.homeX, P.homeY) < CFG.TILE * 22;
-      if (!near) for (const b of P.buildings) {
-        if (b.dead) continue;
-        if (U.dist(e.x, e.y, b.x, b.y) < CFG.TILE * 14) { near = true; break; }
+      const dp = prodGap(e.x, e.y);
+      if (!atWorks(e.x, e.y, dp)) continue;
+      const near = (dp < 10 ? 2.5 : dp < 16 ? 1.6 : 1) / (1 + dp * 0.03);
+      if (r.layer !== "ground") {
+        if (near > aS) { aS = near; aT = e; }
+        continue;
       }
-      if (near) { threat = e; break; }
+      const fw = NO_FIGHT[r.role] ? 0 : forceW(r.role, r.armor, r.cat);
+      foeW += fw; fx += e.x * fw; fy += e.y * fw;
+      /* the CORE: within sixteen tiles of production, or at home - what
+         the launch hold and the recall weigh (an outlying well or refinery
+         being poked is the reserve's job, not the wave's) */
+      if (dp < 16 || U.dist2(e.x, e.y, P.homeX, P.homeY) < HOME2) {
+        coreW += fw; cx += e.x * fw; cy += e.y * fw;
+      }
+      const s = Math.max(fw, r.role === "engineer" ? 1.2 : 0.15) * near;
+      if (s > gS) { gS = s; gT = e; }
     }
-    if (!threat && hot && hotK > 0) {
-      /* nothing visible, but rounds are landing: push the reserve at the
-         bearing they came from rather than standing in the open */
+    if (foeW > 0) {
+      baseT = now; baseW = foeW; baseCoreW = coreW;
+      if (coreW > 0) { baseX = cx / coreW; baseY = cy / coreW; }
+      else { baseX = fx / foeW; baseY = fy / foeW; }
+      const R30 = 900 * T2 * T2, home = [];
+      /* a wave hull still waiting at home for its departure (staggerWave)
+         is standing here, and is counted and used as reserve */
+      for (const u of army)
+        if ((!inWave.has(u) || u._goAt) && !u.carried && U.dist2(u.x, u.y, baseX, baseY) < R30) home.push(u);
+      let defW = 0;
+      for (const b of P.buildings) {
+        if (b.dead || b.buildProgress < 1 || b.def.cat !== "defense") continue;
+        const g = gunProfile(b.def.id);
+        if (g && U.dist2(b.x, b.y, baseX, baseY) < Math.pow((g.range + 4) * T2, 2))
+          defW += (g.hard * 0.5 + g.soft * 0.5) / FORT_DPS;
+      }
+      baseHomeW = ourForce(home) + defW;
+      if (groundConnected && (attackWave.length || raidParty.length) && now >= recallNext &&
+          coreW >= Math.max(1.2, baseHomeW * 1.2) && (prods.length <= 2 || coreW >= 2.5)) {
+        let race = false;
+        if (aim && commitNow()) {
+          const R14 = 196 * T2 * T2;
+          for (const u of attackWave)
+            if (!u.dead && U.dist2(u.x, u.y, aim.x, aim.y) < R14) { race = true; break; }
+        }
+        if (!race) recallWave();
+      }
+    }
+    if (!gT && !aT) {
+      /* nothing visible, but rounds are landing on our works: push the
+         reserve at the place rather than standing in the open */
+      let hot = null, hotK = 0;
+      const n0 = Math.max(0, alarms.length - 80);
+      for (let i = alarms.length - 1; i >= n0; i--) {
+        const a = alarms[i];
+        let k = (a.tier || 1) * (1 - (now - a.t) / 25);
+        if (k <= 0 || k * 2 <= hotK) continue;
+        const dp = prodGap(a.x, a.y);
+        /* the same test the contacts get: a derrick or a refinery shelled
+           from out of sight is our works too */
+        if (!atWorks(a.x, a.y, dp)) continue;
+        if (dp < 8) k *= 2;
+        if (k > hotK) { hotK = k; hot = a; }
+      }
+      if (!hot) return;
       for (const u of army) {
-        if (attackWave.indexOf(u) >= 0) continue;
+        if (inWave.has(u) && !u._goAt) continue;
         if (u.order.type === "idle" || u.order.type === "guard")
           u.give({ type: "attackmove", x: hot.x, y: hot.y });
       }
       return;
     }
-    if (!threat) return;
     for (const u of army) {
-      if (attackWave.indexOf(u) >= 0) continue;
-      /* Marked auto, so it is a reflex and not a release. Ask the automatic
-         question before handing the order out, or it arrives, engage() finds no
-         weapon it may use and drops the unit to idle, and this block hands it
-         out again on the next think.
-         For HELD rounds this guard is unreachable - groundArmy() already
-         excludes aircraft, sam and tel - and it is kept for a pre-existing bug
-         instead: the seenU scan above filters on armed and distance but not on
-         LAYER, so an enemy aircraft near the base hands an attack order to
-         every idle ground unit and trades order for idle every think. */
-      if (!u.canTarget(threat, true)) continue;
-      if (u.order.type === "idle" || u.order.type === "guard")
-        u.give({ type: "attack", target: threat, auto: true });
+      if (inWave.has(u) && !u._goAt) continue;
+      if (u.order.type !== "idle" && u.order.type !== "guard") continue;
+      /* Marked auto, so it is a reflex and not a release, and the automatic
+         question is asked first, or the order arrives, engage() finds no
+         weapon it may use and the hull idles until it is handed the same
+         order again. */
+      let tg = (gT && u.canTarget(gT, true)) ? gT : null;
+      if (!tg && aT && u.canTarget(aT, true)) {
+        /* An aircraft only where this hull could have picked it up itself:
+           entities.js acquire() asks G.airTrack for a radar set or a
+           long-range air-defence round, and a commanded attack is never
+           re-asked - so without this a radar SPAAG at home engaged what the
+           player's identical vehicle could not. O(allied sensors), idle
+           radar hulls at home only, once a think. */
+        const w0 = WEAPONS[u.def.weapons[0]] || {};
+        const needsTrack = u.def.radarQ || u.def.radar ||
+          ((u.def.role === "aa" || u.def.role === "sam") && (w0.range || 0) > 11);
+        if (!needsTrack || !G.airTrack || G.airTrack(u, aT)) tg = aT;
+      }
+      if (tg) u.give({ type: "attack", target: tg, auto: true });
     }
+  }
+  /* ---- come home ----
+     The wave is walking away from the one thing we cannot afford to lose.
+     Every member goes back on an ATTACKMOVE at the enemy's weight at our
+     works - not a move: it is going to a fight - and leaves attackWave, so
+     the reflex above hands it targets as it arrives and the next launch can
+     take it again. The raid party comes too. The wave's book is consumed so
+     reviewAim() does not read the recall as a beaten wave; waveT is pushed
+     out so the launch does not turn them round, and launchGate() holds any
+     launch while the base is outweighed. Once a minute at most. */
+  function recallWave() {
+    const now = G.time, x = baseX, y = baseY;
+    reapWave();
+    let n = 0;
+    for (const u of attackWave) {
+      if (!u || u.dead || u.carried) continue;
+      u.flankTo = null; u._goAt = 0;
+      u.give({ type: "attackmove", x, y });
+      n++;
+    }
+    attackWave = [];
+    waveGate = null; waveGateT = 0; waveMassed = false; waveBook = null;
+    if (raidParty.length) {
+      const rp = raidParty.slice();
+      raidLog.end.home++;
+      endRaid(0, RAID_GAP);
+      for (const u of rp) if (!u.dead) { u.give({ type: "attackmove", x, y }); n++; }
+    }
+    waveT = Math.max(waveT, 30);
+    recallNext = now + 60;
+    warLog.recalls++; warLog.recalled += n;
   }
 
   return {
     init, update,
     get player() { return P; },
+    setPeace(on) { atPeace = !!on; },
     /* The explored map, so the engine can hold this commander's harvesters to
        the same rule the human's obey, and so a test can see what it knows. */
     get look() { return look; },
@@ -7795,6 +12221,60 @@ function makeCommander() {
                             oilers: count(u => u.def.role === "oiler"),
                             tankers: count(u => u.def.refuelRate) },
                repair: repairLedger(),
+               /* The build plan, exposed so a census can see it working:
+                  measured income (inc, cr/s), the bank's trend (slope), how
+                  long money has idled, the growth budget, what the plan wants
+                  against what stands, fuel income and whether it can feed
+                  another line, and counters - built{} by reason, sited
+                  (refineries put at ore), crept (plants put toward the next
+                  field), spread (production put beside a second yard),
+                  guarded (guns put at a production building), headed (orders
+                  moved to the head of the vehicle queue), starved (thinks the
+                  hauler floor held the plan), relief (rigs bought or unfolded
+                  with no yard standing). */
+               macro: macroState(),
+               /* The oil stream, exposed so a census can see WHICH gate kept a
+                  well from going down (why: ok / none / reach / crowded / sold /
+                  refused), whether the commander knows the nodes at all (seen,
+                  free, reach - from its own memory), what it did about it
+                  (shoves, rally, pads, sold, posts, forward) and whether rigs
+                  stall (stalls) and unfold where they stood (stranded).
+                  bought/bulk are barrels purchased on the lifeline and on
+                  import, buyRate the rate right now. */
+               oil: oilIntel(),
+               /* The reconnaissance, exposed so a census can see whether the
+                  eyes are out and what they found, not infer it: explored is
+                  the share of the theatre ever overlooked; found / prodFound
+                  are the seconds at which the rival and then its production
+                  first went on the plot (-1 not yet); prod and prodAge are the
+                  rival production held and the oldest look at it, which the
+                  re-look timer should keep bounded; oilSeen / oilFree / oilFoe
+                  are nodes overlooked, of those free, and seen drilled by
+                  somebody else; eyes counts ground cars (dry, refuelling) and
+                  the sea and air scouts; log.fam counts goals by family. */
+               scout: reconState(),
+               /* The force budget, the landing and the combined operation, so a
+                  census can see the split converge on the theatre, which service
+                  holds the fuel and how often it lapses, whether the craft ever
+                  put anybody ashore, and whether the phases actually cycle. */
+               forces: forceIntel(),
+               /* WHEN AND WHAT TO ATTACK, for the census. gate is the launch rule
+                  open now (full / edge / stall / end, "home" when held for the
+                  base, "shut") with what it weighed: n bodies against full,
+                  ours against bar (-1: no look, no edge), est = their seen
+                  weight with its fading peak and the production garrison,
+                  cover = share of their known works in view within 45 s,
+                  fort = fire on the aim ("n/a": no think has read the
+                  field yet - the key is read-only).
+                  prod / prodPeak / commit are the victory rule (their
+                  production on our plot, the most at once, and whether we are
+                  finishing them); base is the enemy weight last seen at our
+                  works and what met it. Counters: plans (bodies actually
+                  sent), go (per rule), commits, staggered and lastWait (hulls
+                  held at home for time on target), recalls / recalled (waves
+                  pulled home), raidSurplus / raidLull (which gate each party
+                  went on), offBld (hulls concentrate() moved off concrete). */
+               war: warState(),
                /* The second front, exposed for the reason every field here is:
                   whether a party ever forms, which gate stops it when it does
                   not (skip), why each came home (end), the work it did (xp,
@@ -7858,7 +12338,7 @@ function makeCommander() {
                          queued: queuedRole("vehicle", d => !!d.deployTo),
                          want: yardWant(), wants: wantsExpansion(),
                          saving: rigSaving(), need: rigOilNeed(),
-                         node: !!expandNode(), spot: !!findOilSpot(),
+                         node: !!expandNode(true), spot: !!findOilSpot(true),
                          save: Math.round(saveTarget),
                          cash: Math.round(P.cash), oil: Math.round(P.oil) },
                /* Exposed for exactly the reason the fields around it are: so a
@@ -7907,6 +12387,10 @@ return {
   intelOf(player) {
     for (const c of commanders) if (c.player === player) return c.intel();
     return null;
+  },
+  /* hold a commander at peace (see atPeace) - for scripted sandboxes */
+  setPeace(player, on) {
+    for (const c of commanders) if (c.player === player) c.setPeace(on);
   },
   /* the doctrine prior for any army in any decade, with no commander and no
      game needed - it is a function of two strings and static tables */

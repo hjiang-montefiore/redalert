@@ -2588,7 +2588,20 @@ var UI = (function () {
 
     /* topbar */
     document.querySelector("#r-cash span").textContent = "$" + U.fmt(G.human.cash);
-    document.querySelector("#r-oil span").textContent = Math.floor(G.human.oil) + " bbl";
+    /* The bulk import (player.js bulkFuelRate) spends credits on its own, so
+       its rate is on the readout while it runs, and the tooltip says why. */
+    const imp = G.human.bulkFuelRate ? G.human.bulkFuelRate() : 0;
+    const rOil = document.querySelector("#r-oil");
+    rOil.querySelector("span").textContent = Math.floor(G.human.oil) + " bbl" +
+      (imp > 0 ? " +" + imp.toFixed(2) + "/s" : "");
+    if (rOil._imp !== imp) {
+      rOil._imp = imp;
+      rOil.title = imp > 0
+        ? "Bulk import: " + imp.toFixed(2) + " bbl/s at " + CFG.FUEL_BULK_PRICE +
+          " credits a barrel - each refinery past the first, while you bank " +
+          CFG.FUEL_BULK_BANK + " and hold under " + CFG.FUEL_BULK_CEIL + " bbl"
+        : "";
+    }
     const pu = G.human.powerUse(), po = G.human.powerOut();
     const rp = document.getElementById("r-power");
     rp.querySelector("span").textContent = po + "/" + pu + " MW";

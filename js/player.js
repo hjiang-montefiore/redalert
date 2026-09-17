@@ -64,7 +64,33 @@ class Player {
     if (i >= 0) q.ready.splice(i, 1);
   }
 
-  earn(n) { this.cash = Math.min(this.storageCap(), this.cash + n); }
+  /* ---- THE VAULT LIMITS WHAT COMES IN, NOT WHAT IS ALREADY HELD ----
+     (rule fix, every player alike) This was `cash = min(cap, cash + n)`.
+     CFG.BASE_INCOME is paid through here from the first frame, and a side with
+     no refinery has a 4,000 vault - so the Light $5,000, Standard $10,000 and
+     Heavy $20,000 purses were all cut to 4,000 in the first sixtieth of a
+     second, the human's included, and a hauler landing into a full vault
+     (gain 0) clamped again. Measured with the Heavy purse: at t=150 four of
+     eight seats held 0 and none more than 425, with 4,400-4,800 credits of
+     base standing - about what a 4,000 purse buys. Income beyond the vault is
+     still thrown away (that is what silos are for); money already in hand is
+     not destroyed. */
+  earn(n) {
+    if (!(n > 0)) return;
+    const cap = this.storageCap();
+    if (this.cash >= cap) return;
+    this.cash = Math.min(cap, this.cash + n);
+  }
+  /* ---- MONEY THAT COMES BACK IS NOT INCOME ----
+     (rule, every player alike) A refund returns credits that left this purse
+     for something that was never delivered - a cancelled order, a unit whose
+     tank was dry at completion, a unit with no door to leave by, a structure
+     with no ground to stand on. Through earn() it was clamped like ore: with
+     the purse above the vault (a Heavy start) a cancelled, half-paid factory
+     gave back nothing at all, and under the old clamp a refund into a nearly
+     full vault was cut. It comes back whole. Sale proceeds are income and
+     stay on earn(): a sale into a full vault pays nothing, as it always did. */
+  refund(n) { if (n > 0) this.cash += n; }
   spend(n) { if (this.cash < n) return false; this.cash -= n; return true; }
   storageCap() {
     let cap = 4000;
@@ -230,13 +256,47 @@ class Player {
     if (!this.pumpsOwnFuel()) return true;
     return this.oil < 60 && this.cash > 3000;
   }
+  /* ---- bulk import (CFG.FUEL_BULK_*) ----
+     The same for every player. Refineries are counted once a second, and only
+     while the bank and the tanks qualify at all, so a poor side pays nothing
+     for the check. */
+  bulkFuelRate() {
+    const rate = CFG.FUEL_BULK_RATE || 0;
+    if (rate <= 0) return 0;
+    if (this.cash < (CFG.FUEL_BULK_BANK || 0) || this.oil >= (CFG.FUEL_BULK_CEIL || 0)) return 0;
+    const sec = Math.floor(this.game ? this.game.time : 0);
+    if (this._refT !== sec) {
+      let n = 0;
+      for (const b of this.buildings)
+        if (!b.dead && b.buildProgress >= 1 && b.def.id === "refinery") n++;
+      this._refN = n; this._refT = sec;
+    }
+    const extra = Math.min(CFG.FUEL_BULK_MAX || 0, (this._refN || 0) - 1);
+    return extra > 0 ? extra * rate : 0;
+  }
   updateFuelPurchase(dt) {
-    if (!this.buysFuel()) return;
-    const want = CFG.FUEL_BUY_RATE * dt;
-    const cost = want * CFG.FUEL_BUY_PRICE;
-    if (this.cash < cost) return;
-    this.cash -= cost;
-    this.oil += want;
+    /* a ledger of barrels bought, beside oilOut's barrels spent */
+    const inn = this.oilIn || (this.oilIn = { buy: 0, bulk: 0 });
+    if (this.buysFuel()) {
+      const want = CFG.FUEL_BUY_RATE * dt;
+      const cost = want * CFG.FUEL_BUY_PRICE;
+      if (this.cash >= cost) { this.cash -= cost; this.oil += want; inn.buy += want; }
+    }
+    const bulk = this.bulkFuelRate();
+    if (bulk > 0) {
+      const want = bulk * dt;
+      const cost = want * CFG.FUEL_BULK_PRICE;
+      if (this.cash >= cost) {
+        this.cash -= cost; this.oil += want; inn.bulk += want;
+        /* it spends the player's money on its own, so the player is told
+           (once; the fuel readout shows the rate while it runs - ui.js) */
+        if (!this.isAI && !this._bulkSaid && this.game && this.game.alert) {
+          this._bulkSaid = true;
+          this.game.alert("BULK FUEL IMPORT \u2014 REFINERIES BUYING CRUDE AT " +
+                          CFG.FUEL_BULK_PRICE + " A BARREL", "good");
+        }
+      }
+    }
   }
 
   /* ---- advancing a generation ----
@@ -316,11 +376,11 @@ class Player {
     const q = this.queues[kind];
     if (Array.isArray(q.ready)) {
       const i = q.ready.findIndex(r => r.id === id);
-      if (i >= 0) { this.earn(this.factionCost(q.ready[i].def)); q.ready.splice(i, 1); return; }
+      if (i >= 0) { this.refund(this.factionCost(q.ready[i].def)); q.ready.splice(i, 1); return; }
     }
     for (let i = q.items.length - 1; i >= 0; i--) {
       if (q.items[i].id === id) {
-        this.earn(q.items[i].paid);
+        this.refund(q.items[i].paid);
         if (i === 0) q.prog = 0;
         q.items.splice(i, 1);
         return;
@@ -432,7 +492,7 @@ class Player {
       /* unit: spawn at the right factory */
       const def = it.def;
       if (def.oil) {
-        if (this.oil < def.oil) { /* refund, fuel ran out mid-build */ this.earn(this.factionCost(def)); return; }
+        if (this.oil < def.oil) { /* refund, fuel ran out mid-build */ this.refund(this.factionCost(def)); return; }
         this.spendOil(def.oil, def.cat === "vehicle" ? "vehicle" : def.cat || "unit");
       }
       this.game.spawnUnit(this, it.id);

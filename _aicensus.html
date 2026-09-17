@@ -434,6 +434,10 @@ window.addEventListener("load", function () {
                " units="+p.units.filter(function(u){return !u.dead;}).length; }).join("  |  ");
       out.textContent=lines.join("\n")+"\nEND t="+Math.round(Game.time)+
         (Game.over?" decided":" time")+"   "+who+"\n==DONE==";
+  /* done: stop the live game loop. --dump-dom waits out the whole virtual-time
+     budget, and every frame until then still ticks and draws the match - with
+     the AI's 100+ building bases that turned a one-minute run into hours. */
+  window.requestAnimationFrame=function(){ return 0; }; if (window.Game) Game.paused=true;
       return;
     }
     setTimeout(batch,0);

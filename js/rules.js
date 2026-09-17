@@ -134,7 +134,7 @@ var BUILDINGS = {
 
   refinery: { name:"Ore Refinery", cat:"building", cost:1500, time:20, w:3, h:2, hp:1300, armor:"structure",
     power:-40, sight:6, tech:1, prereq:["conyard"], freeUnit:"harvester", storage:2500,
-    desc:"Processes raw ore into credits and ships with one Harvester. Also stores 2,500 credits." },
+    desc:"Processes raw ore into credits and ships with one Harvester. Also stores 2,500 credits. Each refinery past the first (three at most) imports 0.12 bbl/s of crude at 25 credits a barrel while you bank 5,000 and hold under 250 bbl." },
 
   barracks: { name:"Barracks", cat:"building", cost:500, time:11, w:2, h:2, hp:900, armor:"structure",
     power:-25, sight:5, tech:1, prereq:["conyard"], produces:"infantry",

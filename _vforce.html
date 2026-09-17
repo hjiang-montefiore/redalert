@@ -375,6 +375,10 @@ try{
       noShape.length?noShape.join(","):"AIRFRAMES rows present");
   log("");
   log("==== "+PASS+" passed, "+FAIL+" failed ====");
+  /* done: stop the live game loop. --dump-dom waits out the whole virtual-time
+     budget, and every frame until then still ticks and draws the match - with
+     the AI's 100+ building bases that turned a one-minute run into hours. */
+  window.requestAnimationFrame=function(){ return 0; }; if (window.Game) Game.paused=true;
   log("runtime errors: "+(window.__errs.length?window.__errs.join(" | "):"NONE"));
 }catch(e){log("ERR "+e.message+"\n"+e.stack);}
 document.getElementById("tout").textContent=OUT.join("\n");
