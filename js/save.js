@@ -75,6 +75,10 @@ var SaveGame = (function () {
         /* and the two once-only warnings with it, or a reload repeats them */
         rigW: p.rigWarned ? 1 : undefined,
         pArm: p.prodArmed ? 1 : undefined,
+        /* fuel bought and still on the road, and the market pressure behind
+           its price (player.js fuelMarketState). Dropped, a reload would lose
+           barrels already paid for and reset the price to a quiet market. */
+        fm: p.fuelMarketState ? p.fuelMarketState() : undefined,
         stats: Object.assign({}, p.stats),
         homeX: p.homeX, homeY: p.homeY,
         queues: serializeQueues(p.queues),
@@ -243,6 +247,8 @@ var SaveGame = (function () {
       p.rigDeadline = typeof sp.rigDl === "number" ? sp.rigDl : null;
       p.rigWarned = !!sp.rigW;
       p.prodArmed = !!sp.pArm;
+      /* an older save has no key: nothing on the road, a quiet market */
+      if (p.restoreFuelMarket) p.restoreFuelMarket(sp.fm);
       p.stats = sp.stats || p.stats;
       p.homeX = sp.homeX; p.homeY = sp.homeY;
       for (const k in sp.queues) {

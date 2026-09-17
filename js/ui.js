@@ -1806,6 +1806,11 @@ var UI = (function () {
     document.getElementById("r-pause").addEventListener("click", togglePause);
     bindMenu();
     document.getElementById("r-speed").addEventListener("click", cycleSpeed);
+    /* BUY FUEL (player.js buyFuel). onclick, not addEventListener: bind()
+       runs again for every game started or loaded, and a second listener
+       would buy a second lot on every click. */
+    const fuelBtn = document.getElementById("r-fuelbuy");
+    if (fuelBtn) fuelBtn.onclick = buyFuelLot;
     document.querySelectorAll("#tabs .tab").forEach(t =>
       t.addEventListener("click", () => selectTab(t.dataset.q)));
   }
@@ -1882,6 +1887,48 @@ var UI = (function () {
     if (key === cursorKey && !force) return;
     cursorKey = key;
     cv.style.cursor = key ? MODE_CURSOR[key] : "";
+  }
+  /* ---- BUY FUEL ----
+     One lot a click (CFG.FUEL_MKT_HUD_LOT, 50 barrels): two main battle
+     tanks' fuel, or a fighter's and some over - enough to clear a build card
+     that says INSUFFICIENT FUEL, and on a quiet market 1,875 credits rather
+     than a fortune. The next lot's price is always on the button, and
+     Player.buyFuel announces the order and the delivery. A click that cannot
+     buy says why instead of doing nothing. */
+  function buyFuelLot() {
+    if (!G || !G.human || !G.human.fuelQuote) return;
+    const q = G.human.fuelQuote(CFG.FUEL_MKT_HUD_LOT || 50);
+    if (!q.ok) G.alert("CANNOT BUY FUEL \u2014 " + q.why, "warn");
+    else if (G.human.buyFuel(q.bbl)) Sfx.play("click");
+    syncFuelBuy(true);
+  }
+  /* The button face and tooltip. Re-quoted at most four times a game-second
+     while the clock runs (the quote walks the base for a refinery); while it
+     is paused, only when the purse or the base has changed - a sale or a
+     card clicked in a pause can still make the lot unaffordable or leave no
+     refinery. Written to the DOM only when it changed. */
+  let fuelBuyT = -1, fuelBuyCash = -1, fuelBuyN = -1;
+  function syncFuelBuy(force) {
+    const el = document.getElementById("r-fuelbuy");
+    if (!el || !G || !G.human || !G.human.fuelQuote) return;
+    const p = G.human;
+    if (!force && (G.time !== fuelBuyT
+        ? Math.abs(G.time - fuelBuyT) < 0.25
+        : p.cash === fuelBuyCash && p.buildings.length === fuelBuyN)) return;
+    fuelBuyT = G.time; fuelBuyCash = p.cash; fuelBuyN = p.buildings.length;
+    const q = p.fuelQuote(CFG.FUEL_MKT_HUD_LOT || 50);
+    const label = "BUY " + q.bbl + " bbl $" + U.fmt(q.cost);
+    let tip = "Buy " + q.bbl + " bbl of fuel by tanker convoy for $" + U.fmt(q.cost) +
+      " (" + Math.round(q.price) + " a barrel), unloaded at a refinery " + q.eta +
+      "s after you order. " + CFG.FUEL_MKT_PRICE + " a barrel on a quiet market; the " +
+      "price climbs with what you have bought in the last few minutes and eases off again.";
+    if (!q.ok) tip = "CANNOT BUY \u2014 " + q.why + "\n" + tip;
+    const ord = p.fuelOrders();
+    if (ord.length) tip += "\nOn the road: " + ord.map(o => o.bbl + " bbl " +
+      (o.due > G.time ? "in " + Math.ceil(o.due - G.time) + "s" : "waiting for a refinery")).join(", ");
+    if (el._label !== label) { el._label = label; el.textContent = label; }
+    if (el._tip !== tip) { el._tip = tip; el.title = tip; }
+    el.classList.toggle("off", !q.ok);
   }
   function togglePause() {
     G.paused = !G.paused;
@@ -2668,8 +2715,18 @@ var UI = (function () {
        its rate is on the readout while it runs, and the tooltip says why. */
     const imp = G.human.bulkFuelRate ? G.human.bulkFuelRate() : 0;
     const rOil = document.querySelector("#r-oil");
+    /* ...and fuel bought on the market that is still on the road, with the
+       time to the first convoy (player.js fuelOrders) */
+    const inbound = G.human.fuelOrders ? G.human.fuelOrders() : [];
+    let inTxt = "";
+    if (inbound.length) {
+      let n = 0;
+      for (const o of inbound) n += o.bbl;
+      inTxt = " (+" + n + (inbound[0].due > G.time
+        ? " in " + Math.ceil(inbound[0].due - G.time) + "s)" : " waiting)");
+    }
     rOil.querySelector("span").textContent = Math.floor(G.human.oil) + " bbl" +
-      (imp > 0 ? " +" + imp.toFixed(2) + "/s" : "");
+      (imp > 0 ? " +" + imp.toFixed(2) + "/s" : "") + inTxt;
     if (rOil._imp !== imp) {
       rOil._imp = imp;
       rOil.title = imp > 0
@@ -2678,6 +2735,7 @@ var UI = (function () {
           CFG.FUEL_BULK_BANK + " and hold under " + CFG.FUEL_BULK_CEIL + " bbl"
         : "";
     }
+    syncFuelBuy();
     const pu = G.human.powerUse(), po = G.human.powerOut();
     const rp = document.getElementById("r-power");
     rp.querySelector("span").textContent = po + "/" + pu + " MW";

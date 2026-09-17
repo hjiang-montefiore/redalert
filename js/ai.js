@@ -1375,7 +1375,12 @@ function makeCommander() {
      as before, the cheaper hull gets its turn, and the same role may not be
      waited on again for a minute - a price the reserve cannot reach does not
      freeze a service. */
-  function oilIncome() {
+  /* Barrels coming in: our own wells, the lifeline and the bulk import
+     (nativeOil), plus what the fuel market has been delivering lately
+     (marketRate, FUEL MARKET). The holds and the claim ask this, so a
+     destroyer is still waited for when money is buying its barrels. */
+  function oilIncome() { return nativeOil() + marketRate(); }
+  function nativeOil() {
     let r = (P.buysFuel() ? (CFG.FUEL_BUY_RATE || 0.18) : 0) +
             (P.bulkFuelRate ? P.bulkFuelRate() : 0);
     const mul = (FACTIONS[P.faction] || {}).supplyMul || 1;
@@ -2520,7 +2525,12 @@ function makeCommander() {
     /* a rig in the field is a yard that has been paid for - count it, or the
        commander buys a fourth rig while three are still driving */
     const yards = P.countBuilding("conyard") + rigsHeld();
-    const starved = P.oil <= 110 && !findOilSpot(true) && !!expandNode(true);
+    /* A commander buying its fuel on the market is starved for this purpose
+       whatever its tank reads: a bought barrel costs several times a pumped
+       one, and the stock the market keeps (FUEL MARKET) sits above 110 for
+       most of a rich battle, which would otherwise call off every oil
+       expedition exactly when a well is worth most. */
+    const starved = (P.oil <= 110 || marketBuying()) && !findOilSpot(true) && !!expandNode(true);
     /* One yard to two is fifty per cent off every building thereafter - the
        cheapest multiplier in the game and worth stretching for. The third and
        the fourth are a luxury and can wait for a fat bank. */
@@ -5794,7 +5804,15 @@ function makeCommander() {
              oilSp: null, oilT: -1e9, creepTo: null, creepDead: new Map(),
              last: "", n: {}, sited: 0, crept: 0, creepN: 0, spread: 0, guarded: 0,
              headed: 0, restarted: 0, starved: 0, relief: 0, yards: 0, unstuck: 0,
-             spreadT: 0, spreadN: 0, doorT: 0, unsealed: 0, sealed: 0, nominated: 0 };
+             spreadT: 0, spreadN: 0, doorT: 0, unsealed: 0, sealed: 0, nominated: 0,
+             mkt: mktBook() };
+  }
+  /* the fuel market's own book (FUEL MARKET below), reset with the plan */
+  function mktBook() {
+    return { next: 0, rate: 0, rateT: -1, fresh: 0, bought: 0, spent: 0, orders: 0,
+             refused: 0, priced: 0, unit: 0, pMax: 0, eta: 30, why: "", note: "",
+             lastBuy: -1e9, bar: 0, target: 0, burn: 0, reserve: 0, can: false,
+             infN: 0, infMax: -1 };
   }
   /* (isProdDef / isProd - what the victory rule counts - are defined once,
      beside the war aim, off Player.isProduction) */
@@ -6076,6 +6094,243 @@ function makeCommander() {
     m.spreadN++;
   }
 
+  /* ================= THE FUEL MARKET: idle money into barrels =================
+     (owner) "i don't want AI has any cap and make it harder", and the army,
+     the fleet and the air force "mixed wisely".
+
+     MEASURED (jsc census, both seats AI, Warlord, $20,000 purse, ore 1.6):
+     the side that wins banks 16,000-26,000 credits on 25-90 barrels. Fulda P0
+     at t=600 held 22,395 credits and 53 barrels on ~610 cr/s of income and
+     2.19 bbl/s of fuel (three wells, the lifeline, the bulk import). A
+     fighting unit is 47-72 credits a barrel (fighter 1,350/29, gunship
+     1,600/26, MBT 1,400/20, SPG 1,450/20, destroyer 2,200/34), so 2.2 barrels
+     a second can turn about 130 of those 613 credits into anything that burns
+     fuel. The rest went where fuel is not needed: thirteen barracks at t=600
+     and sixteen at t=900, an army of 61 infantry to 14 vehicles (five of
+     them tanks, guns or carriers), and money past the vault thrown away.
+
+     A player with that bank buys fuel. Player.fuelQuote()/buyFuel() sell
+     barrels for credits, delivered to a refinery after a delay, at a price
+     above the 9-credit lifeline that rises with this player's recent
+     purchases - the same market and the same rule for the human. The
+     commander buys:
+       HOW MUCH: a stock of what the production lines would burn over the
+         delivery time plus MKT_HORIZON, net of our own wells and purchase
+         lines. A line counts only while its service has asked for fuel in
+         the last 30 s or has something on order (lineBurn), so a fleet or
+         an army at strength buys nothing. Never less than the price of what
+         is being saved for: Tech III (90), a generational step, a rig.
+       WITH WHAT: money above a reserve - 2,500, the tech/rig/era hoard plus
+         800, or a fifth of the vault, whichever is most, and never under
+         CFG.FUEL_BULK_BANK + 500 while the bulk import could run (a second
+         refinery, tanks under its ceiling): at 25 a barrel that import is
+         the cheapest fuel money buys, and it stops the moment the bank dips
+         under 5,000 - which a 2,500 reserve let the market do (fulda P0 held
+         2,900-3,900 on five refineries at t=360-420 with a test market). And
+         only while the bank idles or holds 3,000 past it. An order is at most
+         spare / (price + MKT_WORTH) barrels, so the barrels take
+         price / (price + 60) of the spare and the units they are for can
+         still be paid: a third at 30 cr/bbl, half at 60.
+       AT WHAT PRICE: MKT_WORTH scaled by how much money is spare and how
+         long it has idled - 0.45x on a bare reserve, +1.2x as the spare
+         reaches MKT_FULL, +0.75x as the idle clock reaches three minutes
+         (27 to 144 cr/bbl at Warlord, 0.7x of that at Regular) - and half as
+         much again while income is being thrown away past the vault. Money
+         that cannot be spent is worth nothing, so an idle bank pays what it
+         must. The spare is measured against a fixed 15,000 and not the
+         vault: refineries raise the vault, and a ceiling read off it fell as
+         the bank grew (fulda P0, jsc census with a test market: 12,215 and
+         then 18,886 banked with the ceiling at 51-55 and the price at 60-86).
+         Market pressure is the brake. The quote is the order's average and
+         climbs with its size (player.js fuelQuote: 30 * (1 + (L + n/2)/100)),
+         so a lot over the ceiling is halved, at most three times, before
+         buying stops for twelve seconds: on taiwan a 120-barrel lot at 57.7
+         against a 57.1 ceiling was refused where 115 barrels passed, and ten
+         of 48 such refusals had a lot of 15 or more under the ceiling.
+     One order every four seconds at most, never more than MKT_PENDING in
+     the post; a refusal (no refinery, no market) waits twenty seconds.
+     Below D.read 0.35 (Recruit) the market is not used, and nobody buys
+     before t=180, without a war factory, or while the mining fleet is short.
+
+     FOG: our own bank, tank, queues and lines, and the quote we are given.
+     Nothing of anybody else's. COST: every four seconds, one pass over our
+     buildings (prodSpeed, storageCap, the refinery count) and three queues,
+     and at most five quotes. */
+  const MKT_WORTH = 60;          // credits of fighting unit one barrel fuels
+  const MKT_HORIZON = 30;        // seconds of net burn held past the delivery time
+  const MKT_MIN = 15;            // the smallest order worth placing
+  const MKT_CHUNK = 120;         // the largest single order
+  const MKT_PENDING = 3;         // orders in the post at once
+  const MKT_FULL = 15000;        // a spare this large is a full bank for the price ceiling
+  const LINE_DUTY = 0.5;         // share of the time a line is really cutting (macroPlan)
+  const INF_SHARE = 0.55;        // infantry's part of the army ceiling while fuel can be had
+  function marketOn() {
+    return typeof P.fuelQuote === "function" && typeof P.buyFuel === "function";
+  }
+  function fuelPending() {
+    if (typeof P.fuelOrders !== "function") return 0;
+    let n = 0;
+    for (const o of (P.fuelOrders() || [])) n += o.bbl || 0;
+    return n;
+  }
+  /* barrels a second ordered lately (a two-minute average), and whether we
+     have been buying at all */
+  function marketRate() { return macro.mkt.rate; }
+  function marketBuying() { return G.time - macro.mkt.lastBuy < 90; }
+  /* What the production lines would burn at full speed, counting only a
+     service that wants fuel now. From the e20 tables at speed 1: a war
+     factory ~1.0 bbl/s (MBT 20 in 20 s, heavy 36/30, SPG 20/21), an airbase
+     ~1.4 (fighter 30/19, gunship 26/22, CAS 40/28), a naval yard ~1.2
+     (destroyer 34/28, submarine 40/30, cruiser 60/42). prodSpeed() is the
+     queue's speed with every building of the kind and the brownout. */
+  function lineBurn(nFac, nAir, nYard) {
+    const now = G.time, asked = (arm) => now - demandT[arm] < 30;
+    let b = 0;
+    if (nFac && (asked("gnd") || queueLen("vehicle"))) b += 1.0 * P.prodSpeed("vehicle");
+    if (nAir && (asked("air") || queueLen("aircraft"))) b += 1.4 * P.prodSpeed("aircraft");
+    if (nYard && (asked("sea") || queueLen("naval"))) b += 1.2 * P.prodSpeed("naval");
+    return b;
+  }
+  /* once a think, from think(), before anything is bought */
+  function fuelMarket(nFac, nAir, nYard, nLab, opening) {
+    const k = macro.mkt, now = G.time;
+    /* the rate on its own clock, so it decays while nothing is bought */
+    if (k.rateT < 0) k.rateT = now;
+    const rdt = now - k.rateT;
+    if (rdt >= 4) {
+      k.rate += (k.fresh / rdt - k.rate) * Math.min(1, rdt / 120);
+      k.fresh = 0; k.rateT = now;
+    }
+    if (now < k.next) return;
+    k.next = now + 4;
+    k.can = false;
+    if (!marketOn()) { k.why = "none"; return; }
+    if ((D.read || 0) < 0.35) { k.why = "tier"; return; }
+    if (now < k.bar) return;
+    /* the mining fleet first, as everywhere in this file: a hauler is what
+       every later barrel is paid from, and the opening's works are paid from
+       the same bank */
+    if (opening || !nFac || G.time < 180) { k.why = "mine"; return; }
+    const pend = fuelPending();
+    const burn = lineBurn(nFac, nAir, nYard);
+    k.burn = burn;
+    /* what is being saved for has to be buyable */
+    let floorOil = 40;
+    if (eraStep) floorOil = Math.max(floorOil, eraStep.oil + 20);
+    if (nLab && P.tech < 3 && (P.techCap === undefined || P.techCap >= 3))
+      floorOil = Math.max(floorOil, 100);
+    if (rigSaving()) floorOil = Math.max(floorOil, rigOilNeed() + 20);
+    const net = Math.max(0, burn - nativeOil());
+    const target = Math.max(floorOil, Math.round(net * (k.eta + MKT_HORIZON)) + (burn > 0 ? 40 : 0));
+    k.target = target;
+    const want = target - (P.oil - committedOil() + pend);
+    const cap = P.storageCap();
+    const bulkOn = (CFG.FUEL_BULK_RATE || 0) > 0 && P.oil < (CFG.FUEL_BULK_CEIL || 0) &&
+                   P.countBuilding("refinery") >= 2;
+    const hoard = Math.max(2500, saveTarget + 800, cap * 0.2);
+    const reserve = bulkOn ? Math.max(hoard, (CFG.FUEL_BULK_BANK || 0) + 500) : hoard;
+    k.reserve = reserve;
+    const spare = P.cash - reserve;
+    const rich = !!(macro.plan && macro.plan.rich) || spare > 3000;
+    if (want < MKT_MIN) { k.why = "stocked"; k.can = rich && spare > 0; return; }
+    if (spare < 500 || !rich) { k.why = "reserve"; return; }
+    if (typeof P.fuelOrders === "function" && (P.fuelOrders() || []).length >= MKT_PENDING) {
+      k.why = "post"; k.can = true; return;
+    }
+    /* (how rich we are is the money above the hoard, not above the bulk
+       import's floor: measured from the floor, the ceiling fell by 14 a
+       barrel whenever a second refinery stood, and taiwan P0 banked 10,248
+       on average against 8,731 measured from the hoard) */
+    const fill = U.clamp((P.cash - hoard) / MKT_FULL, 0, 1), idleF = U.clamp(macro.idle / 180, 0, 1);
+    let pMax = MKT_WORTH * (0.45 + 1.2 * fill + 0.75 * idleF) * (0.7 + 0.3 * (D.read || 0));
+    if (P.cash >= cap * 0.92) pMax *= 1.5;       // income past the vault is being thrown away
+    k.pMax = pMax;
+    const unitOf = (x) => (x && x.bbl > 0 && x.cost > 0 ? x.cost / x.bbl : 0);
+    let n = Math.min(MKT_CHUNK, Math.ceil(want));
+    let qt = P.fuelQuote(n);
+    let unit = unitOf(qt);
+    if (!(unit > 0)) {
+      k.why = "refused"; k.note = (qt && qt.why) || ""; k.refused++; k.bar = now + 20;
+      return;
+    }
+    while (unit > pMax && n >= 2 * MKT_MIN) {
+      n = Math.floor(n / 2);
+      qt = P.fuelQuote(n);
+      unit = unitOf(qt);
+    }
+    if (!(unit > 0)) {
+      k.why = "refused"; k.note = (qt && qt.why) || ""; k.refused++; k.bar = now + 20;
+      return;
+    }
+    k.unit = unit;
+    if (unit > pMax) { k.why = "price"; k.priced++; k.bar = now + 12; return; }
+    /* the barrels' part of the spare, and the rest for what they fuel */
+    n = Math.min(n, qt.bbl, Math.floor(spare / (unit + MKT_WORTH)));
+    if (n < MKT_MIN) { k.why = "reserve"; return; }
+    if (n !== qt.bbl) {
+      qt = P.fuelQuote(n);
+      unit = unitOf(qt);
+      if (!(unit > 0) || unit > pMax) {
+        k.why = unit > 0 ? "price" : "refused"; k.bar = now + 12;
+        return;
+      }
+      k.unit = unit;
+      n = qt.bbl;
+    }
+    if (!qt.ok) { k.why = "refused"; k.note = qt.why || ""; k.refused++; k.bar = now + 20; return; }
+    const c0 = P.cash, p0 = fuelPending(), o0 = P.oil;
+    if (!P.buyFuel(n)) { k.why = "refused"; k.note = "order"; k.refused++; k.bar = now + 20; return; }
+    /* what actually left the bank, and what is actually coming */
+    const got = Math.max(0, fuelPending() - p0 + (P.oil - o0)) || qt.bbl;
+    k.bought += got; k.fresh += got; k.spent += Math.max(0, c0 - P.cash);
+    k.orders++; k.lastBuy = now; k.eta = qt.eta > 0 ? qt.eta : 0;
+    k.why = "ok"; k.can = true;
+  }
+  /* ---- MONEY THE MARKET WILL NOT TAKE BUYS GUNS ----
+     With the stock full or the price past the ceiling - or no market at
+     all - a bank that has idled has nothing left to buy that burns fuel, and
+     under the victory rule the useful oil-free place for it is a gun at a
+     production building (defAnchor sites it there). One more wanted per
+     4,000 above the reserve and a 3,000 float: fulda P0 idled on 22,000-
+     26,000 from t=600 to t=900 in the baseline census, which is four. */
+  function spareGuns(plan) {
+    const k = macro.mkt;
+    if (!plan.rich || !(k.why === "stocked" || k.why === "price" || k.why === "none")) return 0;
+    return Math.floor(Math.max(0, P.cash - Math.max(2500, k.reserve) - 3000) / 4000);
+  }
+  /* How many of the army ceiling may be infantry (ARMY COMPOSITION).
+     Only while money idles: the market is feeding us (k.can is set only for
+     a rich bank), or the bank has idled and the plan reads fuel fine. fuelOK
+     alone is income against lines, not money or a full tank - capped on it,
+     the losing seat on fulda (jsc probe, t=330-420) held 16 infantry to a
+     cap of 15 with an empty vehicle queue, 23-48 barrels and 2,000-4,800
+     credits it could not spend: 190 such samples in 720 s, none with this
+     test. */
+  function infantryCap(size, nFac, plan) {
+    if ((D.read || 0) < 0.35 || nFac < 1 || !groundConnected) return Infinity;
+    return (macro.mkt.can || (plan.rich && plan.fuelOK)) ? Math.ceil(size * INF_SHARE) : Infinity;
+  }
+  function fuelIntel() {
+    const k = macro.mkt, p = macro.plan || {};
+    const bk = forceBook(), tot = bk.gnd + bk.air + bk.sea;
+    const r2 = (v) => Math.round((v || 0) * 100) / 100;
+    let planes = 0;
+    for (const u of P.units) if (!u.dead && u.def.cat === "aircraft") planes++;
+    return { market: marketOn(), why: k.why, note: k.note,
+             bought: Math.round(k.bought), spent: Math.round(k.spent), orders: k.orders,
+             refused: k.refused, priced: k.priced,
+             unit: r2(k.unit), pMax: r2(k.pMax), rate: r2(k.rate),
+             pending: Math.round(fuelPending()), target: Math.round(k.target),
+             burn: r2(k.burn), native: r2(nativeOil()), reserve: Math.round(k.reserve),
+             cash: Math.round(P.cash), oil: Math.round(P.oil),
+             bar: { have: P.countBuilding("barracks"), plan: p.bar || 0 },
+             inf: { have: k.infN, max: k.infMax },
+             air: { share: r2(armShare.air), have: tot ? r2(bk.air / tot) : 0,
+                    planes, bases: P.countBuilding("airbase"), plan: p.air || 0,
+                    lines: p.airFuel || 0 },
+             lines: { fac: p.facFuel || 0, nav: p.navFuel || 0 } };
+  }
+
   function macroPlan(nRef, nFac, nBar, nAir, nYard, nRadar) {
     const m = macro;
     const e = (D.econ || 1) * (D.econBias || 1);
@@ -6113,13 +6368,46 @@ function makeCommander() {
     /* no ore to be had: none seen and unbuilt at all, or half the fleet
        standing with nothing it can reach */
     const noOre = (m.fields !== null && !m.anyOre) || (harvN > 0 && harvIdle * 2 >= harvN);
-    const fuelInc = wells * ((BUILDINGS.derrick && BUILDINGS.derrick.oilRate) || 0.55) + buyRate;
+    /* ...and what the fuel market has been delivering (FUEL MARKET): a
+       bought barrel feeds a line exactly as a pumped one does */
+    const fuelInc = wells * ((BUILDINGS.derrick && BUILDINGS.derrick.oilRate) || 0.55) + buyRate +
+                    marketRate();
     /* A reserve is a reason for one more line only if it is deep for the
        lines already standing: in a jsc smoke run of fulda a flat 90-barrel
        test let a fifth factory go up on one derrick, and the tank was at 29
        a minute later. */
     const lines = nFac + nAir + nYard;
     const fuelOK = P.oil > 45 * Math.max(2, lines) || fuelInc >= 0.35 * Math.max(1, lines);
+    /* ---- EACH SERVICE GETS THE LINES ITS SHARE OF THE FUEL CAN FEED ----
+       fuelOK is one answer for all three services, and while it reads true
+       nothing but income bounds a factory: 1 + (inc - 40) / 38 + richN is
+       twenty-five war factories on fulda P0's 613 cr/s, and a market that
+       keeps fuel reading true would build them. So each service is held to
+       the lines its share of the fuel income (armShare, FORCE BUDGET) can run
+       at LINE_DUTY - a queue runs at 1 + 0.5 per extra building and burns
+       ~1.0 (factory), 1.4 (airbase) or 1.2 (naval yard) barrels a second at
+       speed 1. A line is a building that stays and a market rate is what
+       was paid for lately, under a price that rises with it, so bought fuel
+       counts at half weight here: with it at full weight taiwan P0 put up
+       seven naval yards in a jsc census, the rate fell back with the price,
+       and five stood idle. Shares 0.67 / 0.28 / 0.05: on fulda P0's own 2.19
+       bbl/s that is four factories, one airbase, one yard; with 2.5 more
+       bought, eight, one, one. */
+    const fuelPlan = fuelInc - 0.5 * marketRate();
+    /* ...and whether fuel is fine WITHOUT the market: our wells and the two
+       purchase lines against the lines standing, or a deep tank that nothing
+       has been bought into lately. A bought barrel is held back by its price,
+       so it is no reason for a bigger vault, a bigger mining fleet or fewer
+       fuel docks: in the same census fulda P0 put up ten refineries and 33
+       haulers once market fuel read fine, and banked the income. It is not
+       fuelOK after the buying stops either - fuelOK carries marketRate(),
+       which takes minutes to fade. */
+    const fuelOwn = fuelInc - marketRate() >= 0.35 * Math.max(1, lines) ||
+                    (!marketBuying() && P.oil > 45 * Math.max(2, lines));
+    const lineFor = (share, burn) =>
+      Math.floor(1 + 2 * Math.max(0, fuelPlan * (share || 0) / (burn * LINE_DUTY) - 1));
+    const facFuel = lineFor(armShare.gnd, 1.0), airFuel = lineFor(armShare.air, 1.4),
+          navFuel = lineFor(armShare.sea, 1.2);
     const rich = m.idle > 15;
     const richN = rich ? 1 + Math.floor((m.idle - 15) / 45) : 0;
     const step = 55 / Math.max(0.5, D.econ || 1);      // 38 cr/s at Warlord, 79 at Recruit
@@ -6137,6 +6425,17 @@ function makeCommander() {
       bar = 1 + (rich ? 1 : 0);
     }
     if (!fuelOK) fac = Math.min(fac, Math.max(nFac, 2));
+    fac = Math.min(fac, Math.max(2, facFuel));
+    /* ---- AND THE BARRACKS ARE PROPORTIONATE TO THE INDUSTRY ----
+       bar grew with income alone - one per 61 cr/s past the first 60 - and
+       income is exactly what a fuel-starved commander has too much of: fulda
+       P0 wanted thirteen at 731 cr/s (t=450) and stood on sixteen at t=900
+       beside six war factories. A squad is cut two to three times faster than a
+       vehicle at the same queue speed (4.5-13 s against 11-30 s), so a
+       barracks count at 0.6 of the factories keeps the two arriving at a
+       like pace - five barracks to five factories with the money idling -
+       and the army ceiling still decides how many are bought. */
+    bar = Math.min(bar, 1 + Math.ceil(0.6 * Math.max(1, nFac)) + (rich ? 1 : 0));
     const ab = D.airBias || 1, nb = D.navalBias || 1;
     const pads = (BUILDINGS.airbase && BUILDINGS.airbase.pads) || 4;
     /* ramp space is the ceiling on the air force: four pads a base */
@@ -6148,6 +6447,13 @@ function makeCommander() {
         air += Math.floor(Math.max(0, inc - 70) * ab / (step * 2));
       if (fuelOK) air += richN;
       else air = Math.min(air, Math.max(nAir, 1));
+      /* THE AIR SHARE OF THE FUEL BUYS BASES, ON ANY THEATRE. On land this
+         was one base, plus richN only while fuel read fine, so the air
+         force's 28-33% of the barrels (FORCE BUDGET) had the one or two bases
+         ramp space forced. Held to what that share of the fuel income can
+         run (airFuel), and built up to it once the fuel is there. */
+      air = Math.min(air, Math.max(1, airFuel));
+      if (fuelOK && armShare.air > 0) air = Math.max(air, airFuel);
       /* a full ramp always asks for one more base, fuel or not - the
          airframes already exist and need somewhere to land */
       if (rampFull) air = Math.max(air, nAir + 1);
@@ -6162,6 +6468,7 @@ function makeCommander() {
         nav = 1 + Math.floor(Math.max(0, inc - 60) * nb / (step * 2)) + (fuelOK ? richN : 0);
       else nav = 1 + (nb > 1 && fuelOK ? richN : 0);
       if (!fuelOK) nav = Math.min(nav, Math.max(nYard, 1));
+      nav = Math.min(nav, Math.max(1, navFuel));
     }
     /* A refinery for every seen field in reach that nobody of ours works, paced
        by the clock (Warlord: a third at ~100 s, a fourth at ~200 s) unless no
@@ -6178,11 +6485,19 @@ function makeCommander() {
        the vault actually full, and never faster than the clock plus the idle
        time allows: unbounded, an idle seat in a jsc smoke run of taiwan put
        up eighteen refineries by t=540. */
-    const dockShort = !fuelOK && !!P.bulkFuelRate && nRef < 1 + (CFG.FUEL_BULK_MAX || 0);
+    const dockShort = !fuelOwn && !!P.bulkFuelRate && nRef < 1 + (CFG.FUEL_BULK_MAX || 0);
     /* (the vault reason only while fuel is fine: with fuel short a bigger
        vault banks money the army cannot spend - the trap the plan already
-       refuses for silos) */
-    if (rich && !noOre && (dockShort || (fuelOK && P.cash > P.storageCap() * 0.8)))
+       refuses for silos.) "Fine" here is a deep tank of our own and not the
+       income test alone: facFuel/airFuel/navFuel hold the lines at what the
+       fuel income can run, so income covers the lines almost by
+       construction, and the vault reason then fired on every full bank. A
+       jsc census of fulda without a market had P0 on 15 refineries and
+       39,910 credits at t=600 and on 21 and 56,322 (33 haulers) at t=900,
+       against 7 and 9 before the line caps; with the tank test, 7 and
+       20,594 at t=600. */
+    if (rich && !noOre && (dockShort || (fuelOwn && P.oil > 45 * Math.max(2, lines) &&
+                                         P.cash > P.storageCap() * 0.8)))
       ref = Math.max(ref, Math.min(nRef + 1, refClock + richN));
     /* ---- and when the ore is out of reach, reach for it ----
        Measured in a jsc smoke run of fulda: one seat's nearest seen field was
@@ -6211,7 +6526,7 @@ function makeCommander() {
     return (m.plan = { fac, bar, air, nav, ref, perRef, harv, harvN, noOre, prod, rich, richN, surplus,
                        fuelInc: Math.round(fuelInc * 100) / 100, fuelOK, harvIdle,
                        field: !!ft.inReach, far: !!ft.outReach, served: ft.served,
-                       creep, rampFull });
+                       creep, rampFull, facFuel, airFuel, navFuel, fuelOwn });
   }
 
   /* ---- siting ---- */
@@ -6563,6 +6878,9 @@ function makeCommander() {
     const starving = nRef >= 1 && nFac >= 1 && P.cash < 2200 && !plan.noOre &&
                      harv < Math.max(harvFloor, Math.ceil(plan.harv * 0.5));
     if (starving) macro.starved++;
+    /* the fuel market (FUEL MARKET): before anything is bought, and above
+       every early return in this think */
+    fuelMarket(nFac, nAir, nYard, nLab, mineShort || starving);
     if (!bq.items.length && !bq.ready.length) {
       const can = (id) => !(failCool[id] > G.time);
       const tryB = (id, why) => {
@@ -6626,6 +6944,16 @@ function makeCommander() {
            queue is paid first, so a thin bank only means the next 700
            credits go to the well. */
         (P.countBuilding("derrick") < 1 && P.cash > 300 && oilSpotOK() && tryB("derrick", "well1")) ||
+        /* ---- AND THE NEXT TWO WELLS AHEAD OF THE REST OF THE OPENING ----
+           The general derrick rung below waits behind the second refinery,
+           the naval yard, the dome, the field refinery and the second
+           factory - eighty seconds of works or more at one yard. A well is 700
+           credits for 0.55 barrels a second for good; bought, those barrels
+           are 33 cr/s at 60 a barrel, so a well pays for itself in about
+           twenty seconds of the market's price. The second and the third go
+           down as soon as a site is in reach. */
+        (P.countBuilding("derrick") < 3 && (hard || P.cash > 700) && oilSpotOK() &&
+         tryB("derrick", "well3")) ||
         (nRef < 2 && (hard || P.cash > 1200) && tryB("refinery", "open")) ||
         (!groundConnected && nYard < 1 && shoreOK() && tryB("navalyard", "sea")) ||
         (nRadar < 1 && (hard || P.cash > 1400) && tryB("radar", "open")) ||
@@ -6784,10 +7112,14 @@ function makeCommander() {
          once the plan builds barracks by income: 24 emplacements by t=480 in
          the integration smoke run of fulda (two per step had given nineteen
          in the macro stream's). */
+      /* ...and money that is idling past what the fuel market will take
+         (spareGuns, FUEL MARKET) raises both terms the same way */
+      const spareN = spareGuns(plan);
       const wanted = (armyShort && nDef >= defFloor && !hitHome) ? 0 : Math.round(
-        Math.min(2 + threat * 0.45 + G.time / 600 + plan.richN,
+        Math.min(2 + threat * 0.45 + G.time / 600 + plan.richN + spareN,
                  3 + nFac * 2 + (D.aggro >= 1.3 ? 1 : 0) +
-                 Math.floor(Math.max(0, plan.prod - 2) / 2) + plan.richN) * (D.defenceBias || 1));
+                 Math.floor(Math.max(0, plan.prod - 2) / 2) + plan.richN + spareN) *
+        (D.defenceBias || 1));
       defShort = nDef < wanted;
       if (nDef < wanted) {
         /* The same defect as the army roll, in the other direction: this was
@@ -7038,7 +7370,9 @@ function makeCommander() {
        barrels from the army: a jsc probe of korea had P1 put 184 barrels into
        33 haulers, and 58 into combat vehicles, by t=600 with 30k banked. The
        fleet is held where it stands, never under two docks' worth. */
-    const harvTarget = plan.rich && !plan.fuelOK
+    /* (fuelOwn: fuel that is fine only because the market is selling it is
+       still short for this purpose - see macroPlan) */
+    const harvTarget = plan.rich && !plan.fuelOwn
       ? Math.min(plan.harv, Math.max(2 * plan.perRef, harv)) : plan.harv;
     /* past the first two, a hauler (8 barrels) leaves the rig reserve alone -
        on korea the second yard waited at 10 barrels while haulers took them */
@@ -7089,7 +7423,20 @@ function makeCommander() {
         mix.veh.spg = (mix.veh.spg || 0) + 0.45;
         if (P.tech >= 3) mix.veh.mlrs = (mix.veh.mlrs || 0) + 0.30;
       }
-      if (queueLen("infantry") < 2) buildToward(mix.inf, army, "infantry");
+      /* ---- INFANTRY IS NOT WHERE UNSPENDABLE MONEY GOES ----
+         Both queues fill one ceiling, and the vehicle queue is the one refused
+         for fuel: at t=900 fulda P0's army was 61 infantry to 14 vehicles,
+         cut at sixteen barracks. While money idles and fuel can be had - a
+         rich plan that reads fuel fine, or the market feeding us (FUEL
+         MARKET) - infantry keeps to INF_SHARE of the ceiling and the rest of
+         it waits for the vehicles the barrels are being bought for. Short of
+         money or dry, infantry is the army (infantryCap); across water it is
+         home defence and the landing force. */
+      const infMax = infantryCap(wantSize + plan.surplus, nFac, plan);
+      let infN = 0;
+      for (const u of army) if (u.def.cat === "infantry") infN++;
+      macro.mkt.infN = infN; macro.mkt.infMax = infMax === Infinity ? -1 : infMax;
+      if (queueLen("infantry") < 2 && infN < infMax) buildToward(mix.inf, army, "infantry");
       if (queueLen("vehicle") < 2 && nFac >= 1) buildToward(mix.veh, army, "vehicle");
       /* Eyes are bought above this gate now - see EYES. Inside it, none was
          bought while the army stood at strength. */
@@ -12221,6 +12568,18 @@ function makeCommander() {
                             oilers: count(u => u.def.role === "oiler"),
                             tankers: count(u => u.def.refuelRate) },
                repair: repairLedger(),
+               /* The fuel market and what it buys, so a census can see money
+                  turning into barrels and barrels into the force plan: bought,
+                  spent and orders are this commander's own ledger; why is the
+                  last check (ok, stocked, reserve, price, post, mine, refused,
+                  none, tier) and note the market's reason for a refusal; unit is the
+                  last price against the ceiling pMax; target is the stock the
+                  lines' burn asks for against native (wells and purchase
+                  lines); bar is the barracks against the plan; inf the
+                  infantry against its ceiling (-1: none); air the air force's
+                  share of the barrels against the budget's, its airframes, and
+                  its bases against the plan and the fuel allowance. */
+               fuel: fuelIntel(),
                /* The build plan, exposed so a census can see it working:
                   measured income (inc, cr/s), the bank's trend (slope), how
                   long money has idled, the growth budget, what the plan wants

@@ -162,6 +162,7 @@
   <div id="topbar">
     <div class="res" id="r-cash"><i class="ic-cash"></i><span>0</span></div>
     <div class="res" id="r-oil"><i class="ic-oil"></i><span>0</span></div>
+    <div class="res btn" id="r-fuelbuy" title="Buy fuel by the tanker load">BUY FUEL</div>
     <div class="res" id="r-power"><i class="ic-pow"></i><span>0/0</span></div>
     <div class="res" id="r-tech"><i class="ic-tech"></i><span>TECH I</span></div>
     <div class="spacer"></div>
@@ -1845,6 +1846,228 @@ try{
     q.items.length=0; UI.frame(CFG.DT);
     chk("an empty queue shows nothing", badge()==="", "badge='"+badge()+"'");
     q.items.push.apply(q.items,saved); if(q.ready) q.ready.push.apply(q.ready,savedR);
+  })();
+  }
+
+  /* ====== [45] THE FUEL MARKET ======
+     (owner) "can we buy oil through money?" Player.fuelQuote / buyFuel /
+     fuelOrders, the same for every seat. The arithmetic runs on stand-in
+     seats with a clock of their own - the market reads nothing but a seat's
+     buildings, its purse and game.time - so no match second is spent on it.
+     The HUD button, the match's own tick and the save are then driven on the
+     real player. */
+  if (inHalf(2)) {
+  log("\n[45] FUEL CAN BE BOUGHT, AT A PRICE");
+  (function(){
+    var Pp=Player.prototype;
+    if(typeof Pp.fuelQuote!=="function" || typeof Pp.buyFuel!=="function" ||
+       typeof Pp.fuelOrders!=="function" || typeof Pp.restoreFuelMarket!=="function" ||
+       typeof CFG.FUEL_MKT_PRICE!=="number"){
+      chk("the fuel market exists", false, "missing"); return; }
+    var heard=[], clock={ time: 5000, players: [], alert: function(m){ heard.push(String(m)); } };
+    /* Seats outside the match. Each holds its oil above the lifeline's 60 and
+       gets a derrick of its own (which pumps nothing here - pumping is the
+       building's tick), so the only barrels that move are the market's. */
+    function seat(cash, oil){ var X=new Player(clock, 70, P.faction, cash, true); X.oil=oil; return X; }
+    function has(X,id){ var b={ dead:false, buildProgress:1, def:BUILDINGS[id], tx:0, ty:0 }; X.buildings.push(b); return b; }
+    function wait(X,s){ for(var i=Math.round(s/CFG.DT);i>0;i--){ clock.time+=CFG.DT; X.updateFuelPurchase(CFG.DT); } }
+    function lot(n,L){ return Math.round(CFG.FUEL_MKT_PRICE*n*(1+((L||0)+n/2)/CFG.FUEL_MKT_DEPTH)); }
+    function count(list,re){ return list.filter(function(m){ return re.test(m); }).length; }
+
+    /* ---- no refinery: refused, nothing charged ---- */
+    var A=seat(50000, 500);
+    has(A,"derrick");
+    var qa=A.fuelQuote(50), boughtA=A.buyFuel(50);
+    chk("with no refinery the market refuses, and says why",
+        !qa.ok && /REFINERY/.test(qa.why||"") && !boughtA, JSON.stringify(qa));
+    chk("and nothing is charged, ordered or delivered",
+        A.cash===50000 && A.fuelOrders().length===0 && A.oil===500,
+        "cash "+A.cash+" orders "+A.fuelOrders().length+" oil "+A.oil);
+
+    /* ---- a purchase: paid now, delivered after the ETA ---- */
+    var ref=has(A,"refinery");
+    var q=A.fuelQuote(50);
+    chk("with a refinery a 50-barrel lot is quoted at the quiet-market price",
+        q.ok && q.bbl===50 && q.cost===lot(50) && q.why===null, JSON.stringify(q));
+    chk("dearer a barrel than the lifeline and the bulk import, on a 20-40 s convoy",
+        q.cost/q.bbl>CFG.FUEL_BUY_PRICE && q.cost/q.bbl>CFG.FUEL_BULK_PRICE && q.eta>=20 && q.eta<=40,
+        (q.cost/q.bbl).toFixed(1)+" a barrel vs "+CFG.FUEL_BUY_PRICE+" / "+CFG.FUEL_BULK_PRICE+", eta "+q.eta+"s");
+    var t0=clock.time, okA=A.buyFuel(50), ordA=A.fuelOrders();
+    chk("the order is placed and the credits leave at once",
+        okA && A.cash===50000-q.cost && ordA.length===1 && ordA[0].bbl===50 &&
+        Math.abs(ordA[0].due-(t0+q.eta))<1e-6,
+        "cash "+A.cash+" orders "+JSON.stringify(ordA));
+    chk("but not one barrel comes with the order", A.oil===500, "oil "+A.oil);
+    wait(A, q.eta-1);
+    var early=A.oil, earlyN=A.fuelOrders().length;
+    wait(A, 1.5);
+    chk("the barrels land when the convoy is due, not before",
+        early===500 && earlyN===1 && Math.abs(A.oil-550)<1e-6 && A.fuelOrders().length===0,
+        "oil a second before "+early+", half a second after "+A.oil);
+    chk("and the ledger books them", !!A.oilIn && A.oilIn.market===50 && A.oilIn.marketCr===q.cost,
+        JSON.stringify(A.oilIn));
+
+    /* ---- a convoy with nowhere to unload waits for somewhere ---- */
+    A.buyFuel(20);
+    ref.dead=true;
+    wait(A, CFG.FUEL_MKT_ETA+3);
+    var held=A.oil, heldN=A.fuelOrders().length;
+    ref.dead=false;
+    wait(A, 1.5);
+    chk("a convoy that finds no refinery waits, and unloads once one stands",
+        held===550 && heldN===1 && Math.abs(A.oil-570)<1e-6 && A.fuelOrders().length===0,
+        "refinery down: oil "+held+" orders "+heldN+"; back up: oil "+A.oil);
+
+    /* ---- the price climbs after a big purchase and relaxes later ---- */
+    var B=seat(100000, 500); has(B,"derrick"); has(B,"refinery");
+    var quiet=B.fuelQuote(50).cost, big=B.fuelQuote(CFG.FUEL_MKT_LOT);
+    B.buyFuel(CFG.FUEL_MKT_LOT);
+    var hot=B.fuelQuote(50).cost;
+    chk("a big order costs more a barrel than a small one",
+        big.bbl===CFG.FUEL_MKT_LOT && big.cost/big.bbl>quiet/50*1.5,
+        big.bbl+" bbl at "+(big.cost/big.bbl).toFixed(1)+" vs 50 at "+(quiet/50).toFixed(1));
+    chk("and the next lot after it is far dearer", hot>=quiet*2.5 && hot===lot(50, CFG.FUEL_MKT_LOT),
+        quiet+" -> "+hot);
+    wait(B, CFG.FUEL_MKT_HALFLIFE);
+    var halfP=B.fuelQuote(50).cost;
+    wait(B, CFG.FUEL_MKT_HALFLIFE*4);
+    var cool=B.fuelQuote(50).cost;
+    chk("the pressure halves in one half-life", Math.abs(halfP-lot(50, CFG.FUEL_MKT_LOT/2))<=2,
+        "after "+CFG.FUEL_MKT_HALFLIFE+"s "+halfP+" (expected "+lot(50, CFG.FUEL_MKT_LOT/2)+")");
+    chk("and the market is nearly quiet again a few minutes on", cool<hot*0.5 && cool<=quiet*1.1,
+        "after "+(CFG.FUEL_MKT_HALFLIFE*5)+"s "+cool+" (quiet "+quiet+", hot "+hot+")");
+
+    /* ---- splitting an order saves nothing; the road and the purse bound it ---- */
+    var C=seat(100000, 500), D=seat(100000, 500);
+    has(C,"derrick"); has(C,"refinery"); has(D,"derrick"); has(D,"refinery");
+    C.buyFuel(200);
+    for(var i=0;i<4;i++) D.buyFuel(50);
+    chk("four 50-barrel orders cost what one of 200 does",
+        Math.abs((100000-C.cash)-(100000-D.cash))<=4 && D.fuelOrders().length===4,
+        "one: "+(100000-C.cash)+"  four: "+(100000-D.cash));
+    while(D.fuelOrders().length<CFG.FUEL_MKT_OPEN && D.buyFuel(1));
+    var cashD=D.cash, full=D.fuelQuote(50);
+    chk("with every convoy on the road the next order is refused, and not charged",
+        !full.ok && /CONVOY/.test(full.why||"") && !D.buyFuel(50) && D.cash===cashD &&
+        D.fuelOrders().length===CFG.FUEL_MKT_OPEN, JSON.stringify(full));
+    var F=seat(1000, 500); has(F,"derrick"); has(F,"refinery");
+    var poor=F.fuelQuote(50);
+    chk("a lot the purse cannot cover is refused, still priced, and not charged",
+        !poor.ok && /FUNDS/.test(poor.why||"") && poor.cost===lot(50) && !F.buyFuel(50) &&
+        F.cash===1000 && F.fuelOrders().length===0, JSON.stringify(poor));
+    var huge=F.fuelQuote(100000), none=F.fuelQuote(0), junk=F.fuelQuote("x");
+    chk("an order is clamped to one lot, and nothing is not an order",
+        huge.bbl===CFG.FUEL_MKT_LOT && !none.ok && none.bbl===0 && !junk.ok && junk.bbl===0,
+        "huge "+huge.bbl+", zero: "+none.why+", junk: "+junk.why);
+
+    /* ---- the lifeline and the bulk import are as they were ---- */
+    var Lf=seat(1000, 0); has(Lf,"refinery");
+    wait(Lf, 10);
+    chk("the lifeline still buys 0.18 bbl/s at 9 with a refinery and no derrick",
+        CFG.FUEL_BUY_RATE===0.18 && CFG.FUEL_BUY_PRICE===9 &&
+        Math.abs(Lf.oil-1.8)<0.02 && Math.abs((1000-Lf.cash)-16.2)<0.2 && Lf.fuelOrders().length===0,
+        "oil "+Lf.oil.toFixed(3)+", spent "+(1000-Lf.cash).toFixed(2));
+    var Bk=seat(10000, 100); has(Bk,"derrick"); has(Bk,"refinery"); has(Bk,"refinery"); has(Bk,"refinery");
+    chk("and the bulk import is unchanged",
+        Math.abs(Bk.bulkFuelRate()-0.24)<1e-9 && CFG.FUEL_BULK_PRICE===25, "rate "+Bk.bulkFuelRate());
+    chk("stand-in seats are commanders, so none of that was announced", heard.length===0, heard.join(" | "));
+
+    /* ---- the HUD button, the match's own tick, and the save ---- */
+    var btn=document.getElementById("r-fuelbuy");
+    chk("the top bar has a BUY FUEL button", !!btn, btn ? JSON.stringify(btn.textContent) : "no #r-fuelbuy");
+    if(!btn) return;
+    var realAlert=Game.alert, said=[], eta0=CFG.FUEL_MKT_ETA, refB=null;
+    try {
+      Game.alert=function(m){ said.push(String(m)); };
+      P.restoreFuelMarket(null);
+      if(P.cash<60000) P.cash=60000;
+      if(!P.hasBuilding("refinery")){
+        var cash0=P.cash;
+        btn.click();
+        chk("with no refinery a click buys nothing, and says why",
+            P.cash===cash0 && P.fuelOrders().length===0 && count(said,/CANNOT BUY FUEL.*REFINERY/)===1 &&
+            btn.classList.contains("off") && /REFINERY/.test(btn.title||""),
+            said.join(" | ")+" / title "+JSON.stringify(btn.title));
+        /* "restored" places it finished and without the free hauler */
+        var hx=(P.homeX/32)|0, hy=(P.homeY/32)|0;
+        for(var r=4;r<40&&!refB;r++) for(var a=0;a<32&&!refB;a++){
+          var x=(hx+Math.cos(a/32*6.283)*r)|0, y=(hy+Math.sin(a/32*6.283)*r)|0;
+          if(Game.canPlace(P,"refinery",x,y)) refB=Game.placeBuilding(P,"refinery",x,y,"restored");
+        }
+        if(!refB){ chk("a refinery placed for the button", false, "no ground"); return; }
+      }
+      for(var f=0;f<10;f++){ Game.tick(CFG.DT); if(UI.frame) UI.frame(CFG.DT); }
+      var q1=P.fuelQuote(CFG.FUEL_MKT_HUD_LOT);
+      chk("the button shows the lot and its price, and is live",
+          q1.ok && !btn.classList.contains("off") && btn.textContent.indexOf("$"+U.fmt(q1.cost))>=0 &&
+          btn.textContent.indexOf(String(q1.bbl))>=0 && /tanker/i.test(btn.title||""),
+          JSON.stringify(btn.textContent)+" / "+JSON.stringify(btn.title));
+      /* the tick's delivery, without spending thirty match-seconds on it */
+      CFG.FUEL_MKT_ETA=2;
+      said.length=0;
+      var cash1=P.cash, oil1=P.oil;
+      q1=P.fuelQuote(CFG.FUEL_MKT_HUD_LOT);
+      btn.click();
+      var o1=P.fuelOrders(), q2=P.fuelQuote(CFG.FUEL_MKT_HUD_LOT);
+      chk("a click orders one lot, charges it at once and says so once",
+          o1.length===1 && o1[0].bbl===CFG.FUEL_MKT_HUD_LOT && P.cash===cash1-q1.cost &&
+          count(said,/FUEL ORDERED/)===1,
+          "orders "+JSON.stringify(o1)+", charged "+(cash1-P.cash)+" of "+q1.cost+" / "+said.join(" | "));
+      chk("and the button now shows the dearer next lot",
+          q2.cost>q1.cost && btn.textContent.indexOf("$"+U.fmt(q2.cost))>=0,
+          JSON.stringify(btn.textContent)+" next "+q2.cost);
+      tick(Math.round(1/CFG.DT));
+      var midN=P.fuelOrders().length, midGain=P.oil-oil1;
+      tick(Math.round(1.5/CFG.DT));
+      var gain=P.oil-oil1;
+      chk("the match's own tick unloads it when due, and says so once",
+          midN===1 && midGain<10 && P.fuelOrders().length===0 &&
+          gain-midGain>=CFG.FUEL_MKT_HUD_LOT-0.01 && gain<CFG.FUEL_MKT_HUD_LOT+10 &&
+          count(said,/FUEL CONVOY ARRIVED/)===1,
+          "at 1s: "+midN+" on the road, oil +"+midGain.toFixed(2)+"; at 2.5s: oil +"+gain.toFixed(2)+" / "+said.join(" | "));
+      CFG.FUEL_MKT_ETA=eta0;
+
+      /* an order on the road when the game is saved */
+      P.buyFuel(CFG.FUEL_MKT_HUD_LOT);
+      var want=P.fuelOrders(), rec=null;
+      try {
+        var res=SaveGame.save(Game,"ironfront.test45");
+        if(res.ok){
+          var snap=JSON.parse(localStorage.getItem("ironfront.test45"));
+          rec=snap.players[Game.players.indexOf(P)];
+        } else log("  (save not checked: "+res.error+")");
+      } catch(e){ log("  (save not checked: "+e.message+")"); }
+      try { localStorage.removeItem("ironfront.test45"); } catch(e){}
+      if(rec){
+        chk("a save carries the order on the road",
+            !!rec.fm && Array.isArray(rec.fm.o) && rec.fm.o.length===1 && rec.fm.o[0][0]===want[0].bbl,
+            JSON.stringify(rec.fm));
+        /* SaveGame.load rebuilds the whole match, which would end this suite,
+           so the saved record goes back through the call load() makes */
+        clock.time=Game.time;
+        var R=seat(0, 100); has(R,"derrick"); has(R,"refinery");
+        R.restoreFuelMarket(rec.fm);
+        R.cash=1e6;
+        var back=R.fuelOrders();
+        chk("restored, it is the same order, due at the same time",
+            back.length===1 && back[0].bbl===want[0].bbl && Math.abs(back[0].due-want[0].due)<0.01,
+            JSON.stringify(back)+" vs "+JSON.stringify(want));
+        chk("behind the same market pressure",
+            Math.abs(R.fuelQuote(50).cost-P.fuelQuote(50).cost)<=1,
+            R.fuelQuote(50).cost+" vs "+P.fuelQuote(50).cost);
+        wait(R, CFG.FUEL_MKT_ETA+1);
+        chk("and it is delivered like any other", R.oil===100+want[0].bbl && R.fuelOrders().length===0,
+            "oil "+R.oil);
+        var Old=seat(0, 0); Old.restoreFuelMarket(undefined);
+        chk("a save from before the market restores to nothing on the road and a quiet market",
+            Old.fuelOrders().length===0 && Old.fuelPressure()===0, "");
+      }
+    } finally {
+      CFG.FUEL_MKT_ETA=eta0;
+      Game.alert=realAlert;
+      P.restoreFuelMarket(null);
+      if(refB && !refB.dead) Game.removeBuilding(refB);
+    }
   })();
   }
 

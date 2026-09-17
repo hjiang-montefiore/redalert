@@ -275,6 +275,8 @@ class Player {
     return extra > 0 ? extra * rate : 0;
   }
   updateFuelPurchase(dt) {
+    /* convoys bought on the market (below) unload here once they are due */
+    if (this.fuelInbound && this.fuelInbound.length) this.receiveFuel();
     /* a ledger of barrels bought, beside oilOut's barrels spent */
     const inn = this.oilIn || (this.oilIn = { buy: 0, bulk: 0 });
     if (this.buysFuel()) {
@@ -297,6 +299,130 @@ class Player {
         }
       }
     }
+  }
+
+  /* ---- THE FUEL MARKET (CFG.FUEL_MKT_*) ----
+     (rule, every player alike) Fuel bought by the tanker load: quoted, paid
+     for the moment it is ordered, unloaded at a refinery ETA seconds later.
+     The price climbs with this side's recent buying and eases as that
+     pressure decays - config.js has the numbers and why. The pressure is
+     kept as a level and the time it was written, and decayed when read, so a
+     side that never buys costs nothing per tick and one that has bought
+     costs one Math.pow per quote. */
+  fuelPressure() {
+    const m = this.fuelMkt;
+    if (!m || !(m.p > 0)) return 0;
+    const now = this.game ? this.game.time : 0;
+    return m.p * Math.pow(0.5, Math.max(0, now - m.t) / (CFG.FUEL_MKT_HALFLIFE || 120));
+  }
+  /* what the next single barrel would cost */
+  fuelPrice() {
+    return (CFG.FUEL_MKT_PRICE || 30) * (1 + this.fuelPressure() / (CFG.FUEL_MKT_DEPTH || 100));
+  }
+  /* The quote describes the order as it WOULD be placed - bbl floored to
+     whole barrels and clamped to one lot, its cost, its ETA - whether or not
+     it can be; `ok` says whether it can and `why` says why not. So a caller
+     that cannot afford 250 barrels still sees what they cost and can ask for
+     fewer. `price` is the average per barrel of this order. */
+  fuelQuote(bbl) {
+    const n = Math.max(0, Math.min(CFG.FUEL_MKT_LOT || 250, Math.floor(+bbl || 0)));
+    const L = this.fuelPressure();
+    const cost = Math.round((CFG.FUEL_MKT_PRICE || 30) * n *
+                            (1 + (L + n / 2) / (CFG.FUEL_MKT_DEPTH || 100)));
+    const open = this.fuelInbound ? this.fuelInbound.length : 0;
+    let why = null;
+    if (this.defeated) why = "OUT OF THE WAR";
+    else if (!this.hasBuilding("refinery")) why = "REQUIRES ORE REFINERY";
+    else if (n < 1) why = "NOTHING TO BUY";
+    else if (open >= (CFG.FUEL_MKT_OPEN || 4)) why = "CONVOYS ALREADY ON THE ROAD (" + open + ")";
+    else if (this.cash < cost) why = "INSUFFICIENT FUNDS";
+    return { ok: !why, bbl: n, cost, eta: CFG.FUEL_MKT_ETA || 30, why,
+             price: n > 0 ? cost / n : this.fuelPrice() };
+  }
+  /* true = ordered: the credits leave now and the barrels land at `due` */
+  buyFuel(bbl) {
+    const q = this.fuelQuote(bbl);
+    if (!q.ok || !this.spend(q.cost)) return false;
+    const now = this.game ? this.game.time : 0;
+    this.fuelMkt = { p: this.fuelPressure() + q.bbl, t: now };
+    (this.fuelInbound || (this.fuelInbound = [])).push({ bbl: q.bbl, due: now + q.eta, cost: q.cost });
+    /* barrels are booked in the ledger when they land (receiveFuel), the
+       credits when they are paid */
+    const inn = this.oilIn || (this.oilIn = { buy: 0, bulk: 0 });
+    inn.marketCr = (inn.marketCr || 0) + q.cost;
+    if (!this.isAI && this.game && this.game.alert)
+      this.game.alert("FUEL ORDERED \u2014 " + q.bbl + " BBL FOR $" + U.fmt(q.cost) +
+                      ", CONVOY DUE IN " + q.eta + "S", "good");
+    return true;
+  }
+  /* undelivered orders, earliest first - copies, so nobody edits the book */
+  fuelOrders() {
+    const list = this.fuelInbound;
+    if (!list || !list.length) return [];
+    return list.map(o => ({ bbl: o.bbl, due: o.due, cost: o.cost }))
+               .sort((a, b) => a.due - b.due);
+  }
+  /* From the per-player tick while anything is on the road. Everything due
+     unloads together. With no refinery standing it waits, and the check is
+     repeated once a second rather than every tick, since hasBuilding walks
+     the whole base. A beaten side's orders are simply gone. */
+  receiveFuel() {
+    const list = this.fuelInbound, now = this.game ? this.game.time : 0;
+    if (this.defeated) { list.length = 0; return; }
+    let due = false;
+    for (const o of list) if (o.due <= now) { due = true; break; }
+    if (!due || (this._fuelWait || 0) > now) return;
+    if (!this.hasBuilding("refinery")) {
+      this._fuelWait = now + 1;
+      if (!this.isAI && !this._fuelWaitSaid && this.game && this.game.alert) {
+        this._fuelWaitSaid = true;
+        this.game.alert("FUEL CONVOY WAITING \u2014 NO REFINERY TO UNLOAD AT", "warn");
+      }
+      return;
+    }
+    this._fuelWait = 0; this._fuelWaitSaid = false;
+    let got = 0;
+    for (let i = list.length - 1; i >= 0; i--)
+      if (list[i].due <= now) { got += list[i].bbl; list.splice(i, 1); }
+    this.oil += got;
+    const inn = this.oilIn || (this.oilIn = { buy: 0, bulk: 0 });
+    inn.market = (inn.market || 0) + got;
+    /* the tank level makes every arrival line different: UI.alert drops a
+       repeat of the previous line inside four seconds, and two 50-barrel
+       lots clicked a second apart land a second apart */
+    if (!this.isAI && this.game && this.game.alert)
+      this.game.alert("FUEL CONVOY ARRIVED \u2014 " + got + " BBL UNLOADED, TANKS " +
+                      Math.floor(this.oil) + " BBL", "good");
+  }
+  /* save.js: the orders on the road and the pressure behind the price, both
+     against absolute game time - which a save restores - so a reload neither
+     loses paid-for barrels nor hands out a quiet market. Nothing is written
+     for a side with neither. */
+  fuelMarketState() {
+    const list = this.fuelInbound || [];
+    const p = this.fuelPressure();
+    if (!list.length && p < 0.01) return undefined;
+    return { o: list.map(o => [o.bbl, +o.due.toFixed(2), Math.round(o.cost || 0)]),
+             p: +p.toFixed(3), t: +(this.game ? this.game.time : 0).toFixed(3) };
+  }
+  /* ...and back. A missing key restores as nothing on the road and a quiet
+     market, which is what a save from before this had; a malformed entry is
+     skipped. Every field goes through a number first: a string that passed
+     the checks would be concatenated into the tank on delivery ("10" + 50
+     is "1050") and break the next save. */
+  restoreFuelMarket(s) {
+    this.fuelInbound = [];
+    this.fuelMkt = null;
+    this._fuelWait = 0;
+    if (!s || typeof s !== "object") return;
+    for (const r of (Array.isArray(s.o) ? s.o : [])) {
+      if (!Array.isArray(r)) continue;
+      const bbl = Math.floor(+r[0]), due = +r[1];
+      if (!(bbl > 0) || !Number.isFinite(due)) continue;
+      this.fuelInbound.push({ bbl, due, cost: +r[2] || 0 });
+    }
+    const p = +s.p, t = +s.t;
+    if (p > 0 && Number.isFinite(t)) this.fuelMkt = { p, t };
   }
 
   /* ---- advancing a generation ----

@@ -177,6 +177,52 @@ var CFG = {
   FUEL_BULK_PRICE: 25,       // credits per imported barrel
   FUEL_BULK_BANK: 5000,      // only a side with this much banked imports
   FUEL_BULK_CEIL: 250,       // ...and only while its tanks hold less than this
+  /* --- the fuel market ---
+     (owner) "can we buy oil through money?" Yes: by the tanker load, on the
+     spot market, delivered to a refinery - at a price that climbs the harder
+     a side has been buying lately. The lifeline and the bulk import above are
+     trickles that run on their own; this is an order the commander places,
+     pays for at once and waits for (player.js fuelQuote / buyFuel - the same
+     for every seat, the human's BUY FUEL button included).
+     Measured with brains on both seats at Warlord (20k purse): the side that
+     wins banks 16,000-26,000 credits on 25-90 barrels - fulda P0 at t=600
+     holds 22,395 against a 21,500 vault, so every credit of ore it hauls is
+     thrown away - and pours the money into 12-17 barracks, because a rifle
+     needs no fuel. That is the money this gives somewhere to go.
+     THE PRICE. 30 credits a barrel on a quiet market: dearer than the bulk
+     import's 25 (a standing contract through spare refineries beats the spot
+     market) and over three times the lifeline's 9. Every barrel bought adds
+     to a PRESSURE that halves every 120 seconds, and each 100 barrels of it
+     adds another 30 to the price. An order of n barrels on top of pressure L
+     costs 30 * n * (1 + (L + n/2) / 100) - the marginal price integrated
+     across the order, so four small orders cost exactly what one big one does.
+       one 50-barrel lot, quiet market      1,875   (37.5 a barrel)
+       250 barrels at once                 16,875   (67.5 a barrel)
+       fulda P0's whole 22,395 bank          ~300 barrels, in two orders
+     Buying steadily at R barrels a second holds the pressure at R * 173
+     (120 s / ln 2), so the next barrel costs 30 * (1 + 1.73 R):
+       as much as one derrick  (0.55/s)     58 a barrel,  32 credits a second
+       as much as two          (1.10/s)     87 a barrel,  96 credits a second
+       as much as four         (2.20/s)    144 a barrel, 317 credits a second
+     A derrick is 700 credits ONCE for 0.55 a second - against the market at
+     that rate it pays for itself in 22 seconds - so a rich side can buy its
+     way through a fuel shortage but cannot buy its way out of needing oil.
+     THE LOT. At most 250 barrels an order: the largest single draw in the
+     game is Taiwan's last generational step, 140 x 1.45 = 203, and the
+     dearest hulls are about 150. At most four orders on the road at once;
+     four full lots on a quiet market would cost 180,000 credits, so the price
+     binds long before this does - it only bounds what a save carries.
+     THE DELIVERY. A tanker convoy from the rear, 30 seconds, unloaded at a
+     refinery - the only structure equipped to receive crude. No refinery, no
+     order. A convoy that arrives to find none standing waits at the gate and
+     unloads when one is up again: the crude is already paid for. */
+  FUEL_MKT_PRICE: 30,        // credits a barrel with no recent buying
+  FUEL_MKT_DEPTH: 100,       // barrels of recent buying that add one base price
+  FUEL_MKT_HALFLIFE: 120,    // seconds for that buying pressure to halve
+  FUEL_MKT_LOT: 250,         // largest single order, barrels
+  FUEL_MKT_OPEN: 4,          // orders a side may have on the road at once
+  FUEL_MKT_ETA: 30,          // seconds from order to delivery at a refinery
+  FUEL_MKT_HUD_LOT: 50,      // what one click of the HUD's BUY FUEL orders
 
   /* --- fuel burn per second, by layer --- */
   FUEL_BURN_AIR: 2.6, FUEL_BURN_SEA: 1.1, FUEL_BURN_LAND: 1.5,

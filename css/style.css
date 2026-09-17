@@ -80,6 +80,11 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 #topbar .spacer{flex:1;border:0}
 #topbar .btn{cursor:pointer;border-left:1px solid #22301f}
 #topbar .btn:hover{background:#2a3a26}
+/* BUY FUEL (ui.js syncFuelBuy): a lot that cannot be bought looks it, and
+   the tooltip and the click both say why */
+#topbar #r-fuelbuy{font-size:11px;color:#d9c08a}
+#topbar #r-fuelbuy.off{color:#5f6f58;cursor:not-allowed}
+#topbar #r-fuelbuy.off:hover{background:none}
 #topbar i{width:9px;height:9px;display:inline-block;border-radius:2px}
 .ic-cash{background:#e8c552}.ic-oil{background:#8a6a3c}.ic-pow{background:#5fb0e8}.ic-tech{background:#b06ae0}
 #r-power.low span{color:#ff6b52;animation:blink 1s infinite}
