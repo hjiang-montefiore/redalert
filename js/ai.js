@@ -9359,6 +9359,58 @@ function makeCommander() {
      this chose a corpse every think and moved nobody. The rest score on
      value per hit point still to be delivered, value being 1/roleWeight()
      from the same table the crews use.
+
+     AND THEN - added after a census showed this whole block was inert - by
+     whether anybody can actually shoot the thing. The counters said calls 148
+     and moved 15 on fulda at Warlord; instrumenting every branch of the move
+     loop for the same match said why, and it was not one of the economic
+     tests. Of 1742 hulls that reached the loop as candidates, 929 were thrown
+     out by ONE line - reachDps(u, call) came back zero - and of those 929,
+     gNoWep was 0 and gTooNear was 0: not one was a gun that could not hurt
+     the call, every single one was simply too far from it. Mean distance to
+     the call 20.2 tiles against a mean weapon reach of 8.37; only 56 of the
+     929 stood inside 1.5 times their own reach and 309 stood beyond three
+     times it. After the tube rule (271) and the lockout (24), 961 guns were
+     priced and 929 of them could not fire: 32 hulls in a whole match reached
+     the named target, and the wave loop moved 10 of them (the other 5 of the
+     reported 15 came from the older concrete pass at the bottom of this
+     function, which is a different loop). The economics decided 22 cases in
+     13 minutes. THE DECISION LOGIC WAS NEVER THE PROBLEM; the candidate pool
+     was empty, because the call was chosen by value per hit point over the
+     whole wave while the move test is local, so the commander kept naming a
+     hull on the far side of a strung-out column.
+     So the choice is now made on both: shortlist the four best-scoring
+     targets, and for each ask what fire the wave could ADD to it right now -
+     the same reachDps every candidate is priced with, over the same hulls the
+     move loop would consider - then take the one with the best score times
+     the share of its remaining need that added fire closes inside CALL_WIN.
+     A target nobody can reach scores zero and is never named, so `calls` now
+     counts calls somebody can answer rather than wishes. The shortlist is
+     what keeps it cheap: four targets, one wave pass each.
+     WHAT THAT BOUGHT, and split the way the two loops actually earned it:
+     Same binary, same seeds, fulda at Warlord, three seeds x both seats, with
+     the expected hit points each of the two move sites puts onto the call
+     counted SEPARATELY, because they are different loops and they did not gain
+     the same thing. Over the six commanders the WAVE LOOP - the one this whole
+     diagnosis is about - moved 64 hulls before and 66 after, which is nothing;
+     but it put 1738 expected hit points onto called targets before and 2489
+     after (+43%), because the hulls it moves are now standing next to the
+     thing they are sent at. The older concrete pass at the bottom of this
+     function is the bigger winner by hull count, 13 moves to 25 and 478
+     expected hit points to 1064, because addable() lets an armed contact be
+     named only when somebody can reach it - and a gun shelling a shed counts
+     as somebody. Calls fell 686 to 152 and dry calls 635 to 97: the commander
+     stopped naming things it could not shoot. Time to kill a call somebody was
+     actually switched onto fell from 13.9 s to 4.0 s, and the rate of fire
+     onto one from 17.5 to 25.5 hit points a second.
+     WHAT GOT WORSE, so that nobody has to find it later: the wave's own
+     losses, 162 hulls to 180 over the six commanders. Two seats worse, one
+     better, two bit-identical. The matches diverge at the first call that
+     differs, so those are different battles rather than a controlled cost and
+     this is not proof of harm - but it is not nothing either, and a gun moved
+     onto the call does stop shooting whatever is shooting it. That is exactly
+     what the 0.6-of-present-rate test below bounds, and it is the number to
+     watch if this is ever loosened.
      CALL_WIN = 2 s and the bias is stated rather than hidden: the estimate
      leaves out fireCtrl, aspect and veterancy (delivered fire is HIGHER, so
      the call closes late and leans to overkill) and turret slew, cooldowns
@@ -9404,7 +9456,18 @@ function makeCommander() {
      concrete could be moved - kept apart so `dry` still measures calls
      between contacts */
   const callLog = { runs: 0, calls: 0, kept: 0, moved: 0, dry: 0, covered: 0, fog: 0, bld: 0,
-                   offBld: 0, bldRuns: 0, bldCalls: 0, bldDry: 0 };
+                   offBld: 0, bldRuns: 0, bldCalls: 0, bldDry: 0,
+                   /* noReach: shortlisted targets passed over because the wave
+                      could not add one round to them from where it stands.
+                      noCall: runs where that was true of the whole shortlist.
+                      allCov: runs where the shortlist was EMPTY instead,
+                      because every contact in the picture was already dying -
+                      a different silence, and one the old build kept too.
+                      Counting the two apart is what lets `calls` be read at
+                      all: noReach large against calls is the commander
+                      declining to wish, allCov is a picture with nothing left
+                      to decide. */
+                   noReach: 0, noCall: 0, allCov: 0 };
   /* ---- how much better the call must be ----
      (measured) 226 calls moved two hulls in the elite census, and 190 of 194
      calls were dry on korea. A gun on a target that its move would leave
@@ -9445,6 +9508,50 @@ function makeCommander() {
   function autoFight(u) {
     const o = u && !u.dead && !u.carried && !(u.routT > 0) && u.layer !== "air" ? u.order : null;
     return !!(o && o.type === "attack" && o.auto && !o.release && o.target);
+  }
+  /* ---- an UPPER BOUND on the fire the wave could ADD to this target ----
+     The number the call was chosen without. Every hull counted here is one the
+     move loop below also prices - an automatic engagement, not already on this
+     target, not a tube, not inside the three-second lockout, and shooting
+     something that is itself in the gated picture - and it is priced with the
+     very same reachDps(u, t, 0.86) the loop prices it with. Hulls on concrete
+     are added by the caller, on the terms the onBld pass spends them.
+
+     IT IS A BOUND, NOT AN EQUALITY, and the tests it leaves out are the loop's
+     own: the pass-0 surplus rule, `left * CALL_GAIN > best`, the
+     gain-against-0.6-of-my-present-rate ratio, and everything retarget() adds
+     on top of reachDps - the sightR() acquisition bound, a stance of hold, and
+     acqGate itself. So add > 0 is no promise of a move: measured, 15 of 28
+     calls on fulda are still dry, and on the quiet seed all four are.
+     What it DOES promise is the one direction the choice needs. Every hull
+     this prices is priced identically in the loop and reachDps is never
+     negative, so add == 0 proves the loop would collect nothing: a target with
+     add == 0 is one the commander cannot put a single extra round into this
+     think, which on fulda was 96.7% of the priced guns for the target it was
+     naming. That one-way property is the whole gate.
+
+     COST, bounded rather than measured: one pass over attackWave
+     (<= D.waveSize + 7, 37 at the turtle) with one Map lookup and one
+     pickWeapon each, for at most SHORT = 4 shortlisted targets - 148
+     pickWeapon calls at the worst size - plus, for an ARMED shortlist entry
+     only, two more per hull on concrete: 2 x SHORT x |onBld|, and this
+     build's own census counts 803 hull-samples on concrete over 150 runs on
+     fulda, 5.4 a run (|onBld| is a subset of that), so ~43. Against that, the
+     shortlist bails out of the whole two-pass move loop on the runs where
+     nothing is reachable, which is most of them. Net the two are inside
+     run-to-run noise and NO saving is claimed. Bounded by the wave, never by
+     the number of things on the map, and it walks nothing. */
+  function addable(tally, t, now) {
+    let s = 0;
+    for (const u of attackWave) {
+      if (!autoFight(u)) continue;
+      const cur = u.order.target;
+      if (cur === t || !tally.has(cur)) continue;
+      if (u._callT && now - u._callT < 3) continue;
+      if (u.isIndirect && u.isIndirect()) continue;
+      s += reachDps(u, t, 0.86);
+    }
+    return s;
   }
   function concentrate() {
     /* Micro, on the ladder the flanking code in launchGroundWave already
@@ -9487,23 +9594,81 @@ function makeCommander() {
     if (!tally || (tally.size < 2 && !onBld)) return;
     const soloBld = tally.size < 2;
     if (soloBld) callLog.bldRuns++; else callLog.runs++;
-    let call = null, best = 0;
+    /* THE SHORTLIST. The four best by value per hit point still to be
+       delivered - the old score, unchanged, and the old COVERED rule with it.
+       Four because the census saw a mean of 3.4 targets in the picture per run
+       (525 over 154 runs on fulda), so the shortlist is the whole picture in
+       the ordinary case and a bounded pass in the worst one. Insertion into a
+       four-long array: no sort, no allocation per target beyond the entry. */
+    const SHORT = 4, shot = [];
     for (const [t, c] of tally) {
       const s = callScore(t, c);
       if (s < 0) { callLog.covered++; continue; }
-      if (s > best) { best = s; call = t; }
+      let i = shot.length;
+      while (i > 0 && shot[i - 1].s < s) i--;
+      if (i >= SHORT) continue;
+      shot.splice(i, 0, { t, c, s });
+      if (shot.length > SHORT) shot.pop();
     }
-    /* HYSTERESIS. The score moves every time the call loses hit points, and a
-       turret that re-slews every think fires less than one that does not, so
-       a standing call that is still engaged, still in the picture (it is in
-       the tally, so it passed the gate this think) and within a quarter of the
-       best is kept. */
-    if (lastCall && lastCall !== call) {
-      const s = callScore(lastCall, tally.get(lastCall));
-      if (s > 0 && s >= best * 0.75) { call = lastCall; best = s; callLog.kept++; }
+    /* THE CHOICE: score x the share of the target's remaining need that the
+       fire we could actually add closes inside CALL_WIN. A target nothing can
+       reach scores 0 and is passed over - that case was the whole failure: 148
+       calls, 139 of them dry, because value alone kept naming a hull on the
+       far side of the column. `armed` is what the onBld pass needs, so hulls
+       on concrete count toward the reach of an armed contact only, on exactly
+       the terms that pass spends them.
+       THE SHARE COUNTS `need` A SECOND TIME, ON PURPOSE. callScore is already
+       value per hit point still to be delivered, so for a target the wave
+       cannot saturate the product falls off as 1/need^2: it leans harder on
+       the nearly-dead than the score alone does, because closing one target is
+       worth more than wounding two. The worry that raises is the one this
+       block's own preamble records - scoring the most nearly dead thing
+       highest is how the first draft chose a corpse every think - and it does
+       NOT happen here, because reachability dominates the product: measured on
+       fulda, the mean health of the named call RISES rather than falls - 0.460
+       of maxHp to 0.772 on the seed where the two builds diverge most, and
+       0.566 to 0.683 over six commanders on three seeds. The share also uses
+       the score's
+       own floor, maxHp * 0.04, rather than a bare hit point, so a target
+       already inside a CALL_WIN of death cannot buy an unbounded share. */
+    let call = null, best = 0, bestW = 0, keepW = 0, keepS = 0;
+    for (const e of shot) {
+      let add = addable(tally, e.t, now);
+      if (onBld && e.c.armed) {
+        for (const u of onBld) {
+          if (!autoFight(u) || (u._callT && now - u._callT < 3)) continue;
+          const g = reachDps(u, e.t, 0.86);
+          if (g > 0 && g >= reachDps(u, u.order.target) * 0.6) add += g;
+        }
+      }
+      if (add <= 0) { callLog.noReach++; continue; }
+      const w = e.s * Math.min(1, add * CALL_WIN /
+                              Math.max(callNeed(e.t, e.c), e.t.maxHp * 0.04));
+      if (e.t === lastCall) { keepW = w; keepS = e.s; }
+      if (w > bestW) { bestW = w; best = e.s; call = e.t; }
+    }
+    /* HYSTERESIS, on the same weighted number the choice is made with. The
+       score moves every time the call loses hit points, and a turret that
+       re-slews every think fires less than one that does not, so a standing
+       call that is still engaged, still in the picture (it is in the tally, so
+       it passed the gate this think), still reachable and within a quarter of
+       the best is kept. A standing call that did not make the shortlist, or
+       that nobody can reach any more, has keepW 0 and is dropped.
+       IT NOW FIRES RARELY - kept fell from 1-9 a match to 0-3 - and that is
+       the rule working rather than dying: once a call has absorbed every gun
+       that can reach it its add is 0, so it is released instead of held, and
+       the hulls already on it keep it anyway because engage() does. The band
+       is left to decide between two targets that BOTH still need fire. */
+    if (lastCall && call && lastCall !== call && keepW > 0 && keepW >= bestW * 0.75) {
+      call = lastCall; best = keepS; callLog.kept++;
     }
     lastCall = call;
-    if (!call) return;
+    /* Two silences, kept apart because they mean opposite things: allCov is a
+       picture in which every contact is already dying, which the old build
+       declined too and which has nothing to do with reach; noCall is a
+       shortlist the wave cannot reach, which is the case this whole change
+       exists to stop naming. */
+    if (!call) { if (shot.length) callLog.noCall++; else callLog.allCov++; return; }
     if (soloBld) callLog.bldCalls++; else callLog.calls++;
     let need = callNeed(call, tally.get(call));
     let moved = 0;
@@ -12629,7 +12794,16 @@ function makeCommander() {
                   inside CALL_WIN. fog and bld are counted per HULL, not per
                   target: fog is hulls whose live target the picture could not
                   vouch for within PEEK (so it was not counted at all), bld is
-                  hulls shooting a structure, which this never considers. */
+                  hulls shooting a structure, which this never considers.
+                  noReach is shortlisted targets the wave could not add a round
+                  to from where it stands, noCall is runs where that was the
+                  whole shortlist, and allCov is runs where there was no
+                  shortlist because every contact was already dying. Together
+                  they are the reason `calls` is now far smaller than `runs`
+                  and `dry` small against `calls`: the old build named a call
+                  on all but a handful of runs and 94% of them moved nobody,
+                  because value per hit point chose a target the move loop's
+                  own reach test then refused 96.7% of the time. */
                focus: Object.assign({ acq: (P.tgtStat && P.tgtStat.acq) || 0,
                                       flip: (P.tgtStat && P.tgtStat.flip) || 0 }, callLog),
                /* Exposed so a census can see the commander staging, deferring,

@@ -402,7 +402,17 @@ window.addEventListener("load", function () {
           var oo=P.oilOut||{}, ks=Object.keys(oo).sort(function(a,b){return oo[b]-oo[a];});
           var it2=AI.intelOf(P), pick=function(o,ks){ var r={}; if(!o) return "n/a"; ks.forEach(function(k){ if(o[k]!==undefined) r[k]=o[k]; }); return JSON.stringify(r); };
           lines.push("    ENGAGE: "+pick(it2.engage,["wave","held","massed","massBody","massClock","waits","defers","withdrawals","handed","dropped","spread"]));
-          lines.push("    FOCUS : "+pick(it2.focus,["acq","flip","runs","calls","kept","moved","dry","covered","fog","bld"]));
+          /* noReach/noCall/allCov and the concrete-pass trio are named here
+             because `calls` cannot be read without them. concentrate() now
+             names only a call the wave can answer, so calls falls sharply and
+             the reason is in noReach (shortlisted targets nobody could reach)
+             and noCall (runs where that was the whole shortlist), while allCov
+             is the unrelated silence of a picture already dying. offBld splits
+             `moved` into the two loops that produce it - the wave loop this
+             block is about, and the older pass that takes hulls off concrete -
+             which is the difference between crediting the new rule with the
+             wave-loop moves and with all of them. */
+          lines.push("    FOCUS : "+pick(it2.focus,["acq","flip","runs","calls","kept","moved","dry","covered","fog","bld","noReach","noCall","allCov","offBld","bldRuns","bldCalls","bldDry"]));
           lines.push("    RAID  : "+pick(it2.raid,["party","inWave","formed","xp","lost","end","skip"]));
           lines.push("    RIGS  : queued="+ex.queued+"  onMap="+JSON.stringify(ex.onMap));
           lines.push("    OILOUT: "+(ks.length?ks.map(function(k){return k+"="+Math.round(oo[k]);}).join("  "):"none"));

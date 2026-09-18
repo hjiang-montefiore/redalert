@@ -4473,6 +4473,155 @@ try{
    }
   })();
 
+  /* ====== [61] A CALL THE WAVE CANNOT REACH IS NOT A CALL ======
+     concentrate() names one contact for a ground wave to mass on, and until
+     this was fixed it was very nearly inert: on fulda at Warlord it named 148
+     calls and moved 15 hulls. The call was chosen by value per hit point over
+     the whole wave while the move test is local, so the commander kept naming
+     a hull on the far side of a strung-out column - 929 of the 961 guns it
+     priced were out of range of the thing it had named, and not one of them
+     was a gun that could not have hurt it. The rule now shortlists by value
+     and then names the target the wave can ADD fire to.
+
+     THIS SECTION RAISES ITS OWN BATTLE, for two reasons that cannot be worked
+     around in the shared match: that match is fought at Regular, which is
+     micro 0.4 and below concentrate()'s 0.6 Veteran gate, so the block never
+     executes in it at all; and it is fought on hormuz, where there is no
+     ground route for a ground wave to take. So this raises fulda at Warlord,
+     hands the commander an army so that its OWN launcher puts a wave in the
+     field, then moves eight of that wave's hulls into two scripted geometries
+     and gives them the automatic engagements the engine itself writes
+     ({ type: "attack", auto: true }, entities.js:343). Nothing here reaches
+     into the AI: both cases are read off intel().focus and off the hulls' own
+     orders, and every switch still goes through Unit.retarget -> acqGate. The
+     suite's own match is raised again afterwards, the way [59] does it.
+     Measured on both builds: the old rule fails case 1 (it names a call and
+     moves nobody, calls +1 dry +1) and fails case 2 (moved +0); the new rule
+     gives noCall +1 with calls +0, and moved +4. Bit-identical across runs and
+     unaffected by whatever match ran before it.
+     [61] and not [60] because [60] is taken twice over already - by the ally
+     colour section this build ships with, and by the raid stream's new section,
+     which is applied after this one. The tail of this file has been out of
+     numeric order since [45]; what it has never had is two sections sharing a
+     number. */
+  log("\n[61] A CALL THE WAVE CANNOT REACH IS NOT A CALL");
+  (function(){
+    if(typeof AI==="undefined" || !AI.intelOf || !AI.setPeace){
+      chk("the focus battle has a commander to run it", false, "no AI module"); return; }
+    var savedF=Game.opts;
+    try{
+      Game.init({ theatre:"fulda", seed:"focus", cash:200000, diff:"warlord",
+        era:"e20", eraAI:"e20", eraCapHuman:"e20", eraCapAI:"e20", fog:false,
+        startPos:-1, weather:"clear", factionHuman:"nato", factionAI:"pact",
+        techHuman:3, techAI:3, capHuman:3, capAI:3, armsHuman:"all", armsAI:"all",
+        superweapons:true, resources:1, mapSize:144, aiHandicap:1,
+        roster:[{faction:"nato",ai:false,team:1,label:"YOU"},
+                {faction:"pact",ai:true,team:2,diff:"warlord",personality:"balanced",label:"ENEMY"}] });
+      var FP=Game.players[0], FE=Game.players[1], T=CFG.TILE, M=Game.map;
+      var hb=tile(FE,"ground",4);
+      if(!hb||!AI.intelOf(FE)){ chk("the focus battle is raised", false, hb?"no commander":"no ground"); return; }
+      for(var i=0;i<14;i++) spawn(FE,"mbt_p",hb,(i%7),((i/7)|0));
+      for(var s=0;s<400 && AI.intelOf(FE).engage.wave<8;s++) tick(30);
+      var wv=AI.intelOf(FE).engage.wave;
+      chk("the commander's own launcher puts a ground wave in the field", wv>=8,
+          wv+" hulls at t="+Math.round(Game.time));
+      if(wv<8) return;
+
+      /* two clear stretches, 22 tiles apart, so a gun in one cannot reach the
+         other: an mbt's gun is 8.2 tiles and retarget() refuses past 0.86 of
+         that, which is 7.05 */
+      function clr(cx,cy,rad){ for(var x=cx-rad;x<=cx+rad;x++) for(var y=cy-rad;y<=cy+rad;y++){
+        if(x<2||y<2||x>=M.W-2||y>=M.H-2) return false;
+        if(!GameMap.passable(M,x,y,"ground")) return false; } return true; }
+      var sp=null;
+      for(var x=6;x<M.W-30&&!sp;x+=2) for(var y=6;y<M.H-8&&!sp;y+=2)
+        if(clr(x+13,y,6)&&clr(x+35,y,4)) sp={x:x+13,y:y};
+      var crew=FE.units.filter(function(u){ return !u.dead&&u.layer==="ground"&&u.def.role==="mbt"; });
+      if(!sp||crew.length<8){ chk("the focus geometry is built", false,
+        sp?("only "+crew.length+" tanks"):"no clear ground"); return; }
+      var eight=crew.slice(0,8);
+      /* every other hull of the wave is parked in a corner with nothing to
+         shoot, so the only engagements in the wave are the scripted ones */
+      FE.units.forEach(function(u){ if(!u.dead&&eight.indexOf(u)<0){
+        u.stance="hold"; u.order={type:"idle"}; u.x=4*T+16; u.y=4*T+16; } });
+      function put(u,tx,ty){ u.x=tx*T+16; u.y=ty*T+16; u.path=null; u.moving=false; }
+      function aim(u,t){ u.order={type:"attack",target:t,auto:true}; u._callT=0; }
+      function fx(){ var f=AI.intelOf(FE).focus, o={}; for(var k in f) o[k]=f[k]; return o; }
+      function dd(a,b,k){ return (b[k]||0)-(a[k]||0); }
+      var cx=sp.x, cy=sp.y;
+
+      /* ---- 1. two clusters 22 tiles apart, each already on its own contact.
+         Neither side can reach the other's. There is no call worth making and
+         the old rule made one anyway, every think, and moved nobody. ---- */
+      for(var i=0;i<4;i++) put(eight[i], cx+(i%2), cy+((i/2)|0));
+      for(var i=4;i<8;i++) put(eight[i], cx+22+(i%2), cy+(((i-4)/2)|0));
+      var L=spawn(FP,"mbt_n",{x:cx+3,y:cy},0,0), R=spawn(FP,"mbt_n",{x:cx+25,y:cy},0,0);
+      if(!L||!R){ chk("the focus geometry is built", false, "contacts failed to spawn"); return; }
+      L.stance="hold"; R.stance="hold";
+      for(var i=0;i<8;i++) aim(eight[i], i<4?L:R);
+      var a0=fx();
+      for(var k=0;k<30;k++){ tick(1);
+        for(var i=0;i<8;i++) if(eight[i].order.type!=="attack") aim(eight[i], i<4?L:R); }
+      var a1=fx(), swapped=0;
+      for(var i=0;i<8;i++) if(eight[i].order.target!==(i<4?L:R)) swapped++;
+      chk("a wave split across a gap it cannot shoot over names no call at all",
+          dd(a0,a1,"runs")>=1 && dd(a0,a1,"calls")===0 && dd(a0,a1,"noCall")>=1 && swapped===0,
+          "runs +"+dd(a0,a1,"runs")+", calls +"+dd(a0,a1,"calls")+
+          ", noReach +"+dd(a0,a1,"noReach")+", noCall +"+dd(a0,a1,"noCall")+
+          ", "+swapped+" hulls switched");
+
+      /* ---- 2. six hulls in one cluster - four on a healthy heavy, two on a
+         wounded tank, all of it inside everybody's reach - and one hull far
+         off engaging an MLRS worth more than either that nobody else can
+         touch. The old rule named the MLRS, on value alone, and moved
+         nobody. ---- */
+      put(L, 2, M.H-3); put(R, 3, M.H-3);
+      for(var i=0;i<6;i++) put(eight[i], cx+(i%3), cy+((i/3)|0));
+      put(eight[6], cx+22, cy); put(eight[7], 4, 4); eight[7].stance="hold";
+      var HV=spawn(FP,"hvy_n",{x:cx+4,y:cy},0,0),
+          WD=spawn(FP,"mbt_n",{x:cx,y:cy+4},0,0),
+          PR=spawn(FP,"mlrs_n",{x:cx+24,y:cy},0,0);
+      if(!HV||!WD||!PR){ chk("the focus geometry is built", false, "contacts failed to spawn"); return; }
+      WD.hp=1000; PR.hp=680; HV.stance="hold"; WD.stance="hold"; PR.stance="hold";
+      var want=[HV,HV,HV,HV,WD,WD,PR];
+      for(var i=0;i<7;i++) aim(eight[i], want[i]);
+      /* the commander's own sweep has to record all three before it decides:
+         concentrate() reads nothing the picture cannot vouch for within PEEK */
+      for(var k=0;k<40;k++){ tick(1);
+        for(var i=0;i<7;i++) if(eight[i].order.type!=="attack") aim(eight[i], want[i]); }
+      for(var i=0;i<7;i++) aim(eight[i], want[i]);
+      var b0=fx();
+      for(var k=0;k<30;k++){ tick(1);
+        for(var i=0;i<7;i++) if(eight[i].order.type!=="attack") aim(eight[i], want[i]); }
+      var b1=fx(), onWD=0;
+      for(var i=0;i<4;i++) if(eight[i].order.target===WD) onWD++;
+      chk("and where one contact CAN be massed on, guns are moved onto it",
+          dd(b0,b1,"moved")>=1 && onWD>=1,
+          "moved +"+dd(b0,b1,"moved")+", "+onWD+" of the 4 guns on the heavy switched to the wounded tank");
+      chk("while the richer prize nobody could reach is passed over, not named",
+          dd(b0,b1,"noReach")>=1 && eight[6].order.target===PR,
+          "noReach +"+dd(b0,b1,"noReach")+", the far gun still on the MLRS: "+
+          (eight[6].order.target===PR));
+    } catch(e){
+      chk("the focus battle ran", false, e&&e.message?e.message:String(e));
+    } finally {
+      try{
+        Game.init(savedF);
+        if(typeof UI!=="undefined" && UI.init) UI.init(Game);
+        P=Game.human; E=Game.players[1];
+        if(E && E.cash>4000) E.cash=4000;
+        AI.setPeace(E,true);
+        P.cash=200000; E.cash=200000; P.oil=9000; E.oil=9000;
+        chk("the suite's own match is standing again after the focus battle",
+            !!Game.human && Game.players.length>=2 && Game.map.W===CFG.MAP_W &&
+            Game.map.id===savedF.theatre,
+            Game.map.name+" "+Game.map.W+"x"+Game.map.H);
+      } catch(e3){
+        chk("the suite's own match is standing again after the focus battle", false, e3.message);
+      }
+    }
+  })();
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);
