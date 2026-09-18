@@ -1145,10 +1145,42 @@
     console.warn("[generations] " + nDecoyGap + " surface hulls from e80 on " +
                  "have no decoy rating: " + SOFTKILL_ERA_GAPS.join(", "));
 
+  /* ---- the ready magazine, and the jammer in the rotodome ----
+     The same fault as the decoys directly above, found the same way, in two
+     more places. Both of these sweeps live in rules.js, both are keyed on the
+     unit's ROLE rather than on its id - so both were written to cover the
+     whole game - and both were spelled as a bare loop in the body of rules.js,
+     which runs before eras.js has generated a single historical row.
+
+     rounds: 70 era gun and rocket batteries - 38 self-propelled guns and 32
+       multiple launchers, over eight factions and five eras - reached the
+       field with no magazine. entities.js treats a missing `rounds` as no
+       limit rather than as zero, so every historical howitzer and every
+       historical MLRS fired for the whole battle without resupply.
+     jam:    28 era AEW aircraft carried a radar and no jamming suite, in a
+       game where rules.js says in as many words that the suite is half of
+       what the airframe is for.
+
+     Run from here for the reason applyEraSoftkill() is run from here: this is
+     the last data file and therefore the first moment at which rules.js,
+     eras.js, heavyair.js and this file have all had their say. Both functions
+     refuse to overwrite a value that already exists, so calling them a second
+     time cannot disturb anything rules.js settled. */
+  var nRounds = 0, nRoundsGap = 0, nJam = 0;
+  if (typeof applyRoleRounds === "function") {
+    nRounds = applyRoleRounds();
+    nRoundsGap = ROUNDS_ERA_GAPS.length;
+  }
+  if (typeof applyAewJam === "function") nJam = applyAewJam();
+  if (nRoundsGap && typeof console !== "undefined" && console.warn)
+    console.warn("[generations] " + nRoundsGap + " gun, launcher or battery rows " +
+                 "have no ready magazine: " + ROUNDS_ERA_GAPS.join(", "));
+
   if (typeof console !== "undefined" && console.log)
     console.log("[generations] early warning derived on " + nAew + " airframes, " +
                 "armour on " + nArm + " vehicles, penetration on " +
                 nPen + " guns, ranges rebuilt, sight raised on " + nSight +
                 ", domain scaling on " + nDom + " weapons, decoy ratings on " +
-                nDecoy + " hulls");
+                nDecoy + " hulls, ready rounds on " + nRounds + " batteries, " +
+                "jamming on " + nJam + " AEW aircraft");
 })();
