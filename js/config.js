@@ -394,6 +394,68 @@ CFG.shiftHue = function (col, deg) {
   return { main: rot(col.main), dark: rot(col.dark), light: rot(col.light) };
 };
 
+/* ---------------- one colour per commander ----------------
+   A commander may be handed a colour of its own in the pre-battle slot list;
+   one that was not keeps its faction's. TWO COMMANDERS MUST NOT DEPLOY IN
+   COLOURS A PLAYER CANNOT TELL APART, which is more than "not the same hex":
+   at the size of a minimap dot, two greens 17 units of RGB distance apart
+   are one colour.
+   COLOR_NEAR is that bar, and it is deliberately BELOW the closest pair the
+   table above already ships - NATO #4b8fe0 and France #5f7fd6, 27.5 apart -
+   so this can never second-guess a national colour someone chose on purpose:
+   all eight armies keep their own. What it does catch is a palette nothing
+   constrains, which is exactly what shiftHue produces for a duplicate.
+   The two passes matter. A colour a player ASKED for is settled first and
+   never moves; only the implicit ones rotate. One pass in roster order let a
+   colour an earlier seat took by default push a later seat off the colour
+   its commander had actually chosen. */
+CFG.COLOR_NEAR = 24;
+CFG.colorDist = function (a, b) {
+  const v = (h) => { const n = parseInt(String(h).slice(1), 16);
+                     return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const p = v(a), q = v(b);
+  return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]) +
+                   (p[2] - q[2]) * (p[2] - q[2]));
+};
+/* [{faction, color}] -> the palette each one actually deploys in, in the same
+   order. Pure, and shared: the pre-battle menu paints its colour chips from
+   this and Game.init paints the players from it, so a chip beside a
+   commander's name cannot disagree with the tank on the map.
+   `fac` rides on the result because render3d's archOf has to know whose
+   architecture to raise when the paint is not that army's own - and because
+   it is the mark of a palette that has been through this pass at all. */
+CFG.resolveColors = function (list) {
+  const out = new Array(list.length), taken = [];
+  const clash = (m) => taken.some(t => CFG.colorDist(m, t) < CFG.COLOR_NEAR);
+  const own = (e, i) => {
+    const b = CFG.FACTION_COLORS[e && e.faction] || CFG.TEAM[i % CFG.TEAM.length];
+    return { main: b.main, dark: b.dark, light: b.light, fac: e && e.faction };
+  };
+  /* pass one: the colours commanders asked for. First claim wins. */
+  list.forEach((e, i) => {
+    if (!e || !e.color || !e.color.main) return;
+    const c = { main: e.color.main, dark: e.color.dark || e.color.main,
+                light: e.color.light || e.color.main, fac: e.faction };
+    if (clash(c.main)) return;          // a second claim on one colour is refused
+    out[i] = c;
+    taken.push(c.main);
+  });
+  /* pass two: everyone else takes their faction's, turned round the wheel
+     until it is tellable apart - 42 degrees a turn, the step duplicate
+     factions have always used, and eight turns is the whole wheel */
+  list.forEach((e, i) => {
+    if (out[i]) return;
+    let c = own(e, i);
+    for (let n = 0; n < 8 && clash(c.main); n++) {
+      const s = CFG.shiftHue(c, 42);
+      c = { main: s.main, dark: s.dark, light: s.light, fac: c.fac };
+    }
+    out[i] = c;
+    taken.push(c.main);
+  });
+  return out;
+};
+
 CFG.TEAM = [
   { name: "PLAYER", main: "#4b8fe0", dark: "#22406b", light: "#9ecbff" },
   { name: "ENEMY", main: "#d6503f", dark: "#6b241c", light: "#ff9d8c" },

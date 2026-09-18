@@ -64,6 +64,11 @@ var SaveGame = (function () {
         idx: p.idx, faction: p.faction, isAI: p.isAI, team: p.team,
         diff: p.diff, personality: p.personality, handicap: p.handicap, label: p.label,
         cash: Math.round(p.cash), oil: Math.round(p.oil), tech: p.tech,
+        /* the colour it deployed in. It may have been CHOSEN in the
+           pre-battle slot list, and nothing else in this file says which -
+           dropped, a reload repainted half the battle. An older save has no
+           `col` and falls back to the faction's colours, as it always did. */
+        col: p.color,
         sup: p.support || {},
         upgrades: Object.assign({}, p.upgrades),
         banned: Object.assign({}, p.banned),
@@ -214,7 +219,7 @@ var SaveGame = (function () {
     /* rebuild the world from the original options, then overwrite the state */
     const opts = Object.assign({}, d.opts);
     opts.roster = d.players.map(p => ({
-      faction: p.faction, ai: p.isAI, team: p.team,
+      faction: p.faction, ai: p.isAI, team: p.team, color: p.col,
       diff: p.diff, personality: p.personality, handicap: p.handicap, label: p.label,
     }));
     const G = Game.init(opts);

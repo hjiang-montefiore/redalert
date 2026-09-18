@@ -215,6 +215,10 @@
   <div id="endscreen" class="hidden"><div class="end-box"><h2 id="end-title"></h2><p id="end-sub"></p><button onclick="location.reload()">RETURN TO MENU</button></div></div>
 </div>
 
+<!-- [58] drives the field manual. The panel is built into this by
+     js/gallery.js, exactly as it is in index.html. -->
+<div id="gallery" class="hidden"></div>
+
 <div id="errbox" style="display:none;position:fixed;left:10px;top:40px;z-index:99;max-width:640px;
 background:rgba(60,8,8,.94);border:1px solid #ff6b52;color:#ffd6cc;font:12px/1.5 monospace;
 padding:10px 14px;white-space:pre-wrap;pointer-events:none"></div>
@@ -250,6 +254,11 @@ window.addEventListener("error", function (e) {
 <script src="js/spriteart.js?v=202608222243"></script>
 <script src="js/spriteart_hd.js?v=202608222243"></script>
 <script src="js/three.min.js"></script>
+<!-- [59] drives the editor. This page deliberately carries NO editor markup:
+     MapEdit.available() is false here, nothing is listened to or drawn, and
+     the match this page starts at load is the proof that DEPLOY is unchanged
+     on a page that has only the frozen menu. -->
+<script src="js/mapedit.js?v=202608222243"></script>
 <script src="js/render.js?v=202608222243"></script>
 <script src="js/models3d.js?v=202608222243"></script>
 <script src="js/units3d.js?v=202608222243"></script>
@@ -312,6 +321,12 @@ window.addEventListener("error", function (e) {
 <script src="js/save.js?v=202608222243"></script>
 <script src="js/game.js?v=202608222243"></script>
 <script src="js/main.js?v=202608222243"></script>
+<!-- [58] drives the field manual. This page deliberately does NOT load
+     js/loading.js, which is the hard case the section is written for.
+     Last of the script tags on purpose: the game.js/main.js pair above is
+     a two-line anchor another stream uses, and slipping a tag between
+     them would break it. -->
+<script src="js/gallery.js?v=202608222243"></script>
 
 <div id="tout" style="position:fixed;left:0;top:0;z-index:99999;background:#000;color:#0f0;font:11px monospace;white-space:pre;max-height:100vh;overflow:auto"></div>
 <script>
@@ -3385,6 +3400,1078 @@ try{
         off2.length === 0, off2.join("; ") || "F-86F 1953, Mi-8MT 1977 x2");
   })();
   }
+
+  /* ====== [57] THE SKIRMISH SLOT LIST ======
+     The deployment screen used to offer a COUNT of opponents; it offers a
+     list of commanders now, each with its own army, team letter, colour and
+     - for a computer commander - skill and doctrine, and the team letter is
+     what decides who is allied with whom. THIS PAGE STILL CARRIES THE OLD
+     MARKUP, which is the first thing checked here: every harness does, the
+     match this suite is running was raised from the old count, and the day
+     that stops working every harness in the repository stops working at
+     once.
+     The section deliberately checks the WIRING as well as the rules. A
+     builder that returns the right roster is worth nothing if nothing calls
+     it, so: the live match is asked whether its colours went through
+     Game.assignColors at all (the `fac` tag is stamped there and nowhere
+     else, so deleting that one line from Game.init fails here); the real
+     Skirmish.mount is driven on a container of its own, buttons and all;
+     and a real save is written and read back. */
+  if (inHalf(2)) {
+  log("\n[57] THE SLOT LIST BUILDS THE ROSTER");
+  (function(){
+    if (typeof Skirmish === "undefined") {
+      chk("the slot-list builder is loaded", false, "no Skirmish"); return;
+    }
+    /* ---- 1. the old markup still starts a match ---- */
+    chk("a page with no slot list reports none", Skirmish.read() === null,
+        "read() = " + String(Skirmish.read()));
+    chk("and this one raised its match on the old count all the same",
+        Game.players.length === 2 && Game.human === Game.players[0] &&
+        Game.human.faction === "nato" && Game.players[1].faction === "pact" &&
+        Game.players[1].isAI === true,
+        Game.players.map(function(p){
+          return p.label+" "+p.faction+" t"+p.team; }).join(" | "));
+    chk("with the two of them on different teams",
+        Game.allied(Game.players[0], Game.players[1]) === false,
+        "teams "+Game.players[0].team+" and "+Game.players[1].team);
+    chk("and each in its own faction colours",
+        Game.human.color.main === CFG.FACTION_COLORS.nato.main &&
+        Game.players[1].color.main === CFG.FACTION_COLORS.pact.main,
+        Game.human.color.main+" / "+Game.players[1].color.main);
+    /* THE WIRING. `fac` is stamped by CFG.resolveColors and by nothing else,
+       so this is the live battle saying it really went through the colour
+       pass at the end of Game.init's roster loop. Drop that call and every
+       chosen colour is silently ignored in every battle - and this fails. */
+    chk("because Game.init really put the roster through the colour pass",
+        Game.human.color.fac === "nato" && Game.players[1].color.fac === "pact",
+        "fac tags: "+Game.human.color.fac+" / "+Game.players[1].color.fac);
+
+    /* ---- 2. the fallback builds exactly the roster it always did ---- */
+    function fb(opp){
+      return Skirmish.roster({ slots:null, opponents:opp, fac:"nato", foe:"pact",
+                               pers:"mixed", diff:"regular", handicap:1, seed:1234 });
+    }
+    var one = fb("1");
+    chk("\"1 enemy commander\" is still you and one enemy",
+        one.length === 2 && one[0].faction === "nato" && one[0].ai === false &&
+        one[0].team === 1 && one[0].label === "YOU" &&
+        one[1].faction === "pact" && one[1].ai === true && one[1].team === 2 &&
+        one[1].label === "ENEMY 1" && one[1].diff === "regular" &&
+        one[1].handicap === 1,
+        JSON.stringify(one));
+    var ffa = fb("3");
+    chk("a free-for-all still gives every enemy a team of its own",
+        ffa.length === 4 && ffa[1].team === 2 && ffa[2].team === 3 &&
+        ffa[3].team === 4 && ffa[3].label === "ENEMY 3",
+        ffa.map(function(r){ return r.label+"=t"+r.team; }).join(" "));
+    var tt = fb("2t");
+    chk("\"1 ally vs 2 enemies\" still puts the ally on your team",
+        tt.length === 4 && tt[1].team === 1 && tt[1].label === "ALLY" &&
+        tt[2].team === 2 && tt[3].team === 2 && tt[3].label === "ENEMY 2",
+        tt.map(function(r){ return r.label+"=t"+r.team; }).join(" "));
+    chk("and \"mixed\" still deals every commander a different doctrine",
+        tt[1].personality && tt[2].personality && tt[3].personality &&
+        tt[1].personality !== tt[2].personality &&
+        tt[2].personality !== tt[3].personality &&
+        tt[1].personality !== tt[3].personality,
+        [tt[1].personality,tt[2].personality,tt[3].personality].join(","));
+    chk("the same seed deals the same opponents twice running",
+        JSON.stringify(fb("3")) === JSON.stringify(ffa), "seed 1234");
+
+    /* ---- 3. a roster built from slot rows ---- */
+    var slots = [
+      { faction:"gbr",  team:1, color:"" },
+      { faction:"fra",  team:1, color:"gold", diff:"elite", personality:"turtle" },
+      { faction:"pact", team:2, color:"rose" },
+      { faction:"pla",  team:3, color:"" }
+    ];
+    var rs = Skirmish.roster({ slots:slots, fac:"gbr", foe:"pact", pers:"mixed",
+                               diff:"regular", handicap:1, seed:99 });
+    chk("the rows decide the armies",
+        rs.length === 4 &&
+        rs.map(function(r){ return r.faction; }).join(",") === "gbr,fra,pact,pla",
+        rs.map(function(r){ return r.faction; }).join(","));
+    chk("the team letters decide the sides",
+        rs.map(function(r){ return r.team; }).join(",") === "1,1,2,3",
+        rs.map(function(r){ return r.label+"=t"+r.team; }).join(" "));
+    chk("a commander on your team is labelled an ally and the rest enemies",
+        rs[0].label === "YOU" && rs[1].label === "ALLY" &&
+        rs[2].label === "ENEMY 1" && rs[3].label === "ENEMY 2",
+        rs.map(function(r){ return r.label; }).join(" | "));
+    chk("only the human is the human", rs[0].ai === false &&
+        rs[1].ai === true && rs[2].ai === true && rs[3].ai === true, "ai flags");
+    chk("a row's own skill and doctrine win",
+        rs[1].diff === "elite" && rs[1].personality === "turtle",
+        rs[1].diff+"/"+rs[1].personality);
+    chk("and a row that says nothing takes the screen's defaults",
+        rs[2].diff === "regular" && !!rs[2].personality &&
+        rs[2].handicap === 1, rs[2].diff+"/"+rs[2].personality);
+
+    /* ---- 4. the alliance the letters promise ---- */
+    var ps = rs.map(function(r,i){
+      var p = new Player(Game, i, r.faction, 0, !!r.ai); p.team = r.team; return p;
+    });
+    Game.assignColors(ps, rs);
+    chk("two commanders on one team are allied",
+        Game.allied(ps[0], ps[1]) === true && Game.allied(ps[1], ps[0]) === true,
+        "t"+ps[0].team+" and t"+ps[1].team);
+    chk("and a commander on another team is not",
+        Game.allied(ps[0], ps[2]) === false && Game.allied(ps[2], ps[3]) === false,
+        "t"+ps[0].team+" vs t"+ps[2].team+" vs t"+ps[3].team);
+    chk("so two of the three computer commanders are hostile to you",
+        [ps[1],ps[2],ps[3]].filter(function(o){
+          return !Game.allied(ps[0], o); }).length === 2,
+        "of "+(ps.length-1)+" AI seats");
+
+    /* ---- 5. a skirmish needs two sides ----
+       Every commander on one letter and G.checkVictory finds a single live
+       team on its first pass: the battle is handed to you before a shot is
+       fired. The menu holds DEPLOY shut; the builder refuses it too, for the
+       save file, for this suite and for anyone calling Skirmish.roster. */
+    var allA = Skirmish.roster({
+      slots:[{team:1},{team:1},{team:1},{team:1}],
+      fac:"nato", pers:"mixed", diff:"regular", handicap:1, seed:11 });
+    var teamsA = {}, nA = 0;
+    allA.forEach(function(r){ if(!teamsA[r.team]) { teamsA[r.team]=1; nA++; } });
+    chk("a roster that put every commander on one team is not left that way",
+        nA === 2 && allA[0].team === 1 && allA[3].team === 2,
+        allA.map(function(r){ return r.label+"=t"+r.team; }).join(" "));
+    chk("and the seats that were set up deliberately keep their letters",
+        allA[1].team === 1 && allA[2].team === 1,
+        allA.map(function(r){ return "t"+r.team; }).join(","));
+
+    /* ---- 6. the colours ---- */
+    var pal = {};
+    Skirmish.COLORS.forEach(function(c){ pal[c.id] = c; });
+    chk("a chosen colour reaches the commander",
+        !!pal.gold && !!pal.rose && ps[1].color.main === pal.gold.main &&
+        ps[2].color.main === pal.rose.main,
+        ps[1].color.main+" / "+ps[2].color.main);
+    chk("a commander who chose nothing keeps its faction's",
+        ps[0].color.main === CFG.FACTION_COLORS.gbr.main &&
+        ps[3].color.main === CFG.FACTION_COLORS.pla.main,
+        ps[0].color.main+" / "+ps[3].color.main);
+    chk("and the palette still says which army is wearing it",
+        ps[1].color.fac === "fra" && ps[2].color.fac === "pact",
+        ps[1].color.fac+" / "+ps[2].color.fac);
+    /* BEING A DIFFERENT HEX IS NOT ENOUGH. The first palette drawn for this
+       screen had Gold 17 units of RGB distance from the PLA's amber and
+       Crimson 17 from the KPA's red - at the size of a minimap dot, one
+       colour. The bar is the closest pair the faction table itself ships. */
+    var facMin = 1e9, facPair = "";
+    Object.keys(CFG.FACTION_COLORS).forEach(function(a){
+      Object.keys(CFG.FACTION_COLORS).forEach(function(b){
+        if (a >= b) return;
+        var d = CFG.colorDist(CFG.FACTION_COLORS[a].main, CFG.FACTION_COLORS[b].main);
+        if (d < facMin) { facMin = d; facPair = a+"/"+b; }
+      });
+    });
+    var palMin = 1e9, palPair = "";
+    Skirmish.COLORS.forEach(function(c){
+      Object.keys(CFG.FACTION_COLORS).forEach(function(k){
+        var d = CFG.colorDist(c.main, CFG.FACTION_COLORS[k].main);
+        if (d < palMin) { palMin = d; palPair = c.id+"/"+k; }
+      });
+    });
+    chk("every palette colour is further from every army's than two armies are from each other",
+        palMin > facMin,
+        "closest palette/faction "+palPair+" "+palMin.toFixed(1)+
+        " vs closest faction pair "+facPair+" "+facMin.toFixed(1));
+    chk("and no two palette colours are confusable either",
+        Skirmish.COLORS.every(function(a){
+          return Skirmish.COLORS.every(function(b){
+            return a.id === b.id || CFG.colorDist(a.main, b.main) >= CFG.COLOR_NEAR; });
+        }), Skirmish.COLORS.length+" entries, bar "+CFG.COLOR_NEAR);
+    /* the eight national colours are a deliberate choice and the pass must
+       not second-guess them - NATO and France are 27.5 apart on purpose */
+    var armies = Object.keys(CFG.FACTION_COLORS);
+    var kept = CFG.resolveColors(armies.map(function(k){
+      return { faction:k, color:null }; }));
+    chk("every army still deploys in its own colour when nobody chose",
+        kept.every(function(c,i){
+          return c.main === CFG.FACTION_COLORS[armies[i]].main; }),
+        kept.map(function(c){ return c.main; }).join(" "));
+    /* six commanders of ONE army - the case that used to hand all six the
+       same blue, because the constructor counted the previous battle */
+    var same = [];
+    for (var i = 0; i < Skirmish.MAX; i++) same.push({ faction:"fra", team:i+1, color:"" });
+    var six = Skirmish.roster({ slots:same, fac:"fra", pers:"mixed", diff:"regular",
+                                handicap:1, seed:7 });
+    var sp = six.map(function(r,i){ return new Player(Game, i, r.faction, 0, i>0); });
+    Game.assignColors(sp, six);
+    var seen = {}, n = 0;
+    sp.forEach(function(p){ if (!seen[p.color.main]) { seen[p.color.main] = 1; n++; } });
+    chk("six commanders of one army deploy in six different colours",
+        sp.length === 6 && n === 6,
+        sp.map(function(p){ return p.color.main; }).join(" "));
+    chk("and every one of them is still French to the renderer",
+        sp.filter(function(p){ return p.color.fac === "fra"; }).length === 6,
+        "fac tags");
+    /* a colour taken twice: the menu greys the second one out, and the
+       builder and the colour pass must not rely on it having done so */
+    var dup = Skirmish.roster({ slots:[{ faction:"nato", team:1, color:"gold" },
+                                       { faction:"pact", team:2, color:"gold" }],
+                                fac:"nato", pers:"mixed", diff:"regular",
+                                handicap:1, seed:5 });
+    var dp = dup.map(function(r,i){ return new Player(Game, i, r.faction, 0, i>0); });
+    Game.assignColors(dp, dup);
+    chk("two commanders can never share a colour, however they ask",
+        dp[0].color.main !== dp[1].color.main &&
+        dp[0].color.main === pal.gold.main,
+        dp[0].color.main+" vs "+dp[1].color.main);
+    /* A CHOSEN COLOUR NEVER MOVES. Settling the roster in index order let a
+       colour an earlier seat took by DEFAULT push a later seat off the one
+       its commander actually asked for; chosen colours are settled first. */
+    var far = CFG.shiftHue(CFG.FACTION_COLORS.fra, 42);
+    var pinned = CFG.resolveColors([
+      { faction:"fra", color:null },                 // takes fra's own
+      { faction:"fra", color:null },                 // rotated off it
+      { faction:"deu", color:{ main:far.main, dark:far.dark, light:far.light } }
+    ]);
+    chk("a colour a commander chose is never handed to somebody else",
+        pinned[2].main === far.main && pinned[0].main !== far.main &&
+        pinned[1].main !== far.main,
+        pinned.map(function(c){ return c.main; }).join(" "));
+
+    /* ---- 7. the save carries the colour it deployed in ----
+       A chosen colour is in nothing else this file writes: dropped, a reload
+       repainted half the battle in faction colours. */
+    var rec = null;
+    try {
+      var res = SaveGame.save(Game, "ironfront.test57");
+      if (res.ok) {
+        var snap = JSON.parse(localStorage.getItem("ironfront.test57"));
+        rec = snap.players[0];
+      } else log("  (save not checked: "+res.error+")");
+    } catch(e){ log("  (save not checked: "+e.message+")"); }
+    try { localStorage.removeItem("ironfront.test57"); } catch(e){}
+    if (rec) {
+      chk("a save carries the colour each commander deployed in",
+          !!rec.col && rec.col.main === Game.human.color.main,
+          JSON.stringify(rec.col));
+      /* SaveGame.load rebuilds the whole match, which would end this suite,
+         so the saved record goes back through the call load() makes: the
+         roster it builds carries `color: p.col`, and that is what the colour
+         pass is handed. A chosen colour has to survive the round trip. */
+      var backRoster = [{ faction: rec.faction, team: rec.team,
+                          color: { main: pal.cyan.main, dark: pal.cyan.dark,
+                                   light: pal.cyan.light } }];
+      var backP = [new Player(Game, 0, rec.faction, 0, false)];
+      Game.assignColors(backP, backRoster);
+      chk("and a colour restored from one is the colour that is deployed",
+          backP[0].color.main === pal.cyan.main, backP[0].color.main);
+    }
+
+    /* ---- 8. the rows the menu builds are the rows the builder reads ----
+       Skirmish.row() is the real thing the deployment screen appends, so a
+       renamed class or a mis-wired select fails here rather than falling
+       quietly back to the old count and taking the whole screen with it.
+       (The two top rows hold #opt-fac and #opt-foe, which this page keeps
+       in its own comparison table, so their side cells read empty here and
+       the human falls back on the faction picker - which is checked.) */
+    var box = document.createElement("div");
+    box.appendChild(Skirmish.row(0));
+    box.appendChild(Skirmish.row(1));
+    box.appendChild(Skirmish.row(2));
+    var read = Skirmish.read(box);
+    chk("three rows read back as three commanders", !!read && read.length === 3,
+        JSON.stringify(read));
+    chk("and each starts on a team letter of its own",
+        read.map(function(s){ return s.team; }).join(",") === "1,2,3",
+        read.map(function(s){ return s.team; }).join(","));
+    chk("with no colour claimed and no army forced on the third row",
+        read[0].color === "" && read[1].color === "" && read[2].color === "" &&
+        read[2].faction === "random",
+        JSON.stringify(read[2]));
+    /* Skirmish.row is public and the suite calls it. A row built that way
+       must not stamp #fac-slot-me on its side cell and latch the menu's own
+       reference to it: in a browser that puts a second #fac-slot-me in the
+       document, and the next thing to read that reference writes the faction
+       picker into a detached node. */
+    chk("and a throwaway row never claims the menu's own faction cell",
+        box.querySelectorAll(".srow")[0].querySelector(".scell").id === "" &&
+        box.querySelectorAll(".srow")[1].querySelector(".scell").id === "",
+        "cell ids: ["+box.querySelectorAll(".srow")[0].querySelector(".scell").id+
+        "] ["+box.querySelectorAll(".srow")[1].querySelector(".scell").id+"]");
+    var r3 = box.querySelectorAll(".srow")[2];
+    r3.querySelector(".slot-team").value = "1";
+    r3.querySelector(".slot-col").value = "cyan";
+    r3.querySelector(".slot-fac").value = "roc";
+    r3.querySelector(".slot-diff").value = "warlord";
+    var built = Skirmish.roster({ slots: Skirmish.read(box), fac:"deu",
+                                  pers:"mixed", diff:"regular", handicap:1, seed:3 });
+    chk("a row moved onto your team comes back as an ally",
+        built.length === 3 && built[2].team === 1 && built[2].label === "ALLY" &&
+        built[2].faction === "roc" && built[2].diff === "warlord",
+        built.map(function(r){ return r.label+"/"+r.faction+"/t"+r.team; }).join(" "));
+    chk("and the colour that row claims is the colour it deploys in",
+        !!built[2].color && built[2].color.main === pal.cyan.main,
+        built[2].color ? built[2].color.main : "none");
+    chk("while the human still takes the faction picker's army",
+        built[0].faction === "deu" && built[0].ai === false, built[0].faction);
+
+    /* ---- 9. the screen's own wiring, driven ----
+       Skirmish.mount is the block index.html runs at load. Mounted on a
+       container of its own it can be worked here exactly as a player works
+       it: the add button, the dismiss cross and the change that repaints
+       the labels. Nothing else in the repository drives #slot-list. */
+    var list = document.createElement("div");
+    var add = document.createElement("button");
+    Skirmish.mount(list, add, false);
+    chk("a fresh list starts as you and one opponent",
+        list.querySelectorAll(".srow").length === 2 &&
+        Skirmish.read(list).map(function(s){ return s.team; }).join(",") === "1,2",
+        list.querySelectorAll(".srow").length+" rows");
+    for (var c = 0; c < 6; c++) add.click();
+    chk("\"add commander\" stops at six seats and then greys out",
+        list.querySelectorAll(".srow").length === Skirmish.MAX &&
+        add.disabled === true,
+        list.querySelectorAll(".srow").length+" rows, disabled="+add.disabled);
+    chk("and every seat came up on a letter of its own",
+        Skirmish.read(list).map(function(s){ return s.team; }).join(",") === "1,2,3,4,5,6",
+        Skirmish.read(list).map(function(s){ return s.team; }).join(","));
+    /* dismissing a commander must free its letter. Deriving the next row's
+       letter from the row COUNT skipped it: rows on A B C D, dismiss C, and
+       the next one added landed on D beside the commander already there. */
+    var del = list.querySelectorAll(".srow")[3].querySelector(".slot-del");
+    if (del) del.click();
+    chk("the cross dismisses that commander",
+        list.querySelectorAll(".srow").length === 5 &&
+        Skirmish.read(list).map(function(s){ return s.team; }).join(",") === "1,2,3,5,6",
+        Skirmish.read(list).map(function(s){ return s.team; }).join(","));
+    add.click();
+    chk("and the next commander added takes the letter that was freed",
+        Skirmish.read(list).map(function(s){ return s.team; }).sort().join(",")
+          === "1,2,3,4,5,6",
+        Skirmish.read(list).map(function(s){ return s.team; }).join(","));
+    /* moving a commander onto your letter renames the row on the spot -
+       that is the whole answer to "how do I choose who is on my side" */
+    var row4 = list.querySelectorAll(".srow")[4];
+    row4.querySelector(".slot-team").value = "1";
+    list.dispatchEvent({ type:"change" });
+    chk("moving a commander onto your team renames its row an ally",
+        row4.querySelector(".sname").textContent.indexOf("ALLY") === 0 &&
+        row4.className.indexOf("ally") >= 0,
+        row4.querySelector(".sname").textContent+" ["+row4.className+"]");
+    chk("and the rows left on other letters are still enemies",
+        list.querySelectorAll(".srow")[1].querySelector(".sname")
+            .textContent.indexOf("ENEMY") === 0,
+        list.querySelectorAll(".srow")[1].querySelector(".sname").textContent);
+  })();
+  }
+
+  /* ====== [58] THE FIELD MANUAL ======
+     js/gallery.js is a READER over the same tables the guns read, so what is
+     worth asserting is not that it draws - nothing draws under jsc - but
+     that the numbers it prints are the tables' own, that its filter agrees
+     with inEra() and the `fac` field, and that opening and closing it leaves
+     the screen behind it untouched. That last one is the whole reason it may
+     be reached from the pause menu at all: a manual that ticked the match,
+     or that left the pause menu hidden behind it, would be a cheat and a bug
+     in one.
+
+     THIS PAGE IS THE HARD CASE ON PURPOSE. It carries the OLD menu markup,
+     has no FIELD MANUAL button on either screen, and does not load
+     js/loading.js at all - so the manual runs here with no briefing module
+     to borrow a record or a turntable from, and it still has to answer with
+     the right numbers. */
+  if (inHalf(1)) {
+  log("\n[58] THE FIELD MANUAL OPENS, AGREES WITH THE TABLES, AND LEAVES NO TRACE");
+  (function(){
+   /* outside the try: a failure half way through must still hand the suite
+      back a running clock, or every section after this one measures a frozen
+      board */
+   var wasPaused = Game.paused;
+   try {
+    if (typeof Gallery === "undefined") { chk("the field manual is loaded", false, "no Gallery"); return; }
+    var root = document.getElementById("gallery");
+    if (!root) { chk("the field manual has a panel", false, "no #gallery"); return; }
+
+    /* ---- 1. it starts shut, and it opens ---- */
+    var shellKids = root.children.length, bodyKids = document.body.children.length;
+    chk("it starts closed", !Gallery.isOpen() && root.classList.contains("hidden"),
+        "open=" + Gallery.isOpen());
+    chk("it opens", Gallery.open("menu") === true && Gallery.isOpen(), "");
+    chk("and the panel is on screen", !root.classList.contains("hidden"), "");
+
+    /* ---- 2. the filter agrees with the tables ----
+       The expected count is worked out here a SECOND way, straight off
+       UNITS, so this fails if the manual's rule and inEra()/`fac` ever
+       disagree - rather than being a magic number that has to be retyped
+       every time the roster grows. */
+    var setf = function(id, v){
+      var el = document.getElementById(id);
+      if (el) { el.value = v; el.dispatchEvent({ type: "change" }); }
+    };
+    setf("gal-fac", "nato"); setf("gal-era", "e20"); setf("gal-cat", "vehicle");
+    var want = 0, uid, d;
+    for (uid in UNITS) { d = UNITS[uid];
+      if (d.cat === "vehicle" && (d.fac === "nato" || d.fac === "both") && inEra(d, "e20")) want++; }
+    var got = Gallery.entries();
+    chk("the list holds exactly the vehicles that army fields in that period",
+        got.length === want, got.length + " listed, " + want + " in the table");
+    chk("and that is a real roster, not an empty one", want >= 8, want + " entries");
+    chk("every row it listed passes the same test", got.every(function(id){
+          var u = UNITS[id];
+          return u && u.cat === "vehicle" && (u.fac === "nato" || u.fac === "both") && inEra(u, "e20");
+        }), got.slice(0, 3).join(", "));
+    var list = document.getElementById("gal-list");
+    chk("and the page has one row for each of them",
+        !!list && list.children.length === got.length,
+        list ? list.children.length + " rows" : "no #gal-list");
+    /* narrowing it further must take entries away, not add them */
+    setf("gal-cat", "naval");
+    var navy = Gallery.entries().length;
+    setf("gal-cat", "");
+    var all = Gallery.entries().length;
+    chk("a different class is a different list", navy > 0 && navy !== got.length,
+        navy + " ships vs " + got.length + " vehicles");
+    chk("and every class together is more than any one of them",
+        all > got.length + navy, all + " entries");
+
+    /* ---- 2b. and the classes account for everything ----
+       If the class filters do not add up to the whole manual, the manual is
+       showing something no filter can reach - a player who counts the rows
+       finds entries missing and no way to ask for them. This is the check
+       that keeps the map's own blocks and rubble in a class of their own
+       rather than mislaid between two. */
+    setf("gal-fac", ""); setf("gal-era", "");
+    var whole = Gallery.entries().length, sum = 0, cn = [];
+    ["infantry", "vehicle", "aircraft", "naval", "building", "defense", "civilian"]
+      .forEach(function(c){
+        setf("gal-cat", c);
+        var n = Gallery.entries().length; sum += n; cn.push(c + " " + n);
+      });
+    setf("gal-cat", "");
+    chk("every class filter together accounts for every entry in the manual",
+        sum === whole && whole > 1000,
+        sum + " across " + cn.length + " classes vs " + whole + " in all");
+    /* ...and every one of those classes has to be one the player can ASK
+       for. Setting the filter from a test proves only that the rule works;
+       the Class list is what decides whether anyone can reach it, so the
+       options the panel built are read back here. Without this, dropping a
+       class from the list would leave its entries visible under "every
+       class" and unreachable under any other, and nothing would say so. */
+    var catOpts = String(document.getElementById("gal-cat").innerHTML || "");
+    var unoffered = cn.filter(function(x){
+      return catOpts.indexOf('value="' + x.split(" ")[0] + '"') < 0; });
+    chk("and the Class list offers every one of those classes, scenery included",
+        unoffered.length === 0 && catOpts.indexOf('value="civilian"') >= 0 && cn[6] === "civilian 2",
+        unoffered.length ? "not offered: " + unoffered.join(", ") : cn.join(", "));
+    /* back to the army and period the record checks want */
+    setf("gal-fac", "nato"); setf("gal-era", "e20");
+
+    /* ---- 3. a record says exactly what the table says ----
+       Two machines picked because they are unlike each other: a tank read
+       off UNITS with its gun off WEAPONS, and a fighter whose armour class
+       is `air` and whose gun cannot touch the ground. */
+    ["mbt_n", "fighter_n"].forEach(function(id){
+      var def = UNITS[id], W = WEAPONS[def.weapons[0]];
+      chk(id + " is in the manual", Gallery.entries().indexOf(id) >= 0, "");
+      chk(id + " can be selected", Gallery.select(id) === true, "");
+      var r = Gallery.record();
+      if (!r || r.id !== id) { chk(id + " has a record", false, r ? r.id : "none"); return; }
+      chk(id + ": the cost it prints is the cost in UNITS",
+          r.cost === def.cost, r.cost + " vs " + def.cost);
+      chk(id + ": the armour it prints is the armour in UNITS",
+          r.armour === def.armor, r.armour + " vs " + def.armor);
+      chk(id + ": the hit points too", r.hp === def.hp, r.hp + " vs " + def.hp);
+      chk(id + ": the range it prints is the range in WEAPONS",
+          r.weapons.length > 0 && r.weapons[0].range === W.range,
+          (r.weapons[0] || {}).range + " vs " + W.range);
+      chk(id + ": and the damage and the warhead with it",
+          r.weapons.length > 0 && r.weapons[0].dmg === W.dmg && r.weapons[0].warhead === W.warhead,
+          (r.weapons[0] || {}).dmg + "/" + (r.weapons[0] || {}).warhead);
+      /* ...and the panel PRINTED them, rather than only working them out */
+      var html = document.getElementById("gal-rec").innerHTML;
+      chk(id + ": the panel shows that cost", html.indexOf("$" + U.fmt(def.cost)) >= 0,
+          "$" + U.fmt(def.cost));
+      chk(id + ": the panel shows that range",
+          html.indexOf("range " + W.range.toFixed(1) + " tiles") >= 0,
+          W.range.toFixed(1) + " tiles");
+    });
+
+    /* ---- 4. the comparisons are CFG.DMG, not prose ---- */
+    Gallery.select("mbt_n");
+    var r2 = Gallery.record(), heavy = null, air = null;
+    r2.effect.forEach(function(e){ if (e.armour === "heavy") heavy = e; if (e.armour === "air") air = e; });
+    chk("a tank gun's figure against heavy armour is the balance table's",
+        !!heavy && heavy.mult === CFG.DMG.cannon.heavy,
+        heavy ? String(heavy.mult) : "no row");
+    chk("and the same gun is shown as unable to touch an aircraft at all",
+        !!air && air.mult === 0 && r2.blind.indexOf("aircraft") >= 0,
+        air ? "x" + air.mult + " blind=" + r2.blind.join("/") : "no row");
+    var top = r2.threat[0];
+    chk("what gets through it is ranked by CFG.DMG against its own class",
+        !!top && top.mult === CFG.dmgMult(top.warhead, UNITS.mbt_n.armor) &&
+        r2.threat.every(function(t, i){ return i === 0 || r2.threat[i - 1].mult >= t.mult; }),
+        top ? top.warhead + " x" + top.mult : "no rows");
+    chk("and a machine from another army is named as the answer to it",
+        r2.counters.length > 0 && r2.counters.every(function(c){ return c.def.fac !== "nato"; }),
+        r2.counters.map(function(c){ return c.id; }).join(", "));
+
+    /* ---- 4b. it is the WEAPON'S tgt block that decides what it can reach ----
+       The tank above proves nothing about that rule on its own: its shell
+       already scores 0.00 against aircraft in CFG.DMG, so its air row reads
+       zero whether the rule is applied or not. A rifle is the case that
+       tells them apart. Ball ammunition HAS a figure against aircraft in the
+       table - it is what a machine gun on an anti-air mount would do - but a
+       rifle section cannot engage one, and the manual must say so. Take the
+       tgt test out of effect() and this is the check that goes red. */
+    Gallery.select("rifle_n");
+    var rr = Gallery.record(), rAir = null;
+    rr.effect.forEach(function(e){ if (e.armour === "air") rAir = e; });
+    chk("a rifle cannot reach an aircraft, though its round has a figure against one",
+        !!rAir && rAir.mult === 0 && CFG.DMG.bullet.air > 0,
+        (rAir ? "manual x" + rAir.mult : "no row") + " vs table x" + CFG.DMG.bullet.air);
+    /* ...and the rule must not simply be zeroing the whole column: a mount
+       that CAN engage aircraft reports the table's own figure. */
+    Gallery.select("spaag_n");
+    var sr = Gallery.record(), sAir = null;
+    sr.effect.forEach(function(e){ if (e.armour === "air") sAir = e; });
+    chk("but a flak mount reports the table's own figure against them",
+        !!sAir && sAir.mult === CFG.DMG.flak.air && sAir.mult > 0,
+        sAir ? "x" + sAir.mult + " vs table x" + CFG.DMG.flak.air : "no row");
+
+    /* ---- 4d. one scale, and it is the table's ----
+       Every bar in the manual is scaled by the LARGEST figure in CFG.DMG so
+       that a rifle's best row cannot look like a tank gun's. Hard-code a
+       number smaller than the table's biggest and the top rows all clamp to
+       a full bar and stop being comparable to each other - which is the one
+       thing a shared scale exists for. A flak mount against aircraft is a
+       big figure but not the biggest, so its bar must be short of full. */
+    var biggest = 1, whx, acx;
+    for (whx in CFG.DMG) for (acx in CFG.DMG[whx])
+      if (CFG.DMG[whx][acx] > biggest) biggest = CFG.DMG[whx][acx];
+    chk("the comparison bars are scaled by the table's own largest figure",
+        biggest > CFG.DMG.flak.air &&
+        document.getElementById("gal-rec").innerHTML.indexOf(
+          "width:" + (CFG.DMG.flak.air / biggest * 100).toFixed(1) + "%") >= 0,
+        "flak against aircraft is " + CFG.DMG.flak.air + " of the table's " + biggest);
+
+    /* ---- 4c. every entry names its job in words ----
+       This page has no js/loading.js, so the manual cannot ask the briefing
+       what a role is called - which makes it the right place to prove it
+       names the support roles and the structures ITSELF. The briefing's own
+       forty-six are deliberately not in this sweep: on this page they have
+       nothing to fall back to but their id, and that is honest. */
+    var SUPPORT = ["awacs", "cawacs", "airlift", "tanker", "radarv", "supply",
+                   "transport_sea", "oiler", "mcv", "harvester", "repair",
+                   "repair_sea", "engineer", "medic"];
+    var rawIds = [], nseen = 0, eid, word;
+    for (eid in UNITS) {
+      if (SUPPORT.indexOf(UNITS[eid].role) < 0) continue;
+      nseen++; word = Gallery.recordFor(eid, "unit").role;
+      if (word === UNITS[eid].role || !/^[A-Z]/.test(word)) rawIds.push(eid + "=" + word);
+    }
+    for (eid in BUILDINGS) {
+      nseen++; word = Gallery.recordFor(eid, "building").role;
+      if (word === BUILDINGS[eid].cat || !/^[A-Z]/.test(word)) rawIds.push(eid + "=" + word);
+    }
+    chk("the support roles and the structures name their job, not their table id",
+        rawIds.length === 0 && nseen > 100,
+        nseen + " checked, " + rawIds.length + " raw: " + rawIds.slice(0, 4).join(" "));
+    chk("an AEW aircraft and a construction yard read as words",
+        Gallery.recordFor("awacs_n", "unit").role === "Airborne early warning" &&
+        Gallery.recordFor("conyard", "building").role === "Structure",
+        Gallery.recordFor("awacs_n", "unit").role + " / " +
+        Gallery.recordFor("conyard", "building").role);
+
+    /* ---- 5. the keyboard walks the list ---- */
+    var ents = Gallery.entries();
+    Gallery.select(ents[0]);
+    Gallery.key({ key: "ArrowDown" });
+    chk("the down arrow moves to the next entry", Gallery.record().id === ents[1],
+        ents[0] + " -> " + Gallery.record().id);
+    Gallery.key({ key: "ArrowUp" });
+    chk("and the up arrow comes back", Gallery.record().id === ents[0], Gallery.record().id);
+    Gallery.key({ key: "End" });
+    chk("End goes to the last of them", Gallery.record().id === ents[ents.length - 1],
+        Gallery.record().id);
+    Gallery.key({ key: "ArrowDown" });
+    chk("and the list does not run off its own end",
+        Gallery.record().id === ents[ents.length - 1], Gallery.record().id);
+
+    /* ---- 5b. ...and the page keys go as far as the list goes ----
+       PageUp and PageDown move by ten, so on a list shorter than ten the
+       clamp is the ONLY thing that makes them do anything at all. Two
+       entries is the shortest list the manual can be asked for, which is
+       why the check lives here rather than on the roster at large. */
+    setf("gal-fac", ""); setf("gal-era", ""); setf("gal-cat", "civilian");
+    var few = Gallery.entries();
+    chk("the map's scenery is a list a filter can reach", few.length === 2, few.join(", "));
+    Gallery.select(few[0]);
+    Gallery.key({ key: "PageDown" });
+    chk("PageDown on a list shorter than ten lands on its last entry",
+        Gallery.record().id === few[few.length - 1], few[0] + " -> " + Gallery.record().id);
+    Gallery.key({ key: "PageUp" });
+    chk("and PageUp comes back to its first", Gallery.record().id === few[0], Gallery.record().id);
+
+    /* ---- 5c. Tab stays inside the manual ----
+       It is a modal; a Tab that walked the menu behind it would put the
+       focus on a control the player cannot see. */
+    var ring = [];
+    for (var ti = 0; ti < 6; ti++) { Gallery.key({ key: "Tab" }); ring.push(Gallery.focusId()); }
+    chk("Tab cycles the manual's own controls and wraps inside the panel",
+        ring.join(",") === "gal-fac,gal-era,gal-cat,gal-q,gal-close,gal-fac", ring.join(","));
+
+    /* ---- 6. it leaves nothing behind ---- */
+    Gallery.key({ key: "Escape" });
+    chk("Esc closes it", !Gallery.isOpen() && root.classList.contains("hidden"), "");
+    chk("the match is exactly as paused as it was", Game.paused === wasPaused, String(Game.paused));
+    chk("the panel still holds the list and the record it was built with",
+        !!document.getElementById("gal-list") && !!document.getElementById("gal-rec") &&
+        root.children.length === shellKids,
+        root.children.length + " vs " + shellKids + " children");
+    chk("and the page carries no extra element for having opened it",
+        document.body.children.length === bodyKids,
+        document.body.children.length + " vs " + bodyKids);
+
+    /* ---- 7. from the pause menu, the pause menu comes back ---- */
+    var pm = document.getElementById("pausemenu");
+    pm.classList.remove("hidden");
+    Game.paused = true;
+    Gallery.open("pause");
+    chk("opening it from the pause menu puts the pause menu away",
+        pm.classList.contains("hidden"), "");
+    chk("and it does not start the clock", Game.paused === true, String(Game.paused));
+    Gallery.close();
+    chk("closing it puts the pause menu back exactly as it was",
+        !pm.classList.contains("hidden") && !Gallery.isOpen(), "");
+    chk("and the battle is still frozen", Game.paused === true, String(Game.paused));
+    pm.classList.add("hidden");
+    Game.paused = wasPaused;
+   } catch (e) {
+    chk("the field manual runs without throwing", false,
+        e.message + " | " + String(e.stack).split("\n")[1]);
+    if (typeof Gallery !== "undefined" && Gallery.close) { try { Gallery.close(); } catch (e2) {} }
+    var pmx = document.getElementById("pausemenu");
+    if (pmx) pmx.classList.add("hidden");
+    Game.paused = wasPaused;
+   }
+  })();
+  }
+
+  /* ====== [59] A MAP THE PLAYER DREW IS STILL A MAP THE ENGINE BUILDS ======
+     The editor does not write a map file: it writes the four numbers
+     GameMap.build already takes (theatre, seed, ore density, grid size) plus
+     the tiles the player overruled. Everything that can go wrong with that is
+     a question of AGREEMENT, and all of it is asked here:
+       1. does a map survive being written out and read back in,
+       2. is a blob that is damaged, foreign, off the grid or from a newer
+          build REFUSED rather than half-applied,
+       3. does a battle started on it get the edited ground - and does what the
+          engine DERIVES from the ground (passability, the ore ceiling, the
+          ore index harvesters search, the fine coastline) agree with it,
+       4. does the pathfinder's reachability label - the one cached thing in
+          the game that can silently outlive the ground it describes - see a
+          wall that was painted after it was built, AND does Game.init
+          actually make the call that retires it,
+       5. and does the editor refuse to arm a map it has damaged, WITHOUT
+          calling the generator's own awkward ground damaged.
+     The section ends by rewriting a tile under a live label set on purpose,
+     because that is the failure Path.invalidate() exists to prevent and a test
+     that never provokes it proves nothing.
+     IT RAISES A BATTLE OF ITS OWN, which no other section does, so it puts the
+     suite's shared match back before it returns - [38] below still holds the
+     commanders it was handed at the top of run(). */
+  log("\n[59] AN EDITED THEATRE SURVIVES THE ROUND TRIP AND REACHES THE BATTLE");
+  (function(){
+   var savedOpts = Game.opts, raised = false;
+   try{
+    if (typeof MapEdit === "undefined") { chk("the map editor is loaded", false, "no MapEdit"); return; }
+    var SZ = 96, TH = "fulda", X0 = 60;
+    var doc = MapEdit.create({ th: TH, seed: "editor-test", size: SZ, rich: 1, ns: 2,
+                               name: "BEHTEST RANGE" });
+    chk("a theatre is generated to edit",
+        !!doc && doc.W === SZ && doc.terrain.length === SZ * SZ,
+        doc ? (doc.W + "x" + doc.H + " " + doc.name + ", " + doc.starts.length + " sites") : "no doc");
+    if (!doc) return;
+    var baseStarts = doc.starts.length;
+
+    /* ---- 0. THE SEED THE EDITOR SHOWS IS THE SEED THAT REPRODUCES THE GROUND.
+       adoptDoc writes the number back into the box, so REGENERATE hands that
+       decimal string straight back to create(). Hash it and the button never
+       reproduces the map it is showing, and the seed in the status line is one
+       nobody can type back in or send on. ---- */
+    var sA = MapEdit.create({ th: TH, size: SZ, seed: "seed-in-words", ns: 2, rich: 1 });
+    var sB = MapEdit.create({ th: TH, size: SZ, seed: String(sA.seed), ns: 2, rich: 1 });
+    chk("the seed the editor shows is the seed that grows the same ground again",
+        sB.seed === sA.seed, sA.seed + " typed back gives " + sB.seed);
+
+    /* ---- 1. draw on it ---- */
+    /* somewhere on the LEFT of where the wall is going, with room for a base
+       and far enough from the sites the generator already laid out that the
+       editor adds a site rather than moving one */
+    function padSpot(d, x0, x1) {
+      for (var y = 8; y < d.H - 8; y += 2) for (var x = x0; x < x1; x += 2) {
+        var ok = true;
+        for (var yy = y - 3; yy <= y + 3 && ok; yy++) for (var xx = x - 3; xx <= x + 3; xx++) {
+          var t = d.terrain[yy * d.W + xx];
+          if (!CFG.TERRAIN[t].pass || t === T.TREE) { ok = false; break; }
+        }
+        if (!ok) continue;
+        for (var s = 0; s < d.starts.length; s++)
+          if (Math.abs(d.starts[s].x - x) < 8 && Math.abs(d.starts[s].y - y) < 8) { ok = false; break; }
+        if (ok) return { x: x, y: y };
+      }
+      return null;
+    }
+    var pad = padSpot(doc, 8, 36);
+    chk("there is open ground to build the test map on", !!pad, pad ? (pad.x + "," + pad.y) : "none found");
+    if (!pad) return;
+
+    var rSite = MapEdit.stroke(doc, pad.x, pad.y, "start", 0);
+    chk("a deployment site can be placed on open ground",
+        rSite.ok && doc.starts.length === baseStarts + 1,
+        rSite.why + " -> " + doc.starts.length + " sites");
+    /* and refused where a base could not stand: the middle of the sea */
+    var wet = -1;
+    for (var i = 0; i < doc.terrain.length && wet < 0; i++) if (doc.terrain[i] === T.WATER) wet = i;
+    if (wet >= 0) {
+      var before = doc.starts.length;
+      var rBad = MapEdit.stroke(doc, wet % SZ, (wet / SZ) | 0, "start", 0);
+      chk("...and refused where no base could stand, with a reason",
+          !rBad.ok && !!rBad.why && doc.starts.length === before, rBad.why);
+    }
+
+    var oil0 = doc.oil.length, civ0 = doc.civ.length;
+    var rOil = null, rCiv = null;
+    for (var k = 6; k <= 14 && (!rOil || !rOil.ok); k += 2) rOil = MapEdit.stroke(doc, pad.x + k, pad.y, "oil", 0);
+    for (var k2 = 6; k2 <= 14 && (!rCiv || !rCiv.ok); k2 += 2) rCiv = MapEdit.stroke(doc, pad.x, pad.y + k2, "civ", 0);
+    chk("an oil survey node can be added", rOil.ok && doc.oil.length === oil0 + 1, rOil.why || (oil0 + " -> " + doc.oil.length));
+    chk("a civilian block can be added", rCiv.ok && doc.civ.length === civ0 + 1, rCiv.why || (civ0 + " -> " + doc.civ.length));
+
+    /* a rich seam, a patch of pasture, a lake, and a wall from edge to edge */
+    var oreX = pad.x, oreY = pad.y + 16;
+    MapEdit.stroke(doc, oreX, oreY, "orerich", 2);
+    MapEdit.stroke(doc, pad.x + 5, pad.y + 5, "t2", 1);
+    var lakeX = X0 + 14, lakeY = 44;
+    MapEdit.stroke(doc, lakeX, lakeY, "t0", 3);
+    /* one drag, therefore ONE undo step, which is what a stroke is */
+    MapEdit.down(doc, X0, 0, "t4", 0);
+    for (var y2 = 1; y2 < SZ; y2++) MapEdit.drag(doc, X0, y2, "t4", 0);
+    MapEdit.up(doc);
+    var wallSolid = 0;
+    for (var y3 = 0; y3 < SZ; y3++) if (doc.terrain[y3 * SZ + X0] === T.ROCK) wallSolid++;
+    chk("a wall painted in one drag reaches both edges of the theatre", wallSolid === SZ, wallSolid + "/" + SZ + " tiles");
+    chk("the seam the brush laid is really there", doc.ore[oreY * SZ + oreX] === 1200, "ore=" + doc.ore[oreY * SZ + oreX]);
+    chk("a painted lake is water at no elevation",
+        doc.terrain[lakeY * SZ + lakeX] === T.WATER && doc.elev[lakeY * SZ + lakeX] === 0,
+        "t=" + doc.terrain[lakeY * SZ + lakeX] + " elev=" + doc.elev[lakeY * SZ + lakeX]);
+
+    /* ---- ORE DOES NOT SURVIVE UNDER GROUND THAT CANNOT BE MINED ----
+       The generator refuses to lay ore on water, rock or a city block, and the
+       brush has to hold that rule in both directions: Game.nearestOre is built
+       from the ore field alone and never asks what is on top of it, so a seam
+       sealed under painted rock is a hauler sent nowhere. */
+    var oc = MapEdit.create({ th: TH, seed: 4242, size: SZ, ns: 2, rich: 1 });
+    MapEdit.stroke(oc, 30, 30, "orerich", 2);
+    MapEdit.stroke(oc, 36, 30, "orerich", 2);
+    var laidRock = oc.ore[30 * SZ + 30], laidUrb = oc.ore[30 * SZ + 36];
+    MapEdit.stroke(oc, 30, 30, "t4", 2);
+    MapEdit.stroke(oc, 36, 30, "t7", 2);
+    chk("painting rock or a city block over a seam takes the seam with it",
+        laidRock === 1200 && laidUrb === 1200 &&
+        oc.terrain[30 * SZ + 30] === T.ROCK && oc.terrain[30 * SZ + 36] === T.URBAN &&
+        oc.ore[30 * SZ + 30] === 0 && oc.ore[30 * SZ + 36] === 0,
+        "under rock " + oc.ore[30 * SZ + 30] + ", under built-up " + oc.ore[30 * SZ + 36]);
+
+    /* ---- undo gives a stroke back, and only the one ---- */
+    var undoDepth = doc.undo.length;
+    var wallBefore = wallSolid;
+    chk("the drag was recorded as a single stroke", undoDepth >= 3 && undoDepth <= 16, undoDepth + " strokes on the stack");
+    MapEdit.undo(doc);
+    var wallAfter = 0;
+    for (var y4 = 0; y4 < SZ; y4++) if (doc.terrain[y4 * SZ + X0] === T.ROCK) wallAfter++;
+    chk("undo takes the whole wall back in one step", wallAfter < wallBefore && doc.undo.length === undoDepth - 1,
+        wallAfter + " wall tiles left, " + doc.undo.length + " strokes");
+    /* ...and put it back, because the rest of the section needs it */
+    MapEdit.down(doc, X0, 0, "t4", 0);
+    for (var y5 = 1; y5 < SZ; y5++) MapEdit.drag(doc, X0, y5, "t4", 0);
+    MapEdit.up(doc);
+
+    /* ---- A MARKER IS CHECKED WHILE IT STANDS, NOT ONLY WHEN IT IS PLACED ----
+       The hard half of this is what must NOT be called a fault. Measured over
+       every theatre at three sizes: 9 of 216 generated deployment sites have
+       water inside the construction yard's own 3x3, one theatre's authored
+       deployment stands on water outright, and 42 of 284 oil nodes have a wet
+       corner, because map.js clears a pad round each and deliberately leaves
+       the water where it is. A rule that refused those would be the editor
+       calling the shipped game broken. So a fault is ground the PLAYER put
+       there - and every generated theatre has to come back clean. */
+    var dirty = [];
+    for (var t2 = 0; t2 < THEATRE_LIST.length; t2++) {
+      var g = MapEdit.create({ th: THEATRE_LIST[t2], size: SZ, ns: 2, seed: 4000 + t2 * 17, rich: 1 });
+      var gf = MapEdit.faults(g);
+      var rough = 0;
+      g.starts.forEach(function (s) { if (!CFG.TERRAIN[g.terrain[s.y * SZ + s.x]].pass) rough++; });
+      g.oil.forEach(function (n) { if (!CFG.TERRAIN[g.terrain[n.y * SZ + n.x]].pass) rough++; });
+      if (gf.n) dirty.push(THEATRE_LIST[t2] + "=" + gf.n);
+      if (rough) dirty.push("");                       // counted, not complained about
+    }
+    chk("no theatre the generator draws is called damaged",
+        dirty.filter(function (s) { return s; }).length === 0,
+        dirty.filter(function (s) { return s; }).join(" ") ||
+        THEATRE_LIST.length + " theatres clean, " + dirty.length + " of them with a marker on survey water");
+
+    var drown = MapEdit.create({ th: TH, seed: doc.seed, size: SZ, rich: 1, ns: 2, name: "DROWNED" });
+    var ds = drown.starts[0];
+    MapEdit.stroke(drown, ds.x, ds.y, "t0", 4);
+    var fd = MapEdit.faults(drown);
+    chk("painting a lake over a deployment site is not accepted in silence",
+        fd.n >= 1 && fd.start.indexOf(0) >= 0, fd.n + " faults, sites " + JSON.stringify(fd.start));
+    var rArm = MapEdit.armDoc(drown);
+    chk("...and USE THIS MAP refuses that map, naming the site",
+        rArm.ok === false && /deployment site 1/i.test(rArm.error || "") && MapEdit.armed() === null,
+        rArm.error || "ARMED IT");
+    chk("a map whose markers all have their ground arms",
+        MapEdit.faults(doc).n === 0 && MapEdit.armDoc(doc).ok === true && !!MapEdit.armed(),
+        MapEdit.armed() ? MapEdit.armed().name : ("faults=" + MapEdit.faults(doc).n));
+    MapEdit.disarm();
+
+    /* a flooded town loses its houses, and one undo brings them back. Civilian
+       blocks are the numerous marker - forty to a city - so they go with the
+       ground rather than turning into forty refusals at DEPLOY. */
+    var town = MapEdit.create({ th: TH, seed: doc.seed, size: SZ, rich: 1, ns: 2, name: "TOWN" });
+    if (town.civ.length) {
+      var c0 = town.civ[0], civBefore = town.civ.length;
+      MapEdit.stroke(town, c0.x, c0.y, "t0", 2);
+      var civAfter = town.civ.length;
+      MapEdit.undo(town);
+      chk("a lake painted over a town takes its houses, and undo brings them back",
+          civAfter < civBefore && town.civ.length === civBefore,
+          civBefore + " -> " + civAfter + " -> " + town.civ.length + " blocks");
+    }
+
+    /* ---- 2. write it out and read it back ---- */
+    var e1 = MapEdit.toEdit(doc);
+    var blob = MapEdit.toBlob(doc);
+    chk("the map is written as a compact blob, not as a picture of the grid",
+        typeof blob === "string" && blob.length > 40 && blob.length < SZ * SZ,
+        blob.length + " characters for " + (SZ * SZ) + " tiles");
+    var back = MapEdit.fromBlob(blob);
+    chk("...and reads back in", back.ok === true, back.ok ? "" : back.error);
+    if (!back.ok) return;
+    var doc2 = MapEdit.fromEdit(back.edit);
+    var dT = 0, dE = 0, dO = 0;
+    for (var i2 = 0; i2 < SZ * SZ; i2++) {
+      if (doc.terrain[i2] !== doc2.terrain[i2]) dT++;
+      if (doc.elev[i2] !== doc2.elev[i2]) dE++;
+      if (Math.round(doc.ore[i2]) !== Math.round(doc2.ore[i2])) dO++;
+    }
+    chk("every tile comes back the same", dT === 0 && dE === 0 && dO === 0,
+        dT + " terrain, " + dE + " elevation, " + dO + " ore tiles differ");
+    chk("and so do the start positions, the oil nodes and the civilian blocks",
+        JSON.stringify(doc.starts) === JSON.stringify(doc2.starts) &&
+        JSON.stringify(doc.oil) === JSON.stringify(doc2.oil) &&
+        JSON.stringify(doc.civ) === JSON.stringify(doc2.civ),
+        doc2.starts.length + " sites, " + doc2.oil.length + " oil, " + doc2.civ.length + " blocks");
+    chk("a map written, read and written again is byte for byte the same map",
+        JSON.stringify(MapEdit.toEdit(doc2)) === JSON.stringify(e1),
+        "second blob " + MapEdit.toBlob(doc2).length + " chars");
+
+    /* a named slot is the same road with localStorage in the middle */
+    var rs = MapEdit.saveSlot(doc, "behtest map");
+    var rl = rs.ok ? MapEdit.loadSlot("behtest map") : { ok: false, error: rs.error };
+    chk("a map keeps in a named slot and comes back out of it",
+        rs.ok && rl.ok && JSON.stringify(rl.edit) === JSON.stringify(e1),
+        rs.ok ? (rl.ok ? "round trip clean" : rl.error) : rs.error);
+    chk("a slot that was never written says so rather than throwing",
+        MapEdit.loadSlot("no such map").ok === false, MapEdit.loadSlot("no such map").error);
+    MapEdit.deleteSlot("behtest map");
+    chk("and deleting one removes it from the list", MapEdit.slots().indexOf("behtest map") < 0,
+        "[" + MapEdit.slots().join(", ") + "]");
+
+    /* ---- 3. a blob that is wrong is REFUSED, and says why ---- */
+    var newer = JSON.parse(blob); newer.v = 99; newer = JSON.stringify(newer);
+    var bads = [
+      ["a truncated paste", blob.slice(0, blob.length - 14)],
+      ["text that is not a map at all", "the quick brown fox"],
+      ["an empty box", ""],
+      ["JSON that is not a map", "[1,2,3]"],
+      ["a blob with somebody else's magic", JSON.stringify({ "if": "SOMETHING-ELSE", v: 1 })],
+      ["a blob whose contents were tampered with", blob.replace('"size":96', '"size":144')],
+      ["a map from a newer build", newer]
+    ];
+    var refused = 0, threw = 0, mute = 0;
+    for (var b = 0; b < bads.length; b++) {
+      var res = null;
+      try { res = MapEdit.fromBlob(bads[b][1]); }
+      catch (e) { threw++; log("        (threw on " + bads[b][0] + ": " + e.message + ")"); continue; }
+      if (!res || res.ok !== false) { log("        (accepted " + bads[b][0] + ")"); continue; }
+      if (!res.error || typeof res.error !== "string") { mute++; continue; }
+      refused++;
+    }
+    chk("every damaged, foreign or too-new map is refused", refused === bads.length,
+        refused + "/" + bads.length + " refused, " + threw + " threw, " + mute + " gave no reason");
+    chk("...and not one of them threw", threw === 0, threw + " threw");
+    /* the tampered one and the future one must be refused for the RIGHT reason */
+    chk("a tampered map is named as corrupt",
+        /corrupt/i.test(MapEdit.fromBlob(blob.replace('"size":96', '"size":144')).error || ""),
+        MapEdit.fromBlob(blob.replace('"size":96', '"size":144')).error);
+    chk("a map from a newer build says so instead of guessing",
+        /newer build/i.test(MapEdit.fromBlob(newer).error || ""), MapEdit.fromBlob(newer).error);
+    /* a marker off the grid it claims: checksum-valid, so only a range check
+       catches it. Without one it reaches map.js, which used to clamp a site to
+       0,0 and put the 3x3 construction yard's corner at -1,-1. */
+    var og = JSON.parse(blob);
+    og.st = [0, 0, 90, 90];
+    og.sum = U.hashStr(JSON.stringify([og.v, og.th, og.seed, og.rich, og.size, og.ns,
+                                       og.name, og.t, og.e, og.o, og.st, og.oil, og.civ]));
+    var rOg = MapEdit.fromBlob(JSON.stringify(og));
+    chk("a map whose markers sit off the ground it is drawn on is refused",
+        rOg.ok === false && /outside/i.test(rOg.error || ""), rOg.error || "ACCEPTED IT");
+    var mClamp = GameMap.build(TH, 99, 1, { size: SZ, starts: 2,
+      edit: { v: GameMap.EDIT_V, th: TH, seed: 99, rich: 1, size: SZ, ns: 2, name: "EDGE",
+              t: [], e: [], o: [], st: [0, 0, 90, 90], oil: [], civ: [] } });
+    chk("...and one that gets past anyway is held inside the grid, not at -1",
+        mClamp.starts[0].x >= 2 && mClamp.starts[0].y >= 2 &&
+        mClamp.starts[0].x <= SZ - 3 && mClamp.starts[0].y <= SZ - 3,
+        JSON.stringify(mClamp.starts));
+
+    /* ---- 4. play it ---- */
+    var edit = MapEdit.toEdit(doc);
+    var battle = {
+      theatre: TH, seed: doc.seed, cash: 10000, diff: "regular",
+      era: "e20", eraAI: "e20", eraCapHuman: "e20", eraCapAI: "e20",
+      fog: false, startPos: -1, weather: "clear",
+      factionHuman: "nato", factionAI: "pact",
+      techHuman: 1, techAI: 1, capHuman: 3, capAI: 3,
+      armsHuman: "all", armsAI: "all", superweapons: true,
+      resources: doc.rich, mapSize: doc.size, aiHandicap: 1, edit: edit,
+      roster: [{ faction: "nato", ai: false, team: 1, label: "YOU" },
+               { faction: "pact", ai: true, team: 2, diff: "regular",
+                 personality: "balanced", handicap: 1, label: "ENEMY 1" }]
+    };
+    /* COUNT THE CALL, not just its effect. Path retires its cache on map
+       IDENTITY and a new battle always builds a new map object, so every
+       check below would pass whether or not Game.init ever calls
+       Path.invalidate() - the wiring has to be measured directly. */
+    var invReal = Path.invalidate, invN = 0;
+    Path.invalidate = function(){ invN++; return invReal.apply(Path, arguments); };
+    raised = true;
+    try { Game.init(battle); } finally { Path.invalidate = invReal; }
+    chk("raising a map throws the pathfinder's cached ground away",
+        invN === 1, invN + " calls to Path.invalidate()");
+    var M = Game.map;
+    chk("the battle is raised on the grid the map was drawn at",
+        M.W === SZ && M.H === SZ && CFG.MAP_W === SZ, M.W + "x" + M.H + " CFG.MAP_W=" + CFG.MAP_W);
+    var mT = 0, mE = 0, mO = 0;
+    for (var i3 = 0; i3 < SZ * SZ; i3++) {
+      if (M.terrain[i3] !== doc.terrain[i3]) mT++;
+      if (M.elev[i3] !== doc.elev[i3]) mE++;
+      if (Math.round(M.ore[i3]) !== Math.round(doc.ore[i3])) mO++;
+    }
+    chk("and every tile of it is the tile that was drawn",
+        mT === 0 && mE === 0 && mO === 0, mT + " terrain, " + mE + " elevation, " + mO + " ore tiles differ");
+    chk("the map answers to the name it was saved under", M.name === doc.name, M.name);
+    chk("the deployment sites are the ones that were placed",
+        JSON.stringify(M.starts.map(function(s){return {x:s.x,y:s.y};})) === JSON.stringify(doc.starts),
+        M.starts.length + " sites: " + M.starts.map(function(s){return s.x+","+s.y;}).join(" "));
+    chk("the oil nodes and the civilian blocks travelled with it",
+        M.oilNodes.length === doc.oil.length && (M.civSites || []).length === doc.civ.length &&
+        M.oilNodes.every(function(n,ix){ return n.x === doc.oil[ix].x && n.y === doc.oil[ix].y; }),
+        M.oilNodes.length + " oil, " + (M.civSites || []).length + " blocks");
+
+    /* ---- what the engine DERIVES from those tiles ---- */
+    var wallPass = 0;
+    for (var y6 = 0; y6 < SZ; y6++) if (GameMap.passable(M, X0, y6, "ground")) wallPass++;
+    chk("nothing on the ground can walk through the painted wall", wallPass === 0, wallPass + " passable wall tiles");
+    chk("the painted pasture is ground anything can cross",
+        GameMap.passable(M, pad.x + 5, pad.y + 5, "ground") === true &&
+        M.terrain[(pad.y + 5) * SZ + pad.x + 5] === T.GRASS, "t=" + M.terrain[(pad.y + 5) * SZ + pad.x + 5]);
+    chk("the painted lake is water to a ship and a wall to a tank",
+        GameMap.passable(M, lakeX, lakeY, "sea") === true &&
+        GameMap.passable(M, lakeX, lakeY, "ground") === false, "");
+    /* the fine coastline is sampled from the SOURCE POLYGONS and knows nothing
+       about a lake somebody painted, unless build() is told to patch it */
+    chk("the fine coastline follows the painted lake, not just the survey",
+        M.waterFine[(lakeY * M.FS) * M.FW + lakeX * M.FS] === 1 &&
+        M.shore[(lakeY * M.FS) * M.FW + lakeX * M.FS] < 0,
+        "waterFine=" + M.waterFine[(lakeY * M.FS) * M.FW + lakeX * M.FS] +
+        " shore=" + M.shore[(lakeY * M.FS) * M.FW + lakeX * M.FS].toFixed(1));
+    var oi = oreY * SZ + oreX;
+    chk("the ore ceiling and the regrowth seed follow the ore that was painted",
+        Math.abs(M.oreMax[oi] - M.ore[oi] * 1.35) < 0.01 && M.oreSeed[oi] === 1,
+        "ore=" + M.ore[oi] + " max=" + M.oreMax[oi].toFixed(0) + " seed=" + M.oreSeed[oi]);
+    var found = Game.nearestOre(oreX, oreY, Game.human);
+    chk("a hauler's ore index finds the seam a player drew",
+        !!found && Math.abs(found.x - oreX) <= 3 && Math.abs(found.y - oreY) <= 3 &&
+        M.ore[found.y * SZ + found.x] >= 1000,
+        found ? (found.x + "," + found.y + " ore=" + M.ore[found.y * SZ + found.x].toFixed(0)) : "nothing found");
+
+    /* ---- the pathfinder's labels ---- */
+    var lab = Path.components(M, "ground"), ly = -1;
+    for (var y7 = 2; y7 < SZ - 2 && ly < 0; y7++)
+      if (lab[y7 * SZ + X0 - 1] && lab[y7 * SZ + X0 + 1]) ly = y7;
+    chk("there is ground either side of the wall to ask about", ly >= 0, "row " + ly);
+    if (ly >= 0) {
+      chk("the reachability labels put the two sides on different ground",
+          lab[ly * SZ + X0 - 1] !== lab[ly * SZ + X0 + 1],
+          "left=" + lab[ly * SZ + X0 - 1] + " right=" + lab[ly * SZ + X0 + 1]);
+      chk("...so the pathfinder refuses the crossing outright",
+          Path.reachable(M, X0 - 1, ly, X0 + 1, ly, "ground") === false, "");
+      /* AND THE REASON Game.init CALLS Path.invalidate(). The labels are
+         cached per map OBJECT, so rewriting a tile under them changes the
+         ground without changing the answer - which is a wall the search
+         cannot see, or a door that is no longer there. */
+      var probe = ly * SZ + X0 - 1, was = M.terrain[probe];
+      M.terrain[probe] = T.ROCK;
+      chk("a label set does not notice a tile rewritten under it",
+          Path.components(M, "ground") === lab &&
+          GameMap.passable(M, X0 - 1, ly, "ground") === false,
+          "the tables and the map disagree, as they must for this to matter");
+      Path.invalidate();
+      var fresh = Path.components(M, "ground");
+      chk("...and Path.invalidate() makes it look at the ground again",
+          fresh !== lab && fresh[probe] === 0, "label now " + fresh[probe]);
+      M.terrain[probe] = was;
+      Path.invalidate();
+    }
+
+    /* ---- 5. an edit this build cannot read says so ----
+       save.js stores G.opts wholesale, so a map from a newer build rides into
+       Game.init untouched with nothing left to re-parse it. Dropping it in
+       silence put the player on the generator's ground with no explanation. */
+    var said = [], realAlert = Game.alert;
+    Game.alert = function (m) { said.push(String(m)); };
+    var future = JSON.parse(JSON.stringify(battle));
+    future.edit.v = GameMap.EDIT_V + 98;
+    try { Game.init(future); } finally { Game.alert = realAlert; }
+    var futureWall = 0;
+    for (var y8 = 0; y8 < SZ; y8++) if (Game.map.terrain[y8 * SZ + X0] === T.ROCK) futureWall++;
+    chk("a map from a newer build is announced, not silently thrown away",
+        said.some(function (m) { return /newer build/i.test(m); }) && futureWall < SZ,
+        (said.join(" | ") || "nothing said") + "; wall " + futureWall + "/" + SZ);
+   }catch(e){ chk("the map editor section ran to the end", false,
+                  e.message + " | " + String(e.stack).split("\n").slice(0,3).join(" | ")); }
+   finally {
+    /* ---- PUT THE SUITE'S MATCH BACK ----
+       This is the only section that raises a battle of its own, and the match
+       every other section plays in is a global that Game.init has just
+       replaced. [38] below still holds P and E from the top of run(), so the
+       original opts are re-initialised and the page's own conditioning applied
+       again, exactly as the load handler set it up. */
+    if (raised && savedOpts) {
+      try {
+        Game.init(savedOpts);
+        if (typeof UI !== "undefined" && UI.init) UI.init(Game);
+        P = Game.human; E = Game.players[1];
+        if (E && E.cash > 4000) E.cash = 4000;
+        if (typeof AI !== "undefined" && AI.setPeace) AI.setPeace(E, true);
+        P.cash = 200000; E.cash = 200000; P.oil = 9000; E.oil = 9000;
+        chk("the suite's own match is standing again for the sections that follow",
+            !!Game.human && Game.players.length >= 2 && Game.map.W === CFG.MAP_W &&
+            Game.map.id === savedOpts.theatre,
+            Game.map.name + " " + Game.map.W + "x" + Game.map.H + ", " + Game.players.length + " commanders");
+      } catch (e2) {
+        chk("the suite's own match is standing again for the sections that follow", false, e2.message);
+      }
+    }
+   }
+  })();
 
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){

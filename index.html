@@ -163,26 +163,135 @@
   .ls-card.flip canvas,.ls-card.flip .ls-body{animation:none}
   #loadscreen.ready .ls-go{animation:none}
 }
+
+/* ---------- the theatre editor ----------
+   Red Alert's editor was not a separate program with its own look: it was the
+   same panel as the skirmish screen with a palette down one side and the
+   ground in the middle, which is why a map you drew felt like a map that came
+   in the box. Same panel, same palette and same type as the briefing above,
+   for the same reason - this is another page of the same orders. Kept in this
+   file beside the briefing because the markup it styles lives here only; the
+   harness pages copy the menu, not this. */
+#mapedit{position:fixed;inset:0;z-index:80;display:flex;padding:14px;overflow-y:auto;
+  background:
+    repeating-linear-gradient(0deg,rgba(136,166,115,.045) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(90deg,rgba(136,166,115,.045) 0 1px,transparent 1px 48px),
+    radial-gradient(circle at 50% 30%,#1b2b1f 0%,#0a0e0b 70%)}
+#mapedit::-webkit-scrollbar,.me-tools::-webkit-scrollbar{width:8px}
+#mapedit::-webkit-scrollbar-thumb,.me-tools::-webkit-scrollbar-thumb{background:#33452f}
+.me-box{width:min(1180px,100%);margin:auto;padding:16px 20px 14px;background:rgba(10,16,11,.95);
+  border:1px solid #3a5a3c;box-shadow:0 0 0 1px #0d140e,0 12px 50px #000}
+.me-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;
+  padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #2b3d27}
+.me-kicker{width:100%;font-size:10px;letter-spacing:2.6px;text-transform:uppercase;
+  color:#88a673;font-weight:600}
+.me-head h2{font-size:21px;letter-spacing:4px;font-weight:700;color:#dfe8d8}
+.me-head h2 span{color:#b6d34a}
+.me-headright{margin-left:auto;display:flex;gap:8px;align-items:center}
+.me-headright input{width:210px}
+
+.me-box input,.me-box select,.me-box textarea{background:#141c15;border:1px solid #3a5a3c;
+  color:#cfe0c8;padding:6px 8px;font-size:12px;font-family:inherit;outline:none}
+.me-box textarea{width:100%;resize:vertical;font:11px/1.4 monospace;color:#9fb894;white-space:pre-wrap;
+  word-break:break-all}
+.me-box button{background:#1d2a1c;border:1px solid #4d7342;color:#cfe0c8;padding:7px 12px;
+  font:600 10.5px/1 inherit;letter-spacing:1.8px;text-transform:uppercase;cursor:pointer}
+.me-box button:hover{background:#2c4527;color:#eaf6df}
+.me-box #me-play{background:#3f6b32;border-color:#79b25c;color:#e9f5e0;padding:11px 20px;
+  font-size:12px;letter-spacing:4px}
+.me-box #me-play:hover{background:#4e8a3d}
+
+.me-main{display:grid;grid-template-columns:230px minmax(0,1fr);gap:14px;align-items:start}
+.me-tools{max-height:66vh;overflow-y:auto;padding-right:4px}
+.me-tools h3{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:#88a673;
+  font-weight:600;margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid #22301f}
+.me-tools h3:first-child{margin-top:0}
+.me-tools button{width:100%;margin-top:6px}
+.me-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px}
+.me-row label{width:54px;flex:none;color:#8fa189;letter-spacing:1px;text-transform:uppercase;font-size:10px}
+.me-row select,.me-row input{flex:1;min-width:0}
+
+/* the palette: a swatch in the colour the ground is actually painted in,
+   then the name of the thing, so nothing has to be learned by trial */
+.me-grp{grid-column:1/-1;margin:8px 0 3px;font-size:9px;letter-spacing:1.8px;
+  text-transform:uppercase;color:#6f8a68}
+.me-grp:first-child{margin-top:0}
+.me-pal{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.me-tool{display:flex;align-items:center;gap:6px;width:100%;margin:0!important;padding:5px 6px!important;
+  background:#0f1710;border:1px solid #22301f;color:#93a88c;cursor:pointer;
+  font:500 10px/1.2 inherit!important;letter-spacing:.3px!important;text-transform:none!important;
+  text-align:left}
+.me-tool i{width:11px;height:11px;flex:none;border:1px solid rgba(0,0,0,.5)}
+.me-tool span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me-tool:hover{background:#1a2619;color:#cfe0c8}
+.me-tool.on{background:#2f5228;border-color:#6f9c4c;color:#eaf6df;box-shadow:inset 0 2px 0 #8fd05f}
+
+.me-stage{min-width:0}
+#me-view{display:block;width:100%;max-width:min(66vh,760px);margin:0 auto;aspect-ratio:1/1;
+  background:#050705;border:1px solid #33452f;cursor:crosshair;image-rendering:pixelated;
+  touch-action:none}
+.me-status{margin-top:7px;font-size:10.5px;line-height:1.5;color:#75866f;letter-spacing:.3px;
+  text-align:center;min-height:16px}
+
+.me-foot{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;gap:10px 14px;
+  align-items:start;margin-top:12px;padding-top:11px;border-top:1px solid #26331f}
+.me-slots{display:flex;flex-wrap:wrap;gap:5px}
+.me-slots select{flex:1 1 100%;min-width:0}
+.me-share{display:flex;flex-wrap:wrap;gap:5px}
+.me-share textarea{flex:1 1 100%}
+.me-msg{grid-column:1/-1;order:9;font-size:11px;line-height:1.5;color:#b6d34a;min-height:16px}
+.me-box #me-play{align-self:center}
+
+/* the deployment screen's own line about which ground the battle is on */
+.menu-box .me-arm{gap:9px;flex-wrap:wrap}
+.menu-box .me-arm #me-armed{flex:1;min-width:150px;font-size:11px;letter-spacing:.3px}
+.menu-box .me-arm .me-none{color:#6f7f6b}
+.menu-box .me-arm .me-on{color:#b6d34a}
+.menu-box .me-arm button{background:#1d2a1c;border:1px solid #4d7342;color:#cfe0c8;padding:7px 12px;
+  font:600 10.5px/1 inherit;letter-spacing:1.8px;text-transform:uppercase;cursor:pointer}
+.menu-box .me-arm button:hover{background:#2c4527;color:#eaf6df}
+
+@media (max-width:860px){
+  .me-main{grid-template-columns:minmax(0,1fr)}
+  .me-tools{max-height:none}
+  .me-pal{grid-template-columns:1fr 1fr 1fr}
+  .me-foot{grid-template-columns:minmax(0,1fr)}
+  .me-headright input{width:140px}
+}
 </style>
-<link rel="stylesheet" href="css/style.css?v=202609180839">
+<link rel="stylesheet" href="css/style.css?v=202609181000">
 </head>
 <body>
 
 <div id="menu" class="screen">
   <div class="menu-box">
     <h1>OPERATION <span>IRONFRONT</span></h1>
-    <p class="tag">Modern combined-arms warfare &mdash; skirmish vs. the machine &nbsp;&middot;&nbsp; build <span id="buildid">202609180839</span></p>
-    <div class="sect"><h2>The opposition</h2>
+    <p class="tag">Modern combined-arms warfare &mdash; skirmish vs. the machine &nbsp;&middot;&nbsp; build <span id="buildid">202609181000</span></p>
+    <div class="sect wide"><h2>The opposition</h2>
+      <!-- THE SLOT LIST, borrowed from Red Alert's skirmish screen: the
+           opposition is a LIST OF COMMANDERS, not a count. One row each, you
+           at the top, and the TEAM LETTER - not a menu option - is what says
+           who is allied with whom. The rows themselves are built by main.js
+           out of the rules, so a new army appears in them on its own.
+           #opt-opponents is gone from THIS page and main.js still reads it
+           when it is there: every headless harness carries its own copy of
+           this menu, frozen at the older shape, and must go on producing
+           exactly the roster it always did. -->
+      <div class="shead">
+        <span>Commander</span><span>Side</span><span>Team</span><span>Colour</span>
+        <span>Skill</span><span>Doctrine</span><span></span>
+      </div>
+      <div id="slot-list"></div>
+      <div class="sfoot">
+        <button type="button" id="btn-slot-add">+ Add commander</button>
+        <span>Commanders sharing a team letter fight as allies. Six seats, and
+          no two commanders may take the same colour.</span>
+        <!-- filled in when every commander is on one letter, which would hand
+             you the battle on the first tick; DEPLOY is held shut until then -->
+        <span id="slot-warn" class="swarn"></span>
+      </div>
       <div class="grid2">
-      <div class="row"><label>Opponents</label><select id="opt-opponents">
-        <option value="1" selected>1 enemy commander</option>
-        <option value="2">2 enemies &mdash; free-for-all</option>
-        <option value="3">3 enemies &mdash; free-for-all</option>
-        <option value="2t">1 ally vs 2 enemies</option>
-        <option value="4">4 enemies &mdash; last stand</option>
-        <option value="5">5 enemies &mdash; hopeless</option>
-      </select></div>
-      <div class="row"><label>Doctrine</label><select id="opt-pers">
+      <div class="row"><label>Default doctrine</label><select id="opt-pers">
         <option value="mixed" selected>Mixed &mdash; each picks its own</option>
         <option value="balanced">Combined Arms</option>
         <option value="turtle">Fortress &mdash; digs in, heavy defences</option>
@@ -192,7 +301,7 @@
         <option value="artillery">Gun Line &mdash; artillery heavy</option>
         <option value="boomer">Industrial &mdash; booms then overwhelms</option>
       </select></div>
-      <div class="row"><label>Commander</label><select id="opt-diff">
+      <div class="row"><label>Default skill</label><select id="opt-diff">
         <option value="recruit">Recruit &mdash; digs in, rarely attacks</option>
         <option value="regular" selected>Regular &mdash; balanced, ground-focused</option>
         <option value="veteran">Veteran &mdash; combined arms, fields radar</option>
@@ -200,7 +309,7 @@
         <option value="commander">Commander &mdash; relentless, big economy</option>
         <option value="warlord">Warlord &mdash; overwhelming, no mercy</option>
       </select></div>
-      <div class="row"><label>Enemy economy</label><select id="opt-handi">
+      <div class="row"><label>AI economy</label><select id="opt-handi">
         <option value="0.75">Starved &mdash; 75% of what its haulers earn</option>
         <option value="1" selected>Even &mdash; same rules as you</option>
         <option value="1.4">Favoured &mdash; 140%</option>
@@ -209,11 +318,12 @@
       </div>
     </div>
     <div class="sect wide"><h2>Order of battle</h2>
-      <div class="phead"><span></span><span class="me">You</span><span class="them">Enemy</span></div>
-      <div class="prow"><label>Faction</label>
-        <div class="me" id="fac-slot-me"></div>
-        <div class="them" id="fac-slot-them"></div>
-      </div>
+      <div class="phead"><span></span><span class="me">You</span><span class="them">Every AI</span></div>
+      <!-- The faction pickers moved up into the slot list: a side is a
+           per-commander choice now and one place to make it is enough.
+           These two columns are still "you" against "the machine" - era,
+           tech, ceilings and services are set for the human and for every
+           computer commander, an ally included, exactly as before. -->
       <div class="prow"><label>Era</label>
         <div class="me"><select id="opt-era"></select></div>
         <div class="them"><select id="opt-aera"></select></div>
@@ -292,6 +402,11 @@
       <div class="row"><label>Your position</label><select id="opt-startpos"><option value="-1" selected>Random</option></select></div>
       <div class="row"><label>Map seed</label><input id="opt-seed" type="text" value=""></div>
       </div>
+      <div class="row me-arm"><label>Edited map</label>
+        <span id="me-armed" class="me-none">none &mdash; the generator draws the ground</span>
+        <button type="button" id="btn-editor">MAP EDITOR</button>
+        <button type="button" id="btn-unarm" class="hidden">USE GENERATED</button>
+      </div>
     </div>
     <div class="sect"><h2>Rules and display</h2>
       <div class="grid2">
@@ -313,6 +428,10 @@
     </div>
 
                                                                                                     <button id="btn-start">DEPLOY</button>
+    <!-- The field manual: everything the game can field, browsable before a
+         shot is fired. js/gallery.js binds this button only where it exists,
+         so a page carrying an older copy of this menu simply has no manual. -->
+    <button id="btn-gallery" type="button">FIELD MANUAL &mdash; EVERY MACHINE IN THE GAME</button>
     <div class="hint">
       <b>Victory</b> &mdash; destroy every enemy production facility: construction yards, barracks, war factories, naval yards and airbases. Power, radar, defences and haulers do not keep a beaten side in the war; a construction rig still on the road buys it two minutes to unfold.<br>
       <b>Controls</b> &mdash; LMB select / drag box &middot; RMB move &amp; attack &middot;
@@ -372,6 +491,10 @@
       <button id="pm-resume">RESUME</button>
       <button id="pm-save">SAVE GAME</button>
       <button id="pm-load">LOAD GAME</button>
+      <!-- Looking something up mid-battle. The manual never ticks the game
+           and never touches Game.paused: the battle stays exactly as frozen
+           as this menu left it, and closing puts this menu back. -->
+      <button id="pm-gallery">FIELD MANUAL</button>
       <button id="pm-quit" class="danger">QUIT TO MENU</button>
       <div class="pm-hint">Esc closes this menu &middot; the battle is frozen while it is open</div>
     </div>
@@ -415,6 +538,83 @@
   </div>
 </div>
 
+<!-- The field manual. Empty on purpose: js/gallery.js builds the panel
+     into it, and makes the element itself on a page that has none. -->
+<div id="gallery" class="hidden" role="dialog" aria-modal="true" aria-label="Field manual" tabindex="-1"></div>
+
+
+<!-- The theatre editor. Empty of content on purpose: js/mapedit.js fills the
+     palette, the theatre list and the saved-map list, and draws the ground.
+     Every harness page carries a frozen copy of the menu and NOT this, which
+     is why main.js only ever asks MapEdit.armed() and takes null for an
+     answer - a page without this markup deploys exactly as it always did. -->
+<div id="mapedit" class="hidden" role="dialog" aria-modal="true" aria-labelledby="me-title">
+  <div class="me-box">
+    <header class="me-head">
+      <div class="me-kicker">Theatre editor</div>
+      <h2 id="me-title">SHAPE THE <span>GROUND</span></h2>
+      <div class="me-headright">
+        <input id="me-name" type="text" maxlength="40" value="" aria-label="Map name" placeholder="Map name">
+        <button type="button" id="me-close">CLOSE</button>
+      </div>
+    </header>
+
+    <div class="me-main">
+      <aside class="me-tools">
+        <h3>Brush</h3>
+        <div id="me-palette" class="me-pal"></div>
+        <div class="me-row" style="margin-top:8px"><label>Size</label><select id="me-brush">
+          <option value="0">1 tile</option>
+          <option value="1">3 across</option>
+          <option value="2" selected>5 across</option>
+          <option value="4">9 across</option>
+          <option value="7">15 across</option>
+        </select></div>
+        <button type="button" id="me-undo">UNDO STROKE</button>
+
+        <h3>The ground underneath</h3>
+        <div class="me-row"><label>Theatre</label><select id="me-th"></select></div>
+        <div class="me-row"><label>Size</label><select id="me-size"></select></div>
+        <div class="me-row"><label>Ore</label><select id="me-rich">
+          <option value="0.6">Sparse</option>
+          <option value="1" selected>Standard</option>
+          <option value="1.6">Abundant</option>
+        </select></div>
+        <div class="me-row"><label>Sites</label><select id="me-ns">
+          <option value="2" selected>2 deployment sites</option>
+          <option value="3">3</option><option value="4">4</option>
+          <option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option>
+        </select></div>
+        <div class="me-row"><label>Seed</label><input id="me-seed" type="text" value=""></div>
+        <button type="button" id="me-regen">REGENERATE</button>
+      </aside>
+
+      <div class="me-stage">
+        <canvas id="me-view" width="576" height="576" aria-label="The theatre being edited"></canvas>
+        <div class="me-status" id="me-status"></div>
+      </div>
+    </div>
+
+    <footer class="me-foot">
+      <div class="me-slots">
+        <select id="me-slot" aria-label="Saved maps"></select>
+        <button type="button" id="me-save">SAVE</button>
+        <button type="button" id="me-load">LOAD</button>
+        <button type="button" id="me-del">DELETE</button>
+      </div>
+      <div class="me-share">
+        <textarea id="me-blob" rows="2" spellcheck="false" aria-label="Map exchange text"
+          placeholder="EXPORT puts this map here as text. Paste somebody else's here and press IMPORT."></textarea>
+        <button type="button" id="me-export">EXPORT</button>
+        <button type="button" id="me-import">IMPORT</button>
+      </div>
+      <button type="button" id="me-play">USE THIS MAP</button>
+      <div class="me-msg" id="me-msg"></div>
+    </footer>
+  </div>
+</div>
+
 <div id="errbox" style="display:none;position:fixed;left:10px;top:40px;z-index:99;max-width:640px;
 background:rgba(60,8,8,.94);border:1px solid #ff6b52;color:#ffd6cc;font:12px/1.5 monospace;
 padding:10px 14px;white-space:pre-wrap;pointer-events:none"></div>
@@ -429,94 +629,101 @@ window.addEventListener("error", function (e) {
   box.style.display = "block";
 });
 </script>
-<script src="js/util.js?v=202609180839"></script>
-<script src="js/config.js?v=202609180839"></script>
-<script src="js/facts.js?v=202609180839"></script>
-<script src="js/rules.js?v=202609180839"></script>
-  <script src="js/eras.js?v=202609180839"></script>
-<script src="js/heavyair.js?v=202609180839"></script>
-<script src="js/generations.js?v=202609180839"></script>
-<script src="js/geodata.js?v=202609180839"></script>
-<script src="js/audio.js?v=202609180839"></script>
-  <script src="js/threat.js?v=202609180839"></script>
-<script src="js/map.js?v=202609180839"></script>
-<script src="js/path.js?v=202609180839"></script>
-<script src="js/combat.js?v=202609180839"></script>
-<script src="js/mines.js?v=202609180839"></script>
-<script src="js/sonarnet.js?v=202609180839"></script>
-<script src="js/entities.js?v=202609180839"></script>
-<script src="js/player.js?v=202609180839"></script>
-<script src="js/ai.js?v=202609180839"></script>
-<script src="js/sprites.js?v=202609180839"></script>
-<script src="js/spriteart.js?v=202609180839"></script>
-<script src="js/spriteart_hd.js?v=202609180839"></script>
+<script src="js/util.js?v=202609181000"></script>
+<script src="js/config.js?v=202609181000"></script>
+<script src="js/facts.js?v=202609181000"></script>
+<script src="js/rules.js?v=202609181000"></script>
+  <script src="js/eras.js?v=202609181000"></script>
+<script src="js/heavyair.js?v=202609181000"></script>
+<script src="js/generations.js?v=202609181000"></script>
+<script src="js/geodata.js?v=202609181000"></script>
+<script src="js/audio.js?v=202609181000"></script>
+  <script src="js/threat.js?v=202609181000"></script>
+<script src="js/map.js?v=202609181000"></script>
+<script src="js/path.js?v=202609181000"></script>
+<script src="js/combat.js?v=202609181000"></script>
+<script src="js/mines.js?v=202609181000"></script>
+<script src="js/sonarnet.js?v=202609181000"></script>
+<script src="js/entities.js?v=202609181000"></script>
+<script src="js/player.js?v=202609181000"></script>
+<script src="js/ai.js?v=202609181000"></script>
+<script src="js/sprites.js?v=202609181000"></script>
+<script src="js/spriteart.js?v=202609181000"></script>
+<script src="js/spriteart_hd.js?v=202609181000"></script>
 <script src="js/three.min.js"></script>
-<script src="js/render.js?v=202609180839"></script>
-<script src="js/models3d.js?v=202609180839"></script>
-<script src="js/units3d.js?v=202609180839"></script>
-<script src="js/units3d_salvage.js?v=202609180839"></script>
-<script src="js/units3d_final.js?v=202609180839"></script>
-  <script src="js/units3d_subs.js?v=202609180839"></script>
-  <script src="js/units3d_air2.js?v=202609180839"></script>
-  <script src="js/units3d_ew.js?v=202609180839"></script>
-  <script src="js/civ3d.js?v=202609180839"></script>
-<script src="js/models3d_hd.js?v=202609180839"></script>
-<script src="js/defences3d.js?v=202609180839"></script>
-<script src="js/obstacles3d.js?v=202609180839"></script>
-<script src="js/models3d_east.js?v=202609180839"></script>
-<script src="js/air3d_era.js?v=202609180839"></script>
-<script src="js/air_specs.js?v=202609180839"></script>
-<script src="js/rotor3d.js?v=202609180839"></script>
-<script src="js/rotor_specs.js?v=202609180839"></script>
-<script src="js/armour3d.js?v=202609180839"></script>
-<script src="js/armour_specs.js?v=202609180839"></script>
-<script src="js/warship3d.js?v=202609180839"></script>
-<script src="js/warship_specs.js?v=202609180839"></script>
-<script src="js/infantry3d.js?v=202609180839"></script>
-<script src="js/infantry_specs.js?v=202609180839"></script>
+<!-- the theatre editor. After config.js (it reads CFG.TERRAIN as it loads)
+     and before main.js, which asks MapEdit.armed() when DEPLOY is pressed. -->
+<script src="js/mapedit.js?v=202609181000"></script>
+<script src="js/render.js?v=202609181000"></script>
+<script src="js/models3d.js?v=202609181000"></script>
+<script src="js/units3d.js?v=202609181000"></script>
+<script src="js/units3d_salvage.js?v=202609181000"></script>
+<script src="js/units3d_final.js?v=202609181000"></script>
+  <script src="js/units3d_subs.js?v=202609181000"></script>
+  <script src="js/units3d_air2.js?v=202609181000"></script>
+  <script src="js/units3d_ew.js?v=202609181000"></script>
+  <script src="js/civ3d.js?v=202609181000"></script>
+<script src="js/models3d_hd.js?v=202609181000"></script>
+<script src="js/defences3d.js?v=202609181000"></script>
+<script src="js/obstacles3d.js?v=202609181000"></script>
+<script src="js/models3d_east.js?v=202609181000"></script>
+<script src="js/air3d_era.js?v=202609181000"></script>
+<script src="js/air_specs.js?v=202609181000"></script>
+<script src="js/rotor3d.js?v=202609181000"></script>
+<script src="js/rotor_specs.js?v=202609181000"></script>
+<script src="js/armour3d.js?v=202609181000"></script>
+<script src="js/armour_specs.js?v=202609181000"></script>
+<script src="js/warship3d.js?v=202609181000"></script>
+<script src="js/warship_specs.js?v=202609181000"></script>
+<script src="js/infantry3d.js?v=202609181000"></script>
+<script src="js/infantry_specs.js?v=202609181000"></script>
 <!-- mine warfare and the naval helicopter fit -->
-<script src="js/mine_veh_layer.js?v=202609180839"></script>
-<script src="js/mine_veh_clear.js?v=202609180839"></script>
-<script src="js/mine_ship_layer.js?v=202609180839"></script>
-<script src="js/mine_ship_sweeper.js?v=202609180839"></script>
+<script src="js/mine_veh_layer.js?v=202609181000"></script>
+<script src="js/mine_veh_clear.js?v=202609181000"></script>
+<script src="js/mine_ship_layer.js?v=202609181000"></script>
+<script src="js/mine_ship_sweeper.js?v=202609181000"></script>
 <!-- the naval recovery vehicle -->
-<script src="js/repairship3d.js?v=202609180839"></script>
+<script src="js/repairship3d.js?v=202609181000"></script>
 <!-- mobile air defence and ballistic launchers -->
-<script src="js/sam3d.js?v=202609180839"></script>
-<script src="js/tel3d.js?v=202609180839"></script>
-<script src="js/mine_objects.js?v=202609180839"></script>
-<script src="js/sonarnet_objects.js?v=202609180839"></script>
-<script src="js/asw_helo_fit.js?v=202609180839"></script>
-<script src="js/sub3d_era.js?v=202609180839"></script>
-<script src="js/sub_specs.js?v=202609180839"></script>
+<script src="js/sam3d.js?v=202609181000"></script>
+<script src="js/tel3d.js?v=202609181000"></script>
+<script src="js/mine_objects.js?v=202609181000"></script>
+<script src="js/sonarnet_objects.js?v=202609181000"></script>
+<script src="js/asw_helo_fit.js?v=202609181000"></script>
+<script src="js/sub3d_era.js?v=202609181000"></script>
+<script src="js/sub_specs.js?v=202609181000"></script>
 <!-- hand-built hero models: loaded last so they override the parametric builders -->
-<script src="js/hero/kpa_e50_mbt.js?v=202609180839"></script>
-<script src="js/hero/mbt_c.js?v=202609180839"></script>
-<script src="js/hero/nato_e00_stealthfighter.js?v=202609180839"></script>
-<script src="js/hero/nato_e50_fighter.js?v=202609180839"></script>
-<script src="js/hero/nato_e60_mbt.js?v=202609180839"></script>
-<script src="js/hero/nato_e80_fighter.js?v=202609180839"></script>
-<script src="js/hero/nato_e90_mbt.js?v=202609180839"></script>
-<script src="js/hero/pact_e60_fighter.js?v=202609180839"></script>
-<script src="js/hero/pact_e80_mbt.js?v=202609180839"></script>
-<script src="js/hero/pact_e90_fighter.js?v=202609180839"></script>
-<script src="js/hero/pla_e00_mbt.js?v=202609180839"></script>
-<script src="js/hero/stealth_c.js?v=202609180839"></script>
-<script src="js/hero/destroyer_n.js?v=202609180839"></script>
-<script src="js/hero/kpa_e90_missileboat.js?v=202609180839"></script>
-<script src="js/hero/nato_e50_carrier.js?v=202609180839"></script>
-<script src="js/hero/pact_e60_cruiser.js?v=202609180839"></script>
-<script src="js/hero/pla_e00_destroyer.js?v=202609180839"></script>
-<script src="js/hero/roc_e80_destroyer.js?v=202609180839"></script>
-<script src="js/hero/sub_n.js?v=202609180839"></script>
-<script src="js/bloom3d.js?v=202609180839"></script>
-<script src="js/fx3d.js?v=202609180839"></script>
-<script src="js/render3d.js?v=202609180839"></script>
-<script src="js/icons3d.js?v=202609180839"></script>
-<script src="js/ui.js?v=202609180839"></script>
-<script src="js/save.js?v=202609180839"></script>
-<script src="js/game.js?v=202609180839"></script>
-<script src="js/loading.js?v=202609180839"></script>
-<script src="js/main.js?v=202609180839"></script>
+<script src="js/hero/kpa_e50_mbt.js?v=202609181000"></script>
+<script src="js/hero/mbt_c.js?v=202609181000"></script>
+<script src="js/hero/nato_e00_stealthfighter.js?v=202609181000"></script>
+<script src="js/hero/nato_e50_fighter.js?v=202609181000"></script>
+<script src="js/hero/nato_e60_mbt.js?v=202609181000"></script>
+<script src="js/hero/nato_e80_fighter.js?v=202609181000"></script>
+<script src="js/hero/nato_e90_mbt.js?v=202609181000"></script>
+<script src="js/hero/pact_e60_fighter.js?v=202609181000"></script>
+<script src="js/hero/pact_e80_mbt.js?v=202609181000"></script>
+<script src="js/hero/pact_e90_fighter.js?v=202609181000"></script>
+<script src="js/hero/pla_e00_mbt.js?v=202609181000"></script>
+<script src="js/hero/stealth_c.js?v=202609181000"></script>
+<script src="js/hero/destroyer_n.js?v=202609181000"></script>
+<script src="js/hero/kpa_e90_missileboat.js?v=202609181000"></script>
+<script src="js/hero/nato_e50_carrier.js?v=202609181000"></script>
+<script src="js/hero/pact_e60_cruiser.js?v=202609181000"></script>
+<script src="js/hero/pla_e00_destroyer.js?v=202609181000"></script>
+<script src="js/hero/roc_e80_destroyer.js?v=202609181000"></script>
+<script src="js/hero/sub_n.js?v=202609181000"></script>
+<script src="js/bloom3d.js?v=202609181000"></script>
+<script src="js/fx3d.js?v=202609181000"></script>
+<script src="js/render3d.js?v=202609181000"></script>
+<script src="js/icons3d.js?v=202609181000"></script>
+<script src="js/ui.js?v=202609181000"></script>
+<script src="js/save.js?v=202609181000"></script>
+<script src="js/game.js?v=202609181000"></script>
+<script src="js/loading.js?v=202609181000"></script>
+<script src="js/main.js?v=202609181000"></script>
+<!-- The field manual. Last of the scripts because it borrows the
+     deployment briefing's card machinery (js/loading.js) and reads the
+     menu's own selects; it binds to nothing that is not already there. -->
+<script src="js/gallery.js?v=202609181000"></script>
 </body>
 </html>

@@ -25,7 +25,20 @@ var GameMap = (function () {
     return d;
   }
 
+  /* the on-disk format of an edited map. One number, read by mapedit.js as
+     well, so the writer and the reader can never be a version apart. */
+  const EDIT_V = 1;
+
   function build(theatreId, seed, richness, opts) {
+    /* ---- a map somebody drew ----
+       An edited theatre is not a different generator: it is THIS one, at the
+       theatre, seed, ore density and grid size the map was drawn at, with a
+       list of overridden tiles laid on top further down. Those settings travel
+       WITH the map and are the authority here, because the overrides are
+       indices into a grid of exactly that shape - honouring the caller's
+       settings instead would lay them on the wrong ground. */
+    const ed = (opts && opts.edit && opts.edit.v === EDIT_V) ? opts.edit : null;
+    if (ed) { theatreId = ed.th; seed = ed.seed >>> 0; richness = ed.rich; }
     richness = richness || 1;              // 0.6 sparse .. 1.6 abundant
     const th = THEATRES[theatreId] || THEATRES[THEATRE_LIST[0]];
     /* The theatre is square and its edge is chosen per battle. CFG.MAP_W is
@@ -34,8 +47,8 @@ var GameMap = (function () {
        sized from W/H rather than from the constant. Measured cost is linear -
        about 0.029 ms a tick per thousand tiles, so 288x288 (82,944 tiles) runs
        at 2.42 ms a tick against 0.59 at 144, which is still 34x real time. */
-    const W = (opts && opts.size) || CFG.MAP_W;
-    const H = (opts && opts.size) || CFG.MAP_H;
+    const W = (ed ? ed.size : (opts && opts.size)) || CFG.MAP_W;
+    const H = (ed ? ed.size : (opts && opts.size)) || CFG.MAP_H;
     const rng = U.mulberry32(seed);
     const [lo0, la0, lo1, la1] = th.bbox;
     const dLon = lo1 - lo0, dLat = la1 - la0;
@@ -281,7 +294,12 @@ var GameMap = (function () {
        further starts by picking the buildable spots that are furthest from all
        existing ones, so nobody gets boxed in behind someone else.          */
     const starts = th.starts.map(([lon, lat]) => ({ x: toTx(lon), y: toTy(lat) }));
-    const wantStarts = Math.max(2, Math.min(8, (opts && opts.starts) || 2));
+    /* An edited map's base has to come back byte for byte, and the generator
+       clears a landing pad round every start it invents - so ground grown for
+       four commanders is DIFFERENT ground from the same seed grown for two.
+       The count the map was drawn at therefore travels with the map, and the
+       sites the player placed replace this list further down. */
+    const wantStarts = Math.max(2, Math.min(8, (ed ? ed.ns : (opts && opts.starts)) || 2));
 
     function landRoom(cx, cy, r) {
       /* fraction of a disc that is buildable land — a start needs real space */
@@ -326,6 +344,48 @@ var GameMap = (function () {
     /* ---- roads: link the two start zones with a crude path along low ground ---- */
     carveRoad(terrain, elev, W, H, starts[0], starts[1]);
 
+    /* ---- what the player drew over the top ----
+       HERE, and not a line later: the generator has finished with the tiles
+       and nothing has yet been DERIVED from them. Every derived field below -
+       the fine coastline, the signed distance to the shore, the smoothed
+       elevation the hillshading reads - is then computed from the edited
+       ground rather than from ground the player replaced. The same rule is
+       kept outside this file: game.js throws away the pathfinder's terrain
+       tables and reachability labels as soon as an edited map is in hand,
+       because those are derived from map.terrain too.
+       The sites, nodes and blocks are REPLACED rather than merged: an edited
+       map says where every one of them is, and a list that was half the
+       generator's and half the player's could be neither drawn nor reasoned
+       about. The road and the landing pads above stay where the generator put
+       them, which is what the editor showed the player while they worked. */
+    const edited = ed ? applyEdit(ed, terrain, elev, ore, oreMax, oreSeed, W, H) : null;
+    if (ed) {
+      /* A battle with no deployment site cannot be dealt (game.js divides by
+         the count), so a map that somehow arrives without two keeps the
+         generator's. mapedit.js refuses such a file at the door; this is the
+         belt under those braces, because the edit can also arrive out of a
+         saved game, where nothing re-reads it. */
+      const st = ed.st || [];
+      if (st.length >= 4) {
+        starts.length = 0;
+        /* Two tiles in, not nought: Game.init puts the construction yard at
+           (x-1, y-1) and it is 3x3, so a site clamped to the very edge would
+           write its footprint at negative indices and never enter G.occ. This
+           is the same interior the oil nodes and the civilian blocks below are
+           held to, and well inside what the editor itself allows. */
+        for (let i = 0; i + 1 < st.length; i += 2)
+          starts.push({ x: U.clamp(st[i] | 0, 2, W - 3), y: U.clamp(st[i + 1] | 0, 2, H - 3) });
+      }
+      const oi = ed.oil || [], ci = ed.civ || [];
+      oilNodes.length = 0;
+      for (let i = 0; i + 1 < oi.length; i += 2)
+        oilNodes.push({ x: U.clamp(oi[i] | 0, 1, W - 3),
+                        y: U.clamp(oi[i + 1] | 0, 1, H - 3), taken: false });
+      civSites.length = 0;
+      for (let i = 0; i + 1 < ci.length; i += 2)
+        civSites.push({ x: U.clamp(ci[i] | 0, 1, W - 3), y: U.clamp(ci[i + 1] | 0, 1, H - 3) });
+    }
+
     /* ---- fine-grained coastline field for realistic rendering ----
        FS samples per tile side, straight from the source polygons, so the
        rendered coast is as smooth as the digitised geography.            */
@@ -344,6 +404,16 @@ var GameMap = (function () {
         }
         waterFine[fy * FW + fx] = land ? 0 : 1;
       }
+    }
+    /* The field above is sampled from the SOURCE POLYGONS, so it knows nothing
+       about a lake somebody painted or a strait they filled in: without this
+       the shoreline the renderers draw would follow a coast that is no longer
+       there. Only tiles the edit actually overrode are stamped, so an
+       untouched coast stays exactly as smooth as the digitised geography. */
+    if (edited) for (const ti of edited) {
+      const tx = ti % W, ty = (ti / W) | 0, wet = terrain[ti] === T.WATER ? 1 : 0;
+      for (let k = 0; k < FS; k++) for (let j = 0; j < FS; j++)
+        waterFine[(ty * FS + k) * FW + tx * FS + j] = wet;
     }
     /* signed distance to the shoreline in fine cells: >0 on land, <0 in water */
     const shore = new Float32Array(FW * FH).fill(1e9);
@@ -390,7 +460,10 @@ var GameMap = (function () {
 
     return {
       civSites,
-      id: theatreId, name: th.name, brief: th.brief, startNames: th.startNames,
+      /* an edited theatre answers to the name its author gave it; the briefing
+         and the site names still belong to the real ground underneath */
+      id: theatreId, name: (ed && ed.name) || th.name, brief: th.brief,
+      startNames: th.startNames,
       W, H, terrain, elev, ore, oreMax, oreSeed, oilNodes, starts,
       toLon, toLat,
       FS, FW, FH, waterFine, shore, elevS,
@@ -418,6 +491,44 @@ var GameMap = (function () {
     }
   }
 
+  /* --- an edited map's overrides ---------------------------------
+     Run-length encoded as [firstTile, length, value] triples, because a brush
+     stroke IS a run of tiles. Every index is clamped and every value checked:
+     a blob is text from outside the game and must never be trusted to be in
+     range. Returns the tile indices the TERRAIN overrides touched, which the
+     fine coastline above needs.
+     Nothing here is re-derived from anything else - painting water writes the
+     water, the flat bed and the empty seam as three separate overrides - so a
+     map file says everything it means and this function never has to guess. */
+  function eachRun(runs, N, fn) {
+    if (!runs || !runs.length) return;
+    for (let k = 0; k + 2 < runs.length; k += 3) {
+      const at = runs[k] | 0, len = runs[k + 1] | 0, v = runs[k + 2];
+      if (!(len > 0)) continue;
+      for (let i = Math.max(0, at), e = Math.min(N, at + len); i < e; i++) fn(i, v);
+    }
+  }
+  function applyEdit(ed, terrain, elev, ore, oreMax, oreSeed, W, H) {
+    const N = W * H, touched = [];
+    eachRun(ed.t, N, (i, v) => {
+      const b = v | 0;
+      if (!CFG.TERRAIN[b]) return;                   // a terrain byte we do not have
+      terrain[i] = b; touched.push(i);
+    });
+    eachRun(ed.e, N, (i, v) => { elev[i] = U.clamp(v | 0, 0, 3); });
+    eachRun(ed.o, N, (i, v) => {
+      const q = Math.max(0, +v || 0);
+      ore[i] = q;
+      /* the two fields the generator derives from a tile's ore, derived here
+         the same way: the ceiling regrowth aims at, and whether this tile is
+         one of the seeds that regrows at all (the generator seeds the heart of
+         a field and leaves the rim to be mined out for good) */
+      oreMax[i] = q * 1.35;
+      oreSeed[i] = q >= 800 ? 1 : 0;
+    });
+    return touched;
+  }
+
   /* --- passability helpers --------------------------------------- */
   function passable(map, tx, ty, layer) {
     if (tx < 0 || ty < 0 || tx >= map.W || ty >= map.H) return false;
@@ -442,5 +553,5 @@ var GameMap = (function () {
     return map.elev[ty * map.W + tx];
   }
 
-  return { build, passable, speedAt, coverAt, elevAt };
+  return { build, passable, speedAt, coverAt, elevAt, EDIT_V };
 })();

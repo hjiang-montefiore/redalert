@@ -688,6 +688,13 @@ var Render3D = (function () {
   }
 
   function archOf(team) {
+    /* The palette says which army it belongs to since a colour became a
+       pre-battle choice. Matching on `main` alone handed NATO's buildings
+       to any commander who picked a colour of their own - and to any
+       duplicate whose hue had been rotated, which is the hazard the note in
+       CFG.FACTION_COLORS records. The match is kept as the fallback: a
+       palette from somewhere else still resolves the way it always did. */
+    if (team && team.fac && ARCH[team.fac]) return ARCH[team.fac];
     for (const k in CFG.FACTION_COLORS)
       if (CFG.FACTION_COLORS[k].main === team.main) return ARCH[k] || ARCH.nato;
     return ARCH.nato;

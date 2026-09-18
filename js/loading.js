@@ -178,10 +178,11 @@ var LoadScreen = (function () {
         arms: (human ? opts.armsHuman : opts.armsAI) || "all",
         techCap: Math.max(tech, (human ? opts.capHuman : opts.capAI) || 3),
         diff: r.diff || opts.diff, personality: r.personality,
-        /* Player's constructor colour. Its duplicate-faction shift is not
-           copied: adopt() replaces this with the real colour once the
-           players exist, so the briefing cannot disagree with the map. */
-        color: (CFG.FACTION_COLORS && CFG.FACTION_COLORS[r.faction]) ||
+        /* A colour chosen in the pre-battle slot list, else the faction's.
+           The duplicate-faction hue shift is not copied: adopt() replaces
+           this with the real colour once the players exist, so the briefing
+           cannot disagree with the map. */
+        color: r.color || (CFG.FACTION_COLORS && CFG.FACTION_COLORS[r.faction]) ||
                CFG.TEAM[i % CFG.TEAM.length],
       };
       c.pool = poolFor(c, opts.superweapons === false);
@@ -335,23 +336,29 @@ var LoadScreen = (function () {
   /* Infantry has period kit registered per unit by infantry3d.js; the
      thumbnail builder always takes the generic figure for the role, so the
      unit's own figure is asked for first. */
-  function buildModel(id, color) {
-    const d = UNITS[id];
+  /* `kind` is "unit" unless a caller says otherwise. The briefing only ever
+     deals units; the field manual also shows structures, and those come off
+     the thumbnail builder's own building path. */
+  function buildModel(id, color, kind) {
     let m = null;
-    if (d.cat === "infantry" && typeof UNIT_MODELS !== "undefined" &&
-        UNIT_MODELS[id] && !UNIT_MODELS[id].crude)
-      m = UNIT_MODELS[id].build(THREE, Models3D, { team: color.main });
-    if (!m) m = Icons3D.model(id, "unit", color);
+    if (kind && kind !== "unit") m = Icons3D.model(id, "building", color);
+    else {
+      const d = UNITS[id];
+      if (d && d.cat === "infantry" && typeof UNIT_MODELS !== "undefined" &&
+          UNIT_MODELS[id] && !UNIT_MODELS[id].crude)
+        m = UNIT_MODELS[id].build(THREE, Models3D, { team: color.main });
+      if (!m) m = Icons3D.model(id, "unit", color);
+    }
     /* the thumbnails' one-time colour-space fix, or every card is washed out */
     if (m && Icons3D.prep) Icons3D.prep(m);
     return m;
   }
 
-  function mountModel(slot, id, color) {
+  function mountModel(slot, id, color, kind) {
     const G3 = ensureGL();
     if (!G3) return false;
     let model = null;
-    try { model = buildModel(id, color); } catch (e) { model = null; }
+    try { model = buildModel(id, color, kind); } catch (e) { model = null; }
     if (!model) return false;
     const group = new THREE.Group();
     model.rotation.x = -Math.PI / 2;            // model +Z up -> three +Y up
@@ -841,6 +848,58 @@ var LoadScreen = (function () {
     });
   }
 
+  /* ---- the same machine on a stand, outside a briefing ----
+     The field manual shows a record beside a turning model, and it has to be
+     THIS code: one renderer, one colour fix, one fallback ladder. A second
+     copy would drift away from this one inside a month. The handle owns no
+     timers and no markup - the caller hands it a canvas and drives it - and
+     it is only ever used while no briefing is running, which is the only
+     time the manual can be open.  */
+  function stand(canvas) {
+    const slot = {
+      side: "me", cv: canvas, ctx: canvas.getContext("2d"),
+      pic: canvas.parentNode || canvas,
+      id: null, mode: "none", group: null, sprite: null, still: null,
+      ang: STILL_ANGLE, rad: 1,
+    };
+    return {
+      /* the ladder show() uses: a turning model, then the 2D battlefield's
+         own top-down art, then the build menu's baked thumbnail, then
+         nothing - a record without a picture is still a record */
+      show(id, kind, color) {
+        dropModel(slot);
+        slot.id = id; slot.sprite = null; slot.still = null; slot.mode = "none";
+        slot.ang = STILL_ANGLE;
+        if (mountModel(slot, id, color, kind)) { slot.mode = "gl"; return; }
+        if (!kind || kind === "unit") {
+          let spr = null;
+          try { spr = typeof Sprites !== "undefined" ? Sprites.get(UNITS[id], color) : null; }
+          catch (e) { spr = null; }
+          if (spr && spr.hull) { slot.sprite = spr; slot.mode = "sprite"; return; }
+        }
+        let still = null;
+        try {
+          still = typeof Icons3D !== "undefined"
+            ? Icons3D.get(id, (!kind || kind === "unit") ? "unit" : "building", color) : null;
+        } catch (e) { still = null; }
+        slot.still = still;
+        slot.mode = still ? "still" : "none";
+      },
+      turn(dt) { if (slot.mode === "gl" || slot.mode === "sprite") slot.ang += dt * SPIN; },
+      /* paintGL hides every slot but the one being drawn; the scene holds
+         nothing else, because a briefing drops its models as it goes */
+      paint() { sizeSlot(slot); paintSlot(slot, [slot]); },
+      free() {
+        dropModel(slot);
+        slot.sprite = null; slot.still = null; slot.mode = "none";
+        if (!S) releaseGL();       // never pull the context out from under a briefing
+      },
+    };
+  }
+  /* the plain words this screen uses for a role id, so a second screen can
+     name a slot the same way rather than keeping a list of its own */
+  function roleTitle(role) { return ROLE_TITLE[role] || ""; }
+
   /* The players exist now: take their real colours, so the briefing and the
      battlefield can never disagree about who is which colour. */
   function adopt(players) {
@@ -858,5 +917,9 @@ var LoadScreen = (function () {
   }
 
   return { run, adopt, available, dismiss, MIN_MS,
+           /* the card machinery, handed out so the field manual shows the
+              same record and the same turning model as a briefing card
+              rather than a second drawing of both */
+           describe, roleTitle, stand,
            get active() { return !!S && !S.gone; } };
 })();

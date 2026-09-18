@@ -21,10 +21,30 @@ var Game = (function () {
        the engine already reads G.map.W / G.map.H. The value rides in opts, so
        save.js - which stores G.opts wholesale and re-inits from it - carries
        the map size through a save and reload with no change of its own. */
-    const mapSize = U.clamp(Math.round(opts.mapSize || CFG.MAP_W), 96, 384);
+    /* A map drawn in the editor carries the grid it was drawn at: its
+       overrides are indices into a grid of exactly that shape, so the battle
+       is fought at that size whatever the theatre-size box says. */
+    const ed = (opts.edit && opts.edit.v === GameMap.EDIT_V) ? opts.edit : null;
+    /* An edit written by a newer build cannot be laid on this grid, and the
+       format number is what says so. Dropping it in silence would put the
+       player on the generator's own ground with no idea why the map they drew
+       is gone - every other road into the game names that case out loud, and
+       a save carries opts.edit through untouched with nothing to re-read it. */
+    if (opts.edit && !ed)
+      G.alert("MAP DRAWN BY A NEWER BUILD (FORMAT " + (opts.edit.v | 0) +
+              ") — FIGHTING ON THE GENERATED THEATRE", "bad", true);
+    const mapSize = U.clamp(Math.round((ed && ed.size) || opts.mapSize || CFG.MAP_W), 96, 384);
     CFG.MAP_W = mapSize; CFG.MAP_H = mapSize;
     G.map = GameMap.build(opts.theatre, opts.seed, opts.resources || 1,
-      { starts: (opts.roster && opts.roster.length) || 2, size: mapSize });
+      { starts: (opts.roster && opts.roster.length) || 2, size: mapSize, edit: ed });
+    /* EVERYTHING DERIVED FROM THE GROUND IS NOW STALE. Inside map.js that is
+       handled where the edits are applied; out here the pathfinder is the one
+       module that caches the ground, and it retires its cache by map IDENTITY
+       on the old assumption that only GameMap.build ever writes map.terrain.
+       A new battle does build a new map object, so identity has always been
+       enough - but this is the assumption itself, not a spare call, and an
+       edited theatre is exactly the thing that makes it worth writing down. */
+    if (typeof Path !== "undefined" && Path.invalidate) Path.invalidate();
     G.time = 0;
     G.speed = 1;
     G.paused = false;
@@ -66,6 +86,8 @@ var Game = (function () {
       p.harvestMul = r.handicap || 1;
       p.label = r.label || (p.isAI ? "AI " + i : "YOU");
     });
+    /* colours last, over the finished roster: see G.assignColors */
+    G.assignColors(G.players, roster);
 
     /* pre-battle rules: starting tech, service restrictions, AI economy handicap */
     const armsBan = (mode) => {
@@ -301,6 +323,24 @@ var Game = (function () {
       if (scan(p.buildings)) return true;
     }
     return false;
+  };
+
+  /* ---------------- one colour per commander ----------------
+     Settled over the FINISHED roster, not one player at a time. Player's
+     constructor used to do it alone, counting duplicate factions in
+     game.players, which on the frame Game.init runs still holds the PREVIOUS
+     battle's players (and nothing at all on the first match): every check
+     passed and six French commanders deployed in exactly the same blue.
+     CFG.resolveColors is the rule, and the pre-battle menu paints its colour
+     chips through the same call - so a chip beside a commander's name cannot
+     disagree with the tank on the map. */
+  G.assignColors = function (players, roster) {
+    const cols = CFG.resolveColors(players.map((p, i) => ({
+      faction: p.faction,
+      color: (roster && roster[i] && roster[i].color) || null,
+    })));
+    players.forEach((p, i) => { p.color = cols[i]; });
+    return players;
   };
 
   /* ---------------- alliances ----------------

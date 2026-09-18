@@ -3,11 +3,17 @@ class Player {
   constructor(game, idx, faction, cash, isAI) {
     this.game = game; this.idx = idx;
     this.faction = faction;
-    /* faction colour by default; if two commanders share a faction the later
-       ones shift hue so the battlefield stays readable */
+    /* The faction's colours, as a copy this commander owns. A colour chosen
+       in the pre-battle slot list, and the hue shift that keeps two
+       commanders of one army apart, are both applied by Game.assignColors
+       once the WHOLE roster exists - and the `fac` tag that pass stamps is
+       the mark of a palette that has been through it. Both used to be
+       settled here, counting duplicate factions in game.players - which, on
+       the frame Game.init is building this battle, still holds the PREVIOUS
+       battle's players, and nothing at all on the first match: two French
+       commanders deployed in exactly the same blue. */
     const base = CFG.FACTION_COLORS[faction] || CFG.TEAM[idx % CFG.TEAM.length];
-    const dup = game.players ? game.players.filter(p => p && p.faction === faction).length : 0;
-    this.color = dup > 0 ? CFG.shiftHue(base, dup * 42) : base;
+    this.color = { main: base.main, dark: base.dark, light: base.light };
     this.isAI = isAI;
     this.cash = cash;
     this.oil = 150;                      // barrels — consumed by unit production

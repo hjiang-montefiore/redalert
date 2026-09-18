@@ -38,6 +38,56 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 .menu-box .prow select,.menu-box .prow input{width:100%}
 .menu-box .prow .me select{border-color:#3f6b3a;box-shadow:inset 2px 0 0 #6f9c46}
 .menu-box .prow .them select{border-color:#6b4238;box-shadow:inset 2px 0 0 #b0654c}
+
+/* the opposition, as a list of commanders (Red Alert's skirmish screen).
+   Same idea as .prow above, with more columns: the header row and the
+   commander rows share one grid so the columns line up. A slot select is
+   styled here rather than inheriting from .row, which these are not. */
+.menu-box .shead,.menu-box .srow{display:grid;
+  grid-template-columns:82px minmax(0,1.5fr) 48px minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,1.2fr) 22px;
+  gap:0 8px;align-items:center}
+.menu-box .shead{margin-bottom:6px;font-size:9.5px;letter-spacing:1.8px;
+  text-transform:uppercase;color:#6f8168}
+.menu-box .srow{margin-bottom:6px}
+.menu-box .scell{min-width:0}
+.menu-box .srow select{width:100%;background:#141c15;border:1px solid #3a5a3c;
+  color:#cfe0c8;padding:5px 7px;font-size:12px;font-family:inherit;outline:none}
+.menu-box .sname{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8fa189}
+/* green for the seats on your side of the war, rust for the rest - the same
+   two colours the comparison table below already uses */
+.menu-box .srow.you .sname,.menu-box .srow.ally .sname{color:#9ec96a}
+.menu-box .srow.foe .sname{color:#d0846a}
+.menu-box .srow.you select,.menu-box .srow.ally select{border-color:#3f6b3a}
+.menu-box .srow.foe select{border-color:#6b4238}
+.menu-box .sdash{color:#4d5a48;text-align:center;font-size:11px}
+/* the colour this commander deploys in, painted rather than named */
+.menu-box .scol{display:flex;align-items:center;gap:6px;min-width:0}
+.menu-box .scol select{flex:1;min-width:0}
+.menu-box .schip{flex:none;width:12px;height:12px;background:#5c6657;
+  border:1px solid #0b1109;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.menu-box .slot-del{width:22px;height:22px;padding:0;line-height:1;font-size:13px;
+  background:none;border:1px solid #3a3f36;color:#8a9683;cursor:pointer;font-family:inherit}
+.menu-box .slot-del:hover{border-color:#8f4a3c;color:#e0a08c}
+.menu-box .sfoot{display:flex;align-items:center;gap:12px;margin:10px 0 2px;
+  font-size:10.5px;line-height:1.5;color:#6f7f6b}
+.menu-box #btn-slot-add{flex:none;padding:6px 12px;background:#1b2a19;
+  border:1px solid #3a5a3c;color:#a8c49a;font-family:inherit;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+.menu-box #btn-slot-add:hover{background:#274023}
+.menu-box #btn-slot-add:disabled{opacity:.35;cursor:default}
+/* empty until every commander is on one letter, which is not a skirmish */
+.menu-box .swarn:not(:empty){color:#d0846a;border-left:2px solid #8f4a3c;padding-left:8px}
+/* DEPLOY is held shut while that is true, and has to look shut */
+#btn-start:disabled{background:#2a3327;border-color:#454f3e;color:#6d7a66;cursor:default}
+#btn-start:disabled:hover{background:#2a3327}
+/* on a phone the row stacks into two columns and keeps its own rule */
+@media (max-width:720px){
+  .menu-box .shead{display:none}
+  .menu-box .srow{grid-template-columns:1fr 1fr;gap:5px 8px;margin-bottom:10px;
+    padding-bottom:9px;border-bottom:1px solid #1e2a1c}
+  .menu-box .sname{grid-column:1/-1}
+  .menu-box .sfoot{flex-wrap:wrap;gap:8px}
+}
 .menu-box .blurb{margin-top:10px;padding:9px 11px;background:#0f1710;
   border:1px solid #2b3d27;border-left:2px solid #6f9c46;
   font-size:10.5px;line-height:1.6;color:#93a88c}
@@ -379,3 +429,120 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
   color:#b9cdb0;border-radius:2px}
 #selinfo .pribtn:hover{border-color:#4f7040}
 #selinfo .pribtn.on{background:#1e3a20;border-color:#6fd06f;color:#c8f0c0}
+
+/* ---------- the field manual ----------
+   Red Alert's unit database as this game can do it: a filter rail, a list,
+   and the record - the deployment briefing's own turning model, the real
+   designation, and the warhead-against-armour figures read straight out of
+   CFG.DMG. It lives here rather than in index.html because js/gallery.js
+   builds its own markup, so every page that loads the script is styled by
+   this one block. Same palette as the deployment screen: this is another
+   page of the same orders, not a website. */
+#gallery{position:fixed;inset:0;z-index:95;display:flex;padding:14px;
+  background:radial-gradient(circle at 50% 25%,#16241a 0%,#080c09 70%);outline:none}
+/* the panel takes the focus when it opens, and Tab is kept inside it, so
+   the control that has the focus has to be visible - the menu's inputs
+   carry outline:none */
+#gallery :focus{outline:1px solid #79b25c;outline-offset:1px}
+.gal-box{margin:auto;width:min(1180px,100%);max-height:100%;min-height:0;
+  display:flex;flex-direction:column;background:rgba(10,16,11,.96);border:1px solid #3a5a3c;
+  box-shadow:0 0 0 1px #0d140e,0 12px 50px #000}
+.gal-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding:13px 18px 10px;border-bottom:1px solid #2b3d27}
+.gal-kicker{font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:#88a673;font-weight:600}
+.gal-top h2{font-size:20px;letter-spacing:4px;font-weight:700;color:#dfe8d8}
+.gal-top h2 span{color:#b6d34a}
+#gal-close{flex:none;padding:8px 16px;background:#22301f;border:1px solid #3f6b32;color:#cfe0c8;
+  font-family:inherit;font-size:11px;letter-spacing:2px;cursor:pointer}
+#gal-close:hover{background:#2f4a28;border-color:#79b25c}
+.gal-body{flex:1;min-height:0;display:grid;grid-template-columns:206px 250px minmax(0,1fr)}
+.gal-side{padding:12px 14px;border-right:1px solid #22301f;overflow-y:auto}
+.gal-side .row{display:block;margin-bottom:9px;font-size:12px}
+.gal-side .row label{display:block;width:auto;margin-bottom:3px}
+.gal-side .row select,.gal-side .row input{width:100%;font-size:12px;padding:6px 7px}
+.gal-count{margin-top:12px;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#b6d34a}
+.gal-keys{margin-top:6px;font-size:10px;line-height:1.7;color:#6f7f6b}
+
+/* the list: one row a machine, class then name, as an inventory reads */
+.gal-list{overflow-y:auto;min-height:0;border-right:1px solid #22301f}
+.gal-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;align-items:center;
+  padding:6px 10px;border-bottom:1px solid #182016;cursor:pointer;font-size:12px}
+.gal-item:hover{background:#131c13}
+.gal-item.on{background:#1b2a1a;box-shadow:inset 2px 0 0 #b6d34a}
+.gal-item>b{grid-column:1;color:#dfe8d8;font-weight:600;letter-spacing:.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gal-item>i{grid-column:1;font-style:normal;color:#7c8c78;font-size:10px;letter-spacing:.4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gal-item>span{grid-column:2;grid-row:1/3;color:#93a88c;font-size:10.5px;
+  font-variant-numeric:tabular-nums}
+
+/* the record: a turntable over a plotting grid, then the paperwork */
+.gal-pane{display:flex;flex-direction:column;min-height:0;min-width:0}
+.gal-pic{position:relative;flex:none;height:210px;overflow:hidden;border-bottom:1px solid #22301f;
+  background:
+    radial-gradient(ellipse at 50% 60%,var(--glow,rgba(111,156,70,.2)) 0%,transparent 60%),
+    repeating-linear-gradient(0deg,rgba(136,166,115,.07) 0 1px,transparent 1px 24px),
+    repeating-linear-gradient(90deg,rgba(136,166,115,.07) 0 1px,transparent 1px 24px),
+    #070b07}
+.gal-pic canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.gal-tag{position:absolute;left:12px;top:11px;padding:2px 7px;background:rgba(5,9,5,.82);
+  font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:#9ec96a}
+.gal-rec{padding:12px 16px 18px;overflow-y:auto;min-height:0;
+  font-size:12px;line-height:1.55;color:#a9b9a2}
+.gal-rec h3{margin:2px 0;font-size:18px;letter-spacing:.3px;color:#dfe8d8;font-weight:600}
+.gal-rec h4{margin:14px 0 6px;padding-bottom:4px;font-size:9.5px;letter-spacing:2px;
+  text-transform:uppercase;color:#88a673;font-weight:600;border-bottom:1px solid #22301f}
+.gal-sub{font-size:11px;color:#93a88c}
+.gal-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(102px,1fr));gap:4px;margin-top:10px}
+.gal-stat{padding:5px 7px;background:#0f1710;border:1px solid #22301f}
+.gal-stat span{display:block;font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:#7c8c78}
+.gal-stat b{color:#dfe8d8;font-weight:600;font-variant-numeric:tabular-nums}
+.gal-need{margin-top:8px;font-size:11px;color:#93a88c}
+.gal-need span{margin-right:6px;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#7c8c78}
+.gal-w{margin-bottom:7px;padding:6px 9px;background:#0f1710;border-left:2px solid #3f6b3a}
+.gal-wn{color:#dfe8d8;font-weight:600}
+.gal-wn em{margin-left:7px;font-style:normal;font-size:9px;letter-spacing:1.4px;
+  text-transform:uppercase;color:#a58f5a}
+.gal-wd{font-size:11px;color:#93a88c;font-variant-numeric:tabular-nums}
+.gal-wt{font-size:10.5px;color:#7c8c78}
+.gal-wt s{color:#8a5a4c}
+
+/* the two comparisons. One scale across every record - see barScale(). */
+.gal-cmp{display:flex;flex-direction:column;gap:3px}
+.gal-row{display:grid;grid-template-columns:120px minmax(0,1fr) 44px;gap:8px;
+  align-items:center;font-size:11px}
+.gal-row>span{color:#93a88c}
+.gal-row>b{text-align:right;color:#c8d3c4;font-weight:600;font-variant-numeric:tabular-nums}
+.gal-bar{display:block;height:7px;background:#141c15;border:1px solid #22301f}
+.gal-bar>b{display:block;height:100%;width:0}
+.gal-bar.hi>b{background:linear-gradient(90deg,#3f6b32,#b6d34a)}
+.gal-bar.md>b{background:#6f9c46}
+.gal-bar.lo>b{background:#465440}
+.gal-ct{list-style:none;display:flex;flex-direction:column;gap:3px}
+.gal-ct li{padding:4px 8px;background:#0f1710;border-left:2px solid #6b4238;font-size:11px}
+.gal-ct b{color:#dfe8d8;font-weight:600}
+.gal-ct i{margin-left:7px;font-style:normal;font-size:9.5px;letter-spacing:1.2px;
+  text-transform:uppercase;color:#d0846a}
+.gal-ct span{display:block;color:#7c8c78;font-size:10.5px}
+.gal-fact{margin-top:12px;padding-left:9px;border-left:2px solid #2b3d27;color:#a9b9a2}
+.gal-cf{margin-top:5px;font-size:9px;color:#a58f5a}
+.gal-empty{padding:6px 0;color:#7c8c78}
+#gallery ::-webkit-scrollbar{width:8px}
+#gallery ::-webkit-scrollbar-thumb{background:#33452f}
+
+/* Narrow: the three columns become one scrolling page, filters first. */
+@media (max-width:900px){
+  .gal-body{grid-template-columns:minmax(0,1fr);overflow-y:auto}
+  .gal-side{border-right:0;border-bottom:1px solid #22301f}
+  .gal-list{max-height:230px;border-right:0;border-bottom:1px solid #22301f}
+  .gal-pic{height:150px}
+  .gal-row{grid-template-columns:96px minmax(0,1fr) 42px}
+}
+
+/* the way in, under DEPLOY: plainly the second button on the screen */
+.menu-box #btn-gallery{display:block;width:100%;margin-top:8px;padding:10px;
+  background:#1a231a;border:1px solid #3f6b32;color:#a9b9a2;font-family:inherit;
+  font-size:11px;letter-spacing:3px;cursor:pointer}
+.menu-box #btn-gallery:hover{background:#22301f;border-color:#79b25c;color:#dfe8d8}
+
+

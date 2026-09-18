@@ -1564,7 +1564,13 @@ var Render = (function () {
         else if (!hasRadar) { if (!visible(e)) continue; }
         else if (G.fogEnabled && G.fog[e.ty * map.W + e.tx] === 0) continue;
       }
-      mctx.fillStyle = own ? "#6fd06f" : "#e05545";
+      /* OURS GREEN, AN ALLY ITS OWN COLOUR, EVERYONE ELSE RED. The slot list
+         lets commanders share a team, and a red dot on a friendly tank is
+         the one thing a minimap must never say. An ally's colour is the one
+         it was given before the battle, so the dot and the tank agree. */
+      mctx.fillStyle = own ? "#6fd06f"
+        : G.allied(e.owner, G.human) ? ((e.owner.color && e.owner.color.main) || "#6fd06f")
+        : "#e05545";
       const px = (e.x / CFG.TILE) * S, py = (e.y / CFG.TILE) * S;
       const sz = e.kind === "building" ? 3 : 2;
       mctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
@@ -1664,7 +1670,11 @@ var Render = (function () {
           if (G.fogEnabled && G.fog[e.ty * map.W + e.tx] !== 2) continue;
         } else if (G.fogEnabled && G.fog[e.ty * map.W + e.tx] === 0) continue;
       }
-      mctx.fillStyle = own ? "#6fd06f" : "#e05545";
+      /* ours green, an ally its own colour, everyone else red - see the
+         note in drawMinimap above */
+      mctx.fillStyle = own ? "#6fd06f"
+        : G.allied(e.owner, G.human) ? ((e.owner.color && e.owner.color.main) || "#6fd06f")
+        : "#e05545";
       const px = (e.x / CFG.TILE) * S, py = (e.y / CFG.TILE) * S;
       const sz = e.kind === "building" ? 3 : 2;
       mctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);

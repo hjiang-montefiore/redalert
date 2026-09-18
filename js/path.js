@@ -424,6 +424,23 @@ var Path = (function () {
     return null;
   }
 
+  /* invalidate() -> throw away everything cached for the map in hand.
+     The tables and the labels are keyed on the map OBJECT, which retires them
+     on its own when a new battle builds a new map - and that was enough while
+     GameMap.build was the only thing that ever wrote map.terrain. An edited
+     theatre is what makes that assumption worth stating out loud, because the
+     cost of it being wrong is not a slower search: a stale `pass` table is a
+     wall the search cannot see or a door that is no longer there, and the
+     second of those strands a unit (Unit.stepAlong reads a null path as
+     "arrived"). Cheap enough to call unconditionally - it drops references. */
+  function invalidate() {
+    tMap = null;
+    tGround.pass = tGround.terr = tGround.spd = tGround.comp = null;
+    tSea.pass = tSea.terr = tSea.spd = tSea.comp = null;
+    liveStamp = -1; liveGround = null; liveSea = null;
+    bufN = -1;                                // the grid may be a different size
+  }
+
   /* components(map, layer) -> the terrain label array, one entry per tile, 0
      where the layer cannot go. The commander reads this for the same question
      ("does that ground join ours?") and used to keep its own copy of the same
@@ -447,5 +464,5 @@ var Path = (function () {
     return !a || !b || a === b;
   }
 
-  return { find, nearest, reachable, components, setBlockProbe };
+  return { find, nearest, reachable, components, setBlockProbe, invalidate };
 })();
