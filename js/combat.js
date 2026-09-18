@@ -59,12 +59,23 @@ var Combat = (function () {
       }
     }
 
+    /* PERF: this question - does my side hold radar over the target's square -
+       is asked again below for the fire-control term with the same two
+       arguments, and G.radarCovers is an O(own radars x hostile entities) walk
+       that measured 100.2 us a call at t=850, 200,309 calls in a 350
+       game-second window. Asked once, and lazily, so a shot needing neither
+       branch still pays nothing. -1 means "not asked yet". No closure holds the
+       answer: this runs on every round fired and an allocation there is felt.
+       Nothing between the two uses moves the shooter, the target, or anybody's
+       radars. */
+    let radarSeen = -1;
+
     let sensorMul = 1;
     const rangePx = U.dist(shooter.x, shooter.y, target.x, target.y);
     const organic = (shooter.sightR ? shooter.sightR() : 6) * CFG.TILE;
     if (rangePx > organic) {
-      sensorMul = game.radarCovers(shooter.owner, target.x, target.y)
-        ? CFG.RADAR_FIRE_ACC : CFG.BLIND_FIRE_ACC;
+      radarSeen = game.radarCovers(shooter.owner, target.x, target.y) ? 1 : 0;
+      sensorMul = radarSeen ? CFG.RADAR_FIRE_ACC : CFG.BLIND_FIRE_ACC;
     }
 
     /* A low-observable hull is genuinely harder for a missile seeker to lock
@@ -92,7 +103,8 @@ var Combat = (function () {
          it. A naval mount laid by eye, or a SPAAG hosing at a jet it cannot
          track, is close to wasting ammunition; a tank gun with a laser
          rangefinder barely notices. */
-      fcMul = game.radarCovers(shooter.owner, target.x, target.y)
+      if (radarSeen < 0) radarSeen = game.radarCovers(shooter.owner, target.x, target.y) ? 1 : 0;
+      fcMul = radarSeen
         ? 1 + 0.10 * rdep
         : 1 - 0.50 * rdep;
     }

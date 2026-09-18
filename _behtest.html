@@ -5015,6 +5015,207 @@ try{
   })();
   }
 
+  /* ---- WHAT THIS SECTION IS FOR ----
+     Five hot paths were rewritten to stop repeating work that cannot change
+     between the repeats (the PERF notes in game.js, entities.js, player.js and
+     combat.js say what, and by how much). Four of those rewrites leave TWO
+     pieces of code that have to keep giving one answer, and a fifth rests on a
+     numeric constant that lives in a different file from the code assuming it.
+     NOTHING in this suite touched any of them before: "standoff" appeared only
+     inside a comment, and "airThreat", "targetPrio", "acqGate" and
+     "counterBattery" appeared nowhere at all - so a later edit could have
+     broken one of these silently and every test here would still have passed.
+     The section builds its own little scenario rather than reading whatever
+     the shared match happens to be holding, because by this point in the run
+     the board has been re-raised and is nearly empty - and a comparison
+     between two empty lists passes without proving anything. Each check says
+     how much it actually compared, and fails if that is nothing. */
+  log("\n[38a] THE PERFORMANCE REWRITES ARE HELD TO THEIR ORIGINALS");
+  (function(){
+    var M = Game.map, i, j, k, made = [];
+
+    /* ---- 1. the floor Building.acquire's early-out is built on ----
+       acquire() now skips a candidate whose BEST possible score already loses
+       to the incumbent: raw * 0.30 >= bd. That 0.30 is targetPrio()'s lower
+       clamp, over in entities.js. Lower the clamp and the early-out starts
+       throwing away candidates that could have won - with no other symptom. */
+    var floor = Infinity, worstId = "-", nDefs = 0;
+    var probe = function(def, kind){
+      if (!def) return;
+      var e = { def: def, kind: kind, maxHp: def.hp || 100, hp: def.hp || 100 };
+      nDefs++;
+      var full = targetPrio(e, 1);
+      e.hp = 1;                                  // the most hurt a thing can be and live
+      var hurt = targetPrio(e, 1);
+      if (full < floor) { floor = full; worstId = (def.id || "?") + " undamaged"; }
+      if (hurt < floor) { floor = hurt; worstId = (def.id || "?") + " at 1 hp"; }
+    };
+    for (k in UNITS) probe(UNITS[k], "unit");
+    for (k in BUILDINGS) probe(BUILDINGS[k], "building");
+    chk("targetPrio never scores below the 0.30 Building.acquire's early-out assumes",
+        nDefs > 100 && floor >= 0.30,
+        nDefs + " defs at both hp extremes, lowest " + floor.toFixed(4) + " (" + worstId + ")");
+
+    /* ---- the scenario: one radar and one air-defence piece for each side ----
+       Ground pieces on purpose. A parked aircraft is not emitting and a
+       structure needs a grid, and neither of those is what is under test. */
+    var radarUnitId = null, aaUnitId = null, jammerId = null;
+    for (k in UNITS) {
+      var d = UNITS[k];
+      if (d.layer !== "ground") continue;
+      if (!radarUnitId && d.radar) radarUnitId = k;
+      if (!aaUnitId && Game.airDefenceReach(d) > 0) aaUnitId = k;
+      if (!jammerId && d.jam) jammerId = k;
+    }
+    var mine = tile(P, "ground", 6), theirs = tile(E, "ground", 6);
+    var myRadar = (mine && radarUnitId) ? spawn(P, radarUnitId, mine) : null;
+    var theirAA = (theirs && aaUnitId) ? spawn(E, aaUnitId, theirs, 1, 0) : null;
+    var jammer  = (theirs && jammerId) ? spawn(E, jammerId, theirs, 0, 1) : null;
+    if (myRadar) made.push(myRadar);
+    if (theirAA) made.push(theirAA);
+    if (jammer) made.push(jammer);
+    chk("the scenario this section needs is on the board",
+        !!myRadar && !!theirAA && !!jammer,
+        "radar=" + (radarUnitId || "none") + " aa=" + (aaUnitId || "none") + " jammer=" + (jammerId || "none"));
+
+    /* ---- 2. G.jamAgainst has two bodies now ----
+       One walks the hostile lists; one reads a list G.jamSources gathered, for
+       the callers that judge many radars in a row. They must not drift apart.
+       jamAgainst reads a radar only for x, y and def, so a plain object is a
+       fair stand-in and nothing has to be built or powered. */
+    var radarDef = null;
+    for (k in BUILDINGS) if (BUILDINGS[k].radar) { radarDef = BUILDINGS[k]; break; }
+    if (!radarDef || !jammer) {
+      chk("jamAgainst's gathered-list body answers exactly what its walking body does",
+          false, "no radar def or no jammer to compare with");
+    } else {
+      var src = Game.jamSources(P);
+      var mism = 0, probes = 0, sawJam = 0, sample = "";
+      for (var oy = 0; oy <= 6; oy++) for (var ox = 0; ox <= 6; ox++) {
+        var fake = { x: jammer.x + ox * CFG.TILE, y: jammer.y + oy * CFG.TILE, def: radarDef };
+        var walked = Game.jamAgainst(P, fake);              // the original body
+        var gathered = Game.jamAgainst(P, fake, src);       // the gathered-list body
+        probes++;
+        if (walked > 0) sawJam++;
+        if (walked !== gathered) { mism++; if (!sample) sample = walked + " vs " + gathered; }
+      }
+      chk("jamAgainst's gathered-list body answers exactly what its walking body does",
+          mism === 0 && sawJam > 0 && src.indexOf(jammer) >= 0,
+          probes + " offsets, " + sawJam + " jammed, " + mism + " disagreed, " +
+          (src.length / 2) + " emitters gathered" + (sample ? " (" + sample + ")" : ""));
+    }
+
+    /* ---- 3. the standoff ring list is the filter both old loops applied ----
+       G.standoffPoint used to run the whole hostile walk once per probe - up
+       to twenty-two times a call - and its egress scan then repeated that walk
+       a twenty-third time with its own copy of the filter. Both read one
+       gathered list now. If the list ever stops being exactly what those two
+       loops kept, aircraft route around the wrong things, and the only way to
+       see it is to rebuild the old filter and compare. */
+    var want = [];
+    for (i = 0; i < Game.players.length; i++) {
+      var o = Game.players[i];
+      if (o === P || Game.allied(P, o) || o.defeated) continue;
+      var take = function(list, isBld){
+        for (var n = 0; n < list.length; n++) {
+          var e = list[n];
+          if (e.dead || e.carried) continue;
+          if (isBld && e.buildProgress < 1) continue;
+          var reach = Game.airDefenceReach(e.def) * 1.25;
+          if (!reach) continue;
+          if (!Game.visibleTo(P, e)) continue;
+          want.push(e.x, e.y, reach);
+        }
+      };
+      take(o.units, false);
+      take(o.buildings, true);
+    }
+    var got = Game.airThreatRings(P), same = got.length === want.length;
+    if (same) for (i = 0; i < want.length; i++) if (got[i] !== want[i]) { same = false; break; }
+    chk("the standoff ring list is exactly what both old loops kept, in the same order",
+        same && want.length > 0,
+        (want.length / 3) + " rings expected, " + (got.length / 3) + " gathered");
+
+    /* the early-out the whole rewrite hangs on: a clear mark is handed back
+       untouched and NOT held, which is the case that has to stay one call. */
+    var clear = null;
+    for (var gx = 4; gx < M.W - 4 && !clear; gx += 7)
+      for (var gy = 4; gy < M.H - 4 && !clear; gy += 7) {
+        var cx = gx * CFG.TILE + 16, cy = gy * CFG.TILE + 16;
+        if (Game.airThreatAt(P, cx, cy, 1.5) === 0) clear = { x: cx, y: cy };
+      }
+    /* and the threatened one: standing on the air-defence piece itself cannot
+       be clear, so the answer must be a HELD mark - and a held mark that is not
+       the egress run has to be genuinely outside every ring. */
+    var sp2 = theirAA ? Game.standoffPoint(P, P.homeX, P.homeY, theirAA.x, theirAA.y, 1.5) : null;
+    var heldOk = !!sp2 && sp2.held === true &&
+        (sp2.egress || (sp2.x === P.homeX && sp2.y === P.homeY) ||
+         Game.airThreatAt(P, sp2.x, sp2.y, 1.5) === 0);
+    chk("a mark standing on a live battery is held short, or egressed - never flown to",
+        heldOk, sp2 ? ("held=" + sp2.held + " egress=" + !!sp2.egress +
+                       " threat there=" + Game.airThreatAt(P, sp2.x, sp2.y, 1.5).toFixed(2)) : "no answer");
+    if (!clear) {
+      chk("standoffPoint hands an unthreatened mark straight back, not held short",
+          false, "every sampled square is inside a ring");
+    } else {
+      var sp = Game.standoffPoint(P, P.homeX, P.homeY, clear.x, clear.y, 1.5);
+      chk("standoffPoint hands an unthreatened mark straight back, not held short",
+          !!sp && sp.held === false && sp.x === clear.x && sp.y === clear.y,
+          sp ? ("(" + sp.x.toFixed(1) + "," + sp.y.toFixed(1) + ") held=" + sp.held) : "no answer");
+    }
+
+    /* ---- 4. counter-battery no longer goes through G.radarCovers ----
+       G.updateCounterBattery calls G.cbCovered with a per-tick cache instead.
+       Handed a FRESH cache it must be G.radarCovers exactly, or a later change
+       to radarCovers silently stops reaching the back-plot. Squares are sampled
+       both across the map and tightly around the radar that was just put down,
+       so the comparison covers a true answer as well as false ones. */
+    var cbBad = 0, cbTried = 0, cbTrue = 0, cbSample = "";
+    var ask = function(pp, wx, wy, tag){
+      var a2 = Game.cbCovered(pp, wx, wy, new Map()), b2 = Game.radarCovers(pp, wx, wy);
+      cbTried++;
+      if (b2) cbTrue++;
+      if (a2 !== b2) { cbBad++; if (!cbSample) cbSample = tag; }
+    };
+    for (i = 0; i < Game.players.length; i++) {
+      var pp = Game.players[i];
+      for (var qx = 4; qx < M.W - 4; qx += 13) for (var qy = 4; qy < M.H - 4; qy += 13)
+        ask(pp, qx * CFG.TILE + 16, qy * CFG.TILE + 16, "P" + i + " grid " + qx + "," + qy);
+      if (myRadar) for (var rr = 0; rr <= 24; rr += 2)
+        ask(pp, myRadar.x + rr * CFG.TILE, myRadar.y, "P" + i + " ring " + rr);
+    }
+    chk("the counter-battery radar test answers exactly what G.radarCovers does",
+        cbBad === 0 && cbTrue > 0,
+        cbTried + " (commander, square) pairs, " + cbTrue + " covered, " + cbBad + " disagreed" +
+        (cbSample ? " (first at " + cbSample + ")" : ""));
+
+    /* ---- 5. powerRatio's single walk, and the test G.airTrack inlines ----
+       powerRatio() no longer routes through powerOut()/powerUse(); both of
+       those are still there for their own callers and could drift from it. And
+       G.airTrack no longer reads the `powered` getter per structure - it reads
+       one ratio per commander - which is the same test only while every
+       structure in that scan belongs to the commander being asked. */
+    var prBad = 0, pwBad = 0, pwN = 0;
+    for (i = 0; i < Game.players.length; i++) {
+      var p2 = Game.players[i], use = p2.powerUse();
+      var ref = use <= 0 ? 2 : p2.powerOut() / use;
+      if (p2.powerRatio() !== ref) prBad++;
+      var up = p2.powerRatio() >= 1;
+      for (j = 0; j < p2.buildings.length; j++) {
+        var b3 = p2.buildings[j];
+        pwN++;
+        if (!!b3.powered !== !(b3.def.needPower && !up)) pwBad++;
+      }
+    }
+    chk("powerRatio's one walk is bit-for-bit powerOut() over powerUse()",
+        prBad === 0, Game.players.length + " commanders, " + prBad + " disagreed");
+    chk("and airTrack's inlined power test is the `powered` getter it replaced",
+        pwBad === 0 && pwN > 0, pwN + " structures, " + pwBad + " disagreed");
+
+    /* put the board back the way [38] expects to find it */
+    for (i = 0; i < made.length; i++) { made[i].hp = 0; made[i].dead = true; }
+  })();
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

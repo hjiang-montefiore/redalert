@@ -327,6 +327,15 @@ var Game = (function () {
        well this side actually shares it */
     for (const p of G.players) {
       if (p !== shooter.owner && !G.allied(shooter.owner, p)) continue;
+      /* PERF: `powered` is a GETTER that runs Player.powerRatio(), which was
+         two full walks of the structure list - so the one line below cost
+         183 x 366 additions per airTrack call on a 183-structure board.
+         Measured 207 us a call at t=850. The
+         grid is a per-COMMANDER fact, every entity in these two lists belongs
+         to p, and nothing in the scan changes it, so it is asked at most once
+         per commander - and lazily, so a side with no structures in the way
+         still pays nothing. `!u.powered` is exactly `needPower && !gridUp`. */
+      let gridUp = -1;
       const scan = (list) => {
         for (const u of list) {
           if (u.dead || u === shooter || u.carried) continue;
@@ -336,7 +345,13 @@ var Game = (function () {
              where G.radarCovers and G.recomputeFog both have one. A radar
              dome already fed air tracks from its foundations; a 32-radarQ
              array would have fed much better ones. */
-          if (u.kind === "building" && (u.buildProgress < 1 || !u.powered)) continue;
+          if (u.kind === "building") {
+            if (u.buildProgress < 1) continue;
+            if (u.def.needPower) {
+              if (gridUp < 0) gridUp = p.powerRatio() >= 1 ? 1 : 0;
+              if (!gridUp) continue;
+            }
+          }
           /* the same rule one layer along: a set that is not running feeds
              nobody a firing solution either */
           if (u.kind !== "building" && !G.emitting(u)) continue;
@@ -1217,9 +1232,29 @@ var Game = (function () {
      concatenation of the two arrays, for exactly the reason G.radarCovers()
      splits them: this runs once per radar per fog rebuild and again for every
      radar-laid shot, and allocating a throwaway array in here would be felt. */
-  G.jamAgainst = function (victim, radarEnt) {
-    const rd = radarEnt && radarEnt.def;
-    let worst = 0;
+  /* ---- the jammers, gathered once ----
+     PERF: hunting for jammers and judging one radar are independent jobs. The
+     hunt walks every hostile unit and structure looking for def.jam - almost
+     always a handful, very often none - and nothing in it depends on WHICH
+     radar is asking. G.radarCovers below judges every set the side owns and
+     G.cbCovered judges them again for each contact, so for THOSE callers the
+     whole walk was repeated per radar: measured 100.2 us per radarCovers call
+     at t=850 (118 units, 183 structures), 200,309 calls, 20.1 s of a 253.8 s
+     window. Gathered once, a caller judging several radars pays for the hunt
+     once and each radar then costs one pass over a list that is usually empty.
+     Pairs are pushed flat (entity, ecm) so nothing is allocated per jammer.
+
+     ONLY for those callers. The single-radar ones - G.ewCovers, the
+     radarReveal inside G.recomputeFog, the sidebar readout in js/ui.js and the
+     selection readout in js/render3d.js - keep the original body below, which
+     allocates nothing at all. Routing them through a gathered list cost them a
+     throwaway array they use exactly once: measured on a board carrying 21
+     jammers, 200,000 two-argument calls took 2467-2789 ns each the old way and
+     2752-3598 ns each through a gathered list. None of those four paths is
+     visible to the whole-game profiler this work was measured with, so the
+     regression would not have shown up in the match numbers at all. */
+  G.jamSources = function (victim) {
+    const out = [];
     for (const o of G.players) {
       if (o === victim || G.allied(victim, o) || o.defeated) continue;
       const fac = FACTIONS[o.faction] || {};
@@ -1227,32 +1262,70 @@ var Game = (function () {
       for (const u of o.units) {
         if (u.dead || u.carried || !u.def.jam) continue;
         if (!G.emitting(u)) continue;                  // parked jammer is off
-        const R = u.def.jam * CFG.TILE;
-        const d = U.dist(u.x, u.y, radarEnt.x, radarEnt.y);
-        if (d > R) continue;
-        let k = (1 - d / R) * (u.def.jamPower || 1) * ecm;
-        k *= genContest(rd, u.def);
-        if (k > worst) worst = k;
+        out.push(u, ecm);
       }
-      /* ---- and the fixed sites ----
-         Until now not one of the twenty-eight structures carried `jam`, and a
-         building that did would have done nothing at all: both of these
-         functions walked o.units and stopped. A jamming station cannot follow
-         the battle and cannot be built within reach of anybody else's base -
-         CFG.BUILD_RADIUS is 11 tiles from your own structures - so it never
-         blinds an enemy radar dome sitting at home. What it does is deny the
-         spectrum over YOUR ground: it burns down the picture of every radar
-         platform that comes to you, which is the AEW aircraft, the radar
-         vehicle and the Aegis hull offshore. */
       for (const b of o.buildings) {
         if (!b.def.jam) continue;                      // cheapest possible reject
         if (!G.jamming(b)) continue;                   // scaffolding, or no power
-        const R = b.def.jam * CFG.TILE;
-        const d = U.dist(b.x, b.y, radarEnt.x, radarEnt.y);
+        out.push(b, ecm);
+      }
+    }
+    return out;
+  };
+  /* `src` is optional and is the ONLY thing it changes: given a gathered list
+     this takes its maximum over that, and left out it walks the hostile lists
+     itself exactly as it always did, allocating nothing. The two bodies visit
+     the same jammers in the same order and take the same strict-greater
+     maximum, so they cannot disagree - _behtest section [38a] holds them to
+     it, because two bodies is the one real cost of this arrangement. */
+  G.jamAgainst = function (victim, radarEnt, src) {
+    const rd = radarEnt && radarEnt.def;
+    let worst = 0;
+    if (src) {
+      for (let i = 0; i < src.length; i += 2) {
+        const u = src[i];
+        const R = u.def.jam * CFG.TILE;
+        const d = U.dist(u.x, u.y, radarEnt.x, radarEnt.y);
         if (d > R) continue;
-        let k = (1 - d / R) * (b.def.jamPower || 1) * ecm;
-        k *= genContest(rd, b.def);
+        let k = (1 - d / R) * (u.def.jamPower || 1) * src[i + 1];
+        k *= genContest(rd, u.def);
         if (k > worst) worst = k;
+      }
+    } else {
+      for (const o of G.players) {
+        if (o === victim || G.allied(victim, o) || o.defeated) continue;
+        const fac = FACTIONS[o.faction] || {};
+        const ecm = fac.ecm || 1;
+        for (const u of o.units) {
+          if (u.dead || u.carried || !u.def.jam) continue;
+          if (!G.emitting(u)) continue;                  // parked jammer is off
+          const R = u.def.jam * CFG.TILE;
+          const d = U.dist(u.x, u.y, radarEnt.x, radarEnt.y);
+          if (d > R) continue;
+          let k = (1 - d / R) * (u.def.jamPower || 1) * ecm;
+          k *= genContest(rd, u.def);
+          if (k > worst) worst = k;
+        }
+        /* ---- and the fixed sites ----
+           Until now not one of the twenty-eight structures carried `jam`, and a
+           building that did would have done nothing at all: both of these
+           functions walked o.units and stopped. A jamming station cannot follow
+           the battle and cannot be built within reach of anybody else's base -
+           CFG.BUILD_RADIUS is 11 tiles from your own structures - so it never
+           blinds an enemy radar dome sitting at home. What it does is deny the
+           spectrum over YOUR ground: it burns down the picture of every radar
+           platform that comes to you, which is the AEW aircraft, the radar
+           vehicle and the Aegis hull offshore. */
+        for (const b of o.buildings) {
+          if (!b.def.jam) continue;                      // cheapest possible reject
+          if (!G.jamming(b)) continue;                   // scaffolding, or no power
+          const R = b.def.jam * CFG.TILE;
+          const d = U.dist(b.x, b.y, radarEnt.x, radarEnt.y);
+          if (d > R) continue;
+          let k = (1 - d / R) * (b.def.jamPower || 1) * ecm;
+          k *= genContest(rd, b.def);
+          if (k > worst) worst = k;
+        }
       }
     }
     if (!worst) return 0;
@@ -1383,18 +1456,28 @@ var Game = (function () {
   G.radarCovers = function (p, x, y) {
     /* Each radar is judged on its own: a modern set may still hold the picture
        through a bubble that has already blinded an older one beside it. */
+    /* PERF: the jammer list does not depend on which radar is being judged and
+       this function judges every set the side owns - so from the SECOND radar
+       on it is gathered once for the call. The FIRST is asked the original,
+       allocation-free way, because the common case is that it settles the
+       question by itself: measured 200,000 calls over a covered point, the
+       eager version was 1-4% slower than HEAD (1178/1173/1182 ms against
+       1168/1137/1160) purely for building a list it used once. Judging many
+       radars is where this pays - 71.2 -> 41.5 us a call at t=850. See
+       G.jamSources. */
+    let src = null, judged = 0;
     for (const u of p.units) {
       if (u.dead || u.carried || !u.def.radar) continue;
       if (!G.emitting(u)) continue;                    // parked radar is off
       if (U.dist2(u.x, u.y, x, y) >= Math.pow(u.def.radar * CFG.TILE, 2)) continue;
-      if (G.jamAgainst(p, u) > 0.55) continue;          // this set is burned through
+      if (G.jamAgainst(p, u, judged++ ? (src || (src = G.jamSources(p))) : null) > 0.55) continue;   // this set is burned through
       return true;
     }
     for (const b of p.buildings) {
       if (b.dead || !b.def.radar || b.buildProgress < 1) continue;
       if (!b.powered) continue;
       if (U.dist2(b.x, b.y, x, y) >= Math.pow(b.def.radar * CFG.TILE, 2)) continue;
-      if (G.jamAgainst(p, b) > 0.55) continue;
+      if (G.jamAgainst(p, b, judged++ ? (src || (src = G.jamSources(p))) : null) > 0.55) continue;
       return true;
     }
     return false;
@@ -1444,6 +1527,53 @@ var Game = (function () {
       G.cbContacts.splice(i >= 0 ? i : 0, 1);
     }
   };
+  /* ---- "does that side hold radar over this square", asked many times a tick ----
+     PERF: G.radarCovers is an O(own radars x hostile entities) walk -
+     G.jamAgainst inside it scans every enemy unit and structure for each radar
+     - and it measured 100.2 us a call at t=850 (118 units, 183 structures).
+     G.updateCounterBattery asked it once per (contact, commander) pair, up to
+     60 contacts times every surviving commander, EVERY tick: 1002 us a tick,
+     10.5 s of a 253.8 s window.
+     Nothing in that loop moves an entity, kills one, or changes a power grid,
+     so "which of my radars are up, unjammed, and where" is answered once per
+     commander per tick, and each contact then costs one squared distance per
+     radar. `sites` is the caller's per-tick Map: hand it a fresh one and this
+     is a plain uncached G.radarCovers, which is exactly how _behtest section
+     [38a] holds the two to the same answer for every commander on the board.
+     The reach is stored as Math.pow(radar * TILE, 2), the very expression
+     G.radarCovers compares against, and the radars are visited in the same
+     order - units then buildings - so the answer is the same one. */
+  G.cbCovered = function (p, x, y, sites) {
+    let s = sites.get(p);
+    if (!s) {
+      /* the cheap half of G.radarCovers' filter, once per commander per tick */
+      s = { src: null, r: [] };
+      for (const u of p.units) {
+        if (u.dead || u.carried || !u.def.radar) continue;
+        if (!G.emitting(u)) continue;                    // parked radar is off
+        s.r.push({ e: u, r2: Math.pow(u.def.radar * CFG.TILE, 2), ok: -1 });
+      }
+      for (const b of p.buildings) {
+        if (b.dead || !b.def.radar || b.buildProgress < 1) continue;
+        s.r.push({ e: b, r2: Math.pow(b.def.radar * CFG.TILE, 2), ok: -1 });
+      }
+      sites.set(p, s);
+    }
+    /* The expensive half - the `powered` getter and the jamming contest - is
+       asked only of a set the contact actually lies inside, and then
+       remembered for the rest of the tick. Both are pure reads, so asking them
+       after the distance test rather than before changes no answer; a unit
+       radar is not power-gated, which is why only buildings are asked. */
+    for (let i = 0; i < s.r.length; i++) {
+      const st = s.r[i], e = st.e;
+      if (U.dist2(e.x, e.y, x, y) >= st.r2) continue;
+      if (st.ok < 0)
+        st.ok = ((e.kind !== "building" || e.powered) &&
+                 G.jamAgainst(p, e, s.src || (s.src = G.jamSources(p))) <= 0.55) ? 1 : 0;
+      if (st.ok) return true;
+    }
+    return false;
+  };
   let lastBallisticBanner = -99;
   G.updateCounterBattery = function () {
     /* Defaults only. reportIndirectFire stamps a delay and a life on every
@@ -1451,6 +1581,9 @@ var Game = (function () {
        plotted on the same clock. These two are the fallback for a contact that
        arrived without them - an old save, or a one-argument caller. */
     const PLOT_DELAY = 5.0, LIFE = 17.0;
+    /* the per-tick radar picture G.cbCovered memoises into. Built fresh every
+       tick, so nothing in it survives an entity moving or a grid going down. */
+    const cbSites = new Map();
     for (let i = G.cbContacts.length - 1; i >= 0; i--) {
       const c = G.cbContacts[i];
       if (G.time - c.t > (c.life || LIFE)) { G.cbContacts.splice(i, 1); continue; }
@@ -1463,7 +1596,7 @@ var Game = (function () {
            in the game that reaches past a radar dome's 22 tiles to the 24-31 a
            launcher shoots from. Artillery contacts are untouched: the `ew`
            circle does nothing whatsoever against a howitzer. */
-        if (!G.radarCovers(p, c.x, c.y) &&
+        if (!G.cbCovered(p, c.x, c.y, cbSites) &&
             !(c.ballistic && G.ewCovers && G.ewCovers(p, c.x, c.y))) continue;
         c.plotted = true;
         c.by = p;
@@ -1782,10 +1915,25 @@ var Game = (function () {
      so a caller can hold station just outside by pushing back that far. Only
      hostiles the owner can SEE are counted, and only ones that can actually
      reach the altitude band this aircraft flies in. */
-  G.airThreatAt = function (owner, x, y, margin) {
-    if (!owner) return 0;
-    const m = margin || 0;                       // inflate every ring by this
-    let worst = 0;
+  /* ---- the rings, gathered once ----
+     PERF, measured with a jsc whole-game profiler on a two-commander Warlord
+     match (fulda, e80, seed learnA): G.standoffPoint below probes up to 21
+     points against the SAME owner and the SAME entity set, and every probe
+     re-ran this whole walk - including G.visibleTo(), which for a commander is
+     itself an O(units + buildings) scan. In the 350 game-seconds around t=850
+     (118 units, 183 structures) that was 46,651 standoffPoint calls, 360,367
+     airThreatAt calls, 3,095,259 visibleTo calls and 127,039,002 sightR()
+     calls underneath them: 139.2 s of a 253.8 s window - 55% of the whole
+     match, and much the largest single cost in it. It grows with the SQUARE
+     of the army because both factors do: 385 us per airThreatAt call.
+     Nothing moves while standoffPoint runs, so "which hostile air-defence
+     rings can this commander SEE" is answered once and the point tests become
+     arithmetic over a flat [x, y, reach, ...] array. Same entities, same
+     order, same comparisons, and the fog rule is untouched: a ring the owner
+     cannot see never enters the list, exactly as before. */
+  G.airThreatRings = function (owner) {
+    const out = [];
+    if (!owner) return out;
     for (const o of G.players) {
       if (o === owner || G.allied(owner, o) || o.defeated) continue;
       const scan = (list, isBld) => {
@@ -1802,13 +1950,26 @@ var Game = (function () {
           const reach = G.airDefenceReach(e.def) * 1.25;
           if (!reach) continue;
           if (!G.visibleTo(owner, e)) continue;      // not on our chart, not on our route
-          const d = U.dist(x, y, e.x, e.y) / CFG.TILE;
-          const deep = reach + m - d;
-          if (deep > worst) worst = deep;
+          out.push(e.x, e.y, reach);
         }
       };
       scan(o.units, false);
       scan(o.buildings, true);
+    }
+    return out;
+  };
+  /* `rings` is optional and exists only so a caller asking about several
+     points in one breath pays for the walk once. Left out, this is what it
+     always was. */
+  G.airThreatAt = function (owner, x, y, margin, rings) {
+    if (!owner) return 0;
+    const m = margin || 0;                       // inflate every ring by this
+    const R = rings || G.airThreatRings(owner);
+    let worst = 0;
+    for (let i = 0; i < R.length; i += 3) {
+      const d = U.dist(x, y, R[i], R[i + 1]) / CFG.TILE;
+      const deep = R[i + 2] + m - d;
+      if (deep > worst) worst = deep;
     }
     return worst;
   };
@@ -1826,7 +1987,11 @@ var Game = (function () {
        its result - added outside, a clear point scores 0 + 1.5 > 0 and every
        route in the game reads as threatened. That was the first cut of this
        function and it pinned an E-3 to its own runway. */
-    if (!G.airThreatAt(owner, tx, ty, m)) return { x: tx, y: ty, held: false };
+    /* PERF: gathered ONCE - see G.airThreatRings. The probe loop below and the
+       egress scan at the bottom both read this same list, so the visible
+       threat picture is built one time per call instead of twenty-two. */
+    const rings = G.airThreatRings(owner);
+    if (!G.airThreatAt(owner, tx, ty, m, rings)) return { x: tx, y: ty, held: false };
     const dx = tx - fx, dy = ty - fy;
     const len = Math.hypot(dx, dy);
     if (len < 1) return { x: fx, y: fy, held: true };
@@ -1835,7 +2000,7 @@ var Game = (function () {
        threat allows rather than merely somewhere safe. */
     for (let k = 0.95; k > 0.02; k -= 0.05) {
       const px = fx + dx * k, py = fy + dy * k;
-      if (!G.airThreatAt(owner, px, py, m)) return { x: px, y: py, held: true };
+      if (!G.airThreatAt(owner, px, py, m, rings)) return { x: px, y: py, held: true };
     }
     /* Already inside somebody's envelope, and every point on the approach is
        too. Holding here is not good enough - the owner asked for aircraft that
@@ -1843,20 +2008,12 @@ var Game = (function () {
        from the battery that has the deepest hold on us until the ring lets go.
        That is what a crew told they are being tracked actually does. */
     let bx = 0, by = 0, worstDeep = 0;
-    for (const o of G.players) {
-      if (o === owner || G.allied(owner, o) || o.defeated) continue;
-      const scan = (list, isBld) => {
-        for (const e of list) {
-          if (e.dead || e.carried) continue;
-          if (isBld && e.buildProgress < 1) continue;
-          const reach = G.airDefenceReach(e.def) * 1.25;
-          if (!reach || !G.visibleTo(owner, e)) continue;
-          const deep = reach + m - U.dist(fx, fy, e.x, e.y) / CFG.TILE;
-          if (deep > worstDeep) { worstDeep = deep; bx = e.x; by = e.y; }
-        }
-      };
-      scan(o.units, false);
-      scan(o.buildings, true);
+    /* PERF: the same list again. This loop's filter was reach && visibleTo -
+       exactly what airThreatRings applies - so it walks the same entities in
+       the same order and takes the same strict-greater maximum. */
+    for (let i = 0; i < rings.length; i += 3) {
+      const deep = rings[i + 2] + m - U.dist(fx, fy, rings[i], rings[i + 1]) / CFG.TILE;
+      if (deep > worstDeep) { worstDeep = deep; bx = rings[i]; by = rings[i + 1]; }
     }
     if (worstDeep > 0) {
       const ax = fx - bx, ay = fy - by;
@@ -1879,13 +2036,20 @@ var Game = (function () {
       return G.fog[e.ty * G.map.W + e.tx] === 2;
     }
     /* AI: symmetric check against its own units' sight */
+    /* PERF: Math.pow(r, 2) replaced by r * r - identical for every double
+       (verified over 2,000,000 random operands under jsc), one fewer call on
+       the hottest leaf in the whole profile: 3,095,259 visibleTo calls, and
+       127,039,002 sightR() calls underneath them, in the 350 game-seconds
+       around t=850 - 131.3 s of a 253.8 s window. */
     for (const u of p.units) {
       if (u.dead) continue;
-      if (U.dist2(u.x, u.y, e.x, e.y) < Math.pow(u.sightR() * CFG.TILE, 2)) return true;
+      const r = u.sightR() * CFG.TILE;
+      if (U.dist2(u.x, u.y, e.x, e.y) < r * r) return true;
     }
     for (const b of p.buildings) {
       if (b.dead) continue;
-      if (U.dist2(b.x, b.y, e.x, e.y) < Math.pow(b.sightR() * CFG.TILE, 2)) return true;
+      const r = b.sightR() * CFG.TILE;
+      if (U.dist2(b.x, b.y, e.x, e.y) < r * r) return true;
     }
     return false;
   };

@@ -105,7 +105,22 @@ class Player {
   }
   powerOut() { let p = 0; for (const b of this.buildings) if (!b.dead && b.buildProgress >= 1 && b.def.power > 0) p += b.def.power; return p; }
   powerUse() { let p = 0; for (const b of this.buildings) if (!b.dead && b.buildProgress >= 1 && b.def.power < 0) p += -b.def.power; return p; }
-  powerRatio() { const use = this.powerUse(); return use <= 0 ? 2 : this.powerOut() / use; }
+  /* PERF: this ran powerUse() and then powerOut(), two complete walks of the
+     structure list, and Building.powered is a getter that calls it - so every
+     reader of `powered` paid 2 x buildings. One walk, the same two sums, each
+     accumulated over the same subsequence in the same order, so the result is
+     bit-for-bit what the two walks produced (a + (-b) and a - b are the same
+     IEEE operation). powerOut()/powerUse() are untouched for their other
+     callers. */
+  powerRatio() {
+    let out = 0, use = 0;
+    for (const b of this.buildings) {
+      const pw = b.def.power;
+      if (!pw || b.dead || b.buildProgress < 1) continue;
+      if (pw > 0) out += pw; else use -= pw;
+    }
+    return use <= 0 ? 2 : out / use;
+  }
 
   hasBuilding(id) { for (const b of this.buildings) if (!b.dead && b.buildProgress >= 1 && b.def.id === id) return true; return false; }
   countBuilding(id) { let n = 0; for (const b of this.buildings) if (!b.dead && b.def.id === id) n++; return n; }

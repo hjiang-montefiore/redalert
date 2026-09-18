@@ -1956,13 +1956,22 @@ class Unit {
        wait for a radar picture meant a MANPADS section could never fire at
        all. Twelve of them killed nothing in a hundred seconds against six
        A-10s, which read as a balance problem and was really this. */
-    const VISUAL = 11;
-    const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
-          ((this.def.role === "aa" || this.def.role === "sam") &&
-           ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
+    /* PERF: `needsTrack` reads nothing but this.def and this.layer, and was
+       being worked out for EVERY candidate - acqGate ran 12,422,628 times in
+       the 350 game-seconds around t=850 - and then used only on the air
+       branch. Same expression, same operands, same result; evaluated only
+       when the candidate actually presents as an air target. */
+    const airTgt = e.targetLayer() === "air" && !!this.game.airTrack;
+    let needsTrack = false;
+    if (airTgt) {
+      const VISUAL = 11;
+      needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
+            ((this.def.role === "aa" || this.def.role === "sam") &&
+             ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
+    }
     /* A parked airframe is not a radar track, it is a thing sitting in the
        open, so it goes down the ordinary visual branch instead. */
-    if (e.targetLayer() === "air" && this.game.airTrack && needsTrack) {
+    if (airTgt && needsTrack) {
       if (!this.game.airTrack(this, e)) return false;
     } else if (e.def && e.def.stealth &&
         U.dist(this.x, this.y, e.x, e.y) > R * (1 - e.def.stealth * CFG.STEALTH_ACQ)) return false;
@@ -3595,11 +3604,43 @@ class Building {
   acquire() {
     let best = null, bd = Infinity;
     const R = this.def.weapons ? this.weaponRange(WEAPONS[this.def.weapons[0]]) : 0;
+    /* PERF: R * R and the air-track rule read nothing but this emplacement, and
+       were being worked out again for every candidate the grid handed back.
+       Measured: Building.acquire ran 462,934 times in the 350 game-seconds
+       around t=850 and cost 9.4 s of a 253.8 s window, growing 8.5 -> 17.0 ->
+       24.2 us a call as the board filled from 41 structures to 183.
+       The primary mount is read through the SAME guard as the line above:
+       inside the callback `canTarget(e, true)` had already proved def.weapons
+       exists, and up here nothing has. Today the only caller gates on
+       `d.weapons && d.weapons.length`, so an unguarded read could not throw -
+       but that is a property of the call site, not of this function, and a
+       second caller or an era rewrite that stripped a defence structure's
+       weapons would have made it throw on the first defensive tick. */
+    const w0 = this.def.weapons ? (WEAPONS[this.def.weapons[0]] || {}) : {};
+    const R2 = R * R;
+    const VISUAL = 11;
+    const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
+          ((this.def.role === "aa" || this.def.role === "sam") &&
+           (w0.range || 0) > VISUAL);
     this.game.grid.query(this.x, this.y, R, (e) => {
       if (e.dead || e.owner === this.owner || this.game.allied(this.owner, e.owner)) return;
       /* The civilian player is nobody's ally, so the ownership test above lets a
          vacant block straight through and the turret spent its war levelling
          the village across the road. */
+      /* ---- THE CHEAPEST QUESTION FIRST ----
+         PERF: the two gates below are the expensive half of this scan -
+         canTarget() runs the whole pickWeapon scoring loop for the candidate,
+         and the airTrack test walks both sides' sensor lists. The score a
+         candidate can finally receive is raw * targetPrio(e, 1), and
+         targetPrio is clamped at 0.30 from below (see the table above class
+         Unit), so raw * 0.30 is a floor it cannot go under; an out-of-range
+         candidate is scored at 1.9 * raw, further above that floor still.
+         Anything whose floor already loses to the incumbent can never become
+         `best` whatever the gates answer, and every gate here is a pure read,
+         so skipping them changes no pick. bd starts at Infinity, so the first
+         candidate is always scored in full. */
+      const raw = U.dist2(this.x, this.y, e.x, e.y);
+      if (raw * 0.30 >= bd) return;
       if (!autoTargetable(e)) return;
       /* the automatic question, said out loud - a turret choosing its own
          target is the same act as a column choosing one on the march */
@@ -3613,10 +3654,7 @@ class Building {
          wait for a radar picture meant a MANPADS section could never fire at
          all. Twelve of them killed nothing in a hundred seconds against six
          A-10s, which read as a balance problem and was really this. */
-      const VISUAL = 11;
-      const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
-            ((this.def.role === "aa" || this.def.role === "sam") &&
-             ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
+      /* VISUAL and needsTrack are hoisted above the query - see the note there */
       /* A parked airframe is not a radar track, it is a thing sitting in the
          open, so it goes down the ordinary visual branch instead. */
       if (e.targetLayer() === "air" && this.game.airTrack && needsTrack) {
@@ -3643,8 +3681,7 @@ class Building {
          survived autoTargetable and canTarget(e, true), so an emplacement with
          an empty arc pays nothing for it. A held focus is sticky and never
          re-scored, so there is no re-slew thrash either. */
-      const raw = U.dist2(this.x, this.y, e.x, e.y);
-      const d = raw <= R * R ? raw * targetPrio(e, 1) : raw * 1.9;
+      const d = raw <= R2 ? raw * targetPrio(e, 1) : raw * 1.9;
       if (d < bd) { bd = d; best = e; }
     });
     return best;
