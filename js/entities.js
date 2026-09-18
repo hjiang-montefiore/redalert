@@ -2801,7 +2801,12 @@ class Unit {
          plus the orbit. Once a second, and only while nothing is already in
          reach, so it costs one grid query a second per patrolling aircraft. */
       this.capScanT = (this.capScanT || 0) - dt;
-      if (this.capScanT <= 0) {
+      /* "hold" means do not engage unless ordered, and acquire() honours it by
+         answering null - so the sweep has to honour it too, or this would have
+         quietly turned every held patrol into a firing one (measured: 22 bombs
+         from a bomber set to hold, which should drop none). */
+      if (this.stance === "hold") this.capScanT = 1;
+      else if (this.capScanT <= 0) {
         this.capScanT = 1;
         const RR = (this.sightR() + CFG.CAP_RADIUS) * CFG.TILE;
         let best = null, bd = Infinity;
