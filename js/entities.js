@@ -2784,6 +2784,38 @@ class Unit {
          on its own fuel; a jet is on a clock. */
       const foe = this.acquire();
       if (foe) { this.order = { type: "attack", target: foe, resume: { x: o.x, y: o.y }, cap: true, auto: true }; return; }
+      /* ---- THE PATROL ENVELOPE ----
+         (owner) "my understanding is partol that fly this area and attack any
+         units in this envelop".
+         acquire() looks out from wherever the airframe HAPPENS to be, and a
+         heavy aeroplane's orbit wanders: a B-2 turns at 1.2 rad/s at 5.2
+         tiles a second, so it swings up to nine tiles off the point it was
+         given and spends much of the circuit pointing away. Measured on a
+         patrol with six riflemen three tiles from the mark, acquire() answered
+         "nothing" on 48 of 90 samples; with the enemy fourteen tiles out it
+         answered nothing at all and the aircraft orbited an untouched column.
+         So the patrol sweeps the AREA it was given rather than the spot the
+         aeroplane is at: the same gate every automatic engagement uses
+         (acqGate - fog, held rounds, stealth band, air tracks all still
+         apply), centred on the PATROL POINT, out to this airframe's own sight
+         plus the orbit. Once a second, and only while nothing is already in
+         reach, so it costs one grid query a second per patrolling aircraft. */
+      this.capScanT = (this.capScanT || 0) - dt;
+      if (this.capScanT <= 0) {
+        this.capScanT = 1;
+        const RR = (this.sightR() + CFG.CAP_RADIUS) * CFG.TILE;
+        let best = null, bd = Infinity;
+        this.game.grid.query(o.x, o.y, RR, (e) => {
+          if (e === this || !this.acqGate(e, RR)) return;
+          if (U.dist2(o.x, o.y, e.x, e.y) > RR * RR) return;
+          const d2 = U.dist2(this.x, this.y, e.x, e.y);
+          if (d2 < bd) { bd = d2; best = e; }
+        });
+        if (best) {
+          this.order = { type: "attack", target: best, resume: { x: o.x, y: o.y }, cap: true, auto: true };
+          return;
+        }
+      }
       const d = U.dist(this.x, this.y, o.x, o.y);
       const R = CFG.CAP_RADIUS * CFG.TILE;
       if (d > R * 1.25) {
