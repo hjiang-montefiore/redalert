@@ -1806,9 +1806,16 @@ var Render3D = (function () {
       const scale = 760 / cam.dist;
       const r = Math.max(9, e.r * scale * 0.9);
       if (e.selected) {
-        c.strokeStyle = e.owner === G.human ? "rgba(120,255,120,0.9)" : "rgba(255,110,90,0.95)";
+        /* green for ours, the ally's own colour for an ally, red for an enemy;
+           the ally's ring is broken, so the side reads even when the two
+           commanders picked colours a hair apart */
+        const sd3 = G.side(e);
+        c.strokeStyle = sd3 === "own" ? "rgba(120,255,120,0.9)"
+          : sd3 === "ally" ? G.allyTint(e, "#7fc2ff") : "rgba(255,110,90,0.95)";
         c.lineWidth = 1.4;
+        if (sd3 === "ally") c.setLineDash([4, 3]);
         c.beginPath(); c.ellipse(p.x, p.y + r * 0.4, r * 1.15, r * 0.5, 0, 0, 7); c.stroke();
+        if (sd3 === "ally") c.setLineDash([]);
       }
       if (e.selected || e.hp < e.maxHp) {
         const w = Math.max(20, r * 2), f = e.hp / e.maxHp;

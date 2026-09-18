@@ -4510,6 +4510,76 @@ try{
     chk("the enemy clock actually runs", t1!==t2, JSON.stringify(t1)+" -> "+JSON.stringify(t2));
   })();
 
+  /* ====== [60] AN ALLY IS NOT A HOSTILE ======
+     Reported from a real match: "the ally color is still red and the label is
+     still hostile." Every piece of chrome asked `owner === G.human` and
+     painted the entire rest of the board as the enemy - which was true back
+     when a skirmish was you against one computer, and stopped being true the
+     day the slot list [57] gave commanders team letters. A commander sharing
+     your letter was drawn with a red ring and read HOSTILE in the panel.
+     The fix is one shared question - Game.side(e) -> "own" | "ally" | "foe" -
+     so the answer cannot drift apart between the panel, the 2D ring and the
+     3D ring again. This section holds the question itself and the one piece
+     of chrome that spells the answer out in words. */
+  if (inHalf(2)) {
+  log("\n[60] AN ALLY IS NOT A HOSTILE");
+  (function(){
+    var g=tile(E,"ground",6);
+    var u=g && spawn(E,"mbt_p",g,0,0);
+    if(!u){ chk("ally scenario built", false, "no unit for the second commander"); return; }
+    var panel=function(){
+      var sel=UI.selection;
+      for(var i=0;i<sel.length;i++) sel[i].selected=false;
+      sel.length=0;
+      u.selected=true; sel.push(u);
+      UI.frame(CFG.DT);
+      return (document.getElementById("selinfo")||{}).innerHTML||"";
+    };
+    /* ---- 1. on opposite team letters, nothing changes ---- */
+    var team0=P.team, team1=E.team;
+    chk("this match's two commanders are on different letters",
+        Game.allied(P,E)===false, "teams "+team0+" and "+team1);
+    chk("their armour answers 'foe'", Game.side(u)==="foe", Game.side(u));
+    var hostile=panel();
+    chk("and the panel calls it HOSTILE", hostile.indexOf("HOSTILE")>=0,
+        JSON.stringify(hostile.slice(0,70)));
+    /* ---- 2. put them on OUR letter: the same tank, read again ---- */
+    E.team=team0;
+    try {
+      chk("sharing a letter makes them allied", Game.allied(P,E)===true,
+          "teams "+P.team+" and "+E.team);
+      chk("the same tank now answers 'ally'", Game.side(u)==="ally", Game.side(u));
+      chk("and our own tank still answers 'own'",
+          Game.side(P.units[0]||{owner:P})==="own", Game.side({owner:P}));
+      var allied=panel();
+      chk("the panel reads ALLIED", allied.indexOf("ALLIED")>=0,
+          JSON.stringify(allied.slice(0,70)));
+      chk("and no longer says HOSTILE anywhere", allied.indexOf("HOSTILE")<0,
+          JSON.stringify(allied.slice(0,70)));
+      chk("it names the ally's faction, not 'ENEMY'",
+          allied.indexOf("ENEMY")<0 && allied.indexOf(FACTIONS[E.faction].short)>=0,
+          FACTIONS[E.faction].short);
+      /* the colour is the ALLY'S OWN, so two allies never blur together */
+      var tint=Game.allyTint(u);
+      chk("an ally is drawn in its own colour, not the enemy red",
+          tint===(E.color.light||E.color.main) && tint!=="rgba(255,110,90,0.95)",
+          tint+" (commander "+(E.color.light||E.color.main)+")");
+      chk("and that colour reaches the panel", allied.indexOf(tint)>=0,
+          JSON.stringify(allied.slice(0,90)));
+      /* an ally is not a thing to shoot: a strike flight given one as its
+         target treats it as no target at all */
+      chk("an ally is not a strike target", Game.side(u)!=="foe", Game.side(u));
+    } finally {
+      E.team=team1;
+      for(var j=0;j<UI.selection.length;j++) UI.selection[j].selected=false;
+      UI.selection.length=0;
+      u.dead=true;
+    }
+    chk("and the letters are back where the suite found them",
+        Game.allied(P,E)===false, "teams "+P.team+" and "+E.team);
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

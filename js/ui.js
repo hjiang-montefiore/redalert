@@ -1227,16 +1227,16 @@ var UI = (function () {
       /* an aircraft that cannot touch this target stays on the ramp and keeps
          its place in the flight, rather than burning fuel to find out */
       if (sortieMode === "strike" && target && !target.dead &&
-          target.owner !== G.human && !u.canTarget(target)) { unable++; continue; }
+          G.side(target) === "foe" && !u.canTarget(target)) { unable++; continue; }
       /* An armed sweep with no named target is an order to acquire on the way,
          and a held round may not acquire. The aircraft keeps its place in the
          flight rather than burning the fuel to find that out - the same
          courtesy the canTarget test two lines above already extends. */
-      const named = target && !target.dead && target.owner !== G.human;
+      const named = target && !target.dead && G.side(target) === "foe";
       if (sortieMode === "strike" && !named &&
           u.allWeaponsHeld && u.allWeaponsHeld()) { held++; continue; }
       const order = sortieMode === "strike"
-        ? (target && !target.dead && target.owner !== G.human
+        ? (target && !target.dead && G.side(target) === "foe"
             ? { type: "attack", target, resume: { x: b.x, y: b.y } }
             : { type: "attackmove", x: wx, y: wy })
         : { type: "cap", x: wx, y: wy };
@@ -1317,9 +1317,17 @@ var UI = (function () {
     if (selection.length === 1 && selection[0].owner !== G.human) {
       const e = selection[0];
       const fac = FACTIONS[e.owner.faction];
-      let h = '<b style="color:#ff8a6b">' + (e.def.full || e.def.name).toUpperCase() + "</b><br>";
-      h += '<span style="font-size:9.5px;color:#d05a45;letter-spacing:1px">HOSTILE &middot; ' +
-        (fac ? fac.short : "ENEMY") + "</span><br>";
+      /* An ally is not a hostile. This panel called every commander but the
+         player one, in the enemy's red, which since team letters exist is
+         simply wrong about a commander sharing your letter. */
+      const ally = G.side(e) === "ally";
+      const civ = e.owner === G.neutral;
+      const tint = ally ? G.allyTint(e, "#8fd05f") : civ ? "#b4b8bb" : "#ff8a6b";
+      const word = ally ? "ALLIED" : civ ? "NEUTRAL" : "HOSTILE";
+      let h = '<b style="color:' + tint + '">' + (e.def.full || e.def.name).toUpperCase() + "</b><br>";
+      h += '<span style="font-size:9.5px;color:' + (ally || civ ? tint : "#d05a45") +
+        ';letter-spacing:1px">' + word + " &middot; " +
+        (fac ? fac.short : ally ? "ALLY" : civ ? "CIVILIAN" : "ENEMY") + "</span><br>";
       h += '<div class="stat">HP <i>' + Math.ceil(e.hp) + "/" + Math.ceil(e.maxHp) + "</i></div>";
       h += '<div class="stat">ARMOUR <i>' + (e.armor || "").toUpperCase() + "</i></div>";
       if (e.vet !== undefined && e.kind === "unit")

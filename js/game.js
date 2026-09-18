@@ -345,6 +345,22 @@ var Game = (function () {
 
   /* ---------------- alliances ----------------
      Same team number = allies. Everyone else is a legitimate target.      */
+  /* ---- whose side is this, from the player's chair? ----
+     (owner) "the ally color is still red and the label is still hostile."
+     Everything visual asked `owner === G.human` and painted the whole rest of
+     the board as the enemy, so a commander on your own team - now that team
+     letters exist - was drawn and labelled as one. "own" | "ally" | "foe". */
+  G.side = function (e) {
+    const p = e && (e.owner || e);
+    if (!p || !G.human) return "foe";
+    if (p === G.human) return "own";
+    return G.allied(G.human, p) ? "ally" : "foe";
+  };
+  /* the colour an ally is drawn in: its own, so two allies stay apart */
+  G.allyTint = function (e, fallback) {
+    const c = e && e.owner && e.owner.color;
+    return (c && (c.light || c.main)) || fallback || "#7fc2ff";
+  };
   G.allied = function (a, b) {
     if (!a || !b) return false;
     if (a === b) return true;

@@ -1079,11 +1079,18 @@ var Render = (function () {
   function drawUnitUI(u, X, Y, z) {
     const sel = u.selected;
     if (sel) {
-      ctx.strokeStyle = u.owner === G.human ? "rgba(120,255,120,0.9)" : "rgba(255,110,90,0.95)";
+      /* green for ours, the ally's own colour for an ally, red for an enemy.
+         The ally also gets a BROKEN ring: a commander on our letter may well
+         have picked a red, and hue alone would then say the wrong thing. */
+      const sd = G.side(u);
+      ctx.strokeStyle = sd === "own" ? "rgba(120,255,120,0.9)"
+        : sd === "ally" ? G.allyTint(u, "#7fc2ff") : "rgba(255,110,90,0.95)";
       ctx.lineWidth = 1.2;
+      if (sd === "ally") ctx.setLineDash([4 * z, 3 * z]);
       ctx.beginPath();
       ctx.ellipse(X, Y + 2 * z, (u.r + 4) * z, (u.r + 4) * z * ISO, 0, 0, 7);
       ctx.stroke();
+      if (sd === "ally") ctx.setLineDash([]);
     }
     if (sel || u.hp < u.maxHp || u.owner !== G.human) {
       if (u.hp < u.maxHp || sel) {
@@ -1112,9 +1119,15 @@ var Render = (function () {
   }
   function drawBuildingUI(b, cx, cy, z) {
     if (b.selected) {
-      ctx.strokeStyle = "rgba(120,255,120,0.8)"; ctx.lineWidth = 1.2;
+      /* a clicked structure is drawn in ITS side's colour, not always ours */
+      const sb = G.side(b);
+      ctx.strokeStyle = sb === "own" ? "rgba(120,255,120,0.8)"
+        : sb === "ally" ? G.allyTint(b, "#7fc2ff") : "rgba(255,110,90,0.85)";
+      ctx.lineWidth = 1.2;
+      if (sb === "ally") ctx.setLineDash([4 * z, 3 * z]);
       const w = b.def.w * CFG.TILE * z;
       ctx.strokeRect(cx - w * 0.7, cy - 8 * z, w * 1.4, (b.def.h * CFG.TILE * ISO + 16) * z);
+      if (sb === "ally") ctx.setLineDash([]);
     }
     if (b.hp < b.maxHp || b.selected) {
       const w = b.def.w * CFG.TILE * 1.1 * z, f = b.hp / b.maxHp;
