@@ -91,6 +91,10 @@ var SaveGame = (function () {
         hp: Math.round(u.hp), vet: u.vet, xp: Math.round(u.xp || 0),
         fuel: Math.round(u.fuel), ammo: +(u.ammo || 0).toFixed(2),
         sup: Math.round(u.supplyLeft || 0), load: Math.round(u.load || 0),
+        /* ready rounds: without this every gun and launcher came back from a
+           save with a full magazine, which since the era rows were given
+           magazines is 70 more batteries than it used to be */
+        rd: u.roundsMax ? u.rounds : undefined,
         st: u.stance, ord: liteOrder(u.order), pk: u.parked ? 1 : 0,
         mg: u.mag ? u.mag : undefined,
         mn: u.minesMax ? u.mines : undefined,
@@ -304,6 +308,7 @@ var SaveGame = (function () {
       u.ang = su.a; u.tang = su.ta;
       u.hp = su.hp; u.vet = su.vet || 0; u.xp = su.xp || 0;
       u.fuel = su.fuel; u.ammo = su.ammo;
+      if (su.rd !== undefined) u.rounds = su.rd;
       u.supplyLeft = su.sup || 0; u.load = su.load || 0;
       u.stance = su.st || "guard";
       if (su.pk && u.layer === "air") { u.parked = true; u.order = { type: "parked" }; }

@@ -3272,6 +3272,11 @@ Object.assign(UNITS, {
   cstealth_b: { from:"e20", fac:"gbr", role:"cstealth", name:"F-35B Lightning", full:"Lockheed Martin F-35B Lightning II", cat:"aircraft",
     cost:1780, oil:34, time:22, hp:440, armor:"air", speed:7.9, turn:2.1, sight:11.0, r:16, mass:0,
     layer:"air", weapons:["aam_lo"], prereq:["airbase"], tech:3, jet:true, ammo:4,
+    /* the same airframe as stealth_b, which carries 0.62: without this the
+       carrier F-35B was hard to hold on radar (rcs 0.008) and yet got none of
+       the separate low-observability handling in combat, acquisition, the AI
+       or the threat field */
+    stealth:0.62,
     gen:5, rcs:0.008, radarQ:17, radius:34, carrierCapable:true, refuelable:true, radar:8,
     desc:"The only fifth-generation aircraft that flies from a ski-jump, and the reason the Queen Elizabeth class exists in the shape it does. Op Fortis in 2021 put British and American F-35Bs on the same British deck and took the group to the Pacific. Short legs compared with the carrier variants, a lift fan where the fuel would otherwise be, and a British squadron count that is still in the low tens." },
   asw_helo_b: { from:"e20", fac:"gbr", role:"aswhelo", name:"Merlin HM2", full:"AgustaWestland Merlin HM2", cat:"aircraft",
