@@ -2535,7 +2535,7 @@ var AIR = {
   fighter_b: { gen:4.5, rcs:0.60, radarQ:11.0 },
   bomber_b:  { gen:4.5, rcs:0.60, radarQ:11.0 },
   helo_b:    { gen:4.0, rcs:0.75, radarQ: 6.0 },
-  trans_b:   { gen:4.0, rcs:1.10, radarQ: 1.5 },
+  trans_b:   { gen:4.0, rcs:1.6, radarQ: 1.5 },
   stealth_b: { gen:5.0, rcs:0.0080, radarQ:20.0 },
 
   /* ---- the French seven ----
@@ -3272,7 +3272,7 @@ Object.assign(UNITS, {
   cstealth_b: { from:"e20", fac:"gbr", role:"cstealth", name:"F-35B Lightning", full:"Lockheed Martin F-35B Lightning II", cat:"aircraft",
     cost:1780, oil:34, time:22, hp:440, armor:"air", speed:7.9, turn:2.1, sight:11.0, r:16, mass:0,
     layer:"air", weapons:["aam_lo"], prereq:["airbase"], tech:3, jet:true, ammo:4,
-    gen:5, rcs:0.16, radarQ:17, radius:34, carrierCapable:true, refuelable:true, radar:8,
+    gen:5, rcs:0.008, radarQ:17, radius:34, carrierCapable:true, refuelable:true, radar:8,
     desc:"The only fifth-generation aircraft that flies from a ski-jump, and the reason the Queen Elizabeth class exists in the shape it does. Op Fortis in 2021 put British and American F-35Bs on the same British deck and took the group to the Pacific. Short legs compared with the carrier variants, a lift fan where the fuel would otherwise be, and a British squadron count that is still in the low tens." },
   asw_helo_b: { from:"e20", fac:"gbr", role:"aswhelo", name:"Merlin HM2", full:"AgustaWestland Merlin HM2", cat:"aircraft",
     cost:1520, oil:28, time:17, hp:420, armor:"air", speed:3.2, turn:2.2, sight:8.8, r:13, mass:0,
@@ -3351,32 +3351,62 @@ Object.assign(UNITS, {
 
 
 /* ---- radar cross section of surface ships ----
-   Relative to a conventional 1980s destroyer (= 1.0). Superstructure shaping
-   is the single biggest lever a designer has: an angled, enclosed topside
-   with no exposed clutter returns a fraction of what a Slava's forest of
-   deck launchers, masts and radar dishes puts back. Detection range scales
-   with the fourth root of this, and it also drives how easily an incoming
-   missile can hold a lock. */
+   Relative to a conventional 1980s destroyer (= 1.0).
+
+   WHAT READS IT. For a SHIP: combat.js:73 scales an incoming missile's hit
+   chance by rcs^0.22, and combat.js:418 scales the decoy fit by
+   1.35 - 0.45*rcs, so a quiet hull is harder to hit and easier to spoof with.
+   It does NOT change how far away the ship is spotted: G.rcsOf feeds
+   G.radarReach, and radarReach is reached only through G.airTrack, which
+   entities.js consults only when the target's layer is air. The fourth-root
+   detection curve is real, but it decides how far away an AIRCRAFT is seen.
+
+   TWO THINGS SET THE NUMBER, AND THE SECOND ONE HAS A DATE. Size first: a
+   200-tonne missile boat is a smaller return than an 11,000-tonne cruiser
+   with no treatment on either. Then shaping, which is the bigger lever but
+   only from the mid 1990s - an angled, enclosed topside with no exposed
+   clutter returns a fraction of what a Slava's forest of deck launchers,
+   masts and dishes puts back. La Fayette (1996) is the first hull in the
+   world built to that standard and fra_e90_corvette's 0.14 is the value
+   everything else here is calibrated against. Before her, the number is size
+   alone, and the floor is a 17-tonne motor torpedo boat at 0.30.
+
+   THE SAME LADDER RUNS THROUGH eras.js. Every historical hull carries a
+   signature derived from its own class the same way, so a chain read left to
+   right is a real history: the US corvette line runs 0.85 Dealey, 1.05 Knox,
+   1.10 Perry, 1.10 Perry, 0.14 Littoral Combat Ship, and the cliff is where
+   the shaping arrives. Keep the two files in step - where an era row and an
+   entry here are the SAME CLASS they must carry the same number, which is
+   what [53] in _behtest.html asserts. */
 var SHIP_RCS = {
-  /* NATO: shaped topsides across the board */
-  boat_n:0.30, corvette_n:0.10, missileboat_n:0.28, destroyer_n:0.55,
-  cruiser_n:0.85, carrier_n:2.6,
+  /* NATO: shaped where the class really was - the Burke of 1991 is the first
+     US hull built that way, and the Littoral Combat Ship the first built round
+     it - and ordinary where it was not. A Ticonderoga is a Spruance hull under
+     a much taller deckhouse whose slab sides carry the SPY-1 planar arrays:
+     that is a radar installation, not stealth shaping, and eras.js carries the
+     same 1.25 for her from 1983 on. */
+  boat_n:0.30, corvette_n:0.14, missileboat_n:0.28, destroyer_n:0.55,
+  cruiser_n:1.25, carrier_n:2.6,
   /* PLA: newer hulls are well shaped, older ones less so */
-  boat_c:0.22, corvette_c:0.40, missileboat_c:0.16, destroyer_c:0.50,
+  boat_c:0.16, corvette_c:0.40, missileboat_c:0.16, destroyer_c:0.50,
   cruiser_c:0.60, carrier_c:2.6,
   /* Eastern bloc: 1980s topsides covered in deck launchers and dishes */
-  boat_p:0.55, corvette_p:0.75, missileboat_p:0.50, destroyer_p:1.30,
+  boat_p:0.55, corvette_p:0.62, missileboat_p:0.55, destroyer_p:1.30,
   cruiser_p:1.70, carrier_p:2.9,
-  /* North Korea: small, but no shaping whatsoever */
-  boat_k:0.50, corvette_k:0.85, missileboat_k:0.60,
+  /* North Korea: small, but no shaping whatsoever, so these are size alone -
+     an 82-tonne Chaho, a 1,500-tonne Najin, a 200-tonne Soju. */
+  boat_k:0.40, corvette_k:0.85, missileboat_k:0.55,
   /* Taiwan: an old destroyer and a genuinely stealthy catamaran */
-  boat_r:0.30, corvette_r:0.12, missileboat_r:0.26, destroyer_r:1.15,
+  boat_r:0.26, corvette_r:0.12, missileboat_r:0.26, destroyer_r:1.15,
   /* Britain, France and Germany. The La Fayette of 1996 was the first warship
      in the world designed for a low signature and the number says so; the
      FREMM, the K130 and the Type 45 are shaped too, while a Type 23 is a
-     1980s hull with the clutter tidied up rather than a stealth design. */
-  boat_b:0.30, corvette_b:0.45, destroyer_b:0.30, carrier_b:2.2,
-  boat_f:0.28, corvette_f:0.18, destroyer_f:0.26, carrier_f:2.1,
+     1980s hull with the clutter tidied up rather than a stealth design. The
+     two patrol hulls are NOT in that group and no longer read as if they were:
+     a River Batch 2 is a two-thousand-tonne steel offshore patrol vessel and
+     the Patrouilleur Outre-mer is thirteen hundred tonnes of the same idea. */
+  boat_b:0.80, corvette_b:0.45, destroyer_b:0.30, carrier_b:2.45,
+  boat_f:0.70, corvette_f:0.18, destroyer_f:0.26, carrier_f:2.1,
   corvette_g:0.16, destroyer_g:0.34,
 };
 for (var _rc in SHIP_RCS) if (UNITS[_rc]) UNITS[_rc].rcs = SHIP_RCS[_rc];
@@ -3442,20 +3472,17 @@ for (var _sk2 in SOFTKILL) if (UNITS[_sk2]) UNITS[_sk2].softkill = SOFTKILL[_sk2
    non-decreasing into its own present-day figure in SOFTKILL, which [49] also
    checks: no fleet un-invents a system it already had.
 
-   ONE ANOMALY IN THAT SCALING IS RECORDED HERE SO THE NEXT READER DOES NOT
-   CHASE IT BACK TO THIS TABLE. It is eras.js's data, not a decoy number.
-   Several e90 rows there carry the PRESENT-DAY hull's rcs instead of their
-   own: nato_e90_corvette is a 1977 Oliver Hazard Perry wearing the Littoral
-   Combat Ship's 0.1, while the same class one era earlier has 0.6, and
-   roc_e90_corvette, roc_e90_missileboat and pla_e90_corvette show the same
-   pattern. Measured across all 40 faction/role chains that produces exactly
-   one inversion in the value combat.js actually uses: the 1990s Perry reaches
-   0.339 against the 1991 Arleigh Burke's 0.320. Before this change every one
-   of those hulls sat at zero and the quirk was invisible. Correcting it means
-   editing rcs in a GENERATED file, which also moves radar detection
-   (game.js:235) and missile accuracy (combat.js:73), so it belongs in its own
-   measured pass rather than in a decoy change. [49] checks the scaled value
-   too and knows this one chain by name; any NEW inversion fails. */
+   THE rcs ANOMALY THIS COMMENT USED TO RECORD HAS BEEN FIXED AT SOURCE. It
+   was eras.js's data, not a decoy number: several e90 rows carried the
+   PRESENT-DAY hull's rcs instead of their own, so nato_e90_corvette was a 1977
+   Oliver Hazard Perry wearing the Littoral Combat Ship's 0.1 where the same
+   class one era earlier had 0.6, and roc_e90_corvette, roc_e90_missileboat and
+   pla_e90_corvette did the same. That produced exactly one inversion in the
+   value combat.js actually uses - the 1990s Perry at 0.339 against the 1991
+   Arleigh Burke's 0.320 - and [49] exempted the chain by name. Every naval row
+   in eras.js now carries a signature researched from its own class, the Perry
+   sits at 1.10 in both eras, all 40 chains are monotone, and the exemption is
+   gone. If a chain inverts again it is a real regression. */
 var SOFTKILL_ROLES = { destroyer:1, cruiser:1, corvette:1, carrier:1, missileboat:1 };
 var SOFTKILL_ERA = {
   /* UNITED STATES. Mk 36 SRBOC over AN/SLQ-32 is fleet-wide by the early
@@ -3809,12 +3836,60 @@ for (var _rcv in RADAR_COVERAGE) if (UNITS[_rcv]) UNITS[_rcv].radar = RADAR_COVE
    so they were pure receivers. Scale the jamming off the radar fit, which is
    the same aerial farm doing the work. Must run after RADAR_COVERAGE has been
    applied below, because that is where these aircraft finally get their
-   radar figure - reading it any earlier finds nothing. */
-for (var _wk in UNITS) {
-  var _w = UNITS[_wk];
-  if ((_w.role === "awacs" || _w.role === "cawacs") && _w.radar && !_w.jam)
-    _w.jam = Math.round(_w.radar * 0.42 * 10) / 10;
+   radar figure - reading it any earlier finds nothing.
+
+   AND IT MUST RUN AGAIN LATER. This is derived from the ROLE and was written
+   inline, so it ran while rules.js was still loading and saw only rules.js's
+   own nine airframes; eras.js is loaded after rules.js on every page in the
+   project. Counted at runtime before this change: 28 historical AEW aircraft
+   carried a radar figure and no jam at all - 17 awacs rows and 11 cawacs rows,
+   every era row of both roles from e50 to e00, including the E-3 Sentry at
+   e80, e90 and e00 and the E-2 Hawkeye in five decades. The sentence above
+   applies to a 1977 rotodome exactly as it applies to a 2020 one, and it was
+   true of neither for five of the six eras.
+
+   This is the same defect as SOFTKILL and the ROUNDS table below, and the same
+   repair: a named function, keyed on role rather than on ids, called once here
+   and again from the tail of generations.js once every roster exists. Note
+   that generations.js already re-derives `awacs: true` for exactly this reason
+   - the flag and the jammer are the same aircraft and only one of them was
+   being reached.
+
+   The test is `jam === undefined` rather than `!jam` for two reasons, and
+   neither of them is anything in range today: nothing this filter touches
+   carries a hand-written jam (the only jam:0 in the game is ew_f, whose role
+   is `ewair`, which this filter never sees). It is written that way because
+   the function is now called twice and must not re-derive a figure it has
+   already written, and because a jam value set by hand on some future AEW row
+   has to beat a derived one.
+
+   AND ONE THING THIS DELIBERATELY DOES NOT REACH, recorded here so the next
+   reader does not think it was missed. The dedicated electronic-attack
+   aircraft are role `ewair`, not awacs, and this sweep leaves them alone -
+   correctly, because that role holds jammers and listeners side by side: an
+   EA-18G Growler and an RC-135-derived Airseeker R.1 are both in it, and
+   ew_f Archange carries a deliberate jam:0 because it is a collector. But 13
+   of the 16 ewair rows carry no jam at all, nato_e00_ewair among them, which
+   is the same EA-18G as ew_n's 9.5. Which of those airframes is a jammer, and
+   what each is worth, is per-airframe research and not a role sweep.
+
+   IT IS NOT A FREE GIFT TO THE PAST. G.jamAgainst() multiplies every jammer by
+   genContest(radar, jammer), which halves the jamming that gets through for
+   each generation the radar is newer, so a 1958 Skyraider AEW.1 that finds
+   itself over a present-day battlefield contributes almost nothing. What this
+   restores is the 1960s AEW aircraft jamming a 1960s radar, which is the fight
+   the era rosters exist to stage. */
+function applyAewJam() {
+  var n = 0;
+  for (var _wk in UNITS) {
+    var _w = UNITS[_wk];
+    if ((_w.role === "awacs" || _w.role === "cawacs") && _w.radar && _w.jam === undefined) {
+      _w.jam = Math.round(_w.radar * 0.42 * 10) / 10; n++;
+    }
+  }
+  return n;
 }
+applyAewJam();
 
 
 
@@ -4375,12 +4450,94 @@ for (var _sp in SUPPORT) { SUPPORT[_sp].id = _sp; SUPPORT[_sp].cat = "support"; 
 var ROUNDS = {
   spg: 14, mlrs: 8, mortar: 18, atgmv: 10, heavy: 0,
 };
-for (var _ru in UNITS) {
-  var _r = UNITS[_ru];
-  if (_r.rounds !== undefined) continue;
-  var n = ROUNDS[_r.role];
-  if (n) _r.rounds = n;
+
+/* WHAT WAS BROKEN, MEASURED. This table is keyed by ROLE, not by unit id, and
+   the sweep under it was written inline here - which runs while rules.js is
+   still loading, and eras.js is loaded AFTER rules.js on every page in the
+   project. Counted at runtime before this change: SEVENTY historical gun and
+   rocket batteries reached the battlefield with no `rounds` field at all - 38
+   self-propelled guns and 32 multiple launchers, spread over e50, e60, e80,
+   e90 and e00. Eight factions, and unevenly, because the rosters are real
+   rather than symmetrical: Germany fields neither a gun nor a launcher at e00,
+   NATO no launcher at e60, France none at all before e90, and Britain, Taiwan
+   and Germany none at e50.
+
+   entities.js reads `this.roundsMax = d.rounds || 0` and then guards the shot
+   with `if (this.roundsMax) { if (this.rounds <= 0) return; ... }`, so a
+   missing field is not a small number - it is NO MAGAZINE AT ALL. Korea's 1950
+   SU-76M and NATO's 2017 M109A7 Paladin both fired for the whole battle
+   without ever going dry, and the OUT OF ROUNDS alert never came up.
+   updateSupply() did run on them - it runs for every vehicle - but the top-up
+   it performs sits inside `if (this.roundsMax)`, so there was nothing there
+   for a truck to fill. The paragraph above says a finite magazine is what
+   "makes a supply line worth attacking and worth defending": the supply truck
+   is ERA_TIMELESS and stands in every era, and in five of the six settings it
+   had no gun or launcher magazine to deliver into. It always had fuel to give,
+   and aircraft ammunition, and the hand-written magazines on the 22 era SAM
+   and 23 era TEL rows - this is about the tube and rocket artillery, and
+   nothing else.
+
+   AND WHAT IT DOES NOT DO: it does not make the AI cleverer, whatever the
+   shape of the change suggests. ai.js has exactly two `rounds` gates and
+   neither of them ever sees a gun. The one in driveLaunchers() walks
+   unitsOf("tel"), and every era TEL row already carried a hand-written
+   magazine, so that gate was live before this change and is untouched by it.
+   The other filters the raiding-party pool, one line after RAID_ROLES has
+   narrowed it to lighttank, ifv, tankdestroyer, mbt and heavy - and not one
+   role in that list takes a magazine (heavy's entry above is a researched 0),
+   so it was dead before and is dead after. What does change, for the AI's gun
+   line and for the player's alike, is that both must now be kept resupplied.
+
+   Same defect and same repair as SOFTKILL above. Keyed on role, so a battery
+   added to any future roster in any file is covered the moment it exists;
+   never overwrites a value already set, so the hand-written figures on the tel
+   and sam rows stay the authority and the function is safe to call twice;
+   called once here (so nothing about rules.js's own roster changes) and again
+   from the tail of generations.js, the last data file, because that is the
+   first moment at which every roster exists. */
+var ROUNDS_ERA_GAPS = [];
+/* THE GUARD, AND WHY IT IS NOT THE OBVIOUS ONE. The obvious test - "a row
+   whose role is in ROUNDS and which still has no rounds" - CANNOT FIRE, ever,
+   for any roster: the sweep immediately above has just given every such row
+   one. It would be a net with no mesh, and worse, its emptiness would read as
+   proof of completeness while proving nothing at all. What can really go
+   wrong is the fault this repair exists for - a magazine-carrying role
+   reaching the battlefield without a magazine - so the guard names the roles
+   that MUST end with one and checks the FINISHED roster, whether the value
+   came from this table (spg, mlrs, mortar) or was written per hull in eras.js
+   and rules.js (tel, sam). It fires if ROUNDS loses a key, or if a launcher or
+   battery row is written without a magazine of its own - both measured against
+   this file by mutation, 46 names and 1 name respectively. `heavy` is
+   deliberately not on the list: its 0 above is a researched nothing, not a gap.
+
+   WHAT IT STILL CANNOT SEE, said plainly because the version of this that was
+   reviewed overclaimed and was believed. The list is a snapshot taken when the
+   function runs, so it cannot report a roster loaded AFTER the last call:
+   delete the call at the foot of generations.js and this list - computed here,
+   while only rules.js's own roster existed - reads EMPTY while 70 era
+   batteries go back to having nothing. Measured, and it is the original defect
+   exactly. That case is caught in _behtest [54], which walks the finished
+   UNITS table through unitFor() and does not consult this list at all. Neither
+   guard is sufficient on its own, which is why there are two. */
+var ROUNDS_REQUIRED = ["spg", "mlrs", "mortar", "tel", "sam"];
+function applyRoleRounds() {
+  ROUNDS_ERA_GAPS.length = 0;
+  var n = 0;
+  for (var _ru in UNITS) {
+    var _r = UNITS[_ru];
+    if (_r.rounds !== undefined) continue;
+    var _rn = ROUNDS[_r.role];
+    if (_rn) { _r.rounds = _rn; n++; }
+  }
+  for (var _rg in UNITS) {
+    var _rd = UNITS[_rg];
+    if (ROUNDS_REQUIRED.indexOf(_rd.role) < 0 || _rd.rounds > 0) continue;
+    ROUNDS_ERA_GAPS.push(_rd.fac + "/" + (_rd.from || "e20") + "/" + _rd.role +
+                         " (" + _rg + ")");
+  }
+  return n;
 }
+applyRoleRounds();
 /* a supply truck or a service depot replenishes them */
 if (BUILDINGS.depot) BUILDINGS.depot.resupply = true;
 

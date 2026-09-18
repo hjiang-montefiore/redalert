@@ -2183,14 +2183,16 @@ try{
       var rcs = d.rcs !== undefined ? d.rcs : 1;
       return d.softkill ? d.softkill * U.clamp(1.35 - rcs * 0.45, 0.6, 1.6) : 0;
     }
-    /* KNOWN, MEASURED, AND NOT A DECOY NUMBER. Several e90 rows in eras.js
-       carry the PRESENT-DAY hull's rcs instead of their own: nato_e90_corvette
-       is a 1977 Perry wearing the Littoral Combat Ship's 0.1, where the same
-       class at e80 has 0.6. It is the only one of the 40 faction/role chains
-       that inverts once scaled - the 1990s Perry reaches 0.339 against the
-       1991 Arleigh Burke's 0.320. Exempted BY NAME so that a NEW inversion
-       still fails; the rcs itself is eras.js's and belongs to its own pass. */
-    var effKnown = { "nato/corvette": 1 };
+    /* THE eras.js rcs PASS HAS RUN, AND THE EXEMPTION IS GONE. This list used
+       to hold "nato/corvette", because several e90 rows in eras.js carried the
+       PRESENT-DAY hull's rcs instead of their own - nato_e90_corvette was a
+       1977 Perry wearing the Littoral Combat Ship's 0.1 where the same class
+       at e80 had 0.6 - and that produced the one inversion in the 40
+       faction/role chains. Every naval row now carries a signature researched
+       from its own class, so all 40 chains are monotone with no exemption and
+       this list is empty on purpose. Anything that lands in it is a real
+       regression: either a decoy number or a signature has gone backwards. */
+    var effKnown = {};
     ["nato","pact","pla","roc","gbr","fra","deu","kpa"].forEach(function(f){
       ["destroyer","cruiser","corvette","carrier","missileboat"].forEach(function(r){
         var prev = -1, prevE = -1;
@@ -2207,7 +2209,7 @@ try{
     chk("no fleet's decoys get worse as the decades pass", slid.length===0,
         slid.slice(0,4).join("; ") || "8 factions x 5 roles checked");
     chk("nor once combat.js scales them by the hull's own signature", slidEff.length===0,
-        slidEff.slice(0,4).join("; ") || "40 chains, 1 named eras.js rcs exemption");
+        slidEff.slice(0,4).join("; ") || "40 chains, no exemptions");
     /* ---- and no era roster can be added and silently skipped ---- */
     chk("a roster added to a future era cannot be silently skipped",
         typeof SOFTKILL_ERA_GAPS !== "undefined" && SOFTKILL_ERA_GAPS.length===0,
@@ -2625,6 +2627,200 @@ try{
         "landed="+landed+" flagged="+b2.noPadSaid+" fuel="+b2.fuel.toFixed(0)+
         " dist="+(U.dist(b2.x,b2.y,ab2.x,ab2.y)/32).toFixed(1)+"t");
     if(!b2.dead) b2.dead=true; if(ab2) ab2.dead=true;
+  })();
+  }
+
+  /* ====== [53] ONE HULL, ONE RADAR SIGNATURE ======
+     [49] above guards the decoy table and, since the signature pass, the
+     value combat.js actually scales it by - but it walks only e80..e20 and
+     only hulls that carry a decoy rating, which is 102 hulls and no airframe
+     at all. Measured by putting each of the 136 corrected signatures back one
+     at a time and re-running [49]'s own monotonicity walk: it notices five of
+     them. The headline defect - nato_e90_corvette, a 1977 Oliver Hazard Perry
+     wearing the Littoral Combat Ship's 0.1 - is not one of the five.
+
+     So the values are asserted here as well, and as rules rather than as a
+     list of numbers a later edit would simply be retyped into. The defect
+     they guard has one shape: a row given a signature belonging to a
+     DIFFERENT ship, usually a later one, and usually the flat 0.6 that came
+     out of the generator wherever nobody had researched the class. These four
+     rules catch 40 of the 136 between them, the two headline hulls and every
+     stealth airframe included; the rest are size calibrations whose only
+     authority is the research note, and no rule over this data can check a
+     tonnage the data does not carry. A chain-shaped fifth rule - a dip of a
+     third that comes straight back up - was written, measured against the
+     same 136 reverts, and dropped: it caught nothing the four do not, because
+     a single reverted row dips without recovering. */
+  if (inHalf(2)) {
+  log("\n[53] ONE HULL, ONE RADAR SIGNATURE");
+  (function(){
+    var naval = [], byName = {}, dated = 0;
+    for (var uid in UNITS) {
+      var d = UNITS[uid];
+      if (!d || (d.cat !== "naval" && d.cat !== "aircraft")) continue;
+      if (d.cat === "naval") naval.push(uid);
+      if (d.rcs === undefined) continue;
+      var key = (d.fac || "?") + "/" + (d.name || uid);
+      (byName[key] = byName[key] || []).push(uid);
+    }
+    /* ---- 1. the same ship twice is the same number twice ----
+       A Perry is a Perry in 1980 and in 1990, and the F-22 in the e00 fighter
+       slot is the F-22 in the present-day roster. Keyed on faction and name
+       so it spans eras.js and rules.js without comparing a Soviet Osa to a
+       Chinese one. This is the rule the original defect broke, and it is what
+       found the F-22 sitting at 0.6 beside its own 0.005. */
+    var split = [];
+    for (var nk in byName) {
+      var ids = byName[nk], v0 = UNITS[ids[0]].rcs, bad = false;
+      for (var i = 1; i < ids.length; i++) if (Math.abs(UNITS[ids[i]].rcs - v0) > 1e-9) bad = true;
+      if (bad) split.push(nk + ": " + ids.map(function(x){ return x + "=" + UNITS[x].rcs; }).join(" "));
+    }
+    chk("one designation carries one signature, across every era and both files",
+        split.length === 0,
+        split.slice(0,4).join("; ") || Object.keys(byName).length + " designations checked");
+    /* ---- 2. shaping has a date ----
+       La Fayette, commissioned 1996, is the first warship in the world built
+       for a low signature; nothing afloat before her earns a stealth number.
+       The smallest hull in the game is a 17-tonne motor torpedo boat at 0.30,
+       so anything under that is shaping rather than size. Read off the row's
+       OWN service year rather than its era bucket - which is exactly what a
+       Chin Chiang of 1994 sitting at 0.12 needed. */
+    var early = [];
+    naval.forEach(function(id){
+      var s = UNITS[id];
+      if (s.rcs === undefined || !s.service) return;
+      var m = String(s.service).match(/\d{4}/); if (!m) return;
+      dated++;
+      if (s.rcs < 0.30 && +m[0] < 1996)
+        early.push(id + " " + s.name + " (" + m[0] + ") rcs=" + s.rcs);
+    });
+    chk("no hull is shaped before the class that invented shaping", early.length === 0,
+        early.slice(0,4).join("; ") || dated + " hulls carry a service year");
+    chk("and enough of them carry one for that to mean anything", dated >= 120,
+        dated + " dated hulls");
+    /* ---- 3. the scale keeps both its ends ----
+       combat.js clamps a missile's accuracy multiplier into [0.55, 1.15], and
+       the low clamp starts biting at rcs 0.066 - so a floor of 0.10 keeps
+       every hull on the live part of the curve and nothing becomes unhittable.
+       The loudest thing afloat is a fleet carrier at 2.9. A surface row
+       outside these is a decimal point rather than a ship. */
+    var lo = null, hi = null;
+    naval.forEach(function(id){
+      var r = UNITS[id].rcs; if (r === undefined) return;
+      if (lo === null || r < UNITS[lo].rcs) lo = id;
+      if (hi === null || r > UNITS[hi].rcs) hi = id;
+    });
+    chk("every surface signature is a ship-sized number",
+        !!lo && !!hi && UNITS[lo].rcs >= 0.10 && UNITS[hi].rcs <= 3.0,
+        "quietest " + (lo && UNITS[lo].name) + " " + (lo && UNITS[lo].rcs) +
+        ", loudest " + (hi && UNITS[hi].name) + " " + (hi && UNITS[hi].rcs));
+    chk("and the whole surface fleet was walked", naval.length >= 170,
+        naval.length + " hulls");
+    /* ---- 4. the stealth roles are stealthy in every era that has one ----
+       The same generator default sat on the F-117, the F-35 and the J-20, so
+       in the 1980s and 2000s settings the stealth mechanic did nothing at all.
+       A Su-57 at 0.13 is the loudest aircraft these two roles may hold. */
+    var loud = [];
+    for (var aid in UNITS) {
+      var a = UNITS[aid];
+      if (!a || a.cat !== "aircraft") continue;
+      if (a.role !== "stealthfighter" && a.role !== "cstealth") continue;
+      if (!(a.rcs < 0.20)) loud.push(aid + " " + a.name + " rcs=" + a.rcs);
+    }
+    chk("a stealth aircraft is stealthy in every era that fields one",
+        loud.length === 0, loud.slice(0,4).join("; ") ||
+        "every stealthfighter and carrier-stealth row under 0.20");
+  })();
+  }
+
+  /* ====== [54] AN ERA GUN LINE CARRIES A MAGAZINE, AN ERA ROTODOME CARRIES A JAMMER ======
+     rules.js's ROUNDS table and its AEW jam derivation are both keyed on the
+     unit's ROLE - written, that is, to cover the whole game - and both used to
+     be spelled as a bare loop in the body of rules.js, which runs before
+     eras.js has generated a single row. So 70 era gun and launcher rows
+     reached the field with no `rounds`, and entities.js reads a missing field
+     as NO magazine rather than as an empty one, and 28 era AEW aircraft
+     carried a radar with no jammer. That is exactly the fault [49] above
+     records for the decoys, in two more places, and it survived this long for
+     the same reason: every other section of this suite plays at e20 and never
+     looks at a historical roster. These checks do, through unitFor(), which is
+     what a player actually gets handed.
+
+     They are written so that they CAN fail. A check that asked "is the gap
+     list empty" and nothing else would pass on a roster where the sweep had
+     never run at all - which is precisely the state being fixed. */
+  if (inHalf(2)) {
+  log("\n[54] AN ERA GUN LINE CARRIES A MAGAZINE");
+  (function(){
+    var facs = ["nato","pact","pla","roc","gbr","fra","deu","kpa"];
+    var eraOrd = ["e50","e60","e80","e90","e00","e20"];
+    /* ---- 1. every tube and rocket battery a player can field ---- */
+    var dry = [], guns = 0;
+    facs.forEach(function(f){
+      ["spg","mlrs","mortar"].forEach(function(r){
+        eraOrd.forEach(function(e){
+          var id = unitFor(f, r, e);
+          if (!id || !UNITS[id]) return;
+          guns++;
+          if (!(UNITS[id].rounds > 0))
+            dry.push(f+"/"+e+"/"+r+" -> "+id+" rounds="+UNITS[id].rounds);
+        });
+      });
+    });
+    chk("every gun and launcher a player can field carries a ready magazine",
+        dry.length === 0, dry.slice(0,4).join("; ") || guns+" faction/role/era slots");
+    chk("and the historical rosters really were walked", guns >= 120, guns+" slots");
+    /* 138 and 38 measured; the floors are set below them so that a roster
+       shrinking is a failure and a roster growing is not. */
+    /* ---- 2. the airborne early-warning jammer ----
+       rules.js: "Every airborne early-warning aircraft carries an electronic
+       warfare suite - that is half of what the airframe is for." The dedicated
+       electronic-attack role `ewair` is deliberately NOT checked here: it holds
+       collectors as well as jammers, and ew_f carries a researched jam:0. */
+    var deaf = [], aew = 0;
+    facs.forEach(function(f){
+      ["awacs","cawacs"].forEach(function(r){
+        eraOrd.forEach(function(e){
+          var id = unitFor(f, r, e);
+          if (!id || !UNITS[id] || !UNITS[id].radar) return;
+          aew++;
+          if (!(UNITS[id].jam > 0))
+            deaf.push(f+"/"+e+"/"+r+" -> "+id+" radar="+UNITS[id].radar+" jam="+UNITS[id].jam);
+        });
+      });
+    });
+    chk("every AEW aircraft with a radar carries a jammer too",
+        deaf.length === 0, deaf.slice(0,4).join("; ") || aew+" faction/role/era slots");
+    chk("and enough of them exist for that to mean anything", aew >= 30, aew+" slots");
+    /* ---- 3. the gap list rules.js keeps ----
+       Asserted, but never on its own: see the note above. */
+    chk("no roster can be loaded after the sweep and silently skipped",
+        typeof ROUNDS_ERA_GAPS !== "undefined" && ROUNDS_ERA_GAPS.length === 0,
+        (typeof ROUNDS_ERA_GAPS === "undefined") ? "no gap list" :
+        (ROUNDS_ERA_GAPS.slice(0,4).join("; ") || "no gaps"));
+    /* ---- 4. and the magazine is real once the battery is on the ground ----
+       entities.js sets roundsMax from the def at construction and refills it in
+       updateSupply() only when the unit is in contact. Both halves measured on
+       a historical gun spawned into this match, because a number in a table
+       that entities.js never reads is worth nothing. */
+    var id80 = unitFor("nato","spg","e80"), spot = tile(P,"ground",7);
+    if (!id80 || !UNITS[id80] || !spot) {
+      chk("a 1980s gun to fire", false, "id="+id80+" tile="+(spot?"ok":"none"));
+    } else {
+      var g = Game.spawnUnitAt(P, id80, spot.x*32+16, spot.y*32+16);
+      if (!g) { chk("a 1980s gun to fire", false, "spawn failed"); }
+      else {
+        chk("a historical battery reaches the battlefield with a magazine",
+            g.roundsMax === UNITS[id80].rounds && g.rounds === g.roundsMax,
+            UNITS[id80].name+" roundsMax="+g.roundsMax+" rounds="+g.rounds);
+        g.rounds = 0;
+        for (var i = 0; i < 40 && g.rounds < g.roundsMax; i++) g.updateSupply(1);
+        chk("and a dry one is filled again while it is in supply",
+            g.rounds > 0, "rounds="+g.rounds+"/"+g.roundsMax+
+            " inSupply="+g.inSupply());
+        g.dead = true;
+      }
+    }
   })();
   }
 
