@@ -2824,6 +2824,568 @@ try{
   })();
   }
 
+  /* ---- [55] ----------------------------------------------------------
+     (owner) "it is worth to have the version stat for the unit with long
+     history like B52, H6, and E2"
+
+     The E-2 had six names across six decades and ONE number, because eras.js
+     is generated and only the hand-written cawacs chain ever got a radarQ.
+     Everything else fell through to game.js:255, which reads a missing radarQ
+     as `radar * 1.6` - a fog-of-war coverage radius multiplied by a constant,
+     which is not a radar at all.
+
+     Measured on the roster before eras.js's ERA_RADAR_SETS table existed:
+     the E-2A Hawkeye of 1964 held an air track at 23.8 * 1.6 = 38.1 tiles
+     against the E-2D Advanced Hawkeye's 33, and the era E-3G row at 52.8
+     against the identical present-day aeroplane's 40. Eight era AEW aircraft
+     out-detected every present-day AEW aircraft in the game.
+
+     These seven checks are written so they CAN fail: 1 finds the rows back on
+     the fallback, 2 and 4 catch the Hawkeye inversion directly, 3 catches a
+     family whose marks are in the wrong order, 5 catches a faction's own
+     early-warning slot - and then each fleet's air search - going backwards
+     between two decades, which 2 and 3 both miss: an E-3D made worse than the
+     Shackleton it replaced, or a Ticonderoga's SPY-1A quietly cut, passes them
+     both. 6 catches a hull handed a shorter track than its own gun, and 7 pins
+     the ESM radius that radarQ silently also sets. `spaag` is excluded from 1 on purpose and by the same rule
+     the table uses - every PRESENT-DAY spaag row in rules.js has no radarQ
+     either, so that role sits on the fallback by the roster's own choice and
+     giving only the historical half a researched number would widen the gap
+     rather than close it. */
+  if (inHalf(2)) {
+  log("\n[55] A VERSION'S RADAR IS THE ONE IT CARRIED");
+  (function(){
+    var facs = ["nato","pact","pla","roc","gbr","fra","deu","kpa"];
+    var eraOrd = ["e50","e60","e80","e90","e00"];
+    /* the target every reach below is measured against, so the numbers are
+       comparable: one ordinary fourth-generation fighter, rcs 0.55 */
+    var MARK = { def: UNITS.fighter_n, layer: "air", x: 0, y: 0 };
+    var reach = function(id){ return Game.radarReach({ def: UNITS[id] }, MARK); };
+
+    /* ---- 1. no era platform is left on the radar * 1.6 fallback ---- */
+    var blind = [], sensors = 0;
+    ["awacs","cawacs","destroyer","cruiser","carrier","corvette","missileboat",
+     "sead","ewair","ewveh","radarv","sam","fighter","stealthfighter"].forEach(function(r){
+      facs.forEach(function(f){
+        eraOrd.forEach(function(e){
+          var id = unitFor(f, r, e);
+          if (!id || !UNITS[id] || !UNITS[id].radar) return;
+          sensors++;
+          if (UNITS[id].radarQ === undefined)
+            blind.push(f+"/"+e+"/"+r+" -> "+id+" radar="+UNITS[id].radar);
+        });
+      });
+    });
+    chk("every historical platform with a radar has the set that radar was",
+        blind.length === 0, blind.slice(0,4).join("; ") || sensors+" faction/role/era slots");
+    chk("and the historical rosters really were walked", sensors >= 180, sensors+" slots");
+    /* 235 slots and 29 AEW pairs measured; the floors sit below them so a
+       roster shrinking is a failure and a roster growing is not. */
+    chk("no roster can be loaded after the sweep and silently skipped",
+        typeof ERA_RADAR_GAPS !== "undefined" && ERA_RADAR_GAPS.length === 0,
+        (typeof ERA_RADAR_GAPS === "undefined") ? "no gap list" :
+        (ERA_RADAR_GAPS.slice(0,4).join("; ") || "no gaps"));
+
+    /* ---- 2. no historical AEW aircraft sees further than today's ----
+       Same faction, same role, so this compares an aeroplane with its own
+       successor and never with somebody else's. */
+    var ahead = [], pairs = 0;
+    facs.forEach(function(f){
+      ["awacs","cawacs"].forEach(function(r){
+        var now = unitFor(f, r, "e20");
+        if (!now || !UNITS[now]) return;
+        eraOrd.forEach(function(e){
+          var id = unitFor(f, r, e);
+          if (!id || !UNITS[id] || id === now) return;
+          pairs++;
+          if (reach(id) > reach(now) + 0.001)
+            ahead.push(id+" "+reach(id).toFixed(1)+" > "+now+" "+reach(now).toFixed(1));
+        });
+      });
+    });
+    chk("no historical AEW aircraft out-detects the one that replaced it",
+        ahead.length === 0, ahead.slice(0,4).join("; ") || pairs+" historical/present pairs");
+    chk("and there are enough AEW pairs to mean something", pairs >= 14, pairs+" pairs");
+
+    /* ---- 3. a mark never goes backwards inside one family ----
+       By the SET, not by the faction's calendar: NATO's awacs slot really
+       does run EC-121 -> E-2A -> E-3 -> E-8C JSTARS, and JSTARS is a
+       ground-moving-target radar with no air-search mode at all, so a
+       faction-wide ramp would be the wrong test. These are the chains where
+       one antenna is genuinely the ancestor of the next. */
+    var chains = {
+      "E-2 Hawkeye, APS-82 to APY-9":
+        ["nato_e50_cawacs","nato_e60_awacs","nato_e60_cawacs","nato_e80_cawacs",
+         "nato_e90_cawacs","nato_e00_cawacs","cawacs_n"],
+      "E-3 Sentry, APY-1 to the Block 40/45 APY-2":
+        ["nato_e80_awacs","nato_e00_awacs","awacs_n"],
+      "APS-20, Skyraider to Gannet to Shackleton":
+        ["gbr_e50_cawacs","gbr_e60_cawacs","gbr_e60_awacs"],
+      "Searchwater, Sea King AEW.2 to Crowsnest":
+        ["gbr_e80_cawacs","gbr_e90_cawacs","gbr_e00_cawacs","cawacs_b"],
+      "Shmel, A-50 to A-50U":
+        ["pact_e80_awacs","pact_e90_awacs","pact_e00_awacs","awacs_p"],
+      "Taiwan's Hawkeyes, E-2T to E-2K":
+        ["roc_e90_awacs","roc_e00_awacs","awacs_r"],
+      "Aegis destroyers, SPY-1D to SPY-1D(V)":
+        ["nato_e90_destroyer","nato_e00_destroyer","destroyer_n"],
+      "Aegis cruisers, SPY-1A to SPY-1B":
+        ["nato_e80_cruiser","nato_e90_cruiser","cruiser_n"],
+    };
+    var back = [], links = 0, named = 0;
+    for (var cname in chains) {
+      var ids = chains[cname], prev = null, prevId = null;
+      for (var i = 0; i < ids.length; i++) {
+        var d = UNITS[ids[i]];
+        if (!d) { back.push(cname+": missing row "+ids[i]); continue; }
+        named++;
+        if (d.radarQ === undefined) { back.push(cname+": "+ids[i]+" has no radarQ"); continue; }
+        if (prev !== null) {
+          links++;
+          if (d.radarQ < prev)
+            back.push(cname+": "+ids[i]+" "+d.radarQ+" < "+prevId+" "+prev);
+        }
+        prev = d.radarQ; prevId = ids[i];
+      }
+    }
+    chk("inside one family a later mark never sees less than an earlier one",
+        back.length === 0, back.slice(0,4).join("; ") || links+" mark-to-mark steps");
+    chk("and every mark named in those chains exists", named === 30, named+" of 30 rows");
+
+    /* ---- 4. the owner's own pair, measured ----
+       E-2A of 1964 against E-2D of 2014: same airframe family, AN/APS-96
+       against an AN/APY-9 UHF active array built specifically to find what
+       the sets before it could not. Against the same fighter the E-2D must
+       see several times further, and before this table the E-2A saw FURTHER
+       than the E-2D. */
+    var a = reach("nato_e60_awacs"), d = reach("cawacs_n");
+    chk("the E-2A Hawkeye does not out-see the E-2D", a < d,
+        "E-2A "+a.toFixed(1)+" tiles vs E-2D "+d.toFixed(1)+" tiles");
+    chk("and the fifty years between them are worth four times the range",
+        d >= a * 4 && d <= a * 9,
+        "E-2D/E-2A = "+(a > 0 ? (d/a).toFixed(2) : "inf")+"x");
+    /* the F-117A carried no radar at all - that was the point of it */
+    chk("an F-117A holds no air track of its own, because it had no radar",
+        UNITS.nato_e80_stealthfighter && UNITS.nato_e80_stealthfighter.radarQ === 0,
+        "radarQ="+(UNITS.nato_e80_stealthfighter||{}).radarQ);
+    /* a 1972 aeroplane with a 1945 antenna is jammed like a 1945 antenna */
+    chk("the Shackleton AEW.2 is jammed as the 1945 set it actually carried",
+        UNITS.gbr_e60_awacs && UNITS.gbr_e60_awacs.radarGen === "e50",
+        "radarGen="+(UNITS.gbr_e60_awacs||{}).radarGen);
+
+    /* ---- 5. a faction's own early-warning slot never goes backwards ----
+       Check 2 compares a historical row with today's and check 3 walks one
+       antenna's lineage; neither sees a faction's awacs slot drop from one
+       decade to the next. Dropping gbr_e90_awacs from 38 to 3 - the 1991
+       E-3D made worse than the 1972 Shackleton it replaced, in Britain's own
+       slot - passes both of them. This walks each faction's awacs and cawacs
+       slot in era order and on into the present day.
+       ONE step is allowed down and it is named rather than tolerated: NATO's
+       1990s awacs slot holds the E-8C JSTARS, whose AN/APY-7 is a
+       ground-moving-target radar with no air-to-air mode, so it holds no air
+       track at all and the band's air picture comes from the E-2C Group II in
+       the cawacs slot beside it. That is a roster shape, not a number. */
+    var ALLOWED_DROP = {
+      "nato/awacs e80->e90": "E-8C JSTARS: the AN/APY-7 has no air-search mode",
+    };
+    var drops = [], steps = 0;
+    facs.forEach(function(f){
+      ["awacs","cawacs"].forEach(function(r){
+        var prevQ = null, prevE = null;
+        eraOrd.concat(["e20"]).forEach(function(e){
+          var id = unitFor(f, r, e);
+          if (!id || !UNITS[id] || UNITS[id].radarQ === undefined) return;
+          var qv = UNITS[id].radarQ;
+          if (prevQ !== null) {
+            steps++;
+            if (qv < prevQ && !ALLOWED_DROP[f+"/"+r+" "+prevE+"->"+e])
+              drops.push(f+"/"+r+" "+prevE+"->"+e+" "+prevQ+" -> "+qv+" ("+id+")");
+          }
+          prevQ = qv; prevE = e;
+        });
+      });
+    });
+    chk("a faction's early warning never sees less in a later decade",
+        drops.length === 0, drops.slice(0,4).join("; ") || steps+" decade-to-decade steps");
+    chk("and enough decades were walked to mean something", steps >= 14, steps+" steps");
+
+    /* ---- and the same walk over the fleet, which is most of this table ----
+       Four steps go down and all four are a different SHIP standing in the
+       same slot, not a radar getting worse. Each is already argued in the
+       table's own comment for that row: the Spruance and the Tourville are
+       anti-submarine hulls with no area missile replacing 1960s missile
+       ships, the Bremen is an escort frigate with Sea Sparrow replacing a
+       Charles F. Adams, and the Nimitz went back to conventional antennas
+       rather than keep paying SCANFAR's maintenance bill. Anything else
+       dropping - a Ticonderoga's SPY-1A quietly cut below the Long Beach
+       beside it, say - fails here. */
+    var HULL_DROP = {
+      "nato/destroyer e60->e80": "Spruance: an ASW hull with SPS-40B and no area missile",
+      "fra/destroyer e60->e80":  "Tourville F67: an ASW hull with only Crotale",
+      "deu/destroyer e60->e80":  "Bremen F122: an escort frigate, not an air-defence ship",
+      "nato/carrier e60->e80":   "Nimitz: conventional antennas after SCANFAR's maintenance bill",
+    };
+    var hdrop = [], hsteps = 0;
+    facs.forEach(function(f){
+      ["destroyer","cruiser","carrier","corvette","missileboat"].forEach(function(r){
+        var pq = null, pe = null;
+        eraOrd.concat(["e20"]).forEach(function(e){
+          var id = unitFor(f, r, e);
+          if (!id || !UNITS[id] || UNITS[id].radarQ === undefined) return;
+          var qv = UNITS[id].radarQ;
+          if (pq !== null) {
+            hsteps++;
+            if (qv < pq && !HULL_DROP[f+"/"+r+" "+pe+"->"+e])
+              hdrop.push(f+"/"+r+" "+pe+"->"+e+" "+pq+" -> "+qv+" ("+id+")");
+          }
+          pq = qv; pe = e;
+        });
+      });
+    });
+    chk("and a fleet's air search never goes backwards without a named reason",
+        hdrop.length === 0, hdrop.slice(0,4).join("; ") || hsteps+" hull-to-hull steps");
+    chk("and enough hulls were walked to mean something", hsteps >= 60, hsteps+" steps");
+
+    /* ---- 6. radarQ is ALSO the ESM receiver, and that is not obvious ----
+       sonarnet.js:291 reads def.radarQ directly - esm = radarQ ? min(9, 0.45
+       * radarQ) : 0 - with no radar * 1.6 fallback, so it is how far a hull
+       or an aeroplane reads the radio downlink of an enemy sonar barrier
+       node. Filling radarQ is therefore also what lets a historical fleet
+       find a barrier at all, and nothing in the field's name says so. Pinned
+       here so the next person moving a naval figure sees the second thing it
+       moves. */
+    /* ---- 7. no hull is handed a track shorter than its own gun ----
+       entities.js needsTrack is true for anything carrying `radar`, and its
+       eleven-tile visual escape covers only roles aa and sam - so a SHIP
+       given a radarQ under its own anti-aircraft weapon's range may not fire
+       at an aeroplane the crew can plainly see. The two Taiwanese wartime
+       escorts were exactly that: radarQ 2 against a 4.6-tile twin 3-inch
+       mount, where the radar * 1.6 fallback had covered it at 8.6. Scoped to
+       the rows this table names, because three pre-existing SAM rows
+       (gbr_e50, gbr_e60, pla_e60) carry the same shape and are not this
+       pass's to move. */
+    var mute = [], hulls = 0;
+    if (typeof ERA_RADAR_SETS !== "undefined") for (var sid in ERA_RADAR_SETS) {
+      var sd = UNITS[sid];
+      if (!sd || sd.layer === "air" || sd.radarQ === undefined) continue;
+      var far = 0;
+      (sd.weapons || []).forEach(function (w) {
+        var W = WEAPONS[w];
+        if (W && W.tgt && W.tgt.air && (W.range || 0) > far) far = W.range;
+      });
+      if (!far) continue;
+      hulls++;
+      if (far - sd.radarQ > 1.0)
+        mute.push(sid + " radarQ " + sd.radarQ + " vs a " + far.toFixed(1) + "-tile air weapon");
+    }
+    chk("no hull is given a track shorter than its own anti-aircraft gun",
+        mute.length === 0, mute.slice(0, 4).join("; ") || hulls + " armed rows");
+
+    var esmOf = function(id){ var d = UNITS[id];
+      return (d && d.radarQ) ? Math.min(9, 0.45 * d.radarQ) : 0; };
+    chk("a 1950s destroyer reads a sonar barrier node at four and a half tiles",
+        Math.abs(esmOf("nato_e50_destroyer") - 4.5) < 0.0001,
+        "Forrest Sherman ESM "+esmOf("nato_e50_destroyer").toFixed(2)+" tiles");
+    chk("and an Arleigh Burke's SPY-1D is at the nine-tile ceiling",
+        esmOf("nato_e90_destroyer") >= 9,
+        "SPY-1D ESM "+esmOf("nato_e90_destroyer").toFixed(2)+" tiles");
+  })();
+  }
+
+  /* ====== [56] ONE MACHINE, ONE SET OF NUMBERS ======
+     eras.js says at the top that it is generated, and the arithmetic is still
+     visible in it: every era row's hit points are the PRESENT-DAY unit for the
+     same faction and role multiplied by a factor that depends only on the
+     band - 0.52, 0.64, 0.79, 0.89, 0.96 for e50 through e00, the same five
+     numbers for every faction and very nearly every role. Measured on HEAD,
+     539 of the 966 comparable era rows - 55.8 per cent - sat within two per
+     cent of that formula, and 101 of the 197 (faction, role) chains with
+     three or more era rows climbed in lockstep through hit points, speed,
+     sight AND cost together.
+
+     That is fine for a T-54 becoming a T-62 and wrong for everything else,
+     because the slot does not hold one machine getting better. The NATO early
+     warning slot holds a 65-tonne piston Constellation, then a 24-tonne
+     carrier turboprop, then three Boeing 707s; the USAF fighter slot put a
+     30-tonne twin-engined F-15C BELOW a 12-tonne F-16C; the same 1962 BRDM-2
+     stood in four bands with four different hulls. heavyair.js has always
+     done it the other way - the B-52G carries FEWER cruise missiles than the
+     H, and says so in a comment - and this section is that rule written down.
+
+     Two guards, doing different jobs. The ramp detector proves the fingerprint
+     is still findable on rows nobody has touched before it is asked to stay
+     silent on the corrected ones, but it can only see HIT POINTS. Most of this
+     work is speed, reach, fuel and build time, so the table below names every
+     field it set, on every row it touched: put any one of them back and this
+     section says which row and which field. */
+  if (inHalf(2)) {
+  log("\n[56] ONE MACHINE, ONE SET OF NUMBERS");
+  (function(){
+    var M = { e50: 0.52, e60: 0.64, e80: 0.79, e90: 0.89, e00: 0.96 };
+    /* how far a row's hit points sit from "the e20 unit times this band's
+       factor", as a fraction. null when there is nothing to compare against. */
+    function off(id){
+      var u = UNITS[id];
+      if (!u || !M[u.from]) return null;
+      var base = UNITS[unitFor(u.fac, u.role, "e20")];
+      if (!base || !base.hp || !u.hp) return null;
+      var want = base.hp * M[u.from];
+      return Math.abs(u.hp - want) / want;
+    }
+    function nm(id){ return (UNITS[id] && UNITS[id].name) || id; }
+
+    /* ---- 1. the detector works ----
+       Three rows deliberately NOT touched by this work, one air, one armour,
+       one from a third faction. If the generator's fingerprint has stopped
+       being detectable the next check proves nothing. */
+    var ctl = ["nato_e50_transport", "pact_e50_mbt", "pla_e60_fighter"], onIt = [];
+    ctl.forEach(function(id){ var d = off(id); if (d !== null && d < 0.02) onIt.push(id + " " + UNITS[id].hp); });
+    chk("the per-era multiplier really is how eras.js was generated",
+        onIt.length >= 2, onIt.join("; ") || "detector found nothing to fire on");
+
+    /* ---- 2. and the hulls this work resized have left it ----
+       Only the rows whose HIT POINTS moved far; a row corrected in speed or
+       reach alone is the table in check 3's business, not this one. Measured
+       on HEAD all sixteen sat within 0.8 per cent of the formula - five of
+       them within 0.5 - and they now stand 13.7 to 46.0 per cent off it, so
+       the ten-per-cent line has real margin on both sides. */
+    var fixed = ["nato_e50_awacs", "nato_e80_awacs", "nato_e60_fighter", "nato_e80_fighter",
+                 "nato_e00_fighter", "pact_e80_fighter", "pact_e00_fighter", "pla_e90_fighter",
+                 "kpa_e80_fighter", "kpa_e00_fighter", "pact_e60_transport", "pact_e50_ifv",
+                 "pact_e80_ifv", "pla_e80_ifv", "pact_e60_recon", "pact_e80_recon"];
+    var stuck = [];
+    fixed.forEach(function(id){
+      var d = off(id);
+      if (d === null || d < 0.10) stuck.push(id + " " + nm(id) + " hp=" + (UNITS[id] ? UNITS[id].hp : "?"));
+    });
+    chk("and no resized hull is still sitting on that ramp",
+        stuck.length === 0, stuck.slice(0, 4).join("; ") || fixed.length + " rows checked");
+
+    /* ---- 3. every field this work set, by name ----
+       The ramp detector reads hit points and nothing else, so on its own it
+       would let a reverted speed, radius, turn rate, fuel figure or build time
+       through. This is the table that would not. */
+    var GOLD = {
+      "nato_e50_awacs":      {hp:470, speed:2.9, cost:1700, radius:58, r:24, jet:false},
+      "nato_e60_awacs":      {hp:375, speed:3.9, cost:1850, radius:42, r:22},
+      "nato_e80_awacs":      {hp:575, speed:4.15, cost:2900},
+      "nato_e90_awacs":      {hp:580, speed:4.15, cost:3000},
+      "nato_e50_fighter":    {radius:32},
+      "nato_e60_fighter":    {hp:340, speed:8.2, cost:900, radius:40, turn:1.7},
+      "nato_e80_fighter":    {hp:480, speed:8.9, cost:1350, oil:29, time:24, radius:46},
+      "nato_e90_fighter":    {hp:400, speed:8.5, radius:38},
+      "nato_e00_fighter":    {hp:500, speed:9.55, cost:2100, oil:46, time:31, radius:46, turn:2.4},
+      "roc_e50_fighter":     {speed:7.31, radius:32},
+      "pact_e80_fighter":    {hp:400, speed:8.7, radius:26},
+      "pact_e90_fighter":    {hp:415, speed:8.7, radius:27},
+      "pact_e00_fighter":    {hp:560, speed:9.0, cost:1900, oil:41, time:28, radius:46},
+      "pla_e90_fighter":     {hp:520, speed:8.9, cost:1750, oil:37, time:27, radius:44},
+      "kpa_e50_fighter":     {speed:5.2, radius:18, turn:2.2, jet:false},
+      "kpa_e60_fighter":     {hp:215, speed:7.9},
+      "kpa_e80_fighter":     {hp:300, speed:8.4, radius:25, turn:1.7},
+      "kpa_e90_fighter":     {hp:295, speed:8.0},
+      "kpa_e00_fighter":     {hp:380, speed:8.6, cost:1050, oil:27, time:17, radius:26},
+      "pact_e60_transport":  {hp:470, speed:3.7, cost:560},
+      "pact_e80_transport":  {hp:500, speed:3.85},
+      "pact_e90_transport":  {hp:500, speed:3.85, cost:620, oil:9},
+      "pact_e50_ifv":        {hp:385},
+      "pact_e80_ifv":        {hp:600},
+      "pla_e80_ifv":         {hp:575, speed:1.62},
+      "pact_e90_ifv":        {hp:800, speed:1.78, cost:810, oil:10, time:13},
+      "pact_e00_ifv":        {hp:800},
+      "pact_e60_recon":      {hp:355, speed:2.65, cost:300, oil:4, time:6},
+      "pact_e80_recon":      {hp:355, speed:2.65, cost:300},
+      "pact_e90_recon":      {hp:355, cost:300},
+      "pact_e00_recon":      {hp:355, speed:2.65, cost:300, oil:4}
+    };
+    var wrong = [], counted = 0;
+    for (var gid in GOLD) {
+      var gu = UNITS[gid];
+      if (!gu) { wrong.push(gid + " MISSING"); continue; }
+      for (var f in GOLD[gid]) {
+        counted++;
+        if (gu[f] !== GOLD[gid][f]) wrong.push(gid + "." + f + "=" + gu[f] + " want " + GOLD[gid][f]);
+      }
+    }
+    chk("every airframe figure this work set is still the figure it set",
+        wrong.length === 0, wrong.slice(0, 5).join("; ") ||
+        counted + " fields across " + Object.keys(GOLD).length + " rows");
+
+    /* ---- 4. an E-2 is an E-2 wherever it is parked ----
+       nato_e60_awacs is the E-2A of 1964 and nato_e60_cawacs the E-2B of 1969:
+       the same airframe, the second one sent back to Grumman for a computer.
+       The land-based row used to carry a 707's hull and a 707's combat radius
+       because the slot's e20 anchor is an E-3G. */
+    var e2a = UNITS.nato_e60_awacs, e2b = UNITS.nato_e60_cawacs, e3b = UNITS.nato_e80_awacs;
+    chk("the land-based E-2A and the carrier E-2B are one aeroplane",
+        !!e2a && !!e2b && Math.abs(e2a.hp - e2b.hp) <= 0.04 * e2b.hp &&
+        e2a.speed === e2b.speed && e2a.r === e2b.r && e2a.radius === e2b.radius,
+        e2a ? ("E-2A " + e2a.hp + "/" + e2a.speed + "/r" + e2a.r + "/" + e2a.radius +
+               "  E-2B " + e2b.hp + "/" + e2b.speed + "/r" + e2b.r + "/" + e2b.radius) : "no row");
+    chk("and a turboprop does not reach as far as a 707",
+        !!e3b && e2a.radius * 1.5 < e3b.radius,
+        "E-2A " + e2a.radius + " tiles, E-3B " + e3b.radius + " tiles");
+
+    /* ---- 5. a later row is not automatically a better aeroplane ----
+       The three pairs this work turned round, each for a reason that is about
+       the machine and not the decade. */
+    var pairs = [
+      ["nato_e50_awacs", "nato_e60_awacs", "a Super Constellation is bigger than a Hawkeye"],
+      ["nato_e80_fighter", "nato_e90_fighter", "an F-15C is bigger than an F-16C"],
+      ["kpa_e00_fighter", "fighter_k", "a MiG-29 is bigger than the MiG-21bis that outlives it"]
+    ];
+    pairs.forEach(function(p){
+      var a = UNITS[p[0]], b = UNITS[p[1]];
+      chk(p[2], !!a && !!b && a.hp > b.hp,
+          (a ? nm(p[0]) + " " + a.hp : "?") + " vs " + (b ? nm(p[1]) + " " + b.hp : "?"));
+    });
+
+    /* ---- 6. the chain as a player walks it ----
+       Through unitFor(), which is what actually hands a commander an aircraft. */
+    var bands = ["e50", "e60", "e80", "e90", "e00"], chain = [], drops = 0;
+    bands.forEach(function(e){ chain.push(UNITS[unitFor("nato", "awacs", e)] || null); });
+    for (var i = 1; i < chain.length; i++)
+      if (chain[i] && chain[i - 1] && chain[i].hp < chain[i - 1].hp) drops++;
+    chk("the NATO early-warning chain is not a single climb", drops >= 1,
+        chain.map(function(u){ return u ? u.name + " " + u.hp : "-"; }).join(" -> "));
+
+    /* ---- 7. one hull, one set of numbers - INCLUDING the bookkeeping ----
+       Four BRDM-2 rows whose own descs read "the same vehicle as the game's
+       present-day recon_p, sixty years later", "Unchanged and still in
+       universal service", "Thirty years old and still the standard scout
+       car" - and which used to run 245, 300, 340, 365 hit points. `oil` and
+       `time` are in here because forceBook() in ai.js sums def.oil to decide
+       how much of a force is ground: equalising the hull and leaving the
+       barrels on the ramp would have been half a fix. */
+    function alike(list, fields){
+      var f0 = list[0];
+      return list.every(function(u){
+        return u && f0 && fields.every(function(f){ return u[f] === f0[f]; });
+      });
+    }
+    function showN(list, fields){
+      return list.map(function(u){
+        return u ? fields.map(function(f){ return u[f]; }).join("/") : "-";
+      }).join("  ");
+    }
+    var HULL = ["hp", "speed", "cost", "oil", "time"];
+    var sc = ["e60", "e80", "e90", "e00"].map(function(e){ return UNITS[unitFor("pact", "recon", e)]; });
+    chk("one 1962 scout car has one set of numbers in all four bands",
+        alike(sc, HULL), showN(sc, HULL));
+    var h80 = UNITS[unitFor("pact", "transport", "e80")], h90 = UNITS[unitFor("pact", "transport", "e90")];
+    chk("and the Hip whose desc is the word \"Unchanged\" is unchanged",
+        alike([h80, h90], ["hp", "speed", "cost", "oil"]),
+        showN([h80, h90], ["hp", "speed", "cost", "oil"]));
+    var b3 = [UNITS.pact_e90_ifv, UNITS.pact_e00_ifv];
+    chk("and one 1987 BMP-3 written in two bands reads the same in both",
+        alike(b3, HULL) && b3[0].service === b3[1].service, showN(b3, HULL));
+
+    /* ---- 8. a licence copy is the vehicle it copies ----
+       pla_e80_ifv is the WZ-501/Type 86 and its own desc calls it "a
+       reverse-engineered BMP-1". Correcting the BMP-2 down to its hull and
+       leaving the copy on the ramp would have stood a Chinese BMP-1 above the
+       Soviet BMP-2 that outclasses it. */
+    var bmp1 = UNITS.pact_e60_ifv, wz = UNITS.pla_e80_ifv, bmp2 = UNITS.pact_e80_ifv;
+    chk("a reverse-engineered BMP-1 weighs what a BMP-1 weighs",
+        !!bmp1 && !!wz && !!bmp2 && Math.abs(wz.hp - bmp1.hp) <= 0.04 * bmp1.hp && wz.hp < bmp2.hp,
+        "BMP-1 " + (bmp1 && bmp1.hp) + "  WZ-501 " + (wz && wz.hp) + "  BMP-2 " + (bmp2 && bmp2.hp));
+
+    /* ---- 9. one Sabre, three air forces ----
+       The USAF F-86F, the Luftwaffe's Canadair Sabre Mk 6 and the ROC's
+       F-86F-30 are one aeroplane and were carrying three speeds and three
+       combat radii. The SPEED they now share is the generated one, 7.31,
+       because it is right: the MiG-17F in the same band is 7.57 and the real
+       pair is 1,106 km/h against 1,145. */
+    var sab = [UNITS.nato_e50_fighter, UNITS.deu_e50_fighter, UNITS.roc_e50_fighter];
+    chk("one Sabre in three air forces has one speed and one reach",
+        alike(sab, ["speed", "radius"]), showN(sab, ["speed", "radius"]));
+
+    /* ---- 10. a price in this game is three numbers ----
+       forceBook() in ai.js books def.oil, not def.cost, and player.js refuses
+       a build for want of barrels. Five rows here got dearer; if their fuel
+       and build time had stayed where they were, the Raptor would have become
+       the cheapest fuel in the roster and invisible to oilBudget(). Each is
+       measured against its own faction's present-day fighter, because the
+       credits-per-barrel ratio is a faction constant in this file. */
+    var dearer = ["nato_e80_fighter", "nato_e00_fighter", "pact_e00_fighter",
+                  "pla_e90_fighter", "kpa_e00_fighter"], bad = [];
+    dearer.forEach(function(id){
+      var u = UNITS[id], ref = UNITS[unitFor(u.fac, "fighter", "e20")];
+      if (!u || !ref) { bad.push(id + " no reference"); return; }
+      var mine = u.cost / u.oil, theirs = ref.cost / ref.oil;
+      if (Math.abs(mine - theirs) > 0.05 * theirs)
+        bad.push(id + " " + mine.toFixed(1) + " credits/barrel vs " + theirs.toFixed(1));
+      if (u.cost / u.time > ref.cost / ref.time)
+        bad.push(id + " builds at " + (u.cost / u.time).toFixed(1) + " credits/sec, over " + (ref.cost / ref.time).toFixed(1));
+    });
+    chk("the rows whose price rose carry the fuel and the build time to match",
+        bad.length === 0, bad.slice(0, 4).join("; ") || dearer.length + " rows, cost/oil and cost/time both in band");
+
+    /* ---- 11. reach is ordered the way the comments say it is ----
+       A Su-35S carries 11,500 kg of internal fuel against the Su-27SK's
+       9,400, so it reaches further; and neither era Flanker may out-reach
+       stealth_p, the Su-57 it grows into, because rules.js is the scale. */
+    var su35 = UNITS.pact_e00_fighter, su27 = UNITS.pla_e90_fighter, su57 = UNITS.stealth_p;
+    chk("the Su-35 reaches further than the Su-27 and neither passes the Su-57",
+        !!su35 && !!su27 && !!su57 && su35.radius > su27.radius && su35.radius <= su57.radius,
+        "Su-27SK " + (su27 && su27.radius) + "  Su-35S " + (su35 && su35.radius) +
+        "  Su-57 " + (su57 && su57.radius));
+
+    /* ---- 12. the same aeroplane in two files ----
+       [53] found the e00 F-22's radar cross section sitting at 0.6 beside its
+       own 0.005 in rules.js. The airframe fields had the same fault: 405 hp
+       and speed 8.41 against 520 and 9.6. Hull, speed, turn rate and reach
+       only - the era row still has no `stealth` field, because no row in
+       eras.js has one. */
+    var r22 = UNITS.nato_e00_fighter, s22 = UNITS.stealth_n;
+    chk("the e00 Raptor's hull, speed, turn and reach are the roster Raptor's",
+        !!r22 && !!s22 && r22.hp >= 0.9 * s22.hp && r22.speed >= 0.95 * s22.speed &&
+        r22.turn === s22.turn && r22.radius >= 0.9 * s22.radius,
+        r22 ? ("era " + r22.hp + "/" + r22.speed + "/" + r22.turn + "/" + r22.radius +
+               "   rules.js " + s22.hp + "/" + s22.speed + "/" + s22.turn + "/" + s22.radius) : "no row");
+    /* and it is faster than the two aeroplanes it shares the late bands with,
+       which at 9.3 it was not: the F-117A rows are written at 9.12 and 9.41
+       for a Mach 0.92 aeroplane. That chain is not this work's, but a
+       supercruising Raptor may not trail a subsonic Nighthawk. */
+    var f117 = UNITS.nato_e90_stealthfighter, f35 = UNITS.nato_e00_stealthfighter;
+    chk("and it is the fastest aeroplane in the late NATO air roster",
+        !!r22 && !!f117 && !!f35 && r22.speed > f117.speed && r22.speed > f35.speed,
+        "F-22 " + (r22 && r22.speed) + "  F-117A " + (f117 && f117.speed) + "  F-35A " + (f35 && f35.speed));
+
+    /* ---- 13. a propeller is not a turbine ----
+       The Yak-9P carried "jet": true, which is worth more than a sound cue:
+       generations.js hands every jet aircraft air-to-air refuelling. */
+    var yak = UNITS[unitFor("kpa", "fighter", "e50")], frog = UNITS.bomber_k;
+    chk("a 1949 piston fighter is not a jet, and cannot take fuel in the air",
+        !!yak && !yak.jet && !yak.refuelable && yak.speed < (frog ? frog.speed : 5.6),
+        yak ? (nm(unitFor("kpa", "fighter", "e50")) + " speed=" + yak.speed + " jet=" + !!yak.jet +
+               " refuelable=" + !!yak.refuelable) : "no row");
+
+    /* ---- 14. nothing is fielded before it was built ----
+       The whole historical roster, not a sample: a service year may be EARLIER
+       than its band - a BRDM-2 of 1962 still standing in 2019 is the point of
+       this section - but it can never be later. */
+    var END = { e50: 1959, e60: 1979, e80: 1989, e90: 1999, e00: 2019 }, late = [], walked = 0;
+    for (var id in UNITS) {
+      var u = UNITS[id];
+      if (!u || !u.from || !END[u.from] || !u.service) continue;
+      var m = String(u.service).match(/[0-9]{4}/);
+      if (!m) continue;
+      walked++;
+      if (+m[0] > END[u.from]) late.push(id + " " + u.service + " in " + u.from);
+    }
+    chk("no historical row is fielded before the equipment existed",
+        late.length === 0, late.slice(0, 4).join("; ") || walked + " dated rows");
+    chk("and that walked the whole historical roster", walked >= 800, walked + " dated rows");
+    /* the three dates this work moved, because a row that says 1949 under a
+       name that means 1953 is as wrong as a hit-point figure. */
+    var dated = [["nato_e50_fighter", "1953"], ["pact_e80_transport", "1977"], ["pact_e90_transport", "1977"]], off2 = [];
+    dated.forEach(function(p){ if (!UNITS[p[0]] || String(UNITS[p[0]].service) !== p[1]) off2.push(p[0] + "=" + (UNITS[p[0]] && UNITS[p[0]].service)); });
+    chk("the F-86F is dated to the F-model and the Mi-8MT to its own engines",
+        off2.length === 0, off2.join("; ") || "F-86F 1953, Mi-8MT 1977 x2");
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);
