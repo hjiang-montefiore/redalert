@@ -63,7 +63,7 @@ var Path = (function () {
       tMap = map;
       tGround.pass = tGround.terr = tGround.spd = tGround.comp = null;
       tSea.pass = tSea.terr = tSea.spd = tSea.comp = null;
-      liveStamp = -1; liveGround = null; liveSea = null;
+      dropLive();
       bufN = -1;                              // the grid may be a different size
     }
     const t = key === "sea" ? tSea : tGround;
@@ -131,7 +131,7 @@ var Path = (function () {
   }
   let floodStack = null;
 
-  /* ---- the two label sets ----
+  /* ---- the label sets: terrain, live, and one per mobility class ----
      TERRAIN labels answer for a caller that passes no blockFn: several of the
      commander's queries route THROUGH structures on purpose (a supply line, a
      coastline probe), and for them only water and rock are walls.
@@ -147,33 +147,98 @@ var Path = (function () {
      rebuild happens when a label is next asked for, and only for the layer
      asked, so a flurry of walls going up costs one rebuild, not one each.
      THE ONE RULE THAT KEEPS A UNIT FROM BEING STRANDED: a tile may only be
-     labelled blocked if it is blocked for EVERY caller. Field obstacles are
-     therefore left out - wire stops nobody and dragon's teeth stop only
-     vehicles - and so is an obstacle tile whose obstacle is already dead.
+     labelled blocked if it is blocked for EVERY caller that reads THAT label.
      Under-blocking costs a search that finds the route anyway; over-blocking
-     would refuse a route that exists. */
-  let probeFn = null, stampFn = null;
-  let liveStamp = -1, liveGround = null, liveSea = null;
+     would refuse a route that exists - and stepAlong reads a refusal as
+     "arrived", so over-blocking does not slow a unit down, it strands it.
 
-  function setBlockProbe(probe, stamp) {
-    probeFn = probe || null; stampFn = stamp || null;
-    liveStamp = -1; liveGround = null; liveSea = null;
+     FIELD OBSTACLES, AND THE LABEL SETS THEY NEEDED.
+     sandbag, dragonteeth and tankditch declare blocks:"vehicle", razorwire
+     blocks:"none", so under ONE label set none of them could ever be a wall: a
+     pocket sealed by dragon's teeth is sealed to a tank and open to a rifle
+     squad, and a single set has to answer for both. Splitting by LAYER does
+     not help - the tank and the squad are the same layer. Splitting by
+     MOBILITY does, because G.tileBlocked asks exactly one question of the unit
+     handed to it, `forUnit.cat !== "infantry"`, so there are exactly three
+     classes to answer for: 0 structures only (what a caller that names no unit
+     may assume, and what this module assumed before), 1 infantry, 2 everything
+     else on the ground. Each gets its own array, built lazily, off the same
+     stamp - and a class that walls nothing class 0 walls SHARES class 0's
+     array instead of flooding again.
+     That share is the usual case, and it is what makes this free. Nothing in
+     RULES sets blocks:"all", so class 1 IS class 0 always; class 2 differs only
+     once somebody has actually laid teeth, sandbags or a ditch, and in practice
+     only the player does - all four are engineerOnly and ai.js names none of
+     them. Measured over 600 game-seconds of fulda and 600 of taiwan with
+     brains on both seats: split() was asked 311 and 282 times, answered no
+     every time, and not one class-1 or class-2 flood ran - 0 extra arrays, 0
+     extra bytes. Where teeth ARE down the second class costs exactly one more
+     flood per occupancy stamp - a third of a millisecond on a taiwan 144
+     grid, though that one is best-of-batch on a machine shared with other
+     work and moved by several times between runs, so read it as an order of
+     magnitude and trust the counts - against a stamp churn of about a
+     quarter per game-second, and buys the refusal below.
+     A DEAD obstacle reads as open in every class: removeBuilding clears it out
+     of G.obs a moment later anyway, and guessing open only costs a search. */
+  let probeFn = null, stampFn = null, splitFn = null;
+  /* one array per ground mobility class, plus one for the sea layer, all
+     thrown away together when the occupancy stamp moves */
+  const MOB_N = 3;
+  const liveGround = [null, null, null];
+  const probeAs = [null, null, null];
+  /* per stamp: 0 not asked yet, 1 shares class 0, 2 has walls of its own */
+  const mobDiff = new Uint8Array(MOB_N);
+  let liveStamp = -1, liveSea = null;
+
+  function dropLive() {
+    liveStamp = -1; liveSea = null;
+    for (let m = 0; m < MOB_N; m++) { liveGround[m] = null; mobDiff[m] = 0; }
   }
 
-  function labels(map, key, live) {
+  /* probe(tileIndex, mobClass) -> is that tile shut to that class;
+     stamp() -> the occupancy generation;
+     split(mobClass) -> has that class any wall class 0 has not. `split` is
+     asked ONCE per class per stamp and never per tile, so the caller may
+     answer it by walking its obstacle index. */
+  function setBlockProbe(probe, stamp, split) {
+    probeFn = probe || null; stampFn = stamp || null; splitFn = split || null;
+    probeAs[0] = probeAs[1] = probeAs[2] = null;
+    dropLive();
+  }
+
+  /* the probe bound to one class. Class 0 is handed the caller's own function
+     with nothing wrapped round it: flood() asks about every tile it looks at,
+     some 80,000 questions on a 144 grid, and an added call frame on each is
+     measurable against the 283 us a rebuild takes. The wrappers for the other
+     classes are built once and kept, so no rebuild allocates one. */
+  function probeFor(m) {
+    if (!m) return probeFn;
+    if (!probeAs[m]) probeAs[m] = function (i) { return probeFn(i, m); };
+    return probeAs[m];
+  }
+
+  function labels(map, key, live, mob) {
     const t = tablesFor(map, key);
     if (!live || !probeFn) {
       if (!t.comp) t.comp = flood(map.W, map.H, t.pass, null);
       return t.comp;
     }
     const s = stampFn ? (stampFn() | 0) : 0;
-    if (s !== liveStamp) { liveStamp = s; liveGround = null; liveSea = null; }
+    if (s !== liveStamp) { dropLive(); liveStamp = s; }
+    /* afloat there is nothing to split on - an obstacle is emplaced on dry
+       ground by an engineer on foot - so one set still serves the layer */
     if (key === "sea") {
-      if (!liveSea) liveSea = flood(map.W, map.H, t.pass, probeFn);
+      if (!liveSea) liveSea = flood(map.W, map.H, t.pass, probeFor(0));
       return liveSea;
     }
-    if (!liveGround) liveGround = flood(map.W, map.H, t.pass, probeFn);
-    return liveGround;
+    let m = mob | 0;
+    if (m < 0 || m >= MOB_N) m = 0;
+    if (m) {
+      if (!mobDiff[m]) mobDiff[m] = (splitFn && splitFn(m)) ? 2 : 1;
+      if (mobDiff[m] === 1) m = 0;               // no walls of its own: share
+    }
+    if (!liveGround[m]) liveGround[m] = flood(map.W, map.H, t.pass, probeFor(m));
+    return liveGround[m];
   }
 
   /* The tile carrying label `want` that is closest to (tx,ty) in real
@@ -277,7 +342,11 @@ var Path = (function () {
 
   /* find(map, sx, sy, gx, gy, layer, blockFn) -> array of {x,y} tile centres or null
      blockFn(tx,ty) may veto tiles occupied by structures.                       */
-  function find(map, sx, sy, gx, gy, layer, blockFn) {
+  /* `mob` names the blocking class blockFn belongs to - 1 infantry, 2 any
+     other ground mover, 0 or absent "assume nothing but structures". It only
+     ever chooses a label set; the search itself still asks blockFn about every
+     tile it touches, so a missing or wrong mob costs a search, never a route. */
+  function find(map, sx, sy, gx, gy, layer, blockFn, mob) {
     const W = map.W, H = map.H;
     if (layer === "air") return [{ x: gx, y: gy }];
 
@@ -298,8 +367,9 @@ var Path = (function () {
        old expansion's answer and is nearer on 5,516 of them (fulda 144: mean
        0.337 tiles against 0.412; taiwan: 3.172 against 3.302) - the same
        intent, a little better served, and no search runs at all. */
-    const lab = labels(map, key, !!blockFn);
+    const lab = labels(map, key, !!blockFn, mob);
     const ls = lab[sy * W + sx];
+    let snapped = false;
     if (ls && lab[gy * W + gx] !== ls) {
       const snap = nearestLabelled(lab, W, H, gx, gy, ls);
       if (!snap) return null;
@@ -323,7 +393,7 @@ var Path = (function () {
       if (!ok(map, gx, gy, layer, blockFn) &&
           Math.max(Math.abs(snap.x - gx), Math.abs(snap.y - gy)) > 14 &&
           !nearest(map, gx, gy, layer, blockFn, 14)) return null;
-      gx = snap.x; gy = snap.y;
+      gx = snap.x; gy = snap.y; snapped = true;
     }
 
     /* goal on impassable ground: spiral out for the nearest legal tile */
@@ -332,6 +402,33 @@ var Path = (function () {
       if (!g) return null;
       gx = g.x; gy = g.y;
     }
+    /* ---- ALREADY AS CLOSE AS THIS UNIT WILL EVER GET ----
+       The goal was on another piece of ground and the tile of OUR piece
+       nearest it is the tile we are standing on: there is no move left to make
+       and no route to describe. The one-waypoint path that used to come back
+       here was worse than no answer at all. stepAlong steers at the RAW aim
+       point once it is on the last waypoint, so the unit drove at a goal
+       across the water, ran into the shore, tripped its own stuck timer at
+       0.8 s, threw the path away and searched again - for ever, with the order
+       never retiring. Nor is it an edge case: it is where every unreachable
+       order ENDS UP, one tile after the walk to the shore has succeeded.
+       Refusing gives back the one answer the rest of the engine already
+       understands. stepAlong stamps pathFail and reports the order finished,
+       so the unit stops on the shore, a player's move order retires with a
+       line on the rail (entities.js), and the commander re-tasks on its next
+       sweep instead of grinding for the ten seconds stalledOnMove needs.
+       Measured, a recon vehicle ordered 172 tiles across water on taiwan:
+       124 searches in 120 game-seconds and the order never retiring, against
+       15 searches, the order retired at t=35.0 s and nothing at all spent
+       after it - and the unit finishes on the same tile either way.
+       Measured by replaying every query of real matches through both modules
+       on identical state, 24,776 calls over four runs: this fires on 193 of
+       13,839 on fulda and 714 of 10,937 on taiwan, and on every other call
+       the two agree tile for tile - 0 routes changed, and 0 orders the old
+       module obeyed that this one refuses. That last figure is the one that
+       matters, because stepAlong reads a refusal as "arrived". Cost is a
+       wash: the median paired difference per call is 0.00-0.24 us. */
+    if (snapped && sx === gx && sy === gy) return null;
     if (sx === gx && sy === gy) return [{ x: gx, y: gy }];
 
     const gn = newGen(W * H);
@@ -437,7 +534,7 @@ var Path = (function () {
     tMap = null;
     tGround.pass = tGround.terr = tGround.spd = tGround.comp = null;
     tSea.pass = tSea.terr = tSea.spd = tSea.comp = null;
-    liveStamp = -1; liveGround = null; liveSea = null;
+    dropLive();
     bufN = -1;                                // the grid may be a different size
   }
 
@@ -454,12 +551,12 @@ var Path = (function () {
   /* reachable(map, sx, sy, gx, gy, layer, live) -> true unless the labels can
      prove otherwise. Exported for callers that want the cheap question on its
      own; find() asks it itself. */
-  function reachable(map, sx, sy, gx, gy, layer, live) {
+  function reachable(map, sx, sy, gx, gy, layer, live, mob) {
     if (layer === "air") return true;
     const W = map.W, H = map.H;
     sx = U.clamp(sx, 0, W - 1); sy = U.clamp(sy, 0, H - 1);
     gx = U.clamp(gx, 0, W - 1); gy = U.clamp(gy, 0, H - 1);
-    const lab = labels(map, keyOf(layer), !!live);
+    const lab = labels(map, keyOf(layer), !!live, mob);
     const a = lab[sy * W + sx], b = lab[gy * W + gx];
     return !a || !b || a === b;
   }

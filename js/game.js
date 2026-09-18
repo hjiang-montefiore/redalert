@@ -129,16 +129,47 @@ var Game = (function () {
        that depend on occupancy (harvester docks) know to recompute */
     G.occStamp = 1;
     /* ...and the pathfinder's reachability labels are rebuilt off the same
-       stamp. The probe says whether a tile is shut to EVERY ground unit, which
-       is what a label may assume: a structure's footprint is, a field obstacle
-       is not (wire stops nobody, dragon's teeth stop only vehicles), and a
-       tile whose obstacle is already dead is read as open because guessing
-       open only costs a search that succeeds anyway. Guessing shut could
-       refuse a route that exists, and that would strand a unit. */
+       stamp. The probe says whether a tile is shut, and TO WHOM: a structure's
+       footprint is shut to everybody, a field obstacle only to the class its
+       own rule names (wire stops nobody, dragon's teeth stop only vehicles),
+       and a tile whose obstacle is already dead is read as open because
+       guessing open only costs a search that succeeds anyway. Guessing shut
+       could refuse a route that exists, and that would strand a unit.
+       The three answers are the three tileBlocked() gives - class 0 names no
+       unit, 1 is infantry, 2 is everything else on the ground - and each is
+       NEVER stricter than tileBlocked is for that class, which is the whole
+       safety condition. Class 0 keeps its own branch and the exact expression
+       it always had, because it is the one every rebuild in an ordinary match
+       runs and flood() asks it about 80,000 tiles: routed through the obstacle
+       lookup instead, a rebuild measured about a quarter dearer on taiwan 144
+       (283 -> 388 us, best-of-batch on a shared machine - indicative, not a
+       figure that reproduces to the microsecond).
+       `split` is asked once per class per occupancy stamp, so walking the
+       obstacle index - tens of entries, and empty in any match without a
+       combat engineer in it - beats keeping a counter that could drift out of
+       step with the map. */
     if (typeof Path !== "undefined" && Path.setBlockProbe)
       Path.setBlockProbe(
-        function (i) { return G.occ[i] !== 0 && !G.obs.has(i); },
-        function () { return G.occStamp | 0; });
+        function (i, mob) {
+          if (G.occ[i] === 0) return false;
+          if (!mob) return !G.obs.has(i);      // class 0: obstacles wall nobody
+          const o = G.obs.get(i);
+          if (o === undefined) return true;    // a structure: shut to everyone
+          if (o.dead) return false;
+          const blocks = o.def.blocks || "all";
+          if (blocks === "all") return true;
+          return blocks === "vehicle" && mob === 2;
+        },
+        function () { return G.occStamp | 0; },
+        function (mob) {
+          for (const o of G.obs.values()) {
+            if (o.dead) continue;
+            const blocks = o.def.blocks || "all";
+            if (blocks === "all") return true;
+            if (blocks === "vehicle" && mob === 2) return true;
+          }
+          return false;
+        });
     /* Per-battle caches keyed on G.time. A new battle resets G.time to 0, so
        any cache stamped during the previous battle looks infinitely fresh
        (time - stamp goes negative) and is never rebuilt - which left

@@ -967,11 +967,23 @@ class Unit {
       if (arrived) this.groupSpeed = 0;
       /* A loaded transport sent to a shore it cannot itself enter beaches as
          close as it can get and puts its cargo off there, which is plainly
-         what the order meant. It will never report "arrived" - the goal tile
-         is land its own layer cannot occupy, so stepAlong clamps the path to
-         the water's edge and the final distance test never passes. The test
-         that matters is whether the CARGO can reach the aim point now, not
-         whether the hull did. */
+         what the order meant. The test that matters is whether the CARGO can
+         reach the aim point now, not whether the hull did.
+         IT USED TO BE that the hull could never report "arrived" here: the
+         goal tile is land its own layer cannot occupy, so the path was clamped
+         to the water's edge and the final distance test never passed. That is
+         no longer true. Path.find now REFUSES a goal on another piece of water
+         once the hull is on the tile of its own water nearest to it, and
+         stepAlong reads a refusal as "arrived" - which is exactly the tile a
+         landing craft sits on while it unloads. So this branch runs BEFORE the
+         no-route line below and RETURNS when the cargo goes ashore: a craft
+         that has just landed its troops has done what it was told, and telling
+         it in the same breath that it needs a transport is nonsense. Measured
+         on hormuz with the line above this branch instead: a loaded craft at
+         8,5 ordered onto the beach at 10,3 said "NO ROUTE - THAT GROUND NEEDS
+         A TRANSPORT" and then "3 UNITS ASHORE", and 261 water tiles of that
+         one map are the nearest water to a land aim 2-4.5 tiles inland, so it
+         is the ordinary shape of a landing and not an edge case. */
       if (o.unloadAt && this.cargo && this.cargo.length &&
           U.dist(this.x, this.y, o.x, o.y) < CFG.TILE * 4.5) {
         const n = this.unload(o.x, o.y);
@@ -980,6 +992,45 @@ class Unit {
             this.game.alert(n + (n === 1 ? " UNIT ASHORE" : " UNITS ASHORE"), "good");
           if (!this.cargo.length && !this.nextOrder()) this.order = { type: "idle" };
           return;
+        }
+      }
+      /* ---- AN ORDER THAT ENDED BECAUSE THERE IS NO ROUTE ----
+         stepAlong reports a refusal as "arrived", which is right - there is
+         nothing further the unit can do - and is how the commander gets a unit
+         back to re-task instead of grinding at a shoreline for the ten seconds
+         stalledOnMove takes to notice. To the PLAYER that same silence reads
+         as a bug: the tank walks to the beach, stops, and says nothing, so the
+         order looks lost rather than impossible.
+         `pathFail` is the exact discriminator. It is stamped only where
+         Path.find produced no route at all and cleared by the next search that
+         succeeds, so a goal spiralled onto the edge of a refinery - a real
+         route, just not the tile that was clicked - stays quiet, and only a
+         genuine refusal speaks. One line for a whole group: alert() drops a
+         repeat of the same text inside four seconds, and the four-second gate
+         here keeps the roster scan below off the tick as well. */
+      if (arrived && this.pathFail && this.owner === this.game.human &&
+          U.dist(this.x, this.y, o.x, o.y) > CFG.TILE * 2) {
+        const g = this.game;
+        if (g.time >= (g._noRouteT || 0)) {
+          g._noRouteT = g.time + 4;
+          /* and say what would fix it, when something would. Only something
+             that walks or drives can be put aboard anything, so only a GROUND
+             unit is offered the ride - a hull is already the transport, and
+             advising a destroyer to find one is how this line first read. The
+             carriers that count are the ones a right-click already accepts as
+             a ride (ui.js): anything with a hold for a rifle squad, an
+             amphibian for a vehicle. Nothing is ordered aboard - loading a
+             unit into a transport the player did not ask for is exactly the
+             second-guessing stalledOnMove refuses to do to them. */
+          let lift = false;
+          if (this.layer === "ground") {
+            for (const u of g.human.units) {
+              if (u.dead || !u.def.cargo) continue;
+              if (this.cat === "infantry" ? !u.def.carrier : !!u.def.amphib) { lift = true; break; }
+            }
+          }
+          g.alert(lift ? "NO ROUTE \u2014 THAT GROUND NEEDS A TRANSPORT"
+                       : "NO ROUTE \u2014 STOPPED AS CLOSE AS IT CAN GET", "bad", true);
         }
       }
       if (arrived && !this.nextOrder()) this.order = { type: "idle" };
@@ -1996,7 +2047,19 @@ class Unit {
     if (!this.path || this.repathT <= 0) {
       const gm = this.game;
       this.path = Path.find(map, this.tx, this.ty, gtx, gty, this.layer,
-        (tx, ty) => gm.tileBlocked(tx, ty, this));
+        (tx, ty) => gm.tileBlocked(tx, ty, this),
+        /* the only question tileBlocked asks of a unit, handed to the labels
+           so they can hold field obstacles as well as structures: 1 infantry,
+           2 everything else on the ground. Ground sealed by dragon's teeth
+           then costs a tank two array reads instead of a landmass-wide
+           expansion: on the 9x7 pocket the behaviour suite builds in [63],
+           29,717 blockFn calls down to 18, while the rifle squad beside it
+           still walks in between them for the same 77 calls it always took.
+           GET THIS EXPRESSION WRONG AND A UNIT IS STRANDED, not merely slow:
+           hand a squad class 2 and it is refused at any teeth and stops dead.
+           [63] drives a real squad and a real tank at that pocket for exactly
+           that reason - with `2` hardcoded here the suite reports 213/1. */
+        this.cat === "infantry" ? 1 : 2);
       this.pathI = 0;
       this.repathT = 2.2 + this.game.rng() * 0.8;
       if (!this.path || !this.path.length) {             // nowhere to go

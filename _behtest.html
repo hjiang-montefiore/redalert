@@ -4767,6 +4767,254 @@ try{
   })();
   }
 
+  if (inHalf(1)) {
+  log("\n[63] DRAGON'S TEETH ARE IN THE LABELS, AND A ROUTE THAT DOES NOT EXIST");
+  (function(){
+    /* [51] proves the labels see STRUCTURES. Two things they learned since,
+       and nothing in this suite watched either of them.
+
+       (1) A FIELD OBSTACLE BLOCKS SELECTIVELY - dragon's teeth stop a tank
+       dead and let a rifle squad walk between them - so the labels carry one
+       array per MOBILITY CLASS (0 names no unit and sees only structures, 1 is
+       infantry, 2 is everything else on the ground) and Path.find is told
+       which class its blockFn belongs to. The single expression that picks it
+       is in Unit.stepAlong, and getting it wrong is not a slow route, it is a
+       STRANDED UNIT: a squad handed class 2 is refused at any teeth and stops
+       where it stands, with every suite still green. So these checks go
+       through real units and real orders, not through Path.find alone.
+
+       (2) PATH.FIND REFUSES a goal on another piece of ground once the unit is
+       already standing on the tile of its own piece nearest to it. It used to
+       hand back a single waypoint under the unit's own tracks, which stepAlong
+       reads as "steer at the raw aim point" - so the unit drove at unreachable
+       ground for ever and the order never retired. The refusal has to come
+       back as null, the order has to retire, and the player has to be told
+       once.
+
+       Counts below are of blockFn CALLS and of Path.find calls, not of
+       milliseconds: the suite runs on a virtual clock, so work done is the
+       only honest measure. */
+    var M=Game.map, W=M.W, H=M.H, T=CFG.TILE;
+    /* the units below are driven by their own update loop rather than by
+       Game.tick, so that the class expression in stepAlong is what is under
+       test and the enemy commander is not. That means winding the clock by
+       hand; put it back afterwards so nothing downstream inherits it. */
+    var clock0=Game.time;
+    function clearPatch(w,h){
+      for(var y=4;y<H-h-4;y++) for(var x=4;x<W-w-4;x++){
+        var good=true;
+        for(var j=0;j<h&&good;j++) for(var i=0;i<w;i++)
+          if(!GameMap.passable(M,x+i,y+j,"ground")||Game.tileBlocked(x+i,y+j,null)){ good=false; break; }
+        if(good) return {x:x,y:y};
+      }
+      return null;
+    }
+    var p=clearPatch(17,15);
+    if(!p){ chk("open ground for the obstacle test", false, "none on this map"); return; }
+    function done(){ Game.time=clock0; Game._noRouteT=0; }
+
+    var built=[], mine=[];
+    function put(id,x,y){ var b=Game.placeBuilding(P,id,x,y,true); if(b){ b.buildProgress=1; built.push(b); } return b; }
+    function pull(b){ var i=built.indexOf(b); if(i>=0) built.splice(i,1); if(b&&!b.dead) Game.removeBuilding(b); }
+    function tear(){ while(built.length){ var b=built.pop(); if(!b.dead) Game.removeBuilding(b); }
+                     while(mine.length){ mine.pop().dead=true; } Game.sweepDead(); }
+
+    var rx=p.x+3, ry=p.y+3, RW=9, RH=7;
+    var sx=rx+4, sy=ry-2, gx=rx+4, gy=ry+3;        /* outside the ring -> the middle of it */
+    function ring(id){
+      for(var i=0;i<RW;i++){ put(id,rx+i,ry); put(id,rx+i,ry+RH-1); }
+      for(var j=1;j<RH-1;j++){ put(id,rx,ry+j); put(id,rx+RW-1,ry+j); }
+    }
+    function inRoom(x,y){ return x>rx&&x<rx+RW-1&&y>ry&&y<ry+RH-1; }
+
+    /* stand-ins for the two questions tileBlocked asks. It asks exactly one,
+       `forUnit.cat !== "infantry"`, so a bare object is the whole unit as far
+       as the blocking rule is concerned. */
+    var probes=0;
+    function blkFor(u){ return function(tx,ty){ probes++; return Game.tileBlocked(tx,ty,u); }; }
+    var bv=blkFor({cat:"vehicle",layer:"ground"}), bi=blkFor({cat:"infantry",layer:"ground"});
+    function ask(bf,mob){ probes=0; var r=Path.find(M,sx,sy,gx,gy,"ground",bf,mob);
+      var e=r&&r.length?r[r.length-1]:null;
+      return {p:r,n:probes,end:e,inside:!!e&&inRoom(e.x,e.y)}; }
+
+    /* a real unit of each kind, driven by its own update loop so that the
+       class expression in stepAlong is what is under test */
+    function pick(cat){
+      for(var k in UNITS){ var d=UNITS[k];
+        if(d.layer!=="ground"||d.cat!==cat) continue;
+        if(d.harvester||d.engineer||d.cargo||d.deploy) continue;
+        if(!d.speed||d.speed<1) continue;
+        if(P.banned&&P.banned[k]) continue;
+        return k; }
+      return null;
+    }
+    var VEH=pick("vehicle"), INF=pick("infantry");
+    var finds=0, realFind=Path.find;
+    function drive(u,tx,ty,secs){
+      u.order={type:"move",x:tx*T+T/2,y:ty*T+T/2}; u.groupSpeed=0;
+      finds=0; Path.find=function(){ finds++; return realFind.apply(null,arguments); };
+      try {
+        for(var s=0;s<30*secs;s++){ if(u.dead) break; Game.time+=CFG.DT; u.update(CFG.DT);
+          if(u.order.type!=="move") break; }
+      } finally { Path.find=realFind; }
+      return u;
+    }
+    function spawn(id,x,y){ var u=Game.spawnUnitAt(P,id,x*T+T/2,y*T+T/2); if(u) mine.push(u); return u; }
+
+    /* ---- 1. dragon's teeth: a wall to a tank, a gate to a rifle squad ---- */
+    ring("dragonteeth");
+    var tv=ask(bv,2), ti=ask(bi,1);
+    chk("a pocket ringed in dragon's teeth is refused to a vehicle",
+        !tv.inside, (tv.end?("ends "+tv.end.x+","+tv.end.y):"null")+" probes="+tv.n);
+    chk("and that refusal is two array reads, not a landmass expansion",
+        tv.n<1500, tv.n+" blockFn calls");
+    chk("the rifle squad beside it still walks in between the teeth",
+        ti.inside, (ti.end?("ends "+ti.end.x+","+ti.end.y+" points="+ti.p.length):"null")+" probes="+ti.n);
+
+    /* through the units themselves: this is the check that fails if stepAlong
+       ever hands a squad the vehicle class */
+    if(VEH&&INF){
+      var tank=spawn(VEH,sx,sy), sqd=spawn(INF,sx,sy-1);
+      if(tank&&sqd){
+        drive(sqd,gx,gy,40);
+        chk("a real rifle squad ordered into the teeth pocket gets inside",
+            inRoom(sqd.tx,sqd.ty), "ends "+sqd.tx+","+sqd.ty+" order="+sqd.order.type+" finds="+finds);
+        drive(tank,gx,gy,40);
+        chk("a real vehicle ordered into the same pocket stops outside it",
+            !inRoom(tank.tx,tank.ty), "ends "+tank.tx+","+tank.ty+" order="+tank.order.type);
+        chk("and it does not grind: a handful of searches, then the order retires",
+            tank.order.type!=="move"&&finds<60, "order="+tank.order.type+" finds="+finds);
+      } else chk("a real rifle squad ordered into the teeth pocket gets inside", false, "no units");
+    } else chk("a real rifle squad ordered into the teeth pocket gets inside", false, "no roster");
+
+    /* an obstacle changes the ground exactly as a building does, both ways */
+    var door=null;
+    for(var k2=0;k2<built.length;k2++) if(built[k2].tx===gx&&built[k2].ty===ry) door=built[k2];
+    pull(door);
+    var td=ask(bv,2);
+    chk("knock one tooth out and the vehicle label sees the gap",
+        td.inside, (td.end?("ends "+td.end.x+","+td.end.y):"null")+" probes="+td.n);
+    put("dragonteeth",gx,ry);
+    var tb=ask(bv,2);
+    chk("put the tooth back and it is refused again",
+        !tb.inside, (tb.end?("ends "+tb.end.x+","+tb.end.y):"null")+" probes="+tb.n);
+    tear();
+
+    /* ---- 2. razor wire blocks:"none", so it is nobody's wall ---- */
+    ring("razorwire");
+    var wv=ask(bv,2), wi=ask(bi,1);
+    chk("a ring of razor wire stops neither the vehicle nor the squad",
+        wv.inside&&wi.inside,
+        "vehicle "+(wv.end?wv.end.x+","+wv.end.y:"null")+"/"+wv.n+
+        "  squad "+(wi.end?wi.end.x+","+wi.end.y:"null")+"/"+wi.n);
+    tear();
+
+    /* ---- 3. class 0 is unchanged: a caller that names no unit ----
+       tileBlocked with no unit treats an obstacle as a wall to everybody,
+       while the class-0 label still holds only structures. That is the safe
+       direction - the label is never STRICTER than the predicate - so the
+       search runs and refuses on its own, which is what it always did. */
+    ring("dragonteeth");
+    probes=0;
+    var p0=Path.find(M,sx,sy,gx,gy,"ground",function(tx,ty){ probes++; return Game.tileBlocked(tx,ty,null); });
+    var e0=p0&&p0.length?p0[p0.length-1]:null;
+    chk("a caller that names no unit is still answered as before",
+        !e0||!inRoom(e0.x,e0.y), (e0?("ends "+e0.x+","+e0.y):"null")+" probes="+probes);
+    tear();
+
+    /* ---- 4. a goal on another piece of ground, from the only tile we have ----
+       One open tile walled in on every side. Any goal outside it is on another
+       piece of ground, and the tile of OUR piece nearest that goal is the one
+       we are standing on: there is no move left to make. */
+    var cx=p.x+13, cy=p.y+11;
+    for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++) if(dx||dy) put("nest",cx+dx,cy+dy);
+    var ox=p.x+1, oy=p.y+1;                        /* legal open ground, ten tiles off */
+    var pd=Path.find(M,cx,cy,ox,oy,"ground",bv,2);
+    chk("a goal across ground we cannot leave is refused, not answered with our own tile",
+        pd===null, pd===null?"null":("a path of "+pd.length+" points, first "+pd[0].x+","+pd[0].y));
+    chk("and the goal tile itself is legal, so this is the snap case and not the far-goal one",
+        GameMap.passable(M,ox,oy,"ground")&&!Game.tileBlocked(ox,oy,null), ox+","+oy);
+
+    if(VEH){
+      var stuck=spawn(VEH,cx,cy);
+      var heard=[], realAlert=Game.alert;
+      Game.alert=function(m){ heard.push(m); };
+      Game._noRouteT=0;
+      try { drive(stuck,ox,oy,30); } finally { Game.alert=realAlert; }
+      chk("the order retires instead of grinding at ground it can never reach",
+          !!stuck&&stuck.order.type!=="move"&&finds<=4,
+          stuck?("order="+stuck.order.type+" finds="+finds+" moved="+
+                 (stuck.tx!==cx||stuck.ty!==cy)):"no unit");
+      chk("and the player is told once, in the words for a unit with no ride",
+          heard.length===1&&/NO ROUTE/.test(heard[0])&&/AS CLOSE AS IT CAN GET/.test(heard[0]),
+          JSON.stringify(heard));
+    } else chk("the order retires instead of grinding at ground it can never reach", false, "no roster");
+    tear();
+
+    /* ---- 5. a loaded landing craft says one thing, and it is not this ----
+       The no-route line sits BELOW the unload for a reason: a craft on the last
+       water tile before its beach reports "arrived" on the very tick it puts
+       its cargo off, so with the line above it the craft was told it needed a
+       transport as it landed. */
+    var lst=UNITS.lst?"lst":null;
+    var bay=null;
+    if(lst&&INF){
+      for(var wy=3;wy<H-3&&!bay;wy++) for(var wx=3;wx<W-3;wx++){
+        if(!GameMap.passable(M,wx,wy,"sea")) continue;
+        var open=0, aim=null;
+        for(var q=0;q<8;q++){
+          var ax=wx+[1,-1,0,0,1,1,-1,-1][q], ay=wy+[0,0,1,-1,1,-1,1,-1][q];
+          if(ax<0||ay<0||ax>=W||ay>=H) continue;
+          if(GameMap.passable(M,ax,ay,"sea")) open++;
+        }
+        if(open<5) continue;
+        for(var r=2;r<=3&&!aim;r++) for(var dy2=-r;dy2<=r&&!aim;dy2++) for(var dx2=-r;dx2<=r;dx2++){
+          if(Math.max(Math.abs(dx2),Math.abs(dy2))!==r) continue;
+          var lx=wx+dx2, ly=wy+dy2;
+          if(lx<1||ly<1||lx>=W-1||ly>=H-1) continue;
+          if(!GameMap.passable(M,lx,ly,"ground")||Game.tileBlocked(lx,ly,null)) continue;
+          /* the craft must already be the nearest water to that aim, which is
+             the geometry that makes find() refuse */
+          var nearer=false;
+          for(var ny2=ly-r;ny2<=ly+r&&!nearer;ny2++) for(var nx2=lx-r;nx2<=lx+r;nx2++){
+            if(nx2<0||ny2<0||nx2>=W||ny2>=H) continue;
+            if(!GameMap.passable(M,nx2,ny2,"sea")) continue;
+            if((nx2-lx)*(nx2-lx)+(ny2-ly)*(ny2-ly) < (wx-lx)*(wx-lx)+(wy-ly)*(wy-ly)) nearer=true;
+          }
+          if(!nearer){ aim={x:lx,y:ly}; break; }
+        }
+        if(aim) bay={w:{x:wx,y:wy},a:aim};
+      }
+    }
+    if(bay){
+      var craft=Game.spawnUnitAt(P,lst,bay.w.x*T+T/2,bay.w.y*T+T/2);
+      if(craft){
+        mine.push(craft);
+        for(var c2=0;c2<3;c2++){
+          var pax=Game.spawnUnitAt(P,INF,bay.w.x*T+T/2,bay.w.y*T+T/2);
+          if(pax){ pax.carried=true; craft.cargo.push(pax); mine.push(pax); }
+        }
+        var said=[], keep=Game.alert;
+        Game.alert=function(m){ said.push(m); };
+        Game._noRouteT=0;
+        craft.order={type:"move",x:bay.a.x*T+T/2,y:bay.a.y*T+T/2,unloadAt:true};
+        craft.groupSpeed=0;
+        try { for(var s2=0;s2<30*30;s2++){ if(craft.dead||!craft.cargo.length) break;
+                Game.time+=CFG.DT; craft.update(CFG.DT); } }
+        finally { Game.alert=keep; }
+        chk("a landing craft that puts its cargo ashore is not told it needs a transport",
+            craft.cargo.length===0 && said.length===1 && /ASHORE/.test(said[0]),
+            "cargo left="+craft.cargo.length+"  said="+JSON.stringify(said));
+      } else chk("a landing craft that puts its cargo ashore is not told it needs a transport",
+                 false, "no craft");
+    } else {
+      chk("a landing craft that puts its cargo ashore is not told it needs a transport",
+          true, "no beach of that shape on this map - skipped");
+    }
+    tear(); done();
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);
