@@ -2648,7 +2648,22 @@ class Unit {
       const pad = this.game.findPad(this, true) ||
         (own && !own.dead && (own.kind !== "building" || own.buildProgress >= 1)
           ? { x: own.x, y: own.y, host: own } : null);
-      if (!pad) { /* nowhere to land: orbit home */ this.flyTo(this.owner.homeX, this.owner.homeY, dt); return; }
+      if (!pad) {
+        /* ---- NOWHERE TO LAND, AND SAY SO ----
+           With every strip gone the aircraft orbits home until the tanks are
+           dry and then falls out of the sky - measured, 107 seconds from full
+           to dead - and nothing ever told the player why the bomber would not
+           come home. It reads as the aircraft refusing the order. The orbit
+           itself is right (there is no runway), but it must be explicable:
+           one line per airframe, re-armed if a strip is ever rebuilt. */
+        if (!this.noPadSaid && this.owner === this.game.human && this.game.alert) {
+          this.noPadSaid = true;
+          this.game.alert(this.def.name.toUpperCase() + " \u2014 NO RUNWAY TO RECOVER TO", "bad");
+        }
+        this.flyTo(this.owner.homeX, this.owner.homeY, dt);
+        return;
+      }
+      this.noPadSaid = false;
       const px = pad.x, py = pad.y;
       /* flyTo moves first and tests the capture radius afterwards, and this
          branch went on calling it after the aircraft had reported itself

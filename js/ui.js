@@ -2518,10 +2518,16 @@ var UI = (function () {
       if (G.time - b.lastHitAt < 5) { add(100, "attack", "BASE UNDER ATTACK", b.x, b.y, b); break; }
     }
     /* units in trouble */
-    let dry = 0, lowFuel = 0, broken = 0, idleHarv = 0, idleUnits = 0;
-    let dryRef = null, fuelRef = null, brokenRef = null, harvRef = null, idleRef = null;
+    let dry = 0, lowFuel = 0, broken = 0, idleHarv = 0, idleUnits = 0, homeless = 0;
+    let dryRef = null, fuelRef = null, brokenRef = null, harvRef = null, idleRef = null, homeRef = null;
     for (const u of p.units) {
       if (u.dead || u.carried) continue;
+      /* airborne with no ramp left to recover to (findPad answers null): it
+         will orbit home until the tanks are dry, and the alert that says so
+         fires once per airframe - this row is what keeps it on screen */
+      if (u.layer === "air" && !u.parked && u.noPadSaid && !G.findPad(u, true)) {
+        homeless++; homeRef = homeRef || u;
+      }
       if (u.ammoMax && u.ordnanceDry()) { dry++; dryRef = dryRef || u; }
       else if (u.fuelMax && u.fuel < 22) { lowFuel++; fuelRef = fuelRef || u; }
       if (u.isBroken && u.isBroken()) { broken++; brokenRef = brokenRef || u; }
@@ -2534,6 +2540,11 @@ var UI = (function () {
                u.stance !== "hold" &&
                !(u.allWeaponsHeld && u.allWeaponsHeld())) { idleUnits++; idleRef = idleRef || u; }
     }
+    /* airborne with no strip left to recover to: they orbit until they are dry
+       and then fall out of the sky, so this is the one warning that is worth
+       reading before the fuel gauge runs out */
+    if (homeless) add(96, "nopad", homeless + " AIRCRAFT WITH NOWHERE TO LAND",
+                      homeRef.x, homeRef.y, homeRef);
     if (dry) add(78, "ammo", dry + " UNIT" + (dry > 1 ? "S" : "") + " OUT OF ORDNANCE",
                  dryRef.x, dryRef.y, dryRef);
     if (lowFuel) add(70, "fuel", lowFuel + " UNIT" + (lowFuel > 1 ? "S" : "") + " LOW ON FUEL",

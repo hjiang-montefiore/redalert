@@ -2574,6 +2574,60 @@ try{
   })();
   }
 
+  /* ====== 52: an aircraft with no runway says so ====== */
+  if (inHalf(2)) {
+  log("\n[52] AN AIRCRAFT WITH NO RUNWAY SAYS SO");
+  (function(){
+    /* (owner) "not bombing or return to base and only patrol for no reason and
+       refuse to back to base". Measured: with every strip gone a bomber orbits
+       home for 107 s and falls out of the sky with nothing said, which reads as
+       the aircraft refusing the order. The orbit is right - there is nowhere to
+       land - so what was missing is the telling. */
+    var land=tile(P,"ground",9);
+    if(!land){ chk("runway scenario built", false, "no ground"); return; }
+    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true); if(ab) ab.buildProgress=1;
+    tick(2);
+    var id=unitFor("nato","heavybomber","e20");
+    var b2=id?Game.spawnUnitAt(P,id,land.x*32+16,land.y*32+16):null;
+    if(!b2){ chk("runway scenario built", false, "no bomber"); return; }
+    b2.parked=false; b2.fuel=b2.fuelMax; b2.ammo=b2.ammoMax; b2.hp=b2.maxHp=1e7;
+    b2.give({type:"move", x:b2.x+32*12, y:b2.y});
+    tick(60);
+    /* every strip, not just this one: earlier sections leave their own airbases
+       standing and the bomber would simply recover to one of those */
+    var strips=[];
+    P.buildings.forEach(function(x){ if(!x.dead && (x.def.pads||0)>0){ strips.push(x); x.dead=true; } });
+    P.units.forEach(function(x){ if(!x.dead && (x.def.carrier||x.def.helo)) { strips.push(x); x.dead=true; } });
+    /* and the other airframes earlier sections left flying: they re-home onto
+       the replacement strip and fill its four pads, which is correct engine
+       behaviour and would make this measure the wrong thing */
+    P.units.forEach(function(x){ if(!x.dead && x!==b2 && x.layer==="air") x.dead=true; });
+    b2.give({type:"rtb"});
+    tick(30*8);
+    chk("with every strip gone it is flagged, not silently lost",
+        b2.noPadSaid===true && !b2.parked, "flagged="+b2.noPadSaid+" parked="+b2.parked+" order="+(b2.order&&b2.order.type));
+    /* a strip that really goes down: this corner of the map is crowded by the
+       earlier sections, and a refused placement would leave the aircraft with
+       nowhere to land and the check measuring the wrong thing */
+    var ab2=null;
+    for(var a2=0;a2<40 && !ab2;a2++){
+      var t2=tile(P,"ground",9+a2);
+      if(t2) ab2=Game.placeBuilding(P,"airbase",t2.x,t2.y,true);
+    }
+    if(!ab2){ chk("a replacement strip goes down", false, "placeBuilding refused everywhere"); if(!b2.dead)b2.dead=true; return; }
+    ab2.buildProgress=1;
+    /* this check is about the recovery, not the endurance: the replacement can
+       be a long way off in a crowded map and a Buff's tanks are finite */
+    b2.fuel=b2.fuelMax;
+    var landed=false;
+    for(var i=0;i<30*120 && !landed;i++){ tick(1); if(b2.parked) landed=true; if(b2.dead) break; }
+    chk("and it recovers as soon as a strip exists again", landed && b2.noPadSaid===false,
+        "landed="+landed+" flagged="+b2.noPadSaid+" fuel="+b2.fuel.toFixed(0)+
+        " dist="+(U.dist(b2.x,b2.y,ab2.x,ab2.y)/32).toFixed(1)+"t");
+    if(!b2.dead) b2.dead=true; if(ab2) ab2.dead=true;
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);
