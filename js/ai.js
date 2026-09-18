@@ -10490,16 +10490,33 @@ function makeCommander() {
     }
     /* A launch takes every hull at home, including the ones fighting there.
        Finishing them is exempt - but not inside a minute of a recall, or the
-       recalled wave is turned straight round (recallWave). Only a force at
-       the CORE holds it (within 16 tiles of production, or at home): with
-       yards spread across the map some outlying refinery is nearly always
-       being poked, and in the integration smoke run of korea that held a
-       42-body army at home in two samples of four. */
-    if (go && (why !== "end" || now < recallNext) &&
-        now - baseT < 15 && baseCoreW >= 1.2 && baseCoreW * 3 > baseHomeW) {
+       recalled wave is turned straight round (recallWave). What "held at
+       home" means is coreHeld() below - the raid gate asks the same function,
+       so the two can never disagree about it. In the integration smoke run of
+       korea it held a 42-body army at home in two samples of four. */
+    if (go && (why !== "end" || now < recallNext) && coreHeld(now)) {
       go = false; why = "home";
     }
     return { go, why, n, full, minBody, ours, bar, est, fort, cover: ff.cover };
+  }
+  /* ---- IS A REAL FORCE HOLDING OUR CORE? ----
+     The launch hold, lifted out so the raid gate can ask the same question
+     with the same numbers rather than restate them. Only the CORE counts -
+     within sixteen tiles of production, or at home - because with yards
+     spread across the map some outlying refinery is nearly always being
+     poked; and it counts only against what we have standing there, so one
+     scout is not a siege. baseCoreW is written only while something IS at the
+     core and is never cleared, so baseT's freshness is its guard.
+     NOTE what this does NOT say. baseT and baseCoreW are stamped by
+     defendBase() inside `if (foeW > 0)`, off SEEN contacts only, so "not
+     held" here means "nothing we can SEE is holding it". Rounds landing on
+     our works from guns nobody has laid eyes on leave this reading false
+     while defendBase() is pushing the reserve at the alarm - which is why
+     neither caller may use it to decide that a hull already walking under an
+     order is free. Both only ever ask it about hulls that are standing. */
+  function coreHeld(now) {
+    const t = now === undefined ? G.time : now;
+    return t - baseT < 15 && baseCoreW >= 1.2 && baseCoreW * 3 > baseHomeW;
   }
   /* a real force has been at our works in the last 45 s */
   function underThreat() {
@@ -10625,10 +10642,18 @@ function makeCommander() {
   let raidLog = raidLogNew();    // counters for intel(); nothing decides on them
 
   function raidLogNew() {
-    return { formed: 0, xp: 0, lost: 0,
+    /* `reach` counts the attempts that got as far as the surplus/lull test.
+       Without it a census cannot tell a surplus gate that PASSED from one that
+       was never reached - both read `skip.army 0` - and that is exactly the
+       reading that sent this stream after the wrong gate. */
+    return { formed: 0, reach: 0, xp: 0, lost: 0,
              end: { spent: 0, outgunned: 0, home: 0, fire: 0, dry: 0, life: 0,
                     wave: 0, cut: 0, stuck: 0, done: 0, empty: 0, wiped: 0 },
-             skip: { army: 0, home: 0, pool: 0, target: 0, road: 0 } };
+             /* busy and army were ONE counter. They are two unrelated
+                refusals - our own works under attack, and a wave that cannot
+                spare the hulls - and the census blamed the second for a year
+                of the first. */
+             skip: { busy: 0, army: 0, home: 0, pool: 0, target: 0, road: 0 } };
   }
 
   /* raidFloor() lived here: the launch count restated. The raid gate asks
@@ -10811,8 +10836,24 @@ function makeCommander() {
     const army = groundArmy();
     const want = U.clamp(Math.round(D.waveSize * 0.22), 2, 4);
     /* Not while finishing them - everything goes at the last building - and
-       not while our own works are under attack. */
-    if (commitNow() || now - baseT < 20) { log.skip.army++; return; }
+       not while a real force is holding our CORE.
+       (measured: river, Warlord, 900 s, a brain in both seats) `now - baseT <
+       20` on its own was the whole reason no raid ever formed. defendBase()
+       stamps baseT for ANY armed contact of theirs within fourteen tiles of
+       ANY building we own, and by t=600 we own a hundred and twenty-eight of
+       them spread across the map - so it read "under attack" on 52 of 54
+       attempts. That was every refusal the census showed, and because both
+       refusals shared skip.army, the surplus gate got the blame for it.
+       Over those 52 the weight actually at PRODUCTION or at home - baseCoreW,
+       which defendBase() writes in the same breath as baseT - peaked at 0.75
+       and averaged 0.09, and launchGate()'s own home-hold would have fired on
+       NONE of them: a scout poking an outlying derrick was stopping the
+       second front for the whole match.
+       So the test is coreHeld(), the launch hold itself, and the two cannot
+       disagree because they are one function. On the same run this refuses P0
+       on 0 of its 52 (nothing was ever at its core) and P1 on 22 of its 52
+       (something was, repeatedly, and it lost the match). */
+    if (commitNow() || coreHeld(now)) { log.skip.busy++; return; }
     /* ---- THE BASE IS NOT EMPTIED ----
        groundArmy() keeps attackWave members, and defendBase() skips every
        one of them, so the hulls actually at home are counted here and as many
@@ -10877,6 +10918,7 @@ function makeCommander() {
     const surplus = gRest.go && (gRest.why === "full" || gRest.why === "edge");
     const lull = !surplus && !attackWave.length &&
                  (waveT > RAID_WARN + 25 || !launchGate(army).go);
+    log.reach++;                 // this attempt got as far as the surplus test
     if (!surplus && !lull) { log.skip.army++; return; }
     let cx = 0, cy = 0, sp = 9, fuel = 100;
     for (const u of party) {
@@ -11051,7 +11093,8 @@ function makeCommander() {
              life: raidParty.length ? Math.round(raidEnd - G.time) : 0,
              next: raidParty.length ? 0 : Math.max(0, Math.round(raidNext - G.time)),
              shy: raidShy.size, dead: raidDead.length,
-             formed: raidLog.formed, xp: Math.round(raidLog.xp), lost: raidLog.lost,
+             formed: raidLog.formed, reach: raidLog.reach,
+             xp: Math.round(raidLog.xp), lost: raidLog.lost,
              end: Object.assign({}, raidLog.end), skip: Object.assign({}, raidLog.skip) };
   }
 

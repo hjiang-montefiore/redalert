@@ -4622,6 +4622,151 @@ try{
     }
   })();
 
+  /* ====== BUG 60: THE SECOND FRONT REFUSED ON THE WRONG GROUNDS ======
+     formRaid() turned a raid down for two completely unrelated reasons through
+     ONE counter, skip.army: "our own works are under attack" and "the wave
+     cannot spare the hulls". MEASURED on river/Warlord over 900 s with a brain
+     in both seats: the first fired on 52 of P0's 54 attempts and the second
+     was never reached once - so every census read "skip.army 0 -> 54" and
+     blamed a surplus gate that had never run. The alarm was `now - baseT < 20`
+     on its own, and defendBase() stamps baseT for any armed contact within
+     FOURTEEN TILES OF ANY BUILDING WE OWN; by t=600 that commander owned 128
+     of them spread across the map, so one scout at an outlying derrick shut
+     the second front for the whole match. The weight actually at the core over
+     those 52 refusals averaged 0.09.
+     The test is now coreHeld() - the launch hold itself, one function called by
+     both - so the wave and the raid can never disagree about what "held at
+     home" means; skip.busy and skip.army are two counters; and `reach` counts
+     the attempts that got as far as the surplus test, so a census can tell a
+     gate that PASSED from one that was never reached.
+     This drives the real commander and reads its own census. It needs ground
+     the party could actually drive over, and the suite's theatre is a strait -
+     so the enemy economy it raids is built on OUR OWN landmass, which is also
+     what puts the rival's believed home somewhere groundConnected can reach. */
+  if (inHalf(1)) {
+  log("\n[62] THE RAID GATE NAMES ITS OWN REFUSAL");
+  (function(){
+   var T = CFG.TILE, M = Game.map;
+   if (!AI.create || !AI.intelOf) { chk("there is a commander to drive", false, "no AI"); return; }
+   var eh = { x: (E.homeX / T) | 0, y: (E.homeY / T) | 0 };
+   /* open, unblocked, and on the SAME landmass as the commander's base */
+   function ground(r0, r1, minHome) {
+     for (var r = r0; r <= r1; r++) for (var a = 0; a < 72; a++) {
+       var an = a / 72 * 6.283, x = (eh.x + Math.cos(an) * r) | 0, y = (eh.y + Math.sin(an) * r) | 0;
+       if (x < 5 || y < 5 || x >= M.W - 5 || y >= M.H - 5) continue;
+       if (!GameMap.passable(M, x, y, "ground") || Game.tileBlocked(x, y, null)) continue;
+       if (!Path.reachable(M, eh.x, eh.y, x, y, "ground")) continue;
+       if (minHome && U.dist(x, y, eh.x, eh.y) < minHome) continue;
+       return { x: x, y: y };
+     }
+     return null;
+   }
+   var spot = ground(18, 34, 0);          // THEIR economy: what a raid is for
+   var out  = ground(24, 32, 24);         // OUR outlying works: not the core
+   chk("there is ground on the commander's own landmass for the scenario",
+       !!spot && !!out, spot ? (JSON.stringify(spot) + " / " + JSON.stringify(out)) : "none");
+   if (!spot || !out) return;
+
+   var theirs = [], b;
+   for (var i = 0; i < 4; i++) { b = Game.placeBuilding(P, "refinery", spot.x + i * 4, spot.y, true);
+     if (b) { b.buildProgress = 1; theirs.push(b); } }
+   for (var i = 0; i < 2; i++) { b = Game.placeBuilding(P, "derrick", spot.x + i * 4, spot.y + 4, true);
+     if (b) { b.buildProgress = 1; theirs.push(b); } }
+   /* Ours, and it must SURVIVE being stood next to: the whole point of phase B
+      is that the works stay in the picture while the enemy sits beside them. */
+   var ours = Game.placeBuilding(E, "derrick", out.x, out.y, true);
+   if (ours) { ours.buildProgress = 1; ours.hp = ours.maxHp = 200000; }
+   chk("the scenario is built - their economy to raid, our outlying works to alarm",
+       theirs.length >= 4 && !!ours, theirs.length + " of theirs, outlier at " +
+       U.dist(out.x, out.y, eh.x, eh.y).toFixed(0) + " tiles");
+   if (!ours) return;
+
+   /* A pool to raid WITH. The whitelist is short and fast, and this commander
+      builds almost none of them - that is the composition problem, not this
+      gate's, so the hulls are handed to it. */
+   var hulls = [];
+   function pool(n) {
+     var t = tile(E, "ground", 3), live = 0, k;
+     for (k = 0; k < hulls.length; k++) if (!hulls[k].dead) live++;
+     for (var i = live; i < n; i++) { var u = spawn(E, "lt_p", t, (i % 5) - 2, (i < 5 ? 0 : 1)); if (u) hulls.push(u); }
+   }
+   /* A FRESH commander per phase: init() zeroes the raid census, so each phase
+      below reads its own counters and not the last phase's. */
+   function brain() { AI.reset(); AI.create(Game, E, "warlord", "balanced"); }
+   function raid() { return AI.intelOf(E).raid; }
+   function war()  { return AI.intelOf(E).war; }
+   function foe(n, id, x, y) {
+     var got = [];
+     for (var i = 0; i < n; i++) {
+       var u = Game.spawnUnitAt(P, id, (x + (i % 6) - 3) * T + 16, (y + ((i / 6) | 0)) * T + 16);
+       if (u) { u.give({ type: "guard" }); got.push(u); }
+     }
+     return got;
+   }
+   function gone(a) { for (var i = 0; i < a.length; i++) if (a[i] && !a[i].dead) a[i].dead = true; }
+
+   /* ---- 0. the second front works at all here ---- */
+   pool(10); brain();
+   while (Game.time < 80) tick(Math.round(5 / CFG.DT));
+   tick(Math.round(20 / CFG.DT));
+   var r0 = raid();
+   chk("a raid party forms when nothing is stopping it",
+       r0.formed > 0, "formed=" + r0.formed + " reach=" + r0.reach + " skip=" + JSON.stringify(r0.skip));
+   chk("and no raider is ever a member of the attack wave", r0.inWave === 0, "inWave=" + r0.inWave);
+
+   /* ---- 1. a real force AT THE CORE: refused, and the counter says so ---- */
+   pool(10); brain();
+   var core = foe(14, "hvy_n", eh.x + 2, eh.y + 2);
+   tick(Math.round(14 / CFG.DT));
+   var ra = raid(), wa = war();
+   chk("a force at the CORE is what the commander thinks it is",
+       wa.base && wa.base.age >= 0 && wa.base.age < 15 && wa.base.core >= 1.2 &&
+       wa.base.core * 3 > wa.base.home,
+       "core=" + (wa.base && wa.base.core) + " home=" + (wa.base && wa.base.home) +
+       " age=" + (wa.base && wa.base.age));
+   chk("...and the raid is refused as BUSY, not as short of an army",
+       (ra.skip.busy || 0) > 0 && ra.skip.army === 0 && ra.formed === 0,
+       JSON.stringify(ra.skip) + " formed=" + ra.formed);
+   chk("...so nothing was detached while the core was held", ra.party === 0, "party=" + ra.party);
+   gone(core);
+
+   /* ---- 2. THE SAME FORCE at an outlying building only ----
+      This is the case the whole change is built on: a scout - or here fourteen
+      tanks - at a derrick two dozen tiles from production is the reserve's
+      business, not the second front's, and the old gate read it as "the base
+      is under attack" and stopped raiding for the rest of the match. */
+   pool(10); brain();
+   var edge = foe(14, "hvy_n", out.x + 2, out.y + 2);
+   tick(Math.round(12 / CFG.DT));
+   var rb = raid(), wb = war();
+   chk("an enemy at OUTLYING works is seen, and is not at the core",
+       wb.base && wb.base.age >= 0 && wb.base.age < 20 && wb.base.w > 0 && wb.base.core < 1.2,
+       "w=" + (wb.base && wb.base.w) + " core=" + (wb.base && wb.base.core) +
+       " age=" + (wb.base && wb.base.age));
+   chk("...and it no longer stops the second front",
+       typeof rb.skip.busy === "number" && rb.skip.busy === 0, JSON.stringify(rb.skip));
+   chk("...the attempt now REACHES the surplus test, which it never used to",
+       rb.reach > 0, "reach=" + rb.reach + " skip=" + JSON.stringify(rb.skip));
+   gone(edge);
+
+   /* ---- 3. the census can still tell the two refusals apart ---- */
+   var sk = raid().skip;
+   chk("the raid census counts the two refusals separately",
+       typeof sk.busy === "number" && typeof sk.army === "number" &&
+       typeof raid().reach === "number",
+       JSON.stringify(sk));
+
+   /* ---- PUT THE BOARD BACK for the section that follows ----
+      The hulls handed over are removed, the commander is the page's own again
+      and held at peace, exactly as the top of run() left it. */
+   for (var k = 0; k < hulls.length; k++) if (!hulls[k].dead) hulls[k].dead = true;
+   AI.reset(); AI.create(Game, E, "regular", "balanced");
+   if (AI.setPeace) AI.setPeace(E, true);
+   chk("the commander is the page's own again, and at peace",
+       !!AI.intelOf(E), AI.intelOf(E) ? "a brain is standing" : "none");
+  })();
+  }
+
   log("\n[38] THE SILO COUNTDOWN IS GLOBAL");
   (function(){
     var mine=tile(P,"ground",6), theirs=tile(E,"ground",6);

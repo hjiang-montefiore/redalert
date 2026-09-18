@@ -413,7 +413,11 @@ window.addEventListener("load", function () {
              which is the difference between crediting the new rule with the
              wave-loop moves and with all of them. */
           lines.push("    FOCUS : "+pick(it2.focus,["acq","flip","runs","calls","kept","moved","dry","covered","fog","bld","noReach","noCall","allCov","offBld","bldRuns","bldCalls","bldDry"]));
-          lines.push("    RAID  : "+pick(it2.raid,["party","inWave","formed","xp","lost","end","skip"]));
+          /* `reach` beside `formed`: skip.army 0 means the surplus test
+             refused nothing, and without reach there is no way to tell that
+             from a test that never ran - which is the reading that sent a
+             whole stream after the wrong gate. */
+          lines.push("    RAID  : "+pick(it2.raid,["party","inWave","formed","reach","xp","lost","end","skip"]));
           lines.push("    RIGS  : queued="+ex.queued+"  onMap="+JSON.stringify(ex.onMap));
           lines.push("    OILOUT: "+(ks.length?ks.map(function(k){return k+"="+Math.round(oo[k]);}).join("  "):"none"));
         }catch(e){ lines.push("    EXPAND: <"+e+">"); }
