@@ -983,7 +983,10 @@ var Damage3D = (function () {
       const x1 = lx * cr - ly * sr, y1 = lx * sr + ly * cr;
       ly = y1 * cl - lz * sl; lz = y1 * sl + lz * cl; lx = x1;
     }
-    const ang = e.kind === "building" ? 0 : (e.ang || 0), ca = Math.cos(ang), sa = Math.sin(ang);
+    /* the heading it is DRAWN at: render3d sets every unit's group to -e.ang,
+       except an aircraft on, onto or off a ship's deck, which it turns with
+       her (seatOnDeck) */
+    const ang = e.kind === "building" ? 0 : g ? -g.rotation.y : (e.ang || 0), ca = Math.cos(ang), sa = Math.sin(ang);
     _w.x = (g ? g.position.x : e.x * PXM) + lx * ca - lz * sa;
     _w.y = (g ? g.position.y : 0) + ly;
     _w.z = (g ? g.position.z : e.y * PXM) + lx * sa + lz * ca;

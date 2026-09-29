@@ -747,9 +747,9 @@ var Impact3D = (function () {
      fireball. */
   function startDeck(r) {
     r.type = "ditch"; r.t0 = 0;
-    /* render3d eases a parked machine to the ground under it plus 1.2 m, and
-       at sea that ground is the seabed: the fire is put on the surface, 2 m
-       up, where the deck is, not under the water */
+    /* render3d draws a machine parked on a ship on a spot of her own deck
+       (seatOnDeck), in sight or not, so the fire goes where it stood: r.y0
+       is that. The 2 m is only a floor */
     burst(r, r.grp.position.x, Math.max(2, r.y0 + r.h * 0.5), r.grp.position.z, 0.6);
   }
 

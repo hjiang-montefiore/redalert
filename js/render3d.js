@@ -524,6 +524,539 @@ var Render3D = (function () {
     return found;
   }
 
+  /* ---------------- parked, on what it is parked on ----------------
+     A parked aircraft was set at the ground under it plus 1.2 m whatever its
+     landing gear, after the template had been scaled to the unit's length,
+     so a model whose wheels sit below its origin had them in the ground.
+     Measured at 91c2088 through this renderer, all 368 aircraft types on
+     open ground: every one below it, the fixed-wing 0.21 m (Su-25) to
+     9.70 m (Valiant B.1), the rotorcraft 1.20 to 5.30 m (Gazelle). An
+     airbase's apron is 0.35 m proud of the ground and one of its four
+     revetments is under a hangar roof. On a deck it was worse: heightAt() is
+     the SEABED there, 7 m down, so a helicopter on a frigate or a jet on a
+     carrier was drawn 9.3 to 10.1 m under the sea.
+     Each template's lowest point is measured once, in the frame the model is
+     placed in, and a parked machine is set down so that point rests on the
+     surface under it: the ground; an airbase's pad (padTop); or a spot on a
+     ship's own deck (deckLayout), riding with her (seatOnDeck). */
+  const PARK = {
+    CLEAR: 3,       // m: a pad is found under a ray from this high, below any roof
+    BLEND: 30,      // m of height over which a deck machine blends between its spot and flight
+    CELL: 1,        // m: the grid a deck and an airframe's plan are rastered on
+    WHEEL: 0.35,    // m: what of an airframe is this close to its lowest point is what it stands on
+    SHARE: 25,      // a second spot costing more than this is not laid out (see placeOn)
+    JUMP: 60,       // m in one frame: the game set it down somewhere else, not flown (seatOnDeck)
+  };
+  const TAU = Math.PI * 2;
+  const _pb = new THREE.Box3(), _pv = new THREE.Vector3(), _pp = new THREE.Vector3();
+  const _pa = new THREE.Vector3(), _pc = new THREE.Vector3();
+  const _po = new THREE.Vector3(), _pdn = new THREE.Vector3(0, -1, 0);
+  let parkRay = null;
+  /* a see-through blur - a propeller disc, the rotor disc - is not something
+     an aircraft stands on: 13 types' lowest mesh was an unnamed prop disc at
+     30% opacity, which held their gear up to 1.27 m off the ground. The same
+     test js/impact3d.js charGroup() uses for "blur, not airframe". */
+  function blurOf(o) {
+    const m = Array.isArray(o.material) ? o.material[0] : o.material;
+    return !m || m.visible === false || (m.transparent && m.opacity < 0.98);
+  }
+  /* The lowest point of a parked machine in its group's frame: every solid
+     visible mesh, with the undercarriage down (render3d shows it near the
+     ground) and the rotor blur faded out. A main rotor spins about the
+     vertical and holds its height; a tail rotor stops wherever it stops, so
+     its whole disc counts - none of the rotorcraft reaches below its skids
+     or wheels with it, but a new model may. And where it is: every point
+     within 2 cm of it, a metre apart - wheels level with each other, which a
+     carrier's deck markings, 4 to 5 cm proud, can stand at two heights.
+     Once per template. */
+  function footOf(tpl) {
+    if (tpl._foot !== undefined) return tpl._foot;
+    tpl.updateMatrixWorld(true);
+    const walk = (o, tail, px, py, fn) => {
+      if (o.name === "rotordisc" || (!o.visible && o.name !== "gear")) return;
+      if (o.name === "tailrotor") { o.getWorldPosition(_pp); tail = true; px = _pp.x; py = _pp.y; }
+      const p = o.isMesh && !blurOf(o) && o.geometry && o.geometry.attributes.position;
+      if (p) for (let i = 0; i < p.count; i++) {
+        _pv.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+        if (tail) fn(py - Math.hypot(_pv.x - px, _pv.y - py), px, _pv.z);
+        else fn(_pv.y, _pv.x, _pv.z);
+      }
+      for (let i = 0; i < o.children.length; i++) walk(o.children[i], tail, px, py, fn);
+    };
+    let lo = Infinity;
+    const pts = [];
+    walk(tpl, false, 0, 0, (y) => { if (y < lo) lo = y; });
+    walk(tpl, false, 0, 0, (y, x, z) => {
+      if (y > lo + 0.02 || pts.length >= 32) return;
+      for (let i = 0; i < pts.length; i += 2) if (Math.abs(pts[i] - x) < 1 && Math.abs(pts[i + 1] - z) < 1) return;
+      pts.push(x, z);
+    });
+    tpl._footPts = pts;
+    return (tpl._foot = lo < Infinity ? lo : 0);
+  }
+  /* the first drawn surface of a template under (x, z), from height y0 down,
+     in its own frame; -Infinity where there is none. Only ever on a cache miss. */
+  function surfaceUnder(tpl, x, y0, z) {
+    if (!parkRay) parkRay = new THREE.Raycaster();
+    tpl.updateMatrixWorld(true);
+    parkRay.set(_po.set(x, y0, z), _pdn);
+    const hits = parkRay.intersectObject(tpl, true);
+    for (let i = 0; i < hits.length; i++) {
+      let o = hits[i].object, shown = o.isMesh && !blurOf(o);
+      for (; shown && o && o !== tpl; o = o.parent) if (!o.visible) shown = false;
+      if (shown) return hits[i].point.y;
+    }
+    return -Infinity;
+  }
+  /* An airbase's pad under a parked machine, in world metres. The first
+     surface under a ray from 3 m up: the apron slab or the helipad, 0.35 m
+     proud of the ground, and the hangar FLOOR at the revetment the hangar
+     stands over. From above, that ray finds the hangar roof 6.19 m up, and
+     the faction's and the period's rooftop kit - a radome, a stack, an eave,
+     camouflage netting, 15 to 64 m up - hangs over one or more of the
+     others. The revetments sit at fixed offsets, so this is kept per
+     template and spot. */
+  function padTop(host, e, ground) {
+    const b = ents.get(host.id);
+    if (!b || !b.tpl) return ground;
+    const lx = gx2m(e.x) - b.grp.position.x, lz = gx2m(e.y) - b.grp.position.z;
+    const key = Math.round(lx * 4) * 8192 + Math.round(lz * 4);
+    const pads = b.tpl._pads || (b.tpl._pads = new Map());
+    let y = pads.get(key);
+    if (y === undefined) { y = surfaceUnder(b.tpl, lx, PARK.CLEAR, lz); pads.set(key, y); }
+    return y > -Infinity ? b.grp.position.y + y * b.grp.scale.y : ground;
+  }
+
+  /* ---- where a ship's aircraft stand on her deck ----
+     entities.js lays a deck out the way it lays out an airbase: a grid of
+     revetments on the WORLD axes round the ship's middle. Right for an
+     airbase, wrong for a hull. Measured at 91c2088 with every deck in the
+     game and its complement, at headings of 0, 45 and 90 degrees, 215 of 279
+     had no deck under them at all, an escort with one hangar kept its
+     helicopter on her superstructure, and any turn swung them round her. So
+     each is drawn on a spot of her own deck, in her own frame, found from
+     her model and its own: both are rastered into plans once (planOf), and
+     the airframe is tried over her deck at a few headings for the place
+     where its wheels stand on her deck level and nothing of it goes into
+     her island, hangar or superstructure, clear of the aircraft already
+     placed (placeOn). The game's own position for the aircraft is not
+     touched: this is where the model is drawn. Spots are in her group's
+     frame: +x her bow, +z starboard. */
+  /* The plan of a template on a CELL-metre grid, in its own frame: over each
+     cell the lowest and the highest of what is drawn there, rastered from its
+     triangles (a deck is one wide panel with vertices only at its corners).
+     `skip` leaves out a node and everything under it. */
+  function planOf(tpl, skip) {
+    tpl.updateMatrixWorld(true);
+    _pb.setFromObject(tpl);
+    const s = PARK.CELL, x0 = _pb.min.x, z0 = _pb.min.z;
+    const nx = Math.ceil((_pb.max.x - x0) / s) + 1, nz = Math.ceil((_pb.max.z - z0) / s) + 1;
+    const lo = new Float32Array(nx * nz).fill(Infinity), hi = new Float32Array(nx * nz).fill(-Infinity);
+    const put = (i, k, y) => {
+      if (i < 0 || k < 0 || i >= nx || k >= nz) return;
+      const j = i * nz + k;
+      if (y < lo[j]) lo[j] = y;
+      if (y > hi[j]) hi[j] = y;
+    };
+    const tri = (a, b, c) => {
+      put(Math.floor((a.x - x0) / s), Math.floor((a.z - z0) / s), a.y);
+      put(Math.floor((b.x - x0) / s), Math.floor((b.z - z0) / s), b.y);
+      put(Math.floor((c.x - x0) / s), Math.floor((c.z - z0) / s), c.y);
+      const d = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
+      if (Math.abs(d) < 1e-9) return;                 // edge-on: its corners are in
+      const i0 = Math.ceil((Math.min(a.x, b.x, c.x) - x0) / s - 0.5), i1 = Math.floor((Math.max(a.x, b.x, c.x) - x0) / s - 0.5);
+      const k0 = Math.ceil((Math.min(a.z, b.z, c.z) - z0) / s - 0.5), k1 = Math.floor((Math.max(a.z, b.z, c.z) - z0) / s - 0.5);
+      for (let i = i0; i <= i1; i++) for (let k = k0; k <= k1; k++) {
+        const x = x0 + (i + 0.5) * s, z = z0 + (k + 0.5) * s;
+        const l1 = ((b.z - c.z) * (x - c.x) + (c.x - b.x) * (z - c.z)) / d;
+        const l2 = ((c.z - a.z) * (x - c.x) + (a.x - c.x) * (z - c.z)) / d;
+        if (l1 < -1e-6 || l2 < -1e-6 || l1 + l2 > 1 + 1e-6) continue;
+        put(i, k, l1 * a.y + l2 * b.y + (1 - l1 - l2) * c.y);
+      }
+    };
+    const walk = (o) => {
+      if (skip(o)) return;
+      const geo = o.isMesh && !blurOf(o) && o.geometry, p = geo && geo.attributes.position;
+      if (p) {
+        const ix = geo.index, m = o.matrixWorld, n = ix ? ix.count : p.count;
+        for (let t = 0; t + 2 < n; t += 3) {
+          _pv.fromBufferAttribute(p, ix ? ix.getX(t) : t).applyMatrix4(m);
+          _pa.fromBufferAttribute(p, ix ? ix.getX(t + 1) : t + 1).applyMatrix4(m);
+          _pc.fromBufferAttribute(p, ix ? ix.getX(t + 2) : t + 2).applyMatrix4(m);
+          tri(_pv, _pa, _pc);
+        }
+      }
+      for (let i = 0; i < o.children.length; i++) walk(o.children[i]);
+    };
+    walk(tpl);
+    return { x0, z0, nx, nz, lo, hi };
+  }
+  /* A ship's deck, once per model: the top of her plan; the same grown by a
+     cell each way, which is what an airframe has to clear (a 1 m raster can
+     put the side of an island half a metre from where it is drawn); and her
+     deck's level at the stern, the aft eighth, where every flight deck in
+     the game is - a carrier's full length, an escort's pad aft of her hangar. */
+  function deckOf(stpl) {
+    if (stpl._deckTop) return stpl._deckTop;
+    const P = planOf(stpl, o => !o.visible), nx = P.nx, nz = P.nz, top = P.hi;
+    const grown = new Float32Array(nx * nz);
+    for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) {
+      let m = -Infinity;
+      for (let a = Math.max(0, i - 1); a <= Math.min(nx - 1, i + 1); a++)
+        for (let b = Math.max(0, k - 1); b <= Math.min(nz - 1, k + 1); b++)
+          if (top[a * nz + b] > m) m = top[a * nz + b];
+      grown[i * nz + k] = m;
+    }
+    const n = new Map(), sum = new Map();
+    let best = 0, L0 = 0;
+    for (let i = 0; i < Math.max(2, nx >> 3); i++) for (let k = 0; k < nz; k++) {
+      const y = top[i * nz + k];
+      if (!(y > 0)) continue;
+      const q = Math.round(y * 4), c = (n.get(q) || 0) + 1;
+      n.set(q, c); sum.set(q, (sum.get(q) || 0) + y);
+      if (c > best) best = c;
+    }
+    for (const [q, c] of n) if (c === best) { L0 = sum.get(q) / c; break; }
+    return (stpl._deckTop = { x0: P.x0, z0: P.z0, nx, nz, top, grown, L0 });
+  }
+  /* An airframe's plan relative to its lowest point: what it would hit on a
+     deck. The gear counts whether or not it is down; the rotor blades do not
+     - they stop wherever they stop, and they ride high. Cells within WHEEL of
+     the lowest point are what it stands on. Once per template. */
+  function airPlanOf(tpl) {
+    if (tpl._airPlan) return tpl._airPlan;
+    const foot = footOf(tpl);
+    const P = planOf(tpl, o => o.name === "rotor" || o.name === "rotordisc" || (!o.visible && o.name !== "gear"));
+    const dx = [], dz = [], lo = [], hi = [], sup = [];
+    for (let i = 0; i < P.nx; i++) for (let k = 0; k < P.nz; k++) {
+      const j = i * P.nz + k;
+      if (!(P.lo[j] < Infinity)) continue;
+      if (P.lo[j] - foot < PARK.WHEEL) sup.push(dx.length);
+      dx.push(P.x0 + (i + 0.5) * PARK.CELL); dz.push(P.z0 + (k + 0.5) * PARK.CELL);
+      lo.push(Math.max(0, P.lo[j] - foot)); hi.push(P.hi[j] - foot);
+    }
+    if (!sup.length && dx.length) sup.push(0);
+    return (tpl._airPlan = { n: dx.length, dx: new Float32Array(dx), dz: new Float32Array(dz),
+                             lo: new Float32Array(lo), hi: new Float32Array(hi), sup: new Int32Array(sup) });
+  }
+  /* A carrier's spots: every cell of her deck, at each of a few headings,
+     scored, and the lowest wins. It stands at her deck level; each cell of
+     what it stands on (WHEEL) over the side or over a lower level costs 30;
+     whatever of it goes into her - island, hangar, the aircraft her modellers
+     parked on her deck - 100 a metre; 4 a cell where it would stand in an
+     aircraft already placed; 0.1 a cell hanging over the water, where a tail
+     or a wingtip may. A deck park angles aircraft or turns them aft, so
+     those headings are tried; a helicopter carrier's machines face forward
+     or aft on her flight deck, which is her after half, and are drawn to her
+     stern (0.2 a metre). A candidate is dropped the moment it cannot win.
+     13 to 70 ms a carrier, the first time one is drawn. */
+  const YAW_WING = [0, Math.PI, 0.4, -0.4, Math.PI + 0.4, Math.PI - 0.4];
+  const YAW_ROTOR = [0, Math.PI, 0.35, -0.35];
+  let _sx = new Float32Array(64), _sz = new Float32Array(64);
+  function placeOn(D, A, occ, rotor) {
+    const s = PARK.CELL, n = A.n, ns = A.sup.length, nx = D.nx, nz = D.nz, L = D.L0;
+    const yaws = rotor ? YAW_ROTOR : YAW_WING, aft = rotor ? 0.2 : 0, xn = rotor ? Math.ceil(nx * 0.5) : nx;
+    if (_sx.length < n) { _sx = new Float32Array(n); _sz = new Float32Array(n); }
+    let best = null, bc = Infinity;
+    for (let yi = 0; yi < yaws.length; yi++) {
+      const yaw = yaws[yi], c = Math.cos(yaw), sn = Math.sin(yaw);
+      for (let j = 0; j < n; j++) {                 // its cells turned, in her cells
+        _sx[j] = (A.dx[j] * c + A.dz[j] * sn) / s + 0.5;
+        _sz[j] = (-A.dx[j] * sn + A.dz[j] * c) / s + 0.5;
+      }
+      for (let ci = 0; ci < xn; ci++) for (let ck = 0; ck < nz; ck++) {
+        let cost = aft * ci * s;
+        for (let q = 0; q < ns && cost < bc; q++) {
+          const j = A.sup[q], i = Math.floor(ci + _sx[j]), k = Math.floor(ck + _sz[j]);
+          if (i < 0 || k < 0 || i >= nx || k >= nz || !(D.top[i * nz + k] >= L - 0.3)) cost += 30;
+        }
+        for (let j = 0; j < n && cost < bc; j++) {
+          const i = Math.floor(ci + _sx[j]), k = Math.floor(ck + _sz[j]);
+          if (i < 0 || k < 0 || i >= nx || k >= nz) { cost += 0.1; continue; }
+          const m = i * nz + k, t = D.grown[m], y0 = L + A.lo[j];
+          if (t === -Infinity) cost += 0.1;
+          else if (t > y0 + 0.15) cost += 100 * (t - y0 - 0.15);
+          if (occ.lo[m] <= L + A.hi[j] && y0 <= occ.hi[m]) cost += 4;
+        }
+        if (cost < bc) { bc = cost; best = { x: D.x0 + (ci + 0.5) * s, z: D.z0 + (ck + 0.5) * s, yaw, L, y: L, cost }; }
+      }
+    }
+    return best;
+  }
+  /* An escort's helicopter: set down on the middle of her pad, facing her
+     bow, the way it lands - the middle of what it stands on over the middle
+     of the level deck that runs forward from her stern. Drawn 23.6 to 29.1 m
+     long, it is longer than the pad of every escort in the game (a Burke's
+     is 8 m, before her hangar), so its nose meets her hangar or deckhouse
+     or its tail hangs over her wake: placed by score instead, it went off
+     her stern or onto her bow. Her second helicopter waits in the hangar -
+     it is drawn on the same pad, where the two read as one - as a Burke's
+     and a Ticonderoga's do: two abreast on a 9 m beam were one pile of
+     rotors with a wheel over the side. */
+  function padSpot(D, A) {
+    /* her pad: the largest stretch of deck at her deck level that reaches
+       into her after fifth, in her after half */
+    const nx = D.nx, nz = D.nz, lim = Math.ceil(nx * 0.5), aft = Math.ceil(nx * 0.2);
+    const on = (m) => Math.abs(D.top[m] - D.L0) <= 0.3, seen = new Uint8Array(nx * nz);
+    let sx = 0, sz = 0, best = 0;
+    for (let i0 = 0; i0 < aft; i0++) for (let k0 = 0; k0 < nz; k0++) {
+      if (seen[i0 * nz + k0] || !on(i0 * nz + k0)) continue;
+      const q = [i0 * nz + k0];
+      seen[q[0]] = 1;
+      let ax = 0, az = 0;
+      for (let h = 0; h < q.length; h++) {
+        const m = q[h], i = (m / nz) | 0, k = m % nz;
+        ax += i; az += k;
+        if (i > 0 && !seen[m - nz] && on(m - nz)) { seen[m - nz] = 1; q.push(m - nz); }
+        if (i < lim - 1 && !seen[m + nz] && on(m + nz)) { seen[m + nz] = 1; q.push(m + nz); }
+        if (k > 0 && !seen[m - 1] && on(m - 1)) { seen[m - 1] = 1; q.push(m - 1); }
+        if (k < nz - 1 && !seen[m + 1] && on(m + 1)) { seen[m + 1] = 1; q.push(m + 1); }
+      }
+      if (q.length > best) { best = q.length; sx = ax / q.length; sz = az / q.length; }
+    }
+    /* its middle: along it, halfway between its wheels fore and aft; across
+       it, the middle of its span (the lowest wheel alone is to one side) */
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (let j = 0; j < A.sup.length; j++) { x0 = Math.min(x0, A.dx[A.sup[j]]); x1 = Math.max(x1, A.dx[A.sup[j]]); }
+    for (let j = 0; j < A.n; j++) { z0 = Math.min(z0, A.dz[j]); z1 = Math.max(z1, A.dz[j]); }
+    const xc = D.x0 + (sx + 0.5) * PARK.CELL - (x0 + x1) / 2, z = D.z0 + (sz + 0.5) * PARK.CELL - (z0 + z1) / 2;
+    /* then along her centreline, as far as its wheels stay on the pad, to
+       where the least of it goes into her hangar */
+    let bx = xc, bc = Infinity;
+    for (let d = -15; d <= 15; d += 0.5) {
+      const x = xc + d;
+      let c = Math.abs(d) * 0.01;
+      for (let j = 0; j < A.n && c < bc; j++) {
+        const i = Math.floor((x + A.dx[j] - D.x0) / PARK.CELL), k = Math.floor((z + A.dz[j] - D.z0) / PARK.CELL);
+        const m = i < 0 || k < 0 || i >= nx || k >= nz ? -1 : i * nz + k;
+        if (A.lo[j] < PARK.WHEEL && !(m >= 0 && on(m))) c += 1000;
+        if (m >= 0 && D.grown[m] > D.L0 + A.lo[j] + 0.15) c += D.grown[m] - D.L0 - A.lo[j] - 0.15;
+      }
+      if (c < bc) { bc = c; bx = x; }
+    }
+    return { x: bx, z, yaw: 0, L: D.L0, y: D.L0, cost: 0 };
+  }
+  /* what a placed airframe takes up, for the next one to keep clear of */
+  function stamp(D, A, sp, occ) {
+    const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw);
+    for (let j = 0; j < A.n; j++) {
+      const i = Math.floor((sp.x + A.dx[j] * c + A.dz[j] * sn - D.x0) / PARK.CELL);
+      const k = Math.floor((sp.z - A.dx[j] * sn + A.dz[j] * c - D.z0) / PARK.CELL);
+      if (i < 0 || k < 0 || i >= D.nx || k >= D.nz) continue;
+      const m = i * D.nz + k;
+      if (sp.L + A.lo[j] < occ.lo[m]) occ.lo[m] = sp.L + A.lo[j];
+      if (sp.L + A.hi[j] > occ.hi[m]) occ.hi[m] = sp.L + A.hi[j];
+    }
+  }
+  /* the deck under the spot's lowest points, from her own drawn mesh: a
+     downward ray under each, once per model and spot; it stands on the
+     highest of them */
+  function settle(sp, tpl, stpl) {
+    footOf(tpl);
+    const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw), P = tpl._footPts;
+    let y = -Infinity;
+    for (let i = 0; i < P.length; i += 2) {
+      const h = surfaceUnder(stpl, sp.x + P[i] * c + P[i + 1] * sn, sp.L + 1, sp.z - P[i] * sn + P[i + 1] * c);
+      if (Math.abs(h - sp.L) < 1 && h > y) y = h;
+    }
+    sp.y = y > -Infinity ? y : sp.L;
+    return sp;
+  }
+  function freshOcc(D) {
+    return { lo: new Float32Array(D.nx * D.nz).fill(Infinity), hi: new Float32Array(D.nx * D.nz).fill(-Infinity) };
+  }
+  /* A ship's spots, once per model and deck size, laid out for the
+     complement the game embarks (G.deckAircraftFor), the largest first. On a
+     carrier a machine that cannot be placed cleanly (SHARE) is drawn on the
+     spot of one of its own kind, as on an escort: it is in the hangar. */
+  function deckLayout(S, stpl) {
+    const n = Math.max(1, S.deckSlots ? S.deckSlots() : 1);
+    const kept = stpl._deck || (stpl._deck = []);
+    if (kept[n]) return kept[n];
+    const D = deckOf(stpl), escort = !S.def.carrier, rotor = escort || !!S.def.heloCarrier;
+    const era = S.owner.era || (G.era || "e20"), tpls = [], plans = [], hover = [];
+    for (let i = 0; i < n; i++) {
+      let id = G.deckAircraftFor ? G.deckAircraftFor(S, i) : null;
+      if (!id || !UNITS[id]) id = (G.deckTypesFor ? G.deckTypesFor(S) : [])[0];
+      const t = id && UNITS[id] ? getModel(UNITS[id], S.owner.color, era) : null;
+      tpls.push(t); plans.push(t ? airPlanOf(t) : null); hover.push(!!(id && UNITS[id] && UNITS[id].hover));
+    }
+    const order = tpls.map((t, i) => i).sort((a, b) => (plans[b] ? plans[b].n : 0) - (plans[a] ? plans[a].n : 0) || a - b);
+    const occ = freshOcc(D), spots = new Array(n);
+    let first = null;
+    for (const i of order) {
+      if (!plans[i] || (escort && first)) continue;
+      const sp = escort ? padSpot(D, plans[i]) : placeOn(D, plans[i], occ, rotor);
+      if (sp && (!first || sp.cost < PARK.SHARE)) {
+        spots[i] = settle(sp, tpls[i], stpl); stamp(D, plans[i], sp, occ);
+        if (!first) first = sp;
+      }
+    }
+    for (const i of order) if (!spots[i]) {
+      for (const j of order) if (spots[j] && hover[j] === hover[i]) { spots[i] = spots[j]; break; }
+      if (!spots[i]) spots[i] = first || { x: D.x0 + D.nx * PARK.CELL * 0.1, z: 0, yaw: 0, L: D.L0, y: D.L0, cost: Infinity };
+    }
+    return (kept[n] = { D, n, tpls, plans, hover, spots, escort, rotor, alt: new Array(n) });
+  }
+  /* a type the layout was not made for - the stealth fighter or the AEW
+     aircraft bought onto a spare spot - gets its own place, clear of what
+     the other spots were laid out for; once per model, spot and type */
+  function spotFor(lay, k, tpl, stpl) {
+    if (lay.tpls[k] === tpl) return lay.spots[k];
+    const m = lay.alt[k] || (lay.alt[k] = new Map());
+    let sp = m.get(tpl);
+    if (!sp) {
+      const A = airPlanOf(tpl), occ = freshOcc(lay.D);
+      for (let i = 0; i < lay.n; i++) if (lay.spots[i] !== lay.spots[k] && lay.plans[i]) stamp(lay.D, lay.plans[i], lay.spots[i], occ);
+      sp = settle((lay.escort ? padSpot(lay.D, A) : placeOn(lay.D, A, occ, lay.rotor)) || Object.assign({}, lay.spots[k]), tpl, stpl);
+      m.set(tpl, sp);
+    }
+    return sp;
+  }
+  /* the spot for one more aircraft coming aboard: a free one laid out for
+     its type, else for its kind (rotor or wing), else any free one; with more
+     aboard than she has spots, the least used */
+  function claimSpot(S, lay, rec, e) {
+    const used = new Array(lay.n).fill(0);
+    for (const r of ents.values())
+      if (r !== rec && r.deckShip === S && r.deckK >= 0 && r.deckK < lay.n) used[r.deckK]++;
+    let best = 0, bs = Infinity;
+    for (let k = 0; k < lay.n; k++) {
+      const sc = used[k] * 10 + (lay.tpls[k] === rec.tpl ? 0 : lay.hover[k] === !!e.def.hover ? 1 : 2);
+      if (sc < bs) { bs = sc; best = k; }
+    }
+    return best;
+  }
+  /* where a machine on the ground or an airbase's pad rests: on the pad
+     under it, or on the ground where that is higher - the apron is drawn
+     flat at the base's middle, and on a hillside the slope can bury it */
+  function landRest(e, rec, host, ground) {
+    return (host ? Math.max(padTop(host, e, ground), ground) : ground) - rec.foot;
+  }
+  function easeAlt(rec, want, dt) {
+    if (rec.alt === undefined) rec.alt = want;      // spawns at its real height
+    const rate = (want > rec.alt ? 26 : 17) * dt;   // metres a second
+    rec.alt += U.clamp(want - rec.alt, -rate, rate);
+    return rec.alt;
+  }
+  /* An aircraft on a ship's deck, or coming down to it, or leaving it: set
+     after every entity has been placed this frame, so the ship is where she
+     will be drawn. The machine stays with the ship it is drawn on
+     (rec.deckShip) until it is clear of her, whatever the game does with its
+     home meanwhile.
+     - On her deck, or coming down to it (its home, parked or landing): the
+       spot is turned with her - her heading, her roll in the sea, and the
+       list, trim and settling js/damage3d.js gave her last frame (it runs
+       after this; a list moves 0.03 rad/s at most, so a frame late is under
+       3 cm at 25 m from her middle). An enemy ship in fog whose machine is
+       in sight is not drawn, so her pose is then where the game has her. It
+       eases down from the height the game flies it at and blends from where
+       the game has it onto the spot over the last 30 m, heading included.
+       The heading is carried on from the frame before, not re-wrapped: re-
+       wrapping it every frame flipped the blend the long way round whenever
+       the gap between the two headings passed 180 degrees, up to 151 degrees
+       in one frame on a destroyer's take-off.
+     - Leaving her - a sortie, a new home, a ship sunk or gone: from where it
+       is drawn at that moment, the offset from where the game has it (the
+       spot, and her heading and tilt) is held and dies away as it climbs the
+       30 m. The game already has an airframe at full speed from the first
+       frame, so it goes with the game at once rather than lifting straight
+       up and then racing to catch it (a jet fell 24.5 m behind); and a home
+       moved to another ship, or a ship sunk under it, no longer snaps it to
+       the new spot or the game's slot (338 m and 45 m in one frame).
+     Nothing allocated: arithmetic on what is cached. */
+  function seatOnDeck(e, rec, dt, seen) {
+    const g = rec.grp, mx = gx2m(e.x), mz = gx2m(e.y);
+    const onDeck = e.parked || (e.order && e.order.type === "parked");
+    const landing = e.order && (e.order.type === "rtb" || e.order.type === "land") && !e.moving;
+    const host = e.padOn && !e.padOn.dead && e.padOn.kind !== "building" ? e.padOn : null;
+    let S = rec.deckShip;
+    if (!S) {                                         // coming aboard: a spot on her deck
+      S = rec.deckShip = host;
+      rec.deckTpl = getModel(S.def, S.owner.color, S.owner.era || (G.era || "e20"));
+      const lay = deckLayout(S, rec.deckTpl);
+      rec.deckK = claimSpot(S, lay, rec, e);
+      rec.deckSp = spotFor(lay, rec.deckK, rec.tpl, rec.deckTpl);
+      rec.deckMode = 0; rec.deckW = 0; rec.lsX = rec.lsZ = rec.lsY = 0; rec.gameX = mx; rec.gameZ = mz;
+    }
+    let my, w;
+    if (S === host && (onDeck || landing)) {
+      const sr = seen.has(S.id) ? ents.get(S.id) : null;
+      let px, py, pz, rx, ry, rz;
+      if (sr) {
+        const sg = sr.grp;
+        rec.lsX = sr.listX || 0; rec.lsZ = sr.listZ || 0; rec.lsY = sr.sinkY || 0;
+        px = sg.position.x; py = sg.position.y; pz = sg.position.z;
+        rx = sg.rotation.x; ry = sg.rotation.y; rz = sg.rotation.z;
+      } else {                                        // as the entity sync would draw her
+        px = gx2m(S.x); py = 0.35; pz = gx2m(S.y); ry = -S.ang;
+        rz = Math.sin(G.time * 0.8 + S.id) * 0.012; rx = Math.sin(G.time * 0.6 + S.id * 2) * 0.008;
+      }
+      rx += rec.lsX; rz += rec.lsZ; py += rec.lsY;
+      /* the spot, raised by the machine's own foot, turned as three.js turns
+         her group (Euler YXZ: roll, then pitch, then heading) */
+      const sp = rec.deckSp, lx = sp.x, ly = sp.y - rec.foot, lz = sp.z;
+      const cz = Math.cos(rz), snz = Math.sin(rz), cx = Math.cos(rx), snx = Math.sin(rx);
+      const cy = Math.cos(ry), sny = Math.sin(ry);
+      const x1 = lx * cz - ly * snz, y1 = lx * snz + ly * cz;
+      const y2 = y1 * cx - lz * snx, z2 = y1 * snx + lz * cx;
+      const ax = px + x1 * cy + z2 * sny, ay = py + y2, az = pz - x1 * sny + z2 * cy;
+      /* her tilt, in the frame of an airframe turned sp.yaw on her deck */
+      const cw = Math.cos(sp.yaw), sw = Math.sin(sp.yaw), ayaw = ry + sp.yaw;
+      const arx = rx * cw - rz * sw, arz = rx * sw + rz * cw;
+      rec.deckRest = ay;
+      my = easeAlt(rec, onDeck ? ay : ay + 2.8, dt);
+      const h = U.clamp((my - ay) / PARK.BLEND, 0, 1);
+      w = 1 - h * h * (3 - 2 * h);
+      let dh;
+      if (rec.deckMode !== 1) {
+        /* into the blend: from the heading it is drawn at now, so the switch
+           itself moves nothing (the flight heading is held from here: the
+           game turns a machine to -90 degrees the moment it is serviced) */
+        const yp = g.rotation.y, a1 = ayaw + TAU * Math.round((yp - ayaw) / TAU);
+        rec.parkYaw = w < 0.999 ? (yp - w * a1) / (1 - w) : yp;
+        dh = a1 - rec.parkYaw;
+        rec.deckMode = 1;
+      } else {
+        dh = ayaw - rec.parkYaw;
+        dh += TAU * Math.round((rec.dh - dh) / TAU);    // carried on from the last frame
+      }
+      rec.dh = dh;
+      g.position.set(mx + (ax - mx) * w, my, mz + (az - mz) * w);
+      g.rotation.set(arx * w, rec.parkYaw + dh * w, arz * w);
+    } else if (!(Math.hypot(mx - rec.gameX, mz - rec.gameZ) > PARK.JUMP)) {
+      if (rec.deckMode !== 2) {
+        rec.deckMode = 2;
+        rec.dW0 = rec.deckW;
+        rec.dX = rec.deckX - mx; rec.dZ = rec.deckZ - mz;    // the loop has moved the group to the game's place
+        const d = g.rotation.y + e.ang;
+        rec.dYaw = d - TAU * Math.round(d / TAU);
+        rec.dRX = g.rotation.x; rec.dRZ = g.rotation.z;
+      }
+      my = easeAlt(rec, Math.max(heightAt(e.x, e.y) + 6, AIR_ALT), dt);
+      const h = U.clamp((my - rec.deckRest) / PARK.BLEND, 0, 1);
+      w = 1 - h * h * (3 - 2 * h);
+      const f = rec.dW0 > 1e-3 ? Math.min(1, w / rec.dW0) : 0;
+      g.position.set(mx + rec.dX * f, my, mz + rec.dZ * f);
+      g.rotation.set(rec.dRX * f, -e.ang + rec.dYaw * f, rec.dRZ * f);
+      if (f <= 0) { rec.deckShip = null; rec.deckK = -1; rec.deckMode = 0; w = 0; }
+    } else {
+      /* the game moved it further than a jet flies in a frame, onto a ramp
+         far off - a carrier sunk under what was parked on her re-homes it to
+         the nearest free ramp and sets it down there, 1.3 km away in one
+         probe: that is drawn as the game has it, straight onto its spot or
+         its pad there, not slid across the sea */
+      rec.deckShip = null; rec.deckK = -1; rec.deckMode = 0; rec.deckW = 0; rec.alt = undefined;
+      if (host && (onDeck || landing)) { seatOnDeck(e, rec, dt, seen); return; }
+      const pad = e.padOn && !e.padOn.dead ? e.padOn : null, ground = heightAt(e.x, e.y);
+      my = easeAlt(rec, onDeck ? landRest(e, rec, pad, ground) : Math.max(ground + 6, AIR_ALT), dt);
+      g.position.set(mx, my, mz); g.rotation.set(0, -e.ang, 0);
+      w = 0;
+    }
+    rec.deckW = w; rec.deckX = g.position.x; rec.deckZ = g.position.z; rec.gameX = mx; rec.gameZ = mz;
+    if (rec.gear) rec.gear.visible = my < rec.deckRest + 18;
+  }
+
   /* ---------------- faction architecture ----------------
      One shared set of building models, restyled per faction so a base reads
      as NATO / Eastern / PLA at a glance: different concrete and roof palettes,
@@ -918,6 +1451,8 @@ var Render3D = (function () {
 
   /* ---------------- entity sync ---------------- */
   let lastEraKey = "";
+  const riders = [];                 // aircraft on, onto or off a ship's deck this frame (seatOnDeck)
+  let nRiders = 0;
   function syncEntities(dt) {
     /* when a commander re-equips, its structures are re-skinned to the period */
     const ek = G.players.map(p => p.era || "e20").join(",");
@@ -960,6 +1495,7 @@ var Render3D = (function () {
           tailrotor: findPart(inst, "tailrotor"),
           gear: findPart(inst, "gear"),
           kind: e.kind,
+          tpl,                     // the cached template: what is measured once per model
         };
         three.scene.add(grp);
         ents.set(e.id, rec);
@@ -990,19 +1526,33 @@ var Render3D = (function () {
              deck and cruise height. A helicopter launching off a destroyer
              simply appeared in the air. Ease toward the target instead, and
              climb faster than you descend, the way an aircraft does. */
-          const ground = heightAt(e.x, e.y);
           const onDeck = e.parked || (e.order && e.order.type === "parked");
           const landing = e.order && (e.order.type === "rtb" || e.order.type === "land") && !e.moving;
-          const want = onDeck ? ground + 1.2
-                     : landing ? ground + 4
-                     : Math.max(ground + 6, AIR_ALT);
-          if (rec.alt === undefined) rec.alt = want;      // spawns at its real height
-          const rate = (want > rec.alt ? 26 : 17) * dt;   // metres a second
-          rec.alt += U.clamp(want - rec.alt, -rate, rate);
-          my = rec.alt;
+          if (rec.foot === undefined) rec.foot = footOf(rec.tpl);
+          const host = e.padOn && !e.padOn.dead ? e.padOn : null;
+          if (rec.deckShip || (host && host.kind !== "building" && (onDeck || landing))) {
+            /* on a ship's deck, coming down to it or leaving it: seatOnDeck
+               sets it after this loop, once she has been placed */
+            riders[nRiders++] = e;
+            my = rec.alt === undefined ? 0 : rec.alt;
+          } else {
+            /* resting on the ground or the airbase's pad under it (landRest);
+               the approach and the cruise are measured from the ground, as before */
+            const ground = heightAt(e.x, e.y);
+            const rest = landRest(e, rec, onDeck ? host : null, ground);
+            my = easeAlt(rec, onDeck ? rest : landing ? rest + 2.8 : Math.max(ground + 6, AIR_ALT), dt);
+          }
         } else if (e.layer === "sea" || e.layer === "sub") {
           my = 0.35;
           if (e.layer === "sub") my = -1.2;
+          /* what js/damage3d.js laid on her after the last frame - a holed
+             ship's list, trim and settling - read back before it is replaced,
+             for the aircraft on her deck (seatOnDeck) */
+          if (rec.baseRX !== undefined) {
+            rec.listX = rec.grp.rotation.x - rec.baseRX;
+            rec.listZ = rec.grp.rotation.z - rec.baseRZ;
+            rec.sinkY = rec.grp.position.y - my;
+          }
         } else {
           my = heightAt(e.x, e.y);
         }
@@ -1012,10 +1562,14 @@ var Render3D = (function () {
            fore-and-aft axis. With the default XYZ order a pitched, turning
            tank tips about the world axes and looks like it is sliding on ice. */
         rec.grp.rotation.order = "YXZ";
-        rec.grp.rotation.y = -e.ang;
+        /* an aircraft riding a ship's deck is turned by seatOnDeck after this
+           loop; it keeps the heading it was drawn at until then, so its tail
+           rotor below spins about its own shaft, not the game's heading */
+        if (!rec.deckShip) rec.grp.rotation.y = -e.ang;
         if (e.layer === "sea") {
           rec.grp.rotation.z = Math.sin(G.time * 0.8 + e.id) * 0.012;
           rec.grp.rotation.x = Math.sin(G.time * 0.6 + e.id * 2) * 0.008;
+          rec.baseRX = rec.grp.rotation.x; rec.baseRZ = rec.grp.rotation.z;
         } else if (e.layer === "ground" && e.cat === "infantry") {
           /* ---- a walk cycle ----
              The soldier models are built posed mid-stride, which is right for
@@ -1186,6 +1740,8 @@ var Render3D = (function () {
         }
       }
     }
+    for (let i = 0; i < nRiders; i++) { seatOnDeck(riders[i], ents.get(riders[i].id), dt, seen); riders[i] = null; }
+    nRiders = 0;
     for (const [id, rec] of ents) {
       if (!seen.has(id)) {
         /* An entity that died this frame keeps its model: Impact3D claims it
@@ -1876,7 +2432,12 @@ var Render3D = (function () {
       if (e.dead || e.carried) continue;
       if (!ents.has(e.id)) continue;
       const alt = e.layer === "air" ? AIR_ALT + 4 : undefined;
-      const p = project(e.x, e.y, alt !== undefined ? alt : undefined);
+      /* an aircraft's marker stands over its model, at the same height as
+         ever: a deck machine is drawn on a spot of her own deck, up to 25 m
+         from the game's grid slot, and its ring floated beside it */
+      const ar = alt !== undefined ? ents.get(e.id) : null;
+      const p = ar ? project(m2gx(ar.grp.position.x), m2gx(ar.grp.position.z), alt)
+                   : project(e.x, e.y, alt !== undefined ? alt : undefined);
       if (p.behind || p.x < -80 || p.x > W + 80 || p.y < -80 || p.y > H + 80) continue;
       const scale = 760 / cam.dist;
       const r = Math.max(9, e.r * scale * 0.9);
@@ -2292,9 +2853,19 @@ var Render3D = (function () {
        the selection box test against has to be down there too - otherwise the
        aeroplane you can see on the ramp cannot be clicked, and right-clicking
        it to order a strike misses by a whole cruise altitude. */
-    if (e.layer === "air")
-      alt = (e.parked || (e.order && e.order.type === "parked")) ? undefined : AIR_ALT;
-    else if (e.layer === "sea") alt = 2;
+    if (e.layer === "air") {
+      const parked = e.parked || (e.order && e.order.type === "parked");
+      /* ...and where it is drawn: at its feet on the pad or the deck it
+         stands on - on a ship a spot of her own deck, not the slot the game
+         keeps for it (seatOnDeck) - and at the model while it lifts off a
+         deck or comes down to one */
+      const rec = ents.get(e.id);
+      if (rec && rec.foot !== undefined && (parked || rec.deckShip)) {
+        const p = rec.grp.position;
+        return project(m2gx(p.x), m2gx(p.z), parked ? p.y + rec.foot : p.y);
+      }
+      alt = parked ? undefined : AIR_ALT;
+    } else if (e.layer === "sea") alt = 2;
     else if (e.layer === "sub") alt = 0;
     else alt = undefined;
     return project(e.x, e.y, alt !== undefined ? alt : undefined);
