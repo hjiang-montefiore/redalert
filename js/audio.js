@@ -168,6 +168,49 @@ var Sfx = (function () {
     m.connect(lim); lim.connect(clip); clip.connect(out); out.connect(ac.destination);
 
     var sfx = gainNode(ac, 1.0);   sfx.connect(m);
+    /* TERRAIN RETURNS. Outdoors there is no reverb tail, but a shot or a
+       blast is never dry either: it comes back off the vehicles, walls and
+       ground close by within a few tens of ms, and later off the tree line
+       or the rise behind you - dull, because foliage and the longer path eat
+       the top, and never as a clean copy, because a rough surface scatters
+       it over tens of ms. Without that every one-shot here sounded as if
+       fired in an anechoic room.
+       Two clusters, off the one-shot bus only (UI cues and engines stay
+       dry):
+         near    six small taps at 13-45 ms, irregular so they make no
+                 pitch, each lowpassed a little lower. Inside ~50 ms the ear
+                 fuses them with the sound itself: they read as space and
+                 body, not as echoes.
+         far     six taps at 97-163 ms, 9-17 ms apart, each lowpassed lower
+                 than the one before (1.5 kHz down to 700 Hz) and on
+                 alternating sides: one rough, dull return off the tree line,
+                 not six copies of the crack.
+       A first cut used six identical 2.2 kHz taps spread 29-211 ms; on a
+       single rifle shot or a clink they read as a multi-tap delay. Every tap
+       has its own filter now, so no two returns are the same copy, and the
+       send is highpassed at 160 Hz so a blast's sub is not doubled into the
+       limiter. The taps sum to -19.5 dB of the dry energy before their
+       filters; after them a rifle crack's returns sit about 28 dB under
+       it and an armour clang's about 16 dB, and the loudest 400 ms of any
+       weapon report moves by -0.3 to +0.2 dB. No feedback loop, so nothing
+       can build up however dense the battle, and it is built once per
+       context: no sound pays a node for it. */
+    var rs = gainNode(ac, 0.15), rh = hpf(ac, 160);
+    sfx.connect(rs); rs.connect(rh);
+    var side = [m, m];
+    if (ac.createStereoPanner) {
+      side = [ac.createStereoPanner(), ac.createStereoPanner()];
+      side[0].pan.value = -0.6; side[1].pan.value = 0.55;
+      side[0].connect(m); side[1].connect(m);
+    }
+    [[0.013, 0.34, 3400], [0.019, 0.30, 3100], [0.026, 0.27, 2800], [0.031, 0.23, 2600],
+     [0.038, 0.20, 2400], [0.045, 0.17, 2200],
+     [0.097, 0.17, 1500], [0.106, 0.15, 1350], [0.118, 0.13, 1200], [0.131, 0.11, 1000],
+     [0.146, 0.09, 850], [0.163, 0.07, 700]].forEach(function (tp, i) {
+      var d = ac.createDelay(0.2), l = lpf(ac, tp[2], 0.5), g = gainNode(ac, tp[1]);
+      d.delayTime.value = tp[0];
+      rh.connect(d); d.connect(l); l.connect(g); g.connect(side[i & 1]);
+    });
     var ui  = gainNode(ac, 0.90);  ui.connect(m);
     var bed = gainNode(ac, 1.0);   bed.connect(m);
     /* Engines get their own compressor as well as a hard trim, so seven idling
@@ -1395,96 +1438,419 @@ var Sfx = (function () {
     startNoise(n, t0, dec);
   }
 
-  /* e is a 0..1 energy figure taken from the round's damage */
+  /* ---- the struck-body building blocks ----
+     (owner) "i don't see damaged effect so far." Measured, the old metal was
+     not metal: ring() lets its noise exciter run 6 ms into a Q 14-18
+     bandpass, and a bandpass that narrow at 430 Hz rings for Q / (pi f) =
+     10 ms, so the "0.55 s hull ring" measured 30 ms and every steel hit was
+     really the sine thud under it (armour centroid 144 Hz, hull 77 Hz - the
+     same band as the 120 mm report that fired the round, which masked it).
+     A struck plate is the opposite: an impulse with almost no duration and
+     modes that ring on long after it. So metal now rings on sine
+     oscillators at the body's own inharmonic modes, and everything that is
+     many small impacts (spall, grit, debris, the crush of a fracture) is one
+     noise source, one bandpass and one gain scheduled as a train of grains,
+     where the old grains() spent three nodes on every grain.
+     ring, grains, thud and hiss are unchanged and still here for anyone
+     who calls them. */
+
+  /* A struck body's modes: one sine per mode, a sub-millisecond attack, each
+     mode decaying on its own clock (tau / ratio^0.55, so the high modes die
+     first and a clang goes CLANG-ng instead of sounding a chord). ratios is
+     the body's inharmonic series; amps weights each mode. glide bends every
+     mode down by that fraction over the first 60 ms - a hard blow stiffens a
+     plate for an instant, which is what makes a big hit sound strained.
+     Each mode wanders only 0.4%: the caller varies the whole body's pitch
+     per hit, and more than that per mode would scramble a designed beat. */
+  function plateModes(ac, out, t0, f1, ratios, amps, tau, lvl, cut, glide) {
+    for (var i = 0; i < ratios.length; i++) {
+      var f = f1 * ratios[i] * vary(0.004);
+      if (!amps[i] || f > cut * 1.2 || f > 15000) continue;
+      var o = osc(ac, "sine", f);
+      if (glide) {
+        o.frequency.setValueAtTime(f * (1 + glide), t0);
+        o.frequency.exponentialRampToValueAtTime(f, t0 + 0.06);
+      }
+      var g = gainNode(ac, 0);
+      var d = tau / Math.pow(ratios[i], 0.55);
+      burst(g.gain, t0, 0.0005, d, lvl * amps[i]);
+      o.connect(g); g.connect(out);
+      o.start(t0); o.stop(t0 + d + 0.03);
+    }
+  }
+
+  /* Many small impacts on ONE noise source, ONE bandpass and ONE gain: the
+     gain is scheduled as a train of grains and the bandpass jumps to a new
+     centre (log-uniform in fLo..fHi) for each one. shape > 1 crowds the
+     grains towards the start and every grain is quieter than the one before
+     it on average, which is how debris lands: most of it at once, then the
+     stragglers. Grains never overlap on the one envelope - each is cut short
+     at the next - so a dense train reads as a crunch and a sparse one as a
+     patter. */
+  function grainTrain(ac, out, t0, n, spread, fLo, fHi, dec, lvl, cut, q, shape) {
+    var fh = Math.min(fHi, cut);
+    if (n < 1 || fh < fLo * 1.05) return;
+    var s = noiseSrc(ac, 1), b = bp(ac, fLo, q || 5), g = gainNode(ac, 0);
+    var ts = [], i;
+    for (i = 0; i < n; i++) ts.push(Math.pow(rnd(), shape || 1) * spread);
+    ts.sort(function (x, y) { return x - y; });
+    g.gain.setValueAtTime(0, t0);
+    var last = t0;
+    for (i = 0; i < n; i++) {
+      var t = t0 + ts[i];
+      if (t < last) continue;
+      var room = (i + 1 < n ? t0 + ts[i + 1] : t + dec * 2) - t - 0.001;
+      var d = Math.min(dec * (0.5 + rnd()), Math.max(0.0015, room));
+      b.frequency.setValueAtTime(fLo * Math.pow(fh / fLo, rnd()), t);
+      var pk = lvl * (0.35 + 0.65 * rnd()) * (1 - 0.70 * ts[i] / Math.max(0.001, spread));
+      g.gain.setValueAtTime(0.00001, t);
+      g.gain.linearRampToValueAtTime(Math.max(0.00002, pk), t + 0.0006);
+      g.gain.exponentialRampToValueAtTime(0.00001, t + 0.0006 + d);
+      last = t + 0.0006 + d;
+    }
+    /* the envelope goes BEFORE the filter, so each grain's attack is
+       band-limited too: a muffled crunch stays muffled instead of every
+       grain clicking out to 20 kHz */
+    s.connect(g); g.connect(b); b.connect(out);
+    startNoise(s, t0, Math.max(0.01, last - t0));
+  }
+
+  /* a noise band with a real attack: the column of a water burst rising
+     and the spray coming down take a tenth of a second or more to build,
+     which hiss()'s 4 ms attack cannot say */
+  function noiseWash(ac, out, t0, type, fFrom, fTo, q, atk, dec, lvl, cut) {
+    var n = noiseSrc(ac, 1), f = ac.createBiquadFilter(), g = gainNode(ac, 0);
+    f.type = type; f.Q.value = q;
+    ramp(f.frequency, t0, Math.min(fFrom, cut), Math.min(fTo, cut), atk + dec);
+    burst(g.gain, t0, atk, dec, lvl);
+    n.connect(f); f.connect(g); g.connect(out);
+    startNoise(n, t0, atk + dec);
+  }
+
+  /* The contact, or the shock front: broadband above fHp, a fraction of a
+     millisecond to rise and a few ms to go. The ear times an event from this
+     edge, and it is what the air takes first - a distant one keeps only
+     what the absorption lowpass lets through. */
+  function contactCrack(ac, out, t0, fHp, dec, lvl, cut) {
+    if (lvl < 0.0005 || cut < fHp * 0.9) return;
+    var n = noiseSrc(ac, 1), h = hpf(ac, fHp), g = gainNode(ac, 0);
+    burst(g.gain, t0, 0.0003, dec, lvl);
+    n.connect(h); h.connect(g); g.connect(out);
+    startNoise(n, t0, dec + 0.01);
+  }
+
+  /* A ricochet. The round leaves tumbling, and a tumbling slug whistles at
+     its tumble rate, falling in pitch as it slows and recedes. Band noise
+     carries the rush of air and a quieter sine the whistle in it; a pure
+     sine alone is a cartoon. */
+  function ricochetWhine(ac, out, t0, f, dur, lvl, cut) {
+    if (f > cut) return;
+    var n = noiseSrc(ac, 1), b = bp(ac, f, 16), g = gainNode(ac, 0);
+    b.frequency.setValueAtTime(f * 1.08, t0);
+    b.frequency.exponentialRampToValueAtTime(f * 0.55, t0 + dur);
+    g.gain.setValueAtTime(0.00001, t0);
+    g.gain.linearRampToValueAtTime(lvl * 2.2, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(lvl * 0.9, t0 + dur * 0.45);
+    g.gain.exponentialRampToValueAtTime(0.00001, t0 + dur);
+    n.connect(b); b.connect(g); g.connect(out);
+    startNoise(n, t0, dur);
+    var o = osc(ac, "sine", f), go = gainNode(ac, 0);
+    o.frequency.setValueAtTime(f * 1.08, t0);
+    o.frequency.exponentialRampToValueAtTime(f * 0.55, t0 + dur);
+    go.gain.setValueAtTime(0.00001, t0);
+    go.gain.linearRampToValueAtTime(lvl * 0.35, t0 + 0.02);
+    go.gain.exponentialRampToValueAtTime(0.00001, t0 + dur * 0.9);
+    o.connect(go); go.connect(out);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+
+  /* The blast's positive phase: one heavy low swing. Its pitch starts at
+     `glide` times the note and falls to it within `gt` seconds: close to a
+     charge the first swing of the pressure wave is the shortest one, and
+     that steep first swing is the punch. It then sinks further as the swing
+     lengthens. It is driven through a soft saturator, so it carries 3f and
+     5f: 40-80 Hz is below what a laptop speaker can make, and those
+     harmonics are what let the ear hear the fundamental that is not there.
+     The drive sits before the saturator, so the harmonics fade as the swing
+     does, as the real nonlinearity of a loud pressure wave would. The
+     harmonics stay under 3 kHz, far below Nyquist, so the shaper needs no
+     oversampling. */
+  var thumpCurves = {};
+  function blastThump(ac, out, t0, f, dec, lvl, drive, glide, gt) {
+    var k = Math.round(drive * 10) / 10;
+    if (!thumpCurves[k]) {
+      var c = new Float32Array(1024), d = Math.tanh(k);
+      for (var i = 0; i < 1024; i++) c[i] = Math.tanh(((i * 2) / 1023 - 1) * k) / d;
+      thumpCurves[k] = c;
+    }
+    var o = osc(ac, "sine", f);
+    o.frequency.setValueAtTime(f * glide, t0);
+    o.frequency.exponentialRampToValueAtTime(f, t0 + Math.min(gt, dec * 0.2));
+    o.frequency.exponentialRampToValueAtTime(Math.max(22, f * 0.6), t0 + dec);
+    var g = gainNode(ac, 0);
+    burst(g.gain, t0, 0.0025, dec, 1);
+    var ws = ac.createWaveShaper();
+    ws.curve = thumpCurves[k];
+    var go = gainNode(ac, lvl);
+    o.connect(g); g.connect(ws); ws.connect(go); go.connect(out);
+    o.start(t0); o.stop(t0 + dec + 0.05);
+  }
+
+  /* lowpassed noise whose corner falls from fFrom to fTo: the body of a
+     blast, or its roll. poles 2 gives 24 dB/oct, for a roll that must stay
+     low however loud it is. */
+  function lowRoar(ac, out, t0, rate, fFrom, fTo, atk, dec, lvl, poles) {
+    var n = noiseSrc(ac, rate), l = lpf(ac, 1, 0.7), g = gainNode(ac, 0), tail = l;
+    ramp(l.frequency, t0, fFrom, fTo, dec);
+    n.connect(l);
+    if (poles === 2) {
+      var l2 = lpf(ac, 1, 0.6);
+      ramp(l2.frequency, t0, fFrom * 1.3, fTo * 1.3, dec);
+      l.connect(l2); tail = l2;
+    }
+    burst(g.gain, t0, atk, dec, lvl);
+    tail.connect(g); g.connect(out);
+    startNoise(n, t0, atk + dec);
+  }
+
+  /* When the last blast was scheduled. A shell that bursts on a target
+     arrives as two calls in the same tick: audio.js's projectile poll plays
+     Sfx.boom() and then Sfx.impact() for what it struck, both at
+     currentTime + 2 ms. emitImpact reads this to know that the blast is
+     already there. */
+  var blastAt = -1;
+
+  /* e is a 0..1 energy figure taken from the round's damage. What e means
+     in play, measured off WEAPONS: small arms arrive at 0.06-0.12 (rifle
+     0.09, GPMG 0.12, a 30 mm chain gun 0.06), a tank round at 0.19-0.46
+     (76 mm 0.19, 105 mm 0.33, the GAU-8's 30 mm 0.38, 120 mm 0.35 beside its
+     own boom), artillery and heavy missiles at 0.5-0.7, always with a blast.
+     So the voice that must be unmistakable - a main-gun round striking a
+     tank - lives at e 0.2-0.46, not at 0.9.
+
+     Two cases are told apart here, not by e alone:
+     - PAIRED. A shell bursting on a hull comes with its own blast (above),
+       which already carries the crack and the low thump. The struck plate
+       adds only what the blast lacks: its ring and the spall. A second
+       contact crack and a second thud 30 Hz from the blast's would beat
+       against it and pull the limiter for nothing: a first cut that played
+       them pulled 2.4 dB for a 105 mm howitzer round on a tank (HEAD 0.6);
+       without them it pulls 0.5.
+     - ANTI-MATERIEL. No shell arrives on its own above e 0.47 (the heaviest,
+       the CN120-26 at dmg 148, is 0.46; everything heavier bursts), so a
+       lone e above 0.5 on metal is a rifle round whose e is an artefact of
+       the hitscan scale dmg / 120: the 12.7 mm anti-materiel rifle at 0.79
+       and the 8.6 mm G22 at 0.73. The 12.7 mm fires the HMG's own cartridge,
+       so on a tank or a ship it sounds like the HMG's rounds (0.11), not
+       like the main-gun penetration e 0.79 would otherwise ask for, which
+       measured louder than a 105 mm round on the same tank (-20.7 LUFS
+       against -22.0; now -32.4, beside the HMG's -33.7). */
   function emitImpact(ac, out, t0, mat, e, sp) {
+    var paired = Math.abs(t0 - blastAt) < 0.004;
+    if (!paired && e > 0.5 && (mat === "armour" || mat === "hull")) e = 0.12;
     var lvl = sp.gain * clamp(0.18 + e * 0.85, 0.10, 1.05);
-    var cut = sp.cut;
+    var cut = sp.cut, far = sp.far;
+    var big = clamp((e - 0.10) / 0.5, 0, 1);         // 0 a rifle round, 1 a shell
     switch (mat) {
-      case "armour":
-        /* a hard steel box, small and thick: high resonances, short decay */
-        ring(ac, out, t0, [430, 1010, 2380], 14, 0.16 + e * 0.16, lvl * 1.05, cut);
-        hiss(ac, out, t0, 4200, 1600, 0.05, lvl * 0.30, cut, "bandpass");
-        thud(ac, out, t0, 96, 0.55, 0.10 + e * 0.08, lvl * 0.75);
-        grains(ac, out, t0 + 0.02, 4, 0.10, 1600, 4200, 0.03, lvl * 0.20, cut);
+      case "armour": {
+        /* A tank is a small, very thick steel box. A rifle round does not get
+           in: it is a hard high PING off the plate (the small contact
+           excites the upper modes) and now and then the whine of the round
+           leaving. A main-gun round is the other event: the crack of the
+           contact, a lower CLANG from the whole plate, the dull heavy thud
+           of the hull taking the blow and, a few tens of ms later, the
+           crunch of spall inside. The clang sits at 0.5-4 kHz, the band a
+           tank gun report leaves empty (a 120 mm report's centroid is
+           113 Hz), which is why it reads through the gunfire around it
+           without having to be louder than that gunfire. */
+        var pen = clamp((e - 0.10) / 0.26, 0, 1);
+        /* a flatter law than the other materials: what matters is that a
+           main-gun hit at e 0.2-0.46 is plain, not that an e 0.7 hit is
+           deafening */
+        lvl = sp.gain * clamp(0.30 + e * 0.62, 0.10, 0.95) * 0.75;
+        if (!paired)
+          contactCrack(ac, out, t0, 2600 - 1100 * pen, 0.005 + 0.012 * pen, lvl * (0.55 + 0.30 * pen), cut);
+        var pa = [0.30, 0.55, 0.85, 1.00, 0.70], pb = [1.00, 0.80, 0.62, 0.42, 0.22], am = [];
+        for (var ai = 0; ai < 5; ai++) am.push(pa[ai] * (1 - pen) + pb[ai] * pen);
+        plateModes(ac, out, t0, (880 - 400 * pen) * vary(0.05), [1, 1.59, 2.36, 3.47, 4.62], am,
+              0.10 + 0.46 * pen, lvl * (0.34 + 0.30 * pen), cut, 0.02 * pen);
+        if (!paired)
+          thud(ac, out, t0, 92 - 16 * pen, 0.5, 0.10 + 0.22 * pen, lvl * (0.25 + 0.45 * pen));
+        if (pen > 0.25)
+          grainTrain(ac, out, t0 + 0.03, Math.round(14 + 16 * pen), 0.06 + 0.08 * pen, 300, 2000, 0.008,
+                lvl * 0.65 * pen, cut, 2.5, 1.3);
+        if (pen < 0.7 && rnd() < 0.40 - 0.38 * pen)
+          ricochetWhine(ac, out, t0 + 0.006, (2500 + rnd() * 1500) * (1 - 0.2 * pen), 0.26 + rnd() * 0.24,
+                lvl * 0.10 * (1 - far * 0.6), cut);
         break;
-      case "hull":
-        /* a large steel box: the same event an octave down and far longer */
-        ring(ac, out, t0, [138, 372, 905, 1640], 18, 0.55 + e * 0.5, lvl * 0.9, cut);
-        thud(ac, out, t0, 62, 0.55, 0.34, lvl * 0.9);
-        hiss(ac, out, t0, 2600, 600, 0.14, lvl * 0.30, cut, "bandpass");
+      }
+      case "hull": {
+        /* A ship is a big thin-skinned steel box full of air: the same blow an
+           octave and more down, far longer, and hollow - the compartment
+           behind the plate booms like a drum. The fundamental is doubled
+           1.1% apart (under 2 Hz at 130-165 Hz), and the pair beats: the
+           slow shimmer every big struck panel has. */
+        var hp = clamp((e - 0.10) / 0.30, 0, 1);
+        if (!paired) contactCrack(ac, out, t0, 1500, 0.008 + 0.010 * hp, lvl * 0.45, cut);
+        /* Under its own blast (a naval shell or missile bursting on the hull)
+           the ring is 3 dB down: it is secondary to the blast there, and the
+           doubled fundamental starts in phase, 1.7 times one mode's height,
+           right on top of the blast's first swing - measured, that put 14
+           samples of a 203 mm hit into the clipper, against 7 without it. */
+        plateModes(ac, out, t0, (165 - 35 * hp) * vary(0.04), [1, 1.011, 1.52, 2.26, 3.1, 4.37],
+              [1.0, 0.7, 0.75, 0.6, 0.42, 0.28], Math.min(1.0, 0.65 + 0.40 * hp), lvl * (paired ? 0.23 : 0.33), cut, 0.015 * hp);
+        if (!paired) thud(ac, out, t0, 58, 0.7, 0.40 + 0.30 * hp, lvl * (0.45 + 0.15 * hp));
+        if (hp > 0.2)
+          grainTrain(ac, out, t0 + 0.03, Math.round(6 + 12 * hp), 0.14 + 0.2 * hp, 500, 3000, 0.02,
+                lvl * 0.35 * hp, cut, 4, 1.3);
         break;
+      }
       case "structure":
-        /* concrete: a crunch, dust and falling debris */
-        hiss(ac, out, t0, 1500, 280, 0.24 + e * 0.2, lvl * 1.00, cut, "lowpass");
-        thud(ac, out, t0, 74, 0.5, 0.20 + e * 0.16, lvl * 0.95);
-        grains(ac, out, t0 + 0.04, 9, 0.42, 700, 3200, 0.035, lvl * 0.22, cut);
-        ring(ac, out, t0, [220, 640], 5, 0.10, lvl * 0.25, cut);
+        /* concrete: a sharp fracture crack (a lower corner than steel), the
+           crush of the fracture itself, a puff of dust and then the chips
+           and chunks coming down. Only a shell moves enough of the wall to
+           give the low thud of its mass; under a rifle round it is a
+           trace. */
+        contactCrack(ac, out, t0, 1200, 0.016 + 0.004 * big, lvl * (2.00 - 1.25 * big), cut);
+        grainTrain(ac, out, t0 + 0.002, Math.round(12 + 14 * big), 0.09 + 0.03 * big, 350, 2600, 0.010,
+              lvl * (4.20 - 3.40 * big), cut, 1.6, 1.5);
+        thud(ac, out, t0, 80, 0.5, 0.16 + 0.20 * big, lvl * (0.20 + 0.70 * big));
+        hiss(ac, out, t0 + 0.01, 1400, 300, 0.22 + 0.30 * big, lvl * (1.90 - 1.45 * big), cut, "lowpass");
+        grainTrain(ac, out, t0 + 0.06, Math.round(10 + 26 * big), 0.30 + 0.50 * big, 600, 3600, 0.02,
+              lvl * 0.28, cut, 3, 1.8);
         break;
-      case "water":
-        /* the cavity opening, then the column falling back */
-        hiss(ac, out, t0, 2000, 320, 0.12, lvl * 0.8, cut, "bandpass");
-        thud(ac, out, t0, 230, 0.36, 0.13, lvl * 0.55);
-        hiss(ac, out, t0 + 0.05, 2200, 3600, 0.45 + e * 0.4, lvl * 0.30, cut, "bandpass");
-        grains(ac, out, t0 + 0.12, 7, 0.45, 1000, 3200, 0.05, lvl * 0.16, cut);
+      case "water": {
+        /* a round into water: the slap of the surface, the plip of the
+           cavity (a bubble's pitch RISES as it shrinks - the one sound that
+           says water and nothing else), the column going up as spray and
+           coming back down as drops */
+        contactCrack(ac, out, t0, 900, 0.012 + 0.02 * big, lvl * 0.50, cut);
+        var bf = (520 - 280 * big) * vary(0.08);
+        var ob = osc(ac, "sine", bf), gb = gainNode(ac, 0);
+        ob.frequency.setValueAtTime(bf, t0 + 0.004);
+        ob.frequency.exponentialRampToValueAtTime(bf * 2.1, t0 + 0.05 + 0.08 * big);
+        burst(gb.gain, t0 + 0.004, 0.002, 0.05 + 0.08 * big, lvl * 0.45);
+        ob.connect(gb); gb.connect(out); ob.start(t0); ob.stop(t0 + 0.2 + 0.1 * big);
+        thud(ac, out, t0, 150 - 60 * big, 0.5, 0.10 + 0.15 * big, lvl * 0.45);
+        noiseWash(ac, out, t0 + 0.02, "bandpass", 1600, 4200, 0.7, 0.04 + 0.05 * big, 0.30 + 0.50 * big, lvl * 0.30, cut);
+        grainTrain(ac, out, t0 + 0.14 + 0.1 * big, Math.round(10 + 18 * big), 0.30 + 0.55 * big, 1400, 5000, 0.016,
+              lvl * 0.18, cut, 5, 1.3);
         break;
+      }
       case "rock":
-        hiss(ac, out, t0, 2600, 500, 0.14, lvl * 0.7, cut, "bandpass");
-        thud(ac, out, t0, 88, 0.5, 0.13, lvl * 0.6);
-        grains(ac, out, t0 + 0.01, 10, 0.28, 1300, 5000, 0.025, lvl * 0.32, cut);
+        /* rock is hard and brittle: the brightest non-metal contact, stone
+           chips and grit sprayed off it, and a small round glances off it
+           as often as off a tank */
+        contactCrack(ac, out, t0, 2400, 0.006 + 0.008 * big, lvl * (1.20 - 0.40 * big), cut);
+        thud(ac, out, t0, 90, 0.5, 0.10 + 0.10 * big, lvl * 0.50);
+        grainTrain(ac, out, t0 + 0.004, Math.round(12 + 14 * big), 0.16 + 0.24 * big, 1500, 6000, 0.014,
+              lvl * (0.80 - 0.30 * big), cut, 5, 1.6);
+        hiss(ac, out, t0, 2800, 700, 0.12 + 0.10 * big, lvl * (0.55 - 0.20 * big), cut, "bandpass");
+        if (e < 0.3 && rnd() < 0.35)
+          ricochetWhine(ac, out, t0 + 0.005, 2200 + rnd() * 1400, 0.22 + rnd() * 0.2, lvl * 0.08, cut);
         break;
       case "flesh":
-        hiss(ac, out, t0, 460, 160, 0.10, lvl * 0.70, cut, "lowpass");
-        thud(ac, out, t0, 130, 0.4, 0.09, lvl * 0.55);
-        grains(ac, out, t0 + 0.01, 3, 0.08, 500, 1200, 0.02, lvl * 0.10, cut);
+        /* kept deliberately plain: a muffled blow through cloth and kit, no
+           more. The death is told by die_inf, and told quietly. It is
+           lifted at the small end only - a rifle round is how it arrives -
+           so a hit on a squad is not lost in the battle around it. */
+        lvl *= 1.40 - 0.40 * big;
+        hiss(ac, out, t0, 520, 170, 0.07 + 0.05 * e, lvl * 0.70, cut, "lowpass");
+        thud(ac, out, t0, 120, 0.45, 0.07 + 0.04 * e, lvl * 0.45);
         break;
       case "air":
-        /* a proximity burst: crack, then hot gas */
-        hiss(ac, out, t0, 5000, 1300, 0.07, lvl * 0.7, cut, "bandpass");
-        hiss(ac, out, t0, 1400, 300, 0.26, lvl * 0.5, cut, "bandpass");
-        thud(ac, out, t0, 110, 0.45, 0.16, lvl * 0.4);
+        /* a proximity burst: HE going off in open air with nothing to damp
+           it - the brightest pop in the game - then the gas ball, and the
+           fragments leaving. Little low end: there is no ground to couple
+           the blast into, which is what makes a ground burst a thump. */
+        contactCrack(ac, out, t0, 1900, 0.010 + 0.012 * e, lvl * 1.05, cut);
+        hiss(ac, out, t0, 1600, 350, 0.10 + 0.14 * e, lvl * (0.88 - 0.25 * e), cut, "bandpass");
+        thud(ac, out, t0, 120, 0.5, 0.09 + 0.08 * e, lvl * 0.26);
+        grainTrain(ac, out, t0 + 0.012, Math.round(6 + 8 * e), 0.14, 2500, 7000, 0.012, lvl * 0.30, cut, 4, 1.2);
         break;
       default: /* earth */
-        hiss(ac, out, t0, 620, 150, 0.17 + e * 0.14, lvl * 0.8, cut, "lowpass");
-        thud(ac, out, t0, 66, 0.5, 0.24 + e * 0.2, lvl * 0.9);
-        grains(ac, out, t0 + 0.03, 6, 0.26, 700, 2400, 0.03, lvl * 0.22, cut);
+        /* Soft ground takes the blow, and what it gives back depends on the
+           round. A rifle bullet has nowhere near the energy to move enough
+           soil for a low note: it is a dull, short "thwp" in the low mids
+           and a spurt of grit. A shell throws up a whump of earth at
+           60-70 Hz, a lowpassed puff, and clods pattering back down. */
+        var soft = (1 - big) * (1 - big);
+        thud(ac, out, t0, 118 - 56 * big, 0.55, 0.10 + 0.32 * big, lvl * (0.95 + 0.20 * soft));
+        hiss(ac, out, t0, 1300 - 600 * big, 180 - 20 * big, 0.10 + 0.22 * big, lvl * (0.80 + 2.50 * soft), cut, "lowpass");
+        grainTrain(ac, out, t0 + 0.004 + 0.08 * big, Math.round(8 + 11 * big), 0.10 + 0.54 * big, 400, 2200 - 500 * big, 0.018,
+              lvl * (0.30 + 0.95 * soft), cut, 3, 1.4);
         break;
     }
   }
 
-  /* a general explosion, scale 0..1, used by the legacy explode cues too */
+  /* An explosion, scale 0..1 (0.18 is the smallest the projectile poll asks
+     for), on land or water. What a blast is, in the order it arrives:
+       crack   the shock front - broadband, sub-ms rise, a few ms long; the
+               first thing air absorption takes from a distant one
+       thump   the positive phase, one heavy swing at 40-80 Hz (48 Hz at
+               scale 1, 74 Hz at 0.18: a bigger charge has a longer positive
+               phase, so a lower one), felt rather than heard
+       crunch  the ground and the casing fracturing: a dense train of small
+               impacts in the mids, the first 60-160 ms
+       body    the fireball, lowpassed noise closing down from 2 kHz
+       debris  what was thrown up coming back down: 0.1 s to over a second
+       roll    the blast coming back off terrain, low and long; at range it
+               is most of what is left, so a big one far away is a rumble
+     Size scales every layer; distance trades the crack, the crunch and the
+     debris for the roll. A charge in water has no crack in air - the water
+     takes the shock and gives back a muffled slam - and then the plume: the
+     column rising as spray and falling back as a long hiss and a patter of
+     drops.
+
+     THE BALANCE, measured as the loudest 400 ms through a 200 Hz high-pass
+     (what a laptop speaker plays) and through a 100 Hz low-pass (what it
+     cannot). A first cut put the thump at 0.8 of the level and the body at
+     0.85: the band under 100 Hz rose 11-16 dB over HEAD while everything a
+     laptop plays fell 2-3 dB, so on the owner's speakers a blast sounded
+     thinner than before, and the sub it could not play pulled the limiter.
+     Now the thump sits at 0.45 of the level with twice the drive (its 3f
+     and 5f carry it on a small speaker), the fireball body at 1.6 closing
+     to 90 Hz rather than 65, and the crunch and debris bands are wide
+     enough to be heard at all. Every land blast plays 2.3-4.7 dB more above
+     200 Hz than HEAD did, the band under 100 Hz goes from 4 dB less (the
+     smallest, 74 Hz) to 13 dB more (the biggest, 48 Hz), and the loudest
+     400 ms stays within 1.4 dB of HEAD's. */
   function emitBoom(ac, out, t0, scale, water, sp) {
-    var lvl = sp.gain * clamp(0.30 + scale * 0.8, 0.1, 1.1);
-    var cut = sp.cut;
-    var dec = 0.30 + scale * 0.95;
-    /* leading edge */
-    hiss(ac, out, t0, Math.min(cut, 5200), Math.min(cut, 900), 0.035 + scale * 0.03,
-         lvl * 0.55 * (1 - sp.far * 0.6), cut, "highpass");
-    /* the body, sweeping down */
-    var n = noiseSrc(ac, 0.85);
-    var l = lpf(ac, 1, 0.7);
-    ramp(l.frequency, t0, Math.min(cut, 1400), 62, dec);
-    var g = gainNode(ac, 0);
-    burst(g.gain, t0, 0.006, dec, lvl);
-    n.connect(l); l.connect(g); g.connect(out);
-    startNoise(n, t0, dec);
-    /* the sub */
-    var f0 = water ? 74 : 58 + scale * 34;
-    thud(ac, out, t0, f0 * 1.7, 0.34, dec * 0.9, lvl * (0.85 + scale * 0.2));
-    /* the roll */
-    var n2 = noiseSrc(ac, 0.6);
-    var l2 = lpf(ac, 1, 0.5);
-    ramp(l2.frequency, t0 + 0.06, Math.min(cut, 520), 70, dec * 1.6);
-    var g2 = gainNode(ac, 0);
-    burst(g2.gain, t0 + 0.06, 0.08, dec * 1.6, lvl * (0.30 + sp.far * 0.35));
-    n2.connect(l2); l2.connect(g2); g2.connect(out);
-    startNoise(n2, t0 + 0.06, dec * 1.6);
-    if (water) {
-      hiss(ac, out, t0 + 0.07, Math.min(cut, 3000), Math.min(cut, 5400), 0.6 + scale * 0.6,
-           lvl * 0.35, cut, "highpass");
-      grains(ac, out, t0 + 0.2, 10, 0.7, 1000, 4200, 0.06, lvl * 0.18, cut);
+    var s = scale;
+    blastAt = t0;
+    /* HEAD's level law, trimmed a little at the small end: the crack and the
+       crunch put more of a small blast where the ear (and K-weighting) is
+       most sensitive */
+    var lvl = sp.gain * clamp(0.30 + s * 0.8, 0.1, 1.1) * (0.85 + 0.15 * Math.sqrt(s));
+    var cut = sp.cut, far = sp.far;
+    var dec = (0.30 + s * 0.95) * vary(0.06);
+    var fth = (water ? 62 - 18 * s : 80 - 32 * s) * vary(0.05) * (1 - 0.12 * far);
+    if (!water) {
+      contactCrack(ac, out, t0, 1500, 0.008 + 0.018 * s, lvl * 0.70 * (1 - 0.85 * far), cut);
+      blastThump(ac, out, t0, fth, dec * (0.75 + 0.25 * far), lvl * 0.45, (1.6 + 0.8 * s) * 1.8, 2.4, 0.06);
+      /* the crunch follows the shock front by a few ms - the ground has to
+         be hit before it can break - and is dense rather than sharp: grains
+         24 ms long, each cut by the next. Shorter, harder grains measured
+         no louder above 200 Hz and put single-sample spikes past the
+         limiter's 2 ms attack into the clipper when two blasts stacked. */
+      grainTrain(ac, out, t0 + 0.006, Math.round(16 + 24 * s), 0.06 + 0.10 * s, 280, 2600, 0.024,
+            lvl * 1.6 * (1 - 0.7 * far), cut, 0.9, 1.6);
+      lowRoar(ac, out, t0, 0.85, Math.min(cut, 1800), 90, 0.004, dec, lvl * 1.6, 1);
+      grainTrain(ac, out, t0 + 0.08 + 0.04 * s, Math.round(12 + 30 * s), 0.30 + 0.80 * s, 900, 5200, 0.018,
+            lvl * 0.40 * (1 - 0.9 * far), cut, 2.5, 1.8);
     } else {
-      grains(ac, out, t0 + 0.08, 12, 0.7, 500, 4000, 0.05, lvl * 0.24, cut);
+      hiss(ac, out, t0, Math.min(cut, 1200), Math.min(cut, 300), 0.05 + 0.03 * s, lvl * 0.75, cut, "bandpass");
+      /* the water's slam carries far, the plume does not: at range the
+         thump is most of a water burst, so it gives up less to distance */
+      blastThump(ac, out, t0, fth, dec * 0.85, lvl * (0.70 + 0.15 * s) * (1 + 0.8 * far), 1.2, 1.7, 0.08);
+      lowRoar(ac, out, t0, 0.7, Math.min(cut, 700), 55, 0.006, dec * 0.8, lvl * 0.70, 1);
+      noiseWash(ac, out, t0 + 0.03, "bandpass", 900, 2600, 0.7, 0.10 + 0.08 * s, 0.50 + 0.70 * s, lvl * 0.80, cut);
+      noiseWash(ac, out, t0 + 0.12, "highpass", 2500, 4500, 0.7, 0.20 + 0.10 * s, 0.50 + 0.60 * s, lvl * 0.36, cut);
+      grainTrain(ac, out, t0 + 0.30 + 0.2 * s, Math.round(16 + 26 * s), 0.60 + 0.80 * s, 900, 4500, 0.02,
+            lvl * 0.15, cut, 4, 1.3);
     }
+    lowRoar(ac, out, t0 + 0.06, 0.55, Math.min(cut, 480 * (1 - 0.4 * far)), 55, 0.08 + 0.06 * far, dec * 1.7,
+         lvl * (0.28 + 0.45 * far) * (water ? 0.7 + 0.3 * far : 1), 2);
   }
 
   /* ============================= PUBLIC SHOTS ============================= */
@@ -1717,12 +2083,39 @@ var Sfx = (function () {
     cannon:  function (ac, o, t) { emitReport(ac, o, t, specOf("gun_105"), here(0.7)); },
     missile: function (ac, o, t) { emitReport(ac, o, t, specOf("atgm_veh"), here(0.7)); },
 
+    /* explode is the most repeated blast in the game: combat.js plays it for
+       every detonation over 14 px of aoe near the camera, and game.js for
+       every vehicle, aircraft and ship that dies. emitBoom varies its pitch
+       and length per call, so a salvo does not machine-gun one sample. */
     explode:     function (ac, o, t) { emitBoom(ac, o, t, 0.45, false, here(0.85)); },
+    /* The biggest event there is, and game.js plays it for three: a
+       structure lost, an area strike or nuke (more than 3 tiles of aoe), and
+       a side capitulating (each of its buildings goes up with a blast). One
+       tail has to be true of all three, so it is the aftermath any blast
+       that size leaves: everything it threw up coming back down for two
+       seconds - the heavy pieces first, low and crumbling, then the lighter
+       patter - the low roll of the ground and whatever stood on it
+       settling, and a secondary at 0.55 s as something inside cooks off.
+       HEAD stacked a second boom 110 ms after the first, which only
+       thickened it. */
     explode_big: function (ac, o, t) {
-      emitBoom(ac, o, t, 1.0, false, here(0.95));
-      emitBoom(ac, o, t + 0.11, 0.55, false, here(0.6));
+      var sp = here(0.95);
+      emitBoom(ac, o, t, 1.0, false, sp);
+      grainTrain(ac, o, t + 0.28, 52, 1.9, 180, 2200, 0.032, 0.38, sp.cut, 1.4, 1.2);
+      grainTrain(ac, o, t + 0.40, 28, 1.7, 900, 4200, 0.02, 0.15, sp.cut, 3, 1.4);
+      lowRoar(ac, o, t + 0.25, 0.5, 650, 50, 0.30, 2.1, 0.60, 2);
+      emitBoom(ac, o, t + 0.55, 0.5, false, here(0.62));
     },
-    die_inf: function (ac, o, t) { emitImpact(ac, o, t, "flesh", 0.5, here(0.7)); },
+    /* Tasteful on purpose: no voice, nothing wet. A man going down is the
+       muffled blow, then the body and his kit meeting the ground - a soft
+       low thump, a puff of dirt, and the brief clink of a rifle landing. */
+    die_inf: function (ac, o, t) {
+      var sp = here(0.7);
+      emitImpact(ac, o, t, "flesh", 0.5, sp);
+      thud(ac, o, t + 0.30, 95, 0.5, 0.14, 0.17);
+      hiss(ac, o, t + 0.30, 600, 180, 0.10, 0.12, sp.cut, "lowpass");
+      plateModes(ac, o, t + 0.36, 1450 * vary(0.06), [1, 2.76], [1, 0.5], 0.07, 0.035, sp.cut);
+    },
 
     click:     function (ac, o, t) { beep(ac, o, t, "square", 900, 0, 0.002, 0.04, 0.16); },
 
