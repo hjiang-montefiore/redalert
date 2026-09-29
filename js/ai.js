@@ -587,6 +587,7 @@ function makeCommander() {
   let foeVeh = 0, foeVehT = 0;
   let mineNext = 0;              // the mine doctrine reconsiders on its own clock
   let knownM = null, knownMT = -1e9;    // hostile mines we are entitled to see
+  let mineChart = new Map(), chartT = -1e9;   // mine id -> {x,y,sea,t}, copied at the sweep
   const NO_MINES = [];
   const MINE_MEM = 24;           // signatures kept, oldest dropped
   const BELT_R = 10;             // tiles from home the belt is laid; derived in gapSector
@@ -733,7 +734,7 @@ function makeCommander() {
     ledger = null; ledgerT = -1e9; arvHave = 0; arvLostT = -1e9;
     mineSigns = []; raidHeat = 0; raidT = 0; mineNext = 0;
     foeVeh = 0; foeVehT = 0;
-    knownM = null; knownMT = -1e9;
+    knownM = null; knownMT = -1e9; mineChart = new Map(); chartT = -1e9;
     /* The force budget, the landing and the combined operation belong to one
        battle as well: no theatre reading, no fuel claim, no hold on a hull
        and no fleet marker carried across a restart. */
@@ -3100,6 +3101,7 @@ function makeCommander() {
         for (const b of o.buildings) heed(b, true);
       }
     })();
+    chartMines(now);
     digest(now);
     forgetStale(now);
     pruneHypotheses();
@@ -5385,33 +5387,94 @@ function makeCommander() {
     }
   }
 
-  /* ---- the mines we are entitled to see ----
+  /* ---- the mines we are entitled to see, and the ones we remember ----
      The ONLY legal read of G.mines on this side, and it goes through the same
      door the human's does. Mines.visibleTo(m, P) is the identical call
-     render3d.js makes with G.human before it draws anything, and Mines.lay
-     seeds m.seen with the owner alone - so a hostile mine enters this list
-     only when one of our own units with def.mineDetect has been inside its
-     detection radius, or when it has already gone off, at which point
-     detonate() spots it for every player because a crater is not a secret.
+     render3d.js makes with G.human before it draws anything, and it says yes
+     only while one of our own units with def.mineDetect has the mine inside
+     its reach, plus Mines.LINGER. (owner) "when the mine cleaner leave the
+     mine area, the enemy mine should become invisible again." It does, for
+     this commander exactly as for the human.
 
      Walking G.mines raw would be the purest form of the cheat this file has
      spent its life removing: a minefield is invisible BY DEFINITION and the
      whole weapon is the not-knowing. It would also make the 900-credit mine
      clearer pointless, since its entire contribution is that it turns mines
-     into entries in this list.
+     into entries in this chart.
 
-     Memoised on the think tick because mineWeight() walks it once per approach
-     candidate and there are up to ten of those per wave. */
-  function knownMines() {
-    if (typeof Mines === "undefined" || !G.mines || !G.mines.length) return NO_MINES;
-    if (knownMT === G.time && knownM) return knownM;
-    knownMT = G.time;
-    knownM = [];
+     WHAT IS KEPT WHEN THE CLEARER MOVES ON. visibleTo used to never forget, so
+     this list was a permanent chart that ALSO followed every charted mine to
+     its death live: a mine lifted by somebody else, nowhere near any unit of
+     ours, dropped out of it the tick it went. Now the screen forgets, and a
+     commander reading only the screen would lose the lane its clearer found
+     the moment the column rolled on - voiding the clearer's whole case in
+     driveFlankers ("a detected mine is one mineWeight() prices for nothing
+     next wave").
+
+     So mineChart is this commander's notebook: where each mine was and when a
+     detector of ours last had it, COPIED at the sweep - never a reference to
+     the mine. That is the line between memory and a leak. A human who watched
+     a clearer find a belt still knows where it was once it drops off the
+     screen, and neither of them learns from across the map that it has since
+     been lifted. Nor is it sharper than a player's memory where it counts:
+     the only decision that reads it is mineWeight, through a six-tile
+     falloff, so what it buys is which road, never which square. An entry is
+     struck off the way forgetStale strikes off a structure - a detector of
+     ours is over the spot and nothing shows - or when it is older than
+     mineLife(), for mineWeight's own reason: a belt is spent by use, and one
+     nobody has looked at in three wave-intervals may be bare ground.
+
+     Sampled in intelSweep every 0.8 s, which is why LINGER is a whole second:
+     a mine that shows on the human's screen for any instant at all is still
+     showing at our next sweep, so the rule really is the same rule. */
+  /* How long a mine is kept once nobody is looking at it: the life of an
+     inferred sign, the life of a chart entry and the span of mineWeight's
+     fade, ONE helper so the strike-off and the weight cannot drift apart. It
+     is the grave's life, three of this commander's own wave intervals capped
+     at ten minutes, and deliberately not D.memory. D.memory is how long a
+     MOVING contact stays worth keeping; a mine does not move, and seenB keeps
+     a structure - the other thing that does not move - until something of
+     ours looks again, whatever the tier. What ages a belt is use, and use
+     comes at the pace of the waves, so every tier keeps the same three waves.
+     Only a commander at D.read 0.6 or above ever buys a detector
+     (driveMines), so Recruit and Regular never chart anything; the four that
+     do keep 450, 354, 285 and 225 s. Capped at D.memory, a Veteran would
+     forget a lane its clearer found just as its next wave left (150 s against
+     a 150 s wave interval) while a rough inferred sign on the same ground
+     lived 450. */
+  function mineLife() { return Math.min(600, (D.waveTime || 150) * 3); }
+  function chartMines(now) {
+    if (typeof Mines === "undefined" || !G.mines) return;
     for (const m of G.mines) {
       if (m.dead || m.owner === P || G.allied(m.owner, P)) continue;
       if (!Mines.visibleTo(m, P)) continue;
-      knownM.push(m);
+      const c = mineChart.get(m.id);
+      if (c) c.t = now; else mineChart.set(m.id, { x: m.x, y: m.y, sea: !!m.sea, t: now });
     }
+    chartT = now; knownM = null;
+    if (!mineChart.size) return;
+    /* Mines.update runs before AI.update on the same positions, so a detector
+       inside its reach of a mine that is still there has already spotted it
+       and the entry was refreshed above. One that was not is gone. */
+    const eyes = [];
+    for (const u of P.units) if (!u.dead && !u.carried && u.def.mineDetect) eyes.push(u);
+    const life = mineLife();
+    for (const [id, c] of mineChart) {
+      if (c.t === now) continue;
+      if (now - c.t > life) { mineChart.delete(id); continue; }
+      for (const u of eyes) {
+        if ((u.layer === "sea") !== c.sea) continue;
+        if (U.dist(u.x, u.y, c.x, c.y) <= u.def.mineDetect * CFG.TILE) { mineChart.delete(id); break; }
+      }
+    }
+  }
+  /* The chart as a list, memoised on the tick because mineWeight() walks it
+     once per approach candidate and there are up to ten of those per wave. */
+  function knownMines() {
+    if (!mineChart.size) return NO_MINES;
+    if (knownMT === G.time && knownM) return knownM;
+    knownMT = G.time;
+    knownM = Array.from(mineChart.values());
     return knownM;
   }
 
@@ -5425,11 +5488,12 @@ function makeCommander() {
      worth about half a tank, and the weight is capped at four because a report
      of ten is still one belt.
 
-     DETECTED (knownMines): mines we can actually see, through the same test
-     the renderer applies for the human. Worth more than an inferred one
-     because we know precisely where it is rather than roughly where one went
-     off - which is the whole of what a mine clearer's 3.4-tile mineDetect
-     buys, and where most of its 900 credits is really earned.
+     DETECTED (knownMines): mines a detector of ours has had in reach, through
+     the same test the renderer applies for the human, aged from the last
+     sweep that showed them. Worth more than an inferred one because we know
+     precisely where it is rather than roughly where one went off - which is
+     the whole of what a mine clearer's 3.4-tile mineDetect buys, and where
+     most of its 900 credits is really earned.
 
      Both decay, on the same life as a grave and for a sharper reason: a belt
      does not move but it is SPENT, because a mine fires once. A field that
@@ -5437,7 +5501,7 @@ function makeCommander() {
      commander that treats a minefield as permanent has been denied a road for
      ever by ten credits' worth of scrap. */
   function mineWeight(px, py, now) {
-    const life = Math.min(600, (D.waveTime || 150) * 3), R = CFG.TILE * 6;
+    const life = mineLife(), R = CFG.TILE * 6;
     let w = 0;
     for (let i = mineSigns.length - 1; i >= 0; i--) {
       const s = mineSigns[i];
@@ -5447,9 +5511,9 @@ function makeCommander() {
       if (d > R) continue;
       w += Math.min(4, s.n) * (1 - age / life) * (1 - d / R);
     }
-    for (const m of knownMines()) {
-      const d = U.dist(px, py, m.x, m.y);
-      if (d < R) w += 1.5 * (1 - d / R);
+    for (const c of knownMines()) {
+      const age = now - c.t, d = U.dist(px, py, c.x, c.y);
+      if (d < R && age < life) w += 1.5 * (1 - d / R) * (1 - age / life);
     }
     return w;
   }
@@ -12903,7 +12967,8 @@ function makeCommander() {
                         wave: attackWave.length,
                         q: Object.assign({}, LEARN.q),
                         n: Object.assign({}, LEARN.n) },
-               mines: { signs: mineSigns.length, seen: knownMines().length,
+               mines: { signs: mineSigns.length, charted: knownMines().length,
+                        seen: knownMines().filter(c => c.t === chartT).length,
                         foeVeh: foeVehSeen(),
                         raidHeat: raidHeat, gap: gapSector(),
                         layers: unitsOf("minelayer").length,

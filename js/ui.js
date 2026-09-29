@@ -802,8 +802,8 @@ var UI = (function () {
         " anti-tank mines down where it lands, out to " + rng +
         " tiles. Shift-click to queue a belt. RMB or Esc cancels."
       : "L sows a minefield \u2014 " + per + " mines a round, " + left +
-        " aboard. The mines do not expire, they are invisible until the enemy " +
-        "fields a detector, and they never trigger on your own vehicles. Reach is " +
+        " aboard. The mines do not expire, the enemy sees them only while one of " +
+        "its detectors is close by, and they never trigger on your own vehicles. Reach is " +
         rng + " tiles, SHORTER than the range ring, which shows the high-explosive " +
         "round. " + (w && w.rocket
           ? "This is a rocket and can be intercepted \u2014 but only if the enemy has " +
@@ -909,7 +909,7 @@ var UI = (function () {
         "it targetable. A boat lying still is very nearly silent, so a barrier catches " +
         "the ones in a hurry. N runs your own boats silent."
       : "M arms mine laying. A mine arms a few seconds after it is dropped, " +
-        "is invisible to the enemy until something detects it, and fires once.") + "</div>";
+        "is hidden from the enemy except while one of its detectors is near, and fires once.") + "</div>";
     return h;
   }
 

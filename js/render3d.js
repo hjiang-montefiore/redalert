@@ -1721,15 +1721,25 @@ var Render3D = (function () {
       for (const m of list) {
         const p = project(m.x, m.y);
         if (p.behind || p.x < -20 || p.x > W + 20 || p.y < -20 || p.y > H + 20) continue;
-        const own = m.owner === G.human;
+        /* An ally's mine - on screen only while a clearer of ours is driven
+           through its lane (mines.js, LINGER) - takes the ally's own colour
+           and a broken rim, the way [60] rings an ally, never the hostile
+           orange. */
+        const sd = G.side(m), own = sd === "own", ally = sd === "ally";
+        const tint = ally ? G.allyTint(m, "#7fc2ff") : null;
         const rr = Math.max(2.4, 3.2 * (760 / cam.dist));
         c.beginPath();
         c.arc(p.x, p.y, rr, 0, 7);
-        c.fillStyle = own ? "rgba(150,200,120,0.55)" : "rgba(226,120,80,0.75)";
+        c.fillStyle = own ? "rgba(150,200,120,0.55)" : ally ? tint : "rgba(226,120,80,0.75)";
+        const ga = c.globalAlpha;
+        if (ally) c.globalAlpha = ga * 0.6;
         c.fill();
+        c.globalAlpha = ga;
         c.lineWidth = 1;
-        c.strokeStyle = own ? "rgba(190,235,160,0.75)" : "rgba(255,170,120,0.95)";
+        c.strokeStyle = own ? "rgba(190,235,160,0.75)" : ally ? tint : "rgba(255,170,120,0.95)";
+        if (ally) c.setLineDash([2, 2]);
         c.stroke();
+        if (ally) c.setLineDash([]);
         /* three short prongs, so it reads as a mine and not as a waypoint dot */
         c.beginPath();
         for (let k = 0; k < 3; k++) {

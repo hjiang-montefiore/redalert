@@ -5323,6 +5323,174 @@ try{
   })();
   }
 
+  /* ====== [68] A MINE IS SEEN ONLY WHILE SOMETHING IS LOOKING AT IT ======
+     (owner) "when the mine cleaner leave the mine area, the enemy mine should
+     become invisible again." Mines.spot() only ever added to m.seen, so one
+     pass of a detector charted a field for good. Measured on the old build: a
+     clearer held 2.2 tiles off an enemy mine and then moved to 10 tiles left
+     it visible at 0.1, 1, 5, 30 and 60 seconds, for the human and for the
+     enemy commander alike, and a save carried the sighting with it. Ten of
+     the twenty checks below fail on that build; all twenty pass on this one,
+     where the mine goes 1.03 s after the clearer leaves, for both seats.
+     The clearers are placed by hand and held on idle every tick, so the
+     distances are exact and nothing is lifted: 2.2 tiles is inside the
+     3.4-tile detector and outside the 1.7-tile plough. The ground is chosen
+     well clear of every detector and every mine already on the map, because
+     this runs after the rest of the half has driven machines all over it.
+     Four parts: the human's clearer; an ally's lane; the commander's (the
+     same rule, and a notebook that keeps where a mine was without learning
+     from afar what became of it); and a save from before the change.
+     Everything spawned or laid in the shared match is removed again. */
+  if (inHalf(1)) {
+  log("\n[68] A MINE IS SEEN ONLY WHILE SOMETHING IS LOOKING AT IT");
+  (function(){
+    var T=CFG.TILE, made=[], laid=[];
+    var cid=unitFor(P.faction,"mineclear",P.era), ecid=unitFor(E.faction,"mineclear",E.era);
+    if(!cid||!UNITS[cid]||!ecid||!UNITS[ecid]){ chk("both sides have a mine clearer", false, cid+" / "+ecid); return; }
+    if(typeof AI==="undefined"||!AI.intelOf||!AI.intelOf(E)){ chk("the enemy has a commander", false, ""); return; }
+    /* a row of eleven ground tiles, nothing that sees mines within 16 tiles
+       and no mine within 14 */
+    var quiet=function(owner){
+      var M=Game.map, hx=(owner.homeX/T)|0, hy=(owner.homeY/T)|0;
+      for(var r=9;r<40;r++) for(var a=0;a<48;a++){
+        var an=a/48*6.283, x=(hx+Math.cos(an)*r)|0, y=(hy+Math.sin(an)*r)|0;
+        if(x<2||y<2||x+12>=M.W||y>=M.H-2) continue;
+        var ok=!Game.tileBlocked(x,y,null);
+        for(var dx=0;dx<=10&&ok;dx++) if(!GameMap.passable(M,x+dx,y,"ground")) ok=false;
+        var cx=x*T+16, cy=y*T+16;
+        for(var pi=0;pi<Game.players.length&&ok;pi++){ var us=Game.players[pi].units;
+          for(var ui=0;ui<us.length&&ok;ui++) if(!us[ui].dead&&us[ui].def.mineDetect&&
+            U.dist(us[ui].x,us[ui].y,cx,cy)<16*T) ok=false; }
+        for(var mi=0;mi<Game.mines.length&&ok;mi++)
+          if(U.dist(Game.mines[mi].x,Game.mines[mi].y,cx,cy)<14*T) ok=false;
+        if(ok) return {x:x,y:y};
+      }
+      return null;
+    };
+    var t=quiet(P), te=quiet(E);
+    if(!t||!te){ chk("the mine scenario has quiet ground", false, t?"none near the enemy":"none near us"); return; }
+    var det=UNITS[cid].mineDetect, L=Mines.LINGER, armT=Math.ceil(4.5/CFG.DT);
+    var holdFor=function(u,x,y,n,breach){
+      for(var k=0;k<n;k++){ u.x=x; u.y=y; u.order={type:"idle"}; u.breachT=breach?Game.time:-1e9; tick(1); } };
+    var intel=function(){ return AI.intelOf(E).mines; };
+    /* seconds from the clearer leaving until the mine is gone for `who` */
+    var leave=function(u,m,who,x,y){
+      var t0=Game.time;
+      for(var k=0;k<90;k++){ holdFor(u,x,y,1); if(!Mines.visibleTo(m,who)) return Game.time-t0; }
+      return -1;
+    };
+    var rec=function(m){ return Mines.snapshot(Game).filter(function(s){ return s.id===m.id; })[0]; };
+    try {
+      /* ---- 1. the human's clearer and an enemy mine ---- */
+      var mx=t.x*T+16, my=t.y*T+16;
+      var m=Mines.lay(Game,E,mx,my,false,{quiet:true}); laid.push(m);
+      var u=Game.spawnUnitAt(P,cid,mx+T*10,my); made.push(u);
+      if(!m||!u){ chk("an enemy mine and our clearer", false, "lay/spawn failed"); return; }
+      holdFor(u,mx+T*10,my,armT);
+      chk("an enemy mine is invisible while no detector is near it",
+          !Mines.visibleTo(m,P) && Mines.forRender(Game,P).indexOf(m)<0, "armed="+m.armed);
+      var first=-1;
+      for(var d=7;d>=2.2;d-=0.05){ holdFor(u,mx+T*d,my,1); if(first<0&&Mines.visibleTo(m,P)) first=d; }
+      chk("our clearer shows it once it is inside the detector's reach",
+          first>det-0.1 && first<=det+1e-6, "first seen at "+first.toFixed(2)+"t, reach "+det+"t");
+      chk("and the renderers are handed it", Mines.forRender(Game,P).indexOf(m)>=0, "");
+      var gone=leave(u,m,P,mx+T*10,my);
+      chk("it drops out of sight when the clearer leaves, after the linger and no longer",
+          gone>0 && gone>=(L||0)-1e-6 && gone<=(L||0)+2*CFG.DT,
+          (gone<0?"still visible 3s after leaving":"hidden "+gone.toFixed(2)+"s after leaving")+
+          (L===undefined?", no linger defined":", LINGER "+L+"s"));
+      holdFor(u,mx+T*10,my,30*20);
+      chk("and it stays out of sight twenty seconds on",
+          !Mines.visibleTo(m,P) && Mines.forRender(Game,P).indexOf(m)<0, "");
+      chk("the mine itself is untouched - still in the ground and armed",
+          Game.mines.indexOf(m)>=0 && m.armed && !m.dead, "");
+      chk("its owner sees it the whole time", Mines.visibleTo(m,E) && Mines.forRender(Game,E).indexOf(m)>=0, "");
+      holdFor(u,mx+T*3,my,2);
+      chk("a detector coming back shows it again", Mines.visibleTo(m,P), "");
+      var s1=rec(m);
+      chk("a save made while it is in view carries the sighting", !!s1 && s1.seen.indexOf(P.idx)>=0,
+          JSON.stringify(s1&&s1.seen));
+      holdFor(u,mx+T*10,my,Math.ceil(((L||1)+0.5)/CFG.DT));
+      var s2=rec(m);
+      chk("and one made after it has gone does not", !!s2 && s2.seen.indexOf(P.idx)<0,
+          JSON.stringify(s2&&s2.seen));
+
+      /* ---- 2. an ally's lane ----
+         On a scratch board - two stand-in commanders on one letter, a clearer
+         and an unarmed mine - so the shared match's teams are never touched.
+         A clearer parked beside an ally's field is not shown it; one DRIVEN
+         through the lane is shown what it is lifting (the crew works from the
+         ally's record); and, the change, that sighting ends once it has moved
+         on. The old build kept it for good. */
+      var A={idx:90,units:[]}, B={idx:91,units:[]};
+      var G3={ players:[A,B], time:Game.time, mines:[], alert:function(){},
+               grid:{ query:function(){} },
+               allied:function(a,b){ return (a===A||a===B)&&(b===A||b===B); } };
+      var am=Mines.lay(G3,B,40*T+16,40*T+16,false,{quiet:true,arm:99});
+      var cu={ x:am.x+T*2.2, y:am.y, def:UNITS[cid], layer:"ground",
+               order:{type:"idle"}, breachT:-1e9, dead:false, carried:false };
+      A.units.push(cu);
+      var step=function(n){ for(var k=0;k<n;k++){ G3.time+=CFG.DT; Mines.update(G3,CFG.DT); } };
+      step(3);
+      var parked=Mines.visibleTo(am,A);
+      cu.order={type:"move",x:am.x-T*10,y:am.y}; step(3);
+      var driven=Mines.visibleTo(am,A);
+      cu.x=am.x+T*10; step(Math.ceil(((L||1)+0.5)/CFG.DT));
+      var after=Mines.visibleTo(am,A);
+      chk("an ally's clearer is shown our lane only while it is driven through it, and not after",
+          !parked && driven && !after && Mines.visibleTo(am,B) && G3.mines.indexOf(am)>=0,
+          "parked="+parked+" driven="+driven+" moved on="+after);
+
+      /* ---- 3. the commander's clearer and our mine: the same rule ---- */
+      var ex=te.x*T+16, ey=te.y*T+16;
+      var m2=Mines.lay(Game,P,ex,ey,false,{quiet:true}); laid.push(m2);
+      var eu=Game.spawnUnitAt(E,ecid,ex+T*10,ey); made.push(eu);
+      if(!m2||!eu){ chk("our mine and their clearer", false, "lay/spawn failed"); return; }
+      holdFor(eu,ex+T*10,ey,armT);
+      var c0=intel().charted||0, s0=intel().seen;
+      holdFor(eu,ex+T*2.2,ey,30);
+      chk("their clearer shows them our mine, and their commander's sweep has it",
+          Mines.visibleTo(m2,E) && intel().seen>=s0+1, "visible="+Mines.visibleTo(m2,E)+" seen "+s0+" -> "+intel().seen);
+      var egone=leave(eu,m2,E,ex+T*10,ey);
+      chk("it drops out of their sight on exactly the human's clock",
+          egone>0 && Math.abs(egone-gone)<=CFG.DT+1e-6,
+          "commander "+(egone<0?"never":egone.toFixed(2)+"s")+", human "+(gone<0?"never":gone.toFixed(2)+"s"));
+      holdFor(eu,ex+T*10,ey,30*3);
+      var I=intel();
+      chk("their sweep no longer has it in view", I.seen===s0, "seen="+I.seen+" (was "+s0+" before)");
+      chk("but the commander remembers where it was, as a player would",
+          (I.charted||0)===c0+1, "charted "+c0+" -> "+I.charted);
+      /* lifted where no unit of theirs can see it: the notebook must not learn */
+      m2.dead=true;
+      holdFor(eu,ex+T*10,ey,30*2);
+      chk("a mine lifted out of their sight stays in their notebook - no leak",
+          (intel().charted||0)===c0+1, "charted="+intel().charted);
+      holdFor(eu,ex+T*2.2,ey,30);
+      chk("until their detector looks at the spot and finds nothing there",
+          typeof intel().charted==="number" && intel().charted===c0, "charted="+intel().charted);
+
+      /* ---- 4. a save from before the change ----
+         On a scratch game object, so the shared match's minefield is not
+         replaced. Unarmed and in a corner, so update() touches nobody. */
+      var G2={ players:Game.players, time:Game.time, grid:Game.grid, allied:Game.allied, alert:function(){} };
+      Mines.restore(G2,[{ id:1, x:2*T+16, y:2*T+16, o:E.idx, sea:0, dmg:200, r:0.55, w:"heat",
+                          aoe:0.5, arm:99, a:0, seen:[E.idx,P.idx] }]);
+      var om=G2.mines[0];
+      chk("an old save's permanent sighting restores", !!om && Mines.visibleTo(om,P), "");
+      G2.players=[]; G2.time+=(L||1)+0.5; Mines.update(G2,CFG.DT);
+      chk("and ends after the linger when no detector renews it",
+          !!om && !Mines.visibleTo(om,P) && Mines.visibleTo(om,E),
+          "us="+(om&&Mines.visibleTo(om,P))+" owner="+(om&&Mines.visibleTo(om,E)));
+    } finally {
+      for(var i=0;i<made.length;i++) if(made[i]&&!made[i].dead) made[i].dead=true;
+      for(var j=0;j<laid.length;j++) if(laid[j]) laid[j].dead=true;
+      tick(1);
+    }
+    chk("every mine laid here is gone from the shared match again",
+        laid.every(function(x){ return !x || Game.mines.indexOf(x)<0; }), "");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

@@ -15,8 +15,9 @@
 
    The rules a player needs to understand are deliberately short:
 
-     - A mine is invisible to the enemy until something with a detector
-       gets close, or until it goes off.
+     - A mine is invisible to the enemy except while something of theirs
+       with a detector is close to it. When the detector moves on, the mine
+       drops out of their sight again a second later.
      - It arms a few seconds after being laid, so you cannot drop one
        under a vehicle that is already on top of you.
      - It fires once. There is no reuse and no salvage.
@@ -134,8 +135,10 @@ var Mines = (function () {
       armIn: (opts && opts.arm) || base.arm,
       armed: false,
       dead: false,
-      /* players who have spotted it; the owner always has */
+      /* players who can see it NOW: the owner always, anyone else only while
+         a detector of theirs has it (seenT holds when, see LINGER) */
       seen: [owner],
+      seenT: {},
     };
     G.mines.push(m);
     if (!(opts && opts.quiet) &&
@@ -151,11 +154,58 @@ var Mines = (function () {
     return m;
   }
 
-  function spot(m, p) {
+  /* ---- a mine is seen only while something is looking at it ----
+     (owner) "when the mine cleaner leave the mine area, the enemy mine should
+     become invisible again." spot() only ever added to m.seen and nothing took
+     anyone off it, so one pass of a detector charted a field for the rest of
+     the game. Measured under jsc: a clearer held 2.2 tiles off an enemy mine
+     and then moved away to 10 tiles left it VISIBLE at 0.1, 1, 5, 30 and 60
+     seconds, the enemy commander's view of our mine behaved identically, and
+     the save wrote the spotter's index out with it. A detector is a sensor,
+     not a surveyor: what it shows is what is in front of it.
+
+     So seen is now who can see it at this moment, and seenT the last time each
+     of them had a detector on it; update() drops anyone whose last look is
+     older than LINGER. The owner is never dropped.
+
+     LINGER is not there for flicker, which was measured and does not happen:
+     with no linger at all, a clearer driven past at 0.95 of its reach and a
+     three-vehicle column attack-moving along the very edge each toggled the
+     mine exactly twice, on and then off, and three vehicles sent to one point
+     on the edge settled 0.11 tiles outside it and never crossed in 25
+     seconds. It is there for the commander. ai.js samples visibleTo in
+     intelSweep every 0.8 s, and a clearer passing within 0.99 of its 3.4-tile
+     reach holds a mine for 0.77 s - a 0.96-tile chord at 1.25 tiles a second
+     - which is long enough to flash on the human's screen and short enough to
+     fall between two sweeps. With no linger, ten such passes put the mine
+     into the commander's picture 9 times at 0.99 of reach and 5 times at
+     0.997 (0.43 s in view); with one second, 10 of 10 at both. A whole second
+     is over 0.8, so every sighting the human gets, the commander gets. At the
+     clearer's road speed it is 1.25 tiles beyond the edge of its reach.
+
+     An ally's mine is shown in exactly one case, the one the code already
+     had: while a clearer of ours is being DRIVEN through the ally's lane (the
+     breach window in update(), the only time an allied mine is looked at
+     here) and has it in reach. That sighting used to be kept for good; now it
+     lapses on this same LINGER. It stays because a crew lifting a friendly
+     lane works from that field's record - minefield records exist to be
+     handed to friendly forces (NATO STANAG 2036) - and knows what it is
+     lifting; a CLEARED burst out of bare ground would read as a fault.
+     render3d draws it in the ally's own colour, not the hostile orange. An
+     ally's field is not shown otherwise: its mines can never fire on us
+     (update() skips allies as victims), tileMined() already keeps a layer off
+     an ally's tiles without anyone seeing them, and ai.js's chart skips
+     allied mines, so drawing another commander's whole field every frame -
+     a mesh per mine, the term the CAP comment calls binding - would buy
+     nothing to steer round. */
+  var LINGER = 1.0;
+  function spot(G, m, p) {
+    if (p === m.owner) return;
+    (m.seenT || (m.seenT = {}))[p.idx] = G.time;
     if (m.seen.indexOf(p) < 0) m.seen.push(p);
   }
   function visibleTo(m, p) {
-    return m.seen.indexOf(p) >= 0;
+    return p === m.owner || m.seen.indexOf(p) >= 0;
   }
 
   function detonate(G, m, victim) {
@@ -173,7 +223,7 @@ var Mines = (function () {
       });
     }
     /* everyone can see a mine that has just gone off */
-    for (var i = 0; i < G.players.length; i++) spot(m, G.players[i]);
+    for (var i = 0; i < G.players.length; i++) spot(G, m, G.players[i]);
     if (Combat.addEffect) {
       Combat.addEffect({ t: "boom", x: m.x, y: m.y, r: (m.aoe || 0.6) * CFG.TILE,
                          life: 0.5, max: 0.5, water: m.sea });
@@ -244,7 +294,7 @@ var Mines = (function () {
             if (G.time - (u.breachT || -1e9) > 10) continue;
           }
           var d = U.dist(u.x, u.y, mm.x, mm.y);
-          if (det && d <= det * CFG.TILE) spot(mm, p);
+          if (det && d <= det * CFG.TILE) spot(G, mm, p);
           if (clr && d <= clr * CFG.TILE) {
             mm.clearT = (mm.clearT || 0) + dt * (u.def.mineClearRate || 1);
             if (mm.clearT >= 2.2) {
@@ -263,6 +313,22 @@ var Mines = (function () {
           }
         }
         if (reach) { /* keep the loop honest about its own bound */ }
+      }
+    }
+
+    /* ...and a mine nobody is looking at any more drops out of sight. One more
+       pass over the mines, and only one somebody other than its owner can see
+       costs more than a compare, so the bound stays O(detectors x mines). The
+       mine itself is untouched: still in the ground, still armed, exactly as
+       lethal. Only the sighting ends. */
+    for (var j = 0; j < list.length; j++) {
+      var sm = list[j];
+      if (sm.seen.length < 2) continue;
+      for (var q = sm.seen.length - 1; q >= 0; q--) {
+        var sp = sm.seen[q];
+        if (sp === sm.owner) continue;
+        var st = sm.seenT ? sm.seenT[sp.idx] : undefined;
+        if (st === undefined || G.time - st > LINGER) sm.seen.splice(q, 1);
       }
     }
   }
@@ -340,11 +406,18 @@ var Mines = (function () {
       for (var k = 0; k < (s.seen || []).length; k++)
         if (G.players[s.seen[k]]) seen.push(G.players[s.seen[k]]);
       if (seen.indexOf(owner) < 0) seen.push(owner);
+      /* A sighting carried in the save gets its linger from the restored clock
+         and then has to be earned again by a detector, like any other. An
+         older save wrote every player who had EVER spotted the mine; this is
+         where those permanent sightings end. */
+      var seenT = {};
+      for (var k2 = 0; k2 < seen.length; k2++)
+        if (seen[k2] !== owner) seenT[seen[k2].idx] = G.time;
       G.mines.push({ id: s.id, x: s.x, y: s.y,
                      tx: (s.x / CFG.TILE) | 0, ty: (s.y / CFG.TILE) | 0,
                      owner: owner, sea: !!s.sea, dmg: s.dmg, r: s.r,
                      warhead: s.w, aoe: s.aoe, armIn: s.arm, armed: !!s.a,
-                     dead: false, seen: seen });
+                     dead: false, seen: seen, seenT: seenT });
       if (s.id > maxId) maxId = s.id;
     }
     if (maxId >= NEXT) NEXT = maxId + 1;
@@ -353,6 +426,6 @@ var Mines = (function () {
   return { init: init, lay: lay, update: update, visibleTo: visibleTo,
            CAP: CAP, countOwned: countOwned, roomFor: roomFor,
            forRender: forRender, countNear: countNear, tileMined: tileMined,
-           detonate: detonate, threatens: threatens,
+           detonate: detonate, threatens: threatens, LINGER: LINGER,
            snapshot: snapshot, restore: restore };
 })();
