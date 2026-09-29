@@ -7168,6 +7168,216 @@ try{
   })();
   }
 
+  /* ====== [71] A HIT SAYS WHAT IT HIT, AND A KILL SAYS WHAT DIED ======
+     (owner) "i don't see damaged effect so far." Measured at d9701f9: every
+     impact was drawn as the same orange ball, and in 3D a destroyed tank,
+     ship, helicopter or structure left nothing on the map two seconds later.
+     combat.js told the renderers where a round went off but never what it
+     struck, and a kill said nothing about what had died. It now sends a
+     "hit" event - the surface, the penetration verdict, the direction the
+     round travelled - and a "death" event - what it was, where it was flying
+     or floating, whether the carousel went. This section holds the events,
+     including the two cases review found wrong: a ballistic missile sent at a
+     bare map point (a phantom target, drawn as armour) and an airframe killed
+     on its ramp (a hulk in 3D, nothing in 2D) or on a ship's deck (a hulk
+     left hanging over the sea).
+     The drawing is WebGL and cannot be reached from this page: it is held by
+     tools/jsc/impact3d_check.js, run with tools/jsc/scene3d.py against the
+     real renderer. Everything is put back: the units and the structure made
+     here are gone, both commanders' stats and the RNG are as they were, and
+     the test launcher's counter-battery plot is taken back. */
+  if (inHalf(1)) {
+  log("\n[71] A HIT SAYS WHAT IT HIT, AND A KILL SAYS WHAT DIED");
+  (function(){
+    var g=tile(P,"ground",9), s=tile(P,"sea",4);
+    if(!g){ chk("hit scenario built", false, "no ground"); return; }
+    var made=[], blds=[], rng=Game.rng;
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats);
+    /* new events are told by identity, not by index: older effects expire
+       and are spliced out while a round is in flight, which moves the new
+       ones down the list */
+    var mark=function(){ return new Set(Combat.effects); };
+    var since=function(m,t){ return Combat.effects.filter(function(f){ return !m.has(f) && f.t===t; }); };
+    var mk=function(pl,id,at,dx,dy){ var u=spawn(pl,id,at,dx,dy); if(u) made.push(u); return u; };
+    var sure=function(w){ return Object.assign({}, w, { acc: 5 }); };      // clamps to 0.98
+    try {
+      var gun=mk(P,"mbt_n",g,0,0), tank=mk(E,"mbt_p",g,4,0), man=mk(E,"rifle_p",g,4,3);
+      if(!gun||!tank||!man){ chk("hit scenario built", false, "spawn failed"); return; }
+      tank.ang=0;                                   // nose toward +x, away from the gun
+      /* 1. a GPMG on a tank: every round that lands is named, and it is armour */
+      Game.rng=function(){ return 0.5; };           // every roll lands, none bounces
+      var n0=mark();
+      for(var i=0;i<6;i++) Combat.fire(Game, gun, sure(WEAPONS.lmg), tank);
+      var h=since(n0,"hit");
+      chk("every hitscan round that lands says what it struck", h.length===6,
+          h.length+" hit events for 6 rounds (HEAD sends none)");
+      chk("a round on a tank strikes armour, on that tank",
+          h.length>0 && h.every(function(e){ return e.m==="armour" && e.id===tank.id; }),
+          h[0] ? "m="+h[0].m+" id="+h[0].id+" tank "+tank.id : "none");
+      chk("and says the GPMG did not get in", h.length>0 && h[0].v==="stop", h[0] ? "v="+h[0].v : "none");
+      var want=Math.atan2(tank.y-gun.y, tank.x-gun.x);
+      chk("and which way the round was going", h.length>0 && Math.abs(U.angDiff(h[0].ang, want))<0.01,
+          h[0] ? h[0].ang.toFixed(3)+" vs "+want.toFixed(3) : "none");
+      chk("small arms are marked as small arms, and light", h.length>0 && h[0].w==="bullet" && h[0].k<0.1,
+          h[0] ? "w="+h[0].w+" k="+h[0].k.toFixed(3) : "none");
+      /* 2. a 120 mm round up the tank's back: through */
+      n0=mark();
+      Combat.fire(Game, gun, sure(WEAPONS.gun_120), tank);
+      for(var t=0;t<60 && since(n0,"hit").length===0;t++) Combat.update(Game, CFG.DT);
+      h=since(n0,"hit");
+      chk("a tank gun's round up the rear goes in", h.length===1 && h[0].m==="armour" && (h[0].v==="pen"||h[0].v==="part"),
+          h[0] ? "m="+h[0].m+" v="+h[0].v+" k="+h[0].k.toFixed(2) : "no hit event after "+t+" ticks");
+      /* 3. the same round at the glacis from 50 degrees off the nose: the
+         obliquity is past RICO_ANGLE and the RNG says it skips */
+      var o=Math.PI*50/180;
+      gun.x=tank.x+Math.cos(o)*128; gun.y=tank.y+Math.sin(o)*128;
+      Game.rng=function(){ return 0; };
+      n0=mark();
+      Combat.fire(Game, gun, sure(WEAPONS.gun_120), tank);
+      for(var t2=0;t2<60 && since(n0,"hit").length===0;t2++) Combat.update(Game, CFG.DT);
+      h=since(n0,"hit");
+      chk("a round that bounces off the glacis says so", h.length===1 && h[0].v==="rico",
+          h[0] ? "v="+h[0].v : "no hit event");
+      /* 4. what else a round can meet */
+      Game.rng=function(){ return 0.5; };
+      n0=mark();
+      Combat.fire(Game, gun, sure(WEAPONS.rifle), man);
+      h=since(n0,"hit");
+      chk("a rifle round on a man is 'soft' - a puff of dust, nothing gory", h.length===1 && h[0].m==="soft",
+          h[0] ? "m="+h[0].m : "none");
+      Game.rng=function(){ return 0.99; };          // past acc 0.98: a miss
+      n0=mark();
+      Combat.fire(Game, gun, sure(WEAPONS.rifle), man);
+      h=since(n0,"hit");
+      var mt=h[0] ? Game.map.terrain[((h[0].y/32)|0)*Game.map.W+((h[0].x/32)|0)] : -1;
+      chk("a miss says what it landed in", h.length===1 && !h[0].id &&
+          h[0].m===(mt===T.WATER ? "water" : "ground"), h[0] ? "m="+h[0].m+" terrain "+mt : "none");
+      if (s) {
+        var boat=mk(E,"corvette_p",s,0,0);
+        Game.rng=function(){ return 0.5; };
+        n0=mark();
+        if (boat) Combat.fire(Game, gun, sure(WEAPONS.hmg), boat);
+        h=since(n0,"hit");
+        chk("a round on a ship strikes her hull", !!boat && h.length===1 && h[0].m==="hull",
+            h[0] ? "m="+h[0].m : "none");
+      }
+      var pad=tile(P,"ground",14), b=null;
+      for(var tries=0; pad && !b && tries<6; tries++){ b=Game.placeBuilding(E,"power",pad.x+tries*3,pad.y,true); }
+      if (b) { blds.push(b); b.buildProgress=1;
+        n0=mark();
+        Combat.fire(Game, gun, sure(WEAPONS.hmg), b);
+        h=since(n0,"hit");
+        chk("a round on a structure strikes the structure", h.length===1 && h[0].m==="struct",
+            h[0] ? "m="+h[0].m : "none");
+      }
+      /* a ballistic missile sent at a bare map point by a bombard order:
+         entities.js fires at a phantom with no hp, which is ground and not a
+         target. It was drawn as a hit on armour. dmg 0 and no suppression,
+         so the shared match loses nothing to it; the launch's counter-battery
+         plot is taken back below. */
+      var tel=mk(P,"tel_n",g,0,2), aim=tile(P,"ground",20);
+      if (tel && aim) {
+        var ph={ x:aim.x*32+16, y:aim.y*32+16, layer:"ground", dead:false, armor:"structure",
+                 def:{}, owner:null, r:0, tx:aim.x, ty:aim.y };
+        Game.rng=function(){ return 0.5; };
+        n0=mark();
+        Combat.fire(Game, tel, Object.assign({}, WEAPONS.srbm_mod, { acc:5, dmg:0, suppress:0 }), ph);
+        var pr=Combat.projectiles[Combat.projectiles.length-1];
+        /* only a strike at the aim point is this round's: other rounds of
+           the match are in flight while it flies, and the loop stops when
+           this one has gone off */
+        var here=function(){ return since(n0,"hit").filter(function(e){ return Math.abs(e.x-ph.x)<96 && Math.abs(e.y-ph.y)<96; }); };
+        for(var t3=0;t3<1800 && here().length===0 && Combat.projectiles.indexOf(pr)>=0;t3++) Combat.update(Game, CFG.DT);
+        h=here();
+        var at3=h[0] ? Game.map.terrain[((h[0].y/32)|0)*Game.map.W+((h[0].x/32)|0)] : -1;
+        chk("a ballistic missile on a map point strikes the ground there, not armour",
+            h.length>=1 && !h[0].id && h[0].m===(at3===T.WATER ? "water" : "ground"),
+            h[0] ? "m="+h[0].m+" id="+h[0].id+" terrain "+at3+" after "+t3+" ticks" : "no hit event after "+t3+" ticks");
+      }
+      /* 5. kills: what died, and how long its remains are kept */
+      Game.rng=function(){ return 0; };             // and the carousel always goes
+      n0=mark();
+      Combat.applyDamage(Game, tank, 1e6, WEAPONS.gun_120, gun);
+      var d=since(n0,"death"), wr=since(n0,"wreck"), tt=since(n0,"turrettoss");
+      chk("a kill says what died", d.length===1 && d[0].id===tank.id && d[0].def==="mbt_p" &&
+          d[0].kind==="unit" && d[0].cat==="vehicle" && d[0].layer==="ground",
+          d[0] ? JSON.stringify({id:d[0].id, def:d[0].def, kind:d[0].kind, cat:d[0].cat, layer:d[0].layer}) : "no death event");
+      chk("a hulk is kept for the 2D wreck's own 45 s", d.length===1 && d[0].life===45 && d[0].max===45,
+          d[0] ? d[0].life+"/"+d[0].max : "none");
+      chk("and it says whose it was: the enemy's is drawn by the enemy's fog rule", d.length===1 && d[0].own===false,
+          d[0] ? "own="+d[0].own : "none");
+      chk("the carousel going is on the death itself", d.length===1 && d[0].cata===true && tt.length===1 &&
+          tt[0].x===d[0].x && tt[0].y===d[0].y, d[0] ? "cata="+d[0].cata+" tosses "+tt.length : "none");
+      chk("and the 2D wreck is still sent as before", wr.length===1 && wr[0].x===tank.x, wr.length+" wreck events");
+      n0=mark();
+      Combat.applyDamage(Game, man, 1e6, WEAPONS.rifle, gun);
+      d=since(n0,"death");
+      chk("a fallen man is kept for 5 s, and leaves no wreck",
+          d.length===1 && d[0].cat==="infantry" && d[0].life===5 && since(n0,"wreck").length===0,
+          d[0] ? "life "+d[0].life : "none");
+      /* the 2D view draws every kind of strike and of remains without a fault
+         (this page runs the 2D renderer; the 3D one is held by the harness) */
+      var err=null, t2d=performance.now();
+      try { if (typeof Render2D!=="undefined" && Render===Render2D) Render2D.draw(CFG.DT, UI.input); } catch(e2){ err=e2; }
+      chk("a 2D frame with hits, a hulk and a fallen man in it draws cleanly", !err,
+          err ? String(err) : (performance.now()-t2d).toFixed(0)+" ms");
+      var ga=tile(P,"ground",11);
+      var helo=ga && mk(E,"helo_p",ga,0,0);
+      if (helo) { helo.parked=false; helo.order={ type:"idle" };
+        n0=mark();
+        Combat.applyDamage(Game, helo, 1e6, WEAPONS.hellfire, gun);
+        d=since(n0,"death");
+        chk("an aircraft shot down in flight dies in the air", d.length===1 && d[0].layer==="air" &&
+            since(n0,"wreck").length===0, d[0] ? "layer "+d[0].layer : "none");
+      }
+      /* an airframe shut down on its ramp burns where it stands: the 3D view
+         leaves a hulk, so the 2D view is sent its wreck too */
+      var ramp=ga && mk(E,"helo_p",ga,2,0);
+      if (ramp) { ramp.parked=true; ramp.order={ type:"parked" };
+        n0=mark();
+        Combat.applyDamage(Game, ramp, 1e6, WEAPONS.gun_120, gun);
+        d=since(n0,"death");
+        chk("an airframe killed on its ramp dies on the ground, and leaves the 2D wreck",
+            d.length===1 && d[0].layer==="ground" && since(n0,"wreck").length===1,
+            d[0] ? "layer "+d[0].layer+", wrecks "+since(n0,"wreck").length : "none");
+      }
+      /* one parked on a ship's deck goes over the side: no hulk hanging over
+         the sea once the ship has moved on */
+      if (boat && !boat.dead) {
+        var deck=mk(E,"helo_p",s,0,0);
+        if (deck) { deck.padOn=boat; deck.parked=true; deck.order={ type:"parked" };
+          n0=mark();
+          Combat.applyDamage(Game, deck, 1e6, WEAPONS.gun_120, gun);
+          d=since(n0,"death");
+          chk("an airframe killed on a ship's deck is 'deck', and leaves no wreck",
+              d.length===1 && d[0].layer==="deck" && since(n0,"wreck").length===0,
+              d[0] ? "layer "+d[0].layer+", wrecks "+since(n0,"wreck").length : "none");
+        }
+      }
+      if (b) {
+        n0=mark();
+        Combat.applyDamage(Game, b, 1e7, WEAPONS.howitzer, gun);
+        d=since(n0,"death");
+        chk("a structure's rubble is kept for 60 s", d.length===1 && d[0].kind==="building" && d[0].life===60 &&
+            d[0].def==="power", d[0] ? d[0].kind+" "+d[0].life : "none");
+      }
+    } finally {
+      Game.rng=rng;
+      /* the test launcher's counter-battery plot goes with it */
+      if (Game.cbContacts) for(var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if (made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      blds.forEach(function(x){ if(!x.dead){ x.dead=true; Game.removeBuilding(x); } });
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    chk("the shared match is as it was: RNG, both commanders' books, no stray counter-battery plot",
+        Game.rng===rng && keep(P.stats)===sP && keep(E.stats)===sE &&
+        !(Game.cbContacts||[]).some(function(c){ return made.indexOf(c.unit)>=0; }), "");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

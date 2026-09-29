@@ -131,6 +131,10 @@ var Render3D = (function () {
     buildTerrain();
     buildWater();
     buildFogLayer();
+    /* hits and what kills leave - js/impact3d.js. Its particle clouds belong
+       to this scene and this renderer, so they are made again with them. */
+    if (typeof Impact3D !== "undefined")
+      Impact3D.init(THREE, three, G, { heightAt, PXM, AIR_ALT, recOf: (id) => ents.get(id) });
 
     cam.x = G.human.homeX; cam.y = G.human.homeY; cam.dist = 430;
     resize();
@@ -1183,7 +1187,14 @@ var Render3D = (function () {
       }
     }
     for (const [id, rec] of ents) {
-      if (!seen.has(id)) { three.scene.remove(rec.grp); ents.delete(id); }
+      if (!seen.has(id)) {
+        /* An entity that died this frame keeps its model: Impact3D claims it
+           a moment later, when the death event is read, and turns it into
+           what the kill leaves. Anything else that stopped being drawn -
+           into fog, reskinned, carried - goes as before. */
+        if (!(typeof Impact3D !== "undefined" && Impact3D.adopt(id, rec))) three.scene.remove(rec.grp);
+        ents.delete(id);
+      }
     }
   }
 
@@ -1323,6 +1334,13 @@ var Render3D = (function () {
     }
   }
 
+  /* the ground at x, y is in the player's sight now (G.fog 2), or fog is off */
+  function seenNow3(x, y) {
+    if (!G.fogEnabled || !G.fog) return true;
+    const tx = (x / CFG.TILE) | 0, ty = (y / CFG.TILE) | 0;
+    if (tx < 0 || ty < 0 || tx >= G.map.W || ty >= G.map.H) return false;
+    return G.fog[ty * G.map.W + tx] === 2;
+  }
   function syncEffects(dt) {
     /* ---- projectiles: real ordnance, oriented along its flight path ---- */
     for (const p of Combat.projectiles) {
@@ -1418,6 +1436,19 @@ var Render3D = (function () {
     for (const fx of Combat.effects) {
       if (fx._seen3) continue;
       fx._seen3 = true;
+      if (fx.t === "hit" || fx.t === "death") {
+        if (typeof Impact3D !== "undefined") Impact3D.event(fx);
+        continue;
+      }
+      /* Fog honesty for the fireball and the carousel's stand-in turret, on
+         the rule Impact3D keeps for everything it draws: only where the
+         player sees now. The fog wash lies on the ground (46% on explored
+         tiles, 93% on unexplored), so a fireball showed through it, and the
+         opaque box flew up in front of it - a tank dying where nothing of
+         the player's could see it announced itself. A nuclear burst is still
+         drawn anywhere: its cloud stands kilometres high over the map, and
+         the launch is called out to every commander. */
+      if (((fx.t === "boom" && !fx.nuke) || fx.t === "turrettoss") && !seenNow3(fx.x, fx.y)) continue;
       if (fx.t === "boom") {
         const r = fx.r * PXM * 1.6;
         const gy = heightAt(fx.x, fx.y);
@@ -1470,7 +1501,10 @@ var Render3D = (function () {
         tur.userData = { life: 2.2, max: 2.2, kind: "tumble",
           vx: (Math.random() - 0.5) * 9, vz: (Math.random() - 0.5) * 9,
           vy: 26, spin: (Math.random() - 0.5) * 9 };
-        three.scene.add(tur); fxMeshes.push(tur);
+        /* the stand-in box only when Impact3D could not throw the real turret */
+        if (!(typeof Impact3D !== "undefined" && Impact3D.threwTurret(fx.x, fx.y))) {
+          three.scene.add(tur); fxMeshes.push(tur);
+        }
         const smk = new THREE.Mesh(new THREE.SphereGeometry(1, 9, 7), fxMaterial(0x241f1c, 0.72));
         smk.position.set(gx2m(fx.x), gy + 5, gx2m(fx.y));
         smk.userData = { life: 4.5, max: 4.5, grow: 16, rise: 7, kind: "smoke" };
@@ -1482,11 +1516,18 @@ var Render3D = (function () {
           gx2m(fx.x2), heightAt(fx.x2, fx.y2) + 3, gx2m(fx.y2), !!fx.heavy);
         t3.userData = { life: 0.075, max: 0.075, kind: "tracer" };
         three.scene.add(t3); fxMeshes.push(t3);
-        /* strike sparks where it lands */
-        const sp = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 5), fxMaterial(0xffd9a0, 0.9));
-        sp.position.set(gx2m(fx.x2), heightAt(fx.x2, fx.y2) + 1.6, gx2m(fx.y2));
-        sp.userData = { life: 0.16, max: 0.16, grow: 2.2, kind: "spark" };
-        three.scene.add(sp); fxMeshes.push(sp);
+        /* The strike is the "hit" event combat.js sends with every hitscan
+           round: js/impact3d.js draws what the round met. The pale sphere
+           that stood in for it here, on steel, earth and water alike, is
+           kept only for a page that does not load impact3d.js (the dev pages
+           _play, _replay, _fog and _loadshot), so they still see where a
+           round struck. Its geometry is now disposed with it (below). */
+        if (typeof Impact3D === "undefined") {
+          const sp = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 5), fxMaterial(0xffd9a0, 0.9));
+          sp.position.set(gx2m(fx.x2), heightAt(fx.x2, fx.y2) + 1.6, gx2m(fx.y2));
+          sp.userData = { life: 0.16, max: 0.16, grow: 2.2, kind: "spark" };
+          three.scene.add(sp); fxMeshes.push(sp);
+        }
       } else if (fx.t === "flash") {
         const mz = FX3D.muzzle(THREE, !!fx.big);
         mz.position.set(gx2m(fx.x), heightAt(fx.x, fx.y) + 3.2, gx2m(fx.y));
@@ -1505,7 +1546,20 @@ var Render3D = (function () {
       const m = fxMeshes[i];
       m.userData.life -= dt;
       const f = m.userData.life / m.userData.max;
-      if (m.userData.life <= 0) { three.scene.remove(m); fxMeshes.splice(i, 1); continue; }
+      if (m.userData.life <= 0) {
+        three.scene.remove(m); fxMeshes.splice(i, 1);
+        /* MEASURED: nothing was disposed here, and every effect mesh carries a
+           geometry of its own - ten minutes of battle left the renderer holding
+           +12,310 geometries it would never draw again. The geometry goes with
+           the mesh. The materials stay: FX3D's are shared by every tracer and
+           muzzle flash, and disposing a shared material makes the renderer
+           drop its program and compile it again on the next shot. The ones
+           fxMaterial makes per mesh own no GL object - their program is the
+           one every basic material shares - so the collector takes them with
+           the mesh (programs held: 20 after the harness, flat). */
+        m.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+        continue;
+      }
       if (m.userData.grow) {
         const s = 1 + (1 - f) * m.userData.grow;
         m.scale.set(s, s, s);
@@ -2201,6 +2255,7 @@ var Render3D = (function () {
        after every mesh is placed for this frame, before anything is drawn */
     if (typeof Damage3D !== "undefined") Damage3D.frame(three, G, dt, ents);
     syncEffects(dt);
+    if (typeof Impact3D !== "undefined") Impact3D.frame(dt);
     cleanProjectiles();
     applyCamera();
     /* gentle water shimmer */

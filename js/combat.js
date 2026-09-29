@@ -156,8 +156,18 @@ var Combat = (function () {
       effects.push({ t: "tracer", x1: shooter.x, y1: shooter.y - alt(shooter),
                      x2: ax, y2: ay - alt(target, hit), life: 0.06, max: 0.06,
                      heavy: w.dmg >= 20 });
-      if (hit) applyDamage(game, target, dmg, w, shooter);
-      else splash(game, ax, ay, dmg * 0.25, w, shooter, 0.3);
+      if (hit) {
+        const pb = target._lastPen;
+        applyDamage(game, target, dmg, w, shooter);
+        hitFx(game, target, target._lastPen !== pb ? target._lastPen : null,
+              ax, ay, w, shooter.x, shooter.y, false);
+      } else {
+        splash(game, ax, ay, dmg * 0.25, w, shooter, 0.3);
+        /* a burst that misses an aircraft goes on into the sky, not into the
+           ground under it */
+        if (!(target.targetLayer && target.targetLayer() === "air"))
+          hitFx(game, null, null, ax, ay, w, shooter.x, shooter.y, false);
+      }
       if (w.suppress) suppressAt(game, ax, ay, 1.2, w.suppress, shooter.owner);
       return;
     }
@@ -684,9 +694,13 @@ var Combat = (function () {
       SonarNet.blast(game, p.tx, p.ty, Math.max(1.0, w.aoe || 0.35));
 
     if (p.target && !p.target.dead && p.hit) {
+      const pb = p.target._lastPen;
       applyDamage(game, p.target, p.dmg, w, p.shooter);
+      hitFx(game, p.target, p.target._lastPen !== pb ? p.target._lastPen : null,
+            p.tx, p.ty, w, p.x0, p.y0, p.type === "torpedo" || p.type === "depth");
       if (aoe > 12) splash(game, p.tx, p.ty, p.dmg, w, p.shooter, 0.55, p.target);
     } else {
+      hitFx(game, null, null, p.tx, p.ty, w, p.x0, p.y0, p.type === "torpedo" || p.type === "depth");
       splash(game, p.tx, p.ty, p.dmg, w, p.shooter, 1.0);
     }
   }
@@ -749,6 +763,47 @@ var Combat = (function () {
       effects.push({ t: "text", x: p.tx, y: p.ty - 16, s: s,
                      life: 1.2, max: 1.2, c: laid ? "#c8b06a" : "#ffb45c" });
     }
+  }
+
+  /* ---- what a round struck, for the picture ----
+     (owner) "i don't see damaged effect so far." Every impact was drawn as
+     the same orange ball whatever it met, so steel, concrete, earth and water
+     looked alike and a round that bounced looked like one that went in. A
+     "hit" event names the surface (m: armour, hull, air, struct, soft,
+     ground, water) and, when resolveArmor judged the round, its verdict (v:
+     pen, part, stop, rico). ang is the direction the round was travelling,
+     so a renderer can put the strike on the face it arrived at; k is its
+     weight from the listed damage - a 5.56 mm round 0.03, a 120 mm gun 0.46,
+     a heavyweight torpedo 1.0. x, y is the target's centre, or the point of
+     impact when there was no target.
+     Presentation only: nothing here draws on game.rng, so every roll the
+     battle makes is the one it made before. */
+  const VERDICT_FX = { "RICOCHET": "rico", "NO PENETRATION": "stop",
+                       "PARTIAL PENETRATION": "part", "PENETRATION": "pen" };
+  function hitFx(game, e, pen, x, y, w, fromX, fromY, under) {
+    /* A bombard order aims at a bare map point: entities.js fires at an
+       object with a position, a layer and no hp. applyDamage passes it over
+       as a phantom aim point on that same test, and so does this - what the
+       round met is the ground there. Without it the final branch below
+       called it armour, and a 520-damage ballistic missile landing on earth
+       drew twelve sparks and a spit of flame, like a machine gun on a tank
+       (measured, srbm_mod at a ground point). */
+    if (e && e.hp === undefined) e = null;
+    let m;
+    if (!e) m = isWater(game, x, y) ? "water" : (w.tgt && !w.tgt.ground ? "air" : "ground");
+    else if (e.kind === "building") m = "struct";
+    else if (e.cat === "infantry") m = "soft";
+    else {
+      const tl = e.targetLayer ? e.targetLayer() : e.layer;
+      m = tl === "air" ? "air"
+        : (tl === "sub" || (under && e.cat === "naval")) ? "water"     // it goes off in the sea
+        : e.cat === "naval" ? "hull" : "armour";
+    }
+    effects.push({ t: "hit", x: e ? e.x : x, y: e ? e.y : y, m,
+                   v: pen ? (VERDICT_FX[pen.verdict] || "") : "",
+                   ang: (fromX === undefined || fromY === undefined) ? 0 : Math.atan2(y - fromY, x - fromX),
+                   k: U.clamp((w.dmg || 10) / 340, 0.02, 1), w: w.warhead || "",
+                   u: under ? 1 : 0, id: e ? e.id : 0, life: 0.4, max: 0.4 });
   }
 
   function isWater(game, px, py) {
@@ -1065,8 +1120,30 @@ var Combat = (function () {
       t: "boom", x: e.x, y: e.y, r: Math.max(14, (e.r || 10) * 1.8),
       life: 0.6, max: 0.6, water: e.layer === "sea" || e.layer === "sub",
     });
-    if (e.cat !== "infantry" && e.layer === "ground")
+    /* ---- what died, for what it leaves ----
+       The wreck below is the 2D view's. A death event says enough for a
+       renderer to show each kind of end: a hulk for the wreck's own 45 s,
+       rubble for 60, a fallen man for 5. layer is where the thing was
+       presenting as it died (targetLayer): an airframe on its ramp is on the
+       ground and burns there, one in the air falls. One parked on a ship's
+       deck presents "ground" too but stands on the sea, so it is "deck": its
+       wreck goes over the side rather than hang where the deck was. cata is
+       set below if the carousel went. id lets the 3D view keep the very model
+       the player was watching; own lets its remains be drawn by the rule the
+       living were (the player's own always, anyone else's only where the
+       player sees). Presentation only, like the wreck. */
+    const tl = e.targetLayer ? e.targetLayer() : e.layer;
+    const dfx = { t: "death", x: e.x, y: e.y, id: e.id, def: e.def.id, kind: e.kind, cat: e.cat,
+                  layer: (tl === "ground" && e.layer === "air" && isWater(game, e.x, e.y)) ? "deck" : tl,
+                  r: e.r || 10, ang: e.ang || 0, own: e.owner === game.human, cata: false, life: 45, max: 45 };
+    if (e.kind === "building") dfx.life = dfx.max = 60;
+    else if (e.cat === "infantry") dfx.life = dfx.max = 5;
+    /* The 2D hulk, as before for every ground hull - and now for an airframe
+       destroyed on its ramp, which the 3D view leaves burning where it stood
+       and the 2D view used to leave as bare concrete. */
+    if (e.cat !== "infantry" && (e.layer === "ground" || dfx.layer === "ground"))
       effects.push({ t: "wreck", x: e.x, y: e.y, r: e.r || 10, life: 45, max: 45, ang: e.ang || 0 });
+    effects.push(dfx);
 
     /* Soviet-pattern autoloaders stow their rounds in the crew compartment.
        A clean penetration sets the whole carousel off and throws the turret. */
@@ -1078,6 +1155,7 @@ var Combat = (function () {
       effects.push({ t: "turrettoss", x: e.x, y: e.y, life: 2.2, max: 2.2,
                      ang: e.ang || 0, r: e.r || 10 });
       e._lastReport = -99;                       /* this one always gets said */
+      dfx.cata = true;                           /* and the 3D view throws the real turret */
       report(game, e, "AMMO DETONATION", null, shooter);
       /* The blast catches anything standing too close. grid.query is
          callback-style, and the victims are collected first so that the

@@ -885,6 +885,12 @@ var Render = (function () {
   }
 
   function drawWreck(fx) {
+    /* A wreck is drawn once the player has seen it - at the kill, or coming
+       upon it later - and then stays, like a remembered structure. The 3D
+       view keeps a hulk only for a kill it drew; here a tank killed where
+       nothing of the player's was looking lay on the map as a dark block
+       through the translucent wash over explored ground. */
+    if (!fx._seen2) { if (!seenNow(fx.x, fx.y)) return; fx._seen2 = true; }
     const X = sx(fx.x, fx.y), Y = sy(fx.x, fx.y, GameMap.elevAt(G.map, (fx.x / 32) | 0, (fx.y / 32) | 0));
     const s = cam.z, f = fx.life / fx.max;
     ctx.save();
@@ -893,10 +899,27 @@ var Render = (function () {
     ctx.fillStyle = "#26221d";
     ctx.fillRect(-fx.r * 0.7, -fx.r * 0.45, fx.r * 1.4, fx.r * 0.9);
     ctx.restore();
-    if (f > 0.86) {   // fresh wreck smokes
-      const t = (1 - f) * 7;
-      ctx.fillStyle = "rgba(40,40,40,0.5)";
-      ctx.beginPath(); ctx.arc(X, Y - 8 * s - t * 8, (3 + t * 2.5) * s, 0, 7); ctx.fill();
+    /* Burning, then smouldering - the stages the 3D hulk goes through
+       (js/impact3d.js): flame and black smoke for 14 s, thin grey smoke to
+       32 s. It used to smoke for the first 6 s only. A wreck where the
+       player cannot see now keeps its hulk and loses its smoke, which would
+       otherwise mark the spot through the translucent fog. */
+    const age = fx.max - fx.life;
+    if (age < 32 && seenNow(fx.x, fx.y)) {
+      const burning = age < 14;
+      for (let i = 0; i < 3; i++) {
+        const ph = (G.time * 0.35 + i / 3 + fx.x * 0.013) % 1;
+        ctx.fillStyle = burning ? "rgba(34,31,29," + (0.5 * (1 - ph)).toFixed(3) + ")"
+                                : "rgba(118,112,104," + (0.28 * (1 - ph)).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(X + ph * 10 * s, Y - 8 * s - ph * 34 * s, (3 + ph * 7) * s, 0, 7); ctx.fill();
+      }
+      if (burning) {
+        const fl = 0.75 + 0.25 * Math.sin(G.time * 23 + fx.x);
+        ctx.fillStyle = "rgba(255,150,50," + (0.8 * fl).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(X, Y - 5 * s, 2.6 * fl * s, 0, 7); ctx.fill();
+        ctx.fillStyle = "rgba(255,232,165," + (0.9 * fl).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(X, Y - 5.5 * s, 1.2 * fl * s, 0, 7); ctx.fill();
+      }
     }
   }
 
@@ -1189,6 +1212,12 @@ var Render = (function () {
         ctx.fillStyle = "rgba(255,230,150," + f + ")";
         ctx.beginPath(); ctx.arc(X, Y, (fx.big ? 8 : 4.5) * z * (2 - f), 0, 7); ctx.fill();
       } else if (fx.t === "boom") {
+        /* Fog honesty, as in 3D: the fireball is drawn only where the player
+           sees now. The wash drawn over it is translucent on explored ground,
+           so a kill inside a remembered base showed through. A nuclear burst
+           is drawn anywhere - its cloud is seen across the map, and the
+           launch is called out to every commander. */
+        if (!fx.nuke && !seenNow(fx.x, fx.y)) continue;
         const X = sx(fx.x, fx.y), Y = sy(fx.x, fx.y, 0);
         const r = fx.r * (1.4 - f * 0.4) * z;
         if (fx.water) {
@@ -1208,6 +1237,10 @@ var Render = (function () {
           ctx.fillStyle = "rgba(50,45,42," + (1 - f) * 0.5 + ")";
           ctx.beginPath(); ctx.arc(X, Y - (1 - f) * 26 * z, r * 0.5, 0, 7); ctx.fill();
         }
+      } else if (fx.t === "hit") {
+        drawHit2D(fx, f, z);
+      } else if (fx.t === "death") {
+        drawDeath2D(fx, z);
       } else if (fx.t === "trail") {
         const X = sx(fx.x, fx.y), Y = sy(fx.x, fx.y, 0);
         ctx.fillStyle = fx.sub ? "rgba(200,230,255," + f * 0.35 + ")" : "rgba(220,220,220," + f * 0.4 + ")";
@@ -1221,6 +1254,191 @@ var Render = (function () {
         ctx.globalAlpha = 1;
       }
     }
+  }
+
+  /* ============ the moment of a hit, and what a kill leaves ============
+     The iso twin of js/impact3d.js, for a machine without WebGL. Drawn from
+     each event's own fields and age, so nothing is stored per effect; the
+     scatter is a hash of the impact point, which also keeps a spark from
+     jumping about between frames. Nothing is drawn where the player cannot
+     see now: the fog wash painted over this is translucent on explored
+     ground, so without the test a strike inside a remembered base would
+     show through it. */
+  function seenNow(x, y) {
+    if (!G.fogEnabled || !G.fog) return true;
+    const tx = (x / CFG.TILE) | 0, ty = (y / CFG.TILE) | 0;
+    if (tx < 0 || ty < 0 || tx >= G.map.W || ty >= G.map.H) return false;
+    return G.fog[ty * G.map.W + tx] === 2;
+  }
+  function h01(a, b) { const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return s - Math.floor(s); }
+  function blot(X, Y, r) { ctx.beginPath(); ctx.arc(X, Y, Math.max(0.3, r), 0, 7); ctx.fill(); }
+  function drawHit2D(fx, f, z) {
+    if (!seenNow(fx.x, fx.y)) return;
+    const a = 1 - f, m = fx.m, small = fx.w === "bullet", k = fx.k || 0.1;
+    const ca = Math.cos(fx.ang || 0), sa = Math.sin(fx.ang || 0);
+    /* on a target the strike is on the face toward the shooter */
+    const off = (m === "ground" || m === "water" || m === "soft") ? 0 : m === "struct" ? 14 : 7;
+    const wx = fx.x - ca * off, wy = fx.y - sa * off;
+    const lift = m === "air" ? 34 * z : (m === "armour" || m === "hull" || m === "struct") ? 5 * z : 0;
+    const X = sx(wx, wy), Y = sy(wx, wy, 0) - lift;
+    const at = (d, up) => [sx(wx + ca * d, wy + sa * d), sy(wx + ca * d, wy + sa * d, 0) - lift - up];
+    if (m === "armour" || m === "hull" || m === "air") {
+      if (a < 0.35) {
+        const got = fx.v === "pen" || fx.v === "part";
+        ctx.fillStyle = (got ? "rgba(255,250,235," : "rgba(255,222,160,") + (1 - a / 0.35).toFixed(3) + ")";
+        blot(X, Y, (small ? 1.4 : got ? 5 : 3.2) * z);
+      }
+      /* sparks fly back off the plate, toward where the round came from */
+      ctx.strokeStyle = "rgba(255,205,120," + f.toFixed(3) + ")";
+      ctx.lineWidth = Math.max(0.6, 0.9 * z);
+      ctx.beginPath();
+      const n = small ? 2 : 6;
+      for (let i = 0; i < n; i++) {
+        const b = fx.ang + Math.PI + (h01(fx.x + i, fx.y) - 0.5) * 2.4;
+        const d0 = a * (small ? 7 : 16), d1 = d0 + 4;
+        const up = a * (4 + 8 * h01(i, fx.x)) * z;
+        ctx.moveTo(sx(wx + Math.cos(b) * d0, wy + Math.sin(b) * d0), sy(wx + Math.cos(b) * d0, wy + Math.sin(b) * d0, 0) - lift - up);
+        ctx.lineTo(sx(wx + Math.cos(b) * d1, wy + Math.sin(b) * d1), sy(wx + Math.cos(b) * d1, wy + Math.sin(b) * d1, 0) - lift - up);
+      }
+      ctx.stroke();
+      if (fx.v === "rico") {
+        /* the round skips off the slope and carries on, climbing */
+        const p0 = at(a * 90 - 14, a * 40 * z - 6 * z), p1 = at(a * 90, a * 40 * z);
+        ctx.strokeStyle = "rgba(255,240,190," + f.toFixed(3) + ")";
+        ctx.lineWidth = Math.max(0.8, 1.3 * z);
+        ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+      }
+    } else if (m === "struct") {
+      ctx.fillStyle = "rgba(160,152,140," + (0.5 * f).toFixed(3) + ")";
+      blot(X, Y - a * 6 * z, (small ? 2 : 4 + 6 * k) * (0.5 + a) * z);
+      ctx.fillStyle = "rgba(58,54,50," + f.toFixed(3) + ")";
+      for (let i = 0; i < 3; i++) {
+        const p = at(-(4 + 10 * h01(i, fx.y)) * a, (9 * a - 12 * a * a) * z);
+        blot(p[0] + (h01(fx.x, i) - 0.5) * 10 * z * a, p[1], 0.7 * z);
+      }
+    } else if (m === "soft") {
+      /* a round finding a man: a small puff of dust off his kit, nothing more */
+      ctx.fillStyle = "rgba(140,122,95," + (0.4 * f).toFixed(3) + ")";
+      blot(X, Y - 3 * z - a * 3 * z, (1.5 + a * 3) * z);
+    } else if (m === "ground") {
+      ctx.fillStyle = "rgba(140,122,95," + (0.45 * f).toFixed(3) + ")";
+      blot(X, Y - a * 4 * z, (small ? 1.5 : 3 + 7 * k) * (0.6 + a) * z);
+      ctx.fillStyle = "rgba(90,72,52," + f.toFixed(3) + ")";
+      const nd = small ? 2 : 5;
+      for (let i = 0; i < nd; i++) {
+        const dx = (h01(fx.x + i, fx.y) - 0.5) * (small ? 6 : 18) * a * z;
+        const up = ((small ? 7 : 20 + 20 * k) * a - (small ? 9 : 26) * a * a) * z;
+        blot(X + dx, Y - Math.max(0, up), (small ? 0.6 : 1) * z);
+      }
+    } else if (m === "water") {
+      const big = fx.u ? 2.6 : small ? 0.4 : 0.8 + k;
+      ctx.strokeStyle = "rgba(220,238,250," + (0.8 * f).toFixed(3) + ")";
+      ctx.lineWidth = Math.max(0.6, 1.2 * z);
+      ctx.beginPath(); ctx.ellipse(X, Y, (2 + a * 8) * big * z, (2 + a * 8) * big * z * ISO, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = "rgba(235,246,252," + (0.6 * f).toFixed(3) + ")";
+      ctx.beginPath(); ctx.ellipse(X, Y - (4 + 10 * a) * big * z * 0.5, 1.4 * big * z, (4 + 10 * a) * big * z * 0.5, 0, 0, 7); ctx.fill();
+    }
+  }
+  function drawDeath2D(fx, z) {
+    /* the player's own remains are drawn as the player's own units are:
+       always; anyone else's only where the player sees now */
+    if (fx.cat === "infantry" || !(fx.own || seenNow(fx.x, fx.y))) return;
+    const age = fx.max - fx.life;
+    const X = sx(fx.x, fx.y), Y = sy(fx.x, fx.y, 0);
+    if (fx.kind === "building") {
+      /* the structure slumps into its own dust; the wreck event draws the
+         rubble and its smoke, the flames on it are drawn here */
+      if (age < 5) {
+        const k = age / 5;
+        ctx.fillStyle = "rgba(150,140,126," + (0.55 * (1 - k)).toFixed(3) + ")";
+        for (let i = 0; i < 5; i++)
+          blot(X + (h01(fx.x, i) - 0.5) * fx.r * 1.6 * z * (0.6 + k), Y - k * 10 * z - h01(i, fx.y) * 8 * z,
+               (fx.r * 0.35 + k * fx.r * 0.5) * z);
+      }
+      if (age < 26) {
+        for (let i = 0; i < 3; i++) {
+          const fl = 0.7 + 0.3 * Math.sin(G.time * 19 + i * 2.1 + fx.y);
+          const ox = (h01(fx.y, i) - 0.5) * fx.r * z, oy = (h01(i, fx.x) - 0.5) * fx.r * z * ISO;
+          ctx.fillStyle = "rgba(255,140,45," + (0.75 * fl).toFixed(3) + ")";
+          blot(X + ox, Y + oy - 4 * z, 2.4 * fl * z);
+        }
+      }
+      return;
+    }
+    if (fx.layer === "air") {
+      /* it falls for 2.6 s along its heading, trailing fire and smoke, then
+         burns where it hit */
+      const T = 2.6, k = Math.min(1, age / T);
+      const pos = (kk) => {
+        const d = kk * 60, gx = fx.x + Math.cos(fx.ang) * d, gy = fx.y + Math.sin(fx.ang) * d;
+        return [sx(gx, gy), sy(gx, gy, 0) - 34 * z * (1 - kk * kk), gx, gy];
+      };
+      const p = pos(k);
+      if (!fx.own && !seenNow(p[2], p[3])) return;
+      if (k < 1) {
+        for (let i = 1; i <= 5; i++) {
+          const kk = k - i * 0.07;
+          if (kk < 0) break;
+          const q = pos(kk);
+          ctx.fillStyle = "rgba(40,37,35," + (0.45 - i * 0.07).toFixed(3) + ")";
+          blot(q[0], q[1] - i * 2 * z, (2 + i * 1.2) * z);
+        }
+        ctx.fillStyle = "rgba(255,160,60,0.9)";
+        blot(p[0], p[1], 2.4 * z);
+        return;
+      }
+      if (age - T < 0.4) {
+        ctx.fillStyle = "rgba(255,200,120," + (1 - (age - T) / 0.4).toFixed(3) + ")";
+        blot(p[0], p[1], 10 * z);
+      }
+      ctx.fillStyle = "rgba(30,27,24," + Math.min(1, fx.life / 6).toFixed(3) + ")";
+      ctx.beginPath(); ctx.ellipse(p[0], p[1], 8 * z, 8 * z * ISO, 0, 0, 7); ctx.fill();
+      if (age < 32) {
+        const burning = age < 14;
+        for (let i = 0; i < 3; i++) {
+          const ph = (G.time * 0.35 + i / 3 + fx.x * 0.013) % 1;
+          ctx.fillStyle = burning ? "rgba(34,31,29," + (0.5 * (1 - ph)).toFixed(3) + ")"
+                                  : "rgba(118,112,104," + (0.28 * (1 - ph)).toFixed(3) + ")";
+          blot(p[0] + ph * 10 * z, p[1] - 8 * z - ph * 34 * z, (3 + ph * 7) * z);
+        }
+        if (burning) {
+          ctx.fillStyle = "rgba(255,150,50," + (0.6 + 0.2 * Math.sin(G.time * 23 + fx.x)).toFixed(3) + ")";
+          blot(p[0], p[1] - 4 * z, 2.6 * z);
+        }
+      }
+      return;
+    }
+    if (fx.layer === "sea" || fx.layer === "sub") {
+      /* the hull settles and goes; fuel oil spreads over where it was */
+      const T = fx.layer === "sea" ? 14 : 3.5, k = Math.min(1, age / T);
+      const rr = fx.r * (0.5 + 0.8 * Math.min(1, age / 12)) * z;
+      ctx.fillStyle = "rgba(14,11,8," + (0.45 * Math.min(1, fx.life / 8) * Math.min(1, age / 2)).toFixed(3) + ")";
+      ctx.beginPath(); ctx.ellipse(X, Y, rr * 1.4, rr * ISO, 0, 0, 7); ctx.fill();
+      if (fx.layer === "sea" && k < 1) {
+        ctx.save();
+        ctx.translate(X, Y); ctx.scale(z, z * ISO); ctx.rotate(isoAngle(fx.ang));
+        ctx.globalAlpha = 1 - k;
+        ctx.fillStyle = "#2a2724";
+        ctx.beginPath(); ctx.ellipse(0, 0, fx.r * 0.9 * (1 - 0.5 * k), fx.r * 0.25 * (1 - 0.5 * k), 0, 0, 7); ctx.fill();
+        ctx.restore();
+        for (let i = 0; i < 3; i++) {
+          const ph = (G.time * 0.35 + i / 3 + fx.x * 0.013) % 1;
+          ctx.fillStyle = "rgba(34,31,29," + (0.5 * (1 - ph) * (1 - k)).toFixed(3) + ")";
+          blot(X + ph * 12 * z, Y - 10 * z - ph * 40 * z, (4 + ph * 9) * z);
+        }
+      }
+      if (age < 10) {
+        ctx.fillStyle = "rgba(235,246,252,0.7)";
+        for (let i = 0; i < 4; i++) {
+          const ph = (G.time * 1.3 + h01(fx.x, i)) % 1;
+          if (ph > 1 - age / 10) continue;
+          blot(X + (h01(i, fx.y) - 0.5) * fx.r * 1.4 * z, Y + (h01(fx.y, i) - 0.5) * fx.r * 0.6 * z, (1 + ph) * z);
+        }
+      }
+    }
+    /* A ground hull, or an airframe killed on its ramp: the wreck event
+       draws the hulk and its fire (drawWreck). One killed on a ship's deck
+       ("deck") went over the side in its fireball and leaves nothing. */
   }
 
   /* ============ fog ============
