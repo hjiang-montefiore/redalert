@@ -636,6 +636,8 @@ var Render = (function () {
     else drawVehicle(u, s, col);
     ctx.restore();
 
+    /* a damaged vehicle, aircraft or ship smokes where it burns (js/damage3d.js) */
+    if (typeof Damage3D !== "undefined") Damage3D.draw2D(ctx, u, X, Y - alt, z, G, sx, sy);
     drawUnitUI(u, X, Y - alt, z);
   }
 
@@ -1139,12 +1141,14 @@ var Render = (function () {
       ctx.fillStyle = "#ffd76a"; ctx.font = Math.round(10 * z) + "px sans-serif"; ctx.textAlign = "center";
       ctx.fillText("REPAIRING", cx, cy - 20 * z);
     }
-    /* smoke on heavy damage */
-    if (b.hp < b.maxHp * 0.45 && b.buildProgress >= 1) {
-      const t = (G.time * 1.7 + b.id) % 1;
-      ctx.fillStyle = "rgba(30,30,30," + (0.5 - t * 0.4) + ")";
-      ctx.beginPath(); ctx.arc(cx + Math.sin(b.id) * 8, cy - 4 - t * 22 * z, (3 + t * 6) * z, 0, 7); ctx.fill();
-    }
+    /* Damage, in the same three stages the 3D battlefield draws (js/damage3d.js):
+       light smoke below 70%, dark smoke and sparks below 55% where the bar
+       turns yellow, fire below 25% where it turns red, from more than one
+       place on a big structure. The single puff that was
+       here also rose off an enemy building the player only REMEMBERED under
+       fog, which read its live health through the fog; this draws nothing
+       unless the building is in sight now. */
+    if (typeof Damage3D !== "undefined") Damage3D.drawBuilding2D(ctx, b, cx, cy, z, G);
   }
 
   /* ============ projectiles & effects ============ */

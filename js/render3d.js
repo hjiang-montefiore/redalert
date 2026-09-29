@@ -2186,6 +2186,9 @@ var Render3D = (function () {
     syncNodes();
     updateFog();
     syncEntities(dt);
+    /* damage smoke, fire and sparks, and a holed ship's list (js/damage3d.js):
+       after every mesh is placed for this frame, before anything is drawn */
+    if (typeof Damage3D !== "undefined") Damage3D.frame(three, G, dt, ents);
     syncEffects(dt);
     cleanProjectiles();
     applyCamera();

@@ -315,6 +315,7 @@ window.addEventListener("error", function (e) {
 <script src="js/hero/sub_n.js?v=202608222243"></script>
 <script src="js/bloom3d.js?v=202608222243"></script>
 <script src="js/fx3d.js?v=202608222243"></script>
+<script src="js/damage3d.js?v=202608222243"></script>
 <script src="js/render3d.js?v=202608222243"></script>
 <script src="js/icons3d.js?v=202608222243"></script>
 <script src="js/ui.js?v=202608222243"></script>
@@ -6451,6 +6452,253 @@ try{
     chk("the suite's own yard is standing where it was, and the match carries on",
         !!home && !home.dead && home.buildProgress===1 && Math.abs(home.hp-hp0)<1 && Game.players===roster && !Game.over,
         home ? "yard at "+home.tx+","+home.ty+" hp "+Math.round(home.hp)+"/"+Math.round(hp0) : "no yard");
+  })();
+  }
+
+  /* ====== [70] A DAMAGED MACHINE LOOKS DAMAGED, WHERE IT BURNS ======
+     (owner) "i don't see damaged effect so far." Measured at d9701f9: in 3D a
+     tank on a fifth of its hit points added nothing to the scene at all, and
+     in 2D one grey puff rose off a building below 45% - off a REMEMBERED enemy
+     building under fog too, which read its live health through the fog - and
+     nothing marked a damaged unit.
+     js/damage3d.js draws three stages off the health fraction (light smoke
+     below 70%, dark smoke and sparks below 55% where the bar turns yellow,
+     fire below 25% where it turns red) from where the real thing burns. This
+     page runs the 2D renderer and never loads three.js,
+     so the WebGL half - the pooled layers, scene-object counts over a battle,
+     the listing ship, allocation per frame - is tools/jsc/damage3d_check.py.
+     What is checked here is everything that decides WHAT burns and WHERE, and
+     the emitter bookkeeping, run headless through the module's own frame().
+     The emitters run over a PRIVATE world object: the shared match's fog, its
+     buildings and its tick are never touched. The few real units made to be
+     classified are removed again at the end. */
+  if (inHalf(1)) {
+  log("\n[70] A DAMAGED MACHINE LOOKS DAMAGED, WHERE IT BURNS");
+  (function(){
+    var D3 = (typeof Damage3D !== "undefined") ? Damage3D : null;
+    chk("there is a damage-state module for the renderers to draw from", !!D3,
+        D3 ? "Damage3D" : "none: a damaged unit is drawn exactly like a new one");
+    if (!D3) return;
+    var T = CFG.TILE, made = [], unitsBefore = P.units.length, fogBefore = Game.fogEnabled;
+    var land = tile(P, "ground", 6), sea = tile(P, "sea", 4);
+    function mk(pl, id, t, dx, dy) { var u = t && spawn(pl, id, t, dx, dy); if (u) made.push(u); return u; }
+    var tank = mk(P, "mbt_n", land, 0, 0), truck = mk(P, "supply_n", land, 2, 0),
+        jet = mk(P, "fighter_n", land, 4, 0), helo = mk(P, "helo_n", land, 6, 0),
+        sq = mk(P, "rifle_n", land, 0, 2), ship = mk(P, "destroyer_n", sea, 0, 0),
+        boat = mk(P, "sub_n", sea, 2, 0), foe = mk(E, "mbt_p", land, 3, 3);
+    chk("the scenario is built: armour, a truck, a jet, a gunship, a squad, a destroyer, a submarine, an enemy tank",
+        !!(tank && truck && jet && helo && sq && ship && boat && foe),
+        made.length + " units");
+    if (!(tank && truck && jet && helo && sq && ship && foe)) { for (var q = 0; q < made.length; q++) made[q].dead = true; return; }
+    /* Buildings stand in as plain records carrying the real rules entry: placing
+       real ones would take ground and occupancy from whatever section runs
+       next, and the module reads nothing a Building has that these lack. */
+    var nextId = 970000;
+    function bld(owner, id, tx, ty, frac, prog) {
+      var d = BUILDINGS[id];
+      return { kind: "building", id: nextId++, def: d, owner: owner, tx: tx, ty: ty,
+               x: (tx + d.w / 2) * T, y: (ty + d.h / 2) * T, hp: d.hp * frac, maxHp: d.hp,
+               buildProgress: prog === undefined ? 1 : prog, dead: false };
+    }
+    var bx = land.x + 8, by = land.y + 8;
+    var fac = bld(P, "factory", bx, by, 0.30), pow = bld(P, "power", bx + 4, by, 0.65),
+        bar = bld(P, "barracks", bx + 7, by, 1.0), teeth = bld(P, "dragonteeth", bx, by + 4, 0.1),
+        scaf = bld(P, "power", bx + 3, by + 4, 0.2, 0.5), efac = bld(E, "factory", bx + 8, by + 4, 0.40);
+    function frac(u, f) { u.hp = u.maxHp * f; }
+
+    /* ---- 1. stages off the health fraction, on the health bar's breaks ---- */
+    var want = [[1, 0], [0.71, 0], [0.69, 1], [0.56, 1], [0.54, 2], [0.26, 2], [0.24, 3], [0.01, 3]], got = [];
+    for (var i = 0; i < want.length; i++) { frac(tank, want[i][0]); got.push(D3.stageOf(tank)); }
+    chk("light smoke below 70%, dark smoke and sparks below 55% (the bar goes yellow), fire below 25% (red)",
+        got.join() === want.map(function(w){ return w[1]; }).join(), "stages " + got.join());
+    frac(tank, 0.20); frac(tank, 0.75);
+    chk("and repaired back above 70% it is clean again", D3.stageOf(tank) === 0, "stage " + D3.stageOf(tank));
+
+    /* ---- 2. what never smokes ---- */
+    frac(sq, 0.05); frac(boat, 0.05);
+    chk("infantry do not smoke, however badly hurt", !D3.eligible(sq) && D3.eligible(tank), "rifle squad at 5%");
+    chk("a submerged boat cannot make smoke", boat.layer !== "sub" || !D3.eligible(boat), "layer " + boat.layer);
+    chk("nor can scaffolding, or a line of dragon's teeth",
+        !D3.eligible(scaf) && !D3.eligible(teeth) && D3.eligible(fac), "");
+
+    /* ---- 3. where it burns ---- */
+    function prof(e) { return D3.profile(e); }
+    function src(P0, what) { for (var j = 0; j < P0.srcs.length; j++) if (P0.srcs[j].what === what) return P0.srcs[j]; return null; }
+    var pt = prof(tank), ptr = prof(truck), pj = prof(jet), ph = prof(helo), ps = prof(ship);
+    var eng = src(pt, "engine deck");
+    chk("a tank smokes off its ENGINE DECK at the rear, not off the turret roof",
+        pt.cls === "rear" && eng && eng.x < -0.25 * pt.L, eng ? ("x " + eng.x.toFixed(1) + " m of a " + pt.L.toFixed(1) + " m hull") : "no source");
+    var bay = src(ptr, "engine bay");
+    chk("a truck's engine is forward, under the cab", ptr.cls === "front" && bay && bay.x > 0.2 * ptr.L,
+        bay ? ("x " + bay.x.toFixed(1) + " m of " + ptr.L.toFixed(1)) : "no source");
+    var noz = src(pj, "tail nozzle");
+    chk("a jet burns at the tail and trails it", pj.cls === "jet" && pj.trail && noz && noz.x < -0.4 * pj.L,
+        noz ? ("x " + noz.x.toFixed(1) + " of " + pj.L.toFixed(1) + ", trail " + pj.trail) : "no source");
+    var he = src(ph, "engine"), gb = src(ph, "main gearbox");
+    chk("a gunship burns in its engines and, worse hit, its main gearbox, high under the mast",
+        ph.heli && he && gb && he.min === 1 && gb.min === 2 && he.y > ph.minY + 0.6 * ph.H,
+        he && gb ? ("engine from stage " + he.min + ", gearbox from " + gb.min) : "missing");
+    var hit = src(ps, "hit area"), sup = src(ps, "superstructure");
+    chk("a ship burns where it was holed and, worse hit, in its superstructure",
+        ps.ship && hit && sup && Math.abs(hit.z) > 0.25 * ps.W && sup.min === 2,
+        hit ? ("hit area " + hit.z.toFixed(1) + " m off the centreline of a " + ps.W.toFixed(1) + " m beam") : "missing");
+    var pf = prof(fac), pb = prof(bar), pp = prof(pow), foot = src(pf, "footprint"), sw = src(pp, "switchgear");
+    chk("a big building burns in several places, roof and footprint",
+        pf.srcs.length === 4 && pb.srcs.length === 2 && foot && foot.y < pf.minY + 0.3 * pf.H,
+        "3x3: " + pf.srcs.length + " sources, 2x2: " + pb.srcs.length);
+    chk("a power plant's transformer yard sparks from the first stage, before anything burns", sw && sw.sparkOnly && sw.sparkFrom === 1 && sw.min === 1,
+        sw ? "sparks from stage " + sw.sparkFrom : "no switchgear");
+    /* the engine goes where the real vehicle carries it, not where its role
+       usually does: the BMP-3, BRDM-2 and 2S19 at the back, the Stryker MGS
+       and ATGM carrier at the front; spaag_n is drawn as a Gepard (Leopard 1
+       hull), so it stays at the back whatever rules.js calls it */
+    var eng = [["spg_p", "rear"], ["ifv_p", "rear"], ["recon_p", "rear"], ["lt_n", "front"], ["atgmv_n", "front"],
+               ["spaag_n", "rear"], ["mbt_n", "rear"], ["spg_n", "front"], ["supply_n", "front"], ["ifv_n", "front"]], engBad = [];
+    for (var ei = 0; ei < eng.length; ei++) {
+      var ed = UNITS[eng[ei][0]];
+      var ec = ed ? D3.profile({ kind: "unit", id: 990000 + ei, def: ed, layer: ed.layer, cat: ed.cat, r: ed.r, owner: P }).cls : "missing";
+      if (ec !== eng[ei][1]) engBad.push(eng[ei][0] + " " + ec);
+    }
+    chk("each vehicle burns where its own engine is: BMP-3, BRDM-2, 2S19 at the back; Stryker MGS and ATGM at the front",
+        engBad.length === 0, engBad.length ? engBad.join(", ") : eng.length + " checked");
+
+    /* ---- 4. emitters: a private world, driven headless ---- */
+    var MW = Game.map.W, MH = Game.map.H;
+    var world = { entities: [tank, truck, jet, helo, sq, ship, boat, foe, fac, pow, bar, teeth, scaf, efac],
+                  fogEnabled: false, fog: null, map: { W: MW, H: MH }, human: P, weatherKey: "clear", time: 0 };
+    var all = { x0: 0, y0: 0, x1: MW * T, y1: MH * T };
+    /* what render3d would have drawn this frame, by its own rule: every one
+       of ours, an enemy unit on a tile in sight, an enemy building on any
+       explored tile. The module is handed this map, as render3d hands it
+       ents, so a fogged enemy is ALREADY out of it when the module runs -
+       the path the first version got wrong. */
+    var REC = {};
+    function drawnMap() {
+      var m = new Map();
+      for (var q = 0; q < world.entities.length; q++) {
+        var e = world.entities[q], vis = true;
+        if (e.dead || e.carried) continue;
+        if (world.fogEnabled && e.owner !== P) {
+          var fv = world.fog[e.ty * MW + e.tx];
+          vis = e.kind === "building" ? fv >= 1 : fv === 2;
+        }
+        if (vis) m.set(e.id, REC);
+      }
+      return m;
+    }
+    function run(n, view) { for (var f = 0; f < n; f++) { world.time += 1 / 30; D3.frame(null, world, 1 / 30, drawnMap(), view || all); } }
+    function has(e) { return D3.stats().ids.indexOf(e.id) >= 0; }
+    frac(tank, 0.60); frac(truck, 0.40); frac(jet, 0.20); frac(helo, 0.40); frac(ship, 0.20); frac(foe, 0.30);
+    D3.reset();
+    run(45);
+    var st = D3.stats(), ids = st.ids.slice().sort(function(a, b){ return a - b; });
+    var wantIds = [tank, truck, jet, helo, ship, foe, fac, pow, efac].map(function(e){ return e.id; }).sort(function(a, b){ return a - b; });
+    chk("exactly the damaged, burnable machines carry an emitter", ids.join() === wantIds.join(),
+        st.emitters + " emitters; want " + wantIds.length);
+    chk("...not the squad, the healthy barracks, the scaffold, the teeth or the submerged boat",
+        !has(sq) && !has(bar) && !has(scaf) && !has(teeth) && !has(boat), "");
+    chk("smoke is in the air, and fire and sparks with it",
+        st.smoke > 0 && st.glow > 0 && D3.owned(jet.id) > 0 && D3.owned(fac.id) > 0,
+        "smoke " + st.smoke + ", fire+sparks " + st.glow);
+    var an = D3.anchors(tank.id), cx = tank.x * 0.625, cz = tank.y * 0.625;
+    var back = an ? (an.srcs[0].x - cx) * Math.cos(tank.ang) + (an.srcs[0].z - cz) * Math.sin(tank.ang) : 0;
+    chk("the tank's source sits BEHIND it along its heading", an && back < 0, "along-heading offset " + back.toFixed(2) + " m");
+
+    /* ---- 5. fog: only what the player can see now ---- */
+    world.fogEnabled = true;
+    world.fog = new Uint8Array(MW * MH);
+    for (var k = 0; k < world.fog.length; k++) world.fog[k] = 2;
+    function fogAt(e, v) {
+      var w = e.kind === "building" ? e.def.w : 1, h = e.kind === "building" ? e.def.h : 1;
+      for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++) world.fog[(e.ty + yy) * MW + e.tx + xx] = v;
+    }
+    run(30);
+    var foeUp = D3.owned(foe.id);
+    fogAt(foe, 1); fogAt(efac, 1);
+    run(1);
+    chk("an enemy tank that slips back under fog loses its emitter", !has(foe), "");
+    chk("...and the smoke it had put up goes with it, the same frame", foeUp > 0 && D3.owned(foe.id) === 0,
+        foeUp + " particles in the air, " + D3.owned(foe.id) + " left");
+    chk("a remembered enemy building under fog gets no live smoke", !has(efac), "");
+    chk("our own machines are always in sight", has(tank) && has(fac), "");
+    fogAt(foe, 2);
+    run(1);
+    chk("the enemy tank in sight again smokes again", has(foe), "");
+    /* the view moves away first - every emitter goes, the smoke is left to
+       thin out - and THEN the enemy tank goes under fog: its smoke goes, ours
+       stays */
+    run(30);
+    var away = { x0: -99999, y0: -99999, x1: -99000, y1: -99000 };
+    run(1, away);
+    var foeLeft = D3.owned(foe.id), ourLeft = D3.owned(tank.id);
+    fogAt(foe, 1);
+    run(1, away);
+    chk("looked away from and then fogged, an enemy's lingering smoke goes too; our own lingers on",
+        D3.stats().emitters === 0 && foeLeft > 0 && D3.owned(foe.id) === 0 && ourLeft > 0 && D3.owned(tank.id) > 0,
+        "enemy " + foeLeft + " -> " + D3.owned(foe.id) + ", ours " + ourLeft + " -> " + D3.owned(tank.id));
+    fogAt(foe, 2);
+    world.fogEnabled = false;
+
+    /* ---- 6. repair, death, off screen ---- */
+    var bornBefore = D3.stats().born;
+    frac(tank, 0.80);
+    run(1);
+    chk("repaired above 70%, the tank's emitter is gone the next frame", !has(tank), "");
+    run(150);
+    chk("...and five seconds later none of its smoke is left", D3.owned(tank.id) === 0, D3.owned(tank.id) + " particles");
+    truck.dead = true;
+    run(1);
+    chk("a dead truck carries no emitter", !has(truck), "");
+    truck.dead = false;
+    run(1, { x0: -99999, y0: -99999, x1: -99000, y1: -99000 });
+    chk("with nothing on screen there are no emitters at all", D3.stats().emitters === 0, D3.stats().emitters + "");
+    run(1);
+    chk("...and they come back with the view", D3.stats().emitters > 0, D3.stats().emitters + "");
+
+    /* ---- 7. the cap: sixty burning tanks in one view ---- */
+    var hulls = [];
+    for (var m = 0; m < 60; m++)
+      hulls.push({ kind: "unit", id: 980000 + m, def: tank.def, cat: tank.cat, layer: "ground", r: tank.r,
+                   hp: tank.maxHp * 0.1, maxHp: tank.maxHp, x: tank.x + (m % 10) * 40, y: tank.y + ((m / 10) | 0) * 40,
+                   tx: tank.tx, ty: tank.ty, ang: m, owner: P, dead: false });
+    world.entities = world.entities.concat(hulls);
+    var peakS = 0, peakG = 0;
+    for (var f2 = 0; f2 < 150; f2++) { run(1); var s2 = D3.stats(); if (s2.smoke > peakS) peakS = s2.smoke; if (s2.glow > peakG) peakG = s2.glow; }
+    chk("sixty fires never take the particle pools past their cap",
+        peakS <= D3.SMOKE_CAP && peakG <= D3.GLOW_CAP,
+        "peak smoke " + peakS + "/" + D3.SMOKE_CAP + ", fire+sparks " + peakG + "/" + D3.GLOW_CAP);
+    chk("...and the pool is really in use, thinned rather than starved", peakS > 0.7 * D3.SMOKE_CAP,
+        "peak " + peakS);
+    for (var m2 = 0; m2 < world.entities.length; m2++) if (world.entities[m2].maxHp) world.entities[m2].hp = world.entities[m2].maxHp;
+    run(180);
+    var fin = D3.stats();
+    chk("everything repaired: six seconds on, not one particle or emitter is left",
+        fin.emitters === 0 && fin.smoke === 0 && fin.glow === 0,
+        fin.emitters + " emitters, " + fin.smoke + " smoke, " + fin.glow + " fire+sparks");
+
+    /* ---- 8. 2D: the same stages, and the same fog rule ---- */
+    function Ctx() { this.arcs = 0; this.rects = 0; this.fillStyle = ""; }
+    Ctx.prototype.beginPath = function(){}; Ctx.prototype.fill = function(){};
+    Ctx.prototype.arc = function(){ this.arcs++; }; Ctx.prototype.fillRect = function(){ this.rects++; };
+    function isoX(x, y) { return (x - y) * 0.7071; } function isoY(x, y) { return (x + y) * 0.35; }
+    function draw(e, f) { var c = new Ctx(); frac(e, f); if (e.kind === "building") D3.drawBuilding2D(c, e, 400, 300, 1, world); else D3.draw2D(c, e, 400, 300, 1, world, isoX, isoY); return c.arcs + c.rects; }
+    chk("2D: a tank at 40% smokes, a healthy one does not", draw(tank, 0.4) > 0 && draw(tank, 1) === 0, "");
+    chk("2D: a squad at 10% does not", draw(sq, 0.1) === 0, "");
+    chk("2D: a building smokes from 70% down now, not only below 45%", draw(pow, 0.6) > 0 && draw(pow, 0.8) === 0, "");
+    world.fogEnabled = true; fogAt(efac, 1);
+    var hidden = draw(efac, 0.4); fogAt(efac, 2);
+    var shown = draw(efac, 0.4);
+    world.fogEnabled = false;
+    chk("2D: a remembered enemy building under fog shows no smoke; in sight, it does", hidden === 0 && shown > 0,
+        "fogged " + hidden + " marks, in sight " + shown);
+
+    /* ---- put the board back ---- */
+    D3.reset();
+    for (var z = 0; z < made.length; z++) made[z].dead = true;
+    Game.sweepDead();
+    chk("the shared match is as the section found it",
+        P.units.length === unitsBefore && Game.fogEnabled === fogBefore && D3.stats().emitters === 0,
+        "our units " + P.units.length + " (was " + unitsBefore + ")");
   })();
   }
 
