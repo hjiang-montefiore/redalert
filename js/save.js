@@ -130,6 +130,8 @@ var SaveGame = (function () {
          An aircraft pulled off a patrol to intercept goes back to the patrol
          rather than losing the mission entirely. */
       if (o.cap && o.resume) return { type: "cap", x: Math.round(o.resume.x), y: Math.round(o.resume.y) };
+      /* ...and a unit pulled off a ground or naval patrol, to its beat */
+      if (o.resume && o.resume.patrol) return liteOrder(o.resume.patrol);
       return o.resume ? { type: "attackmove", x: o.resume.x, y: o.resume.y } : { type: "idle" };
     }
     /* An area order is four corners and no x/y, so it used to come back as a
@@ -141,6 +143,18 @@ var SaveGame = (function () {
       if (!isFinite(o.x0)) return { type: "idle" };
       return { type: o.type, x0: Math.round(o.x0), y0: Math.round(o.y0),
                x1: Math.round(o.x1), y1: Math.round(o.y1) };
+    }
+    /* A patrol is a beat, not a point: without its home end (x0, y0) and
+       which way it was walking, a reload restarted the beat from wherever
+       the unit stood, heading out, so a save made on the way home cut the
+       beat short for good - measured, a 10-tile beat came back as 5.1. The
+       turn stamps stay behind: they only stop a unit turning twice in a
+       second. */
+    if (o.type === "patrol") {
+      const l = { type: "patrol", x: Math.round(o.x), y: Math.round(o.y) };
+      if (o.x0 !== undefined) { l.x0 = Math.round(o.x0); l.y0 = Math.round(o.y0); }
+      if (o.back) l.back = true;
+      return l;
     }
     /* A fire mission is more than a point.
        `release` is the player's authority and has to survive a save, or a

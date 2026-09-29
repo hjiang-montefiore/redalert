@@ -37,7 +37,15 @@ var UI = (function () {
     cv = document.getElementById("cv");
     mm = document.getElementById("mm");
     selection = [];
-    bind();
+    /* ONCE PER PAGE. LOAD GAME calls init() again (main.js rebind), and
+       every listener bind() adds is on an element that outlives the game -
+       the window, the canvas, the sidebar buttons - so a second bind() ran
+       every key and every one of those buttons twice. Measured under jsc
+       after one reload: 2 keydown listeners, F put a tank on hold and took
+       it straight off again, and SELL switched itself back off. Everything
+       bind() wires reads G when it runs, so binding once loses nothing. */
+    if (!bound) { bound = true; bind(); }
+    buildCmdBar();
     refreshCards();
   }
 
@@ -1483,6 +1491,7 @@ var UI = (function () {
       if (e.kind === "unit" && e.owner === G.human) h += releasePanel([e]);
       const dsp1 = selectedDispensers();
       if (dsp1.length) h += scatterPanel(dsp1);
+      h += armedHint();
       h += introBlock(e);
       const air1 = selectedAircraft();
       if (air1.length) h += airOrderPanel(air1);
@@ -1539,6 +1548,7 @@ var UI = (function () {
              "</div>";
       }
       h += "</div>";
+      h += armedHint();
       const engN = selectedEngineers();
       if (engN.length) h += obstaclePanel();
       const layN = selectedLayers();
@@ -1577,19 +1587,7 @@ var UI = (function () {
       const rect = cv.getBoundingClientRect();
       const t = pickAt(e.clientX - rect.left, e.clientY - rect.top, true);
       if (!t || t.owner !== G.human || t.kind !== "unit") return;
-      if (!e.shiftKey) clearSel();
-      let n = 0;
-      for (const u of G.human.units) {
-        if (u.dead || u.carried || u.selected) continue;
-        if (u.def.id !== t.def.id) continue;
-        if (!onScreen(u)) continue;
-        u.selected = true; selection.push(u); n++;
-      }
-      if (n) {
-        Sfx.select(t);          /* every match shares t's def, so t names the class */
-        alert(n + " \u00d7 " + t.def.name.toUpperCase() + " SELECTED", "good");
-      }
-      refreshSelInfo();
+      selectSameType([t.def.id], e.shiftKey, t);
     });
 
     cv.addEventListener("mousedown", (e) => {
@@ -1620,6 +1618,7 @@ var UI = (function () {
         if (scatMode && scatterClick(mx, my, e.shiftKey)) return;
         /* an armed aircraft order takes the next click */
         if (airCmdMode && airCmdClick(mx, my)) return;
+        if (patrolMode && patrolClick(mx, my, e.shiftKey)) return;
         /* a pending sortie takes the next click as its target */
         if (sortieMode) {
           const wp = Render.unproject(mx, my);
@@ -1646,6 +1645,11 @@ var UI = (function () {
         if (mineMode) { mineMode = false; refreshSelInfo(); G.alert("MINE LAYING CANCELLED"); return; }
         if (scatMode) { scatMode = false; refreshSelInfo(); G.alert("FIRE MISSION CANCELLED"); return; }
         if (airCmdMode) { airCmdMode = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
+        if (patrolMode) { patrolMode = false; refreshSelInfo(); G.alert("PATROL CANCELLED"); return; }
+        /* the bar LATCHES an attack-move, where the key only holds it while
+           it is down; right-click undoes the latch as it undoes every other
+           armed order */
+        if (input.attackMove && !keys.a) { input.attackMove = false; G.alert("ATTACK-MOVE CANCELLED"); return; }
         if (pendingSupport) { pendingSupport = null; refreshCards(); G.alert("FIRE MISSION CANCELLED"); return; }
         if (sortieMode) { cancelSortie(); G.alert("SORTIE CANCELLED"); return; }
         if (input.launching) { input.launching = null; G.alert("LAUNCH ABORTED"); return; }
@@ -1743,50 +1747,15 @@ var UI = (function () {
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
       keys[k] = true;
-      if (k === "a" && !e.ctrlKey) { input.attackMove = true; }
-      if (k === "s") { for (const u of selection) if (u.kind === "unit" && u.owner === G.human) u.give({ type: "idle" }); Sfx.play("order"); }
-      if (k === "g") { for (const u of selection) if (u.kind === "unit" && u.owner === G.human) { u.stance = "guard"; u.give({ type: "guard" }); } }
-      if (k === "f") { for (const u of selection) if (u.kind === "unit" && u.owner === G.human) u.stance = u.stance === "hold" ? "guard" : "hold"; }
-      if (k === "c") {
-        /* counter-battery stance: guns answer plotted enemy artillery themselves */
-        let n = 0, hc = 0;
-        for (const u of selection) {
-          if (u.kind !== "unit" || u.owner !== G.human || !u.isIndirect || !u.isIndirect()) continue;
-          /* A launcher whose only indirect round is held is not a counter-
-             battery gun: entities.js asks isIndirect(true) in that branch and
-             would find nothing to shoot with, so setting the stance would be a
-             button that lies about what it did. Toggling OFF is still allowed,
-             so a stance set before this change can be cleared. */
-          if (!u.isIndirect(true)) {
-            if (u.stance === "counterbattery") { u.stance = "guard"; n++; }
-            else hc++;
-            continue;
-          }
-          u.stance = u.stance === "counterbattery" ? "guard" : "counterbattery";
-          n++;
-        }
-        if (hc) G.alert(hc + " LAUNCHER" + (hc === 1 ? "" : "S") +
-          " HELD \u2014 A BALLISTIC ROUND NEEDS A FIRE MISSION", "bad");
-        if (n) G.alert(selection.find(u => u.stance === "counterbattery")
-          ? "COUNTER-BATTERY STANCE — " + n + " GUN" + (n === 1 ? "" : "S")
-          : "COUNTER-BATTERY OFF", "good");
-      }
-      /* N runs a submarine silent: a third of the speed for seven tenths of
-         the radiated noise. It is the answer to an acoustic barrier and to a
-         hunting escort both, and without it a barrier has a counter the player
-         cannot find. Keyed like the counter-battery stance and, like it, with
-         no button: it applies to one class of hull only. */
-      if (k === "n") {
-        let nq = 0;
-        for (const u of selection) {
-          if (u.kind !== "unit" || u.owner !== G.human || u.layer !== "sub") continue;
-          u.stance = u.stance === "quiet" ? "guard" : "quiet";
-          nq++;
-        }
-        if (nq) G.alert(selection.find(u => u.stance === "quiet")
-          ? "SILENT RUNNING — " + nq + " BOAT" + (nq === 1 ? "" : "S")
-          : "SILENT RUNNING OFF", "good");
-      }
+      /* Every order the command bar also carries is ONE named function,
+         called from here and from its button (see THE COMMAND BAR), so a
+         key and its button cannot drift apart. */
+      if (k === "a" && !e.ctrlKey) armAttackMove();
+      if (k === "s") cmdStop();
+      if (k === "g") cmdGuard();
+      if (k === "f") cmdHold();
+      if (k === "c") cmdCounterBattery();
+      if (k === "n") cmdQuiet();
       /* M lays mines when a layer is selected, and toggles repair otherwise.
          The two never apply to the same selection. */
       if (k === "m" && !selectedLayers().length) setRepair(!input.repairMode);
@@ -1801,6 +1770,8 @@ var UI = (function () {
       if (k === "escape" && mineMode) { mineMode = false; refreshSelInfo(); G.alert("MINE LAYING CANCELLED"); return; }
       if (k === "escape" && scatMode) { scatMode = false; refreshSelInfo(); G.alert("FIRE MISSION CANCELLED"); return; }
       if (k === "escape" && airCmdMode) { airCmdMode = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
+      if (k === "escape" && patrolMode) { patrolMode = false; refreshSelInfo(); G.alert("PATROL CANCELLED"); return; }
+      if (k === "escape" && input.attackMove) { input.attackMove = false; G.alert("ATTACK-MOVE CANCELLED"); return; }
       if (k === "escape" && sortieMode) { cancelSortie(); G.alert("SORTIE CANCELLED"); return; }
       if (k === "escape") {
         if (menuOpen) { closeMenu(true); }
@@ -1824,9 +1795,18 @@ var UI = (function () {
       /* aircraft orders from the keyboard as well as the panel */
       if (k === "m" && selectedLayers().length) { mineOrder(); return; }
       if (k === "l" && selectedDispensers().length) { scatterOrder(); return; }
-      if (k === "r" && selectedAircraft().length) { airOrder("rtb"); return; }
+      if (k === "r") { cmdRecall(); return; }
       if (k === "y" && selectedAircraft().length) { airOrder("cap"); return; }
       if (k === "t" && selectedAircraft().length) { airOrder("strike"); return; }
+      /* T is Red Alert 2's select-same-type. Measured before this line, T
+         did nothing at all unless aircraft were selected, so taking it for
+         every other selection breaks nothing; with aircraft in the selection
+         it is still their STRIKE, and the double-click and the bar's SAME
+         button still select them. P and X were unbound (Shift+P is the pan
+         flip, and stays so). */
+      if (k === "t") { cmdSelectSame(e.shiftKey); return; }
+      if (k === "p" && !e.shiftKey) { cmdPatrol(); return; }
+      if (k === "x" && !e.ctrlKey && !e.metaKey) { cmdScatter(); return; }
       if (k === "h") Render.setCam(G.human.homeX, G.human.homeY);
       /* V hides the weapon envelopes: useful once a player knows their ranges
          and wants the ground back. Both renderers read the same flag. */
@@ -1837,18 +1817,7 @@ var UI = (function () {
       if (k === "p" && e.shiftKey) setPanMode(panMode === "follow" ? "push" : "follow");
       if (k === "q" && Render.rotate) Render.rotate(0.22);
       if (k === "e" && Render.rotate) Render.rotate(-0.22);
-      if (k === "d") {
-        /* D is the key players reach for first, so it unloads a loaded
-           transport as well as deploying a rig. The two never apply to the
-           same unit, so both can run. */
-        unloadSelection();
-        for (const u of selection) {
-          if (u.kind !== "unit" || !u.def.deployTo) continue;
-          /* G.deployRig is the same code the commander uses - see game.js */
-          if (!G.deployRig(u))
-            G.alert("CANNOT DEPLOY HERE \u2014 NEED CLEAR FLAT GROUND", "bad");
-        }
-      }
+      if (k === "d") cmdDeploy();
       if (/^[0-9]$/.test(k)) {
         if (e.ctrlKey) {
           groups[k] = selection.filter(u => u.owner === G.human);
@@ -1905,8 +1874,9 @@ var UI = (function () {
     bindMenu();
     document.getElementById("r-speed").addEventListener("click", cycleSpeed);
     /* BUY FUEL (player.js buyFuel). onclick, not addEventListener: bind()
-       runs again for every game started or loaded, and a second listener
-       would buy a second lot on every click. */
+       used to run again for every game loaded, and a second listener bought
+       a second lot on every click. It runs once a page now (init), and
+       onclick keeps this button safe if that ever changes. */
     const fuelBtn = document.getElementById("r-fuelbuy");
     if (fuelBtn) fuelBtn.onclick = buyFuelLot;
     document.querySelectorAll("#tabs .tab").forEach(t =>
@@ -2584,6 +2554,461 @@ var UI = (function () {
   }
   let subIdx = -1;
 
+  /* ================= THE COMMAND BAR =================
+     (owner) "the bottom should have helper line like deploy, recall, petrol,
+     and select the same unit on the screen like redalert."
+     Measured before it existed, by a jsc probe that pressed every letter at a
+     selection already on a move order: 7 of 26 keys did anything to three
+     tanks, to a rifle section or to a destroyer - A S G F, plus M V H, which
+     are not unit orders - and the only buttons anywhere were REPAIR and SELL.
+     P, R, T and X did nothing to any of them, select-same was a double-click
+     and nothing else, and a tank handed {type:"patrol"} stood still for ten
+     seconds, because nothing that drives or sails had a patrol at all.
+
+     So: a row of Red Alert 2 style buttons along the bottom of the map, each
+     showing its key. Every button calls the SAME function its key calls - the
+     keydown handler in bind() was rewritten to call these - so a button and
+     its key cannot drift apart. A button greys out when nothing selected can
+     use it, and its tooltip then says why. The bar lies over the map, so it
+     hands the map every click that is not a live button's: the gaps take no
+     pointer at all (css/style.css), and a greyed button, a right-click and a
+     middle-click are passed to the canvas (buildCmdBar). */
+  let bound = false;             // bind() once per PAGE - see init()
+  let patrolMode = false;        // armed: the next map click sets a patrol beat
+  let cmdEls = null;             // command id -> its button
+
+  const ownUnits = () => selection.filter(u => u.kind === "unit" && u.owner === G.human && !u.dead);
+  /* something that moves on the surface under its own orders */
+  const canScatter = (u) => u.layer !== "air" && !u.carried && !u.garrisonIn && (u.def.speed || 0) > 0;
+  /* ...and runs updateGeneric, which is where a patrol is walked: a hauler
+     has a brain of its own that would overwrite the order */
+  const canPatrol = (u) => canScatter(u) && !u.def.harvester;
+  /* where RECALL sends a surface unit: a hull to the naval yard, which mends
+     it (repairSea), refuels it and reloads its deck launchers (reloadAtYard),
+     and is where a deck takes a replacement aircraft aboard (replenishDeck);
+     a vehicle to the service depot, which mends it. Neither mends infantry
+     (entities.js, Building.update), so infantry have no recall. */
+  const recallKind = (u) => (u.layer === "sea" || u.layer === "sub") ? "navalyard"
+                          : (u.layer === "ground" && u.cat !== "infantry") ? "depot" : null;
+  const finished = (id) => G.human.buildings.filter(b => !b.dead && b.def.id === id && b.buildProgress >= 1);
+
+  function armAttackMove() { input.attackMove = true; patrolMode = false; }
+  function cmdStop() {
+    for (const u of selection) if (u.kind === "unit" && u.owner === G.human) u.give({ type: "idle" });
+    Sfx.play("order");
+  }
+  function cmdGuard() {
+    for (const u of selection) if (u.kind === "unit" && u.owner === G.human) { u.stance = "guard"; u.give({ type: "guard" }); }
+  }
+  function cmdHold() {
+    for (const u of selection) if (u.kind === "unit" && u.owner === G.human) u.stance = u.stance === "hold" ? "guard" : "hold";
+  }
+  /* counter-battery stance: guns answer plotted enemy artillery themselves */
+  function cmdCounterBattery() {
+    let n = 0, hc = 0;
+    for (const u of selection) {
+      if (u.kind !== "unit" || u.owner !== G.human || !u.isIndirect || !u.isIndirect()) continue;
+      /* A launcher whose only indirect round is held is not a counter-
+         battery gun: entities.js asks isIndirect(true) in that branch and
+         would find nothing to shoot with, so setting the stance would be a
+         button that lies about what it did. Toggling OFF is still allowed,
+         so a stance set before this change can be cleared. */
+      if (!u.isIndirect(true)) {
+        if (u.stance === "counterbattery") { u.stance = "guard"; n++; }
+        else hc++;
+        continue;
+      }
+      u.stance = u.stance === "counterbattery" ? "guard" : "counterbattery";
+      n++;
+    }
+    if (hc) G.alert(hc + " LAUNCHER" + (hc === 1 ? "" : "S") +
+      " HELD \u2014 A BALLISTIC ROUND NEEDS A FIRE MISSION", "bad");
+    if (n) G.alert(selection.find(u => u.stance === "counterbattery")
+      ? "COUNTER-BATTERY STANCE — " + n + " GUN" + (n === 1 ? "" : "S")
+      : "COUNTER-BATTERY OFF", "good");
+  }
+  /* N runs a submarine silent: a third of the speed for seven tenths of
+     the radiated noise. It is the answer to an acoustic barrier and to a
+     hunting escort both, and without it a barrier has a counter the player
+     cannot find. It applies to one class of hull only, which is why it had
+     no button until the bar, where it is greyed unless a boat is selected. */
+  function cmdQuiet() {
+    let nq = 0;
+    for (const u of selection) {
+      if (u.kind !== "unit" || u.owner !== G.human || u.layer !== "sub") continue;
+      u.stance = u.stance === "quiet" ? "guard" : "quiet";
+      nq++;
+    }
+    if (nq) G.alert(selection.find(u => u.stance === "quiet")
+      ? "SILENT RUNNING — " + nq + " BOAT" + (nq === 1 ? "" : "S")
+      : "SILENT RUNNING OFF", "good");
+  }
+  /* D is the key players reach for first, so it unloads a loaded transport
+     - and turns a garrison out, since unloadSelection() does both - as well
+     as deploying a rig. None of them applies to the same thing as another,
+     so all can run. Our own rigs only: the loop took any rig in the
+     selection, and a selection can be a look at an enemy's - measured under
+     jsc, D with an enemy rig selected unfolded it into a second construction
+     yard FOR THEM (1 -> 2). */
+  function cmdDeploy() {
+    unloadSelection();
+    for (const u of selection) {
+      if (u.owner !== G.human) continue;
+      if (u.kind !== "unit" || !u.def.deployTo) continue;
+      /* G.deployRig is the same code the commander uses - see game.js */
+      if (!G.deployRig(u))
+        G.alert("CANNOT DEPLOY HERE \u2014 NEED CLEAR FLAT GROUND", "bad");
+    }
+  }
+
+  /* ---- PATROL ----
+     Aircraft already fly a combat air patrol (Y). Everything else walks a
+     Tiberian Sun beat (entities.js, the "patrol" branch): from where it stands
+     to the point clicked and back, engaging what it meets on the beat, until
+     told otherwise. One armed click serves a mixed selection: the aircraft get
+     exactly the patrol Y's click gives them, the rest get the beat. With only
+     aircraft selected this IS Y. */
+  function cmdPatrol() {
+    if (!ownUnits().some(canPatrol)) { airOrder("cap"); return; }
+    patrolMode = !patrolMode;
+    if (patrolMode) { airCmdMode = null; sortieMode = null; input.attackMove = false; }
+    Sfx.play("click");
+    refreshSelInfo();
+  }
+  function patrolClick(mx, my, shift) {
+    if (!patrolMode) return false;
+    patrolMode = false;
+    const wp = Render.unproject(mx, my);
+    issuePatrol(wp.x, wp.y, shift);
+    refreshSelInfo();
+    return true;
+  }
+  function issuePatrol(wx, wy, shift) {
+    const own = ownUnits(), T = CFG.TILE;
+    const air = own.filter(u => u.layer === "air"), beat = own.filter(canPatrol);
+    for (const u of air) { u.parked = false; u.give({ type: "cap", x: wx, y: wy }); }
+    /* each unit keeps its place in the group at the far end as well, so a
+       platoon walks its beat as a platoon instead of converging on one tile -
+       the crowding the owner reported is exactly what one shared point makes */
+    let cx = 0, cy = 0;
+    for (const u of beat) { cx += u.x; cy += u.y; }
+    if (beat.length) { cx /= beat.length; cy /= beat.length; }
+    for (const u of beat) {
+      const ox = U.clamp(u.x - cx, -T * 4, T * 4), oy = U.clamp(u.y - cy, -T * 4, T * 4);
+      u.groupSpeed = 0;
+      u.give({ type: "patrol", x: wx + ox, y: wy + oy }, shift);
+    }
+    const n = air.length + beat.length;
+    if (!n) return 0;
+    alert(n + (n === 1 ? " UNIT" : " UNITS") + " ON PATROL", "good");
+    Combat.addEffect({ t: "text", x: wx, y: wy, s: "PATROL", life: 1.0, max: 1.0, c: "#8fd05f" });
+    Sfx.play("order");
+    return n;
+  }
+
+  /* ---- SCATTER ----
+     Red Alert 2's X: every selected unit steps a tile and a half away from
+     the middle of the group, onto ground it can stand on and a tile clear of
+     where any other has already been sent. Units stacked on the middle
+     itself, or a unit alone, take the golden angle round one shared bearing -
+     a lone unit backs away from where it faces - since a bearing of their
+     own could send two of them the same way. */
+  function cmdScatter() {
+    const us = ownUnits().filter(canScatter);
+    if (!us.length) return 0;
+    const T = CFG.TILE, M = G.map, sent = [];
+    let cx = 0, cy = 0;
+    for (const u of us) { cx += u.x; cy += u.y; }
+    cx /= us.length; cy /= us.length;
+    const base = us[0].ang + Math.PI;
+    for (let i = 0; i < us.length; i++) {
+      const u = us[i];
+      const a0 = U.dist(u.x, u.y, cx, cy) > T * 0.25 ? Math.atan2(u.y - cy, u.x - cx)
+                                                     : base + i * 2.39996;
+      for (let k = 0; k < 8; k++) {
+        const a = a0 + (k & 1 ? 1 : -1) * ((k + 1) >> 1) * Math.PI / 4;
+        const x = u.x + Math.cos(a) * T * 1.5, y = u.y + Math.sin(a) * T * 1.5;
+        const tx = Math.floor(x / T), ty = Math.floor(y / T);
+        if (tx < 0 || ty < 0 || tx >= M.W || ty >= M.H) continue;
+        if (!GameMap.passable(M, tx, ty, u.layer) || G.tileBlocked(tx, ty, u)) continue;
+        if (sent.some(p => U.dist(p.x, p.y, x, y) < T)) continue;
+        sent.push({ x, y });
+        u.groupSpeed = 0;
+        u.give({ type: "move", x, y });
+        break;
+      }
+    }
+    const n = sent.length;
+    if (n) Sfx.play("order");
+    return n;
+  }
+
+  /* ---- RECALL ----
+     Aircraft: BASE, through airOrder("rtb") - the very call R has always
+     made. Ships and vehicles: to the facility that services them (recallKind
+     above), most damaged first onto the nearest berth. A berth is a tile
+     inside the facility's repair reach that the unit can stand on and reach,
+     one unit to a berth, so ten tanks recalled together take ten places round
+     the pad instead of jamming on one point: for the 3x2 depot and a reach of
+     2.2 tiles that is exactly the ten berths ai.js withdrawWave() uses. */
+  function recallBerths(b, layer, reach) {
+    const T = CFG.TILE, M = G.map, r = Math.ceil(reach) + 1;
+    const cx = b.x / T, cy = b.y / T, out = [];
+    for (let ty = b.ty - r; ty < b.ty + b.def.h + r; ty++)
+      for (let tx = b.tx - r; tx < b.tx + b.def.w + r; tx++) {
+        if (tx < 0 || ty < 0 || tx >= M.W || ty >= M.H) continue;
+        const d = Math.hypot(tx + 0.5 - cx, ty + 0.5 - cy);
+        if (d > reach || !GameMap.passable(M, tx, ty, layer) || G.tileBlocked(tx, ty, null)) continue;
+        out.push({ tx, ty, x: tx * T + T / 2, y: ty * T + T / 2, d });
+      }
+    return out.sort((p, q) => p.d - q.d);
+  }
+  function cmdRecall() {
+    const own = ownUnits();
+    let n = 0;
+    if (own.some(u => u.layer === "air")) { n += selectedAircraft().length; airOrder("rtb"); }
+    const hurt = (u) => u.hp / Math.max(1, u.maxHp);
+    const surf = own.filter(u => u.layer !== "air" && !u.carried && !u.garrisonIn && recallKind(u))
+                    .sort((a, b) => hurt(a) - hurt(b));
+    const taken = new Set(), berths = new Map();
+    let ships = 0, cars = 0, lost = 0, none = "";
+    for (const u of surf) {
+      const kind = recallKind(u);
+      const sites = finished(kind).sort((a, b) =>
+        U.dist2(u.x, u.y, a.x, a.y) - U.dist2(u.x, u.y, b.x, b.y));
+      if (!sites.length) { none = kind === "depot" ? "NO SERVICE DEPOT" : "NO NAVAL YARD"; continue; }
+      let spot = null;
+      for (const b of sites) {
+        const key = b.id + ":" + u.layer;
+        if (!berths.has(key)) berths.set(key, recallBerths(b, u.layer, kind === "depot" ? 2.2 : 4.2));
+        let first = null;
+        for (const p of berths.get(key)) {
+          if (!Path.reachable(G.map, u.tx, u.ty, p.tx, p.ty, u.layer)) continue;
+          if (!first) first = p;
+          if (!taken.has(p)) { spot = p; break; }
+        }
+        spot = spot || first;              // every berth taken: queue on the nearest
+        if (spot) break;
+      }
+      if (!spot) { lost++; continue; }
+      taken.add(spot);
+      u.groupSpeed = 0;
+      u.give({ type: "move", x: spot.x, y: spot.y });
+      if (kind === "depot") cars++; else ships++;
+    }
+    const said = [];
+    if (ships) said.push(ships + (ships === 1 ? " SHIP" : " SHIPS") + " TO THE NAVAL YARD");
+    if (cars) said.push(cars + (cars === 1 ? " VEHICLE" : " VEHICLES") + " TO THE SERVICE DEPOT");
+    if (lost) said.push(lost + " CANNOT REACH ONE");
+    if (none && !ships && !cars && !n) said.push(none + " TO RECALL TO");
+    if (said.length) alert(said.join(" \u00b7 "), ships || cars ? "good" : "bad", true);
+    if (ships || cars) Sfx.play("order");
+    return n + ships + cars;
+  }
+
+  /* ---- SELECT SAME TYPE ----
+     Every unit of the given types that is on screen: the double-click on the
+     canvas, T, and the SAME button all come through here. Shift adds to the
+     selection instead of replacing it, as box-select does. If none of them
+     is on screen the selection is left alone rather than emptied. */
+  function selectSameType(ids, add, like) {
+    const hits = [];
+    for (const u of G.human.units) {
+      if (u.dead || u.carried || (add && u.selected)) continue;
+      if (ids.indexOf(u.def.id) < 0 || !onScreen(u)) continue;
+      hits.push(u);
+    }
+    if (!hits.length) { refreshSelInfo(); return 0; }
+    if (!add) clearSel();
+    for (const u of hits) if (!u.selected) { u.selected = true; selection.push(u); }
+    const one = like || hits[0];
+    /* one type: every match shares its def, so one unit names the class */
+    Sfx.select(ids.length === 1 ? one : selection);
+    alert(ids.length === 1 ? hits.length + " \u00d7 " + one.def.name.toUpperCase() + " SELECTED"
+                           : hits.length + " SELECTED \u00b7 " + ids.length + " TYPES", "good");
+    refreshSelInfo();
+    return hits.length;
+  }
+  function cmdSelectSame(add) {
+    const ids = [];
+    for (const u of selection)
+      if (u.kind === "unit" && u.owner === G.human && !u.dead && ids.indexOf(u.def.id) < 0) ids.push(u.def.id);
+    return ids.length ? selectSameType(ids, add) : 0;
+  }
+
+  /* What the selection holds that the bar cares about, counted in one pass. */
+  function cmdContext() {
+    const c = { units: [], air: 0, beat: 0, scat: 0, hold: 0, rigs: 0, loaded: 0, garrison: 0,
+                yards: 0, guns: 0, cb: 0, subs: 0, quiet: 0, recall: 0, why: "SELECT A UNIT" };
+    const kinds = { depot: 0, navalyard: 0 };
+    let foot = 0;
+    for (const e of selection) {
+      if (e.dead || e.owner !== G.human) continue;
+      if (e.kind === "building") {
+        if (e.garrison && e.garrison.length) c.garrison++;
+        /* a construction yard that folds back into its rig, where game.js
+           can do that (G.rigFor): D reaches it through cmdDeploy, so DEPLOY
+           must light for it too */
+        if (G.rigFor && G.rigFor(e)) c.yards++;
+        continue;
+      }
+      if (e.kind !== "unit") continue;
+      c.units.push(e);
+      if (e.stance === "hold") c.hold++;
+      if (e.cargo && e.cargo.length) c.loaded++;
+      if (e.def.deployTo) c.rigs++;
+      if (e.isIndirect && e.isIndirect()) { c.guns++; if (e.stance === "counterbattery") c.cb++; }
+      if (e.layer === "sub") { c.subs++; if (e.stance === "quiet") c.quiet++; }
+      if (e.layer === "air") { c.air++; continue; }
+      if (canScatter(e)) c.scat++;
+      if (canPatrol(e)) c.beat++;
+      const k = e.carried || e.garrisonIn ? null : recallKind(e);
+      if (k) kinds[k]++; else foot++;
+    }
+    if (kinds.depot && finished("depot").length) c.recall += kinds.depot;
+    if (kinds.navalyard && finished("navalyard").length) c.recall += kinds.navalyard;
+    if (kinds.depot) c.why = "NO SERVICE DEPOT";
+    else if (kinds.navalyard) c.why = "NO NAVAL YARD";
+    else if (foot) c.why = "A DEPOT DOES NOT MEND INFANTRY";
+    return c;
+  }
+  const anyUnit = (c) => c.units.length ? true : "SELECT A UNIT";
+  /* id, key, label, tooltip; can(c) is true or says why not; on(c) lights it;
+     arm marks an order that waits for a map click */
+  const CMD_BAR = [
+    { id: "amove", key: "A", label: "ATK MOVE", arm: true, can: anyUnit, on: () => !!input.attackMove,
+      run: () => armAttackMove(),
+      tip: "ATTACK-MOVE (A: hold it and click) \u2014 or press this, then click a point: advance on it and engage what is met on the way. Right-click or Esc cancels." },
+    { id: "stop", key: "S", label: "STOP", can: anyUnit, run: () => cmdStop(),
+      tip: "STOP (S) \u2014 drop every order and stand." },
+    { id: "guard", key: "G", label: "GUARD", can: anyUnit, run: () => cmdGuard(),
+      tip: "GUARD (G) \u2014 hold this ground and engage whatever comes into sight." },
+    { id: "hold", key: "F", label: "HOLD FIRE", can: anyUnit, run: () => cmdHold(),
+      on: (c) => c.units.length > 0 && c.hold === c.units.length,
+      tip: "HOLD FIRE (F) \u2014 toggle: shoot only at a target you name. Lit while every unit selected is holding." },
+    { id: "patrol", key: "P", label: "PATROL", arm: true, run: () => cmdPatrol(),
+      can: (c) => (c.beat || c.air) ? true : "NOTHING SELECTED CAN PATROL",
+      on: () => patrolMode || airCmdMode === "cap",
+      tip: "PATROL (P) \u2014 click a point: walk a beat between here and there until told otherwise, engaging what is met on it but chasing nothing off it. Aircraft fly a combat air patrol over it (Y). A unit on HOLD FIRE walks it without shooting." },
+    { id: "scatter", key: "X", label: "SCATTER", run: () => cmdScatter(),
+      can: (c) => c.scat ? true : "NOTHING SELECTED CAN MOVE APART",
+      tip: "SCATTER (X) \u2014 spread out: each unit steps a tile and a half away from the rest." },
+    /* lit for everything D acts on: cmdDeploy() unloads, and so also turns
+       a garrison out - measured on the first cut of this bar, a garrisoned
+       block left DEPLOY grey while D emptied it (2 -> 0) */
+    { id: "deploy", key: "D", label: "DEPLOY", run: () => cmdDeploy(),
+      can: (c) => (c.rigs || c.loaded || c.garrison || c.yards) ? true : "NOTHING SELECTED DEPLOYS",
+      tip: "DEPLOY (D) \u2014 unfold a construction rig where it stands, put a transport's cargo down, or turn a garrison out." },
+    { id: "unload", key: "U", label: "UNLOAD", run: () => unloadSelection(),
+      can: (c) => (c.loaded || c.garrison) ? true : "NOTHING SELECTED IS CARRYING ANYONE",
+      tip: "UNLOAD (U) \u2014 put a transport's cargo down, or turn a garrison out." },
+    { id: "recall", key: "R", label: "RECALL", run: () => cmdRecall(),
+      can: (c) => (c.air || c.recall) ? true : c.why,
+      tip: "RECALL (R) \u2014 aircraft to base; ships to the nearest naval yard, which mends and refuels them and reloads their deck launchers; vehicles to the service depot, which mends them." },
+    { id: "same", key: "T", label: "SAME TYPE", can: anyUnit, run: (ev) => cmdSelectSame(!!(ev && ev.shiftKey)),
+      tip: "SELECT SAME TYPE (T, Shift adds) \u2014 every unit of the selected types that is on screen; double-clicking a unit does the same. While aircraft are selected, T is their STRIKE." },
+    { id: "cb", key: "C", label: "C-BATTERY", run: () => cmdCounterBattery(),
+      can: (c) => c.guns ? true : "NO ARTILLERY SELECTED", on: (c) => c.guns > 0 && c.cb === c.guns,
+      tip: "COUNTER-BATTERY (C) \u2014 toggle: guns answer plotted enemy artillery on their own." },
+    { id: "quiet", key: "N", label: "SILENT RUN", run: () => cmdQuiet(),
+      can: (c) => c.subs ? true : "NO SUBMARINE SELECTED", on: (c) => c.subs > 0 && c.quiet === c.subs,
+      tip: "SILENT RUNNING (N) \u2014 toggle: a submarine trades speed for silence." },
+  ];
+
+  /* Built once, into #game, by script: every page that raises a battle gets
+     the bar without a copy of it in its markup, the way gallery.js makes its
+     own panel on a page that has none. */
+  function buildCmdBar() {
+    if (cmdEls) return;
+    const host = document.getElementById("game") || document.body;
+    const bar = document.createElement("div");
+    bar.id = "cmdbar";
+    bar.setAttribute("role", "toolbar");
+    bar.setAttribute("aria-label", "Orders for the selection");
+    cmdEls = {};
+    const live = (c) => !!(G && G.human) && c.can(cmdContext()) === true;
+    for (const c of CMD_BAR) {
+      const el = document.createElement("div");
+      el.className = "cb";
+      el.setAttribute("role", "button");
+      el.innerHTML = "<kbd>" + c.key + "</kbd><span>" + c.label + "</span>";
+      /* Whose press is it? Asked afresh, not read off the grey, which can be
+         a few frames older than the selection (syncCmdBar). A live button
+         keeps a left press; anything else goes to the map. A left press the
+         map took leaves the click that follows it alone: that click would
+         otherwise land on a selection the map click has just changed. */
+      el.addEventListener("mousedown", (ev) => {
+        const mine = ev.button === 0 && live(c);
+        if (ev.button === 0) el._toMap = !mine;
+        if (!mine) toMap(ev);
+      });
+      el.addEventListener("dblclick", (ev) => { if (!live(c)) toMap(ev); });
+      el.addEventListener("contextmenu", (ev) => ev.preventDefault());
+      el.onclick = (ev) => {
+        if (el._toMap) { el._toMap = false; return; }
+        if (!live(c)) return;
+        c.run(ev);
+        syncCmdBar(true);
+      };
+      bar.appendChild(el);
+      cmdEls[c.id] = el;
+    }
+    host.appendChild(bar);
+    if (host.classList) host.classList.add("has-cmdbar");
+    syncCmdBar(true);
+  }
+  /* The bar lies over the bottom of the map, and a press on it that is not
+     a live button's is the map's: a right-click is a move order there, a
+     middle-drag pans, and a click on a greyed button selects what is under
+     it. On the first cut a right-click on a lit button did nothing at all
+     (measured under jsc: the same right-click on the map moved the tank)
+     and, with no contextmenu handler, a browser opens its own menu there.
+     Handed to the canvas as the same event, so every mode the canvas
+     handler knows applies unchanged. */
+  function toMap(ev) {
+    ev.preventDefault();
+    cv.dispatchEvent(new MouseEvent(ev.type, {
+      bubbles: true, cancelable: true, clientX: ev.clientX, clientY: ev.clientY,
+      button: ev.button, buttons: ev.buttons, detail: ev.detail,
+      shiftKey: ev.shiftKey, ctrlKey: ev.ctrlKey, altKey: ev.altKey, metaKey: ev.metaKey }));
+  }
+  /* Refreshed from frame(), one frame in four, and the DOM is written only
+     where a state actually changed. cmdContext() walks the whole selection:
+     run every frame it cost 16.6-46.4 us a frame with 150 units selected,
+     and one frame in four costs 2.8-12.1 (jsc, 3 runs of 5 x 5000 frames,
+     shared machine). The grey may trail a selection by three frames, and
+     nothing acts on the grey - a press asks can() for itself. A forced sync
+     (after a press, and for the suites) always runs. */
+  let cmdTick = 0;
+  function syncCmdBar(force) {
+    if (!cmdEls || !G || !G.human) return;
+    if (!force && (++cmdTick & 3)) return;
+    const c = cmdContext();
+    for (const d of CMD_BAR) {
+      const el = cmdEls[d.id], why = d.can(c), ok = why === true;
+      const lit = ok && !!d.on && !!d.on(c);
+      const st = (ok ? 1 : 0) | (lit ? 2 : 0);
+      if (force || el._st !== st) {
+        el._st = st;
+        el.classList.toggle("off", !ok);
+        el.classList.toggle("on", lit && !d.arm);
+        el.classList.toggle("arm", lit && !!d.arm);
+        el.setAttribute("aria-disabled", ok ? "false" : "true");
+      }
+      /* a greyed button's tooltip says why it is grey */
+      if (force || el._why !== why) { el._why = why; el.title = ok ? d.tip : d.tip + " (" + why + ")"; }
+    }
+  }
+  /* The line the selection panel shows while an order waits for its map
+     click, as every other armed order has one (airOrderPanel, minePanel):
+     after P the only cue used to be the button turning orange. The key's
+     attack-move needs none - A is held down while it is armed. */
+  function armedHint() {
+    if (patrolMode) return '<div class="hhint">PATROL \u2014 click the far end of the beat: they walk it from where they stand and back, engaging what they meet on it. RMB or Esc cancels.</div>';
+    if (input.attackMove && !keys.a) return '<div class="hhint">ATTACK-MOVE \u2014 click where to advance, engaging what is met on the way. RMB or Esc cancels.</div>';
+    return "";
+  }
+
   /* ================= attention layer =================
      Fuel, ammo, suppression and idle production are all simulated but were
      invisible unless you hand-picked a unit. This scores everything that wants
@@ -2941,6 +3366,7 @@ var UI = (function () {
     renderAttention();
     updateCards();
     refreshSelInfo();
+    syncCmdBar();
     syncSuperweapons();
     Render.drawMinimap(mm);
   }
@@ -2998,5 +3424,7 @@ var UI = (function () {
            cursorMode: () => cursorKey,
            refreshCursor: () => modeCursor(true),
            setSell, setRepair,
+           /* for the suites: the command bar's buttons by id, freshly synced */
+           cmdbar: () => { syncCmdBar(true); return cmdEls; },
            get input() { return input; }, get selection() { return selection; } };
 })();

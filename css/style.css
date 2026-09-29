@@ -249,6 +249,42 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 .cmd.on svg{opacity:1}
 #c-sell.on{background:#7a2222;border-color:#d05050;color:#ffc0c0}
 
+/* ---------- the command bar ----------
+   (owner) "the bottom should have helper line like deploy, recall, petrol,
+   and select the same unit on the screen like redalert." ui.js builds it
+   into #game. It lies over the bottom of the MAP only - right:216px keeps it
+   off the sidebar and so off the minimap - and the strip itself takes no
+   clicks. A button does, so that a greyed one can still say on hover why it
+   is grey; ui.js hands the map every press on it that is not a live
+   button's left click (toMap). Colours are the sidebar's own: .cmd for a button,
+   .hb.arm for an order waiting on a map click, .pribtn.on for a stance that
+   is on. Too narrow for one row it wraps UPWARD, and narrower still it
+   keeps the keys and drops the words (the tooltips keep both). */
+#cmdbar{position:absolute;left:0;right:216px;bottom:8px;z-index:12;display:flex;
+  flex-wrap:wrap-reverse;justify-content:center;gap:3px;padding:0 10px;pointer-events:none}
+#cmdbar .cb{pointer-events:auto;display:flex;align-items:center;gap:5px;height:26px;
+  padding:0 8px 0 4px;background:rgba(14,21,13,.92);border:1px solid #2a3a26;border-radius:2px;
+  color:#b9cdb0;font-size:9.5px;letter-spacing:1px;cursor:pointer;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.55)}
+#cmdbar .cb:hover{border-color:#4f7040;background:rgba(24,36,22,.96);color:#dfe8d8}
+#cmdbar .cb kbd{font:600 9.5px/14px ui-monospace,monospace;min-width:16px;height:16px;
+  text-align:center;color:#e8c552;border:1px solid #4a5a36;border-radius:2px;background:#0b110a}
+#cmdbar .cb.off,#cmdbar .cb.off:hover{opacity:.34;box-shadow:none;cursor:default;
+  border-color:#2a3a26;background:rgba(14,21,13,.92);color:#b9cdb0}
+#cmdbar .cb.on{background:#1e3a20;border-color:#6fd06f;color:#c8f0c0}
+#cmdbar .cb.arm{background:#7a4a1c;border-color:#d08a34;color:#ffdca8}
+#cmdbar .cb.arm kbd{color:#ffdca8;border-color:#d08a34}
+/* the alert rail sat where the bar now is */
+#game.has-cmdbar #alerts{bottom:44px}
+@media (max-width:1300px){
+  #cmdbar .cb{padding:0 6px 0 3px;gap:4px;font-size:8.5px;letter-spacing:.3px}
+  #game.has-cmdbar #alerts{bottom:74px}
+}
+@media (max-width:760px){
+  #cmdbar .cb span{display:none}
+  #cmdbar .cb{padding:0 3px}
+}
+
 #selinfo{height:120px;border-top:1px solid #2a3a26;padding:6px 9px;font-size:10.5px;
   color:#8fa189;overflow:hidden;line-height:1.55}
 #selinfo b{color:#cfe0c8;font-size:12px;letter-spacing:1px}

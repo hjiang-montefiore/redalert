@@ -1055,7 +1055,7 @@ var Game = (function () {
           /* Send it back to the ground it was working, not to idle - a unit
              that was attack-moving through should carry on through. */
           u.order = u.order.resume
-            ? { type: "attackmove", x: u.order.resume.x, y: u.order.resume.y }
+            ? (u.order.resume.patrol || { type: "attackmove", x: u.order.resume.x, y: u.order.resume.y })
             : (u.nextOrder() ? u.order : { type: u.layer === "air" ? "hover" : "idle" });
         }
         if (u.focus === b) u.focus = null;

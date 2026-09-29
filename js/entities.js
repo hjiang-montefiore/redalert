@@ -19,6 +19,31 @@ function autoTargetable(e) {
   return !(e && e.kind === "building" && e.neutral);
 }
 
+/* ---- what a ground or naval patrol will fight ----
+   A patrol engages the way attack-move does (Unit.updateGeneric, "patrol"),
+   and attack-move chases whatever it picked up with no limit, on the
+   target's true position, into fog as readily as not. Measured under jsc on
+   the first cut of the patrol: a tank on an 8-tile beat followed one fleeing
+   scout 20.4 tiles off it and was still after it 60 s later, and with fog on
+   it drove after the scout for 28.2 of the 55.9 s the scout was out of our
+   sight. With this test it went 0.4 tiles off the beat and was back on the
+   same beat 4-6 s after the scout ran (fog on and off). A beat is a line to
+   hold, and a bait that leads a unit off it is exactly what a patrol must
+   not take. So a patrol fights only what lies within its own acquisition
+   radius of the line - what it could have seen from the beat - and only
+   while its side can see it: within that radius of the unit it can, since
+   the unit sees that far, and beyond it only if G.visibleTo says so (the
+   same fog for the commander as for the player). One test both takes a
+   fight up and lets it go, so a target on the edge cannot flip a unit
+   between the two every tick. */
+function patrolFights(u, o, e) {
+  const R = u.sightR() * CFG.TILE * (u.stance === "aggressive" ? 1.25 : 1);
+  const ax = o.x0, ay = o.y0, dx = o.x - ax, dy = o.y - ay, L2 = dx * dx + dy * dy;
+  const k = L2 ? U.clamp(((e.x - ax) * dx + (e.y - ay) * dy) / L2, 0, 1) : 0;
+  if (U.dist(e.x, e.y, ax + dx * k, ay + dy * k) > R) return false;
+  return U.dist2(u.x, u.y, e.x, e.y) <= R * R || u.game.visibleTo(u.owner, e);
+}
+
 /* An emptied civilian block goes back to being nobody's. Restoring the flag
    was not enough on its own: the structure stayed on the last occupier's
    books, so it kept their colours, the enemy commander still read it as one
@@ -307,7 +332,7 @@ class Unit {
        That direction is the whole design. give() -> setOrder() is the only way
        an order reaches a unit from a commander - the player through ui.js, the
        AI through ai.js - and every order this file raises for itself is
-       assigned straight to this.order and never comes through here: the seven
+       assigned straight to this.order and never comes through here: the eight
        auto sites, retaliate(), the counter-battery plot, afterAttack().
 
        Only `attack` and `bombard` release, because only those two name what is
@@ -1370,6 +1395,52 @@ class Unit {
       const foe = this.acquire();
       if (foe) { this.order = { type: "attack", target: foe, resume: { x: o.x, y: o.y }, auto: true }; }
       else if (this.stepAlong(o.x, o.y, dt) && !this.nextOrder()) this.order = { type: "idle" };
+    } else if (o.type === "patrol") {
+      /* ---- PATROL: walk a beat, and fight what is met on it ----
+         (owner) "the bottom should have helper line like deploy, recall,
+         petrol ..." Aircraft already fly a combat air patrol (CAP, Y), but
+         nothing that drives or sails had a patrol of any kind: measured under
+         jsc, a tank handed {type:"patrol"} stood still for ten seconds,
+         because no branch here read it. This is Tiberian Sun's: from where
+         the unit stood when the order began to the point it was given, and
+         back, until it is told otherwise. It engages as an attack-move does -
+         acquire(), then an automatic attack whose `resume` carries this very
+         order, so the beat picks up where it broke off - but only what is on
+         its beat and in its side's sight (patrolFights, top of this file),
+         and a unit on HOLD walks the beat without opening fire, which is
+         what hold means everywhere else. acquire() names one target; when
+         that one is off the beat the unit walks on and asks again. */
+      const g = this.game, T = CFG.TILE;
+      if (o.x0 === undefined) { o.x0 = this.x; o.y0 = this.y; }
+      const lx = o.back ? o.x0 : o.x, ly = o.back ? o.y0 : o.y;
+      if (this.stance !== "hold") {
+        const foe = this.acquire();
+        if (foe && patrolFights(this, o, foe)) {
+          this._mvCk = undefined;        // the fight is not a stall on the leg
+          this.order = { type: "attack", target: foe, resume: { x: lx, y: ly, patrol: o }, auto: true };
+          return;
+        }
+      }
+      /* A leg ends a tile short of its mark - a beat is a line to walk, not
+         a tile to stand on, and the tile may hold a friend - and it ends
+         where the unit got to when it can get no further: the route refused,
+         or ten seconds without closing. Two turns inside a second without
+         moving is a beat with nowhere to go, and turning every tick would
+         plan a route every tick, so that becomes a guard post instead. */
+      const stuck = this.stalledOnMove(lx, ly, dt);
+      if (this.stepAlong(lx, ly, dt, T) || stuck) {
+        if (o.turnT !== undefined && g.time - o.turnT < 1 &&
+            U.dist(this.x, this.y, o.turnX, o.turnY) < T * 0.5) {
+          this.guardX = this.x; this.guardY = this.y;
+          this.order = { type: "guard" };
+          if (this.owner === g.human)
+            g.alert("PATROL HAS NOWHERE TO GO \u2014 GUARDING HERE", "bad", true);
+          return;
+        }
+        o.turnT = g.time; o.turnX = this.x; o.turnY = this.y;
+        o.back = !o.back;
+        this.path = null;
+      }
     } else if (o.type === "attack") {
       const t = o.target;
       /* An engagement the unit chose for itself is dropped as soon as the target
@@ -1377,10 +1448,14 @@ class Unit {
          carrying the auto flag are tested: one the player gave by hand is left
          exactly as given. */
       if (!t || t.dead || (o.auto && !autoTargetable(t))) {
-        if (o.resume) this.order = { type: "attackmove", x: o.resume.x, y: o.resume.y };
+        if (o.resume) this.order = o.resume.patrol || { type: "attackmove", x: o.resume.x, y: o.resume.y };
         else if (!this.nextOrder()) this.order = { type: "idle" };
         return;
       }
+      /* a patrol lets go of what has left its beat or its side's sight, and
+         takes the beat up again (patrolFights, top of this file) */
+      const beat = o.auto && o.resume && o.resume.patrol;
+      if (beat && !patrolFights(this, beat, t)) { this.order = beat; this.path = null; return; }
       /* ---- prosecuting a submarine ----
          A sub outside sonar reach cannot be targeted, so pickWeapon returned
          nothing and the platform simply stopped: an MH-60R ordered onto a
@@ -1436,7 +1511,13 @@ class Unit {
   engage(t, dt) {
     const wi = this.pickWeapon(t);
     if (wi < 0) {                                  // nothing can hurt it — walk away or idle
-      this.order = { type: "idle" };
+      /* ...except a patrol's own fight, which goes back to the beat. The
+         first cut of the patrol lost the beat here for good: a Stinger team
+         whose helicopter set down, and so became a target it has nothing
+         for, went idle and never walked the beat again. */
+      const beat = this.order.auto && this.order.resume && this.order.resume.patrol;
+      this.order = beat || { type: "idle" };
+      if (beat) this.path = null;
       return;
     }
     const w = WEAPONS[this.def.weapons[wi]];

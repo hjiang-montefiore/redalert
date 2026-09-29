@@ -5871,6 +5871,366 @@ try{
   })();
   }
 
+  /* ====== [65] THE COMMAND BAR ======
+     (owner) "the bottom should have helper line like deploy, recall, petrol,
+     and select the same unit on the screen like redalert."
+     Before the bar, a jsc probe pressed every letter at a selection already
+     on a move order: 7 of 26 keys did anything to three tanks, a rifle
+     section or a destroyer; P, R, T and X did nothing to any of them; a tank
+     handed a patrol order stood still; and after one more UI.init - which is
+     what LOAD GAME does - there were two keydown listeners, so F put a tank
+     on hold and straight off again and SELL switched itself back off. And
+     D, with an enemy construction rig selected only for a look, unfolded it
+     into a second construction yard for them.
+     This drives the real buttons beside the real keyboard handler and holds
+     each pair to issuing the same order. It raises the UI once more itself:
+     by this point [59] and [61] have each raised it again already.
+     The review of the first cut added the rest: DEPLOY stayed grey on a
+     garrison D empties; a right-click on a lit button did nothing and a
+     greyed button swallowed its click; a patrol chased a fleeing scout 20
+     tiles off an 8-tile beat, lost its beat for good when its target became
+     one it had no weapon for, and a save dropped the beat's home end. */
+  if (inHalf(1)) {
+  log("\n[65] THE COMMAND BAR, AND EVERY BUTTON THE SAME ORDER AS ITS KEY");
+  (function(){
+    var T=CFG.TILE, M=Game.map, cv=document.getElementById("cv"), DT=CFG.DT;
+    var made=[], built=[], cam0={x:Render.cam.x,y:Render.cam.y};
+    function fire(type,k,shift,count){
+      if(typeof __listeners!=="undefined"){
+        var ev={type:type,shiftKey:!!shift,ctrlKey:false,metaKey:false,altKey:false,preventDefault:function(){}};
+        if(count) Object.defineProperty(ev,"key",{get:function(){ count.n++; return k; }}); else ev.key=k;
+        (__listeners["win:"+type]||[]).slice().forEach(function(f){ f(ev); });
+      } else {
+        var e2=new KeyboardEvent(type,{key:k,shiftKey:!!shift});
+        if(count) Object.defineProperty(e2,"key",{get:function(){ count.n++; return k; }});
+        window.dispatchEvent(e2);
+      }
+    }
+    function key(k,shift){ fire("keydown",k,shift); fire("keyup",k,shift); }
+    function sel(list){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
+      for(var j=0;j<list.length;j++){ list[j].selected=true; s.push(list[j]); } }
+    function put(id,x,y,who){ var u=Game.spawnUnitAt(who||P,id,x*T+T/2,y*T+T/2); if(u) made.push(u); return u; }
+    function orders(list){ return JSON.stringify(list.map(function(u){ var o=u.order;
+      return [o.type, o.x===undefined?null:Math.round(o.x), o.y===undefined?null:Math.round(o.y), u.stance]; })); }
+    function march(list){ for(var i=0;i<list.length;i++){ list[i].stance="guard"; list[i].give({type:"move",x:list[i].x+T*3,y:list[i].y}); } }
+    function park(u,x,y){ u.x=x*T+T/2; u.y=y*T+T/2; u.path=null; u.give({type:"idle"}); u.stance="guard"; }
+    function click(wx,wy){ var rc=cv.getBoundingClientRect();
+      cv.dispatchEvent({type:"mousedown",button:0,clientX:rc.left+Render.sx(wx,wy),
+        clientY:rc.top+Render.sy(wx,wy,GameMap.elevAt(M,(wx/T)|0,(wy/T)|0)),shiftKey:false,ctrlKey:false,metaKey:false}); }
+    function secs(s,fn){ for(var i=0;i<Math.round(s/DT);i++){ Game.tick(DT); if(fn&&fn()) return true; } return false; }
+    function hint(){ return /PATROL \u2014 click the far end/.test((document.getElementById("selinfo")||{}).innerHTML||""); }
+    /* the order a save would write for u, found by where it stands */
+    function saved(u){ var r=SaveGame.save(Game,"ironfront.test65"), rec=null;
+      try { var d=JSON.parse(localStorage.getItem("ironfront.test65"));
+        (d.units||[]).forEach(function(s2){ if(s2.d===u.def.id && Math.abs(s2.x-u.x)<2 && Math.abs(s2.y-u.y)<2) rec=s2; }); }
+      catch(e){} try { localStorage.removeItem("ironfront.test65"); } catch(e){}
+      return rec ? rec.ord : null; }
+    function sameBeat(ord,o){ return !!ord && ord.type==="patrol" && ord.x===Math.round(o.x) && ord.y===Math.round(o.y) &&
+      ord.x0===Math.round(o.x0) && ord.y0===Math.round(o.y0) && !!ord.back===!!o.back; }
+    /* a mouse event at a world point, the way the browser would make one; under
+       jsc there is no MouseEvent, and ui.js makes one to hand a press on the
+       bar to the map, so the section lends it one and takes it back after */
+    function mev(type,button,wx,wy){ var rc=cv.getBoundingClientRect();
+      return new MouseEvent(type,{bubbles:true,cancelable:true,button:button,buttons:1<<button,detail:1,
+        clientX:rc.left+Render.sx(wx,wy),clientY:rc.top+Render.sy(wx,wy,GameMap.elevAt(M,(wx/T)|0,(wy/T)|0)),
+        shiftKey:false,ctrlKey:false,metaKey:false,altKey:false}); }
+    function winUp(wx,wy){ var ev=mev("mouseup",0,wx,wy);
+      if(typeof __listeners!=="undefined") (__listeners["win:mouseup"]||[]).slice().forEach(function(f){ f(ev); });
+      else window.dispatchEvent(ev); }
+    function offBeat(u,o){ var dx=o.x-o.x0, dy=o.y-o.y0, L=dx*dx+dy*dy,
+      k=L?Math.max(0,Math.min(1,((u.x-o.x0)*dx+(u.y-o.y0)*dy)/L)):0;
+      return U.dist(u.x,u.y,o.x0+dx*k,o.y0+dy*k)/T; }
+    function patch(w,h){
+      var hx=(P.homeX/T)|0, hy=(P.homeY/T)|0, best=null, bd=1e9;
+      for(var y=4;y<M.H-h-4;y++) for(var x=4;x<M.W-w-4;x++){
+        var d=Math.abs(x+w/2-hx)+Math.abs(y+h/2-hy); if(d>=bd) continue;
+        var good=true;
+        for(var j=0;j<h&&good;j++) for(var i=0;i<w;i++)
+          if(!GameMap.passable(M,x+i,y+j,"ground")||Game.tileBlocked(x+i,y+j,null)){ good=false; break; }
+        if(good){ best={x:x,y:y}; bd=d; }
+      }
+      return best;
+    }
+
+    /* ---- 1. the keyboard is bound once, however often the UI is raised ---- */
+    UI.init(Game);
+    var cnt={n:0}; fire("keydown","F13",false,cnt); fire("keyup","F13",false);
+    chk("one key press runs the keyboard handler once, after LOAD GAME raised the UI again",
+        cnt.n===1, cnt.n+" keydown handler(s) ran");
+    var cs=document.getElementById("c-sell");
+    if(cs){ UI.setSell(false); cs.click(); var sold=UI.input.sellMode; UI.setSell(false);
+      chk("...and one click on SELL is one toggle", sold===true, "sell mode after one click: "+sold); }
+
+    /* D looks at nothing but our own rigs: it used to unfold an ENEMY rig
+       that was selected only for a look, into a construction yard for them */
+    /* ...on ground where it COULD unfold, or the check proves nothing */
+    var eh={x:(E.homeX/T)|0,y:(E.homeY/T)|0}, cy=BUILDINGS.conyard, spot=null;
+    for(var rr=4;rr<30&&!spot;rr++) for(var aa=0;aa<48&&!spot;aa++){
+      var sx=(eh.x+Math.cos(aa/48*6.283)*rr)|0, sy=(eh.y+Math.sin(aa/48*6.283)*rr)|0;
+      if(Game.canPlace(E,"conyard",sx-((cy.w/2)|0),sy-((cy.h/2)|0))) spot={x:sx,y:sy};
+    }
+    var erig=spot&&Game.spawnUnitAt(E,"mcv",spot.x*T+T/2,spot.y*T+T/2);
+    if(erig){
+      var yards=function(){ return E.buildings.filter(function(b){ return !b.dead && b.def.id==="conyard"; }); };
+      var y0=yards().slice(); sel([erig]); key("d"); var y1=yards();
+      chk("D with an enemy rig selected for a look does not unfold it for them",
+          y1.length===y0.length && !erig.dead, "their yards "+y0.length+" -> "+y1.length+
+          " (the ground there would take a yard)");
+      sel([]);
+      for(var q=0;q<y1.length;q++) if(y0.indexOf(y1[q])<0) Game.removeBuilding(y1[q]);
+      if(!erig.dead) erig.dead=true;
+    }
+
+    var B=UI.cmdbar?UI.cmdbar():null;
+    var IDS=["amove","stop","guard","hold","patrol","scatter","deploy","unload","recall","same","cb","quiet"];
+    var KEY={amove:"A",stop:"S",guard:"G",hold:"F",patrol:"P",scatter:"X",deploy:"D",unload:"U",recall:"R",same:"T",cb:"C",quiet:"N"};
+    chk("there is a command bar with a button for every order", !!B && IDS.every(function(k){ return !!B[k]; }),
+        B ? Object.keys(B).join(",") : "UI.cmdbar is missing");
+    if(!B) return;
+    var named=IDS.filter(function(k){ return B[k].innerHTML.indexOf("<kbd>"+KEY[k]+"</kbd>")>=0 &&
+                                                String(B[k].title).indexOf("("+KEY[k])>=0; });
+    chk("each button shows its key, and its tooltip names it", named.length===IDS.length, named.length+"/"+IDS.length);
+    function lit(){ B=UI.cmdbar(); return IDS.filter(function(k){ return !B[k].classList.contains("off"); }).join(","); }
+    function on(id,cls){ B=UI.cmdbar(); return B[id].classList.contains(cls||"on"); }
+
+    var p=patch(18,9);
+    chk("open ground for the command bar scenario", !!p, p?JSON.stringify(p):"none");
+    if(!p) return;
+    try {
+      var t1=put("mbt_n",p.x+2,p.y+3), t2=put("mbt_n",p.x+2,p.y+5), t3=put("mbt_n",p.x+3,p.y+4);
+      var r1=put("rifle_n",p.x+5,p.y+8), r2=put("rifle_n",p.x+6,p.y+8);
+      var three=[t1,t2,t3];
+      Render.setCam(t3.x,t3.y);
+      tick(2);
+
+      /* ---- 2. greyed when nothing selected can use them ---- */
+      sel([]);
+      chk("nothing selected: every button is greyed", lit()==="", lit()||"none lit");
+      var eg=tile(E,"ground",6), foe=eg&&put("rifle_n",eg.x,eg.y,E);
+      if(foe){ foe.give({type:"move",x:foe.x+T*2,y:foe.y}); sel([foe]); var l0=lit(); B.stop.click();
+        chk("an enemy selected for a look: all greyed, and STOP gives it nothing",
+            l0==="" && foe.order.type==="move", "lit '"+l0+"', its order "+foe.order.type);
+        foe.dead=true; }
+      var depot0=P.buildings.some(function(b){ return !b.dead && b.def.id==="depot" && b.buildProgress>=1; });
+      sel([t1]);
+      var want="amove,stop,guard,hold,patrol,scatter"+(depot0?",recall":"")+",same";
+      chk("a tank selected: what a tank can do lights, the rest stays grey", lit()===want, lit()+"  (want "+want+")");
+
+      /* ---- 3. STOP, GUARD, HOLD: the button is the key ---- */
+      sel(three); march(three); key("s"); var kS=orders(three);
+      sel(three); march(three); B.stop.click(); var bS=orders(three);
+      chk("STOP issues exactly what S does", kS===bS && three.every(function(u){ return u.order.type==="idle"; }), bS);
+      march(three); three.forEach(function(u){ u.stance="hold"; }); key("g"); var kG=orders(three);
+      march(three); three.forEach(function(u){ u.stance="hold"; }); B.guard.click(); var bG=orders(three);
+      chk("GUARD issues exactly what G does", kG===bG &&
+          three.every(function(u){ return u.order.type==="guard" && u.stance==="guard"; }), bG);
+      march(three); key("f"); var kF=orders(three), litF=on("hold");
+      march(three); three.forEach(function(u){ u.stance="guard"; }); B.hold.click(); var bF=orders(three);
+      chk("HOLD FIRE: the button is the F toggle, and lights while it is on",
+          kF===bF && litF && three.every(function(u){ return u.stance==="hold"; }), bF+" lit="+litF);
+      B.hold.click();
+      chk("...and a second press puts them back", three.every(function(u){ return u.stance==="guard"; }) && !on("hold"),
+          three.map(function(u){ return u.stance; }).join(","));
+
+      /* ---- 4. PATROL: armed by P or the button, and the click is the same beat ---- */
+      var two=[t1,t2], farX=t1.x+T*9, farY=t1.y+T;
+      park(t1,p.x+2,p.y+3); park(t2,p.x+2,p.y+5);
+      sel(two); key("p"); var armK=on("patrol","arm"), hintK=hint(); click(farX,farY); var kP=orders(two), hintGone=!hint();
+      park(t1,p.x+2,p.y+3); park(t2,p.x+2,p.y+5);
+      sel(two); B.patrol.click(); var armB=on("patrol","arm"); click(farX,farY); var bP=orders(two);
+      chk("PATROL: P and the button both arm it, and the click gives the same beat",
+          armK && armB && kP===bP && two.every(function(u){ return u.order.type==="patrol"; }), bP);
+      var armAfter=on("patrol","arm");
+      chk("...and the armed state goes out with the click", !armAfter, armAfter?"still armed":"disarmed");
+      chk("...and while it waits for that click the selection panel says what it is waiting for",
+          hintK && hintGone, "hint while armed "+hintK+", gone after the click "+hintGone);
+      /* out of the lane, so the only thing on the beat is the beat */
+      park(t3,p.x+15,p.y+8);
+      var s0={x:t1.x,y:t1.y}, end={x:t1.order.x,y:t1.order.y}, leg=t1.order, turns=0, was=false,
+          dE=1e9, dB=1e9, tOut=-1, tHome=-1, clk=Game.time, svHome=null;
+      secs(45,function(){
+        dE=Math.min(dE,U.dist(t1.x,t1.y,end.x,end.y)/T);
+        if(turns) dB=Math.min(dB,U.dist(t1.x,t1.y,s0.x,s0.y)/T);
+        if(t1.order===leg && !!leg.back!==was){ was=!!leg.back; turns++;
+          if(turns===1) tOut=Game.time-clk; else if(turns===2) tHome=Game.time-clk; }
+        /* a save on the way home, a second into the homeward leg */
+        if(turns===1 && !svHome && Game.time-clk>tOut+1) svHome=saved(t1);
+        return turns>=2; });
+      chk("a tank on patrol walks its beat out and back, and is still on patrol after",
+          turns>=2 && dE<1.5 && dB<1.5 && t1.order===leg,
+          "turned at the far end after "+tOut.toFixed(1)+" s ("+dE.toFixed(2)+" tiles short), at home after "+
+          tHome.toFixed(1)+" s ("+dB.toFixed(2)+" short), order "+t1.order.type);
+      chk("...and a save on the way home keeps the whole beat and the way it was going",
+          !!svHome && svHome.type==="patrol" && svHome.x0===Math.round(s0.x) && svHome.y0===Math.round(s0.y) && svHome.back===true,
+          "saved "+JSON.stringify(svHome)+", home end ("+Math.round(s0.x)+","+Math.round(s0.y)+")");
+      /* it fights what it meets, and goes back to the SAME beat */
+      t1.give({type:"idle"}); t1.stance="hold"; t3.stance="hold"; r1.stance="hold"; r2.stance="hold";
+      var beat=t2.order, hd=t2.ang, h1=put("rifle_n",((t2.x+Math.cos(hd)*T*3)/T)|0,((t2.y+Math.sin(hd)*T*3)/T)|0,E);
+      var fought=false, back=false, svFight=null;
+      if(h1){ h1.give({type:"guard"});
+        secs(30,function(){
+          if(t2.order.type==="attack" && t2.order.resume && t2.order.resume.patrol===beat){
+            if(!fought) svFight=saved(t2);
+            fought=true; h1.hp=Math.min(h1.hp,1); }
+          if(fought && t2.order===beat) back=true;
+          return back; }); }
+      chk("...it engages what it meets on the beat, then takes up the same patrol again",
+          !!h1 && fought && back, "engaged="+fought+" resumed="+back+" hostile dead="+(h1&&h1.dead));
+      chk("...and a save taken mid-fight keeps the patrol, not an attack-move to the end of the leg",
+          sameBeat(svFight,beat), "saved "+JSON.stringify(svFight));
+      /* on HOLD it walks past */
+      t2.stance="hold";
+      var h2=put("rifle_n",((t2.x+Math.cos(t2.ang)*T*3)/T)|0,((t2.y+Math.sin(t2.ang)*T*3)/T)|0,E), shot=false;
+      if(h2){ h2.give({type:"guard"}); secs(6,function(){ if(t2.order.type==="attack") shot=true; return shot; }); }
+      chk("...and a unit on HOLD FIRE walks the beat without opening fire",
+          !!h2 && !shot && t2.order.type==="patrol", "order "+t2.order.type);
+      if(h2) h2.dead=true;
+
+      /* ---- 5. SAME TYPE: every tank on screen, and nothing else ---- */
+      park(t1,p.x+2,p.y+3); park(t2,p.x+2,p.y+5); park(t3,p.x+3,p.y+4);
+      var faraway=tile(P,"ground",34), tf=faraway&&put("mbt_n",faraway.x,faraway.y);
+      Render.setCam(t3.x,t3.y); tick(1);
+      var offs=tf && (Render.sx(tf.x,tf.y)<0||Render.sx(tf.x,tf.y)>cv.width||Render.sy(tf.x,tf.y,0)<0||Render.sy(tf.x,tf.y,0)>cv.height);
+      function ids(){ return UI.selection.map(function(u){ return u.id; }).sort().join(","); }
+      var wantT=three.map(function(u){ return u.id; }).sort().join(",");
+      sel([t1]); key("t"); var kT=ids();
+      sel([t1]); B.same.click(); var bT=ids();
+      /* an earlier section may have left a tank of ours on screen, which T
+         rightly takes too: so ask for OUR three, no rifle, and not the one
+         parked off screen */
+      var got=UI.selection, allT=got.every(function(u){ return u.def.id==="mbt_n"; }),
+          ours=three.every(function(u){ return got.indexOf(u)>=0; }), far=!!tf && got.indexOf(tf)>=0;
+      chk("SAME TYPE: T and the button both take every tank on screen, and only tanks",
+          kT===bT && allT && ours && !far && got.indexOf(r1)<0,
+          "key "+kT+" / button "+bT+" / our three "+wantT+(offs?" / the off-screen tank "+(far?"TAKEN":"left"):""));
+      var jet=put("fighter_n",p.x+9,p.y+2);
+      if(jet){ sel([jet]); key("t");
+        var sh=(document.getElementById("selinfo")||{}).innerHTML||"";
+        var armS=/hb arm" data-aact="strike"/.test(sh);
+        chk("with an aircraft selected T is still its STRIKE", armS, armS?"STRIKE armed":"not armed");
+        key("Escape"); }
+
+      /* ---- 6. RECALL: aircraft to base as R always did; vehicles to the depot ---- */
+      if(jet){ sel([jet]); jet.give({type:"move",x:jet.x+T*4,y:jet.y}); key("r"); var kR=jet.order.type;
+        jet.give({type:"move",x:jet.x+T*4,y:jet.y}); sel([jet]); B.recall.click(); var bR=jet.order.type;
+        chk("RECALL with an aircraft selected issues its RTB, as R does", kR==="rtb" && bR==="rtb", kR+" / "+bR); }
+      sel([r1,r2]);
+      var dep=Game.placeBuilding(P,"depot",p.x+12,p.y+5,true);
+      if(dep){ dep.buildProgress=1; built.push(dep); }
+      chk("a depot does not mend infantry, so RECALL stays grey for a rifle section",
+          !!dep && lit().indexOf("recall")<0, lit());
+      if(dep){
+        three.forEach(function(u){ u.hp=u.maxHp*0.5; });
+        sel(three); var litR=lit().indexOf("recall")>=0; key("r"); var kV=orders(three);
+        park(t1,p.x+2,p.y+3); park(t2,p.x+2,p.y+5); park(t3,p.x+3,p.y+4); three.forEach(function(u){ u.hp=u.maxHp*0.5; });
+        sel(three); B.recall.click(); var bV=orders(three);
+        var spots=three.map(function(u){ return u.order.x+","+u.order.y; });
+        /* whichever finished depot is nearest - an earlier section may have left one */
+        var reach=three.every(function(u){ return u.order.type==="move" && P.buildings.some(function(b){
+          return !b.dead && b.def.id==="depot" && b.buildProgress>=1 && U.dist(u.order.x,u.order.y,b.x,b.y)<T*2.4; }); });
+        var distinct=spots.filter(function(s,i){ return spots.indexOf(s)===i; }).length===3;
+        chk("RECALL: lit for tanks once there is a depot, and the button issues what R does",
+            litR && kV===bV, bV);
+        chk("...each to a berth of its own inside the depot's repair reach", reach && distinct, spots.join(" | "));
+        three.forEach(function(u){ u.hp=u.maxHp; });
+      }
+
+      /* ---- 7. SCATTER: a clump steps apart, the same way from the button ---- */
+      function clump(){ for(var i=0;i<3;i++){ park(three[i],p.x+6,p.y+4); three[i].x+=(i-1)*5; three[i].y+=(i===1?5:0); } }
+      clump(); sel(three); key("x"); var kX=orders(three);
+      clump(); sel(three); B.scatter.click(); var bX=orders(three);
+      var gap=1e9; for(var i=0;i<3;i++) for(var j=i+1;j<3;j++)
+        gap=Math.min(gap,U.dist(three[i].order.x,three[i].order.y,three[j].order.x,three[j].order.y)/T);
+      chk("SCATTER: X and the button send a clump the same ways, at least a tile apart",
+          kX===bX && three.every(function(u){ return u.order.type==="move"; }) && gap>=1, "closest pair "+gap.toFixed(2)+" tiles");
+
+      /* ---- 8. DEPLOY lights for a rig, UNLOAD does not ---- */
+      var rig=put("mcv",p.x+14,p.y+2);
+      if(rig){ sel([rig]); var lr=lit();
+        chk("a construction rig lights DEPLOY and not UNLOAD", lr.indexOf("deploy")>=0 && lr.indexOf("unload")<0, lr); }
+
+      /* ---- 9. DEPLOY is lit for everything D does: a garrison too ---- */
+      var blk=Game.placeBuilding(P,"civblock",p.x+9,p.y+6,true);
+      if(blk){ built.push(blk); blk.buildProgress=1;
+        var gs=[put("rifle_n",p.x+11,p.y+6),put("rifle_n",p.x+11,p.y+7)];
+        var fill=function(){ gs.forEach(function(g){ if(!g.garrisonIn) g.enterGarrison(blk); }); return (blk.garrison||[]).length; };
+        var n0=fill(); sel([blk]); var gl=lit(); B.deploy.click(); var nB=(blk.garrison||[]).length;
+        var n1=fill(); sel([blk]); key("d"); var nK=(blk.garrison||[]).length;
+        chk("a garrison of ours lights DEPLOY, and the button turns it out exactly as D does",
+            n0===2 && gl.indexOf("deploy")>=0 && nB===0 && n1===2 && nK===0,
+            "lit "+gl+"; garrison "+n0+" -> "+nB+" by the button, "+n1+" -> "+nK+" by D");
+      }
+
+      /* ---- 10. a press on the bar that is not a live button's is the map's ---- */
+      var lent=typeof MouseEvent==="undefined";
+      if(lent) globalThis.MouseEvent=function(t,init){ for(var k in init) this[k]=init[k]; this.type=t; this.preventDefault=function(){}; };
+      try {
+        park(t1,p.x+2,p.y+3); park(t2,p.x+2,p.y+5); park(t3,p.x+3,p.y+4); Render.setCam(t1.x,t1.y); tick(1);
+        var gx=t1.x+T*4, gy=t1.y+T;
+        sel([t1]); var stopLit=lit().indexOf("stop")>=0; B.stop.dispatchEvent(mev("mousedown",2,gx,gy)); var rB=orders([t1]);
+        park(t1,p.x+2,p.y+3); sel([t1]); cv.dispatchEvent(mev("mousedown",2,gx,gy)); var rM=orders([t1]);
+        chk("a right-click on a lit button is the map's right-click: the same move order",
+            stopLit && rB===rM && t1.order.type==="move", "on STOP "+rB+" / on the map "+rM);
+        /* a greyed button: the press selects what is under it, and the click
+           that follows runs nothing - RECALL would, on a hurt tank, with the
+           depot of 6 standing */
+        park(t1,p.x+2,p.y+3); t1.hp=t1.maxHp*0.5;
+        sel([]); var recGrey=lit().indexOf("recall")<0;
+        B.recall.dispatchEvent(mev("mousedown",0,t1.x,t1.y)); winUp(t1.x,t1.y); B.recall.click();
+        var pick=UI.selection.map(function(u){ return u.id; }).join(",");
+        chk("a press on a greyed button selects what is under it, and its click runs nothing",
+            recGrey && UI.selection.length===1 && UI.selection[0]===t1 && t1.order.type==="idle",
+            "RECALL grey "+recGrey+"; selected ["+pick+"] (the tank is "+t1.id+"); its order "+t1.order.type);
+        t1.hp=t1.maxHp;
+      } finally { if(lent) delete globalThis.MouseEvent; }
+
+      /* ---- 11. a patrol fights what is on its beat, and is not led off it ---- */
+      park(t1,p.x+2,p.y+4); park(t2,p.x+15,p.y+8); park(t3,p.x+16,p.y+8);
+      sel([t1]); Render.setCam(t1.x,t1.y); key("p"); click(t1.x+T*8,t1.y);
+      var lb=t1.order;
+      tick(1);
+      var sc=put("recon_p",p.x+6,p.y+6,E), took=false, far=0, home=false, tBack=-1, c0=0;
+      if(sc && lb.type==="patrol"){ sc.hp=sc.maxHp*40; sc.maxHp=sc.maxHp*40; sc.stance="hold";
+        took=secs(10,function(){ return t1.order.type==="attack" && t1.order.target===sc; });
+        /* it runs straight off the beat at 2.5 tiles a second, moved by
+           hand: the question is the tank's, so the scout's own route - which
+           an earlier section's leftovers can wind or block - is kept out of it */
+        sc.give({type:"idle"}); c0=Game.time;
+        var bx=lb.x-lb.x0, by=lb.y-lb.y0, bl=Math.sqrt(bx*bx+by*by)||1, nx=-by/bl, ny=bx/bl;
+        if((sc.x-lb.x0)*nx+(sc.y-lb.y0)*ny<0){ nx=-nx; ny=-ny; }
+        var flee=function(){ if(offBeat(sc,lb)>=12) return;
+          sc.x=U.clamp(sc.x+nx*T*2.5*DT,T,(M.W-1)*T); sc.y=U.clamp(sc.y+ny*T*2.5*DT,T,(M.H-1)*T); };
+        home=secs(25,function(){ flee(); far=Math.max(far,offBeat(t1,lb)); if(t1.order===lb){ tBack=Game.time-c0; return true; } return false; }); }
+      chk("a patrol lets go of a target that runs off its beat, and takes the same beat up again",
+          !!sc && took && home && far<=t1.sightR()+0.5,
+          "engaged="+took+"; back on the beat "+(home?"after "+tBack.toFixed(1)+" s":"NOT within 25 s ("+t1.order.type+")")+
+          "; furthest off the beat "+far.toFixed(1)+" tiles (sight "+t1.sightR().toFixed(1)+"); scout "+(sc?offBeat(sc,lb).toFixed(1):"?")+" tiles off it");
+      if(sc) sc.dead=true;
+
+      /* ---- 12. ...and a target it has no weapon for sends it back to the beat, not to idle ---- */
+      var st=put("aa_n",p.x+3,p.y+7);
+      if(st){ st.stance="guard"; sel([st]); key("p"); click(st.x+T*8,st.y); }
+      var sb=st&&st.order, hel=st&&sb.type==="patrol"&&put("helo_p",p.x+6,p.y+8,E), hit=false, lost=false;
+      if(hel){ hel.hp=hel.maxHp*50; hel.maxHp=hel.maxHp*50; hel.give({type:"hover"});
+        hit=secs(15,function(){ return st.order.type==="attack" && st.order.target===hel; });
+        /* it sets down: to a Stinger team a helicopter on the ground is nothing it can shoot */
+        hel.parked=true; hel.order={type:"parked"};
+        secs(8,function(){ if(st.order.type==="idle") lost=true; return false; }); }
+      chk("...a patrol whose target becomes one it has no weapon for walks its beat again",
+          !!hel && hit && !lost && st.order===sb, "engaged="+hit+"; went idle="+lost+"; now "+(st?st.order.type:"?")+(st&&st.order===sb?" (the same beat)":""));
+      if(hel) hel.dead=true;
+    } finally {
+      /* the shared match as this section found it */
+      sel([]);
+      UI.input.attackMove=false; UI.input.sellMode=false; UI.input.repairMode=false;
+      for(var m=0;m<made.length;m++) if(made[m] && !made[m].dead) made[m].dead=true;
+      while(built.length){ var bb=built.pop(); if(!bb.dead) Game.removeBuilding(bb); }
+      if(Game.sweepDead) Game.sweepDead();
+      Render.setCam(cam0.x,cam0.y);
+    }
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time
