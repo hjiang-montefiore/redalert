@@ -79,6 +79,10 @@ var SaveGame = (function () {
         rigDl: typeof p.rigDeadline === "number" ? +p.rigDeadline.toFixed(2) : undefined,
         /* and the two once-only warnings with it, or a reload repeats them */
         rigW: p.rigWarned ? 1 : undefined,
+        /* what is left of the rig grace a production building has paused
+           (G.rigGrace). Dropped, a side that folds up its yard again would
+           come back from a reload with the full two minutes. */
+        rigBk: p.rigBank ? [+p.rigBank.left.toFixed(2), +p.rigBank.at.toFixed(2)] : undefined,
         pArm: p.prodArmed ? 1 : undefined,
         /* fuel bought and still on the road, and the market pressure behind
            its price (player.js fuelMarketState). Dropped, a reload would lose
@@ -119,6 +123,9 @@ var SaveGame = (function () {
         rep: !!b.repairing, sw: +(b.swCharge || 0).toFixed(3),
         ta: +(b.tang || 0).toFixed(3),
         rx: Math.round(b.rally.x), ry: Math.round(b.rally.y),
+        /* a yard folding back into its rig (G.packYard): `prog` is how far
+           down it has come, and this says which way it is going */
+        pk: b.packing ? 1 : undefined,
       })),
     };
   }
@@ -280,6 +287,7 @@ var SaveGame = (function () {
          tick with nothing standing, which is where it would have started */
       p.rigDeadline = typeof sp.rigDl === "number" ? sp.rigDl : null;
       p.rigWarned = !!sp.rigW;
+      p.rigBank = Array.isArray(sp.rigBk) ? { left: sp.rigBk[0], at: sp.rigBk[1] } : null;
       p.prodArmed = !!sp.pArm;
       /* an older save has no key: nothing on the road, a quiet market */
       if (p.restoreFuelMarket) p.restoreFuelMarket(sp.fm);
@@ -319,7 +327,8 @@ var SaveGame = (function () {
          - since an unfolding factory keeps a side in the war (G.checkVictory) -
          a side nobody could beat without finding and shooting it. G.time is
          already restored, so the restarted clock runs on the saved one. */
-      if (b.buildProgress < 1) resumeConstruction(G, b);
+      if (sb.pk && G.resumePack) G.resumePack(b);
+      else if (b.buildProgress < 1) resumeConstruction(G, b);
       b.repairing = !!sb.rep;
       b.swCharge = sb.sw !== undefined ? sb.sw : b.swCharge;
       b.tang = sb.ta || 0;

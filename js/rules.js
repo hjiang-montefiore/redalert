@@ -126,7 +126,7 @@ var WEAPONS = {
 var BUILDINGS = {
   conyard: { name:"Construction Yard", cat:"building", cost:0, time:0, w:3, h:3, hp:2400, armor:"structure",
     power:0, sight:8, tech:1, base:true, undeployable:true,
-    desc:"Mobile HQ, deployed. Anchors your build radius and produces all structures." },
+    desc:"Mobile HQ, deployed. Anchors your build radius and produces all structures. Select it and press D to fold it back into its rig." },
 
   power: { name:"Power Plant", cat:"building", cost:400, time:9, w:2, h:2, hp:850, armor:"structure",
     power:+120, sight:4, tech:1, prereq:["conyard"],

@@ -6231,6 +6231,229 @@ try{
   })();
   }
 
+  /* ====== [73] A YARD PACKS BACK INTO ITS RIG ======
+     (owner) "the mcv should be able to depoly and become back mcv again for
+     relocation and re-depoly"
+     Driven through the D key, which is the path the player and the command
+     bar's Deploy button both take, on the suite's own yard: it folds over
+     CFG.RIG_FOLD seconds rather than popping, the panel offers it and counts
+     it down, the rig comes out where the yard stood carrying its health and
+     the selection, drives off and unfolds again through Game.deployRig as a
+     normal yard - with one of our own riflemen standing beside the new
+     footprint, which used to refuse the unfold (canPlace read the whole
+     64-pixel grid cell, up to two tiles off the footprint). The victory
+     budget (Game.rigGrace) is exercised on seats of its own with no tick
+     running, the way [44] does it. The yard is put back where it was, at
+     the health it had, before the section ends. */
+  if (inHalf(1)) {
+  log("\n[73] A YARD PACKS BACK INTO ITS RIG, AND UNFOLDS AGAIN");
+  (function(){
+    var M=Game.map, heard=[], realAlert=Game.alert, realHuman=Game.human, roster=Game.players;
+    var fold=typeof CFG.RIG_FOLD==="number" ? CFG.RIG_FOLD : 3;
+    function press(k){
+      var ev={ key:k, ctrlKey:false, shiftKey:false, metaKey:false, altKey:false, repeat:false,
+               preventDefault:function(){}, stopPropagation:function(){}, target:document.body };
+      if (typeof __listeners!=="undefined" && __listeners["win:keydown"]) {
+        __listeners["win:keydown"].forEach(function(f){ f(ev); });
+        (__listeners["win:keyup"]||[]).forEach(function(f){ f(ev); });
+      } else {
+        window.dispatchEvent(new KeyboardEvent("keydown",{ key:k, bubbles:true }));
+        window.dispatchEvent(new KeyboardEvent("keyup",{ key:k, bubbles:true }));
+      }
+    }
+    function said(re){ return heard.filter(function(m){ return re.test(m); }).length; }
+    function panel(){ if(UI.frame) UI.frame(CFG.DT); return (document.getElementById("selinfo")||{}).innerHTML||""; }
+    function yardAt(tx,ty){
+      return P.buildings.filter(function(b){ return !b.dead && b.def.id==="conyard" && b.tx===tx && b.ty===ty; })[0]||null;
+    }
+    var yard=null;
+    P.buildings.forEach(function(b){ if(!yard && !b.dead && b.def.id==="conyard" && b.buildProgress>=1) yard=b; });
+    if(!yard){ chk("the suite's yard is standing to begin with", false, "no yard"); return; }
+    var tx0=yard.tx, ty0=yard.ty, hp0=yard.hp, cx=tx0+1, cy=ty0+1, made=[], X=null, K=null;
+    /* UI.selection is read afresh each time: a frame of the UI filters the
+       dead out of it into a new array */
+    function clearSel(){ var s=UI.selection; for(var j=0;j<s.length;j++) s[j].selected=false; s.length=0; }
+    try { (function(){
+      Game.alert=function(m){ heard.push(String(m)); };
+      /* ---- 1. D on the selected yard ---- */
+      yard.hp=yard.maxHp*0.6;
+      clearSel(); yard.selected=true; UI.selection.push(yard);
+      var p0=panel();
+      chk("the yard's panel offers to pack it up, under the key that does it",
+          /PACK UP \(D\)/.test(p0), p0.replace(/<[^>]*>/g," ").replace(/\s+/g," ").slice(0,160));
+      press("d");
+      /* one press, one answer - however many times UI.init has bound the key */
+      chk("D on a selected yard of ours starts it folding, and says so once",
+          !!yard.packing && !yard.dead && said(/PACKING UP/)===1 && said(/CANNOT PACK UP/)===0,
+          "packing="+!!yard.packing+" dead="+yard.dead+": "+(heard.join(" | ")||"nothing said"));
+      var tS=Game.time, t0=yard.packing && yard.packing.t0;
+      tick(1);
+      heard.length=0; press("d");
+      chk("pressed again while it folds, the rail says why and nothing more happens",
+          said(/ALREADY PACKING UP/)>=1 && said(/^(CONSTRUCTION YARD PACKING UP|PACKING UP THE LAST)/)===0 && !!yard.packing && yard.packing.t0===t0,
+          heard.join(" | ")||"nothing said");
+      tick(Math.round(fold/2/CFG.DT)-1);
+      var mid=yard.buildProgress, p1=panel();
+      chk("it folds rather than pops: halfway through the fold it is half down, and the panel counts it",
+          !yard.dead && mid>0.35 && mid<0.65 && /PACKING UP/.test(p1) && !/PACK UP \(D\)/.test(p1),
+          "buildProgress "+(+mid).toFixed(2)+" at "+(Game.time-tS).toFixed(2)+"s; panel "+(/PACKING UP[^%]*%/.exec(p1.replace(/<[^>]*>/g,""))||["none"])[0]);
+      /* a save carries the fold under way, so a reload finishes it */
+      try {
+        var res=SaveGame.save(Game,"ironfront.test73");
+        var rec=res.ok ? JSON.parse(localStorage.getItem("ironfront.test73")).buildings
+                          .filter(function(b){ return b.d==="conyard" && b.tx===tx0 && b.ty===ty0; })[0] : null;
+        chk("a save made mid-fold records which way the yard is going", !!rec && rec.pk===1 && rec.prog<1,
+            rec ? JSON.stringify({prog:rec.prog, pk:rec.pk}) : "not saved: "+(res.error||"no record"));
+      } catch(e){ log("  (save not checked: "+e.message+")"); }
+      try { localStorage.removeItem("ironfront.test73"); } catch(e){}
+      while(!yard.dead && Game.time-tS<fold+2) tick(1);
+      var rig=P.units.filter(function(u){ return !u.dead && u.def.deployTo && u.tx===cx && u.ty===cy; })[0]||null;
+      if(rig) made.push(rig);
+      chk("after the fold time the yard is gone and its rig stands where it stood",
+          yard.dead && !!rig && Math.abs(Game.time-tS-fold)<0.2,
+          "yard dead="+yard.dead+" rig="+(rig?rig.tx+","+rig.ty:"none")+" at "+(Game.time-tS).toFixed(2)+"s of "+fold);
+      if(!rig) return;
+      chk("the rig carries the yard's health", Math.abs(rig.hp/rig.maxHp-0.6)<0.01,
+          Math.round(rig.hp)+"/"+Math.round(rig.maxHp));
+      chk("and the player's selection moves to it", rig.selected===true && UI.selection.indexOf(rig)>=0 && UI.selection.indexOf(yard)<0,
+          "selected="+rig.selected+" in selection="+(UI.selection.indexOf(rig)>=0));
+      /* ---- 2. drive it off and unfold it again, an escort alongside ---- */
+      var spot=null;
+      for(var r=6;r<16 && !spot;r++) for(var a=0;a<32 && !spot;a++){
+        var x=(cx+Math.cos(a/32*6.283)*r)|0, y=(cy+Math.sin(a/32*6.283)*r)|0;
+        /* legal wherever within a tile of it the rig comes to rest */
+        rig.carried=true; var ok=true;
+        for(var dy=-1;dy<=1 && ok;dy++) for(var dx=-1;dx<=1 && ok;dx++) ok=Game.canPlace(P,"conyard",x+dx-1,y+dy-1);
+        rig.carried=false;
+        if(ok) spot={x:x,y:y};
+      }
+      if(!spot){ chk("clear ground to unfold on", false, "none within 15 tiles"); return; }
+      rig.give({ type:"move", x:spot.x*32+16, y:spot.y*32+16 });
+      var tD=Game.time;
+      while(U.dist(rig.x/32,rig.y/32,spot.x+0.5,spot.y+0.5)>1 && Game.time-tD<40) tick(3);
+      /* a rifleman one tile off the footprint, on the side where he shares
+         a 64-pixel grid cell with its edge column (a cell is two tiles),
+         and - to show the test still bites - one ON it, briefly */
+      function rifleAt(tx,ty){
+        if(!GameMap.passable(M,tx,ty,"ground") || Game.tileBlocked(tx,ty,null)) return null;
+        var u=Game.spawnUnitAt(P,Game.unitOf(P,"rifle"),tx*32+16,ty*32+16);
+        if(u){ made.push(u); u.give({type:"idle"}); }
+        return u;
+      }
+      var rtx=rig.tx, rty=rig.ty, ex=((rtx-1)&1) ? rtx-2 : rtx+2;
+      var esc=rifleAt(ex,rty), squat=rifleAt(rtx,rty+1);
+      tick(1);                 /* the grid is rebuilt at the top of a tick */
+      rtx=rig.tx; rty=rig.ty;
+      rig.carried=true; var refusedOn=!Game.canPlace(P,"conyard",rtx-1,rty-1); rig.carried=false;
+      if(squat){ squat.dead=true; Game.sweepDead(); }
+      tick(1);
+      rtx=rig.tx; rty=rig.ty;
+      var moved=U.dist(rtx,rty,cx,cy), beside=!!esc && !esc.dead && Math.abs(esc.tx-rtx)===2 && Math.abs(esc.ty-rty)<=1;
+      var unfolded=Game.deployRig(rig);
+      var y2=yardAt(rtx-1,rty-1);
+      if(y2) made.push(y2);
+      chk("it drives off and unfolds again through deployRig, somewhere else, with a rifleman beside the footprint",
+          unfolded && !!y2 && moved>=4 /* four tiles clears a 3x3 footprint */ && beside,
+          "moved "+moved.toFixed(1)+" tiles, unfolded="+unfolded+", rifleman "+(esc?"at "+esc.tx+","+esc.ty+" by columns "+(rtx-1)+".."+(rtx+1):"not placed"));
+      chk("...while one standing ON the footprint still refuses it", !!squat && refusedOn,
+          squat ? "refused="+refusedOn : "not placed");
+      chk("and what unfolds is a normal yard: finished, the same health, building, and able to fold again",
+          !!y2 && y2.buildProgress===1 && Math.abs(y2.hp/y2.maxHp-0.6)<0.01 && P.prodSpeed("building")>0 &&
+          Game.packRefusal(y2)===null,
+          y2 ? "prog "+y2.buildProgress+" hp "+(y2.hp/y2.maxHp).toFixed(2)+" speed "+P.prodSpeed("building")+
+               " refusal "+Game.packRefusal(y2) : "none");
+      chk("a half-built yard is refused, and says why",
+          (function(){ if(!y2) return false; y2.buildProgress=0.5; var why=Game.packRefusal(y2), did=Game.packYard(y2);
+                       y2.buildProgress=1; return why==="STILL UNFOLDING" && did===false; })(), "");
+      /* the command bar's DEPLOY, in a build that has the bar, runs the
+         function D runs - so it is lit for our yard and folds it */
+      var B=(UI.cmdbar && y2) ? UI.cmdbar() : null;
+      if(B && B.deploy){
+        clearSel(); y2.selected=true; UI.selection.push(y2);
+        B=UI.cmdbar();
+        var lit=!(B.deploy.classList && B.deploy.classList.contains && B.deploy.classList.contains("off"));
+        B.deploy.click();
+        chk("the command bar's DEPLOY is lit for our yard and folds it, as D does", lit && !!y2.packing,
+            "lit="+lit+" packing="+!!y2.packing);
+        var tB=Game.time; while(!y2.dead && Game.time-tB<fold+1) tick(1);
+        P.units.forEach(function(u){ if(!u.dead && u.def.deployTo && made.indexOf(u)<0) made.push(u); });
+        clearSel();
+      }
+
+      /* ---- 3. the victory budget, on seats of its own, no tick running ---- */
+      function place(Xp,id){
+        var hx=(P.homeX/32)|0, hy=(P.homeY/32)|0;
+        for(var r2=20;r2<80;r2+=2) for(var a2=0;a2<40;a2++){
+          var gx=(hx+Math.cos(a2/40*6.283)*r2)|0, gy=(hy+Math.sin(a2/40*6.283)*r2)|0;
+          if(gx<3||gy<3||gx>=M.W-6||gy>=M.H-6) continue;
+          if(Game.canPlace(P,"conyard",gx,gy)) return id ? Game.placeBuilding(Xp,id,gx,gy,true)
+                                                        : Game.spawnUnitAt(Xp,"mcv",(gx+1)*32+16,(gy+1)*32+16);
+        }
+        return null;
+      }
+      X=new Player(Game, roster.length, E.faction, 0, true); X.team=731; X.label="TEST SEAT 73"; X.banned={};
+      K=new Player(Game, roster.length+1, E.faction, 0, true); K.team=732; K.label="TEST KEEPER 73"; K.banned={};
+      X.homeX=K.homeX=E.homeX; X.homeY=K.homeY=E.homeY;
+      var kYard=place(K,"conyard"), xRig=place(X,null);
+      if(!kYard || !xRig){ chk("victory scenario built", false, "no ground"); return; }
+      Game.players=[X,K]; Game.human=X; heard.length=0;
+      X.packedT=Game.time;
+      suiteCheckVictory();
+      chk("folding the last production building starts the same clock a lost base does, and says it was packed",
+          !X.defeated && typeof X.rigDeadline==="number" && Math.abs(X.rigDeadline-Game.time-CFG.RIG_GRACE)<0.01 &&
+          said(/YARD PACKED/)===1, "deadline in "+(X.rigDeadline-Game.time)+"s: "+heard.join(" | "));
+      X.rigDeadline=Game.time+50;                     // seventy seconds of it used on the road
+      var xYard=place(X,"conyard");
+      suiteCheckVictory();
+      var paused=typeof Game.rigGrace==="function" ? Game.rigGrace(X) : -1;
+      chk("unfolding PAUSES the clock rather than resetting it", X.rigDeadline===null && Math.abs(paused-50)<0.05,
+          "deadline "+X.rigDeadline+" budget "+paused);
+      Game.removeBuilding(xYard); X.packedT=Game.time;
+      suiteCheckVictory();
+      chk("so folding straight back up does not hand out a fresh two minutes",
+          typeof X.rigDeadline==="number" && Math.abs(X.rigDeadline-Game.time-50)<0.05,
+          "deadline in "+(typeof X.rigDeadline==="number" ? (X.rigDeadline-Game.time).toFixed(2) : X.rigDeadline)+"s");
+      try {
+        var res2=SaveGame.save(Game,"ironfront.test73");
+        var xs=res2.ok ? JSON.parse(localStorage.getItem("ironfront.test73")).players[0] : null;
+        chk("a save carries the deadline it resumed", !!xs && Math.abs(xs.rigDl-X.rigDeadline)<0.05, xs ? "rigDl "+xs.rigDl : "not saved");
+      } catch(e){ log("  (save not checked: "+e.message+")"); }
+      try { localStorage.removeItem("ironfront.test73"); } catch(e){}
+      /* a yard LOST, not folded: the budget is only what a fold draws on */
+      var xYard2=place(X,"conyard");
+      suiteCheckVictory();
+      var bank2=Game.rigGrace(X); heard.length=0;
+      Game.removeBuilding(xYard2); X.packedT=-1e9;
+      suiteCheckVictory();
+      chk("a yard that FALLS still leaves the full two minutes, as it always has",
+          bank2<CFG.RIG_GRACE && typeof X.rigDeadline==="number" && Math.abs(X.rigDeadline-Game.time-CFG.RIG_GRACE)<0.01 &&
+          said(/ALL PRODUCTION FACILITIES LOST/)===1,
+          "budget before "+bank2.toFixed(1)+", deadline in "+(typeof X.rigDeadline==="number" ? (X.rigDeadline-Game.time).toFixed(2) : X.rigDeadline)+"s: "+heard.join(" | "));
+      X.rigDeadline=null; X.rigBank={ left:50, at:Game.time-100 };
+      chk("and a yard that has stood as long as the rig drove earns all of it back",
+          typeof Game.rigGrace==="function" && Game.rigGrace(X)===CFG.RIG_GRACE,
+          "budget "+(typeof Game.rigGrace==="function" ? Game.rigGrace(X) : "n/a"));
+    })(); } finally {
+      Game.alert=realAlert; Game.human=realHuman; Game.players=roster;
+      [X,K].forEach(function(S){ if(!S) return;
+        S.buildings.forEach(function(b){ if(!b.dead) Game.removeBuilding(b); });
+        S.units.forEach(function(u){ u.dead=true; }); });
+      clearSel();
+      /* the suite's yard goes back where it was, at the health it had */
+      made.forEach(function(e){ if(e.dead) return; if(e.kind==="building") Game.removeBuilding(e); else e.dead=true; });
+      Game.sweepDead();
+      var back=yardAt(tx0,ty0);
+      if(!back) back=Game.placeBuilding(P,"conyard",tx0,ty0,true);
+      back.hp=hp0; back.packing=null; back.buildProgress=1;
+    }
+    tick(2);
+    var home=yardAt(tx0,ty0);
+    chk("the suite's own yard is standing where it was, and the match carries on",
+        !!home && !home.dead && home.buildProgress===1 && Math.abs(home.hp-hp0)<1 && Game.players===roster && !Game.over,
+        home ? "yard at "+home.tx+","+home.ty+" hp "+Math.round(home.hp)+"/"+Math.round(hp0) : "no yard");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

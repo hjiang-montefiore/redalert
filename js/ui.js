@@ -1481,6 +1481,17 @@ var UI = (function () {
         if (n) h += '<span style="font-size:9.5px">U TURNS THEM OUT</span>';
         else h += '<span style="font-size:9.5px">RIGHT-CLICK WITH INFANTRY TO OCCUPY</span>';
       }
+      /* a yard of ours folds back into its rig - the same G.packYard D
+         calls - and while it folds the panel counts it down */
+      if (e.kind === "building" && e.owner === G.human && G.rigFor(e)) {
+        if (e.packing) h += '<div class="stat warn">PACKING UP <i>' + Math.round(e.buildProgress * 100) + "%</i></div>";
+        else {
+          const why = G.packRefusal(e);
+          h += '<div class="hbtns"><div class="hb' + (why ? " off" : "") + '" data-pack="1" title="' +
+               (why || "Fold the yard back into its rig to move it; the queue holds until a yard stands again") +
+               '">PACK UP (D)</div></div>';
+        }
+      }
       if (e.ramp && e.ramp()) h += hangarPanel(e);
       const eng1 = selectedEngineers();
       if (eng1.length) h += obstaclePanel();
@@ -1500,6 +1511,12 @@ var UI = (function () {
       if (air1.length) bindAirOrders(el);
       if (lay1.length || swp1.length || selectedDispensers().length) bindMineOrders(el);
       if (eng1.length) bindObstacles(el);
+      const pk = e.kind === "building" && !e.packing && el.querySelector("[data-pack]");
+      if (pk) pk.addEventListener("mousedown", (ev) => {
+        ev.stopPropagation();
+        G.packYard(e, true);
+        refreshSelInfo();
+      });
       const pb = el.querySelector(".pribtn");
       if (pb) pb.addEventListener("mousedown", (ev) => {
         ev.stopPropagation();
@@ -2654,7 +2671,7 @@ var UI = (function () {
     unloadSelection();
     for (const u of selection) {
       if (u.owner !== G.human) continue;
-      if (u.kind !== "unit" || !u.def.deployTo) continue;
+      if (u.kind !== "unit" || !u.def.deployTo) { G.packByKey(u); continue; }   // a yard of ours folds up (game.js)
       /* G.deployRig is the same code the commander uses - see game.js */
       if (!G.deployRig(u))
         G.alert("CANNOT DEPLOY HERE \u2014 NEED CLEAR FLAT GROUND", "bad");

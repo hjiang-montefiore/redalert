@@ -55,6 +55,16 @@ var CFG = {
      and so do the in-game alerts; the pre-battle hint in index.html says "two
      minutes" in words, so change that line with this one. */
   RIG_GRACE: 120,            // seconds a side holding only rigs has to unfold one
+  /* ---- how long a yard takes to fold back into its rig (G.packYard) ----
+     Unfolding is instant here - G.deployRig puts the yard down finished on
+     the tick D is pressed - so a strict mirror is no time at all, and a
+     zero-second fold cannot be SEEN and lets a yard vanish from under a shell
+     already in the air. Red Alert 2 plays the yard's build-up backwards,
+     a couple of seconds. Three: long enough to watch in either renderer (both
+     draw it off buildProgress, 100% down to 0%), nothing beside a two-minute
+     grace, and it costs a yard under fire three more seconds of it, no more.
+     (Chosen, not measured - the owner judges the look in the browser.) */
+  RIG_FOLD: 3,               // seconds
   SHOW_RANGE_RINGS: true,    // weapon envelope under a selected unit (V toggles)
   POWER_BROWNOUT_FLOOR: 0.35,// worst-case production speed when the grid is starved
   REPAIR_RATE: 0.022,        // fraction of max HP per second at a Service Depot

@@ -910,6 +910,14 @@ var Game = (function () {
       let blocked = false;
       G.grid.query(x * CFG.TILE + 16, y * CFG.TILE + 16, 20, (e) => {
         if (e.dead || e.kind !== "unit" || e.layer !== "ground" || e.carried) return;
+        /* The grid hands back everything in the 64-pixel CELLS the query
+           box touches, which reach up to two tiles past this one: a
+           rifleman standing beside a footprint refused it, and a rig
+           folded out of its yard could not unfold again on the same slab
+           with its escort alongside (measured under jsc on fulda: the
+           starting squad two tiles off the footprint). Standing ON this
+           tile is what blocks - the twenty pixels the query asks for. */
+        if (Math.abs(e.x - (x * CFG.TILE + 16)) > 20 || Math.abs(e.y - (y * CFG.TILE + 16)) > 20) return;
         /* The engineer doing the emplacing is standing right there by
            definition, and must not veto its own work. */
         if (e === G._placer) return;
@@ -967,6 +975,147 @@ var Game = (function () {
     if (u.owner === G.human) { G.alert("CONSTRUCTION YARD DEPLOYED", "good"); Sfx.play("ready"); }
     return true;
   };
+
+  /* ---- and folding a yard back into its rig ----
+     (owner) "the mcv should be able to depoly and become back mcv again for
+     relocation and re-depoly"
+     The way back from G.deployRig, for either side, by the same rules. The
+     rig that comes out is a new vehicle standing where the yard stood, and
+     unfolds again through G.deployRig exactly as a rig from the factory does.
+
+     THE FOLD TAKES CFG.RIG_FOLD SECONDS, and the renderers draw it: the fold
+     runs buildProgress back down from 1 to 0, which is the number both of
+     them already draw a structure rising by (render.js drawBuilding lowers
+     the walls and counts the percentage, render3d.js scales the model), so a
+     yard visibly settles into its footings and the rig drives off the slab.
+     There is no rig-unfold animation to reverse - G.deployRig puts the yard
+     down finished on the tick D is pressed.
+
+     WHAT GOES WITH THE YARD, and what does not:
+       - Its health fraction when the fold ENDS (a yard shot while it folds
+         brings out a rig as hurt as it was), its rank (none, in practice:
+         neither a yard nor a rig carries a gun, so neither ever earns one),
+         its owner, and the player's selection, which moves to the rig.
+       - The structure queue. While the yard folds it is still there and still
+         works what it has in hand; nothing NEW can be ordered, because the
+         prerequisite reads a finished yard (Player.hasBuilding). Once it is
+         folded the queue is exactly what losing the yard leaves, because that
+         is this game's rule and packing up must not be a way round it: with no
+         yard anywhere prodSpeed() is zero, so the item in hand HOLDS what has
+         been paid and resumes when a yard unfolds, queued items wait, and a
+         finished structure stays ready and can still be put down inside the
+         radius of whatever else we own (canPlace reads every structure, and
+         the sidebar goes straight to placement for a ready item). Red Alert 2
+         lets a finished building be placed with no yard standing too. With
+         another yard standing, nothing stops at all.
+       - Its build radius goes when it is folded, not before. Its power is 0,
+         so the grid does not move.
+     Refused, with the reason on the rail, while it is still unfolding (the
+     structure clock is running), while it is already folding, and once the
+     war is over for its owner. A sale is instant in this game and there is
+     no power, capture or garrison state that holds a yard in place; a yard
+     sold, destroyed or surrendered mid-fold is simply gone, and one captured
+     mid-fold stands again, finished, for its captor. */
+  G.rigFor = function (b) {
+    if (!b || b.kind !== "building" || !b.def) return null;
+    const fac = b.owner && b.owner.faction;
+    for (const id in UNITS) {
+      const d = UNITS[id];
+      if (d.deployTo === b.def.id && (d.fac === "both" || d.fac === fac)) return id;
+    }
+    return null;
+  };
+  G.packRefusal = function (b) {
+    if (!b || b.dead || !G.rigFor(b)) return "ONLY A CONSTRUCTION YARD PACKS UP";
+    if (b.packing) return "ALREADY PACKING UP";
+    if (b.buildProgress < 1) return "STILL UNFOLDING";
+    if (G.over || !b.owner || b.owner.defeated) return "THE BATTLE IS OVER";
+    return null;
+  };
+  /* `say` puts a refusal on the player's rail; the commander asks packRefusal */
+  G.packYard = function (b, say) {
+    const why = G.packRefusal(b);
+    if (why) {
+      /* UI.init has bound the keyboard again every time it ran - a loaded
+         game ran it a second time (Main.rebind) - so one press of D could
+         arrive here once per binding, all on one tick. Those copies are not
+         a second press and have nothing to be told. */
+      const echo = b && b.packing && b.packing.t0 === G.time;
+      if (say && b && b.owner === G.human && !echo) { G.alert("CANNOT PACK UP — " + why, "bad"); Sfx.play("sell"); }
+      return false;
+    }
+    const p = b.owner;
+    b.packing = { owner: p, rig: G.rigFor(b), t0: G.time, p0: 1 };
+    /* a folding yard is not a repair job: Building.update stops at a
+       buildProgress under 1, and the flag would be left behind on the slab */
+    b.repairing = false;
+    if (p === G.human) {
+      /* the last production building: say what the victory rule will do
+         when the fold is done, before it is done - a fold is not called off.
+         The number is the budget as it will stand when the fold ENDS (the
+         yard is still up while it folds, and G.rigGrace refills meanwhile),
+         which is the number the clock then starts from. */
+      const last = p.productionBuildings().length <= 1;
+      G.alert(last ? "PACKING UP THE LAST PRODUCTION FACILITY — THE RIG WILL HAVE " +
+                     Math.round(G.rigGrace(p, G.time + CFG.RIG_FOLD)) + "s TO UNFOLD"
+                   : "CONSTRUCTION YARD PACKING UP", last ? "bad" : "good");
+      Sfx.play("build");
+    }
+    foldStep(b);
+    return true;
+  };
+  /* What D does to a structure in the selection (ui.js; the command bar's
+     DEPLOY runs the same function): a yard of the player's own folds up, and
+     nothing else is this key's business. Here rather than in the key handler
+     so that handler needs one call. */
+  G.packByKey = function (e) {
+    if (!e || e.kind !== "building" || e.owner !== G.human || !G.rigFor(e)) return false;
+    return G.packYard(e, true);
+  };
+  /* a save carries a fold under way (save.js `pk`), and this picks it up
+     from the fraction the save held */
+  G.resumePack = function (b) {
+    if (!b || b.dead || !G.rigFor(b)) return false;
+    b.packing = { owner: b.owner, rig: G.rigFor(b), t0: G.time, p0: b.buildProgress };
+    foldStep(b);
+    return true;
+  };
+  /* Stepped every 0.1 s like the structure clock (ui.js tryPlace), but read
+     off the elapsed time: a deferred call lands on the next tick at or after
+     its time, so counting steps ran a three-second fold for 3.6 (measured). */
+  function foldStep(b) {
+    G.defer(0.1, () => {
+      const k = b.packing;
+      if (!k || b.dead) return;
+      if (b.owner !== k.owner) { b.packing = null; b.buildProgress = 1; return; }
+      b.buildProgress = Math.max(0, k.p0 - (G.time - k.t0) / Math.max(0.1, CFG.RIG_FOLD));
+      if (b.buildProgress > 0) foldStep(b);
+      else finishPack(b);
+    });
+  }
+  function finishPack(b) {
+    const p = b.owner, rigId = b.packing.rig, frac = b.hp / b.maxHp, sel = !!b.selected;
+    /* quietly: nobody destroyed it, so there is no wreck, no loss, no alarm */
+    G.removeBuilding(b);
+    const u = G.spawnUnitAt(p, rigId, b.x, b.y);
+    if (b.vet > 0) {
+      u.vet = Math.min(3, b.vet);
+      u.maxHp *= CFG.VET_HP[u.vet] / CFG.VET_HP[0];
+    }
+    u.hp = Math.max(1, u.maxHp * frac);
+    /* where it was folded, for whoever drives it next (the commander sends a
+       rig that came out of a yard back to its own ground, not out to a field) */
+    u.fromYard = { tx: b.tx, ty: b.ty, t: G.time };
+    /* G.checkVictory words the clock it starts off this */
+    p.packedT = G.time;
+    if (sel && typeof UI !== "undefined" && UI.selection) {
+      const s = UI.selection, i = s.indexOf(b);
+      if (i >= 0) s[i] = u; else s.push(u);
+      u.selected = true;
+    }
+    if (p === G.human) { G.alert("CONSTRUCTION YARD PACKED — RIG READY TO MOVE", "good"); Sfx.play("unitready"); }
+    return u;
+  }
 
   G.bumpOcc = function () { G.occStamp = (G.occStamp || 0) + 1; };
 
@@ -2654,6 +2803,49 @@ var Game = (function () {
 
      p.defeated and G.over keep their meanings - the census and the suites
      read both. */
+  /* ---- A YARD PACKED UP ON PURPOSE ----
+     G.packYard folds a yard back into its rig, so a side can now take its
+     last production building off the map by choice. It gets the same
+     CFG.RIG_GRACE as a side whose base fell - no longer, and it does not
+     count as production while it drives:
+       - A rig on its own tank cannot use more. Measured under jsc: folded
+         from a side's last structure, with no radius left to refuel in, it
+         runs DRY 68 s and 61 tiles later (fulda). Setting out from a base
+         that still stands it refuels for the first 15-20 s and gets 63-76
+         tiles, dry 81-88 s after leaving (fulda, ngp, kuwait and korea at
+         240-288 tiles). The nearest free well was 46-58 s off where one
+         could be reached at all, and a dry rig still unfolds where it
+         stands. Two minutes covers the whole tank with half a minute to
+         find ground; a longer grace only buys time to sit still, which is
+         the thing the rule refuses.
+       - A driving rig counted as production would be a side nobody can beat
+         without finding one vehicle, for as long as it likes.
+     What packing adds is a way to cheat the CLOCK: unfold, fold up again the
+     moment the countdown clears, and every cycle is a fresh two minutes - a
+     yard that is never on the map for more than the fold and a side that
+     lives for ever. So for a fold the grace is a budget, not a gift: a
+     production building PAUSES a running clock rather than resetting it, the
+     budget refills a second for every second one stands, and a clock started
+     by folding up the last production building starts from what the budget
+     holds. A relocation that drives forty seconds and unfolds has eighty
+     left at once and all of it back forty seconds later; a side that folds
+     as soon as it unfolds keeps only what it had. Measured under jsc: packed
+     and never unfolded, beaten at 120.0 s; unfolding and folding straight
+     back up every 20 s, beaten after six hops.
+     A base that FALLS still gets the full two minutes, as it always has: the
+     budget is only what a fold draws on, so nothing changes for a side that
+     never packs (a second rig unfolding after the first yard is lost again
+     keeps its fresh 120 s). Selling a yard to restart the clock costs the
+     rig inside it, which is what it cost before packing existed.
+     p.rigBank is { left, at }: what was left when the clock was paused, and
+     when; `at` asks what it will hold at another time (the alert at the
+     start of a fold quotes the end of it). save.js carries it. */
+  G.rigGrace = function (p, at) {
+    const k = p && p.rigBank;
+    if (!k) return CFG.RIG_GRACE;
+    const t = typeof at === "number" ? at : G.time;
+    return Math.min(CFG.RIG_GRACE, k.left + Math.max(0, t - k.at));
+  };
   G.checkVictory = function () {
     for (const p of G.players) {
       if (p.defeated) continue;
@@ -2677,18 +2869,34 @@ var Game = (function () {
           G.pingEvent(prod[0].x, prod[0].y, "note");
         }
       }
-      if (n > 0) { p.rigDeadline = null; p.rigWarned = false; continue; }
+      if (n > 0) {
+        /* A clock that was running is PAUSED by the yard that stops it, not
+           forgotten - see G.rigGrace - and once it has refilled there is
+           nothing left to remember. */
+        if (typeof p.rigDeadline === "number")
+          p.rigBank = { left: Math.max(0, p.rigDeadline - G.time), at: G.time };
+        else if (p.rigBank && G.rigGrace(p) >= CFG.RIG_GRACE) p.rigBank = null;
+        p.rigDeadline = null; p.rigWarned = false; continue;
+      }
 
       const rigs = p.productionRigs();
       if (rigs.length) {
         /* the clock starts the first tick nothing is standing, and a save
            carries it (save.js) so a reload cannot reset it */
         if (typeof p.rigDeadline !== "number") {
-          p.rigDeadline = G.time + CFG.RIG_GRACE;
-          p.rigWarned = false;
+          /* a yard folded up on purpose (G.packYard) starts the clock from
+             what the budget holds; a base that FELL gets the full two
+             minutes, as it always has - see G.rigGrace */
+          const packed = typeof p.packedT === "number" && G.time - p.packedT < 1;
+          const grace = packed ? G.rigGrace(p) : CFG.RIG_GRACE;
+          p.rigBank = null;
+          p.rigDeadline = G.time + grace;
+          /* a clock that starts inside the last thirty seconds has already
+             said its number once; the reminder would say it again next tick */
+          p.rigWarned = grace <= 30;
           if (mine) {
-            G.alert("ALL PRODUCTION FACILITIES LOST — UNFOLD A CONSTRUCTION RIG WITHIN " +
-                    Math.round(CFG.RIG_GRACE) + " SECONDS", "bad");
+            G.alert((packed ? "YARD PACKED" : "ALL PRODUCTION FACILITIES LOST") +
+                    " — UNFOLD A CONSTRUCTION RIG WITHIN " + Math.round(grace) + " SECONDS", "bad");
             G.pingEvent(rigs[0].x, rigs[0].y, "note");
           }
         }

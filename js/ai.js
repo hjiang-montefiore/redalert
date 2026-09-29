@@ -907,6 +907,8 @@ function makeCommander() {
     if (defT <= 0) {
       defT = D.think || 1.6;
       defendBase(groundArmy());
+      /* and, off the picture it has just drawn, whether to run (evacYard) */
+      evacYard();
     }
   }
 
@@ -2770,6 +2772,178 @@ function makeCommander() {
   }
 
 
+  /* ---- FOLDING THE LAST YARD UP AND RUNNING WITH IT ----
+     (owner) "the mcv should be able to depoly and become back mcv again for
+     relocation and re-depoly" - and a mechanic the player has, the commander
+     uses. G.packYard is the same call the D key makes, under the same rules.
+     ONE use: our LAST yard, a force we can SEE at that yard outweighing what
+     stands there to meet it, and that force not yet in reach of it.
+     Everything else in a base can be put back by a yard; a yard only by a
+     3,000-credit rig from a factory with a radar behind it, and an overrun
+     base has neither for long. The rig runs to the held structure farthest
+     from the trouble - a derrick or refinery out at a field, a second base -
+     on our ground, clear of every base and force of theirs we know about,
+     within fifty tiles (a packed rig with nothing of ours left to refuel it
+     runs dry after 61, measured on fulda), and unfolds there. No such ground,
+     no run.
+     BEFORE the guns arrive, never under them - measured, not assumed. A yard
+     is 2,400 points of `structure`, which a tank round hits for 0.55; its rig
+     is 1,339 points of `light`, hit for 1.00 - over three times easier to
+     kill at the same health fraction - and at 0.95 tiles a second against a
+     tank's 1.3-1.7 it cannot outrun anything that wants it. Folding once the
+     yard was being hit put the rig out at 59% and it died 1.4 tiles out 3.7 s
+     later (fulda, ten MBTs on a Warlord's last yard). And a yard that is not
+     yet hit is not enough: in a Warlord mirror on korea (seed aiB) the first
+     cut folded with fourteen of the enemy within fourteen tiles and the
+     nearest 8.6 off - held, but too light or too stale to reach the 0.5 the
+     weight test asks - and the rig came out among three armed enemies and
+     died 1.5 tiles out; the side fell at 702 s against 708 with packing
+     blocked. So nothing armed, of ANY weight, may be held within ten tiles:
+     the longest direct-fire reach on the field is an ATGM carrier's 9.6 (tank
+     guns 5.5-8.2). With that rule the korea match runs exactly as it does
+     with packing blocked, and every scripted overrun it saved still folds -
+     the nearest attacker was 12.2-14.0 tiles off at the fold in all of them.
+     Our own damage near the yard (alarms) was tried as a guard too and
+     separates nothing: in the fulda run that saved the side, haulers and a
+     refinery 7-10 tiles from the yard had been hit in the eight seconds
+     before the fold.
+     And the force has to be at THIS yard. defendBase's picture is of the
+     whole core, and the core counts our starting ground for ever (P.homeX
+     never moves): after one run the first cut still read a force parked in
+     the base it had left as "at the core" and folded the new yard 4.2 s
+     after it stood, with the attackers' centre 45.6 tiles away. So the
+     weight is taken again here, of the contacts we hold a track on within
+     twenty-five tiles of the yard itself, and defendBase's centre of them
+     must be within twenty-five of it too. A second run now needs a second
+     force: on fulda the new yard stood 134.8 and 204.8 s before attackers
+     came within 15-24 tiles of it and it folded again, and the side was
+     still in the war at +400 s both times.
+     Measured under jsc, Warlord, all at fulda:
+       - 144, ten MBTs attack-moving on the last yard and hunting any rig
+         they see: folded at +31.4 s, unfolded 16.3 tiles out and still
+         standing at +400; staying put, the yard fell at +172.9 and the side
+         at +260.3.
+       - 144 and 192, twenty-five MBTs: in the war at +400 s both; staying
+         put, beaten at +104.2 and +106.0.
+       - Five Warlord mirrors to the end (korea, ngp, kuwait, fulda 240,
+         highland), both seats running this: no fold at all. It is rare, and
+         meant to be.
+     Not used to re-site a yard in peacetime: where a yard goes is already
+     chosen (rimYardSpot, rigSpotFor), and a yard folded away from a base that
+     is not under attack is fifty per cent off the build rate for the whole
+     drive, to cure a fault nobody has measured.
+     Everything read here is ours or seen: the yard's own health, the
+     contacts we hold a track on (seenU) and remember (foeNear), defendBase's
+     count of what stands to meet them, seenB for their bases (nearFoe).
+     Veteran and up (D.read), like every other judgement made off that
+     picture. */
+  let evacPlan = null;          // { yard, x, y, t } from the fold until the rig is claimed
+  let evacSeen = 0;             // when the reading below first said "overrun"
+  const evacHp = [];            // [time, hp] of the last yard over the last eight seconds
+  const evacLog = { packed: 0, drove: 0, arrived: 0, early: 0 };
+  /* the weight of armed ground contacts we hold a track on within R of a
+     point - defendBase's own measure, taken about one yard */
+  function forceAt(x, y, R) {
+    const R2 = R * R;
+    let w = 0;
+    for (const r of seenU.values()) {
+      if (r.harvester || !r.armed || r.layer !== "ground" || NO_FIGHT[r.role]) continue;
+      const e = trackedEntity(r);
+      if (e && U.dist2(e.x, e.y, x, y) <= R2) w += forceW(r.role, r.armor, r.cat);
+    }
+    return w;
+  }
+  /* ...and is anything armed at all, of any weight, held within R? */
+  function armedAt(x, y, R) {
+    const R2 = R * R;
+    for (const r of seenU.values()) {
+      if (r.harvester || !r.armed || r.layer !== "ground") continue;
+      const e = trackedEntity(r);
+      if (e && U.dist2(e.x, e.y, x, y) <= R2) return true;
+    }
+    return false;
+  }
+  function evacYard() {
+    if ((D.read || 0) < 0.6) return;
+    let y = null, n = 0;
+    for (const b of P.buildings) if (!b.dead && b.def.base) { n++; y = b; }
+    if (n !== 1 || y.packing || y.buildProgress < 1 || P.productionRigs().length || !G.rigFor(y)) {
+      evacHp.length = 0; evacSeen = 0;
+      return;
+    }
+    const now = G.time, T = CFG.TILE;
+    evacHp.push([now, y.hp]);
+    while (evacHp.length > 1 && now - evacHp[0][0] > 8) evacHp.shift();
+    /* a force we can see at THIS yard, outweighing what stands there... */
+    const far = U.dist(baseX, baseY, y.x, y.y);
+    if (now - baseT > 6 || far > 25 * T) { evacSeen = 0; return; }
+    const w = forceAt(y.x, y.y, 25 * T);
+    if (w < 2 || w < baseHomeW * 1.5 + 0.5) { evacSeen = 0; return; }
+    /* ...on two looks three seconds apart - one bad reading is not a lost base */
+    if (!evacSeen) { evacSeen = now; return; }
+    if (now - evacSeen < 3) return;
+    /* ...and not yet in reach of it: their centre ten tiles off, nothing
+       armed of any weight held within ten, no weight remembered within ten,
+       and the yard not losing health (guns out of sight are still guns) */
+    if (far < 10 * T || armedAt(y.x, y.y, 10 * T) || foeNear(y.x, y.y, 10 * T) >= 0.5 ||
+        evacHp[0][1] - y.hp >= y.maxHp * 0.03) return;
+    /* ...with no help near enough to change it: the wave, within 25 tiles */
+    const R2 = 625 * T * T;
+    if (ourForce(attackWave.filter(u => !u.dead && U.dist2(u.x, u.y, y.x, y.y) < R2)) >= w) return;
+    const to = evacGround(y);
+    if (!to || !G.packYard(y)) return;
+    evacPlan = { yard: y, x: to.x, y: to.y, t: now };
+    evacSeen = 0;
+    evacLog.packed++;
+  }
+  function evacGround(y) {
+    const T = CFG.TILE, lab = compOf("ground"), comp = lab ? compAt(lab, y.x, y.y) : 0;
+    /* where the trouble is: the last force seen at our works if it is under
+       a minute old, else where we believe their base is */
+    const th = baseT > -1e8 && G.time - baseT < 60 ? { x: baseX, y: baseY } : intelHome(rival);
+    const threatY = th ? U.dist(y.x, y.y, th.x, th.y) / T : 0;
+    let best = null, bestS = -Infinity;
+    for (const b of P.buildings) {
+      if (b.dead || b === y || b.buildProgress < 1 || b.def.obstacle || b.def.line) continue;
+      const d = U.dist(b.x, b.y, y.x, y.y) / T;
+      if (d < 16 || d > 50) continue;
+      const away = th ? U.dist(b.x, b.y, th.x, th.y) / T : d;
+      if (th && away < threatY + 6) continue;
+      if (comp && compAt(lab, b.x, b.y) !== comp) continue;
+      if (nearFoe(b.tx, b.ty, 12) || foeNear(b.x, b.y, 12 * T) >= 0.5) continue;
+      const s = away - 0.4 * d;
+      if (s > bestS) { bestS = s; best = b; }
+    }
+    return best ? { x: best.x, y: best.y } : null;
+  }
+  /* True while this rig is still running for the ground evacYard chose. The
+     run ends on arrival, on a stall, or when the clock or the tank is low -
+     and then the rig unfolds where it is by the ordinary no-yard rule, with
+     the search held to where it stands (r._evacAt) rather than sent home. */
+  function evacDrive(r) {
+    const k = evacPlan, T = CFG.TILE;
+    if (!r._evac) {
+      if (!k) return false;
+      if (G.time - k.t > CFG.RIG_FOLD + 6) { evacPlan = null; return false; }
+      if (!k.yard.dead || U.dist(r.x, r.y, k.yard.x, k.yard.y) > T) return false;
+      r._evac = { x: k.x, y: k.y, d: Infinity, dT: G.time };
+      evacPlan = null;
+      evacLog.drove++;
+    }
+    const e = r._evac, d = U.dist(r.x, r.y, e.x, e.y) / T;
+    if (d < e.d - 1.5) { e.d = d; e.dT = G.time; }
+    const left = typeof P.rigDeadline === "number" ? P.rigDeadline - G.time : CFG.RIG_GRACE;
+    const done = d < 5, late = left < 40 || (r.fuelMax && r.fuel < 10) || G.time - e.dT > 12;
+    if (done || late) {
+      r._evacAt = done ? { x: (e.x / T) | 0, y: (e.y / T) | 0 } : { x: r.tx, y: r.ty };
+      r._evac = null;
+      if (done) evacLog.arrived++; else evacLog.early++;
+      return false;
+    }
+    moveRig(r, (e.x / T) | 0, (e.y / T) | 0);
+    return true;
+  }
+
   /* ---- the rig: buy one, drive it out, unfold it ----
      Three states and no more: none in hand, one moving, one in place. It runs
      off the commander's own holdings and the static map, exactly like
@@ -2786,8 +2960,13 @@ function makeCommander() {
        looking for ground. */
     if (!P.countBuilding("conyard") && rigsAll.length) {
       for (const r of rigsAll) {
+        /* a rig we folded up to run with drives first (evacDrive) */
+        if (evacDrive(r)) continue;
         if (unfoldNear(r)) { macro.relief++; continue; }
-        if (!r._stepped) deployAtHome(r);
+        if (r._stepped) continue;
+        /* ...and then looks for ground where it ran to, not back at home */
+        const s = r._evacAt ? rigSpotFor(r, r._evacAt, 8, 6) : null;
+        if (s) moveRig(r, s.cx, s.cy); else deployAtHome(r);
       }
       return;
     }
@@ -2810,7 +2989,10 @@ function makeCommander() {
     let homeRig = false;
     for (const r of rigsAll) {
       if (r._homeYard === undefined)
-        r._homeYard = P.countBuilding("conyard") === 1 && P.oil > 110;
+        /* a rig that came out of one of our yards (G.packYard) is that
+           yard, not an expedition: with other yards standing it goes back
+           to our own ground rather than out toward a field */
+        r._homeYard = !!r.fromYard || (P.countBuilding("conyard") === 1 && P.oil > 110);
       if (!r._homeYard) continue;
       deployAtHome(r);
       if (G.time - yardBlocked < 1) r._homeYard = false;
@@ -13017,7 +13199,9 @@ function makeCommander() {
                          saving: rigSaving(), need: rigOilNeed(),
                          node: !!expandNode(true), spot: !!findOilSpot(true),
                          save: Math.round(saveTarget),
-                         cash: Math.round(P.cash), oil: Math.round(P.oil) },
+                         cash: Math.round(P.cash), oil: Math.round(P.oil),
+                         /* the last yard folded up and run with (evacYard) */
+                         evac: Object.assign({}, evacLog) },
                /* Exposed for exactly the reason the fields around it are: so a
                   test can see whether the learner is separating its arms, or
                   whether every estimate has collapsed to the same number -
