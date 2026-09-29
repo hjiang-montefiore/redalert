@@ -1090,17 +1090,28 @@ var Render3D = (function () {
         /* Recoil. When a cooldown jumps, the weapon just fired: rock the hull
            back on its suspension and let it settle. A 125 mm gun going off
            with the vehicle completely inert was the flattest thing on screen. */
+        /* PER MOUNT, and the heft of the mount that went off. This read "the
+           largest cooldown rose" as "weapons[0] fired", which was true while a
+           tank had one gun. Every tank now carries its coaxial machine gun
+           (generations.js FAULT 05c), cycling every 1.9 s behind a 4.3 s main
+           gun, and each burst would have rocked an Abrams as if the 120 mm
+           had fired. Same formula, same 0.05 floor, right weapon. */
         if (e.cooldowns && e.cooldowns.length) {
-          let mx2 = 0;
-          for (let ci = 0; ci < e.cooldowns.length; ci++)
-            if (e.cooldowns[ci] > mx2) mx2 = e.cooldowns[ci];
-          if (rec.lastCd !== undefined && mx2 > rec.lastCd + 0.05) {
-            const w0 = (e.def.weapons && WEAPONS[e.def.weapons[0]]) || null;
-            const heft = w0 ? U.clamp((w0.dmg || 60) / 900, 0.05, 1) : 0.2;
+          const last = rec.lastCds || (rec.lastCds = []);
+          let fired = null;
+          for (let ci = 0; ci < e.cooldowns.length; ci++) {
+            const cd = e.cooldowns[ci];
+            if (last[ci] !== undefined && cd > last[ci] + 0.05) {
+              const wf = (e.def.weapons && WEAPONS[e.def.weapons[ci]]) || {};
+              if (!fired || (wf.dmg || 60) > (fired.dmg || 60)) fired = wf;
+            }
+            last[ci] = cd;
+          }
+          if (fired) {
+            const heft = U.clamp((fired.dmg || 60) / 900, 0.05, 1);
             rec.kick = 0.045 * heft;                    // radians of nose-up
             rec.recoil = 0.34 * heft;                   // metres the barrel goes back
           }
-          rec.lastCd = mx2;
         }
         if (rec.kick) rec.kick += (0 - rec.kick) * Math.min(1, dt * 7);
         if (rec.recoil) {

@@ -743,6 +743,393 @@
   if (WEAPONS.hellfire) WEAPONS.hellfire.ammo = 1;
 
   /* ======================================================================
+     FAULT 05c - the gun the real machine carried, and the one it did not
+     ======================================================================
+     (owner) "navy, helicopter, tank, a10 should have gun shot if the enemy is
+     infantry only." entities.js gunFirst() now keeps missiles and bombs off
+     men in the open whenever a gun can do the job - which only helps a hull
+     that HAS a gun. Audited over every attack helicopter, CAS airframe,
+     tank and surface ship in every era (the table is in the change notes):
+       - 16 era attack helicopters were one mount, a missile, although the
+         machine had a chin or nose gun - and 15 of those missiles carried
+         the GUN'S name ("30mm M230" on the AH-64A's only mount,
+         proj:"missile"). Each gets its real gun, and its missile its real
+         name. Gazelle HOT, PAH-1, Lynx TOW, 500MD TOW, Scout, Alouette,
+         Z-9W and the Tiger UHT had no fixed gun and get none. The AH-1G's
+         mount was a guided anti-tank round named after its minigun turret;
+         an AH-1G carried no guided missile (TOW came with the AH-1Q in
+         1973), so it becomes the 2.75 in rocket pods it did carry.
+       - 21 missile boats, two Soviet aviation cruisers and four early fleet
+         carriers carried a deck gun the roster left off. A missile boat whose
+         tubes are empty (fixed magazines, entities.js reloadAtYard) is then
+         what it really was: a gun boat. The generic "Harpoon Missile Boat",
+         the HF-III craft and the Nongo, whose gun fit is not published, are
+         left as they were.
+       - every tank, heavy tank and light tank carried a coaxial machine gun
+         and not one had it. Appended, so weapons[0] - the mount every pass
+         in this file rewrites - is still the main gun. It is marked
+         softOnly and entities.js pickWeapon() never offers it against
+         anything but men in the open: scored like any mount, the in-reach
+         coax beat an out-of-reach main gun, and (review) fourteen early
+         light tanks stopped at the coax's reach and machine-gunned armour
+         for no damage at all.
+       - CAS: FAULT 05 above gave every CAS airframe in every era the A-10's
+         GAU-8 - its name AND its 30 mm depleted-uranium figures, so an
+         F-84F's six .50s hit like an Avenger. The GAU-8 stays on the A-10.
+         Everyone else gets the gun it had, by name and by weight (CAS_CAL
+         below), and a Harrier GR5/GR7 and a Mirage 2000D, which had no
+         internal gun at all (the ADEN 25 never entered RAF service; the
+         2000D/N were built without the DEFA pair), lose it. The 30 mm
+         helicopter chain gun on six jets, which FAULT 05 meant to REPLACE and
+         could not find under its private name, is removed.
+     New figures are templated on the roster's own present-day mounts, then
+     scaled by the period factor the generator used for that very hull (its
+     own main mount against the same army's e20 mount), by the era's reach
+     (REACH below) and by the army's optics and naval terms from DOMAIN - the
+     pass above ran before these mounts existed, so it is applied here, the
+     way FAULT 05b does. */
+  function gunT(fields) {
+    var w = { warhead: "bullet", proj: "shell", speed: 640, suppress: 14,
+              tgt: { ground: 1, air: 0, sea: 1, sub: 0 } };
+    for (var k in fields) w[k] = fields[k];
+    return w;
+  }
+  /* helicopter guns: the present-day chain gun (20 x 6, 4.6 tiles, 0.34 of
+     the magazine a burst) and its lighter cousins, near-equal a second */
+  WEAPONS.gun_h30  = gunT({ name: "30mm chin gun", dmg: 20, range: 4.6, reload: 1.4, burst: 6,
+                            burstDelay: 0.06, acc: 0.68, suppress: 16, ammo: 0.34 });
+  WEAPONS.gun_h23  = gunT({ name: "23mm chin gun", dmg: 16, range: 4.6, reload: 1.4, burst: 7,
+                            burstDelay: 0.055, acc: 0.68, suppress: 15, ammo: 0.34 });
+  WEAPONS.gun_h20  = gunT({ name: "20mm turret gun", dmg: 14, range: 4.6, reload: 1.4, burst: 8,
+                            burstDelay: 0.05, acc: 0.68, suppress: 15, ammo: 0.34 });
+  WEAPONS.gun_h127 = gunT({ name: "12.7mm nose gun", dmg: 10, range: 4.4, reload: 1.4, burst: 12,
+                            burstDelay: 0.04, acc: 0.66, proj: "bullet", speed: 0, suppress: 14, ammo: 0.34 });
+  WEAPONS.gun_h762 = gunT({ name: "7.62mm minigun", dmg: 8, range: 4.4, reload: 1.4, burst: 16,
+                            burstDelay: 0.03, acc: 0.66, proj: "bullet", speed: 0, suppress: 16, ammo: 0.34 });
+  /* deck guns, templated on navgun_127 / navgun_76 / navgun_57 */
+  WEAPONS.gun_n127 = gunT({ name: "127mm deck gun", dmg: 120, warhead: "he", range: 11.0, reload: 4.2,
+                            burst: 2, burstDelay: 0.5, acc: 0.66, speed: 720, aoe: 1.5, suppress: 30, sfx: "cannon" });
+  WEAPONS.gun_n100 = gunT({ name: "100mm deck gun", dmg: 70, warhead: "he", range: 9.0, reload: 2.0,
+                            burst: 3, burstDelay: 0.3, acc: 0.76, speed: 700, aoe: 0.7, suppress: 22, sfx: "cannon" });
+  WEAPONS.gun_n76  = gunT({ name: "76mm deck gun", dmg: 50, warhead: "he", range: 7.8, reload: 1.3,
+                            burst: 4, burstDelay: 0.16, acc: 0.76, speed: 700, aoe: 0.5, suppress: 18, sfx: "shot" });
+  WEAPONS.gun_n76t = gunT({ name: "twin 76mm deck gun", dmg: 48, warhead: "he", range: 7.6, reload: 1.6,
+                            burst: 4, burstDelay: 0.2, acc: 0.66, speed: 700, aoe: 0.5, suppress: 18, sfx: "shot" });
+  WEAPONS.gun_n57t = gunT({ name: "twin 57mm deck gun", dmg: 38, warhead: "he", range: 7.0, reload: 1.6,
+                            burst: 4, burstDelay: 0.2, acc: 0.70, speed: 700, aoe: 0.4, suppress: 16, sfx: "shot" });
+  WEAPONS.gun_n37  = gunT({ name: "twin 37mm", dmg: 24, warhead: "he", range: 6.2, reload: 1.6,
+                            burst: 6, burstDelay: 0.1, acc: 0.66, aoe: 0.3, suppress: 14 });
+  WEAPONS.gun_n30  = gunT({ name: "twin 30mm", dmg: 18, warhead: "he", range: 5.8, reload: 1.6,
+                            burst: 8, burstDelay: 0.07, acc: 0.64, aoe: 0.2, suppress: 14 });
+  WEAPONS.gun_n30g = gunT({ name: "30mm six-barrel", dmg: 16, warhead: "he", range: 5.4, reload: 1.8,
+                            burst: 12, burstDelay: 0.04, acc: 0.62, aoe: 0.2, suppress: 14 });
+  WEAPONS.gun_n20  = gunT({ name: "20mm cannon", dmg: 14, range: 5.0, reload: 1.5,
+                            burst: 6, burstDelay: 0.08, acc: 0.64, suppress: 12 });
+  /* the coaxial machine gun: rules.js's own GPMG as it stood before FAULT 08
+     turned the infantry team's into a suppression weapon. softOnly: see
+     entities.js pickWeapon() - it is never offered against armour, a ship
+     or a structure, which is how a crew uses it. */
+  WEAPONS.gun_coax = gunT({ name: "coaxial machine gun", dmg: 9, range: 5.6, reload: 1.9, burst: 8,
+                            burstDelay: 0.055, acc: 0.60, proj: "bullet", speed: 0, suppress: 11,
+                            softOnly: true });
+  WEAPONS.gun_coax_hv = gunT({ name: "heavy coaxial gun", dmg: 14, range: 6.0, reload: 1.7, burst: 5,
+                            burstDelay: 0.08, acc: 0.62, proj: "bullet", speed: 0, suppress: 12,
+                            softOnly: true });
+
+  /* what the generator scaled THIS hull by: its own main mount against the
+     same army's present-day mount for the same role. Where the two are not
+     the same kind of round - a 1960s carrier's gun block against a modern
+     carrier's Aster launcher - the ratio means nothing, and the generator's
+     own period ladder is used instead: read off the rosters above, the
+     tank guns, gunship missiles and missile-boat rounds of every army step
+     0.42 / 0.56 / 0.74 / 0.86 / 0.95 / 1 from e50 to e20. */
+  var PERIOD = { e50: 0.42, e60: 0.56, e80: 0.74, e90: 0.86, e00: 0.95, e20: 1 };
+  /* ...and the era's REACH, which the first version of this pass left out:
+     every new mount had its present-day range in every decade, so (review) a
+     1955 Forrestal's 5-inch reached 11.0 tiles where the same 127 mm Mk 42
+     on every e50 destroyer reaches 8.5, and a 1950s coax reached 5.6 tiles
+     past a light tank's own 4.9 tile gun. Read off the same rosters: the
+     rifle squads (3.7 / 4.1 / 4.6 / 4.8 / 5.0 / 5.0 tiles), the 127 mm
+     destroyer guns (8.5 / 9.4 / 10.5 / 11.0-11.5 / 11.4 / 11.5) and the
+     76 mm corvette guns (5.9 / 6.6 / 7.3 / 7.6 / 7.8 / 7.9) all step the
+     same way. */
+  var REACH = { e50: 0.74, e60: 0.82, e80: 0.92, e90: 0.96, e00: 0.99, e20: 1 };
+  function periodOf(uid) {
+    var u = UNITS[uid];
+    if (!u) return 1;
+    var flat = PERIOD[u.from || "e20"] || 1;
+    var twin = typeof unitFor === "function" ? unitFor(u.fac, u.role, "e20") : null;
+    if (!twin || twin === uid || !UNITS[twin]) return flat;
+    var a = WEAPONS[(u.weapons || [])[0]], b = WEAPONS[(UNITS[twin].weapons || [])[0]];
+    if (!a || !b || !(a.dmg > 0) || !(b.dmg > 0) || a.proj !== b.proj || a.warhead !== b.warhead) return flat;
+    return Math.max(0.35, Math.min(1, a.dmg / b.dmg));
+  }
+  var nGun = 0;
+  function mountGun(uid, tpl, name) {
+    var u = UNITS[uid];
+    if (!u || !u.weapons || !WEAPONS[tpl]) return null;
+    var k = periodOf(uid);
+    var key = privateWeapon(uid, tpl);
+    if (!key) return null;
+    var w = WEAPONS[key], f = facOf(u), e = u.from || "e20";
+    w.name = name;
+    w.dmg = Math.round(w.dmg * k * 10) / 10;
+    var acc = 0.6 + 0.4 * dmul(f, e, "optics"), rng = REACH[e] || 1;
+    if (u.layer === "sea") {
+      var nv = dmul(f, e, "naval");
+      acc *= 0.7 + 0.3 * nv; rng *= 0.85 + 0.15 * nv;
+    }
+    w.acc = Math.max(0.28, Math.min(0.98, +(w.acc * acc).toFixed(3)));
+    if (rng !== 1) w.range = Math.round(w.range * rng * 10) / 10;
+    u.weapons = u.weapons.concat([key]);      // APPENDED: weapons[0] stays the main mount
+    nGun++;
+    return key;
+  }
+  /* rename a mount on ONE hull; a shared entry is cloned first */
+  function relabel(uid, idx, name) {
+    var u = UNITS[uid];
+    if (!u || !u.weapons || !WEAPONS[u.weapons[idx]]) return null;
+    var wid = u.weapons[idx];
+    if (wid.indexOf("__" + uid) < 0) {
+      var pw = privateWeapon(uid, wid);
+      if (!pw) return null;
+      u.weapons = u.weapons.slice(); u.weapons[idx] = pw; wid = pw;
+    }
+    WEAPONS[wid].name = name;
+    return WEAPONS[wid];
+  }
+  function mountIndex(uid, re) {
+    var ws = (UNITS[uid] && UNITS[uid].weapons) || [];
+    for (var i = 0; i < ws.length; i++) if (re.test(ws[i])) return i;
+    return -1;
+  }
+
+  /* ---- attack helicopters: [gun template, gun, what the missile really is] */
+  var HELO_GUN = {
+    nato_e60_gunship: ["gun_h762", "M28 turret: 7.62mm M134 minigun", "2.75in FFAR rocket pods (M158/M200)"],
+    nato_e80_gunship: ["gun_h30",  "30mm M230 chain gun", "AGM-114A Hellfire"],
+    nato_e90_gunship: ["gun_h30",  "30mm M230 chain gun", "AGM-114L Longbow Hellfire"],
+    nato_e00_gunship: ["gun_h30",  "30mm M230 chain gun", "AGM-114 Hellfire II"],
+    roc_e00_gunship:  ["gun_h30",  "30mm M230 chain gun", "AGM-114 Hellfire II"],
+    gbr_e00_gunship:  ["gun_h30",  "30mm M230 chain gun", "AGM-114 Hellfire II"],
+    roc_e90_gunship:  ["gun_h20",  "20mm M197 three-barrel cannon", "BGM-71 TOW and AGM-114 Hellfire"],
+    fra_e00_gunship:  ["gun_h30",  "30mm GIAT 30M781 chin gun", null],
+    pla_e00_gunship:  ["gun_h23",  "23mm chin cannon", "AKD-10 anti-tank missile"],
+    pact_e60_gunship: ["gun_h127", "12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
+    pact_e80_gunship: ["gun_h127", "12.7mm YakB-12.7 gatling", "9M114 Shturm (AT-6 Spiral)"],
+    pact_e90_gunship: ["gun_h30",  "30mm 2A42 cannon", "9K121 Vikhr (AT-16)"],
+    pact_e00_gunship: ["gun_h30",  "30mm 2A42 cannon (NPPU-28)", "9M120 Ataka (AT-9)"],
+    kpa_e80_gunship:  ["gun_h127", "12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
+    kpa_e90_gunship:  ["gun_h127", "12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
+    kpa_e00_gunship:  ["gun_h127", "12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
+  };
+  for (var hg in HELO_GUN) {
+    var hs = HELO_GUN[hg];
+    if (!UNITS[hg] || !UNITS[hg].weapons || UNITS[hg].weapons.length !== 1) continue;
+    if (hs[2]) relabel(hg, 0, hs[2]);
+    mountGun(hg, hs[0], hs[1]);
+  }
+  /* The AH-1G's pods are unguided rockets, and a rocket that is renamed but
+     still flies like an 81-point shaped-charge missile to 9.9 tiles at 0.72
+     is the same invention under a truer label. It takes the figures the
+     roster already gives the same period's 68 mm pods (the Jaguar A's SNEB:
+     2 x 76 HE, 5.4 tiles, 0.62) - an area weapon against men and soft
+     vehicles, not a tank killer, which is what the Cobra was until TOW. */
+  (function () {
+    var i = mountIndex("nato_e60_gunship", /^w_e60_nato_gunship__/);
+    if (i < 0) return;
+    var w = WEAPONS[UNITS.nato_e60_gunship.weapons[i]];
+    w.warhead = "he"; w.dmg = 76; w.burst = 2; w.burstDelay = 0.28; w.range = 5.4;
+    w.acc = 0.62; w.aoe = 1.6; w.suppress = 32; delete w.pen;
+  })();
+  /* the present-day ones already carry a gun: give it, and the missile beside
+     it, the real names. A Mi-28 does not fire Hellfires. */
+  var HELO_NAME = {
+    helo_n: ["30mm M230 chain gun", null],
+    helo_r: ["30mm M230 chain gun", null],
+    helo_b: ["30mm M230 chain gun", null],
+    helo_f: ["30mm GIAT 30M781 chin gun", "AGM-114 Hellfire II"],
+    helo_p: ["30mm 2A42 cannon (NPPU-28)", "9M120 Ataka (AT-9)"],
+    helo_c: ["23mm chin cannon", "AKD-10 anti-tank missile"],
+    helo_k: ["12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
+  };
+  for (var hn in HELO_NAME) {
+    var gi = mountIndex(hn, /^chaingun/), mi = mountIndex(hn, /^hellfire/);
+    if (gi >= 0) relabel(hn, gi, HELO_NAME[hn][0]);
+    if (mi >= 0 && HELO_NAME[hn][1]) relabel(hn, mi, HELO_NAME[hn][1]);
+  }
+  /* the Mi-24's gun is a 12.7 mm gatling, not a 30 mm chain gun */
+  (function () {
+    var i = mountIndex("helo_k", /^chaingun/);
+    if (i < 0) return;
+    var w = WEAPONS[UNITS.helo_k.weapons[i]], t = WEAPONS.gun_h127;
+    w.dmg = t.dmg; w.burst = t.burst; w.burstDelay = t.burstDelay; w.range = t.range;
+    w.proj = t.proj; w.speed = t.speed;
+  })();
+
+  /* ---- deck guns ---- */
+  var DECK_GUN = {
+    missileboat_p:        ["gun_n76",  "AK-176 76mm"],
+    missileboat_k:        ["gun_n30",  "2 x twin 30mm AK-230"],
+    missileboat_c:        ["gun_n30g", "30mm H/PJ-13 six-barrel"],
+    pact_e60_missileboat: ["gun_n30",  "2 x twin 30mm AK-230"],
+    pact_e80_missileboat: ["gun_n76",  "AK-176 76mm"],
+    pact_e00_missileboat: ["gun_n100", "A-190 100mm"],
+    kpa_e60_missileboat:  ["gun_n30",  "2 x twin 30mm AK-230"],
+    kpa_e80_missileboat:  ["gun_n30",  "2 x twin 30mm AK-230"],
+    kpa_e90_missileboat:  ["gun_n30",  "2 x twin 30mm AK-230"],
+    pla_e60_missileboat:  ["gun_n30",  "2 x twin 30mm Type 69"],
+    pla_e90_missileboat:  ["gun_n37",  "twin 37mm Type 76A and twin 30mm"],
+    pla_e00_missileboat:  ["gun_n30g", "30mm H/PJ-13 six-barrel"],
+    deu_e60_missileboat:  ["gun_n76",  "76mm OTO Melara Compact"],
+    deu_e80_missileboat:  ["gun_n76",  "2 x 76mm OTO Melara Compact"],
+    deu_e90_missileboat:  ["gun_n76",  "76mm OTO Melara Compact"],
+    deu_e00_missileboat:  ["gun_n76",  "76mm OTO Melara Compact"],
+    nato_e80_missileboat: ["gun_n76",  "Mk 75 76mm"],
+    roc_e60_missileboat:  ["gun_n20",  "20mm Oerlikon"],
+    roc_e80_missileboat:  ["gun_n20",  "20mm Oerlikon"],
+    roc_e90_missileboat:  ["gun_n20",  "20mm Oerlikon"],
+    roc_e00_missileboat:  ["gun_n20",  "20mm T75 cannon"],
+    pact_e60_carrier:     ["gun_n57t", "2 x twin 57mm AK-725"],
+    pact_e80_carrier:     ["gun_n76t", "2 x twin 76mm AK-726"],
+    /* the fleet carriers that were still built with a gun battery. Enterprise,
+       the Nimitzes, Kuznetsov, Liaoning, Invincible, de Gaulle and the Queen
+       Elizabeths never had one; Ark Royal (R09) and Foch lost theirs during the
+       decade the roster puts them in, and Arromanches carried only 40 mm AA,
+       so those are left as they are. */
+    nato_e50_carrier:     ["gun_n127", "8 x 5in/54 Mk 42"],
+    gbr_e50_carrier:      ["gun_n127", "8 x twin 4.5in dual-purpose"],
+    fra_e60_carrier:      ["gun_n100", "8 x 100mm Mle 1953"],
+    fra_e80_carrier:      ["gun_n100", "4 x 100mm Mle 1953"],
+  };
+  for (var dg in DECK_GUN) {
+    var du = UNITS[dg];
+    if (!du || !du.weapons) continue;
+    var hasGun = false;
+    for (var dq = 0; dq < du.weapons.length; dq++) {
+      var dw = WEAPONS[du.weapons[dq]];
+      if (dw && dw.proj === "shell" && dw.tgt && dw.tgt.ground) hasGun = true;
+    }
+    if (!hasGun) mountGun(dg, DECK_GUN[dg][0], DECK_GUN[dg][1]);
+  }
+
+  /* ---- the coaxial machine gun ---- */
+  var COAX_SPECIAL = {
+    mbt_f: ["gun_coax_hv", "12.7mm coaxial M2HB"],
+    fra_e90_mbt: ["gun_coax_hv", "12.7mm coaxial M2HB"],
+    fra_e00_mbt: ["gun_coax_hv", "12.7mm coaxial M2HB"],
+    fra_e60_mbt: ["gun_coax_hv", "20mm M693 coaxial cannon"],
+    fra_e80_mbt: ["gun_coax_hv", "20mm M693 coaxial cannon"],
+    pact_e50_heavy: ["gun_coax_hv", "12.7mm DShKM coaxial"],
+    pact_e60_heavy: ["gun_coax_hv", "14.5mm KPVT coaxial"],
+    /* the T-14's machine gun is on the roof, in the remote station */
+    hvy_p: ["gun_coax", "7.62mm PKTM, remote weapon station"],
+  };
+  var TANK_ROLE = { mbt: 1, heavy: 1, lighttank: 1 };
+  for (var tq in UNITS) {
+    var tu = UNITS[tq];
+    if (!tu || tu.cat !== "vehicle" || !TANK_ROLE[tu.role] || !tu.weapons || !tu.weapons.length) continue;
+    if (mountIndex(tq, /^gun_coax/) >= 0) continue;
+    var cs = COAX_SPECIAL[tq] || ["gun_coax", "coaxial machine gun"];
+    var ck = mountGun(tq, cs[0], cs[1]);
+    /* and never past the main gun: a machine gun that out-reached the tank's
+       own cannon would be the first thing to fire. REACH already keeps every
+       roster tank inside this; it is the guard for the next one added. */
+    var mg0 = WEAPONS[tu.weapons[0]];
+    if (ck && mg0 && mg0.range > 0 && WEAPONS[ck].range > mg0.range * 0.9)
+      WEAPONS[ck].range = Math.round(mg0.range * 9) / 10;
+  }
+
+  /* ---- CAS: the gun each airframe really had ----
+     [name, calibre class]. CAS_CAL is what each class delivers against the
+     GAU-8's own figures (46 a round, 14 a burst, pen 90): the share of that
+     damage and its penetration. Read from the guns themselves - muzzle
+     energy times rate of fire, then the shell: the 30x173 Avenger at 3,900
+     rounds a minute is in a class of its own, a GSh-30-2 (30x165, 3,000) is
+     the next thing to it, the 30 mm revolvers (DEFA, ADEN, NR-30, 30M791)
+     and the Mauser 27 mm fire lighter rounds or fewer of them, the 20 and
+     23 mm guns lighter again, and six .50s are a machine-gun battery - ball
+     ammunition, so "bullet" rather than "cannon". Burst, reload, accuracy,
+     reach and the 0.12 a pass all stay the GAU-8's: those describe the pass,
+     not the gun. Not scaled by period, like FAULT 05's own CAS weapons. */
+  var CAS_CAL = {
+    gsh30: [0.60, 60], r30: [0.45, 45], bk27x2: [0.50, 50], bk27: [0.35, 50],
+    c20: [0.35, 32], c23t: [0.35, 35], c23x4: [0.35, 35], c23x2: [0.22, 35],
+    c20x4: [0.28, 30], pod20: [0.15, 30], hmg: [0.10, 18],
+  };
+  var CAS_GUN = {
+    nato_e50_cas: ["4 x 20mm M3 cannon", "c20x4"],        nato_e60_cas: ["20mm M61A1 Vulcan", "c20"],
+    nato_e90_cas: ["20mm M61A1 Vulcan", "c20"],
+    deu_e50_cas: ["6 x 12.7mm M3", "hmg"],                roc_e50_cas: ["6 x 12.7mm M3", "hmg"],
+    deu_e60_cas: ["2 x 30mm DEFA 552", "r30"],            deu_e80_cas: ["27mm Mauser BK-27 (centreline pod)", "bk27"],
+    deu_e90_cas: ["2 x 27mm Mauser BK-27", "bk27x2"],     bomber_g: ["2 x 27mm Mauser BK-27", "bk27x2"],
+    gbr_e00_cas: ["27mm Mauser BK-27", "bk27"],           bomber_b: ["27mm Mauser BK-27", "bk27"],
+    fra_e50_cas: ["4 x 20mm Hispano 404", "c20x4"],       gbr_e50_cas: ["4 x 20mm Hispano Mk V", "c20x4"],
+    fra_e60_cas: ["2 x 30mm DEFA 553", "r30"],            fra_e80_cas: ["2 x 30mm DEFA 553", "r30"],
+    fra_e00_cas: ["30mm GIAT 30M791", "r30"],             gbr_e60_cas: ["2 x 30mm ADEN gun pods", "r30"],
+    pact_e50_cas: ["4 x 23mm NR-23", "c23x4"],            pact_e60_cas: ["2 x 30mm NR-30", "r30"],
+    kpa_e60_cas: ["2 x 30mm NR-30", "r30"],
+    pact_e80_cas: ["30mm GSh-30-2", "gsh30"],             pact_e90_cas: ["30mm GSh-30-2", "gsh30"],
+    pact_e00_cas: ["30mm GSh-30-2", "gsh30"],             bomber_p: ["30mm GSh-30-2", "gsh30"],
+    kpa_e80_cas: ["30mm GSh-30-2", "gsh30"],              kpa_e90_cas: ["30mm GSh-30-2", "gsh30"],
+    kpa_e00_cas: ["30mm GSh-30-2", "gsh30"],              bomber_k: ["30mm GSh-30-2", "gsh30"],
+    kpa_e50_cas: ["2 x 23mm NS-23", "c23x2"],             pla_e50_cas: ["2 x 23mm NS-23", "c23x2"],
+    pla_e60_cas: ["2 x 23mm Type 23-2", "c23x2"],         pla_e80_cas: ["2 x 23mm Type 23-2", "c23x2"],
+    pla_e90_cas: ["23mm Type 23-3 twin-barrel", "c23t"],  pla_e00_cas: ["23mm Type 23-3 twin-barrel", "c23t"],
+    bomber_c: ["23mm Type 23-3 twin-barrel", "c23t"],
+    roc_e60_cas: ["4 x 20mm M39", "c20"],                 roc_e80_cas: ["20mm gun pod", "pod20"],
+    roc_e90_cas: ["20mm M61A1 Vulcan", "c20"],            roc_e00_cas: ["20mm M61A1 Vulcan", "c20"],
+    bomber_r: ["20mm M61A1 Vulcan", "c20"],
+  };
+  /* no internal gun in service: Harrier GR5 and GR7, Mirage 2000D */
+  var CAS_NO_GUN = { gbr_e80_cas: 1, gbr_e90_cas: 1, fra_e90_cas: 1, bomber_f: 1 };
+  for (var cq in UNITS) {
+    var cu = UNITS[cq];
+    if (!cu || cu.role !== "cas" || !cu.weapons) continue;
+    /* the helicopter chain gun FAULT 05 meant to replace */
+    var ch = mountIndex(cq, /^chaingun/);
+    if (ch >= 0 && mountIndex(cq, /^gau8/) >= 0)
+      cu.weapons = cu.weapons.slice(0, ch).concat(cu.weapons.slice(ch + 1));
+    var gq = mountIndex(cq, /^gau8/);
+    if (gq < 0) continue;
+    if (CAS_NO_GUN[cq]) { cu.weapons = cu.weapons.slice(0, gq).concat(cu.weapons.slice(gq + 1)); continue; }
+    var cg = CAS_GUN[cq], cc = cg && CAS_CAL[cg[1]];
+    if (!cc) continue;
+    var cw = relabel(cq, gq, cg[0]);
+    if (!cw) continue;
+    cw.dmg = Math.round(WEAPONS.gau8.dmg * cc[0] * 10) / 10;
+    cw.pen = cc[1];
+    if (cg[1] === "hmg") cw.warhead = "bullet";
+  }
+  /* ...and the era airframe's own mount, which the generator named after the
+     airframe's GUN although it is a bomb pass (proj:"bomb", 2.4 tiles, two
+     points of magazine). With the real gun now beside it, a Su-25 would list
+     "30mm GSh-30-2" twice and drop bombs with one of them. It is renamed to
+     what it delivers - generically where the load varied, never a guess at a
+     designation. Mounts already named for their stores are left alone. */
+  var CAS_STORES = {
+    deu_e50_cas: "HVAR rockets (F-84F)",       deu_e60_cas: "rocket pods (G.91R/3)",
+    deu_e80_cas: "BL755 cluster bombs (Alpha Jet A)",
+    fra_e50_cas: "T-10 rocket pods",           fra_e60_cas: "68mm SNEB rocket pods",
+    gbr_e50_cas: "RP-3 rockets",               gbr_e60_cas: "68mm SNEB rockets",
+    nato_e50_cas: "bombs and rockets",         nato_e60_cas: "bombs",
+    nato_e00_cas: "guided bombs",
+    pact_e50_cas: "bombs and rockets",         pact_e60_cas: "bombs and rocket pods",
+    pact_e80_cas: "bombs and rocket pods",     pact_e90_cas: "bombs and rocket pods",
+    pact_e00_cas: "bombs and rocket pods",
+    kpa_e50_cas: "bombs and rockets",          kpa_e60_cas: "bombs and rocket pods",
+    kpa_e80_cas: "bombs and rocket pods",      kpa_e90_cas: "bombs and rocket pods",
+    kpa_e00_cas: "bombs and rocket pods",
+    pla_e50_cas: "bombs and rockets",          pla_e60_cas: "bombs and rocket pods",
+    roc_e50_cas: "bombs and rockets",          roc_e60_cas: "bombs and rockets",
+    roc_e80_cas: "bombs",                      roc_e90_cas: "bombs",
+  };
+  for (var sq in CAS_STORES) {
+    var si = mountIndex(sq, /^w_e\d\d_[a-z]+_cas/);
+    if (si >= 0) relabel(sq, si, CAS_STORES[sq]);
+  }
+
+  /* ======================================================================
      FAULT 08 - two infantry weapons that made no sense
      ======================================================================
      The machine gun did LESS damage per shot than a rifle at nearly twice the

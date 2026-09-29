@@ -6947,6 +6947,227 @@ try{
   })();
   }
 
+  /* ====== [67] A GUN FOR A MAN IN THE OPEN ======
+     (owner) "navy, helicopter, tank, a10 should have gun shot if the enemy is
+     infantry only." Measured on HEAD, three rifle squads held immortal and one
+     attack order: an AH-64 fired ten Hellfires and not one burst of 30 mm and
+     went home dry after 23 s; an A-10 eight Mavericks and no GAU-8; an
+     Arleigh Burke ten Harpoons beside its gun; a Bradley eight TOWs from 10.0
+     tiles and never closed to the 25 mm. entities.js gunFirst() now keeps the
+     precious round off a soft target while a gun can do the job, and
+     generations.js FAULT 05c gives the gun to the hulls that really had one.
+     This drives the real engage()/updateAir() paths and counts what leaves
+     the rails, then checks what must STILL free a missile, and the three
+     things review found wrong with the first version: a coax that fired at
+     tanks, a straight-line "closing" estimate that drove a Bradley 23 tiles
+     round a line of dragon's teeth, and new mounts with present-day reach in
+     the 1950s. Everything spawned or built is removed; the enemy is left at
+     peace. */
+  if (inHalf(1)) {
+  log("\n[67] A GUN FOR A MAN IN THE OPEN");
+  (function(){
+    var T = CFG.TILE, M = Game.map, made = [], built = [];
+    function mk(p, id, x, y) { var u = Game.spawnUnitAt(p, id, x * T + 16, y * T + 16); if (u) made.push(u); return u; }
+    function bare(id) { return id.replace(/__.*/, ""); }
+    function clearAll() { for (var i = 0; i < made.length; i++) made[i].dead = true; tick(2); }
+    /* rounds leaving each mount of ONE shooter, through the real Combat.fire */
+    var tally = null, realFire = Combat.fire;
+    Combat.fire = function (g, s, w, t) {
+      if (tally && s === tally.who) {
+        var ws = s.def.weapons, k = "?";
+        for (var i = 0; i < ws.length; i++) if (WEAPONS[ws[i]] === w) { k = bare(ws[i]); break; }
+        tally.n[k] = (tally.n[k] || 0) + 1;
+        if (tally.first < 0) tally.first = Game.time - tally.t0;
+      }
+      return realFire.apply(this, arguments);
+    };
+    function precious(n, u) {
+      var c = 0;
+      for (var k in n) { var i = -1; for (var j = 0; j < u.def.weapons.length; j++) if (bare(u.def.weapons[j]) === k) i = j;
+        var w = i >= 0 ? WEAPONS[u.def.weapons[i]] : null;
+        if (w && (w.proj === "missile" || w.proj === "bomb")) c += n[k]; }
+      return c;
+    }
+    function guns(n, u) { var c = 0; for (var k in n) c += n[k]; return c - precious(n, u); }
+    /* shooter ordered onto the first of `foes`, everyone immortal */
+    function fight(u, foes, secs) {
+      u.maxHp = u.hp = 1e9;
+      for (var i = 0; i < foes.length; i++) { foes[i].maxHp = foes[i].hp = 1e9; foes[i].stance = "hold"; }
+      u.give({ type: "attack", target: foes[0] });
+      tally = { who: u, n: {}, first: -1, t0: Game.time };
+      var closest = 1e9, x0 = u.x, y0 = u.y, drove = 0;
+      for (var k = 0; k < Math.round(secs / CFG.DT); k++) {
+        Game.tick(CFG.DT);
+        u.hp = u.maxHp; for (var i = 0; i < foes.length; i++) foes[i].hp = foes[i].maxHp;
+        closest = Math.min(closest, U.dist(u.x, u.y, foes[0].x, foes[0].y) / T);
+        drove += U.dist(u.x, u.y, x0, y0) / T; x0 = u.x; y0 = u.y;
+      }
+      var r = { n: tally.n, closest: closest, first: tally.first, drove: drove }; tally = null;
+      return r;
+    }
+    function squads(id, x, y, k) { var a = []; for (var i = 0; i < (k || 3); i++) { var s = mk(E, id, x + i, y); if (s) a.push(s); } return a; }
+    try {
+      var land = tile(P, "ground", 7);
+      chk("there is open ground for the scene", !!land, JSON.stringify(land));
+      if (!land) return;
+
+      /* ---- the data: the gun is on the machines that had one ---- */
+      function gunOf(id) { var ws = (UNITS[id] && UNITS[id].weapons) || [];
+        for (var i = 0; i < ws.length; i++) { var w = WEAPONS[ws[i]];
+          if (w && w.proj !== "missile" && w.proj !== "bomb" && w.tgt && w.tgt.ground && w.dmg > 0) return w; }
+        return null; }
+      function hasGun(id) { var w = gunOf(id); return w ? w.name : null; }
+      chk("an AH-64A carries its 30 mm M230, not only a missile named after it",
+          /M230/.test(hasGun("nato_e80_gunship") || ""), "gun: " + hasGun("nato_e80_gunship"));
+      chk("a Mi-24V carries its 12.7 mm YakB", /YakB/.test(hasGun("pact_e80_gunship") || ""), "gun: " + hasGun("pact_e80_gunship"));
+      chk("a Molniya missile boat carries its AK-176", /AK-176/.test(hasGun("missileboat_p") || ""), "gun: " + hasGun("missileboat_p"));
+      var noCoax = [], wide = [];
+      for (var id in UNITS) { var d = UNITS[id];
+        if (d.cat !== "vehicle" || !/^(mbt|heavy|lighttank)$/.test(d.role || "") || !d.weapons.length) continue;
+        var cx = null; for (var i = 1; i < d.weapons.length; i++) if (/^gun_coax/.test(d.weapons[i])) cx = WEAPONS[d.weapons[i]];
+        if (!cx) { noCoax.push(id); continue; }
+        var mg0 = WEAPONS[d.weapons[0]];
+        if (!cx.softOnly || cx.range > mg0.range) wide.push(id + " " + cx.range + ">" + mg0.range); }
+      chk("every tank carries its coaxial gun, behind the main gun in weapons[0]", noCoax.length === 0,
+          noCoax.length + " without: " + noCoax.slice(0, 6).join(","));
+      chk("...for men in the open only, and never reaching past its own main gun", wide.length === 0,
+          wide.length + " wrong: " + wide.slice(0, 4).join(", "));
+      var gr7 = hasGun("gbr_e90_cas"), su25 = gunOf("pact_e80_cas"), f84 = gunOf("deu_e50_cas"), a10 = gunOf("bomber_n");
+      chk("no gun is invented: a Harrier GR7 has none, and a Su-25's is not a GAU-8",
+          !gr7 && !!su25 && !/GAU-8/.test(su25.name), "GR7: " + gr7 + " / Su-25: " + (su25 && su25.name));
+      chk("...nor does it hit like one: an F-84F's six .50s are ball ammunition, below a GSh-30-2, below the A-10's Avenger",
+          !!f84 && !!su25 && !!a10 && f84.warhead === "bullet" && f84.dmg < su25.dmg && su25.dmg < a10.dmg && /GAU-8/.test(a10.name),
+          "F-84F " + (f84 && f84.dmg) + " / Su-25 " + (su25 && su25.dmg) + " / A-10 " + (a10 && a10.dmg));
+      chk("a Tiger UHT, which had no gun, still has none", !hasGun("helo_g"), "helo_g: " + hasGun("helo_g"));
+      var cob = UNITS.nato_e60_gunship && WEAPONS[UNITS.nato_e60_gunship.weapons[0]];
+      chk("an AH-1G's pods are unguided rockets, not an anti-tank missile it never carried",
+          !!cob && cob.warhead === "he" && cob.range <= 6 && /FFAR/.test(cob.name),
+          cob ? cob.name + " " + cob.warhead + " r" + cob.range : "none");
+      var fg = gunOf("nato_e50_carrier"), dg = gunOf("nato_e50_destroyer");
+      chk("a 1955 Forrestal's 5-inch reaches no further than the same gun on a 1955 destroyer",
+          !!fg && !!dg && fg.range <= dg.range, (fg && fg.range) + " vs " + (dg && dg.range) + " tiles");
+
+      /* ---- the choice, from where the helicopter actually holds ----
+         the air-defence plot gunFirst() reads is gathered once per half
+         second, so after a spawn the clock is run past the next half second */
+      var pick = function (u, t) { var i = u.pickWeapon(t); return i < 0 ? "-" : bare(u.def.weapons[i]); };
+      var at = function (u, t, dd) { u.x = t.x - dd * T; u.y = t.y; };
+      var ap = mk(P, "helo_n", land.x - 10, land.y), rq = mk(E, "rifle_p", land.x, land.y);
+      var mbt = mk(E, "mbt_p", land.x, land.y + 3);
+      tick(Math.ceil(0.5 / CFG.DT) + 1);
+      at(ap, rq, 10);
+      chk("an Apache ten tiles from a rifle squad reaches for the chain gun", pick(ap, rq) === "chaingun", pick(ap, rq));
+      at(ap, mbt, 10);
+      chk("...ten tiles from a tank, the Hellfire, as before", pick(ap, mbt) === "hellfire", pick(ap, mbt));
+      /* now a Stinger team two tiles behind the squad */
+      var sti = mk(E, "aa_p", land.x + 2, land.y);
+      tick(Math.ceil(0.5 / CFG.DT) + 1);
+      at(ap, sti, 10);
+      chk("...ten from the Stinger team itself - soft, but it reaches us - the Hellfire",
+          pick(ap, sti) === "hellfire", pick(ap, sti));
+      at(ap, rq, 10);
+      chk("...and the rifle squad under that Stinger's umbrella gets the Hellfire from standoff",
+          pick(ap, rq) === "hellfire", pick(ap, rq));
+      /* a PT-76 six tiles from an M48: past the coax's reach, inside the 76 mm's */
+      var pt = mk(P, "pact_e50_lighttank", land.x - 6, land.y + 3);
+      if (pt) { at(pt, mbt, 6);
+        chk("a PT-76 six tiles from a tank fires its 76 mm, not the coax (a machine gun does nothing to armour)",
+            pick(pt, mbt) === bare(pt.def.weapons[0]), pick(pt, mbt));
+        at(pt, rq, 3);
+        chk("...and three tiles from a rifle squad, the coax", /^gun_coax/.test(pick(pt, rq)), pick(pt, rq)); }
+      clearAll();
+
+      /* ---- AH-64 against three rifle squads, 12 s ---- */
+      var h = mk(P, "helo_n", land.x - 14, land.y);
+      var r1 = fight(h, squads("rifle_p", land.x, land.y), 12);
+      chk("an AH-64 on a rifle squad fires its 30 mm and no Hellfire",
+          guns(r1.n, h) > 0 && precious(r1.n, h) === 0, JSON.stringify(r1.n) + " closest " + r1.closest.toFixed(1));
+      /* the gun draws on the same one pool (a burst is 0.34 of a Hellfire),
+         so this is a rate, not a reserve: HEAD had spent half the magazine
+         on five Hellfires by now */
+      chk("...and spends the magazine at a third of the rate: 12 s leaves at least 6.5 of 10 aboard",
+          h.ammo >= 6.5, "ordnance " + h.ammo.toFixed(2) + "/" + h.ammoMax);
+      clearAll();
+
+      /* ---- A-10 against three rifle squads, 20 s ---- */
+      var a1 = mk(P, "bomber_n", land.x - 16, land.y);
+      var r2 = fight(a1, squads("rifle_p", land.x, land.y), 20);
+      chk("an A-10 on a rifle squad strafes with the GAU-8 and keeps its Mavericks and bombs",
+          (r2.n.gau8 || 0) > 0 && precious(r2.n, a1) === 0, JSON.stringify(r2.n));
+      clearAll();
+
+      /* ---- Bradley against three rifle squads, 12 s: it closes to the 25 mm ---- */
+      var b = mk(P, "ifv_n", land.x - 10, land.y);
+      var r3 = fight(b, squads("rifle_p", land.x, land.y), 12);
+      chk("a Bradley on a rifle squad closes and fires the 25 mm, no TOW",
+          (r3.n.autocannon || 0) > 0 && precious(r3.n, b) === 0,
+          JSON.stringify(r3.n) + " closest " + r3.closest.toFixed(1));
+      clearAll();
+
+      /* ---- ...but not round a line it cannot cross ----
+         Nine tiles from the squads with 19 tiles of dragon's teeth between:
+         the 25 mm is three tiles of straight line away and sixteen of road.
+         The first version drove the road and fired after 15 s. */
+      var p = null;
+      for (var y = 4; y < M.H - 23 && !p; y++) for (var x = 4; x < M.W - 18 && !p; x++) {
+        var good = true;
+        for (var j = 0; j < 19 && good; j++) for (var i = 0; i < 14; i++)
+          if (!GameMap.passable(M, x + i, y + j, "ground") || Game.tileBlocked(x + i, y + j, null)) { good = false; break; }
+        if (good) p = { x: x, y: y };
+      }
+      chk("there is open ground for a line of teeth", !!p, JSON.stringify(p));
+      if (p) {
+        for (var j = 0; j < 19; j++) { var bt = Game.placeBuilding(P, "dragonteeth", p.x + 7, p.y + j, true);
+          if (bt) { bt.buildProgress = 1; built.push(bt); } }
+        var bx = mk(P, "ifv_n", p.x + 1, p.y + 9);
+        var r6 = fight(bx, squads("rifle_p", p.x + 10, p.y + 9), 8);
+        chk("a Bradley with the teeth between it and the squad fires the TOW from where it stands, as HEAD did",
+            precious(r6.n, bx) > 0 && r6.first >= 0 && r6.first < 3 && r6.drove < 2,
+            JSON.stringify(r6.n) + " first shot " + r6.first.toFixed(1) + " s, drove " + r6.drove.toFixed(1) + " tiles");
+        clearAll();
+        while (built.length) { var bb2 = built.pop(); if (!bb2.dead) Game.removeBuilding(bb2); }
+        Game.sweepDead();
+      }
+
+      /* ---- warships against a squad ashore: a sea tile with open ground 6 out ---- */
+      var hx = (P.homeX / T) | 0, hy = (P.homeY / T) | 0, coast = null;
+      for (var rr = 3; rr < 40 && !coast; rr++) for (var aa = 0; aa < 64 && !coast; aa++) {
+        var an = aa / 64 * 6.283, x = (hx + Math.cos(an) * rr) | 0, y = (hy + Math.sin(an) * rr) | 0;
+        if (x < 3 || y < 3 || x >= M.W - 3 || y >= M.H - 3) continue;
+        if (!GameMap.passable(M, x, y, "sea") || Game.tileBlocked(x, y, null)) continue;
+        for (var bb = 0; bb < 16 && !coast; bb++) {
+          var bn = bb / 16 * 6.283, gx = (x + Math.cos(bn) * 6) | 0, gy = (y + Math.sin(bn) * 6) | 0;
+          if (GameMap.passable(M, gx, gy, "ground") && !Game.tileBlocked(gx, gy, null))
+            coast = { s: { x: x, y: y }, g: { x: gx, y: gy } };
+        }
+      }
+      chk("there is a shore to fight across", !!coast, JSON.stringify(coast));
+      if (coast) {
+        var dd = mk(P, "destroyer_n", coast.s.x, coast.s.y);
+        var r4 = fight(dd, squads("rifle_p", coast.g.x, coast.g.y, 2), 12);
+        chk("an Arleigh Burke on a squad ashore fires the 127 mm and no Harpoon",
+            (r4.n.navgun_mk45 || 0) > 0 && (r4.n.ssm_harpoon || 0) === 0, JSON.stringify(r4.n));
+        clearAll();
+        /* nothing is left unarmed: a boat with ONLY missiles still uses them */
+        var mb = mk(P, "missileboat_n", coast.s.x, coast.s.y);
+        var r5 = fight(mb, squads("rifle_p", coast.g.x, coast.g.y, 2), 10);
+        chk("a missile boat with no gun still fires its missile at the squad",
+            precious(r5.n, mb) > 0, JSON.stringify(r5.n));
+        clearAll();
+      }
+    } finally {
+      tally = null; Combat.fire = realFire;
+      for (var i = 0; i < made.length; i++) made[i].dead = true;
+      while (built.length) { var bb3 = built.pop(); if (!bb3.dead) Game.removeBuilding(bb3); }
+      tick(2);
+      if (Game.sweepDead) Game.sweepDead();
+      if (AI.setPeace) AI.setPeace(E, true);
+    }
+    chk("the scene is cleared: every unit spawned and every tooth placed is gone",
+        made.every(function (u) { return u.dead; }) && built.length === 0, made.length + " spawned, all removed");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

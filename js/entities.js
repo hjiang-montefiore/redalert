@@ -190,6 +190,7 @@ class Unit {
     this.rounds = this.roundsMax;
     this.unsupplied = 0;                 // seconds out of contact with supply
     this.ammoMax = d.ammo || 0; this.ammo = this.ammoMax;  // aircraft ordnance
+    this.gunChase = null;                // gunFirst's time box: { t, since, last }
     this.minesMax = d.layMines || 0; this.mines = this.minesMax;
     /* Cargo rockets or cargo shells on an artillery piece. A launcher is not a
        minelayer and must not be offered a minelayer's orders: ui.js picks the
@@ -1711,6 +1712,10 @@ class Unit {
   /* fire every mount other than the primary that can engage this target */
   fireOtherMounts(primary, t) {
     const tl = t.targetLayer();
+    /* the gun that was chosen for a man in the open is not joined by the
+       ship's anti-ship missiles: measured on HEAD, an Arleigh Burke put
+       five Harpoon pairs into three rifle squads in 60 s beside its gun */
+    const tArmor = t.armorClass(), spare = this.gunFirst(t, false, tArmor);
     for (let i = 0; i < this.def.weapons.length; i++) {
       if (i === primary) continue;
       const w = WEAPONS[this.def.weapons[i]];
@@ -1722,6 +1727,7 @@ class Unit {
          RELEASED order holdsFire is false and it does fire, which is correct:
          the player named the target. */
       if (this.holdsFire(w)) continue;
+      if ((spare && Unit.precious(w)) || (w.softOnly && tArmor !== "infantry")) continue;
       if (w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
@@ -1736,6 +1742,183 @@ class Unit {
     }
   }
 
+  /* ---- A GUN FOR A MAN IN THE OPEN, A MISSILE FOR A MACHINE ----
+     (owner) "navy, helicopter, tank, a10 should have gun shot if the enemy is
+     infantry only."
+     pickWeapon() below scores expected damage a second and nothing else, and
+     pays a missile 1.35 for opening from past 55% of its reach. Against a
+     rifle squad that hands the choice to whatever reaches furthest, so every
+     hull that carries a gun AND a guided round opened on men in the open with
+     the guided round and never came in to the gun. Measured on HEAD under jsc
+     (tools/jsc), three rifle squads held immortal, one attack order, 60 s:
+       AH-64 (helo_n)     10 Hellfires, 0 bursts of 30 mm; dry in 23 s, home
+       Mi-28 (helo_p)     10 missiles, 0 bursts
+       A-10 (bomber_n)     8 Mavericks, 0 GAU-8 passes; dry, home
+       Su-25 (e80)         8 Kh-29, 0 gun
+       Arleigh Burke      17 gun salvos AND 5 Harpoon pairs at three squads
+       Project 22160      41-50 gun salvos AND 4 Oniks
+       Bradley (ifv_n)     8 TOW, 0 rounds of 25 mm - it stopped at 10.0
+                           tiles, where the TOW reached, and never closed
+     So against a SOFT target - armour class "infantry" - a precious round (a
+     missile, a bomb, an MLRS rocket) is not a candidate while a gun this hull
+     may fire can do the job: in reach now, or reachable by closing for no
+     more than GUN_CLOSE seconds of the route it would actually drive. Each of
+     these still frees the missile, so nothing that carries only missiles, or
+     cannot close, is left unarmed:
+       - no gun can engage it at all: a missile boat, an ATGM carrier, a
+         Gazelle HOT, a Tiger UHT;
+       - the target can hurt us from where the gun would have to stand: a
+         Stinger team's 9.9 tiles against a chain gun that hovers at 4.0, a
+         Javelin team's 7.2 against a 25 mm that stops at 5.9. That target
+         warrants the standoff. A rifle squad against a Bradley does not -
+         a 5.56 at 0.32 against light armour is not a threat, so only a
+         weapon that does at least half damage to our armour class counts.
+         Its PUBLISHED range with gunProfile's 1.15 margin, never
+         weaponRange(): their faction multiplier and their optics upgrade
+         are not things we can honestly know;
+       - for an aircraft that would have to close, the squad stands under an
+         air-defence ring its side can SEE - G.airThreatAt, the fog-honest
+         plot the standoff logic already flies by (gunRunCovered below). A
+         rifle squad with a Stinger team behind it is a Hellfire target, not
+         a gun run;
+       - the gun cannot get there: a structure, a garrison, a hull on hold,
+         or no route at all (pathFail on the target's own tile - a destroyer
+         already on the water nearest an inland squad);
+       - the route is long. The first version timed the STRAIGHT LINE, and
+         (review) a Bradley nine tiles from three squads with a 25-tile line
+         of dragon's teeth between them drove 23.3 tiles round the end of it
+         and fired its first round after 15.1 s, where HEAD fired a TOW at
+         0.1 s from where it stood. gunApproach() walks the A* route the
+         hull is following instead: now 0.0 tiles driven, TOW at 0.1 s;
+       - it has been closing on this one target for 2 x GUN_CLOSE and the
+         gun is still out of reach: traffic, a slow crossing, a squad that
+         keeps backing off. The estimate was wrong, so it stops driving and
+         shoots with what reaches (gunChaseSpent).
+     Among the guns the scoring is exactly what it was, and against armour,
+     ships, aircraft and structures this returns false and pickWeapon is the
+     same function it was. holdsFire() still runs FIRST in both loops, so a
+     HARM or a ballistic round needs its order exactly as before.
+     An aircraft's gun still draws on its one ordnance pool (a chain-gun
+     burst is 0.34 of a Hellfire), so a long strafe empties the magazine all
+     the same, only later: an AH-64 on three immortal squads went dry at
+     42 s, not 23 s. Keeping a missile back through a whole sortie would take
+     a gun magazine of its own, and this does not pretend to.
+     Read by Building through .call(), so it asks nothing a structure lacks:
+     a structure has no speed, and never reaches the closing branch. */
+  static precious(w) { return !!w && (w.proj === "missile" || w.proj === "bomb" || !!w.rocket); }
+  /* Does this mount list hold a precious round AND a gun? Without both,
+     gunFirst cannot change pickWeapon's answer, so it is not asked - a tank
+     (main gun and coax), a rifle squad, a gunless missile boat: most of what
+     acquire() puts through pickWeapon. Kept off the def, keyed by it, and
+     re-read if the list is ever replaced. */
+  static gunMix(def) {
+    const ws = def.weapons || [];
+    const memo = Unit.gunMixMemo || (Unit.gunMixMemo = new WeakMap());
+    let m = memo.get(def);
+    if (m && m.ws === ws) return m.mix;
+    let p = false, g = false;
+    for (let i = 0; i < ws.length; i++) {
+      const w = WEAPONS[ws[i]];
+      if (!w || !(w.dmg > 0)) continue;
+      if (Unit.precious(w)) p = true; else g = true;
+    }
+    memo.set(def, m = { ws: ws, mix: p && g });
+    return m.mix;
+  }
+  gunFirst(t, anyAmmo, tArmor) {
+    if (!t || (tArmor || (t.armorClass && t.armorClass())) !== "infantry") return false;
+    if (!Unit.gunMix(this.def)) return false;
+    const GUN_CLOSE = 6;                     // seconds of closing a gun is worth
+    const T = CFG.TILE, d = U.dist(this.x, this.y, t.x, t.y);
+    const tl = t.targetLayer();
+    /* how far this target reaches, with a weapon that matters, at the layer
+       and the armour we present */
+    const me = this.targetLayer(), myArmor = this.armorClass();
+    let reach = 0;
+    const tw = (t.def && t.def.weapons) || [];
+    for (let i = 0; i < tw.length; i++) {
+      const w = WEAPONS[tw[i]];
+      if (!w || !(w.dmg > 0) || (w.tgt && !w.tgt[me])) continue;
+      if (CFG.dmgMult(w.warhead, myArmor) < 0.5) continue;
+      const r = (w.range || 0) * T * 1.15;
+      if (r > reach) reach = r;
+    }
+    const pf = this.pathFail;
+    const pace = (this.def.speed > 0 && !this.garrisonIn && this.stance !== "hold" &&
+                  !(pf && pf.x === t.tx && pf.y === t.ty)) ? this.def.speed * T : 0;
+    for (let i = 0; i < this.def.weapons.length; i++) {
+      const w = WEAPONS[this.def.weapons[i]];
+      if (!w || Unit.precious(w) || !(w.dmg > 0) || this.holdsFire(w)) continue;
+      if (this.ammoMax && !anyAmmo && !this.canAfford(w)) continue;
+      if (w.tgt && !w.tgt[tl]) continue;
+      const rng = this.weaponRange(w);
+      /* 0.8: where a helicopter hovers and a jet orbits to use this gun */
+      if (reach >= rng * 0.8) continue;
+      if (d <= rng && !(w.minRange && d < w.minRange * T)) {
+        if (this.gunChase && this.gunChase.t === t) this.gunChase = null;
+        return true;
+      }
+      if (!pace) continue;
+      const budget = pace * GUN_CLOSE;
+      if (this.gunApproach(t, rng * 0.86, budget) > budget) continue;
+      if (this.gunChaseSpent(t, GUN_CLOSE * 2)) continue;
+      return !this.gunRunCovered(t);
+    }
+    return false;
+  }
+  /* How far this hull has to travel before t is inside `stop` - the distance
+     engage() stops at. Along the route it is following when that route leads
+     to this target (the order's target, path ending within two tiles of it),
+     else the straight line: an aircraft flies one, and a hull with no route
+     yet takes one step on the straight-line answer before stepAlong() hands
+     it the real route for the next call. The walk ends as soon as it passes
+     `budget`, since past that the only answer wanted is "too far". */
+  gunApproach(t, stop, budget) {
+    const T = CFG.TILE, d = U.dist(this.x, this.y, t.x, t.y);
+    if (d <= stop) return 0;
+    const p = this.path, o = this.order;
+    if (this.layer === "air" || !p || !p.length || !o || o.target !== t) return d - stop;
+    const end = p[p.length - 1];
+    if (Math.abs(end.x - t.tx) > 2 || Math.abs(end.y - t.ty) > 2) return d - stop;
+    let run = 0, px = this.x, py = this.y;
+    for (let i = this.pathI || 0; i < p.length; i++) {
+      const nx = p[i].x * T + T / 2, ny = p[i].y * T + T / 2;
+      run += U.dist(px, py, nx, ny); px = nx; py = ny;
+      if (run > budget || U.dist(nx, ny, t.x, t.y) <= stop) return run;
+    }
+    return run + Math.max(0, U.dist(px, py, t.x, t.y) - stop);
+  }
+  /* The time box on the estimate above. Counts CONTINUOUS closing on the
+     order's own target - a gap of half a second restarts it - and answers
+     true once it has run past `limit` with the gun still out of reach.
+     Only the engagement being driven is timed; acquire() asking about a
+     candidate starts no clock. */
+  gunChaseSpent(t, limit) {
+    const o = this.order;
+    if (!o || o.target !== t || !this.game) return false;
+    const now = this.game.time;
+    let c = this.gunChase;
+    if (!c || c.t !== t || now - c.last > 0.5) c = this.gunChase = { t: t, since: now, last: now };
+    c.last = now;
+    return now - c.since > limit;
+  }
+  /* Asked only when the gun would have to CLOSE - a hull already in reach is
+     where it is, and there the old scoring picks the gun anyway. The rings are
+     gathered once per side per half second, not per call: G.airThreatRings is
+     the walk its own comment measured at 385 us, and acquire() asks
+     pickWeapon of every candidate in sight. An air-defence unit crosses a
+     fraction of a tile in half a second. */
+  gunRunCovered(t) {
+    const g = this.game;
+    if (this.layer !== "air" || !g || !g.airThreatRings || !g.airThreatAt) return false;
+    const slot = Math.floor(g.time * 2);
+    let memo = g.gunRingMemo;
+    if (!memo || memo.slot !== slot) memo = g.gunRingMemo = { slot: slot, by: new Map() };
+    let R = memo.by.get(this.owner);
+    if (!R) { R = g.airThreatRings(this.owner); memo.by.set(this.owner, R); }
+    return g.airThreatAt(this.owner, t.x, t.y, 0, R) > 0;
+  }
+
   /* Choose the best weapon for this target, not merely the first that can
      engage it. A destroyer carries a gun, an area SAM, an anti-ship missile,
      a lightweight ASW torpedo and a CIWS; which one it reaches for depends
@@ -1747,6 +1930,8 @@ class Unit {
        round will really meet, or every mount would score zero damage on a
        parked airframe and the choice between them would be arbitrary */
     const tl = t.targetLayer(), tArmor = t.armorClass();
+    /* a man in the open is the gun's: see gunFirst() above */
+    const spare = Unit.prototype.gunFirst.call(this, t, anyAmmo, tArmor);
     const dist = U.dist(this.x, this.y, t.x, t.y) / CFG.TILE;
     let best = -1, bestScore = -1;
     for (let i = 0; i < this.def.weapons.length; i++) {
@@ -1770,6 +1955,14 @@ class Unit {
          mount was picked every tick, tryFire refused it, and a cheaper mount
          that could still fire was never tried */
       if (!anyAmmo && this.ammoMax && !this.canAfford(w)) continue;
+      if (spare && Unit.precious(w)) continue;
+      /* A coaxial machine gun is for men in the open and is not a candidate
+         against anything else (generations.js FAULT 05c). Scored like any
+         mount, the in-reach coax beat an out-of-reach main gun (x0.05), so
+         (review) a PT-76 ordered onto an M48 ten tiles off stopped at the
+         coax's reach and put 112 rounds of 7.62 into it for no damage at
+         all, where HEAD fired seven 76 mm rounds and took 865 HP to 606. */
+      if (w.softOnly && tArmor !== "infantry") continue;
       if (w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
