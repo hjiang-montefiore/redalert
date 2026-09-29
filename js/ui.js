@@ -1723,7 +1723,7 @@ var UI = (function () {
       }
       if (e.button === 0 && input.dragging) {
         if (input.dragDist > 6) boxSelect(e.shiftKey);
-        else clickSelect(e.shiftKey);
+        else clickSelect(e.shiftKey, e.detail);
         input.dragging = false;
       }
       if (e.button === 1) input.panMMB = false;
@@ -2074,7 +2074,9 @@ var UI = (function () {
   }
 
   /* ---------- picking ---------- */
-  function pickAt(mx, my, includeBuildings, only) {
+  /* `stack`, when passed, collects every candidate under the point with its
+     score, so clickSelect() can walk down a pile */
+  function pickAt(mx, my, includeBuildings, only, stack) {
     let best = null, bd = Infinity;
     for (const e of G.entities) {
       if (e.dead || e.carried) continue;
@@ -2096,7 +2098,7 @@ var UI = (function () {
          on their own airbase can never be selected at all - the building is
          always underneath them and always wins on distance. */
       if (e.kind === "unit") d -= 14;
-      if (d < rr && d < bd) {
+      if (d < rr && (stack || d < bd)) {
         /* fog check for enemies */
         /* A submerged boat is decided by SONAR ALONE and the fog test is not
            applied to it. The two used to be ANDed, so a boat held by a sensor
@@ -2123,15 +2125,60 @@ var UI = (function () {
           const fg = G.fog[e.ty * G.map.W + e.tx];
           if (e.kind === "building" ? fg === 0 : fg !== 2) continue;
         }
-        bd = d; best = e;
+        if (stack) stack.push({ e, d });
+        if (d < bd) { bd = d; best = e; }
       }
     }
     return best;
   }
   function clearSel() { for (const s of selection) s.selected = false; selection = []; refreshSelInfo(); }
 
-  function clickSelect(shift) {
-    const e = pickAt(input.mx, input.my, true);
+  function clickSelect(shift, clicks) {
+    const stack = [];
+    let e = pickAt(input.mx, input.my, true, null, stack);
+    /* ---- clicking a pile again takes the next one in it ----
+       (owner) "...and cannot select units clearly." A click still picks the
+       nearest thing under the cursor with the unit bias, exactly as it always
+       did, and notes the pile it landed on: the units of the same side under
+       the cursor whose footprints overlap the one picked by more than 2 px -
+       the depth settle() in entities.js lets no unit at rest keep, so a pile
+       is units in motion or freshly stacked, never a parked formation.
+       Clicking the same spot again (within 6 px) while holding one of that
+       pile takes the next in it, in the order noted at the first click -
+       nearest first, then by id, so a pile sliding apart is not re-sorted
+       into visiting one twice - and wraps round to the first. Where the pile
+       has come apart, or there never was one, the click keeps what it holds,
+       because re-clicking a unit to hear it answer is the commonest click in
+       the game (below). The first cut stepped to anything inside the pick
+       radius: under jsc, 12 of 12 tanks re-clicked in a 41.6 px formation
+       with no two touching were swapped for a neighbour; now none is. A
+       double-click's second click (the browser's click count, `detail`, is
+       2) never steps: it belongs to select-every-one-of-this-type, which is
+       unchanged, and so are shift-click and TAB. */
+    const last = clickSelect.last, held = selection.length === 1 ? selection[0] : null;
+    if (!shift && last && held && last.pile.indexOf(held) >= 0 &&
+        Math.abs(input.mx - last.x) <= 6 && Math.abs(input.my - last.y) <= 6) {
+      const pile = last.pile, top = pile[0];
+      const under = (u) => !u.dead && stack.some(c => c.e === u);
+      let next = null;
+      for (let k = 1; k < pile.length && !(clicks > 1) && !next; k++) {
+        const c = pile[(pile.indexOf(held) + k) % pile.length];
+        if (under(c) && (c === top || U.dist(c.x, c.y, top.x, top.y) < c.r + top.r - 2)) next = c;
+      }
+      if (next) e = next;
+      else if (under(held)) e = held;
+    } else {
+      const pile = [];
+      if (e && e.kind === "unit") {
+        for (const c of stack) {
+          const u = c.e;
+          if (u !== e && u.kind === "unit" && u.owner === e.owner &&
+              U.dist(u.x, u.y, e.x, e.y) < u.r + e.r - 2) pile.push(c);
+        }
+        pile.sort((a, b) => a.d - b.d || a.e.id - b.e.id);
+      }
+      clickSelect.last = e ? { x: input.mx, y: input.my, pile: [e].concat(pile.map(c => c.e)) } : null;
+    }
     if (!shift) clearSel();
     if (e && e.owner === G.human) {
       if (shift && e.selected) {
@@ -2269,6 +2316,145 @@ var UI = (function () {
     refreshSelInfo();
   }
 
+  /* ---- a place for every unit ----
+     (owner) "the unit should have less overlapping or more space instead of
+     crowding and cannot select units clearly."
+     The formation this replaces laid one square grid at one pitch - the
+     widest member's radius times 2.6 - over the goal and never looked at the
+     ground under it: a slot in the sea or inside a factory sent its unit to
+     the nearest tile somebody else was also heading for, a rifle squad in a
+     mixed group was spaced as if it were a tank, and attack-move had no
+     formation at all - every unit was handed the one clicked pixel.
+     Each unit now gets a spot of its own, sized to its own footprint (twice
+     its radius plus Unit.clearance(), 0.6 of the radius and 8 px at least:
+     a tank keeps the old 41.6 px pitch, a squad gets 20 px, a destroyer 52 -
+     and a crowd the commander makes by sending a wave to one point is spaced
+     by the same rule, entities.js crowdStop), on ground that unit can stand
+     on and reach, filled outward from the goal and a little wider across
+     the line of advance than along it. The goal's own piece of ground is the
+     one filled when the goal can be stood on - so a click on the far bank
+     still ends in NO ROUTE, as it should - and the unit's own piece when it
+     cannot, so a click just off the beach lines the column up along it
+     instead of sending everyone at one tile of sand. Largest footprints go
+     first and a squad fills the gaps a tank leaves. Air, surface and
+     submerged units are laid out apart, because they never collide with
+     each other. A single unit, or one with nowhere left to go,
+     gets the raw point - exactly what it always got. Returns [{u, x, y}].
+     Measured under jsc: 12 tanks attack-moved to one point went from 42 to
+     45 of 66 pairs overlapping (4 or 5 never arriving) to none; a
+     right-click at the water's edge put 3 of 12 formation spots in the sea
+     and now puts none; and 12 tanks with 20 squads end at most 3.5 tiles
+     from their centre, not 4.7, because a squad is no longer spaced as if
+     it were a tank. */
+  function groupSlots(units, wx, wy) {
+    const out = [], M = G.map, TL = CFG.TILE;
+    if (units.length < 2) { for (const u of units) out.push({ u, x: wx, y: wy }); return out; }
+    let cx0 = 0, cy0 = 0;
+    for (const u of units) { cx0 += u.x; cy0 += u.y; }
+    cx0 /= units.length; cy0 /= units.length;
+    const head = Math.atan2(wy - cy0, wx - cx0), ch = Math.cos(head), sh = Math.sin(head);
+    const al = (x, y) => (x - wx) * ch + (y - wy) * sh, ac = (x, y) => (y - wy) * ch - (x - wx) * sh;
+    const gtx = U.clamp((wx / TL) | 0, 0, M.W - 1), gty = U.clamp((wy / TL) | 0, 0, M.H - 1);
+    const layers = {};
+    for (const u of units) (layers[u.layer] || (layers[u.layer] = [])).push(u);
+    for (const L in layers) {
+      /* a kind is one footprint and one blocking class: it shares one list */
+      const kinds = new Map();
+      let minS = Infinity, maxS = 0, area = 0;
+      for (const u of layers[L]) {
+        const s = 2 * u.r + u.clearance(), mob = u.cat === "infantry" ? 1 : 2, key = s + ":" + mob;
+        let k = kinds.get(key);
+        if (!k) kinds.set(key, k = { s, mob, units: [] });
+        k.units.push(u);
+        minS = Math.min(minS, s); maxS = Math.max(maxS, s); area += s * s;
+      }
+      const order = [...kinds.values()].sort((a, b) => b.s - a.s);
+      const step = Math.max(6, minS / 2);
+      /* Candidates half the smallest pitch apart, out to 1.6 times the radius
+         the group packs into, and laid again out to 2.6 only if that leaves
+         somebody without a spot - a coast, a town. Out to 2.6 every time, the
+         first cut cost 8-10 ms an order at 100-200 units under jsc; this way
+         3-5 ms. */
+      for (const mult of [1.6, 2.6]) {
+        const R = Math.sqrt(area / Math.PI) * mult + maxS;
+        const K = Math.ceil(R / step), cand = [];
+        for (let i = -K; i <= K; i++) for (let j = -K; j <= K; j++) {
+          const along = i * step, across = j * step, m = along * along * 1.6 + across * across;
+          if (m > R * R) continue;
+          const x = wx + ch * along - sh * across, y = wy + sh * along + ch * across;
+          if (x < 0 || y < 0 || x >= M.W * TL || y >= M.H * TL) continue;
+          cand.push({ x, y, m });
+        }
+        cand.sort((a, b) => a.m - b.m);
+        /* spots already given out, bucketed at the largest pitch, so a test
+           reads nine buckets and not the whole list */
+        const placed = new Map(), cell = maxS;
+        const clear = (x, y, s) => {
+          const bx = (x / cell) | 0, by = (y / cell) | 0;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const b = placed.get((bx + dx) * 65536 + by + dy);
+            if (b) for (const p of b) {
+              const need = (s + p.s) / 2;
+              if ((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) < need * need) return false;
+            }
+          }
+          return true;
+        };
+        let short = false;
+        for (const k of order) {
+          const probe = k.units[0], tileOk = new Map();
+          const stand = (tx, ty) => GameMap.passable(M, tx, ty, L) && !G.tileBlocked(tx, ty, probe);
+          const air = L === "air", goalOk = air || stand(gtx, gty);
+          const rx = goalOk ? gtx : probe.tx, ry = goalOk ? gty : probe.ty;
+          const ok = (x, y) => {
+            if (air) return true;
+            const tx = (x / TL) | 0, ty = (y / TL) | 0, i = ty * M.W + tx;
+            let v = tileOk.get(i);
+            if (v === undefined) {
+              v = stand(tx, ty) && Path.reachable(M, rx, ry, tx, ty, L, true, k.mob);
+              tileOk.set(i, v);
+            }
+            return v;
+          };
+          k.spots = [];
+          for (let c = 0; c < cand.length && k.spots.length < k.units.length; c++) {
+            const p = cand[c];
+            if (!ok(p.x, p.y) || !clear(p.x, p.y, k.s)) continue;
+            const q = { x: p.x, y: p.y, s: k.s }, key = ((p.x / cell) | 0) * 65536 + ((p.y / cell) | 0);
+            const b = placed.get(key);
+            if (b) b.push(q); else placed.set(key, [q]);
+            k.spots.push(q);
+          }
+          if (k.spots.length < k.units.length) short = true;
+        }
+        if (!short) break;
+      }
+      /* Spots and units of a kind are both ranked front to back along the
+         line of advance, cut into ranks, and matched left to right within a
+         rank, so a group arrives in the order it travelled in. Giving each
+         spot to whichever unit was nearest it - the old formation's rule -
+         crosses routes. Straight-line routes crossing, under jsc, on the
+         build before / nearest-unit / ranks: 12 tanks 29 / 21 / 13 of 66,
+         40 tanks 208 / 144 / 92 of 780, 12 tanks with 20 squads 186 / 204 /
+         161 of 496. A big mixed group still crosses more than the old single
+         grid did - 50 tanks and 50 squads 766 / 1,480 / 1,389 of 4,950 -
+         because the squads' spots ring the tanks' and some lie on the far
+         side. */
+      for (const k of order) {
+        const spots = k.spots, us = k.units.slice().sort((a, b) => al(b.x, b.y) - al(a.x, a.y));
+        spots.sort((a, b) => al(b.x, b.y) - al(a.x, a.y));
+        const w = Math.max(1, Math.round(Math.sqrt(spots.length)));
+        for (let r0 = 0; r0 < spots.length; r0 += w) {
+          const rs = spots.slice(r0, r0 + w).sort((a, b) => ac(a.x, a.y) - ac(b.x, b.y));
+          const ru = us.slice(r0, r0 + w).sort((a, b) => ac(a.x, a.y) - ac(b.x, b.y));
+          for (let i = 0; i < rs.length; i++) out.push({ u: ru[i], x: rs[i].x, y: rs[i].y });
+        }
+        for (let i = spots.length; i < us.length; i++) out.push({ u: us[i], x: wx, y: wy });
+      }
+    }
+    return out;
+  }
+
   function issueOrderCore(target, wx, wy, shift) {
     const mine = selection.filter(s => s.owner === G.human);
     if (!mine.length) return;                       // enemy intel selection takes no orders
@@ -2297,12 +2483,7 @@ var UI = (function () {
       }
       /* nothing in the selection can occupy it - engineers and vehicles fall
          through to a plain move rather than shelling somebody's housing */
-      const n2 = units.length, cols2 = Math.ceil(Math.sqrt(n2));
-      units.forEach((u, i) => {
-        const ox = (i % cols2 - (cols2 - 1) / 2) * (u.r * 2.6);
-        const oy = (Math.floor(i / cols2) - (Math.ceil(n2 / cols2) - 1) / 2) * (u.r * 2.6);
-        u.give({ type: "move", x: wx + ox, y: wy + oy }, shift);
-      });
+      for (const sl of groupSlots(units, wx, wy)) sl.u.give({ type: "move", x: sl.x, y: sl.y }, shift);
       Sfx.play("order");
       return;
     }
@@ -2396,6 +2577,7 @@ var UI = (function () {
          taken recall and a lost recall were indistinguishable at the moment of
          the click, which is exactly why this shipped as a bug report. */
       let sentHome = 0, airMoved = 0;
+      const movers = [];
       for (const u of units) {
         const host = landingHost(u);
         if (host) {
@@ -2409,8 +2591,11 @@ var UI = (function () {
           u.give({ type: "enter", target });
         else if (target.kind === "building" && u.def.engineer)
           u.give({ type: "enter", target });
-        else { u.give({ type: "move", x: wx, y: wy }, shift); if (u.layer === "air") airMoved++; }
+        else { movers.push(u); if (u.layer === "air") airMoved++; }
       }
+      /* the rest walk to the point - each to a spot of its own beside it,
+         not all onto the unit or the structure that was clicked */
+      for (const sl of groupSlots(movers, wx, wy)) sl.u.give({ type: "move", x: sl.x, y: sl.y }, shift);
       if (sentHome)
         alert(sentHome === 1 ? "RETURNING TO BASE"
                              : sentHome + " AIRCRAFT RETURNING TO BASE", "good");
@@ -2433,58 +2618,35 @@ var UI = (function () {
        formation to reach a slot on the far side, which is what made a large
        selection churn every time it was ordered anywhere.
 
-       Now the grid is rotated to the direction of travel - ranks across the
-       axis of advance, files along it - and each slot goes to whichever
-       unassigned unit is already nearest it, so nobody crosses anybody. */
+       Then the grid was rotated to the direction of travel - ranks across the
+       axis of advance, files along it - and each slot went to whichever
+       unassigned unit was already nearest it, which still crossed routes
+       (29 of 66 pairs for 12 tanks). groupSlots() above keeps the turn, fits
+       each spot to the unit and to the ground, and matches rank to rank. */
     const n = units.length;
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
-    let cx0 = 0, cy0 = 0;
-    for (const u of units) { cx0 += u.x; cy0 += u.y; }
-    cx0 /= n; cy0 /= n;
-    const head = Math.atan2(wy - cy0, wx - cx0);
-    const ch = Math.cos(head), sh = Math.sin(head);
-    /* one spacing for the whole group, set by its widest member, and one pace,
-       set by its slowest, so a mixed formation neither overlaps nor strings out */
-    let gap = 0, slowest = Infinity;
+    /* one pace, set by the slowest, so a mixed formation does not string out */
+    let slowest = Infinity;
     for (const u of units) {
-      gap = Math.max(gap, u.r * 2.6);
       const sp = (u.def.speed || 1) * (u.speedMul ? u.speedMul() : 1);
       if (sp < slowest) slowest = sp;
     }
-    const slots = [];
-    for (let i = 0; i < n; i++) {
-      const across = (i % cols - (cols - 1) / 2) * gap;          // rank
-      const along  = (Math.floor(i / cols) - (rows - 1) / 2) * gap;  // file
-      slots.push({ x: wx + ch * along - sh * across,
-                   y: wy + sh * along + ch * across });
-    }
-    const pool = units.slice();
-    for (const sl of slots) {
-      let bi = 0, bd = Infinity;
-      for (let i = 0; i < pool.length; i++) {
-        const d = U.dist2(pool[i].x, pool[i].y, sl.x, sl.y);
-        if (d < bd) { bd = d; bi = i; }
-      }
-      const u = pool[bi];
-      pool.splice(bi, 1);
+    const gx = (wx / CFG.TILE) | 0, gy = (wy / CFG.TILE) | 0, walk = [];
+    for (const u of units) {
       /* A loaded landing craft sent to a beach it cannot itself drive onto is
          asking to put its cargo there. It goes to the aim point itself, with
          no formation offset, and unloads when it gets close. */
-      if (u.cargo && u.cargo.length && u.layer !== "air") {
-        const gx = (wx / CFG.TILE) | 0, gy = (wy / CFG.TILE) | 0;
-        if (!GameMap.passable(G.map, gx, gy, u.layer)) {
-          u.groupSpeed = 0;
-          u.give({ type: "move", x: wx, y: wy, unloadAt: true }, shift);
-          continue;
-        }
-      }
+      if (u.cargo && u.cargo.length && u.layer !== "air" && !GameMap.passable(G.map, gx, gy, u.layer)) {
+        u.groupSpeed = 0;
+        u.give({ type: "move", x: wx, y: wy, unloadAt: true }, shift);
+      } else walk.push(u);
+    }
+    for (const sl of groupSlots(walk, wx, wy)) {
       /* Hold the group together on the road: everyone moves at the pace of the
          slowest member, so a formation arrives as a formation instead of strung
          out with the fast units alone at the front. A lone unit is never
          throttled. */
-      u.groupSpeed = (n > 1) ? slowest : 0;
-      u.give({ type: "move", x: sl.x, y: sl.y }, shift);
+      sl.u.groupSpeed = (n > 1) ? slowest : 0;
+      sl.u.give({ type: "move", x: sl.x, y: sl.y }, shift);
     }
     Combat.addEffect({ t: "text", x: wx, y: wy, s: "·", life: 0.5, max: 0.5, c: "#8fd05f" });
     Sfx.play("order");
@@ -2504,8 +2666,12 @@ var UI = (function () {
             " WILL NOT FIRE ON AN ATTACK-MOVE \u2014 NAME THE TARGET", "bad");
     }
     const wp = Render.unproject(mx, my);
-    for (const u of selection) if (u.kind === "unit" && u.owner === G.human)
-      u.give({ type: "attackmove", x: wp.x, y: wp.y }, shift);
+    /* a spot each, as a plain move gets: every unit used to be handed the one
+       clicked pixel, and twelve tanks sent there ended 40 of 66 pairs
+       overlapping, five still shoving at it 45 s later */
+    const amv = selection.filter(u => u.kind === "unit" && u.owner === G.human);
+    for (const sl of groupSlots(amv, wp.x, wp.y))
+      sl.u.give({ type: "attackmove", x: sl.x, y: sl.y }, shift);
     Combat.addEffect({ t: "text", x: wp.x, y: wp.y, s: "ATTACK MOVE", life: 0.8, max: 0.8, c: "#ff8a6b" });
     /* An attack-move is the standing authority to engage what you meet - this
        function's own comment says so - and it is the commonest offensive order

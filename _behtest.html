@@ -1851,7 +1851,14 @@ try{
     cv.dispatchEvent({ type:"mousedown", button:2, clientX:rc.left+away.x, clientY:rc.top+away.y, shiftKey:false, ctrlKey:false, metaKey:false });
     chk("right-click leaves sell mode too, and nothing was sold", !inp.sellMode && !b.dead && UI.cursorMode()==="",
         "sell="+inp.sellMode+" dead="+b.dead+" cursor='"+UI.cursorMode()+"'");
-    b.dead=true;
+    /* removeBuilding, not b.dead: a structure only marked dead is swept out
+       of the entity list with its footprint still written into G.occ, and
+       that ground stays blocked for the rest of the match. [48] lays its
+       mine one tile east of a tile near home; when a match put this power
+       plant on that tile, the clearer's route was refused and [48] failed
+       for a reason that had nothing to do with mines (G.occ held id 464,
+       no entity by that id, found under jsc with all five streams stacked). */
+    Game.removeBuilding(b);
   })();
   }
 
@@ -2116,7 +2123,11 @@ try{
     var id=unitFor("nato","mineclear","e20");
     if(!id||!UNITS[id]){ chk("a mine clearer exists", false, String(id)); return; }
     function run(owner, drive, label, want){
-      var t=tile(P,"ground",7);
+      /* the mine goes one tile east of the clearer, so that tile must be
+         open ground as well: tile() vouches only for the one it returns */
+      var t=null;
+      for(var r0=7;r0<40&&!t;r0++){ var c0=tile(P,"ground",r0);
+        if(c0 && GameMap.passable(Game.map,c0.x+1,c0.y,"ground") && !Game.tileBlocked(c0.x+1,c0.y,null)) t=c0; }
       if(!t){ chk(label, false, "no ground"); return; }
       var u=Game.spawnUnitAt(P,id,t.x*32+16,t.y*32+16);
       var mx=(t.x+1)*32+16, my=t.y*32+16;
@@ -6699,6 +6710,240 @@ try{
     chk("the shared match is as the section found it",
         P.units.length === unitsBefore && Game.fogEnabled === fogBefore && D3.stats().emitters === 0,
         "our units " + P.units.length + " (was " + unitsBefore + ")");
+  })();
+  }
+
+  /* ====== [64] A GROUP ARRIVES SPREAD OUT, AND A PILE CAN BE CLICKED APART ======
+     (owner) "the unit should have less overlapping or more space instead of
+     crowding and cannot select units clearly."
+     Measured on the build before this section, 12 M1A2s attack-moved to one
+     point: 45 of 66 pairs overlapping, 39 of them by more than 4 px of a 32 px
+     footprint, and 4 of the 12 still shoving at the point 45 s later - an
+     order that never completes. Six destroyers: all 15 pairs overlapping by
+     22 px on average. A right-click to the water's edge put 3 of 12 formation
+     slots in the sea. Two hulls left overlapping stayed that way for good, and
+     clicking a pile picked the same one every time.
+     And three things the first cut of this got wrong, held here so they stay
+     fixed: a wave handed one point, re-handed it every think as the commander
+     does, never came to rest; a wave stopped short behind its own firing line
+     and left a position that does not shoot first standing; and clicking a
+     unit again swapped it for a neighbour it was not even touching.
+     Every part drives the real thing: the page's own mouse handlers for the
+     player's orders, u.give() exactly as the commander issues its wave, and
+     Game.tick for the movement. The enemy is put on our letter for the
+     duration, except for the one fight, so nothing else here turns into a
+     fight, and everything spawned is removed again. */
+  if (inHalf(1)) {
+  log("\n[64] A GROUP ARRIVES SPREAD OUT, AND A PILE CAN BE CLICKED APART");
+  (function(){
+    var T=CFG.TILE, M=Game.map, made=[], team1=E.team, cam0=null;
+    var cv=document.getElementById("cv");
+    if(!cv||!UI.input||!Render.cam){ chk("the page's canvas and camera are there to click on", false, "no #cv / UI.input / Render.cam"); return; }
+    cam0={ x:Render.cam.x, y:Render.cam.y, z:Render.cam.z };
+    function patch(layer,w,h){
+      var hx=(P.homeX/T)|0, hy=(P.homeY/T)|0, best=null, bd=Infinity;
+      for(var y=4;y<M.H-h-4;y+=2) for(var x=4;x<M.W-w-4;x+=2){
+        var good=true;
+        for(var j=0;j<h&&good;j++) for(var i=0;i<w;i++)
+          if(!GameMap.passable(M,x+i,y+j,layer)||Game.tileBlocked(x+i,y+j,null)){ good=false; break; }
+        if(good){ var d=Math.abs(x-hx)+Math.abs(y-hy); if(d<bd){ bd=d; best={x:x,y:y}; } }
+      }
+      return best;
+    }
+    function put(id,tx,ty,who){ var u=Game.spawnUnitAt(who||P,id,tx*T+16,ty*T+16); if(u) made.push(u); return u; }
+    function block(id,n,x0,y0,pitch,cols,who){ cols=cols||4; var a=[]; for(var k=0;k<n;k++){ var u=put(id,x0+(k%cols)*pitch,y0+((k/cols)|0)*pitch,who); if(u) a.push(u); } return a; }
+    function select(us){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
+      for(var i=0;i<us.length;i++){ us[i].selected=true; s.push(us[i]); } }
+    function screen(wx,wy){ return { x:Render.sx(wx,wy), y:Render.sy(wx,wy,GameMap.elevAt(M,(wx/T)|0,(wy/T)|0)) }; }
+    function down(p,button){ var rc=cv.getBoundingClientRect();
+      cv.dispatchEvent({ type:"mousedown", button:button, clientX:rc.left+p.x, clientY:rc.top+p.y, shiftKey:false, ctrlKey:false, metaKey:false }); }
+    function up(detail){ var ev={ type:"mouseup", button:0, shiftKey:false, detail:detail };
+      if(typeof __listeners!=="undefined") (__listeners["win:mouseup"]||[]).forEach(function(f){ f(ev); });
+      else window.dispatchEvent(new MouseEvent("mouseup",{ button:0, detail:detail })); }
+    function click(p,detail){ down(p,0); up(detail); }
+    function attackMove(us,wx,wy){ Render.setCam(wx,wy); select(us); UI.input.attackMove=true; down(screen(wx,wy),0); UI.input.attackMove=false; }
+    function rightClick(us,wx,wy){ Render.setCam(wx,wy); select(us); down(screen(wx,wy),2); }
+    /* how a group stands: pairs overlapping by more than 2 px (the depth a
+       settled crowd is allowed), units still on their way, how far the last
+       three seconds moved them, and how far from the point they gathered */
+    function stand(us,secs,gx,gy){
+      var n=Math.round(secs/CFG.DT), mark=n-Math.round(3/CFG.DT), at=null;
+      for(var s=0;s<n;s++){ Game.tick(CFG.DT); if(s===mark) at=us.map(function(u){ return [u.x,u.y]; }); }
+      var ov=0, worst=0, going=0, drift=0, cx=0, cy=0, far=0;
+      for(var i=0;i<us.length;i++){
+        var t=us[i].order.type; if(t==="move"||t==="attackmove") going++;
+        drift+=Math.hypot(us[i].x-at[i][0],us[i].y-at[i][1]); cx+=us[i].x; cy+=us[i].y;
+        if(gx!==undefined) far=Math.max(far,Math.hypot(us[i].x-gx,us[i].y-gy)/T);
+        for(var j=i+1;j<us.length;j++){
+          var d=us[i].r+us[j].r-Math.hypot(us[i].x-us[j].x,us[i].y-us[j].y);
+          if(d>worst) worst=d; if(d>2) ov++; }
+      }
+      cx/=us.length; cy/=us.length;
+      return { ov:ov, pairs:us.length*(us.length-1)/2, worst:worst, going:going, drift:drift, far:far,
+               off: gx===undefined ? 0 : Math.hypot(cx-gx,cy-gy)/T };
+    }
+    function say(r){ return r.ov+" of "+r.pairs+" pairs over 2 px (worst "+r.worst.toFixed(1)+" px), "+r.going+" still on the order, last 3 s moved "+r.drift.toFixed(1)+" px"; }
+    function clear(){ while(made.length) made.pop().dead=true; Game.sweepDead();
+      var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0; }
+    var gp=patch("ground",30,22), sp=patch("sea",24,16);
+    if(!gp||!sp){ chk("open ground and open water for the group test", false, "ground "+!!gp+" sea "+!!sp); return; }
+    E.team=P.team;
+    try {
+      /* ---- 1. the player's attack-move, twelve tanks ---- */
+      var tanks=block("mbt_n",12,gp.x+2,gp.y+6,1.5), gx=(gp.x+22)*T+16, gy=(gp.y+11)*T+16;
+      tick(1);
+      attackMove(tanks,gx,gy);
+      var pts={}, same=0;
+      tanks.forEach(function(u){ var k=Math.round(u.order.x)+","+Math.round(u.order.y); if(pts[k]) same++; pts[k]=1; });
+      chk("an attack-move gives each tank a spot of its own, not the one clicked pixel",
+          tanks.length===12 && tanks.every(function(u){ return u.order.type==="attackmove"; }) && same===0,
+          tanks.length+" tanks, "+same+" sharing a point");
+      var r1=stand(tanks,40);
+      chk("twelve tanks attack-moved to one point all arrive, and stand apart",
+          r1.ov===0 && r1.going===0, say(r1));
+      chk("and once there they are still - no shuffling at rest", r1.drift<1, say(r1));
+      clear();
+
+      /* ---- 2. the commander's way: tanks and rifle squads handed one point each ---- */
+      var wave=block("mbt_n",12,gp.x+2,gp.y+6,1.5).concat(block("rifle_n",20,gp.x+9,gp.y+4,1,5));
+      tick(1);
+      wave.forEach(function(u){ u.give({ type:"attackmove", x:gx, y:gy }); });
+      var r2=stand(wave,40,gx,gy);
+      chk("12 tanks and 20 squads given one point each by give() all arrive, and stand apart",
+          wave.length===32 && r2.ov===0 && r2.going===0, say(r2));
+      chk("and they gather round the point, not in a tail down the road",
+          r2.far<4.5 && r2.off<1.2, "farthest "+r2.far.toFixed(2)+" tiles out, centre "+r2.off.toFixed(2)+" off the point");
+      /* the commander re-hands every idle member the same attack-move each
+         think (driveWave, 1.6 s): the crowd must stay at rest under that */
+      var moved=0, going2=0, snap=wave.map(function(u){ return [u.x,u.y]; });
+      for(var s=0;s<Math.round(8/CFG.DT);s++){
+        if(s%Math.round(1.6/CFG.DT)===0) wave.forEach(function(u){ if(u.order.type==="idle") u.give({ type:"attackmove", x:gx, y:gy }); });
+        Game.tick(CFG.DT);
+        if(s%Math.round(0.4/CFG.DT)===0) wave.forEach(function(u){ var t=u.order.type; if(t==="move"||t==="attackmove") going2++; });
+      }
+      wave.forEach(function(u,i){ moved+=Math.hypot(u.x-snap[i][0],u.y-snap[i][1]); });
+      chk("re-handed the same point every 1.6 s, as the commander does, nobody sets off again",
+          moved<2 && going2===0, "moved "+moved.toFixed(1)+" px in 8 s, "+going2+" unit-samples back on the order");
+      clear();
+
+      /* ---- 3. ships ---- */
+      var fleet=block("destroyer_n",6,sp.x+2,sp.y+3,2), fx=(sp.x+18)*T+16, fy=(sp.y+10)*T+16;
+      tick(1);
+      attackMove(fleet,fx,fy);
+      var r3=stand(fleet,30);
+      chk("six destroyers attack-moved to one point stand apart", r3.ov===0 && r3.going===0, say(r3));
+      clear();
+
+      /* ---- 4. a right-click at the water's edge ---- */
+      /* a tile of open ground with the sea on at least three sides of it,
+         and a column parked on the same ground a few tiles inland */
+      var edge=null, start=null, col=[];
+      for(var y=10;y<M.H-10&&!start;y++) for(var x=10;x<M.W-10&&!start;x++){
+        if(!GameMap.passable(M,x,y,"ground")||Game.tileBlocked(x,y,null)) continue;
+        var wet=0; for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++) if(GameMap.passable(M,x+dx,y+dy,"sea")) wet++;
+        if(wet<3) continue;
+        edge={x:x,y:y};
+        for(var r=4;r<14&&!start;r++) for(var a=0;a<32&&!start;a++){
+          var sx=(edge.x+Math.cos(a/32*6.283)*r)|0, sy=(edge.y+Math.sin(a/32*6.283)*r)|0, fine=true;
+          for(var j=0;j<3&&fine;j++) for(var i=0;i<4;i++)
+            if(!GameMap.passable(M,sx+i,sy+j,"ground")||Game.tileBlocked(sx+i,sy+j,null)||
+               !Path.reachable(M,sx+i,sy+j,edge.x,edge.y,"ground",true,2)){ fine=false; break; }
+          if(fine) start={x:sx,y:sy};
+        }
+      }
+      if(start) col=block("mbt_n",12,start.x,start.y,1);
+      if(col.length===12){
+        tick(1);
+        rightClick(col,edge.x*T+16,edge.y*T+16);
+        var inSea=0;
+        col.forEach(function(u){ if(!GameMap.passable(M,(u.order.x/T)|0,(u.order.y/T)|0,"ground")) inSea++; });
+        chk("a formation ordered to the water's edge puts no tank's spot in the sea",
+            inSea===0 && col.every(function(u){ return u.order.type==="move"; }), inSea+" of 12 spots in the water, edge "+edge.x+","+edge.y);
+      } else chk("a formation ordered to the water's edge puts no tank's spot in the sea", false, "no coast with room behind it");
+      clear();
+
+      /* ---- 5. a wave handed one point closes on a position that does not
+         shoot first. The first cut counted anything standing still that had
+         been sent to the point as the crowd there, so every tank that came
+         up behind one stopped to fire went idle beside it: measured apart
+         from this suite, 5 of 8 T-90As on hold fire outlived such a wave.
+         Here the fight itself, and then the rule directly. ---- */
+      E.team=team1;
+      var ours=block("mbt_n",16,gp.x+1,gp.y+5,1.5), them=block("mbt_p",8,gp.x+24,gp.y+8,1.5,4,E);
+      them.forEach(function(u){ u.stance="hold"; });
+      var ax=(gp.x+20)*T+16, ay=(gp.y+9)*T+16, wiped=-1;
+      tick(1);
+      ours.forEach(function(u){ u.give({ type:"attackmove", x:ax, y:ay }); });
+      for(var s=0;s<Math.round(75/CFG.DT)&&wiped<0;s++){
+        Game.tick(CFG.DT);
+        if(them.every(function(u){ return u.dead; })) wiped=s*CFG.DT;
+      }
+      var left=them.filter(function(u){ return !u.dead; }).length;
+      E.team=P.team;
+      chk("sixteen tanks handed one point four tiles short of eight on hold fire destroy all eight",
+          ours.length===16 && them.length===8 && left===0, left+" of 8 left"+(wiped>=0?", all gone at "+wiped.toFixed(1)+" s":" after 75 s"));
+      clear();
+      var short1=put("mbt_n",gp.x+19,gp.y+11), next1=put("mbt_n",gp.x+12,gp.y+11);
+      tick(1);
+      short1.give({ type:"attackmove", x:gx, y:gy }); short1.give({ type:"idle" });   // sent there, stopped 3 tiles short
+      next1.give({ type:"attackmove", x:gx, y:gy });
+      for(var s=0;s<Math.round(15/CFG.DT);s++) Game.tick(CFG.DT);
+      var dn=Math.hypot(next1.x-gx,next1.y-gy)/T;
+      chk("one sent to the same point that stopped short is not the crowd there - the next goes on to the point",
+          !!short1 && !!next1 && next1.order.type==="idle" && dn<1.2, "ended "+dn.toFixed(2)+" tiles from the point, "+next1.order.type);
+      clear();
+
+      /* ---- 6. two hulls left on top of each other ease apart, then stop ---- */
+      var c=gp, pile=[put("mbt_n",c.x+10,c.y+10),put("mbt_n",c.x+10,c.y+10),put("mbt_n",c.x+10,c.y+10)];
+      pile.forEach(function(u){ u.x=(c.x+10)*T+16; u.y=(c.y+10)*T+16; });
+      var r5=stand(pile,6);
+      chk("three tanks left exactly stacked and idle move apart on their own",
+          r5.ov===0, say(r5));
+      var r5b=stand(pile,4);
+      chk("and then they stay put", r5b.drift<0.5 && r5b.ov===0, say(r5b));
+      clear();
+
+      /* ---- 7. clicking a pile walks down it ---- */
+      var bx=(c.x+12)*T+16, by=(c.y+12)*T+16;
+      var three=[put("mbt_n",c.x+12,c.y+12),put("mbt_n",c.x+12,c.y+12),put("mbt_n",c.x+12,c.y+12)];
+      three[0].x=bx; three[0].y=by; three[1].x=bx+9; three[1].y=by; three[2].x=bx; three[2].y=by+9;
+      Render.setCam(bx,by);
+      var at=screen(bx+3,by+3), got=[];
+      select([]); UI.input.mx=at.x; UI.input.my=at.y;
+      for(var k=0;k<4;k++){ click(at); got.push(UI.selection.length===1?UI.selection[0]:null); }
+      var distinct=[got[0],got[1],got[2]].filter(function(u,i,a){ return u && three.indexOf(u)>=0 && a.indexOf(u)===i; }).length;
+      chk("clicking the same spot on a pile of three selects each in turn",
+          distinct===3, got.map(function(u){ return u? "#"+(three.indexOf(u)): "none"; }).join(" "));
+      chk("and a fourth click comes back round to the first", got[3]===got[0] && !!got[0],
+          "first #"+three.indexOf(got[0])+", fourth #"+three.indexOf(got[3]));
+      var before=UI.selection[0];
+      click(at,2);
+      chk("the second click of a double-click does not step down the pile",
+          UI.selection.length===1 && UI.selection[0]===before, "held #"+three.indexOf(UI.selection[0]));
+      var rc=cv.getBoundingClientRect();
+      cv.dispatchEvent({ type:"dblclick", button:0, clientX:rc.left+at.x, clientY:rc.top+at.y, shiftKey:false });
+      chk("a double-click still takes every one of that type on screen",
+          three.every(function(u){ return u.selected; }), UI.selection.length+" selected");
+      clear();
+
+      /* ---- 8. ...but a unit in a parked formation is not a pile ---- */
+      var rank=[], swapped=0;
+      for(var k=0;k<4;k++){ var u=put("mbt_n",c.x+12,c.y+12); if(u){ u.x=bx+k*41.6; u.y=by; rank.push(u); } }
+      rank.forEach(function(u){
+        var p=screen(u.x,u.y); Render.setCam(u.x,u.y); p=screen(u.x,u.y);
+        select([]); UI.input.mx=p.x; UI.input.my=p.y;
+        click(p,1); var a=UI.selection[0]; click(p,1); if(UI.selection[0]!==a || a!==u) swapped++;
+      });
+      chk("clicking a tank again in a formation keeps that tank (41.6 px apart, none touching)",
+          rank.length===4 && swapped===0, swapped+" of "+rank.length+" swapped for a neighbour");
+      clear();
+    } finally {
+      E.team=team1; clear();
+      Render.cam.z=cam0.z; Render.setCam(cam0.x,cam0.y);
+      UI.input.attackMove=false;
+    }
+    chk("the letters and the board are back where the suite found them",
+        Game.allied(P,E)===false && made.length===0, "teams "+P.team+" and "+E.team);
   })();
   }
 

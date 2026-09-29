@@ -212,6 +212,17 @@ class Unit {
     this.deployed = false;
     this.routT = 0;                                         // seconds left running
     this.pad = null;                                        // airbase slot
+    /* crowdStop() / settle() bookkeeping - what the last step ran into, and
+       where the last trip ended and for which point - laid down here so every
+       unit carries the same fields in the same order. Added on first use
+       they gave the hot grid callbacks more object shapes to tell apart: on
+       the first cut of this, stepAlong() measured 3.20 us a call against
+       HEAD's 2.56 that way, and 2.28-2.44 once they were declared here (133
+       units, jsc, two runs each on a shared machine - read it as a
+       direction, not a figure). */
+    this._touch = null; this._touchT = -1; this._touchX = NaN; this._touchY = NaN;
+    this._atGX = NaN; this._atGY = NaN; this._atX = 0; this._atY = 0;
+    this._settleT = (this.id % 15) * CFG.DT; this._settling = false;
   }
 
   get tx() { return U.clamp((this.x / CFG.TILE) | 0, 0, this.game.map.W - 1); }
@@ -988,7 +999,7 @@ class Unit {
         }
         this.path = null; this.repathT = 0;           // one forced re-plan
       }
-      const arrived = this.stepAlong(o.x, o.y, dt);
+      const arrived = this.legDone(o, dt);
       if (arrived) this.groupSpeed = 0;
       /* A loaded transport sent to a shore it cannot itself enter beaches as
          close as it can get and puts its cargo off there, which is plainly
@@ -1394,7 +1405,7 @@ class Unit {
     } else if (o.type === "attackmove") {
       const foe = this.acquire();
       if (foe) { this.order = { type: "attack", target: foe, resume: { x: o.x, y: o.y }, auto: true }; }
-      else if (this.stepAlong(o.x, o.y, dt) && !this.nextOrder()) this.order = { type: "idle" };
+      else if (this.legDone(o, dt) && !this.nextOrder()) this.order = { type: "idle" };
     } else if (o.type === "patrol") {
       /* ---- PATROL: walk a beat, and fight what is met on it ----
          (owner) "the bottom should have helper line like deploy, recall,
@@ -1504,6 +1515,12 @@ class Unit {
       /* drift back to guard post if shoved too far */
       if (o.type === "guard" && U.dist(this.x, this.y, this.guardX, this.guardY) > CFG.TILE * 3)
         this.stepAlong(this.guardX, this.guardY, dt);
+    }
+    /* at rest - parked, on guard, or shooting from where it stands - it
+       eases off anything it has been left overlapping. settle() says why. */
+    if (!this.moving) {
+      const t = this.order.type;
+      if (t === "idle" || t === "guard" || t === "attack") this.settle(dt);
     }
   }
 
@@ -2100,6 +2117,235 @@ class Unit {
     return true;
   }
 
+  /* ---- arriving where somebody is already standing ----
+     (owner) "the unit should have less overlapping or more space instead of
+     crowding and cannot select units clearly."
+     stepAlong() finishes a trip only within 0.45 of a tile of the exact
+     point, and its separation push (30 px/s) is weaker than a tank's drive
+     (50 px/s), so every unit sent to one point shoved into the first arrival
+     until it was nearly on top of it. The commander sends every wave to one
+     point (driveWave), and a factory sends every new unit to one rally
+     point. Measured under jsc, 12 M1A2s each handed one attack-move point
+     by give(), as ai.js does: 39 to 45 of 66 pairs overlapping, the worst by
+     27 px of a 32 px footprint, and 5 of the 12 still shoving at the point
+     45 s later - an order that never completes.
+     So a trip that meets the crowd already standing at its point takes the
+     free spot nearest that point instead (crowdStop, findSpot): the same
+     spacing the player's formations get from groupSlots() in ui.js, on
+     ground the unit can stand on and reach. Measured the same way: no pair
+     over 2 px, all 12 arrive, the crowd's centre 0.2 of a tile off the
+     point; sixteen tanks delivered to a rally point one at a time gather
+     0.6-0.9 of a tile off it, where the first cut of this, stopping at the
+     first touch, grew a tail 4.2 tiles back toward the factory.
+
+     Who the crowd is matters as much. legDone() writes down where each trip
+     ended, and only a unit standing where a trip to this same point ended
+     (restsAt) counts: a front line that stopped short to shoot is not the
+     crowd at the goal, and the first cut of this, which counted anything
+     standing still that had been sent there, stopped a 16-tank wave behind
+     its own firing line - 5 of 8 T-90As on hold fire outlived it, where the
+     build before destroyed all 8 in 46 s. Counting only arrivals, all 8 go
+     in 29 s. Nor is one of ours that is merely parked on the point: the
+     trip drives up to it as it always did, and settle() below eases the
+     two apart. The commander's depot berths are a tile apart, closer than
+     any formation, and stopping short beside whoever was parked on one kept
+     99 of 120 repair cases inside the depot's reach (the build before 106,
+     with 52 pairs left overlapping); driving in and easing apart keeps 109,
+     none overlapping. A landing craft putting troops ashore and a rig about
+     to unfold need the exact point and never ask. Ten tiles out it stops
+     asking. */
+  legDone(o, dt) {
+    const done = this.crowdStop(o) ||
+      this.stepAlong(o.sx !== undefined ? o.sx : o.x, o.sx !== undefined ? o.sy : o.y, dt);
+    if (!done) return false;
+    /* a trip that found no route stopped where it stood: that is not the
+       goal, and nobody should gather round it as if it were */
+    if (!this.pathFail) {
+      this._atGX = o.x; this._atGY = o.y; this._atX = this.x; this._atY = this.y;
+    }
+    return true;
+  }
+  /* the gap a formation leaves round this unit: groupSlots() in ui.js spaces
+     the player's spots by it and a crowd is spaced by it here, so the crowd
+     a commander makes by sending a wave to one point stands as open as the
+     formation a player makes with a right-click */
+  clearance() { return this.r * 0.6 > 8 ? this.r * 0.6 : 8; }
+  /* it ended a trip to (gx, gy) and still stands where that trip ended */
+  restsAt(gx, gy) {
+    const H = CFG.TILE * 0.5;
+    return !this.moving && Math.abs(this._atGX - gx) < H && Math.abs(this._atGY - gy) < H &&
+           Math.abs(this.x - this._atX) < H && Math.abs(this.y - this._atY) < H;
+  }
+  crowdStop(o) {
+    if (o.unloadAt || this.def.deployTo) return false;
+    const T = CFG.TILE, d = U.dist(this.x, this.y, o.x, o.y);
+    if (d > T * 10) return false;
+    /* Handed the same goal again where it already stopped for it: still
+       there. The commander re-hands every idle wave member its attack-move
+       each think (driveWave, 1.6 s), all on the same tick. Without this, in
+       the first cut of this, each of them set off for the point again and
+       the crowd never came to rest: 40 tanks under those re-orders had 39.8
+       of 40 moving in every 0.4 s sample (the build before, still shoving at
+       the one point, 3.8 moving and 61.5 pairs overlapping by more than
+       2 px). Now none moves and none overlaps. Not if the point has come
+       free since: then it walks in. */
+    if (this.restsAt(o.x, o.y) && (d < T * 0.8 || this.pointTaken(o.x, o.y))) return true;
+    /* stepAlong() leaves what it ran into on the last tick, read off the
+       separation query it already pays for; a unit that did not step looks
+       for itself, one small query */
+    const spot = o.sx !== undefined, px = spot ? o.sx : o.x, py = spot ? o.sy : o.y;
+    if (this._touchT < this.game.time - CFG.DT * 1.5 || this._touchX !== px || this._touchY !== py)
+      this.touching(px, py);
+    const e = this._touch;
+    if (!e || e.dead || e.moving || !e.restsAt(o.x, o.y)) return false;
+    if (spot && U.dist(e.x, e.y, px, py) >= this.r + e.r) return false;   // my spot is still free
+    /* the crowd, or one of it on the spot I chose: find another. Four in a
+       row gone before it got there and it stays where it is */
+    if ((o.spotN = (o.spotN || 0) + 1) > 4) return true;
+    const s = this.findSpot(o.x, o.y);
+    if (!s) return true;                                 // nothing free within ten tiles
+    o.sx = s.x; o.sy = s.y; this.path = null;
+    return false;
+  }
+  /* one of ours stands at rest on (gx, gy) */
+  pointTaken(gx, gy) {
+    let hit = false;
+    const own = this.owner, L = this.layer, cl = this.clearance();
+    this.game.grid.query(gx, gy, this.r + 40, (e) => {
+      if (hit || e === this || e.dead || e.kind !== "unit" || e.layer !== L || e.carried ||
+          e.owner !== own || e.moving) return;
+      const m = this.r + e.r + (cl + e.clearance()) * 0.5;
+      if (U.dist2(e.x, e.y, gx, gy) < m * m) hit = true;
+    });
+    return hit;
+  }
+  /* The free spot nearest (gx, gy) that this unit can stand on and reach:
+     rings round the point one formation pitch apart, six spots to the ring
+     per ring out, the nearer ring first - but a spot on the near side may
+     beat one on the far side of a closer ring (0.35 of the walk to it is
+     added), so a unit does not cross the whole crowd for a hand's width.
+     Free means no unit of ours standing within a formation's spacing of it,
+     and none already on its way there: a spot is claimed when it is chosen,
+     on the owner, until the unit reaches it or is given something else.
+     Without the claims forty tanks arriving together kept choosing the same
+     spots - 131 searches for 40 units, and one that lost a spot four times
+     stopped where it was; with them, 50. Only our own units are looked at:
+     where our own are standing is all a commander needs to know here. */
+  findSpot(gx, gy) {
+    const g = this.game, M = g.map, T = CFG.TILE, L = this.layer, own = this.owner;
+    const cl = this.clearance(), pitch = 2 * this.r + cl, mob = this.cat === "infantry" ? 1 : 2;
+    const cand = [{ x: gx, y: gy, c: 0.35 * U.dist(gx, gy, this.x, this.y) }];
+    for (let k = 1; k <= 8 && k * pitch <= T * 10; k++) {
+      const rho = k * pitch, n = 6 * k, a0 = (k & 1) ? Math.PI / n : 0;
+      for (let i = 0; i < n; i++) {
+        const a = a0 + i / n * Math.PI * 2, x = gx + Math.cos(a) * rho, y = gy + Math.sin(a) * rho;
+        cand.push({ x, y, c: rho + 0.35 * U.dist(x, y, this.x, this.y) });
+      }
+    }
+    cand.sort((a, b) => a.c - b.c);
+    const tx0 = this.tx, ty0 = this.ty;
+    const claims = own._spotClaims || (own._spotClaims = []);
+    let w = 0;
+    for (const c of claims) {
+      const uo = c.u.order;
+      if (c.u !== this && !c.u.dead && uo && uo.sx === c.x && uo.sy === c.y) claims[w++] = c;
+    }
+    claims.length = w;
+    for (const p of cand) {
+      if (p.x < 0 || p.y < 0) continue;
+      const tx = (p.x / T) | 0, ty = (p.y / T) | 0;
+      if (tx >= M.W || ty >= M.H || !GameMap.passable(M, tx, ty, L) || g.tileBlocked(tx, ty, this) ||
+          !Path.reachable(M, tx0, ty0, tx, ty, L, true, mob)) continue;
+      let free = true;
+      g.grid.query(p.x, p.y, this.r + 40, (e) => {
+        if (!free || e === this || e.dead || e.kind !== "unit" || e.layer !== L || e.carried ||
+            e.owner !== own || e.moving) return;
+        const m = this.r + e.r + (cl + e.clearance()) * 0.5 - 2;
+        if (U.dist2(e.x, e.y, p.x, p.y) < m * m) free = false;
+      });
+      for (let i = 0; free && i < w; i++) {
+        const c = claims[i], m = this.r + c.u.r + (cl + c.u.clearance()) * 0.5 - 2;
+        if (U.dist2(c.x, c.y, p.x, p.y) < m * m) free = false;
+      }
+      if (free) { claims.push({ u: this, x: p.x, y: p.y }); return p; }
+    }
+    return null;
+  }
+  /* what stepAlong() records, for a unit that has not stepped since: the
+     one of the crowd at its goal within a formation's spacing and a hand's
+     width, nearest the point it is steering for (px, py) */
+  touching(px, py) {
+    let touch = null, touchD = Infinity;
+    const r = this.r, own = this.owner, cl = this.clearance(), o = this.order;
+    this.game.grid.query(this.x, this.y, r + 32, (e) => {
+      if (e === this || e.dead || e.kind !== "unit" || e.layer !== this.layer || e.carried ||
+          e.owner !== own || e.moving) return;
+      const reach = r + e.r + (cl + e.clearance()) * 0.5 + 4;
+      if (U.dist2(this.x, this.y, e.x, e.y) >= reach * reach) return;
+      const de = U.dist2(e.x, e.y, px, py);
+      if (de < touchD && e.restsAt(o.x, o.y)) { touchD = de; touch = e; }
+    });
+    this._touch = touch; this._touchT = this.game.time;
+    this._touchX = px; this._touchY = py;
+    return touch;
+  }
+
+  /* ---- at rest, ease apart ----
+     Nothing used to separate a unit that was not moving: the push above
+     lives in stepAlong(), so two hulls left overlapping stayed that way for
+     the rest of the match, and a stack is exactly what cannot be clicked
+     apart. At rest a unit now slides off whatever it overlaps - at 16 px/s
+     or four tenths of its road speed if that is less, never more than half
+     the overlap in a tick so two of them meeting halfway cannot overshoot,
+     and only once the overlap is past 2 px and until it is under 0.5, so a
+     settled crowd does not shiver: three tanks left exactly on top of each
+     other are apart inside 3 s and then move 0.0 px. It does not turn the
+     hull, set `moving` or burn fuel - this is shuffling a few feet, not
+     driving - and a deployed gun and anything airborne stay put. Looked at
+     twice a second (staggered by id) until an overlap is found, then every
+     tick until it is gone, so a parked army pays one small grid query per
+     unit per half second. Where a trip ended moves with it, so a shuffle
+     does not make it forget it has arrived (restsAt). */
+  settle(dt) {
+    if (this.deployed || this.layer === "air") return;
+    if (!this._settling) {
+      if ((this._settleT -= dt) > 0) return;
+      this._settleT = 0.5;
+    }
+    let px = 0, py = 0, worst = 0;
+    const r = this.r;
+    this.game.grid.query(this.x, this.y, r + 18, (e) => {
+      if (e === this || e.dead || e.kind !== "unit" || e.layer !== this.layer || e.carried) return;
+      const min = r + e.r, dx = this.x - e.x, dy = this.y - e.y, d2 = dx * dx + dy * dy;
+      if (d2 >= min * min) return;
+      const dd = Math.sqrt(d2), ov = min - dd;
+      if (ov > worst) worst = ov;
+      if (dd > 0.01) { px += dx / dd * ov; py += dy / dd * ov; }
+      else {                          /* exactly stacked: split along a direction of its own */
+        const a = this.id * 2.39996;
+        px += Math.cos(a) * ov; py += Math.sin(a) * ov;
+      }
+    });
+    if (worst < (this._settling ? 0.5 : 2)) { this._settling = false; return; }
+    this._settling = true;
+    const len = Math.sqrt(px * px + py * py);
+    if (len < 0.01 || this.speedMul() <= 0) return;
+    const step = Math.min(len * 0.5, Math.min(16, this.def.speed * CFG.TILE * 0.4) * dt);
+    const x0 = this.x, y0 = this.y, nx = x0 + px / len * step, ny = y0 + py / len * step;
+    if (this.standable(nx, ny)) { this.x = nx; this.y = ny; }
+    else if (this.standable(nx, y0)) this.x = nx;
+    else if (this.standable(x0, ny)) this.y = ny;
+    else { this._settling = false; return; }  // wedged: back to looking twice a second
+    this._atX += this.x - x0; this._atY += this.y - y0;
+  }
+  /* the same test stepAlong() applies to a step: on the board, passable for
+     this layer, not inside a structure or an obstacle that stops this unit */
+  standable(x, y) {
+    const map = this.game.map, tx = (x / CFG.TILE) | 0, ty = (y / CFG.TILE) | 0;
+    return x >= 0 && y >= 0 && tx < map.W && ty < map.H &&
+           GameMap.passable(map, tx, ty, this.layer) && !this.game.tileBlocked(tx, ty, this);
+  }
+
   /* ---- movement: follow A* path with hull rotation & local avoidance ---- */
   stepAlong(px, py, dt, stopDist) {
     const map = this.game.map;
@@ -2216,8 +2462,18 @@ class Unit {
     let ny = this.y + Math.sin(this.ang) * sp * dt;
 
     /* local separation from friendlies on the same layer */
-    let pushX = 0, pushY = 0;
-    this.game.grid.query(this.x, this.y, this.r + 18, (e) => {
+    let pushX = 0, pushY = 0, touch = null, touchD = Infinity;
+    /* A trip within ten tiles of its point also looks for the crowd there
+       (crowdStop), a formation's spacing out from the hull, so the query
+       reaches 14 px further for it: 18 px past the hull does not reach a
+       tank's neighbour at 41.6. Measured on 133 units under jsc, Unit.update
+       per call with and without the wider reach: 6.66-7.19 us against
+       6.56-7.24 (orders every 20 s), 7.33-8.67 against 8.03-8.31 (re-orders
+       every 1.6 s) - noise on a shared machine either way; HEAD 5.91-7.27
+       and 8.29-10.04. */
+    const od = this.order, ot = od.type, cl = this.clearance();
+    const near = (ot === "move" || ot === "attackmove") && U.dist2(this.x, this.y, px, py) < 102400;
+    this.game.grid.query(this.x, this.y, this.r + (near ? 32 : 18), (e) => {
       if (e === this || e.dead || e.kind !== "unit" || e.layer !== this.layer || e.carried) return;
       const dd = U.dist(this.x, this.y, e.x, e.y), min = this.r + e.r;
       if (dd < min && dd > 0.01) {
@@ -2230,7 +2486,17 @@ class Unit {
           Combat.applyDamage(this.game, e, 500, { warhead: "bullet", tgt: { ground: 1 } }, this);
         }
       }
+      /* one of ours at rest, a formation's spacing and a hand's width off:
+         the one nearest the point it belongs to is kept for crowdStop() to
+         judge on the next tick - read off this query, no second search */
+      if (near && e.owner === this.owner && !e.moving &&
+          dd < min + (cl + e.clearance()) * 0.5 + 4) {
+        const de = U.dist2(e.x, e.y, px, py);
+        if (de < touchD && e.restsAt(od.x, od.y)) { touchD = de; touch = e; }
+      }
     });
+    this._touch = touch; this._touchT = this.game.time;
+    this._touchX = px; this._touchY = py;
     nx += pushX * dt; ny += pushY * dt;
 
     /* Don't walk into impassable tiles - or off the map.
