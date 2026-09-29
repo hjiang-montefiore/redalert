@@ -13,13 +13,17 @@
                                      duck() rides this
 
    WEAPON REPORTS are not a hand-written case per gun. They are built from the
-   weapon row in rules.js: the calibre parsed out of WEAPONS[id].name, the
-   projectile type, the warhead and the damage figure together decide the body
-   frequency, the tail length, how much supersonic crack sits on top and how
-   much sub-bass sits underneath. Add a gun to rules.js and it gets a report of
-   the right size for nothing. A 7.62 mm GPMG lands near 1370 Hz with a 96 ms
-   tail and almost no sub; a 125 mm smoothbore lands near 246 Hz with a 790 ms
-   tail and a 74 Hz thump under it.
+   weapon row in rules.js: the calibre read out of WEAPONS[id].name (cartridge,
+   millimetre, centimetre, inch and .50-cal notations alike), what the name
+   says the weapon is, the projectile type, the warhead and the damage figure
+   pick a family - rifle, machine gun, heavy MG, autocannon, rotary, tank gun,
+   naval gun, howitzer, mortar, ten kinds of missile launch, three of rocket,
+   torpedoes, depth charges, bombs - and scale its physics. Add a gun to
+   rules.js and it gets a report of the right size for nothing. A 7.62 mm GPMG
+   is a 0.7 ms blast wave under a 0.24 ms bullet crack with a short outdoor
+   tail; a 125 mm smoothbore is a 4 ms blast wave, a 1 ms crack, a noise boom
+   centred near 90 Hz and two echoes rolling out over two seconds. A rotary
+   gun is one report per burst, at its true cyclic rate.
 
    DISTANCE is a three-part model: amplitude falls off on a curve whose knee
    scales with calibre (a tank gun carries much further than a rifle), the high
@@ -191,15 +195,67 @@ var Sfx = (function () {
   }
 
   /* ------------------------------------------------- weapon fingerprints */
-  /* Everything a report needs, derived once per weapon id and cached. */
-  var specCache = {};
+  /* Everything a report needs, derived once per weapon row and cached.
 
+     THE NAME SAYS WHAT THE WEAPON IS; THE PROJECTILE SAYS HOW THE GAME MOVES
+     ITS DAMAGE. rules.js strafes an A-10's GAU-8 as proj "bomb", fires a
+     fighter's GSh-30-1 as a "missile" and a Mi-24's YakB gatling as a HEAT
+     "missile". Keyed on the projectile alone, 92 of the 2135 rows at HEAD
+     that are guns played a bomb leaving its rack (25) or a missile or rocket
+     launch (67), and 33 missiles and rockets played a gun. Where the two
+     disagree the name wins, and a GAU-8 is heard as a GAU-8. */
+  var specCache = {}, specMap = (typeof WeakMap !== "undefined") ? new WeakMap() : null, specN = 0;
+
+  function num(s) { return parseFloat(String(s).replace(",", ".")); }
+
+  /* THE CALIBRE, read the way the name wrote it. Every notation in the roster
+     is read, and where a name holds two the one written first wins, since the
+     first-listed weapon is the mount's main one. The old reader took the
+     first number in front of "mm" and nothing else, which over the 1918 rows
+     at HEAD read the AKM's 7.62x39mm as a 39 mm cannon (the case length), the
+     G3's "7,62mm" as a 62 mm gun (a decimal comma), 3in/50 and .50cal as
+     unknown (sized from damage instead: 51.8 and 28.2 mm) and "1,000 lb" as
+     0 lb, clamped up to the smallest bomb. 267 of the 2135 rows read
+     differently now, 96 of them the tanks' "coaxial machine gun", which it
+     sized from damage as an 11.6 mm gun. */
+  var CAL_RX = [
+    /* bullet x case: 7.62x39 is a 7.62 mm bullet in a 39 mm case, 30x173 the
+       GAU-8's round. "4x 20mm" and "2x30mm" are counts, told apart by the
+       numbers: no service bullet is under 4.5 mm and no case is under 17. */
+    [/(\d+(?:[.,]\d+)?)[x×](\d+(?:[.,]\d+)?)/, function (m) {
+      var a = num(m[1]), b = num(m[2]);
+      return (a >= 4.5 && a <= 45 && b >= 17 && b <= 180 && b > a * 1.2) ? a : 0;
+    }],
+    [/(\d+(?:[.,]\d{1,2})?)\s*mm\b/i, function (m) { return num(m[1]); }],
+    [/(\d+(?:[.,]\d+)?)\s*cm\b/i, function (m) { return num(m[1]) * 10; }],
+    [/(\d+(?:\.\d+)?)(?:in\b|\s?-?inch|")/i, function (m) { return num(m[1]) * 25.4; }],
+    [/(?:^|[^\w.])\.(\d{2,3})(?!\d)/, function (m) { return parseFloat("0." + m[1]) * 25.4; }],
+    [/(\d+)\s*-?\s*(?:pounder|pdr)\b/i, function (m) { return 31.5 * Math.pow(num(m[1]), 0.33); }],
+    /* bomb weight, thousands separators and kilograms included */
+    [/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*-?\s*(lb|kg)\b/i, function (m) {
+      var v = parseFloat(m[1].replace(/,/g, "")) * (/kg/i.test(m[2]) ? 2.2046 : 1);
+      return v > 0 ? clamp(Math.pow(v, 0.42) * 22, 60, 420) : 0;
+    }],
+  ];
+  var calAtIdx = Infinity;                         // where calOf found it
+  function calOf(nm) {
+    var best = 0, at = Infinity;
+    for (var i = 0; i < CAL_RX.length; i++) {
+      var m = CAL_RX[i][0].exec(nm);
+      if (!m || m.index >= at) continue;
+      var v = CAL_RX[i][1](m);
+      if (v > 0) { best = v; at = m.index; }
+    }
+    calAtIdx = at;
+    return best;
+  }
   function boreOf(w) {
     var nm = String(w.name || w.id || "");
-    var mm = /(\d+(?:\.\d+)?)\s*mm/i.exec(nm);
-    if (mm) return clamp(parseFloat(mm[1]), 4, 460);
-    var lb = /(\d+(?:\.\d+)?)\s*lb/i.exec(nm);
-    if (lb) return clamp(Math.pow(parseFloat(lb[1]), 0.42) * 22, 60, 420);
+    var c = calOf(nm);
+    if (c) return clamp(c, 4, 460);
+    /* the small arms that are named without a calibre */
+    if (/Minimi|M249|\bSAW\b|M16|\bM4\b|AR-15|L85|FAMAS|G36|Galil|\bAUG\b/.test(nm)) return 5.56;
+    if (/GPMG|\bM60\b|\bPKM?T?\b|\bMG ?(?:3|42)\b|FN MAG|\bBren\b|DP-28|\bRPK\b|Garand|\bM14\b|\bFAL\b|\bG3\b|\bSKS\b|Mosin|machine gun/.test(nm)) return 7.62;
     var dmg = Math.max(1, w.dmg || 10);
     /* No calibre in the name, so size it from what the round actually does */
     if (w.proj === "bullet") return clamp(4.6 * Math.pow(dmg, 0.42), 5, 22);
@@ -209,16 +265,151 @@ var Sfx = (function () {
     return clamp(18 + dmg * 0.22, 10, 220);
   }
 
+  /* where in a name a class of weapon is first mentioned */
+  function firstAt(rx, s) { var m = rx.exec(s); return m ? m.index : Infinity; }
+  var RX_GUN = /cannon|gun ?pod|GAU-\d|M61|M168|M197|\bM39\b|Vulcan|GSh-|\bN[RS]-\d|\bN-37|ADEN|DEFA|Hispano|BK-?27|YakB|gatling|minigun|chain ?gun|autocannon|[Ff]lak\b|Bofors|Rh ?202/i;
+  var RX_ROCKET = /rocket|\bMRL|MLRS|\bMARS\b|barrage|Katyusha|\bGrad\b|Hydra|FFAR|HVAR|SNEB|\bRP-3|\bS-[58]\b|\bS-13|\bLAU-|Zuni|RBU|Hedgehog|recoilless|Carl Gust|\bRPG|PG-7|\bLAW\b|bazooka|Panzerfaust/i;
+  /* acronyms are case-sensitive: "TOW" is not "towed", "HOT" not "shot" */
+  var RX_MISSILE = /[Mm]issile|\bSAM\b|\bAAM|ATGM|\bSSM|MANPADS|\bR-\d|\b(?:AIM|AGM|RIM|MIM|BGM|FGM)-|\bKh-|\bHJ-|\bHQ-|\bPL-\d|\bYJ-|\b9M\d|\bTOW\b|TOW-\d|\bHOT\b|HOT ?\d|MILAN|Milan|Javelin|Spike|Hellfire|Maverick|\bHARM\b|\bALARM\b|Harpoon|Exocet|Stinger|Mistral|Aster \d|Crotale|Tomaha|TLAM|Granit|Termit|Styx|Moskit|Scud|Patriot|Sparrow|Sidewinder|AMRAAM|ASRAAM|Brimstone|Storm Shadow|SCALP|Taurus|JASSM|ATACMS|Polaris|Trident|Bulava|Bazalt|\bVLS\b|\bSM-\d|ESSM|Kalibr|Oniks|BrahMos|Yakhont|Matra|\bR\.5\d\d|Super 530|\bMagic\b|\bMICA\b|Meteor|Python|Shafrir|Firestreak|Red Top|Skyflash/;
+  var RX_BOMB = /bomb|JDAM|\bGBU|Paveway|\bMk ?8[2-4]\b|BL755|cluster|\bFAB-|\bKAB-/i;
+
   function kindOf(w) {
     var p = w.proj, nm = String(w.name || "");
-    if (p === "missile") return /rocket|MRL|barrage/i.test(nm) ? "rocket" : "missile";
+    if (p === "none") return /decoy|chaff|Nulka|SRBOC|flare/i.test(nm) ? "decoy" : "ciws";
     if (p === "torpedo") return "torpedo";
     if (p === "depth")   return "depth";
-    if (p === "bomb")    return "bomb";
-    if (p === "arc")     return /rocket|MRL|barrage/i.test(nm) ? "rocket" : "arc";
+    if (p === "missile" || p === "bomb") {
+      var g = firstAt(RX_GUN, nm), r = firstAt(RX_ROCKET, nm), s = firstAt(RX_MISSILE, nm), b = firstAt(RX_BOMB, nm);
+      var lead = Math.min(r, s, b), cal = calOf(nm);
+      /* a gun named first - by name, or by a gun's calibre with nothing
+         that flies itself ("37mm 61-K", "3 x 30mm NR-30") or listed ahead of
+         it as a separate item ("4 x 20mm and T-10 rockets"; but "40mm PG-7
+         series HEAT rocket" is the rocket's own calibre) */
+      if (g < lead || (lead === Infinity && cal > 0 && cal <= 130 && !/\d\s*-?\s*(?:lb|kg)\b/i.test(nm)) ||
+          (cal > 0 && cal <= 40 && calAtIdx < lead && /\band\b|,|\+|&|\bplus\b|\bwith\b/i.test(nm.slice(calAtIdx, lead)))) return "gun";
+      if (/recoilless|Carl Gust|\bRCL\b/i.test(nm)) return "gun";
+      if (r < Math.min(s, b) || (w.rocket && s === Infinity)) return "rocket";
+      if (p === "bomb") return s < b ? "missile" : "bomb";
+      return "missile";
+    }
+    if (p === "arc") {
+      /* a helicopter's dipping-sonar attack is the torpedo it drops */
+      if (/torpedo|sonar/i.test(nm) && !RX_ROCKET.test(nm)) return "torpedo";
+      if (/\bASW\b|depth charge/i.test(nm) && !RX_ROCKET.test(nm)) return "depth";
+      return (w.rocket || RX_ROCKET.test(nm)) ? "rocket" : "arc";
+    }
+    /* "8 x Kh-35 SSM" moved as a shell is still a missile */
+    if (firstAt(RX_MISSILE, nm) < firstAt(RX_GUN, nm) && !/\d\s*mm\b/.test(nm.slice(0, firstAt(RX_MISSILE, nm)))) return "missile";
     if (p === "bullet")  return "mg";
-    if (p === "none")    return "ciws";
     return "gun";                                  // shell, tracer, anything else
+  }
+
+  /* ROTARY AND REVOLVER GUNS: cyclic rate in rounds per minute, from the
+     makers' figures. Above ~2500 rpm the reports fuse into one tone at the
+     firing rate - the GAU-8's 3900 rpm is a 65 Hz "BRRRT", an M61's 6000 a
+     100 Hz buzz, a Phalanx's 4500 in between - so these are heard as a
+     burst, not as rounds. Rates are per gun; a battery's add (below). */
+  var RPM = [
+    [/GAU-8|Goalkeeper/i, 3900], [/Phalanx|M168/i, 4500], [/M61|Vulcan/i, 6000], [/M134|minigun/i, 3000],
+    [/H\/PJ-1[14]|Kashtan|Type 1130/i, 9500], [/AK-630|GSh-6|Type 730|H\/PJ-1[23]|six-barrel/i, 5000],
+    [/GSh-23|Type 23-3/i, 3400], [/GSh-30-2/i, 3000], [/YakB|12\.7mm gatling/i, 4500], [/GAU-19/i, 1300],
+    [/GAU-12|GAU-22/i, 3600], [/M197/i, 730], [/Meroka/i, 1800], [/AK-230|Type 69/i, 2000],
+    [/30M791/i, 2500], [/30M781/i, 750], [/DEFA|\bM39\b/i, 1500], [/ADEN/i, 1300], [/BK-?27|Mauser/i, 1700],
+    [/GSh-30-1|GSh-301/i, 1650], [/NR-30/i, 850], [/NR-23|Type 23-2/i, 850], [/NS-23/i, 550], [/N-37/i, 400],
+    [/Hispano|HS\.?404/i, 700], [/ShVAK/i, 750], [/Colt Mk 12/i, 1000],
+    [/M230/i, 625], [/2A42/i, 550], [/2A38/i, 2500], [/Bofors L\/60|40mm L\/60/i, 130], [/Bofors|L\/70/i, 300],
+    /* machine guns count here only as a battery: one is heard round by round */
+    [/M2HB/i, 550, 1], [/\bM3\b|\.50 ?cal/i, 1200, 1], [/KPV|14\.5/i, 600, 1],
+  ];
+  /* A battery of separate guns - an F-86's six .50s, a Hunter's four ADENs,
+     a ZPU-4 - is one ripping burst: the rates add, as the reports fuse. The
+     count is the one the name leads with. */
+  var COUNT = { two: 2, twin: 2, three: 3, four: 4, quad: 4, six: 6 };
+  function rpmOf(nm) {
+    for (var i = 0; i < RPM.length; i++) if (RPM[i][0].test(nm)) {
+      var c = /^\s*(\d)\s*x/i.exec(nm), w = /^\s*(two|twin|three|four|quad|six)\b/i.exec(nm);
+      var n = c ? +c[1] : w ? COUNT[w[1].toLowerCase()] : 1;
+      if (RPM[i][2] && n < 2) return 0;
+      return n > 1 ? Math.min(6000, RPM[i][1] * n) : RPM[i][1];
+    }
+    return 0;
+  }
+
+  var RX_MANPADS = /MANPADS|Stinger|Mistral|Igla|Strela|9K3[2-8]\b|\b9M3(?:13|2M?|6|9|42)\b|\bQW-\d|HN-5|FN-6|Blowpipe|Starstreak|Redeye|Chiron|RBS[- ]?70|\bHVM\b|IR\/UV/i;
+
+  /* THE VOICE. kind is the coarse class (it is what describe() reports and
+     what the rate limit keys on); fam picks the physics. */
+  function famOf(w, kind, bore, nm) {
+    var rpm = rpmOf(nm), p = w.proj;
+    switch (kind) {
+      case "ciws":  return "rotary";
+      case "decoy": return "decoy";
+      case "depth": return "depth";
+      case "bomb":  return "bomb";
+      case "torpedo":
+        return (bore >= 330 || /heavyweight|533|21in|650|Mk ?48|Spearfish|Tigerfish|DM2|F17|F21|53-65|UGST|Yu-6|SUT|Seeaal|Seehecht|tubes/i.test(nm))
+          ? "torpedo" : "lwt";
+      case "rocket":
+        /* the shoulder-fired ones: a launch charge, then the motor */
+        if (/RPG|PG-7|\bLAW\b|bazooka|Panzerfaust|rocket-propelled grenade|LRAC|M72|AT4|APILAS|Armbrust|disposable|shaped-charge|\bM20\b|3[.,]5 ?in/i.test(nm)) return "rpg";
+        if (p === "missile" || p === "bomb") return "ffar";
+        return "mlrs";
+      case "missile":
+        /* what a round can engage says more than its flight profile: the
+           Patriot site's row flies a "cruise" profile */
+        if (RX_MANPADS.test(nm)) return "manpads";
+        if (w.tgt && w.tgt.air && !w.tgt.ground) {
+          /* a named air-to-air round first: "Matra R.530 and 2x30mm DEFA"
+             carries a 30 mm calibre that is the gun's, not the missile's */
+          if (/\bAAM|AIM-|\bR-\d|\bPL-\d|Sparrow|Sidewinder|AMRAAM|ASRAAM|Meteor|MICA|Magic|R\.5\d\d|Super 530|Python|Shafrir|Derby|Firestreak|Red Top|Skyflash|Phoenix|Sky Sword|air-to-air|IR missile|radar missile|in the bays/i.test(nm)) return "aam";
+          /* shoulder-fired rounds are 70-80 mm; the British Javelin is one
+             (the American one is an anti-tank round, so only here). Only a
+             calibre the name states counts: one sized from damage made the
+             S-75's V-750 and the HAWK shoulder-fired */
+          if (/Javelin|shoulder/i.test(nm) || (calOf(nm) > 0 && bore <= 80)) return "manpads";
+          return /S-[34]00|\bFort|\bRif\b|Kinzhal|Klinok|Shtil|48N6|5V55|9M96|HQ-9|HHQ-9|Pongae|Vertically|\bVLS\b|CAMM|Sea Ceptor/i.test(nm) ? "sam_cold" : "sam";
+        }
+        /* an air-to-air round by name, whatever the row says it engages (not
+           by "R-" or "PL-": the R-17, R-27 and R-39 are ballistic) */
+        if (/\bAAM|AIM-|Sparrow|Sidewinder|AMRAAM|ASRAAM|Meteor|MICA|Magic|R\.5\d\d|Super 530|Python|Shafrir|Derby|Firestreak|Red Top|Skyflash|Phoenix|Sky Sword|air-to-air/i.test(nm)) return "aam";
+        if (/\bSAM\b|surface-to-air|\bSM-\d|ESSM/i.test(nm)) return "sam";
+        /* names first, the flight profile last: the Z-10's "AKD-10 anti-
+           tank missile" is derived from a row that flies a cruise profile */
+        if (/ballistic|Scud|SRBM|ATACMS|Iskander|Tochka|Pluton|Hades|Lance|Hwasong|Polaris|Trident|Bulava|SLBM|R-17|Pukguksong|\bM[245]\d\b|\bM20\b|JL-\d|DF-\d/i.test(nm)) return "ballistic";
+        if (/cruise|Tomaha|TLAM|BGM-109|Kh-55|Kh-101|\bKD-\d|CJ-10|Kalibr|3M14|Storm Shadow|SCALP|Taurus|JASSM|ALCM|Hyunmoo-3/i.test(nm)) return "cruise";
+        if (w.antiRadiation || /anti-radiation|anti-radar|\bARM\b/i.test(nm)) return "asm";
+        if (/anti-ship|\bSSM|Harpoon|Exocet|Styx|Termit|P-15|P-270|Moskit|P-700|Granit|P-800|Oniks|Yakhont|BrahMos|\bYJ-\d|C-80\d|\bSY-\d|\bHY-\d|Hsiung Feng|\bHF-\d|\bNSM\b|RBS[- ]?15|Otomat|Penguin|Kormoran|Gabriel|Sea Eagle|Kh-35|LRASM|Silkworm|Kh-22|P-500|Bazalt|P-1000|Vulkan|P-35\b|P-6\b/i.test(nm)) return "ashm";
+        if (/Hellfire|AGM-|Maverick|Brimstone|Vikhr|Ataka|Shturm|\bAS\.\d|\bKh-\d|Mokopa|AKD-\d|air-to-surface|laser-guided missile|stand-off/i.test(nm)) return "asm";
+        if (/Javelin|FGM-148|Spike|NLAW|HJ-12|Eryx|\bMMP\b|Bulsae-3|fire-and-forget/i.test(nm)) return "atgm_soft";
+        if (/anti-tank|ATGM|wire-guided|SACLOS|MCLOS|beam-riding|\bTOW\b|\bHOT\b|MILAN|Milan|Malyutka|Konkurs|Kornet|Fagot|Falanga|Swingfire|\bSS\.1[01]\b|\bHJ-(?:73|8|9)\b/.test(nm)) return "atgm";
+        if (w.profile === "ballistic") return "ballistic";
+        if (w.profile === "cruise") return "cruise";
+        if (w.profile === "skim") return "ashm";
+        return "atgm";
+      case "arc":
+        if (/mortar/i.test(nm) || (bore <= 120 && (w.speed || 0) <= 190)) return "mortar";
+        return "howitzer";
+      default: break;
+    }
+    /* guns and small arms */
+    if (/recoilless|Carl Gust|\bRCL\b/i.test(nm)) return "recoilless";
+    if (/grenade launcher|\bGMG\b|\bAGL\b|AGS-\d|\bMk ?19\b|\bMk ?47\b|QLZ/i.test(nm) && calOf(nm) >= 30 && calOf(nm) <= 40) return "gl";
+    if (rpm >= 2500 || /rotary cannon|gatling|minigun|CIWS|six-barrel/i.test(nm)) return "rotary";
+    if (rpm > 0 && (p === "missile" || p === "bomb" || (w.burstDelay && w.burstDelay < 0.06))) return "revolver";
+    if (p === "missile" || p === "bomb") return bore < 16 ? "rotary" : "revolver";     // a gun fired as a "missile": one call is one burst
+    if (bore < 9.6) {
+      var cm = /(\d+(?:[.,]\d+)?)[x×](\d+)/.exec(nm);
+      if (/SMG|sub-?machine|machine pistol|pistol|PPSh|PPS-|\bUzi|Sten\b|Thompson|MP ?40|MP ?5\b|Sterling/i.test(nm) ||
+          (cm && num(cm[2]) <= 33 && num(cm[1]) <= 11.5)) return "pistol";
+      return ((w.burst || 1) >= 4) ? "mg" : "rifle";
+    }
+    if (bore < 16) return "hmg";
+    if (bore < 60) return "autocannon";
+    /* a direct-fire round (kinetic, HEAT, HESH) is a tank or anti-tank gun;
+       HE and proximity rounds out of a big bore are a ship's or a coastal
+       battery's, or a dual-purpose mount's */
+    if (/cannon|heat|bullet/.test(w.warhead || "") && !/\d(?:mm|in)\/\d\d|naval|coastal|Mk ?4[25]\b/i.test(nm)) return "tank";
+    return "naval";
   }
 
   function specOf(w) {
@@ -231,74 +422,194 @@ var Sfx = (function () {
       return s;
     }
     if (!w) return specOf("gun_light");
-    var id = w.id || w.name || "?";
-    if (specCache[id]) return specCache[id];
-    specCache[id] = buildSpec(w, id);
-    return specCache[id];
+    /* one fingerprint per weapon row, matched by the row itself. Not by id:
+       generations.js derives rows from a template and keeps its id, so
+       "atgm_inf" is a Javelin, a Kornet and an HJ-12, which launch nothing
+       alike. Not by name either: many rows carry no id, and "30mm GSh-30-2"
+       is both a 14-round burst and a 2-round strafing pass, which need
+       their own burst lengths and their own rate limits */
+    var S = specMap ? specMap.get(w) : null;
+    if (S) return S;
+    var id = w.id || w.name || "?", key = id + "|" + (w.name || "");
+    if (!specMap && specCache[key]) return specCache[key];
+    S = buildSpec(w, id);
+    S.key = key + "#" + (++specN);
+    if (specMap) specMap.set(w, S); else specCache[key] = S;
+    return S;
   }
+
+  /* FAMILY TABLE. Per family, relative to the bore-scaled base:
+       T    blast positive-phase duration, ms per mm of bore. Blast waves
+            scale with the cube root of charge energy (Hopkinson-Cranz), and
+            the cube root of the propellant charge runs close to linear in
+            bore (5.56 mm: 1.7 g, 120 mm: 8.5 kg - a ratio of 17 in cube
+            root against 22 in bore), so the pulse length goes with bore:
+            0.09 ms/mm puts a 5.56 at 0.5 ms and a 120 mm at 11 ms, the order
+            of what small arms show at a few metres and big guns at tens.
+            A Friedlander wave's spectrum peaks at 1/(2 pi T) and falls
+            6 dB an octave above it: the rifle's centres near 300 Hz and
+            still snaps. The tank gun's would centre near 15 Hz - felt, not
+            heard, and not reproduced at all by the laptops and headphones
+            this is played on: a first cut spent a third of a 155 mm's
+            energy below 30 Hz and lost 5-7 dB of its audible 30-150 Hz
+            weight. So the pulse stops growing at 4.2 ms (peak 38 Hz) and
+            the size of a big gun is carried by its boom (bm), a noise band
+            at 60-240 Hz by bore, which is where a listener hears it.
+       cD   ballistic crack N-wave length, ms: 0.2 ms for a rifle bullet,
+            about 1 ms for a tank round's bow shock (it grows with the body's
+            diameter); ck how much of it - a pistol round barely makes one
+            (7.62x25 is only just supersonic, 9 mm often is not), a mortar
+            bomb and a grenade none
+       bf   body band centre, Hz - the turbulent propellant gas leaving the
+            muzzle; bq its Q; bd seconds for it to die away
+       bm   boom: the low, noisy bulk of a big charge (0 = none); bmd its time
+       cf   mechanism ring, Hz (breech, links, feed tray); rg its level
+       tl   outdoor tail, seconds to silence: reflections off terrain, tree
+            lines and buildings; ta its level against the blast; tf its
+            starting brightness, Hz
+       ec   discrete echoes coming back (big guns)
+       tube a mortar's or grenade launcher's quarter-wave note, Hz (0: from
+            the bore - 63 Hz for an 81 mm)
+       lv   loudness trim against HEAD's mix, measured per family. Small
+            arms' crack (ck) sits above 1: at 0.85 the first 20 ms had 3-4 dB
+            less above 8 kHz than HEAD's report */
+  var FAM = {
+    pistol:     { T: 0.070, cD: 0.15, ck: 0.30, bf: 1400, bq: 0.9, bd: 0.12, bm: 0,    bmd: 0,    cf: 0,    rg: 0,    tl: 0.70, ta: 0.045, tf: 2400, ec: 0, lv: 0.80 },
+    rifle:      { T: 0.090, cD: 0.20, ck: 1.90, bf: 1700, bq: 0.8, bd: 0.15, bm: 0,    bmd: 0,    cf: 0,    rg: 0,    tl: 0.90, ta: 0.055, tf: 2800, ec: 0, lv: 0.88 },
+    mg:         { T: 0.095, cD: 0.24, ck: 1.25, bf: 1450, bq: 0.8, bd: 0.16, bm: 0,    bmd: 0,    cf: 0,    rg: 0,    tl: 0.90, ta: 0.055, tf: 2600, ec: 0, lv: 0.75 },
+    hmg:        { T: 0.090, cD: 0.36, ck: 1.40, bf: 850,  bq: 0.8, bd: 0.22, bm: 0.35, bmd: 0.18, cf: 0,    rg: 0,    tl: 1.10, ta: 0.060, tf: 2000, ec: 0, lv: 0.57 },
+    autocannon: { T: 0.085, cD: 0.55, ck: 0.70, bf: 700,  bq: 0.9, bd: 0.30, bm: 0.55, bmd: 0.30, cf: 2300, rg: 0.45, tl: 1.30, ta: 0.065, tf: 1600, ec: 0, lv: 0.40 },
+    gl:         { T: 0.080, cD: 0,    ck: 0,    bf: 420,  bq: 1.6, bd: 0.22, bm: 0.30, bmd: 0.20, cf: 1400, rg: 0.25, tl: 0.80, ta: 0.050, tf: 1000, ec: 0, lv: 1.00, tube: 190 },
+    tank:       { T: 0.090, cD: 1.00, ck: 0.55, bf: 480,  bq: 0.7, bd: 0.50, bm: 1.15, bmd: 0.90, cf: 0,    rg: 0,    tl: 2.60, ta: 0.090, tf: 900,  ec: 2, lv: 0.86 },
+    recoilless: { T: 0.085, cD: 0.80, ck: 0.80, bf: 650,  bq: 0.7, bd: 0.40, bm: 0.80, bmd: 0.70, cf: 0,    rg: 0,    tl: 2.00, ta: 0.080, tf: 1100, ec: 1, lv: 1.00 },
+    naval:      { T: 0.090, cD: 0.90, ck: 0.50, bf: 440,  bq: 0.7, bd: 0.55, bm: 2.40, bmd: 1.00, cf: 1700, rg: 0.12, tl: 2.80, ta: 0.110, tf: 800,  ec: 2, lv: 0.56 },
+    howitzer:   { T: 0.095, cD: 1.10, ck: 0.45, bf: 380,  bq: 0.7, bd: 0.60, bm: 2.30, bmd: 1.10, cf: 0,    rg: 0,    tl: 3.20, ta: 0.110, tf: 700,  ec: 2, lv: 0.64 },
+    mortar:     { T: 0.055, cD: 0,    ck: 0,    bf: 0,    bq: 3.0, bd: 0.28, bm: 0.80, bmd: 0.50, cf: 0,    rg: 0,    tl: 1.40, ta: 0.060, tf: 600,  ec: 1, lv: 1.00, tube: 0 },
+  };
 
   function buildSpec(w, id) {
     var bore = boreOf(w);
     var kind = kindOf(w);
+    var nm   = String(w.name || "");
+    var fam  = famOf(w, kind, bore, nm);
     var dmg  = Math.max(1, w.dmg || 10);
     var wh   = w.warhead || "he";
 
-    /* Body frequency. Bore is the whole story: the muzzle blast of a small
-       bore is a high snap, a large bore is a low bark. */
+    /* HEAD's fingerprint, kept as the defaults: body frequency from bore (a
+       small bore is a high snap, a large one a low bark), tail length,
+       loudness from bore then payload, crack, thump and ring. Each family
+       below replaces what it models; describe() reports the result. */
     var f0 = clamp(760 * Math.pow(20 / bore, 0.62), 90, 1900);
-    /* Tail. How long the blast keeps rolling. */
     var tail = 0.035 + 1.15 * Math.pow(bore / 200, 0.9);
-    /* Intrinsic loudness, from bore first and payload second. */
     var level = clamp(0.10 + 0.55 * Math.pow(bore / 150, 0.55) +
                       0.22 * Math.pow(Math.min(dmg, 400) / 300, 0.7), 0.08, 1.0);
-    /* Supersonic crack: everything a small bore has, almost nothing a
-       howitzer has. */
     var crack = clamp(1.10 - bore / 140, 0.18, 1.0);
-    /* Sub-bass concussion: the reverse. */
     var thump = clamp(Math.pow(bore / 160, 0.9), 0.02, 1.15);
-    /* Mount and breech ring. Autocannon and AA mounts clatter; a tank gun in
-       a big cast turret does not. */
-    var ring = (wh === "flak") ? 0.55
-             : (kind === "gun" && bore <= 45) ? 0.45
-             : (kind === "mg") ? 0.18 : 0.06;
-    /* How far the report carries before the falloff knee. */
+    var ring = (wh === "flak") ? 0.55 : (fam === "autocannon") ? 0.45 : (fam === "mg" || fam === "rifle") ? 0.18 : 0.06;
     var refM = 90 + 3.2 * bore;
 
-    if (kind === "missile" || kind === "rocket") {
-      /* A launch has no shock wave, only motor. Burn time scales with the
-         size of the round. */
-      tail  = 0.50 + Math.min(0.95, dmg / 420);
-      crack = 0.12;
-      thump = clamp(0.20 + dmg / 700, 0.2, 0.9);
-      level = level * (kind === "rocket" ? 0.70 : 0.62);
-      ring  = 0.05;
-      refM  = 260 + dmg * 0.9;
-      f0    = clamp(f0, 150, 520);
-    } else if (kind === "arc") {
-      /* Mortars and howitzers fire out of a tube: hollow, no crack. */
-      crack *= 0.30;
-      tail  *= 1.25;
-      ring   = 0.30;
-    } else if (kind === "torpedo" || kind === "depth") {
-      tail  = 0.55;
-      crack = 0.10;
-      thump = 0.55;
-      level *= 0.55;
-      refM  = 300;
-    } else if (kind === "bomb") {
-      /* A release is nearly silent from outside the aircraft. */
-      tail = 0.30; crack = 0.05; thump = 0.10; level *= 0.22; refM = 200;
-    } else if (kind === "ciws") {
-      tail = 0.10; crack = 0.9; thump = 0.05; level = 0.30; ring = 0.7; refM = 190;
-      f0 = 1200;
-    }
-
-    return {
-      id: id, bore: bore, kind: kind, warhead: wh, dmg: dmg,
-      f0: f0, tail: tail, level: level, crack: crack, thump: thump,
-      ring: ring, refM: refM,
-      dur: Math.max(0.12, tail * 1.9 + 0.10),
+    var S = {
+      id: id, key: id, bore: bore, kind: kind, fam: fam, warhead: wh, dmg: dmg,
+      f0: f0, tail: tail, level: level, crack: crack, thump: thump, ring: ring, refM: refM,
+      gap: kind === "mg" ? 0.022 : 0.030,
     };
+
+    var F = FAM[fam];
+    if (F) {
+      /* ---- a gun: crack, blast, body, mechanism, outdoor tail ---- */
+      /* the pulse is capped at 4.2 ms, spectral peak 38 Hz: see T above */
+      S.T   = clamp(F.T * bore, 0.3, 4.2) / 1000;
+      S.cD  = F.cD / 1000 * (fam === "hmg" ? bore / 12.7 : 1);
+      S.crack = F.ck;
+      S.f0  = F.bf * Math.pow((fam === "tank" || fam === "naval" || fam === "howitzer") ? 105 / bore : 1, 0.45);
+      S.bq  = F.bq; S.bd = F.bd * (fam === "autocannon" ? Math.pow(bore / 30, 0.5) : 1);
+      S.bm  = F.bm; S.bmd = F.bmd * Math.pow(clamp(bore / 100, 0.3, 2.1), 0.3);
+      S.fm  = clamp(260 * Math.pow(12.7 / bore, 0.45), 60, 240);
+      S.sub = bore >= 57 || fam === "mortar";
+      S.cf  = F.cf; S.ring = F.rg * (wh === "flak" ? 1.2 : 1);
+      S.tail = F.tl * Math.pow(clamp(bore / 100, 0.5, 2.1), (fam === "tank" || fam === "naval" || fam === "howitzer") ? 0.35 : 0);
+      S.ta  = F.ta; S.tf = F.tf; S.ec = F.ec;
+      S.tube = F.tube === 0 ? clamp(46 * Math.pow(120 / bore, 0.8), 40, 150) : (F.tube || 0);
+      if (!F.bf) S.f0 = S.tube * 3;
+      /* the blast is the report's reference level; its size is in S.level,
+         from the bore alone: a report is as loud as its charge, and the
+         game's damage figure is not the charge (the 105 mm M102 does 300 a
+         round, the PzH 2000's 155 mm 158). describe() reports the boom as
+         the thump, the mechanism as the ring */
+      S.thump = F.bm;
+      S.level = clamp(0.12 + 0.62 * Math.pow(bore / 150, 0.6), 0.08, 1.0) * F.lv;
+      /* between big guns the charge grows with the cube of the bore and the
+         blast's overpressure at a given range with its cube root, to a power
+         a little over one: a 125 mm is 5-6 dB over a 76 mm, as HEAD had them,
+         not the 1.7 dB the curve above gives. Above 120 mm the curve flattens
+         again: what a 203 mm has over a 155 mm lives below 150 Hz, and a mix
+         bus can only give it to the limiter (at the steeper slope one 203 mm
+         shot took 4-5 dB of gain reduction off everything else) */
+      if (fam === "tank" || fam === "naval" || fam === "howitzer") S.level *= Math.pow(bore / 120, bore < 120 ? 0.75 : 0.3);
+      /* the anti-materiel rifle: one round, the heaviest crack a man carries */
+      if (fam === "hmg" && (w.burst || 1) === 1) {
+        /* ...and its muzzle brake throws the blast sideways: a Barrett's
+           report is notorious, well above an M2's through the same round */
+        S.crack = 1.45; S.tail *= 1.2; S.level *= 1.45;
+      }
+      /* the voice is held until the report is 60 dB under its peak, near
+         or far (check_sound_weapons.js holds it to that). Small arms fire
+         hundreds of rounds a minute, so theirs is kept short: 0.57 s for a
+         rifle with the voice table's margin, against HEAD's 0.50 */
+      S.dur = 0.06 + S.tail * (bore < 16 ? 0.29 : bore < 60 ? 0.35 : 0.58);
+    } else if (fam === "rotary" || fam === "revolver") {
+      /* ---- one report per BURST ---- */
+      var rpm = rpmOf(nm) || (fam === "rotary" ? (bore < 16 ? 4000 : 4500) : 1200);
+      S.rpm = rpm;
+      /* the report lasts the game's burst - its rounds' span, in GAME
+         seconds, which the clock turns into real ones (see gameRate) - and
+         a little over, so a round the frame loop delivers late still falls
+         inside it. The rounds land on simulation ticks: game.js runs a
+         deferred round on the first tick at or after its time, so at 30 Hz a
+         burstDelay of 0.045 s is two ticks, 0.067 s, and a GAU-8's 14 rounds
+         take 0.87 s, not 0.59. A burst-of-one row is one fixed burst a call. */
+      var tick = (typeof CFG !== "undefined" && CFG.DT > 0) ? CFG.DT : 1 / 30;
+      var step = Math.ceil((w.burstDelay || 0.1) / tick - 1e-6) * tick;
+      S.span = (w.burst || 1) > 1 ? Math.min(1.1, (w.burst - 1) * step) : 0;
+      S.over = S.span ? 0.12 : kind === "ciws" ? 0.5 : 0.55;
+      S.blen = S.span + S.over;
+      S.burst = true;
+      S.T = clamp(0.085 * bore, 0.5, 3.2) / 1000;
+      S.f0 = clamp(3800 * Math.pow(12.7 / bore, 0.6), 1200, 5000);
+      S.tail = 0.45 + bore * 0.012;
+      S.level = clamp(0.30 + bore * 0.006, 0.3, 0.55) * (kind === "ciws" ? 0.8 : 1);
+      /* HEAD's carry for the calibre: a burst is louder than a round
+         because it is more rounds, not because it carries further */
+      S.refM = 90 + 3.2 * bore;
+      S.dur = S.blen + S.tail;
+      /* for describe(): no crack layer, the weight band is the thump */
+      S.crack = 0; S.thump = 1.2; S.ring = 0;
+    } else if (MIS[fam]) {
+      /* ---- a motor: the family's row, adjusted for how this one leaves ---- */
+      var M = {}, k2;
+      for (k2 in MIS[fam]) M[k2] = MIS[fam][k2];
+      /* an SLBM is blown out of its tube by gas under water and lights at the
+         breach, 1.05 s later in combat.js's own timing */
+      if (w.coldLaunch) { M.ej = 1.0; M.ejT = 12; M.gap = 1.05; M.wet = true; }
+      /* anti-ship rounds that cruise on a turbojet once the booster drops */
+      if (fam === "ashm" && /Harpoon|NSM|RBS[- ]?15|Kh-35|Uran|YJ-8[23]|C-80[23]|LRASM|Hsiung Feng II\b|Granit|Otomat|Sea Eagle|Block 3/i.test(nm)) M.jet = 0.8;
+      /* an air-launched cruise missile falls clear and starts its engine: no booster */
+      if (fam === "cruise" && (w.proj === "bomb" || /ALCM|AGM-86|Kh-55|Kh-101|\bKD-\d|Storm Shadow|SCALP|Taurus|JASSM/i.test(nm))) { M.ig = 0.15; M.bst = 0.25; M.ck = 0.1; M.rum = 0.25; }
+      S.mis = M;
+      /* for describe(): the crackle and the rumble */
+      S.crack = M.ck; S.thump = M.rum; S.ring = 0;
+      S.msize = clamp(0.55 + dmg / 500, 0.55, 1.7);
+      S.level = fam === "decoy" ? 0.30 : level * (kind === "rocket" ? 0.70 : 0.62);
+      S.refM = 260 + Math.min(dmg, 900) * 0.9;
+      S.dur = (M.gap || 0) + M.bst + M.sus * 1.4 + 0.1;
+    } else {
+      /* ---- what goes into water, and what falls ---- */
+      S.level = kind === "bomb" ? level * 0.10 : level * 0.55;
+      S.refM = kind === "bomb" ? 200 : 300;
+      S.dur = kind === "bomb" ? 0.75 : kind === "depth" ? 0.6 : 1.3;
+      S.crack = 0; S.thump = 0; S.ring = 0;
+    }
+    return S;
   }
 
   /* --------------------------------------------------------- spatialiser */
@@ -404,237 +715,626 @@ var Sfx = (function () {
   }
 
   /* ============================ WEAPON REPORTS ============================
-     Five layers, each scaled by the weapon's own fingerprint. A 7.62 mm is
-     almost entirely layer 1; a 155 mm is almost entirely layers 3 and 4.   */
+     A report is built from what a microphone at the gun actually records,
+     layer by layer, each scaled by the weapon's own fingerprint:
+       the BLAST WAVE  - the muzzle's pressure pulse, a Friedlander wave whose
+                         length grows with bore: 0.5 ms for a rifle (a snap),
+                         4 ms for a tank gun (a punch - longer would be
+                         infrasound); played from one shared table, so it
+                         costs two nodes whatever the calibre
+       the CRACK       - the supersonic projectile's N-wave: 0.2 ms for a
+                         rifle bullet, about 1 ms for a tank round
+       the BODY        - turbulent propellant gas leaving the muzzle, noise
+       the BOOM        - a big charge's low bulk, a noise band 60-240 Hz by
+                         bore: where a listener hears a big gun's size
+       the MECHANISM   - breech, links, feed tray: autocannon only
+       the TAIL        - the report coming back off terrain and tree lines,
+                         and for big guns discrete echoes: the "roll"
+     Distance is honest: the crack dies first (it is the highest and the
+     most directional), the blast wave stretches (a weak shock lengthens as it
+     travels), the tail takes over, and the spatial chain's air absorption
+     does the rest - a 155 mm across the map is a low thud and a long roll.
+     Motors (missiles, rockets) and water (torpedoes, depth charges) have
+     their own builders below. */
+
+  /* ------------------------------------------ shared pressure waveforms --
+     Computed once per context and shared like the noise buffer. A report
+     plays each at the rate that gives the length it needs. */
+  var shapeCache = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+  var BLAST_T = 0.002, NWAVE_D = 0.001;          // reference lengths of the stored shapes
+  function shapeBuf(ac, name) {
+    var c = shapeCache ? shapeCache.get(ac) : ac.__shapes;
+    if (!c) { c = {}; if (shapeCache) shapeCache.set(ac, c); else ac.__shapes = c; }
+    if (c[name]) return c[name];
+    var sr = ac.sampleRate, n, b, d, i, x, r;
+    if (name === "blast") {
+      /* Friedlander, p = (1 - t/T) e^(-t/T). With the decay constant at 1
+         the positive and negative impulses cancel, as they do in the far
+         field, so a pulse leaves no DC for the limiter to sit on. */
+      n = Math.ceil(sr * BLAST_T * 16);
+      b = ac.createBuffer(1, n, sr); d = b.getChannelData(0);
+      for (i = 0; i < n; i++) { x = i / (sr * BLAST_T); d[i] = (1 - x) * Math.exp(-x); }
+    } else if (name === "echo") {
+      /* the same wave come back off a tree line: its shock front rounded
+         off by the trip (a triangular smoothing half a length wide - two
+         running means, so it costs O(n)), so an echo thuds instead of
+         clicking; still zero-mean */
+      var src0 = shapeBuf(ac, "blast").getChannelData(0), L0 = src0.length;
+      var h = Math.max(1, Math.round(sr * BLAST_T * 0.25)), acc = 0;
+      n = L0 + 2 * h; b = ac.createBuffer(1, n, sr); d = b.getChannelData(0);
+      var tmp = new Float32Array(n);
+      for (i = 0; i < n; i++) {
+        acc += (i < L0 ? src0[i] : 0) - (i >= h && i - h < L0 ? src0[i - h] : 0);
+        tmp[i] = acc / h;
+      }
+      acc = 0;
+      for (i = 0; i < n; i++) { acc += tmp[i] - (i >= h ? tmp[i - h] : 0); d[i] = acc / h; }
+    } else if (name === "nwave") {
+      /* instant compression, linear fall through zero, instant return; the
+         ground reflection follows 2.5 lengths later at half strength */
+      var L = Math.max(4, Math.round(sr * NWAVE_D));
+      n = L * 5; b = ac.createBuffer(1, n, sr); d = b.getChannelData(0);
+      for (i = 0; i < L; i++) { x = 1 - 2 * i / (L - 1); d[i] += x; d[i + Math.round(L * 2.5)] += 0.5 * x; }
+    } else if (name === "rot" || name === "rev" || name === "cell") {
+      /* A burst: rounds at a reference rate, each a small blast wave plus a
+         puff of muzzle gas. "rot" is seven barrels at 70 Hz and loops as a
+         whole - no two barrels quite alike, which is the growl under a
+         GAU-8. "rev" is a revolver's four chambers at 25 Hz. "cell" is one
+         round and silence, looped at whatever length the rate asks, for guns
+         slow enough to be heard round by round. */
+      var hz = name === "rot" ? 70 : name === "rev" ? 25 : 4, k = name === "cell" ? 1 : name === "rot" ? 7 : 4;
+      var P = Math.round(sr / hz), T = sr * (name === "rot" ? 0.0011 : 0.0024), tau = sr * (name === "rot" ? 0.005 : 0.009);
+      n = P * k; b = ac.createBuffer(1, n, sr); d = b.getChannelData(0);
+      var span = Math.min(n, Math.round(Math.max(T * 12, tau * 7)));
+      /* one round's pulse and its gas envelope, computed once */
+      var bk = new Float32Array(span), ek = new Float32Array(span);
+      for (i = 0; i < span; i++) { x = i / T; bk[i] = (1 - x) * Math.exp(-x); ek[i] = 0.5 * Math.exp(-i / tau); }
+      /* between a rotary's rounds the gas never stops: a floor under the train */
+      if (name === "rot") for (i = 0; i < n; i++) d[i] = 0.16 * (Math.random() * 2 - 1);
+      for (r = 0; r < k; r++) {
+        var A = k > 1 ? 0.78 + 0.22 * Math.random() : 1, off = r * P + (k > 1 ? Math.round((Math.random() - 0.5) * P * 0.05) : 0);
+        for (i = 0; i < span; i++) d[(off + i + n) % n] += A * (bk[i] + (Math.random() * 2 - 1) * ek[i]);
+      }
+    } else if (name === "crackle") {
+      /* The crackle of a big solid motor: shock-steepened spikes in the jet
+         noise, compressions only, arriving at random - positively skewed,
+         which is why a Grad salvo rips and a hiss does not. 1 s, looped. */
+      /* the hiss under the spikes is the shared noise buffer's, not a
+         second 72,000 calls to Math.random */
+      n = Math.floor(sr * 1.0); b = ac.createBuffer(1, n, sr); d = b.getChannelData(0);
+      var nz = noiseBuf(ac).getChannelData(0), tauC = sr * 0.00015, mean = 0, t = 0, kc = new Float32Array(40);
+      for (i = 0; i < 40; i++) kc[i] = Math.exp(-i / tauC);
+      for (i = 0; i < n; i++) { d[i] = 0.26 * nz[i]; mean += d[i]; }
+      while (true) {
+        t += -Math.log(1 - Math.random()) * sr / 700;
+        if (t >= n) break;
+        var a = -Math.log(1 - Math.random()) * 0.7, s0 = Math.floor(t);
+        for (i = 0; i < 40 && s0 + i < n; i++) { d[s0 + i] += a * kc[i]; mean += a * kc[i]; }
+      }
+      mean /= n;
+      for (i = 0; i < n; i++) d[i] -= mean;
+    }
+    c[name] = b;
+    return b;
+  }
+  /* Built on first use, like the noise buffer. After a session's first
+     report the rest are built one per turn of the event loop, 40 ms apart,
+     so the first missile or rotary burst does not pay for its table in the
+     middle of a frame (the crackle alone is several milliseconds cold) */
+  var warmQ = null;
+  function warmTables(ac) {
+    if (warmQ) return;
+    warmQ = ["echo", "rot", "rev", "cell", "crackle"];
+    var next = function () {
+      var nm = warmQ.shift();
+      if (!nm) return;
+      try { shapeBuf(ac, nm); } catch (e) {}
+      try { setTimeout(next, 40); } catch (e) {}
+    };
+    try { setTimeout(next, 40); } catch (e) {}
+  }
+  function shapeSrc(ac, name, rate) {
+    var s = ac.createBufferSource();
+    s.buffer = shapeBuf(ac, name);
+    s.playbackRate.value = clamp(rate, 0.02, 64);
+    return s;
+  }
+  /* one pressure pulse into out: a buffer source and its gain, no automation */
+  function pulse(ac, out, t, name, rate, amp) {
+    var s = shapeSrc(ac, name, rate), g = gainNode(ac, amp);
+    s.connect(g); g.connect(out);
+    s.start(t);
+    return s;
+  }
+
+  /* a noise band's RMS scales with the square root of its bandwidth; these
+     turn a target level into a gain whatever the band, so a layer keeps its
+     place in the report when its filter moves */
+  function nbBand(ac, f, q) { return 2 * Math.sqrt(q * ac.sampleRate * 0.5 / Math.max(40, f)); }
+  function nbLow(ac, f) { return 2 * Math.sqrt(ac.sampleRate * 0.5 / Math.max(40, f)); }
+
+  /* attack, then an exponential decay of 80 dB over dec, relative to the
+     layer's own peak (and on at that slope, rather than parking on a floor
+     until the source stops). The shared burst() decays to an absolute 1e-5,
+     so a quiet layer - any report heard from far off - lost fewer dB in the
+     same time than a loud one: distance slowed the decay, and far tails
+     outlived their voices */
+  function env(par, t0, atk, dec, peak) {
+    peak = Math.max(peak, 0.00002);
+    var a = Math.max(0.0004, atk);
+    par.setValueAtTime(peak * 0.0001, t0);
+    par.linearRampToValueAtTime(peak, t0 + a);
+    par.exponentialRampToValueAtTime(peak * 0.00001, t0 + a + dec * 1.25);
+  }
+
+  /* level of each layer against S.level: set by measurement so each family
+     sits in the mix where HEAD's did (see the comparison with the commit) */
+  var KG = { blast: 0.95, crack: 0.62, body: 0.20, boom: 0.26, tail: 1.0, tube: 6.0, clank: 0.55, echo: 0.42 };
 
   function emitGun(ac, out, t0, S, sp) {
-    var lvl = S.level * sp.gain;
-    var cut = sp.cut, far = sp.far;
-    var f0 = S.f0 * vary(0.04);
-    var tail = S.tail * (1 + far * 0.55);           // distance stretches the roll
+    var far = sp.far, cut = sp.cut;
+    var lvl = S.level * sp.gain * vary(0.10);
+    /* a big charge's report goes out through a subsonic filter, 12 dB/oct
+       below 38 Hz (where BS.1770 stops counting loudness too): under it the
+       pulse, the boom and the late tail would spend headroom on nothing a
+       speaker plays */
+    if (S.sub) { var hs = hpf(ac, 38); hs.connect(out); out = hs; }
 
-    /* 1. muzzle crack - the shock wave. Dies fast with distance. */
-    var ck = S.crack * (1 - 0.72 * far);
-    if (ck > 0.02 && cut > 700) {
-      var cd = 0.004 + 0.030 * (S.bore / 200);
-      var n1 = noiseSrc(ac, 1);
-      var h1 = hpf(ac, clamp(f0 * 2.2, 380, 7000));
-      var pk = ac.createBiquadFilter();
-      pk.type = "peaking";
-      pk.frequency.value = clamp(f0 * 3.2, 500, 11000);
-      pk.Q.value = 0.9; pk.gain.value = 9;
-      var g1 = gainNode(ac, 0);
-      burst(g1.gain, t0, 0.0007, cd, lvl * ck * 0.95);
-      n1.connect(h1); h1.connect(pk); pk.connect(g1); g1.connect(out);
-      startNoise(n1, t0, cd);
+    /* 1. BLAST WAVE, stretching with distance - to 5.5 ms at most, since
+          below ~29 Hz a longer one is headroom, not sound */
+    var T = Math.min(0.0055, S.T * vary(0.08) * (1 + 1.4 * far));
+    var pb = lvl * KG.blast;
+    var sB = pulse(ac, out, t0, "blast", BLAST_T / T, pb * (1 - 0.5 * far) * (S.tube ? 0.45 : 1));
+    if (S.tube) {
+      /* a mortar or grenade tube is a pipe closed at one end: it rings at
+         its quarter-wave note (an 81 mm tube 1.3 m long: 343 / 5.2 = 66 Hz;
+         the body band sits on the third partial) for some 50 ms, and a
+         low-velocity round leaves a soft pulse - hollow, not sharp. At Q 4.5
+         the ring was over in 20 ms and made no difference to the sound */
+      var bt = bp(ac, S.tube * vary(0.05), 10), gt = gainNode(ac, lvl * KG.tube);
+      sB.connect(bt); bt.connect(gt); gt.connect(out);
     }
 
-    /* 2. blast body - filtered noise sweeping down through the bore note */
-    var bd = tail * 0.60;
-    var n2 = noiseSrc(ac, 1);
-    var l2 = lpf(ac, 1, 0.8);
-    ramp(l2.frequency, t0,
-         Math.min(cut, f0 * 3.1 * (1 - 0.55 * far)),
-         Math.max(55, Math.min(cut, f0 * 0.55 * (1 - 0.35 * far))), bd);
-    var h2 = hpf(ac, Math.max(26, f0 * 0.20));
-    var g2 = gainNode(ac, 0);
-    burst(g2.gain, t0 + 0.0015, 0.0025, bd, lvl * (0.55 + 0.35 * S.thump));
-    n2.connect(h2); h2.connect(l2); l2.connect(g2); g2.connect(out);
-    startNoise(n2, t0, bd);
+    /* 2. CRACK - the first thing distance takes */
+    var ck = S.crack * (1 - 1.25 * far);
+    if (ck > 0.04 && S.cD > 0 && cut > 2500)
+      pulse(ac, out, t0, "nwave", NWAVE_D / (S.cD * vary(0.12)), lvl * ck * KG.crack);
 
-    /* 3. concussion - the sub you feel rather than hear. Bore drives it. */
-    if (S.thump > 0.05) {
-      var tf = clamp(f0 * 0.30, 30, 200);
-      var o3 = osc(ac, "sine", tf);
-      o3.frequency.setValueAtTime(tf * 1.35, t0);
-      o3.frequency.exponentialRampToValueAtTime(Math.max(24, tf * 0.52), t0 + tail * 0.8);
-      var o3b = osc(ac, "triangle", tf * 2.02);
-      o3b.frequency.setValueAtTime(tf * 2.7, t0);
-      o3b.frequency.exponentialRampToValueAtTime(Math.max(30, tf * 1.0), t0 + tail * 0.6);
-      var g3 = gainNode(ac, 0), g3b = gainNode(ac, 0);
-      burst(g3.gain,  t0, 0.004, tail * 0.95, lvl * S.thump * 0.95);
-      burst(g3b.gain, t0, 0.003, tail * 0.40, lvl * S.thump * 0.22);
-      o3.connect(g3); g3.connect(out); o3.start(t0); o3.stop(t0 + tail + 0.06);
-      o3b.connect(g3b); g3b.connect(out); o3b.start(t0); o3b.stop(t0 + tail * 0.7 + 0.05);
+    /* 3. BODY - the gas jet; 4. BOOM - the low bulk of a big charge;
+       5. MECHANISM; 6. TAIL - all off one noise source */
+    var n = noiseSrc(ac, 1);
+    /* gains are normalised at the NEAR band, so when distance pulls a filter
+       down the energy above it really is gone, as absorption takes it. The
+       ground takes more: over grass at a grazing angle the 200-800 Hz band
+       is the one that dips, so a far gun keeps its boom and loses its bark */
+    var f0 = S.f0 * vary(0.07), fb = clamp(f0 * (1 - 0.45 * far), 60, Math.max(90, cut * 0.8));
+    var bb = bp(ac, fb, S.bq), gb = gainNode(ac, 0);
+    env(gb.gain, t0, 0.0006, S.bd * (1 + 0.8 * far), pb * KG.body * nbBand(ac, f0, S.bq) * (1 - 0.75 * far));
+    n.connect(bb); bb.connect(gb); gb.connect(out);
+    if (S.bm) {
+      /* a noise band, not a pitched thump: lowpassed at 12 dB/oct with a
+         little resonance, centred by bore (240 Hz for a 12.7 mm, 94 Hz for
+         a 120 mm) and sinking as it dies */
+      var fm = S.fm * vary(0.08), dm = S.bmd * (1 + 0.3 * far), lm = lpf(ac, fm, 3), gm = gainNode(ac, 0);
+      ramp(lm.frequency, t0, fm, fm * 0.55, dm);
+      env(gm.gain, t0 + 0.002, 0.004 + 0.03 * far, dm, pb * S.bm * KG.boom * nbLow(ac, fm));
+      n.connect(lm); lm.connect(gm); gm.connect(out);
     }
-
-    /* 4. rolling tail - the blast coming back off the ground. Only big bores
-          and distant shots have one worth the nodes. */
-    var rollLvl = S.thump * 0.40 + far * 0.45;
-    if (rollLvl > 0.10) {
-      var rd = tail * 1.5;
-      var t4 = t0 + 0.035 + far * 0.06;
-      var n4 = noiseSrc(ac, 0.7);
-      var l4 = lpf(ac, 1, 0.5);
-      /* The roll is stretched by distance, so its downward sweep has to start
-         lower as well - otherwise the extra time it spends in the mid band
-         measures as a DISTANT shot being brighter than a near one. */
-      ramp(l4.frequency, t4, Math.min(cut, 700 * (1 - 0.55 * far)), 70, rd);
-      var g4 = gainNode(ac, 0);
-      burst(g4.gain, t4, 0.05, rd, lvl * rollLvl * 0.45);
-      n4.connect(l4); l4.connect(g4); g4.connect(out);
-      startNoise(n4, t4, rd);
+    if (S.ring > 0.05 && S.cf && far < 0.6 && cut > S.cf) {
+      var bc = bp(ac, S.cf * vary(0.05), 8), gc = gainNode(ac, 0);
+      env(gc.gain, t0 + 0.005, 0.0008, 0.08 + 0.10 * S.ring, lvl * S.ring * KG.clank * nbBand(ac, S.cf, 8) * (1 - far));
+      n.connect(bc); bc.connect(gc); gc.connect(out);
     }
+    /* the tail darkens as it dies, and is longer and relatively louder with
+       distance - which is what makes a far gun read as far. Small arms' and
+       autocannon's grow less: they fire hundreds of rounds a minute and
+       their voices are held briefly (see buildSpec) */
+    var tl = S.tail * vary(0.10) * (1 + (S.bore < 20 ? 0.1 : S.bore < 60 ? 0.2 : 0.6) * far), t5 = t0 + 0.008 + 0.03 * far;
+    var tf = Math.min(cut, S.tf * (1 - 0.55 * far));
+    var lt = lpf(ac, tf, 0.6), gl = gainNode(ac, 0);
+    ramp(lt.frequency, t5, tf, Math.max(S.bore >= 60 ? 90 : 55, S.tf * 0.07), tl * 0.7);
+    env(gl.gain, t5, 0.015 + 0.05 * far + tl * 0.02, tl, pb * S.ta * KG.tail * nbLow(ac, S.tf) * (1 + (S.bore >= 20 ? 0.3 : -0.4) * far));
+    n.connect(lt); lt.connect(gl); gl.connect(out);
+    startNoise(n, t0, tl + 0.05);
 
-    /* 5. mount / breech ring - what makes a 30 mm chain gun mechanical */
-    if (S.ring > 0.10 && cut > 900 && far < 0.75) {
-      var rf = clamp(f0 * 1.9, 300, 4200) * vary(0.06);
-      for (var k = 0; k < 2; k++) {
-        var n5 = noiseSrc(ac, 1);
-        var b5 = bp(ac, rf * (k ? 1.63 : 1), 11 + k * 5);
-        var g5 = gainNode(ac, 0);
-        burst(g5.gain, t0 + 0.003 * k, 0.001, 0.05 + 0.09 * S.ring,
-              lvl * S.ring * (k ? 0.22 : 0.34) * (1 - far));
-        n5.connect(b5); b5.connect(g5); g5.connect(out);
-        startNoise(n5, t0, 0.16);
-      }
+    /* 7. ECHOES - big guns: the report returning from tree lines and hills,
+          each later, softer and longer, its front rounded off by the trip */
+    for (var e = 0; e < S.ec; e++)
+      pulse(ac, out, t0 + (0.21 + 0.37 * e) * vary(0.2) + far * 0.05, "echo",
+            BLAST_T / Math.min(0.0065, T * (1.6 + 1.0 * e)), pb * KG.echo * (0.30 - 0.10 * e) * (1 + 0.3 * far));
+  }
+
+  /* MORTARS: the hollow tube note is emitGun's tube layer; this only keeps
+     the name the dispatch has always used for indirect fire */
+  function emitArc(ac, out, t0, S, sp) { emitGun(ac, out, t0, S, sp); }
+
+  /* ---------------------------------------------------------- bursts ----
+     ROTARY AND FAST AIRCRAFT CANNON. A GAU-8 at 3900 rpm puts a round out
+     every 15 ms; the reports fuse into one tearing tone at 65 Hz, the
+     "BRRRT", which a train of separate gun reports cannot be (it clicks). So
+     one call is the whole burst: a looped train of rounds at the true rate,
+     spun up from 62 % over the first 0.12 s as a driven gun is, with the
+     burst's own echo building under it. Slower guns (an M230 at 625 rpm)
+     loop a single round at their own interval and are heard round by round.
+     A gun that is still firing when its report ends - an AC-130's Vulcan
+     battery never stops, a veteran A-10's passes run into each other - goes
+     straight on in a new report without spinning up again (admitShot). */
+  function emitBurst(ac, out, t0, S, sp) {
+    var far = sp.far, cut = sp.cut, ts = sp.ts || 1;
+    var lvl = S.level * sp.gain * vary(0.08);
+    /* as long as the game's burst, on the game's clock */
+    var len = Math.max(0.12, S.span * ts + S.over * (1 + 0.1 * rnd()));
+    var hz = S.rpm / 60 * vary(0.02);
+    var train = hz >= 42 ? "rot" : hz >= 17 ? "rev" : "cell";
+    var src = ac.createBufferSource();
+    src.buffer = shapeBuf(ac, train);
+    src.loop = true;
+    var rate = 1;
+    if (train === "cell") { src.loopStart = 0; src.loopEnd = 1 / hz; }
+    else rate = hz / (train === "rot" ? 70 : 25);
+    var spin = train === "rot" && !sp.cont ? Math.min(0.12, len * 0.25) : 0;
+    src.playbackRate.setValueAtTime(rate * (spin ? 0.62 : 1), t0);
+    if (spin) src.playbackRate.linearRampToValueAtTime(rate, t0 + spin);
+
+    var g = gainNode(ac, 0), pk = lvl * 0.46, atk = sp.cont ? 0.02 : 0.004;
+    g.gain.setValueAtTime(0.00001, t0);
+    g.gain.linearRampToValueAtTime(pk, t0 + atk);
+    g.gain.setValueAtTime(pk, t0 + len - 0.025);
+    g.gain.linearRampToValueAtTime(pk * 0.0001, t0 + len);
+    /* the tearing top, darkened by distance */
+    var lp = lpf(ac, Math.min(cut, S.f0 * (1 - 0.55 * far)), 0.7);
+    src.connect(lp); lp.connect(g);
+    /* the weight: the burst's own fundamental and its first harmonics -
+       held, not raised, with distance, so the burst falls off as a round of
+       the same calibre does */
+    var lw = lpf(ac, clamp(hz * 2.6, 60, 420), 0.9), gw = gainNode(ac, 1.2);
+    src.connect(lw); lw.connect(gw); gw.connect(g);
+    g.connect(out);
+    /* a burst opens on a round: a single-round loop starts at its onset, a
+       barrel train anywhere in its cycle */
+    var off = train === "cell" ? 0 : rnd() * src.buffer.duration;
+    try { src.start(t0, off); } catch (e1) { src.start(t0); }
+    src.stop(t0 + len + 0.02);
+
+    /* the burst coming back: reverberation builds while it fires and
+       outlasts it, darkening from the middle of the burst on */
+    var tf = Math.min(cut, 1500 * (1 - 0.45 * far));
+    var nt = noiseSrc(ac, 0.8), lt = lpf(ac, tf, 0.6), gt = gainNode(ac, 0);
+    ramp(lt.frequency, t0 + len * 0.5, tf, 80, len * 0.5 + S.tail);
+    gt.gain.setValueAtTime(0.00001, t0);
+    gt.gain.linearRampToValueAtTime(lvl * 0.14 * (1 + 0.3 * far), t0 + len);
+    gt.gain.exponentialRampToValueAtTime(lvl * 0.14e-4, t0 + len + S.tail * (1 + 0.5 * far));
+    nt.connect(lt); lt.connect(gt); gt.connect(out);
+    startNoise(nt, t0, len + S.tail * 1.5);
+
+    /* the burst is registered only now that it has a voice, so a round
+       refused one leaves the next round free to be heard */
+    if (sp.bst) {
+      var L = sp.bst.list;
+      for (var i = L.length - 1; i >= 0; i--)
+        if (Math.abs(L[i].x - sp.bst.x) + Math.abs(L[i].y - sp.bst.y) < 96) L.splice(i, 1);
+      L.push({ x: sp.bst.x, y: sp.bst.y, last: t0 + S.span * ts + 0.07, end: t0 + len });
     }
   }
+
+  function emitCiws(ac, out, t0, S, sp) { emitBurst(ac, out, t0, S, sp); }
+
+  /* ----------------------------------------------------------- motors ----
+     A launch is a motor, not a shock wave. What it sounds like depends on
+     how it leaves the tube:
+       soft / cold launch (Javelin, Stinger, S-300, an SLBM): a gas charge
+         pops the round out, a beat of near silence, then the motor lights;
+       hot launch (TOW's launch motor, Patriot, a rail-launched Hellfire):
+         ignition at once;
+     and then the motor itself: broadband roar whose centre falls with nozzle
+     size (jet noise peaks near 0.2 x exhaust speed / nozzle diameter - a
+     Stinger hisses, a Scud roars), with crackle - the shock-steepened
+     spikes of a big solid motor - underneath. As the round leaves, the band
+     slides DOWN (Doppler and air absorption both pull it there) and fades:
+     the old builder swept it upward, which is the sound of an approach. A
+     cruise missile's sustainer is a turbojet, heard as a whine that falls
+     away; most anti-ship missiles are the same after the booster.
+       ej/ejT   eject pop and its blast length (ms); gap before ignition (s)
+       wet      the eject happens under water (an SLBM): heard through it
+       bang     a launch charge like a gun's (RPG-7, disposable launchers)
+       ig/igT   ignition thump, its length (ms)
+       fB       roar band centre (Hz); bst booster seconds; sus fade seconds
+       ck       crackle; rum low rumble; jet turbojet whine; hs 0 drops the
+                departing hiss; lv level trim */
+  var MIS = {
+    atgm:      { ej: 0,   gap: 0,    ig: 0.80, igT: 3.5, fB: 1900, bst: 0.30, sus: 1.00, ck: 0.10, rum: 0.35, jet: 0, lv: 0.63 },
+    atgm_soft: { ej: 1.3, ejT: 2.2, gap: 0.17, ig: 0.25, igT: 2.5, fB: 2300, bst: 0.28, sus: 0.85, ck: 0.10, rum: 0.25, jet: 0, lv: 0.60 },
+    asm:       { ej: 0,   gap: 0,    ig: 0.45, igT: 3.0, fB: 1700, bst: 0.50, sus: 0.75, ck: 0.35, rum: 0.45, jet: 0, lv: 0.60 },
+    aam:       { ej: 0,   gap: 0,    ig: 0.30, igT: 2.5, fB: 1800, bst: 0.40, sus: 0.55, ck: 0.35, rum: 0.35, jet: 0, lv: 0.60 },
+    manpads:   { ej: 1.6, ejT: 1.8, gap: 0.22, ig: 0.35, igT: 2.0, fB: 2300, bst: 0.45, sus: 0.65, ck: 0.30, rum: 0.30, jet: 0, lv: 0.39 },
+    sam:       { ej: 0,   gap: 0,    ig: 0.90, igT: 6.0, fB: 1150, bst: 0.95, sus: 0.90, ck: 0.65, rum: 0.80, jet: 0, lv: 0.60 },
+    sam_cold:  { ej: 1.0, ejT: 7.0, gap: 0.38, ig: 0.60, igT: 6.0, fB: 1150, bst: 0.95, sus: 0.90, ck: 0.65, rum: 0.80, jet: 0, lv: 0.60 },
+    ashm:      { ej: 0,   gap: 0,    ig: 0.90, igT: 7.0, fB: 1000, bst: 1.10, sus: 1.20, ck: 0.55, rum: 0.90, jet: 0, lv: 0.78 },
+    cruise:    { ej: 0,   gap: 0,    ig: 0.80, igT: 7.0, fB: 1050, bst: 0.80, sus: 1.90, ck: 0.40, rum: 0.70, jet: 1.0, lv: 0.70 },
+    ballistic: { ej: 0,   gap: 0,    ig: 1.00, igT: 10,  fB: 620,  bst: 2.00, sus: 1.10, ck: 1.00, rum: 1.20, jet: 0, lv: 0.78 },
+    rpg:       { ej: 0,   gap: 0.07, bang: 1, ig: 0.30, igT: 2.0, fB: 2000, bst: 0.22, sus: 0.60, ck: 0.10, rum: 0.20, jet: 0, lv: 0.60 },
+    mlrs:      { ej: 0,   gap: 0,    ig: 0.70, igT: 5.0, fB: 900,  bst: 0.55, sus: 0.55, ck: 0.85, rum: 0.90, jet: 0, lv: 0.54 },
+    ffar:      { ej: 0,   gap: 0,    ig: 0.40, igT: 2.5, fB: 2200, bst: 0.28, sus: 0.35, ck: 0.40, rum: 0.30, jet: 0, lv: 0.60 },
+    decoy:     { ej: 0.8, ejT: 3.0, gap: 0.05, ig: 0.10, igT: 1.5, fB: 3000, bst: 0.25, sus: 0.40, ck: 0.10, rum: 0,     jet: 0, hs: 0, lv: 0.35 },
+  };
+  var KM = { ej: 0.9, ig: 0.8, roar: 0.75, hiss: 0.10, rum: 0.80, jet: 0.08, gas: 0.11, wash: 0.5 };
 
   function emitMissile(ac, out, t0, S, sp) {
-    var lvl = S.level * sp.gain, cut = sp.cut;
-    var burn = S.tail * vary(0.06);
+    var M = S.mis || MIS.atgm, far = sp.far, cut = sp.cut;
+    var lvl = S.level * sp.gain * vary(0.10) * M.lv;
+    var size = S.msize || 1;                          // motor size, 0.6 (Stinger) .. 1.6 (Scud)
+    /* an SLBM breaks the surface when the game says (combat.js's WET, in
+       game seconds); every other gap is the round's own */
+    var ti = t0 + (M.wet ? M.gap * (sp.ts || 1) : (M.gap || 0) * vary(0.15));
+    var bst = M.bst * vary(0.08), sus = M.sus * vary(0.1) * (1 + 0.4 * far);
+    /* far off, the ground and the air take the top of a motor's roar as
+       they take a gun's bark, and a jet radiates its highs aft, not to the
+       side: a distant launch is a low rush with a soft onset */
+    var dull = 1 - 0.4 * far;
 
-    /* 1. igniter - a short pressurised bang out of the tube */
-    var n1 = noiseSrc(ac, 1);
-    var b1 = bp(ac, clamp(Math.min(cut, 420), 120, 900), 1.1);
-    var g1 = gainNode(ac, 0);
-    burst(g1.gain, t0, 0.002, 0.075, lvl * 0.42);
-    n1.connect(b1); b1.connect(g1); g1.connect(out);
-    startNoise(n1, t0, 0.1);
+    /* 1. eject charge, or a gun-like launch charge */
+    if (M.ej) {
+      var sE = shapeSrc(ac, "blast", BLAST_T / (M.ejT / 1000 * vary(0.1) * (1 + far)));
+      var gE = gainNode(ac, lvl * M.ej * KM.ej * (M.wet ? 1.6 : 1) * (1 - 0.6 * far));
+      if (M.wet) {
+        var lE = lpf(ac, 220, 0.8);
+        sE.connect(lE); lE.connect(gE);
+      } else sE.connect(gE);
+      gE.connect(out); sE.start(t0);
+    }
+    if (M.bang) {
+      pulse(ac, out, t0, "blast", BLAST_T / (0.0035 * (1 + far)), lvl * 1.1 * (1 - 0.5 * far));
+      if (far < 0.6 && cut > 2500) pulse(ac, out, t0, "nwave", NWAVE_D / 0.0005, lvl * 0.45 * (1 - far));
+    }
 
-    /* 2. motor - a wide band that opens upward as the round accelerates away,
-          which is the single feature that makes a launch unmistakable */
-    var n2 = noiseSrc(ac, 1);
-    var b2 = bp(ac, 1, 0.85);
-    var b2c = lpf(ac, Math.min(cut, 3200), 0.7);
-    b2.frequency.setValueAtTime(240, t0);
-    b2.frequency.exponentialRampToValueAtTime(Math.max(300, Math.min(cut, 2600)), t0 + burn * 0.42);
-    b2.frequency.exponentialRampToValueAtTime(Math.max(180, Math.min(cut, 850)), t0 + burn);
-    var g2 = gainNode(ac, 0);
-    g2.gain.setValueAtTime(0.00001, t0);
-    g2.gain.linearRampToValueAtTime(lvl * 0.68, t0 + 0.055);
-    g2.gain.setValueAtTime(lvl * 0.68, t0 + burn * 0.30);
-    g2.gain.exponentialRampToValueAtTime(0.00001, t0 + burn);
-    n2.connect(b2); b2.connect(b2c); b2c.connect(g2); g2.connect(out);
-    startNoise(n2, t0, burn);
+    /* 2. ignition */
+    if (M.ig) pulse(ac, out, ti, "blast", BLAST_T / (M.igT / 1000 * vary(0.1) * (1 + 1.5 * far)), lvl * M.ig * KM.ig * (1 - 0.8 * far));
 
-    /* 3. motor rumble - the low half of the exhaust */
-    var rf = clamp(S.f0 * 0.22, 42, 130);
-    var o3 = osc(ac, "sawtooth", rf);
-    o3.frequency.setValueAtTime(rf * 0.8, t0);
-    o3.frequency.linearRampToValueAtTime(rf * 1.5, t0 + burn * 0.6);
-    var l3 = lpf(ac, Math.min(cut, 300), 3.5);
-    var g3 = gainNode(ac, 0);
-    burst(g3.gain, t0, 0.05, burn * 0.9, lvl * S.thump * 1.05);
-    o3.connect(l3); l3.connect(g3); g3.connect(out);
-    o3.start(t0); o3.stop(t0 + burn + 0.05);
-
-    /* 4. departure hiss - the round going away from you. Band-limited on
-          both sides: unbounded it becomes the loudest thing in the spectrum
-          and a missile launch ends up brighter than a rifle. */
-    var n4 = noiseSrc(ac, 1);
-    var h4 = hpf(ac, Math.min(cut * 0.7, 1800));
-    var h4b = lpf(ac, Math.min(cut, 4200), 0.6);
-    var g4 = gainNode(ac, 0);
-    burst(g4.gain, t0 + 0.03, 0.12, burn * 1.05, lvl * 0.08 * (1 - sp.far * 0.7));
-    n4.connect(h4); h4.connect(h4b); h4b.connect(g4); g4.connect(out);
-    startNoise(n4, t0, burn + 0.2);
-  }
-
-  function emitRocket(ac, out, t0, S, sp) {
-    /* An unguided rocket leaves harder and rougher than a guided round. */
-    emitMissile(ac, out, t0, S, sp);
-    var lvl = S.level * sp.gain;
-    var n = noiseSrc(ac, 1.4);
-    var b = bp(ac, Math.min(sp.cut, 1500), 0.8);
-    var g = gainNode(ac, 0);
-    burst(g.gain, t0, 0.004, 0.20, lvl * 0.55);
-    n.connect(b); b.connect(g); g.connect(out);
-    startNoise(n, t0, 0.24);
-  }
-
-  function emitArc(ac, out, t0, S, sp) {
-    /* Tube artillery: the hollow tube note first, then the blast. */
-    var lvl = S.level * sp.gain;
-    var tf = clamp(S.f0 * 0.55, 60, 420);
-    var o = osc(ac, "sine", tf);
-    o.frequency.setValueAtTime(tf * 1.9, t0);
-    o.frequency.exponentialRampToValueAtTime(tf * 0.7, t0 + 0.10);
-    var g = gainNode(ac, 0);
-    burst(g.gain, t0, 0.002, 0.13, lvl * 0.45);
-    o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + 0.2);
-    emitGun(ac, out, t0, S, sp);
-  }
-
-  function emitTorpedo(ac, out, t0, S, sp) {
-    var lvl = S.level * sp.gain;
-    /* compressed-air launch: a muffled slam, then water */
-    var n1 = noiseSrc(ac, 1);
-    var l1 = lpf(ac, Math.min(sp.cut, 500), 1.2);
-    var g1 = gainNode(ac, 0);
-    burst(g1.gain, t0, 0.004, 0.16, lvl * 0.55);
-    n1.connect(l1); l1.connect(g1); g1.connect(out);
-    startNoise(n1, t0, 0.2);
-    var o = osc(ac, "sine", 120);
-    o.frequency.setValueAtTime(150, t0);
-    o.frequency.exponentialRampToValueAtTime(48, t0 + 0.24);
-    var go = gainNode(ac, 0);
-    burst(go.gain, t0, 0.005, 0.26, lvl * 0.50);
-    o.connect(go); go.connect(out); o.start(t0); o.stop(t0 + 0.32);
-    /* bubbles: band-limited noise chopped by a fast LFO */
-    var n2 = noiseSrc(ac, 1);
-    var b2 = bp(ac, Math.min(sp.cut, 820), 2.2);
-    var b2b = lpf(ac, Math.min(sp.cut, 1400), 0.7);
-    var g2 = gainNode(ac, 0);
-    burst(g2.gain, t0 + 0.05, 0.06, 0.55, lvl * 0.25);
-    var lfo = osc(ac, "sine", 17), lg = gainNode(ac, 0.75);
-    lfo.connect(lg); lg.connect(g2.gain);
-    lfo.start(t0); lfo.stop(t0 + 0.7);
-    n2.connect(b2); b2.connect(b2b); b2b.connect(g2); g2.connect(out);
-    startNoise(n2, t0, 0.65);
-  }
-
-  function emitBomb(ac, out, t0, S, sp) {
-    var lvl = S.level * sp.gain;
-    var n = noiseSrc(ac, 0.9);
-    var b = bp(ac, Math.min(sp.cut, 700), 0.7);
-    b.frequency.setValueAtTime(Math.min(sp.cut, 900), t0);
-    b.frequency.exponentialRampToValueAtTime(Math.max(120, Math.min(sp.cut, 220)), t0 + 0.32);
-    var g = gainNode(ac, 0);
-    burst(g.gain, t0, 0.05, 0.30, lvl * 0.9);
-    n.connect(b); b.connect(g); g.connect(out);
-    startNoise(n, t0, 0.36);
-  }
-
-  function emitCiws(ac, out, t0, S, sp) {
-    /* Not discrete rounds: a saw at the cyclic rate. */
-    var lvl = S.level * sp.gain;
-    var o = osc(ac, "sawtooth", 62);
-    var b = bp(ac, Math.min(sp.cut, 1700), 1.6);
-    var g = gainNode(ac, 0);
-    burst(g.gain, t0, 0.01, 0.34, lvl * 0.8);
-    o.connect(b); b.connect(g); g.connect(out);
-    o.start(t0); o.stop(t0 + 0.4);
+    /* 3. the roar: a broad band that falls as the round leaves - most of
+          the way by burnout, when it is already doing Mach 1-2 away from
+          the launcher (Doppler alone puts a round receding at 300 m/s at
+          c / (c + v) = 0.53 of its pitch), the rest as it goes */
+    var fB = M.fB * vary(0.06) * dull, rise = 0.03 + 0.05 * size + (M === MIS.ballistic ? 0.25 : 0);
     var n = noiseSrc(ac, 1);
-    var h = hpf(ac, Math.min(sp.cut * 0.8, 2600));
-    var gn = gainNode(ac, 0);
-    burst(gn.gain, t0, 0.008, 0.30, lvl * 0.35);
-    n.connect(h); h.connect(gn); gn.connect(out);
-    startNoise(n, t0, 0.34);
+    var br = bp(ac, 1, 0.55);
+    br.frequency.setValueAtTime(Math.min(cut, fB * 0.8), ti);
+    br.frequency.linearRampToValueAtTime(Math.min(cut, fB), ti + rise);
+    br.frequency.exponentialRampToValueAtTime(Math.max(90, Math.min(cut, fB * 0.6)), ti + bst);
+    br.frequency.exponentialRampToValueAtTime(Math.max(90, Math.min(cut, fB * 0.3 * dull)), ti + bst + sus);
+    /* ...and its top closes down with it: the air between takes more of
+       the highs the further the round is */
+    var fL = Math.min(cut * 0.5, fB * 2.6), lr = lpf(ac, fL, 0.6);
+    lr.frequency.setValueAtTime(fL, ti + rise);
+    lr.frequency.exponentialRampToValueAtTime(Math.max(200, fL * 0.5), ti + bst);
+    lr.frequency.exponentialRampToValueAtTime(Math.max(150, fL * 0.25), ti + bst + sus);
+    /* the band moves down at constant Q, so it narrows; the energy the air
+       leaves - the low part - is kept (1 / sqrt(dull)) */
+    var gr = gainNode(ac, 0), pk = lvl * KM.roar * (1 - 0.1 * far) / Math.sqrt(dull);
+    gr.gain.setValueAtTime(0.00001, ti);
+    gr.gain.linearRampToValueAtTime(pk, ti + rise);
+    gr.gain.setValueAtTime(pk, ti + rise + bst * 0.5);
+    gr.gain.exponentialRampToValueAtTime(pk * 0.35, ti + bst);
+    gr.gain.exponentialRampToValueAtTime(pk * 0.0001, ti + bst + sus);
+    n.connect(br); br.connect(lr); lr.connect(gr); gr.connect(out);
+
+    /* 4. the hiss of the jet going away, high and thin, and the first thing
+          to go as it does (a decoy's little motor is all hiss already, and
+          fires often enough to save the nodes) */
+    if (M.hs !== 0) {
+      var hh = hpf(ac, Math.min(cut * 0.7, 2600)), gh = gainNode(ac, 0);
+      env(gh.gain, ti + 0.02, 0.06, (bst + sus * 0.8) * 0.5, lvl * KM.hiss * (1 - 0.8 * far));
+      n.connect(hh); hh.connect(gh); gh.connect(out);
+    }
+
+    /* 5. between the launch and the motor. An RPG-7's charge throws the
+          round out with a bang and its gas and echo carry on for the tenth
+          of a second before the sustainer lights 10 m out - outdoors a
+          bang is never followed by silence. An SLBM's eject is heard
+          through the sea: the gas bubble churns and dies away, then the
+          missile shoulders the water aside as it rises and breaks the
+          surface in a column of spray, and lights */
+    var pre = M.bang || M.wet;
+    if (pre) {
+      var lb = M.wet ? lpf(ac, Math.min(cut, 420), 0.7) : bp(ac, Math.min(cut, 1100 * dull), 0.7);
+      var gb = gainNode(ac, 0);
+      if (M.wet) {
+        var aw = lvl * KM.wash * (1 - 0.4 * far), tw = ti - t0;
+        gb.gain.setValueAtTime(0.00001, t0);
+        gb.gain.linearRampToValueAtTime(aw, t0 + 0.06);
+        gb.gain.exponentialRampToValueAtTime(aw * 0.18, t0 + tw * 0.55);
+        gb.gain.exponentialRampToValueAtTime(aw * 1.2, ti);
+        gb.gain.exponentialRampToValueAtTime(aw * 0.0001, ti + 0.8);
+      } else env(gb.gain, t0 + 0.001, 0.002, 0.34, lvl * KM.gas * nbBand(ac, 1100, 0.7) * (1 - 0.5 * far));
+      n.connect(lb); lb.connect(gb); gb.connect(out);
+    }
+    startNoise(n, pre ? t0 : ti, (pre ? ti - t0 : 0) + bst + sus + 0.05);
+
+    /* 6. rumble and crackle: a big motor tears, a small one barely does.
+          The low end is what carries: it lasts as long as the roar does */
+    if (M.rum > 0.05) {
+      var sc = shapeSrc(ac, "crackle", (0.55 + 0.5 * M.ck) / Math.sqrt(size));
+      sc.loop = true;
+      var lc = lpf(ac, 1, 0.7);
+      lc.frequency.setValueAtTime(Math.min(cut * 0.6, (380 + 900 * M.ck / size) * dull), ti);
+      lc.frequency.exponentialRampToValueAtTime(Math.max(70, Math.min(cut, 160 / size)), ti + bst + sus);
+      var gc = gainNode(ac, 0), pc = lvl * M.rum * KM.rum * (1 - 0.2 * far);
+      gc.gain.setValueAtTime(0.00001, ti);
+      gc.gain.linearRampToValueAtTime(pc, ti + rise * 1.5);
+      gc.gain.setValueAtTime(pc, ti + Math.max(rise * 1.5, rise + bst * 0.5));
+      gc.gain.exponentialRampToValueAtTime(pc * 0.35, ti + bst);
+      gc.gain.exponentialRampToValueAtTime(pc * 0.0001, ti + bst + sus);
+      sc.connect(lc); lc.connect(gc); gc.connect(out);
+      try { sc.start(ti, rnd() * 0.9); } catch (e1) { sc.start(ti); }
+      sc.stop(ti + bst + sus + 0.05);
+    }
+
+    /* 7. the turbojet sustainer: a whine that falls away as the round does */
+    if (M.jet && cut > 1200) {
+      var fj = 3100 * vary(0.08);
+      var oj = osc(ac, "triangle", fj), gj = gainNode(ac, 0);
+      oj.frequency.setValueAtTime(fj, ti + bst * 0.5);
+      oj.frequency.exponentialRampToValueAtTime(fj * 0.62, ti + bst + sus);
+      gj.gain.setValueAtTime(0.00001, ti + bst * 0.5);
+      gj.gain.linearRampToValueAtTime(lvl * M.jet * KM.jet * (1 - 0.8 * far), ti + bst);
+      gj.gain.exponentialRampToValueAtTime(lvl * M.jet * KM.jet * 1e-4, ti + bst + sus);
+      oj.connect(gj); gj.connect(out);
+      oj.start(ti + bst * 0.5); oj.stop(ti + bst + sus + 0.05);
+    }
+  }
+
+  /* ROCKETS: unguided motors, the same physics with their own table rows -
+     an RPG's launch charge bangs before its sustainer lights 10 m out; an
+     MLRS round is all booster, and a salvo's ripple is the game's own burst
+     cadence (12 rounds at 0.16 s), one whoosh per round. */
+  function emitRocket(ac, out, t0, S, sp) { emitMissile(ac, out, t0, S, sp); }
+
+  /* ------------------------------------------------------------ water ----
+     A torpedo leaves its tube on a water ram or a slug of air: from above
+     the surface that is a muffled thump (the air-water boundary passes about
+     a thousandth of the energy, so everything above ~300 Hz is gone), the
+     tube's own hollow note, then the air and water it pushed out -
+     bubbles, whose pitch rises as they shrink - and the water closing
+     behind it. Its motor stays in the water: a first cut let a 640 Hz
+     whine through and it ended every launch on a test tone. A lightweight
+     torpedo from a deck tube or an aircraft goes into the water in the
+     open: a compressed-air cough and a splash. */
+  function emitTorpedo(ac, out, t0, S, sp) {
+    var far = sp.far, cut = sp.cut;
+    var lvl = S.level * sp.gain * vary(0.10);
+    var heavy = S.fam === "torpedo";
+    var bT = (heavy ? 0.016 : 0.006) * vary(0.1) * (1 + far);
+    var sB = shapeSrc(ac, "blast", BLAST_T / bT);
+    var lB = lpf(ac, Math.min(cut, heavy ? 300 : 700), 0.8), gB = gainNode(ac, lvl * (heavy ? 0.85 : 0.60));
+    sB.connect(lB); lB.connect(gB); gB.connect(out);
+    if (heavy) {
+      var bt = bp(ac, 78 * vary(0.06), 5), gt = gainNode(ac, lvl * 1.6);
+      sB.connect(bt); bt.connect(gt); gt.connect(out);
+    }
+    sB.start(t0);
+
+    /* bubbles: a band rising as they shrink, chopped at the rate they
+       break. The chop rides a unity gain AFTER the envelope, so it scales
+       with it and the bubbles die away instead of holding their level */
+    var n = noiseSrc(ac, 1), dull = 1 - 0.4 * far;
+    var b2 = bp(ac, 1, 2.0);
+    b2.frequency.setValueAtTime(Math.min(cut, (heavy ? 520 : 900) * dull), t0 + 0.04);
+    b2.frequency.exponentialRampToValueAtTime(Math.min(cut, (heavy ? 1150 : 1900) * dull), t0 + 0.7);
+    var g2 = gainNode(ac, 0), gm = gainNode(ac, 0.5);
+    env(g2.gain, t0 + 0.04, 0.05, heavy ? 0.75 : 0.6, lvl * (heavy ? 3.7 : 1.0));
+    var lfo = osc(ac, "triangle", 11 * vary(0.2)), lg = gainNode(ac, 0.5);
+    lfo.connect(lg); lg.connect(gm.gain);
+    lfo.start(t0); lfo.stop(t0 + 0.85);
+    n.connect(b2); b2.connect(g2); g2.connect(gm); gm.connect(out);
+    if (!heavy) {
+      /* the splash of the round going in: a broad band round 2 kHz with a
+         soft front, not a crack - water parts, it does not shatter */
+      var hs = bp(ac, Math.min(cut * 0.5, 2200 * (1 - 0.5 * far)), 0.8), gs = gainNode(ac, 0);
+      env(gs.gain, t0 + 0.07, 0.012, 0.26, lvl * 1.5 * (1 - 0.6 * far));
+      n.connect(hs); hs.connect(gs); gs.connect(out);
+    }
+    /* the water closing over it: a low wash that dies away */
+    var lw = lpf(ac, Math.min(cut, heavy ? 260 : 420), 0.7), gw = gainNode(ac, 0);
+    env(gw.gain, t0 + 0.06, 0.10, heavy ? 1.0 : 0.6, lvl * (heavy ? 1.8 : 0.8) * (1 - 0.3 * far));
+    n.connect(lw); lw.connect(gw); gw.connect(out);
+    startNoise(n, t0, heavy ? 1.15 : 0.8);
+  }
+
+  /* DEPTH CHARGES leave a K-gun or a Y-gun on a black-powder impulse charge -
+     a low, soft "whumpf", not a gun's crack - and tumble away through the
+     air. The splash and the detonation belong to the impact. */
+  function emitDepth(ac, out, t0, S, sp) {
+    var far = sp.far, cut = sp.cut;
+    var lvl = S.level * sp.gain * vary(0.10);
+    var sB = shapeSrc(ac, "blast", BLAST_T / (0.007 * vary(0.1) * (1 + far)));
+    var lB = lpf(ac, Math.min(cut, 650), 0.7), gB = gainNode(ac, lvl * 1.7);
+    sB.connect(lB); lB.connect(gB); gB.connect(out); sB.start(t0);
+    var n = noiseSrc(ac, 1), b = bp(ac, 1, 1.2), g = gainNode(ac, 0);
+    ramp(b.frequency, t0, Math.min(cut, 900), Math.min(cut, 380), 0.45);
+    env(g.gain, t0 + 0.01, 0.03, 0.45, lvl * 1.6);
+    n.connect(b); b.connect(g); g.connect(out);
+    startNoise(n, t0, 0.5);
+  }
+
+  /* BOMBS. The release is the ejector rack's cartridges kicking the store
+     off its hooks - a hard metallic clack - and then the fall: rushing air
+     that grows and rises in pitch as it comes down toward the ground
+     listener (Doppler, approaching). The combat code gives a bomb 0.7 s of
+     game time, so the rush is cut there and the explosion takes over. */
+  function emitBomb(ac, out, t0, S, sp) {
+    var far = sp.far, cut = sp.cut;
+    var lvl = S.level * sp.gain * vary(0.10);
+    var n = noiseSrc(ac, 1);
+    var bc = bp(ac, Math.min(cut, 1250 * vary(0.06)), 6), gc = gainNode(ac, 0);
+    env(gc.gain, t0, 0.0008, 0.07, lvl * 2.6 * (1 - 0.6 * far));
+    n.connect(bc); bc.connect(gc); gc.connect(out);
+    var br = bp(ac, 1, 1.3), gr = gainNode(ac, 0), fall = 0.68 * (sp.ts || 1);
+    br.frequency.setValueAtTime(Math.min(cut, 520 * (1 - 0.4 * far)), t0 + 0.05);
+    br.frequency.exponentialRampToValueAtTime(Math.min(cut, 1250 * (1 - 0.4 * far)), t0 + fall);
+    /* from 50 dB under its peak, not from nothing: the air is moving from
+       the moment the store leaves the rack */
+    gr.gain.setValueAtTime(lvl * 2.6 * 0.003, t0 + 0.05);
+    gr.gain.exponentialRampToValueAtTime(lvl * 2.6, t0 + fall - 0.02);
+    gr.gain.linearRampToValueAtTime(0.00001, t0 + fall + 0.02);
+    n.connect(br); br.connect(gr); gr.connect(out);
+    startNoise(n, t0, fall + 0.05);
   }
 
   function emitReport(ac, out, t0, S, sp) {
-    switch (S.kind) {
-      case "missile":  emitMissile(ac, out, t0, S, sp); break;
-      case "rocket":   emitRocket(ac, out, t0, S, sp);  break;
-      case "arc":      emitArc(ac, out, t0, S, sp);     break;
-      case "torpedo":
-      case "depth":    emitTorpedo(ac, out, t0, S, sp); break;
-      case "bomb":     emitBomb(ac, out, t0, S, sp);    break;
-      case "ciws":     emitCiws(ac, out, t0, S, sp);    break;
-      default:         emitGun(ac, out, t0, S, sp);     break;
+    switch (S.fam) {
+      case "rotary": case "revolver":            emitBurst(ac, out, t0, S, sp);   break;
+      case "mortar":                             emitArc(ac, out, t0, S, sp);     break;
+      case "rpg": case "mlrs": case "ffar":      emitRocket(ac, out, t0, S, sp);  break;
+      case "torpedo": case "lwt":                emitTorpedo(ac, out, t0, S, sp); break;
+      case "depth":                              emitDepth(ac, out, t0, S, sp);   break;
+      case "bomb":                               emitBomb(ac, out, t0, S, sp);    break;
+      default:
+        if (S.mis) emitMissile(ac, out, t0, S, sp);
+        else emitGun(ac, out, t0, S, sp);
+        break;
     }
+  }
+
+  /* THE GAME'S CLOCK. main.js runs the simulation at dt * Game.speed, so
+     at 2x a burst rules.js times at 0.35 s is over in 0.18 s of audio time.
+     Motors and blasts are physics and keep their own time; what the game
+     times - a burst's length, a bomb's fall, an SLBM's rise to the surface -
+     follows its clock. Read per call: the speed button can change it at
+     any moment. */
+  function gameRate() {
+    try { var s = Game.speed; return (s > 0 && s < 10) ? s : 1; } catch (e) { return 1; }
+  }
+
+  /* ONE REPORT PER BURST for the burst families. A rotary's later rounds
+     arrive as calls every burstDelay; they are already inside the report the
+     first call made, so they are swallowed while they fall inside its span
+     and come from the same place (two A-10s strafing side by side each get
+     their own). A round after the span - the next burst, or a gun that
+     never stops - starts a new report; if the last one is still sounding it
+     carries straight on (sp.cont). Every other weapon keeps the per-weapon
+     gap it always had. */
+  var burstsLive = {};
+  function admitShot(S, x, y, now, sp) {
+    var key = S.key || S.id;
+    if (sp) sp.ts = 1 / gameRate();
+    if (!warmQ && ctx) warmTables(ctx);
+    if (!S.burst) {
+      var prev = lastReport[key];
+      if (prev !== undefined && now - prev < S.gap) return false;
+      lastReport[key] = now;
+      return true;
+    }
+    var list = burstsLive[key] || (burstsLive[key] = []);
+    var px = x === undefined ? 0 : x, py = y === undefined ? 0 : y;
+    for (var i = list.length - 1; i >= 0; i--) {
+      var b = list[i];
+      if (now > b.end + 0.3) { list.splice(i, 1); continue; }
+      if (Math.abs(b.x - px) + Math.abs(b.y - py) >= 96) continue;
+      if (now < b.last) { b.x = px; b.y = py; return false; }
+      if (sp) sp.cont = now < b.end + 0.15;
+      break;
+    }
+    if (sp) sp.bst = { list: list, x: px, y: py };
+    return true;
   }
 
   /* =============================== IMPACTS ===============================
@@ -798,10 +1498,7 @@ var Sfx = (function () {
     var sp = (x === undefined) ? here(0.9) : place(x, y, S.refM, S.level);
     if (!sp) return;
     var now = ctx.currentTime;
-    var gap = S.kind === "mg" ? 0.022 : 0.030;
-    var prev = lastReport[S.id];
-    if (prev !== undefined && now - prev < gap) return;
-    lastReport[S.id] = now;
+    if (!admitShot(S, x, y, now, sp)) return;
     var head = voice(sp, S.dur * (1 + sp.far * 0.7) + sp.delay, sfxBus);
     if (!head) return;
     try { emitReport(ctx, head, now + 0.002, S, sp); } catch (e) { fail(e); }
@@ -1016,9 +1713,9 @@ var Sfx = (function () {
 
   var cues = {
     /* fallbacks for call sites that do not know which weapon fired */
-    shot:    function (ac, o, t) { emitGun(ac, o, t, specOf("lmg"), here(0.75)); },
-    cannon:  function (ac, o, t) { emitGun(ac, o, t, specOf("gun_105"), here(0.7)); },
-    missile: function (ac, o, t) { emitMissile(ac, o, t, specOf("atgm_veh"), here(0.7)); },
+    shot:    function (ac, o, t) { emitReport(ac, o, t, specOf("lmg"), here(0.75)); },
+    cannon:  function (ac, o, t) { emitReport(ac, o, t, specOf("gun_105"), here(0.7)); },
+    missile: function (ac, o, t) { emitReport(ac, o, t, specOf("atgm_veh"), here(0.7)); },
 
     explode:     function (ac, o, t) { emitBoom(ac, o, t, 0.45, false, here(0.85)); },
     explode_big: function (ac, o, t) {
@@ -1596,11 +2293,11 @@ var Sfx = (function () {
   function describe(id) {
     var S = specOf(id);
     return {
-      id: S.id, kind: S.kind, warhead: S.warhead, bore_mm: +S.bore.toFixed(2),
+      id: S.id, kind: S.kind, fam: S.fam, warhead: S.warhead, bore_mm: +S.bore.toFixed(2),
       body_hz: +S.f0.toFixed(1), tail_s: +S.tail.toFixed(3),
       level: +S.level.toFixed(3), crack: +S.crack.toFixed(3),
       thump: +S.thump.toFixed(3), ring: +S.ring.toFixed(2),
-      carry_m: +S.refM.toFixed(0),
+      carry_m: +S.refM.toFixed(0), rpm: S.rpm || 0, voice_s: +S.dur.toFixed(3),
     };
   }
 
