@@ -54,12 +54,15 @@
        in a way this file does not know. It is 2.95 m long and stowed at
        12 deg. The stern ramp is 2.05 m long and stowed at 35 deg.
 
-   The propellers are NOT called "rotor". render3d spins the first "rotor"
-   it finds about the world vertical, applied in the parent's frame, so the
-   old model's port propeller tumbled end over end through its duct and the
-   starboard one never moved at all. Nothing on this craft turns about a
-   vertical axis, and render3d has no way to turn a propeller about its
-   shaft, so nothing here carries an animated name. The blades are stopped
+   The propellers are NOT called "rotor". When render3d spun the first
+   "rotor" it found about the world vertical, applied in the parent's frame,
+   the old model's port propeller tumbled end over end through its duct and
+   the starboard one never moved at all. It now turns every "rotor" about
+   whichever of the part's own axes lies nearest the craft's up, and every
+   "tailrotor" about the one across it: a helicopter's shafts. A propeller
+   shaft runs fore and aft, so either name would still turn it about the
+   wrong line, and render3d has no name for a fore-and-aft shaft; nothing
+   here carries an animated name. The blades are stopped
    at 45 deg so they read as blades and not as a disc.
 
    Draw calls. About four of these are alive at once, and every mesh costs a

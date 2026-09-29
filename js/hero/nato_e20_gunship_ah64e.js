@@ -67,24 +67,21 @@
    The four main blades sit at 45 degrees, so blade phase never sets it.
 
    NAMED NODES, and why each mount is built the way it is:
-     rotor      render3d.js turns it with rotateOnWorldAxis(scene up), which
-                three.js applies in the PARENT's frame. The head therefore
-                hangs in the asw_helo_fit.js mount, turned +PI/2 about X.
-                That lands the renderer's axis on the model's upward mast,
-                so the head turns anti-clockwise seen from above. Inside the
-                mount a -PI/2 group puts the head back into model axes, so
-                it is authored like everything else.
+     rotor      render3d.js turns it positively about whichever of its own
+                axes lies along the mast. The head hangs in the
+                asw_helo_fit.js mount, turned +PI/2 about X, which points
+                that axis, its local +Y, up the mast, so the head turns
+                anti-clockwise seen from above. Inside the mount a -PI/2
+                group puts the head back into model axes, so it is authored
+                like everything else.
      rotordisc  inside the rotor, on its own transparent, depthWrite:false
                 material, which the renderer fades with rpm.
      tailrotor  the asw_helo_fit.js tail mount (+PI/2 about X). Hub axis
                 along local Z, which is the model's lateral axis. The
-                renderer's spin axis is the aircraft's lateral axis taken in
-                the parent's frame, which matches the hub only at headings 0
-                and 180 degrees; at any other heading the rotor tumbles, as
-                every tail rotor in the game does. No mount can undo that,
-                because the error turns with the heading. This is the mount
-                that is right once render3d.js takes the axis in the right
-                frame.
+                renderer turns it positively about local +Z. (It used to take
+                the aircraft's lateral axis in the parent's frame, which
+                matched the hub only at headings 0 and 180 degrees; no mount
+                could undo that, because the error turned with the heading.)
    The Longbow radome and the mast under it are NOT in the rotor: the
    radar sits on a fixed mast that runs up through the hollow rotor shaft,
    and it does not turn.
@@ -1017,10 +1014,11 @@ var HeroAH64E = (function () {
     mesh(g, fixedM, T.metal, "mast");
     mesh(g, fixedS, T.skin, "radome", true);
 
-    /* The mount. Its +PI/2 about X puts the renderer's spin axis (scene
-       up, taken in this frame) on the mast pointing UP, so the rotor turns
-       anti-clockwise from above. head undoes the turn so the head is
-       authored in model axes, with its origin at the hub centre. */
+    /* The mount. Its +PI/2 about X points the rotor node's local +Y - the
+       one of its own axes along the mast, which render3d.js turns it
+       positively about - UP the mast, so the rotor turns anti-clockwise
+       from above. head undoes the turn so the head is authored in model
+       axes, with its origin at the hub centre. */
     var mnt = new V.Group();
     mnt.position.set(HUB_X, 0, HZ);
     mnt.rotation.x = PI / 2;

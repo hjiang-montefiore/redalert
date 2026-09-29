@@ -94,12 +94,12 @@
    phase never sets it.
 
    NAMED NODES, built exactly as nato_e20_gunship_ah64e.js builds them:
-     rotor      render3d.js turns it with rotateOnWorldAxis(scene up), which
-                three.js applies in the PARENT's frame. The head therefore
-                hangs in the asw_helo_fit.js mount, turned +PI/2 about X, so
-                the renderer's axis lands on the model's upward mast and the
-                head turns anti-clockwise seen from above, as the Bo 105's
-                does. Inside the mount a -PI/2 group puts the head back into
+     rotor      render3d.js turns it positively about whichever of its own
+                axes lies along the mast. The head hangs in the
+                asw_helo_fit.js mount, turned +PI/2 about X, so that axis,
+                its local +Y, points up the mast and the head turns
+                anti-clockwise seen from above, as the Bo 105's does.
+                Inside the mount a -PI/2 group puts the head back into
                 model axes, so it is authored like everything else.
      rotordisc  inside the rotor, on its own transparent, depthWrite:false
                 material, which the renderer fades with rpm.
@@ -107,9 +107,9 @@
                 along local Z, which is the model's lateral axis; local +Z is
                 the model's right, so outboard of the fin, on the left, is
                 local -Z. The renderer turns it positively about local +Z,
-                which is clockwise seen from the left, as the real one turns
-                (right only at headings 0 and 180 degrees, as for every
-                tail rotor in the game; see nato_e20_gunship_ah64e.js).
+                which is clockwise seen from the left, as the real one turns,
+                at every heading (once, only at 0 and 180 degrees; see
+                nato_e20_gunship_ah64e.js).
    The skids are NOT named "gear": they are fixed and stay down in flight,
    and the renderer hides a "gear" node above 18 m.
 
@@ -936,10 +936,11 @@ var HeroBo105P = (function () {
     mesh(g, team, T.team, "team");
 
     /* ======================================================= main rotor ==
-       The mount. Its +PI/2 about X puts the renderer's spin axis (scene
-       up, taken in this frame) on the mast pointing UP, so the rotor turns
-       anti-clockwise from above, as the Bo 105's does. head undoes the turn
-       so the head is authored in model axes, origin at the blade plane. */
+       The mount. Its +PI/2 about X points the rotor node's local +Y - the
+       one of its own axes along the mast, which render3d.js turns it
+       positively about - UP the mast, so the rotor turns anti-clockwise
+       from above, as the Bo 105's does. head undoes the turn so the head is
+       authored in model axes, origin at the blade plane. */
     var mnt = new V.Group();
     mnt.position.set(0, 0, Z(HUB_H));
     mnt.rotation.x = PI / 2;

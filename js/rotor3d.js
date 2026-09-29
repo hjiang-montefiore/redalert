@@ -421,15 +421,34 @@ var Rotor3D = (function () {
   }
 
   /* ---------------------------------------------------------- rotor system */
-  /* The renderer spins whatever part is named "rotor" about that part's LOCAL
-     Y axis (render3d.js: rec.rotor.rotation.y += dt * 28). Our models are +Z
-     up, so the assembly is built in a Y-up local frame and then given a
-     quarter turn about X, which puts local Y along model Z - vertical - and
-     lets the disc actually turn. Without the name and that pre-rotation every
-     helicopter in the game sat with its blades frozen. */
+  /* The renderer turns whatever part is named "rotor" positively about
+     whichever of the part's own axes lies along the machine's up
+     (render3d.js rotorShafts), so the way that axis points is the way the
+     head turns. The assembly is built in a Y-up local frame and given a
+     quarter turn about X, which puts local Y along model Z - up the mast,
+     so the head turns anti-clockwise from above, as an American rotor
+     does. A CLOCKWISE design's named node takes the quarter turn the other
+     way, pointing local Y DOWN the mast, and an inner group turned PI about
+     X, which holds every part, stands the assembly back upright exactly
+     where it was. Without the name every helicopter in the game sat with
+     its blades frozen. */
+  /* Seen from above, the Mil design line (the Mi-4 to the Mi-28, and the
+     Z-5 built from the Mi-4) and the Sud / Aerospatiale one (the Alouette,
+     the Gazelle, and the Z-9 built from the Dauphin) turn clockwise, as the
+     Mi-28N, Alouette II, Gazelle and Tiger heroes do. The Z-8, Z-10 and
+     Z-20 stay as drawn, anti-clockwise: which way they turn is not
+     recorded here. A Kamov's two heads are set against each other by the
+     renderer, whichever way this points them. */
+  var CLOCKWISE = /^(Mil |Mi-\d|Z-5$|Sud |SA \d|Harbin Z-9|Z-9)/;
+
   function rotorHead(THREE, g, P, L, R, x, z, blades, skin, dark) {
-    var rot = new THREE.Group();
-    rot.name = "rotor";
+    var node = new THREE.Group(), rot = node;
+    node.name = "rotor";
+    if (CLOCKWISE.test(P.designation || "")) {
+      rot = new THREE.Group();
+      rot.rotation.x = Math.PI;
+      node.add(rot);
+    }
 
     var hub = new THREE.Mesh(
       new THREE.CylinderGeometry(L * 0.030, L * 0.038, L * 0.038, 12), dark);
@@ -477,15 +496,16 @@ var Rotor3D = (function () {
     disc.position.y = L * 0.014;
     rot.add(disc);
 
-    rot.rotation.x = Math.PI / 2;      /* local +Y -> model +Z, i.e. upright */
-    rot.position.set(x, 0, z);
-    g.add(rot);
-    return rot;
+    /* local +Y -> model +Z, i.e. upright; or -Z, with rot turning back */
+    node.rotation.x = rot === node ? Math.PI / 2 : -Math.PI / 2;
+    node.position.set(x, 0, z);
+    g.add(node);
+    return node;
   }
 
-  /* The renderer spins "tailrotor" about its LOCAL X, so this assembly is
-     built around local X and then turned so that axis lies across the
-     aircraft, which is where a tail rotor shaft actually points. */
+  /* The renderer spins "tailrotor" about whichever of its own axes lies
+     across the aircraft. This assembly is built around local X and then
+     turned so that axis lies across, where a tail rotor shaft points. */
   function tailRotor(THREE, g, P, L, R, skin, dark) {
     var tr = R * 0.20;
     var x = -L * 0.475, z = cabinTop(P, L) * 0.42 + L * 0.075;

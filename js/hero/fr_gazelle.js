@@ -119,27 +119,34 @@
 
    NAMED NODES:
      rotor      the pact_e20_gunship_mi28n.js mount: a group turned -PI/2
-                about X, so the renderer's spin axis (scene up, applied in
-                the parent's frame) lands on the DOWNWARD mast and the head
-                turns clockwise from above, as a Sud rotor does. A +PI/2
-                group inside puts the head back into model axes.
+                about X, so the head's local +Y - the axis render3d.js
+                turns it about, being the one of its own axes that lies
+                along the mast - points DOWN the mast and the head turns
+                clockwise from above, as a Sud rotor does. A +PI/2 group
+                inside puts the head back into model axes.
      rotordisc  inside the rotor, on its own transparent, depthWrite:false
                 material, which the renderer fades with rpm.
-   There is no "tailrotor". render3d.js spins a tail rotor about the
-   machine's lateral axis but applies it in the rotor's PARENT frame, which
-   matches the shaft only at headings 0 and 180 degrees. An open tail rotor
-   that tumbles at other headings is a wobble; a fan in a 0.34 m-thick
-   shroud that tumbles cuts out through both faces of the fin (measured:
-   its blades reach 0.35 m off the duct plane at headings 45 and 90, against
-   the shroud's 0.17 m half-thickness), which breaks the one feature a
-   player reads the Gazelle by. A 0.7 m fan at 5,800 rpm is a blur at any
-   zoom, so it stays still, as the parametric fenestron in rotor3d.js does,
-   and its hub and blades are merged into the fittings meshes, two draw
-   calls (and two shadow draws) fewer per Gazelle on screen. The fan is
-   built in the asw_helo_fit.js tail mount all the same (+PI/2 about X,
-   axis along local Z, the lateral axis): once render3d.js takes the axis in
-   the right frame, set FAN_SPINS below to true and it becomes a
-   "tailrotor" node of its own that turns.
+   There is no "tailrotor". render3d.js used to apply a tail rotor's axis
+   in the rotor's PARENT frame, which matched the shaft only at headings 0
+   and 180 degrees. An open tail rotor that tumbles at other headings is a
+   wobble; a fan in a 0.34 m-thick shroud that tumbles cuts out through
+   both faces of the fin (measured: its blades reached 0.35 m off the duct
+   plane at headings 45 and 90, against the shroud's 0.17 m
+   half-thickness), which breaks the one feature a player reads the
+   Gazelle by. A 0.7 m fan at 5,800 rpm is a blur at any zoom, so it stays
+   still, as the parametric fenestron in rotor3d.js does, and its hub and
+   blades are merged into the fittings meshes, two draw calls (and two
+   shadow draws) fewer per Gazelle on screen. Turned, thirteen sharp
+   blades would not blur either: at the renderer's 40 rad/s tail-rotor
+   rate a blade moves 38.2 deg a frame at 60 fps against a 27.7 deg
+   pitch, so the fan would seem to creep forward 10.5 deg a frame (and
+   back 6.7 at 30 fps). The fan is built in the asw_helo_fit.js tail mount
+   all the same (+PI/2 about X, axis along local Z, the lateral axis), and
+   render3d.js now turns every part about its own shaft: set FAN_SPINS
+   below to true and it becomes a "tailrotor" node of its own that turns
+   inside its shroud (tools/jsc/rotor_axes_check.js builds it that way and
+   holds it to the slab it fills at rest, at every heading, nosed up and
+   banked).
    There is no "gear" (the skids are fixed) and no "turret".
 
    Materials are the house tiers: SKIN (one procedural CanvasTexture per
@@ -179,8 +186,9 @@ var HeroGazelle = (function () {
   var STAB_Y  =  0.89;                     /* 1.78 m over the endplates   */
   var BEAM_X = -0.22, BEAM_H = 0.92;       /* the weapons beam            */
 
-  /* Once render3d.js spins a "tailrotor" about its own shaft (see NAMED
-     NODES), set this true and the Fenestron fan becomes one that turns. */
+  /* render3d.js spins a "tailrotor" about its own shaft, so true makes the
+     Fenestron fan one that turns true in its shroud; see NAMED NODES for
+     why it stands still. */
   var FAN_SPINS = false;
 
   /* ---- the three variants: what each era's def actually flew ---- */
@@ -1301,10 +1309,11 @@ var HeroGazelle = (function () {
     mesh(g, team, T.team, "team");
 
     /* ======================================================= main rotor ==
-       The mount's -PI/2 about X puts the renderer's spin axis (scene up,
-       taken in this frame) on the mast pointing DOWN, so the rotor turns
-       clockwise from above. head undoes the turn so the head is authored
-       in model axes, with its origin at the hub in the blade plane. */
+       The mount's -PI/2 about X points the rotor node's local +Y - the one
+       of its own axes along the mast, which render3d.js turns it
+       positively about - DOWN the mast, so the rotor turns clockwise from
+       above. head undoes the turn so the head is authored in model axes,
+       with its origin at the hub in the blade plane. */
     var mnt = new V.Group();
     mnt.position.set(0, 0, Z(HUB_H));
     mnt.rotation.x = -PI / 2;

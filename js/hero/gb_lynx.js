@@ -114,11 +114,11 @@
    blades sit at 45 degrees, so blade phase never sets it.
 
    NAMED NODES, and why each mount is built the way it is:
-     rotor      render3d.js turns it with rotateOnWorldAxis(scene up), which
-                three.js applies in the PARENT's frame. The head hangs in
-                the asw_helo_fit.js mount turned +PI/2 about X inside a
-                group that leans the shaft 4 degrees forward, so the axis
-                lands on the shaft pointing up and the head turns
+     rotor      render3d.js turns it positively about whichever of its own
+                axes lies along the mast. The head hangs in the
+                asw_helo_fit.js mount turned +PI/2 about X inside a group
+                that leans the shaft 4 degrees forward, so that axis lies
+                on the leaning shaft pointing up and the head turns
                 counterclockwise from above, as NASA Table 3 says. A -PI/2
                 group inside puts the head back into model axes.
      rotordisc  inside the rotor, on its own transparent, depthWrite:false
@@ -127,10 +127,11 @@
                 AH.7 (clockwise from the rotor side, top blade moving aft)
                 uses +PI/2, as the AH-64E does; the AH.1 (counter-clockwise,
                 top blade moving forward) uses -PI/2, which reverses the
-                renderer's spin. Measured with the renderer's own calls:
-                each turns the right way at heading 0, about the right axis
-                but backwards at 180, and tumbles in between, like every
-                tail rotor in the game (see the AH-64E file).
+                renderer's spin. Measured through the renderer
+                (tools/jsc/rotor_axes_check.js): each turns its own way
+                about its hub at every heading, nosed up or banked. (Once
+                it was right only at heading 0, backwards at 180 and
+                tumbling in between; see the AH-64E file.)
    The skids are NOT named "gear": they are fixed, and the renderer hides a
    "gear" node above 18 m. Nothing is named "turret": the Lynx has no gun,
    and the roof sight is fixed to the airframe.
@@ -1196,9 +1197,10 @@ var HeroLynx = (function () {
     mesh(tilt, [cyl(0.12, 0.13, 0.26, 14, "z", 0, 0, -0.17),
                 cyl(0.30, 0.30, 0.05, 18, "z", 0, 0, -0.16)], T.metal, "mast");
 
-    /* The mount: +PI/2 about X puts the renderer's spin axis on the shaft
-       pointing up, so the head turns counterclockwise from above; head
-       undoes the turn so the head is authored in model axes. */
+    /* The mount: +PI/2 about X points the rotor node's local +Y - the axis
+       render3d.js turns it positively about - up the leaning shaft, so the
+       head turns counterclockwise from above; head undoes the turn so the
+       head is authored in model axes. */
     var mnt = new V.Group();
     mnt.rotation.x = PI / 2;
     tilt.add(mnt);

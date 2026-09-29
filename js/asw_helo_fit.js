@@ -32,16 +32,21 @@
    Rotor group is named "rotor", tail rotor "tailrotor", undercarriage
    "gear", as the renderer expects.
 
-   ONE THING WORTH WRITING DOWN about those names. render3d.js turns the
-   discs with Object3D.rotateOnWorldAxis, and three.js applies that in the
-   PARENT's frame - its own source says "method assumes no rotated parent".
-   Every model in this game hangs under tpl.rotation.x = -PI/2, so a rotor
-   added straight to the model root gets spun about the model's LATERAL
-   axis and windmills on its side. Each disc here therefore sits inside a
-   mount group turned +PI/2 about X, which cancels the template rotation:
-   the scene-up axis the renderer hands in lands back on the model's own +Z
-   and the disc turns about its mast. The assemblies inside those mounts are
-   built Y-up, exactly as rotor3d.js builds its heads.
+   ONE THING WORTH WRITING DOWN about those names. render3d.js turns each
+   one positively about whichever of its own axes lies along the machine's
+   up (a "rotor") or across it (a "tailrotor"), found once per instance, so
+   the frame a part is built in no longer matters to the axis - only to
+   the sense. Each disc here sits inside a mount group turned +PI/2 about X
+   and is built Y-up inside it, exactly as rotor3d.js builds its heads: a
+   head's local +Y runs up the mast, so it turns anti-clockwise from above,
+   as a Sikorsky's does, and a tail rotor's hub is local Z. The Z-9's mount
+   turns the other way, -PI/2, pointing its named node's +Y DOWN the mast,
+   so it turns clockwise, as a Dauphin's does; a group inside turned PI
+   stands its assembly back upright. (The mounts date from when render3d
+   used Object3D.rotateOnWorldAxis, which three.js applies in the PARENT's
+   frame: they kept these heads on their masts, where the parametric ones
+   windmilled, but no mount could keep a tail rotor right at any heading
+   but 0 and 180 degrees.)
 
    Colours: naval grey, salt-weathered. The base tones are the seagrey and
    bluegrey rows of the shared PAINT table taken down to about 0.60 of their
@@ -412,18 +417,25 @@ var AswHelo3D = (function () {
 
   /* ================================================== rotor systems ======
      See the header: each disc lives inside a mount group turned +PI/2 about
-     X so that the renderer's world-axis spin lands on the mast. Inside the
+     X, so the axis the renderer turns it about runs up the mast. Inside the
      mount the assembly is Y-UP: hub axis along local +Y, blades in the
-     local XZ plane. */
-  function mount(g, x, z, name) {
+     local XZ plane. A clockwise (cw) mount turns -PI/2 instead, so that
+     axis runs DOWN the mast, and hands back a group inside the named node
+     turned PI about X, which puts the Y-up assembly exactly where the +PI/2
+     mount would. */
+  function mount(g, x, z, name, cw) {
     var w = new THREE.Group();
     w.position.set(x, 0, z);
-    w.rotation.x = PI / 2;
+    w.rotation.x = cw ? -PI / 2 : PI / 2;
     g.add(w);
     var r = new THREE.Group();
     r.name = name;
     w.add(r);
-    return r;
+    if (!cw) return r;
+    var h = new THREE.Group();
+    h.rotation.x = PI;
+    r.add(h);
+    return h;
   }
 
   /* A NAVAL rotor head: elastomeric hub, blade-fold cuffs with their hinge
@@ -432,12 +444,12 @@ var AswHelo3D = (function () {
      it sits dead centre of the top-down view a player actually gets. */
   function mainRotor(g, x, z, R, n, opt) {
     opt = opt || {};
-    /* opt.into builds this head into an existing rotor group instead of
-       claiming a mount of its own. A coaxial pair needs that: findPart takes
-       the FIRST node called "rotor" and spins only that one, so two separately
-       named heads would leave the upper one frozen over a turning lower one.
-       Both heads therefore hang off one group and turn together. */
-    var rot = opt.into || mount(g, x, z, "rotor");
+    /* opt.into builds this head into a rotor group made elsewhere instead
+       of claiming a mount of its own. (A coaxial pair once shared one: the
+       renderer spun only the FIRST node called "rotor", so a separate upper
+       head would have sat frozen. It turns every head now, a machine's
+       second one the other way, and the Ka-27's heads each have their own.) */
+    var rot = opt.into || mount(g, x, z, "rotor", opt.cw);
     var mt = metalOf(THREE), dk = darkOf(THREE), bd = bladeOf(THREE);
     var tip = fm(THREE, opt.tip || 0xd2d7d9, 0.70, 0.10);
     var s = opt.s || 1;
@@ -644,10 +656,12 @@ var AswHelo3D = (function () {
     /* ---- main rotor: four blades, bifilar absorber, fold cuffs ---- */
     mainRotor(g, 0.35, 2.00, S.rotorD * 0.5, 4, { bifilar: true, chord: 0.53, tip: 0xd2d7d9 });
 
-    /* ---- tail rotor.  The real one is canted 20 deg, but the renderer
-       spins this part about a fixed world axis, so a canted disc would
-       tumble instead of turn; the PYLON carries the cant and the disc
-       stays square. Nobody can measure it at RTS zoom. ---- */
+    /* ---- tail rotor.  The real one is canted 20 deg; this disc stays
+       square to the aircraft, which nobody can measure at RTS zoom. It
+       was left square because render3d then read a tail rotor's axis in
+       the parent's frame, where a canted disc would have tumbled. It no
+       longer does: a disc canted in its mount turns true about its own
+       shaft, as trans_n's 19.5-degree one does (rotor_axes_check.js). ---- */
     tailRotor(g, -8.15, 0.50, 2.26, 1.68, 4);
 
     /* ---- glazing ---- */
@@ -796,12 +810,13 @@ var AswHelo3D = (function () {
       A(g, cyl(0.035, 0.035, 0.85, 5), mt,
         0.05 + Math.cos(a) * 0.30, Math.sin(a) * 0.30, 2.55);
     }
-    /* lower head, and the upper head 1.0 m above it on the same shaft */
+    /* lower head, and the upper head 1.0 m above it on the same shaft, each
+       a "rotor" of its own: render3d.js turns a machine's second head the
+       other way, so the pair contra-rotates as a Kamov's does (hung off the
+       lower head, the upper one used to turn with it) */
     var head = mount(g, 0.05, 2.18, "rotor");
     mainRotor(null, 0, 0, R, 3, { into: head, chord: 0.48, tip: 0xb03a2c, s: 0.92 });
-    var upper = new THREE.Group();
-    upper.position.y = 1.00;              /* mount-local +Y is the model's +Z */
-    head.add(upper);
+    var upper = mount(g, 0.05, 2.18 + 1.00, "rotor");
     mainRotor(null, 0, 0, R, 3, { into: upper, chord: 0.48, tip: 0xb03a2c, s: 0.92,
                                   cap: true, nodisc: true });
 
@@ -920,7 +935,8 @@ var AswHelo3D = (function () {
       A(g, cyl(0.20, 0.18, 0.32, 8, "x"), dk, -0.52, s2 * 0.56, 1.06, 0, 0, s2 * 0.12);
     }
     A(g, cyl(0.16, 0.19, 0.50, 10), dk, 0.30, 0, 1.42);
-    mainRotor(g, 0.30, 1.68, R, 4, { chord: 0.40, tip: 0xd2d7d9, s: 0.80 });
+    /* clockwise from above, as every Aerospatiale head turns */
+    mainRotor(g, 0.30, 1.68, R, 4, { chord: 0.40, tip: 0xd2d7d9, s: 0.80, cw: true });
     /* the Starflex star plate under the head, a Dauphin trademark */
     A(g, cyl(0.44, 0.44, 0.07, 8), mt, 0.30, 0, 1.52);
 

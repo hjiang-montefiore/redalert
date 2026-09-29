@@ -986,19 +986,27 @@ UNIT_MODELS["trans_p"] = {
     var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 10), darkMat);
     mast.rotation.x = Math.PI / 2;
     mast.position.set(0.8, 0, 2.05); g.add(mast);
+    /* A Mil head turns clockwise from above. The renderer turns "rotor"
+       positively about whichever of its own axes lies along the mast, so
+       the node is turned PI about X to point its +Z down the mast, and head,
+       which holds the parts, turns them back upright where they were. */
     var rotor = new THREE.Group();
     rotor.name = "rotor";
     rotor.position.set(0.8, 0, 2.3);
+    rotor.rotation.x = Math.PI;
+    var head = new THREE.Group();
+    head.rotation.x = Math.PI;
+    rotor.add(head);
     var hub = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.26, 0.34, 10), darkMat);
     hub.rotation.x = Math.PI / 2;
-    rotor.add(hub);
+    head.add(hub);
     var bladeGeo = new THREE.BoxGeometry(10.65 - 0.5, 0.62, 0.09);
     bladeGeo.rotateY(0.025);
     bladeGeo.translate(0.5 + (10.65 - 0.5) / 2, 0, 0);
     for (var b = 0; b < 5; b++) {
       var bl = new THREE.Mesh(bladeGeo, darkMat);
       bl.rotation.z = b * Math.PI * 2 / 5;
-      rotor.add(bl);
+      head.add(bl);
     }
     g.add(rotor);
 

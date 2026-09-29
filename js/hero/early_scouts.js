@@ -66,10 +66,10 @@
    (Alouette) and 45/135/225/315 (Scout), so none sets it.
 
    NAMED NODES, as on the AH-64E and Mi-28N heroes:
-     rotor      render3d.js turns it with rotateOnWorldAxis(scene up), which
-                three.js applies in the PARENT's frame. The head hangs in a
-                mount turned about X: -PI/2 on the Alouette puts the spin
-                axis on the DOWNWARD mast, so it turns clockwise from above
+     rotor      render3d.js turns it positively about whichever of its own
+                axes lies along the mast, its local +Y. The head hangs in a
+                mount turned about X: -PI/2 on the Alouette points that
+                axis DOWN the mast, so it turns clockwise from above
                 as a French rotor does (the Mi-28N mount); +PI/2 on the
                 Scout turns it anti-clockwise (the AH-64E mount). Inside the
                 mount a group turned back by the same angle puts the head
@@ -1023,11 +1023,12 @@ var HeroEarlyScouts = (function () {
     mesh(g, glass, T.glass, "glass");
 
     /* ======================================================= main rotor ==
-       Mi-28N mount: -PI/2 about X lands the renderer's spin axis on the
-       DOWNWARD mast, so the head turns clockwise from above, as every
-       Alouette's does; head undoes the turn. Three metal blades of 0.33 m
-       chord on a fully articulated head. Turning clockwise, the leading
-       edge is on the -Y side. */
+       Mi-28N mount: -PI/2 about X points the rotor node's local +Y, the
+       axis render3d.js turns it positively about, DOWN the mast, so the
+       head turns clockwise from above, as every Alouette's does; head
+       undoes the turn. Three metal blades of 0.33 m chord on a fully
+       articulated head. Turning clockwise, the leading edge is on the -Y
+       side. */
     var mnt = new V.Group();
     mnt.position.set(0, 0, Z(AL.HUB_H));
     mnt.rotation.x = -PI / 2;
@@ -1492,10 +1493,11 @@ var HeroEarlyScouts = (function () {
     mesh(g, glass, T.glass, "glass");
 
     /* ======================================================= main rotor ==
-       AH-64E mount: +PI/2 about X lands the renderer's spin axis on the
-       UPWARD mast, so the head turns anti-clockwise from above; head undoes
-       the turn. Four blades of 0.35 m chord on an articulated head, set at
-       45 degrees. Turning anti-clockwise, the leading edge is on +Y. */
+       AH-64E mount: +PI/2 about X points the rotor node's local +Y, the
+       axis render3d.js turns it positively about, UP the mast, so the head
+       turns anti-clockwise from above; head undoes the turn. Four blades
+       of 0.35 m chord on an articulated head, set at 45 degrees. Turning
+       anti-clockwise, the leading edge is on +Y. */
     var mnt = new V.Group();
     mnt.position.set(0, 0, Z(SC.HUB_H));
     mnt.rotation.x = PI / 2;

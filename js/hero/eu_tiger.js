@@ -125,10 +125,10 @@
 
    NAMED NODES, built the way pact_e20_gunship_mi28n.js and
    nato_e20_gunship_ah64e.js worked out:
-     rotor      render3d.js turns it with rotateOnWorldAxis(scene up), taken
-                in the PARENT's frame. The head hangs in a mount turned -PI/2
-                about X, which lands the renderer's axis on the model's
-                DOWNWARD mast, so the head turns clockwise seen from above as
+     rotor      render3d.js turns it positively about whichever of its own
+                axes lies along the mast. The head hangs in a mount turned
+                -PI/2 about X, which points that axis, its local +Y, DOWN
+                the mast, so the head turns clockwise seen from above as
                 the Tiger's does. Inside, a +PI/2 group puts the head back
                 into model axes.
      rotordisc  inside the rotor, on its own transparent, depthWrite:false
@@ -1182,10 +1182,11 @@ var HeroTiger = (function () {
     mesh(g, rubber, T.rubber, "tyres");
     mesh(g, team, T.team, "team");
 
-    /* The mount. Its -PI/2 about X puts the renderer's spin axis (scene
-       up, taken in this frame) on the mast pointing DOWN, so the head turns
-       clockwise from above. head undoes the turn so the head is authored
-       in model axes, with its origin at the hub. */
+    /* The mount. Its -PI/2 about X points the rotor node's local +Y - the
+       one of its own axes along the mast, which render3d.js turns it
+       positively about - DOWN the mast, so the head turns clockwise from
+       above. head undoes the turn so the head is authored in model axes,
+       with its origin at the hub. */
     var mnt = new V.Group();
     mnt.position.set(0, 0, HZ);
     mnt.rotation.x = -PI / 2;

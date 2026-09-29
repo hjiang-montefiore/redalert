@@ -509,9 +509,64 @@ var Render3D = (function () {
       }
     });
   }
-  const SPIN_UP = new THREE.Vector3(0, 1, 0);
-  const SPIN_ACROSS = new THREE.Vector3();
-  const SPIN_Q = new THREE.Quaternion();
+  /* A rotor turns about its OWN shaft, in its own frame.
+     Each part used to be turned with rotateOnWorldAxis, which three.js
+     documents as assuming no rotated parent: it premultiplies the part's
+     rotation, so the axis handed in is read in the PARENT's frame - and every
+     part here hangs under the model's -PI/2 turn, its scale and whatever
+     mounts the modeller built. Measured through this renderer on all 64
+     rotorcraft (tools/jsc/rotor_axes_check.js): 44 main rotors - every
+     parametric machine and the older hand-built ones - windmilled about the
+     lateral axis, 90 deg out at every heading, and their 41 tail rotors
+     turned at right angles to their shafts; the 15 tail rotors hung in
+     mounts were right only at 0 and 180 deg (30 deg out at 30, 45 at 45, 90
+     at 90), and 18 deg out even at 0 once the machine banked 18; the
+     Ka-50's upper head never turned, because only the first "rotor" was
+     looked for. Only the 20 main rotors hung in mounts - the heroes' and
+     asw_helo_fit.js's - were right: each mount happened to turn the
+     parent's frame onto the mast.
+     So the shaft is found once, when the instance is made: of the part's
+     own three axes, as its rest rotation and every mount above it lay them
+     in the machine, the one nearest the machine's up (a "rotor") or across
+     it (a "tailrotor", a fenestron fan included). A turn about that local
+     axis stays on the shaft whatever the parent does - rotated, stretched
+     or mirrored - and keeps what the modeller built into the part: the
+     Lynx's mast leans 4.0 deg forward and the Mi-28N's 4.5, the Black
+     Hawk's and the Z-20's tail rotors are canted 19.5 and 17.2 deg, and
+     turned about the machine's pure vertical or lateral those discs would
+     wobble.
+     The turn is positive about that axis as the model points it, so the
+     model sets the sense: a Mil, a Sud or a Tiger head points it DOWN the
+     mast and turns clockwise from above, an Apache, a Bo 105 or a Lynx
+     head points it up and turns anti-clockwise. A machine's heads
+     alternate - a second one, coaxial or tandem, turns opposite to the
+     first however the two were pointed. */
+  const RS_F = new THREE.Matrix4(), RS_M = new THREE.Matrix4(), RS_D = new THREE.Vector3();
+  function rotorShafts(grp) {
+    let out = null, heads = 0, first = 1;
+    grp.traverse((o) => {
+      const main = o.name === "rotor";
+      if (!main && o.name !== "tailrotor") return;
+      const F = RS_F.makeRotationFromQuaternion(o.quaternion), d = RS_D;
+      for (let p = o.parent; p && p !== grp; p = p.parent)
+        F.premultiply(p.matrixAutoUpdate ? RS_M.compose(p.position, p.quaternion, p.scale) : p.matrix);
+      let best = -1, k = 1;
+      for (let i = 0; i < 3; i++) {
+        d.set(0, 0, 0).setComponent(i, 1).transformDirection(F);
+        const along = Math.abs(main ? d.y : d.z);          // the group: +Y up, Z across
+        if (along > best) { best = along; k = i; }
+      }
+      let sign = 1;
+      if (main) {
+        const up = d.set(0, 0, 0).setComponent(k, 1).transformDirection(F).y > 0 ? 1 : -1;
+        if (heads === 0) first = up;
+        else sign = (heads % 2 ? -first : first) * up;
+        heads++;
+      }
+      (out || (out = [])).push({ part: o, axis: new THREE.Vector3().setComponent(k, sign), main });
+    });
+    return out;
+  }
 
   function findParts(wrap, name) {
     const out = [];
@@ -1493,6 +1548,7 @@ var Render3D = (function () {
           rotor: findPart(inst, "rotor"),
           discs: findParts(inst, "rotordisc"),
           tailrotor: findPart(inst, "tailrotor"),
+          shafts: rotorShafts(grp),
           gear: findPart(inst, "gear"),
           kind: e.kind,
           tpl,                     // the cached template: what is measured once per model
@@ -1687,12 +1743,6 @@ var Render3D = (function () {
            while a tank was driving at what it was shooting at, because then
            tang and ang are equal and the error is zero. */
         if (rec.turret) rec.turret.rotation.z = -(e.tang - e.ang);
-        /* Spin the discs about WORLD axes rather than the part's local ones.
-           The models in the pack were authored to two different conventions,
-           so a fixed local axis span the hand-built Apache's main rotor about
-           a horizontal line — it windmilled on its side — while the
-           parametric machines span correctly. Deriving the axis from the
-           aircraft itself is right for both, whatever frame it was drawn in. */
         /* wheels come down only when the aircraft is actually near the
            ground: on the apron, or on an approach to land */
         if (rec.gear) {
@@ -1728,11 +1778,15 @@ var Render3D = (function () {
             }
           }
         }
-        if (rec.rotor && rec.rpm > 0.001) rec.rotor.rotateOnWorldAxis(SPIN_UP, dt * 28 * rec.rpm);
-        if (rec.tailrotor) {
-          /* a tail rotor turns about the shaft that runs across the machine */
-  SPIN_ACROSS.set(0, 0, 1).applyQuaternion(rec.grp.getWorldQuaternion(SPIN_Q));
-          rec.tailrotor.rotateOnWorldAxis(SPIN_ACROSS, dt * 40 * (rec.rpm === undefined ? 1 : rec.rpm));
+        /* every head about its own shaft (rotorShafts), at the speeds it
+           always had: a main rotor stops dead below a thousandth of full
+           speed, a tail rotor is simply scaled by it */
+        if (rec.shafts) {
+          for (let si = 0; si < rec.shafts.length; si++) {
+            const s = rec.shafts[si];
+            if (!s.main) s.part.rotateOnAxis(s.axis, dt * 40 * (rec.rpm === undefined ? 1 : rec.rpm));
+            else if (rec.rpm > 0.001) s.part.rotateOnAxis(s.axis, dt * 28 * rec.rpm);
+          }
         }
         /* ship wakes */
         if (e.layer === "sea" && e.moving && Math.random() < 0.3) {

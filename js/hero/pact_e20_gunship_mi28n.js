@@ -61,14 +61,14 @@
    behind the fin for a blur that the top-down camera sees edge-on.
 
    NAMED NODES, and why each mount is built the way it is:
-     rotor      render3d.js turns it with rotateOnWorldAxis(scene up), which
-                three.js applies in the PARENT's frame. The head therefore
-                hangs in a mount turned -PI/2 about X. That lands the
-                renderer's axis on the model's DOWNWARD mast, so the head
-                turns clockwise seen from above, as a Mil rotor does. (The
-                asw_helo_fit.js mount uses +PI/2 and turns the American
-                way.) Inside the mount, a +PI/2 group puts the head back
-                into model axes, so it is authored like everything else.
+     rotor      render3d.js turns it positively about whichever of its own
+                axes lies along the mast. The head hangs in a mount turned
+                -PI/2 about X, which points that axis, its local +Y, DOWN
+                the mast, so the head turns clockwise seen from above, as a
+                Mil rotor does. (The asw_helo_fit.js mount uses +PI/2 and
+                turns the American way.) Inside the mount, a +PI/2 group
+                puts the head back into model axes, so it is authored like
+                everything else.
      rotordisc  inside the rotor, on its own transparent, depthWrite:false
                 material, which the renderer fades with rpm.
      tailrotor  the asw_helo_fit.js tail mount (+PI/2 about X). Hub axis
@@ -917,10 +917,11 @@ var HeroMi28N = (function () {
        overall height */
     mesh(tilt, [sph(0.45, 16, 10, 0, 0, 0.83, 1, 1, 0.84)], T.skin, "radome", true);
 
-    /* The mount. Its -PI/2 about X puts the renderer's spin axis (scene
-       up, taken in this frame) on the mast pointing DOWN, so the rotor
-       turns clockwise from above. head undoes the turn so the head is
-       authored in model axes. */
+    /* The mount. Its -PI/2 about X points the rotor node's local +Y - the
+       one of its own axes along the mast, which render3d.js turns it
+       positively about - DOWN the tilted mast, so the rotor turns clockwise
+       from above. head undoes the turn so the head is authored in model
+       axes. */
     var mnt = new V.Group();
     mnt.rotation.x = -PI / 2;
     tilt.add(mnt);
