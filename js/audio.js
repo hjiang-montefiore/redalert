@@ -46,7 +46,10 @@ var Sfx = (function () {
   var mixLevel    = 0.32;   // BASE_GAIN as adjusted by volume() and setEnabled()
   var MAX_VOICES  = 22;     // simultaneous spatial one-shots
   var MAX_ENGINES = 7;      // simultaneous engine beds
-  var ENGINE_MIX  = 0.26;   // engines are a bed, never a feature
+  var ENGINE_MIX  = 0.080;  // a 62 t hull's engine: see engineLevel, and buildBus
+  var ENGINE_UNDER = 9;     // LU an engine keeps under its own main weapon, at least
+  var ENGINE_COMP_T = -10;  // dBFS: the engine compressor, which only a crowd reaches
+  var ENGINE_IDLE = 0.62;   // an idling engine's gain against full drive
   var MAX_DELAY   = 0.28;   // s, cap on the speed-of-sound arrival lag
 
   /* Distances are world pixels converted to a nominal metre scale so that the
@@ -213,13 +216,34 @@ var Sfx = (function () {
     });
     var ui  = gainNode(ac, 0.90);  ui.connect(m);
     var bed = gainNode(ac, 1.0);   bed.connect(m);
-    /* Engines get their own compressor as well as a hard trim, so seven idling
-       hulls sit under the battle instead of forming a wall of drone. */
-    var ec = ac.createDynamicsCompressor();
-    ec.threshold.value = -26; ec.knee.value = 8; ec.ratio.value = 8;
+    /* ENGINES: a trim, a compressor only a crowd reaches, and that
+       compressor's own makeup gain taken back out after it.
+       A DynamicsCompressor raises everything it passes by the spec's
+       automatic MAKEUP GAIN, (1 / curve(0 dBFS))^0.6, whatever goes in. The
+       old settings (-26 dB, 8:1, 8 dB knee) made that +11.55 dB, which undid
+       all but 0.15 dB of the 0.26 trim, and one tank at the camera drove
+       them 18 dB over threshold: a lone engine was held 6.8 dB down and
+       every hull came out at -10.8 to -13.4 LUFS over its loudest 400 ms
+       whatever its size. An M1A2 driving at the camera read -13.0 against
+       -18.4 for its own 120 mm (above 200 Hz, all a laptop plays, 3.8 dB
+       over it), a 5 t HMMWV -10.8 against -29.9 for a burst of its 12.7 mm,
+       and all 403 armed ground vehicles in rules.js and 231 of the 240
+       armed ships were louder driving than their main weapon firing
+       (tools/audio/check_engine_mix.js measures all of it).
+       The knee is hard now, so the makeup is exactly 0.6 * -T * (1 - 1/R)
+       in the spec and in every browser (a soft knee's curve is each
+       implementation's own), and the gain after the compressor removes it:
+       a hull's level is ENGINE_MIX and its own (engineLevel), nothing else.
+       The loudest hull in the game, a 2900 hp cruiser, reaches the
+       compressor at -14.0 dBFS at full drive at the camera, so at -10 it
+       never touches one engine; seven of them packed round the camera lose
+       0.3 dB to it, seven M1A2s nothing. */
+    var ec = ac.createDynamicsCompressor(), ecT = ENGINE_COMP_T, ecR = 8;
+    ec.threshold.value = ecT; ec.knee.value = 0; ec.ratio.value = ecR;
     ec.attack.value = 0.05; ec.release.value = 0.4;
+    var unmake = gainNode(ac, Math.pow(10, -0.6 * -ecT * (1 - 1 / ecR) / 20));
     var eng = gainNode(ac, ENGINE_MIX);
-    eng.connect(ec); ec.connect(m);
+    eng.connect(ec); ec.connect(unmake); unmake.connect(m);
     return { master: m, sfx: sfx, ui: ui, bed: bed, eng: eng, limiter: lim, out: out };
   }
 
@@ -1919,11 +1943,100 @@ var Sfx = (function () {
     return clamp(58 - mass * 0.55, 26, 58);
   }
 
+  /* HOW LOUD A HULL'S ENGINE IS: two rules, and the quieter one wins.
+     BY ITS SIZE. Sound power follows engine power and engine power follows
+     weight - an M1A2's 1500 hp for 62 t, a Bradley's 600 for 30, an
+     HMMWV's 190 for 5 - so 3 dB a doubling of mass, a 62 t hull at
+     ENGINE_MIX: -28.5 LUFS over its loudest 400 ms at full drive at the
+     camera, 10 LU under its own 120 mm. Afloat rules.js gives no mass but
+     does give size, as hit points (a patrol boat 520, a corvette 1150, a
+     destroyer 2100, a carrier 4200), and a ship's engine runs as a ground
+     hull of hp / 20 tonnes would: a destroyer's as a 105 t one's, 11.6 LU
+     under its own 127 mm.
+     UNDER ITS OWN GUN. Size alone cannot keep an engine under the gun its
+     hull carries, because at any one weight the main weapons span 15 LU at
+     the camera: a 12.7 mm burst reads -30 LUFS, an autocannon -27, a tank
+     gun -19, a howitzer -15. With the M1A2 10 LU under its 120 mm, size
+     alone put 176 of the 403 armed ground vehicles within 8 LU of their own
+     main weapon and 8 of them over it (an 18 t light tank 2.5 LU over its
+     30 mm); holding every one 8 LU under by size alone left the median 19
+     under and the quietest 29 - gone. So no engine comes within
+     ENGINE_UNDER of the quietest report its main weapon's family makes.
+     REPORT_Q is that report, per family: the loudest 400 ms at the camera,
+     per unit of S.level, of the quietest main weapon any vehicle or ship in
+     rules.js carries, one round, with the rounds of a burst that land
+     inside 400 ms adding 10 log n (a rotary or revolver burst is one
+     report); tools/audio/check_engine_mix.js prints it afresh, to paste
+     here when a weapon family's sound is changed. It reads each of the 615
+     main weapons 0 to 5.5 LU quieter than that weapon really reads (1.4
+     the median). VOICE_LU is one voice's own loudness per unit gain
+     through this bus at full drive at the camera; it rises 2.24 dB an
+     octave of its note (the K-weighting over a 16-80 Hz saw) and fits every
+     note in the game to +-0.27 dB. So no armed hull comes nearer its gun
+     than ENGINE_UNDER less those 0.27 dB. A family missing from REPORT_Q
+     leaves a hull on its size.
+     At full drive at the camera an M1A2 sits 10.0 LU under its 120 mm
+     (HEAD 5.4 over it), a T-90A 10.9 under its 125 mm, a Bradley 9.3 under
+     its TOW, an M-SHORAD 11.1 under its 35 mm, an HMMWV 9.9 under a burst
+     of its 12.7 mm (HEAD 19.1 over), a destroyer 11.6 under its 127 mm and
+     a patrol boat 9.7 under its 12.7 mm. Of the 643 armed hulls in rules.js
+     every one is at least 8.8 LU under its main weapon, 491 of them 8 to 12
+     (the median 10.7 on land, 10.8 afloat); the widest, 18-19 LU, are small
+     hulls with big guns, whose engines keep their size: an 18 t truck
+     carrying a 155 mm howitzer, a 720 hp corvette carrying a 127 mm.
+     Engines at full drive at the camera run from -45.7 LUFS (a 14 t SPAAG
+     firing four .50s) to -25.0 (a 2900 hp cruiser), idling 6.6-7.8 LU
+     under that. */
+  var REPORT_Q = {
+    tank: -14.7, naval: -9.7, howitzer: -11.1, autocannon: -18.3, hmg: -21.1, mg: -22.4, rotary: -20.2,
+    revolver: -28.2, atgm: -19.0, atgm_soft: -18.8, manpads: -19.9, sam: -17.2, sam_cold: -18.2, aam: -16.7,
+    ashm: -14.9, cruise: -16.1, ballistic: -14.9, mlrs: -19.4, torpedo: -19.2,
+  };
+  var VOICE_LU = -5.63;     // LUFS: one voice on a 32 Hz note, gain 1, ENGINE_MIX 1, full drive, at the camera
+  function engineLevel(u) {
+    var d = u.def || {};
+    var t = u.cat === "naval" ? clamp((d.hp || 1000) / 20, 4, 240) : clamp(d.mass || 20, 4, 80);
+    var lvl = Math.sqrt(t / 62);
+    var wid = (d.weapons || [])[0], w = (wid && typeof WEAPONS !== "undefined") ? WEAPONS[wid] : null;
+    if (!w) return lvl;
+    var S = specOf(w), q = REPORT_Q[S.fam];
+    if (q === undefined) return lvl;
+    var tick = (typeof CFG !== "undefined" && CFG.DT > 0) ? CFG.DT : 1 / 30;
+    var step = Math.ceil((w.burstDelay || 0.1) / tick - 1e-6) * tick;
+    var n = S.burst ? 1 : Math.min(Math.max(1, w.burst || 1), 1 + Math.floor(0.4 / step + 1e-9));
+    var gun = q + 20 * Math.log(S.level) / Math.LN10 + 10 * Math.log(n) / Math.LN10;
+    var voice = VOICE_LU + 20 * Math.log(ENGINE_MIX) / Math.LN10 + 2.24 * Math.log(engineBase(u) / 32) / Math.LN2;
+    return Math.min(lvl, Math.pow(10, (gun - ENGINE_UNDER - voice) / 20));
+  }
+  var lvlCache = (typeof WeakMap !== "undefined") ? new WeakMap() : null;
+  function levelOf(u) {                     // once per unit type, not per voice
+    var l = (lvlCache && u.def) ? lvlCache.get(u.def) : undefined;
+    if (l === undefined) { l = engineLevel(u); if (lvlCache && u.def) lvlCache.set(u.def, l); }
+    return l;
+  }
+  /* No two hulls run at the same rpm. Four tanks picked up in the same
+     frame - a camera pan onto a platoon - started four sawtooths in phase
+     at one pitch, and they summed like one engine 12 dB up, not like four:
+     seven M1A2s driving at the camera read -14.8 LUFS over their loudest
+     400 ms on one note, 3.6 LU over one of their 120 mm shots, and -21.7
+     with each up to 3% its own; four in line passing the camera -19.0
+     against -24.4. The offset is the hull's, from its id, not a draw: a
+     voice dropped when its hull leaves the nearest seven and rebuilt when
+     it comes back is the same engine, not one up to a semitone off (a
+     30 s, 28-vehicle scene rebuilds 11-14 voices that way). */
+  function hullSpread(id) {
+    var s = String(id), h = 2166136261;
+    for (var i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+    h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12;
+    return 1 + 0.03 * (2 * ((h >>> 0) / 4294967296) - 1);
+  }
+
   function makeEngine(u) {
     var f = engineBase(u);
     if (!f) return null;
+    f *= hullSpread(u.id);
     var v = {
-      id: u.id, f: f, jet: !!(u.def && u.def.jet),
+      id: u.id, f: f, jet: !!(u.def && u.def.jet), lvl: levelOf(u),
       g: gainNode(ctx, 0.0001),
       lp: lpf(ctx, 120, 2.2),
       pan: ctx.createStereoPanner ? ctx.createStereoPanner() : null,
@@ -2004,7 +2117,14 @@ var Sfx = (function () {
       v.lp.frequency.setTargetAtTime(Math.min(sp.cut, 95 + 420 * v.spd), now, 0.15);
       v.nb.frequency.setTargetAtTime(Math.min(sp.cut, 500 + 1500 * v.spd), now, 0.2);
       v.ng.gain.setTargetAtTime(0.02 + 0.10 * v.spd, now, 0.2);
-      v.g.gain.setTargetAtTime(sp.gain * (0.35 + 0.65 * v.spd) * 0.85, now, 0.18);
+      /* idle against full drive: HEAD's 0.35 + 0.65 x speed, heard through
+         a compressor that squashed it, played an idling hull 6.5-7.8 LU
+         under its full drive at the camera; unsquashed the same law puts
+         it 11.6-12.7 LU under (an idling M1A2 at -40.9 LUFS, a harvester
+         waiting at a refinery -41.2, an HMMWV -51.4). 0.62 plays HEAD's
+         contrast again, 6.6-7.8 LU, with the note and the exhaust still
+         opening up on load */
+      v.g.gain.setTargetAtTime(sp.gain * v.lvl * (ENGINE_IDLE + (1 - ENGINE_IDLE) * v.spd) * 0.85, now, 0.18);
       if (v.pan) v.pan.pan.setTargetAtTime(sp.pan, now, 0.2);
     }
     for (var id in engVoices) {
