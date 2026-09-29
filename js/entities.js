@@ -3249,21 +3249,18 @@ class Unit {
     return U.dist(this.x, this.y, px, py) < CFG.TILE * (this.def.hover ? 0.7 : 2.2);
   }
 
-  /* Alongside a naval yard, a ship with an empty deck slot takes on a
-     replacement airframe. This is the only way to refill one: a helicopter
-     lost at sea leaves a hole in the ship's capability until she goes home,
-     which is what makes losing it matter. */
+  /* A replacement for a deck that has lost one is BOUGHT now - from the
+     ship's flight-deck panel, or by the commander (ai.js driveDecks) - and
+     this works the order: G.workDeckOrders pays for it as it builds and then
+     cranes it aboard alongside a naval yard or flies it out from an airbase
+     in reach. It used to be free and automatic at the yard; see the block
+     above G.deckTypesFor in game.js for what that cost and why it went.
+     The point this comment always made still holds, and harder: a
+     helicopter lost at sea is a hole in the ship's capability until one can
+     be BROUGHT to her, and now it also costs what a helicopter costs. */
   replenishDeck(dt) {
-    if (!this.deckSlots || !this.deckSlots()) return;
-    if (this.wing().length >= this.deckSlots()) { this.deckT = 0; return; }
-    const yard = this.game.nearestBuilding(this.owner, "navalyard", this.x, this.y);
-    if (!yard || U.dist(this.x, this.y, yard.x, yard.y) > CFG.TILE * 7) { this.deckT = 0; return; }
-    this.deckT = (this.deckT || 0) + dt;
-    if (this.deckT < 12) return;                 // craning an aircraft aboard takes a while
-    this.deckT = 0;
-    const n = this.game.embarkComplement(this, true);
-    if (n && this.owner === this.game.human)
-      this.game.alert(this.def.name.toUpperCase() + " \u2014 AIRCRAFT EMBARKED", "good");
+    if (this.deckQ && this.deckQ.length && this.game.workDeckOrders)
+      this.game.workDeckOrders(this, dt);
   }
 
   /* ---- a warship's flight deck ----

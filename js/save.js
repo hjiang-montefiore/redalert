@@ -104,6 +104,14 @@ var SaveGame = (function () {
         mg: u.mag ? u.mag : undefined,
         mn: u.minesMax ? u.mines : undefined,
         nt: u.netMax ? u.net : undefined,
+        /* an airframe on order for this ship's deck is money already paid */
+        dq: u.deckQ && u.deckQ.length ? u.deckQ.map(it => ({ id: it.id,
+              paid: Math.round(it.paid), done: it.done ? 1 : 0, oil: it.oiled ? 1 : 0,
+              n: it.n })) : undefined,
+        /* bought for a deck rather than delivered with the hull: the
+           commander's force book counts its barrels (ai.js forceBook), and a
+           load that dropped the mark dropped 102 of a Kuznetsov's 281 */
+        dB: u.deckBought ? 1 : undefined,
       })),
       buildings: bl.map(b => ({
         d: b.def.id, o: b.owner.idx, tx: b.tx, ty: b.ty,
@@ -320,6 +328,15 @@ var SaveGame = (function () {
       if (su.mg) u.mag = su.mg;
       if (su.mn !== undefined) u.mines = su.mn;
       if (su.nt !== undefined) u.net = su.nt;
+      /* each order keeps its place on the fleet's one line (game.js
+         workDeckOrders), or an airframe half paid for reloads behind one not
+         yet started; a save without the number queues in list order */
+      if (su.dq) u.deckQ = su.dq.filter(it => UNITS[it.id]).map(it => {
+        const n = it.n || (p.deckSeq || 0) + 1;
+        p.deckSeq = Math.max(p.deckSeq || 0, n);
+        return { id: it.id, paid: it.paid || 0, done: !!it.done, oiled: !!it.oil, n: n };
+      });
+      if (su.dB) u.deckBought = true;
       u.order = su.ord || { type: "idle" };
     }
 

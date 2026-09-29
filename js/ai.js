@@ -1252,7 +1252,8 @@ function makeCommander() {
     for (const u of P.units) {
       if (u.dead || !u.def || !u.def.oil) continue;
       if (u._fbFree === undefined)
-        u._fbFree = !!(u.layer === "air" && u.padOn && u.padOn.kind === "unit");
+        u._fbFree = !!(u.layer === "air" && u.padOn && u.padOn.kind === "unit" &&
+                       !u.deckBought);       // bought for the deck: its barrels were spent
       if (u._fbFree) continue;
       const k = armOf(u.def);
       if (!k) continue;
@@ -1271,6 +1272,10 @@ function makeCommander() {
         if (k && it.def.oil) b[k] += it.def.oil;
       }
     }
+    for (const it of deckOrders()) {
+      const d = UNITS[it.id], k = armOf(d);
+      if (k && d.oil) b[k] += d.oil;
+    }
     fbCache = b; fbT = G.time;
     return b;
   }
@@ -1284,6 +1289,7 @@ function makeCommander() {
       if (!qq) continue;
       for (const it of qq.items) n += (it.def && it.def.oil) || 0;
     }
+    for (const it of deckOrders()) if (!it.oiled) n += UNITS[it.id].oil || 0;
     return n;
   }
   /* A service asked for barrels it could not have. The claim is the CHEAPEST
@@ -1504,6 +1510,65 @@ function makeCommander() {
       if (arm && oilClaim && oilClaim.arm === arm) oilClaim = null;
     }
     return ok;
+  }
+
+  /* ---- A DECK WITH A HOLE IN IT ----
+     (owner) "when aircraft carrier or navy has aircraft/helicoper space, we
+     can purchase new units and get refill."
+     The purchase the player makes from the flight-deck panel, on the same
+     terms, through the same gate: G.deckOrderReason() decides for both, so a
+     commander buys only what the hull really operates, pays the full price
+     and the barrels, and is refused wherever no yard is alongside and no
+     airbase can fly one out. It reads nothing but its own ships and its own
+     buildings, so there is no fog question in it at all. Measured before
+     this, hormuz e20 with 60,000 credits: a destroyer 18 tiles off its own
+     yard was still 0/1 after 180 s, and the Kuznetsov 26 tiles out was never
+     given a single Su-33 - her deck filled with three Mi-28N gunships that
+     appeared ON her from an airbase whose four pads were full. The bank,
+     hoard and fuel rules are tryBuildUnit()'s; one order per ship at a time
+     and one purchase a pass, on its own clock at the top of think() so the
+     early returns there cannot starve it.
+     An order that cannot be delivered is CANCELLED, as the player would
+     cancel it from the panel that tells them why: measured, an at-sea order
+     whose airbase was then lost sat finished for 240 s holding 1,104 credits
+     and 26 barrels, and the ship, having an order, could never place
+     another. 45 s is the patience - time for a ship already making for the
+     yard to get there; a wait for fuel is not given up on, since
+     committedOil() is already holding those barrels for it. */
+  const DECK_GIVE_UP = 45;
+  let deckT = 0;
+  function deckOrders() {
+    const out = [];
+    for (const u of P.units) if (!u.dead && u.deckQ) for (const it of u.deckQ) out.push(it);
+    return out;
+  }
+  function driveDecks() {
+    if (G.time < deckT || !G.orderDeckAircraft) return;
+    deckT = G.time + 5;
+    for (const s of P.units) {
+      if (s.dead || !s.deckQ || !s.deckQ.length) continue;
+      for (let i = s.deckQ.length - 1; i >= 0; i--) {
+        const it = s.deckQ[i], d = UNITS[it.id];
+        const stuck = !d || !G.deckDelivery(s, d).how ||
+                      (it.done && s.wing().length >= s.deckSlots());
+        if (!stuck) { it.stuckT = undefined; continue; }
+        if (it.stuckT === undefined) it.stuckT = G.time;
+        else if (G.time - it.stuckT >= DECK_GIVE_UP) G.cancelDeckOrder(s, i);
+      }
+    }
+    for (const s of P.units) {
+      if (s.dead || !s.deckSlots || !s.deckSlots() || (s.deckQ && s.deckQ.length)) continue;
+      if (s.wing().length >= s.deckSlots()) continue;
+      const id = G.deckWants(s);
+      if (!id) continue;
+      const def = UNITS[id], cost = P.factionCost(def);
+      if (P.cash < cost * 0.6) continue;
+      if (saveTarget > 0 && P.cash < saveTarget + cost) continue;
+      if (eraStep && def.oil && P.cash >= eraStep.cost && P.oil - def.oil < eraStep.oil) continue;
+      if (!oilSpare(def.oil) || !armOilOk(armOf(def), def.oil)) continue;
+      if (G.orderDeckAircraft(s, id)) continue;          // a reason: not this ship, now
+      return;
+    }
   }
 
   /* ---- the factory door stays open ----
@@ -6850,6 +6915,7 @@ function makeCommander() {
        attackmove ones plus its tubes, which concentrate() skips - and
        concentrate() only ever touches automatic attack orders. */
     concentrate();
+    driveDecks();
 
     const nPower = P.countBuilding("power");
     const nRef = P.countBuilding("refinery");
@@ -7828,18 +7894,13 @@ function makeCommander() {
          launcher needs before it will sail. */
       if (P.tech >= 2 && !P.hasBuilding("radar")) capN = Math.min(capN, 4);
       if (fleetValue < capN) {
-        /* a carrier with an empty deck is a very expensive target: fill it */
-        const decks = P.units.reduce((n, u) => n + (!u.dead && u.def.carrier ? u.def.carrier : 0), 0);
-        if (decks > 0) {
-          const embarked = count(u => u.layer === "air" && u.def.carrierCapable);
-          if (embarked < decks && P.cash > 1800 && queueLen("aircraft") < 2) {
-            /* cstrike last of the three on purpose: a deck wants fighters
-               before it wants bombers, and where a navy has no strike
-               aircraft this simply answers null and costs nothing. */
-            if (tryBuildUnit("cstealth") || tryBuildUnit("cfighter") ||
-                tryBuildUnit("cstrike")) return;
-          }
-        }
+        /* A carrier with an empty deck is a very expensive target, and it is
+           filled by driveDecks() now - bought FOR that deck. This queued a
+           fighter on the AIR tab whenever the carrier-capable airframes
+           owned ANYWHERE - gunships at the airbase included - numbered fewer
+           than the deck spots, and one bought while the airbase had a pad
+           free went to the airbase. Measured over 180 s with 60,000 credits:
+           not one Su-33 was queued for a Kuznetsov 26 tiles out. */
         /* A shortfall picker against a reading of the water, not a ladder of
            dice. buildToward() builds the role furthest below its intended
            share, which converges on the mixture from wherever the fleet

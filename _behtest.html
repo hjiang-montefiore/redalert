@@ -5491,6 +5491,386 @@ try{
   })();
   }
 
+  /* ====== [66] A DECK WITH ROOM ON IT CAN BE BOUGHT FOR ======
+     (owner) "when aircraft carrier or navy has aircraft/helicoper space, we
+     can purchase new units and get refill."
+     Measured before: a deck was refilled only by lying within seven tiles of a
+     naval yard for twelve seconds, which filled every empty spot at once for
+     60% of the list price and none of the fuel (an Arleigh Burke took both
+     MH-60Rs for 1,680 credits and 0 of their 52 barrels). At sea nothing ever
+     came - 0/2 after 60 s - and a commander's destroyer 18 tiles out was 0/1
+     after 180 s with 60,000 credits banked.
+     Now a deck is BOUGHT for, by the player from the ship's panel and by the
+     commander on the same terms (G.deckOrderReason is the gate for both):
+     full price and barrels, the AIR tab's own tech and prerequisite gate, the
+     airframe's build time on one line for the whole fleet, craned aboard
+     alongside a yard or flown out from an airbase in ferry range - and only
+     the types that hull really operated, which is also all a deck will
+     recover or count as ramp. This section holds all of it, on the page's own
+     match, and puts the board back afterwards: what it built, what it
+     bought, and every deck queue as it found it. */
+  if (inHalf(1)) {
+  log("\n[66] A DECK WITH ROOM ON IT CAN BE BOUGHT FOR");
+  (function(){
+    var T=CFG.TILE, M=Game.map, G=Game;
+    var have=typeof G.orderDeckAircraft==="function" && typeof G.deckTypesFor==="function";
+    chk("a ship's deck can be bought for", have, have?"G.orderDeckAircraft":"no purchase path at all");
+    var made=[], placed=[], patched=[], cash0=P.cash, oil0=P.oil, ecash0=E.cash, eoil0=E.oil, etech0=E.tech, ptech0=P.tech, pcap0=P.techCap;
+    /* what was here before, so the section takes away only what it made */
+    var before=P.units.concat(E.units), qSnap=[];
+    before.forEach(function(u){ if(u.deckQ) qSnap.push([u, u.deckQ.map(function(it){ return Object.assign({}, it); })]); });
+    function put(pl,id,r0){ var hx=(pl.homeX/T)|0, hy=(pl.homeY/T)|0;
+      for(var r=r0;r<45;r++) for(var a=0;a<72;a++){ var an=a/72*6.283, x=(hx+Math.cos(an)*r)|0, y=(hy+Math.sin(an)*r)|0;
+        if(G.canPlace(pl,id,x,y)){ var b=G.placeBuilding(pl,id,x,y,true); if(b){ b.buildProgress=1; placed.push(b); return b; } } }
+      return null; }
+    function sea(cx,cy,rmin,rmax,ok){
+      for(var r=rmin;r<=rmax;r++) for(var a=0;a<72;a++){ var an=a/72*6.283, x=(cx+Math.cos(an)*r)|0, y=(cy+Math.sin(an)*r)|0;
+        if(x<3||y<3||x>=M.W-3||y>=M.H-3) continue;
+        if(!GameMap.passable(M,x,y,"sea")||G.tileBlocked(x,y,null)) continue;
+        if(ok&&!ok(x*T+16,y*T+16)) continue;
+        return {x:x*T+16,y:y*T+16}; }
+      return null; }
+    /* held, so a hull does not sail off after a contact mid-measurement */
+    function ship(pl,id,at){ var s=G.spawnUnitAt(pl,id,at.x,at.y); s.stance="hold"; s.give({type:"guard"}); made.push(s); return s; }
+    function yardDist(pl,x,y){ var d=1e9; pl.buildings.forEach(function(b){ if(!b.dead&&b.def.id==="navalyard") d=Math.min(d,U.dist(x,y,b.x,b.y)/T); }); return d; }
+    function secs(s){ tick(Math.round(s/CFG.DT)); }
+    function patch(o,k,v){ patched.push([o,k,o[k]]); o[k]=v; }
+    function unpatch(){ for(var k=patched.length-1;k>=0;k--) patched[k][0][patched[k][1]]=patched[k][2]; patched.length=0; }
+    function tidy(){
+      unpatch();
+      for(var i=0;i<made.length;i++){ var s=made[i];
+        if(s.wing) s.wing().forEach(function(a){ a.dead=true; });
+        if(s.deckQ) s.deckQ.length=0;
+        s.dead=true; }
+      /* airframes bought for a deck while the section ran - on its own hulls
+         or on the commander's - were paid for with the section's money */
+      P.units.concat(E.units).forEach(function(u){
+        if(!u.dead&&u.deckBought&&before.indexOf(u)<0) u.dead=true;
+        if(u.deckQ&&u.deckQ.length) u.deckQ.length=0; });
+      qSnap.forEach(function(r){ if(!r[0].dead) r[0].deckQ=r[1]; });
+      P.deckLine=null; E.deckLine=null;
+      for(var j=0;j<placed.length;j++) if(!placed[j].dead) G.removeBuilding(placed[j]);
+      G.sweepDead(); P.cash=cash0; P.oil=oil0; E.cash=ecash0; E.oil=eoil0; E.tech=etech0; P.tech=ptech0; P.techCap=pcap0;
+    }
+    try {
+    var DD=G.unitOf(P,"destroyer"), CV=G.unitOf(P,"carrier");
+    var yard=put(P,"navalyard",3), base=put(P,"airbase",4);
+    if(!yard||!base||!DD||!CV){ chk("the deck scenario is built", false, "yard "+!!yard+" airbase "+!!base+" "+DD+" "+CV); return; }
+    var yc={x:(yard.x/T)|0,y:(yard.y/T)|0};
+    /* every type a deck of this army takes is tech 2 or 3 */
+    P.tech=Math.max(P.tech,3);
+
+    /* ---- 1. alongside the yard, an empty deck is NOT refilled for free ---- */
+    /* The purse moves on its own in this match - income, the fuel market -
+       so what is measured is the deck and the order, not the bank. */
+    var d1=ship(P,DD,sea(yc.x,yc.y,2,6));
+    secs(15);
+    chk("alongside the yard, 15 s with no order: nothing comes aboard by itself",
+        d1.wing().length===0 && !(d1.deckQ&&d1.deckQ.length),
+        "deck "+d1.wing().length+"/"+d1.deckSlots()+", "+(U.dist(d1.x,d1.y,yard.x,yard.y)/T).toFixed(1)+
+        " tiles from the yard (it used to crane both aboard at 12.0 s for 60% of list and 0 barrels)");
+    if(!have){ return; }
+
+    /* ---- 2. what a hull may take ---- */
+    var heloId=G.deckAircraftFor(d1,0), ddTypes=G.deckTypesFor(d1);
+    chk("a destroyer's deck takes the helicopter it embarked, and only that",
+        ddTypes.length===1 && ddTypes[0]===heloId && UNITS[heloId].hover, JSON.stringify(ddTypes));
+    var gun=unitFor(P.faction,"gunship",P.era);
+    var gunWhy=gun?G.deckOrderReason(d1,gun):"CANNOT OPERATE (no gunship)";
+    chk("a gunship is refused on the destroyer, by name", gunWhy && gunWhy.indexOf("CANNOT OPERATE")>=0, gun+": "+gunWhy);
+    /* every hull with a deck, every army, every decade: an escort only ever
+       lists rotorcraft, a carrier only ever lists carrier-capable types of
+       its own army and decade, fixed-wing only where deckAircraftFor itself
+       puts a fixed-wing aboard, and none at all on a hull built as a
+       helicopter carrier */
+    var bad=[], hulls=0, cvs=0, noAir=0, heloCv=0;
+    Object.keys(FACTIONS).forEach(function(f){ ERAS.forEach(function(e){
+      Object.keys(UNITS).forEach(function(k){ var d=UNITS[k];
+        if(d.cat!=="naval"||!(d.carrier||d.helo)) return;
+        if(d.fac!==f&&d.fac!=="both") return;
+        if(typeof inEra==="function"&&!inEra(d,e)) return;
+        var stub={def:d,owner:{faction:f,era:e,units:[]},deckSlots:function(){return (d.carrier||0)||(d.helo||0);},wing:function(){return [];}};
+        var ts=G.deckTypesFor(stub); hulls++;
+        if(d.carrier) cvs++;
+        if(d.heloCarrier) heloCv++;
+        var fixed=G.deckAircraftFor(stub,0); if(d.carrier&&fixed&&UNITS[fixed].hover) noAir++;
+        ts.forEach(function(id){ var a=UNITS[id];
+          var why=!a.carrierCapable?"not deck-capable":(a.fac!==f&&a.fac!=="both")?"another army's":!inEra(a,e)?"out of its decade":
+                  (!d.carrier&&!a.hover)?"fixed-wing on an escort":(d.heloCarrier&&!a.hover)?"fixed-wing on a helicopter carrier":
+                  (d.carrier&&!a.hover&&UNITS[fixed].hover)?"fixed-wing where the navy had none":null;
+          if(why) bad.push(k+"@"+e+":"+id+" "+why); }); }); }); });
+    chk("across every army and decade, no hull is offered an airframe it never operated",
+        hulls>0 && heloCv>0 && bad.length===0, hulls+" hull-decades ("+cvs+" carriers, "+noAir+" sailing as helicopter carriers, "+heloCv+" built as one)"+(bad.length?"; "+bad.slice(0,4).join(" | "):""));
+    /* Moskva by name: a helicopter cruiser that never operated the Yak-38 -
+       it went to sea in Kiev, 1976, in the same decade band */
+    var mdef=UNITS.pact_e60_carrier;
+    if(mdef){
+      var mo={def:mdef,owner:{faction:"pact",era:"e60",units:[]},deckSlots:function(){return mdef.carrier;},wing:function(){return [];}};
+      var mts=G.deckTypesFor(mo), mc=[]; for(var i=0;i<mdef.carrier;i++) mc.push(G.deckAircraftFor(mo,i));
+      chk("Moskva sails with helicopters and is offered helicopters, not the Yak-38",
+          mts.length>0 && mts.concat(mc).every(function(id){ return id&&UNITS[id].hover; }),
+          "aboard "+mc.map(function(id){return UNITS[id]?UNITS[id].name:id;}).join(", ")+"; offered "+mts.map(function(id){return UNITS[id].name;}).join(", "));
+    }
+    var land=unitFor(P.faction,"fighter",P.era);
+    var cvStub={def:UNITS[CV],owner:P,deckSlots:function(){return UNITS[CV].carrier;},wing:function(){return [];},deckQ:[],dead:false,x:yard.x,y:yard.y};
+    var landWhy=G.deckOrderReason(cvStub,land);
+    chk("a land fighter is refused on the carrier, by name",
+        land && landWhy && landWhy.indexOf("CANNOT OPERATE")>=0, land+" ("+(UNITS[land]||{}).name+"): "+landWhy);
+
+    /* ---- 2b. the AIR tab's own gate: tech, the match's ceiling, the lab or dome ---- */
+    patch(P,"tech",1);
+    var hd=UNITS[heloId], lowWhy=G.deckOrderReason(d1,heloId), airTab=P.lockReason(hd);
+    chk("at tech 1 the destroyer's helicopter is refused in the AIR tab's own words",
+        !!lowWhy && lowWhy===airTab && lowWhy.indexOf("TECH")>=0, "deck: "+lowWhy+" / AIR tab: "+airTab);
+    unpatch();
+    /* a type whose prerequisite structure is missing - hidden for the check
+       by standing every such structure back to half-built */
+    var gated=[], gbad=[];
+    G.deckTypesFor(cvStub).forEach(function(id){
+      (UNITS[id].prereq||[]).forEach(function(rq){ if(rq==="airbase"||gated.indexOf(rq)>=0) return; gated.push(rq);
+        P.buildings.forEach(function(b){ if(!b.dead&&b.def.id===rq) patch(b,"buildProgress",0.5); }); }); });
+    var gatedN=0;
+    G.deckTypesFor(cvStub).forEach(function(id){
+      var need=(UNITS[id].prereq||[]).filter(function(rq){ return rq!=="airbase"; })[0];
+      if(!need) return; gatedN++;
+      var w=G.deckOrderReason(cvStub,id), want="REQUIRES "+BUILDINGS[need].name.toUpperCase();
+      if(w!==want) gbad.push(UNITS[id].name+": "+w+" (AIR tab: "+P.lockReason(UNITS[id])+")"); });
+    var capT=G.deckTypesFor(cvStub).filter(function(id){ return (UNITS[id].tech||0)>2; })[0], capWhy=null;
+    if(capT){ patch(P,"techCap",2); capWhy=G.deckOrderReason(cvStub,capT); }
+    unpatch();
+    chk("a carrier type that needs a lab or a radar dome, or is above the match's tech ceiling, is refused for the deck too",
+        gatedN>0 && gbad.length===0 && (!capT || capWhy==="ABOVE TECH CEILING (TECH 2)"),
+        gatedN+" gated types"+(gbad.length?": "+gbad.join(" | "):"")+(capT?"; "+UNITS[capT].name+" under a tech-2 ceiling: "+capWhy:""));
+
+    /* ---- 3. bought alongside: full price, full fuel, its build time, craned aboard -
+       and a second hull ordering in the same instant waits its turn ---- */
+    /* a brownout slows this exactly as it slows the production queues */
+    var pr=P.powerRatio(), spd=pr<1?Math.max(CFG.POWER_BROWNOUT_FLOOR,pr):1;
+    var cost=P.factionCost(hd), bt=P.factionTime(hd)/spd;
+    var led0=(P.oilOut&&P.oilOut.aircraft)||0;
+    var dQ=ship(P,DD,sea(yc.x,yc.y,2,7,function(x,y){ return U.dist(x,y,d1.x,d1.y)>T*1.5; }));
+    var why1=G.orderDeckAircraft(d1,heloId), it1=d1.deckQ&&d1.deckQ[0];
+    var whyQ=G.orderDeckAircraft(dQ,heloId);
+    chk("an order alongside the yard is accepted", why1===null && whyQ===null, String(why1)+" / "+String(whyQ));
+    var t0=G.time, at=null, atQ=null, spawnD=null;
+    for(var i=0;i<Math.round((2*bt+10)/CFG.DT)&&!(at&&atQ);i++){ tick(1);
+      var w=d1.wing(); if(w.length&&at===null){ at=G.time-t0; spawnD=U.dist(w[0].x,w[0].y,d1.x,d1.y)/T; }
+      if(dQ.wing().length&&atQ===null) atQ=G.time-t0; }
+    var h1=d1.wing()[0];
+    chk("...it comes aboard after its own build time, not in twelve seconds",
+        at!==null && at>=bt*0.9 && at<=bt+3, "aboard at "+(at===null?"never":at.toFixed(1)+" s")+", build time "+bt.toFixed(1)+" s");
+    chk("...and the second hull's, ordered in the same instant, after it: one line for the fleet",
+        at!==null && atQ!==null && atQ>=at+bt*0.9 && atQ<=at+bt+3,
+        "second aboard at "+(atQ===null?"never":atQ.toFixed(1)+" s")+" (used to be the same "+(at===null?"?":at.toFixed(1))+" s)");
+    chk("...craned aboard: parked on HER deck, on the spot",
+        !!h1 && h1.padOn===d1 && h1.parked && spawnD<1.5, h1?("padOn "+(h1.padOn===d1)+" parked "+h1.parked+" "+spawnD.toFixed(2)+" tiles"):"none");
+    var led=((P.oilOut&&P.oilOut.aircraft)||0)-led0;
+    chk("...and each cost what the AIR tab charges, money and barrels",
+        !!it1 && Math.abs(it1.paid-cost)<2 && it1.oiled && Math.abs(led-2*(hd.oil||0))<0.5,
+        it1?("paid "+Math.round(it1.paid)+" of "+cost+", "+led.toFixed(1)+" of 2 x "+(hd.oil||0)+" bbl drawn"):"no order");
+
+    /* ---- 4. deck full; cancel refunds ---- */
+    var full=G.deckOrderReason(d1,heloId), why2=G.orderDeckAircraft(d1,heloId);
+    var why3=G.orderDeckAircraft(d1,heloId);
+    chk("one spot left: one more is accepted, the next is refused as DECK FULL",
+        why2===null && why3 && why3.indexOf("DECK FULL")===0, JSON.stringify([full,why2,why3]));
+    secs(5);
+    var last=d1.deckQ[d1.deckQ.length-1], paid=last?last.paid:0, c2=P.cash;
+    var ok=G.cancelDeckOrder(d1,d1.deckQ.length-1);
+    chk("cancelling an order refunds what it had paid",
+        ok && paid>1 && Math.abs((P.cash-c2)-paid)<0.01 && d1.deckQ.length===0,
+        "paid "+Math.round(paid)+" in 5 s, refunded "+Math.round(P.cash-c2));
+
+    /* ---- 4b. a ship lost with an order on her: refunded ---- */
+    var d3=ship(P,DD,sea(yc.x,yc.y,3,10));
+    G.orderDeckAircraft(d3,heloId); secs(3);
+    var paid3=d3.deckQ.length?d3.deckQ[0].paid:0, c3=P.cash;
+    d3.dead=true; G.sweepDead();
+    chk("a ship lost with an airframe on order for her is refunded what it had paid",
+        paid3>1 && Math.abs((P.cash-c3)-paid3)<0.01, "paid "+Math.round(paid3)+", refunded "+Math.round(P.cash-c3));
+
+    /* ---- 5. at sea: flown out from the airbase, and it lands on her ---- */
+    var d2at=sea(yc.x,yc.y,12,40,function(x,y){ return yardDist(P,x,y)>7.5 && U.dist(x,y,base.x,base.y)/T>8; });
+    var d2=ship(P,DD,d2at);
+    var dv=G.deckDelivery(d2,hd);
+    chk("at sea the delivery is a flight from the airbase, and the panel can say so",
+        dv.how==="air" && dv.from===base, JSON.stringify({how:dv.how,tiles:dv.tiles&&Math.round(dv.tiles),why:dv.why}));
+    G.orderDeckAircraft(d2,heloId);
+    t0=G.time; var launched=null, landed=null, fromBase=null, h2=null;
+    for(var i=0;i<Math.round((bt+60)/CFG.DT)&&landed===null;i++){ tick(1);
+      var w2=d2.wing();
+      if(w2.length&&launched===null){ h2=w2[0]; launched=G.time-t0; fromBase=U.dist(h2.x,h2.y,base.x,base.y)/T; }
+      if(h2&&h2.parked&&U.dist(h2.x,h2.y,d2.x,d2.y)<T*1.5) landed=G.time-t0; }
+    chk("...it takes off from the airbase, not from nowhere",
+        launched!==null && fromBase<2, launched===null?"never built":("launched at "+launched.toFixed(1)+" s, "+fromBase.toFixed(1)+" tiles from the airbase"));
+    chk("...and lands on her deck",
+        landed!==null && h2.padOn===d2, landed===null?"never landed":("down at "+landed.toFixed(1)+" s, "+(dv.tiles||0).toFixed(1)+" tiles from the airbase"));
+
+    /* ---- the panel: the buy row is on the ship's own flight-deck panel, and
+       it says how the airframe will reach her ---- */
+    if(UI.selection&&UI.frame){
+      var sel=UI.selection; for(var k=0;k<sel.length;k++) sel[k].selected=false; sel.length=0;
+      d2.selected=true; sel.push(d2);
+      var html="";
+      try { UI.frame(CFG.DT); html=(document.getElementById("selinfo")||{}).innerHTML||""; }
+      finally { d2.selected=false; sel.length=0; }
+      chk("her panel offers the helicopter to buy, and says it will be flown out",
+          html.indexOf('data-deckbuy="'+heloId+'"')>=0 && html.indexOf("flown out from the airbase")>=0,
+          JSON.stringify((html.match(/BUY FOR THIS DECK[^<]*<i>[^<]*/)||[""])[0])+" / "+
+          JSON.stringify((html.match(/At sea:[^<]*/)||["no delivery line"])[0]));
+    }
+
+    /* ---- 6. the refill: rearmed and refuelled on the deck, at sea, under way ---- */
+    if(h2&&h2.parked){
+      h2.fuel=20; if(h2.ammoMax) h2.ammo=0;
+      var goAt=sea((d2.x/T)|0,(d2.y/T)|0,8,20,null);
+      if(goAt) d2.give({type:"move",x:goAt.x,y:goAt.y});
+      var f0=h2.fuel, x0=d2.x, y0=d2.y; secs(1);
+      var df=h2.fuel-f0, da=h2.ammo, sailed=U.dist(d2.x,d2.y,x0,y0)/T;
+      secs(4);
+      chk("on her deck, under way, it is refuelled and rearmed",
+          sailed>0.3 && df>15 && (!h2.ammoMax || da>1) && h2.fuel>=h2.fuelMax-1 && (!h2.ammoMax||h2.ammo>=h2.ammoMax-0.05),
+          "she sailed "+sailed.toFixed(1)+" tiles in that second; +"+df.toFixed(1)+" fuel and +"+da.toFixed(2)+" ordnance; full after 5 s ("+Math.round(h2.fuel)+"%, "+h2.ammo.toFixed(1)+"/"+h2.ammoMax+")");
+    } else chk("on her deck, under way, it is refuelled and rearmed", false, "nothing aboard to service");
+
+    /* ---- 7. a carrier: fixed-wing within ferry range flies out; beyond it, refused and told why ---- */
+    var fid=G.deckAircraftFor({def:UNITS[CV],owner:P,deckSlots:function(){return UNITS[CV].carrier;}},0);
+    var reach=G.ferryReach(P,UNITS[fid]);
+    var inAt=sea(yc.x,yc.y,10,Math.max(12,Math.floor(reach*0.6)),function(x,y){ var d=U.dist(x,y,base.x,base.y)/T; return yardDist(P,x,y)>7.5 && d>10 && d<reach*0.7; });
+    var cv=inAt&&ship(P,CV,inAt), fbt=P.factionTime(UNITS[fid])/spd;
+    if(cv){
+      var wf=G.orderDeckAircraft(cv,fid);
+      t0=G.time; var jl=null, jet=null;
+      for(var i=0;i<Math.round((fbt+60)/CFG.DT)&&jl===null;i++){ tick(1);
+        if(!jet) jet=cv.wing().filter(function(a){return a.def.id===fid;})[0];
+        if(jet&&jet.parked&&U.dist(jet.x,jet.y,cv.x,cv.y)<T*2) jl=G.time-t0; }
+      chk("a carrier fighter bought at sea flies out and lands on her",
+          wf===null && jl!==null && jet.padOn===cv, (UNITS[fid].name)+": "+(wf||"")+(jl===null?" never landed":" down at "+jl.toFixed(1)+" s, "+(U.dist(cv.x,cv.y,base.x,base.y)/T).toFixed(0)+" tiles out, reach "+reach.toFixed(0)));
+      /* Beyond reach. A jet here carries 55 s of loiter on top of its
+         radius, so an F/A-18E ferries about 356 tiles and no water on this
+         map is that far from the airbase: the same hull is asked the
+         question from a point that far out, which is all deckDelivery reads. */
+      var farCv={def:cv.def,owner:P,dead:false,deckQ:[],deckSlots:function(){return cv.deckSlots();},
+                 wing:function(){return cv.wing();},x:base.x+(reach+20)*T,y:base.y};
+      var farWhy=G.deckOrderReason(farCv,fid), heloFar=G.deckOrderReason(farCv,G.deckAircraftFor(cv,UNITS[CV].carrier-1));
+      chk("beyond ferry range the fighter is refused, and the reason says so",
+          farWhy && farWhy.indexOf("FERRY RANGE")>=0, farWhy);
+      chk("...while a helicopter, which has no fuel clock here, can still be flown out",
+          heloFar===null, String(heloFar));
+
+      /* ---- 7b. a save carries what is on order and what was bought ----
+         SaveGame.load rebuilds the whole match, which would end this suite,
+         so the record is read back as written */
+      G.orderDeckAircraft(cv,fid); secs(2);
+      var rec=null, hrec=null;
+      try {
+        var res=SaveGame.save(Game,"ironfront.test66");
+        if(res.ok){
+          var snap=JSON.parse(localStorage.getItem("ironfront.test66"));
+          var ul=G.entities.filter(function(e){ return e.kind==="unit"&&!e.dead; });
+          rec=snap.units[ul.indexOf(cv)]; hrec=snap.units[ul.indexOf(jet)];
+        } else log("  (save not checked: "+res.error+")");
+      } catch(e){ log("  (save not checked: "+e.message+")"); }
+      try { localStorage.removeItem("ironfront.test66"); } catch(e){}
+      if(rec) chk("a save carries the order on her deck, and the mark on the airframe bought for it",
+          !!rec.dq && rec.dq.length===1 && rec.dq[0].id===fid && rec.dq[0].paid>0 && !!hrec && hrec.dB===1,
+          JSON.stringify(rec.dq)+" / bought "+(hrec&&hrec.dB));
+      if(cv.deckQ&&cv.deckQ.length) G.cancelDeckOrder(cv,0);
+    } else chk("a carrier fighter bought at sea flies out and lands on her", false, "no water inside "+reach.toFixed(0)+" tiles");
+
+    /* ---- 8. the AIR tab's way onto a deck ----
+       (a) finished while the only airbase is still going up: there is no
+       airbase to come out of, so a carrier alongside the yard takes it - the
+       tick used to throw on src.rally. (b) nowhere at all: refunded, money
+       and barrels. (c) the airbase full and the carrier at sea: it flies out
+       to her; it used to appear on her deck the instant it was built. (d) a
+       gunship is ramp nobody's deck operates. */
+    var fdef=UNITS[fid], gdef=gun&&UNITS[gun];
+    var cvY=ship(P,CV,sea(yc.x,yc.y,2,6,function(x,y){ return yardDist(P,x,y)<=6.5; }));
+    P.buildings.forEach(function(b){ if(!b.dead&&b.def.id==="airbase") patch(b,"buildProgress",0.5); });
+    P.oil=Math.max(P.oil,500);
+    var err=null, c4=P.cash, o4=P.oil;
+    try { P.onProduced("aircraft",{id:fid,def:fdef,paid:P.factionCost(fdef)}); } catch(e){ err=e.message; }
+    var onY=cvY.wing().filter(function(a){ return a.def.id===fid; })[0];
+    chk("a carrier fighter finished while the airbase is still going up is craned aboard the carrier alongside",
+        !err && !!onY && onY.parked, err?"threw: "+err:(onY?"on "+cvY.def.name+", parked "+onY.parked:"not aboard"));
+    if(gdef){
+      c4=P.cash; o4=P.oil; err=null;
+      try { P.onProduced("aircraft",{id:gun,def:gdef,paid:P.factionCost(gdef)}); } catch(e){ err=e.message; }
+      chk("...and a gunship with no airbase up and no deck that operates it is refunded, money and barrels",
+          !err && Math.abs(P.cash-c4-P.factionCost(gdef))<1 && Math.abs(P.oil-o4)<0.01,
+          err?"threw: "+err:"cash +"+Math.round(P.cash-c4)+" of "+P.factionCost(gdef)+", oil "+(P.oil-o4).toFixed(1)+" (it kept "+(gdef.oil||0)+" bbl)");
+    }
+    unpatch();
+    cvY.wing().forEach(function(a){ a.dead=true; }); cvY.dead=true; G.sweepDead();
+    var src=(P.primary&&P.primary.airbase&&!P.primary.airbase.dead&&P.primary.airbase.buildProgress>=1)?P.primary.airbase:G.nearestBuilding(P,"airbase",P.homeX,P.homeY);
+    var busy=0; P.units.forEach(function(u){ if(!u.dead&&u.layer==="air"&&u.padOn===src) busy++; });
+    for(var i=busy;i<(src.def.pads||0);i++){ var f=G.spawnUnitAt(P,land,src.x,src.y); f.padOn=src; f.parked=true; f.order={type:"parked"}; made.push(f); }
+    if(cv){
+      var u2=G.spawnUnit(P,fid); if(u2) made.push(u2);
+      var dk=u2&&u2.padOn, dk2=dk&&dk.kind==="unit"?G.deckDelivery(dk,fdef):null;
+      var nearAb=u2?Math.min.apply(null,P.buildings.filter(function(b){return !b.dead&&b.def.pads;}).map(function(b){return U.dist(u2.x,u2.y,b.x,b.y)/T;})):-1;
+      chk("with the airbase full, a carrier fighter from the AIR tab flies out to a carrier at sea; it does not appear on her",
+          !!dk2 && dk2.how==="air" && !u2.parked && u2.order.type==="rtb" && nearAb<1.5 && U.dist(u2.x,u2.y,dk.x,dk.y)/T>3,
+          u2?(dk&&dk.def?dk.def.name:"no deck")+" by "+(dk2?dk2.how:"-")+", "+(U.dist(u2.x,u2.y,dk.x,dk.y)/T).toFixed(1)+" tiles from her, "+nearAb.toFixed(1)+" from an airbase, "+u2.order.type:"nothing built");
+    }
+    if(gdef){
+      var g2=G.spawnUnit(P,gun); if(g2) made.push(g2);
+      var gp=g2&&G.findPad(g2);
+      var ramp=0; P.buildings.forEach(function(b){ if(!b.dead&&b.buildProgress>=1&&b.def.pads) ramp+=b.def.pads; });
+      chk("a gunship is never given a deck spot - built, coming home, or counted as ramp",
+          !!g2 && g2.padOn===src && (!gp||gp.host.kind==="building") && P.airCapacity(gdef)===ramp && P.airCapacity(hd)>ramp,
+          g2?("built onto "+(g2.padOn&&g2.padOn.def.name)+"; home offered "+(gp?gp.host.def.name:"none (lands on its own)")+"; ramp for it "+P.airCapacity(gdef)+" of "+ramp+" airbase pads, for "+hd.name+" "+P.airCapacity(hd)):"nothing built");
+    }
+
+    /* ---- 9. the commander buys for its own deck, by the same rules, and
+       gives up an order it cannot deliver ---- */
+    var eYard=null, eBase=null;
+    E.buildings.forEach(function(b){ if(!b.dead&&b.buildProgress>=1){ if(b.def.id==="navalyard") eYard=eYard||b; if(b.def.pads) eBase=eBase||b; } });
+    eYard=eYard||put(E,"navalyard",3); eBase=eBase||put(E,"airbase",4);
+    var eDD=G.unitOf(E,"destroyer");
+    if(eYard&&eBase&&eDD){
+      E.cash=30000; E.oil=Math.max(E.oil,600); E.tech=Math.max(E.tech,2);
+      var ey={x:(eYard.x/T)|0,y:(eYard.y/T)|0};
+      var eAt=sea(ey.x,ey.y,12,40,function(x,y){ return yardDist(E,x,y)>7.5; });
+      var ed=eAt&&ship(E,eDD,eAt);
+      var eh=ed?G.deckAircraftFor(ed,0):null;
+      var eAb=null, eIt=null;
+      for(var i=0;i<Math.round(150/CFG.DT)&&ed&&!eAb;i++){ tick(1);
+        if(!eIt&&ed.deckQ&&ed.deckQ.length) eIt=ed.deckQ[0];
+        var ew=ed.wing().filter(function(a){return a.parked;}); if(ew.length) eAb=ew[0]; }
+      chk("the commander buys for its own destroyer at sea, and it lands aboard",
+          !!eAb && eAb.deckBought && eAb.padOn===ed,
+          ed?(eh+" -> deck "+ed.wing().length+"/"+ed.deckSlots()+(ed.deckQ&&ed.deckQ.length?" on order "+ed.deckQ.length:"")+
+              ", "+(yardDist(E,ed.x,ed.y)).toFixed(0)+" tiles from its yard"):"no water");
+      chk("...paying the same price and barrels the player pays",
+          !!eIt && Math.abs(eIt.paid-E.factionCost(UNITS[eIt.id]))<2 && eIt.oiled,
+          eIt?(eIt.id+": paid "+Math.round(eIt.paid)+" of "+E.factionCost(UNITS[eIt.id])+", "+(UNITS[eIt.id].oil||0)+" bbl drawn "+!!eIt.oiled):"never ordered");
+      /* the second hull's order is placed, then the ship is made one no yard
+         or airbase can reach - which is what losing the airbase does to it */
+      var eAt2=sea(ey.x,ey.y,12,40,function(x,y){ return yardDist(E,x,y)>7.5 && (!ed||U.dist(x,y,ed.x,ed.y)>T*2); });
+      var ed2=eAt2&&ship(E,eDD,eAt2);
+      if(ed2){
+        var o2=G.orderDeckAircraft(ed2,eh), it2=ed2.deckQ&&ed2.deckQ[0], dd0=G.deckDelivery;
+        patch(G,"deckDelivery",function(s,d){ return s===ed2?{how:null,why:"NO AIRBASE TO FLY ONE OUT (the section's)"}:dd0(s,d); });
+        var gone=null; t0=G.time;
+        for(var i=0;i<Math.round(70/CFG.DT)&&gone===null;i++){ tick(1); if(!ed2.deckQ.length) gone=G.time-t0; }
+        unpatch();
+        chk("...and cancels, refunded, an order it can no longer deliver instead of holding the money for ever",
+            o2===null && gone!==null && it2 && it2.gone && gone<=60,
+            o2!==null?"order refused: "+o2:(gone===null?"still on order after 70 s ("+(it2&&it2.why)+")":"cancelled "+gone.toFixed(0)+" s after the ship became unreachable, "+Math.round(it2.paid)+" credits back"));
+      }
+    } else chk("the commander buys for its own destroyer at sea, and it lands aboard", false, "no yard/airbase/destroyer for the commander");
+    } finally { tidy(); }
+    var left=P.units.concat(E.units).filter(function(u){return !u.dead&&((u.deckBought&&before.indexOf(u)<0)||made.indexOf(u)>=0);}).length;
+    var qBack=qSnap.every(function(r){ return r[0].dead||r[0].deckQ===r[1]; }) &&
+              P.units.concat(E.units).every(function(u){ return !u.deckQ||!u.deckQ.length||qSnap.some(function(r){return r[0]===u;}); });
+    chk("and the board is put back: what it built and bought is gone, and every deck's orders are as they were",
+        left===0 && qBack && placed.every(function(b){return b.dead;}),
+        left+" units left, "+placed.length+" structures removed, "+qSnap.length+" deck queues restored");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

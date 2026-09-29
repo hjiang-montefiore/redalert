@@ -473,7 +473,7 @@ var Game = (function () {
     if (!src) src = G.nearestBuilding(p, srcId, p.homeX, p.homeY);
     /* a carrier is an airbase that sails: if there is no strip, or its decks
        are the only free ramp, deliver the aircraft to the ship instead */
-    let deck = null;
+    let deck = null, deckHow = null;
     if (def.cat === "aircraft" && def.carrierCapable) {
       let padsFree = 0;
       if (src) {
@@ -484,16 +484,28 @@ var Game = (function () {
       if (!src || padsFree <= 0) {
         let bd = Infinity;
         for (const sh of p.units) {
-          if (sh.dead || !sh.def.carrier) continue;
-          let used = 0;
-          for (const e of p.units) if (!e.dead && e.layer === "air" && e.padOn === sh) used++;
-          if (used >= sh.def.carrier) continue;
+          /* Only a deck that really operates this type, has a spot nobody
+             has ordered, and can be REACHED. This handed the airframe to the
+             nearest carrier with a gap wherever she was: measured, a Super
+             Hornet appeared parked on a Ford 30.2 tiles from the airbase the
+             instant it was finished, and a commander's Kuznetsov put to sea
+             with three Mi-28N gunships aboard because they were rotorcraft
+             and the airbase was full. It flies out now (G.deckDelivery), and
+             an escort takes its own helicopter the same way. */
+          if (sh.dead || !sh.deckSlots || !sh.deckSlots()) continue;
+          if (G.deckTypesFor(sh).indexOf(defId) < 0) continue;
+          if (sh.wing().length + (sh.deckQ ? sh.deckQ.length : 0) >= sh.deckSlots()) continue;
+          const dv = G.deckDelivery(sh, def);
+          if (!dv.how) continue;
           const d = U.dist2(sh.x, sh.y, p.homeX, p.homeY);
-          if (d < bd) { bd = d; deck = sh; }
+          if (d < bd) { bd = d; deck = sh; deckHow = dv; }
         }
       }
     }
-    if (!src && !deck) { p.refund(p.factionCost(def)); return null; }
+    /* onProduced drew the barrels before this was called, so they go back
+       with the money - they used to stay spent (measured: a carrier fighter
+       finished with no airbase up refunded 1,749 credits and kept 34 bbl) */
+    if (!src && !deck) { p.refund(p.factionCost(def)); returnOil(p, def); return null; }
 
     let sx, sy;
     if (def.cat === "naval") {
@@ -520,7 +532,9 @@ var Game = (function () {
       if (!spot) { p.refund(p.factionCost(def)); return null; }
       sx = spot.x * CFG.TILE + 16; sy = spot.y * CFG.TILE + 16;
     } else if (def.cat === "aircraft") {
-      const host = deck || src;
+      /* craned aboard alongside the yard, otherwise off the runway of the
+         airbase that can reach her */
+      const host = !deck ? src : deckHow.how === "yard" ? deck : deckHow.from;
       sx = host.x; sy = host.y;
     } else {
       const spot = Path.nearest(G.map, src.tx + ((src.def.w / 2) | 0), src.ty + src.def.h, "ground",
@@ -533,13 +547,21 @@ var Game = (function () {
     /* a new airframe starts shut down on its ramp, not orbiting */
     if (u && def.cat === "aircraft") {
       u.padOn = deck || src;
-      u.parked = true;
-      u.order = { type: "parked" };
+      if (deck && deckHow.how === "air") { u.parked = false; u.order = { type: "rtb" }; }
+      else { u.parked = true; u.order = { type: "parked" }; }
+      /* An airframe has no rally point, and `src` can be null here: an
+         airbase still going up keeps the AIR queue running (prodSpeed counts
+         it) while nearestBuilding() refuses it, so a carrier fighter finished
+         then fell through to `src.rally` below and threw out of Game.tick -
+         measured, t=19.0 on hormuz with the airbase at 50%. */
+      return u;
     }
     /* A warship with a flight deck sails with its air complement aboard, and
        that complement belongs to the ship. Lose an aircraft and the deck stays
-       empty until the ship goes home for another - which is the whole
-       logistical point of embarking aircraft rather than basing them ashore.
+       empty until another is bought and brought to her - craned aboard at a
+       yard or flown out from an airbase in reach (G.deckDelivery) - which is
+       the whole logistical point of embarking aircraft rather than basing
+       them ashore.
        An era carrier spells its deck `carrier` and has no `helo` at all, so
        gating on `helo` delivered the one hull built to operate aircraft empty. */
     if (u && def.cat === "naval" && (def.helo || def.carrier)) G.embarkComplement(u);
@@ -585,9 +607,13 @@ var Game = (function () {
        still be bought onto a spare spot by hand. */
     const fighter = deckLegal(unitFor(p.faction, "cfighter", era)) ||
                     deckLegal(unitFor(p.faction, "cstealth", era));
-    /* No naval air arm this period: she sails as a helicopter carrier, which
-       is exactly what Moskva and her kind actually were. */
-    if (!fighter) return helo;
+    /* No naval air arm this period: she sails as a helicopter carrier. And a
+       hull that WAS a helicopter carrier sails as one whatever her navy flew
+       from other decks: Moskva (1967) never operated the Yak-38, which went
+       to sea in Kiev in 1976 - the same decade band, so the navy's fixed-wing
+       role answering for the e60 Soviet deck put two Forgers aboard a ship
+       that only ever carried Ka-25s. def.heloCarrier says which hull. */
+    if (!fighter || host.def.heloCarrier) return helo;
     const slots = host.deckSlots ? host.deckSlots() : 1;
     if (slot >= slots - 1 && helo) return helo;
     /* A REAL AIR WING IS FIGHTERS AND ATTACK AIRCRAFT. Until the "cstrike"
@@ -601,9 +627,12 @@ var Game = (function () {
     return fighter;
   };
 
-  /* Fill every empty deck slot. Used when the ship is delivered, and again
-     whenever it is alongside a naval yard. Returns how many it took on. */
-  G.embarkComplement = function (ship, charge) {
+  /* Fill every empty deck slot. Used when the ship is delivered: the
+     complement comes with the hull and is in its price. A spot emptied later
+     is refilled only by a purchase (G.orderDeckAircraft below), so the
+     60%-of-list `charge` the yard refill passed is gone with it. Returns how
+     many it took on. */
+  G.embarkComplement = function (ship) {
     if (!ship || ship.dead || !ship.deckSlots) return 0;
     const slots = ship.deckSlots();
     if (!slots) return 0;
@@ -613,21 +642,252 @@ var Game = (function () {
     while (have < slots) {
       /* Ask per spot rather than once for the whole deck, and ask for the spot
          that is actually empty: lose the helicopter and the next machine craned
-         aboard is a helicopter, lose a fighter and it is a fighter. The price
-         below then follows the airframe instead of always being a helicopter's. */
+         aboard is a helicopter, lose a fighter and it is a fighter. */
       const id = G.deckAircraftFor(ship, ship.wing().some(u => u.def.hover) ? 0 : slots - 1);
       if (!id || !UNITS[id]) break;
-      if (charge) {
-        const cost = Math.round((UNITS[id].cost || 0) * 0.6);   // airframe only
-        if (ship.owner.cash < cost) break;
-        ship.owner.cash -= cost;
-      }
       const h = G.spawnUnitAt(ship.owner, id, ship.x, ship.y);
       if (!h) break;
       h.padOn = ship; h.parked = true; h.order = { type: "parked" };
       have++; made++;
     }
     return made;
+  };
+
+  /* ================= BUYING AN AIRFRAME FOR A DECK =================
+     (owner) "when aircraft carrier or navy has aircraft/helicoper space, we
+     can purchase new units and get refill."
+     A deck used to be refilled one way only, and not by the player: a ship
+     that lay within seven tiles of a naval yard for twelve seconds had EVERY
+     empty spot filled at once, at 60% of the list price and none of the fuel.
+     Measured on hormuz, e20: an Arleigh Burke alongside took both MH-60Rs at
+     t+12.0s for 1,680 credits and 0 barrels - where the same helicopter from
+     the AIR tab costs 1,484 and 26 barrels EACH and takes 16 s at full power.
+     At sea there was nothing: 0/2 after 60s, 21 tiles out, and an MH-60R
+     bought from the AIR tab while she waited went to the airbase and stayed
+     there, although her empty panel said "Build a helicopter from the AIR tab
+     and it will come aboard". A purchase beside that free path would be a
+     trap - sailing home would always be 43% cheaper and free of fuel - so the
+     free path is gone and this is the one way a deck is refilled, for the
+     player and for the commander (ai.js driveDecks) alike: the airframe's full
+     price and barrels, the AIR tab's own tech and prerequisite gate, its own
+     build time on one line for the whole fleet, and a delivery that could
+     actually happen.
+
+     What a hull may take is what it really operated. An escort's hangar
+     takes the helicopter deckAircraftFor() already puts aboard - an MH-60R,
+     a Ka-27, a Z-9 - and nothing else; a carrier takes its own air wing plus
+     the carrier types of its navy and decade the complement leaves out (the
+     stealth fighter, the AEW aircraft); a hull built as a helicopter carrier
+     (def.heloCarrier: Moskva) takes helicopters and nothing else. Never an
+     F-16 on a carrier or a Mi-24 on a frigate. The same list is what a deck
+     will RECOVER (G.findPad) and count as ramp (Player.airCapacity), so a
+     type that cannot be bought for a deck cannot squat on one either. */
+  const DECK_YARD_R = 7;       // tiles: "alongside", the reach the old refill used
+  G.deckTypesFor = function (ship) {
+    const slots = ship && ship.deckSlots ? ship.deckSlots() : 0;
+    if (!slots) return [];
+    const p = ship.owner, era = p.era || G.era;
+    /* findPad and airCapacity ask this of every deck on every call, so the
+       answer is kept on the ship: nothing it reads changes in a match */
+    const key = p.faction + "|" + era + "|" + slots;
+    if (ship._deckKey === key) return ship._deckTypes;
+    const out = [];
+    const add = (id) => { if (id && UNITS[id] && out.indexOf(id) < 0) out.push(id); };
+    for (let i = 0; i < slots; i++) add(G.deckAircraftFor(ship, i));
+    if (ship.def.carrier && out.some(id => !UNITS[id].hover))
+      for (const r of ["cfighter", "cstealth", "cstrike", "cawacs"])
+        add(deckLegal(unitFor(p.faction, r, era)));
+    ship._deckKey = key; ship._deckTypes = out;
+    return out;
+  };
+  /* What the empty spot should get back: the complement deckAircraftFor()
+     lays out, less what is aboard and on order, helicopter first - it is the
+     ship's submarine sensor and the carrier's plane guard. */
+  G.deckWants = function (ship) {
+    const slots = ship && ship.deckSlots ? ship.deckSlots() : 0;
+    if (!slots) return null;
+    const want = {}, order = [];
+    for (let i = slots - 1; i >= 0; i--) {
+      const id = G.deckAircraftFor(ship, i);
+      if (!id) continue;
+      want[id] = (want[id] || 0) + 1;
+      if (order.indexOf(id) < 0) order.push(id);
+    }
+    for (const u of ship.wing()) if (want[u.def.id]) want[u.def.id]--;
+    for (const it of (ship.deckQ || [])) if (want[it.id]) want[it.id]--;
+    for (const id of order) if (want[id] > 0) return id;
+    return null;
+  };
+  /* How far an airframe can be ferried one way off a full tank, in tiles -
+     the same 1.35 margin and 8-point approach reserve reserveFuel() keeps, so
+     a jet sent to a carrier arrives with what it would have come home on.
+     airBurn() reads only def and fuelMax, and a helicopter burns nothing. */
+  G.ferryReach = function (p, def) {
+    if (!def || def.hover) return Infinity;
+    const burn = Unit.prototype.airBurn.call({ def: def, fuelMax: 100 }) *
+                 ((FACTIONS[p.faction] || {}).fuelMul || 1);
+    if (!(burn > 0)) return Infinity;
+    return (100 - 8) / (burn * 1.35) * Math.max(0.5, def.speed);
+  };
+  /* How a replacement reaches this ship NOW. Alongside a naval yard it is
+     craned aboard. At sea it is flown out from a completed airbase - the only
+     structure in the game with a ramp, so a helicopter comes from there too -
+     and a jet only from one inside its ferry range. Otherwise it cannot be
+     delivered, and the reason is the answer. */
+  G.deckDelivery = function (ship, def) {
+    const p = ship.owner, T = CFG.TILE;
+    const yard = G.nearestBuilding(p, "navalyard", ship.x, ship.y);
+    if (yard && U.dist(ship.x, ship.y, yard.x, yard.y) <= T * DECK_YARD_R)
+      return { how: "yard", from: yard };
+    const reach = G.ferryReach(p, def);
+    let best = null, bd = Infinity, near = Infinity;
+    for (const b of p.buildings) {
+      if (b.dead || b.buildProgress < 1 || !b.def.pads) continue;
+      const d = U.dist(ship.x, ship.y, b.x, b.y) / T;
+      near = Math.min(near, d);
+      if (d <= reach && d < bd) { bd = d; best = b; }
+    }
+    if (best) return { how: "air", from: best, tiles: bd };
+    return { how: null, why: near === Infinity
+      ? "NOT ALONGSIDE A NAVAL YARD, AND NO AIRBASE TO FLY ONE OUT"
+      : "BEYOND FERRY RANGE: NEAREST AIRBASE " + Math.round(near) + " TILES, " +
+        def.name.toUpperCase() + " REACHES " + Math.floor(reach) };
+  };
+  /* The AIR tab's own gate, asked of the same Player.lockReason: the match's
+     aircraft ban, the army and the decade, the tech level and the match's
+     tech ceiling, the lab or the radar dome a type needs, the barrels.
+     Without it the deck was a side door - measured, at tech 3 with no lab and
+     no radar dome the AIR tab refused the F-35C and the E-2D and the deck
+     sold both, and the hangar's transfer then moved them ashore; a commander
+     at tech 1 was given Su-33s. Two of lockReason's clauses are about the
+     AIR tab's RAMP and are left out: the airbase prerequisite (where the
+     airframe comes from is deckDelivery's question, and a yard alongside
+     needs no airbase) and airbase hangar space (the spot is on this deck). */
+  function deckGate(p, def) {
+    const pre = def.prereq || [];
+    const d = pre.indexOf("airbase") < 0 ? def
+      : Object.assign({}, def, { prereq: pre.filter(r => r !== "airbase") });
+    const why = p.lockReason(d);
+    return why && why.indexOf("NO HANGAR SPACE") !== 0 && why !== "NO AIRBASE OR CARRIER" ? why : null;
+  }
+  /* null if this ship may order this airframe now, else the reason */
+  G.deckOrderReason = function (ship, id) {
+    if (!ship || ship.dead || !ship.deckSlots || !ship.deckSlots()) return "NO FLIGHT DECK";
+    const p = ship.owner, def = UNITS[id];
+    if (!def) return "NO SUCH AIRCRAFT";
+    if (G.deckTypesFor(ship).indexOf(id) < 0)
+      return def.name.toUpperCase() + " CANNOT OPERATE FROM " + ship.def.name.toUpperCase();
+    const lock = deckGate(p, def);
+    if (lock) return lock;
+    const n = ship.wing().length + (ship.deckQ ? ship.deckQ.length : 0);
+    if (n >= ship.deckSlots()) return "DECK FULL (" + n + "/" + ship.deckSlots() + ")";
+    const dv = G.deckDelivery(ship, def);
+    return dv.how ? null : dv.why;
+  };
+  G.orderDeckAircraft = function (ship, id) {
+    const why = G.deckOrderReason(ship, id);
+    if (why) return why;
+    const p = ship.owner;
+    (ship.deckQ || (ship.deckQ = [])).push({ id: id, paid: 0, n: (p.deckSeq = (p.deckSeq || 0) + 1) });
+    return null;
+  };
+  /* barrels drawn for an airframe that is not going to exist after all go
+     back, and off the ledger they were written to (Player.spendOil) */
+  function returnOil(p, def) {
+    const n = def.oil || 0;
+    if (!n) return;
+    p.oil += n;
+    const k = def.cat === "vehicle" ? "vehicle" : def.cat || "unit";
+    if (p.oilOut && p.oilOut[k]) p.oilOut[k] = Math.max(0, p.oilOut[k] - n);
+  }
+  /* everything paid comes back, and the barrels if they were already drawn */
+  G.cancelDeckOrder = function (ship, i) {
+    const q = ship && ship.deckQ;
+    if (!q || !q[i]) return false;
+    const it = q.splice(i, 1)[0];
+    it.gone = true;                          // off the line, if it was on it
+    ship.owner.refund(it.paid);
+    if (it.oiled && UNITS[it.id]) returnOil(ship.owner, UNITS[it.id]);
+    return true;
+  };
+  G.deliverToDeck = function (ship, id, dv) {
+    const p = ship.owner, from = dv.how === "yard" ? ship : dv.from;
+    const u = G.spawnUnitAt(p, id, from.x, from.y);
+    u.padOn = ship;
+    u.deckBought = true;               // paid for: ai.js books its barrels
+    if (dv.how === "yard") { u.parked = true; u.order = { type: "parked" }; }
+    else { u.parked = false; u.order = { type: "rtb" }; }   // findPad answers her deck
+    p.stats.built++;
+    return u;
+  };
+  /* ONE LINE FOR THE WHOLE FLEET. Each hull building its own airframe made
+     every ship a factory: measured, four destroyers alongside that ordered at
+     the same instant had four helicopters aboard at 45.7s, the time of one,
+     where the AIR tab builds one at a time. The line takes the oldest order
+     whose ship has it at the head of her queue; p.deckLine holds it, and it
+     is let go when it is finished, cancelled, or its ship is gone. */
+  function deckLineFree(p) {
+    const l = p.deckLine;
+    return !l || l.it.done || l.it.gone || l.ship.dead || !l.ship.deckQ || l.ship.deckQ[0] !== l.it;
+  }
+  function takeDeckLine(p) {
+    let best = null;
+    for (const s of p.units) {
+      if (s.dead || !s.deckQ || !s.deckQ.length || s.deckQ[0].done) continue;
+      if (!best || (s.deckQ[0].n || 0) < (best.it.n || 0)) best = { it: s.deckQ[0], ship: s };
+    }
+    p.deckLine = best;
+  }
+  G.deckLineHolds = function (p, it) { return !!p.deckLine && p.deckLine.it === it && !deckLineFree(p); };
+  /* Worked from the ship's own update (Unit.replenishDeck). Paid for as it
+     builds, as Player.updateQueues pays - a stall on an empty bank, a
+     brownout slows it - and the barrels drawn when it is finished, as
+     onProduced draws them. Unlike the AIR queue it is not scaled by the
+     airbase count and needs no airbase to run: what hands the airframe over
+     is the yard alongside or the airbase in reach, and an order is refused
+     while neither can. A finished airframe that cannot yet be delivered
+     waits for the reason to clear, and says so once. */
+  G.workDeckOrders = function (ship, dt) {
+    const q = ship.deckQ;
+    if (!q || !q.length) return;
+    const p = ship.owner, it = q[0], def = UNITS[it.id];
+    if (!def) { q.shift(); return; }
+    if (!it.done) {
+      if (deckLineFree(p)) takeDeckLine(p);
+      if (!p.deckLine || p.deckLine.it !== it) return;      // queued behind another
+      const cost = p.factionCost(def), pr = p.powerRatio();
+      const speed = pr < 1 ? Math.max(CFG.POWER_BROWNOUT_FLOOR, pr) : 1;
+      const pay = Math.min(cost * dt * speed / p.factionTime(def), cost - it.paid, p.cash);
+      if (pay > 0) { p.cash -= pay; it.paid += pay; }
+      if (it.paid < cost - 0.01) return;
+      it.done = true; it.t = 0;
+      p.deckLine = null;
+    }
+    it.t = (it.t || 0) - dt;                 // delivery is looked at once a second
+    if (it.t > 0) return;
+    it.t = 1;
+    let why = null, dv = null;
+    if (def.oil && !it.oiled) {
+      if (p.oil < def.oil) why = "AWAITING FUEL (" + def.oil + " bbl)";
+      else { p.spendOil(def.oil, "aircraft"); it.oiled = true; }
+    }
+    if (!why && ship.wing().length >= ship.deckSlots()) why = "DECK FULL, WAITING FOR A SPOT";
+    if (!why) { dv = G.deckDelivery(ship, def); if (!dv.how) why = dv.why; }
+    if (why) {
+      if (!it.why) {
+        it.whyT = G.time;
+        if (p === G.human)
+          G.alert(def.name.toUpperCase() + " FOR " + ship.def.name.toUpperCase() + " — " + why, "bad");
+      }
+      it.why = why;
+      return;
+    }
+    q.shift();
+    G.deliverToDeck(ship, it.id, dv);
+    if (p === G.human)
+      G.alert(def.name.toUpperCase() + (dv.how === "yard"
+        ? " CRANED ABOARD " + ship.def.name.toUpperCase()
+        : " FLYING OUT TO " + ship.def.name.toUpperCase()), "good");
   };
 
   /* ---------------- construction ---------------- */
@@ -1041,21 +1301,26 @@ var Game = (function () {
      back as the airframe's home ramp; without it this is a pure query, which
      is all the bingo-fuel reserve ever wanted from it. */
   G.findPad = function (u, claim) {
-    /* What a given host can offer THIS airframe. A carrier's deck takes
-       anything carrier-capable; an escort's flight deck takes a rotor and
-       nothing else - a destroyer cannot recover a fixed-wing aircraft.
-       def.helo had been sitting on twelve ships since they were written, and
-       the build tooltip had been promising "EMBARKS 2 HELICOPTERS" the whole
-       time, but the old blanket carrier-capable gate skipped every ship for a
-       helicopter without the flag - including the deck it was standing on. */
-    const rotary = !!(u && u.def.hover);
-    const deckOK = !u || u.def.carrierCapable;
-    const slotsOn = (h) => h.kind === "building"
-      ? (h.buildProgress >= 1 ? (h.def.pads || 0) : 0)
-      : ((h.def.carrier || 0) > 0 ? (deckOK ? h.def.carrier : 0)
-                                  : (rotary ? (h.def.helo || 0) : 0));
+    /* What a given host can offer THIS airframe. An airbase takes anything; a
+       deck takes the types that hull really operates (G.deckTypesFor) - an
+       escort's hangar its own helicopter, a carrier her air wing. def.helo
+       had been sitting on twelve ships since they were written, and the build
+       tooltip had been promising "EMBARKS 2 HELICOPTERS" the whole time, but
+       the old blanket carrier-capable gate skipped every ship for a helicopter
+       without the flag - including the deck it was standing on. The gate that
+       replaced it then took ANY rotor on an escort and anything carrier-capable
+       on a carrier, and a rotor is carrier-capable by construction: measured,
+       an AH-64 from the AIR tab, after one sortie with the airbase full, came
+       home to an Arleigh Burke whose hangar operates only the MH-60R (the
+       same rule in spawnUnit put three Mi-28Ns on a commander's Kuznetsov).
+       A spot with an airframe on order for it (ship.deckQ) is taken. */
+    const slotsOn = (h) => {
+      if (h.kind === "building") return h.buildProgress >= 1 ? (h.def.pads || 0) : 0;
+      const s = h.deckSlots ? h.deckSlots() : 0;
+      return s && G.deckTypesFor(h).indexOf(u.def.id) >= 0 ? s : 0;
+    };
     const usedOn = (h) => {
-      let n = 0;
+      let n = h.deckQ ? h.deckQ.length : 0;
       for (const e of u.owner.units)
         if (!e.dead && e.layer === "air" && e !== u && e.padOn === h) n++;
       return n;
@@ -2299,6 +2564,10 @@ var Game = (function () {
         const arr = e.kind === "unit" ? e.owner.units : e.owner.buildings;
         const j = arr.indexOf(e);
         if (j >= 0) arr.splice(j, 1);
+        /* a ship lost with an airframe on order for her deck: the order is
+           cancelled and refunded, as her captain could have done a second
+           earlier (G.cancelDeckOrder) - there is no deck left to deliver to */
+        if (e.deckQ && e.deckQ.length) while (e.deckQ.length) G.cancelDeckOrder(e, 0);
       }
     }
   };

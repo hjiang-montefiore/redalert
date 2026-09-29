@@ -542,15 +542,20 @@ class Player {
   airCapacity(def) {
     let n = 0;
     for (const b of this.buildings) if (!b.dead && b.buildProgress >= 1 && b.def.pads) n += b.def.pads;
-    /* decks only count toward aircraft that can actually use them */
-    if (!def || def.carrierCapable)
-      for (const u of this.units) if (!u.dead && u.def.carrier) n += u.def.carrier;
-    /* An escort's flight deck is not airbase ramp, but it is parking, and the
-       helicopters standing on it were already being counted as owned. Count
-       the space too, for rotary airframes only - mirroring deckSlots(), which
-       reads carrier first and helo only where there is no carrier. */
-    if (!def || def.hover)
-      for (const u of this.units) if (!u.dead && !u.def.carrier && u.def.helo) n += u.def.helo;
+    /* A deck counts only toward the aircraft that hull really operates
+       (G.deckTypesFor, which is also what G.findPad lets land on it and what
+       the flight-deck panel sells) - a carrier's spots toward her air wing, an
+       escort's hangar toward her own helicopter. An escort's flight deck is
+       not airbase ramp, but it is parking, and the helicopters standing on it
+       were already being counted as owned. Counted for any rotor or anything
+       carrier-capable, the space sold gunships the AIR tab then had nowhere
+       to put but a frigate. */
+    const gm = this.game;
+    for (const u of this.units) {
+      if (u.dead || !u.deckSlots) continue;
+      const s = u.deckSlots();
+      if (s && (!def || !gm || !gm.deckTypesFor || gm.deckTypesFor(u).indexOf(def.id) >= 0)) n += s;
+    }
     return n;
   }
   airOwned(def) {
@@ -563,10 +568,9 @@ class Player {
          the ship; billing it to the airbase ramp filled the hangar with
          aircraft the airbase never held and locked the AIR tab out. */
       const host = u.padOn && !u.padOn.dead ? u.padOn : null;
-      if (host && host.kind === "unit" && host.def) {
-        if (host.def.carrier) { if (def && !def.carrierCapable) continue; }
-        else if (host.def.helo) { if (def && !def.hover) continue; }
-      }
+      if (host && host.kind === "unit" && host.deckSlots && host.deckSlots() &&
+          def && this.game && this.game.deckTypesFor &&
+          this.game.deckTypesFor(host).indexOf(def.id) < 0) continue;
       n++;
     }
     return n;

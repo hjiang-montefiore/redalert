@@ -520,6 +520,69 @@ var UI = (function () {
     return sortiePick[b.id];
   }
 
+  /* ---- BUYING FOR A DECK ----
+     (owner) "when aircraft carrier or navy has aircraft/helicoper space, we
+     can purchase new units and get refill."
+     Only the types this hull really operates (G.deckTypesFor), at the price
+     and fuel the AIR tab charges, and each row says why it cannot be bought
+     if it cannot. The line under them says how the airframe will reach her -
+     craned aboard at the yard, flown out from an airbase, or not at all and
+     why - because "at sea, out of range" is otherwise a button that silently
+     does nothing. A refusal that belongs to one type (a jet beyond its ferry
+     range, a type that needs the lab) is said under that row: it used to be
+     only in the row's tooltip, under a delivery line that spoke for the
+     helicopter and read "flown out". What is on order shows its progress, or
+     QUEUED while another airframe for the fleet is on the one line (game.js
+     workDeckOrders); x cancels and refunds. */
+  function deckBuyPanel(b) {
+    if (b.kind !== "unit" || b.owner !== G.human || !G.deckTypesFor) return "";
+    const slots = b.deckSlots(), q = b.deckQ || [];
+    const free = slots - b.wing().length - q.length;
+    let h = "";
+    if (q.length) {
+      h += '<div class="hh sub">ON ORDER <i>' + q.length + "</i></div>";
+      q.forEach((it, i) => {
+        const d = UNITS[it.id];
+        const pct = Math.floor(100 * it.paid / Math.max(1, G.human.factionCost(d)));
+        const st = it.done ? (it.why ? "WAITING" : "READY")
+                 : G.deckLineHolds(G.human, it) ? "BUILD " + pct + "%" : "QUEUED";
+        h += '<div class="hrow xfer" title="' + (it.why || (d.full || d.name)) + '">' +
+             '<canvas class="hi" width="34" height="21" data-thumb="' + d.id + '"></canvas>' +
+             '<span class="hn">' + d.name + "</span>" +
+             '<span class="hs ' + (it.why ? "rearming" : "airborne") + '">' + st + "</span>" +
+             '<span class="hf"></span>' +
+             '<span class="hx go" data-deckcancel="' + i + '" title="Cancel and refund">\u2715</span></div>';
+        if (it.done && it.why) h += '<div class="hempty">' + it.why + "</div>";
+      });
+    }
+    if (free <= 0) return h;
+    const types = G.deckTypesFor(b);
+    if (!types.length) return h;
+    h += '<div class="hh sub">BUY FOR THIS DECK <i>' + free + " free</i></div>";
+    const dv = G.deckDelivery(b, UNITS[G.deckWants(b) || types[0]]);
+    for (const id of types) {
+      const d = UNITS[id], why = G.deckOrderReason(b, id);
+      h += '<div class="hrow xfer' + (why ? " off" : "") + '" title="' +
+           (why || ((d.full || d.name) + " \u00b7 $" + G.human.factionCost(d) +
+                    (d.oil ? " \u00b7 " + d.oil + " bbl" : "") +
+                    " \u00b7 " + Math.round(G.human.factionTime(d)) + "s")) + '">' +
+           '<canvas class="hi" width="34" height="21" data-thumb="' + id + '"></canvas>' +
+           '<span class="hn">' + d.name + "</span>" +
+           '<span class="hs ready">$' + G.human.factionCost(d) + "</span>" +
+           '<span class="hf">' + (d.oil ? d.oil + "b" : "") + "</span>" +
+           (why ? '<span class="hx"></span>'
+                : '<span class="hx go" data-deckbuy="' + id + '" title="Buy for this deck">+</span>') +
+           "</div>";
+      if (why && why !== dv.why) h += '<div class="hempty">' + why + "</div>";
+    }
+    h += '<div class="hempty">' + (dv.how === "yard"
+      ? "Alongside the naval yard: craned aboard when built."
+      : dv.how === "air"
+        ? "At sea: flown out from the airbase " + Math.round(dv.tiles) + " tiles away when built."
+        : "Cannot be delivered: " + dv.why + ".") + "</div>";
+    return h;
+  }
+
   function hangarPanel(b) {
     const wing = b.wing(), ramp = b.ramp();
     const parked = wing.filter(u => u.parked);
@@ -532,11 +595,13 @@ var UI = (function () {
       '<div class="hcols"><span></span><span>AIRCRAFT</span><span>STATE</span>' +
       "<span>FUEL</span><span></span></div>";
     if (!wing.length) {
+      /* "Build a helicopter from the AIR tab and it will come aboard" was not
+         true of an escort: measured, the MH-60R went to the airbase and her
+         deck stayed 0/2. The deck is bought for from here now. */
       h += '<div class="hempty">' + (b.kind === "unit"
-        ? (b.def.carrier
-            ? "Deck empty. Build carrier-capable aircraft from the AIR tab and they will come aboard."
-            : "Deck empty. Build a helicopter from the AIR tab and it will come aboard.")
-        : "No aircraft based here.<br>Build them from the AIR tab.") + "</div></div>";
+        ? "Deck empty."
+        : "No aircraft based here.<br>Build them from the AIR tab.") + "</div>" +
+        deckBuyPanel(b) + "</div>";
       return h;
     }
     for (const u of wing) {
@@ -591,17 +656,18 @@ var UI = (function () {
        that built it has since been destroyed - can be adopted here while
        there is room. An aircraft with nowhere to go home to is otherwise lost
        the moment its tanks run dry. */
-    const free = ramp - wing.length;
+    const free = ramp - wing.length - (b.deckQ ? b.deckQ.length : 0);
     if (free > 0) {
-      /* Only offer machines this ramp could actually recover: a carrier deck
-         takes anything carrier-capable, an escort's hangar takes rotorcraft
-         only, an airbase takes everything - the same three cases G.findPad
-         applies when the aircraft tries to come home. Unfiltered, the list was
-         happy to base an F-22 on a destroyer, and it never got back. */
+      /* Only offer machines this ramp could actually recover: an airbase takes
+         everything, a deck the types that hull operates (G.deckTypesFor) - the
+         same test G.findPad applies when the aircraft tries to come home.
+         Unfiltered, the list was happy to base an F-22 on a destroyer, and it
+         never got back; filtered by "a rotor", it based an AH-64 on one. A
+         spot with an airframe on order for it is not free. */
       const deckHost = b.kind === "unit";
       const elsewhere = G.human.units.filter(u =>
         !u.dead && u.layer === "air" && u.padOn !== b &&
-        (!deckHost || (u.def.carrierCapable && (b.def.carrier || u.def.hover))));
+        (!deckHost || G.deckTypesFor(b).indexOf(u.def.id) >= 0));
       if (elsewhere.length) {
         h += '<div class="hh sub">ELSEWHERE <i>' + free + " free</i></div>";
         for (const u of elsewhere.slice(0, 6)) {
@@ -619,6 +685,7 @@ var UI = (function () {
           h += '<div class="hempty">and ' + (elsewhere.length - 6) + " more</div>";
       }
     }
+    h += deckBuyPanel(b);
     if (sortieMode)
       h += '<div class="hhint">' + (sortieMode === "strike"
         ? "Click a target to strike it."
@@ -1119,6 +1186,29 @@ var UI = (function () {
                             def: UNITS[cv2.dataset.thumb] || {} }); } catch (e) {}
     });
 
+    /* buy an airframe for this deck, or cancel one on order */
+    root.querySelectorAll("[data-deckbuy]").forEach(btn => {
+      btn.addEventListener("mousedown", (ev) => {
+        ev.stopPropagation();
+        const id = btn.dataset.deckbuy;
+        const why = G.orderDeckAircraft(b, id);
+        if (why) { alert(why, "bad"); return; }
+        alert(UNITS[id].name.toUpperCase() + " ORDERED FOR " + b.def.name.toUpperCase(), "good");
+        Sfx.play("order");
+        refreshSelInfo();
+      });
+    });
+    root.querySelectorAll("[data-deckcancel]").forEach(btn => {
+      btn.addEventListener("mousedown", (ev) => {
+        ev.stopPropagation();
+        if (G.cancelDeckOrder(b, +btn.dataset.deckcancel)) {
+          alert("DECK ORDER CANCELLED \u2014 REFUNDED", "good");
+          Sfx.play("click");
+        }
+        refreshSelInfo();
+      });
+    });
+
     /* per-aircraft recall: bring this one home to THIS base */
     root.querySelectorAll("[data-recall]").forEach(btn => {
       btn.addEventListener("mousedown", (ev) => {
@@ -1141,7 +1231,7 @@ var UI = (function () {
         const id = +btn.dataset.xfer;
         const u = G.human.units.find(x => !x.dead && x.id === id);
         if (!u) return;
-        if (b.wing().length >= b.ramp()) { alert("NO ROOM ON THIS RAMP", "bad"); return; }
+        if (b.wing().length + (b.deckQ ? b.deckQ.length : 0) >= b.ramp()) { alert("NO ROOM ON THIS RAMP", "bad"); return; }
         u.padOn = b;
         if (u.parked) { u.parked = false; u.order = { type: "rtb" }; }
         else u.give({ type: "rtb" });
