@@ -37,6 +37,36 @@ var AIRFRAMES = {
   /* The same airframe in 1980s grey with the ASMP round on the centreline where the bomb used to sit. */
   fra_e80_heavybomber: {era:"e80", fac:"fra", role:"heavybomber", designation:"Dassault Mirage IVP", len:23.5, span:11.9, planform:"delta", sweep:60, taper:0.10, dihedral:0, prop:"none", engines:2, engMount:"fuselage", intake:"cheek", tail:"single", htail:"none", wingpos:"mid", fuselage:"area", canard:false, rotodome:false, canoe:false, stealth:0, camo:"seagrey"},
 
+  /* ---- the deck and strike rows eras.js moved (era_holes) ----
+     Parametric rows for air3d_era.js: data, not hand-built models. Each of
+     these airframes either changed role or now flies in decades it did not,
+     and each was drawn as the wrong aeroplane or as nothing at all. Measured
+     with render3d's modelKeyFor at b4a9943: the Super Etendard and SEM, once
+     re-roled "cstrike", had no same-role peer with a shape and fell to
+     fallbackModel()'s grey box; the Crusader borrowed the F/A-18E, and the
+     Tornado IDS the A-10. The three A-6 rows, grey boxes until now, borrow the
+     Super Etendard as their same-role peer. They are deliberately not given
+     their own row here: this builder does not fold wings, and an unfolded
+     16.2 m A-6 could not be placed on the 1980s and 1990s American decks
+     beside two fighters - measured with parked3d_check C, it was put in the
+     hangar, drawn on a fighter's spot. */
+  /* Super Etendard: a 45-degree mid wing on a slim single-engined fuselage, half-round
+     intakes on its flanks under the cockpit, one swept fin and the tailplane at its root.
+     The tailplane height and the 3 degrees of anhedral are read off drawings, not measured.
+     The 1980s Aeronavale finish was dark blue-grey. */
+  fra_e80_cfighter: {era:"e80", fac:"fra", role:"cstrike", designation:"Dassault-Breguet Super Etendard", len:14.3, span:9.6, planform:"swept", sweep:45, taper:0.35, dihedral:-3, prop:"none", engines:1, engMount:"fuselage", intake:"cheek", tail:"single", htail:"mid", wingpos:"mid", fuselage:"slim", canard:false, rotodome:false, canoe:false, stealth:0, camo:"bluegrey"},
+  /* the same airframe; the Modernise changed the radar and the cockpit, not the outline */
+  fra_e90_cfighter: {era:"e90", fac:"fra", role:"cstrike", designation:"Dassault Super Etendard Modernise", len:14.3, span:9.6, planform:"swept", sweep:45, taper:0.35, dihedral:-3, prop:"none", engines:1, engMount:"fuselage", intake:"cheek", tail:"single", htail:"mid", wingpos:"mid", fuselage:"slim", canard:false, rotodome:false, canoe:false, stealth:0, camo:"seagrey"},
+  /* Vought F-8E(FN) Crusader: a long area-ruled body with its mouth under the nose,
+     a 42-degree wing set on top of the fuselage and drooping 5 degrees, one fin and
+     the one-piece tailplane low on the tail cone. The deck fighter of 1964-99. */
+  fra_e60_cfighter: {era:"e60", fac:"fra", role:"cfighter", designation:"Vought F-8E(FN) Crusader", len:16.6, span:10.9, planform:"swept", sweep:42, taper:0.3, dihedral:-5, prop:"none", engines:1, engMount:"fuselage", intake:"chin", tail:"single", htail:"low", wingpos:"high", fuselage:"area", canard:false, rotodome:false, canoe:false, stealth:0, camo:"bluegrey"},
+  /* Panavia Tornado IDS: shoulder swing wings out of a short fixed glove, drawn spread
+     at 25 degrees as it sits on a ramp; two engines side by side behind square cheek
+     intakes; a very tall single fin and all-moving tailerons. The Luftwaffe's
+     green-and-grey finish of the 1980s. */
+  deu_e90_cas: {era:"e80", fac:"deu", role:"cas", designation:"Panavia Tornado IDS", len:16.7, span:13.9, planform:"swing", sweep:25, taper:0.35, dihedral:0, prop:"none", engines:2, engMount:"fuselage", intake:"cheek", tail:"single", htail:"slab", wingpos:"shoulder", fuselage:"wide", canard:false, rotodome:false, canoe:false, stealth:0, camo:"olive"},
+
   /* Hercules: high wing, four big turboprops, a deep boxy hold and a ramp. */
   airlift_n: {era:"e20", fac:"nato", role:"airlift", designation:"C-130J Super Hercules", len:34.4, span:40.4, planform:"straight", sweep:3, taper:0.45, dihedral:2, prop:"turboprop", engines:4, engMount:"wing", intake:"none", tail:"single", htail:"low", wingpos:"high", fuselage:"airliner", canard:false, rotodome:false, canoe:false, stealth:0, camo:"twotone"},
   nato_e50_airlift: {era:"e50", fac:"nato", role:"airlift", designation:"C-130A Hercules", len:29.8, span:40.4, planform:"straight", sweep:3, taper:0.45, dihedral:2, prop:"turboprop", engines:4, engMount:"wing", intake:"none", tail:"single", htail:"low", wingpos:"high", fuselage:"airliner", canard:false, rotodome:false, canoe:false, stealth:0, camo:"silver"},

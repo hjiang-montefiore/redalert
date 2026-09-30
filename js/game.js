@@ -643,7 +643,18 @@ var Game = (function () {
       /* Ask per spot rather than once for the whole deck, and ask for the spot
          that is actually empty: lose the helicopter and the next machine craned
          aboard is a helicopter, lose a fighter and it is a fighter. */
-      const id = G.deckAircraftFor(ship, ship.wing().some(u => u.def.hover) ? 0 : slots - 1);
+      /* THE SPOT IS WHAT G.deckWants SAYS IS MISSING: the plan deckAircraftFor()
+         lays out, less what is aboard, helicopter first. This used to ask the
+         plan's spot 0 for every fixed-wing spot, so the strike aircraft the
+         plan puts in one spot of three never went to sea. Measured at b4a9943
+         by spawning every carrier in the game and reading her deck back: 3 of
+         25 were delivered differently from their plan - the American decks of
+         the 1960s to the 1990s, each as three fighters and a helicopter with no
+         A-6, while [N7] in _navfire, which reads the plan, found the Intruder
+         on it. deckWants is the question driveDecks (ai.js) already asks to
+         refill a lost spot, so delivery and refill now agree; where it has no
+         answer, the old question is asked. */
+      const id = G.deckWants(ship) || G.deckAircraftFor(ship, ship.wing().some(u => u.def.hover) ? 0 : slots - 1);
       if (!id || !UNITS[id]) break;
       const h = G.spawnUnitAt(ship.owner, id, ship.x, ship.y);
       if (!h) break;

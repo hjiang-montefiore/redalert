@@ -8360,6 +8360,178 @@ try{
   })();
   }
 
+  /* ====== [78] A SYSTEM IS FIELDED IN EVERY DECADE IT SERVED ======
+     (owner) "It is fine if not all four party can have the similar weapon. We
+     should respect the reality." Respecting it cuts both ways: a nation that
+     never had a system gets nothing, and a system a nation DID have is not
+     taken away in the middle of its service life. Seven were, each by an era
+     window that stopped short of the real dates, and a window is the whole
+     of what a commander is handed - unitFor() is the AI's roster and the
+     AIR/NAVY/VEHICLE card list is ui.js's fac + cat + inEra filter.
+     Measured at b4a9943: unitFor null for nato cruiser e00, nato
+     stealthbomber e00, pact missileboat e90 and pact radarv e90; the A-10A,
+     the Crusader and the German Tornado IDS missing from the 1991, 1985 and
+     1985 sidebars.
+     A deck is checked on a DELIVERED hull, not only on its plan. The plan
+     (G.deckAircraftFor, per spot) is what [N7] in _navfire reads, and it
+     had an A-6 on every American deck of the 1960s-90s; the ship G.spawnUnit
+     delivered carried three fighters and a helicopter, because
+     G.embarkComplement asked the plan's spot 0 for every fixed-wing spot.
+     Of the 25 carriers in the game, 3 went to sea differently from their plan.
+     Everything is put back. The hulls and aircraft made here are swept, and
+     the human's army and decade, lent for the decks, are restored. The spawns
+     draw on a stand-in for Game.rng, so the shared stream is not advanced. */
+  if (inHalf(1)) {
+  log("\n[78] A SYSTEM IS FIELDED IN EVERY DECADE IT SERVED, AND A REAL HOLE STAYS EMPTY");
+  (function(){
+    var rng0 = Game.rng, fac0 = P.faction, era0 = P.era, stats0 = JSON.stringify(P.stats);
+    var alive = function(){ return Game.entities.filter(function(e){ return !e.dead; }).length; };
+    var live0 = alive(), draws = 0, made = [];
+    function card(fac, era, id){ var d = UNITS[id];
+      return !!d && (d.fac === fac || d.fac === "both") && inEra(d, era); }
+    function nm(id){ return id && UNITS[id] ? id + " (" + UNITS[id].name + ")" : String(id); }
+    function tally(ids){ var c = {}; ids.forEach(function(id){ c[id] = (c[id] || 0) + 1; }); return c; }
+    function sameMix(a, b){ var A = tally(a), B = tally(b), k;
+      for (k in A) if (A[k] !== B[k]) return false;
+      for (k in B) if (A[k] !== B[k]) return false;
+      return true; }
+    function names(ids){ return ids.map(function(id){ return UNITS[id] ? UNITS[id].name : id; }).join(", "); }
+    function ground(id){ var u = UNITS[id];
+      return !!u && (u.weapons || []).some(function(k){ var w = WEAPONS[k]; return w && (!w.tgt || w.tgt.ground); }); }
+
+    /* [fac, role, era, the def that served, why, does it now answer unitFor()] */
+    var SERVED = [
+      ["nato","cruiser","e00","nato_e90_cruiser","VLS Ticonderoga: none decommissioned before 2022", true],
+      ["nato","stealthbomber","e00","nato_e90_stealthbomber","B-2A: 1997 to the present", true],
+      ["fra","cfighter","e80","fra_e60_cfighter","F-8E(FN) Crusader: Clemenceau and Foch to 1999", true],
+      ["fra","cfighter","e90","fra_e60_cfighter","F-8P Crusader: retired December 1999", true],
+      ["pact","missileboat","e90","pact_e80_missileboat","Project 1241 Molniya: the 1990s missile craft", true],
+      ["pact","radarv","e90","pact_e00_radarv","1L219 Zoopark-1: in service at the turn of the 1990s", true],
+      /* a SECOND airframe in a band another already holds: a card in the
+         sidebar, and unitFor()'s answer is left exactly as it was */
+      ["nato","cas","e90","nato_e80_cas","A-10A: Desert Storm 1991, Kosovo 1999", "nato_e90_cas"],
+      ["deu","cas","e80","deu_e90_cas","Tornado IDS: the strike wings, 1982-83", "deu_e80_cas"]];
+    SERVED.forEach(function(s){
+      var got = unitFor(s[0], s[1], s[2]);
+      var ok = card(s[0], s[2], s[3]) &&
+               (s[5] === true ? got === s[3] : got === s[5]);
+      chk(s[0] + " " + s[2] + " " + s[1] + " fields " + UNITS[s[3]].name + " - " + s[4], ok,
+          "card " + card(s[0], s[2], s[3]) + ", unitFor " + nm(got));
+    });
+    /* the tie in the German e80 band is broken by ROLES order, which is
+       insertion order - pinned here so a reordered file fails loudly */
+    var cas = ROLES.cas || [];
+    chk("the Alpha Jet is still written before the Tornado, so unitFor's e80 answer is unchanged",
+        cas.indexOf("deu_e80_cas") >= 0 && cas.indexOf("deu_e80_cas") < cas.indexOf("deu_e90_cas"),
+        "ROLES.cas " + cas.indexOf("deu_e80_cas") + " < " + cas.indexOf("deu_e90_cas"));
+    /* Two rows opened a decade AFTER their own service date - the Zoopark-1
+       dated 1993 but first fielded in the 2000s, the Tornado IDS dated 1981
+       but first fielded in the 1990s. (Rows that carry a CLASS date, such as
+       the VLS Ticonderoga's 1983, sit after an earlier row of the same class
+       and are not what this is about.) */
+    var BAND = function(y){ return y < 1960 ? "e50" : y < 1980 ? "e60" : y < 1990 ? "e80" :
+                                   y < 2000 ? "e90" : y < 2020 ? "e00" : "e20"; };
+    var late = [];
+    ["pact_e00_radarv","deu_e90_cas"].forEach(function(id){
+      var d = UNITS[id], y = parseInt(d.service, 10);
+      if (eraIndex(d.from) !== eraIndex(BAND(y))) late.push(id + " service " + y + " from " + d.from);
+    });
+    chk("and the two that opened after their own service date now open in it", late.length === 0,
+        late.join("; ") || "Zoopark-1 1993 from e90, Tornado IDS 1981 from e80");
+    /* the field manual prints the same window */
+    if (typeof Gallery !== "undefined" && Gallery.recordFor) {
+      var sp = ["nato_e80_cas","fra_e60_cfighter","pact_e00_radarv","deu_e90_cas"].map(function(id){
+        var r = Gallery.recordFor(id, "unit"); return id + ": " + (r ? r.era : "?"); });
+      chk("and the field manual prints the new windows",
+          sp.join("|") === "nato_e80_cas: 1980s to 1990s|fra_e60_cfighter: 1960s-70s to 1990s|" +
+                           "pact_e00_radarv: 1990s to 2000s-10s|deu_e90_cas: 1980s to 1990s", sp.join("; "));
+    }
+    /* A 1990s radar is contested as one. game.js genContest() dates the set by
+       radarGen || from, and the Zoopark-1 has no radarGen, so opening it in
+       its own decade also dates its electronics there: in a 2000s-10s match an
+       e00 jammer now gets 1.7x through to it where it got 1.0x, and an e90
+       jammer 1.0x where it got 0.55x. Pinned so the change is not silent. */
+    var zp = UNITS.pact_e00_radarv, gc = Game.genContest;
+    var g00 = gc ? gc(zp, { from: "e00" }) : NaN, g90 = gc ? gc(zp, { from: "e90" }) : NaN;
+    chk("the Zoopark-1 is jammed as the 1990s set it is: 1.7x from a 2000s jammer, 1.0x from a 1990s one",
+        Math.abs(g00 - 1.7) < 1e-9 && g90 === 1,
+        "x" + (+g00).toFixed(2) + " and x" + (+g90).toFixed(2) + " (b4a9943: x1.00 and x0.55)");
+
+    /* ---- the decks, as delivered ----
+       Every carrier in the game is spawned in her own army and decade, given
+       her complement the way G.spawnUnit gives it, and read back. */
+    var seaT = tile(P, "sea", 6), CV = [], wings = {};
+    for (var k in UNITS) { var d = UNITS[k];
+      if (d.cat === "naval" && d.carrier > 0 && FACTIONS[d.fac]) CV.push(k); }
+    CV.sort();
+    Game.rng = function(){ draws++; return 0.5; };
+    try {
+      CV.forEach(function(id){
+        var d = UNITS[id];
+        P.faction = d.fac; P.era = d.from || "e20";
+        var cv = seaT && Game.spawnUnitAt(P, id, seaT.x * 32 + 16, seaT.y * 32 + 16);
+        if (!cv) return;
+        made.push(cv);
+        Game.embarkComplement(cv);
+        var wing = cv.wing(), plan = [];
+        wing.forEach(function(u){ made.push(u); });
+        for (var i = 0; i < cv.deckSlots(); i++) { var a = Game.deckAircraftFor(cv, i); if (a) plan.push(a); }
+        wings[id] = { wing: wing.map(function(u){ return u.def.id; }), plan: plan,
+                      types: Game.deckTypesFor(cv).slice() };
+      });
+    } finally {
+      Game.rng = rng0; P.faction = fac0; P.era = era0;
+      made.forEach(function(u){ u.dead = true; });
+      Game.sweepDead();
+    }
+    var off = CV.filter(function(id){ return !wings[id] || !sameMix(wings[id].wing, wings[id].plan); });
+    chk("every carrier in the game is delivered with the complement her deck plan lays out",
+        CV.length > 0 && off.length === 0,
+        off.length ? off.map(function(id){ return id + " [" + (wings[id] ? names(wings[id].wing) : "not spawned") +
+                                                  "] planned [" + (wings[id] ? names(wings[id].plan) : "") + "]"; }).join("; ")
+                   : CV.length + " carriers (b4a9943: 3 of 25 were not)");
+    /* the French deck of 1978-99: the Crusader fighter, the Super Etendard
+       strike aircraft and a helicopter, as Clemenceau and Foch really sailed */
+    [["e80","fra_e80_carrier","fra_e80_cfighter"],["e90","fra_e90_carrier","fra_e90_cfighter"]].forEach(function(q){
+      var w = wings[q[1]], helo = unitFor("fra", "aswhelo", q[0]), c = tally(w ? w.wing : []);
+      chk("a French " + q[0] + " carrier is delivered with a Crusader, a " + UNITS[q[2]].name + " and a helicopter",
+          !!w && w.wing.length === 3 && c.fra_e60_cfighter === 1 && c[q[2]] === 1 && !!helo && c[helo] === 1 &&
+          w.types.indexOf("fra_e60_cfighter") >= 0 && w.types.indexOf(q[2]) >= 0,
+          w ? "[" + names(w.wing) + "], takes [" + w.types.join(", ") + "]" : "not spawned");
+    });
+    /* and the American deck of 1965-99 gets the Intruder its plan always had */
+    var us = ["nato_e60_carrier","nato_e80_carrier","nato_e90_carrier"].map(function(id){
+      var w = wings[id], e = UNITS[id].from, c = tally(w ? w.wing : []);
+      return { id: id, ok: !!w && c["nato_" + e + "_cstrike"] === 1 && c["nato_" + e + "_cfighter"] === w.wing.length - 2,
+               txt: id + " [" + (w ? names(w.wing) : "-") + "]" }; });
+    chk("an American carrier of the 1960s-90s is delivered with an A-6 among her fighters",
+        us.every(function(r){ return r.ok; }), us.map(function(r){ return r.txt; }).join("; "));
+    var rm = wings.fra_e00_carrier;
+    chk("and the Rafale M's deck in the 2000s is untouched", !!rm && tally(rm.wing).fra_e00_cfighter === 2,
+        rm ? names(rm.wing) : "not spawned");
+    var bad = ["fra_e80_cfighter","fra_e90_cfighter"].filter(function(id){ var u = UNITS[id];
+      return !(u.role === "cstrike" && ground(id) && u.ammo === 5 && u.carrierCapable); });
+    chk("the Super Etendard and the SEM are the strike aircraft: both still hit the beach and keep the 5-pass sortie",
+        bad.length === 0, ["fra_e80_cfighter","fra_e90_cfighter"].map(function(id){ var u = UNITS[id];
+          return u.name + " " + u.role + ", ground " + ground(id) + ", ammo " + u.ammo; }).join("; "));
+
+    /* ---- the real holes stay holes ---- */
+    var HOLE = [["nato","missileboat","e00","no US Navy missile craft after the PHMs went in 1993"],
+                ["nato","heavy","e80",""],["nato","heavy","e90",""],["nato","heavy","e00",""],
+                ["pact","heavy","e80",""],["pact","heavy","e90",""],["pact","heavy","e00",""]];
+    var filled = HOLE.filter(function(h){ return !!unitFor(h[0], h[1], h[2]); })
+                     .map(function(h){ return h[0] + "/" + h[1] + "/" + h[2] + " -> " + unitFor(h[0], h[1], h[2]); });
+    chk("and the real holes stay empty: no US missile boat after 1993, no US or Soviet heavy tank e80-e00",
+        filled.length === 0, filled.join("; ") || HOLE.length + " cells empty");
+    var left = made.filter(function(u){ return Game.entities.indexOf(u) >= 0 || P.units.indexOf(u) >= 0; });
+    chk("the shared match is as it was: Game.rng put back, its stream not drawn, nothing left spawned, the human's army and decade restored",
+        Game.rng === rng0 && draws > 0 && left.length === 0 && alive() === live0 &&
+        P.faction === fac0 && P.era === era0 && JSON.stringify(P.stats) === stats0,
+        made.length + " made and swept, " + draws + " draws went to the stand-in, live entities " + live0 + " -> " + alive() +
+        ", human " + P.faction + " " + P.era);
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

@@ -920,14 +920,26 @@ var Render3D = (function () {
   function freshOcc(D) {
     return { lo: new Float32Array(D.nx * D.nz).fill(Infinity), hi: new Float32Array(D.nx * D.nz).fill(-Infinity) };
   }
-  /* A ship's spots, once per model and deck size, laid out for the
-     complement the game embarks (G.deckAircraftFor), the largest first. On a
-     carrier a machine that cannot be placed cleanly (SHARE) is drawn on the
-     spot of one of its own kind, as on an escort: it is in the hangar. */
+  /* A ship's spots, once per model, deck size and complement, laid out for
+     the complement the game embarks (G.deckAircraftFor), the largest first. On
+     a carrier a machine that cannot be placed cleanly (SHARE) is drawn on the
+     spot of one of its own kind, as on an escort: it is in the hangar.
+     THE COMPLEMENT IS PART OF THE KEY, because a model is not a ship: a hull
+     with no model of its own draws a same-role peer's (modelKeyFor), and
+     thirteen carriers draw carrier_n's - every British and French one and the
+     Soviet Kiev. Keyed on the model and the deck size alone, the first of those
+     sharing a template to take an aircraft aboard laid the deck out for all of
+     them, and the rest were fitted onto spots made for another navy's
+     aeroplanes. Measured with tools/jsc/parked3d_check.js C once the French
+     1980s deck became Crusader, Super Etendard and Lynx: the Kiev's Ka-27 and
+     Yak-38 overlapped by 3.9 m2 on a layout made for Clemenceau. The plan is
+     asked once per aircraft coming aboard, not per frame. */
   function deckLayout(S, stpl) {
     const n = Math.max(1, S.deckSlots ? S.deckSlots() : 1);
-    const kept = stpl._deck || (stpl._deck = []);
-    if (kept[n]) return kept[n];
+    let key = n + (S.def.carrier ? "c" : "e") + (S.def.heloCarrier ? "h" : "") + ":";
+    for (let i = 0; i < n; i++) key += (G.deckAircraftFor ? G.deckAircraftFor(S, i) : "") + ",";
+    const kept = stpl._deck || (stpl._deck = {});
+    if (kept[key]) return kept[key];
     const D = deckOf(stpl), escort = !S.def.carrier, rotor = escort || !!S.def.heloCarrier;
     const era = S.owner.era || (G.era || "e20"), tpls = [], plans = [], hover = [];
     for (let i = 0; i < n; i++) {
@@ -951,7 +963,7 @@ var Render3D = (function () {
       for (const j of order) if (spots[j] && hover[j] === hover[i]) { spots[i] = spots[j]; break; }
       if (!spots[i]) spots[i] = first || { x: D.x0 + D.nx * PARK.CELL * 0.1, z: 0, yaw: 0, L: D.L0, y: D.L0, cost: Infinity };
     }
-    return (kept[n] = { D, n, tpls, plans, hover, spots, escort, rotor, alt: new Array(n) });
+    return (kept[key] = { D, n, tpls, plans, hover, spots, escort, rotor, alt: new Array(n) });
   }
   /* a type the layout was not made for - the stealth fighter or the AEW
      aircraft bought onto a spare spot - gets its own place, clear of what
