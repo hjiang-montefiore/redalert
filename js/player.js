@@ -193,7 +193,9 @@ class Player {
        only in the sidebar because the AI reaches the queue through
        enqueue() -> lockReason() and never through the menu. */
     if (def.fac !== undefined && def.fac !== "both" && def.fac !== this.faction)
-      return "NOT IN SERVICE WITH THIS ARMY";
+      /* a stand-in card (ui.js itemsForTab, rules.js STRUCT_ABSENT) carries
+         the reason this army never had the thing */
+      return def.absent || "NOT IN SERVICE WITH THIS ARMY";
     /* not yet invented, or long since retired.
        Structures are exempt from the era window as a class, and have to be:
        rules.js stamps from:"e50" on every one of them, so an era test against

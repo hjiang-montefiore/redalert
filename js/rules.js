@@ -76,6 +76,29 @@ var WEAPONS = {
      and it misses. That is the honest way to stat an unverified system. */
   sam_pongae: { name:"Pongae-5", dmg:200, warhead:"flak", range:12.6, reload:9.0, burst:2, burstDelay:0.8,
                 acc:0.74, proj:"missile", speed:600, aoe:1.1, abm:0.30, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* V-750, the S-75 Dvina's round (SA-2 Guideline). Two stages, 2.3 t, a
+     190 kg warhead and radio command from the ground: big, not agile, and the
+     easiest round in the class to shoot down. The Soviet Union delivered
+     forty-five S-75 batteries to North Korea between 1962 and 1971 (SIPRI).
+     Reach is placed on a log scale between the two Soviet-pattern rounds that
+     bound it at runtime - the 2S6 Tunguska's 9M311 (8 km, 9.4 tiles) and the
+     2K11 Krug (50 km, 10.6): 9.4 + 0.655 ln(km / 8) gives 10.4 for 34 km,
+     43 on the Volkhov. These are the Soviet original's figures, not an export
+     discount: what makes the North Korean battery worse is generations.js's
+     guided-weapons curve for its army, as for every round the KPA fires. */
+  sam_s75:    { name:"V-750 (S-75) command-guided SAM", dmg:185, warhead:"flak", range:10.4, reload:10.0, burst:1,
+                acc:0.55, proj:"missile", speed:540, aoe:1.1, profile:"pop", intercept:0.95,
+                tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* S-200 (SA-5 Gammon). One enormous four-booster round on a single fixed
+     rail, built to reach bombers, tankers and AWACS at 250 km, and clumsy
+     against a manoeuvring fighter. Above 75 km the same kind of log scale
+     runs from the S-300PS (75 km, 12.5 tiles) to the S-400's 40N6 (400 km,
+     13.6): 12.5 + 0.657 ln(km / 75) gives 13.3 for 250 km - the longest reach
+     in North Korean service and still inside the static SAM Site's 14.0. No
+     abm: it was never built for a ballistic body. */
+  sam_s200:   { name:"S-200 Vega (5V28)", dmg:230, warhead:"flak", range:13.3, reload:12.0, burst:1,
+                acc:0.66, proj:"missile", speed:620, aoe:1.4, profile:"pop", intercept:0.85,
+                tgt:{ground:0,air:1,sea:0,sub:0} },
 
   /* ---------- naval ---------- */
   navgun_57:  { name:"57mm naval gun", dmg:38, warhead:"he", range:7.2, reload:1.5, burst:3, burstDelay:0.22,
@@ -829,7 +852,35 @@ Object.assign(UNITS, {
   nato_e00_sam: {"fac":"nato","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot PAC-3","full":"MIM-104E Patriot PAC-3","cost":2650,"oil":38,"time":33,"hp":600,"armor":"light","speed":1.10,"turn":1.1,"sight":13.2,"r":16,"mass":36,"weapons":["sam_area3"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2001","confidence":"high","desc":"Sixteen hit-to-kill rounds per launcher, no warhead worth the name, and the first Western system built to hit a ballistic missile rather than to hope.","turret":true,"tturn":0.6,"deploy":true,"deploySec":5.5,"radar":13,"radarQ":20,"rounds":12},
   pact_e00_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"S-300PMU-2","full":"S-300PMU-2 Favorit","cost":2600,"oil":38,"time":32,"hp":640,"armor":"light","speed":1.25,"turn":1.2,"sight":13.2,"r":16,"mass":42,"weapons":["sam_area3"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2001","confidence":"high","desc":"The last of the S-300 line before the S-400 took the name and the money. Same launcher, longer round, and by now a genuine anti-ballistic capability.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.0,"radar":13,"radarQ":18,"rounds":4},
   pla_e00_sam: {"fac":"pla","role":"sam","cat":"vehicle","layer":"ground","name":"HQ-9","full":"HQ-9 on Taian TAS-5380","cost":2500,"oil":36,"time":31,"hp":630,"armor":"light","speed":1.25,"turn":1.2,"sight":13.2,"r":16,"mass":38,"weapons":["sam_area3"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2003","confidence":"medium","desc":"Chinese air defence's first modern mobile battery. Laid out like the S-300 it followed; the planar-array radar is not. HQ-16 (2011) and HQ-22 (2016) fill in below it.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.5,"radar":13,"radarQ":19,"rounds":4},
-  roc_e00_sam: {"fac":"roc","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot GEM+","full":"MIM-104D PAC-2 GEM+ (MADS)","cost":2900,"oil":36,"time":34,"hp":570,"armor":"light","speed":1.05,"turn":1.0,"sight":12.1,"r":16,"mass":34,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"1998","confidence":"high","desc":"Three fire units bought as the Modified Air Defense System and delivered from 1997. Taiwan's first mobile area SAM of any kind, and a purchase rather than a capability - Sky Bow I and II are hillside silos that cannot move.","turret":true,"tturn":0.5,"deploy":true,"deploySec":6.0,"radar":12,"radarQ":18,"rounds":4},
+  roc_e00_sam: {"fac":"roc","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot GEM+","full":"MIM-104D PAC-2 GEM+ (MADS)","cost":2900,"oil":36,"time":34,"hp":570,"armor":"light","speed":1.05,"turn":1.0,"sight":12.1,"r":16,"mass":34,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e90","to":"e00","service":"1998","confidence":"high","desc":"Three fire units bought as the Modified Air Defense System after the 1996 missile firings and delivered from 1997. Taiwan's first SAM with any answer to a ballistic missile, and a purchase rather than a capability - Sky Bow I and II are hillside silos that cannot move.","turret":true,"tturn":0.5,"deploy":true,"deploySec":6.0,"radar":12,"radarQ":18,"rounds":4},
+  /* ---- five batteries that had been written as infantry teams ----
+     (owner, via the approved roadmap) "Strategic SAM systems are infantry 'aa'
+     teams that walk on foot for 140-380 credits". Measured at b62fbf6: 13
+     infantry rows carried an S-75, S-200, HQ-2, S-300PMU, HQ-9, HAWK,
+     Patriot or Pongae-5 name at 140-380 credits and infantry pace, while the
+     KPA had no 'sam' row before e20 and Taiwan none before e00 (its 1990s
+     Patriot was one of the teams: roc_e00_sam above now opens in e90).
+     These are the batteries, one launcher to a card as everywhere else.
+     - The Taiwanese HAWKs cost what the German HAWK rows cost, being the
+       same American battery, but they are towed and emplaced: 8 and 7
+       seconds to set up at a towed pace of 1.0, where the German rows take
+       the 1.6 s default at 1.35 and 1.10 - a gap left for the owner.
+     - The S-75 is the Soviet export battery on the Soviet figures: one round
+       on its rail, a pace of 0.70, 11 seconds to emplace, $1650.
+     - The S-200 is a site - 0.35 like the Bloodhound, 16 seconds - with one
+       round on its single rail. Priced for its reach at $1950: $300 over the
+       S-75 and under an Improved HAWK's three rounds. Measured under jsc, a
+       hovering gunship took 253 damage from it in 60 s and 1754 from a
+       Patriot's four rounds; it was first priced at $2300, which one round
+       could not justify.
+     - The S-75 runs e60 to e00 and the S-200 e80 to e00 on purpose: no new
+       area SAM entered KPA service in the 1990s, and the Pongae-5 of about
+       2017 arrives only at the end of the 2000s-10s. */
+  roc_e60_sam: {"fac":"roc","role":"sam","cat":"vehicle","layer":"ground","name":"HAWK","full":"MIM-23 HAWK battery, M192 towed launcher","cost":1900,"oil":26,"time":24,"hp":540,"armor":"light","speed":1.0,"turn":1.1,"sight":11.0,"r":15,"mass":18,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1960s","confidence":"medium","desc":"Three rounds on a towed launcher: the same American battery the Bundeswehr fielded, towed behind a truck and emplaced before it can fire. The US Army brought Nike-Hercules to the island in the 1958 Strait crisis; Taiwan's own first HAWK batteries followed in the 1960s, beside Nike sites that could not move at all, and they are still in service sixty years on.","turret":true,"tturn":0.7,"radar":9,"radarQ":10,"deploy":true,"deploySec":8.0,"rounds":3},
+  roc_e80_sam: {"fac":"roc","role":"sam","cat":"vehicle","layer":"ground","name":"Improved HAWK","full":"MIM-23B Improved HAWK battery","cost":2200,"oil":30,"time":28,"hp":570,"armor":"light","speed":1.0,"turn":1.1,"sight":12.2,"r":16,"mass":30,"weapons":["sam_area1"],"prereq":["factory","radar","lab"],"tech":3,"from":"e80","to":"e90","service":"1980s","confidence":"medium","desc":"The backbone of Taiwan's air defence for thirty years and still in service in the 2020s. Through the 1990s it stands beside the Sky Bow I batteries dug into the hills, which cannot move, and from 1997 beside the first Patriot fire units.","turret":true,"tturn":0.6,"radar":11,"radarQ":13,"deploy":true,"deploySec":7.0,"rounds":3},
+  kpa_e60_sam: {"fac":"kpa","role":"sam","cat":"vehicle","layer":"ground","name":"S-75 Dvina","full":"S-75 Dvina (SA-2), SM-63 launcher and Fan Song radar","cost":1650,"oil":22,"time":24,"hp":470,"armor":"light","speed":0.7,"turn":0.9,"sight":9.6,"r":16,"mass":12,"weapons":["sam_s75"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e00","service":"1962","confidence":"medium","desc":"Forty-five batteries came from the Soviet Union between 1962 and 1971, the most consequential air-defence purchase in KPA history and still the numerical backbone half a century later. One two-stage round on a towed rail, command-guided from a big, loud Fan Song radar that has to be dug in before anything can fire - hours to site and hours to move - and anyone with a jammer and an anti-radiation missile can find it. Density is its only real defence.","turret":true,"tturn":0.5,"deploy":true,"deploySec":11.0,"radar":10.5,"radarQ":10,"rounds":1},
+  kpa_e80_sam: {"fac":"kpa","role":"sam","cat":"vehicle","layer":"ground","name":"S-200 Vega","full":"S-200 Vega (SA-5 Gammon), 5P72 launcher and Square Pair radar","cost":1950,"oil":28,"time":28,"hp":520,"armor":"light","speed":0.35,"turn":0.6,"sight":12.1,"r":16,"mass":16,"weapons":["sam_s200"],"prereq":["factory","radar","lab"],"tech":3,"from":"e80","to":"e00","service":"1987","confidence":"medium","desc":"Delivered at the end of 1987: the longest-reaching SAM the KPA has ever fielded and a real threat to tankers and AWACS that stray close. Enormous, fixed-site, one round on a single rail, and tied to a Square Pair radar that cannot hide: treat the mobility figure as fiction, as with the Bloodhound. Against a fighter with a jammer and a HARM it is a target, not a threat.","turret":true,"tturn":0.4,"deploy":true,"deploySec":16.0,"radar":13,"radarQ":10,"rounds":1},
+  kpa_e00_sam: {"fac":"kpa","role":"sam","cat":"vehicle","layer":"ground","name":"Pongae-5","full":"Pongae-5 (KN-06) area SAM","cost":2200,"oil":30,"time":30,"hp":560,"armor":"light","speed":1.15,"turn":1.1,"sight":12.2,"r":16,"mass":36,"weapons":["sam_pongae"],"prereq":["factory","radar","lab"],"tech":3,"from":"e00","to":"e00","service":"2017","confidence":"low","desc":"Paraded in 2010, fired from 2011 and judged operational around 2017, so it arrives only at the very end of this period and in small numbers - the S-75 and S-200 batteries are still the network. Laid out like an S-300; its radar, its reliability and its numbers are all unverified, so it engages and mostly misses.","turret":true,"tturn":0.7,"deploy":true,"deploySec":6.0,"radar":11,"radarQ":9,"rounds":4},
   nato_e50_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"MGM-5 Corporal","full":"MGM-5 Corporal guided missile","cost":2600,"oil":46,"time":36,"hp":440,"armor":"light","speed":0.85,"turn":0.8,"sight":5.0,"r":16,"mass":12,"weapons":["srbm_early"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1955","confidence":"high","desc":"A slim white finned rocket on a towed erector with a convoy of vans behind it. Liquid-fuelled, radio-commanded, and a battalion of two hundred and fifty men to fire one round.","turret":false,"deploy":true,"deploySec":9.0,"rounds":1},
   pact_e50_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"R-11 Scud-A","full":"R-11 (8K11) on the 8U218 erector","cost":2500,"oil":44,"time":35,"hp":520,"armor":"light","speed":1.00,"turn":0.9,"sight":5.0,"r":16,"mass":40,"weapons":["srbm_early"],"prereq":["factory","lab"],"tech":3,"from":"e50","to":"e50","service":"1957","confidence":"high","desc":"One fat missile on an erector welded to a wartime heavy assault-gun hull. Crude, and the ancestor of every launcher in this role.","turret":false,"deploy":true,"deploySec":8.0,"rounds":1},
   nato_e60_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"Pershing 1a","full":"MGM-31A Pershing 1a, M790 erector-launcher","cost":2900,"oil":50,"time":37,"hp":500,"armor":"light","speed":1.15,"turn":1.0,"sight":5.0,"r":17,"mass":20,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e60","to":"e60","service":"1969","confidence":"high","desc":"Solid-fuelled, and the wheeled erector cut the reaction time hard against the tracked launcher it replaced. The divisional weapon alongside it was MGM-52 Lance.","turret":false,"deploy":true,"deploySec":6.0,"rounds":1},
@@ -1493,12 +1544,109 @@ Object.assign(BUILDINGS, {
     superweapon: { key:"conv", label:"BALLISTIC MISSILE", charge:240, dmg:950, aoe:5.0,
                    warhead:"he", flight:7, alert:"MISSILE LAUNCH DETECTED" },
     desc:"Hardened silo holding a conventional ballistic missile. Charges over four minutes, then flattens a base block anywhere on the map. Needs steady power." },
-  nukesilo: { name:"Strategic Silo", cat:"defense", cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
+  /* ---- WHO HAD ONE, AND WHEN ----
+     (owner, via the approved roadmap) "The Strategic Silo has no fac or
+     srole, so every faction can build a nuclear ICBM silo in every era,
+     including ROC, Germany, the UK and 1950s KPA." Measured at b62fbf6: the
+     card stood on all 48 faction/era sidebars and the only lock on any of
+     them was the research lab. It is now a structure family like the arrays
+     above - `fac`, srole "nuke" and a real service window, one row per army
+     that really had a land-based strategic missile:
+       US      e50 on   Atlas D on alert 31 October 1959; Titan, Minuteman 1962
+       USSR    e50 on   R-5M 1956; R-7 and the Strategic Rocket Forces, Dec 1959
+       UK      e50-e60  sixty Thor, RAF crews, US warheads under dual key, 1958-63
+       China   e60 on   DF-2A and the Second Artillery Corps, both 1966
+       France  e60-e90  eighteen S2/S3 silos at Albion, August 1971 - September 1996
+       KPA     e00 on   first test October 2006; Hwasong-15 2017, road-mobile
+       Taiwan, West Germany: never.
+     A row serves every period its missile stood on alert in, which is how
+     the American and Soviet rows reach back into the 1950s on two months and
+     two weeks of it, and how Albion reaches the 1990s. The report behind the
+     roadmap said "none for the UK"; Thor is the one deliberate difference,
+     because the RAF really did stand sixty of them on alert in eastern
+     England, and by the same rule it serves 1958-59 and 1960-63. Every row
+     keeps the same superweapon: who had the weapon is history, what it does
+     is balance, and the second is not this change's business. An army with
+     no row in a period is shown the stand-in card below, locked, with its
+     reason. */
+  nukesilo: { name:"Strategic Silo", full:"ICBM launch facility: Atlas, Titan II, Minuteman",
+    cat:"defense", fac:"nato", srole:"nuke", from:"e50", service:"1959", confidence:"high",
+    cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
     power:-150, sight:7, tech:3, prereq:["lab","missilesilo"], needPower:true,
     superweapon: { key:"nuke", label:"NUCLEAR MISSILE", charge:420, dmg:3200, aoe:9.0,
                    warhead:"nuclear", flight:10, nuke:true, alert:"NUCLEAR LAUNCH DETECTED" },
-    desc:"Nuclear-tipped ICBM. Seven minutes to charge, and the strike erases everything inside nine tiles. Both sides are warned the moment it flies." },
+    desc:"Atlas stood on alert in the open from October 1959, Titan and Minuteman went underground from 1962, and 400 Minuteman III still wait in 450 holes across the Great Plains. Seven minutes to charge; the strike erases everything inside nine tiles, and both sides are warned the moment it flies." },
+
+  nukesilo_p: { name:"Strategic Silo", full:"Strategic Rocket Forces launch site: R-7, R-16, UR-100, R-36",
+    cat:"defense", fac:"pact", srole:"nuke", from:"e50", service:"1959", confidence:"high",
+    cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
+    power:-150, sight:7, tech:3, prereq:["lab","missilesilo"], needPower:true,
+    superweapon: { key:"nuke", label:"NUCLEAR MISSILE", charge:420, dmg:3200, aoe:9.0,
+                   warhead:"nuclear", flight:10, nuke:true, alert:"NUCLEAR LAUNCH DETECTED" },
+    desc:"The R-5M carried the first Soviet nuclear warhead on a missile in 1956; the R-7 went on duty at Plesetsk as the Strategic Rocket Forces were founded on 17 December 1959, and the R-16 put the force underground from 1963. Seven minutes to charge; the strike erases everything inside nine tiles, and both sides are warned the moment it flies." },
+  nukesilo_c: { name:"Strategic Missile Base", full:"Second Artillery base: DF-3 and DF-4 in caves, DF-5 in silos",
+    cat:"defense", fac:"pla", srole:"nuke", from:"e60", service:"1966", confidence:"high",
+    cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
+    power:-150, sight:7, tech:3, prereq:["lab","missilesilo"], needPower:true,
+    superweapon: { key:"nuke", label:"NUCLEAR MISSILE", charge:420, dmg:3200, aoe:9.0,
+                   warhead:"nuclear", flight:10, nuke:true, alert:"NUCLEAR LAUNCH DETECTED" },
+    desc:"The Second Artillery Corps was founded on 1 July 1966, and that October a DF-2 flew a live warhead to Lop Nur. The DF-3 followed in 1971, the DF-4 into mountain caves in 1980 and the DF-5 into silos in 1981. Seven minutes to charge; the strike erases everything inside nine tiles, and both sides are warned the moment it flies." },
+  nukesilo_f: { name:"Albion Silo", full:"S2 / S3 IRBM silo, Plateau d'Albion",
+    cat:"defense", fac:"fra", srole:"nuke", from:"e60", to:"e90", service:"1971", confidence:"high",
+    cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
+    power:-150, sight:7, tech:3, prereq:["lab","missilesilo"], needPower:true,
+    superweapon: { key:"nuke", label:"NUCLEAR MISSILE", charge:420, dmg:3200, aoe:9.0,
+                   warhead:"nuclear", flight:10, nuke:true, alert:"NUCLEAR LAUNCH DETECTED" },
+    desc:"Eighteen silos in the hills of Haute-Provence, on alert from August 1971 with the S2 and from 1980 with the megaton S3, and closed in September 1996. Before them France's deterrent is the Mirage IV, and after them its submarines and aircraft. Seven minutes to charge; the strike erases everything inside nine tiles, and both sides are warned the moment it flies." },
+  nukesilo_b: { name:"Thor Emplacement", full:"PGM-17 Thor IRBM, RAF Bomber Command (Project Emily)",
+    cat:"defense", fac:"gbr", srole:"nuke", from:"e50", to:"e60", service:"1958", confidence:"high",
+    cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
+    power:-150, sight:7, tech:3, prereq:["lab","missilesilo"], needPower:true,
+    superweapon: { key:"nuke", label:"NUCLEAR MISSILE", charge:420, dmg:3200, aoe:9.0,
+                   warhead:"nuclear", flight:10, nuke:true, alert:"NUCLEAR LAUNCH DETECTED" },
+    desc:"Sixty American Thors on RAF bases in eastern England from 1958, raised from horizontal shelters on open pads and armed only when an RAF key and a USAF key turned together, because the warheads were American. Stood down in August 1963, leaving the deterrent to the V-force until it went to sea with Polaris in 1968. Seven minutes to charge; the strike erases everything inside nine tiles, and both sides are warned the moment it flies." },
+  nukesilo_k: { name:"Missile Operating Base", full:"Hwasong-15 road-mobile ICBM, tunnel base",
+    cat:"defense", fac:"kpa", srole:"nuke", from:"e00", service:"2017", confidence:"medium",
+    cost:6000, oil:150, time:60, w:3, h:3, hp:1600, armor:"structure",
+    power:-150, sight:7, tech:3, prereq:["lab","missilesilo"], needPower:true,
+    superweapon: { key:"nuke", label:"NUCLEAR MISSILE", charge:420, dmg:3200, aoe:9.0,
+                   warhead:"nuclear", flight:10, nuke:true, alert:"NUCLEAR LAUNCH DETECTED" },
+    desc:"Not a silo: the launchers are nine-axle trucks kept inside mountain tunnels that drive out to fire. Six nuclear tests from October 2006 to September 2017, and the Hwasong-15 flew in November 2017. Seven minutes to charge; the strike erases everything inside nine tiles, and both sides are warned the moment it flies." },
 });
+
+/* ---- a family this army never had is explained, not hidden ----
+   (owner, via the approved roadmap) "make sure the UI explains a locked
+   card." Every army had a Strategic Silo card until the family above was
+   gated, so hiding it the way the arrays are hidden would take a card away
+   with no word said. ui.js itemsForTab shows this stand-in wherever
+   structureFor() finds no row for the army in its period, locked; player.js
+   lockReason reads `why` as the reason on the card, the tooltip and the
+   refusal. The stand-in is never a buildable def: it has no row in BUILDINGS,
+   so structureFor(), the AI, the load screen and the field manual never meet
+   it. Each reason is written to be true in every period it can appear in. */
+var STRUCT_ABSENT = {
+  nuke: {
+    card: "nukesilo",
+    name: "Strategic Silo",
+    full: "Land-based strategic nuclear missile",
+    desc: "Only an army that really had one can build one, and only in the years it had it. The " +
+          "United States and the Soviet Union from the end of the 1950s; Britain for the five " +
+          "years of Thor, 1958-1963, beside the V-bombers and before its deterrent went to sea; " +
+          "China from 1966; France from its eighteen Albion silos, 1971-1996, with bombers and " +
+          "then submarines beside them; North Korea only after its 2006 test, on road-mobile " +
+          "launchers. Taiwan's weapons programme was stopped under American pressure in 1976 and " +
+          "again in 1988, and West Germany renounced nuclear weapons in 1954, as united Germany " +
+          "did again in 1990: both only ever hosted somebody else's.",
+    why: {
+      pla: "NO NUCLEAR WEAPON BEFORE THE 1964 TEST",
+      kpa: "NO NUCLEAR-ARMED MISSILE BEFORE THE 2000s",
+      roc: "TAIWAN NEVER FIELDED A NUCLEAR WEAPON",
+      gbr: "NO LAND-BASED MISSILE AFTER THOR (1963)",
+      fra: "LAND-BASED ONLY 1971-1996, AT ALBION",
+      deu: "RENOUNCED BY GERMANY IN 1954, AND AGAIN IN 1990",
+    },
+  },
+};
 BUILDINGS.radar.radar = 22;
 BUILDINGS.airbase.radar = 11;
 BUILDINGS.sam.radar = 15;

@@ -7378,6 +7378,164 @@ try{
   })();
   }
 
+  /* ====== [77] A STRATEGIC SAM IS A BATTERY, AND A SILO NEEDS AN ARMY THAT HAD ONE ======
+     (owner) "i take your suggestions and make it on 1,2,3 first." - the
+     approved roadmap's first step, "fix the data errors, since they break
+     play today", items 4 and 5. Measured at b62fbf6:
+     - 13 infantry 'aa' rows carried a strategic SAM - the PLA's HQ-2,
+       S-300PMU/HQ-7 and HQ-9/S-400, Taiwan's HAWK, I-HAWK, PAC-2 and PAC-3,
+       the KPA's S-75, S-200, "network" and Pongae-5, and the US e90/e00
+       "Patriot" - walking at 0.81-0.89 for 140-380 credits, while the KPA had
+       no 'sam' battery before e20 and Taiwan none before e00, its 1990s
+       Patriot being one of the teams;
+     - the Strategic Silo stood on all 48 faction/era sidebars, and the only
+       lock on any of them was the research lab.
+     This holds the roster, the structure family, the AI's picker, and the
+     locked card that tells a Taiwanese, German, 1980s British or 1950s North
+     Korean commander why there is no silo. It swaps the human's army and
+     period to walk the table and puts both back, with the sidebar tab, the
+     selection and the defence queue as they were. */
+  if (inHalf(1)) {
+  log("\n[77] A STRATEGIC SAM IS A BATTERY, AND A SILO NEEDS AN ARMY THAT HAD ONE");
+  (function(){
+    var FACS=["nato","pact","pla","kpa","roc","gbr","fra","deu"];
+    var f0=P.faction, e0=P.era, sel0=UI.selection.slice(), dq0=JSON.stringify(P.queues.defense.items.map(function(i){return i.id;}));
+    var alert0=Game.alert, said=[], dqLen0=P.queues.defense.items.length;
+    /* anything this section managed to queue is taken back (only a failing
+       tree can queue one: that is what is being tested) */
+    var unqueue=function(){ var it=P.queues.defense.items;
+      while (it.length>dqLen0) P.cancel("defense", it[it.length-1].id); };
+    /* ---- 1. no infantry team carries a strategic SAM ---- */
+    var rx=/\bHQ-2\b|HQ-9|HQ-16|S-300|S-400|S-75|S-125|S-200|\bHAWK\b|Patriot|Pongae|Nike/;
+    var walk=[];
+    for (var id in UNITS) { var d=UNITS[id];
+      if (d.cat==="infantry" && (rx.test(d.name)||rx.test(d.full||""))) walk.push(id+" '"+d.name+"' $"+d.cost); }
+    chk("no infantry team is a strategic SAM system", walk.length===0,
+        walk.length+" at HEAD-style rows: "+walk.slice(0,4).join("; "));
+    /* ---- 2. the batteries exist where the history puts them ---- */
+    var want={ kpa:["e60","e80","e90","e00","e20"], roc:["e60","e80","e90","e00","e20"],
+               pla:["e60","e80","e90","e00","e20"], nato:["e60","e80","e90","e00","e20"] };
+    var miss=[];
+    for (var f in want) want[f].forEach(function(e){
+      var s=unitsFor(f,"sam",e).filter(function(k){ var u=UNITS[k];
+        return u.cat==="vehicle" && u.deploy && u.radar>0 && u.cost>=1500; });
+      if (!s.length) miss.push(f+"/"+e); });
+    chk("every period that had a strategic SAM has it as a battery: deployed, radiating, priced as one",
+        miss.length===0, miss.length ? "no battery: "+miss.join(" ") : "KPA, ROC, PLA and US e60-e20");
+    chk("the AI picks the newest battery: KPA S-75, S-200, Pongae-5; Taiwan's Patriot from 1997",
+        unitFor("kpa","sam","e60")==="kpa_e60_sam" && unitFor("kpa","sam","e90")==="kpa_e80_sam" &&
+        unitFor("kpa","sam","e00")==="kpa_e00_sam" && unitFor("roc","sam","e90")==="roc_e00_sam" &&
+        unitsFor("roc","sam","e90").indexOf("roc_e80_sam")>=0,
+        ["e60","e80","e90","e00"].map(function(e){ return e+"="+unitFor("kpa","sam",e); }).join(" ")+" roc e90="+unitFor("roc","sam","e90"));
+    var s75=UNITS.kpa_e60_sam, s200=UNITS.kpa_e80_sam;
+    chk("the S-75 and S-200 set up like sites and move like them",
+        !!s75 && !!s200 && s75.deploySec>=10 && s200.deploySec>=s75.deploySec && s75.speed<=0.7 && s200.speed<=0.4,
+        s75&&s200 ? "S-75 dep "+s75.deploySec+" spd "+s75.speed+"; S-200 dep "+s200.deploySec+" spd "+s200.speed : "missing");
+    var w75=s75&&WEAPONS[s75.weapons[0]], w200=s200&&WEAPONS[s200.weapons[0]];
+    chk("and the S-200 reaches past the S-75 with no anti-ballistic shot",
+        !!w75 && !!w200 && w200.range>w75.range && !w200.abm,
+        w75&&w200 ? w200.range+" > "+w75.range+", abm "+(w200.abm||0) : "missing");
+    /* ---- 3. the teams in their place ---- */
+    var none=[], guns=[], bad=[];
+    FACS.forEach(function(f){ ERAS.forEach(function(e){
+      var a=unitFor(f,"aa",e); if (!a) { none.push(f+"/"+e); return; }
+      var ad=UNITS[a], w=WEAPONS[ad.weapons[0]];
+      if (ad.cat!=="infantry" || ad.cost>400) bad.push(a+" $"+ad.cost);
+    }); });
+    chk("every army still has an air-defence team in every period, priced as a team",
+        none.length===0 && bad.length===0, (none.join(" ")+" "+bad.join(" ")).trim() || "48 of 48");
+    ["pla_e60_aa","kpa_e60_aa","roc_e60_aa","roc_e80_aa"].forEach(function(k){
+      var w=UNITS[k]&&WEAPONS[UNITS[k].weapons[0]];
+      if (!w || w.proj!=="shell" || !w.tgt.air) guns.push(k+" "+(w?w.proj+" '"+w.name+"'":"?")); });
+    chk("where no shoulder-fired missile existed yet the team serves a gun, and fires shells",
+        guns.length===0, guns.join("; ") || "Type 65 37mm, ZPU-4, Bofors 40mm x2");
+    /* ---- 4. who had a strategic silo, and when ---- */
+    var ROW={ nato:["nukesilo","e50","e20"], pact:["nukesilo_p","e50","e20"], pla:["nukesilo_c","e60","e20"],
+              fra:["nukesilo_f","e60","e90"], gbr:["nukesilo_b","e50","e60"], kpa:["nukesilo_k","e00","e20"] };
+    var expect=function(f,e){ var r=ROW[f]; if(!r) return null;
+      var i=ERAS.indexOf(e); return (i>=ERAS.indexOf(r[1]) && i<=ERAS.indexOf(r[2])) ? r[0] : null; };
+    var wrong=[], have=0;
+    FACS.forEach(function(f){ ERAS.forEach(function(e){
+      var got=(typeof structureFor==="function") ? structureFor(f,"nuke",e) : null, x=expect(f,e);
+      if (x) have++;
+      if (got!==x) wrong.push(f+"/"+e+" "+got+"!="+x); }); });
+    chk("the strategic silo belongs to the armies and periods that had one (the AI's picker)",
+        wrong.length===0, wrong.length ? wrong.length+" wrong: "+wrong.slice(0,5).join("; ") : have+" of 48 faction/era slots");
+    /* ---- 5. what the sidebar shows, and what it says ---- */
+    var cardsNow=function(){ var c=document.getElementById("cards"); return (c&&c.children)||[]; };
+    var tabOf=function(){ var c=cardsNow(); if(!c.length) return "?"; var k=c[0].dataset.kind;
+      return (k==="upgrade"||k==="era")?"building":k; };
+    var key=function(k){ var ev={type:"keydown",key:k,shiftKey:false,ctrlKey:false,metaKey:false,altKey:false,preventDefault:function(){}};
+      (__listeners["win:keydown"]||[]).slice().forEach(function(fn){ fn(ev); });
+      ev.type="keyup"; (__listeners["win:keyup"]||[]).slice().forEach(function(fn){ fn(ev); }); };
+    var s=UI.selection; for (var q=0;q<s.length;q++) s[q].selected=false; s.length=0;   // Tab cycles subgroups otherwise
+    UI.refreshCards();
+    var tab0=tabOf(), presses=0;
+    while (tabOf()!=="defense" && presses<7) { key("Tab"); presses++; }
+    var sideBad=[], standIns=0, opened=0, tipOk=0, tipBad=[], clickBad=[];
+    try {
+      Game.alert=function(m){ said.push(String(m)); };
+      FACS.forEach(function(f){ ERAS.forEach(function(e){
+        P.faction=f; P.era=e; UI.refreshCards();
+        var nk=[], c=cardsNow();
+        for (var i=0;i<c.length;i++){ var b=BUILDINGS[c[i].dataset.id]; if (b&&b.superweapon&&b.superweapon.nuke) nk.push(c[i]); }
+        var x=expect(f,e);
+        if (nk.length!==1) { sideBad.push(f+"/"+e+" "+nk.length+" cards"); return; }
+        var card=nk[0], cid=card.dataset.id;
+        if (x) {
+          /* its own row, gated only by what any structure is gated by */
+          var why=P.lockReason(BUILDINGS[cid]);
+          card.dispatchEvent({type:"mouseenter"});
+          var tipOwn=(document.getElementById("tooltip")||{}).innerHTML||"";
+          card.dispatchEvent({type:"mouseleave"});
+          if (cid!==x || /NOT IN SERVICE|NOT YET|WITHDRAWN/.test(why||"")) sideBad.push(f+"/"+e+" "+cid+" ["+why+"]");
+          else if (tipOwn.indexOf("THE REAL THING")<0) sideBad.push(f+"/"+e+" "+cid+" has no real-thing panel");
+          else opened++;
+        } else {
+          standIns++;
+          var reason=(typeof STRUCT_ABSENT!=="undefined") ? STRUCT_ABSENT.nuke.why[f] : "(no reason at all)";
+          if (!card.classList.contains("lock")) sideBad.push(f+"/"+e+" stand-in not locked");
+          card.dispatchEvent({type:"mouseenter"});
+          var tip=(document.getElementById("tooltip")||{}).innerHTML||"";
+          /* the reason, the history, and no "real thing" panel for an army that had none */
+          if (tip.indexOf(reason)>=0 && tip.indexOf("Taiwan")>=0 && tip.indexOf("THE REAL THING")<0) tipOk++;
+          else tipBad.push(f+"/"+e);
+          card.dispatchEvent({type:"mouseleave"});
+          var n0=said.length, q0=P.queues.defense.items.length;
+          card.click();
+          if (P.queues.defense.items.length!==q0 || said.slice(n0).indexOf(reason)<0)
+            clickBad.push(f+"/"+e+" said "+JSON.stringify(said.slice(n0)));
+        }
+      }); });
+    } finally {
+      Game.alert=alert0;
+      P.faction=f0; P.era=e0; unqueue();
+      presses=0; UI.refreshCards();
+      while (tabOf()!==tab0 && presses<7) { key("Tab"); presses++; }
+      UI.refreshCards();
+      for (var r=0;r<sel0.length;r++){ sel0[r].selected=true; s.push(sel0[r]); }
+    }
+    chk("each sidebar carries exactly one strategic card: its own army's row, with its real-thing panel, where one existed",
+        sideBad.length===0, sideBad.length ? sideBad.slice(0,5).join("; ") : opened+" own rows, "+standIns+" stand-ins");
+    chk("and elsewhere a locked stand-in whose tooltip says why and who did have one",
+        standIns>0 && tipOk===standIns, tipOk+"/"+standIns+(tipBad.length?" bad: "+tipBad.slice(0,4).join(" "):""));
+    chk("a click on it is refused with that reason and queues nothing",
+        standIns>0 && clickBad.length===0, clickBad.slice(0,3).join("; ") || standIns+" refused");
+    /* ---- 6. the gate holds on the queue itself, not only on the menu ---- */
+    /* with every prerequisite granted, so only the army can refuse it */
+    var tech0=P.tech; P.tech=3; P.hasBuilding=function(){ return true; };
+    try {
+      P.faction="roc"; P.era="e20";
+      var took=P.enqueue("defense","nukesilo"), took2=P.enqueue("defense","nukesilo_c");
+    } finally { delete P.hasBuilding; P.tech=tech0; P.faction=f0; P.era=e0; unqueue(); }
+    chk("Taiwan cannot queue anybody's silo, whatever the card says", !took && !took2, "nukesilo "+took+", nukesilo_c "+took2);
+    chk("the shared match is as it was: army, period, tab, selection, defence queue",
+        P.faction===f0 && P.era===e0 && P.tech===tech0 && !P.hasOwnProperty("hasBuilding") && tabOf()===tab0 && UI.selection.length===sel0.length &&
+        JSON.stringify(P.queues.defense.items.map(function(i){return i.id;}))===dq0 && Game.alert===alert0,
+        P.faction+"/"+P.era+" tab "+tabOf()+" (was "+tab0+")");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

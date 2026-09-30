@@ -1105,6 +1105,18 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
   reg("nato_e90_sam", 15.50, buildPatriot, PAC2); // MIM-104D PAC-2 GEM
   reg("nato_e00_sam", 15.50, buildPatriot, PAC3); // MIM-104E PAC-3
   reg("roc_e00_sam",  15.50, buildPatriot, PAC2_ROC); // PAC-2 GEM+ (MADS)
+  /* The batteries that had been infantry rows until the roadmap moved them
+     here. No new model: each draws the nearest honest shape already built.
+     The HQ-2 IS a Chinese S-75, so the North Korean S-75 is that rail (the
+     real SM-63 is towed, not tracked). The S-200 is a bigger single round on
+     a single fixed rail and borrows the same one until it has its own. The
+     Taiwanese HAWKs are the American HAWK on the M727 frame; theirs were
+     towed M192s. The 2000s Pongae-5 is the present-day one. */
+  reg("kpa_e60_sam", 10.90, buildRail, HQ2);      // S-75 Dvina: the HQ-2 is its copy
+  reg("kpa_e80_sam", 10.90, buildRail, HQ2);      // S-200 Vega: stand-in, wants its own
+  reg("kpa_e00_sam", 12.52, buildTelar, PONGAE);  // Pongae-5, as sam_k
+  reg("roc_e60_sam",  6.89, buildRail, HAWK);     // MIM-23 HAWK
+  reg("roc_e80_sam",  6.89, buildRail, HAWK);     // MIM-23B Improved HAWK
 
   /* The 1960s tier. These are registered here rather than left to the
      armour_specs "rocket" generator because the generator draws a pack of

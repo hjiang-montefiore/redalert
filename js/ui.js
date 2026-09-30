@@ -83,6 +83,22 @@ var UI = (function () {
             !inEra(d, p.era || CUR_ERA)) continue;
         out.push({ id, def: d, kind: tab });
       }
+      /* A structure family this army never had in this period is shown as
+         ONE locked stand-in card rather than silently vanishing (rules.js
+         STRUCT_ABSENT). It borrows the family head's id, so the icon is the
+         real model and a click goes through enqueue() -> lockReason() like
+         any card and is refused there; the def it carries is a copy with the
+         reason attached, which is what the tooltip and the refusal read.
+         Measured: 24 of the 48 faction/era sidebars show it once the
+         Strategic Silo was gated; all 48 carried the silo itself before. */
+      if (typeof STRUCT_ABSENT !== "undefined" && typeof structureFor === "function")
+        for (const sr in STRUCT_ABSENT) {
+          const A = STRUCT_ABSENT[sr], head = BUILDINGS[A.card];
+          if (!head || head.cat !== tab || structureFor(p.faction, sr, p.era || CUR_ERA)) continue;
+          out.push({ id: A.card, kind: tab, def: Object.assign({}, head,
+            { name: A.name, full: A.full, desc: A.desc, fac: "none",
+              absent: A.why[p.faction] || "NOT IN SERVICE WITH THIS ARMY" }) });
+        }
       if (tab === "building") {
         for (const id in UPGRADES) out.push({ id, def: UPGRADES[id], kind: "upgrade" });
         /* Re-equipping the force one generation forward. Shown whenever there is a later generation at all, even when it is
@@ -481,7 +497,9 @@ var UI = (function () {
     html += rows.join("<br>");
 
     /* real-world reference panel: what the actual machine does */
-    if (typeof FACTS !== "undefined" && FACTS[it.id]) {
+    /* not on a stand-in (itemsForTab, rules.js STRUCT_ABSENT): it borrows the
+       id of a row this army never had, and that row's machine is not its own */
+    if (typeof FACTS !== "undefined" && FACTS[it.id] && !d.absent) {
       const f = FACTS[it.id];
       const line = factLine(it.id);
       html += '<div class="fact"><h5>THE REAL THING' +

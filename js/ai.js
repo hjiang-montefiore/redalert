@@ -396,6 +396,9 @@ function doctrine(fac, era) {
 const WORTH = {
   conyard: 2400, refinery: 2600, factory: 1500, derrick: 1400,
   missilesilo: 2400, nukesilo: 2600, airbase: 1200, navalyard: 1000,
+  /* the other armies' strategic silos (rules.js, srole "nuke") are the same
+     prize as the American one */
+  nukesilo_p: 2600, nukesilo_c: 2600, nukesilo_f: 2600, nukesilo_b: 2600, nukesilo_k: 2600,
   lab: 800, barracks: 700, radar: 700, power: 500, depot: 350,
   silo: 150, sonararray: 200,
   /* A structure with no gun would fall through worthOf() to 250, or - for a
@@ -7884,9 +7887,13 @@ function makeCommander() {
        of contacts held at once, the same figure the fighter force is sized
        against. One battery once anything has flown over us, two once that is an
        air force, three only against a real air campaign. tryBuildUnit answers
-       false where a nation has no launcher in this period, which is the correct
-       and automatic answer for the KPA before the present day, the ROC before
-       the 2000s, and everybody in the 1950s. */
+       false where the roster has no launcher for this army in this period, and
+       the commander spends the money elsewhere; whether a gap is history is
+       the roster's business, not this block's. Measured when the North Korean
+       and Taiwanese strategic SAMs became batteries (rules.js, "five
+       batteries"): 9 of the 48 army/period slots have none, seven of them in
+       the 1950s - before, the KPA had none until the present day and Taiwan
+       none before the 2000s. */
     if (P.tech >= 3 && P.hasBuilding("radar") && P.hasBuilding("lab") &&
         queueLen("vehicle") < 3 && !mineShort) {
       const dAD = dossier[rival ? rival.idx : -1];
@@ -7995,9 +8002,23 @@ function makeCommander() {
          only, so a silo still rising read as no silo and another was ordered
          each time the defence queue emptied - three missile silos inside two
          minutes on an idle bank in a jsc smoke run of taiwan. */
+      /* Its OWN army's strategic silo, or none: structureFor() answers null
+         for Taiwan and West Germany always, Britain after the Thor years,
+         France outside 1971-96, China before 1966 and the KPA before the
+         2000s - exactly as the sidebar does, and lockReason() would refuse
+         the American row a second time. Measured at b62fbf6 in a jsc census
+         of elite commanders on 200,000 credits with fuel held at 3,000: a
+         1980s North Korean and a 1950s French commander each had the
+         American silo up by t=600, and a present-day German one by t=1050.
+         With this, the same census to t=600: the 1980s KPA builds the
+         conventional missile silo and no nuclear one, beside three S-200
+         batteries it could not have bought before; China in the 1980s and
+         1990s builds its own base, Britain in the 1960s-70s its Thor
+         emplacement, and a 1990s Taiwan a Patriot battery and no silo. */
+      const nukeId = structureFor(P.faction, "nuke", P.era);
       if (!P.countBuilding("missilesilo") && P.cash > 3800) P.enqueue("defense", "missilesilo");
-      else if (P.hasBuilding("missilesilo") && !P.countBuilding("nukesilo") &&
-               P.cash > 6400 && P.oil > 160) P.enqueue("defense", "nukesilo");
+      else if (nukeId && P.hasBuilding("missilesilo") && !P.countBuilding(nukeId) &&
+               P.cash > 6400 && P.oil > 160) P.enqueue("defense", nukeId);
     }
     for (const b of P.buildings) {
       if (atPeace || b.dead || !b.def.superweapon || b.swCharge < 1) continue;

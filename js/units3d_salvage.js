@@ -4681,6 +4681,15 @@ BLD_MODELS["navalyard"] = {
   }
 };
 
+/* The strategic silo is one family with a row per army (rules.js, srole
+   "nuke"), and five of the six rows have no model of their own yet. They draw
+   the American silo until they do - a stand-in, not a likeness: Thor stood on
+   an open pad beside a shelter that rolled back, and the KPA base is a tunnel
+   portal. Resolved when built, so the order the files load in is irrelevant. */
+["nukesilo_p", "nukesilo_c", "nukesilo_f", "nukesilo_b", "nukesilo_k"].forEach(function (k) {
+  BLD_MODELS[k] = { build: function (THREE, M, C) { return BLD_MODELS["nukesilo"].build(THREE, M, C); } };
+});
+
 BLD_MODELS["nukesilo"] = {
   build: function (THREE, M, C) {
     var g = new THREE.Group();

@@ -50,8 +50,8 @@ var INFKIT = {
   roc_e50_rifle: {era:"e50", fac:"roc", role:"rifle", designation:"Rifle Squad", helmet:"steel", webbing:"belt", weapon:"battlerifle", camo:"olive", gear:["bandolier", "backpack", "canteen"]},
 
   /* ---------------------------------------------------------------- e60 */
-  /* KPA S-75 launch crew: Peaked field caps and simple belts on a revetted site, servicing a single long rail with a two-stage finned SA-2. */
-  kpa_e60_aa: {era:"e60", fac:"kpa", role:"aa", designation:"KPA S-75 launch crew", helmet:"cap", webbing:"belt", weapon:"assault", camo:"olive", gear:["radio", "canteen"]},
+  /* ZPU-4 Team: four long heavy machine gun barrels in a square block on a towed carriage, gunner behind an open web sight, crew in field caps. */
+  kpa_e60_aa: {era:"e60", fac:"kpa", role:"aa", designation:"KPA ZPU-4 Team", helmet:"cap", webbing:"belt", weapon:"mg", camo:"olive", gear:["canteen", "entrench"]},
   /* KPA RPG-7 gunner: Steel-helmeted gunner with the optic-sighted RPG-7 on his shoulder; the loader's pack bristles with finned PG-7 rounds. */
   kpa_e60_at: {era:"e60", fac:"kpa", role:"at", designation:"KPA RPG-7 gunner", helmet:"steel", webbing:"belt", weapon:"rpg", camo:"olive", gear:["backpack", "canteen", "bandolier"]},
   /* KPA rifleman, Soviet-pattern kit: Soviet-style rounded steel helmet over a khaki tunic, AK clone with a three-cell canvas pouch riding on the waist belt. */
@@ -68,22 +68,22 @@ var INFKIT = {
   pact_e60_at: {era:"e60", fac:"pact", role:"at", designation:"Soviet Malyutka gunner", helmet:"steel", webbing:"belt", weapon:"atgm", camo:"olive", gear:["backpack", "radio", "canteen"]},
   /* Soviet motor rifleman: SSh-68 steel helmet, rolled rain cape and entrenching tool on the belt, AKM held low as he dismounts from the carrier. */
   pact_e60_rifle: {era:"e60", fac:"pact", role:"rifle", designation:"Soviet motor rifleman", helmet:"steel", webbing:"belt", weapon:"assault", camo:"olive", gear:["canteen", "entrench", "bandolier", "greatcoat"]},
-  /* PLA HQ-2 launch crew: Static-site crew in soft caps with rifles slung, working a towed rail carrying a huge two-stage finned SA-2 copy. */
-  pla_e60_aa: {era:"e60", fac:"pla", role:"aa", designation:"PLA HQ-2 launch crew", helmet:"cap", webbing:"belt", weapon:"assault", camo:"olive", gear:["radio", "canteen"]},
+  /* Type 65 Twin 37mm: gun crew in soft caps around a twin-barrelled towed mount, clip loaders held ready above the breeches. */
+  pla_e60_aa: {era:"e60", fac:"pla", role:"aa", designation:"Type 65 Twin 37mm", helmet:"cap", webbing:"belt", weapon:"mg", camo:"green", gear:["canteen", "entrench"]},
   /* PLA RPG gunner, Type 69: Capped gunner shoulders the bulbous Type 69 warhead while the loader's chest carrier is stuffed with finned spare rockets. */
   pla_e60_at: {era:"e60", fac:"pla", role:"at", designation:"PLA RPG gunner, Type 69", helmet:"cap", webbing:"vest", weapon:"rpg", camo:"olive", gear:["backpack", "canteen", "bandolier"]},
   /* PLA rifleman, Type 65 uniform: No helmet at all: soft peaked cap with a red star, and a three-pocket canvas chest rig over a mustard-olive tunic. */
   pla_e60_rifle: {era:"e60", fac:"pla", role:"rifle", designation:"PLA rifleman, Type 65 uniform", helmet:"cap", webbing:"vest", weapon:"assault", camo:"olive", gear:["bandolier", "canteen", "entrench"]},
-  /* ROC HAWK battery crew: Bare-headed technicians in ball caps and fatigues around a three-rail HAWK launcher, rifles left slung on the shoulder. */
-  roc_e60_aa: {era:"e60", fac:"roc", role:"aa", designation:"ROC HAWK battery crew", helmet:"cap", webbing:"belt", weapon:"battlerifle", camo:"green", gear:["radio", "canteen"]},
+  /* Bofors 40mm: crew in M1 steel pots seated either side of a single tall autocannon on a four-wheeled carriage. */
+  roc_e60_aa: {era:"e60", fac:"roc", role:"aa", designation:"ROC Bofors 40mm crew", helmet:"steel", webbing:"belt", weapon:"mg", camo:"green", gear:["canteen", "radio"]},
   /* ROC recoilless rifle crew: crew-served m40a1 106mm on its tripod (or jeep pintle), a .50-cal spotting rifle clamped along the top of the barrel; the number two carries a fat 106mm heat round to the breech. */
   roc_e60_at: {era:"e60", fac:"roc", role:"at", designation:"ROC recoilless rifle crew", helmet:"steel", webbing:"belt", weapon:"recoilless", camo:"green", gear:["backpack", "canteen"]},
   /* ROC rifleman, US-pattern kit: American M1 steel pot with foliage band and M1956 belt kit, carrying a long wood-stocked M14-type Type 57 rifle. */
   roc_e60_rifle: {era:"e60", fac:"roc", role:"rifle", designation:"ROC rifleman, US-pattern kit", helmet:"steel", webbing:"belt", weapon:"battlerifle", camo:"green", gear:["backpack", "canteen", "bandolier"]},
 
   /* ---------------------------------------------------------------- e80 */
-  /* S-200 (SA-5 Gammon): Fixed-site guidance crew in peaked soft caps and long greatcoats, carbines slung on the back, dragging heavy cabling - no launcher anywhere on the man. */
-  kpa_e80_aa: {era:"e80", fac:"kpa", role:"aa", designation:"S-200 (SA-5 Gammon)", helmet:"cap", webbing:"belt", weapon:"assault", camo:"olive", gear:["radio", "greatcoat"]},
+  /* HN-5 Team: conscript gunner in a peaked cap with a slim first-generation Chinese tube on the shoulder, loader carrying the spare round. */
+  kpa_e80_aa: {era:"e80", fac:"kpa", role:"aa", designation:"KPA HN-5 Team", helmet:"cap", webbing:"belt", weapon:"manpads", camo:"olive", gear:["backpack", "canteen"]},
   /* Bulsae-2 Team: gunner lying in behind a 9p135-pattern tripod launcher, a cylindrical missile container clamped on top and a drum-shaped optical tracker on its left side; loader beside him with a second tube. */
   kpa_e80_at: {era:"e80", fac:"kpa", role:"at", designation:"Bulsae-2 Team", helmet:"steel", webbing:"belt", weapon:"atgm", camo:"olive", gear:["backpack", "canteen"]},
   /* Type 88 Squad: Deep-skirted steel helmet and khaki-olive tunic, with AK-74-pattern Type 88 folded wire stock and flat khaki chest pouches worn over the chest. */
@@ -106,16 +106,16 @@ var INFKIT = {
   pla_e80_at: {era:"e80", fac:"pla", role:"at", designation:"HJ-8 Red Arrow", helmet:"steel", webbing:"vest", weapon:"atgm", camo:"green", gear:["backpack", "canteen"]},
   /* Type 81 Squad: Bare GK80 steel pot over a plain grass-green tunic, with the three-cell canvas chest rig riding high on the ribs and a wood-furniture Type 81 held across it. */
   pla_e80_rifle: {era:"e80", fac:"pla", role:"rifle", designation:"Type 81 Squad", helmet:"steel", webbing:"vest", weapon:"assault", camo:"green", gear:["canteen", "entrench", "backpack"]},
-  /* Improved HAWK: Battery crew rather than shooters: soft caps, sleeves rolled, rifles slung muzzle-down while they walk a cable reel out toward the radar - nothing on the shoulder. */
-  roc_e80_aa: {era:"e80", fac:"roc", role:"aa", designation:"Improved HAWK", helmet:"cap", webbing:"belt", weapon:"assault", camo:"olive", gear:["radio", "canteen"]},
+  /* Bofors 40mm: the same towed gun a decade on, crew in olive fatigues and steel helmets, ready-use clips stacked by the carriage. */
+  roc_e80_aa: {era:"e80", fac:"roc", role:"aa", designation:"ROC Bofors 40mm crew", helmet:"steel", webbing:"belt", weapon:"mg", camo:"olive", gear:["canteen", "radio"]},
   /* TOW Team: Tall splayed tripod with the fat drum-shaped optical tracker slung under the launch tube, gunner seated behind it on the ground. */
   roc_e80_at: {era:"e80", fac:"roc", role:"at", designation:"TOW Team", helmet:"steel", webbing:"belt", weapon:"atgm", camo:"olive", gear:["backpack", "radio", "canteen"]},
   /* Rifle Squad: Looks a decade behind everyone else: US-pattern M1 steel pot, olive fatigues and web belt with suspenders, but carrying a stubby 5.56mm Type 65 assault rifle. */
   roc_e80_rifle: {era:"e80", fac:"roc", role:"rifle", designation:"Rifle Squad", helmet:"steel", webbing:"belt", weapon:"assault", camo:"olive", gear:["canteen", "bandolier", "entrench"]},
 
   /* ---------------------------------------------------------------- e90 */
-  /* KPA SAM Battery Crew: rear-area manpads pair with an ht-16pgj (sa-7/strela-2 copy) tube shouldered, soft cap and belt kit, no body armour. */
-  kpa_e90_aa: {era:"e90", fac:"kpa", role:"aa", designation:"KPA SAM Battery Crew", helmet:"cap", webbing:"belt", weapon:"manpads", camo:"olive", gear:["radio", "greatcoat", "canteen"]},
+  /* Strela-3 Team: rear-area MANPADS pair with a Strela-3-pattern tube shouldered, soft cap and belt kit, no body armour. */
+  kpa_e90_aa: {era:"e90", fac:"kpa", role:"aa", designation:"KPA Strela-3 Team", helmet:"cap", webbing:"belt", weapon:"manpads", camo:"olive", gear:["radio", "greatcoat", "canteen"]},
   /* KPA Bulsae-2 Team: Steel-helmeted pair prone behind a squat wire-guided launcher, control box on a lanyard and no body armour anywhere. */
   kpa_e90_at: {era:"e90", fac:"kpa", role:"at", designation:"KPA Bulsae-2 Team", helmet:"steel", webbing:"belt", weapon:"atgm", camo:"olive", gear:["radio", "canteen", "bandolier"]},
   /* KPA Rifleman: a type 88 with a plain curved 30-round magazine (the standard ak-74-pattern box) */
@@ -132,28 +132,28 @@ var INFKIT = {
   pact_e90_at: {era:"e90", fac:"pact", role:"at", designation:"Kornet Team", helmet:"kevlar", webbing:"vest", weapon:"atgm", camo:"green", gear:["backpack", "radio", "canteen"]},
   /* Motor Rifleman: Segmented flak vest with horizontal quilted rows over blotchy green field dress, AK-74 with a plum-brown magazine and slotted muzzle brake. */
   pact_e90_rifle: {era:"e90", fac:"pact", role:"rifle", designation:"Motor Rifleman", helmet:"steel", webbing:"vest", weapon:"assault", camo:"green", gear:["backpack", "canteen", "entrench", "bandolier"]},
-  /* PLA Air Defence Crew: Battery crewman with dust goggles pushed up on the helmet, radio handset in one hand and a shoulder SAM tube braced in the other. */
-  pla_e90_aa: {era:"e90", fac:"pla", role:"aa", designation:"PLA Air Defence Crew", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"olive", gear:["radio", "goggles", "canteen"]},
+  /* QW-1 Team: gunner with dust goggles pushed up on the helmet, radio handset in one hand and the QW-1 tube braced in the other. */
+  pla_e90_aa: {era:"e90", fac:"pla", role:"aa", designation:"PLA QW-1 Team", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"olive", gear:["radio", "goggles", "canteen"]},
   /* PLA Anti-Tank Team: Two men crouched over a low HJ-8 tripod, wire spool and boxy sight between them, spare stubby PF-89 tube slung on the loader's back. */
   pla_e90_at: {era:"e90", fac:"pla", role:"at", designation:"PLA Anti-Tank Team", helmet:"kevlar", webbing:"vest", weapon:"atgm", camo:"olive", gear:["backpack", "radio", "canteen"]},
   /* PLA Rifleman, late 1990s: Bullpup QBZ-95 with the magazine behind the grip, carried over a flat Type 95 chest rig of stacked pouches. */
   pla_e90_rifle: {era:"e90", fac:"pla", role:"rifle", designation:"PLA Rifleman, late 1990s", helmet:"kevlar", webbing:"vest", weapon:"modernassault", camo:"olive", gear:["backpack", "canteen", "entrench", "bandolier"]},
-  /* ROC Air Defence Crew: stinger gunner in woodland, tube shouldered at a steep angle skyward, iff interrogator box at the hip and the spotter beside him. */
-  roc_e90_aa: {era:"e90", fac:"roc", role:"aa", designation:"ROC Air Defence Crew", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"woodland", gear:["radio", "goggles", "canteen"]},
+  /* ROC Stinger Team: gunner in woodland, tube shouldered at a steep angle skyward, IFF interrogator box at the hip and the spotter beside him. */
+  roc_e90_aa: {era:"e90", fac:"roc", role:"aa", designation:"ROC Stinger Team", helmet:"kevlar", webbing:"vest", weapon:"manpads", camo:"woodland", gear:["radio", "goggles", "canteen"]},
   /* ROC TOW-2A Team: Tall TOW tripod with the big square optical sight box at eye height and the gunner seated behind it, legs splayed wide. */
   roc_e90_at: {era:"e90", fac:"roc", role:"at", designation:"ROC TOW-2A Team", helmet:"kevlar", webbing:"vest", weapon:"atgm", camo:"woodland", gear:["backpack", "radio", "canteen"]},
   /* ROC Rifleman: American-cut PASGT shell and flak vest over woodland fatigues, carrying a stubby T65 rifle with a fixed carry handle. */
   roc_e90_rifle: {era:"e90", fac:"roc", role:"rifle", designation:"ROC Rifleman", helmet:"kevlar", webbing:"vest", weapon:"assault", camo:"woodland", gear:["backpack", "canteen", "entrench", "bandolier"]},
 
   /* ---------------------------------------------------------------- e00 */
-  /* KN-06 Pongae-5: Peaked olive service cap instead of a helmet, tube on the shoulder, cable running to the KN-06 launcher. */
-  kpa_e00_aa: {era:"e00", fac:"kpa", role:"aa", designation:"KN-06 Pongae-5", helmet:"cap", webbing:"vest", weapon:"manpads", camo:"olive", gear:["radio", "canteen"]},
+  /* HT-16PGJ Team: peaked olive service cap instead of a helmet, the Igla-class tube on the shoulder with its bulbous gripstock battery. */
+  kpa_e00_aa: {era:"e00", fac:"kpa", role:"aa", designation:"KPA HT-16PGJ Team", helmet:"cap", webbing:"vest", weapon:"manpads", camo:"olive", gear:["radio", "canteen"]},
   /* Bulsae-3 Team: Prone behind a low Bulsae-3 tripod with a blocky laser sight; chest rig only, no plate carrier. */
   kpa_e00_at: {era:"e00", fac:"kpa", role:"at", designation:"Bulsae-3 Team", helmet:"steel", webbing:"vest", weapon:"atgm", camo:"olive", gear:["backpack", "radio", "canteen"]},
   /* Type 88 Squad: Deliberately a generation behind: rounded steel helmet, olive AK chest rig, Type 88 with the coiled helical magazine. */
   kpa_e00_rifle: {era:"e00", fac:"kpa", role:"rifle", designation:"Type 88 Squad", helmet:"steel", webbing:"vest", weapon:"assault", camo:"olive", gear:["bandolier", "canteen", "entrench"]},
-  /* Patriot PAC-3: PAC-3 crewman with a headset over the helmet and a whip antenna off his back, tube angled high. */
-  nato_e00_aa: {era:"e00", fac:"nato", role:"aa", designation:"Patriot PAC-3", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"desert", gear:["radio", "goggles", "canteen"]},
+  /* Stinger Block I Team: gunner with a headset over the helmet and a whip antenna off his back, tube angled high. */
+  nato_e00_aa: {era:"e00", fac:"nato", role:"aa", designation:"NATO Stinger Team", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"desert", gear:["radio", "goggles", "canteen"]},
   /* Javelin: Javelin gunner kneeling, CLU block on a wide green tube carried over a tan plate carrier, NVG mount flipped up. */
   nato_e00_at: {era:"e00", fac:"nato", role:"at", designation:"Javelin", helmet:"modern", webbing:"plate", weapon:"atgm", camo:"desert", gear:["backpack", "nvg", "kneepads"]},
   /* Rifle Squad: single-tube an/pvs-14 monocular on the helmet mount, railed m4 carbine, tan carrier bristling with pouches. */
@@ -164,14 +164,14 @@ var INFKIT = {
   pact_e00_at: {era:"e00", fac:"pact", role:"at", designation:"Kornet Team", helmet:"modern", webbing:"plate", weapon:"atgm", camo:"green", gear:["backpack", "radio", "kneepads"]},
   /* Motor Rifle Squad: Ratnik silhouette: round railed 6B47 helmet, bulky green plate rig, AK-74M with a side-rail optic. */
   pact_e00_rifle: {era:"e00", fac:"pact", role:"rifle", designation:"Motor Rifle Squad", helmet:"modern", webbing:"plate", weapon:"modernassault", camo:"green", gear:["backpack", "nvg", "kneepads", "canteen"]},
-  /* HQ-9 / HQ-16 / S-400: Battery crewman under a headset, tube skyward, thick cable trailing back to the HQ-9 erector. */
-  pla_e00_aa: {era:"e00", fac:"pla", role:"aa", designation:"HQ-9 / HQ-16 / S-400", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"digital", gear:["radio", "goggles", "canteen"]},
+  /* HN-6 Team: gunner in digital camouflage under a headset, the slim HN-6 tube raised skyward. */
+  pla_e00_aa: {era:"e00", fac:"pla", role:"aa", designation:"PLA HN-6 Team", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"digital", gear:["radio", "goggles", "canteen"]},
   /* HJ-12 Red Arrow Team: Fat HJ-12 tube up on the shoulder with a squared sight block; loader behind him hauling a second canister. */
   pla_e00_at: {era:"e00", fac:"pla", role:"at", designation:"HJ-12 Red Arrow Team", helmet:"modern", webbing:"plate", weapon:"atgm", camo:"digital", gear:["backpack", "radio", "kneepads"]},
   /* QBZ-95-1 Squad: Bullpup QBZ-95-1 held with the magazine behind the grip, over a blue-green pixel plate carrier. */
   pla_e00_rifle: {era:"e00", fac:"pla", role:"rifle", designation:"QBZ-95-1 Squad", helmet:"modern", webbing:"plate", weapon:"modernassault", camo:"digital", gear:["backpack", "kneepads", "canteen", "radio"]},
-  /* Patriot PAC-3: PAC-3 crewman in a woodland helmet cover, tube raised beside the pale canister pack of the launch station. */
-  roc_e00_aa: {era:"e00", fac:"roc", role:"aa", designation:"Patriot PAC-3", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"woodland", gear:["radio", "goggles", "canteen"]},
+  /* ROC Stinger Team: gunner in a woodland helmet cover, tube raised, the grip-stock IFF antenna folded out. */
+  roc_e00_aa: {era:"e00", fac:"roc", role:"aa", designation:"ROC Stinger Team", helmet:"modern", webbing:"plate", weapon:"manpads", camo:"woodland", gear:["radio", "goggles", "canteen"]},
   /* Javelin Team: Kneeling gunner with the boxy CLU sight clamped under a pale launch tube, spotter crouched at his shoulder. */
   roc_e00_at: {era:"e00", fac:"roc", role:"at", designation:"Javelin Team", helmet:"modern", webbing:"plate", weapon:"atgm", camo:"woodland", gear:["backpack", "radio", "kneepads"]},
   /* Infantry Squad: Short railed T91 carbine and a woodland helmet cover, plate carrier worn high and cinched tight. */
