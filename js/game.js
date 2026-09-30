@@ -176,6 +176,10 @@ var Game = (function () {
        harvesters searching the previous map's ore positions. */
     G._oreIdx = null;
     G.cbContacts = [];
+    /* where the player last saw each contact that has since gone out of
+       sight (G.trackGhosts). A new battle has seen nothing yet. The lit
+       firing points (G.revealFire) live on the players, who are new too. */
+    G.ghosts = [];
 
     /* fog: 0 unseen, 1 explored, 2 visible — per human player only */
     G.fog = new Uint8Array(G.map.W * G.map.H);
@@ -2306,6 +2310,9 @@ var Game = (function () {
         const sc = c.ballistic ? 1.0 : 2.0;
         c.px = c.x + (G.rng() - 0.5) * CFG.TILE * sc;
         c.py = c.y + (G.rng() - 0.5) * CFG.TILE * sc;
+        /* and, when a radar made it, the ground it names is lit for this side
+           for a few seconds (G.flashPlot): a fix on the guns, for either seat */
+        G.flashPlot(p, c);
         if (p === G.human) {
           if (c.ballistic) {
             /* Not "ENEMY GUNS LOCATED", which is what this said for every
@@ -2871,6 +2878,9 @@ var Game = (function () {
       if (!G.fogEnabled) return true;
       return G.fog[e.ty * G.map.W + e.tx] === 2;
     }
+    /* a firing point this side saw flash (G.revealFire): the same lit tiles
+       the player's fog is lifted over, read off the same grid */
+    if (p._flash && G.flashLit(p, e)) return true;
     /* AI: symmetric check against its own units' sight */
     /* PERF: Math.pow(r, 2) replaced by r * r - identical for every double
        (verified over 2,000,000 random operands under jsc), one fewer call on
@@ -2890,11 +2900,334 @@ var Game = (function () {
     return false;
   };
 
+  /* ---------------- a shot gives the shooter away ----------------
+     (owner) "ai should have the same fog like us. don't assume and make ai
+     know everything." Measured on HEAD 7beddb2 under jsc, fog on, hormuz e20:
+     a Kornet team 10.0 tiles from an Abrams (sight 8.0) put three missiles
+     into it and was on the player's screen for 0.00 s of the next 15; a 125 mm
+     gun hit a Bradley four times from 8.1 tiles (sight 7.5), also 0.00 s. The
+     commander was held to the same blindness - a Javelin team hit its T-90A
+     three times from 8.0 tiles and never entered its picture (seenU 0 -> 0) -
+     except that digest() wrote the Javelin's exact position into its dossier
+     off lastHitBy, a fix no sensor had made.
+
+     A muzzle flash, a backblast and a missile motor are the loudest things on
+     a battlefield, and the crew being shot at is looking straight at them. So
+     a shot now lights its firing point for the side it was fired at - the
+     tiles, exactly as recomputeFog lights a tile - when somebody on that side
+     could have seen it: the target itself, or any unit or structure of that
+     side, each within its own sight on the day (flashEyes) times how far that
+     signature carries (FLASH[].k). One stamp, read by both seats: the
+     player's fog is lifted over those tiles, and a commander's G.visibleTo
+     and intelSweep read the very same grid. Nobody else is told - not the
+     shooter's side, not a third army.
+
+     Artillery is found the two ways it is found in the field. By eye: a
+     howitzer 20 tiles back is seen only if an observer of the side being
+     shelled is within its own sight x 1.6 of the gun - the same rule as
+     everything else. And by counter-battery radar: G.updateCounterBattery
+     already back-plots the firing point for a side whose radar covers it (an
+     AN/TPQ-53 or a Zoopark-1 tracks the shells back to the tube, to a
+     fire-control grid), and that plot now lights the ground it names for that
+     side too (G.flashPlot), on the grid both seats read. The player's radar
+     already lifts the fog over its whole reach (recomputeFog), so there it
+     mostly repeats what is on the screen; a commander's picture has no radar
+     term at all (Building.sightR), and until now got a grid reference
+     (cbTargets) and never a sight of the guns. A launch that only an
+     early-warning array back-plotted lights nothing: that array is a
+     warning with a grid on it, and "lifts no fog" (G.ewCovers).
+
+     Not a shooter's flash: a submarine (G.justFired already fixes a boat that
+     fires, on the sonar rule), a fast jet (no firing POINT to give away - it
+     is two kilometres on by the time you look; the air picture is radar's
+     job), a torpedo or a bomb, which show nothing at the launcher, and any
+     round that can only go after a submarine - a depth charge, an RBU-6000
+     salvo - because the boat it is fired at is under the water and sees
+     nothing. A helicopter hovering to fire is in: that is exactly the launch
+     a tank crew looks for.
+
+     dur - seconds the firing point stays lit; a guided missile adds its own
+       time of flight, because its smoke trail points back at the launcher
+       for as long as it is in the air (at most 3 s more).
+     r   - tiles of ground lit round the shooter's own tile: a rifle's flash
+       gives away one tile, a backblast or a gun's dust cloud a little more.
+     k   - how far the signature carries, as a multiple of the observer's own
+       sight. A sniper's suppressed round fired from a hide carries no
+       further than the man himself can be seen; a rocket salvo's smoke
+       carries twice as far.
+     intelSweep() runs every 0.8 s, so the shortest light (1.0 s) is always
+     caught by at least one sweep: the commander cannot miss one the player
+     was shown. */
+  const FLASH = {
+    small:   { id: "small",   dur: 1.5, r: 0.5, k: 1.2 },  // rifles and machine guns, 12.7/14.5 mm HMGs too (bullet, dmg < 20); flash hiders
+    sniper:  { id: "sniper",  dur: 1.0, r: 0.5, k: 1.0 },  // suppressed, from a hide
+    gun:     { id: "gun",     dur: 3.0, r: 1.0, k: 1.6 },  // tank gun, autocannon, naval mount
+    missile: { id: "missile", dur: 5.0, r: 1.5, k: 2.0 },  // ATGM, SAM, SSM, rocket launcher
+    arty:    { id: "arty",    dur: 4.0, r: 1.5, k: 1.6 },  // tube artillery
+    mortar:  { id: "mortar",  dur: 2.5, r: 1.0, k: 1.2 },
+    rocket:  { id: "rocket",  dur: 6.0, r: 1.5, k: 2.0 },  // rocket artillery, a ballistic launch
+  };
+  G.FLASH = FLASH;
+  G.flashSig = function (s, w) {
+    if (!s || !w || !s.def) return null;
+    if (s.layer === "sub") return null;
+    if (s.layer === "air" && !s.def.hover) return null;
+    const pj = w.proj;
+    if (pj === "torpedo" || pj === "depth" || pj === "bomb" || pj === "none") return null;
+    /* a round that reaches nothing but a submarine: the RBU-6000 and the
+       helicopters' depth charges fly as "arc" and would otherwise be read as
+       a gun line (wclass: 8 such rows) */
+    const tg = w.tgt;
+    if (tg && tg.sub && !tg.ground && !tg.sea && !tg.air) return null;
+    if (pj === "arc" || w.indirect)
+      return (w.rocket || pj === "missile") ? FLASH.rocket
+           : s.def.role === "mortar" ? FLASH.mortar : FLASH.arty;
+    if (pj === "missile") return FLASH.missile;
+    /* dmg < 20 on a bullet round is every rifle and machine gun in the
+       data, the 12.7 and 14.5 mm heavy machine guns (dmg 11-13) included:
+       measured, no bullet round is above 14. An autocannon flies as a shell
+       and is a gun. */
+    if (pj === "bullet" && w.warhead === "bullet" && w.dmg < 20)
+      return s.def.role === "sniper" ? FLASH.sniper : FLASH.small;
+    if (pj === "bullet" && s.def.role === "sniper") return FLASH.sniper;
+    return FLASH.gun;
+  };
+  /* who owns what stands where a round is sent at bare ground (a bombard
+     order): combat.js coverAt's rule, nearest within three tiles */
+  function ownerNear(x, y, not) {
+    let best = null, bd = Infinity;
+    G.grid.query(x, y, CFG.TILE * 3, (e) => {
+      if (e.dead || !e.owner || e.owner === not || e.owner.isNeutral || G.allied(e.owner, not)) return;
+      const d = U.dist2(e.x, e.y, x, y);
+      if (d < bd) { bd = d; best = e; }
+    });
+    return best ? best.owner : null;
+  }
+  /* How far an observer sees a flash, before the signature's own k: its sight
+     on the day - Unit.sightR, so optics research, a garrison's height, and
+     the weather less what thermal sights claw back of it. Dust and rain stand
+     between a flash and the eye exactly as they stand between the eye and a
+     hull: in a sandstorm a T-90 crew that sees 3.9 tiles no longer sees a
+     Kornet launch ten tiles off (the first cut, on def.sight alone, saw it
+     and plotted it). Darkness and a grey sky are only a want of light, and a
+     flash brings its own: at night and under overcast the crew sees it as
+     far as on a clear day, so the weather's loss is given back there. A
+     structure's and a garrison's sight carry no weather term at all. */
+  const FLASH_LIGHT_ONLY = { night: true, overcast: true };
+  function flashEyes(o) {
+    let r = o.sightR ? o.sightR() : (o.def.sight || 0);
+    if (FLASH_LIGHT_ONLY[G.weatherKey] && o.kind !== "building" &&
+        !(o.garrisonIn && !o.garrisonIn.dead) && G.visionMul) r /= G.visionMul(o);
+    return r;
+  }
+  /* could this one observer have seen a flash at s, carrying k x its sight.
+     The squared distance is tested first against a bound no crew's clear-day
+     sight reaches (def.sight x 1.5, above optics' x1.25), so a side's far-off
+     units cost one subtraction each and sightR() is asked only of the near. */
+  function looksAt(o, s, k) {
+    if (!o || o.dead || o.layer === "sub" || (o.carried && !o.garrisonIn) || !o.def) return false;
+    const d2 = U.dist2(o.x, o.y, s.x, s.y), T = k * CFG.TILE;
+    if (!o.garrisonIn) { const top = (o.def.sight || 0) * 1.5 * T; if (d2 > top * top) return false; }
+    const R = flashEyes(o) * T;
+    return d2 <= R * R;
+  }
+  G.flashSeenBy = function (p, s, k, target) {
+    if (target && target.owner === p && looksAt(target, s, k)) return true;
+    for (const u of p.units) if (looksAt(u, s, k)) return true;
+    for (const b of p.buildings) if (looksAt(b, s, k)) return true;
+    return false;
+  };
+  /* Light tiles round (cx, cy) for side p until `until`. The grid holds, per
+     tile, when its light goes out; the list holds the stamps still burning, so
+     the fog pass and the commander's sweep visit only those. The player's fog
+     is lit at once - the flash is seen when it happens, not at the next
+     recompute - and recomputeFog relights it (G.flashFog) until it goes out.
+     `entry`, when given, is a stamp still burning at the same tile for the
+     same side: it is extended rather than joined by another, so a gun that
+     keeps firing from one spot holds one stamp, not one a shot. */
+  G.flashStamp = function (p, cx, cy, r, until, entry) {
+    const W = G.map.W, H = G.map.H, N = W * H;
+    const F = p._flash || (p._flash = { grid: null, list: [] });
+    if (!F.grid || F.grid.length !== N) F.grid = new Float32Array(N);
+    const fog = (p === G.human && G.fogEnabled) ? G.fog : null;
+    const ri = Math.floor(r), r2 = r * r;
+    for (let dy = -ri; dy <= ri; dy++) for (let dx = -ri; dx <= ri; dx++) {
+      if (dx * dx + dy * dy > r2) continue;
+      const x = cx + dx, y = cy + dy;
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const i = y * W + x;
+      if (F.grid[i] < until) F.grid[i] = until;
+      if (fog) fog[i] = 2;
+    }
+    const L = F.list, now = G.time;
+    for (let j = L.length - 1; j >= 0; j--) if (L[j].until <= now) L.splice(j, 1);
+    if (entry && entry.until > now && L.indexOf(entry) >= 0) {
+      if (entry.until < until) entry.until = until;
+      if (entry.r < r) entry.r = r;
+      return entry;
+    }
+    const st = { x: cx, y: cy, r: r, until: until };
+    L.push(st);
+    return st;
+  };
+  /* is e standing on ground a flash has lit for side p. Never a submarine:
+     eyes do not find a boat under the water, lit or not (G.canSeeSub). */
+  G.flashLit = function (p, e) {
+    const F = p && p._flash;
+    if (!F || !F.list.length || e.layer === "sub") return false;
+    return F.grid[e.ty * G.map.W + e.tx] > G.time;
+  };
+  /* recomputeFog has just put every lit tile back to "explored": relight the
+     ones a flash still holds for the player */
+  G.flashFog = function (fog) {
+    const F = G.human && G.human._flash;
+    if (!F || !F.list.length) return;
+    const W = G.map.W, H = G.map.H, now = G.time, L = F.list;
+    for (let j = L.length - 1; j >= 0; j--) {
+      const s = L[j];
+      if (s.until <= now) { L.splice(j, 1); continue; }
+      const ri = Math.floor(s.r);
+      const y1 = Math.min(H - 1, s.y + ri), x1 = Math.min(W - 1, s.x + ri);
+      for (let y = Math.max(0, s.y - ri); y <= y1; y++)
+        for (let x = Math.max(0, s.x - ri); x <= x1; x++) {
+          const i = y * W + x;
+          if (F.grid[i] > now) fog[i] = 2;
+        }
+    }
+  };
+  /* The one entry point: combat.js fire() calls it for every round, before
+     anything else, because the round has left the barrel whether or not it
+     then hits. Cheap on the hot path: a burst from the same tile at the same
+     side re-lights nothing until its light is a quarter-second from renewal,
+     and a side nobody of which could see the flash is not asked again for
+     half a second. Returns whether the shooter is lit for the side now. */
+  G.revealFire = function (s, w, target) {
+    if (!s || !w || s.dead || !s.owner || s.owner.isNeutral || !s.def) return false;
+    const sig = G.flashSig(s, w);
+    if (!sig) return false;
+    let vp = target ? target.owner : null;
+    if (!vp && target && (w.proj === "arc" || w.indirect)) vp = ownerNear(target.x, target.y, s.owner);
+    if (!vp || vp === s.owner || vp.isNeutral || G.allied(vp, s.owner)) return false;
+    const now = G.time, W = G.map.W;
+    let dur = sig.dur;
+    if (sig === FLASH.missile && target)
+      dur += Math.min(3, U.dist(s.x, s.y, target.x, target.y) / Math.max(60, w.speed || 60));
+    const bld = s.kind === "building";
+    const cx = bld ? s.tx + (s.def.w >> 1) : s.tx, cy = bld ? s.ty + (s.def.h >> 1) : s.ty;
+    const idx = cy * W + cx, until = now + dur;
+    const m = s._flash || (s._flash = { p: null, i: -1, until: 0, miss: null, missT: -1e9, st: null });
+    if (m.p === vp && m.i === idx && m.until >= until - 0.25) return true;
+    if (m.miss === vp && now - m.missT < 0.5) return false;
+    if (!G.flashSeenBy(vp, s, sig.k, target)) { m.miss = vp; m.missT = now; return false; }
+    /* a structure is lit over its whole footprint: both renderers and
+       visibleTo read a structure at its corner tile */
+    const r = bld ? Math.max(sig.r, Math.hypot(s.def.w >> 1, s.def.h >> 1) + 0.01) : sig.r;
+    m.st = G.flashStamp(vp, cx, cy, r, until, (m.p === vp && m.i === idx) ? m.st : null);
+    m.p = vp; m.i = idx; m.until = until; m.miss = null;
+    return true;
+  };
+  /* A counter-battery plot (G.updateCounterBattery, the moment side p's radar
+     fixes contact c) lights the ground it names for p, for as long as the
+     guns' own flash would have held it: 4 s for a tube, rocket or mortar
+     contact, 6 s for a ballistic launch. The plot is scattered by up to a
+     tile (half one for a ballistic track), so 1.5 tiles round the plotted
+     tile always takes in the tile the shooter fired from. It is lit when the
+     plot is MADE - five seconds after a gun fired, two after a launch - so a
+     battery that has already scooted is not there to be seen, and a gun that
+     stayed is. Only a radar's plot: a ballistic contact is also plotted by
+     an early-warning array (G.ewCovers), which "lifts no fog" by design -
+     a boost-phase back-plot is a warning and a grid, not a sight of the
+     TEL - so one no radar of p's covers lights nothing. Ballistic plots are
+     a handful a match, so asking G.radarCovers again costs nothing. */
+  G.flashPlot = function (p, c) {
+    if (!p || !c || p.isNeutral || c.px === undefined) return;
+    if (c.ballistic && !G.radarCovers(p, c.x, c.y)) return;
+    const W = G.map.W, H = G.map.H;
+    const cx = U.clamp((c.px / CFG.TILE) | 0, 0, W - 1), cy = U.clamp((c.py / CFG.TILE) | 0, 0, H - 1);
+    const sig = c.ballistic ? FLASH.rocket : FLASH.arty;
+    G.flashStamp(p, cx, cy, 1.5, G.time + sig.dur, null);
+  };
+
+  /* ---------------- where we last saw it ----------------
+     A contact that drops out of sight leaves a grey ghost where it was last
+     seen, fading - the way a remembered structure stays drawn under the fog.
+     The commander has always had this and more: seenU keeps every vehicle it
+     saw, where and when, for 65 s at the least (ai.js forgetStale, D.memory up
+     to 600 s). The player now gets the equivalent and no more:
+       - a ghost is written only on the transition from seen to not seen, off
+         the heading and time it was last SEEN at, and it never moves after;
+       - it stands where the contact stepped out of view: one tick's travel on
+         from where it was last drawn, over the edge onto ground we do not
+         see. Written at the last-seen spot itself, it stood on ground in
+         plain view that the player could see was empty - measured over a
+         600 s fulda match, 154 of 610 ghosts, 8.2% of all ghost-seconds and
+         once a whole 20 s life. A move longer than a tile is not a step (the
+         game set the unit down somewhere) and keeps the last-seen spot;
+       - it is drawn only while its own ground is out of view (`show`; a
+         submarine's datum always, since eyes over the water say nothing
+         about a boat under it);
+       - it goes when the unit is seen again (the unit itself is drawn), when
+         it is too old - 20 s on land, 30 at sea (a hull is slow), 6 for an
+         aircraft (a minute-old air track is worse than none, which is why
+         the commander keeps air short too), 20 for a sonar datum - or when
+         we look at that ground again and it is not there, exactly as a
+         commander strikes a structure off seenB;
+       - a unit seen to die, or seen to board a transport, leaves nothing.
+     Kept on the game, read by both renderers, and never consulted by any
+     rule: a ghost cannot be selected, targeted or fired at. At most 64. */
+  const GHOST_LIFE = { ground: 20, sea: 30, air: 6, sub: 20 };
+  const GHOST_MAX = 64;
+  G.GHOST_LIFE = GHOST_LIFE;
+  G.trackGhosts = function () {
+    const H = G.human;
+    if (!H || !G.fogEnabled || !G.fog) return;
+    const gh = G.ghosts || (G.ghosts = []);
+    const now = G.time, W = G.map.W, fog = G.fog, T2 = CFG.TILE * CFG.TILE;
+    for (const p of G.players) {
+      if (p === H || G.allied(H, p)) continue;
+      for (const u of p.units) {
+        if (u.dead) continue;
+        const vis = !u.carried && (u.layer === "sub" ? G.canSeeSub(H, u) : fog[u.ty * W + u.tx] === 2);
+        if (vis) {
+          const s = u._seen || (u._seen = { x: 0, y: 0, ang: 0, tang: 0, parked: false, t: 0 });
+          s.x = u.x; s.y = u.y; s.ang = u.ang || 0; s.tang = u.tang === undefined ? s.ang : u.tang;
+          s.parked = !!(u.parked || (u.order && u.order.type === "parked")); s.t = now;
+          u._seenOn = true;
+          if (u._gh) { const j = gh.indexOf(u._gh); if (j >= 0) gh.splice(j, 1); u._gh = null; }
+        } else if (u._seenOn) {
+          u._seenOn = false;
+          if (u.carried || !u._seen) continue;
+          const s = u._seen, L = u.layer;
+          const step = L !== "sub" && U.dist2(u.x, u.y, s.x, s.y) <= T2;
+          const gx = step ? u.x : s.x, gy = step ? u.y : s.y;
+          const g = { id: u.id, def: u.def, owner: p, layer: L, r: u.r || 10,
+                      x: gx, y: gy, tx: U.clamp((gx / CFG.TILE) | 0, 0, W - 1),
+                      ty: U.clamp((gy / CFG.TILE) | 0, 0, G.map.H - 1),
+                      ang: s.ang, tang: s.tang, parked: s.parked, t: s.t,
+                      life: GHOST_LIFE[L] || GHOST_LIFE.ground, hid: false, show: false };
+          if (u._gh) { const j = gh.indexOf(u._gh); if (j >= 0) gh.splice(j, 1); }
+          u._gh = g;
+          gh.push(g);
+          if (gh.length > GHOST_MAX) gh.shift();
+        }
+      }
+    }
+    for (let i = gh.length - 1; i >= 0; i--) {
+      const g = gh[i];
+      if (now - g.t >= g.life) { gh.splice(i, 1); continue; }
+      if (g.layer === "sub") { g.show = true; continue; }
+      if (fog[g.ty * W + g.tx] !== 2) g.hid = g.show = true;
+      else if (g.hid) gh.splice(i, 1);        // looked again, and it is not there
+    }
+  };
+
   /* ---------------- fog of war ---------------- */
   G.recomputeFog = function () {
     if (!G.fogEnabled) return;
     const map = G.map, fog = G.fog;
     for (let i = 0; i < fog.length; i++) if (fog[i] === 2) fog[i] = 1;
+    /* a firing point the enemy gave away stays lit for its time (G.revealFire) */
+    G.flashFog(fog);
     const reveal = (cx, cy, r) => {
       const r2 = r * r;
       const x0 = Math.max(0, cx - r | 0), x1 = Math.min(map.W - 1, cx + r | 0);
@@ -3130,6 +3463,10 @@ var Game = (function () {
 
     G.fogT -= dt;
     if (G.fogT <= 0) { G.fogT = CFG.FOG_UPDATE; G.recomputeFog(); }
+    /* every tick, not on the fog's clock: a contact leaves the screen the
+       tick it steps onto an unlit tile, and its ghost belongs where it
+       was last drawn, not a quarter-second behind */
+    G.trackGhosts();
 
     G.checkVictory();
   };

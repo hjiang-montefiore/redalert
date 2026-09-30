@@ -24,6 +24,10 @@ var Combat = (function () {
   /* --------------------------------------------------------- firing */
   function fire(game, shooter, weapon, target) {
     const w = weapon;
+    /* The round has left the barrel, whatever it does next: its flash, blast
+       or motor may give the shooter away to the side it was fired at
+       (game.js G.revealFire). A stand-in game object in a test has none. */
+    if (game.revealFire) game.revealFire(shooter, w, target);
     const fac = FACTIONS[shooter.owner.faction];
     /* stabilised fire control keeps a moving tank accurate; unstabilised does not */
     const fc = fac && fac.fireCtrl ? fac.fireCtrl : 1;

@@ -525,6 +525,7 @@ var Render = (function () {
       else drawUnit(it);
     }
 
+    drawGhosts();
     drawProjectiles();
     drawEffects();
     drawFog();
@@ -585,6 +586,41 @@ var Render = (function () {
       ctx.fillText(b.sub, cx, cy + 14);
     }
     ctx.restore();
+  }
+
+  /* ---- where we last saw it ----
+     G.trackGhosts keeps the player's last sighting of each contact that has
+     gone out of sight. The 3D view draws the unit's own model in grey there;
+     this view draws a dashed grey ring the size of the unit, and the minimap
+     a grey dot, both fading over the ghost's life - and, as in 3D, only
+     while its ground is out of view (g.show). Never drawn with the fog off,
+     when nothing is ever out of sight. */
+  function ghostFade(g) { return g.show ? 1 - (G.time - g.t) / g.life : 0; }
+  function drawGhosts() {
+    if (!G.fogEnabled || !G.ghosts || !G.ghosts.length) return;
+    const z = cam.z;
+    ctx.save();
+    ctx.strokeStyle = "#b9c2cb"; ctx.lineWidth = 1.5; ctx.setLineDash([3 * z, 3 * z]);
+    for (const g of G.ghosts) {
+      const a = ghostFade(g);
+      if (a <= 0) continue;
+      const el = g.layer === "air" ? 0 : GameMap.elevAt(G.map, g.tx, g.ty);
+      const X = sx(g.x, g.y), Y = sy(g.x, g.y, el) - (g.layer === "air" && !g.parked ? 34 * z : 0);
+      const r = Math.max(4, g.r * 0.9 * z);
+      ctx.globalAlpha = 0.18 + 0.5 * a;
+      ctx.beginPath(); ctx.ellipse(X, Y, r, r * 0.5, 0, 0, 7); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  function drawGhostDots(mctx, S) {
+    if (!G.fogEnabled || !G.ghosts || !G.ghosts.length) return;
+    for (const g of G.ghosts) {
+      const a = ghostFade(g);
+      if (a <= 0) continue;
+      mctx.fillStyle = "rgba(185,194,203," + (0.25 + 0.5 * a).toFixed(2) + ")";
+      mctx.fillRect((g.x / CFG.TILE) * S - 1, (g.y / CFG.TILE) * S - 1, 2, 2);
+    }
   }
 
   function visible(e) {
@@ -2144,6 +2180,7 @@ var Render = (function () {
       const sz = e.kind === "building" ? 3 : 2;
       mctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
     }
+    drawGhostDots(mctx, S);
     /* view frustum */
     mctx.strokeStyle = "rgba(255,255,255,0.7)"; mctx.lineWidth = 1;
     const c0 = unproject(0, 0), c1 = unproject(W, 0), c2 = unproject(W, H), c3 = unproject(0, H);
@@ -2251,6 +2288,7 @@ var Render = (function () {
       const sz = e.kind === "building" ? 3 : 2;
       mctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
     }
+    drawGhostDots(mctx, S);
     /* Barriers and their contacts. Mines have never appeared on the minimap
        and still do not; a barrier does, because it is a thing the player put
        somewhere on purpose and then has to remember about while looking at the

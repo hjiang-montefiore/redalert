@@ -10421,6 +10421,380 @@ try{
         "dark shared sets "+dark0+" -> "+darkShared()+", made left on the board "+left);
   })();
   }
+  /* ====== [85] A SHOT GIVES THE SHOOTER AWAY, AND WHAT GOES OUT OF SIGHT LEAVES A GHOST ======
+     Measured on HEAD 7beddb2, fog on: a Kornet team 10 tiles from an Abrams
+     (sight 8.0) hit it three times and was on the player's screen for 0.00 s
+     of the next 15; a Javelin team hit a commander's T-90A from 8 tiles and
+     never entered its picture - but digest() wrote the team's exact position
+     into the commander's dossier off lastHitBy. game.js G.revealFire now
+     lights the firing point for the side a round was fired at, if anybody on
+     that side could see the flash, and both seats read the same lit tiles;
+     G.flashPlot does the same for a counter-battery radar's back-plot; and
+     G.trackGhosts leaves the player a fading grey ghost where a contact went
+     out of sight. Held here: the launch is seen the instant it happens and
+     for the signature's time (5 s + the missile's flight), by the player and
+     by the commander alike and within one fog recompute of each other; the
+     commander's plot takes the shooter; a gun twenty tiles back with nobody
+     looking stays hidden, the commander no longer learns its position from
+     the hit, and it IS seen once an observer is near enough to see the
+     flash; a sniper's round stays hidden from a squad that cannot see that
+     far; the shooter's own side is told nothing; a round that can only
+     reach a submarine gives nothing away; dust hides a launch, the dark
+     does not; a counter-battery radar that covers a gun nobody can see
+     lights it when it plots it, for either seat, for the same time, and an
+     early-warning array's launch back-plot lights nothing; the
+     ghost stays where the unit went out of sight when the unit moves on,
+     goes when that ground is looked at again, when the unit is seen again,
+     and after its life, while the commander still holds an older sighting
+     on its plot; a unit that walks out of our view leaves its ghost over
+     the edge, on ground we do not see, never on ground in plain view.
+     The shared match plays with the fog off: it is switched on for this and
+     put back. Everything is put back: the units made here are gone, the fog
+     grid and its switch, the weather, every lit firing point and ghost, the
+     RNG, both commanders' books and the test guns' counter-battery plots.
+     What the enemy commander noted on its plot while this ran is its own
+     memory of units that are now gone, and ages out as any sighting does. */
+  if (inHalf(1)) {
+  log("\n[85] A SHOT GIVES THE SHOOTER AWAY, AND WHAT GOES OUT OF SIGHT LEAVES A GHOST");
+  (function(){
+    var TS=CFG.TILE, M=Game.map, made=[], rng=Game.rng, DT=CFG.DT;
+    var fogOn=Game.fogEnabled, fog0=new Uint8Array(Game.fog), fogT0=Game.fogT, wk0=Game.weatherKey;
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats);
+    var snap=function(p){ var F=p._flash; return F ? { grid: F.grid ? new Float32Array(F.grid) : null, list: F.list.slice() } : null; };
+    var fl0={ p: snap(P), e: snap(E) }, hadGh=("ghosts" in Game), gh0=Game.ghosts ? Game.ghosts.slice() : null;
+    var W=M.W, ft=function(e){ return Game.fog[e.ty*W+e.tx]; };
+    function mk(p,id,x,y){ var u=Game.spawnUnitAt(p,id,x*TS+16,y*TS+16); if(u){ made.push(u); u.order={type:"idle"}; u.stance="hold"; u._pin={x:u.x,y:u.y}; } return u; }
+    /* Every unit made here is held where it was put, every tick, as [68]
+       holds its clearer: a commander at peace still re-tasks what it owns -
+       its scouting sweep drove the first cut's enemy scout 27.5 tiles off in
+       the twenty seconds a ghost takes to fade. put() is the only mover. */
+    function put(u,x,y){ u.x=x; u.y=y; u._pin={x:x,y:y}; }
+    function tk(){ for(var i=0;i<made.length;i++){ var u=made[i]; if(u.dead||!u._pin) continue;
+        u.x=u._pin.x; u.y=u._pin.y; u.order={type:"idle"}; u.path=null; if(u.orders) u.orders.length=0;
+        /* a unit marked quiet holds its fire: its own shots would light it */
+        if(u._quiet&&u.cooldowns) for(var c=0;c<u.cooldowns.length;c++) u.cooldowns[c]=99; }
+      Game.tick(DT); }
+    function pass(x,y){ return x>1&&y>1&&x<W-2&&y<M.H-2&&GameMap.passable(M,x,y,"ground")&&!Game.tileBlocked(x,y,null); }
+    function lonely(x,y,r){ var n=0; Game.grid.query(x*TS+16,y*TS+16,r*TS,function(e){ if(!e.dead) n++; }); return n===0; }
+    /* no radar of either side over a tile: a counter-battery plot would light
+       a gun there, and the checks that want a gun nobody can find need one
+       nobody's radar covers either */
+    function dark(x,y){ return !Game.radarCovers(P,x*TS+16,y*TS+16) && !Game.radarCovers(E,x*TS+16,y*TS+16); }
+    /* a straight run of d+1 ground tiles, nobody within r tiles of either
+       end, well clear of both bases, no radar over either end, and - given
+       rb - no structure within rb tiles of either end */
+    function noBld(x,y,rb){ var n=0; Game.grid.query(x*TS+16,y*TS+16,rb*TS,function(e){ if(!e.dead&&e.kind==="building") n++; }); return n===0; }
+    /* nothing lit near a row, for either side: a firing point still burning
+       from an earlier scenario (or the shared match) would show what the
+       next one needs hidden */
+    function unlit(x,d,y){ var ok=true; [P,E].forEach(function(p){ var F=p._flash; if(F&&F.list) F.list.forEach(function(s){
+        if(s.until>Game.time&&s.x>=x-4&&s.x<=x+d+4&&Math.abs(s.y-y)<=4) ok=false; }); }); return ok; }
+    /* Fresh ground first. The full half-1 run reaches this section with both
+       bases grown and both sides' radars up, and a first cut that kept every
+       scenario's units on the board until the end ran out of quiet, dark
+       ground two scenarios short ("no ground"). So each scenario's units
+       leave the board when it is done (offBoard()), and a row may fall back to
+       ground an earlier one here has freed. */
+    var used=[];
+    function row(d,r,rb){
+      for(var fresh=1;fresh>=0;fresh--)
+      for(var y=6;y<M.H-6;y+=2) for(var x=6;x+d<W-6;x+=2){
+        var ok=true; for(var k=0;k<=d&&ok;k++) if(!pass(x+k,y)) ok=false;
+        if(!ok) continue;
+        if(fresh&&used.some(function(q){ return Math.abs(q.y-y)<=r&&x<=q.x+q.d+r&&q.x<=x+d+r; })) continue;
+        if(U.dist(x*TS,y*TS,P.homeX,P.homeY)<30*TS||U.dist(x*TS,y*TS,E.homeX,E.homeY)<30*TS) continue;
+        if(U.dist((x+d)*TS,y*TS,P.homeX,P.homeY)<30*TS||U.dist((x+d)*TS,y*TS,E.homeX,E.homeY)<30*TS) continue;
+        if(!lonely(x,y,r)||!lonely(x+d,y,r)||!lonely(x+(d>>1),y,r)) continue;
+        if(!dark(x,y)||!dark(x+d,y)) continue;
+        if(rb&&(!noBld(x,y,rb)||!noBld(x+d,y,rb))) continue;
+        if(!unlit(x,d,y)) continue;
+        used.push({x:x,y:y,d:d});
+        return {x:x,y:y};
+      } return null; }
+    /* a scenario done: its units leave the board, and so do their guns'
+       counter-battery contacts - a plot left standing is a target the
+       commander may still shell */
+    function offBoard(){ for(var i=0;i<arguments.length;i++){ var u=arguments[i]; if(u&&!u.dead) u.dead=true; }
+      if(Game.cbContacts) for(var ci=Game.cbContacts.length-1;ci>=0;ci--){ var cu=Game.cbContacts[ci].unit;
+        if(cu&&cu.dead&&made.indexOf(cu)>=0) Game.cbContacts.splice(ci,1); }
+      Game.sweepDead(); }
+    /* seconds from now until test() goes false, ticking; -1 if never within lim */
+    function lastsFor(test,lim){ var t0=Game.time; for(var k=0;k<Math.ceil(lim/DT);k++){ if(!test()) return Game.time-t0; tk(); } return -1; }
+    function ticks(n){ for(var k=0;k<n;k++) tk(); }
+    /* a round that lands: the RNG is pinned for the one roll and handed back */
+    function shoot(s,w,t){ Game.rng=function(){ return 0.5; }; try { Combat.fire(Game, s, Object.assign({}, w, { acc: 5 }), t); } finally { Game.rng=rng; } }
+    var ghostOf=function(u){ return (Game.ghosts||[]).filter(function(g){ return g.id===u.id; })[0]||null; };
+    var fl=Game.FLASH||{};
+    try {
+      Game.fogEnabled=true; Game.recomputeFog();
+      /* Every shooter is put one tile past what its target can see on the
+         day - research (optics, x1.25) and the weather move that, and the
+         shared match has had both by now - and every observer the same way. */
+      var past=function(u,cap){ return Math.min(cap, Math.floor(u.sightR())+1); };
+      var g1=row(12,20);
+      if(!g1){ chk("[85] quiet ground for the scenario", false, "none found"); return; }
+
+      /* ---- 1. the player is shot at by a Kornet team it cannot see ---- */
+      var tank=mk(P,"mbt_n",g1.x+12,g1.y), kor=tank&&mk(E,"at_p",g1.x+12-past(tank,12),g1.y);
+      if(!kor||!tank){ chk("[85] Kornet team and Abrams spawned", false, ""); return; }
+      tk(); Game.recomputeFog();
+      var d1=U.dist(kor.x,kor.y,tank.x,tank.y)/TS;
+      chk("the Kornet team is out of the Abrams' sight and hidden from the player",
+          d1>tank.sightR() && ft(kor)!==2 && !Game.visibleTo(P,kor),
+          "range "+d1.toFixed(1)+"t, tank sees "+tank.sightR().toFixed(1)+"t, fog "+ft(kor));
+      var wK=WEAPONS[kor.def.weapons[0]];
+      var want1=(fl.missile?fl.missile.dur:5)+Math.min(3, U.dist(kor.x,kor.y,tank.x,tank.y)/Math.max(60,wK.speed));
+      shoot(kor, wK, tank);
+      var own=!!(Game.flashLit&&Game.flashLit(E,kor));
+      chk("the launch is seen the instant it happens", ft(kor)===2 && Game.visibleTo(P,kor), "fog "+ft(kor));
+      var lit1=lastsFor(function(){ return ft(kor)===2; }, 15);
+      chk("and stays in view for a missile's time: 5 s and its flight, to the next fog recompute",
+          lit1>=want1-DT && lit1<=want1+CFG.FOG_UPDATE+2*DT,
+          "in view "+(lit1<0?"15+":lit1.toFixed(2))+" s, signature "+want1.toFixed(2)+" s (HEAD: 0)");
+      chk("and it was the flash, not the tank's own eyes: the team is still out of its sight",
+          U.dist(kor.x,kor.y,tank.x,tank.y)/TS>tank.sightR(), "");
+      var gk=ghostOf(kor);
+      chk("when the light goes out a ghost is left where the team was last seen",
+          !!gk && gk.x===kor.x && gk.y===kor.y && gk.def===kor.def && gk.owner===E && gk.show && Math.abs(gk.t-(Game.time-DT))<=DT+1e-6,
+          gk ? "at "+(gk.x/TS).toFixed(1)+","+(gk.y/TS).toFixed(1)+" seen "+gk.t.toFixed(2)+" now "+Game.time.toFixed(2) : "no ghost (HEAD has none)");
+      /* it moves off unseen, away from the tank: the ghost does not follow it */
+      var kx=kor.x, ky=kor.y, away=(ky/TS)<M.H/2 ? 12 : -12;
+      put(kor,kor.x,kor.y+TS*away); ticks(10);
+      gk=ghostOf(kor);
+      chk("the ghost stays where the team was seen when the team moves on unseen",
+          !!gk && gk.x===kx && gk.y===ky && ft(kor)!==2,
+          gk ? "ghost "+(U.dist(gk.x,gk.y,kx,ky)/TS).toFixed(1)+"t off where it was seen, team 12t away and "+(ft(kor)===2?"in view":"unseen") : "none");
+      /* the tank drives up and looks at that ground: nothing there */
+      put(tank,kx+TS*4,ky); tk(); Game.recomputeFog(); tk();
+      chk("the ghost goes when that ground is looked at again and it is not there",
+          Game.fog[((ky/TS)|0)*W+((kx/TS)|0)]===2 && !ghostOf(kor), "fog "+Game.fog[((ky/TS)|0)*W+((kx/TS)|0)]+", ghost "+(!!ghostOf(kor)));
+      offBoard(kor,tank);
+
+      /* ---- 2. the commander is shot at by a TOW it cannot see ---- */
+      var g2=row(12,20);
+      var t90=g2&&mk(E,"mbt_p",g2.x+12,g2.y), bra=t90&&mk(P,"ifv_n",g2.x+12-past(t90,12),g2.y);
+      if(!bra||!t90){ chk("[85] Bradley and T-90 spawned", false, ""); return; }
+      tk();
+      var sgt=(typeof AI!=="undefined"&&AI.sightingOf)?AI.sightingOf:function(){ return null; };
+      chk("the Bradley is out of the T-90's sight and not on the commander's plot",
+          U.dist(bra.x,bra.y,t90.x,t90.y)/TS>t90.sightR() && !Game.visibleTo(E,bra) && !sgt(E,bra.id), "");
+      var wT=WEAPONS.tow2b||WEAPONS[bra.def.weapons[0]];
+      var want2=(fl.missile?fl.missile.dur:5)+Math.min(3, U.dist(bra.x,bra.y,t90.x,t90.y)/Math.max(60,wT.speed));
+      var t2=Game.time;
+      shoot(bra, wT, t90);
+      own=own||!!(Game.flashLit&&Game.flashLit(P,bra));
+      chk("the commander sees the launch the instant it happens", Game.visibleTo(E,bra), "");
+      var sawAt=null;
+      var lit2=lastsFor(function(){ var s=sgt(E,bra.id); if(s&&!sawAt) sawAt=s; return Game.visibleTo(E,bra); }, 15);
+      chk("for the same signature's time the player was shown, to within one fog recompute",
+          lit2>=want2-DT && lit2<=want2+DT && lit1>0 && Math.abs(lit2-lit1)<=CFG.FOG_UPDATE+2*DT,
+          "commander "+(lit2<0?"15+":lit2.toFixed(2))+" s, player "+(lit1<0?"-":lit1.toFixed(2))+" s, signature "+want2.toFixed(2)+" s");
+      chk("and its plot takes the TOW team where it fired from, while it was lit",
+          !!sawAt && sawAt.x===bra.x && sawAt.y===bra.y && sawAt.t>=t2 && sawAt.t<=t2+want2+DT,
+          sawAt ? "plotted at t+"+(sawAt.t-t2).toFixed(2)+" s" : "never on the plot (HEAD: never)");
+
+      /* ---- 3. nothing else leaks ---- */
+      chk("the shooter's own side is told nothing by its own shots", !own, "");
+      /* The TOW team leaves the board now, with the T-90, so nothing of the
+         commander's can see it again: its sighting ages from here, and
+         section 4 measures it against the player's ghost. */
+      offBoard(bra,t90);
+      /* a howitzer twenty tiles back, nobody of theirs near it */
+      var g3=row(20,24);
+      var gun=g3&&mk(P,"spg_n",g3.x,g3.y), vic=g3&&mk(E,"mbt_p",g3.x+20,g3.y);
+      if(!gun||!vic){ chk("[85] howitzer scenario spawned", false, ""); return; }
+      tk();
+      var wH=WEAPONS[gun.def.weapons[0]];
+      /* the commander's dossier, held by reference: intel() hands out the array itself */
+      var DOS=(AI.intelOf(E)||{}).dossier||[], dos=function(){ return DOS[P.idx]; };
+      shoot(gun, wH, vic);
+      var lit3=Game.visibleTo(E,gun);
+      /* the shell flies ~3 s; then give the commander's sweep a second */
+      var leak=false, hit=false;
+      for(var k3=0;k3<Math.ceil(6/DT);k3++){ tk(); if(vic.lastHitBy===gun) hit=true;
+        var dd=dos(); if(dd&&dd.lastX===gun.x&&dd.lastY===gun.y) leak=true; }
+      chk("a howitzer 20 tiles back with nobody of theirs near enough is not seen by its flash",
+          !lit3 && !Game.visibleTo(E,gun) && !sgt(E,gun.id), "");
+      chk("and the commander no longer learns where it is from being hit by it",
+          hit && !leak, "hit="+hit+", its exact position on the dossier="+leak+" (HEAD: true)");
+      /* an observer of theirs 10 tiles from the gun: it cannot see the gun
+         (sight 7.9) but it sees a 155 mm going off */
+      var obs=mk(E,"recon_p",g3.x+11,g3.y);
+      if(obs) put(obs,gun.x+TS*past(obs,12),obs.y);
+      ticks(20);
+      var sawGun0=Game.visibleTo(E,gun);
+      shoot(gun, wH, vic);
+      chk("the same gun IS seen once an observer of theirs is close enough to see the flash",
+          !!obs && !sawGun0 && Game.visibleTo(E,gun) && U.dist(obs.x,obs.y,gun.x,gun.y)/TS>obs.sightR(),
+          obs ? "observer "+(U.dist(obs.x,obs.y,gun.x,gun.y)/TS).toFixed(1)+"t off, sees "+obs.sightR().toFixed(1)+"t" : "");
+      /* a sniper's round at a squad that cannot see nine tiles */
+      var g4=row(9,20);
+      var snp=g4&&mk(P,"sniper_n",g4.x,g4.y), sq=g4&&mk(E,"rifle_p",g4.x+9,g4.y);
+      if(snp&&sq){ tk();
+        shoot(snp, WEAPONS[snp.def.weapons[0]], sq);
+        chk("a sniper's round is not seen by a squad that cannot see that far",
+            !Game.visibleTo(E,snp), "squad sees "+sq.sightR().toFixed(1)+"t, sniper at 9t");
+      }
+      offBoard(gun,vic,obs,snp,sq);
+      /* the RBU-6000 and the helicopters' depth charges fly as "arc": at a
+         boat under the water they give no firing point away, as a torpedo
+         does not (the first cut read them as a rocket battery and a gun) */
+      var asw=[["destroyer_p","asw_rbu__destroyer_p"],["asw_helo_p","asw_rbu__asw_helo_p"],
+               ["pla_e80_aswhelo","w_e80_pla_aswhelo__pla_e80_aswhelo"],["pact_e60_corvette","asw_rbu__pact_e60_corvette"]]
+        .filter(function(r){ return UNITS[r[0]] && WEAPONS[r[1]]; });
+      var aswSig=Game.flashSig ? asw.map(function(r){ var d=UNITS[r[0]], s=Game.flashSig({def:d,layer:d.layer,kind:"unit"}, WEAPONS[r[1]]); return r[0]+" "+(s?s.id:"none"); }) : null;
+      chk("a round that can only reach a submarine gives no firing point away",
+          !!aswSig && asw.length>=2 && aswSig.every(function(t){ return /none$/.test(t); }), aswSig ? aswSig.join(", ") : "no flash classes (HEAD)");
+
+      /* ---- 3b. dust hides a launch; the dark does not ---- */
+      /* no structure near: a structure's sight carries no weather term */
+      var g6=row(12,20,32);
+      Game.weatherKey="clear";
+      var tw=g6&&mk(E,"mbt_p",g6.x+12,g6.y);
+      if(!tw){ chk("[85] weather scenario spawned", false, ""); return; }
+      var clr=tw.sightR(), dW=past(tw,12), kw=mk(P,"at_p",g6.x+12-dW,g6.y);
+      tk();
+      var wKw=WEAPONS[kw.def.weapons[0]], kk=(fl.missile||{k:2}).k, eyes={}, seenW={};
+      ["sandstorm","night"].forEach(function(wx){
+        Game.weatherKey=wx; delete kw._flash;
+        eyes[wx]=tw.sightR();
+        shoot(kw, wKw, tw);
+        seenW[wx]=Game.visibleTo(E,kw);
+      });
+      Game.weatherKey=wk0;
+      offBoard(tw,kw);
+      chk("in a sandstorm a crew does not see a launch the dust hides: twice its sight in the dust is short of it",
+          dW>kk*eyes.sandstorm && !seenW.sandstorm,
+          "T-90 sees "+eyes.sandstorm.toFixed(1)+"t in the dust ("+clr.toFixed(1)+"t clear), launch "+dW+"t off, seen="+seenW.sandstorm+" (first cut: seen)");
+      chk("at night it sees the same launch as on a clear day: a flash brings its own light",
+          seenW.night && dW>eyes.night && dW<=kk*clr,
+          "sees "+eyes.night.toFixed(1)+"t at night, launch "+dW+"t off, seen="+seenW.night);
+
+      /* ---- 3c. counter-battery radar finds the guns nobody can see ----
+         A gun's contact (Game.reportIndirectFire, which combat.js fire()
+         leaves for every arcing round) under a radar vehicle of the other
+         side, twelve tiles off: nobody's eyes reach the gun, the radar does
+         - a Zoopark-1 covers 14.5 tiles, a TPQ-53 15. No round is fired, so
+         no flash is in it: this is the radar's light alone. The player's own
+         radar vehicle already lifts the player's fog over its whole range
+         (recomputeFog, the human's seat only), so on that side the plot's
+         light is read off the grid both seats share (Game.flashLit). */
+      var cbDur=(fl.arty||{dur:4}).dur;
+      var cbRun=function(side, foe, gunId, radId){
+        var g7=row(14,20); if(!g7) return null;
+        var gn=mk(foe,gunId,g7.x,g7.y), rv=mk(side,radId,g7.x+12,g7.y);
+        if(!gn||!rv) return null;
+        tk();
+        var out={ covered: Game.radarCovers(side,gn.x,gn.y), eyes: rv.sightR(), D: U.dist(rv.x,rv.y,gn.x,gn.y)/TS };
+        var seen=side===P ? function(){ return !!(Game.flashLit&&Game.flashLit(P,gn)); } : function(){ return Game.visibleTo(E,gn); };
+        out.before=seen();
+        var ts=Game.time, on=-1, off=-1;
+        Game.reportIndirectFire(gn, WEAPONS[gn.def.weapons[0]]);
+        for(var k=0;k<Math.ceil(12/DT);k++){ tk(); var sn=seen();
+          if(sn&&on<0) on=Game.time-ts; if(!sn&&on>=0){ off=Game.time-ts; break; } }
+        out.on=on; out.off=off; out.dur=on>=0&&off>0 ? off-on : -1;
+        offBoard(gn,rv);
+        return out;
+      };
+      var cbE=cbRun(E, P, "spg_n", "radarv_p");
+      var cbP=cbRun(P, E, "spg_p", "radarv_n");
+      var cbTxt=function(o){ return !o ? "no ground" : "radar "+o.D.toFixed(1)+"t off (its crew sees "+o.eyes.toFixed(1)+"t), covered="+o.covered+
+          ": "+(o.on<0 ? "never lit" : "lit at t+"+o.on.toFixed(2)+" s for "+(o.dur<0?"12+":o.dur.toFixed(2))+" s"); };
+      var cbOk=function(o){ return !!o && o.covered && !o.before && o.D>o.eyes && o.on>=5-DT && o.on<=5+3*DT && o.dur>=cbDur-DT && o.dur<=cbDur+2*DT; };
+      chk("the commander's counter-battery radar lights a gun none of its crews can see, when it plots it, for 4 s",
+          cbOk(cbE), cbTxt(cbE)+" (HEAD: never)");
+      chk("and the player's radar lights the same, on the grid both seats share, for the same time",
+          cbOk(cbP) && !!cbE && Math.abs(cbP.dur-cbE.dur)<=2*DT, cbTxt(cbP));
+      /* A ballistic launch is also back-plotted by an early-warning array
+         (Game.ewCovers), which lifts no fog by design: a boost-phase plot is a
+         warning and a grid, not a sight of the TEL. So a ballistic plot on
+         ground no radar of the commander's covers lights nothing, and a gun's
+         plot on the same ground does. */
+      var g8=row(2,20), ewTxt="no ground";
+      var ewOk=false;
+      if (g8 && Game.flashPlot && Game.flashLit) {
+        var at8={ layer:"ground", tx:g8.x, ty:g8.y }, X8=g8.x*TS+16, Y8=g8.y*TS+16;
+        var c8=function(b){ return { ballistic:b, x:X8, y:Y8, px:X8, py:Y8 }; };
+        var cov8=Game.radarCovers(E,X8,Y8);
+        Game.flashPlot(E, c8(true)); var ewL=Game.flashLit(E, at8);
+        Game.flashPlot(E, c8(false)); var cbL=Game.flashLit(E, at8);
+        ewOk=!cov8 && !ewL && cbL;
+        ewTxt="radar over it "+cov8+": ballistic plot lit="+ewL+", gun plot lit="+cbL;
+      } else if (g8) ewTxt="no flashPlot (HEAD)";
+      chk("a launch only an early-warning array could have plotted lights nothing; a radar's plot there does", ewOk, ewTxt);
+
+      /* ---- 4. a ghost that is never looked at again fades out ---- */
+      var g5=row(16,20);
+      var sc=g5&&mk(E,"mbt_p",g5.x,g5.y), ey=g5&&mk(P,"recon_n",g5.x+3,g5.y);
+      if(!sc||!ey){ chk("[85] ghost-life scenario spawned", false, ""); return; }
+      sc._quiet=ey._quiet=true;
+      var ex0=ey.x;
+      /* n ticks with our scout `off` tiles east of the tank; stops early when
+         stop() says so */
+      var run4=function(off,n,stop){ put(ey,ex0+TS*(off-3),ey.y);
+        for(var k=0;k<n;k++){ tk(); if(k===0) Game.recomputeFog(); if(stop&&stop()) return true; } return false; };
+      run4(3,3);
+      chk("an enemy tank 3 tiles from our scout is in view", ft(sc)===2, "");
+      run4(16,3);
+      var gs=ghostOf(sc), life=(Game.GHOST_LIFE||{}).ground||20;
+      chk("when our scout pulls back out of sight its ghost is left", !!gs && ft(sc)!==2 && gs.show, "");
+      run4(16, Math.ceil((life+2)/DT), function(){ return !ghostOf(sc); });
+      chk("and fades out after its life, 20 s on land",
+          !!gs && !ghostOf(sc) && Math.abs((Game.time-gs.t)-life)<=2*DT,
+          gs ? "gone "+(Game.time-gs.t).toFixed(2)+" s after last seen" : "no ghost");
+      /* the commander saw the TOW team (section 2) before the player last saw
+         this tank, and nothing of its has seen the team since: its sighting
+         is older than the ghost that has just faded, and still on its plot */
+      var sb=sgt(E,bra.id);
+      chk("while the commander still holds an older sighting: a ghost gives the player no more than the plot",
+          !!gs && !!sb && gs.t>=sb.t && Game.time-sb.t>=life,
+          sb ? "the commander's sighting of the TOW team is "+(Game.time-sb.t).toFixed(1)+" s old and kept; the ghost went at "+life+" s (air: "+
+               ((Game.GHOST_LIFE||{}).air)+" s against the commander's 22.5)" : "no sighting on the plot");
+      /* seen again: the unit is drawn and its ghost goes */
+      run4(3,3); run4(16,3);
+      var gs2=ghostOf(sc);
+      run4(3,3);
+      chk("a ghost goes the moment the unit is seen again", !!gs2 && !ghostOf(sc) && ft(sc)===2, "");
+      /* our scout stands still and the tank walks away from it, 6 px a tick:
+         where it goes out of sight it leaves its ghost over the edge, on
+         ground we do not see - never on the ground in view it was last seen
+         on, where the player can see there is nothing (the first cut: on the
+         lit tile, a quarter of all ghosts in a 600 s match) */
+      put(ey,ex0+TS*13,ey.y); put(sc,g5.x*TS+16+TS*13,sc.y); tk(); Game.recomputeFog(); tk();
+      var inView=ft(sc)===2, lastX=sc.x, walked=0;
+      while(ft(sc)===2 && walked<TS*16){ lastX=sc.x; put(sc,sc.x-6,sc.y); walked+=6; tk(); }
+      var gw=ghostOf(sc);
+      chk("a unit that walks out of our view leaves its ghost over the edge, on ground we do not see",
+          inView && !!gw && gw.show && Game.fog[gw.ty*W+gw.tx]!==2 && Math.abs(gw.x-lastX)<=6.01 && gw.y===sc.y,
+          gw ? "ghost "+Math.abs(gw.x-lastX).toFixed(1)+" px on from where it was last seen, its tile "+(Game.fog[gw.ty*W+gw.tx]===2?"IN VIEW":"out of view")+
+               ", "+(U.dist(gw.x,gw.y,ey.x,ey.y)/TS).toFixed(1)+"t from our scout (sees "+ey.sightR().toFixed(1)+"t)" : (inView ? "no ghost" : "the tank was never in view"));
+      /* a 2D frame with a ghost in it draws cleanly */
+      run4(16,3);
+      var err=null;
+      try { if (typeof Render2D!=="undefined" && Render===Render2D) Render2D.draw(DT, UI.input); } catch(e2){ err=e2; }
+      chk("a 2D frame with a ghost in it draws cleanly", !err && !!ghostOf(sc), err ? String(err) : "");
+    } finally {
+      Game.rng=rng; Game.weatherKey=wk0;
+      if (Game.cbContacts) for(var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if (made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      made.forEach(function(u){ if(!u.dead) u.dead=true; delete u._pin; });
+      Game.tick(DT);
+      Game.fogEnabled=fogOn; Game.fog.set(fog0); Game.fogT=fogT0;
+      var putFl=function(p,s){ if(!s){ delete p._flash; return; } p._flash={ grid: s.grid, list: s.list }; };
+      putFl(P,fl0.p); putFl(E,fl0.e);
+      if (hadGh) Game.ghosts=gh0; else delete Game.ghosts;
+      Game.players.forEach(function(p){ p.units.forEach(function(u){ delete u._seen; delete u._seenOn; delete u._gh; delete u._flash; }); });
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    chk("the shared match is as it was: fog off, weather, no lit ground, its ghosts as they were, RNG, both books, no stray plot",
+        Game.fogEnabled===fogOn && Game.weatherKey===wk0 && Game.rng===rng && keep(P.stats)===sP && keep(E.stats)===sE &&
+        (hadGh ? Game.ghosts===gh0 : !("ghosts" in Game)) && made.every(function(u){ return u.dead; }) &&
+        !(Game.cbContacts||[]).some(function(c){ return made.indexOf(c.unit)>=0; }), "");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

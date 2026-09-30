@@ -3754,6 +3754,30 @@ function makeCommander() {
       paint(b.tx + b.def.w / 2, b.ty + b.def.h / 2, r);
       G.grid.query(b.x, b.y, r * CFG.TILE, (e) => noteContact(e, b, r, now));
     }
+    /* ---- a firing point given away ----
+       G.revealFire lit these tiles for this side when something fired from
+       them at us and one of ours could see the flash, and G.flashPlot when
+       our counter-battery radar back-plotted a gun there - the very tiles
+       the player's fog is lifted over in the same case, read off the same
+       grid (G.flashLit). Whatever stands on them is in view
+       while the light lasts, and goes on the plot like any other sighting:
+       the shooter becomes a live track, which tendScout, concentrate() and
+       defendBase already know how to answer. The ground is overlooked too,
+       as it is explored for the player. No stealth cut: it is the flash that
+       is seen, not the airframe. Stamps run at most a few seconds and the
+       sweep every 0.8, so none is missed. */
+    const FL = P._flash;
+    if (FL && FL.list.length) {
+      for (const s of FL.list) {
+        if (s.until <= now) continue;
+        paint(s.x, s.y, s.r);
+        G.grid.query((s.x + 0.5) * CFG.TILE, (s.y + 0.5) * CFG.TILE, (s.r + 1.5) * CFG.TILE, (e) => {
+          if (!e || e.dead || e.carried || !e.owner || e.owner === P || G.allied(P, e.owner)) return;
+          if (e.kind === "building" && e.buildProgress < 1) return;
+          if (G.flashLit(P, e)) noteSighting(e, now);
+        });
+      }
+    }
     /* Our own barrier. A node is not a unit and is not in P.units, so a field
        this commander paid for would improve its targeting through canSeeSub
        and never once enter its picture - it would prosecute contacts it had no
@@ -4000,7 +4024,20 @@ function makeCommander() {
         if (by.layer === "sub") d.sawSub = true;
         if (by.layer === "air") { d.sawAir = true; d.peakAir = Math.max(d.peakAir, 1); }
         if (by.armor === "heavy") d.sawHeavy = true;
-        d.lastX = by.x; d.lastY = by.y; d.lastT = now;
+        /* WHERE it fired from is known only if we saw it - its flash
+           (G.revealFire, so it is in visibleTo while lit) or plain sight;
+           a submarine only on sonar (G.canSeeSub, which a boat that has just
+           fired always meets), because a commander's visibleTo has no
+           submarine test and would hand over a boat under the water to any
+           unit of ours within sight of the spot. This wrote the shooter's
+           exact position for every hit, seen or not: a howitzer twenty
+           tiles back, which nobody of ours could see, was on the dossier to
+           the pixel and fed intelHome(). The class of the thing that hit us
+           (sub, air, heavy above) is still read off the round, as a crew
+           would. */
+        if (by.layer === "sub" ? G.canSeeSub(P, by) : G.visibleTo(P, by)) {
+          d.lastX = by.x; d.lastY = by.y; d.lastT = now;
+        }
       }
       /* A hauler under fire runs for the refinery instead of standing there -
          as a RETURN, the hauler's own way to a dock. This was a move to
@@ -13822,6 +13859,12 @@ function makeCommander() {
     /* The explored map, so the engine can hold this commander's harvesters to
        the same rule the human's obey, and so a test can see what it knows. */
     get look() { return look; },
+    /* one sighting off the plot - where and when this commander last saw
+       entity `id` - so a test can hold it to what the player was shown */
+    sighting(id) {
+      const r = seenU.get(id) || seenB.get(id);
+      return r ? { x: r.x, y: r.y, t: r.t } : null;
+    },
     intel() {
       /* the new state is exposed for the same reason `look` already is: so a
          test or a debug overlay can see whether any of this is firing */
@@ -14027,6 +14070,13 @@ return {
   },
   update(dt) { for (let i = 0; i < commanders.length; i++) commanders[i].update(dt); },
   get count() { return commanders.length; },
+  /* where and when a given commander last saw entity `id` (its plot, seenU or
+     seenB), or null - so a test can hold what the player is shown, a flash
+     or a ghost, to what the commander was shown */
+  sightingOf(player, id) {
+    for (const c of commanders) if (c.player === player) return c.sighting(id);
+    return null;
+  },
   /* the explored map belonging to a given commander, or null if that player is
      not run by one - which keeps the human and the neutral player unaffected */
   lookOf(player) {

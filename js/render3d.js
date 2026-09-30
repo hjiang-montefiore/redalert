@@ -1516,6 +1516,117 @@ var Render3D = (function () {
     return wrap;
   }
 
+  /* ---------------- where we last saw it ----------------
+     G.trackGhosts keeps the player's last sighting of every contact that has
+     gone out of sight; this draws each one as its own model in flat grey at
+     the spot and heading it was last seen at, fading out over its life - the
+     same model the live unit wore (the cached template, so nothing new is
+     built or uploaded), under the same fog wash a remembered structure sits
+     under. Eight shared materials, one per step of the fade, so a ghost costs
+     a clone and a material swap when it steps down, and nothing per frame. A
+     ghost is scenery: never picked, never selected (entityScreen and the
+     picking both work off game entities, and a ghost is not one). It is drawn
+     only while the record says its ground is out of view (g.show). */
+  const ghostRecs = new Map();       // ghost record -> { grp, inst, k }
+  const ghostMats = [];
+  function ghostMat(k) {
+    if (!ghostMats[k]) {
+      const m = new THREE.MeshLambertMaterial({ color: 0xaeb7c0, transparent: true,
+        opacity: 0.12 + 0.43 * (k + 1) / 8, depthWrite: false });
+      m.color.convertSRGBToLinear();
+      ghostMats[k] = m;
+    }
+    return ghostMats[k];
+  }
+  function ghostPaint(inst, k) {
+    inst.traverse((o) => {
+      if (o.isMesh) {
+        o.material = ghostMat(k);
+        /* A ghost is not there, so it throws no shadow and takes none. The
+           template's meshes all cast (prepModel), and r148's shadow pass
+           ignores a material's transparency: a tank's ghost at 17-55%
+           opacity threw the full, solid shadow of a tank (182 of 182 meshes;
+           a destroyer's 266 of 266). */
+        o.castShadow = false; o.receiveShadow = false;
+        /* a rotor's blur disc is a turning rotor; a ghost's is not turning */
+        if (o.name === "rotordisc") o.visible = false;
+      } else if (o.isLine || o.isPoints || o.isSprite) o.visible = false;
+    });
+  }
+  /* An aircraft on an airbase's pad or a ship's deck is drawn where landRest
+     and seatOnDeck put it - on the pad, on her deck at its spot, rolled with
+     her - and not at the ground under its game position, where the first cut
+     put its ghost: inside the pad, or under the sea beside the ship. So where
+     each enemy machine standing on something was drawn is noted every frame,
+     once syncEntities has placed it, and a ghost written for it takes that
+     pose. Only parked machines: everything else is drawn from the record. */
+  const ghostPose = new Map();       // entity id -> its drawn pose, frame noted
+  let ghostFrame = 0;
+  function notePoses() {
+    ghostFrame++;
+    const H = G.human;
+    for (const p of G.players) {
+      if (p === H || G.allied(H, p)) continue;
+      for (const e of p.units) {
+        if (e.layer !== "air" || e.dead || !(e.parked || (e.order && e.order.type === "parked"))) continue;
+        const rec = ents.get(e.id);
+        if (!rec) continue;
+        let q = ghostPose.get(e.id);
+        if (!q) ghostPose.set(e.id, q = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, f: 0 });
+        const gp = rec.grp.position, gr = rec.grp.rotation;
+        q.x = gp.x; q.y = gp.y; q.z = gp.z; q.rx = gr.x; q.ry = gr.y; q.rz = gr.z; q.f = ghostFrame;
+      }
+    }
+    for (const [id, q] of ghostPose) if (ghostFrame - q.f > 30) ghostPose.delete(id);
+  }
+  function syncGhosts() {
+    const list = (G.fogEnabled && G.ghosts) || [];
+    const live = new Set();
+    for (const g of list) {
+      const a = 1 - (G.time - g.t) / g.life;
+      if (a <= 0 || !g.def || !g.owner || !g.show) continue;
+      live.add(g);
+      const k = Math.max(0, Math.min(7, Math.ceil(a * 8) - 1));
+      let rec = ghostRecs.get(g);
+      if (!rec) {
+        const tpl = getModel(g.def, g.owner.color, g.owner.era || (G.era || "e20"));
+        const inst = tpl.clone();
+        ghostPaint(inst, k);
+        const grp = new THREE.Group();
+        grp.add(inst);
+        grp.userData.ghost = g.id;                   // tools/jsc/ghost3d_check.js finds it by this
+        grp.rotation.order = "YXZ";
+        const q = g.parked ? ghostPose.get(g.id) : null;
+        if (q) {
+          grp.position.set(q.x, q.y, q.z);
+          grp.rotation.set(q.rx, q.ry, q.rz);
+        } else {
+          let my;
+          if (g.layer === "air") {
+            const ground = heightAt(g.x, g.y);
+            my = g.parked ? ground - footOf(tpl) : Math.max(ground + 6, AIR_ALT);
+          } else if (g.layer === "sea") my = 0.35;
+          else if (g.layer === "sub") my = -0.6;     // a datum, just under the surface
+          else my = heightAt(g.x, g.y);
+          grp.position.set(gx2m(g.x), my, gx2m(g.y));
+          grp.rotation.y = -g.ang;
+        }
+        /* trained as it was last seen: trackGhosts stores tang for every
+           contact (the hull's heading where it has none), so this is the
+           live rule, -(tang - ang), with no fallback - an `||` here took a
+           turret laid exactly along a grid row (tang 0) for the hull's */
+        const tur = findPart(inst, "turret");
+        if (tur) tur.rotation.z = -(g.tang - g.ang);
+        three.scene.add(grp);
+        rec = { grp, inst, k };
+        ghostRecs.set(g, rec);
+      } else if (rec.k !== k) { ghostPaint(rec.inst, k); rec.k = k; }
+    }
+    for (const [g, rec] of ghostRecs)
+      if (!live.has(g)) { three.scene.remove(rec.grp); ghostRecs.delete(g); }
+    if (G.fogEnabled) notePoses();
+  }
+
   /* ---------------- entity sync ---------------- */
   let lastEraKey = "";
   const riders = [];                 // aircraft on, onto or off a ship's deck this frame (seatOnDeck)
@@ -2986,6 +3097,7 @@ var Render3D = (function () {
     syncNodes();
     updateFog();
     syncEntities(dt);
+    syncGhosts();
     /* damage smoke, fire and sparks, and a holed ship's list (js/damage3d.js):
        after every mesh is placed for this frame, before anything is drawn */
     if (typeof Damage3D !== "undefined") Damage3D.frame(three, G, dt, ents);
