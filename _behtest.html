@@ -4571,6 +4571,18 @@ try{
       if(!L||!R){ chk("the focus geometry is built", false, "contacts failed to spawn"); return; }
       L.stance="hold"; R.stance="hold";
       for(var i=0;i<8;i++) aim(eight[i], i<4?L:R);
+      /* the commander's own sweep has to record both contacts before the
+         window opens, exactly as the second scenario below waits for its
+         three. Without it the check hung on the phase of two clocks - the
+         0.8 s sweep and the 0.9 s think - inside a one-second window: when
+         the Soviet roster gained its second cards and the high/low mix
+         bought them, the wave launched at t=72 instead of t=75, the one
+         think in the window came before the sweep had seen L or R, and it
+         read runs +0 with nothing wrong in the rule it tests (measured:
+         the other streams stacked pass, the mix alone passes, together
+         they did not) */
+      for(var k=0;k<40;k++){ tick(1);
+        for(var i=0;i<8;i++) if(eight[i].order.type!=="attack") aim(eight[i], i<4?L:R); }
       var a0=fx();
       for(var k=0;k<30;k++){ tick(1);
         for(var i=0;i<8;i++) if(eight[i].order.type!=="attack") aim(eight[i], i<4?L:R); }
@@ -8769,6 +8781,196 @@ try{
     chk("the shared match is as it was: clock, fog, RNG, G.emitting, both commanders' books, nothing of ours left",
         Game.rng===rng && Game.time===clock && Game.fogEnabled===fogOn && Game.emitting===emit0 && keep(P.stats)===sP && keep(E.stats)===sE &&
         Combat.projectiles.length===nProj && made.every(function(u){ return u.dead; }), made.length+" spawned, all removed");
+  })();
+  }
+
+  /* ====== [79] ONE ROLE, SEVERAL CARDS: A HIGH/LOW MIX ======
+     (owner) "i take your suggestions and make it on 1,2,3 first." The second
+     step puts a T-72 beside the T-80 and a Buk beside the S-300, and unitFor()
+     names ONE card per army, role and period - so the commander built the
+     newest card every time and would never have fielded the cheaper tank or
+     the SAM it could have had a tech level earlier. Synthetic cards only
+     (never shipped: every one is removed again below). A cheaper second tank
+     goes into each side's present-day roster for the tables and the sidebar;
+     the commander's mix is measured on roles of the suite's own, "zz79" and
+     "zz79r", so the real second cards other work adds to the Soviet roster
+     cannot move the arithmetic under the test. Purchases are simulated by
+     queueing what AI.pickOf() names, which is what pickFor() counts; nothing
+     ticks. */
+  if (inHalf(1)) {
+  log("\n[79] ONE ROLE, SEVERAL CARDS: THE COMMANDER FIELDS A HIGH/LOW MIX");
+  (function(){
+    var E2=Game.players[1], made=[], guns=[], cvMade=null, q=E2.queues.vehicle, q0=q.items.slice();
+    var keepE={ cash:E2.cash, oil:E2.oil, tech:E2.tech, hb:E2.hasBuilding,
+                own:Object.prototype.hasOwnProperty.call(E2,"hasBuilding") };
+    var rolesN=(ROLES.mbt||[]).length;
+    var alive=function(pl){ return pl.units.filter(function(u){ return !u.dead; }).length; };
+    var nP0=alive(P), nE0=alive(E2), sel0=UI.selection.slice();
+    var hiE=unitFor(E2.faction,"mbt",E2.era), hiP=unitFor(P.faction,"mbt",P.era);
+    if(!hiE||!hiP){ chk("both sides field a main battle tank", false, hiE+" "+hiP); return; }
+    var nE=unitsFor(E2.faction,"mbt",E2.era).length;
+    /* the better card is the incumbent's own numbers; the cheaper one is 65%
+       of the price, 85% of the hit points and a gun that gets through 85% of
+       the plate - the T-72 to the incumbent's T-80 */
+    function card(baseId, tag, role, low){
+      var hi=UNITS[baseId], c=JSON.parse(JSON.stringify(hi));
+      c.role=role; c.name="TEST CARD "+tag; c.full="synthetic card, suite [79] only";
+      if (low) {
+        var g=WEAPONS[hi.weapons[0]], lg=JSON.parse(JSON.stringify(g));
+        lg.id="zz79_gun_"+tag; lg.dmg=Math.round(g.dmg*0.9);
+        lg.pen=Math.round((g.pen!==undefined?g.pen:g.dmg*CFG.PEN_PER_DMG.cannon)*0.85);
+        WEAPONS[lg.id]=lg; guns.push(lg.id);
+        c.cost=Math.round(hi.cost*0.65); c.hp=Math.round(hi.hp*0.85);
+        if(c.armorMM) c.armorMM.front=Math.round(c.armorMM.front*0.8);
+        c.weapons=[lg.id].concat(hi.weapons.slice(1));
+      }
+      UNITS["zz79_"+tag]=c; made.push("zz79_"+tag);
+      return "zz79_"+tag;
+    }
+    var loE=card(hiE,"e","mbt",true), loP=card(hiP,"p","mbt",true);
+    var tHi=card(hiE,"hi","zz79",false), tLo=card(hiE,"lo","zz79",true);
+    reindexRoles();
+    function pickR(role){ return (typeof AI!=="undefined" && AI.pickOf) ? AI.pickOf(E2,role)
+                                                                   : unitFor(E2.faction,role,E2.era); }
+    function pick(){ return pickR("zz79"); }
+    function buy(n){ var got={}; for(var i=0;i<n;i++){ var id=pick(); got[id]=(got[id]||0)+1;
+      q.items.push({ id:id, def:UNITS[id], paid:0 }); } return got; }
+    function shareOf(role){ var it=AI.intelOf(E2), r=it&&it.roster&&it.roster[role]; return r?r.share:{}; }
+    function share(){ return shareOf("zz79"); }
+    function fmt(o){ return Object.keys(o).map(function(k){ return k+" "+o[k]; }).join(", "); }
+    try {
+      var listE=unitsFor(E2.faction,"mbt",E2.era);
+      chk("unitsFor() offers the second card, and unitFor() still names the incumbent for its single-answer callers",
+          listE.indexOf(loE)>=0 && listE.length===nE+1 && unitFor(E2.faction,"mbt",E2.era)===hiE,
+          listE.join(", ")+" -> "+unitFor(E2.faction,"mbt",E2.era));
+
+      /* the player's VEHICLE tab: Tab cycles the sidebar, as a player would */
+      var sel=UI.selection; while(sel.length){ sel[0].selected=false; sel.shift(); }
+      function press(k){ var ev={ key:k, ctrlKey:false, shiftKey:false, metaKey:false, altKey:false,
+          repeat:false, preventDefault:function(){}, stopPropagation:function(){}, target:document.body };
+        if (typeof __listeners!=="undefined" && __listeners["win:keydown"]) {
+          __listeners["win:keydown"].forEach(function(f){ f(ev); });
+          (__listeners["win:keyup"]||[]).forEach(function(f){ f(ev); });
+        } else { window.dispatchEvent(new KeyboardEvent("keydown",{ key:k, bubbles:true }));
+                 window.dispatchEvent(new KeyboardEvent("keyup",{ key:k, bubbles:true })); } }
+      function cards(){ UI.refreshCards(); var o=[]; document.querySelectorAll(".card").forEach(function(c){
+        if(c.dataset) o.push(c.dataset); }); return o; }
+      var kind0=(cards()[0]||{}).kind, onVeh=null;
+      for(var t=0;t<7 && !onVeh;t++){ var cs=cards();
+        if(cs.length && cs[0].kind==="vehicle") onVeh=cs; else press("Tab"); }
+      var ids=(onVeh||[]).map(function(d){ return d.id; });
+      chk("the player's sidebar shows BOTH cards for the role", ids.indexOf(loP)>=0 && ids.indexOf(hiP)>=0,
+          onVeh ? ids.filter(function(x){ return UNITS[x] && UNITS[x].role==="mbt"; }).join(", ") : "no vehicle tab reached");
+      for(var t2=0;t2<7 && kind0 && (cards()[0]||{}).kind!==kind0;t2++) press("Tab");
+
+      /* the commander: every gate open, so the cards are priced and not refused */
+      E2.hasBuilding=function(){ return true; }; E2.tech=Math.max(E2.tech,3); E2.oil=Math.max(E2.oil,600);
+      q.items.length=0;
+      E2.cash=0;
+      var poor=buy(12), sPoor=share();
+      chk("twelve purchases on an empty bank buy BOTH cards, not the newest twelve times",
+          (poor[tLo]||0)>0 && (poor[tHi]||0)>0, fmt(poor));
+      chk("and on an empty bank the cheaper card is the larger share, with a core of the better one",
+          sPoor[tLo]>sPoor[tHi] && sPoor[tHi]>=0.2 && (poor[tLo]||0)>(poor[tHi]||0), fmt(sPoor));
+      q.items.length=0;
+      E2.cash=200000;
+      pick(); var sRich=share();
+      chk("a full bank leans toward the better card", sRich[tHi]>sPoor[tHi],
+          "better card "+(sPoor[tHi]||0)+" poor -> "+(sRich[tHi]||0)+" rich");
+
+      /* the gates: never a card the player's sidebar would grey out - and
+         the role is then priced as the one card it has, not left to chance */
+      var t0=UNITS[tLo].tech;
+      UNITS[tLo].tech=E2.tech+1;
+      var shut={}; for(var i=0;i<6;i++){ var id=pick(); shut[id]=(shut[id]||0)+1; }
+      var sShut=share();
+      chk("a card above this army's tech is never picked, and the whole role is the open card's",
+          !shut[tLo] && shut[tHi]===6 && !(sShut[tLo]>0) && sShut[tHi]===1, fmt(shut)+" :: shares "+fmt(sShut));
+      UNITS[tLo].tech=t0;
+      var t1=UNITS[tHi].tech;
+      UNITS[tHi].tech=E2.tech+1;
+      var open=pick();
+      chk("and with the better card shut, the cheaper one is built instead of nothing", open===tLo, open);
+      UNITS[tHi].tech=t1;
+
+      /* a generic row (fac "both") stands in for an army with no machine of
+         its own: cheaper and better on paper here, and still not a card
+         beside this army's own two */
+      E2.cash=0;
+      var gen=card(hiE,"gen","zz79",true); UNITS[gen].fac="both"; UNITS[gen].cost=Math.round(UNITS[hiE].cost*0.4);
+      reindexRoles();
+      var gb={}; for(var i2=0;i2<6;i2++){ var id2=pick(); gb[id2]=(gb[id2]||0)+1; }
+      var sGen=share();
+      chk("a generic row is not a card where the army fields its own machine",
+          !gb[gen] && !(sGen[gen]>0) && sGen[tHi]>0 && sGen[tLo]>0, fmt(gb)+" :: shares "+fmt(sGen));
+      delete UNITS[gen]; made.splice(made.indexOf(gen),1); reindexRoles();
+
+      /* reach: two anti-tank teams off this army's own, one with its missile
+         and one that must close to half the reach of the period's tank guns
+         to fire, at four-fifths of the price and the same warhead. Priced
+         on damage alone (doctValue()'s tiebreaker) the short one is the
+         better buy per credit, and it is the one that walks through the
+         tanks' fire to earn it */
+      var atId=unitFor(E2.faction,"at",E2.era);
+      if (atId && UNITS[atId].weapons && UNITS[atId].weapons.length) {
+        var far=card(atId,"far","zz79r",false), near=card(atId,"near","zz79r",false);
+        var aw=WEAPONS[UNITS[atId].weapons[0]], nw=JSON.parse(JSON.stringify(aw));
+        /* the period's tank guns, read the way the commander reads them: each
+           heavy hull's longest ground weapon, and the median of those */
+        var hvR=[]; ["mbt","heavy","ifv","lighttank","recon"].forEach(function(r){ (ROLES[r]||[]).forEach(function(k){
+          var u=UNITS[k], best=0; if(!u || !inEra(u,E2.era) || u.armor!=="heavy") return;
+          (u.weapons||[]).forEach(function(wk){ var w=WEAPONS[wk]; if(w&&w.tgt&&w.tgt.ground&&w.dmg>0&&w.range>best) best=w.range; });
+          if(best) hvR.push(best); }); });
+        hvR.sort(function(a,b){ return a-b; });
+        nw.id="zz79_gun_near"; nw.range=Math.round((hvR.length?hvR[hvR.length>>1]:8)*0.5*10)/10;
+        nw.pen=aw.pen!==undefined?aw.pen:Math.round(aw.dmg*CFG.PEN_PER_DMG.heat);
+        WEAPONS[nw.id]=nw; guns.push(nw.id);
+        UNITS[near].weapons=[nw.id].concat(UNITS[atId].weapons.slice(1));
+        UNITS[near].cost=Math.round(UNITS[atId].cost*0.8);
+        reindexRoles();
+        E2.cash=0; pickR("zz79r");
+        var sR=shareOf("zz79r");
+        chk("a team that must walk into the tanks' guns to fire is the smaller share, though it costs four-fifths",
+            sR[far]>sR[near] && sR[near]>0, "reach "+aw.range+" t: "+(sR[far]||0)+", reach "+nw.range+" t: "+(sR[near]||0));
+      }
+
+      /* a deck: "the carrier types of its navy and decade" - every card of
+         them, so a second carrier fighter bought from the AIR tab may go
+         aboard instead of being refused a deck its navy flew it from */
+      var cfId=unitFor(P.faction,"cfighter",P.era);
+      if (cfId) {
+        var cf=JSON.parse(JSON.stringify(UNITS[cfId]));
+        cf.name="TEST SECOND CARRIER FIGHTER"; cf.full="synthetic card, suite [79] only";
+        cf.cost=Math.round(cf.cost*0.8); cf.carrierCapable=true;
+        UNITS.zz79_cf=cf; made.push("zz79_cf"); reindexRoles();
+        var cv=spawn(P,"carrier_n",tile(P,"sea",6),0,0);
+        if (cv) { cvMade=cv;
+          var types=Game.deckTypesFor(cv);
+          chk("a carrier takes every carrier fighter its navy flies this decade",
+              types.indexOf(cfId)>=0 && types.indexOf("zz79_cf")>=0, types.join(", "));
+        } else chk("carrier spawned for the deck check", false, "no sea tile");
+      }
+    } finally {
+      /* the hull and the air wing spawnUnitAt() embarked with it */
+      if (cvMade) { (cvMade.wing ? cvMade.wing() : []).forEach(function(u){ u.dead=true; }); cvMade.dead=true; }
+      if (Game.sweepDead) Game.sweepDead();
+      q.items.length=0; q.items.push.apply(q.items,q0);
+      E2.cash=keepE.cash; E2.oil=keepE.oil; E2.tech=keepE.tech;
+      if (keepE.own) E2.hasBuilding=keepE.hb; else delete E2.hasBuilding;
+      made.forEach(function(k){ delete UNITS[k]; });
+      guns.forEach(function(k){ delete WEAPONS[k]; });
+      reindexRoles();
+      var s1=UI.selection; while(s1.length){ s1[0].selected=false; s1.shift(); }
+      sel0.forEach(function(u){ if(!u.dead){ u.selected=true; s1.push(u); } });
+    }
+    chk("the shared match is as it was: rosters, queue, purse, gates, both armies and the selection",
+        (ROLES.mbt||[]).length===rolesN && !ROLES.zz79 && !ROLES.zz79r && made.every(function(k){ return !UNITS[k]; }) &&
+        guns.every(function(k){ return !WEAPONS[k]; }) && q.items.length===q0.length &&
+        (!cvMade || cvMade.dead) && E2.cash===keepE.cash && E2.hasBuilding===keepE.hb &&
+        unitsFor(E2.faction,"mbt",E2.era).length===nE && alive(P)===nP0 && alive(E2)===nE0 &&
+        UI.selection.length===sel0.filter(function(u){ return !u.dead; }).length,
+        "mbt cards "+(ROLES.mbt||[]).length+", queue "+q.items.length+", our units "+alive(P)+"/"+nP0+
+        ", theirs "+alive(E2)+"/"+nE0+", selected "+UI.selection.length+"/"+sel0.length);
   })();
   }
 

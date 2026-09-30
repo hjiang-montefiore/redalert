@@ -1454,8 +1454,348 @@ function makeCommander() {
                        landed: fs.landed, noBeach: fs.noBeach, noHard: fs.noHard, dry: fs.dry } };
   }
 
+  /* ======================================================================
+     ONE ROLE, SEVERAL MACHINES: THE HIGH/LOW MIX
+     ======================================================================
+     unitFor() names ONE machine per army, role and period - the newest - and
+     every purchase this commander made went through it. That was right while
+     the roster held one machine per role, and it stops being right the moment
+     it does not: the Soviet army of the 1980s fielded the T-72 beside the T-80
+     and the Buk beside the S-300. A commander that can only ever name the
+     newer card builds the dearer tank every time, whatever it can afford and
+     whatever it is looking at, and never the SAM it could have had a tech
+     level earlier. The player's sidebar has always shown every card
+     unitsFor() returns, so this is the commander catching up with the menu.
+     Measured before this, Warlord on both seats, fulda e80, 900 s, with a
+     synthetic cheaper tank and a synthetic tech-2 SAM put beside the T-80U
+     and the S-300PS: the Soviet seat ordered 4 T-80U and not one of the
+     cheaper tank, and 2 S-300PS and not one of the other SAM. With this, the
+     same match: 7 of the cheaper tank and 4 T-80U, one SAM of each, and the
+     Scud-B beside the Tochka - a real 1980s pair the old rule never fielded
+     (every TEL was a Tochka). In the roster as it stood, 30 of 2,068
+     army-role-period slots already offered more than one card.
+
+     HOW A CARD IS PRICED - mixFor(), reading the card as a player would:
+       fire   damage a second through CFG.DMG and the penetration layer, the
+              derivation doctValue() uses, against the picture this commander
+              has actually built - foeArms() and foeSea(), aged by D.memory and
+              scaled by D.read - laid over a small era prior (MIX_PRIOR) so an
+              empty plot still prices a tank as a tank. A gun is tested against
+              the plate we have LOOKED at, written down at contact; only with
+              none in view is it the era's typical plate. A Recruit reads
+              neither and prices against the prior alone. Only what the card
+              fires by itself counts: a weapon held for an order (a Tomahawk,
+              a nuclear round) on a card that otherwise fights on its own is
+              not firepower the card brings to a fight.
+       reach  against armour, how far the weapon reaches against how far the
+              armour of this period shoots back (mixReach, the era's median,
+              a static table like doctPlate). doctValue()'s reach term is "a
+              tiebreaker, not the argument", and between two anti-tank teams
+              it IS the argument: a 4.1-tile RPG-7V team has to walk three
+              tiles through an M1A1's 7.3-tile gun to shoot at all, and a
+              9.1-tile Konkurs team never enters it. Priced with the
+              tiebreaker the RPG team was the better buy per credit and took
+              0.66 of the 1980s anti-tank budget at an empty bank and 0.52
+              with a full one, while in seeded jsc fights at equal credits
+              against three M1A1s (4 seeds each) nine Konkurs teams took 82%
+              of the tanks' hit points and fifteen RPG teams 65%. So a weapon
+              the target outranges is priced at (range/reach)^MIX_OUTRANGED,
+              and one that outranges it gains half its margin, up to
+              MIX_REACH_CAP. Measured with it, same rows, no cap on either
+              card: Konkurs 0.50 at an empty bank and 0.64 with a full one,
+              the Kornet 0.51-0.54 and 0.66-0.69 after it. Pairs of equal
+              reach do not move (the three 1980s tanks within 0.002, the
+              four SHORAD vehicles within 0.004); the BMP-2 gains 0.01 on the
+              BTR-70's shorter machine gun.
+       worth  sqrt(fire x hit points): Lanchester's square law, under which a
+              hull's fighting value is what it deals times what it takes. Hit
+              points are the roster's own measure of protection - armorAt()
+              derives the plate from them when a hull declares none.
+       score  worth / cost^(1 - lean). At lean 0 that is worth per credit, the
+              measure when money is what runs out; at lean 1 it is worth per
+              hull, the measure when it is not. `lean` rises with the bank
+              against the dearest card (a commander sitting on money is short
+              of factories, not credits) and with the personality's techBias -
+              Industrial 1.5 leans on quality, Shock 0.6 on numbers - and is
+              never under 0.5 for an aircraft, where the ramp fills long before
+              the bank empties.
+     Shares go as score^MIX_K, over a floor: every card that no other card
+     beats on BOTH worth and price keeps a core - MIX_CORE, or half the role
+     shared among them where there are more than two such cards - so a poor
+     army keeps a core of the better machine and a rich one still fields the
+     cheap one. A card that is beaten on both keeps only its score share,
+     which is small: the arithmetic here does not see an all-weather radar or
+     a missile that outranges the plot, so it is not allowed to say never.
+     Two rows under one name are one machine and one card. A generic row
+     (fac "both" - the Minesweeper, the Mine Clearer) stands in for an army
+     that has no machine of its own, so where this army has one it is not a
+     card: priced beside the Troika and the Frankenthal, the generic row
+     took 0.64-0.68 of the Bundesmarine's minesweeping on its 57 mm gun. A
+     role whose cards carry no weapon (a landing craft, a recovery vehicle,
+     an electronic-warfare aircraft) has nothing to price in a fight and
+     keeps unitFor()'s answer exactly. And a card may carry `mixCap`, the
+     most of the role it may take, where the real army had the type only in
+     small numbers - price and firepower cannot know that.
+
+     WHAT IS NEVER PICKED: a card lockReason() refuses for anything but fuel -
+     the era, tech, ceiling, prerequisite and authorisation gates that grey the
+     same card out in the player's sidebar. Fuel is a wait, not a gate, exactly
+     as in buildToward().
+
+     pickFor() then builds toward the shares the way buildToward() builds
+     toward the role mixture: the card furthest under its share among what we
+     own and have queued. A card that tryBuildUnit() would refuse this tick
+     for money or barrels - the bank, the savings hoard, the reserve for a
+     generational step or a rig, the service's fuel claim - gives way to one
+     it would take, but only while that one is less than MIX_BAND over its
+     own share - so a poor commander leans on the cheaper tank and cannot
+     abolish the core by being poor.
+
+     unitFor()'s single answer is KEPT where one answer is the question:
+     doctValue() (a module-level prior, flagship against flagship across all
+     eight rosters and the reason doctNorm() compares like with like), the
+     rig (one construction vehicle per army), armFieldable() and the ssn line
+     (existence only - unitFor() is null exactly when unitsFor() is empty),
+     the free starting squads and the deck complement in game.js (what a
+     ship embarks is its air wing, not a purchase), and generations.js's
+     present-day twin. */
+  const MIX_CORE = 0.20;       // the least share a card that is not beaten outright keeps
+  const MIX_K = 3;             // how sharply a difference in score becomes one in share
+  const MIX_RICH = 8;          // dearest cards' worth of bank at which money stops binding
+  const MIX_BAND = 0.10;       // how far past its share a cheaper card may run while the dearer waits
+  const MIX_OUTRANGED = 2;     // (range / the armour's reach) to this power, for a weapon it outranges
+  const MIX_REACH_CAP = 1.25;  // the most that outranging the armour is worth
+  /* the era prior, as pseudo-sightings: what an empty plot is taken to hold */
+  const MIX_PRIOR = { infantry: 0.9, light: 0.8, heavy: 0.8, structure: 0.3,
+                      air: 0.4, sea: 0.2, sub: 0.1 };
+  /* What a role is BOUGHT to answer - counterMix() adds the MANPADS team, the
+     SPAAG and the SAM against aircraft and the anti-tank team against armour -
+     so its cards are priced on that, and anything else they can do counts a
+     quarter. Priced on the whole picture instead, a Tunguska's cannon made it
+     worth more than a Tor on a plot of tanks, which is not why either is
+     bought. */
+  const MIX_JOB = { aa: ["air"], spaag: ["air"], sam: ["air"], fighter: ["air"],
+                    cfighter: ["air"], stealthfighter: ["air"],
+                    at: ["heavy", "light"], tankdestroyer: ["heavy", "light"] };
+  const mixBook = {};          // role -> the last pricing and what it bought, for intel()
+  /* How far the armour of a period shoots back: the median, over every
+     army's heavy and light hulls in service, of each hull's longest ground
+     weapon. Measured on the roster: heavy 6.1 tiles at e50, 7.3 at e80, 8.1
+     at e20; light 4.7, 5.9, 6.6. The same class of reading as doctPlate() -
+     a recognition manual's table, not a sighting. */
+  const mixReachT = {};
+  function mixReach(era) {
+    if (mixReachT[era]) return mixReachT[era];
+    const hv = [], lt = [];
+    for (const role of ["mbt", "heavy", "ifv", "lighttank", "recon"])
+      for (const k of (ROLES[role] || [])) {
+        const u = UNITS[k];
+        if (!u || !inEra(u, era)) continue;
+        let r = 0;
+        for (const wk of (u.weapons || [])) {
+          const w = WEAPONS[wk];
+          if (w && w.tgt && w.tgt.ground && w.dmg > 0 && w.range > r) r = w.range;
+        }
+        if (!r) continue;
+        if (u.armor === "heavy") hv.push(r);
+        else if (u.armor === "light") lt.push(r);
+      }
+    const med = (a, d) => { if (!a.length) return d; a.sort((x, y) => x - y); return a[a.length >> 1]; };
+    return (mixReachT[era] = { heavy: med(hv, 7.3), light: med(lt, 5.9) });
+  }
+
+  function mixPicture(role) {
+    const a = foeArms(), s = foeSea();
+    const grip = D.read === undefined ? 1 : D.read;
+    const seen = { infantry: a.inf, light: a.light + a.arty, heavy: a.armour,
+                   structure: 2 * U.clamp(a.line / 70, 0, 1), air: a.air,
+                   sea: s.surf, sub: s.sub };
+    const job = MIX_JOB[role];
+    const W = {};
+    let tot = 0;
+    for (const c in MIX_PRIOR) {
+      W[c] = (MIX_PRIOR[c] + grip * (seen[c] || 0)) * (job && job.indexOf(c) < 0 ? 0.25 : 1);
+      tot += W[c];
+    }
+    for (const c in W) W[c] /= tot;
+    return { W, plate: grip > 0 ? a.plate : 0 };
+  }
+  /* damage a second against the picture - doctValue()'s arithmetic, weighted
+     by what we have seen instead of by class, and extended to the water: a
+     hull is heavy armour in CFG.DMG and resolveArmor() never tests a ship's
+     plate, so the sea is priced off the flat matrix as combat.js prices it */
+  function mixFire(def, pic) {
+    const f = FACTIONS[P.faction] || {}, aq = f.ammoQ || 1;
+    const era = P.era || CUR_ERA, ref = doctPlate(era), reach = mixReach(era);
+    const plate = { heavy: pic.plate > 0 ? pic.plate : ref.heavy, light: ref.light };
+    let fire = 0;
+    for (const wk of (def.weapons || [])) {
+      const w = WEAPONS[wk];
+      if (!w || !w.tgt || !(w.dmg > 0)) continue;
+      if ((w.manual || w.nuke) && !def.noAuto) continue;   // held for an order: not its own fight
+      const cyc = Math.max(0.5, (w.reload || 2) + (w.burst || 1) * (w.burstDelay || 0));
+      const acc = U.clamp((w.acc === undefined ? 0.7 : w.acc) * (f.accMul || 1), 0.03, 0.98);
+      const dps = w.dmg * (w.burst || 1) * acc / cyc;
+      const R = (w.range || 0) * (f.rangeMul || 1);
+      const rch = 0.75 + 0.25 * U.clamp(R / 8, 0, 3);
+      const decl = w.pen !== undefined;
+      let pen = decl ? w.pen : w.dmg * (CFG.PEN_PER_DMG[w.warhead] || 0.5);
+      if (!decl && (w.warhead === "cannon" || w.warhead === "heat")) pen *= 1 + (aq - 1) * 0.6;
+      const ke = w.warhead === "cannon" || w.warhead === "heat";
+      for (const c in pic.W) {
+        const dom = c === "air" || c === "sea" || c === "sub" ? c : "ground";
+        if (!w.tgt[dom]) continue;
+        let x = dps * CFG.dmgMult(w.warhead, dom === "sea" || dom === "sub" ? "heavy" : c);
+        if (c === "heavy" || c === "light") {
+          /* stand-off, in place of the tiebreaker - see "reach" above */
+          const k = R / reach[c];
+          x *= k >= 1 ? Math.min(MIX_REACH_CAP, 1 + 0.5 * (k - 1)) : Math.pow(k, MIX_OUTRANGED);
+          if (ke) x *= c === "heavy" ? aq : 1 + (aq - 1) * 0.5;
+          if (CFG.PEN_WARHEADS[w.warhead]) {
+            const r = pen / plate[c];
+            x *= r < CFG.PEN_NONE ? CFG.PEN_FAIL_MUL
+               : r < CFG.PEN_FULL ? CFG.PEN_FAIL_MUL + (1 - CFG.PEN_FAIL_MUL) *
+                                    (r - CFG.PEN_NONE) / (CFG.PEN_FULL - CFG.PEN_NONE)
+               : 1;
+          }
+        } else x *= rch;
+        fire += pic.W[c] * x;
+      }
+    }
+    return fire;
+  }
+  /* Every card this army can field for a role, priced and shared. null when
+     the period offers one card or none - unitFor()'s answer stands, and a
+     role with one machine costs nothing here at all. */
+  function mixFor(role) {
+    const ids = unitsFor(P.faction, role, P.era);
+    if (ids.length < 2) return null;
+    const cards = [];
+    const from = (d) => d.from !== undefined ? eraIndex(d.from) : 0;
+    for (let i = 0; i < ids.length; i++) {
+      const def = UNITS[ids[i]], why = P.lockReason(def);
+      if (why && why.indexOf("INSUFFICIENT FUEL") !== 0) continue;
+      /* one machine recorded twice - a present-day row and its era row under
+         the same name, as the TPQ-53 and the MH-60R are - is ONE card: the
+         one unitFor() would name, so it is never bought as its own pair */
+      if (ids.some((o, j) => j !== i && UNITS[o].name === def.name &&
+                             (from(UNITS[o]) > from(def) || (from(UNITS[o]) === from(def) && j < i))))
+        continue;
+      cards.push({ id: ids[i], def, cost: Math.max(1, P.factionCost(def)), dry: !!why,
+                   worth: 0, score: 0, share: 0 });
+    }
+    if (!cards.length) return cards;
+    const pic = mixPicture(role);
+    let top = 0;
+    for (const c of cards) {
+      c.worth = Math.sqrt(mixFire(c.def, pic) * Math.max(1, c.def.hp || 0));
+      if (c.cost > top) top = c.cost;
+    }
+    const own = cards.some(c => c.def.fac === P.faction);
+    const live = cards.filter(c => c.worth > 0 && !(own && c.def.fac === "both"));
+    const bank = Math.max(0, P.cash - saveTarget);
+    let lean = 0.7 * U.clamp(bank / (MIX_RICH * top), 0, 1) + 0.5 * ((D.techBias || 1) - 1);
+    if (cards[0].def.cat === "aircraft") lean = Math.max(lean, 0.5);
+    lean = U.clamp(lean, 0, 0.9);
+    if (live.length < 2) {
+      /* one armed card of our own, or nothing to price in a fight: that card,
+         else the one unitFor() names, else the newest the gates let through */
+      const u = unitFor(P.faction, role, P.era);
+      let best = live[0] || cards.find(c => c.id === u), bf = -1;
+      if (!best) for (const c of cards) if (from(c.def) > bf) { bf = from(c.def); best = c; }
+      best.share = 1;
+    } else {
+      let sum = 0, nCore = 0;
+      for (const c of live) {
+        c.score = Math.pow(c.worth / Math.pow(c.cost, 1 - lean), MIX_K);
+        sum += c.score;
+        c.beaten = live.some(o => o !== c && o.worth >= c.worth && o.cost <= c.cost &&
+                                  (o.worth > c.worth || o.cost < c.cost));
+        if (!c.beaten) nCore++;
+      }
+      const core = Math.min(MIX_CORE, 0.5 / nCore);
+      for (const c of live)
+        c.share = (c.beaten ? 0 : core) + (1 - core * nCore) * c.score / sum;
+      /* A type the real army fielded only in small numbers carries its ceiling
+         on its own card (mixCap, a share of the role), and what it cannot take
+         goes to the others by share: price and firepower know nothing of how
+         many airframes a country actually had. */
+      let over = 0, free = 0;
+      for (const c of live) if (c.def.mixCap !== undefined && c.share > c.def.mixCap) {
+        over += c.share - c.def.mixCap; c.share = c.def.mixCap; c.capped = true;
+      }
+      for (const c of live) if (!c.capped) free += c.share;
+      if (over > 0 && free > 0) for (const c of live) if (!c.capped) c.share += over * c.share / free;
+    }
+    const bk = mixBook[role] || (mixBook[role] = { bought: {} });
+    bk.t = G.time; bk.lean = Math.round(lean * 100) / 100;
+    bk.share = {};
+    for (const c of cards) bk.share[c.id] = Math.round(c.share * 1000) / 1000;
+    return cards;
+  }
+  /* Would tryBuildUnit() take this card this tick, on money and barrels? Its
+     own tests, in its own order, without its bookkeeping: the bank, the
+     savings hoard, the reserve for a generational step and for a rig, and
+     the service's fuel claim (the home air defence asks only the committed
+     fuel, as there). Read-only, so pickFor() can ask it of every card. */
+  function payable(def, role) {
+    const cost = P.factionCost(def);
+    if (P.cash < cost * 0.6) return false;
+    const exempt = role === "harvester" || role === "supply";
+    const hoardFor = role === "mcv" && rigHoard ? 0 : saveTarget;
+    if (hoardFor > 0 && !exempt && P.cash < hoardFor + cost) return false;
+    if (!def.oil) return true;
+    if (eraStep && !exempt && P.cash >= eraStep.cost && P.oil - def.oil < eraStep.oil) return false;
+    if (role !== "mcv" && !exempt && !oilSpare(def.oil)) return false;
+    return role === "sam" || role === "spaag" ? P.oil - committedOil() >= def.oil
+                                              : armOilOk(armOf(def), def.oil);
+  }
+  /* The card to build for a role now. Exactly unitFor() wherever the period
+     offers one card, and wherever every card is shut - so a refusal still
+     reads the newest card's reason, and buildToward() cools the role on it
+     as it always has. */
+  function pickFor(role) {
+    const cards = mixFor(role);
+    const live = cards ? cards.filter(c => c.share > 0) : [];
+    if (!live.length) return unitFor(P.faction, role, P.era);
+    if (live.length === 1) return live[0].id;
+    const have = {}, ids = live.map(c => c.id);
+    let n = 0;
+    const tally = (id) => { if (ids.indexOf(id) >= 0) { have[id] = (have[id] || 0) + 1; n++; } };
+    for (const u of P.units) if (!u.dead) tally(u.def.id);
+    for (const k of ["infantry", "vehicle", "aircraft", "naval"])
+      if (q(k)) for (const it of q(k).items) tally(it.id);
+    for (const c of live) c.gap = c.share - (n ? (have[c.id] || 0) / n : 0);
+    live.sort((a, b) => (b.gap - a.gap) || (b.share - a.share) || (a.cost - b.cost));
+    for (const c of live) {
+      if (c.gap < -MIX_BAND) continue;
+      if (!c.dry && payable(c.def, role)) return c.id;
+    }
+    return live[0].id;
+  }
+  /* What one purchase for this role is expected to cost: the shares' average
+     over the cards the yard can cut TODAY, which is hullYardstick()'s rule,
+     and unitFor()'s price where there is one card. 0 when nothing can be cut. */
+  function rolePrice(role) {
+    const cards = mixFor(role);
+    if (!cards) {
+      const id = unitFor(P.faction, role, P.era);
+      return id && UNITS[id] && !P.lockReason(UNITS[id]) ? P.factionCost(UNITS[id]) : 0;
+    }
+    let s = 0, w = 0;
+    for (const c of cards) if (!c.dry && c.share > 0) { s += c.share * c.cost; w += c.share; }
+    return w > 0 ? s / w : 0;
+  }
+  function mixIntel() {
+    const out = {};
+    for (const r in mixBook) out[r] = { t: Math.round(mixBook[r].t), lean: mixBook[r].lean,
+                                        share: Object.assign({}, mixBook[r].share),
+                                        bought: Object.assign({}, mixBook[r].bought) };
+    return out;
+  }
+
   function tryBuildUnit(role) {
-    const id = unitFor(P.faction, role, P.era);
+    const id = pickFor(role);
     if (!id) return false;
     const def = UNITS[id];
     const why = P.lockReason(def);
@@ -1510,6 +1850,7 @@ function makeCommander() {
     const ok = P.enqueue(def.cat, id);
     if (ok) {
       delete holdFrom[role];
+      if (mixBook[role]) mixBook[role].bought[id] = (mixBook[role].bought[id] || 0) + 1;
       /* served: the promise now sits in the queue, where committedOil() keeps
          it safe, and the next think re-reads who is furthest behind */
       if (arm && oilClaim && oilClaim.arm === arm) oilClaim = null;
@@ -4149,8 +4490,11 @@ function makeCommander() {
          cut TODAY keeps the cap honest, and the yardstick rises of its own
          accord the moment the dome goes up, which re-opens the cap and lets
          the real warships in. */
-      if (!id || !UNITS[id] || P.lockReason(UNITS[id])) continue;
-      sum += mix[role] * P.factionCost(UNITS[id]); w += mix[role];
+      /* ...and where the period offers several hulls for the role, the price of
+         the mix pickFor() is building toward, over the cards cut TODAY */
+      const price = id ? rolePrice(role) : 0;
+      if (!price) continue;
+      sum += mix[role] * price; w += mix[role];
     }
     return w > 0 ? sum / w : 900;
   }
@@ -4178,8 +4522,22 @@ function makeCommander() {
   function heatEdge(plate) {
     if (!plate) return 0.5;                    // nothing identified: no opinion
     let pen = 0;
-    for (const role of ["heavy", "mbt", "lighttank"]) {
-      const id = unitFor(P.faction, role, P.era);
+    /* Every card of the role that this army can build, not only the newest: a
+       T-80 beside a T-72 is a gun this army owns. A card the gates shut for
+       anything but fuel does not speak for the role - a T-80U the lab has not
+       unlocked is not a gun we have - unless every card is shut, where the
+       newest speaks as it always did. pickFor() leans only a little toward
+       the gun that gets through the plate we have seen, which is why this
+       asks the question for the role and not for the card the mix happens
+       to build next. */
+    const heatIds = (role) => {
+      const all = unitsFor(P.faction, role, P.era);
+      if (all.length < 2) return all;
+      const open = all.filter(k => { const why = P.lockReason(UNITS[k]);
+                                     return !why || why.indexOf("INSUFFICIENT FUEL") === 0; });
+      return open.length ? open : [unitFor(P.faction, role, P.era)];
+    };
+    for (const role of ["heavy", "mbt", "lighttank"]) for (const id of heatIds(role)) {
       if (!id || !UNITS[id]) continue;
       const w = WEAPONS[(UNITS[id].weapons || [])[0]];
       if (!w || w.warhead !== "cannon") continue;
@@ -4639,7 +4997,10 @@ function makeCommander() {
     gaps.sort((x, y) => (y.gap - x.gap) || (want[y.role] - want[x.role]));
     let fuelSeen = false;
     for (let i = 0; i < gaps.length && i < 4; i++) {
-      const id = unitFor(P.faction, gaps[i].role, P.era);
+      /* the card pickFor() would build: a role is open while ANY of its cards
+         is, so a T-72 the factory can cut is not cooled for want of the
+         research lab the T-80 needs */
+      const id = pickFor(gaps[i].role);
       const why = id && UNITS[id] ? P.lockReason(UNITS[id]) : "NONE";
       if (why) {
         /* the best role this service can build but for fuel is waited for,
@@ -5405,7 +5766,7 @@ function makeCommander() {
        workshop. */
     if (!P.hasBuilding("depot")) return false;   // hard prereq, and our only other repair
     if (army.length < 6 || queueLen("vehicle") >= 2) return false;
-    const id = unitFor(P.faction, "repair", P.era);
+    const id = pickFor("repair");
     if (!id || !UNITS[id] || P.lockReason(UNITS[id])) return false;
     /* two 2.2-tile bubbles barely overlap and a third is duplication */
     const have = fielded("vehicle", d => d.repairRate && d.layer === "ground");
@@ -5449,7 +5810,7 @@ function makeCommander() {
   function wantTender() {
     if ((D.read || 0) < 0.80 || !D.navy) return false;
     if (!P.hasBuilding("navalyard") || queueLen("naval") >= 2) return false;
-    const id = unitFor(P.faction, "repair_sea", P.era);
+    const id = pickFor("repair_sea");
     if (!id || !UNITS[id] || P.lockReason(UNITS[id])) return false;
     if (fielded("naval", d => d.repairRate && (d.layer === "sea" || d.layer === "sub")) >= 1) return false;
     const L = repairLedger();
@@ -8023,7 +8384,7 @@ function makeCommander() {
          purchase: the chain answers false and the think goes on. */
       let airHold = false;
       const holdFighter = () => {
-        const id = unitFor(P.faction, "fighter", P.era), def = id ? UNITS[id] : null;
+        const id = pickFor("fighter"), def = id ? UNITS[id] : null;
         const why = def ? P.lockReason(def) : null;
         airHold = !!(why && why.indexOf("INSUFFICIENT FUEL") === 0 && fuelHold("fighter", def));
         return false;
@@ -13190,6 +13551,8 @@ function makeCommander() {
     init, update,
     get player() { return P; },
     setPeace(on) { atPeace = !!on; },
+    /* the card this commander would build for a role now (pickFor) */
+    pick(role) { return pickFor(role); },
     /* The explored map, so the engine can hold this commander's harvesters to
        the same rule the human's obey, and so a test can see what it knows. */
     get look() { return look; },
@@ -13213,6 +13576,10 @@ function makeCommander() {
                             oilers: count(u => u.def.role === "oiler"),
                             tankers: count(u => u.def.refuelRate) },
                repair: repairLedger(),
+               /* the high/low mix, per role that offers several cards: the
+                  shares last priced, the lean they were priced at, and what
+                  was actually bought of each - see mixFor() */
+               roster: mixIntel(),
                /* The fuel market and what it buys, so a census can see money
                   turning into barrels and barrels into the force plan: bought,
                   spent and orders are this commander's own ledger; why is the
@@ -13402,6 +13769,12 @@ return {
   },
   intelOf(player) {
     for (const c of commanders) if (c.player === player) return c.intel();
+    return null;
+  },
+  /* the card a commander would build for a role right now - read-only, for
+     the suites and a census; null for a seat no commander runs */
+  pickOf(player, role) {
+    for (const c of commanders) if (c.player === player) return c.pick(role);
     return null;
   },
   /* hold a commander at peace (see atPeace) - for scripted sandboxes */

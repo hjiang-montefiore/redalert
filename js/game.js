@@ -707,7 +707,11 @@ var Game = (function () {
     for (let i = 0; i < slots; i++) add(G.deckAircraftFor(ship, i));
     if (ship.def.carrier && out.some(id => !UNITS[id].hover))
       for (const r of ["cfighter", "cstealth", "cstrike", "cawacs"])
-        add(deckLegal(unitFor(p.faction, r, era)));
+        /* every card of the role, not only the newest: "the carrier types of
+           its navy and decade" is plural wherever the navy flew two, and a
+           second carrier fighter bought from the AIR tab has to be allowed
+           aboard - and counted as ramp, and landed on - like the first */
+        for (const id of unitsFor(p.faction, r, era)) add(deckLegal(id));
     ship._deckKey = key; ship._deckTypes = out;
     return out;
   };
