@@ -1785,6 +1785,7 @@ var UI = (function () {
       const rect = cv.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
       input.hasMouse = true;
+      input.shift = !!e.shiftKey;
       if (areaDrag) { areaDrag.x1 = mx; areaDrag.y1 = my; }
       if (input.dragging) input.dragDist += Math.abs(mx - input.mx) + Math.abs(my - input.my);
       if (input.panMMB) {
@@ -1854,6 +1855,12 @@ var UI = (function () {
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
       keys[k] = true;
+      /* Shift held shows the orders of every unit of the player's, not only
+         the selection (render.js orderLines), so its state is kept on
+         `input`, which both renderers are handed. Every key, a mouse move
+         over the map and the window losing focus read it afresh, so it
+         cannot stick down. */
+      input.shift = !!e.shiftKey;
       /* Every order the command bar also carries is ONE named function,
          called from here and from its button (see THE COMMAND BAR), so a
          key and its button cannot drift apart. */
@@ -1954,8 +1961,14 @@ var UI = (function () {
     window.addEventListener("keyup", (e) => {
       const k = e.key.toLowerCase();
       keys[k] = false;
+      input.shift = !!e.shiftKey;
       if (k === "a") input.attackMove = false;
     });
+    /* A window that loses focus with Shift down never hears its keyup, and
+       the canvas no mouse move while the pointer is over the sidebar - so
+       without this the every-unit view stayed on until some key was
+       pressed or the pointer crossed the map again. */
+    window.addEventListener("blur", () => { input.shift = false; });
 
     /* command buttons */
     document.getElementById("c-sell").addEventListener("click", () => setSell(!input.sellMode));

@@ -8057,6 +8057,309 @@ try{
         JSON.stringify(P.stats)===sP && JSON.stringify(E.stats)===sE, "tab "+tab0+" -> "+tabNow()+", selection "+sel0.length+" -> "+UI.selection.length);
   })();
   }
+  /* ====== [83] ORDERS STAY ON THE MAP ======
+     (owner) "i take your suggestions and make it on 1,2,3 first" - the first
+     small idea: StarCraft II's order lines. Measured at b4a9943: a tank given
+     a move and two Shift-queued waypoints held all three, the clicks left
+     three "·" marks of 0.5 s, and a 2D frame drawn at the moment of the
+     click stroked 292 segments without one ending on a waypoint; a fire
+     mission left no mark on the map at all. render.js orderLines() is now
+     the list both views draw: from each selected unit of the player's - all
+     of them while Shift is down, the selection first - to what it is doing
+     and on through what it will really do after, one kind to an order; a
+     factory to its rally flag; a fire mission's landing ring, and a cargo
+     round's mine ring; a box being mined. This holds the list: its legs for
+     orders given through the player's own clicks and keys, where each chain
+     stops (a patrol, a fire mission, a combat air patrol and a recall never
+     take up what is queued behind them), its fog rule (own units only, no
+     leg to a target the player cannot see), both rings against where the
+     rounds and the mines really fall, and that the 2D view strokes it. The
+     3D view's one LineSegments is held by tools/jsc/orderlines3d_check.js.
+     Everything made here is taken away again, and the selection, the
+     camera, the fog, the RNG, the minefields, both commanders' books and the
+     rounds fired are put back. */
+  if (inHalf(1)) {
+  log("\n[83] ORDERS STAY ON THE MAP: QUEUED LEGS, BEATS, FIRE MISSIONS, RALLY LINES");
+  (function(){
+    var T=CFG.TILE, M=Game.map, cv=document.getElementById("cv");
+    var made=[], blds=[], sel0=UI.selection.slice(), cam0={x:Render.cam.x,y:Render.cam.y,z:Render.cam.z};
+    var fogOn0=Game.fogEnabled, fog0=Game.fog.slice(), rng=Game.rng, mines0=(Game.mines||[]).length;
+    var sP=JSON.stringify(P.stats), sE=JSON.stringify(E.stats);
+    var MN=typeof Mines!=="undefined" ? Mines : null, mLay=MN&&MN.lay, mMined=MN&&MN.tileMined;
+    var pSave=null, fxSave=null;
+    var OLF=(typeof Render2D!=="undefined" && typeof Render2D.orderLines==="function") ? Render2D.orderLines : null;
+    chk("the renderers share an order-line list", !!OLF, "Render2D.orderLines is "+(typeof Render2D!=="undefined" ? typeof Render2D.orderLines : "absent"));
+    if(!OLF){ var EMPTY={n:0,nm:0,nr:0,seg:[],mark:[],ring:[],kinds:[],miss:0,drawn:0,sowR:function(){ return 0; }}; OLF=function(){ return EMPTY; }; }
+    function lines(sel,all){ var L=OLF(Game,sel,!!all), out=[];
+      for(var i=0;i<L.n;i++){ var j=i*7; out.push({x0:L.seg[j],y0:L.seg[j+1],a0:L.seg[j+2],x1:L.seg[j+3],y1:L.seg[j+4],a1:L.seg[j+5],k:L.kinds[L.seg[j+6]]}); }
+      out.marks=[]; for(var m=0;m<L.nm;m++) out.marks.push({x:L.mark[m*4],y:L.mark[m*4+1],a:L.mark[m*4+2],k:L.kinds[L.mark[m*4+3]]});
+      out.rings=[]; for(var r=0;r<L.nr;r++) out.rings.push({x:L.ring[r*4],y:L.ring[r*4+1],r:L.ring[r*4+2],k:L.kinds[L.ring[r*4+3]]});
+      return out; }
+    function eq(s,x0,y0,x1,y1){ return Math.abs(s.x0-x0)<0.5&&Math.abs(s.y0-y0)<0.5&&Math.abs(s.x1-x1)<0.5&&Math.abs(s.y1-y1)<0.5; }
+    function desc(ls){ return ls.map(function(s){ return s.k+" "+Math.round(s.x0)+","+Math.round(s.y0)+(s.a0?"^":"")+">"+Math.round(s.x1)+","+Math.round(s.y1)+(s.a1?"^":""); }).join(" | ")||"none"; }
+    function of(ls,k){ return ls.filter(function(s){ return s.k===k; }); }
+    function sel(list){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
+      for(var j=0;j<list.length;j++){ list[j].selected=true; s.push(list[j]); } }
+    function mk(pl,id,x,y){ if(!UNITS[id]) return null; var u=Game.spawnUnitAt(pl,id,x*T+16,y*T+16); if(u) made.push(u); return u; }
+    function place(id,near){ var hx=near.x, hy=near.y, d=BUILDINGS[id];
+      for(var r=2;r<30;r++) for(var a=0;a<32;a++){ var x=(hx+Math.cos(a/32*6.283)*r)|0, y=(hy+Math.sin(a/32*6.283)*r)|0;
+        if(Game.canPlace(P,id,x,y)){ var b=Game.placeBuilding(P,id,x,y,true); if(b){ b.buildProgress=1; blds.push(b); return b; } } }
+      return null; }
+    function click(btn,wx,wy,shift,ctrl){ var rc=cv.getBoundingClientRect();
+      cv.dispatchEvent({type:"mousedown",button:btn,clientX:rc.left+Render.sx(wx,wy),
+        clientY:rc.top+Render.sy(wx,wy,GameMap.elevAt(M,(wx/T)|0,(wy/T)|0)),shiftKey:!!shift,ctrlKey:!!ctrl,metaKey:false}); }
+    function winEv(type,ev){ if(typeof __listeners!=="undefined") (__listeners["win:"+type]||[]).slice().forEach(function(f){ f(ev); });
+      else window.dispatchEvent(type==="blur" ? new Event("blur") : new KeyboardEvent(type,{key:ev.key,shiftKey:ev.shiftKey})); }
+    function key(type,k,shift){ winEv(type,{type:type,key:k,shiftKey:!!shift,ctrlKey:false,metaKey:false,altKey:false,preventDefault:function(){}}); }
+    function moveMouse(shift){ var rc=cv.getBoundingClientRect();
+      cv.dispatchEvent({type:"mousemove",clientX:rc.left+400,clientY:rc.top+300,shiftKey:!!shift}); }
+    function fixedRng(){ var seed=12345; Game.rng=function(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x80000000; }; }
+    try {
+      var g=tile(P,"ground",9);
+      if(!g){ chk("order-line scenario built", false, "no ground"); return; }
+      Render.setCam(g.x*T,g.y*T);
+      var A=mk(P,"mbt_n",g.x,g.y), B=mk(P,"mbt_n",g.x,g.y+2), C=mk(P,"mbt_n",g.x+2,g.y+4),
+          gun=mk(P,"spg_n",g.x-2,g.y+2), foe=mk(E,"mbt_p",g.x+9,g.y+1), lay=mk(P,"minelayer",g.x-3,g.y-2);
+      if(!A||!B||!C||!gun||!foe||!lay){ chk("order-line scenario built", false, "spawn failed"); return; }
+      [A,B,C,gun,lay].forEach(function(u){ u.stance="hold"; });        // nobody wanders off to fight
+      /* a box of ground to mine, four tiles off, with a move queued behind it:
+         given now so the three ticks below start the job (entities.js lays
+         out the lattice on its first tick) and lay nothing */
+      var bx0=lay.x+T*4, by0=lay.y-T, bx1=lay.x+T*7, by1=lay.y+T;
+      lay.give({ type:"autolay", x0:bx0, y0:by0, x1:bx1, y1:by1 }); lay.give({ type:"move", x:lay.x-T*3, y:lay.y }, true);
+      /* 1. a patrol by P and a click: the beat, once it has begun */
+      sel([C]); key("keydown","p",false); key("keyup","p",false); click(0,C.x+T*6,C.y,false);
+      for(var i=0;i<3;i++) Game.tick(CFG.DT);
+      var po=C.order; ls=lines(UI.selection,false);
+      var beat=of(ls,"patrol");
+      chk("a patrol draws its beat end to end, and both ends are marked", po.type==="patrol" && po.x0!==undefined &&
+          beat.some(function(s){ return eq(s,po.x0,po.y0,po.x,po.y); }) &&
+          of(ls.marks,"patrol").length===2, po.type+" x0="+po.x0+"; "+desc(ls));
+      click(2,C.x+T*2,C.y+T*4,true);
+      ls=lines(UI.selection,false);
+      chk("a move Shift-queued behind a patrol is not drawn: a patrol never ends, so the tank never goes there",
+          C.order.type==="patrol" && C.orders.length===1 && C.orders[0].type==="move" && ls.length===beat.length && !of(ls,"move").length,
+          C.order.type+", "+C.orders.length+" queued; "+desc(ls));
+      /* 2. a move and two Shift-queued waypoints, by right-click */
+      sel([A]);
+      click(2,A.x+T*4,A.y,false); click(2,A.x+T*4,A.y+T*3,true); click(2,A.x+T,A.y+T*5,true);
+      var q=[A.order].concat(A.orders), ls=lines(UI.selection,false);
+      chk("a move and two queued waypoints draw three legs, unit to first to second to third",
+          q.length===3 && ls.length===3 && ls.every(function(s){ return s.k==="move" && !s.a0 && !s.a1; }) &&
+          eq(ls[0],A.x,A.y,q[0].x,q[0].y) && eq(ls[1],q[0].x,q[0].y,q[1].x,q[1].y) && eq(ls[2],q[1].x,q[1].y,q[2].x,q[2].y),
+          q.length+" orders; "+desc(ls));
+      chk("and each waypoint is marked", ls.marks.length===3 && ls.marks.every(function(m,i){ return Math.abs(m.x-q[i].x)<0.5 && Math.abs(m.y-q[i].y)<0.5; }),
+          ls.marks.length+" marks");
+      var L1=OLF(Game,UI.selection,false), L2=OLF(Game,UI.selection,false);
+      chk("the list is made once and refilled, not allocated each frame", L1===L2 && L1.seg===L2.seg && L1.seg instanceof Float32Array, "");
+      /* 3. attack-move by its key, and the fight it breaks off for */
+      sel([B]); UI.input.attackMove=true; click(0,B.x-T*5,B.y,false);
+      ls=lines(UI.selection,false);
+      chk("an attack-move is its own kind of leg", B.order.type==="attackmove" && ls.length===1 && ls[0].k==="amove" &&
+          eq(ls[0],B.x,B.y,B.order.x,B.order.y), B.order.type+"; "+desc(ls));
+      var amx=B.order.x, amy=B.order.y;
+      B.order={ type:"attack", target:foe, resume:{x:amx,y:amy}, auto:true };      // what the attackmove branch hands over
+      ls=lines(UI.selection,false);
+      chk("a fight on the way is an attack leg to the enemy, then the attack-move taken up again",
+          ls.length===2 && ls[0].k==="attack" && eq(ls[0],B.x,B.y,foe.x,foe.y) && ls[1].k==="amove" && eq(ls[1],foe.x,foe.y,amx,amy), desc(ls));
+      /* 4. Ctrl+right-click: a fire mission, and where its rounds come down */
+      sel([gun]); click(2,gun.x+T*12,gun.y,false,true);
+      var fo=gun.order; ls=lines(UI.selection,false);
+      chk("a fire mission is a leg to the aim point with a ring round it", fo.type==="bombard" && ls.length===1 && ls[0].k==="fire" &&
+          eq(ls[0],gun.x,gun.y,fo.x,fo.y) && ls.rings.length===1 && ls.rings[0].k==="fire" &&
+          Math.abs(ls.rings[0].x-fo.x)<0.5 && Math.abs(ls.rings[0].y-fo.y)<0.5,
+          fo.type+"; "+desc(ls)+"; rings "+ls.rings.length);
+      /* where 400 of this gun's own rounds fall, on a fixed RNG */
+      fixedRng();
+      var w=WEAPONS[gun.def.weapons[0]], far=0, onAim=0, n=400, ph={ x:fo.x, y:fo.y, layer:"ground", dead:false, armor:"structure",
+        def:{}, owner:null, r:0, tx:(fo.x/T)|0, ty:(fo.y/T)|0 };
+      var n1=Combat.projectiles.length;
+      for(var k=0;k<n;k++){ Combat.fire(Game,gun,w,ph); var pr=Combat.projectiles[Combat.projectiles.length-1];
+        var d=U.dist(pr.tx,pr.ty,fo.x,fo.y); if(d<0.01) onAim++; if(d>far) far=d; }
+      Game.rng=rng;
+      Combat.projectiles.splice(n1, Combat.projectiles.length-n1);
+      var ringR=ls.rings.length ? ls.rings[0].r : 0;
+      chk("every round of the gun's own falls inside the ring, and the ring is no wider than they fall",
+          ringR>0 && far<=ringR && far>=ringR*0.95,
+          w.name+": "+onAim+" of "+n+" on the aim point, the farthest "+far.toFixed(1)+" px out; ring "+ringR+" px");
+      click(2,gun.x+T*12,gun.y+T*3,true,true);
+      ls=lines(UI.selection,false);
+      chk("a second mission Shift-queued behind it is not drawn: a mission fires to its clock and the gun then stands idle",
+          gun.order===fo && gun.orders.length===1 && gun.orders[0].type==="bombard" && ls.length===1 && ls.rings.length===1,
+          gun.orders.length+" queued; "+desc(ls)+"; rings "+ls.rings.length);
+      /* 4b. a cargo round: the order the MINEFIELD panel gives (ui.js), a
+         move queued behind it, and where the stick's mines really lie */
+      var si=gun.scatterIndex ? gun.scatterIndex() : -1, wS=si>=0 ? WEAPONS[gun.def.weapons[si]] : null;
+      if(wS && wS.scatter && MN){
+        /* an aim point on open ground, so the stick is not lost to water */
+        var sx0=gun.x+T*11, sy0=gun.y-T, gx0=(gun.x/T)|0, gy0=(gun.y/T)|0, found=false;
+        for(var rS=8;rS<=12 && !found;rS++) for(var aS=0;aS<24 && !found;aS++){
+          var cx=(gx0+Math.cos(aS/24*6.283)*rS)|0, cy=(gy0+Math.sin(aS/24*6.283)*rS)|0, open=true;
+          for(var oy=-5;oy<=5 && open;oy++) for(var ox=-5;ox<=5;ox++)
+            if(ox*ox+oy*oy<=25 && !GameMap.passable(M,cx+ox,cy+oy,"ground")){ open=false; break; }
+          if(open){ sx0=cx*T+16; sy0=cy*T+16; found=true; }
+        }
+        gun.give({ type:"bombard", wi:si, x:sx0, y:sy0, until:Game.time+25 }); gun.give({ type:"move", x:gun.x-T*2, y:gun.y }, true);
+        ls=lines(UI.selection,false);
+        var sow=OLF(Game,[],false).sowR(wS);
+        chk("a cargo round rings where its mines can lie, and the move queued after it is drawn: one round, then the next order",
+            ls.length===2 && ls[0].k==="fire" && eq(ls[0],gun.x,gun.y,sx0,sy0) && ls[1].k==="move" &&
+            ls.rings.length===1 && ls.rings[0].k==="area" && Math.abs(ls.rings[0].r-sow)<0.01 && sow>ringR,
+            desc(ls)+"; ring "+(ls.rings[0] ? ls.rings[0].k+" "+ls.rings[0].r.toFixed(1) : "none")+" px");
+        /* fired through Combat.fire and flown by Combat.update, with the
+           match's own rounds and effects set aside and Mines.lay recording
+           instead of laying, so nothing reaches the shared minefields */
+        pSave=Combat.projectiles.splice(0, Combat.projectiles.length); fxSave=Combat.effects.splice(0, Combat.effects.length);
+        var got=[];
+        MN.lay=function(g2,own,x,y){ got.push([x,y]); return true; }; MN.tileMined=function(){ return false; };
+        fixedRng();
+        var phS={ x:sx0, y:sy0, layer:"ground", dead:false, armor:"structure", def:{}, owner:null, r:0, tx:(sx0/T)|0, ty:(sy0/T)|0 };
+        for(var kS=0;kS<400;kS++) Combat.fire(Game,gun,wS,phS);
+        for(var tS=0;tS<900 && Combat.projectiles.length;tS++) Combat.update(Game, CFG.DT);
+        Game.rng=rng; MN.lay=mLay; MN.tileMined=mMined;
+        Combat.projectiles.length=0; Array.prototype.push.apply(Combat.projectiles, pSave); pSave=null;
+        Combat.effects.length=0; Array.prototype.push.apply(Combat.effects, fxSave); fxSave=null;
+        var farS=0; got.forEach(function(p2){ farS=Math.max(farS, U.dist(p2[0],p2[1],sx0,sy0)); });
+        chk("every mine of "+wS.name+" falls inside that ring, and the ring is not much wider than they fall",
+            got.length>=1500 && farS<=sow && farS>=sow*0.88,
+            got.length+" mines from 400 rounds, the farthest "+farS.toFixed(1)+" px out; ring "+sow.toFixed(1)+" px");
+      } else chk("a cargo round rings where its mines can lie", false, "no cargo round on "+gun.def.id);
+      /* 5. a landing craft's unload point, a squad boarding it */
+      var s=tile(P,"sea",4), lst=s && mk(P,"lst",s.x,s.y), sq=mk(P,"rifle_n",g.x-1,g.y-1);
+      if(lst && sq){
+        lst.give({ type:"move", x:lst.x+T*3, y:lst.y, unloadAt:true }); sq.give({ type:"enter", target:lst });
+        ls=lines([lst,sq],false);
+        chk("an unload run and a squad boarding are drawn, each as its own kind",
+            of(ls,"unload").length===1 && eq(of(ls,"unload")[0],lst.x,lst.y,lst.x+T*3,lst.y) &&
+            of(ls,"enter").length===1 && eq(of(ls,"enter")[0],sq.x,sq.y,lst.x,lst.y), desc(ls));
+      } else chk("an unload run and a squad boarding are drawn, each as its own kind", false, "no sea or no craft");
+      /* 6. a strike flown from a ramp: at height to the target, and home */
+      var ab=place("airbase",g), fac=place("barracks",g);
+      var jet=mk(P,"fighter_n",g.x+1,g.y-3);
+      if(jet && ab){
+        jet.parked=false; jet.padOn=ab;
+        jet.order={ type:"attack", target:foe, resume:{x:ab.x,y:ab.y}, release:true };
+        ls=lines([jet],false);
+        chk("an aircraft's strike runs from its height to the target, then back to its ramp as the attack-move afterAttack() makes it",
+            ls.length===2 && ls[0].k==="strike" && ls[0].a0===1 && ls[0].a1===0 && eq(ls[0],jet.x,jet.y,foe.x,foe.y) &&
+            ls[1].k==="amove" && ls[1].a1===1 && eq(ls[1],foe.x,foe.y,ab.x,ab.y), desc(ls));
+        var o6=jet.order, home=jet.afterAttack({ type:"attack", target:null, resume:{x:ab.x,y:ab.y} });
+        jet.order=home; var ls6=lines([jet],false); jet.order=o6;
+        chk("and once the target is gone the way home is the same kind of line, because it is the same order",
+            home.type==="attackmove" && ls6.length===1 && ls6[0].k==="amove" && eq(ls6[0],jet.x,jet.y,ab.x,ab.y), home.type+"; "+desc(ls6));
+        /* FOG: the leg to a target is drawn only while the player can see it */
+        Game.fogEnabled=true;
+        var fi=foe.ty*M.W+foe.tx;
+        Game.fog[fi]=1; ls=lines([jet],false);
+        chk("fog: no leg points at a target the player cannot see - the way home starts from the aircraft",
+            ls.length===1 && ls[0].k==="amove" && eq(ls[0],jet.x,jet.y,ab.x,ab.y), desc(ls));
+        Game.fog[fi]=2; ls=lines([jet],false);
+        chk("and it is back the moment the target is in sight", ls.length===2 && ls[0].k==="strike", desc(ls));
+        var eb=E.buildings.filter(function(b){ return !b.dead; })[0];
+        if(eb){ var bi=eb.ty*M.W+eb.tx; B.order={ type:"attack", target:eb };
+          Game.fog[bi]=1; var seen=lines([B],false).length; Game.fog[bi]=0; var never=lines([B],false).length;
+          chk("a structure once seen keeps its leg in the fog, one never seen has none", seen===1 && never===0, "explored "+seen+", unexplored "+never); }
+        Game.fogEnabled=fogOn0;
+        jet.order={ type:"cap", x:jet.x+T*6, y:jet.y };
+        jet.orders=[{ type:"move", x:jet.x-T*6, y:jet.y }];
+        ls=lines([jet],false);
+        chk("a combat air patrol is flown at height, and what is queued behind it is not drawn: it is taken up again after every trip home",
+            ls.length===1 && ls[0].k==="cap" && ls[0].a1===1 && eq(ls[0],jet.x,jet.y,jet.x+T*6,jet.y), desc(ls));
+        jet.order={ type:"rtb" };
+        ls=lines([jet],false);
+        chk("a recall comes down on the ramp and ends there: a parked aircraft takes up nothing queued",
+            ls.length===1 && ls[0].k==="rtb" && ls[0].a0===1 && ls[0].a1===0 && eq(ls[0],jet.x,jet.y,ab.x,ab.y), desc(ls));
+        jet.order={ type:"rtb", then:{ type:"cap", x:jet.x+T*6, y:jet.y } };
+        ls=lines([jet],false);
+        chk("a recall that carries its patrol shows the way back out to it",
+            ls.length===2 && ls[0].k==="rtb" && ls[1].k==="cap" && ls[1].a0===0 && ls[1].a1===1 && eq(ls[1],ab.x,ab.y,jet.x+T*6,jet.y), desc(ls));
+        jet.orders.length=0;
+      } else chk("an aircraft's strike runs from its height to the target, then back to its ramp", false, "no airbase or jet");
+      /* 7. only the player's own: an enemy clicked for intel shows nothing */
+      foe.give({ type:"move", x:foe.x+T*3, y:foe.y });
+      ls=lines([foe],false);
+      chk("an enemy selected for intel shows none of its orders", foe.order.type==="move" && ls.length===0, desc(ls));
+      /* 7b. the box of ground being mined */
+      var lo=lay.order, lp=lo.pts && lo.pts[lo.i];
+      ls=lines([lay],false);
+      var box=of(ls,"area");
+      chk("a box being mined is outlined, with a line to the point being worked, and the move queued after it is not drawn",
+          lo.type==="autolay" && !!lp && lay.orders.length===1 && ls.length===5 && box.length===5 &&
+          eq(box[0],lay.x,lay.y,lp.x,lp.y) && eq(box[1],bx0,by0,bx1,by0) && eq(box[2],bx1,by0,bx1,by1) &&
+          eq(box[3],bx1,by1,bx0,by1) && eq(box[4],bx0,by1,bx0,by0),
+          lo.type+", "+(lo.pts ? lo.pts.length : 0)+" points; "+desc(ls));
+      /* 8. rally lines, set by right-click */
+      if(fac && ab){
+        sel([fac]); click(2,fac.x+T*5,fac.y+T*2,false);
+        ls=lines(UI.selection,false);
+        chk("a selected barracks is linked to its rally flag", ls.length===1 && ls[0].k==="rally" &&
+            eq(ls[0],fac.x,fac.y,fac.rally.x,fac.rally.y) && Math.abs(fac.rally.x-(fac.x+T*5))<T, desc(ls));
+        sel([ab]); click(2,ab.x+T*5,ab.y+T*2,false);
+        ls=lines(UI.selection,false);
+        chk("an airbase is not: an airframe never goes to a rally point (game.js)", !!ab.rally && ls.length===0, desc(ls));
+      } else chk("a selected barracks is linked to its rally flag", false, "could not place a barracks and an airbase");
+      /* 9. Shift shows every unit of the player's, the selection first, and letting go shows the selection again */
+      sel([A]);
+      var mine=lines(UI.selection,!!UI.input.shift).length;
+      key("keydown","Shift",true);
+      var held=!!UI.input.shift, all=lines(UI.selection,!!UI.input.shift);
+      key("keyup","Shift",false);
+      var after=lines(UI.selection,!!UI.input.shift).length;
+      chk("while Shift is down every unit of the player's shows its orders; let go, only the selection",
+          mine===3 && held && all.some(function(s){ return s.k==="patrol"; }) && all.some(function(s){ return s.k==="fire"; }) &&
+          all.length>mine && !UI.input.shift && after===3,
+          "selection "+mine+" legs, Shift "+(held?"down":"not seen")+" "+all.length+" legs, released "+after);
+      chk("and the selection's legs come first, so a full list never loses the units in hand",
+          all.length>3 && eq(all[0],A.x,A.y,A.order.x,A.order.y) && all[0].k==="move" && all[1].k==="move" && all[2].k==="move", desc(all.slice(0,4)));
+      moveMouse(true); var mv=!!UI.input.shift; moveMouse(false);
+      chk("a mouse move over the map reads Shift afresh", mv && !UI.input.shift, "");
+      key("keydown","Shift",true); var down=!!UI.input.shift;
+      winEv("blur",{type:"blur"});
+      chk("and the window losing focus lets go of it, so it cannot stick down", down && !UI.input.shift, "");
+      /* a list filled to the brim: 320 made-up units of the player's, each
+         with a move and 12 queued, are 4,160 legs against room for 4,096 */
+      var fake=[]; for(var fu0=0;fu0<320;fu0++){ var fu={ kind:"unit", owner:P, x:fu0, y:0, layer:"ground", order:{ type:"move", x:fu0, y:10 }, orders:[] };
+        for(var fq=1;fq<13;fq++) fu.orders.push({ type:"move", x:fu0, y:10+fq }); fake.push(fu); }
+      var LF=OLF(Game,fake,false);
+      chk("a list filled past its 4,096 legs stops there and counts what it left out", LF.n===4096 && LF.cut===64, LF.n+" legs, "+LF.cut+" left out");
+      /* 10. the 2D view strokes the list */
+      Render.setCam(A.x+T*2,A.y+T*2);
+      var err=null, L=OLF(Game,UI.selection,false);
+      try { if(Render===Render2D) Render2D.draw(CFG.DT, UI.input); } catch(e2){ err=e2; }
+      chk("the 2D view strokes every leg of the selection that is on screen", !err && Render===Render2D && L.drawn===3,
+          err ? String(err) : "stroked "+L.drawn+" of "+L.n);
+    } catch(ex) {
+      chk("[83] runs to the end", false, String(ex)+" "+String(ex.stack||"").split("\n")[0]);
+    } finally {
+      Game.rng=rng; Game.fogEnabled=fogOn0; Game.fog.set(fog0);
+      if(MN){ MN.lay=mLay; MN.tileMined=mMined; }
+      if(pSave){ Combat.projectiles.length=0; Array.prototype.push.apply(Combat.projectiles, pSave); }
+      if(fxSave){ Combat.effects.length=0; Array.prototype.push.apply(Combat.effects, fxSave); }
+      for(var pi=Combat.projectiles.length-1; pi>=0; pi--)
+        if(made.indexOf(Combat.projectiles[pi].shooter)>=0) Combat.projectiles.splice(pi,1);
+      if(Game.cbContacts) for(var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if(made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      if(UI.input.shift) key("keyup","Shift",false);
+      UI.input.attackMove=false;
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      blds.forEach(function(b){ if(!b.dead){ b.dead=true; Game.removeBuilding(b); } });
+      sel(sel0.filter(function(e){ return !e.dead; }));
+      Render.setCam(cam0.x,cam0.y); Render.cam.z=cam0.z;
+      var back=function(st,js){ var o=JSON.parse(js); for(var k2 in st) if(!(k2 in o)) delete st[k2]; for(var k3 in o) st[k3]=o[k3]; };
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    var selBack=sel0.filter(function(e){ return !e.dead; });
+    chk("the shared match is as it was: RNG, fog, minefields, rounds, selection, both commanders' books",
+        Game.rng===rng && Game.fogEnabled===fogOn0 && !UI.input.shift && (!MN || (MN.lay===mLay && MN.tileMined===mMined)) &&
+        (Game.mines||[]).length===mines0 &&
+        UI.selection.length===selBack.length && selBack.every(function(e,i){ return UI.selection[i]===e && e.selected; }) &&
+        !Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0; }) &&
+        JSON.stringify(P.stats)===sP && JSON.stringify(E.stats)===sE &&
+        !(Game.cbContacts||[]).some(function(c){ return made.indexOf(c.unit)>=0; }),
+        "mines "+mines0+" -> "+(Game.mines||[]).length+", selection "+selBack.length+" -> "+UI.selection.length);
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

@@ -2857,6 +2857,104 @@ var Render3D = (function () {
     return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a.toFixed(3) + ")";
   }
 
+  /* ---------------- order lines ----------------
+     What render.js orderLines() lists - the player's own units' orders as
+     far as each will really carry them, the rally links, a fire mission's
+     landing ring, a box being mined or swept; the fog rule and the colours
+     are set there, once, for both views - laid on the ground as ONE
+     LineSegments: one draw call however many units, from a buffer made once
+     and refilled each frame, so nothing is allocated per frame. It is drawn
+     over everything (no depth test), the way StarCraft II draws its
+     waypoints, so a ridge or a hangar never hides where a unit is going; a
+     ground leg is still bent over the relief every 1.5 tiles so that in
+     perspective it lies on the map instead of cutting through a hill. A
+     flying leg runs at the cruise height the aircraft are drawn at.
+     Measured at b4a9943 under jsc (tools/jsc/orderlines3d_check.js times the
+     list and this fill together, median of 60 frames): 40 tanks with 13
+     orders each, 520 legs and 10,400 vertices, cost 1.2 to 1.5 ms a frame,
+     1.3 to 1.6 ms with Shift showing every unit, and 0.010 to 0.011 ms with
+     nothing to show, with the machine at load averages of 39 to 57. One draw
+     call either way. The buffer holds OLV vertices; the list puts the
+     selection first, so a buffer filled by Shift over a very large army
+     leaves out the rest of the army first. */
+  const OLV = 16384;                           // vertices: 8,192 pieces of line
+  let olObj = null, olPos = null, olCol = null, olRGB = null, olV = 0;
+  function olMake() {
+    const geo = new THREE.BufferGeometry();
+    olPos = new THREE.BufferAttribute(new Float32Array(OLV * 3), 3);
+    olCol = new THREE.BufferAttribute(new Float32Array(OLV * 3), 3);
+    olPos.setUsage(THREE.DynamicDrawUsage); olCol.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute("position", olPos); geo.setAttribute("color", olCol);
+    geo.setDrawRange(0, 0);
+    olObj = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+      vertexColors: true, transparent: true, opacity: 0.85,
+      depthTest: false, depthWrite: false, fog: false, toneMapped: false }));
+    olObj.name = "orderLines";
+    olObj.frustumCulled = false;               // the box would have to be refitted every frame
+    olObj.renderOrder = 999;
+    olObj.visible = false;
+    olRGB = Render2D.orderLines(null).colors.map(h => new THREE.Color(h).convertSRGBToLinear());
+  }
+  /* metres above the datum for a point of a leg: flying, or on the ground or
+     the sea a metre up */
+  function olY(x, y, a) { return a ? AIR_ALT : Math.max(heightAt(x, y), 0.35) + 1.0; }
+  function olPut(x, y, h, c) {
+    const i = olV * 3, P = olPos.array, C = olCol.array;
+    P[i] = gx2m(x); P[i + 1] = h; P[i + 2] = gx2m(y);
+    C[i] = c.r; C[i + 1] = c.g; C[i + 2] = c.b;
+    olV++;
+  }
+  /* one leg, in pieces: flat through the air, over the relief on the ground,
+     and eased between the two where a leg comes down to a ramp */
+  function olPiece(x0, y0, a0, x1, y1, a1, c) {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const n = a0 && a1 ? 1 : Math.min(32, Math.max(1, Math.ceil(len / 48)));
+    const h0 = olY(x0, y0, a0), h1 = olY(x1, y1, a1), mixed = a0 !== a1;
+    let px = x0, py = y0, ph = h0;
+    for (let p = 1; p <= n; p++) {
+      if (olV + 2 > OLV) return;
+      const t = p / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+      const h = p === n ? h1 : mixed ? h0 + (h1 - h0) * t : olY(x, y, a0);
+      olPut(px, py, ph, c); olPut(x, y, h, c);
+      px = x; py = y; ph = h;
+    }
+  }
+  function syncOrderLines(input) {
+    if (!olObj) olMake();
+    if (olObj.parent !== three.scene) three.scene.add(olObj);
+    const L = Render2D.orderLines(G, typeof UI !== "undefined" ? UI.selection : null,
+                                  !!(input && input.shift));
+    olV = 0;
+    const s = L.seg, m = L.mark, R = L.ring;
+    for (let i = 0; i < L.n; i++) {
+      const j = i * 7;
+      olPiece(s[j], s[j + 1], s[j + 2], s[j + 3], s[j + 4], s[j + 5], olRGB[s[j + 6]]);
+    }
+    /* a waypoint: a small diamond, six metres across, on the ground or at height */
+    for (let i = 0; i < L.nm; i++) {
+      const j = i * 4, x = m[j], y = m[j + 1], a = m[j + 2], c = olRGB[m[j + 3]], d = 5;
+      olPiece(x - d, y, a, x, y - d, a, c); olPiece(x, y - d, a, x + d, y, a, c);
+      olPiece(x + d, y, a, x, y + d, a, c); olPiece(x, y + d, a, x - d, y, a, c);
+    }
+    /* where a fire mission's rounds, or a cargo round's mines, can come
+       down: 32 chords over the ground */
+    for (let i = 0; i < L.nr; i++) {
+      const j = i * 4, x = R[j], y = R[j + 1], r = R[j + 2], c = olRGB[R[j + 3]];
+      for (let k = 0; k < 32; k++) {
+        const a0 = k / 32 * Math.PI * 2, a1 = (k + 1) / 32 * Math.PI * 2;
+        olPiece(x + Math.cos(a0) * r, y + Math.sin(a0) * r, 0,
+                x + Math.cos(a1) * r, y + Math.sin(a1) * r, 0, c);
+      }
+    }
+    olObj.visible = olV > 0;
+    olObj.geometry.setDrawRange(0, olV);
+    if (olV) {
+      /* upload only what was written this frame */
+      olPos.updateRange.offset = 0; olPos.updateRange.count = olV * 3; olPos.needsUpdate = true;
+      olCol.updateRange.offset = 0; olCol.updateRange.count = olV * 3; olCol.needsUpdate = true;
+    }
+  }
+
   /* ---------------- main draw ---------------- */
   function draw(dt, input) {
     if (!three) return;
@@ -2872,6 +2970,7 @@ var Render3D = (function () {
     syncEffects(dt);
     if (typeof Impact3D !== "undefined") Impact3D.frame(dt);
     cleanProjectiles();
+    syncOrderLines(input);
     applyCamera();
     /* gentle water shimmer */
     if (waterMesh) waterMesh.material.opacity = 0.64 + Math.sin(G.time * 0.7) * 0.03;

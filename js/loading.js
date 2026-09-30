@@ -79,7 +79,7 @@ var LoadScreen = (function () {
   /* Tips repeat what the game already says in its own hints and alerts. */
   const TIPS = [
     "<b>Space</b> jumps to the next thing that needs you.",
-    "<b>A</b>+click attack-moves; <b>Shift+RMB</b> queues waypoints.",
+    "<b>A</b>+click attack-moves; <b>Shift+RMB</b> queues waypoints, and holding <b>Shift</b> shows every unit's orders.",
     "<b>Ctrl+0-9</b> sets a group and <b>0-9</b> recalls it.",
     "<b>C</b> puts guns on counter-battery: they answer plotted enemy artillery themselves.",
     "Build power, then a refinery. Harvesters fund the war.",

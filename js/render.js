@@ -1552,9 +1552,314 @@ var Render = (function () {
     ctx.restore();
   }
 
+  /* ============ order lines ============
+     (owner) "i take your suggestions and make it on 1,2,3 first" - and the
+     first of the small ideas was StarCraft II's, C&C3's and Supreme
+     Commander's: show on the map what a unit has been told to do.
+     Measured at b4a9943 under jsc: a tank given a move and two Shift-queued
+     waypoints holds all three, and the map showed three "·" marks that lived
+     0.5 s each; a 2D frame drawn at the moment of the click stroked 292
+     segments and not one of them ended on a waypoint, nor did any 0.6 s
+     later while the tank still had all three orders. An attack-move
+     left "ATTACK MOVE" for 0.8 s, a patrol "PATROL" for 1.0 s, a
+     Ctrl+right-click fire mission nothing on the map at all, and a selected
+     barracks drew its flag and no line back to itself.
+
+     So: from each of the player's selected units - every unit of his while
+     Shift is held, as StarCraft II does, Shift being the key that queues - a
+     line runs to what it is doing now and on through what it will do after,
+     one colour to a kind of order. A selected factory is linked to its rally
+     flag; an airbase is not, because an airframe never goes to one (game.js:
+     "An airframe has no rally point") - its flag is left as it always was. A
+     fire mission shows where its rounds can come down, which the game DOES
+     model and only as a circle: combat.js fire() puts a hit on the aim point
+     and a miss 14 + rng * 30 px off it in any direction, whatever the gun and
+     whatever the range, so the ring is 44 px (1.4 tiles) round the aim point
+     - not an ellipse, and not a guess. Measured: 400 of an M109's 155 mm
+     rounds at one map point on a fixed RNG put 13 on the aim point and none
+     farther out than 43.9 px. A cargo round is ringed where its MINES can
+     lie instead, which is wider (olSowR). A box of ground being mined or
+     swept is outlined, with a line to the point the vehicle is working.
+
+     A LINE GOES ONLY AS FAR AS THE UNIT WILL. The queue (u.orders) is taken
+     up only by an order that finishes into nextOrder() (entities.js): a
+     move, an attack-move, a fight, a clearance, a mine laid, a cargo round
+     away. A patrol never finishes; a combat air patrol is flown until the
+     tanks send it home and then taken up again; a fire mission runs to its
+     clock and stands idle; a squad that boards is aboard; a recall parks; a
+     mined or swept box ends idle - and an idle unit never takes up what is
+     queued. Measured at b4a9943, each with a move queued behind it: a patrol
+     still walking its beat after 30 s; a fire mission on a 3 s clock
+     idle after 30 s; a squad aboard its IFV after 10 s; a combat air patrol
+     home for fuel and back on station within 60 s; a recall parked after
+     60 s - and the move still queued in every one. So the line stops at
+     such an order, and nothing is drawn to a place the unit is never going.
+     A strike's way home is drawn as what afterAttack()
+     makes it, an ATTACK-MOVE back to the ramp that fights whatever it meets
+     - the same kind before the target dies and after.
+
+     FOG. Only the player's own units: an enemy clicked for intel, or an
+     ally's, shows nothing. A leg that ends on a TARGET is drawn only while
+     that target is on the player's own map by the rule both renderers draw
+     it by - a unit in sight, a structure once seen, a boat held on sonar -
+     so no line can point into the fog at what it hides.
+
+     One list for both renderers, in world pixels, rebuilt each frame into
+     typed arrays made once: render.js strokes it here, render3d.js copies it
+     into a single LineSegments. The list allocates nothing per frame, nor do
+     the strokes (the dash patterns are made once, below), and making the
+     list for 40 tanks with 13 orders each - 520 legs - took 0.11 to 0.35 ms
+     under jsc on a loaded machine. It holds OL_MAXS legs, and the selection
+     is listed first, so if Shift over a very large army ever fills it, what
+     goes unshown is the rest of the army and never the units in the
+     player's hand (OL.cut counts what was left out). A harvester's round
+     trip and a guard post are not orders anyone needs reminding of, and
+     draw nothing. */
+  const OL_KINDS = ["move", "amove", "attack", "patrol", "unload", "enter",
+                    "strike", "rtb", "cap", "fire", "rally", "area"];
+  const OL_COLS = ["#8fd05f", "#ff9a4a", "#ff4a3a", "#ffe066", "#5ac8ff", "#5ac8ff",
+                   "#ff5a9c", "#a8b8ff", "#ffe066", "#e07cff", "#8fd05f", "#e2c478"];
+  /* a beat walked both ways, a patrol flown over a point, a way home, a
+     rally and a box of ground are standing arrangements rather than a single
+     trip: dashed. The box is the colour of the one the player drags out. */
+  const OL_DASH = [0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1];
+  const OL_DASH_ON = [6, 5], OL_DASH_OFF = [], OL_DASH_RING = [3, 4];
+  const K_MOVE = 0, K_AMOVE = 1, K_ATTACK = 2, K_PATROL = 3, K_UNLOAD = 4, K_ENTER = 5,
+        K_STRIKE = 6, K_RTB = 7, K_CAP = 8, K_FIRE = 9, K_RALLY = 10, K_AREA = 11;
+  const OL_MAXS = 4096, OL_MAXM = 2048, OL_MAXR = 128;
+  const OL_MISS = 44;                      // combat.js fire(): a miss lands 14 + rng*30 px off
+  /* Where a cargo round's mines can lie. combat.js scatterMines() lays mine
+     i of n at sqrt((i + 0.5) / n) * scatterR out, at i golden angles round,
+     stretched 1.6:1 along the line of fire; jitters each up to 0.225 tile
+     each way (0.32 tile at most); and does it round the point the round came
+     down - anywhere inside OL_MISS. The stick's own farthest mine is worked
+     out here the way scatterMines() places it, and the line of fire is not
+     known until the launcher shoots, so the ring is that stick turned
+     through every bearing. An M109's M741 RAAMS (5 mines, scatterR 1.2)
+     comes to 112.0 px; 2,000 of its mines from 400 rounds on a fixed RNG
+     reach 104.6 to 106.0 px at the farthest, by the ground they fell on
+     (_behtest [83] fires them). */
+  function olSowR(w) {
+    const n = Math.max(1, w.scatter | 0), R = (w.scatterR || 1.8) * CFG.TILE;
+    let far = 0;
+    for (let i = 0; i < n; i++) {
+      const rr = Math.sqrt((i + 0.5) / n) * R, th = i * 2.39996323;
+      far = Math.max(far, Math.hypot(Math.cos(th) * rr * 1.6, Math.sin(th) * rr));
+    }
+    return OL_MISS + far + 0.32 * CFG.TILE;
+  }
+  const OL_HOME = { type: "rtb" };         // what a join on a tanker with no mission hands on to
+  const OL = {
+    kinds: OL_KINDS, colors: OL_COLS, dash: OL_DASH, miss: OL_MISS, sowR: olSowR,
+    n: 0, seg: new Float32Array(OL_MAXS * 7),     // x0 y0 a0  x1 y1 a1  kind  (a: 1 = flying)
+    nm: 0, mark: new Float32Array(OL_MAXM * 4),   // x y a kind: a waypoint
+    nr: 0, ring: new Float32Array(OL_MAXR * 4),   // x y r kind: where a fire mission can land
+    units: 0,                                     // units with at least one leg
+    cut: 0,                                       // legs past OL_MAXS, not listed
+    drawn: 0,                                     // segments the 2D view stroked last frame
+  };
+  let olX = 0, olY = 0, olA = 0;                  // the pen: where the next leg starts
+  function olMark(x, y, a, k) {
+    if (OL.nm >= OL_MAXM) return;
+    const m = OL.mark, i = OL.nm++ * 4;
+    m[i] = x; m[i + 1] = y; m[i + 2] = a; m[i + 3] = k;
+  }
+  function olLeg(k, x, y, a, mark) {
+    if (typeof x !== "number" || typeof y !== "number" || x !== x || y !== y) return;   // no point, no leg
+    if (OL.n < OL_MAXS) {
+      const s = OL.seg, i = OL.n++ * 7;
+      s[i] = olX; s[i + 1] = olY; s[i + 2] = olA; s[i + 3] = x; s[i + 4] = y; s[i + 5] = a; s[i + 6] = k;
+    } else OL.cut++;
+    if (mark) olMark(x, y, a, k);
+    olX = x; olY = y; olA = a;
+  }
+  /* a battery given one aim point shares one ring */
+  function olRing(x, y, r, k) {
+    const R = OL.ring, fx = Math.fround(x), fy = Math.fround(y), fr = Math.fround(r);
+    for (let i = 0; i < OL.nr; i++)
+      if (R[i * 4] === fx && R[i * 4 + 1] === fy && R[i * 4 + 2] === fr && R[i * 4 + 3] === k) return;
+    if (OL.nr >= OL_MAXR) return;
+    const i = OL.nr++ * 4;
+    R[i] = x; R[i + 1] = y; R[i + 2] = r; R[i + 3] = k;
+  }
+  /* on the player's map now: render.js visible(), for any game */
+  function olShown(g, e) {
+    if (e.owner === g.human || !g.fogEnabled || !g.fog) return true;
+    if (e.layer === "sub") return !!(g.canSeeSub && g.canSeeSub(g.human, e));
+    const f = g.fog[e.ty * g.map.W + e.tx];
+    return e.kind === "building" ? f >= 1 : f === 2;
+  }
+  function olFlying(e) {
+    return e.layer === "air" && !e.parked && !(e.order && e.order.type === "parked") ? 1 : 0;
+  }
+  function olNum(v) { return typeof v === "number" && v === v; }
+  function olUnit(g, u) {
+    const air = u.layer === "air" ? 1 : 0, q = u.orders, pad = u.padOn && !u.padOn.dead ? u.padOn : null;
+    olX = u.x; olY = u.y; olA = olFlying(u);
+    let o = u.order, qi = 0;
+    const n0 = OL.n;
+    /* the order now, what it hands on to itself (a fight's way back, a
+       recall's mission), then the queue while each one finishes into it: at
+       most 1 + 12 queued, and a guard of 32 */
+    for (let step = 0; step < 32 && o; step++) {
+      let next = null, pull = false;
+      const t = o.target;
+      switch (o.type) {
+        case "move": olLeg(o.unloadAt ? K_UNLOAD : K_MOVE, o.x, o.y, air, true); pull = true; break;
+        case "laymine": case "emplace": olLeg(K_MOVE, o.x, o.y, air, true); pull = true; break;
+        case "attackmove": olLeg(K_AMOVE, o.x, o.y, air, true); pull = true; break;
+        case "attack":
+          if (t && !t.dead && olShown(g, t)) olLeg(air ? K_STRIKE : K_ATTACK, t.x, t.y, olFlying(t), false);
+          if (o.resume) {
+            if (o.resume.patrol) next = o.resume.patrol;
+            /* back on station, flown until the tanks send it home */
+            else if (air && o.cap) olLeg(K_CAP, o.resume.x, o.resume.y, 1, true);
+            /* afterAttack(): back to the resume point - a strike's own ramp -
+               as an attack-move, which fights what it meets on the way */
+            else { olLeg(K_AMOVE, o.resume.x, o.resume.y, air, true); pull = true; }
+          } else if (air && o.then) next = o.then;
+          else pull = true;
+          break;
+        case "patrol": {
+          /* the leg being walked now, then the whole beat; a beat not yet
+             begun starts wherever the unit will be when it begins */
+          const fresh = o.x0 === undefined;
+          const ax = fresh ? olX : o.x0, ay = fresh ? olY : o.y0;
+          olMark(ax, ay, air, K_PATROL);
+          if (!fresh) {
+            olLeg(K_PATROL, o.back ? ax : o.x, o.back ? ay : o.y, air, false);
+            olX = ax; olY = ay; olA = air;
+          }
+          olLeg(K_PATROL, o.x, o.y, air, true);
+          break;
+        }
+        case "bombard": {
+          olLeg(K_FIRE, o.x, o.y, 0, true);
+          /* the mount the order names (entities.js bombard): a cargo round is
+             one round and then the next order; a gun fires until the clock */
+          const w = o.wi !== undefined && u.def.weapons ? WEAPONS[u.def.weapons[o.wi]] : null;
+          if (w && w.scatter) { olRing(o.x, o.y, olSowR(w), K_AREA); pull = true; }
+          else olRing(o.x, o.y, OL_MISS, K_FIRE);
+          break;
+        }
+        case "clearobstacle":
+          if (t && !t.dead && olShown(g, t)) olLeg(K_ENTER, t.x, t.y, olFlying(t), false);
+          pull = true;
+          break;
+        case "enter":
+          if (t && !t.dead && olShown(g, t)) olLeg(K_ENTER, t.x, t.y, olFlying(t), false);
+          break;
+        case "rtb": case "land":
+          olLeg(K_RTB, pad ? pad.x : u.owner.homeX, pad ? pad.y : u.owner.homeY, 0, true);
+          next = o.then || null;
+          break;
+        case "tank":
+          if (t && !t.dead) olLeg(K_RTB, t.x, t.y, 1, false);
+          next = o.then || OL_HOME;
+          break;
+        case "cap": olLeg(K_CAP, o.x, o.y, 1, true); break;
+        case "autolay": case "autosweep": {
+          /* the lattice point being worked, then the box the player drew (a
+             saved order comes back without its corners, and draws no box) */
+          const box = olNum(o.x0) && olNum(o.y0) && olNum(o.x1) && olNum(o.y1);
+          const p = o.pts && o.i < o.pts.length ? o.pts[o.i] : null;
+          if (p) olLeg(K_AREA, p.x, p.y, air, false);
+          else if (box) olLeg(K_AREA, (o.x0 + o.x1) / 2, (o.y0 + o.y1) / 2, air, false);
+          if (box) {
+            olX = o.x0; olY = o.y0; olA = air;
+            olLeg(K_AREA, o.x1, o.y0, air, false); olLeg(K_AREA, o.x1, o.y1, air, false);
+            olLeg(K_AREA, o.x0, o.y1, air, false); olLeg(K_AREA, o.x0, o.y0, air, false);
+          }
+          break;
+        }
+      }
+      o = next || (pull && q && qi < q.length ? q[qi++] : null);
+    }
+    if (OL.n > n0) OL.units++;
+  }
+  /* skipSel: this pass follows one over the selection, which has been listed */
+  function olUnits(g, me, list, skipSel) {
+    if (list) for (let i = 0; i < list.length; i++) {
+      const u = list[i];
+      if (u.kind !== "unit" || u.owner !== me || u.dead || u.carried || !u.order) continue;
+      if (skipSel && u.selected) continue;
+      olUnit(g, u);
+    }
+  }
+  function olRallies(me, list, skipSel) {
+    if (list) for (let i = 0; i < list.length; i++) {
+      const b = list[i];
+      if (b.kind !== "building" || b.owner !== me || b.dead || !b.rally) continue;
+      if (skipSel && b.selected) continue;
+      if (!b.def.produces || b.def.produces === "aircraft") continue;
+      olX = b.x; olY = b.y; olA = 0;
+      /* a selected factory has its flag already; one shown by Shift gets a dot */
+      olLeg(K_RALLY, b.rally.x, b.rally.y, 0, !b.selected);
+    }
+  }
+  /* the list for one frame. sel is the player's selection; all = Shift held */
+  function orderLines(g, sel, all) {
+    OL.n = OL.nm = OL.nr = OL.units = OL.cut = 0;
+    if (!g || !g.human) return OL;
+    const me = g.human;
+    olUnits(g, me, sel, false);
+    if (all) olUnits(g, me, me.units, true);
+    olRallies(me, sel, false);
+    if (all) olRallies(me, me.buildings, true);
+    return OL;
+  }
+  /* ---- the 2D view: one path per kind, over the map, under the cursor aids ---- */
+  function drawOrderLines(input) {
+    const sel = (typeof UI !== "undefined") ? UI.selection : null;
+    const L = orderLines(G, sel, !!(input && input.shift));
+    L.drawn = 0;
+    if (!L.n && !L.nm && !L.nr) return;
+    const z = cam.z, lift = 34 * z, s = L.seg;
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = 1.5;
+    for (let k = 0; k < OL_KINDS.length; k++) {
+      let any = false;
+      ctx.beginPath();
+      for (let i = 0; i < L.n; i++) {
+        const j = i * 7;
+        if (s[j + 6] !== k) continue;
+        const X0 = sx(s[j], s[j + 1]), Y0 = sy(s[j], s[j + 1], 0) - s[j + 2] * lift;
+        const X1 = sx(s[j + 3], s[j + 4]), Y1 = sy(s[j + 3], s[j + 4], 0) - s[j + 5] * lift;
+        if ((X0 < 0 && X1 < 0) || (X0 > W && X1 > W) || (Y0 < 0 && Y1 < 0) || (Y0 > H && Y1 > H)) continue;
+        ctx.moveTo(X0, Y0); ctx.lineTo(X1, Y1);
+        any = true; L.drawn++;
+      }
+      if (!any) continue;
+      ctx.strokeStyle = OL_COLS[k];
+      ctx.setLineDash(OL_DASH[k] ? OL_DASH_ON : OL_DASH_OFF);
+      ctx.stroke();
+    }
+    ctx.setLineDash(OL_DASH_OFF);
+    const r = Math.max(2, 2.6 * z), m = L.mark;
+    for (let i = 0; i < L.nm; i++) {
+      const j = i * 4, X = sx(m[j], m[j + 1]), Y = sy(m[j], m[j + 1], 0) - m[j + 2] * lift;
+      if (X < -8 || X > W + 8 || Y < -8 || Y > H + 8) continue;
+      ctx.fillStyle = OL_COLS[m[j + 3]];
+      ctx.beginPath();
+      ctx.moveTo(X, Y - r); ctx.lineTo(X + r, Y); ctx.lineTo(X, Y + r); ctx.lineTo(X - r, Y);
+      ctx.closePath(); ctx.fill();
+    }
+    const R = L.ring;
+    ctx.setLineDash(OL_DASH_RING);
+    for (let i = 0; i < L.nr; i++) {
+      const j = i * 4, X = sx(R[j], R[j + 1]), Y = sy(R[j], R[j + 1], 0), rx = R[j + 2] * z;
+      if (X + rx < 0 || X - rx > W || Y + rx < 0 || Y - rx > H) continue;
+      ctx.strokeStyle = OL_COLS[R[j + 3]];
+      ctx.beginPath(); ctx.ellipse(X, Y, rx, rx * ISO, 0, 0, 7); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   /* ============ interaction overlays ============ */
   function drawOverlay(input) {
     drawRangeRings();
+    drawOrderLines(input);
     /* selection box */
     if (input.dragging && input.dragDist > 6) {
       ctx.strokeStyle = "rgba(140,255,140,0.8)";
@@ -2007,6 +2312,7 @@ var Render = (function () {
     get cam() { return cam; }, sx, sy,
     markDirty() { terrainDirty = true; mmBaseDirty = true; },
     getWorldTex, refreshOre, drawMinimapFrom,
+    orderLines,          // the order-line list render3d.js draws as well
   };
 })();
 var Render2D = Render;
