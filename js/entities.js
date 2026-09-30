@@ -486,7 +486,34 @@ class Unit {
     if (d.harvester) { this.updateHarvester(dt); }
     else if (this.garrisonIn) { this.updateGarrison(dt); return; }
     else if (this.layer === "air") { this.updateAir(dt); }
-    else { this.updateGeneric(dt); }
+    else {
+      this.updateGeneric(dt);
+      /* ---- A SAM BATTERY SETS UP WHERE IT STOPS ----
+         deploySec was only ever paid inside engage(), and only while the
+         target was inside the envelope: an aircraft crossing a ten-tile ring
+         at five tiles a second gives about four seconds of it a pass, so a
+         battery that had stood on the same spot for a minute still met the
+         first raid packed up. Measured under jsc on an S-75 (deploySec 11):
+         one launch in sixty seconds, at t=40.5, on the third pass of four
+         aircraft. And nothing ever took the set-up away again short of that
+         chase, so a launcher that had set up once could drive anywhere and
+         fire the moment it stopped. For a `sam` launcher - the role whose
+         deploySec is its march-to-fire time, five minutes for an S-300 or a
+         Buk and hours for an S-75 - standing still on idle or guard now sets
+         it up, and moving loses the set-up, so every move is paid for again
+         on arrival. Packing up is not timed: the cost of moving is that
+         set-up plus the march speed. Deliberately not the gun and rocket
+         artillery or the ballistic launchers, which carry the same flag and
+         aim at the ground. The AI's launchers live by the same rule: they set
+         up wherever they stand on guard, as the player's do. */
+      if (d.deploy && d.role === "sam") {
+        if (this.moving) { this.deployed = false; this.deployT = 0; }
+        else if (!this.deployed && (this.order.type === "idle" || this.order.type === "guard")) {
+          this.deployT = (this.deployT || 0) + dt;
+          if (this.deployT > (d.deploySec || 1.6)) { this.deployed = true; this.deployT = 0; }
+        }
+      }
+    }
 
     /* A carrier's deck is spelled `carrier`, not `helo`, and an era carrier has
        no `helo` at all - so the one ship built to operate aircraft was the one
@@ -1551,6 +1578,36 @@ class Unit {
     const dist = U.dist(this.x, this.y, t.x, t.y);
 
     if (dist > range) {
+      /* ---- A SET-UP LAUNCHER DOES NOT PACK UP TO RUN AFTER AN AEROPLANE ----
+         Measured under jsc at b4a9943 - two launchers twelve seconds on
+         their site, four strike aircraft of the period making three passes
+         through the envelope, sixty seconds: an S-300PM fired none, an
+         S-300PS three (the first 36 s in), a Krug two. An engagement the
+         launcher chose for itself kept the aircraft as its target once it had
+         flown out of reach, so the line below packed the launcher up and
+         drove it after an aeroplane three times its speed - the S-75 was 6.4
+         tiles off its site by t=25 - and it met the next pass packed up.
+         So an AUTOMATIC engagement of a fixed-wing aircraft by a launcher that
+         sets up is dropped here, still set up, and acquire() takes the next
+         thing that comes into reach; acqGate() already refuses an aeroplane
+         outside this hull's air reach, so the one that just left is not taken
+         back. Kept that narrow on purpose:
+           - a helicopter is exempt: one hovering just outside reach and
+             shooting is worth the few tenths of a tile it takes to reach it;
+           - a hull that does not set up (gun SPAAG, missile SHORAD, a
+             MANPADS team) is exempt: stepping after a target costs it no
+             set-up, so it keeps the old behaviour in full, including answering
+             a gunship that shot it from just out of reach (retaliate());
+           - an order given by hand still pursues. The AI's home-defence
+             order is `auto` - ai.js calls it "a reflex and not a release" -
+             so its set-up launchers get exactly the player's launchers' rule. */
+      if (this.def.deploy && this.order.auto && this.layer === "ground" &&
+          t.def && !t.def.hover && t.targetLayer && t.targetLayer() === "air") {
+        const ro = this.order.resume;
+        if (ro) this.order = ro.patrol || { type: "attackmove", x: ro.x, y: ro.y };
+        else if (!this.nextOrder()) this.order = { type: "idle" };
+        return;
+      }
       if (this.def.deploy && this.deployed) { this.deployed = false; }
       this.stepAlong(t.x, t.y, dt, range * 0.86);
       return;

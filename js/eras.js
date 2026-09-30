@@ -9289,6 +9289,99 @@ Object.assign(WEAPONS, {
    "sub": 0
   }
  },
+ /* ==================================================================
+    THE SOVIET ARMY'S AIR-DEFENCE MISSILES, 1957 to 2016
+    The rounds for the launchers authored after pact_e00_spaag in the UNITS
+    block below. Measured on HEAD before they existed: the Soviet line went
+    2K11 Krug (e60) straight to the S-300 (e80), pact had no SAM of any kind
+    in e50, and every pact spaag weapon from the ZSU-57-2 to the Pantsir-S1 is
+    proj "shell" - so no Soviet vehicle below the S-300 took part in the area
+    interception layer in combat.js, which asks for proj "missile".
+
+    REACH. The land air-defence table is not one formula, so each round is
+    placed against the rows it actually fights beside, as they stand at
+    runtime (measured under jsc at b4a9943):
+      - the short-range tier is ONE figure per period, whatever the system:
+        generations.js rewrites every era MANPADS and gun SPAAG round to
+        R(SAM_ERA_M), so the Strela-2 team and the Shilka both reach 8.6 tiles
+        in the 1960s, the Igla and the Tunguska 9.4 in the 1980s, 9.8 in the
+        1990s, and the Igla-S and the Pantsir 10.2 from 2000 (e20 Tunguska
+        spaag_p 10.8). The Tunguska and Pantsir rows fire their cannon only -
+        proj "shell", their missiles are not modelled - so they stand here as
+        the guns they are in the game;
+      - the area rows are buckets: first-generation 10.6 (Krug, HAWK, HQ-2),
+        S-300PS/PM 12.5, S-300PMU-2 and S-400 13.6; the S-75 fires the
+        V-750 round rules.js already carries for North Korea's S-75
+        battery (sam_s75), 10.4, so the two S-75s share one set of figures.
+    A row keeps one reach in every period it serves, so each is set to sit
+    above whatever really reaches less far and below whatever really reaches
+    further in EACH of those periods (runtime tiles, real km in brackets):
+      1960s  Strela-2 8.6 (4) = Shilka < Strela-10 9.4 (5) < Osa 10.0 (10)
+             < S-125 10.2 (15-22) < Kub 10.3 (24) < S-75 10.4 (34-43)
+             < Krug 10.6 (50)
+      1980s  Strela-10 9.4 = Igla (5) = Tunguska < Osa 10.0 < Tor 10.2 (12)
+             < Kub 10.3 < Buk-M1 11.2 (35) < S-300PS 12.5 (75)
+      1990s  Strela-10 9.4 < Igla 9.8 = Tunguska-M < Osa 10.0 < Tor-M1 10.7
+             (12, two channels) < Buk-M1 11.2 < S-300PM 12.5
+      2000s  Strela-10 9.4 < Igla-S 10.2 (6) = Pantsir < Tor-M1 10.7
+             < Tor-M2 11.0 (15) < Buk-M2 12.0 (50) < Buk-M3 12.6 (70)
+             < S-300PMU-2 13.6
+      2020s  Strela-10 9.4 < Igla-S 10.2 < Tunguska 10.8 < Tor-M2 11.0
+             < Buk-M3 12.6 < S-400 13.6
+    Two constraints decide the rest. The Kub serves 1967-89, so it must stay
+    under the S-75 and the Krug in the 1960s and over the Tor in the 1980s.
+    And the Tor could not be one row from 1986 to 2019: under the Kub in the
+    1980s and over the Igla-S of the 2000s cannot both hold, so the
+    two-channel Tor-M1 of 1991 is its own row, as it is its own system.
+    The Strela-10 sits level with the Igla it really matches (5 km against
+    5.2) and under the 6 km Igla-S; what it has over a team is a 3-5 kg
+    warhead, eight rounds, armour and no radar. Every one stays inside the
+    static SAM Site's 14.0. The spaag rows take generations.js's
+    air-defence multiplier on top (x1.003 in the
+    1960s, x1.0105 1980s, x1.021 1990s, x1.027 2000s), which the ranges
+    written below allow for.
+
+    SIGHT is generations.js's business, as on every row: it lifts a hull's
+    sight to its reach and then applies the army's optics, which is why the
+    S-300PMU-2 already sees 12.4 tiles against a 13.6-tile reach. The Buk
+    and Tor rows from the 1980s on see a little less far than they reach
+    for the same reason; the sight written on each card below is a
+    starting figure that rule overwrites, not a choice.
+
+    DAMAGE follows the warhead, between the MANPADS teams (Igla 81 for 1.2 kg,
+    Igla-S 105 for 2.5 kg) and the area buckets (sam_area1 175 for the 54-190
+    kg of HAWK, HQ-2 and Krug): 115 for the Strela-10's 3-5 kg, 130-150 for the
+    15 kg of Osa and Tor - beside the Chaparral's 111 and the Antelope's 150,
+    the land missile SHORAD already in the game - and 160-190 for the 57-72 kg
+    of S-125, Kub and Buk. ACCURACY is the round's own quality before
+    generations.js applies the Pact guided-weapons curve by the row's `from`
+    era, so a 1961 S-125 is not penalised for Russia in 2024 and a Buk-M3 is.
+
+    ONE ROUND PER TRIGGER. burst is 1 on every row, so the launcher's
+    `rounds` is the missiles it really carries: a Kub three, a Tor eight.
+    Named by missile, never by the system's 9K3x index, because audio.js reads
+    9K3[2-8] as a shoulder-fired round - measured through Sfx.describe(). */
+ "sam_s125": {"name":"V-601P (S-125) command-guided SAM","dmg":160,"warhead":"flak","range":10.2,"reload":8.0,"burst":1,"acc":0.66,"proj":"missile","speed":540,"aoe":0.9,"profile":"pop","intercept":0.85,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ /* 3M9: an integral rocket-ramjet at Mach 2.8 on continuous-wave semi-active
+    homing, 57 kg warhead - the round Israeli electronic warfare had no
+    answer to in October 1973 */
+ "sam_kub": {"name":"3M9 (Kub) semi-active ramjet SAM","dmg":160,"warhead":"flak","range":10.3,"reload":6.0,"burst":1,"acc":0.72,"proj":"missile","speed":600,"aoe":0.9,"profile":"pop","intercept":0.78,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ "sam_buk_m1": {"name":"9M38M1 (Buk-M1) semi-active SAM","dmg":170,"warhead":"flak","range":11.2,"reload":5.0,"burst":1,"acc":0.80,"proj":"missile","speed":620,"aoe":1.0,"profile":"pop","intercept":0.72,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ /* 9M317: first round in the family with a real shot at a tactical ballistic
+    missile, so it carries an `abm` figure, below the S-300PS's 0.30 */
+ "sam_buk_m2": {"name":"9M317 (Buk-M2) semi-active SAM","dmg":180,"warhead":"flak","range":12.0,"reload":4.6,"burst":1,"acc":0.84,"proj":"missile","speed":680,"aoe":1.0,"abm":0.20,"profile":"pop","intercept":0.66,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ "sam_buk_m3": {"name":"9M317M (Buk-M3) semi-active SAM","dmg":190,"warhead":"flak","range":12.6,"reload":4.2,"burst":1,"acc":0.86,"proj":"missile","speed":720,"aoe":1.1,"abm":0.30,"profile":"pop","intercept":0.58,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ "sam_osa_land": {"name":"9M33 / 9M33M3 (Osa) command-guided SAM","dmg":130,"warhead":"flak","range":10.0,"reload":3.4,"burst":1,"acc":0.66,"proj":"missile","speed":540,"aoe":0.7,"profile":"pop","intercept":0.80,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ /* 9M37 of 1976 and 9M37M of 1981 (two-channel seekers, 3 kg warhead), then
+    the three-channel 9M333 of 1989 with 5 kg; the name keeps "Strela", which
+    audio.js voices with the infrared family - the round it is */
+ "sam_strela10": {"name":"9M37 / 9M333 (Strela-10) IR-homing SAM","dmg":115,"warhead":"flak","range":9.4,"reload":3.0,"burst":1,"acc":0.62,"proj":"missile","speed":480,"aoe":0.6,"profile":"pop","intercept":0.90,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ /* thrown clear of the turret by a gas charge and turned in flight, hence
+    "vertically launched" - which is also what audio.js keys its cold launch on */
+ "sam_tor": {"name":"9M330 (Tor), vertically launched","dmg":140,"warhead":"flak","range":10.1,"reload":2.8,"burst":1,"acc":0.78,"proj":"missile","speed":600,"aoe":0.7,"profile":"pop","intercept":0.72,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ /* two targets at once from 1991: the shorter reload is the second channel */
+ "sam_tor_m1": {"name":"9M331 (Tor-M1), vertically launched","dmg":150,"warhead":"flak","range":10.5,"reload":2.3,"burst":1,"acc":0.82,"proj":"missile","speed":620,"aoe":0.7,"profile":"pop","intercept":0.68,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
+ "sam_tor_m2": {"name":"9M338K (Tor-M2), vertically launched","dmg":140,"warhead":"flak","range":10.7,"reload":1.7,"burst":1,"acc":0.88,"proj":"missile","speed":640,"aoe":0.7,"profile":"pop","intercept":0.62,"tgt":{"ground":0,"air":1,"sea":0,"sub":0}},
  "w_e00_pact_spaag": {
   "name": "Twin 30mm 2A38M plus 12 x 57E6 SAM",
   "dmg": 25,
@@ -10259,6 +10352,87 @@ Object.assign(UNITS, {
   pact_e00_spg: {"fac":"pact","role":"spg","cat":"vehicle","layer":"ground","name":"2S19 Msta-S","full":"2S19M2 Msta-S 152mm SPH","cost":1380,"oil":19,"time":21,"hp":785,"armor":"light","speed":1.34,"turn":1.5,"sight":5.3,"r":15,"mass":42,"weapons":["w_e00_pact_spg"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"1989","confidence":"high","desc":"The game's `spg_p`. The M2 update (2013) cuts the time from halt to first round substantially. 2S35 Koalitsiya-SV, the intended replacement, remains in very limited service.","turret":true,"tturn":0.9},
   pact_e00_mlrs: {"fac":"pact","role":"mlrs","cat":"vehicle","layer":"ground","name":"BM-30 Smerch","full":"9A52 Smerch / 9A53 Tornado-S","cost":1995,"oil":30,"time":28,"hp":690,"armor":"light","speed":1.29,"turn":1.3,"sight":5.3,"r":15,"mass":44,"weapons":["w_e00_pact_mlrs","scat_ptm3"],"dispenser":6,"prereq":["factory","lab"],"tech":3,"from":"e00","to":"e00","service":"1987","confidence":"high","desc":"The game's `mlrs_p`, joined by Tornado-G (2013, guided 122mm) and TOS-1A Solntsepyok (2001) — a 24-tube thermobaric launcher on a T-72 chassis with only about 6km of range, so it must be brought right up behind the assault, and its effect on troops in buildings and trenches is extreme.","turret":true,"tturn":0.8},
   pact_e00_spaag: {"fac":"pact","role":"spaag","cat":"vehicle","layer":"ground","name":"Pantsir-S1","full":"96K6 Pantsir-S1","cost":1000,"oil":14,"time":15,"hp":815,"armor":"light","speed":1.58,"turn":1.9,"sight":9.2,"r":14,"mass":34,"weapons":["w_e00_pact_spaag"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"2012","confidence":"medium","desc":"The intended Tunguska successor and the point-defence layer under S-400. Its record against small drones has been mixed in practice — good against aircraft, inconsistent against slow low-signature targets.","turret":true,"tturn":2.6,"radar":7.8},
+  /* ---- THE SOVIET AIR-DEFENCE FAMILY: eleven launchers the line was missing ----
+     pact_e80_aa already says "the layers above it are 9K330 Tor (1986), 9K37
+     Buk (1980) and S-300PS (1982)", and two of those three did not exist.
+     Measured at b4a9943: unitsFor("pact", "sam", "e50") was empty, the only
+     S-75 in the game was North Korea's battery, and not one pact spaag
+     weapon in any era was a missile.
+
+     WHERE THEY GO. The medium-range systems join Krug and the S-300 in "sam";
+     the missile SHORAD joins Shilka, Tunguska and Pantsir in "spaag". No new
+     role: "spaag" is already the mobile SHORAD tier whatever the round -
+     loading.js labels it "Mobile air defence", and Chaparral, Avenger,
+     Stormer HVM, Roland, Crotale NG and Antelope in it fire missiles. A new
+     role would have to be taught to ai.js's counter mix, NO_FIGHT and homeAD,
+     to generations.js's AIRDEF_ROLE, entities.js, loading.js and damage3d.js
+     before it did anything, and would do nothing "spaag" does not.
+
+     WHICH PERIODS. A row starts in the band its service year falls in and
+     runs while the army still fielded it: the Osa of 1971 and the Strela-10
+     of 1976 are 1960s-70s rows, the Buk-M3 and Tor-M2 of 2016 are 2000s-2010s
+     rows that carry on into the 2020s, and the Strela-10, upgraded to the M3
+     in 1989 and the M4 since, serves every period from 1976 on.
+
+     WHY HERE, after pact_e00_spaag: unitFor() picks the newest `from` and
+     settles a tie by insertion order, and every Krug, S-300 and gun SPAAG row
+     is inserted before this point - so the commander's own pick in every
+     period stays exactly what it was (the _behtest section [81] holds it),
+     and the only slot that changes is 1950s "sam", which was empty. Which of
+     several rows the AI buys is the roster-mix work's business, not this
+     block's; the player sees all of them in the build menu today.
+
+     EMITTERS. `radar` is the fog radius and what an ESM receiver hears at 1.9
+     times, and an anti-radiation round does triple damage to anything that
+     carries it, so every launcher with a set is a Weasel's target and says
+     how loud it is. Strela-10 carries none on purpose: it is cued by a
+     passive direction-finder and has nothing for a HARM to home on. The
+     spaag rows keep that role's radar * 1.6 track fallback, the one decision
+     ERA_RADAR_SETS below records for the whole role; the sam rows carry a
+     researched radarQ, which ERA_RADAR_GAPS requires.
+
+     SET-UP. deploySec is the march-to-fire time on the S-300's scale (five
+     minutes = 4.0 s): 4.0 for Kub and Buk, which are ready five minutes after
+     they stop, and 10-11 for the towed S-125 and S-75, which take hours. It is
+     paid where the launcher stops - entities.js Unit.update sets a sam
+     launcher up while it stands and takes the set-up away when it moves - so
+     every move costs the set-up again on arrival. Packing up is not timed.
+
+     PRICE AND FIRE. A missile SHORAD's real edge - twice a cannon's reach -
+     is squeezed into the tenths of a tile the table above allows, so what is
+     left to it is the warhead, the magazine and the rate of fire; those are
+     set so that in the period each enters service the gun SPAAG beside it
+     does not beat it on both worth and price, in the terms the roster mix
+     prices a card (sqrt(fire x hit points) against cost). Measured under jsc
+     at b4a9943, 1980s, two launchers and a supply truck against four NATO
+     aircraft of the period for sixty seconds, package damage for A-10 passes
+     / fighter passes / gunship passes / gunships hunting the launchers:
+     Tunguska pair ($1,530) 37/16/50/34%, Tor pair ($2,100) 57/23/76/59%, Osa
+     pair ($1,480) 23/22/34/7%, Strela-10 pair ($1,120) 15/6/31/4%; six Igla
+     teams ($1,410) 53/37/85/66%. The same test in the 1960s-70s: Shilka pair
+     ($1,200) 30/25/62/34%, Osa pair 17/18/56/47%, Strela-10 pair
+     25/15/27/10%, six Strela-2 teams ($1,110) 37/10/76/22%. The Tor is the
+     one that beats gunships sent to hunt it, which is what it was built for -
+     though not, as in life, by outreaching them (12 km against the Hellfire's
+     8): here the Hellfire reaches 12.2 tiles and the Tor 10.2, so it wins by
+     rate of fire and magazine.
+
+     THE S-75 is the same system as the North Korean kpa_e60_sam battery, so
+     it fires the same V-750 round (sam_s75, rules.js) and moves, sets up and
+     radiates with the same figures as that row; the generations.js curve
+     alone separates a Soviet crew of 1957 from a Korean one of the 1960s.
+     The facts are in js/facts.js under the same ids. */
+  pact_e50_s75: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"S-75 Dvina","full":"S-75 Dvina (SA-2 Guideline), SM-63 launcher and SNR-75 radar","cost":1650,"oil":22,"time":24,"hp":470,"armor":"light","speed":0.70,"turn":0.9,"sight":9.6,"r":16,"mass":12,"weapons":["sam_s75"],"prereq":["factory","radar"],"tech":3,"from":"e50","to":"e60","service":"1957","confidence":"high","desc":"One launcher of a six-rail battery and the battery's Fan Song radar: a single two-stage round on a towed rail, hours to dig in and hours to move. The missile that brought down Powers' U-2 over Sverdlovsk in 1960 and Anderson's over Cuba in 1962, and the backbone over Hanoi. A big warhead for anything that does not manoeuvre, and a radar every Weasel hears long before it is in range.","turret":true,"tturn":0.5,"deploy":true,"deploySec":11,"radar":10.5,"radarQ":10,"rounds":1},
+  pact_e60_s125: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"S-125 Neva","full":"S-125 Neva (SA-3 Goa), 5P73 launcher and SNR-125 radar","cost":1600,"oil":21,"time":23,"hp":480,"armor":"light","speed":0.70,"turn":0.9,"sight":9.4,"r":15,"mass":10,"weapons":["sam_s125"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1961","confidence":"high","desc":"The low-altitude partner to the S-75, built because aircraft had learned to fly under it. Four rounds on a towed launcher beside a Low Blow radar, well over an hour to site. A Yugoslav S-125 battalion shot down an F-117A on 27 March 1999, having survived by moving every few days and radiating only in short bursts.","turret":true,"tturn":0.6,"deploy":true,"deploySec":10,"radar":9,"radarQ":9,"rounds":4},
+  pact_e60_kub: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"2K12 Kub","full":"2K12 Kub (SA-6 Gainful), 2P25 launcher and 1S91 radar","cost":1800,"oil":24,"time":24,"hp":540,"armor":"light","speed":1.45,"turn":1.4,"sight":9.6,"r":15,"mass":20,"weapons":["sam_kub"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e80","service":"1967","confidence":"high","desc":"Three ramjet rounds on a tracked launcher that keeps up with a tank division and is ready five minutes after it stops. The surprise of October 1973. Nine years later in the Bekaa Valley, decoys, drones and anti-radiation missiles took most of the Syrian batteries apart in an afternoon: the Straight Flush radar is the battery's one set, and the thing to kill.","turret":true,"tturn":0.8,"deploy":true,"deploySec":4.0,"radar":8.5,"radarQ":11,"rounds":3},
+  pact_e80_buk: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"Buk-M1","full":"9K37M1 Buk-M1 (SA-11 Gadfly), 9A310M1 TELAR","cost":2150,"oil":30,"time":27,"hp":620,"armor":"light","speed":1.40,"turn":1.3,"sight":10.0,"r":16,"mass":35,"weapons":["sam_buk_m1"],"prereq":["factory","radar"],"tech":3,"from":"e80","to":"e90","service":"1983","confidence":"high","desc":"The Kub's successor, and the difference is on the launcher: each vehicle carries its own Fire Dome engagement radar beside four rounds, so every one can find, track and kill alone. The first Buk entered service in 1980 and the M1 in 1983. A launcher of this type fired the round that destroyed MH17 over eastern Ukraine in July 2014.","turret":true,"tturn":0.8,"deploy":true,"deploySec":4.0,"radar":9.5,"radarQ":13,"rounds":4},
+  pact_e00_buk: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"Buk-M2","full":"9K317 Buk-M2 (SA-17 Grizzly), 9A317 TELAR","cost":2250,"oil":31,"time":28,"hp":640,"armor":"light","speed":1.40,"turn":1.3,"sight":10.2,"r":16,"mass":36,"weapons":["sam_buk_m2"],"prereq":["factory","radar"],"tech":3,"from":"e00","to":"e00","service":"2008","confidence":"high","desc":"The 9M317 round of the 1998 Buk-M1-2 on a launcher with a phased-array radar: about 50 km, and the first in the family with a real shot at a tactical ballistic missile. It reached the army's brigades from 2008, a decade after the round that makes it.","turret":true,"tturn":0.9,"deploy":true,"deploySec":4.0,"radar":10.5,"radarQ":15,"rounds":4},
+  pact_e00_buk_m3: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"Buk-M3","full":"9K317M Buk-M3 (SA-27 Gollum), 9A317M TELAR","cost":2350,"oil":32,"time":29,"hp":660,"armor":"light","speed":1.40,"turn":1.3,"sight":11.6,"r":16,"mass":36,"weapons":["sam_buk_m3"],"prereq":["factory","radar"],"tech":3,"from":"e00","service":"2016","confidence":"medium","desc":"Six rounds in sealed canisters instead of four on rails, and the 9M317M reaches about 70 km - close to the first S-300's reach, on a tracked vehicle that moves with the brigade. In service from 2016.","turret":true,"tturn":0.9,"deploy":true,"deploySec":4.0,"radar":11.5,"radarQ":17,"rounds":6},
+  pact_e60_osa: {"fac":"pact","role":"spaag","cat":"vehicle","layer":"ground","name":"Osa","full":"9K33 Osa (SA-8 Gecko), 9A33B launcher; Osa-AK 1975, Osa-AKM 1980","cost":740,"oil":11,"time":14,"hp":520,"armor":"light","speed":1.65,"turn":1.8,"sight":9.0,"r":14,"mass":18,"weapons":["sam_osa_land"],"prereq":["factory","radar"],"tech":2,"from":"e60","to":"e90","service":"1971","confidence":"high","desc":"Search radar, tracking radar and the missiles on one amphibious 6x6, so a regiment's air cover swims the river with it. Adopted in 1971 with four rounds; the Osa-AK of 1975 carries six in boxes and the Osa-AKM of 1980 reaches about 10 km, twice a shoulder-fired missile. A radar on every launcher means every launcher is a HARM target.","turret":true,"tturn":1.8,"radar":7.0,"rounds":6},
+  pact_e60_strela10: {"fac":"pact","role":"spaag","cat":"vehicle","layer":"ground","name":"Strela-10","full":"9K35 Strela-10 (SA-13 Gopher) on the MT-LB; Strela-10M3 1989","cost":560,"oil":8,"time":12,"hp":500,"armor":"light","speed":1.50,"turn":1.9,"sight":8.6,"r":14,"mass":13,"weapons":["sam_strela10"],"prereq":["factory","radar"],"tech":2,"from":"e60","service":"1976","confidence":"high","desc":"Four infrared rounds on an MT-LB and four more stowed inside, with three times a shoulder-fired missile's warhead. No search radar: it listens with a passive direction-finder for the attacker's own radar and shoots on sight, so there is nothing on it for an anti-radiation missile to home on. The M3 of 1989 and the M4 since are still in the line today.","turret":true,"tturn":2.2,"radar":0,"rounds":8},
+  pact_e80_tor: {"fac":"pact","role":"spaag","cat":"vehicle","layer":"ground","name":"Tor","full":"9K330 Tor (SA-15 Gauntlet), 9A330 launcher","cost":1050,"oil":14,"time":16,"hp":700,"armor":"light","speed":1.45,"turn":1.7,"sight":9.2,"r":14,"mass":34,"weapons":["sam_tor"],"prereq":["factory","radar"],"tech":2,"from":"e80","to":"e80","service":"1986","confidence":"high","desc":"Eight rounds standing upright in the turret, thrown clear by a gas charge and turned onto the target, with the search radar on the roof. Built to shoot down what the aircraft releases - glide bombs, cruise missiles, HARMs - as well as the aircraft, and to reach a hovering attack helicopter from outside its missiles' range.","turret":true,"tturn":2.4,"radar":7.4,"rounds":8},
+  pact_e90_tor: {"fac":"pact","role":"spaag","cat":"vehicle","layer":"ground","name":"Tor-M1","full":"9K331 Tor-M1 (SA-15 Gauntlet), 9A331 launcher","cost":1150,"oil":15,"time":16,"hp":720,"armor":"light","speed":1.45,"turn":1.7,"sight":9.4,"r":14,"mass":34,"weapons":["sam_tor_m1"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e00","service":"1991","confidence":"high","desc":"The Tor with a second channel: two targets at once, a faster missile and a quicker reaction. Eight rounds. An Iranian Tor-M1 shot down Ukraine International Airlines Flight 752 over Tehran in January 2020.","turret":true,"tturn":2.5,"radar":7.8,"rounds":8},
+  pact_e00_tor_m2: {"fac":"pact","role":"spaag","cat":"vehicle","layer":"ground","name":"Tor-M2","full":"9K332 Tor-M2 (SA-15 Gauntlet), 9A331M launcher","cost":1250,"oil":16,"time":17,"hp":760,"armor":"light","speed":1.50,"turn":1.7,"sight":9.6,"r":14,"mass":35,"weapons":["sam_tor_m2"],"prereq":["factory","radar"],"tech":2,"from":"e00","service":"2016","confidence":"medium","desc":"Sixteen smaller rounds where the Tor-M1 carried eight, four channels, and it can launch on the move. A short reach with a great deal behind it: the Russian answer to the drone and the glide bomb.","turret":true,"tturn":2.6,"radar":8.2,"rounds":16},
   pact_e00_aa: {"fac":"pact","role":"aa","cat":"infantry","layer":"ground","name":"Igla-S Team","full":"MANPADS Team, 9K338 Igla-S","cost":310,"oil":0,"time":7,"hp":100,"armor":"infantry","speed":0.89,"turn":6,"sight":7.6,"r":6,"mass":0.1,"weapons":["w_e00_pact_aa"],"prereq":["barracks"],"tech":1,"from":"e00","to":"e00","service":"2004","confidence":"medium","desc":"The game's `aa_p`. Heavier warhead, better seeker discrimination, and enough sensitivity to engage cruise missiles and UAVs. Verba (9K333, 2015) is the newer three-band-seeker weapon above it. S-400 (2007) is the strategic layer."},
   pact_e00_recon: {"fac":"pact","role":"recon","cat":"vehicle","layer":"ground","name":"BRDM-2","full":"BRDM-2 Scout Car","cost":300,"oil":4,"time":6,"hp":355,"armor":"light","speed":2.65,"turn":3,"sight":8.7,"r":11,"mass":7,"weapons":["w_e00_pact_recon"],"prereq":["factory"],"tech":1,"from":"e00","to":"e00","service":"1962","confidence":"high","desc":"Still the game's `recon_p` and still in service — a sixty-year-old design. GAZ-2330 Tigr (2006) is the modern protected patrol vehicle that does much of the practical scouting, but it is not an armoured car in the BRDM sense.","turret":true,"tturn":2.2},
   pact_e00_radarv: {"fac":"pact","role":"radarv","cat":"vehicle","layer":"ground","name":"Zoopark-1","full":"1L219 Zoopark-1","cost":1095,"oil":11,"time":15,"hp":540,"armor":"light","speed":1.63,"turn":1.8,"sight":8.7,"r":14,"mass":15,"weapons":[],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e00","service":"1993","confidence":"medium","desc":"The game's `radarv_p`. Backtracks incoming shells to their firing point. Real capability, and the counter-battery duel is one thing the Russian artillery arm is organised around. It entered service at the turn of the 1990s - some sources give 1989, others 1993 - and served on through the 2000s.","turret":true,"tturn":0.9,"radar":14.1},

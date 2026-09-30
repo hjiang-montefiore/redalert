@@ -164,6 +164,7 @@ var Damage3D = (function () {
     roc_e50_spaag: "front",                                            // M16 half-track
     spaag_g: "front", atgmv_g: "front",                                // Wiesel 1 and 2: engine front right
     pact_e00_spaag: "front",                                           // Pantsir-S1 on the KAMAZ-6560 truck
+    pact_e60_strela10: "front",                                        // Strela-10: the MT-LB engine sits behind the cab
   };
   const WING_ENGINES = { heavybomber: 1, awacs: 1, cawacs: 1, airlift: 1, tanker: 1, ewair: 1, patrol: 1 };
   const OIL = { refinery: 1, derrick: 1, silo: 1, depot: 1 };

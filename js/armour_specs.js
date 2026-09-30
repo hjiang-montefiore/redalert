@@ -100,6 +100,23 @@ var ARMOUR = {
   pact_e00_radarv: {era:"e00", fac:"pact", role:"radarv", designation:"1L219 Zoopark-1 counter-battery radar", kind:"apc", len:7.2, width:2.9, height:2.7, hull:"boxy", turret:"none", turretAt:0, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:"none", track:true, wheels:7, wheelR:0.3, susp:"torsion", rollers:0, sprocketFront:true, skirts:"none", extras:["stowage","netting","snorkel"], camo:"green"},
   /* Pointed amphibious 4x4 with a small truncated-cone 14.5mm turret and two pairs of small belly wheels tucked between the axles. */
   pact_e00_recon: {era:"e00", fac:"pact", role:"recon", designation:"BRDM-2 scout car", kind:"wheeled", len:5.8, width:2.4, height:2.3, hull:"boat", turret:"small", turretAt:0, gunCal:14.5, gunLen:1.4, brake:false, evac:false, mantlet:"none", track:false, wheels:2, wheelR:0.5, susp:"none", rollers:0, sprocketFront:false, skirts:"none", extras:["trimvane","snorkel","cupola","netting"], camo:"green"},
+  /* ---- the Soviet missile SHORAD added in js/eras.js after pact_e00_spaag ----
+     Without these rows modelKeyFor() gave each of them the first spaag peer
+     with a model, a Gepard-pattern gun tank. The generator draws a turret
+     with no gun when gunCal is 0 - the same answer fra_e90_spaag's Roland
+     row gives - and draws neither missiles nor radar, so these are honest
+     hull-and-turret silhouettes, and a dedicated model for each (the Osa's
+     folding radar and box launchers, the Tor's upright turret, the
+     Strela-10's four canisters) is owed. */
+  /* A long boat-shaped amphibious 6x6 with one big turret amidships that carries its own radars and the missile boxes. */
+  pact_e60_osa: {era:"e60", fac:"pact", role:"spaag", designation:"9K33 Osa, 9A33B on the BAZ-5937 6x6", kind:"wheeled", len:9.14, width:2.75, height:4.2, hull:"boat", turret:"welded", turretAt:-0.05, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:"none", track:false, wheels:3, wheelR:0.62, susp:"none", rollers:0, sprocketFront:false, skirts:"none", extras:["stowage"], camo:"green"},
+  /* The low MT-LB tractor box on six road wheels with no return rollers, and a small turret on the roof behind the cab carrying the missile canisters. */
+  pact_e60_strela10: {era:"e60", fac:"pact", role:"spaag", designation:"9K35 Strela-10, 9A35 on the MT-LB", kind:"apc", len:6.6, width:2.85, height:2.3, hull:"boxy", turret:"small", turretAt:-0.1, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:"none", track:true, wheels:6, wheelR:0.3, susp:"torsion", rollers:0, sprocketFront:true, skirts:"none", extras:["stowage"], camo:"green"},
+  /* A tall slab-sided turret on a boxy tracked hull, the missiles standing upright inside it behind the search radar on its roof. */
+  pact_e80_tor: {era:"e80", fac:"pact", role:"spaag", designation:"9K330 Tor, 9A330 on the GM-355", kind:"tank", len:7.5, width:3.3, height:3.8, hull:"boxy", turret:"welded", turretAt:-0.05, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:"none", track:true, wheels:6, wheelR:0.34, susp:"torsion", rollers:3, sprocketFront:false, skirts:"none", extras:["stowage"], camo:"green"},
+  /* The same upright-turret silhouette as the 1986 Tor: the Tor-M1 and Tor-M2 differ in what is inside the turret, not in its outline. */
+  pact_e90_tor: {era:"e90", fac:"pact", role:"spaag", designation:"9K331 Tor-M1, 9A331 on the GM-355", kind:"tank", len:7.5, width:3.3, height:3.8, hull:"boxy", turret:"welded", turretAt:-0.05, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:"none", track:true, wheels:6, wheelR:0.34, susp:"torsion", rollers:3, sprocketFront:false, skirts:"none", extras:["stowage"], camo:"green"},
+  pact_e00_tor_m2: {era:"e00", fac:"pact", role:"spaag", designation:"9K332 Tor-M2, 9A331M", kind:"tank", len:7.5, width:3.3, height:3.8, hull:"boxy", turret:"welded", turretAt:-0.05, gunCal:0, gunLen:0, brake:false, evac:false, mantlet:"none", track:true, wheels:6, wheelR:0.34, susp:"torsion", rollers:3, sprocketFront:false, skirts:"none", extras:["stowage"], camo:"green"},
   /* 8x8 truck carrying one tall rotating block: six missile tubes on each flank, a 30mm barrel outboard of each pack, and a big round tracking dish in the middle. */
   pact_e00_spaag: {era:"e00", fac:"pact", role:"spaag", designation:"96K6 Pantsir-S1", kind:"wheeled", len:10, width:2.9, height:4, hull:"boxy", turret:"welded", turretAt:-0.1, gunCal:30, gunLen:2.4, brake:false, evac:false, mantlet:"none", track:false, wheels:4, wheelR:0.6, susp:"none", rollers:0, sprocketFront:false, skirts:"none", extras:["stowage","netting"], camo:"green"},
   /* Huge flat-sided turret filling the back two-thirds of a T-80 hull, long 152mm with a double-baffle brake, and an ammunition conveyor hatch in the turret rear. */

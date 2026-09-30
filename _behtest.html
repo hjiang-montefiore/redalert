@@ -9315,6 +9315,285 @@ try{
   })();
   }
 
+  /* ====== [81] THE SOVIET AIR-DEFENCE FAMILY ======
+     (owner) "i take your suggestions and make it on 1,2,3 first" - step 2,
+     the Soviet staples. Measured on HEAD: the Soviet line went Krug straight
+     to the S-300, unitsFor("pact","sam","e50") was empty, the only S-75 in the
+     game was North Korea's battery, and not one pact spaag round in any
+     era was a missile. Eleven launchers were added in js/eras.js; this section
+     holds them to the band their service year falls in, to the commander's
+     own picks (unchanged but for the empty 1950s slot), to a reach that sits
+     above what really reaches less far and below what really reaches further
+     in EVERY period a row serves - the Igla teams and gun SPAAGs included -
+     and to the emitter rule SEAD is built on: every set is heard, the
+     Strela-10 is not.
+
+     It also holds the two engine repairs that let them - and every mobile
+     SAM already in the game - fire in time. Measured under jsc at b4a9943,
+     two launchers twelve seconds on their site and four strike aircraft of
+     the period making three passes in sixty seconds: an S-300PM fired none
+     and an S-300PS three, the first 36 s in, because an engagement it chose
+     for itself chased the aircraft out of the envelope and packed the
+     launcher up to do it, and deploySec was only paid while a target was in
+     reach; with the repairs, 6 and 7. Checked on the 2K11
+     Krug, which HEAD has, so those checks fail on HEAD on their own account.
+     And it holds what that repair must NOT touch, which its first cut did: a
+     gun SPAAG, or a launcher, answering a helicopter that hovers just outside
+     its reach still closes and fires, as on HEAD. The commander is held still
+     while the live part runs, and the units, the RNG and both commanders'
+     books are put back afterwards. */
+  if (inHalf(1)) {
+  log("\n[81] THE SOVIET AIR-DEFENCE FAMILY: IN SERVICE, IN REACH, ON THE AIR, IN ACTION");
+  (function(){
+    /* id, role, eras it serves, ready rounds, carries a set */
+    var FAM = [
+      ["pact_e50_s75",      "sam",   "e50,e60",                 1,  true],
+      ["pact_e60_s125",     "sam",   "e60",                     4,  true],
+      ["pact_e60_kub",      "sam",   "e60,e80",                 3,  true],
+      ["pact_e80_buk",      "sam",   "e80,e90",                 4,  true],
+      ["pact_e00_buk",      "sam",   "e00",                     4,  true],
+      ["pact_e00_buk_m3",   "sam",   "e00,e20",                 6,  true],
+      ["pact_e60_osa",      "spaag", "e60,e80,e90",             6,  true],
+      ["pact_e60_strela10", "spaag", "e60,e80,e90,e00,e20",     8,  false],
+      ["pact_e80_tor",      "spaag", "e80",                     8,  true],
+      ["pact_e90_tor",      "spaag", "e90,e00",                 8,  true],
+      ["pact_e00_tor_m2",   "spaag", "e00,e20",                 16, true],
+    ];
+    /* the first and last year of each band (ERA_INFO: e60 is the 1960s-70s,
+       e00 the 2000s-2010s): a row starts in the band its service year is in */
+    var BAND = { e50: [1945, 1959], e60: [1960, 1979], e80: [1980, 1989], e90: [1990, 1999],
+                 e00: [2000, 2019], e20: [2020, 2100] };
+    var W0 = function(id){ var u = UNITS[id]; return u && WEAPONS[u.weapons[0]]; };
+
+    /* ---- 1. the rows ---- */
+    var bad = [], missing = [];
+    FAM.forEach(function(f){
+      var u = UNITS[f[0]];
+      if (!u) { missing.push(f[0]); return; }
+      var eras = ERAS.filter(function(e){ return inEra(u, e); }).join(",");
+      var w = W0(f[0]), b = BAND[u.from] || [0, 0];
+      if (u.fac !== "pact" || u.role !== f[1]) bad.push(f[0] + " is " + u.fac + "/" + u.role);
+      if (eras !== f[2]) bad.push(f[0] + " serves " + eras + ", not " + f[2]);
+      if (!(+u.service >= b[0] && +u.service <= b[1])) bad.push(f[0] + " dated " + u.service + " but starts in " + u.from);
+      if (u.rounds !== f[3]) bad.push(f[0] + " rounds " + u.rounds + ", not " + f[3]);
+      if (!w || w.proj !== "missile" || !w.tgt || !w.tgt.air || w.tgt.ground) bad.push(f[0] + " round is not an air-only missile");
+      if (u.role === "sam" && !(u.radarQ > 0)) bad.push(f[0] + " has no track quality");
+      if (typeof FACTS === "undefined" || !FACTS[f[0]] || +FACTS[f[0]].service !== +u.service)
+        bad.push(f[0] + " facts " + (FACTS[f[0]] ? FACTS[f[0]].service : "missing"));
+    });
+    chk("eleven Soviet air-defence launchers are fielded, each from the band its service year falls in",
+        missing.length === 0 && bad.length === 0,
+        (missing.length ? "missing: " + missing.join(" ") + "  " : "") + (bad.slice(0, 4).join("; ") || "11 rows"));
+
+    /* ---- 2. the commander's own pick ---- */
+    var want = { sam:   ["pact_e50_s75", "pact_e60_sam", "pact_e80_sam", "pact_e90_sam", "pact_e00_sam", "sam_p"],
+                 spaag: ["pact_e50_spaag", "pact_e60_spaag", "pact_e80_spaag", "pact_e90_spaag", "pact_e00_spaag", "spaag_p"] };
+    var moved = [];
+    ["sam", "spaag"].forEach(function(r){ ERAS.forEach(function(e, i){
+      var got = unitFor("pact", r, e);
+      if (got !== want[r][i]) moved.push(r + "/" + e + " -> " + got);
+    }); });
+    chk("the commander's pick is unchanged in every period, and the empty 1950s SAM slot is the S-75",
+        moved.length === 0, moved.join("; ") || "12 slots");
+    var nS60 = unitsFor("pact", "sam", "e60").length, nA80 = unitsFor("pact", "spaag", "e80").length,
+        nA00 = unitsFor("pact", "spaag", "e00").length, nA20 = unitsFor("pact", "spaag", "e20").length;
+    chk("and the player's own sidebar carries the family: 1960s SAMs 4, mobile air defence 4 in the 1980s and 2000s, 3 in the 2020s",
+        nS60 === 4 && nA80 === 4 && nA00 === 4 && nA20 === 3,
+        "e60 sam " + nS60 + ", spaag e80 " + nA80 + " e00 " + nA00 + " e20 " + nA20);
+
+    /* ---- 3. the reach, in every period, against everything beside it ----
+       Each period is a chain of groups: strictly longer from one group to the
+       next, level allowed inside a group. The shoulder-fired team and the gun
+       SPAAG are the period's commander picks, so the chain holds against
+       whatever those rows reach at runtime. Real km in the eras.js header. */
+    var aa = function(e){ return unitFor("pact", "aa", e); }, sp = function(e){ return unitFor("pact", "spaag", e); };
+    var CH = {
+      e50: [[aa("e50"), sp("e50")], ["pact_e50_s75"]],
+      e60: [[aa("e60"), sp("e60")], ["pact_e60_strela10"], ["pact_e60_osa"], ["pact_e60_s125"],
+            ["pact_e60_kub"], ["pact_e50_s75"], ["pact_e60_sam"]],
+      e80: [["pact_e60_strela10", aa("e80"), sp("e80")], ["pact_e60_osa"], ["pact_e80_tor"], ["pact_e60_kub"],
+            ["pact_e80_buk"], ["pact_e80_sam"]],
+      e90: [["pact_e60_strela10"], [aa("e90"), sp("e90")], ["pact_e60_osa"], ["pact_e90_tor"], ["pact_e80_buk"],
+            ["pact_e90_sam"]],
+      e00: [["pact_e60_strela10"], [aa("e00"), sp("e00")], ["pact_e90_tor"], ["pact_e00_tor_m2"], ["pact_e00_buk"],
+            ["pact_e00_buk_m3"], ["pact_e00_sam"]],
+      e20: [["pact_e60_strela10"], [aa("e20")], [sp("e20")], ["pact_e00_tor_m2"], ["pact_e00_buk_m3"], ["sam_p"]],
+    };
+    var site = BUILDINGS.sam && WEAPONS[(BUILDINGS.sam.weapons || [])[0]];
+    var R = function(id){ var w = W0(id); return w && w.range > 0 ? w.range : NaN; };
+    var nm = function(id){ return UNITS[id] ? UNITS[id].name : id; };
+    var wrong = [], line = [];
+    ERAS.forEach(function(e){
+      var ch = CH[e], lo = -Infinity, parts = [];
+      for (var g = 0; g < ch.length; g++) {
+        var rs = ch[g].map(R), mn = Math.min.apply(null, rs), mx = Math.max.apply(null, rs);
+        if (!(mn > lo) || rs.some(isNaN)) wrong.push(e + ": " + ch[g].map(nm).join("/") + " " + rs.join("/") +
+                                                      " not past " + (g ? ch[g - 1].map(nm).join("/") : "-"));
+        lo = mx; parts.push(ch[g].map(function(id){ return nm(id) + " " + R(id); }).join(" = "));
+      }
+      if (!site || !(lo < site.range)) wrong.push(e + ": " + lo + " not inside the SAM Site");
+      line.push(e + " " + parts.join(" < "));
+    });
+    chk("in every period each launcher reaches past what really reaches less far and short of what reaches further, inside the static SAM Site",
+        wrong.length === 0, wrong.length ? wrong.slice(0, 3).join("; ") : line[2] + " | " + line[4]);
+
+    /* ---- 4. on the air, or not ---- */
+    var loud = [], quiet = [];
+    FAM.forEach(function(f){ var u = UNITS[f[0]]; if (!u) return;
+      if (f[4] && !(u.radar > 0)) loud.push(f[0] + " radar " + u.radar);
+      if (!f[4] && u.radar) quiet.push(f[0] + " radar " + u.radar); });
+    chk("every launcher with a set announces it, and the Strela-10 carries none for a HARM to home on",
+        !missing.length && loud.length === 0 && quiet.length === 0,
+        missing.length ? missing.length + " rows missing" : (loud.concat(quiet).join("; ") || "10 emitters, 1 silent"));
+
+    /* ---- the live part: the commander is held, everything is put back ---- */
+    var made = [], rng = Game.rng, upd = (typeof AI !== "undefined") ? AI.update : null;
+    var keep = function(st){ return JSON.stringify(st); };
+    var back = function(st, js){ var o = JSON.parse(js); for (var k in st) if (!(k in o)) delete st[k]; for (var k2 in o) st[k2] = o[k2]; };
+    var sP = keep(P.stats), sE = keep(E.stats);
+    var mk = function(pl, id, at, dx, dy){ var u = spawn(pl, id, at, dx, dy); if (u) made.push(u); return u; };
+    var M = Game.map, mid = null;
+    var mx = ((P.homeX + E.homeX) / 64) | 0, my = ((P.homeY + E.homeY) / 64) | 0;
+    for (var r = 0; r < 50 && !mid; r++) for (var a = 0; a < 48 && !mid; a++) {
+      var x = (mx + Math.cos(a / 48 * 6.283) * r) | 0, y = (my + Math.sin(a / 48 * 6.283) * r) | 0;
+      if (x < 20 || y < 26 || x >= M.W - 20 || y >= M.H - 26) continue;
+      var ok = true;
+      for (var dx = -2; dx <= 2 && ok; dx++) for (var dy = -2; dy <= 2 && ok; dy++)
+        if (!GameMap.passable(M, x + dx, y + dy, "ground") || Game.tileBlocked(x + dx, y + dy, null)) ok = false;
+      if (ok) mid = { x: x, y: y };
+    }
+    var T = CFG.TILE;
+    try {
+      if (upd) AI.update = function(){};
+      if (!mid) { chk("an open patch of ground for the live checks", false, "none found"); return; }
+
+      /* ---- 5. SEAD finds the set and not the silent launcher ---- */
+      var tor = mk(E, "pact_e80_tor", mid, 0, 0), str = mk(E, "pact_e60_strela10", mid, 2, 1);
+      var wz = mk(P, "sead_n", mid, -8, 0);
+      if (!tor || !str || !wz) chk("SEAD scenario built", false, "tor " + !!tor + " strela " + !!str + " weasel " + !!wz);
+      else {
+        wz.parked = false; wz.ammo = wz.ammoMax; wz.fuel = wz.fuelMax;
+        var t1 = wz.seadTarget();
+        tor.dead = true;
+        var t2 = wz.seadTarget();
+        chk("a Weasel's receiver names the Tor, and with the Tor gone does not name the Strela-10",
+            t1 === tor && t2 !== str,
+            "first " + (t1 ? t1.def.name : "none") + ", then " + (t2 ? t2.def.name : "none"));
+        wz.dead = true; str.dead = true;
+      }
+
+      /* ---- 6. a battery sets up where it stops, and moving loses the set-up ---- */
+      var k = mk(P, "pact_e60_sam", mid, 0, 3);
+      if (!k) chk("Krug spawned", false, "");
+      else {
+        k.give({ type: "guard" }); k.guardX = k.x; k.guardY = k.y;
+        tick(Math.round(((k.def.deploySec || 1.6) + 0.6) / CFG.DT));
+        var setUp = !!k.deployed;
+        k.deployed = true;
+        k.give({ type: "move", x: k.x + 3 * T, y: k.y });
+        tick(15);
+        chk("a Krug left on guard sets itself up, and moving loses the set-up",
+            setUp && !k.deployed,
+            "deployed after " + ((k.def.deploySec || 1.6) + 0.6).toFixed(1) + "s on guard: " + setUp +
+            ", after moving: " + !!k.deployed + " (HEAD: false, true)");
+
+        /* ---- 7. it does not pack up to chase an aeroplane out of its envelope ---- */
+        k.order = { type: "idle" }; k.path = null; tick(2);
+        var jet = mk(E, "bomber_n", mid, 0, -22);
+        if (!jet) chk("target aircraft spawned", false, "");
+        else {
+          jet.parked = false; jet.fuel = jet.fuelMax;
+          k.deployed = true;
+          var x0 = k.x, y0 = k.y;
+          k.order = { type: "attack", target: jet, auto: true };
+          tick(90);
+          var drift = U.dist(k.x, k.y, x0, y0) / T;
+          chk("an engagement it chose for itself is dropped when the aeroplane is out of reach - still set up, not chasing",
+              !jet.def.hover && drift < 0.2 && !!k.deployed && !(k.order.type === "attack" && k.order.target === jet),
+              "moved " + drift.toFixed(2) + " tiles, deployed " + !!k.deployed + ", order " + k.order.type +
+              " in 3s (HEAD: packs up and drives after it)");
+          k.give({ type: "attack", target: jet });
+          x0 = k.x; y0 = k.y;
+          tick(45);
+          chk("and one the player gave still pursues",
+              U.dist(k.x, k.y, x0, y0) / T > 0.3,
+              "moved " + (U.dist(k.x, k.y, x0, y0) / T).toFixed(2) + " tiles in 1.5s");
+          jet.dead = true; k.dead = true;
+        }
+      }
+
+      /* ---- 8. ...and a helicopter hovering just outside reach is still closed on ----
+         The rule above is for set-up launchers and aeroplanes only. A gun
+         SPAAG answering a gunship that shot it from 0.3 tiles out of reach -
+         retaliate(), or the AI's home-defence reflex, both `auto` - steps in
+         and fires, as on HEAD; so does a Krug, which the helicopter exemption
+         keeps. The first cut of the rule caught both, and the hull died
+         without firing a round. */
+      var hel = unitFor("nato", "gunship", "e80");
+      [["pact_e80_spaag", 0.3], ["pact_e60_sam", 0.3]].forEach(function(c){
+        var ad = mk(E, c[0], mid, 0, 6);
+        var reach = ad ? ad.weaponRange(WEAPONS[ad.def.weapons[0]]) / T : 0;
+        var h = ad ? Game.spawnUnitAt(P, hel, ad.x + (reach + c[1]) * T, ad.y) : null;
+        if (h) made.push(h);
+        if (!ad || !h) { chk("hover scenario built for " + c[0], false, "ad " + !!ad + " heli " + !!h); return; }
+        h.parked = false; h.fuel = h.fuelMax; h.stance = "hold"; h.order = { type: "idle" };
+        if (ad.def.deploy) ad.deployed = true;
+        var hx = h.x, hy = h.y, ax = ad.x, ay = ad.y, shots = 0, seen = new Set();
+        ad.order = { type: "attack", target: h, auto: true };
+        for (var n = 0; n < Math.round(6 / CFG.DT); n++) {
+          h.x = hx; h.y = hy;                         // it hovers where it is
+          Game.tick(CFG.DT);
+          var ps = Combat.projectiles || [];
+          for (var q = 0; q < ps.length; q++) if (!seen.has(ps[q])) { seen.add(ps[q]); if (ps[q].shooter === ad) shots++; }
+        }
+        /* whether a round then leaves also depends on things this section
+           does not own - a jammer or a darkened set left nearby by the shared
+           match - so the test is that the engagement is kept and closed: it
+           fired, or it is still on the helicopter */
+        var step = U.dist(ad.x, ad.y, ax, ay) / T;
+        var kept = shots >= 1 || (ad.order.type === "attack" && ad.order.target === h);
+        chk("a " + ad.def.name + " still closes on a " + h.def.name + " hovering " + c[1] + " tiles outside its reach, and keeps the engagement",
+            !!h.def.hover && step > 0.1 && kept,
+            "stepped " + step.toFixed(2) + " tiles, " + shots + " rounds in 6s, order " + ad.order.type +
+            " (the first cut: did not step at all, order dropped)");
+        ad.dead = true; h.dead = true;
+      });
+
+      /* ---- 9. and in action: a Tor against an A-10 crossing its ring ---- */
+      Game.rng = function(){ return 0.5; };
+      var tor2 = mk(E, "pact_e80_tor", mid, 0, 0);
+      var a10 = mk(P, "bomber_n", mid, -16, 0);
+      if (!tor2 || !a10) chk("live scenario built", false, "tor " + !!tor2 + " a10 " + !!a10);
+      else {
+        a10.parked = false; a10.fuel = a10.fuelMax; a10.stance = "aggressive";
+        a10.give({ type: "move", x: (mid.x + 16) * T, y: mid.y * T });
+        var seen2 = new Set(), launched = 0;
+        for (var n2 = 0; n2 < Math.round(8 / CFG.DT); n2++) {
+          Game.tick(CFG.DT);
+          var ps2 = Combat.projectiles || [];
+          for (var q2 = 0; q2 < ps2.length; q2++) if (!seen2.has(ps2[q2])) { seen2.add(ps2[q2]); if (ps2[q2].shooter === tor2) launched++; }
+        }
+        chk("a Tor launches at an A-10 crossing its ring, and its magazine counts the round",
+            launched >= 1 && tor2.rounds === tor2.roundsMax - launched,
+            launched + " launched, rounds " + tor2.rounds + "/" + tor2.roundsMax);
+      }
+    } finally {
+      Game.rng = rng;
+      if (upd) AI.update = upd;
+      made.forEach(function(u){ if (!u.dead) u.dead = true; });
+      if (Combat.projectiles) for (var pi = Combat.projectiles.length - 1; pi >= 0; pi--)
+        if (made.indexOf(Combat.projectiles[pi].shooter) >= 0) Combat.projectiles.splice(pi, 1);
+      tick(2);
+      back(P.stats, sP); back(E.stats, sE);
+    }
+    chk("the shared match is as it was: the commander, the RNG, both books, and none of the test's rounds in the air",
+        Game.rng === rng && (!upd || AI.update === upd) && keep(P.stats) === sP && keep(E.stats) === sE &&
+        !(Combat.projectiles || []).some(function(p){ return made.indexOf(p.shooter) >= 0; }) &&
+        made.every(function(u){ return u.dead; }), "");
+  })();
+  }
+
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

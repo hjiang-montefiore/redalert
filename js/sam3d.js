@@ -1124,6 +1124,61 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
      pack: the round lies naked on a rail with nothing over it. */
   reg("nato_e60_sam", 6.89, buildRail, HAWK);    // M727 Self-Propelled HAWK
   reg("pact_e60_sam", 10.95, buildRail, KRUG);    // 2K11 Krug, 2P24
+
+  /* The Soviet family added in js/eras.js after pact_e00_spaag. Registered
+     here because modelKeyFor() falls back to the FIRST same-role peer with a
+     model, and in "sam" that is sam_n: every one of these was drawing as a
+     Patriot PAC-3 on an American HEMTT. No new builder and no hero model -
+     buildRail() with a parameter block each, and every block is a STAND-IN
+     that says what it gets wrong:
+       S-75    the HQ-2 block exactly, because the HQ-2 IS the Chinese S-75
+               round on its rail. The real SM-63 is a towed, emplaced mount,
+               not a tracked hull - a dedicated towed model is owed.
+       S-125   four bare rounds with boosters on a slewing beam; the real
+               5P73 is a towed four-rail mount stacked two over two.
+       Kub     three rounds with the ramjet intake ducts the 3M9 really has,
+               on a tracked hull: the 2P25 silhouette, near enough.
+       Buk     four rounds on a tracked hull, but buildRail draws no radar and
+               every Buk launcher carries one on the turret face - the one
+               thing a dedicated model most needs to add. The M3 draws six
+               rails where it really has six sealed canisters. */
+  var NEVA = {                                  /* 5P73, four V-601P         */
+    hullLen: 6.20, halfW: 1.42, wheelR: 0.33, beltW: 0.42, wheels: 5,
+    turretX: -0.30, elev: -0.38, seed: 5073,
+    mLen: 4.40, mR: 0.19, railY: [0.96, 0.32, -0.32, -0.96],
+    booster: { len: 2.20, r: 0.275 },
+    paint: 0x47523a, mPaint: 0xb6b5aa,
+  };
+  var KUB = {                                   /* 2P25, three 3M9 ramjets   */
+    hullLen: 6.80, halfW: 1.55, wheelR: 0.32, beltW: 0.42, wheels: 6,
+    turretX: -0.40, elev: -0.30, seed: 2125,
+    mLen: 5.80, mR: 0.165, ducts: true, railY: [0.66, 0, -0.66],
+    paint: 0x47523a, mPaint: 0xc3c2b8,
+  };
+  var BUK = {                                   /* 9A310M1, four 9M38M1      */
+    hullLen: 7.40, halfW: 1.62, wheelR: 0.34, beltW: 0.46, wheels: 6,
+    turretX: -0.60, elev: -0.34, seed: 9310,
+    mLen: 5.55, mR: 0.20, railY: [0.93, 0.31, -0.31, -0.93],
+    paint: 0x51553f, mPaint: 0xb9b7ab,
+  };
+  var BUK2 = {                                  /* 9A317, four 9M317         */
+    hullLen: 7.40, halfW: 1.62, wheelR: 0.34, beltW: 0.46, wheels: 6,
+    turretX: -0.60, elev: -0.34, seed: 9317,
+    mLen: 5.55, mR: 0.20, railY: [0.93, 0.31, -0.31, -0.93],
+    paint: 0x4d5440, mPaint: 0xa9a99c,
+  };
+  var BUK3 = {                                  /* 9A317M, six 9M317M        */
+    hullLen: 7.40, halfW: 1.62, wheelR: 0.34, beltW: 0.46, wheels: 6,
+    turretX: -0.60, elev: -0.34, seed: 9318,
+    mLen: 5.18, mR: 0.18, railY: [1.10, 0.66, 0.22, -0.22, -0.66, -1.10],
+    paint: 0x4a513c, mPaint: 0x9fa093,
+  };
+  reg("pact_e50_s75",  10.90, buildRail, HQ2);    // S-75 Dvina: the HQ-2 is its copy
+  reg("pact_e60_s125", 7.28, buildRail, NEVA);    // S-125 Neva, 5P73
+  reg("pact_e60_kub",  7.92, buildRail, KUB);     // 2K12 Kub, 2P25
+  reg("pact_e80_buk",  7.66, buildRail, BUK);     // Buk-M1, 9A310M1
+  reg("pact_e00_buk",  7.66, buildRail, BUK2);    // Buk-M2, 9A317
+  reg("pact_e00_buk_m3", 7.32, buildRail, BUK3);  // Buk-M3, 9A317M
   reg("pla_e60_sam", 10.90, buildRail, HQ2);     // HQ-2 on a Type 63 hull
   reg("pla_e80_sam", 10.90, buildRail, HQ2);     // the same, twenty years on
 })();
