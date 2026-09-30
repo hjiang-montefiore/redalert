@@ -283,14 +283,14 @@ var UI = (function () {
     const kind = it.kind;
     if (kind === "era") {
       const why = p.eraLockReason();
-      if (why) { alert(why, "bad"); Sfx.play("sell"); return; }
+      if (why) { Sfx.announce("refused", null, why); alert(why, "bad"); Sfx.play("sell"); return; }
       if (p.startEraAdvance()) { Sfx.play("click"); refreshCards(); }
       return;
     }
     if (kind === "support") {
       /* arm the targeting reticle: the next map click calls the mission in */
       const why = G.supportReady(p, it.id);
-      if (why) { alert(why, "bad"); Sfx.play("sell"); return; }
+      if (why) { Sfx.announce("refused", null, why); alert(why, "bad"); Sfx.play("sell"); return; }
       pendingSupport = (pendingSupport === it.id) ? null : it.id;
       Sfx.play("click");
       refreshCards();
@@ -314,8 +314,20 @@ var UI = (function () {
   function failBeep(it, kind) {
     const p = G.human;
     const r = p.lockReason(it.def, kind === "upgrade");
-    if (r) G.alert(r, "bad");
-    else if (p.cash < 50) G.alert("INSUFFICIENT FUNDS", "bad");
+    /* No lockReason means the queue's own limit refused the card
+       (Player.enqueue): six structures waiting, nine of anything, research
+       already running, or no ramp space for another airframe. It is never
+       money - production is paid as it runs, and enqueue() does not look at
+       the cash - yet this said INSUFFICIENT FUNDS whenever the cash was under
+       50 and nothing at all otherwise. The rail and the base's voice now
+       give the reason there is: "Insufficient fuel" for a card that needs
+       barrels, "Unable to comply" for the rest (announcer.js refusal). */
+    const q = p.queues[kind];
+    const why = r || (kind === "upgrade" ? "RESEARCH ALREADY UNDER WAY"
+      : kind === "aircraft" && q && q.items.length < 9 ? "NO RAMP SPACE FOR ANOTHER AIRCRAFT"
+      : "QUEUE FULL");
+    Sfx.announce("refused", null, why);
+    G.alert(why, "bad");
   }
   function onCardCancel(it) {
     G.human.cancel(it.kind === "upgrade" ? "upgrade" : it.kind, it.id);
@@ -1293,7 +1305,7 @@ var UI = (function () {
         ev.stopPropagation();
         const id = btn.dataset.deckbuy;
         const why = G.orderDeckAircraft(b, id);
-        if (why) { alert(why, "bad"); return; }
+        if (why) { Sfx.announce("refused", null, why); alert(why, "bad"); return; }
         alert(UNITS[id].name.toUpperCase() + " ORDERED FOR " + b.def.name.toUpperCase(), "good");
         Sfx.play("order");
         refreshSelInfo();
@@ -1731,7 +1743,7 @@ var UI = (function () {
         if (pendingSupport) {
           const wp = Render.unproject(mx, my);
           const why = G.callFireSupport(G.human, pendingSupport, wp.x, wp.y);
-          if (why) alert(why, "bad"); else Sfx.play("order");
+          if (why) { Sfx.announce("refused", null, why); alert(why, "bad"); } else Sfx.play("order");
           pendingSupport = null;
           refreshCards();
           return;
@@ -1755,7 +1767,7 @@ var UI = (function () {
            factory used to swallow the click - the factory could not be sold
            or repaired from that side. The cursor reads the same picker. */
         if (input.sellMode) { const b = ownBuildingAt(mx, my); if (b) G.sellBuilding(b); return; }
-        if (input.repairMode) { const b = ownBuildingAt(mx, my); if (b) { b.repairing = !b.repairing; } return; }
+        if (input.repairMode) { const b = ownBuildingAt(mx, my); if (b) { b.repairing = !b.repairing; if (b.repairing && b.hp < b.maxHp) Sfx.announce("repairing", b); } return; }
         if (input.attackMove || keys.a) { issueAttackMove(mx, my, e.shiftKey); input.attackMove = false; return; }
         /* an armed area order takes the whole drag, not just the click */
         if (areaMode) { areaDrag = { x0: mx, y0: my, x1: mx, y1: my }; return; }
@@ -1995,6 +2007,7 @@ var UI = (function () {
     if (eraEl) eraEl.addEventListener("click", () => {
       if (!G.human || !G.human.eraStepInfo || !G.human.eraStepInfo()) return;
       if (G.human.eraLockReason()) {
+        Sfx.announce("refused", null, G.human.eraLockReason());
         G.alert(G.human.eraLockReason(), "warn");
         return;
       }
@@ -2104,7 +2117,7 @@ var UI = (function () {
   function buyFuelLot() {
     if (!G || !G.human || !G.human.fuelQuote) return;
     const q = G.human.fuelQuote(CFG.FUEL_MKT_HUD_LOT || 50);
-    if (!q.ok) G.alert("CANNOT BUY FUEL \u2014 " + q.why, "warn");
+    if (!q.ok) { Sfx.announce("refused", null, q.why); G.alert("CANNOT BUY FUEL \u2014 " + q.why, "warn"); }
     else if (G.human.buyFuel(q.bbl)) Sfx.play("click");
     syncFuelBuy(true);
   }
@@ -2838,7 +2851,7 @@ var UI = (function () {
       }
       Sfx.play("click");
       updateCards();
-    } else G.alert("CANNOT DEPLOY THERE", "bad");
+    } else { Sfx.announce("cannot_build"); G.alert("CANNOT DEPLOY THERE", "bad"); }
   }
 
   /* narrow the selection to one unit type — the Tab sub-group idiom */
@@ -2993,8 +3006,10 @@ var UI = (function () {
       if (u.owner !== G.human) continue;
       if (u.kind !== "unit" || !u.def.deployTo) { G.packByKey(u); continue; }   // a yard of ours folds up (game.js)
       /* G.deployRig is the same code the commander uses - see game.js */
-      if (!G.deployRig(u))
+      if (!G.deployRig(u)) {
+        Sfx.announce("cannot_deploy", u);
         G.alert("CANNOT DEPLOY HERE \u2014 NEED CLEAR FLAT GROUND", "bad");
+      }
     }
   }
 
@@ -3513,7 +3528,7 @@ var UI = (function () {
         el.className = "sw" + (b.def.superweapon.nuke ? " nuke" : "") + (foe ? " foe" : "");
         el.innerHTML = '<div class="swfill"></div><div class="swtx"></div>';
         if (!foe) el.addEventListener("click", () => {
-          if (b.dead || b.swCharge < 1) { G.alert("SILO NOT READY", "bad"); return; }
+          if (b.dead || b.swCharge < 1) { Sfx.announce("silo_not_ready", G.human); G.alert("SILO NOT READY", "bad"); return; }
           input.launching = b;
           input.placing = null;
           setSell(false); setRepair(false);
@@ -3543,6 +3558,7 @@ var UI = (function () {
          it. Thirty seconds is about one more production cycle. */
       if (el._foe && !ready && secs <= 30 && !b._warn30) {
         b._warn30 = true;
+        Sfx.announce(b.def.superweapon.nuke ? "enemy_nuke_30" : "enemy_missile_30", G.human, secs);
         G.alert("ENEMY " + kind + " READY IN " + U.mmss(secs), "bad");
         if (typeof Threat !== "undefined" && Threat.fire)
           Threat.fire(2, "ENEMY " + kind + " ALMOST READY", U.mmss(secs) + " REMAINING");

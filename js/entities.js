@@ -1491,6 +1491,8 @@ class Unit {
             Combat.addEffect({ t: "text", x: o.x, y: o.y - 10, s: def.name.toUpperCase(),
                                life: 0.9, max: 0.9, c: "#8fd05f" });
         } else if (this.owner === this.game.human) {
+          /* a field engineer's obstacle is a structure put down by hand */
+          Sfx.announce(this.owner.cash < (def.cost || 0) ? "insufficient_funds" : "cannot_build", this);
           this.game.alert(this.owner.cash < (def.cost || 0)
             ? "NOT ENOUGH FUNDS" : "CANNOT EMPLACE THERE", "bad");
         }
@@ -3137,7 +3139,7 @@ class Unit {
         const carried = this.load * (this.owner.harvestMul || 1);
         const gain = Math.min(carried, Math.max(0, cap - this.owner.cash));
         if (gain < this.load && this.owner === this.game.human && !this.warnedSilo) {
-          this.game.alert("ORE LOST — BUILD SILOS", "bad"); this.warnedSilo = true;
+          Sfx.announce("silos_needed", this); this.game.alert("ORE LOST — BUILD SILOS", "bad"); this.warnedSilo = true;
         }
         this.owner.earn(gain);
         this.owner.stats.mined += gain;
@@ -4412,7 +4414,17 @@ class Building {
           if (this.owner === this.game.human) {
             this.game.alert(d.superweapon.label + " READY", "good");
             Sfx.play("ready");
-          } else this.game.alert("ENEMY " + d.superweapon.label + " IS READY", "bad");
+            Sfx.announce(d.superweapon.nuke ? "nuke_ready" : "missile_ready", this);
+          } else {
+            /* an enemy silo's clock is the one thing this game makes public -
+               the sidebar runs every enemy countdown for every player (ui.js
+               syncSuperweapons) - so the voice may say it is armed; never
+               where it is, and never an ally's */
+            const hu = this.game.human;
+            if (hu && !this.game.allied(hu, this.owner))
+              Sfx.announce(d.superweapon.nuke ? "enemy_nuke_armed" : "enemy_missile_armed", hu);
+            this.game.alert("ENEMY " + d.superweapon.label + " IS READY", "bad");
+          }
         }
       }
     }

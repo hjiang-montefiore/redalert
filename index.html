@@ -424,6 +424,21 @@
         <option value="follow" selected>Map follows the mouse</option>
         <option value="push">Classic edge scroll (inverted)</option>
       </select></div>
+      <!-- the sound switches; js/announcer.js keeps them, main.js applies them -->
+      <div class="row"><label>Sound</label><select id="opt-sound">
+        <option value="1" selected>On &mdash; full volume</option>
+        <option value="0.6">On &mdash; quieter</option>
+        <option value="0.3">On &mdash; quiet</option>
+        <option value="0">Off</option>
+      </select></div>
+      <div class="row"><label>Unit voices</label><select id="opt-voices">
+        <option value="1" selected>On &mdash; crews answer</option>
+        <option value="0">Off</option>
+      </select></div>
+      <div class="row"><label>Announcer</label><select id="opt-announcer">
+        <option value="1" selected>On &mdash; the base speaks</option>
+        <option value="0">Off</option>
+      </select></div>
       </div>
     </div>
 
@@ -495,6 +510,8 @@
            and never touches Game.paused: the battle stays exactly as frozen
            as this menu left it, and closing puts this menu back. -->
       <button id="pm-gallery">FIELD MANUAL</button>
+      <!-- the same switches mid-battle; js/announcer.js binds and labels them -->
+      <div class="pm-sound"><button id="pm-snd" type="button">SOUND ON</button><button id="pm-vox" type="button">VOICES ON</button><button id="pm-eva" type="button">ANNOUNCER ON</button></div>
       <button id="pm-quit" class="danger">QUIT TO MENU</button>
       <div class="pm-hint">Esc closes this menu &middot; the battle is frozen while it is open</div>
     </div>
@@ -638,6 +655,7 @@ window.addEventListener("error", function (e) {
 <script src="js/generations.js?v=202609290701"></script>
 <script src="js/geodata.js?v=202609290701"></script>
 <script src="js/audio.js?v=202609290701"></script>
+<script src="js/announcer.js?v=202609290701"></script>
   <script src="js/threat.js?v=202609290701"></script>
 <script src="js/map.js?v=202609290701"></script>
 <script src="js/path.js?v=202609290701"></script>

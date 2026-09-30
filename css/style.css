@@ -351,6 +351,10 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 .pm-box button.danger{border-color:#7a2c22;color:#ffbdae}
 .pm-box button.danger:hover{background:#4a1a14;border-color:#d05050}
 .pm-hint{font-size:10px;color:#5f6f5b;text-align:center;margin-top:6px;letter-spacing:.5px}
+/* the three sound switches, one row */
+.pm-sound{display:flex;gap:6px}
+.pm-sound button{flex:1;padding:8px 2px;font-size:10px;letter-spacing:1px}
+.pm-sound button.off{color:#7f927a;border-color:#2c3a27;background:#161f14}
 
 /* ---------- attention ribbon ---------- */
 #attn{position:absolute;left:14px;top:40px;z-index:21;display:none;flex-direction:column;gap:3px;width:250px}

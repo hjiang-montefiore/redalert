@@ -145,6 +145,14 @@ var Threat = (function () {
     e._pingT = now;
     const kind = e.kind === "building" ? "base" : "unit";
     if (G.pingEvent) G.pingEvent(e.x, e.y, kind);
+    /* The base's voice keeps its own clock - "Our base is under attack" at
+       most once in twenty seconds, an ore hauler the same - so it is asked
+       here, past the per-object gate and the player's own fire, rather than
+       behind this module's rungs, which a second front can re-arm. Not for
+       a barrier; not for a unit that is not a hauler (being shot at is the
+       job, and under_fire already says it). */
+    if (kind === "base" ? !isBarrier(e) : !!(e.def && e.def.harvester))
+      Sfx.announce(kind === "base" ? "base_attack" : "hauler_attack", e);
     alertFor(kind, e, now);
   }
 

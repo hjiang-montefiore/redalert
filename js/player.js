@@ -433,6 +433,7 @@ class Player {
     /* the tank level makes every arrival line different: UI.alert drops a
        repeat of the previous line inside four seconds, and two 50-barrel
        lots clicked a second apart land a second apart */
+    if (!this.isAI && got > 0) Sfx.announce("fuel_arrived", this);
     if (!this.isAI && this.game && this.game.alert)
       this.game.alert("FUEL CONVOY ARRIVED \u2014 " + got + " BBL UNLOADED, TANKS " +
                       Math.floor(this.oil) + " BBL", "good");
@@ -520,6 +521,7 @@ class Player {
       this.game.alert("RE-EQUIPPED \u2014 " + ERA_INFO[this.era].name.toUpperCase() +
                       " EQUIPMENT AVAILABLE", "good");
       Sfx.play("ready");
+      Sfx.announce("reequipped", this);
       UI.refreshCards();
     }
   }
@@ -539,19 +541,28 @@ class Player {
        your airbases and carriers have revetments for */
     if (kind === "aircraft" && this.airSpaceLeft(def) <= q.items.length) return false;
     q.items.push({ id, def, paid: 0 });
+    /* the base answers the card - Red Alert 2's "Building", "Training" -
+       and only ours: a commander's queue is not read out */
+    if (!this.isAI) Sfx.announce(kind === "infantry" ? "training" : kind === "upgrade" ? "researching" : "building", this);
     return true;
   }
   cancel(kind, id) {
     const q = this.queues[kind];
     if (Array.isArray(q.ready)) {
       const i = q.ready.findIndex(r => r.id === id);
-      if (i >= 0) { this.refund(this.factionCost(q.ready[i].def)); q.ready.splice(i, 1); return; }
+      if (i >= 0) {
+        this.refund(this.factionCost(q.ready[i].def)); q.ready.splice(i, 1);
+        if (!this.isAI) Sfx.announce("cancelled", this);
+        return;
+      }
     }
     for (let i = q.items.length - 1; i >= 0; i--) {
       if (q.items[i].id === id) {
         this.refund(q.items[i].paid);
         if (i === 0) q.prog = 0;
         q.items.splice(i, 1);
+        /* a right-click on the card took it off the queue without a sound */
+        if (!this.isAI) Sfx.announce("cancelled", this);
         return;
       }
     }
@@ -627,7 +638,11 @@ class Player {
       const it = q.items[0];
       const def = it.def;
       const speed = this.prodSpeed(kind === "upgrade" ? "building" : kind);
-      if (speed <= 0) continue;
+      /* The factory this line runs on is gone - destroyed, sold, captured,
+         or a yard folded up - and the queue waits for another. It waited in
+         silence; the base says so once, when it stops, not every tick. */
+      if (speed <= 0) { if (!q.held && !this.isAI) Sfx.announce("on_hold", this); q.held = true; continue; }
+      q.held = false;
 
       const cost = kind === "upgrade" ? def.cost : this.factionCost(def);
       const time = this.factionTime(def);
@@ -635,6 +650,17 @@ class Player {
       const payment = cost * rate;
       if (it.paid < cost) {
         const pay = Math.min(payment, cost - it.paid, this.cash);
+        /* Out of money under a build: Red Alert 2's "Insufficient funds". The
+           standing budget (CFG.BASE_INCOME) pays a trickle every tick, so the
+           cash never quite reaches zero and "broke" is a build paid at less
+           than half its rate, not a payment of nothing. Said as it starts,
+           not on every tick it lasts; the announcer holds it to one in six
+           seconds. Nothing about what is paid changes. */
+        if (!this.isAI) {
+          const short = this.cash < Math.min(payment, cost - it.paid) * 0.5;
+          if (short && !it.broke) Sfx.announce("insufficient_funds", this);
+          it.broke = short;
+        }
         if (pay <= 0) continue;                        // broke — production stalls
         this.cash -= pay; it.paid += pay;
       }
@@ -650,7 +676,7 @@ class Player {
   onProduced(kind, it) {
     if (kind === "building" || kind === "defense") {
       this.queues[kind].ready.push(it);                // waits for placement
-      if (!this.isAI) { this.game.alert("CONSTRUCTION COMPLETE", "good"); Sfx.play("ready"); UI.refreshCards(); }
+      if (!this.isAI) { this.game.alert("CONSTRUCTION COMPLETE", "good"); Sfx.play("ready"); Sfx.announce("construction_complete", this); UI.refreshCards(); }
     } else if (kind === "upgrade") {
       const def = it.def;
       /* Oil is checked when the item is queued, but it can be spent on units
@@ -660,7 +686,12 @@ class Player {
       if (def.tech) { this.tech = Math.max(this.tech, def.tech); }
       else this.upgrades[it.id] = true;
       if (def.tech) this.upgrades["tech" + def.tech] = true;
-      if (!this.isAI) { this.game.alert(def.name.toUpperCase() + " COMPLETE", "good"); Sfx.play("ready"); UI.refreshCards(); }
+      if (!this.isAI) {
+        this.game.alert(def.name.toUpperCase() + " COMPLETE", "good"); Sfx.play("ready");
+        /* a tech level opens the sidebar up - Red Alert 2's "New construction options" */
+        Sfx.announce(def.tech ? "tech_up" : "upgrade_complete", this);
+        UI.refreshCards();
+      }
     } else {
       /* unit: spawn at the right factory */
       const def = it.def;
@@ -670,6 +701,10 @@ class Player {
       }
       const made = this.game.spawnUnit(this, it.id);
       if (!this.isAI) Sfx.play("unitready");
+      /* "Unit ready", by what came off the line - and only if something did */
+      if (made && !this.isAI)
+        Sfx.announce(def.cat === "infantry" ? "unit_trained" : def.cat === "aircraft" ? "aircraft_ready"
+                     : def.cat === "naval" ? "vessel_ready" : "unit_ready", this);
       /* a class with a fixed number of hulls (lockReason) keeps count of the
          hulls it has commissioned: a sunk one is not replaced, there was no
          fifth Iowa. In stats, so a save carries it. */

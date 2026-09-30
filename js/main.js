@@ -513,6 +513,14 @@
     const pv = document.getElementById("opt-pan");
     if (pv && UI.panMode) pv.value = UI.panMode();
   }
+  /* ...and the sound switches as the player last left them (js/announcer.js
+     keeps them). A page without the Sound block has nothing to show. */
+  if (typeof Announcer !== "undefined" && Announcer.prefs) {
+    const sp = Announcer.prefs(), put = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    put("opt-sound", sp.sfx ? String(sp.vol) : "0");
+    put("opt-voices", sp.vox ? "1" : "0");
+    put("opt-announcer", sp.eva ? "1" : "0");
+  }
 
   let raf = 0, lastT = 0, acc = 0;
   /* a briefing is up and the battle behind it is still being raised */
@@ -541,6 +549,13 @@
     if (briefing) return;
     const pv = document.getElementById("opt-pan");
     if (pv && UI.setPanMode) UI.setPanMode(pv.value);
+    /* The Sound block, applied and kept - where this page has one. A harness
+       page's frozen menu has none, and must not overwrite what the player set. */
+    const snd = document.getElementById("opt-sound");
+    if (snd && typeof Announcer !== "undefined" && Announcer.setPrefs) {
+      const v = parseFloat(snd.value), sw = (id) => { const el = document.getElementById(id); return !el || el.value !== "0"; };
+      Announcer.setPrefs({ sfx: v > 0, vol: v > 0 ? v : undefined, vox: sw("opt-voices"), eva: sw("opt-announcer") });
+    }
     const seedStr = document.getElementById("opt-seed").value.trim();
     let seed = seedStr ? U.hashStr(seedStr) : (Math.random() * 0xffffffff) >>> 0;
     /* ---- a theatre the player drew ----

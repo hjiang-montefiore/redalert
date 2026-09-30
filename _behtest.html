@@ -242,6 +242,7 @@ window.addEventListener("error", function (e) {
 <script src="js/generations.js?v=202608222243"></script>
 <script src="js/geodata.js?v=202608222243"></script>
 <script src="js/audio.js?v=202608222243"></script>
+<script src="js/announcer.js?v=202608222243"></script>
   <script src="js/threat.js?v=202608222243"></script>
 <script src="js/map.js?v=202608222243"></script>
 <script src="js/path.js?v=202608222243"></script>
@@ -11195,6 +11196,593 @@ try{
     }
     chk("the shared match is as it was: RNG and both commanders' books", Game.rng===rng &&
         keep(P.stats)===sP && keep(E.stats)===sE && made.every(function(u){ return u.dead; }), made.length+" units made and removed");
+  })();
+  }
+
+  /* ====== [88] THE BASE'S VOICE ======
+     (owner) "we want more audio effect like if we cannot deploy or buid or
+     have low power then we should have a clear female voice. you can use
+     red alert 2 as the example". Measured at 5c8faba: nothing in js/ spoke
+     for the base. Low power, power restored, a cancelled card, a queue on
+     hold, a dome's picture going dark and coming back, a repair started and
+     the end of the battle made no sound and put no line on the rail; every
+     refusal - a rig that cannot unfold, a structure that cannot go there, a
+     locked card - was text under the one alarm klaxon, and a full queue was
+     silent or blamed on money; and audio.js's vox() cancel()led the one
+     speech channel before every crew line, so anything else said would have
+     been cut off by a click on a tank.
+     This holds js/announcer.js: a known female voice chosen by name on each
+     platform, and a crew voice that is never hers; the delivery; the arbiter
+     (tiers, cooldowns given back by a line dropped unsaid, a queue that
+     drops stale lines, a crew answer that waits for her and never cuts her
+     off, a refusal that cuts in over an echo, a critical line that cuts in
+     over anything less); the klaxon's question (justSaid); the switch, mute
+     and volume; the AI side never speaking; and the event sites themselves,
+     driven for real - a card queued, cancelled, locked and refused on a
+     full queue, a unit and a structure off the line, production starved of
+     money and on hold, a rig that cannot deploy, a structure that cannot be
+     placed, a field engineer's obstacle refused, one repaired, sold, lost,
+     captured each way, a unit and a hauler lost, the base and a hauler
+     under fire and a barrier not, the grid and the dome, silos needed, a
+     silo ready (ours and theirs) and not ready, the enemy clock at thirty
+     seconds, a launch seen and unseen, the era step, a fuel lot and a fuel
+     convoy, a deck delivery, and - on test seats of their own, as [44]
+     does it - the last production facility, the rig clock and its warning,
+     defeat and victory.
+     speechSynthesis is a recording stand-in for the section, the clock is
+     the announcer's own, and Sfx is a stand-in that hands announce() to the
+     announcer and plays nothing (the jsc runner's Sfx is a no-op, and in a
+     browser the chirp would need a live context); all three are put back.
+     THE SHARED MATCH IS NOT TICKED. What is made here is taken off the
+     board, the grid and its owner's lists; the queues, cash, oil, era,
+     stats, events, deferred calls, effects, selection, placement, repair
+     mode and the fuel book are back as they were. */
+  if (inHalf(1)) {
+  log("\n[88] THE BASE'S VOICE: A CLEAR FEMALE ANNOUNCER, AND ONE SPEECH CHANNEL SHARED WITH THE CREWS");
+  (function(){
+    var A = (typeof Announcer === "object" && Announcer) ? Announcer : null;
+    var ok = !!A && typeof A.say === "function" && typeof A.unit === "function" && typeof A.watch === "function";
+    chk("there is an announcer: Announcer.say (the base), Announcer.unit (the crews), Announcer.watch (the grid and the dome)", ok,
+        ok ? "" : "missing - nothing speaks for the base, and the crews' vox() cancels the one speech channel before every line");
+    if (!ok) return;
+    var W = window, T = CFG.TILE, M = Game.map;
+    /* ---- the stand-ins ---- */
+    var VOICES = [ { name:"Alex", lang:"en-US" }, { name:"Daniel", lang:"en-GB" }, { name:"Albert", lang:"en-US" },
+                   { name:"Samantha", lang:"en-US", "default": true }, { name:"Google UK English Female", lang:"en-GB" } ];
+    var st = { spoken: [], cancels: 0, cur: null };
+    var fake = { speaking: false, pending: false,
+      getVoices: function(){ return VOICES; },
+      speak: function(u){ st.spoken.push(u); st.cur = u; fake.speaking = true; },
+      cancel: function(){ st.cancels++; var u = st.cur; st.cur = null; fake.speaking = false; if (u && u.onerror) u.onerror({ error: "interrupted" }); },
+      addEventListener: function(){} };
+    function Utt(text){ this.text = text; this.voice = null; this.pitch = 1; this.rate = 1; this.volume = 1; this.lang = ""; }
+    function finish(){ var u = st.cur; st.cur = null; fake.speaking = false; if (u && u.onend) u.onend({}); }
+    function drain(){ for (var i = 0; i < 12 && (st.cur || A.state().queue.length); i++) finish(); }
+    function last(){ var u = st.spoken[st.spoken.length - 1]; return u ? u.text : ""; }
+    function texts(n0){ return st.spoken.slice(n0).map(function(u){ return u.text; }); }
+    function base(n0){ return texts(n0).filter(function(t){ return /\.$/.test(t); }); }
+    function said(key, arg){ var L = A.line(key); return L ? L.t.replace("{n}", String(arg)) : "?"; }
+    var dS = Object.getOwnPropertyDescriptor(W, "speechSynthesis"), dU = Object.getOwnPropertyDescriptor(W, "SpeechSynthesisUtterance");
+    function stand(k, v){ try { Object.defineProperty(W, k, { value: v, configurable: true, writable: true }); } catch(e){ try { W[k] = v; } catch(e2){} } }
+    function unstand(k, d){ try { if (d) Object.defineProperty(W, k, d); else delete W[k]; } catch(e){} }
+    var S0 = Sfx, lvl = 1, chirps = 0, calls = [], asked = [];
+    var SfxT = new Proxy({}, { get: function(t, k){
+      if (k === "announce") return function(key, who, n){ asked.push(key); return A.say(key, who, n); };
+      if (k === "chirp") return function(){ chirps++; return 0; };
+      if (k === "voiceLevel") return function(){ return lvl; };
+      if (k === "setEnabled" || k === "volume" || k === "voxEnabled") return function(v){ calls.push(k + ":" + v); };
+      if (k === "play" || k === "select" || k === "vox" || k === "ensure") return function(){};
+      var f = S0[k]; return typeof f === "function" ? f.bind(S0) : f; } });
+    var T0 = 5000, now = T0;
+    function adv(s){ now += s; }
+    function has(k){ return asked.indexOf(k) >= 0; }
+    /* what the rail said, for the sites whose words must match it */
+    var GA = Game.alert, rail = [];
+    /* everything shared this section touches, to be put back */
+    var keep = function(o){ return JSON.stringify(o); };
+    var backTo = function(o, js){ var v = JSON.parse(js); for (var k in o) if (!(k in v)) delete o[k]; for (var k2 in v) o[k2] = v[k2]; };
+    var sP = keep(P.stats), sE = keep(E.stats), cash0 = P.cash, cashE = E.cash, oil0 = P.oil, oilIn0 = P.oilIn ? keep(P.oilIn) : null;
+    var era0 = [P.era, P.eraProgress, P.eraTarget];
+    var qs0 = {}; for (var qk in P.queues) qs0[qk] = { items: P.queues[qk].items.slice(), ready: Array.isArray(P.queues[qk].ready) ? P.queues[qk].ready.slice() : null, prog: P.queues[qk].prog, held: P.queues[qk].held };
+    var qE0 = {}; for (var qk2 in E.queues) qE0[qk2] = E.queues[qk2].items.slice();
+    var fuel0 = P.fuelInbound ? P.fuelInbound.slice() : null, hadFuel = "fuelInbound" in P, fw0 = [P._fuelWait, P._fuelWaitSaid];
+    var broke0 = []; for (var qk5 in P.queues) P.queues[qk5].items.forEach(function(it){ broke0.push([it, it.broke]); });
+    var ev0 = Game.events ? Game.events.slice() : null, def0 = Game.deferred.slice(), fx0 = Combat.effects.slice(), prj0 = Combat.projectiles.slice();
+    var sel0 = UI.selection.slice(), inp = UI.input, place0 = [inp.placing, inp.placeKind, inp.placeTx, inp.placeTy], rep0 = !!inp.repairMode;
+    var ents0 = Game.entities.length, pB0 = P.buildings.slice(), eB0 = E.buildings.slice(), pU0 = P.units.slice(), eU0 = E.units.slice();
+    var made = [], fakes = [], prefs0 = A.prefs(), repL = Threat.reportLoss, repLaunch = Threat.reportLaunch, seen0 = Game.launchSeen;
+    var roster0 = Game.players, human0 = Game.human, over0 = Game.over, endG0 = UI.endGame, dd0 = Game.deckDelivery, dtd0 = Game.deliverToDeck, sur0 = Game.surrender;
+    var put = function(a, b){ a.length = 0; Array.prototype.push.apply(a, b); }, cpKeep = Game.canPlace;
+    function sel(list){ var s = UI.selection; for (var i = 0; i < s.length; i++) s[i].selected = false; s.length = 0;
+      for (var j = 0; j < list.length; j++){ list[j].selected = true; s.push(list[j]); } }
+    function key(k){ var ev = { type:"keydown", key:k, shiftKey:false, ctrlKey:false, metaKey:false, altKey:false, preventDefault:function(){} };
+      if (typeof __listeners !== "undefined") (__listeners["win:keydown"] || []).slice().forEach(function(f){ f(ev); });
+      else W.dispatchEvent(new KeyboardEvent("keydown", { key:k }));
+      if (typeof __listeners !== "undefined") (__listeners["win:keyup"] || []).slice().forEach(function(f){ f({ type:"keyup", key:k, preventDefault:function(){} }); });
+      else W.dispatchEvent(new KeyboardEvent("keyup", { key:k })); }
+    var cvs = document.getElementById("cv");
+    /* a left click on the map at a world point, through the canvas's own handler */
+    function clickAt(wx, wy){ var rc = cvs.getBoundingClientRect();
+      var ev = { type:"mousedown", button:0, clientX: rc.left + Render.sx(wx, wy), clientY: rc.top + Render.sy(wx, wy, GameMap.elevAt(M, (wx / T) | 0, (wy / T) | 0)),
+                 shiftKey:false, ctrlKey:false, metaKey:false };
+      if (typeof __listeners !== "undefined") { cvs.dispatchEvent(ev); (__listeners["win:mouseup"] || []).slice().forEach(function(f){ f({ type:"mouseup", button:0, clientX:0, clientY:0 }); }); }
+      else cvs.dispatchEvent(new MouseEvent("mousedown", ev)); }
+    /* a free spot for a structure of `id` that `pl` may put there */
+    function spot(pl, id, r0){ var d = BUILDINGS[id], hx = (pl.homeX / T) | 0, hy = (pl.homeY / T) | 0;
+      for (var r = r0 || 3; r < 40; r++) for (var a = 0; a < 40; a++){
+        var x = (hx + Math.cos(a / 40 * 6.283) * r - d.w / 2) | 0, y = (hy + Math.sin(a / 40 * 6.283) * r - d.h / 2) | 0;
+        if (Game.canPlace(pl, id, x, y)) return { x: x, y: y }; } return null; }
+    function build(pl, id){ var s = spot(pl, id); if (!s) return null; var b = Game.placeBuilding(pl, id, s.x, s.y, true); if (b) made.push(b); return b; }
+    function unit(pl, id, x, y){ if (!id || !UNITS[id]) return null; var u = Game.spawnUnitAt(pl, id, x, y); if (u) made.push(u); return u; }
+    stand("speechSynthesis", fake); stand("SpeechSynthesisUtterance", Utt);
+    Sfx = SfxT;
+    Game.alert = function(m){ rail.push(String(m)); return GA.apply(this, arguments); };
+    A.reset(); A.setClock(function(){ return now; });
+    try {
+      chk("the stand-in speech engine is the one the announcer sees", W.speechSynthesis === fake && W.SpeechSynthesisUtterance === Utt, "");
+
+      /* ---- 1. a clear female voice, by name, on every platform ---- */
+      var cv1 = A.chooseVoice(VOICES, "eva", null), cr1 = A.chooseVoice(VOICES, "crew", cv1.voice);
+      chk("macOS: the announcer is Samantha, a known female voice, over Alex, Daniel and the novelty Albert",
+          cv1.voice && cv1.voice.name === "Samantha" && cv1.named, cv1.voice ? cv1.voice.name : "none");
+      chk("and the crews are Daniel, a known male voice - never hers",
+          cr1.voice && cr1.voice.name === "Daniel" && cr1.voice !== cv1.voice, cr1.voice ? cr1.voice.name : "none");
+      var WIN = [ { name:"Microsoft David - English (United States)", lang:"en-US" }, { name:"Microsoft Zira - English (United States)", lang:"en-US" },
+                  { name:"Microsoft Mark - English (United States)", lang:"en-US" } ];
+      var cw = A.chooseVoice(WIN, "eva", null), crw = A.chooseVoice(WIN, "crew", cw.voice);
+      chk("Windows: Zira for the base, David for the crews", cw.voice && /Zira/.test(cw.voice.name) && crw.voice && /David/.test(crw.voice.name),
+          (cw.voice ? cw.voice.name : "none") + " / " + (crw.voice ? crw.voice.name : "none"));
+      var CHR = [ { name:"Google Deutsch", lang:"de-DE" }, { name:"Google UK English Male", lang:"en-GB" },
+                  { name:"Google US English", lang:"en-US" }, { name:"Google UK English Female", lang:"en-GB" } ];
+      var cc = A.chooseVoice(CHR, "eva", null), crc = A.chooseVoice(CHR, "crew", cc.voice);
+      chk("Chrome's own voices: Google US English for the base, Google UK English Male for the crews",
+          cc.voice && cc.voice.name === "Google US English" && crc.voice && crc.voice.name === "Google UK English Male",
+          (cc.voice ? cc.voice.name : "none") + " / " + (crc.voice ? crc.voice.name : "none"));
+      var ce = A.chooseVoice([ { name:"Samantha", lang:"en-US" }, { name:"Samantha (Enhanced)", lang:"en-US" } ], "eva", null);
+      var cn = A.chooseVoice([ { name:"Microsoft Zira - English (United States)", lang:"en-US" }, { name:"Microsoft Aria Online (Natural) - English (United States)", lang:"en-US" } ], "eva", null);
+      chk("a better build is preferred: Samantha (Enhanced) over Samantha, Edge's Aria (Natural) over Zira",
+          ce.voice && ce.voice.name === "Samantha (Enhanced)" && cn.voice && /Aria/.test(cn.voice.name),
+          (ce.voice ? ce.voice.name : "none") + " / " + (cn.voice ? cn.voice.name : "none"));
+      var cf = A.chooseVoice([ { name:"Fred", lang:"en-US" }, { name:"Whisper", lang:"en-US" }, { name:"Voice 7", lang:"en-US" } ], "eva", null);
+      chk("with no known female voice: the best English voice that is not a known male or novelty one, marked a fallback",
+          cf.voice && cf.voice.name === "Voice 7" && !cf.named && A.delivery.fallbackPitch > A.delivery.pitch, cf.voice ? cf.voice.name : "none");
+
+      /* ---- 2. the delivery ---- */
+      var n0 = st.spoken.length, s0 = A.say("construction_complete");
+      var u0 = st.spoken[n0];
+      chk("\"Construction complete.\" is spoken at once, in Samantha's voice, calm and clipped, at the player's volume, after the key-up chirp",
+          s0 === "Construction complete." && !!u0 && u0.text === s0 && u0.voice === VOICES[3] && u0.pitch === A.delivery.pitch &&
+          u0.rate >= 1 && u0.rate <= 1.15 && u0.volume === 1 && chirps === 1,
+          u0 ? "voice " + (u0.voice && u0.voice.name) + ", pitch " + u0.pitch + ", rate " + u0.rate + ", volume " + u0.volume + ", chirps " + chirps : "nothing spoken");
+
+      /* ---- 3. the arbiter ---- */
+      var n1 = st.spoken.length, c1 = st.cancels, ans = A.unit("Moving out", 0.94, 1.0, 0.85);
+      chk("a crew's answer never cuts the base off: while she speaks it waits, and nothing is cancelled",
+          ans === true && st.spoken.length === n1 && st.cancels === c1 && A.state().queue.join() === "crew",
+          "answered " + ans + ", cancels " + (st.cancels - c1) + ", waiting " + A.state().queue.join());
+      adv(0.6); finish();
+      var ua = st.spoken[st.spoken.length - 1];
+      chk("and when she finishes inside a second, the crew answers - in Daniel's voice, at its own pitch and volume, with no key-up",
+          !!ua && ua.text === "Moving out" && ua.voice === VOICES[1] && ua.pitch === 0.94 && ua.volume === 0.85 && chirps === 1,
+          ua ? ua.text + " / " + (ua.voice && ua.voice.name) + ", pitch " + ua.pitch + ", chirps " + chirps : "silent");
+      finish(); adv(5);
+      A.say("unit_ready"); var n1b = st.spoken.length; A.unit("Wilco", 1, 1.16, 0.85); adv(A.crewWait + 0.2); finish();
+      chk("an answer she kept waiting longer than a second is dropped unsaid - it no longer answers the click",
+          st.spoken.length === n1b && A.journal().some(function(j){ return j.key === "crew" && j.how === "dropped:stale"; }), texts(n1b).join(" | "));
+      drain(); adv(5);
+      A.say("construction_complete"); var n1c = st.spoken.length, q1 = A.say("unit_ready");
+      chk("a line while she speaks waits its turn", q1 === "Unit ready." && st.spoken.length === n1c && A.state().queue.join() === "unit_ready", A.state().queue.join());
+      finish();
+      chk("and is said when she finishes", last() === "Unit ready.", last());
+      var c2 = st.cancels; A.say("low_power");
+      chk("a critical line cuts in over a lesser one: \"Low power.\" at once", last() === "Low power." && st.cancels === c2 + 1, last());
+      var c3 = st.cancels; A.say("structure_sold");
+      chk("and nothing less cuts in over a critical one", last() === "Low power." && st.cancels === c3 && A.state().queue.join() === "structure_sold", A.state().queue.join());
+      drain();
+      chk("the queue runs out in order", last() === "Structure sold.", last());
+      /* a refusal answers the player's own action */
+      adv(30); A.say("building"); var c7 = st.cancels, rf1 = A.say("cannot_deploy"), js1 = A.justSaid(0.05);
+      chk("a refusal cuts in over an echo: \"Building.\" gives way to \"Cannot deploy here.\" at once, and the klaxon is told she has it",
+          rf1 === "Cannot deploy here." && last() === rf1 && st.cancels === c7 + 1 && js1 === true, last() + ", justSaid " + js1);
+      drain(); adv(30); A.unit("Yes sir", 1.06, 1.12, 0.85); var c8 = st.cancels; A.say("unable");
+      chk("and over a crew's answer", last() === "Unable to comply." && st.cancels === c8 + 1, last());
+      drain(); adv(30); A.say("construction_complete"); var c9 = st.cancels, rf3 = A.say("cannot_build"), js3 = A.justSaid(0.05);
+      chk("but not over news of its own weight: it waits, and the klaxon is told she has NOT said it, so it sounds",
+          rf3 === "Cannot build there." && last() === "Construction complete." && st.cancels === c9 && js3 === false &&
+          A.state().queue.join() === "cannot_build", "queue " + A.state().queue.join() + ", justSaid " + js3);
+      drain(); var cd4 = A.say("cannot_build"), js4 = A.justSaid(0.05);
+      chk("a refusal she will not repeat (on its cooldown) leaves the klaxon to it", cd4 === null && js4 === false, "justSaid " + js4);
+      drain();
+      /* the crews among themselves */
+      adv(30); var n2 = st.spoken.length, ch2 = chirps;
+      A.unit("Yes sir", 1.06, 1.12, 0.85);
+      var uc = st.spoken[n2];
+      chk("with the channel free a crew answers at once, in its own voice - Daniel, not the announcer's",
+          !!uc && uc.text === "Yes sir" && uc.voice === VOICES[1] && uc.pitch === 1.06 && uc.volume === 0.85 && chirps === ch2,
+          uc ? (uc.voice && uc.voice.name) + ", pitch " + uc.pitch + ", volume " + uc.volume + ", chirps " + chirps : "silent");
+      var c4 = st.cancels; A.unit("Moving", 1.06, 1.12, 0.85);
+      chk("a newer answer replaces an older one, as vox() always did", last() === "Moving" && st.cancels === c4 + 1, last());
+      A.say("building");
+      chk("the base's quiet lines wait for a crew's answer to end", last() === "Moving" && A.state().queue.join() === "building", A.state().queue.join());
+      finish();
+      chk("and then go", last() === "Building.", last());
+      drain(); adv(30); A.unit("Wilco", 1, 1.16, 0.85); var c5 = st.cancels; A.say("base_attack");
+      chk("a critical line cuts a crew's answer off", last() === "Our base is under attack." && st.cancels === c5 + 1, last());
+      drain();
+      /* cooldowns, on the announcer's own clock */
+      adv(5); var ba5 = A.say("base_attack"); adv(16); var ba21 = A.say("base_attack"); drain();
+      chk("\"Our base is under attack\" at most every 20 s", ba5 === null && ba21 !== null, "at +5 s " + ba5 + ", at +21 s " + ba21);
+      var f0 = A.say("insufficient_funds"); drain(); adv(3); var f3 = A.say("insufficient_funds"); adv(3.5); var f6 = A.say("insufficient_funds"); drain();
+      chk("\"Insufficient funds\" at most every 6 s", f0 !== null && f3 === null && f6 !== null, [f0, f3, f6].join(" / "));
+      var l0 = A.say("unit_lost"); drain(); adv(7); var l7 = A.say("unit_lost"); adv(1.5); var l8 = A.say("unit_lost"); drain();
+      chk("\"Unit lost\" at most every 8 s", l0 !== null && l7 === null && l8 !== null, [l0, l7, l8].join(" / "));
+      /* stale lines, the cooldown they give back, and the order they go in */
+      adv(30); A.say("construction_complete"); A.say("repairing"); adv(3.5); var n3 = st.spoken.length; finish();
+      chk("a line that waited past its time is dropped unsaid (\"Repairing\" 3.5 s late)",
+          st.spoken.length === n3 && A.state().queue.length === 0 && A.journal().some(function(j){ return j.key === "repairing" && j.how === "dropped:stale"; }),
+          texts(n3).join(" | "));
+      adv(1); var rp2 = A.say("repairing"); drain();
+      chk("and gives its cooldown back: nobody heard it, so the next \"Repairing\" is said", rp2 === "Repairing." && last() === "Repairing.", String(rp2));
+      adv(30); A.say("construction_complete"); A.say("cancelled"); A.say("radar_offline"); var n4 = st.spoken.length; drain();
+      chk("waiting lines go most urgent first", texts(n4).join(" | ") === "Radar offline. | Cancelled.", texts(n4).join(" | "));
+      adv(30); A.say("construction_complete");
+      ["cancelled", "repairing", "structure_sold", "unit_ready", "radar_online", "enemy_captured", "yard_packing"].forEach(function(k){ A.say(k); });
+      var qn = A.state().queue;
+      chk("the queue is short, and a flood keeps the most urgent", qn.length === 4 && qn.every(function(k){ return A.line(k).p === A.tiers.NORM; }), qn.join());
+      drain();
+      /* a refused order, in the words of the rule that refused it */
+      var rmap = [A.refusal("INSUFFICIENT FUNDS"), A.refusal("INSUFFICIENT FUEL (12/40 bbl)"), A.refusal("REQUIRES RESEARCH LAB"), A.refusal("QUEUE FULL"), A.refusal("")];
+      adv(30); var rs = A.say("refused", null, "INSUFFICIENT FUEL (0/40 bbl)"); drain();
+      chk("a refusal says money or fuel when that is the rule's reason, and \"Unable to comply\" for anything else",
+          rmap.join() === "insufficient_funds,insufficient_fuel,unable,unable,unable" && rs === "Insufficient fuel.", rmap.join() + " / " + rs);
+
+      /* ---- 4. the switch, mute and volume ---- */
+      adv(30); A.unit("Stand by", 1, 1, 0.85); var c10 = st.cancels;
+      A.setPrefs({ eva: false }, false); var n5 = st.spoken.length, off = A.say("unit_ready");
+      chk("the announcer switch: off, she says nothing - and a crew's answer in progress is not cut off",
+          off === null && st.spoken.length === n5 && !A.enabled && st.cancels === c10 && A.state().current === "crew", "current " + A.state().current);
+      finish();
+      A.unit("Yes sir", 1.06, 1.12, 0.85);
+      chk("and the crews still answer - the switch is hers, not theirs", last() === "Yes sir", last());
+      finish(); A.setPrefs({ eva: true }, false); lvl = 0; var mute = A.say("unit_ready");
+      chk("muted, she says nothing", mute === null && st.spoken.length === n5 + 1, "");
+      lvl = 0.5; A.say("unit_ready"); var uv = st.spoken[st.spoken.length - 1];
+      chk("at half volume, she speaks at half volume", !!uv && uv.text === "Unit ready." && uv.volume === 0.5, uv ? String(uv.volume) : "silent");
+      lvl = 1; A.unit("Wilco", 1, 1.16, 0.85); A.hushUnits();
+      chk("the crews switched off: an answer waiting behind her goes with them, and she is not cut off",
+          A.state().queue.length === 0 && A.state().current === "unit_ready", A.state().queue.join() + " / " + A.state().current);
+      var c6 = st.cancels; A.hush();
+      chk("mute takes the word out of her mouth (Sfx.setEnabled(false) calls hush)", st.cancels === c6 + 1 && !A.state().current, "");
+
+      /* ---- 5. the other side never speaks ---- */
+      adv(30); var n6 = st.spoken.length, ai1 = A.say("unit_ready", E), ai2 = A.say("structure_lost", E.buildings[0] || E);
+      var eq = null;
+      for (var bid in BUILDINGS){ var d1 = BUILDINGS[bid]; if (!(d1.cost > 0) || d1.base || E.lockReason(d1)) continue; if (E.enqueue("building", bid)) { eq = bid; break; } }
+      chk("a commander's production and losses are not read out", ai1 === null && ai2 === null && st.spoken.length === n6 && !has("building"),
+          (eq ? "the commander queued a " + eq + " and nothing was said" : "the commander had nothing to queue"));
+
+      /* ---- 6. the event sites, driven for real ---- */
+      adv(30); asked.length = 0; var n7 = st.spoken.length;
+      var bq = null;
+      /* a structure that costs something - the first priced card the player may queue */
+      for (var bid2 in BUILDINGS){ var d2 = BUILDINGS[bid2]; if (d2.cat !== "building" || !(d2.cost > 0) || d2.base || P.lockReason(d2)) continue; if (P.enqueue("building", bid2)) { bq = bid2; break; } }
+      drain();
+      var iq = null, rif = Game.unitOf(P, "rifle");
+      if (rif && !P.lockReason(UNITS[rif]) && P.enqueue("infantry", rif)) iq = rif;
+      drain();
+      if (bq) P.cancel("building", bq);
+      drain();
+      chk("a card queued says \"Building\" (\"Training\" for infantry), and a card cancelled says \"Cancelled\"",
+          !!bq && texts(n7)[0] === "Building." && (!iq || texts(n7)[1] === "Training.") && last() === "Cancelled.",
+          (bq || "nothing queued") + ": " + texts(n7).join(" | "));
+      /* a card the player may not have yet: HEAD put its reason on the rail under the klaxon, and said nothing */
+      adv(30); var n7b = st.spoken.length, box = document.getElementById("cards"), lockCard = null, lockWhy = "";
+      UI.refreshCards();
+      if (box && box.children) for (var ci = 0; ci < box.children.length; ci++) {
+        var cd = box.children[ci]; if (cd && cd.classList && cd.classList.contains("lock") && cd.dataset && cd.dataset.kind !== "era" && cd.dataset.kind !== "support") { lockCard = cd; break; } }
+      if (lockCard) {
+        var ldef = lockCard.dataset.kind === "upgrade" ? UPGRADES[lockCard.dataset.id] : lockCard.dataset.kind === "building" || lockCard.dataset.kind === "defense" ? BUILDINGS[lockCard.dataset.id] : UNITS[lockCard.dataset.id];
+        lockWhy = ldef ? (P.lockReason(ldef, lockCard.dataset.kind === "upgrade") || "") : "";
+        rail.length = 0; lockCard.click(); drain();
+      }
+      chk("a card the player cannot have yet: its reason on the rail, and in her words (\"Unable to comply\", or fuel)",
+          !!lockCard && !!lockWhy && texts(n7b).join(" | ") === said(A.refusal(lockWhy)) && rail.indexOf(lockWhy) >= 0,
+          lockCard ? lockWhy + ": " + texts(n7b).join(" | ") : "no locked card on the tab");
+      /* a card refused by a full queue: silent at HEAD, or blamed on money when the cash was under 50 */
+      adv(30); var n7c = st.spoken.length, openCard = null, bqq = P.queues.building;
+      if (box && box.children) for (var cj = 0; cj < box.children.length; cj++) {
+        var ck = box.children[cj]; if (ck && ck.dataset && ck.dataset.kind === "building" && !ck.classList.contains("lock") && !P.readyItem("building", ck.dataset.id)) { openCard = ck; break; } }
+      if (openCard) {
+        var fillDef = BUILDINGS[openCard.dataset.id];
+        while (bqq.items.length + bqq.ready.length < 6) bqq.items.push({ id: openCard.dataset.id, def: fillDef, paid: 0 });
+        var cashQ = P.cash; P.cash = 10; rail.length = 0; openCard.click(); drain(); P.cash = cashQ;
+      }
+      chk("a card refused because its queue is full: \"QUEUE FULL\" on the rail and \"Unable to comply\" - never \"Insufficient funds\", whatever the cash",
+          !!openCard && texts(n7c).join(" | ") === "Unable to comply." && rail.indexOf("QUEUE FULL") >= 0 && rail.indexOf("INSUFFICIENT FUNDS") < 0,
+          openCard ? texts(n7c).join(" | ") + " / rail " + rail.join(" | ") : "no open structure card");
+      put(bqq.items, qs0.building.items);
+      /* starved of money, and a line with no factory */
+      adv(30); var n8 = st.spoken.length, cashS = P.cash;
+      if (bq && P.enqueue("building", bq)) {
+        P.cash = 0; P.updateQueues(CFG.DT); P.cash = cashS; drain();
+        P.cancel("building", bq); drain();
+      }
+      chk("production starved of money: \"Insufficient funds\"", has("insufficient_funds") && texts(n8).indexOf("Insufficient funds.") >= 0, texts(n8).join(" | "));
+      var hk = ["naval", "aircraft", "vehicle", "infantry"].filter(function(k){ return P.queues[k] && P.prodSpeed(k) <= 0; })[0];
+      adv(30); var n9 = st.spoken.length;
+      if (hk) {
+        var hid = null; for (var uid in UNITS) if (UNITS[uid].cat === (hk === "naval" ? "naval" : hk)) { hid = uid; break; }
+        P.queues[hk].items.push({ id: hid, def: UNITS[hid], paid: 0 });
+        var cashH = P.cash; P.cash = 0; P.updateQueues(CFG.DT); P.updateQueues(CFG.DT); P.cash = cashH; drain();
+      }
+      chk("a queue whose factory is gone: \"Production on hold\", once", !hk || (texts(n9).filter(function(t){ return t === "Production on hold."; }).length === 1),
+          hk ? hk + ": " + texts(n9).join(" | ") : "every line has its factory in the shared match");
+      /* off the line */
+      adv(30); var n10 = st.spoken.length;
+      if (bq) { P.onProduced("building", { id: bq, def: BUILDINGS[bq], paid: 0 }); drain(); P.queues.building.ready.pop(); }
+      if (!P.hasBuilding("barracks")) build(P, "barracks");     // somewhere for a rifleman to come out of
+      var uk = P.hasBuilding("barracks") ? "infantry" : P.hasBuilding("factory") ? "vehicle" : null;
+      var uid2 = uk === "infantry" ? rif : uk ? Game.unitOf(P, "ifv") || Game.unitOf(P, "mbt") : null;
+      var pu0 = P.units.slice(), ran = false;
+      if (uid2 && UNITS[uid2] && !UNITS[uid2].oil) {
+        ran = true; P.onProduced(uk, { id: uid2, def: UNITS[uid2], paid: 0 }); drain();
+        P.units.forEach(function(u){ if (pu0.indexOf(u) < 0) made.push(u); });
+      }
+      chk("a structure finished: \"Construction complete\"; a unit off the line: \"Unit trained\" / \"Unit ready\"",
+          texts(n10)[0] === "Construction complete." && (!ran || /^Unit (trained|ready)\.$/.test(last())),
+          texts(n10).join(" | ") + (ran ? "" : " (no factory to put a unit out of)"));
+      /* a rig that cannot unfold, and a structure that cannot go there */
+      adv(30); var n11 = st.spoken.length;
+      var yard = P.buildings.filter(function(b){ return !b.dead && b.def.id === "conyard" && b.buildProgress >= 1; })[0];
+      var rigId = yard ? Game.rigFor(yard) : null, rig = null;
+      if (yard && rigId) {
+        rig = unit(P, rigId, yard.x, yard.y);
+        if (rig) { rig.x = yard.x; rig.y = yard.y; sel([rig]); key("d"); drain(); }
+      }
+      chk("a rig told to unfold where it cannot: \"Cannot deploy here\"", !!rig && has("cannot_deploy") && texts(n11).indexOf("Cannot deploy here.") >= 0 && !rig.dead,
+          rig ? texts(n11).join(" | ") : "no yard to stand a rig on");
+      adv(30); var n12 = st.spoken.length;
+      if (yard && cvs) {
+        inp.placing = "power"; inp.placeKind = "building"; inp.placeTx = yard.tx; inp.placeTy = yard.ty;
+        var ev = { type: "mousedown", button: 0, clientX: 5, clientY: 5, shiftKey: false, ctrlKey: false, metaKey: false };
+        if (typeof __listeners !== "undefined") cvs.dispatchEvent(ev); else cvs.dispatchEvent(new MouseEvent("mousedown", ev));
+        drain();
+      }
+      chk("a structure put down on top of the yard: \"Cannot build there\"", has("cannot_build") && texts(n12).indexOf("Cannot build there.") >= 0, texts(n12).join(" | "));
+      inp.placing = null;
+      /* a field engineer's obstacle, worked on open ground: refused by the
+         ground (Game.canPlace stood in to say no), then by an empty till */
+      adv(30); var n12b = st.spoken.length, obs = "sandbag", ofree = BUILDINGS[obs] ? spot(P, obs, 6) : null, fe = null;
+      if (ofree) {
+        var ox = (ofree.x + 0.5) * T, oy = (ofree.y + 0.5) * T, cp0 = Game.canPlace, cashO = P.cash;
+        fe = unit(P, rif, ox, oy);
+        if (fe) {
+          try { Game.canPlace = function(){ return false; }; fe.x = ox; fe.y = oy; fe.order = { type: "emplace", what: obs, x: ox, y: oy, workT: 999 }; fe.update(CFG.DT); }
+          finally { Game.canPlace = cp0; }
+          drain(); adv(30);
+          P.cash = 0; fe.x = ox; fe.y = oy; fe.order = { type: "emplace", what: obs, x: ox, y: oy, workT: 999 }; fe.update(CFG.DT); P.cash = cashO; drain();
+        }
+      }
+      chk("a field engineer's obstacle refused: \"Cannot build there\" where the ground says no, \"Insufficient funds\" with an empty till",
+          !!fe && texts(n12b).join(" | ") === "Cannot build there. | Insufficient funds.", fe ? texts(n12b).join(" | ") : "no ground for an obstacle");
+      /* the base under fire, a hauler under fire, a barrier under fire */
+      adv(30); var n13 = st.spoken.length, pw = build(P, "power"), bag = build(P, "sandbag");
+      var hv = unit(P, "harvester", P.homeX + T * 4, P.homeY + T * 4);
+      if (pw) Threat.reportDamage(1, pw, null);
+      drain(); adv(30);
+      var bagAsked = asked.length; if (bag) Threat.reportDamage(1, bag, null);
+      var bagQuiet = asked.length === bagAsked;
+      if (hv) Threat.reportDamage(1, hv, null);
+      drain();
+      chk("our structure hit: \"Our base is under attack\"; our hauler hit: \"Ore hauler under attack\"; a sandbag hit: not a word",
+          !!pw && !!hv && texts(n13).join(" | ") === "Our base is under attack. | Ore hauler under attack." && (!bag || bagQuiet), texts(n13).join(" | "));
+      /* a repair ordered on it, through the canvas in repair mode */
+      adv(30); var n13b = st.spoken.length;
+      if (pw) { var hp0 = pw.hp; pw.hp = pw.maxHp * 0.5; UI.setRepair(true); clickAt(pw.x, pw.y); UI.setRepair(false); drain();
+        var repd = pw.repairing; pw.repairing = false; pw.hp = hp0; }
+      chk("a damaged structure put under repair: \"Repairing\"", !!pw && repd === true && texts(n13b).join(" | ") === "Repairing.", texts(n13b).join(" | "));
+      /* sold, lost, captured */
+      Threat.reportLoss = function(){ return true; };        // no banner, no warning clock moved
+      adv(30); var n14 = st.spoken.length, cash1 = P.cash;
+      if (pw) Game.sellBuilding(pw);
+      drain(); P.cash = cash1;
+      var lostB = build(P, "power"); if (lostB) Game.onDeath(lostB);
+      drain();
+      var eb = build(E, "power");
+      if (eb) { Game.captureBuilding(eb, P); drain(); adv(10); Game.captureBuilding(eb, E); drain(); }
+      chk("sold: \"Structure sold\"; lost: \"Structure lost\"; captured from them, and by them",
+          texts(n14).join(" | ") === "Structure sold. | Structure lost. | Enemy structure captured. | Structure captured by the enemy.",
+          texts(n14).join(" | "));
+      adv(30); var n15 = st.spoken.length, gi = unit(P, rif, P.homeX + T * 5, P.homeY + T * 5);
+      if (gi) { gi.dead = true; Game.onDeath(gi); } drain();
+      if (hv) { hv.dead = true; Game.onDeath(hv); } drain();
+      chk("a rifleman killed: \"Unit lost\"; a hauler killed: \"Ore hauler lost\"",
+          texts(n15).join(" | ") === "Unit lost. | Ore hauler lost.", texts(n15).join(" | "));
+      /* the grid and the dome */
+      adv(30); var n16 = st.spoken.length;
+      var dome = (P.hasBuilding("radar") && (!Game.domeLit || Game.domeLit(P))) ? null : build(P, "radar");
+      /* a full grid to start from: a stand-in generator where the shared match runs short */
+      var gen = function(pl){ var g = { id: -880 - fakes.length, kind: "building", dead: false, buildProgress: 1, owner: pl, def: { id: "_gen88", power: 5000 } };
+        pl.buildings.push(g); fakes.push(g); return g; };
+      if (P.powerRatio() < 1) gen(P);
+      A.watch(Game, true);
+      var load = { id: -88, kind: "building", dead: false, buildProgress: 1, owner: P, def: { id: "_load88", power: -(P.powerOut() * 2 + 100) } };
+      P.buildings.push(load); A.watch(Game, true); drain();
+      P.buildings.splice(P.buildings.indexOf(load), 1); adv(30); A.watch(Game, true); drain();
+      var grid = texts(n16).join(" | ");
+      chk("the grid falls short: \"Low power\" and \"Radar offline\"; it comes back: \"Power restored\" and \"Radar online\"",
+          grid === "Low power. | Radar offline. | Power restored. | Radar online.", grid + (dome ? " (a dome was put up for it)" : ""));
+      /* ore with nowhere to go */
+      adv(30); var n16b = st.spoken.length, rfy = P.buildings.filter(function(b){ return !b.dead && b.def.id === "refinery" && b.buildProgress >= 1; })[0] || build(P, "refinery");
+      var hv2 = rfy ? unit(P, "harvester", rfy.x, rfy.y) : null;
+      if (hv2) { var dk = hv2.dockFor(rfy), cashV = P.cash; hv2.x = dk.x; hv2.y = dk.y; hv2.load = CFG.HARVEST_LOAD || 100; hv2.warnedSilo = false;
+        hv2.order = { type: "return" }; P.cash = P.storageCap(); hv2.updateHarvester(CFG.DT); P.cash = cashV; drain(); }
+      chk("a hauler that lands ore the vault cannot hold: \"Silos needed\"", !!hv2 && texts(n16b).join(" | ") === "Silos needed.", hv2 ? texts(n16b).join(" | ") : "no refinery");
+      /* a silo ready - ours, and theirs, whose clock this game makes public */
+      adv(30); var n17 = st.spoken.length, ps = build(P, "nukesilo"), es = build(E, "nukesilo");
+      gen(P); gen(E);                                         // a silo charges only on a full grid
+      if (ps) { ps.swCharge = 1 - 1e-7; ps.swWarned = false; ps.update(CFG.DT); drain(); }
+      if (es) { es.swCharge = 1 - 1e-7; es.swWarned = false; es.update(CFG.DT); drain(); }
+      chk("our silo charged: \"Nuclear missile ready\"; theirs: \"Warning. Enemy nuclear missile armed\"",
+          !!ps && !!es && texts(n17).join(" | ") === "Nuclear missile ready. | Warning. Enemy nuclear missile armed.", texts(n17).join(" | "));
+      /* the sidebar's silo row: ours clicked before it is charged, and the enemy clock at thirty seconds */
+      adv(30); var n17b = st.spoken.length, swEl = null, es30 = "";
+      if (ps && es && UI.frame) {
+        ps.swCharge = 0.5; var chg = es.def.superweapon.charge; es.swCharge = 1 - 19.5 / chg; es._warn30 = false;
+        UI.frame(CFG.DT); drain();
+        es30 = texts(n17b).join(" | ");
+        var swb = document.getElementById("swbar");
+        if (swb && swb.children) for (var si = 0; si < swb.children.length; si++) if (swb.children[si]._b === ps) swEl = swb.children[si];
+        adv(30); if (swEl) { swEl.click(); drain(); }
+      }
+      chk("the enemy clock at thirty seconds: \"Enemy nuclear missile ready in 20 seconds\"; our silo clicked half charged: \"Silo not ready\"",
+          es30 === "Enemy nuclear missile ready in 20 seconds." && !!swEl && last() === "Silo not ready.", es30 + " / " + last());
+      /* a launch: ours, theirs where seen, theirs where not */
+      Threat.reportLaunch = function(){};
+      adv(30); var n18 = st.spoken.length;
+      var ls = typeof Game.launchSeen === "function";
+      if (ps && es && ls) {
+        ps.swCharge = 1; Game.launchSuperweapon(ps, E.homeX, E.homeY); drain();
+        adv(30); Game.launchSeen = function(){ return true; }; es.swCharge = 1; Game.launchSuperweapon(es, P.homeX, P.homeY); drain();
+        adv(30); Game.launchSeen = function(){ return false; }; es.swCharge = 1; Game.launchSuperweapon(es, P.homeX, P.homeY); drain();
+        Game.launchSeen = seen0;
+      }
+      chk("our launch: \"Nuclear missile launched\"; theirs, seen: \"Warning. Nuclear launch detected\"; theirs, unseen: nothing",
+          ls && texts(n18).join(" | ") === "Nuclear missile launched. | Warning. Nuclear launch detected.", texts(n18).join(" | "));
+      /* what counts as seen: the player's own sensors, and nothing else */
+      if (ls && es) {
+        var vt = Game.visibleTo, ew = Game.ewCovers, rc = Game.radarCovers, aim = { x: P.homeX, y: P.homeY };
+        var mk = function(v, e2, rs, ra){ Game.visibleTo = function(){ return v; }; Game.ewCovers = function(){ return e2; };
+          Game.radarCovers = function(p, x, y){ return (x === es.x && y === es.y) ? rs : ra; }; return Game.launchSeen(P, es, aim.x, aim.y); };
+        var truth = [mk(false,false,false,false), mk(true,false,false,false), mk(false,true,false,false), mk(false,false,true,false), mk(false,false,false,true)];
+        Game.visibleTo = vt; Game.ewCovers = ew; Game.radarCovers = rc;
+        chk("a launch is seen by eye, by an early-warning array over the silo, or by a radar over the silo or the aim point - and by nothing else",
+            truth.join() === "false,true,true,true,true", truth.join());
+      }
+      /* the era step refused, from the bar over the sidebar */
+      adv(30); var n18b = st.spoken.length, eraEl = document.getElementById("erabar"), eraWhy = null;
+      if (eraEl && P.eraStepInfo && P.eraStepInfo()) {
+        if (!P.hasBuilding("lab")) build(P, "lab");
+        var cashR = P.cash, oilR = P.oil; P.oil = 0; P.cash = 0;
+        eraWhy = P.eraLockReason();
+        if (eraWhy) { rail.length = 0; eraEl.click(); drain(); }
+        P.cash = cashR; P.oil = oilR;
+      }
+      chk("the era step refused: its reason on the rail and in her words (fuel, money or \"Unable to comply\")",
+          !eraWhy ? !(P.eraStepInfo && P.eraStepInfo()) : texts(n18b).join(" | ") === said(A.refusal(eraWhy)) && rail.indexOf(eraWhy) >= 0 && P.era === era0[0] && !(P.eraProgress > 0),
+          eraWhy ? eraWhy + ": " + texts(n18b).join(" | ") : "no era step left in this match");
+      /* a fuel lot the till cannot pay for, and a fuel convoy in */
+      adv(30); var n19 = st.spoken.length;
+      if (!P.hasBuilding("refinery")) build(P, "refinery");
+      var fb = document.getElementById("r-fuelbuy"), fq = null;
+      if (fb && fb.onclick && P.fuelQuote) { var cashF = P.cash; P.cash = 0; fq = P.fuelQuote(CFG.FUEL_MKT_HUD_LOT || 50); if (!fq.ok) { fb.onclick(); drain(); } P.cash = cashF; }
+      chk("a fuel lot that cannot be bought: \"Insufficient funds\" (or \"Unable to comply\" for another reason)",
+          !!fq && !fq.ok && texts(n19).join(" | ") === said(A.refusal(fq.why)), fq ? fq.why + ": " + texts(n19).join(" | ") : "no fuel button");
+      adv(30); var n19b = st.spoken.length;
+      if (!P.fuelInbound) P.fuelInbound = [];
+      P._fuelWait = 0; P.fuelInbound.push({ bbl: 1, due: Game.time - 1, cost: 0 }); P.receiveFuel(); drain();
+      chk("a fuel convoy unloaded: \"Fuel convoy arrived\"", last() === "Fuel convoy arrived." && texts(n19b).length === 1, texts(n19b).join(" | "));
+      /* an airframe delivered to a deck: craned aboard, or flying out to it */
+      adv(30); var n19c = st.spoken.length, airId = null;
+      for (var aid in UNITS) if (UNITS[aid].cat === "aircraft") { airId = aid; break; }
+      if (airId && Game.workDeckOrders) {
+        var ship = { owner: P, def: { name: "Test Deck" }, deckQ: [], wing: function(){ return []; }, deckSlots: function(){ return 2; }, x: P.homeX, y: P.homeY };
+        Game.deliverToDeck = function(){};
+        Game.deckDelivery = function(){ return { how: "yard" }; };
+        ship.deckQ.push({ id: airId, paid: 1e9, done: true, t: 0, oiled: true }); Game.workDeckOrders(ship, 1); drain();
+        adv(30); Game.deckDelivery = function(){ return { how: "fly", from: ship }; };
+        ship.deckQ.push({ id: airId, paid: 1e9, done: true, t: 0, oiled: true }); Game.workDeckOrders(ship, 1); drain();
+        Game.deckDelivery = dd0; Game.deliverToDeck = dtd0;
+      }
+      chk("an airframe delivered to a deck: \"Aircraft craned aboard\", then \"Aircraft flying out to the deck\"",
+          texts(n19c).join(" | ") === "Aircraft craned aboard. | Aircraft flying out to the deck.", texts(n19c).join(" | "));
+
+      /* ---- 7. the end of the battle, on seats of its own ----
+         As [44] does: the real rule (the suite holds it as suiteCheckVictory)
+         over a roster of two test seats, the player's for this section, with
+         nothing ticking; the rail and the end screen are stand-ins. Each
+         seat's production and rigs are read through its own methods, so no
+         ground is taken. */
+      adv(30); var n20 = st.spoken.length, X = null, K = null, endShown = [];
+      try {
+        X = new Player(Game, roster0.length, P.faction, 0, false); X.team = 881; X.label = "TEST SEAT 88"; X.banned = {};
+        K = new Player(Game, roster0.length + 1, E.faction, 0, true); K.team = 882; K.label = "TEST KEEPER 88"; K.banned = {};
+        X.homeX = K.homeX = P.homeX; X.homeY = K.homeY = P.homeY;
+        var fk = function(nm){ return { x: P.homeX, y: P.homeY, def: { name: nm } }; };
+        var xProd = [fk("Yard A"), fk("Yard B")], xRigs = [fk("Rig")], kProd = [fk("Keep")], kRigs = [];
+        X.productionBuildings = function(){ return xProd; }; X.productionRigs = function(){ return xRigs; };
+        K.productionBuildings = function(){ return kProd; }; K.productionRigs = function(){ return kRigs; };
+        Game.players = [X, K]; Game.human = X; Game.over = false;
+        Game.alert = function(m){ rail.push(String(m)); };
+        UI.endGame = function(won){ endShown.push(won); };
+        /* the keeper has nothing to lay down, and the real surrender sweeps
+           the shared board's dead as it goes */
+        Game.surrender = function(){ return 0; };
+        suiteCheckVictory();                                   // two standing: the warning is armed
+        xProd = [xProd[0]]; suiteCheckVictory(); drain();      // down to the last one
+        adv(30); xProd = []; X.packedT = -1e9; suiteCheckVictory(); drain();   // the base falls, a rig is left
+        adv(30); X.rigDeadline = Game.time + 20; X.rigWarned = false; suiteCheckVictory(); drain();
+        adv(30); xProd = [fk("Yard C")]; suiteCheckVictory(); kProd = []; suiteCheckVictory(); drain();   // theirs falls: victory
+        var winT = texts(n20);
+        Game.over = false; K.defeated = false; kProd = [fk("Keep")];
+        adv(30); var n21 = st.spoken.length; xProd = []; xRigs = []; suiteCheckVictory(); drain();       // ours falls with no rig: defeat
+        var loseT = texts(n21);
+        chk("the last production facility, the rig clock, its thirty-second warning and victory are said; defeat on a fall with no rig",
+            winT.join(" | ") === "Warning. Last production facility. | " + said("rig_clock", Math.round(CFG.RIG_GRACE)) + " | " + said("rig_30", 20) + " | Victory. The field is ours." &&
+            loseT.join(" | ") === "The battle is lost." && endShown.join() === "true,false",
+            winT.join(" | ") + " || " + loseT.join(" | ") + " || end screens " + endShown.join());
+      } finally {
+        Game.players = roster0; Game.human = human0; Game.over = over0; UI.endGame = endG0; Game.surrender = sur0;
+        Game.alert = function(m){ rail.push(String(m)); return GA.apply(this, arguments); };
+      }
+
+      /* ---- 8. a new battle, or a save loaded over this one, starts her fresh ---- */
+      adv(30); A.say("construction_complete"); A.say("unit_ready"); A.watch(Game, true);
+      var ini = String(Game.init).indexOf("Announcer.reset") >= 0;
+      A.reset(); A.setClock(function(){ return now; });
+      var fresh = A.state(), again = A.say("unit_ready");
+      chk("Game.init resets the announcer (save.js loads through it), and a reset leaves nothing queued, no cooldown and no line in her mouth",
+          ini && fresh.queue.length === 0 && !fresh.current && again === "Unit ready." && A.journal().length === 1,
+          "init calls reset: " + ini + ", queue " + fresh.queue.join() + ", then " + again);
+      drain();
+    } catch(ex) {
+      chk("[88] runs to the end", false, String(ex) + " " + String(ex.stack || "").split("\n")[0]);
+    } finally {
+      Sfx = S0; Game.alert = GA; A.reset(); A.setClock(null); A.setPrefs(prefs0, false);
+      unstand("speechSynthesis", dS); unstand("SpeechSynthesisUtterance", dU);
+      Threat.reportLoss = repL; Threat.reportLaunch = repLaunch; Game.launchSeen = seen0;
+      Game.players = roster0; Game.human = human0; Game.over = over0; UI.endGame = endG0; Game.deckDelivery = dd0; Game.deliverToDeck = dtd0; Game.surrender = sur0;
+      fakes.forEach(function(g){ var a = g.owner.buildings, j = a.indexOf(g); if (j >= 0) a.splice(j, 1); });
+      made.forEach(function(e){
+        if (e.kind === "building" && !e.dead) Game.removeBuilding(e);
+        e.dead = true;
+        var i = Game.entities.indexOf(e); if (i >= 0) Game.entities.splice(i, 1);
+        [P.units, E.units, P.buildings, E.buildings].forEach(function(a){ var j = a.indexOf(e); if (j >= 0) a.splice(j, 1); });
+      });
+      for (var qk3 in qs0){ var q = P.queues[qk3], s0q = qs0[qk3]; put(q.items, s0q.items); if (s0q.ready) put(q.ready, s0q.ready); q.prog = s0q.prog; if (s0q.held === undefined) delete q.held; else q.held = s0q.held; }
+      for (var qk4 in qE0) put(E.queues[qk4].items, qE0[qk4]);
+      P.cash = cash0; E.cash = cashE; P.oil = oil0; P.era = era0[0]; P.eraProgress = era0[1]; P.eraTarget = era0[2];
+      if (oilIn0 === null) delete P.oilIn; else backTo(P.oilIn, oilIn0);
+      if (fuel0) put(P.fuelInbound, fuel0); else if (!hadFuel) delete P.fuelInbound;
+      P._fuelWait = fw0[0]; P._fuelWaitSaid = fw0[1];
+      broke0.forEach(function(b){ if (b[1] === undefined) delete b[0].broke; else b[0].broke = b[1]; });
+      if (ev0) put(Game.events, ev0);
+      put(Game.deferred, def0); put(Combat.effects, fx0); put(Combat.projectiles, prj0);
+      sel(sel0.filter(function(e){ return !e.dead; }));
+      inp.placing = place0[0]; inp.placeKind = place0[1]; inp.placeTx = place0[2]; inp.placeTy = place0[3];
+      if (UI.setRepair) UI.setRepair(rep0);
+      backTo(P.stats, sP); backTo(E.stats, sE);
+      try { UI.refreshCards(); } catch(e) {}
+    }
+    chk("the shared match is as it was: its structures and units, queues, cash, oil, era, books, events, deferred calls, effects; speech, Sfx, the roster and the rail put back",
+        Sfx === S0 && Game.alert === GA && W.speechSynthesis !== fake && Game.entities.length === ents0 &&
+        Game.players === roster0 && Game.human === human0 && Game.over === over0 && Game.surrender === sur0 && Game.canPlace === cpKeep &&
+        P.buildings.length === pB0.length && P.buildings.every(function(b, i){ return pB0[i] === b; }) &&
+        E.buildings.length === eB0.length && P.units.length === pU0.length && E.units.length === eU0.length &&
+        P.cash === cash0 && P.oil === oil0 && P.era === era0[0] && keep(P.stats) === sP && keep(E.stats) === sE &&
+        Game.deferred.length === def0.length && Combat.effects.length === fx0.length &&
+        P.queues.building.items.length === qs0.building.items.length && made.every(function(e){ return e.dead; }),
+        "entities " + ents0 + " -> " + Game.entities.length);
   })();
   }
 

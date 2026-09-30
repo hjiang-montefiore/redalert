@@ -2369,6 +2369,29 @@ var Sfx = (function () {
          the other cues and the promised variation was half a promise. */
       tick(ac, o, t + 0.002, 900 * v, 3.0, 0.05, 0.09);
     },
+    /* ANNOUNCER KEY-UP, about 115 ms - js/announcer.js lays it in front of
+       every line the base speaks. The words come from speechSynthesis, which
+       is outside this graph and cannot be filtered, so this is where EVA's
+       radio comes from: a squelch break, then a data burst stepping 2.64 ->
+       3.52 -> 2.96 kHz through a radio-band bandpass, and the break closing.
+       The steps are contiguous, so it is heard as ONE event and never as the
+       two separated taps of `order`; and it sits a clear step above `order`,
+       `click` and every selection cue by spectral centroid (a first cut at
+       1.76-2.35 kHz measured 2106 Hz against `order`'s 2085 - its squares
+       carry their harmonics up there), so it is never taken for a click on
+       a unit; under `alarm` in level. tools/audio/check_announcer.js holds
+       all three. */
+    eva: function (ac, o, t) {
+      var g = gainNode(ac, 1), band = bp(ac, 3000, 1.0);
+      g.connect(band); band.connect(o);
+      tick(ac, g, t, 3400, 2.5, 0.022, 0.10);
+      [2640, 3520, 2960].forEach(function (f, i) {
+        var t2 = t + 0.014 + i * 0.024, ov = osc(ac, "triangle", f), lg = gainNode(ac, 0);
+        burst(lg.gain, t2, 0.002, 0.032, 0.16);
+        ov.connect(lg); lg.connect(g); ov.start(t2); ov.stop(t2 + 0.05);
+      });
+      tick(ac, g, t + 0.09, 4000, 1.8, 0.026, 0.05);
+    },
     build:     function (ac, o, t) { beep(ac, o, t, "triangle", 420, 640, 0.006, 0.11, 0.18); },
     ready:     function (ac, o, t) {
       [660, 880, 1100].forEach(function (f, i) { beep(ac, o, t + i * 0.09, "triangle", f, 0, 0.01, 0.12, 0.22); });
@@ -2552,6 +2575,17 @@ var Sfx = (function () {
                so it gets the longest gap in the table */
             : /^under_fire/.test(name) ? 9000
             : /^threat_med|^stealth_pass|^lock_warn/.test(name) ? 2500 : 60;
+    /* The alert rail's klaxon yields to the base's voice: every event site
+       that speaks asks the announcer BEFORE it puts its "bad" line on the
+       rail, so when the words for that event are going out right now they
+       are the announcement, and a klaxon under them would only bury them -
+       one event, one announcement. When her line had to wait behind another
+       (and may go stale there), or she took nothing - off, muted, on
+       cooldown, nothing to say - the klaxon sounds as it always did, so a
+       refusal is never left with neither. The site asks her and puts its
+       line up in one go, so 50 ms covers it, and leaves an unrelated line
+       that happens to land just after hers its klaxon. */
+    if (name === "alarm" && typeof Announcer !== "undefined" && Announcer.justSaid && Announcer.justSaid(0.05)) return;
     if (lastCue[name] && now - lastCue[name] < gap) return;
     lastCue[name] = now;
     var fn = cues[name];
@@ -2838,7 +2872,7 @@ var Sfx = (function () {
   }
   function setEnabled(on) {
     enabled = !!on;
-    if (!enabled) stopEngines();
+    if (!enabled) { stopEngines(); hushSpeech(); }
     applyMix();
   }
   function volume(v) { userVol = clamp(v, 0, 1); applyMix(); }
@@ -2953,6 +2987,19 @@ var Sfx = (function () {
     var line = kind === "order" ? voxPick(VOX_ORDER[cls])
                                 : (voxPick(VOX[role]) || voxPick(VOX_CLASS[cls]));
     if (!line) return null;
+    /* One speech channel, shared with the base's announcer (js/announcer.js).
+       Cancelling it before every answer would cut her off mid-line, so the
+       answer goes through her arbiter, which gives the crews a voice of
+       their own and has an answer wait for her rather than talk over the
+       base. An answer it turns away does not spend the 1.6 s: the next
+       click may still be answered. The path below is for a page that does
+       not load the announcer. */
+    if (typeof Announcer !== "undefined" && Announcer.unit) {
+      var tn = VOX_TONE[cls] || { pitch: 1, rate: 1 };
+      if (!Announcer.unit(line, tn.pitch, tn.rate, clamp(userVol, 0, 1) * 0.85)) return null;
+      voxT = now;
+      return line;
+    }
     voxT = now;
     try {
       var u = new window.SpeechSynthesisUtterance(line);
@@ -2968,7 +3015,35 @@ var Sfx = (function () {
   }
   function voxEnabled(on) {
     voxOn = !!on;
-    if (!voxOn) { try { window.speechSynthesis.cancel(); } catch (e) {} }
+    /* switching the crews off must not cut the base off mid-line */
+    if (!voxOn) {
+      if (typeof Announcer !== "undefined" && Announcer.hushUnits) Announcer.hushUnits();
+      else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+    }
+  }
+
+  /* ========================= THE BASE'S VOICE =========================
+     js/announcer.js speaks for the base. Every event site in js/ reaches it
+     as Sfx.announce(key, side, n) - the object those sites already call for
+     every sound - so a page that does not load the announcer (every frozen
+     harness page) stays silent, and the jsc runner's no-op Sfx swallows it. */
+  function announce(key, who, n) {
+    if (typeof Announcer === "undefined" || !Announcer || !Announcer.say) return null;
+    return Announcer.say(key, who, n);
+  }
+  /* the level the words go out at: the player's volume, and 0 on mute */
+  function voiceLevel() { return enabled ? clamp(userVol, 0, 1) : 0; }
+  /* The key-up in front of a line. Returns how long the words should wait
+     for it: 0 when no running context played it (not yet unlocked by a
+     click, or muted), and then the words go at once. */
+  function chirp() {
+    if (!enabled || !ensure() || !ctx) return 0;
+    play("eva");
+    return ctx.state === "running" ? 0.11 : 0;
+  }
+  function hushSpeech() {
+    if (typeof Announcer !== "undefined" && Announcer && Announcer.hush) { Announcer.hush(); return; }
+    try { window.speechSynthesis.cancel(); } catch (e) {}
   }
 
   return {
@@ -2980,6 +3055,7 @@ var Sfx = (function () {
     updateEngines: updateEngines, stopEngines: stopEngines,
     render: render, describe: describe, stats: stats,
     setEnabled: setEnabled, volume: volume,
+    announce: announce, chirp: chirp, voiceLevel: voiceLevel,
     get ctx() { return ctx; },
     /* the pre-limiter sum, exposed so a test rig can tap the live mix */
     get bus() { return master; },

@@ -4,6 +4,11 @@ var Game = (function () {
 
   G.init = function (opts) {
     G.opts = opts;
+    /* a new battle, or a save loaded over this one (save.js comes through
+       here): the base's voice starts fresh - nothing queued from the old
+       board, no cooldown carried over, and a watcher that has not yet seen
+       this grid or this dome, so its first look only records */
+    if (typeof Announcer !== "undefined" && Announcer.reset) Announcer.reset();
     /* the period this battle is fought in, before anything reads the roster */
     G.era = (typeof ERAS !== "undefined" && ERAS.indexOf(opts.era) >= 0) ? opts.era : "e20";
     /* The two sides start in their own periods. A 1950s army defending against
@@ -904,6 +909,7 @@ var Game = (function () {
     }
     q.shift();
     G.deliverToDeck(ship, it.id, dv);
+    if (p === G.human) Sfx.announce(dv.how === "yard" ? "deck_craned" : "deck_flyout", p);
     if (p === G.human)
       G.alert(def.name.toUpperCase() + (dv.how === "yard"
         ? " CRANED ABOARD " + ship.def.name.toUpperCase()
@@ -1061,7 +1067,7 @@ var Game = (function () {
          arrive here once per binding, all on one tick. Those copies are not
          a second press and have nothing to be told. */
       const echo = b && b.packing && b.packing.t0 === G.time;
-      if (say && b && b.owner === G.human && !echo) { G.alert("CANNOT PACK UP — " + why, "bad"); Sfx.play("sell"); }
+      if (say && b && b.owner === G.human && !echo) { Sfx.announce("cannot_pack"); G.alert("CANNOT PACK UP — " + why, "bad"); Sfx.play("sell"); }
       return false;
     }
     const p = b.owner;
@@ -1076,6 +1082,7 @@ var Game = (function () {
          yard is still up while it folds, and G.rigGrace refills meanwhile),
          which is the number the clock then starts from. */
       const last = p.productionBuildings().length <= 1;
+      Sfx.announce("yard_packing", p);
       G.alert(last ? "PACKING UP THE LAST PRODUCTION FACILITY — THE RIG WILL HAVE " +
                      Math.round(G.rigGrace(p, G.time + CFG.RIG_FOLD)) + "s TO UNFOLD"
                    : "CONSTRUCTION YARD PACKING UP", last ? "bad" : "good");
@@ -1133,7 +1140,7 @@ var Game = (function () {
       if (i >= 0) s[i] = u; else s.push(u);
       u.selected = true;
     }
-    if (p === G.human) { G.alert("CONSTRUCTION YARD PACKED — RIG READY TO MOVE", "good"); Sfx.play("unitready"); }
+    if (p === G.human) { G.alert("CONSTRUCTION YARD PACKED — RIG READY TO MOVE", "good"); Sfx.play("unitready"); Sfx.announce("yard_packed", p); }
     return u;
   }
 
@@ -1197,11 +1204,15 @@ var Game = (function () {
        the same capture twice. Taking one of theirs is a good-news toast,
        which Threat has no rung for and should not have. */
     if (old === G.human) {
+      Sfx.announce("structure_captured", old);
       const T = (typeof Threat !== "undefined" && Threat.reportLoss) ? Threat : null;
       if (T) { if (!T.reportLoss(b, true)) G.alert("STRUCTURE CAPTURED BY ENEMY", "bad", true); }
       else { G.alert("STRUCTURE CAPTURED BY ENEMY", "bad"); G.pingEvent(b.x, b.y, "loss"); }
     } else {
       G.alert("ENEMY STRUCTURE CAPTURED", "good");
+      /* spoken only when it was ours that took it: two commanders trading a
+         block behind the fog is not the player's news */
+      if (newOwner === G.human) Sfx.announce("enemy_captured", newOwner);
       if (newOwner === G.human || G.visibleTo(G.human, b)) G.pingEvent(b.x, b.y, "note");
     }
   };
@@ -1243,7 +1254,7 @@ var Game = (function () {
     b.owner.earn(b.def.cost * CFG.SELL_REFUND * (b.hp / b.maxHp));
     G.removeBuilding(b);
     /* the player hears their own sales, not the enemy's */
-    if (b.owner === G.human) Sfx.play("sell");
+    if (b.owner === G.human) { Sfx.play("sell"); Sfx.announce("structure_sold", b.owner); }
   };
 
   /* Hand a structure to another commander - used when infantry occupy a
@@ -1305,6 +1316,9 @@ var Game = (function () {
       }
       const mine = e.owner === G.human;
       if (mine || !e.owner.isAI || e.owner === G.ai) Sfx.play("explode_big");
+      /* the base's voice, ahead of the rail's line below; a barrier is not a
+         structure worth a word - it dies by the dozen (threat.js isBarrier) */
+      if (mine && e.def.armor !== "wall") Sfx.announce("structure_lost", e);
       /* Losing a structure is the top rung of the warning. An enemy block
          coming down where the player cannot see it is not a warning at all,
          and pinging it would turn the marker into a fog reveal.
@@ -1336,6 +1350,7 @@ var Game = (function () {
       }
     } else {
       if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; Combat.kill(G, c, null); }
+      if (e.owner === G.human) Sfx.announce(e.def.harvester ? "hauler_lost" : "unit_lost", e);
       if (e.owner === G.human && e.def.harvester) G.alert("ORE HAULER LOST", "bad");
       /* A destroyed unit leaves a mark. The damage path pings once every three
          seconds per object and that marker lives 2.5s, so a company wiped out
@@ -2376,10 +2391,28 @@ var Game = (function () {
     Sfx.play(opts.nuke || aoeTiles > 3 ? "explode_big" : "explode");
   };
 
+  /* ---- would this side see a strategic launch? ----
+     The alert rail and the banner warn every side of every launch - "both
+     sides are warned", the silo's own card says so. The base's VOICE is held
+     to what the side's own sensors would give it: the silo in sight, an
+     early-warning array over the silo (G.ewCovers, the sensor the ballistic
+     back-plot uses), or a radar - a dome's or a vehicle's - over the silo or
+     over the aim point, where the warhead comes down. */
+  G.launchSeen = function (p, b, wx, wy) {
+    if (!p || !b) return false;
+    if (b.owner === p) return true;
+    if (G.visibleTo(p, b)) return true;
+    if (G.ewCovers && G.ewCovers(p, b.x, b.y)) return true;
+    return !!(G.radarCovers && (G.radarCovers(p, b.x, b.y) || G.radarCovers(p, wx, wy)));
+  };
+
   G.launchSuperweapon = function (b, wx, wy) {
     const sw = b.def.superweapon;
     if (!sw || b.swCharge < 1) return false;
     b.swCharge = 0;
+    if (b.owner === G.human) Sfx.announce(sw.nuke ? "nuke_launched" : "missile_launched", b.owner);
+    else if (!G.allied(G.human, b.owner) && G.launchSeen(G.human, b, wx, wy))
+      Sfx.announce(sw.nuke ? "nuke_detected" : "missile_detected", G.human);
     /* both sides are warned — there is no surprise nuclear strike */
     UI.alert(sw.alert + (b.owner === G.human ? " — OUTBOUND" : " — INBOUND"),
              b.owner === G.human ? "good" : "bad");
@@ -3444,6 +3477,9 @@ var Game = (function () {
 
     G.updateWeather(dt);
     if (typeof Threat !== "undefined") Threat.update(dt);
+    /* the grid and the dome, watched for the base's voice: low power, power
+       restored, radar online and offline (js/announcer.js) */
+    if (typeof Announcer !== "undefined") Announcer.watch(G);
     G.updateCounterBattery();
     for (const p of G.players) {
       /* the standing budget - see CFG.BASE_INCOME. Every surviving commander,
@@ -3633,6 +3669,7 @@ var Game = (function () {
         p.prodArmed = false;
         if (mine) {
           const rigs = p.productionRigs().length;
+          Sfx.announce("last_facility", p);
           G.alert("LAST PRODUCTION FACILITY — IF THE " + prod[0].def.name.toUpperCase() +
                   " FALLS, " + (rigs ? "A RIG HAS " + Math.round(CFG.RIG_GRACE) + "s TO UNFOLD"
                                      : "THE BATTLE IS LOST"), "bad");
@@ -3665,6 +3702,7 @@ var Game = (function () {
              said its number once; the reminder would say it again next tick */
           p.rigWarned = grace <= 30;
           if (mine) {
+            Sfx.announce(packed ? "rig_clock_packed" : "rig_clock", p, Math.round(grace));
             G.alert((packed ? "YARD PACKED" : "ALL PRODUCTION FACILITIES LOST") +
                     " — UNFOLD A CONSTRUCTION RIG WITHIN " + Math.round(grace) + " SECONDS", "bad");
             G.pingEvent(rigs[0].x, rigs[0].y, "note");
@@ -3674,6 +3712,7 @@ var Game = (function () {
         if (left > 0) {
           if (mine && left <= 30 && !p.rigWarned) {
             p.rigWarned = true;
+            Sfx.announce("rig_30", p, Math.ceil(left));
             G.alert(Math.ceil(left) + " SECONDS TO UNFOLD A CONSTRUCTION RIG", "bad");
           }
           continue;
@@ -3700,6 +3739,7 @@ var Game = (function () {
     for (const p of G.players) if (!p.defeated) liveTeams.add(p.team);
     if (G.human.defeated) {
       G.over = true;
+      Sfx.announce("defeat", G.human);
       UI.endGame(false, G.human.defeatWhy === "rig"
         ? "NO CONSTRUCTION YARD WAS UNFOLDED IN TIME"
         : "ALL YOUR PRODUCTION FACILITIES WERE DESTROYED");
@@ -3707,6 +3747,7 @@ var Game = (function () {
     }
     if (liveTeams.size <= 1 && !G.over) {
       G.over = true;
+      Sfx.announce("victory", G.human);
       UI.endGame(true, "EVERY ENEMY PRODUCTION FACILITY DESTROYED");
     }
   };
