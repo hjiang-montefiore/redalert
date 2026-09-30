@@ -1177,8 +1177,9 @@ var Render3D = (function () {
         const c = m.clone();
         const hsl = { h: 0, s: 0, l: 0 };
         c.color.getHSL(hsl);
-        /* leave painted markings, glass and bright metal alone */
-        if (hsl.s < 0.45 && hsl.l > 0.08) {
+        /* leave painted markings, glass and bright metal alone - and the
+           owner's colour, whatever its shade (tagParts) */
+        if (hsl.s < 0.45 && hsl.l > 0.08 && !(m.userData && m.userData.team)) {
           /* the surface may already have been converted; tint in its own space */
           const t = tint.clone();
           if (m.userData && m.userData._srgbDone) t.convertSRGBToLinear();
@@ -1193,26 +1194,472 @@ var Render3D = (function () {
     });
   }
 
-  /* the roof slab, not the tip of whatever mast the building already carries:
-     take the tallest part that is actually broad enough to stand on */
-  function roofHeightOf(model, w, d) {
-    const minSpan = Math.min(w, d) * 0.25;
-    const bb = new THREE.Box3(), sz = new THREE.Vector3();
-    let roof = 0, any = false;
-    model.traverse(o => {
-      if (!o.isMesh || !o.geometry) return;
-      bb.setFromObject(o); bb.getSize(sz);
-      if (sz.x < minSpan || sz.z < minSpan) return;   /* a mast or a railing */
-      if (bb.max.y > roof) { roof = bb.max.y; any = true; }
+  /* ---------------- standing the rooftop kit on the building ----------------
+     The faction's kit and the period's were bolted on at fixed fractions of
+     the plot: the faction's at the height of the template's bounding box,
+     the period's at the top of its tallest broad part. Wherever the tallest
+     thing on a plot was not under a spot, the kit hung in the air, and the
+     plot-sized pieces - the PLA eave slabs, the 1980s net - roofed yards and
+     tank farms. Measured by tools/jsc/fixtures3d_check.js over all 43
+     structures, 8 armies and 6 periods, the worst drop from a piece's foot
+     to the surface under it was 30.2 m on the construction yard, 27.7 m on
+     the radar, 27.3 m on the lab, 27.0 m on the airbase, 23.0 m on the
+     naval yard, 21.8 m on the power plant (its radome, over the tank
+     farm), 20.9 m on the factory; pieces reached up to 8.9 m past the
+     plots of the town blocks and the field works; and 113 of 139 roof
+     fires lit on burning structures sat on floating kit or on the net, up
+     to 13.3 m over the surface under them.
+     So every piece now stands on the surface under it. When a template is
+     built (once, never per frame) the model is looked at from above: its
+     opaque meshes rasterised every half metre and binned for exact rays -
+     not a gun mount, a turret or a rotor, which turn, and whose sweep is
+     kept clear. A piece goes to the spot nearest its old one where its foot
+     and a pad at least 3 m across are all roof - the building's own
+     structure (tagParts), a storey up: never a yard, a pad or an apron, a
+     hull on the slip or a crane's yellow steel - and near enough level, and
+     stands at the lowest point under its foot: nothing shows air beneath
+     it, and a pitch or a vent only takes the foot a little into the roof.
+     Pieces are laid in turn and none overlaps another. Per piece:
+       - masts, the whip, the lattice mast and the brick chimney stand on
+         any such roof, let into a pitch as a chimney rises through one: the
+         masts by up to a tenth of their height, the period's pieces by up
+         to 1.4 m, a fifth to a quarter of theirs;
+       - the radomes, the dish and the array face need a level roof; the
+         radome, the Pact stack and the banner board (on its lower edge,
+         turned along the roof where it runs that way) are tried smaller,
+         down to 45%, and the dish, the face and the modern radome down to
+         60%, where no roof takes them whole;
+       - the PLA eaves are sized to the broadest roof level within 0.7 m
+         (the 0.9 m slab swallows the vents) and the masts stand on the upper
+         tier; the net to the broadest roof within 2 m, its poles reaching
+         down to the roof at each corner;
+       - a piece no roof can carry is left off. A well pad, a revetted
+         hardstand or a sawtooth hall has no level patch for a radome: it
+         gets none, rather than one perched on a ridge or over the gravel.
+     It costs a template about 9 ms more to build under jsc (ten structures
+     from cold: 117 -> 206 ms), and draws the same meshes or fewer. */
+  const KIT_CS = 0.5;                 // the search raster, metres
+  const KIT_ROOF = 3.0;               // a roof is a storey up; below it is yard, pad or apron
+  const KIT_PAD = 1.5;                // and at least 3 m across under any piece
+  const KIT_TURNS = { turret: 1, mountwrap: 1, rotor: 1, rotordisc: 1, tailrotor: 1 };
+  let kitMemo = null;                 // the last model measured: { key, S }
+
+  function kitOpaque(mat) {
+    const list = Array.isArray(mat) ? mat : [mat];
+    for (const m of list) if (m && m.visible !== false && !(m.transparent && m.opacity < 0.99)) return true;
+    return false;
+  }
+  /* the model seen from above, in root's own frame: its triangles binned by
+     the ground they cover, and the top a ray meets every 0.5 m */
+  function kitSurface(root, key) {
+    root.updateMatrixWorld(true);
+    /* the same def is not always the same model (a civilian block varies
+       its storeys build to build), so the model's own size is in the key */
+    const bb = new THREE.Box3().setFromObject(root);
+    let nm = 0;
+    root.traverse((o) => { if (o.isMesh) nm++; });
+    key += "|" + nm + "|" + [bb.min.x, bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z].map((q) => q.toFixed(2)).join(",");
+    if (kitMemo && kitMemo.key === key) return kitMemo.S;
+    const inv = new THREE.Matrix4().copy(root.matrixWorld).invert(), M = new THREE.Matrix4();
+    const v = new THREE.Vector3(), c = new THREE.Vector3();
+    const list = [], keep = [];
+    let n = 0, bx0 = Infinity, bx1 = -Infinity, bz0 = Infinity, bz1 = -Infinity;
+    const walk = (o, turns) => {
+      if (o.visible === false) return;
+      if (!turns && KIT_TURNS[o.name]) {
+        /* whatever turns sweeps a circle about its pivot: keep it clear */
+        turns = true;
+        c.setFromMatrixPosition(o.matrixWorld).applyMatrix4(inv);
+        let r = 0;
+        o.traverse((q) => {
+          if (!q.isMesh || !q.geometry || !q.geometry.attributes.position) return;
+          const p = q.geometry.attributes.position;
+          M.multiplyMatrices(inv, q.matrixWorld);
+          for (let i = 0; i < p.count; i++) {
+            v.fromBufferAttribute(p, i).applyMatrix4(M);
+            r = Math.max(r, Math.hypot(v.x - c.x, v.z - c.z));
+          }
+        });
+        if (r > 0) keep.push({ x0: c.x - r, x1: c.x + r, z0: c.z - r, z1: c.z + r });
+      }
+      if (!turns && o.isMesh && o.geometry && o.geometry.attributes.position && kitOpaque(o.material)) {
+        list.push(o);
+        n += ((o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3) | 0;
+      }
+      for (let i = 0; i < o.children.length; i++) walk(o.children[i], turns);
+    };
+    walk(root, false);
+    const V = new Float32Array(n * 9), F = new Uint8Array(n);
+    let t = 0;
+    for (const o of list) {
+      const g = o.geometry, p = g.attributes.position, idx = g.index, cnt = idx ? idx.count : p.count;
+      /* which of its triangles are the building's own structure (tagParts):
+         per material group where a mesh carries several */
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      const built = (q) => {
+        let mi = 0;
+        if (mats.length > 1)
+          for (const gr of g.groups) if (q >= gr.start && q < gr.start + gr.count) { mi = gr.materialIndex; break; }
+        const m = mats[mi];
+        return m && m.userData && m.userData.built ? 1 : 0;
+      };
+      const flat = mats.length > 1 ? -1 : built(0);
+      const e = M.multiplyMatrices(inv, o.matrixWorld).elements;
+      /* each vertex moved into root's frame once, then gathered by index */
+      const P = new Float32Array(p.count * 3);
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+        const X = e[0] * x + e[4] * y + e[8] * z + e[12], Z = e[2] * x + e[6] * y + e[10] * z + e[14];
+        P[i * 3] = X; P[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13]; P[i * 3 + 2] = Z;
+        if (X < bx0) bx0 = X; if (X > bx1) bx1 = X;
+        if (Z < bz0) bz0 = Z; if (Z > bz1) bz1 = Z;
+      }
+      const I = idx ? idx.array : null;
+      for (let q = 0; q + 2 < cnt; q += 3, t++) {
+        F[t] = flat >= 0 ? flat : built(q);
+        for (let k = 0; k < 3; k++) {
+          const vi = (I ? I[q + k] : q + k) * 3;
+          V[t * 9 + k * 3] = P[vi]; V[t * 9 + k * 3 + 1] = P[vi + 1]; V[t * 9 + k * 3 + 2] = P[vi + 2];
+        }
+      }
+    }
+    if (!t) return null;
+    const cb = Math.max(0.75, Math.max(bx1 - bx0, bz1 - bz0) / 64);
+    const mx = Math.max(1, Math.ceil((bx1 - bx0) / cb)), mz = Math.max(1, Math.ceil((bz1 - bz0) / cb));
+    const start = new Int32Array(mx * mz + 1);
+    const cells = (o, f) => {
+      const i0 = Math.max(0, Math.floor((Math.min(V[o], V[o + 3], V[o + 6]) - bx0) / cb));
+      const i1 = Math.min(mx - 1, Math.floor((Math.max(V[o], V[o + 3], V[o + 6]) - bx0) / cb));
+      const j0 = Math.max(0, Math.floor((Math.min(V[o + 2], V[o + 5], V[o + 8]) - bz0) / cb));
+      const j1 = Math.min(mz - 1, Math.floor((Math.max(V[o + 2], V[o + 5], V[o + 8]) - bz0) / cb));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) f(j * mx + i);
+    };
+    for (let q = 0; q < t; q++) cells(q * 9, (k) => { start[k + 1]++; });
+    for (let k = 0; k < mx * mz; k++) start[k + 1] += start[k];
+    const fill = start.slice(0, mx * mz), items = new Int32Array(start[mx * mz]);
+    for (let q = 0; q < t; q++) cells(q * 9, (k) => { items[fill[k]++] = q; });
+    const S = { V, F, cb, mx, mz, start, items, bx0, bz0, built: 0,
+                box: { x0: bx0, x1: bx1, z0: bz0, z1: bz1 }, keep,
+                x0: bx0, z0: bz0, nx: Math.max(1, Math.ceil((bx1 - bx0) / KIT_CS)),
+                nz: Math.max(1, Math.ceil((bz1 - bz0) / KIT_CS)), T: null, win: {} };
+    /* the raster: each triangle drawn onto the lattice under it, keeping
+       the highest - what a ray dropped at every lattice point would meet */
+    const W = S.nx + 1, T = S.T = new Float32Array(W * (S.nz + 1)).fill(-Infinity);
+    const B = S.B = new Uint8Array(W * (S.nz + 1));
+    for (let q = 0; q < t; q++) {
+      const o = q * 9, ax = V[o], ay = V[o + 1], az = V[o + 2];
+      const e1x = V[o + 3] - ax, e1z = V[o + 5] - az, e2x = V[o + 6] - ax, e2z = V[o + 8] - az;
+      const det = e1x * e2z - e2x * e1z;
+      if (det > -1e-9 && det < 1e-9) continue;          // a wall seen edge-on covers no ground
+      const i0 = Math.max(0, Math.ceil((Math.min(ax, V[o + 3], V[o + 6]) - bx0) / KIT_CS - 1e-6));
+      const i1 = Math.min(S.nx, Math.floor((Math.max(ax, V[o + 3], V[o + 6]) - bx0) / KIT_CS + 1e-6));
+      const j0 = Math.max(0, Math.ceil((Math.min(az, V[o + 5], V[o + 8]) - bz0) / KIT_CS - 1e-6));
+      const j1 = Math.min(S.nz, Math.floor((Math.max(az, V[o + 5], V[o + 8]) - bz0) / KIT_CS + 1e-6));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const px = bx0 + i * KIT_CS - ax, pz = bz0 + j * KIT_CS - az;
+        const u = (px * e2z - e2x * pz) / det, w = (e1x * pz - px * e1z) / det;
+        if (u < -1e-6 || w < -1e-6 || u + w > 1 + 1e-6) continue;
+        const y = ay + u * (V[o + 4] - ay) + w * (V[o + 7] - ay);
+        if (y > T[j * W + i]) { T[j * W + i] = y; B[j * W + i] = F[q]; }
+      }
+    }
+    kitMemo = { key, S };
+    return S;
+  }
+  /* the highest surface of the model at (x, z), -Infinity over bare air;
+     S.built says whether it is the building's own structure */
+  function kitTop(S, x, z) {
+    const i = Math.min(S.mx - 1, Math.floor((x - S.bx0) / S.cb)), j = Math.min(S.mz - 1, Math.floor((z - S.bz0) / S.cb));
+    if (i < 0 || j < 0) return -Infinity;
+    const V = S.V, c = j * S.mx + i;
+    let best = -Infinity;
+    for (let q = S.start[c]; q < S.start[c + 1]; q++) {
+      const o = S.items[q] * 9, ax = V[o], ay = V[o + 1], az = V[o + 2];
+      const e1x = V[o + 3] - ax, e1z = V[o + 5] - az, e2x = V[o + 6] - ax, e2z = V[o + 8] - az;
+      const det = e1x * e2z - e2x * e1z;
+      if (det > -1e-9 && det < 1e-9) continue;
+      const px = x - ax, pz = z - az;
+      const u = (px * e2z - e2x * pz) / det, w = (e1x * pz - px * e1z) / det;
+      if (u < -1e-6 || w < -1e-6 || u + w > 1 + 1e-6) continue;
+      const y = ay + u * (V[o + 4] - ay) + w * (V[o + 7] - ay);
+      if (y > best) { best = y; S.built = S.F[S.items[q]]; }
+    }
+    return best;
+  }
+  /* one template's layout: the surface, plus what its own pieces add - a
+     slab a later piece may stand on, a piece nothing else may overlap */
+  function kitPlan(root, key) {
+    const S = kitSurface(root, key);
+    if (!S) return null;
+    const K = { S, root, T: Float32Array.from(S.T), B: Uint8Array.from(S.B), keep: S.keep.slice(), decks: [], put: [],
+                lo: new Float32Array(S.nx * S.nz), hi: new Float32Array(S.nx * S.nz), win: {} };
+    kitCells(K);
+    return K;
+  }
+  /* each raster cell: the lowest and the highest of its four corners (a
+     cell is roof when even its lowest is, and all four are built) */
+  function kitCells(K) {
+    const S = K.S, nx = S.nx, nz = S.nz, T = K.T, Bt = K.B, W = nx + 1;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const k = j * W + i, a = T[k], b = T[k + 1], c = T[k + W], d = T[k + W + 1];
+      K.lo[j * nx + i] = Bt[k] && Bt[k + 1] && Bt[k + W] && Bt[k + W + 1] ? Math.min(a, b, c, d) : -Infinity;
+      K.hi[j * nx + i] = Math.max(a, b, c, d);
+    }
+    K.win = K.decks.length ? {} : K.S.win;
+  }
+  /* the lowest lo and the highest hi of every a x b block of cells, by its
+     first cell: van Herk's running minimum, a few comparisons a cell
+     whatever the size of the block */
+  function kitRun(src, dst, n, step, off, w, mn, g, h) {
+    for (let i = 0; i < n; i++) {
+      const v = src[off + i * step];
+      g[i] = i % w ? (mn ? Math.min(g[i - 1], v) : Math.max(g[i - 1], v)) : v;
+    }
+    for (let i = n - 1; i >= 0; i--) {
+      const v = src[off + i * step];
+      h[i] = (i + 1) % w && i < n - 1 ? (mn ? Math.min(h[i + 1], v) : Math.max(h[i + 1], v)) : v;
+    }
+    for (let i = 0; i + w <= n; i++) dst[off + i * step] = mn ? Math.min(h[i], g[i + w - 1]) : Math.max(h[i], g[i + w - 1]);
+  }
+  function kitWin(K, a, b) {
+    const key = a + "x" + b;
+    if (K.win[key]) return K.win[key];
+    const nx = K.S.nx, nz = K.S.nz, n = nx * nz, g = new Float32Array(Math.max(nx, nz)), h = new Float32Array(Math.max(nx, nz));
+    const out = { lo: new Float32Array(n).fill(-Infinity), hi: new Float32Array(n).fill(Infinity) };
+    for (const mn of [true, false]) {
+      const src = mn ? K.lo : K.hi, dst = mn ? out.lo : out.hi, t = new Float32Array(n).fill(mn ? -Infinity : Infinity);
+      if (a <= nx) for (let j = 0; j < nz; j++) kitRun(src, t, nx, 1, j * nx, a, mn, g, h);
+      if (b <= nz) for (let i = 0; i < nx; i++) kitRun(t, dst, nz, nx, i, b, mn, g, h);
+    }
+    return (K.win[key] = out);
+  }
+  /* the surface at (x, z) with the slabs already laid */
+  function kitAt(K, x, z) {
+    let t = kitTop(K.S, x, z);
+    if (t > -Infinity && !K.S.built) t = -Infinity;
+    for (const s of K.decks) if (x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1 && s.y > t) t = s.y;
+    return t;
+  }
+  /* rays every 0.25 m over a foot (a disk, or a rectangle), its outline
+     included: the lowest and the highest roof under it, or null where any
+     ray falls off the roof (or the two are more than `sink` apart) */
+  function kitFoot(K, x, z, hx, hz, disk, sink) {
+    let lo = Infinity, hi = -Infinity;
+    const lim = sink === undefined ? Infinity : sink;
+    const one = (px, pz) => {
+      const t = kitAt(K, px, pz);
+      if (!(t >= KIT_ROOF)) return false;
+      if (t < lo) lo = t;
+      if (t > hi) hi = t;
+      return hi - lo <= lim;
+    };
+    /* the outline first, 3 cm outside the foot so that a foot whose rim
+       lies on a step meets the lower side too; where a foot does not fit,
+       it is usually there */
+    if (disk) {
+      const r = hx + 0.03, nr = Math.max(1, Math.ceil(r / 0.25));
+      for (let q = nr; q >= 1; q--) {
+        const rr = r * q / nr, na = Math.max(12, Math.ceil(2 * Math.PI * rr / 0.25));
+        for (let a = 0; a < na; a++)
+          if (!one(x + rr * Math.cos(a * 2 * Math.PI / na), z + rr * Math.sin(a * 2 * Math.PI / na))) return null;
+      }
+      if (!one(x, z)) return null;
+    } else {
+      const ax = hx + 0.03, az = hz + 0.03;
+      const ni = Math.max(1, Math.ceil(2 * ax / 0.25)), nj = Math.max(1, Math.ceil(2 * az / 0.25));
+      for (const edge of [true, false])
+        for (let j = 0; j <= nj; j++) for (let i = 0; i <= ni; i++)
+          if ((i === 0 || j === 0 || i === ni || j === nj) === edge &&
+              !one(x - ax + 2 * ax * i / ni, z - az + 2 * az * j / nj)) return null;
+    }
+    return { lo, hi };
+  }
+  function kitClear(K, x0, x1, z0, z1) {
+    for (const r of K.keep) if (x0 < r.x1 && x1 > r.x0 && z0 < r.z1 && z1 > r.z0) return false;
+    return true;
+  }
+  /* the spot nearest (px, pz) that carries a foot of half-size hx x hz (a
+     disk of radius hx): the whole piece (its box e) inside the model's own
+     plan and clear of everything placed, and under it a pad of roof at least
+     3 m across - so a mast stands on a roof, never on a lamp, a rail or a
+     crane's jib - with no more than `sink` between its lowest and highest
+     point. Searched in rings out from the old spot on the raster (the square
+     inside the pad, which any pad that carries it passes), then checked with
+     rays; the piece stands at the lowest point under its own foot. */
+  function kitFind(K, hx, hz, disk, e, px, pz, sink, kmin) {
+    const S = K.S, cs = KIT_CS, nx = S.nx, nz = S.nz, B = S.box;
+    const ry = disk ? hx : hz, ax = Math.max(hx, KIT_PAD), az = Math.max(ry, KIT_PAD);
+    /* the prefilter is the square inside the pad of the smallest size the
+       piece may take, so one raster pass serves every size it is tried at */
+    const q = disk ? Math.SQRT1_2 : 1, s0 = kmin || 1;
+    const ca = Math.max(1, Math.ceil(Math.max(hx * s0, KIT_PAD) * q / cs));
+    const cb = Math.max(1, Math.ceil(Math.max(ry * s0, KIT_PAD) * q / cs));
+    const Wn = kitWin(K, 2 * ca, 2 * cb);
+    const st = Math.max(1, Math.round(Math.min(ax, az) / (3 * cs)));
+    const ci = Math.round((px - S.x0) / cs), cj = Math.round((pz - S.z0) / cs);
+    let best = null, bd = Infinity;
+    const R = Math.ceil((Math.max(ci, nx - ci, cj, nz - cj) + 1) / st);
+    const test = (i, j) => {
+      const i0 = i - ca, j0 = j - cb;
+      if (i0 < 0 || j0 < 0 || i0 + 2 * ca > nx || j0 + 2 * cb > nz) return;
+      const x = S.x0 + i * cs, z = S.z0 + j * cs, dd = Math.hypot(x - px, z - pz);
+      if (dd >= bd) return;
+      const c = j0 * nx + i0;
+      if (!(Wn.lo[c] >= KIT_ROOF) || Wn.hi[c] - Wn.lo[c] > sink) return;
+      if (x + e.x0 < B.x0 - 1e-6 || x + e.x1 > B.x1 + 1e-6 || z + e.z0 < B.z0 - 1e-6 || z + e.z1 > B.z1 + 1e-6) return;
+      if (!kitClear(K, x + e.x0, x + e.x1, z + e.z0, z + e.z1)) return;
+      const f = kitFoot(K, x, z, ax, az, disk, sink);
+      if (!f) return;
+      const g = ax > hx || az > ry ? kitFoot(K, x, z, hx, hz, disk) : f;
+      if (!g) return;
+      best = { x, z, y: g.lo }; bd = dd;
+    };
+    for (let k = 0; k <= R && k * st * cs < bd; k++) {
+      if (!k) { test(ci, cj); continue; }
+      for (let d = -k; d <= k; d++) { test(ci + d * st, cj - k * st); test(ci + d * st, cj + k * st); }
+      for (let d = -k + 1; d < k; d++) { test(ci - k * st, cj + d * st); test(ci + k * st, cj + d * st); }
+    }
+    return best;
+  }
+  /* sRGB authored colours to linear once, as prepModel does for the models */
+  function kitLin(g, shadows) {
+    g.traverse((o) => {
+      if (!o.isMesh) return;
+      if (shadows) { o.castShadow = true; o.receiveShadow = true; }
+      if (o.material && o.material.color && !o.material.userData._srgbDone) {
+        o.material.userData._srgbDone = true;
+        o.material.color.convertSRGBToLinear();
+      }
     });
-    if (!any) { bb.setFromObject(model); roof = bb.max.y * 0.6; }
-    return roof;
+  }
+  function kitG(...o) { const g = new THREE.Group(); for (const q of o) g.add(q); return g; }
+  function kitM(geo, mat, x, y, z) { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); return o; }
+  function kitDrop(g) { g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+  /* stand one piece: p.mk(k) builds it at scale k with its foot at y = 0 on
+     its own axis; tried at full size, then smaller down to p.kmin, turned a
+     quarter where p.turn allows it. Left off if no roof carries it. */
+  const KIT_K = [1, 0.8, 0.6, 0.45];
+  function kitSpot(K, p) {
+    const bx = new THREE.Box3();
+    for (const k of KIT_K) {
+      if (k < (p.kmin || 1) - 1e-6) break;
+      const g = p.mk(k);
+      bx.setFromObject(g);
+      let hit = null, rot = 0;
+      for (const turn of (p.turn ? [0, 1] : [0])) {
+        const hx = (turn ? p.hz : p.hx) * k, hz = (turn ? p.hx : p.hz) * k;
+        const e = turn ? { x0: bx.min.z, x1: bx.max.z, z0: -bx.max.x, z1: -bx.min.x }
+                       : { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z };
+        const f = kitFind(K, hx, hz, !!p.disk, e, p.px, p.pz, p.sink * k, (p.kmin || 1) / k);
+        if (f && (!hit || Math.hypot(f.x - p.px, f.z - p.pz) < Math.hypot(hit.x - p.px, hit.z - p.pz))) {
+          hit = f; hit.e = e; rot = turn;
+        }
+      }
+      if (hit) {
+        g.position.set(hit.x, hit.y, hit.z);
+        g.rotation.y = rot ? Math.PI / 2 : 0;
+        g.name = "kit." + p.name;
+        const e = hit.e, m = 0.3;
+        K.keep.push({ x0: hit.x + e.x0 - m, x1: hit.x + e.x1 + m, z0: hit.z + e.z0 - m, z1: hit.z + e.z1 + m });
+        K.put.push(g);
+        return g;
+      }
+      kitDrop(g);
+    }
+    return null;
+  }
+  /* the broadest roof left: the largest rectangle of cells within `tol` of
+     one level and clear of everything placed, up to W x D and at least
+     w0 x d0, nearest (px, pz) where it has room to move. By the classic
+     largest-rectangle-under-a-histogram sweep, once per level. */
+  function kitRect(K, tol, W, D, w0, d0, px, pz) {
+    const S = K.S, cs = KIT_CS, nx = S.nx, nz = S.nz;
+    const free = new Uint8Array(nx * nz), lv = new Map(), bk = Math.max(0.1, tol / 5);
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const c = j * nx + i;
+      if (!(K.lo[c] >= KIT_ROOF)) continue;
+      const x0 = S.x0 + i * cs, z0 = S.z0 + j * cs;
+      if (!kitClear(K, x0, x0 + cs, z0, z0 + cs)) continue;
+      free[c] = 1;
+      const b = Math.floor(K.lo[c] / bk);
+      lv.set(b, (lv.get(b) || 0) + 1);
+    }
+    const need = Math.ceil(w0 / cs) * Math.ceil(d0 / cs), hgt = new Int32Array(nx);
+    const cands = [], los = [];
+    for (let c = 0; c < nx * nz; c++) if (free[c]) los.push(K.lo[c]);
+    los.sort((a, b) => a - b);
+    const below = (y) => {
+      let a = 0, b = los.length;
+      while (a < b) { const m = (a + b) >> 1; if (los[m] < y) a = m + 1; else b = m; }
+      return a;
+    };
+    /* the levels with the most cells first; one with fewer cells than the
+       broadest rectangle found holds nothing broader */
+    const lvs = [];
+    for (const [b] of lv) {
+      const L = b * bk, ub = below(L + tol + 1e-6) - below(L - 1e-3);
+      if (ub >= need) lvs.push({ L, ub });
+    }
+    lvs.sort((a, b) => b.ub - a.ub);
+    /* the ten fullest levels are the roofs; a stack as two typed arrays */
+    const si = new Int32Array(nx + 1), sh = new Int32Array(nx + 1);
+    let top = 0;
+    for (let v = 0; v < lvs.length && v < 10; v++) {
+      const L = lvs[v].L;
+      if (Math.min(lvs[v].ub * cs * cs, W * D) <= top) break;
+      hgt.fill(0);
+      for (let j = 0; j < nz; j++) {
+        for (let i = 0; i < nx; i++) {
+          const c = j * nx + i;
+          hgt[i] = free[c] && K.lo[c] >= L - 1e-3 && K.hi[c] <= L + tol ? hgt[i] + 1 : 0;
+        }
+        let n = 0;
+        for (let i = 0; i <= nx; i++) {
+          const h = i < nx ? hgt[i] : 0;
+          let s0 = i;
+          while (n && sh[n - 1] >= h) {
+            n--;
+            const rw = (i - si[n]) * cs, rd = sh[n] * cs;
+            if (rw >= w0 && rd >= d0) {
+              /* the part of it within the design size, as near (px, pz) as it goes */
+              const cw = Math.min(rw, W), cd = Math.min(rd, D);
+              if (cw * cd >= top * 0.6) {
+                const x0 = S.x0 + si[n] * cs, z0 = S.z0 + (j - sh[n] + 1) * cs;
+                const cx = Math.min(Math.max(px, x0 + cw / 2), x0 + rw - cw / 2);
+                const cz = Math.min(Math.max(pz, z0 + cd / 2), z0 + rd - cd / 2);
+                cands.push({ s: cw * cd, cx, cz, w: cw, d: cd, dd: Math.hypot(cx - px, cz - pz) });
+                if (cw * cd > top) top = cw * cd;
+              }
+            }
+            s0 = si[n];
+          }
+          if (h > 0) { si[n] = s0; sh[n] = h; n++; }
+        }
+      }
+    }
+    cands.sort((a, b) => b.s - a.s || a.dd - b.dd);
+    /* the broadest that the rays agree is level, inset a little from its edge */
+    for (let n = 0; n < cands.length && n < 12; n++) {
+      const r = cands[n], w = r.w - 0.5, d = r.d - 0.5;
+      const f = kitFoot(K, r.cx, r.cz, w / 2, d / 2, false, tol);
+      if (f) return { x: r.cx, z: r.cz, w, d, y: f.lo, top: f.hi };
+    }
+    return null;
+  }
+  /* a slab laid: its top is roof for what comes after it */
+  function kitDeck(K, x, z, w, d, y) {
+    const S = K.S, W = S.nx + 1, s = { x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y };
+    K.decks.push(s);
+    for (let j = 0; j <= S.nz; j++) for (let i = 0; i <= S.nx; i++) {
+      const px = S.x0 + i * KIT_CS, pz = S.z0 + j * KIT_CS;
+      if (px >= s.x0 && px <= s.x1 && pz >= s.z0 && pz <= s.z1 && K.T[j * W + i] < y) { K.T[j * W + i] = y; K.B[j * W + i] = 1; }
+    }
+    kitCells(K);
   }
 
   /* the rooftop kit that dates the building at a glance */
-  function eraFixture(E, def) {
-    if (!E || !E.fixture) return null;
-    const g = new THREE.Group();
+  function eraKit(E, def, K) {
+    if (!E || !E.fixture) return;
     const w = def.w * TILE_M, d = def.h * TILE_M;
     /* rooftop kit is sized to a plausible real fixture, not to the footprint */
     const m = Math.min(w, d, 13);
@@ -1223,72 +1670,80 @@ var Render3D = (function () {
 
     if (E.fixture === "chimney") {
       /* a brick stack and a single whip: nothing here is electronic yet */
-      const st = new THREE.Mesh(new THREE.BoxGeometry(m * 0.11, m * 0.42, m * 0.11), brick);
-      st.position.set(-w * 0.28, m * 0.21, d * 0.24);
-      g.add(st);
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(m * 0.15, m * 0.04, m * 0.15), brick);
-      cap.position.set(-w * 0.28, m * 0.44, d * 0.24);
-      g.add(cap);
-      const whip = new THREE.Mesh(new THREE.CylinderGeometry(m * 0.006, m * 0.01, m * 0.5, 5), steel);
-      whip.position.set(w * 0.30, m * 0.25, -d * 0.22);
-      g.add(whip);
+      kitSpot(K, { name: "chimney", hx: m * 0.055, hz: m * 0.055, sink: m * 0.11, px: -w * 0.28, pz: d * 0.24,
+        mk: () => kitG(kitM(new THREE.BoxGeometry(m * 0.11, m * 0.42, m * 0.11), brick, 0, m * 0.21, 0),
+                      kitM(new THREE.BoxGeometry(m * 0.15, m * 0.04, m * 0.15), brick, 0, m * 0.44, 0)) });
+      kitSpot(K, { name: "whip", disk: true, hx: m * 0.01, sink: m * 0.11, px: w * 0.30, pz: -d * 0.22,
+        mk: () => kitG(kitM(new THREE.CylinderGeometry(m * 0.006, m * 0.01, m * 0.5, 5), steel, 0, m * 0.25, 0)) });
     } else if (E.fixture === "lattice") {
       /* a guyed lattice mast, the signature of a 1960s installation */
-      for (let i = 0; i < 3; i++) {
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(m * 0.012, m * 0.012, m * 0.62, 4), steel);
-        const a = i * Math.PI * 2 / 3;
-        leg.position.set(w * 0.24 + Math.cos(a) * m * 0.045, m * 0.31,
-                         -d * 0.20 + Math.sin(a) * m * 0.045);
-        g.add(leg);
-      }
-      for (let r = 1; r <= 3; r++) {
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(m * 0.048, m * 0.006, 4, 9), steel);
-        ring.rotation.x = Math.PI / 2;
-        ring.position.set(w * 0.24, m * 0.14 * r, -d * 0.20);
-        g.add(ring);
-      }
+      kitSpot(K, { name: "lattice", disk: true, hx: m * 0.057, sink: m * 0.11, px: w * 0.24, pz: -d * 0.20,
+        mk: () => {
+          const g = new THREE.Group();
+          for (let i = 0; i < 3; i++) {
+            const a = i * Math.PI * 2 / 3;
+            g.add(kitM(new THREE.CylinderGeometry(m * 0.012, m * 0.012, m * 0.62, 4), steel,
+                     Math.cos(a) * m * 0.045, m * 0.31, Math.sin(a) * m * 0.045));
+          }
+          for (let r = 1; r <= 3; r++) {
+            const ring = kitM(new THREE.TorusGeometry(m * 0.048, m * 0.006, 4, 9), steel, 0, m * 0.14 * r, 0);
+            ring.rotation.x = Math.PI / 2;
+            g.add(ring);
+          }
+          return g;
+        } });
     } else if (E.fixture === "netting") {
-      /* camouflage netting stretched over the roof on short poles */
-      const net = new THREE.Mesh(new THREE.BoxGeometry(w * 0.82, m * 0.02, d * 0.82),
-        new THREE.MeshStandardMaterial({ color: 0x5f6a44, roughness: 1, transparent: true, opacity: 0.62 }));
-      net.position.y = m * 0.30;
-      g.add(net);
+      /* camouflage netting stretched over the roof on short poles, as broad
+         as the broadest roof - a net may cross a pitch or a vent, and its
+         poles reach down to the roof under each corner */
+      const r = kitRect(K, 2.0, w * 0.82, d * 0.82, 6, 6, 0, 0);
+      if (!r) return;
+      const ny = Math.max(r.y + m * 0.30, r.top + m * 0.12);
+      const g = new THREE.Group();
+      g.add(kitM(new THREE.BoxGeometry(r.w, m * 0.02, r.d),
+        new THREE.MeshStandardMaterial({ color: 0x5f6a44, roughness: 1, transparent: true, opacity: 0.62 }), 0, ny - r.y, 0));
+      const foot = (x, z, rr) => { const f = kitFoot(K, r.x + x, r.z + z, rr, rr, true); return f ? f.lo : r.y; };
       for (let sx = -1; sx <= 1; sx += 2) for (let sz = -1; sz <= 1; sz += 2) {
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(m * 0.012, m * 0.012, m * 0.30, 5), drab);
-        pole.position.set(sx * w * 0.36, m * 0.15, sz * d * 0.36);
-        g.add(pole);
+        const x = sx * (r.w / 2 - 0.4), z = sz * (r.d / 2 - 0.4), fy = foot(x, z, m * 0.012) - r.y;
+        g.add(kitM(new THREE.CylinderGeometry(m * 0.012, m * 0.012, ny - r.y - fy, 5), drab, x, (fy + ny - r.y) / 2, z));
       }
-      const mast = new THREE.Mesh(new THREE.CylinderGeometry(m * 0.01, m * 0.016, m * 0.44, 6), steel);
-      mast.position.set(w * 0.22, m * 0.52, -d * 0.20);
-      g.add(mast);
+      const mx = r.w * 0.25, mz = -r.d * 0.25, my = foot(mx, mz, m * 0.016) - r.y, top = ny - r.y + m * 0.44;
+      g.add(kitM(new THREE.CylinderGeometry(m * 0.01, m * 0.016, top - my, 6), steel, mx, (my + top) / 2, mz));
+      g.position.set(r.x, r.y, r.z);
+      g.name = "kit.net";
+      K.keep.push({ x0: r.x - r.w / 2, x1: r.x + r.w / 2, z0: r.z - r.d / 2, z1: r.z + r.d / 2 });
+      K.put.push(g);
     } else if (E.fixture === "dish") {
       /* a satellite dish on a pedestal: the 1990s roofline */
-      const ped = new THREE.Mesh(new THREE.CylinderGeometry(m * 0.05, m * 0.07, m * 0.16, 8), pale);
-      ped.position.set(w * 0.24, m * 0.08, -d * 0.22);
-      g.add(ped);
-      const prof = [];
-      for (let q = 0; q <= 10; q++) {
-        const rr = (q / 10) * m * 0.17;
-        prof.push(new THREE.Vector2(Math.max(0.001, rr), (rr * rr) / (m * 0.42)));
-      }
-      const dm = new THREE.MeshStandardMaterial({ color: 0xe4e8ea, roughness: 0.6 });
-      dm.side = THREE.DoubleSide;
-      const dish = new THREE.Mesh(new THREE.LatheGeometry(prof, 16), dm);
-      dish.rotation.z = -0.85;
-      dish.position.set(w * 0.24, m * 0.24, -d * 0.22);
-      g.add(dish);
+      kitSpot(K, { name: "dish", disk: true, hx: m * 0.07, sink: m * 0.04, kmin: 0.55, px: w * 0.24, pz: -d * 0.22,
+        mk: (k) => {
+          const mm = m * k;
+          const prof = [];
+          for (let q = 0; q <= 10; q++) {
+            const rr = (q / 10) * mm * 0.17;
+            prof.push(new THREE.Vector2(Math.max(0.001, rr), (rr * rr) / (mm * 0.42)));
+          }
+          const dm = new THREE.MeshStandardMaterial({ color: 0xe4e8ea, roughness: 0.6 });
+          dm.side = THREE.DoubleSide;
+          const dish = kitM(new THREE.LatheGeometry(prof, 16), dm, 0, mm * 0.24, 0);
+          dish.rotation.z = -0.85;
+          return kitG(kitM(new THREE.CylinderGeometry(mm * 0.05, mm * 0.07, mm * 0.16, 8), pale, 0, mm * 0.08, 0), dish);
+        } });
     } else if (E.fixture === "array") {
-      /* a flat phased-array face and a squat modern radome */
-      const face = new THREE.Mesh(new THREE.BoxGeometry(m * 0.03, m * 0.24, m * 0.30), pale);
-      face.position.set(w * 0.26, m * 0.16, -d * 0.20);
-      face.rotation.z = 0.22;
-      g.add(face);
-      const rad = new THREE.Mesh(new THREE.SphereGeometry(m * 0.09, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
-        new THREE.MeshStandardMaterial({ color: 0xeef1f3, roughness: 0.55 }));
-      rad.position.set(-w * 0.24, m * 0.03, d * 0.22);
-      g.add(rad);
+      /* a flat phased-array face and a squat modern radome, both standing on
+         the roof (the face's lower edge had hung 0.04 m of the fixture's
+         size above it, the radome's rim 0.03) */
+      kitSpot(K, { name: "array", hx: m * 0.041, hz: m * 0.15, sink: m * 0.02, kmin: 0.55, turn: true,
+        px: w * 0.26, pz: -d * 0.20,
+        mk: (k) => {
+          const face = kitM(new THREE.BoxGeometry(m * k * 0.03, m * k * 0.24, m * k * 0.30), pale, 0, m * k * 0.1204, 0);
+          face.rotation.z = 0.22;
+          return kitG(face);
+        } });
+      kitSpot(K, { name: "radome", disk: true, hx: m * 0.09, sink: m * 0.009, kmin: 0.55, px: -w * 0.24, pz: d * 0.22,
+        mk: (k) => kitG(kitM(new THREE.SphereGeometry(m * k * 0.09, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshStandardMaterial({ color: 0xeef1f3, roughness: 0.55 }), 0, 0, 0)) });
     }
-    return g.children.length ? g : null;
   }
 
   function archOf(team) {
@@ -1318,8 +1773,9 @@ var Render3D = (function () {
         const hsl = { h: 0, s: 0, l: 0 };
         c.color.getHSL(hsl);
         /* only restyle desaturated structural surfaces; leave painted detail,
-           hazard stripes, glass and metals alone */
-        if (hsl.s < 0.22 && hsl.l > 0.12 && hsl.l < 0.82) {
+           hazard stripes, glass and metals alone, and the owner's colour
+           whatever its shade (tagParts) */
+        if (hsl.s < 0.22 && hsl.l > 0.12 && hsl.l < 0.82 && !(m.userData && m.userData.team)) {
           const target = hsl.l > 0.55 ? wall : (hsl.l > 0.33 ? wall2 : roof);
           c.color.copy(target).multiplyScalar(0.72 + hsl.l * 0.55);
         }
@@ -1331,62 +1787,95 @@ var Render3D = (function () {
   }
 
   /* a rooftop fixture that identifies the faction from the air */
-  function archFixture(A, def, team) {
-    const g = new THREE.Group();
+  function archKit(A, def, K) {
     const trim = new THREE.MeshStandardMaterial({ color: A.trim, roughness: 0.5, metalness: 0.25 });
     const metal = new THREE.MeshStandardMaterial({ color: 0xb8bec4, roughness: 0.35, metalness: 0.8 });
     const acc = new THREE.MeshStandardMaterial({ color: A.accent, roughness: 0.6 });
-    const w = def.w * TILE_M, d = def.h * TILE_M;
+    const w = def.w * TILE_M, d = def.h * TILE_M, mn = Math.min(w, d);
     if (A.style === "nato") {
       /* white radome + slim antenna mast: expeditionary, sensor-heavy */
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(Math.min(w, d) * 0.13, 14, 10,
-        0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xe8ecef, roughness: 0.55 }));
-      dome.position.set(w * 0.26, 0, -d * 0.26);
-      g.add(dome);
-      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, Math.min(w, d) * 0.42, 6), metal);
-      mast.position.set(-w * 0.28, mast.geometry.parameters.height / 2, d * 0.22);
-      g.add(mast);
-      for (let i = 0; i < 3; i++) {
-        const yagi = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w, d) * 0.11, 0.2, 0.2), metal);
-        yagi.position.set(-w * 0.28, Math.min(w, d) * 0.2 + i * 1.6, d * 0.22);
-        g.add(yagi);
-      }
+      kitSpot(K, { name: "radome", disk: true, hx: mn * 0.13, sink: mn * 0.013, kmin: 0.45, px: w * 0.26, pz: -d * 0.26,
+        mk: (k) => kitG(kitM(new THREE.SphereGeometry(mn * k * 0.13, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshStandardMaterial({ color: 0xe8ecef, roughness: 0.55 }), 0, 0, 0)) });
+      const mh = mn * 0.42;
+      kitSpot(K, { name: "mast", disk: true, hx: 0.35, sink: mh * 0.1, px: -w * 0.28, pz: d * 0.22,
+        mk: () => {
+          const g = kitG(kitM(new THREE.CylinderGeometry(0.25, 0.35, mh, 6), metal, 0, mh / 2, 0));
+          for (let i = 0; i < 3; i++) g.add(kitM(new THREE.BoxGeometry(mn * 0.11, 0.2, 0.2), metal, 0, mn * 0.2 + i * 1.6, 0));
+          return g;
+        } });
     } else if (A.style === "pact") {
-      /* brutalist stack + banner board: heavy industry aesthetic */
-      const stack = new THREE.Mesh(new THREE.CylinderGeometry(Math.min(w, d) * 0.09,
-        Math.min(w, d) * 0.11, Math.min(w, d) * 0.55, 10), acc);
-      stack.position.set(w * 0.28, stack.geometry.parameters.height / 2, -d * 0.24);
-      g.add(stack);
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(Math.min(w, d) * 0.095,
-        Math.min(w, d) * 0.095, 1.1, 10), trim);
-      band.position.set(w * 0.28, Math.min(w, d) * 0.46, -d * 0.24);
-      g.add(band);
-      const board = new THREE.Mesh(new THREE.BoxGeometry(w * 0.34, Math.min(w, d) * 0.16, 0.4), trim);
-      board.position.set(-w * 0.2, Math.min(w, d) * 0.12, d * 0.3);
-      g.add(board);
+      /* brutalist stack + banner board: heavy industry aesthetic. The board
+         stands on its lower edge (it hung 0.04 of the plot's width over the
+         fixture's base, 1.6 m on a 2x2) and may turn to lie along a roof. */
+      kitSpot(K, { name: "stack", disk: true, hx: mn * 0.11, sink: mn * 0.035, kmin: 0.45, px: w * 0.28, pz: -d * 0.24,
+        mk: (k) => kitG(
+          kitM(new THREE.CylinderGeometry(mn * k * 0.09, mn * k * 0.11, mn * k * 0.55, 10), acc, 0, mn * k * 0.275, 0),
+          kitM(new THREE.CylinderGeometry(mn * k * 0.095, mn * k * 0.095, 1.1, 10), trim, 0, mn * k * 0.46, 0)) });
+      kitSpot(K, { name: "board", hx: w * 0.17, hz: 0.2, sink: mn * 0.012, kmin: 0.45, turn: true, px: -w * 0.2, pz: d * 0.3,
+        mk: (k) => kitG(kitM(new THREE.BoxGeometry(w * k * 0.34, mn * k * 0.16, 0.4), trim, 0, mn * k * 0.08, 0)) });
     } else {
-      /* PLA: tiered eave band + paired mast, tile-red accent */
-      const eave = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.9, d * 0.72), acc);
-      eave.position.y = 0.45;
-      g.add(eave);
-      const eave2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.52, 0.8, d * 0.52), trim);
-      eave2.position.y = 1.4;
-      g.add(eave2);
-      for (const sgn of [-1, 1]) {
-        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, Math.min(w, d) * 0.34, 6), metal);
-        mast.position.set(sgn * w * 0.26, mast.geometry.parameters.height / 2 + 1.4, -d * 0.24);
-        g.add(mast);
+      /* PLA: tiered eave band + paired mast, tile-red accent. The eaves are
+         laid on the broadest level roof and sized to it, not to the plot (they
+         had roofed whole plots, 43 m square on a 3x3), the upper tier resting
+         on the lower (it had hung 0.1 m over it); the masts stand on the upper
+         tier, or on a roof of their own where there are no eaves. */
+      const r = kitRect(K, 0.7, w * 0.72, d * 0.72, 7, 7, 0, 0), mh = mn * 0.34;
+      if (r) {
+        const g = kitG(kitM(new THREE.BoxGeometry(r.w, 0.9, r.d), acc, 0, 0.45, 0),
+                       kitM(new THREE.BoxGeometry(r.w * 0.722, 0.8, r.d * 0.722), trim, 0, 1.3, 0));
+        g.position.set(r.x, r.y, r.z);
+        g.name = "kit.eaves";
+        K.put.push(g);
+        kitDeck(K, r.x, r.z, r.w, r.d, r.y + 0.9);
+        kitDeck(K, r.x, r.z, r.w * 0.722, r.d * 0.722, r.y + 1.7);
       }
+      for (const sgn of [-1, 1])
+        kitSpot(K, { name: "mast", disk: true, hx: 0.3, sink: mh * 0.1,
+          px: r ? r.x + sgn * (r.w * 0.361 - 0.6) : sgn * w * 0.26, pz: r ? r.z - (r.d * 0.361 - 0.6) : -d * 0.24,
+          mk: () => kitG(kitM(new THREE.CylinderGeometry(0.22, 0.3, mh, 6), metal, 0, mh / 2, 0)) });
     }
-    g.traverse(o => {
+  }
+
+  /* Two kinds of surface are told apart once, on the model as it was
+     authored, before either restyle runs:
+     - the owner's colour, whatever its shade, which neither restyle then
+       touches. Germany's field grey #7a8a72 is linear s 0.20, l 0.21 -
+       inside restyle()'s concrete band and eraRestyle()'s - so its team
+       markings came out in the army's concrete grey (#b5babb today,
+       #b0a29c in the 1950s): 454 of the 3,882 team-coloured parts on the
+       43 structures in six periods, every one of them Germany's
+       (tools/jsc/fixtures3d_check.js).
+     - the building's own structure: a grey of any shade or a white (HSL
+       s < 0.22) - concrete, cladding, sheeting, a white under a painted map
+       - and the owner's colour on it. Only that carries rooftop kit: on the
+       naval yard the level tops a storey up include the primer-red hull on
+       the slip, and a radome and a brick stack went on the ship. Primer,
+       safety yellow, hazard paint and glass are no roof. */
+  function tagParts(model, team) {
+    const tc = new THREE.Color(team.main).convertSRGBToLinear(), hsl = { h: 0, s: 0, l: 0 };
+    model.traverse((o) => {
       if (!o.isMesh) return;
-      o.castShadow = true; o.receiveShadow = true;
-      if (o.material && o.material.color && !o.material.userData._srgbDone) {
-        o.material.userData._srgbDone = true;
-        o.material.color.convertSRGBToLinear();
+      for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+        if (!m || !m.color) continue;
+        if (Math.abs(m.color.r - tc.r) + Math.abs(m.color.g - tc.g) + Math.abs(m.color.b - tc.b) < 3e-3) m.userData.team = true;
+        m.color.getHSL(hsl);
+        if (hsl.s < 0.22 || m.userData.team) m.userData.built = true;
       }
     });
-    return g;
+  }
+  /* dress a structure: the army's kit first - the period tints it as it
+     tints the building under it - then the period's */
+  function dressKit(root, def, team, A, E) {
+    const K = kitPlan(root, def.id);
+    if (!K) return;
+    if (A) {
+      archKit(A, def, K);
+      for (const g of K.put) { kitLin(g, true); eraRestyle(g, E); root.add(g); }
+      K.put.length = 0;
+    }
+    eraKit(E, def, K);
+    for (const g of K.put) { kitLin(g, false); root.add(g); }
   }
 
   /* buildings */
@@ -1436,12 +1925,6 @@ var Render3D = (function () {
         new THREE.MeshStandardMaterial({ color: new THREE.Color(team.main).convertSRGBToLinear(), roughness: 0.5 }));
       trim.position.y = hM - 0.6;
       tpl.add(trim);
-      /* faction rooftop fixture */
-      if (def.cat !== "defense" && def.id !== "wall" && !def.bare) {
-        const fx = archFixture(A0, def, team);
-        fx.position.y = hM;
-        tpl.add(fx);
-      }
       /* defence mount on top from 3D pack or nothing */
       if (def.cat === "defense" && typeof BLD_MODELS !== "undefined" && BLD_MODELS["def_" + def.id]) {
         try {
@@ -1452,9 +1935,11 @@ var Render3D = (function () {
           tpl.add(mnt);
         } catch (e3) {}
       }
+      tagParts(tpl, team);
       eraRestyle(tpl, E);
-      const ef0 = def.bare ? null : eraFixture(E, def);
-      if (ef0) { ef0.position.y = roofHeightOf(tpl, def.w * TILE_M, def.h * TILE_M); tpl.add(ef0); }
+      /* the faction's and the period's rooftop kit, stood on the roof */
+      if (!def.bare && def.cat !== "civilian")
+        dressKit(tpl, def, team, def.cat !== "defense" && def.id !== "wall" ? A0 : null, E);
       prepModel(tpl);
       tpl.scale.multiplyScalar(CFG.BLD_SCALE);
       modelCache[ck] = tpl;
@@ -1469,27 +1954,25 @@ var Render3D = (function () {
        jamming sites are the first structures to use it. They are drawn whole
        and to scale, and all three of the layers below are actively wrong on
        them: restyle() repaints a phased-array face into a national wall
-       colour, archFixture() bolts a white radome and a yagi mast onto the top
-       of a PAVE PAWS, and eraFixture() at e80 drapes a camouflage net sized to
-       the plot - 49 metres square on a 3x3 - straight across the array faces.
-       A national early-warning array is the same Raytheon concrete for
+       colour, the faction's kit bolts a white radome and a yagi mast onto a
+       PAVE PAWS, and the period's at e80 drapes a camouflage net across the
+       array faces (sized to the plot as it once was, 49 metres square on a
+       3x3). A national early-warning array is the same Raytheon concrete for
        everybody who bought one. */
+    tagParts(tpl, team);
     if (def.cat !== "defense" && !def.bare) restyle(tpl, A);
     const wrap = new THREE.Group();
     tpl.rotation.x = -Math.PI / 2;
     wrap.add(tpl);
     const bb = new THREE.Box3().setFromObject(wrap);
-    if (def.cat !== "defense" && def.id !== "wall" && !def.bare) {
-      const fx = archFixture(A, def, team);
-      fx.position.y = Math.max(1, bb.max.y);
-      wrap.add(fx);
-    } else if (def.cat === "defense" && typeof BLD_MODELS !== "undefined" &&
-               BLD_MODELS["def_" + def.id]) {
+    if (def.cat === "defense" && typeof BLD_MODELS !== "undefined" &&
+        BLD_MODELS["def_" + def.id]) {
       /* emplacements ship without their gun: the engine mounts the rotating
          weapon on top so it can slew toward targets */
       try {
         const mnt = BLD_MODELS["def_" + def.id].build(THREE, Models3D, { team: team.main });
         prepModel(mnt);
+        tagParts(mnt, team);
         const mw = new THREE.Group();
         mnt.rotation.x = -Math.PI / 2;
         mw.add(mnt);
@@ -1498,19 +1981,13 @@ var Render3D = (function () {
         wrap.add(mw);
       } catch (e) {}
     }
-    /* period materials and rooftop kit, layered over the faction styling */
+    /* period materials, layered over the faction styling, then the rooftop
+       kit - the army's and the period's - stood on the roof. Not on a town's
+       blocks: civ3d.js draws them as nobody's base, "no domes, no antennas",
+       and every one of them wore a NATO radome and mast. */
     eraRestyle(wrap, E);
-    const ef = def.bare ? null : eraFixture(E, def);
-    if (ef) {
-      ef.position.y = Math.max(0.5, roofHeightOf(wrap, def.w * TILE_M, def.h * TILE_M));
-      ef.traverse(o => {
-        if (o.material && o.material.color && !o.material.userData._srgbDone) {
-          o.material.userData._srgbDone = true;
-          o.material.color.convertSRGBToLinear();
-        }
-      });
-      wrap.add(ef);
-    }
+    if (!def.bare && def.cat !== "civilian")
+      dressKit(wrap, def, team, def.cat !== "defense" && def.id !== "wall" ? A : null, E);
     wrap.scale.multiplyScalar(CFG.BLD_SCALE);
     modelCache[ck] = wrap;
     return wrap;

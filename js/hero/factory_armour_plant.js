@@ -638,19 +638,10 @@ var HeroArmourPlant = (function () {
     /* the hulls' green paint */
     T.A = new THREE.MeshStandardMaterial({ color: 0x4d5433, roughness: 0.8, metalness: 0.1 });
     T.T = new THREE.MeshStandardMaterial({ color: new THREE.Color(teamCol), roughness: 0.55, metalness: 0.12 });
-    /* A grey team colour (Germany's field grey is linear s 0.15) sits in
-       restyle()'s band and would come out in the faction's wall paint.
-       Carried by a map on a white material instead, it keeps its colour. */
-    (function () {
-      var c = new THREE.Color(teamCol).convertSRGBToLinear(), hsl = { h: 0, s: 0, l: 0 };
-      c.getHSL(hsl);
-      if (hsl.s < 0.24 && hsl.l > 0.10 && hsl.l < 0.84) {
-        var cv = mkCv(4, 4), g = cv.getContext("2d");
-        g.fillStyle = "#" + new THREE.Color(teamCol).getHexString(); g.fillRect(0, 0, 4, 4);
-        T.T.color.setHex(0xffffff);
-        T.T.map = finish(THREE, cv);
-      }
-    })();
+    /* The owner's colour is the owner's even when it is a grey: render3d
+       tags it (tagParts) and neither restyle() nor eraRestyle() touches it.
+       Germany's field grey no longer rides on a map over white, where the
+       period's tint still reached it (42% toward brick in the 1950s). */
     var B = { W: new Batch("tile", 6), R: new Batch("tile", 6), G: new Batch("keep"), Y: new Batch("plan"),
               S: new Batch(), C: new Batch(), A: new Batch(), T: new Batch() };
     function emit(parts, px, py, pz, hdg) {

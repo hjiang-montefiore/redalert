@@ -328,7 +328,15 @@ var Damage3D = (function () {
         if (!M.tur && o.name === "turret") M.tur = o;
         const t = inTur || o.name === "turret" || o.name === "mountwrap";
         const geo = o.isMesh && o.geometry;
-        if (geo && geo.attributes && geo.attributes.position) {
+        /* a structure burns through its roofs, not through a camouflage net
+           spread over one (render3d's 1980s kit is 62% opaque): on a burning
+           building a see-through mesh is no surface. With the net stood on
+           the roof, 23 of 133 roof fires lit on twelve burning structures -
+           every one of them under a net - burned on the net itself, 2.7 to
+           4.7 m over the roof (tools/jsc/fixtures3d_check.js). */
+        const sheer = e.kind === "building" && o.isMesh &&
+          [].concat(o.material).every((m) => m && m.transparent && m.opacity < 0.9);
+        if (geo && geo.attributes && geo.attributes.position && !sheer) {
           if (!geo.boundingBox) geo.computeBoundingBox();
           bx.copy(geo.boundingBox).applyMatrix4(o.matrixWorld);
           M.box.union(bx);
