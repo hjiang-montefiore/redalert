@@ -217,4 +217,25 @@ var WARSHIPS = {
   /* Spruance hull but no VLS and no array faces: twin-arm Mk 26 rail launchers and 5-inch mounts fore and aft, big rotating SPS-48/49 aerials on lattice masts between two stacks. */
   destroyer_r: {era:"e20", fac:"roc", role:"destroyer", designation:"Kee Lung (ex-Kidd DDG-993)", len:171.6, beam:16.8, bow:"clipper", super:"boxy", funnels:2, funnelStyle:"capped", mast:"lattice", guns:2, gunCal:127, gunPos:"foreaft", vls:0, launchers:"rails", ciws:2, helo:"hangar", radar:"dish", camo:"haze"},
 };
+/* ---- the Iowa class ----
+   A new role has no same-role peer, so render3d.js modelKeyFor() and
+   icons3d.js would have found no model at all and drawn the renderer's
+   generic fallback. These are spec rows for the parametric builder above, not
+   a hand-built model: three triple 16-inch turrets (406 mm, two forward and
+   one aft), two funnels, a stepped tower bridge; the 1980s and 1990s rows add
+   the armored boxes (launchers "box") and four Phalanx. At the builder's
+   0.44 L the forward barrels ran some 16 m past the stem (review); foreAt
+   0.40 sets turret 1 96 m forward of amidships and turret 2 at 52 m, as far
+   back as the layered bridge block (to 41 m) allows before turret 2 lands on
+   it - the real turret 1 stood 77 m forward, behind a longer forecastle than
+   this builder draws. Checked with tools/model3d: 271 m, 3166 and 4110
+   triangles, no issues, the barrels end inside the stem. A dedicated hero
+   Iowa is still wanted - no armour belt, no conning tower, no fantail crane,
+   and the forward turrets a little too far forward. */
+Object.assign(WARSHIPS, {
+  nato_e50_battleship: {era:"e50", fac:"nato", role:"battleship", designation:"BB-61 Iowa", len:270.4, beam:33.0, bow:"clipper", super:"layered", funnels:2, funnelStyle:"stack", mast:"lattice", guns:3, gunCal:406, gunPos:"foreaft", foreAt:0.40, vls:0, launchers:"none", ciws:0, helo:"pad", radar:"dish", camo:"haze"},
+  nato_e60_battleship: {era:"e60", fac:"nato", role:"battleship", designation:"BB-62 New Jersey", len:270.4, beam:33.0, bow:"clipper", super:"layered", funnels:2, funnelStyle:"stack", mast:"lattice", guns:3, gunCal:406, gunPos:"foreaft", foreAt:0.40, vls:0, launchers:"none", ciws:0, helo:"pad", radar:"dish", camo:"haze"},
+  nato_e80_battleship: {era:"e80", fac:"nato", role:"battleship", designation:"BB-62 New Jersey (1982)", len:270.4, beam:33.0, bow:"clipper", super:"layered", funnels:2, funnelStyle:"capped", mast:"lattice", guns:3, gunCal:406, gunPos:"foreaft", foreAt:0.40, vls:0, launchers:"box", ciws:4, helo:"pad", radar:"dish", camo:"haze"},
+  nato_e90_battleship: {era:"e90", fac:"nato", role:"battleship", designation:"BB-63 Missouri (1991)", len:270.4, beam:33.0, bow:"clipper", super:"layered", funnels:2, funnelStyle:"capped", mast:"lattice", guns:3, gunCal:406, gunPos:"foreaft", foreAt:0.40, vls:0, launchers:"box", ciws:4, helo:"pad", radar:"dish", camo:"haze"},
+});
 if (typeof Warship3D !== "undefined" && Warship3D.registerAll) Warship3D.registerAll();

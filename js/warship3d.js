@@ -439,7 +439,10 @@ var Warship3D = (function () {
     var tw = Math.min(tl * (nb >= 3 ? 0.74 : nb === 2 ? 0.78 : 0.82), S.B * 0.58);
     return {
       nb: nb, l: tl, w: tw, h: tl * (nb >= 3 ? 0.46 : 0.42),
-      bl: Math.min(cal * 0.038 + cal * cal * 0.000072, S.L * 0.14),
+      /* fitted to 8-inch and below; a 16in/50 is fifty calibres, 20.3 m,
+         where the curve gives 27 m. Nothing but the battleship rows reaches
+         the first branch (the largest gun in every other row is 203 mm). */
+      bl: Math.min(cal >= 300 ? cal * 0.050 : cal * 0.038 + cal * cal * 0.000072, S.L * 0.14),
       br: Math.max(0.055, cal * 0.0007 + cal * cal * 0.0000030),
     };
   }
@@ -989,7 +992,10 @@ var Warship3D = (function () {
       aftCur = gx + gf * 0.55;
     }
 
-    var foreCur = L * 0.44;
+    /* where the forward mounts start. 0.44 L suits a destroyer or a cruiser;
+       a battleship's first turret stands a fifth of her length back from the
+       stem behind a long forecastle, and a row may say so (warship_specs.js) */
+    var foreCur = L * (P.foreAt || 0.44);
     for (i = 0; i < gs2.f; i++) {
       var gf2 = gunFoot(S, cal, P.guns), gx2 = foreCur - gf2 * 0.58 - i * gf2 * 1.06;
       var gz2 = K.topAt(gx2);

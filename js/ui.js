@@ -889,6 +889,8 @@ var UI = (function () {
     const w0 = WEAPONS[held[0]];
     const how = w0.nuke
       ? "CTRL + RIGHT-CLICK THE AIMPOINT TWICE TO RELEASE"
+      : w0.landAttack
+      ? "RIGHT-CLICK A STRUCTURE YOU HAVE FOUND<br>NOTHING THAT MOVES, AND NOT A MAP POINT"
       : e.isIndirect()
       ? "CTRL + RIGHT-CLICK A MAP POINT<br>OR RIGHT-CLICK A TARGET YOU CAN SEE"
       : w0.antiRadiation
@@ -901,6 +903,13 @@ var UI = (function () {
     h += '<span style="font-size:9.5px">' + (w0.name || "").toUpperCase() +
          " DOES NOT FIRE UNLESS ORDERED<br>" + how +
          (list.length > 1 ? "<br>" + list.length + " SELECTED" : "") + "</span>";
+    /* the land-attack magazine: a VLS ship cannot refill it at sea */
+    if (w0.landAttack && e.def.magazine && e.def.magazine[held[0]]) {
+      const mi = e.def.weapons.indexOf(held[0]), cap = e.def.magazine[held[0]];
+      const left = e.mag && e.mag[mi] !== undefined ? e.mag[mi] : cap;
+      h += '<div class="stat' + (left > 0 ? "" : " warn") + '">TOMAHAWK <i>' + left + "/" + cap +
+           (left > 0 ? "" : " \u2014 NAVAL YARD TO RELOAD") + "</i></div>";
+    }
     return h;
   }
   function selectedHeld() {

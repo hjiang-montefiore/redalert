@@ -80,7 +80,17 @@ var Combat = (function () {
     let sensorMul = 1;
     const rangePx = U.dist(shooter.x, shooter.y, target.x, target.y);
     const organic = (shooter.sightR ? shooter.sightR() : 6) * CFG.TILE;
-    if (rangePx > organic) {
+    /* ...except a land-attack cruise missile, which is not aimed from the
+       ship at all: it flies TERCOM and DSMAC (GPS from Block III, 1993) to
+       coordinates taken off the plot, so the launching hull's own eyes and
+       radar picture have nothing to add. Measured without this line, 400
+       shots each at 18.5 tiles: a Burke with SPY-1 over the target hit 0.88
+       of the time, a Spruance whose SPS-40 stops at 16.8 hit 0.18 and an Iowa
+       0.20 (0.90 x 0.52 blind x 0.50 fire control) - the same missile, a
+       fivefold spread, decided by the launching ship's radar. With it,
+       0.81 to 0.85 for all three. It is fired only at a structure
+       (entities.js pickWeapon), so there is no contact to lose. */
+    if (rangePx > organic && !w.landAttack) {
       radarSeen = game.radarCovers(shooter.owner, target.x, target.y) ? 1 : 0;
       sensorMul = radarSeen ? CFG.RADAR_FIRE_ACC : CFG.BLIND_FIRE_ACC;
     }
@@ -687,6 +697,7 @@ var Combat = (function () {
 
   /* 0 = aimed entirely by eye, 1 = the weapon is blind without a radar track. */
   function radarDependence(shooter, w) {
+    if (w.landAttack) return 0;                     // flies to coordinates; nothing aboard steers it
     if (w.proj === "missile") return 1.00;          // seeker or command guidance
     if (w.warhead === "flak") return 0.95;          // AA guns and CIWS are radar-laid
     if (shooter.cat === "naval" && w.proj === "shell") return 0.80;

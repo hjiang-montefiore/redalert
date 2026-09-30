@@ -212,6 +212,26 @@ class Player {
       const from = def.from !== undefined ? eraIndex(def.from) : 0;
       return eraIndex(this.era || CUR_ERA) < from ? "NOT YET IN SERVICE" : "WITHDRAWN FROM SERVICE";
     }
+    /* ---- a class that had only so many hulls ----
+       Four Iowas were built and no fifth was coming; in 1968 only New Jersey
+       came back, and by the Gulf War only Missouri and Wisconsin were in
+       commission. `hulls` is the ceiling for the period, `hullClass` joins one
+       class's rows across the eras, and the count is over the match: every
+       hull commissioned from a yard (onProduced keeps stats.hulls), so a sunk
+       one is not replaced, or every hull afloat if that is more - a ship given
+       at the start was not built here - and a hull on the slip counts too. The
+       AI buys through enqueue() -> lockReason() as well, so it meets the same
+       ceiling. */
+    if (def.hulls && !isUpgrade) {
+      const cls = def.hullClass || def.id;
+      let afloat = 0, slip = 0;
+      for (const u of this.units) if (!u.dead && u.def && (u.def.hullClass || u.def.id) === cls) afloat++;
+      for (const k in this.queues)
+        for (const it of this.queues[k].items) if (it.def && (it.def.hullClass || it.def.id) === cls) slip++;
+      const built = (this.stats.hulls && this.stats.hulls[cls]) || 0;
+      if (Math.max(built, afloat) + slip >= def.hulls)
+        return "CLASS CEILING — " + def.hulls + " HULL" + (def.hulls === 1 ? "" : "S") + " IN THIS PERIOD";
+    }
     if (def.tech && !isUpgrade && this.techCap !== undefined && def.tech > this.techCap)
       return "ABOVE TECH CEILING (TECH " + this.techCap + ")";
     if (def.tech && !isUpgrade && this.tech < def.tech) return "REQUIRES TECH " + def.tech;
@@ -648,8 +668,15 @@ class Player {
         if (this.oil < def.oil) { /* refund, fuel ran out mid-build */ this.refund(this.factionCost(def)); return; }
         this.spendOil(def.oil, def.cat === "vehicle" ? "vehicle" : def.cat || "unit");
       }
-      this.game.spawnUnit(this, it.id);
+      const made = this.game.spawnUnit(this, it.id);
       if (!this.isAI) Sfx.play("unitready");
+      /* a class with a fixed number of hulls (lockReason) keeps count of the
+         hulls it has commissioned: a sunk one is not replaced, there was no
+         fifth Iowa. In stats, so a save carries it. */
+      if (made && def.hulls) {
+        const hs = this.stats.hulls || (this.stats.hulls = {}), hc = def.hullClass || it.id;
+        hs[hc] = (hs[hc] || 0) + 1;
+      }
     }
   }
 }

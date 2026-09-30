@@ -220,6 +220,33 @@ var FACTS = {
     armament:"24 Trident II D5 ballistic missile tubes, Mk 48 torpedoes",
     note:"Widely assessed as among the quietest submarines ever built. Its mission is to " +
          "not be found; it avoids surface action entirely.", confidence:"high" },
+  nato_e50_battleship: { name:"Iowa-class battleship (BB-61 to BB-64), 1950s", origin:"United States", service:"1943",
+    crew:"~2,700", weight_t:57540, speed_kmh:61, range_km:"~27800",
+    armament:"9x 16in/50 Mk 7 in three triple turrets (Mk 8 AP and Mk 13 HC shells), 20x 5in/38 in ten twin Mk 28 mounts, quad 40mm Bofors",
+    protection:"307 mm inclined main belt, about 500 mm turret faces, about 440 mm conning tower; torpedo defence system",
+    note:"All four were back in commission for Korea by 1951; Wisconsin was the last paid off, in March 1958, " +
+         "leaving the US Navy without a battleship for the first time since 1895. After 1960 the only " +
+         "battleships that went to sea again.", confidence:"high" },
+  nato_e60_battleship: { name:"USS New Jersey (BB-62), Vietnam recommissioning", origin:"United States", service:"1968",
+    crew:"~1,600", weight_t:57540, speed_kmh:61, range_km:"~27800",
+    armament:"9x 16in/50 Mk 7, 20x 5in/38; every 40mm and 20mm mount removed",
+    protection:"307 mm belt, about 500 mm turret faces; ULQ-6 ECM added",
+    note:"In commission 6 April 1968 to 17 December 1969, one gunline tour off Vietnam: about 5,700 rounds of " +
+         "16-inch. The only battleship in commission anywhere in the world in those two years.", confidence:"high" },
+  nato_e80_battleship: { name:"Iowa-class battleship after the 1982-88 reactivation", origin:"United States", service:"1982",
+    crew:"~1,800", weight_t:57540, speed_kmh:61, range_km:"~27800",
+    armament:"9x 16in/50 Mk 7, 12x 5in/38 in six twin mounts, 32 Tomahawk in eight Mk 143 armored boxes, " +
+              "16 Harpoon in four quad canisters, 4x Phalanx CIWS",
+    protection:"307 mm belt, about 500 mm turret faces; SLQ-32(V)3 and Mk 36 SRBOC; no area SAM (Stinger teams aboard)",
+    note:"New Jersey recommissioned December 1982 and shelled the Chouf off Lebanon in 1983-84; Iowa followed in 1984, " +
+         "Missouri in 1986 and Wisconsin in 1988.", confidence:"high" },
+  nato_e90_battleship: { name:"Iowa-class battleship in the Gulf War (Missouri, Wisconsin)", origin:"United States", service:"1986",
+    crew:"~1,800", weight_t:57540, speed_kmh:61, range_km:"~27800",
+    armament:"9x 16in/50 Mk 7, 12x 5in/38, 32 Tomahawk in eight Mk 143 armored boxes, 16 Harpoon, 4x Phalanx CIWS",
+    protection:"307 mm belt, about 500 mm turret faces; SLQ-32(V)3 and Mk 36 SRBOC",
+    note:"Iowa paid off in October 1990 and New Jersey in February 1991. Missouri and Wisconsin fired Tomahawk on the " +
+         "first night of Desert Storm and then 16-inch with Pioneer RPV spotting; Missouri, the last battleship in " +
+         "commission anywhere, left service in March 1992.", confidence:"high" },
   ssgn_n: { name:"Ohio-class SSGN (converted)", origin:"United States", service:"2007",
     crew:159, weight_t:18750, speed_kmh:"~37 submerged", range_km:"unlimited",
     armament:"Up to 154 Tomahawk in converted tubes, Mk 48 torpedoes, special forces lockout",

@@ -12292,6 +12292,174 @@ Object.assign(UNITS, {
    era unit is also tagged so nothing here leaks into a present-day battle. */
 if (typeof reindexRoles === "function") reindexRoles();
 
+/* ==================================================================
+   THE IOWA CLASS, AND THE TOMAHAWK THE SURFACE FLEET CARRIED
+   (owner) "i take your suggestions and make it on 1,2,3 first." - item W11
+   of the gap report. Measured on HEAD b62fbf6 under jsc: no faction had a
+   battleship in any era, and not one US surface ship carried Tomahawk; a
+   Burke ordered onto a power station 18 tiles inland closed to 15.1 tiles and
+   killed it with six Harpoons, and a Spruance, with no Harpoon, closed to
+   11.3 and used its guns.
+
+   ONLY THE UNITED STATES, and only in the years it really had them. Britain's
+   Vanguard (paid off 1960) and France's Jean Bart (1970) are left out: both
+   spent most of the 1950s in reserve - Vanguard from 1955, Jean Bart after
+   Suez - and a row for either needs its own gun, radar and armour research,
+   which a half-done row would only pretend to have. The Soviet Union never
+   completed a battleship of its own; the two Tsarist dreadnoughts and the
+   ex-Italian Novorossiysk it kept were gone by 1957. After 1960 the Iowas are
+   the only battleships that went to sea again, in three commissions:
+     e50  1951-58: all four back for Korea; Wisconsin was the last out, in
+          March 1958. Four hulls.
+     e60  1968-69: New Jersey ALONE, one Vietnam gunline tour, 6 April 1968 to
+          17 December 1969. One hull.
+     e80  1982-89: all four reactivated between 1982 and 1988 with Tomahawk,
+          Harpoon and Phalanx. Four hulls.
+     e90  the Gulf War: Iowa paid off in October 1990 and New Jersey in
+          February 1991, so Desert Storm was Missouri and Wisconsin, and
+          Missouri was the last battleship in commission anywhere, to March
+          1992. Two hulls.
+   No e00 or e20 row: struck 1995-2006 and museum ships since. The class
+   ceiling is player.js lockReason (`hulls`, one `hullClass` across the rows),
+   counted over the match, so a sunk Iowa is not replaced.
+
+   A NEW ROLE, "battleship", and not "cruiser". The role is what the commander
+   asks for: unitFor(fac, "cruiser", era) answers ONE hull, and it would still
+   answer the Des Moines, the Long Beach and the Ticonderoga, so an Iowa filed
+   as a cruiser could never be chosen by the AI and would be dealt as
+   "Cruiser" on the briefing card. As its own role the commander can ask for
+   it when it sees a coastal battery (ai.js navalMix), counts an enemy one as
+   a capital ship (foeSea), and keeps its scouts outside its guns (SEA_R). The
+   decoy sweep in rules.js walks SOFTKILL_ROLES and skips a role it does not
+   list, so the 1980s hulls carry their own figure below.
+
+   ARMOUR. Every hull in this game is armor "heavy" and there is no naval
+   penetration model (combat.js resolveArmor answers vehicles only), so what a
+   307 mm belt buys is carried in hit points, set against the same decade's
+   cruiser and carrier. The era rows scale off a present-day figure by the
+   factors every naval chain in this file uses (cruiser 1510/1855/2290/2580
+   against cruiser_n's 2900, carrier 2185/2690/3320/3740 against 4200 - 0.52,
+   0.64, 0.79, 0.89): an Iowa of 5200 on that scale is 2700, 3330 and 4300,
+   and the 1990s hull is the same ship as the 1980s one, so 4300 again - the
+   toughest hull afloat in every era it served. Cost, fuel and build time run
+   the same way and sit under the carrier, which comes with an air wing.
+
+   ONE GUN, TWO SHELLS. The 16in/50 Mk 7 is the same gun from 1943 to 1992,
+   and it went to sea with two kinds of round for two different jobs:
+     HC  the 1,900 lb Mk 13 high-capacity shell, for the shore. Lobbed
+         ("arc"): plunging fire at a fixed point, so the ship is an indirect
+         shooter - Ctrl+right-click shells a map point, and a counter-battery
+         stance answers plotted artillery. Range 16.0. The gun's 38 km
+         against a 130-152 mm coastal gun's 30 is 1.27 times the coastal
+         battery's 13.5, about 17 - the reach the game already gives its
+         heavy shore-bombardment gun (rules.js navgun_203) - and it is set a
+         tile short of that so the Tomahawks aboard keep a band of their own
+         past the gun (17.3 to 20.5 with the NATO reach; pickWeapon keeps
+         them in their boxes inside the gun's reach). 17.3 with the NATO
+         reach, so even after engage() closes to 86% of it (14.9) she stays
+         outside the battery - the whole point the Iowas were brought back to
+         make. Land artillery out-ranges it (a 155 mm howitzer 20 tiles), as
+         it should. It is not laid on a ship: nothing afloat stays where a
+         lobbed shell was aimed.
+     AP  the 2,700 lb Mk 8 armour-piercing shell, against a ship. Direct fire
+         off the Mk 38 director, scored like every other naval shell in the
+         game (the splash is what lets a round that lands alongside a hull
+         count, and a no-splash row lost to Sverdlovs it would have sunk: an
+         e50 Iowa with one died to a Sverdlov and a Kotlin). Range 11.0,
+         11.9 with the NATO reach - past a Sverdlov's 7.5 and a
+         Sovremenny's guns, and inside every anti-ship missile of the navies
+         it would have met: a P-15 Termit's 12.2 in the 1960s, the P-35,
+         P-500 and P-700 (13.9 to 16.0) after them. On the real scale the gun
+         reached 38.7 km and the P-500 550. (Those are the roadmap's
+         weapon-data rows. On b4a9943 the Kynda's P-35, the Slava's P-500,
+         the Sovremenny's P-270 and the Pyotr Velikiy's P-700 are still
+         8.4-9.5 tile shells - a data error that pass fixes - and there the
+         AP shell out-ranges them; see the fights below.)
+   Measured with one lobbed row at 17.0 for both jobs, under jsc with the fog
+   on, both sides on attack-move across 17 tiles of open water: an e80 Iowa
+   (3,500) sank a Slava and a Sovremenny (3,725) without a scratch - the
+   Slava fired 6 Bazalts before she died - and a 1968 New Jersey did the same
+   to a Kynda and a Kashin. With the two shells, the same runs capped at
+   240 s, on b4a9943 with the roadmap's weapon-data pass in (it gives the
+   P-500, P-270 and P-700 their real reach): against the Slava and the
+   Sovremenny the Soviet pair stood off at their missiles' reach, the
+   sixteen-inch never fired, and the Iowa was down to 1,702 of 4,429 with
+   the Sovremenny untouched and the Slava at 1,271 of 2,176; alone against a
+   Slava (2,265) she lost 36% to the Slava's 51%, and against a Pyotr
+   Velikiy 32% to 48%. New Jersey sank the Kynda and the Kashin (2,905) and
+   lost a third of her hull; an e50 Iowa sank a Sverdlov and a Kotlin for
+   22% of hers, and two Sverdlovs and a Kotlin (3,770) for half. The gun era
+   was hers; the missile era was not. (Without that pass the Soviet missiles
+   are shorter, she closes to the AP shell's reach, and she sinks the Slava
+   and the Sovremenny for 46% of her hull, the Pyotr Velikiy for 49%.)
+
+   THE FIVE-INCH BATTERY is split by side, not counted twice. Ten twin Mk 28
+   mounts, five a side, and a mount on one beam cannot bear on the other: the
+   surface row is the engaged side's five, and the anti-aircraft row is the
+   other five on VT fuzes (with the quad 40 mm Bofors in the 1950s; every
+   40 mm and 20 mm mount was gone by 1968). The 1980s refit landed four
+   mounts for the armored boxes and the Harpoon canisters, so three a side -
+   and the anti-aircraft job went to four Phalanx. Reach on each era's own
+   naval-gun scale: 17.3 km against the 5in/54's 23.7 (8.5 tiles in e50) and
+   23 km (10.5 in e80).
+
+   THE TOMAHAWK ROWS keep the submarine round's figures - 320, 19.0 tiles,
+   0.90, subsonic cruise at intercept 1.55 - with the three differences that
+   matter on a surface ship:
+     manual      HELD. It fires on a commander's order and never on
+                 acquisition, like HARM and the ballistic rounds.
+     landAttack  a structure, and nothing that moves: TLAM flies to the
+                 coordinates it was given (entities.js pickWeapon).
+     tgt.sea 0   the anti-ship TASM went to sea in 1983 and was withdrawn in
+                 the 1990s, never usable beyond the horizon it needed a target
+                 from; Harpoon does that job on every one of these hulls.
+   and a ripple, not a trickle. Mk 41 puts a round out every few seconds and
+   the armored box its four in a minute; at the submarine's 14 to 16 seconds
+   a ship landed about 17 hp/s on a power station that repairs 18.7, so a
+   Spruance's whole load of eight could not bring down a repaired one (review,
+   repair.js). Six seconds from the cells and eight from the boxes: the
+   magazine, which cannot be refilled at sea, is what limits a strike.
+   Fitted to the hulls at the tail of generations.js, not here - see the note
+   there. Burst 1, so the magazine counts missiles. */
+Object.assign(WEAPONS, {
+  bb_16in50: { name:"16in/50 Mk 7, HC shells", dmg:420, warhead:"he", range:16.0,
+    minRange:3.0, reload:11, burst:3, burstDelay:0.45, acc:0.45, proj:"arc", speed:260,
+    aoe:3.4, suppress:95, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"cannon" },
+  bb_16in50_ap: { name:"16in/50 Mk 7, AP shells", dmg:420, warhead:"he", range:11.0,
+    reload:11, burst:3, burstDelay:0.45, acc:0.45, proj:"shell", speed:700,
+    aoe:0.9, tgt:{ground:0,air:0,sea:1,sub:0}, sfx:"cannon" },
+  bb_5in38_side5: { name:"5in/38 Mk 28, five twin mounts a side", dmg:64, warhead:"he",
+    range:6.4, reload:4.2, burst:4, burstDelay:0.3, acc:0.62, proj:"shell", speed:720,
+    aoe:0.9, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"cannon" },
+  bb_5in38_side3: { name:"5in/38 Mk 28, three twin mounts a side", dmg:64, warhead:"he",
+    range:7.9, reload:4.2, burst:3, burstDelay:0.35, acc:0.66, proj:"shell", speed:720,
+    aoe:0.9, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"cannon" },
+  bb_aa_e50: { name:"5in/38 on VT fuzes and quad 40mm Bofors", dmg:44, warhead:"flak",
+    range:5.6, reload:1.4, burst:6, burstDelay:0.1, acc:0.60, proj:"shell", speed:820,
+    aoe:0.5, tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"cannon" },
+  bb_aa_e60: { name:"5in/38 on VT fuzes", dmg:40, warhead:"flak", range:5.6,
+    reload:1.6, burst:4, burstDelay:0.1, acc:0.58, proj:"shell", speed:820, aoe:0.5,
+    tgt:{ground:0,air:1,sea:0,sub:0}, sfx:"cannon" },
+  tlam_n_ship: { name:"BGM-109 Tomahawk (Mk 41 VLS)", dmg:320, warhead:"he", range:19.0,
+    minRange:2.5, reload:6, burst:1, acc:0.90, proj:"missile", speed:112, aoe:2.0,
+    profile:"cruise", intercept:1.55, manual:true, landAttack:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
+  /* the Mk 143 armored box: four rounds, raised to fire, on the first
+     Spruance refits from 1983 and eight of them on each Iowa */
+  tlam_n_abl: { name:"BGM-109 Tomahawk (Mk 143 armored box)", dmg:320, warhead:"he",
+    range:19.0, minRange:2.5, reload:8, burst:1, acc:0.90, proj:"missile", speed:112,
+    aoe:2.0, profile:"cruise", intercept:1.55, manual:true, landAttack:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
+});
+Object.assign(UNITS, {
+  nato_e50_battleship: { fac:"nato", role:"battleship", cat:"naval", layer:"sea", name:"Iowa BB", full:"USS Iowa (BB-61), Iowa-class battleship", cost:2120, oil:46, time:50, hp:2700, armor:"heavy", speed:1.60, turn:0.55, sight:8.6, r:27, mass:0, weapons:["bb_16in50","bb_16in50_ap","bb_5in38_side5","bb_aa_e50"], prereq:["navalyard","lab"], tech:3, from:"e50", to:"e50", service:"1943", confidence:"high", turret:true, tturn:0.8, radar:12, radarQ:9, ciws:0.60, rcs:2.4, hulls:4, hullClass:"iowa", desc:"Nine 16-inch guns on 45,000 tonnes, a 307 mm belt, and thirty-three knots - the fastest battleships ever built, and by the end of the war escorting the carriers rather than leading the fleet. All four were back in commission for Korea by 1951, firing on the coast from Wonsan to Chongjin; when Wisconsin paid off in March 1958 the US Navy had no battleship in commission for the first time since 1895. High-capacity shells for the shore, armour-piercing for a ship. No hull sonar and no answer to a submarine: she sails with escorts or not at all." },
+  nato_e60_battleship: { fac:"nato", role:"battleship", cat:"naval", layer:"sea", name:"New Jersey BB", full:"USS New Jersey (BB-62), 1968 recommissioning", cost:2620, oil:57, time:53, hp:3330, armor:"heavy", speed:1.65, turn:0.55, sight:8.6, r:27, mass:0, weapons:["bb_16in50","bb_16in50_ap","bb_5in38_side5","bb_aa_e60"], prereq:["navalyard","lab"], tech:3, from:"e60", to:"e60", service:"1968", confidence:"high", turret:true, tturn:0.8, radar:12.6, radarQ:10, ciws:0.50, rcs:2.4, hulls:1, hullClass:"iowa", desc:"ONE ship. New Jersey alone came back, on 6 April 1968, for a single tour on the Vietnam gunline, and was decommissioned again on 17 December 1969 - about 5,700 rounds of 16-inch into the DMZ and the coast, with every 40 mm and 20 mm mount gone and ECM on the masts in their place. The rest of the class stayed in reserve, which is why the yard will lay down only this one in the 1960s. A missile cruiser of this decade outranges her guns." },
+  nato_e80_battleship: { fac:"nato", role:"battleship", cat:"naval", layer:"sea", name:"Iowa BB", full:"USS New Jersey (BB-62), Iowa class after the 1980s reactivation", cost:3500, oil:75, time:58, hp:4300, armor:"heavy", speed:1.70, turn:0.55, sight:11, r:27, mass:0, weapons:["bb_16in50","bb_16in50_ap","bb_5in38_side3","ssm_harpoon","ciws_phalanx"], prereq:["navalyard","lab"], tech:3, from:"e80", to:"e80", service:"1982", confidence:"high", turret:true, tturn:0.8, radar:16, radarQ:17, ciws:0.70, softkill:0.27, rcs:2.4, hulls:4, hullClass:"iowa", desc:"Reactivated between 1982 and 1988 as the centre of a surface action group: four of the 5-inch mounts landed to make room for eight armored box launchers of Tomahawk and four quad canisters of Harpoon, four Phalanx, SPS-49 air search - and no area missile at all, so the air defence is the escort's. New Jersey shelled the Chouf in 1983-84. Thirty-two Tomahawks that do not reload at sea; every Soviet missile cruiser of the decade outranges her guns." },
+  nato_e90_battleship: { fac:"nato", role:"battleship", cat:"naval", layer:"sea", name:"Iowa BB", full:"USS Missouri (BB-63), Desert Storm", cost:3500, oil:75, time:58, hp:4300, armor:"heavy", speed:1.70, turn:0.55, sight:11, r:27, mass:0, weapons:["bb_16in50","bb_16in50_ap","bb_5in38_side3","ssm_harpoon","ciws_phalanx"], prereq:["navalyard","lab"], tech:3, from:"e90", to:"e90", service:"1986", confidence:"high", turret:true, tturn:0.8, radar:16, radarQ:17, ciws:0.70, softkill:0.27, rcs:2.4, hulls:2, hullClass:"iowa", desc:"TWO ships. Iowa paid off in October 1990 and New Jersey in February 1991, so the Gulf War was Missouri and Wisconsin: Tomahawks from the armored boxes on the first night, then 16-inch into the Kuwaiti coast with Pioneer drones spotting the fall of shot - one Iraqi unit famously surrendered to Wisconsin's drone. Missouri was the last battleship in commission anywhere in the world, until March 1992." },
+});
+/* the four rows above are merged after the reindex further up */
+if (typeof reindexRoles === "function") reindexRoles();
+
 /* ---- torpedo run speed ----
    All twenty-five era tubes were generated from the per-nation table in
    rules.js while that table was still authored in tiles/sec, so they came out

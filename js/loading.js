@@ -67,6 +67,7 @@ var LoadScreen = (function () {
     ewair: "Electronic warfare", gunshipair: "Fixed-wing gunship",
     patrol: "Patrol vessel or fast attack craft", corvette: "Escort or light warship",
     missileboat: "Missile boat or corvette", destroyer: "Destroyer or frigate",
+    battleship: "Battleship",
     cruiser: "Cruiser", carrier: "Aircraft-carrying warship", sub: "Submarine",
     ssn: "Nuclear submarine", ssbn: "Ballistic missile submarine",
     ssgn: "Cruise missile submarine", navminelayer: "Minelaying",

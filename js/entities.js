@@ -1792,6 +1792,10 @@ class Unit {
          the player named the target. */
       if (this.holdsFire(w)) continue;
       if ((spare && Unit.precious(w)) || (w.softOnly && tArmor !== "infantry")) continue;
+      /* A land-attack round goes only when it LEADS (pickWeapon): never as a
+         free extra beside a gun that already reaches, where it would spend a
+         magazine that cannot be refilled at sea on work the gun is doing. */
+      if (w.landAttack) continue;
       if (w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
@@ -2027,6 +2031,32 @@ class Unit {
          coax's reach and put 112 rounds of 7.62 into it for no damage at
          all, where HEAD fired seven 76 mm rounds and took 865 HP to 606. */
       if (w.softOnly && tArmor !== "infantry") continue;
+      /* ---- a land-attack cruise missile ----
+         It flies to the coordinates it was given, so it is for what stays
+         where it was found: a structure, and nothing that moves. It gets this
+         far only under a RELEASED order (holdsFire above) - a commander named
+         that structure - and it is for what NOTHING ELSE ABOARD can reach.
+         Beyond the gun and the Harpoon it is the only choice, so it leads and
+         the hull stands off; scored like any other mount out there it lost to
+         the gun on HEAD's reloads and the hull sailed in to the gun's reach
+         (a Burke ordered onto a power station inland closed to 15.1 tiles, a
+         Spruance to 11.3), which is the one thing the missile exists to
+         spare it. Inside that reach it is not a candidate at all: a round the
+         ship cannot replace at sea is not spent on work its gun is doing, so
+         an Iowa shells a beach with its sixteen-inch and keeps the Tomahawks
+         for what lies behind it. An empty cell is passed over. */
+      if (w.landAttack) {
+        if (t.kind !== "building") continue;
+        if (this.mag && this.mag[i] !== undefined && this.mag[i] <= 0) continue;
+        let other = 0;
+        for (let j = 0; j < this.def.weapons.length; j++) {
+          const wj = WEAPONS[this.def.weapons[j]];
+          if (j === i || !wj || !wj.tgt || !wj.tgt.ground || wj.landAttack || this.holdsFire(wj)) continue;
+          other = Math.max(other, this.weaponRange(wj) / CFG.TILE);
+        }
+        if (dist <= other) continue;
+        return i;
+      }
       if (w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;

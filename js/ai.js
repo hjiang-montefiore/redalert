@@ -899,6 +899,12 @@ function makeCommander() {
        tick that queues a purchase, and a scout under fire or running dry must
        not wait for a quiet factory. Every two seconds; scoutT is the clock. */
     if (scoutT <= 0) { scoutT = 2; driveScouts(); }
+    /* The surface Tomahawk driver is off think() for the reason defendBase()
+       and the raid driver were taken off it: think() returns early on every
+       tick that queues a purchase, and a named strike is a standing order,
+       not a purchase. One think interval, like defendBase() below. */
+    strikeT -= dt;
+    if (strikeT <= 0) { strikeT = D.think || 1.6; driveStrikeShips(); }
     /* ---- the production we cannot lose ----
        (victory rule) a side with no live production building is beaten.
        defendBase() used to run on the last line of think(), after fifteen
@@ -4311,7 +4317,7 @@ function makeCommander() {
       s.surf += w;
       if (r.role === "missileboat") s.missile += w;
       else if (r.role === "destroyer" || r.role === "cruiser" ||
-               r.role === "carrier") s.capital += w;
+               r.role === "carrier" || r.role === "battleship") s.capital += w;
     }
     /* The submerged boat is the one contact a sighting cannot be relied on to
        produce, because it is under water and our sonar may never have held it.
@@ -4383,6 +4389,12 @@ function makeCommander() {
     const mix = { corvette: 0.40, patrol: P.tech >= 2 ? 0.06 : 0.28 };
     if (P.tech >= 2) { mix.destroyer = 0.26; mix.sub = 0.16; mix.missileboat = 0.12; }
     if (P.tech >= 3) mix.cruiser = 0.10;
+    /* The battleship, for the one navy that had one after 1950: unitFor()
+       answers null for everyone else and for the US after 1992, so the key is
+       never written. A thin standing share - four hulls in a fleet of six
+       hundred - raised by the coastal-battery term below; lockReason's class
+       ceiling holds it to the hulls that existed. */
+    if (P.tech >= 3 && unitFor(P.faction, "battleship", P.era)) mix.battleship = 0.06;
     /* A SECOND submarine line, and only for the navy that actually ran two.
        unitFor() answers null for every faction with no `ssn` row, so this adds
        nothing whatever to anyone else's mixture - it does not even cost them a
@@ -4442,6 +4454,9 @@ function makeCommander() {
        gun line on the beach is taken apart from outside its envelope or not at
        all: the submarine's land-attack round reaches 19. */
     if (s.coast > 0 && P.tech >= 3) add("sub", 0.14 * U.clamp(s.coast / 3, 0, 1) * grip);
+    /* ...and so does a sixteen-inch HC shell, which outranges the battery:
+       the thing the Iowas were brought back to do */
+    if (s.coast > 0 && mix.battleship) add("battleship", 0.12 * U.clamp(s.coast / 3, 0, 1) * grip);
 
     /* The same guard the ground mixture carries, for the same reason: a fleet
        of nothing but missile boats has no sonar, no SAM and 900 hit points a
@@ -5134,6 +5149,117 @@ function makeCommander() {
       if (dup) continue;
       telFired.push({ x: spot.x, y: spot.y, t: now });
       u.give({ type: "bombard", x: spot.x, y: spot.y, until: now + 12 });
+    }
+  }
+
+  /* ---- land-attack cruise missiles from the surface fleet ----
+     A surface ship's Tomahawk is HELD - tlam_n_ship and tlam_n_abl carry
+     `manual`, as a ballistic round does - so the naval wave's attackmove never
+     fires one and acquire() never picks one up. This is the commander naming
+     the target, which is the only way a held round goes, through the same
+     give() -> setOrder() release the player's right-click uses.
+
+     FOG. The target is a structure off seenB - this commander's own plot -
+     belonging to the rival, standing on ground this commander has OVERLOOKED
+     (look): exactly the test ui.js pickAt puts to the player's right-click,
+     which takes a structure on explored ground and never on ground nobody
+     has visited. An emitter only HEARD (esmSweep) is on the plot but not on
+     that ground, and is left alone: measured on the first cut, an AI Spruance
+     put two Tomahawks each into a SAM site 15.5 tiles off and a radar dome at
+     15.9 that nothing of its side had ever seen (best eye 1.9 and 5.0 tiles
+     short), which a player in the same seat could not have clicked. r.ref is
+     touched only for .dead and to hand the engine the thing to fire at:
+     warAim()'s convention, and pickEmitter()'s. No unit is ever aimed at; the
+     round flies to coordinates, and a unit will not be there.
+
+     WHAT IS WORTH ONE. Guns ashore and air defence first - a coastal battery
+     out-ranges every hull gun but the Iowa's, and a SAM or radar site is what
+     the air force is waiting on - then production, then anything. A
+     structure another ship was sent at in the last forty seconds is taken only
+     when nothing else is in reach, so two destroyers do not empty their cells
+     into one power plant.
+
+     A STRIKE IS A PACKAGE, FIRED FROM WHERE THE SHIP STANDS. Only a structure
+     already inside the missile's reach and past the guns and Harpoons (where
+     pickWeapon lets the missile lead) is chosen, so engage() never sails the
+     hull in. What it may take over: nothing to do, the fleet's advance
+     (attackmove - resumed through the order's `resume` when the strike is
+     over, the way acquire() hands a hull back to its leg), and an automatic
+     engagement of a STRUCTURE - measured, a Burke that sighted a power
+     station 16.8 tiles off had given itself one on the first tick, so
+     refusing every attack order meant never naming it. Never a move (the
+     oiler, the road home to a yard), never a commanded order, never a fight
+     with something that moves. It ends after four rounds, the target gone,
+     the cells dry or forty-five seconds, whichever is first, and the ship
+     then rests twenty seconds before it may be named again - on the first
+     cut the cap ended one ORDER and the next tick, 1.6 s later, named the
+     same power station again. */
+  const tlamSent = new Map();       // structure id -> when a ship was last sent at it
+  let strikeT = 0;                  // driveStrikeShips()'s own clock
+  const STRIKE_N = 4, STRIKE_S = 45, STRIKE_REST = 20;
+  function strikeMount(u) {
+    const ws = u.def.weapons;
+    for (let i = 0; i < ws.length; i++) { const w = WEAPONS[ws[i]]; if (w && w.landAttack) return i; }
+    return -1;
+  }
+  function driveStrikeShips() {
+    if (atPeace || !look) return;
+    const now = G.time, rid = rival ? rival.idx : -1, W = G.map.W;
+    if (tlamSent.size > 64) for (const [k, t0] of tlamSent) if (now - t0 > 60) tlamSent.delete(k);
+    for (const u of P.units) {
+      if (u.dead || u.cat !== "naval" || u.layer !== "sea") continue;
+      const wi = strikeMount(u);
+      if (wi < 0) continue;
+      const cap = (u.def.magazine || {})[u.def.weapons[wi]];
+      const left = u.mag && u.mag[wi] !== undefined ? u.mag[wi] : cap;
+      const dry = left !== undefined && left <= 0;
+      const s = u._tlamS;
+      if (s) {
+        const o = s.order;
+        if (u.order === o && o.target && !o.target.dead && !dry &&
+            (left === undefined || s.left0 - left < STRIKE_N) && now - s.t0 < STRIKE_S) continue;
+        /* over: back to the leg it was taken from, or to nothing */
+        if (u.order === o) u.give(o.resume ? { type: "attackmove", x: o.resume.x, y: o.resume.y }
+                                            : { type: "idle" });
+        u._tlamS = null; u._tlamRest = now + STRIKE_REST;
+        continue;
+      }
+      if (dry || (u._tlamRest || 0) > now) continue;
+      const o0 = u.order, ot = o0.type;
+      const autoBld = ot === "attack" && o0.auto && !o0.release &&
+                      o0.target && o0.target.kind === "building";
+      if (!(ot === "idle" || ot === "guard" || ot === "attackmove" || autoBld)) continue;
+      const w = WEAPONS[u.def.weapons[wi]];
+      const R = u.weaponRange(w) * 0.95, minR = (w.minRange || 0) * CFG.TILE;
+      /* and beyond everything else aboard that reaches a structure: inside
+         that, pickWeapon() leaves the missile in its cell */
+      let other = 0;
+      for (let j = 0; j < u.def.weapons.length; j++) {
+        const wj = WEAPONS[u.def.weapons[j]];
+        if (j === wi || !wj || !wj.tgt || !wj.tgt.ground || wj.landAttack || u.manualWeapon(wj)) continue;
+        other = Math.max(other, u.weaponRange(wj));
+      }
+      let best = null, bv = 0;
+      for (const r of seenB.values()) {
+        if (r.gone || !r.ref || r.ref.dead || (rid >= 0 && r.own !== rid)) continue;
+        if (!look[r.ty * W + r.tx]) continue;              // heard, never seen
+        const d = U.dist(u.x, u.y, r.x, r.y);
+        if (d > R || d < minR || d <= other) continue;
+        const bd = BUILDINGS[r.key];
+        const air = !!(bd && (bd.radar || bd.jam || (bd.weapons || []).some(k =>
+                         WEAPONS[k] && WEAPONS[k].tgt && WEAPONS[k].tgt.air)));
+        let v = (gunProfile(r.key) || air) ? 3 : isProd(r.key) ? 2 : 1;
+        if (now - (tlamSent.get(r.id) || -1e9) < 40) v *= 0.2;
+        v /= 1 + d / CFG.TILE * 0.02;
+        if (v > bv) { bv = v; best = r; }
+      }
+      if (!best) continue;
+      tlamSent.set(best.id, now);
+      const resume = ot === "attackmove" ? { x: o0.x, y: o0.y } : autoBld ? o0.resume : null;
+      const order = { type: "attack", target: best.ref };
+      if (resume) order.resume = { x: resume.x, y: resume.y };
+      u.give(order);
+      u._tlamS = { order: order, t0: now, left0: left };
     }
   }
 
@@ -8533,6 +8659,14 @@ function makeCommander() {
          Counted per salvo, on the edge. It used to add 0.02 per think tick and
          wait for 3, which is 150 consecutive thinks - four unbroken minutes of
          firing from one spot - so no gun in any game ever displaced once. */
+      /* ...but not a warship. The Iowa is the only surface ship with a lobbed
+         gun, and this random 5-9 tile hop, written for a howitzer on land,
+         sent her at land tiles and cancelled whatever she was firing on
+         (review: seven hops in a 900 s census, two of them onto the shore).
+         A ship keeps the counter-battery stance above - New Jersey answered
+         the batteries in the Chouf that way in 1983-84 - and simply does not
+         displace. */
+      if (u.cat === "naval") continue;
       u._salvos = u._salvos || 0;
       const firing = (u.order.type === "bombard" ||
                       (u.order.type === "attack" && u.cooldowns.some(c => c > 0)));
@@ -12011,7 +12145,8 @@ function makeCommander() {
   /* ...and the surface gun and missile reach of a hull, by class: patrol hmg
      5.4, corvette 57 mm 7.2, destroyer 127 mm 11, missile boat SSM 13.5,
      cruiser 203 mm 17 */
-  const SEA_R = { patrol: 7, corvette: 9, destroyer: 12, missileboat: 15, cruiser: 18 };
+  const SEA_R = { patrol: 7, corvette: 9, destroyer: 12, missileboat: 15, cruiser: 18,
+                  battleship: 16 };   // AP 16in 11.9 with the NATO reach, Harpoon 15.1
   /* how much each kind of look is worth to each job */
   const SCOUT_WT = {
     find:     { relook: 1.5, abeam: 1.3, ore: 1.0, oil: 0.6, cell: 1.0, lane: 1.1, post: 0 },

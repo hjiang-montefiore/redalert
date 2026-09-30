@@ -1568,6 +1568,60 @@
     if (_hd && HELD_ROLES[_hd.role]) { _hd.noAuto = true; nHeld++; }
   }
 
+  /* ---- Tomahawk goes to sea in the surface fleet ----
+     W11 of the gap report: 288 Tomahawks were launched in Desert Storm,
+     most of them from cruisers, destroyers and the battleships Missouri and
+     Wisconsin, and in this game only a US submarine carried one.
+
+     FITTED HERE, after "eyes to match the reach" further up this file, and
+     not on the rows in eras.js. That pass raises every hull's sight to its
+     longest non-lobbed weapon plus 0.4 tiles, which is how every Tomahawk
+     boat in the game came to see 19.4. A round that flies to coordinates is
+     no reason for the ship to see further: measured, a Burke fitted in
+     eras.js went from 14.9 tiles of sight to 19.4 and a Spruance from 10.9.
+     (A pass that skips rounds fired on a cue would skip this one too; fitted
+     here, the answer does not depend on it.)
+
+     WHO:
+       Spruance (e80)          Mk 143 armored boxes from 1983, then Mk 41 on
+                               24 hulls from 1986. Eight rounds, because the
+                               row's 3D fit draws the boxes.
+       Burke (e90, e00, e20)   Mk 41 from DDG-51's commissioning in 1991.
+       Ticonderoga (e90, e20)  CG-52 Bunker Hill onward, from 1986.
+       Iowa (e80, e90)         eight boxes, thirty-two rounds.
+     NOT the e80 Ticonderoga. That row is USS Ticonderoga (CG-47) by name and
+     by its 3D row (Mk 26 rails, no cells), and CG-47 to CG-51 never carried
+     the missile; the VLS ships of 1986-89 are the e90 row. A US cruiser of the
+     2000s, if a later pass adds one, is a VLS ship - the five Mk 26 hulls
+     were gone by 2005 - and is fitted by the id it would carry.
+
+     THE MAGAZINE is the load, not the cell count: a Burke's 90-96 cells also
+     hold the area SAMs and ASROC, and eight to sixteen Tomahawks was an
+     ordinary deployment. Mk 41 cannot be reloaded at sea, so an empty ship
+     goes home to a naval yard (entities.js reloadAtYard) - the rule the
+     Slava's deck tubes already live by. Merged into any magazine the hull
+     already declares. */
+  var TLAM_FIT = {
+    nato_e80_destroyer:  ["tlam_n_abl", 8],
+    nato_e90_destroyer:  ["tlam_n_ship", 12],
+    nato_e00_destroyer:  ["tlam_n_ship", 12],
+    destroyer_n:         ["tlam_n_ship", 12],
+    nato_e90_cruiser:    ["tlam_n_ship", 16],
+    nato_e00_cruiser:    ["tlam_n_ship", 16],
+    cruiser_n:           ["tlam_n_ship", 16],
+    nato_e80_battleship: ["tlam_n_abl", 32],
+    nato_e90_battleship: ["tlam_n_abl", 32],
+  };
+  for (var _tfk in TLAM_FIT) {
+    var _tfu = UNITS[_tfk], _tff = TLAM_FIT[_tfk];
+    if (!_tfu || !_tfu.weapons || !WEAPONS[_tff[0]]) continue;
+    if (_tfu.weapons.indexOf(_tff[0]) < 0) _tfu.weapons = _tfu.weapons.concat([_tff[0]]);
+    var _tfm = {};
+    for (var _tfq in (_tfu.magazine || {})) _tfm[_tfq] = _tfu.magazine[_tfq];
+    _tfm[_tff[0]] = _tff[1];
+    _tfu.magazine = _tfm;
+  }
+
   /* ---- a warship's decoys, re-derived now that the era rosters exist ----
      Exactly the case the `refuelable` sweep above documents, and found the
      same way. rules.js applies SOFTKILL from a table keyed by unit id at the

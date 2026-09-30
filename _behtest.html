@@ -9594,6 +9594,372 @@ try{
   }
 
 
+  /* ====== [82] TOMAHAWK AT SEA, AND THE BATTLESHIP ======
+     (owner) "i take your suggestions and make it on 1,2,3 first." Item W11:
+     288 Tomahawks were launched in Desert Storm, most from cruisers,
+     destroyers and the battleships Missouri and Wisconsin. Measured at
+     b62fbf6 no US surface ship carried one and no navy had a battleship: a
+     Burke ordered onto a power station 18 tiles inland closed to 15.1 tiles
+     and used Harpoons, a Spruance closed to 11.3 and used its guns.
+     This section holds the fit (held, interceptable, a magazine, not on the
+     CG-47 row, no wider eyes), the battleship's place in history and in the
+     fleet (US only, one hull in 1968 and two in 1991, the toughest hull of
+     each decade, a ceiling counted over the match, HC for the shore and AP
+     inside the missiles' reach at sea), the order that releases the missile
+     and the ones that do not, a strike on a structure under a SAM belt and
+     without one, the Iowa taking a coastal battery apart from outside its
+     reach while keeping its Tomahawks, and the commander firing one only by
+     naming a structure it has SEEN - never one it has only heard.
+     The strikes are driven by the ship's and the battery's own update() and
+     Combat.update(), not Game.tick, with the match's other rounds parked, so
+     the forced RNG below touches nothing but these shots. Everything is put
+     back: the units and structures made here, the RNG, the era, both
+     commanders' books, the parked rounds, any counter-battery plot the
+     sixteen-inch left, and the enemy commander, which is rebuilt and held at
+     peace exactly as [62] leaves it. */
+  if (inHalf(1)) {
+  log("\n[82] TOMAHAWK ON THE SURFACE FLEET, AND THE BATTLESHIP THAT CARRIED IT");
+  (function(){
+    var M=Game.map, T2=CFG.TILE, made=[], blds=[], rng=Game.rng, era0=P.era, parked=null;
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats), brainTouched=false, spawn0=Game.spawnUnit;
+    function mk(pl,id,x,y){ var u=UNITS[id] ? Game.spawnUnitAt(pl,id,x*T2+16,y*T2+16) : null; if(u) made.push(u); return u; }
+    function bld(pl,id,x,y){ var b=Game.placeBuilding(pl,id,x,y,true); if(b){ b.buildProgress=1; blds.push(b); } return b; }
+    function tl(id){ var d=UNITS[id]; if(!d||!d.weapons) return null;
+      for(var i=0;i<d.weapons.length;i++){ var w=WEAPONS[d.weapons[i]];
+        if(w && w.landAttack) return { i:i, k:d.weapons[i], w:w, mag:(d.magazine||{})[d.weapons[i]] }; }
+      return null; }
+    function left(u,t){ return u.mag && u.mag[t.i]!==undefined ? u.mag[t.i] : t.mag; }
+    function isLand(x,y){ return x>3&&y>3&&x<M.W-4&&y<M.H-4 && GameMap.passable(M,x,y,"ground") && !Game.tileBlocked(x,y,null); }
+    function isSea(x,y){ return x>3&&y>3&&x<M.W-4&&y<M.H-4 && GameMap.passable(M,x,y,"sea") && !Game.tileBlocked(x,y,null); }
+    function near(pl,x,y){ var b=1e9; pl.units.concat(pl.buildings).forEach(function(e){ if(!e.dead){ var d=U.dist(e.x,e.y,x,y)/T2; if(d<b) b=d; } }); return b; }
+    /* a clear sea tile and, D tiles from it, a patch of land clear for a 2x2;
+       `lonely` keeps both clear of the named side by that many tiles */
+    function scene(home, D, r0, lonely){
+      var hx=(home.homeX/T2)|0, hy=(home.homeY/T2)|0;
+      for (var r=r0||6;r<70;r+=2) for (var a=0;a<64;a++){
+        var sx=(hx+Math.cos(a/64*6.283)*r)|0, sy=(hy+Math.sin(a/64*6.283)*r)|0;
+        if(!isSea(sx,sy)) continue;
+        for (var b=0;b<48;b++){
+          var lx=Math.round(sx+Math.cos(b/48*6.283)*D), ly=Math.round(sy+Math.sin(b/48*6.283)*D), ok=true;
+          for (var dx=-3;dx<=4&&ok;dx++) for (var dy=-3;dy<=4&&ok;dy++) if(!isLand(lx+dx,ly+dy)) ok=false;
+          if(ok && lonely && (near(lonely.pl,(lx+0.5)*T2,(ly+0.5)*T2)<lonely.land || near(lonely.pl,(sx+0.5)*T2,(sy+0.5)*T2)<lonely.sea)) ok=false;
+          if(ok) return { sx:sx, sy:sy, lx:lx, ly:ly };
+        }
+      }
+      return null;
+    }
+    /* the longest anti-ship MISSILE aboard a pact surface ship of that decade */
+    function pactReach(era){ var best=0;
+      ["cruiser","destroyer","corvette","missileboat","carrier"].forEach(function(r){ var id=unitFor("pact",r,era); if(!id) return;
+        UNITS[id].weapons.forEach(function(k){ var w=WEAPONS[k]; if(w && w.proj==="missile" && w.tgt && w.tgt.sea) best=Math.max(best, w.range*(FACTIONS.pact.rangeMul||1)); }); });
+      return best; }
+    var mark=function(){ return new Set(Combat.effects); };
+    try { (function(){
+      /* ---- 1. the fit ---- */
+      var fit=["nato_e80_destroyer","nato_e90_destroyer","nato_e00_destroyer","destroyer_n",
+               "nato_e90_cruiser","cruiser_n","nato_e80_battleship","nato_e90_battleship"], bad=[];
+      fit.forEach(function(id){ var t=tl(id);
+        if(!t || !t.w.manual || !(t.mag>0) || t.w.proj!=="missile" || !(t.w.intercept>0) ||
+           !t.w.tgt.ground || t.w.tgt.sea || t.w.tgt.air) bad.push(id+":"+(t?t.k:"none")); });
+      chk("Tomahawk is aboard the Spruance, the Burke of three decades, the VLS Ticonderoga and the reactivated Iowa - held, interceptable, land-attack only, with a magazine",
+          bad.length===0, bad.join("; ") || fit.map(function(id){ return id+" "+tl(id).mag; }).join(", "));
+      var leak=[];
+      for (var k in UNITS){ var d=UNITS[k];
+        if(d.cat==="naval" && d.layer==="sea" && tl(k) && (d.fac!=="nato" || k==="nato_e80_cruiser")) leak.push(k); }
+      chk("...and not on USS Ticonderoga (CG-47), whose Mk 26 rails never fired one, nor on any other navy's surface ship",
+          !!tl("destroyer_n") && !tl("nato_e80_cruiser") && leak.length===0, leak.join(", ") || "CG-47 row and every other navy clean");
+      var eyes=fit.filter(function(id){ var t=tl(id); return t && UNITS[id].sight >= t.w.range; });
+      chk("the missile does not widen a ship's eyes to its own 19 tiles, as the sight pass did for every Tomahawk boat",
+          !!tl("destroyer_n") && eyes.length===0,
+          eyes.join(", ") || "Burke "+UNITS.destroyer_n.sight+", Spruance "+UNITS.nato_e80_destroyer.sight+
+          ", Iowa "+(UNITS.nato_e80_battleship||{}).sight+" against a "+(tl("destroyer_n")||{w:{}}).w.range+"-tile round");
+
+      /* ---- 2. the battleship, only where it was real ---- */
+      var have={};
+      ERAS.forEach(function(e){ ["nato","pact","pla","kpa","roc","gbr","fra","deu"].forEach(function(f){
+        var id=unitFor(f,"battleship",e); if(id) have[f+"/"+e]=id; }); });
+      chk("only the United States has a battleship - the 1950s, New Jersey's 1968-69 tour, 1982-89, the Gulf War - and none after",
+          keep(Object.keys(have).sort())===keep(["nato/e50","nato/e60","nato/e80","nato/e90"]) &&
+          have["nato/e90"]==="nato_e90_battleship", keep(have));
+      var B50=UNITS.nato_e50_battleship, B60=UNITS.nato_e60_battleship, B80=UNITS.nato_e80_battleship, B90=UNITS.nato_e90_battleship;
+      if(!B50||!B60||!B80||!B90){ chk("the four battleship rows exist", false, "missing"); return; }
+      var tough=[];
+      [["e50",B50],["e60",B60],["e80",B80],["e90",B90]].forEach(function(p){
+        var cv=UNITS[unitFor("nato","carrier",p[0])], cg=UNITS[unitFor("nato","cruiser",p[0])];
+        if(!(p[1].hp>cv.hp && p[1].hp>cg.hp && p[1].armor==="heavy" && p[1].cost<cv.cost))
+          tough.push(p[0]+" "+p[1].hp+" vs carrier "+cv.hp+", cruiser "+cg.hp); });
+      chk("it is the toughest hull afloat in each decade it served, and still cheaper than the carrier",
+          tough.length===0, tough.join("; ") || "hp "+B50.hp+" / "+B60.hp+" / "+B80.hp+" / "+B90.hp);
+      chk("four hulls in the class, one in the 1960s and two in the Gulf War", B50.hulls===4 && B60.hulls===1 && B80.hulls===4 &&
+          B90.hulls===2 && B50.hullClass===B60.hullClass && B60.hullClass===B80.hullClass && B80.hullClass===B90.hullClass,
+          B50.hulls+"/"+B60.hulls+"/"+B80.hulls+"/"+B90.hulls);
+      var HC=WEAPONS.bb_16in50, AP=WEAPONS.bb_16in50_ap, nm=(FACTIONS.nato.rangeMul||1);
+      var bad2=[B50,B60,B80,B90].filter(function(b){ return b.weapons.indexOf("bb_16in50")<0 || b.weapons.indexOf("bb_16in50_ap")<0; });
+      var apR=AP ? AP.range*nm : 99, p60=pactReach("e60"), p80=pactReach("e80");
+      chk("one gun, two shells: HC for the shore, out-ranging a coastal battery, and AP for a ship, inside the reach of the anti-ship missiles it would have met",
+          !!HC && !!AP && bad2.length===0 && HC.tgt.ground && !HC.tgt.sea && AP.tgt.sea && !AP.tgt.ground &&
+          HC.range*nm*0.86 > WEAPONS.coast_gun.range && apR < p60 && apR < p80 && apR < WEAPONS.ssm_harpoon.range*nm,
+          "HC "+(HC&&HC.range)+" ("+(HC?(HC.range*nm*0.86).toFixed(1):"-")+" after the approach) against the battery's "+WEAPONS.coast_gun.range+
+          "; AP "+apR.toFixed(1)+" against the longest pact missile of the 1960s "+p60.toFixed(1)+" and 1980s "+p80.toFixed(1)+
+          " and its own Harpoon "+(WEAPONS.ssm_harpoon.range*nm).toFixed(1));
+      chk("it reads as a battleship, with a model and a fact sheet for every row",
+          B80.role==="battleship" && typeof WARSHIPS!=="undefined" &&
+          ["nato_e50_battleship","nato_e60_battleship","nato_e80_battleship","nato_e90_battleship"].every(function(id){ return !!WARSHIPS[id] && !!FACTS[id]; }),
+          "WARSHIPS and FACTS rows for e50, e60, e80, e90");
+
+      /* ---- 3. the class ceiling, read through the same lockReason() the AI builds through ---- */
+      var bs=scene(P, 14, 5);
+      if(!bs){ chk("sea for the class-ceiling check", false, "none"); return; }
+      function base(def){ var h=def.hulls; delete def.hulls; var r=P.lockReason(def)||""; def.hulls=h; return r; }
+      P.era="e80"; delete P.stats.hulls;
+      var rb=base(B80), r0=P.lockReason(B80)||"", three=[];
+      for(var i=0;i<3;i++) three.push(mk(P,"nato_e80_battleship",bs.sx,bs.sy));
+      P.queues.naval.items.push({ id:"nato_e80_battleship", def:B80, paid:0 });
+      var r4=P.lockReason(B80)||"";
+      P.queues.naval.items.pop();
+      var r3=P.lockReason(B80)||"";
+      three.forEach(function(u){ if(u) u.dead=true; }); Game.sweepDead();
+      /* commissioned from the yard: onProduced, with the yard stubbed */
+      Game.spawnUnit=function(){ return { stub:true }; };
+      for(var j=0;j<4;j++) P.onProduced("naval", { id:"nato_e80_battleship", def:Object.assign({}, B80, { oil:0 }) });
+      Game.spawnUnit=spawn0;
+      var rSunk=P.lockReason(B80)||"", built=(P.stats.hulls||{}).iowa;
+      P.stats.hulls={ iowa:3 }; var r3b=P.lockReason(B80)||"";
+      P.era="e90"; P.stats.hulls={ iowa:2 }; var r90=P.lockReason(B90)||"", rb90=base(B90);
+      P.stats.hulls={ iowa:1 }; var r91=P.lockReason(B90)||"";
+      delete P.stats.hulls;
+      P.era="e60";
+      var nj=mk(P,"nato_e60_battleship",bs.sx,bs.sy), r1=P.lockReason(B60)||"";
+      if(nj) nj.dead=true; Game.sweepDead();
+      P.era=era0;
+      chk("the yard lays down a fourth Iowa but not a fifth, even after one is sunk; one in 1968, two in 1991",
+          r0===rb && /CLASS CEILING — 4 HULLS/.test(r4) && r3===rb && built===4 && /4 HULLS/.test(rSunk) &&
+          r3b===rb && /2 HULLS/.test(r90) && r91===rb90 && /CLASS CEILING — 1 HULL /.test(r1),
+          "none: '"+r0+"' (as without a ceiling); three afloat + one on the slip: '"+r4+"'; three: '"+r3+"'; four commissioned and all sunk: '"+
+          rSunk+"'; e90 with two: '"+r90+"'; 1960s with New Jersey: '"+r1+"'");
+
+      /* ---- 4. held, released, and what it is fired at ---- */
+      var sc=scene(P, 17.5, 6);
+      if(!sc){ chk("sea and land for the strike", false, "none"); return; }
+      var pw=bld(E,"power",sc.lx,sc.ly), dd=mk(P,"destroyer_n",sc.sx,sc.sy), t=tl("destroyer_n");
+      var tank=mk(E,"mbt_p",sc.lx-1,sc.ly+3);
+      if(!pw||!dd||!t||!tank){ chk("strike scenario built", false, "power "+!!pw+" ship "+!!dd+" tank "+!!tank); return; }
+      var d0=U.dist(dd.x,dd.y,pw.x,pw.y)/T2;
+      dd.order={ type:"attack", target:pw, auto:true };            // what acquire() hands it
+      var autoPick=dd.pickWeapon(pw);
+      dd.give({ type:"attack", target:pw });                       // the player's right-click
+      var relPick=dd.pickWeapon(pw);
+      chk("an automatic engagement of a structure leaves the Tomahawk in its cell; a right-click on it releases it, and from "+d0.toFixed(1)+" tiles it leads",
+          autoPick!==t.i && dd.order.release===true && relPick===t.i,
+          "auto -> "+(dd.def.weapons[autoPick]||"none")+", released -> "+(dd.def.weapons[relPick]||"none"));
+      dd.give({ type:"attack", target:tank });
+      var tankPick=dd.pickWeapon(tank);
+      var x0=dd.x, y0=dd.y, ang=Math.atan2(dd.y-pw.y, dd.x-pw.x);
+      dd.x=pw.x+Math.cos(ang)*10*T2; dd.y=pw.y+Math.sin(ang)*10*T2;
+      dd.give({ type:"attack", target:pw });
+      var nearPick=dd.pickWeapon(pw);
+      dd.x=x0; dd.y=y0;
+      chk("released at a tank it is not the round - it flies to coordinates - and inside gun reach the gun takes the structure",
+          tankPick!==t.i && nearPick!==t.i && nearPick>=0,
+          "tank -> "+(dd.def.weapons[tankPick]||"none")+", structure at 10 tiles -> "+(dd.def.weapons[nearPick]||"none"));
+
+      /* the release panel names the gesture and counts the cells */
+      var html="";
+      if (typeof UI!=="undefined" && UI.selection && UI.frame) {
+        var s0=UI.selection.slice(); UI.selection.forEach(function(e){ e.selected=false; }); UI.selection.length=0;
+        dd.selected=true; UI.selection.push(dd); UI.frame(CFG.DT);
+        html=((document.getElementById("selinfo")||{}).innerHTML||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ");
+        dd.selected=false; UI.selection.length=0; s0.forEach(function(e){ if(!e.dead){ e.selected=true; UI.selection.push(e); } });
+        chk("the panel says how it is fired and how many are aboard",
+            /RIGHT-CLICK A STRUCTURE/.test(html) && new RegExp("TOMAHAWK "+t.mag+"/"+t.mag).test(html),
+            (html.match(/RELEASE.{0,160}/)||[html.slice(0,160)])[0]);
+      }
+
+      /* ---- 5. the strike, into a SAM belt and then without one ---- */
+      var samId=unitFor(E.faction,"sam",E.era);
+      var sam1=mk(E,samId,sc.lx+3,sc.ly), sam2=mk(E,samId,sc.lx-2,sc.ly+2);
+      tank.dead=true;
+      dd.give({ type:"idle" });              // nothing leaves the cells during the one real tick
+      tick(1);                               // the grid is rebuilt at the top of a tick
+      parked=Combat.projectiles.splice(0, Combat.projectiles.length);
+      /* FORCED RNG, so this is a statement of what the defender CAN do, not of
+         how often it does: 0.2 lands every hit roll against a Tomahawk's ~0.8
+         and falls inside every interception roll a covering area SAM gets
+         (acc x 0.45 x 1.55 x 0.62, ~0.39 for an S-400 class battery). */
+      Game.rng=function(){ return 0.2; };
+      function strike(n, secs){
+        var m=mark(), kills=new Set(), mine=[], minD=1e9, hp0=pw.hp, mag0=left(dd,t);
+        dd.give({ type:"attack", target:pw });
+        for (var k=0;k<Math.round(secs/CFG.DT);k++){
+          dd.update(CFG.DT); Combat.update(Game, CFG.DT);
+          Combat.projectiles.forEach(function(p){ if(p.shooter===dd && mine.indexOf(p)<0) mine.push(p); });
+          /* counted as they appear: a kill's text lives one second and is spliced out */
+          Combat.effects.forEach(function(f){ if(f.s==="SAM KILL" && !m.has(f)) kills.add(f); });
+          var dnow=U.dist(dd.x,dd.y,pw.x,pw.y)/T2; if(dnow<minD) minD=dnow;
+          if (pw.dead) break;
+          if (mine.length>=n && !mine.some(function(p){ return Combat.projectiles.indexOf(p)>=0; })) break;
+        }
+        var tlams=mine.filter(function(p){ return p.w===t.w; });
+        return { fired:tlams.length, other:mine.length-tlams.length, killed:kills.size,
+                 dmg:hp0-(pw.dead?0:pw.hp), minD:minD, spent:mag0-left(dd,t) };
+      }
+      var s1=strike(3, 60);
+      chk("ordered onto the power station, the Burke launches from where it stands - past its gun and its Harpoons - and nothing else",
+          s1.fired>=3 && s1.other===0 && s1.minD > 14.5,
+          s1.fired+" Tomahawks, "+s1.other+" other rounds, never closer than "+s1.minD.toFixed(1)+" tiles");
+      chk("a SAM belt can shoot every one of them down (every roll forced inside the defender's odds), and then the station takes nothing",
+          s1.killed===s1.fired && s1.dmg===0, s1.killed+" SAM kills of "+s1.fired+" under the forced roll, damage "+s1.dmg);
+      chk("the magazine counts them, and a VLS cell is not refilled at sea", s1.spent===s1.fired && left(dd,t)===t.mag-s1.fired,
+          left(dd,t)+"/"+t.mag+" aboard");
+      sam1.dead=true; sam2.dead=true; tick(1);
+      Game.rng=function(){ return 0.2; };
+      var hp1=pw.hp, one=WEAPONS[t.k].dmg*CFG.VET_DMG[dd.vet], s2=strike(2, 45);
+      chk("with the belt gone they arrive: a Tomahawk is interceptable, not unstoppable",
+          s2.fired>=2 && s2.killed===0 && s2.dmg >= one*s2.fired*0.95,
+          s2.fired+" fired, "+s2.killed+" shot down, "+Math.round(s2.dmg)+" damage of "+Math.round(hp1)+" hp ("+Math.round(one)+" a round)");
+      Game.rng=rng;
+      Combat.projectiles.length=0; Combat.projectiles.push.apply(Combat.projectiles, parked); parked=null;
+
+      /* ---- 6. the Iowa and the coastal battery ---- */
+      var cs=scene(P, 15.5, 8);
+      if(!cs){ chk("sea and shore for the bombardment", false, "none"); return; }
+      var cb=bld(E,"coastal",cs.lx,cs.ly), bb=mk(P,"nato_e80_battleship",cs.sx,cs.sy), tb=tl("nato_e80_battleship");
+      if(!cb||!bb||!tb){ chk("bombardment scenario built", false, "battery "+!!cb+" ship "+!!bb); return; }
+      tick(1);
+      parked=Combat.projectiles.splice(0, Combat.projectiles.length);
+      var cbR=cb.weaponRange ? cb.weaponRange(WEAPONS.coast_gun)/T2 : WEAPONS.coast_gun.range;
+      var bbHp=bb.hp, cbHp=cb.hp, minB=1e9, gun=0, ap=0, mag0=left(bb,tb), tt=0;
+      /* The second and third shell of a salvo come off Game.defer, which only
+         Game.tick runs, and Game.time stands still in this loop. So the
+         callbacks this loop schedules - and only those - are run here on the
+         loop's own clock; everything else in the queue is left alone. */
+      var T0=Game.time, known=new Set(Game.deferred||[]), ours=[];
+      function deferred(){
+        (Game.deferred||[]).forEach(function(d){ if(!known.has(d)){ known.add(d); ours.push({ d:d, due:tt+(d.t-T0) }); } });
+        for (var q=ours.length-1;q>=0;q--) if (ours[q].due<=tt){
+          var dq=ours[q].d; ours.splice(q,1);
+          var j=Game.deferred.indexOf(dq); if(j>=0){ Game.deferred.splice(j,1); dq.fn(); } }
+      }
+      bb.give({ type:"attack", target:cb });
+      for (var k2=0;k2<Math.round(90/CFG.DT) && !cb.dead;k2++){
+        bb.update(CFG.DT); cb.update(CFG.DT); tt+=CFG.DT; deferred(); Combat.update(Game, CFG.DT);
+        Combat.projectiles.forEach(function(p){ if(p.shooter===bb && !p._c82){ p._c82=1; if(p.w===WEAPONS.bb_16in50) gun++; if(p.w===WEAPONS.bb_16in50_ap) ap++; } });
+        var dB=U.dist(bb.x,bb.y,cb.x,cb.y)/T2; if(dB<minB) minB=dB;
+      }
+      chk("the Iowa takes a coastal battery apart with her HC shells from outside the battery's own reach",
+          cb.dead && minB > cbR && bb.hp===bbHp && gun>0 && ap===0,
+          (cb.dead?"battery destroyed":"battery "+Math.round(cb.hp)+"/"+Math.round(cbHp))+" in "+tt.toFixed(0)+" s, "+gun+
+          " HC shells and "+ap+" AP, never closer than "+minB.toFixed(1)+" tiles against its "+cbR.toFixed(1)+", Iowa "+Math.round(bb.hp)+"/"+Math.round(bbHp));
+      chk("...and keeps her thirty-two Tomahawks for what lies behind the beach", left(bb,tb)===mag0 && mag0===32,
+          left(bb,tb)+"/"+tb.mag+" aboard");
+      ours.forEach(function(o){ var j=Game.deferred.indexOf(o.d); if(j>=0) Game.deferred.splice(j,1); });
+      Combat.projectiles.length=0; Combat.projectiles.push.apply(Combat.projectiles, parked); parked=null;
+
+      /* ---- 7. the commander fires one only by naming a structure it has SEEN ---- */
+      brainTouched=true;
+      AI.reset(); AI.create(Game, E, "regular", "balanced");
+      /* first a site it can only HEAR: a SAM battery ashore, radiating, that
+         nothing of the commander's side has looked at. Asked as an invariant
+         - never named, never fired at, while its ground is unlooked - over
+         the seconds the site was both heard (the ESM law of esmSweep:
+         radiating, inside 1.9 x its own reach of a listener that is on the
+         air) and inside the missile's band past the guns. Then the
+         counter-proof: once the ground IS looked at - by the commander's own
+         aircraft passing over, as happened in the full suite, or else by the
+         tile being marked looked-at the way a scout would have left it - the
+         site, on the plot, is named: the look gate, and nothing else, was
+         holding it. The first cut sampled the look grid once at the end, and
+         in the full suite a Pact fighter had flown over the site by then.
+         A window shorter than one intelligence sweep plus one think of this
+         "regular" commander (0.8 + 2.8 s) proves nothing, and neither does a
+         site that dies before the counter-proof, so either one moves the
+         scene along the coast and tries again - never a named or fired shot
+         while blind, which fails at once. */
+      var et=tl("nato_e80_destroyer"), hA=null, tries=[];
+      for (var att=0; att<3 && !hA; att++){
+        var hs=scene(E, 15.5, 5+att*9, { pl:E, land:13, sea:6 });
+        if (!hs) { tries.push("no scene"); break; }
+        var site=bld(P,"sam",hs.lx,hs.ly), sp=mk(E,"nato_e80_destroyer",hs.sx,hs.sy);
+        if (!site || !sp) { tries.push("not built"); if(sp) sp.dead=true; if(site){ site.dead=true; Game.removeBuilding(site); } Game.sweepDead(); continue; }
+        sp.stance="hold";
+        /* on the air: a site radiates only with its grid up (G.jamming reads
+           `powered`), and this side's grid is whatever the match left it -
+           so this one site, and nothing else, is given its power */
+        Object.defineProperty(site, "powered", { value:true, configurable:true });
+        var lk=AI.lookOf(E), li=site.ty*M.W+site.tx, spW=WEAPONS[sp.def.weapons[et.i]];
+        var band=function(){ var d=U.dist(sp.x,sp.y,site.x,site.y), oth=0;
+          sp.def.weapons.forEach(function(k,j){ var wj=WEAPONS[k];
+            if(j!==et.i && wj && wj.tgt && wj.tgt.ground && !wj.landAttack && !sp.manualWeapon(wj)) oth=Math.max(oth, sp.weaponRange(wj)); });
+          return d<=sp.weaponRange(spW)*0.95 && d>oth && d>=(spW.minRange||0)*T2; };
+        var heard=function(){ var loud=(site.def.radar||site.def.jam||0)*1.9;
+          return !site.dead && Game.emitting(sp) && Game.jamming(site) && U.dist(sp.x,sp.y,site.x,site.y)/T2<=loud; };
+        var st={ cand:0, namedBlind:false, firedBlind:0, named:false, how:"" };
+        var watch=function(){ var o=sp.order, blind=!lk || lk[li]===0;
+          if (o && o.type==="attack" && o.target===site){ if(blind) st.namedBlind=true; else st.named=true; }
+          Combat.projectiles.forEach(function(p){ if(p.shooter===sp && p.w===spW && !p._h82){ p._h82=1; if(blind) st.firedBlind++; } });
+          return blind; };
+        for (var k4=0;k4<Math.round(12/CFG.DT);k4++){
+          Game.tick(CFG.DT);
+          if (!watch()) { st.how="its own aircraft"; break; }
+          if (heard() && band()) st.cand+=CFG.DT;
+        }
+        if (!st.namedBlind && st.firedBlind===0 && st.cand<3.6) {
+          tries.push("eyes over it after "+st.cand.toFixed(1)+" s");
+        } else if (!st.namedBlind && st.firedBlind===0) {
+          if (!st.how) { st.how="the tile marked"; if (lk[li]===0) lk[li]=1; }
+          for (var k5=0;k5<Math.round(10/CFG.DT) && !st.named && heard();k5++){ Game.tick(CFG.DT); watch(); }
+          if (st.named) hA=st; else tries.push("site lost before the counter-proof");
+        } else hA=st;
+        sp.dead=true; site.dead=true; Game.removeBuilding(site); Game.sweepDead();
+      }
+      chk("a SAM site the commander only HEARS is never named for a Tomahawk while its ground is unlooked - a player could not click it either - and once the ground is looked at, it is",
+          !!hA && hA.cand>=3.6 && !hA.namedBlind && hA.firedBlind===0 && hA.named,
+          hA ? "heard, unlooked and in the band for "+hA.cand.toFixed(1)+" s: named "+hA.namedBlind+", "+hA.firedBlind+" fired; then looked at ("+hA.how+"): named "+hA.named+
+               (tries.length ? " [earlier scenes: "+tries.join("; ")+"]" : "") : "no conclusive scene: "+tries.join("; "));
+      var as=scene(E, 16.5, 5);
+      if(!as){ chk("sea near the enemy for the commander's strike", false, "none"); return; }
+      var eb=mk(E,"destroyer_n",as.sx,as.sy), et2=tl("destroyer_n");
+      var mine2=bld(P,"power",as.lx,as.ly), eye=mk(E,unitFor(E.faction,"recon",E.era)||"recon_p",as.lx+3,as.ly+1);
+      var home=tile(P,"ground",3), pt=home ? mk(P,"mbt_n",home.x,home.y) : null;   // a unit, asked about below
+      if(!eb||!mine2){ chk("commander scenario built", false, "ship "+!!eb+" structure "+!!mine2); return; }
+      if (eye) eye.give({ type:"guard" });
+      var named=null, flew=[], atUnit=0;
+      for (var k3=0;k3<Math.round(30/CFG.DT);k3++){
+        Game.tick(CFG.DT);
+        if (!named && eb.order && eb.order.type==="attack" && eb.order.release && eb.order.target===mine2) named=eb.order;
+        Combat.projectiles.forEach(function(p){ if(p.shooter===eb && p.w===et2.w && flew.indexOf(p)<0){ flew.push(p);
+          if (p.target && p.target.kind!=="building") atUnit++; } });
+        if (flew.length && named) break;
+      }
+      chk("the commander's Burke fires a Tomahawk only under a commanded attack on a structure it has seen, never at a unit",
+          !!named && !named.auto && flew.length>=1 && atUnit===0 && (!pt || eb.pickWeapon(pt)!==et2.i),
+          (named ? "named the "+named.target.def.id+" at "+(U.dist(eb.x,eb.y,mine2.x,mine2.y)/T2).toFixed(1)+" tiles" : "never named it")+
+          ", "+flew.length+" in the air, "+atUnit+" at a unit");
+    })(); } catch(e){
+      chk("[82] ran", false, e && e.message ? e.message : String(e));
+    } finally {
+      Game.rng=rng; P.era=era0; Game.spawnUnit=spawn0;
+      if (parked){ Combat.projectiles.length=0; Combat.projectiles.push.apply(Combat.projectiles, parked); }
+      if (Game.cbContacts) for (var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if (made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      for (var pi=Combat.projectiles.length-1; pi>=0; pi--)
+        if (made.indexOf(Combat.projectiles[pi].shooter)>=0) Combat.projectiles.splice(pi,1);
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      blds.forEach(function(b){ if(!b.dead){ b.dead=true; Game.removeBuilding(b); } });
+      Game.sweepDead();
+      back(P.stats,sP); back(E.stats,sE);
+      if (brainTouched){ AI.reset(); AI.create(Game, E, "regular", "balanced"); }
+      if (AI.setPeace) AI.setPeace(E, true);
+    }
+    chk("the shared match is as it was: RNG, era, both commanders' books, no stray round or plot, the commander at peace",
+        Game.rng===rng && P.era===era0 && Game.spawnUnit===spawn0 && keep(P.stats)===sP && keep(E.stats)===sE &&
+        !Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0; }) &&
+        !(Game.cbContacts||[]).some(function(c){ return made.indexOf(c.unit)>=0; }) && !!AI.intelOf(E), "");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time
