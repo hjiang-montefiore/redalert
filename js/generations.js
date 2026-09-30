@@ -619,7 +619,90 @@
     if (u.weapons.indexOf(wid) < 0) u.weapons.unshift(wid);
   }
   var WEST_CAS = { nato:1, roc:1, gbr:1, fra:1, deu:1 };
-  /* every CAS airframe in every era, not just the modern pair */
+  /* ---- the guided missile each CAS airframe REALLY carried ----
+     (owner) "It is fine that some countries does not have them at all or
+     highly being behind." This loop used to hand EVERY cas airframe in every
+     decade a Maverick (West) or a Kh-29 (East). MEASURED at b62fbf6: all 47
+     got one, and 29 of them never carried any guided air-to-surface missile
+     in the decade they serve - an A-1 Skyraider, an Il-10, a Venom and an
+     Ouragan firing 1970s TV-guided rounds, a Q-5 whose own description says
+     "no guided weapons", the KPA's Su-25Ks although their description says
+     unguided ordnance only, and Luftwaffe and French jets carrying an
+     American missile they never hung on those airframes. Seven more had the
+     right idea under the wrong name. The Maverick entered service in 1972
+     and the Kh-29 in 1980.
+
+     Keyed by airframe. null = no guided air-to-surface missile on that
+     aircraft in that decade: it keeps the bombs, rockets and gun it went to
+     war with. [template, name] gives the missile, renamed on that airframe
+     alone when the shared template's name is not what it carried. A cas
+     airframe added later and not listed falls back to the old rule from the
+     1980s on, and gets nothing before - an invention is worse than a gap.
+     These templates are handed out after DOMAIN, unscaled, exactly as the
+     Maverick and the Kh-29 always were. */
+  WEAPONS.kh23 = {
+    /* Kh-23 Grom (AS-7 Kerry), 1973: radio command - the pilot flew it onto
+       the target with a thumb controller, watching a flare in its tail -
+       with a 111 kg warhead and about 10 km. A generation before the Kh-29
+       and it shows: shorter, smaller and a round the pilot usually missed
+       with, so the figures are its own rather than the Kh-29's. */
+    name: "Kh-23 Grom (AS-7 Kerry)", dmg: 200, warhead: "heat", pen: 450,
+    range: R(5000), reload: 4.0, burst: 1, acc: 0.55, ammo: 1,
+    proj: "missile", speed: 380, aoe: 0.9, suppress: 20,
+    tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+  };
+  WEAPONS.yj8k = {
+    /* YJ-8K / C-801K, the JH-7's reason to exist: the PLA Navy's air arm took
+       the Flying Leopard from about 1994 to hit ships, and this was the round
+       - a French-pattern sea-skimmer of about 50 km, Mach 0.9, a 165 kg
+       warhead, two or four under the wings. It had been generated as a BOMB
+       named "YJ-8K anti-ship missiles" (range 2.5, so the aircraft overflew
+       the ship it was sent at), beside a Soviet Kh-29 the JH-7 never carried.
+       The damage is the Houjian's own YJ-8 row (pla_e90_missileboat, 228);
+       the speed, profile and intercept are the Exocet's, the missile it was
+       modelled on; the reach is the air-to-surface band (Kh-29 11.7,
+       Maverick 13.1). Two pool points a round, so a full load is the four it
+       could carry. Ships only: it has no land-attack mode. */
+    name: "YJ-8K (C-801K) anti-ship missile", dmg: 230, warhead: "he",
+    range: 11.5, minRange: 1.5, reload: 4.0, burst: 1, acc: 0.78, ammo: 2,
+    proj: "missile", speed: 122, aoe: 1.4, suppress: 20,
+    profile: "skim", intercept: 1.0, sfx: "missile",
+    tgt: { ground: 0, air: 0, sea: 1, sub: 0 },
+  };
+  var CAS_ASM = {
+    nato_e50_cas: null,                                   /* A-1 Skyraider */
+    nato_e60_cas: ["maverick", "AGM-65A Maverick"],       /* A-7D, cleared for it from 1972 */
+    pact_e50_cas: null,                                   /* Il-10M */
+    pact_e60_cas: ["kh23", null],                         /* Su-17M */
+    pla_e50_cas: null, pla_e60_cas: null, pla_e80_cas: null,   /* Il-10, Q-5, Q-5C */
+    /* JH-7: the YJ-8K above. Its generated bomb row, which carried the
+       missile's name, is renamed for the bombs it really was (REAL_FIT). */
+    pla_e90_cas: ["yj8k", null],
+    pla_e00_cas: ["kh29", "KD-88 air-to-surface missile"],  /* JH-7A */
+    bomber_c:    ["kh29", "KD-88 air-to-surface missile"],
+    kpa_e50_cas: null, kpa_e60_cas: null, kpa_e80_cas: null,
+    kpa_e90_cas: null, kpa_e00_cas: null, bomber_k: null,
+    roc_e50_cas: null, roc_e60_cas: null, roc_e80_cas: null,   /* F-84G, F-100A, AT-3 */
+    gbr_e50_cas: null, gbr_e60_cas: null,                 /* Venom, Harrier GR.1 */
+    gbr_e80_cas: null, gbr_e90_cas: null,                 /* GR.5, GR7: Maverick came with the GR7 in 2001 */
+    gbr_e00_cas: ["maverick", "Brimstone"],               /* Tornado GR4, 2005 */
+    bomber_b:    ["maverick", "Brimstone"],               /* Typhoon FGR4 */
+    fra_e50_cas: null, fra_e60_cas: null,                 /* Ouragan, Jaguar A */
+    fra_e80_cas: null,                                    /* its own AS.30L mount is the missile */
+    /* Mirage 2000D. The Jaguar's AS.30L row beside it reads 168 / 7.6: that
+       is the generator's own 1980s figure, where this is the present-day
+       template every CAS missile here is handed unscaled (the A-7D's 1972
+       Maverick too). By R() the AS.30L's 10 km is no shorter than the 9 km
+       the Maverick template is built on, so the figures stay. */
+    fra_e90_cas: ["maverick", "AS.30L laser-guided missile"],
+    fra_e00_cas: null, bomber_f: null,                    /* Rafale and 2000D RMV: AASM and GBU-12 */
+    /* Alpha Jet and G.91: BL755, rockets and guns; Tornado IDS: MW-1,
+       Kormoran at sea and, from 2005, Taurus. Whatever Mavericks the
+       Luftwaffe had went on its F-4F Phantoms (filed here as fighters,
+       deu_e80_fighter), not on these. */
+    deu_e50_cas: null, deu_e60_cas: null, deu_e80_cas: null,
+    deu_e90_cas: null, bomber_g: null,
+  };
   for (var uidA in UNITS) {
     var uA = UNITS[uidA];
     if (!uA || uA.role !== "cas") continue;
@@ -627,7 +710,12 @@
        or Rafale was being handed a Soviet Kh-29 by falling off the end of this
        test. Add any new Western army here. */
     var west = !!WEST_CAS[uA.fac];
-    giveWeapon(uidA, west ? "maverick" : "kh29");
+    var fitA = CAS_ASM.hasOwnProperty(uidA) ? CAS_ASM[uidA]
+             : (ERAS.indexOf(uA.from || "e20") >= 2 ? [west ? "maverick" : "kh29", null] : null);
+    if (fitA) {
+      giveWeapon(uidA, fitA[0]);
+      if (fitA[1]) relabel(uidA, UNITS[uidA].weapons.indexOf(fitA[0]), fitA[1]);
+    }
     giveWeapon(uidA, "gau8", "chaingun");
   }
   /* ======================================================================
@@ -1055,6 +1143,19 @@
     roc_e00_missileboat:  ["gun_n20",  "20mm T75 cannon"],
     pact_e60_carrier:     ["gun_n57t", "2 x twin 57mm AK-725"],
     pact_e80_carrier:     ["gun_n76t", "2 x twin 76mm AK-726"],
+    /* The gun that had been hiding inside the "missile". Until the nine
+       anti-ship rows in eras.js became missiles they were proj "shell", so
+       hasGun above counted each as its own deck gun and none of these hulls
+       was ever given one: a Sovremenny had no AK-130 and a Kynda no 76 mm. */
+    pact_e60_cruiser:     ["gun_n76t", "2 x twin 76mm AK-726"],
+    pact_e80_corvette:    ["gun_n57t", "twin 57mm AK-725"],
+    pact_e80_destroyer:   ["navgun_ak130", "2 x AK-130 twin 130mm"],
+    pact_e90_destroyer:   ["navgun_ak130", "2 x AK-130 twin 130mm"],
+    pact_e80_cruiser:     ["navgun_ak130", "AK-130 twin 130mm"],
+    pact_e90_cruiser:     ["navgun_ak130", "AK-130 twin 130mm"],
+    pact_e00_cruiser:     ["navgun_ak130", "AK-130 twin 130mm"],
+    pact_e00_corvette:    ["gun_n100", "A-190 100mm"],
+    roc_e00_corvette:     ["gun_n76",  "OTO 76mm Super Rapid"],
     /* the fleet carriers that were still built with a gun battery. Enterprise,
        the Nimitzes, Kuznetsov, Liaoning, Invincible, de Gaulle and the Queen
        Elizabeths never had one; Ark Royal (R09) and Foch lost theirs during the
@@ -1356,6 +1457,268 @@
     var want = POOL[uu.role];
     if (want && (uu.ammo || 0) < want) uu.ammo = want;
   }
+
+  /* ======================================================================
+     WHAT EACH AIRFRAME, HELICOPTER AND HULL REALLY CARRIED
+     ======================================================================
+     (owner) "It is fine that not all four party can have the similar
+     weapon. We should respect the reality." The present-day rosters in
+     rules.js are built on a few shared templates named for American rounds -
+     aam "AIM-120 AMRAAM", aam_lo "AIM-260 (LO)", sdb "small-diameter bomb",
+     manpad "Stinger MANPADS", asw_mk54 "Mk 54" - and the era generator
+     reused NATO rows on European hulls. MEASURED at b62fbf6 over every
+     fielded def: a MiG-29, J-10C, MiG-21bis, Su-33 and J-15 fired AMRAAMs; a
+     Su-57, J-20 and J-35 the AIM-260, which no air force has yet declared
+     operational, and an American glide bomb; Igla, FN-6, HT-16 and Mistral
+     teams fired Stingers; British, French and German helicopters from 1955
+     to 1999 dropped a torpedo of 2004; four helicopters dropped their
+     dipping sonar as a torpedo, two Soviet ones fired a mortar pattern
+     under a sonar's name and a Ka-27 fired a ship's RBU-6000; the Moskva
+     fired its own helicopter group at ships as a missile; a Taiwanese F-16
+     fired its radar; French deck fighters fired Sparrows and AMRAAMs.
+
+     IDENTITY, NOT BALANCE - unless the real weapon is a different class of
+     thing, and then the row says what changed and why. Runs after DOMAIN,
+     the CAS, helicopter and deck-gun passes and FAULT 14's bay stores, so a
+     mount here is already the clone those passes made for this hull
+     (relabel() clones one that is not). A mount that is not found - another
+     pass already changed it - is left alone, and _behtest [74] fails on
+     whatever is still wrong.
+
+     The torpedoes keep their figures. An older round is plainly a lesser
+     one, but nearly every ASW helicopter in the game carries a present-day
+     lightweight torpedo at 200 to 215 whatever its decade - the MH-60R
+     serves from e60 at the Mk 54's 215, the PLA's Z-8 in e90 at the Yu-7's
+     205; only the ROC's e80 Defender row (168) and the PLA's e80 depth
+     charges were generated lower - so scaling Europe's alone down the
+     period ladder (the first cut of this pass did) made a Sea King weaker
+     than the American beside it for no historical reason. The names are
+     what they carried; a decade curve for every navy's torpedoes is its own
+     change, and needs the MH-60R's span fixed first.
+
+     [unit, current name or id pattern, real name, options]
+       tpl       swap to this template first, keeping the faction and period
+                 scaling the old mount had been given (as a ratio of its own
+                 template), then rename
+       drop      the airframe never carried it: remove the mount
+       dmg, rangeMul  the class figure, said in the comment */
+  function fitIndex(uid, test) {
+    var ws = (UNITS[uid] && UNITS[uid].weapons) || [];
+    for (var i = 0; i < ws.length; i++) {
+      var w = WEAPONS[ws[i]];
+      if (w && (typeof test === "string" ? w.name === test : test.test(ws[i]))) return i;
+    }
+    return -1;
+  }
+  function swapMount(uid, idx, tpl) {
+    var u = UNITS[uid], was = u.weapons[idx], old = WEAPONS[was];
+    var base = WEAPONS[String(was).split("__")[0]];
+    var key = privateWeapon(uid, tpl);
+    if (!key || !old) return;
+    var nw = WEAPONS[key];
+    if (base && base !== old) {
+      if (base.acc && old.acc !== undefined && nw.acc !== undefined)
+        nw.acc = Math.max(0.28, Math.min(0.98, +(nw.acc * old.acc / base.acc).toFixed(3)));
+      if (base.range && old.range && nw.range)
+        nw.range = Math.round(nw.range * old.range / base.range * 10) / 10;
+    }
+    u.weapons = u.weapons.slice(); u.weapons[idx] = key;
+  }
+  var REAL_FIT = [
+    /* ---- air to air: the missile each air force bought ---- */
+    ["fighter_p",   "AIM-120 AMRAAM", "R-27R and R-73"],                /* MiG-29S */
+    ["cfighter_p",  "AIM-120 AMRAAM", "R-27ER and R-73"],               /* Su-33 */
+    ["fighter_c",   "AIM-120 AMRAAM", "PL-15 and PL-10"],               /* J-10C */
+    ["cfighter_c",  "AIM-120 AMRAAM", "PL-12 and PL-8"],                /* J-15, 2013 */
+    /* MiG-21bis: an R-60 and an R-13 are short-range infrared rounds, not an
+       active-radar BVR missile. Its range here was already the KPA-scaled
+       8.1; the damage is the 172 the same airframe's R-60/R-13 row does in
+       e90 (kpa_e90_fighter), against the AMRAAM's 200. */
+    ["fighter_k",   "AIM-120 AMRAAM", "R-60M and R-13M IR missiles", { dmg: 172 }],
+    ["fighter_b",   "AIM-120 AMRAAM", "Meteor and ASRAAM"],             /* Typhoon FGR4, Meteor 2018 */
+    ["fighter_f",   "AIM-120 AMRAAM", "MICA and Meteor"],               /* Rafale F4 */
+    ["cfighter_f",  "AIM-120 AMRAAM", "MICA and Meteor"],
+    /* F-16V: an AIM-260 on an export fourth-generation jet is the wrong round
+       and the wrong class. It flies the same AMRAAM as the American F-16C
+       beside it, at Taiwan's own scaling: 230 / 10.6 becomes 200 / 9.2. */
+    ["fighter_r",   "AIM-260 (LO)", "AIM-120C-7 AMRAAM and AIM-9X", { tpl: "aam" }],
+    ["stealth_p",   "AIM-260 (LO)", "R-77M and R-74M2 (internal bays)"],   /* Su-57, as FACTS */
+    ["stealth_c",   "AIM-260 (LO)", "PL-15 and PL-10 (internal bays)"],    /* J-20 */
+    ["cstealth_c",  "AIM-260 (LO)", "PL-15 and PL-10 (internal bays)"],    /* J-35 */
+    ["stealth_b",   "AIM-260 (LO)", "AIM-120C-7 AMRAAM and ASRAAM (internal)"],   /* UK F-35B */
+    ["cstealth_b",  "AIM-260 (LO)", "AIM-120C-7 AMRAAM and ASRAAM (internal)"],
+    ["roc_e00_fighter", "AN/APG-83 SABR AESA", "AIM-120C-5 AMRAAM and AIM-9M"],   /* the radar is not a missile */
+    ["fra_e00_cfighter", "AIM-120 AMRAAM and AIM-9 internally", "MICA EM / MICA IR"],   /* Rafale M */
+    /* The Super Etendard carried Magic for self-defence and nothing longer:
+       a short-range infrared round in place of a Sparrow or an AMRAAM, so
+       its reach comes down to what a short-range round has here - the
+       e80 Sea Harrier's AIM-9L flies 7.6 tiles against this row's 8.6. */
+    ["fra_e80_cfighter", "AIM-7 Sparrow", "R.550 Magic", { rangeMul: 0.85 }],
+    ["fra_e90_cfighter", "AIM-120 AMRAAM", "R.550 Magic II", { rangeMul: 0.85 }],
+    ["fra_e60_cfighter", /^w_e60_nato_fighter/, "Matra R.530 and R.550 Magic"],   /* F-8E(FN) */
+    /* A Sea Hawk and an Aquilon carried four 20 mm Hispanos and no missile,
+       not an American F-86's six .50s. The NAME is all that changes: the
+       mount is still proj "missile", as every 1950s fighter gun in the
+       roster is (the F-86's .50s and the MiG-17's N-37 alike) - a known
+       open fault, guns modelled as homing rounds, left for its own change
+       because fixing two airframes would leave them the only real guns in
+       their decade. */
+    ["fra_e50_cfighter", /^w_e50_nato_fighter/, "Four 20mm Hispano 404 cannon"],  /* Aquilon */
+    ["gbr_e50_cfighter", /^w_e50_nato_fighter/, "Four 20mm Hispano Mk V cannon"], /* Sea Hawk */
+    /* the generator named these after the GUN, but the mount is the homing
+       missile the aircraft fought with; the gun is not modelled on them */
+    ["pact_e80_fighter", "30mm GSh-30-1", "R-27R and R-73"],            /* MiG-29 */
+    ["pact_e90_fighter", "30mm GSh-30-1", "R-27R and R-73"],            /* MiG-29S */
+    ["pact_e00_fighter", "30mm GSh-30-1", "R-77-1 and R-73"],           /* Su-35S */
+    ["pla_e80_fighter",  "23mm cannon",   "PL-2B and PL-5B IR missiles"],   /* J-8II */
+    ["pla_e90_fighter",  "30mm GSh-30-1", "R-27R and R-73"],            /* Su-27SK */
+    ["pla_e00_fighter",  "23mm cannon",   "PL-12 and PL-8"],            /* J-10 / J-10B */
+    ["roc_e60_fighter",  "20mm M61A1 Vulcan", "AIM-9 Sidewinder and 20mm M61A1"],   /* F-104G */
+    ["roc_e80_fighter",  "2x 20mm M39",       "AIM-9 Sidewinder and 2x 20mm M39"],  /* F-5E */
+    ["roc_e90_fighter",  "20mm M61A1",        "AIM-7M Sparrow and AIM-9M Sidewinder"],  /* F-16A/B Block 20 */
+
+    /* ---- air to ground ---- */
+    ["stealth_p",   "small-diameter bomb", "KAB-250 guided bomb (internal)"],
+    /* The J-20 is an air-superiority fighter; no ground-attack store has been
+       shown in service, and the e00 J-20 row already carries missiles alone.
+       Dropped, not renamed into an invention. */
+    ["stealth_c",   "small-diameter bomb", "", { drop: true }],
+    /* the J-35's bay store stays a light glide bomb, as FAULT 14 decided -
+       just not an American product name */
+    ["cstealth_c",  "small-diameter bomb", "light guided glide bomb (internal bay)"],
+    ["stealth_b",   "small-diameter bomb", "Paveway IV (internal bay)"],
+    ["cstealth_b",  "2x GBU-32 JDAM (short bay)", "2x Paveway IV (internal bay)"],
+    ["bomber_p",    "500lb guided bomb", "KAB-500 guided bomb"],
+    ["bomber_b",    "500lb guided bomb", "Paveway IV"],
+    ["bomber_f",    "500lb guided bomb", "GBU-12 Paveway II and AASM"],
+    ["bomber_c",    "500lb guided bomb", "LT-2 laser-guided bomb"],       /* JH-7A */
+    /* The KPA has no guided bomb: the note on its e80 Su-25K says unguided
+       ordnance only. The KPA's own guided-weapon scaling had already brought
+       this mount to the accuracy of the e00 Su-25K's iron bombs (0.743
+       against 0.744), so only the name was wrong. The Q-5C's own
+       description says "still unguided iron bombs and rockets". */
+    ["bomber_k",    "500lb guided bomb", "FAB-250 and FAB-500 bombs"],
+    ["pla_e80_cas", "500lb guided bomb", "bombs and rocket pods"],
+    /* the JH-7's missile is now the YJ-8K the CAS pass gives it; this row,
+       a bomb that carried the missile's name, is the bombs it also dropped */
+    ["pla_e90_cas", "YJ-8K anti-ship missiles", "250 kg and 500 kg bombs"],
+    /* A pod and a weapons programme are not bombs. The F-15E's LANTIRN pods
+       found the target for the GBU-12s it dropped; SWIP gave the A-6E
+       Harpoon and SLAM, but this row is a range-2.7 bomb, so it is named
+       for the bombs it models - the stand-off rounds are not in it. */
+    ["nato_e90_cas",     "LANTIRN navigation and targeting pods", "GBU-12 Paveway II and Mk 82 bombs"],
+    ["nato_e90_cstrike", "SWIP: Paveway, Harpoon and SLAM", "Mk 83 and Paveway II bombs"],
+    /* "Brimstone and Paveway IV" was a bomb mount, and the GR9 beside the
+       GR4 never carried Brimstone; Brimstone is now the GR4's missile */
+    ["gbr_e00_cas",      "Brimstone and Paveway IV", "Paveway II and Paveway IV"],
+    ["gbr_e00_cfighter", "Brimstone and Paveway IV", "Paveway II and Paveway IV"],
+    /* Tien Chien II is an air-to-air missile, filed here as a bomb */
+    ["roc_e00_cas",      "Tien Chien II", "Mk 82 bombs"],
+
+    /* ---- the right MANPADS on each shoulder ---- */
+    ["aa_p", "Stinger MANPADS", "9K338 Igla-S MANPADS"],
+    ["aa_c", "Stinger MANPADS", "FN-6 MANPADS"],
+    ["aa_k", "Stinger MANPADS", "HT-16PGJ MANPADS"],
+    ["aa_f", "Stinger MANPADS", "Mistral 3 MANPADS"],
+
+    /* ---- anti-submarine helicopters: the torpedo of their own decade ----
+       Mk 44 1957, Mk 46 1965, Sting Ray 1983, Mk 54 2004, MU90 about 2002.
+       Names only; see the header for why the figures stay. */
+    ["gbr_e50_aswhelo", "Mk 54 lightweight torpedo", "Mk 30 homing torpedo"],            /* Whirlwind HAS.7 */
+    ["gbr_e60_aswhelo", "Mk 54 lightweight torpedo", "Mk 44 homing torpedo"],            /* Wessex HAS.1 */
+    ["gbr_e80_aswhelo", "Mk 54 lightweight torpedo", "Sting Ray and Mk 46 torpedoes"],   /* Sea King HAS.5 */
+    ["gbr_e90_aswhelo", "Sting Ray Mod 1", "Sting Ray Mod 0"],                           /* Mod 1 is 2006 */
+    ["fra_e80_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],                   /* Lynx HAS.2(FN) */
+    ["fra_e90_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],
+    ["deu_e80_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],                   /* Sea Lynx Mk88 */
+    ["deu_e90_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],
+    /* the sonar dips; the torpedo is what goes in the water */
+    ["nato_e00_aswhelo", "AN/AQS-22 ALFS dipping sonar", "Mk 54 lightweight torpedo"],   /* MH-60R */
+    ["gbr_e00_aswhelo",  "AN/AQS-22 ALFS dipping sonar", "Sting Ray torpedo"],           /* Merlin HM1 */
+    ["fra_e00_aswhelo",  "AN/AQS-22 ALFS dipping sonar", "MU90 Impact"],                 /* NH90 Caiman */
+    ["deu_e00_aswhelo",  "AN/AQS-22 ALFS dipping sonar", "Mk 46 torpedo"],               /* Sea Lynx Mk88A */
+    /* A Ka-25PL and a Ka-27PL drop a homing torpedo (AT-1 from 1962; AT-1M
+       and APR-2 later) or depth bombs. Their generated rows were a sonar's
+       name on a ship's mortar pattern - proj "arc", five or six rounds to
+       2.6-3.3 tiles - so a new name alone would be the same invention under
+       a truer label. Each becomes a torpedo mount at the Pact's own scaling
+       of the row it replaces, as the present-day Ka-27 below does: 215 at
+       6.5 tiles, the figure every other ASW helicopter of their decade has. */
+    ["pact_e60_aswhelo", "Dipping sonar and one AT-1 torpedo", "AT-1 homing torpedo", { tpl: "asw_mk54" }],   /* Ka-25PL */
+    ["pact_e80_aswhelo", "Dipping sonar", "AT-1M torpedo and depth bombs", { tpl: "asw_mk54" }],             /* Ka-27PL */
+    /* A Ka-27 does not carry a twelve-barrel ship's rocket mortar. It drops
+       an APR-2 or AT-1M homing torpedo: a torpedo mount, at the Pact's own
+       scaling of the one it replaces. */
+    ["asw_helo_p", "RBU-6000 rocket mortar", "APR-2 / AT-1M ASW torpedo", { tpl: "asw_mk54" }],
+
+    /* ---- ships ----
+       The Moskva's "weapon" was its own air group - fourteen Ka-25s modelled
+       as a 9-tile missile against ships and submarines - although the deck
+       already carries them as aircraft (carrier: 3). What the hull itself
+       fired at a submarine was two RBU-6000 (and the RPK-1 Vikhr nuclear ASW
+       rocket, which is not modelled); against a ship it had only its guns.
+       The RBU is the same unscaled template the 1960s Petya already fires. */
+    ["pact_e60_carrier", "14 x Ka-25 ASW helicopters", "2 x RBU-6000 rocket mortar", { tpl: "asw_rbu" }],
+  ];
+  var nFit = 0;
+  for (var rf = 0; rf < REAL_FIT.length; rf++) {
+    var RF = REAL_FIT[rf], ru = UNITS[RF[0]];
+    if (!ru || !ru.weapons) continue;
+    var ri = fitIndex(RF[0], RF[1]);
+    if (ri < 0) continue;
+    var ro = RF[3] || {};
+    if (ro.drop) { ru.weapons = ru.weapons.slice(0, ri).concat(ru.weapons.slice(ri + 1)); nFit++; continue; }
+    if (ro.tpl) swapMount(RF[0], ri, ro.tpl);
+    var rw = relabel(RF[0], ri, RF[2]);
+    if (!rw) continue;
+    if (ro.dmg) rw.dmg = ro.dmg;
+    if (ro.rangeMul) rw.range = Math.round(rw.range * ro.rangeMul * 10) / 10;
+    nFit++;
+  }
+
+  /* ---- names the generator cut off at 42 characters ----
+     "Up to 18" on the B-2A (eras.js) was the worst of it; these are the
+     rest that stop mid-word. Keyed on the exact cut-off text, so a row
+     another change has already renamed is left alone. Every clone of the
+     row is renamed, so no hull keeps the stub. */
+  var TRUNC = {
+    w_e00_kpa_missileboat: ["Kumsong-3 (Kh-35 derivative) anti-ship mis", "Kumsong-3 (Kh-35 derivative) anti-ship missile"],
+    w_e00_nato_lighttank:  ["105mm M68A2 in a low-profile autoloading t", "105mm M68A2 in a low-profile autoloading turret"],
+    w_e00_pact_lighttank:  ["125mm 2A75 with autoloader and Refleks ATG", "125mm 2A75 with autoloader and Refleks ATGM"],
+    w_e00_pact_spg:        ["152mm 2A64 with automated laying and fire ", "152mm 2A64 with automated laying and fire control"],
+    w_e00_pla_at:          ["HJ-12 imaging-infrared fire-and-forget ATG", "HJ-12 imaging-infrared fire-and-forget ATGM"],
+    w_e00_roc_spaag:       ["4x TC-1L (ground-launched Sky Sword I) IR ", "4x TC-1L (ground-launched Sky Sword I) IR missiles"],
+    w_e50_kpa_spg:         ["76.2mm ZiS-3 in an open-topped fighting co", "76.2mm ZiS-3 in an open-topped fighting compartment"],
+    w_e50_nato_cruiser:    ["Nine 203mm/55 Mk 16 rapid-fire guns in thr", "Nine 203mm/55 Mk 16 rapid-fire guns in three turrets"],
+    w_e50_nato_ifv:        [".50 cal M2HB on an open pintle mount - not", ".50 cal M2HB on an open pintle mount"],
+    w_e50_pla_rifle:       ["Type 56 7.62x39mm assault rifle (licence A", "Type 56 7.62x39mm assault rifle (licence AK-47)"],
+    w_e60_kpa_missileboat: ["P-15 Termit (SS-N-2 Styx) anti-ship missil", "P-15 Termit (SS-N-2 Styx) anti-ship missiles"],
+    w_e60_kpa_spg:         ["122mm D-74 or M-1931/37 gun on a locally b", "122mm D-74 or M-1931/37 gun on a locally built chassis"],
+    w_e60_nato_aa:         ["70mm uncooled lead-sulphide IR homing miss", "70mm uncooled lead-sulphide IR homing missile"],
+    w_e60_nato_fighter:    ["AIM-7 Sparrow radar-guided and AIM-9 Sidew", "AIM-7 Sparrow and AIM-9 Sidewinder"],
+    w_e60_nato_lighttank:  ["152mm M81 gun/launcher firing conventional", "152mm M81 gun/launcher: shells and MGM-51 Shillelagh"],
+    w_e60_nato_sead:       ["AGM-45 Shrike and AGM-78 Standard ARM anti", "AGM-45 Shrike and AGM-78 Standard ARM"],
+    w_e60_nato_spaag:      ["20mm M168 rotary cannon (M61 Vulcan deriva", "20mm M168 rotary cannon (M61 Vulcan derivative)"],
+    w_e60_nato_spg:        ["155mm M126 howitzer in a fully rotating en", "155mm M126 howitzer in a fully rotating turret"],
+    w_e60_pact_fighter:    ["23mm GSh-23 and 2-4 x R-3S/R-60 IR missile", "23mm GSh-23 and 2-4 x R-3S/R-60 IR missiles"],
+    w_e60_pact_recon:      ["14.5mm KPVT and 7.62mm PKT in a small turr", "14.5mm KPVT and 7.62mm PKT in a small turret"],
+    w_e60_pact_spaag:      ["Quad 23mm AZP-23 with RPK-2 Tobol gun-layi", "Quad 23mm AZP-23 with RPK-2 Tobol gun-laying radar"],
+    w_e60_roc_spg:         ["M110: 203mm M2A2 howitzer. M108: 105mm M10", "203mm M2A2 (M110) and 105mm M103 (M108) howitzers"],
+    w_e80_kpa_missileboat: ["4x P-15 Termit (SS-N-2 Styx) anti-ship mis", "4x P-15 Termit (SS-N-2 Styx) anti-ship missiles"],
+    w_e80_nato_mbt:        ["120mm M256 smoothbore (licensed Rheinmetal", "120mm M256 smoothbore (licensed Rheinmetall L/44)"],
+    w_e80_pact_mbt:        ["125mm 2A46M-1 with 9K119 Refleks gun-launc", "125mm 2A46M-1 with 9K119 Refleks gun-launched ATGM"],
+    w_e80_roc_mlrs:        ["45x 117mm Mk15 rockets (steel-ball fragmen", "45x 117mm Mk15 rockets (steel-ball fragmentation)"],
+    w_e90_kpa_spg:         ["170mm gun on a redesigned chassis with onb", "170mm gun on a redesigned chassis with onboard ammunition"],
+    w_e90_nato_at:         ["127mm imaging-infrared fire-and-forget mis", "127mm imaging-infrared fire-and-forget missile"],
+  };
+  for (var tk in WEAPONS) {
+    var tb = TRUNC[tk.split("__")[0]];
+    if (tb && WEAPONS[tk].name === tb[0]) { WEAPONS[tk].name = tb[1]; nFit++; }
+  }
+
+  /* twelve Kh-55SM on two rotary launchers, one round each (eras.js) */
+  if (UNITS.pact_e80_stealthbomber && (UNITS.pact_e80_stealthbomber.ammo || 0) < 12)
+    UNITS.pact_e80_stealthbomber.ammo = 12;
 
   /* ---- who can take fuel from a tanker, re-derived after the rosters exist -
      rules.js stamps `refuelable` on `cat === "aircraft" && jet && !tanker &&

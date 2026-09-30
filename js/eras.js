@@ -3324,26 +3324,34 @@ Object.assign(WEAPONS, {
   },
   "sfx": "missile"
  },
+  /* Tuo Chiang: eight Hsiung Feng II and eight Hsiung Feng III on the
+     after deck. ssm_hf3's own figures, the ones corvette_r - the same hull
+     in the present day - already fires; the e00 hull just had not been
+     told. */
  "w_e00_roc_corvette": {
-  "name": "Hsiung Feng II and III anti-ship missiles",
-  "dmg": 49,
+  "name": "Hsiung Feng II and III",
+  "dmg": 280,
   "warhead": "he",
-  "range": 7.9,
-  "reload": 1.22,
-  "burst": 4,
-  "burstDelay": 0.16,
-  "acc": 0.73,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 0.5,
+  "range": 15.0,
+  "minRange": 2.0,
+  "reload": 15,
+  "burst": 2,
+  "burstDelay": 0.9,
+  "acc": 0.84,
+  "proj": "missile",
+  "speed": 310,
+  "aoe": 1.5,
   "tgt": {
    "ground": 1,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "shot"
+  "sfx": "missile",
+  "profile": "loft",
+  "intercept": 0.6
  },
+
  "w_e00_roc_destroyer": {
   "name": "Two 127mm/54 Mk 45",
   "dmg": 119,
@@ -6567,8 +6575,11 @@ Object.assign(WEAPONS, {
   "profile": "loft",
   "intercept": 0.7
  },
+ /* "Up to 18" was "Up to 18,000 kg internal" cut off by the generator. In
+    this decade the B-2A's load was sixteen GBU-31s on two rotary launchers,
+    first dropped over Serbia in March 1999; the figures are unchanged. */
  "w_e90_nato_stealthbomber": {
-  "name": "Up to 18",
+  "name": "2000lb GBU-31 JDAM",
   "dmg": 447,
   "warhead": "he",
   "range": 2.9,
@@ -7674,26 +7685,105 @@ Object.assign(WEAPONS, {
   },
   "sfx": "cannon"
  },
+  /* ---- NINE ANTI-SHIP MISSILES THAT WERE CANNON SHELLS ----
+     (owner) "We should respect the reality." These nine rows were generated
+     as proj "shell": a 700 px/s round in bursts of four, 7.3 to 10.1 tiles,
+     38 to 143 a hit. So each flew a gun's flat trajectory, arrived in a
+     fraction of a second and could not be touched by a SAM, a decoy or a
+     close-in gun - combat.js's three defence layers engage a missile or a
+     rocket, never a shell - and none reached anything a Harpoon (14.0) could. MEASURED at
+     b62fbf6, each hull pinned against its own decade's American peer for 60 s
+     (the peer's own SAMs, decoys and CIWS live): at 6 tiles they fired 44 to
+     56 "missiles" a minute and not one was engaged; at 12 tiles none of the
+     nine could fire at all.
+
+     Each is now the missile it was, sized against the rows the game already
+     trusts - ssm_harpoon 265 / 14.0 / skim / 1.00, ssm_exocet 250 / 15.0,
+     ssm_oniks 320 / 15.0 / loft / 0.45, ssm_granit 380 / 16.5 / loft / 0.40 -
+     and flown the way it flew: the P-120, the Moskit and the Uran are
+     sea-skimmers ("skim": the area SAM sees them late), the P-35, P-500, P-700
+     and P-1000 are high-altitude divers ("loft": seen early, hard to stop),
+     and the Hsiung Feng row is ssm_hf3's own figures. Reach sits in the
+     12.5 to 16.5 band those rules.js rows occupy, the longer-legged rounds
+     higher. How much of it a hull can use on its own is a question of what
+     its SIDE can see, and it is decided elsewhere: whether a contact out
+     there is taken at all (entities.js acqGate(): past the crew's own
+     sight, only what the side holds, because a ship's anti-ship round is
+     fired on a cue - rules.js firesOnCue), and how well the round flies once
+     it is -
+     combat.js fire() halves a guided round's accuracy when the side holds
+     no radar track on the target, and these hulls' own sets reach 8.7 to
+     13.6 tiles (two carry none the game counts) where the American
+     cruisers and destroyers beside them reach 15.4 to 20.2. That is the
+     real weapon: the P-35 was built to be fired at a target a Tu-95RTs had
+     found, and a squadron with nothing overhead fired short or fired blind.
+     tgt.ground is 0 on the eight Soviet rows, as ssm_granit already argues:
+     none was ever fired at a target ashore, and the gun that had been
+     hiding inside the "missile" goes back on each hull beside it
+     (generations.js DECK_GUN).
+
+     NO MAGAZINE. The tubes were finite, but so were a Spruance's Harpoon
+     canisters, and no anti-ship round on a hull before the present day is
+     counted in this game - the only rounds counted aboard one are the held
+     Tomahawks (generations.js TLAM_FIT). Giving these nine alone a magazine
+     would be a handicap on one navy, not a fact about it; the long reload
+     stands for the salvo. The DOMAIN
+     pass still applies the Pact's guided and naval figures on top, so every
+     accuracy below is the round as built, not as fired.
+
+     WHAT IT DOES TO A FIGHT. The shells had been these hulls' real armament:
+     a gun's reach, a gun's rate, and nothing could stop them. As missiles
+     they are a stand-off round a ship's defences can answer, beside the gun
+     each hull really carried. MEASURED at b3a3a86,
+     one against one on an empty sea with the other side's hull of the same
+     decade, each on its own army's modifiers, both on guard from 13 tiles,
+     three runs of eleven pairings (the nine hulls, the Kiev and the
+     Kuznetsov against American ones, the Tuo Chiang against a Type 056):
+     the missile ship won 3, lost 12 and drew 18 with the shells, and wins
+     4, loses 9 and draws 20 with these rows. Where both ships carry
+     missiles it is now a missile exchange at 13 tiles: a Slava against a
+     Ticonderoga, which lost all three at 9 tiles with the shells, draws all
+     three with twenty P-500s against thirty-eight Harpoons. Where the other
+     ship has only a longer gun it is not: a Slava against a Burke Flight
+     IIA, which carries no anti-ship missile, holds at 12.3 tiles with a
+     P-1000 in reach, never fires its AK-130 (9.7) and loses all three to
+     78 to 84 rounds of 5-inch, and a Kynda does the same against the Long
+     Beach's 127 mm. That is engage() standing a hull off at the reach of
+     the mount it chose - a behaviour outside these rows, and the owner's
+     call. */
+  /* P-35, in service 1962 on Project 58 Grozny: two quad launchers and a
+     reload for each, 300 km at Mach 1.3-1.5 at altitude under a warhead of
+     800 kg to a tonne, steered mid-course by radio because the ship's own
+     radar saw a fraction of that - the Ka-25Ts and the Tu-95RTs were the
+     other half of the weapon. The US Navy had no ship-launched anti-ship
+     missile until Harpoon in 1977; elsewhere in the West Sweden's Rb 08
+     (1967), Israel's Gabriel (1970), Norway's Penguin (1972) and France's
+     MM38 Exocet (1975) came first. A big, high, early radar round: easy for
+     a Terrier or Tartar to see (0.85). */
  "w_e60_pact_cruiser": {
-  "name": "8 x P-35 anti-ship missiles in two quad la",
-  "dmg": 84,
+  "name": "P-35 (SS-N-3B Sepal)",
+  "dmg": 300,
   "warhead": "he",
-  "range": 8.4,
-  "reload": 5.52,
-  "burst": 4,
-  "burstDelay": 0.3,
-  "acc": 0.54,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 1,
+  "range": 14.0,
+  "minRange": 2.5,
+  "reload": 24,
+  "burst": 2,
+  "burstDelay": 1.1,
+  "acc": 0.62,
+  "proj": "missile",
+  "speed": 260,
+  "aoe": 2.0,
   "tgt": {
-   "ground": 1,
+   "ground": 0,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "cannon"
+  "sfx": "missile",
+  "profile": "loft",
+  "intercept": 0.85
  },
+
  "w_e60_pact_missileboat": {
   "name": "4 x P-15 Termit SSM",
   "dmg": 179,
@@ -8040,26 +8130,33 @@ Object.assign(WEAPONS, {
   "profile": "pop",
   "intercept": 1
  },
+  /* P-120 Malakhit, 1972, two triple launchers on a Project 1234: 150 km at
+     Mach 0.9, 500 kg - twice a Harpoon's warhead on a 1960s seeker, flown
+     low. Subsonic and large, so a little easier to stop than a Harpoon. */
  "w_e80_pact_corvette": {
-  "name": "6 x P-120 Malakhit SSM",
-  "dmg": 38,
+  "name": "P-120 Malakhit (SS-N-9 Siren)",
+  "dmg": 270,
   "warhead": "he",
-  "range": 7.3,
-  "reload": 1.33,
-  "burst": 4,
-  "burstDelay": 0.16,
-  "acc": 0.66,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 0.5,
+  "range": 13.0,
+  "minRange": 2.0,
+  "reload": 16,
+  "burst": 2,
+  "burstDelay": 0.9,
+  "acc": 0.72,
+  "proj": "missile",
+  "speed": 125,
+  "aoe": 1.6,
   "tgt": {
-   "ground": 1,
+   "ground": 0,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "shot"
+  "sfx": "missile",
+  "profile": "skim",
+  "intercept": 1.05
  },
+
  "w_e80_pact_missileboat": {
   "name": "4 x P-15 or P-270 Moskit SSM",
   "dmg": 237,
@@ -8082,46 +8179,64 @@ Object.assign(WEAPONS, {
   "profile": "loft",
   "intercept": 0.45
  },
+  /* P-270 Moskit (3M80), 1984, two quad mounts on a Project 956: Mach 2.8
+     high and about Mach 2.2 at wave height, a weave at the end, 300 kg,
+     120 km high-low and about 90 km flown low all the way - which is how
+     it is flown here. The
+     round the West spent the 1980s building the Aegis ship and RAM to
+     answer: supersonic AND in the clutter, so hard at every layer. */
  "w_e80_pact_destroyer": {
-  "name": "8 x P-270 Moskit SSM",
-  "dmg": 111,
+  "name": "P-270 Moskit (SS-N-22 Sunburn)",
+  "dmg": 300,
   "warhead": "he",
-  "range": 9.3,
-  "reload": 5.11,
-  "burst": 4,
-  "burstDelay": 0.3,
-  "acc": 0.61,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 1,
+  "range": 12.5,
+  "minRange": 2.0,
+  "reload": 20,
+  "burst": 2,
+  "burstDelay": 0.8,
+  "acc": 0.78,
+  "proj": "missile",
+  "speed": 330,
+  "aoe": 1.7,
   "tgt": {
-   "ground": 1,
+   "ground": 0,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "cannon"
+  "sfx": "missile",
+  "profile": "skim",
+  "intercept": 0.45
  },
+
+  /* P-500 Bazalt, 1975: eight twin tubes fixed at an angle along a Slava's
+     sides, 550 km at Mach 2.5 at altitude, a tonne of explosive, and a dive
+     at the end. Built to put a carrier out of action from beyond its air
+     wing, with targeting from a Tu-95RTs or a Legenda satellite. */
  "w_e80_pact_cruiser": {
-  "name": "16 x P-500 Bazalt SSM in fixed deck pairs",
-  "dmg": 111,
+  "name": "P-500 Bazalt (SS-N-12 Sandbox)",
+  "dmg": 370,
   "warhead": "he",
-  "range": 9.3,
-  "reload": 5.11,
-  "burst": 4,
-  "burstDelay": 0.3,
-  "acc": 0.61,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 1,
+  "range": 16.0,
+  "minRange": 3.0,
+  "reload": 26,
+  "burst": 2,
+  "burstDelay": 1.2,
+  "acc": 0.7,
+  "proj": "missile",
+  "speed": 320,
+  "aoe": 2.0,
   "tgt": {
-   "ground": 1,
+   "ground": 0,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "cannon"
+  "sfx": "missile",
+  "profile": "loft",
+  "intercept": 0.55
  },
+
  "w_e80_pact_sub": {
   "name": "6 x 533mm torpedo tubes",
   "dmg": 259,
@@ -8186,27 +8301,50 @@ Object.assign(WEAPONS, {
   "profile": "loft",
   "intercept": 0.8
  },
+ /* ---- the Tu-160's Kh-55SM was a BOMB ----
+    MEASURED at b62fbf6: proj "bomb", range 2.7, so a Blackjack flew over
+    the thing it was sent at, and the name had been cut off mid-word.
+    Kh-55SM: 3,000 km at Mach 0.77 hugging the ground, twelve on the two
+    rotary launchers (the airframe's ammo is set to 12 in generations.js).
+    Nuclear-only in the 1980s; the conventional Kh-555 from about 2000 is
+    what played conventional here stands for, the way the file already plays
+    the AGM-86B. 12.7 tiles is alcm_b's 11.5 through the file's own
+    compression, (3000 / 2400) ^ 0.45. HELD: a long-range land-attack round
+    fires only on an order that names its target (owner's rule), exactly as
+    Blue Steel and ASMP are - and ai.js already keeps an all-held
+    heavybomber on the ramp until it has a structure it has seen to send it
+    at. landAttack: it flies to coordinates, so it is for what stays where
+    it was found - a structure - which is how a surface ship's Tomahawk is
+    marked: entities.js pickWeapon lets a released one lead only at a
+    structure, and fireOtherMounts never throws one in beside a gun. After
+    DOMAIN the e80 Pact's guided term takes 0.88 to about 0.78. */
  "w_e80_pact_stealthbomber": {
-  "name": "12 x Kh-55 cruise missiles in two rotary l",
-  "dmg": 385,
+  "name": "Kh-55SM cruise missile",
+  "dmg": 400,
   "warhead": "he",
-  "range": 2.7,
-  "reload": 1.33,
-  "burst": 2,
-  "burstDelay": 0.4,
-  "acc": 0.84,
-  "proj": "bomb",
-  "speed": 0,
-  "aoe": 3.4,
+  "range": 12.7,
+  "minRange": 3,
+  "reload": 7.5,
+  "burst": 1,
+  "acc": 0.88,
+  "proj": "missile",
+  "speed": 300,
+  "aoe": 2.4,
   "suppress": 110,
-  "ammo": 2,
+  "ammo": 1,
+  "manual": true,
+  "landAttack": true,
   "tgt": {
    "ground": 1,
    "air": 0,
-   "sea": 1,
+   "sea": 0,
    "sub": 0
-  }
+  },
+  "sfx": "missile",
+  "profile": "cruise",
+  "intercept": 1.4
  },
+
  "w_e80_pact_stealthfighter": {
   "name": "n/a",
   "dmg": 170,
@@ -8508,46 +8646,59 @@ Object.assign(WEAPONS, {
   },
   "sfx": "shot"
  },
+  /* the same Moskit a decade on; the 3M80M's longer legs, same warhead */
  "w_e90_pact_destroyer": {
-  "name": "8 x P-270 Moskit",
-  "dmg": 129,
+  "name": "P-270 Moskit (SS-N-22 Sunburn)",
+  "dmg": 310,
   "warhead": "he",
-  "range": 9.8,
-  "reload": 4.88,
-  "burst": 4,
-  "burstDelay": 0.3,
-  "acc": 0.64,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 1,
+  "range": 13.5,
+  "minRange": 2.0,
+  "reload": 20,
+  "burst": 2,
+  "burstDelay": 0.8,
+  "acc": 0.8,
+  "proj": "missile",
+  "speed": 330,
+  "aoe": 1.7,
   "tgt": {
-   "ground": 1,
+   "ground": 0,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "cannon"
+  "sfx": "missile",
+  "profile": "skim",
+  "intercept": 0.45
  },
+
+  /* P-700 Granit, 1983: twenty under the forecastle of a Kirov. The same
+     round, and the same figures, as ssm_granit on the Oscar - which is what
+     the note on ssm_granit in rules.js asked for - fired in pairs because
+     a cruiser's salvo is its whole point. */
  "w_e90_pact_cruiser": {
-  "name": "20 x P-700 Granit",
-  "dmg": 129,
+  "name": "P-700 Granit (SS-N-19 Shipwreck)",
+  "dmg": 380,
   "warhead": "he",
-  "range": 9.8,
-  "reload": 4.88,
-  "burst": 4,
-  "burstDelay": 0.3,
-  "acc": 0.64,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 1,
+  "range": 16.5,
+  "minRange": 2.5,
+  "reload": 28,
+  "burst": 2,
+  "burstDelay": 1.2,
+  "acc": 0.72,
+  "proj": "missile",
+  "speed": 300,
+  "aoe": 2.0,
   "tgt": {
-   "ground": 1,
+   "ground": 0,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "cannon"
+  "sfx": "missile",
+  "profile": "loft",
+  "intercept": 0.4
  },
+
  "w_e90_pact_sub": {
   "name": "6 x 533mm torpedo tubes",
   "dmg": 301,
@@ -9086,16 +9237,23 @@ Object.assign(WEAPONS, {
     "range": 8.2, "reload": 1.7, "burst": 4, "burstDelay": 0.2, "acc": 0.72,
     "proj": "shell", "speed": 860, "aoe": 0.6, "sfx": "cannon",
     "tgt": { "ground": 1, "air": 0, "sea": 1, "sub": 0 } },
+ /* Kuznetsov's twelve P-700 Granit under the flight deck are the Kirov's
+    and the Oscar's round (w_e90_pact_cruiser, ssm_granit), so they carry
+    the same figures; they had been generated at 142 on the "pop"
+    interceptor profile, 10.6 tiles. */
  "w_e90_pact_carrier": {
-  "name": "12 x P-700 Granit under the deck",
-  "dmg": 142,
+  "name": "P-700 Granit (SS-N-19 Shipwreck)",
+  "dmg": 380,
   "warhead": "he",
-  "range": 10.6,
-  "reload": 5.3,
-  "burst": 1,
-  "acc": 0.68,
+  "range": 16.5,
+  "minRange": 2.5,
+  "reload": 28,
+  "burst": 2,
+  "burstDelay": 1.2,
+  "acc": 0.72,
   "proj": "missile",
-  "speed": 520,
+  "speed": 300,
+  "aoe": 2.0,
   "tgt": {
    "ground": 0,
    "air": 0,
@@ -9103,8 +9261,8 @@ Object.assign(WEAPONS, {
    "sub": 0
   },
   "sfx": "missile",
-  "profile": "pop",
-  "intercept": 0.85
+  "profile": "loft",
+  "intercept": 0.4
  },
  "w_e90_pact_sead": {
   "name": "Kh-31P ramjet anti-radiation missile",
@@ -9503,26 +9661,33 @@ Object.assign(WEAPONS, {
   "profile": "pop",
   "intercept": 1
  },
+  /* Kh-35 / 3M24 Uran, accepted 2003, two quads on a Steregushchiy: the
+     Russian Harpoon - 130 km, Mach 0.8, wave height - with a 145 kg
+     warhead to the Harpoon's 221. */
  "w_e00_pact_corvette": {
-  "name": "8 x Kh-35 SSM",
-  "dmg": 49,
+  "name": "3M24 Uran (Kh-35)",
+  "dmg": 240,
   "warhead": "he",
-  "range": 7.9,
-  "reload": 1.22,
-  "burst": 4,
-  "burstDelay": 0.16,
-  "acc": 0.73,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 0.5,
+  "range": 13.5,
+  "minRange": 2.0,
+  "reload": 13,
+  "burst": 2,
+  "burstDelay": 0.9,
+  "acc": 0.84,
+  "proj": "missile",
+  "speed": 120,
+  "aoe": 1.4,
   "tgt": {
-   "ground": 1,
+   "ground": 0,
    "air": 0,
    "sea": 1,
    "sub": 0
   },
-  "sfx": "shot"
+  "sfx": "missile",
+  "profile": "skim",
+  "intercept": 1.0
  },
+
  "w_e00_pact_missileboat": {
   "name": "8 x Kalibr or Oniks in VLS",
   "dmg": 304,
@@ -9586,36 +9751,21 @@ Object.assign(WEAPONS, {
   },
   "sfx": "missile"
  },
+  /* P-1000 Vulkan, 1987: the Bazalt's longer-legged successor in the same
+     sixteen tubes, 700 km at Mach 2.5, a lower terminal run. */
  "w_e00_pact_cruiser": {
-  "name": "16 x P-1000 Vulkan SSM",
-  "dmg": 143,
+  "name": "P-1000 Vulkan (SS-N-12 Mod 2)",
+  "dmg": 390,
   "warhead": "he",
-  "range": 10.1,
-  "reload": 4.69,
-  "burst": 4,
-  "burstDelay": 0.3,
-  "acc": 0.67,
-  "proj": "shell",
-  "speed": 700,
-  "aoe": 1,
-  "tgt": {
-   "ground": 1,
-   "air": 0,
-   "sea": 1,
-   "sub": 0
-  },
-  "sfx": "cannon"
- },
- "w_e00_pact_carrier": {
-  "name": "P-700 Granit",
-  "dmg": 157,
-  "warhead": "he",
-  "range": 10.9,
-  "reload": 5.1,
-  "burst": 1,
-  "acc": 0.71,
+  "range": 16.5,
+  "minRange": 3.0,
+  "reload": 26,
+  "burst": 2,
+  "burstDelay": 1.2,
+  "acc": 0.74,
   "proj": "missile",
-  "speed": 520,
+  "speed": 330,
+  "aoe": 2.0,
   "tgt": {
    "ground": 0,
    "air": 0,
@@ -9623,8 +9773,33 @@ Object.assign(WEAPONS, {
    "sub": 0
   },
   "sfx": "missile",
-  "profile": "pop",
-  "intercept": 0.85
+  "profile": "loft",
+  "intercept": 0.5
+ },
+
+ /* the same twelve Granit a decade on: the Kirov's figures, as above */
+ "w_e00_pact_carrier": {
+  "name": "P-700 Granit (SS-N-19 Shipwreck)",
+  "dmg": 380,
+  "warhead": "he",
+  "range": 16.5,
+  "minRange": 2.5,
+  "reload": 28,
+  "burst": 2,
+  "burstDelay": 1.2,
+  "acc": 0.72,
+  "proj": "missile",
+  "speed": 300,
+  "aoe": 2.0,
+  "tgt": {
+   "ground": 0,
+   "air": 0,
+   "sea": 1,
+   "sub": 0
+  },
+  "sfx": "missile",
+  "profile": "loft",
+  "intercept": 0.4
  },
  "w_e00_pact_sead": {
   "name": "Kh-31P and Kh-58 anti-radiation missiles",
@@ -11756,17 +11931,20 @@ Object.assign(WEAPONS, {
   },
 
   /* ---- KIEV'S OWN BATTERY ----
-     Follows w_e60_pact_carrier and w_e90_pact_carrier: the carrier's weapon
-     row in this game is its self-defence, tgt.air only, and the air group is
-     modelled by carrier:3 rather than by this. Four twin P-500 Bazalt
-     launchers forward of the island with a reload magazine below, plus two
-     SA-N-3 Goblet - the Kiev was a cruiser that happened to have a deck, and
-     it spent the hangar volume to be one. */
+     Four twin P-500 Bazalt launchers forward of the island with a reload
+     magazine below - the Kiev was a cruiser that happened to have a deck,
+     and it spent the hangar volume to be one. The air group is modelled by
+     carrier:3 and the two SA-N-3 Goblet launchers by sam_shtorm beside this
+     row, so this is the Bazalt alone, and it is the Slava's Bazalt
+     (w_e80_pact_cruiser) to the figure: the same round had been generated
+     here as 118 at 9.8 tiles on the "pop" interceptor profile, a third of
+     what the same missile did from the Slava's tubes. */
   "w_e80_pact_carrier": {
-    "name": "8 x P-500 Bazalt and SA-N-3 Goblet", "dmg": 118, "warhead": "he",
-    "range": 9.8, "reload": 5.6, "burst": 1, "acc": 0.62, "proj": "missile",
-    "speed": 520, "tgt": { "ground": 0, "air": 0, "sea": 1, "sub": 0 },
-    "sfx": "missile", "profile": "pop", "intercept": 0.85
+    "name": "P-500 Bazalt (SS-N-12 Sandbox)", "dmg": 370, "warhead": "he",
+    "range": 16.0, "minRange": 3.0, "reload": 26, "burst": 2, "burstDelay": 1.2,
+    "acc": 0.7, "proj": "missile", "speed": 320, "aoe": 2.0,
+    "tgt": { "ground": 0, "air": 0, "sea": 1, "sub": 0 },
+    "sfx": "missile", "profile": "loft", "intercept": 0.55
   },
 
   /* ---- THE HORMONE'S SONAR ----

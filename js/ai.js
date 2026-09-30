@@ -13510,8 +13510,12 @@ function makeCommander() {
        wrong answer arriving by a different road. Null drops it to the sweep
        branch, where the allWeaponsHeld guard holds it on the ramp - the same
        treatment the Weasel already gets.
-       Gated on allWeaponsHeld so it changes nothing for the B-52 or the H-6:
-       no existing heavybomber carries a held round. */
+       Gated on allWeaponsHeld so it changes nothing for the B-52 or the H-6,
+       whose ALCM, CALCM, JASSM and KD-20 are not held. What it does take is
+       every bomber whose whole load is held: the Valiant's Blue Danube, the
+       Vulcan's Blue Steel and Yellow Sun, the Mirage IV's AN-11/AN-22 and
+       ASMP, and - since their cruise missiles stopped being bombs - the
+       Tu-160's Kh-55SM and the Tu-160M's Kh-101. */
     if (a.def.role === "heavybomber" && a.allWeaponsHeld && a.allWeaponsHeld()) {
       const st = warAim();
       if (!st || st.raid || !st.ref || st.ref.dead) return null;

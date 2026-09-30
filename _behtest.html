@@ -11036,6 +11036,168 @@ try{
   })();
   }
 
+  /* ====== [74] A MISSILE IS A MISSILE, AND EACH ARMY FIRES ITS OWN ======
+     (owner) "We should respect the reality." Measured at b62fbf6: nine
+     Soviet and Taiwanese anti-ship missiles were proj "shell" - a flat
+     cannon round no SAM, decoy or close-in gun could engage, reaching 7.3
+     to 10.1 tiles against a Harpoon's 14.0 - and their hulls had no gun of
+     their own because the "missile" was standing in for it; the Kiev and
+     the Kuznetsov fired the same P-500 and P-700 at a third of the Slava's
+     and the Kirov's figures, and the Moskva fired its own helicopters. The
+     Tu-160's Kh-55 was a bomb with a 2.7-tile reach and the Tu-160M dropped
+     JDAMs. Every CAS airframe in every decade carried a Maverick or a Kh-29,
+     and the JH-7's YJ-8K was a bomb; MiGs, J-10s and Su-33s fired AMRAAMs,
+     a Su-57 and a J-20 the AIM-260 and an American glide bomb; Igla, FN-6,
+     HT-16 and Mistral teams fired Stingers; British, French and German
+     helicopters from 1955 dropped a 2004 torpedo, four dropped their
+     dipping sonar, two Soviet ones fired a mortar pattern under a sonar's
+     name and a Ka-27 fired a ship's RBU-6000; an F-15E dropped its LANTIRN
+     pods; 28 weapon names stopped mid-word. This holds the data and one
+     live engagement - a Moskit fired at a Spruance with every defensive
+     roll forced to succeed must be stopped by the Spruance's own defences,
+     which no shell ever could be. Everything made here is removed and the
+     RNG and both commanders' books are put back. */
+  if (inHalf(1)) {
+  log("\n[74] A MISSILE IS A MISSILE, AND EACH ARMY FIRES ITS OWN");
+  (function(){
+    var made=[], rng=Game.rng;
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats);
+    var ws=function(id){ return ((UNITS[id]||{}).weapons||[]).map(function(k){ return WEAPONS[k]; }).filter(Boolean); };
+    var lastEra=function(d){ var e=ERAS.filter(function(x){ return inEra(d,x); }); return e.length ? e[e.length-1] : null; };
+    var fielded=function(d){ return !!lastEra(d); };
+    try {
+      /* 1. the nine rows: a missile, with a flight profile, that reaches */
+      var SSM = { pact_e60_cruiser:/P-35/, pact_e80_corvette:/P-120/, pact_e80_destroyer:/P-270/,
+                  pact_e90_destroyer:/P-270/, pact_e80_cruiser:/P-500/, pact_e90_cruiser:/P-700/,
+                  pact_e00_corvette:/Kh-35/, pact_e00_cruiser:/P-1000/, roc_e00_corvette:/Hsiung Feng/ };
+      var badM=[], noGun=[];
+      var ssmOf=function(h,re){ var m=null; ws(h).forEach(function(w){ if(re.test(w.name||"") && w.tgt && w.tgt.sea) m=w; }); return m; };
+      for (var h in SSM) {
+        if(!UNITS[h]){ badM.push(h+" missing"); continue; }
+        var m=ssmOf(h,SSM[h]);
+        if (!m || m.proj!=="missile" || !/^(skim|loft)$/.test(m.profile||"") || !(m.intercept>0) || !(m.range>=12) || !(m.dmg>=240))
+          badM.push(h+": "+(m ? m.proj+" "+m.profile+" r"+m.range+" d"+m.dmg : "no anti-ship mount"));
+        if (!ws(h).some(function(w){ return w.proj==="shell" && w.tgt && w.tgt.ground && !SSM[h].test(w.name||""); })) noGun.push(h);
+      }
+      /* the same round is the same round on a carrier's forecastle */
+      [["pact_e80_carrier","pact_e80_cruiser",/P-500/],["pact_e90_carrier","pact_e90_cruiser",/P-700/],
+       ["pact_e00_carrier","pact_e90_cruiser",/P-700/]].forEach(function(q){
+        var a=ssmOf(q[0],q[2]), b=ssmOf(q[1],q[2]);
+        if (!a || !b || a.dmg!==b.dmg || a.profile!==b.profile || a.intercept!==b.intercept || a.burst!==b.burst)
+          badM.push(q[0]+" "+(a ? a.name+" "+a.dmg+" "+a.profile : "no "+q[2].source)+" vs "+q[1]+" "+(b ? b.dmg+" "+b.profile : "none"));
+      });
+      chk("nine anti-ship rows fly as missiles, sea-skimming or diving, 12 tiles and more - and a carrier's Bazalt and Granit are the cruiser's",
+          badM.length===0, badM.length ? badM.join("; ") : "P-35, P-120, P-270 x2, P-500, P-700, Kh-35, P-1000, HF-II/III; Kiev and Kuznetsov "+
+          ssmOf("pact_e90_carrier",/P-700/).dmg+" = Kirov "+ssmOf("pact_e90_cruiser",/P-700/).dmg);
+      chk("and each of those hulls has its own gun beside the missile", noGun.length===0,
+          noGun.length ? "no gun: "+noGun.join(", ") : "AK-726, AK-725, AK-130, A-190, OTO 76");
+
+      /* 2. live: a Moskit must meet the Spruance's own defences */
+      var s0=tile(P,"sea",4);
+      if (!s0) chk("a Moskit can be stopped", false, "no sea");
+      else {
+        var sh=Game.spawnUnitAt(P,"pact_e80_destroyer",s0.x*32+16,s0.y*32+16); if(sh) made.push(sh);
+        var tg=Game.spawnUnitAt(E,"nato_e80_destroyer",s0.x*32+16,s0.y*32+16); if(tg) made.push(tg);
+        if (!sh || !tg) chk("a Moskit can be stopped", false, "spawn failed");
+        else {
+          tg.x = sh.x + 8*32; tg.y = sh.y; tg.stance="hold";
+          var mw=ssmOf("pact_e80_destroyer",/P-270/);
+          var hp0=tg.hp, e0=new Set(Combat.effects), gone=false, t;
+          Game.rng=function(){ return 0; };               // every roll lands - including the defender's
+          var p0=Combat.projectiles.length;
+          Combat.fire(Game, sh, Object.assign({}, mw, { burst:1 }), tg);
+          var mine=Combat.projectiles.slice(p0);
+          for (t=0; t<240 && !gone; t++) {
+            Combat.update(Game, CFG.DT);
+            gone = mine.every(function(p){ return Combat.projectiles.indexOf(p)<0; });
+          }
+          Game.rng=rng;
+          var said=Combat.effects.filter(function(f){ return !e0.has(f) && f.t==="text" && /SAM KILL|INTERCEPTED|DECOYED/.test(f.s); })
+                                 .map(function(f){ return f.s; });
+          chk("a Moskit fired at a Spruance meets its SAM, decoys and guns", said.length>0 && tg.hp===hp0,
+              (mw ? mw.name+" as proj "+mw.proj : "no P-270")+": "+(said.length ? said.join(",") : "not engaged")+
+              ", target "+hp0.toFixed(0)+" -> "+tg.hp.toFixed(0)+" (HEAD: a shell, never engaged)");
+        }
+      }
+
+      /* 3. the Blackjack's cruise missiles: stand-off, held for an order, for structures */
+      var bad4=[];
+      ["pact_e80_stealthbomber","sbomber_p"].forEach(function(id){
+        var w=ws(id).filter(function(w){ return w.tgt && w.tgt.ground; });
+        if (w.length!==1 || w[0].proj!=="missile" || !(w[0].range>=12) || !w[0].manual || !w[0].landAttack || !/Kh-(55|101)/.test(w[0].name))
+          bad4.push(id+": "+w.map(function(x){ return x.name+" "+x.proj+" r"+x.range+(x.manual?" held":""); }).join(","));
+      });
+      var g0=tile(P,"ground",9), bm=g0 ? Game.spawnUnitAt(P,"sbomber_p",g0.x*32+16,g0.y*32+16) : null;
+      if (bm) made.push(bm);
+      var held = bm && bm.allWeaponsHeld() && bm.holdsFire(WEAPONS[bm.def.weapons[0]]);
+      chk("the Tu-160 and Tu-160M fire Kh-55SM and Kh-101 from stand-off, and only when ordered",
+          bad4.length===0 && !!held, bad4.length ? bad4.join("; ") : (held ? "held until an order names the target" : "not held"));
+
+      /* 4. nobody fires the other bloc's rounds */
+      var US=/\bAIM-\d|\bAGM-\d|AMRAAM|Sidewinder|Sparrow|Stinger|Maverick|small-diameter|\bJDAM\b|Hellfire|Paveway|Harpoon|Tomahawk/;
+      var cross=[];
+      for (var u in UNITS) { var d5=UNITS[u]; if (!/^(pact|pla|kpa)$/.test(d5.fac||"") || !fielded(d5)) continue;
+        ws(u).forEach(function(w){ if (US.test(w.name||"")) cross.push(u+" '"+w.name+"'"); }); }
+      chk("no Soviet, Russian, Chinese or Korean def fires an American-named round", cross.length===0,
+          cross.length ? cross.slice(0,8).join("; ")+(cross.length>8?" ... "+cross.length:"") : "every pact, pla and kpa mount");
+
+      /* 5. no CAS airframe carries a missile from after its time; the JH-7 has its own */
+      var late=[];
+      for (var c in UNITS) { var dc=UNITS[c]; if (dc.role!=="cas") continue; var le=lastEra(dc); if (!le) continue;
+        ws(c).forEach(function(w){ var n=w.name||"";
+          if ((le==="e50" && /Maverick|AGM-65|Kh-2\d/.test(n)) || (le==="e60" && /Kh-29/.test(n)) ||
+              (dc.fac==="kpa" && w.proj==="missile")) late.push(c+" '"+n+"'"); }); }
+      var jh=ws("pla_e90_cas").filter(function(w){ return /YJ-8K/.test(w.name||""); });
+      var jhOk = jh.length===1 && jh[0].proj==="missile" && jh[0].tgt.sea && !jh[0].tgt.ground && jh[0].range>=10;
+      chk("no CAS airframe fires a missile it never carried, and the JH-7's YJ-8K is a missile",
+          late.length===0 && jhOk, (late.length ? late.join("; ")+"; " : "Maverick from 1972, Kh-29 from 1980, none for the KPA; ")+
+          "JH-7: "+jh.map(function(w){ return w.name+" "+w.proj+" r"+w.range; }).join(","));
+
+      /* 6. helicopters drop a torpedo, not a sonar, a mortar pattern or a ship's RBU */
+      var asw=[];
+      for (var a in UNITS) { var da=UNITS[a]; if (da.role!=="aswhelo") continue; var la=lastEra(da); if (!la) continue;
+        ws(a).forEach(function(w){ var n=w.name||"";
+          if (/sonar|RBU/i.test(n) || (da.fac==="pact" && w.proj!=="torpedo") ||
+              (/^(gbr|fra|deu)$/.test(da.fac) && ERAS.indexOf(la)<=3 && /Mk 54|Mod 1/.test(n))) asw.push(a+" '"+n+"' "+w.proj); }); }
+      var ka=[ws("pact_e60_aswhelo")[0], ws("pact_e80_aswhelo")[0], ws("asw_helo_p")[0]];
+      chk("ASW helicopters drop the torpedo of their decade, not a sonar, a mortar salvo or an RBU-6000",
+          asw.length===0, asw.length ? asw.join("; ") : "Ka-25PL, Ka-27PL, Ka-27: "+
+          ka.map(function(w){ return w ? w.name+" ("+w.proj+" "+w.dmg+"/"+w.range+")" : "none"; }).join(", "));
+
+      /* 7. a bomb, a shell or a mortar is not named for a missile, a sensor or an air group */
+      var mis=[];
+      for (var b in UNITS) { var db=UNITS[b]; if (!fielded(db)) continue;
+        ws(b).forEach(function(w){ var n=w.name||"";
+          if ((w.proj==="bomb" || w.proj==="shell" || w.proj==="arc") &&
+              /missile|\bSSM\b|\bKh-\d|YJ-|Harpoon|SLAM|Tien Chien|LANTIRN|sonar|\bAESA\b|APG-/.test(n)) mis.push(b+" '"+n+"' "+w.proj);
+          if (/helicopters|^AN\/A[PQ][GSY]-/.test(n)) mis.push(b+" '"+n+"'"); }); }
+      chk("no bomb, shell or mortar is named for a missile, a sensor or an air group", mis.length===0,
+          mis.length ? mis.slice(0,8).join("; ")+(mis.length>8?" ... "+mis.length:"") : "every fielded mount");
+
+      /* 8. leftovers: names cut off mid-word, and the SAM Site */
+      var STUB=["Up to 18","AIM-7 Sparrow radar-guided and AIM-9 Sidew","12 x Kh-55 cruise missiles in two rotary l",
+        "8 x P-35 anti-ship missiles in two quad la","125mm 2A46M-1 with 9K119 Refleks gun-launc",
+        "120mm M256 smoothbore (licensed Rheinmetal","Quad 23mm AZP-23 with RPK-2 Tobol gun-layi",
+        "P-15 Termit (SS-N-2 Styx) anti-ship missil","Kumsong-3 (Kh-35 derivative) anti-ship mis",
+        "M110: 203mm M2A2 howitzer. M108: 105mm M10","127mm imaging-infrared fire-and-forget mis"];
+      var up=[]; for (var wk in WEAPONS) if (STUB.indexOf(WEAPONS[wk].name)>=0) up.push(wk+" '"+WEAPONS[wk].name+"'");
+      var sw=BUILDINGS.sam && WEAPONS[BUILDINGS.sam.weapons[0]];
+      chk("no weapon name stops mid-word, and the SAM Site flies a SAM's profile under no one army's name",
+          up.length===0 && sw && sw.profile==="pop" && !/Patriot/.test(sw.name),
+          (up.length ? "cut off: "+up.slice(0,4).join("; ")+(up.length>4?" ... "+up.length:"")+"; " : "")+
+          (sw ? "'"+sw.name+"' "+sw.profile : "no SAM Site"));
+    } finally {
+      Game.rng=rng;
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    chk("the shared match is as it was: RNG and both commanders' books", Game.rng===rng &&
+        keep(P.stats)===sP && keep(E.stats)===sE && made.every(function(u){ return u.dead; }), made.length+" units made and removed");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

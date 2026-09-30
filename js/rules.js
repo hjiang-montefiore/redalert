@@ -137,8 +137,13 @@ var WEAPONS = {
                 acc:0.85, proj:"shell", speed:840, aoe:0.6, tgt:{ground:1,air:0,sea:1,sub:0} },
   aa_battery: { name:"twin 40mm AA", dmg:34, warhead:"flak", range:9.0, reload:1.5, burst:5, burstDelay:0.08,
                 acc:0.70, proj:"shell", speed:920, aoe:0.6, tgt:{ground:0,air:1,sea:0,sub:0} },
-  sam_site:   { name:"Patriot SAM site", dmg:230, warhead:"flak", range:14.0, reload:5.0, burst:2, burstDelay:0.6,
-                acc:0.90, proj:"missile", speed:680, aoe:1.2, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* The SAM Site is every army's fixed battery, so its round is not named
+     for one of them - a Soviet or a Chinese site was firing "Patriot". And a
+     SAM flies "pop" like every other interceptor in the file: left to the
+     catch-all at the foot of this file it came out "cruise" (range 14.0 is
+     over that loop's 12-tile cut), a sea-skimming land-attack profile. */
+  sam_site:   { name:"long-range SAM battery", dmg:230, warhead:"flak", range:14.0, reload:5.0, burst:2, burstDelay:0.6,
+                acc:0.90, proj:"missile", speed:680, aoe:1.2, profile:"pop", tgt:{ground:0,air:1,sea:0,sub:0} },
   coast_gun:  { name:"152mm coastal gun", dmg:210, warhead:"he", range:13.5, minRange:2.0, reload:7.5, burst:2, burstDelay:0.6,
                 acc:0.62, proj:"shell", speed:640, aoe:2.0, tgt:{ground:1,air:0,sea:1,sub:0} },
   bunker_how: { name:"emplaced 155mm", dmg:145, warhead:"frag", range:16.0, minRange:4.5, reload:9.0, burst:1,
@@ -1282,6 +1287,23 @@ Object.assign(WEAPONS, {
               acc:0.94, proj:"bomb", speed:0, aoe:3.4, suppress:110, ammo:2, tgt:{ground:1,air:0,sea:1,sub:0} },
   alcm:     { name:"KD-20 cruise missile", dmg:430, warhead:"he", range:9.0, minRange:2.0, reload:7.0, burst:1,
               acc:0.90, proj:"missile", speed:360, aoe:2.6, suppress:70, ammo:1, tgt:{ground:1,air:0,sea:1,sub:0} },
+  /* Kh-101, the Tu-160M's round: a low-observable subsonic cruise missile,
+     4,500 km or more, a warhead of about 400 kg, first fired in anger from
+     Tu-160s over Syria on 17 November 2015. The Blackjack had been carrying
+     "2000lb JDAM" - an American bomb, dropped from overhead. 15.0 tiles is
+     the Kh-55SM's 12.7 through the file's compression, (4500 / 3000) ^ 0.45,
+     and level with the B-52H's JASSM. Harder to see than the Kh-55SM (1.2
+     against 1.4) and harder to stop than a Tomahawk (1.55). HELD like every
+     long-range land-attack round: it fires only on an order that names the
+     target (owner's rule; entities.js holdsFire), and landAttack keeps it
+     for structures, as eras.js says of the Kh-55SM. Deliberately left to
+     the DOMAIN pass, which takes this 0.92 to about 0.63 on a present-day
+     Pact airframe against the 1980s Kh-55SM's 0.78: that table holds the
+     Pact of the 1970s level with NATO and today's Russia behind it in
+     guidance, and the P-800 Oniks beside it pays the same 0.68. */
+  kh101:    { name:"Kh-101 cruise missile", dmg:420, warhead:"he", range:15.0, minRange:3.0, reload:7.5, burst:1,
+              acc:0.92, proj:"missile", speed:300, aoe:2.4, suppress:110, ammo:1, manual:true, landAttack:true,
+              profile:"cruise", intercept:1.2, sfx:"missile", tgt:{ground:1,air:0,sea:0,sub:0} },
 });
 
 Object.assign(UNITS, {
@@ -1323,8 +1345,8 @@ Object.assign(UNITS, {
      problem differently: raw speed, and standoff range.                      */
   sbomber_p: { fac:"pact", role:"heavybomber", name:"Tu-160M Blackjack", full:"Tu-160M Blackjack", cat:"aircraft",
     cost:3800, oil:95, time:50, hp:1150, armor:"air", speed:9.8, turn:0.85, sight:10.5, r:24, mass:0,
-    layer:"air", weapons:["jdam_hvy"], prereq:["airbase","lab"], tech:3, jet:true, ammo:8,
-    desc:"The largest and fastest combat aircraft ever built — supersonic, swing-wing and heavily armoured, but NOT stealthy. It survives by crossing defended airspace faster than the SAMs can solve the problem." },
+    layer:"air", weapons:["kh101"], prereq:["airbase","lab"], tech:3, jet:true, ammo:12,
+    desc:"The largest and fastest combat aircraft ever built — supersonic, swing-wing and heavily armoured, but NOT stealthy. It survives on speed and stand-off: twelve Kh-101 cruise missiles on two rotary launchers, released only on your order, from outside most of the SAM rings it would otherwise have to cross." },
   sbomber_c: { fac:"pla", role:"heavybomber", name:"H-6N", full:"Xian H-6N", cat:"aircraft",
     cost:3500, oil:80, time:46, hp:880, armor:"air", speed:4.4, turn:1.0, sight:12.5, r:22, mass:0,
     layer:"air", weapons:["alcm"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
