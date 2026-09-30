@@ -3915,17 +3915,28 @@ function applyEraSoftkill() {
    A ballistic missile submarine that can only fire torpedoes is a very
    expensive torpedo boat. The whole reason these hulls exist is to hold a
    target ashore at risk from under water, so they get a land-attack missile:
-   slow to reload, long-ranged, and fired while submerged. */
+   slow to reload, long-ranged, and fired while submerged.
+
+   And fired only on an order. (owner) "missiles fired from sub need
+   permission": every SLBM here is `manual`, as a TEL's srbm_* round is, and
+   every Tomahawk, Kalibr and MdCN a boat carries is `manual` and
+   `landAttack`, as the surface fleet's tlam_n_ship is - it flies to the
+   coordinates of a structure. None of them reaches a ship (tgt.sea 0): no
+   army here fields an anti-ship ballistic missile, and TASM, the anti-ship
+   Tomahawk, is not modelled. generations.js ("a submarine's strategic
+   rounds") has the measurements, and names in STRATEGIC_ROUND_GAPS any
+   such round whose row forgets to say so. */
+var STRATEGIC_ROUND_GAPS = [];
 Object.assign(WEAPONS, {
   slbm_n: { name:"Trident II D5 (conventional)", coldLaunch:true, dmg:900, warhead:"he", range:22.0,
     minRange:3.0, reload:165, burst:1, acc:0.82, proj:"missile", speed:16, aoe:4.2,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   slbm_p: { name:"Bulava (conventional)", coldLaunch:true, dmg:840, warhead:"he", range:20.0,
     minRange:3.0, reload:172, burst:1, acc:0.74, proj:"missile", speed:16, aoe:4.0,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   slbm_c: { name:"JL-2 (conventional)", coldLaunch:true, dmg:780, warhead:"he", range:19.5,
     minRange:3.0, reload:180, burst:1, acc:0.76, proj:"missile", speed:16, aoe:3.8,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   /* Britain fires the SAME missile as the United States - Trident II D5, drawn
      from the common pool at King's Bay - and builds only the warhead and the
      boat, which is why this row is a relabelled D5 and says so. France built
@@ -3935,19 +3946,19 @@ Object.assign(WEAPONS, {
      what replaced them, and that gap across thirty years is the point. */
   slbm_b: { name:"Trident II D5 (British warhead)", coldLaunch:true, dmg:900, warhead:"he", range:22.0,
     minRange:3.0, reload:165, burst:1, acc:0.82, proj:"missile", speed:16, aoe:4.2,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   slbm_f: { name:"M51 (conventional)", coldLaunch:true, dmg:860, warhead:"he", range:21.0,
     minRange:3.0, reload:170, burst:1, acc:0.80, proj:"missile", speed:16, aoe:4.0,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   slbm_polaris: { name:"Polaris A3TK (Chevaline)", coldLaunch:true, dmg:700, warhead:"he", range:17.0,
     minRange:3.0, reload:190, burst:1, acc:0.55, proj:"missile", speed:16, aoe:4.4,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   slbm_m20: { name:"M20 (conventional)", coldLaunch:true, dmg:680, warhead:"he", range:16.0,
     minRange:3.0, reload:195, burst:1, acc:0.50, proj:"missile", speed:16, aoe:4.4,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   tlam_n: { name:"BGM-109 Tomahawk", dmg:320, warhead:"he", range:19.0, minRange:2.5,
     reload:20, burst:2, burstDelay:1.1, acc:0.90, proj:"missile", speed:13, aoe:2.0,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, landAttack:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 
   /* ---- Tomahawk from an ATTACK boat, which is not the same magazine ----
      Los Angeles, Seawolf and Virginia all carried only a torpedo with
@@ -3980,14 +3991,16 @@ Object.assign(WEAPONS, {
      magazine that happens to float. */
   tlam_n_tube: { name:"BGM-109 Tomahawk (torpedo tube)", dmg:320, warhead:"he",
     range:19.0, minRange:2.5, reload:32, burst:1, acc:0.90, proj:"missile",
-    speed:13, aoe:2.0, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    speed:13, aoe:2.0, manual:true, landAttack:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   tlam_n_vls: { name:"BGM-109 Tomahawk (12 vertical tubes)", dmg:320, warhead:"he",
     range:19.0, minRange:2.5, reload:26, burst:1, acc:0.90, proj:"missile",
-    speed:13, aoe:2.0, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    speed:13, aoe:2.0, manual:true, landAttack:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   tlam_n_vpm: { name:"BGM-109 Tomahawk (Virginia Payload Module)", dmg:320,
     warhead:"he", range:19.0, minRange:2.5, reload:23, burst:2, burstDelay:1.1,
     acc:0.90, proj:"missile", speed:13, aoe:2.0,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    manual:true, landAttack:true, tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 });
 
 /* ---- road-mobile ballistic missiles ----
@@ -4004,33 +4017,39 @@ Object.assign(WEAPONS, {
    rewrote the artillery through R(metres) - mlrs 23.2, howitzer 20.4, koksan
    25.7, mrl240 26.5 - and never migrated sam_site or the slbm block, which is
    why a Trident still says 22.0. A launcher that cannot out-shoot an M270 has
-   no reason to exist, so this family runs 24.0 to 31.0. */
+   no reason to exist, so this family runs 24.0 to 31.0.
+
+   No reach at sea (tgt.sea 0). A guided round re-aims at the live target
+   every tick, so with it a 1950s Corporal could be put onto a carrier under
+   way; no army here fields an anti-ship ballistic missile (DF-21D, DF-26).
+   generations.js ("a submarine's strategic rounds") holds every ballistic
+   round to it. */
 Object.assign(WEAPONS, {
   srbm_early: { name:"MGM-5 / R-11 class", dmg:430, warhead:"he", range:24.0, minRange:8.0, reload:95, burst:1,
     acc:0.12, proj:"missile", speed:620, aoe:3.0, suppress:90, indirect:true, manual:true,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   srbm_short: { name:"OTR-21 class", dmg:400, warhead:"he", range:26.0, minRange:8.0, reload:55, burst:1,
     acc:0.80, proj:"missile", speed:700, aoe:2.2, suppress:80, indirect:true, manual:true,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   /* A plain Scud is a big, hot, non-manoeuvring airframe on a predictable
      parabola and Patriot did engage them in 1991, so 0.45 - not the SLBM's
      0.12 - is both the accurate figure and the one that makes the new SAM
      mean something. See MISSILE_PROFILE. */
   srbm_scud:  { name:"R-17 class", dmg:470, warhead:"he", range:27.0, minRange:8.0, reload:80, burst:1,
     acc:0.30, proj:"missile", speed:680, aoe:3.2, suppress:95, indirect:true, manual:true,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   srbm_atacms:{ name:"MGM-140 ATACMS", dmg:440, warhead:"he", range:28.5, minRange:8.0, reload:60, burst:1,
     acc:0.88, proj:"missile", speed:700, aoe:2.4, suppress:80, indirect:true, manual:true,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   /* The most accurate ballistic missile of its generation, by a distance, and
      the only weapon in this file deleted by a treaty rather than by obsolescence.
      `to:"e80"` on the unit is the INF Treaty and the desc says so. */
   srbm_p2:    { name:"MGM-31B Pershing II", dmg:520, warhead:"he", range:31.0, minRange:8.0, reload:95, burst:1,
     acc:0.90, proj:"missile", speed:730, aoe:2.6, suppress:95, indirect:true, manual:true,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   srbm_mod:   { name:"9K720 class", dmg:520, warhead:"he", range:30.0, minRange:8.0, reload:58, burst:1,
     acc:0.90, proj:"missile", speed:720, aoe:2.6, suppress:90, indirect:true, manual:true,
-    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 });
 
 if (UNITS.ssbn_n) UNITS.ssbn_n.weapons = ["slbm_n", "torp_mk48"];
@@ -4408,7 +4427,8 @@ Object.assign(WEAPONS, {
      3M-14 land-attack round specifically, and it is subsonic. */
   tlam_p: { name:"3M-14 Kalibr", dmg:315, warhead:"he", range:19.0, minRange:2.5,
     reload:34, burst:1, acc:0.88, proj:"missile", speed:112, aoe:2.0,
-    profile:"cruise", intercept:1.50, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"cruise", intercept:1.50, manual:true, landAttack:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 
   /* The Soviet deterrent before the Borei. ssbn_p is a Project 955A firing a
      Bulava, so it moves to e00 where it belongs - but taking it out of e60,
@@ -4435,7 +4455,8 @@ Object.assign(WEAPONS, {
      already burning, so it must NOT get the ejected-and-unlit sequence. */
   slbm_r27: { name:"R-27 (conventional)", dmg:660, warhead:"he", range:14.5,
     minRange:3.0, reload:200, burst:1, acc:0.42, proj:"missile", speed:700, aoe:4.6,
-    profile:"ballistic", intercept:0.26, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"ballistic", intercept:0.26, manual:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   /* R-39 (3M65, SS-N-20 Sturgeon, 1983): ninety tonnes, the heaviest SLBM any
      navy has fielded, ten warheads, 8,300 km. The missile is the reason the
      Typhoon is the size it is - the boat was built around it, not the reverse
@@ -4443,7 +4464,8 @@ Object.assign(WEAPONS, {
      with the Union that paid for it. */
   slbm_r39: { name:"R-39 (conventional)", coldLaunch:true, dmg:820, warhead:"he", range:19.0,
     minRange:3.0, reload:185, burst:1, acc:0.62, proj:"missile", speed:730, aoe:4.2,
-    profile:"ballistic", intercept:0.18, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"ballistic", intercept:0.18, manual:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   /* R-29RM / R-29RMU2 Sineva (SS-N-23 Skiff, 1986 / 2007): liquid-fuelled,
      which the West gave up on at sea, and the most ACCURATE missile the
      Soviet Union ever put in a boat - astro-inertial with a satellite update
@@ -4452,7 +4474,8 @@ Object.assign(WEAPONS, {
   /* no coldLaunch: the whole R-29 family is a hot wet start, like the R-27. */
   slbm_sineva: { name:"R-29RM Sineva (conventional)", dmg:800, warhead:"he", range:19.5,
     minRange:3.0, reload:178, burst:1, acc:0.72, proj:"missile", speed:740, aoe:4.0,
-    profile:"ballistic", intercept:0.17, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"ballistic", intercept:0.17, manual:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 
   /* ----------------------------------------------------------- gbr ----
      Britain buys the SAME missile off the same American line - 65 Block III
@@ -4465,12 +4488,14 @@ Object.assign(WEAPONS, {
      Ohio SSGN putting pairs out of dedicated cells. First firing HMS
      Splendid, 9 November 1998 on the US east coast range; first shot in anger
      from the same boat over Kosovo in March 1999, HMS Triumph over Libya in
-     2011. tgt.sea is 1 because every land-attack row in this file carries it;
-     it is this file's shorthand for "reaches a surface target", not a claim
-     that the Royal Navy has a submarine anti-ship missile. It does not. */
+     2011. The Royal Navy has no submarine anti-ship missile, and this round
+     reaches nothing at sea: it flies to a structure's coordinates, held for
+     an order like every submarine land-attack round (the family note above
+     tlam_n; generations.js, "a submarine's strategic rounds"). */
   tlam_b: { name:"BGM-109 Tomahawk (tube-launched)", dmg:320, warhead:"he", range:19.0,
     minRange:2.5, reload:32, burst:1, acc:0.90, proj:"missile", speed:112, aoe:2.0,
-    profile:"cruise", intercept:1.55, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"cruise", intercept:1.55, manual:true, landAttack:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 
   /* ----------------------------------------------------------- fra ----
      MdCN is the ONLY land-attack weapon a French submarine has ever carried
@@ -4488,7 +4513,8 @@ Object.assign(WEAPONS, {
      prefix that appears nowhere else in this table. */
   tlam_f: { name:"MdCN naval cruise missile", dmg:300, warhead:"he", range:17.5,
     minRange:2.5, reload:26, burst:1, acc:0.90, proj:"missile", speed:112, aoe:1.9,
-    profile:"cruise", intercept:1.55, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"cruise", intercept:1.55, manual:true, landAttack:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
   /* The missile the file was missing entirely. Le Triomphant commissioned on
      21 March 1997 with sixteen M45 - the M4 airframe under the hardened TN 75
      warhead, 6,000 km, six bodies - and M51 did not fly until 9 November 2006
@@ -4499,7 +4525,8 @@ Object.assign(WEAPONS, {
      after it breaches. There is no French exception to record. */
   slbm_m45: { name:"M45 (conventional)", coldLaunch:true, dmg:780, warhead:"he", range:19.0,
     minRange:3.0, reload:178, burst:1, acc:0.70, proj:"missile", speed:720, aoe:4.1,
-    profile:"ballistic", intercept:0.17, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"ballistic", intercept:0.17, manual:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 
   /* ----------------------------------------------------------- kpa ----
      North Korea's one demonstrated submarine-launched land-attack round, and
@@ -4513,16 +4540,19 @@ Object.assign(WEAPONS, {
      stage above the surface, which is exactly what the released photographs
      show and why the barge ejection programme came first.
 
-     NOT `manual`. Every other slbm_* row fires on acquisition, and a held
-     round on a submarine is unreachable in this build: the map-point gesture
-     in ui.js is gated on isIndirect(), which needs indirect:true, and the
-     AI's only bombard path iterates tel units. A manual SLBM on a boat would
-     be a missile nobody could ever fire. The single tube is modelled the
-     right way instead - see the magazine below, which holds ONE round and
-     needs a naval yard to put another in the tube. */
+     HELD, like every SLBM, and with no reach at sea. A held round on a boat
+     was once written off here as unreachable, since the map-point gesture in
+     ui.js needs isIndirect() and the AI's bombard path iterates tel units.
+     It is reachable by the other gesture: a right-click on a target the side
+     can see is an attack order, released in entities.js setOrder, and the
+     commander's own is ai.js driveStrikeShips, which names a structure it
+     has looked at for a boat as it does for a ship. The single tube is the
+     magazine below, which holds ONE round and needs a naval yard to put
+     another in the tube. */
   slbm_pk1: { name:"Pukguksong-1 (conventional)", coldLaunch:true, dmg:520, warhead:"he", range:15.0,
     minRange:3.0, reload:200, burst:1, acc:0.70, proj:"missile", speed:660, aoe:3.4,
-    profile:"ballistic", intercept:0.38, tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
+    profile:"ballistic", intercept:0.38, manual:true,
+    tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
 });
 
 /* Chevaline was a British penetration-aid front end fitted to Polaris A3 from

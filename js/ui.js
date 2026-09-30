@@ -905,6 +905,10 @@ var UI = (function () {
       ? "RIGHT-CLICK A STRUCTURE YOU HAVE FOUND<br>NOTHING THAT MOVES, AND NOT A MAP POINT"
       : e.isIndirect()
       ? "CTRL + RIGHT-CLICK A MAP POINT<br>OR RIGHT-CLICK A TARGET YOU CAN SEE"
+      /* an SLBM: held like a TEL's round, but a boat has no map-point
+         gesture (forceFire wants isIndirect), and it cannot touch a hull */
+      : e.layer === "sub"
+      ? "RIGHT-CLICK A TARGET ASHORE YOU CAN SEE<br>NOTHING AT SEA, AND NOT A MAP POINT"
       : w0.antiRadiation
       ? "RIGHT-CLICK THE EMITTER<br>CTRL + RIGHT-CLICK WILL BE REFUSED"
       : "RIGHT-CLICK A TARGET YOU CAN SEE<br>CTRL + RIGHT-CLICK WILL BE REFUSED";
@@ -915,18 +919,28 @@ var UI = (function () {
     h += '<span style="font-size:9.5px">' + (w0.name || "").toUpperCase() +
          " DOES NOT FIRE UNLESS ORDERED<br>" + how +
          (list.length > 1 ? "<br>" + list.length + " SELECTED" : "") + "</span>";
-    /* the land-attack magazine: a VLS ship cannot refill it at sea */
-    if (w0.landAttack && e.def.magazine && e.def.magazine[held[0]]) {
+    /* the held round's magazine: a VLS ship cannot refill it at sea, and
+       nor can the Sinpo refill the one tube of its Pukguksong */
+    if (e.cat === "naval" && e.def.magazine && e.def.magazine[held[0]]) {
       const mi = e.def.weapons.indexOf(held[0]), cap = e.def.magazine[held[0]];
       const left = e.mag && e.mag[mi] !== undefined ? e.mag[mi] : cap;
-      h += '<div class="stat' + (left > 0 ? "" : " warn") + '">TOMAHAWK <i>' + left + "/" + cap +
+      const what = /tomahawk/i.test(w0.name || "") ? "TOMAHAWK" : "MISSILES";
+      h += '<div class="stat' + (left > 0 ? "" : " warn") + '">' + what + " <i>" + left + "/" + cap +
            (left > 0 ? "" : " \u2014 NAVAL YARD TO RELOAD") + "</i></div>";
     }
     return h;
   }
+  /* Every unit of ours selected that carries a held round - not only one
+     whose every mount is held. A Virginia keeps its torpedo and holds its
+     Tomahawk, a Burke its gun and its Tomahawk: one of them selected showed
+     the release panel (the single-selection branch asks releasePanel
+     itself), two of them selected showed nothing of how the round is fired.
+     Counted over the roster, this adds 26 units: every ship and boat that
+     carries a held Tomahawk, Kalibr, MdCN or SLBM beside a gun or a
+     torpedo, and nothing else. */
   function selectedHeld() {
     return selection.filter(u => u.kind === "unit" && u.owner === G.human && !u.dead &&
-                                 u.allWeaponsHeld && u.allWeaponsHeld());
+                                 u.manualWeapon && (u.def.weapons || []).some(k => u.manualWeapon(WEAPONS[k])));
   }
 
   /* A launcher with a mine pod, or a howitzer with RAAMS in the ready rack.

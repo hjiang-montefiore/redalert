@@ -9588,10 +9588,20 @@ try{
               " in 3s (HEAD: packs up and drives after it)");
           k.give({ type: "attack", target: jet });
           x0 = k.x; y0 = k.y;
+          /* Pursuing, not how far it got: a Krug turns in place before it
+             drives, and which way it faces here is the shared match's
+             business - how it came to stand here. At 83a2127 it faced 0.59
+             rad off its path and had covered 1.44 tiles in the 1.5 s; once
+             the match's boats stopped firing unasked (strategic_missiles)
+             it faced the other way and spent the 1.5 s turning 1.80 rad onto
+             its path, 0.21 tiles covered. Still 1.5 s, because a longer wait
+             here moves the board of every section after it. */
+          var a0 = k.ang || 0;
           tick(45);
+          var mv81 = U.dist(k.x, k.y, x0, y0) / T, turn81 = Math.abs(U.angDiff(k.ang || 0, a0));
           chk("and one the player gave still pursues",
-              U.dist(k.x, k.y, x0, y0) / T > 0.3,
-              "moved " + (U.dist(k.x, k.y, x0, y0) / T).toFixed(2) + " tiles in 1.5s");
+              k.order.type === "attack" && k.order.target === jet && (mv81 > 0.3 || (turn81 > 0.5 && !!k.path)),
+              "moved " + mv81.toFixed(2) + " tiles and turned " + turn81.toFixed(2) + " rad onto its path in 1.5s, order " + k.order.type);
           jet.dead = true; k.dead = true;
         }
       }
@@ -12117,6 +12127,284 @@ try{
         placed.every(function(b){ return b.dead && P.buildings.indexOf(b)<0; }) &&
         !Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0; }),
         made.length+" units made and removed, "+placed.length+" yard placed and removed");
+  })();
+  }
+
+  /* ====== [89] A SUBMARINE'S STRATEGIC ROUNDS GO ON AN ORDER, AND NONE FINDS A SHIP ======
+     (owner) "missiles fired from sub need permission." At 83a2127, on this
+     suite's own match with a seeded RNG: a player's Virginia on guard 16.5
+     tiles off a power station put three Tomahawks into it unasked in a
+     minute (850 to 5); an Ohio on guard put a Trident unasked into a
+     destroyer 14.8 tiles off (1,948 to 1,725); and the commander's Kilo and
+     Borei, on automatic orders, put two rounds into a power station of ours
+     on ground the commander had never looked at, inside eight seconds. And
+     every ballistic round could find a ship: the Ohio ORDERED onto that
+     destroyer under way picked the Trident, and a HIMARS ordered onto one
+     put two 9K720-class rounds into it (1,948 to 1,655), re-aimed at the
+     moving hull every tick.
+     This holds the fit (every SLBM and every tlam_ round aboard a boat is
+     held; the tlam_ rounds fly to a structure; nothing ballistic or
+     land-attack reaches the sea, and the rows say so themselves; torpedoes,
+     the SSGN's Harpoon and the Oscar's Granit stay automatic; the
+     air-launched cruise missiles the owner kept stay as they were), the
+     player's boat - silent on guard, released by a right-click, never the
+     SLBM against a hull - and its panel, for one boat and for two selected
+     together, a TEL that cannot be put onto a ship, and the commander naming a
+     structure for a Kilo and a Borei only once its own side has LOOKED at
+     it, never a unit, with the Borei handed back the moment its one round
+     is away - played on ground of its own, the commander's other units that
+     could see into it standing off the board while it plays. The player's shots run on the boat's own update() and
+     Combat.update() with the match's rounds parked and a private RNG; the
+     commander's run on Game.tick, as [82]'s do, so the match clock moves on
+     by those seconds. What is handed back: the units and structures made
+     here are gone, the RNG and the parked rounds are restored, both
+     commanders' books are written back, the selection is restored, and the
+     enemy commander is rebuilt and held at peace, as [82] leaves it. */
+  if (inHalf(1)) {
+  log("\n[89] A SUBMARINE'S STRATEGIC ROUNDS GO ON AN ORDER, AND NO BALLISTIC OR LAND-ATTACK ROUND FINDS A SHIP");
+  (function(){
+    var M=Game.map, T2=CFG.TILE, DT=CFG.DT, made=[], blds=[], rng=Game.rng, parked=null, brainTouched=false, booksMoved=false, t89=Game.time, side89=null;
+    var sel0=(typeof UI!=="undefined" && UI.selection) ? UI.selection.slice() : [];
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats);
+    function mk(pl,id,x,y){ var u=UNITS[id] ? Game.spawnUnitAt(pl,id,x*T2+16,y*T2+16) : null; if(u) made.push(u); return u; }
+    function bld(pl,id,x,y){ var b=Game.placeBuilding(pl,id,x,y,true); if(b){ b.buildProgress=1; blds.push(b); } return b; }
+    function isLand(x,y){ return x>3&&y>3&&x<M.W-4&&y<M.H-4 && GameMap.passable(M,x,y,"ground") && !Game.tileBlocked(x,y,null); }
+    function isSea(x,y){ return x>3&&y>3&&x<M.W-4&&y<M.H-4 && GameMap.passable(M,x,y,"sea") && !Game.tileBlocked(x,y,null); }
+    function near(pl,x,y){ var b=1e9; pl.units.concat(pl.buildings).forEach(function(e){ if(!e.dead){ var d=U.dist(e.x,e.y,x,y)/T2; if(d<b) b=d; } }); return b; }
+    /* a clear sea tile and, D tiles from it, a patch of land clear for a 2x2
+       (the [82] scene); `lonely` keeps both clear of the named side */
+    function scene(home, D, r0, lonely){
+      var hx=(home.homeX/T2)|0, hy=(home.homeY/T2)|0;
+      for (var r=r0||6;r<70;r+=2) for (var a=0;a<64;a++){
+        var sx=(hx+Math.cos(a/64*6.283)*r)|0, sy=(hy+Math.sin(a/64*6.283)*r)|0;
+        if(!isSea(sx,sy)) continue;
+        for (var b=0;b<48;b++){
+          var lx=Math.round(sx+Math.cos(b/48*6.283)*D), ly=Math.round(sy+Math.sin(b/48*6.283)*D), ok=true;
+          for (var dx=-3;dx<=4&&ok;dx++) for (var dy=-3;dy<=4&&ok;dy++) if(!isLand(lx+dx,ly+dy)) ok=false;
+          if(ok && lonely && (near(lonely.pl,(lx+0.5)*T2,(ly+0.5)*T2)<lonely.land || near(lonely.pl,(sx+0.5)*T2,(sy+0.5)*T2)<lonely.sea)) ok=false;
+          if(ok) return { sx:sx, sy:sy, lx:lx, ly:ly };
+        }
+      }
+      return null;
+    }
+    /* water D tiles from (x, y), clear of the scene's own boat */
+    function seaAt(x,y,D){ for (var a=0;a<64;a++){ var sx=Math.round(x+Math.cos(a/64*6.283)*D), sy=Math.round(y+Math.sin(a/64*6.283)*D);
+      if(isSea(sx,sy) && isSea(sx+1,sy) && isSea(sx,sy+1)) return { x:sx, y:sy }; } return null; }
+    function mount(u,test){ for (var i=0;i<u.def.weapons.length;i++){ var w=WEAPONS[u.def.weapons[i]]; if(w && test(w,u.def.weapons[i])) return i; } return -1; }
+    var slbmOf=function(u){ return mount(u,function(w){ return w.profile==="ballistic" && w.proj==="missile"; }); };
+    var tlamOf=function(u){ return mount(u,function(w,k){ return k.split("__")[0].indexOf("tlam_")===0; }); };
+    function flew(u,wi,list){ var w=WEAPONS[u.def.weapons[wi]];
+      Combat.projectiles.forEach(function(p){ if(p.shooter===u && p.w===w && list.indexOf(p)<0) list.push(p); }); return list; }
+    function panel(u){
+      if (typeof UI==="undefined" || !UI.selection || !UI.frame) return "";
+      var us=[].concat(u);
+      UI.selection.forEach(function(e){ e.selected=false; }); UI.selection.length=0;
+      us.forEach(function(e){ e.selected=true; UI.selection.push(e); }); UI.frame(DT);
+      var h=((document.getElementById("selinfo")||{}).innerHTML||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ");
+      us.forEach(function(e){ e.selected=false; }); UI.selection.length=0; return h;
+    }
+    try { (function(){
+      /* ---- 1. the fit ---- */
+      var bad=[], held=[], auto=[];
+      for (var uk in UNITS){ var d=UNITS[uk]; if(!d || d.layer!=="sub" || !d.weapons) continue;
+        d.weapons.forEach(function(k){ var w=WEAPONS[k]; if(!w || !w.tgt) return;
+          var bal=w.profile==="ballistic" && w.proj==="missile" && w.tgt.ground, cru=k.split("__")[0].indexOf("tlam_")===0;
+          if (bal || cru){ held.push(uk);
+            if(!w.manual || w.tgt.sea || (cru && !w.landAttack) || (bal && w.landAttack)) bad.push(uk+":"+k); }
+          else { auto.push(uk+":"+k); if(w.manual) bad.push(uk+":"+k+" (held, should not be)"); } }); }
+      chk("every SLBM and every submarine land-attack cruise round is held for an order, the cruise rounds fly to a structure, and none of them reaches a ship",
+          held.length>=25 && bad.length===0,
+          bad.slice(0,6).join("; ") || held.length+" mounts on "+held.filter(function(v,i,a){ return a.indexOf(v)===i; }).length+" boats (83a2127: none held, every one tgt.sea 1)");
+      chk("...and their rows say so themselves: the tail pass in generations.js had no round to put right",
+          typeof STRATEGIC_ROUND_GAPS!=="undefined" && STRATEGIC_ROUND_GAPS.length===0,
+          typeof STRATEGIC_ROUND_GAPS==="undefined" ? "no gap list (83a2127: no pass, every row tgt.sea 1)" : (STRATEGIC_ROUND_GAPS.slice(0,4).join("; ") || "no gaps"));
+      var sa=["ssgn_n:ssm_harpoon","ssgn_p:ssm_granit__ssgn_p"].filter(function(s){ return auto.indexOf(s)>=0; });
+      chk("...while a boat's torpedoes and anti-ship missiles - the SSGN's Harpoon, the Oscar's Granit - stay its own to fire",
+          sa.length===2 && auto.every(function(s){ var w=WEAPONS[s.split(":")[1]]; return !w.manual && w.tgt.sea; }),
+          auto.length+" automatic mounts, "+sa.join(", "));
+      var bl=[], nb=0;
+      for (var wk in WEAPONS){ var w=WEAPONS[wk]; if(w && w.profile==="ballistic" && w.proj==="missile" && w.tgt && w.tgt.ground){ nb++; if(w.tgt.sea) bl.push(wk); } }
+      var ash=["ssm_harpoon","yj8k"].filter(function(k){ return WEAPONS[k] && WEAPONS[k].tgt.sea; });
+      chk("no ballistic missile in the game reaches a ship - a 1950s Corporal no more than a Trident - and the anti-ship missiles still do",
+          nb>=40 && bl.length===0 && ash.length===2,
+          (bl.length ? "still at sea: "+bl.slice(0,5).join(", ") : nb+" ballistic rounds, none")+"; Harpoon and YJ-8K keep the sea (83a2127: all "+nb+" reached it)");
+      var air=["alcm__pla_e00_heavybomber","jassm","taurus_kepd__bomber_g","calcm","alcm_b"].map(function(k){ return WEAPONS[k]; }).filter(Boolean);
+      chk("the air-launched cruise missiles the owner kept firing unordered are as they were",
+          air.length===5 && air.every(function(w){ return !w.manual && !w.landAttack; }) && WEAPONS.alcm__pla_e00_heavybomber.tgt.sea===1,
+          air.map(function(w){ return w.name+(w.manual?" HELD":""); }).join(", "));
+
+      /* ---- 2. the player's Ohio: silent on guard, released by a right-click ---- */
+      var sc=scene(P, 16, 6);
+      if(!sc){ chk("sea and shore for the Ohio", false, "none"); return; }
+      var pw=bld(E,"power",sc.lx,sc.ly), oh=mk(P,"ssbn_n",sc.sx,sc.sy), ws=seaAt(sc.sx,sc.sy,14);
+      var eHull=unitFor(E.faction,"destroyer",E.era)||"destroyer_p", dd=ws ? mk(E,eHull,ws.x,ws.y) : null;
+      var tank=mk(E,unitFor(E.faction,"mbt",E.era)||"mbt_p",sc.lx-1,sc.ly+3);
+      if(!pw||!oh||!dd||!tank){ chk("Ohio scenario built", false, "station "+!!pw+" boat "+!!oh+" hull "+!!dd+" tank "+!!tank); return; }
+      var si=slbmOf(oh);
+      tick(1);                                   // the grid is rebuilt at the top of a tick
+      parked=Combat.projectiles.splice(0, Combat.projectiles.length);
+      Game.rng=function(){ return 0.5; };
+      oh.stance="guard"; oh.give({ type:"guard" });
+      var own=[];
+      for (var k=0;k<Math.round(20/DT);k++){ oh.update(DT); Combat.update(Game, DT); flew(oh,si,own); }
+      chk("left on guard with a destroyer "+(U.dist(oh.x,oh.y,dd.x,dd.y)/T2).toFixed(1)+" tiles off and a power station ashore, the Ohio fires no Trident on its own",
+          si>=0 && own.length===0 && !oh.canTarget(pw,true),
+          own.length+" Tridents in 20 s (83a2127: one into the hull, unasked)");
+      oh.give({ type:"attack", target:dd });
+      var hullPick=oh.pickWeapon(dd);
+      oh.give({ type:"attack", target:tank });
+      var tankPick=oh.pickWeapon(tank);
+      oh.give({ type:"attack", target:pw });
+      var relPick=oh.pickWeapon(pw), shot=[];
+      for (var k2=0;k2<Math.round(30/DT) && !shot.length;k2++){ oh.update(DT); Combat.update(Game, DT); flew(oh,si,shot); }
+      chk("a right-click on the station releases it; ordered onto a destroyer the boat takes the torpedo, never the Trident",
+          oh.order.release===true && relPick===si && shot.length>=1 && hullPick!==si && hullPick>=0 && oh.canTarget(dd),
+          "station -> "+(oh.def.weapons[relPick]||"none")+", "+shot.length+" away; destroyer -> "+(oh.def.weapons[hullPick]||"none")+
+          " (83a2127: slbm_n); tank -> "+(oh.def.weapons[tankPick]||"none"));
+      Game.rng=rng;
+      Combat.projectiles.length=0; Combat.projectiles.push.apply(Combat.projectiles, parked); parked=null;
+
+      /* ---- 3. a Virginia, and the panels ---- */
+      var vi=mk(P,"sub_n",sc.sx,sc.sy), ti=vi ? tlamOf(vi) : -1;
+      if(!vi || ti<0){ chk("Virginia built", false, "none"); return; }
+      vi.order={ type:"attack", target:pw, auto:true };             // what acquire() would hand it
+      var vAuto=vi.pickWeapon(pw);
+      vi.give({ type:"attack", target:pw });
+      var vRel=vi.pickWeapon(pw);
+      vi.give({ type:"attack", target:tank });
+      var vTank=vi.pickWeapon(tank);
+      chk("the Virginia's Tomahawk: left in its tube on an automatic engagement, released by a right-click on a structure, never put into a tank",
+          vAuto!==ti && vRel===ti && vTank!==ti && !vi.canTarget(pw,true) && vi.canTarget(dd,true),
+          "auto -> "+(vi.def.weapons[vAuto]||"none")+", released -> "+(vi.def.weapons[vRel]||"none")+", tank -> "+(vi.def.weapons[vTank]||"none"));
+      vi.give({ type:"idle" }); oh.give({ type:"idle" });
+      /* the Sinpo's one Pukguksong, in its one tube (rules.js magazine) */
+      var sp=mk(P,"kpa_e00_sub",sc.sx,sc.sy);
+      var hO=panel(oh), hV=panel(vi), hS=sp ? panel(sp) : "";
+      if (hO || hV)
+        chk("the panel says how each is fired: the Ohio's Trident at a target ashore and not by map point, the Virginia's Tomahawk at a structure, and the Sinpo's one round in its one tube",
+            /TRIDENT II D5 \(CONVENTIONAL\) DOES NOT FIRE UNLESS ORDERED/.test(hO) && /TARGET ASHORE/.test(hO) && /NOT A MAP POINT/.test(hO) &&
+            /RELEASE HELD 1\/2/.test(hO) && /RIGHT-CLICK A STRUCTURE/.test(hV) && /TOMAHAWK/.test(hV) &&
+            /PUKGUKSONG-1 \(CONVENTIONAL\) DOES NOT FIRE UNLESS ORDERED/.test(hS) && /MISSILES 1\/1/.test(hS),
+            (hO.match(/RELEASE.{0,150}/)||[hO.slice(0,120)])[0]+" || "+(hV.match(/RELEASE.{0,120}/)||[hV.slice(0,120)])[0]+
+            " || "+(hS.match(/MISSILES.{0,12}/)||["Sinpo: no magazine line"])[0]);
+      /* two Virginias selected together: each keeps its torpedo, so neither
+         is all-held, and the multi-selection panel left the release out */
+      var vi2=mk(P,"sub_n",sc.sx,sc.sy), hVV=vi2 ? panel([vi,vi2]) : "";
+      if (hVV)
+        chk("two Virginias selected together still say how their Tomahawks are fired",
+            /BGM-109 TOMAHAWK.{0,40}DOES NOT FIRE UNLESS ORDERED/.test(hVV) && /RIGHT-CLICK A STRUCTURE/.test(hVV) && /2 SELECTED/.test(hVV),
+            (hVV.match(/RELEASE.{0,150}/)||["no release panel (83a2127: none) - "+hVV.slice(0,80)])[0]);
+      if (vi2) vi2.dead=true;
+      if (sp) sp.dead=true;
+
+      /* ---- 4. a ballistic launcher ashore cannot be put onto a ship ---- */
+      var tel=mk(P,unitFor(P.faction,"tel",P.era)||"tel_n",sc.lx+2,sc.ly-2);
+      chk("a TEL right-clicked onto a destroyer has nothing to fire at it; onto the station it does",
+          !!tel && !tel.canTarget(dd) && tel.canTarget(pw),
+          tel ? tel.def.id+": destroyer "+tel.canTarget(dd)+", station "+tel.canTarget(pw)+" (83a2127: true, and a HIMARS ordered onto one under way put two rounds into it, 1,948 to 1,655)" : "no TEL");
+      [oh,vi,dd,tank,tel].forEach(function(u){ if(u) u.dead=true; });
+      pw.dead=true; Game.removeBuilding(pw); Game.sweepDead();
+
+      /* ---- 5. the commander names a structure for its boats only once its side has LOOKED at it ---- */
+      brainTouched=true;
+      AI.reset(); AI.create(Game, E, "regular", "balanced");
+      var kId=unitFor(E.faction,"sub",E.era), bId=unitFor(E.faction,"ssbn",E.era), res=null, tries=[];
+      for (var att=0; att<3 && !res; att++){
+        var hs=scene(E, 15, 5+att*9, { pl:E, land:13, sea:6 });
+        if(!hs){ tries.push("no scene"); break; }
+        var st=bld(P,"power",hs.lx,hs.ly), kb=kId ? mk(E,kId,hs.sx,hs.sy) : null, ws2=seaAt(hs.sx,hs.sy,2), bb=(bId && ws2) ? mk(E,bId,ws2.x,ws2.y) : null;
+        if(!st || !kb || !bb){ tries.push("not built: "+kId+" "+!!kb+", "+bId+" "+!!bb); [kb,bb].forEach(function(u){ if(u) u.dead=true; });
+          if(st){ st.dead=true; Game.removeBuilding(st); } Game.sweepDead(); continue; }
+        /* tough enough to outlive a Kalibr and a Bulava (1,155 at most), so
+           what takes the Borei off its order is the commander, not a dead
+           target - a plain station's 850 died to the pair */
+        st.maxHp=st.hp=4000;
+        /* and the scene is its own (aside(), at the head of the suite):
+           every unit of the commander's this section did not make that
+           could see or reach the structure is off the board while it plays,
+           swept again every tick and put back after. Without it the check
+           rested on who happened to be passing - with naval_fixes applied,
+           the commander's own Mi-28 stood 9.8 to 10.4 tiles from each of the
+           three scenes tried, inside its 11.2-tile sight, and all three had
+           the ground looked at 0.8 to 1.7 s in, so none was conclusive */
+        side89=aside(made, function(){ return [st]; }, function(u){ return u.owner===E; });
+        var ki=tlamOf(kb), bi=slbmOf(bb), lk=AI.lookOf(E), li=st.ty*M.W+st.tx;
+        var r={ blind:0, namedBlind:false, firedBlind:0, named:{}, atUnit:0, how:"", back:-1, t:0,
+                reload:bi>=0 ? WEAPONS[bb.def.weapons[bi]].reload : 0 };
+        var fk=[], fb=[];
+        var watch=function(){ var blind=!lk || lk[li]===0;
+          [[kb,"k"],[bb,"b"]].forEach(function(p){ var o=p[0].order;
+            if(o && o.type==="attack" && o.target===st){ if(blind) r.namedBlind=true; else if(!r.named[p[1]]) r.named[p[1]]={ rel:o.release===true, auto:!!o.auto }; } });
+          var nk=fk.length, nb2=fb.length; flew(kb,ki,fk); flew(bb,bi,fb);
+          fk.concat(fb).forEach(function(p){ if(!p._c89){ p._c89=1; if(p.target && p.target.kind!=="building") r.atUnit++; if(blind) r.firedBlind++; } });
+          if(fb.length>nb2 && r.back<0) r.back=r.t;
+          return blind; };
+        /* first nobody of the commander's side has looked at that ground;
+           a window shorter than one intelligence sweep and one think of this
+           "regular" commander (0.8 + 2.8 s) proves nothing, so a scene its
+           own aircraft happen to overfly sooner is moved along the coast */
+        for (var k3=0;k3<Math.round(8/DT);k3++){ r.aside=Math.max(r.aside||0, side89.sweep()); Game.tick(DT); r.t+=DT; if(!watch()){ r.how="its own eyes"; break; } r.blind+=DT; }
+        if (r.namedBlind || r.firedBlind) { res=r; }
+        else if (r.blind<3.6) { tries.push("looked at after "+r.blind.toFixed(1)+" s"); }
+        else {
+          /* then a scout of its side stands beside it, as [82]'s does: the
+             structure is on the plot and its ground looked at */
+          var eye=mk(E,unitFor(E.faction,"recon",E.era)||"recon_p",hs.lx+3,hs.ly+1);
+          if (eye) eye.give({ type:"guard" });
+          if (!r.how) r.how=eye ? "a scout of its side beside it" : "no scout";
+          var t0=r.t, backAt=-1;
+          for (var k4=0;k4<Math.round(25/DT);k4++){ r.aside=Math.max(r.aside||0, side89.sweep()); Game.tick(DT); r.t+=DT; watch();
+            if (r.back>=0 && backAt<0 && !(bb.order && bb.order.type==="attack" && bb.order.target===st)) backAt=r.t;
+            if (fk.length && fb.length && backAt>=0) break; }
+          r.k=fk.length; r.b=fb.length; r.backAfter=backAt>=0 ? backAt-r.back : -1; r.after=r.t-t0;
+          res=r;
+          if (eye) eye.dead=true;
+        }
+        side89.back(); side89=null;
+        [kb,bb].forEach(function(u){ if(u) u.dead=true; }); st.dead=true; Game.removeBuilding(st); Game.sweepDead();
+      }
+      chk("the commander never names or fires on a structure of ours its side has not looked at; once a scout of its own has, its Kilo gets a Kalibr and its Borei a Bulava away on a commanded order - at the structure, never a unit",
+          !!res && res.blind>=3.6 && !res.namedBlind && res.firedBlind===0 && res.named.k && res.named.k.rel && !res.named.k.auto &&
+          res.named.b && res.named.b.rel && res.k>=1 && res.b>=1 && res.atUnit===0,
+          res ? "unlooked "+res.blind.toFixed(1)+" s: named "+res.namedBlind+", "+res.firedBlind+" fired (83a2127: named on an automatic order, 2 fired, all while unlooked); looked at ("+res.how+"): "+
+                kId+" "+keep(res.named.k||null)+" "+res.k+" away, "+bId+" "+keep(res.named.b||null)+" "+res.b+" away, "+res.atUnit+" at a unit, in "+(res.after||0).toFixed(1)+" s"+
+                "; "+(res.aside||0)+" of the commander's own units stood off the scene's ground"+
+                (tries.length ? " [earlier scenes: "+tries.join("; ")+"]" : "") : "no conclusive scene: "+tries.join("; "));
+      chk("...and a boat whose next round is minutes off is handed straight back, not left sitting on the order",
+          !!res && res.backAfter>=0 && res.backAfter<4,
+          res ? "the "+bId+" off the order "+(res.backAfter>=0 ? res.backAfter.toFixed(1)+" s after its round left" : "never")+
+                " (a 45 s strike window against a "+res.reload+" s reload)" : "");
+    })(); } catch(e){
+      chk("[89] ran", false, e && e.message ? e.message+" "+String(e.stack).split("\n")[1] : String(e));
+    } finally {
+      if (side89){ side89.back(); side89=null; }
+      Game.rng=rng;
+      if (parked){ Combat.projectiles.length=0; Combat.projectiles.push.apply(Combat.projectiles, parked); }
+      if (Game.cbContacts) for (var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if (made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      for (var pi=Combat.projectiles.length-1; pi>=0; pi--)
+        if (made.indexOf(Combat.projectiles[pi].shooter)>=0) Combat.projectiles.splice(pi,1);
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      blds.forEach(function(b){ if(!b.dead){ b.dead=true; Game.removeBuilding(b); } });
+      Game.sweepDead();
+      if (typeof UI!=="undefined" && UI.selection){ UI.selection.forEach(function(e){ e.selected=false; }); UI.selection.length=0;
+        sel0.forEach(function(e){ if(!e.dead){ e.selected=true; UI.selection.push(e); } }); }
+      booksMoved = keep(P.stats)!==sP || keep(E.stats)!==sE;
+      back(P.stats,sP); back(E.stats,sE);
+      if (brainTouched){ AI.reset(); AI.create(Game, E, "regular", "balanced"); }
+      if (AI.setPeace) AI.setPeace(E, true);
+    }
+    var selNow=(typeof UI!=="undefined" && UI.selection) ? UI.selection.slice() : [], selWas=sel0.filter(function(e){ return !e.dead; });
+    chk("the shared match is handed back: the RNG, no stray round or plot, nothing made left standing, the selection, the commander rebuilt at peace, both commanders' books written back",
+        Game.rng===rng && keep(P.stats)===sP && keep(E.stats)===sE &&
+        !Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0; }) &&
+        !(Game.cbContacts||[]).some(function(c){ return made.indexOf(c.unit)>=0; }) &&
+        made.every(function(u){ return u.dead; }) && blds.every(function(b){ return b.dead; }) &&
+        selNow.length===selWas.length && selNow.every(function(e,i){ return e===selWas[i]; }) && !!AI.intelOf(E),
+        made.length+" units and "+blds.length+" structures made and removed; the books "+(booksMoved ? "moved while it ran and were written back" : "never moved")+
+        "; the match clock ran on "+(Game.time-t89).toFixed(1)+" s, as [82]'s does");
   })();
   }
 

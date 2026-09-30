@@ -1098,7 +1098,16 @@ function makeCommander() {
        incidentally, several hundred entries to sort through every time. */
     const cand = [];
     for (const r of seenB.values()) if (!r.gone) cand.push(r);
-    for (const r of intelU(null, D.memory || 240)) cand.push(r);
+    /* m.ashore: a round that cannot touch a hull (a ballistic round has no
+       tgt.sea - generations.js) is not aimed at a fleet, nor counted in the
+       cluster it would be aimed at. The splash reads the same tgt
+       (combat.js canHurtLayer), so a round on a knot of ships at sea hurts
+       none of them. Measured with the commander's radar watching only the
+       water round three of our destroyers off its coast: at 5c8faba its
+       TEL put the fire mission on the fleet (the aimpoint on water, 0.0
+       tiles from a hull); now it takes its war aim ashore. */
+    for (const r of intelU(m.ashore ? (r => r.layer !== "sea" && r.layer !== "sub") : null,
+                           D.memory || 240)) cand.push(r);
     if (cand.length < 3) return null;
     let best = null, bestN = 0;
     const R = (m.aoe || 2) * CFG.TILE * 1.6;
@@ -5301,7 +5310,7 @@ function makeCommander() {
          concrete barrier. */
       let spot = null;
       if (siegeAt && now - siegeAt.t < 60) spot = { x: siegeAt.x, y: siegeAt.y };
-      if (!spot) spot = bestStrikePoint({ aoe: 2.6, rounds: 1 });
+      if (!spot) spot = bestStrikePoint({ aoe: 2.6, rounds: 1, ashore: true });
       if (!spot) {
         const t = warAim();
         if (t && t.x !== undefined) spot = { x: t.x, y: t.y };
@@ -5361,9 +5370,35 @@ function makeCommander() {
   const tlamSent = new Map();       // structure id -> when a ship was last sent at it
   let strikeT = 0;                  // driveStrikeShips()'s own clock
   const STRIKE_N = 4, STRIKE_S = 45, STRIKE_REST = 20;
+  /* ---- and from under the water ----
+     (owner) "missiles fired from sub need permission." A boat's land-attack
+     cruise round and its SLBM are held now (generations.js), so the naval
+     wave's attackmove never fires one, and nothing else in this file names a
+     target for a boat. Measured on the behaviour suite's match (its [89]):
+     at 83a2127 the commander's Kilo and Borei, on automatic orders, put two
+     rounds into a power station of ours standing on ground the commander
+     had never looked at, inside eight seconds. Now nothing is named while
+     that ground is unlooked; once a scout of its own has looked, the Kilo
+     and the Borei are each named on a commanded order and each gets its
+     round away at the structure, never at a unit, a few seconds later (3.2
+     and 6.0 s in two runs of the suite).
+     The same driver under the same fog: a structure off seenB, on ground
+     this commander has LOOKED at, inside the round's reach and past whatever
+     else aboard reaches the shore. An SLBM is not `landAttack` - like a TEL's
+     round it may be put onto anything the side can see - but a commander
+     names only a structure for it, which is what one round in 165 to 200
+     seconds is worth. A boat is named only with that round ready, and a
+     strike ends as soon as the next round could not leave inside the
+     window: an SLBM's reload is longer than the whole window, and without
+     that - measured, a Borei on a structure that outlived its Bulava - the
+     boat sat on the order 43.6 s after its one round had gone; with it, the
+     boat is handed back 1.6 s after. */
   function strikeMount(u) {
     const ws = u.def.weapons;
-    for (let i = 0; i < ws.length; i++) { const w = WEAPONS[ws[i]]; if (w && w.landAttack) return i; }
+    for (let i = 0; i < ws.length; i++) {
+      const w = WEAPONS[ws[i]];
+      if (w && (w.landAttack || (u.layer === "sub" && w.manual && w.profile === "ballistic"))) return i;
+    }
     return -1;
   }
   function driveStrikeShips() {
@@ -5371,7 +5406,7 @@ function makeCommander() {
     const now = G.time, rid = rival ? rival.idx : -1, W = G.map.W;
     if (tlamSent.size > 64) for (const [k, t0] of tlamSent) if (now - t0 > 60) tlamSent.delete(k);
     for (const u of P.units) {
-      if (u.dead || u.cat !== "naval" || u.layer !== "sea") continue;
+      if (u.dead || u.cat !== "naval" || (u.layer !== "sea" && u.layer !== "sub")) continue;
       const wi = strikeMount(u);
       if (wi < 0) continue;
       const cap = (u.def.magazine || {})[u.def.weapons[wi]];
@@ -5381,14 +5416,15 @@ function makeCommander() {
       if (s) {
         const o = s.order;
         if (u.order === o && o.target && !o.target.dead && !dry &&
-            (left === undefined || s.left0 - left < STRIKE_N) && now - s.t0 < STRIKE_S) continue;
+            (left === undefined || s.left0 - left < STRIKE_N) && now - s.t0 < STRIKE_S &&
+            (u.cooldowns[wi] || 0) <= STRIKE_S - (now - s.t0)) continue;
         /* over: back to the leg it was taken from, or to nothing */
         if (u.order === o) u.give(o.resume ? { type: "attackmove", x: o.resume.x, y: o.resume.y }
                                             : { type: "idle" });
         u._tlamS = null; u._tlamRest = now + STRIKE_REST;
         continue;
       }
-      if (dry || (u._tlamRest || 0) > now) continue;
+      if (dry || (u._tlamRest || 0) > now || (u.cooldowns[wi] || 0) > 0) continue;
       const o0 = u.order, ot = o0.type;
       const autoBld = ot === "attack" && o0.auto && !o0.release &&
                       o0.target && o0.target.kind === "building";

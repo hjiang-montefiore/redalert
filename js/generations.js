@@ -1990,6 +1990,94 @@
     _tfu.magazine = _tfm;
   }
 
+  /* ---- a submarine's strategic rounds go on an order, and none finds a ship ----
+     (owner) "missiles fired from sub need permission." At 83a2127 every SLBM -
+     Polaris to Trident, R-27 to Bulava, M20 to M51, JL-2 and the Pukguksong -
+     and every submarine land-attack cruise missile - Tomahawk in four fits,
+     Kalibr 3M-14, MdCN - fired on acquisition like a torpedo, while the land
+     launchers (HELD_ROLES above) and the surface fleet's Tomahawk (eras.js
+     tlam_n_ship) waited for an order. Measured on the behaviour suite's own
+     match with a seeded RNG: a Virginia on guard 16.5 tiles off a power
+     station put three Tomahawks into it unasked in a minute (850 to 5), and
+     an Ohio on guard put a Trident into a destroyer 14.8 tiles off (1,948 to
+     1,725). The rows now say what these rounds are (rules.js, the slbm_*,
+     tlam_* and srbm_* rows; eras.js, Hades):
+       an SLBM is `manual`, as a TEL's srbm_* round is. It goes on an order
+         that names a target the side can see - a right-click - and on
+         nothing else. A boat is not an indirect shooter, so there is no
+         map-point gesture: ui.js forceFire refuses it and the release panel
+         says so.
+       a submarine's cruise round of the tlam_ family - Tomahawk, Kalibr
+         3M-14, MdCN (rules.js named MdCN tlam_f "to sit with" the other two)
+         - is `manual` and `landAttack`, as tlam_n_ship is. It flies to the
+         coordinates of a structure (entities.js pickWeapon), and leads only
+         past whatever else aboard reaches the shore. `landAttack` also takes
+         the launching side's radar out of its hit roll (combat.js
+         radarDependence), exactly as for the surface Tomahawk: 4,000
+         Virginia Tomahawks at a structure 16.5 tiles off hit 0.91 of the
+         time under their side's radar and 0.42 outside it at 83a2127, and
+         0.82 to 0.83 either way now - the surface Tomahawk's own figure. So a
+         boat striking past its side's radar now hits about twice as often,
+         and one striking under it a tenth less.
+     NOT held: the torpedo, and a boat's anti-ship missiles. The SSGN's
+     Harpoon (skim) and the Oscar's Granit (loft) are neither, and stay
+     exactly what they were.
+
+     NONE OF THEM FINDS A SHIP. A guided round re-aims at the live target
+     every tick (combat.js), and every ballistic missile carried tgt.sea 1 -
+     a 1950s Corporal or Scud-A as much as a Trident. Measured the same way:
+     the Ohio ordered onto that destroyer under way chose the Trident over
+     its torpedo, and a HIMARS ordered onto one put two rounds into it (1,948
+     to 1,655). Now the Ohio takes its Mk 48, closes, and has the hull down
+     to 1,198 in 90 s, and the HIMARS has nothing it may fire at a ship: its
+     order drops to idle. No army here fields an anti-ship ballistic missile
+     - the DF-21D and DF-26 are not in the roster - so every ballistic round
+     loses the sea; a real one added later declares `asbm` and is left
+     alone. The land-attack cruise rounds lose it too: TLAM, 3M-14 and MdCN
+     fly to coordinates. TASM, the anti-ship Tomahawk, went to sea in US
+     boats from 1983 to 1994 and is not modelled; if it is wanted it is a
+     row of its own, automatic and sea-only, not a reason to let the
+     land-attack round hunt hulls. The AIR-LAUNCHED cruise missiles - ALCM,
+     CALCM, JASSM, KD-20 and Taurus - are left exactly as they are: the
+     owner kept them firing without an order.
+
+     THIS PASS is the net under those rows. It runs here, at the tail, because
+     only now does every roster exist and has every boat's private copy of
+     its rounds been cut, so a boat or a row added later is covered from this
+     line. A round the rule covers that is not held, or a ballistic round
+     that still reaches the sea, is put right and named in
+     STRATEGIC_ROUND_GAPS (rules.js), and _behtest [89] fails if that list
+     is not empty: the row forgot to say what it is. A fresh tgt each time,
+     so no round sharing the object is touched with it. */
+  var sealess = function (k, w) {
+    w.tgt = { ground: w.tgt.ground, air: w.tgt.air, sea: 0, sub: w.tgt.sub };
+    STRATEGIC_ROUND_GAPS.push(k + " reached the sea");
+  };
+  if (typeof STRATEGIC_ROUND_GAPS !== "undefined") {
+    for (var _bk in WEAPONS) {
+      var _bw = WEAPONS[_bk];
+      if (_bw && _bw.profile === "ballistic" && _bw.proj === "missile" && _bw.tgt &&
+          _bw.tgt.ground && _bw.tgt.sea && !_bw.asbm) sealess(_bk, _bw);
+    }
+    for (var _su in UNITS) {
+      var _sd = UNITS[_su];
+      if (!_sd || _sd.layer !== "sub" || !_sd.weapons) continue;
+      for (var _sq = 0; _sq < _sd.weapons.length; _sq++) {
+        var _sid = _sd.weapons[_sq], _sw = WEAPONS[_sid];
+        if (!_sw || _sw.proj !== "missile" || !_sw.tgt || !_sw.tgt.ground) continue;
+        var _scru = _sw.profile === "cruise" && _sid.split("__")[0].indexOf("tlam_") === 0;
+        if (_sw.profile !== "ballistic" && !_scru) continue;
+        if (!_sw.manual || (_scru && !_sw.landAttack))
+          STRATEGIC_ROUND_GAPS.push(_sid + " on " + _su + " was not held");
+        _sw.manual = true;
+        if (_scru) { _sw.landAttack = true; if (_sw.tgt.sea) sealess(_sid, _sw); }
+      }
+    }
+    if (STRATEGIC_ROUND_GAPS.length && typeof console !== "undefined" && console.warn)
+      console.warn("[generations] " + STRATEGIC_ROUND_GAPS.length + " strategic rounds were " +
+                   "not held or not kept off the sea by their rows: " + STRATEGIC_ROUND_GAPS.join(", "));
+  }
+
   /* ---- a warship's decoys, re-derived now that the era rosters exist ----
      Exactly the case the `refuelable` sweep above documents, and found the
      same way. rules.js applies SOFTKILL from a table keyed by unit id at the
