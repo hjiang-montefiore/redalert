@@ -2781,7 +2781,17 @@ var Render3D = (function () {
     for (const e of sel) {
       if (e.dead) continue;
       const d = e.def || {};
-      if (d.radar) {
+      /* a set switched off covers nothing (G.setEmcon): its reach in grey,
+         and whether it is dark or on its way back. Ours or an ally's only: a
+         single enemy can be selected too, and whether ITS set is on the air
+         is for our ears to say (G.esmPlot), not for its ring - drawn as if
+         lit, the ring says only what the recognition manual would. */
+      const emc = (G.radarDark && e.emcon && (e.owner === G.human || G.allied(e.owner, G.human)) &&
+                   G.radarDark(e)) ? G.emconState(e) : null;
+      if (d.radar && emc) ring(e, d.radar, "rgba(150,160,170,0.55)", null,
+                               emc === "dark" ? "RADAR OFF (EMCON)"
+                                              : "RELIGHTING " + Math.ceil(e.relightAt - G.time) + "s");
+      else if (d.radar) {
         /* a jammed radar really is smaller: show the reach the player has */
         let r = d.radar;
         const jam = G.jamAgainst ? G.jamAgainst(e.owner, e) : 0;

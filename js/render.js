@@ -2110,7 +2110,10 @@ var Render = (function () {
   function drawMinimap(mm) {
     const mctx = mm.getContext("2d");
     const map = G.map, S = mm.width / map.W;
-    const hasRadar = G.human.hasBuilding("radar") && G.human.powerRatio() >= 1;
+    /* the dome's picture needs the dome ON THE AIR, not only built and
+       powered: switched off (G.setEmcon) it paints nothing (G.domeLit) */
+    const domeUp = G.human.hasBuilding("radar") && G.human.powerRatio() >= 1;
+    const hasRadar = domeUp && (!G.domeLit || G.domeLit(G.human));
     mctx.fillStyle = "#050705"; mctx.fillRect(0, 0, mm.width, mm.height);
     if (G._worldTex) {
       mctx.imageSmoothingEnabled = true;
@@ -2153,7 +2156,8 @@ var Render = (function () {
     if (!hasRadar) {
       mctx.fillStyle = "rgba(0,0,0,0.25)"; mctx.fillRect(0, 0, mm.width, mm.height);
       mctx.fillStyle = "#4d6047"; mctx.font = "9px sans-serif"; mctx.textAlign = "center";
-      mctx.fillText(G.human.hasBuilding("radar") ? "RADAR OFFLINE — LOW POWER" : "NO RADAR", mm.width / 2, 12);
+      mctx.fillText(G.human.hasBuilding("radar")
+        ? (domeUp ? "RADAR OFF (EMCON)" : "RADAR OFFLINE — LOW POWER") : "NO RADAR", mm.width / 2, 12);
     }
     /* last, and over the low-power wash, for the reason given in
        drawMinimapFrom. This minimap never rotates, so its own frustum corners
@@ -2181,7 +2185,9 @@ var Render = (function () {
     G = game;
     const mctx = mm.getContext("2d");
     const map = G.map, S = mm.width / map.W;
-    const hasRadar = G.human.hasBuilding("radar") && G.human.powerRatio() >= 1;
+    /* a dome switched off paints nothing: see drawMinimap */
+    const domeUp = G.human.hasBuilding("radar") && G.human.powerRatio() >= 1;
+    const hasRadar = domeUp && (!G.domeLit || G.domeLit(G.human));
     mctx.setTransform(1, 0, 0, 1, 0, 0);
     mctx.fillStyle = "#050705"; mctx.fillRect(0, 0, mm.width, mm.height);
 
@@ -2282,7 +2288,8 @@ var Render = (function () {
     if (!hasRadar) {
       mctx.fillStyle = "rgba(0,0,0,0.25)"; mctx.fillRect(0, 0, mm.width, mm.height);
       mctx.fillStyle = "#4d6047"; mctx.font = "9px sans-serif"; mctx.textAlign = "center";
-      mctx.fillText(G.human.hasBuilding("radar") ? "RADAR OFFLINE" : "NO RADAR", mm.width / 2, 12);
+      mctx.fillText(G.human.hasBuilding("radar")
+        ? (domeUp ? "RADAR OFF (EMCON)" : "RADAR OFFLINE") : "NO RADAR", mm.width / 2, 12);
     }
     /* ---- attack markers sit on top of EVERYTHING, the blackout included ----
        The wash above is 25% black. Drawing the warning underneath it took the

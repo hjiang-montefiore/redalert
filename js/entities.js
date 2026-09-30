@@ -426,6 +426,9 @@ class Unit {
          this is, and this.order is the wrong thing to read here because every
          command-path caller asks before the order exists. */
       if (auto && this.manualWeapon(w)) continue;
+      /* ordered or not, a round its own set guides cannot be fired with the
+         set off (game.js G.ownRadarMount) */
+      if (this.radarOffMount(w)) continue;
       if (Combat && w.tgt) {
         if (tl === "air" && !w.tgt.air) continue;
         if (tl === "sub" && !w.tgt.sub) continue;
@@ -659,11 +662,23 @@ class Unit {
      an enemy tank from putting a kilotonne into it, and it is enforced in the
      engine rather than in the interface. */
   holdsFire(w) {
+    /* a round this hull's own set guides stays on the rail while the set is
+       off, released or not (radarOffMount, below) */
+    if (this.radarOffMount(w)) return true;
     if (w && w.nuke) {
       const o = this.order;
       return !(o && o.release === true && o.type === "bombard" && o.nuke === true);
     }
     return this.manualWeapon(w) && !this.released();
+  }
+  /* ---- EMCON: this mount is dead while the set that guides it is off ----
+     game.js G.setEmcon and G.ownRadarMount. Asked by holdsFire, so every fire
+     path in this file - engage, the secondary mounts, the garrison, both air
+     branches and a structure's defensive fire - leaves it on the rail; and by
+     canTarget, so no order and no reflex is taken on it either. */
+  radarOffMount(w) {
+    const g = this.game;
+    return !!(this.emcon && g.radarDark && g.radarDark(this) && g.ownRadarMount(w));
   }
   /* Nothing aboard fires unprompted, so there is nothing this platform can do
      on its own. Drives the spawn stance, the idle nag and the UI refusals. An
@@ -2115,6 +2130,47 @@ class Unit {
   tryFire(wi, t) {
     if (this.cooldowns[wi] > 0) return;
     const w = WEAPONS[this.def.weapons[wi]];
+    /* ---- an anti-radiation seeker needs something to home on ----
+       Refused, not wasted, while the target's set is off the air (game.js
+       G.armLock): a Weasel ordered onto a dark battery holds its orbit with
+       the round on the rail and fires the moment the set comes back up -
+       which is the whole contest emission control sets up. A shot the
+       aircraft took on its own initiative (seadTarget's self-issued order)
+       is simply over, and it goes back to what it was doing. Only an emitter
+       is asked: an ARM ordered onto a tank still flies as it always did.
+       The AARGM, with its own terminal seeker, may be sent at a dark set.
+       The player's Weasel waits for as long as the player leaves it there,
+       and is told why. A commander's waits G.ARM_WAIT seconds and then takes
+       its seeker's silence as the fact it is - the set is off - and goes
+       back to be re-tasked, noting the set (armDark) so that it is not sent
+       straight back at it unless the commander hears it again (ai.js
+       pickEmitter). Without that, found in review, an AI Weasel ordered onto
+       a dark dome orbited it to bingo fuel, landed, and was sent at the same
+       dome again: one dark set pinned it for the whole battle. */
+    const armT = w && w.antiRadiation && t && t.def && (t.def.radar || t.def.jam) && this.game.armLock;
+    /* the set is on the air again: a later silence starts a new wait */
+    if (armT && this.order && this.order.armWait !== undefined && this.game.armLock(t)) this.order.armWait = undefined;
+    if (armT && !this.game.armLock(t) && this.game.armSeeker(w, this) !== "active") {
+      const o = this.order, g = this.game;
+      if (o && o.type === "attack" && o.target === t && o.auto && this.afterAttack) {
+        this.order = this.afterAttack(o);
+      } else if (this.owner === g.human) {
+        if (this.noLockSaid !== t) {
+          this.noLockSaid = t;
+          g.alert(this.def.name.toUpperCase() + " — TARGET OFF THE AIR, HOLDING FOR IT", "warn");
+        }
+      } else if (o && o.type === "attack" && o.target === t && this.afterAttack) {
+        if (o.armWait === undefined) o.armWait = g.time;
+        else if (g.time - o.armWait >= (g.ARM_WAIT || 15)) {
+          this.armDark = { id: t.id, t: g.time };
+          /* given up, not carried: afterAttack() would otherwise fly a
+             live target home and back with the aircraft (the rearm carry) */
+          this.order = this.afterAttack({ type: "attack", target: null, resume: o.resume,
+                                          cap: o.cap, then: o.then });
+        }
+      }
+      return;
+    }
     /* guarded on ammoMax: a Building borrows this method through
        Unit.prototype.tryFire.call and has no magazine and no canAfford */
     if (this.ammoMax && !this.canAfford(w)) return;          // aircraft out of ordnance
@@ -2158,6 +2214,10 @@ class Unit {
       const shooter = this, game = this.game;
       const tick = () => {
         if (shooter.dead || !t || t.dead || n-- <= 0) return;
+        /* the burst's later rounds ask what the first one did: a set switched
+           off between them keeps them on the rail (radarOffMount) - the AI's
+           drill goes dark exactly then, as a Weasel shows */
+        if (Unit.prototype.radarOffMount.call(shooter, w)) return;
         Combat.fire(game, shooter, w, t);
         game.defer(delay, tick);
       };
@@ -2358,7 +2418,11 @@ class Unit {
     let needsTrack = false;
     if (airTgt) {
       const VISUAL = 11;
-      needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
+      /* a set switched off is no set (game.js G.setEmcon): its crew engages
+         by eye, as a hull without one does, and only a long-range SAM round
+         still needs somebody else's track */
+      const setOn = (this.def.radarQ || this.def.radar) && !(this.emcon && this.game.radarDark(this));
+      needsTrack = setOn || this.layer === "air" ||
             ((this.def.role === "aa" || this.def.role === "sam") &&
              ((WEAPONS[this.def.weapons[0]] || {}).range || 0) > VISUAL);
     }
@@ -4206,7 +4270,7 @@ class Building {
      mount, so these have to exist here or the first defensive tick throws. */
   manualWeapon(w) { return Unit.prototype.manualWeapon.call(this, w); }
   released() { return false; }
-  holdsFire(w) { return this.manualWeapon(w); }
+  holdsFire(w) { return this.manualWeapon(w) || Unit.prototype.radarOffMount.call(this, w); }
   pickWeapon(t) { return Unit.prototype.pickWeapon.call(this, t); }
   weaponRange(w) { return Unit.prototype.weaponRange.call(this, w); }
   sightR() { return this.def.sight * (this.owner.upgrades.optics ? 1.25 : 1); }
@@ -4332,7 +4396,8 @@ class Building {
     const w0 = this.def.weapons ? (WEAPONS[this.def.weapons[0]] || {}) : {};
     const R2 = R * R;
     const VISUAL = 11;
-    const needsTrack = this.def.radarQ || this.def.radar || this.layer === "air" ||
+    const needsTrack = ((this.def.radarQ || this.def.radar) && !(this.emcon && this.game.radarDark(this))) ||
+          this.layer === "air" ||
           ((this.def.role === "aa" || this.def.role === "sam") &&
            (w0.range || 0) > VISUAL);
     this.game.grid.query(this.x, this.y, R, (e) => {

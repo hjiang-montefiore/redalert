@@ -1554,6 +1554,14 @@ var UI = (function () {
       if (e.ammoMax) h += '<div class="stat">ORDNANCE <i>' + (e.ammo).toFixed(1) + "/" + e.ammoMax + "</i></div>";
       if (e.roundsMax) h += '<div class="stat' + (e.rounds === 0 ? " warn" : "") +
         '">ROUNDS <i>' + e.rounds + "/" + e.roundsMax + "</i></div>";
+      /* emission control, and a relight counting down - frame() redraws
+         this panel every frame, so the count needs nothing of its own */
+      if (e.owner === G.human && G.canEmcon && G.canEmcon(e)) {
+        const st = G.emconState(e);
+        h += '<div class="stat' + (st === "on" ? "" : " warn") + '">RADAR <i>' +
+             (st === "on" ? "ON THE AIR" : st === "dark" ? "DARK — O RELIGHTS" :
+              "RELIGHTING " + Math.ceil(e.relightAt - G.time) + "s") + "</i></div>";
+      }
       if (e.isOutOfSupply && e.isOutOfSupply()) {
         const pct = Math.round(e.supplyStrain() * 100);
         h += '<div class="stat warn">SUPPLY <i>OUT OF CONTACT ' + pct + "%</i></div>";
@@ -1879,6 +1887,7 @@ var UI = (function () {
       if (k === "f") cmdHold();
       if (k === "c") cmdCounterBattery();
       if (k === "n") cmdQuiet();
+      if (k === "o" && !e.ctrlKey && !e.metaKey) cmdEmcon();
       /* M lays mines when a layer is selected, and toggles repair otherwise.
          The two never apply to the same selection. */
       if (k === "m" && !selectedLayers().length) setRepair(!input.repairMode);
@@ -2938,6 +2947,31 @@ var UI = (function () {
       ? "SILENT RUNNING — " + nq + " BOAT" + (nq === 1 ? "" : "S")
       : "SILENT RUNNING OFF", "good");
   }
+  /* ---- O: RADAR OFF (emission control, game.js G.setEmcon) ----
+     One press takes every selected set that is still transmitting, or still
+     coming back up, off the air at once; with every one of them dark already
+     it starts the relight on each, on its own decade's clock. Our own sets
+     only - a look at an enemy battery must not switch it off for them - and
+     the bar's button is this same function.
+     O, because it was free: the handler binds A S G F C N M U L R Y T P X H V
+     Q E D, Delete, Tab, Space and the digits, and O reads as on/off. Ctrl+O
+     and Cmd+O are left to the browser. */
+  function cmdEmcon() {
+    const sets = selection.filter(e => !e.dead && e.owner === G.human && G.canEmcon && G.canEmcon(e));
+    if (!sets.length) return;
+    const allDark = sets.every(e => G.emconState(e) === "dark");
+    let n = 0, longest = 0;
+    for (const e of sets) {
+      if (!G.setEmcon(e, !allDark)) continue;
+      n++;
+      if (allDark) longest = Math.max(longest, e.relightAt - G.time);
+    }
+    if (!n) return;
+    G.alert(allDark
+      ? "RADAR RELIGHTING — " + n + " SET" + (n === 1 ? "" : "S") + " ON THE AIR IN " + Math.ceil(longest) + "s"
+      : "RADAR OFF — " + n + " SET" + (n === 1 ? "" : "S") + " DARK", "good");
+    refreshSelInfo();
+  }
   /* D is the key players reach for first, so it unloads a loaded transport
      - and turns a garrison out, since unloadSelection() does both - as well
      as deploying a rig. None of them applies to the same thing as another,
@@ -3134,7 +3168,8 @@ var UI = (function () {
   /* What the selection holds that the bar cares about, counted in one pass. */
   function cmdContext() {
     const c = { units: [], air: 0, beat: 0, scat: 0, hold: 0, rigs: 0, loaded: 0, garrison: 0,
-                yards: 0, guns: 0, cb: 0, subs: 0, quiet: 0, recall: 0, why: "SELECT A UNIT" };
+                yards: 0, guns: 0, cb: 0, subs: 0, quiet: 0, recall: 0, why: "SELECT A UNIT",
+                emit: 0, dark: 0 };
     const kinds = { depot: 0, navalyard: 0 };
     let foot = 0;
     for (const e of selection) {
@@ -3145,6 +3180,7 @@ var UI = (function () {
            can do that (G.rigFor): D reaches it through cmdDeploy, so DEPLOY
            must light for it too */
         if (G.rigFor && G.rigFor(e)) c.yards++;
+        if (G.canEmcon && G.canEmcon(e)) { c.emit++; if (G.emconState(e) === "dark") c.dark++; }
         continue;
       }
       if (e.kind !== "unit") continue;
@@ -3154,6 +3190,7 @@ var UI = (function () {
       if (e.def.deployTo) c.rigs++;
       if (e.isIndirect && e.isIndirect()) { c.guns++; if (e.stance === "counterbattery") c.cb++; }
       if (e.layer === "sub") { c.subs++; if (e.stance === "quiet") c.quiet++; }
+      if (G.canEmcon && G.canEmcon(e)) { c.emit++; if (G.emconState(e) === "dark") c.dark++; }
       if (e.layer === "air") { c.air++; continue; }
       if (canScatter(e)) c.scat++;
       if (canPatrol(e)) c.beat++;
@@ -3208,6 +3245,11 @@ var UI = (function () {
     { id: "quiet", key: "N", label: "SILENT RUN", run: () => cmdQuiet(),
       can: (c) => c.subs ? true : "NO SUBMARINE SELECTED", on: (c) => c.subs > 0 && c.quiet === c.subs,
       tip: "SILENT RUNNING (N) \u2014 toggle: a submarine trades speed for silence." },
+    /* lit while every set selected is DARK - not merely relighting - so a lit
+       button always means that nothing selected is on the air */
+    { id: "emcon", key: "O", label: "RADAR OFF", run: () => cmdEmcon(),
+      can: (c) => c.emit ? true : "NO RADAR OR JAMMER SELECTED", on: (c) => c.emit > 0 && c.dark === c.emit,
+      tip: "RADAR OFF (O) — toggle emission control: the selected radars, SAM sets, jammers and ships go dark at once. Dark, nothing hears them and no anti-radiation missile can lock them, but they see only by eye and a missile their own set guides stays on the rail; guns and infrared or optical missiles still fire, but without another set's picture they aim as a crew with no early warning does. A round already in the air on the set's guidance loses it. Back on the air takes 4 s for a 2020s set, up to 12 s for a 1950s one." },
   ];
 
   /* Built once, into #game, by script: every page that raises a battle gets

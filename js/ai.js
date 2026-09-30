@@ -899,6 +899,12 @@ function makeCommander() {
        tick that queues a purchase, and a scout under fire or running dry must
        not wait for a quiet factory. Every two seconds; scoutT is the clock. */
     if (scoutT <= 0) { scoutT = 2; driveScouts(); }
+    /* ---- emission control ----
+       Off think() for the same reason: a battery that sees a Weasel coming
+       must not wait for a quiet factory. Half a second, whatever the tier:
+       going dark is a crew's drill, not a staff decision (emconDiscipline). */
+    emconT -= dt;
+    if (emconT <= 0) { emconT = 0.5; emconDiscipline(false); }
     /* The surface Tomahawk driver is off think() for the reason defendBase()
        and the raid driver were taken off it: think() returns early on every
        tick that queues a purchase, and a named strike is a standing order,
@@ -921,6 +927,127 @@ function makeCommander() {
     }
   }
 
+  /* ================= EMISSION CONTROL: the commander's drill =================
+     (owner) "ai should have the same fog like us. don't assume and make ai
+     know everything." G.setEmcon is the switch the player's O key throws;
+     this decides when to throw it, off what this commander actually KNOWS.
+
+     A set goes DARK when an aircraft carrying an anti-radiation round is
+     inside that round's reach of it - plus 15% and a tile and a half, since a
+     Weasel does not wait for the edge - and somebody on this side knows the
+     aircraft is there: seen (G.visibleTo, the eyes this plot is built from),
+     heard (G.esmPlot, the same receivers the player's picture uses), or held
+     on a radar track over the datalink (G.airTrack, which asks nothing of a
+     set that is off). Or when an anti-radiation round is in flight at this
+     very set, which the set sees on its own scope for as long as it is still
+     transmitting. What an aircraft CARRIES is read off its def, the way
+     noteSighting writes down a class and a glacis on contact: a recognition
+     manual, not a leak.
+
+     It RELIGHTS when an aircraft that carries no such round is inside its own
+     reach and nothing threatening is known near it now - light up, shoot,
+     and go dark again when the Weasel shows - or when nothing threatening
+     has been known near it for EMCON_HOLD seconds. Dark, it cannot see a
+     Weasel still orbiting beyond its crew's eyes. That is the gamble the
+     real crews took, and it is why this is a drill and not a cheat.
+
+     An aircraft whose only anti-radiation round has its own terminal seeker
+     - the AARGM on the 2020s Growler (game.js G.armSeeker "active") - is
+     not a reason to go dark: a set that switches off is still found, so the
+     battery gives up its shots for nothing (found in review). The drill
+     treats it as the aircraft it is, and engages it.
+
+     Radars only. A jammer - the ewveh vehicles, whose radar figure is their
+     direction-finding receiver, and the jamming sites - is left on, because
+     the moment a strike package arrives is the moment its jamming is for:
+     dark, it drops the umbrella over the very batteries it is there to
+     cover (found in review). The player may still switch one off. Ground
+     sets only:
+     seadTarget never goes after a ship, and a darkened escort cannot see
+     the sea-skimmer coming, so the fleet keeps its radars on. Not an
+     airfield, whose radar is traffic control and which seadTarget leaves
+     alone. Not at peace - a commander fighting no war keeps its sets on,
+     which the scripted suites rely on - and not below Regular: `read` 0 is
+     the Recruit whose crews radiate until they die. */
+  const EMCON_HOLD = 10;
+  let emconT = 0;
+  const emconBook = { dark: 0, relit: 0, passes: 0 };
+  function emconDiscipline(force) {
+    if (!force && (atPeace || (D.read || 0) < 0.3)) return emconBook;
+    emconBook.passes++;
+    const now = G.time, T = CFG.TILE;
+    /* hostile aircraft in the air, and how far each one's ARM reaches */
+    const air = [];
+    for (const o of G.players) {
+      if (o === P || o.defeated || G.allied(P, o)) continue;
+      for (const a of o.units) {
+        if (a.dead || a.carried || a.layer !== "air") continue;
+        if (a.parked || (a.order && a.order.type === "parked")) continue;
+        let arm = 0;
+        for (const k of (a.def.weapons || [])) {
+          const w = WEAPONS[k];
+          if (w && w.antiRadiation && w.tgt && w.tgt.ground && G.armSeeker(w, a) !== "active")
+            arm = Math.max(arm, a.weaponRange(w));
+        }
+        air.push({ a: a, r: arm ? arm * 1.15 + 1.5 * T : 0 });
+      }
+    }
+    /* anti-radiation rounds in flight at our own sets */
+    const inbound = new Set();
+    for (const p of Combat.projectiles)
+      if (p.w && p.w.antiRadiation && p.target && p.target.owner === P) inbound.add(p.target);
+    const esm = air.length ? G.esmPlot(P) : null;
+    const knows = (e, a) => G.visibleTo(P, a) || (esm && esm.has(a.id)) ||
+                            (G.airTrack ? G.airTrack(e, a) : false);
+    const drill = (e) => {
+      if (!G.canEmcon(e) || !e.def.radar || e.def.jam) return;
+      if (e.kind === "building" ? (e.buildProgress < 1 || e.def.pads) : e.layer !== "ground") return;
+      let threat = inbound.has(e) && G.emitting(e), prey = false, reach = 0;
+      if (!threat) for (const k of (e.def.weapons || [])) {
+        const w = WEAPONS[k];
+        if (w && w.tgt && w.tgt.air) reach = Math.max(reach, e.weaponRange(w));
+      }
+      for (let i = 0; i < air.length && !threat; i++) {
+        const q = air[i], d = U.dist(e.x, e.y, q.a.x, q.a.y);
+        if (q.r ? d > q.r : (prey || !reach || d > reach)) continue;
+        if (!knows(e, q.a)) continue;
+        if (q.r) threat = true; else prey = true;
+      }
+      if (threat) e.emconSeen = now;
+      const recent = e.emconSeen !== undefined && now - e.emconSeen < EMCON_HOLD;
+      const dark = G.radarDark(e);
+      if (threat) {
+        if ((!dark || e.relightAt) && G.setEmcon(e, true)) emconBook.dark++;
+      } else if (dark && !e.relightAt && (prey || !recent)) {
+        if (G.setEmcon(e, false)) emconBook.relit++;
+      }
+    };
+    for (const u of P.units) if (!u.dead && !u.carried) drill(u);
+    for (const b of P.buildings) if (!b.dead) drill(b);
+    return emconBook;
+  }
+
+
+  /* ---- which emitter a Weasel is sent at, now that a set can go dark ----
+     An anti-radiation round needs a set ON THE AIR (entities.js tryFire),
+     and this commander knows a set is on the air only by HEARING it -
+     G.esmPlot, the player's own rule. So pickEmitter prefers a heard
+     emitter, at up to twice the distance of one that is only seen or
+     remembered; and a set this very aircraft's seeker found dark (armDark,
+     set when an ordered shot is given up after G.ARM_WAIT) is not offered to
+     it again for ARM_DARK_MEMORY seconds unless it is heard once more. */
+  const ARM_DARK_MEMORY = 60;
+  let onAirSet = null, onAirT = -1;
+  function heardNow(e) {
+    if (onAirT !== G.time) { onAirT = G.time; onAirSet = G.esmPlot(P); }
+    return !!(onAirSet && onAirSet.has(e.id));
+  }
+  function onAirWeight(e) { return heardNow(e) ? 1 : 4; }
+  function armDarkFor(a, e) {
+    const m = a.armDark;
+    if (!m || m.id !== e.id || G.time - m.t >= ARM_DARK_MEMORY) return false;
+    return !heardNow(e);
+  }
   /* ---------- helpers ---------- */
   function count(pred) { let n = 0; for (const u of P.units) if (!u.dead && pred(u)) n++; return n; }
   function unitsOf(role) { return P.units.filter(u => !u.dead && u.def.role === role); }
@@ -3712,7 +3839,7 @@ function makeCommander() {
           if (gridUp < 0) gridUp = P.powerRatio() >= 1 ? 1 : 0;
           if (!gridUp) continue;
         }
-        if (b.def.radar) listeners.push(b);
+        if (b.def.radar && !(b.emcon && G.radarDark(b))) listeners.push(b);   // off, it hears nothing
       }
       if (!listeners.length) return;
       for (const o of G.players) {
@@ -13305,7 +13432,8 @@ function makeCommander() {
       const e = trackedEntity(r);
       if (!e || !e.def || !(e.def.radar || e.def.jam)) continue;
       if (!a.canTarget(e)) continue;              // commanded question: held rounds count
-      const d = U.dist2(a.x, a.y, e.x, e.y);
+      if (armDarkFor(a, e)) continue;             // its own seeker found it off the air
+      const d = U.dist2(a.x, a.y, e.x, e.y) * onAirWeight(e);   // heard is on the air
       if (d < bd) { bd = d; best = e; }
     }
     if (best) return best;
@@ -13320,8 +13448,8 @@ function makeCommander() {
     for (const r of seenB.values()) {
       const bd2 = BUILDINGS[r.key];
       if (r.gone || !bd2 || !(bd2.radar || bd2.jam)) continue;
-      if (!r.ref || r.ref.dead || !a.canTarget(r.ref)) continue;
-      const d = U.dist2(a.x, a.y, r.x, r.y);
+      if (!r.ref || r.ref.dead || !a.canTarget(r.ref) || armDarkFor(a, r.ref)) continue;
+      const d = U.dist2(a.x, a.y, r.x, r.y) * onAirWeight(r.ref);
       if (d < bd) { bd = d; best = r.ref; }
     }
     return best;
@@ -13643,7 +13771,7 @@ function makeCommander() {
            player's identical vehicle could not. O(allied sensors), idle
            radar hulls at home only, once a think. */
         const w0 = WEAPONS[u.def.weapons[0]] || {};
-        const needsTrack = u.def.radarQ || u.def.radar ||
+        const needsTrack = ((u.def.radarQ || u.def.radar) && !(u.emcon && G.radarDark(u))) ||
           ((u.def.role === "aa" || u.def.role === "sam") && (w0.range || 0) > 11);
         if (!needsTrack || !G.airTrack || G.airTrack(u, aT)) tg = aT;
       }
@@ -13685,6 +13813,9 @@ function makeCommander() {
   return {
     init, update,
     get player() { return P; },
+    /* one pass of the emission-control drill now, clock and peace aside */
+    emcon(force) { return emconDiscipline(!!force); },
+    get emconBook() { return emconBook; },
     setPeace(on) { atPeace = !!on; },
     /* the card this commander would build for a role now (pickFor) */
     pick(role) { return pickFor(role); },
@@ -13900,6 +14031,18 @@ return {
      not run by one - which keeps the human and the neutral player unaffected */
   lookOf(player) {
     for (const c of commanders) if (c.player === player) return c.look;
+    return null;
+  },
+  /* One pass of a commander's emission-control drill, run now whatever its
+     clock or its peace says - or, asClock, exactly as its own half-second
+     clock runs it, peace and tier included - for the suites and the probe
+     that measured it; and the book of what the drill has done. */
+  emconPass(player, asClock) {
+    for (const c of commanders) if (c.player === player) return c.emcon(!asClock);
+    return null;
+  },
+  emconOf(player) {
+    for (const c of commanders) if (c.player === player) return c.emconBook;
     return null;
   },
   intelOf(player) {

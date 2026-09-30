@@ -317,7 +317,7 @@ var Game = (function () {
   G.airTrack = function (shooter, target) {
     const d = U.dist(shooter.x, shooter.y, target.x, target.y) / CFG.TILE;
     /* organic nose radar */
-    if (radarReach(shooter, target) >= d) return true;
+    if (!(shooter.emcon && G.radarDark(shooter)) && radarReach(shooter, target) >= d) return true;
 
     const fac = FACTIONS[shooter.owner.faction] || {};
     const dl = fac.datalink !== undefined ? fac.datalink : 0.5;
@@ -355,6 +355,7 @@ var Game = (function () {
           /* the same rule one layer along: a set that is not running feeds
              nobody a firing solution either */
           if (u.kind !== "building" && !G.emitting(u)) continue;
+          if (u.emcon && G.radarDark(u)) continue;      // ...nor does a structure's set switched off
           const q = u.def.radarQ !== undefined ? u.def.radarQ : (u.def.radar ? u.def.radar * 1.6 : 0);
           if (!q) continue;
           const du = U.dist(u.x, u.y, target.x, target.y) / CFG.TILE;
@@ -1348,8 +1349,240 @@ var Game = (function () {
      of a jammer. Ground and naval emitters are unaffected. */
   G.emitting = function (u) {
     if (!u || u.dead || u.carried) return false;
+    /* a set its crew has switched off, or is still bringing back up, is off
+       the air whatever carries it (G.setEmcon, below) */
+    if (u.emcon && G.radarDark(u)) return false;
     if (u.layer !== "air") return true;
     return !u.parked && !(u.order && u.order.type === "parked");
+  };
+
+  /* ---- EMISSION CONTROL: RADAR OFF ----
+     (owner) "i take your suggestions and make it on 1,2,3 first" - and the
+     third was the report's idea 3, "radar on/off with a relight delay, the
+     counter to HARMs" (WARNO, Broken Arrow).
+
+     A radar that transmits announces itself (G.esmPlot), and until this every
+     ground and sea set in the game transmitted from the moment it was built
+     until it died: G.emitting() answered true for all of them, and only an
+     aircraft parked on its ramp was ever off the air. So the answer every
+     air-defence crew since the Shrike has had to an anti-radiation missile
+     did not exist. In 1999 the Serbian SA-6 crews radiated in bursts of
+     seconds and sat dark the rest of the time; NATO fired 743 HARMs in 78
+     days (Lambeth, NATO's Air War for Kosovo, 2001) and most of the
+     batteries were still there at the end.
+
+     WHAT DARK MEANS, at every place that asks G.emitting() or G.jamming():
+     no radar picture (the fog, G.radarCovers, G.airTrack, the counter-battery
+     and strategic back-plots), no jamming, and no listening - in this game
+     the ear IS the set (esmPlot, and ai.js esmSweep), so a set that is off
+     hears nothing either. Nobody hears IT, so a Weasel's self-launch
+     (entities.js seadTarget) never finds it, and an anti-radiation seeker has
+     nothing to lock (G.armLock). What it still has is what its crew can do by
+     EYE: guns, and the infrared and optically aimed missiles in EYES_AA
+     below, at the penalty combat.js already charges a radar-laid shot with no
+     picture. A missile its own set has to guide stays on the rail
+     (G.ownRadarMount).
+
+     OFF IS INSTANT - it is a switch on the transmitter - AND ON IS NOT.
+     G.EMCON_RELIGHT is the era-dated time from the order to a set back on the
+     air: high voltage back on the transmitter, then search, track and lock
+     from nothing. A valve set of the 1950s is slow at that, a solid-state one
+     of the 2020s is not. The numbers are GAME seconds set against what they
+     have to beat, not wall-clock warm-up times: a HARM crosses its whole
+     reach in about a second here (speed 520: 16 tiles is 0.98 s, 10.5 tiles
+     0.65 s), so any relight that short would let a crew go dark as the round
+     commits and fire again as it lands - the instant on/off flicker WARNO
+     players abused. Four seconds at best is several missile flights; twelve on a
+     1950s set is two SAM reloads. A second OFF during a relight abandons it,
+     and the next ON starts the clock from the top: there is no cheap
+     half-lit state to hover in.
+
+     The player throws the switch with O or the RADAR OFF button (ui.js
+     cmdEmcon), the commander with its drill (ai.js emconDiscipline): the same
+     function, the same clock, and a commander that knows only what it has
+     seen or heard. */
+  G.EMCON_RELIGHT = { e50: 12, e60: 10, e80: 7, e90: 6, e00: 5, e20: 4 };
+  /* what may go dark: anything on the ground or at sea that carries a set or
+     a jammer, and any structure that does. Not an aircraft - an airborne
+     sensor's emission control is another doctrine, and a parked one is off
+     already - and not a submarine, which has silent running (ui.js cmdQuiet). */
+  G.canEmcon = function (e) {
+    if (!e || e.dead || !e.def || !(e.def.radar || e.def.jam)) return false;
+    if (e.kind === "building") return true;
+    return e.kind === "unit" && e.layer !== "air" && e.layer !== "sub";
+  };
+  /* dark, or still relighting. A relight completes on the game clock alone,
+     so it needs no tick of its own and a save carries it as one number. */
+  G.radarDark = function (e) {
+    if (!e || !e.emcon) return false;
+    if (e.relightAt && G.time >= e.relightAt) { e.emcon = false; e.relightAt = 0; return false; }
+    return true;
+  };
+  /* "on", "dark", or "relight" and the seconds still to run */
+  G.emconState = function (e) {
+    if (!G.radarDark(e)) return "on";
+    return e.relightAt ? "relight " + Math.max(0, e.relightAt - G.time).toFixed(1) : "dark";
+  };
+  /* The SET's decade, read the way genContest reads it: radarGen where the
+     set is not the hull's own generation, else the hull's date - and, as
+     genContest does, never a date rules.js made up. Every structure that was
+     never given a service date is stamped from:"e50" and marked eraStamped
+     (rules.js, the BUILDINGS loop); read as a real date, that put a 2020s
+     player's Radar Dome, SAM Site, AA Battery and Airbase on the 1950s valve
+     clock, 12 s, three times a Patriot's 4 (found in review). Such a
+     structure is built to its owner's current decade; one with a real date -
+     the strategic arrays, the jamming sites - keeps it. */
+  G.relightDelay = function (e) {
+    const d = (e && e.def) || {};
+    const own = e && e.owner && e.owner.era;
+    const era = d.radarGen || (d.eraStamped ? null : d.from) || own ||
+                (typeof CUR_ERA !== "undefined" ? CUR_ERA : null) || "e20";
+    const s = G.EMCON_RELIGHT[era];
+    return s !== undefined ? s : 5;
+  };
+  /* dark=true: off, now. dark=false: start the relight. True if anything
+     changed, so a caller can count what it actually did. */
+  G.setEmcon = function (e, dark) {
+    if (!G.canEmcon(e)) return false;
+    const was = G.radarDark(e);
+    if (dark) {
+      if (was && !e.relightAt) return false;       // dark already
+      e.emcon = true; e.relightAt = 0;             // a relight in progress is abandoned
+      /* Off the air is off every plot at once. G.esmPlot keeps each side's
+         picture for half a second (a perf cache, not a sensor delay), and a
+         set that stopped transmitting must not stay heard - or be launched
+         on by a Weasel's self-launch - for up to that long after. Rare: a
+         key press, or the commander's drill a few times a minute. */
+      ESM_PLOT.length = 0;
+      return true;
+    }
+    if (!was || e.relightAt) return false;         // on the air, or already coming up
+    e.relightAt = G.time + G.relightDelay(e);
+    ESM_PLOT.length = 0;                           // the same, for a switch thrown back
+    return true;
+  };
+  /* Does p have a Radar Dome finished and on the air? The minimap's picture
+     of every enemy on explored ground is the dome's (render.js drawMinimap
+     and drawMinimapFrom), and a dome switched off must not keep painting it
+     - found in review: dark, nobody heard it and no Weasel found it, and the
+     player's minimap still showed every enemy it had shown lit. */
+  G.domeLit = function (p) {
+    if (!p) return false;
+    for (const b of p.buildings)
+      if (!b.dead && b.buildProgress >= 1 && b.def.id === "radar" && !G.radarDark(b)) return true;
+    return false;
+  };
+
+  /* ---- which rounds go dark with the set ----
+     A surface-to-air missile its own set guides - semi-active homing on the
+     set's illumination, or command guidance off its tracking radar - is
+     useless with the set off, and that is every SAM in the game except these,
+     which a crew aims by eye:
+       infrared homers  Stinger (manpad: the Ozelot; the ROC e90 Avenger fit),
+                        MIM-72 Chaparral, TC-1 Sky Sword I (the Antelope, the
+                        ROC e00 fit), RIM-116 RAM (it homes on the threat's own
+                        emissions and then in infrared; a ship normally cues it
+                        from its radar or its ESM, but the round needs no
+                        illumination, so a ship keeping EMCON can still fire it
+                        on an ESM or a visual cue)
+       optical trackers Starstreak (a laser beam; "a passive infrared sight
+                        that never emits", rules.js), Rapier in all three rows
+                        - the towed FSA of 1971 and the Tracked Rapier of 1981
+                        ("optically tracked by default with Blindfire radar
+                        added from 1979", eras.js) as much as the FSC - Roland
+                        2 and Crotale NG (each kept an optical channel beside
+                        its radar - Roland 1 was the clear-weather optical
+                        system)
+       guns in a missile's clothes  the ROC's Maxson .50 and Bofors L/60 rows
+                        are proj "missile" in eras.js and are a man with a
+                        ring sight: the M42 Duster had no radar at all.
+     Keyed on the weapon id, or on the id before "__" for the per-hull copies
+     generations.js makes; the three "SAM launcher" fits and the two early
+     Rapiers (which fire the generic first-generation round) are named in full
+     because the base sam_veh and sam_area1 are radar rounds. A weapon may also say for
+     itself with `emconOK`. A GUN is never held: a radar-laid gun with its set
+     off still shoots, badly (combat.js fcMul).
+     "Badly" holds for the eye-aimed missiles too, and on purpose. fcMul
+     charges every shot its side holds no radar picture over - a Stinger team
+     on its own has always paid it, which is this game's model of CUEING: an
+     infrared round needs no set to guide it, but its crew needs somebody's
+     set to tell them where to look (the Avenger's Sentinel, the Ozelot's
+     separate search radar). A dark Avenger fights like a Stinger team with
+     no early warning; a neighbour's lit set, or a lit dome, gives it back. */
+  const EYES_AA = {
+    manpad: 1, hvm: 1, sam_ram: 1,
+    w_e50_roc_spaag: 1, w_e60_roc_spaag: 1, w_e80_roc_spaag: 1, w_e90_roc_spaag: 1, w_e00_roc_spaag: 1,
+    w_e90_gbr_spaag: 1, w_e00_gbr_spaag: 1,
+    w_e80_fra_sam: 1, w_e90_fra_spaag: 1, w_e00_fra_spaag: 1,
+    sam_veh__spaag_r: 1, sam_veh__gbr_e90_sam: 1, sam_veh__gbr_e00_sam: 1,
+    sam_area1__gbr_e60_sam: 1, sam_area1__gbr_e80_sam: 1,
+  };
+  let WEAPON_ID = null;
+  function weaponId(w) {
+    if (!WEAPON_ID) { WEAPON_ID = new Map(); for (const k in WEAPONS) WEAPON_ID.set(WEAPONS[k], k); }
+    return WEAPON_ID.get(w) || null;
+  }
+  G.ownRadarMount = function (w) {
+    if (!w || !w.tgt || !w.tgt.air || w.proj !== "missile") return false;
+    if (w.emconOK !== undefined) return !w.emconOK;
+    const id = weaponId(w);
+    return !(id && (EYES_AA[id] || EYES_AA[id.split("__")[0]]));
+  };
+
+  /* ---- what an anti-radiation round does when its emitter goes dark ----
+     Launch needs a lock (G.armLock, entities.js tryFire), so every round in
+     the air left the rail on a set that was transmitting. What it does when
+     the set stops was decided by the round's generation, so it is here:
+       none    AGM-45 Shrike (1965), Kh-28 (1973), AS.37 Martel (about 1970):
+               a seeker locked to a band and nothing else. The set goes off,
+               the seeker has nothing, the round goes where it was pointing -
+               shutting down was the North Vietnamese SA-2 crews' answer to
+               the Shrike. The NATO e60 row also names the AGM-78 Standard
+               ARM, which could remember; the Shrike was most of what was
+               carried, so the row is scored as the Shrike.
+       memory  AGM-88 HARM (1985), Kh-58 (early 1980s), Kh-31P (late 1980s),
+               ARMAT (1984), YJ-91: it remembers where the emitter was and
+               flies on to it. It lands near the set, not in its antenna - a
+               near miss, which applyDamage scores at 0.35 on a set that is
+               not radiating.
+       loiter  ALARM (1990): it climbs, opens a parachute and hangs over the
+               area waiting for the set to come back - the one ARM built
+               around exactly the tactic this answers. If the set relights
+               inside the window it dives on it; if not, it falls on the fix.
+       active  AGM-88E AARGM (in service 2012) on the 2020s EA-18G, ew_n:
+               GPS/INS and an active millimetre-wave terminal seeker, built
+               for the radar that shuts down. It keeps its target, and may be
+               sent at a set that is dark already.
+     `harm` is carried by both the F-16CJ (sead_n) and the Growler (ew_n), so
+     the AARGM is named by the airframe. Anything not listed is scored by the
+     decade in its id - a 1950s or 1960s round has no memory, a later one
+     has - and a round may say for itself with `armSeeker`. */
+  const ARM_SEEKER = {
+    w_e60_nato_sead: "none", w_e60_pact_sead: "none", w_e60_fra_sead: "none",
+    w_e90_gbr_sead: "loiter", w_e00_gbr_sead: "loiter",
+  };
+  const ARM_SEEKER_BY_HULL = { ew_n: "active" };
+  G.armSeeker = function (w, shooter) {
+    if (!w || !w.antiRadiation) return null;
+    if (w.armSeeker) return w.armSeeker;
+    const hull = shooter && shooter.def && ARM_SEEKER_BY_HULL[shooter.def.id];
+    if (hull) return hull;
+    const root = (weaponId(w) || "").split("__")[0];
+    if (ARM_SEEKER[root]) return ARM_SEEKER[root];
+    return /_e(50|60)_/.test(root) ? "none" : "memory";
+  };
+  /* how long an ALARM hangs under its canopy, in game seconds */
+  G.ARM_LOITER = 20;
+  /* how long a commander's Weasel holds an ordered ARM shot at a set that is
+     off the air before it gives the target up (entities.js tryFire). Longer
+     than the drill's own 10 s hold (ai.js EMCON_HOLD), so a battery that
+     went dark only for the Weasel's run-in can come back inside it. The
+     player's Weasel is not timed: it waits as long as the player lets it. */
+  G.ARM_WAIT = 15;
+  /* Can an anti-radiation seeker lock this? It has to carry a set or a
+     jammer, and be on the air with it now. */
+  G.armLock = function (e) {
+    return !!(e && !e.dead && e.def && (e.def.radar || e.def.jam)) && G.jamming(e);
   };
 
   /* The nearest friendly tanker that is airborne, still has fuel to give, and
@@ -1632,6 +1865,7 @@ var Game = (function () {
     }
     for (const b of owner.buildings) {
       if (b.dead || b.buildProgress < 1 || b.powered === false) continue;
+      if (b.emcon && G.radarDark(b)) continue;         // the ear is the set: off, it hears nothing
       if (b.def.radar || b.def.radarQ) ears.push(b);
     }
     if (ears.length) for (const o of G.players) {
@@ -1685,7 +1919,7 @@ var Game = (function () {
 
   G.jamming = function (e) {
     if (!e || e.dead) return false;
-    if (e.kind === "building") return e.buildProgress >= 1 && e.powered !== false;
+    if (e.kind === "building") return e.buildProgress >= 1 && e.powered !== false && !(e.emcon && G.radarDark(e));
     return G.emitting(e);
   };
 
@@ -1909,6 +2143,7 @@ var Game = (function () {
     for (const b of p.buildings) {
       if (!b.def.ew) continue;
       if (b.dead || b.buildProgress < 1 || !b.powered) continue;   // a dark array is a pyramid
+      if (b.emcon && G.radarDark(b)) continue;                     // and so is a switched-off one
       if (U.dist2(b.x, b.y, x, y) >= Math.pow(b.def.ew * CFG.TILE, 2)) continue;
       if (G.jamAgainst(p, b) > 0.55) continue;    // burned through, same 0.55 as every radar
       return true;
@@ -1939,6 +2174,7 @@ var Game = (function () {
     for (const b of p.buildings) {
       if (b.dead || !b.def.radar || b.buildProgress < 1) continue;
       if (!b.powered) continue;
+      if (b.emcon && G.radarDark(b)) continue;          // switched off (G.setEmcon)
       if (U.dist2(b.x, b.y, x, y) >= Math.pow(b.def.radar * CFG.TILE, 2)) continue;
       if (G.jamAgainst(p, b, judged++ ? (src || (src = G.jamSources(p))) : null) > 0.55) continue;
       return true;
@@ -2018,6 +2254,7 @@ var Game = (function () {
       }
       for (const b of p.buildings) {
         if (b.dead || !b.def.radar || b.buildProgress < 1) continue;
+        if (b.emcon && G.radarDark(b)) continue;        // switched off (G.setEmcon)
         s.r.push({ e: b, r2: Math.pow(b.def.radar * CFG.TILE, 2), ok: -1 });
       }
       sites.set(p, s);
@@ -2732,6 +2969,7 @@ var Game = (function () {
     const gridUp = G.human.powerRatio() >= 1;
     for (const b of G.human.buildings) {
       if (b.dead || !b.def.radar || b.buildProgress < 1 || !b.powered) continue;
+      if (b.emcon && G.radarDark(b)) continue;          // switched off: no picture
       if (!gridUp) continue;
       radarReveal(b, b.tx + b.def.w / 2, b.ty + b.def.h / 2, b.def.radar);
     }

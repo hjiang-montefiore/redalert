@@ -294,6 +294,9 @@ var Combat = (function () {
       for (const k of (e.def.weapons || [])) {
         const w2 = WEAPONS[k];
         if (!w2 || !w2.tgt || !w2.tgt.air || w2.proj !== "missile") continue;
+        /* a round its own set guides does not leave the rail while the set
+           is off (game.js G.ownRadarMount) - not at an aircraft, not here */
+        if (e.emcon && game.radarDark(e) && game.ownRadarMount(w2)) continue;
         /* reach, measured from the interceptor to what it is covering */
         const reach = (w2.range || 0) * CFG.TILE;
         if (U.dist2(e.x, e.y, prot.x, prot.y) > reach * reach) continue;
@@ -363,6 +366,7 @@ var Combat = (function () {
         if (e.buildProgress < 1 || e.powered === false) return;
       } else if (e.kind !== "unit") return;
       else if (!e.def.radar) return;             // an unaimed gun cannot do this
+      if (e.emcon && game.radarDark(e)) return;  // nor one whose director is switched off
       for (const k of (e.def.weapons || [])) {
         const w2 = WEAPONS[k];
         if (!w2 || !w2.tgt || !w2.tgt.air) continue;
@@ -390,6 +394,50 @@ var Combat = (function () {
     for (let i = projectiles.length - 1; i >= 0; i--) {
       const p = projectiles[i];
       p.age += dt;
+
+      /* ---- EMCON: the set this surface-to-air round flies on goes dark ----
+         A round the shooter's own set has to guide (game.js G.ownRadarMount -
+         semi-active homing on its illumination, or command guidance off its
+         track) is not launched while the set is off (entities.js holdsFire,
+         and the burst's later rounds in tryFire), and one already in the air
+         when the crew switches off has nothing left to fly on either: it goes
+         on to where the aircraft was and misses. Without this a crew could
+         fire and go dark in the same second and the round still hit - found
+         in review, a set switched off three frames after launch scored the
+         same 237, 193 and 264 on a jet as one left on. */
+      const ps = p.shooter;
+      if (p.hit && p.target && !p.target.dead && ps && ps.emcon && game.radarDark && game.radarDark(ps) &&
+          game.ownRadarMount(p.w)) lostGuidance(game, p, "set");
+
+      /* ---- EMCON: the emitter this anti-radiation round rides goes dark ----
+         It left the rail locked on a set that was transmitting (entities.js
+         tryFire). While the set stays on, the round keeps a fix on it; the
+         moment it stops, the round does what its generation did (game.js
+         G.armSeeker): nothing to follow, a remembered fix, a parachute and a
+         wait, or its own terminal seeker. Only an emitter is followed like
+         this: a round ordered onto a tank flies at it as it always did. */
+      const pt = p.target;
+      if (p.hit && pt && !pt.dead && p.w && p.w.antiRadiation && game.armLock &&
+          pt.def && (pt.def.radar || pt.def.jam)) {
+        if (game.armLock(pt)) {
+          p.litX = pt.x; p.litY = pt.y;
+          if (p.loiter > 0) p.loiter = -1;                  // it came back up: dive on it
+        } else {
+          const how = game.armSeeker(p.w, p.shooter);
+          if (how === "loiter" && !(p.loiter < 0)) {
+            if (p.loiter === undefined) {
+              p.loiter = game.ARM_LOITER || 20;
+              if (p.owner === game.human || pt.owner === game.human)
+                effects.push({ t: "text", x: p.x, y: p.y - p.z - 16, s: "ALARM LOITERING",
+                               life: 1.2, max: 1.2, c: "#ffd27a" });
+            }
+            p.loiter -= dt;
+            /* hanging under its canopy: not flying, and not ageing out */
+            if (p.loiter > 0) { p.age -= dt; continue; }
+          }
+          if (how !== "active") lostGuidance(game, p, how);
+        }
+      }
 
       if ((p.type === "missile" || p.type === "torpedo") &&
           p.target && !p.target.dead) {
@@ -503,7 +551,7 @@ var Combat = (function () {
            of engagement, not an umbrella. */
         if (!p.intCheck && d < CFG.TILE * 3.2 && p.age > 0.25) {
           p.intCheck = true;
-          const chance = (prot.def.ciws || 0) + (prot.def.aps || 0) +
+          const chance = ciwsOf(game, prot) + (prot.def.aps || 0) +
                          closeInGuns(game, prot);
           const hardC = (p.w && p.w.intercept !== undefined) ? p.w.intercept : 1;
           const profC = p.w && p.w.profile;
@@ -523,7 +571,7 @@ var Combat = (function () {
           p.intCheck = true;
           const prot = p.target;
           if (prot && !prot.dead && prot.owner !== p.owner) {
-            const chance = (prot.def.ciws || 0) + (prot.def.aps || 0);
+            const chance = ciwsOf(game, prot) + (prot.def.aps || 0);
             if (chance > 0 && game.rng() < chance) {
               effects.push({ t: "boom", x: p.x, y: p.y - p.z, r: 12, life: 0.3, max: 0.3 });
               effects.push({ t: "text", x: prot.x, y: prot.y - 30, s: "INTERCEPTED",
@@ -683,6 +731,43 @@ var Combat = (function () {
       effects[i].life -= dt;
       if (effects[i].life <= 0) effects.splice(i, 1);
     }
+  }
+
+  /* ---- a guided round whose guidance has gone dark (EMCON) ----
+     An anti-radiation round that has lost its emitter:
+       `none`   flies on where it was pointed and lands 1.5 to 3.5 tiles off;
+       `memory` (and an ALARM whose wait ran out, `loiter`) flies to the last
+                fix and lands within a tile of it.
+     A surface-to-air round whose own set was switched off (`set`) flies on
+     past where the aircraft was, 1 to 2.5 tiles wide of it.
+     Either way it is no longer a hit: detonate() scores it as blast at the
+     aim point, and applyDamage scores an anti-radiation warhead at 0.35 on a
+     set that is not radiating. */
+  function lostGuidance(game, p, how) {
+    const T = CFG.TILE;
+    const x = p.litX !== undefined ? p.litX : p.tx, y = p.litY !== undefined ? p.litY : p.ty;
+    const off = how === "none" ? T * (1.5 + game.rng() * 2.0)
+              : how === "set" ? T * (1.0 + game.rng() * 1.5)
+              : T * (0.3 + game.rng() * 0.6);
+    const a = game.rng() * U.PI2;
+    if (p.owner === game.human || p.target.owner === game.human)
+      effects.push({ t: "text", x: p.target.x, y: p.target.y - 30,
+                     s: how === "set" ? "SAM LOST GUIDANCE" : how === "none" ? "ARM LOST LOCK" : "ARM ON MEMORY",
+                     life: 1.1, max: 1.1, c: "#ffd27a" });
+    p.tx = x + Math.cos(a) * off; p.ty = y + Math.sin(a) * off;
+    if (how !== "set") p.tz = 0;                   // a SAM bursts in the air, an ARM on the ground
+    p.target = null; p.hit = false; p.lost = how;
+  }
+
+  /* A hull's own close-in mount (def.ciws) is laid by its own set - Phalanx,
+     the AK-630's MR-123 and the Type 730's radar all search and track for
+     themselves - and RADAR OFF (G.setEmcon) is every emitter aboard, so a
+     hull that is dark has it in standby, exactly as a dark neighbour's
+     radar-laid gun is in closeInGuns. Found in review: a dark Arleigh Burke
+     kept its Phalanx while a dark Gepard beside it lost its guns. */
+  function ciwsOf(game, prot) {
+    if (prot.emcon && game.radarDark && game.radarDark(prot)) return 0;
+    return prot.def.ciws || 0;
   }
 
   /* How far a round may travel before it self-destructs. */
@@ -1031,8 +1116,13 @@ var Combat = (function () {
     /* anti-radiation missiles home on emissions: they gut a radar and barely
        scratch anything that is not transmitting */
     if (w.antiRadiation) {
-      const emits = (e.def && e.def.radar) || (e.def && e.def.jam) ||
-                    (e.kind === "building" && e.def.radar);
+      /* ON THE AIR, not merely fitted (game.js G.armLock): a set switched
+         off before the round arrived takes a near miss, not the warhead in
+         its antenna. Only the AARGM, whose own terminal seeker is built for
+         exactly that set, still finds the fit. */
+      const fit = !!(e.def && (e.def.radar || e.def.jam));
+      const emits = fit && (!game.armLock || game.armLock(e) ||
+                            game.armSeeker(w, shooter) === "active");
       dmg *= emits ? 3.0 : 0.35;
     }
     /* ---- cover, and which way it faces ----

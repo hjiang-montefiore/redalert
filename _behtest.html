@@ -9960,6 +9960,467 @@ try{
   })();
   }
 
+  /* ====== [84] RADAR OFF: EMISSION CONTROL ======
+     (owner) "i take your suggestions and make it on 1,2,3 first" - step 3,
+     idea 3: a radar on/off switch with a relight delay, the counter to the
+     anti-radiation missile. Measured at 7beddb2 and again at b4a9943:
+     G.emitting() was true for every ground and sea set from the day it was
+     built to the day it died, so a battery could not go dark at all, and a
+     HARM did triple damage to anything FITTED with a set whether or not it
+     was transmitting.
+     This holds the switch (O and the bar's button, one function), the
+     era-dated relight - a structure's by its owner's decade, not the 1950
+     stamp rules.js gives undated structures - and the no-flicker rule; what
+     a dark set loses (its picture, the minimap's included, its ear, the
+     rounds its set guides - on the rail, later in a burst and in the air -
+     and a hull's own CIWS) and keeps (guns, infrared and optical missiles);
+     what each generation of anti-radiation seeker does when its emitter
+     goes dark in flight; a commander's Weasel giving a dark set up where the
+     player's waits; the save; and the commander's drill - dark under a
+     threat it KNOWS of, relit to engage, jammers left on, no going dark for
+     an AARGM - on the commander's own fog.
+     THE SHARED MATCH IS NOT TICKED, AND ITS CLOCK NEVER MOVES. The first cut
+     ran six seconds of it, which moved the board enough to cost [85] its
+     quiet ground (found in review); a later cut stepped the clock forward
+     for its flights and put it back, which left every "until" and "last at"
+     the match keeps - a flash's light, a commander's last contact - in the
+     future, and cost [85] its counter-battery check in the stacked suite.
+     So a relight's moment and a wait's start are moved instead of the
+     clock; every flight runs on Combat.update with the match's own rounds
+     and effects set aside; the RNG is a private one; and at the end the
+     units made here are taken off the board, the grid and their owners'
+     lists, and the projectiles, effects, deferred calls, events, hit log,
+     fog, any firing-point light (a side's _flash, where the game keeps
+     one), both commanders' books, their stats and every shared set's switch
+     are back as they were, with every side's ESM picture recomputed. */
+  if (inHalf(1)) {
+  log("\n[84] RADAR OFF: A SET SWITCHED OFF IS OFF THE AIR, AND ITS CREW FIGHTS BY EYE");
+  (function(){
+    var T=CFG.TILE, DT=CFG.DT, made=[], rng=Game.rng, t0=Game.time, sel0=UI.selection.slice();
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats);
+    var ok=typeof Game.setEmcon==="function" && typeof Game.canEmcon==="function" && typeof Game.relightDelay==="function";
+    chk("there is a radar switch: Game.setEmcon, Game.canEmcon, Game.relightDelay", ok,
+        ok ? "" : "missing - every ground and sea set transmits until it dies");
+    if(!ok) return;
+    /* everything shared this section touches, to be put back */
+    var put=function(a,b){ a.length=0; Array.prototype.push.apply(a,b); };
+    var prj0=Combat.projectiles.slice(), fx0=Combat.effects.slice(), def0=Game.deferred.slice(),
+        ev0=Game.events?Game.events.slice():null, hl0=Combat.hitLog?Combat.hitLog.slice():null,
+        fogOn=Game.fogEnabled, fog0=new Uint8Array(Game.fog), tmpB=[];
+    var bookE=AI.emconOf?AI.emconOf(E):null, bookP=AI.emconOf?AI.emconOf(P):null,
+        bookE0=bookE?keep(bookE):null, bookP0=bookP?keep(bookP):null;
+    var sw0=[]; Game.entities.forEach(function(e){ sw0.push([e,e.emcon,e.relightAt,e.emconSeen]); });
+    /* a round fired here lights its firing point for the side it was fired
+       at, where the game models that (p._flash): kept, and put back */
+    var flash0=Game.players.map(function(pl){ var F=pl._flash;
+      return F ? { g: F.grid ? F.grid.slice() : null, l: (F.list||[]).map(function(s){ return [s,s.until,s.r]; }) } : null; });
+    var darkShared=function(){ var n=0; Game.entities.forEach(function(e){ if(!e.dead && made.indexOf(e)<0 && Game.radarDark(e)) n++; }); return n; };
+    var dark0=darkShared(), prng=U.mulberry32(84);
+    Game.rng=prng;
+    var mk=function(pl,id,at,dx,dy){ var u=spawn(pl,id,at,dx,dy); if(u){ made.push(u); Game.grid.insert(u); } return u; };
+    /* airborne, fuelled and armed, on HOLD FIRE: nothing here fires on its
+       own, and nothing could - the match is not ticked */
+    var air=function(u){ if(u){ u.parked=false; u.order={type:"hover"}; u.fuel=u.fuelMax; u.ammo=u.ammoMax; u.stance="hold"; } return u; };
+    var hold=function(u){ if(u){ u.stance="hold"; u.give({type:"idle"}); } return u; };
+    function fire(type,k){
+      var ev={type:type,key:k,shiftKey:false,ctrlKey:false,metaKey:false,altKey:false,preventDefault:function(){}};
+      if(typeof __listeners!=="undefined") (__listeners["win:"+type]||[]).slice().forEach(function(f){ f(ev); });
+      else window.dispatchEvent(new KeyboardEvent(type,{key:k}));
+    }
+    function key(k){ fire("keydown",k); fire("keyup",k); }
+    function sel(list){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
+      for(var j=0;j<list.length;j++){ list[j].selected=true; s.push(list[j]); } }
+    var ownShots=function(){ return Combat.projectiles.filter(function(p){ return made.indexOf(p.shooter)>=0; }); };
+    var lit=function(u){ Game.setEmcon(u,false); u.relightAt=Game.time; Game.radarDark(u); };   // straight back on
+    /* a flight is flown with the match's own rounds and effects set aside */
+    var stash=function(){ return [Combat.projectiles.splice(0), Combat.effects.splice(0)]; };
+    var unstash=function(s){ put(Combat.projectiles,s[0]); put(Combat.effects,s[1]); };
+    /* a tile of `kind` r0.. tiles out from our home, with nothing alive within
+       rc tiles of it - and, if foeR, nothing of the enemy's within foeR */
+    function quiet(kind,r0,rc,foeR){
+      var M=Game.map, hx=(P.homeX/T)|0, hy=(P.homeY/T)|0;
+      for(var r=r0;r<70;r++) for(var a=0;a<48;a++){
+        var an=a/48*6.283, x=(hx+Math.cos(an)*r)|0, y=(hy+Math.sin(an)*r)|0;
+        if(x<3||y<3||x>=M.W-3||y>=M.H-3) continue;
+        if(!GameMap.passable(M,x,y,kind) || Game.tileBlocked(x,y,null)) continue;
+        var n=0; Game.grid.query(x*T+16,y*T+16,rc*T,function(e){ if(!e.dead && U.dist(e.x,e.y,x*T+16,y*T+16)<=rc*T) n++; });
+        if(n) continue;
+        if(foeR){ var m=0; Game.entities.forEach(function(e){ if(!e.dead && e.owner===E && U.dist(e.x,e.y,x*T+16,y*T+16)<=foeR*T) m++; }); if(m) continue; }
+        return {x:x,y:y};
+      } return null; }
+    var g=tile(P,"ground",9), sea=tile(P,"sea",4), q=quiet("ground",12,10), far=quiet("ground",22,16)||tile(P,"ground",22);
+    if(!g||!q||!far){ chk("radar-off scenario built", false, "no ground"); return; }
+    try {
+      var sam=hold(mk(P,"sam_n",g,0,0)), rv=hold(mk(P,"radarv_n",g,3,0)), oz=hold(mk(P,"spaag_g",g,0,3)),
+          gun=hold(mk(P,"spaag_p",g,3,3)), tank=hold(mk(P,"mbt_n",g,6,0)), jet=air(mk(P,"sead_n",g,6,3)),
+          ddg=sea?hold(mk(P,"destroyer_n",sea,0,0)):null;
+      if(!sam||!rv||!oz||!gun||!tank||!jet){ chk("radar-off scenario built", false, "spawn failed"); return; }
+
+      /* ---- 1. what may go dark, and how long it takes to come back ---- */
+      chk("a SAM, a radar vehicle, a gun SPAAG and a destroyer may go dark; a tank and an airborne Weasel may not",
+          Game.canEmcon(sam) && Game.canEmcon(rv) && Game.canEmcon(gun) && (!ddg || Game.canEmcon(ddg)) &&
+          !Game.canEmcon(tank) && !Game.canEmcon(jet),
+          "sam "+Game.canEmcon(sam)+" radarv "+Game.canEmcon(rv)+" gun "+Game.canEmcon(gun)+" ddg "+(ddg?Game.canEmcon(ddg):"n/a")+
+          " tank "+Game.canEmcon(tank)+" jet "+Game.canEmcon(jet));
+      var d50=Game.relightDelay({def:UNITS.gbr_e50_sam, owner:P}), d80=Game.relightDelay({def:UNITS.pact_e80_spaag, owner:P}),
+          d20=Game.relightDelay(sam), dRv=Game.relightDelay(rv);
+      chk("the relight is dated by the set: 1950s valves slowest, 2020s solid state fastest",
+          d50===12 && d80===7 && d20===4, "Bloodhound (1958) "+d50+" s, 2S6 Tunguska (1982) "+d80+" s, Patriot PAC-3 MSE "+d20+" s");
+      var bs=function(id,era){ return Game.relightDelay({def:BUILDINGS[id], kind:"building", owner:{era:era}}); };
+      var b20=bs("radar","e20"), b80=bs("radar","e80"), s20=bs("sam","e20"), l20=BUILDINGS.lpar_n?bs("lpar_n","e20"):7;
+      chk("a structure relights on its owner's decade, not the 1950 date rules.js stamps on an undated one; a dated array keeps its own",
+          b20===4 && s20===4 && b80===7 && l20===7,
+          "Radar Dome e20 "+b20+" s, e80 "+b80+" s; SAM Site e20 "+s20+" s; PAVE PAWS (from "+(BUILDINGS.lpar_n?BUILDINGS.lpar_n.from:"-")+") for an e20 owner "+l20+" s");
+
+      /* ---- 2. O and the button: one function ---- */
+      sel([sam,rv,tank]);
+      var B=UI.cmdbar?UI.cmdbar():null;
+      chk("RADAR OFF is on the bar, keyed O, and live for a selection with a set in it",
+          !!B && !!B.emcon && B.emcon.innerHTML.indexOf("<kbd>O</kbd>")>=0 && !B.emcon.classList.contains("off") &&
+          String(B.emcon.title).indexOf("(O)")>=0, B&&B.emcon ? B.emcon.className : "no emcon button");
+      key("o");
+      chk("O takes every selected set off the air at once, and leaves the tank alone",
+          !Game.emitting(sam) && !Game.emitting(rv) && !Game.jamming(sam) && Game.emconState(sam)==="dark" &&
+          Game.emconState(rv)==="dark" && !tank.emcon && Game.emitting(tank),
+          "sam "+Game.emconState(sam)+", radarv "+Game.emconState(rv)+", tank emcon "+!!tank.emcon);
+      B=UI.cmdbar();
+      var litB=B.emcon.classList.contains("on");
+      B.emcon.click();
+      chk("the button is the same toggle: lit while all are dark, and a press starts each relight on its own clock",
+          litB && /^relight/.test(Game.emconState(sam)) && !Game.emitting(sam) &&
+          Math.abs(sam.relightAt-Game.time-d20)<0.01 && Math.abs(rv.relightAt-Game.time-dRv)<0.01,
+          "lit "+litB+", sam "+Game.emconState(sam)+", radarv "+Game.emconState(rv)+" ("+dRv+" s)");
+      sel([sam]); key("o");
+      var pnl=(document.getElementById("selinfo")||{}).innerHTML||"";
+      var ab=Game.emconState(sam)==="dark";
+      chk("the panel says so", /RADAR <i>DARK/.test(pnl), (pnl.match(/RADAR <i>[^<]*/)||["no RADAR line"])[0]);
+      key("o");
+      var restart=Math.abs(sam.relightAt-Game.time-d20)<0.01;
+      /* the relight lands on the clock alone (G.radarDark): a second short of
+         its moment the set is still dark, and just past it, on the air. The
+         moment is moved, not the clock - a clock stepped forward and put
+         back leaves every "until" and "last at" the match keeps in the
+         future. */
+      sam.relightAt=Game.time+1; var notYet=!Game.emitting(sam);
+      sam.relightAt=Game.time-0.2; var onNow=Game.emitting(sam) && Game.emconState(sam)==="on";
+      chk("no flicker: OFF in a relight abandons it, ON starts the whole clock again, and only then is the set on the air",
+          ab && restart && notYet && onNow,
+          "abandoned "+ab+", restarted "+restart+", dark a second short "+notYet+", on after "+onNow);
+
+      /* ---- 3. what a dark set loses, and what its crew keeps ---- */
+      var foe=air(mk(E,"fighter_p",g,5,-4));
+      var wSam=WEAPONS[sam.def.weapons[0]];
+      var litShoot=sam.canTarget(foe);
+      [sam,oz,gun].forEach(function(u){ Game.setEmcon(u,true); });
+      chk("dark, a SAM holds the round its set guides - ordered or not - and its crew still fights by eye: a Stinger, a gun",
+          litShoot && !sam.canTarget(foe) && sam.holdsFire(wSam) && oz.canTarget(foe) && gun.canTarget(foe),
+          "sam lit "+litShoot+" dark "+sam.canTarget(foe)+", Ozelot (Stinger) "+oz.canTarget(foe)+", Tunguska (its gun) "+gun.canTarget(foe));
+      /* the burst: the first round leaves, the set goes dark, the second is due */
+      lit(sam); sam.cooldowns[0]=0; if(sam.roundsMax) sam.rounds=sam.roundsMax;
+      var nB=ownShots().length, dq0=Game.deferred.length;
+      sam.tryFire(0,foe);
+      var first=ownShots().length===nB+1, due=Game.deferred.slice(dq0);
+      Game.setEmcon(sam,true);
+      due.forEach(function(d){ var i=Game.deferred.indexOf(d); if(i>=0) Game.deferred.splice(i,1); d.fn(); });
+      var second=ownShots().length-nB-1;
+      Game.deferred.length=dq0;
+      chk("a set that goes dark between the rounds of a burst keeps the rest on the rail",
+          first && due.length===1 && second===0 && (wSam.burst||1)>1,
+          "burst "+(wSam.burst||1)+" at "+(wSam.burstDelay||0)+" s: first round away "+first+", rounds launched after going dark "+second);
+      var ear=hold(mk(E,"radarv_p",g,14,0)), ew=air(mk(E,"sead_p",g,-7,0));
+      var askSead=function(){ ew.stance="guard"; var t2=ew.seadTarget(); ew.stance="hold"; return t2; };
+      /* switching a set off drops it from every side's plot at once (the
+         plot is otherwise kept half a second) */
+      lit(sam); Game.setEmcon(sam,true);
+      var heardDark=Game.esmPlot(E).has(sam.id), seadDark=askSead();
+      lit(sam);
+      var heardLit=Game.esmPlot(E).has(sam.id), seadLit=askSead();
+      chk("dark, nobody hears it and a Weasel's self-launch never finds it; on the air, both do",
+          !heardDark && seadDark!==sam && heardLit && seadLit===sam,
+          "heard dark "+heardDark+" lit "+heardLit+"; seadTarget dark "+(seadDark?seadDark.def.name:"null")+" lit "+(seadLit?seadLit.def.name:"null"));
+
+      /* ---- 4. an anti-radiation seeker needs something to lock ---- */
+      Game.setEmcon(sam,true);
+      ew.give({type:"attack",target:sam}); ew.cooldowns[0]=0;
+      var n0=ownShots().length; ew.tryFire(0,sam);
+      var held=ownShots().length===n0 && ew.order.type==="attack";
+      ew.order={type:"attack",target:sam,auto:true,release:true,then:{type:"rtb"}}; ew.tryFire(0,sam);
+      var gone=ew.order.type!=="attack", goneTo=ew.order.type;
+      lit(sam);
+      ew.give({type:"attack",target:sam}); ew.cooldowns[0]=0; ew.tryFire(0,sam);
+      var shot=ownShots().length===n0+1;
+      chk("an ARM is not launched at a set that is off the air: an ordered Weasel holds for it, a self-launched shot is over, and it fires the moment the set is back",
+          held && gone && shot, "held "+held+", self-launch dropped "+gone+" (to "+goneTo+"), fired when lit "+shot);
+      var gr=air(mk(P,"ew_n",g,-7,5)), cj=air(mk(P,"sead_n",g,-7,6));
+      Game.setEmcon(ear,true);
+      gr.give({type:"attack",target:ear}); cj.give({type:"attack",target:ear}); gr.cooldowns[0]=0; cj.cooldowns[0]=0;
+      n0=ownShots().length; gr.tryFire(0,ear); var aargm=ownShots().length===n0+1; cj.tryFire(0,ear);
+      var harm=ownShots().length===n0+1;
+      chk("the 2020s Growler's AARGM may still be sent at a dark set; the F-16CJ's HARM may not",
+          aargm && harm && Game.armSeeker(WEAPONS[gr.def.weapons[0]],gr)==="active" && Game.armSeeker(WEAPONS[cj.def.weapons[0]],cj)==="memory",
+          "AARGM launched "+aargm+", HARM held "+harm);
+      /* a commander's Weasel is not pinned over a dark set for the battle */
+      Game.setEmcon(sam,true);
+      ew.give({type:"attack",target:sam}); ew.cooldowns[0]=0; ew.armDark=null;
+      n0=ownShots().length; ew.tryFire(0,sam);
+      var waiting=ew.order.type==="attack" && ew.order.target===sam && ew.order.armWait===Game.time;
+      var W8=Game.ARM_WAIT||15;
+      /* the wait run out on the order's own clock, not the match's */
+      if(ew.order.armWait!==undefined) ew.order.armWait-=W8+0.1;
+      ew.cooldowns[0]=0; ew.tryFire(0,sam); cj.cooldowns[0]=0; cj.tryFire(0,ear);
+      var gaveUp=!(ew.order.type==="attack" && ew.order.target===sam) && !!ew.armDark && ew.armDark.id===sam.id,
+          stillP=cj.order.type==="attack" && cj.order.target===ear;
+      chk("a commander's Weasel gives a dark set up after "+W8+" s and notes it; the player's waits for as long as the player leaves it",
+          waiting && gaveUp && stillP && ownShots().length===n0,
+          "AI waiting "+waiting+", gave up "+gaveUp+" (now "+ew.order.type+"), player's still on it "+stillP);
+
+      /* ---- 5. in flight: what each generation does when its emitter goes dark ----
+         Every round is a hit at launch, nothing intercepts it (rng 0.99), and
+         the set is switched off three frames out of the rail. */
+      /* on quiet ground, the shooter nine tiles off: a round that loses its
+         emitter comes down within five tiles of the set, and nothing of the
+         match is there to be hit */
+      var putAt=function(u,dx,dy){ u.x=(q.x+dx)*T+16; u.y=(q.y+dy)*T+16; u.tx=(u.x/T)|0; u.ty=(u.y/T)|0; };
+      function flight(shooter, W, darkAt, relightAt, tid){
+        var tgt=hold(mk(E,tid||"radarv_p",q,0,0)); tgt.hp=tgt.maxHp=100000;
+        putAt(shooter,-9,0);
+        var hp0=tgt.hp, st=0, lo=false, sv=stash();
+        Game.rng=function(){ return 0; };
+        Combat.fire(Game, shooter, W, tgt);
+        var pr=Combat.projectiles[Combat.projectiles.length-1];
+        Game.rng=function(){ return 0.99; };
+        while(Combat.projectiles.indexOf(pr)>=0 && st<1800){
+          if(st===darkAt) Game.setEmcon(tgt,true);
+          if(st===relightAt) lit(tgt);
+          Combat.update(Game,DT); st++;
+          if(pr.loiter>0) lo=true;
+        }
+        Game.time=t0; Game.rng=prng; unstash(sv);
+        tgt.dead=true;
+        return { lost: pr.lost||null, dmg: hp0-tgt.hp, off: U.dist(pr.tx,pr.ty,tgt.x,tgt.y)/T, loiter: lo, s: st*DT };
+      }
+      var sh60=air(mk(P,"nato_e60_sead",g,0,-6)), sh90=air(mk(P,"gbr_e90_sead",g,1,-6));
+      var WS=WEAPONS[sh60.def.weapons[0]], WA=WEAPONS[sh90.def.weapons[0]], WH=WEAPONS.harm, WG=WEAPONS[gr.def.weapons[0]];
+      var r0=flight(cj, WH, -1), r1=flight(cj, WH, 3), r2=flight(sh60, WS, 3), r3=flight(sh90, WA, 3, 60),
+          r4=flight(sh90, WA, 3), r5=flight(gr, WG, 3), r6=flight(cj, WH, 3, undefined, "mbt_p");
+      var f=function(r){ return (r.lost||"on target")+" "+Math.round(r.dmg)+" dmg "+r.off.toFixed(2)+"t"+(r.loiter?" loitered":""); };
+      chk("a HARM on a set that stays on the air hits it with the triple warhead", !r0.lost && r0.dmg>=WH.dmg*1.5, f(r0));
+      chk("HARM (memory): the set goes dark, the round flies on to the last fix and lands a near miss",
+          r1.lost==="memory" && r1.off>=0.3 && r1.off<=0.95 && r1.dmg<r0.dmg*0.2, f(r1));
+      chk("Shrike (no memory): it goes where it was pointing, 1.5 tiles off and more",
+          r2.lost==="none" && r2.off>=1.5 && r2.dmg<r0.dmg*0.2, f(r2));
+      chk("ALARM: it hangs under its parachute, and dives on the set when it comes back",
+          r3.loiter && !r3.lost && r3.dmg>=WA.dmg*1.5, f(r3)+" after "+r3.s.toFixed(1)+" s");
+      chk("...and if the set never comes back it falls on the fix when the wait runs out",
+          r4.loiter && r4.lost==="loiter" && r4.off<=0.95 && r4.s>=Game.ARM_LOITER, f(r4)+" after "+r4.s.toFixed(1)+" s");
+      chk("AARGM: its own terminal seeker keeps the target, dark or not", !r5.lost && r5.dmg>=WG.dmg*1.5, f(r5));
+      chk("...and a HARM ordered onto a tank, which has no set to switch off, still flies at the tank",
+          !r6.lost && r6.off<0.1, f(r6));
+      /* ...and a SAM whose own set is switched off once it is in the air:
+         a second Patriot on the quiet ground, a jet seven tiles off */
+      var sq=hold(mk(P,"sam_n",q,-4,0));
+      function samFlight(darkAt){
+        var jt=air(mk(E,"fighter_p",q,3,0)); jt.hp=jt.maxHp=100000;
+        var hp0=jt.hp, st=0, sv=stash();
+        lit(sq);
+        Game.rng=function(){ return 0; };
+        Combat.fire(Game, sq, wSam, jt);
+        var pr=Combat.projectiles[Combat.projectiles.length-1];
+        Game.rng=function(){ return 0.99; };
+        while(Combat.projectiles.indexOf(pr)>=0 && st<1800){
+          if(st===darkAt) Game.setEmcon(sq,true);
+          Combat.update(Game,DT); st++;
+        }
+        Game.time=t0; Game.rng=prng; unstash(sv);
+        jt.dead=true;
+        return { lost: pr.lost||null, dmg: hp0-jt.hp, off: U.dist(pr.tx,pr.ty,jt.x,jt.y)/T };
+      }
+      var s0=samFlight(-1), s1=samFlight(3);
+      chk("a SAM in the air when its own set goes dark loses its guidance and misses; left on, the same shot hits",
+          !s0.lost && s0.dmg>0 && s1.lost==="set" && s1.dmg===0 && s1.off>(wSam.aoe||0.35),
+          "lit: "+Math.round(s0.dmg)+" dmg; dark 3 frames in: "+(s1.lost||"on target")+" "+Math.round(s1.dmg)+" dmg, burst "+s1.off.toFixed(2)+"t from the jet");
+
+      /* ---- 6. a hull's own CIWS is laid by its own set ----
+         A 1950s destroyer - no SAM and no decoys, so nothing but its own
+         close-in guns can stop the round - alone on quiet water, with every
+         roll a success: lit, it shoots the Harpoon down; dark, nothing does. */
+      [ear,ew,foe].forEach(function(u){ u.dead=true; });
+      var qs=null;
+      if(ddg) for(var rr=6;rr<16&&!qs;rr++) for(var aa=0;aa<24&&!qs;aa++){
+        var sx=((ddg.x/T)+Math.cos(aa/24*6.283)*rr)|0, sy=((ddg.y/T)+Math.sin(aa/24*6.283)*rr)|0;
+        if(sx<2||sy<2||sx>=Game.map.W-2||sy>=Game.map.H-2||!GameMap.passable(Game.map,sx,sy,"sea")) continue;
+        var foes=0; Game.entities.forEach(function(e){ if(!e.dead && e.owner===E && U.dist(e.x,e.y,sx*T+16,sy*T+16)<=22*T) foes++; });
+        if(!foes) qs={x:sx,y:sy};
+      }
+      function ciwsRun(dark){
+        var sh=hold(mk(E,"pact_e50_destroyer",qs,0,0)); sh.hp=sh.maxHp=100000;
+        if(dark) Game.setEmcon(sh,true);
+        var hp0=sh.hp, st=0, sv=stash(), cut=false;
+        Game.rng=function(){ return 0; };
+        Combat.fire(Game, ddg, WEAPONS.ssm_harpoon, sh);
+        var pr=Combat.projectiles[Combat.projectiles.length-1];
+        while(Combat.projectiles.indexOf(pr)>=0 && st<3000){ Combat.update(Game,DT); st++; }
+        cut=Combat.effects.some(function(x){ return x.s==="INTERCEPTED"; });
+        Game.time=t0; Game.rng=prng; unstash(sv);
+        sh.dead=true;
+        return { dmg: hp0-sh.hp, cut: cut };
+      }
+      if(ddg && qs && UNITS.pact_e50_destroyer && WEAPONS.ssm_harpoon){
+        var c0=ciwsRun(false), c1=ciwsRun(true);
+        chk("a dark hull's own CIWS and radar-laid guns are in standby with its sets; lit, they stop the round",
+            c0.cut && c0.dmg===0 && !c1.cut && c1.dmg>0,
+            "lit: "+(c0.cut?"INTERCEPTED":"not stopped, "+Math.round(c0.dmg)+" dmg")+"; dark: "+(c1.cut?"INTERCEPTED":"hit, "+Math.round(c1.dmg)+" dmg"));
+      } else chk("a dark hull's own CIWS is in standby", false, "no sea for the scenario");
+
+      /* ---- 7. the minimap's picture is the dome's ----
+         Every enemy the fog has been lifted from once and not now; the
+         shared match plays with the fog off, so it is switched on here and
+         put back. A dome and a power station are lent to our list for the
+         look if we have none, and taken away again - not placed, so no tile
+         is claimed. */
+      var dome=null; P.buildings.forEach(function(b){ if(!dome && !b.dead && b.buildProgress>=1 && b.def.id==="radar") dome=b; });
+      var hx=(P.homeX/T)|0, hy=(P.homeY/T)|0;
+      if(!dome){ dome=new Building(Game,"radar",P,hx,hy); P.buildings.push(dome); tmpB.push(dome); }
+      if(P.powerRatio()<1){ var pw=new Building(Game,"power",P,hx+3,hy); P.buildings.push(pw); tmpB.push(pw); }
+      var domeSw=[dome.emcon,dome.relightAt];
+      Game.fogEnabled=true;
+      Game.entities.forEach(function(e){ if(!e.dead && e.owner===E && e.layer!=="sub") Game.fog[e.ty*Game.map.W+e.tx]=1; });
+      var texts=[];
+      function dots(){
+        /* a 2D context that counts red dots and keeps the text; every other
+           call is a no-op */
+        var n=0, o={ fillRect:function(){ if(o._f==="#e05545") n++; }, fillText:function(s){ texts.push(s); },
+          createImageData:function(w,h){ return {data:new Uint8ClampedArray(w*h*4)}; } };
+        var ctx=new Proxy(o,{ get:function(t,k){ if(k==="fillStyle") return t._f; if(k in t) return t[k];
+            return function(){ return {data:new Uint8ClampedArray(4), width:0}; }; },
+          set:function(t,k,v){ if(k==="fillStyle") t._f=v; else t[k]=v; return true; } });
+        texts.length=0;
+        try { Render.drawMinimap({ width:200, height:200, getContext:function(){ return ctx; } }); } catch(e5){ texts.push("ERR "+e5.message); }
+        return n;
+      }
+      var mLit=dots(), tLit=texts.join("|");
+      Game.setEmcon(dome,true);
+      var mDark=dots(), tDark=texts.join("|");
+      /* ...and off the air for every other picture: each asks G.emitting or
+         G.jamming (a commander's radar picture, stealth_sight's, included) */
+      var domeOff=!Game.emitting(dome) && !Game.jamming(dome);
+      dome.emcon=domeSw[0]; dome.relightAt=domeSw[1];
+      Game.fog.set(fog0); Game.fogEnabled=fogOn;
+      tmpB.forEach(function(b){ var i=P.buildings.indexOf(b); if(i>=0) P.buildings.splice(i,1); });
+      chk("a dome switched off stops painting the enemy on the minimap, and the minimap says why",
+          mLit>mDark && tDark.indexOf("RADAR OFF (EMCON)")>=0 && tLit.indexOf("RADAR OFF")<0 && domeOff,
+          "enemy dots on explored ground: dome lit "+mLit+", dark "+mDark+"; label dark \""+tDark+"\"; off the air "+domeOff);
+
+      /* ---- 8. a save keeps it ---- */
+      Game.setEmcon(sam,true); Game.setEmcon(rv,true); Game.setEmcon(rv,false);
+      var recS=null, recR=null;
+      SaveGame.save(Game,"ironfront.test84");
+      try { var sd=JSON.parse(localStorage.getItem("ironfront.test84"));
+        (sd.units||[]).forEach(function(s2){
+          if(s2.d===sam.def.id && Math.abs(s2.x-sam.x)<2 && Math.abs(s2.y-sam.y)<2) recS=s2;
+          if(s2.d===rv.def.id && Math.abs(s2.x-rv.x)<2 && Math.abs(s2.y-rv.y)<2) recR=s2; }); } catch(e3){}
+      try { localStorage.removeItem("ironfront.test84"); } catch(e4){}
+      chk("a save writes a dark set as dark, and a relighting one with the moment it comes back",
+          !!recS && recS.em===1 && !recS.rl && !!recR && recR.em===1 && Math.abs(recR.rl-rv.relightAt)<0.02,
+          "sam "+(recS?JSON.stringify({em:recS.em,rl:recS.rl}):"none")+", radarv "+(recR?JSON.stringify({em:recR.em,rl:recR.rl}):"none"));
+
+      /* ---- 9. the commander's drill, on its own fog ----
+         Out on quiet ground on our side, clear of everything: the enemy's
+         own test sets are gone, so the only thing that can tell its battery
+         a Weasel is there is the battery. */
+      [jet,gr,cj,sh60,sh90].forEach(function(u){ u.dead=true; });
+      var bat=hold(mk(E,"sam_p",far,0,0)), wz=air(mk(P,"sead_n",far,-6,0));
+      AI.emconPass(E,true);
+      var peaceOn=Game.emitting(bat);
+      var b0=keep(AI.emconOf(E)||{});
+      AI.emconPass(E);
+      var darkSeen=!Game.emitting(bat) && Game.emconState(bat)==="dark";
+      chk("at peace the commander keeps its sets on; its drill takes a battery dark with a Weasel in its crew's sight",
+          peaceOn && darkSeen, "on at peace "+peaceOn+", dark after the drill "+darkSeen+" (book "+b0+" -> "+keep(AI.emconOf(E))+")");
+      wz.dead=true;
+      var st1=air(mk(P,"bomber_n",far,-5,2));
+      AI.emconPass(E);
+      var relit=/^relight/.test(Game.emconState(bat));
+      var wz2=air(mk(P,"sead_n",far,-6,-1));
+      AI.emconPass(E);
+      chk("the Weasel gone and a striker in reach, it relights to engage - and goes dark again the moment the Weasel is back",
+          relit && Game.emconState(bat)==="dark", "relighting "+relit+", then "+Game.emconState(bat));
+      /* a jammer beside it stays on under the same Weasel; and a Growler,
+         whose AARGM finds a dark set anyway, is engaged, not hidden from */
+      var jmv=hold(mk(E,"ewv_p",far,2,2));
+      AI.emconPass(E);
+      var jamOn=Game.emitting(jmv) && Game.jamming(jmv) && !jmv.emcon;
+      [st1,wz2].forEach(function(u){ u.dead=true; });
+      lit(bat); bat.emconSeen=undefined;
+      var gw=air(mk(P,"ew_n",far,-6,0));
+      AI.emconPass(E);
+      var stayOn=Game.emconState(bat)==="on";
+      chk("the drill leaves a jammer on the air under a Weasel, and does not go dark for an AARGM it cannot hide from",
+          jamOn && stayOn, "Krasukha-4 on the air "+jamOn+"; battery under a Growler "+Game.emconState(bat));
+      [gw,jmv].forEach(function(u){ u.dead=true; });
+      /* A Weasel past the crew's eyes, inside its own round's reach and inside
+         the set's radar. A radar vehicle, because its set out-reaches its
+         crew's eyes by a margin research cannot close: the first cut used an
+         S-400 at a fixed 14 tiles, and once optics research had lifted that
+         crew's sight to 14.4 it saw the Weasel (found in review). Dark, the
+         set has nothing to know it by. */
+      var bat2=hold(mk(E,"radarv_p",far,0,6)); Game.setEmcon(bat2,true); bat.dead=true;
+      /* The distance is taken from where the set really stands - spawnUnitAt
+         nudges a vehicle off a blocked tile, which in the stacked suite put
+         a Weasel laid off the planned tile 13.8 tiles from the set, past its
+         12.9 - and set halfway between the crew's eyes and the set's reach
+         on this very airframe, toward the middle of the map. */
+      var at2={x:(bat2.x-16)/T, y:(bat2.y-16)/T}, dir=bat2.x<Game.map.W*T/2?1:-1;
+      var pr0=mk(P,"sead_n",at2,0,0), eyes2=bat2.sightR(), reach2=Game.radarReach(bat2,pr0); pr0.dead=true;
+      var D=(eyes2+reach2)/2;
+      var wz3=air(mk(P,"sead_n",at2,dir*D,0));
+      var sees=Game.visibleTo(E,wz3), heard=Game.esmPlot(E).has(wz3.id);
+      AI.emconPass(E);
+      var blind=/^relight/.test(Game.emconState(bat2));
+      Game.setEmcon(bat2,true); lit(bat2);                              // on the air, as its crew left it
+      var reach=Game.radarReach(bat2,wz3);
+      var dbg="eyes "+bat2.sightR().toFixed(1)+"t, radar "+reach.toFixed(1)+"t, Weasel at "+(U.dist(bat2.x,bat2.y,wz3.x,wz3.y)/T).toFixed(1)+"t, track "+Game.airTrack(bat2,wz3);
+      AI.emconPass(E);
+      var ownScope=Game.emconState(bat2)==="dark";
+      chk("the commander knows only what it sees: dark, it relights under a Weasel it cannot see or hear; on the air, its own scope finds the same Weasel and it goes dark",
+          !sees && !heard && blind && ownScope && D<reach,
+          "E sees it "+sees+", hears it "+heard+"; dark set relit "+blind+"; lit set went dark "+ownScope+" ("+dbg+")");
+    } finally {
+      Game.rng=rng; Game.time=t0;
+      /* a switch thrown on a set of ours drops every side's ESM picture, so
+         none is kept that was heard with this section's sets on the air */
+      var any=null; made.forEach(function(u){ if(!any && !u.dead && Game.canEmcon(u)) any=u; });
+      if(any){ Game.setEmcon(any,true); Game.setEmcon(any,false); }
+      made.forEach(function(u){ u.dead=true; });
+      /* off the board: the entity list, both sides' lists and the grid */
+      for(var i=Game.entities.length-1;i>=0;i--) if(made.indexOf(Game.entities[i])>=0) Game.entities.splice(i,1);
+      [P,E].forEach(function(pl){ [pl.units,pl.buildings].forEach(function(a){
+        for(var j=a.length-1;j>=0;j--) if(made.indexOf(a[j])>=0 || tmpB.indexOf(a[j])>=0) a.splice(j,1); }); });
+      if(Game.grid.buckets) Game.grid.buckets.forEach(function(bk){ for(var j=bk.length-1;j>=0;j--) if(made.indexOf(bk[j])>=0) bk.splice(j,1); });
+      put(Combat.projectiles,prj0); put(Combat.effects,fx0); put(Game.deferred,def0);
+      if(ev0 && Game.events) put(Game.events,ev0);
+      if(hl0 && Combat.hitLog) put(Combat.hitLog,hl0);
+      Game.fog.set(fog0); Game.fogEnabled=fogOn;
+      sw0.forEach(function(s){ var e=s[0]; if(e.emcon!==s[1]) e.emcon=s[1]; if(e.relightAt!==s[2]) e.relightAt=s[2]; if(e.emconSeen!==s[3]) e.emconSeen=s[3]; });
+      Game.players.forEach(function(pl,i){ var f0=flash0[i];
+        if(!f0){ if(pl._flash) delete pl._flash; return; }
+        if(f0.g && pl._flash.grid && pl._flash.grid.length===f0.g.length) pl._flash.grid.set(f0.g);
+        var L=pl._flash.list; L.length=0;
+        f0.l.forEach(function(q){ q[0].until=q[1]; q[0].r=q[2]; L.push(q[0]); }); });
+      if(bookE) back(bookE,bookE0);
+      if(bookP) back(bookP,bookP0);
+      sel(sel0);
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    var left=0; Game.entities.forEach(function(e){ if(made.indexOf(e)>=0) left++; });
+    chk("the shared match is as it was: clock, RNG, stats, rounds, deferred calls, every shared set's switch, and nothing of this section's left on the board",
+        Game.rng===rng && Game.time===t0 && keep(P.stats)===sP && keep(E.stats)===sE && ownShots().length===0 &&
+        Combat.projectiles.length===prj0.length && Game.deferred.length===def0.length && darkShared()===dark0 && left===0,
+        "dark shared sets "+dark0+" -> "+darkShared()+", made left on the board "+left);
+  })();
+  }
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

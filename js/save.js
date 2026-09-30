@@ -105,6 +105,9 @@ var SaveGame = (function () {
            magazines is 70 more batteries than it used to be */
         rd: u.roundsMax ? u.rounds : undefined,
         st: u.stance, ord: liteOrder(u.order), pk: u.parked ? 1 : 0,
+        /* emission control: dark, and when a relight lands - absolute game
+           time, which is saved and restored before any unit (G.setEmcon) */
+        em: u.emcon ? 1 : undefined, rl: u.emcon && u.relightAt ? +u.relightAt.toFixed(2) : undefined,
         mg: u.mag ? u.mag : undefined,
         mn: u.minesMax ? u.mines : undefined,
         nt: u.netMax ? u.net : undefined,
@@ -126,6 +129,7 @@ var SaveGame = (function () {
         /* a yard folding back into its rig (G.packYard): `prog` is how far
            down it has come, and this says which way it is going */
         pk: b.packing ? 1 : undefined,
+        em: b.emcon ? 1 : undefined, rl: b.emcon && b.relightAt ? +b.relightAt.toFixed(2) : undefined,
       })),
     };
   }
@@ -336,6 +340,7 @@ var SaveGame = (function () {
       b.swCharge = sb.sw !== undefined ? sb.sw : b.swCharge;
       b.tang = sb.ta || 0;
       b.rally = { x: sb.rx, y: sb.ry };
+      if (sb.em) { b.emcon = true; b.relightAt = sb.rl || 0; }
     }
     for (let ui = 0; ui < d.units.length; ui++) {
       const su = d.units[ui];
@@ -350,6 +355,7 @@ var SaveGame = (function () {
       if (su.rd !== undefined) u.rounds = su.rd;
       u.supplyLeft = su.sup || 0; u.load = su.load || 0;
       u.stance = su.st || "guard";
+      if (su.em) { u.emcon = true; u.relightAt = su.rl || 0; }
       if (su.pk && u.layer === "air") { u.parked = true; u.order = { type: "parked" }; }
       if (su.mg) u.mag = su.mg;
       if (su.mn !== undefined) u.mines = su.mn;
