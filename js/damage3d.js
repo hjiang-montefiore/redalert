@@ -661,12 +661,12 @@ var Damage3D = (function () {
       if (d.id === "power") {
         /* The transformer yard and the switch house arc as soon as the plant
            is hit hard enough to smoke at all. BLD_MODELS.power
-           (units3d_salvage.js) stands its three transformers on a slab at
-           model y -15.6, their HV bushings in a row 0.6 m to one side; the
-           model's own frame is found from its node, and the ray puts the
-           sparks on the middle transformer's bushings. (Not on its centre:
-           an overhead conductor runs right over it at 9 m, and a ray there
-           makes the sparks come off the wire.) */
+           (js/hero/power_diesel_station.js) stands its two step-up
+           transformers in firewalled bays south of the engine hall, the HV
+           bushings of each in a row along its south edge at model y -15.0;
+           the model's own frame is found from its node, and the ray puts the
+           sparks on the middle bushing of the east transformer, at model
+           (-6.5, -15.0), where the jumper from the gantry lands on it. */
         const node = M.inst.children[0];
         let sx = cx + L * 0.34, sz = cz - W * 0.34, sy = onMesh(M, sx, sz, 0.6, H * 0.2);
         if (node && !node.isMesh && Math.abs(node.rotation.x + Math.PI / 2) < 1e-3) {
