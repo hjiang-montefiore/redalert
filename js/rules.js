@@ -4024,7 +4024,9 @@ for (var _rcv in RADAR_COVERAGE) if (UNITS[_rcv]) UNITS[_rcv].radar = RADAR_COVE
    ew_f Archange carries a deliberate jam:0 because it is a collector. But 13
    of the 16 ewair rows carry no jam at all, nato_e00_ewair among them, which
    is the same EA-18G as ew_n's 9.5. Which of those airframes is a jammer, and
-   what each is worth, is per-airframe research and not a role sweep.
+   what each is worth, is per-airframe research and not a role sweep - and it
+   is done in eras.js, EW_AIRFRAME: six of the thirteen were real jammers and
+   carry one now, and seven are collectors and correctly carry none.
 
    IT IS NOT A FREE GIFT TO THE PAST. G.jamAgainst() multiplies every jammer by
    genContest(radar, jammer), which halves the jamming that gets through for

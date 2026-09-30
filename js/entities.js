@@ -2922,7 +2922,7 @@ class Unit {
          of flying it, not the end of it - so the mission is carried through
          the turnaround and resumed once the aircraft is serviceable again. */
       const standing = (o.type === "cap" || o.type === "attackmove")
-        ? { type: o.type, x: o.x, y: o.y }
+        ? { type: o.type, x: o.x, y: o.y, commit: o.commit }   // a jammer sent in goes back in
         : (o.cap && o.resume) ? { type: "cap", x: o.resume.x, y: o.resume.y } : null;
       /* A strike is an `attack` order carrying a `resume` point and NO `cap`
          flag - which is exactly what the airbase STRIKE panel and the STRIKE
@@ -3082,7 +3082,21 @@ class Unit {
        advance and engage, which is a fight the player asked for. */
     const transiting = (o.type === "move" || o.type === "cap") &&
                        !o.release && this.stance !== "aggressive";
-    if ((defenceless || transiting) && this.game.standoffPoint &&
+    /* ---- EXCEPT A JAMMER SENT IN BY NAME ----
+       A jammer's bubble is shorter than every SAM ring here - 10.5 tiles at
+       the widest against rings of 14.8 to 18.5 - so this hold kept every
+       jammer out of reach of every battery its side could see: measured, 0.00
+       on the battery's radar from each jamming airframe given a patrol over
+       one. To jam a battery a jammer has to be inside its reach, and taking an
+       aircraft in is the commander's call, as it is for anything else: a cap
+       marked `commit` - the player's STRIKE on a hostile with a jammer
+       selected (ui.js), or the AI's flyJammer() when one of its strikes is
+       under a battery - flies to its point through the rings. A jammer only:
+       an early-warning aircraft carries a derived jam figure too, and the flag
+       does nothing for it, so an E-3 still cannot be ordered over a Patriot. */
+    const committed = o.commit === true && o.type === "cap" &&
+                      !!this.def.jam && !this.def.awacs;
+    if ((defenceless || transiting) && !committed && this.game.standoffPoint &&
         (o.type === "move" || o.type === "attackmove" || o.type === "cap")) {
       const margin = 1.5 + (this.def.jam ? 0 : 1.0);   // a jammer may sit closer
       /* Anchor the walk-back at HOME, not at the aircraft. Computed from the

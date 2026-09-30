@@ -1111,7 +1111,9 @@ var UI = (function () {
       "</div>";
     h += '<div class="hhint">' + (
       airCmdMode === "cap"    ? "Click a point to patrol over it. RMB or Esc cancels."
-    : airCmdMode === "strike" ? "Click a target to strike it. RMB or Esc cancels."
+    : airCmdMode === "strike" ? (air.some(u => u.def.jam && !u.def.awacs)
+        ? "Click a target to strike it. A jammer flies in over what you click and jams it. RMB or Esc cancels."
+        : "Click a target to strike it. RMB or Esc cancels.")
     : "BASE (R) sends them home to refuel and rearm, and right-clicking a base " +
       "or a deck sends them to THAT one. PATROL (Y) holds a point " +
       "and engages what comes. STRIKE (T) aims a run.") + "</div>";
@@ -1164,20 +1166,45 @@ var UI = (function () {
          and holds the ones that cannot, and reports both. A jammer is the one
          exception worth flying anyway: its bubble is positional, so it goes on
          patrol instead of being refused. */
-      let hd = 0, jm = 0;
+      /* AND A JAMMER SENT TO STRIKE A HOSTILE GOES IN AND JAMS IT. Its bubble
+         is keyed on the battery (G.jamAt reads the shooter's position) and is
+         shorter than every SAM ring, so the patrol above - which holds short
+         of what it can see - never reaches one. Named, it flies a cap over the
+         target marked `commit`, which entities.js lets through the rings; that
+         is the only way in, and it is the player's to give. The test is "has
+         nothing it may fire at this", not "all held": the EF-111A, the 1970s
+         EA-6B, the AD-5Q and the Y-8G carry no weapon at all (eras.js
+         EW_AIRFRAME), and allWeaponsHeld() answers false for an empty list,
+         so on the old test they went down the strike path to an attackmove
+         that held short under an "AIRCRAFT COMMITTED" banner (found in review
+         of the first cut). A jammer that CAN shoot the thing named - a
+         Growler's HARM at an emitter - takes the strike like any aircraft, and
+         an early-warning aircraft is not a jammer here, whatever its derived
+         jam figure. */
+      let hd = 0, jm = 0, jc = 0;
       const fly = [];
       for (const u of air) {
-        if (!foe && u.allWeaponsHeld && u.allWeaponsHeld()) {
-          if (u.def.jam) { u.parked = false; u.give({ type: "cap", x: wp.x, y: wp.y }); jm++; }
-          else hd++;
+        const held = !!(u.allWeaponsHeld && u.allWeaponsHeld());
+        if (u.def.jam && !u.def.awacs && (!u.def.weapons.length || held) &&
+            !(foe && u.canTarget(tgt))) {
+          u.parked = false;
+          if (foe) { u.give({ type: "cap", x: tgt.x, y: tgt.y, commit: true }); jc++; }
+          else { u.give({ type: "cap", x: wp.x, y: wp.y }); jm++; }
           continue;
         }
+        if (!foe && held) { hd++; continue; }
         fly.push(u);
+      }
+      const jword = (k) => k + " JAMMER" + (k === 1 ? "" : "S");
+      const jnote = [];
+      if (jm) jnote.push(jword(jm) + " ON PATROL");
+      if (jc) {
+        jnote.push(jword(jc) + " GOING IN \u2014 JAMMING " + String(tgt.def.name || "TARGET").toUpperCase());
+        Combat.addEffect({ t: "text", x: tgt.x, y: tgt.y, s: "JAM", life: 1.0, max: 1.0, c: "#c88cff" });
       }
       if (!fly.length) {
         alert((hd ? hd + " HELD \u2014 RIGHT-CLICK THE EMITTER, NOT THE GROUND" : "") +
-              (hd && jm ? " \u00b7 " : "") +
-              (jm ? jm + " JAMMER" + (jm === 1 ? "" : "S") + " ON PATROL" : ""),
+              (hd && jnote.length ? " \u00b7 " : "") + jnote.join(" \u00b7 "),
               hd ? "bad" : "good");
         airCmdMode = null; refreshSelInfo(); return true;
       }
@@ -1192,7 +1219,7 @@ var UI = (function () {
       }
       alert(n + " AIRCRAFT COMMITTED" +
             (hd ? " \u00b7 " + hd + " HELD, NAME THE EMITTER" : "") +
-            (jm ? " \u00b7 " + jm + " JAMMING" : ""), "good");
+            (jnote.length ? " \u00b7 " + jnote.join(" \u00b7 ") : ""), "good");
       Combat.addEffect({ t: "text", x: wp.x, y: wp.y, s: "STRIKE", life: 1.0, max: 1.0, c: "#ff8a6b" });
     }
     Sfx.play("order");

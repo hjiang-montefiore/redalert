@@ -3325,12 +3325,27 @@ function makeCommander() {
     (function esmSweep() {
       const listeners = [];
       for (const u of P.units) {
-        if (u.dead || u.carried) continue;
+        /* An ear has to be switched on to hear. G.esmPlot - the player's side
+           of this same law - asks G.emitting() of every listener, so a Gabriel
+           or an E-3 shut down on its ramp hears nothing for the player; this
+           loop did not ask, and the commander's parked collectors were
+           listening from the apron. */
+        if (u.dead || u.carried || !G.emitting(u)) continue;
         if (u.def.radar || u.def.radarQ || u.def.role === "ewair" ||
             u.def.role === "sead" || u.def.awacs) listeners.push(u);
       }
+      /* ...and a set on a structure only with the power on: G.esmPlot skips a
+         structure whose `powered` is false, and this loop took every finished
+         dome, so a commander in a brown-out still heard through it. The grid
+         is one fact per commander, asked once and only if a set needs it -
+         `powered` is a getter that walks the structure list twice. */
+      let gridUp = -1;
       for (const b of P.buildings) {
         if (b.dead || b.buildProgress < 1) continue;
+        if (b.def.radar && b.def.needPower) {
+          if (gridUp < 0) gridUp = P.powerRatio() >= 1 ? 1 : 0;
+          if (!gridUp) continue;
+        }
         if (b.def.radar) listeners.push(b);
       }
       if (!listeners.length) return;
@@ -3341,7 +3356,12 @@ function makeCommander() {
           if (isBld && e.buildProgress < 1) return;
           const def = e.def;
           if (!def || !(def.radar || def.jam)) return;
-          if (!G.emitting || !G.emitting(e)) return;     // silent set, silent plot
+          /* G.jamming, not G.emitting. For a vehicle they are one question; a
+             STRUCTURE is always "emitting" and is on the air only with its
+             grid up, which is how G.esmPlot hears for the player. Asked with
+             G.emitting, this commander heard a SAM site or a dome browned out
+             by a power cut that the player's ears could not. */
+          if (!G.jamming(e)) return;     // silent set, silent plot
           const loud = (def.radar || def.jam) * 1.9;
           for (const l of listeners) {
             if (U.dist(l.x, l.y, e.x, e.y) / CFG.TILE <= loud) { noteSighting(e, now); return; }
@@ -8268,6 +8288,21 @@ function makeCommander() {
       if (a._scout) continue;
       const idle = a.order.type === "hover" || a.order.type === "parked" ||
                    a.order.type === "idle";
+      /* ---- a jammer with nothing to shoot is flown by flyJammer() ----
+         Ahead of the idle test on purpose: a jammer already on its station is
+         the one aircraft here whose standing order has to CHANGE when the
+         fight does - sent in over a battery that one of our strikes is under,
+         and back out to the station when the strike is over. These are the
+         AD-5Q, the 1970s EA-6B, the EF-111A and the Y-8G, which lost a missile
+         they never carried (eras.js EW_AIRFRAME), and the Canberra T.17; the
+         EA-6B ICAP II, both Growlers and the J-16D carry anti-radiation
+         rounds and are flown with the armed aircraft below. An early-warning
+         aircraft carries a jam figure too - rules.js applyAewJam derives one
+         from its radar - and is NOT a jammer for this purpose: without
+         `!a.def.awacs` all 37 AEW rows came here, and at peace, where there is
+         no sweep point, an E-3 that flew its station within 2.5 s stayed on
+         hover over its own base (measured in review of the first cut). */
+      if (a.def.jam && !a.def.awacs && !a.def.weapons.length) { flyJammer(a, idle); continue; }
       if (!idle) continue;
       /* ---- the aircraft that carry no weapons ----
          An early-warning aircraft, a tanker or a transport was skipped here for
@@ -8279,7 +8314,16 @@ function makeCommander() {
          radar covers the approaches without offering itself to the enemy. */
       if (!a.def.weapons.length) {
         if (a.fuel < a.reserveFuel()) continue;
-        if (!a.def.awacs) continue;      // transports wait for a task
+        /* A collector - the Gabriels, the Nimrod R.1, the Airseeker, Archange -
+           carries neither a weapon nor a jammer, so this test sent it back to
+           wait with the transports, and the commander's listening aircraft
+           never flew: at b62fbf6 a C-160G spawned at home is still on "hover"
+           8 s later (_behtest [75]), and a 40 s war probe found every unarmed
+           one of them there throughout. esmSweep hears only through
+           an ear that is airborne, so it flies the early-warning station below
+           - back from the line, a third of the way to the rival - which is
+           where a Rivet Joint or a Gabriel works. */
+        if (!a.def.awacs && a.def.role !== "ewair") continue;      // transports wait for a task
         /* The tanker used to be flown from here too, onto the same station as
            the AWACS - a third of the way to the enemy. Those two aircraft want
            opposite things. An early-warning aircraft wants to be BACK, where
@@ -12858,6 +12902,76 @@ function makeCommander() {
     const t = warAim();
     if (!t) return null;
     return (t.ref && !t.ref.dead) ? t.ref : null;
+  }
+  /* ---- the jammer's two stations ----
+     (owner) "we want to increase the dependace on the rador and importance of
+     jammer or eletronic war."
+     A jammer's bubble is shorter than every surface-to-air ring in the game -
+     the widest airborne one is the Y-8G's 10.5 tiles, and G.standoffPoint
+     holds a defenceless aircraft 1.25 x a battery's reach plus 1.5 tiles out,
+     14.8 to 18.5 tiles for this game's SAMs - so a jammer that keeps out of
+     the rings never touches a battery anybody can see. To jam one it has to go
+     IN, and going in is a decision, not a route: entities.js lets a jammer
+     through a known ring only on a cap marked `commit`. The player gives it by
+     sending a jammer to STRIKE a hostile (ui.js); this commander gives it by
+     the rule a planner would use - a battery on our picture has one of OUR
+     aircraft pressing a commanded attack inside its reach, or at a target
+     under it. That is when a jammer is worth its risk: G.jamAt is read at the
+     SHOOTER's position, so a jammer over the battery cuts every radar-laid
+     shot it fires at the strike. A Weasel's HARM at the battery itself is not
+     such a case - it is fired from outside the ring, and a jammer sent over
+     the battery for it would be the only aircraft inside.
+     Otherwise the jammer flies the armed jammer's station, 45% of the way to
+     the sweep point, and one that was sent in comes back out to it when the
+     strike is over - or home, at peace, where there is no sweep point. */
+  function flyJammer(a, idle) {
+    const o = a.order, t = o.type;
+    if (!idle && t !== "cap") return;               // rtb, tank, land: its own business
+    if (idle && a.fuel < a.reserveFuel()) return;
+    const prey = jamPrey(a);
+    if (prey) {
+      if (!(t === "cap" && o.commit && U.dist(o.x, o.y, prey.x, prey.y) < 2 * CFG.TILE))
+        a.give({ type: "cap", x: prey.x, y: prey.y, commit: true });
+      return;
+    }
+    if (t === "cap" && !o.commit) return;           // on its station already
+    const sw = airSweepPoint();
+    if (sw) a.give({ type: "cap", x: P.homeX + (sw.x - P.homeX) * 0.45,
+                                  y: P.homeY + (sw.y - P.homeY) * 0.45 });
+    else if (t === "cap") a.give({ type: "rtb" });
+  }
+  /* The battery one of our strikes is under. Only what is on our picture, by
+     the two gates pickEmitter() uses - a vehicle we hold a live track on, a
+     structure we have seen - and only a set that can reach an aircraft. */
+  function jamPrey(a) {
+    let strikers = null;
+    for (const u of P.units) {
+      if (u.dead || u === a || u.layer !== "air") continue;
+      const o = u.order;
+      if (o && o.type === "attack" && o.release && o.target && !o.target.dead)
+        (strikers || (strikers = [])).push(u);
+    }
+    if (!strikers) return null;
+    let best = null, bd = Infinity;
+    const judge = (e) => {
+      if (!e || e.dead || !e.def || !(e.def.radar || e.def.jam)) return;
+      const reach = G.airDefenceReach(e.def) * CFG.TILE;
+      if (!reach) return;
+      const R2 = reach * reach;
+      let under = false;
+      for (const s of strikers) {
+        const tg = s.order.target;
+        if (U.dist2(s.x, s.y, e.x, e.y) <= R2 ||
+            (tg !== e && U.dist2(tg.x, tg.y, e.x, e.y) <= R2)) { under = true; break; }
+      }
+      if (!under) return;
+      const d = U.dist2(a.x, a.y, e.x, e.y);
+      if (d < bd) { bd = d; best = e; }
+    };
+    for (const r of seenU.values())
+      if (r.layer === "ground" || r.layer === "sea") judge(trackedEntity(r));
+    for (const r of seenB.values()) if (!r.gone) judge(r.ref);
+    return best;
   }
   /* where an airframe should sweep when nothing is held on radar */
   function airSweepPoint() {

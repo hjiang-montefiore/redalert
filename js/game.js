@@ -1598,7 +1598,16 @@ var Game = (function () {
   G.esmPlot = function (owner) {
     if (!owner) return null;
     const rec = ESM_PLOT[owner.idx];
-    if (rec && G.time - rec.t < 0.5) return rec.set;
+    /* A cache from the FUTURE is not a cache. ESM_PLOT outlives a match - it
+       is this file's, not the battle's - so a new battle started at t=0 after
+       one that ran to t=900 was handed the old battle's plot, entity ids and
+       all, for fifteen minutes; loading an earlier save did the same, and so
+       did anything that stepped the clock forward and back. Found when the
+       minimap began asking every frame (render.js drawHeardEmitters): _behtest
+       section [31] draws a minimap four seconds ahead to age a marker out, and
+       the plot it cached there stood in for the real one until the clock
+       caught up. */
+    if (rec && G.time >= rec.t && G.time - rec.t < 0.5) return rec.set;
     const set = new Set(), ears = [];
     for (const u of owner.units) {
       if (u.dead || u.carried || !G.emitting(u)) continue;
@@ -1632,6 +1641,31 @@ var Game = (function () {
     if (G.visibleTo(owner, e)) return true;
     const set = G.esmPlot(owner);
     return !!(set && set.has(e.id));
+  };
+
+  /* ---- ...and what the player's ears hear, put on the player's map ----
+     (owner) "ai should have the same fog like us. don't assume and make ai
+     know everything."
+     G.esmPlot is the player's half of the shared electronic picture and it
+     had one reader: the Weasel's self-launch (entities.js seadTarget). What a
+     player's Gabriel, Nimrod or radar vehicle heard was never SHOWN, while
+     ai.js esmSweep writes every emitter its commander hears into that
+     commander's picture - so a French player's C-160G, whose only job is to
+     listen, told its owner nothing, and in the decades where Britain and
+     France field no anti-radiation carrier at all it did nothing either.
+     This is the list the minimap draws (render.js drawHeardEmitters): every
+     hostile set on the plot that the player cannot SEE, as a position. What
+     is seen is drawn as a unit already. */
+  G.esmHeard = function (owner) {
+    const out = [];
+    const set = owner ? G.esmPlot(owner) : null;
+    if (!set || !set.size) return out;
+    for (const o of G.players) {
+      if (o === owner || o.defeated || G.allied(owner, o)) continue;
+      for (const u of o.units) if (!u.dead && set.has(u.id) && !G.visibleTo(owner, u)) out.push(u);
+      for (const b of o.buildings) if (!b.dead && set.has(b.id) && !G.visibleTo(owner, b)) out.push(b);
+    }
+    return out;
   };
 
   G.jamming = function (e) {

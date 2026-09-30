@@ -183,6 +183,9 @@ var SaveGame = (function () {
       const l = { type: o.type, x: Math.round(o.x), y: Math.round(o.y) };
       if (o.release) l.release = true;
       if (o.nuke) l.nuke = true;
+      /* a jammer sent in over a battery (entities.js) is still sent in after a
+         reload, rather than coming back as a patrol that holds short */
+      if (o.commit) l.commit = true;
       if (o.wi !== undefined) l.wi = o.wi;
       if (o.until !== undefined) l.until = Math.round(o.until);
       return l;

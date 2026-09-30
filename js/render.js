@@ -1711,6 +1711,26 @@ var Render = (function () {
     }, col, 2.0, a);
   }
 
+  /* ---- emitters our ears hear and our eyes do not ----
+     G.esmHeard (game.js): a hollow violet diamond for each - the colour of
+     the jamming ring, because it is the same war - on both minimaps. Hollow
+     so it never reads as a unit dot, three pixels so a plot of a dozen does
+     not paint over the ground. Nothing with the fog off, when nothing is
+     unseen, and nothing that is seen: that is a red dot already. */
+  function drawHeardEmitters(mctx, S) {
+    if (!G.esmHeard || !G.human) return;
+    const heard = G.esmHeard(G.human);
+    if (!heard.length) return;
+    mctx.strokeStyle = "rgba(200,140,255,0.95)"; mctx.lineWidth = 1;
+    mctx.beginPath();
+    for (let i = 0; i < heard.length; i++) {
+      const px = (heard[i].x / CFG.TILE) * S, py = (heard[i].y / CFG.TILE) * S;
+      mctx.moveTo(px, py - 3); mctx.lineTo(px + 3, py);
+      mctx.lineTo(px, py + 3); mctx.lineTo(px - 3, py); mctx.closePath();
+    }
+    mctx.stroke();
+  }
+
   /* Called from both minimap paths - the 2D one below and drawMinimapFrom,
      which is what render3d delegates to - so one implementation serves both
      renderers. Drawn inside the rotated transform, with the entity dots, so
@@ -1788,6 +1808,8 @@ var Render = (function () {
       mctx.drawImage(G._worldTex, 0, 0, mm.width, mm.height);
     }
     if (G.fogEnabled && fogCache) mctx.drawImage(fogCache, 0, 0, mm.width, mm.height);
+    /* emitters heard and not seen, under the dots (G.esmHeard) */
+    drawHeardEmitters(mctx, S);
     /* entities as dots (radar shows enemies in explored area) */
     for (const e of G.entities) {
       if (e.dead || e.carried) continue;
@@ -1934,6 +1956,8 @@ var Render = (function () {
         mctx.stroke();
       }
     }
+    /* and the emitters our ears hear that our eyes do not (G.esmHeard) */
+    drawHeardEmitters(mctx, S);
     if (quad) {
       mctx.strokeStyle = "rgba(255,255,255,0.7)"; mctx.lineWidth = 1;
       mctx.beginPath();

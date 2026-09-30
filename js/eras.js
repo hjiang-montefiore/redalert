@@ -11979,6 +11979,169 @@ for (var _tw in WEAPONS) {
 
 
 /* ==================================================================
+   THE ELECTRONIC-WARFARE AIRCRAFT, AIRFRAME BY AIRFRAME
+   (owner) "we want to increase the dependace on the rador and importance
+   of jammer or eletronic war."
+
+   game.js jams from def.jam and from nothing else, and 13 of the 16 `ewair`
+   rows carried no jam at all - counted in the catalogue at b62fbf6. Seven
+   of those thirteen are right: the Nimrod R.1, the Airseeker, Archange and
+   the four French Gabriels are collectors, and every one of their own descs
+   says so. The other six were real jammers that never jammed. Worse, five of
+   them fired the jammer: "Jammer pods and chaff dispensers" (AD-5Q, dmg 88),
+   "ALQ-99 tactical jamming pods" (1970s EA-6B, 118), "ALQ-99E jamming suite"
+   (EF-111A, 155), "ALQ-99" (EA-18G, 200) and "none (jamming and SIGINT
+   payloads)" (Y-8G, 209) were anti-radiation MISSILES, and so were the
+   "Gabriel ELINT suite with communications jamming" (74) and "C-160G Gabriel
+   ELINT/COMINT with jamming transmitters" (112) on two listening aircraft.
+   A receiver does not blow up the radar it is listening to.
+
+   THE RULE HERE: every airframe gets the jamming its real type did, and an
+   anti-radiation missile only where that airframe really carried one - the
+   EA-6B from the ICAP II rebuild of the mid-1980s and the EA-18G, both with
+   AGM-88 HARM. Those two stay HELD (manual here, and noAuto by role at the
+   tail of generations.js): the only way they leave the rail without an order
+   is the self-launch at a radiating battery the owner asked for by name -
+   (owner) "i need the ew aircraft engaing a radiating emitter automatically"
+   - which is entities.js seadTarget() and is untouched.
+
+   CALIBRATED AGAINST THE THREE THAT ALREADY JAMMED, which set the scale:
+   ew_n (EA-18G with NGJ, 2020s) 9.5 tiles at power 1.00, ew_c (J-16D) 9.0
+   at 0.95, and the Canberra T.17 of 1966 - a training jammer - 6.0 at 0.70.
+   Radius is how far the transmitters reach; power is the peak at zero range
+   and falls off linearly to the edge (G.jamAgainst). What each number buys
+   against a contemporary radar of the same generation - genContest x1.00 -
+   is peak = jamPower x ecm(jammer) / eccm(victim), and a set is burned
+   through (no picture, the 0.55 in G.radarCovers) only inside
+   R x (1 - 0.55/peak). Against the Pact (eccm 0.85) with NATO ecm 1.15:
+
+                        jam   power   peak   burned through   degraded (>0.15)
+     AD-5Q  (1956)       5.0   0.55    0.74    inside 1.3 t      inside 4.0 t
+     EA-6B  (1971)       8.0   0.85    1.15    inside 4.2 t      inside 7.0 t
+     EF-111A (1983)      9.0   0.90    1.22    inside 4.9 t      inside 7.9 t
+     EA-6B ICAP II (90s) 9.0   0.90    1.22    inside 4.9 t      inside 7.9 t
+     EA-18G (2009)       9.0   0.95    1.29    inside 5.2 t      inside 8.0 t
+     Y-8G (PLA, ecm 1.12, against NATO eccm 1.20)
+                        10.5   0.70    0.65    inside 1.6 t      inside 8.1 t
+
+   The Y-8G is the one STANDOFF jammer in the set and its numbers say so: a
+   four-engined transport has the power and the aerials for the widest bubble
+   of any aeroplane here, and it jams by brute noise from an orbit rather than
+   by the reactive, receiver-cued jamming the ALQ-99 aircraft do from inside a
+   package - so it degrades everything in a wide circle and blinds little. The
+   American rows rise with their decade and stay under ew_n, which is the same
+   Growler a decade on with the Next Generation Jammer.
+
+   WHERE IT HAS TO BE TO DO ANY OF THAT, measured under jsc: three Pact SAM
+   launchers of the jammer's decade, seen, against four strike aircraft five
+   tiles out from them, 20 s a case. Given a PATROL over the package, every
+   airframe here holds short at 14 to 24 tiles - G.standoffPoint keeps a
+   defenceless aircraft 1.25 x the battery's reach plus 1.5 tiles out, 14.8
+   to 18.5 tiles for this game's SAMs - and no bubble reaches that far, so
+   the battery's radar reads 0.00, as it did for ew_n and ew_c before any of
+   this. Pinned six tiles from the battery, the Prowlers, the EF-111A and the
+   Y-8G put 0.29 to 0.41 on its radar and cut its accuracy term from 1.10 to
+   0.82-0.90 (ew_n 0.76, ew_c 0.82; the AD-5Q's five tiles do not reach).
+   SENT IN - a cap marked `commit`, which is the player's STRIKE on a
+   hostile with a jammer selected, or the commander's flyJammer() in ai.js
+   when one of its strikes is under a battery - it orbits 3 to 5 tiles off,
+   puts 0.59 to 0.75 on the radar (the Canberra 0.33, the AD-5Q 0.26), takes
+   the battery's picture away 45-81% of the time and cuts the accuracy term
+   to 0.37-0.56. And it pays
+   for it: alone over three batteries, with nothing held up for it, an
+   EF-111A lasted 12.3 s, a Prowler 10.4 to 17.3, the Y-8G 14.7 and the 2009
+   Growler 3.5. That is the trade, and it is the commander's to make.
+
+   Run AFTER the ARM floor above, so the Growler's round keeps the 15.5
+   tiles it already had; the removed rounds are deleted outright once no row
+   carries them, so nothing can hang a jamming pod back on as a missile. */
+var EW_AIRFRAME = {
+  /* Douglas AD-5Q, EA-1F from 1962: a widened Skyraider with three
+     countermeasures operators behind the pilot, noise jammers in underwing
+     pods and chaff. The first carrier-based electronic warfare aircraft;
+     VAW-13 flew them off Vietnam until 1969. No anti-radiation missile ever
+     flew on one - the Shrike arrived in 1965 on strike aircraft. And it now
+     flies like a Skyraider: the row had speed 6.54, barely short of the jet
+     EA-6B's 6.84, against 4.82 for the AD-4 it was built from. The
+     widened AD-5 was the slower of the two, so 4.7, with the AD-4's turn. */
+  nato_e50_ewair: { jam: 5.0, jamPower: 0.55, weapons: [], ammo: 0, speed: 4.7, turn: 1.5,
+    desc: "Include with caution - 1950s electronic warfare is mostly chaff, noise jammers carried inside bombers, and dedicated ferret aircraft (RB-47H, RB-50) flying peripheral intelligence missions rather than escorting strikes. The AD-5Q is the first carrier-based dedicated EW aircraft, four crew in a widened Skyraider fuselage: noise jammers in underwing pods and chaff, and nothing to shoot with. It blinds a 1950s set only when it is nearly on top of it." },
+  /* Grumman EA-6B, in service July 1971, first to war with VAQ-132 in 1972:
+     the ALQ-99 in up to five external pods, two transmitters each, and
+     three officers working them by hand. AGM-88 HARM entered service in
+     1985 and reached the Prowler with ICAP II - this row ends in 1979, so it
+     carries none. The old desc also said "after the EF-111 retired", which
+     is 1998 and nineteen years past this row's last day. */
+  nato_e60_ewair: { jam: 8.0, jamPower: 0.85, weapons: [], ammo: 0,
+    desc: "Four crew - one pilot, three electronic countermeasures officers - because jamming in this era is a manual craft, not an automated one. The ALQ-99 rides in up to five pods under the wings, and the Prowler first went to war over North Vietnam in 1972 with VAQ-132. It carries no missile of any kind in this decade: HARM reached it only with the ICAP II rebuild of the mid-1980s. Its whole value is the bubble, and it is the strongest jammer of its day." },
+  /* General Dynamics/Grumman EF-111A Raven, IOC 1983, 42 converted: the
+     ALQ-99E in the weapons-bay canoe, automated down to two crew, fast
+     enough to go in with the package. Unarmed from first flight to
+     retirement in 1998 - its own desc says so, and the old row gave it a
+     155-damage missile named after the jamming suite. */
+  nato_e80_ewair: { jam: 9.0, jamPower: 0.90, weapons: [], ammo: 0,
+    desc: "The 'Spark Vark' - an F-111 with the whole EA-6B jamming suite automated down to two crew instead of four, fast enough to keep up with a strike package rather than trailing behind it. Carried no missiles of any kind, so it could not shoot back. One is credited with a kill on 17 January 1991 by manoeuvring an Iraqi Mirage F1 into the ground. Retired in 1998, leaving the Prowler to do the job alone." },
+  /* EA-6B ICAP II, the 1990s Prowler: the same pods with new transmitters
+     and HARM on the wing - fired in Desert Storm and over Kosovo. The row
+     was named "ICAP III", which is the 2005 upgrade and outside the decade.
+     The HARM row it already carries is right and is kept, held. */
+  nato_e90_ewair: { jam: 9.0, jamPower: 0.90, full: "Grumman EA-6B Prowler, ICAP II" },
+  /* Boeing EA-18G Growler, IOC September 2009: three ALQ-99 pods cued by the
+     ALQ-218 wideband receiver, which is why it gets more out of the same
+     pods than a Prowler, and AGM-88 HARM - fired over Libya in 2011. Its
+     round was named "ALQ-99", the jamming pod. Just under ew_n, which is the
+     same aeroplane with the Next Generation Jammer. */
+  nato_e00_ewair: { jam: 9.0, jamPower: 0.95, arm: "AGM-88 HARM",
+    desc: "The game's electronic attack aircraft, and the first US jammer that can defend itself - it keeps the Super Hornet's radar and can carry AMRAAM, unlike the unarmed EF-111A. Two crew instead of the Prowler's four, because the ALQ-218 receivers cue the jamming automatically. Only about 160 exist and they cover the entire US joint force's tactical electronic attack. The HARM on the wing is held for an order or a radiating battery." },
+  /* Shaanxi Y-8G (GX-3): standoff jamming from a transport orbit. No
+     anti-radiation missile - the old row's round was literally named "none
+     (jamming and SIGINT payloads)" and did 209. And it flew like a fighter:
+     jet:true and speed 7.72, faster than the EF-111A (7.22) and the EA-18G
+     (7.52), on an airframe air_specs.js already draws as four turboprops. A
+     Y-8 is an An-12 - 662 km/h at best, against 671 for the C-130J this game
+     flies at 3.4 and 513 for the Transall at 3.0 - so 3.3, a transport's
+     turn, and no probe (jet:false is what keeps heavyair.js from making it
+     refuelable). The name drops the Y-9G, which is a 2010s aircraft and
+     outside this row's decade. Open sources on all of these are thin, and
+     confidence stays low. */
+  pla_e00_ewair:  { jam: 10.5, jamPower: 0.70, weapons: [], ammo: 0,
+    jet: false, speed: 3.3, turn: 1.2,
+    name: "Y-8G", full: "Shaanxi Y-8G (Gaoxin-3) electronic warfare aircraft",
+    desc: "A Shaanxi Y-8 - the Chinese An-12 - rebuilt as a standoff jammer: four turboprops, a fuselage of transmitters and operators, and the widest jamming bubble of any aeroplane of its decade, meant to be worked from an orbit behind the line rather than from inside a strike package. It carries no missile. The Y-9G of the 2010s is a later aircraft and not this row. Individual variants and dates are poorly documented in open sources; most of what is published is inference from photographs of the antenna fits." },
+  /* Nord 2501 Gabriel: a listening Noratlas, and its own desc says "no
+     high-power jamming pods and no anti-radiation missiles". No jam, and
+     the missile goes. It still LISTENS: role ewair is an ear to G.esmPlot
+     and to the commander's esmSweep in ai.js, so it cues a Weasel. */
+  fra_e60_ewair:  { weapons: [], ammo: 0 },
+  /* C-160G Gabriel: two Transalls of ELINT and COMINT from 1989 to 2022.
+     The e90 and e00 rows of the same aeroplane already say "It jams nothing
+     and it kills nothing"; this one said "communications jamming" and fired
+     a 112-damage missile. */
+  fra_e80_ewair:  { weapons: [], ammo: 0,
+    desc: "Two aircraft, total. Antennas down each side of a Transall, a radome under the nose, and an operators' console fit for collection - electronic and communications intelligence, and nothing that jams. Compare the EF-111A: this is a slow turboprop that works from a standoff orbit, finds the other side's emitters and hands them on, and cannot escort a strike package anywhere." },
+};
+(function () {
+  var dropped = {};
+  for (var _ek in EW_AIRFRAME) {
+    var _ed = UNITS[_ek], _ef = EW_AIRFRAME[_ek];
+    if (!_ed) continue;
+    if (_ef.weapons) (_ed.weapons || []).forEach(function (w) { dropped[w] = 1; });
+    for (var _k in _ef) if (_k !== "arm") _ed[_k] = _ef[_k];
+    /* the ARM that is real is held, and named for what it is */
+    (_ed.weapons || []).forEach(function (w) {
+      var _w = WEAPONS[w];
+      if (!_w || !_w.antiRadiation) return;
+      _w.manual = true;
+      if (_ef.arm) _w.name = _ef.arm;
+    });
+  }
+  /* a round no row carries any more is removed, not left lying about */
+  for (var _du in UNITS) (UNITS[_du].weapons || []).forEach(function (w) { delete dropped[w]; });
+  for (var _dw in dropped) delete WEAPONS[_dw];
+})();
+
+
+/* ==================================================================
    THE SET EACH MARK ACTUALLY CARRIED
    (owner) "it is worth to have the version stat for the unit with long
    history like B52, H6, and E2"

@@ -7536,6 +7536,235 @@ try{
   })();
   }
 
+  /* ====== [75] EVERY JAMMER JAMS AND CAN BE SENT IN, EVERY EAR IS HEARD, AND ONLY A REAL ARM FLIES ======
+     game.js jams from def.jam and nothing else, and at b62fbf6 thirteen of
+     the sixteen `ewair` rows had none: six real jammers never jammed, and
+     five of them - with two listening Gabriels - fired the jamming suite as
+     a damaging anti-radiation missile ("ALQ-99E jamming suite", dmg 155).
+     eras.js EW_AIRFRAME gives each airframe what its real type did. And a
+     jammer that jams still did nothing to a battery anyone could see: its
+     bubble is shorter than every ring, and G.standoffPoint held it outside.
+     Checked here: the roster split, the calibration band the three working
+     jammers set, the missile discipline, the Y-8G and AD-5Q flying as what
+     they are; on the board, an EF-111A jamming a battery's radar, a C-160G
+     that jams nothing and whose ear puts an unseen battery on the player's
+     minimap, a patrol that holds short against a cap marked `commit` that
+     goes in, the STRIKE command giving that commit; and the commander flying
+     its collector, its AEW aircraft (which the first cut of this grounded at
+     peace) and sending its jammer in over a battery with one of its strikes
+     under it. Everything spawned is removed and the fog is put back. */
+  if (inHalf(1)) {
+  log("\n[75] EVERY JAMMER JAMS AND CAN BE SENT IN, EVERY EAR IS HEARD, AND ONLY A REAL ARM FLIES");
+  (function(){
+    var JAMMERS=["nato_e50_ewair","nato_e60_ewair","nato_e80_ewair","nato_e90_ewair","nato_e00_ewair",
+                 "ew_n","pla_e00_ewair","ew_c","gbr_e60_ewair"];
+    var EARS=["gbr_e80_ewair","ew_b","fra_e60_ewair","fra_e80_ewair","fra_e90_ewair","fra_e00_ewair","ew_f"];
+    var REAL_ARM={ nato_e90_ewair:1, nato_e00_ewair:1, ew_n:1, ew_c:1 };
+    var every=[], k;
+    for (k in UNITS) if (UNITS[k].role==="ewair") every.push(k);
+    /* A row this section does not name is judged by what it carries - a jam
+       figure makes it a jammer - and only reported, so a real addition (the
+       Soviet Yak-28PP or Su-24MP, say) does not fail this for existing. */
+    var named=JAMMERS.concat(EARS), odd=every.filter(function(id){ return named.indexOf(id)<0; });
+    odd.forEach(function(id){ if (UNITS[id].jam>0) JAMMERS.push(id); else EARS.push(id); });
+    chk("every EW row this section names is in the roster",
+        named.every(function(id){ return !!UNITS[id]; }),
+        every.length+" ewair rows"+(odd.length?"; also judged: "+odd.join(", "):""));
+    /* ---- 1. the jammer, and the calibration the three working ones set ---- */
+    var mute=JAMMERS.filter(function(id){ var u=UNITS[id]; return !(u && u.jam>0 && u.jamPower>0); });
+    chk("every airframe whose real type jammed carries a jammer",
+        mute.length===0, mute.length ? mute.length+" never jam: "+mute.join(", ") : JAMMERS.length+" jammers");
+    var loud=EARS.filter(function(id){ return UNITS[id] && UNITS[id].jam>0; });
+    chk("and no collector does", loud.length===0, loud.join(", ")||EARS.length+" collectors, jam 0");
+    var ref=UNITS.ew_n, band=[];
+    JAMMERS.forEach(function(id){ var u=UNITS[id]; if(!u || !(u.jam>0)) return;
+      if (u.jam<4.5 || u.jam>11 || u.jamPower<0.5 || u.jamPower>1 ||
+          (id!=="ew_n" && u.jam*u.jamPower>ref.jam*ref.jamPower))
+        band.push(id+" "+u.jam+"/"+u.jamPower); });
+    chk("inside the band the Canberra (6.0/0.70) and ew_n (9.5/1.00) set, none above today's Growler",
+        band.length===0, band.join("; ")||"ok");
+    /* ---- 2. the missile ---- */
+    var fake=[], held=[];
+    every.forEach(function(id){ (UNITS[id].weapons||[]).forEach(function(w){ var W=WEAPONS[w];
+      if(!W){ fake.push(id+" -> missing "+w); return; }
+      if (W.antiRadiation && !REAL_ARM[id]) fake.push(id+": \""+W.name+"\" dmg "+W.dmg);
+      else if (/jamm|ALQ|ELINT|SIGINT|^none/i.test(W.name)) fake.push(id+": \""+W.name+"\"");
+      if (W.antiRadiation && !(W.manual && UNITS[id].noAuto)) held.push(id+": \""+W.name+"\""); }); });
+    chk("an anti-radiation missile only where the airframe really carried one, named for the missile",
+        fake.length===0, fake.length ? fake.length+": "+fake.slice(0,4).join("; ") : "EA-6B ICAP II, EA-18G x2, J-16D");
+    chk("and every one of them is held, on the round and on the airframe", held.length===0, held.join("; ")||"all held");
+    var gh=UNITS.nato_e00_ewair, gw=gh && WEAPONS[gh.weapons[0]];
+    chk("the 2009 Growler's round is AGM-88 HARM, not the ALQ-99 pod",
+        !!gw && /AGM-88/.test(gw.name), gw ? gw.name : "none");
+    /* ---- 3. the airframes fly as what they are ---- */
+    var y8=UNITS.pla_e00_ewair, ad5=UNITS.nato_e50_ewair, ad4=UNITS.nato_e50_cas, c160=UNITS.fra_e80_ewair;
+    chk("the Y-8G is a four-turboprop transport, not a jet faster than the EF-111A, and has no probe",
+        !!y8 && !y8.jet && !y8.refuelable && y8.speed<=4 && c160 && y8.speed>=c160.speed && !/Y-9/.test(y8.name),
+        y8 ? y8.name+" speed "+y8.speed+" jet "+y8.jet+" refuelable "+!!y8.refuelable+" (C-160G "+(c160&&c160.speed)+", EF-111A "+UNITS.nato_e80_ewair.speed+")" : "missing");
+    chk("and the AD-5Q flies no faster than the AD-4 Skyraider it was built from",
+        !!ad5 && !!ad4 && ad5.speed<=ad4.speed, ad5 ? "AD-5Q "+ad5.speed+", AD-4 "+(ad4&&ad4.speed) : "missing");
+    /* ---- 4. on the board ---- */
+    var M=Game.map, T=CFG.TILE, made=[], spot=null, wasFog=Game.fogEnabled;
+    /* out of earshot of everything of ours: a battery radar of 12 tiles is
+       heard at 1.9x that, so nothing we own may stand within 26 tiles - or
+       the collector would not be the ear being tested */
+    var ours=P.units.concat(P.buildings).filter(function(e){ return !e.dead; });
+    var clear=function(x,y){ for (var i=0;i<ours.length;i++)
+      if (U.dist(ours[i].x,ours[i].y,x*T+16,y*T+16)<26*T) return false; return true; };
+    var mx=((P.homeX+E.homeX)/2/T)|0, my=((P.homeY+E.homeY)/2/T)|0;
+    for (var r=0;r<70 && !spot;r++) for (var a=0;a<64 && !spot;a++){
+      var x=(mx+Math.cos(a/64*6.283)*r)|0, y=(my+Math.sin(a/64*6.283)*r)|0;
+      if (x<26||y<26||x>=M.W-26||y>=M.H-26) continue;
+      if (GameMap.passable(M,x,y,"ground") && !Game.tileBlocked(x,y,null) && clear(x,y)) spot={x:x,y:y};
+    }
+    if (!spot) { chk("open ground for the battery", false, "none"); return; }
+    /* the approach: from the battery toward our home */
+    var ax=P.homeX-(spot.x*T+16), ay=P.homeY-(spot.y*T+16), al=Math.hypot(ax,ay)||1; ax/=al; ay/=al;
+    var cv=document.getElementById("cv");
+    function key(k){ var ev={type:"keydown",key:k,shiftKey:false,ctrlKey:false,metaKey:false,altKey:false,preventDefault:function(){}};
+      (__listeners["win:keydown"]||[]).slice().forEach(function(f){ f(ev); });
+      ev.type="keyup"; (__listeners["win:keyup"]||[]).slice().forEach(function(f){ f(ev); }); }
+    function sel(list){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
+      for(var j=0;j<list.length;j++){ list[j].selected=true; s.push(list[j]); } }
+    function click(wx,wy){ Render.setCam(wx,wy); var rc=cv.getBoundingClientRect();
+      cv.dispatchEvent({type:"mousedown",button:0,clientX:rc.left+Render.sx(wx,wy),
+        clientY:rc.top+Render.sy(wx,wy,GameMap.elevAt(M,(wx/T)|0,(wy/T)|0)),shiftKey:false,ctrlKey:false,metaKey:false});
+      (__listeners["win:mouseup"]||[]).slice().forEach(function(f){ f({type:"mouseup",button:0,shiftKey:false,detail:1}); }); }
+    var cam0={x:Render.cam.x,y:Render.cam.y};
+    function heardList(){ return Game.esmHeard ? Game.esmHeard(P) : []; }
+    try {
+      var sam=Game.spawnUnitAt(E,"pact_e80_sam",spot.x*T+16,spot.y*T+16);
+      if (sam) { made.push(sam); sam.stance="hold"; sam.order={type:"idle"}; }
+      var flyer=function(id, dx){ var u=Game.spawnUnitAt(P,id,sam.x+ax*dx*T,sam.y+ay*dx*T); if(u){ made.push(u); u.stance="hold"; u.parked=false; u.order={type:"hover"}; } return u; };
+      var base=sam ? Game.jamAgainst(E, sam) : 0;
+      var ef=sam && flyer("nato_e80_ewair", 4);
+      var jA=ef ? Game.jamAgainst(E, sam) : 0, jT=ef ? Game.jamAt(E, sam.x, sam.y) : 0;
+      chk("an EF-111A four tiles off a Pact battery jams its radar and its radar-laid shots",
+          !!ef && jA>0.15 && jT>0.15 && jA>base,
+          "jamAgainst "+jA.toFixed(2)+" (was "+base.toFixed(2)+"), jamAt "+jT.toFixed(2)+" (0.15 is where it starts to bite)");
+      if (ef) { ef.dead=true; Game.sweepDead(); }
+      var gb=sam && flyer("fra_e80_ewair", 4);
+      if (gb) tick(20);                     // G.esmPlot is cached for half a second
+      if (gb) { gb.hp=gb.maxHp; sam.hp=sam.maxHp; }
+      var heard=gb ? Game.esmPlot(P).has(sam.id) : false, jG=gb ? Game.jamAgainst(E, sam) : -1;
+      /* and it is the Gabriel that hears it: take it away and nothing does */
+      if (gb) { gb.dead=true; Game.sweepDead(); tick(20); sam.hp=sam.maxHp; }
+      var deaf=gb ? !Game.esmPlot(P).has(sam.id) : false;
+      chk("a C-160G Gabriel in the same place jams nothing, and it is the ear that hears the battery",
+          !!gb && jG===base && heard && deaf,
+          gb ? "jamAgainst "+jG.toFixed(2)+" (was "+base.toFixed(2)+"); on our ESM plot with it "+heard+", without it "+!deaf : "not spawned");
+      /* ---- 4a. what it hears is on the player's map ----
+         Sixteen tiles out: past the Gabriel's own radar (11) and sight (9.9),
+         inside the 22.8 at which a 12-tile set is heard. With the fog on the
+         battery is unseen, so it is on G.esmHeard and the minimap draws a
+         violet diamond on it; without the Gabriel, nothing. */
+      Game.fogEnabled=true;
+      var ear2=sam && flyer("fra_e80_ewair", 16);
+      if (ear2) { Game.recomputeFog(); tick(20); ear2.hp=ear2.maxHp; Game.recomputeFog(); }
+      var onList=ear2 ? heardList().indexOf(sam)>=0 : false, seen=sam ? Game.visibleTo(P,sam) : true;
+      var S=196/M.W, pen=null, marks=0;
+      var ctx=new Proxy({}, { get:function(t,k){ if(k in t) return t[k];
+          if(k==="moveTo") return function(x,y){ if(pen==="rgba(200,140,255,0.95)" && Math.abs(x-sam.x/T*S)<0.01 && Math.abs(y-(sam.y/T*S-3))<0.01) marks++; };
+          if(k==="createImageData") return function(w,h){ return {data:new Uint8ClampedArray(w*h*4),width:w,height:h}; };
+          return function(){}; },
+        set:function(t,k,v){ if(k==="strokeStyle") pen=v; t[k]=v; return true; } });
+      var mm={ width:196, height:196, getContext:function(){ return ctx; } };
+      if (ear2 && Render.drawMinimapFrom) Render.drawMinimapFrom(mm, Game, null, null);
+      var marks1=marks; marks=0;
+      if (ear2) { ear2.dead=true; Game.sweepDead(); tick(20); sam.hp=sam.maxHp; Game.recomputeFog(); }
+      if (Render.drawMinimapFrom) Render.drawMinimapFrom(mm, Game, null, null);
+      chk("what a Gabriel hears and nobody sees is drawn on the player's minimap, and goes when the ear does",
+          !!ear2 && !seen && onList && marks1===1 && marks===0 && heardList().indexOf(sam)<0,
+          ear2 ? "unseen "+!seen+", on G.esmHeard "+onList+", diamonds on it "+marks1+" with the ear, "+marks+" without" : "not spawned");
+      Game.fogEnabled=wasFog;
+      /* ---- 4b. held short on a patrol, in on a commit ----
+         The ring is drawn from batteries we can see, and with the fog off we
+         see this one: 1.25 x 12.5 + 1.5 = 17.1 tiles for a jammer. A jet
+         held there swings about the point, so "short" is judged as outside
+         the battery's own 12.5-tile reach with nothing on its radar. */
+      /* 12 s from 26 tiles out, judged on the last 4: a jet on a cap swings
+         round its point, so one sample can catch it at the far side of a turn */
+      var runIn=function(order){
+        var u=flyer("nato_e80_ewair", 26); if(!u) return null;
+        u.give(order);
+        var n=Math.round(12/CFG.DT), from=n-Math.round(4/CFG.DT), sd=0, sj=0, mj=0, k2=0;
+        for (var i=0;i<n;i++){ Game.tick(CFG.DT); u.hp=u.maxHp; u.fuel=u.fuelMax; sam.hp=sam.maxHp;
+          if (i>=from) { var jj=Game.jamAgainst(E,sam); sd+=U.dist(u.x,u.y,sam.x,sam.y)/T; sj+=jj; if(jj>mj) mj=jj; k2++; } }
+        var res={ d:sd/k2, jam:sj/k2, max:mj, t:u.order.type };
+        u.dead=true; Game.sweepDead(); return res;
+      };
+      var capR=sam && runIn({ type:"cap", x:sam.x, y:sam.y });
+      var comR=sam && runIn({ type:"cap", x:sam.x, y:sam.y, commit:true });
+      chk("an EF-111A on patrol over a battery it can see holds short, and jams nothing there",
+          !!capR && capR.d>12.5 && capR.max===0, capR ? capR.d.toFixed(1)+" t off on average, jam on its radar at most "+capR.max.toFixed(2) : "none");
+      chk("sent in (a cap marked commit) it flies through the ring and jams the battery",
+          !!comR && comR.d<6.5 && comR.jam>0.3 && comR.t==="cap", comR ? comR.d.toFixed(1)+" t off on average, jam on its radar "+comR.jam.toFixed(2)+" (at most "+comR.max.toFixed(2)+"), order "+comR.t : "none");
+      /* ---- 4c. the STRIKE command is what gives the commit ---- */
+      var ef2=sam && flyer("nato_e80_ewair", 26), ui1=null, ui2=null;
+      if (ef2 && cv && UI.selection) {
+        sel([ef2]); key("t"); click(sam.x, sam.y);
+        ui1={ t:ef2.order.type, c:ef2.order.commit===true, d:U.dist(ef2.order.x||0,ef2.order.y||0,sam.x,sam.y)/T };
+        var gx=sam.x+ax*20*T, gy=sam.y+ay*20*T;
+        sel([ef2]); key("t"); click(gx, gy);
+        ui2={ t:ef2.order.type, c:ef2.order.commit===true, d:U.dist(ef2.order.x||0,ef2.order.y||0,gx,gy)/T };
+        sel([]);
+      }
+      chk("STRIKE on the battery with a jammer selected sends it in over the battery; on open ground it patrols",
+          !!ui1 && ui1.t==="cap" && ui1.c && ui1.d<1 && !!ui2 && ui2.t==="cap" && !ui2.c && ui2.d<2,
+          ui1 ? "on the battery: "+ui1.t+(ui1.c?" commit":"")+" "+ui1.d.toFixed(1)+" t off it; on the ground: "+ui2.t+(ui2.c?" commit":"")+" "+ui2.d.toFixed(1)+" t off the click" : "no canvas");
+      /* ---- 5. the commander flies them ----
+         At peace airSweepPoint() is null, so the station an EW aircraft is
+         given here is the early-warning one, which does not depend on it. */
+      var ai1=function(id){ var u=Game.spawnUnitAt(E,id,E.homeX,E.homeY);
+        if (u) { made.push(u); u.order={type:"hover"}; u.parked=false; }
+        var t0=Game.time; while (u && !u.dead && u.order.type==="hover" && Game.time-t0<8) { tick(3); if(u) { u.hp=u.maxHp; u.fuel=u.fuelMax; } }
+        return u ? { t:u.order.type, s:(Game.time-t0).toFixed(1), d:(u.order.x!==undefined ? U.dist(u.order.x,u.order.y,E.homeX,E.homeY)/T : 0) } : null; };
+      var col=ai1("fra_e90_ewair");
+      chk("the commander flies its collector to a station instead of leaving it hovering at home",
+          !!col && col.t==="cap", col ? "order "+col.t+" after "+col.s+"s, "+col.d.toFixed(1)+" t out" : "not spawned");
+      var aew=ai1("nato_e80_awacs");
+      chk("and its early-warning aircraft, which carries a derived jam figure, still flies its own station",
+          !!aew && aew.t==="cap" && aew.d>1, aew ? "order "+aew.t+" after "+aew.s+"s, "+aew.d.toFixed(1)+" t out" : "not spawned");
+      /* ---- 5a. and sends its jammer in over a battery its strike is under ----
+         Our battery, held; an enemy launcher beside it as the commander's eye;
+         an enemy A-10 pressing a commanded attack six tiles inside the
+         battery's reach, all where the Pact battery above stood. The
+         commander's unarmed EF-111A should be given a cap
+         over our battery marked commit - and, the strike called off, come home
+         (at peace there is no station to go back to). */
+      if (sam) { sam.dead=true; Game.sweepDead(); }
+      var pb=Game.spawnUnitAt(P,"nato_e80_sam",spot.x*T+16,spot.y*T+16), eye=null, stk=null, ej=null, got=null, back=null;
+      if (pb) { made.push(pb); pb.stance="hold"; pb.order={type:"idle"};
+        eye=Game.spawnUnitAt(E,"pact_e80_sam",pb.x-ax*3*T,pb.y-ay*3*T); if(eye){ made.push(eye); eye.stance="hold"; eye.order={type:"idle"}; }
+        stk=Game.spawnUnitAt(E,"nato_e80_cas",pb.x-ax*6*T,pb.y-ay*6*T); if(stk){ made.push(stk); stk.parked=false; stk.stance="hold"; stk.give({type:"attack",target:pb}); }
+        ej=Game.spawnUnitAt(E,"nato_e80_ewair",E.homeX,E.homeY); if(ej){ made.push(ej); ej.order={type:"hover"}; ej.parked=false; }
+        var t1=Game.time;
+        while (ej && !ej.dead && !(ej.order.type==="cap" && ej.order.commit) && Game.time-t1<10) {
+          tick(3); pb.hp=pb.maxHp; ej.hp=ej.maxHp; ej.fuel=ej.fuelMax;
+          if (stk && !stk.dead) { stk.hp=stk.maxHp; stk.fuel=stk.fuelMax; if (stk.order.type!=="attack") stk.give({type:"attack",target:pb}); }
+        }
+        got={ t:ej.order.type, c:ej.order.commit===true, d:ej.order.x!==undefined ? U.dist(ej.order.x,ej.order.y,pb.x,pb.y)/T : -1, s:(Game.time-t1).toFixed(1) };
+        if (stk) { stk.dead=true; Game.sweepDead(); }
+        var t2=Game.time;
+        while (ej && !ej.dead && ej.order.type==="cap" && ej.order.commit && Game.time-t2<10) { tick(3); pb.hp=pb.maxHp; ej.hp=ej.maxHp; ej.fuel=ej.fuelMax; }
+        back={ t:ej.order.type, s:(Game.time-t2).toFixed(1) };
+      }
+      chk("the commander sends its jammer in over a battery one of its strikes is under",
+          !!got && got.t==="cap" && got.c && got.d>=0 && got.d<2,
+          got ? "order "+got.t+(got.c?" commit":"")+" "+got.d.toFixed(1)+" t off our battery after "+got.s+"s" : "not built");
+      chk("and brings it out again when the strike is over", !!back && !(back.t==="cap"),
+          back ? "order "+back.t+" after "+back.s+"s" : "not built");
+    } finally {
+      Game.fogEnabled=wasFog; if (Game.recomputeFog) Game.recomputeFog();
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      Game.sweepDead();
+      try { sel([]); } catch(e){}
+      Render.setCam(cam0.x, cam0.y);
+    }
+    chk("and the board is as it was", made.every(function(u){ return P.units.indexOf(u)<0 && E.units.indexOf(u)<0; }), "");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time
