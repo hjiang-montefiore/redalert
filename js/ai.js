@@ -3298,6 +3298,25 @@ function makeCommander() {
         });
       }
     }
+    /* ---- the sea surface: our surface radar and our boats' sonar ----
+       (owner) "ai should have the same fog like us." A warship's sight is its
+       optics now, not the reach of its anti-ship missile, and a boat's is its
+       periscope; what they hold further out on the water is G.seaHolds
+       (game.js) - a ship's surface-search radar out to its own anti-ship
+       reach, a submarine's sonar - and the player's fog is lit on exactly
+       those hulls' tiles. This commander's picture takes the same hulls from
+       the same two sensors, and nothing else: not the water round them, not
+       an aircraft over it, nothing ashore. What its fleet may fire on and
+       what it knows are one list, as they are for the player. */
+    if (G.seaHolds) {
+      for (const o of G.players) {
+        if (o === P || G.allied(P, o) || o.defeated) continue;
+        for (const e of o.units) {
+          if (e.dead || e.carried || e.layer !== "sea") continue;
+          if (G.seaHolds(P, e)) noteSighting(e, now);
+        }
+      }
+    }
     /* ---- electronic support measures ----
        A radar that is transmitting announces its own position. You do not need
        to see the dish, or get an echo back off it: you only have to hear it,

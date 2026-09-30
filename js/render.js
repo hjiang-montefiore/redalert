@@ -597,7 +597,11 @@ var Render = (function () {
        so every single barrier contact would have been invisible. Nodes are
        deliberately NOT given sight instead: recomputeFog reveals GROUND to
        whatever it is handed, which would give the player surface contacts and
-       terrain that a hydrophone cannot possibly provide. */
+       terrain that a hydrophone cannot possibly provide.
+       A submarine's OWN sonar is the one set that does hand over a surface
+       hull, because that is how a boat whose eyes are a periscope finds its
+       targets - and even then only the hull: G.seaHolds (game.js) lights the
+       one tile it sits on, never the water, the sky or the ground round it. */
     if (e.layer === "sub") return G.canSeeSub(G.human, e);
     const f = G.fog[e.ty * G.map.W + e.tx];
     if (e.kind === "building") return f >= 1;        // structures stay on map once seen

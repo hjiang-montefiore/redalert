@@ -473,7 +473,27 @@
      Indirect fire is deliberately left alone. A howitzer is SUPPOSED to shoot
      further than it can see - that is what a spotter is for, and the game
      already models it that way with the bombard order. Only weapons that must
-     find their own target get the eyes to do it. */
+     find their own target get the eyes to do it.
+
+     ...and only a weapon its crew aims through its OWN sight. Measured on
+     b62fbf6 and again on b4a9943, this loop raised 535 sights to the longest
+     weapon aboard, and for 186 of them that weapon is not aimed by anybody's
+     eye at all: a Pershing II saw 31.4 tiles and a HIMARS 30.4, an Ohio 22.4
+     and a Virginia 19.4 from under the water, a Harpoon boat 14.4, an F-16CJ
+     and a B-52H 16.4 - against 8 for an Abrams and 9.5 for a Humvee - and
+     G.recomputeFog lifted the fog over every tile of it (1,045 tiles for one
+     HIMARS, 164 for an Abrams). A round fired on a cue - firesOnCue() in
+     rules.js - now leaves its launcher's eyes where its optics put them and
+     reaches past them on what the SIDE holds instead: Unit.acqGate and
+     G.sideSees. Those 186 come down - 170 to their card, the five era rows
+     below among them, and 16 warships only as far as the gun or point-defence
+     missile they also carry - and none goes up; the other 349, for guns and
+     crew-aimed missiles, are raised exactly as before.
+     A HIMARS now lifts 80 fog tiles.
+     Five era launchers had the raised figure copied into their own rows in
+     eras.js - Sergeant 27.4, Lance 29.0 and 22, Corporal 24.4, Hades 26 - so
+     this loop could never bring them down; they carry the 5.0 every other
+     launcher card in the game does. */
   var INDIRECT_ROLE = { mlrs: 1, spg: 1, mortar: 1 };
   var nSight = 0;
   for (var uid4 in UNITS) {
@@ -483,9 +503,33 @@
     for (var q4 = 0; q4 < u4.weapons.length; q4++) {
       var w4 = WEAPONS[u4.weapons[q4]];
       if (!w4 || w4.proj === "arc") continue;      /* lobbed = indirect */
+      if (typeof firesOnCue === "function" && firesOnCue(u4, w4)) continue;   /* the side aims it */
       if (w4.range > reach) reach = w4.range;
     }
     if (reach > (u4.sight || 0)) { u4.sight = Math.round((reach + 0.4) * 10) / 10; nSight++; }
+  }
+
+  /* ---- low observability, read off the signature ----
+     Here rather than in rules.js because eras.js and heavyair.js have to have
+     built their airframes first. rules.js (stealthFromRcs) says why and how
+     much: an airframe that states its own figure keeps it; one with the very
+     signature of such an airframe takes that figure, so the same signature
+     earns the same stealth in every era; anything else is on the curve.
+     Measured: the F-117A (e80, e90) and the e00 F-22A 0.65, the e90 B-2A 0.75,
+     the e00 F-35A 0.62 (the F-35C's 0.009), the e00 J-20 0.58 - all 0 before. */
+  var HAND_LO = {};
+  for (var uidH in UNITS) {
+    var uH = UNITS[uidH];
+    if (!uH || uH.layer !== "air" || uH.stealth === undefined || uH.rcs === undefined) continue;
+    var hH = HAND_LO[uH.rcs] || (HAND_LO[uH.rcs] = { sum: 0, n: 0 });
+    hH.sum += uH.stealth; hH.n++;
+  }
+  for (var uidL in UNITS) {
+    var uL = UNITS[uidL];
+    if (!uL || uL.layer !== "air" || uL.stealth !== undefined) continue;
+    if (typeof stealthFromRcs !== "function" || !(stealthFromRcs(uL.rcs) > 0)) continue;
+    var hL = HAND_LO[uL.rcs];
+    uL.stealth = hL ? Math.round(hL.sum / hL.n * 100) / 100 : stealthFromRcs(uL.rcs);
   }
 
   /* Optics last, so it is applied to the finished figure rather than being

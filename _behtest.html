@@ -8532,6 +8532,246 @@ try{
   })();
   }
 
+  /* ====== [76] STEALTH IS WHAT THE SIGNATURE EARNS, AND A LAUNCHER SEES WHAT ITS OPTICS SEE ======
+     Two faults in the sensor model, measured on b62fbf6 and again on b4a9943.
+     STEALTH: only the eight e20 airframes with a hand-set def.stealth had any.
+     The F-117A (e80, e90), the e90 B-2A and the e00 F-22A, F-35A and J-20 had
+     a radar signature and nothing else, so they broke 0% of missile locks and
+     a Stinger team picked them up at the full 10.4 tiles it picks up an F-4
+     at. generations.js now reads the figure off the signature (rules.js
+     stealthFromRcs): the same signature earns the same figure in every era,
+     and the eight keep their own.
+     SIGHT: generations.js raised 535 sights to the longest weapon aboard, so a
+     HIMARS saw 30.4 tiles, an Ohio 22.4 from under the water and a Harpoon
+     boat 14.4, the fog lifted over all of it (1,721 tiles for the HIMARS below), and
+     an Ohio put a Trident into a tank sixteen tiles inland that nobody on its
+     side had seen. A round fired on a cue (rules.js firesOnCue) no longer
+     stretches its launcher's eyes; past them it goes only on what the SIDE
+     holds - G.sideSees: the fog for the human, the same sources for a
+     commander - and blind on what nobody holds. At sea a warship's surface
+     radar and a boat's own sonar hold the HULLS (G.seaHolds) - never the
+     aircraft over the same water, for either seat.
+     No check here asserts that a ballistic or land-attack round fires by
+     itself: the Ohio is only ever shown NOT to, and what a scout gives its
+     side is read off G.sideSees and an ordered volley.
+     The side's picture IS the fog, and this page plays with the fog off, so
+     it is switched on for those checks and put back. Nothing is ticked.
+     Everything is put back: units spawned here are gone, the fog grid and its
+     switch, G.emitting, the clock, both commanders' books and the projectile
+     list are as they were, and the match's RNG has not been drawn on. */
+  if (inHalf(1)) {
+  log("\n[76] STEALTH IS WHAT THE SIGNATURE EARNS, AND A LAUNCHER SEES WHAT ITS OPTICS SEE");
+  (function(){
+    var TS=CFG.TILE, M=Game.map, made=[], rng=Game.rng, clock=Game.time;
+    var fogOn=Game.fogEnabled, fog0=new Uint8Array(Game.fog), emit0=Game.emitting;
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats), nProj=Combat.projectiles.length;
+    function mk(p,id,x,y){ var u=Game.spawnUnitAt(p,id,x*TS+16,y*TS+16); if(u){ made.push(u); u.order={type:"idle"}; u.stance="hold"; if(u.layer==="air") u.parked=false; } return u; }
+    function pass(x,y,kind){ return x>1&&y>1&&x<M.W-2&&y<M.H-2&&GameMap.passable(M,x,y,kind)&&!Game.tileBlocked(x,y,null); }
+    /* nobody within r tiles - or, given `who`, nobody of that side */
+    function lonely(x,y,r,who){ var n=0; Game.grid.query(x*TS+16,y*TS+16,r*TS,function(e){ if(!e.dead && (!who || e.owner===who)) n++; }); return n===0; }
+    /* nobody of `who`'s under radar at the tile either */
+    function dark(x,y,who){ return !Game.radarCovers(who,x*TS+16,y*TS+16); }
+    /* A at (ax,ay), B d tiles east of it, each clear of anybody within r, and
+       B outside the radar of every side named in `unseen` */
+    function pair(kA,kB,d,r,who,unseen){
+      for(var y=4;y<M.H-4;y+=3) for(var x=4;x+d<M.W-4;x+=3){
+        if(!pass(x,y,kA)||!pass(x+d,y,kB)||!lonely(x,y,r,who)||!lonely(x+d,y,r,who)) continue;
+        if(unseen && !unseen.every(function(p){ return dark(x+d,y,p) && dark(x,y,p); })) continue;
+        return {ax:x,ay:y,bx:x+d,by:y};
+      } return null; }
+    function near(x,y,kind){ for(var r=2;r<6;r++) for(var a=0;a<16;a++){ var an=a/16*6.283;
+      var tx=(x+Math.cos(an)*r)|0, ty=(y+Math.sin(an)*r)|0; if(pass(tx,ty,kind)) return {x:tx,y:ty}; } return null; }
+    var seed=4242, lcg=function(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+    /* N rounds of w from s at t, and how many were rolled as hits. Each round
+       is taken straight back off the list, so nothing lands on the match. */
+    function volley(s,w,t,N){ var h=0; seed=4242; Game.rng=lcg;
+      for(var i=0;i<N;i++){ var n0=Combat.projectiles.length; Combat.fire(Game,s,w,t);
+        if(Combat.projectiles.length>n0){ if(Combat.projectiles[n0].hit) h++; Combat.projectiles.length=n0; } }
+      Game.rng=own; return h; }
+    /* Every unit spawned draws its facing off the match's RNG, and the sections
+       after this one roll off the same stream - so twenty-two spawns here would
+       hand every later section a different battle. This section draws its own. */
+    var oseed=7676, own=function(){ oseed=(oseed*1103515245+12345)&0x7fffffff; return oseed/0x7fffffff; };
+    /* a commander's picture is kept for FOG_UPDATE seconds; step the clock past
+       it rather than run the match (put back at the end) */
+    function fresh(){ Game.time+=CFG.FOG_UPDATE+0.01; }
+    var sees=function(p,e,s){ return !!(Game.sideSees && Game.sideSees(p,e,s)); };
+    var holds=function(p,e){ return !!(Game.seaHolds && Game.seaHolds(p,e)); };
+    try {
+      Game.rng=own;
+      /* ---- 1. stealth, off the signature ---- */
+      var LO={nato_e80_stealthfighter:0.65, nato_e90_stealthfighter:0.65, nato_e90_stealthbomber:0.75,
+              nato_e00_fighter:0.65, nato_e00_stealthfighter:0.62, pla_e00_stealthfighter:0.58};
+      chk("every stealth airframe before e20 carries what its signature earns",
+          Object.keys(LO).every(function(id){ return UNITS[id] && UNITS[id].stealth===LO[id]; }),
+          Object.keys(LO).map(function(id){ return id.replace(/^nato_/,"")+" "+(UNITS[id]?UNITS[id].stealth:"-"); }).join(", ")+" (b4a9943: none of them)");
+      var HAND={stealth_n:0.65, stealth_p:0.22, stealth_c:0.60, sbomber_n:0.75, stealth_b:0.62,
+                cstealth_n:0.62, cstealth_c:0.58, cstealth_b:0.62}, worst=0, curve=typeof stealthFromRcs==="function";
+      var handOk=Object.keys(HAND).every(function(id){ var d=UNITS[id];
+        if(d && curve) worst=Math.max(worst, Math.abs(0.317*Math.log10(0.70/d.rcs)-HAND[id]));
+        return d && d.stealth===HAND[id]; });
+      chk("the eight e20 airframes keep their own figure, and the one curve lies within 0.032 of each",
+          handOk && curve && worst<=0.032, "worst "+worst.toFixed(3));
+      chk("the same signature earns the same stealth in every era",
+          UNITS.nato_e00_fighter.stealth===UNITS.stealth_n.stealth && UNITS.nato_e90_stealthbomber.stealth===UNITS.sbomber_n.stealth &&
+          UNITS.nato_e80_stealthfighter.stealth===UNITS.stealth_n.stealth,
+          "e00 Raptor "+UNITS.nato_e00_fighter.stealth+" / e20 "+UNITS.stealth_n.stealth+", e90 B-2 "+UNITS.nato_e90_stealthbomber.stealth+" / e20 "+UNITS.sbomber_n.stealth);
+      chk("a conventional airframe is not a stealth contact",
+          ["fighter_g","cfighter_n","fighter_n","fighter_c","fra_e60_gunship"].every(function(id){ return UNITS[id] && !UNITS[id].stealth; }),
+          "Eurofighter, Super Hornet, F-16C, J-10C and Gazelle at rcs 0.45-0.55");
+      var g=tile(P,"ground",9);
+      var aa=g && mk(P,"aa_n",g.x,g.y), sam=g && mk(P,"sam_n",g.x,g.y+1), f117=g && mk(E,"nato_e80_stealthfighter",g.x+3,g.y);
+      if(aa && sam && f117){
+        f117.order={type:"idle"};
+        var R=aa.sightR()*TS, far=0;
+        for(var dd=1; dd<=12; dd+=0.1){ f117.x=aa.x+dd*TS; f117.y=aa.y; if(aa.acqGate(f117,R)) far=dd; }
+        chk("a Stinger team picks an F-117 up from closer in than an F-4", far>3 && far<7.5,
+            "acquired out to "+far.toFixed(1)+" tiles of its "+(R/TS).toFixed(1)+" (b4a9943: 10.4)");
+        f117.x=sam.x+3*TS; f117.y=sam.y;
+        var W=Object.assign({},WEAPONS[sam.def.weapons[0]],{acc:5,dmg:0,suppress:0});
+        var hit=volley(sam,W,f117,200);
+        chk("and most of the radar-guided missiles fired at it lose the lock", hit<100,
+            hit+" of 200 "+W.name+" rolled as hits (b4a9943: 195)");
+      } else chk("stealth scenario built", false, "spawn failed");
+
+      /* ---- 2. eyes where the optics put them ---- */
+      var TELS=["tel_n","deu_e60_tel","deu_e80_tel","gbr_e50_tel","gbr_e60_tel","fra_e90_tel"];
+      chk("a launcher, a boat under the water and a Harpoon boat see what their optics see",
+          TELS.every(function(id){ return UNITS[id] && UNITS[id].sight<=5.0; }) &&
+          UNITS.ssbn_n.sight<=6.5 && UNITS.sub_n.sight<=9 && UNITS.missileboat_n.sight<=9.5,
+          "HIMARS "+UNITS.tel_n.sight+", Ohio "+UNITS.ssbn_n.sight+", Virginia "+UNITS.sub_n.sight+
+          ", Harpoon boat "+UNITS.missileboat_n.sight+" (b4a9943: 30.4, 22.4, 19.4, 14.4)");
+      var aim=function(id){ var d=UNITS[id], r=0; d.weapons.forEach(function(k){ var w=WEAPONS[k]; if(w&&w.proj!=="arc"&&w.range>r) r=w.range; }); return d.sight>=r; };
+      chk("a crew that aims its own weapon keeps the eyes for it",
+          aim("mbt_n") && aim("at_n") && aim("helo_n") && aim("aa_n") && aim("recon_n"),
+          "Abrams "+UNITS.mbt_n.sight+", Javelin "+UNITS.at_n.sight+", Apache "+UNITS.helo_n.sight+", Stinger "+UNITS.aa_n.sight);
+
+      /* the side's picture is the fog: on for everything below */
+      Game.fogEnabled=true;
+
+      /* ---- 3. a commander's Ohio and a tank ashore nobody of its side has seen ---- */
+      var pr=pair("sea","ground",16,21,null,[E]);
+      var spot=pr && near(pr.bx+3,pr.by,"ground");
+      if(pr && spot){
+        var ohio=mk(E,"ssbn_n",pr.ax,pr.ay), tank=mk(P,"mbt_n",pr.bx,pr.by);
+        var Ro=ohio.sightR()*TS, slbm=Object.assign({},WEAPONS[ohio.def.weapons[0]],{dmg:0,suppress:0});
+        fresh();
+        chk("a commander's Ohio does not fire by itself on a tank sixteen tiles inland its side has not seen",
+            !ohio.acqGate(tank,Ro) && !sees(E,tank,ohio), "sight "+(Ro/TS).toFixed(1)+" (b4a9943: 22.4, and it took the tank)");
+        var blind=volley(ohio,slbm,tank,300);
+        var scout=mk(E,"recon_p",spot.x,spot.y);
+        fresh();
+        var held=volley(ohio,slbm,tank,300);
+        chk("once a scout of its side watches it the side holds it, and an ordered round flies true instead of blind",
+            !!scout && sees(E,tank,ohio) && held>0 && blind/held>0.35 && blind/held<0.70,
+            blind+" hits of 300 unwatched, "+held+" watched (b4a9943: 104 both ways)");
+        ohio.dead=true; tank.dead=true; if(scout) scout.dead=true;
+      } else chk("Ohio scenario built", false, "no quiet stretch of coast");
+
+      /* ---- 4. a commander's missile boat on its own surface radar ---- */
+      var ps=pair("sea","sea",11,15,null,[E]);
+      var ps2=ps && (pass(ps.ax,ps.ay+8,"sea")?{x:ps.ax,y:ps.ay+8}:pass(ps.ax,ps.ay-8,"sea")?{x:ps.ax,y:ps.ay-8}:null);
+      if(ps && ps2){
+        var mb=mk(E,"missileboat_p",ps.ax,ps.ay), lcs=mk(P,"corvette_n",ps.bx,ps.by), lcs2=mk(P,"corvette_n",ps2.x,ps2.y);
+        fresh();
+        var Rm=mb.sightR()*TS;
+        chk("a missile boat still takes a hull eleven tiles off on its own surface radar",
+            mb.acqGate(lcs,Rm) && holds(E,lcs), "sight "+(Rm/TS).toFixed(1)+", Oniks "+(mb.weaponRange(WEAPONS[mb.def.weapons[0]])/TS).toFixed(1));
+        mb.order={type:"attack",target:lcs2,auto:true}; mb.stance="guard";
+        var beat={type:"patrol",x0:mb.x,y0:mb.y,x:mb.x,y:mb.y-3*TS};
+        chk("and a commander's concentrate() and a patrol are offered what that scan takes",
+            mb.retarget(lcs) && patrolFights(mb,beat,lcs), "retarget and patrolFights at 11 tiles, past its 7.4-tile sight (the first draft of this change: retarget refused)");
+        mb.order={type:"idle"}; mb.stance="hold";
+        Game.emitting=function(u){ return u===mb ? false : emit0(u); };
+        fresh();
+        chk("with its radar off it holds nothing of its own",
+            !holds(E,lcs) && !mb.acqGate(lcs,Rm), "G.emitting false for the boat");
+        Game.emitting=emit0;
+        mb.dead=true; lcs.dead=true; lcs2.dead=true;
+      } else chk("sea scenario built", false, "no open water");
+
+      /* ---- 5. sonar holds the hull and not the helicopter over the same water - for both seats ---- */
+      var pk=pair("sea","sea",14,24,null,[E,P]);
+      if(pk){
+        var kilo=mk(E,"sub_p",pk.ax,pk.ay), hull=mk(P,"corvette_n",pk.bx,pk.by), helo=mk(P,"helo_n",pk.bx-1,pk.by+3);
+        helo.parked=false; helo.order={type:"hover",x:helo.x,y:helo.y};
+        fresh();
+        /* the helicopter is asked without a shooter, so no radar track of anybody's
+           enters it: the question is what the SIDE's picture holds */
+        var cHull=sees(E,hull,kilo), cHelo=sees(E,helo,null);
+        kilo.dead=true; hull.dead=true; helo.dead=true;
+        var vir=mk(P,"sub_n",pk.ax,pk.ay), hullE=mk(E,"corvette_p",pk.bx,pk.by), heloE=mk(E,"helo_p",pk.bx-1,pk.by+3);
+        heloE.parked=false; heloE.order={type:"hover",x:heloE.x,y:heloE.y};
+        Game.recomputeFog();
+        var hHull=Game.visibleTo(P,hullE), hHelo=Game.visibleTo(P,heloE), hPlot=Game.airPlotKnows(P,heloE);
+        chk("a boat's sonar holds a hull fourteen tiles off and not the helicopter over the same water, for the commander as for the player",
+            cHull && !cHelo && hHull && !hHelo && !hPlot,
+            "commander's Kilo: hull "+cHull+", helicopter "+cHelo+"; player's Virginia: hull "+hHull+", helicopter "+hHelo+
+            " (b4a9943: the player's Virginia saw both, by a 19.4-tile sight)");
+        vir.dead=true; hullE.dead=true; heloE.dead=true;
+      } else chk("sonar scenario built", false, "no quiet water");
+
+      /* ---- 6. the human's side is the fog ---- */
+      var ph=pair("sea","ground",16,21,P,[P]);
+      var spot2=ph && near(ph.bx+3,ph.by,"ground");
+      if(ph && spot2){
+        var ohio2=mk(P,"ssbn_n",ph.ax,ph.ay), tank2=mk(E,"mbt_p",ph.bx,ph.by);
+        Game.recomputeFog();
+        var Rh=ohio2.sightR()*TS, before=ohio2.acqGate(tank2,Rh)||sees(P,tank2,ohio2);
+        var scout2=mk(P,"recon_n",spot2.x,spot2.y);
+        Game.recomputeFog();
+        var after=!!scout2 && sees(P,tank2,ohio2);
+        chk("the player's side holds what the player's fog shows, and not what it hides", !before && after,
+            "unseen "+before+", scouted "+after+" (b4a9943: its 22.4-tile sight took the unseen tank)");
+        ohio2.dead=true; tank2.dead=true; if(scout2) scout2.dead=true;
+      } else chk("human Ohio scenario built", false, "no quiet stretch of coast");
+      /* what one launcher and one boat add to the player's fog, far from anything of ours */
+      var pt=pair("ground","ground",1,34,P), pv=pair("sea","ground",12,30,P);
+      if(pt && pv){
+        Game.recomputeFog(); var was=new Uint8Array(Game.fog);
+        var tel=mk(P,"tel_n",pt.ax,pt.ay); Game.recomputeFog();
+        var fTel=0; for(var i1=0;i1<Game.fog.length;i1++) if(Game.fog[i1]===2 && was[i1]!==2) fTel++;
+        tel.dead=true; Game.recomputeFog(); was=new Uint8Array(Game.fog);
+        var boat=mk(P,"sub_n",pv.ax,pv.ay); Game.recomputeFog();
+        var outside=0, sr=9.5;
+        for(var i2=0;i2<Game.fog.length;i2++){
+          if(Game.fog[i2]!==2 || was[i2]===2) continue;
+          var dx=(i2%M.W)-boat.tx, dy=((i2/M.W)|0)-boat.ty; if(dx*dx+dy*dy<=sr*sr) continue;
+          var onHull=false; E.units.forEach(function(e){ if(!e.dead && e.layer==="sea" && e.ty*M.W+e.tx===i2) onHull=true; });
+          if(!onHull) outside++; }
+        chk("a HIMARS lifts the fog its crew can see, and a submerged Virginia nothing past its periscope but the hulls it hears",
+            fTel<200 && outside===0, fTel+" tiles for the HIMARS (b4a9943: 1,721); "+outside+" other tiles past 9.5 tiles of the Virginia, its periscope "+boat.sightR().toFixed(1)+" (b4a9943: 892, its 19.4-tile circle)");
+        boat.dead=true;
+      } else chk("fog scenario built", false, "no quiet ground and water");
+
+      /* ---- 7. with the fog off at the menu nobody's picture is limited ---- */
+      Game.fogEnabled=false;
+      var pf=pair("sea","ground",16,21,null,[E]);
+      if(pf){
+        var ohio3=mk(E,"ssbn_n",pf.ax,pf.ay), tank3=mk(P,"mbt_n",pf.bx,pf.by);
+        fresh();
+        chk("with the fog switched off every side holds what its cued rounds reach, as before",
+            sees(E,tank3,ohio3), "commander's Ohio on a tank nobody of its side has seen: "+sees(E,tank3,ohio3)+" (b4a9943: its sight reached it)");
+        ohio3.dead=true; tank3.dead=true;
+      } else chk("fog-off scenario built", false, "no quiet stretch of coast");
+    } catch(e) { chk("section [76] ran to the end", false, String(e)+" "+String(e.stack).split("\n")[1]); }
+    finally {
+      Game.rng=rng; Game.time=clock; Game.emitting=emit0;
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      Game.fogEnabled=fogOn; Game.fog.set(fog0);
+      for(var pi=Combat.projectiles.length-1; pi>=nProj; pi--) Combat.projectiles.splice(pi,1);
+      if (Game.cbContacts) for(var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if (made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    chk("the shared match is as it was: clock, fog, RNG, G.emitting, both commanders' books, nothing of ours left",
+        Game.rng===rng && Game.time===clock && Game.fogEnabled===fogOn && Game.emitting===emit0 && keep(P.stats)===sP && keep(E.stats)===sE &&
+        Combat.projectiles.length===nProj && made.every(function(u){ return u.dead; }), made.length+" spawned, all removed");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

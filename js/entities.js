@@ -38,10 +38,17 @@ function autoTargetable(e) {
    between the two every tick. */
 function patrolFights(u, o, e) {
   const R = u.sightR() * CFG.TILE * (u.stance === "aggressive" ? 1.25 : 1);
+  /* A hull carrying a round fired on a cue looks as far as acquire() does
+     (Unit.acqReach), and past its own eyes it fights only what its SIDE holds
+     - the very test acqGate() let the contact through on - so a patrolling
+     missile boat is not handed a target by its scan and then refused it here.
+     Everything else is exactly as it was: Rq is R. */
+  const Rq = u.acqReach ? u.acqReach(R) : R;
   const ax = o.x0, ay = o.y0, dx = o.x - ax, dy = o.y - ay, L2 = dx * dx + dy * dy;
   const k = L2 ? U.clamp(((e.x - ax) * dx + (e.y - ay) * dy) / L2, 0, 1) : 0;
-  if (U.dist(e.x, e.y, ax + dx * k, ay + dy * k) > R) return false;
-  return U.dist2(u.x, u.y, e.x, e.y) <= R * R || u.game.visibleTo(u.owner, e);
+  if (U.dist(e.x, e.y, ax + dx * k, ay + dy * k) > Rq) return false;
+  if (U.dist2(u.x, u.y, e.x, e.y) <= R * R) return true;
+  return Rq > R ? u.game.sideSees(u.owner, e, u) : u.game.visibleTo(u.owner, e);
 }
 
 /* An emptied civilian block goes back to being nobody's. Restoring the flag
@@ -2091,6 +2098,11 @@ class Unit {
      cannot yet hit: see THE TWO TIERS at the bottom of this method. */
   acquire() {
     const R = this.sightR() * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
+    /* A round fired on a cue reaches past the crew's own eyes (firesOnCue,
+       rules.js), so the scan goes out as far as the longest of them and
+       acqGate() lets a contact out there through only if the SIDE holds it.
+       Everything else scans exactly R, as it always has (acqReach). */
+    const Rq = this.acqReach(R);
     /* A Weasel weights an emitter a hundredfold below - 0.06 against 6 - but
        only for a round it may actually fire. acquire() is the automatic
        question by definition, so a held ARM contributes nothing to it;
@@ -2120,7 +2132,7 @@ class Unit {
        few compares per candidate. */
     let bestIn = null, bdIn = Infinity, bestOut = null, bdOut = Infinity;
     let best0 = null, bd0 = Infinity;
-    this.game.grid.query(this.x, this.y, R, (e) => {
+    this.game.grid.query(this.x, this.y, Rq, (e) => {
       /* every gate, in acqGate() below, so retarget() can ask the same ones */
       if (!this.acqGate(e, R)) return;
       if (rG2 < 0) {
@@ -2212,18 +2224,21 @@ class Unit {
        hover - all seven reach a target only through here. Because a held
        round is invisible to it, a hull can never be handed an automatic
        order against something only a held round could reach.
-       This matters far more than the designs assumed: a launcher's sight is
-       21 to 31 tiles after generations.js rewrites it, not the 5.0 on the
+       This matters far more than the designs assumed: a launcher's sight was
+       21 to 31 tiles after generations.js rewrote it, not the 5.0 on the
        card, so idle/guard and attackmove were LIVE auto-fire paths for every
-       TEL in the game. */
+       TEL in the game. (It keeps its card's 5.0 now - rules.js firesOnCue -
+       and this gate is still what holds its rounds.) */
     if (!this.canTarget(e, true)) return false;
     /* low-observable airframes cannot be acquired at full range */
     /* A surface mount cannot shoot at an aeroplane it cannot reach, so it
        has no business asking whether anybody holds a track on one. acquire()
-       scans to sightR() * 1.25, and a naval hull's sight is widened to match
+       scans to sightR() * 1.25, and a naval hull's sight was widened to match
        its LONGEST weapon - an anti-ship missile - so an LCS whose 76mm
        reaches 8.0 tiles was interrogating airTrack about every airframe
        inside 20.5 tiles, every tick, for ever, and being silently refused.
+       (That missile no longer widens the sight - rules.js firesOnCue - but
+       acquire() now scans out to it instead, so the test is needed still.)
        120 surface shooters carry that phantom band; the missile boat has
        14.8 tiles of it around a 3.2-tile Phalanx. That artefact, not any
        missing radar, is the bulk of a measured 87.2% airTrack denial rate
@@ -2266,7 +2281,67 @@ class Unit {
       if (!this.game.airTrack(this, e)) return false;
     } else if (e.def && e.def.stealth &&
         U.dist(this.x, this.y, e.x, e.y) > R * (1 - e.def.stealth * CFG.STEALTH_ACQ)) return false;
+    /* ---- past the crew's own eyes: only on a cue ----
+       R is what this crew sees. Only a hull carrying a round fired on a cue
+       scans further (acquire, acqReach), and a contact out there is taken
+       only if one of those rounds reaches the layer it presents and the SIDE
+       holds it: a radar track for an aeroplane (the branch above has already
+       asked), and G.sideSees for everything else - our eyes, our radar
+       picture, an emitter we hear, and on the water our surface radar and our
+       boats' sonar. So an Ohio no longer puts a Trident into a tank sixteen
+       tiles inland that nobody on its side has seen (_behtest [76]). A hull
+       with no cued round is untouched: it never scans past R, and what the
+       grid's buckets hand it beyond R is accepted exactly as before. The
+       distance is asked first, so a candidate inside R - nearly all of them -
+       costs one subtraction more than it did and no lookup at all. */
+    const d2 = U.dist2(this.x, this.y, e.x, e.y);
+    if (d2 > R * R) {
+      const cue = this.cueReach();
+      if (cue) {
+        const w = cue[e.targetLayer()];
+        if (!w) return false;
+        const rw = this.weaponRange(w);
+        if (d2 > rw * rw) return false;
+        if (!(airTgt && needsTrack) && !this.game.sideSees(this.owner, e, this)) return false;
+      }
+    }
     return true;
+  }
+
+  /* ---- the rounds this hull fires on a cue, by the layer they reach ----
+     firesOnCue() in rules.js names them. A held round is left out, because
+     acquire() is the automatic question and a held round never answers it.
+     For each layer a target can present, the longest such round; `far` is the
+     longest of all, which is how far acquire() looks. null for the great
+     majority of the roster, which aims everything it fires through its own
+     sight. Worked out once per def and kept in a Map beside it rather than
+     on it: a def is read on every hot path in the game, and a property
+     bolted onto 1,216 of them at run time is a new shape for each. */
+  cueReach() {
+    const d = this.def;
+    const CUE = Unit.CUE || (Unit.CUE = new Map());
+    const got = CUE.get(d);
+    if (got !== undefined) return got;
+    let c = null;
+    for (const k of (d.weapons || [])) {
+      const w = WEAPONS[k];
+      if (!w || this.manualWeapon(w) || typeof firesOnCue !== "function" || !firesOnCue(d, w)) continue;
+      if (!c) c = { ground: null, sea: null, sub: null, air: null, far: null };
+      const g = w.tgt;
+      for (const L of ["ground", "sea", "sub", "air"])
+        if ((!g || g[L]) && (!c[L] || w.range > c[L].range)) c[L] = w;
+      if (!c.far || w.range > c.far.range) c.far = w;
+    }
+    CUE.set(d, c);
+    return c;
+  }
+  /* How far this hull's automatic scan looks: its crew's radius R, or out to
+     the longest round it fires on a cue. acquire(), retarget() and
+     patrolFights() all ask this one question, so a commander's concentrate()
+     and a patrol are offered exactly what the scan itself would take. */
+  acqReach(R) {
+    const cue = this.cueReach();
+    return cue ? Math.max(R, this.weaponRange(cue.far)) : R;
   }
 
   /* ---- swap the target of an engagement this hull chose for itself ----
@@ -2300,7 +2375,7 @@ class Unit {
     if (!t || t === o.target || this.stance === "hold") return false;
     const R = this.sightR() * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
     const d = U.dist(this.x, this.y, t.x, t.y);
-    if (d > R || !this.acqGate(t, R)) return false;
+    if (d > this.acqReach(R) || !this.acqGate(t, R)) return false;
     const wi = this.pickWeapon(t);
     if (wi < 0) return false;
     const w = WEAPONS[this.def.weapons[wi]];

@@ -1174,6 +1174,90 @@ Object.assign(UNITS, {
    inside friendly radar coverage than blind (see Combat.sensorFactor).
    STEALTH: low-observable airframes defeat radar-guided missiles outright a
    fraction of the time, and cannot be acquired at full range.                */
+
+/* ---- what a radar signature earns ----
+   combat.js (the lock that breaks), entities.js acqGate (the acquisition cut)
+   and ai.js noteContact (what a commander notices) all read def.stealth, and
+   only eight e20 airframes carried one. Every other airframe with a stealth
+   signature had the rcs figure and nothing else, so on b62fbf6, and still on
+   b4a9943, the F-117A (e80, e90), the B-2A (e90), the F-22A and F-35A (e00)
+   and the e00 J-20 broke 0% of missile locks and were picked up at the full
+   10.4 tiles an F-4 is - against 60-75% and 5.9-6.8 tiles for the same
+   airframes in e20. A Nighthawk over Baghdad in 1991 was not a Phantom.
+
+   So it is read off the signature, in one place (generations.js stamps it,
+   once every roster exists), by two rules in this order:
+     1. an airframe with the very signature of one of the eight hand-set ones
+        takes that figure: the same signature earns the same stealth in every
+        era, so the e00 Raptor is the e20 Raptor's 0.65 and the e90 B-2 the
+        e20 B-2's 0.75 - and the F-117, at the Raptor's 0.005, is 0.65 too;
+     2. anything else is on one curve, 0.317 per decade of radar cross-section
+        below 0.70 m2 - the least-squares line through those eight, which
+        lands within 0.032 of every one of them (F-22 0.68 against 0.65, J-35
+        0.55 against 0.58, B-2 0.75 exactly). Only the e00 J-20, at 0.010
+        against the e20 airframe's 0.008, is on it today: 0.58 against 0.60.
+   The eight keep their own figure - they are what both rules are drawn from.
+
+   LO_RCS sits in an empty band on purpose. Nothing in the roster lies between
+   the Su-57 at 0.13 and the Eurofighter, Super Hornet, Rafale and Gazelle at
+   0.45, and the line would otherwise hand those a 3-6% "stealth" - which is
+   read as a true/false test in two places (threat.js tier, ai.js sawStealth)
+   and would turn a Super Hornet into a stealth contact.
+
+   NOT CHANGED HERE, and older than this: combat.js breaks the lock of ANY
+   missile or flak round at that rate, infrared ones included, because no
+   weapon row says what its seeker is. The rule above only spreads the old
+   figure across the eras the airframes flew in.                            */
+var LO_RCS = 0.2;
+function stealthFromRcs(rcs) {
+  if (rcs === undefined || !(rcs < LO_RCS) || rcs <= 0) return 0;
+  return Math.round(Math.min(0.9, 0.317 * Math.log10(0.70 / rcs)) * 100) / 100;
+}
+
+/* ---- fired on a cue, not on sight ----
+   (owner) "ai should have the same fog like us. don't assume and make ai know
+   everything." Most rounds in the game are aimed by the crew that fires them:
+   a tank gunner, a Kornet operator, a Stinger gunner, an Apache's TADS. For
+   those the crew's sight IS the weapon's sight, and generations.js gives the
+   crew eyes to match its reach. These are the rounds that are not. They leave
+   on the SIDE's picture - a radar track, a sonar contact, an emitter plotted
+   by ESM, a set of coordinates - and fly on past anything the launcher can
+   see for itself:
+     - anything a submarine fires: a boat's eyes are a periscope;
+     - a held round (noAuto, manual, nuclear, the srbm_* rounds): it goes on an
+       order, at a target somebody already has;
+     - an anti-radiation seeker: it homes on an emitter, not on a picture;
+     - a ship's anti-ship or land-attack missile: over the horizon;
+     - a bomber's stand-off missile: released at coordinates;
+     - a radar-guided area SAM past VISUAL range, the 11 tiles entities.js
+       acqGate draws the eye/track line at: its track decides, not its crew.
+   Such a round does not stretch its launcher's sight (generations.js), and
+   past that sight it engages only what the side holds (Unit.acqGate,
+   G.sideSees) - at full accuracy on a held contact and blind on one nobody
+   holds any more (Combat.fire). Lobbed rounds are not in here: indirect fire
+   has its own rules - spotters, the bombard order, counter-battery.
+
+   What this takes away on purpose, and the owner should know it: the crew's
+   OPTICS. generations.js scales every sight by the army's optics (Pact 0.72,
+   KPA 0.52 in e20), and on b62fbf6 that cut came off a sight already
+   stretched to the missile, so - measured on b4a9943 - 18 of the Pact's 35
+   hulls and sites that carry such a round and 8 of the KPA's 14 (ships,
+   submarines and the long-range SAM batteries; no other army has one) could
+   not reach the last 0.6 to 2.4 tiles of their own missiles, and night and
+   weather cut them further (Combat.fire's visMul). A radar-cued Oniks does
+   not look through its crew's thermal sight, so neither cut applies to a cued
+   round now. The army's naval standing still does: generations.js DOMAIN
+   already shortens and blunts a Pact or KPA ship's missile (naval 0.72, 0.48),
+   and the surface picture reaches only as far as that shortened missile.   */
+function firesOnCue(def, w) {
+  if (!def || !w || w.proj === "arc") return false;
+  if (def.layer === "sub") return true;
+  if (def.noAuto || w.manual || w.nuke || w.indirect || w.antiRadiation) return true;
+  if (w.proj !== "missile" || !w.tgt) return false;
+  var surf = !!(w.tgt.ground || w.tgt.sea);
+  if (surf) return def.layer === "sea" || def.role === "heavybomber" || def.role === "stealthbomber";
+  return !!w.tgt.air && w.range > 11;
+}
 Object.assign(WEAPONS, {
   aam_lo:   { name:"AIM-260 (LO)", dmg:230, warhead:"flak", range:11.0, reload:2.8, burst:1,
               acc:0.92, proj:"missile", speed:760, aoe:0.8, ammo:1, tgt:{ground:0,air:1,sea:0,sub:0} },

@@ -49,8 +49,15 @@ var Combat = (function () {
     }
     /* --- sensor quality: firing beyond your own eyes needs radar --- */
     /* you cannot shoot well at what you can barely see */
+    /* A round fired on a cue (firesOnCue, rules.js) is laid by a radar track,
+       a sonar solution or a set of coordinates rather than by anybody's eye,
+       so the weather does not blunt it and its launcher's own sight is not
+       the edge of its picture - see the sensor term below. Units only: a
+       structure's sight was never stretched, and nothing here changes for it. */
+    const cued = shooter.kind === "unit" && typeof firesOnCue === "function" &&
+                 firesOnCue(shooter.def, w);
     let visMul = 1;
-    if (game.visionMul) {
+    if (game.visionMul && !cued) {
       const v = game.visionMul(shooter);
       if (v < 1) {
         const reach = shooter.sightR() * CFG.TILE;
@@ -76,6 +83,28 @@ var Combat = (function () {
     if (rangePx > organic) {
       radarSeen = game.radarCovers(shooter.owner, target.x, target.y) ? 1 : 0;
       sensorMul = radarSeen ? CFG.RADAR_FIRE_ACC : CFG.BLIND_FIRE_ACC;
+    }
+
+    /* ---- a round fired on a cue is exactly as good as its cue ----
+       Past its launcher's own eyes, the block above asks only whether this
+       side has radar over the target's square - the right question for a gun
+       or a crew-aimed missile, and the wrong one for a round the side put on
+       a contact. That one is at full accuracy on a contact the side holds
+       (G.sideSees: eyes, radar picture, surface picture, sonar, ESM, an air
+       track), and on anything that stays where it was plotted - a structure,
+       or a point on the map from a bombard order - because there the
+       coordinates ARE the cue; and blind on a contact nobody holds any more.
+       On b62fbf6 the question never arose: generations.js had stretched every
+       such launcher's sight to its own reach, so every shot it could make was
+       "organic". Measured, 300 rounds each at a tank nobody of ours could see:
+       a HIMARS 124 hits at 25 tiles and a B-52's JASSM 128 at 14 on b62fbf6
+       and again on b4a9943, 75 and 80 now. A HARM on a battery we only HEAR
+       is 120 either way: the plot is its cue. A land-attack round that flies
+       its own way to the coordinates (w.landAttack) is left to the rule
+       written for it. */
+    if (cued && rangePx > organic && !w.landAttack) {
+      sensorMul = (!target.owner || target.kind === "building" || !game.sideSees ||
+                   game.sideSees(shooter.owner, target, shooter)) ? 1 : CFG.BLIND_FIRE_ACC;
     }
 
     /* A low-observable hull is genuinely harder for a missile seeker to lock

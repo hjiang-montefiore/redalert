@@ -2337,6 +2337,142 @@ var Game = (function () {
     }
     return false;
   };
+  /* ---- does this SIDE hold a contact on e? ----
+     (owner) "ai should have the same fog like us. don't assume and make ai
+     know everything." The question a round fired on a cue (firesOnCue,
+     rules.js) asks before it goes past its launcher's own eyes - asked by
+     Unit.acqGate before a hull takes a contact out there by itself, and by
+     Combat.fire before it grants such a round full accuracy. One answer for
+     every seat, and it is the fog:
+       - a submarine only on sonar - canSeeSub, as everywhere else;
+       - for the human, the fog grid (G.visibleTo), which recomputeFog lifts
+         with our eyes and our radar picture, and lights on the tile of every
+         hull our surface radar or our boats' sonar holds (G.seaHolds);
+       - for a commander, the same sources on the same terms: its visibleTo is
+         eyes only, so the radar picture (G.radarPicture) and G.seaHolds are
+         asked here;
+       - an emitter we HEAR: G.esmPlot, the second way into the air picture
+         (G.airPlotKnows) and the whole basis of SEAD. A HARM homes on the
+         transmission, not on anybody's sight of the dish;
+       - an aeroplane, also a radar track by G.airTrack's law, shared over the
+         datalink - the rule the guns already hold aircraft to.
+     Nothing on land is anybody's surface picture - ground clutter is why
+     JSTARS exists - so a column inland has to be SEEN, by eyes or under a
+     radar picture, before a Tomahawk or a Trident is put into it.
+     With the fog switched off at the menu nobody's picture is limited: every
+     side's cued rounds see what they reach, as they did on b62fbf6, and the
+     AI is not held to a fog the player has turned off.
+     A commander's answer is kept for FOG_UPDATE seconds per contact, the
+     cadence the human's fog grid is rebuilt at, so it sees no fresher than
+     the player and a salvo of questions about one contact costs one answer. */
+  const SIDE_EYES = new Map();
+  let sideEyesT = -1;
+  function commanderSees(p, e) {
+    return G.visibleTo(p, e) || G.radarPicture(p, e.x, e.y) || G.seaHolds(p, e);
+  }
+  G.sideSees = function (p, e, shooter) {
+    if (!p || !e || e.dead) return false;
+    if (e.owner === p || G.allied(p, e.owner)) return true;
+    const tl = e.targetLayer ? e.targetLayer() : e.layer;
+    if (tl === "sub") return G.canSeeSub(p, e);
+    if (!G.fogEnabled) return true;
+    let eyes;
+    if (p === G.human) eyes = G.visibleTo(p, e);
+    else if (e.id !== undefined && p.idx !== undefined) {
+      if (G.time < sideEyesT || G.time - sideEyesT >= CFG.FOG_UPDATE) { SIDE_EYES.clear(); sideEyesT = G.time; }
+      const k = e.id * 64 + p.idx;
+      eyes = SIDE_EYES.get(k);
+      if (eyes === undefined) { eyes = commanderSees(p, e); SIDE_EYES.set(k, eyes); }
+    } else eyes = commanderSees(p, e);
+    if (eyes) return true;
+    const esm = e.id !== undefined && G.esmPlot ? G.esmPlot(p) : null;
+    if (esm && esm.has(e.id)) return true;
+    return tl === "air" && !!shooter && G.airTrack(shooter, e);
+  };
+  /* How far one radar of p's still reaches, in pixels, given the hostile
+     jamming it sits in: blinded past 0.55, cut down past 0.15 - the same law
+     recomputeFog's radarReveal and G.radarCovers apply. */
+  function radarLeft(p, ent, r) {
+    const jam = G.jamAgainst(p, ent);
+    if (jam > 0.55) return 0;
+    return jam > 0.15 ? r * Math.max(0.15, 1 - jam) : r;
+  }
+  /* The radar picture recomputeFog's radarReveal lifts the human's fog with,
+     asked of one point for any side: a set that is transmitting (G.emitting,
+     so not one shut down on its ramp or switched off), cut down by the
+     hostile jamming it sits in, and a structure's set only once it is built
+     and while the grid carries it. Measured in pixels from the set rather
+     than over the fog's tiles, so it can differ from the human's grid by a
+     tile at the rim and nowhere else. */
+  G.radarPicture = function (p, x, y) {
+    const TL = CFG.TILE;
+    const seen = (ent, r) => {
+      if (U.dist2(ent.x, ent.y, x, y) > r * r) return false;
+      const eff = radarLeft(p, ent, r);
+      return eff > 0 && U.dist2(ent.x, ent.y, x, y) <= eff * eff;
+    };
+    for (const u of p.units) {
+      if (u.dead || u.carried || !u.def.radar || !G.emitting(u)) continue;
+      if (seen(u, u.def.radar * TL)) return true;
+    }
+    /* recomputeFog asks `b.powered` AND a full grid; the second implies the
+       first, and `powered` is a getter that walks the structure list twice
+       (see the PERF note in G.airTrack), so only the grid is asked, once. */
+    let gridUp = -1;
+    for (const b of p.buildings) {
+      if (b.dead || !b.def.radar || b.buildProgress < 1 || !G.emitting(b)) continue;
+      if (gridUp < 0) gridUp = p.powerRatio() >= 1 ? 1 : 0;
+      if (!gridUp) return false;
+      if (seen(b, b.def.radar * TL)) return true;
+    }
+    return false;
+  };
+  /* ---- a hull on the water that the side holds ----
+     Two sensors hold a surface hull and nothing else - not the sky over it,
+     not the shore:
+       - a warship's surface-search radar, out to the reach of its own
+         anti-ship rounds, while it transmits (G.emitting: a set switched off
+         holds nothing) and cut by jamming like any radar. That reach is never
+         the radar's limit: the longest in the game, 16.9 tiles, stands for
+         about 16 km on generations.js's range scale, and a mast-head set holds
+         another warship to the horizon at 25 to 40. So a ship's anti-ship
+         missile keeps the envelope it had against ships, and buys nothing
+         inland;
+       - a submarine's own sonar, for which a hull on the surface is the
+         loudest thing in the water: heard at the ceiling canSeeSub puts on
+         any contact, SEA_NOISE (2.2) times the set's rating - a Virginia's
+         11.0 at 24 tiles, a Kilo's 7.2 at 16. A boat's eyes are a periscope,
+         and this is how it has always found its targets.
+     Nothing else: not a coastal array, not an acoustic node (render.js
+     visible() and ai.js intelSweep say why a hydrophone hands over no
+     surface picture), not a helicopter's dipping set - an aircraft finds
+     ships with its eyes and its radar - and not a surface ship's own sonar,
+     which its radar out-reaches.
+     The player's fog is lit on the tile each such hull sits on and nowhere
+     else (recomputeFog), and a commander asks the same question here, so a
+     helicopter or a jet over the same water is no more visible to either. */
+  G.SEA_NOISE = 2.2;
+  G.seaHolds = function (p, e) {
+    if (!p || !e || e.dead || e.layer !== "sea") return false;
+    const TL = CFG.TILE;
+    for (const u of p.units) {
+      if (u.dead || u.carried) continue;
+      if (u.layer === "sub") {
+        if (!u.def.sonar) continue;
+        const r = u.def.sonar * G.SEA_NOISE * TL;
+        if (U.dist2(u.x, u.y, e.x, e.y) < r * r) return true;
+        continue;
+      }
+      if (u.layer !== "sea" || !u.cueReach || !G.emitting(u)) continue;
+      const c = u.cueReach();
+      if (!c || !c.sea) continue;
+      const r = u.weaponRange(c.sea);
+      if (U.dist2(u.x, u.y, e.x, e.y) > r * r) continue;
+      const eff = radarLeft(p, u, r);
+      if (eff > 0 && U.dist2(u.x, u.y, e.x, e.y) <= eff * eff) return true;
+    }
+    return false;
+  };
   /* Has this player's side ever overlooked this tile? The human has the fog
      array; an AI commander keeps its own explored map, and any player without a
      commander (the neutral owner, a human seat) is unrestricted exactly as
@@ -2528,6 +2664,16 @@ var Game = (function () {
       }
     };
     for (const u of G.human.units) if (!u.dead && !u.carried) reveal(u.tx, u.ty, u.sightR());
+    /* a hull on the water our surface radar or our boats' sonar holds
+       (G.seaHolds) is drawn where it is: its own tile is lit and nothing
+       round it - not the water, not the sky over it, not the shore - exactly
+       the contact a commander's G.sideSees is granted and no more */
+    for (const o of G.players) {
+      if (o === G.human || o.defeated || G.allied(G.human, o)) continue;
+      for (const e of o.units)
+        if (!e.dead && !e.carried && e.layer === "sea" && G.seaHolds(G.human, e))
+          fog[e.ty * map.W + e.tx] = 2;
+    }
     for (const b of G.human.buildings) if (!b.dead) reveal(b.tx + b.def.w / 2, b.ty + b.def.h / 2, b.sightR());
 
     /* ---- radar lifts the fog ----
