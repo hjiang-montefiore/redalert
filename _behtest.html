@@ -7765,6 +7765,298 @@ try{
   })();
   }
 
+  /* ====== [86] STRONG AGAINST, WEAK AGAINST ======
+     (owner) "i take your suggestions and make it on 1,2,3 first." - step 3,
+     idea 5: say on the build card, and on a selected unit of either side,
+     what it kills, what it cannot hurt and what hurts it. Measured at
+     b62fbf6: the card showed cost, hit points, the FIRST weapon's range and
+     damage and the sensors, and the panel the first weapon's name - nothing
+     that says a ZSU-23-4's flak does x0.04 to a tank. Gallery.matchup reads
+     CFG.DMG, the tgt blocks and Combat.resolveArmor; these checks hold it to
+     the table (the figures are recomputed here from CFG.DMG), to the engine
+     rules a table-only reading gets wrong - the tgt gate, the 0.5 damage
+     floor, penetration from every arc, a true median over the other side's
+     tanks - to the things that kill without being in `weapons` (a silo's
+     strike, a mine), to the lobby's bans, and then drive the real card and
+     the real panel. Everything is put back: the tab the sidebar was on and
+     THEN the selection (Tab on a mixed selection cycles its subgroups, so
+     the other order would narrow it), the tooltip, the RNG stream (spawning
+     rolls a heading, so the roll is stubbed) and both commanders' books;
+     the two units made here are gone. */
+  if (inHalf(1)) {
+  log("\n[86] STRONG AGAINST, WEAK AGAINST - ON THE CARD AND ON THE PANEL");
+  (function(){
+    var MU=(typeof Gallery!=="undefined") && Gallery.matchup;
+    chk("the verdict is one function, shared with the field manual", typeof MU==="function",
+        "Gallery.matchup is "+typeof MU+" (HEAD: the card has no such rows)");
+    /* on HEAD there is nothing to ask, but the card and the panel below
+       are still driven, so the run shows what the player sees without it */
+    var hasMU=typeof MU==="function";
+    var row=function(mu,k){ var l=((mu&&mu.lines)||[]).filter(function(x){ return x.k===k; })[0]; return l ? l.v : null; };
+    var fx=function(m){ return "×"+Number(m).toFixed(2); };
+    var DOT=" · ", R0=CFG.VET_DMG[0], STILL={ rng:function(){ return 1; } };
+    var has=function(v,s){ return (v||"").split(DOT).indexOf(s)>=0; };
+    var aq=function(W,arm,f){ var F=FACTIONS[f];
+      if(!F||!F.ammoQ||(W.warhead!=="cannon"&&W.warhead!=="heat")) return 1;
+      return arm==="heavy" ? F.ammoQ : arm==="light" ? 1+(F.ammoQ-1)*0.5 : 1; };
+    var hullOf=function(h,hf){ var F=FACTIONS[hf]||{};
+      return { kind:"unit", cat:h.cat, armor:h.armor, def:h, x:0, y:0, ang:0, maxHp:(h.hp||0)*(F.hpMul||1) }; };
+    var hullsOf=function(fb,era,arm){ var out=[], k;
+      for(k in UNITS){ var d=UNITS[k];
+        if(d.cat==="vehicle" && d.armor===arm && (d.fac===undefined||d.fac==="both"||d.fac===fb) && inEra(d,era)) out.push(d); }
+      return out; };
+    if(hasMU){
+
+      /* ---- 1. the owner's own example, figure for figure off CFG.DMG ----
+         Flak is not a penetrating warhead and carries no ammoQ, so every
+         figure is the table's; a class whose hit - a rookie's, x0.88, as a
+         machine leaves the factory - cannot clear applyDamage's 0.5 floor
+         belongs on the CANNOT row instead. */
+      var z=MU("pact_e60_spaag","unit",{fac:"pact",vs:[{fac:"nato",era:"e60"}]});
+      var zw=WEAPONS[UNITS.pact_e60_spaag.weapons[0]], wk=[], no=[];
+      [["infantry","infantry"],["light","light vehicles"],["heavy","tanks"],["structure","structures"]].forEach(function(p){
+        var m=CFG.DMG[zw.warhead][p[0]];
+        if(zw.dmg*R0*m>0.5) wk.push(p[1]+" "+fx(m)); else no.push(p[1]);
+      });
+      chk("ZSU-23-4: STRONG against aircraft at the table's own flak figure",
+          row(z,"STRONG VS")==="aircraft "+fx(CFG.DMG.flak.air), row(z,"STRONG VS"));
+      chk("and WEAK against a tank at x0.04, and against everything else on the ground, each at its table figure",
+          row(z,"WEAK VS")===wk.join(DOT) && CFG.DMG.flak.heavy===0.04 && wk.length===4,
+          row(z,"WEAK VS")+"  (table: "+wk.join(DOT)+")");
+
+      /* ---- 2. the tgt gate: a tank gun has a figure for nothing in the air ---- */
+      var t=MU("mbt_n","unit",{fac:"nato",vs:[{fac:"pact",era:"e20"}]});
+      chk("an Abrams CANNOT hurt an aircraft",
+          has(row(t,"CANNOT HURT"),"aircraft") && !WEAPONS[UNITS.mbt_n.weapons[0]].tgt.air, row(t,"CANNOT HURT"));
+      chk("but is STRONG against the opposing tanks, the table's x"+CFG.DMG.cannon.heavy+
+          " times NATO's penetrator quality",
+          has(row(t,"STRONG VS"),"tanks "+fx(CFG.DMG.cannon.heavy*FACTIONS.nato.ammoQ)), row(t,"STRONG VS"));
+
+      /* ---- 3. the floor: a rifle's ball has a table figure against a tank and
+         still cannot hurt one - no penetration leaves x0.12 of it, and the
+         hit falls under applyDamage's 0.5 ---- */
+      var rw=WEAPONS[UNITS.rifle_n.weapons[0]], r=MU("rifle_n","unit",{fac:"nato",vs:[{fac:"pact",era:"e20"}]});
+      var left=rw.dmg*R0*CFG.DMG.bullet.heavy*CFG.PEN_FAIL_MUL;
+      chk("a rifle section CANNOT hurt a tank, though ball has x"+CFG.DMG.bullet.heavy+" against one in the table",
+          has(row(r,"CANNOT HURT"),"tanks") && CFG.DMG.bullet.heavy>0 && left<=0.5,
+          row(r,"CANNOT HURT")+"  (a hit leaves "+left.toFixed(2)+")");
+      chk("and is STRONG against infantry at the table's own figure",
+          (row(r,"STRONG VS")||"").indexOf("infantry "+fx(CFG.DMG.bullet.infantry))===0, row(r,"STRONG VS"));
+
+      /* ---- 4. penetration: CFG.DMG alone says a 100 mm AT gun is x0.95
+         against heavy armour, which reads "strong". Against a 2020 Russian
+         tank it does not get cleanly through either front (it is a partial
+         on a T-90A and bounces off the T-14) and it goes clean through either
+         side, and that is what the card has to say ---- */
+      var aw=WEAPONS[BUILDINGS.atpost.weapons[0]], a=MU("atpost","building",{fac:"nato",vs:[{fac:"pact",era:"e20"}]});
+      var pen=Combat.penOf(aw,{owner:{faction:"nato"},vet:0});
+      var fronts=[UNITS.mbt_p.armorMM.front, UNITS.hvy_p.armorMM.front], sides=[UNITS.mbt_p.armorMM.side, UNITS.hvy_p.armorMM.side];
+      chk("the AT gun emplacement is strong against tanks only FROM THE FLANK",
+          has(row(a,"STRONG VS"),"tanks from the flank") &&
+          CFG.DMG.cannon.heavy>=0.85 && pen<CFG.PEN_FULL*Math.min.apply(null,fronts) && pen>=CFG.PEN_FULL*Math.max.apply(null,sides),
+          row(a,"STRONG VS")+"  (pen "+pen.toFixed(0)+" mm vs fronts "+fronts.join("/")+", sides "+sides.join("/")+")");
+
+      /* ---- 5. a true median. With an even number of tanks it is the mean
+         of the middle two, not the easier one: a T-34-85 holes an M48 and
+         bounces off an M103, so it is not "STRONG against tanks" head-on.
+         Recomputed here hull by hull through Combat.resolveArmor. ---- */
+      var tw=UNITS.pla_e50_mbt && WEAPONS[UNITS.pla_e50_mbt.weapons[0]], th=hullsOf("nato","e50","heavy");
+      if(tw && th.length>=2){
+        var tf=th.map(function(h){ var v=Combat.resolveArmor(STILL,hullOf(h,"nato"),tw,{x:1,y:0,owner:{faction:"pla"},vet:0}); return v?v.mul:1; }).sort(function(p,q){ return p-q; });
+        var ts=th.map(function(h){ var v=Combat.resolveArmor(STILL,hullOf(h,"nato"),tw,{x:0,y:1,owner:{faction:"pla"},vet:0}); return !v||v.verdict==="PENETRATION"?1:0; }).sort();
+        var n2=tf.length>>1, tmed=tf.length%2 ? tf[n2] : (tf[n2-1]+tf[n2])/2, smed=ts.length%2 ? ts[n2] : (ts[n2-1]+ts[n2])/2;
+        var tt=CFG.DMG[tw.warhead].heavy*aq(tw,"heavy","pla"), tv=MU("pla_e50_mbt","unit",{fac:"pla",vs:[{fac:"nato",era:"e50"}]});
+        var want=(tmed<1 && tt>=0.85 && smed===1) ? "tanks from the flank" : "tanks "+fx(tt*tmed);
+        var said=[row(tv,"STRONG VS"),row(tv,"FAIR VS"),row(tv,"WEAK VS")].join(DOT);
+        chk("a T-34-85 against NATO's "+th.length+" tanks of 1950: the median head-on figure, not the thinner tank's",
+            has(said,want) && !has(row(tv,"STRONG VS"),"tanks "+fx(tt*tf[tf.length-1])),
+            said+"  (head-on "+tf.map(function(m){ return m.toFixed(2); }).join("/")+", want "+want+")");
+      } else chk("a T-34-85 against NATO's tanks of 1950", false, "the roster no longer has two such tanks: rewrite this check");
+
+      /* ---- 6. "cannot" is absolute. Every CANNOT HURT tanks / light vehicles
+         claim in 2020, each army against each other, is put to the engine:
+         no weapon it carries, on any hull of that class the other side
+         fields, from ahead, abeam OR astern, may clear the floor. (Judged
+         head-on and abeam only, a British Ajax "could not hurt" a KPA tank
+         whose rear plate its 40 mm scratches.) ---- */
+      var AF=Object.keys(FACTIONS), claims=0, bad=[];
+      AF.forEach(function(fa){ AF.forEach(function(fb){ if(fa===fb) return;
+        var H={ heavy:hullsOf(fb,"e20","heavy"), light:hullsOf(fb,"e20","light") }, k;
+        for(k in UNITS){ var d=UNITS[k]; if(d.fac!==fa || !inEra(d,"e20")) continue;
+          var ws=(d.weapons||[]).map(function(w){ return WEAPONS[w]; }).filter(function(W){ return W && W.dmg>0; });
+          if(!ws.length) continue;
+          var mu=MU(k,"unit",{fac:fa,vs:[{fac:fb,era:"e20"}]});
+          [["tanks","heavy"],["light vehicles","light"]].forEach(function(p){
+            if(mu.cannot.indexOf(p[0])<0) return; claims++;
+            ws.forEach(function(W){ if(!W.tgt || !W.tgt.ground || W.softOnly) return;
+              H[p[1]].forEach(function(h){ [[1,0],[0,1],[-1,0]].forEach(function(xy){
+                var v=Combat.resolveArmor(STILL,hullOf(h,fb),W,{x:xy[0],y:xy[1],owner:{faction:fa},vet:0});
+                var hit=W.dmg*R0*CFG.dmgMult(W.warhead,p[1])*aq(W,p[1],fa)*(W.antiRadiation?0.35:1)*(v?v.mul:1);
+                if(hit>0.5 && bad.length<400) bad.push(fa+" "+k+" vs "+fb+" "+h.name+" "+xy.join(",")+" = "+hit.toFixed(2));
+              }); });
+            });
+          });
+        }
+      }); });
+      chk("every 'cannot hurt' a vehicle in 2020 holds from every arc, against every hull of the class",
+          claims>100 && !bad.length, claims+" claims, "+bad.length+" contradicted"+(bad.length?": "+bad.slice(0,3).join("; "):""));
+
+      /* ---- 7. what hurts it: only anti-aircraft rounds reach an aircraft,
+         and the other side's fighters carry them too ---- */
+      var fid=null, k2;
+      for(k2 in UNITS) if(UNITS[k2].role==="fighter" && UNITS[k2].fac==="nato" && inEra(UNITS[k2],"e20")){ fid=k2; break; }
+      var fm=fid && MU(fid,"unit",{fac:"nato",vs:[{fac:"pact",era:"e20"}]});
+      chk("a fighter is HURT BY air-to-air weapons and by flak and SAMs, both at the table's figure",
+          !!fm && row(fm,"HURT BY")==="air-to-air weapons "+fx(CFG.DMG.flak.air)+DOT+"flak and SAMs "+fx(CFG.DMG.flak.air),
+          fid+": "+row(fm,"HURT BY"));
+      /* ...and a lobby that grounds the enemy's air force takes their fighters
+         and their HARMs off the card with it */
+      var nb=[{fac:"pact",era:"e20",ban:{aircraft:true,naval:true}}];
+      var fb2=fid && MU(fid,"unit",{fac:"nato",vs:nb}), sb2=MU("sam","building",{fac:"nato",vs:nb}), sb1=MU("sam","building",{fac:"nato",vs:[{fac:"pact",era:"e20"}]});
+      chk("with PACT on the ground alone: no air-to-air weapons on the fighter, no anti-radiation missiles on the SAM site",
+          !!fb2 && row(fb2,"HURT BY")==="flak and SAMs "+fx(CFG.DMG.flak.air) &&
+          (row(sb1,"HURT BY")||"").indexOf("anti-radiation")>=0 && (row(sb2,"HURT BY")||"").indexOf("anti-radiation")<0,
+          row(fb2,"HURT BY")+" | SAM: "+row(sb1,"HURT BY")+" -> "+row(sb2,"HURT BY"));
+      /* ...and a HARM's reason to exist is a transmitter */
+      var sid=null;
+      for(k2 in UNITS) if(UNITS[k2].role==="sead" && inEra(UNITS[k2],"e20") &&
+         (UNITS[k2].weapons||[]).some(function(w){ return WEAPONS[w] && WEAPONS[w].antiRadiation; })){ sid=k2; break; }
+      var sm=sid && MU(sid,"unit",{fac:UNITS[sid].fac,vs:[{fac:"pact",era:"e20"}]});
+      chk("an anti-radiation aircraft is STRONG against radars first",
+          !!sm && (row(sm,"STRONG VS")||"").indexOf("radars")===0, sid+": "+row(sm,"STRONG VS"));
+
+      /* ---- 8. what kills without being in `weapons` ---- */
+      var ms=MU("missilesilo","building",{fac:"nato",vs:[{fac:"pact",era:"e20"}]}), ns=MU("nukesilo","building",{fac:"nato",vs:[{fac:"pact",era:"e20"}]});
+      var sw1=BUILDINGS.missilesilo.superweapon, sw2=BUILDINGS.nukesilo.superweapon;
+      chk("the silos are not UNARMED: their strike is judged at its own warhead's figures",
+          !row(ms,"UNARMED") && !row(ns,"UNARMED") &&
+          has(row(ms,"STRONG VS"),"structures "+fx(CFG.DMG[sw1.warhead].structure)) &&
+          has(row(ns,"STRONG VS"),"tanks "+fx(CFG.DMG[sw2.warhead].heavy)) && has(row(ns,"CANNOT HURT"),"aircraft"),
+          "silo: "+row(ms,"STRONG VS")+" | strategic: "+row(ns,"STRONG VS")+" / cannot "+row(ns,"CANNOT HURT"));
+      var ml=MU("minelayer","unit",{fac:"nato",vs:[{fac:"pact",era:"e20"}]}), LM=Mines.LAND, mh=hullsOf("pact","e20","heavy");
+      var mm=mh.map(function(h){ var v=Combat.resolveArmor(STILL,hullOf(h,"pact"),{warhead:LM.warhead,dmg:LM.dmg,belly:true},null); return v?v.mul:1; }).sort(function(p,q){ return p-q; });
+      var mmed=mm.length%2 ? mm[mm.length>>1] : (mm[(mm.length>>1)-1]+mm[mm.length>>1])/2;
+      chk("a minelayer is STRONG against tanks through the belly, and cannot hurt the infantry that do not set a mine off",
+          has(row(ml,"STRONG VS"),"tanks "+fx(CFG.DMG[LM.warhead].heavy*mmed)) && has(row(ml,"CANNOT HURT"),"infantry") &&
+          !Mines.threatens({sea:false},{layer:"ground",cat:"infantry"}),
+          row(ml,"STRONG VS")+" / cannot "+row(ml,"CANNOT HURT"));
+      var pw=MU("power","building",{fac:"nato",vs:[{fac:"pact",era:"e20"}]}), tr=MU("trans_n","unit",{fac:"nato",vs:[{fac:"pact",era:"e20"}]});
+      chk("a power plant's card is what hurts it; a transport's says it is UNARMED",
+          pw.lines.length===1 && !!row(pw,"HURT BY") && row(tr,"UNARMED")==="",
+          pw.lines.map(function(l){ return l.k; }).join("/")+" | "+tr.lines.map(function(l){ return l.k; }).join("/"));
+
+      /* ---- the manual says the same, and says which reading is which:
+         the rows under their own heading, the bars labelled as the table
+         alone, and a silo's strike where "Unarmed." used to sit over a
+         verdict that says it kills. The page it was on is put back. ---- */
+      var box=document.getElementById("gal-rec"), rec0=Gallery.record && Gallery.record();
+      if(box && Gallery.select("missilesilo")){
+        var gh=box.innerHTML, gv=Gallery.record().verdict;
+        chk("the manual's silo page names its strike instead of 'Unarmed.', and prints the card's rows under their own heading",
+            gh.indexOf("Unarmed.")<0 && gh.indexOf(BUILDINGS.missilesilo.superweapon.label)>=0 &&
+            gh.indexOf("Against the opposition")>=0 && !!gv && gv.lines.every(function(l){ return gh.indexOf(l.v)>=0; }),
+            gv ? gv.lines.map(function(l){ return l.k+": "+l.v; }).join(" | ") : "no verdict");
+        Gallery.select("rifle_n"); gh=box.innerHTML;
+        chk("and a rifle's bars say they are the damage table before plate, beside 'Cannot hurt: ... tanks'",
+            gh.indexOf("What its rounds do <i>by the damage table, before plate</i>")>=0 &&
+            gh.indexOf("Cannot engage")>=0 && gh.indexOf("Cannot touch")<0 && /Cannot hurt<\/span>[^<]*tanks/.test(gh), "");
+        if(rec0) Gallery.select(rec0.id);
+      } else chk("the manual's silo page", false, "no #gal-rec panel to print into");
+
+      chk("it is worked out once: asking again is the same object",
+          MU("pact_e60_spaag","unit",{fac:"pact",vs:[{fac:"nato",era:"e60"}]})===z, "");
+      var rec=Gallery.recordFor("pact_e60_spaag","unit");
+      chk("and the field manual prints the very same verdict, against every other army",
+          !!rec && rec.verdict===MU("pact_e60_spaag","unit",{era:(document.getElementById("gal-era")||{}).value||""}) &&
+          rec.verdict.vs.split(",").length===7,
+          rec && rec.verdict ? rec.verdict.vs : "no verdict on the record");
+    }
+
+    /* ---- 9. the real build card ---- */
+    var rng=Game.rng, sP=JSON.stringify(P.stats), sE=JSON.stringify(E.stats);
+    var sel0=UI.selection.slice(), made=[];
+    function fire(type,key){
+      if(typeof __listeners!=="undefined"){
+        var ev={type:type,key:key,shiftKey:false,ctrlKey:false,metaKey:false,altKey:false,preventDefault:function(){}};
+        (__listeners["win:"+type]||[]).slice().forEach(function(f){ f(ev); });
+      } else window.dispatchEvent(new KeyboardEvent(type,{key:key}));
+    }
+    function cards(){ var box=document.getElementById("cards"), out=[], i;
+      for(i=0; box && i<box.children.length; i++) if(box.children[i] && box.children[i].dataset) out.push(box.children[i]);
+      return out; }
+    function tabNow(){
+      var c=cards()[0], kd=c && c.dataset.kind;
+      return (kd==="upgrade"||kd==="era") ? "building" : (kd||"");
+    }
+    function toTab(want){ for(var i=0;i<7 && tabNow()!==want;i++){ fire("keydown","Tab"); fire("keyup","Tab"); } return tabNow()===want; }
+    function hover(c,type){ if(typeof __listeners!=="undefined") c.dispatchEvent({type:type}); else c.dispatchEvent(new MouseEvent(type)); }
+    function sel(list){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
+      for(var j=0;j<list.length;j++){ list[j].selected=true; s.push(list[j]); } }
+    var tab0=null;
+    try {
+      sel([]);
+      UI.refreshCards && UI.refreshCards();
+      tab0=tabNow();
+      var onDef=toTab("defense"), card=null;
+      cards().forEach(function(c){ if(c.dataset.id==="flak") card=c; });
+      chk("the defence tab carries the AA battery's card", onDef && !!card, "tab "+tabNow());
+      if(card){
+        hover(card,"mouseenter");
+        var tip=document.getElementById("tooltip"), th=(tip && tip.innerHTML)||"";
+        var mine=hasMU ? MU("flak","building",{fac:P.faction,vs:Game.enemiesOf(P).map(function(o){ return {fac:o.faction,era:o.era||Game.era,ban:o.banned,cap:o.techCap}; })}) : {lines:[]};
+        chk("hovering it prints the verdict on the card, strong against aircraft at x"+CFG.DMG.flak.air,
+            th.indexOf('<div class="vs">')>=0 && th.indexOf("<b>STRONG VS</b>aircraft "+fx(CFG.DMG.flak.air))>=0,
+            JSON.stringify(th.slice(th.indexOf('<div class="vs">'), th.indexOf('<div class="vs">')+160)));
+        chk("row for row what matchup says, and a ground-blind battery is told it cannot hurt the ground",
+            hasMU && mine.lines.every(function(l){ return th.indexOf("<b>"+l.k+"</b>"+l.v)>=0; }) &&
+            row(mine,"CANNOT HURT")==="ground targets", row(mine,"CANNOT HURT"));
+        /* the stand-in lays every element out 800 px tall in an 800 px
+           window - a card taller than the screen, which is what the rows
+           make of a warship's on a short one. HEAD's min() put its top at
+           -10 px, the name off-screen. */
+        chk("a card as tall as the window keeps its name on screen",
+            parseFloat(tip.style.top)>=0, "top "+tip.style.top+" (card "+tip.offsetHeight+" px, window "+window.innerHeight+" px)");
+        hover(card,"mouseleave");
+      }
+
+      /* ---- 10. the real panel, theirs and ours ---- */
+      Game.rng=function(){ return 0.5; };
+      var g=tile(E,"ground",6), gp=tile(P,"ground",7);
+      var foe=g && spawn(E,"mbt_p",g,0,0), own=gp && spawn(P,"mbt_n",gp,0,0);
+      Game.rng=rng;
+      if(foe) made.push(foe); if(own) made.push(own);
+      chk("panel scenario built", !!foe && !!own, "");
+      if(foe && own){
+        sel([foe]); UI.frame(CFG.DT);
+        var ph=(document.getElementById("selinfo")||{}).innerHTML||"";
+        var theirs=hasMU ? MU("mbt_p","unit",{fac:E.faction,vs:Game.enemiesOf(E).map(function(o){ return {fac:o.faction,era:o.era||Game.era,ban:o.banned,cap:o.techCap}; })}) : {lines:[]};
+        chk("a hostile tank's panel carries its verdict, read off its type",
+            hasMU && ph.indexOf("HOSTILE")>=0 && ph.indexOf('<div class="vs">')>=0 &&
+            theirs.lines.every(function(l){ return ph.indexOf("<b>"+l.k+"</b>"+l.v)>=0; }),
+            theirs.lines.map(function(l){ return l.k+": "+l.v; }).join(" | "));
+        sel([own]); UI.frame(CFG.DT);
+        var oh=(document.getElementById("selinfo")||{}).innerHTML||"";
+        chk("and so does our own, below its intro and orders", oh.indexOf('<div class="vs">')>oh.indexOf('<div class="intro">') &&
+            oh.indexOf('<div class="intro">')>=0 && oh.indexOf("<b>CANNOT HURT</b>aircraft")>=0,
+            JSON.stringify(oh.slice(oh.indexOf('<div class="vs">'), oh.indexOf('<div class="vs">')+120)));
+      }
+    } finally {
+      Game.rng=rng;
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      /* the tab first: Tab with a mixed selection is cycleSubgroup, not
+         the sidebar, and would narrow the selection being put back */
+      sel([]);
+      if(tab0) toTab(tab0);
+      sel(sel0.filter(function(u){ return !u.dead; }));
+      var tp=document.getElementById("tooltip"); if(tp) tp.style.display="none";
+    }
+    chk("the shared match is as it was: the tab, the selection, the RNG, both commanders' books",
+        (!tab0 || tabNow()===tab0) && Game.rng===rng &&
+        UI.selection.length===sel0.filter(function(u){ return !u.dead; }).length &&
+        UI.selection.every(function(u,i){ return u===sel0.filter(function(v){ return !v.dead; })[i]; }) &&
+        JSON.stringify(P.stats)===sP && JSON.stringify(E.stats)===sE, "tab "+tab0+" -> "+tabNow()+", selection "+sel0.length+" -> "+UI.selection.length);
+  })();
+  }
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

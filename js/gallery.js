@@ -293,6 +293,374 @@ var Gallery = (function () {
       .sort((a, b) => b.score - a.score).slice(0, 5);
   }
 
+  /* ---------------- strong against, weak against ----------------
+     (owner) "i take your suggestions and make it on 1,2,3 first." - step 3,
+     idea 5 of that roadmap. With twelve hundred real machines nobody can
+     remember that a ZSU-23-4's flak does x0.04 to a tank, and until now only
+     this manual said so, three menus deep. matchup() says it in a handful of
+     short rows for the build card and the selection panel (ui.js
+     counterRows), and it lives HERE so there is one reading of the tables,
+     not two that drift.
+     Every term is the engine's own:
+       reach   the weapon's tgt block against the layer the target is on, and
+               softOnly - the two gates canTarget and pickWeapon apply
+       warhead CFG.dmgMult; the ammoQ applyDamage multiplies in for cannon
+               and heat against heavy or light plate; x0.35 for an
+               anti-radiation round against anything not transmitting
+       plate   Combat.resolveArmor ITSELF, asked about a shot from ahead,
+               abeam and astern, so penetration is the engine's verdict and
+               not a copy of it. Vehicles only, because resolveArmor returns
+               null for infantry, structures, aircraft and ships - as in play
+       floor   applyDamage drops a hit worth 0.5 or less, so a round that
+               cannot clear it on its own "cannot hurt"; it is not "weak"
+     The bands are the manual's own bars: x0.85 and up is STRONG, x0.40 up to
+     that is FAIR, under x0.40 is WEAK.
+     It is judged against the machines the OPPOSITION can field in ITS period
+     - the enemies' armies and eras, and the lobby's service bans and tech
+     ceilings on them, which the player set - and nothing a sighting would
+     add. One plate for everybody was measured and is wrong: at e80 the
+     in-era tank fronts run from 128 mm (ROC) to 503 mm (British), a median
+     of 192, which would tell a NATO player that a round which bounces off
+     every T-80U kills tanks head-on.
+     Cached on (entry, army, opposition): the first card costs one pass over
+     the roster, every later hover is a lookup. */
+  const FOE = [
+    { key: "inf",  word: "infantry",       layer: "ground", armour: "infantry", cat: "infantry" },
+    { key: "lv",   word: "light vehicles", layer: "ground", armour: "light", veh: true, cat: "vehicle" },
+    { key: "tank", word: "tanks",          layer: "ground", armour: "heavy", veh: true, cat: "vehicle" },
+    { key: "bld",  word: "structures",     layer: "ground", armour: "structure", cat: "building" },
+    { key: "air",  word: "aircraft",       layer: "air",    armour: "air", cat: "aircraft" },
+    /* a patrol boat, corvette or missile boat wears light plate; a
+       destroyer, cruiser or carrier heavy - and ninety-six hulls against
+       eighty-three is too even a split to call "ships" one thing */
+    { key: "boat", word: "light ships",    layer: "sea",    armour: "light", cat: "naval" },
+    { key: "ship", word: "warships",       layer: "sea",    armour: "heavy", cat: "naval" },
+    /* fifty-two of the sixty-six boats are attack submarines, in light plate */
+    { key: "sub",  word: "submarines",     layer: "sub",    armour: "light", cat: "naval" },
+  ];
+  /* CFG.DMG's warhead rows in the words a card has room for. Every
+     anti-aircraft round in WEAPONS is "flak" - the 40 mm battery, the
+     Patriot, the Stinger AND the fighter's AIM-120 or cannon (77 of the 324
+     air-reaching flak weapons ride on aircraft) - so what hurts an aircraft
+     is split by what carries it: "flak and SAMs" alone would never tell a
+     pilot that the other side's fighters are the thing to fear. */
+  const ROUND_WORD = {
+    bullet: "small arms", cannon: "kinetic rounds", he: "high explosive",
+    frag: "artillery", heat: "shaped charges", flak: "flak and SAMs", nuclear: "nuclear",
+    aa: "air-to-air weapons", arm: "anti-radiation missiles while transmitting",
+  };
+  const STRONG = 0.85, WEAK = 0.40;
+  /* combat.js applyDamage: `if (dmg <= 0.5) return`, on a round that left
+     the muzzle at w.dmg x VET_DMG[vet] - and a machine off the line is a
+     rookie (entities.js: this.vet = 0), so the floor is judged at x0.88. A
+     silo's missile and a mine have no shooter: their damage arrives raw. */
+  const FLOOR = 0.5;
+  const ROOKIE = () => (CFG.VET_DMG && CFG.VET_DMG[0]) || 1;
+  /* the hull sits at 0,0 facing +x; the shot comes from ahead, abeam or
+     astern, at the plates' own slopes (52, 14 and 10 degrees), which are all
+     under RICO_ANGLE, so no ricochet is ever rolled and the stub never runs */
+  const AHEAD = { x: 1, y: 0 }, ABEAM = { x: 0, y: 1 }, ASTERN = { x: -1, y: 0 };
+  const ARCS = [["front", AHEAD], ["flank", ABEAM], ["rear", ASTERN]];
+  const NO_ROLL = { rng: () => 1 };
+  const MU = {}, ARMY = {};
+  /* the median, and a true one: with two hulls it is the mean of both, not
+     the thinner one. Measured with the upper value, five 1950s-60s guns
+     read STRONG against tanks head-on while one of the opponent's only two
+     tanks took under x0.40 (a T-34-85 against an M48 and an M103) */
+  const med = (a) => {
+    if (!a.length) return 0;
+    a.sort((x, y) => x - y);
+    const h = a.length >> 1;
+    return a.length % 2 ? a[h] : (a[h - 1] + a[h]) / 2;
+  };
+  const fx = (m) => "×" + num(m, 2);
+
+  /* What the machine has to hurt anything with: its weapons, and two things
+     that are not in `weapons` and still kill. A silo's strike is the weapon
+     game.js launchSuperweapon builds - its dmg and warhead, tgt ground and
+     sea, no shooter. A minelayer's mine is Mines' own charge, which goes off
+     under the hull (`belly`) and only under what Mines.threatens lets set it
+     off; without these the Strategic Silo, whose card says it "erases
+     everything inside nine tiles", printed UNARMED. */
+  function armsOf(def) {
+    const ws = weaponsOf(def).filter(W => W.dmg > 0);
+    const sw = def.superweapon;
+    if (sw && sw.dmg > 0)
+      ws.push({ name: sw.label, dmg: sw.dmg, warhead: sw.warhead, raw: true,
+                tgt: { ground: 1, air: 0, sea: 1, sub: 0 } });
+    const M = typeof Mines !== "undefined" ? Mines : null;
+    if (def.layMines && M && M.LAND && M.SEA && M.threatens) {
+      const m = def.mineSea ? M.SEA : M.LAND, sea = !!def.mineSea;
+      ws.push({ name: sea ? "Sea mine" : "Land mine", dmg: m.dmg, warhead: m.warhead,
+                belly: !sea, raw: true, mine: { sea: sea },
+                tgt: { ground: sea ? 0 : 1, air: 0, sea: sea ? 1 : 0, sub: 0 } });
+    }
+    return ws;
+  }
+  /* what the other side's round makes of this hull from one direction: the
+     verdict object resolveArmor returns, or null where it does not apply */
+  function plate(W, hull, hullFac, fac, from) {
+    if (typeof Combat === "undefined" || !Combat.resolveArmor) return null;
+    const F = (typeof FACTIONS !== "undefined" && FACTIONS[hullFac]) || {};
+    const e = { kind: "unit", cat: hull.cat, armor: hull.armor, def: hull, x: 0, y: 0, ang: 0,
+                maxHp: (hull.hp || 0) * (F.hpMul && hull.cat !== "infantry" ? F.hpMul : 1) };
+    return Combat.resolveArmor(NO_ROLL, e, W,
+      W.raw ? null : { x: from.x, y: from.y, owner: { faction: fac }, vet: 0 });
+  }
+  /* applyDamage's penetrator-quality term, for the army that fired it */
+  function ammoQ(W, armour, fac) {
+    const F = (typeof FACTIONS !== "undefined" && FACTIONS[fac]) || null;
+    if (W.raw || !F || !F.ammoQ || (W.warhead !== "cannon" && W.warhead !== "heat")) return 1;
+    return armour === "heavy" ? F.ammoQ : armour === "light" ? 1 + (F.ammoQ - 1) * 0.5 : 1;
+  }
+  const muzzle = (W) => W.dmg * (W.raw ? 1 : ROOKIE());
+  /* The opposition: every armed machine and emplacement its armies can
+     field in their period, each with the army that fires it, and their
+     vehicles - the plates a round is judged against. "Can field" is
+     Player.lockReason's pre-battle half, the half the lobby set and the
+     player knows: the army, the period, the Services ban (no air force, no
+     navy - on the class and on the airbase or naval yard a structure needs)
+     and the tech ceiling. Measured before this, a SAM site facing a PACT
+     told to fight on the ground alone still read "HURT BY anti-radiation
+     missiles", which only its aircraft carry. */
+  function armyKey(a) {
+    const b = a.ban || {};
+    return a.fac + "@" + (a.era || "") + (b.aircraft ? "!air" : "") + (b.naval ? "!sea" : "") +
+           (a.cap && a.cap < 3 ? "/t" + a.cap : "");
+  }
+  function fields(def, a, memo) {
+    if (def.fac !== undefined && def.fac !== "both" && def.fac !== a.fac) return false;
+    if (a.era && typeof inEra === "function" && !inEra(def, a.era)) return false;
+    const b = a.ban || {};
+    if (def.cat && b[def.cat]) return false;
+    if (a.cap && def.tech && def.tech > a.cap) return false;
+    for (const rq of def.prereq || []) {
+      if ((rq === "airbase" && b.aircraft) || (rq === "navalyard" && b.naval)) return false;
+      if (memo[rq] === undefined) {
+        memo[rq] = true;                     // a loop in the table lets a thing through
+        const pb = typeof BUILDINGS !== "undefined" ? BUILDINGS[rq] : null;
+        memo[rq] = !!pb && fields(pb, a, memo);
+      }
+      if (!memo[rq]) return false;
+    }
+    return true;
+  }
+  function army(list) {
+    /* two commanders of one army in one period are one arsenal */
+    const seen = {};
+    list = list.filter(a => !seen[armyKey(a)] && (seen[armyKey(a)] = 1));
+    const key = list.map(armyKey).sort().join(",");
+    if (ARMY[key]) return ARMY[key];
+    const guns = [], hulls = [];
+    for (const a of list) {
+      const memo = {};
+      for (const id in (typeof UNITS !== "undefined" ? UNITS : {})) {
+        const u = UNITS[id];
+        if (!u || !fields(u, a, memo)) continue;
+        if (u.cat === "vehicle" && (u.armor === "heavy" || u.armor === "light"))
+          hulls.push({ def: u, fac: a.fac });
+        for (const W of weaponsOf(u))
+          if (W.dmg > 0 && W.tgt) guns.push({ w: W, fac: a.fac, air: u.layer === "air" });
+      }
+      for (const id in (typeof BUILDINGS !== "undefined" ? BUILDINGS : {})) {
+        const b = BUILDINGS[id];
+        if (!b || !b.weapons || !fields(b, a, memo)) continue;
+        for (const W of weaponsOf(b)) if (W.dmg > 0 && W.tgt) guns.push({ w: W, fac: a.fac, air: false });
+      }
+    }
+    return (ARMY[key] = { key: key, guns: guns, hulls: hulls });
+  }
+  /* One of our weapons against one class of target. For a vehicle class the
+     figure is the median over the opposition's own hulls of that class, head
+     on; `flank` says the median hull is holed clean through from the side.
+     A round that cannot clear the floor head-on is not yet "cannot hurt":
+     that is the one absolute word on the card, so every hull is asked from
+     the flank and the rear too, and the least exposed arc that some hull
+     can be hurt from is named instead - a 40 mm CTAS scratches a CM-11's
+     rear plate, and 10 of 6,258 "cannot" claims said otherwise. */
+  function against(W, c, fac, hulls) {
+    if (!W || !(W.dmg > 0) || !W.tgt || !W.tgt[c.layer]) return null;
+    if (W.softOnly && c.armour !== "infantry") return null;
+    /* a mine is set off by weight, and Mines.threatens says whose; a
+       structure never drives onto one */
+    if (W.mine && (c.key === "bld" ||
+        !Mines.threatens(W.mine, { layer: c.layer, cat: c.cat }))) return null;
+    const m = CFG.dmgMult(W.warhead, c.armour) * ammoQ(W, c.armour, fac) *
+              (W.antiRadiation ? 0.35 : 1);
+    if (c.veh && CFG.PEN_WARHEADS[W.warhead]) {
+      const fr = [], sd = [], arc = { front: 0, flank: 0, rear: 0 };
+      for (const h of hulls) {
+        if (h.def.armor !== c.armour) continue;
+        const v = ARCS.map(([k, from]) => plate(W, h.def, h.fac, fac, from));
+        fr.push(v[0] ? v[0].mul : 1);
+        sd.push(!v[1] || v[1].verdict === "PENETRATION" ? 1 : 0);
+        ARCS.forEach(([k], i) => { arc[k] = Math.max(arc[k], m * (v[i] ? v[i].mul : 1)); });
+      }
+      if (fr.length) {
+        const f = med(fr);
+        /* only a round that is strong once it is through can be "strong from
+           the flank"; a hit is judged by the side it can come in from */
+        const flank = f < 1 && m >= STRONG && med(sd) === 1;
+        const hit = muzzle(W) * (flank ? m : m * f);
+        if (hit > FLOOR) return { m: m * f, hit: hit, flank: flank, w: W };
+        for (const k of ["flank", "rear"])
+          if (muzzle(W) * arc[k] > FLOOR) return { m: arc[k], hit: muzzle(W) * arc[k], arc: k, w: W };
+        return { m: m * f, hit: hit, flank: false, w: W };
+      }
+    }
+    return { m: m, hit: muzzle(W) * m, flank: false, w: W };
+  }
+  /* a head-on figure is worth more than a figure from behind the target */
+  const better = (v, best) => !best || (!v.arc !== !best.arc ? !v.arc : v.m > best.m);
+  /* What the opposition's rounds do to THIS machine, by warhead: the median
+     over every weapon of that warhead it fields that can reach this layer. */
+  function threatsTo(def, kind, own, A) {
+    const layer = kind === "unit" ? (def.layer || "ground") : "ground";
+    const armour = def.armor || "structure";
+    const hull = kind === "unit" && def.cat === "vehicle" && (armour === "heavy" || armour === "light");
+    const emits = !!(def.radar || def.jam);
+    const by = {};
+    for (const g of A.guns) {
+      const W = g.w;
+      if (!W.tgt[layer] || (W.softOnly && armour !== "infantry")) continue;
+      /* a HARM is held until it is ordered, and x0.35 on anything silent:
+         it is not what hurts a machine with no transmitter, and pooled with
+         the high explosive it would drag that row down */
+      if (W.antiRadiation && !emits) continue;
+      const t = CFG.dmgMult(W.warhead, armour) * ammoQ(W, armour, g.fac) * (W.antiRadiation ? 3.0 : 1);
+      let m = t, side = 1, back = null;
+      const wh = W.antiRadiation ? "arm" : (W.warhead === "flak" && g.air) ? "aa" : W.warhead;
+      if (hull && CFG.PEN_WARHEADS[W.warhead]) {
+        const v = ARCS.map(([k, from]) => plate(W, def, own, g.fac, from));
+        m = t * (v[0] ? v[0].mul : 1);
+        side = !v[1] || v[1].verdict === "PENETRATION" ? 1 : 0;
+        /* the least exposed arc it CAN be hurt from, for the one line that
+           would otherwise say nothing can */
+        for (let i = 1; i < 3 && !back; i++) {
+          const mm = t * (v[i] ? v[i].mul : 1);
+          if (muzzle(W) * mm > FLOOR) back = { arc: ARCS[i][0], m: mm };
+        }
+      }
+      if (muzzle(W) * m <= FLOOR) m = 0;
+      const b = by[wh] || (by[wh] = { m: [], side: [], one: 0, back: null,
+                                      table: CFG.dmgMult(W.warhead, armour) });
+      b.m.push(m); b.side.push(side); b.one = Math.max(b.one, m);
+      if (!m && back && (!b.back || (b.back.arc === back.arc ? back.m > b.back.m : back.arc === "flank")))
+        b.back = back;
+    }
+    const out = [];
+    for (const wh in by) {
+      const m = med(by[wh].m);
+      out.push({ warhead: wh, word: ROUND_WORD[wh] || wh, mult: m, one: by[wh].one, back: by[wh].back,
+                 flank: hull && m < STRONG && by[wh].table >= STRONG && med(by[wh].side) === 1 });
+    }
+    return out.sort((x, y) => y.mult - x.mult || (x.word < y.word ? -1 : 1));
+  }
+  /* The verdict. `opts.fac` is the army that owns the machine (a structure or
+     an "every army" unit has none of its own); `opts.vs` the opposition as
+     [{fac, era, ban, cap}]. With no opposition given - the manual, outside a
+     match - it is every other army in `opts.era`, else the last period it
+     serves. */
+  function matchup(id, kind, opts) {
+    const def = defOf(id, kind);
+    if (!def || typeof CFG === "undefined" || !CFG.DMG) return null;
+    opts = opts || {};
+    const fac = opts.fac || (def.fac !== undefined && def.fac !== "both" ? def.fac : "");
+    let vs = (opts.vs || []).filter(a => a && a.fac);
+    if (!vs.length) {
+      const era = opts.era || (typeof ERAS !== "undefined"
+        ? ERAS[def.to !== undefined ? eraIndex(def.to) : ERAS.length - 1] : "");
+      vs = Object.keys(typeof FACTIONS !== "undefined" ? FACTIONS : {})
+        .filter(f => f !== fac).map(f => ({ fac: f, era: era }));
+    }
+    const A = army(vs);
+    const key = kind + ":" + id + "|" + fac + "|" + A.key;
+    if (MU[key]) return MU[key];
+
+    const ws = armsOf(def);
+    /* The sea is on a card only where it is the job. A tank's gun does
+       score x0.95 on a destroyer's plate, and a card that said so on every
+       tank and every AT emplacement would bury the line their player needs;
+       a warship, an aircraft and a structure the naval yard unlocks (or that
+       stands on the shore) keep it. Submarines only where there is a way to
+       reach one, or the boat is one. */
+    const sea = def.cat === "naval" || def.layer === "air" ||
+      (kind === "building" && (!!def.shore || (def.prereq || []).indexOf("navalyard") >= 0));
+    const deep = def.cat === "naval" || ws.some(W => W.tgt && W.tgt.sub);
+    const strong = [], weak = [], cannot = [], fair = [];
+    for (const c of FOE) {
+      if (c.layer === "sea" && !sea) continue;
+      if (c.layer === "sub" && !deep) continue;
+      let best = null;
+      for (const W of ws) {
+        const v = against(W, c, fac, A.hulls);
+        if (v && v.hit > FLOOR && better(v, best)) best = v;
+      }
+      if (!best) { cannot.push(c); continue; }
+      const e = { key: c.key, word: c.word, mult: best.m, arc: best.arc || "" };
+      if (!best.arc && (best.m >= STRONG || best.flank)) { e.flank = best.m < STRONG; strong.push(e); }
+      else if (best.m >= STRONG) strong.push(e);
+      else if (best.m < WEAK) weak.push(e);
+      else fair.push(e);
+    }
+    /* A HARM's reason to exist is a transmitter: x3.0 over the table, which
+       on a radar site's concrete is the figure the SAM site's own card
+       shows as what hurts it. */
+    const arm = ws.filter(W => W.antiRadiation);
+    if (arm.length) strong.unshift({ key: "radar", word: "radars",
+      mult: Math.max.apply(null, arm.map(W => CFG.dmgMult(W.warhead, "structure") * 3.0)) });
+    const hurt = threatsTo(def, kind, fac, A);
+
+    const lines = [];
+    const said = (e) => e.flank ? e.word + " from the flank"
+                               : e.word + (e.arc ? " from the " + e.arc : "") + " " + fx(e.mult);
+    if (ws.length) {
+      if (strong.length) lines.push({ k: "STRONG VS", v: strong.map(said).join(" · "), cls: "s" });
+      /* The middle band is named too. Left unsaid, a Virginia's card read
+         "strong against infantry and structures" - its Tomahawk - and never
+         mentioned the torpedo, x0.80 on a submarine, that is its job. Every
+         class on the card is now in exactly one row. */
+      if (fair.length) lines.push({ k: "FAIR VS", v: fair.map(said).join(" · "), cls: "f" });
+      if (weak.length) lines.push({ k: "WEAK VS", v: weak.map(said).join(" · "), cls: "w" });
+      /* named as classes where a whole domain is out of reach */
+      let no = cannot.map(c => c.key);
+      const words = [];
+      if (["inf", "lv", "tank", "bld"].every(k => no.indexOf(k) >= 0)) {
+        words.push("ground targets"); no = no.filter(k => ["inf", "lv", "tank", "bld"].indexOf(k) < 0);
+      }
+      if (no.indexOf("boat") >= 0 && no.indexOf("ship") >= 0) {
+        no = no.filter(k => k !== "boat" && k !== "ship"); no.push("ships");
+      }
+      for (const k of no) {
+        const c = FOE.filter(x => x.key === k)[0];
+        words.push(c ? c.word : k);
+      }
+      if (words.length) lines.push({ k: "CANNOT HURT", v: words.join(" · "), cls: "n" });
+    /* A unit with nothing to shoot is worth saying so - a transport, a
+       tanker, an AWACS. Twenty-two base structures and a power plant are
+       not: their card is about what hurts them. */
+    } else if (kind === "unit") lines.push({ k: "UNARMED", v: "", cls: "n" });
+    const top = hurt.filter(t => t.mult >= STRONG || t.flank).slice(0, 3);
+    if (top.length) lines.push({ k: "HURT BY", v: top.map(said).join(" · "), cls: "h" });
+    else if (hurt.length && hurt[0].mult > 0)
+      lines.push({ k: "HURT BY", v: "at best " + said(hurt[0]), cls: "h" });
+    else {
+      /* "nothing" is absolute, so it is said only when not one of the
+         opposition's weapons can hurt it from any arc: first the best
+         single round head-on, then the least exposed arc one gets in from */
+      const one = hurt.filter(t => t.one > 0).sort((x, y) => y.one - x.one)[0];
+      const back = hurt.filter(t => t.back).sort((x, y) =>
+        (x.back.arc === y.back.arc ? y.back.m - x.back.m : x.back.arc === "flank" ? -1 : 1))[0];
+      lines.push({ k: "HURT BY", cls: "h", v: one ? "at best one " + said({ word: one.word, mult: one.one })
+        : back ? "only " + said({ word: back.word, arc: back.back.arc, mult: back.back.m })
+        : "nothing the opposition fields" });
+    }
+
+    return (MU[key] = { id: id, kind: kind, fac: fac, vs: A.key,
+                        strong: strong, weak: weak, fair: fair, cannot: cannot.map(c => c.word),
+                        hurt: hurt, lines: lines });
+  }
+
   /* ---------------- the record ----------------
      One object, built from the tables, which the panel prints and the
      regression suite reads. There is no second path: what a test asserts
@@ -336,6 +704,7 @@ var Gallery = (function () {
       weapons: arms, engages: Object.keys(seen), blind: blind,
       effect: effect(def), threat: threat(def),
       counters: counters(id, kind, def, filter().era),
+      verdict: matchup(id, kind, { era: filter().era }),
       fact: (said && said.fact) || (F && F.note) || def.desc || "",
       /* Two different claims, and they are not interchangeable. FACTS'
          `confidence` grades the PUBLISHED FIGURES; a roster row's own grades
@@ -348,7 +717,7 @@ var Gallery = (function () {
   /* ---------------- painting the record ---------------- */
   function bar(mult) {
     const w = Math.max(0, Math.min(100, (mult / barScale()) * 100));
-    const cls = mult >= 0.85 ? "hi" : mult >= 0.4 ? "md" : "lo";
+    const cls = mult >= STRONG ? "hi" : mult >= WEAK ? "md" : "lo";
     return '<i class="gal-bar ' + cls + '"><b style="width:' + num(w, 1) + '%"></b></i>';
   }
   function statRow(k, v) {
@@ -381,7 +750,21 @@ var Gallery = (function () {
       h.push('<div class="gal-need"><span>Needs</span> ' + esc(r.prereq.join(" · ")) + "</div>");
 
     h.push("<h4>Armament</h4>");
-    if (!r.weapons.length) h.push('<div class="gal-empty">Unarmed.</div>');
+    /* A silo's strike and a minelayer's mines are not in `weapons`, and
+       "Unarmed." above a verdict saying they kill contradicted it. Both
+       are printed from the fields the engine fires them with: the
+       superweapon row game.js launches, and Mines' own charge. */
+    const sw = r.def.superweapon, MN = typeof Mines !== "undefined" && Mines.LAND ? Mines : null;
+    if (sw) h.push('<div class="gal-w"><div class="gal-wn">' + esc(sw.label) + "<em>" + esc(sw.warhead) +
+      "</em></div>" + '<div class="gal-wd">' + esc(["anywhere on the map", sw.dmg + " over " + num(sw.aoe, 1) +
+      " tiles", "charges in " + num(sw.charge, 0) + " s"].join(" · ")) + "</div></div>");
+    if (r.def.layMines) {
+      const m = MN ? (r.def.mineSea ? MN.SEA : MN.LAND) : null;
+      h.push('<div class="gal-w"><div class="gal-wn">' + (r.def.mineSea ? "Sea mines" : "Land mines") +
+        (m ? "<em>" + esc(m.warhead) + "</em>" : "") + "</div>" + '<div class="gal-wd">' +
+        esc([r.def.layMines + " carried", m ? m.dmg + " each" : ""].filter(Boolean).join(" · ")) + "</div></div>");
+    }
+    if (!r.weapons.length && !sw && !r.def.layMines) h.push('<div class="gal-empty">Unarmed.</div>');
     for (const w of r.weapons) {
       const bits = ["range " + num(w.range, 1) + " tiles"];
       if (w.minRange) bits.push("blind inside " + num(w.minRange, 1));
@@ -398,19 +781,38 @@ var Gallery = (function () {
         (w.cannot.length ? " <s>" + esc(w.cannot.join(", ")) + "</s>" : "") + "</div></div>");
     }
     if (r.blind.length && r.weapons.length)
-      h.push('<div class="gal-need"><span>Cannot touch</span> ' + esc(r.blind.join(" · ")) + "</div>");
+      h.push('<div class="gal-need"><span>Cannot engage</span> ' + esc(r.blind.join(" · ")) + "</div>");
+
+    /* The build card's rows, word for word. They are the verdict - through
+       the other side's plate, over the damage floor, in their period - and
+       the two blocks of bars below are the damage table alone, before any
+       of that; both are said on the page, because a rifle's x0.06 bar
+       against heavy armour and "cannot hurt tanks" are both true and read
+       like a contradiction when neither says which it is. "Cannot touch"
+       became "Cannot engage" for the same reason: it is the tgt block,
+       the domains no weapon aboard can aim at. An unarmed machine has
+       said "Unarmed." under Armament already. */
+    if (r.verdict) {
+      const vs = r.verdict.lines.filter(l => l.k !== "UNARMED");
+      if (vs.length) {
+        h.push("<h4>Against the opposition <i>in period, through their plate</i></h4>");
+        for (const l of vs)
+          h.push('<div class="gal-need gal-vs ' + l.cls + '"><span>' +
+                 esc(l.k.charAt(0) + l.k.slice(1).toLowerCase()) + "</span> " + esc(l.v) + "</div>");
+      }
+    }
 
     /* an unarmed machine has no rounds, and six empty rows saying so is
        noise; what kills it is still worth knowing, so that block stays */
     if (r.weapons.length) {
-      h.push("<h4>What its rounds do</h4><div class=\"gal-cmp\">");
+      h.push("<h4>What its rounds do <i>by the damage table, before plate</i></h4><div class=\"gal-cmp\">");
       for (const e of r.effect)
         h.push('<div class="gal-row"><span>' + esc(e.word) + "</span>" + bar(e.mult) +
           "<b>" + (e.mult ? "×" + num(e.mult, 2) : "—") + "</b></div>");
       h.push("</div>");
     }
 
-    h.push("<h4>What gets through it</h4><div class=\"gal-cmp\">");
+    h.push("<h4>What gets through it <i>by the damage table, before plate</i></h4><div class=\"gal-cmp\">");
     for (const t of r.threat)
       h.push('<div class="gal-row"><span>' + esc(t.word) + "</span>" + bar(t.mult) +
         "<b>×" + num(t.mult, 2) + "</b></div>");
@@ -779,6 +1181,7 @@ var Gallery = (function () {
 
   return {
     open: open, close: close, key: key, select: select, recordFor: recordFor,
+    matchup: matchup,
     isOpen: () => shown,
     /* what the list is showing, and the record the panel printed - the same
        objects the page is built from, not a second calculation, so a test

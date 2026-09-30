@@ -495,6 +495,12 @@ var UI = (function () {
     const lock = p.lockReason(d, it.kind === "upgrade");
     if (lock) rows.push('<span class="warn">' + lock + "</span>");
     html += rows.join("<br>");
+    /* what it is for, and what it is not - a unit card's kind is its tab.
+       Not on a stand-in (d.absent, rules.js STRUCT_ABSENT): like THE REAL
+       THING below, it would describe a row this army never had. */
+    const vsKind = it.kind === "building" || it.kind === "defense" ? "building"
+                 : (UNITS[it.id] === d ? "unit" : null);
+    if (vsKind && !d.absent) html += counterRows(it.id, vsKind, p);
 
     /* real-world reference panel: what the actual machine does */
     /* not on a stand-in (itemsForTab, rules.js STRUCT_ABSENT): it borrows the
@@ -515,7 +521,11 @@ var UI = (function () {
     tip.style.display = "block";
     const r = card.getBoundingClientRect();
     tip.style.right = "222px";
-    tip.style.top = Math.min(window.innerHeight - tip.offsetHeight - 10, r.top) + "px";
+    /* never above the top of the window: with the verdict rows a warship
+       or fighter card runs to ~650 px, and on a short window the old
+       min() put its name off-screen. The foot of the card (THE REAL
+       THING) is what gives instead. */
+    tip.style.top = Math.max(6, Math.min(window.innerHeight - tip.offsetHeight - 10, r.top)) + "px";
     tip.style.left = "auto";
   }
   function hideTip() { document.getElementById("tooltip").style.display = "none"; }
@@ -768,6 +778,35 @@ var UI = (function () {
       h += '<span class="cf2">published figures: ~' + f.confidence + " confidence</span>";
     h += "</div>";
     return h;
+  }
+
+  /* ---- strong against, weak against ----
+     A few short rows - what it kills, what it does fair work on, what it
+     barely scratches, what it cannot hurt at all, and what hurts it - on the
+     build card and on a single selected unit, ours or anybody else's.
+     Gallery.matchup makes them from CFG.DMG, the tgt blocks and
+     Combat.resolveArmor, the tables a hit is resolved with, so the card
+     cannot disagree with the battlefield; this only prints them. The
+     opposition is the owner's enemies: their armies and the Services bans
+     and tech ceilings the lobby put on them, and a period. A rival of ours
+     is judged in the period the HUD already prints as "ENEMY <era>" - the
+     most advanced any of them has re-equipped to (p.era moves when one
+     does). In a duel that IS the enemy's; in a free-for-all the screen
+     never says who is behind, so neither do these rows. A hostile's rows
+     are a reading of its TYPE, which the panel already names, and say
+     nothing about where its friends are. Cached in gallery.js, so a hover
+     or a panel refresh is a lookup. */
+  function counterRows(id, kind, owner) {
+    if (typeof Gallery === "undefined" || !Gallery.matchup || !owner || !kind || !G.enemiesOf) return "";
+    const rivals = G.enemiesOf(G.human);
+    let seen = null;
+    for (const q of rivals) if (q.era && (!seen || eraIndex(q.era) > eraIndex(seen))) seen = q.era;
+    const foes = G.enemiesOf(owner).map(o => ({ fac: o.faction,
+      era: (rivals.indexOf(o) >= 0 && seen) || o.era || G.era, ban: o.banned, cap: o.techCap }));
+    const mu = Gallery.matchup(id, kind, { fac: owner.faction, vs: foes, era: owner.era || G.era });
+    if (!mu || !mu.lines.length) return "";
+    return '<div class="vs">' + mu.lines.map(l =>
+      '<div class="' + l.cls + '"><b>' + l.k + "</b>" + l.v + "</div>").join("") + "</div>";
   }
 
   /* ---- field engineering ---- */
@@ -1480,6 +1519,7 @@ var UI = (function () {
         h += '<div class="stat">WEAPON <i>' + w.name.toUpperCase() + "</i></div>";
         h += '<div class="stat">RANGE <i>' + w.range + "</i></div>";
       }
+      h += counterRows(e.def.id, e.kind, e.owner);
       h += introBlock(e);
       el.innerHTML = h;
       return;
@@ -1551,6 +1591,11 @@ var UI = (function () {
       h += introBlock(e);
       const air1 = selectedAircraft();
       if (air1.length) h += airOrderPanel(air1);
+      /* our own unit, an emplacement or a silo of ours - last, under the
+         orders, so a fighter's air-order buttons stay where they were; a
+         yard's or a depot's panel is its production and hangar controls */
+      if (e.kind === "unit" || (e.def.weapons && e.def.weapons.length) || e.def.superweapon)
+        h += counterRows(e.def.id, e.kind, e.owner);
       el.innerHTML = h;
       if (e.ramp && e.ramp()) bindHangar(e, el);
       if (air1.length) bindAirOrders(el);

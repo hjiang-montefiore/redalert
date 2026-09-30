@@ -427,5 +427,8 @@ var Mines = (function () {
            CAP: CAP, countOwned: countOwned, roomFor: roomFor,
            forRender: forRender, countNear: countNear, tileMined: tileMined,
            detonate: detonate, threatens: threatens, LINGER: LINGER,
+           /* the two charges, read (never written) by the field manual's
+              verdict so a minelayer's card is this file's numbers */
+           LAND: LAND, SEA: SEA,
            snapshot: snapshot, restore: restore };
 })();

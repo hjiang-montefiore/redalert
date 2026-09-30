@@ -308,6 +308,16 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 #tooltip .fact .spec{color:#7f9aa8;font-size:10px;font-variant-numeric:tabular-nums}
 #tooltip .fact .arm{color:#93a08a;font-size:10px}
 #tooltip .fact .nt{color:#8d9c86;font-size:10px;font-style:italic;display:block;margin-top:3px}
+/* strong against / weak against (gallery.js matchup): the same rows on the card and the panel */
+#tooltip .vs{margin-top:6px;padding-top:5px;border-top:1px solid #2c3d28;font-size:10px;line-height:1.35}
+#tooltip .vs b,#selinfo .vs b{font-weight:600;font-size:8.5px;letter-spacing:1.2px;margin-right:5px}
+#tooltip .vs .s b,#selinfo .vs .s b,.gal-vs.s span{color:#8fd06f}
+#tooltip .vs .f b,#selinfo .vs .f b,.gal-vs.f span{color:#c9c07a}
+#tooltip .vs .w b,#selinfo .vs .w b,.gal-vs.w span{color:#e0a86a}
+#tooltip .vs .n b,#selinfo .vs .n b,.gal-vs.n span{color:#ff8a6b}
+#tooltip .vs .h b,#selinfo .vs .h b,.gal-vs.h span{color:#7fc9e0}
+.gal-vs{margin-top:4px}
+.gal-rec h4 i{font-style:normal;letter-spacing:.6px;text-transform:none;color:#6c7f66;margin-left:4px}
 
 #alerts{position:absolute;left:14px;bottom:14px;width:340px;z-index:20;
   display:flex;flex-direction:column-reverse;gap:3px;pointer-events:none}
@@ -412,6 +422,7 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 #selinfo .intro .nt{display:block;color:#93a08a;font-size:9.5px;font-style:italic;
   line-height:1.45}
 #selinfo .intro .arm2{display:block;color:#7e8c76;font-size:9px;line-height:1.4;margin-top:3px}
+#selinfo .vs{margin-top:6px;padding-top:5px;border-top:1px solid #2c3d28;font-size:9.5px;line-height:1.4;color:#a8bda0}
 #selinfo .intro .cf2{display:block;color:#7d6a3a;font-size:8.5px;margin-top:3px}
 /* field-engineering picker on a selected engineer */
 /* hangar rows: a picture of the aircraft, then its state, then a control */
