@@ -12456,7 +12456,10 @@ Object.assign(UNITS, {
 
   /* ============ ROC ANTI-SUBMARINE HELICOPTERS, 1980 to the present ============
      asw_helo_r is the S-70C(M) Thunderhawk, ordered in 1983 and delivered
-     around 1990, and it carried from:"e80". It is rebased to e90 in rules.js.
+     around 1990, and it carried from:"e80". It is rebased to e90 in rules.js,
+     and since then to e20: its row carries the Mk 54 of 2004, and the 1990s
+     and 2000s are roc_e00_aswhelo with the Mk 46 (the naval_fixes block at
+     the foot of this file).
      This row is what actually flew the ASW mission in the 1980s, and it is a
      genuinely different machine - a two-tonne light helicopter with a towed
      magnetic detector and no dipping sonar at all, hunting from the deck of a
@@ -13245,5 +13248,154 @@ var ERA_RADAR_GAPS = [];
     if (!_cu || !/_e(50|60|80|90|00)_/.test(_cid)) continue;
     if (!_cu.radar || _cu.role === "spaag") continue;
     if (_cu.radarQ === undefined) ERA_RADAR_GAPS.push(_cid + " radar=" + _cu.radar);
+  }
+})();
+
+/* ==================================================================
+   THE UNITED STATES NAVY'S ANTI-SUBMARINE HELICOPTERS, DECADE BY DECADE
+   (owner) "take 2 and 3 reommendations" - item 3: the MH-60R flew from
+   the 1960s although it entered service in 2006. rules.js now starts
+   asw_helo_n at e20, and these are the machines that really flew between.
+
+   The US Navy flew TWO helicopter communities for thirty-five years, and
+   the difference is the whole reason there are four rows here and not two:
+     HS  - the carrier's own anti-submarine squadron, a big helicopter with
+           a dipping sonar that works the inner zone around the carrier:
+           SH-3 Sea King from 1961, SH-60F Oceanhawk from 1991.
+     HSL - LAMPS, the helicopter an escort carries as part of her own sensor
+           suite, laying buoys whose signals go back to the ship: SH-2
+           Seasprite from 1971, SH-60B Seahawk from 1984.
+   A Sea King does not go into a Knox's hangar and a carrier did not sail
+   with a LAMPS detachment, so each row says which deck it is for
+   (`deckFit`), and deckHelo() in game.js puts the right one aboard.
+   The MH-60R merged the two in 2006, which is why nato_e00_aswhelo and
+   asw_helo_n carry no deckFit and go on every deck.
+
+   The figures follow the other navies' rows of the same decades: a Sea
+   King against the Royal Navy's Wessex and Sea King HAS.5, a Seasprite
+   against the ROC's 500MD and the Lynx, a Seahawk against the Lynx HMA.8
+   and the MH-60R. The torpedo is asw_mk54 renamed for its decade in
+   generations.js REAL_FIT (Mk 44 1957, Mk 46 1965), as every other era
+   anti-submarine helicopter's is. `sonar` is how the game models all of
+   it - a dipping set and a field of buoys are both a reach in tiles - and
+   the descriptions say which each one had. Their 3D model is the Seahawk
+   the roster already draws for asw_helo_n (render3d modelKeyFor, first
+   aswhelo row with a model): right for the SH-60B and SH-60F, a stand-in
+   for the Sea King and the Seasprite until they have one of their own.
+   The 1950s stay empty: the HSS-1 Seabat of 1955 is not in this roster.
+   The Sea King and the Seasprite both start in the 1960s, and unitFor()
+   names the first listed of a decade's rows, as it does for every role
+   with more than one card (33 such at 83a2127 - the Soviet tanks and SAMs
+   of the 1960s among them - and the commander chooses between cards in
+   ai.js mixFor). The Sea King is listed first on purpose: it is the
+   navy's anti-submarine helicopter in the sense a role question means.
+   Which deck takes which is deckFit's answer, not the order's.
+   ================================================================== */
+Object.assign(UNITS, {
+  nato_e60_aswhelo: { fac:"nato", role:"aswhelo", cat:"aircraft", layer:"air", name:"SH-3 Sea King", full:"Sikorsky SH-3A/D/H Sea King", cost:880, oil:18, time:13, hp:290, armor:"air", speed:2.85, turn:2.0, sight:6.0, r:12, mass:0, weapons:["asw_mk54"], prereq:["airbase"], tech:2, from:"e60", to:"e80", service:"1961", confidence:"high", ammo:2, radius:20, sonar:5.8, rcs:1.0, radarQ:3, gen:2.5, deckFit:"carrier", desc:"The carrier's submarine hunter for thirty years, and the first helicopter to carry its dipping sonar and its torpedoes in one airframe: the Seabat of the 1950s had hunted in pairs, one aircraft holding contact while the other carried the weapon. The HSS-2 of 1961, the SH-3D of 1966 with the AQS-13 sonar, the SH-3H of 1972 with sonobuoys and a magnetic anomaly detector - two Mk 44 or Mk 46 torpedoes, four hours on task, and a boat hull for a ditching. Too big for an escort's hangar: it flew from the carriers, and the escorts had the Seasprite, until the SH-60F began to take its place in 1991." },
+  nato_e60_lamps: { fac:"nato", role:"aswhelo", cat:"aircraft", layer:"air", name:"SH-2F Seasprite", full:"Kaman SH-2D/F Seasprite, LAMPS Mk I", cost:690, oil:13, time:11, hp:225, armor:"air", speed:3.2, turn:2.5, sight:5.8, r:12, mass:0, weapons:["asw_mk54"], prereq:["airbase"], tech:2, from:"e60", to:"e80", service:"1971", confidence:"high", ammo:1, radius:14, sonar:4.6, rcs:0.8, radarQ:3, gen:2.5, deckFit:"escort", desc:"LAMPS - the Light Airborne Multi-Purpose System - and the first manned helicopter an American escort carried as part of her own weapon system. A utility Seasprite rebuilt from 1971 with an LN-66 surface-search radar, a towed magnetic anomaly detector, fifteen sonobuoys and a Mk 46 torpedo, flown from the Knox, Garcia and Brooke escorts whose hangars had been built for the DASH drone. No dipping sonar: its buoys went into the water and their signals came back to the ship, whose operators did the hunting. The navy needed it badly enough to put the SH-2F back into production in 1981, while the SH-60B was late." },
+  nato_e80_lamps: { fac:"nato", role:"aswhelo", cat:"aircraft", layer:"air", name:"SH-60B Seahawk", full:"Sikorsky SH-60B Seahawk, LAMPS Mk III", cost:1150, oil:22, time:15, hp:340, armor:"air", speed:3.3, turn:2.4, sight:7.6, r:13, mass:0, weapons:["asw_mk54"], prereq:["airbase"], tech:2, from:"e80", to:"e90", service:"1984", confidence:"high", ammo:2, radius:22, sonar:7.0, rcs:0.78, radarQ:7, gen:3.5, deckFit:"escort", desc:"LAMPS Mk III: the Army's Black Hawk made a ship's aircraft - a folding tail and rotor, the RAST haul-down winch that drags it onto a pitching deck, and a data link that puts its APS-124 radar, its twenty-five-tube sonobuoy launcher and its magnetic detector straight into the ship's combat centre. Two Mk 46 torpedoes. In service in 1984 from the Perrys, the Spruances and the Ticonderogas, and the first ship's helicopter that fought as one of the ship's own sensors rather than as a guest on her deck; Penguin and Hellfire later made it a surface-strike aircraft as well. The MH-60R took its job, and the carrier's SH-60F's, in 2006." },
+  nato_e90_aswhelo: { fac:"nato", role:"aswhelo", cat:"aircraft", layer:"air", name:"SH-60F Oceanhawk", full:"Sikorsky SH-60F Oceanhawk", cost:1180, oil:22, time:15, hp:345, armor:"air", speed:3.3, turn:2.4, sight:7.4, r:13, mass:0, weapons:["asw_mk54"], prereq:["airbase"], tech:2, from:"e90", to:"e90", service:"1991", confidence:"high", ammo:3, radius:20, sonar:7.6, rcs:0.78, radarQ:0, gen:3.5, deckFit:"carrier", desc:"The Sea King's successor over the carrier: the Seahawk airframe without the SH-60B's search radar and data link, and with an AQS-13F dipping sonar and three torpedo stations in their place, because the carrier's inner zone is hunted by lowering a transducer below the layer, not by laying a field of buoys for a ship to listen to. Delivered from 1989 and in the carrier air wings from 1991. No radar at all, so it takes no air track of its own. The MH-60R replaced it, together with the escorts' SH-60B, in 2006." },
+});
+/* Taiwan's Thunderhawk of the 1990s is this row, with the Mk 46 it came
+   with in 1991; asw_helo_r in rules.js, with the Mk 54, now starts at e20
+   (see the note there). One aircraft, two rows, one per torpedo. */
+if (UNITS.roc_e00_aswhelo) UNITS.roc_e00_aswhelo.from = "e90";
+if (typeof reindexRoles === "function") reindexRoles();
+
+/* ==================================================================
+   THE FLIGHT DECKS THE ESCORTS REALLY HAD
+   (owner) "respect the reality ... It is fine that some countries does not
+   have them at all"
+   `helo`, the helicopters a hull embarks, was written on the twelve
+   generic present-day hulls in rules.js and on nothing else. MEASURED at
+   83a2127: 0 of the 112 surface combatants the rosters field from the
+   1950s to the 2010s, counted once a decade, carried it (32 do after
+   this), so no escort of any navy put to sea with a helicopter before the
+   2020s - not a Spruance, a Perry, a Sovremenny or a Bremen, whose hangars
+   were the point of them - and none of the British, French or German
+   present-day escorts either.
+   Each row below is a hull that had a flight deck AND a hangar in the
+   decade the row stands for, with the number it embarked, and a helicopter
+   of its own navy and decade that really flew from it (G.deckAircraftFor).
+   THE DECK IS DELIVERED EMPTY (emptyDeck, read by G.spawnUnit) and filled
+   the way a lost helicopter is replaced: bought from the ship's panel, or
+   by the commander's driveDecks, at the AIR tab's price and barrels, and
+   craned aboard at the yard. The present-day hulls in rules.js were priced
+   with their helicopters aboard and sail with them; these rows were priced
+   as hulls without, and nothing here changes a price. MEASURED on the first
+   cut, which delivered them full: a 1980s Perry at 875 sailed with two
+   SH-60Bs listed at 1,150 each - 2.63 times her own price in free aircraft,
+   a Spruance 1.43, a Kirov 1.35, where the worst present-day hull
+   (destroyer_n, two MH-60Rs) is 1.27. A torpedo is added where the class
+   carried tubes its row left out. Where the navy's only helicopter
+   row for that decade is a machine the hangar could not take, the hull is
+   left without, and says so here rather than carrying the wrong aircraft:
+     Leander (1963)          a Wasp - there is no Wasp row
+     Type 22, Type 42 (e80)  a Lynx HAS.2/3 - the 1980s row is the Sea King
+     Jiangwei, Luhu (e90)    a Z-9 - the 1990s row is the Z-8, a copied
+                             Super Frelon, and the Z-9C starts at e00
+     La Fayette, Cassard     a Panther, which has no submarine sensors
+   A pad with no hangar embarks nothing: Long Beach, Kynda, Kashin, Colbert,
+   the K130, the Type 056 - whose present-day row had a helicopter it never
+   carried - and the Arleigh Burke Flight I, built without the hangars the
+   Flight IIA added.
+   ================================================================== */
+var ERA_DECKS = {
+  /* ---- the United States Navy: LAMPS on the escorts ---- */
+  nato_e60_corvette:  { helo: 1 },     /* Knox: the DASH hangar, lengthened in the 1970s for an SH-2 */
+  nato_e80_corvette:  { helo: 2 },     /* Oliver Hazard Perry: two LAMPS */
+  nato_e80_destroyer: { helo: 2 },     /* Spruance */
+  nato_e80_cruiser:   { helo: 2 },     /* Ticonderoga */
+  nato_e90_corvette:  { helo: 2 },     /* Perry */
+  nato_e90_cruiser:   { helo: 2 },     /* Ticonderoga, 1990s and 2000s */
+  nato_e00_corvette:  { helo: 1 },     /* LCS: one MH-60, as corvette_n */
+  nato_e00_destroyer: { helo: 2 },     /* Burke Flight IIA */
+  /* ---- the Soviet and Russian navy ---- */
+  pact_e80_destroyer: { helo: 1 },     /* Sovremenny: one Ka-27 in a telescoping hangar */
+  pact_e80_cruiser:   { helo: 1 },     /* Slava: one Ka-27 below the pad */
+  pact_e90_destroyer: { helo: 1 },     /* Sovremenny, 1990s and 2000s */
+  pact_e90_cruiser:   { helo: 3 },     /* Pyotr Velikiy: three Ka-27 below the quarterdeck */
+  pact_e00_corvette:  { helo: 1 },     /* Steregushchiy */
+  pact_e00_cruiser:   { helo: 1 },     /* Slava */
+  /* ---- the PLA Navy ---- */
+  pla_e00_destroyer:  { helo: 1 },     /* Type 052C / 052D: one Z-9C */
+  pla_e00_corvette:   { add: ["asw_yu7"] },            /* Type 056: two triple Yu-7 mounts, a pad and no hangar */
+  corvette_c:         { helo: 0, add: ["asw_yu7"] },   /* Type 056A, the same */
+  /* ---- the ROC Navy ---- */
+  roc_e80_destroyer:  { helo: 1 },     /* Wu Chin III: the FRAM DASH hangar, one 500MD/ASW */
+  roc_e90_destroyer:  { helo: 2 },     /* Cheng Kung: the Perry hangar, two S-70C(M) */
+  roc_e00_destroyer:  { helo: 2 },     /* Kee Lung, as destroyer_r */
+  /* ---- the Royal Navy ---- */
+  gbr_e60_destroyer:  { helo: 1 },     /* County: one Wessex HAS.1 */
+  gbr_e60_cruiser:    { helo: 4 },     /* Tiger and Blake after the 1965-72 conversion the
+                                          row describes: a hangar aft for four Wessex, then Sea Kings */
+  gbr_e90_corvette:   { helo: 1 },     /* Type 23: one Lynx HMA.8 */
+  gbr_e90_destroyer:  { helo: 1 },     /* Type 42 Batch 3: one Lynx */
+  gbr_e00_corvette:   { helo: 1 },     /* Type 23: one Merlin HM1 */
+  gbr_e00_destroyer:  { helo: 1 },     /* Type 45: one Merlin or Lynx */
+  corvette_b:         { helo: 1 },     /* Type 23: one Merlin HM2 or Wildcat */
+  destroyer_b:        { helo: 1 },     /* Type 45 */
+  /* ---- the Marine nationale ---- */
+  fra_e80_destroyer:  { helo: 2 },     /* Tourville: two Lynx */
+  fra_e00_corvette:   { helo: 1, add: ["asw_mu90"] },  /* FREMM: one NH90, MU90 tubes */
+  fra_e00_destroyer:  { helo: 1, add: ["asw_mu90"] },  /* Horizon */
+  corvette_f:         { helo: 1, add: ["asw_mu90"] },
+  destroyer_f:        { helo: 1, add: ["asw_mu90"] },
+  /* ---- the Deutsche Marine ---- */
+  deu_e80_destroyer:  { helo: 2 },     /* Bremen: two Sea Lynx */
+  deu_e90_destroyer:  { helo: 2 },     /* Brandenburg */
+  deu_e00_destroyer:  { helo: 2 },     /* Sachsen: two Sea Lynx, MU90 already aboard */
+  destroyer_g:        { helo: 2, add: ["asw_mu90"] },  /* Sachsen: the MU90 its 2000s row carries */
+};
+(function () {
+  for (var _dk in ERA_DECKS) {
+    var _du = UNITS[_dk], _dd = ERA_DECKS[_dk];
+    if (!_du) continue;
+    if (_dd.helo !== undefined) _du.helo = _dd.helo;
+    if (_du.helo) _du.emptyDeck = true;
+    (_dd.add || []).forEach(function (w) {
+      if (WEAPONS[w] && _du.weapons.indexOf(w) < 0) _du.weapons = _du.weapons.concat([w]);
+    });
   }
 })();

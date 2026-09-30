@@ -247,6 +247,28 @@ var FACTS = {
     note:"Iowa paid off in October 1990 and New Jersey in February 1991. Missouri and Wisconsin fired Tomahawk on the " +
          "first night of Desert Storm and then 16-inch with Pioneer RPV spotting; Missouri, the last battleship in " +
          "commission anywhere, left service in March 1992.", confidence:"high" },
+  nato_e60_aswhelo: { name:"Sikorsky SH-3 Sea King (HSS-2, SH-3D, SH-3H)", origin:"United States", service:"1961",
+    crew:4, weight_t:9.3, speed_kmh:267, range_km:1000,
+    armament:"Two Mk 44 or Mk 46 torpedoes; AQS-10 then AQS-13 dipping sonar; sonobuoys and ASQ-81 MAD on the SH-3H",
+    note:"The first anti-submarine helicopter to carry its sonar and its weapon in one airframe, so one aircraft " +
+         "could find a boat and attack it. It flew from the carriers' HS squadrons from 1961 until the SH-60F " +
+         "began replacing it in 1991.", confidence:"high" },
+  nato_e60_lamps: { name:"Kaman SH-2D/F Seasprite (LAMPS Mk I)", origin:"United States", service:"1971",
+    crew:3, weight_t:6.1, speed_kmh:265, range_km:680,
+    armament:"One or two Mk 46 torpedoes; LN-66 radar, ASQ-81 towed MAD, 15 sonobuoys",
+    note:"The first manned helicopter carried as part of a US escort's own weapon system. It had no dipping " +
+         "sonar: its sonobuoys' signals were relayed to the ship, where the hunting was done.", confidence:"high" },
+  nato_e80_lamps: { name:"Sikorsky SH-60B Seahawk (LAMPS Mk III)", origin:"United States", service:"1984",
+    crew:3, weight_t:9.9, speed_kmh:270, range_km:830,
+    armament:"Two Mk 46 torpedoes; APS-124 radar, 25-tube sonobuoy launcher, ASQ-81 MAD, ALQ-142 ESM; Penguin and Hellfire later",
+    note:"A data link sends its radar and sonobuoy picture straight to the ship's combat information centre, and " +
+         "the RAST winch hauls it down onto a small, pitching deck.", confidence:"high" },
+  nato_e90_aswhelo: { name:"Sikorsky SH-60F Oceanhawk", origin:"United States", service:"1991",
+    crew:4, weight_t:9.9, speed_kmh:270, range_km:800,
+    armament:"Up to three Mk 46 torpedoes; AQS-13F dipping sonar",
+    note:"The carrier's inner-zone submarine hunter that replaced the Sea King: a Seahawk without the SH-60B's " +
+         "search radar and data link, and with a dipping sonar instead. The MH-60R replaced both in 2006.",
+    confidence:"high" },
   ssgn_n: { name:"Ohio-class SSGN (converted)", origin:"United States", service:"2007",
     crew:159, weight_t:18750, speed_kmh:"~37 submerged", range_km:"unlimited",
     armament:"Up to 154 Tomahawk in converted tubes, Mk 48 torpedoes, special forces lockout",

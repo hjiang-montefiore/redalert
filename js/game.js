@@ -573,8 +573,13 @@ var Game = (function () {
        the whole logistical point of embarking aircraft rather than basing
        them ashore.
        An era carrier spells its deck `carrier` and has no `helo` at all, so
-       gating on `helo` delivered the one hull built to operate aircraft empty. */
-    if (u && def.cat === "naval" && (def.helo || def.carrier)) G.embarkComplement(u);
+       gating on `helo` delivered the one hull built to operate aircraft empty.
+       An era ESCORT's deck (eras.js ERA_DECKS, def.emptyDeck) is delivered
+       empty on purpose: its row was priced as a hull without aircraft, so
+       its helicopters are bought for it like any replacement - measured on
+       the first cut, which put them aboard free, a 1980s Perry at 875 sailed
+       with 2,300 of SH-60Bs. */
+    if (u && def.cat === "naval" && (def.helo || def.carrier) && !def.emptyDeck) G.embarkComplement(u);
 
     /* move to rally */
     if (src.rally && def.cat !== "aircraft")
@@ -598,6 +603,26 @@ var Game = (function () {
   /* an id only if that machine can actually operate from a deck: whatever is
      put on one has to be allowed to land back on it by G.findPad */
   function deckLegal(id) { return (id && UNITS[id] && UNITS[id].carrierCapable) ? id : null; }
+  /* The navy's anti-submarine helicopter for THIS deck. Every other navy
+     here flew one shipborne ASW helicopter a decade and every deck takes it,
+     which is unitFor()'s answer. The US Navy flew two for thirty-five years
+     - the carrier's big dipping-sonar helicopter (SH-3, then SH-60F) and the
+     escort's LAMPS (SH-2, then SH-60B) - and the rows say which deck each
+     was for in `deckFit` (eras.js). So the newest of the navy's decade that
+     fits the deck; where none is marked for it, the newest of them all, as
+     before. A bare player (no hull) asks for no deck in particular. */
+  function deckHelo(p, era, host) {
+    const fit = host && host.def ? (host.def.carrier ? "carrier" : "escort") : null;
+    let best = null, bf = -1, any = null, af = -1;
+    for (const id of unitsFor(p.faction, "aswhelo", era)) {
+      if (!deckLegal(id)) continue;
+      const d = UNITS[id], f = d.from !== undefined ? eraIndex(d.from) : 0;
+      if (f > af) { af = f; any = id; }
+      if (fit && d.deckFit && d.deckFit !== fit) continue;
+      if (f > bf) { bf = f; best = id; }
+    }
+    return best || any;
+  }
 
   /* What a navy puts in ONE deck spot, on this ship, in its owner's period.
      An escort's hangar takes a helicopter and nothing else. A carrier is an
@@ -609,7 +634,7 @@ var Game = (function () {
     const p = host && host.owner ? host.owner : host;      // a bare player still works
     if (!p) return null;
     const era = p.era || G.era;
-    const helo = deckLegal(unitFor(p.faction, "aswhelo", era)) ||
+    const helo = deckHelo(p, era, host) ||
                  deckLegal(unitFor(p.faction, "transport", era));
     if (!host || !host.def || !host.def.carrier) return helo;
     /* The deck is filled with the workhorse rather than the exquisite machine -

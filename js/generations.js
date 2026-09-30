@@ -1632,6 +1632,11 @@
     ["fra_e90_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],
     ["deu_e80_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],                   /* Sea Lynx Mk88 */
     ["deu_e90_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],
+    /* the United States' own, decade by decade (eras.js) */
+    ["nato_e60_aswhelo", "Mk 54 lightweight torpedo", "Mk 44 and Mk 46 torpedoes"],     /* SH-3A to SH-3H */
+    ["nato_e60_lamps",   "Mk 54 lightweight torpedo", "Mk 46 torpedo"],                  /* SH-2F, LAMPS I */
+    ["nato_e80_lamps",   "Mk 54 lightweight torpedo", "Mk 46 torpedo"],                  /* SH-60B, LAMPS III */
+    ["nato_e90_aswhelo", "Mk 54 lightweight torpedo", "Mk 46 torpedo"],                  /* SH-60F */
     /* the sonar dips; the torpedo is what goes in the water */
     ["nato_e00_aswhelo", "AN/AQS-22 ALFS dipping sonar", "Mk 54 lightweight torpedo"],   /* MH-60R */
     ["gbr_e00_aswhelo",  "AN/AQS-22 ALFS dipping sonar", "Sting Ray torpedo"],           /* Merlin HM1 */

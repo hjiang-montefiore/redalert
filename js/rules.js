@@ -3440,7 +3440,17 @@ Object.assign(UNITS, {
 
 /* ---- ASW helicopters: what actually kills a submarine ---- */
 Object.assign(UNITS, {
-  asw_helo_n: { from:"e60", fac:"nato", role:"aswhelo", name:"MH-60R Seahawk", full:"Sikorsky MH-60R",
+  /* from:"e20", not "e60". js/facts.js records the MH-60R's service as
+     2006, and from:"e60" made it the only American anti-submarine
+     helicopter from the 1960s to the 1990s: every US deck of those four
+     decades flew a helicopter that did not yet exist, and the 1950s had
+     none at all. eras.js now carries what really flew there - the SH-3 Sea
+     King and the SH-2 Seasprite from the 1960s, the SH-60B from 1984, the
+     SH-60F over the carriers from 1991 - and nato_e00_aswhelo is this same
+     aircraft from 2006. Starting here at e20 rather than e00 keeps the two
+     MH-60R rows off one from-index in e00, the tie the Ka-27 note below
+     describes. */
+  asw_helo_n: { from:"e20", fac:"nato", role:"aswhelo", name:"MH-60R Seahawk", full:"Sikorsky MH-60R",
     cat:"aircraft", cost:1400, oil:26, time:16, hp:380, armor:"air", speed:3.4, turn:2.4,
     sight:8.5, r:13, mass:0, layer:"air", weapons:["asw_mk54"], prereq:["airbase"], tech:2,
     ammo:4, radius:24, sonar:9.5, rcs:0.75, radarQ:9, gen:4.5, carrierCapable:true,
@@ -3469,7 +3479,14 @@ Object.assign(UNITS, {
     ammo:3, radius:20, sonar:6.2, rcs:0.85, radarQ:5, gen:3.5, carrierCapable:true,
     desc:"Coaxial-rotor ASW helicopter dating from 1981. It still flies from Russian decks " +
          "because there is no replacement, and its sensors are of their era." },
-  asw_helo_r: { from:"e90", fac:"roc", role:"aswhelo", name:"S-70C(M) Thunderhawk", full:"Sikorsky S-70C(M)-1/2",
+  /* from:"e20", not "e90". This row carries the Mk 54 (asw_mk54), and the
+     Mk 54 entered service in 2004: the Thunderhawks came in 1991 with the
+     Mk 46, and Taiwan's Mk 46 stock was offered Mk 54 conversion kits only in
+     the package notified to Congress in June 2017. So the 1990s and 2000s
+     are roc_e00_aswhelo (eras.js), the same aircraft with its "Mk46
+     torpedoes", which the naval_fixes block at the foot of eras.js starts at
+     e90; this row is the present day's. */
+  asw_helo_r: { from:"e20", fac:"roc", role:"aswhelo", name:"S-70C(M) Thunderhawk", full:"Sikorsky S-70C(M)-1/2",
     cat:"aircraft", cost:1350, oil:25, time:16, hp:360, armor:"air", speed:3.3, turn:2.3,
     sight:8.0, r:13, mass:0, layer:"air", weapons:["asw_mk54"], prereq:["airbase"], tech:2,
     ammo:3, radius:22, sonar:8.6, rcs:0.78, radarQ:8, gen:4.0, carrierCapable:true,

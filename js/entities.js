@@ -1746,6 +1746,9 @@ class Unit {
        around. Anything with more than one mount now fires everything that is
        ready, in range, and able to engage this target. */
     if (this.def.weapons.length > 1 && this.cat === "naval") this.fireOtherMounts(wi, t);
+    /* ...and a warship under the other ship's guns does not hold at
+       missile range with its own gun silent: answerTheGun() below */
+    if (this.cat === "naval") this.answerTheGun(w, t, dist, dt);
   }
 
   /* A garrisoned squad fights from the windows: it keeps its own weapon but
@@ -1872,6 +1875,144 @@ class Unit {
         return;
       }
     }
+  }
+
+  /* ---- ANSWER THE GUN ----
+     engage() stands a hull off at the reach of the mount pickWeapon() chose,
+     and with an anti-ship missile in reach that mount is the missile. That is
+     the right place to stand while the stand-off is keeping the other ship's
+     guns off - a missile ship's whole case is that it hits from where it
+     cannot be hit back - and the wrong one once it is not. A hull already
+     inside the enemy's gun reach, whose own gun could not reach back, held at
+     missile range, launched a pair every twenty-odd seconds and was shelled
+     to death with its gun silent. The Soviet anti-ship rows were cannon
+     shells until eras.js made them missiles, so every Pact hull's "missile"
+     had been its gun and this never showed.
+     MEASURED at 83a2127 under jsc, one against one on an empty sea, each hull
+     on its own army's modifiers, 13 tiles apart, three runs each: a 2000s
+     Slava against an Arleigh Burke Flight IIA - which carries no anti-ship
+     missile at all - held at 12.3 tiles, put twelve to fourteen P-1000s
+     away, never fired its AK-130 and lost all three to 76-84 rounds of
+     5-inch; a Kynda lost all three to the Long Beach from 11.8-11.9 tiles;
+     ordered onto a Spruance, a 1980s Sovremenny held at 11.3 and lost all
+     three. With this the Slava closes to 9.6-9.7 tiles and wins all three
+     on its AK-130, the Kynda all three at 6.2 on its AK-726, the Sovremenny
+     all three at 9.1-9.2.
+     So a warship fighting a surface ship from INSIDE that ship's gun reach
+     closes to its own gun's, firing as it goes, WHEN ITS GUNS WIN THE
+     EXCHANGE THERE; the missile still leaves from fireOtherMounts() as it
+     comes off its reload, and once the gun is in reach pickWeapon() hands it
+     the fight on its own. Outside her gun reach nothing changes - the
+     stand-off is doing its job, and two missile ships still trade at missile
+     range - and a hull on HOLD stays where it was put. It is a ship's reflex,
+     read off what its side can see and the published rows, for every navy
+     and both commanders alike.
+     THE EXCHANGE is time to sink: her hit points over what our guns put into
+     her a second from where we would stand, against ours over what every
+     gun of theirs that reaches that point - or whose hull could see it -
+     puts into us; figures as pickWeapon() scores a mount (damage, burst,
+     accuracy and reload against the armour met). The first cut had none of
+     this - it closed whenever its gun did a quarter of hers - and in review
+     it sailed a Sovremenny in to 9.2 tiles of an Iowa, whose 16-inch had
+     never reached it at 12.3, and lost all three in 43-57 s where HEAD drew
+     two; it took a 1990s Sovremenny out of its line into a Ticonderoga, a
+     Burke and a Perry and lost the whole squadron all three times, where
+     HEAD drew; and it ran an Osa, a Molniya, a Buyan-M and a Huangfeng in
+     to 4.6-8.6 tiles of destroyers their guns could not beat. Over 24
+     pairings and 8 squadron actions, three runs each, on guard and under
+     attack orders, the missile ship's duels (won-lost-drawn) go from
+     1-27-44 on guard and 13-42-17 ordered at HEAD to 10-20-42 and 24-33-15 -
+     the Slava, the Kynda and both Sovremennys against American escorts;
+     against an Iowa and in every missile boat nothing changes - and every
+     squadron action ends ship for ship as at HEAD (sunk by the missile side
+     0 and 3, lost 20 and 36). Counting our own squadron's guns as well was
+     tried on paper and left out: the 1990s three against three then weighs
+     27.6 s against 27.5, a coin the first cut lost three times in three.
+     NEVER as a carrier - her weapon is her air wing, and the first cut sailed
+     a Kiev in to 6.9 tiles of a Spruance to fight it with two 76 mm mounts -
+     and never as a boat under the water, which has no gun to bring to bear. */
+  answerTheGun(w, t, dist, dt) {
+    if (!w || w.proj !== "missile" || this.stance === "hold") return;
+    if (this.def.carrier || this.layer !== "sea") return;
+    if (!t || t.cat !== "naval" || !t.def || t.targetLayer() !== "sea") return;
+    /* asked twice a second, not every tick: it reads every hull of theirs
+       this side can see, and a ship crosses a fraction of a tile in that */
+    const now = this.game.time;
+    let m = this.gunAns;
+    if (!m || m.t !== t || now < m.at) m = this.gunAns = { t: t, at: -1, reach: 0, hp: 0, thp: 0 };
+    if (now - m.at >= 0.5) {
+      m.at = now;
+      /* Once it has turned in, the exchange is judged on the hit points it
+         turned in with: the salvo that lands on the way in is part of the
+         price it already weighed. Re-weighed on what is left, the first cut
+         of this turned back 11.4 tiles out after one Harpoon hit - inside
+         the Burke's 5-inch and outside its own AK-130, the worst place of
+         all - and sank in 69 s where HEAD took 225. A new gun coming into
+         the reckoning still turns it back. */
+      m.reach = this.gunAnswer(t, dist, m.reach ? m.hp : this.hp, m.reach ? m.thp : t.hp);
+      if (!m.reach) m.hp = m.thp = 0;
+      else if (!m.hp) { m.hp = this.hp; m.thp = t.hp; }
+    }
+    if (!m.reach || dist <= m.reach) return;
+    this.stepAlong(t.x, t.y, dt, m.reach * 0.86);
+  }
+  /* The reach of the gun to close to, or 0 to stay where it is. hp and thp
+     are our hull's and hers, as the exchange is judged on them. */
+  gunAnswer(t, dist, hp, thp) {
+    const g = this.game, T = CFG.TILE, me = this.targetLayer();
+    const mine0 = this.armorClass(), theirs0 = t.armorClass();
+    const gun = (w) => !!w && (w.proj === "shell" || w.proj === "bullet") && w.dmg > 0;
+    const dps = (w, arm) => w.dmg * (w.burst || 1) * (w.acc !== undefined ? w.acc : 0.8) *
+                            CFG.dmgMult(w.warhead, arm) / Math.max(0.4, w.reload || 1);
+    /* 1. inside her gun reach: the PUBLISHED range with gunFirst()'s 1.15,
+          never her weaponRange() - another army's multipliers and optics
+          are not ours to know */
+    let reach = 0;
+    for (const k of (t.def.weapons || [])) {
+      const w = WEAPONS[k];
+      if (gun(w) && !(w.tgt && !w.tgt[me])) reach = Math.max(reach, (w.range || 0) * T * 1.15);
+    }
+    if (!reach || dist > reach) return 0;
+    /* 2. a gun of ours that cannot reach her from here, and what our guns
+          put into her from where it would stand */
+    let mine = 0;
+    const ours = [];
+    for (const k of this.def.weapons) {
+      const w = WEAPONS[k];
+      if (!gun(w) || (w.tgt && !w.tgt.sea) || this.holdsFire(w)) continue;
+      const r = this.weaponRange(w);
+      ours.push({ w: w, r: r });
+      if (r > mine) mine = r;
+    }
+    if (!mine || dist <= mine) return 0;
+    const stand = mine * 0.86;
+    let out = 0;
+    for (const o of ours) if (o.r >= stand) out += dps(o.w, theirs0);
+    if (!(out > 0)) return 0;
+    /* 3. and what comes back there: every gun that reaches that point or
+          could, on her and on every hull, battery and gun of theirs this
+          side knows of (G.sideSees). A hull at sea that could SEE the point
+          counts as if in reach - on guard it takes what it sees, and it
+          would be there before the fight was - so a single hull is fought
+          and a squadron is not. */
+    const sx = t.x + (this.x - t.x) * stand / dist, sy = t.y + (this.y - t.y) * stand / dist;
+    let inn = 0;
+    for (const p of g.players) {
+      if (p === this.owner || p.isNeutral || (g.allied && g.allied(this.owner, p))) continue;
+      for (const list of [p.units, p.buildings]) for (const e of list) {
+        if (e.dead || e.carried || !e.def || !e.def.weapons) continue;
+        if (e.kind === "building" && e.buildProgress < 1) continue;
+        if (e !== t && g.sideSees && !g.sideSees(this.owner, e)) continue;
+        const d = U.dist(sx, sy, e.x, e.y);
+        const join = e.layer === "sea" ? (e.def.sight || 0) * T : 0;
+        for (const k of e.def.weapons) {
+          const w = WEAPONS[k];
+          if (gun(w) && !(w.tgt && !w.tgt[me]) && d <= (w.range || 0) * T * 1.15 + join) inn += dps(w, mine0);
+        }
+      }
+    }
+    /* 4. close only to win: her hull gone to our guns before ours to theirs */
+    return thp / out < hp / Math.max(inn, 1e-6) ? mine : 0;
   }
 
   /* fire every mount other than the primary that can engage this target */
@@ -2124,6 +2265,20 @@ class Unit {
          mount was picked every tick, tryFire refused it, and a cheaper mount
          that could still fire was never tried */
       if (!anyAmmo && this.ammoMax && !this.canAfford(w)) continue;
+      /* ...and nor is a deck tube that is empty (rules.js FIXED_MAGAZINE).
+         Without this the missile went on outscoring the gun after the last
+         round had gone: tryFire refused it every tick, engage() held the
+         hull at the missile's stand-off, and a gun that could not reach from
+         there was never chosen. MEASURED at 5c8faba under jsc, a present-day
+         Slava 12 tiles from an Arleigh Burke with both of her tubes marked
+         empty: pickWeapon named the P-800 it could not fire, every tick, and
+         the AK-130 never; passed over, the gun leads and engage() closes to
+         its reach. That is what the Slava's own fact sheet says she becomes
+         once the tubes are empty - a gun platform - until she is back
+         alongside a yard. canTarget() and the commander's reachDps() ask
+         this same loop, so a hull that is dry and carries nothing else now
+         reads as unable to hit a ship, which it is. */
+      if (!anyAmmo && this.mag && this.mag[i] !== undefined && this.mag[i] <= 0) continue;
       if (spare && Unit.precious(w)) continue;
       /* A coaxial machine gun is for men in the open and is not a candidate
          against anything else (generations.js FAULT 05c). Scored like any

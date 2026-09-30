@@ -352,6 +352,67 @@ function tile(P,kind,r0){
 }
 function spawn(P,id,t,dx,dy){ if(!t||!UNITS[id]) return null;
   return Game.spawnUnitAt(P,id,(t.x+(dx||0))*32+16,(t.y+(dy||0))*32+16); }
+/* ---- A SCENE OF ITS OWN ----
+   A section that plays a scenario inside the shared match plays it among
+   whatever the match has put there, and a check that holds only because
+   nothing else happened to be passing is a check on the match, not on the
+   mechanic. Measured when the first cut of [90]'s closing rule moved where
+   the fleets stood: [82]'s power station was sunk by a passing Pact
+   corvette 14.0 tiles off before the commander's Burke could name it, and
+   [85]'s gun was already in sight of a MiG-29 on patrol 11.4 tiles away
+   before the observer's flash was tested; and, in review, with [89]'s
+   stream and the announcer applied beside that cut, an enemy scout on a
+   move order drove into sight of [85]'s counter-battery gun.
+   aside(made, at, pick, pad) takes off the board every unit the section
+   did not make that could reach into the scene - inside its own sight or
+   its longest weapon's reach, plus two seconds of its own speed and `pad`
+   tiles, of any point at() returns - and that pick() accepts; sweep() is run every tick while
+   the scene plays, so one that comes in later goes the same way; back()
+   puts every one back as it was, in the order the match held it, and
+   rebuilds the grid. Off the board is out of Game.entities and its owner's
+   list: not updated, not seen, not in the grid, not a target. Cargo in a
+   transport is left where it is - it does nothing while carried. */
+function aside(made, at, pick, pad){
+  var T=CFG.TILE, gone=[], ent0=Game.entities.slice(), own0=new Map();
+  function reach(u){
+    var r=u.sightR ? u.sightR() : 0;
+    (u.def.weapons||[]).forEach(function(k){ var w=WEAPONS[k];
+      if(w && w.dmg>0) r=Math.max(r, u.weaponRange ? u.weaponRange(w)/T : (w.range||0)); });
+    return (r+(u.def.speed||0)*2+1+(pad||0))*T;
+  }
+  function sweep(){
+    var pts=(at()||[]).filter(function(p){ return p && !p.dead; });
+    if(!pts.length) return gone.length;
+    for (var i=Game.entities.length-1;i>=0;i--){ var e=Game.entities[i];
+      if(e.dead || e.kind!=="unit" || made.indexOf(e)>=0 || (e.carried && !e.garrisonIn)) continue;
+      if(pick && !pick(e)) continue;
+      var r=reach(e);
+      if(!pts.some(function(p){ return U.dist2(e.x,e.y,p.x,p.y)<=r*r; })) continue;
+      Game.entities.splice(i,1);
+      var arr=e.owner.units; if(!own0.has(arr)) own0.set(arr, arr.slice());
+      var j=arr.indexOf(e); if(j>=0) arr.splice(j,1);
+      gone.push(e);
+    }
+    return gone.length;
+  }
+  function order(arr, base, add){
+    var k=new Map(); base.forEach(function(e,i){ k.set(e,i); });
+    var all=arr.concat(add.filter(function(e){ return arr.indexOf(e)<0; })), n=base.length;
+    var keyed=all.map(function(e,i){ return { e:e, k:k.has(e) ? k.get(e) : n+i }; });
+    keyed.sort(function(a,b){ return a.k-b.k; });
+    arr.length=0; keyed.forEach(function(x){ arr.push(x.e); });
+  }
+  function back(){
+    var n=gone.length; if(!n) return 0;
+    order(Game.entities, ent0, gone);
+    own0.forEach(function(base, arr){ order(arr, base, gone.filter(function(e){ return e.owner.units===arr; })); });
+    gone=[]; own0=new Map();
+    Game.grid.clear();
+    for (var q=0;q<Game.entities.length;q++){ var e=Game.entities[q]; if(!e.dead && (!e.carried || e.garrisonIn)) Game.grid.insert(e); }
+    return n;
+  }
+  return { sweep:sweep, back:back, out:function(){ return gone.length; } };
+}
 
 window.addEventListener("load", function(){
   var set=function(id,v){var el=document.getElementById(id); if(el) el.value=v;};
@@ -9059,7 +9120,17 @@ try{
       }
       return best;
     }
-    function put(pl,id,tx,ty,ang){ var u=Game.spawnUnitAt(pl,id,tx*T+16,ty*T+16); if(u){ made.push(u); if(ang!==undefined) u.ang=ang; } return u; }
+    /* The turret is laid on the facing given, with the hull. Unit's
+       constructor draws both from the SHARED match's Game.rng, before the
+       fights below seed their own, so each turret's first traverse - and
+       with it the fight - followed whatever the rest of the suite had drawn.
+       Measured when the naval_fixes stream changed how one commander's
+       destroyer met the player's Burke at t=376: the same ground, seed and
+       orders, and four T-72Bs against three M1A1s read "1 and 1 standing
+       after 160 s"; with seven or twelve throwaway units made first, 56%
+       and 59% taken and the T-72Bs gone. Laid with the hull, it reads 64%
+       on that match and on HEAD's alike. */
+    function put(pl,id,tx,ty,ang){ var u=Game.spawnUnitAt(pl,id,tx*T+16,ty*T+16); if(u){ made.push(u); if(ang!==undefined){ u.ang=ang; u.tang=ang; } } return u; }
     /* The board: only the fighters are on the grid and only they and Combat
        run, each tick as Game.tick runs them (deferred burst rounds first).
        The shared match's rounds, deferred calls, effects, 3D hit log and
@@ -9928,14 +9999,29 @@ try{
       var home=tile(P,"ground",3), pt=home ? mk(P,"mbt_n",home.x,home.y) : null;   // a unit, asked about below
       if(!eb||!mine2){ chk("commander scenario built", false, "ship "+!!eb+" structure "+!!mine2); return; }
       if (eye) eye.give({ type:"guard" });
+      /* The scene is its own (aside(), at the head of the suite). Measured
+         when the first cut of [90]'s closing rule moved the fleets: a Pact
+         corvette passing 14.0 tiles off sank this power station 2.1 s in,
+         with the Burke idle 16.5 tiles away, and the check read "never
+         named it". Every armed unit of either side that could reach the
+         station, the Burke or the eye is off the board while this plays,
+         and back when it ends; the commander, its eyes and its Burke are
+         what they were, and what it may name is exactly what it could
+         before. With no armed unit of ours left in the scene, "never at a
+         unit" is not left to whatever happened to pass: it is held by
+         eb.pickWeapon(pt) on the tank made for it above, in the same check. */
+      var armed82=function(u){ return (u.def.weapons||[]).some(function(k){ var w=WEAPONS[k]; return !!w && w.dmg>0; }); };
+      var side82=aside(made, function(){ return [mine2, eb, eye]; }, armed82);
       var named=null, flew=[], atUnit=0;
+      try {
       for (var k3=0;k3<Math.round(30/CFG.DT);k3++){
-        Game.tick(CFG.DT);
+        side82.sweep(); Game.tick(CFG.DT);
         if (!named && eb.order && eb.order.type==="attack" && eb.order.release && eb.order.target===mine2) named=eb.order;
         Combat.projectiles.forEach(function(p){ if(p.shooter===eb && p.w===et2.w && flew.indexOf(p)<0){ flew.push(p);
           if (p.target && p.target.kind!=="building") atUnit++; } });
         if (flew.length && named) break;
       }
+      } finally { side82.back(); }
       chk("the commander's Burke fires a Tomahawk only under a commanded attack on a structure it has seen, never at a unit",
           !!named && !named.auto && flew.length>=1 && atUnit===0 && (!pt || eb.pickWeapon(pt)!==et2.i),
           (named ? "named the "+named.target.def.id+" at "+(U.dist(eb.x,eb.y,mine2.x,mine2.y)/T2).toFixed(1)+" tiles" : "never named it")+
@@ -10474,7 +10560,9 @@ try{
        its scouting sweep drove the first cut's enemy scout 27.5 tiles off in
        the twenty seconds a ghost takes to fade. put() is the only mover. */
     function put(u,x,y){ u.x=x; u.y=y; u._pin={x:x,y:y}; }
-    function tk(){ for(var i=0;i<made.length;i++){ var u=made[i]; if(u.dead||!u._pin) continue;
+    /* the howitzer's scene is its own while it plays (see 3 below) */
+    var side85=null;
+    function tk(){ if(side85) side85.sweep(); for(var i=0;i<made.length;i++){ var u=made[i]; if(u.dead||!u._pin) continue;
         u.x=u._pin.x; u.y=u._pin.y; u.order={type:"idle"}; u.path=null; if(u.orders) u.orders.length=0;
         /* a unit marked quiet holds its fire: its own shots would light it */
         if(u._quiet&&u.cooldowns) for(var c=0;c<u.cooldowns.length;c++) u.cooldowns[c]=99; }
@@ -10608,6 +10696,16 @@ try{
       var g3=row(20,24);
       var gun=g3&&mk(P,"spg_n",g3.x,g3.y), vic=g3&&mk(E,"mbt_p",g3.x+20,g3.y);
       if(!gun||!vic){ chk("[85] howitzer scenario spawned", false, ""); return; }
+      /* Measured when the first cut of [90]'s closing rule made the shared
+         match play out differently: a MiG-29 of theirs on patrol
+         11.4 tiles from the gun, with 11.5 of sight, already had it in view
+         before the observer's flash was fired, and "the same gun IS seen
+         once an observer..." failed on what it saw first. The row is chosen
+         with nobody within 24 tiles, but a patrol does not stay out; so from
+         here to the observer's check everybody the section did not make that
+         could come within sight or reach of the gun, its target or the
+         observer is off the board, and back afterwards (aside()). */
+      side85=aside(made, function(){ return [gun, vic, obs]; });
       tk();
       var wH=WEAPONS[gun.def.weapons[0]];
       /* the commander's dossier, held by reference: intel() hands out the array itself */
@@ -10632,6 +10730,7 @@ try{
       chk("the same gun IS seen once an observer of theirs is close enough to see the flash",
           !!obs && !sawGun0 && Game.visibleTo(E,gun) && U.dist(obs.x,obs.y,gun.x,gun.y)/TS>obs.sightR(),
           obs ? "observer "+(U.dist(obs.x,obs.y,gun.x,gun.y)/TS).toFixed(1)+"t off, sees "+obs.sightR().toFixed(1)+"t" : "");
+      side85.back(); side85=null;
       /* a sniper's round at a squad that cannot see nine tiles */
       var g4=row(9,20);
       var snp=g4&&mk(P,"sniper_n",g4.x,g4.y), sq=g4&&mk(E,"rifle_p",g4.x+9,g4.y);
@@ -10689,6 +10788,13 @@ try{
         var g7=row(14,20); if(!g7) return null;
         var gn=mk(foe,gunId,g7.x,g7.y), rv=mk(side,radId,g7.x+12,g7.y);
         if(!gn||!rv) return null;
+        /* Its scene is its own too (aside()). Measured in review, with the
+           first cut of [90]'s stream, [89]'s and the announcer applied
+           together: an enemy scout on a move order drove to 5.9 tiles of
+           the gun, inside its 7.9 of sight, and still saw it at +9.2 s, so
+           the commander's radar light read 5.63 s where the plot's own is 4
+           and the player's check, which compares the two, failed with it. */
+        side85=aside(made, function(){ return [gn, rv]; });
         tk();
         var out={ covered: Game.radarCovers(side,gn.x,gn.y), eyes: rv.sightR(), D: U.dist(rv.x,rv.y,gn.x,gn.y)/TS };
         var seen=side===P ? function(){ return !!(Game.flashLit&&Game.flashLit(P,gn)); } : function(){ return Game.visibleTo(E,gn); };
@@ -10698,6 +10804,7 @@ try{
         for(var k=0;k<Math.ceil(12/DT);k++){ tk(); var sn=seen();
           if(sn&&on<0) on=Game.time-ts; if(!sn&&on>=0){ off=Game.time-ts; break; } }
         out.on=on; out.off=off; out.dur=on>=0&&off>0 ? off-on : -1;
+        side85.back(); side85=null;
         offBoard(gn,rv);
         return out;
       };
@@ -10779,6 +10886,7 @@ try{
       try { if (typeof Render2D!=="undefined" && Render===Render2D) Render2D.draw(DT, UI.input); } catch(e2){ err=e2; }
       chk("a 2D frame with a ghost in it draws cleanly", !err && !!ghostOf(sc), err ? String(err) : "");
     } finally {
+      if (side85) { side85.back(); side85=null; }
       Game.rng=rng; Game.weatherKey=wk0;
       if (Game.cbContacts) for(var ci=Game.cbContacts.length-1; ci>=0; ci--)
         if (made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
@@ -11783,6 +11891,232 @@ try{
         Game.deferred.length === def0.length && Combat.effects.length === fx0.length &&
         P.queues.building.items.length === qs0.building.items.length && made.every(function(e){ return e.dead; }),
         "entities " + ents0 + " -> " + Game.entities.length);
+  })();
+  }
+
+  /* ====== [90] A SHIP ANSWERS THE GUN, AND EVERY DECK FLIES ITS OWN DECADE'S HELICOPTER ======
+     (owner) "take 2 and 3 reommendations".
+     2 - warships that never used their guns. A present-day Slava whose deck
+     tubes were empty went on choosing the missile it could not fire, and a
+     missile hull already inside another ship's gun reach held at missile
+     range with its own gun silent and was shelled to death (entities.js
+     pickWeapon's empty-tube skip and answerTheGun). Held here with engage()
+     driven by hand and every cooldown held, so only where a hull goes is
+     measured, on a scene of its own (aside()): it closes under a Spruance's
+     guns and keeps its stand-off from a Perry's, and it does not close
+     under an Iowa's, on a Spruance with a Perry beside her, as a carrier,
+     with a 20 mm gun, or on HOLD.
+     3 - the MH-60R flew from the 1960s. Held here: the American anti-
+     submarine helicopter of each decade and the deck each one flew from,
+     through the same deckAircraftFor() / embarkComplement() / deckWants()
+     that deliver a hull and refill it for the player and the commander -
+     an era escort delivered with its deck empty, as its price says, and a
+     present-day one full, as its price says - the flight decks the other
+     navies' escorts really had, and the torpedo each carried. Everything
+     made or placed here is removed, the era is put back, and both
+     commanders' books are as they were. */
+  if (inHalf(1)) {
+  log("\n[90] A SHIP ANSWERS THE GUN, AND EVERY DECK FLIES ITS OWN DECADE'S HELICOPTER");
+  (function(){
+    var made=[], placed=[], T=CFG.TILE, era0=P.era, side90=null;
+    /* every unit made here draws its facing from Game.rng as it is built:
+       the section plays on a random stream of its own, so the match's is
+       handed back exactly where it was, draw for draw */
+    var rng0=Game.rng; Game.rng=U.mulberry32(90);
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats);
+    var nm=function(id){ return id && UNITS[id] ? UNITS[id].name : String(id); };
+    try {
+      /* ---- 1. an empty deck tube is not a choice: the present-day Slava turns to its gun ---- */
+      var s0=tile(P,"sea",4);
+      var sv=s0 && Game.spawnUnitAt(P,"cruiser_p",s0.x*T+16,s0.y*T+16); if(sv) made.push(sv);
+      var dd=s0 && Game.spawnUnitAt(E,"destroyer_n",s0.x*T+16,s0.y*T+16); if(dd) made.push(dd);
+      if (!sv || !dd) chk("a dry Slava turns to its gun", false, s0 ? "spawn failed" : "no sea");
+      else {
+        dd.x = sv.x + 12*T; dd.y = sv.y; dd.stance="hold";
+        var mi=-1; sv.def.weapons.forEach(function(k,i){ if(sv.def.magazine && sv.def.magazine[k]) mi=i; });
+        var full=sv.pickWeapon(dd);
+        sv.mag={}; sv.mag[mi]=0;
+        var dry=sv.pickWeapon(dd), wd=WEAPONS[sv.def.weapons[dry]];
+        var wn=function(i){ return i>=0 ? WEAPONS[sv.def.weapons[i]].name : "nothing"; };
+        chk("a Slava whose tubes are dry turns to its gun at 12 tiles instead of the missile it cannot fire",
+            mi>=0 && full===mi && dry!==mi && !!wd && wd.proj==="shell",
+            "full tubes: "+wn(full)+"; dry: "+wn(dry)+" (HEAD: the P-800 again, refused every tick)");
+        sv.mag=null;
+      }
+      /* this pair leaves before the next scene is built: section 2 counts
+         every gun of theirs in sight of where its hulls would stand */
+      if (sv) sv.dead=true; if (dd) dd.dead=true; Game.sweepDead();
+
+      /* ---- 2. under another ship's guns a missile hull closes to its own ---- */
+      var sl=null;
+      (function(){ var M=Game.map, hx=(P.homeX/T)|0, hy=(P.homeY/T)|0;
+        for (var r=4; r<90 && !sl; r++) for (var a=0; a<64 && !sl; a++) {
+          var an=a/64*6.283, x=(hx+Math.cos(an)*r)|0, y=(hy+Math.sin(an)*r)|0, ok=true;
+          if (x<3 || y<4 || x+14>=M.W-3 || y>=M.H-4) continue;
+          for (var i=0; i<=14 && ok; i++) for (var j=-2; j<=2; j++) if (!GameMap.passable(M,x+i,y+j,"sea")) { ok=false; break; }
+          if (ok) sl={x:x,y:y};
+        } })();
+      /* each trial is its own pair, and the only hulls near: anybody the
+         section did not make that could see or reach the water is aside()
+         while they run, and nothing is ticked, so nothing else moves */
+      var here=sl ? {x:sl.x*T+16, y:sl.y*T+16} : null;
+      if (here) { side90=aside(made, function(){ return [here, {x:here.x+14*T, y:here.y}]; }, null, 12); side90.sweep(); }
+      var at=function(pl,id,dx,dy){ var u=sl && UNITS[id] ? Game.spawnUnitAt(pl,id,(sl.x+(dx||0))*T+16,(sl.y+(dy||0))*T+16) : null; if(u) made.push(u); return u; };
+      var gone=function(){ for (var i=0;i<arguments.length;i++) if (arguments[i]) arguments[i].dead=true; Game.sweepDead(); };
+      /* the shooter `gap` tiles from the target, both put where they are
+         meant to be; returns where the shooter stands after 5 s of engage() */
+      var trial=function(sh, tg, gap, stance){
+        sh.x=sl.x*T+16; sh.y=sl.y*T+16; tg.x=sh.x+gap*T; tg.y=sh.y;
+        sh.path=null; sh.stance=stance||"guard"; sh.order={ type:"attack", target:tg }; sh.tang=0; sh.ang=0; sh.gunAns=null;
+        for (var n=0;n<150;n++){ for (var c=0;c<sh.cooldowns.length;c++) sh.cooldowns[c]=99; sh.engage(tg, CFG.DT); }
+        return U.dist(sh.x,sh.y,tg.x,tg.y)/T;
+      };
+      var duel=function(shId, tgId, gap, stance, extra){
+        var sh=at(P,shId), tg=at(E,tgId,gap,0), ex=extra ? at(E,extra[0],gap+extra[1],extra[2]) : null;
+        if (!sh || !tg || (extra && !ex)) { gone(sh,tg,ex); return -1; }
+        var d=trial(sh,tg,gap,stance); gone(sh,tg,ex); return d;
+      };
+      if (!sl) chk("a Sovremenny keeps its stand-off from a Perry and closes under a Spruance's guns", false, "no open water");
+      else {
+        var ga=at(P,"pact_e80_destroyer"), mk=-1, gk=-1;
+        ga.def.weapons.forEach(function(k,i){ var w=WEAPONS[k]; if(w && w.tgt && w.tgt.sea){ if(w.proj==="missile") mk=i; else if(w.proj==="shell") gk=i; } });
+        var reach=function(u,i){ return i<0 ? 0 : u.weaponRange(WEAPONS[u.def.weapons[i]])/T; };
+        var mR=reach(ga,mk), gR=reach(ga,gk), gap=11;
+        gone(ga);
+        var SV="pact_e80_destroyer";
+        var fromPerry=duel(SV,"nato_e80_corvette",gap), fromSpru=duel(SV,"nato_e80_destroyer",gap), onHold=duel(SV,"nato_e80_destroyer",gap,"hold");
+        chk("a Sovremenny keeps its stand-off from a Perry and closes under a Spruance's guns, and on HOLD stays where it was put",
+            mk>=0 && gk>=0 && mR>gap && gR<gap && Math.abs(fromPerry-gap)<0.05 && fromSpru>0 && fromSpru<gap-0.5 && Math.abs(onHold-gap)<0.05,
+            (mk<0 ? "no anti-ship missile aboard; " : "Moskit "+mR.toFixed(1)+", AK-130 "+gR.toFixed(1)+"; ")+
+            "from "+gap+" tiles: a Perry -> "+fromPerry.toFixed(2)+", a Spruance -> "+fromSpru.toFixed(2)+", on hold -> "+onHold.toFixed(2)+
+            " (HEAD: 11.00 from both, shelled with its gun silent)");
+        /* ...and where its gun would lose the exchange it stays: an Iowa's
+           16-inch and 5-inch sink it before its AK-130 sinks her, and a Perry
+           beside the Spruance - in sight of the water it would stand on -
+           turns the same duel into a squadron's fight */
+        var fromIowa=duel(SV,"nato_e80_battleship",gap), fromPair=duel(SV,"nato_e80_destroyer",gap,null,["nato_e80_corvette",3,2]);
+        chk("but not under an Iowa's guns, nor on a Spruance with a Perry beside her: its guns would lose the exchange",
+            Math.abs(fromIowa-gap)<0.05 && Math.abs(fromPair-gap)<0.05,
+            "from "+gap+" tiles: an Iowa -> "+fromIowa.toFixed(2)+", a Spruance and a Perry -> "+fromPair.toFixed(2)+
+            " (the first cut: 9.2 and closing, and lost to the Iowa in 43-57 s)");
+        /* ...and the two things it never does */
+        var fromKiev=duel("pact_e80_carrier","nato_e80_destroyer",gap), fromHaiOu=duel("roc_e60_missileboat","pla_e60_destroyer",8);
+        var hoGun=UNITS.roc_e60_missileboat ? UNITS.roc_e60_missileboat.weapons.map(function(k){ return WEAPONS[k]; }).filter(function(w){ return w && (w.proj==="shell"||w.proj==="bullet"); })[0] : null;
+        chk("a carrier does not close on anybody's guns, and a 20 mm gun is no reason to close on a destroyer",
+            Math.abs(fromKiev-gap)<0.05 && Math.abs(fromHaiOu-8)<0.05,
+            "Kiev under a Spruance's 5-inch from "+gap+" tiles -> "+fromKiev.toFixed(2)+"; Hai Ou ("+(hoGun?hoGun.name:"?")+") under a Luda's 130 mm from 8 -> "+fromHaiOu.toFixed(2)+
+            " (the first cut: 6.9 and 4.6)");
+      }
+      if (side90) { side90.back(); side90=null; }
+
+      /* ---- 3. the American anti-submarine helicopter of each decade ---- */
+      var YEARS={ e50:[1950,1959], e60:[1960,1979], e80:[1980,1989], e90:[1990,1999], e00:[2000,2019], e20:[2020,2099] };
+      var byEra={}, early=[];
+      ERAS.forEach(function(e){ byEra[e]=unitsFor("nato","aswhelo",e).map(nm).sort().join(" + ") || "none";
+        unitsFor("nato","aswhelo",e).forEach(function(id){ var y=parseInt(UNITS[id].service||FACTS[id]&&FACTS[id].service,10);
+          if(/MH-60R/.test(UNITS[id].name) && ERAS.indexOf(e)<ERAS.indexOf("e00")) early.push(e+":"+id);
+          if(!(y<=YEARS[e][1])) early.push(e+":"+id+" in service "+y); }); });
+      chk("the United States flies the helicopters of each decade: Sea King and Seasprite from the 1960s, the SH-60B from 1984, the SH-60F over the carriers from 1991, the MH-60R from 2006 - and nothing before it existed",
+          byEra.e50==="none" && byEra.e60==="SH-2F Seasprite + SH-3 Sea King" &&
+          byEra.e80==="SH-2F Seasprite + SH-3 Sea King + SH-60B Seahawk" && byEra.e90==="SH-60B Seahawk + SH-60F Oceanhawk" &&
+          byEra.e00==="MH-60R Seahawk" && byEra.e20==="MH-60R Seahawk" && early.length===0 && UNITS.asw_helo_n.from==="e20",
+          ERAS.map(function(e){ return e+": "+byEra[e]; }).join("; ")+(early.length?" | too early: "+early.join(", "):"")+" (HEAD: the MH-60R from e60, none in e50)");
+      var NEW=["nato_e60_aswhelo","nato_e60_lamps","nato_e80_lamps","nato_e90_aswhelo"], badNew=[];
+      NEW.forEach(function(id){ var d=UNITS[id]; if(!d){ badNew.push(id+" missing"); return; }
+        var tw=(d.weapons||[]).map(function(k){ return WEAPONS[k]; }).filter(function(w){ return w && w.proj==="torpedo"; })[0];
+        if(!FACTS[id]) badNew.push(id+" no facts");
+        if(!tw || /Mk 54/.test(tw.name) || !/Mk 4[46]/.test(tw.name)) badNew.push(id+" torpedo "+(tw?tw.name:"none"));
+        if(d.deckFit!=="carrier" && d.deckFit!=="escort") badNew.push(id+" deckFit "+d.deckFit);
+        if(!d.carrierCapable || !d.hover) badNew.push(id+" not deck-capable"); });
+      var torp=function(id){ return id && UNITS[id] ? (UNITS[id].weapons||[]).map(function(k){ return WEAPONS[k]; }).filter(function(w){ return w && w.proj==="torpedo"; })[0] : null; };
+      var roc90=unitFor("roc","aswhelo","e90"), roc20=unitFor("roc","aswhelo","e20"), thr=torp(roc90), thr20=torp(roc20);
+      chk("each carries the torpedo of its decade and a fact sheet, and Taiwan's Thunderhawk the Mk 46 it came with in 1991 - the Mk 54 only today",
+          badNew.length===0 && !!thr && /Mk ?46/.test(thr.name) && roc90!=="asw_helo_r" && !!thr20 && /Mk 54/.test(thr20.name) && roc20==="asw_helo_r",
+          (badNew.join("; ") || NEW.map(function(id){ var tw=UNITS[id].weapons.map(function(k){ return WEAPONS[k]; }).filter(function(w){ return w.proj==="torpedo"; })[0];
+            return UNITS[id].name+" "+tw.name+" ("+UNITS[id].deckFit+")"; }).join(", "))+"; S-70C(M) of the 1990s ("+roc90+") "+(thr?thr.name:"no torpedo")+", of today ("+roc20+") "+(thr20?thr20.name:"no torpedo")+
+          " (HEAD: the Mk 54 from 1991)");
+
+      /* ---- 4. and the deck each one flew from ---- */
+      var stub=function(id, f, e){ var d=UNITS[id], n=d ? ((d.carrier||0)||(d.helo||0)) : 0;
+        return { def:d, owner:{ faction:f, era:e, units:[] }, deckSlots:function(){ return n; }, wing:function(){ return []; } }; };
+      var plan=function(id, f, e){ var s=stub(id,f,e), out=[]; if(!s.def) return "missing"; for(var i=0;i<s.deckSlots();i++) out.push(nm(Game.deckAircraftFor(s,i))); return out.join(", ") || "no deck"; };
+      var helo=function(id, f, e){ var s=stub(id,f,e); if(!s.def) return "missing"; var n=s.deckSlots(); return n ? nm(Game.deckAircraftFor(s,n-1)) : "no deck"; };
+      var US={ knox:plan("nato_e60_corvette","nato","e60"), perry:plan("nato_e80_corvette","nato","e80"),
+               spru:plan("nato_e80_destroyer","nato","e80"), tico:plan("nato_e80_cruiser","nato","e80"),
+               burke1:plan("nato_e90_destroyer","nato","e90"), burke2:plan("nato_e00_destroyer","nato","e00"),
+               cv60:helo("nato_e60_carrier","nato","e60"), cv80:helo("nato_e80_carrier","nato","e80"),
+               cv90:helo("nato_e90_carrier","nato","e90"), cv00:helo("nato_e00_carrier","nato","e00") };
+      var refill=Game.deckWants ? nm(Game.deckWants(stub("nato_e60_corvette","nato","e60"))) : "none";
+      chk("a Knox embarks a Seasprite; Perry, Spruance and Ticonderoga two SH-60Bs; the carriers a Sea King, then the SH-60F, then the MH-60R; the Burke Flight I no helicopter",
+          US.knox==="SH-2F Seasprite" && US.perry==="SH-60B Seahawk, SH-60B Seahawk" && US.spru===US.perry && US.tico===US.perry &&
+          US.burke1==="no deck" && US.burke2==="MH-60R Seahawk, MH-60R Seahawk" &&
+          US.cv60==="SH-3 Sea King" && US.cv80==="SH-3 Sea King" && US.cv90==="SH-60F Oceanhawk" && US.cv00==="MH-60R Seahawk" &&
+          refill==="SH-2F Seasprite",
+          Object.keys(US).map(function(k){ return k+": "+US[k]; }).join("; ")+"; a Knox's empty deck asks for: "+refill+
+          " (HEAD: no escort deck before e20, and the MH-60R on every carrier from e60)");
+      /* delivered for real, through the yard's own path (G.spawnUnit), and
+         refilled: an era hull's price never had aircraft in it, so her deck
+         comes out of the yard empty and asks for the helicopter of her
+         decade; a present-day hull's did, and she sails with hers */
+      var yard=null; P.buildings.forEach(function(b){ if(!yard && !b.dead && b.buildProgress>=1 && b.def.id==="navalyard") yard=b; });
+      if (!yard) { var hx=(P.homeX/T)|0, hy=(P.homeY/T)|0;
+        for (var ry=3; ry<45 && !yard; ry++) for (var ra=0; ra<72 && !yard; ra++) { var an=ra/72*6.283, yx=(hx+Math.cos(an)*ry)|0, yy=(hy+Math.sin(an)*ry)|0;
+          if (Game.canPlace(P,"navalyard",yx,yy)) { yard=Game.placeBuilding(P,"navalyard",yx,yy,true); if (yard) placed.push(yard); } } }
+      var cash1=P.cash, took="no yard", again="none", buys="", full="";
+      if (yard) {
+        P.era="e80";
+        var sp=Game.spawnUnit(P,"nato_e80_destroyer");
+        if (sp) { made.push(sp); took=sp.wing().length+"/"+sp.deckSlots(); again=nm(Game.deckWants(sp)); buys=Game.deckTypesFor(sp).map(nm).join(", "); }
+        P.era="e20";
+        var dn=Game.spawnUnit(P,"destroyer_n");
+        if (dn) { made.push(dn); var wg=dn.wing(); wg.forEach(function(u){ made.push(u); }); full=wg.map(function(u){ return u.def.name; }).join(", "); }
+        P.era=era0;
+      }
+      chk("a Spruance of the 1980s comes out of the yard with her deck empty, asking for SH-60Bs at their price; a present-day Burke with her two MH-60Rs",
+          took==="0/2" && again==="SH-60B Seahawk" && buys==="SH-60B Seahawk" && full==="MH-60R Seahawk, MH-60R Seahawk" && P.cash===cash1,
+          "Spruance deck "+took+", asks for "+again+", buys "+buys+"; the e20 Burke sails with "+(full||"nothing")+
+          " (the first cut: a Spruance at 1,605 sailed with 2,300 of SH-60Bs aboard)");
+
+      /* ---- 5. the other navies' escorts, with the hangars they had ---- */
+      var OTH={ sovremenny:plan("pact_e80_destroyer","pact","e80"), slava:plan("pact_e80_cruiser","pact","e80"),
+                kirov:plan("pact_e90_cruiser","pact","e90"), type052:plan("pla_e00_destroyer","pla","e00"),
+                chengKung:plan("roc_e90_destroyer","roc","e90"), county:plan("gbr_e60_destroyer","gbr","e60"),
+                type23:plan("gbr_e90_corvette","gbr","e90"), tourville:plan("fra_e80_destroyer","fra","e80"),
+                bremen:plan("deu_e80_destroyer","deu","e80"), fremm:plan("corvette_f","fra","e20"),
+                type056:plan("corvette_c","pla","e20"), luhu:plan("pla_e90_destroyer","pla","e90"),
+                type22:plan("gbr_e80_corvette","gbr","e80"), k130:plan("corvette_g","deu","e20"),
+                tiger:plan("gbr_e60_cruiser","gbr","e60") };
+      var tube=function(id, name){ return (UNITS[id].weapons||[]).some(function(k){ var w=WEAPONS[k]; return !!w && w.proj==="torpedo" && w.name.indexOf(name)>=0; }); };
+      var tubes={ fremm:tube("corvette_f","MU90"), horizon:tube("destroyer_f","MU90"), f124:tube("destroyer_g","MU90"), type056a:tube("corvette_c","Yu-7") };
+      chk("the other navies' escorts embark what their hangars held, the hulls with a pad and no hangar - or a hangar their navy's helicopter of that decade did not fit - none, and every class its torpedo tubes",
+          OTH.sovremenny==="Ka-27PL Helix" && OTH.slava==="Ka-27PL Helix" && OTH.kirov==="Ka-27 Helix, Ka-27 Helix, Ka-27 Helix" &&
+          OTH.type052==="Z-9C / Z-20F" && OTH.chengKung==="S-70C(M) Thunderhawk, S-70C(M) Thunderhawk" && OTH.county==="Wessex HAS.1" &&
+          OTH.type23==="Lynx HMA.8" && OTH.tourville==="Lynx Mk4, Lynx Mk4" && OTH.bremen==="Sea Lynx Mk88, Sea Lynx Mk88" &&
+          OTH.fremm==="NH90 NFH Caiman" && OTH.type056==="no deck" && OTH.luhu==="no deck" && OTH.type22==="no deck" && OTH.k130==="no deck" &&
+          OTH.tiger==="Wessex HAS.1, Wessex HAS.1, Wessex HAS.1, Wessex HAS.1" &&
+          tubes.fremm && tubes.horizon && tubes.f124 && tubes.type056a,
+          Object.keys(OTH).map(function(k){ return k+": "+OTH[k]; }).join("; ")+"; tubes "+JSON.stringify(tubes));
+    } catch(e) {
+      chk("[90] ran", false, e && e.message ? e.message : String(e));
+    } finally {
+      P.era=era0; Game.rng=rng0;
+      if (side90) { side90.back(); side90=null; }
+      made.forEach(function(u){ if(!u.dead) u.dead=true; if(u.deckQ) u.deckQ.length=0; });
+      placed.forEach(function(b){ if(!b.dead){ b.dead=true; Game.removeBuilding(b); } });
+      Game.sweepDead();
+      for (var pj=Combat.projectiles.length-1; pj>=0; pj--) if (made.indexOf(Combat.projectiles[pj].shooter)>=0) Combat.projectiles.splice(pj,1);
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    /* the books are written back above by design; what this holds is that
+       nothing the section made, placed or took aside is left out of place */
+    chk("the shared match is as it was: its random stream, the era, both commanders' books, nothing made or placed here left, no stray round, everything taken aside back",
+        Game.rng===rng0 && P.era===era0 && keep(P.stats)===sP && keep(E.stats)===sE && side90===null &&
+        made.every(function(u){ return u.dead && Game.entities.indexOf(u)<0; }) &&
+        placed.every(function(b){ return b.dead && P.buildings.indexOf(b)<0; }) &&
+        !Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0; }),
+        made.length+" units made and removed, "+placed.length+" yard placed and removed");
   })();
   }
 
