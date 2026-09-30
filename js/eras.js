@@ -10231,7 +10231,7 @@ Object.assign(UNITS, {
   pact_e80_stealthfighter: {"fac":"pact","role":"stealthfighter","cat":"aircraft","layer":"air","name":"none","full":"No Soviet low-observable aircraft existed","cost":1790,"oil":34,"time":29,"hp":475,"armor":"air","speed":8.93,"turn":2.7,"sight":9.7,"r":16,"mass":0,"weapons":["w_e80_pact_stealthfighter"],"prereq":["airbase","lab"],"tech":3,"from":"e80","to":"e80","service":"—","confidence":"high","desc":"State this plainly: the USSR never fielded a stealth aircraft. Soviet institutes produced the diffraction theory (Ufimtsev) that Lockheed used for Have Blue, but no Soviet stealth programme reached service in this era or the next two.","jet":true,"ammo":4,"radar":6.7,"radius":45,"rcs":0.6},
   pact_e90_rifle: {"fac":"pact","role":"rifle","cat":"infantry","layer":"ground","name":"Motor Rifle Squad","full":"Motor Rifle Squad, AK-74M","cost":115,"oil":0,"time":4,"hp":110,"armor":"infantry","speed":1.03,"turn":7,"sight":5.2,"r":6,"mass":0.1,"weapons":["w_e90_pact_rifle"],"prereq":["barracks"],"tech":1,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"The game's `rifle_p` exactly. Polymer furniture, side rail for optics, one rifle for all roles replacing the earlier variant spread. Adopted the year the USSR ended and still the standard rifle thirty years later."},
   pact_e90_at: {"fac":"pact","role":"at","cat":"infantry","layer":"ground","name":"Kornet Team","full":"AT Team, 9M133 Kornet","cost":320,"oil":0,"time":8,"hp":100,"armor":"infantry","speed":0.86,"turn":6,"sight":6.4,"r":6,"mass":0.1,"weapons":["w_e90_pact_at"],"prereq":["barracks"],"tech":1,"from":"e90","to":"e90","service":"1998","confidence":"high","desc":"The game's `at_p`. Beam-riding rather than wire-guided, so no wire to break and better jam resistance — but the gunner must hold the beam on target for the whole flight. No fire-and-forget, unlike Javelin. 9K115-2 Metis-M (1992) is the lighter companion."},
-  pact_e90_mbt: {"fac":"pact","role":"mbt","cat":"vehicle","layer":"ground","name":"T-90","full":"T-90 (Object 188) Main Battle Tank","cost":1205,"oil":17,"time":19,"hp":1620,"armor":"heavy","speed":1.57,"turn":1.6,"sight":6.8,"r":15,"mass":47,"weapons":["w_e90_pact_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1992","confidence":"medium","desc":"Originally designated T-72BU and renamed for political and export reasons. Genuinely improved, but only around 120 were delivered to the Russian Army through the entire decade because there was no budget. T-80U remains the premium tank on paper and increasingly a museum piece in practice.","turret":true,"tturn":1.3,"crush":true},
+  pact_e90_mbt: {"fac":"pact","role":"mbt","cat":"vehicle","layer":"ground","name":"T-90","full":"T-90 (Object 188) Main Battle Tank","mixCap":0.25,"cost":1205,"oil":17,"time":19,"hp":1620,"armor":"heavy","speed":1.57,"turn":1.6,"sight":6.8,"r":15,"mass":47,"weapons":["w_e90_pact_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1992","confidence":"medium","desc":"Originally designated T-72BU and renamed for political and export reasons. Genuinely improved, but only around 120 were delivered to the Russian Army through the entire decade because there was no budget. T-80U remains the premium tank on paper and increasingly a museum piece in practice.","turret":true,"tturn":1.3,"crush":true},
   pact_e90_lighttank: {"fac":"pact","role":"lighttank","cat":"vehicle","layer":"ground","name":"BMD-3","full":"BMD-3 Airborne Combat Vehicle","cost":620,"oil":8,"time":11,"hp":660,"armor":"light","speed":1.96,"turn":2.4,"sight":6.6,"r":13,"mass":18,"weapons":["w_e90_pact_lighttank"],"prereq":["factory"],"tech":1,"from":"e90","to":"e90","service":"1990","confidence":"medium","desc":"Only around 130 built before funding stopped. PT-76 is withdrawn from Russian units during this decade. Russia effectively has no light tank in the 1990s — the role is a hole until the Sprut-SD in 2005.","turret":true,"tturn":1.6},
   pact_e90_ifv: {"fac":"pact","role":"ifv","cat":"vehicle","layer":"ground","name":"BMP-3","full":"BMP-3 IFV","cost":810,"oil":10,"time":13,"hp":800,"armor":"light","speed":1.78,"turn":2,"sight":6.4,"r":14,"mass":19,"weapons":["w_e90_pact_ifv"],"prereq":["factory"],"tech":1,"from":"e90","to":"e90","service":"1987","confidence":"medium","desc":"Production continues almost entirely for export — the UAE order kept the line alive. Russian Army deliveries in the 1990s are minimal. BTR-80A (1994) adds a 30mm turret to the wheeled carrier and is the more common new vehicle.","turret":true,"tturn":1.8,"cargo":6},
   pact_e90_spg: {"fac":"pact","role":"spg","cat":"vehicle","layer":"ground","name":"2S19 Msta-S","full":"2S19 Msta-S 152mm SPH","cost":1245,"oil":17,"time":20,"hp":730,"armor":"light","speed":1.32,"turn":1.5,"sight":5.1,"r":15,"mass":42,"weapons":["w_e90_pact_spg"],"prereq":["factory","radar"],"tech":2,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"Unchanged, and barely produced. Artillery remains the strongest arm of the Russian ground force through this decade precisely because it needs no new technology to be effective.","turret":true,"tturn":0.9},
@@ -10253,7 +10253,7 @@ Object.assign(UNITS, {
   pact_e90_stealthfighter: {"fac":"pact","role":"stealthfighter","cat":"aircraft","layer":"air","name":"none","full":"MiG 1.44 and Su-47 were prototypes only","cost":2105,"oil":40,"time":30,"hp":535,"armor":"air","speed":9.21,"turn":2.7,"sight":10.6,"r":16,"mass":0,"weapons":["w_e90_pact_stealthfighter"],"prereq":["airbase","lab"],"tech":3,"from":"e90","to":"e90","service":"—","confidence":"high","desc":"Neither aircraft entered service or came close. MiG 1.44 flew twice in 2000 and the programme died; Su-47 Berkut was a forward-swept-wing technology demonstrator, one airframe. Any roster that gives 1990s Russia a stealth aircraft is inventing it.","jet":true,"ammo":4,"radar":7.4,"radius":45,"rcs":0.13},
   pact_e00_rifle: {"fac":"pact","role":"rifle","cat":"infantry","layer":"ground","name":"Motor Rifle Squad","full":"Motor Rifle Squad, AK-74M","cost":130,"oil":0,"time":4,"hp":120,"armor":"infantry","speed":1.04,"turn":7,"sight":5.4,"r":6,"mass":0.1,"weapons":["w_e00_pact_rifle"],"prereq":["barracks"],"tech":1,"from":"e00","to":"e00","service":"1991","confidence":"high","desc":"AK-74M remains standard; AK-12 (2018) begins replacing it slowly. The bigger change is body armour, optics and radios reaching the squad — Ratnik from 2015 — which is where most of the actual improvement lives."},
   pact_e00_at: {"fac":"pact","role":"at","cat":"infantry","layer":"ground","name":"Kornet Team","full":"AT Team, 9M133 Kornet / Kornet-EM","cost":350,"oil":0,"time":8,"hp":105,"armor":"infantry","speed":0.87,"turn":6,"sight":6.8,"r":6,"mass":0.1,"weapons":["w_e00_pact_at"],"prereq":["barracks"],"tech":1,"from":"e00","to":"e00","service":"1998","confidence":"high","desc":"Kornet-EM (2012) extends range and adds an automatic tracker that removes most of the gunner's beam-holding burden. Still not fire-and-forget."},
-  pact_e00_mbt: {"fac":"pact","role":"mbt","cat":"vehicle","layer":"ground","name":"T-90A","full":"T-90A Main Battle Tank","cost":1330,"oil":19,"time":20,"hp":1745,"armor":"heavy","speed":1.58,"turn":1.6,"sight":7.2,"r":15,"mass":47,"weapons":["w_e00_pact_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"2004","confidence":"high","desc":"The game's `mbt_p`. Welded turret replacing the cast one, and the first Russian tank with a genuinely usable thermal — and even then it is a French Catherine-FC module built under licence, which tells you exactly where the gap was. Production ended around 2011 in favour of the cheaper T-72B3.","turret":true,"tturn":1.3,"crush":true},
+  pact_e00_mbt: {"fac":"pact","role":"mbt","cat":"vehicle","layer":"ground","name":"T-90A","full":"T-90A Main Battle Tank","cost":1330,"oil":19,"time":20,"hp":1745,"armor":"heavy","speed":1.58,"turn":1.6,"sight":7.2,"r":15,"mass":47,"weapons":["w_e00_pact_mbt"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"2004","confidence":"high","desc":"Rebuilt from 2020 into the T-90M the present-day roster fields. Welded turret replacing the cast one, and the first Russian tank with a genuinely usable thermal — and even then it is a French Catherine-FC module built under licence, which tells you exactly where the gap was. Production ended around 2011 in favour of the cheaper T-72B3.","turret":true,"tturn":1.3,"crush":true},
   pact_e00_lighttank: {"fac":"pact","role":"lighttank","cat":"vehicle","layer":"ground","name":"Sprut-SD","full":"2S25 Sprut-SD","cost":685,"oil":9,"time":11,"hp":710,"armor":"light","speed":1.98,"turn":2.4,"sight":7,"r":13,"mass":18,"weapons":["w_e00_pact_lighttank"],"prereq":["factory"],"tech":1,"from":"e00","to":"e00","service":"2005","confidence":"medium","desc":"The game's `lt_p`. A full 125mm gun on an 18-tonne air-droppable amphibious hull — it can be parachuted from an Il-76 and it can swim. Armour stops rifle fire and nothing more. Fewer than 40 built; adoption year is given as 2005 or 2006 depending on source.","turret":true,"tturn":1.6},
   pact_e00_ifv: {"fac":"pact","role":"ifv","cat":"vehicle","layer":"ground","name":"BMP-3","full":"BMP-3 IFV","cost":810,"oil":10,"time":13,"hp":800,"armor":"light","speed":1.78,"turn":2,"sight":6.8,"r":14,"mass":19,"weapons":["w_e00_pact_ifv"],"prereq":["factory"],"tech":1,"from":"e00","to":"e00","service":"1987","confidence":"high","desc":"The game's `ifv_p`, with Russian Army deliveries finally resuming in quantity from around 2005. BTR-82A (2013) and BMD-4M (2016) fill out the wheeled and airborne slots.","turret":true,"tturn":1.8,"cargo":6},
   pact_e00_spg: {"fac":"pact","role":"spg","cat":"vehicle","layer":"ground","name":"2S19 Msta-S","full":"2S19M2 Msta-S 152mm SPH","cost":1380,"oil":19,"time":21,"hp":785,"armor":"light","speed":1.34,"turn":1.5,"sight":5.3,"r":15,"mass":42,"weapons":["w_e00_pact_spg"],"prereq":["factory","radar"],"tech":2,"from":"e00","to":"e00","service":"1989","confidence":"high","desc":"The game's `spg_p`. The M2 update (2013) cuts the time from halt to first round substantially. 2S35 Koalitsiya-SV, the intended replacement, remains in very limited service.","turret":true,"tturn":0.9},
@@ -11816,6 +11816,199 @@ Object.assign(UNITS, {
      e50 and e60 stay empty. The PLAN had no ASW helicopter and no deck. */
   pla_e80_aswhelo: {"fac":"pla","role":"aswhelo","cat":"aircraft","layer":"air","name":"SA 321Ja Super Frelon","full":"Aerospatiale SA 321Ja Super Frelon, PLA Navy","cost":960,"oil":20,"time":14,"hp":330,"armor":"air","speed":2.7,"turn":1.9,"sight":6.0,"r":12,"mass":0,"weapons":["w_e80_pla_aswhelo"],"prereq":["airbase"],"tech":2,"from":"e80","to":"e80","service":"1977","confidence":"medium","desc":"Thirteen aircraft bought from France in 1977-78, and for a decade the whole of Chinese anti-submarine aviation. It has the airframe for the job - three engines, a boat hull, hours on task - and almost none of the equipment: a search radar, no dipping sonar worth the name, and depth charges rather than a homing torpedo, because China had no air-dropped ASW torpedo until the 1990s. It also had nowhere to land at sea until the Luda conversions of the late 1980s.","ammo":2,"radius":22,"sonar":4.4,"rcs":1.05,"radarQ":4,"gen":2.5},
   pla_e90_aswhelo: {"fac":"pla","role":"aswhelo","cat":"aircraft","layer":"air","name":"Z-8","full":"Changhe Z-8, licence-built Super Frelon","cost":1080,"oil":21,"time":14,"hp":345,"armor":"air","speed":2.8,"turn":2.0,"sight":6.4,"r":12,"mass":0,"weapons":["asw_yu7"],"prereq":["airbase"],"tech":2,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"The same aircraft built in China: first flight 11 December 1985, PLANAF service in August 1989, formally certified on 12 November 1994, and only fifteen to twenty made because the gearbox and the rotor head were harder to copy than the shape. What it adds over the imported Frelon is the Yu-7, a licensed Mk 46 pattern and the first homing torpedo a Chinese aircraft could drop.","ammo":2,"radius":22,"sonar":5.6,"rcs":1.0,"radarQ":5,"gen":3},
+});
+
+/* ==================================================================
+   THE SOVIET AND RUSSIAN GROUND FORCE'S STAPLES
+   (owner) "i take your suggestions and make it on 1,2,3 first" - step 2.
+   The tank most players expect to meet on the Soviet side was missing:
+   MEASURED against the roster before this block, a search of every pact row
+   for T-64, T-72, BTR-60/70/80/82 and RPG-7/18/22/26/29 found nothing, while
+   the KPA fielded the BTR-60PB and the RPG-7 that the Soviet Union built and
+   the PLA the Type 69 copy of it. The mbt line jumped T-62 -> T-80U -> T-90,
+   every carrier after the BTR-152 was a BMP, and motor-rifle infantry went
+   from the RPG-2 straight to guided-missile teams.
+
+   WHEN EACH ROW IS FIELDED. Never before its service date. A row enters in
+   the band its date falls in (the bands are _behtest.html [56]'s END table:
+   e60 to 1979, e80 to 1989, e90 to 1999, e00 to 2019) unless the type only
+   reached the troops in numbers in the next band, and then it enters there;
+   those rows are marked "next band" below and each one's desc says why.
+     T-64A          1968  e60
+     T-72 Ural      1973  e60        the low tank beside the T-64A and T-62
+     T-72A          1979  e80        next band: built 1979-85, the T-72 of
+                                     the 1980s (the export T-72M1 is its twin)
+     T-72B          1985  e80
+     T-72B (1989)   1989  e90        next band: Kontakt-5, and the 1990s round
+     T-72B3         2013  e00
+     T-72B3 (2016)  2016  e20        next band: every T-72B3 rebuilt after
+                                     2016 is this model, and they are the 2020s'
+     T-80BVM        2018  e20        next band: first delivered in 2018
+     BTR-60PB       1966  e60
+     BTR-70         1972  e80        next band: the 1970s rode BTR-60PBs; the
+                                     BTR-70 was the carrier of Afghanistan
+     BTR-80         1986  e90-e00    next band: in numbers from the 1990s
+     BTR-82A        2013  e00-e20
+     RPG-7 / PG-7V  1961  e60
+     RPG-7V/PG-7VL  1977  e80        next band: the 93 mm round of the 1980s
+     RPG-7V1/PG-7VR 1988  e90-e20    next band: the tandem round of the 1990s
+   The present-day T-90A (mbt_p) is renamed the T-90M in rules.js rather than
+   given a new row: the T-90A of 2004 is already pact_e00_mbt, and mbt_p's
+   numbers (1400 credits, 1820 hp, gun_125 at 165) already describe a better
+   tank than that one, which is what the T-90M is.
+
+   WHY A TANK IS SPLIT BY DECADE. generations.js reads a gun's penetration
+   off the row's FIRST era (u.from), not the decade being played. Ammunition
+   is issued to a whole fleet, so a T-72B of 1985 fought the 1990s with the
+   3BM42 the T-90 beside it fired: as one e80-e90 row it fired 430 against the
+   T-90's 500. MEASURED in _behtest.html [80]: five of that row took 2-4% of
+   three M1A2s' hit points, where four 1989 T-72Bs took 18-32% and three
+   T-90s 21-32% - and the roster-mix
+   commander, measured in review of that version, bought it for 45-55% of its
+   1990s tanks. The same held for the T-72B3 at 580 in the 2020s beside 620
+   for the T-80BVM and the T-90M. So the 1990s T-72B and the 2020s T-72B3 are
+   rows of their own, each its decade's model on its decade's curve.
+
+   A SECOND ROW IN THE SAME ROLE, NOT A NEW ROLE. The BTRs are 'ifv' because
+   that is where the game already keeps every wheeled or unarmed-turret
+   carrier: the M113, the M59, the BTR-152, the FV432, the Saracen, the Type 63
+   and the KPA's own BTR-60PB. A new 'apc' role would be read by nothing in
+   js/ai.js (it builds by role), by no counter table and by no other army.
+   The RPG teams are a second 'at' row because every army's squad weapon
+   already lives there: the KPA's RPG-7 team, the PLA's Type 69, the US LAW
+   and AT4, the British Carl Gustav. MEASURED: 47 rifle squads in the game,
+   not one with a second weapon, so an RPG on the motor-rifle squad would be
+   the only anti-armour rifle squad in any army, in five eras at once.
+
+   Everything here is appended after the rows it sits beside, and a tie in
+   `from` goes to the first row in ROLES, so unitFor() - the single def the
+   commander builds today - still answers T-62, T-80U, T-90, T-90A, BMP-1..3
+   and the guided-missile teams. js/ai.js choosing between rows is the
+   roster-mix work; these rows are there for it to choose from, and the ones
+   the real army had in small numbers carry `mixCap`, the most of the role
+   that mix may give them: the T-64A and T-72 Ural (0.3 each - the 1970s
+   Soviet tank park was still mostly T-62s and T-55s), the 1990s T-90 (0.25 -
+   pact_e90_mbt's own desc: about 120 delivered in the whole decade) and the
+   T-80BVM (0.25 - a few hundred rebuilt beside a T-72B3 fleet several times
+   its size).
+
+   THE RPG IS OUT-RANGED BY A TANK, HERE AS IN LIFE. Ranges are the real
+   ones through generations.js's R(), and the rows are named so the AT_ERA_M
+   pass (/^w_(e\d\d)_([a-z]+)_([a-z]+)$/, role "at") does not stretch them
+   to a guided missile's 8-10 tiles. An RPG-7 is a 300-500 m weapon, so it
+   reaches 3.7 / 4.1 / 4.3 tiles - a little less than the same decade's
+   rifle squad (4.1 / 4.6 / 4.8) and less than a tank's coaxial gun (4.6 /
+   5.2 / 5.4). This game has no concealment - acquire() searches the unit's
+   own sight, and a tank sees 7-8 tiles - so the ambush the real weapon lives
+   by does not exist here. What does is cover and a garrison, which take
+   damage off: an RPG team is for a building or a tree line on a road, and
+   for carriers. MEASURED in the open, seeded, on a board of two seats of
+   their own: six RPG-7V teams (990 credits) all die to one M1A1 (1,095) and
+   take 71% of it, and holding their ground they lose three and never touch
+   it; four Konkurs teams (1,080) kill it and lose one. Six RPG-7V1 teams
+   (1,170) do beat one M1A2 and keep two, and in the 1960s-70s six RPG-7
+   teams beat an M60A1 and keep four. So the RPG rows carry mixCap 0.25:
+   roster_mix prices a card on damage, penetration and hit points per credit
+   with only a mild range term, and priced so, uncapped, the cheap RPG took
+   44-82% of the commander's anti-tank purchases and its anti-armour became
+   mostly a team a tank out-ranges. Every other army's shoulder rocket is
+   still carried at a guided missile's reach by that AT_ERA_M pass (LAW and
+   Carl Gustav 8.0, AT4 9.1, the KPA's own RPG-7 8.0) - a data error in those
+   rows, left for a pass over all of them at once rather than fixed for one
+   army's rows.
+
+   WHAT IS NOT MODELLED: the 9M119 Svir / Refleks fired through the 125 mm.
+   The T-72B, T-72B3, T-80BVM and T-90M all carried it, and it is in their
+   FACTS armament. It is not a mount here for the reason no tank in the game
+   has one - T-80U, T-90, T-90A, Type 99A, ZTQ-15 and Sprut-SD all carried a
+   gun-launched missile and all fire only their gun: a ground unit has no
+   magazine (entities.js ammoMax is an aircraft's), so four missiles in a
+   carousel would be an endless 9.1-tile shot, and generations.js's "eyes to
+   match the reach" pass would lift the carrier's sight to it. MEASURED with a
+   9.1-tile mount added before that pass: the T-72B and T-80U go from 7.5 and
+   7.6 tiles to 9.1 against an M1A1's 7.7, the T-90M from 7.5 to 8.3 against
+   an M1A2's 8.0 - the optics gap the DOMAIN table exists to draw, turned the
+   other way round. It wants a magazine first, and every army's gun-launched
+   missile at once.
+   ================================================================== */
+Object.assign(WEAPONS, {
+ /* 125 mm D-81T (2A26), the first 125 mm tank gun in service, fed by the
+    T-64's 6ETs10 mechanised loader - the loader came with the 115 mm T-64 of
+    1966 (the AMX-13's revolver of 1952 is the older autoloader). Eight rounds
+    a minute against the T-62's four, so it reloads faster than the 115 mm
+    beside it and hits a little harder; penetration is the e60 curve's (3BM12,
+    1968). */
+ "w_e60_pact_t64a": {"name":"125mm D-81T (2A26) smoothbore, mechanised loader","dmg":98,"warhead":"cannon","range":6.9,"reload":5.1,"burst":1,"acc":0.68,"proj":"shell","speed":860,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* The same gun as the 2A26M2 on the T-72 Ural, fed by the T-72's own
+    carousel under the turret floor and laid through the same TPD-2-49
+    optical rangefinder sight - so the same row's figures, under its own name. */
+ "w_e60_pact_t72": {"name":"125mm 2A26M2 smoothbore, carousel autoloader","dmg":98,"warhead":"cannon","range":6.9,"reload":5.1,"burst":1,"acc":0.68,"proj":"shell","speed":860,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* 2A46 on the T-72A: the TPD-K1 laser rangefinder sight of 1979 but the
+    older two-plane stabiliser and no ballistic computer, so a shade less
+    accurate and shorter than the T-72B's row below. The rounds are the
+    decade's: ammunition is issued to the fleet, not to the model. */
+ "w_e80_pact_t72a": {"name":"125mm 2A46 smoothbore, TPD-K1 laser sight","dmg":122,"warhead":"cannon","range":7.2,"reload":5.55,"burst":1,"acc":0.67,"proj":"shell","speed":860,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* 2A46M on the T-72B: the same rounds as the T-80U's 2A46M-1 (dmg 122) laid
+    through the 1A40-1 sight, which has a laser rangefinder but no stabilised
+    gunner's sight and no ballistic computer of the 1A45 Irtysh's class - so
+    it is a shade less accurate and a shade shorter than the T-80U's row. */
+ "w_e80_pact_t72b": {"name":"125mm 2A46M smoothbore","dmg":122,"warhead":"cannon","range":7.4,"reload":5.55,"burst":1,"acc":0.69,"proj":"shell","speed":860,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* The 1989 T-72B's 2A46M firing the 1990s 3BM42 'Mango' - the T-90's
+    round (dmg 142, the e90 curve's 500) - through the same 1A40-1 sight,
+    so it keeps the T-72B's shorter reach and lower accuracy against the
+    T-90's 1A45T. */
+ "w_e90_pact_t72b89": {"name":"125mm 2A46M firing 3BM42","dmg":142,"warhead":"cannon","range":7.6,"reload":5.55,"burst":1,"acc":0.74,"proj":"shell","speed":880,"aoe":0.9,"suppress":24,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* 2A72 on the BTR-82A: the BMP-3's secondary 30 mm, firing the 2A42's
+    30x165 ammunition at about half its rate. Warhead as the BMP-2's 2A42 row
+    beside it, so the two carriers' guns are compared on one scale. */
+ "w_e00_pact_btr82a": {"name":"30mm 2A72 autocannon","dmg":19,"warhead":"bullet","range":6.2,"reload":2.4,"burst":4,"burstDelay":0.12,"acc":0.64,"proj":"shell","speed":620,"suppress":12,"tgt":{"ground":1,"air":0,"sea":1,"sub":0}},
+ /* RPG-7 with the 85 mm PG-7V (1961, 260 mm) and PG-7VM (1969, 300 mm).
+    pen is stated outright, on the scale every army's shoulder rocket in this
+    game already sits on: generations.js's armour is one frontal figure
+    against a kinetic round, and a HEAT round meets that same figure - the
+    AT4 resolves 499 there, the Panzerfaust 3 572, the LAW 80 520. So the
+    PG-7VL (about 500 mm, the AT4's class) is 500, and the tandem PG-7VR -
+    about 600 mm behind reactive armour, short of the Panzerfaust 3's 700 -
+    is 540: a partial penetration of an M1A2's front (569), not a clean one.
+    acc is written against the RESOLVED figure. generations.js's DOMAIN pass
+    reads every proj:"missile" row as guided and multiplies it by the army's
+    missile-guidance quality - pact 0.968 in e60, 0.888 in e80, 0.776 in e90 -
+    which is the quality of a missile factory, not of a rocket whose guidance
+    is the gunner. So the three rows below are 0.66 / 0.72 / 0.82 and all
+    three resolve to 0.64 (MEASURED under jsc; 0.49 in e90 before). The
+    rocket stays proj:"missile" because that is what an active protection
+    system intercepts and what the sound bank hears as an RPG. */
+ "w_e60_pact_rpg7": {"name":"RPG-7 with PG-7V 85mm HEAT rocket","dmg":70,"pen":280,"warhead":"heat","range":3.7,"reload":4.6,"burst":1,"acc":0.66,"proj":"missile","speed":300,"aoe":0.6,"suppress":16,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
+ /* PG-7VL, 1977: 93 mm, about 500 mm of steel. */
+ "w_e80_pact_rpg7v": {"name":"RPG-7V with PG-7VL 93mm HEAT rocket","dmg":84,"pen":500,"warhead":"heat","range":4.1,"reload":4.6,"burst":1,"acc":0.72,"proj":"missile","speed":300,"aoe":0.6,"suppress":16,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
+ /* PG-7VR, 1988: a 64 mm precursor charge sets off reactive armour so the
+    105 mm main charge meets bare plate. A heavier round (4.5 kg) and slower
+    to reload. */
+ "w_e90_pact_rpg7v1": {"name":"RPG-7V1 with PG-7VR 105mm tandem HEAT rocket","dmg":100,"pen":540,"warhead":"heat","range":4.3,"reload":5.2,"burst":1,"acc":0.82,"proj":"missile","speed":280,"aoe":0.7,"suppress":18,"tgt":{"ground":1,"air":0,"sea":1,"sub":0},"profile":"pop","intercept":1},
+});
+
+Object.assign(UNITS, {
+  /* ---- main battle tanks ---- */
+  pact_e60_t64a: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-64A", full:"T-64A (Object 434) Main Battle Tank", cost:1000, oil:13, time:19, hp:1180, armor:"heavy", speed:1.50, turn:1.6, sight:5.4, r:15, mass:38, weapons:["w_e60_pact_t64a"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, mixCap:0.3, from:"e60", to:"e60", service:"1968", confidence:"high", desc:"Kharkiv's tank, accepted in 1968 with the first 125 mm tank gun in service. It kept the T-64's mechanised loader, which let the crew drop to three, and its combination armour - steel, glass-textolite and steel on the glacis, the first composite armour on a production tank. Kept for the Soviet Army alone and very expensive, and its 5TDF two-stroke engine was troublesome enough that the simpler T-72 was ordered beside it as the tank the whole army could be given. Its front is its own figure rather than the decade's curve: the M60's 105 mm gets only partly through it." },
+  pact_e60_t72: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-72 Ural", full:"T-72 'Ural' (Object 172M) Main Battle Tank", cost:900, oil:12, time:18, hp:1200, armor:"heavy", speed:1.50, turn:1.6, sight:5.4, r:15, mass:41, weapons:["w_e60_pact_t72"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, mixCap:0.3, from:"e60", to:"e60", service:"1973", confidence:"high", desc:"Nizhny Tagil's answer to the T-64, accepted in 1973: the same 125 mm gun and three-man crew on a simpler, cheaper hull with a V-46 diesel, torsion bars and six big road wheels - the tank the whole army and its allies could be given. The glacis is the T-64's laminate; the turret is plain cast steel. Its carousel autoloader keeps the rounds in the floor, where a penetration sets them off." },
+  pact_e80_t72a: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-72A", full:"T-72A (Object 176) Main Battle Tank", cost:800, oil:11, time:15, hp:1220, armor:"heavy", speed:1.45, turn:1.6, sight:5.6, r:15, mass:41, weapons:["w_e80_pact_t72a"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, from:"e80", to:"e80", service:"1979", confidence:"high", desc:"The T-72 of 1979: a TPD-K1 laser rangefinder, smoke dischargers, rubber side skirts and a thickened cast turret with filler inserts that Western analysts called 'Dolly Parton'. Accepted in the last year of the 1970s and built until 1985, so it is the T-72 of the 1980s - the export T-72M1 is nearly the same tank. No reactive armour until the T-72AV bolted Kontakt-1 on in 1985. The cheapest tank on the Soviet sidebar, and every 1980s NATO tank gun goes straight through it." },
+  pact_e80_t72b: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-72B", full:"T-72B (Object 184) Main Battle Tank", cost:850, oil:11, time:15, hp:1300, armor:"heavy", speed:1.42, turn:1.6, sight:5.8, r:15, mass:45, weapons:["w_e80_pact_t72b"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, from:"e80", to:"e80", service:"1985", confidence:"high", desc:"The cheap half of the Soviet high/low mix and by 1990 the most numerous tank in the army. The B of 1985 adds the thickened cast turret Western analysts called 'Super Dolly Parton', Kontakt-1 reactive armour and the 9K120 Svir missile fired through the gun (not modelled as a separate mount). Worse fire control and a weaker engine than a T-80U for four fifths of the price." },
+  pact_e90_t72b89: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-72B (1989)", full:"T-72B (1989 model) Main Battle Tank", cost:980, oil:12, time:16, hp:1450, armor:"heavy", speed:1.44, turn:1.6, sight:5.8, r:15, mass:45, weapons:["w_e90_pact_t72b89"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, from:"e90", to:"e90", service:"1989", confidence:"high", desc:"The T-72B as built from 1989, with Kontakt-5 heavy reactive armour across the turret and glacis in place of the Kontakt-1 bricks, and firing the 3BM42 'Mango' long rod every 125 mm crew carried into the 1990s - the T-90's round, through the T-72B's worse sight. Accepted in the last year of the 1980s; in the 1990s it was the tank Russia actually had, when only about 120 T-90s were delivered." },
+  pact_e00_t72b3: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-72B3", full:"T-72B3 Main Battle Tank", cost:1150, oil:15, time:18, hp:1600, armor:"heavy", speed:1.52, turn:1.6, sight:6.6, r:15, mass:46, weapons:["w_e00_pact_mbt"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, from:"e00", to:"e00", service:"2013", confidence:"medium", desc:"Not a new tank: stored T-72B hulls rebuilt from 2012 with the Sosna-U thermal sight, a digital radio, Kontakt-5 and an autoloader that takes the longer rods, then accepted in 2013. The cheapest way Russia found to put a thermal sight in front of every tank gunner, and by the end of the decade the most numerous tank it had." },
+  pact_e20_t72b3m: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-72B3 (2016)", full:"T-72B3 (2016 model) Main Battle Tank", cost:1180, oil:16, time:18, hp:1650, armor:"heavy", speed:1.58, turn:1.6, sight:6.8, r:15, mass:47, weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, from:"e20", to:"e20", service:"2016", confidence:"medium", desc:"The T-72B3 as rebuilt from 2016: a 1,130 hp V-92S2F engine, the 2A46M-4 gun, Relikt reactive armour on the hull sides and slat screens at the back. Every T-72B3 rebuilt after 2016 is this model, and they are the 2020s' most numerous Russian tank - firing the same modern long rods as the T-90M beside it, through the same Sosna-U sight." },
+  pact_e20_t80bvm: { fac:"pact", role:"mbt", cat:"vehicle", layer:"ground", name:"T-80BVM", full:"T-80BVM Main Battle Tank", cost:1320, oil:24, time:19, hp:1700, armor:"heavy", speed:1.72, turn:1.7, sight:7.2, r:15, mass:46, weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true, mixCap:0.25, from:"e20", to:"e20", service:"2018", confidence:"medium", desc:"T-80BVs out of storage, rebuilt at Omsk with the Sosna-U sight, Relikt reactive armour and a 1,250 hp gas turbine: the fastest tank Russia fields, and the thirstiest. First delivered in 2018, so it belongs to the 2020s, when a few hundred were fielded beside a T-72B3 fleet several times the size." },
+
+  /* ---- wheeled carriers: two of the three motor-rifle regiments of a
+     Soviet motor-rifle division rode BTRs, not BMPs ---- */
+  pact_e60_btr60: { fac:"pact", role:"ifv", cat:"vehicle", layer:"ground", name:"BTR-60PB", full:"BTR-60PB Armoured Personnel Carrier", cost:360, oil:5, time:8, hp:470, armor:"light", speed:1.75, turn:2.2, sight:4.9, r:14, mass:10, weapons:["w_e60_pact_recon"], prereq:["factory"], tech:1, turret:true, tturn:2.0, cargo:8, from:"e60", to:"e60", service:"1966", confidence:"high", desc:"What most Soviet motor riflemen rode from 1966: eight wheels, two GAZ-49B petrol engines and the BRDM-2's one-man KPVT/PKT turret - the same mount, so the same weapon row. Amphibious and quick on a road; the squad gets out through roof hatches, over the top, under fire. Cheaper than a BMP-1 and carries no missile at all." },
+  pact_e80_btr70: { fac:"pact", role:"ifv", cat:"vehicle", layer:"ground", name:"BTR-70", full:"BTR-70 Armoured Personnel Carrier", cost:430, oil:5, time:9, hp:510, armor:"light", speed:1.82, turn:2.2, sight:5.4, r:14, mass:11, weapons:["w_e80_pact_recon"], prereq:["factory"], tech:1, turret:true, tturn:2.0, cargo:6, from:"e80", to:"e80", service:"1972", confidence:"medium", desc:"The BTR-60's successor, accepted in 1972 but the carrier of the 1980s and of the Afghan war - the 1970s' motor riflemen still mostly rode BTR-60PBs. The same turret and eight wheels, still two petrol engines, and small side hatches between the second and third axles that are barely better than the roof. Rifle-proof and not much more." },
+  pact_e90_btr80: { fac:"pact", role:"ifv", cat:"vehicle", layer:"ground", name:"BTR-80", full:"BTR-80 Armoured Personnel Carrier", cost:500, oil:6, time:10, hp:570, armor:"light", speed:1.90, turn:2.2, sight:5.8, r:14, mass:14, weapons:["w_e90_pact_recon"], prereq:["factory"], tech:1, turret:true, tturn:2.0, cargo:6, from:"e90", to:"e00", service:"1986", confidence:"high", desc:"Accepted in 1986 and in the units in numbers from the 1990s: one KamAZ diesel in place of two petrol engines, a KPVT that elevates to 60 degrees to fire up a mountainside, and a real side door, split in two, so the squad steps out in the lee of the hull. The standard Russian wheeled carrier of the 1990s and 2000s." },
+  pact_e00_btr82a: { fac:"pact", role:"ifv", cat:"vehicle", layer:"ground", name:"BTR-82A", full:"BTR-82A Armoured Personnel Carrier", cost:620, oil:7, time:11, hp:650, armor:"light", speed:1.92, turn:2.2, sight:6.6, r:14, mass:15, weapons:["w_e00_pact_btr82a"], prereq:["factory"], tech:1, turret:true, tturn:2.0, cargo:6, from:"e00", to:"e20", service:"2013", confidence:"high", desc:"The BTR-80 hull with a stabilised 30 mm 2A72 - the BMP-3's secondary gun - a thermal sight, a spall liner and better mine protection. Produced from 2011 and accepted in 2013. Better armed than any BTR before it and still thin-skinned: the gun is for infantry and carriers, not tanks." },
+
+  /* ---- the squad's rocket launcher, fielded as the team that carried it ---- */
+  pact_e60_rpg7: { fac:"pact", role:"at", cat:"infantry", layer:"ground", name:"RPG-7 Team", full:"AT Team, RPG-7 with PG-7V", cost:140, oil:0, time:5, hp:65, armor:"infantry", speed:0.92, turn:6, sight:4.5, r:6, mass:0.1, weapons:["w_e60_pact_rpg7"], prereq:["barracks"], tech:1, mixCap:0.25, from:"e60", to:"e60", service:"1961", confidence:"high", desc:"Every motor-rifle squad carried one from 1961: a gunner and an assistant with a bag of 85 mm PG-7V rounds. Effective to about 300 m on a moving tank and 500 m on a stationary one - inside a tank's coaxial machine gun and far inside its main gun - so in the open a tank kills it first. Put it in a building or a tree line on the road the armour has to use; the guided-missile team is the long-range answer." },
+  pact_e80_rpg7v: { fac:"pact", role:"at", cat:"infantry", layer:"ground", name:"RPG-7V Team", full:"AT Team, RPG-7V with PG-7VL, RPG-18 and RPG-22", cost:165, oil:0, time:5, hp:80, armor:"infantry", speed:0.96, turn:6, sight:4.7, r:6, mass:0.1, weapons:["w_e80_pact_rpg7v"], prereq:["barracks"], tech:1, mixCap:0.25, from:"e80", to:"e80", service:"1977", confidence:"high", desc:"The same launcher with the 93 mm PG-7VL of 1977 - good for about 500 mm of steel, and the round of the 1980s - while the riflemen around it carry one-shot RPG-18 (1972) and RPG-22 (1985) tubes as well. Still unguided and still a few hundred metres: cheap, quick to reload and deadly to a carrier, or to a tank from a building's side. Out in the open a 1980s tank sees it coming and kills it first." },
+  pact_e90_rpg7v1: { fac:"pact", role:"at", cat:"infantry", layer:"ground", name:"RPG-7V1 Team", full:"AT Team, RPG-7V1 with PG-7VR tandem, RPG-26 and RPG-29", cost:195, oil:0, time:5, hp:95, armor:"infantry", speed:1.00, turn:6, sight:5.2, r:6, mass:0.1, weapons:["w_e90_pact_rpg7v1"], prereq:["barracks"], tech:1, mixCap:0.25, from:"e90", to:"e20", service:"1988", confidence:"medium", desc:"The PG-7VR tandem round of 1988, in the units from the 1990s, fires a small charge first to set off reactive armour and reaches about 600 mm behind it; the RPG-26 one-shot tube and the heavier RPG-29 Vampir sit alongside, and the RPG-7V2 of 2001 is the same weapon with a better sight. Thirty years on it is still the squad's own anti-armour weapon, still fired from a few hundred metres, and still for cover and carriers rather than a tank's front across open ground." },
 });
 
 /* ==================================================================

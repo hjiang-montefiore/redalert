@@ -137,6 +137,8 @@ var Damage3D = (function () {
     roc_e50_spg: "rear",                                               // M7 Priest: the Sherman's radial at the back
     gbr_e50_spg: "rear",                                               // Sexton on the Ram
     kpa_e60_ifv: "rear",                                               // BTR-60PB: two GAZ-49B at the back
+    pact_e60_btr60: "rear", pact_e80_btr70: "rear",                    // BTR-60PB, BTR-70: twin petrol engines aft
+    pact_e90_btr80: "rear", pact_e00_btr82a: "rear",                   // BTR-80, BTR-82A: the KamAZ diesel aft
     deu_e50_ifv: "rear",                                               // HS.30: the Rolls-Royce B81 at the back
     nato_e50_recon: "rear", roc_e50_recon: "rear",                     // M8 Greyhound
     roc_e80_recon: "rear", roc_e90_recon: "rear",                      // V-150 Commando

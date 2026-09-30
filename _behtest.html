@@ -8974,6 +8974,347 @@ try{
   })();
   }
 
+  /* ====== [80] THE T-72, THE BTR AND THE RPG-7 ARE IN THE SOVIET ARMY ======
+     (owner) "i take your suggestions and make it on 1,2,3 first" - step 2.
+     MEASURED at b62fbf6: not one pact row in any era was a T-64, a T-72, a
+     BTR-60/70/80/82 or an RPG-7/18/22/26/29, while the KPA had the BTR-60PB
+     and the RPG-7 the Soviet Union built. js/eras.js now carries the T-64A
+     (1968), T-72 Ural (1973), T-72A (1979), T-72B (1985), the 1989 T-72B, the
+     T-72B3 (2013) and its 2016 model, the T-80BVM (2018), the BTR-60PB (1966),
+     BTR-70 (1972), BTR-80 (1986) and BTR-82A (2013) and three RPG-7 teams, and
+     the present-day T-90A (mbt_p) is the T-90M it had already become. This
+     holds: every row on its service window and nowhere else, with a reference
+     card that agrees with it; each one on the build menu of a Soviet/Russian
+     commander of its decade and of no one else's (driven through the real
+     sidebar, the Tab key and UI.refreshCards); the 1990s and 2020s rows firing
+     their decade's rounds; a T-72B platoon against M1A1s it cannot quite get
+     through, and against the T-80U platoon the same money buys; the 1989
+     T-72B against M1A2s beside the 1985 row it replaces; a BTR-80 section
+     against riflemen who cannot hurt it; the RPG as the short, cheap weapon it
+     is; and the ceiling on what the commander's mix may spend on the types
+     the real army had few of.
+     THE FIGHTS ARE FOUGHT ON A BOARD OF THEIR OWN. Two seats made the way
+     Game.init makes a seat and never entered in Game.players, on open ground
+     at least 16 tiles from any structure, on seeded RNGs. Only the fighters
+     are on the grid and only they and Combat are updated; the shared match's
+     rounds in the air, its deferred calls, its effects, its 3D hit log and
+     its clock are parked and put back. MEASURED why: fought through Game.tick, the first
+     version of this section ran the shared match about 370 game-seconds on
+     (t 0 -> 370.5; the enemy went from tech 1, 3 units and 1 building to tech
+     3, 28 units and 31 buildings) while reporting it unchanged, and the
+     enemy's research moved the fights themselves - the same four-against-three
+     went from an M1A1 3-0 win to a T-72B 4-0 win within one run. Everything
+     is put back: units, both books, the RNG, the clock, the enemy's army and
+     research, the human's faction, era, selection and sidebar tab. */
+  if (inHalf(1)) {
+  log("\n[80] THE T-72, THE BTR AND THE RPG-7 ARE IN THE SOVIET ARMY");
+  (function(){
+    var T=CFG.TILE, M=Game.map, rng=Game.rng;
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats), fac0=P.faction, era0=P.era;
+    var live=function(a){ return a.filter(function(e2){ return !e2.dead; }).length; };
+    var match0={ t:Game.time, n:live(Game.entities), eu:live(E.units), eb:live(E.buildings), up:keep(E.upgrades),
+                 tech:E.tech, shots:Combat.projectiles.length, def:Game.deferred.length };
+    var sel0=UI.selection.slice(), made=[];
+    var WANT={ pact_e60_t64a:["mbt","e60"], pact_e60_t72:["mbt","e60"], pact_e80_t72a:["mbt","e80"],
+               pact_e80_t72b:["mbt","e80"], pact_e90_t72b89:["mbt","e90"], pact_e00_t72b3:["mbt","e00"],
+               pact_e20_t72b3m:["mbt","e20"], pact_e20_t80bvm:["mbt","e20"], pact_e60_btr60:["ifv","e60"],
+               pact_e80_btr70:["ifv","e80"], pact_e90_btr80:["ifv","e90 e00"], pact_e00_btr82a:["ifv","e00 e20"],
+               pact_e60_rpg7:["at","e60"], pact_e80_rpg7v:["at","e80"], pact_e90_rpg7v1:["at","e90 e00 e20"] };
+    var ids=Object.keys(WANT);
+    function press(k){
+      var ev={ key:k, ctrlKey:false, shiftKey:false, metaKey:false, altKey:false, repeat:false,
+               preventDefault:function(){}, stopPropagation:function(){}, target:document.body };
+      if (typeof __listeners!=="undefined" && __listeners["win:keydown"]) {
+        __listeners["win:keydown"].forEach(function(f){ f(ev); });
+        (__listeners["win:keyup"]||[]).forEach(function(f){ f(ev); });
+      } else {
+        window.dispatchEvent(new KeyboardEvent("keydown",{ key:k, bubbles:true }));
+        window.dispatchEvent(new KeyboardEvent("keyup",{ key:k, bubbles:true }));
+      }
+    }
+    function cards(){ UI.refreshCards(); var out=[];
+      document.querySelectorAll(".card").forEach(function(c){ if(c.dataset) out.push(c.dataset.kind+":"+c.dataset.id); });
+      return out; }
+    function onTab(kind){ for(var i=0;i<8;i++){ var c=cards(); if(c.length && c[0].split(":")[0]===kind) return c; press("Tab"); } return []; }
+    /* a seeded generator for the fights (same LCG the model tools use) */
+    function seeded(s){ return function(){ s=(Math.imul(s,1664525)+1013904223)>>>0; return s/4294967296; }; }
+    /* open ground for a fight, at least 16 tiles from every structure of
+       either commander: the nearest such patch to the human's home */
+    var BLD=[]; Game.players.forEach(function(pl){ pl.buildings.forEach(function(b){ if(!b.dead) BLD.push(b); }); });
+    function patch(w,h){
+      var hx=(P.homeX/T)|0, hy=(P.homeY/T)|0, best=null, bd=Infinity;
+      for(var y=4;y<M.H-h-4;y+=2) for(var x=4;x<M.W-w-4;x+=2){
+        var cx=x+w/2, cy=y+h/2, near=false;
+        for(var q=0;q<BLD.length&&!near;q++) if(Math.hypot(BLD[q].tx-cx,BLD[q].ty-cy)<16+w/2) near=true;
+        if(near) continue;
+        var good=true;
+        for(var j=0;j<h&&good;j++) for(var i=0;i<w;i++)
+          if(!GameMap.passable(M,x+i,y+j,"ground")||Game.tileBlocked(x+i,y+j,null)){ good=false; break; }
+        if(good){ var d=Math.abs(x-hx)+Math.abs(y-hy); if(d<bd){ bd=d; best={x:x,y:y}; } }
+      }
+      return best;
+    }
+    function put(pl,id,tx,ty,ang){ var u=Game.spawnUnitAt(pl,id,tx*T+16,ty*T+16); if(u){ made.push(u); if(ang!==undefined) u.ang=ang; } return u; }
+    /* The board: only the fighters are on the grid and only they and Combat
+       run, each tick as Game.tick runs them (deferred burst rounds first).
+       The shared match's rounds, deferred calls, effects, 3D hit log and
+       clock are parked for the fight and put back after it; the fighters
+       are gone. */
+    function board(fighters, secs, done, measure){
+      var t0=Game.time, rng0=Game.rng, shots=Combat.projectiles.splice(0, Combat.projectiles.length),
+          fx=Combat.effects.splice(0, Combat.effects.length), def0=Game.deferred, hits=[], end=-1, out=null;
+      var hl=Combat.hitLog ? Combat.hitLog.slice() : null;
+      Game.deferred=[];
+      try {
+        for(var s=0;s<Math.round(secs/CFG.DT);s++){
+          Game.time+=CFG.DT;
+          for(var i=Game.deferred.length-1;i>=0;i--) if(Game.deferred[i].t<=Game.time){ var d=Game.deferred[i]; Game.deferred.splice(i,1); d.fn(); }
+          Game.grid.clear();
+          fighters.forEach(function(u){ if(!u.dead) Game.grid.insert(u); });
+          /* supply held at zero: a seat with no depot must not starve */
+          fighters.forEach(function(u){ if(!u.dead){ u.unsupplied=0; u.update(CFG.DT); } });
+          Combat.update(Game, CFG.DT);
+          Combat.effects.forEach(function(f){ if(f.t==="hit" && !f._sg80){ f._sg80=1; hits.push(f); } });
+          if(done()){ end=(s+1)*CFG.DT; break; }
+        }
+        out=measure();
+      } finally {
+        Game.time=t0; Game.rng=rng0; Game.deferred=def0;
+        Combat.projectiles.length=0; Array.prototype.push.apply(Combat.projectiles, shots);
+        Combat.effects.length=0; Array.prototype.push.apply(Combat.effects, fx);
+        if (hl) { Combat.hitLog.length=0; Array.prototype.push.apply(Combat.hitLog, hl); }
+        fighters.forEach(function(u){ u.dead=true; });
+        Game.sweepDead();
+        Game.grid.clear(); Game.entities.forEach(function(e2){ if(!e2.dead && (!e2.carried || e2.garrisonIn)) Game.grid.insert(e2); });
+      }
+      out.end=end; out.hits=hits;
+      return out;
+    }
+    try {
+      /* ---- 1. the rows, on their service windows ---- */
+      var wrong=[];
+      ids.forEach(function(id){ var d=UNITS[id], w=WANT[id];
+        var on=d ? ERAS.filter(function(e){ return inEra(d,e); }).join(" ") : "none";
+        if(!d || d.fac!=="pact" || d.role!==w[0] || on!==w[1]) wrong.push(id+" "+(d?d.role+" "+on:"missing")); });
+      chk("eight T-64/T-72/T-80 rows, four BTRs and three RPG-7 teams are pact rows on their own decades",
+          wrong.length===0, wrong.length ? wrong.slice(0,4).join("; ") : ids.length+" rows, each on its window");
+      var dated=[];
+      ids.forEach(function(id){ var d=UNITS[id], f=typeof FACTS!=="undefined"&&FACTS[id];
+        if(!d||!f||String(f.service)!==String(d.service)||f.confidence!==d.confidence) dated.push(id+(f?" "+f.service+"/"+f.confidence:" no card")); });
+      chk("each carries a reference card whose service year and confidence are the row's", dated.length===0,
+          dated.length ? dated.join(", ") : "FACTS for all "+ids.length);
+      var early=ids.filter(function(id){ var d=UNITS[id]; return !d || +d.service > ({e60:1979,e80:1989,e90:1999,e00:2019,e20:2099})[d.from]; });
+      chk("and none is fielded in a decade before its service date", early.length===0, early.join(", ")||"every from-band ends after the date");
+      var mixE=["e60","e80","e90","e00","e20"].map(function(e){ return e+" mbt "+unitsFor("pact","mbt",e).length+
+        ", ifv "+unitsFor("pact","ifv",e).length+", at "+unitsFor("pact","at",e).length; });
+      chk("so a Soviet or Russian commander has at least two tanks, two carriers and two anti-tank teams in every decade from e60",
+          ["e60","e80","e90","e00","e20"].every(function(e){ return unitsFor("pact","mbt",e).length>=2 &&
+            unitsFor("pact","ifv",e).length>=2 && unitsFor("pact","at",e).length>=2; }), mixE.join("; "));
+      chk("the present-day tank is the T-90M; the T-90A is the 2000s row, and its reference card went with it",
+          UNITS.mbt_p && UNITS.mbt_p.name==="T-90M" && FACTS.mbt_p.service===2020 && UNITS.pact_e00_mbt.name==="T-90A" &&
+          FACTS.pact_e00_mbt && FACTS.pact_e00_mbt.name==="T-90A" && FACTS.pact_e00_mbt.service===2004,
+          UNITS.mbt_p ? UNITS.mbt_p.name+" / "+UNITS.pact_e00_mbt.name+" ("+(FACTS.pact_e00_mbt?FACTS.pact_e00_mbt.name:"no card")+")" : "no mbt_p");
+
+      /* ---- 2. on the menu of the army and the decade that had them ---- */
+      var sig0=cards().join("|"), shown=[], hidden=[], locked=[];
+      UI.selection.forEach(function(u){ u.selected=false; }); UI.selection.length=0;
+      ["e60","e80","e90","e00","e20"].forEach(function(e){
+        P.faction="pact"; P.era=e;
+        var have=onTab("vehicle").concat(onTab("infantry")).map(function(s){ return s.split(":")[1]; });
+        ids.forEach(function(id){
+          if(!UNITS[id]){ if(e==="e20") shown.push(id+" has no row"); return; }
+          var due=inEra(UNITS[id],e), there=have.indexOf(id)>=0;
+          if(due && !there) shown.push(id+" missing in "+e);
+          if(!due && there) hidden.push(id+" shown in "+e);
+          if(due && there){ var why=P.lockReason(UNITS[id]);
+            if(why && /SERVICE|ARMY/.test(why)) locked.push(id+" "+why); }
+        });
+      });
+      P.faction="nato"; P.era="e80";
+      var nato=onTab("vehicle").concat(onTab("infantry")).filter(function(s){ return ids.indexOf(s.split(":")[1])>=0; });
+      P.faction=fac0; P.era=era0;
+      for(var q=0;q<8 && cards().join("|")!==sig0;q++) press("Tab");
+      chk("every one is a card on the Soviet/Russian sidebar of each decade that fielded it",
+          shown.length===0, shown.length ? shown.slice(0,4).join("; ") : "vehicle and infantry tabs, e60 to e20");
+      chk("and on no other decade's", hidden.length===0, hidden.length ? hidden.slice(0,4).join("; ") : "none early, none late");
+      chk("and never refused for service or army", locked.length===0, locked.slice(0,3).join("; ") || "no era or army lock");
+      chk("an American commander is shown none of them", nato.length===0, nato.length ? nato.join(", ") : "none on the 1980s NATO sidebar");
+      chk("and the sidebar is back on the tab it was on", cards().join("|")===sig0, "");
+
+      /* ---- 3. the guns: ammunition is the decade's, the plate the tank's ---- */
+      var t72=UNITS.pact_e80_t72b, t80=UNITS.pact_e80_mbt, m1=UNITS.nato_e80_mbt, t72a=UNITS.pact_e80_t72a;
+      var g72=WEAPONS[t72.weapons[0]], g80=WEAPONS[t80.weapons[0]], g1=WEAPONS[m1.weapons[0]];
+      chk("the T-72B is the cheap tank: cheaper and thinner than the T-80U beside it, the same 125 mm rounds",
+          t72.cost<t80.cost*0.85 && t72.armorMM.front<t80.armorMM.front && g72.pen===g80.pen && g72.dmg===g80.dmg,
+          "T-72B "+t72.cost+" cr, "+t72.armorMM.front+" mm, pen "+g72.pen+"; T-80U "+t80.cost+" cr, "+t80.armorMM.front+" mm, pen "+g80.pen);
+      chk("its 2A46M only partly gets through an M1A1's front, and the M1A1's gun goes through its own",
+          g72.pen/m1.armorMM.front>=CFG.PEN_NONE && g72.pen/m1.armorMM.front<CFG.PEN_FULL && g1.pen/t72.armorMM.front>=CFG.PEN_FULL,
+          "pen "+g72.pen+" on "+m1.armorMM.front+" = "+(g72.pen/m1.armorMM.front).toFixed(2)+"; "+g1.pen+" on "+t72.armorMM.front+" = "+(g1.pen/t72.armorMM.front).toFixed(2));
+      var pen=function(id){ return WEAPONS[UNITS[id].weapons[0]].pen; };
+      chk("each decade's T-72 fires that decade's rounds: the 1989 T-72B the T-90's, the 2016 T-72B3 the T-90M's, the T-72A the T-72B's",
+          pen("pact_e90_t72b89")===pen("pact_e90_mbt") && pen("pact_e20_t72b3m")===pen("mbt_p") &&
+          pen("pact_e00_t72b3")===pen("pact_e00_mbt") && pen("pact_e80_t72a")===pen("pact_e80_t72b") && pen("pact_e90_t72b89")>pen("pact_e80_t72b"),
+          "e80 "+pen("pact_e80_t72a")+"/"+pen("pact_e80_t72b")+", e90 "+pen("pact_e90_t72b89")+" (T-90 "+pen("pact_e90_mbt")+"), e00 "+pen("pact_e00_t72b3")+
+          " (T-90A "+pen("pact_e00_mbt")+"), e20 "+pen("pact_e20_t72b3m")+" (T-90M "+pen("mbt_p")+")");
+      var fr=function(id){ return UNITS[id].armorMM.front; };
+      chk("the plate is the tank's: the T-64A's composite over the T-72 Ural's cast turret over the T-62, and the unarmoured-by-ERA T-72A under the T-72B",
+          fr("pact_e60_t64a")>fr("pact_e60_t72") && fr("pact_e60_t72")>fr("pact_e60_mbt")*1.4 && fr("pact_e80_t72a")<fr("pact_e80_t72b") &&
+          g1.pen/fr("pact_e80_t72a")>=CFG.PEN_FULL,
+          "T-64A "+fr("pact_e60_t64a")+", T-72 Ural "+fr("pact_e60_t72")+", T-62 "+fr("pact_e60_mbt")+"; T-72A "+fr("pact_e80_t72a")+", T-72B "+fr("pact_e80_t72b"));
+
+      /* ---- 4. a T-72B platoon against the M1A1, fought on the board ---- */
+      function seat(fac,team,idx){ var st=new Player(Game,idx,fac,0,false); st.team=team; st.era="e20"; st.label="[80] "+fac; return st; }
+      var RED=seat("pact",880,90), BLUE=seat("nato",881,91);
+      var gp=patch(30,12);
+      /* Four T-72Bs at about the price of three M1A1s, and then the T-80U
+         platoon a commander could have bought instead, from the same ground on
+         the same orders and the same seed. MEASURED in a full half-1 run at
+         b4a9943, seeds 80 and 81: the four T-72Bs lose, taking 68% and 61% of
+         the M1A1s' hit points with them; three T-80Us (3,060 credits) lose
+         too, taking 39% and 47%; four T-72As (3,200) take 57% (seed 80,
+         logged). With the whole roadmap stacked the same pairs gave 84/54 and
+         36/48, and on a fresh match's ground 48/54 and 41/38. That is
+         the mix the row is for: the worse tank, bought in numbers, gets more
+         for the money than the better one. */
+      function fight(id,n,blueId,seed){
+        var reds=[], blues=[];
+        for(var i=0;i<n;i++) reds.push(put(RED,id,gp.x+2,gp.y+1+Math.round(i*10/(n-1)),0));
+        for(var k=0;k<3;k++) blues.push(put(BLUE,blueId,gp.x+13,gp.y+1+k*5,Math.PI));
+        var bx=(gp.x+13)*T+16, rx=(gp.x+2)*T+16, cy=(gp.y+6)*T+16;
+        reds.forEach(function(u){ u.give({ type:"attackmove", x:bx, y:cy }); });
+        blues.forEach(function(u){ u.give({ type:"attackmove", x:rx, y:cy }); });
+        var bIds=blues.map(function(u){ return u.id; });
+        Game.rng=seeded(seed);
+        var r=board(reds.concat(blues),160,function(){ return reds.every(function(u){ return u.dead; }) || blues.every(function(u){ return u.dead; }); },
+          function(){ return { rl:reds.filter(function(u){ return !u.dead; }).length, bl:blues.filter(function(u){ return !u.dead; }).length,
+            taken:blues.reduce(function(a,u){ return a+(u.dead?u.maxHp:u.maxHp-u.hp); },0),
+            pool:blues.reduce(function(a,u){ return a+u.maxHp; },0) }; });
+        r.n=n; r.share=r.pool>0 ? r.taken/r.pool : 0;
+        r.onBlue=r.hits.filter(function(h){ return bIds.indexOf(h.id)>=0 && h.w==="cannon"; });
+        log("        "+n+" "+UNITS[id].name+" against 3 "+UNITS[blueId].name+": "+r.rl+" and "+r.bl+" standing "+(r.end>=0?"at "+r.end.toFixed(1)+" s":"after 160 s")+
+            ", "+Math.round(100*r.share)+"% of their hp taken; "+r.onBlue.length+" hits on them, verdicts "+
+            r.onBlue.map(function(h){ return h.v.charAt(0); }).join(""));
+        return r;
+      }
+      if(!gp){ chk("open ground for the tank fight", false, "no 30x12 patch"); }
+      else {
+        var f4=fight("pact_e80_t72b",4,"nato_e80_mbt",80), part=f4.onBlue.filter(function(h){ return h.v==="part"; }).length,
+            full=f4.onBlue.filter(function(h){ return h.v==="pen"; }).length;
+        chk("the platoon closes and fights: its rounds land, and from the front they only partly get through",
+            f4.onBlue.length>=4 && part>full, f4.onBlue.length+" hits on the M1A1s, "+part+" partial, "+full+" full");
+        chk("four T-72Bs at about the price of three M1A1s lose, but take a third of their hit points with them",
+            f4.end>=0 && f4.rl===0 && f4.bl>=1 && f4.share>=1/3,
+            (4*t72.cost)+" cr against "+(3*m1.cost)+": "+f4.bl+" M1A1 left, "+Math.round(100*f4.share)+"% of their hp taken");
+        var g4=fight("pact_e80_t72b",4,"nato_e80_mbt",81), f3=fight("pact_e80_mbt",3,"nato_e80_mbt",80), g3=fight("pact_e80_mbt",3,"nato_e80_mbt",81);
+        var m4=(f4.share+g4.share)/2, m3=(f3.share+g3.share)/2;
+        chk("and get more for the money than the T-80U platoon the same credits nearly buy",
+            m4>m3, "four T-72Bs ("+(4*t72.cost)+" cr) "+Math.round(100*m4)+"%, three T-80Us ("+(3*t80.cost)+" cr) "+Math.round(100*m3)+"%, over two seeds each");
+        fight("pact_e80_t72a",4,"nato_e80_mbt",80);      /* logged, not asserted: the cheapest card */
+        /* The 1990s: the 1985 row it replaces, fighting M1A2s with its 1980s
+           round, against the 1989 T-72B with the T-90's. MEASURED in a full
+           half-1 run at b4a9943, seed 80: five of the 1985 row took 3% of three
+           M1A2s, four of the 1989 model 23% and three T-90s 32% (logged);
+           with the whole roadmap stacked 4%, 32% and 25%, and on a fresh
+           match's ground 2%, 18% and 21%. */
+        var old=fight("pact_e80_t72b",5,"nato_e90_mbt",80), b89=fight("pact_e90_t72b89",4,"nato_e90_mbt",80);
+        fight("pact_e90_mbt",3,"nato_e90_mbt",80);        /* logged: the T-90 beside it */
+        chk("in the 1990s the 1989 T-72B, firing the T-90's round, hurts the M1A2s the 1985 row barely scratched",
+            b89.share>=0.15 && b89.share>old.share*3,
+            "four 1989 T-72Bs "+Math.round(100*b89.share)+"%, five of the 1985 row "+Math.round(100*old.share)+"%");
+      }
+
+      /* ---- 5. a BTR-80 section against riflemen ---- */
+      var bp=patch(22,10);
+      if(!bp){ chk("open ground for the carrier fight", false, "no 22x10 patch"); }
+      else {
+        var btr=[], sq=[];
+        for(var b=0;b<3;b++) btr.push(put(RED,"pact_e90_btr80",bp.x+2,bp.y+2+b*3,0));
+        for(var r2=0;r2<3;r2++) sq.push(put(BLUE,"nato_e90_rifle",bp.x+9,bp.y+2+r2*3,Math.PI));
+        var hp0=btr.reduce(function(a,u){ return a+u.hp; },0);
+        btr.forEach(function(u){ u.give({ type:"attackmove", x:(bp.x+10)*T+16, y:(bp.y+5)*T+16 }); });
+        Game.rng=seeded(82);
+        var bb=board(btr.concat(sq),90,function(){ return sq.every(function(u){ return u.dead; }); },
+          function(){ return { hp1:btr.reduce(function(a,u){ return a+(u.dead?0:u.hp); },0), alive:btr.every(function(u){ return !u.dead; }),
+                               left:sq.filter(function(u){ return !u.dead; }).length }; });
+        var soft=bb.hits.filter(function(h){ return h.m==="soft"; }).length;
+        chk("three BTR-80s wipe out three rifle squads in the open",
+            bb.end>=0, bb.end>=0 ? "all three gone at "+bb.end.toFixed(1)+" s, "+soft+" hits on men" : bb.left+" squads left after 90 s");
+        chk("and the riflemen cannot hurt it: 5.56 does not get through, the section keeps nine tenths of its hit points",
+            bb.hp1>=hp0*0.9 && bb.alive, Math.round(bb.hp1)+" of "+Math.round(hp0)+" hp");
+      }
+
+      /* ---- 6. the RPG is short, cheap and hits hard ---- */
+      var rpg=UNITS.pact_e90_rpg7v1, kor=UNITS.pact_e90_at, wr=WEAPONS[rpg.weapons[0]], wk=WEAPONS[kor.weapons[0]];
+      var rifle=WEAPONS[UNITS.pact_e90_rifle.weapons[0]], coax=WEAPONS[UNITS.pact_e80_t72b.weapons[1]];
+      chk("an RPG team reaches no further than its own riflemen and less than half a guided-missile team",
+          wr.range<=rifle.range && wr.range<wk.range*0.5 && wr.range<coax.range,
+          "RPG-7V1 "+wr.range+", AK-74M "+rifle.range+", Kornet "+wk.range+", a tank's coax "+coax.range+" tiles");
+      var blind=[["pact_e60_rpg7","pact_e60_rifle"],["pact_e80_rpg7v","pact_e80_rifle"],["pact_e90_rpg7v1","pact_e90_rifle"]]
+        .filter(function(p){ return UNITS[p[0]].sight<UNITS[p[1]].sight; }).map(function(p){ return p[0]+" "+UNITS[p[0]].sight+" < "+UNITS[p[1]].sight; });
+      chk("and its gunner, with the PGO-7 optic, sees at least as far as the riflemen round him", blind.length===0,
+          blind.join("; ")||"e60 "+UNITS.pact_e60_rpg7.sight+", e80 "+UNITS.pact_e80_rpg7v.sight+", e90 "+rpg.sight+" tiles");
+      var brad=UNITS.nato_e90_ifv, bmm=CFG.ARMOR_MM.light.front*Math.sqrt(U.clamp(brad.hp/CFG.ARMOR_HP_REF.light,0.3,3.2));
+      chk("for well under the price of that team, with a tandem round that goes straight through a 1990s Bradley and only partly through an M1A2's front",
+          rpg.cost<kor.cost*0.7 && wr.pen>=bmm*CFG.PEN_FULL && wr.pen/UNITS.nato_e90_mbt.armorMM.front<CFG.PEN_FULL,
+          rpg.cost+" cr against "+kor.cost+"; pen "+wr.pen+" on "+Math.round(bmm)+" mm and on "+UNITS.nato_e90_mbt.armorMM.front+", acc "+wr.acc);
+
+      /* ---- 7. what the mix may spend on the types the army had few of ----
+         roster_mix prices a card on damage, penetration and hit points per
+         credit with only a mild range term, so it cannot see that a 4-tile
+         rocket dies to a tank before it fires. MEASURED with that mix and
+         these rows, priced without a cap: the RPG teams took 44-82% of the
+         commander's anti-tank purchases, the 1990s T-90 45-51% of its tanks
+         (about 120 were delivered), the T-80BVM a third. */
+      var CAP={ pact_e60_rpg7:0.25, pact_e80_rpg7v:0.25, pact_e90_rpg7v1:0.25, pact_e20_t80bvm:0.25,
+                pact_e90_mbt:0.25, pact_e60_t64a:0.3, pact_e60_t72:0.3 };
+      var uncapped=Object.keys(CAP).filter(function(id){ return UNITS[id].mixCap!==CAP[id]; });
+      chk("the RPG teams, the 1990s T-90, the T-80BVM, the T-64A and the T-72 Ural carry their ceiling on the card",
+          uncapped.length===0, uncapped.map(function(id){ return id+" "+UNITS[id].mixCap; }).join(", ")||"mixCap on all seven");
+      if (typeof AI!=="undefined" && AI.pickOf) {
+        var E2=E, k0={ fac:E2.faction, era:E2.era, cash:E2.cash, oil:E2.oil, tech:E2.tech, hb:E2.hasBuilding,
+                      own:Object.prototype.hasOwnProperty.call(E2,"hasBuilding") }, qi=E2.queues.infantry, q0=qi.items.slice();
+        var got={};
+        try {
+          E2.hasBuilding=function(){ return true; }; E2.tech=3; E2.oil=600; E2.cash=0;
+          E2.faction="pact"; E2.era="e80"; qi.items.length=0;
+          for(var pk=0;pk<20;pk++){ var pid=AI.pickOf(E2,"at"); got[pid]=(got[pid]||0)+1; qi.items.push({ id:pid, def:UNITS[pid], paid:0 }); }
+        } finally {
+          qi.items.length=0; qi.items.push.apply(qi.items,q0);
+          E2.faction=k0.fac; E2.era=k0.era; E2.cash=k0.cash; E2.oil=k0.oil; E2.tech=k0.tech;
+          if(k0.own) E2.hasBuilding=k0.hb; else delete E2.hasBuilding;
+        }
+        chk("and the commander's mix keeps to it: twenty 1980s anti-tank purchases on an empty bank are mostly Konkurs teams",
+            (got.pact_e80_rpg7v||0)<=6 && (got.pact_e80_at||0)>=14,
+            (got.pact_e80_at||0)+" Konkurs, "+(got.pact_e80_rpg7v||0)+" RPG-7V");
+      } else {
+        chk("and with no mix in this build the commander builds the guided team: unitFor() names the Konkurs",
+            unitFor("pact","at","e80")==="pact_e80_at" && unitFor("pact","mbt","e90")==="pact_e90_mbt", unitFor("pact","at","e80"));
+      }
+    } catch(e){
+      chk("the Soviet staples section ran to the end", false, e.message+" | "+String(e.stack).split("\n").slice(0,2).join(" | "));
+    } finally {
+      Game.rng=rng;
+      P.faction=fac0; P.era=era0;
+      if (Game.cbContacts) for(var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if (made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      Game.sweepDead();
+      UI.selection.length=0; sel0.forEach(function(u){ if(!u.dead){ u.selected=true; UI.selection.push(u); } });
+      back(P.stats,sP); back(E.stats,sE);
+      UI.refreshCards();
+    }
+    var match1={ t:Game.time, n:live(Game.entities), eu:live(E.units), eb:live(E.buildings), up:keep(E.upgrades),
+                 tech:E.tech, shots:Combat.projectiles.length, def:Game.deferred.length };
+    chk("the shared match is as it was: its clock, the enemy's army and research, both books, the RNG, the human's army and decade, nothing left standing",
+        keep(match1)===keep(match0) && Game.rng===rng && keep(P.stats)===sP && keep(E.stats)===sE && P.faction===fac0 && P.era===era0 &&
+        made.every(function(u){ return u.dead; }),
+        "t "+match0.t.toFixed(1)+" -> "+match1.t.toFixed(1)+", entities "+match0.n+" -> "+match1.n+", enemy units "+match0.eu+" -> "+match1.eu+
+        ", buildings "+match0.eb+" -> "+match1.eb+", tech "+match0.tech+" -> "+match1.tech);
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

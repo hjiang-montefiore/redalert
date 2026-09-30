@@ -16,7 +16,7 @@ Everything is plain HTML5/Canvas — the same files run identically on both plat
 ## What's in the box
 
 - **3 factions** with authentic rosters: NATO Expeditionary Force (M1A2, AH-64E, Arleigh Burke, F-16C…),
-  Eastern Coalition (T-90A, Mi-28N, Kilo, MiG-29…), People's Liberation Army (Type 99A, Z-10, Type 052D, J-10C…) —
+  Eastern Coalition (T-90M, Mi-28N, Kilo, MiG-29…), People's Liberation Army (Type 99A, Z-10, Type 052D, J-10C…) —
   88 units in total across infantry, armour, aviation and warships.
 - **4 real-geography theatres**, rasterised from hand-digitised coastlines:
   Taiwan Strait, Korean Peninsula, Strait of Hormuz, Normandy Coast. Real chokepoints, real mountain

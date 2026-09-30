@@ -502,7 +502,16 @@ var UNITS = {
     cost:1500, oil:22, time:22, hp:1750, armor:"heavy", speed:1.55, turn:1.5, sight:8.0, r:16, mass:62,
     layer:"ground", weapons:["gun_120"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.5, crush:true,
     desc:"Main battle tank. M256 120mm smoothbore firing depleted-uranium long rods, Chobham composite front, gas-turbine drive, and hunter-killer thermal sights that see through night and dust." },
-  mbt_p: { fac:"pact", role:"mbt", name:"T-90A", full:"T-90A MBT", cat:"vehicle",
+  /* T-90M, not the T-90A. The T-90A of 2004 is already the e00 row
+     (pact_e00_mbt), so the present day was fielding the same tank twice, and
+     this row's own numbers - 1400 credits, 1820 hp, gun_125 at 165 against the
+     e00 T-90A's 1330, 1745 and 157 - were already a better tank's. The T-90M
+     entered service in 2020 and is the one Russian tank still being built.
+     Only the name moves; the id stays, so the commander and every suite
+     section that fights an mbt_p are untouched. The hand-built mesh it draws
+     (units3d.js) is still the T-90A's: a T-90M one - Relikt, the turret
+     bustle box - is later work. */
+  mbt_p: { fac:"pact", role:"mbt", name:"T-90M", full:"T-90M Proryv MBT", cat:"vehicle",
     cost:1400, oil:20, time:20, hp:1820, armor:"heavy", speed:1.6, turn:1.6, sight:7.4, r:15, mass:47,
     layer:"ground", weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true,
     desc:"125mm smoothbore with an autoloader and reactive armour. Hits harder, aims slower, costs less." },

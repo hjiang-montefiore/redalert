@@ -7792,6 +7792,9 @@ UNIT_MODELS["mbt_p"] = {
     bx(g, 0.14, 0.2, 0.14, 3.3, 1.0, 1.15, gunMat); bx(g, 0.14, 0.2, 0.14, 3.3, -1.0, 1.15, gunMat);
     var dh = czu(g, 0.28, 0.05, 2.35, 0, 1.28, hullMat); dh.rotation.y = 0.34;
     var tur = new THREE.Group(); tur.name = "turret"; tur.position.set(0.3, 0, 1.4); g.add(tur);
+    /* mbt_p's card is the T-90M (2020) since the soviet-ground pass; this is
+       still the T-90A's mesh below it - no Relikt, no turret bustle box - and
+       a T-90M of its own is later work. */
     /* T-90A, not T-90 obr.1992. The A model of 2004 is precisely the variant
        that dropped the T-72B cast dome for a WELDED turret - js/eras.js says
        so of this very unit ("Welded turret replacing the cast one") - and a

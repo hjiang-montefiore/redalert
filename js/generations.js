@@ -143,6 +143,25 @@
     hvy_r:  { pen: 780, front: 738 },   /* M1A2T is an Abrams, not a CM-11 */
     hvy_k:  { pen: 380, front: 353 },
     mbt_c:  { pen: 700, front: 640 },
+    /* Three Soviet tanks that are not their decade's standard, so their plate
+       is read off this table rather than the curve. On the curve's own scale
+       the T-62 sits at 174 against about 220 mm real and the M60A1 at 177
+       against about 250 - a factor of about 0.75-0.8.
+       T-64A, 1968: steel, glass-textolite and steel on the glacis, aluminium
+       inserts in the cast turret, about 370 real - 285 here. The e60 curve
+       would give it the T-62's 175.
+       T-72 Ural, 1973: the T-64's glacis under a solid cast turret - 275, so
+       the M60A1's 105 mm (275) just gets through it and only partly
+       through the T-64A. */
+    pact_e60_t64a: { front: 285, note: "T-64A: composite armour a decade early" },
+    pact_e60_t72:  { front: 275 },
+    /* T-72A, 1979: a 1970s array fighting in the 1980s. The e80 curve (459)
+       is the reactive-armour generation's - the T-80U and T-72B; the T-72A had
+       none and a filled cast turret, about 400-420 real on the
+       turret and less on the hull - 330 here. Every 1980s NATO gun in the
+       game (400-470) goes through it; the T-72B beside it (427) lets the
+       French 400 only partly through. */
+    pact_e80_t72a: { front: 330 },
   };
 
   function U_clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
