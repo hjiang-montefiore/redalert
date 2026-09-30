@@ -1624,16 +1624,21 @@ var Render = (function () {
      A LINE GOES ONLY AS FAR AS THE UNIT WILL. The queue (u.orders) is taken
      up only by an order that finishes into nextOrder() (entities.js): a
      move, an attack-move, a fight, a clearance, a mine laid, a cargo round
-     away. A patrol never finishes; a combat air patrol is flown until the
-     tanks send it home and then taken up again; a fire mission runs to its
-     clock and stands idle; a squad that boards is aboard; a recall parks; a
-     mined or swept box ends idle - and an idle unit never takes up what is
-     queued. Measured at b4a9943, each with a move queued behind it: a patrol
-     still walking its beat after 30 s; a fire mission on a 3 s clock
-     idle after 30 s; a squad aboard its IFV after 10 s; a combat air patrol
+     away, a fire mission at its clock. A patrol never finishes; a combat air
+     patrol is flown until the tanks send it home and then taken up again; a
+     squad that boards is aboard; a recall parks; a mined or swept box ends
+     idle - and an idle unit never takes up what is queued. Measured at
+     b4a9943, each with a move queued behind it: a patrol still walking its
+     beat after 30 s; a squad aboard its IFV after 10 s; a combat air patrol
      home for fuel and back on station within 60 s; a recall parked after
      60 s - and the move still queued in every one. So the line stops at
      such an order, and nothing is drawn to a place the unit is never going.
+     A fire mission stood idle at its clock too, and the line stopped there,
+     until (owner) "yes" to missions fired in sequence: bombard() now hands
+     on, so the line runs on through a mission to a second one's ring, a
+     move or an attack-move (_behtest [87]). Not an aircraft's: updateAir()
+     never runs bombard(), so an airframe holding a mission never reaches
+     its clock, and its line still stops there.
      A strike's way home is drawn as what afterAttack()
      makes it, an ATTACK-MOVE back to the ramp that fights whatever it meets
      - the same kind before the target dies and after.
@@ -1776,10 +1781,12 @@ var Render = (function () {
         case "bombard": {
           olLeg(K_FIRE, o.x, o.y, 0, true);
           /* the mount the order names (entities.js bombard): a cargo round is
-             one round and then the next order; a gun fires until the clock */
+             one round and then the next order; a gun fires until its clock
+             and then the next order. Not in the air (above). */
           const w = o.wi !== undefined && u.def.weapons ? WEAPONS[u.def.weapons[o.wi]] : null;
-          if (w && w.scatter) { olRing(o.x, o.y, olSowR(w), K_AREA); pull = true; }
+          if (w && w.scatter) olRing(o.x, o.y, olSowR(w), K_AREA);
           else olRing(o.x, o.y, OL_MISS, K_FIRE);
+          pull = !air;
           break;
         }
         case "clearobstacle":

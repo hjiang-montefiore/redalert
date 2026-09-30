@@ -2413,9 +2413,17 @@ var UI = (function () {
      because the reload on the heavy rounds runs to a minute and a half. */
   function forceFire(mx, my, shift) {
     const wp = Render.unproject(mx, my);
+    /* Nothing airborne. An AC-130's 105 mm and an ASW helicopter's RBU are
+       lobbed rounds, so isIndirect() says yes - but updateAir() has no fire-
+       mission branch. Measured at bb41156, each with a move Shift-queued
+       behind the mission: an AC-130 answered "1 GUN ON FIRE MISSION", fired
+       nothing and flew home for fuel at 53 s, the move still queued; a Ka-27
+       was still hanging over its pad on the order at 120 s, 0 px moved, the
+       move still queued. The gunship's howitzer is for a target it can see:
+       right-click. */
     const guns = selection.filter(u =>
       u.owner === G.human && u.kind === "unit" && !u.dead &&
-      u.isIndirect && u.isIndirect());
+      u.layer !== "air" && u.isIndirect && u.isIndirect());
     if (!guns.length) {
       alert("NOTHING SELECTED THAT CAN SHELL A MAP POINT", "bad");
       return;

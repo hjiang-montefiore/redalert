@@ -8082,8 +8082,9 @@ try{
      factory to its rally flag; a fire mission's landing ring, and a cargo
      round's mine ring; a box being mined. This holds the list: its legs for
      orders given through the player's own clicks and keys, where each chain
-     stops (a patrol, a fire mission, a combat air patrol and a recall never
-     take up what is queued behind them), its fog rule (own units only, no
+     stops (a patrol, a combat air patrol and a recall never take up what is
+     queued behind them; a fire mission does, at its clock - [87]), its fog
+     rule (own units only, no
      leg to a target the player cannot see), both rings against where the
      rounds and the mines really fall, and that the 2D view strokes it. The
      3D view's one LineSegments is held by tools/jsc/orderlines3d_check.js.
@@ -8196,8 +8197,9 @@ try{
           w.name+": "+onAim+" of "+n+" on the aim point, the farthest "+far.toFixed(1)+" px out; ring "+ringR+" px");
       click(2,gun.x+T*12,gun.y+T*3,true,true);
       ls=lines(UI.selection,false);
-      chk("a second mission Shift-queued behind it is not drawn: a mission fires to its clock and the gun then stands idle",
-          gun.order===fo && gun.orders.length===1 && gun.orders[0].type==="bombard" && ls.length===1 && ls.rings.length===1,
+      chk("a second mission Shift-queued behind it is drawn on from the first, ringed: the gun fires it when the first one's clock runs out ([87])",
+          gun.order===fo && gun.orders.length===1 && gun.orders[0].type==="bombard" && ls.length===2 && ls[1].k==="fire" &&
+          eq(ls[1],fo.x,fo.y,gun.orders[0].x,gun.orders[0].y) && ls.rings.length===2 && ls.rings[1].k==="fire",
           gun.orders.length+" queued; "+desc(ls)+"; rings "+ls.rings.length);
       /* 4b. a cargo round: the order the MINEFIELD panel gives (ui.js), a
          move queued behind it, and where the stick's mines really lie */
@@ -10792,6 +10794,245 @@ try{
         Game.fogEnabled===fogOn && Game.weatherKey===wk0 && Game.rng===rng && keep(P.stats)===sP && keep(E.stats)===sE &&
         (hadGh ? Game.ghosts===gh0 : !("ghosts" in Game)) && made.every(function(u){ return u.dead; }) &&
         !(Game.cbContacts||[]).some(function(c){ return made.indexOf(c.unit)>=0; }), "");
+  })();
+  }
+
+  /* ====== [87] FIRE MISSIONS RUN IN TURN ======
+     (owner) "yes" - to "Should queued fire missions execute in sequence? I'd
+     say yes, as in C&C and WARNO." Measured at c1870b6: an M109 given a
+     Ctrl+right-click mission and a second Shift+Ctrl+right-click behind it
+     put its rounds on the first until the clock ran out and then stood idle,
+     the second still queued and never fired. A move or an attack-move queued
+     behind a mission waited the same way, and a mission that could not be
+     fired at all - a launcher's held round on an order that never released
+     it, a cargo round with the rack empty - dropped the gun to idle and
+     wedged everything behind it. bombard() now ends into nextOrder() as a
+     move does; a queued mission's clock starts when it is taken up and its
+     mount has reloaded, so a belt of 26-second mine rockets lays every
+     stick; a dry gun out of supply does not hold the queue; a launcher that
+     drives to its firing point sets up again there; an aircraft, which never
+     flies a fire mission, is not given one; and the order lines draw on past
+     a mission to what really comes next. The rounds are recorded rather
+     than flown, so nothing lands on the shared match, and everything made
+     here is taken away again. */
+  if (inHalf(1)) {
+  log("\n[87] FIRE MISSIONS RUN IN TURN: A QUEUED MISSION FIRES, AND WHAT COMES AFTER IS TAKEN UP");
+  (function(){
+    var T=CFG.TILE, M=Game.map, cv=document.getElementById("cv");
+    var made=[], sel0=UI.selection.slice(), cam0={x:Render.cam.x,y:Render.cam.y,z:Render.cam.z};
+    var sP=JSON.stringify(P.stats), sE=JSON.stringify(E.stats), fire0=Combat.fire, shots=[];
+    var OLF=(typeof Render2D!=="undefined" && typeof Render2D.orderLines==="function") ? Render2D.orderLines : null;
+    function sel(list){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
+      for(var j=0;j<list.length;j++){ list[j].selected=true; s.push(list[j]); } }
+    function mk(pl,id,x,y){ if(!UNITS[id]) return null; var u=Game.spawnUnitAt(pl,id,x*T+16,y*T+16); if(u) made.push(u); return u; }
+    function open(x,y){ return x>1&&y>1&&x<M.W-2&&y<M.H-2&&GameMap.passable(M,x,y,"ground")&&!Game.tileBlocked(x,y,null); }
+    /* the open tile nearest a world point, as a world point at its centre */
+    function near(wx,wy){ var x=(wx/T)|0, y=(wy/T)|0;
+      for(var r=0;r<6;r++) for(var a=0;a<16;a++){ var tx=(x+Math.cos(a/16*6.283)*r)|0, ty=(y+Math.sin(a/16*6.283)*r)|0;
+        if(open(tx,ty)) return { x:tx*T+16, y:ty*T+16 }; } return { x:x*T+16, y:y*T+16 }; }
+    function click(btn,wx,wy,shift,ctrl){ var rc=cv.getBoundingClientRect();
+      cv.dispatchEvent({type:"mousedown",button:btn,clientX:rc.left+Render.sx(wx,wy),
+        clientY:rc.top+Render.sy(wx,wy,GameMap.elevAt(M,(wx/T)|0,(wy/T)|0)),shiftKey:!!shift,ctrlKey:!!ctrl,metaKey:false}); }
+    function at(u,o){ return shots.filter(function(s){ return s.u===u && Math.abs(s.x-o.x)<1 && Math.abs(s.y-o.y)<1; }); }
+    function by(u){ return shots.filter(function(s){ return s.u===u; }); }
+    function legs(u){ var L=OLF(Game,[u],false), ks=[], rs=[]; for(var i=0;i<L.n;i++) ks.push(L.kinds[L.seg[i*7+6]]);
+      for(var r=0;r<L.nr;r++) rs.push(L.kinds[L.ring[r*4+3]]); return { k:ks.join(","), r:rs.join(","), L:L }; }
+    /* tick until stop() or sec game-seconds, calling each() after every tick */
+    function run(sec,stop,each){ var t0=Game.time; while(Game.time-t0<sec){ Game.tick(CFG.DT); if(each) each(); if(stop&&stop()) break; } return Game.time-t0; }
+    try {
+      var g=tile(P,"ground",9);
+      if(!g){ chk("fire-mission scenario built", false, "no ground"); return; }
+      /* aim toward the middle of the map, where there is room */
+      var dx=(M.W/2-g.x), dy=(M.H/2-g.y), dl=Math.hypot(dx,dy)||1; dx/=dl; dy/=dl;
+      Render.setCam(g.x*T,g.y*T);
+      /* the launcher four tiles off to one side, the rocket launcher four to the other */
+      var tp=near(g.x*T+16-dy*T*4, g.y*T+16+dx*T*4), rp=near(g.x*T+16+dy*T*4, g.y*T+16-dx*T*4);
+      var gun=mk(P,"spg_n",g.x,g.y), tel=mk(P,"tel_n",(tp.x/T)|0,(tp.y/T)|0), mrl=mk(P,"mlrs_p",(rp.x/T)|0,(rp.y/T)|0);
+      if(!gun||!tel||!mrl){ chk("fire-mission scenario built", false, "spawn failed"); return; }
+      gun.stance="hold"; tel.stance="hold"; mrl.stance="hold";      // nobody wanders off to fight
+      /* the rounds are recorded where they were aimed, not flown */
+      Combat.fire=function(g2,sh,w,tg){ if(made.indexOf(sh)>=0){ shots.push({ u:sh, w:w, x:tg.x, y:tg.y, t:Game.time }); return; }
+        return fire0.apply(this, arguments); };
+      var a1={ x:gun.x+dx*T*8, y:gun.y+dy*T*8 }, a2={ x:gun.x+dx*T*8-dy*T*3, y:gun.y+dy*T*8+dx*T*3 };
+      var m=near(gun.x-dx*T*3, gun.y-dy*T*3);
+      /* 1. by the player's own clicks: a mission, a second Shift-queued behind it, and a move behind that */
+      sel([gun]);
+      click(2,a1.x,a1.y,false,true); click(2,a2.x,a2.y,true,true); click(2,m.x,m.y,true,false);
+      var o1=gun.order, q1=gun.orders[0], mv=gun.orders[1];
+      chk("Ctrl+right-click, Shift+Ctrl+right-click and a Shift+right-click queue a mission, a mission and a move",
+          o1.type==="bombard" && gun.orders.length===2 && q1 && q1.type==="bombard" && mv && mv.type==="move",
+          o1.type+" then "+gun.orders.map(function(o){ return o.type; }).join(", "));
+      o1.until=Game.time+9;                                  // the first mission's 90 s clock, cut to 9
+      var tq=-1, left=-1, cdq=0;
+      run(40, function(){ return mv && gun.order===mv; },
+        function(){ if(tq<0 && gun.order===q1){ tq=Game.time; left=q1.until-Game.time; cdq=Math.max(0,gun.cooldowns[0]); q1.until=Game.time+12; } });
+      var s1=at(gun,o1), s2=at(gun,q1);
+      chk("the queued mission is taken up when the first one's clock runs out, released, and puts its rounds on its own aim point",
+          s1.length>=1 && tq>0 && q1.release===true && s2.length>=1 && s2[0].t>=tq && s1[s1.length-1].t<tq,
+          s1.length+" round(s) on the first, "+s2.length+" on the second"+(tq>0 ? " from "+(tq-s1[0].t).toFixed(1)+" s after the first round" : ", never taken up")+
+          "; now "+gun.order.type+", "+gun.orders.length+" queued");
+      chk("and its clock runs from then, once the tube has reloaded: the full 90 s, not what was left of 90 s from the click",
+          tq>0 && Math.abs(left-cdq-90)<0.1, tq>0 ? left.toFixed(2)+" s on the clock when taken up, "+cdq.toFixed(2)+" s of it the reload" : "never taken up");
+      var d0=U.dist(gun.x,gun.y,m.x,m.y);
+      run(3);
+      chk("then the move queued behind them is taken up, and the gun drives", gun.order===mv && U.dist(gun.x,gun.y,m.x,m.y)<d0-T*0.25,
+          gun.order.type+", "+d0.toFixed(0)+" -> "+U.dist(gun.x,gun.y,m.x,m.y).toFixed(0)+" px from the waypoint");
+      /* 2. a mission and an attack-move behind it */
+      var am=near(gun.x+dy*T*3, gun.y-dx*T*3);
+      gun.give({ type:"bombard", x:a1.x, y:a1.y, until:Game.time+3 }); gun.give({ type:"attackmove", x:am.x, y:am.y }, true);
+      run(6, function(){ return gun.order.type!=="bombard"; });
+      chk("a mission hands on to an attack-move queued behind it", gun.order.type==="attackmove" && gun.orders.length===0,
+          gun.order.type+", "+gun.orders.length+" queued");
+      /* 3. a lone mission ends idle, as it always has - which is how every
+         mission the AI gives ends: ai.js queues nothing */
+      gun.give({ type:"bombard", x:a1.x, y:a1.y, until:Game.time+2 });
+      run(3);
+      var eQ=E.units.filter(function(u){ return !u.dead && u.orders && u.orders.length; }).length;
+      chk("a mission with nothing queued behind it still ends idle, and no unit of the AI's holds a queued order",
+          gun.order.type==="idle" && eQ===0, gun.order.type+"; "+eQ+" AI units with a queue");
+      /* 4. a cargo round with the rack empty: said, handed on at once, and no ready round spent */
+      var si=gun.scatterIndex(), wS=si>=0 ? WEAPONS[gun.def.weapons[si]] : null;
+      if(wS && gun.dispMax){
+        var disp0=gun.disp, dS=Math.max((wS.minRange||0)+1.5, wS.range*0.5);
+        var sa={ x:gun.x+dx*T*dS, y:gun.y+dy*T*dS }, m2=near(gun.x-dx*T*2, gun.y-dy*T*2);
+        /* a full magazine and no resupply part-way, so a round spent on the refusal shows */
+        gun.disp=0; gun.cooldowns[si]=5; gun.rounds=gun.roundsMax; gun._resT=0;
+        gun.give({ type:"bombard", wi:si, x:sa.x, y:sa.y, until:Game.time+25 }); gun.give({ type:"move", x:m2.x, y:m2.y }, true);
+        var cm=gun.order, spent=null, rb=gun.rounds, tR=Game.time, px=gun.x, py=gun.y, movedR=-1;
+        run(8, function(){ return gun.order!==cm; }, function(){ if(gun.order!==cm && spent===null){ spent=rb-gun.rounds; movedR=U.dist(px,py,gun.x,gun.y); tR=Game.time-tR; } rb=gun.rounds; });
+        chk("a cargo mission with no mine round aboard is refused at once, before the launcher moves or waits out its reload, and hands on to the move behind it",
+            gun.order.type==="move" && gun.order.x===m2.x && !by(gun).some(function(s){ return s.w===wS; }) && spent!==null && tR<=CFG.DT*2.5 && movedR<1,
+            gun.order.type+", "+gun.orders.length+" queued, "+by(gun).filter(function(s){ return s.w===wS; }).length+" cargo rounds away"+
+            (spent!==null ? "; refused after "+tR.toFixed(3)+" s, "+movedR.toFixed(1)+" px moved" : "; never refused"));
+        chk("and the refusal spends no ready round", gun.roundsMax>0 && spent===0,
+            spent===null ? "never refused" : spent+" ready round(s) gone on the refusal ("+gun.rounds+"/"+gun.roundsMax+")");
+        gun.disp=disp0;
+      } else chk("a cargo mission with no mine round aboard is refused and hands on", false, "no cargo round on "+gun.def.id);
+      /* 5. a belt of two sticks from a launcher whose mine rocket reloads in
+         26 s, against the 25 s the MINEFIELD panel gives a stick: the second
+         stick's clock waits for the tube */
+      var ri=mrl.scatterIndex(), wR=ri>=0 ? WEAPONS[mrl.def.weapons[ri]] : null;
+      if(wR && mrl.dispMax){
+        var dR=Math.max((wR.minRange||0)+1.5, mrl.weaponRange(wR)/T*0.6);
+        var b1=near(mrl.x+dx*T*dR, mrl.y+dy*T*dR), b2=near(mrl.x+dx*T*dR-dy*T*3, mrl.y+dy*T*dR+dx*T*3), m3=near(mrl.x-dx*T*2, mrl.y-dy*T*2);
+        mrl.disp=mrl.dispMax; mrl.rounds=mrl.roundsMax; mrl.cooldowns[ri]=0;
+        mrl.give({ type:"bombard", wi:ri, x:b1.x, y:b1.y, until:Game.time+25 }); mrl.give({ type:"bombard", wi:ri, x:b2.x, y:b2.y, until:Game.time+25 }, true);
+        mrl.give({ type:"move", x:m3.x, y:m3.y }, true);
+        var mvR=mrl.orders[1];
+        run(45, function(){ return mrl.order===mvR || mrl.order.type==="idle"; });
+        var k1=at(mrl,b1), k2=at(mrl,b2);
+        chk("a belt of 26-second mine rockets lays every stick, the second when the tube has reloaded, then takes up the move",
+            k1.length===1 && k2.length===1 && k2[0].t-k1[0].t>=wR.reload-0.5 && mrl.order===mvR,
+            wR.name+" (reload "+wR.reload+" s): sticks "+k1.length+","+k2.length+(k1[0]&&k2[0] ? ", "+(k2[0].t-k1[0].t).toFixed(1)+" s apart" : "")+
+            "; now "+mrl.order.type+", rack "+mrl.disp+"/"+mrl.dispMax+(typeof Mines!=="undefined" ? ", field room "+Mines.roomFor(Game,P) : ""));
+      } else chk("a belt of mine rockets lays every stick", false, "no cargo round on "+mrl.def.id);
+      /* 6. a dry gun: out of supply it does not hold the queue; in supply it
+         waits for the round that is coming */
+      gun.rounds=0; gun._resT=0; gun.inSupply=function(){ return false; };
+      gun.give({ type:"bombard", x:a1.x, y:a1.y, until:Game.time+20 }); gun.give({ type:"bombard", x:a2.x, y:a2.y, until:Game.time+20 }, true);
+      var m4=near(gun.x+dy*T*2, gun.y-dx*T*2); gun.give({ type:"move", x:m4.x, y:m4.y }, true);
+      var mvD=gun.orders[1], nD=by(gun).length;
+      var tD=run(25, function(){ return gun.order===mvD || gun.order.type==="idle"; });
+      delete gun.inSupply;
+      chk("a dry gun out of supply, with missions and a move queued, goes straight on to the move: no round is coming to fire them with",
+          gun.order===mvD && tD<=0.25 && by(gun).length===nD,
+          gun.order.type+" after "+tD.toFixed(2)+" s, "+(by(gun).length-nD)+" round(s) fired, "+gun.orders.length+" queued");
+      gun.rounds=0; gun._resT=0; gun.unsupplied=0; gun.cooldowns[0]=0;
+      gun.give({ type:"bombard", x:a1.x, y:a1.y, until:Game.time+5 }); var m5=near(gun.x-dy*T*2, gun.y+dx*T*2); gun.give({ type:"move", x:m5.x, y:m5.y }, true);
+      var oW=gun.order, mvW=gun.orders[0], tW0=Game.time, tW=run(8, function(){ return gun.order===mvW || gun.order.type==="idle"; });
+      var sW=at(gun,oW).filter(function(s){ return s.t>=tW0; });
+      chk("in supply a dry gun waits for its round, fires it, and hands on only at the clock",
+          sW.length>=1 && sW[0].t-tW0>=1.5 && gun.order===mvW && tW>=5,
+          (sW[0] ? "first round "+(sW[0].t-tW0).toFixed(1)+" s in" : "no round")+"; "+gun.order.type+" at "+tW.toFixed(1)+" s");
+      /* 7. a launcher's held round: a queued mission is an explicit order and
+         fires it; one that carries no release fires nothing and hands on */
+      var wT=WEAPONS[tel.def.weapons[0]];
+      chk("the launcher's round is held while it has no order", !!wT && tel.holdsFire(wT), wT ? wT.name : "no weapon");
+      var ta=near(tel.x+dx*T*12, tel.y+dy*T*12), tb=near(tel.x-dx*T, tel.y-dy*T);
+      tel.give({ type:"move", x:tel.x+dx*T, y:tel.y+dy*T });
+      tel.give({ type:"bombard", x:ta.x, y:ta.y, until:Game.time+30, auto:true }, true);
+      tel.give({ type:"bombard", x:ta.x, y:ta.y, until:Game.time+10 }, true);
+      tel.give({ type:"move", x:tb.x, y:tb.y }, true);
+      var oA=tel.orders[0], oB=tel.orders[1], oC=tel.orders[2], tA=-1, tB=-1, nA=-1;
+      run(40, function(){ return tel.order===oC; }, function(){
+        if(tel.order===oA && tA<0) tA=Game.time;
+        if(tel.order===oB && tB<0){ tB=Game.time; nA=by(tel).length; } });
+      var sT=by(tel);
+      chk("a queued mission that carries no release fires nothing and hands on at once",
+          tA>0 && oA.release!==true && tB>0 && tB-tA<=CFG.DT*2.5 && nA===0,
+          (tA>0 ? "taken up" : "never taken up")+", release "+oA.release+(tB>0 ? ", handed on after "+(tB-tA).toFixed(3)+" s" : ", never handed on")+
+          "; now "+tel.order.type+", "+tel.orders.length+" queued");
+      chk("the next, a mission the player queued, is released when taken up and fires the held round on its aim point",
+          oB.release===true && sT.length===1 && Math.abs(sT[0].x-ta.x)<1 && Math.abs(sT[0].y-ta.y)<1 && sT[0].w===wT,
+          "release "+oB.release+", "+sT.length+" round(s)"+(sT[0] ? " at "+sT[0].x.toFixed(0)+","+sT[0].y.toFixed(0) : ""));
+      chk("and the move after it is taken up when its clock runs out", tel.order===oC && tel.orders.length===0,
+          tel.order.type+", "+tel.orders.length+" queued");
+      /* 8. a launcher set up where it stands, sent to a point just beyond its
+         reach: it strikes the set-up to drive, and sets up again there */
+      var Rt=tel.weaponRange(wT), tc=null;
+      for(var dd=2; dd<=8 && !tc; dd++) for(var aa=-3; aa<=3 && !tc; aa++){
+        var an=Math.atan2(dy,dx)+aa*0.15, tx2=((tel.x+Math.cos(an)*(Rt+T*dd))/T)|0, ty2=((tel.y+Math.sin(an)*(Rt+T*dd))/T)|0;
+        if(open(tx2,ty2)) tc={ x:tx2*T+16, y:ty2*T+16 }; }
+      if(!tc) tc={ x:tel.x+dx*(Rt+T*3), y:tel.y+dy*(Rt+T*3) };
+      tel.deployed=true; tel.deployT=0; tel.cooldowns[0]=0; tel.rounds=tel.roundsMax;
+      tel.give({ type:"bombard", x:tc.x, y:tc.y, until:Game.time+30 });
+      var nT=by(tel).length, drvDep=false, drove=false, tIn=-1, tx0=tel.x, ty0=tel.y;
+      run(30, function(){ return by(tel).length>nT; }, function(){
+        if(U.dist(tx0,ty0,tel.x,tel.y)>1){ drove=true; if(tel.deployed && tIn<0) drvDep=true; }
+        if(tIn<0 && U.dist(tel.x,tel.y,tc.x,tc.y)<=Rt) tIn=Game.time; });
+      var sC=by(tel).slice(nT), ds=tel.def.deploySec||1.6;
+      chk("a launcher that drives to its firing point strikes its set-up to do it, and sets up again there before it fires",
+          drove && !drvDep && tIn>0 && sC.length===1 && sC[0].t-tIn>=ds-CFG.DT,
+          (drove ? "drove "+(drvDep ? "still set up" : "packed up") : "never moved")+
+          (sC[0] && tIn>0 ? "; fired "+(sC[0].t-tIn).toFixed(2)+" s after coming into range (set-up "+ds+" s)" : "; did not fire"));
+      tel.give({ type:"idle" });
+      /* 9. an aircraft: never flies a fire mission, so it is not given one,
+         and one that holds a mission draws nothing past it */
+      var hp=near(g.x*T+16+dx*T*2, g.y*T+16+dy*T*2), air=mk(P,UNITS.gunshipair_n ? "gunshipair_n" : "asw_helo_p",(hp.x/T)|0,(hp.y/T)|0);
+      if(air && OLF){
+        var box=document.getElementById("alerts"), nb=box && box.children ? box.children.length : 0;
+        sel([air]); var oAir=air.order.type; click(2,a1.x,a1.y,false,true);
+        var na=box && box.children ? box.children.length : 0, said=na>nb && box.children[na-1] ? box.children[na-1].textContent : "";
+        chk("an aircraft is not put on a fire mission: its airframe never flies one",
+            air.order.type!=="bombard" && !(air.orders||[]).some(function(o){ return o.type==="bombard"; }),
+            air.def.id+": "+oAir+" -> "+air.order.type+(said ? "; \""+said+"\"" : ""));
+        air.give({ type:"bombard", x:a1.x, y:a1.y, until:Game.time+60 }); air.give({ type:"move", x:m.x, y:m.y }, true);
+        var la=legs(air);
+        chk("and one that holds a mission anyway draws no line past it, because it will never get past it",
+            air.order.type==="bombard" && air.orders.length===1 && la.k==="fire" && la.r==="fire", "legs "+la.k+"; rings "+la.r);
+        air.dead=true;
+      } else chk("an aircraft is not put on a fire mission", false, air ? "Render2D.orderLines is absent" : "no gunship or ASW helicopter to spawn");
+      /* 10. the order lines draw on past a mission to what comes next */
+      if(OLF){
+        gun.give({ type:"bombard", x:a1.x, y:a1.y, until:Game.time+60 }); gun.give({ type:"bombard", x:a2.x, y:a2.y, until:Game.time+60 }, true);
+        gun.give({ type:"move", x:m.x, y:m.y }, true);
+        var lg=legs(gun), L=lg.L;
+        chk("the order lines run on past a mission: to the first aim point, the second, then the move, each mission ringed",
+            lg.k==="fire,fire,move" && lg.r==="fire,fire" &&
+            Math.abs(L.seg[1*7+0]-a1.x)<0.5 && Math.abs(L.seg[1*7+3]-a2.x)<0.5 && Math.abs(L.seg[2*7+3]-m.x)<0.5,
+            "legs "+lg.k+"; rings "+lg.r);
+        gun.give({ type:"idle" });
+      } else chk("the order lines run on past a mission", false, "Render2D.orderLines is absent");
+    } catch(ex) {
+      chk("[87] runs to the end", false, String(ex)+" "+String(ex.stack||"").split("\n")[0]);
+    } finally {
+      Combat.fire=fire0;
+      for(var pi=Combat.projectiles.length-1; pi>=0; pi--)
+        if(made.indexOf(Combat.projectiles[pi].shooter)>=0) Combat.projectiles.splice(pi,1);
+      if(Game.cbContacts) for(var ci=Game.cbContacts.length-1; ci>=0; ci--)
+        if(made.indexOf(Game.cbContacts[ci].unit)>=0) Game.cbContacts.splice(ci,1);
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      sel(sel0.filter(function(e){ return !e.dead; }));
+      Render.setCam(cam0.x,cam0.y); Render.cam.z=cam0.z;
+      var back=function(st,js){ var o=JSON.parse(js); for(var k2 in st) if(!(k2 in o)) delete st[k2]; for(var k3 in o) st[k3]=o[k3]; };
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    var selBack=sel0.filter(function(e){ return !e.dead; });
+    chk("the shared match is as it was: rounds, selection, both commanders' books",
+        Combat.fire===fire0 && UI.selection.length===selBack.length && selBack.every(function(e,i){ return UI.selection[i]===e && e.selected; }) &&
+        !Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0; }) &&
+        JSON.stringify(P.stats)===sP && JSON.stringify(E.stats)===sE,
+        shots.length+" rounds recorded and none flown; selection "+selBack.length+" -> "+UI.selection.length);
   })();
   }
 

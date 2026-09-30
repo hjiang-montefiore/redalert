@@ -332,6 +332,16 @@ class Unit {
     if (this.carried) return;
     if (!this.orders) this.orders = [];
     if (queue && (this.order.type !== "idle" || this.orders.length)) {
+      /* A fire mission's clock (until) is how long the gun is given to get
+         its rounds away, and the caller stamps it at the click (ui.js
+         forceFire: now + 90; a cargo stick from the MINEFIELD panel, now +
+         25). Right for a mission begun at once, wrong for one that waits in
+         the queue: with bombard() handing on and the clock left as clicked,
+         a second mission clicked a tick after the first came up, when the
+         first one's 90 s ran out, with 0.000 s left and fired nothing. So a
+         queued mission keeps its window as a length, and nextOrder() starts
+         it (missionClock). */
+      if (order.type === "bombard" && order.until !== undefined) order.span = order.until - this.game.time;
       if (this.orders.length < 12) this.orders.push(order);
       return;
     }
@@ -372,7 +382,12 @@ class Unit {
   }
   /* pull the next queued task when the current one finishes */
   nextOrder() {
-    if (this.orders && this.orders.length) { this.setOrder(this.orders.shift()); return true; }
+    if (this.orders && this.orders.length) {
+      const o = this.orders.shift();
+      if (o.span !== undefined) this.missionClock(o);      // a queued fire mission (give)
+      this.setOrder(o);
+      return true;
+    }
     return false;
   }
   retaliate(shooter) {
@@ -751,9 +766,54 @@ class Unit {
     if (best) best.serviced = this.game.time;
     return best;
   }
+  /* ---- a queued fire mission's clock starts when it can be fired ----
+     give() kept its window as a length. It runs from when the gun takes the
+     mission up or, if the mount it will fire is still reloading, from when
+     that reload is done. The reload is what a belt of cargo sticks needs:
+     the MINEFIELD panel gives a stick 25 s, and a 9M55K4, AT2 or PHL-03
+     mine rocket takes 26 to reload. With the clock started at take-up it ran
+     out a second before the tube was ready: a BM-30 given a belt of four
+     laid the 1st and the 3rd and skipped the 2nd and the 4th without a
+     word (rack 6 to 4). With the reload counted in, it lays all four. The
+     mount is the one bombard() will fire: the one the order names, or the
+     first lobbed round that is not a cargo round. */
+  missionClock(o) {
+    let wi = o.wi;
+    for (let i = 0; wi === undefined && i < this.def.weapons.length; i++) {
+      const w = WEAPONS[this.def.weapons[i]];
+      if (w && !w.scatter && (w.proj === "arc" || w.indirect)) wi = i;
+    }
+    const cd = wi !== undefined ? this.cooldowns[wi] || 0 : 0;
+    o.until = this.game.time + Math.max(0, cd) + o.span;
+    delete o.span;
+  }
   /* fire on a map position: how artillery answers a counter-battery plot */
   bombard(o, dt) {
-    if (this.game.time > o.until) { this.order = { type: "idle" }; return; }
+    /* ---- a finished mission hands on to what is queued ----
+       as a move, an attack-move, a fight, a mine laid and a cargo round away
+       already did. It dropped to idle, and an idle unit takes up nothing, so
+       whatever the player queued behind a mission waited for ever. Measured
+       at c1870b6: an M109 put 11 rounds on a first mission, one every 8.5 s,
+       stood idle when its 90 s ran out and was still idle at 195 s with the
+       second mission queued and not a round fired on it; a move queued
+       behind a mission had not moved it a pixel at 97 s. (owner) "yes" to
+       missions fired in sequence, as in C&C and WARNO. Every mission still
+       gets its whole window before the next begins. ai.js never queues an
+       order, so every mission the AI gives still ends idle, as before. */
+    if (this.game.time > o.until) { if (!this.nextOrder()) this.order = { type: "idle" }; return; }
+    /* ---- ...and a gun with nothing to fire does not hold the queue ----
+       Dry, out of supply - updateSupply gives nothing back out of contact -
+       and with something queued behind: no round is coming for this mission,
+       so the next order is taken now, not at the clock. With the handover
+       alone an M109 out of supply with one round aboard, given two missions
+       and a move home, fired its round in the first second and did not start
+       home until 180 s. In supply a dry gun waits, because a round comes back
+       every 2 s (CFG.RESUPPLY_RATE); and a mission with nothing behind it
+       waits on its clock, as it always has. */
+    if (this.roundsMax && this.rounds <= 0 && this.unsupplied > 0 && this.orders && this.orders.length) {
+      this.nextOrder();
+      return;
+    }
     /* ---- which mount answers this fire mission ----
        A launcher may carry two lobbed rounds - the high-explosive ripple it was
        built around, and a cargo round that puts an anti-tank minefield on the
@@ -782,10 +842,35 @@ class Unit {
         if (w0.proj === "arc" || w0.indirect) { wi = i; break; }
       }
     }
-    if (wi < 0) { this.order = { type: "idle" }; return; }
+    /* Nothing aboard may fire on this order: a held round on an order that
+       never released it (an automatic one, or one restored from a save older
+       than release), or no lobbed mount at all. That ends this mission and
+       not the ones behind it. It skips only what nobody authorised: a
+       mission the player queued is released when it is taken up (setOrder)
+       and fires its held round like one given at once. */
+    if (wi < 0) { if (!this.nextOrder()) this.order = { type: "idle" }; return; }
     const w = WEAPONS[this.def.weapons[wi]];
+    /* ---- an empty rack refuses the stick before the launcher moves ----
+       It was asked only as the round was about to leave, so the launcher
+       drove into range, laid the tube, waited out the reload and paid a
+       ready round for a stick it did not have (14/14 to 13/14 at c1870b6),
+       then stood idle with the rest of the belt stuck behind it. Nothing is
+       spent by asking, so it is asked first, and the next order is taken. */
+    if (w.scatter && this.dispMax && this.disp <= 0) {
+      if (this.owner === this.game.human)
+        this.game.alert(this.def.name.toUpperCase() + " \u2014 NO MINE ROUNDS ABOARD", "bad");
+      if (!this.nextOrder()) this.order = { type: "idle" };
+      return;
+    }
     const range = this.weaponRange(w), minR = (w.minRange || 0) * CFG.TILE;
     const dist = U.dist(this.x, this.y, o.x, o.y);
+    /* A launcher that has to drive to its firing point sets up again when it
+       gets there, as engage() has it. Queued missions made that the ordinary
+       case, and bombard() never struck the set-up: a HIMARS (deploySec 3)
+       that had fired on one point and was sent on to one beyond its reach
+       drove 17.5 s with its jacks down and fired the tick it came into
+       range. It now sets up there, and fires 3.1 s after. */
+    if ((dist > range || dist < minR) && this.def.deploy && this.deployed) this.deployed = false;
     if (dist > range) { this.stepAlong(o.x, o.y, dt, range * 0.85); return; }
     if (dist < minR) {
       const a = Math.atan2(this.y - o.y, this.x - o.x);
@@ -827,20 +912,19 @@ class Unit {
        Deliberately BELOW the ready-round test: a dry gun must return there,
        before anything else is spent. */
     if (w.scatter) {
-      if (this.dispMax && this.disp <= 0) {
-        if (this.owner === this.game.human)
-          this.game.alert(this.def.name.toUpperCase() + " \u2014 NO MINE ROUNDS ABOARD", "bad");
-        this.order = { type: "idle" };
-        return;
-      }
+      /* (an empty rack is refused further up, before anything moves) */
       /* Asked before the rocket flies as well as inside Mines.lay, so a
          commander whose field is already full keeps the round on the rack
-         instead of watching a rocket land and do nothing. */
+         instead of watching a rocket land and do nothing. The ready round
+         taken just above has not left the tube, so it goes back; and the
+         next order is taken rather than the queue waiting behind an idle
+         gun. */
       if (typeof Mines !== "undefined" && !Mines.roomFor(this.game, this.owner)) {
         if (this.owner === this.game.human)
           this.game.alert("MINEFIELD CEILING \u2014 " + Mines.CAP +
                           " MINES ALREADY IN THE GROUND", "bad");
-        this.order = { type: "idle" };
+        if (this.roundsMax) this.rounds++;
+        if (!this.nextOrder()) this.order = { type: "idle" };
         return;
       }
       this.disp--;
