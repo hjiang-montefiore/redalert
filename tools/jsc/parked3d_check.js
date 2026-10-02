@@ -256,7 +256,9 @@ function topOf(grp) {
    in her frame, for the overlap between two aircraft */
 function inside(u, ship, T) {
   var inv = shipInv(ship), n = 0, deep = 0, worst = 0, cells = {};
-  eachVert(recOf(u).grp, inv, function (v) {
+  eachVert(recOf(u).grp, inv, function (v, o) {
+    /* render3d's deck planner leaves a rotor out of an aircraft's plan (airPlanOf), so a blade tip over a neighbour is not laid out and not counted */
+    for (var an = o; an; an = an.parent) if (an.name === "rotor" || an.name === "rotordisc") return;
     n++;
     var t = T.at(v.x, v.z);
     if (t - v.y > 1.0) { deep++; worst = Math.max(worst, t - v.y); }
