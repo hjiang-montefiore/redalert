@@ -446,6 +446,11 @@ var OVERSIZE = {};
   "nato_e50_heavybomber nato_e60_heavybomber nato_e80_heavybomber nato_e90_heavybomber nato_e00_heavybomber hbomber_n",
   /* H-6, Tu-160, B-2 */
   "sbomber_p pla_e60_heavybomber pla_e80_heavybomber pla_e00_heavybomber sbomber_c pact_e80_stealthbomber sbomber_n nato_e90_stealthbomber",
+  /* the airlift rows that stand in on the C.1 Hercules model (the first of their role in ROLES): its real 40.4 m of
+     span on 29.8 m of length is wider for its length than the old 34 m stand-in, and the game scales an aircraft by
+     length, so the UK and French A400M rows and fra_e00_airlift reach into a wall by more than VOL_TOL. The ten
+     Hercules rows themselves, drawn at r 20, fit. They leave when they get a model of their own. */
+  "airlift_b airlift_f fra_e00_airlift",
   "trans_k kpa_e50_transport kpa_e60_transport kpa_e80_transport kpa_e00_transport roc_e50_transport"   /* An-2, Po-2, C-46 */
 ].forEach(function (s) { s.split(" ").forEach(function (id) { OVERSIZE[id] = true; }); });
 
