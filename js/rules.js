@@ -659,10 +659,12 @@ var UNITS = {
     layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:2.0,
     desc:"Patrol corvette built for endurance. A 57mm gun and a very tough hull for the price." },
 
-  missileboat_n: { fac:"nato", role:"missileboat", name:"Harpoon Missile Boat", cat:"naval",
-    cost:1500, oil:22, time:19, hp:900, armor:"light", speed:3.0, turn:1.8, sight:9, r:16, mass:0,
-    layer:"sea", weapons:["ssm"], prereq:["navalyard","radar"], tech:2,
-    desc:"Anti-ship missile craft. Kills capital ships and shore targets from beyond gun range — if nothing intercepts." },
+  /* No US missile boat after the Pegasus class (PHM-1 to PHM-6, 1977-1993;
+     nato_e80_missileboat in eras.js). The Navy has fielded none since, so the
+     present day has no row for the role, and the commander's naval share for
+     it goes to the hulls the US does build (ai.js buildToward cools a role
+     unitFor() cannot fill). The "Harpoon Missile Boat" that stood here was not
+     a real type. */
   missileboat_p: { fac:"pact", role:"missileboat", name:"Molniya Missile Boat", full:"Project 1241 Molniya", cat:"naval",
     cost:1450, oil:21, time:18, hp:950, armor:"light", speed:3.1, turn:1.8, sight:8.5, r:16, mass:0,
     layer:"sea", weapons:["ssm"], prereq:["navalyard","radar"], tech:2,
@@ -3201,7 +3203,6 @@ var NAVY = {
   boat_n:        { weapons:["hmg"], sonar:0, vls:0, helo:0, radarQ:4 },
   corvette_n:    { weapons:["navgun_76","ssm_nsm","ciws_phalanx"], sonar:6.0, vls:8, helo:1,
                    radarQ:14, ciws:0.45 },
-  missileboat_n: { weapons:["ssm_harpoon","ciws_phalanx"], sonar:0, vls:0, helo:0, radarQ:9 },
   destroyer_n:   { weapons:["navgun_mk45","sam_sm2","ssm_harpoon","asw_mk54","ciws_phalanx"],
                    sonar:9.5, vls:96, helo:2, radarQ:34, ciws:0.72 },
   cruiser_n:     { weapons:["navgun_mk45","sam_sm2","ssm_harpoon","asw_mk54","ciws_phalanx"],
@@ -3670,7 +3671,7 @@ var SHIP_RCS = {
      a much taller deckhouse whose slab sides carry the SPY-1 planar arrays:
      that is a radar installation, not stealth shaping, and eras.js carries the
      same 1.25 for her from 1983 on. */
-  boat_n:0.30, corvette_n:0.14, missileboat_n:0.28, destroyer_n:0.55,
+  boat_n:0.30, corvette_n:0.14, destroyer_n:0.55,
   cruiser_n:1.25, carrier_n:2.6,
   /* PLA: newer hulls are well shaped, older ones less so */
   boat_c:0.16, corvette_c:0.40, missileboat_c:0.16, destroyer_c:0.50,
@@ -3706,7 +3707,7 @@ for (var _rc in SHIP_RCS) if (UNITS[_rc]) UNITS[_rc].rcs = SHIP_RCS[_rc];
    defined a single historical hull. The historical fits are in SOFTKILL_ERA
    underneath, applied by a sweep that runs after every roster exists. */
 var SOFTKILL = {
-  corvette_n:0.30, destroyer_n:0.34, cruiser_n:0.34, carrier_n:0.26, missileboat_n:0.20,
+  corvette_n:0.30, destroyer_n:0.34, cruiser_n:0.34, carrier_n:0.26,
   corvette_c:0.26, destroyer_c:0.29, cruiser_c:0.31, carrier_c:0.24, missileboat_c:0.16,
   corvette_p:0.14, destroyer_p:0.17, cruiser_p:0.18, carrier_p:0.15, missileboat_p:0.10,
   corvette_r:0.24, destroyer_r:0.22, missileboat_r:0.16,
@@ -4359,7 +4360,6 @@ var FIXED_MAGAZINE = {
   corvette_k:    { ssm_kn01: 4 },
   missileboat_r: { ssm_hf3: 4 },
   corvette_r:    { ssm_hf3: 8 },
-  missileboat_n: { ssm_harpoon: 8 },
   missileboat_c: { ssm_yj18: 8 },
   /* Oscar II carries twenty-four, and cannot reload submerged either */
   ssgn_p:        { ssm_oniks: 24 },

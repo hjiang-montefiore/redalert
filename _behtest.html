@@ -7222,8 +7222,14 @@ try{
         chk("an Arleigh Burke on a squad ashore fires the 127 mm and no Harpoon",
             (r4.n.navgun_mk45 || 0) > 0 && (r4.n.ssm_harpoon || 0) === 0, JSON.stringify(r4.n));
         clearAll();
-        /* nothing is left unarmed: a boat with ONLY missiles still uses them */
-        var mb = mk(P, "missileboat_n", coast.s.x, coast.s.y);
+        /* nothing is left unarmed: a boat with ONLY missiles still uses them.
+           Taiwan's Hsiung Feng boat is the one hull left armed with nothing
+           but missiles; the US "Harpoon Missile Boat" this used was not a real
+           type and is gone (the Navy has had no missile boat since 1993). */
+        chk("the US Navy has no missile boat today: the last, the Pegasus class, retired in 1993",
+            !UNITS.missileboat_n && unitFor("nato", "missileboat", "e20") === null,
+            "row " + !!UNITS.missileboat_n + ", unitFor " + unitFor("nato", "missileboat", "e20"));
+        var mb = mk(P, "missileboat_r", coast.s.x, coast.s.y);
         var r5 = fight(mb, squads("rifle_p", coast.g.x, coast.g.y, 2), 10);
         chk("a missile boat with no gun still fires its missile at the squad",
             precious(r5.n, mb) > 0, JSON.stringify(r5.n));
@@ -8714,11 +8720,11 @@ try{
 
       /* ---- 2. eyes where the optics put them ---- */
       var TELS=["tel_n","deu_e60_tel","deu_e80_tel","gbr_e50_tel","gbr_e60_tel","fra_e90_tel"];
-      chk("a launcher, a boat under the water and a Harpoon boat see what their optics see",
+      chk("a launcher, a boat under the water and a missile boat see what their optics see",
           TELS.every(function(id){ return UNITS[id] && UNITS[id].sight<=5.0; }) &&
-          UNITS.ssbn_n.sight<=6.5 && UNITS.sub_n.sight<=9 && UNITS.missileboat_n.sight<=9.5,
+          UNITS.ssbn_n.sight<=6.5 && UNITS.sub_n.sight<=9 && UNITS.missileboat_r.sight<=9.5,
           "HIMARS "+UNITS.tel_n.sight+", Ohio "+UNITS.ssbn_n.sight+", Virginia "+UNITS.sub_n.sight+
-          ", Harpoon boat "+UNITS.missileboat_n.sight+" (b4a9943: 30.4, 22.4, 19.4, 14.4)");
+          ", Hsiung Feng boat "+UNITS.missileboat_r.sight+" (b4a9943: 30.4, 22.4, 19.4; the US Harpoon boat, since removed, 14.4)");
       var aim=function(id){ var d=UNITS[id], r=0; d.weapons.forEach(function(k){ var w=WEAPONS[k]; if(w&&w.proj!=="arc"&&w.range>r) r=w.range; }); return d.sight>=r; };
       chk("a crew that aims its own weapon keeps the eyes for it",
           aim("mbt_n") && aim("at_n") && aim("helo_n") && aim("aa_n") && aim("recon_n"),

@@ -4250,66 +4250,6 @@ SPRITE_DRAW["corvette_c"] = {
   }
 };
 
-SPRITE_DRAW["missileboat_n"] = {
-  l: 56, w: 13,
-  draw: function (ctx, C) {
-    var H = "#6d7378", D = "#4b5054", S = "#7e858c";
-    function poly(p) {
-      ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]);
-      for (var i = 1; i < p.length; i++) ctx.lineTo(p[i][0], p[i][1]);
-      ctx.closePath();
-    }
-    var hull = [[28, 0], [19, -4.8], [-23, -6.3], [-28, -4.9], [-28, 4.9], [-23, 6.3], [19, 4.8]];
-    poly(hull); ctx.fillStyle = H; ctx.fill();
-    poly([[23, 0], [17, -3.6], [-22, -5], [-26.5, -3.8], [-26.5, 3.8], [-22, 5], [17, 3.6]]);
-    ctx.fillStyle = D; ctx.fill();
-    ctx.lineWidth = 1.4;
-    ctx.strokeStyle = C.sh(H, 20);
-    ctx.beginPath(); ctx.moveTo(26, -1); ctx.lineTo(19, -4.2); ctx.lineTo(-23, -5.6); ctx.stroke();
-    ctx.strokeStyle = C.sh(H, -22);
-    ctx.beginPath(); ctx.moveTo(26, 1); ctx.lineTo(19, 4.2); ctx.lineTo(-23, 5.6); ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.fillStyle = "#3a3e42";
-    ctx.beginPath(); ctx.arc(21.5, 0, 1.8, 0, 6.2832); ctx.fill();
-    ctx.strokeStyle = C.dk; ctx.stroke();
-    ctx.strokeStyle = "#2e3134"; ctx.lineWidth = 1.1;
-    ctx.beginPath(); ctx.moveTo(22.5, 0); ctx.lineTo(25.8, 0); ctx.stroke();
-    ctx.lineWidth = 1;
-    var dh = [[15, -3], [11, -4.2], [1, -4.2], [1, 4.2], [11, 4.2], [15, 3]];
-    poly(dh); ctx.fillStyle = S; ctx.fill();
-    ctx.strokeStyle = C.dk; ctx.stroke();
-    ctx.fillStyle = C.sh(S, 18); ctx.fillRect(1.5, -3.7, 9.5, 1);
-    ctx.fillStyle = C.sh(S, -22); ctx.fillRect(1.5, 2.7, 9.5, 1);
-    ctx.fillStyle = "#33373b";
-    poly([[14.2, -2.3], [11, -3.4], [11, 3.4], [14.2, 2.3]]); ctx.fill();
-    function rack(s) {
-      ctx.save();
-      ctx.translate(-7, s * 2.1);
-      ctx.rotate(-s * 0.35);
-      for (var i = 0; i < 4; i++) {
-        var ty = -2.5 + i * 1.66;
-        ctx.fillStyle = "#8d9399";
-        ctx.fillRect(-4.2, ty - 0.65, 8.4, 1.3);
-        ctx.fillStyle = "#3a3e43";
-        ctx.fillRect(3, ty - 0.65, 1.2, 1.3);
-        ctx.strokeStyle = C.dk;
-        ctx.strokeRect(-4.2, ty - 0.65, 8.4, 1.3);
-      }
-      ctx.restore();
-    }
-    rack(-1); rack(1);
-    ctx.fillStyle = "#3a3e42";
-    ctx.beginPath(); ctx.arc(-24, 0, 1.7, 0, 6.2832); ctx.fill();
-    ctx.strokeStyle = C.dk; ctx.stroke();
-    poly(hull); ctx.globalAlpha = 0.16; ctx.fillStyle = C.main; ctx.fill(); ctx.globalAlpha = 1;
-    ctx.fillStyle = C.main; ctx.fillRect(3, -4.2, 2.2, 8.4);
-    poly(hull); ctx.strokeStyle = C.dk; ctx.lineWidth = 1; ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,0.5)";
-    ctx.beginPath(); ctx.moveTo(27, -1.1); ctx.lineTo(23, -3);
-    ctx.moveTo(27, 1.1); ctx.lineTo(23, 3); ctx.stroke();
-  }
-};
-
 SPRITE_DRAW["missileboat_p"] = {
   l: 56, w: 14,
   draw: function (ctx, C) {
