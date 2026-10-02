@@ -44,6 +44,43 @@
    Model space: +X nose, +Y left, +Z up, real metres.
    Colour: PAINT.darkgrey from js/air3d_era.js (0x4f575d), the Soviet
    grey-on-grey the type wore, with that table's own two disruptive tones.
+
+   VARIANTS. build(THREE, M, C, which) draws this one airframe as each row
+   that flies it (VARIANTS below). Called without `which` it is the hero:
+
+     "9.13S"  pact_e90_fighter and fighter_p. Both rows are the MiG-29S
+              (eras.js calls the one "the game's fighter_p exactly").
+     "9.12"   pact_e80_fighter, the 1983 Fulcrum-A: a slim spine, the small
+              ventral fins of the first batches, Soviet blue-grey.
+     "9.12G"  deu_e90_mig29, the ex-NVA MiG-29G of JG 73: slim spine, no
+              ventral fins, Luftwaffe light grey.
+     "9.12K"  kpa_e00_fighter, the KPAF MiG-29: slim spine, no ventral fins,
+              the bluegrey air_specs gives the row.
+
+   The 9.13 raised the spine into a hump about 0.2 m over the fuselage roof
+   between the fins (SPINE below); the 9.12 keeps a third of that rise
+   (slimSpine). The ventral fins under the tunnels were deleted when the fin
+   chord was extended in the mid-1980s, before the 9.13 was built, so only
+   the early 9.12 has them. The hero carried them too until the 9.13SE
+   photograph below showed them gone. Everything else is shared.
+
+   Photographs for the variants (Wikimedia Commons):
+     Luftwaffe MiG-29G 29+03, Gatow museum, Andre Gerwing Collection
+       IDs 012003 / 012005 / 012007 / 021818: port side from aft and nose
+       three-quarter. Nothing hangs under the nozzles, so the late 9.12 has
+       no ventral fins; light grey overall; an R-27 on the inboard pylon.
+     Polish 105 (MiG-29A, ILA Berlin 2016): the 9.12 from above, in a bank.
+     Bangladesh Air Force MiG-29SE 36507, side on at take-off ("36507
+       Mikoyan-Gurevich MiG-29SE Fulcrum-C Bangladesh Air Force 2960536507
+       VGHS.jpg"): the 9.13 hump, and nothing under the nozzles.
+     A KPAF MiG-29 photographed from a P-3 Orion in 2003 ("DPRK MiG-29",
+       409 px wide): a low spine running straight back from the canopy to
+       the fins, so the row is a 9.12, and eras.js gives it the 1983 N019
+       (radarGen e80) too. Thin evidence. The aircraft is backlit against a
+       bright sky, so the still says nothing about its paint.
+
+   The whole airframe is baked into one mesh per material before it is
+   returned (mergeByMaterial): 180 draw calls became 10.
    ========================================================================= */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -60,6 +97,19 @@ var MiG29Hero = (function () {
   var TONE_B = "#616a70";
   var SKIN_R = 0.87, SKIN_M = 0.06;
 
+  /* The other rows wear other entries of the same table: bluegrey, the
+     Soviet blue-grey of the 1980s (air_specs gives it to both the e80 and
+     the KPAF row), and seagrey, its light grey, here the Luftwaffe's. This
+     sheet's soot, seams and belly dirt cost a light paint about a sixth of
+     its brightness against a twelfth on the dark grey, so those two are the
+     table's colours lifted by a tenth to come out where the table puts
+     them. */
+  var PAL = {
+    darkgrey: { id: "darkgrey", base: BASE,     a: TONE_A,    b: TONE_B },
+    bluegrey: { id: "bluegrey", base: 0x8799aa, a: "#75899c", b: "#a2b4c4" },
+    seagrey:  { id: "seagrey",  base: 0xabb5bb, a: "#9aa4ab", b: "#bec7cd" },
+  };
+
   /* ---------------------------------------------------------------- rng -- */
   function rngFor(seed) {
     var s = seed >>> 0 || 1;
@@ -72,9 +122,9 @@ var MiG29Hero = (function () {
      the TAIL to u=1 at the NOSE, with v=0.25 along the spine and v=0.75 along
      the belly -- so exhaust soot belongs at low u, and once the texture's
      flipY has had its say the belly lands at canvas row 0.25H.              */
-  var _sheet = null;
-  function sheet(THREE) {
-    if (_sheet !== null) return _sheet;
+  var _sheets = {};
+  function sheet(THREE, pal) {
+    if (_sheets[pal.id] !== undefined) return _sheets[pal.id];
     try {
       var W = 1024, H = 512;
       var cv = document.createElement("canvas");
@@ -85,10 +135,10 @@ var MiG29Hero = (function () {
 
       /* 1. base camouflage: field grey, then the two disruptive tones as the
             soft-edged blotches the type actually wore */
-      g.fillStyle = hex(BASE); g.fillRect(0, 0, W, H);
+      g.fillStyle = hex(pal.base); g.fillRect(0, 0, W, H);
       for (i = 0; i < 30; i++) {
         g.globalAlpha = 0.45;
-        g.fillStyle = (i & 1) ? TONE_A : TONE_B;
+        g.fillStyle = (i & 1) ? pal.a : pal.b;
         g.beginPath();
         g.ellipse(R() * W, R() * H, 50 + R() * 150, 26 + R() * 78, R() * 3.14, 0, 6.29);
         g.fill();
@@ -179,9 +229,9 @@ var MiG29Hero = (function () {
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
       t.anisotropy = 8;
-      _sheet = t;
-    } catch (e) { _sheet = null; }
-    return _sheet;
+      _sheets[pal.id] = t;
+    } catch (e) { _sheets[pal.id] = null; }
+    return _sheets[pal.id];
   }
 
   /* ------------------------------------------------------ linear colour ---
@@ -191,54 +241,14 @@ var MiG29Hero = (function () {
      flag and is decoded properly, so the painted skin is right while every
      untextured part renders about three stops too light -- 0x0e1012, chosen
      as a black duct interior, measured #585d60 on screen and the intakes read
-     as plates rather than holes. Converting sRGB to linear here puts the
-     untextured tiers back on the same footing as the painted one.            */
-  function lin(c) {
-    function f(v) {
-      v /= 255;
-      return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    }
-    var r = Math.round(f((c >> 16) & 255) * 255);
-    var g = Math.round(f((c >> 8) & 255) * 255);
-    var b = Math.round(f(c & 255) * 255);
-    return (r << 16) | (g << 8) | b;
-  }
+     as plates rather than holes. That is why the untextured tiers below are
+     given such dark values.
 
-  /* ------------------------------------------------------- team colour ----
-     The renderer runs ACES tone mapping under a strong key, which eats
-     saturation: the stock 0x3f7fd0 team blue came out of the first render as
-     near-white and the fin bands read as windows rather than markings. Push
-     the chroma up and the lightness down before it ever reaches the shader,
-     so what lands on screen is the colour that was asked for.               */
-  function punch(rgb) {
-    var r = ((rgb >> 16) & 255) / 255,
-        gn = ((rgb >> 8) & 255) / 255,
-        b = (rgb & 255) / 255;
-    var mx = Math.max(r, gn, b), mn = Math.min(r, gn, b), d = mx - mn;
-    var h = 0, s = 0, l = (mx + mn) * 0.5;
-    if (d > 1e-6) {
-      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-      if (mx === r) h = (gn - b) / d + (gn < b ? 6 : 0);
-      else if (mx === gn) h = (b - r) / d + 2;
-      else h = (r - gn) / d + 4;
-      h /= 6;
-    }
-    s = Math.min(1, s * 1.5 + 0.28);
-    l = Math.max(0.17, Math.min(0.44, l * 0.80));
-    function ch(p, q, t) {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 0.5) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    }
-    var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
-    var R2 = Math.round(ch(p, q, h + 1 / 3) * 255);
-    var G2 = Math.round(ch(p, q, h) * 255);
-    var B2 = Math.round(ch(p, q, h - 1 / 3) * 255);
-    return (R2 << 16) | (G2 << 8) | B2;
-  }
+     The team flash is the exception: it is exactly C.team, as on the other
+     heroes, so eraPaint's team test leaves it alone. It used to go through
+     an HSL boost and an sRGB-to-linear step that both read the colour as a
+     number, but the game passes C.team as a "#rrggbb" string, and every
+     side came out the same near-black, #0a0303.                             */
 
   /* ============================================================ materials ==
      Three tiers only. SKIN is the painted surface and carries the canvas
@@ -246,13 +256,13 @@ var MiG29Hero = (function () {
      METAL covers fittings, nozzles, gear -- plus, at roughness 0.95, the
      rubber and the flat-black duct and cockpit interiors. GLASS is the
      canopy, the HUD and the IRST ball.                                      */
-  function materials(THREE, C) {
-    var tex = sheet(THREE);
+  function materials(THREE, C, pal) {
+    var tex = sheet(THREE, pal);
 
     /* SKIN on lofted bodies: cylindrical UVs already cover 0..1 */
     var skin = new THREE.MeshStandardMaterial({
       color: 0xffffff, roughness: SKIN_R, metalness: SKIN_M, side: THREE.DoubleSide });
-    if (tex) skin.map = tex; else skin.color.setHex(BASE);
+    if (tex) skin.map = tex; else skin.color.setHex(pal.base);
 
     /* SKIN on extruded surfaces: their UVs are raw metres, so the sheet has
        to be shrunk or a 5 m wing tiles the panel lines into corduroy */
@@ -264,11 +274,12 @@ var MiG29Hero = (function () {
       c.repeat.set(0.074, 0.074);
       c.offset.set(0.44, 0.40);
       panel.map = c;
-    } else panel.color.setHex(BASE);
+    } else panel.color.setHex(pal.base);
 
-    /* team colour flash: painted surface, so it lives in the SKIN tier */
+    /* team colour flash: painted surface, so it lives in the SKIN tier, and
+       exactly C.team (see the note on linear colour above) */
     var team = new THREE.MeshStandardMaterial({
-      color: lin(punch((C && C.team !== undefined) ? C.team : 0x3f7fd0)),
+      color: new THREE.Color((C && C.team !== undefined) ? C.team : 0x3f7fd0),
       roughness: SKIN_R, metalness: SKIN_M, side: THREE.DoubleSide });
 
     /* METAL. These hex values look far too dark to be metal and that is
@@ -447,29 +458,156 @@ var MiG29Hero = (function () {
 
   var GROUND = -1.58;   /* wheels touch here; fin tip 2.88 -> 4.46 m high    */
 
+  /* ============================================================ variants ==
+     slim: the 9.12 spine against the 9.13 hump. ventral: the small fins
+     under the tunnels, early 9.12 only. fit: which stores hang on the
+     pylons. pal: the paint.                                                 */
+  var VARIANTS = {
+    "9.13S": { slim: false, ventral: false, fit: "e90", pal: PAL.darkgrey },
+    "9.12":  { slim: true,  ventral: true,  fit: "e90", pal: PAL.bluegrey },
+    "9.12G": { slim: true,  ventral: false, fit: "e90", pal: PAL.seagrey },
+    "9.12K": { slim: true,  ventral: false, fit: "k",   pal: PAL.bluegrey },
+  };
+  function variantOf(v) {
+    return (typeof v === "string" ? VARIANTS[v] : v) || VARIANTS["9.13S"];
+  }
+
+  /* roof height of a section list at x, held flat beyond its ends */
+  function topAt(secs, x) {
+    var n = secs.length - 1, a, b, t;
+    if (x <= secs[0].x) return secs[0].zc + secs[0].h;
+    for (var i = 1; i <= n; i++) {
+      if (x <= secs[i].x) {
+        a = secs[i - 1]; b = secs[i]; t = (x - a.x) / (b.x - a.x);
+        return (a.zc + a.h) + ((b.zc + b.h) - (a.zc + a.h)) * t;
+      }
+    }
+    return secs[n].zc + secs[n].h;
+  }
+
+  /* The 9.12 spine: the hump's rise over the fuselage roof cut to a third,
+     the bottom left where it was (it is buried in the roof anyway) and the
+     width trimmed. Where the hump is already below the roof, as at its last
+     station, it is left alone. */
+  var _slim = null;
+  function slimSpine() {
+    if (_slim) return _slim;
+    _slim = [];
+    for (var i = 0; i < SPINE.length; i++) {
+      var s = SPINE[i], bot = s.zc - s.h, top = s.zc + s.h, roof = topAt(FUS, s.x);
+      var nt = top > roof ? roof + (top - roof) * 0.34 : top;
+      _slim.push({ x: s.x, w: s.w * 0.86, h: (nt - bot) * 0.5, zc: (nt + bot) * 0.5, sq: s.sq });
+    }
+    return _slim;
+  }
+  function spineFor(V) { return V.slim ? slimSpine() : SPINE; }
+  /* how far the 9.12 spine top lies below the 9.13 hump at x: everything
+     that sits on the spine is placed at its 9.13 height minus this */
+  function spineDrop(V, x) {
+    return V.slim ? topAt(SPINE, x) - topAt(slimSpine(), x) : 0;
+  }
+
+  /* ---------------------------------------------------------- store fits --
+     Stations a side, inboard to outboard. e90 is the load the hero always
+     carried, an R-27 inboard and R-73s on the middle and outer rails; it is
+     the "R-27R and R-73" generations.js gives the MiG-29S, and the Gatow
+     29+03 photographs show the Luftwaffe's R-27 on that inboard pylon. The
+     KPAF row's weapon is the R-27R (eras.js), so it carries that inboard
+     and one R-73 on the outer rail: a typical load, as no photograph of a
+     KPAF loading was found. */
+  var R27 = { len: 4.05, rad: 0.120, fc: 0.55, fs: 0.42, cn: true };
+  var R73 = { len: 2.86, rad: 0.088, fc: 0.40, fs: 0.30, cn: true };
+  function fitRacks(kind) {
+    var IN = { y: 2.60, cx: -0.95 }, MID = { y: 3.72, cx: -1.30 }, OUT = { y: 4.76, cx: -1.62 };
+    var pick = {
+      e90: [[IN, R27], [MID, R73], [OUT, R73]],
+      k:   [[IN, R27], [OUT, R73]],
+    }[kind] || [];
+    var o = [];
+    for (var i = 0; i < pick.length; i++) {
+      var st = pick[i][0], w = pick[i][1];
+      o.push({ y: st.y, len: w.len, rad: w.rad, fc: w.fc, fs: w.fs, cn: w.cn, cx: st.cx });
+    }
+    return o;
+  }
+
+  /* ============================================================== merge ==
+     Every part used to be a Mesh of its own: 180 draw calls, and 180 more
+     for the shadow pass, per aircraft on screen. Each mesh is baked into
+     the frame of the model and meshes sharing a material become one
+     geometry. The "gear" group stays a group of its own, or the renderer
+     could not stow it; its parts are merged inside it. Vertices, colours,
+     UVs and materials are the same ones as before, so the look is too. */
+  function mergeByMaterial(THREE, root) {
+    var main = { order: [], by: {} }, gear = { order: [], by: {} };
+    (function walk(node, pm, inGear) {
+      for (var i = 0; i < node.children.length; i++) {
+        var c = node.children[i];
+        c.updateMatrix();
+        var m = pm.clone().multiply(c.matrix);
+        var ing = inGear || c.name === "gear";
+        if (c.isMesh) {
+          var b = ing ? gear : main, key = c.material.uuid;
+          if (!b.by[key]) { b.by[key] = { mat: c.material, parts: [] }; b.order.push(key); }
+          var geo = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+          geo.applyMatrix4(m);
+          b.by[key].parts.push(geo);
+        } else walk(c, m, ing);
+      }
+    })(root, new THREE.Matrix4(), false);
+
+    function emit(bucket, into) {
+      for (var i = 0; i < bucket.order.length; i++) {
+        var e = bucket.by[bucket.order[i]], n = 0, k, o = 0;
+        for (k = 0; k < e.parts.length; k++) n += e.parts[k].attributes.position.count;
+        var P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2);
+        for (k = 0; k < e.parts.length; k++) {
+          var a = e.parts[k].attributes;
+          P.set(a.position.array, o * 3);
+          N.set(a.normal.array, o * 3);
+          if (a.uv) U.set(a.uv.array, o * 2);
+          o += a.position.count;
+        }
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
+        geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
+        geo.setAttribute("uv", new THREE.BufferAttribute(U, 2));
+        into.add(new THREE.Mesh(geo, e.mat));
+      }
+    }
+    var out = new THREE.Group();
+    emit(main, out);
+    var gr = new THREE.Group();
+    gr.name = "gear";
+    emit(gear, gr);
+    out.add(gr);
+    return out;
+  }
+
   /* ================================================================ build == */
-  function build(THREE, M, C) {
-    var T = materials(THREE, C);
+  function build(THREE, M, C, which) {
+    var V = variantOf(which);
+    var T = materials(THREE, C, V.pal);
     var g = new THREE.Group();
 
-    addBody(THREE, M, g, T);
+    addBody(THREE, M, g, T, V);
     addTunnels(THREE, M, g, T);
     addWings(THREE, M, g, T);
     addIntakes(THREE, M, g, T);
-    addTail(THREE, M, g, T);
+    addTail(THREE, M, g, T, V);
     addCockpit(THREE, M, g, T);
     addNoseKit(THREE, M, g, T);
-    addSpineKit(THREE, M, g, T);
-    addStores(THREE, M, g, T);
+    addSpineKit(THREE, M, g, T, V);
+    addStores(THREE, M, g, T, V);
     addGear(THREE, M, g, T);
-    addTeamFlash(THREE, M, g, T);
-    return g;
+    addTeamFlash(THREE, M, g, T, V);
+    return mergeByMaterial(THREE, g);
   }
 
   /* --------------------------------------------------------- central body */
-  function addBody(THREE, M, g, T) {
+  function addBody(THREE, M, g, T, V) {
     g.add(new THREE.Mesh(M.loft(THREE, FUS, 40), T.skin));
-    g.add(new THREE.Mesh(M.loft(THREE, SPINE, 24), T.skin));
+    g.add(new THREE.Mesh(M.loft(THREE, spineFor(V), 24), T.skin));
     g.add(new THREE.Mesh(M.loft(THREE, CHUTE, 18), T.skin));
     /* the chute door closing the aft face of the container */
     var door = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.40, 0.30), T.ink);
@@ -638,7 +776,7 @@ var MiG29Hero = (function () {
   }
 
   /* ------------------------------------------------- fins and stabilators */
-  function addTail(THREE, M, g, T) {
+  function addTail(THREE, M, g, T, V) {
     /* Fin: a low forward root fillet along the boom, then a 46 degree
        leading edge to a squared tip 2.58 m up. Canted 7 degrees outboard.
        Root chord 4.65 m, tip chord 1.28 m -- close to the real 4.3 / 1.35. */
@@ -688,10 +826,12 @@ var MiG29Hero = (function () {
       st.rotation.x = -s * 3.5 * D2R;
       g.add(st);
 
-      /* ventral fin under each tunnel */
-      var vf = new THREE.Mesh(M.slab(THREE, ventR, 0.07, "xz"), T.panel);
-      vf.position.set(0, s * 1.52 + 0.035, -0.78);
-      g.add(vf);
+      /* ventral fin under each tunnel: early 9.12s only (see the header) */
+      if (V.ventral) {
+        var vf = new THREE.Mesh(M.slab(THREE, ventR, 0.07, "xz"), T.panel);
+        vf.position.set(0, s * 1.52 + 0.035, -0.78);
+        g.add(vf);
+      }
     }
   }
 
@@ -784,22 +924,22 @@ var MiG29Hero = (function () {
      The dorsal airbrake is hinged at its FORWARD edge, so the plate has to be
      modelled about that hinge and then rotated: build it in world coordinates
      and rotate about the group origin and it swings into the fuselage.       */
-  function addSpineKit(THREE, M, g, T) {
+  function addSpineKit(THREE, M, g, T, V) {
     var ab = new THREE.Mesh(M.slab(THREE, [
       [0.00, 0.34], [-1.65, 0.30], [-1.65, -0.30], [0.00, -0.34],
     ], 0.05), T.panel);
-    ab.position.set(-2.90, 0, 0.69);
+    ab.position.set(-2.90, 0, 0.69 - spineDrop(V, -2.90));
     ab.rotation.y = 0.16;
     g.add(ab);
     var well = new THREE.Mesh(new THREE.BoxGeometry(1.60, 0.62, 0.05), T.ink);
-    well.position.set(-3.72, 0, 0.605);
+    well.position.set(-3.72, 0, 0.605 - spineDrop(V, -3.72));
     g.add(well);
 
     /* blade aerials: one on the spine, one under the tunnel */
     var b1 = new THREE.Mesh(M.slab(THREE, [
       [-1.05, 0.00], [-1.32, 0.30], [-1.62, 0.30], [-1.55, 0.00],
     ], 0.05, "xz"), T.panel);
-    b1.position.set(0, 0.025, 0.90);
+    b1.position.set(0, 0.025, 0.90 - spineDrop(V, -1.30));
     g.add(b1);
     var b2 = new THREE.Mesh(M.slab(THREE, [
       [0.60, 0.00], [0.37, -0.26], [0.07, -0.26], [0.13, 0.00],
@@ -857,13 +997,9 @@ var MiG29Hero = (function () {
     return grp;
   }
 
-  /* three stations a side: R-27 inboard, R-73 on the middle and outer rails */
-  function addStores(THREE, M, g, T) {
-    var racks = [
-      { y: 2.60, len: 4.05, rad: 0.120, fc: 0.55, fs: 0.42, cn: true, cx: -0.95 },
-      { y: 3.72, len: 2.86, rad: 0.088, fc: 0.40, fs: 0.30, cn: true, cx: -1.30 },
-      { y: 4.76, len: 2.86, rad: 0.088, fc: 0.40, fs: 0.30, cn: true, cx: -1.62 },
-    ];
+  /* three stations a side; what hangs on them is the variant's fit (fitRacks) */
+  function addStores(THREE, M, g, T, V) {
+    var racks = fitRacks(V.fit);
     for (var i = 0; i < racks.length; i++) {
       var r = racks[i];
       for (var s = -1; s <= 1; s += 2) {
@@ -881,7 +1017,10 @@ var MiG29Hero = (function () {
   /* ---------------------------------------------------------------- gear --
      The renderer stows this group in cruise, so it MUST be named "gear".
      A CylinderGeometry runs along +Y, so every leg needs rotation.x = PI/2
-     before it is a leg rather than an axle.                                  */
+     before it is a leg rather than an axle. A wheel is the other way about:
+     left along +Y its axle already runs across the aircraft and it stands
+     on its tread. The wheels were once given the legs' turn as well, which
+     laid every tyre flat, 0.2 m above GROUND.                                */
   function addGear(THREE, M, g, T) {
     var gr = new THREE.Group();
     gr.name = "gear";
@@ -897,11 +1036,9 @@ var MiG29Hero = (function () {
     gr.add(nleg);
     for (var w = -1; w <= 1; w += 2) {
       var nw = new THREE.Mesh(new THREE.CylinderGeometry(0.275, 0.275, 0.145, 14), T.tyre);
-      nw.rotation.x = HALF_PI;
       nw.position.set(2.94, w * 0.115, nz);
       gr.add(nw);
       var nh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.155, 10), T.metal);
-      nh.rotation.x = HALF_PI;
       nh.position.set(2.94, w * 0.115, nz);
       gr.add(nh);
     }
@@ -927,11 +1064,9 @@ var MiG29Hero = (function () {
       brace.position.set(-0.10, s * 1.44, -0.62);
       gr.add(brace);
       var mw = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.16, 16), T.tyre);
-      mw.rotation.x = HALF_PI;
       mw.position.set(-0.50, s * 1.68, mz);
       gr.add(mw);
       var hb = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.17, 12), T.metal);
-      hb.rotation.x = HALF_PI;
       hb.position.set(-0.50, s * 1.68, mz);
       gr.add(hb);
       var md = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.06, 0.50), T.panel);
@@ -946,14 +1081,18 @@ var MiG29Hero = (function () {
      can put on the unit: the fin bands (with the fins), a band across each
      wing, a chevron on each side of the nose, and a stripe over the spine
      for the straight-down view.                                             */
-  function addTeamFlash(THREE, M, g, T) {
+  function addTeamFlash(THREE, M, g, T, V) {
     var ch = chordAt(3.40);
     if (ch) {
       var cx = (ch[0] + ch[1]) * 0.5;
       for (var s = -1; s <= 1; s += 2) {
         var band = new THREE.Mesh(new THREE.BoxGeometry(1.26, 0.80, 0.05), T.team);
         band.rotation.x = -s * ANHEDRAL * D2R;
-        band.position.set(cx, s * 3.40, wingTop(3.40) + 0.012);
+        /* models3d's slab bevels its caps out by 0.4 of the thickness, so
+           the wing's upper skin is WING_T * 0.4 above wingTop(); at
+           wingTop() itself the band lay 3 cm under the skin and never
+           showed */
+        band.position.set(cx, s * 3.40, wingTop(3.40) + WING_T * 0.4 + 0.012);
         g.add(band);
       }
     }
@@ -964,14 +1103,33 @@ var MiG29Hero = (function () {
       g.add(ny);
     }
     var sp = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.78, 0.07), T.team);
-    sp.position.set(-0.60, 0, 0.90);
+    sp.position.set(-0.60, 0, 0.90 - spineDrop(V, -0.60));
     g.add(sp);
   }
 
-  return { build: build };
+  return { build: build, variants: VARIANTS };
 })();
 
 UNIT_MODELS["pact_e90_fighter"] = {
   len: 17.30,
   build: function (THREE, M, C) { return MiG29Hero.build(THREE, M, C); },
+};
+
+/* The other MiG-29 rows are this airframe in their own guise. len is the
+   measured X extent of the model (pitot to lip ring), the same for all. */
+UNIT_MODELS["fighter_p"] = {
+  len: 17.39,
+  build: function (THREE, M, C) { return MiG29Hero.build(THREE, M, C, "9.13S"); },
+};
+UNIT_MODELS["pact_e80_fighter"] = {
+  len: 17.39,
+  build: function (THREE, M, C) { return MiG29Hero.build(THREE, M, C, "9.12"); },
+};
+UNIT_MODELS["deu_e90_mig29"] = {
+  len: 17.39,
+  build: function (THREE, M, C) { return MiG29Hero.build(THREE, M, C, "9.12G"); },
+};
+UNIT_MODELS["kpa_e00_fighter"] = {
+  len: 17.39,
+  build: function (THREE, M, C) { return MiG29Hero.build(THREE, M, C, "9.12K"); },
 };
