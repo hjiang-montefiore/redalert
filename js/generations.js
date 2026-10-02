@@ -1070,9 +1070,7 @@
     pact_e80_gunship: ["gun_h127", "12.7mm YakB-12.7 gatling", "9M114 Shturm (AT-6 Spiral)"],
     pact_e90_gunship: ["gun_h30",  "30mm 2A42 cannon", "9K121 Vikhr (AT-16)"],
     pact_e00_gunship: ["gun_h30",  "30mm 2A42 cannon (NPPU-28)", "9M120 Ataka (AT-9)"],
-    kpa_e80_gunship:  ["gun_h127", "12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
-    kpa_e90_gunship:  ["gun_h127", "12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
-    kpa_e00_gunship:  ["gun_h127", "12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
+    /* the KPA rows are the MD 500D now and carry no gun at all: see the Sagger block below */
   };
   for (var hg in HELO_GUN) {
     var hs = HELO_GUN[hg];
@@ -1102,21 +1100,25 @@
     helo_f: ["30mm GIAT 30M781 chin gun", "AGM-114 Hellfire II"],
     helo_p: ["30mm 2A42 cannon (NPPU-28)", "9M120 Ataka (AT-9)"],
     helo_c: ["23mm chin cannon", "AKD-10 anti-tank missile"],
-    helo_k: ["12.7mm YakB-12.7 gatling", "9M17 Falanga (AT-2 Swatter)"],
   };
   for (var hn in HELO_NAME) {
     var gi = mountIndex(hn, /^chaingun/), mi = mountIndex(hn, /^hellfire/);
     if (gi >= 0) relabel(hn, gi, HELO_NAME[hn][0]);
     if (mi >= 0 && HELO_NAME[hn][1]) relabel(hn, mi, HELO_NAME[hn][1]);
   }
-  /* the Mi-24's gun is a 12.7 mm gatling, not a 30 mm chain gun */
-  (function () {
-    var i = mountIndex("helo_k", /^chaingun/);
-    if (i < 0) return;
-    var w = WEAPONS[UNITS.helo_k.weapons[i]], t = WEAPONS.gun_h127;
-    w.dmg = t.dmg; w.burst = t.burst; w.burstDelay = t.burstDelay; w.range = t.range;
-    w.proj = t.proj; w.speed = t.speed;
-  })();
+  /* The KPA's helicopter is the Hughes/MD 500D, and what the sources support it carrying is the
+     AT-3 Sagger (the 27 July 2013 parade; en.wikipedia "MD Helicopters MD 500" and "Korean People's
+     Army Air Force"): no chin gun, no rocket pods, no Falanga. atgm_sagger above is the 9M14 as the
+     ground rows fire it - a big warhead, a 26-second wire flight and 0.40 to hit - which is the
+     honest figure for a light helicopter that has to hold the missile on target by hand. The
+     roster's placeholder missile is replaced rather than relabelled, so nothing keeps a Hellfire's
+     speed, reload or pop-up flight. */
+  ["kpa_e80_md500", "kpa_e90_md500", "kpa_e00_md500", "md500_k"].forEach(function (uid) {
+    var u = UNITS[uid];
+    if (!u || !WEAPONS.atgm_sagger) return;
+    u.weapons = ["atgm_sagger"];
+    relabel(uid, 0, "9M14 Malyutka (AT-3 Sagger)");
+  });
 
   /* ---- deck guns ---- */
   var DECK_GUN = {

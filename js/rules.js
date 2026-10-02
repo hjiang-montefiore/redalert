@@ -641,11 +641,19 @@ var UNITS = {
     desc:"Armoured ground-attack jet. Delivers heavy ordnance onto a base block and runs for home." },
 
 /* ============================ NAVAL ============================ */
-  boat_n: { fac:"nato", role:"patrol", name:"Mk VI Patrol Boat", cat:"naval",
+  /* DATED, 2026-10-02 (roster realism). The Mk VI entered US service in 2016 (first two delivered
+     to Coastal Riverine Group Two in September 2015, forward deployed to Bahrain in April 2016;
+     en.wikipedia "Mark VI patrol boat"), and this row used to be stamped from:"e50" by the timeless
+     list below, so a 1950s American commander was offered a 2016 boat. It is the present-day row now.
+     The American boats of the earlier decades are nato_e50_patrol, nato_e60_patrol and
+     nato_e90_patrol in eras.js; the 1980s are left empty on purpose (see the note there). */
+  boat_n: { from:"e20", service:"2016", fac:"nato", role:"patrol", name:"Mk VI Patrol Boat", cat:"naval",
     cost:500, oil:6, time:9, hp:520, armor:"light", speed:3.4, turn:2.2, sight:8.5, r:13, mass:0,
     layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
     desc:"Fast inshore patrol craft. Scouts coastline, chases transports, dies to anything serious." },
-  boat_p: { fac:"pact", role:"patrol", name:"Project 21630 Gunboat", cat:"naval",
+  /* DATED. Project 21630 Buyan: first ship in 2006. Period boats are pact_e50_patrol,
+     pact_e60_patrol and pact_e80_patrol in eras.js. */
+  boat_p: { from:"e20", service:"2006", fac:"pact", role:"patrol", name:"Project 21630 Gunboat", cat:"naval",
     cost:470, oil:6, time:8.5, hp:560, armor:"light", speed:3.2, turn:2.2, sight:8.0, r:13, mass:0,
     layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
     desc:"Shallow-draught river gunboat. Cheap hull for screening and scouting." },
@@ -705,7 +713,12 @@ var UNITS = {
     desc:"Diesel-electric 'Black Hole' — extremely quiet, cheap, and lethal to anything on the surface. " +
          "Carries four Garmoniya-type seabed stations: fewer than a Virginia, and shorter-lived." },
 
-  lst: { fac:"both", role:"transport_sea", name:"Landing Craft", full:"LCAC Air-Cushion Landing Craft", cat:"naval",
+  /* DATED. The LCAC entered service in 1986 (en.wikipedia "Landing Craft Air Cushion": service
+     1986-present; JEFF B selected in 1981). Before it the United States landed from LSTs and
+     utility craft (nato_e50_lst, nato_e60_lst in eras.js). This row stays "both" as it always was,
+     which still hands the American hovercraft to the other armies from the 1980s on; their own
+     landing ships are listed in eras.js where a source was found, and the rest is a known gap. */
+  lst: { from:"e80", service:"1986", fac:"both", role:"transport_sea", name:"Landing Craft", full:"LCAC Air-Cushion Landing Craft", cat:"naval",
     cost:900, oil:12, time:14, hp:900, armor:"light", speed:2.8, turn:1.6, sight:6.5, r:18, mass:0,
     layer:"sea", weapons:[], prereq:["navalyard"], tech:1, cargo:6, amphib:true,
     desc:"Carries six vehicles or infantry across water and drives them straight up onto the beach." },
@@ -1127,10 +1140,11 @@ Object.assign(UNITS, {
     layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6,
     desc:"Two-seat strike fighter hauling guided bombs onto hardened targets." },
 
-  boat_c: { fac:"pla", role:"patrol", name:"Type 022 Houbei", cat:"naval",
-    cost:485, oil:6, time:8.7, hp:540, armor:"light", speed:3.5, turn:2.3, sight:8.2, r:13, mass:0,
-    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
-    desc:"Wave-piercing catamaran missile boat, here in its gun-armed patrol fit. Very fast." },
+  /* RETIRED, 2026-10-02. This row was the Type 022 Houbei "in its gun-armed patrol fit", offered from the
+     1950s. The Houbei is a missile boat (eight YJ-83, in service from 2004) and has no patrol fit; it
+     is missileboat_c and pla_e00_missileboat, and a second card of the same hull under the same name
+     was the duplicate the owner saw. The PLA Navy's real gun boats are pla_e50_patrol, pla_e60_patrol
+     and pla_e00_patrol in eras.js. The NAVY and SHIP_RCS tables below skip an id that is not here. */
   corvette_c: { fac:"pla", role:"corvette", name:"Type 056 Jiangdao", cat:"naval",
     cost:1175, oil:16, time:15.5, hp:1190, armor:"light", speed:2.85, turn:1.7, sight:9.2, r:17, mass:0,
     layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:2.0,
@@ -1310,7 +1324,11 @@ Object.assign(WEAPONS, {
 
 Object.assign(UNITS, {
   /* ---- radar vehicles: mobile sensor coverage for the whole force ---- */
-  radarv_n: { from:"e80", fac:"nato", role:"radarv", name:"TPQ-53 Radar", full:"AN/TPQ-53 Radar Vehicle", cat:"vehicle",
+  /* DATED. The TPQ-53 is facts.js's 2011 and nato_e00_radarv's 2013: it was never an 1980s radar. The
+     1980s and 1990s American counter-battery radars are the Firefinder pair, nato_e80_radarv in
+     eras.js; in the 2000s-10s this same set is nato_e00_radarv, which is why this row used to be a
+     second "TPQ-53 Radar" card in the same menu. */
+  radarv_n: { from:"e20", service:"2011", fac:"nato", role:"radarv", name:"TPQ-53 Radar", full:"AN/TPQ-53 Radar Vehicle", cat:"vehicle",
     cost:1200, oil:12, time:16, hp:520, armor:"light", speed:1.7, turn:1.8, sight:9, r:14, mass:16,
     layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:15, turret:true, tturn:0.9,
     desc:"Mobile phased-array radar. Projects a 15-tile sensor bubble: artillery, SAMs and missile boats firing inside it hit far more often. Unarmed and fragile — keep it behind the line." },
@@ -1853,10 +1871,29 @@ Object.assign(UNITS, {
     layer:"ground", weapons:[], prereq:["factory","radar"], tech:2, radar:12.5, turret:true, tturn:0.9,
     desc:"Elderly artillery-locating radar. Smaller bubble than its rivals, but it is what makes the Koksan park lethal instead of merely loud." },
 
-  helo_k: { fac:"kpa", role:"gunship", name:"Mi-24 Hind", full:"Mi-24D Hind", cat:"aircraft",
-    cost:1150, oil:20, time:16, hp:700, armor:"air", speed:3.3, turn:2.0, sight:7.6, r:17, mass:0,
-    layer:"air", weapons:["hellfire","chaingun"], prereq:["airbase"], tech:2, hover:true, ammo:7,
-    desc:"Gunship and troop carrier in one heavily armoured airframe. Slow and easy to hit, but it soaks punishment other helicopters cannot." },
+  /* THE KPA HAS NO MI-24 IN THIS ROSTER. Owner's decision, 2026-10-02. No photograph of a KPA Mi-24 is
+     known; en.wikipedia lists North Korea only as a possible operator of the Hind; Mitzer and Oliemans
+     (The Armed Forces of North Korea, 2020) trace the claim to a Congressional Research Service error
+     (the owner's citation; not re-read here); the IISS Military Balance has carried about 20.
+     What is documented is the Hughes/MD 500: en.wikipedia "MD Helicopters MD 500", North Korea
+     section - 87 civilian-type Hughes MD 500s bought in the 1980s by getting round US export controls
+     through a West German firm, flown sparingly, "allegations that at least sixty ... have been
+     modified to serve as helicopter gunships", and shown at the Victory Parade of 27 July 2013 modified
+     to fire Soviet AT-3 Sagger wire-guided missiles; "Korean People's Army Air Force", aircraft table:
+     MD 500, variant D, 84, "illegally obtained by circumventing U.S. export controls", and the AT-3 at
+     the 2013 parade; "9K11 Malyutka": North Korea's own copy is the Bulsae-1. The year 1985 is the
+     owner's (Mitzer and Oliemans); en.wikipedia says only "during the 1980s". The variant: the KPAAF
+     inventory table says D; its airfield table lists H500D, H500E and 500D at Pukch'ang, and the
+     Aviationist's report of the 2013 parade calls the armed machines 500Es - so "MD 500D" is the
+     inventory's name for a fleet that includes Es.
+     So the present-day row is the MD 500D carrying the AT-3 and nothing else. It keeps no Hind
+     rating: 1.4 tonnes against 11.5, no armour, no gun, a missile the pilot has to fly by wire.
+     Its model is a stand-in until a hero MD 500 exists (see the note on the era rows in eras.js).
+     The weapon is swapped for the real atgm_sagger in generations.js. */
+  md500_k: { fac:"kpa", role:"gunship", name:"MD 500D", full:"Hughes/MD 500D (Model 369D), AT-3 Sagger conversion", cat:"aircraft",
+    cost:660, oil:10, time:11, hp:380, armor:"air", speed:3.4, turn:2.6, sight:7.0, r:13, mass:0, service:"1985",
+    layer:"air", weapons:["hellfire"], prereq:["airbase"], tech:2, hover:true, ammo:4,
+    desc:"The KPA's only documented armed helicopter: a civilian-type MD 500D, one of 87 bought in the 1980s by evading US export controls, converted to carry AT-3 Sagger anti-tank missiles and paraded that way in 2013. A light, unarmoured scout with a wire-guided missile the pilot must hold on target for the whole flight - cheap, quick, and nothing like a Hind." },
   trans_k: { fac:"kpa", role:"transport", name:"Mi-2 / An-2 Lift", full:"An-2 Colt", cat:"aircraft",
     cost:520, oil:8, time:8, hp:420, armor:"air", speed:3.4, turn:2.6, sight:7.0, r:15, mass:0,
     layer:"air", weapons:[], prereq:["airbase"], tech:2, hover:true, cargo:10, ammo:0,
@@ -1990,10 +2027,12 @@ Object.assign(UNITS, {
     layer:"air", weapons:["jdam","chaingun"], prereq:["airbase","lab"], tech:3, jet:true, ammo:6,
     desc:"Indigenous Defence Fighter in the strike role — far faster over the target than an A-10, with a lighter bomb load." },
 
-  boat_r: { fac:"roc", role:"patrol", name:"Kuang Hua VI", full:"Kuang Hua VI Missile Boat", cat:"naval",
-    cost:640, oil:7, time:10, hp:500, armor:"light", speed:3.6, turn:2.4, sight:8.6, r:13, mass:0,
-    layer:"sea", weapons:["hmg"], prereq:["navalyard"], tech:1, turret:true, tturn:2.4,
-    desc:"Fast stealth-shaped inshore boat. The quickest hull in the game — built to sortie from a cave and run." },
+  /* RETIRED, 2026-10-02. The Kuang Hua VI is a missile boat (four Hsiung Feng II; prototype commissioned
+     2003, boats in service from 2009-10; en.wikipedia "Kuang Hua VI-class missile boat") and it is
+     already roc_e00_missileboat. The ROC Navy's gun-armed patrol hull is roc_e50_patrol in eras.js,
+     the ex-American PC-461s it operated from 1948 into the 1970s (three passed to the Customs service
+     in 1972); no later one with a date was found in a source, so from the 1980s the role is left
+     empty rather than filled with a missile boat under another name. */
   corvette_r: { fac:"roc", role:"corvette", name:"Tuo Chiang", full:"Tuo Chiang-class Corvette", cat:"naval",
     cost:1550, oil:18, time:19, hp:1050, armor:"light", speed:3.3, turn:1.9, sight:10.2, r:17, mass:0,
     layer:"sea", weapons:["navgun_57"], prereq:["navalyard"], tech:1, turret:true, tturn:2.1, radar:9,
@@ -2290,10 +2329,10 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["sam_camm"], prereq:["factory","radar","lab"], tech:3, turret:false,
     deploy:true, deploySec:5.0, radar:11, radarQ:17, rounds:8,
     desc:"Eight soft-launched active-radar missiles that can turn onto a target behind the launcher, a Giraffe radar and a fire-control system that can hold twenty-four engagements at once - a genuine generational jump over the Rapier it replaced in 2021. But its reach is about 25km. Britain has had no long-range or anti-ballistic air defence of any kind since Bloodhound retired in 1991." },
-  stealth_b: { fac:"gbr", role:"stealthfighter", name:"F-35B Lightning", full:"F-35B Lightning (617 Sqn)", cat:"aircraft",
+  stealth_b: { fac:"gbr", role:"stealthfighter", name:"F-35B Lightning (land)", service:"2018", full:"F-35B Lightning II, land-based (617 Sqn)", cat:"aircraft",
     cost:2600, oil:48, time:34, hp:500, armor:"air", speed:9.2, turn:2.3, sight:12.2, r:16, mass:0,
     layer:"air", weapons:["aam_lo","sdb"], prereq:["airbase","lab"], tech:3, jet:true, ammo:5, stealth:0.62,
-    desc:"The short take-off and vertical landing variant, in British service since 2018, flown by the RAF and the Fleet Air Arm from the same squadrons. The lift fan is what lets it operate from a ramp-equipped carrier with no catapult, and it is also what costs it fuel and bay volume - the B has the shortest legs and the smallest magazine of the three variants." },
+    desc:"The short take-off and vertical landing variant, in British service since 2018, flown by the RAF and the Fleet Air Arm from the same squadrons. The lift fan is what lets it operate from a ramp-equipped carrier with no catapult, and it is also what costs it fuel and bay volume - the B has the shortest legs and the smallest magazine of the three variants. The same airframe is also the carrier card (cstealth_b), because the game keeps land-based and shipborne aircraft in different roles; this land-based card is the full fit - five missiles and a pair of bombs - and is priced as the other nations' stealth fighters are, and the deck card is cut down and cheaper to match." },
   awacs_b: { from:"e20", fac:"gbr", role:"awacs", name:"E-7 Wedgetail AEW1", full:"Boeing E-7A Wedgetail AEW.1", cat:"aircraft",
     cost:3400, oil:70, time:34, hp:600, armor:"air", speed:4.3, turn:0.9, sight:15.5, r:26, mass:0,
     layer:"air", weapons:[], prereq:["airbase","radar","lab"], tech:3, jet:true, ammo:0,
@@ -2754,7 +2793,7 @@ var AIR = {
   /* ---- third generation: no real radar, huge return ---- */
   fighter_k: { gen:3.0, rcs:1.00, radarQ: 5.0 },
   bomber_k:  { gen:3.0, rcs:1.50, radarQ: 2.0 },
-  helo_k:    { gen:3.0, rcs:0.90, radarQ: 2.0 },
+  md500_k:   { gen:2.5, rcs:0.75, radarQ: 1.0 },   /* a 1960s light helicopter with no radar; rcs as the ROC's 500MD (eras.js roc_e80_gunship) */
   trans_k:   { gen:2.5, rcs:1.30, radarQ: 1.5 },
 
   /* ---- fourth generation ---- */
@@ -2834,7 +2873,7 @@ var AIR = {
    that reach is a real planning constraint. The MiG-21's notoriously short
    legs and the B-2's intercontinental reach both survive the compression. */
 var AIR_RADIUS = {
-  fighter_k: 22, bomber_k: 28, helo_k: 20, trans_k: 26,
+  fighter_k: 22, bomber_k: 28, md500_k: 20, trans_k: 26,
   fighter_n: 40, fighter_p: 30, fighter_c: 40, fighter_r: 42,
   bomber_n:  34, bomber_p:  28, bomber_c:  40, bomber_r:  30,
   helo_n:    24, helo_p:    22, helo_c:    23, helo_r:    24,
@@ -3550,7 +3589,7 @@ Object.assign(UNITS, {
     cost:4150, oil:88, time:53, hp:3300, armor:"heavy", speed:1.6, turn:0.6, sight:13, r:30, mass:0,
     layer:"sea", weapons:["ciws_phalanx"], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.5, carrier:3, storage:0,
     desc:"Sixty-five thousand tonnes, two islands, a ski-jump and no catapult - so it flies F-35B and nothing else, and can never operate a fixed-wing early-warning aircraft. Britain invented the steam catapult, the angled deck and the mirror landing sight, gave all three to the United States Navy, and then built a carrier that uses none of them. Two ships, and for years not enough escorts to screen one." },
-  cstealth_b: { from:"e20", fac:"gbr", role:"cstealth", name:"F-35B Lightning", full:"Lockheed Martin F-35B Lightning II", cat:"aircraft",
+  cstealth_b: { from:"e20", fac:"gbr", role:"cstealth", name:"F-35B Lightning (deck)", service:"2018", full:"Lockheed Martin F-35B Lightning II, embarked (Queen Elizabeth class)", cat:"aircraft",
     cost:1780, oil:34, time:22, hp:440, armor:"air", speed:7.9, turn:2.1, sight:11.0, r:16, mass:0,
     layer:"air", weapons:["aam_lo"], prereq:["airbase"], tech:3, jet:true, ammo:4,
     /* the same airframe as stealth_b, which carries 0.62: without this the
@@ -3559,7 +3598,7 @@ Object.assign(UNITS, {
        or the threat field */
     stealth:0.62,
     gen:5, rcs:0.008, radarQ:17, radius:34, carrierCapable:true, refuelable:true, radar:8,
-    desc:"The only fifth-generation aircraft that flies from a ski-jump, and the reason the Queen Elizabeth class exists in the shape it does. Op Fortis in 2021 put British and American F-35Bs on the same British deck and took the group to the Pacific. Short legs compared with the carrier variants, a lift fan where the fuel would otherwise be, and a British squadron count that is still in the low tens." },
+    desc:"The only fifth-generation aircraft that flies from a ski-jump, and the reason the Queen Elizabeth class exists in the shape it does. Op Fortis in 2021 put British and American F-35Bs on the same British deck and took the group to the Pacific. Short legs compared with the carrier variants, a lift fan where the fuel would otherwise be, and a British squadron count that is still in the low tens. It is the same aircraft as the land-based card (stealth_b) and costs less on purpose: the carrier role is the cut-down fit - four missiles, no bombs, shorter legs, 440 hit points against 500 - and the price follows the figures, not the airframe." },
   asw_helo_b: { from:"e20", fac:"gbr", role:"aswhelo", name:"Merlin HM2", full:"AgustaWestland Merlin HM2", cat:"aircraft",
     cost:1520, oil:28, time:17, hp:420, armor:"air", speed:3.2, turn:2.2, sight:8.8, r:13, mass:0,
     layer:"air", weapons:["asw_stingray"], prereq:["airbase"], tech:2,
@@ -4673,6 +4712,15 @@ var ERA_TIMELESS = ["harvester", "mcv", "engineer", "supply", "transport_sea",
                     "minelayer", "mineclear", "navminelayer", "minesweeper",
                     "mortar", "mg", "sniper", "medic", "repair", "repair_sea",
                     "patrol"];
+/* WHAT THIS LIST STILL DOES WRONG, measured 2026-10-02 (roster realism). The test above was about the
+   ROLE, and it held for the role. It never held for the machine in the row: the present-day
+   Mk VI, Buyan, Houbei and Kuang Hua VI went out as 1950s patrol boats, and the LCAC as every army's
+   1950s landing craft. Those rows now carry an explicit from: (boat_n, boat_p, lst) or are retired
+   (boat_c, boat_r), so the loop below leaves them alone, and the period boats are real rows in
+   eras.js. What is left on this list by designation rather than by role is the generic rows that
+   name present-day kit - "Weapons Team, M240B", "Mortar Section, M252", "Sniper Team, M107", the
+   HEMTT, the PK, the PP-87 - and a service year for none of them: _behtest.html [92] counts them as
+   gaps instead of passing them in silence. */
 for (var _eu in UNITS) {
   var _e = UNITS[_eu];
   if (_e.from !== undefined) continue;

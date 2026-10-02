@@ -236,4 +236,21 @@ Object.assign(WARSHIPS, {
   nato_e80_battleship: {era:"e80", fac:"nato", role:"battleship", designation:"BB-62 New Jersey (1982)", len:270.4, beam:33.0, bow:"clipper", super:"layered", funnels:2, funnelStyle:"capped", mast:"lattice", guns:3, gunCal:406, gunPos:"foreaft", foreAt:0.40, vls:0, launchers:"box", ciws:4, helo:"pad", radar:"dish", camo:"haze"},
   nato_e90_battleship: {era:"e90", fac:"nato", role:"battleship", designation:"BB-63 Missouri (1991)", len:270.4, beam:33.0, bow:"clipper", super:"layered", funnels:2, funnelStyle:"capped", mast:"lattice", guns:3, gunCal:406, gunPos:"foreaft", foreAt:0.40, vls:0, launchers:"box", ciws:4, helo:"pad", radar:"dish", camo:"haze"},
 });
+/* ---- the landing ships before the LCAC (roster realism, 2026-10-02) ----
+   The period landing ships in eras.js (nato_e50_lst ... deu_e60_lst) have no model of their own,
+   and render3d.js modelKeyFor() would lend them the first transport_sea peer's - which is "lst",
+   drawn since its hero as the LCAC hovercraft of 1986, so a 1950s tank landing ship would have
+   flown on an air cushion. These rows are STAND-INS, not measured hulls: the tank landing ships
+   reuse this file's generic LST row and the two smaller craft (EDIC, Barbe) the LCU row, with
+   only the designation changed, until each class has a model of its own. */
+Object.assign(WARSHIPS, {
+  nato_e50_lst: {era:"e50", fac:"nato", role:"transport_sea", designation:"LST-1156 Terrebonne Parish class", len:100, beam:15.2, bow:"flush", super:"boxy", funnels:1, funnelStyle:"stack", mast:"pole", guns:2, gunCal:40, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+  nato_e60_lst: {era:"e60", fac:"nato", role:"transport_sea", designation:"LST-1179 Newport class", len:100, beam:15.2, bow:"flush", super:"boxy", funnels:1, funnelStyle:"stack", mast:"pole", guns:2, gunCal:40, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+  gbr_e50_lst: {era:"e50", fac:"gbr", role:"transport_sea", designation:"LST (3)", len:100, beam:15.2, bow:"flush", super:"boxy", funnels:1, funnelStyle:"stack", mast:"pole", guns:2, gunCal:40, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+  gbr_e60_lst: {era:"e60", fac:"gbr", role:"transport_sea", designation:"Round Table LSL", len:100, beam:15.2, bow:"flush", super:"boxy", funnels:1, funnelStyle:"stack", mast:"pole", guns:2, gunCal:40, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+  pact_e60_lst: {era:"e60", fac:"pact", role:"transport_sea", designation:"Project 1171 Tapir", len:100, beam:15.2, bow:"flush", super:"boxy", funnels:1, funnelStyle:"stack", mast:"pole", guns:2, gunCal:40, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+  pla_e80_lst: {era:"e80", fac:"pla", role:"transport_sea", designation:"Type 072", len:100, beam:15.2, bow:"flush", super:"boxy", funnels:1, funnelStyle:"stack", mast:"pole", guns:2, gunCal:40, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+  fra_e50_lst: {era:"e50", fac:"fra", role:"transport_sea", designation:"EDIC", len:41.1, beam:8.8, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:20, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+  deu_e60_lst: {era:"e60", fac:"deu", role:"transport_sea", designation:"Type 520 Barbe", len:41.1, beam:8.8, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:20, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+});
 if (typeof Warship3D !== "undefined" && Warship3D.registerAll) Warship3D.registerAll();

@@ -12414,6 +12414,145 @@ try{
   })();
   }
 
+  /* ====== [92] NOTHING IS OFFERED BEFORE IT WAS BUILT, ARMY BY ARMY ======
+     Section [14] walks the service year a UNIT ROW carries. That left three holes, all found by
+     the owner's "duplication in the gallery" report: a year that lives only in facts.js (the LCAC
+     1986, the TPQ-53 2011) is never read; a row with no year at all (the Mk VI patrol boat of
+     2016, the Project 21630 of 2006, the Type 022 and the Kuang Hua VI, which are missile boats)
+     is never checked; and nothing looked at what an ARMY is actually offered in an era - the list
+     the build menu shows, which is every row of the army whose window covers the era, not only the
+     one unitFor() would pick.
+     So this walks all eight armies x every period x every role through that menu filter, reads the
+     year from the row or else facts.js, and fails on anything offered in a period that ended before
+     it entered service. A row with no year anywhere cannot be judged: it is listed as a GAP and
+     counted, and the count may fall but not grow past its ceiling, so an undated row cannot be
+     added in silence. The named cases are then checked on their own, because a row with no year
+     passes the general walk by being undatable: the four patrol boats, the radar, the landing
+     craft, the KPA gunship (the owner's decision: the MD 500D with the AT-3, no Mi-24 anywhere,
+     nothing before 1985), the Mi-24D's year, and the five names that appeared twice in one army's
+     menu of one period. */
+  if (inHalf(2)) {
+  log("\n[92] EVERY ARMY, ERA AND ROLE: NOTHING IS OFFERED BEFORE IT ENTERED SERVICE");
+  (function(){
+    var ARMIES = ["nato","gbr","fra","deu","pact","pla","kpa","roc"];
+    var END = { e50:1959, e60:1979, e80:1989, e90:1999, e00:2019 };      /* the 2020s end nothing */
+    var GAP_CEILING = 80;
+    function yearOf(id){
+      var u = UNITS[id], m = String((u && u.service) || "").match(/[0-9]{4}/);
+      if (m) return +m[0];
+      var F = (typeof FACTS !== "undefined") ? FACTS[id] : null;
+      m = F ? String(F.service || "").match(/[0-9]{4}/) : null;
+      return m ? +m[0] : null;
+    }
+    function offered(fac, era){                          /* the build menu's own filter */
+      var out = [];
+      for (var id in UNITS){ var u = UNITS[id]; if (u.fac !== "both" && u.fac !== fac) continue; if (inEra(u, era)) out.push(id); }
+      return out;
+    }
+    var late = [], gaps = {}, walked = 0, dupes = [], roleCells = 0;
+    ARMIES.forEach(function(fac){
+      ERAS.forEach(function(era){
+        var ids = offered(fac, era), names = {};
+        ids.forEach(function(id){ (names[UNITS[id].name] = names[UNITS[id].name] || []).push(id); });
+        for (var nm in names) if (names[nm].length > 1) dupes.push(fac + " " + era + " \"" + nm + "\" = " + names[nm].join(" + "));
+        Object.keys(ROLES).forEach(function(role){ roleCells++; });
+        if (!END[era]) return;
+        ids.forEach(function(id){
+          walked++;
+          var y = yearOf(id);
+          if (y === null) { gaps[id] = 1; return; }
+          if (y > END[era]) late.push(fac + " " + era + " " + UNITS[id].role + ": " + UNITS[id].name + " [" + id + "] in service " + y);
+        });
+        /* every role through unitFor() as well: what the commander picks is one of the menu's rows */
+        Object.keys(ROLES).forEach(function(role){
+          var pick = unitFor(fac, role, era);
+          if (pick && ids.indexOf(pick) < 0) late.push(fac + " " + era + " " + role + ": unitFor() picked " + pick + " which the menu does not offer");
+        });
+      });
+    });
+    chk("no army is offered equipment in a period that ended before it entered service",
+        late.length === 0, late.length ? late.length + " late: " + late.slice(0, 5).join("; ") : "none late");
+    chk("and that walked every army x period x role, not a sample",
+        walked >= 1500 && roleCells >= 8 * 6 * 40, walked + " offers over " + ARMIES.length + " armies, " + roleCells + " army/era/role cells");
+    var gapIds = Object.keys(gaps);
+    log("  gaps: " + gapIds.length + " offered rows carry no service year anywhere, so nothing can judge them (first 12: " +
+        gapIds.slice(0, 12).join(", ") + (gapIds.length > 12 ? ", ..." : "") + ")");
+    chk("rows with no service year anywhere are counted, and the count does not grow",
+        gapIds.length <= GAP_CEILING, gapIds.length + " undated rows offered before the 2020s (ceiling " + GAP_CEILING + ")");
+
+    /* ---- the named cases ---- */
+    var badPatrol = [];
+    ["nato","pact","pla","roc"].forEach(function(fac){
+      ["e50","e60","e80","e90","e00"].forEach(function(era){
+        unitsFor(fac, "patrol", era).forEach(function(id){
+          var y = yearOf(id);
+          if (y === null || y > END[era]) badPatrol.push(fac + " " + era + " " + UNITS[id].name + " [" + id + "] " + (y === null ? "undated" : y));
+        });
+      });
+    });
+    chk("the NATO, Pact, PLA and ROC patrol boats offered before the 2020s are all dated, and none is later than its period",
+        badPatrol.length === 0, badPatrol.length ? badPatrol.slice(0, 4).join("; ") : "every patrol card is dated and in period");
+    var p20 = { nato:"Mk VI", pact:"21630", pla:"Houbei", roc:"Kuang Hua" }, pre20 = [];
+    ["nato","pact","pla","roc"].forEach(function(fac){
+      ["e50","e60","e80","e90","e00"].forEach(function(era){
+        unitsFor(fac, "patrol", era).forEach(function(id){ if (UNITS[id].name.indexOf(p20[fac]) >= 0) pre20.push(fac + " " + era + " " + UNITS[id].name); });
+      });
+    });
+    chk("the Mk VI, the Project 21630, the Type 022 and the Kuang Hua VI are not offered as patrol boats before the 2020s (the last two never, being missile boats)",
+        pre20.length === 0 && !UNITS.boat_c && !UNITS.boat_r && unitsFor("pla", "patrol", "e20").every(function(id){ return UNITS[id].name.indexOf("Houbei") < 0; }),
+        pre20.length ? pre20.slice(0, 4).join("; ") : "boat_c " + (UNITS.boat_c ? "still here" : "retired") + ", boat_r " + (UNITS.boat_r ? "still here" : "retired"));
+    var emptyP = [], noNavy = [];
+    ARMIES.forEach(function(fac){ ERAS.forEach(function(era){
+      if (unitFor(fac, "patrol", era)) return;
+      emptyP.push(fac + " " + era);
+      if (!["corvette","destroyer","missileboat","sub"].some(function(r){ return !!unitFor(fac, r, era); })) noNavy.push(fac + " " + era);
+    }); });
+    chk("where an army has no patrol boat in a period the role is left empty rather than filled, and each such army still has another warship to build",
+        noNavy.length === 0,
+        emptyP.length + " empty patrol cells (" + emptyP.join(", ") + ")" + (noNavy.length ? "; NO OTHER WARSHIP in " + noNavy.join(", ") : ""));
+
+    var lst = [];
+    ARMIES.forEach(function(fac){ ["e50","e60"].forEach(function(era){ if (unitsFor(fac, "transport_sea", era).indexOf("lst") >= 0) lst.push(fac + " " + era); }); });
+    chk("the LCAC (1986) is nobody's landing craft before the 1980s, and the Americans land from LSTs until it exists",
+        lst.length === 0 && !!UNITS.lst && UNITS.lst.from === "e80" && unitFor("nato", "transport_sea", "e50") === "nato_e50_lst" &&
+        unitFor("nato", "transport_sea", "e60") === "nato_e60_lst" && unitFor("nato", "transport_sea", "e80") === "lst",
+        lst.length ? lst.join(", ") : "e50 " + unitFor("nato", "transport_sea", "e50") + ", e60 " + unitFor("nato", "transport_sea", "e60") + ", e80 " + unitFor("nato", "transport_sea", "e80"));
+    var rv = ["e50","e60","e80","e90","e00","e20"].map(function(e){ return e + "=" + unitFor("nato", "radarv", e); }).join(" ");
+    chk("the TPQ-53 (2011) is not an American 1980s or 1990s radar: the Firefinder is, and each period has one card of it",
+        unitsFor("nato", "radarv", "e80").indexOf("radarv_n") < 0 && unitsFor("nato", "radarv", "e90").indexOf("radarv_n") < 0 &&
+        unitFor("nato", "radarv", "e80") === "nato_e80_radarv" && unitFor("nato", "radarv", "e90") === "nato_e80_radarv" &&
+        unitsFor("nato", "radarv", "e00").length === 1 && unitFor("nato", "radarv", "e20") === "radarv_n",
+        rv);
+
+    var kg = [];
+    ["e50","e60","e80","e90","e00","e20"].forEach(function(e){
+      var id = unitFor("kpa", "gunship", e); kg.push(e + "=" + (id ? UNITS[id].name + "/" + yearOf(id) : "-"));
+    });
+    var mi = Object.keys(UNITS).filter(function(id){ return UNITS[id].fac === "kpa" && /Mi-24|Hind/.test(UNITS[id].name + " " + (UNITS[id].full || "")); });
+    chk("the KPA's gunship is the MD 500D with the AT-3 from 1985, empty before it, and no row of the army is a Mi-24",
+        !unitFor("kpa", "gunship", "e50") && !unitFor("kpa", "gunship", "e60") && mi.length === 0 &&
+        ["e80","e90","e00","e20"].every(function(e){
+          var id = unitFor("kpa", "gunship", e), u = UNITS[id], w = u && u.weapons && WEAPONS[u.weapons[0]];
+          return !!u && /MD 500D/.test(u.name) && yearOf(id) === 1985 && u.weapons.length === 1 && !!w && /Malyutka/.test(w.name) && u.hp < 450 && u.cost < 800;
+        }),
+        kg.join(" ") + (mi.length ? "; Mi-24 rows: " + mi.join(", ") : ""));
+    chk("the Soviet row that draws the Mi-24D is dated to the D (1976), not the Mi-24A (1972)",
+        !!UNITS.pact_e60_gunship && String(UNITS.pact_e60_gunship.service) === "1976" && yearOf("pact_e60_gunship") === 1976 && !!FACTS.pact_e60_gunship && FACTS.pact_e60_gunship.service === 1976,
+        UNITS.pact_e60_gunship ? "service " + UNITS.pact_e60_gunship.service + ", " + UNITS.pact_e60_gunship.full : "no row");
+
+    chk("no army sees the same card name twice in one period (five did: the TPQ-53, the F-35B, the Type 022, the Kuang Hua VI, the CM-32)",
+        dupes.length === 0, dupes.length ? dupes.length + " duplicate names: " + dupes.slice(0, 4).join("; ") : "every army's menu names every card once, in every period");
+    var sb = UNITS.stealth_b, cb = UNITS.cstealth_b, ci = UNITS.roc_e00_ifv, cr = UNITS.roc_e00_recon;
+    chk("the two British F-35Bs say which is the land card and which the deck card, and the price gap is explained on both",
+        !!sb && !!cb && sb.name !== cb.name && /land/i.test(sb.name) && /deck|carrier|ship/i.test(cb.name) &&
+        /cstealth_b|carrier card|deck card/.test(sb.desc) && /stealth_b|land-based card/.test(cb.desc),
+        sb && cb ? sb.name + " " + sb.cost + " / " + cb.name + " " + cb.cost : "missing");
+    chk("Taiwan's two 2000s 8x8s carry their own variant designations: the CM-33 carrier and the CM-32",
+        !!ci && !!cr && /CM-33/.test(ci.name) && /CM-32/.test(cr.name) && ci.name !== cr.name,
+        ci && cr ? ci.name + " / " + cr.name : "missing");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time
