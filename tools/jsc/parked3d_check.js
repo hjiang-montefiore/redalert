@@ -437,6 +437,11 @@ var OVERSIZE = {};
   /* the transport-EW stand-in (C-160G, Nimrod R.1, Airseeker), EA-6B */
   "ew_b ew_f gbr_e80_ewair fra_e60_ewair fra_e80_ewair fra_e90_ewair fra_e00_ewair nato_e60_ewair nato_e90_ewair",
   "cstealth_b",                                               /* F-35B */
+  /* the B-52, D to H: the old model fitted only because it was drawn 56.2 m
+     long for a 48.5 m aeroplane, and the game scales an aircraft by its
+     length; drawn to its real proportions its 56.4 m wing reaches through
+     the walls (js/hero/us_b52_stratofortress.js) */
+  "nato_e50_heavybomber nato_e60_heavybomber nato_e80_heavybomber nato_e90_heavybomber nato_e00_heavybomber hbomber_n",
   /* H-6, Tu-160, B-2 */
   "sbomber_p pla_e60_heavybomber pla_e80_heavybomber pla_e00_heavybomber sbomber_c pact_e80_stealthbomber sbomber_n nato_e90_stealthbomber",
   "trans_k kpa_e50_transport kpa_e60_transport kpa_e80_transport kpa_e00_transport roc_e50_transport"   /* An-2, Po-2, C-46 */
