@@ -24,7 +24,11 @@
      A. on open ground, its lowest drawn point is on the ground (3 cm). A
         see-through blur - a propeller disc - is not a point it stands on;
      B. on an airbase's pad - every period's and every architecture's model,
-        every revetment - on the pad, and under the hangar on its floor;
+        every revetment - on the pad, every revetment open to the sky, and
+        nothing of it inside the base: four of every type, one on each pad,
+        and none of it more than VOL_TOL into a wall, the tower or anything
+        else standing there, but for the types listed as drawn too big for a
+        revetment (OVERSIZE);
      C. on every deck in the game, every type that deck takes, at four
         headings: its lowest point on her deck under that point, measured in
         her own frame with a ray from her own model; and on a carrier nothing
@@ -289,6 +293,154 @@ function tracker(u) {
   return t;
 }
 
+/* ---- B's volume test: how far a parked aircraft is inside the base ----
+   The base's solid parts as a height map in its own group's frame (world
+   metres, y up): the highest drawn surface over every 5 cm cell, leaving out
+   the slab and what is painted on it (anything under 0.15 m above the pad).
+   A structure is taken as solid from the pad to its top, so a roof over a
+   pad counts as inside - a revetment is open to the sky. */
+var VOL = { CELL: 0.05, SKIP: 0.15, MARCH: 40, STOP: 1.0 };
+function volInv(base) {
+  var grp = recOf(base).grp;
+  grp.updateMatrixWorld(true);
+  return new THREE.Matrix4().copy(grp.matrixWorld).invert();
+}
+function volMapOf(base, padY) {
+  var grp = recOf(base).grp, inv = volInv(base);
+  var T = [], lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
+  var a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), M = new THREE.Matrix4();
+  grp.traverse(function (o) {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position || !shown(o) || blur(o)) return;
+    M.multiplyMatrices(inv, o.matrixWorld);
+    var p = o.geometry.attributes.position, ix = o.geometry.index, n = ix ? ix.count : p.count;
+    for (var t = 0; t + 2 < n; t += 3) {
+      a.fromBufferAttribute(p, ix ? ix.getX(t) : t).applyMatrix4(M);
+      b.fromBufferAttribute(p, ix ? ix.getX(t + 1) : t + 1).applyMatrix4(M);
+      c.fromBufferAttribute(p, ix ? ix.getX(t + 2) : t + 2).applyMatrix4(M);
+      if (Math.max(a.y, b.y, c.y) < padY + VOL.SKIP) continue;
+      T.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+      lo[0] = Math.min(lo[0], a.x, b.x, c.x); lo[1] = Math.min(lo[1], a.z, b.z, c.z);
+      hi[0] = Math.max(hi[0], a.x, b.x, c.x); hi[1] = Math.max(hi[1], a.z, b.z, c.z);
+    }
+  });
+  var s = VOL.CELL, x0 = lo[0] - 1, z0 = lo[1] - 1, nx = Math.ceil((hi[0] - lo[0] + 2) / s) + 1, nz = Math.ceil((hi[1] - lo[1] + 2) / s) + 1;
+  if (!T.length) { x0 = 0; z0 = 0; nx = 1; nz = 1; }
+  var top = new Float32Array(nx * nz).fill(-Infinity);
+  function put(x, z, y) {
+    var i = Math.round((x - x0) / s), k = Math.round((z - z0) / s);
+    if (i >= 0 && k >= 0 && i < nx && k < nz && y > top[i * nz + k]) top[i * nz + k] = y;
+  }
+  for (var q = 0; q < T.length; q += 9) {
+    var ax = T[q], ay = T[q + 1], az = T[q + 2], bx = T[q + 3], by = T[q + 4], bz = T[q + 5], cx = T[q + 6], cy = T[q + 7], cz = T[q + 8];
+    /* its edges, walked at a quarter cell: an upright face has no area in
+       plan, and its top edge still bounds the cells it stands on */
+    [[ax, ay, az, bx, by, bz], [bx, by, bz, cx, cy, cz], [cx, cy, cz, ax, ay, az]].forEach(function (e) {
+      var L = Math.hypot(e[3] - e[0], e[5] - e[2]), m = Math.max(1, Math.ceil(L / (s / 4)));
+      for (var j = 0; j <= m; j++) put(e[0] + (e[3] - e[0]) * j / m, e[2] + (e[5] - e[2]) * j / m, e[1] + (e[4] - e[1]) * j / m);
+    });
+    var d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+    if (Math.abs(d) < 1e-9) continue;
+    var i0 = Math.ceil((Math.min(ax, bx, cx) - x0) / s), i1 = Math.floor((Math.max(ax, bx, cx) - x0) / s);
+    var k0 = Math.ceil((Math.min(az, bz, cz) - z0) / s), k1 = Math.floor((Math.max(az, bz, cz) - z0) / s);
+    for (var i = Math.max(0, i0); i <= Math.min(nx - 1, i1); i++) for (var k = Math.max(0, k0); k <= Math.min(nz - 1, k1); k++) {
+      var x = x0 + i * s, z = z0 + k * s;
+      var l1 = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d, l2 = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d;
+      if (l1 < -1e-6 || l2 < -1e-6 || l1 + l2 > 1 + 1e-6) continue;
+      var y = l1 * ay + l2 * by + (1 - l1 - l2) * cy;
+      if (y > top[i * nz + k]) top[i * nz + k] = y;
+    }
+  }
+  /* the highest thing in every metre square, to pass over what is nowhere near */
+  var cs = Math.round(1 / s), cnx = Math.ceil(nx / cs), cnz = Math.ceil(nz / cs), coarse = new Float32Array(cnx * cnz).fill(-Infinity);
+  for (var i2 = 0; i2 < nx; i2++) for (var k2 = 0; k2 < nz; k2++) {
+    var v = top[i2 * nz + k2], ci = ((i2 / cs) | 0) * cnz + ((k2 / cs) | 0);
+    if (v > coarse[ci]) coarse[ci] = v;
+  }
+  return { x0: x0, z0: z0, nx: nx, nz: nz, s: s, top: top, cs: cs, cnx: cnx, cnz: cnz, coarse: coarse };
+}
+function volCell(S, i, k) { return i < 0 || k < 0 || i >= S.nx || k >= S.nz ? -Infinity : S.top[i * S.nz + k]; }
+/* how far a point is inside: 0 if it is not under the top of what stands
+   there; else the shortest way out - up through that top, or sideways along
+   the plan's four axes to the nearest spot where what stands is no higher
+   than the point (to +-half a cell). A wing skimming a wall's top is
+   centimetres in, however far across it it reaches; a wing through the
+   middle of a wall is as deep as half the wall is thick. */
+function volDepth(S, x, y, z) {
+  var i = Math.round((x - S.x0) / S.s), k = Math.round((z - S.z0) / S.s), h = volCell(S, i, k);
+  if (!(h > y + 0.02)) return 0;
+  var best = Math.min(VOL.MARCH, Math.ceil((h - y) / S.s + 0.5), Math.ceil(VOL.STOP / S.s + 0.5));
+  var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (var w = 0; w < 4; w++) {
+    for (var r = 1; r < best; r++) {
+      if (!(volCell(S, i + dirs[w][0] * r, k + dirs[w][1] * r) > y + 0.02)) { best = r; break; }
+    }
+  }
+  return Math.min((best - 0.5) * S.s, h - y);
+}
+/* the deepest any solid drawn part of a unit goes into the base: its
+   triangles sampled every 5 cm, but only those near something that stands
+   higher than they are low; a metre in is through it, and there it stops */
+function volInside(u, S, inv) {
+  var r = recOf(u), worst = { d: 0, x: 0, y: 0, z: 0 };
+  var a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), M = new THREE.Matrix4();
+  r.grp.updateMatrixWorld(true);
+  r.grp.traverse(function (o) {
+    if (worst.d >= VOL.STOP) return;
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position || !shown(o) || blur(o)) return;
+    M.multiplyMatrices(inv, o.matrixWorld);
+    var p = o.geometry.attributes.position, ix = o.geometry.index, cnt = ix ? ix.count : p.count;
+    for (var t = 0; t + 2 < cnt && worst.d < VOL.STOP; t += 3) {
+      a.fromBufferAttribute(p, ix ? ix.getX(t) : t).applyMatrix4(M);
+      b.fromBufferAttribute(p, ix ? ix.getX(t + 1) : t + 1).applyMatrix4(M);
+      c.fromBufferAttribute(p, ix ? ix.getX(t + 2) : t + 2).applyMatrix4(M);
+      var ylo = Math.min(a.y, b.y, c.y), near = false;
+      var ci0 = Math.floor((Math.min(a.x, b.x, c.x) - S.x0) / S.s / S.cs), ci1 = Math.floor((Math.max(a.x, b.x, c.x) - S.x0) / S.s / S.cs);
+      var ck0 = Math.floor((Math.min(a.z, b.z, c.z) - S.z0) / S.s / S.cs), ck1 = Math.floor((Math.max(a.z, b.z, c.z) - S.z0) / S.s / S.cs);
+      for (var ci = Math.max(0, ci0); ci <= Math.min(S.cnx - 1, ci1) && !near; ci++)
+        for (var ck = Math.max(0, ck0); ck <= Math.min(S.cnz - 1, ck1); ck++) if (S.coarse[ci * S.cnz + ck] > ylo + 0.02) { near = true; break; }
+      if (!near) continue;
+      var e = Math.max(a.distanceTo(b), b.distanceTo(c), c.distanceTo(a)), m = Math.max(1, Math.ceil(e / S.s));
+      for (var i = 0; i <= m && worst.d < VOL.STOP; i++) for (var j = 0; i + j <= m; j++) {
+        var l1 = i / m, l2 = j / m, l3 = 1 - l1 - l2;
+        var x = a.x * l1 + b.x * l2 + c.x * l3, y = a.y * l1 + b.y * l2 + c.y * l3, z = a.z * l1 + b.z * l2 + c.z * l3;
+        var d = volDepth(S, x, y, z);
+        if (d > worst.d) worst = { d: d, x: x, y: y, z: z };
+      }
+    }
+  });
+  return worst;
+}
+/* How far in a parked aircraft may reach and still count as clear: 0.15 m
+   (world), under a pixel at the default zoom - a wingtip on a wall's face,
+   a wing skimming its top. Measured with the model's first commit: the 305
+   types a revetment holds reach 0.134 m at most (the tankers' wings over the
+   tops of the inner walls; the Su-57 0.075, the F-86 0.041), the nearest of
+   the rest 0.175 (the transport-EW stand-in's wingtips on a wall's face). */
+var VOL_TOL = 0.15;
+/* The types drawn too big for a revetment. The game draws an aircraft at
+   about twice its real size and the airbase's walls are real ones, 22.8 m
+   apart (25.1 m in the world; js/hero/airbase_revetments.js); each of these
+   reaches into a wall below its top, on every pad, by more than VOL_TOL. By
+   the model they are drawn with: */
+var OVERSIZE = {};
+[
+  /* the A-10 model, 35.9 m of wing, and the twelve CAS types drawn with it */
+  "bomber_n bomber_g deu_e50_cas deu_e60_cas deu_e80_cas gbr_e50_cas gbr_e60_cas gbr_e80_cas gbr_e00_cas fra_e50_cas fra_e60_cas fra_e80_cas fra_e00_cas",
+  "nato_e80_cas nato_e00_cas",                                /* A-10, A-10C */
+  "bomber_b bomber_f gbr_e90_cas fra_e90_cas",                /* the strike stand-in */
+  "bomber_p bomber_k kpa_e90_cas pact_e90_cas kpa_e00_cas pact_e00_cas",   /* Su-25 */
+  "nato_e50_cas pact_e50_cas kpa_e50_cas pla_e50_cas",        /* A-1 Skyraider, Il-10 */
+  "roc_e50_cas roc_e80_cas roc_e50_fighter",                  /* F-84G, AT-3, F-86F */
+  /* the E-3 model and the AEW types drawn with it; E-3, E-8C */
+  "awacs_b awacs_f awacs_n nato_e00_awacs gbr_e60_awacs gbr_e90_awacs gbr_e00_awacs fra_e90_awacs fra_e00_awacs nato_e80_awacs nato_e90_awacs",
+  /* the transport-EW stand-in (C-160G, Nimrod R.1, Airseeker), EA-6B */
+  "ew_b ew_f gbr_e80_ewair fra_e60_ewair fra_e80_ewair fra_e90_ewair fra_e00_ewair nato_e60_ewair nato_e90_ewair",
+  "cstealth_b",                                               /* F-35B */
+  /* H-6, Tu-160, B-2 */
+  "sbomber_p pla_e60_heavybomber pla_e80_heavybomber pla_e00_heavybomber sbomber_c pact_e80_stealthbomber sbomber_n nato_e90_stealthbomber",
+  "trans_k kpa_e50_transport kpa_e60_transport kpa_e80_transport kpa_e00_transport roc_e50_transport"   /* An-2, Po-2, C-46 */
+].forEach(function (s) { s.split(" ").forEach(function (id) { OVERSIZE[id] = true; }); });
+
 function run() {
   var P = Game.human, E = Game.players[1];
   AI.setPeace(E, true); Game.checkVictory = function () {};
@@ -335,7 +487,7 @@ function run() {
 
   /* ---- B. an airbase's pads: every architecture and every period ---- */
   var ARCHS = ["nato", "pact", "pla"], ERAS = ["e50", "e60", "e80", "e90", "e00", "e20"], rowsB = [], padH = {}, nb = 0;
-  var roofed = null;
+  var open = { n: 0, miss: 0, worst: -Infinity, id: "" };
   for (var i0 = 0, v = 0; want("B") && i0 < AIR.length; v++) {
     var fac = ARCHS[v % 3], era = ERAS[((v / 3) | 0) % 6], c = CFG.FACTION_COLORS[fac];
     P.color = { main: c.main, dark: c.dark, light: c.light, fac: fac }; P.faction = fac; P.era = era;
@@ -352,11 +504,18 @@ function run() {
       var m = onPad(u, base), key = ((u.x - base.x) * PXM).toFixed(1) + "," + ((u.y - base.y) * PXM).toFixed(1);
       m.id = u.def.id + "@" + fac + "/" + era; rowsB.push(m);
       if (m.pad !== undefined) padH[key] = (padH[key] || "") + (padH[key] && padH[key].indexOf(m.pad.toFixed(2)) >= 0 ? "" : " " + m.pad.toFixed(2));
-      /* the revetment the hangar stands over */
-      if (!roofed && Math.abs((u.x - base.x) * PXM + 18.6) < 0.2 && Math.abs((u.y - base.y) * PXM - 22.3) < 0.2) {
+      /* a revetment is open to the sky: straight down from 400 m over an
+         aircraft in one, the first thing of the base is its pad - no roof,
+         and none of the faction's or the period's rooftop kit, which
+         render3d.js used to hang over one of them */
+      var ox = Math.abs((u.x - base.x) * PXM), oz = (u.y - base.y) * PXM;
+      if (Math.abs(ox - 18.6) < 0.2 && (Math.abs(oz + 14.9) < 0.2 || Math.abs(oz - 22.3) < 0.2) && m.pad !== undefined) {
         var r = recOf(u), br = recOf(base), p = r.grp.position;
         var top = firstHit(br.grp, _from.set(p.x, 400, p.z), _down.set(0, -1, 0));
-        roofed = { floor: m.pad, roof: top ? top.y - br.grp.position.y : NaN, gap: m.gap };
+        var over = top ? top.y - br.grp.position.y - m.pad : NaN;
+        open.n++;
+        if (over !== over) open.miss++;
+        else if (over > open.worst) { open.worst = over; open.id = m.id; }
       }
     });
     drop(pl.concat([base]));
@@ -367,9 +526,59 @@ function run() {
     log("  pads: " + nb + " airbases (3 architectures x 6 periods), surface above the base by spot (m):");
     Object.keys(padH).forEach(function (k) { log("    (" + k + ")" + padH[k]); });
     chk("B. every aircraft type parked on an airbase's pad has its lowest point on the pad", rowsB.length >= AIR.length && tB.bad === 0, tB.text);
-    chk("B. the revetment under the hangar is parked on the hangar's floor, not on its roof",
-        !!roofed && roofed.roof > 5 && Math.abs(roofed.floor) < 1 && Math.abs(roofed.gap) <= TOL,
-        roofed ? "floor " + f2(roofed.floor) + " m, roof " + f2(roofed.roof) + " m, gap " + f2(roofed.gap) + " m" : "no aircraft in that revetment");
+    chk("B. every revetment is open to the sky: straight down, the first thing of the base over its aircraft is its pad",
+        open.n >= 4 && !open.miss && open.worst <= TOL,
+        open.n + " parked in revetments" + (open.miss ? ", " + open.miss + " with nothing of the base under them" : "") +
+        "; the most anything of the base stands over a pad: " + f2(open.worst) + " m (" + open.id + ")");
+    /* ...and nothing of it inside the base. Four of every type on one base,
+       one on each pad, the owner in the type's own period (a stand-in wears
+       its period's kit): how far any solid drawn part of it is inside the
+       walls, the tower or anything else standing on the slab (volInside).
+       The drawn aircraft are twice their real size and overhang a real
+       revetment's walls; they must not go through them.
+       Each type gets an owner's colour of its own. render3d caches a model
+       by its key, colour and period, not by the def, and scales it to the
+       def that built it: a stand-in shared by types of different sizes is
+       drawn at the size of whichever came first in that colour, so with one
+       colour for all of them what was measured would depend on the order of
+       the roster. */
+    var volRows = [], volBad = [], volBig = [], volFit = [], volMaps = {}, nv = 0, vt0 = preciseTime();
+    AIR.forEach(function (id, k) {
+      var fac = ARCHS[k % 3], c = CFG.FACTION_COLORS[fac], own = "#4b" + ("0000" + (k + 1).toString(16)).slice(-4);
+      P.color = { main: own, dark: c.dark, light: c.light, fac: fac }; P.faction = fac; P.era = eraOf(id);
+      var vb = Game.placeBuilding(P, "airbase", g.x - 1, g.y - 1, true);
+      if (!vb) return;
+      vb.buildProgress = 1;
+      var four = [0, 1, 2, 3].map(function () { return Game.spawnUnitAt(P, id, vb.x, vb.y); });
+      park(four, vb);
+      frames(2);
+      var br = recOf(vb), inv = volInv(vb), padY = Infinity;
+      four.forEach(function (u) { var m = onPad(u, vb); if (m.pad !== undefined && m.pad < padY) padY = m.pad; });
+      /* the base's shape depends on its architecture and period, not on
+         the colour it is painted: one map for each */
+      var S = volMaps[fac + "|" + P.era] || (volMaps[fac + "|" + P.era] = volMapOf(vb, padY));
+      var row = { id: id, d: 0 };
+      four.forEach(function (u) { var w = volInside(u, S, inv); if (w.d > row.d) row.d = w.d; nv++; });
+      volRows.push(row);
+      if (OVERSIZE[id]) (row.d > VOL_TOL ? volBig : volFit).push(row);
+      else if (row.d > VOL_TOL) volBad.push(row);
+      drop(four.concat([vb]));
+    });
+    P.color = col0; P.faction = fac0; P.era = "e20";
+    volBad.sort(function (a, b) { return b.d - a.d; });
+    var held = volRows.filter(function (r) { return !OVERSIZE[r.id]; });
+    var worstHeld = held.reduce(function (w, r) { return r.d > w.d ? r : w; }, { d: 0, id: "-" });
+    chk("B. nothing of a parked aircraft is inside the base: four of each type, one on each pad, and none of the " + held.length +
+        " a revetment holds more than " + (VOL_TOL * 100) + " cm into a wall, the tower or anything else of it",
+        volRows.length >= AIR.length && held.length > 250 && !volBad.length,
+        nv + " parked; " + volBad.length + " further in" +
+        (volBad.length ? " (" + volBad.slice(0, 8).map(function (r) { return r.id + " " + r.d.toFixed(2) + (r.d >= VOL.STOP ? "+" : ""); }).join(", ") + (volBad.length > 8 ? ", ..." : "") + ")" : "") +
+        "; the most " + worstHeld.d.toFixed(3) + " m (" + worstHeld.id + ")");
+    volBig.sort(function (a, b) { return b.d - a.d; });
+    log("  drawn too big for a revetment (OVERSIZE): " + volBig.length + " reach into it, " +
+        volBig.filter(function (r) { return r.d >= VOL.STOP; }).length + " of them a metre or more (through a wall)" +
+        (volFit.length ? "; " + volFit.length + " listed now fit, take them off the list: " + volFit.map(function (r) { return r.id + " " + r.d.toFixed(2); }).join(", ") : "") +
+        "; " + ((preciseTime() - vt0)).toFixed(0) + " s");
   }
 
   /* ---- C. every deck in the game, everything it takes, four headings ---- */
