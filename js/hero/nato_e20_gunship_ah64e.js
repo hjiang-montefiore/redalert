@@ -116,6 +116,50 @@
    had: the team flash is exactly C.team and emissive, so the repaint
    leaves it alone. Nothing specific to the E, or to any one operator, is
    modelled: no national markings, no serials, no MUM-T antennas.
+   THE ERA VARIANTS. Three more rows of the game's Apache line draw from
+   this file, through the thin wrappers at its foot (build() is handed only
+   the team colour, so the variant has to be fixed by the wrapper):
+     E  helo_n, helo_r, roc_e00_gunship and nato_e00_gunship, the AH-64E
+        Apache Guardian: everything described above, and nothing else.
+        (The ONE MESH paragraph above is older than the models the
+        Alouette, Scout, Gazelle, Lynx, Bo 105 and Tiger rows have of
+        their own now. The renderer's peer rule lends this build today
+        only to helo_b and gbr_e00_gunship; helo_r and roc_e00_gunship
+        are registered to it by id.)
+     D  nato_e90_gunship, the AH-64D Longbow Apache, in service 1998. The
+        machine described above is already a Longbow, radome and enlarged
+        forward avionics bays included, and the E is the D remanufactured,
+        so the D builds the same geometry; only the group is named for it.
+     A  nato_e80_gunship, the AH-64A, in service 1986. Two things differ
+        that a camera above the machine can see:
+          - it has no Longbow. The mast ends in the rotor head, 3.87 m up,
+            so the radar stalk, its collar and the radome are left out.
+            (The side and three-quarter photographs show a thin antenna
+            rod standing a little over half a metre out of the head's
+            top. It is a few centimetres thick, a hairline at this
+            camera distance, and it is not drawn.)
+          - its side avionics bays are the original ones, which the
+            Longbow's enlarged bays replaced. They are drawn 0.84 m out
+            from the centreline against the Longbow's 0.95 m, and they start
+            0.2 m further back at the nose; under the wing they meet the
+            roots exactly as the Longbow's do, so the wing still rests on
+            them. Published figures give the new bays only as "enlarged",
+            so those two numbers are an estimate from the photographs.
+        The rest of the airframe is drawn as the E's. On the side view the
+        hub, the main wheels and the tail wheel stand where the E's do, to the
+        picture's accuracy (about 0.3 m). The sight turret may stand 0.2 to
+        0.6 m further ahead of the hub on the A, depending on whether the
+        wheelbase or the rotor sets the scale; the pictures cannot settle
+        that, so it is left as the E's. The A's original TADS/PNVS and the
+        E's M-TADS/PNVS differ in detail below what this camera shows. The
+        painted bay edges are redrawn for the A's bays on a sheet of their
+        own; the E and the D share the first sheet.
+   Photographs of the A, all on Wikimedia Commons: "AH-64A on FOB Speicher"
+   (a side view, the airframe dark against the sky), "AH-64A at Fort Rucker
+   Sep 1999" (front three-quarter, the left bay under the canopy) and "AH-64A
+   Apache avionics 3900" (head-on, a museum aircraft: the pair of bays
+   either side of the sight turret). The side view was scaled on the 10.59 m
+   wheelbase and the 14.63 m rotor.
    ASCII only.                                                              */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -192,7 +236,7 @@ var HeroAH64E = (function () {
     return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   }
 
-  function skinCanvas() {
+  function skinCanvas(variant) {
     var cv = document.createElement("canvas");
     cv.width = TW; cv.height = TH;
     var g = cv.getContext("2d");
@@ -281,7 +325,11 @@ var HeroAH64E = (function () {
        upright outer face: a hard shadow line with the sunlit lip under it,
        which is what picks the bays out in every side-on photograph */
     for (b = 1; b <= 2; b++) {
-      var eb = [[4.10, 1.40], [3.30, 1.33], [0.80, 1.48], [0.35, 1.62], [-0.80, 1.66], [-1.10, 1.60]];
+      /* the Longbow's bay edge; the AH-64A's smaller bays carry theirs
+         along the same three stations, 0.02 m lower ahead of the wing */
+      var eb = variant === "A"
+        ? [[3.90, 1.38], [3.20, 1.31], [0.80, 1.46], [0.35, 1.62], [-0.80, 1.66], [-1.10, 1.60]]
+        : [[4.10, 1.40], [3.30, 1.33], [0.80, 1.48], [0.35, 1.62], [-0.80, 1.66], [-1.10, 1.60]];
       g.lineWidth = 2.2; g.strokeStyle = "rgba(0,0,0,0.50)";
       g.beginPath();
       for (i = 0; i < eb.length; i++) {
@@ -315,18 +363,22 @@ var HeroAH64E = (function () {
     return cv;
   }
 
-  var _cv = null, _tex = null;             /* module scope: built once   */
-  function skinTexture() {
-    if (_tex !== null) return _tex;
+  /* module scope: built once per sheet. The E and the D share one; the
+     A has its own, because its painted bay edges sit where its smaller
+     bays do. */
+  var _sheet = { E: { cv: null, tex: null }, A: { cv: null, tex: null } };
+  function skinTexture(variant) {
+    var s = _sheet[variant === "A" ? "A" : "E"];
+    if (s.tex !== null) return s.tex;
     try {
-      if (!_cv) _cv = skinCanvas();
-      _tex = new V.CanvasTexture(_cv);
-      _tex.wrapS = _tex.wrapT = V.ClampToEdgeWrapping;
-      _tex.anisotropy = 4;
+      if (!s.cv) s.cv = skinCanvas(variant);
+      s.tex = new V.CanvasTexture(s.cv);
+      s.tex.wrapS = s.tex.wrapT = V.ClampToEdgeWrapping;
+      s.tex.anisotropy = 4;
       /* r148: Texture.colorSpace does nothing yet; encoding is what works */
-      if (V.sRGBEncoding !== undefined) _tex.encoding = V.sRGBEncoding;
-    } catch (e) { _tex = false; }
-    return _tex;
+      if (V.sRGBEncoding !== undefined) s.tex.encoding = V.sRGBEncoding;
+    } catch (e) { s.tex = false; }
+    return s.tex;
   }
 
   /* Face-normal projection into the four bands. Faces looking mostly fore
@@ -361,8 +413,8 @@ var HeroAH64E = (function () {
   }
 
   /* ========================================================= materials == */
-  function makeMats(C) {
-    var tex = skinTexture();
+  function makeMats(C, variant) {
+    var tex = skinTexture(variant);
     var m = {};
     m.skin = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.84, metalness: 0.08 });
     if (tex) m.skin.map = tex; else m.skin.color.setHex(0x40463a);
@@ -602,11 +654,12 @@ var HeroAH64E = (function () {
   }
 
   /* ========================================================= the build == */
-  function build(THREE, M, C) {
+  function build(THREE, M, C, variant) {
     V = THREE;
-    var T = makeMats(C);
+    var isA = variant === "A";             /* the AH-64A: no Longbow, smaller bays */
+    var T = makeMats(C, variant);
     var g = new V.Group();
-    g.name = "ah64e";
+    g.name = isA ? "ah64a" : variant === "D" ? "ah64d" : "ah64e";
     var i, k, s, a;
     var skin = [], dark = [], metal = [], store = [], rubber = [], team = [], glass = [];
 
@@ -682,12 +735,26 @@ var HeroAH64E = (function () {
       return [[x, it[0], Z(it[1])], [x, ot[0], Z(ot[1])], [x, ol[0], Z(ol[1])],
               [x, ob[0], Z(ob[1])], [x, ib[0], Z(ib[1])]];
     }
-    var BAY0 = bay(4.12, [0.34, 1.44], [0.50, 1.40], [0.52, 1.02], [0.44, 0.90], [0.32, 0.86]);
-    var BAY1 = bay(3.30, [0.42, 1.40], [0.93, 1.33], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
-    var BAY1B = bay(0.80, [0.43, 1.56], [0.94, 1.48], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
-    var BAY1C = bay(0.35, [0.44, 1.70], [0.95, 1.62], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
-    var BAY2 = bay(-0.80, [0.44, 1.72], [0.95, 1.66], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
-    var BAY3 = bay(-1.10, [0.44, 1.66], [0.80, 1.60], [0.80, 1.00], [0.70, 0.86], [0.40, 0.76]);
+    var BAY0, BAY1, BAY1B, BAY1C, BAY2, BAY3;
+    if (isA) {
+      /* The AH-64A's original bays: 0.84 m out where the Longbow's are 0.95,
+         the nose piece begun 0.2 m further back, the shelf 0.02 m lower
+         ahead of the wing. From x = 0.35 aft the tops are the Longbow's, so
+         the wing root still sits on them. */
+      BAY0 = bay(3.92, [0.34, 1.42], [0.48, 1.38], [0.50, 1.04], [0.42, 0.92], [0.32, 0.88]);
+      BAY1 = bay(3.20, [0.42, 1.38], [0.82, 1.31], [0.84, 0.96], [0.74, 0.80], [0.40, 0.76]);
+      BAY1B = bay(0.80, [0.43, 1.54], [0.83, 1.46], [0.84, 0.96], [0.74, 0.80], [0.40, 0.76]);
+      BAY1C = bay(0.35, [0.44, 1.70], [0.84, 1.62], [0.84, 0.96], [0.74, 0.80], [0.40, 0.76]);
+      BAY2 = bay(-0.80, [0.44, 1.72], [0.84, 1.66], [0.84, 0.96], [0.74, 0.80], [0.40, 0.76]);
+      BAY3 = bay(-1.10, [0.44, 1.66], [0.74, 1.60], [0.74, 1.00], [0.66, 0.86], [0.40, 0.76]);
+    } else {
+      BAY0 = bay(4.12, [0.34, 1.44], [0.50, 1.40], [0.52, 1.02], [0.44, 0.90], [0.32, 0.86]);
+      BAY1 = bay(3.30, [0.42, 1.40], [0.93, 1.33], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
+      BAY1B = bay(0.80, [0.43, 1.56], [0.94, 1.48], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
+      BAY1C = bay(0.35, [0.44, 1.70], [0.95, 1.62], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
+      BAY2 = bay(-0.80, [0.44, 1.72], [0.95, 1.66], [0.95, 0.94], [0.82, 0.78], [0.40, 0.74]);
+      BAY3 = bay(-1.10, [0.44, 1.66], [0.80, 1.60], [0.80, 1.00], [0.70, 0.86], [0.40, 0.76]);
+    }
     both(skin, solid(BAY0, BAY1));
     both(skin, solid(BAY1, BAY1B));
     both(skin, solid(BAY1B, BAY1C));
@@ -993,24 +1060,28 @@ var HeroAH64E = (function () {
     var HZ = Z(HUB_H), fixedM = [], fixedS = [];
     fixedM.push(cyl(0.13, 0.15, HUB_H - 3.00 - 0.12, 14, "z", HUB_X, 0, Z(3.00) + (HUB_H - 3.12) / 2));
     fixedM.push(cyl(0.35, 0.35, 0.05, 18, "z", HUB_X, 0, Z(HUB_H - 0.38)));
-    /* the stalk runs from inside the head top up into the radome's belly */
-    var STALK0 = HUB_H + 0.20, STALK1 = 4.47;
-    fixedM.push(cyl(0.12, 0.12, STALK1 - STALK0, 12, "z", HUB_X, 0, Z((STALK0 + STALK1) / 2)));
-    fixedM.push(cyl(0.19, 0.16, 0.10, 14, "z", HUB_X, 0, Z(4.02)));
-    /* the rim is squarer than an ellipse (exponent 0.42 across) and the
-       crown a gentle dome (0.6 up); the underside is a little shallower */
-    var FCR_R = 0.68, FCR_HH = 0.275, FCR_C = 4.95 - FCR_HH, prof = [];
-    for (i = 0; i <= 10; i++) {
-      var th = -PI / 2 + PI * i / 10, cth = Math.cos(th), sth = Math.sin(th);
-      prof.push([(sth < 0 ? -0.85 : 1) * Math.pow(Math.abs(sth), 0.6) * FCR_HH,
-                 FCR_R * Math.pow(Math.abs(cth), 0.42)]);
+    /* The Longbow's fire control radar: the AH-64A has none, and its mast
+       ends in the head. */
+    if (!isA) {
+      /* the stalk runs from inside the head top up into the radome's belly */
+      var STALK0 = HUB_H + 0.20, STALK1 = 4.47;
+      fixedM.push(cyl(0.12, 0.12, STALK1 - STALK0, 12, "z", HUB_X, 0, Z((STALK0 + STALK1) / 2)));
+      fixedM.push(cyl(0.19, 0.16, 0.10, 14, "z", HUB_X, 0, Z(4.02)));
+      /* the rim is squarer than an ellipse (exponent 0.42 across) and the
+         crown a gentle dome (0.6 up); the underside is a little shallower */
+      var FCR_R = 0.68, FCR_HH = 0.275, FCR_C = 4.95 - FCR_HH, prof = [];
+      for (i = 0; i <= 10; i++) {
+        var th = -PI / 2 + PI * i / 10, cth = Math.cos(th), sth = Math.sin(th);
+        prof.push([(sth < 0 ? -0.85 : 1) * Math.pow(Math.abs(sth), 0.6) * FCR_HH,
+                   FCR_R * Math.pow(Math.abs(cth), 0.42)]);
+      }
+      /* latheX lays an (x, r) profile along model x; the radome stands on
+         z, so it is built along x and turned upright */
+      var fcr = latheX(prof.slice().reverse(), 18, 0, 0);
+      fcr.rotateY(-PI / 2);
+      fcr.translate(HUB_X, 0, Z(FCR_C));
+      fixedS.push(fcr);
     }
-    /* latheX lays an (x, r) profile along model x; the radome stands on
-       z, so it is built along x and turned upright */
-    var fcr = latheX(prof.slice().reverse(), 18, 0, 0);
-    fcr.rotateY(-PI / 2);
-    fcr.translate(HUB_X, 0, Z(FCR_C));
-    fixedS.push(fcr);
     mesh(g, fixedM, T.metal, "mast");
     mesh(g, fixedS, T.skin, "radome", true);
 
@@ -1106,7 +1177,14 @@ var HeroAH64E = (function () {
     return g;
   }
 
-  return { build: build };
+  /* build() is handed (THREE, Models3D, {team}) and nothing else, so each
+     variant is a wrapper that fixes the last argument. build is the E that
+     helo_n, helo_r and roc_e00_gunship register. */
+  return {
+    build:  function (THREE, M, C) { return build(THREE, M, C, "E"); },
+    buildD: function (THREE, M, C) { return build(THREE, M, C, "D"); },
+    buildA: function (THREE, M, C) { return build(THREE, M, C, "A"); }
+  };
 })();
 
 /* len is the MEASURED x extent, main rotor disc front to the tip of the
@@ -1118,3 +1196,12 @@ UNIT_MODELS["helo_n"] = { len: 17.74, build: HeroAH64E.build };
    a 2,200-triangle rotor_specs row. */
 UNIT_MODELS["helo_r"] = { len: 17.74, build: HeroAH64E.build };
 UNIT_MODELS["roc_e00_gunship"] = { len: 17.74, build: HeroAH64E.build };
+/* The game's own Apache rows by era, which the 2,112-2,200-triangle
+   rotor_specs rows drew until now. The 2000s-10s row is the AH-64E, the
+   helo_n aircraft, built as it is; the 1990s row is the AH-64D Longbow, the
+   same geometry (see THE ERA VARIANTS); the 1980s row is the AH-64A, the
+   same airframe without the Longbow. All three measure 17.74 m, the A
+   included: the radome stands inside the extent the rotors set. */
+UNIT_MODELS["nato_e00_gunship"] = { len: 17.74, build: HeroAH64E.build };
+UNIT_MODELS["nato_e90_gunship"] = { len: 17.74, build: HeroAH64E.buildD };
+UNIT_MODELS["nato_e80_gunship"] = { len: 17.74, build: HeroAH64E.buildA };
