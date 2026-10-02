@@ -463,6 +463,11 @@ function run() {
   var DOC = {
     "deu_e80_gunship|tailrotor": 1, "gbr_e90_gunship|tailrotor": 1,        // Bo 105, Lynx AH.7: cw from the left
     "gbr_e80_gunship|tailrotor": -1,                                       // Lynx AH.1: the -PI/2 mount, the other way
+    /* Mi-24D and Mi-24V (hero/pact_hind_mi24.js): top blade aft, clockwise
+       from the left - "up on the side towards the front" (Gordon and
+       Komissarov), "top blade aft" (VFS Vertipedia) */
+    "pact_e60_gunship|tailrotor": 1, "pact_e80_gunship|tailrotor": 1, "helo_k|tailrotor": 1,
+    "kpa_e80_gunship|tailrotor": 1, "kpa_e90_gunship|tailrotor": 1, "kpa_e00_gunship|tailrotor": 1,
   };
   CW.forEach(function (k) { DOC[k + "|rotor"] = -1; });
   ACW.forEach(function (k) { DOC[k + "|rotor"] = 1; });
