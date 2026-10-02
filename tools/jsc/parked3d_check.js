@@ -438,6 +438,11 @@ var OVERSIZE = {};
   "awacs_b awacs_f awacs_n nato_e00_awacs gbr_e60_awacs gbr_e90_awacs gbr_e00_awacs fra_e90_awacs fra_e00_awacs nato_e80_awacs nato_e90_awacs",
   /* the transport-EW stand-in (C-160G, Nimrod R.1, Airseeker), EA-6B */
   "ew_b ew_f gbr_e80_ewair fra_e60_ewair fra_e80_ewair fra_e90_ewair fra_e00_ewair nato_e60_ewair nato_e90_ewair",
+  /* the KC-135 and KC-46 models (js/hero/us_tankers.js) and every tanker row drawn with them: at their real
+     proportions the wing's underside is about 3 m up where the revetment walls stand, inside the 3.66 m bins
+     (the tankers that keep a model of their own, tanker_p and tanker_c, still fit) */
+  "nato_e60_tanker nato_e90_tanker tanker_n nato_e50_tanker nato_e80_tanker tanker_g tanker_b tanker_f pact_e50_tanker pact_e60_tanker",
+  "gbr_e50_tanker gbr_e60_tanker gbr_e90_tanker gbr_e00_tanker fra_e60_tanker fra_e80_tanker fra_e90_tanker fra_e00_tanker deu_e00_tanker pla_e90_tanker",
   "cstealth_b",                                               /* F-35B */
   /* the B-52, D to H: the old model fitted only because it was drawn 56.2 m
      long for a 48.5 m aeroplane, and the game scales an aircraft by its
