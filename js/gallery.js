@@ -918,8 +918,15 @@ var Gallery = (function () {
       li.dataset.id = r.id;
       const nm = document.createElement("b");
       nm.textContent = r.def.name || r.id;
+      /* The period leads the line. With every period showing, an army's
+         rows for one machine in different decades - six NATO rifle squads,
+         the A-10 of the 1980s and the A-10C of today - read as the same
+         entry twice when the line carried only the army and the role
+         (159 names did, measured). It goes first because the line is cut
+         with an ellipsis when the rail is narrow. */
+      const span = eraSpan(r.def);
       const sub = document.createElement("i");
-      sub.textContent = factionName(r.def.fac) + " · " + roleWord(r.def);
+      sub.textContent = (span ? span + " · " : "") + factionName(r.def.fac) + " · " + roleWord(r.def);
       const pr = document.createElement("span");
       pr.textContent = r.def.cost ? money(r.def.cost) : "";
       li.appendChild(nm); li.appendChild(sub); li.appendChild(pr);
