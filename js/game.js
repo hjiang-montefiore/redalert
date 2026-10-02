@@ -659,6 +659,26 @@ var Game = (function () {
        nothing changes and the deck is fighters as before. */
     const strike = deckLegal(unitFor(p.faction, "cstrike", era));
     if (strike && slots >= 3 && slot % 3 === 1) return strike;
+    /* ...AND, WHERE THE NAVY REALLY FLIES ONE FROM ITS CARRIERS BESIDE ITS
+       WORKHORSE, ONE STEALTH FIGHTER. The F-35C was a purchase only, so a
+       present-day Ford sailed as three Super Hornets and a helicopter. The US
+       Navy has flown it from carriers since 2021 (VFA-147 aboard Carl Vinson,
+       the first deployment), about one squadron to three of Super Hornets;
+       the PLA Navy's J-35 made its first catapult launches and arrested
+       landings on the Fujian in September 2025, beside the J-15T and the
+       KJ-600, and she was commissioned that November. One spot in the wing
+       is the stealth jet, the one after the strike aircraft's, so a deck with
+       both lays out workhorse, strike, stealth, helicopter. A role rule, not
+       a list: it fires only for a navy with BOTH a carrier fighter and a
+       carrier stealth jet in the period - the Queen Elizabeth's F-35B is
+       already her whole fighter force (`fighter` is it), Russia and France
+       have no stealth carrier jet, and none had one before the 2020s, so
+       those decks are as they were - and only where the deck has three
+       fixed-wing spots, because on a deck of three the helicopter has this
+       one. The airframe comes with the hull, so it is in the hull's price
+       (rules.js carrier_n, carrier_c). */
+    const stealth = deckLegal(unitFor(p.faction, "cstealth", era));
+    if (stealth && stealth !== fighter && slots >= 4 && slot % 3 === 2) return stealth;
     return fighter;
   };
 
@@ -723,7 +743,10 @@ var Game = (function () {
      takes the helicopter deckAircraftFor() already puts aboard - an MH-60R,
      a Ka-27, a Z-9 - and nothing else; a carrier takes its own air wing plus
      the carrier types of its navy and decade the complement leaves out (the
-     stealth fighter, the AEW aircraft); a hull built as a helicopter carrier
+     AEW aircraft, the stealth fighter where the wing has none, and the
+     electronic-attack aircraft - the US Navy's AD-5Q, EA-6B and EA-18G, which
+     rules.js and eras.js mark carrier-capable, and never the USAF's EF-111A
+     or any other army's land-based jammer); a hull built as a helicopter carrier
      (def.heloCarrier: Moskva) takes helicopters and nothing else. Never an
      F-16 on a carrier or a Mi-24 on a frigate. The same list is what a deck
      will RECOVER (G.findPad) and count as ramp (Player.airCapacity), so a
@@ -741,7 +764,7 @@ var Game = (function () {
     const add = (id) => { if (id && UNITS[id] && out.indexOf(id) < 0) out.push(id); };
     for (let i = 0; i < slots; i++) add(G.deckAircraftFor(ship, i));
     if (ship.def.carrier && out.some(id => !UNITS[id].hover))
-      for (const r of ["cfighter", "cstealth", "cstrike", "cawacs"])
+      for (const r of ["cfighter", "cstealth", "cstrike", "cawacs", "ewair"])
         /* every card of the role, not only the newest: "the carrier types of
            its navy and decade" is plural wherever the navy flew two, and a
            second carrier fighter bought from the AIR tab has to be allowed

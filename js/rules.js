@@ -724,7 +724,12 @@ var UNITS = {
     desc:"Carries six vehicles or infantry across water and drives them straight up onto the beach." },
 
   carrier_n: { fac:"nato", role:"carrier", name:"Gerald R. Ford CVN", full:"USS Gerald R. Ford (CVN-78)", cat:"naval",
-    cost:5000, oil:110, time:60, hp:4200, armor:"heavy", speed:1.6, turn:0.6, sight:14, r:30, mass:0,
+    /* 6,000, up from 5,000. The complement comes with the hull and is in its
+       price, and the F-35C that now takes one of her four spots (2,900 listed)
+       replaces a Super Hornet (1,650): her free aircraft went from 6,350 to
+       7,600 - 1.27 times the hull's price to 1.52, past every carrier of the
+       1990s and after. 6,000 puts it back at 1.27, as it was. */
+    cost:6000, oil:110, time:60, hp:4200, armor:"heavy", speed:1.6, turn:0.6, sight:14, r:30, mass:0,
     layer:"sea", weapons:[], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.65, carrier:4, storage:0,
     desc:"Commissioned in 2017 and the first new American carrier design since the Nimitz of 1975. Electromagnetic catapults instead of steam, a smaller island moved aft, and a sortie rate a third higher than the class she replaces." },
   carrier_p: { fac:"pact", role:"carrier", name:"Kuznetsov CV", full:"Project 1143.5 Kuznetsov", cat:"naval",
@@ -1170,7 +1175,11 @@ Object.assign(UNITS, {
     desc:"Air-independent-propulsion attack submarine. Sits silent on a shipping lane and empties its tubes. " +
          "Carries four Underwater Great Wall nodes — a programme marketed since 2015 and taken seriously." },
   carrier_c: { fac:"pla", role:"carrier", name:"Type 003 Fujian", cat:"naval",
-    cost:4900, oil:108, time:59, hp:4300, armor:"heavy", speed:1.6, turn:0.6, sight:13.5, r:30, mass:0,
+    /* 5,800, up from 4,900, for the same reason: the J-35 that now takes one of
+       her four spots (2,850 listed) replaces a J-15 (1,700), so her free
+       aircraft went from 6,400 to 7,550 - 1.31 times her price to 1.54. 5,800
+       puts it at 1.30, under what it was. */
+    cost:5800, oil:108, time:59, hp:4300, armor:"heavy", speed:1.6, turn:0.6, sight:13.5, r:30, mass:0,
     layer:"sea", weapons:[], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.6, carrier:4,
     desc:"Catapult-equipped supercarrier. Four aircraft rearm and refuel at sea, wherever you sail it." },
 });
@@ -2615,6 +2624,16 @@ Object.assign(UNITS, {
     cost:2800, oil:44, time:32, hp:520, armor:"air", speed:7.6, turn:1.9, sight:12.5, r:16, mass:0,
     layer:"air", weapons:["harm"], prereq:["airbase","lab"], tech:3, jet:true, ammo:4,
     jam:9.5, jamPower:1.0, radar:10,
+    /* A CARRIER AIRCRAFT. Every US carrier air wing has flown an
+       electronic-attack squadron since the 1970s - EA-6B Prowlers from 1971,
+       then this aircraft, which replaced them between 2009 and 2015 - and it
+       exists to fly with the fleet. It was the one ship-based type without
+       the flag - facts.js has always called it carrier-capable - so it could
+       never be bought onto, land on or be counted as ramp by a deck. The
+       USAF's EF-111A never went to sea and keeps its row without it, as does
+       every other army's jammer. G.deckTypesFor offers role "ewair" to a
+       carrier, and deckLegal() in game.js asks for this flag. */
+    carrierCapable:true,
     desc:"Airborne electronic attack. Its jamming pods blind every hostile radar within nine tiles, and it carries HARM to kill the emitters that keep transmitting. The single most disruptive aircraft in the game." },
   ew_c: { fac:"pla", role:"ewair", name:"J-16D", full:"Shenyang J-16D", cat:"aircraft",
     cost:2700, oil:42, time:31, hp:560, armor:"air", speed:7.8, turn:1.9, sight:12.0, r:16, mass:0,

@@ -12797,6 +12797,18 @@ for (var _tw in WEAPONS) {
    Run AFTER the ARM floor above, so the Growler's round keeps the 15.5
    tiles it already had; the removed rounds are deleted outright once no row
    carries them, so nothing can hang a jamming pod back on as a missile. */
+/* CARRIER-CAPABLE, AND WHICH ONES. The US Navy's electronic-attack aircraft
+   are carrier aircraft, and `carrierCapable` is what lets G.deckTypesFor admit
+   one to a carrier's deck (role "ewair" is in its list): the AD-5Q of 1956,
+   the first carrier-based EW aircraft; the EA-6B Prowler of 1971 and of the
+   1990s, the air wing's jammer until the Growler replaced it (2009-2015); and
+   the EA-18G of 2009 (rules.js flags ew_n, its present-day card). NOT the
+   EF-111A of the 1980s: the Air Force's Raven was a land-based conversion of
+   the F-111A and never went to sea, so the e80 American deck takes no jammer
+   at all - the Navy's Prowlers of the 1980s (ICAP I, and ICAP II from 1984)
+   have no row, the Prowler's first window ending in 1979 and its second
+   opening in 1990. And not one other army's: the Canberra, the Nimrod and the
+   Airseeker, the Gabriels and Archange, the Y-8G and the J-16D are land-based. */
 var EW_AIRFRAME = {
   /* Douglas AD-5Q, EA-1F from 1962: a widened Skyraider with three
      countermeasures operators behind the pilot, noise jammers in underwing
@@ -12806,7 +12818,7 @@ var EW_AIRFRAME = {
      flies like a Skyraider: the row had speed 6.54, barely short of the jet
      EA-6B's 6.84, against 4.82 for the AD-4 it was built from. The
      widened AD-5 was the slower of the two, so 4.7, with the AD-4's turn. */
-  nato_e50_ewair: { jam: 5.0, jamPower: 0.55, weapons: [], ammo: 0, speed: 4.7, turn: 1.5,
+  nato_e50_ewair: { jam: 5.0, jamPower: 0.55, weapons: [], ammo: 0, speed: 4.7, turn: 1.5, carrierCapable: true,
     desc: "Include with caution - 1950s electronic warfare is mostly chaff, noise jammers carried inside bombers, and dedicated ferret aircraft (RB-47H, RB-50) flying peripheral intelligence missions rather than escorting strikes. The AD-5Q is the first carrier-based dedicated EW aircraft, four crew in a widened Skyraider fuselage: noise jammers in underwing pods and chaff, and nothing to shoot with. It blinds a 1950s set only when it is nearly on top of it." },
   /* Grumman EA-6B, in service July 1971, first to war with VAQ-132 in 1972:
      the ALQ-99 in up to five external pods, two transmitters each, and
@@ -12814,7 +12826,7 @@ var EW_AIRFRAME = {
      1985 and reached the Prowler with ICAP II - this row ends in 1979, so it
      carries none. The old desc also said "after the EF-111 retired", which
      is 1998 and nineteen years past this row's last day. */
-  nato_e60_ewair: { jam: 8.0, jamPower: 0.85, weapons: [], ammo: 0,
+  nato_e60_ewair: { jam: 8.0, jamPower: 0.85, weapons: [], ammo: 0, carrierCapable: true,
     desc: "Four crew - one pilot, three electronic countermeasures officers - because jamming in this era is a manual craft, not an automated one. The ALQ-99 rides in up to five pods under the wings, and the Prowler first went to war over North Vietnam in 1972 with VAQ-132. It carries no missile of any kind in this decade: HARM reached it only with the ICAP II rebuild of the mid-1980s. Its whole value is the bubble, and it is the strongest jammer of its day." },
   /* General Dynamics/Grumman EF-111A Raven, IOC 1983, 42 converted: the
      ALQ-99E in the weapons-bay canoe, automated down to two crew, fast
@@ -12827,13 +12839,13 @@ var EW_AIRFRAME = {
      and HARM on the wing - fired in Desert Storm and over Kosovo. The row
      was named "ICAP III", which is the 2005 upgrade and outside the decade.
      The HARM row it already carries is right and is kept, held. */
-  nato_e90_ewair: { jam: 9.0, jamPower: 0.90, full: "Grumman EA-6B Prowler, ICAP II" },
+  nato_e90_ewair: { jam: 9.0, jamPower: 0.90, full: "Grumman EA-6B Prowler, ICAP II", carrierCapable: true },
   /* Boeing EA-18G Growler, IOC September 2009: three ALQ-99 pods cued by the
      ALQ-218 wideband receiver, which is why it gets more out of the same
      pods than a Prowler, and AGM-88 HARM - fired over Libya in 2011. Its
      round was named "ALQ-99", the jamming pod. Just under ew_n, which is the
      same aeroplane with the Next Generation Jammer. */
-  nato_e00_ewair: { jam: 9.0, jamPower: 0.95, arm: "AGM-88 HARM",
+  nato_e00_ewair: { jam: 9.0, jamPower: 0.95, arm: "AGM-88 HARM", carrierCapable: true,
     desc: "The game's electronic attack aircraft, and the first US jammer that can defend itself - it keeps the Super Hornet's radar and can carry AMRAAM, unlike the unarmed EF-111A. Two crew instead of the Prowler's four, because the ALQ-218 receivers cue the jamming automatically. Only about 160 exist and they cover the entire US joint force's tactical electronic attack. The HARM on the wing is held for an order or a radiating battery." },
   /* Shaanxi Y-8G (GX-3): standoff jamming from a transport orbit. No
      anti-radiation missile - the old row's round was literally named "none

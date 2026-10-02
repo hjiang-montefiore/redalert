@@ -12553,6 +12553,242 @@ try{
   })();
   }
 
+  /* ====== [93] THE CARRIER'S AIR WING: ONE F-35C IN FOUR SPOTS, AND THE NAVY'S JAMMERS ON HER DECK ======
+     (owner) "then ford cvs should carry f-35?" - and, to the gap found on the
+     way, that the Growler could not be bought onto, land on or be counted on
+     a US carrier's deck: "want both".
+     1 - the present-day Ford sailed as three Super Hornets and the MH-60R, the
+     F-35C a purchase only. G.deckAircraftFor now gives the navy's carrier
+     stealth jet one spot where the navy has one beside its carrier fighter
+     and the deck has the room: two Super Hornets, an F-35C and the MH-60R
+     for the US Navy, which has flown the F-35C from carriers since 2021, and
+     the Fujian's J-15, J-15, J-35 and helicopter. Held here: the plan of every
+     carrier of every army and decade (the Queen Elizabeth's F-35B is already
+     her whole fighter force, Russia and France have no stealth carrier jet,
+     and no navy had one before the 2020s: all as they were), the hull as
+     delivered, and what the free complement is worth against the hull's price
+     - 6,350 against 5,000 at c27fdc1 and 7,600 after the swap, so the price
+     goes with it (rules.js).
+     2 - the EA-18G could not be bought onto, land on or be counted on a deck:
+     its row was the one ship-based type without carrierCapable, and so were
+     the Prowlers and the AD-5Q. Held here: through the same deckTypesFor() /
+     deckOrderReason() / orderDeckAircraft() / findPad() / airCapacity() the
+     player's panel and the commander use, the Growler is bought for the Ford,
+     flown out from the airbase and lands on her; the Prowler and the Skyraider
+     are on the decks of their decades; and the USAF's EF-111A and every other
+     army's land-based jammer are still refused, on every deck there is.
+     3 - the commander refills an emptied F-35C spot with an F-35C (deckWants
+     asks the plan), through driveDecks on the commander's own clock.
+     Everything made or placed here is removed, the era and the army lent to
+     the commander are put back, and the section plays on a random stream of
+     its own. */
+  if (inHalf(1)) {
+  log("\n[93] THE CARRIER'S AIR WING: ONE F-35C IN FOUR SPOTS, AND THE NAVY'S JAMMERS ON HER DECK");
+  (function(){
+    var T=CFG.TILE, G=Game, M=Game.map, made=[], placed=[], patched=[], before=P.units.concat(E.units);
+    var era0=P.era, fac0=P.faction, efac0=E.faction, cash0=P.cash, oil0=P.oil, ecash0=E.cash, eoil0=E.oil;
+    var rng0=Game.rng; Game.rng=U.mulberry32(93);
+    var keep=function(st){ return JSON.stringify(st); };
+    var back=function(st,js){ var o=JSON.parse(js); for(var k in st) if(!(k in o)) delete st[k]; for(var k2 in o) st[k2]=o[k2]; };
+    var sP=keep(P.stats), sE=keep(E.stats);
+    var qSnap=[], ePre=new Set(E.units), eBld0=E.buildings.slice();
+    ["building","infantry","vehicle","aircraft","naval","defense"].forEach(function(k){ [P,E].forEach(function(pl){
+      if (pl.queues && pl.queues[k]) qSnap.push([pl.queues[k], pl.queues[k].items.slice()]); }); });
+    var nm=function(id){ return id && UNITS[id] ? UNITS[id].name : String(id); };
+    var tally=function(ids){ var c={}; ids.forEach(function(id){ c[id]=(c[id]||0)+1; }); return c; };
+    var names=function(ids){ return ids.map(nm).join(", "); };
+    var patch=function(o,k,v){ patched.push([o,k,o[k]]); o[k]=v; };
+    var unpatch=function(){ for(var k=patched.length-1;k>=0;k--) patched[k][0][patched[k][1]]=patched[k][2]; patched.length=0; };
+    var secs=function(s){ tick(Math.round(s/CFG.DT)); };
+    var put=function(pl,id,r0){ var hx=(pl.homeX/T)|0, hy=(pl.homeY/T)|0;
+      for(var r=r0;r<45;r++) for(var a=0;a<72;a++){ var an=a/72*6.283, x=(hx+Math.cos(an)*r)|0, y=(hy+Math.sin(an)*r)|0;
+        if(G.canPlace(pl,id,x,y)){ var b=G.placeBuilding(pl,id,x,y,true); if(b){ b.buildProgress=1; placed.push(b); return b; } } }
+      return null; };
+    var sea=function(cx,cy,rmin,rmax,ok){
+      for(var r=rmin;r<=rmax;r++) for(var a=0;a<72;a++){ var an=a/72*6.283, x=(cx+Math.cos(an)*r)|0, y=(cy+Math.sin(an)*r)|0;
+        if(x<3||y<3||x>=M.W-3||y>=M.H-3) continue;
+        if(!GameMap.passable(M,x,y,"sea")||G.tileBlocked(x,y,null)) continue;
+        if(ok&&!ok(x*T+16,y*T+16)) continue;
+        return {x:x*T+16,y:y*T+16}; }
+      return null; };
+    var yardDist=function(pl,x,y){ var d=1e9; pl.buildings.forEach(function(b){ if(!b.dead&&b.def.id==="navalyard") d=Math.min(d,U.dist(x,y,b.x,b.y)/T); }); return d; };
+    var stub=function(id, f, e){ var d=UNITS[id], n=d ? ((d.carrier||0)||(d.helo||0)) : 0;
+      return { def:d, owner:{ faction:f, era:e, units:[] }, deckSlots:function(){ return n; }, wing:function(){ return []; }, deckQ:[], dead:false, x:0, y:0 }; };
+    var plan=function(id, f, e){ var s=stub(id,f,e), out=[]; for(var i=0;i<s.deckSlots();i++) out.push(G.deckAircraftFor(s,i)); return out; };
+    var roles=function(ids){ return ids.map(function(id){ return UNITS[id] ? UNITS[id].role : "?"; }); };
+    var value=function(ids){ return ids.reduce(function(t,id){ return t+(UNITS[id]?UNITS[id].cost:0); },0); };
+    try {
+      /* ---- 1. the plan of every carrier of every army and decade ---- */
+      var ford=plan("carrier_n","nato","e20"), fc=tally(ford);
+      chk("a present-day US carrier's deck plan is two Super Hornets, an F-35C and the MH-60R, the stealth jet no longer a purchase only",
+          ford.length===4 && fc.cfighter_n===2 && fc.cstealth_n===1 && fc.asw_helo_n===1 && !UNITS[ford[0]].hover && !!UNITS[ford[3]].hover,
+          names(ford)+" (c27fdc1: three Super Hornets and the MH-60R)");
+      var PLAN={ fujian:plan("carrier_c","pla","e20"), qe:plan("carrier_b","gbr","e20"), kuz:plan("carrier_p","pact","e20"), cdg:plan("carrier_f","fra","e20") };
+      var jc=tally(PLAN.fujian), qc=tally(PLAN.qe), kc=tally(PLAN.kuz), cc=tally(PLAN.cdg);
+      chk("where the navy has a stealth carrier jet beside its fighter - the Fujian's J-35, flown from her since 2025 - it takes the same spot; the Queen Elizabeth's F-35B is already her whole fighter force, and Russia and France have none",
+          jc.cfighter_c===2 && jc.cstealth_c===1 && PLAN.fujian.length===4 &&
+          qc.cstealth_b===2 && PLAN.qe.length===3 && !qc.cfighter_b &&
+          kc.cfighter_p===2 && !kc.cstealth_p && PLAN.kuz.length===3 &&
+          cc.cfighter_f===2 && !cc.cstealth_f && PLAN.cdg.length===3,
+          "Fujian: "+names(PLAN.fujian)+"; Queen Elizabeth: "+names(PLAN.qe)+"; Kuznetsov: "+names(PLAN.kuz)+"; Charles de Gaulle: "+names(PLAN.cdg));
+      /* every other carrier in the game: no stealth jet on any deck before the 2020s, and no deck of three gains one */
+      var odd=[], hulls=0;
+      Object.keys(FACTIONS).forEach(function(f){ ERAS.forEach(function(e){
+        var id=unitFor(f,"carrier",e); if(!id||!UNITS[id]||!UNITS[id].carrier) return;
+        if(e==="e20") return;                       // the four of today are held above
+        hulls++; var r=roles(plan(id,f,e));
+        if(r.indexOf("cstealth")>=0) odd.push(id+"@"+e+" "+names(plan(id,f,e)));
+        if((e==="e60"||e==="e80"||e==="e90") && f==="nato" && !(r[1]==="cstrike" && r[0]==="cfighter" && r[2]==="cfighter")) odd.push(id+"@"+e+" lost its strike spot"); }); });
+      chk("and every carrier of the 1950s to the 2010s sails as it did: no stealth jet, the American decks of the 1960s-90s still with the A-6 beside their fighters",
+          hulls>=15 && odd.length===0, hulls+" carrier-decades read"+(odd.length?"; "+odd.slice(0,4).join(" | "):""));
+
+      /* ---- 2. the hull as delivered, and what it is worth against its price ---- */
+      P.era="e20"; P.faction="nato";
+      var sP0=sea((P.homeX/T)|0,(P.homeY/T)|0,6,60,function(x,y){ return yardDist(P,x,y)>8; });
+      var cv=sP0 ? G.spawnUnitAt(P,"carrier_n",sP0.x,sP0.y) : null;
+      if (!cv) { chk("a present-day US carrier is made for the deck checks", false, "no open water"); }
+      else {
+        made.push(cv); G.embarkComplement(cv);
+        var wing=cv.wing(); wing.forEach(function(u){ made.push(u); });
+        var wc=tally(wing.map(function(u){ return u.def.id; })), val=value(wing.map(function(u){ return u.def.id; })), price=UNITS.carrier_n.cost;
+        chk("she is delivered with it: two Super Hornets, an F-35C and the MH-60R aboard, on her deck, and nothing left for her commander to ask for",
+            wing.length===4 && wc.cfighter_n===2 && wc.cstealth_n===1 && wc.asw_helo_n===1 &&
+            wing.every(function(u){ return u.padOn===cv && u.parked; }) && G.deckWants(cv)===null,
+            names(wing.map(function(u){ return u.def.id; }))+"; wants "+G.deckWants(cv));
+        /* the complement comes with the hull and is in its price: the free
+           aircraft are worth no more against the hull than they were (6,350
+           against 5,000, 1.27, at c27fdc1) - the Fujian's 6,400 against 4,900
+           was 1.31 */
+        var fj=plan("carrier_c","pla","e20"), fval=value(fj), fprice=UNITS.carrier_c.cost;
+        chk("PRICE: the free complement is worth no more against the hull's price than it was - the Ford 1.27, the Fujian 1.31 at c27fdc1",
+            val/price<=6350/5000+1e-9 && fval/fprice<=6400/4900+1e-9,
+            "Ford "+val+" / "+price+" = "+(val/price).toFixed(3)+" (7,600 / 5,000 = 1.52 unpriced); Fujian "+fval+" / "+fprice+" = "+(fval/fprice).toFixed(3)+" (7,550 / 4,900 = 1.54 unpriced)");
+
+        /* ---- 3. the Growler: bought for the Ford, flown out, landed on her ---- */
+        patch(P,"tech",3); P.oil=Math.max(P.oil,900); P.cash=Math.max(P.cash,60000);
+        if (!P.hasBuilding("lab")) put(P,"lab",4);
+        if (!P.hasBuilding("airbase")) put(P,"airbase",4);
+        var gdef=UNITS.ew_n, hole=wing.filter(function(u){ return u.def.role==="cstealth"; })[0] || wing.filter(function(u){ return !u.def.hover; })[0];
+        hole.dead=true; G.sweepDead();                       // the F-35C is lost: one spot is free
+        var types=G.deckTypesFor(cv), why0=G.deckOrderReason(cv,"ew_n");
+        chk("a present-day US carrier takes the Growler: it is on her list, the AIR tab's own gate lets it through, and her free spot counts as ramp for it",
+            types.indexOf("ew_n")>=0 && why0===null,
+            "takes "+names(types)+"; "+(why0===null?"order allowed":why0));
+        var c1=P.airCapacity(gdef); cv.dead=true; var c0=P.airCapacity(gdef); cv.dead=false;
+        chk("...her four spots are ramp for it, counted like an airbase's pads",
+            c1-c0===cv.deckSlots(), "airCapacity "+c0+" -> "+c1+" with the carrier ("+cv.deckSlots()+" spots)");
+        var dv=G.deckDelivery(cv,gdef), base=dv.from;
+        var gw0=P.units.filter(function(u){ return !u.dead && u.def.id==="ew_n"; }).length;
+        var bt=P.factionTime(gdef), spd=Math.max(CFG.POWER_BROWNOUT_FLOOR, Math.min(1,P.powerRatio()));
+        var ord=G.orderDeckAircraft(cv,"ew_n"), it=cv.deckQ&&cv.deckQ[0];
+        chk("...and it can be BOUGHT for her: the order is accepted, at the AIR tab's price, and she is out of reach of a yard so it is flown out from the airbase",
+            ord===null && !!it && dv.how==="air" && !!base && base.kind==="building" && base.def.pads>0,
+            (ord===null?"accepted":ord)+"; delivery "+dv.how+(dv.from?" from the "+dv.from.def.name:"")+(dv.why?" ("+dv.why+")":""));
+        var t0=G.time, out=null, down=null, gw=null;
+        for (var i=0;i<Math.round((bt/spd+75)/CFG.DT) && down===null;i++){ tick(1);
+          if(!gw){ gw=cv.wing().filter(function(u){ return u.def.id==="ew_n"; })[0]; if(gw){ out=G.time-t0; made.push(gw); } }
+          if(gw && gw.parked && gw.padOn===cv && U.dist(gw.x,gw.y,cv.x,cv.y)<T*2) down=G.time-t0; }
+        chk("...it takes off from the airbase and LANDS on her deck, parked there as her own",
+            down!==null && gw.padOn===cv && gw.parked && gw.deckBought===true,
+            down===null ? "never landed" : "off the strip "+out.toFixed(1)+" s after the order, down on her at "+down.toFixed(1)+" s ("+(U.dist(cv.x,cv.y,base.x,base.y)/T).toFixed(0)+" tiles out; build time "+bt.toFixed(0)+" s)");
+        /* a Growler based elsewhere comes home to her, as to an airbase: findPad */
+        var lone=G.spawnUnitAt(P,"ew_n",cv.x+3*T,cv.y); made.push(lone); lone.padOn=null; lone.parked=false;
+        var spare=cv.wing().filter(function(u){ return u!==gw; })[0]; if(spare) spare.dead=true; G.sweepDead();
+        var fp=G.findPad(lone);
+        chk("a Growler in the air nearer her than any airbase is given HER deck to land on when she has a spot",
+            !!fp && fp.host===cv, fp ? "host "+fp.host.def.name : "no pad at all");
+
+        /* ---- 4. what must NOT go to sea ---- */
+        var EW=Object.keys(UNITS).filter(function(k){ return UNITS[k].role==="ewair"; });
+        var capable=EW.filter(function(k){ return UNITS[k].carrierCapable; }).sort();
+        var want=["ew_n","nato_e00_ewair","nato_e50_ewair","nato_e60_ewair","nato_e90_ewair"].sort();
+        chk("the jammers that are carrier aircraft are the US Navy's alone: the AD-5Q, the two Prowlers and the two Growlers - not the Raven, and no other army's",
+            want.every(function(k){ return capable.indexOf(k)>=0; }) && !UNITS.nato_e80_ewair.carrierCapable &&
+            capable.every(function(k){ return UNITS[k].fac==="nato"; }),
+            capable.join(", ")+" of "+EW.length+" electronic-warfare rows");
+        var refused=[], taken=[], asked=0;
+        [["carrier_c","pla","e20","ew_c"],["carrier_b","gbr","e20","ew_b"],["carrier_f","fra","e20","ew_f"],
+         ["pla_e00_carrier","pla","e00","pla_e00_ewair"],["gbr_e80_carrier","gbr","e80","gbr_e80_ewair"],
+         ["gbr_e90_carrier","gbr","e90","gbr_e80_ewair"],["fra_e80_carrier","fra","e80","fra_e80_ewair"],
+         ["nato_e80_carrier","nato","e80","nato_e80_ewair"],["carrier_p","pact","e20","ew_n"],["carrier_c","pla","e20","ew_n"]].forEach(function(q){
+          if (!UNITS[q[0]] || !UNITS[q[3]]) return;
+          var s=stub(q[0],q[1],q[2]); asked++;
+          /* a deck that lists it has taken it; the reason is asked only of a deck that does not,
+             since a stub has no purse or base for the purchase gates behind that first one */
+          if (G.deckTypesFor(s).indexOf(q[3])>=0) { taken.push(q[3]+" on "+q[0]+"@"+q[2]); return; }
+          var w=G.deckOrderReason(s,q[3]);
+          if (!w || w.indexOf("CANNOT OPERATE")<0) refused.push(q[3]+" on "+q[0]+"@"+q[2]+": "+w); });
+        chk("the EF-111A and every other army's land-based jammer - the Fujian's J-16D, the Airseeker, Archange, the Gabriels, the Nimrod, the Y-8G - are refused on every deck, and the Growler on any army's but her own",
+            asked>=8 && refused.length===0 && taken.length===0, refused.concat(taken).join(" | ")||asked+" decks asked, all refused by name");
+        var us=function(id,e){ return G.deckTypesFor(stub(id,"nato",e)).filter(function(k){ return UNITS[k].role==="ewair"; }); };
+        var u50=us("nato_e50_carrier","e50"), u60=us("nato_e60_carrier","e60"), u80=us("nato_e80_carrier","e80"), u90=us("nato_e90_carrier","e90"), u00=us("nato_e00_carrier","e00"), u20=us("carrier_n","e20");
+        chk("the American decks take the jammer of their decade - the AD-5Q, the Prowler, the Prowler, the Growler, the Growler - and the 1980s deck does not take the Raven, for it was the Air Force's",
+            u50.indexOf("nato_e50_ewair")>=0 && u60.indexOf("nato_e60_ewair")>=0 && u80.indexOf("nato_e80_ewair")<0 && u90.indexOf("nato_e90_ewair")>=0 &&
+            u00.indexOf("nato_e00_ewair")>=0 && u20.indexOf("ew_n")>=0,
+            [["e50",u50],["e60",u60],["e80",u80],["e90",u90],["e00",u00],["e20",u20]].map(function(r){ return r[0]+": "+(names(r[1])||"none"); }).join("; "));
+        /* a real Raven with a real deck at its own decade: no landing on her */
+        P.era="e80";
+        var c80s=sea((P.homeX/T)|0,(P.homeY/T)|0,6,60,function(x,y){ return yardDist(P,x,y)>8 && U.dist(x,y,cv.x,cv.y)>T*6; });
+        var cv80=c80s ? G.spawnUnitAt(P,"nato_e80_carrier",c80s.x,c80s.y) : null;
+        if (cv80) { made.push(cv80);                           // no complement aboard: every spot is free
+          var raven=G.spawnUnitAt(P,"nato_e80_ewair",cv80.x+2*T,cv80.y); made.push(raven); raven.padOn=null; raven.parked=false;
+          var rp=G.findPad(raven);
+          chk("a Raven flying beside an empty 1980s carrier is not given her deck to land on - her spots are for the Navy's aircraft",
+              !rp || rp.host!==cv80, rp ? "host "+rp.host.def.name : "no sea pad (it lands ashore)");
+        } else chk("a Raven flying beside an empty 1980s carrier is not given her deck to land on", false, "no open water");
+        P.era="e20";
+
+        /* ---- 5. the commander refills an emptied F-35C spot with an F-35C ----
+           A US carrier of the commander's own, put first on its list so the
+           pass that serves one ship a turn serves her; the commander is lent
+           the army the F-35C belongs to for the few seconds it takes and gets
+           its own back, with its cash, fuel, tech, queues and anything it
+           made meanwhile. */
+        patch(E,"tech",3); E.cash=60000; E.oil=Math.max(E.oil,900);
+        if (!E.hasBuilding("lab")) put(E,"lab",4);
+        if (!E.hasBuilding("airbase")) put(E,"airbase",4);
+        var eAt=sea((E.homeX/T)|0,(E.homeY/T)|0,6,60,function(x,y){ return yardDist(E,x,y)>8; });
+        E.faction="nato";
+        var ec=eAt ? G.spawnUnitAt(E,"carrier_n",eAt.x,eAt.y) : null;
+        if (!ec) chk("the commander buys the F-35C its carrier lost", false, "no open water for the commander's carrier");
+        else {
+          made.push(ec); G.embarkComplement(ec); ec.wing().forEach(function(u){ made.push(u); });
+          var eHole=ec.wing().filter(function(u){ return u.def.role==="cstealth"; })[0] || ec.wing().filter(function(u){ return !u.def.hover; })[0];
+          eHole.dead=true; G.sweepDead();
+          E.units.splice(E.units.indexOf(ec),1); E.units.unshift(ec);
+          var wantId=G.deckWants(ec), eIt=null, et0=G.time;
+          for (var k=0;k<Math.round(14/CFG.DT) && !eIt;k++){ tick(1); if(ec.deckQ && ec.deckQ.length) eIt=ec.deckQ[0]; }
+          chk("her commander puts an F-35C on order for the emptied spot - what deckWants asks for, through the same gate the player's panel uses - not a Super Hornet",
+              wantId==="cstealth_n" && !!eIt && eIt.id==="cstealth_n" && ec.deckQ.length===1,
+              "deckWants "+nm(wantId)+"; on order "+(eIt?nm(eIt.id)+" ("+E.factionCost(UNITS[eIt.id])+" credits, "+UNITS[eIt.id].oil+" bbl) after "+(G.time-et0).toFixed(1)+" s":"nothing after "+(G.time-et0).toFixed(1)+" s")+
+              " (c27fdc1: the Super Hornet, for there was no F-35C in the plan)");
+          if (ec.deckQ && ec.deckQ.length) while (ec.deckQ.length) G.cancelDeckOrder(ec,0);
+        }
+      }
+    } catch(e) {
+      chk("[93] ran", false, e && e.message ? e.message+" "+String(e.stack||"").split("\n")[0] : String(e));
+    } finally {
+      unpatch();
+      E.faction=efac0; P.era=era0; P.faction=fac0; Game.rng=rng0;
+      made.forEach(function(u){ if(u.wing) u.wing().forEach(function(a){ a.dead=true; }); if(u.deckQ) u.deckQ.length=0; u.dead=true; });
+      P.units.concat(E.units).forEach(function(u){ if(!u.dead && ((u.deckBought && before.indexOf(u)<0) || (u.owner===E && !ePre.has(u)))) u.dead=true; });
+      P.deckLine=null; E.deckLine=null;
+      E.buildings.forEach(function(b){ if(!b.dead && eBld0.indexOf(b)<0 && placed.indexOf(b)<0) placed.push(b); });
+      placed.forEach(function(b){ if(!b.dead){ b.dead=true; Game.removeBuilding(b); } });
+      Game.sweepDead();
+      qSnap.forEach(function(r){ r[0].items.length=0; r[0].items.push.apply(r[0].items,r[1]); });
+      P.cash=cash0; P.oil=oil0; E.cash=ecash0; E.oil=eoil0;
+      back(P.stats,sP); back(E.stats,sE);
+    }
+    chk("the shared match is as it was: its random stream, the era and the army lent to the commander, both purses and queues, both commanders' books, nothing made or placed here left standing",
+        Game.rng===rng0 && P.era===era0 && P.faction===fac0 && E.faction===efac0 && P.cash===cash0 && E.cash===ecash0 &&
+        keep(P.stats)===sP && keep(E.stats)===sE && made.every(function(u){ return u.dead && Game.entities.indexOf(u)<0; }) &&
+        placed.every(function(b){ return b.dead && P.buildings.indexOf(b)<0 && E.buildings.indexOf(b)<0; }) &&
+        E.units.every(function(u){ return ePre.has(u); }),
+        made.length+" units made and removed, "+placed.length+" structures placed and removed");
+  })();
+  }
+
   Game.checkVictory = suiteCheckVictory;
   log("\n==== "+PASS+" passed, "+FAIL+" failed ====");
   /* done: stop the live game loop. --dump-dom waits out the whole virtual-time

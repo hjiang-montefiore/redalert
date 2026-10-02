@@ -660,6 +660,16 @@ function run() {
   P.faction = "nato"; P.era = "e20";
   var dd = Game.spawnUnitAt(P, "destroyer_n", (s1.x - 6) * TT, s1.y * TT);
   var cv = Game.spawnUnitAt(P, "carrier_n", (s1.x + 4) * TT, (s1.y + 4) * TT);
+  /* A hull's first heading is a draw from the shared stream, so how far each of
+     these had to turn to take up the courses D gives them depended on how many
+     machines the sections before had spawned. With the Prowlers and the
+     Growlers on the carriers' decks section C parks five more types, and -
+     measured at b73fa74 - the carrier was left 16 degrees from her course and
+     D, which wants the smaller of the two turns over 17, failed with nothing
+     wrong (133 degrees without those five). Each is laid across her course,
+     so both turn a quarter of a circle whatever was drawn before. */
+  dd.ang = dd.tang = Math.atan2(-9, 8) - Math.PI / 2;
+  cv.ang = cv.tang = Math.atan2(7, -9) - Math.PI / 2;
   [dd, cv].forEach(function (s) {
     Game.embarkComplement(s);
     s.wing().forEach(function (u) { u.stance = "hold"; });
