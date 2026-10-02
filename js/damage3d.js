@@ -117,10 +117,10 @@ var Damage3D = (function () {
   const REAR_ENGINE = { mbt: 1, lighttank: 1, heavy: 1, spaag: 1, tankdestroyer: 1 };
   /* The vehicles that break their role's rule, by unit id (the era rosters
      are ids of their own). Only layouts that are certain are listed; the
-     rest keep the role's. spaag_n is NOT here: rules.js names it a Stryker,
-     but the model drawn for it is a Gepard on the Leopard 1 hull with its
-     engine deck grilles at the back (units3d.js "Engine deck grilles"), and
-     the smoke has to come off the vehicle the player is looking at. */
+     rest keep the role's. spaag_n, the M-SHORAD, is drawn on the Stryker A1
+     hull (js/hero/us_stryker.js) with the engine front right, so it is listed
+     with the other Strykers; the smoke has to come off the vehicle the player
+     is looking at. */
   const ENGINE_AT = {
     /* engine at the back, in a role that usually carries it forward */
     ifv_p: "rear", pact_e90_ifv: "rear", pact_e00_ifv: "rear",        // BMP-3: UTD-29 under the rear floor
@@ -147,6 +147,7 @@ var Damage3D = (function () {
     deu_e60_recon: "rear", recon_g: "rear",                            // Luchs, Fennek
     /* engine forward, in a role that usually carries it at the back */
     lt_n: "front", nato_e00_lighttank: "front", atgmv_n: "front",      // Stryker: the C7 front right, by the driver
+    spaag_n: "front",                                                  // M-SHORAD on the Stryker A1
     lt_b: "front",                                                     // Ajax (ASCOD): power pack front right
     gbr_e60_lighttank: "front", gbr_e80_lighttank: "front",            // CVR(T) Scorpion, Scimitar, Striker:
     gbr_e90_lighttank: "front", gbr_e00_lighttank: "front",            //   the engine front right

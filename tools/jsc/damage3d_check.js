@@ -268,7 +268,7 @@ chk("factory (3x3): four sources, all burning at 20%, every one on the mesh", af
    self-propelled guns whose laid barrel used to drag the source off the bow */
 var odd = [["spg_p", "rear", "2S19 Msta-S on the T-80 hull"], ["spg_n", "front", "M109: engine front right"],
            ["ifv_p", "rear", "BMP-3"], ["recon_p", "rear", "BRDM-2"], ["lt_n", "front", "Stryker MGS"],
-           ["spaag_n", "rear", "the model drawn is a Gepard"]];
+           ["spaag_n", "front", "M-SHORAD on the Stryker A1"]];
 var oddRows = [], oddOk = true;
 for (var o3 = 0; o3 < odd.length; o3++) {
   var uo = unitAt(P, odd[o3][0], land, -4 + o3 * 3, 7);
