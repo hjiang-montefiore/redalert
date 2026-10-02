@@ -1,5 +1,61 @@
-/* ============ nato_e90_mbt.js - HERO reference model: M1A2 Abrams ========
-   Style and period anchor for the e90 (1990s NATO) armour roster.
+/* ============ nato_e90_mbt.js - HERO family: General Dynamics M1 Abrams ====
+   One hull and one turret, five rows, told apart by a variant table. The file
+   keeps its old name because the M1A2 (nato_e90_mbt) is the model every other
+   row grew out of; it now registers all five keys:
+
+     nato_e80_mbt  M1A1 Abrams, 1985      120 mm M256, no CITV. The first
+                                          Abrams with the German-designed gun;
+                                          1980s NATO three-tone paint.
+     nato_e90_mbt  M1A2 Abrams, 1992      + the commander's independent thermal
+                                          viewer (CITV) forward and left of the
+                                          cupola. The model this file began as.
+     nato_e00_mbt  M1A2 SEP, 2001         + the thermal management unit on the
+                                          rear of the turret (the SEP's added
+                                          cooling for its extra electronics).
+     mbt_n         M1A2 SEPv3, 2020       + CROWS-LP, the remote weapon station
+                                          that replaces the .50 on the
+                                          commander's ring.
+     hvy_n         M1A2C with Trophy      + the two Trophy launchers on the
+                                          rear flanks of the turret.
+
+   Each row adds only what the real tank added, and nothing else. Not drawn,
+   because nothing about them shows from outside or no photograph here
+   shows them: the M1A2C's ammunition data link, the under-armour auxiliary
+   power unit in the left rear sponson, the armour packages, the compressor
+   half of the thermal management system (forward of the gunner's sight) and
+   Trophy's four flat radar panels. The SEP is drawn as the 2001 SEP (the .50
+   still on its ring); CROWS comes with the SEPv2 of 2008 and the TUSK kit,
+   neither of which is drawn.
+
+   Sources: Wikimedia Commons photographs "M1A2 SEPv2 Abrams with Trophy
+   launcher mock-ups" (MSPO 2021: side and front views, which place the
+   launchers on the turret rear flanks and show the CITV and CROWS), "M1A2 SEP
+   V3 Abrams" and "Cav. M1A2 SEPv3" (Fort Hood, 2020: CROWS-LP on its riser),
+   "M1A1 Trophy Technology Demonstrator" (the launcher box on the turret rear
+   flank, tubes at its forward end, a large oval cover on its side). Position
+   of the thermal management unit: the program description puts the SEP's air
+   handling unit "in the left side of the turret bustle". Published figures:
+   hull 7.92 m, overall 9.83 m gun forward, width 3.66 m, height 2.44 m, 635 mm
+   track.
+
+   Built to the project's hero conventions: every static part is merged into
+   ONE mesh per material, hull and turret each, so a variant is 11 to 12 draw
+   calls and 6 to 7 materials (the old M1A2 hero was 386 meshes, the parametric
+   rows 173 to 190). The turret is the group named "turret", origin on the ring
+   centre, gun along +X, so it still trains and recoils. The team material is
+   exactly C.team, because era repaints of other armies' rows that borrow these
+   keys look for the team colour to leave it alone. Road wheels do not spin:
+   fourteen wheel groups would cost fourteen draw calls on their own, and the
+   other tank heroes leave them still too.
+
+   The M1A2 row is the same geometry as before, triangle for triangle (8,236),
+   to within a millimetre, bar one tuck: the heavy front skirt sections and the
+   hull-side team plates sit 3 cm further in, so the tank is 3.72 m wide
+   instead of 3.77 m (published 3.66 m). What else changed is the paint (one
+   flat-shaded material for the lofts and the boxes alike) and that the team
+   flash is no longer darkened.
+
+   The notes below are from the original M1A2 pass and still apply.
 
    What has to read at a glance, from the reference photographs:
      - SEVEN road wheels per side, evenly spaced, with the drive sprocket at
@@ -91,6 +147,19 @@ var HeroAbrams = (function () {
     return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   }
 
+  /* ------------------------------------------------------------ variants */
+  /* What each row adds. paint picks the canvas; the rest are switches the
+     turret builder reads. Keep this table honest: a switch is only ever true
+     where the real tank had the feature. */
+  var VARIANTS = {
+    m1a1:  { paint: "nato",   citv: false, tms: false, crows: false, trophy: false },
+    m1a2:  { paint: "desert", citv: true,  tms: false, crows: false, trophy: false },
+    sep:   { paint: "desert", citv: true,  tms: true,  crows: false, trophy: false },
+    sepv3: { paint: "desert", citv: true,  tms: true,  crows: true,  trophy: false },
+    m1a2c: { paint: "desert", citv: true,  tms: true,  crows: true,  trophy: true  }
+  };
+
+
   /* ------------------------------------------------------------ SKIN tex */
   /* One 1024 canvas carries the whole paint job: NATO desert base from the
      armour3d PAINT table, disruptive blotches in that table's secondary
@@ -98,29 +167,33 @@ var HeroAbrams = (function () {
      grime that is heaviest low down and behind the exhaust.
      u = 0 is the hull TAIL on the lofted body, so the exhaust smear is
      painted into the low-u band and lands where the grille actually is.  */
-  var _cv = null;
-  function paintCanvas() {
-    if (_cv) return _cv;
+  var _cv = {};   /* one canvas per paint scheme, built once per page */
+  function paintCanvas(scheme) {
+    if (_cv[scheme]) return _cv[scheme];
     var W = 1024, H = 1024, i, j, x, y, n, q;
     var cv = document.createElement("canvas");
     cv.width = W; cv.height = H;
     var g = cv.getContext("2d");
-    var R = rng(19902);
+    /* "nato" is the 1980s three-tone: dark green with hard-edged brown and
+       black patches. Everything later is plain desert tan. */
+    var nato = (scheme === "nato");
+    var R = rng(nato ? 19851 : 19902);
 
     /* Base coat is PAINT.desert (0xb0a07c) from armour3d.js, pulled down and
        warmed to 0x9c8759. That is deliberate: this renderer runs ACES tone
        mapping under a 1.4 key light and the table value came back off the
        screen as pale cream with no desert in it at all. The darker source
        lands on the value the table is asking for. */
-    g.fillStyle = "#9c8759"; g.fillRect(0, 0, W, H);
+    g.fillStyle = nato ? "#4a5833" : "#9c8759"; g.fillRect(0, 0, W, H);
 
     /* disruptive camouflage */
-    var tones = ["#87764c", "#b09a69", "#7b6c47", "#a89263"];
-    for (i = 0; i < 46; i++) {
-      g.globalAlpha = 0.34 + R() * 0.22;
+    var tones = nato ? ["#66512f", "#2a2d1f", "#566a3a", "#725b37"]
+                     : ["#87764c", "#b09a69", "#7b6c47", "#a89263"];
+    for (i = 0; i < (nato ? 34 : 46); i++) {
+      g.globalAlpha = (nato ? 0.78 : 0.34) + R() * 0.22;
       g.fillStyle = tones[i % tones.length];
       g.beginPath();
-      g.ellipse(R() * W, R() * H, 46 + R() * 130, 30 + R() * 84, R() * 3.1416, 0, 6.2832);
+      g.ellipse(R() * W, R() * H, (nato ? 70 : 46) + R() * 130, (nato ? 46 : 30) + R() * 84, R() * 3.1416, 0, 6.2832);
       g.fill();
     }
     g.globalAlpha = 1;
@@ -204,13 +277,13 @@ var HeroAbrams = (function () {
       g.fillStyle = "rgba(22,20,18,0.20)";
       g.fillRect(R() * W * 0.24, R() * H, 2 + R() * 7, 14 + R() * 80);
     }
-    _cv = cv;
-    return _cv;
+    _cv[scheme] = cv;
+    return cv;
   }
 
-  function skinTex(THREE, rx, ry) {
+  function skinTex(THREE, scheme, rx, ry) {
     try {
-      var t = new THREE.CanvasTexture(paintCanvas());
+      var t = new THREE.CanvasTexture(paintCanvas(scheme));
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
       t.anisotropy = 8;
@@ -219,49 +292,50 @@ var HeroAbrams = (function () {
     } catch (e) { return null; }
   }
 
+
   /* ---------------------------------------------------------- materials */
-  function makeMats(THREE, C) {
-    var M3 = {};
-    /* tier 1 SKIN - painted surface, textured */
-    function paint(rx, ry) {
-      var m = new THREE.MeshStandardMaterial(
-        { color: 0xffffff, roughness: 0.90, metalness: 0.05 });
-      var t = skinTex(THREE, rx, ry);
-      if (t) m.map = t; else m.color.setHex(0xb0a07c);
-      return m;
-    }
-    M3.skin  = paint(1, 1);       /* small painted panels that want smoothing */
-    /* The lofted hull and turret take a flat-shaded copy of the same paint.
-       Averaged normals turned the squared-off sections back into a soft cast
-       dome the moment the corner chamfers were shaded smooth - which is the
-       "rounded blob" this project keeps producing. Flat shading is what makes
-       a chamfer read as a plate edge, and an Abrams is nothing but plates. */
-    M3.skinL = paint(1, 1); M3.skinL.flatShading = true;
-    M3.skinS = paint(0.34, 0.34); /* small painted fittings, zoomed in      */
+  /* The house three tiers: SKIN (the textured paint), METAL (fittings, gun,
+     running gear, rubber) and GLASS, plus the team flash. The build ends by
+     merging every mesh that shares a material, so a variant costs one draw
+     call per material for the hull and again for the turret. skinS is not a
+     material of its own: it stands for the same paint zoomed in three times,
+     and the merge folds it into skin by scaling the UVs of the parts that
+     asked for it. The lofted bodies and the boxes share one flat-shaded
+     paint: averaged normals turned the squared-off sections back into a soft
+     cast dome, and an Abrams is nothing but plates. */
+  function makeMats(THREE, C, V) {
+    var T = {};
+    var tex = skinTex(THREE, V.paint, 1, 1);
+    T.skin = new THREE.MeshStandardMaterial(
+      { color: 0xffffff, roughness: 0.90, metalness: 0.05, flatShading: true });
+    if (tex) T.skin.map = tex; else T.skin.color.setHex(V.paint === "nato" ? 0x4a5636 : 0xb0a07c);
+    T.skinL = T.skin;
+    T.skinS = T.skin.clone();
+    T.skinS.userData = { into: T.skin, uvs: 0.34 };
 
-    /* tier 2 METAL - fittings, gun, undercarriage; no texture */
-    M3.metal = new THREE.MeshStandardMaterial(
+    T.metal = new THREE.MeshStandardMaterial(
       { color: 0x5d6165, roughness: 0.55, metalness: 0.50 });
-    M3.dark  = new THREE.MeshStandardMaterial(
+    T.dark  = new THREE.MeshStandardMaterial(
       { color: 0x3a3d40, roughness: 0.60, metalness: 0.45 });
-    /* rubber and track pads count as METAL, matt and non-metallic */
-    M3.rub   = new THREE.MeshStandardMaterial(
+    /* rubber and track pads: matt and non-metallic */
+    T.rub   = new THREE.MeshStandardMaterial(
       { color: 0x1b1d1e, roughness: 0.95, metalness: 0.04 });
-
-    /* tier 3 GLASS - vision blocks, periscopes, sight windows */
-    M3.glass = new THREE.MeshPhysicalMaterial({
+    T.glass = new THREE.MeshStandardMaterial({
       color: 0x2b3a44, roughness: 0.10, metalness: 0.10,
       transparent: true, opacity: 0.84 });
 
-    /* Team flash: painted, so it stays inside the SKIN tier. The colour is
-       C.team as handed in, taken down in value first - at full value the key
-       light plus ACES burnt a mid blue out to near white and ownership stopped
-       reading at map zoom. Darkening keeps the hue and gets it back. */
-    M3.team = new THREE.MeshStandardMaterial(
+    /* Team flash: exactly C.team as handed in. Era repaints of other armies'
+       rows that borrow these keys test for the team colour to leave it be,
+       and a darkened copy would be repainted with the rest of the hull. */
+    T.team = new THREE.MeshStandardMaterial(
       { color: (C && C.team) || 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
-    M3.team.color.multiplyScalar(0.62);
-    return M3;
+
+    /* the Trophy launchers: olive drab, as on the photographed mock-ups */
+    if (V.trophy)
+      T.olive = new THREE.MeshStandardMaterial({ color: 0x4d5a38, roughness: 0.88, metalness: 0.06 });
+    return T;
   }
+
 
   /* ------------------------------------------------------- lofted bodies */
   /* M.loft emits its quads wound (a, c, b) which, for the section walk it
@@ -317,6 +391,24 @@ var HeroAbrams = (function () {
     p.add(c);
     return c;
   }
+
+
+  /* An XZ outline extruded across the vehicle and centred on y = yc: for
+     boxes with a sloped face. No bevel, so the edges stay hard. */
+  function prism(THREE, p, pts, depth, m, yc) {
+    var sh = new THREE.Shape(), i;
+    sh.moveTo(pts[0][0], pts[0][1]);
+    for (i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
+    sh.closePath();
+    var geo = new THREE.ExtrudeGeometry(sh, { depth: depth, bevelEnabled: false, steps: 1 });
+    geo.rotateX(Math.PI / 2);          /* shape y -> world z; the depth runs toward -y */
+    geo.computeVertexNormals();
+    var b = new THREE.Mesh(geo, m);
+    b.position.set(0, yc + depth / 2, 0);
+    p.add(b);
+    return b;
+  }
+
 
   /* ============================================================== HULL   */
   function buildHull(THREE, M, g, T) {
@@ -524,17 +616,20 @@ var HeroAbrams = (function () {
       var hp = [[1.26, SK_BOT - 0.06], [3.26, 0.28], [3.48, 0.58],
                 [3.48, 0.82], [1.26, SK_TOP]];
       var hm = new THREE.Mesh(M.slab(THREE, hp, SK_TH * 1.5, "xz"), T.skinS);
-      hm.position.y = s > 0 ? SK_Y + SK_TH * 1.5 : -SK_Y;
+      /* 0.03 m inboard of where it first sat, so the hull is 3.68 m over the
+         skirts, the published 3.66 m, and not 3.74 m */
+      hm.position.y = s > 0 ? SK_Y + SK_TH * 1.5 - 0.03 : -SK_Y + 0.03;
       g.add(hm);
     }
   }
 
+
   /* =========================================================== TURRET    */
-  function buildTurret(THREE, M, T) {
+  function buildTurret(THREE, M, T, V) {
     var t = new THREE.Group();
     t.name = "turret";                 /* the renderer rotates this by name */
     t.position.set(TUR.x, 0, TUR.z);
-    var i, s;
+    var i, j, s;
 
     /* The faceted body. Stations again as (x, halfWidth, top, bottom): the
        plan view sweeps out from the mantlet to the widest point behind the
@@ -574,12 +669,15 @@ var HeroAbrams = (function () {
     /* the gun travel lock folded on the glacis is a hull part, not here */
 
     /* ---- the M1A2 tell: commander's independent thermal viewer, standing
-       proud of the roof on its pedestal, forward and LEFT of the cupola --- */
-    post(THREE, t, 0.16, 0.19, 0.22, 12, T.metal, 0.52, 0.46, 1.05);
-    box(THREE, t, 0.40, 0.36, 0.34, T.skinS, 0.52, 0.46, 1.33);
-    box(THREE, t, 0.07, 0.30, 0.22, T.dark,   0.73, 0.46, 1.34);
-    box(THREE, t, 0.03, 0.24, 0.17, T.glass,  0.77, 0.46, 1.34);
-    box(THREE, t, 0.46, 0.40, 0.05, T.skinS,  0.53, 0.46, 1.52);   /* sun hood */
+       proud of the roof on its pedestal, forward and LEFT of the cupola.
+       The M1A1 has bare roof here. ---- */
+    if (V.citv) {
+      post(THREE, t, 0.16, 0.19, 0.22, 12, T.metal, 0.52, 0.46, 1.05);
+      box(THREE, t, 0.40, 0.36, 0.34, T.skinS, 0.52, 0.46, 1.33);
+      box(THREE, t, 0.07, 0.30, 0.22, T.dark,   0.73, 0.46, 1.34);
+      box(THREE, t, 0.03, 0.24, 0.17, T.glass,  0.77, 0.46, 1.34);
+      box(THREE, t, 0.46, 0.40, 0.05, T.skinS,  0.53, 0.46, 1.52);   /* sun hood */
+    }
 
     /* ---- gunner's primary sight, armoured hood on the roof front right - */
     box(THREE, t, 0.52, 0.46, 0.30, T.skinS, 0.92, -0.52, 1.09);
@@ -588,7 +686,7 @@ var HeroAbrams = (function () {
     /* the gunner's auxiliary sight port beside it */
     box(THREE, t, 0.18, 0.16, 0.14, T.dark,  1.34, -0.16, 1.00);
 
-    /* ---- commander's cupola, right of the centreline, with the M2 ------ */
+    /* ---- commander's cupola, right of the centreline ------------------- */
     var cx = -0.30, cy = -0.74;
     post(THREE, t, 0.50, 0.50, 0.20, 16, T.skinS, cx, cy, 1.03);
     post(THREE, t, 0.40, 0.40, 0.09, 12, T.skinS, cx, cy, 1.17);
@@ -597,12 +695,25 @@ var HeroAbrams = (function () {
       box(THREE, t, 0.16, 0.13, 0.11, T.glass,
           cx + Math.cos(a) * 0.47, cy + Math.sin(a) * 0.47, 1.05, -a);
     }
-    /* the .50 cal on its ring mount */
-    box(THREE, t, 0.14, 0.14, 0.24, T.metal, cx + 0.30, cy, 1.32);
-    box(THREE, t, 0.62, 0.14, 0.16, T.metal, cx + 0.46, cy, 1.46);
-    tube(THREE, t, 0.045, 0.045, 0.80, 8, T.metal, cx + 1.10, cy, 1.47);
-    box(THREE, t, 0.20, 0.26, 0.22, T.dark,   cx + 0.20, cy - 0.16, 1.40);
-    box(THREE, t, 0.34, 0.06, 0.30, T.metal,  cx + 0.62, cy + 0.14, 1.52);
+    if (V.crows) {
+      /* CROWS-LP: the .50 and its day and thermal sensors in an armoured
+         head on a short riser, fired from under armour. It replaces the
+         ring-mounted M2 below. */
+      box(THREE, t, 0.44, 0.44, 0.22, T.skinS, cx, cy, 1.31);                /* riser over the ring  */
+      box(THREE, t, 0.60, 0.38, 0.28, T.skinS, cx + 0.04, cy, 1.53);         /* head                 */
+      box(THREE, t, 0.20, 0.28, 0.20, T.dark,  cx + 0.30, cy - 0.10, 1.53);  /* sensor housing       */
+      box(THREE, t, 0.03, 0.22, 0.14, T.glass, cx + 0.405, cy - 0.10, 1.53); /* its window           */
+      box(THREE, t, 0.46, 0.12, 0.14, T.metal, cx + 0.34, cy + 0.12, 1.62);  /* M2 receiver          */
+      tube(THREE, t, 0.036, 0.036, 0.78, 8, T.metal, cx + 0.80, cy + 0.12, 1.62);   /* barrel         */
+      box(THREE, t, 0.26, 0.16, 0.18, T.dark,  cx - 0.06, cy + 0.27, 1.52);  /* ammunition box       */
+    } else {
+      /* the .50 cal on its ring mount */
+      box(THREE, t, 0.14, 0.14, 0.24, T.metal, cx + 0.30, cy, 1.32);
+      box(THREE, t, 0.62, 0.14, 0.16, T.metal, cx + 0.46, cy, 1.46);
+      tube(THREE, t, 0.045, 0.045, 0.80, 8, T.metal, cx + 1.10, cy, 1.47);
+      box(THREE, t, 0.20, 0.26, 0.22, T.dark,   cx + 0.20, cy - 0.16, 1.40);
+      box(THREE, t, 0.34, 0.06, 0.30, T.metal,  cx + 0.62, cy + 0.14, 1.52);
+    }
 
     /* ---- loader's hatch and skate-mounted M240, left of the centreline - */
     var lx = -0.18, ly = 0.76;
@@ -631,8 +742,10 @@ var HeroAbrams = (function () {
       box(THREE, t, 0.05, 0.05, 0.64, T.metal, -3.02, s * 1.14, 0.56);
       box(THREE, t, 0.45, 0.05, 0.05, T.metal, -2.83, s * 1.25, 0.87);
       box(THREE, t, 0.45, 0.05, 0.05, T.metal, -2.83, s * 1.25, 0.28);
-      /* side stowage box carried on the turret flank */
-      box(THREE, t, 1.30, 0.24, 0.44, T.skinS, -1.10, s * 1.71, 0.60);
+      /* side stowage box carried on the turret flank (the Trophy launchers
+         take this place on the M1A2C) */
+      if (!V.trophy)
+        box(THREE, t, 1.30, 0.24, 0.44, T.skinS, -1.10, s * 1.71, 0.60);
     }
     for (i = 0; i < 3; i++)
       box(THREE, t, 0.05, 2.42, 0.05, T.metal, -3.02, 0, 0.30 + i * 0.29);
@@ -652,46 +765,153 @@ var HeroAbrams = (function () {
     post(THREE, t, 0.030, 0.030, 0.44, 6, T.metal, -1.10, 0, 1.16);
     box(THREE, t, 0.22, 0.12, 0.10, T.dark, -1.10, 0, 1.42);
 
+    /* ---- the SEP's thermal management unit. Its air handling unit is
+       mounted in the left side of the turret bustle, so the part that shows
+       is drawn as a louvred casing on the roof at the left rear corner of the
+       bustle, grille to the rear. The SEP added computers and a second
+       generation thermal imager, and this is the cooling that came with them. */
+    if (V.tms) {
+      box(THREE, t, 0.50, 0.74, 0.28, T.skinS, -2.35, 0.73, 1.07);
+      box(THREE, t, 0.40, 0.60, 0.03, T.dark,  -2.33, 0.73, 1.225);        /* top grille   */
+      for (i = 0; i < 3; i++)
+        box(THREE, t, 0.035, 0.58, 0.03, T.metal, -2.45 + i * 0.10, 0.73, 1.245);
+      box(THREE, t, 0.03, 0.62, 0.18, T.dark,  -2.61, 0.73, 1.07);         /* rear grille  */
+    }
+
+    /* ---- Trophy: a launcher box on each rear flank of the turret, tall at
+       the back and sloping down to the front, with a large oval cover on its
+       outer side and a block of countermeasure tubes pointing outboard at its
+       forward end. Placed from the photographs of the Abrams launcher
+       mock-ups and of the M1A1 demonstrator; the radar panels are not drawn. */
+    if (V.trophy) {
+      for (s = -1; s <= 1; s += 2) {
+        var ly0 = s * 1.68;
+        prism(THREE, t, [[-2.58, 0.44], [-1.12, 0.44], [-1.08, 0.64],
+                         [-1.34, 0.94], [-2.58, 1.08]], 0.40, T.olive, ly0);
+        var cov = wheelCyl(THREE, t, 0.17, 0.05, 14, T.dark, -2.05, s * 1.905, 0.72);
+        cov.scale.x = 1.8;                                                      /* oval access cover */
+        for (i = 0; i < 3; i++)
+          for (j = 0; j < 3; j++)
+            wheelCyl(THREE, t, 0.04, 0.09, 6, T.dark, -1.26 - i * 0.12, s * 1.90, 0.58 + j * 0.12);
+        box(THREE, t, 0.46, 0.22, 0.03, T.team, -1.95, ly0, 1.025, 0.112);     /* team flash on top */
+      }
+    }
+
     /* ---- team flashes, so ownership reads on a busy map ---- */
     for (s = -1; s <= 1; s += 2) {
       box(THREE, t, 0.62, 0.05, 0.17, T.team, -0.30, s * 1.69, 0.74);
-      box(THREE, t, 0.46, 0.05, 0.15, T.team, -1.10, s * 1.84, 0.60);
+      if (!V.trophy)
+        box(THREE, t, 0.46, 0.05, 0.15, T.team, -1.10, s * 1.835, 0.60);
     }
     box(THREE, t, 0.07, 0.74, 0.17, T.team, -2.60, 0, 0.74);
     return t;
   }
 
+  /* ===================================================== merge by material */
+  /* Each mesh costs a draw call, and one more for the shadow pass, per tank
+     on screen: everything that shares a material becomes one geometry. The
+     turret keeps a group of its own (the renderer trains and recoils it by
+     name), merged on its own in turret-local space. Parts that were given
+     skinS fold into skin with their UVs scaled by the factor on the alias. */
+  function mergeByMaterial(THREE, root) {
+    var hullB = { order: [], by: {} }, turB = { order: [], by: {} }, tur = null;
+    function take(bucket, c, m) {
+      var mat = c.material, ud = mat.userData || {};
+      var tgt = ud.into || mat, us = ud.uvs || 1, key = tgt.uuid;
+      if (!bucket.by[key]) { bucket.by[key] = { mat: tgt, parts: [] }; bucket.order.push(key); }
+      var geo = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+      geo.applyMatrix4(m);
+      if (us !== 1 && geo.attributes.uv) {
+        var u = geo.attributes.uv.array;
+        for (var i = 0; i < u.length; i++) u[i] *= us;
+      }
+      bucket.by[key].parts.push(geo);
+    }
+    function walk(node, pm, bucket) {
+      for (var i = 0; i < node.children.length; i++) {
+        var c = node.children[i];
+        c.updateMatrix();
+        if (c.isMesh) take(bucket, c, pm.clone().multiply(c.matrix));
+        else if (c.name === "turret") { tur = c; walk(c, new THREE.Matrix4(), turB); }
+        else walk(c, pm.clone().multiply(c.matrix), bucket);
+      }
+    }
+    walk(root, new THREE.Matrix4(), hullB);
+
+    function emit(bucket, into) {
+      for (var i = 0; i < bucket.order.length; i++) {
+        var e = bucket.by[bucket.order[i]], n = 0, k, o = 0;
+        for (k = 0; k < e.parts.length; k++) n += e.parts[k].attributes.position.count;
+        var P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2);
+        for (k = 0; k < e.parts.length; k++) {
+          var at = e.parts[k].attributes;
+          P.set(at.position.array, o * 3);
+          N.set(at.normal.array, o * 3);
+          if (at.uv) U.set(at.uv.array, o * 2);
+          o += at.position.count;
+        }
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
+        geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
+        geo.setAttribute("uv", new THREE.BufferAttribute(U, 2));
+        into.add(new THREE.Mesh(geo, e.mat));
+      }
+    }
+    var res = new THREE.Group();
+    emit(hullB, res);
+    var tg = new THREE.Group();
+    tg.name = "turret";
+    tg.position.copy(tur.position);
+    emit(turB, tg);
+    res.add(tg);
+    return res;
+  }
+
   /* ============================================================ BUILD    */
-  function build(THREE, M, C) {
+  function build(THREE, M, C, which) {
+    var V = VARIANTS[which] || VARIANTS.m1a2;
     var g = new THREE.Group();
-    var T = makeMats(THREE, C);
+    var T = makeMats(THREE, C, V);
 
     buildHull(THREE, M, g, T);
     buildRunningGear(THREE, g, T);
     buildSkirts(THREE, M, g, T);
-    g.add(buildTurret(THREE, M, T));
+    g.add(buildTurret(THREE, M, T, V));
 
     /* hull team flashes: front and rear so the owner reads from any bearing */
     var s;
     for (s = -1; s <= 1; s += 2) {
-      box(THREE, g, 0.62, 0.05, 0.17, T.team, 2.55, s * 1.86, 0.72);
+      box(THREE, g, 0.62, 0.05, 0.17, T.team, 2.55, s * 1.835, 0.72);   /* half sunk in the front skirt */
       box(THREE, g, 0.48, 0.05, 0.15, T.team, -3.05, s * 1.76, 1.30);
     }
     box(THREE, g, 0.06, 0.62, 0.15, T.team, X_TAIL - 0.02, 0, 1.40);
 
-    g.traverse(function (o) {
+    var out = mergeByMaterial(THREE, g);
+    out.traverse(function (o) {
       if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
     });
-    return g;
+    return out;
   }
 
-  return { build: build };
+  return { build: build, variants: VARIANTS };
 })();
 
 /* Registration. Overwrite unconditionally: a hero model is meant to replace
-   whatever parametric version already claimed this id.
-   len is the model's real overall extent, gun forward: 9.77 m.            */
-UNIT_MODELS["nato_e90_mbt"] = {
-  len: 9.77,
-  build: function (THREE, M, C) { return HeroAbrams.build(THREE, M, C); }
-};
+   whatever parametric version already claimed these ids. All five rows draw
+   the one hull; len is the real overall extent, gun forward (measured: 9.77 m,
+   the same for every variant, because nothing a row adds reaches past it). */
+(function () {
+  var rows = [
+    ["nato_e80_mbt", "m1a1"],     /* M1A1 Abrams                */
+    ["nato_e90_mbt", "m1a2"],     /* M1A2 Abrams                */
+    ["nato_e00_mbt", "sep"],      /* M1A2 SEP                   */
+    ["mbt_n",        "sepv3"],    /* M1A2 SEPv3                 */
+    ["hvy_n",        "m1a2c"]     /* M1A2C with Trophy          */
+  ];
+  rows.forEach(function (r) {
+    UNIT_MODELS[r[0]] = {
+      len: 9.77,
+      build: function (THREE, M, C) { return HeroAbrams.build(THREE, M, C, r[1]); }
+    };
+  });
+})();
