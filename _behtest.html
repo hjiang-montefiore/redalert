@@ -6862,6 +6862,19 @@ try{
     var gp=patch("ground",30,22), sp=patch("sea",24,16);
     if(!gp||!sp){ chk("open ground and open water for the group test", false, "ground "+!!gp+" sea "+!!sp); return; }
     E.team=P.team;
+    /* ON AN RNG OF ITS OWN, as [80] to [91] are. Every unit's repath clock is
+       drawn on the shared Game.rng (entities.js stepAlong, 2.2 + rng x 0.8),
+       so what the crowd below did hung on how many draws every section before
+       it had made. MEASURED at f9ef2ee, this section run alone with the shared
+       stream advanced by 14 draws: "re-handed the same point every 1.6 s"
+       failed - 208 px moved, 33 unit-samples back on the order - with the
+       engine untouched; and the stand-off change of [91], which flies the
+       B-52 of [42] on a different circle, moved the draws ahead of it so that
+       the whole half failed it the same way (651 px, 80 samples). Seeded here
+       it measures the crowd and not the match; the shared stream is handed
+       back in the finally. */
+    var rng64=Game.rng, s64=64;
+    Game.rng=function(){ s64=(s64*16807)%2147483647; return (s64-1)/2147483646; };
     try {
       /* ---- 1. the player's attack-move, twelve tanks ---- */
       var tanks=block("mbt_n",12,gp.x+2,gp.y+6,1.5), gx=(gp.x+22)*T+16, gy=(gp.y+11)*T+16;
@@ -7012,7 +7025,7 @@ try{
           rank.length===4 && swapped===0, swapped+" of "+rank.length+" swapped for a neighbour");
       clear();
     } finally {
-      E.team=team1; clear();
+      E.team=team1; Game.rng=rng64; clear();
       Render.cam.z=cam0.z; Render.setCam(cam0.x,cam0.y);
       UI.input.attackMove=false;
     }
@@ -12786,6 +12799,468 @@ try{
         placed.every(function(b){ return b.dead && P.buildings.indexOf(b)<0 && E.buildings.indexOf(b)<0; }) &&
         E.units.every(function(u){ return ePre.has(u); }),
         made.length+" units made and removed, "+placed.length+" structures placed and removed");
+  })();
+  }
+
+  /* ====== [91] A STAND-OFF BOMBER SHOOTS FROM OUTSIDE THE RINGS ======
+     (owner) "b52H should shoot missle far away instead of bomb under the sam
+     range." At f9ef2ee, in this section's own first scene, a present-day
+     B-52H ordered onto a radar three tiles from a SAM Site its side had seen
+     fired three JASSMs, came to 9.2 tiles of a battery that reaches 14.0,
+     spent 18.8 s inside its ring and was shot down 24.1 s after the order;
+     with the battery between it and the target it came to 2.2 tiles and was
+     down at 26.6 s; and a jsc probe of the e00, e90 and e80 marks on the same
+     kind of target had them dead at 13.0, 22.4 and 17.5 s. A commanded attack
+     skipped every ring its side knew of, the shooter flew straight at the
+     target until it was inside 1.06 x its hold and overshot the turn, and
+     the hold itself was flown at 0.85 of what orbitAround() was handed.
+     Held here, each scene on open ground of its own far from both bases, the
+     units that could reach into it standing off the board while it plays
+     (aside(), at the head of the suite):
+       - the row: the present-day B-52H carries the AGM-158B JASSM-ER at 22.7
+         tiles, the JASSM's 15.0 x (926 / 370.4) ^ 0.45, and the older marks
+         keep their rounds;
+       - ordered onto that radar under a SAM Site on ground its side has
+         explored - which the player's map goes on drawing - with nothing of
+         ours in sight of it, it shoots every round from outside the
+         battery's planning ring and is never inside it, nor inside the
+         battery's real reach;
+       - with the battery standing between it and the target it goes ROUND
+         the ring to a launch circle on the far side and shoots from there;
+       - a battery on ground our side has never looked at is not on its
+         chart: it flies the circle it would fly with no battery there - and
+         when the battery fires, the shot gives it away (G.revealFire) and it
+         is outside the ring again within seconds and works from there;
+       - a LAUNCHER - an S-400 TEL a scout of ours watched for three seconds
+         and then left - stays on its chart where it was seen, the whole
+         attack, and the bomber never comes inside its ring. The first cut
+         dropped a vehicle off the chart the moment it was out of sight:
+         measured here, on the chart for 2.5 s of 120, in to 5.3 tiles of the
+         TEL and 22.3 s inside its ring; 94a0345 had no chart and came to
+         1.7 tiles, 56.3 s inside;
+       - a move, and an attack-move, whose straight line runs over a SAM Site
+         it knows of go ROUND the ring, and a move to a point 25 tiles beside
+         one is not held short but goes there and holds on a circle clear of
+         it. Measured here on the first cut: the move straight over the
+         battery, 0.1 tiles, 7.5 s inside, three rounds at it (94a0345 the
+         same, and its attack-move to 3.2 tiles, eight rounds); the point 25
+         tiles off held short with the alert 39 tiles from it, where
+         94a0345's Buff, loitering at the point, strayed to 12.3 tiles of the
+         battery and took eight rounds;
+       - a radar inside four SAM Sites, which no launch circle within its
+         round's reach clears, holds it short with the alert, no round fired
+         and never inside a ring; aggressive stance (F) still takes it in;
+       - the commander is held to the same rule: of two tanks it holds tracks
+         on, it names for its bomber the one outside our battery's ring though
+         the other is nearer, and names the nearer once the battery is gone;
+         and its bomber ordered onto a structure under our battery drops the
+         order instead of flying in;
+       - and what the rule is not about is as it was: a Weasel's HARM is
+         still fired from inside the ring of the battery it attacks, and a
+         B-52D still flies over its target to bomb it.
+     On a private RNG; the fog, the alert line and every unit and structure
+     made here are handed back. */
+  if (inHalf(2)) {
+  log("\n[91] A STAND-OFF BOMBER SHOOTS FROM OUTSIDE THE RINGS ITS SIDE KNOWS, AND HOLDS SHORT WHEN IT CANNOT");
+  (function(){
+    var M=Game.map, T=CFG.TILE, DT=CFG.DT, made=[], blds=[], rng=Game.rng, side=null;
+    var fog0=Game.fogEnabled, fogCopy=Game.fog.slice(), al0=Game.alert, alerts=[];
+    /* what the commander had standing before: it puts up guns beside the
+       structures this section gives it, and they go when the section does */
+    var eB0=new Set(E.buildings), pB0=new Set(P.buildings), spots=[];
+    var seed=91;
+    Game.rng=function(){ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; };
+    Game.alert=function(m){ alerts.push(String(m)); };
+    function isLand(x,y){ return x>3&&y>3&&x<M.W-4&&y<M.H-4 && GameMap.passable(M,x,y,"ground") && !Game.tileBlocked(x,y,null); }
+    function clear(x,y){ for(var i=-1;i<3;i++) for(var j=-1;j<3;j++) if(!isLand(x+i,y+j)) return false; return true; }
+    function spot(x0,y0){ for(var r=0;r<10;r++) for(var a=0;a<32;a++){
+      var x=Math.round(x0+Math.cos(a/32*6.283)*r), y=Math.round(y0+Math.sin(a/32*6.283)*r); if(clear(x,y)) return {x:x,y:y}; } return null; }
+    function bld(pl,id,at){ var b=at?Game.placeBuilding(pl,id,at.x,at.y,true):null; if(b){ b.buildProgress=1; blds.push(b); } return b; }
+    function mk(pl,id,x,y){ var u=UNITS[id]?Game.spawnUnitAt(pl,id,x,y):null; if(u) made.push(u); return u; }
+    function off(list){ list.forEach(function(e){ if(e && !e.dead){ e.dead=true; if(e.kind==="building") Game.removeBuilding(e); } }); Game.sweepDead(); }
+    /* open land, 26 tiles clear of every map edge so a launch circle fits,
+       45 from both bases and 30 from every structure any side has */
+    function ground(){
+      for (var y=27;y<=M.H-28;y+=3) for (var x=27;x<=M.W-28;x+=3){
+        if (spots.some(function(q){ return U.dist(q.x,q.y,x,y)<40; })) continue;
+        if (!clear(x,y)) continue;
+        if (U.dist(x*T,y*T,P.homeX,P.homeY)<45*T || U.dist(x*T,y*T,E.homeX,E.homeY)<45*T) continue;
+        if (Game.entities.some(function(e){ return !e.dead && e.kind==="building" && U.dist(e.x,e.y,x*T,y*T)<30*T; })) continue;
+        var n=0; for (var a=0;a<8;a++) if (spot(x+Math.cos(a/8*6.283)*6, y+Math.sin(a/8*6.283)*6)) n++;
+        if (n>=7){ spots.push({ x:x, y:y }); return { x:x, y:y }; }
+      }
+      return null;
+    }
+    /* the battery has to be on the air to shoot: power for the commander's
+       whole grid, as [36] gives its own, so a brown-out cannot quietly
+       stand in for the rule */
+    function powerUp(pl, at){
+      for (var i=0;i<12 && pl.powerRatio()<1.4;i++){ var pb=bld(pl, "power", spot(at.x-12+i*3, at.y+(uy<0?12:-12))); if (!pb) break; }
+    }
+    var g=ground();
+    if (!g){ chk("[91] open ground for the scenes", false, "none"); Game.rng=rng; Game.alert=al0; return; }
+    /* the bomber comes in from 45 tiles off, from whichever side has room */
+    var ux=0, uy=(g.y>=55 ? -1 : 1);
+    function scene(samOff, nSam, eid){
+      var s={ sams:[], tgt:null, pw:[] };
+      s.tgt=bld(E, "radar", spot(g.x, g.y)); if (s.tgt) s.tgt.hp=s.tgt.maxHp=1e6;
+      var at=[];
+      if (nSam===4) at=[[0,-5],[5,0],[0,5],[-5,0]];
+      else at=[[samOff[0], samOff[1]]];
+      at.forEach(function(o){ var sm=bld(eid||E, "sam", spot(g.x+o[0], g.y+o[1])); if(sm){ sm.hp=sm.maxHp=1e6; s.sams.push(sm); } });
+      powerUp(eid||E, g);
+      return s;
+    }
+    function bomber(id, owner, hp){
+      var b=mk(owner||P, id, g.x*T+16+ux*45*T, g.y*T+16+uy*45*T);
+      if (!b) return null;
+      b.parked=false; b.order={ type:"idle" }; b.fuel=b.fuelMax; b.ammo=b.ammoMax; b.ang=Math.atan2(-uy,-ux);
+      if (hp) b.hp=b.maxHp=hp;
+      return b;
+    }
+    /* fly a scene: where it went, where it shot from, who shot at it */
+    function ringAt(R, e){ for (var i=0;i<R.length;i+=3) if (Math.abs(R[i]-e.x)<2 && Math.abs(R[i+1]-e.y)<2) return true; return false; }
+    /* a ring within a tile and a half of e: a launcher's entry is where it
+       was SEEN, which a TEL that has shuffled since need not be exactly */
+    function ringNear(R, e){ for (var i=0;i<R.length;i+=3) if (U.dist(R[i],R[i+1],e.x,e.y)<1.5*T) return true; return false; }
+    function open(b, s){ side=aside(made, function(){ return s.sams.concat([s.tgt, b]); }, function(){ return true; }, 4); side.sweep(); }
+    function fly(b, s, secs, until){
+      var st={ shots:[], minS:1e9, minT:1e9, inRing:0, inReach:0, hitBy:0, hp0:b.hp, hp1:b.hp, dead:false, t:0, plan:{} };
+      var ring=Game.airDefenceReach(s.sams[0].def)*1.25;
+      st.ring=ring; st.reach=0;
+      (s.sams[0].def.weapons||[]).forEach(function(k){ var w=WEAPONS[k];
+        if (w && w.tgt && w.tgt.air) st.reach=Math.max(st.reach, s.sams[0].weaponRange(w)/T); });
+      if (!side) open(b, s);
+      for (var k=0;k<Math.round(secs/DT);k++){
+        side.sweep(); Game.tick(DT); st.t+=DT;
+        s.tgt.hp=s.tgt.maxHp; s.sams.forEach(function(x){ x.hp=x.maxHp; });
+        if (b.dead){ st.dead=true; break; }
+        b.fuel=b.fuelMax;
+        var dS=1e9; s.sams.forEach(function(x){ var d=U.dist(b.x,b.y,x.x,x.y)/T; if (d<dS) dS=d; });
+        var dT=U.dist(b.x,b.y,s.tgt.x,s.tgt.y)/T;
+        if (dS<st.minS) st.minS=dS; if (dT<st.minT) st.minT=dT;
+        if (dS<=ring) st.inRing+=DT; if (dS<=st.reach) st.inReach+=DT;
+        var so=b.order && b.order.so; if (so) st.plan[so.kind]=(st.plan[so.kind]||0)+1;
+        Combat.projectiles.forEach(function(p){ if (p._s91) return; p._s91=1;
+          if (p.shooter===b) st.shots.push({ t:st.t, dS:dS, dT:dT });
+          if (s.sams.indexOf(p.shooter)>=0 && p.target===b) st.hitBy++; });
+        if (until && until(st, b)) break;
+      }
+      st.hp1=b.hp;
+      side.back(); side=null;
+      return st;
+    }
+    function stamp(st){ return st.shots.length+" rounds from "+(st.shots.length ? Math.min.apply(null,st.shots.map(function(x){ return x.dS; })).toFixed(1)+"-"+Math.max.apply(null,st.shots.map(function(x){ return x.dS; })).toFixed(1)+" t of the battery" : "-")+
+                           ", closest "+st.minS.toFixed(1)+" (planning ring "+st.ring.toFixed(1)+", reach "+st.reach.toFixed(1)+"), "+st.inRing.toFixed(1)+" s in the ring, "+
+                           st.hitBy+" rounds at it, "+(st.dead ? "SHOT DOWN at "+st.t.toFixed(1)+" s" : "hp "+st.hp0.toFixed(0)+" -> "+st.hp1.toFixed(0)); }
+    function fogOn(){ Game.fogEnabled=true; Game.fog.fill(1); Game.recomputeFog(); }
+    try { (function(){
+      /* ---- 1. the row ---- */
+      var hb=UNITS.hbomber_n, er=WEAPONS.jassm_er, wJ=WEAPONS.jassm;
+      var want=Math.round(wJ.range*Math.pow(926/370.4,0.45)*10)/10;
+      chk("the present-day B-52H carries the AGM-158B JASSM-ER at the JASSM's 15.0 x (926 / 370.4) ^ 0.45 = 22.7 tiles; the older marks keep theirs",
+          !!er && hb.weapons[0]==="jassm_er" && er.range===want && er.range===22.7 && er.dmg===wJ.dmg && wJ.range===15.0 &&
+          UNITS.nato_e00_heavybomber.weapons[0]==="jassm" && UNITS.nato_e90_heavybomber.weapons[0]==="calcm" && UNITS.nato_e80_heavybomber.weapons[0]==="alcm_b",
+          hb.weapons.join("+")+(er ? ", "+er.name+" "+er.range : " (f9ef2ee: jassm+lrasm, the 15.0-tile JASSM)"));
+
+      /* ---- 2. a battery seen, and remembered ---- */
+      var s1=scene([3,0], 1);
+      if (!s1.tgt || s1.sams.length<1){ chk("[91] scene 2 built", false, "radar "+!!s1.tgt+" sams "+s1.sams.length); return; }
+      tick(30);
+      var b1=bomber("hbomber_n");
+      open(b1, s1);
+      fogOn(); tick(16);
+      var remembered=Game.standoffRings ? ringAt(Game.standoffRings(P), s1.sams[0]) : false, inSight=Game.visibleTo(P, s1.sams[0]);
+      b1.give({ type:"attack", target:s1.tgt });
+      var r1=fly(b1, s1, 60);
+      chk("ordered onto a radar 3 tiles from a SAM Site on ground its side has explored, nothing of its in sight of the battery, the B-52H shoots every round from outside the battery's planning ring and never enters it",
+          !r1.dead && r1.shots.length>=4 && r1.minS>r1.ring && r1.inRing===0 && r1.hitBy===0 && !inSight && remembered,
+          stamp(r1)+"; the battery in sight at the order "+inSight+", on its side's chart "+remembered+" (f9ef2ee: 3 rounds, closest 9.2, 18.8 s in the ring, shot down at 24.1 s)");
+      chk("...and from beyond its real reach, at the edge of its own: its circle is flown round the target, rounds away from 21 tiles and more",
+          r1.inReach===0 && !!r1.plan.around && r1.shots.length>0 && r1.shots.every(function(x){ return x.dT>=21; }),
+          "plan "+JSON.stringify(r1.plan)+", rounds from "+r1.shots.map(function(x){ return x.dT.toFixed(1); }).slice(0,6).join(",")+" t of the target");
+      off([b1]);
+
+      /* ---- 3. the battery between it and the target ---- */
+      off(s1.sams); s1.sams=[];
+      var sm3=bld(E, "sam", spot(g.x+ux*10, g.y+uy*10)); if (sm3){ sm3.hp=sm3.maxHp=1e6; s1.sams.push(sm3); }
+      tick(30);
+      var b3=bomber("hbomber_n");
+      b3.give({ type:"attack", target:s1.tgt });
+      var r3=fly(b3, s1, 60);
+      chk("with the battery standing between it and the target it goes round the ring to a launch circle beyond and shoots from there",
+          !!sm3 && !r3.dead && r3.shots.length>=2 && r3.minS>r3.ring && r3.inRing===0 && r3.hitBy===0,
+          stamp(r3)+", plan "+JSON.stringify(r3.plan)+" (f9ef2ee: closest 2.2, 16.1 s in the ring, shot down at 26.6 s)");
+      off([b3]);
+
+      /* ---- 4. a battery its fog hides ---- */
+      off(s1.sams); s1.sams=[];
+      var sm4=bld(E, "sam", spot(g.x+uy*10, g.y)); if (sm4){ sm4.hp=sm4.maxHp=1e6; s1.sams.push(sm4); }
+      powerUp(E, g);
+      tick(30);
+      var b4=bomber("hbomber_n", P, 1e5);
+      open(b4, s1);
+      fogOn();
+      for (var yy=sm4.ty-4; yy<=sm4.ty+5; yy++) for (var xx=sm4.tx-4; xx<=sm4.tx+5; xx++) Game.fog[yy*M.W+xx]=0;
+      tick(16);
+      b4.give({ type:"attack", target:s1.tgt });
+      tick(2);
+      var blind=Game.standoffRings ? !ringAt(Game.standoffRings(P), sm4) && !Game.visibleTo(P, sm4) : false, kind0=b4.order.so ? b4.order.so.kind : "none";
+      var shotAt=-1, knownAt=-1, outAgain=-1, inAfter=0;
+      var r4=fly(b4, s1, 90, function(st, b){
+        if (shotAt<0 && st.hitBy>0) shotAt=st.t;
+        if (knownAt<0 && Game.standoffRings && ringAt(Game.standoffRings(P), sm4)) knownAt=st.t;
+        if (knownAt>=0){ var d=U.dist(b.x,b.y,sm4.x,sm4.y)/T;
+          if (outAgain<0 && d>st.ring) outAgain=st.t;
+          if (outAgain>=0 && d<=st.ring) inAfter+=DT;
+          return st.t-knownAt>20; }
+        return false; });
+      chk("a battery on ground its side never looked at is not on its chart: the bomber flies the circle it would fly with no battery there",
+          blind && kind0==="around",
+          "the battery "+(Game.standoffRings ? (blind ? "not on its chart" : "ON its chart") : "- no chart at f9ef2ee")+" at the order, plan "+kind0);
+      chk("...until the battery fires, and the shot gives it away: then it is out of the ring within seconds, stays out, and goes on shooting",
+          shotAt>=0 && knownAt>=0 && knownAt-shotAt<1 && outAgain>=0 && outAgain-knownAt<8 && inAfter===0 && r4.shots.length>=2,
+          (shotAt>=0 ? "first round at it after "+shotAt.toFixed(1)+" s ("+r4.hitBy+" in all), on its chart "+(knownAt>=0 ? (knownAt-shotAt).toFixed(1)+" s later" : "never")+
+                      ", out of the ring "+(outAgain>=0 ? (outAgain-knownAt).toFixed(1)+" s after that" : "never")+", "+inAfter.toFixed(1)+" s back inside; "+r4.shots.length+" rounds of its own, hp "+r4.hp0.toFixed(0)+" -> "+r4.hp1.toFixed(0)
+                    : "the battery never fired at it ("+stamp(r4)+")")+" (f9ef2ee: no chart; 20 rounds at it and it never left the ring)");
+      off([b4]);
+      Game.fog.set(fogCopy); Game.fogEnabled=fog0;
+
+      /* ---- 4b. a LAUNCHER its side has seen, and no longer sees ----
+         an S-400 TEL ten tiles beyond the target, watched for three seconds
+         by a scout of ours that then goes. It stays where it was seen: the
+         commander, at peace, still moves its units, and a TEL it drove off
+         would test where the plot thinks it is, not the plot */
+      off(s1.sams); s1.sams=[];
+      var telAt=spot(g.x-ux*10, g.y-uy*10), tel=(telAt && UNITS.sam_p) ? mk(E, "sam_p", telAt.x*T+16, telAt.y*T+16) : null;
+      if (tel){ tel.hp=tel.maxHp=1e6; tel.order={ type:"idle" }; s1.sams.push(tel); }
+      var tel0=tel ? { x:tel.x, y:tel.y } : null, telPins=0;
+      function pinTel(){ if (tel && U.dist(tel.x,tel.y,tel0.x,tel0.y)>8){ telPins++;
+        tel.x=tel0.x; tel.y=tel0.y; tel.tx=(tel.x/T)|0; tel.ty=(tel.y/T)|0;
+        if (!tel.order || tel.order.type!=="attack") tel.order={ type:"idle" }; } }
+      for (var k4=0;k4<Math.round(30/DT);k4++){ Game.tick(DT); pinTel(); }
+      var b4b=tel ? bomber("hbomber_n", P, 1e5) : null;
+      var telOn0=false, telSeen0=false, telCharted=0, telFlown=0, r4b=null;
+      if (b4b){
+        open(b4b, s1);
+        fogOn();
+        var eye4=mk(P, "recon_n", tel.x+3*T, tel.y);
+        if (eye4){ eye4.stance="hold"; eye4.order={ type:"idle" }; }
+        for (k4=0;k4<Math.round(3/DT);k4++){ side.sweep(); Game.tick(DT); pinTel(); }
+        var sawTel=Game.visibleTo(P, tel);
+        off([eye4]);
+        for (k4=0;k4<Math.round(2/DT);k4++){ side.sweep(); Game.tick(DT); pinTel(); }
+        telSeen0=Game.visibleTo(P, tel);
+        telOn0=sawTel && !telSeen0 && ringNear(Game.standoffRings ? Game.standoffRings(P) : [], tel);
+        b4b.give({ type:"attack", target:s1.tgt });
+        r4b=fly(b4b, s1, 120, function(st){
+          pinTel(); telFlown+=DT;
+          if (ringNear(Game.standoffRings ? Game.standoffRings(P) : [], tel)) telCharted+=DT;
+          return false; });
+      }
+      chk("a SAM VEHICLE its side saw and no longer sees - an S-400 TEL a scout watched for three seconds - stays on its chart where it was seen, the whole attack",
+          !!r4b && telOn0 && telCharted>=telFlown*0.97,
+          r4b ? "seen by the scout, out of sight at the order "+!telSeen0+", on the chart at the order "+telOn0+" and for "+telCharted.toFixed(1)+" of "+telFlown.toFixed(1)+" s (the first cut: 2.5 s of 120; 94a0345: no chart)"
+              : "no TEL or no bomber");
+      chk("...and the B-52H works the target from outside that launcher's ring the whole time, never inside it nor its reach, and is never fired at",
+          !!r4b && !r4b.dead && r4b.shots.length>=4 && r4b.minS>r4b.ring && r4b.inRing===0 && r4b.hitBy===0,
+          r4b ? stamp(r4b)+", plan "+JSON.stringify(r4b.plan)+" (the first cut: in to 5.3 t, 22.3 s in the ring; 94a0345: 1.7 t, 56.3 s)" : "-");
+      if (b4b) off([b4b]);
+      off(s1.sams); s1.sams=[];
+      Game.fog.set(fogCopy); Game.fogEnabled=fog0;
+
+      /* ---- 4c. a move whose straight line runs over a battery it knows ----
+         a SAM Site three tiles off the radar; the bomber 40 tiles one side
+         of it, sent 36 tiles past it on the other, and then the same on an
+         attack-move */
+      var smX=bld(E, "sam", spot(g.x+3, g.y)); if (smX){ smX.hp=smX.maxHp=1e6; }
+      powerUp(E, g);
+      var lineX=null;
+      for (var aX=0; aX<16 && smX && !lineX; aX++){ var cxA=Math.cos(aX/16*6.283), syA=Math.sin(aX/16*6.283);
+        var dX=smX.x+cxA*36*T, dY=smX.y+syA*36*T, oX=smX.x-cxA*40*T, oY=smX.y-syA*40*T;
+        if (dX<3*T||dY<3*T||dX>(M.W-3)*T||dY>(M.H-3)*T||oX<3*T||oY<3*T||oX>(M.W-3)*T||oY>(M.H-3)*T) continue;
+        lineX={ dx:dX, dy:dY, ox:oX, oy:oY, ux:cxA, uy:syA }; }
+      tick(30);
+      var sX={ sams:smX ? [smX] : [], tgt:s1.tgt }, rX={};
+      ["move","attackmove"].forEach(function(kind){
+        if (!lineX) return;
+        var bX=mk(P, "hbomber_n", lineX.ox, lineX.oy);
+        if (!bX) return;
+        bX.parked=false; bX.order={ type:"idle" }; bX.fuel=bX.fuelMax; bX.ammo=bX.ammoMax; bX.hp=bX.maxHp=1e5;
+        bX.ang=Math.atan2(lineX.dy-lineX.oy, lineX.dx-lineX.ox);
+        side=aside(made, function(){ return [smX, bX]; }, function(){ return true; }, 4); side.sweep();
+        fogOn();
+        alerts.length=0;
+        bX.give({ type:kind, x:lineX.dx, y:lineX.dy });
+        var nearest=1e9;
+        var r=fly(bX, sX, 45, function(st, b){ var d=U.dist(b.x,b.y,lineX.dx,lineX.dy)/T; if (d<nearest) nearest=d; return false; });
+        r.got=nearest; r.order=bX.order ? bX.order.type : "-";
+        r.held=alerts.filter(function(m){ return /HOLDING SHORT/.test(m); }).length;
+        rX[kind]=r;
+        off([bX]);
+        Game.fog.set(fogCopy); Game.fogEnabled=fog0;
+      });
+      /* clear of the ring and not held short, and then the move gets there;
+         the sweep may instead take up a target it passes within reach of,
+         which it then works from outside the rings like any attack */
+      var okX=function(r, sweep){ return !!r && !r.dead && r.minS>r.ring && r.inRing===0 && r.hitBy===0 && r.held===0 &&
+                                         (r.got<14 || (sweep && r.order==="attack")); };
+      var sayX=function(r){ return r ? "closest "+r.minS.toFixed(1)+" (ring "+r.ring.toFixed(1)+", reach "+r.reach.toFixed(1)+"), "+r.inRing.toFixed(1)+" s in the ring, "+r.hitBy+" rounds at it, "+
+                                       (r.held ? "HELD SHORT" : "not held")+", came to "+r.got.toFixed(1)+" t of the point, now "+r.order : "-"; };
+      chk("a move, and an attack-move, whose straight line runs over a SAM Site its side knows of go ROUND the ring: never inside it, never fired at, not held short, and the move gets there",
+          !!lineX && okX(rX.move, false) && okX(rX.attackmove, true),
+          "move: "+sayX(rX.move)+"; attack-move: "+sayX(rX.attackmove)+" (the first cut and 94a0345: the move straight over the battery, 0.1 t, 7.5 s in the ring, 3 rounds at it; 94a0345's attack-move to 3.2 t, 8 rounds)");
+
+      /* ---- 4d. a move to a point 25 tiles beside that battery ----
+         outside its ring and the transit margin, but inside the circle a
+         Buff swings through when it turns */
+      var rY=null;
+      if (lineX){
+        var wx=-lineX.uy, wy=lineX.ux;
+        if (smX.x+wx*25*T<3*T || smX.x+wx*25*T>(M.W-3)*T || smX.y+wy*25*T<3*T || smX.y+wy*25*T>(M.H-3)*T){ wx=-wx; wy=-wy; }
+        var pYx=smX.x+wx*25*T, pYy=smX.y+wy*25*T;
+        var bY=mk(P, "hbomber_n", lineX.ox, lineX.oy);
+        if (bY){
+          bY.parked=false; bY.order={ type:"idle" }; bY.fuel=bY.fuelMax; bY.ammo=bY.ammoMax; bY.hp=bY.maxHp=1e5;
+          bY.ang=Math.atan2(pYy-lineX.oy, pYx-lineX.ox);
+          side=aside(made, function(){ return [smX, bY]; }, function(){ return true; }, 4); side.sweep();
+          fogOn();
+          alerts.length=0;
+          bY.give({ type:"move", x:pYx, y:pYy });
+          var nearY=1e9;
+          rY=fly(bY, sX, 60, function(st, b){ var d=U.dist(b.x,b.y,pYx,pYy)/T; if (d<nearY) nearY=d; return false; });
+          rY.got=nearY; rY.order=bY.order ? bY.order.type : "-";
+          rY.held=alerts.filter(function(m){ return /HOLDING SHORT/.test(m); }).length;
+          off([bY]);
+          Game.fog.set(fogCopy); Game.fogEnabled=fog0;
+        }
+      }
+      chk("a move to a point 25 tiles beside a SAM Site it knows of - outside the ring and the margin - is not held short: it goes there and holds on a circle clear of the ring",
+          !!rY && rY.held===0 && rY.minS>rY.ring && rY.inRing===0 && rY.hitBy===0 && rY.got<12 && rY.order==="hover",
+          rY ? sayX(rY)+" (the first cut: HOLDING SHORT, 39.3 t from the point; 94a0345: in to 12.3 t, 10.3 s in the ring, 8 rounds at it)" : "-");
+      off(smX ? [smX] : []);
+
+      /* ---- 5. no launch circle clears the rings: held short, and told ---- */
+      off(s1.sams.concat([s1.tgt], s1.pw));
+      var s5=scene(null, 4);
+      tick(30);
+      var b5=bomber("hbomber_n", P, 1e5);
+      alerts.length=0;
+      b5.give({ type:"attack", target:s5.tgt });
+      var r5=fly(b5, s5, 40);
+      var said=alerts.filter(function(m){ return /HOLDING SHORT OF AIR DEFENCE/.test(m); });
+      chk("a radar inside four SAM Sites, which no launch circle within its reach clears: it holds short, says so, and fires nothing",
+          s5.sams.length===4 && r5.shots.length===0 && r5.minS>r5.ring && r5.inRing===0 && said.length===1 && b5.order.type==="attack",
+          stamp(r5)+"; alert: "+(said[0] || "none")+" (f9ef2ee: no alert, 6 rounds from 4.9-10.6 t of the batteries, 35.3 s in the rings, 33 rounds at it)");
+      b5.stance="aggressive";
+      var r5b=fly(b5, s5, 25, function(st){ return st.minS<st.ring-2; });
+      chk("...and aggressive stance is still the off switch: set to F it presses in",
+          r5b.minS<r5b.ring, "closest "+r5b.minS.toFixed(1)+" of a "+r5b.ring.toFixed(1)+"-tile ring once aggressive");
+      off([b5]);
+
+      /* ---- 6. the commander: held to the same rule ---- */
+      off(s5.sams.concat([s5.tgt], s5.pw));
+      /* a structure of ours under a battery of ours; the commander has looked
+         at the ground (a scout of its stands there for two seconds, then goes) */
+      var g1=g; g=ground() || g1;
+      var pS=bld(P, "sam", spot(g.x+3, g.y)), pT=bld(P, "power", spot(g.x, g.y+3));
+      var eye=mk(E, unitFor(E.faction,"recon",E.era)||"recon_p", (g.x+1)*T, (g.y+6)*T);
+      if (eye) eye.stance="hold";
+      /* nobody else of the commander's near enough to see the battery, or to
+         draw its fire and the flash that would give it away: what it knows
+         at the order is what its scout saw */
+      side=aside(made, function(){ return [pS, pT]; }, function(){ return true; }, 4); side.sweep();
+      for (var k6=0;k6<60;k6++){ side.sweep(); Game.tick(DT); }
+      var eSaw=Game.visibleTo(E, pS);
+      off([eye]);
+      for (k6=0;k6<20;k6++){ side.sweep(); Game.tick(DT); }
+      var eRings=Game.standoffRings ? ringAt(Game.standoffRings(E), pS) : false, eSees=Game.visibleTo(E, pS);
+      var tu=bomber(unitFor(E.faction,"heavybomber",E.era)||"sbomber_p", E, 1e5);
+      tu.give({ type:"attack", target:pT });
+      var tu0=U.dist(tu.x,tu.y,pS.x,pS.y)/T, tuMin=1e9, droppedAt=-1, ringE=Game.airDefenceReach(pS.def)*1.25;
+      for (k6=0;k6<Math.round(10/DT);k6++){ side.sweep(); Game.tick(DT); tu.fuel=tu.fuelMax;
+        var d6=U.dist(tu.x,tu.y,pS.x,pS.y)/T; if (d6<tuMin) tuMin=d6;
+        if (droppedAt<0 && !(tu.order && tu.order.type==="attack" && tu.order.target===pT)) droppedAt=k6*DT; }
+      side.back(); side=null;
+      chk("the commander's bomber ordered onto a structure under our battery, which it knows of, drops the order instead of flying in - and the target is struck off for it",
+          eSaw && !eSees && eRings && droppedAt>=0 && droppedAt<2 && tuMin>ringE && !!tu.soNo && tu.soNo.has(pT.id),
+          tu.def.name+" ("+tu.def.weapons.join("+")+"): our battery seen "+eSaw+", in sight at the order "+eSees+", on its chart "+eRings+"; order dropped "+(droppedAt>=0 ? "after "+droppedAt.toFixed(1)+" s" : "never")+
+          " for "+(tu.order ? tu.order.type : "-")+", closest "+tuMin.toFixed(1)+" of a "+ringE.toFixed(1)+"-tile ring (started "+tu0.toFixed(1)+"; f9ef2ee: never dropped, in to 8.9)");
+      off([tu]);
+      /* the target it would name: two tanks of ours it holds tracks on, the
+         nearer one under the battery */
+      var mbtN=unitFor(P.faction,"mbt",P.era)||"mbt_n";
+      var hx=(g.x+1)*T+16, hy=(g.y-2)*T+16+uy*24*T;
+      var aAt=spot(g.x+1, g.y-2), bAt=null;
+      for (var rB=30; rB<40 && !bAt; rB+=2) for (var aB=0; aB<24 && !bAt; aB++){
+        var bx=Math.round(g.x+3+Math.cos(aB/24*6.283)*rB), by=Math.round(g.y+Math.sin(aB/24*6.283)*rB);
+        if (bx<5 || by<5 || bx>M.W-6 || by>M.H-6 || !clear(bx,by)) continue;
+        if (U.dist(hx,hy,bx*T,by*T) > U.dist(hx,hy,aAt.x*T,aAt.y*T)+5*T) bAt={ x:bx, y:by }; }
+      var tA=aAt ? mk(P, mbtN, aAt.x*T+16, aAt.y*T+16) : null, tB=bAt ? mk(P, mbtN, bAt.x*T+16, bAt.y*T+16) : null;
+      var eA=tA ? mk(E, unitFor(E.faction,"recon",E.era)||"recon_p", tA.x, tA.y-4*T*uy) : null;
+      var eB=tB ? mk(E, unitFor(E.faction,"recon",E.era)||"recon_p", tB.x+3*T, tB.y) : null;
+      [tA,tB,eA,eB].forEach(function(u){ if(u){ u.stance="hold"; u.order={ type:"idle" }; } });
+      var h6=mk(E, "sbomber_c", hx, hy);
+      if (h6){ h6.parked=false; h6.order={ type:"idle" }; h6.fuel=h6.fuelMax; h6.ammo=h6.ammoMax; }
+      tick(45);
+      var pick1=(h6 && AI.airTargetOf) ? AI.airTargetOf(E, h6) : null;
+      var near=h6 && tA && tB && U.dist(h6.x,h6.y,tA.x,tA.y)<U.dist(h6.x,h6.y,tB.x,tB.y);
+      off([pS]); tick(20);
+      var pick2=(h6 && AI.airTargetOf) ? AI.airTargetOf(E, h6) : null;
+      chk("of two of our tanks it holds tracks on, the commander names for its bomber the one outside our battery's ring though the other is nearer - and the nearer once the battery is gone",
+          !!near && pick1===tB && pick2===tA,
+          (AI.airTargetOf ? "with the battery: "+(pick1===tA ? "the tank under it" : pick1===tB ? "the tank in the open" : (pick1 ? pick1.def.name : "nothing"))+
+                            "; without: "+(pick2===tA ? "the nearer tank" : pick2===tB ? "the far tank" : (pick2 ? pick2.def.name : "nothing")) : "no AI.airTargetOf (f9ef2ee)")+
+          " (H-6N borrowed: the Pact's own Tu-160M carries only held rounds and is named a structure by warAim, behind the same filter)");
+      off([tA,tB,eA,eB,h6,pT]);
+      g=g1;
+
+      /* ---- 7. what the rule is not about ---- */
+      var s7=scene([3,0], 1);
+      tick(30);
+      var wz=bomber("sead_n", P, 1e5);
+      if (wz){ wz.give({ type:"attack", target:s7.sams[0] }); }
+      var r7=wz ? fly(wz, s7, 30, function(st){ return st.shots.length>0 && st.minS<st.ring; }) : null;
+      chk("a Weasel's HARM is still fired from inside the ring of the very battery it is attacking",
+          !!r7 && r7.shots.length>=1 && r7.minS<r7.ring,
+          r7 ? "HARM away "+r7.shots.length+", closest "+r7.minS.toFixed(1)+" of a "+r7.ring.toFixed(1)+"-tile ring" : "no Weasel");
+      off([wz]);
+      var bd=bomber("nato_e60_heavybomber", P, 1e5);
+      if (bd) bd.give({ type:"attack", target:s7.tgt });
+      var r8=bd ? fly(bd, s7, 40, function(st){ return st.shots.length>0; }) : null;
+      chk("...and a B-52D still flies over its target to bomb it",
+          !!r8 && r8.shots.length>=1 && r8.minT<4,
+          r8 ? "closest "+r8.minT.toFixed(1)+" t to the radar, "+r8.shots.length+" bombs, from "+(r8.shots[0] ? r8.shots[0].dT.toFixed(1) : "-")+" t" : "no B-52D");
+      off([bd]);
+      off(s7.sams.concat([s7.tgt], s7.pw));
+    })(); } catch(e){
+      chk("[91] ran", false, e && e.message ? e.message+" "+String(e.stack).split("\n")[1] : String(e));
+    } finally {
+      if (side){ side.back(); side=null; }
+      Game.rng=rng; Game.alert=al0;
+      Game.fog.set(fogCopy); Game.fogEnabled=fog0;
+      /* the guns the commander put up beside the scenes go with them - taken
+         onto the list FIRST, so a round one of them still has in the air is
+         taken off with the rest */
+      E.buildings.concat(P.buildings).forEach(function(b){
+        if (b.dead || eB0.has(b) || pB0.has(b) || blds.indexOf(b)>=0) return;
+        if (spots.some(function(q){ return U.dist(b.x,b.y,q.x*T,q.y*T)<36*T; })) blds.push(b); });
+      for (var pi=Combat.projectiles.length-1; pi>=0; pi--)
+        if (made.indexOf(Combat.projectiles[pi].shooter)>=0 || blds.indexOf(Combat.projectiles[pi].shooter)>=0) Combat.projectiles.splice(pi,1);
+      made.forEach(function(u){ if(!u.dead) u.dead=true; });
+      blds.forEach(function(b){ if(!b.dead){ b.dead=true; Game.removeBuilding(b); } });
+      Game.sweepDead();
+      if (AI.setPeace) AI.setPeace(E, true);
+    }
+    chk("the shared match is handed back: the RNG, the fog, the alert line, no stray round, nothing made left standing",
+        Game.rng===rng && Game.alert===al0 && Game.fogEnabled===fog0 &&
+        !Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0 || blds.indexOf(p.shooter)>=0; }) &&
+        made.every(function(u){ return u.dead; }) && blds.every(function(b){ return b.dead; }),
+        made.length+" units and "+blds.length+" structures made and removed"+
+        (Game.rng!==rng ? "; the RNG NOT handed back" : "")+(Game.alert!==al0 ? "; the alert line NOT handed back" : "")+
+        (Game.fogEnabled!==fog0 ? "; the fog NOT handed back" : "")+
+        (Combat.projectiles.some(function(p){ return made.indexOf(p.shooter)>=0 || blds.indexOf(p.shooter)>=0; }) ? "; a round of ours still flying" : "")+
+        (made.some(function(u){ return !u.dead; }) || blds.some(function(b){ return !b.dead; }) ? "; something made still standing" : ""));
   })();
   }
 

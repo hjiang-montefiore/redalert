@@ -112,8 +112,11 @@
 
   /* ---------------------------------------------------------- armament --
      What separates a 1950s bomber from a modern one is not how hard it hits
-     but from how far away. Range is in tiles; the heaviest surface-to-air
-     systems in the game reach roughly 9-11 tiles. */
+     but from how far away. Range is in tiles. When this was written the
+     heaviest surface-to-air systems in the game reached roughly 9-11 tiles;
+     they now reach 10.4 to 15.0 - the fixed SAM Site 14.0 in every decade,
+     a present-day Burke's SM-2 14.5 - and a bomber plans against 1.25 times
+     that (game.js G.airThreatRings). See THE CHECK, above the AGM-86B. */
   var W = {
     /* free-fall iron bombs: enormous load, but the aeroplane has to be
        overhead, inside everything the enemy owns.
@@ -135,6 +138,43 @@
                   reload: 0.9, burst: 9, burstDelay: 0.18, acc: 0.60, proj: "bomb",
                   speed: 0, aoe: 3.8, suppress: 190, ammo: 1,
                   tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+    /* ---- THE CHECK: each B-52 round against the area SAMs of its decade ----
+       A stand-off bomber now launches only from a circle outside every ring
+       its side knows of (game.js G.standoffLaunch): 1.25 x the battery's
+       catalogue reach, plus a 1.0-tile margin and 0.75 of orbit wander, and
+       it shoots out to 0.95 of its own reach (nato's rangeMul 1.08 in). The
+       kilometres go onto tiles by the two rules the files already use - for
+       one stand-off round from another, tiles x (km / km) ^ 0.45 (the
+       Kh-55SM from the AGM-86B, the Kh-101 from the Kh-55SM); for SAMs the
+       log scale of rules.js, the S-300PS's 75 km at 12.5 and the 40N6's
+       400 km at 13.6 - and the fixed SAM Site stands at 14.0 in every decade.
+         AGM-86B ALCM  2,400+ km (USAF; Wikipedia). e80, against the S-200's
+           250 km (13.3) and the S-300PS (12.5): reach 12.4, circle at most
+           11.0, a SAM Site's ring 19.25. FAILS.
+         AGM-86C CALCM  1,100 km nominal, the true figure classified. e90:
+           reach 14.0, circle 12.6. FAILS.
+         AGM-158A JASSM  370.4 km (200 nmi; Janes). e00, against the S-300PMU-2,
+           PAC-3, HQ-9 and SAMP/T (13.6, a ring of 18.75): reach 16.2,
+           circle 14.6. FAILS.
+         AGM-158B JASSM-ER  more than 926 km (500 nmi; Janes, DOT&E). e20:
+           reach 24.5, circle 22.5. CLEARS, with 3.3 tiles to spare against a
+           SAM Site at the target.
+       Every real round out-reached the SAMs of its own decade - the ALCM by
+       ten times - and three of the four do not here, so under the rule those
+       three marks hold short of nearly any defended target. Measured in
+       commander-against-commander matches on fulda at t=900 s: of the Pact
+       structures NATO had on its map, a launch circle reached 5 of 99 at
+       e80 with the ALCM's 11.5 and 9 of 110 at e00 with the JASSM's 15.0,
+       against 77 and 62 at the JASSM-ER's 22.7.
+       They are NOT raised here, for a reason that is not the B-52's: the
+       Soviet rounds are scaled off the AGM-86B's 11.5 (eras.js Kh-55SM 12.7,
+       rules.js Kh-101 15.0), so moving it alone would hand one side a reach
+       the same arithmetic denies the other - and on the JASSM-ER's footing
+       the Kh-101's 4,500 km would be some 46 tiles, not 15. That wants one
+       pass over both sides' stand-off rounds together - the AGM-86B and C,
+       the JASSM, the KD-20, the Kh-55SM and Kh-101, Blue Steel, ASMP and the
+       YJ-6 - and it is the owner's call. Until then an older mark held short
+       says so, and aggressive stance (F) still takes it in. */
     /* the moment the Buff stopped having to overfly anything */
     alcm_b:     { name: "AGM-86B ALCM", dmg: 430, warhead: "he", range: 11.5, minRange: 3.0,
                   reload: 7.5, burst: 1, acc: 0.90, proj: "missile", speed: 300,
@@ -145,6 +185,29 @@
                   aoe: 2.6, suppress: 85, ammo: 1,
                   tgt: { ground: 1, air: 0, sea: 0, sub: 0 } },
     jassm:      { name: "AGM-158 JASSM", dmg: 480, warhead: "he", range: 15.0, minRange: 3.0,
+                  reload: 6.4, burst: 1, acc: 0.95, proj: "missile", speed: 340,
+                  aoe: 2.6, suppress: 90, ammo: 1, stealthy: 0.55,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
+    /* AGM-158B JASSM-ER: the JASSM airframe with a Williams F107 turbofan in
+       place of the J402 turbojet and more fuel in the same outside
+       dimensions, and the same 1,000 lb WDU-42/B penetrator. The published
+       reaches are 370.4 km (200 nmi) for the A and more than 926 km (500 nmi)
+       for the ER (Janes, DOT&E FY2013; Lockheed Martin), so the ER reaches
+       2.5 times as far. In USAF service from April 2014, integrated on the
+       B-52 after the B-1, and the round that replaced the AGM-86C CALCM when
+       it was retired in November 2019.
+       22.7 tiles is the JASSM's 15.0 through the file's own compression for
+       one stand-off round derived from another, (926 / 370.4) ^ 0.45 = 1.51 -
+       the rule the Kh-55SM row (from the AGM-86B) and the Kh-101 row (from
+       the Kh-55SM) were made by. Against its own decade it does what the
+       row's description says: at nato's 1.08 it reaches 24.5 tiles and
+       entities.js flies its launch circle at up to 22.5, outside the 19.25 a
+       present-day SAM Site's planning ring stands at (1.25 x 14.0, plus the
+       1.0 margin and 0.75 of orbit wander - game.js G.standoffLaunch) and the
+       18.75 of an S-400, a PAC-3 or an HQ-9 (1.25 x 13.6). The JASSM's 15.0
+       does not: 16.2 at nato's, a circle of at most 14.6.
+       tgt is the JASSM's own, as the row it replaces had it. */
+    jassm_er:   { name: "AGM-158B JASSM-ER", dmg: 480, warhead: "he", range: 22.7, minRange: 3.0,
                   reload: 6.4, burst: 1, acc: 0.95, proj: "missile", speed: 340,
                   aoe: 2.6, suppress: 90, ammo: 1, stealthy: 0.55,
                   tgt: { ground: 1, air: 0, sea: 1, sub: 0 } },
@@ -452,9 +515,14 @@ asmp:       { name: "ASMP stand-off missile", dmg: 660, warhead: "he",
       /* the same twenty stations, shared between the land and the anti-ship
          round. LRASM's per-aircraft figure is not published as firmly as
          JASSM's, so it draws on the JASSM magazine rather than getting an
-         invented one of its own. */
+         invented one of its own.
+         The land round is the JASSM-ER its name has always promised. It was
+         the plain JASSM, 15.0 tiles: measured at f9ef2ee, ordered onto a
+         radar three tiles from a SAM Site, this aeroplane orbited at 12.2,
+         came to 7.7 tiles of the battery and was shot down 13.0 s after the
+         order. */
       cost: 4800, oil: 104, time: 54, hp: 940, speed: 4.7, ammo: 20, radius: 115,
-      weapons: ["jassm", "lrasm"], from: "e20",
+      weapons: ["jassm_er", "lrasm"], from: "e20",
       desc: "Seventy years old and still the longest reach in the inventory. " +
             "Stealthy standoff missiles against land targets and anti-ship missiles " +
             "against a fleet, all launched from a stand-off it will never leave." }),

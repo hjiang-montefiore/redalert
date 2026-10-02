@@ -350,6 +350,29 @@ var FACTS = {
     armament:"16 fixed P-1000 launchers, S-300F SAM, AK-130 twin 130mm, AK-630 CIWS",
     note:"The anti-ship missiles sit in sixteen fixed deck tubes that cannot be reloaded " +
          "at sea. One alpha strike and the ship is a gun platform.", confidence:"high" },
+  /* ---- the present-day Buff (heavyair.js) ----
+     The armament line says what the aeroplane really carries, which is not
+     quite the game row: the JASSM-ER is real and so is its reach, but
+     AGM-158C LRASM is operational on the B-1B (initial operational
+     capability December 2018) and the F/A-18E/F, and was flight-tested on
+     the F-35C in 2024 and the F-35B in 2025; the B-52 is not among its
+     launch platforms (Janes, 2025). The B-52's published maritime weapons
+     are Harpoon and Quickstrike mines. The game row still carries LRASM;
+     that is the owner's to keep or drop. Figures:
+     USAF B-52H fact sheet (crew, 650 mph, 8,800 miles, 70,000 lb); Janes
+     and DOT&E for the JASSM-ER's 500 nmi. */
+  hbomber_n: { name:"Boeing B-52H Stratofortress", origin:"United States", service:1961,
+    crew:5, weight_t:221, speed_kmh:1046, range_km:14200,
+    armament:"AGM-158B JASSM-ER, more than 926 km, twelve on the wing pylons and eight on the " +
+             "internal rotary launcher since the 1760 Internal Weapons Bay Upgrade; about " +
+             "31,500 kg of mixed ordnance in all; AGM-86B ALCM in the nuclear role",
+    protection:"Electronic countermeasures - the AN/ALQ-172 jammer under the AN/ALQ-155 " +
+               "power management system, chaff and flares; the tail gun was removed in 1991",
+    note:"102 H models, the first delivered on 9 May 1961, and the US Air Force means to fly " +
+         "them into the 2050s on new Rolls-Royce F130 engines. The JASSM-ER replaced the " +
+         "AGM-86C CALCM, retired in November 2019: the aeroplane now launches from beyond " +
+         "the reach of the air defences it is attacking rather than penetrating them.",
+    confidence:"high" },
 };
 
 /* ---- roster realism, 2026-10-02: the period rows that replaced present-day boats, the radar and

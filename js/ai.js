@@ -13529,6 +13529,28 @@ function makeCommander() {
   }
   function pickAirTarget(a) {
     if (atPeace) return null;
+    /* ---- A STAND-OFF BOMBER IS SENT ONLY WHERE IT CAN SHOOT FROM OUTSIDE ----
+       (owner) "b52H should shoot missle far away instead of bomb under the
+       sam range." entities.js flies a bomber with a stand-off round from a
+       launch orbit outside every ring its side knows of, and holds short
+       when no such orbit reaches the target (flyStandoff). This commander is
+       held to the same rule from the other end: it does not name a target
+       for one that no launch orbit reaches - a.standoffReach(), against the
+       rings ITS side knows (G.standoffRings: batteries in sight, structures
+       on ground it has looked at, launchers where it last saw them), so it
+       is handed nothing its fog hides. Every branch below asks it of what it
+       would return; a bomber with no reachable target falls to the sweep
+       branch, where its attack-move goes round the rings and takes what
+       comes within reach. Measured under jsc at f9ef2ee, sent at a radar
+       three tiles from a SAM Site its side could see, the four B-52 marks
+       from e80 on, the H-6K and the Tu-160M each flew into the ring and was
+       shot down, 13.0 to 29.2 s after the order (_behtest [91] holds the
+       rule, the commander's half included). Today it is the rule waiting
+       for the day it is needed: of the bombers this commander buys only
+       the role "stealthbomber" (its air purchases, tryBuildUnit), and the
+       one stealth bomber is the B-2 with bombs, which flies by none of it. */
+    const reach = (a.standoffAir && a.standoffAir())
+      ? (e) => a.standoffReach(e) : null;
     /* TERMINAL, not a fall-through. Role "sead" is neither "fighter" nor "cas",
        so it fell into the gunship branch and could come back with an enemy MBT
        or a refinery - and ai.js then issues a COMMANDED attack order, which
@@ -13555,7 +13577,7 @@ function makeCommander() {
     if (a.def.role === "heavybomber" && a.allWeaponsHeld && a.allWeaponsHeld()) {
       const st = warAim();
       if (!st || st.raid || !st.ref || st.ref.dead) return null;
-      return st.ref.kind === "building" ? st.ref : null;
+      return st.ref.kind === "building" && (!reach || reach(st.ref)) ? st.ref : null;
     }
     /* ROUTE BY WHAT THE AIRCRAFT CAN SHOOT, NOT BY THE NAME OF ITS ROLE.
        Role "cfighter" is not sead/ewair, not "fighter" and not "cas", so every
@@ -13603,7 +13625,7 @@ function makeCommander() {
     const op = opFocus();
     if (op) {
       const s = opAir(a, op);
-      if (s) { forceStat.opAir++; return s; }
+      if (s && (!reach || reach(s))) { forceStat.opAir++; return s; }
     }
     if (a.def.role !== "cas") {
       /* gunships hunt armour and haulers, and only ones actually on the plot */
@@ -13614,14 +13636,14 @@ function makeCommander() {
         if (!e) continue;
         if (!(e.def.harvester || e.armor === "heavy")) continue;
         const d = U.dist2(a.x, a.y, e.x, e.y);
-        if (d < bd) { bd = d; best = e; }
+        if (d < bd && (!reach || reach(e))) { bd = d; best = e; }
       }
       if (best) return best;
     }
     /* fall through: hit the objective, if it is a structure we can still see */
     const t = warAim();
     if (!t) return null;
-    return (t.ref && !t.ref.dead) ? t.ref : null;
+    return (t.ref && !t.ref.dead && (!reach || reach(t.ref))) ? t.ref : null;
   }
   /* ---- the jammer's two stations ----
      (owner) "we want to increase the dependace on the rador and importance of
@@ -13896,6 +13918,16 @@ function makeCommander() {
     setPeace(on) { atPeace = !!on; },
     /* the card this commander would build for a role now (pickFor) */
     pick(role) { return pickFor(role); },
+    /* the target this commander would give aircraft `a` now, its peace
+       aside (pickAirTarget) - for the suites. It asks what a think asks:
+       warAim() may review its aim, as it would on the next think at this
+       game time; the operational-air tally pickAirTarget keeps is put back,
+       since no task was given. */
+    airTarget(a) {
+      const was = atPeace, op = forceStat.opAir;
+      atPeace = false;
+      try { return pickAirTarget(a); } finally { atPeace = was; forceStat.opAir = op; }
+    },
     /* The explored map, so the engine can hold this commander's harvesters to
        the same rule the human's obey, and so a test can see what it knows. */
     get look() { return look; },
@@ -14143,6 +14175,12 @@ return {
      the suites and a census; null for a seat no commander runs */
   pickOf(player, role) {
     for (const c of commanders) if (c.player === player) return c.pick(role);
+    return null;
+  },
+  /* the target a commander would give one of its aircraft right now, peace
+     aside - for the suites ([91]; see airTarget); null for a seat none runs */
+  airTargetOf(player, a) {
+    for (const c of commanders) if (c.player === player) return c.airTarget(a);
     return null;
   },
   /* hold a commander at peace (see atPeace) - for scripted sandboxes */

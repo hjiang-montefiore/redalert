@@ -2607,6 +2607,15 @@ class Unit {
        level it unprompted. Once somebody garrisons it, it stops being
        neutral and becomes a legitimate target like any other. */
     if (!autoTargetable(e)) return false;
+    /* struck off by the stand-off rule: nothing in reach of it lies outside
+       the rings this bomber's side knows of (flyStandoff), for twenty s */
+    if (this.soNo) {
+      const until = this.soNo.get(e.id);
+      if (until !== undefined) {
+        if (until > this.game.time) return false;
+        this.soNo.delete(e.id);
+      }
+    }
     /* The automatic question. This one call is the gate behind attackmove,
        idle/guard, the garrison windows, air attackmove, CAP, strip alert and
        hover - all seven reach a target only through here. Because a held
@@ -3546,8 +3555,18 @@ class Unit {
        player already has on the F key.
 
        attackmove is deliberately NOT included for an armed aircraft: it means
-       advance and engage, which is a fight the player asked for. */
-    const transiting = (o.type === "move" || o.type === "cap") &&
+       advance and engage, which is a fight the player asked for.
+       EXCEPT FOR A STAND-OFF BOMBER (standoffAir, below). Its fight is fought
+       from outside the rings - the attack branch below will not take it
+       inside one - so an attack-move that carried it over the battery on the
+       way would be the one road left into the envelope; and it is the
+       commander's armed sweep for every strike airframe (ai.js). It goes
+       round the rings as a transit does (soTransit), and while it holds it
+       still looks for work: acquire() reaches as far as its missile does
+       (rules.js firesOnCue). */
+    const soAir = this.standoffAir();
+    const transiting = (o.type === "move" || o.type === "cap" ||
+                        (soAir && o.type === "attackmove")) &&
                        !o.release && this.stance !== "aggressive";
     /* ---- EXCEPT A JAMMER SENT IN BY NAME ----
        A jammer's bubble is shorter than every SAM ring here - 10.5 tiles at
@@ -3566,6 +3585,12 @@ class Unit {
     if ((defenceless || transiting) && !committed && this.game.standoffPoint &&
         (o.type === "move" || o.type === "attackmove" || o.type === "cap")) {
       const margin = 1.5 + (this.def.jam ? 0 : 1.0);   // a jammer may sit closer
+      /* A stand-off bomber flies its transit by the rings its side knows -
+         round them, not merely short of the last one, and held on a circle
+         it can fly (soTransit). What it hands back is a leg already clear of
+         them, flown by the order's own branch below. */
+      const soT = soAir && !!this.game.soStation;
+      if (soT && this.soTransit(o, margin, dt)) return;
       /* Anchor the walk-back at HOME, not at the aircraft. Computed from the
          current position the station moves every time the aircraft does: it
          backs out of the ring, the route then reads clear, it turns in again,
@@ -3574,7 +3599,8 @@ class Unit {
          nothing. Anchored at home the station is a fixed point on the corridor
          and the aircraft simply flies to it and stays. */
       const hx = this.owner.homeX, hy = this.owner.homeY;
-      const sp = this.game.standoffPoint(this.owner, hx, hy, o.x, o.y, margin);
+      const sp = soT ? { held: false }
+                     : this.game.standoffPoint(this.owner, hx, hy, o.x, o.y, margin);
       if (sp.held) {
         if (!this.warnedRing && this.owner === this.game.human) {
           this.warnedRing = true;
@@ -3628,6 +3654,22 @@ class Unit {
          range it is shooting from. tryFire() has no facing test, so an orbiting
          aircraft shoots perfectly well - and an AC-130 firing out of its left
          side while it circles is not a compromise, it is the real thing. */
+      /* ---- A STAND-OFF BOMBER SHOOTS FROM OUTSIDE THE RINGS ----
+         (owner) "b52H should shoot missle far away instead of bomb under the
+         sam range." A heavy or stealth bomber putting a stand-off round onto
+         its target flies the launch orbit G.standoffLaunch plans - outside
+         every ring its side knows of, reached round them - and holds short,
+         and says so, when there is none (flyStandoff below). The orbit this
+         branch flies is kept for everything else: an anti-radiation shooter
+         closes on the edge of the very battery it is attacking, which is its
+         job; a bomb or a gun overflies or orbits as before; a helicopter
+         hovers. Aggressive stance is the off switch it has always been (F):
+         the bomber presses in as it did. */
+      if (!this.def.hover && this.stance !== "aggressive" && Unit.standoffRound(w) &&
+          this.standoffAir() && this.game.standoffLaunch) {
+        this.flyStandoff(o, t, wi, w, range, dist, dt);
+        return;
+      }
       if (!this.def.hover) {
         /* ---- a pass, or a shot from outside? ----
            A bomb has to be delivered over the target and a gun has to be
@@ -3753,6 +3795,9 @@ class Unit {
           this.noPadSaid = true;
           this.game.alert(this.def.name.toUpperCase() + " \u2014 NO RUNWAY TO RECOVER TO", "bad");
         }
+        /* home round the rings, as to a ramp below */
+        const dh = this.ringDetour(o, this.owner.homeX, this.owner.homeY);
+        if (dh) { this.soFlyTo(dh.x, dh.y, dt); return; }
         this.flyTo(this.owner.homeX, this.owner.homeY, dt);
         return;
       }
@@ -3809,6 +3854,9 @@ class Unit {
             return;
           }
         }
+        /* a stand-off bomber goes home round the rings it worked outside */
+        const dv = this.ringDetour(o, px, py);
+        if (dv) { this.soFlyTo(dv.x, dv.y, dt); return; }
         this.flyTo(px, py, dt); return;
       }
       o.down = true;
@@ -3914,6 +3962,9 @@ class Unit {
           return;
         }
       }
+      /* a stand-off bomber patrols on a circle clear of the rings its side
+         knows (soLoiter) when they are near enough for this one to stray in */
+      if (this.soLoiter(o, o.x, o.y, dt)) return;
       const d = U.dist(this.x, this.y, o.x, o.y);
       const R = CFG.CAP_RADIUS * CFG.TILE;
       if (d > R * 1.25) {
@@ -4105,6 +4156,13 @@ class Unit {
            returns it on purpose so a Weasel with held rounds stays somewhere
            the commander can find it. */
         if (o.hx === undefined) { o.hx = this.x; o.hy = this.y; }
+        /* ...and a stand-off bomber holds on a circle clear of the rings its
+           side knows, when they are near enough for this one to stray into
+           (soLoiter): a Buff cannot fly this racetrack, 6.4 tiles across
+           against its own 17-tile turning circle - measured at 94a0345, one
+           sent to a point 25 tiles from a SAM Site strayed to 12.3 tiles of
+           it */
+        if (this.soLoiter(o, o.hx, o.hy, dt)) return;
         o.orbit = (o.orbit || 0) + dt * 0.9;
         const R = CFG.CAP_RADIUS * CFG.TILE;
         this.flyTo(o.hx + Math.cos(o.orbit) * R, o.hy + Math.sin(o.orbit) * R, dt);
@@ -4251,11 +4309,376 @@ class Unit {
      and every other side-firing gunship orbits left with the guns on the port
      side, and because a consistent direction stops two aircraft on the same
      target flying into each other. */
-  orbitAround(t, radius, dt) {
+  orbitAround(t, radius, dt, dir) {
     const a = Math.atan2(this.y - t.y, this.x - t.x);
-    const lead = 0.55;                       // radians ahead on the circle
+    const lead = 0.55 * (dir === -1 ? -1 : 1);   // radians ahead on the circle
     return this.flyTo(t.x + Math.cos(a + lead) * radius,
                       t.y + Math.sin(a + lead) * radius, dt);
+  }
+  /* A circle of radius r (pixels) round (cx, cy), FLOWN at r. Chasing a
+     point `lead` ahead on its circle, orbitAround() settles where the line to
+     that point is the tangent - at cos(0.55) = 0.85 of the radius it is
+     handed (measured, a B-52H handed 14.3 tiles flies 12.2) - so it is handed
+     r / cos(0.55). And it is JOINED on the tangent from outside: flown
+     straight at, a circle is overshot by up to a turning radius, which for a
+     Buff is 8.5 tiles. `dir` is which way round (G.soDir: the way it is
+     already going, so it never reverses its turn); left out, orbitAround's
+     own left-hand way. `guard`: the join is flown by soFlyTo. */
+  flyOrbit(cx, cy, r, dt, dir, guard) {
+    const dx = this.x - cx, dy = this.y - cy, D = Math.hypot(dx, dy);
+    const s = dir === -1 ? -1 : 1;
+    if (D > r + CFG.TILE * 1.5) {
+      const a = Math.atan2(dy, dx), b = Math.acos(r / D);
+      const jx = cx + Math.cos(a + s * b) * r, jy = cy + Math.sin(a + s * b) * r;
+      return guard ? this.soFlyTo(jx, jy, dt) : this.flyTo(jx, jy, dt);
+    }
+    return this.orbitAround({ x: cx, y: cy }, r / Math.cos(0.55), dt, s);
+  }
+  turnRadius() { return this.def.speed / Math.max(0.05, this.def.turn) * CFG.TILE; }
+  /* ---- AND IT TURNS AWAY FROM THEM ----
+     flyTo turns the short way round, and a heavy aeroplane's turn is a
+     circle of its own - seventeen tiles across for a Buff - so a route clear
+     of every ring is no use if the turn onto it is not. MEASURED: a B-52H
+     on an attack-move round a SAM Site took up a target as it passed, and
+     its launch circle lay behind it; the short way round was toward the
+     battery, and the turn carried it from 26.2 to 12.3 tiles of a battery
+     that reaches 14.0. So a stand-off bomber flying by the rings lays the
+     arc of any turn of more than half a radian against them first, and if
+     the short way crosses one and the long way does not, it turns the long
+     way - held until it is round, so it does not change its mind halfway. */
+  soFlyTo(px, py, dt) {
+    const g = this.game, now = g.time;
+    let d = Math.atan2(py - this.y, px - this.x) - this.ang;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    const gd = this.soGuard, TL = CFG.TILE;
+    if (gd && gd.until > now && gd.o === this.order) {
+      if ((d > 0 ? 1 : -1) !== gd.s && Math.abs(d) > 0.15) {
+        const a = this.ang + gd.s * 1.2;
+        this.flyTo(this.x + Math.cos(a) * TL * 20, this.y + Math.sin(a) * TL * 20, dt);
+        return false;
+      }
+      this.soGuard = null;
+    } else if (Math.abs(d) > 0.5 && g.standoffRings) {
+      const R = g.standoffRings(this.owner), s = d > 0 ? 1 : -1;
+      if (R.length && this.soSweepHits(R, s, Math.abs(d)) &&
+          !this.soSweepHits(R, -s, U.PI2 - Math.abs(d))) {
+        this.soGuard = { s: -s, o: this.order,
+                         until: now + (U.PI2 - Math.abs(d)) / Math.max(0.05, this.def.turn) + 1 };
+        const a = this.ang - s * 1.2;
+        this.flyTo(this.x + Math.cos(a) * TL * 20, this.y + Math.sin(a) * TL * 20, dt);
+        return false;
+      }
+    }
+    return this.flyTo(px, py, dt);
+  }
+  /* does a turn of `span` radians, the way `s` says (1 angle increasing),
+     from here and on this heading, pass inside a ring of R grown by the
+     stand-off margin? */
+  soSweepHits(R, s, span) {
+    const TL = CFG.TILE, tr = this.turnRadius(), th = this.ang;
+    const pad = (this.game.STANDOFF_MARGIN || 1) * TL;
+    const cx = this.x - Math.sin(th) * tr * s, cy = this.y + Math.cos(th) * tr * s;
+    const a0 = Math.atan2(this.y - cy, this.x - cx), n = Math.max(2, Math.ceil(span / 0.3));
+    for (let k = 1; k <= n; k++) {
+      const a = a0 + s * span * k / n, x = cx + Math.cos(a) * tr, y = cy + Math.sin(a) * tr;
+      for (let i = 0; i < R.length; i += 3) {
+        const rr = R[i + 2] * TL + pad;
+        if (U.dist2(x, y, R[i], R[i + 1]) < rr * rr) return true;
+      }
+    }
+    return false;
+  }
+
+  /* ================= THE STAND-OFF RULE =================
+     (owner) "b52H should shoot missle far away instead of bomb under the sam
+     range." The rule is about a WEAPON on a kind of aircraft, not about a
+     flag: a guided round against the surface that is not an anti-radiation
+     missile, carried by a heavy or stealth bomber. Every army's bomber that
+     carries one flies by it - the B-52G and H, the H-6D, K and N, the
+     Tu-160 and Tu-160M, the Vulcan B.2's Blue Steel and the Mirage IVP's
+     ASMP - because a stand-off missile is launched from outside the
+     defences whoever builds it; that is what the words mean. NOT by it:
+       - an anti-radiation round, which is fired from the edge of the very
+         battery it is attacking (the Weasel's job, its own branch);
+       - a bomb, which has to be delivered over the target (the B-52D over
+         Hanoi, the Valiant's Blue Danube, a B-2's JDAM);
+       - a strike aircraft (role "cas"), a gunship and the AC-130, which
+         press a commanded attack into a defended area because that is their
+         job and a player who orders it means it (the transit rule's own
+         line, above) - the Tornado's Taurus included;
+       - a helicopter, which hovers.
+     Memoised per def and re-read if the mount list is ever replaced, the
+     way gunMix() is. */
+  static standoffRound(w) {
+    return !!w && w.proj === "missile" && !w.antiRadiation && !!w.tgt && !w.tgt.air &&
+           !!(w.tgt.ground || w.tgt.sea);
+  }
+  static ringsDiffer(a, b) {
+    if (a === b) return false;
+    if (!a || !b || a.length !== b.length) return true;
+    for (let i = 0; i < a.length; i++)
+      if (Math.abs(a[i] - b[i]) > (i % 3 === 2 ? 0.1 : CFG.TILE * 0.5)) return true;
+    return false;
+  }
+  standoffAir() {
+    const d = this.def;
+    if (this.layer !== "air" || d.hover || (d.role !== "heavybomber" && d.role !== "stealthbomber")) return false;
+    const memo = Unit.soAirMemo || (Unit.soAirMemo = new WeakMap());
+    const m = memo.get(d);
+    if (m && m.ws === d.weapons) return m.v;
+    let v = false;
+    for (const k of (d.weapons || [])) if (Unit.standoffRound(WEAPONS[k])) { v = true; break; }
+    memo.set(d, { ws: d.weapons, v: v });
+    return v;
+  }
+  /* The reach to plan with: the longest stand-off round aboard that can be
+     put onto this target now, and its arming distance. Longest, not the one
+     pickWeapon would choose at this moment - a present-day B-52H shoots a
+     ship with LRASM once it is close enough, but from where it has to stand
+     outside a Type 055's rings only its JASSM-ER reaches. `ordered` counts a
+     held round as the order will release it: ai.js asks before it orders. */
+  standoffReachOf(t, ordered) {
+    let reach = 0, minR = 0;
+    const tl = t.targetLayer ? t.targetLayer() : "ground";
+    for (let i = 0; i < this.def.weapons.length; i++) {
+      const w = WEAPONS[this.def.weapons[i]];
+      if (!Unit.standoffRound(w) || (!ordered && this.holdsFire(w))) continue;
+      if (this.ammoMax && !this.canAfford(w)) continue;
+      if (w.tgt && !w.tgt[tl]) continue;
+      if (w.landAttack && t.kind !== "building") continue;
+      const r = this.weaponRange(w);
+      if (r > reach) { reach = r; minR = (w.minRange || 0) * CFG.TILE; }
+    }
+    return { reach: reach, minR: minR };
+  }
+  /* Can this bomber put a stand-off round onto t from outside every ring
+     its side knows of? ai.js asks it of every target it would give one.
+     The question is asked without the route (noRoute: a commander asks it
+     of every candidate), so a target flyStandoff has since found no way to
+     - and struck off (soNo) - is answered no until it is struck back on,
+     or the commander would hand the same order straight back each think. */
+  standoffReach(t) {
+    if (!t || !this.standoffAir()) return true;
+    if (this.soNo && this.soNo.get(t.id) > this.game.time) return false;
+    const rr = this.standoffReachOf(t, true);
+    if (!rr.reach || !this.game.standoffLaunch) return true;
+    return !this.game.standoffLaunch(this.owner, this.x, this.y, t.x, t.y,
+      { reach: rr.reach, minR: rr.minR, turnR: this.turnRadius(), noRoute: true }).held;
+  }
+  /* The attack, flown by the rule. The plan is kept on the order and made
+     again when what the side knows changes, when the target moves, when the
+     round in hand changes, and every three seconds from where the aircraft
+     then is - never every frame: G.standoffLaunch walks the rings and, when
+     the way is blocked, a small route search. */
+  flyStandoff(o, t, wi, w, range, dist, dt) {
+    const g = this.game, TL = CFG.TILE, now = g.time;
+    const rr = this.standoffReachOf(t, false);
+    const reach = rr.reach || range, minR = rr.reach ? rr.minR : (w.minRange || 0) * TL;
+    const rings = g.standoffRings(this.owner);
+    let sp = o.so;
+    const moved = !!sp && U.dist(sp.tx, sp.ty, t.x, t.y) > TL * 1.5;
+    if (!sp || moved || sp.reach !== reach || now - sp.t >= 3 ||
+        (now - sp.t >= 0.5 && Unit.ringsDiffer(sp.rings, rings))) {
+      const prev = sp;
+      sp = o.so = g.standoffLaunch(this.owner, this.x, this.y, t.x, t.y, {
+        reach: reach, minR: minR, turnR: this.turnRadius(), rings: rings,
+        home: { x: this.owner.homeX, y: this.owner.homeY }, ang: this.ang,
+        keep: prev ? { cx: prev.cx, cy: prev.cy, dir: prev.dir } : null,
+        prefer: prev && !prev.held && prev.kind === "offset" ? { x: prev.cx, y: prev.cy } : null });
+      sp.t = now; sp.rings = rings; sp.reach = reach; sp.tx = t.x; sp.ty = t.y;
+    }
+    if (sp.held) {
+      /* No point within the round's reach of the target lies outside the
+         rings. An engagement nobody ordered, or a commander's order, is not
+         worth the airframe: the target is struck off for twenty seconds so
+         acquire() does not hand it straight back, and the aircraft returns
+         to where its owner can re-task it - ai.js asks standoffReach() before
+         it gives an order, so this is the commander learning of a battery
+         after it gave one. The PLAYER'S order stands: the bomber holds short
+         of the rings, says so once, and goes in the moment a launch point
+         opens - a battery killed, a target that moves - or when the player
+         sets it aggressive. */
+      if (o.auto || this.owner !== g.human) {
+        (this.soNo || (this.soNo = new Map())).set(t.id, now + 20);
+        this.order = o.auto
+          ? this.afterAttack({ type: "attack", target: null, resume: o.resume, cap: o.cap, then: o.then })
+          : { type: "hover" };
+        return;
+      }
+      if (this.warnedReach !== t) {
+        this.warnedReach = t;
+        g.alert(this.def.name.toUpperCase() +
+                " — HOLDING SHORT OF AIR DEFENCE: TARGET BEYOND STAND-OFF REACH", "bad");
+      }
+    } else this.warnedReach = null;
+    /* the route round the rings, then the circle */
+    const via = sp.via;
+    while (via.length && U.dist(this.x, this.y, via[0].x, via[0].y) < TL * 2.2) via.shift();
+    if (via.length) this.soFlyTo(via[0].x, via[0].y, dt);
+    else if (sp.kind === "around") this.flyOrbit(t.x, t.y, sp.r, dt, sp.dir, true);
+    else this.flyOrbit(sp.cx, sp.cy, sp.r, dt, sp.dir, true);
+    /* and the round goes whenever the target is inside its reach - the same
+       0.968 of range the orbit below has always fired at (hold x 1.10) */
+    if (dist <= range * 0.968 && dist >= (w.minRange || 0) * TL) {
+      this.tryFire(wi, t);
+      if (this.ordnanceDry()) this.order = this.afterAttack(o);
+    }
+  }
+  /* The way home round the rings, for a stand-off bomber: having gone round
+     them to its launch orbit, a straight line back to the ramp can run
+     through the middle of them. Remade every two seconds, like the plan.
+     It has to get home whatever the rings say, so when they leave no way
+     round - a ramp under a battery, a belt with no gap - it takes the way
+     that is least inside them (G.soRoute `soft`), never the straight line
+     through the middle. */
+  ringDetour(o, px, py) {
+    if (!this.standoffAir() || this.stance === "aggressive" || !this.game.soRoute) return null;
+    const now = this.game.time;
+    if (!o.det || now - o.det.t > 2 || o.det.px !== px || o.det.py !== py)
+      o.det = { t: now, px: px, py: py,
+                via: this.game.soRoute(this.owner, this.x, this.y, px, py,
+                                       undefined, undefined, true) || [] };
+    const v = o.det.via;
+    while (v.length && U.dist(this.x, this.y, v[0].x, v[0].y) < CFG.TILE * 2.2) v.shift();
+    return v.length ? v[0] : null;
+  }
+  /* ---- THE TRANSIT, flown by the same rule ----
+     (review) The first cut held a stand-off bomber short only when the END
+     of a move lay inside a ring: G.standoffPoint looks at the destination
+     and not the way to it, so a move or a sweep to a point beyond a
+     remembered SAM Site was flown in a straight line over the battery.
+     Measured on that cut under jsc, a present-day B-52H sent 36 tiles past
+     a SAM Site its side had on its chart: on a move it passed 0.1 tiles
+     from the battery, 6.0 s inside its reach, two rounds at it, 968 hp to
+     462 - exactly what HEAD did - and on an attack-move 3.9 tiles, the
+     same two rounds. And the hold had been grown by the whole circle the
+     aeroplane flies, so every remembered SAM Site kept a move 33 tiles off
+     a battery that reaches 14 ("HOLDING SHORT" for a point 25 tiles out).
+     So a move, a sweep or a patrol:
+       - goes ROUND the rings its side knows (G.soRoute, the route the attack
+         and the way home already fly), the margin the transit hold has
+         always used (2.5 tiles) on every leg;
+       - with a ring near enough the point for the aeroplane to stray into,
+         ends on a circle it can fly, clear of them (G.soStation, then
+         soLoiter): round the point itself when that circle is clear,
+         beside it when not, JOINED on the tangent - a Buff that flew to the
+         point and only then turned would swing up to two turning radii, 17
+         tiles, toward whatever lay on that side. Measured on the transit
+         fix before this was added: a move to a point 25 tiles beside a
+         remembered SAM Site, turned in at the point, came to 11.0 tiles of
+         a battery that reaches 14.0. With no ring that near, the move ends
+         as every aeroplane's does;
+       - is HELD, and says so, when the point itself is inside a ring - on
+         the line from home, short of them, as G.standoffPoint holds - or
+         when no way round reaches it: then on that line on our side of
+         them. A sweep or a patrol held there still takes what comes within
+         its reach (the attack branch keeps it outside the rings while it
+         shoots).
+     Answers true when it has flown this frame; false hands back a last leg
+     that is clear, for the order's own branch to fly. */
+  soTransit(o, margin, dt) {
+    const g = this.game, TL = CFG.TILE, now = g.time;
+    const rings = g.standoffRings(this.owner);
+    const rL = this.turnRadius() * 1.3, slack = TL * 1.75;
+    let p = o.sot;
+    if (!p || now - p.t >= 3 || (now - p.t >= 0.5 && Unit.ringsDiffer(p.rings, rings))) {
+      const home = { x: this.owner.homeX, y: this.owner.homeY };
+      const so = { r: rL, slack: slack, margin: margin, rings: rings, home: home };
+      let st = g.soStation(this.owner, o.x, o.y, so);
+      const near = Unit.ringNear(rings, o.x, o.y, margin, rL + slack);
+      const same = (q) => !!p && U.dist(p.cx, p.cy, q.x, q.y) < TL * 1.5;
+      let via = null, dir = same(st) ? p.dir : g.soDir(st.x, st.y, this.x, this.y, this.ang);
+      if (!st.held) {
+        /* to the point, or with a ring near it to its circle */
+        const en = near ? g.soEntry(st.x, st.y, rL, this.x, this.y, dir) : { x: o.x, y: o.y };
+        via = g.soRoute(this.owner, this.x, this.y, en.x, en.y, margin, rings);
+        if (via.closed) {
+          /* the point is clear and there is no way round to it */
+          so.open = true;
+          st = g.soStation(this.owner, o.x, o.y, so);
+          st.held = true;
+          dir = same(st) ? p.dir : g.soDir(st.x, st.y, this.x, this.y, this.ang);
+        }
+      }
+      if (st.held) {
+        const en = g.soEntry(st.x, st.y, rL, this.x, this.y, dir);
+        via = g.soRoute(this.owner, this.x, this.y, en.x, en.y, margin, rings);
+        if (via.closed) via = g.soRoute(this.owner, this.x, this.y, en.x, en.y, margin, rings, true);
+      }
+      p = o.sot = { t: now, rings: rings, held: st.held, near: near, cx: st.x, cy: st.y, dir: dir, via: via };
+    }
+    const via = p.via;
+    while (via.length && U.dist(this.x, this.y, via[0].x, via[0].y) < TL * 2.2) via.shift();
+    if (p.held) {
+      if ((o.type === "attackmove" || o.type === "cap") && this.soAcquire(o)) return true;
+      if (!this.warnedRing && this.owner === g.human) {
+        this.warnedRing = true;
+        g.alert(this.def.name.toUpperCase() + " — HOLDING SHORT OF AIR DEFENCE", "bad");
+      }
+      if (via.length) this.soFlyTo(via[0].x, via[0].y, dt);
+      else this.flyOrbit(p.cx, p.cy, rL, dt, p.dir, true);
+      return true;
+    }
+    this.warnedRing = false;
+    if (!via.length && (!p.near || o.type === "cap")) return false;   // the last leg is clear
+    if ((o.type === "attackmove" || o.type === "cap") && this.soAcquire(o)) return true;
+    if (via.length) { this.soFlyTo(via[0].x, via[0].y, dt); return true; }
+    /* on the circle: a move or a sweep has arrived, and holds there */
+    this.flyOrbit(p.cx, p.cy, rL, dt, p.dir, true);
+    if (U.dist(this.x, this.y, p.cx, p.cy) < rL + TL * 2 && !this.nextOrder())
+      this.order = { type: "hover", hx: p.cx, hy: p.cy };
+    return true;
+  }
+  /* a sweep or a patrol in transit takes what comes within its reach, as its
+     own branch would */
+  soAcquire(o) {
+    const foe = this.acquire();
+    if (!foe) return false;
+    this.order = o.type === "cap"
+      ? { type: "attack", target: foe, resume: { x: o.x, y: o.y }, cap: true, auto: true }
+      : { type: "attack", target: foe, resume: { x: o.x, y: o.y }, auto: true };
+    return true;
+  }
+  /* is a ring of `rings` near enough (sx, sy) for a circle of radius `circ`
+     (pixels, wander in) round it to stray inside the ring and `margin`? */
+  static ringNear(rings, sx, sy, margin, circ) {
+    for (let i = 0; i < rings.length; i += 3)
+      if (U.dist(sx, sy, rings[i], rings[i + 1]) < (rings[i + 2] + margin) * CFG.TILE + 2 * circ) return true;
+    return false;
+  }
+  /* A stand-off bomber holding where it was sent - at the end of a move or
+     a sweep (hover) or on a patrol (cap) - with a ring its side knows near
+     enough for the hold to stray into: it holds on a circle it can fly,
+     clear of them (G.soStation), reached round them. Further off than that
+     the hold is the one every aeroplane flies. Answers true when it flew. */
+  soLoiter(o, sx, sy, dt) {
+    if (!this.standoffAir() || this.stance === "aggressive" || !this.game.soStation) return false;
+    const g = this.game, TL = CFG.TILE, now = g.time;
+    const rings = g.standoffRings(this.owner);
+    const rL = this.turnRadius() * 1.3, slack = TL * 1.75, margin = 2.5;
+    let p = o.sol;
+    if (!p || p.sx !== sx || p.sy !== sy || now - p.t >= 3 ||
+        (now - p.t >= 0.5 && Unit.ringsDiffer(p.rings, rings))) {
+      /* near: the ring, its margin and twice the circle with its wander */
+      const near = Unit.ringNear(rings, sx, sy, margin, rL + slack), was = p;
+      p = o.sol = { t: now, rings: rings, sx: sx, sy: sy, near: near, cx: sx, cy: sy, via: [] };
+      if (near) {
+        const st = g.soStation(this.owner, sx, sy, { r: rL, slack: slack, margin: margin, rings: rings,
+                                                     home: { x: this.owner.homeX, y: this.owner.homeY } });
+        p.dir = was && was.near && U.dist(was.cx, was.cy, st.x, st.y) < TL * 1.5
+          ? was.dir : g.soDir(st.x, st.y, this.x, this.y, this.ang);
+        const en = g.soEntry(st.x, st.y, rL, this.x, this.y, p.dir);
+        let via = g.soRoute(this.owner, this.x, this.y, en.x, en.y, margin, rings);
+        if (via.closed) via = g.soRoute(this.owner, this.x, this.y, en.x, en.y, margin, rings, true);
+        p.cx = st.x; p.cy = st.y; p.via = via;
+      }
+    }
+    if (!p.near) return false;
+    const via = p.via;
+    while (via.length && U.dist(this.x, this.y, via[0].x, via[0].y) < TL * 2.2) via.shift();
+    if (via.length) this.soFlyTo(via[0].x, via[0].y, dt);
+    else this.flyOrbit(p.cx, p.cy, rL, dt, p.dir, true);
+    return true;
   }
   flyTo(px, py, dt) {
     const want = Math.atan2(py - this.y, px - this.x);

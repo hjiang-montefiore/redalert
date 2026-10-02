@@ -185,6 +185,9 @@ var Game = (function () {
        sight (G.trackGhosts). A new battle has seen nothing yet. The lit
        firing points (G.revealFire) live on the players, who are new too. */
     G.ghosts = [];
+    /* the clock of the stand-off bombers' plot of launchers (G.aaPlotSweep);
+       the plots themselves live on the players, new with the battle */
+    G.aaPlotT = 0;
 
     /* fog: 0 unseen, 1 explored, 2 visible — per human player only */
     G.fog = new Uint8Array(G.map.W * G.map.H);
@@ -2855,9 +2858,31 @@ var Game = (function () {
      arithmetic over a flat [x, y, reach, ...] array. Same entities, same
      order, same comparisons, and the fog rule is untouched: a ring the owner
      cannot see never enters the list, exactly as before. */
-  G.airThreatRings = function (owner) {
+  /* ---- AND WHAT THE SIDE REMEMBERS, for the one caller that asks ----
+     `remember` adds the hostile STRUCTURES standing on ground this side has
+     explored - G.explored(), the player's fog or a commander's own look grid
+     - whether or not anything is looking at them this second. That is the
+     same rule by which the player's map keeps drawing a structure once its
+     ground has been seen (render.js visible()) and the player may still click
+     it (ui.js pickAt), and the commander's look grid answers it the same way
+     for its own side: concrete does not move. A vehicle is not remembered
+     here - it moves; G.standoffRings adds where the side last SAW each one
+     (G.aaPlotSweep) - and neither side is handed ground it has not looked
+     at.
+     Only G.standoffRings passes it - the list a stand-off bomber flies by
+     (G.standoffLaunch, its transit and its station, its way home) and the
+     commander asks of before it sends one - and it has to: such a bomber
+     works 17 to 19 tiles off the battery it is avoiding and its own sight
+     is 9 (a B-52's), so a ring counted only while somebody SEES it drops
+     out as soon as the bomber has backed off to a safe distance, and it
+     turns in again. Measured in a commander-against-commander match on
+     fulda at e00, t=900 s: NATO had the ground of 25 Pact air-defence
+     structures on its map and had none of them in sight. Every older
+     caller leaves it out and gets exactly what it got. */
+  G.airThreatRings = function (owner, remember) {
     const out = [];
     if (!owner) return out;
+    const W = G.map.W;
     for (const o of G.players) {
       if (o === owner || G.allied(owner, o) || o.defeated) continue;
       const scan = (list, isBld) => {
@@ -2873,7 +2898,10 @@ var Game = (function () {
              - so it assumes the worst plausible case instead. */
           const reach = G.airDefenceReach(e.def) * 1.25;
           if (!reach) continue;
-          if (!G.visibleTo(owner, e)) continue;      // not on our chart, not on our route
+          /* remembered first: G.explored is one array read, G.visibleTo a
+             walk over the whole army for a commander (see PERF above) */
+          if (!(remember && isBld && G.explored(owner, e.ty * W + e.tx)) &&
+              !G.visibleTo(owner, e)) continue;      // not on our chart, not on our route
           out.push(e.x, e.y, reach);
         }
       };
@@ -2904,7 +2932,7 @@ var Game = (function () {
      approach back toward the aircraft rather than sideways: an orbit short of
      the threat is what an early-warning aircraft actually flies, and it keeps
      the geometry legible to a player watching it. */
-  G.standoffPoint = function (owner, fx, fy, tx, ty, margin) {
+  G.standoffPoint = function (owner, fx, fy, tx, ty, margin, known) {
     const m = margin === undefined ? 1.5 : margin;
     /* airThreatAt returns 0 when clear and a POSITIVE depth when inside, so the
        margin has to inflate the ring inside the test rather than be added to
@@ -2914,7 +2942,10 @@ var Game = (function () {
     /* PERF: gathered ONCE - see G.airThreatRings. The probe loop below and the
        egress scan at the bottom both read this same list, so the visible
        threat picture is built one time per call instead of twenty-two. */
-    const rings = G.airThreatRings(owner);
+    /* `known` is an already-gathered list a caller wants used instead -
+       a stand-off bomber's, which includes what its side remembers
+       (G.standoffRings). Left out, this is the list it always read. */
+    const rings = known || G.airThreatRings(owner);
     if (!G.airThreatAt(owner, tx, ty, m, rings)) return { x: tx, y: ty, held: false };
     const dx = tx - fx, dy = ty - fy;
     const len = Math.hypot(dx, dy);
@@ -2946,6 +2977,482 @@ var Game = (function () {
       return { x: fx + ax / al * run, y: fy + ay / al * run, held: true, egress: true };
     }
     return { x: fx, y: fy, held: true };
+  };
+
+  /* ================= THE STAND-OFF LAUNCH =================
+     (owner) "b52H should shoot missle far away instead of bomb under the sam
+     range."
+     It did not, and the reasons were all in entities.js's attack branch:
+     a commanded attack carries `release` and so skipped every ring the side
+     knew about; the stand-off shooter flew AT the target until it was inside
+     1.06 x its hold and only then tried to turn onto the circle, which with a
+     Buff's 8.5-tile turning radius carried it to 9.2 tiles; and orbitAround()
+     chases a point 0.55 rad ahead on its circle, so it settles at cos(0.55)
+     = 0.85 of the radius it is handed - a JASSM's 0.88 x 16.2 hold flown at
+     12.2. MEASURED at f9ef2ee under jsc, a present-day B-52H ordered onto a
+     radar three tiles from a SAM Site its side could see: two JASSMs away,
+     closest approach 7.7 tiles to a battery that reaches 14.0, shot down
+     13.0 seconds after the order. The e00, e90 and e80 marks did the same
+     (dead at 13.0, 22.4 and 17.5 s).
+     So a bomber with a stand-off round works its target from a launch orbit
+     that lies wholly outside every ring its side KNOWS of, reached by a route
+     that goes round them:
+       - the rings are G.standoffRings: a battery seen now, a structure on
+         ground its side has explored, or a launcher where its side last
+         saw it (the plot, below). Never one its fog hides - it can still be
+         caught by one of those, exactly as a transiting aircraft can, and
+         the shot that gives the battery away (G.revealFire) puts it on the
+         chart the next half second, and keeps it there;
+       - each ring is drawn as G.airThreatRings draws it, 1.25 x the
+         catalogue reach, plus STANDOFF_MARGIN, plus what a flown circle
+         wanders off its own line;
+       - first choice, the old one made safe: a circle round the target at
+         0.88 of the round's reach, or the nearest radius that clears every
+         ring, so it shoots on every reload;
+       - failing that, a tight circle (1.3 turning radii) off to one side of
+         the target, the whole of it outside every ring, set as close in as
+         that allows; it shoots on the part of each lap that is in reach, and
+         `duty` says how much of the lap that is;
+       - failing both, HELD: there is no point within the round's reach of
+         the target outside the rings, and the bomber holds on a circle short
+         of them on the line from home - the transit hold of G.standoffPoint,
+         drawn round the same remembered rings. entities.js says so to the
+         player and drops the target for an automatic engagement or a
+         commander's order (ai.js no longer gives one it cannot fly).
+     The route is the shortest one through points round the rings - sixteen
+     on each, far enough out that the straight leg between two of them stays
+     clear - and an aircraft already inside a ring is first sent straight out
+     of the deepest one, the egress G.standoffPoint flies. The circle is
+     joined the way the aircraft is already turning (soDir), and entities.js
+     soFlyTo turns it the long way round when the short way would sweep it
+     into a ring.
+     Units: everything in pixels except `margin` (tiles), as the other
+     planners here. Pure: reads the rings and the map, writes nothing. */
+  G.STANDOFF_MARGIN = 1.0;
+
+  /* ---- AND WHERE IT LAST SAW EACH LAUNCHER ----
+     A structure is remembered on ground the side has explored (G.airThreat-
+     Rings `remember`): concrete does not move. A launcher does, and the
+     first cut of this rule forgot one the moment it was out of sight - and
+     every area SAM in the game but the fixed SAM Site and the AA Battery is
+     a vehicle: the S-400, the S-300PS, PM and PMU-2, the HQ-9, Patriot,
+     SAMP/T, Buk, the S-75, and every SAM ship. A B-52 works 17 to 19 tiles
+     off a battery and sees 9, so the battery was on its chart only for the
+     few seconds its own launch lit it (G.revealFire): the bomber turned out
+     of the ring, the light went out, the ring came off the chart, the plan
+     went back to the circle round the target and the bomber turned in
+     again. MEASURED under jsc on that cut, a present-day B-52H at real hp
+     ordered onto a radar 8 to 12 tiles from an S-400 TEL its fog hid or
+     that a scout had seen for three seconds: 4 or 5 entries into the TEL's
+     reach in 240 s, 7 to 14 s inside it, shot down in 2 of 5 scenes; a
+     base of three unseen TELs and two seen SAM Sites, down at 8.9 s.
+     So each side keeps a plot of the air-defence VEHICLES it has seen - by
+     its own units' and structures' sight or a launch it saw (G.visibleTo,
+     the rule every sighting in this game obeys), nothing its fog hides:
+       - while a vehicle is in sight its entry is where it is, every half
+         second;
+       - when it leaves sight the entry stays where it stepped out of view -
+         the ghost tracker's rule (G.trackGhosts): where it first stands
+         unseen if that is within a tile of where it was last seen, else that
+         last-seen spot - and is drawn there as the ring it had;
+       - it is struck off when the side looks at that spot again, three
+         seconds or more after the sighting, and the vehicle is not there
+         (the commander strikes a structure off its plot the same way, ai.js
+         forgetStale); when the side that owns it is beaten or becomes an
+         ally; and AA_PLOT_LIFE seconds after it was last seen - five
+         minutes: longer than a B-52H takes to put twenty rounds away, since
+         an entry that ran out mid-attack sent the bomber back into the very
+         ring it had just left (the review measured a 60 s memory: in again
+         at 70 s and at 142 s);
+       - never an aircraft (a minute-old air track is worse than none - the
+         commander keeps air short for the same reason) or a submarine.
+     The player and the commander keep it by the one rule through the one
+     fog, twice a second (G.tick), whether or not a bomber is up - a launcher
+     seen to die while none was flying is struck off then, not left as a
+     ring for the next one. G.standoffRings is its one reader. Measured in a
+     commander-against-commander match on fulda at e20 to t=600 s: 2,250
+     sweeps, 84 ms in all, 0.21% of the simulation, none over 0.3 ms. */
+  G.AA_PLOT_LIFE = 300;
+  G.aaPlotSweep = function (p) {
+    if (!p || p.isNeutral) return null;
+    /* a new battle, or the fog switched on or off under a sandbox, starts
+       the plot afresh: with no fog everything is in sight */
+    let pl = p._aaPlot;
+    if (!pl || pl.game !== G.startOrder || pl.fog !== G.fogEnabled)
+      pl = p._aaPlot = { game: G.startOrder, fog: G.fogEnabled, t: -1, by: new Map() };
+    const now = G.time;
+    if (pl.t === now) return pl;
+    pl.t = now;
+    const by = pl.by, TL = CFG.TILE;
+    for (const o of G.players) {
+      if (o === p || o.isNeutral || o.defeated || G.allied(p, o)) continue;
+      for (const e of o.units) {
+        if (e.dead || e.carried || e.layer === "air" || e.layer === "sub") continue;
+        const reach = G.airDefenceReach(e.def);
+        if (!reach) continue;
+        let r = by.get(e.id);
+        if (G.visibleTo(p, e)) {
+          if (!r) { r = { x: 0, y: 0, reach: 0, t: 0, on: false, own: o }; by.set(e.id, r); }
+          r.x = e.x; r.y = e.y; r.reach = reach * 1.25; r.t = now; r.on = true;
+        } else if (r && r.on) {
+          r.on = false;                          // the step out of view
+          if (U.dist2(e.x, e.y, r.x, r.y) <= TL * TL) { r.x = e.x; r.y = e.y; }
+        }
+      }
+    }
+    const W = G.map.W, H = G.map.H;
+    for (const [id, r] of by) {
+      if (r.t === now) continue;                 // in sight this sweep
+      r.on = false;
+      if (now - r.t > G.AA_PLOT_LIFE || r.own.defeated || G.allied(p, r.own)) { by.delete(id); continue; }
+      if (now - r.t >= 3) {
+        const tx = U.clamp((r.x / TL) | 0, 0, W - 1), ty = U.clamp((r.y / TL) | 0, 0, H - 1);
+        if (G.visibleTo(p, { x: r.x, y: r.y, tx: tx, ty: ty })) by.delete(id);   // looked, not there
+      }
+    }
+    return pl;
+  };
+  /* the rings for one side: what it sees, the structures it remembers and
+     the launchers on its plot - gathered once per side per half second the
+     way entities.js gunRunCovered gathers the visible ones */
+  G.standoffRings = function (owner) {
+    if (!owner) return [];
+    const slot = Math.floor(G.time * 2);
+    let memo = G.soRingMemo;
+    if (!memo || memo.slot !== slot || memo.game !== G.startOrder) {
+      memo = G.soRingMemo = { slot: slot, game: G.startOrder, by: new Map() };
+    }
+    let R = memo.by.get(owner);
+    if (!R) {
+      R = G.airThreatRings(owner, true);
+      /* swept at this same instant, so an entry is `on` exactly when the
+         vehicle is in sight and already on the list above */
+      const pl = G.aaPlotSweep(owner);
+      if (pl) for (const r of pl.by.values()) if (!r.on) R.push(r.x, r.y, r.reach);
+      memo.by.set(owner, R);
+    }
+    return R;
+  };
+  /* the flat ring list as circles in pixels, each grown by `pad`. A circle
+     wholly inside another adds nothing to where an aircraft may fly - a
+     Tunguska parked beside an S-400 - and is left out, so the route search
+     below does not pay for it. */
+  function soCircles(R, pad) {
+    const all = [];
+    for (let i = 0; i < R.length; i += 3) all.push({ x: R[i], y: R[i + 1], r: R[i + 2] * CFG.TILE + pad });
+    const out = [];
+    for (let i = 0; i < all.length; i++) {
+      const a = all[i];
+      let inner = false;
+      for (let j = 0; j < all.length && !inner; j++) {
+        if (j === i) continue;
+        const b = all[j], d = U.dist(a.x, a.y, b.x, b.y);
+        /* strictly inside, or the later of two identical circles */
+        if (d + a.r < b.r - 0.01 || (j < i && d + a.r <= b.r + 0.01 && b.r <= a.r + 0.01)) inner = true;
+      }
+      if (!inner) out.push(a);
+    }
+    return out;
+  }
+  function soSegClear(C, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy;
+    for (const c of C) {
+      let t = L2 > 0 ? ((c.x - x1) * dx + (c.y - y1) * dy) / L2 : 0;
+      t = t < 0 ? 0 : (t > 1 ? 1 : t);
+      const px = x1 + dx * t - c.x, py = y1 + dy * t - c.y;
+      if (px * px + py * py < c.r * c.r) return false;
+    }
+    return true;
+  }
+  function soInside(C, x, y) {
+    for (const c of C) if (U.dist2(x, y, c.x, c.y) < c.r * c.r) return true;
+    return false;
+  }
+  /* how far the leg A-B runs inside the circles, in pixels, summed */
+  function soInsideLen(C, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    if (L < 1e-6) return 0;
+    const ux = dx / L, uy = dy / L;
+    let s = 0;
+    for (const c of C) {
+      const fx = x1 - c.x, fy = y1 - c.y, b = fx * ux + fy * uy, q = fx * fx + fy * fy - c.r * c.r;
+      const disc = b * b - q;
+      if (disc <= 0) continue;
+      const sq = Math.sqrt(disc), t0 = Math.max(0, -b - sq), t1 = Math.min(L, -b + sq);
+      if (t1 > t0) s += t1 - t0;
+    }
+    return s;
+  }
+  /* the shortest way from A to B that stays out of every circle: B itself if
+     the leg is clear, else Dijkstra over sixteen points round each circle.
+     Returns the turning points to fly through (B not included), or null.
+     `soft` is for a trip that has to be made whatever the rings say - the
+     way home (entities.js ringDetour): a leg through a circle is allowed at
+     SO_THROUGH times its length inside, so it answers the way that is least
+     inside them, and never null. */
+  const SO_THROUGH = 25;
+  function soRoute(C, ax, ay, bx, by, soft) {
+    if (soSegClear(C, ax, ay, bx, by)) return [];
+    const TL = CFG.TILE, MW = G.map.W * TL, MH = G.map.H * TL, N = 16, k = 1 / Math.cos(Math.PI / N);
+    const nodes = [{ x: ax, y: ay }, { x: bx, y: by }];
+    for (const c of C) {
+      const rr = (c.r + TL * 0.5) * k;
+      for (let i = 0; i < N; i++) {
+        const x = c.x + Math.cos(i / N * U.PI2) * rr, y = c.y + Math.sin(i / N * U.PI2) * rr;
+        if (x < TL || y < TL || x > MW - TL || y > MH - TL || soInside(C, x, y)) continue;
+        nodes.push({ x: x, y: y });
+      }
+    }
+    const n = nodes.length, dist = new Array(n).fill(Infinity), prev = new Array(n).fill(-1), done = new Array(n).fill(false);
+    dist[0] = 0;
+    for (;;) {
+      let u = -1, best = Infinity;
+      for (let i = 0; i < n; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+      if (u < 0) return null;
+      if (u === 1) break;
+      done[u] = true;
+      const a = nodes[u];
+      for (let v = 0; v < n; v++) {
+        if (done[v]) continue;
+        const b = nodes[v];
+        let d = dist[u] + U.dist(a.x, a.y, b.x, b.y);
+        if (d >= dist[v]) continue;
+        if (!soSegClear(C, a.x, a.y, b.x, b.y)) {
+          if (!soft) continue;
+          d += SO_THROUGH * soInsideLen(C, a.x, a.y, b.x, b.y);
+          if (d >= dist[v]) continue;
+        }
+        dist[v] = d; prev[v] = u;
+      }
+    }
+    const via = [];
+    for (let v = prev[1]; v > 0; v = prev[v]) via.unshift({ x: nodes[v].x, y: nodes[v].y });
+    return via;
+  }
+  /* where on a circle an aircraft at (ax, ay) joins it, flying round it
+     the way `dir` says (1, angle increasing - orbitAround()'s own way - or
+     -1): the tangent point, or the nearest point of the circle from inside
+     it */
+  function soEntry(cx, cy, r, ax, ay, dir) {
+    const dx = ax - cx, dy = ay - cy, D = Math.hypot(dx, dy) || 1;
+    const a = Math.atan2(dy, dx), b = D > r ? Math.acos(r / D) : 0, s = dir === -1 ? -1 : 1;
+    return { x: cx + Math.cos(a + s * b) * r, y: cy + Math.sin(a + s * b) * r };
+  }
+  /* which way round a centre an aircraft at (ax, ay) on heading `ang` is
+     already going: 1 angle increasing, -1 decreasing. Joined that way it
+     never has to reverse its turn - a Buff told to circle against its own
+     sense of travel swings a whole turning circle, 8.5 tiles, the wrong way
+     before it is round (measured, from a sweep that took up a target as it
+     passed a SAM Site: in from 25.0 to 13.3 tiles of the battery) */
+  function soDir(cx, cy, ax, ay, ang) {
+    if (ang === undefined) return 1;
+    return (ax - cx) * Math.sin(ang) - (ay - cy) * Math.cos(ang) >= 0 ? 1 : -1;
+  }
+  /* out of every ring the point is inside, deepest first, each time straight
+     away from that ring's battery to 1.5 tiles past its edge - the egress
+     G.standoffPoint flies. Answers the point it ends at and the legs.
+     On the map: where straight away from the battery runs off the edge, the
+     way out is turned by up to 90 degrees each side, nearest first, to the
+     first that leaves the ring on the map - flyTo holds an aircraft on the
+     map, so a point off it was a corner the aircraft pressed into until the
+     next plan. */
+  function soEgress(C, x, y) {
+    const TL = CFG.TILE, MW = G.map.W * TL, MH = G.map.H * TL, lead = [];
+    const onMap = (px, py) => px > TL && py > TL && px < MW - TL && py < MH - TL;
+    for (let n = 0; n < 4; n++) {
+      let deep = 0, dc = null;
+      for (const c of C) { const d = c.r - U.dist(x, y, c.x, c.y); if (d > deep) { deep = d; dc = c; } }
+      if (!dc) break;
+      const a0 = Math.atan2(y - dc.y, x - dc.x);
+      let nx = U.clamp(x + Math.cos(a0) * (deep + TL * 1.5), TL * 1.01, MW - TL * 1.01);
+      let ny = U.clamp(y + Math.sin(a0) * (deep + TL * 1.5), TL * 1.01, MH - TL * 1.01);
+      for (const da of [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.57, -1.57]) {
+        /* along this bearing, to where it leaves dc's circle, and 1.5 on */
+        const ux = Math.cos(a0 + da), uy = Math.sin(a0 + da);
+        const fx = x - dc.x, fy = y - dc.y, b = fx * ux + fy * uy;
+        const s = -b + Math.sqrt(Math.max(0, b * b - (fx * fx + fy * fy - dc.r * dc.r)));
+        const qx = x + ux * (s + TL * 1.5), qy = y + uy * (s + TL * 1.5);
+        if (onMap(qx, qy)) { nx = qx; ny = qy; break; }
+      }
+      x = nx; y = ny;
+      lead.push({ x: x, y: y });
+    }
+    return { x: x, y: y, lead: lead };
+  }
+  /* the same route for any aircraft of `owner`'s, from where it is: out of
+     a ring it is inside, then round the rest. `soft` (the way home,
+     entities.js ringDetour) never fails: with no way round it takes the way
+     that is least inside them (soRoute). Answers the turning points, with
+     `closed` set when there was no clear way and none was flown. */
+  G.soRoute = function (owner, ax, ay, bx, by, margin, rings, soft) {
+    const m = (margin === undefined ? G.STANDOFF_MARGIN : margin) * CFG.TILE;
+    const C = soCircles(rings || G.standoffRings(owner), m);
+    const eg = soEgress(C, ax, ay);
+    const via = soRoute(C, eg.x, eg.y, bx, by, !!soft);
+    if (via) return eg.lead.concat(via);
+    const out = eg.lead.slice();
+    out.closed = true;
+    return out;
+  };
+  /* A STATION for an aircraft of `owner`'s that has to fly a circle of
+     radius o.r (pixels) where it was sent, (sx, sy) - a stand-off bomber at
+     the end of a move, a sweep or a patrol: the centre of a circle that,
+     with o.slack (pixels) of wander, lies wholly outside every ring grown
+     by o.margin (tiles). The point itself when that circle is clear; else
+     the nearest centre that is, on whichever side of the point is nearer
+     home (a hold, not a move). HELD when the point is inside a ring grown
+     by o.margin: then the hold of G.standoffPoint, on the line from home,
+     the furthest point of it short of the rings, pulled back by the
+     circle - or with o.open (the caller found no way round to the point),
+     the furthest point of that line still reached from home without
+     crossing a ring, so the hold is on our side of them. Answers
+     { x, y, held }. */
+  G.soStation = function (owner, sx, sy, o) {
+    const TL = CFG.TILE, MW = G.map.W * TL, MH = G.map.H * TL;
+    const m = (o.margin === undefined ? G.STANDOFF_MARGIN : o.margin) * TL;
+    const R = o.rings || G.standoffRings(owner), sl = o.slack || 0;
+    const lo = o.r + sl + TL;
+    const cx = (x) => U.clamp(x, lo, MW - lo), cy = (y) => U.clamp(y, lo, MH - lo);
+    const hx = o.home ? o.home.x : sx, hy = o.home ? o.home.y : sy;
+    const CM = soCircles(R, m), CL = soCircles(R, m + o.r + sl);
+    const corridor = (open) => {
+      let px = hx, py = hy;
+      if (open) {
+        for (let k = 0.05; k < 0.999; k += 0.05) {
+          const qx = hx + (sx - hx) * k, qy = hy + (sy - hy) * k;
+          if (!soSegClear(CM, hx, hy, qx, qy)) break;
+          if (!soInside(CL, qx, qy)) { px = qx; py = qy; }
+        }
+      } else {
+        for (let k = 0.95; k > 0.0; k -= 0.05) {
+          const qx = hx + (sx - hx) * k, qy = hy + (sy - hy) * k;
+          if (!soInside(CL, qx, qy)) { px = qx; py = qy; break; }
+        }
+      }
+      return { x: cx(px), y: cy(py), held: true };
+    };
+    if (o.open) return corridor(true);
+    if (soInside(CM, sx, sy)) return corridor(false);
+    const x0 = cx(sx), y0 = cy(sy);
+    if (!soInside(CL, x0, y0)) return { x: x0, y: y0, held: false };
+    for (let d = TL; d <= (o.r + sl) * 2.5 + TL * 4; d += TL) {
+      let best = null, bd = Infinity;
+      for (let k = 0; k < 32; k++) {
+        const x = cx(sx + Math.cos(k / 32 * U.PI2) * d), y = cy(sy + Math.sin(k / 32 * U.PI2) * d);
+        if (soInside(CL, x, y)) continue;
+        const dh = U.dist2(x, y, hx, hy);
+        if (dh < bd) { bd = dh; best = { x: x, y: y }; }
+      }
+      if (best) return { x: best.x, y: best.y, held: false };
+    }
+    return corridor(false);                       // nothing near clears
+  };
+  /* where on a circle of radius r round (cx, cy) an aircraft at (ax, ay)
+     joins it (soEntry) - the end of the route to a station */
+  G.soEntry = function (cx, cy, r, ax, ay, dir) { return soEntry(cx, cy, r, ax, ay, dir); };
+  G.soDir = function (cx, cy, ax, ay, ang) { return soDir(cx, cy, ax, ay, ang); };
+  /* o: { reach, minR, turnR (pixels), margin (tiles), rings, home:{x,y},
+          noRoute (a yes/no question: skip the route), prefer:{x,y},
+          ang (the aircraft's heading), keep:{cx, cy, dir} (the circle it is
+          flying: the same circle keeps its way round) }
+     Answers { held, kind: "around" | "offset" | "held", cx, cy, r (the
+     circle to FLY - entities.js hands orbitAround r / cos 0.55), dir (which
+     way round, soDir), duty, via: [turning points] }. */
+  G.standoffLaunch = function (owner, ax, ay, tx, ty, o) {
+    const TL = CFG.TILE, MW = G.map.W * TL, MH = G.map.H * TL;
+    const m = (o.margin === undefined ? G.STANDOFF_MARGIN : o.margin) * TL;
+    const C = soCircles(o.rings || G.standoffRings(owner), m);
+    const reach = o.reach, fireMax = reach * 0.95;
+    const turnR = Math.max(o.turnR || TL, TL);
+    const minR = Math.max((o.minR || 0) * 1.3, TL * 2);
+    /* how far a flown circle wanders off its own line. MEASURED under jsc
+       with flyOrbit's tangent entry, a B-52H: 0.1 tiles on a 22-tile circle
+       round the target, and up to 1.3 on the tight 1.3-turning-radius one
+       off to the side (pursuit of a point that close lags the turn) */
+    const slackA = TL * 0.75, slackO = TL * 1.75;
+    const onMap = (x, y, r) => x - r > TL && y - r > TL && x + r < MW - TL && y + r < MH - TL;
+    /* is the whole band [r - slack, r + slack] round (cx, cy) outside every ring? */
+    const circleSafe = (cx, cy, r, slack) => {
+      for (const c of C) {
+        const e = U.dist(cx, cy, c.x, c.y);
+        if (e >= r ? e - r - slack < c.r : r - slack - e < c.r) return false;
+      }
+      return true;
+    };
+    /* routes start where the aircraft will be once out of any ring it is in */
+    const eg = o.noRoute ? { x: ax, y: ay, lead: [] } : soEgress(C, ax, ay);
+    const kp = o.keep;
+    const routeTo = (c) => {
+      c.dir = kp && U.dist(kp.cx, kp.cy, c.cx, c.cy) < TL * 1.5 ? kp.dir : soDir(c.cx, c.cy, ax, ay, o.ang);
+      if (o.noRoute) return [];
+      const en = soEntry(c.cx, c.cy, c.r, eg.x, eg.y, c.dir);
+      const via = soRoute(C, eg.x, eg.y, en.x, en.y);
+      return via ? eg.lead.concat(via) : null;
+    };
+    let best = null;
+    /* ---- 1. round the target itself, at the edge of the round's reach ---- */
+    const rLo = Math.max(minR, turnR * 1.15), rHi = fireMax - slackA;
+    const rPref = Math.min(rHi, reach * 0.88);
+    if (rHi >= rLo) {
+      for (let s = 0; s <= 60 && !best; s++) {
+        /* outward from the preferred radius first, then inward */
+        const r = s % 2 === 0 ? rPref + (s / 2) * TL * 0.25 : rPref - ((s + 1) / 2) * TL * 0.25;
+        if (r < rLo || r > rHi) continue;
+        if (onMap(tx, ty, r + slackA) && circleSafe(tx, ty, r, slackA)) {
+          const c = { kind: "around", cx: tx, cy: ty, r: r, duty: 1 };
+          c.via = routeTo(c);
+          if (c.via) best = c;
+          else break;                     // no way to the circle: try a side orbit
+        }
+      }
+    }
+    /* ---- 2. a tight circle off to one side, the whole of it outside ---- */
+    if (!best) {
+      const rO = turnR * 1.3;
+      const cands = [];
+      for (let k = 0; k < 32; k++) {
+        const ux = Math.cos(k / 32 * U.PI2), uy = Math.sin(k / 32 * U.PI2);
+        for (let c = rO + minR; c < fireMax + rO - TL; c += TL * 0.5) {
+          const cx = tx + ux * c, cy = ty + uy * c;
+          if (!onMap(cx, cy, rO + slackO) || !circleSafe(cx, cy, rO, slackO)) continue;
+          /* the share of the lap inside the round's reach */
+          const q = (c * c + rO * rO - fireMax * fireMax) / (2 * c * rO);
+          const duty = Math.acos(q > 1 ? 1 : (q < -1 ? -1 : q)) / Math.PI;
+          if (duty >= 0.12) cands.push({ kind: "offset", cx: cx, cy: cy, r: rO, duty: duty });
+          break;                                   // the closest safe centre on this bearing
+        }
+      }
+      /* the most time in reach; between near-equals, the one already being
+         flown (no dithering between two bearings) and then the nearest */
+      const pf = o.prefer;
+      for (const c of cands) {
+        c.score = c.duty - U.dist(ax, ay, c.cx, c.cy) / TL / 600 +
+                  (pf && U.dist(pf.x, pf.y, c.cx, c.cy) < TL * 3 ? 0.08 : 0);
+      }
+      cands.sort((a, b) => b.score - a.score);
+      for (let i = 0; i < cands.length && i < 6 && !best; i++) {
+        const c = cands[i];
+        c.via = routeTo(c);
+        if (c.via) best = c;
+      }
+    }
+    if (best) { best.held = false; return best; }
+    /* ---- 3. HELD: nothing within reach lies outside the rings ----
+       Hold on a circle short of them, on the line from home: the transit
+       hold of G.standoffPoint drawn round the same remembered rings and
+       pulled back by the circle the aeroplane flies there. */
+    const rH = turnR * 1.3;
+    const hx = o.home ? o.home.x : ax, hy = o.home ? o.home.y : ay;
+    const CH = soCircles(o.rings || G.standoffRings(owner), m + rH + slackO);
+    let px = hx, py = hy;
+    for (let k = 0.95; k > 0.0; k -= 0.05) {
+      const qx = hx + (tx - hx) * k, qy = hy + (ty - hy) * k;
+      if (!soInside(CH, qx, qy)) { px = qx; py = qy; break; }
+    }
+    px = U.clamp(px, rH + TL, MW - rH - TL); py = U.clamp(py, rH + TL, MH - rH - TL);
+    const held = { held: true, kind: "held", cx: px, cy: py, r: rH, duty: 0, via: [] };
+    held.via = routeTo(held) || eg.lead;
+    return held;
   };
 
   G.explored = function (p, i) {
@@ -3551,6 +4058,13 @@ var Game = (function () {
        tick it steps onto an unlit tile, and its ghost belongs where it
        was last drawn, not a quarter-second behind */
     G.trackGhosts();
+    /* and the air-defence vehicles each side has seen, where it saw them,
+       twice a second (G.aaPlotSweep) */
+    G.aaPlotT = (G.aaPlotT || 0) - dt;
+    if (G.aaPlotT <= 0) {
+      G.aaPlotT = 0.5;
+      for (const p of G.players) if (!p.defeated) G.aaPlotSweep(p);
+    }
 
     G.checkVictory();
   };
