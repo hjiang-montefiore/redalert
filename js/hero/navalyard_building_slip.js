@@ -1300,6 +1300,15 @@ var HeroNavalYard = (function () {
     props(B);
     var root = new V.Group();
     root.name = "navalyard";
+    /* What render3d.js shorePose() seats and turns the yard by, in these
+       axes: the water line the quay walls, fenders and ladders are drawn
+       for; the face the slip runs out of; and the slip's mouth on it.
+       render3d now sets WL on the water plane (never lower than the ground
+       under the plot's middle) and turns the yard a quarter turn at a time
+       so the slip runs to its water; where the notes above say a building
+       is never turned, they predate that. The quays on the other faces
+       still serve: a ship may lie against any of them. */
+    root.userData.shore = { waterline: WL, seaward: [-1, 0], mouth: [-PL, SY] };
     Object.keys(B).forEach(function (k) {
       var m = B[k].mesh(T[k], "yard_" + k);
       if (m) root.add(m);

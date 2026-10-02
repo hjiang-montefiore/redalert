@@ -139,6 +139,7 @@ var Render3D = (function () {
     cam.x = G.human.homeX; cam.y = G.human.homeY; cam.dist = 430;
     resize();
     ents.clear(); modelCache = {};
+    shoreFits.clear(); shorePoses.clear();       // a new battle is a new coast
   }
 
   function resize() {
@@ -2066,7 +2067,11 @@ var Render3D = (function () {
       const k = Math.max(0, Math.min(7, Math.ceil(a * 8) - 1));
       let rec = ghostRecs.get(g);
       if (!rec) {
-        const tpl = getModel(g.def, g.owner.color, g.owner.era || (G.era || "e20"));
+        /* a structure's ghost is its own model, seated and turned as the
+           structure is (shorePose) - G.trackGhosts writes units only today */
+        const bld = BUILDINGS[g.def.id] === g.def;
+        const tpl = bld ? getBuildingModel(g.def, g.owner.color, g.owner.era || (G.era || "e20"))
+                        : getModel(g.def, g.owner.color, g.owner.era || (G.era || "e20"));
         const inst = tpl.clone();
         ghostPaint(inst, k);
         const grp = new THREE.Group();
@@ -2074,6 +2079,7 @@ var Render3D = (function () {
         grp.userData.ghost = g.id;                   // tools/jsc/ghost3d_check.js finds it by this
         grp.rotation.order = "YXZ";
         const q = g.parked ? ghostPose.get(g.id) : null;
+        let gs = null;
         if (q) {
           grp.position.set(q.x, q.y, q.z);
           grp.rotation.set(q.rx, q.ry, q.rz);
@@ -2084,16 +2090,21 @@ var Render3D = (function () {
             my = g.parked ? ground - footOf(tpl) : Math.max(ground + 6, AIR_ALT);
           } else if (g.layer === "sea") my = 0.35;
           else if (g.layer === "sub") my = -0.6;     // a datum, just under the surface
+          else if (bld && g.def.shore) {
+            gs = shorePose(g.def, Math.round(g.x / CFG.TILE - g.def.w / 2), Math.round(g.y / CFG.TILE - g.def.h / 2), tpl);
+            my = gs.y;
+          }
           else my = heightAt(g.x, g.y);
           grp.position.set(gx2m(g.x), my, gx2m(g.y));
-          grp.rotation.y = -g.ang;
+          grp.rotation.y = gs ? gs.yaw : -g.ang;
         }
         /* trained as it was last seen: trackGhosts stores tang for every
            contact (the hull's heading where it has none), so this is the
            live rule, -(tang - ang), with no fallback - an `||` here took a
-           turret laid exactly along a grid row (tang 0) for the hull's */
+           turret laid exactly along a grid row (tang 0) for the hull's.
+           A turned shore building's mount is trained through its turn. */
         const tur = findPart(inst, "turret");
-        if (tur) tur.rotation.z = -(g.tang - g.ang);
+        if (tur) tur.rotation.z = gs ? -(g.tang - g.ang) - gs.yaw : -(g.tang - g.ang);
         three.scene.add(grp);
         rec = { grp, inst, k };
         ghostRecs.set(g, rec);
@@ -2102,6 +2113,182 @@ var Render3D = (function () {
     for (const [g, rec] of ghostRecs)
       if (!live.has(g)) { three.scene.remove(rec.grp); ghostRecs.delete(g); }
     if (G.fogEnabled) notePoses();
+  }
+
+  /* ---------------- a shore building: where it sits, which way it faces ----------------
+     A naval yard or a coastal sonar array stands on a plot with water and
+     land in it (G.canPlace), and it was set like any other structure: at the
+     ground under the plot's middle, never turned. Over every legal plot within
+     40 tiles of a home on the fourteen theatres, at three seeds, that middle
+     runs from the -7 m seabed to 18 m up a bank and is at or under the 0.35 m
+     water plane on about half of them; on taiwan both commanders' yards stood
+     3 to 4 m under water. And a slip ran out wherever the model was drawn
+     running out, whatever lay there.
+
+     So a shore building is seated and turned here, ONCE per plot, and
+     everything drawn at its foot asks here: its model (syncEntities, and so
+     also where it is remembered under fog), a ghost of it (syncGhosts), its
+     selection ring, health bar and repair label (drawOverlay), its sonar ring
+     (drawSensorRings), its rally flag and where its rally line leaves it, the
+     placement preview, and the point the mouse picks it by (entityScreen).
+     What burns on it (damage3d.js) and what it leaves (impact3d.js) go with
+     its group. No other structure comes here: theirs is untouched.
+
+     THE SEAT is read off the model - userData.shore, in its own axes. The
+     naval yard's quay walls, fenders and ladders are drawn for a water line
+     1.9 m under its origin, 2.9 m under its apron; the sonar array's
+     hardstanding is the lowest thing on it that has to stay dry. The seat
+     puts that line on the water plane, and never lower than the ground under
+     the plot's middle - the rule every structure keeps, so a yard up a bank
+     stays on its bank. A shore model that declares nothing is set with its
+     origin on the water at the least, and not turned. While it goes up it
+     rises about that line (a), where the others rise out of the ground.
+     Measured over that census (seed btest; the other two alike): a yard's
+     apron was under water on 286 of 761 plots and is on none; ground stood
+     through its apron or slip on 716 and does on 203 - the bank plots, set
+     at the ground under their middles, and ones whose land climbs inland -
+     and its quay walls stop short of the ground or the sea on 26 bank plots,
+     as they did. A sonar array's pad was under water on 165 of 475 and is on
+     none; ground stands through it on 385, as on 403 before: a pad 0.8 m
+     thick on the water line, the beach climbing under its landward half.
+
+     THE HEADING. The edge of the plot with the most water on it decides
+     nothing on over half the plots - the water is on a corner, or on two
+     sides - and on 13 to 17 of the AI's 18 picks at each seed. So: of the
+     four quarter turns, the candidates are the ones that put the model's
+     mouth on water (where its slip runs into the sea, where its cable lands:
+     the plot tile there or the one past it); failing any, the ones with
+     water on that face or just past it; failing those, all four. Of the
+     candidates, the one that faces the water round the plot wins: the
+     bearing of every water tile within RING tiles of the plot, from its
+     middle, summed and laid on each candidate's facing. A tie goes to the
+     face with more water on it, then to a ring two tiles wider, then to the
+     way the model was drawn facing, then to the first of east, south, west,
+     north - so with no water in sight it is not turned at all. A plot that
+     is not square turns only end for end. Over the census every plot faces water; a yard's slip runs
+     onto water on 744 of 761 - on the rest no quarter turn puts it there:
+     the water meets the plot only mid-side, or runs through its middle row
+     as a river - 749 were settled without a tiebreak and 4 by the order;
+     on the AI's picks, 17 of 18 onto water; every sonar array's cable.
+     Once per plot: 0.01 ms, and the first of a def builds its model to read
+     what it declares. */
+  const SHORE = {
+    WATER: 0.35,    // m: the sea's surface (buildWater)
+    RING: 4,        // tiles round the plot whose water it is turned to
+  };
+  const SIDES = [[1, 0], [0, 1], [-1, 0], [0, -1]];            // east, south, west, north (game x, y)
+  const QUARTER = [0, Math.PI / 2, Math.PI, -Math.PI / 2];     // k quarter turns, as rotation.y
+  const shoreFits = new Map();       // def id -> what its model says of the sea
+  const shorePoses = new Map();      // def id -> Map(plot -> pose): this battle's coast
+  const _sv = new THREE.Vector3();
+  /* userData.shore on any node of the model, in that node's own axes:
+     waterline - the height the sea was drawn to meet; seaward - the axis of
+     the face that meets it; mouth - the point on that face where it runs
+     into the water. Read through the template's own transforms, so the
+     stand-up turn and BLD_SCALE on it are taken as whatever they are. Once
+     per def: a team's colour or a period's kit does not move its quay. */
+  function shoreFit(def, tpl) {
+    let f = shoreFits.get(def.id);
+    if (f) return f;
+    if (!tpl) tpl = getBuildingModel(def, G.human.color, G.human.era || (G.era || "e20"));
+    f = { wl: 0, q: -1, lat: 0, dep: 0 };
+    let node = null;
+    tpl.traverse((o) => { if (!node && o.userData.shore) node = o; });
+    if (node) {
+      tpl.updateMatrixWorld(true);
+      const S = node.userData.shore, M = node.matrixWorld;
+      f.wl = _sv.set(0, 0, S.waterline || 0).applyMatrix4(M).y;       // metres over the group's origin
+      if (S.seaward) {
+        _sv.set(S.seaward[0], S.seaward[1], 0).transformDirection(M);
+        const sx = _sv.x, sz = _sv.z;
+        f.q = (Math.round(Math.atan2(sz, sx) / (Math.PI / 2)) + 4) % 4;   // the side it faces unturned
+        if (S.mouth) {
+          _sv.set(S.mouth[0], S.mouth[1], 0).applyMatrix4(M);
+          f.lat = _sv.x * sz - _sv.z * sx;                           // metres left of the face's middle
+          f.dep = _sv.x * sx + _sv.z * sz;                           // metres out from the middle, along the face
+        }
+      }
+    }
+    shoreFits.set(def.id, f);
+    return f;
+  }
+  /* the side of the plot (0 east, 1 south, 2 west, 3 north) its seaward
+     face is turned to, and how that was settled */
+  function shoreSide(def, tx, ty, f) {
+    const map = G.map, MW = map.W, MH = map.H, ter = map.terrain;
+    const w = def.w, h = def.h, cx = tx + w / 2, cy = ty + h / 2;
+    const wet = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH && ter[y * MW + x] === T.WATER;
+    const pull = (R) => {
+      let px = 0, py = 0;
+      for (let y = ty - R; y < ty + h + R; y++) for (let x = tx - R; x < tx + w + R; x++) {
+        if (!wet(x, y)) continue;
+        const ox = x + 0.5 - cx, oy = y + 0.5 - cy, d = Math.hypot(ox, oy);
+        if (d > 0) { px += ox / d; py += oy / d; }
+      }
+      return (k) => px * SIDES[k][0] + py * SIDES[k][1];
+    };
+    const mouth = (k) => {
+      const d = SIDES[k], l = f.lat / TILE_M;                      // the mouth, tiles left looking out
+      const mx = cx + d[0] * w / 2 + d[1] * l, my = cy + d[1] * h / 2 - d[0] * l;
+      return wet(Math.floor(mx + d[0] * 0.5), Math.floor(my + d[1] * 0.5)) ||
+             wet(Math.floor(mx - d[0] * 0.5), Math.floor(my - d[1] * 0.5));
+    };
+    const face = (k) => {
+      const d = SIDES[k], n = d[0] ? h : w;
+      let c = 0;
+      for (let i = 0; i < n; i++) for (let o = 0; o < 2; o++) {
+        const x = d[0] > 0 ? tx + w - 1 + o : d[0] < 0 ? tx - o : tx + i;
+        const y = d[1] > 0 ? ty + h - 1 + o : d[1] < 0 ? ty - o : ty + i;
+        if (wet(x, y)) c++;
+      }
+      return c;
+    };
+    const best = (ks, score) => {
+      let m = -Infinity;
+      for (const k of ks) m = Math.max(m, score(k));
+      return ks.filter((k) => score(k) >= m - 1e-9);
+    };
+    const all = [0, 1, 2, 3].filter((k) => w === h || ((f.q - k) & 1) === 0);
+    /* the tile the mouth itself lies in, or the next one out: a yard's slip
+       ends 1.9 m past the plot, a sonar's cable lands inside its edge tile */
+    const atMouth = (k) => {
+      const d = SIDES[k], l = f.lat / TILE_M, dp = f.dep / TILE_M;
+      const px = cx + d[0] * dp + d[1] * l, py = cy + d[1] * dp - d[0] * l;
+      return wet(Math.floor(px), Math.floor(py)) || wet(Math.floor(px + d[0] * 0.5), Math.floor(py + d[1] * 0.5));
+    };
+    let ks = all.filter(atMouth), how = "mouth";
+    if (!ks.length) ks = all.filter(mouth);
+    if (!ks.length) { ks = all.filter((k) => face(k) > 0); how = "face"; }
+    if (!ks.length) { ks = all; how = "any"; }
+    ks = best(ks, pull(SHORE.RING));
+    if (ks.length > 1) { ks = best(ks, face); how += ",face"; }
+    if (ks.length > 1) { ks = best(ks, pull(SHORE.RING + 2)); how += ",ring"; }
+    if (ks.length > 1) { if (ks.indexOf(f.q) >= 0) ks = [f.q]; how += ",order"; }
+    return { k: ks[0], how };
+  }
+  /* where a shore building of this def stands on the plot at tx, ty: once
+     per plot and battle. y is its seat (the model's origin, metres), yaw
+     its turn (rotation.y), face the side it faces (-1: not turned), a the
+     height in its own frame that stays put while it goes up. */
+  function shorePose(def, tx, ty, tpl) {
+    let m = shorePoses.get(def.id);
+    if (!m) shorePoses.set(def.id, m = new Map());
+    const key = ty * 65536 + tx;
+    let P = m.get(key);
+    if (P) return P;
+    const f = shoreFit(def, tpl);
+    const ground = heightAt((tx + def.w / 2) * CFG.TILE, (ty + def.h / 2) * CFG.TILE);
+    const afloat = SHORE.WATER - f.wl;
+    const S = f.q >= 0 ? shoreSide(def, tx, ty, f) : { k: -1, how: "none" };
+    P = { y: Math.max(afloat, ground), yaw: S.k >= 0 ? QUARTER[(f.q - S.k + 4) % 4] : 0,
+          face: S.k, how: S.how, a: afloat >= ground ? f.wl : 0, ground, afloat };
+    m.set(key, P);
+    return P;
+  }
+  /* the height a thing drawn at a shore building's foot stands at - its
+     seat; undefined for anything else, which keeps to the ground */
+  function shoreAlt(e) {
+    return e.kind === "building" && e.def.shore ? shorePose(e.def, e.tx, e.ty).y : undefined;
   }
 
   /* ---------------- entity sync ---------------- */
@@ -2168,13 +2355,21 @@ var Render3D = (function () {
       const mx = gx2m(e.x), mz = gx2m(e.y);
       let my;
       if (e.kind === "building") {
-        my = heightAt(e.x, e.y);
+        /* a shore building where shorePose seats and turns it, found once;
+           every other structure on the ground under its middle, unturned */
+        const sp = e.def.shore ? rec.shore || (rec.shore = shorePose(e.def, e.tx, e.ty, rec.tpl)) : null;
+        my = sp ? sp.y : heightAt(e.x, e.y);
         rec.grp.position.set(gx2m((e.tx + e.def.w / 2) * CFG.TILE), my, gx2m((e.ty + e.def.h / 2) * CFG.TILE));
         const pr = e.buildProgress;
         rec.grp.scale.y = 0.15 + 0.85 * pr;
-        if (rec.turret) rec.turret.rotation.z = -(e.tang || 0);
+        /* turned to its water, and while it goes up it rises about its own
+           water line (sp.a) as the others rise out of the ground; a mount is
+           trained through the turn, so it still lays on its bearing */
+        if (sp) { rec.grp.rotation.y = sp.yaw; rec.grp.position.y = my + sp.a * (1 - rec.grp.scale.y); }
+        const aim = sp ? -(e.tang || 0) - sp.yaw : -(e.tang || 0);
+        if (rec.turret) rec.turret.rotation.z = aim;
         const mw = findPart(rec.inst, "mountwrap");
-        if (mw) mw.rotation.z = -(e.tang || 0);
+        if (mw) mw.rotation.z = aim;
       } else {
         if (e.layer === "air") {
           /* Aircraft altitude used to be recomputed from scratch every frame,
@@ -3091,7 +3286,7 @@ var Render3D = (function () {
          from the game's grid slot, and its ring floated beside it */
       const ar = alt !== undefined ? ents.get(e.id) : null;
       const p = ar ? project(m2gx(ar.grp.position.x), m2gx(ar.grp.position.z), alt)
-                   : project(e.x, e.y, alt !== undefined ? alt : undefined);
+                   : project(e.x, e.y, alt !== undefined ? alt : shoreAlt(e));   // a shore building's at its seat
       if (p.behind || p.x < -80 || p.x > W + 80 || p.y < -80 || p.y > H + 80) continue;
       const scale = 760 / cam.dist;
       const r = Math.max(9, e.r * scale * 0.9);
@@ -3206,11 +3401,19 @@ var Render3D = (function () {
       c.lineWidth = 2;
       c.beginPath();
       const corners = [[tx, ty], [tx + def.w, ty], [tx + def.w, ty + def.h], [tx, ty + def.h]];
-      corners.forEach(([cx2, cy2], i) => {
-        const pp = project(cx2 * CFG.TILE, cy2 * CFG.TILE);
-        i === 0 ? c.moveTo(pp.x, pp.y) : c.lineTo(pp.x, pp.y);
-      });
+      /* a shore building's plot is drawn level at the seat it would take and,
+         where it can go, the face it would turn to the water is ruled heavier
+         (shorePose) */
+      const sp = def.shore ? shorePose(def, tx, ty) : null;
+      const cp = corners.map(([cx2, cy2]) => project(cx2 * CFG.TILE, cy2 * CFG.TILE, sp ? sp.y : undefined));
+      cp.forEach((pp, i) => { i === 0 ? c.moveTo(pp.x, pp.y) : c.lineTo(pp.x, pp.y); });
       c.closePath(); c.fill(); c.stroke();
+      if (ok && sp && sp.face >= 0) {
+        const a = cp[(sp.face + 1) % 4], b = cp[(sp.face + 2) % 4];
+        c.lineWidth = 5;
+        c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+        c.lineWidth = 2;                 // the drag box after it sets no width of its own
+      }
     }
     /* attack-move cursor */
     if (input.attackMove) {
@@ -3247,7 +3450,9 @@ var Render3D = (function () {
     /* rally flags */
     for (const b of G.human.buildings) {
       if (!b.selected || !b.def.produces || b.dead) continue;
-      const p = project(b.rally.x, b.rally.y);
+      /* a shore building's flag stands on the sea's surface, where its rally
+         line ends (olY), not on the seabed under it */
+      const p = project(b.rally.x, b.rally.y, b.def.shore ? Math.max(heightAt(b.rally.x, b.rally.y), SHORE.WATER) : undefined);
       c.strokeStyle = "#8fd05f"; c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x, p.y - 16); c.stroke();
       c.fillStyle = "#8fd05f";
@@ -3365,7 +3570,7 @@ var Render3D = (function () {
     const sel = UI.selection;
     if (!sel || !sel.length) return;
     const ring = (e, tiles, stroke, fill, label) =>
-      groundRing(c, e, tiles, { stroke, fill, label });
+      groundRing(c, e, tiles, { stroke, fill, label, alt: shoreAlt(e) });   // a sonar array's round its seat
     for (const e of sel) {
       if (e.dead) continue;
       const d = e.def || {};
@@ -3508,6 +3713,18 @@ var Render3D = (function () {
   /* metres above the datum for a point of a leg: flying, or on the ground or
      the sea a metre up */
   function olY(x, y, a) { return a ? AIR_ALT : Math.max(heightAt(x, y), 0.35) + 1.0; }
+  /* a rally line leaves a shore building a metre over its seat (shorePose),
+     as every other leg leaves the ground it starts from; render.js starts
+     it at the building's middle */
+  function olFrom(x, y) {
+    const bs = G.human.buildings;
+    for (let i = 0; i < bs.length; i++) {
+      const b = bs[i];
+      if (b.def.shore && !b.dead && Math.fround(b.x) === x && Math.fround(b.y) === y)
+        return shorePose(b.def, b.tx, b.ty).y + 1.0;
+    }
+    return undefined;
+  }
   function olPut(x, y, h, c) {
     const i = olV * 3, P = olPos.array, C = olCol.array;
     P[i] = gx2m(x); P[i + 1] = h; P[i + 2] = gx2m(y);
@@ -3516,10 +3733,10 @@ var Render3D = (function () {
   }
   /* one leg, in pieces: flat through the air, over the relief on the ground,
      and eased between the two where a leg comes down to a ramp */
-  function olPiece(x0, y0, a0, x1, y1, a1, c) {
+  function olPiece(x0, y0, a0, x1, y1, a1, c, from) {
     const len = Math.hypot(x1 - x0, y1 - y0);
     const n = a0 && a1 ? 1 : Math.min(32, Math.max(1, Math.ceil(len / 48)));
-    const h0 = olY(x0, y0, a0), h1 = olY(x1, y1, a1), mixed = a0 !== a1;
+    const h0 = from !== undefined ? from : olY(x0, y0, a0), h1 = olY(x1, y1, a1), mixed = a0 !== a1;
     let px = x0, py = y0, ph = h0;
     for (let p = 1; p <= n; p++) {
       if (olV + 2 > OLV) return;
@@ -3536,9 +3753,11 @@ var Render3D = (function () {
                                   !!(input && input.shift));
     olV = 0;
     const s = L.seg, m = L.mark, R = L.ring;
+    const kr = L.kinds.indexOf("rally");
     for (let i = 0; i < L.n; i++) {
       const j = i * 7;
-      olPiece(s[j], s[j + 1], s[j + 2], s[j + 3], s[j + 4], s[j + 5], olRGB[s[j + 6]]);
+      olPiece(s[j], s[j + 1], s[j + 2], s[j + 3], s[j + 4], s[j + 5], olRGB[s[j + 6]],
+              s[j + 6] === kr ? olFrom(s[j], s[j + 1]) : undefined);
     }
     /* a waypoint: a small diamond, six metres across, on the ground or at height */
     for (let i = 0; i < L.nm; i++) {
@@ -3631,12 +3850,15 @@ var Render3D = (function () {
       alt = parked ? undefined : AIR_ALT;
     } else if (e.layer === "sea") alt = 2;
     else if (e.layer === "sub") alt = 0;
-    else alt = undefined;
+    else alt = shoreAlt(e);                  // a shore building at its seat; anything else on the ground
     return project(e.x, e.y, alt !== undefined ? alt : undefined);
   }
   return {
     init, resize, draw, drawMinimap, unproject, moveCam, setCam, zoom, sx, sy, markDirty,
     panAxes, rotate, entityScreen,
+    /* where a shore building of this id would stand on this plot: seat,
+       heading and how the heading was found (tools/jsc/shore3d_check.js) */
+    shorePose(id, tx, ty) { return shorePose(BUILDINGS[id], tx, ty); },
     get cam() { return cam; },
     get three() { return three; },
   };

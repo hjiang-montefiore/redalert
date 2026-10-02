@@ -519,10 +519,14 @@ var Damage3D = (function () {
      never counts; the biggest roof takes more than one fire. One fire more
      burns on the ground at the foot of the main hall's wall, on the side the
      default camera looks at (render3d's yaw of -45 degrees puts it at +X,
-     -Z), where stores and spilled fuel burn out through the doors. */
-  /* heights are from the ground the building stands on, which is y = 0 in
-     its own frame: render3d sets the group on the terrain. A silo or a pier
-     reaches below it, so the bottom of the box is not the ground. */
+     -Z), where stores and spilled fuel burn out through the doors. The side
+     is chosen in the model's own frame, so a shore building that render3d
+     turns toward the water (shorePose) can carry that fire round to the far
+     side of its hall. */
+  /* heights are from the building's own datum, y = 0 in its own frame:
+     render3d sets the group on the terrain, or a shore building at its seat
+     (shorePose). A silo or a pier reaches below it, so the bottom of the box
+     is not the ground. */
   const ROOF_MIN = 3.0, STEP = 1.2, GROUND = 1.2;
   function heightMap(T, b) {
     const L = b.maxX - b.minX, W = b.maxZ - b.minZ;
@@ -975,12 +979,13 @@ var Damage3D = (function () {
     if (P.ship && rec && rec.grp) pose(em, rec, stg, dt);
   }
 
-  /* A source in the world, this frame. Buildings are drawn unrotated;
-     everything else faces e.ang. A ship also rolls and pitches - the sea,
-     and its own list and trim once it floods - and a fire on its deck goes
-     with the deck: it is turned by the group's roll and pitch exactly as
-     render3d turns the model (Euler order YXZ: pitch, then roll, then
-     heading). One reusable point, nothing allocated. */
+  /* A source in the world, this frame. Buildings are drawn unrotated but
+     for a shore building, turned to its water; everything else faces e.ang.
+     A ship also rolls and pitches - the sea, and its own list and trim once
+     it floods - and a fire on its deck goes with the deck: it is turned by
+     the group's roll and pitch exactly as render3d turns the model (Euler
+     order YXZ: pitch, then roll, then heading). One reusable point, nothing
+     allocated. */
   const _w = { x: 0, y: 0, z: 0, lx: 0, ly: 0, lz: 0 };
   function where(em, q) {
     const e = em.e, P = em.prof, rec = em.rec, g = rec && rec.grp;
@@ -996,8 +1001,9 @@ var Damage3D = (function () {
     }
     /* the heading it is DRAWN at: render3d sets every unit's group to -e.ang,
        except an aircraft on, onto or off a ship's deck, which it turns with
-       her (seatOnDeck) */
-    const ang = e.kind === "building" ? 0 : g ? -g.rotation.y : (e.ang || 0), ca = Math.cos(ang), sa = Math.sin(ang);
+       her (seatOnDeck); a structure's group is never turned but a shore
+       building's, which render3d turns to its water (shorePose) */
+    const ang = e.kind === "building" ? (g && g.rotation.y ? -g.rotation.y : 0) : g ? -g.rotation.y : (e.ang || 0), ca = Math.cos(ang), sa = Math.sin(ang);
     _w.x = (g ? g.position.x : e.x * PXM) + lx * ca - lz * sa;
     _w.y = (g ? g.position.y : 0) + ly;
     _w.z = (g ? g.position.z : e.y * PXM) + lx * sa + lz * ca;

@@ -445,6 +445,13 @@
     /* (15) one floodlight, at the gate and aimed inward. An armed emplacement
        lights the ground in front of it; this one lights its own entrance. */
     floodlight(THREE, g, -11.5, 11.0);
+    /* (16) what render3d.js shorePose() seats and turns the station by: the
+       hardstanding's underside is the lowest thing here that has to stay
+       dry, and the cable leaves the pad for the sea off the +X face, where
+       the duct drops below grade. So the pad never goes under the water, and
+       the station is turned a quarter turn at a time so its cable runs to
+       it - engine fact (1) above predates that; the rest of it still holds. */
+    g.userData.shore = { waterline: 0, seaward: [1, 0], mouth: [16.7, CY] };
     return g;
   } };
 
