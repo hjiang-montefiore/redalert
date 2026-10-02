@@ -1112,3 +1112,9 @@ var HeroAH64E = (function () {
 /* len is the MEASURED x extent, main rotor disc front to the tip of the
    aft tail rotor blade; render3d.js normalises on the measurement anyway. */
 UNIT_MODELS["helo_n"] = { len: 17.74, build: HeroAH64E.build };
+/* Taiwan's Apaches are the same AH-64E Guardian: 30 cleared for sale in
+   2008 and delivered in 2013-14, inside the 2000s-10s era (helo_r is the ROC's
+   present-day row, roc_e00_gunship its 2000s-10s one). Both were drawn by
+   a 2,200-triangle rotor_specs row. */
+UNIT_MODELS["helo_r"] = { len: 17.74, build: HeroAH64E.build };
+UNIT_MODELS["roc_e00_gunship"] = { len: 17.74, build: HeroAH64E.build };

@@ -1007,3 +1007,7 @@ var HeroMi28N = (function () {
 /* len is the MEASURED x extent, rotor disc front to the trailing edge of
    the stabiliser; render3d.js normalises on the measurement anyway. */
 UNIT_MODELS["helo_p"] = { len: 20.14, build: HeroMi28N.build };
+/* pact_e00_gunship, the 2000s-10s row, is the same Mi-28N Night Hunter: it
+   entered Russian service in 2009. It was drawn by a 2,244-triangle
+   rotor_specs row. */
+UNIT_MODELS["pact_e00_gunship"] = { len: 20.14, build: HeroMi28N.build };
