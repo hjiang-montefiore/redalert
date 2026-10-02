@@ -457,11 +457,19 @@ function run() {
              "nato_e00_transport", "roc_e00_transport", "trans_n", "trans_r",                      // Black Hawk
              "nato_e80_transport", "nato_e90_transport", "pla_e80_transport",                      // Black Hawk, S-70C-2
              "nato_e00_aswhelo", "roc_e00_aswhelo", "asw_helo_n", "asw_helo_r",                    // Seahawk, Thunderhawk
+             "nato_e80_lamps", "nato_e90_aswhelo",                                                 // SH-60B, SH-60F
              "nato_e50_transport", "nato_e60_gunship", "roc_e90_gunship",                          // S-55, AH-1G, AH-1W
              "nato_e60_transport", "roc_e60_transport", "roc_e80_transport", "roc_e90_transport",  // UH-1
              "roc_e80_gunship"];                                                                   // 500MD
   var DOC = {
     "deu_e80_gunship|tailrotor": 1, "gbr_e90_gunship|tailrotor": 1,        // Bo 105, Lynx AH.7: cw from the left
+    /* the H-60s (hero/h60_hawk_family.js): a tractor on the starboard
+       side, top blade aft, clockwise from the left */
+    "asw_helo_n|tailrotor": 1, "nato_e00_aswhelo|tailrotor": 1, "nato_e80_lamps|tailrotor": 1,
+    "nato_e90_aswhelo|tailrotor": 1, "asw_helo_r|tailrotor": 1, "roc_e00_aswhelo|tailrotor": 1,
+    "trans_n|tailrotor": 1, "nato_e80_transport|tailrotor": 1, "nato_e90_transport|tailrotor": 1,
+    "nato_e00_transport|tailrotor": 1, "trans_r|tailrotor": 1, "roc_e00_transport|tailrotor": 1,
+    "pla_e80_transport|tailrotor": 1,
     "gbr_e80_gunship|tailrotor": -1,                                       // Lynx AH.1: the -PI/2 mount, the other way
     /* Mi-24D and Mi-24V (hero/pact_hind_mi24.js): top blade aft, clockwise
        from the left - "up on the side towards the front" (Gordon and
