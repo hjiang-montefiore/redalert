@@ -484,6 +484,33 @@ var Game = (function () {
       if (!pb.dead && pb.buildProgress >= 1 && pb.def.id === srcId) src = pb;
     }
     if (!src) src = G.nearestBuilding(p, srcId, p.homeX, p.homeY);
+    /* A full airbase hands the airframe on to the next one with a free pad.
+       (owner) "when the aircraft is over 4 in the primary airbase, then the
+       aircraft should be distributed to other airbases instead of
+       overstacking." Delivery based every new airframe on the primary - or
+       the nearest airbase - whether or not it had a pad left, so a fifth jet
+       parked on top of the fourth, while lockReason() had counted the ramp
+       space of every airbase the commander owns and let it be bought. An
+       aircraft coming home already goes to a base with a pad free
+       (findPad); a new one now does the same, to the airbase nearest the
+       one it was built for. With every pad taken it stays where it was, and
+       a carrier-capable type still looks for a deck below. */
+    if (def.cat === "aircraft" && src) {
+      const padsLeft = (b) => {
+        let used = 0;
+        for (const e of p.units) if (!e.dead && e.layer === "air" && e.padOn === b) used++;
+        return (b.def.pads || 0) - used;
+      };
+      if (padsLeft(src) <= 0) {
+        let alt = null, ad = Infinity;
+        for (const b of p.buildings) {
+          if (b === src || b.dead || b.buildProgress < 1 || b.def.id !== srcId || padsLeft(b) <= 0) continue;
+          const d = U.dist2(src.x, src.y, b.x, b.y);
+          if (d < ad) { ad = d; alt = b; }
+        }
+        if (alt) src = alt;
+      }
+    }
     /* a carrier is an airbase that sails: if there is no strip, or its decks
        are the only free ramp, deliver the aircraft to the ship instead */
     let deck = null, deckHow = null;

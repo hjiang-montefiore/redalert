@@ -6824,7 +6824,11 @@ try{
       }
       return best;
     }
-    function put(id,tx,ty,who){ var u=Game.spawnUnitAt(who||P,id,tx*T+16,ty*T+16); if(u) made.push(u); return u; }
+    /* made on the section's own stream and numbered from its own counter -
+       see ON AN RNG OF ITS OWN, below */
+    function put(id,tx,ty,who){ var u, eid=EID; own64++; EID=eid64;
+      try { u=Game.spawnUnitAt(who||P,id,tx*T+16,ty*T+16); } finally { own64--; eid64=EID; EID=eid; }
+      if(u){ made.push(u); ours64.add(u); } return u; }
     function block(id,n,x0,y0,pitch,cols,who){ cols=cols||4; var a=[]; for(var k=0;k<n;k++){ var u=put(id,x0+(k%cols)*pitch,y0+((k/cols)|0)*pitch,who); if(u) a.push(u); } return a; }
     function select(us){ var s=UI.selection; for(var i=0;i<s.length;i++) s[i].selected=false; s.length=0;
       for(var i=0;i<us.length;i++){ us[i].selected=true; s.push(us[i]); } }
@@ -6870,11 +6874,48 @@ try{
        failed - 208 px moved, 33 unit-samples back on the order - with the
        engine untouched; and the stand-off change of [91], which flies the
        B-52 of [42] on a different circle, moved the draws ahead of it so that
-       the whole half failed it the same way (651 px, 80 samples). Seeded here
-       it measures the crowd and not the match; the shared stream is handed
-       back in the finally. */
-    var rng64=Game.rng, s64=64;
-    Game.rng=function(){ s64=(s64*16807)%2147483647; return (s64-1)/2147483646; };
+       the whole half failed it the same way (651 px, 80 samples).
+       AND THE STREAM IS THE CROWD'S ALONE, AND SO ARE ITS NUMBERS. A seed of
+       its own was not a stream of its own: Game.rng is the whole match's, and
+       while this section played, the commander's think, findSpot, scoutGoal
+       and buildToward, the facing of every unit it built and the repath clock
+       of every one of its units on the move all drew on the seeded stream,
+       in between the crowd's own draws. MEASURED when spawnUnit began handing
+       a new airframe on to an airbase with a pad free (game.js, 2026-10-03):
+       the commander's jets parked elsewhere, it chose differently, and while
+       the 32 of part 2 drove to their point the stream was drawn 1,063 times
+       - about 250 of them the crowd's, 167 ai.js's (the build before: 1,185
+       and 326). They arrived another way, with the point itself left open -
+       nobody near enough it for a squad to count it taken - and the re-hands
+       sent nine squads off for it: "re-handed the same point every 1.6 s"
+       failed, 370 px moved, 43 unit-samples back on the order, with nothing
+       near the patch and the engine untouched - and in review one draw more
+       on an aircraft's delivery, at the build before, failed it the same
+       way. The other thread is the unit numbers. A unit's rest clock is
+       staggered by its id (entities.js, _settleT = id % 15 ticks, and a
+       stack splits along id x 2.39996), and the ids came off the match's
+       counter, which every section before and the commander's builds during
+       part 1 advance: the same twelve tanks of part 1, on the same draws,
+       numbered three apart, stood on other pixels. So only the section's
+       own units draw on the seeded stream - as they are made and while they
+       update - and the rest of the match draws on another one, seeded too,
+       while the section plays; and the section's units are numbered from a
+       counter of their own, far above any id the match will reach, the
+       match's counter going on where it was. Checked when this went in: at
+       the build before, at the airbase change, with one draw more ahead of
+       the section and with the match run 90 s further first, the crowds of
+       parts 1 and 2 stood on the same pixels to the thousandth. It measures
+       the crowd and not the match; the shared stream and Unit.update are
+       handed back in the finally. */
+    var rng64=Game.rng, s64=64, sMatch=6464, own64=0, ours64=new Set(), upd64=Unit.prototype.update, eid64=6400000;
+    Game.rng=function(){
+      if(own64){ s64=(s64*16807)%2147483647; return (s64-1)/2147483646; }
+      sMatch=(sMatch*16807)%2147483647; return (sMatch-1)/2147483646;
+    };
+    Unit.prototype.update=function(dt){
+      if(!ours64.has(this)) return upd64.call(this,dt);
+      own64++; try { return upd64.call(this,dt); } finally { own64--; }
+    };
     try {
       /* ---- 1. the player's attack-move, twelve tanks ---- */
       var tanks=block("mbt_n",12,gp.x+2,gp.y+6,1.5), gx=(gp.x+22)*T+16, gy=(gp.y+11)*T+16;
@@ -7025,12 +7066,13 @@ try{
           rank.length===4 && swapped===0, swapped+" of "+rank.length+" swapped for a neighbour");
       clear();
     } finally {
-      E.team=team1; Game.rng=rng64; clear();
+      E.team=team1; Game.rng=rng64; Unit.prototype.update=upd64; ours64.clear(); clear();
       Render.cam.z=cam0.z; Render.setCam(cam0.x,cam0.y);
       UI.input.attackMove=false;
     }
     chk("the letters and the board are back where the suite found them",
-        Game.allied(P,E)===false && made.length===0, "teams "+P.team+" and "+E.team);
+        Game.allied(P,E)===false && made.length===0 && Game.rng===rng64 && Unit.prototype.update===upd64,
+        "teams "+P.team+" and "+E.team);
   })();
   }
 

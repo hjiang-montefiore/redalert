@@ -2740,10 +2740,41 @@ var UI = (function () {
          hangar RECALL), while this one played the same click a move plays. A
          taken recall and a lost recall were indistinguishable at the moment of
          the click, which is exactly why this shipped as a bug report. */
-      let sentHome = 0, airMoved = 0;
+      let sentHome = 0, airMoved = 0, diverted = 0;
       const movers = [];
+      /* An airbase that is full sends the rest on to the nearest airbase with
+         a pad free, as a new airframe and a returning one already go.
+         (owner) "when the aircraft is over 4 in the primary airbase, then the
+         aircraft should be distributed to other airbases instead of
+         overstacking." This order based every selected aircraft on the base
+         clicked, four pads or not, and was the last way left to park a fifth
+         jet on top of the fourth. One already based there keeps its pad;
+         with every airbase full the rest stay based where they were - and
+         one with no base left to stay on still lands on the one clicked.
+         The first cut of this sent that one nowhere: a fighter whose own
+         airbase was gone, ordered onto a full one with every other full
+         too, was handed a move to the clicked point and the toast "NOT A
+         LANDING SURFACE - MOVING THERE" about a working airbase, where this
+         order had always based it there (tools/jsc/airspread_check.js).
+         An over-stacked revetment beats orbiting until the tanks are dry,
+         as the recovery order itself says (entities.js, rtb). */
+      const padsLeft = (b, u) => {
+        let used = 0;
+        for (const e of u.owner.units) if (e !== u && !e.dead && e.layer === "air" && e.padOn === b) used++;
+        return (b.def.pads || 0) - used;
+      };
       for (const u of units) {
-        const host = landingHost(u);
+        let host = landingHost(u);
+        if (host && host.kind === "building" && host.def.pads && padsLeft(host, u) <= 0) {
+          let alt = null, ad = Infinity;
+          for (const b of u.owner.buildings) {
+            if (b === host || b.dead || b.buildProgress < 1 || !b.def.pads || padsLeft(b, u) <= 0) continue;
+            const d = U.dist2(host.x, host.y, b.x, b.y);
+            if (d < ad) { ad = d; alt = b; }
+          }
+          if (alt) { host = alt; diverted++; }
+          else if (u.padOn && !u.padOn.dead) host = u.padOn;
+        }
         if (host) {
           u.padOn = host; u.parked = false;
           u.give({ type: "rtb" }, shift);
@@ -2761,8 +2792,9 @@ var UI = (function () {
          not all onto the unit or the structure that was clicked */
       for (const sl of groupSlots(movers, wx, wy)) sl.u.give({ type: "move", x: sl.x, y: sl.y }, shift);
       if (sentHome)
-        alert(sentHome === 1 ? "RETURNING TO BASE"
-                             : sentHome + " AIRCRAFT RETURNING TO BASE", "good");
+        alert((sentHome === 1 ? "RETURNING TO BASE"
+                              : sentHome + " AIRCRAFT RETURNING TO BASE") +
+              (diverted ? " — AIRBASE FULL, " + diverted + " TO ANOTHER AIRBASE" : ""), "good");
       /* and say why, when the answer is no. An aircraft right-clicked onto a
          friendly structure that is not a ramp gets a move, which is a
          defensible order and an invisible one. */
