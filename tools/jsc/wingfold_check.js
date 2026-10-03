@@ -45,11 +45,15 @@ function recOf(e) { return H ? H.recOf(e.id) : null; }
 
 /* published spans, spread and folded (m): NAVAIR descriptive arrangements of
    the A-6E (53'-0", 25'-4" folded) and the EA-6B (53'-0", 299" = 24'-11"
-   folded); the F-4: 38 ft 5 in, 27 ft 7 in folded (F-4E figures) */
+   folded); the F-4: 38 ft 5 in, 27 ft 7 in folded (F-4E figures); the
+   Yak-38: 7.022 m spread, 4.45 m folded, the outer panels up through 102 deg
+   (Russian figures as given on migflug.com's Yak-38 data page; the Western
+   tables' 7.32 m is not used) */
 var PUB = {
   nato_e60_cstrike: [16.15, 7.72], nato_e80_cstrike: [16.15, 7.72], nato_e90_cstrike: [16.15, 7.72],
   nato_e60_ewair: [16.15, 7.595], nato_e90_ewair: [16.15, 7.595],
-  nato_e60_cfighter: [11.70, 8.41], nato_e60_fighter: [11.70, 8.41], nato_e80_sead: [11.70, 8.41]
+  nato_e60_cfighter: [11.70, 8.41], nato_e60_fighter: [11.70, 8.41], nato_e80_sead: [11.70, 8.41],
+  pact_e60_cfighter: [7.022, 4.45], pact_e80_cfighter: [7.022, 4.45]
 };
 var _v = new THREE.Vector3(), _ax = new THREE.Vector3();
 function foldsOf(o) { var L = []; o.traverse(function (x) { if (x.name === "wingfold") L.push(x); }); return L; }
