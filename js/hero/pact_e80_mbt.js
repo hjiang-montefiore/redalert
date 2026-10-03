@@ -331,25 +331,14 @@ var HeroT80U = (function () {
   }
 
   /* ------------------------------------------------------- lofted bodies */
-  /* M.loft emits its quads wound (a, c, b), which for its section walk puts
-     the face normal radially INWARD: with a FrontSide material the outer
-     skin is culled and you look through the body at its own far wall.  Flip
-     the winding, recompute, keep FrontSide. */
-  /* The T-80U builder walks its stations in decreasing x, which M.loft
-     already winds outward, and then flips them (inside out: the far inner
-     wall shows).  The T-80BVM sets this flag so its lofts keep the outward
-     winding; the T-80U leaves it false and is unchanged. */
-  var outwardLoft = false;
+  /* Every lofted body goes through body().  These builders walk their
+     stations in decreasing x, and for that walk M.loft already winds the
+     faces outward, so the geometry is used as it comes.  (It used to be
+     flipped here on the belief that M.loft winds inward, which turned the
+     T-80U's hull sides and turret inside out: with a FrontSide material the
+     outer skin was culled and you saw the far inner wall.) */
   function body(THREE, M, secs, segs) {
-    var geo = M.loft(THREE, secs, segs);
-    var ix = geo.getIndex ? geo.getIndex() : null;
-    if (ix && ix.array && !outwardLoft) {
-      var a = ix.array, i, t;
-      for (i = 0; i + 2 < a.length; i += 3) { t = a[i + 1]; a[i + 1] = a[i + 2]; a[i + 2] = t; }
-      ix.needsUpdate = true;
-      geo.computeVertexNormals();
-    }
-    return geo;
+    return M.loft(THREE, secs, segs);
   }
   /* stations written as (x, halfWidth, top, bottom) because a plate layout
      is easier to reason about than a centre-and-half-height */
@@ -1269,14 +1258,12 @@ var HeroT80U = (function () {
     var T = makeMats(THREE, C);
     var g = new THREE.Group();
     g.name = "t80bvm";
-    outwardLoft = true;
     buildHull(THREE, M, g, T);
     buildGlacisBVM(THREE, g, T);
     buildRunningGear(THREE, g, T);
     buildSkirtsBVM(THREE, g, T);
     buildDeckBVM(THREE, g, T);
     var tur = buildTurretBVM(THREE, M, T);
-    outwardLoft = false;
     g.add(tur);
     mergeByMat(THREE, tur, false);
     mergeByMat(THREE, g, true);
