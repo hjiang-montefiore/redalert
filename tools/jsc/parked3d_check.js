@@ -438,6 +438,9 @@ var OVERSIZE = {};
      which stands in a revetment clear of the walls */
   "nato_e50_cas pact_e50_cas kpa_e50_cas pla_e50_cas",        /* A-1 Skyraider, Il-10 */
   "roc_e50_cas roc_e80_cas roc_e50_fighter",                  /* F-84G, AT-3, F-86F */
+  /* the MiG-17F (js/hero/ru_mig17.js): 9.63 m of wing on 11.36 m of length, drawn to its real proportions (the old stand-in
+     was 13.9 m long); the game scales an aircraft by length, so it reaches 1.03 m into a revetment wall, like the F-86F above */
+  "pact_e50_fighter",
   /* the E-3 model and the AEW types drawn with it; E-3, E-8C */
   "awacs_b awacs_f awacs_n nato_e00_awacs gbr_e60_awacs gbr_e90_awacs gbr_e00_awacs fra_e90_awacs fra_e00_awacs nato_e80_awacs nato_e90_awacs",
   /* the transport-EW stand-in (C-160G, Nimrod R.1, Airseeker), EA-6B */
