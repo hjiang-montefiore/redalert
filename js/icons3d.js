@@ -63,10 +63,12 @@ var Icons3D = (function () {
   }
 
   /* build the model for an item, whatever kind it is */
-  function makeModel(id, kind, team) {
+  function makeModel(id, kind, team, era) {
     const C = { team: team.main };
     if (kind === "building" || kind === "defense") {
-      if (typeof BLD_MODELS !== "undefined" && BLD_MODELS[id]) return BLD_MODELS[id].build(THREE, Models3D, C);
+      /* an emplacement dug by an army in a period is drawn as that army's, as on the map */
+      const bk = typeof Render3D !== "undefined" && Render3D.bldKey ? Render3D.bldKey(id, team, era) : id;
+      if (typeof BLD_MODELS !== "undefined" && BLD_MODELS[bk]) return BLD_MODELS[bk].build(THREE, Models3D, C);
       return null;
     }
     const def = UNITS[id];
@@ -91,13 +93,15 @@ var Icons3D = (function () {
   }
 
   /* returns an HTMLCanvasElement thumbnail, or null if it cannot be made */
-  function get(id, kind, team) {
-    const ck = id + "|" + kind + "|" + team.main;
+  function get(id, kind, team, era) {
+    /* the period the player is in, unless the caller says */
+    if (!era) era = (typeof G !== "undefined" && G && ((G.human && G.human.era) || G.era)) || "e20";
+    const ck = id + "|" + kind + "|" + team.main + "|" + (team.fac || "") + "|" + era;
     if (cache[ck] !== undefined) return cache[ck];
     if (!ensure()) { cache[ck] = null; return null; }
 
     let model = null;
-    try { model = makeModel(id, kind, team); } catch (e) { model = null; }
+    try { model = makeModel(id, kind, team, era); } catch (e) { model = null; }
     if (!model) { cache[ck] = null; return null; }
 
     prep(model);

@@ -773,7 +773,20 @@ var Render3D = (function () {
       if (c > best) best = c;
     }
     for (const [q, c] of n) if (c === best) { L0 = sum.get(q) / c; break; }
-    return (stpl._deckTop = { x0: P.x0, z0: P.z0, nx, nz, top, grown, L0 });
+    /* a pad raised clear of her after deck - the Sovremenny's, on her hangar
+       roof above the quarterdeck and the after gun - is not at the level of
+       her after eighth: the model marks the middle of the pad's surface with
+       an empty, hidden "helipad" node, and that is her deck and her pad (on
+       a carrier only the level counts: placeOn does not look for a pad) */
+    const mk = stpl.getObjectByName("helipad");
+    let pad = null;
+    if (mk) {
+      mk.getWorldPosition(_pv);
+      L0 = _pv.y;
+      pad = { i: Math.min(nx - 1, Math.max(0, Math.floor((_pv.x - P.x0) / PARK.CELL))),
+              k: Math.min(nz - 1, Math.max(0, Math.floor((_pv.z - P.z0) / PARK.CELL))) };
+    }
+    return (stpl._deckTop = { x0: P.x0, z0: P.z0, nx, nz, top, grown, L0, pad });
   }
   /* An airframe's plan relative to its lowest point: what it would hit on a
      deck. The gear counts whether or not it is down; the rotor blades do not
@@ -861,11 +874,13 @@ var Render3D = (function () {
      rotors with a wheel over the side. */
   function padSpot(D, A) {
     /* her pad: the largest stretch of deck at her deck level that reaches
-       into her after fifth, in her after half */
-    const nx = D.nx, nz = D.nz, lim = Math.ceil(nx * 0.5), aft = Math.ceil(nx * 0.2);
+       into her after fifth, in her after half - or, where the model marks
+       it (deckOf), the stretch under its "helipad" node */
+    const nx = D.nx, nz = D.nz, lim = D.pad ? nx : Math.ceil(nx * 0.5), aft = Math.ceil(nx * 0.2);
     const on = (m) => Math.abs(D.top[m] - D.L0) <= 0.3, seen = new Uint8Array(nx * nz);
+    const iA = D.pad ? D.pad.i : 0, iB = D.pad ? D.pad.i + 1 : aft, kA = D.pad ? D.pad.k : 0, kB = D.pad ? D.pad.k + 1 : nz;
     let sx = 0, sz = 0, best = 0;
-    for (let i0 = 0; i0 < aft; i0++) for (let k0 = 0; k0 < nz; k0++) {
+    for (let i0 = iA; i0 < iB; i0++) for (let k0 = kA; k0 < kB; k0++) {
       if (seen[i0 * nz + k0] || !on(i0 * nz + k0)) continue;
       const q = [i0 * nz + k0];
       seen[q[0]] = 1;
@@ -891,7 +906,11 @@ var Render3D = (function () {
     let bx = xc, bc = Infinity;
     for (let d = -15; d <= 15; d += 0.5) {
       const x = xc + d;
-      let c = Math.abs(d) * 0.01;
+      /* a marked pad is shorter than the wheelbase the model's scale gives
+         the helicopter, so some wheels are off it wherever it stands (the
+         flat 1000 is the same for each place): the cost of sliding along
+         must then keep it centred on the pad, not out over her gun */
+      let c = Math.abs(d) * (D.pad ? 1 : 0.01);
       for (let j = 0; j < A.n && c < bc; j++) {
         const i = Math.floor((x + A.dx[j] - D.x0) / PARK.CELL), k = Math.floor((z + A.dz[j] - D.z0) / PARK.CELL);
         const m = i < 0 || k < 0 || i >= nx || k >= nz ? -1 : i * nz + k;
@@ -1919,17 +1938,39 @@ var Render3D = (function () {
   }
 
   /* buildings */
+  /* the army a palette belongs to, as archOf finds it - but null, not NATO,
+     for a palette from nowhere */
+  function sideOf(team) {
+    if (team && team.fac && CFG.FACTION_COLORS[team.fac]) return team.fac;
+    for (const k in CFG.FACTION_COLORS)
+      if (team && CFG.FACTION_COLORS[k].main === team.main) return k;
+    return null;
+  }
+  /* A gun or missile emplacement is drawn as the army and the period that
+     dug it: a US SAM site of the 1960s is a Nike Hercules battery, a Soviet
+     one an S-75 ring - BLD_MODELS["sam_pact_e60"]. An army and a period with
+     no fixed site of that kind have no such entry and keep the shared
+     emplacement; nothing is drawn for a side that never built one. */
+  function bldKeyFor(def, team, era) {
+    const f = sideOf(team), k = f ? def.id + "_" + f + "_" + (era || "e20") : null;
+    return k && typeof BLD_MODELS !== "undefined" && BLD_MODELS[k] ? k : def.id;
+  }
   function getBuildingModel(def, team, era) {
     /* the period is part of the identity, so it is part of the cache key */
     const E = (typeof ERA_ARCH !== "undefined" && ERA_ARCH[era]) ? ERA_ARCH[era] : null;
-    const ck = "b_" + def.id + "|" + team.main + "|" + (era || "e20");
+    const bk = bldKeyFor(def, team, era);
+    const ck = "b_" + bk + "|" + team.main + "|" + (era || "e20");
     if (modelCache[ck]) return modelCache[ck];
     let tpl = null;
     try {
-      if (typeof BLD_MODELS !== "undefined" && BLD_MODELS[def.id]) {
-        tpl = BLD_MODELS[def.id].build(THREE, Models3D, { team: team.main });
+      if (typeof BLD_MODELS !== "undefined" && BLD_MODELS[bk]) {
+        tpl = BLD_MODELS[bk].build(THREE, Models3D, { team: team.main });
       }
     } catch (e) { tpl = null; }
+    /* a side's model that fails to build is the shared emplacement, not a box */
+    if (!tpl && bk !== def.id) {
+      try { tpl = BLD_MODELS[def.id] ? BLD_MODELS[def.id].build(THREE, Models3D, { team: team.main }) : null; } catch (e) { tpl = null; }
+    }
     if (!tpl) {
       /* fallback: concrete box with the painted 2D roof art on top */
       tpl = new THREE.Group();
@@ -1985,6 +2026,7 @@ var Render3D = (function () {
       modelCache[ck] = tpl;
       return tpl;
     }
+    const whole = !!(tpl.userData && tpl.userData.whole);
     /* pack model: restyle to the faction's architecture, then z-up -> y-up.
        Defensive emplacements are field fortifications — sandbags, earth and
        gun metal read the same for everyone, so they keep their own palette. */
@@ -2024,10 +2066,15 @@ var Render3D = (function () {
     /* period materials, layered over the faction styling, then the rooftop
        kit - the army's and the period's - stood on the roof. Not on a town's
        blocks: civ3d.js draws them as nobody's base, "no domes, no antennas",
-       and every one of them wore a NATO radome and mast. */
-    eraRestyle(wrap, E);
-    if (!def.bare && def.cat !== "civilian")
-      dressKit(wrap, def, team, def.cat !== "defense" && def.id !== "wall" ? A : null, E);
+       and every one of them wore a NATO radome and mast. Nor on a model that
+       is already one army's site of one period (bldKeyFor) and says so
+       (userData.whole): its paint is that period's, from photographs, and a
+       period tint or a camouflage net over its launchers would be invented. */
+    if (!whole) {
+      eraRestyle(wrap, E);
+      if (!def.bare && def.cat !== "civilian")
+        dressKit(wrap, def, team, def.cat !== "defense" && def.id !== "wall" ? A : null, E);
+    }
     wrap.scale.multiplyScalar(CFG.BLD_SCALE);
     modelCache[ck] = wrap;
     return wrap;
@@ -4089,6 +4136,9 @@ var Render3D = (function () {
     /* where a shore building of this id would stand on this plot: seat,
        heading and how the heading was found (tools/jsc/shore3d_check.js) */
     shorePose(id, tx, ty) { return shorePose(BUILDINGS[id], tx, ty); },
+    /* the BLD_MODELS key an emplacement is drawn from for an army and a
+       period (the build-menu thumbnail follows it; tools/jsc/bldside_check.js) */
+    bldKey(id, team, era) { return bldKeyFor({ id }, team, era); },
     /* a drawn launcher's pod-laying rule and launch origin, called on its own
        record, so tools/jsc/launcher3d_check.js can time what they cost */
     launcherProbe(e) {

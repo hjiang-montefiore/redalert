@@ -697,6 +697,11 @@ var HeroSovremenny = (function () {
     tw.children.slice().forEach(function (c) { tw.remove(c); });
     tb.children.forEach(function (c) { tw.add(c); });
     root.add(tw);
+    /* the middle of the pad's surface, for render3d's deckOf: the pad
+       stands on the 02 block 5.4 m above the quarterdeck, not at the level
+       of her after eighth, so it is marked (hidden, no geometry) */
+    var hp = new THREE.Object3D(); hp.name = "helipad"; hp.visible = false;
+    hp.position.set(-36.1, 0, ZP); root.add(hp);
     return root;
   }
   return { build: build };

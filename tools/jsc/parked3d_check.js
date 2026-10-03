@@ -31,9 +31,12 @@
         revetment (OVERSIZE);
      C. on every deck in the game, every type that deck takes, at four
         headings: its lowest point on her deck under that point, measured in
-        her own frame with a ray from her own model; and on a carrier nothing
+        her own frame with a ray from her own model; on a carrier nothing
         of it inside her - island, hangar, the aircraft her modeller parked on
-        her - and the complement she sails with clear of each other;
+        her - and the complement she sails with clear of each other; and on
+        an escort whose model marks her pad (a "helipad" node, for a pad
+        raised clear of her after deck) the helicopter at the mark's level,
+        its wheels on the stretch of deck the mark stands on;
      D. riding with her while she steams, turns and rolls, and while a hole
         lists her, heading and all;
      E. taking off and landing without a jump, in place or in heading, from
@@ -621,7 +624,7 @@ function run() {
   var s0 = seaSpot(8);
   Render3D.setCam(s0.x * TT, s0.y * TT);
   var HOSTS = Object.keys(UNITS).filter(function (id) { var d = UNITS[id]; return d.layer === "sea" && ((d.carrier || 0) || (d.helo || 0)); });
-  var HEADS = [0, 1.9, 3.6, 5.1], rowsC = [], typesC = 0, inCar = [], inEsc = [], ovl = [], shared = 0, ovlN = 0;
+  var HEADS = [0, 1.9, 3.6, 5.1], rowsC = [], typesC = 0, inCar = [], inEsc = [], padRows = [], ovl = [], shared = 0, ovlN = 0;
   HOSTS.forEach(function (hid, hi) {
     if (!want("C")) return;
     var d = UNITS[hid];
@@ -631,7 +634,19 @@ function run() {
     var n = ship.deckSlots(), types = Game.deckTypesFor(ship);
     typesC += types.length;
     frames(1);
-    var T = topOf(recOf(ship).grp);
+    var T = topOf(recOf(ship).grp), mk = recOf(ship).grp.getObjectByName("helipad"), mkp = null, stretch = null;
+    if (mk && !d.carrier) {
+      /* the mark in her frame, and the cells of the deck level around it: the pad's stretch */
+      mkp = mk.getWorldPosition(new THREE.Vector3()).applyMatrix4(shipInv(ship));
+      stretch = {};
+      var qn = [[Math.round(mkp.x * 2), Math.round(mkp.z * 2)]];
+      stretch[qn[0]] = 1;
+      for (var qi = 0; qi < qn.length && qi < 4000; qi++) [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (dq) {
+        var cx = qn[qi][0] + dq[0], cz = qn[qi][1] + dq[1];
+        if (stretch[[cx, cz]] || Math.abs(T.at(cx / 2, cz / 2) - mkp.y) > 0.3) return;
+        stretch[[cx, cz]] = 1; qn.push([cx, cz]);
+      });
+    }
     for (var t0 = 0; t0 < types.length; t0 += n) {
       var air = types.slice(t0, t0 + n).map(function (id) { return Game.spawnUnitAt(P, id, ship.x, ship.y); });
       park(air, ship);
@@ -640,6 +655,12 @@ function run() {
         var m = onDeck(u, ship); m.id = u.def.id + "@" + hid; rowsC.push(m);
         var ins = inside(u, ship, T);
         (d.carrier ? inCar : inEsc).push({ id: m.id, frac: ins.frac, worst: ins.worst });
+        if (mkp) {
+          /* its lowest point against the mark's level, and the middle of its wheels (every point within 2 cm of the lowest) over the stretch */
+          var pinv = shipInv(ship), plo = lowest(recOf(u).grp, pinv).y, wx = 0, wz = 0, wn = 0;
+          eachVert(recOf(u).grp, pinv, function (v) { if (v.y <= plo + 0.02) { wx += v.x; wz += v.z; wn++; } });
+          padRows.push({ id: m.id, gap: plo - mkp.y, on: !!stretch[[Math.round(wx / wn * 2), Math.round(wz / wn * 2)]] });
+        }
       });
       drop(air);
     }
@@ -672,6 +693,12 @@ function run() {
     chk("C. on a carrier nothing of it is inside her: no type with more than 1% of it over 1 m into her island, hangar or deck park",
         inCar.length > 50 && carBad.length === 0,
         inCar.length + " parked; " + carBad.length + " over; the most " + (wc.frac * 100).toFixed(1) + "% (" + wc.id + ", " + wc.worst.toFixed(2) + " m)");
+    var padBad = padRows.filter(function (r) { return Math.abs(r.gap) > TOL || !r.on; }), padKeys = {};
+    padRows.forEach(function (r) { padKeys[r.id.split("@")[1]] = 1; });
+    chk("C. where an escort's model marks her pad (helipad), the helicopter parks at the mark's level with its wheels on the stretch of deck under it",
+        Object.keys(padKeys).length >= 3 && padRows.length >= 3 && padBad.length === 0,
+        padRows.length + " parked on " + Object.keys(padKeys).length + " hulls (" + Object.keys(padKeys).join(", ") + "); " + padBad.length + " off" +
+        (padBad.length ? " (" + padBad.slice(0, 4).map(function (r) { return r.id + " " + f2(r.gap) + " m" + (r.on ? "" : ", wheels off the pad"); }).join(", ") + ")" : ""));
     log("  an escort's helicopter, drawn longer than her pad, meets her hangar or deckhouse: the most " + (we.frac * 100).toFixed(1) +
         "% of it over 1 m inside her (" + we.id + ", " + we.worst.toFixed(2) + " m)");
     ovl.sort(function (a, b) { return b.m2 - a.m2; });
