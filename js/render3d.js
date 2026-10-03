@@ -782,7 +782,17 @@ var Render3D = (function () {
   function airPlanOf(tpl) {
     if (tpl._airPlan) return tpl._airPlan;
     const foot = footOf(tpl);
-    const P = planOf(tpl, o => o.name === "rotor" || o.name === "rotordisc" || (!o.visible && o.name !== "gear"));
+    /* on a deck its wings are folded (seatOnDeck), so its plan is the folded
+       one; the template is spread again whatever happens, as every instance
+       and ghost is copied from it */
+    const folds = findParts(tpl, "wingfold");
+    let P;
+    try {
+      poseFold(folds, 1);
+      P = planOf(tpl, o => o.name === "rotor" || o.name === "rotordisc" || (!o.visible && o.name !== "gear"));
+    } finally {
+      if (folds.length) { poseFold(folds, 0); tpl.updateMatrixWorld(true); }
+    }
     const dx = [], dz = [], lo = [], hi = [], sup = [];
     for (let i = 0; i < P.nx; i++) for (let k = 0; k < P.nz; k++) {
       const j = i * P.nz + k;
@@ -1007,6 +1017,33 @@ var Render3D = (function () {
     rec.alt += U.clamp(want - rec.alt, -rate, rate);
     return rec.alt;
   }
+  /* Carrier aircraft stand on a deck with their wings folded. A hero may
+     give its folding outer panels as groups named "wingfold": origin on the
+     hinge line, unrotated at rest (spread, as it flies), and
+     userData.fold = { axis: [x, y, z] (its own frame), angle (rad) }, the
+     turn about the hinge that gives the real folded shape. Render only: the
+     game's rules do not know a wing folds. They fold once the machine stands
+     at rest on her deck (FOLD_S to fold; at once when it is set down there
+     already, as a deck park is drawn the first time), and spread the moment
+     it is anything else - coming down to her, lifting off, in flight, on an
+     airbase or the ground - so a wing is never folded in the air. A fog
+     ghost is a copy of the template, spread, except the ghost of a machine
+     last seen standing on a deck, which keeps the fold it was seen with
+     (notePoses), as it keeps the spot. The deck planner lays a deck out
+     with the folded plan (airPlanOf). */
+  const FOLD_S = 3;
+  const _fax = new THREE.Vector3();
+  function poseFold(parts, f) {
+    for (let i = 0; i < parts.length; i++) {
+      const d = parts[i].userData.fold;
+      if (d) parts[i].quaternion.setFromAxisAngle(_fax.set(d.axis[0], d.axis[1], d.axis[2]), d.angle * f);
+    }
+  }
+  function foldOnDeck(rec, rest, dt) {
+    if (!rec.folds || !rec.folds.length) return;
+    const f = !rest ? 0 : rec.fold === undefined ? 1 : Math.min(1, rec.fold + dt / FOLD_S);
+    if (f !== rec.fold) { rec.fold = f; poseFold(rec.folds, f); }
+  }
   /* An aircraft on a ship's deck, or coming down to it, or leaving it: set
      after every entity has been placed this frame, so the ship is where she
      will be drawn. The machine stays with the ship it is drawn on
@@ -1047,7 +1084,7 @@ var Render3D = (function () {
       rec.deckSp = spotFor(lay, rec.deckK, rec.tpl, rec.deckTpl);
       rec.deckMode = 0; rec.deckW = 0; rec.lsX = rec.lsZ = rec.lsY = 0; rec.gameX = mx; rec.gameZ = mz;
     }
-    let my, w;
+    let my, w, rest = false;
     if (S === host && (onDeck || landing)) {
       const sr = seen.has(S.id) ? ents.get(S.id) : null;
       let px, py, pz, rx, ry, rz;
@@ -1074,6 +1111,7 @@ var Render3D = (function () {
       const arx = rx * cw - rz * sw, arz = rx * sw + rz * cw;
       rec.deckRest = ay;
       my = easeAlt(rec, onDeck ? ay : ay + 2.8, dt);
+      rest = onDeck && my <= ay + 0.05;
       const h = U.clamp((my - ay) / PARK.BLEND, 0, 1);
       w = 1 - h * h * (3 - 2 * h);
       let dh;
@@ -1123,6 +1161,7 @@ var Render3D = (function () {
     }
     rec.deckW = w; rec.deckX = g.position.x; rec.deckZ = g.position.z; rec.gameX = mx; rec.gameZ = mz;
     if (rec.gear) rec.gear.visible = my < rec.deckRest + 18;
+    foldOnDeck(rec, rest, dt);
   }
 
   /* ---------------- faction architecture ----------------
@@ -2050,9 +2089,10 @@ var Render3D = (function () {
         const rec = ents.get(e.id);
         if (!rec) continue;
         let q = ghostPose.get(e.id);
-        if (!q) ghostPose.set(e.id, q = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, f: 0 });
+        if (!q) ghostPose.set(e.id, q = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, f: 0, fold: 0 });
         const gp = rec.grp.position, gr = rec.grp.rotation;
         q.x = gp.x; q.y = gp.y; q.z = gp.z; q.rx = gr.x; q.ry = gr.y; q.rz = gr.z; q.f = ghostFrame;
+        q.fold = rec.fold || 0;                      // its wings as seen (foldOnDeck)
       }
     }
     for (const [id, q] of ghostPose) if (ghostFrame - q.f > 30) ghostPose.delete(id);
@@ -2083,6 +2123,7 @@ var Render3D = (function () {
         if (q) {
           grp.position.set(q.x, q.y, q.z);
           grp.rotation.set(q.rx, q.ry, q.rz);
+          if (q.fold) poseFold(findParts(inst, "wingfold"), q.fold);
         } else {
           let my;
           if (g.layer === "air") {
@@ -2337,6 +2378,7 @@ var Render3D = (function () {
           tailrotor: findPart(inst, "tailrotor"),
           shafts: rotorShafts(grp),
           gear: findPart(inst, "gear"),
+          folds: findParts(inst, "wingfold"),   // folding outer wing panels (foldOnDeck)
           elev: findPart(inst, "podelev"),   // a launcher's elevating pod (poseLauncher)
           kind: e.kind,
           tpl,                     // the cached template: what is measured once per model
@@ -2393,6 +2435,7 @@ var Render3D = (function () {
             const ground = heightAt(e.x, e.y);
             const rest = landRest(e, rec, onDeck ? host : null, ground);
             my = easeAlt(rec, onDeck ? rest : landing ? rest + 2.8 : Math.max(ground + 6, AIR_ALT), dt);
+            if (rec.fold) foldOnDeck(rec, false, dt);   // wings spread off a deck
           }
         } else if (e.layer === "sea" || e.layer === "sub") {
           my = 0.35;

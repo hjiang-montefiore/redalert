@@ -636,6 +636,9 @@ function run() {
     Game.embarkComplement(ship);
     var wing = ship.wing();
     wing.forEach(function (u) { u.stance = "hold"; });
+    /* measured as render3d draws them: a machine with folding wings (a
+       "wingfold" group) stands on her deck folded from the frame it is drawn
+       (foldOnDeck; held by tools/jsc/wingfold_check.js) */
     frames(2);
     var cells = wing.map(function (u) { return inside(u, ship, T).cells; }), at = wing.map(function (u) { return onDeck(u, ship); });
     for (var a = 0; a < wing.length; a++) for (var b = a + 1; b < wing.length; b++) {

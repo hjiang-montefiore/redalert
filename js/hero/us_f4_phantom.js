@@ -6,9 +6,11 @@
      nato_e60_fighter  F-4C of the USAF (1963 on): the short nose of the F-4B/C/D
                        (58 ft 3 in, 17.76 m), no gun, southeast-Asia camouflage
                        (tan, two greens over light grey, from 1966-67), four
-                       AIM-7 Sparrow in the belly recesses, a pair of AIM-9 on each
-                       outer pylon, the 600 US gal centreline tank and a 370 US gal
-                       tank on each inboard pylon. The row is the USAF F-4C, so the
+                       AIM-7 Sparrow in the belly recesses, a pair of AIM-9 on the
+                       LAU-7 rails of each inboard pylon, the 600 US gal centreline
+                       tank and a 370 US gal tank on each outboard pylon (the
+                       three-view's front view hangs the wing tanks outboard, at
+                       about y 3.4 m, inboard of the fold). The row is the USAF F-4C, so the
                        model is NOT carrier capable and has no catapult bar shown.
      nato_e80_sead     F-4G Advanced Wild Weasel (1978 on): the F-4E airframe, 63 ft
                        (19.2 m) with the longer radome, the gun replaced by the
@@ -28,6 +30,25 @@
    wheelbase, the exact pylon stations, the extent of the camouflage pattern.
    Not drawn: leading-edge slats and flaps, the pitot boom (it would set the
    renderer's scale), the refuelling receptacle, the arrestor hook.
+   WING FOLD (all three rows: the F-4E's published figures give a folded
+   width, 27 ft 7 in = 8.41 m, so the USAF kept the Navy's folding wing; a
+   photograph of the F-4S on the Midway shows the piano hinge on the upper
+   skin at the dihedral break, the outer panel standing up). The outer panel
+   is a "wingfold" group, folded by js/render3d.js on a ship's deck only.
+   The break and hinge are at y 4.00 m: a three-view puts the dihedral break
+   at about 4.18 m, and with the panel upright the hinge plus the panel's
+   root thickness gives 8.48 m folded (+0.8% on 8.41 m), which a hinge at
+   4.18 m could not (8.84 m). Even with the real airfoil (NACA 0006.4-64
+   root to 0003-64 tip, about 0.13 m deep at the break, where this wing is
+   0.24 m) a hinge at 4.18 m gives 8.62 m (+2.5%) upright, and only a panel
+   lying almost flat over the wing would give 8.41 m there, which the
+   photograph refutes: the drawing's break and the published width differ
+   by 0.1-0.2 m a side, and the hinge is where the published width puts it.
+   The panel turns 78 deg, from its 12 deg of dihedral to upright. The
+   planform is unchanged; the outer pylon moved
+   inboard of the hinge (y 3.40 m, where the three-view has the outer
+   stores), the aileron line onto the inner panel, and the team patch from
+   the outer panel to a band on the inner one.
    ================================================================ */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -372,27 +393,35 @@ var HeroF4 = (function () {
       K.dark.push(box(1.9, 0.045, 1.0, 2.5, s * 0.84, -0.18));                  /* splitter plate */
     }
 
-    /* wing: flat inner panel, outer panels with 12 deg of dihedral */
-    var rise = 2.75 * Math.tan(12 * PI / 180);
-    var WZ = -0.35;
+    /* wing: flat inner panel out to the fold, outer panels with 12 deg of
+       dihedral that fold (the same planform: edges straight from y 3.1 m) */
+    var YF = 4.0, rise = (5.85 - YF) * Math.tan(12 * PI / 180);
+    var WZ = -0.35, FOLDL = { "-1": [], "1": [] };
+    function wle(y) { return -0.7 - (y - 3.1) * (3.2 / 2.75); }
+    function wte(y) { return -5.1 - (y - 3.1) * (0.25 / 2.75); }
+    function wt(y) { return 0.30 - (y - 3.1) * (0.18 / 2.75); }
     for (s = -1; s <= 1; s += 2) {
       var up = [0, 0, 1];
       K.skin.push(sol([
         foil([1.7, s * 0.7, WZ], [-5.4, s * 0.7, WZ], 0.52, up),
         foil([-0.7, s * 3.1, WZ], [-5.1, s * 3.1, WZ], 0.30, up),
+        foil([wle(YF), s * YF, WZ], [wte(YF), s * YF, WZ], wt(YF), up)], true, true));
+      FOLDL[s].push(sol([
+        foil([wle(YF), s * YF, WZ], [wte(YF), s * YF, WZ], wt(YF), up),
         foil([-3.9, s * 5.85, WZ + rise], [-5.35, s * 5.85, WZ + rise], 0.12, up)], true, true));
       /* flap and aileron hinge lines, drawn as shallow dark strips */
       K.dark.push(box(1.5, 0.03, 0.04, -4.35, s * 1.9, WZ + 0.17));
-      K.dark.push(box(1.0, 0.03, 0.04, -4.75, s * 4.2, WZ + 0.30 + 0.05 * 0));
-      /* wing-fold line: the Navy B shows the hinge across the whole chord */
-      K.dark.push(F.fold ? box(1.9, 0.05, 0.04, -3.0, s * 3.1, WZ + 0.16) : box(0.8, 0.05, 0.03, -2.6, s * 3.1, WZ + 0.17));
+      K.dark.push(box(1.0, 0.03, 0.04, -4.75, s * 3.55, WZ + 0.05));
+      /* wing-fold line on the inner panel: the Navy B shows the hinge across the whole chord */
+      K.dark.push(F.fold ? box(1.9, 0.05, 0.04, -3.55, s * (YF - 0.03), WZ + wt(YF) / 2 + 0.01)
+                         : box(0.8, 0.05, 0.03, -3.15, s * (YF - 0.03), WZ + wt(YF) / 2 + 0.02));
       /* the C's upper-wing bulges over its wider main tyres */
       if (F.bulge) K.skin.push(loft([[-0.7, s * 2.1, WZ + 0.22, 0.05, 0.03, 1], [-1.4, s * 2.1, WZ + 0.27, 0.34, 0.09, 1],
         [-2.3, s * 2.1, WZ + 0.27, 0.34, 0.09, 1], [-3.0, s * 2.1, WZ + 0.22, 0.05, 0.03, 1]], 12, true, true));
-      /* top team patch on the outer panel near the tip */
+      /* team band round the inner panel just inboard of the fold */
       K.team.push(sol([
-        foil([-3.2, s * 4.5, WZ + (4.5 - 3.1) * 0.2126 + 0.002], [-5.3, s * 4.5, WZ + (4.5 - 3.1) * 0.2126 + 0.002], 0.13, up),
-        foil([-3.8, s * 5.6, WZ + (5.6 - 3.1) * 0.2126 + 0.002], [-5.3, s * 5.6, WZ + (5.6 - 3.1) * 0.2126 + 0.002], 0.07, up)], true, true));
+        foil([wle(3.3) + 0.02, s * 3.3, WZ], [wte(3.3) - 0.02, s * 3.3, WZ], wt(3.3) + 0.03, up),
+        foil([wle(3.85) + 0.02, s * 3.85, WZ], [wte(3.85) - 0.02, s * 3.85, WZ], wt(3.85) + 0.03, up)], true, true));
     }
     /* stabilators: 23 deg of anhedral, low at the tail */
     for (s = -1; s <= 1; s += 2) {
@@ -460,16 +489,21 @@ var HeroF4 = (function () {
       sparrow(spLine[i][0], spLine[i][1], -0.84);
     }
     /* wing stations: z of the wing's underside at the pylon */
-    var zi = WZ - 0.12, zo = WZ + (4.3 - 3.1) * 0.2126 - 0.06;
+    var zi = WZ - 0.12, zo = WZ - 0.10;
     for (s = -1; s <= 1; s += 2) {
       pylon(-1.4, s * 2.6, zi, zi - 0.28);
-      pylon(-3.0, s * 4.3, zo, zo - 0.22);
-      if (F.inboard === "tank") tank(4.1, 0.30, 0.6, s * 2.6, zi - 0.58);
+      pylon(-2.6, s * 3.4, zo, zo - 0.22);
       if (F.inboard === "harm") harm(0.4, s * 2.6, zi - 0.44);
-      if (F.outboard === "aim9") {
-        sidewinder(-1.2, s * 4.3 - 0.14, zo - 0.36);
-        sidewinder(-1.2, s * 4.3 + 0.14, zo - 0.36);
+      /* the F-4's Sidewinders ride LAU-7 rails on the inboard pylon's shoulders,
+         one each side; the 370 US gal tanks hang on the outboard pylon */
+      if (F.inboard === "aim9") {
+        K.dark.push(box(1.0, 0.52, 0.05, -1.4, s * 2.6, zi - 0.27));
+        K.dark.push(box(2.4, 0.07, 0.07, -1.3, s * 2.6 - 0.26, zi - 0.26));
+        K.dark.push(box(2.4, 0.07, 0.07, -1.3, s * 2.6 + 0.26, zi - 0.26));
+        sidewinder(0.0, s * 2.6 - 0.26, zi - 0.36);
+        sidewinder(0.0, s * 2.6 + 0.26, zi - 0.36);
       }
+      if (F.outboard === "tank") tank(4.1, 0.30, -0.55, s * 3.4, zo - 0.52);
     }
 
     mesh(g, K.dark, T.dark, "dark");
@@ -479,6 +513,20 @@ var HeroF4 = (function () {
     mesh(g, K.team, T.team, "team");
     mesh(g, K.fin, T.white, "fin");
     mesh(g, K.pale, T.pale, "stores");
+    /* the outer panels: one "wingfold" group each, origin on the hinge (the
+       upper skin at the break), one skin mesh (its UVs put the underside in
+       the belly band); js/render3d.js turns it 78 deg about the hinge on a deck */
+    for (s = -1; s <= 1; s += 2) {
+      var fg = new V.Group(), zh = WZ + wt(YF) / 2, fgeo = projUV(merge(FOLDL[s]));
+      fg.name = "wingfold";
+      fg.position.set(0, s * YF, zh);
+      fg.userData.fold = { axis: [1, 0, 0], angle: s * 78 * PI / 180 };
+      fgeo.translate(0, -s * YF, -zh);
+      var fmesh = new V.Mesh(fgeo, T.skin);
+      fmesh.name = "skin_fold";
+      fg.add(fmesh);
+      g.add(fg);
+    }
 
     /* ---- gear: named "gear"; tyres are the lowest opaque points ---- */
     var gr = new V.Group();
@@ -512,7 +560,7 @@ var HeroF4 = (function () {
     f4b: { node: "f4b", scheme: SCHEMES.gull, long: false, chin: false, whiteFin: true, fold: true, thin: true, bulge: false,
            sparrows: [[2.6, 0.62], [2.6, -0.62], [-1.3, 0.62], [-1.3, -0.62]], inboard: null, outboard: null },
     f4c: { node: "f4c", scheme: SCHEMES.sea, long: false, chin: false, bulge: true,
-           sparrows: [[2.6, 0.62], [2.6, -0.62], [-1.3, 0.62], [-1.3, -0.62]], inboard: "tank", outboard: "aim9" },
+           sparrows: [[2.6, 0.62], [2.6, -0.62], [-1.3, 0.62], [-1.3, -0.62]], inboard: "aim9", outboard: "tank" },
     f4g: { node: "f4g", scheme: SCHEMES.euro1, long: true, chin: true,
            sparrows: [[-1.3, 0.62], [-1.3, -0.62]], inboard: "harm", outboard: null }
   };
