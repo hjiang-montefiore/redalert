@@ -57,6 +57,43 @@
    The unditching log is NOT drawn (no reference shows one).
    Radio whip antennas, markings and the snorkel are left out.
 
+   LATER MARKS (added 2026-10; every feature below rests on a photograph):
+     refs (Wikimedia Commons, cached in scratchpad/t72l_ref):
+       b89  T-72B mod. 1989 02.jpg (a T-72B mod. 1989 on a range, rear 3/4): rolled
+            tarpaulin on the turret rear, rubber skirts, plain green, no cope cage.
+       b3a  T-72B3 - TankBiathlon2013-09.jpg (a T-72B3 in front 3/4, 2013): a row of
+            large flat-faced Kontakt-5 boxes along the turret front and cheeks, a
+            boxy Sosna-U sight on the roof left of the gun, a tall block of boxes
+            across the glacis, a plain steel side skirt with hinge brackets (no
+            rubber), a cluster of smoke tubes on the turret's port side behind the
+            gunner, a commander's cupola with the 12.7 mm gun, fuel drums on the
+            right of the rear deck.
+       b3m  T-72B3M MBT Army-2022 2022-08-20 2607.jpg (an exhibition T-72B3M, rear
+            left 3/4): two rows of square Relikt modules over the front 5/6 of the
+            hull side, slat screens over the rear hull side and hung across the
+            stern, slat panels on the turret sides and rear, large Kontakt-5 boxes
+            on the turret front, four smoke tubes on the port front of the roof, the
+            Sosna-U box, no fuel drums.
+       (T-72B3 obr. 2016.jpg is a wartime wreck with a cope cage: used only to
+        confirm the turret ERA pattern; the cage and every field addition are NOT drawn.)
+     T-72B (1989): the B of 1985 with Kontakt-5 instead of Kontakt-1 (the row text and
+        facts.js say Kontakt-5): bigger boxes in three rows on the glacis, three tall
+        boxes along each cheek and a second row behind; TPD-K1 and the 902B banks as
+        the B. Box counts are approximate (no clean detail photograph).
+     T-72B3: the Sosna-U box replaces the TPD-K1 window; the front smoke banks are not
+        fitted - one cluster of four tubes at the port side behind the gunner is drawn
+        because b3a shows exactly one; steel skirts instead of rubber; the same K-5.
+     T-72B3 (2016) = B3M: Relikt side modules, slat screens, turret slat panels.
+        NOT CONFIRMED: the exact module count per side and the count of slat bars.
+        A separate "commander's sight mast" is NOT drawn: the only post visible on the
+        cupola in b3m is the gun mount, and a mast would take the height to 2.42 m
+        against the published 2.23 m. The B3's smoke cluster sits behind the gunner in
+        b3a and on the port front of the roof in b3m; both are drawn as photographed.
+     Kontakt-5 turret layout (all three rows): per side one straight line of flat-topped
+        boxes along the cheek (the forward horseshoe seen in b3m and in the b3y front
+        view), a second higher row behind it and a short rank across the front roof.
+
+
    Materials: PAINT (green, textured), DARK (track, rubber, fittings, sights),
    RUBBER (skirts), ERA (reactive boxes), WHEEL (tyres and hubs by vertex
    colour), and the team colour exactly as handed in (C.team).
@@ -86,7 +123,25 @@ var HeroT72 = (function () {
             TX: 0.30,
             dome: { AF: 1.56, AR: 1.40, AY: 1.10, drop: -0.04, bul: 0.08 },
             ears: false, laser: true, smoke: 6, skirts: true, gills: false,
-            aaMg: true, drums: 2, eraTurret: true, eraGlacis: true, cheek: 0.24 }
+            aaMg: true, drums: 2, eraTurret: true, eraGlacis: true, cheek: 0.24 },
+    /* later marks: Kontakt-5 (k5), see the header */
+    b89:  { paint: { base: "#4a5638", blots: ["#414b2e", "#55603f"], seed: 189 },
+            TX: 0.30,
+            dome: { AF: 1.56, AR: 1.40, AY: 1.10, drop: -0.04, bul: 0.08 },
+            ears: false, laser: true, smoke: 6, skirts: true, gills: false,
+            aaMg: true, drums: 2, eraTurret: false, eraGlacis: true, k5: true, cheek: 0.24 },
+    b3:   { paint: { base: "#4b5a40", blots: ["#424f35", "#566645"], seed: 203 },
+            TX: 0.30,
+            dome: { AF: 1.56, AR: 1.40, AY: 1.10, drop: -0.04, bul: 0.08 },
+            ears: false, laser: false, smoke: 0, skirts: true, steel: true, gills: false,
+            aaMg: true, drums: 2, eraTurret: false, eraGlacis: true, k5: true, cheek: 0.24,
+            sosna: true, smokeRear: 4 },
+    b3m:  { paint: { base: "#55654a", blots: ["#4a5a40", "#607252"], seed: 2016 },
+            TX: 0.30,
+            dome: { AF: 1.56, AR: 1.40, AY: 1.10, drop: -0.04, bul: 0.08 },
+            ears: false, laser: false, smoke: 0, skirts: false, gills: false,
+            aaMg: true, drums: 0, eraTurret: false, eraGlacis: true, k5: true, cheek: 0.24,
+            sosna: true, smokeFront: 4, relikt: true, slat: true, cage: true }
   };
 
   var TY = 1.395, TW = 0.29;
@@ -144,6 +199,20 @@ var HeroT72 = (function () {
       P.push([c[0] + u[0] * sx + v[0] * sy + w[0] * sz, c[1] + u[1] * sx + v[1] * sy + w[1] * sz, c[2] + u[2] * sx + v[2] * sy + w[2] * sz]);
     }
     hexa(bin, P);
+  }
+  /* an oriented block without its underside (ERA boxes, slat bars: 10 triangles) */
+  function blk(bin, c, u, v, w, hu, hv, hw) {
+    function Q(a, b, d) {
+      return [c[0] + u[0] * a * hu + v[0] * b * hv + w[0] * d * hw, c[1] + u[1] * a * hu + v[1] * b * hv + w[1] * d * hw,
+              c[2] + u[2] * a * hu + v[2] * b * hv + w[2] * d * hw];
+    }
+    var q = [Q(-1, -1, -1), Q(1, -1, -1), Q(1, 1, -1), Q(-1, 1, -1), Q(-1, -1, 1), Q(1, -1, 1), Q(1, 1, 1), Q(-1, 1, 1)];
+    var F = [[[4, 5, 6, 7], w], [[1, 2, 6, 5], u], [[0, 4, 7, 3], [-u[0], -u[1], -u[2]]],
+             [[3, 7, 6, 2], v], [[0, 1, 5, 4], [-v[0], -v[1], -v[2]]]], k, f;
+    for (k = 0; k < F.length; k++) {
+      f = F[k][0];
+      triN(bin, q[f[0]], q[f[1]], q[f[2]], F[k][1]); triN(bin, q[f[0]], q[f[2]], q[f[3]], F[k][1]);
+    }
   }
   function belt(bin, x0, z0, x1, z1, y0, y1, th) {
     var dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz), nx = -dz / l * th / 2, nz = dx / l * th / 2;
@@ -307,11 +376,36 @@ var HeroT72 = (function () {
       var SX = [[2.28, 1.45], [1.40, 0.45], [0.40, -0.60], [-0.65, -1.65], [-1.70, -2.70]];
       for (p = -1; p <= 1; p += 2) {
         for (i = 0; i < SX.length; i++) {
-          box(B.rubber, SX[i][1], SX[i][0], p * 1.705 - 0.018, p * 1.705 + 0.018, 0.60, 0.99);
+          box(V.steel ? B.paint : B.rubber, SX[i][1], SX[i][0], p * 1.705 - 0.018, p * 1.705 + 0.018, 0.60, 0.99);
           box(B.dark, SX[i][1] + 0.02, SX[i][1] + 0.05, p * 1.725 - 0.012, p * 1.725 + 0.012, 0.64, 0.99);
           box(B.dark, SX[i][0] - 0.05, SX[i][0] - 0.02, p * 1.725 - 0.012, p * 1.725 + 0.012, 0.64, 0.99);
         }
       }
+    }
+    if (V.relikt) {
+      /* Relikt modules (b3m): two rows of square modules over the front part of the hull side, hung from the fender */
+      var rc, rr, rx;
+      for (p = -1; p <= 1; p += 2) {
+        for (rc = 0; rc < 6; rc++) {
+          rx = 1.97 - rc * 0.58;
+          for (rr = 0; rr < 2; rr++)
+            blk(B.era, [rx, p * 1.75, 0.715 + rr * 0.18], [1, 0, 0], [0, p, 0], [0, 0, 1], 0.27, 0.045, 0.085);
+          box(B.dark, rx - 0.29, rx - 0.27, p * 1.75 - 0.05, p * 1.75 + 0.05, 0.62, 0.99);
+        }
+        box(B.dark, 2.26, 2.28, p * 1.75 - 0.05, p * 1.75 + 0.05, 0.62, 0.99);
+      }
+    }
+    if (V.slat) {
+      /* slat screens (b3m): over the rear hull side and hung across the stern */
+      var sj, sk;
+      for (p = -1; p <= 1; p += 2) {
+        for (sk = 0; sk < 7; sk++) box(B.paint, -0.64 - sk * 0.35 - 0.015, -0.64 - sk * 0.35 + 0.015, p * 1.745 - 0.02, p * 1.745 + 0.02, 0.60, 1.01);
+        for (sj = 0; sj < 5; sj++) box(B.paint, -2.74, -0.62, p * 1.745 - 0.012, p * 1.745 + 0.012, 0.63 + sj * 0.07, 0.65 + sj * 0.07);
+      }
+      for (sk = 0; sk < 9; sk++) box(B.paint, -3.70, -3.66, -1.28 + sk * 0.32, -1.24 + sk * 0.32, 0.38, 1.01);
+      for (sj = 0; sj < 7; sj++) box(B.paint, -3.70, -3.66, -1.28, 1.28, 0.40 + sj * 0.09, 0.42 + sj * 0.09);
+      box(B.dark, -3.70, -3.43, 1.18, 1.24, 0.94, 0.99);
+      box(B.dark, -3.70, -3.43, -1.24, -1.18, 0.94, 0.99);
     }
     /* fender fittings: left tool box, right fuel tanks, spare track-link bar */
     box(B.paint, -0.30, 0.85, 1.38, 1.62, FZ + 0.02, FZ + 0.16);
@@ -357,6 +451,14 @@ var HeroT72 = (function () {
       var ang = Math.atan(0.36), u = [Math.cos(ang), 0, -Math.sin(ang)], w = [Math.sin(ang), 0, Math.cos(ang)];
       var row, col, xs, cz;
       for (row = 0; row < 3; row++) {
+        if (V.k5) {
+          /* Kontakt-5: bigger flat boxes, three rows of six across the glacis (b3a, b3m) */
+          xs = 2.55 + row * 0.32;
+          cz = roofZ(xs) + 0.05;
+          for (col = 0; col < 6; col++)
+            blk(B.era, [xs, (col - 2.5) * 0.36, cz], u, [0, 1, 0], w, 0.14, 0.165, 0.045);
+          continue;
+        }
         xs = 2.50 + row * 0.23;
         cz = roofZ(xs) + 0.035;
         for (col = -3; col <= 3; col++)
@@ -365,7 +467,7 @@ var HeroT72 = (function () {
     }
   }
 
-  function addRunning(B) {
+  function addRunning(B, V) {
     var n, i, a, b, l, d, t, tot = 0, segs = [], q, rem, px, pz, k, s, y, step, cnt, dx, dz, pts = [], th;
     pts.push([SPR.x, 0.05], [IDL.x, 0.05]);
     for (i = 1; i <= 7; i++) { th = -Math.PI / 2 + i * Math.PI / 8; pts.push([IDL.x + Math.cos(th) * RC, IDL.z + Math.sin(th) * RC]); }
@@ -377,7 +479,7 @@ var HeroT72 = (function () {
       l = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
       segs.push([a, b, l]); tot += l;
     }
-    cnt = Math.round(tot / 0.27); step = tot / cnt;
+    cnt = Math.round(tot / ((V && V.link) || 0.27)); step = tot / cnt;
     for (s = -1; s <= 1; s += 2) {
       y = s * TY;
       for (i = 0; i < n; i++) belt(B.dark, segs[i][0][0], segs[i][0][1], segs[i][1][0], segs[i][1][1], y - TW, y + TW, 0.08);
@@ -541,6 +643,49 @@ var HeroT72 = (function () {
     box(B.dark, -1.66, -1.58, 0.56, 0.60, 0.48, 0.72);
     /* team plate on the roof behind the cupola */
     box(B.team, -0.95, -0.55, -0.20, 0.20, 0.715, 0.735);
+    if (V.k5) {
+      /* Kontakt-5 on the turret (b3a, b3m, b3y front view): per side one straight line of flat-topped boxes laid along
+         the cheek from the mantlet back and out (a V open to the rear, the forward "horseshoe"), a second, higher row
+         behind it, and a short rank across the roof ahead of the hatches. Every box in a line shares one orientation. */
+      var kA = [1.58, 0.42], kB = [1.10, 1.00], kdx = kB[0] - kA[0], kdy = kB[1] - kA[1], kL = Math.sqrt(kdx * kdx + kdy * kdy);
+      var ktx = kdx / kL, kty = kdy / kL, krow, kc, kq, kin, kzc, khh;
+      for (s = -1; s <= 1; s += 2) {
+        for (krow = 0; krow < 2; krow++) {
+          kin = krow ? 0.30 : 0.07; kzc = krow ? 0.71 : 0.64; khh = krow ? 0.09 : 0.12;
+          for (kc = 0; kc < 3; kc++) {
+            kq = (kc + 0.5) / 3 * kL;
+            blk(B.era, [kA[0] + ktx * kq - kty * kin, s * (kA[1] + kty * kq + ktx * kin), kzc],
+                [ktx, s * kty, 0], [-kty, s * ktx, 0], [0, 0, 1], kL / 6 - 0.012, 0.095, khh);
+          }
+        }
+        for (i = 0; i < 2; i++) blk(B.era, [0.42, s * (0.50 + i * 0.38), 0.74], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.12, 0.17, 0.06);
+      }
+    }
+    if (V.sosna) {
+      /* Sosna-U gunner's sight box on the roof, left of the gun (b3a, b3m) */
+      box(B.paint, 0.62, 1.02, 0.28, 0.72, 0.64, 0.92);
+      box(B.dark, 1.02, 1.05, 0.33, 0.67, 0.70, 0.86);
+      box(B.dark, 0.66, 0.98, 0.32, 0.68, 0.92, 0.95);
+    }
+    if (V.smokeRear || V.smokeFront) {
+      /* a cluster of four 902B tubes on the port side (b3a: behind the gunner; b3m: on the port front of the roof) */
+      var sx0 = V.smokeFront ? 0.20 : -0.95;
+      for (i = 0; i < 4; i++) {
+        x = sx0 + i * 0.075;
+        cyl(B.dark, [x, 1.00, 0.34], [x + (V.smokeFront ? 0.16 : 0.08), 1.06, 0.60], 0.036, 0.036, 8);
+      }
+      box(B.dark, sx0 - 0.04, sx0 + 0.27, 0.95, 1.05, 0.30, 0.36);
+    }
+    if (V.cage) {
+      /* slat panels on the turret sides and across the rear of the bustle (b3m) */
+      var cj, ck;
+      for (s = -1; s <= 1; s += 2) {
+        for (ck = 0; ck < 4; ck++) box(B.paint, -0.55 - ck * 0.30 - 0.012, -0.55 - ck * 0.30 + 0.012, s * 1.06 - 0.02, s * 1.06 + 0.02, 0.15, 0.58);
+        for (cj = 0; cj < 5; cj++) box(B.paint, -1.46, -0.54, s * 1.06 - 0.012, s * 1.06 + 0.012, 0.19 + cj * 0.09, 0.21 + cj * 0.09);
+      }
+      for (ck = 0; ck < 3; ck++) box(B.paint, -1.84, -1.80, -0.74 + ck * 0.74, -0.70 + ck * 0.74, 0.15, 0.58);
+      for (cj = 0; cj < 4; cj++) box(B.paint, -1.84, -1.80, -0.74, 0.74, 0.19 + cj * 0.11, 0.21 + cj * 0.11);
+    }
     /* Kontakt-1 boxes on the cheeks and roof of the B: a V around the gun */
     if (V.eraTurret) {
       /* Kontakt-1 on the B's turret (photographs): a row of tall boxes along the cheek front, a second row behind it,
@@ -571,7 +716,7 @@ var HeroT72 = (function () {
     var V = VARIANTS[which] || VARIANTS.a, T = materials(THREE, C, V), g = new THREE.Group();
     var HB = bins(T), i, wg, WB, tg, TB = bins(T);
     addHull(HB, V);
-    addRunning(HB);
+    addRunning(HB, V);
     flush(THREE, g, HB);
     for (i = 0; i < XW.length; i++) {
       WB = new Bin(T.wheel, false, true);
@@ -605,4 +750,16 @@ UNIT_MODELS["pact_e80_t72a"] = {
 UNIT_MODELS["pact_e80_t72b"] = {
   len: 9.53,
   build: function (THREE, M, C) { return HeroT72.build(THREE, M, C, "b"); }
+};
+UNIT_MODELS["pact_e90_t72b89"] = {
+  len: 9.53,
+  build: function (THREE, M, C) { return HeroT72.build(THREE, M, C, "b89"); }
+};
+UNIT_MODELS["pact_e00_t72b3"] = {
+  len: 9.53,
+  build: function (THREE, M, C) { return HeroT72.build(THREE, M, C, "b3"); }
+};
+UNIT_MODELS["pact_e20_t72b3m"] = {
+  len: 9.53,
+  build: function (THREE, M, C) { return HeroT72.build(THREE, M, C, "b3m"); }
 };
