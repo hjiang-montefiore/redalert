@@ -10,9 +10,9 @@
      tanker_n        "N"  Boeing KC-46A Pegasus (767-2C): two PW4062 turbofans,
                           the 767 wing, the boom under the tail and the two
                           wing aerial refuelling pods.
-   The KC-97 (nato_e50_tanker) and the KC-10 (nato_e80_tanker) are NOT drawn
-   here: they have no model of their own and stand in on tanker_n, as they did
-   before; they are a later round.
+   The KC-97 (nato_e50_tanker) and the KC-10 (nato_e80_tanker) are not drawn
+   here: they have models of their own, js/hero/us_kc97g.js and
+   js/hero/us_kc10a.js.
 
    References (Wikimedia Commons, each fetched once):
      - "Boeing KC-135 Stratotanker line drawing - USAF medium res": the
