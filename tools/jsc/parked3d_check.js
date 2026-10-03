@@ -449,7 +449,7 @@ var OVERSIZE = {};
      was 13.9 m long); the game scales an aircraft by length, so it reaches 1.03 m into a revetment wall, like the F-86F above */
   "pact_e50_fighter",
   /* the E-3 model and the AEW types drawn with it; E-3, E-8C */
-  "awacs_b awacs_f awacs_n nato_e00_awacs gbr_e60_awacs gbr_e90_awacs gbr_e00_awacs fra_e90_awacs fra_e00_awacs nato_e80_awacs nato_e90_awacs",
+  "awacs_b awacs_f awacs_n nato_e00_awacs gbr_e60_awacs gbr_e90_awacs gbr_e00_awacs fra_e90_awacs fra_e00_awacs nato_e80_awacs nato_e90_awacs pact_e80_awacs pact_e90_awacs pact_e00_awacs awacs_p",
   /* the transport-EW stand-in (C-160G, Nimrod R.1, Airseeker), EA-6B */
   "ew_b ew_f gbr_e80_ewair fra_e60_ewair fra_e80_ewair fra_e90_ewair fra_e00_ewair nato_e60_ewair nato_e90_ewair",
   /* the KC-135 and KC-46 models (js/hero/us_tankers.js) and every tanker row drawn with them: at their real
