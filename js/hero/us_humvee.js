@@ -31,6 +31,62 @@
    number open it is read off those photographs against the 3.30 m
    wheelbase.
 
+   TWO MORE ROWS on the same chassis (the 1990s support variants):
+     nato_e90_spaag  M1097 Avenger (AN/TWQ-1), woodland: the heavy HMMWV with a
+                     hard-top cab and the Boeing turret on the bed - a rivetted
+                     housing with a raked glass front, a Stinger pod each side
+                     (four rounds a pod, 2 x 2 mouths), the FN M3P .50, the
+                     FLIR box and two whips.  The whole turret is the trained node.
+     nato_e90_ewveh  AN/TLQ-17A TRAFFIC JAM, desert tan: the HMMWV carrying a
+                     shelter box on the bed and a roof mast with a directional
+                     antenna head.  The head is the trained node.
+   Avenger evidence.  The Wikipedia fact sheet: 4.95 x 2.18 x 2.64 m, 3,900 kg,
+   crew 2, two Stinger pods "each capable of firing up to 4" missiles, an FN
+   M3P, a Raytheon AN/VLR-1 FLIR, fielded on the M998 and on the M1097 heavy
+   HMMWV (the Humvee article lists "M1097 heavy HMMWV Avenger"); the 2005
+   up-gun fit moved the gun into the RIGHT POD's place, so in the basic fit
+   the gun is not there.  Four press photographs on Wikimedia Commons: a
+   woodland-painted Avenger on a HMMWV (hard-top cab with the doors off, the
+   housing close behind the cab, the glass front hinged up, pods elevated);
+   a Taiwanese vehicle from the front left (flat hard roof, hard doors with
+   windows, a dark raked housing front, pods level with the housing top, two
+   whips, a sensor cluster under the left pod); a Marine LAAD close-up from
+   the front (a gunner in the compartment, a rivetted housing, the FLIR in a
+   bracket on the left, a pod each side as tall as the glass); and a launch
+   seen from behind.
+   The housing (1.2 x 1.1 x 1.35 m) and pods (1.6 x 0.42 x 0.42 m) are read off
+   them against the 3.30 m wheelbase.  NOT confirmed: where the M3P sits (the
+   up-gun text says only that it was moved into the right pod's place; it is
+   drawn low on the right under the pod, a guess) and the exact rake of the
+   glass; the pods are drawn level, the travel posture (the 2.64 m stowed
+   height).  The FLIR on the left is seen in two photographs.  Size against the
+   fact sheet: 4.95 m long (drawn 4.95: the nose 0.09 m and the tail 0.18 m
+   longer than the M998 tub's; the tail figure is read off the woodland
+   photograph, rear bumper face about 0.75 m behind the rear axle), 2.18 m
+   wide (the body is 2.14 m, -1.8 %; the mirrors reach 2.40 m), 2.64 m high
+   (pod tops 2.62 m; the two whips stand above that and their height is not
+   established).  Woodland,
+   because every photograph found is MERDC woodland; a Gulf War vehicle would
+   be tan and no photograph of one was found.  Both rows: 7 materials, the
+   Avenger 13 draw calls and the TRAFFIC JAM 11, the named "turret" node one
+   baked mesh per material.
+   TRAFFIC JAM: THE REFERENCES ARE THIN.  The Wikipedia list of US military
+   electronics (citing Travis 1988) calls the AN/TLQ-17 a 550 W HF/VHF
+   communications countermeasures system carried on the HMMWV, on the M1028
+   CUCV and in the EH-60A; the Humvee article lists the M1037 and M1042 S250
+   shelter carriers; the row says unarmoured, canvas doors, about five
+   tonnes, Desert Storm service.  No photograph or drawing of the AN/TLQ-17A
+   was found (a Commons search finds none; the web searches tried, two search
+   engines and DVIDS, returned nothing usable), so what is drawn is the
+   carrier class and a generic fit: the M998-family cab, an S250-type shelter
+   box on the bed (1.8 x 2.0 x 1.5 m, read off the bed length and the vehicle
+   width), and on its roof one mast with a broadband directional head (a boom
+   and five cross elements).  The
+   shelter, the mast and the head are INFERRED, not seen.  The row's turret
+   flag trains the head.  The row text says canvas doors; no source for the
+   door type of the shelter carrier was found, so the hard cab of the family
+   is drawn.  The carrier keeps the M998 tub's 4.68 m (no length is published
+   for it).
    What is deliberately NOT drawn: crew, interior beyond the seats, the CROWS
    remote station (the row's gun is a ring-mounted .50 that aims), any
    variant the rows do not name.
@@ -66,7 +122,18 @@ var HeroHumvee = (function () {
     e00: { kind: "arm", paint: "tan", fb: 0xad9970, R: 0.470, XF: 1.62, XR: -1.68,
            nose: 2.30, bump: 2.45, tail: -2.28, hw: 1.15, turret: "gpk" },
     n:   { kind: "arm", paint: "tan2", fb: 0xa8946c, R: 0.470, XF: 1.62, XR: -1.68,
-           nose: 2.30, bump: 2.45, tail: -2.28, hw: 1.15, turret: "ogpk" }
+           nose: 2.30, bump: 2.45, tail: -2.28, hw: 1.15, turret: "ogpk" },
+    /* the M1097 heavy HMMWV (36 in tyres, the M998 body) with the Avenger turret.
+       The fact sheet gives 4.95 m overall (16 ft 3 in) against the M998's 4.57 m,
+       so the overhangs are longer than the first-generation tub's: 0.09 m at the
+       nose and 0.18 m at the tail.  The tail figure is read off the woodland
+       photograph (rear bumper face about 0.75 m behind the rear axle); the split
+       is a reading, the total is the published length. */
+    av:  { kind: "avenger", paint: "wood", fb: 0x4b5a37, R: 0.457, XF: 1.60, XR: -1.70,
+           nose: 2.29, bump: 2.375, tail: -2.32, hw: 1.07 },
+    /* the unarmoured shelter carrier of the TRAFFIC JAM */
+    tj:  { kind: "jam", paint: "tan", fb: 0xb09a6e, R: 0.457, XF: 1.60, XR: -1.70,
+           nose: 2.20, bump: 2.285, tail: -2.14, hw: 1.07 }
   };
   var TW = 0.318;          /* 12.5 in section width */
   var HALF_TRACK = 0.908;  /* 71.5 in track */
@@ -667,6 +734,104 @@ var HeroHumvee = (function () {
     g.add(tg);
   }
 
+  /* ------------------------------------------------ the M998-family hard cab */
+  /* What the Avenger carrier and the shelter carrier share: the tub (bonnet,
+     fenders, grille, bumpers, lamps, mirrors, bed sides), a closed cab block
+     from the belt line to a flat roof, the raked windshield, door glass, the
+     door seams and the team panel on the roof, and a floor under the bed so
+     the arches do not show the sky.  The roof is flat and rigid in the Avenger
+     photographs; the doors are drawn closed. */
+  function cabHard(K, T, V) {
+    var zr = 1.83, hw = V.hw, i, sx;
+    tub(K, T, V);
+    K.prism(T.skin, [[-0.30, 1.10], [1.04, 1.10], [0.90, zr], [-0.30, zr]], -1.00, 1.00);
+    K.bb(T.skin, V.tail, -0.30, -0.78, 0.78, 0.50, 1.10);
+    K.bb(T.skin, -0.30, 0.98, -0.60, 0.60, 0.50, 1.10);
+    K.bb(T.skin, 0.98, 1.08, -0.62, 0.62, 0.82, 1.14);
+    windshield(K, T, 1.0055, 1.28, 0.9096, 1.78, 0.95, false);
+    K.bbm(T.glass, -0.06, 0.80, 1.00, 1.012, 1.36, 1.74);
+    /* the door: seams ahead and behind it (above and below the belt line), the
+       sill seam and the handle */
+    for (i = 0; i < 2; i++) {
+      sx = [0.96, -0.20][i];
+      K.bbm(T.dark, sx - 0.005, sx + 0.005, 1.00, 1.010, 1.10, 1.82);
+      K.bbm(T.dark, sx - 0.005, sx + 0.005, hw, hw + 0.010, 0.64, 1.20);
+    }
+    K.bbm(T.dark, -0.20, 0.96, hw, hw + 0.010, 0.64, 0.655);
+    K.bbm(T.dark, 0.02, 0.12, hw, hw + 0.020, 1.12, 1.15);
+    /* team recognition panel on the roof, front half */
+    K.bb(T.team, 0.12, 0.72, -0.45, 0.45, zr, zr + 0.013);
+  }
+
+  /* ------------------------------------------------- the M1097 Avenger */
+  var AV_X = -1.18, AV_Z = 1.14;        /* slew ring centre on the bed, floor + ring */
+  function bodyAvenger(K, T, V) {
+    cabHard(K, T, V);
+    /* the slew ring the turret housing turns on */
+    K.cyl(T.dark, 0.60, 0.04, 16, AV_X, 0, 1.12, "z");
+  }
+  /* The Avenger's gun: the FN M3P, the electrically fired .50 (the aircraft
+     Browning M3): receiver on (x0, y0, z0), barrel along +X.  About 1.5 m
+     overall with the 0.91 m barrel; no ammunition can is drawn, no photograph
+     shows it. */
+  function m3p(K, T, x0, y0, z0) {
+    var d = T.dark;
+    K.bb(d, x0 - 0.24, x0 + 0.24, y0 - 0.055, y0 + 0.055, z0 - 0.07, z0 + 0.075);   /* receiver */
+    K.bb(d, x0 - 0.30, x0 - 0.24, y0 - 0.05, y0 + 0.05, z0 - 0.05, z0 + 0.05);      /* back plate */
+    K.cyl(d, 0.0155, 0.91, 8, x0 + 0.695, y0, z0 + 0.01, "x");                      /* barrel */
+    K.cyl(d, 0.022, 0.09, 8, x0 + 1.20, y0, z0 + 0.01, "x");                        /* flash hider */
+    K.bb(d, x0 - 0.05, x0 + 0.15, y0 + 0.055, y0 + 0.155, z0 - 0.05, z0 + 0.05);    /* bracket to the housing */
+  }
+  function turretAvenger(THREE, T, g) {
+    /* local origin: the ring centre on the bed; gun and pods point along +X.
+       The housing is a rivetted box with a raked glass front, the pods stand on
+       its sides, the FLIR is on the left, the gun low on the right. */
+    var tg = new THREE.Group(), K = new Baker(THREE), s, i, j;
+    tg.name = "turret";
+    tg.position.set(AV_X, 0, AV_Z);
+    K.prism(T.skin, [[-0.62, 0.0], [0.58, 0.0], [0.58, 0.35], [0.32, 1.30], [-0.62, 1.30]], -0.55, 0.55);
+    K.bb(T.skin, -0.66, 0.40, -0.60, 0.60, 1.30, 1.35);                              /* roof */
+    K.plate(T.glass, 0.584, 0.35, 0.324, 1.30, 0.016, -0.44, 0.44, "fwd");          /* the glass front */
+    for (s = -1; s <= 1; s += 2) {
+      K.bb(T.skin, -0.45, 1.15, s * 0.55, s * 0.97, 1.06, 1.48);                     /* the pod: 1.6 x 0.42 x 0.42 */
+      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++)                                /* four tube mouths */
+        K.cyl(T.dark, 0.07, 0.02, 10, 1.155, s * 0.76 + (i - 0.5) * 0.19, 1.27 + (j - 0.5) * 0.19, "x");
+      K.bb(T.dark, -0.56, -0.44, s * 0.40 - 0.06, s * 0.40 + 0.06, 1.35, 1.41);     /* whip base */
+      K.rod(T.dark, 0.008, [-0.50, s * 0.40, 1.41], [-0.50, s * 0.40, 2.65], 4);    /* whip */
+    }
+    K.bb(T.dark, 0.18, 0.50, 0.55, 0.78, 0.46, 0.80);                                /* FLIR / laser box, left */
+    K.cyl(T.glass, 0.07, 0.03, 12, 0.515, 0.665, 0.63, "x");                         /* its window */
+    m3p(K, T, 0.12, -0.70, 0.84);                                                    /* the .50, right, under the pod */
+    K.flush(tg);
+    g.add(tg);
+  }
+
+  /* --------------------------------------------- the TRAFFIC JAM carrier */
+  var JAM_X = -1.45, JAM_Z = 2.69;      /* mast foot on the shelter roof */
+  function bodyJam(K, T, V) {
+    cabHard(K, T, V);
+    /* S250-type shelter on the bed: front on the cab back, rear on the tail
+       plane, 2.0 m wide, 1.5 m tall, resting on the bed side walls */
+    K.bb(T.skin, V.tail, -0.34, -1.00, 1.00, 1.16, 2.65);
+    K.bb(T.team, -0.95, -0.42, -0.60, 0.60, 2.65, 2.663);          /* recognition panel, front half of the roof */
+    K.bb(T.dark, JAM_X - 0.16, JAM_X + 0.16, -0.16, 0.16, 2.65, 2.69);   /* the mast foot */
+  }
+  function mastJam(THREE, T, g) {
+    /* A mast and a directional broadband head: a boom along +X with five cross
+       elements, longest at the back.  Generic (see the header): the form of the
+       real antenna was not found. */
+    var tg = new THREE.Group(), K = new Baker(THREE), i;
+    var xs = [-0.60, -0.30, 0.0, 0.28, 0.54], ls = [1.50, 1.25, 1.02, 0.84, 0.70];
+    tg.name = "turret";
+    tg.position.set(JAM_X, 0, JAM_Z);
+    K.cyl(T.dark, 0.04, 1.10, 8, 0, 0, 0.55, "z");                  /* the mast */
+    K.cyl(T.dark, 0.022, 1.40, 6, 0, 0, 1.12, "x");                  /* the boom */
+    for (i = 0; i < 5; i++) K.cyl(T.dark, 0.012, ls[i], 5, xs[i], 0, 1.12, "y");
+    K.bb(T.dark, -0.07, 0.07, -0.07, 0.07, 1.06, 1.18);              /* the clamp where the boom meets the mast */
+    K.flush(tg);
+    g.add(tg);
+  }
+
   /* --------------------------------------------------------------- build */
   function make(key) {
     return function (THREE, M, C) {
@@ -677,6 +842,8 @@ var HeroHumvee = (function () {
       chassis(K, T, V);
       var roof = 1.88;
       if (V.kind === "slant") bodySlant(K, T, V);
+      else if (V.kind === "avenger") bodyAvenger(K, T, V);
+      else if (V.kind === "jam") bodyJam(K, T, V);
       else bodyArm(K, T, V);
       K.flush(g);
       var tg = tyreGeo(THREE, V.R), s, i, axs = [V.XF, V.XR];
@@ -688,6 +855,8 @@ var HeroHumvee = (function () {
         g.add(w);
       }
       if (V.kind === "slant") turretRing(THREE, T, g);
+      else if (V.kind === "avenger") turretAvenger(THREE, T, g);
+      else if (V.kind === "jam") mastJam(THREE, T, g);
       else if (V.turret === "gpk") turretGpk(THREE, T, g, roof);
       else turretOgpk(THREE, T, g, roof);
       g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -704,3 +873,5 @@ UNIT_MODELS["nato_e80_recon"] = { len: 4.68, build: HeroHumvee.make("e80") };
 UNIT_MODELS["nato_e90_recon"] = { len: 4.68, build: HeroHumvee.make("e90") };
 UNIT_MODELS["nato_e00_recon"] = { len: 5.08, build: HeroHumvee.make("e00") };
 UNIT_MODELS["recon_n"] = { len: 5.08, build: HeroHumvee.make("n") };
+UNIT_MODELS["nato_e90_spaag"] = { len: 4.95, build: HeroHumvee.make("av") };
+UNIT_MODELS["nato_e90_ewveh"] = { len: 4.68, build: HeroHumvee.make("tj") };
