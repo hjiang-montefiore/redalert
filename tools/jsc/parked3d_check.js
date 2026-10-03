@@ -430,6 +430,9 @@ var OVERSIZE = {};
      aircraft by its length and a Super Constellation is as wide as it is long, so at its real proportions it
      reaches 0.7 m into a revetment wall (the one row on this list that is a 1950s piston airliner) */
   "nato_e50_awacs",
+  /* the Tu-126 Moss (js/hero/ru_tu126.js): 51.2 m of swept wing on 55.2 m of length - without this entry the parked check
+     finds it 0.82 m into a revetment wall (the game scales an aircraft by its length) */
+  "pact_e60_awacs",
   /* the A-10 model, 35.9 m of wing, and the twelve CAS types drawn with it */
   "bomber_n bomber_g deu_e50_cas deu_e60_cas deu_e80_cas gbr_e50_cas gbr_e60_cas gbr_e80_cas gbr_e00_cas fra_e50_cas fra_e60_cas fra_e80_cas fra_e00_cas",
   "nato_e80_cas nato_e00_cas",                                /* A-10, A-10C */
