@@ -80,6 +80,13 @@ function run() {
   if (!H) return;
   var col0 = P.color, fac0 = P.faction;
   Render3D.setCam(flatSpot().x * TT, flatSpot().y * TT);
+  /* the armies' own SAM sites are set aside while the check stands its
+     marked boxes in their places, and put back after: what it holds is the
+     lookup, not which armies happen to have a site of which period today */
+  var kept = {};
+  Object.keys(BLD_MODELS).forEach(function (k) {
+    if (/^sam_[a-z]+_e\d\d$/.test(k)) { kept[k] = BLD_MODELS[k]; delete BLD_MODELS[k]; }
+  });
   BLD_MODELS["sam_pact_e60"] = fake("sam_pact_e60", true);
   BLD_MODELS["sam_pact_e50"] = fake("sam_pact_e50", false);
   BLD_MODELS["sam_pact_e20"] = fake("sam_pact_e20", false);
@@ -100,4 +107,5 @@ function run() {
       (tint ? tint.color.toString(16) : "-") + " at e50 without it; meshes " + (own ? own.meshes : "-") + "/" + (ref ? ref.meshes : "-") + "/" + (tint ? tint.meshes : "-"));
   P.color = col0; P.faction = fac0; P.era = "e20";
   delete BLD_MODELS["sam_pact_e60"]; delete BLD_MODELS["sam_pact_e50"]; delete BLD_MODELS["sam_pact_e20"];
+  Object.keys(kept).forEach(function (k) { BLD_MODELS[k] = kept[k]; });
 }
