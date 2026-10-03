@@ -335,10 +335,15 @@ var HeroT80U = (function () {
      the face normal radially INWARD: with a FrontSide material the outer
      skin is culled and you look through the body at its own far wall.  Flip
      the winding, recompute, keep FrontSide. */
+  /* The T-80U builder walks its stations in decreasing x, which M.loft
+     already winds outward, and then flips them (inside out: the far inner
+     wall shows).  The T-80BVM sets this flag so its lofts keep the outward
+     winding; the T-80U leaves it false and is unchanged. */
+  var outwardLoft = false;
   function body(THREE, M, secs, segs) {
     var geo = M.loft(THREE, secs, segs);
     var ix = geo.getIndex ? geo.getIndex() : null;
-    if (ix && ix.array) {
+    if (ix && ix.array && !outwardLoft) {
       var a = ix.array, i, t;
       for (i = 0; i + 2 < a.length; i += 3) { t = a[i + 1]; a[i + 1] = a[i + 2]; a[i + 2] = t; }
       ix.needsUpdate = true;
@@ -956,10 +961,336 @@ var HeroT80U = (function () {
     return g;
   }
 
-  return { build: build };
+  /* ====================================================== T-80BVM (2018) ==
+     pact_e20_t80bvm.  The rebuilt T-80BV: the T-80B/BV cast turret under
+     Relikt, the Sosna-U gunner's sight, the new commander's sight, Relikt
+     skirts and the factory slat screens.  Hull, running gear and gun are the
+     T-80U's (same hull); everything below is new.  Built from the same
+     builders, then merged per material so it is two meshes per material.
+
+     References (Wikimedia Commons, cached in scratchpad/t80bvm_ref), all
+     labelled T-80BVM at a show or parade:
+       r1  "T-80BVM (2).jpg"  parade column, 3/4 front: Relikt tile arrays on
+           the turret front and roof, ribbed packs on the hull front corners,
+           headlamps with U guards, tall Relikt skirts with scalloped lower
+           flaps, rear slat screens.  (Roof marks and the crew are not drawn.)
+       r4  "T-80BVM MBT Army-2022 ... 2611.jpg"  head on: the fan of three
+           tilted Relikt slabs each side of the gun, the vertical slab left of
+           the gun, the Sosna-U box with its lamp on the gunner's side, the
+           commander's sight and 12.7 mm on the right, canvas mantlet boot,
+           four louvred blocks high on the plain glacis, lamps with guards.
+       r5  "T-80BVM MBT Army-2022 ... 2606.jpg"  side: Relikt wall skirt over
+           the front half, slat screen over the rear skirt, a fuel tank on the
+           left fender ahead of the sprocket, slat cage round the turret
+           bustle and the engine deck, rear slat screen, whip aerial.
+     Not confirmed (judgement): panel counts and exact tile sizes, the louvre
+     block positions on the glacis, the smoke-launcher bank position.  No
+     drums, no log, no wartime fittings, no markings.  Plain Russian green.  */
+  function tslab(THREE, p, m, w, d, h, x, y, z, yaw, pitch) {
+    var b = new THREE.Mesh(new THREE.BoxGeometry(w, d, h), m);
+    b.rotation.order = "ZYX";
+    b.rotation.set(0, pitch || 0, yaw || 0);
+    b.position.set(x, y, z);
+    p.add(b);
+    return b;
+  }
+  /* a slat screen between two plan points: nH rails, nV uprights */
+  function screen(THREE, p, m, x0, y0, x1, y1, z0, z1, nH, nV, th, bar) {
+    var dx = x1 - x0, dy = y1 - y0, L = Math.sqrt(dx * dx + dy * dy);
+    var yaw = Math.atan2(dy, dx), i, t;
+    for (i = 0; i < nH; i++)
+      box(THREE, p, m, L, th, bar, (x0 + x1) * 0.5, (y0 + y1) * 0.5,
+          z0 + (z1 - z0) * i / (nH - 1), 0, 0, yaw);
+    for (i = 0; i < nV; i++) {
+      t = i / (nV - 1);
+      box(THREE, p, m, bar, th, z1 - z0 + bar, x0 + dx * t, y0 + dy * t,
+          (z0 + z1) * 0.5, 0, 0, yaw);
+    }
+  }
+
+  /* bake every mesh under root (except the turret subtree when asked) into
+     one mesh per material, in root's own space */
+  function mergeByMat(THREE, root, skipTurret) {
+    root.updateMatrixWorld(true);
+    var inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    var list = [], buckets = {}, order = [];
+    root.traverse(function (o) { if (o.isMesh) list.push(o); });
+    list.forEach(function (o) {
+      var pp = o.parent, inT = false;
+      while (pp && pp !== root) { if (pp.name === "turret") inT = true; pp = pp.parent; }
+      if (skipTurret && inT) return;
+      var geo = o.geometry.clone();
+      if (geo.index) geo = geo.toNonIndexed();
+      if (!geo.attributes.normal) geo.computeVertexNormals();
+      geo.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+      var pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
+      var uv = geo.attributes.uv ? geo.attributes.uv.array
+                                 : new Float32Array(pos.length / 3 * 2);
+      var key = o.material.uuid;
+      if (!buckets[key]) { buckets[key] = { m: o.material, p: [], n: [], u: [] }; order.push(key); }
+      var b = buckets[key], i;
+      for (i = 0; i < pos.length; i++) { b.p.push(pos[i]); b.n.push(nor[i]); }
+      for (i = 0; i < uv.length; i++) b.u.push(uv[i]);
+      o.parent.remove(o);
+      o.geometry.dispose();
+    });
+    order.forEach(function (key) {
+      var b = buckets[key], geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.p), 3));
+      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.n), 3));
+      geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(b.u), 2));
+      root.add(new THREE.Mesh(geo, b.m));
+    });
+  }
+
+  function buildGlacisBVM(THREE, g, T) {
+    var c, k, s, p, i;
+    /* four louvred blocks across the glacis (r4) */
+    for (c = 0; c < 4; c++) {
+      p = onGlacis(0.46, 0.05);
+      box(THREE, g, T.skinS, 0.24, 0.40, 0.07, p.x, (c - 1.5) * 0.43, p.z, 0, GL_ANG, 0);
+      for (k = 0; k < 3; k++) {
+        var q = onGlacis(0.40 + k * 0.06, 0.095);
+        box(THREE, g, T.dark, 0.035, 0.34, 0.03, q.x, (c - 1.5) * 0.43, q.z, 0, GL_ANG, 0);
+      }
+    }
+    /* ribbed packs on the sponson tops beside the turret ring (r1, r4) */
+    for (s = -1; s <= 1; s += 2) {
+      box(THREE, g, T.era, 1.00, 0.50, 0.07, 0.90, s * 1.42, DECK + 0.035);
+      for (i = 0; i < 6; i++)
+        box(THREE, g, T.era, 0.05, 0.46, 0.04, 0.46 + i * 0.17, s * 1.42, DECK + 0.09);
+      box(THREE, g, T.era, 0.50, 0.44, 0.07, 1.78, s * 1.50, 1.27, 0, 0.30, 0);
+    }
+    /* headlamps with their U guards: white left, dark IR lens right (r4) */
+    for (s = -1; s <= 1; s += 2) {
+      p = onGlacis(0.50, 0.15);
+      tube(THREE, g, T.metal, 0.110, 0.115, 0.18, 12, p.x, s * 1.04, p.z);
+      var lens = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.094, 0.094, 0.04, 12), T.glass);
+      lens.rotation.z = -Math.PI / 2;
+      lens.position.set(p.x + 0.10, s * 1.04, p.z);
+      g.add(lens);
+      for (i = -1; i <= 1; i += 2)
+        box(THREE, g, T.metal, 0.30, 0.03, 0.03, p.x + 0.04, s * 1.04 + i * 0.15, p.z + 0.02, 0, 0, 0);
+      box(THREE, g, T.metal, 0.03, 0.33, 0.03, p.x + 0.19, s * 1.04, p.z + 0.02);
+    }
+    /* flat lower plate across the nose and the hinged apron (r4) */
+    box(THREE, g, T.skinS, 0.07, 2.50, 0.52, X_NOSE + 0.08, 0, 0.31);
+    for (i = 0; i < 2; i++)
+      box(THREE, g, T.metal, 0.06, 0.20, 0.08, X_NOSE + 0.13, (i - 0.5) * 1.8, 0.52);
+  }
+
+  function buildSkirtsBVM(THREE, g, T) {
+    var s, i, yc, n = 5, xs = -0.30, x1 = 2.62, pw = (x1 - xs) / n;
+    for (s = -1; s <= 1; s += 2) {
+      yc = s * (SK_Y + 0.02);
+      /* hanger rail */
+      box(THREE, g, T.skinS, x1 - xs + 0.1, 0.07, 0.08, (xs + x1) * 0.5, yc, SK_TOP - 0.02);
+      /* the Relikt wall: tall tile panels, with the scalloped lower flaps */
+      for (i = 0; i < n; i++) {
+        var px = xs + pw * (i + 0.5);
+        box(THREE, g, T.era, pw - 0.03, 0.10, 0.54, px, yc + s * 0.025, 1.12);
+        box(THREE, g, T.metal, 0.05, 0.12, 0.50, px + pw * 0.5, yc + s * 0.025, 1.12);
+        tslab(THREE, g, T.skinS, pw - 0.10, 0.04, 0.26, px, yc - s * 0.01, 0.78, 0, 0.0);
+        box(THREE, g, T.skinS, pw * 0.5, 0.04, 0.06, px, yc - s * 0.03, 0.62, 0, 0, 0);
+      }
+      /* rear skirt: plain lower plate under a slat screen (r5) */
+      box(THREE, g, T.skinS, 0.85, 0.05, 0.40, -0.725, yc, 0.84);
+      screen(THREE, g, T.skinS, -1.15, yc + s * 0.03, -0.30, yc + s * 0.03,
+             1.02, 1.40, 4, 8, 0.03, 0.03);
+      /* the mudflap behind the sprocket */
+      box(THREE, g, T.rub, 0.06, 0.56, 0.52, -3.56, s * 1.36, 0.42);
+    }
+    /* the fuel tank on the left fender ahead of the sprocket (r5; port side) */
+    tube(THREE, g, T.skinS, 0.15, 0.15, 0.95, 14, -1.80, 1.66, 1.17);
+    box(THREE, g, T.metal, 0.07, 0.10, 0.12, -1.80, 1.56, 1.29);
+  }
+
+  function buildDeckBVM(THREE, g, T) {
+    var i, s;
+    post(THREE, g, T.skinS, 1.17, 1.21, 0.10, 20, TUR.x, 0, DECK - 0.02);
+    /* engine deck, intake stack and louvres as on every T-80 */
+    box(THREE, g, T.skinS, 2.00, 2.84, 0.07, -2.30, 0, DECK + 0.035);
+    for (i = 0; i < 5; i++)
+      box(THREE, g, T.dark, 0.15, 2.60, 0.09, -1.52 - i * 0.34, 0, DECK + 0.085);
+    box(THREE, g, T.skinS, 0.84, 1.68, 0.16, -2.26, 0, DECK + 0.145);
+    for (i = 0; i < 3; i++)
+      box(THREE, g, T.dark, 0.11, 1.54, 0.05, -2.54 + i * 0.26, 0, DECK + 0.235);
+    box(THREE, g, T.skinS, 0.09, 0.98, 0.46, X_TAIL - 0.07, 0.56, 1.10);
+    for (i = 0; i < 3; i++)
+      box(THREE, g, T.dark, 0.05, 0.92, 0.06, X_TAIL - 0.12, 0.56, 0.96 + i * 0.14);
+    for (i = 0; i < 2; i++)
+      post(THREE, g, T.metal, 0.13, 0.13, 0.05, 10, -1.18 - i * 0.62,
+           (i & 1) ? 1.14 : -1.14, DECK + 0.035);
+    /* factory rear slat screen only (r1, pre-2022 parade); no cage over the
+       engine deck, no overhead structure */
+    screen(THREE, g, T.skinS, -3.62, -1.40, -3.62, 1.40, 0.95, 1.55, 5, 12, 0.03, 0.035);
+    /* lifting eyes at the tail */
+    for (s = -1; s <= 1; s += 2)
+      box(THREE, g, T.metal, 0.20, 0.07, 0.20, -3.58, s * 0.92, 0.82);
+    /* team strip: engine deck (the other is on the turret roof) */
+    box(THREE, g, T.team, 0.25, 1.00, 0.02, -2.95, 0, DECK + 0.08);
+  }
+
+  function buildTurretBVM(THREE, M, T) {
+    var t = new THREE.Group();
+    t.name = "turret";
+    t.position.set(TUR.x, 0, TUR.z);
+    var i, s, a, k, q;
+
+    /* the cast turret: same casting outline as the file's T-80U turret */
+    t.add(new THREE.Mesh(body(THREE, M, stations([
+      [-1.55, 0.95, 0.520, -0.10],
+      [-1.34, 1.10, 0.580, -0.10],
+      [-0.90, 1.24, 0.660, -0.10],
+      [-0.30, 1.32, 0.700, -0.10],
+      [ 0.22, 1.30, 0.700, -0.10],
+      [ 0.70, 1.16, 0.680, -0.10],
+      [ 1.05, 0.92, 0.630, -0.06],
+      [ 1.28, 0.62, 0.540,  0.04]
+    ], 0.50), 22), T.skinL));
+    var rp = new THREE.Mesh(M.slab(THREE,
+      [[1.02, 0.86], [0.60, 1.18], [0.00, 1.30], [-0.70, 1.26],
+       [-1.20, 1.10], [-1.52, 0.88], [-1.52, -0.88], [-1.20, -1.10],
+       [-0.70, -1.26], [0.00, -1.30], [0.60, -1.18], [1.02, -0.86]], 0.15),
+      T.skinL);
+    rp.position.z = 0.70 - 0.14;
+    t.add(rp);
+
+    /* ---- Relikt: a fan of tilted slabs each side of the gun (r4) */
+    var cheek = [[1.16, 0.74], [1.00, 0.94], [0.72, 1.14], [0.24, 1.29], [-0.24, 1.33], [-0.90, 1.25]];
+    var out = 0.13;
+    for (s = -1; s <= 1; s += 2) {
+      for (k = 0; k < cheek.length - 1; k++) {
+        var dx = cheek[k + 1][0] - cheek[k][0], dy = cheek[k + 1][1] - cheek[k][1];
+        var L = Math.sqrt(dx * dx + dy * dy), nx = dy / L, ny = -dx / L;
+        var n = Math.max(1, Math.round(L / 0.36));
+        for (q = 0; q < n; q++) {
+          var tt = (q + 0.5) / n;
+          var px = cheek[k][0] + dx * tt + nx * out, py = cheek[k][1] + dy * tt + ny * out;
+          /* shell slabs up the cheek, then the flank boxes behind them */
+          tslab(THREE, t, T.era, 0.22, L / n - 0.025, 0.54, px, s * py, 0.40,
+                Math.atan2(s * ny, nx), k < 3 ? -0.26 : 0);
+          /* roof tile above each slab */
+          if (k < 3)
+            tslab(THREE, t, T.era, 0.30, L / n - 0.04, 0.09, px - nx * 0.12, s * (py - ny * 0.12), 0.74,
+                  Math.atan2(s * ny, nx), 0);
+        }
+      }
+    }
+    /* the vertical slab left of the gun (r4) */
+    box(THREE, t, T.era, 0.14, 0.40, 0.46, 1.20, 0.46, 0.34);
+    /* the flat course across the brow */
+    box(THREE, t, T.era, 0.30, 0.30, 0.09, 0.98, -0.22, 0.75);
+
+    /* ---- mantlet: canvas boot over the trunnions (r4) */
+    t.add(new THREE.Mesh(body(THREE, M, [
+      { x: 1.64, w: 0.20, h: 0.18, zc: GUN_Z, sq: 0.90 },
+      { x: 1.52, w: 0.30, h: 0.24, zc: GUN_Z, sq: 0.85 },
+      { x: 1.36, w: 0.50, h: 0.34, zc: GUN_Z, sq: 0.75 },
+      { x: 1.14, w: 0.64, h: 0.40, zc: GUN_Z, sq: 0.72 },
+      { x: 0.94, w: 0.70, h: 0.42, zc: GUN_Z, sq: 0.72 }
+    ], 14), T.skinL));
+
+    /* ---- 2A46M-4, 125 mm, painted sleeve as on every photograph */
+    tube(THREE, t, T.skinS, 0.150, 0.158, 1.08, 14, 2.10, 0, GUN_Z, true);
+    tube(THREE, t, T.metal, 0.170, 0.170, 0.07, 12, 2.67, 0, GUN_Z, true);
+    tube(THREE, t, T.skinS, 0.138, 0.144, 0.70, 14, 3.06, 0, GUN_Z, true);
+    tube(THREE, t, T.skinS, 0.205, 0.150, 0.10, 14, 3.46, 0, GUN_Z, true);
+    tube(THREE, t, T.skinS, 0.205, 0.205, 0.52, 14, 3.77, 0, GUN_Z, true);
+    tube(THREE, t, T.skinS, 0.112, 0.205, 0.10, 14, 4.08, 0, GUN_Z, true);
+    tube(THREE, t, T.skinS, 0.098, 0.104, 1.404, 12, 4.832, 0, GUN_Z, true);
+    tube(THREE, t, T.metal, 0.114, 0.114, 0.18, 14, 5.624, 0, GUN_Z);
+
+    /* ---- gunner's station (+Y): hatch and the Sosna-U head (r4) */
+    post(THREE, t, T.skinS, 0.34, 0.35, 0.11, 14, -0.30, 0.58, 0.73);
+    post(THREE, t, T.skinS, 0.30, 0.30, 0.08, 12, -0.30, 0.58, 0.82);
+    box(THREE, t, T.glass, 0.10, 0.20, 0.10, 0.00, 0.58, 0.78);
+    box(THREE, t, T.skinS, 0.46, 0.46, 0.40, 0.56, 0.60, 0.91);
+    box(THREE, t, T.skinS, 0.50, 0.50, 0.05, 0.54, 0.60, 1.13, 0, -0.10, 0);
+    box(THREE, t, T.glass, 0.04, 0.16, 0.16, 0.80, 0.50, 0.93);
+    box(THREE, t, T.glass, 0.04, 0.12, 0.12, 0.80, 0.72, 0.93);
+    /* the lamp on its bracket beside it */
+    tube(THREE, t, T.metal, 0.11, 0.11, 0.14, 12, 0.46, 1.00, 0.86);
+    var lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.03, 12), T.glass);
+    lamp.rotation.z = -Math.PI / 2;
+    lamp.position.set(0.55, 1.00, 0.86);
+    t.add(lamp);
+    box(THREE, t, T.metal, 0.04, 0.04, 0.16, 0.46, 1.00, 0.76);
+    /* domed periscope head behind it */
+    post(THREE, t, T.skinS, 0.13, 0.14, 0.12, 12, -0.06, 0.92, 0.79);
+
+    /* ---- commander's station (-Y): cupola, new commander's sight, 12.7 mm */
+    post(THREE, t, T.skinS, 0.42, 0.44, 0.15, 14, -0.08, -0.62, 0.74);
+    post(THREE, t, T.skinS, 0.37, 0.37, 0.09, 14, -0.08, -0.62, 0.86);
+    for (i = 0; i < 4; i++) {
+      a = -1.35 + i * 0.72;
+      box(THREE, t, T.glass, 0.10, 0.17, 0.11,
+          -0.08 + 0.42 * Math.cos(a), -0.62 + 0.42 * Math.sin(a), 0.78, 0, 0, a);
+    }
+    box(THREE, t, T.skinS, 0.30, 0.26, 0.28, 0.22, -0.84, 1.00);
+    box(THREE, t, T.glass, 0.04, 0.18, 0.14, 0.38, -0.84, 1.02);
+    post(THREE, t, T.skinS, 0.14, 0.14, 0.18, 12, 0.20, -0.58, 0.97);
+    box(THREE, t, T.metal, 0.52, 0.14, 0.16, 0.06, -0.62, 1.22);
+    tube(THREE, t, T.metal, 0.034, 0.038, 0.82, 8, 0.72, -0.62, 1.24);
+    tube(THREE, t, T.metal, 0.052, 0.052, 0.12, 8, 1.18, -0.62, 1.24);
+    box(THREE, t, T.skinS, 0.26, 0.24, 0.24, -0.22, -0.44, 1.22);
+    /* armoured screen left of the commander's sight (r4) */
+    box(THREE, t, T.skinS, 0.06, 0.40, 0.38, 0.36, -1.08, 1.04, 0, -0.12, 0);
+
+    /* ---- 902B smoke dischargers on the cheeks */
+    for (s = -1; s <= 1; s += 2) {
+      var bank = new THREE.Group();
+      bank.position.set(0.50, s * 1.30, 0.70);
+      bank.rotation.set(0, -0.44, s * 0.52);
+      box(THREE, bank, T.skinS, 0.16, 0.70, 0.11, -0.02, 0, -0.10);
+      for (i = 0; i < 4; i++)
+        tube(THREE, bank, T.metal, 0.062, 0.062, 0.36, 8, 0.04, (i - 1.5) * 0.170, 0);
+      t.add(bank);
+    }
+
+    /* ---- slat screens at the turret rear (r1, r5): rear plane and two diagonal
+       returns, with the stowage inside; no top rail */
+    screen(THREE, t, T.skinS, -1.76, -0.84, -1.76, 0.84, 0.00, 0.64, 5, 12, 0.03, 0.035);
+    for (s = -1; s <= 1; s += 2) {
+      screen(THREE, t, T.skinS, -1.76, s * 0.84, -0.95, s * 1.34, 0.00, 0.64, 5, 8, 0.03, 0.035);
+      box(THREE, t, T.skinS, 0.46, 0.38, 0.30, -1.36, s * 0.62, 0.30);
+    }
+    /* whip aerial and its base (r5) */
+    post(THREE, t, T.metal, 0.012, 0.036, 1.60, 6, -1.00, -0.92, 1.50);
+    post(THREE, t, T.metal, 0.055, 0.075, 0.12, 8, -1.00, -0.92, 0.77);
+
+    /* team strip on the turret roof */
+    box(THREE, t, T.team, 1.00, 0.25, 0.02, -0.80, 0.0, 0.72);
+    return t;
+  }
+
+  function buildBVM(THREE, M, C) {
+    var T = makeMats(THREE, C);
+    var g = new THREE.Group();
+    g.name = "t80bvm";
+    outwardLoft = true;
+    buildHull(THREE, M, g, T);
+    buildGlacisBVM(THREE, g, T);
+    buildRunningGear(THREE, g, T);
+    buildSkirtsBVM(THREE, g, T);
+    buildDeckBVM(THREE, g, T);
+    var tur = buildTurretBVM(THREE, M, T);
+    outwardLoft = false;
+    g.add(tur);
+    mergeByMat(THREE, tur, false);
+    mergeByMat(THREE, g, true);
+    g.traverse(function (o) {
+      if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+    });
+    return g;
+  }
+
+  return { build: build, buildBVM: buildBVM };
 })();
 
 /* A hero model replaces whatever parametric version armour3d.js made.
    len is the MEASURED x extent, muzzle to fuel drum, not the catalogue
    hull length: render3d.js normalises on the measurement anyway. */
 UNIT_MODELS["pact_e80_mbt"] = { len: 10.08, build: HeroT80U.build };
+UNIT_MODELS["pact_e20_t80bvm"] = { len: 9.554, build: HeroT80U.buildBVM };
