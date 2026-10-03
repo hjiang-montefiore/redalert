@@ -2825,7 +2825,10 @@ var Game = (function () {
   const AAREACH = {};
   G.airDefenceReach = function (def) {
     if (!def) return 0;
-    const key = def.id || def.name;
+    /* An AA Battery's def is its army's and period's (rules.js
+       BUILDING_SIDE): every one says "flak", and an M167's 11.9 tiles are
+       not a KS-19's 13.9. bldDefKey files a row's copy under its own key. */
+    const key = (typeof bldDefKey === "function" && bldDefKey(def)) || def.id || def.name;
     if (key && AAREACH[key] !== undefined) return AAREACH[key];
     let reach = 0;
     for (const wk of (def.weapons || [])) {

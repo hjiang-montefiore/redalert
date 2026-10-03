@@ -7,9 +7,11 @@
    period] ("sam_pact_e60") when there is one, and from BLD_MODELS[id] when
    there is not. Throwaway models are registered here - none exist yet - and
    a SAM site is placed for each army and period under test: a Pact e60 one
-   draws its own; a NATO e60 one, a Pact e80 one and one in a palette from
-   nowhere draw the shared "sam". The build-menu thumbnail follows the same
-   key. A model that says userData.whole keeps its own paint and gets no
+   draws its own; a NATO e60 one and a Pact e80 one draw the shared "sam".
+   The army is the structure's own (entities.js Building builtBy), so one the
+   Pact dug in a palette from nowhere is still the Pact's; the build-menu
+   thumbnail, which has only a palette to go on, draws the shared one for
+   such a palette. A model that says userData.whole keeps its own paint and gets no
    period kit; one that does not is tinted for its period as ever. */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30, H = null;
 function log(s) { print(s); }
@@ -92,9 +94,11 @@ function run() {
   BLD_MODELS["sam_pact_e20"] = fake("sam_pact_e20", false);
   var own = drawn(P, "pact", "e60"), nato = drawn(P, "nato", "e60"), late = drawn(P, "pact", "e80"), none = drawn(P, "pact", "e60", "#4b0042");
   chk("a Pact e60 SAM site draws sam_pact_e60", !!own && own.mark === "MARK_sam_pact_e60", own && String(own.mark));
-  chk("a NATO e60 one, a Pact e80 one and one in a palette from nowhere draw the shared sam",
-      !!nato && !!late && !!none && !nato.mark && !late.mark && !none.mark,
-      [nato, late, none].map(function (r) { return r ? String(r.mark) : "not placed"; }).join(", "));
+  chk("a NATO e60 one and a Pact e80 one draw the shared sam",
+      !!nato && !!late && !nato.mark && !late.mark,
+      [nato, late].map(function (r) { return r ? String(r.mark) : "not placed"; }).join(", "));
+  chk("one the Pact dug in a palette from nowhere is the Pact's all the same: the army is the structure's, the palette only colours it",
+      !!none && none.mark === "MARK_sam_pact_e60", none ? String(none.mark) : "not placed");
   chk("the key follows the army and the period, and a palette from nowhere has none",
       Render3D.bldKey("sam", CFG.FACTION_COLORS.pact, "e60") === "sam_pact_e60" && Render3D.bldKey("sam", CFG.FACTION_COLORS.nato, "e60") === "sam" &&
       Render3D.bldKey("sam", { main: "#4b0042" }, "e60") === "sam" && Render3D.bldKey("sam", CFG.FACTION_COLORS.pact, undefined) === "sam_pact_e20",

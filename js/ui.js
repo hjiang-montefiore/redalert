@@ -81,7 +81,12 @@ var UI = (function () {
         if (d.fac !== undefined && d.fac !== "both" && d.fac !== p.faction) continue;
         if (d.srole !== undefined && typeof inEra === "function" &&
             !inEra(d, p.era || CUR_ERA)) continue;
-        out.push({ id, def: d, kind: tab });
+        /* the card describes what this army would dig in this period: a US
+           AA Battery of the 1960s is an M167 Vulcan, a Soviet one an S-60
+           (rules.js BUILDING_SIDE), and the tooltip's WPN row and text are
+           that battery's. Every other card is the shared def, as before. */
+        out.push({ id, def: typeof bldDefFor === "function" ? bldDefFor(id, p.faction, p.era || CUR_ERA) : d,
+                   kind: tab });
       }
       /* A structure family this army never had in this period is shown as
          ONE locked stand-in card rather than silently vanishing (rules.js
@@ -512,7 +517,7 @@ var UI = (function () {
        THING below, it would describe a row this army never had. */
     const vsKind = it.kind === "building" || it.kind === "defense" ? "building"
                  : (UNITS[it.id] === d ? "unit" : null);
-    if (vsKind && !d.absent) html += counterRows(it.id, vsKind, p);
+    if (vsKind && !d.absent) html += counterRows(it.id, vsKind, p, d);
 
     /* real-world reference panel: what the actual machine does */
     /* not on a stand-in (itemsForTab, rules.js STRUCT_ABSENT): it borrows the
@@ -808,14 +813,17 @@ var UI = (function () {
      are a reading of its TYPE, which the panel already names, and say
      nothing about where its friends are. Cached in gallery.js, so a hover
      or a panel refresh is a lookup. */
-  function counterRows(id, kind, owner) {
+  /* `def`, when given, is the machine's own: a structure's is the army's and
+     the period's that dug it (rules.js BUILDING_SIDE), which is neither its
+     owner's now after a re-equip nor after a capture */
+  function counterRows(id, kind, owner, def) {
     if (typeof Gallery === "undefined" || !Gallery.matchup || !owner || !kind || !G.enemiesOf) return "";
     const rivals = G.enemiesOf(G.human);
     let seen = null;
     for (const q of rivals) if (q.era && (!seen || eraIndex(q.era) > eraIndex(seen))) seen = q.era;
     const foes = G.enemiesOf(owner).map(o => ({ fac: o.faction,
       era: (rivals.indexOf(o) >= 0 && seen) || o.era || G.era, ban: o.banned, cap: o.techCap }));
-    const mu = Gallery.matchup(id, kind, { fac: owner.faction, vs: foes, era: owner.era || G.era });
+    const mu = Gallery.matchup(id, kind, { fac: owner.faction, vs: foes, era: owner.era || G.era, def: def });
     if (!mu || !mu.lines.length) return "";
     return '<div class="vs">' + mu.lines.map(l =>
       '<div class="' + l.cls + '"><b>' + l.k + "</b>" + l.v + "</div>").join("") + "</div>";
@@ -1554,7 +1562,7 @@ var UI = (function () {
         h += '<div class="stat">WEAPON <i>' + w.name.toUpperCase() + "</i></div>";
         h += '<div class="stat">RANGE <i>' + w.range + "</i></div>";
       }
-      h += counterRows(e.def.id, e.kind, e.owner);
+      h += counterRows(e.def.id, e.kind, e.owner, e.def);
       h += introBlock(e);
       el.innerHTML = h;
       return;
@@ -1638,7 +1646,7 @@ var UI = (function () {
          orders, so a fighter's air-order buttons stay where they were; a
          yard's or a depot's panel is its production and hangar controls */
       if (e.kind === "unit" || (e.def.weapons && e.def.weapons.length) || e.def.superweapon)
-        h += counterRows(e.def.id, e.kind, e.owner);
+        h += counterRows(e.def.id, e.kind, e.owner, e.def);
       el.innerHTML = h;
       if (e.ramp && e.ramp()) bindHangar(e, el);
       if (air1.length) bindAirOrders(el);

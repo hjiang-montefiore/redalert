@@ -137,6 +137,127 @@ var WEAPONS = {
                 acc:0.85, proj:"shell", speed:840, aoe:0.6, tgt:{ground:1,air:0,sea:1,sub:0} },
   aa_battery: { name:"twin 40mm AA", dmg:34, warhead:"flak", range:9.0, reload:1.5, burst:5, burstDelay:0.08,
                 acc:0.70, proj:"shell", speed:920, aoe:0.6, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* ---- one army's AA battery in one period ----
+     (owner, 2026-10-03) "why russian aa batteries are the same as US. the us
+     aa batteries should be better than russia". The AA Battery was one twin
+     40 mm for every army in every decade, while render3d already drew the
+     United States and the Soviet Union / Russia each with its own guns of each
+     period (js/hero/us_aa_site.js, ru_aa_site.js). These are those guns; the
+     building reaches them through BUILDING_SIDE below. Every other army keeps
+     aa_battery. What every row rests on, in the same terms for all six:
+
+       dmg     the shared battery's 34 for a 40 mm round of 0.96 kg (the
+               Bofors L/70's), scaled by the square root of the projectile's
+               weight. The same rule puts the 35 mm twin (0.55 kg) at the 26
+               `spaag` carries and a 23 mm round (186 g) at the 15 the
+               ZSU-23-4 fires (w_e60_pact_spaag), so a 23 mm here hits like a
+               23 mm everywhere else.
+       range   written at the reach the battery fires at in play. generations.js
+               lifts every static flak mount to at least R(9 km) = 13.1 tiles
+               ("further than a man with a tube"), which is where aa_battery's
+               9.0 above ends up; it does not touch these rows, which sit on a
+               log scale through that battery instead - its twin 40 mm reaching
+               about 4 km (the radar-laid L/70's effective range) at 13.1
+               tiles, one tile per e-fold of real effective slant range. generations.js's own R() would put a 1,200 m gun at
+               5.3 tiles, inside a Stinger's reach; one tile per e-fold is the
+               flattest scale on which a fivefold real gap (the S-60 over the
+               M167) still shows after the United States' optics multiplier
+               (FACTIONS.nato.rangeMul 1.08). No gun reaches the SAM Site's
+               14.0, so the two heavy guns, which would land at 14.3 and 14.4,
+               are held just inside it in the same order.
+       burst / reload   the battery's real rate of fire, as a ratio between the
+               two sides of a period; the cadence itself is set so that each
+               period's US and Soviet batteries average aa_battery's 79 expected
+               damage a second (dmg x burst x acc / reload, what pickWeapon
+               scores), and the game's air-defence balance stays where it was.
+       acc     fire control and fuzing.
+       aoe     what a miss does. A proximity or time fuze bursts the shell by
+               the aircraft, so the heavy guns splash; a contact-fuzed 57, 23 or
+               20 mm round that misses flies on and self-destructs far away.
+       speed   the shared battery's 920 for about 1,000 m/s, by muzzle velocity.
+
+     THE OWNER'S DIRECTIVE: in every period the US battery puts clearly more
+     damage into an aircraft within its reach than the Soviet one - about 1.4
+     to 1.5 times on these tables, from the real rates of fire and fire control, and
+     1.6 to 1.7 in play, where the two armies' accuracy multipliers (FACTIONS
+     accMul, 1.07 and 0.94, already 1.14 between them on the old shared gun)
+     come on top - and every Soviet gun keeps on these tables the longer
+     reach it really had over its American rival, in every period. In play
+     the US optics multiplier (rangeMul 1.08) overturns the narrow gaps; the
+     S-60's over the M167, fivefold in life, survives it.
+     Sources: English Wikipedia "90 mm gun M1/M2/M3", "KS-19", "AZP S-60",
+     "M167 VADS", "M163 VADS", "ZU-23-2", "Phalanx CIWS" and "Centurion C-RAM",
+     fetched 2026-10-03.
+
+     1950s, US: 90 mm M2, four guns ("normally operated in groups of four",
+     hence burst 4) laid by the M9 director off the SCR-584 radar - "all the
+     crews had to do was load the guns" - on proximity (VT) fuzes since 1944,
+     which is the 0.72 against the shared battery's 0.70. The M20 fuze-setter
+     rammer took the M2 to 24 rounds a minute against the KS-19's 15, which is
+     the 3.4 s cadence against its 5.4. M71 shell 10.56 kg: dmg 113. Maximum
+     ceiling 13.3 km. 823 m/s. */
+  aa_m2_90:   { name:"90mm M2, SCR-584 and VT fuzes", dmg:113, warhead:"flak", range:13.6, reload:3.4, burst:4, burstDelay:0.15,
+                acc:0.72, proj:"shell", speed:760, aoe:1.0, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* 1950s, USSR: KS-19 100 mm with the PUAZO-6 director and the SON-4, later
+     SON-9 ("Fire Can"), radar; from the KS-19M of 1951 the GSP-100 power drive
+     laid the guns off the director as the M9 laid the American ones. The
+     heavier shell (15.6 kg: dmg 137), the higher velocity (900 m/s) and the
+     longer reach - 15 km vertical against the 90 mm's 13.3 - are real and
+     kept: it is the longest-reaching battery in the file. It fired 14 to 15
+     rounds a minute even with its power rammer and automatic fuze setter.
+     The US gun had proximity fuzes as standard from 1944; the KS-19 is listed
+     with time-fuzed rounds (12.7 km vertical) and radio-fuzed ones, neither
+     dated, so it is given part of that edge: 0.65 against 0.72. Expected
+     damage a second 66 against the 90 mm's 96. Sources as above, and Russian
+     Wikipedia "100-mm zenitnaya pushka KS-19" for the shell, the velocity,
+     the rate and the GSP-100. */
+  aa_ks19:    { name:"100mm KS-19, SON-9 radar", dmg:137, warhead:"flak", range:13.9, reload:5.4, burst:4, burstDelay:0.18,
+                acc:0.65, proj:"shell", speed:830, aoe:1.0, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* 1960s, USSR: S-60 57 mm, the four guns of a battery fed in four-round
+     clips at 70 rounds a minute sustained, laid by the SON-9 system (the
+     Grom-2 radar and the PUAZO-5A director). Its reach is the one honest advantage it holds over the M167 and
+     it is kept in full: 6,000 m radar-directed (4,000 m by eye) against
+     1,200 m, 13.5 tiles against 11.9 - still ahead after the US optics. Its
+     anti-aircraft round (UOR-281, 2.85 kg: dmg 59) is impact-fuzed with a
+     self-destruct, so it must hit; the AR-51 proximity fuze came only with
+     the later RPK-1 Vaza director. 0.54, aoe 0.35. 1,000 m/s. Expected damage
+     a second 67 against the M167's 92: the S-60 starts shooting sooner, and
+     the Vulcan wins the fight once the aircraft is inside its 12-tile reach. */
+  aa_s60:     { name:"57mm S-60, SON-9 radar", dmg:59, warhead:"flak", range:13.5, reload:1.9, burst:4, burstDelay:0.12,
+                acc:0.54, proj:"shell", speed:920, aoe:0.35, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* 1960s to 1990s, US: M167 VADS, the towed 20 mm M168 Vulcan - six barrels,
+     3,000 rounds a minute in bursts of 10, 30, 60 or 100, laid by an AN/VPS-2
+     range-only radar and an M61 lead-computing sight. Twelve rounds to a
+     burst at 0.04 s and a 1.15 s cadence; 0.80 is that radar-ranged stream.
+     Its reach is its weakness and it is kept: "a low effective range of only
+     1,200 m", the HEI-T self-destructing at about 1,800 m (FM 44-1-2), 11.9
+     tiles - the shortest battery here, and still past any MANPADS. M56/M246
+     HEI 102 g: dmg 11. 1,030 m/s. Expected damage a second 92. */
+  aa_m167:    { name:"20mm M167 VADS (M168 Vulcan)", dmg:11, warhead:"flak", range:11.9, reload:1.15, burst:12, burstDelay:0.04,
+                acc:0.80, proj:"shell", speed:950, aoe:0.3, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* 1980s to the present, USSR / Russia: ZU-23-2, two 23 mm 2A14 on a towed
+     mount, 400 rounds a minute practical per barrel from two 50-round belts,
+     aimed and fired by hand through the ZAP-23 optical-mechanical sight - no
+     radar at all - so 0.50. 23x152B HEI-T, 186 g: dmg 15, the ZSU-23-4's
+     own figure. Effective range 2.5 km against the M167's 1,200 m: 12.6
+     tiles to 11.9, the Soviet reach again (on these tables; the US optics
+     multiplier just closes it in play). 970 m/s. Expected damage a second
+     65 against the M167's 92 and the C-RAM's 98. */
+  aa_zu23:    { name:"twin 23mm ZU-23-2, optical sight", dmg:15, warhead:"flak", range:12.6, reload:1.15, burst:10, burstDelay:0.05,
+                acc:0.50, proj:"shell", speed:890, aoe:0.3, tgt:{ground:0,air:1,sea:0,sub:0} },
+  /* 2000s and the present, US: the Land-based Phalanx Weapon System, the gun
+     of the Army's C-RAM - "a modified Phalanx 1B CIWS ... mounted on a
+     trailer", the same M61A1 at 4,500 rounds a minute from a 1,550-round drum,
+     its own Ku-band search and track radars and a FLIR closing the loop on
+     its own tracer: 0.86, the best fire control here. Fourteen rounds to a
+     burst at 0.03 s, a 1.35 s cadence. The HEIT-SD round is the VADS's own
+     (M246; later M940 MPT-SD), so dmg 11 as on the M167. 2,000 m effective,
+     2,300 m maximum (Centurion C-RAM): 12.4 tiles, about level with the
+     ZU-23-2's 12.6. Expected damage a second 98. Its counter-rocket work is
+     not here but in BUILDING_SIDE below (ciws), the field a warship's
+     Phalanx is given. */
+  aa_lpws:    { name:"20mm Land Phalanx (C-RAM)", dmg:11, warhead:"flak", range:12.4, reload:1.35, burst:14, burstDelay:0.03,
+                acc:0.86, proj:"shell", speed:950, aoe:0.3, tgt:{ground:0,air:1,sea:0,sub:0} },
   /* The SAM Site is every army's fixed battery, so its round is not named
      for one of them - a Soviet or a Chinese site was firing "Patriot". And a
      SAM flies "pop" like every other interceptor in the file: left to the
@@ -277,6 +398,98 @@ var BUILDINGS = {
     power:-50, sight:6, tech:3, prereq:["lab"], weapons:["bunker_how"], turret:true,
     desc:"Fixed 155mm battery. Enormous reach, long minimum range, and it needs spotters to shoot at anything." },
 };
+
+/* ---- one army's emplacement in one period ----
+   Keyed EXACTLY as render3d.js bldKeyFor keys BLD_MODELS - id, the army,
+   the period - so a battery fires the guns it is drawn with: a US AA
+   Battery of the 1960s is an M167 Vulcan and shoots like one, a Soviet one an
+   S-60. A row replaces only what it names, on a copy of the shared def that
+   keeps its id ("flak"), cost, hit points, power, prerequisites, sight and
+   the shared battery's search radar (radar, radarQ) - the ZU-23-2 rows'
+   too, whose guns are laid by eye, which is why their text says that and
+   not that the site has no radar; an army and a period with no row -
+   Britain, France, Germany, China, North Korea, Taiwan, and any structure
+   but the AA Battery - keep the shared def and its twin 40 mm. The
+   building takes its row when it is dug (entities.js Building), from its
+   owner's army and period then, and keeps both (builtBy, era): a battery is
+   not re-gunned when its army re-equips, as no unit is, nor when an
+   engineer takes it, and render3d draws it as that army's site of that
+   period for good (bldFrom). The weapons are the WEAPONS rows that follow
+   aa_battery, which say what each figure rests on.
+
+   `ciws` on the two C-RAM rows is the one field here that is not a weapon
+   or a description. It is the warship's own close-in figure (combat.js
+   ciwsOf), the chance a rocket or missile aimed at this mount is shot down
+   in its last seconds, and the Land Phalanx is that system ashore: 0.40, as
+   a hull with one Phalanx carries (the Perry frigate 0.42). The battery's gun
+   also counts in combat.js closeInGuns, as every radar-laid AA gun does,
+   for everything inside its reach: 0.86 x 0.35 = 0.30. Together a round at
+   the mount itself is stopped 70% of the time - "the Centurion shot down 70%
+   of indirect fire in Afghanistan" (Wikipedia "Centurion C-RAM", citing the
+   Air University's 2019 study). */
+var BUILDING_SIDE = {
+  flak_nato_e50: { weapons:["aa_m2_90"],
+    desc:"90mm M2 gun battery: four guns laid by an M9 director off an SCR-584 radar, firing proximity-fuzed shells. Accurate, hard-hitting flak at every height over your base." },
+  flak_nato_e60: { weapons:["aa_m167"],
+    desc:"M167 VADS: towed 20mm Vulcan, six barrels at 3,000 rounds a minute, ranged by radar through a lead-computing sight. Short reach, and nothing low survives inside it." },
+  flak_nato_e80: { weapons:["aa_m167"],
+    desc:"M167 VADS: towed 20mm Vulcan, six barrels at 3,000 rounds a minute, ranged by radar through a lead-computing sight. Short reach, and nothing low survives inside it." },
+  flak_nato_e90: { weapons:["aa_m167"],
+    desc:"M167 VADS: towed 20mm Vulcan, six barrels at 3,000 rounds a minute, ranged by radar through a lead-computing sight. Short reach, and nothing low survives inside it." },
+  flak_nato_e00: { weapons:["aa_lpws"], ciws:0.40,
+    desc:"C-RAM: radar-directed 20mm Land Phalanx, 4,500 rounds a minute under its own search and track radars. Shreds low aircraft, and shoots down rockets and missiles fired at the base around it." },
+  flak_nato_e20: { weapons:["aa_lpws"], ciws:0.40,
+    desc:"C-RAM: radar-directed 20mm Land Phalanx, 4,500 rounds a minute under its own search and track radars. Shreds low aircraft, and shoots down rockets and missiles fired at the base around it." },
+  flak_pact_e50: { weapons:["aa_ks19"],
+    desc:"KS-19 100mm gun battery laid off a SON-9 radar. The heaviest shell and the longest reach of any AA gun, but barely fifteen rounds a minute a gun." },
+  flak_pact_e60: { weapons:["aa_s60"],
+    desc:"S-60 57mm gun battery laid by a SON-9 radar. Engages well before a light gun can, but its contact-fuzed shells have to score direct hits." },
+  flak_pact_e80: { weapons:["aa_zu23"],
+    desc:"ZU-23-2: twin 23mm on a towed mount, aimed by hand through an optical sight. Cheap, rugged and quick-firing, but every burst is laid by eye." },
+  flak_pact_e90: { weapons:["aa_zu23"],
+    desc:"ZU-23-2: twin 23mm on a towed mount, aimed by hand through an optical sight. Cheap, rugged and quick-firing, but every burst is laid by eye." },
+  flak_pact_e00: { weapons:["aa_zu23"],
+    desc:"ZU-23-2: twin 23mm on a towed mount, aimed by hand through an optical sight. Cheap, rugged and quick-firing, but every burst is laid by eye." },
+  flak_pact_e20: { weapons:["aa_zu23"],
+    desc:"ZU-23-2: twin 23mm on a towed mount, aimed by hand through an optical sight. Cheap, rugged and quick-firing, but every burst is laid by eye." },
+};
+/* The key a structure of this army and period is filed under: the row's when
+   there is one, else the shared id. The same rule render3d draws by, with the
+   period defaulting to the present as there. */
+function bldSideKey(id, fac, era) {
+  var k = id + "_" + fac + "_" + (era || "e20");
+  return fac && BUILDING_SIDE[k] && BUILDINGS[id] ? k : id;
+}
+/* The def a key stands for: BUILDINGS[key] itself, or for a row the shared
+   def with the row put over it. Made once per key, on first asking - after
+   every file has finished writing the shared def (radar, radarQ, from) - and
+   then kept, so every battery of one army and period holds the same object
+   and anything that memoises on a def (entities.js gunMixMemo, game.js
+   airDefenceReach) sees one. */
+var BLD_SIDE_DEF = {};
+var BLD_SIDE_OF = typeof Map !== "undefined" ? new Map() : null;     // copy -> its key
+function bldDefOf(key) {
+  if (BUILDINGS[key]) return BUILDINGS[key];
+  var row = BUILDING_SIDE[key], m = /^(.+)_([a-z]+)_(e\d\d)$/.exec(key || "");
+  var base = row && m ? BUILDINGS[m[1]] : null;
+  if (!base) return null;
+  var d = BLD_SIDE_DEF[key];
+  if (!d) {
+    d = BLD_SIDE_DEF[key] = Object.assign({}, base, row);
+    if (BLD_SIDE_OF) BLD_SIDE_OF.set(d, key);
+  }
+  return d;
+}
+/* what a structure of `id` built by this army in this period is */
+function bldDefFor(id, fac, era) { return bldDefOf(bldSideKey(id, fac, era)) || BUILDINGS[id]; }
+/* the key a def is filed under - a row's for a row's copy, else its id - for
+   anything that caches by structure: "flak" alone no longer says which guns */
+function bldDefKey(def) { return (def && BLD_SIDE_OF && BLD_SIDE_OF.get(def)) || (def && def.id); }
+/* is this a structure's def, shared or one army's? A row's copy is not
+   BUILDINGS[def.id], which is the test render3d's ghosts used */
+function bldIsDef(def) {
+  return !!def && (BUILDINGS[def.id] === def || !!(BLD_SIDE_OF && BLD_SIDE_OF.has(def)));
+}
 
 /* ---------------------------------------------------------------- UPGRADES */
 var UPGRADES = {

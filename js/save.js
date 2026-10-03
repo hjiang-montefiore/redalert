@@ -130,6 +130,18 @@ var SaveGame = (function () {
            down it has come, and this says which way it is going */
         pk: b.packing ? 1 : undefined,
         em: b.emcon ? 1 : undefined, rl: b.emcon && b.relightAt ? +b.relightAt.toFixed(2) : undefined,
+        /* the period it was dug in, and the army that dug it where that is
+           not its owner (entities.js Building: era, builtBy). A load
+           rebuilds every structure as its owner's of the owner's period at
+           that moment, and this file does not carry a re-equipped army's
+           period at all, so without them a 1960s Soviet S-60 battery came
+           back as whatever the battle started with - its guns (rules.js
+           BUILDING_SIDE) and the site render3d draws it as - and a captured
+           one as its captor's. The period is written for every structure:
+           which one the load would otherwise give it is not this file's to
+           know. */
+        be: b.era || undefined,
+        bf: b.builtBy && b.builtBy !== b.owner.faction ? b.builtBy : undefined,
       })),
     };
   }
@@ -327,6 +339,9 @@ var SaveGame = (function () {
       if (!p || !BUILDINGS[sb.d]) continue;
       const b = G.placeBuilding(p, sb.d, sb.tx, sb.ty, "restored");
       bref[bi] = b;
+      /* the army and the period that dug it again (be, bf above): its guns,
+         and the site it is drawn as */
+      if (b && (sb.be || sb.bf) && b.setOrigin) b.setOrigin(sb.bf, sb.be);
       b.hp = sb.hp; b.buildProgress = sb.prog;
       /* A structure saved half-built has to go on building. Its clock is a
          G.defer closure and a closure does not travel in JSON, so it used to

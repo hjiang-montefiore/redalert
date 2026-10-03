@@ -4879,7 +4879,28 @@ class Unit {
 /* =============================================================== BUILDING */
 class Building {
   constructor(game, defId, owner, tx, ty) {
-    const d = BUILDINGS[defId];
+    /* ---- the guns of the army and the period that dug it ----
+       A US AA Battery of the 1960s is an M167 Vulcan and a Soviet one an S-60
+       (rules.js BUILDING_SIDE), keyed exactly as render3d draws them: the
+       owner's army, and the period its owner is in now. this.def is then that
+       row's copy of the shared def - id, cost, hit points and everything else
+       unchanged, the weapons and the description its own - and every reader
+       of a structure's weapons (pickWeapon, combat.js, the AI's sightings,
+       the selection panel) reads it there. Settled once, here: an army that
+       re-equips builds the new guns but does not re-gun the old batteries,
+       as it does not retro-fit its tanks. `era` is the period it was dug in
+       and `builtBy` the army that dug it - kept apart from the owner, which
+       an engineer can change: a battery taken keeps its guns, and render3d
+       (bldFrom) goes on drawing every emplacement as the site that army dug
+       in that period, in its new owner's colours. A save carries both
+       (save.js `bf`, `be`). `sideKey` is the BUILDING_SIDE row it fires, or
+       the id. Any other army, period or structure keeps BUILDINGS[defId]
+       itself, as before. */
+    this.era = (owner && owner.era) || (game && game.era) || "e20";
+    this.builtBy = (owner && owner.faction) || null;
+    this.sideKey = typeof bldSideKey === "function" ? bldSideKey(defId, this.builtBy, this.era) : defId;
+    const d = (this.sideKey !== defId && bldDefOf(this.sideKey)) || BUILDINGS[defId];
+    if (d === BUILDINGS[defId]) this.sideKey = defId;
     this.id = EID++;
     this.game = game; this.def = d; this.owner = owner;
     this.kind = "building"; this.cat = d.cat; this.layer = "ground";
@@ -4911,6 +4932,29 @@ class Building {
   }
   get powered() {
     return !this.def.needPower || this.owner.powerRatio() >= 1;
+  }
+  /* Make this the structure `fac` dug in `era` (either may be left out):
+     what a save restores (save.js `bf`, `be`). The load rebuilds every
+     structure as its owner's of the owner's period at that moment, and
+     neither need be the one that dug it - an army re-equips, and a battery
+     taken by an engineer keeps the guns it was taken with. Its guns and
+     description are that army's of that period (rules.js BUILDING_SIDE),
+     its hit points that army's as on the day it was dug (structHpMul,
+     which a capture does not change either), and render3d draws it from
+     builtBy and era. Only the def, the cooldowns of its mounts and maxHp
+     can change; the caller sets hp after. */
+  setOrigin(fac, era) {
+    const id = this.def.id;
+    if (fac && FACTIONS[fac]) this.builtBy = fac;
+    if (era && (typeof ERAS === "undefined" || ERAS.indexOf(era) >= 0)) this.era = era;
+    const d = (typeof bldDefFor === "function" && bldDefFor(id, this.builtBy, this.era)) || BUILDINGS[id];
+    this.sideKey = typeof bldDefKey === "function" ? bldDefKey(d) : id;
+    if (d !== this.def) {
+      this.def = d;
+      this.cooldowns = (d.weapons || []).map(() => 0);
+    }
+    this.maxHp = d.hp * ((FACTIONS[this.builtBy] || {}).structHpMul || 1);
+    return this;
   }
   retaliate() {}
   /* A structure presents its own layer and its own armour - it is never

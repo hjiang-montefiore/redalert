@@ -1951,14 +1951,40 @@ var Render3D = (function () {
      one an S-75 ring - BLD_MODELS["sam_pact_e60"]. An army and a period with
      no fixed site of that kind have no such entry and keep the shared
      emplacement; nothing is drawn for a side that never built one. */
-  function bldKeyFor(def, team, era) {
-    const f = sideOf(team), k = f ? def.id + "_" + f + "_" + (era || "e20") : null;
+  /* `fac`, when given, is the army that dug it and wins over the palette's:
+     a battery an engineer has taken is still the army's that built it, in
+     its captor's colours. Without it the palette says, as the build menu's
+     thumbnail asks it. */
+  function bldKeyFor(def, team, era, fac) {
+    const f = fac ? (CFG.FACTION_COLORS[fac] ? fac : null) : sideOf(team);
+    const k = f ? def.id + "_" + f + "_" + (era || "e20") : null;
     return k && typeof BLD_MODELS !== "undefined" && BLD_MODELS[k] ? k : def.id;
   }
-  function getBuildingModel(def, team, era) {
+  /* ---- the army and the period that dug it ----
+     entities.js Building keeps both from the day it was dug (builtBy, era),
+     and its guns are theirs for good (rules.js BUILDING_SIDE): an AA Battery
+     of the 1960s is an M167 Vulcan whatever its army has re-equipped with
+     since, and one an engineer took from the Soviet Army an S-60. So an
+     emplacement drawn as one army's site of one period - sam, flak, arty,
+     coastal - is drawn as the one that dug it, not as its owner's of the
+     owner's period now: before this an M167 battery turned into a C-RAM the
+     moment its army re-equipped, and a captured one into its captor's
+     model with its old guns. The colours are the owner's now, so a capture
+     is plain to see. A structure with no site of its own - every other one,
+     and an army and a period with none - is the shared model in its owner's
+     period as before, re-skinned when the owner re-equips (syncEntities).
+     A record with no period of its own (a ghost - G.trackGhosts writes
+     units only today) is its owner's now. */
+  function bldFrom(e) {
+    return e && e.era ? { fac: e.builtBy, era: e.era } : null;
+  }
+  function getBuildingModel(def, team, era, from) {
+    /* the dug-by site when there is one, in the period it was dug in */
+    let bk = from ? bldKeyFor(def, team, from.era, from.fac) : def.id;
+    if (bk !== def.id) era = from.era;
+    else if (!from) bk = bldKeyFor(def, team, era);
     /* the period is part of the identity, so it is part of the cache key */
     const E = (typeof ERA_ARCH !== "undefined" && ERA_ARCH[era]) ? ERA_ARCH[era] : null;
-    const bk = bldKeyFor(def, team, era);
     const ck = "b_" + bk + "|" + team.main + "|" + (era || "e20");
     if (modelCache[ck]) return modelCache[ck];
     let tpl = null;
@@ -2166,8 +2192,10 @@ var Render3D = (function () {
       if (!rec) {
         /* a structure's ghost is its own model, seated and turned as the
            structure is (shorePose) - G.trackGhosts writes units only today */
-        const bld = BUILDINGS[g.def.id] === g.def;
-        const tpl = bld ? getBuildingModel(g.def, g.owner.color, g.owner.era || (G.era || "e20"))
+        /* an AA Battery's def is its army's copy (rules.js BUILDING_SIDE),
+           not BUILDINGS[id] itself; bldIsDef knows both */
+        const bld = typeof bldIsDef === "function" ? bldIsDef(g.def) : BUILDINGS[g.def.id] === g.def;
+        const tpl = bld ? getBuildingModel(g.def, g.owner.color, g.owner.era || (G.era || "e20"), bldFrom(g))
                         : getModel(g.def, g.owner.color, g.owner.era || (G.era || "e20"));
         const inst = tpl.clone();
         ghostPaint(inst, k);
@@ -2428,8 +2456,10 @@ var Render3D = (function () {
       let rec = ents.get(e.id);
       if (!rec) {
         const grp = new THREE.Group();
+        /* a structure as the army and the period that dug it (bldFrom), in
+           its owner's colours */
         const tpl = e.kind === "building"
-          ? getBuildingModel(e.def, e.owner.color, e.owner.era || (G.era || "e20"))
+          ? getBuildingModel(e.def, e.owner.color, e.owner.era || (G.era || "e20"), bldFrom(e))
           : getModel(e.def, e.owner.color, e.owner.era || (G.era || "e20"));
         const inst = tpl.clone();
         grp.add(inst);
@@ -4137,8 +4167,15 @@ var Render3D = (function () {
        heading and how the heading was found (tools/jsc/shore3d_check.js) */
     shorePose(id, tx, ty) { return shorePose(BUILDINGS[id], tx, ty); },
     /* the BLD_MODELS key an emplacement is drawn from for an army and a
-       period (the build-menu thumbnail follows it; tools/jsc/bldside_check.js) */
-    bldKey(id, team, era) { return bldKeyFor({ id }, team, era); },
+       period (the build-menu thumbnail follows it; tools/jsc/bldside_check.js),
+       and - given a structure - the key it is drawn from now, as the army and
+       the period that dug it (bldFrom; tools/jsc/aaside_check.js) */
+    bldKey(id, team, era, fac) { return bldKeyFor({ id }, team, era, fac); },
+    bldKeyOf(e) {
+      const f = bldFrom(e);
+      return f ? bldKeyFor(e.def, e.owner.color, f.era, f.fac)
+               : bldKeyFor(e.def, e.owner.color, e.owner.era || G.era || "e20");
+    },
     /* a drawn launcher's pod-laying rule and launch origin, called on its own
        record, so tools/jsc/launcher3d_check.js can time what they cost */
     launcherProbe(e) {

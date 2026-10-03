@@ -12878,6 +12878,25 @@ try{
     function bld(pl,id,at){ var b=at?Game.placeBuilding(pl,id,at.x,at.y,true):null; if(b){ b.buildProgress=1; blds.push(b); } return b; }
     function mk(pl,id,x,y){ var u=UNITS[id]?Game.spawnUnitAt(pl,id,x,y):null; if(u) made.push(u); return u; }
     function off(list){ list.forEach(function(e){ if(e && !e.dead){ e.dead=true; if(e.kind==="building") Game.removeBuilding(e); } }); Game.sweepDead(); }
+    /* where a scene stands a structure of its own. The commander, at peace,
+       digs guns in beside the structures this section gives it, wherever its
+       own build order puts them - and one on the spot a SAM Site was meant
+       for moved that site wherever spot() found room. Measured once the AA
+       Battery had its armies' own guns (rules.js BUILDING_SIDE): by scene 5
+       the commander had two machine-gun nests and an AT post on and beside
+       the fourth spot of the ring, and a nest, an AA Battery and a SAM Site
+       of its own beside the third; the fourth SAM Site went in 3.0 tiles
+       from the radar instead of 5, the ring had a gap, and the bomber -
+       correctly - fired from it (400 of 401). So what the commander has put
+       up since the section began, on or beside the spot, is taken off first
+       (the rest goes at the end, in the finally below): every scene stands
+       where it says and nowhere else - terrain apart, which is the same in
+       every run - whatever the commander happened to build. */
+    function lay(x0,y0){
+      off(E.buildings.filter(function(b){ return !b.dead && !eB0.has(b) && blds.indexOf(b)<0 &&
+                                                 U.dist(b.x,b.y,(x0+0.5)*T,(y0+0.5)*T)<6*T; }));
+      return spot(x0,y0);
+    }
     /* open land, 26 tiles clear of every map edge so a launch circle fits,
        45 from both bases and 30 from every structure any side has */
     function ground(){
@@ -12903,11 +12922,11 @@ try{
     var ux=0, uy=(g.y>=55 ? -1 : 1);
     function scene(samOff, nSam, eid){
       var s={ sams:[], tgt:null, pw:[] };
-      s.tgt=bld(E, "radar", spot(g.x, g.y)); if (s.tgt) s.tgt.hp=s.tgt.maxHp=1e6;
+      s.tgt=bld(E, "radar", lay(g.x, g.y)); if (s.tgt) s.tgt.hp=s.tgt.maxHp=1e6;
       var at=[];
       if (nSam===4) at=[[0,-5],[5,0],[0,5],[-5,0]];
       else at=[[samOff[0], samOff[1]]];
-      at.forEach(function(o){ var sm=bld(eid||E, "sam", spot(g.x+o[0], g.y+o[1])); if(sm){ sm.hp=sm.maxHp=1e6; s.sams.push(sm); } });
+      at.forEach(function(o){ var sm=bld(eid||E, "sam", lay(g.x+o[0], g.y+o[1])); if(sm){ sm.hp=sm.maxHp=1e6; s.sams.push(sm); } });
       powerUp(eid||E, g);
       return s;
     }
@@ -12983,7 +13002,7 @@ try{
 
       /* ---- 3. the battery between it and the target ---- */
       off(s1.sams); s1.sams=[];
-      var sm3=bld(E, "sam", spot(g.x+ux*10, g.y+uy*10)); if (sm3){ sm3.hp=sm3.maxHp=1e6; s1.sams.push(sm3); }
+      var sm3=bld(E, "sam", lay(g.x+ux*10, g.y+uy*10)); if (sm3){ sm3.hp=sm3.maxHp=1e6; s1.sams.push(sm3); }
       tick(30);
       var b3=bomber("hbomber_n");
       b3.give({ type:"attack", target:s1.tgt });
@@ -12995,7 +13014,7 @@ try{
 
       /* ---- 4. a battery its fog hides ---- */
       off(s1.sams); s1.sams=[];
-      var sm4=bld(E, "sam", spot(g.x+uy*10, g.y)); if (sm4){ sm4.hp=sm4.maxHp=1e6; s1.sams.push(sm4); }
+      var sm4=bld(E, "sam", lay(g.x+uy*10, g.y)); if (sm4){ sm4.hp=sm4.maxHp=1e6; s1.sams.push(sm4); }
       powerUp(E, g);
       tick(30);
       var b4=bomber("hbomber_n", P, 1e5);
@@ -13073,7 +13092,7 @@ try{
          a SAM Site three tiles off the radar; the bomber 40 tiles one side
          of it, sent 36 tiles past it on the other, and then the same on an
          attack-move */
-      var smX=bld(E, "sam", spot(g.x+3, g.y)); if (smX){ smX.hp=smX.maxHp=1e6; }
+      var smX=bld(E, "sam", lay(g.x+3, g.y)); if (smX){ smX.hp=smX.maxHp=1e6; }
       powerUp(E, g);
       var lineX=null;
       for (var aX=0; aX<16 && smX && !lineX; aX++){ var cxA=Math.cos(aX/16*6.283), syA=Math.sin(aX/16*6.283);
@@ -13151,7 +13170,8 @@ try{
       var said=alerts.filter(function(m){ return /HOLDING SHORT OF AIR DEFENCE/.test(m); });
       chk("a radar inside four SAM Sites, which no launch circle within its reach clears: it holds short, says so, and fires nothing",
           s5.sams.length===4 && r5.shots.length===0 && r5.minS>r5.ring && r5.inRing===0 && said.length===1 && b5.order.type==="attack",
-          stamp(r5)+"; alert: "+(said[0] || "none")+" (f9ef2ee: no alert, 6 rounds from 4.9-10.6 t of the batteries, 35.3 s in the rings, 33 rounds at it)");
+          stamp(r5)+"; alert: "+(said[0] || "none")+"; the sites "+s5.sams.map(function(x){ return (U.dist(x.x,x.y,s5.tgt.x,s5.tgt.y)/T).toFixed(1); }).join("/")+
+          " t from the radar (f9ef2ee: no alert, 6 rounds from 4.9-10.6 t of the batteries, 35.3 s in the rings, 33 rounds at it)");
       b5.stance="aggressive";
       var r5b=fly(b5, s5, 25, function(st){ return st.minS<st.ring-2; });
       chk("...and aggressive stance is still the off switch: set to F it presses in",

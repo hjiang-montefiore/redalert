@@ -108,10 +108,14 @@ function coldableGun(key) {
    how hard it would be hit, only that it would be. The 1.15 margin is
    gunProfile's and is here for the same reason: their range multiplier and
    their optics are not things we can honestly know.                        */
+/* `key` may be one army's battery of one period ("flak_pact_e60", a sighting's
+   `sk`): the AA Battery fires different guns for the US and the Soviet Union
+   in each period (rules.js BUILDING_SIDE), and an S-60's 13.5 tiles are not a
+   ZU-23-2's 12.6. Any other key is the shared table, as ever. */
 const AAG = {};
 function aaProfile(key) {
   if (AAG[key] !== undefined) return AAG[key];
-  const def = BUILDINGS[key];
+  const def = BUILDINGS[key] || (typeof bldDefOf === "function" ? bldDefOf(key) : null);
   let reach = 0;
   if (def && def.weapons) for (const wk of def.weapons) {
     const w = WEAPONS[wk];
@@ -3955,8 +3959,14 @@ function makeCommander() {
       if (rec) { if (rec.gone) seenVer++; rec.t = now; rec.gone = false; }
       else {
         seenVer++;
+        /* `sk` is which army's battery of which period it is (rules.js
+           BUILDING_SIDE) - a KS-19 ring does not look like an M167, so that
+           is recognised at contact like the type itself - and only an
+           emplacement carrying one has it; aaProfile reads its reach off it */
+        const sk = typeof bldDefKey === "function" ? bldDefKey(e.def) : e.def.id;
         seenB.set(e.id, { id: e.id, own: oi, tx: e.tx, ty: e.ty, x: e.x, y: e.y, ref: e,
-                          key: e.def.id, cost: e.def.cost || 300, t: now, gone: false });
+                          key: e.def.id, sk: sk !== e.def.id ? sk : undefined,
+                          cost: e.def.cost || 300, t: now, gone: false });
       }
       /* An emitter is an emitter. A jamming station announces itself exactly
          as a radar does - louder, in fact - and it is the single thing a Wild
@@ -4429,7 +4439,7 @@ function makeCommander() {
            it would tell the commander to hold its gunships back from a base
            with no extra SAM in it. aaProfile() reads the published target set
            and answers properly. */
-        if (BUILDINGS[r.key] && aaProfile(r.key) > 0) a.aa += 1;
+        if (BUILDINGS[r.key] && aaProfile(r.sk || r.key) > 0) a.aa += 1;
         continue;
       }
       const w = g.hard * 0.75 + g.soft * 0.25;
@@ -5725,7 +5735,7 @@ function makeCommander() {
     const hot = (px, py) => {
       for (const r of seenB.values()) {
         if (r.gone) continue;
-        const reach = aaProfile(r.key);
+        const reach = aaProfile(r.sk || r.key);
         if (!reach) continue;
         if (U.dist(px, py, r.x, r.y) / CFG.TILE < reach + CFG.CAP_RADIUS + 3) return true;
       }
@@ -13077,7 +13087,7 @@ function makeCommander() {
       aa = [];
       for (const r of seenB.values()) {
         if (r.gone) continue;
-        const R = aaProfile(r.key);
+        const R = aaProfile(r.sk || r.key);
         if (R) aa.push({ x: r.x, y: r.y, r2: Math.pow((R + 2) * T2, 2) });
       }
       for (const r of seenU.values()) {

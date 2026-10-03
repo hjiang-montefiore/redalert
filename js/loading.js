@@ -340,9 +340,11 @@ var LoadScreen = (function () {
   /* `kind` is "unit" unless a caller says otherwise. The briefing only ever
      deals units; the field manual also shows structures, and those come off
      the thumbnail builder's own building path. */
-  function buildModel(id, color, kind) {
+  /* `era`, for a structure, is the period it is shown in (the field
+     manual's filter): an emplacement is one army's site of one period */
+  function buildModel(id, color, kind, era) {
     let m = null;
-    if (kind && kind !== "unit") m = Icons3D.model(id, "building", color);
+    if (kind && kind !== "unit") m = Icons3D.model(id, "building", color, era);
     else {
       const d = UNITS[id];
       if (d && d.cat === "infantry" && typeof UNIT_MODELS !== "undefined" &&
@@ -355,11 +357,11 @@ var LoadScreen = (function () {
     return m;
   }
 
-  function mountModel(slot, id, color, kind) {
+  function mountModel(slot, id, color, kind, era) {
     const G3 = ensureGL();
     if (!G3) return false;
     let model = null;
-    try { model = buildModel(id, color, kind); } catch (e) { model = null; }
+    try { model = buildModel(id, color, kind, era); } catch (e) { model = null; }
     if (!model) return false;
     const group = new THREE.Group();
     model.rotation.x = -Math.PI / 2;            // model +Z up -> three +Y up
@@ -867,11 +869,11 @@ var LoadScreen = (function () {
       /* the ladder show() uses: a turning model, then the 2D battlefield's
          own top-down art, then the build menu's baked thumbnail, then
          nothing - a record without a picture is still a record */
-      show(id, kind, color) {
+      show(id, kind, color, era) {
         dropModel(slot);
         slot.id = id; slot.sprite = null; slot.still = null; slot.mode = "none";
         slot.ang = STILL_ANGLE;
-        if (mountModel(slot, id, color, kind)) { slot.mode = "gl"; return; }
+        if (mountModel(slot, id, color, kind, era)) { slot.mode = "gl"; return; }
         if (!kind || kind === "unit") {
           let spr = null;
           try { spr = typeof Sprites !== "undefined" ? Sprites.get(UNITS[id], color) : null; }
@@ -881,7 +883,7 @@ var LoadScreen = (function () {
         let still = null;
         try {
           still = typeof Icons3D !== "undefined"
-            ? Icons3D.get(id, (!kind || kind === "unit") ? "unit" : "building", color) : null;
+            ? Icons3D.get(id, (!kind || kind === "unit") ? "unit" : "building", color, era) : null;
         } catch (e) { still = null; }
         slot.still = still;
         slot.mode = still ? "still" : "none";

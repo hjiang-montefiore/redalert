@@ -115,15 +115,21 @@ var Gallery = (function () {
      swaps a model instead of rebuilding a renderer. standDead latches when
      the borrowed turntable has thrown, the way loading.js's own glFailed
      does - one failure, not one per keypress. */
-  let stand = null, standCv = null, standId = null, standCol = null, standDead = false;
+  let stand = null, standCv = null, standId = null, standCol = null, standEra = null, standDead = false;
 
   /* ---------------- reading the tables ---------------- */
   /* An entry is a unit id or a structure id; `kind` says which table to
      read. Structures are in because "everything in the game" has to include
      the SAM site that shoots the aircraft on the previous page. */
-  function defOf(id, kind) {
-    return kind === "unit" ? (typeof UNITS !== "undefined" && UNITS[id])
-                           : (typeof BUILDINGS !== "undefined" && BUILDINGS[id]);
+  /* A structure read for a named army AND period is that army's of that
+     period: the AA Battery fires an M167 Vulcan for the United States in the
+     1960s and an S-60 for the Soviet Union (rules.js BUILDING_SIDE). Without
+     both it is the shared def - "every army" and "every period" have no one
+     battery to show. */
+  function defOf(id, kind, fac, era) {
+    if (kind === "unit") return typeof UNITS !== "undefined" && UNITS[id];
+    const d = typeof BUILDINGS !== "undefined" && BUILDINGS[id];
+    return d && fac && era && typeof bldDefFor === "function" ? bldDefFor(id, fac, era) : d;
   }
   function factionName(f) {
     if (f === undefined || f === "both") return "Every army";
@@ -463,7 +469,7 @@ var Gallery = (function () {
           if (W.dmg > 0 && W.tgt) guns.push({ w: W, fac: a.fac, air: u.layer === "air" });
       }
       for (const id in (typeof BUILDINGS !== "undefined" ? BUILDINGS : {})) {
-        const b = BUILDINGS[id];
+        const b = defOf(id, "building", a.fac, a.era);
         if (!b || !b.weapons || !fields(b, a, memo)) continue;
         for (const W of weaponsOf(b)) if (W.dmg > 0 && W.tgt) guns.push({ w: W, fac: a.fac, air: false });
       }
@@ -562,10 +568,15 @@ var Gallery = (function () {
      match - it is every other army in `opts.era`, else the last period it
      serves. */
   function matchup(id, kind, opts) {
-    const def = defOf(id, kind);
-    if (!def || typeof CFG === "undefined" || !CFG.DMG) return null;
     opts = opts || {};
+    /* the machine itself when the caller has it (`opts.def`: a structure on
+       the map is the army's and the period's that dug it, ui.js
+       counterRows), else the owner's own battery when the caller names its
+       army and period; the cache key says which one it is */
+    const def = opts.def || defOf(id, kind, opts.fac, opts.era);
+    if (!def || typeof CFG === "undefined" || !CFG.DMG) return null;
     const fac = opts.fac || (def.fac !== undefined && def.fac !== "both" ? def.fac : "");
+    const own = typeof bldDefKey === "function" && kind !== "unit" ? bldDefKey(def) : id;
     let vs = (opts.vs || []).filter(a => a && a.fac);
     if (!vs.length) {
       const era = opts.era || (typeof ERAS !== "undefined"
@@ -574,7 +585,7 @@ var Gallery = (function () {
         .filter(f => f !== fac).map(f => ({ fac: f, era: era }));
     }
     const A = army(vs);
-    const key = kind + ":" + id + "|" + fac + "|" + A.key;
+    const key = kind + ":" + (own || id) + "|" + fac + "|" + A.key;
     if (MU[key]) return MU[key];
 
     const ws = armsOf(def);
@@ -666,7 +677,11 @@ var Gallery = (function () {
      regression suite reads. There is no second path: what a test asserts
      about is literally what the page shows. */
   function recordFor(id, kind) {
-    const def = defOf(id, kind);
+    /* a structure is shown as the army and period the filter names, which
+       open() sets to the battle's own: its guns and its text are that
+       battery's (defOf) */
+    const f = filter();
+    const def = defOf(id, kind, f.fac, f.era);
     if (!def) return null;
     const F = (typeof FACTS !== "undefined" && FACTS[id]) || null;
     const said = (kind === "unit" && typeof LoadScreen !== "undefined" && LoadScreen.describe)
@@ -704,7 +719,8 @@ var Gallery = (function () {
       weapons: arms, engages: Object.keys(seen), blind: blind,
       effect: effect(def), threat: threat(def),
       counters: counters(id, kind, def, filter().era),
-      verdict: matchup(id, kind, { era: filter().era }),
+      /* the verdict on the battery shown, not on the shared one */
+      verdict: matchup(id, kind, { era: filter().era, def: def }),
       fact: (said && said.fact) || (F && F.note) || def.desc || "",
       /* Two different claims, and they are not interchangeable. FACTS'
          `confidence` grades the PUBLISHED FIGURES; a roster row's own grades
@@ -846,7 +862,7 @@ var Gallery = (function () {
   }
   function dropStand() {
     if (stand) { try { stand.free(); } catch (e) {} }
-    stand = null; standCv = null; standId = null; standCol = null;
+    stand = null; standCv = null; standId = null; standCol = null; standEra = null;
   }
   /* The turntable is a WebGL context and a shader cache, so it is made ONCE
      and asked to swap models: show() already drops the old geometry and
@@ -858,7 +874,15 @@ var Gallery = (function () {
   function paintPicture(r) {
     const cv = $("gal-cv");
     if (!cv || !r) return;
-    const col = colourFor(r.fac === "both" ? FAC_ORDER[0] : r.fac);
+    /* A structure is pictured as the army and the period its record is of
+       (recordFor reads the filter): an emplacement is drawn as one army's
+       site of one period (render3d.js bldKeyFor), and a Soviet commander's
+       field manual of the 1960s that printed the S-60 battery beside the
+       first army's present-day C-RAM would contradict itself. A unit is its
+       own army's whatever the filter says, as before. */
+    const f = filter(), bld = r.kind !== "unit";
+    const col = colourFor(bld && f.fac ? f.fac : (r.fac === "both" ? FAC_ORDER[0] : r.fac));
+    const era = (bld && f.era) || undefined;
     const tag = $("gal-tag");
     if (tag) tag.textContent = r.facName + " · " + r.shortName;
     const pic = $("gal-pic");
@@ -875,9 +899,9 @@ var Gallery = (function () {
       try {
         /* nothing to swap when the list re-paints on the same entry, which
            is what every keystroke in the search box does */
-        if (r.id !== standId || col.main !== standCol) {
-          stand.show(r.id, r.kind, col);
-          standId = r.id; standCol = col.main;
+        if (r.id !== standId || col.main !== standCol || era !== standEra) {
+          stand.show(r.id, r.kind, col, era);
+          standId = r.id; standCol = col.main; standEra = era;
         }
         stand.paint();
         return;
@@ -885,7 +909,7 @@ var Gallery = (function () {
     }
     try {
       const im = (typeof Icons3D !== "undefined" && Icons3D.get)
-        ? Icons3D.get(r.id, r.kind === "unit" ? "unit" : "building", col) : null;
+        ? Icons3D.get(r.id, r.kind === "unit" ? "unit" : "building", col, era) : null;
       const ctx = cv.getContext("2d");
       if (!ctx) return;
       ctx.clearRect(0, 0, cv.width, cv.height);
