@@ -438,6 +438,10 @@ var OVERSIZE = {};
      which stands in a revetment clear of the walls */
   "nato_e50_cas pact_e50_cas kpa_e50_cas pla_e50_cas",        /* A-1 Skyraider, Il-10 */
   "roc_e50_cas roc_e80_cas roc_e50_fighter",                  /* F-84G, AT-3, F-86F */
+  /* the Su-17M with Kh-28 (js/hero/ru_su17.js): 13.7 m of spread wing on 18.8 m of length, the lower
+     surface level about 1.9 m up; its row (r 16) draws it smaller than the bombing row (r 17), which
+     clears, and its wingtips go 0.37 m under the tops of the walls */
+  "pact_e60_sead",
   /* the MiG-17F (js/hero/ru_mig17.js): 9.63 m of wing on 11.36 m of length, drawn to its real proportions (the old stand-in
      was 13.9 m long); the game scales an aircraft by length, so it reaches 1.03 m into a revetment wall, like the F-86F above */
   "pact_e50_fighter",
