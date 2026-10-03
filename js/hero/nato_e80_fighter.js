@@ -260,9 +260,16 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
   }
 
   /* ============================================================== BUILD */
-  function build(THREE, M, C) {
+  function build(THREE, M, C, isE) {
     var g = new THREE.Group();
     var T = makeMats(THREE);
+    /* F-15E variant: Gunship Gray, FS 36118, the only scheme the production
+       Strike Eagle has worn. The skin is a texture painted at SKIN_C, so this
+       colour is a multiplier (0.77) that darkens it to about 0x50565a. */
+    if (isE) T.skin.color.setHex(0xc4c4c4), T.panel.color.setHex(0xc4c4c4);
+    /* the LANTIRN pods are lofted in T.metal; that material is single sided and
+       the loft winds them inside out, so it is drawn double sided in this variant */
+    if (isE) T.metal.side = THREE.DoubleSide;
     /* The first render came back with no team colour visible at all: the
        renderer's ACES curve plus the warm key light drained a mid blue to
        grey, exactly as the house style warns. So the flash keeps C.team's
@@ -492,7 +499,11 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     /* ------------------------------------------------------ dorsal brake */
     /* The Eagle's speedbrake is enormous and sits on the spine directly
        behind the canopy. Closed at cruise, but the panel still reads. */
-    var brake = [[X(7.60), 0.62], [X(7.60), -0.62], [X(9.90), -0.70], [X(9.90), 0.70]];
+    /* the two-seat canopy of the F-15E runs back to 7.85, so its brake starts
+       behind it, a little shorter */
+    var brake = isE
+      ? [[X(7.95), 0.62], [X(7.95), -0.62], [X(10.00), -0.70], [X(10.00), 0.70]]
+      : [[X(7.60), 0.62], [X(7.60), -0.62], [X(9.90), -0.70], [X(9.90), 0.70]];
     m = new THREE.Mesh(M.slab(THREE, brake, 0.07), T.panel);
     m.position.z = 0.775; g.add(m);
 
@@ -508,9 +519,19 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       [ 5.90, 0.48, 0.42, 0.83],
       [ 6.60, 0.36, 0.31, 0.81],
     ];
+    if (isE) {
+      /* two-seat canopy: the same windscreen, the bubble carried back over the
+         weapon systems officer's seat, ending about 1.3 m further aft */
+      CANOPY.push([ 7.25, 0.43, 0.36, 0.82 ], [ 7.85, 0.30, 0.24, 0.80 ]);
+      CANOPY.splice(5, 1, [ 6.60, 0.46, 0.40, 0.83 ]);
+    }
     g.add(new THREE.Mesh(loftStations(THREE, M, CANOPY, 24), T.glass));
     /* the metal fairing that carries the canopy back into the spine */
-    var SPINE = [
+    var SPINE = isE ? [
+      [ 7.70, 0.30, 0.22, 0.79],
+      [ 8.10, 0.22, 0.15, 0.77],
+      [ 8.50, 0.12, 0.07, 0.76],
+    ] : [
       [ 6.45, 0.37, 0.32, 0.81],
       [ 7.10, 0.32, 0.25, 0.79],
       [ 7.80, 0.22, 0.15, 0.77],
@@ -520,8 +541,15 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     /* windscreen bow, canopy sills, and the frame arch at the aft end */
     g.add(box(THREE, T.steel, 0.10, 0.66, 0.46, X(4.28), 0, 0.80));
     for (sgn = -1; sgn <= 1; sgn += 2)
-      g.add(box(THREE, T.steel, 3.10, 0.07, 0.09, X(5.30), sgn * 0.47, 0.64));
-    g.add(box(THREE, T.panel, 0.16, 0.64, 0.46, X(6.62), 0, 0.79));
+      g.add(box(THREE, T.steel, isE ? 4.30 : 3.10, 0.07, 0.09, X(isE ? 5.50 : 5.30), sgn * 0.47, 0.64));
+    g.add(box(THREE, T.panel, 0.16, 0.64, 0.46, X(isE ? 7.35 : 6.62), 0, 0.79));
+    if (isE) {
+      /* mid frame between the two seats, and the rear cockpit */
+      g.add(box(THREE, T.steel, 0.10, 0.60, 0.40, X(6.35), 0, 0.82));
+      g.add(box(THREE, T.dark, 0.40, 0.56, 0.20, X(6.45), 0, 0.68));
+      g.add(box(THREE, T.dark, 0.34, 0.42, 0.50, X(7.05), 0, 0.68));
+      g.add(box(THREE, T.dark, 0.22, 0.38, 0.22, X(6.80), 0, 0.93));
+    }
     /* cockpit: coaming, HUD, seat - visible through the glass, nothing more */
     g.add(box(THREE, T.dark, 0.44, 0.60, 0.20, X(4.72), 0, 0.66));
     g.add(box(THREE, T.steel, 0.07, 0.36, 0.30, X(4.55), 0, 0.88));
@@ -571,8 +599,10 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     ];
     for (sgn = -1; sgn <= 1; sgn += 2) {
       /* fuselage-corner AIM-7, tucked into the lower corner of the trunk */
-      g.add(missile(3.66, 0.20, X(10.10), sgn * 1.82, -0.74, 0.62));
-      g.add(missile(3.66, 0.20, X(10.70), sgn * 1.30, -0.94, 0.62));
+      if (!isE) {
+        g.add(missile(3.66, 0.20, X(10.10), sgn * 1.82, -0.74, 0.62));
+        g.add(missile(3.66, 0.20, X(10.70), sgn * 1.30, -0.94, 0.62));
+      }
       /* Wing pylon. Both reference photographs show the same fit: a 610
          gallon bag on the pylon and a Sidewinder on each shoulder rail
          beside it, which is also what gives the Eagle its loaded, heavy
@@ -600,15 +630,70 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       [12.30, 0.36, 0.36, -1.26, 1.0],
       [12.90, 0.16, 0.16, -1.27, 1.0],
     ];
-    g.add(new THREE.Mesh(loftStations(THREE, M, TANK, 18), T.skin));
-    for (i = 0; i < 4; i++) {
+    if (!isE) g.add(new THREE.Mesh(loftStations(THREE, M, TANK, 18), T.skin));
+    for (i = 0; !isE && i < 4; i++) {
       var ta = i / 4 * Math.PI * 2 + Math.PI / 4;
       var tf = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.05, 0.52), T.panel);
       tf.position.set(X(12.30), Math.cos(ta) * 0.36, -1.26 + Math.sin(ta) * 0.36);
       tf.rotation.x = -ta;
       g.add(tf);
     }
-    g.add(box(THREE, T.panel, 1.20, 0.20, 0.34, X(9.80), 0, -0.98));
+    if (!isE) g.add(box(THREE, T.panel, 1.20, 0.20, 0.34, X(9.80), 0, -0.98));
+
+    /* ------------------------------------------- F-15E: CFTs, bombs, pods */
+    if (isE) {
+      /* Conformal fuel tanks on the intake trunks, under the wing roots.
+         Length ~7.2 m, outboard face carries the tangential stores. */
+      var CFT = [
+        [ 7.40, 0.07, 0.08, -0.24, 0.8],
+        [ 7.90, 0.19, 0.24, -0.28, 0.7],
+        [ 8.60, 0.27, 0.30, -0.30, 0.6],
+        [11.20, 0.28, 0.30, -0.30, 0.6],
+        [13.80, 0.26, 0.28, -0.29, 0.6],
+        [14.55, 0.12, 0.14, -0.27, 0.7],
+      ];
+      /* Mk 82 500 lb bombs: 2.21 m x 0.273 m, hung tangentially in a row
+         along the lower outer edge of each tank (3 per side shown) */
+      var BOMB = [
+        [ 0.00, 0.012, 0.012, 0.0, 1.0],
+        [ 0.20, 0.100, 0.100, 0.0, 1.0],
+        [ 0.60, 0.136, 0.136, 0.0, 1.0],
+        [ 1.60, 0.136, 0.136, 0.0, 1.0],
+        [ 2.05, 0.085, 0.085, 0.0, 1.0],
+        [ 2.21, 0.045, 0.045, 0.0, 1.0],
+      ];
+      var bs, bgeo, lantirn;
+      for (sgn = -1; sgn <= 1; sgn += 2) {
+        g.add(new THREE.Mesh(loftStations(THREE, M, CFT, 16, sgn * 1.86), T.skin));
+        for (bs = 0; bs < 3; bs++) {
+          /* BOMB rows are measured from the nose of the bomb: a station of
+             2.21 m is the tail. loftStations flips them aft of NOSE. */
+          bgeo = loftStations(THREE, M, BOMB, 12, sgn * 2.03);
+          m = new THREE.Mesh(bgeo, T.panel);
+          m.position.set(-(8.4 + bs * 2.3) + 1.10 + NOSE - NOSE, 0, -0.76);
+          g.add(m);
+          g.add(box(THREE, T.steel, 0.30, 0.04, 0.12, X(8.4 + bs * 2.3), sgn * 2.03, -0.62));
+        }
+        /* LANTIRN under the intake floor: AN/AAQ-13 navigation pod
+           1.99 m x 0.30 m to port, AN/AAQ-14 targeting pod 2.50 m x
+           0.38 m to starboard (sides after the usual Strike Eagle fit; not
+           confirmed against a drawing) */
+        var pl = sgn > 0 ? 1.99 : 2.50, pd = sgn > 0 ? 0.150 : 0.190;
+        var POD = [
+          [ 0.00, 0.020, 0.020, 0.0, 1.0],
+          [ 0.18, pd * 0.78, pd * 0.78, 0.0, 1.0],
+          [ 0.55, pd, pd, 0.0, 1.0],
+          [ pl - 0.50, pd, pd, 0.0, 1.0],
+          [ pl - 0.12, pd * 0.80, pd * 0.80, 0.0, 1.0],
+          [ pl, pd * 0.45, pd * 0.45, 0.0, 1.0],
+        ];
+        m = new THREE.Mesh(loftStations(THREE, M, POD, 14, sgn * 1.16), T.metal);
+        m.position.set(-(6.35) - 0.0, 0, -1.12);
+        g.add(m);
+        g.add(box(THREE, T.dark, 0.10, pd * 1.5, pd * 1.5, X(6.35 + 0.06), sgn * 1.16, -1.12));
+        g.add(box(THREE, T.steel, 0.70, 0.07, 0.22, X(7.30), sgn * 1.16, -0.97));
+      }
+    }
 
     /* ------------------------------------------------------------- gear */
     /* Named so render3d.js can stow it in cruise and drop it on the apron. */
@@ -685,13 +770,15 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     var red = lens(0xd8382a, 0x8c1a10, 0.9);
     var grn = lens(0x36d059, 0x11761f, 0.9);
     var wht = lens(0xe6ecef, 0x9aa4a8, 0.7);
-    m = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 6), red);
-    m.position.set(X(14.10), 6.34, WZ); g.add(m);
-    m = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 6), grn);
-    m.position.set(X(14.10), -6.34, WZ); g.add(m);
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), wht);
-      m.position.set(X(19.20), sgn * 1.555, 3.36); g.add(m);
+    if (!isE) {
+      m = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 6), red);
+      m.position.set(X(14.10), 6.34, WZ); g.add(m);
+      m = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 6), grn);
+      m.position.set(X(14.10), -6.34, WZ); g.add(m);
+      for (sgn = -1; sgn <= 1; sgn += 2) {
+        m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), wht);
+        m.position.set(X(19.20), sgn * 1.555, 3.36); g.add(m);
+      }
     }
 
     /* ------------------------------------------------------- team flashes */
@@ -711,8 +798,56 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
        top surfaces are where ownership actually has to read */
     g.add(box(THREE, team, 1.20, 0.50, 0.06, X(10.60), 0, 0.765));
 
-    return g;
+    return isE ? mergePerMaterial(THREE, g) : g;
   }
 
-  UNIT_MODELS["nato_e80_fighter"] = { len: 19.43, build: build };
+  /* Bake every mesh into one geometry per material (the F-15E variant draws
+     in a dozen calls instead of hundreds). The "gear" group is kept as a
+     group, merged per material inside, so the renderer can still stow it. */
+  function mergeGroup(THREE, root, outParent, skipGear) {
+    var buckets = [], gearGroup = null;
+    root.updateMatrixWorld(true);
+    root.traverse(function (o) {
+      if (o.isMesh && o.geometry) {
+        var p = o.parent, inGear = false;
+        while (p) { if (p.name === "gear") inGear = true; p = p.parent; }
+        if (inGear !== !!skipGear) return;
+        var b = null, k;
+        for (k = 0; k < buckets.length; k++) if (buckets[k].mat === o.material) b = buckets[k];
+        if (!b) { b = { mat: o.material, list: [] }; buckets.push(b); }
+        b.list.push(o);
+      }
+    });
+    buckets.forEach(function (b) {
+      var pos = [], nor = [], uv = [], i, j;
+      b.list.forEach(function (o) {
+        var geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        geo.applyMatrix4(o.matrixWorld);
+        var P = geo.attributes.position.array, N = geo.attributes.normal ? geo.attributes.normal.array : null;
+        var U = geo.attributes.uv ? geo.attributes.uv.array : null;
+        for (i = 0; i < P.length; i++) { pos.push(P[i]); nor.push(N ? N[i] : 0); }
+        for (j = 0; j < P.length / 3 * 2; j++) uv.push(U ? U[j] : 0);
+      });
+      var mg = new THREE.BufferGeometry();
+      mg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      mg.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+      mg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      outParent.add(new THREE.Mesh(mg, b.mat));
+    });
+  }
+
+  function mergePerMaterial(THREE, g) {
+    var out = new THREE.Group();
+    mergeGroup(THREE, g, out, false);
+    var gear = new THREE.Group();
+    gear.name = "gear";
+    mergeGroup(THREE, g, gear, true);
+    out.add(gear);
+    return out;
+  }
+
+  UNIT_MODELS["nato_e80_fighter"] = { len: 19.43, build: function (THREE, M, C) { return build(THREE, M, C, false); } };
+  /* F-15E Strike Eagle: the same airframe with the two-seat canopy, the
+     conformal fuel tanks, tangential bombs and the LANTIRN pods. */
+  UNIT_MODELS["nato_e90_cas"] = { len: 19.43, build: function (THREE, M, C) { return build(THREE, M, C, true); } };
 })();
