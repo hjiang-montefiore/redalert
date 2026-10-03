@@ -2085,6 +2085,16 @@ var Render3D = (function () {
     for (const p of G.players) {
       if (p === H || G.allied(H, p)) continue;
       for (const e of p.units) {
+        if (e.layer === "ground") {
+          /* a towed launcher's pose as last drawn, for its ghost (syncGhosts) */
+          const r = e.def.deploy ? ents.get(e.id) : null;
+          if (r && r.pose) {
+            let q = ghostPose.get(e.id);
+            if (!q) ghostPose.set(e.id, q = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, f: 0, fold: 0 });
+            q.dep = r.pose.visible; q.f = ghostFrame;
+          }
+          continue;
+        }
         if (e.layer !== "air" || e.dead || !(e.parked || (e.order && e.order.type === "parked"))) continue;
         const rec = ents.get(e.id);
         if (!rec) continue;
@@ -2146,6 +2156,14 @@ var Render3D = (function () {
            A turned shore building's mount is trained through its turn. */
         const tur = findPart(inst, "turret");
         if (tur) tur.rotation.z = gs ? -(g.tang - g.ang) - gs.yaw : -(g.tang - g.ang);
+        /* a towed launcher's ghost in the pose it was last seen in (notePoses),
+           packed up if none was noted */
+        const dpl = g.def.deploy ? findPart(inst, "deploypose") : null;
+        if (dpl) {
+          const qd = ghostPose.get(g.id), up = !!(qd && qd.dep), trv = findPart(inst, "travelpose");
+          dpl.visible = up;
+          if (trv) trv.visible = !up;
+        }
         three.scene.add(grp);
         rec = { grp, inst, k };
         ghostRecs.set(g, rec);
@@ -2380,6 +2398,8 @@ var Render3D = (function () {
           gear: findPart(inst, "gear"),
           folds: findParts(inst, "wingfold"),   // folding outer wing panels (foldOnDeck)
           elev: findPart(inst, "podelev"),   // a launcher's elevating pod (poseLauncher)
+          pose: findPart(inst, "deploypose"),   // a towed launcher set up (e.deployed) ...
+          march: findPart(inst, "travelpose"),  // ... and on the march behind its tractor
           kind: e.kind,
           tpl,                     // the cached template: what is measured once per model
         };
@@ -2587,6 +2607,19 @@ var Render3D = (function () {
            tang and ang are equal and the error is zero. */
         if (rec.turret) rec.turret.rotation.z = -(e.tang - e.ang);
         if (rec.elev) poseLauncher(e, rec, dt);
+        /* A launcher drawn in two poses (js/hero/ru_s75_s125.js) is set up
+           while the unit is deployed and standing (entities.js: a SAM sets
+           up after deploySec idle and loses it on the move), on the march
+           otherwise. Not moving as well: a gun or ballistic launcher keeps
+           e.deployed through a plain move order, and must not drive off
+           erected. Visibility only; models without the groups untouched. */
+        if (rec.pose) {
+          const up = !!e.deployed && !e.moving;
+          if (rec.pose.visible !== up) {
+            rec.pose.visible = up;
+            if (rec.march) rec.march.visible = !up;
+          }
+        }
         /* wheels come down only when the aircraft is actually near the
            ground: on the apron, or on an approach to land */
         if (rec.gear) {

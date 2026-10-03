@@ -326,6 +326,9 @@ var Damage3D = (function () {
       const bx = new THREE.Box3();
       const walk = (o, inTur) => {
         if (SPINS[o.name]) { if (!M.rot && o.name === "rotor") M.rot = o; return; }
+        /* a model drawn in two poses (render3d: "deploypose", "travelpose")
+           is measured in the one it shows; the other is not there */
+        if (!o.visible && (o.name === "deploypose" || o.name === "travelpose")) return;
         if (!M.tur && o.name === "turret") M.tur = o;
         const t = inTur || o.name === "turret" || o.name === "mountwrap";
         const geo = o.isMesh && o.geometry;
@@ -709,9 +712,11 @@ var Damage3D = (function () {
      a damaged entity just off screen): kind -> def id -> era, and for a
      building the army too - render3d restyles a structure and tops it with
      a different rooftop fixture for each */
-  const cacheM = { u: {}, b: {} }, cacheE = { u: {}, b: {} };
+  const cacheM = { u: {}, b: {} }, cacheE = { u: {}, b: {} }, cacheD = { u: {}, b: {} };
   function profileFor(e, rec) {
-    const C = (rec && rec.inst ? cacheM : cacheE)[e.kind === "building" ? "b" : "u"];
+    /* a model drawn in two poses has a profile for each: render3d's
+       rec.pose is its deploy pose, shown or not (measure) */
+    const C = (rec && rec.inst ? (rec.pose && rec.pose.visible ? cacheD : cacheM) : cacheE)[e.kind === "building" ? "b" : "u"];
     let per = C[e.def.id];
     if (!per) per = C[e.def.id] = {};
     const era = (e.owner && e.owner.era) || "e20";
@@ -973,7 +978,9 @@ var Damage3D = (function () {
     const rec = ents ? ents.get(e.id) : null;
     if (ents && !rec) return;                         // not drawn this frame
     let em = byId.get(e.id);
-    const P = em ? em.prof : profileFor(e, rec);
+    let P = em ? em.prof : profileFor(e, rec);
+    /* it burns on the pose it shows: set up, or packed up on the march */
+    if (em && rec && rec.pose) { const Q = profileFor(e, rec); if (Q !== P) em.prof = P = Q; }
     if (!onScreen(e, rec, P, view)) return;
     if (!em) em = attachEm(e, P);
     em.frame = frameNo; em.stage = stg; em.rec = rec;
