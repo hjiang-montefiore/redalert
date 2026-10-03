@@ -44,6 +44,21 @@
    elevation made it 2.64 m against 2.57 m); wheels, sprocket teeth and track
    end connectors are finer, so the rows sit in the 6,000-9,000 triangle band.
 
+   Elevation: everything of the module that elevates - the box, the pod
+   faces, the HIMARS boom, the team stripe - is the group "podelev", a child
+   of the module hinged at its rear trunnion and turned about its own Y (the
+   model's pitch axis) by render3d.js, which raises it to LAUNCH_EL to fire
+   and lays it level again; the cradle stays on the ring.  Its userData
+   carries the cells (each round's mouth and the pod's rear, in its frame),
+   where render3d starts a round and puts the backblast.  LAUNCH_EL is not a
+   published figure: no reference fetched gives a firing elevation (FAS: the
+   M26's range "is a function of LLM elevation", with no table), so it is
+   the angle the pod and the missile stand at in the owner's picture of a
+   HIMARS firing, read by eye as 30-40 degrees.  The round each row's
+   launcher fires (ord, per weapon key) is declared here and only here, so
+   the same weapon on another row - "mlrs" is also the Smerch's and the
+   PHL-03's, "srbm_mod" the Iskander's - draws exactly as before.
+
    Turret: the launcher module is the node "turret" on the rows whose def has
    turret:true (all but nato_e00_tel and tel_n).  entities.js turns the hull
    of a turret:false unit to its target and leaves tang where it was, so a
@@ -54,8 +69,9 @@
    wheel of each side in it (the old M270 rows spun twelve wheels); the
    belts, sprockets and idlers are baked.
 
-   Draw calls: bodies are baked to one mesh per material.  M270 15, HIMARS 15
-   (hull 5 + module 4 + 6 wheel groups; the HIMARS body 5 + module 4 + 6).
+   Draw calls: bodies are baked to one mesh per material.  M270 16, HIMARS 16
+   (hull 5 + module 5 + 6 wheel groups; the HIMARS body 5 + module 5 + 6):
+   the module is the cradle on the ring (1) and the elevating group (4).
    Materials: SKIN (camo canvas), DARK, STEEL, RUBBER, GLASS, TEAM.  The team
    flash is exactly C.team (cab roof panel and a stripe along the module top,
    both up-facing for the RTS camera), which ERA_KIT repainting relies on.
@@ -69,16 +85,24 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 var HeroUsMlrs = (function () {
   "use strict";
 
-  /* what each registered key carries.  pods: the end-face pattern. */
+  /* what each registered key carries.  pods: the end-face pattern.  ord:
+     the round each weapon of the row is drawn as in flight (js/fx3d.js);
+     a weapon not named keeps its old drawing (nato_e90_mlrs' AT2 mine
+     rocket).  M26 for the 1983 and 1991 M270s; GMLRS for the present-day
+     M270A2 (the M26 family left the US Army's active inventory in June 2009,
+     en.wikipedia M270) and for the 2005 HIMARS row, whose description fields
+     it with GMLRS (GMLRS introduced 2005); ATACMS and PrSM as the rows say. */
   var ROWS = {
-    nato_e80_mlrs: { veh: "m270",   paint: "nato",  pods: "rocket", turret: true  },
-    nato_e90_mlrs: { veh: "m270",   paint: "sand",  pods: "rocket", turret: true  },
-    mlrs_n:        { veh: "m270",   paint: "green", pods: "rocket", turret: true  },
-    nato_e90_tel:  { veh: "m270",   paint: "sand",  pods: "atacms", turret: true  },
-    nato_e00_mlrs: { veh: "himars", paint: "sand",  pods: "rocket", turret: true  },
-    nato_e00_tel:  { veh: "himars", paint: "sand",  pods: "atacms", turret: false },
-    tel_n:         { veh: "himars", paint: "green", pods: "prsm",   turret: false }
+    nato_e80_mlrs: { veh: "m270",   paint: "nato",  pods: "rocket", turret: true,  ord: { w_e80_nato_mlrs: "m26" } },
+    nato_e90_mlrs: { veh: "m270",   paint: "sand",  pods: "rocket", turret: true,  ord: { w_e90_nato_mlrs: "m26" } },
+    mlrs_n:        { veh: "m270",   paint: "green", pods: "rocket", turret: true,  ord: { mlrs: "gmlrs" } },
+    nato_e90_tel:  { veh: "m270",   paint: "sand",  pods: "atacms", turret: true,  ord: { srbm_atacms: "atacms" } },
+    nato_e00_mlrs: { veh: "himars", paint: "sand",  pods: "rocket", turret: true,  ord: { w_e00_nato_mlrs: "gmlrs" } },
+    nato_e00_tel:  { veh: "himars", paint: "sand",  pods: "atacms", turret: false, ord: { srbm_atacms: "atacms" } },
+    tel_n:         { veh: "himars", paint: "green", pods: "prsm",   turret: false, ord: { srbm_mod: "prsm" } }
   };
+  /* the pod's firing elevation: see the header (not a published figure) */
+  var LAUNCH_EL = 35 * Math.PI / 180;
 
   function rng(seed) {
     var s = (seed >>> 0) || 1;
@@ -193,15 +217,12 @@ var HeroUsMlrs = (function () {
   }
 
   /* One merged mesh per material.  `pre` is an optional matrix every part is
-     put through on the way in: the module's few degrees of elevation. */
+     put through on the way in: about(px, pz) takes parts authored in the
+     module's frame into the elevating group's, whose origin is the rear
+     trunnion; about() clears it. */
   function Baker(THREE) { this.T = THREE; this.by = []; this.pre = null; }
-  Baker.prototype.tilt = function (ang, px, pz) {
-    var T = this.T;
-    if (!ang) { this.pre = null; return; }
-    var m = new T.Matrix4().makeTranslation(px, 0, pz);
-    m.multiply(new T.Matrix4().makeRotationY(ang));
-    m.multiply(new T.Matrix4().makeTranslation(-px, 0, -pz));
-    this.pre = m;
+  Baker.prototype.about = function (px, pz) {
+    this.pre = px === undefined ? null : new this.T.Matrix4().makeTranslation(-px, 0, -pz);
   };
   Baker.prototype.add = function (mat, geo) {
     var g = geo.index ? geo.toNonIndexed() : geo;
@@ -298,45 +319,83 @@ var HeroUsMlrs = (function () {
   /* The launcher loader module, built about the traverse ring (origin: the
      ring centre on the deck).  o: hw half width, x0/x1 length, z0/z1 height,
      pods [y centres] and kinds [rocket | atacms | prsm, one per pod],
-     tilt/px/pz the module's elevation about its rear trunnion (0 = stowed level).  The pods sit
+     px/pz the rear trunnion the module elevates about.  The pods sit
      inside the box; only their end faces show, standing 0.04 m proud of the
      module's front, which is where the rockets leave: forward, over the cab.
      The mouth discs stand 6 and 12 mm beyond that face, apart so they cannot
      z-fight.
-     Behind the cab they are hidden at rest and show when the module traverses. */
-  function launcher(KT, T, o) {
-    var i, j, k, yc, kind, c = 0.12, zc = (o.z0 + 0.16 + o.z1 - 0.12) / 2;
-    KT.tilt(o.tilt, o.px, o.pz);
+     Behind the cab they are hidden at rest and show when the module traverses.
+     Two bakers: KT keeps the cradle, which stays on the traverse ring; KE
+     takes everything that elevates, shifted into the trunnion's frame for
+     the group "podelev" (elevGroup), and is left in that frame so the caller
+     can add its own module parts.  Returns the cells, one per round the
+     pods hold: [mouth x, y, z, pod rear x] in that frame.
+     o.boom: the HIMARS launcher-loader boom (below). */
+  function launcher(KT, KE, T, o) {
+    var i, j, k, yc, kind, c = 0.12, zc = (o.z0 + 0.16 + o.z1 - 0.12) / 2, cells = [];
+    function cell(y, z) { cells.push([o.x1 + 0.06 - o.px, y, z - o.pz, o.x0 - o.px]); }
+    /* the cradle under it, which the traverse ring carries */
+    KT.bb(T.dark, o.x0 + 0.5, o.x1 - 0.6, -o.hw + 0.3, o.hw - 0.3, o.z0 - 0.14, o.z0 + 0.01);
+    KE.about(o.px, o.pz);
     /* the module: an octagonal section, chamfered along its top edges */
-    KT.prismYZ(T.skin, [[-o.hw + 0.02, o.z0], [o.hw - 0.02, o.z0], [o.hw, o.z0 + 0.10], [o.hw, o.z1 - c],
+    KE.prismYZ(T.skin, [[-o.hw + 0.02, o.z0], [o.hw - 0.02, o.z0], [o.hw, o.z0 + 0.10], [o.hw, o.z1 - c],
                         [o.hw - c, o.z1], [-o.hw + c, o.z1], [-o.hw, o.z1 - c], [-o.hw, o.z0 + 0.10]],
                o.x0, o.x1);
     /* two panel lines down each side, so the box reads as plated, not poured */
     for (j = -1; j <= 1; j += 2) for (k = 0; k < 2; k++)
-      KT.box(T.dark, o.x1 - o.x0 - 0.3, 0.012, 0.022, (o.x0 + o.x1) / 2, j * (o.hw + 0.004), k ? o.z1 - 0.20 : o.z0 + 0.30);
-    /* the cradle under it, which the traverse ring carries */
-    KT.bb(T.dark, o.x0 + 0.5, o.x1 - 0.6, -o.hw + 0.3, o.hw - 0.3, o.z0 - 0.14, o.z0 + 0.01);
+      KE.box(T.dark, o.x1 - o.x0 - 0.3, 0.012, 0.022, (o.x0 + o.x1) / 2, j * (o.hw + 0.004), k ? o.z1 - 0.20 : o.z0 + 0.30);
     /* the pod end faces: a boxed stub per pod and its mouths */
     for (i = 0; i < o.pods.length; i++) {
       yc = o.pods[i]; kind = o.kinds[i];
-      KT.bb(T.skin, o.x1 - 0.02, o.x1 + 0.04, yc - 0.49, yc + 0.49, zc - 0.43, zc + 0.43);
+      KE.bb(T.skin, o.x1 - 0.02, o.x1 + 0.04, yc - 0.49, yc + 0.49, zc - 0.43, zc + 0.43);
       if (kind === "rocket") {
         for (j = -1; j <= 1; j++) for (k = -1; k <= 1; k += 2)
-          { KT.mouth(T.dark, 0.12, 12, o.x1 + 0.052, yc + j * 0.31, zc + k * 0.215);
-            KT.mouth(T.steel, 0.14, 12, o.x1 + 0.046, yc + j * 0.31, zc + k * 0.215); }
+          { KE.mouth(T.dark, 0.12, 12, o.x1 + 0.052, yc + j * 0.31, zc + k * 0.215);
+            KE.mouth(T.steel, 0.14, 12, o.x1 + 0.046, yc + j * 0.31, zc + k * 0.215);
+            cell(yc + j * 0.31, zc + k * 0.215); }
       } else if (kind === "atacms") {
-        KT.mouth(T.dark, 0.31, 20, o.x1 + 0.052, yc, zc);
-        KT.mouth(T.steel, 0.335, 20, o.x1 + 0.046, yc, zc);
+        KE.mouth(T.dark, 0.31, 20, o.x1 + 0.052, yc, zc);
+        KE.mouth(T.steel, 0.335, 20, o.x1 + 0.046, yc, zc);
+        cell(yc, zc);
       } else {
         for (j = -1; j <= 1; j += 2) {
-          KT.mouth(T.dark, 0.21, 16, o.x1 + 0.052, yc + j * 0.255, zc);
-          KT.mouth(T.steel, 0.23, 16, o.x1 + 0.046, yc + j * 0.255, zc);
+          KE.mouth(T.dark, 0.21, 16, o.x1 + 0.052, yc + j * 0.255, zc);
+          KE.mouth(T.steel, 0.23, 16, o.x1 + 0.046, yc + j * 0.255, zc);
+          cell(yc + j * 0.255, zc);
         }
       }
     }
+    /* The HIMARS launcher-loader boom, stowed: a yoke over the front of the
+       box, an arm along each side of the top rising to a cross bar above the
+       pod face - as it stands over the pod in the owner's picture and the
+       HIMARS training photograph (the integrated loading and hoisting gear,
+       de.wikipedia MLRS).  It is kept behind the face, clear of the cab
+       wall, and under the cab roof.  Section, rise and length are by eye,
+       not published.  The M270 is not given one: its stowed height (2.57 m,
+       which the module top already makes) leaves no room for a yoke standing
+       above it, and its stowed boom could not be made out. */
+    if (o.boom) {
+      for (j = -1; j <= 1; j += 2)
+        KE.prism(T.skin, [[o.x1 - 1.05, o.z1 - 0.02], [o.x1 - 0.12, o.z1 + 0.26], [o.x1 - 0.12, o.z1 + 0.36],
+                          [o.x1 - 1.15, o.z1 + 0.06]], j * (o.hw - 0.17) - 0.045, j * (o.hw - 0.17) + 0.045);
+      KE.bb(T.skin, o.x1 - 0.20, o.x1 - 0.06, -(o.hw - 0.12), o.hw - 0.12, o.z1 + 0.26, o.z1 + 0.37);
+    }
     /* team stripe along the top, facing the RTS camera */
-    KT.bb(T.team, o.x0 + 0.7, o.x1 - 0.7, -0.26, 0.26, o.z1 + 0.0, o.z1 + 0.025);
-    KT.tilt(0);
+    KE.bb(T.team, o.x0 + 0.7, o.x1 - 0.7, -0.26, 0.26, o.z1 + 0.0, o.z1 + 0.025);
+    return cells;
+  }
+
+  /* The elevating part of the module: a group at the trunnion, level at
+     rest, which render3d turns about its own Y. */
+  function elevGroup(THREE, KE, px, pz, cells) {
+    var E = new THREE.Group();
+    E.name = "podelev";
+    E.position.set(px, 0, pz);
+    KE.flush(E);
+    KE.about();
+    E.userData.cells = cells;
+    E.userData.el = LAUNCH_EL;
+    return E;
   }
 
   /* ------------------------------------------------------------ small parts */
@@ -441,18 +500,19 @@ var HeroUsMlrs = (function () {
 
     /* the module on its traverse ring: ring centre -0.95, the module 4.15 m,
        rear trunnion 0.6 m in, front 0.3 m clear of the cab rear wall */
-    var RX = -0.95;
+    var RX = -0.95, KE = new Baker(THREE), cells;
     KT.cyl(T.dark, 1.02, 0.15, 26, 0, 0, 0.075, "z");
-    launcher(KT, T, { hw: 1.22, x0: -2.25, x1: 1.90, z0: 0.15, z1: 1.08, pods: [0.57, -0.57],
-                      kinds: [V.pods, V.pods], tilt: 0, px: -1.65, pz: 0.15 });
+    cells = launcher(KT, KE, T, { hw: 1.22, x0: -2.25, x1: 1.90, z0: 0.15, z1: 1.08, pods: [0.57, -0.57],
+                                  kinds: [V.pods, V.pods], px: -1.65, pz: 0.15 });
     /* the louvred panel on the port side of the module, as in the photographs */
-    KT.box(T.dark, 1.10, 0.03, 0.42, 0.75, 1.235, 0.64);
-    for (i = 0; i < 4; i++) KT.box(T.steel, 1.06, 0.035, 0.025, 0.75, 1.24, 0.50 + i * 0.09);
+    KE.box(T.dark, 1.10, 0.03, 0.42, 0.75, 1.235, 0.64);
+    for (i = 0; i < 4; i++) KE.box(T.steel, 1.06, 0.035, 0.025, 0.75, 1.24, 0.50 + i * 0.09);
 
     K.flush(root);
     var G = new THREE.Group();
     G.position.set(RX, 0, DECK);
     KT.flush(G);
+    G.add(elevGroup(THREE, KE, -1.65, 0.15, cells));
     if (V.turret) G.name = "turret";
     root.add(G);
 
@@ -534,15 +594,16 @@ var HeroUsMlrs = (function () {
     K.bb(T.steel, -3.46, -3.40, -0.95, 0.95, 0.88, 1.00);                    /* tail beam */
 
     /* the module, over the tandem: ring centre -1.40 */
-    var RX = -1.40;
+    var RX = -1.40, KE = new Baker(THREE), cells;
     KT.cyl(T.dark, 0.72, 0.15, 24, 0, 0, 0.075, "z");
-    launcher(KT, T, { hw: 0.67, x0: -2.05, x1: 2.13, z0: 0.15, z1: 1.40, pods: [0],
-                      kinds: [V.pods], tilt: 0, px: -1.45, pz: 0.15 });
+    cells = launcher(KT, KE, T, { hw: 0.67, x0: -2.05, x1: 2.13, z0: 0.15, z1: 1.40, pods: [0],
+                                  kinds: [V.pods], px: -1.45, pz: 0.15, boom: true });
 
     K.flush(root);
     var G = new THREE.Group();
     G.position.set(RX, 0, DECK + UP);
     KT.flush(G);
+    G.add(elevGroup(THREE, KE, -1.45, 0.15, cells));
     if (V.turret) G.name = "turret";
     root.add(G);
 
@@ -589,7 +650,8 @@ var HeroUsMlrs = (function () {
 (function () {
   var k, rows = HeroUsMlrs.rows;
   function reg(key, len) {
-    UNIT_MODELS[key] = { len: len, build: function (THREE, M, C) { return HeroUsMlrs.build(key, THREE, M, C); } };
+    UNIT_MODELS[key] = { len: len, ord: rows[key].ord,
+                         build: function (THREE, M, C) { return HeroUsMlrs.build(key, THREE, M, C); } };
   }
   for (k in rows) if (Object.prototype.hasOwnProperty.call(rows, k)) reg(k, rows[k].veh === "m270" ? 6.96 : 7.04);
 })();

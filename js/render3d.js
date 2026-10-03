@@ -2337,6 +2337,7 @@ var Render3D = (function () {
           tailrotor: findPart(inst, "tailrotor"),
           shafts: rotorShafts(grp),
           gear: findPart(inst, "gear"),
+          elev: findPart(inst, "podelev"),   // a launcher's elevating pod (poseLauncher)
           kind: e.kind,
           tpl,                     // the cached template: what is measured once per model
         };
@@ -2517,6 +2518,9 @@ var Render3D = (function () {
             last[ci] = cd;
           }
           if (fired) {
+            /* a launcher's pod holds from the shot (poseLauncher): a TEL that
+               has just put up its last round is dry from this frame on */
+            if (rec.elev) rec.lastShot = G.time;
             const heft = U.clamp((fired.dmg || 60) / 900, 0.05, 1);
             rec.kick = 0.045 * heft;                    // radians of nose-up
             rec.recoil = 0.34 * heft;                   // metres the barrel goes back
@@ -2525,7 +2529,8 @@ var Render3D = (function () {
         if (rec.kick) rec.kick += (0 - rec.kick) * Math.min(1, dt * 7);
         if (rec.recoil) {
           rec.recoil += (0 - rec.recoil) * Math.min(1, dt * 9);
-          if (rec.turret) rec.turret.position.x = (rec.turretX || 0) - rec.recoil;
+          /* a rocket launcher's module has no barrel to run back */
+          if (rec.turret && !rec.elev) rec.turret.position.x = (rec.turretX || 0) - rec.recoil;
         }
         /* Train the turret about the model's OWN vertical axis. Model space is
            +X nose, +Y left, +Z up, so a turret group's local Y is the LEFT-RIGHT
@@ -2538,6 +2543,7 @@ var Render3D = (function () {
            while a tank was driving at what it was shooting at, because then
            tang and ang are equal and the error is zero. */
         if (rec.turret) rec.turret.rotation.z = -(e.tang - e.ang);
+        if (rec.elev) poseLauncher(e, rec, dt);
         /* wheels come down only when the aircraft is actually near the
            ground: on the apron, or on an approach to land */
         if (rec.gear) {
@@ -2746,11 +2752,144 @@ var Render3D = (function () {
     if (tx < 0 || ty < 0 || tx >= G.map.W || ty >= G.map.H) return false;
     return G.fog[ty * G.map.W + tx] === 2;
   }
+  /* ---- a rocket launcher lays its pod ----
+     A model with a group named "podelev" (js/hero/us_m270_himars.js: the
+     launcher-loader module of the M270 and the HIMARS, hinged at its rear
+     trunnion) has it turned about its own Y, the model's pitch axis. Level
+     while the vehicle drives or has nothing to shoot; raised to the model's
+     launch elevation (userData.el) while it holds a target, or a fire
+     mission, inside its weapon's reach and has a round left; held through the
+     salvo and HOLD_EL seconds past the last round; down at once when the
+     vehicle moves off. The one exception is the last stretch of the drive to
+     the firing point, the distance covered in the time the pod takes to
+     come up: the game fires the tick the launcher arrives, and a ripple out
+     of a pod still lying over the cab would be the worse picture. The rate
+     is the row's own laying rate, the tturn its module traverses at: the
+     M270A1 and HIMARS launcher drive lays azimuth and elevation together
+     (GlobalSecurity, M270A1: stowed to the furthest aim point in 16 s), so
+     here the two finish together too. Only the unit's own state is read;
+     a ghost is a fresh copy of the template, so a contact in the fog shows
+     its pod stowed. */
+  const HOLD_EL = 3;
+  function poseLauncher(e, rec, dt) {
+    const el = rec.elev.userData.el || 0.61, rate = e.def.tturn || 0.8, o = e.order;
+    let up = rec.lastShot !== undefined && G.time - rec.lastShot < HOLD_EL && !e.moving, tx, ty;
+    if (o && o.type === "attack" && o.target && !o.target.dead) { tx = o.target.x; ty = o.target.y; }
+    else if (o && o.type === "bombard") { tx = o.x; ty = o.y; }
+    if (!up && tx !== undefined && !(e.roundsMax && e.rounds <= 0)) {
+      const w = layMount(e, o);
+      if (w) {
+        const d = Math.hypot(tx - e.x, ty - e.y);
+        const reach = e.weaponRange ? e.weaponRange(w) : w.range * CFG.TILE;
+        const lead = e.moving ? (rec.sp || 0) * Math.max(0, el - (rec.elA || 0)) / rate : 0;
+        up = d <= reach + lead && d >= (w.minRange || 0) * CFG.TILE;
+      }
+    }
+    const a = rec.elA || 0, want = up ? el : 0;
+    if (a === want) return;
+    /* A launcher already on its bearing when it takes a target fires that
+       same tick, before any pod could be up. While rounds are leaving a pod
+       still coming up it catches up at three times its laying rate - a
+       picture compromise, not a figure - so that one or two rounds of a
+       ripple, not five, leave it low. */
+    const step = rate * dt * (want > a && rec.lastShot !== undefined && G.time - rec.lastShot < 0.5 ? 3 : 1);
+    rec.elA = Math.abs(want - a) <= step ? want : a + (want > a ? step : -step);
+    rec.elev.rotation.y = -rec.elA;
+  }
+
+  /* The mount the order will fire, chosen as entities.js chooses it: a
+     mission's named mount (bombard o.wi: the M270's AT2 mine rocket, whose
+     reach is not its rockets'), else the first mount that is not a mine
+     dispenser. None while every mount is held: a TEL's ballistic missile
+     under an order that did not release it does not go, so its pod stays
+     down. */
+  function layMount(e, o) {
+    const ws = e.def.weapons;
+    if (o.type === "bombard" && o.wi !== undefined) {
+      const w = WEAPONS[ws[o.wi]];
+      if (w && !(e.holdsFire && e.holdsFire(w))) return w;
+    }
+    for (let i = 0; i < ws.length; i++) {
+      const w = WEAPONS[ws[i]];
+      if (w && !w.scatter && !(e.holdsFire && e.holdsFire(w))) return w;
+    }
+    return null;
+  }
+
+  /* ---- the round leaves the pod ----
+     A round from a launcher drawn with a "podelev" group is first drawn at
+     the mouth of the pod's next cell (userData.cells, in the group's frame:
+     mouth x, y, z and the pod's rear x), wherever the pod is laid, and is
+     pulled onto its simulated path over LAUNCH_JOIN seconds; the path itself
+     is not touched. The motor's flash is drawn at the mouth, and the
+     backblast - fire, then a dust cloud kicked off the ground, at most one a
+     launcher every 0.25 s - out of the rear of the pod. ents holds only what
+     the player can see this frame, so a launcher in the fog gets none of
+     it and its rounds are drawn exactly as before. */
+  const LAUNCH_JOIN = 0.3;
+  let _lm = null, _lr = null, _ld = null, _lx = null;
+  function launchOffset(p, x, y, z) {
+    const s = p.shooter, rec = s && s.id !== undefined ? ents.get(s.id) : null;
+    /* a round first drawn well after it left (the renderer was not running
+       when it was fired) is not pulled back to the pod */
+    if (!rec || !rec.elev || p.age > 0.5) return null;
+    rec.lastShot = G.time;
+    const cells = rec.elev.userData.cells;
+    if (!cells || !cells.length) return null;
+    if (!_lm) { _lm = new THREE.Vector3(); _lr = new THREE.Vector3(); _ld = new THREE.Vector3(); _lx = new THREE.Vector3(1, 0, 0); }
+    rec.cellI = ((rec.cellI === undefined ? -1 : rec.cellI) + 1) % cells.length;
+    const c = cells[rec.cellI];
+    rec.elev.updateWorldMatrix(true, false);
+    _lm.set(c[0], c[1], c[2]).applyMatrix4(rec.elev.matrixWorld);
+    _lr.set(c[3], c[1], c[2]).applyMatrix4(rec.elev.matrixWorld);
+    _ld.subVectors(_lm, _lr).normalize();
+    /* the motor lighting in the mouth of the cell: the shape of FX3D.muzzle,
+       on materials of its own, because the fade below writes opacity into
+       whatever material it finds and FX3D's are shared with every round in
+       flight */
+    const mz = new THREE.Group(), cone = new THREE.Mesh(new THREE.ConeGeometry(0.75, 3.0, 7), fxMaterial(0xfff0c0, 0.9));
+    cone.rotation.z = -Math.PI / 2; cone.position.x = 1.4;
+    mz.add(cone, new THREE.Mesh(new THREE.SphereGeometry(0.8, 8, 6), fxMaterial(0xffb24a, 0.9)));
+    mz.position.copy(_lm);
+    mz.quaternion.setFromUnitVectors(_lx, _ld);
+    mz.userData = { life: 0.12, max: 0.12, grow: 0.8, kind: "flash" };
+    three.scene.add(mz); fxMeshes.push(mz);
+    /* the jet out of the rear of the pod: fire, then dust off the ground */
+    const fb = new THREE.Mesh(new THREE.SphereGeometry(1.0, 8, 6), fxMaterial(0xffa04a, 0.85));
+    fb.position.copy(_lr).addScaledVector(_ld, -1.5);
+    fb.userData = { life: 0.25, max: 0.25, grow: 2.6, kind: "spark" };
+    three.scene.add(fb); fxMeshes.push(fb);
+    if (!(rec.bbT > G.time)) {
+      rec.bbT = G.time + 0.25;
+      const du = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 6), fxMaterial(0xb49c76, 0.55));
+      du.position.copy(_lr).addScaledVector(_ld, -4);
+      du.position.y = Math.max(heightAt(s.x, s.y) + 1.2, du.position.y - 2);
+      du.userData = { life: 1.8, max: 1.8, grow: 5.5, rise: 1.1, kind: "smoke" };
+      three.scene.add(du); fxMeshes.push(du);
+    }
+    return { x: _lm.x - x, y: _lm.y - y, z: _lm.z - z, t: 0,
+             px: _lm.x, py: _lm.y, pz: _lm.z, ax: _ld.x, ay: _ld.y, az: _ld.z, first: true };
+  }
+  /* the named round a launcher row fires with this weapon (UNIT_MODELS[row].ord,
+     by the row's own id: a peer drawn with the same model keeps its rounds).
+     generations.js gives a row its own copy of a shared weapon as
+     "<weapon>__<row>"; the name before the "__" is the one the row declares. */
+  function ordFor(p) {
+    const def = p.shooter && p.shooter.def;
+    const mdl = def && typeof UNIT_MODELS !== "undefined" ? UNIT_MODELS[def.id] : null;
+    if (!mdl || !mdl.ord || !def.weapons) return null;
+    for (let i = 0; i < def.weapons.length; i++) {
+      const k = def.weapons[i];
+      if (WEAPONS[k] === p.w) return mdl.ord[k] || mdl.ord[k.split("__")[0]] || null;
+    }
+    return null;
+  }
+
   function syncEffects(dt) {
     /* ---- projectiles: real ordnance, oriented along its flight path ---- */
     for (const p of Combat.projectiles) {
       if (!p._m3) {
-        try { p._m3 = FX3D.create(THREE, p); } catch (e) { p._m3 = null; }
+        try { p._m3 = FX3D.create(THREE, p, ordFor(p)); } catch (e) { p._m3 = null; }
         if (!p._m3) {
           p._m3 = new THREE.Mesh(new THREE.SphereGeometry(0.9, 6, 6), fxMaterial(0xffd280, 1));
         }
@@ -2768,7 +2907,22 @@ var Render3D = (function () {
       const vy = y - (p._lastY !== undefined ? p._lastY : y);
       p._px = p.x; p._py = p.y; p._lastY = y;
       p._m3.position.set(gx2m(p.x), y, gx2m(p.y));
-      if (vx || vy || vz) FX3D.orient(p._m3, vx, vy, vz, dt, G.time);
+      /* out of the pod mouth and onto the path (launchOffset); pointed the
+         way it is drawn moving, along the pod on its first frame */
+      let ox = vx, oy = vy, oz = vz;
+      if (p._lo === undefined) p._lo = launchOffset(p, p._m3.position.x, y, p._m3.position.z);
+      if (p._lo) {
+        const L = p._lo, k = 1 - L.t / LAUNCH_JOIN;
+        L.t += dt;
+        if (k > 0) {
+          const sm = k * k * (3 - 2 * k), q = p._m3.position;
+          q.set(q.x + L.x * sm, q.y + L.y * sm, q.z + L.z * sm);
+          if (L.first) { ox = L.ax; oy = L.ay; oz = L.az; L.first = false; }
+          else { ox = q.x - L.px; oy = q.y - L.py; oz = q.z - L.pz; }
+          L.px = q.x; L.py = q.y; L.pz = q.z;
+        } else p._lo = null;
+      }
+      if (ox || oy || oz) FX3D.orient(p._m3, ox, oy, oz, dt, G.time);
 
       /* ---- a cold-launched round is UNLIT until it breaches ----
          combat.js gives the round p.subLaunch while it is climbing out of the
@@ -3859,6 +4013,13 @@ var Render3D = (function () {
     /* where a shore building of this id would stand on this plot: seat,
        heading and how the heading was found (tools/jsc/shore3d_check.js) */
     shorePose(id, tx, ty) { return shorePose(BUILDINGS[id], tx, ty); },
+    /* a drawn launcher's pod-laying rule and launch origin, called on its own
+       record, so tools/jsc/launcher3d_check.js can time what they cost */
+    launcherProbe(e) {
+      const rec = ents.get(e.id);
+      if (!rec || !rec.elev) return null;
+      return { pose: (dt) => poseLauncher(e, rec, dt), launch: (p) => launchOffset(p, 0, 0, 0) };
+    },
     get cam() { return cam; },
     get three() { return three; },
   };

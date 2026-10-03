@@ -246,11 +246,120 @@ var FX3D = (function () {
     return g;
   }
 
+  /* ---------------- named rounds ----------------
+     A launcher row may name the round it fires (UNIT_MODELS[row].ord, which
+     render3d hands to create(); js/hero/us_m270_himars.js declares them).
+     Real proportions, times VIS like everything here. From the references:
+       M26 rocket    3.94 m x 227 mm; four stabiliser fins at the aft end,
+                     packed folded in the tube and opened once it leaves;
+                     spin-stabilised (FAS M26 page; designation-systems.net,
+                     MLRS rockets)
+       M30/M31 GMLRS the same 3.94 m x 227 mm body and tail, plus four small
+                     control fins in the nose - canards (designation-systems.
+                     net: M31 externally identical to M30; en.wikipedia M270:
+                     "four forward-mounted canards")
+       ATACMS        3.975 m x 610 mm, fin span 1.40 m (en.wikipedia; de.
+                     wikipedia 3.96-4.00 m, 604 mm, 1400 mm); movable control
+                     fins at the tail (FAS ATACMS page), four of them,
+                     trapezoidal (de.wikipedia: "vier trapezfoermige
+                     Steuerfluegel am Raketenheck")
+       PrSM          3.96 m x 432 mm; four trapezoidal control fins at the
+                     tail (de.wikipedia)
+     NOT in those references, so drawn by eye and not data: every nose
+     length, every fin chord, the rocket and PrSM fin heights, the canard
+     size. The colours are the shared missile
+     materials, not a claim about any paint. Each round is five meshes - body,
+     nose, all its fins merged into one, flame and core - so a twelve-rocket
+     ripple costs sixty draw calls while it flies. */
+  const ORD = {
+    /* L, D: length and diameter; nose: nose length; fins: [count, height off
+       the body, root chord, tip chord, centre from the tail (or, with a
+       negative value, from the nose tip)]; spin: rad/s about the axis */
+    m26:    { L: 3.94,  D: 0.227, nose: 0.55, spin: 6,
+              fins: [[4, 0.17, 0.30, 0.24, 0.17]] },
+    gmlrs:  { L: 3.94,  D: 0.227, nose: 0.55, spin: 0,
+              fins: [[4, 0.17, 0.30, 0.24, 0.17], [4, 0.07, 0.12, 0.08, -0.68]] },
+    atacms: { L: 3.975, D: 0.61,  nose: 0.95, spin: 0,
+              fins: [[4, 1.40 / 2 - 0.305, 0.55, 0.30, 0.32]] },
+    prsm:   { L: 3.96,  D: 0.432, nose: 1.00, spin: 0,
+              fins: [[4, 0.20, 0.38, 0.18, 0.22]] },
+  };
+  /* one fin as a thin trapezoid plate: root chord on the body, tip chord at
+     height h, trailing edges in line, t thick; triangles wound outward */
+  const FIN_TRI = [0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6, 0, 4, 5, 0, 5, 1,
+                   3, 2, 6, 3, 6, 7, 0, 3, 7, 0, 7, 4, 1, 5, 6, 1, 6, 2];
+  function finPlates(out, n, h, root, tip, t, xc, r) {
+    const x0 = xc - root / 2, x1 = xc + root / 2, xt = x0 + tip, y = t / 2;
+    const P = [[x0, -y, 0], [x1, -y, 0], [xt, -y, h], [x0, -y, h],
+               [x0, y, 0], [x1, y, 0], [xt, y, h], [x0, y, h]];
+    for (let i = 0; i < n; i++) {
+      const a = i * Math.PI * 2 / n, c = Math.cos(a), s = Math.sin(a);
+      for (let k = 0; k < FIN_TRI.length; k++) {
+        const v = P[FIN_TRI[k]], z = v[2] + r * 0.98;
+        out.push(v[0], v[1] * c - z * s, v[1] * s + z * c);
+      }
+    }
+  }
+  function buildRound(THREE, m, o) {
+    const g = new THREE.Group(), S = VIS;
+    /* orient() writes yaw into rotation.y and pitch into rotation.z every
+       frame and adds the spin to rotation.x. In the default XYZ order that
+       x turn is applied last, about the WORLD x axis, so a spinning M26
+       flying anywhere but along world x swung its nose off its path (a
+       quarter turn after 0.26 s); in YZX it is applied first, about the
+       round's own long axis. With no spin the two orders give the same
+       pose, so the unspun rounds are unchanged by it. */
+    g.rotation.order = "YZX";
+    const L = o.L * S, R = o.D * 0.5 * S, nl = o.nose * S, bl = L - nl;
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(R, R, bl, 12), m.missileBody);
+    body.rotation.z = Math.PI / 2;
+    body.position.x = -L / 2 + bl / 2;
+    g.add(body);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(R, nl, 12), m.missileNose);
+    nose.rotation.z = -Math.PI / 2;
+    nose.position.x = L / 2 - nl / 2;
+    g.add(nose);
+    const pos = [];
+    for (const f of o.fins) {
+      const xc = f[4] >= 0 ? -L / 2 + f[4] * S : L / 2 + f[4] * S;
+      finPlates(pos, f[0], f[1] * S, f[2] * S, f[3] * S, 0.03 * S, xc, R);
+    }
+    const fg = new THREE.BufferGeometry();
+    fg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    fg.computeVertexNormals();
+    const fins = new THREE.Mesh(fg, m.missileFin);
+    fins.name = "fins";
+    g.add(fins);
+    /* the motor: a flame cone and a hot core out of the nozzle, both
+       additive and flickered by orient() like every missile's */
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(R * 1.4, L * 0.8, 8), m.flame);
+    flame.rotation.z = Math.PI / 2;
+    flame.position.x = -L / 2 - L * 0.4;
+    flame.name = "flame";
+    g.add(flame);
+    const core = new THREE.Mesh(new THREE.ConeGeometry(R * 0.75, L * 0.4, 8), m.flameCore);
+    core.rotation.z = Math.PI / 2;
+    core.position.x = -L / 2 - L * 0.2;
+    core.name = "core";
+    g.add(core);
+    g.userData.len = L;
+    if (o.spin) g.userData.spin = o.spin;
+    return g;
+  }
+
   /* ---------------- public ---------------- */
-  /* a projectile mesh for p, already oriented; caller adds it to the scene */
-  function create(THREE, p) {
+  /* a projectile mesh for p, already oriented; caller adds it to the scene.
+     ord: the named round a launcher row fires (ORD above), else nothing -
+     and then every type is drawn exactly as it always was. */
+  function create(THREE, p, ord) {
     const m = materials(THREE);
     let g;
+    if (ord && ORD[ord]) {
+      g = buildRound(THREE, m, ORD[ord]);
+      g.userData.ord = ord;
+      g.userData.type = p.type;
+      return g;
+    }
     switch (p.type) {
       case "missile": g = buildByProfile(THREE, m, p.w); break;
       case "arc":     g = buildShell(THREE, m, true); break;
@@ -316,5 +425,5 @@ var FX3D = (function () {
     return g;
   }
 
-  return { create, orient, tracer, muzzle, VIS };
+  return { create, orient, tracer, muzzle, VIS, ORD };
 })();
