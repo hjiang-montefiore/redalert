@@ -6634,17 +6634,17 @@ try{
     chk("a power plant's transformer yard sparks from the first stage, before anything burns", sw && sw.sparkOnly && sw.sparkFrom === 1 && sw.min === 1,
         sw ? "sparks from stage " + sw.sparkFrom : "no switchgear");
     /* the engine goes where the real vehicle carries it, not where its role
-       usually does: the BMP-3, BRDM-2 and 2S19 at the back, the Stryker MGS
-       and ATGM carrier at the front; spaag_n is drawn as a Gepard (Leopard 1
-       hull), so it stays at the back whatever rules.js calls it */
+       usually does: the BMP-3, BRDM-2 and 2S19 at the back, the Stryker MGS,
+       ATGM carrier and M-SHORAD (spaag_n, drawn on the Stryker A1 hull since
+       js/hero/us_stryker.js replaced the old Gepard model) at the front */
     var eng = [["spg_p", "rear"], ["ifv_p", "rear"], ["recon_p", "rear"], ["lt_n", "front"], ["atgmv_n", "front"],
-               ["spaag_n", "rear"], ["mbt_n", "rear"], ["spg_n", "front"], ["supply_n", "front"], ["ifv_n", "front"]], engBad = [];
+               ["spaag_n", "front"], ["mbt_n", "rear"], ["spg_n", "front"], ["supply_n", "front"], ["ifv_n", "front"]], engBad = [];
     for (var ei = 0; ei < eng.length; ei++) {
       var ed = UNITS[eng[ei][0]];
       var ec = ed ? D3.profile({ kind: "unit", id: 990000 + ei, def: ed, layer: ed.layer, cat: ed.cat, r: ed.r, owner: P }).cls : "missing";
       if (ec !== eng[ei][1]) engBad.push(eng[ei][0] + " " + ec);
     }
-    chk("each vehicle burns where its own engine is: BMP-3, BRDM-2, 2S19 at the back; Stryker MGS and ATGM at the front",
+    chk("each vehicle burns where its own engine is: BMP-3, BRDM-2, 2S19 at the back; Stryker MGS, ATGM and M-SHORAD at the front",
         engBad.length === 0, engBad.length ? engBad.join(", ") : eng.length + " checked");
 
     /* ---- 4. emitters: a private world, driven headless ---- */
