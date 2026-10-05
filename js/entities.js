@@ -139,6 +139,12 @@ function targetPrio(e, base) {
   return p < 0.30 ? 0.30 : (p > 1.90 ? 1.90 : p);
 }
 
+/* The lines a step back is tried along, in radians off "straight away from
+   the enemy" (Unit.kiteDecide): straight, and 34 and 63 degrees either side;
+   the one that opens the gap most is taken. At 63 degrees under half of the
+   step still opens the gap, so nothing wider is worth the turn. */
+const KITE_DEV = [0, 0.6, -0.6, 1.1, -1.1];
+
 /* =================================================================== UNIT */
 class Unit {
   constructor(game, defId, owner, x, y) {
@@ -231,6 +237,9 @@ class Unit {
     this._touch = null; this._touchT = -1; this._touchX = NaN; this._touchY = NaN;
     this._atGX = NaN; this._atGY = NaN; this._atX = 0; this._atY = 0;
     this._settleT = (this.id % 15) * CFG.DT; this._settling = false;
+    /* kiteDecide() / kiteStep(): the step back under way, and the ground the
+       giving of it is tied to - declared here for the same reason */
+    this.kiteS = null; this.kiteX = NaN; this.kiteY = NaN; this.kiteT = -1e9;
   }
 
   get tx() { return U.clamp((this.x / CFG.TILE) | 0, 0, this.game.map.W - 1); }
@@ -375,6 +384,9 @@ class Unit {
     if (!(order && order.type === "move")) this.groupSpeed = 0;
     this.order = order;
     this.path = null; this.pathI = 0; this.pathFail = null;
+    /* an order from a commander ends a step back and lets go of the ground
+       it was tied to (kiteDecide): wherever it is sent is the new ground */
+    this.kiteS = null; this.kiteT = -1e9;
     if (order.type === "move" || order.type === "attackmove") {
       this.guardX = order.x; this.guardY = order.y;
     }
@@ -1677,6 +1689,8 @@ class Unit {
     const range = this.weaponRange(w);
     const minR = (w.minRange || 0) * CFG.TILE;
     const dist = U.dist(this.x, this.y, t.x, t.y);
+    /* giving ground while the round reloads (kiteStep, below) */
+    if (this.kiteS !== null && this.kiteStep(t, dist, dt)) return;
 
     if (dist > range) {
       /* ---- A SET-UP LAUNCHER DOES NOT PACK UP TO RUN AFTER AN AEROPLANE ----
@@ -1737,7 +1751,11 @@ class Unit {
       this.ang = U.turnToward(this.ang, want, this.def.turn * dt);
       if (Math.abs(U.angDiff(this.ang, want)) > 0.1) return;
     }
+    const cd0 = this.cooldowns[wi];
     this.tryFire(wi, t);
+    /* the round is away: is this a fight to give ground in? (kiteDecide) */
+    if (cd0 <= 0 && this.cooldowns[wi] > 0 && this.stance === "guard" && this.order.auto)
+      this.kiteDecide(t, wi, w, range, dist);
     /* A warship is not a tank with one gun. The 127mm mount, the anti-ship
        missiles, the area SAM and the close-in system are separate installations
        with separate crews and separate magazines, and they engage at the same
@@ -1749,6 +1767,209 @@ class Unit {
     /* ...and a warship under the other ship's guns does not hold at
        missile range with its own gun silent: answerTheGun() below */
     if (this.cat === "naval") this.answerTheGun(w, t, dist, dt);
+  }
+
+  /* ---- KITE: FIRE, THEN GIVE GROUND ----
+     A ground hull that outreaches what it is fighting stood still while that
+     thing drove into its own reach, and then traded shots with it on equal
+     terms - the band between the two reaches, the one stretch of ground where
+     the fight is all ours, was crossed at the enemy's road speed and thrown
+     away. Nothing stepped back on the ground: a helicopter holds off at 0.8
+     of its reach, a missile ship at its missile's (answerTheGun), a bomber
+     flies the stand-off, and engage() only ever backed out of a weapon's
+     arming distance. This is the same idea for the crews on the ground: put
+     the round away, give ground while the gun reloads, come back on aim as it
+     loads, so the enemy spends longer in the open taking fire it cannot
+     return before it can answer.
+
+     WHO. A ground hull on stance guard, in an engagement it chose for itself
+     (order.auto: what it picked up on guard, on an attack-move or a patrol,
+     or answers when shot), firing a round that is aimed rather than lobbed,
+     with a round left. Never on hold; never on a move, which never reaches
+     engage(); never a platform that sets up (def.deploy) or artillery, which
+     backs out of its arming distance instead. NOT on an attack the commander
+     gave by name - the player's right-click on that hull, or the AI's: that
+     order says "go and kill that one" (it carries `release`), and a hull
+     that backs away from the very thing it was sent at reads as refusing the
+     order. Aircraft and ships never come here; they have their stand-offs.
+     AGAINST WHAT. A unit on the ground - never a structure, which does not
+     come on - that (a) can hurt us at all, by Unit.reachAt(): its PUBLISHED
+     reach with the 1.15 margin, with a weapon that does half damage or more
+     to our armour, so a rifle squad is no reason for a tank destroyer to
+     move; (b) we outreach by three quarters of a tile at least, measured
+     from 0.92 of our reach or 0.98 of our own sight, whichever is shorter -
+     we never give so much ground that it ends up out of our reach, nor past
+     our own eyes, where a round is laid blind (CFG.BLIND_FIRE_ACC 0.52);
+     (c) is no faster than we are, ours as we stand (fuel, strain, the ground
+     under us) against its card speed on its ground; (d) is coming: moving,
+     heading within 60 degrees of us. On the cards, nato against pact in all
+     six periods, 15 pairings pass all four, and only two of them are in the
+     1980s and four today: ATGM teams against MG teams, and an ATGM carrier
+     or a gun SPAAG against what is slower.
+     WHEN. Decided once per round, as it leaves the barrel (engage), and only
+     if the step costs no shot: the burst out, the hull turned away, the
+     drive and the time to come back on aim (a turret tracks through the
+     step; a hull gun or a squad must turn round, pi over its turn rate) all
+     fit inside the reload, with half a second of driving at least. And the
+     enemy, closing at its card speed, must stay outside its reach until our
+     front is back towards it: a hull that turns away from something that can
+     already shoot it shows it the plates CFG.ASPECT_MUL scores at 1.55 and
+     2.10, and a turreted one swings its front back round as soon as each
+     step ends. That rule is why a tank destroyer never gives ground to a
+     tank: an M1 closes 2.2 tiles in the 1.4 s a Khrizantema takes to turn.
+     WHERE. Straight away from it, or 34 or 63 degrees off that line
+     (KITE_DEV), whichever opens the gap most; no further than the reload can
+     drive, than keeps the enemy inside our reach when we are loaded, or than
+     the ground runs unbroken - it stops half a tile short of the first
+     water, rock, structure or map edge on the line (standable). It may not
+     end deeper inside the reach of anything else of theirs our side can see
+     (one grid query per step, never per tick; G.sideSees, so the commander
+     reads its fog as the player reads theirs). And it is tied to ground:
+     FIVE tiles from the unit's guard post when it stands within five tiles
+     of it, else from where it gave its first step; the tie holds ten
+     seconds past the last step and a new order drops it, so a run of
+     engagements, or an enemy that keeps coming, cannot walk a unit back
+     across the map - four Javelin teams sent in one after another moved a
+     tank destroyer 4.7 tiles in all (tools/jsc/kite_check.js). Three, the
+     guard order's own drift-back radius, was measured first and is too
+     short to pay for a hull's two turns: over the same 40 paired fights a
+     Khrizantema against a Javelin team won 18 with it against 19 standing
+     still; with five it wins 21 (exchange +0.09 against -0.06). Once the
+     ground is spent it stands and fights, front on.
+     THE RHYTHM is shot - step - shot, and nothing flips it from tick to
+     tick: a step begins only with a round fired, and ends when the reload is
+     down to the time it takes to come back on aim, at its end point, when
+     the enemy is not closing as fast as we give ground, or early when the
+     enemy reaches its own reach anyway, has stopped coming for 0.4 s (a hull
+     between waypoints stands still for a tick), or the hull is wedged, dry
+     or taken off guard. Measured over 40 paired fights each (kite_check
+     "-- ab"): a Kornet team against an MG team wins 4 against 2, a 1990s
+     Javelin team against a PK team 11 against 2, the Khrizantema as above.
+     The same for every side: crew behaviour, like the target preference
+     (TGT_PRIO) and the stand-offs, not a difficulty setting. P.aiOff "kite"
+     switches it off for one player, for the A/B scorecard (tools/jsc). */
+  kiteDecide(t, wi, w, range, dist) {
+    const d = this.def, P = this.owner, g = this.game, T = CFG.TILE;
+    if (this.layer !== "ground" || d.deploy || this.garrisonIn || this.order.release ||
+        w.proj === "arc" || w.indirect || (this.roundsMax && this.rounds <= 0) ||
+        (P.aiOff && P.aiOff.has("kite"))) return;
+    if (t.kind !== "unit" || t.layer !== "ground" || t.garrisonIn || !(t.def.speed > 0)) return;
+    const re = Unit.reachAt(t, this.targetLayer(), this.armorClass());
+    const stopR = Math.min(range * 0.92, this.sightR() * T * 0.98);
+    if (!re || stopR < re + T * 0.75) return;
+    const map = g.map;
+    const vMe = d.speed * this.speedMul() * GameMap.speedAt(map, this.tx, this.ty, this.layer) * T;
+    const vThem = t.def.speed * GameMap.speedAt(map, t.tx, t.ty, t.layer) * T;
+    if (!(vMe > 0) || vMe < vThem) return;
+    const away = Math.atan2(this.y - t.y, this.x - t.x);
+    if (!t.moving || Math.cos(U.angDiff(t.ang, away)) <= 0.5) return;
+    /* the clock: the burst out, the hull turned away, the drive, and back on
+       aim when it loads; `face` is the turn that puts the front back */
+    const cd = this.cooldowns[wi], turn = Math.max(0.3, d.turn || 1), face = Math.PI / turn;
+    const burstT = (w.burst || 1) > 1 ? (w.burst - 1) * (w.burstDelay || 0.1) : 0;
+    const tAway = Math.abs(U.angDiff(this.ang, away)) / turn;
+    const lead = d.turret ? 0.25 : face + 0.15;
+    const run = cd - burstT - tAway - lead;
+    if (run < 0.5 || dist - vThem * (burstT + tAway) <= re) return;
+    /* the ground it is tied to */
+    const now = g.time, LEASH = T * 5;
+    let ax = this.kiteX, ay = this.kiteY;
+    if (!(now - this.kiteT < 10)) {
+      const post = U.dist(this.x, this.y, this.guardX, this.guardY) <= LEASH;
+      ax = post ? this.guardX : this.x; ay = post ? this.guardY : this.y;
+    }
+    const px = this.x - ax, py = this.y - ay, pp = px * px + py * py - LEASH * LEASH;
+    const Lrun = vMe * run, Lcap = stopR - dist + vThem * cd;
+    let foes = null, gx = 0, gy = 0, best = 0;
+    for (let i = 0; i < KITE_DEV.length; i++) {
+      const dev = KITE_DEV[i], c = Math.cos(dev), a = away + dev;
+      const ux = Math.cos(a), uy = Math.sin(a);
+      /* no further than the far side of the leash circle along this line */
+      const b = px * ux + py * uy, disc = b * b - pp;
+      if (disc < 0) continue;
+      let L = Math.min(Lrun, Lcap / c, Math.sqrt(disc) - b);
+      /* and only as far as the ground runs unbroken: stop half a tile short
+         of the first water, rock, structure or edge on the line */
+      let s = T * 0.5;
+      while (s < L && this.standable(this.x + ux * s, this.y + uy * s)) s += T * 0.5;
+      if (s < L) L = s - T * 0.5;
+      else if (!this.standable(this.x + ux * L, this.y + uy * L)) L -= T * 0.5;
+      if (L < T * 0.5 || L * c <= best) continue;
+      /* still outside its reach once we have driven it and turned back */
+      if (dist + L * c - vThem * (burstT + tAway + L / vMe + face) <= re + T * 0.25) continue;
+      const ex = this.x + ux * L, ey = this.y + uy * L;
+      if (foes === null) foes = this.kiteFoes(t);
+      let into = false;
+      for (let j = 0; j < foes.length && !into; j += 3) {
+        const dg = U.dist2(ex, ey, foes[j], foes[j + 1]);
+        into = dg <= foes[j + 2] && dg < U.dist2(this.x, this.y, foes[j], foes[j + 1]);
+      }
+      if (into) continue;
+      best = L * c; gx = ex; gy = ey;                   // the line that opens the gap most
+    }
+    if (!best) return;                                  // nowhere to go: it stands
+    if (!(now - this.kiteT < 10)) { this.kiteX = ax; this.kiteY = ay; }
+    this.kiteT = now;
+    const k = (this.kiteS !== null && this.kiteS.t === t) ? this.kiteS
+      : (this.kiteS = { t: t, step: false, wi: 0, gx: 0, gy: 0, re: 0, stopR: 0, vt: 0,
+                        lead: 0, go: 0, ck: 0, cx: 0, cy: 0, nc: 0 });
+    k.step = true; k.wi = wi; k.gx = gx; k.gy = gy; k.re = re; k.stopR = stopR; k.vt = vThem; k.lead = lead;
+    k.go = now + burstT; k.ck = k.go + tAway + 0.3; k.cx = this.x; k.cy = this.y; k.nc = 0;
+    this.path = null; this.repathT = 0;
+    /* counted per owner for the scorecard and a census; nothing decides on it */
+    P.kiteN = (P.kiteN || 0) + 1;
+  }
+  /* What else of theirs our side can see near here, flat as [x, y, reach^2],
+     for whatever carries a weapon that matters against us (Unit.reachAt). */
+  kiteFoes(t) {
+    const g = this.game, own = this.owner, me = this.targetLayer(), arm = this.armorClass();
+    const out = [];
+    g.grid.query(this.x, this.y, CFG.TILE * 14, (e) => {
+      if (e === t || e === this || e.dead || !e.def || !e.def.weapons || !e.def.weapons.length) return;
+      const o = e.owner;
+      if (!o || o === own || o.isNeutral || g.allied(own, o)) return;
+      if (e.kind === "building" && e.buildProgress < 1) return;
+      const r = Unit.reachAt(e, me, arm);
+      if (!r || (g.sideSees && !g.sideSees(own, e, this))) return;
+      out.push(e.x, e.y, r * r);
+    });
+    return out;
+  }
+  /* One tick of a step under way; true when it moved, and engage() then has
+     nothing more to do this tick. Between steps a turreted hull brings its
+     front plate back round to the enemy while the turret works. */
+  kiteStep(t, dist, dt) {
+    const k = this.kiteS;
+    if (k.t !== t) { this.kiteS = null; return false; }
+    const want = Math.atan2(t.y - this.y, t.x - this.x);
+    if (!k.step) {
+      if (this.def.turret && this.cat === "vehicle")
+        this.ang = U.turnToward(this.ang, want, (this.def.turn || 1) * dt);
+      return false;
+    }
+    const now = this.game.time;
+    if (now < k.go) return false;                 // the burst is still going out: stand for it
+    const cd = this.cooldowns[k.wi];
+    /* done: back on aim as it loads, or it is not closing as fast as we
+       give ground - more would leave it outside our reach when we are
+       loaded, even coming on at its card speed */
+    let end = cd <= k.lead || dist - k.vt * cd >= k.stopR || dist <= k.re ||
+              this.stance !== "guard" || this.speedMul() <= 0;
+    if (!end) {
+      k.nc = (t.moving && Math.cos(U.angDiff(t.ang, want + Math.PI)) > 0.5) ? 0 : k.nc + dt;
+      if (k.nc > 0.4) end = true;
+      else if (now >= k.ck) {
+        if (U.dist2(this.x, this.y, k.cx, k.cy) < 9) end = true;        // wedged
+        k.ck = now + 0.5; k.cx = this.x; k.cy = this.y;
+      }
+    }
+    if (!end) {
+      if (this.def.turret) this.tang = U.turnToward(this.tang, want, (this.def.tturn || 1.5) * dt);
+      if (!this.stepAlong(k.gx, k.gy, dt)) return true;
+    }
+    k.step = false;
+    this.path = null; this.kiteT = now;
+    return this.moving;
   }
 
   /* A garrisoned squad fights from the windows: it keeps its own weapon but
@@ -2135,6 +2356,25 @@ class Unit {
     memo.set(def, m = { ws: ws, mix: p && g });
     return m.mix;
   }
+  /* How far t reaches, in pixels, with a weapon that matters against a hull
+     presenting `layer` and `armor`: the longest of its mounts that can engage
+     that layer and does at least half damage to that armour class, at its
+     PUBLISHED range with gunProfile's 1.15 margin - never its weaponRange(),
+     because another army's range multiplier and its optics upgrade are not
+     things we can honestly know. 0 when nothing aboard matters. One reading
+     of the recognition manual for gunFirst() and kiteDecide() alike. */
+  static reachAt(t, layer, armor) {
+    const tw = (t && t.def && t.def.weapons) || [];
+    let reach = 0;
+    for (let i = 0; i < tw.length; i++) {
+      const w = WEAPONS[tw[i]];
+      if (!w || !(w.dmg > 0) || (w.tgt && !w.tgt[layer])) continue;
+      if (CFG.dmgMult(w.warhead, armor) < 0.5) continue;
+      const r = (w.range || 0) * CFG.TILE * 1.15;
+      if (r > reach) reach = r;
+    }
+    return reach;
+  }
   gunFirst(t, anyAmmo, tArmor) {
     if (!t || (tArmor || (t.armorClass && t.armorClass())) !== "infantry") return false;
     if (!Unit.gunMix(this.def)) return false;
@@ -2143,16 +2383,7 @@ class Unit {
     const tl = t.targetLayer();
     /* how far this target reaches, with a weapon that matters, at the layer
        and the armour we present */
-    const me = this.targetLayer(), myArmor = this.armorClass();
-    let reach = 0;
-    const tw = (t.def && t.def.weapons) || [];
-    for (let i = 0; i < tw.length; i++) {
-      const w = WEAPONS[tw[i]];
-      if (!w || !(w.dmg > 0) || (w.tgt && !w.tgt[me])) continue;
-      if (CFG.dmgMult(w.warhead, myArmor) < 0.5) continue;
-      const r = (w.range || 0) * T * 1.15;
-      if (r > reach) reach = r;
-    }
+    const reach = Unit.reachAt(t, this.targetLayer(), this.armorClass());
     const pf = this.pathFail;
     const pace = (this.def.speed > 0 && !this.garrisonIn && this.stance !== "hold" &&
                   !(pf && pf.x === t.tx && pf.y === t.ty)) ? this.def.speed * T : 0;
