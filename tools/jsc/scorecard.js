@@ -10,7 +10,8 @@
    diff (tier of both, default commander), pers (doctrine of both, default
    balanced), limit (game seconds, default 900), b (which seat is "B": 0 or 1),
    off (comma list, goes on B's player as player.aiOff = new Set([...]) before
-   the first tick), cash, res.
+   the first tick), offboth (comma list, goes on BOTH players: the paired
+   control of scorecard.py --paired), cash, res.
 
    Output: one line "SCORECARD {json}". Side "A" and "B" are not seats; the
    json carries seat numbers too. Per side: destroyed / lost (credits, from the
@@ -18,7 +19,10 @@
    what the other lost), units and buildings lost, production buildings
    standing, army value (units that are not haulers), buildings value, result,
    and kiteSteps: how many times that side's crews gave ground between shots
-   (entities.js Unit.kiteDecide; player.kiteN).
+   (entities.js Unit.kiteDecide; player.kiteN), and stats: a copy of the
+   numeric fields of player.aiStats when the player has one (the generic
+   counter hook: a behaviour that bumps P.aiStats.<name> shows up in the
+   scorecard report as a per-match mean, no edit here needed).
    Based on _comp.html's harness: both seats get a brain, the human chair
    included. */
 (function () {
@@ -29,7 +33,8 @@
   var MAP = A.map || "fulda", ERA = A.era || "e80", SEED = A.seed || "sc1",
       FAC = [A.fac0 || "nato", A.fac1 || "pact"], DIFF = A.diff || "commander",
       PERS = A.pers || "balanced", LIMIT = parseFloat(A.limit || "900"),
-      B = A.b === "0" ? 0 : 1, OFF = (A.off || "").split(",").filter(Boolean);
+      B = A.b === "0" ? 0 : 1, OFF = (A.off || "").split(",").filter(Boolean),
+      OFFBOTH = (A.offboth || "").split(",").filter(Boolean);
   var SIDE = B === 0 ? ["B", "A"] : ["A", "B"];          /* seat -> label */
   var errs = [];
   window.addEventListener("error", function (e) { errs.push((e.message || "error") + " " + (e.filename || "") + ":" + (e.lineno || "")); });
@@ -59,6 +64,7 @@
     P[0].isAI = true;
     AI.create(Game, P[0], DIFF, PERS);
     if (OFF.length) P[B].aiOff = new Set(OFF);
+    if (OFFBOTH.length) { P[0].aiOff = new Set(OFFBOTH); P[1].aiOff = new Set(OFFBOTH); }
 
     var lost = [0, 1].map(function () { return { uv: 0, bv: 0, un: 0, bn: 0 }; });
     var defeatT = [null, null];
@@ -76,7 +82,10 @@
       var p = P[seat], o = lost[1 - seat], me = lost[seat], army = 0, bld = 0, nu = 0, i;
       for (i = 0; i < p.units.length; i++) { var u = p.units[i]; if (u.dead) continue; nu++; if (!u.def.harvester) army += u.def.cost || 100; }
       for (i = 0; i < p.buildings.length; i++) { var b = p.buildings[i]; if (!b.dead) bld += b.def.cost || 100; }
-      return { seat: seat, faction: p.faction,
+      var st = {};
+      if (p.aiStats && typeof p.aiStats === "object")
+        for (var k in p.aiStats) if (typeof p.aiStats[k] === "number") st[k] = p.aiStats[k];
+      return { seat: seat, stats: st, faction: p.faction,
                destroyed: o.uv + o.bv, destroyedUnits: o.uv, destroyedBldgs: o.bv,
                lost: me.uv + me.bv, lostUnits: me.un, lostBldgs: me.bn,
                prodLeft: p.productionBuildings().length, armyValue: army, bldValue: bld, unitsLeft: nu,
@@ -84,7 +93,7 @@
     }
     function finish() {
       var s = [side(0), side(1)], out = { map: MAP, era: ERA, seed: SEED, tier: DIFF, pers: PERS, limit: LIMIT,
-                                          b: B, off: OFF, endT: Math.round(Game.time * 10) / 10 };
+                                          b: B, off: OFF, offBoth: OFFBOTH, endT: Math.round(Game.time * 10) / 10 };
       out.A = s[SIDE.indexOf("A")]; out.B = s[SIDE.indexOf("B")];
       [out.A, out.B].forEach(function (x) {
         var other = x === out.A ? out.B : out.A;
