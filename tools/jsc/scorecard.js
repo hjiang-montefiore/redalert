@@ -16,7 +16,9 @@
    json carries seat numbers too. Per side: destroyed / lost (credits, from the
    defs' costs: Combat.kill prices every death, and what one side destroyed is
    what the other lost), units and buildings lost, production buildings
-   standing, army value (units that are not haulers), buildings value, result.
+   standing, army value (units that are not haulers), buildings value, result,
+   and kiteSteps: how many times that side's crews gave ground between shots
+   (entities.js Unit.kiteDecide; player.kiteN).
    Based on _comp.html's harness: both seats get a brain, the human chair
    included. */
 (function () {
@@ -78,7 +80,7 @@
                destroyed: o.uv + o.bv, destroyedUnits: o.uv, destroyedBldgs: o.bv,
                lost: me.uv + me.bv, lostUnits: me.un, lostBldgs: me.bn,
                prodLeft: p.productionBuildings().length, armyValue: army, bldValue: bld, unitsLeft: nu,
-               defeatT: defeatT[seat] };
+               defeatT: defeatT[seat], kiteSteps: p.kiteN || 0 };
     }
     function finish() {
       var s = [side(0), side(1)], out = { map: MAP, era: ERA, seed: SEED, tier: DIFF, pers: PERS, limit: LIMIT,

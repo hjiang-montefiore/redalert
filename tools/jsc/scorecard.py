@@ -132,6 +132,9 @@ def report(rs, label, cmd):
             side, D, Lo, D / Lo if Lo else float("inf"),
             sum(r[side]["armyValue"] for r in ok) / len(ok), sum(r[side]["prodLeft"] for r in ok) / len(ok),
             sum(r[side]["lostUnits"] for r in ok) / len(ok), sum(r[side]["lostBldgs"] for r in ok) / len(ok)))
+    kA = [r["A"].get("kiteSteps", 0) for r in ok]; kB = [r["B"].get("kiteSteps", 0) for r in ok]
+    L.append("kite steps per match      A %.1f (max %d, %d of %d matches with any)   B %.1f" % (
+        sum(kA) / len(kA), max(kA), sum(1 for k in kA if k), len(kA), sum(kB) / len(kB)))
     L.append("")
     L.append("per map / era (B-A net exchange, B-A win rate, undecided):")
     cells = {}
