@@ -246,20 +246,11 @@
       mk("span", "sdash", row).textContent = "—";
       mk("span", "sdash", row).textContent = "—";
     } else {
-      /* Each computer commander names its own skill. The deployment screen
-         no longer shows a "default skill" under the list - choosing it in
-         two places was the screen's most visible redundancy - so a row
-         starts on the value that default holds (Regular) instead of on a
-         blank pointing at a control nobody can see. A page whose skill list
-         cannot be read keeps the old blank, which still means "the default". */
-      const skills = shortOpts("opt-diff", null);
-      const want = (document.getElementById("opt-diff") || {}).value || "regular";
-      if (skills.length)
-        mkSel("slot-diff", row, skills, skills.some(o => o[0] === want) ? want : skills[0][0]);
-      else mkSel("slot-diff", row, [["", "Default skill"]], "");
-      /* left blank, a commander picks its own doctrine - which is all the
-         hidden default "Mixed" ever meant */
-      mkSel("slot-pers", row, shortOpts("opt-pers", "Any doctrine"), "");
+      /* Blank is "the same as every computer": the skill and doctrine the
+         forces table sets for the computers' column. A row only names one
+         when this commander is to play differently from the rest. */
+      mkSel("slot-diff", row, shortOpts("opt-diff", "Same as all"), "");
+      mkSel("slot-pers", row, shortOpts("opt-pers", "Same as all"), "");
     }
     /* the first opponent cannot be dismissed - a skirmish needs one */
     if (i >= 2) {
@@ -551,38 +542,19 @@
      the menu's own markup is not built into elements at all. */
   const menuBox = menu && menu.querySelector ? menu.querySelector(".menu-box") : null;
 
-  /* ---- one set of forces for every side, unless you ask for two ----
-     The pairs are the old you-against-every-AI table, which showed ten
-     dropdowns for what is - in nearly every battle - five choices made
-     once. While "Same for every side" is ticked, the computers' column is
-     folded away and follows yours. Untick it and it opens on the values it
-     holds (yours, at that moment) and goes its own way. */
-  const FORCE_PAIRS = [["opt-era", "opt-aera"], ["opt-ptech", "opt-atech"],
-                       ["opt-peracap", "opt-aeracap"], ["opt-pcap", "opt-acap"],
-                       ["opt-parms", "opt-aarms"]];
-  const sameBox = document.getElementById("opt-same");
-  const forcesCard = document.getElementById("card-forces");
-  const linked = () => !sameBox || sameBox.checked !== false;
-  function followForces() {
-    if (!linked()) return;
-    for (const [me, them] of FORCE_PAIRS) {
-      const a = document.getElementById(me), b = document.getElementById(them);
-      if (a && b && b.value !== a.value) b.value = a.value;
-    }
-  }
-  if (menuBox && sameBox && forcesCard) {
-    for (const [me] of FORCE_PAIRS) {
-      const a = document.getElementById(me);
-      if (a) a.addEventListener("change", followForces);
-    }
-    const showLink = () => {
-      if (linked()) forcesCard.classList.add("linked");
-      else forcesCard.classList.remove("linked");
-    };
-    sameBox.addEventListener("change", () => { showLink(); followForces(); });
-    /* a browser that puts form state back on reload may hand the box back
-       unticked: the card must say what the box says */
-    showLink();
+  /* ---- the computers' column follows yours until you change it ----
+     What the era pickers above already do, for the rest of the table: a
+     matched war stays one set of picks, and an asymmetric one is one more
+     pick in the computers' column - which is always on show. (A first
+     redesign folded that column away behind a "Same for every side" box;
+     the owner could no longer find the computers' era and tech.) */
+  for (const [me, them] of [["opt-ptech", "opt-atech"], ["opt-peracap", "opt-aeracap"],
+                            ["opt-pcap", "opt-acap"], ["opt-parms", "opt-aarms"]]) {
+    const a = document.getElementById(me), b = document.getElementById(them);
+    if (!a || !b) continue;
+    let touched = false;
+    b.addEventListener("change", () => { touched = true; });
+    a.addEventListener("change", () => { if (!touched) b.value = a.value; });
   }
 
   /* ---- a short list as a row of buttons ----
@@ -661,7 +633,8 @@
       esc(foes.length === 1 ? armyName(foes[0].faction) : foes.length + " enemies") + "</b>";
     const eraMe = optText("opt-era"), eraThem = optText("opt-aera");
     const bits = [sides, "<b>" + esc(optText("opt-map")) + "</b>",
-      esc(eraMe + (!linked() && eraThem && eraThem !== eraMe ? " against " + eraThem : "")),
+      esc(eraMe + (eraThem && eraThem !== eraMe ? " against " + eraThem : "")),
+      esc(optText("opt-diff") + " computers"),
       esc(optText("opt-cash", 1))];
     const wx = (document.getElementById("opt-weather") || {}).value;
     if (wx && wx !== "clear") bits.push(esc(optText("opt-weather")));
