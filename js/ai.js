@@ -515,6 +515,7 @@ function makeCommander() {
   let waveDefer = 0;             // launches deferred in a row on the force ratio
   let homeward = [];             // survivors of a broken wave still being walked home
   let homeUntil = 0;             // ...and until when
+  let mending = [];              // single hulls stepped out of a wave to be mended (FALLBACK)
   let engStat = engBook();       // what all of the above has done, for intel()
   const GATE_HOLD = 22;          // seconds a staged body waits on its stragglers
   const GATE_R = 3.5;            // tiles from its own mark that count as "there"
@@ -727,6 +728,7 @@ function makeCommander() {
     aimShy.clear(); scoutShy.clear(); aimRvT = -1; waveBook = null; oreSites = null;
     waveGate = null; waveGateT = 0; waveMassed = false; waveTurn0 = waveTurn1 = 0;
     flankClock = 0; waveDefer = 0; homeward = []; homeUntil = 0; engStat = engBook();
+    mending = []; fbTick = 0;
     /* nor an estimate of the enemy, a production count or a recall clock */
     foeMemo = null; foeMemoT = -1; foePeak = 0; foePeakT = 0; fortMemo = 0; fortT = -1;
     for (const k in prodPeakOf) delete prodPeakOf[k];
@@ -897,6 +899,14 @@ function makeCommander() {
       raidTick = Math.max(0.5, (D.think || 1.6) * 0.5);
       driveRaid();
       formRaid();
+    }
+    /* ---- one hull out of the line (FALLBACK) ----
+       The raid's clock and the raid's reason: think() returns early on
+       purchase ticks, and a hull at a sliver of its bar has seconds. */
+    fbTick -= dt;
+    if (fbTick <= 0) {
+      fbTick = Math.max(0.5, (D.think || 1.6) * 0.5);
+      driveFallback();
     }
     /* ---- the eyes ----
        Off think() for the reason the raid is: think() returns early on every
@@ -2381,6 +2391,7 @@ function makeCommander() {
     const t = u.order && u.order.type;
     if (u.def.deployTo || u === prospect || u.flankTo) return false;
     if (attackWave.indexOf(u) >= 0 || raidParty.indexOf(u) >= 0) return false;
+    if (u._fb) return false;                     // on a berth being mended (FALLBACK)
     if (u.def.harvester) return t === "idle" || t === "harvest";
     return t === "idle" || t === "guard" || t === "move";
   }
@@ -2839,7 +2850,7 @@ function makeCommander() {
       if (!d.weapons || !d.weapons.length) continue;
       const t = u.order && u.order.type;
       if (t !== "idle" && t !== "guard") continue;
-      if (attackWave.indexOf(u) >= 0 || raidParty.indexOf(u) >= 0) continue;
+      if (attackWave.indexOf(u) >= 0 || raidParty.indexOf(u) >= 0 || u._fb) continue;
       /* fast and cheap: the walk is the job, not the fight */
       const s = (d.speed || 1) + (d.cat === "vehicle" ? 0.5 : 0) - (d.cost || 0) / 4000;
       if (s > bs) { bs = s; best = u; }
@@ -4277,14 +4288,32 @@ function makeCommander() {
             : ROLE_ARM[role] || (cat === "infantry" ? "inf" : "light");
     return FORCE_W[k] || 0.40;
   }
-  function foeNear(x, y, R) {
-    const now = G.time, mem = Math.min(90, Math.max(14, D.memory || 90)), R2 = R * R;
+  /* `o` is FALLBACK's, which asks where the fire is NOW rather than what is
+     standing on a piece of ground: o.sea weighs hulls (sea and sub) instead
+     of ground vehicles, o.win shortens the window (a body seen a minute ago
+     has moved), and o.reach grades a contact by distance - in full at point
+     blank, half at the edge of its reach, nothing at R, a few tiles past it
+     where it would have had to move to matter. Nearer is heavier because a
+     hull stays inside a nearer gun's reach for longer on its way out, which
+     is also what lets two roads past the same body be told apart. Left
+     out, this is what it always was. */
+  function foeNear(x, y, R, o) {
+    const now = G.time, mem = (o && o.win) || Math.min(90, Math.max(14, D.memory || 90)), R2 = R * R;
+    const sea = !!(o && o.sea), reach = (o && o.reach) || 0;
     let v = 0;
     for (const r of seenU.values()) {
-      if (r.harvester || !r.armed || r.layer !== "ground" || NO_FIGHT[r.role]) continue;
+      if (r.harvester || !r.armed || NO_FIGHT[r.role]) continue;
+      if (sea ? (r.layer !== "sea" && r.layer !== "sub") : r.layer !== "ground") continue;
       const age = now - r.t;
-      if (age > mem || U.dist2(r.x, r.y, x, y) > R2) continue;
-      v += forceW(r.role, r.armor, r.cat) * (1 - age / mem);
+      if (age > mem) continue;
+      const d2 = U.dist2(r.x, r.y, x, y);
+      if (d2 > R2) continue;
+      let k = 1;
+      if (reach) {
+        const d = Math.sqrt(d2);
+        k = d <= reach ? 1 - 0.5 * d / reach : 0.5 * (R - d) / Math.max(1, R - reach);
+      }
+      v += forceW(r.role, r.armor, r.cat) * (1 - age / mem) * k;
     }
     return v;
   }
@@ -4299,7 +4328,24 @@ function makeCommander() {
   function engBook() {
     return { held: 0, staged: 0, massBody: 0, massClock: 0, spread: [], waits: 0,
              kept: 0, defers: 0, withdrawals: 0, withdrawn: 0, pad: 0,
-             dropped: 0, handed: 0 };
+             dropped: 0, handed: 0, fb: fbBook() };
+  }
+  /* FALLBACK's own counters (driveFallback). out is hulls that stepped out,
+     by where they went (arv, tender, medic, depot, yard); back rejoined
+     their wave, pool went home to the next one, mended reached FB_REJOIN,
+     lost died on the way or on the berth, giveUp were let go short of it
+     (no road, or a source that stopped mending), resrc were re-pointed when
+     their source died. route and hot are the picture at work: a dog-leg
+     taken round known fire, a meeting point pulled back out of it. The
+     refusals are counted per ASKING, not per hull - a hull is asked again a
+     few seconds later - so they read as how often each rule held a hull in
+     the line: calm (under the line, nothing shooting), finish (its target
+     dies first), doomed (it would not live to get out), far (only a source
+     a wave cycle away), noSrc (nothing that can mend it). */
+  function fbBook() {
+    return { out: 0, arv: 0, tender: 0, medic: 0, depot: 0, yard: 0, back: 0, pool: 0,
+             mended: 0, lost: 0, giveUp: 0, resrc: 0, route: 0, hot: 0,
+             calm: 0, finish: 0, doomed: 0, far: 0, noSrc: 0 };
   }
 
   /* ---- the casualty return ----
@@ -5417,6 +5463,7 @@ function makeCommander() {
     if (tlamSent.size > 64) for (const [k, t0] of tlamSent) if (now - t0 > 60) tlamSent.delete(k);
     for (const u of P.units) {
       if (u.dead || u.cat !== "naval" || (u.layer !== "sea" && u.layer !== "sub")) continue;
+      if (u._fb && !u._tlamS) continue;          // out of the line being mended (FALLBACK)
       const wi = strikeMount(u);
       if (wi < 0) continue;
       const cap = (u.def.magazine || {})[u.def.weapons[wi]];
@@ -6216,10 +6263,12 @@ function makeCommander() {
       const u = arv[i];
       if (u.stance !== "hold") u.stance = "hold";
       /* a second one stands off to one side: two bubbles on one point cover no
-         more ground than one */
+         more ground than one. One that has hulls stepped out of the line to
+         it (FALLBACK, fbMeet) holds the meeting point instead, until they
+         are mended. */
       const off = i * CFG.TILE * 1.8;
-      const ax = sx + Math.cos(i * 2.1) * off;
-      const ay = sy + Math.sin(i * 2.1) * off;
+      const ax = u._fbAt ? u._fbAt.x : sx + Math.cos(i * 2.1) * off;
+      const ay = u._fbAt ? u._fbAt.y : sy + Math.sin(i * 2.1) * off;
       if (U.dist(u.x, u.y, ax, ay) < CFG.TILE * 1.4) continue;      // on station
       const o = u.order;
       if (o.type === "move" && U.dist(o.x, o.y, ax, ay) < CFG.TILE * 2) continue;
@@ -6249,13 +6298,15 @@ function makeCommander() {
       const k = 1 + 4 * (1 - u.hp / Math.max(1, u.maxHp));
       cx += u.x * k; cy += u.y * k; w += k;
     }
+    /* one that has hulls stepped out of the line to it (FALLBACK) is left on
+       the meeting point; steerMending keeps it there */
     if (!w) {
       /* no fleet to keep: lie alongside the yard, which is also the only place
          a tender can take fuel, since oiler:true on repair_sea drives nothing */
       const yard = G.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
       if (!yard) return;
       for (const u of tend)
-        if (U.dist(u.x, u.y, yard.x, yard.y) > CFG.TILE * 5 && u.order.type !== "move")
+        if (!u._fbAt && U.dist(u.x, u.y, yard.x, yard.y) > CFG.TILE * 5 && u.order.type !== "move")
           u.give({ type: "move", x: yard.x, y: yard.y });
       return;
     }
@@ -6267,6 +6318,7 @@ function makeCommander() {
     }
     for (const u of tend) {
       if (u.stance !== "hold") u.stance = "hold";
+      if (u._fbAt) continue;
       if (U.dist(u.x, u.y, sx, sy) < CFG.TILE * 1.2) continue;
       const o = u.order;
       if (o.type === "move" && U.dist(o.x, o.y, sx, sy) < CFG.TILE * 1.8) continue;
@@ -6633,11 +6685,15 @@ function makeCommander() {
 
   /* The vehicle that walks in front of the column. Not part of the army:
      groundArmy() excludes it for the same reason it excludes the scout - it
-     carries an hmg and 820 hit points and that is not combat power. */
+     carries an hmg and 820 hit points and that is not combat power. Nor
+     is one stepped out of the line to be mended (FALLBACK) - it is a wave
+     member, so it can be: planWave() would push it back into attackWave
+     while it was still on its berth, steered by both at once, and
+     fbRelease() would push it in a second time when it rejoined. */
   function wavePoint() {
     if ((D.read === undefined ? 1 : D.read) < 1.0) return null;
     for (const u of P.units)
-      if (!u.dead && u.layer === "ground" && u.def.mineDetect && u.def.mineClear) return u;
+      if (!u.dead && u.layer === "ground" && u.def.mineDetect && u.def.mineClear && !u._fb) return u;
     return null;
   }
 
@@ -6753,6 +6809,7 @@ function makeCommander() {
     for (const u of clearers) {
       if (u.order.type !== "idle" && u.order.type !== "guard") continue;
       if (attackWave.indexOf(u) >= 0) continue;    // it is leading a wave
+      if (u._fb) continue;                         // ...or out of it, on a berth (FALLBACK)
       const b = bearing();
       if (!b) continue;
       const a = Math.atan2(b.y - P.homeY, b.x - P.homeX);
@@ -8877,6 +8934,9 @@ function makeCommander() {
          the batteries in the Chouf that way in 1983-84 - and simply does not
          displace. */
       if (u.cat === "naval") continue;
+      /* nor a gun on a workshop's berth (FALLBACK): the hop would take it
+         out of the bubble it drove back to */
+      if (u._fb) continue;
       u._salvos = u._salvos || 0;
       const firing = (u.order.type === "bombard" ||
                       (u.order.type === "attack" && u.cooldowns.some(c => c > 0)));
@@ -8980,8 +9040,9 @@ function makeCommander() {
       u.def.weapons.length && !u.def.supply && !u.def.repairRate &&
       u.def.role !== "minesweeper" && u.def.role !== "navminelayer" &&
       navalWave.indexOf(u) < 0 &&
-      /* the hull detailed as eyes (seaScout) is not a bombardment hull */
-      !u._scout);
+      /* the hull detailed as eyes (seaScout) is not a bombardment hull,
+         and one stepped out of the line to be mended (FALLBACK) is not yet */
+      !u._scout && !u._fb);
     /* ---- when the bombardment group goes ----
        The thirty-percent roll is kept, and G.rng() is drawn on exactly the
        ticks it always was, so the seeded stream the replay depends on does
@@ -9429,7 +9490,7 @@ function makeCommander() {
       /* escort: any idle warships come along, to the escort station */
       const es = amphib.station || { x: b.seaX, y: b.seaY };
       for (const s2 of P.units) {
-        if (s2.dead || s2.layer !== "sea" || s2.def.amphib || !s2.def.weapons.length || s2._scout) continue;
+        if (s2.dead || s2.layer !== "sea" || s2.def.amphib || !s2.def.weapons.length || s2._scout || s2._fb) continue;
         if (s2.order.type === "idle")
           s2.give({ type: "attackmove", x: es.x, y: es.y });
       }
@@ -9708,7 +9769,7 @@ function makeCommander() {
     /* the guns that are NOT in the wave help too - there is no reason to keep
        a battery at home while the road is being opened */
     for (const u of P.units) {
-      if (u.dead || attackWave.indexOf(u) >= 0) continue;
+      if (u.dead || u._fb || attackWave.indexOf(u) >= 0) continue;      // _fb: being mended
       if (!(u.isIndirect && u.isIndirect()) || u.def.role === "tel") continue;
       if (u.order.type === "idle" || u.order.type === "guard")
         u.give({ type: "bombard", x: spot.x, y: spot.y, until: now + 30 });
@@ -10890,7 +10951,10 @@ function makeCommander() {
          so that no caller - launchGroundWave, defendBase, startAmphib - can
          hand it a second order: every one of them reads this list and no
          other. raidParty is at most four long. */
-      (!raidParty.length || raidParty.indexOf(u) < 0));
+      (!raidParty.length || raidParty.indexOf(u) < 0) &&
+      /* nor is a hull stepped out of the line to be mended (FALLBACK): it
+         rejoins its wave, or this list, when it is mended */
+      !u._fb);
   }
 
   /* ---- the plot, priced ----
@@ -11209,6 +11273,515 @@ function makeCommander() {
         u.give({ type: near ? "attackmove" : "move", x: s.x, y: s.y });
       } else if (near && o === "move") {
         u.give({ type: "attackmove", x: s.x, y: s.y });
+      }
+    }
+  }
+
+  /* ================= FALLBACK: one hull out of the line ==================
+     withdrawWave() pulls a WHOLE wave out once it is beaten. Nothing pulled
+     out the ONE hull that was about to die, and in this engine a hull at a
+     sliver of its bar in the front line is the most wanted thing on the
+     field: Unit.acquire() prefers the wounded (targetPrio, "finish what is
+     already dying"), so every shooter in reach converges on it without a
+     word passing between them. Measured with a probe on the wave lists, four
+     commander-against-commander battles of 900 s (fulda e80 and e20, korea
+     e20, hormuz e20): of the wave members whose bar was ever sampled under
+     0.35, 96 to 100% died - median 3-4 s later ashore, 11 s afloat - and of
+     those under 0.5, 97 to 99%. A wave here fights to its last hull; there
+     is no "the fight ended and the survivors limped home".
+
+     So a vehicle, squad or hull under the leave line steps out to the
+     nearest thing that can mend it, is mended, and comes back:
+       - a recovery vehicle (repairNearby: 2.2 tiles, 26 hp/s) for a
+         vehicle, a tender (30 hp/s) for a ship, a medic (healNearby, 14
+         hp/s) for a squad - one with the wave, within FB_MOBILE_R tiles and
+         with a berth free in its bubble (FB_BERTHS: wantRecovery's "about
+         three hulls");
+       - the service depot or the naval yard (5% of the bar a second, 0.12
+         credits a hit point), when the trip is worth making.
+     A squad has nothing else - no building mends a rifleman - and the
+     commander buys no medics, so in a battle between two commanders the
+     squads, 85 to 95% of every measured wave, have no source and stay.
+
+     WHEN. Under fbLeave() - 0.15 + 0.20 * micro: 0.23 at Regular, 0.35 at
+     Commander and Warlord, and 0.15 higher afloat (FB_SEA, below) - and
+     only in or near contact: hit inside the
+     last FB_CONTACT_S seconds (its own bar, which this side reads exactly),
+     or standing where the picture puts fire (fbHeat: emplacements on the
+     plot and contacts seen inside half a minute, never a unit unseen). A
+     hull that is damaged and quiet stays in the line: driveRecovery already
+     pulls the workshop towards the damaged, five to one, and nothing is
+     shooting at it yet.
+
+     WORTH IT. What is at stake is the hull's price, because a hull under
+     the line in contact is a hull that dies (above). What the trip costs is
+     the hull out of the line, and a hull is bought to fight wave cycles, so
+     its rent is its price over D.waveTime a second. Both sides are the same
+     price and it cancels: the trip and the mending must fit inside one wave
+     cycle. A depot 80 tiles off is 59 s of road to an Abrams at 1.55 tiles
+     a second (straight line * 1.15) and 10 s on the pad - inside
+     Commander's 95, outside Warlord's 75. Two exceptions read the picture,
+     and so wait for D.read 0.55 as driveRecovery does:
+       - its target is about to die: what it is shooting at would be dead
+         inside FB_FINISH seconds of its own fire (reachDps, the published
+         rate the concentration prices with). A kill takes a gun off the
+         other side; it fires first and is asked again a moment later.
+       - it would not live to get out: its own bar is falling fast enough to
+         kill it in under half the time it needs to get out of reach, and
+         it has something in reach to hurt. A hull that dies on the road
+         gives nothing; one that dies shooting may take something with it.
+         With nothing in reach it runs anyway - staying buys nothing.
+
+     WHERE. A workshop with the wave stands where the damage is, which is in
+     the fight, and 26 hit points a second does not save a hull that is
+     losing several hundred. So the workshop and the hull MEET: where the
+     workshop is if the picture puts no fire there, otherwise the first
+     quiet point back towards home, two tiles at a time up to sixteen
+     (three up to twenty-one afloat; fbMeet). "Quiet" is out of the reach
+     of every contact on the plot, not merely away from it: the first cut
+     faded a contact linearly to nothing at nine tiles, so a tank written
+     down at eight - inside its own gun's 8.2 - counted a ninth of a tank
+     and the workshop's spot read quiet. Traced on fulda e80: six hulls in a
+     row stepped back to a workshop two to seven tiles off and were dead
+     inside seven seconds, under enemy tanks at six to nine tiles and
+     gunships (aircraft are not on this picture at all: no point a tank can
+     drive to in a few seconds is out of a gunship's reach). The workshop
+     holds there (_fbAt, which driveRecovery and driveTender honour) while
+     it has clients and rejoins the wave after. The road out is read off the same
+     picture (fbExit): the straight leg and the bearings off it, one exit's
+     length out, and a dog-leg only when it saves real fire (FB_QUIET) for
+     the extra ground.
+
+     NO OSCILLATION. Out under fbLeave(), back over FB_REJOIN (0.85): more
+     than half a bar between them. A hull that was refused is not asked
+     again for a few seconds (_fbNo), one that has come back cannot leave
+     again for eight, and a hull is never re-routed more than once in two
+     seconds. All of it runs on its own clock in update() - half a think,
+     never under half a second, the raid driver's - because think() returns
+     early on purchase ticks and a hull at a sliver has seconds, not a quiet
+     factory. COST: one comparison per wave member per pass; the picture is
+     read only for a hull already under the line.
+
+     BACK. Mended, it rejoins its wave if the wave is still out and within
+     FB_MOBILE_R; otherwise it goes to the pool at home, where the next wave
+     forms. While it is away it is out of attackWave and navalWave, so the
+     wave drivers, the concentration and the recall leave it alone, and out
+     of groundArmy() like a raider, so no other caller hands it a second
+     order. A death on the way goes on the casualty return, and on the
+     wave's book (fbBookIn), like any other wave casualty.
+
+     MEASURED, commander against commander on the scorecard's 48 battles
+     (fulda, korea, hormuz x e80, e20 x 8 seeds, tools/jsc/scorecard.py
+     --off fallback): it fires 2.7 times a battle - 0.5 on fulda e20, 2.5
+     to 3.9 on the other land cells, 2.6 and 4.2 on hormuz - and not once in
+     19 of the 48, which are therefore bit-for-bit the same battle with it
+     on or off (the match is deterministic). The A/B came out net exchange
+     B-A -0.069 [-0.227, +0.089], inside the noise floor, with the land
+     cells on B's side - but those cells' sign is carried by the battles in
+     which it never fired: fulda e20 reads +0.10 with half an outing a
+     battle. Paired instead against the same 29 seeds it fired in, rerun
+     with it off on both sides, it is worth +0.084 [-0.010, +0.177] of net
+     exchange over all 48: +0.20 [-0.04, +0.44] at sea, where it gained in
+     10 of the 11 battles it fired in and A lost 11,600 credits a battle
+     less, and +0.02 [-0.05, +0.09] ashore, nine better and nine worse.
+     The difference is the road. A hull at the sea line (0.5) had a median
+     22 s left and clears a Harpoon's 14 tiles in about five at 2.6 tiles a
+     second; a vehicle at 0.35 had about 6 s and needs about as long to
+     clear a tank gun's 8.2 at 1.3, so ashore most of them die on the way
+     (on the three land cells where it fires much, 1.2 to 2.9 lost a battle
+     against 0.6 to 0.8 mended). They were dying where they stood anyway, so
+     it costs nothing measurable ashore; it simply saves little there. It is
+     left on for both: ashore it is the same decision a crew would take, and
+     a hull that does get back is a whole tank. (All of this was measured
+     before review made a death on the road count on the wave's book -
+     fbBookIn, below - which moves the land cells, where most of those
+     deaths are, and not the fleets, which keep no book.)
+
+     The commander's own units only - nothing here reads or orders anybody
+     else's. Recruit (micro 0.2) does not do it at all. The A/B switch is
+     P.aiOff "fallback" (tools/jsc/scorecard.py --off fallback). */
+  const FB_REJOIN = 0.85;        // back to the line at this share of the bar
+  const FB_MOBILE_R = 30;        // tiles: a workshop or medic further off is not with the wave
+  const FB_BERTHS = 3;           // clients one mobile workshop takes at once
+  const FB_CONTACT_S = 5;        // seconds since the last hit that still count as contact
+  const FB_QUIET = 0.3;          // known fire, in tanks (forceW), that a point may carry and be "out of it"
+  const FB_FINISH = 2.5;         // seconds of its own fire that a target it should finish may need
+  const FB_STALL = 12;           // seconds on a berth without a hit point gained, then let go
+  /* Ashore and afloat: the reach of the other side's guns and the few
+     tiles past it a contact may have moved (fbHeat), the ground a hull
+     covers to get out of it (fbExit's first leg, the `doomed` test), how
+     far back a meeting point may be pulled and in what steps, the bearings
+     a first leg may take, and how much higher the leave line sits. Afloat
+     is longer on every count. A tank gun reaches 8.2 tiles where a Mk 45
+     reaches 11.5 and a Harpoon 14, and a hull pays
+     for every degree it turns: traced on hormuz e20 with the land figures,
+     the four ships that stepped out between 0.19 and 0.35 under enemy guns
+     at 5 to 11 tiles were all sunk 3 to 8 s later, two of them having made
+     good under a tile in five seconds while they came round onto a
+     ninety-degree dog-leg. Measured before any of this, a hull under 0.5
+     had a median 22 s left and one under 0.35 had 11, so a ship goes at
+     0.5 and takes the straight road unless a small turn saves a lot. */
+  const FB_LAND = { reach: 8.5, fade: 3.5, exit: 6, back: 16, step: 2, turn: [0, 0.7, -0.7, 1.3, -1.3], over: 0 };
+  const FB_SEA = { reach: 14, fade: 4, exit: 12, back: 21, step: 3, turn: [0, 0.5, -0.5], over: 0.15 };
+  const FB_HEAT_LAND = { win: 30, reach: FB_LAND.reach * CFG.TILE },
+        FB_HEAT_SEA = { sea: true, win: 30, reach: FB_SEA.reach * CFG.TILE };
+  let fbTick = 0;
+  function fbLeave(sea) { return 0.15 + 0.20 * (D.micro || 0) + (sea ? FB_SEA.over : 0); }
+  /* Known fire at a point, in tanks: the emplacements on the plot priced
+     through FORT_DPS, as defendBase prices our own, and what has been seen
+     within reach of it in the last half-minute, the nearer the heavier.
+     Fog-honest by construction: both halves are this commander's plot and
+     nothing else - never r.ref, never a unit nobody of ours has seen. */
+  function fbHeat(x, y, sea, hs) {
+    const L = sea ? FB_SEA : FB_LAND;
+    return exposureAt(x, y, hs) / FORT_DPS +
+           foeNear(x, y, CFG.TILE * (L.reach + L.fade), sea ? FB_HEAT_SEA : FB_HEAT_LAND);
+  }
+  /* a standing point on the client's own layer, at or next to (x, y) */
+  function fbSpot(x, y, sea) {
+    const M = G.map, T = CFG.TILE, layer = sea ? "sea" : "ground";
+    const tx = U.clamp((x / T) | 0, 0, M.W - 1), ty = U.clamp((y / T) | 0, 0, M.H - 1);
+    if (GameMap.passable(M, tx, ty, layer)) return { x: (tx + 0.5) * T, y: (ty + 0.5) * T };
+    const n = Path.nearest(M, tx, ty, layer, null, 3);
+    return n ? { x: (n.x + 0.5) * T, y: (n.y + 0.5) * T } : null;
+  }
+  function fbClients(s) {
+    let n = 0;
+    for (const m of mending) if (m._fb && m._fb.src === s) n++;
+    return n;
+  }
+  /* the lowest berth index nobody at this source holds */
+  function fbSlot(s) {
+    for (let k = 0; ; k++) {
+      let used = false;
+      for (const m of mending) if (m._fb && m._fb.src === s && m._fb.k === k) { used = true; break; }
+      if (!used) return k;
+    }
+  }
+  /* What can mend this hull, and how long until it would be mended: the
+     road at its own speed plus the work. The quickest wins; a fixed site
+     whose total runs past a wave cycle is "far" (see WORTH IT). */
+  function fbSource(u, sea, inf) {
+    const T = CFG.TILE, spd = Math.max(0.3, u.def.speed || 1) * T;
+    const need = Math.max(0, FB_REJOIN - u.hp / u.maxHp), cycle = D.waveTime || 150;
+    let best = null, bt = Infinity, far = false;
+    for (const s of P.units) {
+      if (s.dead || s.carried || s === u) continue;
+      const rate = inf ? s.def.heal : s.def.repairRate;
+      if (!rate) continue;
+      if (sea ? (s.layer !== "sea" && s.layer !== "sub") : s.layer !== "ground") continue;
+      const d = U.dist(u.x, u.y, s.x, s.y);
+      if (d > FB_MOBILE_R * T || fbClients(s) >= FB_BERTHS) continue;
+      const t = d / spd + need * u.maxHp / rate;
+      if (t > cycle) { far = true; continue; }
+      if (t < bt) { bt = t; best = { ent: s, kind: inf ? "medic" : sea ? "tender" : "arv", mobile: true, d }; }
+    }
+    if (!inf) {
+      const b = G.nearestBuilding(P, sea ? "navalyard" : "depot", u.x, u.y);
+      if (b) {
+        const d = U.dist(u.x, u.y, b.x, b.y) * 1.15;      // a road is not a straight line
+        const t = d / spd + need / 0.05;
+        if (t > cycle) far = true;
+        else if (t < bt) { bt = t; best = { ent: b, kind: sea ? "yard" : "depot", mobile: false, d }; }
+      }
+    }
+    return best || (far ? "far" : null);
+  }
+  /* Where a workshop meets its client: where it stands, if the picture puts
+     no fire there; else the first quiet point back towards home (or, afloat,
+     the yard), a step at a time; else the least hot of them. Below D.read
+     0.55 it is simply where the workshop stands. */
+  function fbMeet(s, sea) {
+    const T = CFG.TILE;
+    if ((D.read || 0) < 0.55 || fbHeat(s.x, s.y, sea, 1) < FB_QUIET) return { x: s.x, y: s.y };
+    engStat.fb.hot++;
+    const yard = sea ? G.nearestBuilding(P, "navalyard", P.homeX, P.homeY) : null;
+    const hx = yard ? yard.x : P.homeX, hy = yard ? yard.y : P.homeY;
+    const dh = U.dist(s.x, s.y, hx, hy) || 1;
+    let best = null, bh = Infinity;
+    const L = sea ? FB_SEA : FB_LAND;
+    for (let k = L.step; k <= L.back && k * T <= dh; k += L.step) {
+      const p = fbSpot(s.x + (hx - s.x) / dh * k * T, s.y + (hy - s.y) / dh * k * T, sea);
+      if (!p) continue;
+      const h = fbHeat(p.x, p.y, sea, 1);
+      if (h < FB_QUIET) return p;
+      if (h < bh) { bh = h; best = p; }
+    }
+    return best || { x: s.x, y: s.y };
+  }
+  /* The first leg out: the straight one, or a bearing off it that carries
+     at least FB_QUIET less known fire over its length once the extra ground
+     is paid for (a twentieth of a tank a tile). null: go straight. */
+  function fbExit(u, to, sea, hs) {
+    const T = CFG.TILE, d = U.dist(u.x, u.y, to.x, to.y);
+    if (d < T * 3) return null;
+    const lay = sea ? FB_SEA : FB_LAND;
+    const L = Math.min(lay.exit * T, d * 0.6), b0 = Math.atan2(to.y - u.y, to.x - u.x);
+    let best = null, bs = Infinity, direct = Infinity;
+    for (const da of lay.turn) {
+      const e = fbSpot(u.x + Math.cos(b0 + da) * L, u.y + Math.sin(b0 + da) * L, sea);
+      if (!e) continue;
+      let h = 0;
+      for (let k = 1; k <= 3; k++) h += fbHeat(u.x + (e.x - u.x) * k / 3, u.y + (e.y - u.y) * k / 3, sea, hs);
+      const sc = h + 0.05 * (L + U.dist(e.x, e.y, to.x, to.y) - d) / T;
+      if (da === 0) direct = sc;
+      if (sc < bs) { bs = sc; best = da === 0 ? null : e; }
+    }
+    return best && direct - bs >= FB_QUIET ? best : null;
+  }
+  /* where the client is to stand: a berth on the workshop once it is on
+     its meeting point (padBerth's first rows sit inside its 2.2 tiles),
+     on the meeting point until then; a berth on the depot's pad; the yard
+     itself for a ship, which stops at the water nearest it */
+  function fbBerth(f) {
+    const s = f.src, T = CFG.TILE;
+    if (f.kind === "yard") return { x: s.x, y: s.y };
+    if (!f.mobile) return padBerth(s, f.k, true);
+    const at = s._fbAt || s;
+    return padBerth(U.dist(s.x, s.y, at.x, at.y) < T * 2 ? s : at, f.k, true);
+  }
+  function fbReach(f) { return CFG.TILE * (f.kind === "yard" ? 4.6 : f.kind === "depot" ? 2.4 : 2.2); }
+  /* `until` is the road's allowance: the longer of the way to the workshop
+     and the way to its berth, which on a meeting point fbMeet has pulled
+     back is up to sixteen tiles (twenty-one afloat) further than the
+     workshop itself */
+  function fbPoint(u, f, src, now) {
+    f.src = src.ent; f.kind = src.kind; f.mobile = src.mobile; f.k = fbSlot(src.ent);
+    f.inT = 0; f.reT = now + 2;
+    if (src.mobile && !src.ent._fbAt) src.ent._fbAt = fbMeet(src.ent, f.sea);
+    const to = fbBerth(f);
+    f.until = now + Math.max(src.d, U.dist(u.x, u.y, to.x, to.y)) /
+                    (Math.max(0.3, u.def.speed || 1) * CFG.TILE) * 1.6 + 15;
+  }
+  /* ---- the book follows the hull ----
+     waveSpent() is the hit points still in attackWave against what the wave
+     was booked with, and over 0.55 reviewAim() breaks the whole wave off and
+     writes its objective off for a wave cycle. A hull that steps out takes
+     its hit points out of the numerator and leaves them in the book, so it
+     read as a LOSS - the very thing runAmphib and the staging hold re-book
+     for ("or waveSpent() reads the released hulls as losses"). And on land
+     it is the vehicles that carry the book: a measured wave is 85-95%
+     squads at 100-200 hit points against a tank's 1,100-1,700, so one tank
+     stepping out at 0.35 read as four or five hundredths of the wave lost.
+     Traced on fulda e80, one took waveSpent from 0.521 to 0.562 and the
+     whole wave was broken off a second later, and two of that battle's
+     five withdrawals came within two seconds of a hull stepping out. (The
+     fleets keep no book, so none of this ever touched them.) Re-booking
+     from scratch would forget what the wave HAS lost, so the book is scaled
+     instead: the hull takes its share of the book with it when it leaves -
+     the book times its share of the hit points still in the wave, so
+     waveSpent() reads exactly what it read the moment before - and brings
+     THAT SAME share back when it rejoins or dies. The trip as a whole then
+     moves waveSpent() exactly as the same wounds, mending or death would
+     have moved it in the line. The first cut brought back a fresh share,
+     worked out to keep the reading level again, and so brought nothing back
+     for a hull that died on the road - which ashore is most of them: 58 of
+     the 131 that stepped out on the scorecard's 48 battles died away from
+     the line, 47 of them on fulda and korea. In fallback_check [10] a tank
+     that left a four-tank wave at 0.25 and was killed on the way left it
+     reading 0.186 spent, where the same death in the line reads 0.250, so
+     the break-off those losses should bring came late or not at all. A
+     book written since the hull left - a new launch, the staging hold's
+     re-book - never held it: it joins that one scaled in, level, and its
+     death is no loss of that wave's. */
+  function fbBookOut(u, f) {
+    if (!waveBook || waveBook.hp <= 0) return;
+    let hp = 0;
+    for (const w of attackWave) if (!w.dead) hp += w.hp;
+    if (hp <= 0) return;
+    f.share = waveBook.hp * Math.min(1, u.hp / hp);
+    waveBook.hp -= f.share;
+    f.book = waveBook;
+  }
+  function fbBookIn(u, f) {
+    const b = f.book;
+    f.book = null;
+    if (!waveBook) return;
+    if (b === waveBook) { waveBook.hp += f.share; return; }
+    if (u.dead || waveBook.hp <= 0) return;
+    let hp = 0;
+    for (const w of attackWave) if (!w.dead) hp += w.hp;
+    if (hp > 0) waveBook.hp *= (hp + u.hp) / hp;
+  }
+  function fbStart(u, sea, src, now) {
+    const wave = sea ? navalWave : attackWave, i = wave.indexOf(u);
+    const f = u._fb = { sea, t0: now, wp: null, book: null, share: 0 };
+    if (!sea && i >= 0) fbBookOut(u, f);
+    if (i >= 0) wave.splice(i, 1);
+    u.flankTo = null; u._goAt = 0;
+    mending.push(u);
+    fbPoint(u, f, src, now);
+    const to = fbBerth(f);
+    const hs = u.armor === "heavy" || u.armor === "light" ? 1 : 0;
+    f.wp = (D.read || 0) >= 0.55 ? fbExit(u, to, sea, hs) : null;
+    if (f.wp) {
+      u.give({ type: "move", x: f.wp.x, y: f.wp.y });
+      u.give({ type: "move", x: to.x, y: to.y }, true);
+      engStat.fb.route++;
+    } else u.give({ type: "move", x: to.x, y: to.y });
+    engStat.fb.out++; engStat.fb[src.kind]++;
+  }
+  /* Off the berth: back to the wave if it is out and near, or to the pool.
+     `healed` false (no road, a source that stopped mending) goes to the pool
+     whatever: a hull still under the line is not sent back into the fight. */
+  function fbRelease(u, i, healed) {
+    const f = u._fb, T = CFG.TILE;
+    mending.splice(i, 1);
+    u._fb = null; u._fbNo = G.time + 8;
+    if (f && f.mobile && f.src && !fbClients(f.src)) f.src._fbAt = null;
+    if (f && !f.sea && u.dead) fbBookIn(u, f);       // a death on the road is the wave's loss
+    if (u.dead || !f) return;
+    const wave = f.sea ? navalWave : attackWave;
+    if (healed && wave.length && (f.sea || groundConnected)) {
+      let cx = 0, cy = 0, n = 0;
+      for (const w of wave) if (!w.dead) { cx += w.x; cy += w.y; n++; }
+      if (n && U.dist(u.x, u.y, cx / n, cy / n) <= FB_MOBILE_R * T) {
+        if (!f.sea) fbBookIn(u, f);
+        wave.push(u);
+        u.give({ type: "attackmove", x: cx / n, y: cy / n });
+        engStat.fb.back++;
+        return;
+      }
+    }
+    engStat.fb.pool++;
+    const shed = f.sea ? G.nearestBuilding(P, "navalyard", P.homeX, P.homeY)
+                       : (G.nearestBuilding(P, "depot", P.homeX, P.homeY) ||
+                          G.nearestBuilding(P, "factory", P.homeX, P.homeY));
+    const c = shed ? { x: shed.x, y: shed.y + (f.sea ? 0 : 2 * T) } : { x: P.homeX, y: P.homeY };
+    if (U.dist(u.x, u.y, c.x, c.y) > 16 * T)
+      u.give({ type: f.sea ? "move" : "attackmove", x: c.x, y: c.y });
+    else if (u.order.type === "move") u.give({ type: "idle" });
+  }
+  /* the hulls already out, once a pass */
+  function steerMending(now) {
+    const T = CFG.TILE;
+    for (let i = mending.length - 1; i >= 0; i--) {
+      const u = mending[i], f = u._fb;
+      if (!f) { mending.splice(i, 1); continue; }
+      if (u.dead) {
+        if (!u._graved) { u._graved = 1; noteGrave(u); }
+        engStat.fb.lost++;
+        fbRelease(u, i, false);
+        continue;
+      }
+      /* mended is asked first: a hull that reached the line on the pass its
+         workshop died is mended, and goes back to its wave */
+      if (u.hp >= u.maxHp * FB_REJOIN) { engStat.fb.mended++; fbRelease(u, i, true); continue; }
+      /* a depot or a yard an engineer has taken is not dead, and mends
+         only its new owner's hulls */
+      if (!f.src || f.src.dead || f.src.carried || f.src.owner !== P) {
+        if (f.mobile && f.src) f.src._fbAt = null;
+        f.src = null;
+        const n = fbSource(u, f.sea, u.cat === "infantry");
+        /* nothing else can take it: let go short of the line, and counted
+           so - out = mended + lost + giveUp + now */
+        if (!n || n === "far") { engStat.fb.giveUp++; fbRelease(u, i, false); continue; }
+        fbPoint(u, f, n, now);
+        f.wp = null; f.reT = 0;
+        engStat.fb.resrc++;
+      }
+      const s = f.src;
+      /* the workshop is walked to the meeting point here as well as in
+         driveRecovery, which only runs on a think that bought nothing */
+      if (f.mobile && s._fbAt && U.dist(s.x, s.y, s._fbAt.x, s._fbAt.y) > T * 1.4 &&
+          !(s.order.type === "move" && U.dist(s.order.x, s.order.y, s._fbAt.x, s._fbAt.y) < T))
+        s.give({ type: "move", x: s._fbAt.x, y: s._fbAt.y });
+      const to = fbBerth(f);
+      if (U.dist(u.x, u.y, s.x, s.y) <= fbReach(f)) {
+        /* on the berth: mending, unless nothing has been gained for a while
+           (a depot with an empty bank, a tender that wandered) */
+        if (!f.inT) { f.inT = now; f.hpT = now; f.hp = u.hp; }
+        /* The road's allowance is spent by now on a workshop's berth - 26
+           hit points a second takes 20 to 40 s over a tank's half bar - so
+           without this a hull dragged off it (the engagement an idle hull
+           picks up, a shove) was let go at once, half-mended, instead of
+           being put back - in fallback_check [10], sent home at 0.42 twenty
+           seconds into its mending. Off the berth it has FB_STALL seconds
+           to return. */
+        f.until = Math.max(f.until, now + FB_STALL);
+        if (u.hp > f.hp + 1) { f.hp = u.hp; f.hpT = now; }
+        else if (now - f.hpT > FB_STALL) { engStat.fb.giveUp++; fbRelease(u, i, false); }
+        continue;
+      }
+      if (now > f.until) { engStat.fb.giveUp++; fbRelease(u, i, false); continue; }
+      if (u.routT > 0 || (f.reT || 0) > now) continue;
+      /* Off the berth: still on its road, or re-sent. stalledOnMove drops an
+         AI move after ten seconds without headway, an engagement it picked
+         up on the berth can drag it off, and a workshop that moved moves the
+         berth. */
+      const o = u.order;
+      if (o.type === "move" && ((f.wp && o.x === f.wp.x && o.y === f.wp.y) ||
+                                U.dist(o.x, o.y, to.x, to.y) < T * 1.2)) continue;
+      f.reT = now + 2; f.wp = null;
+      u.give({ type: "move", x: to.x, y: to.y });
+    }
+  }
+  /* What this side owns that can mend anything, asked once a pass and only
+     when somebody is under the line. A squad with no medic anywhere, or a
+     hull with no tender and no yard, is not a decision and is not counted. */
+  function fbCan() {
+    const c = { inf: false, veh: false, sea: false };
+    for (const s of P.units) {
+      if (s.dead || s.carried) continue;
+      if (s.def.heal) c.inf = true;
+      else if (s.def.repairRate) { if (s.layer === "ground") c.veh = true; else c.sea = true; }
+    }
+    if (!c.veh) c.veh = !!G.nearestBuilding(P, "depot", P.homeX, P.homeY);
+    if (!c.sea) c.sea = !!G.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
+    return c;
+  }
+  /* is this wave member to step out now */
+  function fbConsider(u, sea, now, can) {
+    const inf = u.cat === "infantry", read = D.read || 0;
+    if (!(inf ? can.inf : sea ? can.sea : can.veh)) return;
+    const hs = u.armor === "heavy" || u.armor === "light" ? 1 : 0;
+    const hit = u.lastHitAt !== undefined && now - u.lastHitAt < FB_CONTACT_S;
+    if (!hit && (read < 0.35 || fbHeat(u.x, u.y, sea, hs) < FB_QUIET)) {
+      engStat.fb.calm++; u._fbNo = now + 2; return;
+    }
+    const src = fbSource(u, sea, inf);
+    if (!src || src === "far") {
+      if (src) engStat.fb.far++; else engStat.fb.noSrc++;
+      u._fbNo = now + 6; return;
+    }
+    if (read >= 0.55) {
+      /* The target is read through the concentration's gate (trackedEntity,
+         seen inside PEEK) before its bar is: an attack order outlives the
+         sighting it was given on - a gun firing over somebody else's eyes,
+         a contact that has just gone into the fog - and what is left of a
+         target nobody of ours can see is not this commander's to know. */
+      const t0 = u.order.type === "attack" ? u.order.target : null;
+      const rec = t0 ? seenU.get(t0.id) : null;
+      const t = rec && trackedEntity(rec) === t0 && now - rec.t <= PEEK ? t0 : null;
+      const dps = t && t.kind === "unit" ? reachDps(u, t) : 0;
+      if (dps > 0 && t.hp / dps < FB_FINISH) { engStat.fb.finish++; u._fbNo = now + 1.5; return; }
+      const s = u._fbS;
+      const inc = Math.max(s.rate, now - s.t >= 0.5 ? Math.max(0, s.hp - u.hp) / (now - s.t) : 0);
+      const out = Math.min((sea ? FB_SEA : FB_LAND).exit, src.d / CFG.TILE) / Math.max(0.3, u.def.speed || 1);
+      if (dps > 0 && inc > 0 && u.hp / inc < out * 0.5) { engStat.fb.doomed++; u._fbNo = now + 3; return; }
+    }
+    fbStart(u, sea, src, now);
+  }
+  /* One pass: steer the hulls already out, then look down both waves. A
+     member above the line costs one comparison and the trend sample below -
+     its own bar on our own clock, the one thing about a fight a side knows
+     exactly, kept so `doomed` has a rate to read the moment it is asked. */
+  function driveFallback() {
+    if ((D.micro || 0) < 0.3 || (P.aiOff && P.aiOff.has("fallback"))) return;
+    const now = G.time;
+    if (mending.length) steerMending(now);
+    let can = null;
+    for (let w = 0; w < 2; w++) {
+      const wave = w ? navalWave : attackWave, leave = fbLeave(w === 1);
+      if (!w && !groundConnected) continue;
+      for (let i = wave.length - 1; i >= 0; i--) {
+        const u = wave[i];
+        if (!u || u.dead || u._fb || u.carried || u.garrisonIn || u.layer === "air") continue;
+        let s = u._fbS;
+        if (!s) s = u._fbS = { t: now, hp: u.hp, rate: 0 };
+        else if (now - s.t >= 2.5) { s.rate = Math.max(0, s.hp - u.hp) / (now - s.t); s.t = now; s.hp = u.hp; }
+        if (u.hp > u.maxHp * leave || (u._fbNo || 0) > now || u.routT > 0) continue;
+        fbConsider(u, w === 1, now, can || (can = fbCan()));
       }
     }
   }
@@ -12767,6 +13340,7 @@ function makeCommander() {
     for (const u of P.units) {
       if (u.dead || u.cat !== "naval" || u.layer !== "sea") continue;
       if (u._scout === "sea") { cur = u; continue; }
+      if (u._fb) continue;                       // out of the line being mended (FALLBACK)
       const d = u.def;
       if (!d.weapons.length || d.amphib || d.supply || d.repairRate || d.carrier) continue;
       if (d.role === "minesweeper" || d.role === "navminelayer") continue;
@@ -13413,7 +13987,7 @@ function makeCommander() {
       const dm = dat[dat.length - 1];
       let best = null, bd = Infinity;
       for (const u of P.units) {
-        if (u.dead || !u.def.sonar || u._scout) continue;
+        if (u.dead || !u.def.sonar || u._scout || u._fb) continue;
         if (u.order.type !== "idle" && u.order.type !== "guard") continue;
         const dd = U.dist2(u.x, u.y, dm.x, dm.y);
         if (dd < bd) { bd = dd; best = u; }
@@ -13423,7 +13997,8 @@ function makeCommander() {
 
     const dS = dossier[rival ? rival.idx : -1];
     if (!dS || !dS.sawSub) return;
-    const boats = P.units.filter(u => !u.dead && u.netMax > 0 && u.net > 0 &&
+    /* not a boat on a berth being mended (FALLBACK): idle there is not idle */
+    const boats = P.units.filter(u => !u.dead && u.netMax > 0 && u.net > 0 && !u._fb &&
                                  (u.order.type === "idle" || u.order.type === "guard"));
     if (!boats.length) return;
 
@@ -13947,6 +14522,12 @@ function makeCommander() {
       const r = seenU.get(id) || seenB.get(id);
       return r ? { x: r.x, y: r.y, t: r.t } : null;
     },
+    /* The live wave lists, for a test that has to stand a unit in one
+       (tools/jsc/fallback_check.js) or a census that has to tell a wave
+       member from a hull at home. The arrays themselves, not copies: reapWave
+       replaces attackWave every think, so ask again rather than hold one.
+       book() books a wave stood up by hand, as a launch would. */
+    get waves() { return { ground: attackWave, naval: navalWave, homeward, mending, book: bookWave }; },
     intel() {
       /* the new state is exposed for the same reason `look` already is: so a
          test or a debug overlay can see whether any of this is firing */
@@ -14092,6 +14673,10 @@ function makeCommander() {
                          homeIn: homeward.length ? Math.round((homeUntil - G.time) * 10) / 10 : -1,
                          pad: engStat.pad, handed: engStat.handed,
                          dropped: engStat.dropped,
+                         /* FALLBACK (fbBook): single hulls out of the line,
+                            and `now` of them away at this moment */
+                         fallback: Object.assign({ now: mending.length,
+                                                   leave: Math.round(fbLeave(false) * 100) / 100 }, engStat.fb),
                          force: Math.round(ourForce(attackWave) * 100) / 100,
                          foeAtAim: aim ? Math.round(foeNear(aim.x, aim.y, CFG.TILE * 12) * 100) / 100 : 0 },
                /* Exposed for the reason every field around it is: a commander
@@ -14179,6 +14764,11 @@ return {
   },
   intelOf(player) {
     for (const c of commanders) if (c.player === player) return c.intel();
+    return null;
+  },
+  /* the live wave lists of a commander (see `waves`), or null */
+  wavesOf(player) {
+    for (const c of commanders) if (c.player === player) return c.waves;
     return null;
   },
   /* the card a commander would build for a role right now - read-only, for
