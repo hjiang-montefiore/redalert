@@ -242,7 +242,14 @@
 .me-msg{grid-column:1/-1;order:9;font-size:11px;line-height:1.5;color:#b6d34a;min-height:16px}
 .me-box #me-play{align-self:center}
 
-/* the deployment screen's map-editor line is styled in css/style.css (.me-line) */
+/* the deployment screen's own line about which ground the battle is on */
+.menu-box .me-arm{gap:9px;flex-wrap:wrap}
+.menu-box .me-arm #me-armed{flex:1;min-width:150px;font-size:11px;letter-spacing:.3px}
+.menu-box .me-arm .me-none{color:#6f7f6b}
+.menu-box .me-arm .me-on{color:#b6d34a}
+.menu-box .me-arm button{background:#1d2a1c;border:1px solid #4d7342;color:#cfe0c8;padding:7px 12px;
+  font:600 10.5px/1 inherit;letter-spacing:1.8px;text-transform:uppercase;cursor:pointer}
+.menu-box .me-arm button:hover{background:#2c4527;color:#eaf6df}
 
 @media (max-width:860px){
   .me-main{grid-template-columns:minmax(0,1fr)}
@@ -252,261 +259,201 @@
   .me-headright input{width:140px}
 }
 </style>
-<link rel="stylesheet" href="css/style.css?v=202610050738">
+<link rel="stylesheet" href="css/style.css?v=202610050744">
 </head>
 <body>
 
 <div id="menu" class="screen">
   <div class="menu-box">
-    <!-- THE DEPLOYMENT SCREEN. Three bands: who fights (commanders and their
-         forces), where (the battlefield) and the rules, with DEPLOY on a bar
-         that never scrolls away and says in one line what it will start.
-         Every opt-* control the old screen had is still here, with the same
-         values and defaults: tools/jsc/run.py builds its page from this file
-         and every check and the scorecard set these ids by name. What
-         changed is what is SHOWN. The skill and doctrine defaults are not a
-         second place to choose them any more - each commander row carries
-         its own - and the computer column of the forces table only opens
-         when you ask for a lopsided war. -->
-    <header class="mb-head">
-      <div class="mb-brand">
-        <h1>OPERATION <span>IRONFRONT</span></h1>
-        <p class="tag">Modern combined-arms warfare &middot; skirmish against the machine</p>
+    <h1>OPERATION <span>IRONFRONT</span></h1>
+    <p class="tag">Modern combined-arms warfare &mdash; skirmish vs. the machine &nbsp;&middot;&nbsp; build <span id="buildid">202610050744</span></p>
+    <div class="sect wide"><h2>The opposition</h2>
+      <!-- THE SLOT LIST, borrowed from Red Alert's skirmish screen: the
+           opposition is a LIST OF COMMANDERS, not a count. One row each, you
+           at the top, and the TEAM LETTER - not a menu option - is what says
+           who is allied with whom. The rows themselves are built by main.js
+           out of the rules, so a new army appears in them on its own.
+           #opt-opponents is gone from THIS page and main.js still reads it
+           when it is there: every headless harness carries its own copy of
+           this menu, frozen at the older shape, and must go on producing
+           exactly the roster it always did. -->
+      <div class="shead">
+        <span>Commander</span><span>Side</span><span>Team</span><span>Colour</span>
+        <span>Skill</span><span>Doctrine</span><span></span>
       </div>
-      <div class="mb-tools">
-        <!-- The field manual: everything the game can field, browsable before a
-             shot is fired. js/gallery.js binds this button only where it exists,
-             so a page carrying an older copy of this menu simply has no manual. -->
-        <button id="btn-gallery" type="button" title="Every machine in the game, browsable before a shot is fired">Field manual</button>
-        <span class="mb-build">Build <span id="buildid">202610050738</span></span>
+      <div id="slot-list"></div>
+      <div class="sfoot">
+        <button type="button" id="btn-slot-add">+ Add commander</button>
+        <span>Commanders sharing a team letter fight as allies. Six seats, and
+          no two commanders may take the same colour.</span>
+        <!-- filled in when every commander is on one letter, which would hand
+             you the battle on the first tick; DEPLOY is held shut until then -->
+        <span id="slot-warn" class="swarn"></span>
       </div>
-    </header>
-
-    <div class="mb-body">
-      <div class="mb-col">
-        <section class="card" aria-labelledby="h-cmd">
-          <h2 id="h-cmd">Commanders</h2>
-          <!-- THE SLOT LIST, borrowed from Red Alert's skirmish screen: the
-               opposition is a LIST OF COMMANDERS, not a count. One row each, you
-               at the top, and the TEAM LETTER - not a menu option - is what says
-               who is allied with whom. The rows themselves are built by main.js
-               out of the rules, so a new army appears in them on its own.
-               #opt-opponents is gone from THIS page and main.js still reads it
-               when it is there: every headless harness carries its own copy of
-               this menu, frozen at the older shape, and must go on producing
-               exactly the roster it always did. -->
-          <div class="shead">
-            <span>Commander</span><span>Army</span><span>Team</span><span>Colour</span>
-            <span>Skill</span><span>Doctrine</span><span></span>
-          </div>
-          <div id="slot-list"></div>
-          <div class="sfoot">
-            <button type="button" id="btn-slot-add">+ Add commander</button>
-            <span class="snote">One team letter = one alliance &middot; up to six commanders, one colour each</span>
-            <!-- filled in when every commander is on one letter, which would hand
-                 you the battle on the first tick; DEPLOY is held shut until then -->
-            <span id="slot-warn" class="swarn"></span>
-          </div>
-          <div id="fac-blurb" class="blurb"></div>
-        </section>
-
-        <!-- You against every computer commander, side by side: what each side
-             starts with and may grow into, and - for the computers only - how
-             well they play and how they fight. The computers' column follows
-             yours until you change it (main.js), so a matched war is still one
-             set of picks. A commander's own row can still give that one
-             commander a different skill or doctrine. -->
-        <section class="card" id="card-forces" aria-labelledby="h-forces">
-          <h2 id="h-forces">Forces</h2>
-          <div class="phead"><span></span><span class="me">You</span><span class="them">Computer commanders</span></div>
-          <div class="prow"><label for="opt-era">Starting era</label>
-            <div class="me"><select id="opt-era"></select></div>
-            <div class="them"><select id="opt-aera" aria-label="Computer starting era"></select></div>
-          </div>
-          <div class="prow"><label for="opt-ptech">Tech start</label>
-            <div class="me"><select id="opt-ptech">
-              <option value="1" selected>Tech I &mdash; research it yourself</option>
-              <option value="2">Tech II &mdash; MBTs &amp; aviation unlocked</option>
-              <option value="3">Tech III &mdash; everything unlocked</option>
-            </select></div>
-            <div class="them"><select id="opt-atech" aria-label="Computer tech start">
-              <option value="1" selected>Tech I</option>
-              <option value="2">Tech II</option>
-              <option value="3">Tech III</option>
-            </select></div>
-          </div>
-          <div class="prow"><label for="opt-peracap">Era ceiling</label>
-            <div class="me"><select id="opt-peracap"></select></div>
-            <div class="them"><select id="opt-aeracap" aria-label="Computer era ceiling"></select></div>
-          </div>
-          <div class="prow"><label for="opt-pcap">Tech ceiling</label>
-            <div class="me"><select id="opt-pcap">
-                <option value="1">Tech I &mdash; no research beyond the basics</option>
-                <option value="2">Tech II &mdash; no strategic weapons or stealth</option>
-                <option value="3" selected>Tech III &mdash; no ceiling</option>
-              </select></div>
-            <div class="them"><select id="opt-acap" aria-label="Computer tech ceiling">
-                <option value="1">Tech I</option>
-                <option value="2">Tech II</option>
-                <option value="3" selected>Tech III</option>
-              </select></div>
-          </div>
-          <div class="prow"><label for="opt-parms">Services</label>
-            <div class="me"><select id="opt-parms">
-                <option value="all" selected>Combined arms &mdash; everything</option>
-                <option value="noair">No air force</option>
-                <option value="nonavy">No navy</option>
-                <option value="ground">Ground war only</option>
-              </select></div>
-            <div class="them"><select id="opt-aarms" aria-label="Computer services">
-                <option value="all" selected>Combined arms &mdash; everything</option>
-                <option value="noair">No air force</option>
-                <option value="nonavy">No navy</option>
-                <option value="ground">Ground war only</option>
-              </select></div>
-          </div>
-          <div class="prow"><label for="opt-diff">Skill</label>
-            <div class="me"><span class="pnone">&mdash;</span></div>
-            <div class="them"><select id="opt-diff">
-            <option value="recruit">Recruit &mdash; digs in, rarely attacks</option>
-            <option value="regular" selected>Regular &mdash; balanced, ground-focused</option>
-            <option value="veteran">Veteran &mdash; combined arms, fields radar</option>
-            <option value="elite">Elite &mdash; fast tech, stealth &amp; silos</option>
-            <option value="commander">Commander &mdash; relentless, big economy</option>
-            <option value="warlord">Warlord &mdash; overwhelming, no mercy</option>
-          </select></div>
-          </div>
-          <div class="prow"><label for="opt-pers">Doctrine</label>
-            <div class="me"><span class="pnone">&mdash;</span></div>
-            <div class="them"><select id="opt-pers">
-            <option value="mixed" selected>Mixed &mdash; each picks its own</option>
-            <option value="balanced">Combined Arms</option>
-            <option value="turtle">Fortress &mdash; digs in, heavy defences</option>
-            <option value="rusher">Shock &mdash; early relentless attacks</option>
-            <option value="airpower">Air Doctrine &mdash; rushes airbases</option>
-            <option value="naval">Blue Water &mdash; fleet-first</option>
-            <option value="artillery">Gun Line &mdash; artillery heavy</option>
-            <option value="boomer">Industrial &mdash; booms then overwhelms</option>
-          </select></div>
-          </div>
-          <div class="prow"><label for="opt-handi">Economy</label>
-            <div class="me"><span class="pnone">&mdash;</span></div>
-            <div class="them"><select id="opt-handi">
-              <option value="0.75">Starved &mdash; 75% of what its haulers earn</option>
-              <option value="1" selected>Even &mdash; same rules as you</option>
-              <option value="1.4">Favoured &mdash; 140%</option>
-              <option value="2">Overwhelming &mdash; 200%</option>
-            </select></div>
-          </div>
-          <p class="pnote">The computer column copies yours until you change it. Every computer
-            commander plays at this skill and doctrine unless its own row says otherwise.</p>
-        </section>
+      <div class="grid2">
+      <div class="row"><label>Default doctrine</label><select id="opt-pers">
+        <option value="mixed" selected>Mixed &mdash; each picks its own</option>
+        <option value="balanced">Combined Arms</option>
+        <option value="turtle">Fortress &mdash; digs in, heavy defences</option>
+        <option value="rusher">Shock &mdash; early relentless attacks</option>
+        <option value="airpower">Air Doctrine &mdash; rushes airbases</option>
+        <option value="naval">Blue Water &mdash; fleet-first</option>
+        <option value="artillery">Gun Line &mdash; artillery heavy</option>
+        <option value="boomer">Industrial &mdash; booms then overwhelms</option>
+      </select></div>
+      <div class="row"><label>Default skill</label><select id="opt-diff">
+        <option value="recruit">Recruit &mdash; digs in, rarely attacks</option>
+        <option value="regular" selected>Regular &mdash; balanced, ground-focused</option>
+        <option value="veteran">Veteran &mdash; combined arms, fields radar</option>
+        <option value="elite">Elite &mdash; fast tech, stealth &amp; silos</option>
+        <option value="commander">Commander &mdash; relentless, big economy</option>
+        <option value="warlord">Warlord &mdash; overwhelming, no mercy</option>
+      </select></div>
+      <div class="row"><label>AI economy</label><select id="opt-handi">
+        <option value="0.75">Starved &mdash; 75% of what its haulers earn</option>
+        <option value="1" selected>Even &mdash; same rules as you</option>
+        <option value="1.4">Favoured &mdash; 140%</option>
+        <option value="2">Overwhelming &mdash; 200%</option>
+      </select></div>
       </div>
-
-      <div class="mb-col">
-        <section class="card" aria-labelledby="h-ground">
-          <h2 id="h-ground">Battlefield</h2>
-          <div class="row"><label for="opt-map">Theatre</label><select id="opt-map">
-            <option value="plains">Open Plains &mdash; armour country</option>
-            <option value="river" selected>River Valley &mdash; chokepoints</option>
-            <option value="highland">Highlands &mdash; elevation warfare</option>
-          </select></div>
-          <div id="th-blurb" class="blurb th"></div>
-          <div class="grid2">
-            <div class="row"><label for="opt-mapsize">Size</label><select id="opt-mapsize">
-              <option value="144" selected>Standard &mdash; 144&times;144, bases ~90 tiles apart</option>
-              <option value="192">Large &mdash; 192&times;192, room to manoeuvre</option>
-              <option value="240">Huge &mdash; 240&times;240, long approaches</option>
-              <option value="288">Vast &mdash; 288&times;288, aircraft need tankers</option>
-            </select></div>
-            <div class="row"><label for="opt-startpos">Your position</label><select id="opt-startpos"><option value="-1" selected>Random</option></select></div>
-            <div class="row"><label for="opt-weather">Weather</label><select id="opt-weather">
-              <option value="clear" selected>Clear &mdash; no visibility penalty</option>
-              <option value="dynamic">Dynamic &mdash; rolls through the battle</option>
-              <option value="overcast">Overcast</option>
-              <option value="rain">Rain squalls</option>
-              <option value="night">Night &mdash; thermal sights decide it</option>
-              <option value="sandstorm">Sandstorm &mdash; near-blind without thermals</option>
-            </select></div>
-            <div class="row"><label for="opt-seed">Map seed</label><input id="opt-seed" type="text" value="" placeholder="random" autocomplete="off" spellcheck="false"></div>
-            <div class="row"><label for="opt-fog">Fog of war</label><select id="opt-fog"><option value="1" selected>On</option><option value="0">Off</option></select></div>
-            <div class="row"><label for="opt-res">Ore</label><select id="opt-res">
-              <option value="0.6">Sparse &mdash; every field contested</option>
-              <option value="1" selected>Standard</option>
-              <option value="1.6">Abundant &mdash; long, big battles</option>
-            </select></div>
-          </div>
-          <div class="row me-arm"><label>Ground</label>
-            <div class="me-line">
-              <span id="me-armed" class="me-none">none &mdash; the generator draws the ground</span>
-              <button type="button" id="btn-editor">Map editor</button>
-              <button type="button" id="btn-unarm" class="hidden">Use generated</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="card" aria-labelledby="h-rules">
-          <h2 id="h-rules">Rules</h2>
-          <div class="grid2">
-            <div class="row"><label for="opt-cash">Starting funds</label><select id="opt-cash">
-              <option value="5000">Light &mdash; $5,000</option>
-              <option value="10000" selected>Standard &mdash; $10,000</option>
-              <option value="20000">Heavy &mdash; $20,000</option>
-            </select></div>
-            <div class="row"><label for="opt-super">Strategic weapons</label><select id="opt-super">
-              <option value="1" selected>Enabled &mdash; missile &amp; nuclear silos</option>
-              <option value="0">Disabled &mdash; conventional war</option>
-            </select></div>
-          </div>
-        </section>
-
-        <!-- how this machine shows and plays the battle, not the battle itself:
-             remembered between visits (main.js / js/announcer.js) and the
-             sound switches are on the pause menu too, so they fold away -->
-        <details class="card mb-prefs">
-          <summary>Display and sound</summary>
-          <div class="grid2">
-            <div class="row"><label for="opt-3d">Renderer</label><select id="opt-3d"><option value="1" selected>3D &mdash; WebGL battlefield</option><option value="0">Classic &mdash; 2.5D</option></select></div>
-            <div class="row"><label for="opt-pan">Camera pan</label><select id="opt-pan">
-              <option value="follow" selected>Map follows the mouse</option>
-              <option value="push">Classic edge scroll (inverted)</option>
-            </select></div>
-            <!-- the sound switches; js/announcer.js keeps them, main.js applies them -->
-            <div class="row"><label for="opt-sound">Sound</label><select id="opt-sound">
-              <option value="1" selected>On &mdash; full volume</option>
-              <option value="0.6">On &mdash; quieter</option>
-              <option value="0.3">On &mdash; quiet</option>
-              <option value="0">Off</option>
-            </select></div>
-            <div class="row"><label for="opt-voices">Unit voices</label><select id="opt-voices">
-              <option value="1" selected>On &mdash; crews answer</option>
-              <option value="0">Off</option>
-            </select></div>
-            <div class="row"><label for="opt-announcer">Announcer</label><select id="opt-announcer">
-              <option value="1" selected>On &mdash; the base speaks</option>
-              <option value="0">Off</option>
-            </select></div>
-          </div>
-        </details>
+    </div>
+    <div class="sect wide"><h2>Order of battle</h2>
+      <div class="phead"><span></span><span class="me">You</span><span class="them">Every AI</span></div>
+      <!-- The faction pickers moved up into the slot list: a side is a
+           per-commander choice now and one place to make it is enough.
+           These two columns are still "you" against "the machine" - era,
+           tech, ceilings and services are set for the human and for every
+           computer commander, an ally included, exactly as before. -->
+      <div class="prow"><label>Era</label>
+        <div class="me"><select id="opt-era"></select></div>
+        <div class="them"><select id="opt-aera"></select></div>
       </div>
-
-      <details class="card mb-help">
-        <summary>How to play &mdash; victory and controls</summary>
-        <div class="hint">
-          <b>Victory</b> &mdash; destroy every enemy production facility: construction yards, barracks, war factories, naval yards and airbases. Power, radar, defences and haulers do not keep a beaten side in the war; a construction rig still on the road buys it two minutes to unfold.<br>
-          <b>Controls</b> &mdash; LMB select / drag box &middot; RMB move &amp; attack &middot;
-          <b>A</b>+click attack-move &middot; <b>S</b> stop &middot; <b>G</b> guard &middot; <b>F</b> hold fire &middot; <b>P</b> patrol &middot; <b>X</b> scatter &middot; <b>T</b> every unit of that type on screen &middot; <b>R</b> back to base, yard or depot &middot; every order is on the bar along the bottom<br>
-          <b>Ctrl+0-9</b> set group &middot; <b>0-9</b> recall &middot; <b>Tab</b> cycle tabs &middot;
-          <b>Space</b> next thing needing you &middot; <b>C</b> counter-battery &middot; <b>Del</b> sell &middot; <b>D</b> deploy MCV, or fold a selected construction yard back into one &middot; <b>U</b> unload &middot; <b>H</b> home &middot; <b>Q/E</b> rotate &middot; <b>Shift+P</b> flip pan &middot; <b>Shift+0-9</b> camera bookmark &middot; <b>Tab</b> cycle sub-group &middot; <b>Shift+RMB</b> queue waypoints &middot; hold <b>Shift</b> to see every unit's orders &middot; <b>Esc</b> menu &middot; wheel to zoom, MMB/edge to pan
-        </div>
-      </details>
+      <div class="prow"><label>Era ceiling</label>
+        <div class="me"><select id="opt-peracap"></select></div>
+        <div class="them"><select id="opt-aeracap"></select></div>
+      </div>
+      <div class="prow"><label>Tech start</label>
+        <div class="me"><select id="opt-ptech">
+        <option value="1" selected>Tech I &mdash; research it yourself</option>
+        <option value="2">Tech II &mdash; MBTs &amp; aviation unlocked</option>
+        <option value="3">Tech III &mdash; everything unlocked</option>
+      </select></div>
+        <div class="them"><select id="opt-atech">
+        <option value="1" selected>Tech I</option>
+        <option value="2">Tech II</option>
+        <option value="3">Tech III</option>
+      </select></div>
+      </div>
+      <div class="prow"><label>Tech ceiling</label>
+        <div class="me"><select id="opt-pcap">
+        <option value="1">Tech I &mdash; no research beyond the basics</option>
+        <option value="2">Tech II &mdash; no strategic weapons or stealth</option>
+        <option value="3" selected>Tech III &mdash; no ceiling</option>
+      </select></div>
+        <div class="them"><select id="opt-acap">
+        <option value="1">Tech I</option>
+        <option value="2">Tech II</option>
+        <option value="3" selected>Tech III</option>
+      </select></div>
+      </div>
+      <div class="prow"><label>Services</label>
+        <div class="me"><select id="opt-parms">
+        <option value="all" selected>Combined arms &mdash; everything</option>
+        <option value="noair">No air force</option>
+        <option value="nonavy">No navy</option>
+        <option value="ground">Ground war only</option>
+      </select></div>
+        <div class="them"><select id="opt-aarms">
+        <option value="all" selected>Combined arms &mdash; everything</option>
+        <option value="noair">No air force</option>
+        <option value="nonavy">No navy</option>
+        <option value="ground">Ground war only</option>
+      </select></div>
+      </div>
+      <div id="fac-blurb" class="blurb"></div>
+    </div>
+    <div class="sect"><h2>The ground</h2>
+      <div class="grid2">
+      <div class="row"><label>Terrain</label><select id="opt-map">
+        <option value="plains">Open Plains &mdash; armour country</option>
+        <option value="river" selected>River Valley &mdash; chokepoints</option>
+        <option value="highland">Highlands &mdash; elevation warfare</option>
+      </select></div>
+      <div class="row"><label>Theatre size</label><select id="opt-mapsize">
+        <option value="144" selected>Standard &mdash; 144&times;144, bases ~90 tiles apart</option>
+        <option value="192">Large &mdash; 192&times;192, room to manoeuvre</option>
+        <option value="240">Huge &mdash; 240&times;240, long approaches</option>
+        <option value="288">Vast &mdash; 288&times;288, aircraft need tankers</option>
+      </select></div>
+      <div class="row"><label>Ore density</label><select id="opt-res">
+        <option value="0.6">Sparse &mdash; every field contested</option>
+        <option value="1" selected>Standard</option>
+        <option value="1.6">Abundant &mdash; long, big battles</option>
+      </select></div>
+      <div class="row"><label>Weather</label><select id="opt-weather">
+        <option value="clear" selected>Clear &mdash; no visibility penalty</option>
+        <option value="dynamic">Dynamic &mdash; rolls through the battle</option>
+        <option value="overcast">Overcast</option>
+        <option value="rain">Rain squalls</option>
+        <option value="night">Night &mdash; thermal sights decide it</option>
+        <option value="sandstorm">Sandstorm &mdash; near-blind without thermals</option>
+      </select></div>
+      <div class="row"><label>Fog of war</label><select id="opt-fog"><option value="1" selected>On</option><option value="0">Off</option></select></div>
+      <div class="row"><label>Your position</label><select id="opt-startpos"><option value="-1" selected>Random</option></select></div>
+      <div class="row"><label>Map seed</label><input id="opt-seed" type="text" value=""></div>
+      </div>
+      <div class="row me-arm"><label>Edited map</label>
+        <span id="me-armed" class="me-none">none &mdash; the generator draws the ground</span>
+        <button type="button" id="btn-editor">MAP EDITOR</button>
+        <button type="button" id="btn-unarm" class="hidden">USE GENERATED</button>
+      </div>
+    </div>
+    <div class="sect"><h2>Rules and display</h2>
+      <div class="grid2">
+      <div class="row"><label>Starting funds</label><select id="opt-cash">
+        <option value="5000">Light &mdash; $5,000</option>
+        <option value="10000" selected>Standard &mdash; $10,000</option>
+        <option value="20000">Heavy &mdash; $20,000</option>
+      </select></div>
+      <div class="row"><label>Strategic weapons</label><select id="opt-super">
+        <option value="1" selected>Enabled &mdash; missile &amp; nuclear silos</option>
+        <option value="0">Disabled &mdash; conventional war</option>
+      </select></div>
+      <div class="row"><label>Renderer</label><select id="opt-3d"><option value="1" selected>3D battlefield (WebGL)</option><option value="0">Classic 2.5D</option></select></div>
+      <div class="row"><label>Camera pan</label><select id="opt-pan">
+        <option value="follow" selected>Map follows the mouse</option>
+        <option value="push">Classic edge scroll (inverted)</option>
+      </select></div>
+      <!-- the sound switches; js/announcer.js keeps them, main.js applies them -->
+      <div class="row"><label>Sound</label><select id="opt-sound">
+        <option value="1" selected>On &mdash; full volume</option>
+        <option value="0.6">On &mdash; quieter</option>
+        <option value="0.3">On &mdash; quiet</option>
+        <option value="0">Off</option>
+      </select></div>
+      <div class="row"><label>Unit voices</label><select id="opt-voices">
+        <option value="1" selected>On &mdash; crews answer</option>
+        <option value="0">Off</option>
+      </select></div>
+      <div class="row"><label>Announcer</label><select id="opt-announcer">
+        <option value="1" selected>On &mdash; the base speaks</option>
+        <option value="0">Off</option>
+      </select></div>
+      </div>
     </div>
 
-    <footer class="mb-foot">
-      <!-- one line, rewritten by main.js on every change: what DEPLOY starts -->
-      <div id="dep-summary" class="mb-sum" aria-live="polite"></div>
-      <button id="btn-start">DEPLOY</button>
-    </footer>
+                                                                                                    <button id="btn-start">DEPLOY</button>
+    <!-- The field manual: everything the game can field, browsable before a
+         shot is fired. js/gallery.js binds this button only where it exists,
+         so a page carrying an older copy of this menu simply has no manual. -->
+    <button id="btn-gallery" type="button">FIELD MANUAL &mdash; EVERY MACHINE IN THE GAME</button>
+    <div class="hint">
+      <b>Victory</b> &mdash; destroy every enemy production facility: construction yards, barracks, war factories, naval yards and airbases. Power, radar, defences and haulers do not keep a beaten side in the war; a construction rig still on the road buys it two minutes to unfold.<br>
+      <b>Controls</b> &mdash; LMB select / drag box &middot; RMB move &amp; attack &middot;
+      <b>A</b>+click attack-move &middot; <b>S</b> stop &middot; <b>G</b> guard &middot; <b>F</b> hold fire &middot; <b>P</b> patrol &middot; <b>X</b> scatter &middot; <b>T</b> every unit of that type on screen &middot; <b>R</b> back to base, yard or depot &middot; every order is on the bar along the bottom<br>
+      <b>Ctrl+0-9</b> set group &middot; <b>0-9</b> recall &middot; <b>Tab</b> cycle tabs &middot;
+      <b>Space</b> next thing needing you &middot; <b>C</b> counter-battery &middot; <b>Del</b> sell &middot; <b>D</b> deploy MCV, or fold a selected construction yard back into one &middot; <b>U</b> unload &middot; <b>H</b> home &middot; <b>Q/E</b> rotate &middot; <b>Shift+P</b> flip pan &middot; <b>Shift+0-9</b> camera bookmark &middot; <b>Tab</b> cycle sub-group &middot; <b>Shift+RMB</b> queue waypoints &middot; hold <b>Shift</b> to see every unit's orders &middot; <b>Esc</b> menu &middot; wheel to zoom, MMB/edge to pan
+    </div>
   </div>
 </div>
 
@@ -699,270 +646,270 @@ window.addEventListener("error", function (e) {
   box.style.display = "block";
 });
 </script>
-<script src="js/util.js?v=202610050738"></script>
-<script src="js/config.js?v=202610050738"></script>
-<script src="js/facts.js?v=202610050738"></script>
-<script src="js/rules.js?v=202610050738"></script>
-  <script src="js/eras.js?v=202610050738"></script>
-<script src="js/heavyair.js?v=202610050738"></script>
-<script src="js/generations.js?v=202610050738"></script>
-<script src="js/geodata.js?v=202610050738"></script>
-<script src="js/audio.js?v=202610050738"></script>
-<script src="js/announcer.js?v=202610050738"></script>
-  <script src="js/threat.js?v=202610050738"></script>
-<script src="js/map.js?v=202610050738"></script>
-<script src="js/path.js?v=202610050738"></script>
-<script src="js/combat.js?v=202610050738"></script>
-<script src="js/mines.js?v=202610050738"></script>
-<script src="js/sonarnet.js?v=202610050738"></script>
-<script src="js/entities.js?v=202610050738"></script>
-<script src="js/player.js?v=202610050738"></script>
-<script src="js/ai.js?v=202610050738"></script>
-<script src="js/sprites.js?v=202610050738"></script>
-<script src="js/spriteart.js?v=202610050738"></script>
-<script src="js/spriteart_hd.js?v=202610050738"></script>
+<script src="js/util.js?v=202610050744"></script>
+<script src="js/config.js?v=202610050744"></script>
+<script src="js/facts.js?v=202610050744"></script>
+<script src="js/rules.js?v=202610050744"></script>
+  <script src="js/eras.js?v=202610050744"></script>
+<script src="js/heavyair.js?v=202610050744"></script>
+<script src="js/generations.js?v=202610050744"></script>
+<script src="js/geodata.js?v=202610050744"></script>
+<script src="js/audio.js?v=202610050744"></script>
+<script src="js/announcer.js?v=202610050744"></script>
+  <script src="js/threat.js?v=202610050744"></script>
+<script src="js/map.js?v=202610050744"></script>
+<script src="js/path.js?v=202610050744"></script>
+<script src="js/combat.js?v=202610050744"></script>
+<script src="js/mines.js?v=202610050744"></script>
+<script src="js/sonarnet.js?v=202610050744"></script>
+<script src="js/entities.js?v=202610050744"></script>
+<script src="js/player.js?v=202610050744"></script>
+<script src="js/ai.js?v=202610050744"></script>
+<script src="js/sprites.js?v=202610050744"></script>
+<script src="js/spriteart.js?v=202610050744"></script>
+<script src="js/spriteart_hd.js?v=202610050744"></script>
 <script src="js/three.min.js"></script>
 <!-- the theatre editor. After config.js (it reads CFG.TERRAIN as it loads)
      and before main.js, which asks MapEdit.armed() when DEPLOY is pressed. -->
-<script src="js/mapedit.js?v=202610050738"></script>
-<script src="js/render.js?v=202610050738"></script>
-<script src="js/models3d.js?v=202610050738"></script>
-<script src="js/units3d.js?v=202610050738"></script>
-<script src="js/units3d_salvage.js?v=202610050738"></script>
-<script src="js/units3d_final.js?v=202610050738"></script>
-  <script src="js/units3d_subs.js?v=202610050738"></script>
-  <script src="js/units3d_air2.js?v=202610050738"></script>
-  <script src="js/units3d_ew.js?v=202610050738"></script>
-  <script src="js/civ3d.js?v=202610050738"></script>
-<script src="js/models3d_hd.js?v=202610050738"></script>
-<script src="js/defences3d.js?v=202610050738"></script>
-<script src="js/obstacles3d.js?v=202610050738"></script>
-<script src="js/models3d_east.js?v=202610050738"></script>
-<script src="js/air3d_era.js?v=202610050738"></script>
-<script src="js/air_specs.js?v=202610050738"></script>
-<script src="js/rotor3d.js?v=202610050738"></script>
-<script src="js/rotor_specs.js?v=202610050738"></script>
-<script src="js/armour3d.js?v=202610050738"></script>
-<script src="js/armour_specs.js?v=202610050738"></script>
-<script src="js/warship3d.js?v=202610050738"></script>
-<script src="js/warship_specs.js?v=202610050738"></script>
-<script src="js/infantry3d.js?v=202610050738"></script>
-<script src="js/infantry_specs.js?v=202610050738"></script>
+<script src="js/mapedit.js?v=202610050744"></script>
+<script src="js/render.js?v=202610050744"></script>
+<script src="js/models3d.js?v=202610050744"></script>
+<script src="js/units3d.js?v=202610050744"></script>
+<script src="js/units3d_salvage.js?v=202610050744"></script>
+<script src="js/units3d_final.js?v=202610050744"></script>
+  <script src="js/units3d_subs.js?v=202610050744"></script>
+  <script src="js/units3d_air2.js?v=202610050744"></script>
+  <script src="js/units3d_ew.js?v=202610050744"></script>
+  <script src="js/civ3d.js?v=202610050744"></script>
+<script src="js/models3d_hd.js?v=202610050744"></script>
+<script src="js/defences3d.js?v=202610050744"></script>
+<script src="js/obstacles3d.js?v=202610050744"></script>
+<script src="js/models3d_east.js?v=202610050744"></script>
+<script src="js/air3d_era.js?v=202610050744"></script>
+<script src="js/air_specs.js?v=202610050744"></script>
+<script src="js/rotor3d.js?v=202610050744"></script>
+<script src="js/rotor_specs.js?v=202610050744"></script>
+<script src="js/armour3d.js?v=202610050744"></script>
+<script src="js/armour_specs.js?v=202610050744"></script>
+<script src="js/warship3d.js?v=202610050744"></script>
+<script src="js/warship_specs.js?v=202610050744"></script>
+<script src="js/infantry3d.js?v=202610050744"></script>
+<script src="js/infantry_specs.js?v=202610050744"></script>
 <!-- mine warfare and the naval helicopter fit -->
-<script src="js/mine_veh_layer.js?v=202610050738"></script>
-<script src="js/mine_veh_clear.js?v=202610050738"></script>
-<script src="js/mine_ship_layer.js?v=202610050738"></script>
-<script src="js/mine_ship_sweeper.js?v=202610050738"></script>
+<script src="js/mine_veh_layer.js?v=202610050744"></script>
+<script src="js/mine_veh_clear.js?v=202610050744"></script>
+<script src="js/mine_ship_layer.js?v=202610050744"></script>
+<script src="js/mine_ship_sweeper.js?v=202610050744"></script>
 <!-- the naval recovery vehicle -->
-<script src="js/repairship3d.js?v=202610050738"></script>
+<script src="js/repairship3d.js?v=202610050744"></script>
 <!-- mobile air defence and ballistic launchers -->
-<script src="js/sam3d.js?v=202610050738"></script>
-<script src="js/tel3d.js?v=202610050738"></script>
-<script src="js/mine_objects.js?v=202610050738"></script>
-<script src="js/sonarnet_objects.js?v=202610050738"></script>
-<script src="js/asw_helo_fit.js?v=202610050738"></script>
-<script src="js/sub3d_era.js?v=202610050738"></script>
-<script src="js/sub_specs.js?v=202610050738"></script>
+<script src="js/sam3d.js?v=202610050744"></script>
+<script src="js/tel3d.js?v=202610050744"></script>
+<script src="js/mine_objects.js?v=202610050744"></script>
+<script src="js/sonarnet_objects.js?v=202610050744"></script>
+<script src="js/asw_helo_fit.js?v=202610050744"></script>
+<script src="js/sub3d_era.js?v=202610050744"></script>
+<script src="js/sub_specs.js?v=202610050744"></script>
 <!-- hand-built hero models: loaded last so they override the parametric builders -->
-<script src="js/hero/kpa_e50_mbt.js?v=202610050738"></script>
-<script src="js/hero/mbt_c.js?v=202610050738"></script>
-<script src="js/hero/nato_e00_stealthfighter.js?v=202610050738"></script>
-<script src="js/hero/nato_e50_fighter.js?v=202610050738"></script>
-<script src="js/hero/nato_e60_mbt.js?v=202610050738"></script>
-<script src="js/hero/nato_e80_fighter.js?v=202610050738"></script>
-<script src="js/hero/nato_e90_mbt.js?v=202610050738"></script>
-<script src="js/hero/pact_e60_fighter.js?v=202610050738"></script>
-<script src="js/hero/pact_e80_mbt.js?v=202610050738"></script>
-<script src="js/hero/pact_e90_fighter.js?v=202610050738"></script>
-<script src="js/hero/pla_e00_mbt.js?v=202610050738"></script>
-<script src="js/hero/stealth_c.js?v=202610050738"></script>
-<script src="js/hero/destroyer_n.js?v=202610050738"></script>
-<script src="js/hero/kpa_e90_missileboat.js?v=202610050738"></script>
-<script src="js/hero/nato_e50_carrier.js?v=202610050738"></script>
-<script src="js/hero/pact_e60_cruiser.js?v=202610050738"></script>
-<script src="js/hero/pla_e00_destroyer.js?v=202610050738"></script>
-<script src="js/hero/roc_e80_destroyer.js?v=202610050738"></script>
-<script src="js/hero/sub_n.js?v=202610050738"></script>
-<script src="js/hero/pact_e20_gunship_mi28n.js?v=202610050738"></script>
-<script src="js/hero/nato_e20_carrier_ford.js?v=202610050738"></script>
-<script src="js/hero/harvester_ore_hauler.js?v=202610050738"></script>
-<script src="js/hero/lcac_landing_craft.js?v=202610050738"></script>
-<script src="js/hero/nato_e20_gunship_ah64e.js?v=202610050738"></script>
-<script src="js/hero/early_scouts.js?v=202610050738"></script>
-<script src="js/hero/de_bo105.js?v=202610050738"></script>
-<script src="js/hero/gb_lynx.js?v=202610050738"></script>
-<script src="js/hero/fr_gazelle.js?v=202610050738"></script>
-<script src="js/hero/eu_tiger.js?v=202610050738"></script>
-<script src="js/hero/pact_e20_corvette_22160.js?v=202610050738"></script>
-<script src="js/hero/us_aa_site.js?v=202610050738"></script>
-<script src="js/hero/ru_coastal_site.js?v=202610050738"></script>
-<script src="js/hero/ru_howitzer_site.js?v=202610050738"></script>
-<script src="js/hero/ru_aa_site.js?v=202610050738"></script>
-<script src="js/hero/us_sam_site.js?v=202610050738"></script>
-<script src="js/hero/ru_sam_site.js?v=202610050738"></script>
-<script src="js/hero/us_howitzer_site.js?v=202610050738"></script>
-<script src="js/hero/ru_oscar.js?v=202610050738"></script>
-<script src="js/hero/ru_borei.js?v=202610050738"></script>
-<script src="js/hero/ru_buyan.js?v=202610050738"></script>
-<script src="js/hero/ru_yasen.js?v=202610050738"></script>
-<script src="js/hero/ru_steregushchiy.js?v=202610050738"></script>
-<script src="js/hero/ru_sovremenny.js?v=202610050738"></script>
-<script src="js/hero/ru_pyotr.js?v=202610050738"></script>
-<script src="js/hero/ru_akula.js?v=202610050738"></script>
-<script src="js/hero/ru_kuznetsov.js?v=202610050738"></script>
-<script src="js/hero/ru_delta4.js?v=202610050738"></script>
-<script src="js/hero/ru_kilo.js?v=202610050738"></script>
-<script src="js/hero/ru_typhoon.js?v=202610050738"></script>
-<script src="js/hero/ru_svetlyak.js?v=202610050738"></script>
-<script src="js/hero/ru_tarantul.js?v=202610050738"></script>
-<script src="js/hero/ru_kiev.js?v=202610050738"></script>
-<script src="js/hero/ru_nanuchka.js?v=202610050738"></script>
-<script src="js/hero/ru_slava.js?v=202610050738"></script>
-<script src="js/hero/ru_shmel.js?v=202610050738"></script>
-<script src="js/hero/ru_alligator.js?v=202610050738"></script>
-<script src="js/hero/ru_yankee.js?v=202610050738"></script>
-<script src="js/hero/ru_victor.js?v=202610050738"></script>
-<script src="js/hero/ru_foxtrot.js?v=202610050738"></script>
-<script src="js/hero/ru_moskva.js?v=202610050738"></script>
-<script src="js/hero/ru_kashin.js?v=202610050738"></script>
-<script src="js/hero/ru_kotlin.js?v=202610050738"></script>
-<script src="js/hero/ru_grisha.js?v=202610050738"></script>
-<script src="js/hero/ru_osa_boat.js?v=202610050738"></script>
-<script src="js/hero/ru_kronshtadt.js?v=202610050738"></script>
-<script src="js/hero/ru_november.js?v=202610050738"></script>
-<script src="js/hero/ru_su24.js?v=202610050738"></script>
-<script src="js/hero/ru_su57.js?v=202610050738"></script>
-<script src="js/hero/ru_whiskey.js?v=202610050738"></script>
-<script src="js/hero/ru_riga.js?v=202610050738"></script>
-<script src="js/hero/ru_su35.js?v=202610050738"></script>
-<script src="js/hero/ru_sverdlov.js?v=202610050738"></script>
-<script src="js/hero/ru_il78.js?v=202610050738"></script>
-<script src="js/hero/ru_ka50.js?v=202610050738"></script>
-<script src="js/hero/ru_a50.js?v=202610050738"></script>
-<script src="js/hero/ru_tu160.js?v=202610050738"></script>
-<script src="js/hero/ru_tu126.js?v=202610050738"></script>
-<script src="js/hero/ru_3ms2.js?v=202610050738"></script>
-<script src="js/hero/ru_mig25bm.js?v=202610050738"></script>
-<script src="js/hero/ru_su17.js?v=202610050738"></script>
-<script src="js/hero/ru_mig17.js?v=202610050738"></script>
-<script src="js/hero/ru_ka25.js?v=202610050738"></script>
-<script src="js/hero/ru_yak38.js?v=202610050738"></script>
-<script src="js/hero/ru_mi8.js?v=202610050738"></script>
-<script src="js/hero/ru_il10.js?v=202610050738"></script>
-<script src="js/hero/ru_mi4.js?v=202610050738"></script>
-<script src="js/hero/ru_tu16.js?v=202610050738"></script>
-<script src="js/hero/ru_kamaz.js?v=202610050738"></script>
-<script src="js/hero/ru_krasukha.js?v=202610050738"></script>
-<script src="js/hero/ru_khrizantema.js?v=202610050738"></script>
-<script src="js/hero/ru_s400.js?v=202610050738"></script>
-<script src="js/hero/ru_t14.js?v=202610050738"></script>
-<script src="js/hero/ru_smerch.js?v=202610050738"></script>
-<script src="js/hero/ru_iskander.js?v=202610050738"></script>
-<script src="js/hero/ru_pantsir.js?v=202610050738"></script>
-<script src="js/hero/ru_zoopark.js?v=202610050738"></script>
-<script src="js/hero/ru_sprut.js?v=202610050738"></script>
-<script src="js/hero/ru_t90.js?v=202610050738"></script>
-<script src="js/hero/ru_bmp3.js?v=202610050738"></script>
-<script src="js/hero/ru_bm14_bm21.js?v=202610050738"></script>
-<script src="js/hero/ru_shturm.js?v=202610050738"></script>
-<script src="js/hero/ru_s300.js?v=202610050738"></script>
-<script src="js/hero/ru_tochka.js?v=202610050738"></script>
-<script src="js/hero/ru_s75_s125.js?v=202610050738"></script>
-<script src="js/hero/ru_buk.js?v=202610050738"></script>
-<script src="js/hero/ru_bmd.js?v=202610050738"></script>
-<script src="js/hero/ru_krug_kub.js?v=202610050738"></script>
-<script src="js/hero/ru_osa_strela.js?v=202610050738"></script>
-<script src="js/hero/ru_2s19.js?v=202610050738"></script>
-<script src="js/hero/ru_tor.js?v=202610050738"></script>
-<script src="js/hero/ru_scud_b.js?v=202610050738"></script>
-<script src="js/hero/ru_2s3.js?v=202610050738"></script>
-<script src="js/hero/ru_bmp12.js?v=202610050738"></script>
-<script src="js/hero/ru_t72.js?v=202610050738"></script>
-<script src="js/hero/ru_btr8x8.js?v=202610050738"></script>
-<script src="js/hero/ru_tunguska.js?v=202610050738"></script>
-<script src="js/hero/ru_scud_a.js?v=202610050738"></script>
-<script src="js/hero/ru_t64.js?v=202610050738"></script>
-<script src="js/hero/ru_t62.js?v=202610050738"></script>
-<script src="js/hero/ru_brdm.js?v=202610050738"></script>
-<script src="js/hero/ru_btr152.js?v=202610050738"></script>
-<script src="js/hero/ru_su100.js?v=202610050738"></script>
-<script src="js/hero/ru_t54.js?v=202610050738"></script>
-<script src="js/hero/ru_zsu.js?v=202610050738"></script>
-<script src="js/hero/ru_pt76.js?v=202610050738"></script>
-<script src="js/hero/ru_t10.js?v=202610050738"></script>
-<script src="js/hero/us_a6_intruder.js?v=202610050738"></script>
-<script src="js/hero/us_e1_tracer.js?v=202610050738"></script>
-<script src="js/hero/us_kc97g.js?v=202610050738"></script>
-<script src="js/hero/us_bell_huey.js?v=202610050738"></script>
-<script src="js/hero/us_kc10a.js?v=202610050738"></script>
-<script src="js/hero/us_ec121.js?v=202610050738"></script>
-<script src="js/hero/us_skyraider.js?v=202610050738"></script>
-<script src="js/hero/us_f105g.js?v=202610050738"></script>
-<script src="js/hero/us_h19.js?v=202610050738"></script>
-<script src="js/hero/us_ef111a.js?v=202610050738"></script>
-<script src="js/hero/us_f4_phantom.js?v=202610050738"></script>
-<script src="js/hero/us_a7_corsair.js?v=202610050738"></script>
-<script src="js/hero/us_early_rockets.js?v=202610050738"></script>
-<script src="js/hero/us_early_light.js?v=202610050738"></script>
-<script src="js/hero/us_m548_family.js?v=202610050738"></script>
-<script src="js/hero/us_pershing.js?v=202610050738"></script>
-<script src="js/hero/us_tpq37.js?v=202610050738"></script>
-<script src="js/hero/us_airborne_light.js?v=202610050738"></script>
-<script src="js/hero/us_m103.js?v=202610050738"></script>
-<script src="js/hero/us_m48.js?v=202610050738"></script>
-<script src="js/hero/us_m41.js?v=202610050738"></script>
-<script src="js/hero/us_m113.js?v=202610050738"></script>
-<script src="js/hero/us_patriot.js?v=202610050738"></script>
-<script src="js/hero/us_paladin.js?v=202610050738"></script>
-<script src="js/hero/us_m270_himars.js?v=202610050738"></script>
-<script src="js/hero/us_bradley.js?v=202610050738"></script>
-<script src="js/hero/us_humvee.js?v=202610050738"></script>
-<script src="js/hero/us_prophet.js?v=202610050738"></script>
-<script src="js/hero/us_hemtt.js?v=202610050738"></script>
-<script src="js/hero/us_tpq53.js?v=202610050738"></script>
-<script src="js/hero/us_stryker.js?v=202610050738"></script>
-<script src="js/hero/us_lcs.js?v=202610050738"></script>
-<script src="js/hero/us_tankers.js?v=202610050738"></script>
-<script src="js/hero/us_b2_spirit.js?v=202610050738"></script>
-<script src="js/hero/us_f117_nighthawk.js?v=202610050738"></script>
-<script src="js/hero/us_e3_sentry.js?v=202610050738"></script>
-<script src="js/hero/us_c130_hercules.js?v=202610050738"></script>
-<script src="js/hero/us_pegasus_phm.js?v=202610050738"></script>
-<script src="js/hero/us_mk6_patrol.js?v=202610050738"></script>
-<script src="js/hero/us_f18_family.js?v=202610050738"></script>
-<script src="js/hero/us_f35_family.js?v=202610050738"></script>
-<script src="js/hero/us_e2_hawkeye.js?v=202610050738"></script>
-<script src="js/hero/us_ticonderoga_cg.js?v=202610050738"></script>
-<script src="js/hero/nato_f16_family.js?v=202610050738"></script>
-<script src="js/hero/h60_hawk_family.js?v=202610050738"></script>
-<script src="js/hero/us_b52_stratofortress.js?v=202610050738"></script>
-<script src="js/hero/us_a10_thunderbolt.js?v=202610050738"></script>
-<script src="js/hero/us_f22_raptor.js?v=202610050738"></script>
-<script src="js/hero/pact_hind_mi24.js?v=202610050738"></script>
-<script src="js/hero/pact_su25_frogfoot.js?v=202610050738"></script>
-<script src="js/hero/pact_ka27_helix.js?v=202610050738"></script>
-<script src="js/hero/airbase_revetments.js?v=202610050738"></script>
-<script src="js/hero/navalyard_building_slip.js?v=202610050738"></script>
-<script src="js/hero/power_diesel_station.js?v=202610050738"></script>
-<script src="js/hero/derrick_pumping_well.js?v=202610050738"></script>
-<script src="js/hero/conyard_engineer_yard.js?v=202610050738"></script>
-<script src="js/hero/refinery_ore_concentrator.js?v=202610050738"></script>
-<script src="js/hero/barracks_block.js?v=202610050738"></script>
-<script src="js/hero/factory_armour_plant.js?v=202610050738"></script>
-<script src="js/bloom3d.js?v=202610050738"></script>
-<script src="js/fx3d.js?v=202610050738"></script>
-<script src="js/impact3d.js?v=202610050738"></script>
-<script src="js/damage3d.js?v=202610050738"></script>
-<script src="js/render3d.js?v=202610050738"></script>
-<script src="js/icons3d.js?v=202610050738"></script>
-<script src="js/ui.js?v=202610050738"></script>
-<script src="js/save.js?v=202610050738"></script>
-<script src="js/game.js?v=202610050738"></script>
-<script src="js/loading.js?v=202610050738"></script>
-<script src="js/main.js?v=202610050738"></script>
+<script src="js/hero/kpa_e50_mbt.js?v=202610050744"></script>
+<script src="js/hero/mbt_c.js?v=202610050744"></script>
+<script src="js/hero/nato_e00_stealthfighter.js?v=202610050744"></script>
+<script src="js/hero/nato_e50_fighter.js?v=202610050744"></script>
+<script src="js/hero/nato_e60_mbt.js?v=202610050744"></script>
+<script src="js/hero/nato_e80_fighter.js?v=202610050744"></script>
+<script src="js/hero/nato_e90_mbt.js?v=202610050744"></script>
+<script src="js/hero/pact_e60_fighter.js?v=202610050744"></script>
+<script src="js/hero/pact_e80_mbt.js?v=202610050744"></script>
+<script src="js/hero/pact_e90_fighter.js?v=202610050744"></script>
+<script src="js/hero/pla_e00_mbt.js?v=202610050744"></script>
+<script src="js/hero/stealth_c.js?v=202610050744"></script>
+<script src="js/hero/destroyer_n.js?v=202610050744"></script>
+<script src="js/hero/kpa_e90_missileboat.js?v=202610050744"></script>
+<script src="js/hero/nato_e50_carrier.js?v=202610050744"></script>
+<script src="js/hero/pact_e60_cruiser.js?v=202610050744"></script>
+<script src="js/hero/pla_e00_destroyer.js?v=202610050744"></script>
+<script src="js/hero/roc_e80_destroyer.js?v=202610050744"></script>
+<script src="js/hero/sub_n.js?v=202610050744"></script>
+<script src="js/hero/pact_e20_gunship_mi28n.js?v=202610050744"></script>
+<script src="js/hero/nato_e20_carrier_ford.js?v=202610050744"></script>
+<script src="js/hero/harvester_ore_hauler.js?v=202610050744"></script>
+<script src="js/hero/lcac_landing_craft.js?v=202610050744"></script>
+<script src="js/hero/nato_e20_gunship_ah64e.js?v=202610050744"></script>
+<script src="js/hero/early_scouts.js?v=202610050744"></script>
+<script src="js/hero/de_bo105.js?v=202610050744"></script>
+<script src="js/hero/gb_lynx.js?v=202610050744"></script>
+<script src="js/hero/fr_gazelle.js?v=202610050744"></script>
+<script src="js/hero/eu_tiger.js?v=202610050744"></script>
+<script src="js/hero/pact_e20_corvette_22160.js?v=202610050744"></script>
+<script src="js/hero/us_aa_site.js?v=202610050744"></script>
+<script src="js/hero/ru_coastal_site.js?v=202610050744"></script>
+<script src="js/hero/ru_howitzer_site.js?v=202610050744"></script>
+<script src="js/hero/ru_aa_site.js?v=202610050744"></script>
+<script src="js/hero/us_sam_site.js?v=202610050744"></script>
+<script src="js/hero/ru_sam_site.js?v=202610050744"></script>
+<script src="js/hero/us_howitzer_site.js?v=202610050744"></script>
+<script src="js/hero/ru_oscar.js?v=202610050744"></script>
+<script src="js/hero/ru_borei.js?v=202610050744"></script>
+<script src="js/hero/ru_buyan.js?v=202610050744"></script>
+<script src="js/hero/ru_yasen.js?v=202610050744"></script>
+<script src="js/hero/ru_steregushchiy.js?v=202610050744"></script>
+<script src="js/hero/ru_sovremenny.js?v=202610050744"></script>
+<script src="js/hero/ru_pyotr.js?v=202610050744"></script>
+<script src="js/hero/ru_akula.js?v=202610050744"></script>
+<script src="js/hero/ru_kuznetsov.js?v=202610050744"></script>
+<script src="js/hero/ru_delta4.js?v=202610050744"></script>
+<script src="js/hero/ru_kilo.js?v=202610050744"></script>
+<script src="js/hero/ru_typhoon.js?v=202610050744"></script>
+<script src="js/hero/ru_svetlyak.js?v=202610050744"></script>
+<script src="js/hero/ru_tarantul.js?v=202610050744"></script>
+<script src="js/hero/ru_kiev.js?v=202610050744"></script>
+<script src="js/hero/ru_nanuchka.js?v=202610050744"></script>
+<script src="js/hero/ru_slava.js?v=202610050744"></script>
+<script src="js/hero/ru_shmel.js?v=202610050744"></script>
+<script src="js/hero/ru_alligator.js?v=202610050744"></script>
+<script src="js/hero/ru_yankee.js?v=202610050744"></script>
+<script src="js/hero/ru_victor.js?v=202610050744"></script>
+<script src="js/hero/ru_foxtrot.js?v=202610050744"></script>
+<script src="js/hero/ru_moskva.js?v=202610050744"></script>
+<script src="js/hero/ru_kashin.js?v=202610050744"></script>
+<script src="js/hero/ru_kotlin.js?v=202610050744"></script>
+<script src="js/hero/ru_grisha.js?v=202610050744"></script>
+<script src="js/hero/ru_osa_boat.js?v=202610050744"></script>
+<script src="js/hero/ru_kronshtadt.js?v=202610050744"></script>
+<script src="js/hero/ru_november.js?v=202610050744"></script>
+<script src="js/hero/ru_su24.js?v=202610050744"></script>
+<script src="js/hero/ru_su57.js?v=202610050744"></script>
+<script src="js/hero/ru_whiskey.js?v=202610050744"></script>
+<script src="js/hero/ru_riga.js?v=202610050744"></script>
+<script src="js/hero/ru_su35.js?v=202610050744"></script>
+<script src="js/hero/ru_sverdlov.js?v=202610050744"></script>
+<script src="js/hero/ru_il78.js?v=202610050744"></script>
+<script src="js/hero/ru_ka50.js?v=202610050744"></script>
+<script src="js/hero/ru_a50.js?v=202610050744"></script>
+<script src="js/hero/ru_tu160.js?v=202610050744"></script>
+<script src="js/hero/ru_tu126.js?v=202610050744"></script>
+<script src="js/hero/ru_3ms2.js?v=202610050744"></script>
+<script src="js/hero/ru_mig25bm.js?v=202610050744"></script>
+<script src="js/hero/ru_su17.js?v=202610050744"></script>
+<script src="js/hero/ru_mig17.js?v=202610050744"></script>
+<script src="js/hero/ru_ka25.js?v=202610050744"></script>
+<script src="js/hero/ru_yak38.js?v=202610050744"></script>
+<script src="js/hero/ru_mi8.js?v=202610050744"></script>
+<script src="js/hero/ru_il10.js?v=202610050744"></script>
+<script src="js/hero/ru_mi4.js?v=202610050744"></script>
+<script src="js/hero/ru_tu16.js?v=202610050744"></script>
+<script src="js/hero/ru_kamaz.js?v=202610050744"></script>
+<script src="js/hero/ru_krasukha.js?v=202610050744"></script>
+<script src="js/hero/ru_khrizantema.js?v=202610050744"></script>
+<script src="js/hero/ru_s400.js?v=202610050744"></script>
+<script src="js/hero/ru_t14.js?v=202610050744"></script>
+<script src="js/hero/ru_smerch.js?v=202610050744"></script>
+<script src="js/hero/ru_iskander.js?v=202610050744"></script>
+<script src="js/hero/ru_pantsir.js?v=202610050744"></script>
+<script src="js/hero/ru_zoopark.js?v=202610050744"></script>
+<script src="js/hero/ru_sprut.js?v=202610050744"></script>
+<script src="js/hero/ru_t90.js?v=202610050744"></script>
+<script src="js/hero/ru_bmp3.js?v=202610050744"></script>
+<script src="js/hero/ru_bm14_bm21.js?v=202610050744"></script>
+<script src="js/hero/ru_shturm.js?v=202610050744"></script>
+<script src="js/hero/ru_s300.js?v=202610050744"></script>
+<script src="js/hero/ru_tochka.js?v=202610050744"></script>
+<script src="js/hero/ru_s75_s125.js?v=202610050744"></script>
+<script src="js/hero/ru_buk.js?v=202610050744"></script>
+<script src="js/hero/ru_bmd.js?v=202610050744"></script>
+<script src="js/hero/ru_krug_kub.js?v=202610050744"></script>
+<script src="js/hero/ru_osa_strela.js?v=202610050744"></script>
+<script src="js/hero/ru_2s19.js?v=202610050744"></script>
+<script src="js/hero/ru_tor.js?v=202610050744"></script>
+<script src="js/hero/ru_scud_b.js?v=202610050744"></script>
+<script src="js/hero/ru_2s3.js?v=202610050744"></script>
+<script src="js/hero/ru_bmp12.js?v=202610050744"></script>
+<script src="js/hero/ru_t72.js?v=202610050744"></script>
+<script src="js/hero/ru_btr8x8.js?v=202610050744"></script>
+<script src="js/hero/ru_tunguska.js?v=202610050744"></script>
+<script src="js/hero/ru_scud_a.js?v=202610050744"></script>
+<script src="js/hero/ru_t64.js?v=202610050744"></script>
+<script src="js/hero/ru_t62.js?v=202610050744"></script>
+<script src="js/hero/ru_brdm.js?v=202610050744"></script>
+<script src="js/hero/ru_btr152.js?v=202610050744"></script>
+<script src="js/hero/ru_su100.js?v=202610050744"></script>
+<script src="js/hero/ru_t54.js?v=202610050744"></script>
+<script src="js/hero/ru_zsu.js?v=202610050744"></script>
+<script src="js/hero/ru_pt76.js?v=202610050744"></script>
+<script src="js/hero/ru_t10.js?v=202610050744"></script>
+<script src="js/hero/us_a6_intruder.js?v=202610050744"></script>
+<script src="js/hero/us_e1_tracer.js?v=202610050744"></script>
+<script src="js/hero/us_kc97g.js?v=202610050744"></script>
+<script src="js/hero/us_bell_huey.js?v=202610050744"></script>
+<script src="js/hero/us_kc10a.js?v=202610050744"></script>
+<script src="js/hero/us_ec121.js?v=202610050744"></script>
+<script src="js/hero/us_skyraider.js?v=202610050744"></script>
+<script src="js/hero/us_f105g.js?v=202610050744"></script>
+<script src="js/hero/us_h19.js?v=202610050744"></script>
+<script src="js/hero/us_ef111a.js?v=202610050744"></script>
+<script src="js/hero/us_f4_phantom.js?v=202610050744"></script>
+<script src="js/hero/us_a7_corsair.js?v=202610050744"></script>
+<script src="js/hero/us_early_rockets.js?v=202610050744"></script>
+<script src="js/hero/us_early_light.js?v=202610050744"></script>
+<script src="js/hero/us_m548_family.js?v=202610050744"></script>
+<script src="js/hero/us_pershing.js?v=202610050744"></script>
+<script src="js/hero/us_tpq37.js?v=202610050744"></script>
+<script src="js/hero/us_airborne_light.js?v=202610050744"></script>
+<script src="js/hero/us_m103.js?v=202610050744"></script>
+<script src="js/hero/us_m48.js?v=202610050744"></script>
+<script src="js/hero/us_m41.js?v=202610050744"></script>
+<script src="js/hero/us_m113.js?v=202610050744"></script>
+<script src="js/hero/us_patriot.js?v=202610050744"></script>
+<script src="js/hero/us_paladin.js?v=202610050744"></script>
+<script src="js/hero/us_m270_himars.js?v=202610050744"></script>
+<script src="js/hero/us_bradley.js?v=202610050744"></script>
+<script src="js/hero/us_humvee.js?v=202610050744"></script>
+<script src="js/hero/us_prophet.js?v=202610050744"></script>
+<script src="js/hero/us_hemtt.js?v=202610050744"></script>
+<script src="js/hero/us_tpq53.js?v=202610050744"></script>
+<script src="js/hero/us_stryker.js?v=202610050744"></script>
+<script src="js/hero/us_lcs.js?v=202610050744"></script>
+<script src="js/hero/us_tankers.js?v=202610050744"></script>
+<script src="js/hero/us_b2_spirit.js?v=202610050744"></script>
+<script src="js/hero/us_f117_nighthawk.js?v=202610050744"></script>
+<script src="js/hero/us_e3_sentry.js?v=202610050744"></script>
+<script src="js/hero/us_c130_hercules.js?v=202610050744"></script>
+<script src="js/hero/us_pegasus_phm.js?v=202610050744"></script>
+<script src="js/hero/us_mk6_patrol.js?v=202610050744"></script>
+<script src="js/hero/us_f18_family.js?v=202610050744"></script>
+<script src="js/hero/us_f35_family.js?v=202610050744"></script>
+<script src="js/hero/us_e2_hawkeye.js?v=202610050744"></script>
+<script src="js/hero/us_ticonderoga_cg.js?v=202610050744"></script>
+<script src="js/hero/nato_f16_family.js?v=202610050744"></script>
+<script src="js/hero/h60_hawk_family.js?v=202610050744"></script>
+<script src="js/hero/us_b52_stratofortress.js?v=202610050744"></script>
+<script src="js/hero/us_a10_thunderbolt.js?v=202610050744"></script>
+<script src="js/hero/us_f22_raptor.js?v=202610050744"></script>
+<script src="js/hero/pact_hind_mi24.js?v=202610050744"></script>
+<script src="js/hero/pact_su25_frogfoot.js?v=202610050744"></script>
+<script src="js/hero/pact_ka27_helix.js?v=202610050744"></script>
+<script src="js/hero/airbase_revetments.js?v=202610050744"></script>
+<script src="js/hero/navalyard_building_slip.js?v=202610050744"></script>
+<script src="js/hero/power_diesel_station.js?v=202610050744"></script>
+<script src="js/hero/derrick_pumping_well.js?v=202610050744"></script>
+<script src="js/hero/conyard_engineer_yard.js?v=202610050744"></script>
+<script src="js/hero/refinery_ore_concentrator.js?v=202610050744"></script>
+<script src="js/hero/barracks_block.js?v=202610050744"></script>
+<script src="js/hero/factory_armour_plant.js?v=202610050744"></script>
+<script src="js/bloom3d.js?v=202610050744"></script>
+<script src="js/fx3d.js?v=202610050744"></script>
+<script src="js/impact3d.js?v=202610050744"></script>
+<script src="js/damage3d.js?v=202610050744"></script>
+<script src="js/render3d.js?v=202610050744"></script>
+<script src="js/icons3d.js?v=202610050744"></script>
+<script src="js/ui.js?v=202610050744"></script>
+<script src="js/save.js?v=202610050744"></script>
+<script src="js/game.js?v=202610050744"></script>
+<script src="js/loading.js?v=202610050744"></script>
+<script src="js/main.js?v=202610050744"></script>
 <!-- The field manual. Last of the scripts because it borrows the
      deployment briefing's card machinery (js/loading.js) and reads the
      menu's own selects; it binds to nothing that is not already there. -->
-<script src="js/gallery.js?v=202610050738"></script>
+<script src="js/gallery.js?v=202610050744"></script>
 </body>
 </html>
