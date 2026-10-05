@@ -2909,7 +2909,9 @@ var Game = (function () {
      fulda at e00, t=900 s: NATO had the ground of 25 Pact air-defence
      structures on its map and had none of them in sight. Every older
      caller leaves it out and gets exactly what it got. */
-  G.airThreatRings = function (owner, remember) {
+  /* `noAir` leaves out hostile AIRCRAFT, for the commander's question
+     (G.standoffRings below); left out, this is the list it always was. */
+  G.airThreatRings = function (owner, remember, noAir) {
     const out = [];
     if (!owner) return out;
     const W = G.map.W;
@@ -2919,6 +2921,7 @@ var Game = (function () {
         for (const e of list) {
           if (e.dead || e.carried) continue;
           if (isBld && e.buildProgress < 1) continue;
+          if (noAir && e.layer === "air") continue;
           /* Plan against the catalogue figure with a buffer, the way a real
              threat ring is drawn. The published range is not what the battery
              actually reaches: weaponRange() multiplies by the owner's faction
@@ -3145,12 +3148,34 @@ var Game = (function () {
   /* the rings for one side: what it sees, the structures it remembers and
      the launchers on its plot - gathered once per side per half second the
      way entities.js gunRunCovered gathers the visible ones */
-  G.standoffRings = function (owner) {
+  /* `noAir` is the commander's question (ai.js AIRSAFE: which air defence
+     its aircraft keep out of). The same rings less every hostile AIRCRAFT:
+     a fighter's missile reach is not air defence a fighter is sent round,
+     and every air contact would otherwise stand inside a ring of its own.
+     And it READS the plot rather than sweeping it - as G.tick last swept it,
+     at most half a second ago, every entry in sight or not (one in sight is
+     then on the list twice, which a point or a leg test does not mind) - so
+     asking it moves nothing a stand-off bomber flies by, and a commander
+     with the behaviour switched off plays exactly as before. Left out, this
+     is the list it always was. */
+  G.standoffRings = function (owner, noAir) {
     if (!owner) return [];
     const slot = Math.floor(G.time * 2);
     let memo = G.soRingMemo;
     if (!memo || memo.slot !== slot || memo.game !== G.startOrder) {
       memo = G.soRingMemo = { slot: slot, game: G.startOrder, by: new Map() };
+    }
+    if (noAir) {
+      const na = memo.na || (memo.na = new Map());
+      let N = na.get(owner);
+      if (!N) {
+        N = G.airThreatRings(owner, true, true);
+        const pl = owner._aaPlot;
+        if (pl && pl.game === G.startOrder && pl.fog === G.fogEnabled)
+          for (const r of pl.by.values()) N.push(r.x, r.y, r.reach);
+        na.set(owner, N);
+      }
+      return N;
     }
     let R = memo.by.get(owner);
     if (!R) {

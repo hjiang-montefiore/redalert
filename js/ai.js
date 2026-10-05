@@ -769,6 +769,10 @@ function makeCommander() {
        one map */
     reconReset(); oilReset();
     for (const k in roleCool) delete roleCool[k];
+    /* nor a book of airframes, a quick loss or a held purchase (AIRSAFE) */
+    asTick = 0; asBook.clear(); asStMemo = null;
+    for (const k in asQuick) delete asQuick[k];
+    for (const k in asHold) delete asHold[k];
     intelT = 0; lastDigest = 0; aim = null;
     /* the plan's income average, budget and survey belong to one battle */
     macro = macroBook();
@@ -907,6 +911,14 @@ function makeCommander() {
     if (fbTick <= 0) {
       fbTick = Math.max(0.5, (D.think || 1.6) * 0.5);
       driveFallback();
+    }
+    /* ---- the air force and the rings it knows (AIRSAFE) ----
+       The same clock for the same reason: an aircraft turning in on a
+       contact under a battery has seconds, and think() may be buying. */
+    asTick -= dt;
+    if (asTick <= 0) {
+      asTick = Math.max(0.5, (D.think || 1.6) * 0.5);
+      driveAirSafe();
     }
     /* ---- the eyes ----
        Off think() for the reason the raid is: think() returns early on every
@@ -1967,6 +1979,11 @@ function makeCommander() {
     const hoardFor = role === "mcv" && rigHoard ? 0 : saveTarget;
     if (hoardFor > 0 && role !== "harvester" && role !== "supply" &&
         P.cash < hoardFor + P.factionCost(def)) return false;
+    /* AIRSAFE: an airframe whose kind keeps dying as soon as it is sent waits
+       out its hold (asLoss) - asked once the money is there, so what is
+       counted is a purchase the hold stopped, and before the fuel is booked
+       as demand, since the force budget should not move barrels toward it */
+    if (def.cat === "aircraft" && asHeld(role)) return false;
     if (dry) {
       if (demandable(def, role)) noteDemand(armOf(def), def.oil);
       return false;
@@ -8777,6 +8794,8 @@ function makeCommander() {
          purchase: the chain answers false and the think goes on. */
       let airHold = false;
       const holdFighter = () => {
+        /* a fighter on its re-buy hold (AIRSAFE) is not waited for */
+        if (asHolding("fighter")) { airHold = false; return false; }
         const id = pickFor("fighter"), def = id ? UNITS[id] : null;
         const why = def ? P.lockReason(def) : null;
         airHold = !!(why && why.indexOf("INSUFFICIENT FUEL") === 0 && fuelHold("fighter", def));
@@ -9122,7 +9141,10 @@ function makeCommander() {
         /* a third of the way to the enemy, not over them */
         const ox = at ? P.homeX + (at.x - P.homeX) * 0.30 : P.homeX;
         const oy = at ? P.homeY + (at.y - P.homeY) * 0.30 : P.homeY;
-        a.give({ type: "cap", x: ox, y: oy });
+        /* and on our side of every ring it knows (AIRSAFE asStation) */
+        const ost = asStation(ox, oy);
+        a.give({ type: "cap", x: ost.x, y: ost.y });
+        asSent(a, ost.moved);
         continue;
       }
       /* `a.ammoMax &&` is not decoration. Three aircraft in the game declare
@@ -9139,7 +9161,7 @@ function makeCommander() {
          airframe applies to itself when it decides to scramble */
       if (a.fuel < a.reserveFuel()) continue;
       const tgt = pickAirTarget(a);
-      if (tgt) { a.give({ type: "attack", target: tgt }); continue; }
+      if (tgt) { a.give({ type: "attack", target: tgt }); asSent(a, false); continue; }
       /* Nothing held on radar. A fighter takes station over the objective and
          acquires for itself; a strike aircraft sweeps armed towards it. Sitting
          on the apron because the plot is momentarily empty is how an air force
@@ -9155,14 +9177,21 @@ function makeCommander() {
          same shape as the AWACS branch above; ew_n's bubble is 9.5 tiles, so a
          partial advance still covers the approach. */
       if (a.allWeaponsHeld && a.allWeaponsHeld()) {
-        if (a.def.jam) a.give({ type: "cap",
-                                x: P.homeX + (sweep.x - P.homeX) * 0.45,
-                                y: P.homeY + (sweep.y - P.homeY) * 0.45 });
+        if (a.def.jam) {
+          const jst = asStation(P.homeX + (sweep.x - P.homeX) * 0.45,
+                                P.homeY + (sweep.y - P.homeY) * 0.45);
+          a.give({ type: "cap", x: jst.x, y: jst.y });
+          asSent(a, jst.moved);
+        }
         continue;
       }
+      /* not over the objective when it is under a ring we know: on our side
+         of them, where a patrol can fight (AIRSAFE asStation) */
+      const st = asStation(sweep.x, sweep.y);
       a.give(a.def.role === "fighter"
-        ? { type: "cap", x: sweep.x, y: sweep.y }
-        : { type: "attackmove", x: sweep.x, y: sweep.y });
+        ? { type: "cap", x: st.x, y: st.y }
+        : { type: "attackmove", x: st.x, y: st.y });
+      asSent(a, st.moved);
     }
 
     /* keep the wave pushing */
@@ -10355,7 +10384,10 @@ function makeCommander() {
      from a nest's 6.0 tiles to a howitzer bunker's 16.0 - and live armour
      standing on it. Null means nothing there is worth suppressing, and the
      caller carries on exactly as it did. */
-  function opAir(a, op) {
+  /* `safe` (AIRSAFE, from pickAirTarget): only what the airframe can work
+     from outside the rings it knows - the next gun or tank on the list when
+     the best one stands under one */
+  function opAir(a, op, safe) {
     const ws = a.def.weapons || [];
     for (let i = 0; i < ws.length; i++)
       if (a.manualWeapon && a.manualWeapon(WEAPONS[ws[i]])) return null;
@@ -10378,8 +10410,8 @@ function makeCommander() {
       for (const p of pts) if (U.dist2(r.x, r.y, p.x, p.y) < R2) { covers = true; break; }
       if (!covers || !a.canTarget(r.ref, true)) continue;
       const v = (g.hard + g.soft) / (1 + U.dist(a.x, a.y, r.x, r.y) / CFG.TILE * 0.05);
-      if (now - (opHit.get(r.id) || -1e9) < 20) { if (v > sv) { sv = v; spare = r; } continue; }
-      if (v > bv) { bv = v; best = r; }
+      if (now - (opHit.get(r.id) || -1e9) < 20) { if (v > sv && (!safe || safe(r.ref))) { sv = v; spare = r; } continue; }
+      if (v > bv && (!safe || safe(r.ref))) { bv = v; best = r; }
     }
     const gun = best || spare;
     if (gun) { opHit.set(gun.id, now); return gun.ref; }
@@ -10394,7 +10426,7 @@ function makeCommander() {
       if (!e || !(e.armor === "heavy" || e.armor === "light")) continue;
       if (!a.canTarget(e, true)) continue;
       const d = U.dist2(a.x, a.y, e.x, e.y);
-      if (d < bd) { bd = d; best = e; }
+      if (d < bd && (!safe || safe(e))) { bd = d; best = e; }
     }
     return best;
   }
@@ -14060,6 +14092,334 @@ function makeCommander() {
     }
     return best || groundTarget();
   }
+  /* ================= AIRSAFE: THE AIR FORCE KEEPS OUT OF KNOWN AIR DEFENCE =================
+     (owner) "Air stays out of known AD."
+     MEASURED over 16 instrumented computer-against-computer matches
+     (commander tier; fulda, korea, hormuz; e20 to e80): aircraft were 46%
+     of everything a commander lost by value, 902,620 of 1,979,295 credits.
+     AA Batteries took 405,675 of it and SAM Sites 255,625 - 73% between
+     them - ground AA 128k, ships 57k, fighters 55k. 80% of it (722k) went
+     to a killer the commander ALREADY had on its map before the aircraft's
+     last order, and 84% of the site kills came within 30 s of that order,
+     51% inside 15 s. Value destroyed per credit spent: gunship 0.38,
+     fighter 0.19, CAS 0.17, SEAD 0.09, ASW helicopter 0.01. The causes were
+     all in this file: a sweep flew to the ground objective, which is the
+     enemy base (airSweepPoint); the fighter and gunship branches of
+     pickAirTarget took the nearest contact whatever covered it; only the
+     stand-off bomber asked the rings; and a Weasel or an ASW helicopter
+     lost was bought again on the next think.
+     So every sortie asks what the stand-off bomber's planner asks, of
+     G.standoffRings(P, true): batteries in sight, structures on ground this
+     commander has looked at, launchers where it last saw them, each drawn
+     at 1.25 x its PUBLISHED reach (no faction multiplier, no upgrade), less
+     hostile aircraft - a fighter's missile is not a ring a fighter is sent
+     round - and read without moving the plot. Nothing its fog hides.
+       - WHERE IT WORKS, not where the target is (asWork). A helicopter
+         hovers on the near side at 0.8 of its longest reach that can hit
+         the target (entities.js updateAir); a fixed-wing aircraft circles
+         it at 0.88 (a missile) or 0.80 (a gun) of that reach, which
+         orbitAround() flies at cos 0.55 = 0.85 of it, or with bombs alone
+         passes over it and turns, a turning radius and four tiles round.
+         That hover point, circle or disc, a tile clear (G.STANDOFF_MARGIN),
+         must lie outside every ring; a fixed-wing that carries a bomb for
+         the target must have the target itself outside too, since the end
+         of its sortie goes over it. A target that fails is left alone.
+       - THE WAY IN (Veteran up). An attack is flown in a straight line -
+         only a stand-off bomber routes round a ring - so the straight leg
+         from the aircraft to where it works is exposure when it passes
+         inside a ring: as drawn, no margin, the 1.25 being the worst
+         plausible reach already and a leg flown once, fast. A ring the
+         aircraft is already inside counts only if the leg goes a tile
+         deeper into it.
+       - SEAD goes AT the rings - its job - but only at an emitter it can
+         out-fly: the circle it shoots from (0.88 x 0.85 = 0.75 of its
+         anti-radiation round's reach) must clear that emitter's own
+         PUBLISHED reach - not the 1.25 ring, which a Weasel has to enter to
+         kill anything that reaches at all - and every OTHER ring as drawn.
+         MEASURED under jsc, a lone powered site, the aircraft sent from 40
+         tiles: an F-16CJ (HARM 17.3 tiles at NATO's range) fires at 16.2,
+         closes to 12.3, kills an AA Battery (12.6) and lives, and is shot
+         down by a SAM Site (14.0) at 14.2 s with the site on 381 of 850; a
+         Su-24M (16.0) closes to 11.0 and dies to the SAM Site at 5.1 s. The
+         rule sends the F-16CJ at the Battery and neither at a SAM Site.
+       - SWEEPS AND STATIONS (asStation). A sweep or a patrol toward the
+         objective, the jammer's station and the early-warning orbit stop at
+         the furthest point on the line from home whose patrol circle
+         (CFG.CAP_RADIUS and 1.75 tiles of wander, 2.5 tiles off every ring,
+         the transit margin entities.js flies) is clear, reached without
+         crossing a ring - G.soStation's corridor, the stand-off bomber's own
+         hold. That is our side of their cover: our front.
+       - RULES OF ENGAGEMENT (Veteran up, asRoe). On a patrol or a sweep an
+         aircraft acquires for itself (entities.js acquire, the CAP envelope)
+         and chases what it took wherever it goes; no ring is asked. So
+         twice a think the commander strikes off, for each airborne aircraft
+         of its own, the contacts on its own picture within reach of it that
+         it could only work from inside a ring - the soNo list acquire()
+         already honours for the stand-off bomber - and breaks off an attack
+         whose target now stands under one.
+       - RE-BUY DISCIPLINE (Veteran up, asLoss). An airframe lost within
+         AS_QUICK seconds of its order is a quick loss. A second quick loss
+         of the same role inside AS_WIN seconds holds that role's purchase
+         for AS_HOLD seconds a loss past the first, AS_HOLD_MAX at most: the
+         money goes to whatever the build order wants next, and the role
+         comes back when the hold runs out. Our own losses only - nothing
+         about the enemy is read for it.
+     DIFFICULTY, on D.read (how much of the picture it acts on): Recruit
+     flies as it always did; Regular keeps where it works and where it
+     patrols out of the rings but does not look at the way in, set rules of
+     engagement or hold a purchase; Veteran and up do it all.
+     A/B: P.aiOff "airsafe" switches every decision off. The book and the
+     counters (P.aiStats) are kept either way so both seats report:
+     airSorties, sweepsMoved, airTargetsRefused (seadRefused of them, once
+     per aircraft and target), roeStruck, airBrokeOff, rebuyHolds,
+     rebuyHeld, and the losses - airLost / airLostCr, airLossQuick, and
+     airLossKnownAD / airLossKnownADCr: to a battery on the ring list at the
+     aircraft's last order. */
+  const AS_QUICK = 45, AS_WIN = 300, AS_HOLD = 90, AS_HOLD_MAX = 300;
+  const AS_MARGIN = 1.0;          // tiles round where it works (G.STANDOFF_MARGIN)
+  const AS_ROE = 6;               // seconds a contact stays struck off; renewed while covered
+  let asTick = 0, asStMemo = null;
+  const asBook = new Set();       // our airframes, so each loss is read once
+  const asQuick = {};             // role -> times of its quick losses, the last AS_WIN s
+  const asHold = {};              // role -> game time its purchase is held until
+  function asOn() { return (D.read || 0) > 0 && !(P.aiOff && P.aiOff.has("airsafe")); }
+  function asFull() { return (D.read || 0) >= 0.6; }
+  function asStat(k, n) {
+    const s = P.aiStats || (P.aiStats = {});
+    s[k] = (s[k] || 0) + (n === undefined ? 1 : n);
+  }
+  function asRings() { return G.standoffRings ? G.standoffRings(P, true) : []; }
+  /* does the straight leg A-B pass inside a ring as drawn? One the leg
+     starts inside counts only if it goes a tile deeper; `skip` leaves a
+     target's own ring out (SEAD) */
+  function asLegHot(R, ax, ay, bx, by, skip) {
+    const TL = CFG.TILE, dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+    for (let i = 0; i < R.length; i += 3) {
+      if (skip && skip(i)) continue;
+      const cx = R[i], cy = R[i + 1], r = R[i + 2] * TL;
+      let t = L2 > 0 ? ((cx - ax) * dx + (cy - ay) * dy) / L2 : 0;
+      t = t < 0 ? 0 : (t > 1 ? 1 : t);
+      const near = U.dist(ax + dx * t, ay + dy * t, cx, cy);
+      if (near >= r) continue;
+      const d0 = U.dist(ax, ay, cx, cy);
+      if (d0 < r && near > d0 - TL) continue;    // already in it, not going deeper
+      return true;
+    }
+    return false;
+  }
+  /* does a circle of radius rad round (cx, cy), flown with `pad` pixels of
+     wander, pass inside a ring grown by m tiles? (standoffLaunch's
+     circleSafe, for a circle the commander does not fly itself) */
+  function asBandHot(R, cx, cy, rad, pad, m, skip) {
+    for (let i = 0; i < R.length; i += 3) {
+      if (skip && skip(i)) continue;
+      const d = U.dist(cx, cy, R[i], R[i + 1]);
+      if (Math.abs(d - rad) < (R[i + 2] + m) * CFG.TILE + pad) return true;
+    }
+    return false;
+  }
+  /* where aircraft a works target t from: a hover point (rad 0), the circle
+     a fixed-wing flies round it (band) or the disc its bomb passes sweep;
+     `over` when it carries a bomb for the target too, `arm` when the round
+     it reaches out with is anti-radiation and the target an emitter */
+  function asWork(a, t) {
+    const TL = CFG.TILE, tl = t.targetLayer ? t.targetLayer() : "ground";
+    const emits = !!(t.def && (t.def.radar || t.def.jam));
+    let reach = 0, k = 0.8, bomb = false, arm = false;
+    for (const id of (a.def.weapons || [])) {
+      const w = WEAPONS[id];
+      if (!w || !(w.dmg > 0) || (w.tgt && !w.tgt[tl])) continue;
+      if (w.proj === "bomb") { bomb = true; continue; }
+      if (w.antiRadiation && !emits) continue;     // a HARM is not for a tank
+      const r = a.weaponRange(w);
+      if (r > reach) { reach = r; k = w.proj === "missile" ? 0.88 : 0.80; arm = !!w.antiRadiation; }
+    }
+    if (a.def.hover) {
+      const d = U.dist(a.x, a.y, t.x, t.y), h = reach * 0.8, f = d > h ? h / d : 1;
+      return { x: t.x + (a.x - t.x) * f, y: t.y + (a.y - t.y) * f, rad: 0, band: false, over: false, arm: false };
+    }
+    const tr = a.turnRadius();
+    if (!reach) return { x: t.x, y: t.y, rad: tr + 4 * TL, band: false, over: true, arm: false };
+    return { x: t.x, y: t.y, rad: Math.max(reach * k * 0.85, tr), band: true, over: bomb, arm: arm };
+  }
+  /* can aircraft a work target t, and get there, outside every ring R? */
+  function asSafe(a, t, R) {
+    const TL = CFG.TILE, wk = asWork(a, t);
+    let skip = null;
+    if (wk.arm) {
+      /* a Weasel at an emitter: that emitter at its published reach, which
+         the circle it shoots from must clear; every other ring as drawn */
+      const own = G.airDefenceReach(t.def), drawn = own * 1.25;
+      if (wk.rad < own * TL) return false;
+      skip = (i) => Math.abs(R[i + 2] - drawn) < 0.01 && U.dist(R[i], R[i + 1], t.x, t.y) < 2 * TL;
+    }
+    if (wk.band) {
+      if (asBandHot(R, wk.x, wk.y, wk.rad, TL * 0.75, AS_MARGIN, skip)) return false;
+      if (wk.over && G.airThreatAt(P, t.x, t.y, 0, R) > 0) return false;
+    } else if (G.airThreatAt(P, wk.x, wk.y, AS_MARGIN + wk.rad / TL, R) > 0) return false;
+    if (!asFull()) return true;
+    const d = U.dist(a.x, a.y, wk.x, wk.y), f = d > wk.rad ? 1 - wk.rad / d : 0;
+    return !asLegHot(R, a.x, a.y, a.x + (wk.x - a.x) * f, a.y + (wk.y - a.y) * f, skip);
+  }
+  /* where an aircraft of ours patrols or sweeps when sent toward (sx, sy):
+     the point itself when its patrol circle is clear of every ring this
+     commander knows and (Veteran up) the line from home to it crosses none;
+     else the furthest point of that line, reached from home without
+     crossing a ring, whose circle is clear (G.soStation `open`). A Regular
+     takes G.soStation's plain answer - short of the ring the point is in,
+     or the nearest clear spot beside it. */
+  function asStation(sx, sy) {
+    if (!asOn() || !G.soStation) return { x: sx, y: sy, moved: false };
+    const R = asRings();
+    if (asStMemo && asStMemo.R === R && asStMemo.sx === sx && asStMemo.sy === sy) return asStMemo.st;
+    const TL = CFG.TILE, r = CFG.CAP_RADIUS * TL, slack = TL * 1.75, m = 2.5;
+    const home = { x: P.homeX, y: P.homeY }, full = asFull();
+    let st = { x: sx, y: sy, moved: false };
+    if (G.airThreatAt(P, sx, sy, m + (r + slack) / TL, R) > 0 ||
+        (full && asLegHot(R, home.x, home.y, sx, sy))) {
+      const s = G.soStation(P, sx, sy, { r: r, slack: slack, margin: m, rings: R, home: home, open: full });
+      st = { x: s.x, y: s.y, moved: true };
+    }
+    asStMemo = { R: R, sx: sx, sy: sy, st: st };
+    return st;
+  }
+  /* a sortie ordered (the order just given): stamped for the re-buy rule
+     and the loss counters - but only a NEW one, another kind of order,
+     another target or a point three tiles off the last, the test the
+     diagnostic's leg clock used. The sortie loop re-issues a hovering
+     helicopter's sweep to the same point every think, and re-stamping that
+     made every loss a "quick" one (measured, the first cut: 51 orders in 75
+     s to one Mi-28 on one station). */
+  function asSent(a, moved) {
+    const o = a.order || {}, k = a._asK, tg = o.target || null;
+    const fresh = !k || k.type !== o.type || k.tg !== tg ||
+                  (!tg && U.dist(k.x || 0, k.y || 0, o.x || 0, o.y || 0) > 3 * CFG.TILE);
+    if (!fresh) return;
+    a._asK = { type: o.type, tg: tg, x: o.x, y: o.y };
+    a._asT = G.time;
+    a._asR = asRings();
+    asStat("airSorties");
+    if (moved) asStat("sweepsMoved");
+  }
+  function asHolding(role) { return asHold[role] > G.time && asOn() && asFull(); }
+  function asHeld(role) {
+    if (!asHolding(role)) return false;
+    asStat("rebuyHeld");
+    return true;
+  }
+  /* one of our airframes is down */
+  function asLoss(u, now) {
+    const cost = (u.def && u.def.cost) || 0;
+    asStat("airLost"); asStat("airLostCr", cost);
+    if (u._asT !== undefined && now - u._asT <= AS_QUICK) {
+      asStat("airLossQuick");
+      const role = u.def.role, q = asQuick[role] || (asQuick[role] = []);
+      q.push(now);
+      while (q.length && now - q[0] > AS_WIN) q.shift();
+      if (q.length >= 2 && asOn() && asFull()) {
+        const until = now + Math.min(AS_HOLD_MAX, AS_HOLD * (q.length - 1));
+        if (!(asHold[role] > now)) asStat("rebuyHolds");
+        if (until > (asHold[role] || 0)) asHold[role] = until;
+      }
+    }
+    /* the counter only, never a decision: was what shot it down a battery
+       that stood on the ring list when it was sent? */
+    const by = u.lastHitBy, R0 = u._asR;
+    if (by && R0 && by.def && by.owner && by.owner !== P && by.layer !== "air") {
+      const ring = G.airDefenceReach(by.def) * 1.25;
+      if (ring > 0) for (let i = 0; i < R0.length; i += 3) {
+        if (Math.abs(R0[i + 2] - ring) < 0.01 && U.dist(R0[i], R0[i + 1], by.x, by.y) < CFG.TILE * 3) {
+          asStat("airLossKnownAD"); asStat("airLossKnownADCr", cost);
+          break;
+        }
+      }
+    }
+  }
+  function asStrike(a, e, now) {
+    const m = a.soNo || (a.soNo = new Map());
+    if (!(m.get(e.id) > now)) asStat("roeStruck");
+    m.set(e.id, now + AS_ROE);
+  }
+  /* an attack broken off: back to the patrol or sweep it came from, or to
+     the sweep a think would give it, on our side of the rings - by way of a
+     MOVE while it is inside one, so it does not stop on the way out for the
+     next contact (measured, the first cut: a Hind in among a base it had
+     found took a new target every half second, 78 times in 40 s), with the
+     patrol queued behind it, since a jet left on "hover" flies a racetrack
+     wherever it happens to be until a think re-tasks it - and a Weasel,
+     whose own seeker would take the next emitter in reach, home */
+  function asResume(a, o, R) {
+    if (a.def.role === "sead" || a.def.role === "ewair") { a.give({ type: "rtb" }); return; }
+    const to = o.resume || airSweepPoint();
+    if (!to) { a.give({ type: "rtb" }); return; }
+    const st = asStation(to.x, to.y);
+    const cap = o.resume ? !!o.cap : a.def.role === "fighter";
+    const pat = cap ? { type: "cap", x: st.x, y: st.y } : { type: "attackmove", x: st.x, y: st.y };
+    if (G.airThreatAt(P, a.x, a.y, 0, R) > 0) {
+      a.give({ type: "move", x: st.x, y: st.y });
+      a.give(pat, true);
+    } else a.give(pat);
+  }
+  function asRoe(now) {
+    const R = asRings(), TL = CFG.TILE;
+    const cell = (G.grid && G.grid.cell) || TL * 2;
+    for (const a of P.units) {
+      if (a.dead || a.layer !== "air" || a.parked || a.carried || a._scout) continue;
+      if (!a.def.weapons.length || (a.standoffAir && a.standoffAir())) continue;   // that one flies by the rings itself
+      /* A struck contact that runs out is never asked about again - acqGate
+         drops an entry only for a candidate it is handed, and a dead one
+         never is - so the list only grew: 150 entries on one F-117 by
+         t=865 (fulda e80 sc3, review). An expired entry answers exactly as an
+         absent one everywhere it is read, so dropping them changes nothing. */
+      if (a.soNo && a.soNo.size > 8) for (const [id, until] of a.soNo) if (!(until > now)) a.soNo.delete(id);
+      const o = a.order, t = o && o.type;
+      let brk = false;
+      if (t === "attack") {
+        const e = o.target;
+        if (e && !e.dead && !asSafe(a, e, R)) { asStrike(a, e, now); asStat("airBrokeOff"); brk = true; }
+      }
+      /* a Weasel's seeker does not read the list (entities.js seadTarget) */
+      if (a.def.role === "sead" || a.def.role === "ewair") { if (brk) asResume(a, o, R); continue; }
+      if (t !== "attack" && t !== "cap" && t !== "attackmove" && t !== "hover" && t !== "idle") continue;
+      /* what it could take for itself: inside its eyes and its patrol
+         circle, round it and round the point it patrols */
+      const RR = (a.sightR() + CFG.CAP_RADIUS + 2) * TL, RR2 = RR * RR;
+      const px = (t === "cap" || t === "attackmove") ? o.x : a.x;
+      const py = (t === "cap" || t === "attackmove") ? o.y : a.y;
+      /* ...and as far as acquire() itself reaches, which is not a circle:
+         the grid hands it every bucket over the SQUARE round its radius
+         (util.js SpatialGrid.query, 2-tile buckets), and it keeps what they
+         hold. The circle alone missed the corners: traced in review (fulda
+         e20 sc5, an F-22 on a sweep 6.5 tiles off a ring, sight 15.6), it
+         took a power plant, a yard, a refinery at 21.7 to 22.8 tiles, one
+         after another, each broken off half a think later - into the rings
+         7 times in 40 s, 5.4 tiles deep. With the square, the same match
+         (both seats on): stealth fighters entering a ring on an automatic
+         attack 16 times -> 2, the most break-offs by one aircraft in 40 s
+         7 -> 4. Still only what is on the picture. */
+      const R0 = a.sightR() * TL * (a.stance === "aggressive" ? 1.25 : 1);
+      const Q = (a.acqReach ? a.acqReach(R0) : R0) + cell;
+      const look = (e) => {
+        if (!e || e.dead) return;
+        if ((Math.abs(e.x - a.x) > Q || Math.abs(e.y - a.y) > Q) &&
+            U.dist2(a.x, a.y, e.x, e.y) > RR2 && U.dist2(px, py, e.x, e.y) > RR2) return;
+        if (!a.canTarget(e, true) || asSafe(a, e, R)) return;
+        asStrike(a, e, now);
+      };
+      for (const r of seenU.values()) look(trackedEntity(r));
+      for (const r of seenB.values()) if (!r.gone) look(r.ref);
+      if (brk) asResume(a, o, R);
+    }
+  }
+  /* the book of our airframes, and the rules of engagement (update(), on
+     the fallback's clock) */
+  function driveAirSafe() {
+    const now = G.time;
+    for (const u of P.units) if (!u.dead && u.layer === "air") asBook.add(u);
+    for (const u of asBook) if (u.dead) { asBook.delete(u); asLoss(u, now); }
+    if (atPeace || !asOn() || !asFull()) return;
+    asRoe(now);
+  }
   /* What an airframe is sent after. A weapon needs a real entity, so this only
      ever answers with something we are holding a live track on; when all we
      have is a memory the caller flies an armed sweep to it instead. It used to
@@ -14083,7 +14443,10 @@ function makeCommander() {
      in this function uses. The building fallback reads r.ref directly, which is
      what warAim() already does for structures - stated plainly rather than
      claimed to be a tracked contact, because it is not one. */
-  function pickEmitter(a) {
+  /* `safe` (AIRSAFE asSafe, from pickAirTarget): one it can out-fly, or
+     nothing - the Weasel waits on the ramp rather than go at a battery that
+     out-ranges the circle it shoots from */
+  function pickEmitter(a, safe) {
     let best = null, bd = Infinity;
     for (const r of seenU.values()) {
       if (r.layer !== "ground") continue;
@@ -14092,7 +14455,7 @@ function makeCommander() {
       if (!a.canTarget(e)) continue;              // commanded question: held rounds count
       if (armDarkFor(a, e)) continue;             // its own seeker found it off the air
       const d = U.dist2(a.x, a.y, e.x, e.y) * onAirWeight(e);   // heard is on the air
-      if (d < bd) { bd = d; best = e; }
+      if (d < bd && (!safe || safe(e))) { bd = d; best = e; }
     }
     if (best) return best;
     /* Ask the DEF what radiates, rather than naming two structures. The hard
@@ -14108,11 +14471,34 @@ function makeCommander() {
       if (r.gone || !bd2 || !(bd2.radar || bd2.jam)) continue;
       if (!r.ref || r.ref.dead || !a.canTarget(r.ref) || armDarkFor(a, r.ref)) continue;
       const d = U.dist2(a.x, a.y, r.x, r.y) * onAirWeight(r.ref);
-      if (d < bd) { bd = d; best = r.ref; }
+      if (d < bd && (!safe || safe(r.ref))) { bd = d; best = r.ref; }
     }
     return best;
   }
+  /* What an airframe is sent after, by the AIRSAFE rule when it is on: every
+     branch below asks `safe` of what it would return (asSafe - where the
+     aircraft would work it from, and the straight way there, against the
+     rings this commander knows), and a target that fails is left alone - as
+     is one the rules of engagement struck off for this aircraft (asRoe), or
+     the two would hand it back and forth. The first one left alone in a
+     pick is counted, once per aircraft and target. */
   function pickAirTarget(a) {
+    if (!asOn()) return pickAirTarget0(a, null);
+    const R = asRings();
+    let refused = null;
+    const t = pickAirTarget0(a, (e) => {
+      if (!(a.soNo && a.soNo.get(e.id) > G.time) && asSafe(a, e, R)) return true;
+      if (!refused) refused = e;
+      return false;
+    });
+    if (refused && a._asNo !== refused.id) {
+      a._asNo = refused.id;
+      asStat("airTargetsRefused");
+      if (a.def.role === "sead" || a.def.role === "ewair") asStat("seadRefused");
+    }
+    return t;
+  }
+  function pickAirTarget0(a, safe) {
     if (atPeace) return null;
     /* ---- A STAND-OFF BOMBER IS SENT ONLY WHERE IT CAN SHOOT FROM OUTSIDE ----
        (owner) "b52H should shoot missle far away instead of bomb under the
@@ -14142,7 +14528,7 @@ function makeCommander() {
        releases, so the AI would have put anti-radiation missiles into tanks at
        0.35x. Returning null instead drops it to the sweep branch, where AI-2
        holds it on the ramp. */
-    if (a.def.role === "sead" || a.def.role === "ewair") return pickEmitter(a);
+    if (a.def.role === "sead" || a.def.role === "ewair") return pickEmitter(a, safe);
     /* TERMINAL for the same reason, one role along. A strategic bomber whose
        every round is HELD is carrying release authority the owner asked for by
        name, and the branch below hunts the nearest harvester or heavy-armour
@@ -14195,7 +14581,7 @@ function makeCommander() {
         const e = trackedEntity(r);
         if (!e || e.targetLayer() !== "air") continue;
         const d = U.dist2(a.x, a.y, e.x, e.y);
-        if (d < bd) { bd = d; best = e; }
+        if (d < bd && (!safe || safe(e))) { bd = d; best = e; }
       }
       return best;
     }
@@ -14209,7 +14595,7 @@ function makeCommander() {
        and then everything below runs as it always did. */
     const op = opFocus();
     if (op) {
-      const s = opAir(a, op);
+      const s = opAir(a, op, safe);
       if (s && (!reach || reach(s))) { forceStat.opAir++; return s; }
     }
     if (a.def.role !== "cas") {
@@ -14221,14 +14607,14 @@ function makeCommander() {
         if (!e) continue;
         if (!(e.def.harvester || e.armor === "heavy")) continue;
         const d = U.dist2(a.x, a.y, e.x, e.y);
-        if (d < bd && (!reach || reach(e))) { bd = d; best = e; }
+        if (d < bd && (!reach || reach(e)) && (!safe || safe(e))) { bd = d; best = e; }
       }
       if (best) return best;
     }
     /* fall through: hit the objective, if it is a structure we can still see */
     const t = warAim();
     if (!t) return null;
-    return (t.ref && !t.ref.dead && (!reach || reach(t.ref))) ? t.ref : null;
+    return (t.ref && !t.ref.dead && (!reach || reach(t.ref)) && (!safe || safe(t.ref))) ? t.ref : null;
   }
   /* ---- the jammer's two stations ----
      (owner) "we want to increase the dependace on the rador and importance of
@@ -14257,14 +14643,20 @@ function makeCommander() {
     if (idle && a.fuel < a.reserveFuel()) return;
     const prey = jamPrey(a);
     if (prey) {
-      if (!(t === "cap" && o.commit && U.dist(o.x, o.y, prey.x, prey.y) < 2 * CFG.TILE))
+      if (!(t === "cap" && o.commit && U.dist(o.x, o.y, prey.x, prey.y) < 2 * CFG.TILE)) {
         a.give({ type: "cap", x: prey.x, y: prey.y, commit: true });
+        asSent(a, false);
+      }
       return;
     }
     if (t === "cap" && !o.commit) return;           // on its station already
     const sw = airSweepPoint();
-    if (sw) a.give({ type: "cap", x: P.homeX + (sw.x - P.homeX) * 0.45,
-                                  y: P.homeY + (sw.y - P.homeY) * 0.45 });
+    if (sw) {
+      /* on our side of every ring it knows (AIRSAFE asStation) */
+      const st = asStation(P.homeX + (sw.x - P.homeX) * 0.45, P.homeY + (sw.y - P.homeY) * 0.45);
+      a.give({ type: "cap", x: st.x, y: st.y });
+      asSent(a, st.moved);
+    }
     else if (t === "cap") a.give({ type: "rtb" });
   }
   /* The battery one of our strikes is under. Only what is on our picture, by
@@ -14512,6 +14904,32 @@ function makeCommander() {
       const was = atPeace, op = forceStat.opAir;
       atPeace = false;
       try { return pickAirTarget(a); } finally { atPeace = was; forceStat.opAir = op; }
+    },
+    /* AIRSAFE, for tools/jsc/airsafe_check.js, its peace aside: sweep() the
+       point a sweep toward the objective is sent to now (and the objective's
+       own point, raw); sent(a) books a sortie as the sortie loop does;
+       tick() runs the book of airframes and the rules of engagement now;
+       buy(role) is one purchase attempt; holds and quick are the re-buy
+       book, read-only copies */
+    get airsafe() {
+      return {
+        sweep() {
+          const was = atPeace; atPeace = false;
+          try {
+            const sw = airSweepPoint();
+            if (!sw) return null;
+            const st = asStation(sw.x, sw.y);
+            return { raw: { x: sw.x, y: sw.y }, x: st.x, y: st.y, moved: st.moved };
+          } finally { atPeace = was; }
+        },
+        sent(a) { asSent(a, false); },
+        tick() { const was = atPeace; atPeace = false; try { driveAirSafe(); } finally { atPeace = was; } },
+        /* one purchase attempt, as the build order makes it (tryBuildUnit) */
+        buy(role) { return tryBuildUnit(role); },
+        holds: Object.assign({}, asHold),
+        quick: JSON.parse(JSON.stringify(asQuick)),
+        on: asOn(), full: asFull(),
+      };
     },
     /* The explored map, so the engine can hold this commander's harvesters to
        the same rule the human's obey, and so a test can see what it knows. */
@@ -14781,6 +15199,11 @@ return {
      aside - for the suites ([91]; see airTarget); null for a seat none runs */
   airTargetOf(player, a) {
     for (const c of commanders) if (c.player === player) return c.airTarget(a);
+    return null;
+  },
+  /* a commander's AIRSAFE hooks (see `airsafe`), or null for a seat none runs */
+  airsafeOf(player) {
+    for (const c of commanders) if (c.player === player) return c.airsafe;
     return null;
   },
   /* hold a commander at peace (see atPeace) - for scripted sandboxes */
