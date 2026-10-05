@@ -229,7 +229,7 @@ class Unit {
        units, jsc, two runs each on a shared machine - read it as a
        direction, not a figure). */
     this._touch = null; this._touchT = -1; this._touchX = NaN; this._touchY = NaN;
-    this._atGX = NaN; this._atGY = NaN; this._atX = 0; this._atY = 0;
+    this._atGX = NaN; this._atGY = NaN; this._atX = 0; this._atY = 0; this._atT = -1;
     this._settleT = (this.id % 15) * CFG.DT; this._settling = false;
   }
 
@@ -2831,6 +2831,7 @@ class Unit {
        goal, and nobody should gather round it as if it were */
     if (!this.pathFail) {
       this._atGX = o.x; this._atGY = o.y; this._atX = this.x; this._atY = this.y;
+      this._atT = this.game.time;
     }
     return true;
   }
@@ -2857,8 +2858,24 @@ class Unit {
        of 40 moving in every 0.4 s sample (the build before, still shoving at
        the one point, 3.8 moving and 61.5 pairs overlapping by more than
        2 px). Now none moves and none overlaps. Not if the point has come
-       free since: then it walks in. */
-    if (this.restsAt(o.x, o.y) && (d < T * 0.8 || this.pointTaken(o.x, o.y))) return true;
+       free since: then the one of the crowd nearest it walks in, and only
+       that one - every member farther out than an arrival may stop short
+       used to find the point free alike, and each took a spot afresh. And
+       once it has set off it is not asked again: it asks before it steps,
+       with `moving` still clear, so on the way in it found itself at rest
+       where it had stood and stopped as soon as it was inside 0.8 of a
+       tile, 25 px out - covering the point for none of the squads behind
+       it, which is how a crowd of squads comes to rest with the point
+       open: the nearest there by its own measure, not by theirs. Every
+       re-hand then sent another in to stop short and a handful more off
+       to spots farther out - 18 squads re-handed every 1.6 s moved 117 to
+       153 px in 8 s, and with the squad on the point lost all 18 moved,
+       where now nobody moves and one walks in (tools/jsc/crowd_check.js;
+       [64] failed on it once, on another random stream). */
+    if (!o.walkIn && this.restsAt(o.x, o.y)) {
+      if (d < T * 0.8 || this.pointTaken(o.x, o.y) || this.nearerIn(o.x, o.y, d)) return true;
+      o.walkIn = true;
+    }
     /* stepAlong() leaves what it ran into on the last tick, read off the
        separation query it already pays for; a unit that did not step looks
        for itself, one small query */
@@ -2875,6 +2892,39 @@ class Unit {
     if (!s) return true;                                 // nothing free within ten tiles
     o.sx = s.x; o.sy = s.y; this.path = null;
     return false;
+  }
+  /* one of ours stands nearer (gx, gy) than this unit, d out, with that
+     point in hand now: held this tick where a trip to it had ended, as
+     still there, or on a move to it not asked yet. And one already walking
+     in counts wherever it stands: its first steps can take it farther out
+     - it turns as it goes - and measured by where it stood then, the next
+     of a ring the same distance out found nobody nearer and walked in too.
+     Under jsc, a ring of six squads or six tanks round a lost point, laid
+     facing ten ways each: two to six walked in for 6 of the 20, all six
+     squads when they faced outward. Not one merely at rest there: what is
+     asked is which of a crowd re-handed together walks in, and a unit
+     handed the point on its own - a player's right-click with only it
+     selected - is not held back by a crowd nobody asked. Counting every
+     one at rest there held it where it stood, click after click: a squad
+     52 px out and a tank 95 px out, each selected alone and right-clicked
+     onto the open point with one of the crowd nearer it, did not move,
+     where the build before walked each in. A tie goes to the older unit,
+     so two standing the same distance out do not both walk in. The query
+     reaches a tile past d, for a walker that has stepped back. */
+  nearerIn(gx, gy, d) {
+    let hit = false;
+    const own = this.owner, L = this.layer, H = CFG.TILE * 0.5, me = U.dist2(this.x, this.y, gx, gy), id = this.id;
+    const now = this.game.time;
+    this.game.grid.query(gx, gy, d + CFG.TILE, (e) => {
+      if (hit || e === this || e.dead || e.kind !== "unit" || e.layer !== L || e.carried || e.owner !== own) return;
+      const eo = e.order, to = (eo.type === "move" || eo.type === "attackmove") &&
+                               Math.abs(eo.x - gx) < H && Math.abs(eo.y - gy) < H;
+      if (to && eo.walkIn) { hit = true; return; }
+      const de = U.dist2(e.x, e.y, gx, gy);
+      if (de > me || (de === me && e.id > id)) return;
+      if (to || (e._atT === now && e.restsAt(gx, gy))) hit = true;
+    });
+    return hit;
   }
   /* one of ours stands at rest on (gx, gy) */
   pointTaken(gx, gy) {
