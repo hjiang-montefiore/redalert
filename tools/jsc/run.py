@@ -3,6 +3,11 @@
 
 usage:  python3 tools/jsc/run.py PAGE [--hash half=2] [--search "?map=korea&diff=warlord"]
                                  [--limit SECONDS] [--console]
+                                 [--test FILE.js] [-- ARGS...]
+
+--test FILE.js loads FILE after the page's scripts (before the load event), as
+scene3d.py does, and anything after "--" reaches it as the global __ARGS. 3D
+scripts stay skipped. See tools/jsc/scorecard.js.
 
 What it does: reads the page's element ids and their default values (so the
 page's own set("opt-...") calls and main.js start() behave as in a browser),
@@ -76,6 +81,9 @@ def element_ids(src):
 def main():
     args = sys.argv[1:]
     if not args: print(__doc__); sys.exit(2)
+    extra = []
+    if "--" in args:
+        i = args.index("--"); extra = args[i + 1:]; args = args[:i]
     page = args[0]
     def opt(name, default=None):
         return args[args.index(name) + 1] if name in args else default
@@ -89,9 +97,9 @@ def main():
     src = open(path).read()
     items = page_items(src)
     tmp = tempfile.mkdtemp(prefix="jscrun_")
-    parts = ["var __IDS = %s;\nvar __HASH = %s, __SEARCH = %s;\nvar __QUIET_CONSOLE = %s;\n"
+    parts = ["var __IDS = %s;\nvar __HASH = %s, __SEARCH = %s;\nvar __QUIET_CONSOLE = %s;\nvar __ARGS = %s;\n"
              % (json.dumps(element_ids(src)), json.dumps(hsh), json.dumps(search),
-                "false" if "--console" in args else "true"),
+                "false" if "--console" in args else "true", json.dumps(extra)),
              "load(%s);\n" % json.dumps(os.path.join(HERE, "env.js"))]
     n_inline = 0
     for kind, payload in items:
@@ -114,6 +122,7 @@ if (typeof Render3D === "undefined") var Render3D = new Proxy({ init: function (
 if (typeof Sfx === "undefined") var Sfx = new Proxy({}, { get: function (t, k) { return k === "selClass" ? function () { return null; } : function () {}; } });
 if (typeof Sprites === "undefined") var Sprites = new Proxy({}, { get: function () { return function () { return null; }; } });
 if (typeof Icons3D === "undefined") var Icons3D = new Proxy({}, { get: function () { return function () { return null; }; } });
+__TESTLOAD__
 (__listeners["doc:DOMContentLoaded"] || []).forEach(function (f) { try { f({}); } catch (e) { print("[DOMContentLoaded error] " + e + "\n" + e.stack); } });
 (__listeners["win:load"] || []).forEach(function (f) { try { f({}); } catch (e) { print("[load handler error] " + e + "\n" + e.stack); } });
 var __deadline = Date.now() + __LIMIT * 1000, __steps = 0;
@@ -127,7 +136,9 @@ while (__timers.length) {
   if (++__steps > 5e6) { print("[jsc runner] too many timers"); break; }
 }
 __toutFlush();
-""".replace("__LIMIT", str(limit)))
+""".replace("__LIMIT", str(limit)).replace("__TESTLOAD__",
+        ("try { load(%s); } catch (e) { print('[test load error] ' + e + '\\n' + e.stack); }" % json.dumps(os.path.abspath(opt("--test"))))
+        if opt("--test") else ""))
     driver = os.path.join(tmp, "driver.js")
     open(driver, "w").write("".join(parts))
     t0 = time.time()
