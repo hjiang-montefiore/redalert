@@ -3,111 +3,7 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
   font-family:"Segoe UI",Roboto,"DejaVu Sans",system-ui,sans-serif;user-select:none}
 .hidden{display:none!important}
 
-/* ---------- main menu ---------- */
-.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 50% 30%,#1b2b1f 0%,#0a0e0b 70%);z-index:50}
-.menu-box{width:min(940px,94vw);max-height:94vh;overflow-y:auto;padding:30px 34px;
-  background:rgba(10,16,11,.93);border:1px solid #3a5a3c;
-  box-shadow:0 0 0 1px #0d140e,0 12px 50px #000}
-.menu-box::-webkit-scrollbar{width:8px}
-.menu-box::-webkit-scrollbar-thumb{background:#33452f}
-/* settings flow in two columns; headings, blurb, button and hint span both */
-/* ---------- deployment screen ----------
-   Twenty-four identical label-and-dropdown rows used to flow into a bare
-   two-column grid in DOM order: no hierarchy, nothing grouped, and - in a
-   game whose entire subject is asymmetry - your settings never sat beside
-   the enemy's. It is four titled sections now, and the order of battle is
-   laid out as a straight comparison, faction first. */
-.menu-box{display:block}
-.menu-box .sect{margin-bottom:20px}
-.menu-box .sect h2{font-size:10px;letter-spacing:2.6px;text-transform:uppercase;
-  color:#88a673;font-weight:600;margin:0 0 11px;padding-bottom:6px;
-  border-bottom:1px solid #2b3d27}
-.menu-box .grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
-.menu-box .row{margin-bottom:9px}
-.menu-box .row label{width:118px;flex:none}
-
-/* the you-against-enemy table */
-.menu-box .phead{display:grid;grid-template-columns:124px 1fr 1fr;gap:0 14px;
-  margin-bottom:6px;font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase}
-.menu-box .phead .me{color:#9ec96a}
-.menu-box .phead .them{color:#d0846a}
-.menu-box .prow{display:grid;grid-template-columns:124px 1fr 1fr;gap:0 14px;
-  align-items:center;margin-bottom:8px}
-.menu-box .prow>label{color:#8fa189;letter-spacing:1px;text-transform:uppercase;font-size:11px}
-.menu-box .prow select,.menu-box .prow input{width:100%}
-.menu-box .prow .me select{border-color:#3f6b3a;box-shadow:inset 2px 0 0 #6f9c46}
-.menu-box .prow .them select{border-color:#6b4238;box-shadow:inset 2px 0 0 #b0654c}
-
-/* the opposition, as a list of commanders (Red Alert's skirmish screen).
-   Same idea as .prow above, with more columns: the header row and the
-   commander rows share one grid so the columns line up. A slot select is
-   styled here rather than inheriting from .row, which these are not. */
-.menu-box .shead,.menu-box .srow{display:grid;
-  grid-template-columns:82px minmax(0,1.5fr) 48px minmax(0,1.35fr) minmax(0,1.2fr) minmax(0,1.2fr) 22px;
-  gap:0 8px;align-items:center}
-.menu-box .shead{margin-bottom:6px;font-size:9.5px;letter-spacing:1.8px;
-  text-transform:uppercase;color:#6f8168}
-.menu-box .srow{margin-bottom:6px}
-.menu-box .scell{min-width:0}
-.menu-box .srow select{width:100%;background:#141c15;border:1px solid #3a5a3c;
-  color:#cfe0c8;padding:5px 7px;font-size:12px;font-family:inherit;outline:none}
-.menu-box .sname{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8fa189}
-/* green for the seats on your side of the war, rust for the rest - the same
-   two colours the comparison table below already uses */
-.menu-box .srow.you .sname,.menu-box .srow.ally .sname{color:#9ec96a}
-.menu-box .srow.foe .sname{color:#d0846a}
-.menu-box .srow.you select,.menu-box .srow.ally select{border-color:#3f6b3a}
-.menu-box .srow.foe select{border-color:#6b4238}
-.menu-box .sdash{color:#4d5a48;text-align:center;font-size:11px}
-/* the colour this commander deploys in, painted rather than named */
-.menu-box .scol{display:flex;align-items:center;gap:6px;min-width:0}
-.menu-box .scol select{flex:1;min-width:0}
-.menu-box .schip{flex:none;width:12px;height:12px;background:#5c6657;
-  border:1px solid #0b1109;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
-.menu-box .slot-del{width:22px;height:22px;padding:0;line-height:1;font-size:13px;
-  background:none;border:1px solid #3a3f36;color:#8a9683;cursor:pointer;font-family:inherit}
-.menu-box .slot-del:hover{border-color:#8f4a3c;color:#e0a08c}
-.menu-box .sfoot{display:flex;align-items:center;gap:12px;margin:10px 0 2px;
-  font-size:10.5px;line-height:1.5;color:#6f7f6b}
-.menu-box #btn-slot-add{flex:none;padding:6px 12px;background:#1b2a19;
-  border:1px solid #3a5a3c;color:#a8c49a;font-family:inherit;font-size:10px;
-  letter-spacing:2px;text-transform:uppercase;cursor:pointer}
-.menu-box #btn-slot-add:hover{background:#274023}
-.menu-box #btn-slot-add:disabled{opacity:.35;cursor:default}
-/* empty until every commander is on one letter, which is not a skirmish */
-.menu-box .swarn:not(:empty){color:#d0846a;border-left:2px solid #8f4a3c;padding-left:8px}
-/* DEPLOY is held shut while that is true, and has to look shut */
-#btn-start:disabled{background:#2a3327;border-color:#454f3e;color:#6d7a66;cursor:default}
-#btn-start:disabled:hover{background:#2a3327}
-/* on a phone the row stacks into two columns and keeps its own rule */
-@media (max-width:720px){
-  .menu-box .shead{display:none}
-  .menu-box .srow{grid-template-columns:1fr 1fr;gap:5px 8px;margin-bottom:10px;
-    padding-bottom:9px;border-bottom:1px solid #1e2a1c}
-  .menu-box .sname{grid-column:1/-1}
-  .menu-box .sfoot{flex-wrap:wrap;gap:8px}
-}
-.menu-box .blurb{margin-top:10px;padding:9px 11px;background:#0f1710;
-  border:1px solid #2b3d27;border-left:2px solid #6f9c46;
-  font-size:10.5px;line-height:1.6;color:#93a88c}
-.menu-box .blurb b{color:#b6d34a;letter-spacing:1px}
-
-/* the button that starts the battle should look like it */
-.menu-box #btn-start{display:block;width:100%;margin-top:6px;padding:15px;
-  font-size:15px;letter-spacing:5px}
-@media (max-width:720px){
-  .menu-box .grid2{grid-template-columns:1fr}
-  .menu-box .phead,.menu-box .prow{grid-template-columns:96px 1fr 1fr;gap:0 8px}
-}
-.menu-box>h1,.menu-box>.tag,.menu-box>#btn-start,.menu-box>.hint{grid-column:1/-1}
-.menu-box>.hint:first-of-type{grid-column:1/-1}
-.menu-box .row{margin-bottom:10px}
-.menu-box .row label{width:126px;flex:none}
-@media (max-width:720px){.menu-box{grid-template-columns:1fr}}
-.menu-box h1{font-size:34px;letter-spacing:5px;font-weight:700;color:#dfe8d8;margin-bottom:4px}
-.menu-box h1 span{color:#b6d34a}
-.tag{font-size:12px;letter-spacing:2px;color:#7c8c78;margin-bottom:26px;text-transform:uppercase}
+/* ---------- shared form rows (the field manual's filters use them too) ---------- */
 .row{display:flex;align-items:center;margin-bottom:12px;font-size:13px}
 .row label{width:150px;color:#8fa189;letter-spacing:1px;text-transform:uppercase;font-size:11px}
 .row select,.row input{flex:1;background:#141c15;border:1px solid #3a5a3c;color:#cfe0c8;
@@ -117,6 +13,215 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
 #btn-start:hover{background:#4e8a3d}
 .hint{margin-top:20px;font-size:11px;line-height:1.7;color:#6f7f6b;border-top:1px solid #26331f;padding-top:12px}
 .hint b{color:#9fb894}
+
+/* ---------- main menu: the deployment screen ----------
+   It used to be one long scrolling panel: four titled lists of identically
+   styled label-and-dropdown rows, the commanders' skill and doctrine chosen
+   twice (in each row and again as "defaults" under the list), every era and
+   tech setting laid out twice (you, then "every AI") even when both sides
+   were the same, display and sound mixed in with the rules of the battle,
+   and DEPLOY somewhere below the fold. Now: a header, two columns of cards
+   (who fights / where and under what rules) that scroll on their own, and a
+   bar along the bottom that never scrolls away, with DEPLOY and one line
+   saying what it will start. Same palette as the deployment briefing and the
+   in-game panels - green for your side, rust for theirs. */
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:
+    repeating-linear-gradient(0deg,rgba(136,166,115,.035) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(90deg,rgba(136,166,115,.035) 0 1px,transparent 1px 48px),
+    radial-gradient(circle at 50% 30%,#1b2b1f 0%,#0a0e0b 70%);z-index:50}
+.menu-box{width:min(1180px,96vw);height:min(940px,96vh);display:flex;flex-direction:column;
+  background:rgba(9,14,10,.94);border:1px solid #33502f;color-scheme:dark;
+  box-shadow:0 0 0 1px #0d140e,0 18px 60px #000}
+.menu-box ::-webkit-scrollbar{width:8px}
+.menu-box ::-webkit-scrollbar-thumb{background:#33452f}
+
+/* header: the name of the game, and the manual beside it */
+.mb-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;
+  gap:12px 24px;padding:22px 28px 16px;border-bottom:1px solid #22301f}
+.menu-box h1{font-size:30px;line-height:1;letter-spacing:6px;font-weight:700;color:#dfe8d8}
+.menu-box h1 span{color:#b6d34a}
+.menu-box .tag{margin-top:9px;font-size:11px;letter-spacing:2.4px;color:#76876f;text-transform:uppercase}
+.mb-tools{display:flex;align-items:center;gap:16px}
+.mb-build{font-size:10px;letter-spacing:1.6px;color:#55644f;text-transform:uppercase;
+  font-variant-numeric:tabular-nums}
+.menu-box #btn-gallery{height:32px;padding:0 16px;background:#141e14;border:1px solid #3f6b32;
+  color:#b5c7ad;font:600 10.5px/1 inherit;letter-spacing:2.2px;text-transform:uppercase;cursor:pointer}
+.menu-box #btn-gallery:hover{background:#1f2e1d;border-color:#79b25c;color:#e6f0df}
+
+/* the two columns of cards; only this part scrolls */
+.mb-body{flex:1;min-height:0;overflow-y:auto;padding:18px 28px 22px;display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px 18px;align-content:start}
+.mb-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.menu-box .card{background:rgba(17,26,18,.78);border:1px solid #26371f;padding:15px 17px 5px}
+.menu-box .card h2,.menu-box .card>summary{font-size:10.5px;letter-spacing:2.6px;
+  text-transform:uppercase;color:#9fbe86;font-weight:600}
+.menu-box .card h2{margin:0 0 13px}
+.menu-box .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+.menu-box .card-h h2{margin:0}
+.menu-box .mb-help{grid-column:1/-1}
+
+/* folding cards and folding parts of cards */
+.menu-box details>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;
+  padding-bottom:10px}
+.menu-box details>summary::-webkit-details-marker{display:none}
+.menu-box details>summary::before{content:"";width:0;height:0;flex:none;
+  border-left:5px solid #6f9c46;border-top:4px solid transparent;border-bottom:4px solid transparent;
+  transition:transform .15s}
+.menu-box details[open]>summary::before{transform:rotate(90deg)}
+.menu-box details>summary:hover{color:#d6e8c8}
+.menu-box .mb-more{margin:2px 0 8px;padding-top:10px;border-top:1px dashed #26371f}
+.menu-box .mb-more>summary{font-size:11px;letter-spacing:1px;color:#8fa189}
+.menu-box .mb-more[open]>summary{margin-bottom:4px}
+
+/* one field: the label over its control, so two or three fit side by side */
+.menu-box .card .row{display:flex;flex-direction:column;align-items:stretch;gap:5px;
+  margin:0 0 12px;font-size:13px}
+.menu-box .card .row>select,.menu-box .card .row>input{flex:none}
+.menu-box .card .row>label,.menu-box .prow>label{width:auto;font-size:10px;letter-spacing:1.6px;
+  color:#7f9478;text-transform:uppercase}
+.menu-box .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.menu-box select,.menu-box input[type=text]{width:100%;height:32px;min-width:0;
+  background:#111a12;border:1px solid #33502f;border-radius:2px;color:#d3e2cc;
+  padding:0 9px;font:13px/1.2 inherit;outline:none}
+.menu-box select{appearance:none;-webkit-appearance:none;padding-right:26px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237fa36a'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;text-overflow:ellipsis}
+.menu-box select:hover,.menu-box input[type=text]:hover{border-color:#4d7342}
+.menu-box input[type=text]::placeholder{color:#55644f}
+.menu-box select:focus-visible,.menu-box input:focus-visible,.menu-box button:focus-visible,
+.menu-box summary:focus-visible{outline:2px solid #79b25c;outline-offset:1px}
+
+/* a short list of choices as one row of buttons (main.js builds these over
+   the select, which stays in the page - hidden - as the value everyone reads) */
+.menu-box .seg{display:flex;height:32px;border:1px solid #33502f;border-radius:2px;overflow:hidden}
+.menu-box .seg button{flex:1 1 0;min-width:0;padding:0 6px;background:#111a12;border:0;
+  border-left:1px solid #26371f;color:#97ad8f;font:600 10.5px/1 inherit;letter-spacing:1.3px;
+  text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.menu-box .seg button:first-child{border-left:0}
+.menu-box .seg button:hover{background:#1a2819;color:#dfe8d8}
+.menu-box .seg button[aria-checked=true]{background:#2f5527;color:#f0f8e8;
+  box-shadow:inset 0 -2px 0 #9ec96a}
+.menu-box .seg-src{position:absolute!important;width:1px!important;height:1px!important;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;padding:0}
+
+/* the forces table: you against every computer commander. While the card is
+   "linked" (one set of choices for every side) the computers' column folds
+   away and the header says so. */
+.menu-box .phead,.menu-box .prow{display:grid;grid-template-columns:118px minmax(0,1fr) minmax(0,1fr);
+  gap:0 12px;align-items:center}
+.menu-box .phead{margin-bottom:7px;font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase}
+.menu-box .phead .me{color:#9ec96a}
+.menu-box .phead .them{color:#d0846a}
+.menu-box .prow{margin-bottom:10px}
+.menu-box .prow .me select{box-shadow:inset 2px 0 0 #6f9c46}
+.menu-box .prow .them select{border-color:#6b4238;box-shadow:inset 2px 0 0 #b0654c}
+.menu-box .lk-on{display:none}
+.menu-box .linked .lk-on{display:inline}
+.menu-box .linked .lk-off{display:none}
+.menu-box .linked .them{display:none}
+.menu-box .linked .phead,.menu-box .linked .prow{grid-template-columns:118px minmax(0,1fr)}
+.menu-box .linked .phead .me{color:#a9bf9c}
+.menu-box .linked .prow .me select{box-shadow:none}
+.menu-box .mb-switch{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.6px;
+  color:#a9bf9c;cursor:pointer;white-space:nowrap}
+.menu-box .mb-switch input{width:15px;height:15px;margin:0;accent-color:#6f9c46;cursor:pointer}
+.menu-box .mb-more .row{margin-top:4px}
+
+/* the opposition, as a list of commanders (Red Alert's skirmish screen): the
+   header row and the commander rows share one grid so the columns line up */
+.menu-box .shead,.menu-box .srow{display:grid;
+  grid-template-columns:70px minmax(0,1.5fr) 50px minmax(0,1.3fr) minmax(0,1.15fr) minmax(0,1.2fr) 24px;
+  gap:0 7px;align-items:center}
+.menu-box .shead{padding:0 8px 6px 11px;font-size:9.5px;letter-spacing:1.6px;
+  text-transform:uppercase;color:#6f8168}
+.menu-box .srow{margin-bottom:5px;padding:6px 8px 6px 9px;background:#0f1810;
+  border:1px solid #1f2e1c;border-left:2px solid #6f9c46}
+.menu-box .srow.foe{border-left-color:#b0654c}
+.menu-box .scell{min-width:0}
+.menu-box .srow select{height:30px;font-size:12px;padding-left:7px}
+.menu-box .sname{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8fa189;
+  font-weight:600;white-space:nowrap}
+.menu-box .srow.you .sname,.menu-box .srow.ally .sname{color:#9ec96a}
+.menu-box .srow.foe .sname{color:#d0846a}
+.menu-box .srow.foe select{border-color:#5b3d33}
+.menu-box .sdash{color:#4d5a48;text-align:center;font-size:11px}
+/* the colour this commander deploys in, painted rather than named */
+.menu-box .scol{display:flex;align-items:center;gap:6px;min-width:0}
+.menu-box .scol select{flex:1;min-width:0}
+.menu-box .schip{flex:none;width:12px;height:12px;border-radius:2px;background:#5c6657;
+  border:1px solid #0b1109;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.menu-box .slot-del{width:24px;height:24px;padding:0;line-height:1;font-size:14px;
+  background:none;border:1px solid #3a3f36;border-radius:2px;color:#8a9683;cursor:pointer;font-family:inherit}
+.menu-box .slot-del:hover{border-color:#8f4a3c;color:#e0a08c}
+.menu-box .sfoot{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:9px 0 2px;
+  font-size:10.5px;line-height:1.5;color:#6f7f6b}
+.menu-box #btn-slot-add{flex:none;height:30px;padding:0 13px;background:#1a2818;
+  border:1px solid #3a5a3c;border-radius:2px;color:#b5cfa6;font:600 10px/1 inherit;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+.menu-box #btn-slot-add:hover{background:#274023;color:#e6f0df}
+.menu-box #btn-slot-add:disabled{opacity:.35;cursor:default}
+/* empty until every commander is on one letter, which is not a skirmish */
+.menu-box .swarn:empty{display:none}
+.menu-box .swarn{flex-basis:100%;color:#e09a80;border-left:2px solid #8f4a3c;padding-left:8px}
+
+/* what an army and a theatre bring, under the place each is chosen */
+.menu-box .blurb{margin:10px 0 12px;padding:9px 11px;background:#0d150e;border:1px solid #22311f;
+  border-left:2px solid #6f9c46;font-size:11px;line-height:1.6;color:#93a88c}
+.menu-box .blurb:empty{display:none}
+.menu-box .blurb b{color:#b6d34a;letter-spacing:1px}
+.menu-box .blurb.th{margin-top:-2px;border-left-color:#8a9a5a}
+
+/* which ground the battle is on: the generator's, or one drawn in the editor */
+.menu-box .me-line{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;min-height:32px}
+.menu-box .me-line #me-armed{flex:1 1 160px;min-width:0;font-size:11.5px;letter-spacing:.3px}
+.menu-box .me-line .me-none{color:#6f7f6b}
+.menu-box .me-line .me-on{color:#b6d34a}
+.menu-box .me-line button{height:30px;padding:0 13px;background:#1a2818;border:1px solid #4d7342;
+  border-radius:2px;color:#cfe0c8;font:600 10px/1 inherit;letter-spacing:1.8px;text-transform:uppercase;cursor:pointer}
+.menu-box .me-line button:hover{background:#2c4527;color:#eaf6df}
+
+.menu-box .mb-help .hint{margin:0 0 12px;padding:0;border:0;font-size:11.5px;line-height:1.75;color:#7f907a}
+.menu-box .mb-prefs[open]>summary,.menu-box .mb-help[open]>summary{margin-bottom:4px}
+
+/* the bar along the bottom: what DEPLOY will start, and DEPLOY */
+.mb-foot{display:flex;align-items:center;gap:14px 22px;padding:14px 28px;
+  border-top:1px solid #2b3d27;background:rgba(12,19,13,.97)}
+.mb-sum{flex:1;min-width:0;font-size:12.5px;line-height:1.55;letter-spacing:.4px;color:#8ea486}
+.mb-sum b{color:#e2ecdb;font-weight:600}
+.mb-sum .vs{color:#d0846a;font-weight:600;letter-spacing:1.5px;margin:0 3px}
+.mb-sum .dot{color:#3f5a37;margin:0 7px}
+.menu-box #btn-start{flex:none;width:auto;min-width:250px;margin:0;padding:15px 36px;
+  background:#3f6b32;border:1px solid #79b25c;border-radius:2px;color:#f0f8e8;
+  font:700 16px/1 inherit;letter-spacing:7px;cursor:pointer;box-shadow:0 0 0 1px #0d140e,0 6px 22px rgba(0,0,0,.5)}
+.menu-box #btn-start:hover{background:#4e8a3d}
+/* DEPLOY is held shut while every commander is on one team, and has to look shut */
+.menu-box #btn-start:disabled,.menu-box #btn-start:disabled:hover{background:#2a3327;border-color:#454f3e;
+  color:#6d7a66;cursor:default;box-shadow:none}
+
+@media (max-width:1020px){
+  .mb-body{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:720px){
+  .menu-box{width:100vw;height:100vh;height:100dvh;border:0}
+  .mb-head{padding:16px 16px 12px}
+  .menu-box h1{font-size:24px;letter-spacing:4px}
+  .mb-body{padding:14px 16px 18px;gap:14px}
+  .mb-col{gap:14px}
+  .menu-box .card{padding:13px 13px 3px}
+  /* a commander row stacks into two columns and keeps its own rule */
+  .menu-box .shead{display:none}
+  .menu-box .srow{grid-template-columns:1fr 1fr;gap:6px 8px}
+  .menu-box .sname{grid-column:1/-1}
+  .menu-box .phead,.menu-box .prow{grid-template-columns:92px minmax(0,1fr) minmax(0,1fr);gap:0 8px}
+  .menu-box .linked .phead,.menu-box .linked .prow{grid-template-columns:92px minmax(0,1fr)}
+  .mb-foot{flex-direction:column;align-items:stretch;padding:12px 16px}
+  .menu-box #btn-start{width:100%;min-width:0}
+}
+@media (max-width:440px){
+  .menu-box .grid2{grid-template-columns:minmax(0,1fr)}
+  .menu-box .card-h{flex-wrap:wrap}
+}
 
 /* ---------- game frame ---------- */
 #game{position:fixed;inset:0}
@@ -589,11 +694,3 @@ html,body{height:100%;overflow:hidden;background:#0b0d0c;color:#c8d3c4;
   .gal-pic{height:150px}
   .gal-row{grid-template-columns:96px minmax(0,1fr) 42px}
 }
-
-/* the way in, under DEPLOY: plainly the second button on the screen */
-.menu-box #btn-gallery{display:block;width:100%;margin-top:8px;padding:10px;
-  background:#1a231a;border:1px solid #3f6b32;color:#a9b9a2;font-family:inherit;
-  font-size:11px;letter-spacing:3px;cursor:pointer}
-.menu-box #btn-gallery:hover{background:#22301f;border-color:#79b25c;color:#dfe8d8}
-
-

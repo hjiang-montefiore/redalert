@@ -168,7 +168,8 @@
      rest of the menu does not. The explanatory half of each label is cut at
      the em dash, because a slot column is narrow. */
   function shortOpts(id, dfltLabel) {
-    const out = [["", dfltLabel]];
+    /* no label, no blank entry: the list is only the real choices */
+    const out = dfltLabel == null ? [] : [["", dfltLabel]];
     const src = document.getElementById(id);
     const opts = src && src.options;
     if (!opts) return out;
@@ -245,8 +246,20 @@
       mk("span", "sdash", row).textContent = "—";
       mk("span", "sdash", row).textContent = "—";
     } else {
-      mkSel("slot-diff", row, shortOpts("opt-diff", "Default skill"), "");
-      mkSel("slot-pers", row, shortOpts("opt-pers", "Default doctrine"), "");
+      /* Each computer commander names its own skill. The deployment screen
+         no longer shows a "default skill" under the list - choosing it in
+         two places was the screen's most visible redundancy - so a row
+         starts on the value that default holds (Regular) instead of on a
+         blank pointing at a control nobody can see. A page whose skill list
+         cannot be read keeps the old blank, which still means "the default". */
+      const skills = shortOpts("opt-diff", null);
+      const want = (document.getElementById("opt-diff") || {}).value || "regular";
+      if (skills.length)
+        mkSel("slot-diff", row, skills, skills.some(o => o[0] === want) ? want : skills[0][0]);
+      else mkSel("slot-diff", row, [["", "Default skill"]], "");
+      /* left blank, a commander picks its own doctrine - which is all the
+         hidden default "Mixed" ever meant */
+      mkSel("slot-pers", row, shortOpts("opt-pers", "Any doctrine"), "");
     }
     /* the first opponent cannot be dismissed - a skirmish needs one */
     if (i >= 2) {
@@ -435,10 +448,17 @@
     blurb.style.cssText = "margin-top:2px;border-top:none;padding-top:0;grid-column:1/-1";
     diffRow.parentElement.insertBefore(blurb, diffRow);
   }
+  /* The army's note sits under the commanders and the theatre's under the
+     theatre picker, where this page has a box for each. A harness page's
+     frozen menu has the one box, and gets both in it as before. */
+  const thBlurb = document.getElementById("th-blurb");
   function syncBlurb() {
     const f = FACTIONS[document.getElementById("opt-fac").value];
     const th = THEATRES[document.getElementById("opt-map").value];
-    blurb.innerHTML = "<b>" + f.short + ":</b> " + f.bonus + "<br><b>THEATRE:</b> " + th.brief;
+    if (thBlurb) {
+      blurb.innerHTML = "<b>" + f.short + ":</b> " + f.bonus;
+      thBlurb.innerHTML = th.brief;
+    } else blurb.innerHTML = "<b>" + f.short + ":</b> " + f.bonus + "<br><b>THEATRE:</b> " + th.brief;
   }
   /* the deployment sites a theatre offers, named after the real ground */
   function syncStarts() {
@@ -520,6 +540,145 @@
     put("opt-sound", sp.sfx ? String(sp.vol) : "0");
     put("opt-voices", sp.vox ? "1" : "0");
     put("opt-announcer", sp.eva ? "1" : "0");
+  }
+
+  /* ================= THE DEPLOYMENT SCREEN'S OWN HELP =================
+     Nothing here changes what DEPLOY reads: every value still lives in the
+     opt-* control it always did, and start() reads only those. This block
+     changes how the controls are shown and kept in step, and all of it is
+     skipped on a page without the markup it needs - every headless
+     harness's frozen copy of this menu, and the page under tools/jsc, where
+     the menu's own markup is not built into elements at all. */
+  const menuBox = menu && menu.querySelector ? menu.querySelector(".menu-box") : null;
+
+  /* ---- one set of forces for every side, unless you ask for two ----
+     The pairs are the old you-against-every-AI table, which showed ten
+     dropdowns for what is - in nearly every battle - five choices made
+     once. While "Same for every side" is ticked, the computers' column is
+     folded away and follows yours. Untick it and it opens on the values it
+     holds (yours, at that moment) and goes its own way. */
+  const FORCE_PAIRS = [["opt-era", "opt-aera"], ["opt-ptech", "opt-atech"],
+                       ["opt-peracap", "opt-aeracap"], ["opt-pcap", "opt-acap"],
+                       ["opt-parms", "opt-aarms"]];
+  const sameBox = document.getElementById("opt-same");
+  const forcesCard = document.getElementById("card-forces");
+  const linked = () => !sameBox || sameBox.checked !== false;
+  function followForces() {
+    if (!linked()) return;
+    for (const [me, them] of FORCE_PAIRS) {
+      const a = document.getElementById(me), b = document.getElementById(them);
+      if (a && b && b.value !== a.value) b.value = a.value;
+    }
+  }
+  if (menuBox && sameBox && forcesCard) {
+    for (const [me] of FORCE_PAIRS) {
+      const a = document.getElementById(me);
+      if (a) a.addEventListener("change", followForces);
+    }
+    const showLink = () => {
+      if (linked()) forcesCard.classList.add("linked");
+      else forcesCard.classList.remove("linked");
+    };
+    sameBox.addEventListener("change", () => { showLink(); followForces(); });
+    /* a browser that puts form state back on reload may hand the box back
+       unticked: the card must say what the box says */
+    showLink();
+  }
+
+  /* ---- a short list as a row of buttons ----
+     A two- or three-way choice reads faster as buttons than as a dropdown
+     that has to be opened to be read. The select stays in the page, out of
+     sight, and stays THE value: a button only sets it and announces the
+     change the way a pick from the list would. `part` is which side of the
+     option's em dash names the button - the amount, for the funds. */
+  const SEGMENTS = [["opt-fog", 0], ["opt-res", 0], ["opt-cash", 1], ["opt-super", 0],
+                    ["opt-3d", 0], ["opt-voices", 0], ["opt-announcer", 0]];
+  function segment(id, part) {
+    const sel = document.getElementById(id);
+    if (!sel || !sel.options || !sel.options.length || !sel.parentNode) return;
+    const box = document.createElement("div");
+    box.className = "seg";
+    box.setAttribute("role", "radiogroup");
+    const lab = sel.parentNode.querySelector("label");
+    if (lab) box.setAttribute("aria-label", lab.textContent);
+    const btns = [];
+    const paint = () => {
+      for (const [b, v] of btns) b.setAttribute("aria-checked", sel.value === v ? "true" : "false");
+    };
+    for (let i = 0; i < sel.options.length; i++) {
+      const o = sel.options[i], full = String(o.textContent);
+      const bits = full.split("—");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role", "radio");
+      b.textContent = (bits[part] || bits[0]).trim();
+      b.title = full;
+      b.addEventListener("click", () => {
+        if (sel.value === o.value) return;
+        sel.value = o.value;
+        paint();
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      box.appendChild(b);
+      btns.push([b, o.value]);
+    }
+    sel.classList.add("seg-src");
+    sel.tabIndex = -1;
+    sel.setAttribute("aria-hidden", "true");
+    sel.parentNode.insertBefore(box, sel.nextSibling);
+    sel.addEventListener("change", paint);
+    paint();
+  }
+  if (menuBox) {
+    try { for (const [id, part] of SEGMENTS) segment(id, part); }
+    catch (e) { /* a browser that cannot build them keeps the dropdowns */ }
+  }
+
+  /* ---- the line beside DEPLOY: what it will start ----
+     Read back off the same controls start() reads, so it cannot promise a
+     battle DEPLOY will not give. */
+  const sumEl = document.getElementById("dep-summary");
+  const optText = (id, part) => {
+    const el = document.getElementById(id);
+    const o = el && el.options && el.options[el.selectedIndex];
+    if (!o) return "";
+    const bits = String(o.textContent).split("—");
+    return (bits[part || 0] || bits[0]).trim();
+  };
+  const esc = (t) => String(t).replace(/[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const armyName = (k) => FACTIONS[k] ? FACTIONS[k].name : "a random army";
+  function summarise() {
+    if (!sumEl || !menuBox) return;
+    const slots = readSlots() || [];
+    const me = slots.length ? slots[0].team : 1;
+    let allies = 0;
+    const foes = [];
+    slots.forEach((s, i) => { if (i) { if (s.team === me) allies++; else foes.push(s); } });
+    const sides = "<b>" + esc(armyName((slots[0] || {}).faction)) + "</b>" +
+      (allies ? " + " + allies + (allies > 1 ? " allies" : " ally") : "") +
+      '<span class="vs">VS</span><b>' +
+      esc(foes.length === 1 ? armyName(foes[0].faction) : foes.length + " enemies") + "</b>";
+    const eraMe = optText("opt-era"), eraThem = optText("opt-aera");
+    const bits = [sides, "<b>" + esc(optText("opt-map")) + "</b>",
+      esc(eraMe + (!linked() && eraThem && eraThem !== eraMe ? " against " + eraThem : "")),
+      esc(optText("opt-cash", 1))];
+    const wx = (document.getElementById("opt-weather") || {}).value;
+    if (wx && wx !== "clear") bits.push(esc(optText("opt-weather")));
+    if ((document.getElementById("opt-fog") || {}).value === "0") bits.push("no fog");
+    const armed = document.getElementById("me-armed");
+    if (armed && armed.className === "me-on") bits.push("edited map");
+    sumEl.innerHTML = bits.join('<span class="dot">&middot;</span>');
+  }
+  if (menuBox && sumEl) {
+    /* a pick bubbles up as a change; adding or dismissing a commander is a
+       click, handled on the button first, so the rows are current by the
+       time it reaches here */
+    menuBox.addEventListener("change", summarise);
+    menuBox.addEventListener("click", summarise);
+    /* the map editor arms its ground from its own screen: catch the return */
+    menu.addEventListener("focusin", summarise);
+    try { summarise(); } catch (e) { sumEl.textContent = ""; }
   }
 
   let raf = 0, lastT = 0, acc = 0;
