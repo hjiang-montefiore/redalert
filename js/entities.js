@@ -1690,7 +1690,7 @@ class Unit {
     const minR = (w.minRange || 0) * CFG.TILE;
     const dist = U.dist(this.x, this.y, t.x, t.y);
     /* giving ground while the round reloads (kiteStep, below) */
-    if (this.kiteS !== null && this.kiteStep(t, dist, dt)) return;
+    if (this.kiteS !== null && this.kiteStep(t, dist, dt, range, minR)) return;
 
     if (dist > range) {
       /* ---- A SET-UP LAUNCHER DOES NOT PACK UP TO RUN AFTER AN AEROPLANE ----
@@ -1792,14 +1792,15 @@ class Unit {
      order says "go and kill that one" (it carries `release`), and a hull
      that backs away from the very thing it was sent at reads as refusing the
      order. Aircraft and ships never come here; they have their stand-offs.
-     AGAINST WHAT. A unit on the ground - never a structure, which does not
-     come on - that (a) can hurt us at all, by Unit.reachAt(): its PUBLISHED
-     reach with the 1.15 margin, with a weapon that does half damage or more
-     to our armour, so a rifle squad is no reason for a tank destroyer to
-     move; (b) we outreach by three quarters of a tile at least, measured
-     from 0.92 of our reach or 0.98 of our own sight, whichever is shorter -
-     we never give so much ground that it ends up out of our reach, nor past
-     our own eyes, where a round is laid blind (CFG.BLIND_FIRE_ACC 0.52);
+     AGAINST WHAT. A unit on the ground that our side can see - never a
+     structure, which does not come on - that (a) can hurt us at all, by
+     Unit.reachAt(): its PUBLISHED reach with the 1.15 margin, with a weapon
+     that does half damage or more to our armour, so a rifle squad is no
+     reason for a tank destroyer to move; (b) we outreach by three quarters
+     of a tile at least, measured from 0.92 of our reach or 0.98 of our own
+     sight, whichever is shorter - we never give so much ground that it ends
+     up out of our reach, nor past our own eyes, where a round is laid blind
+     (CFG.BLIND_FIRE_ACC 0.52);
      (c) is no faster than we are, ours as we stand (fuel, strain, the ground
      under us) against its card speed on its ground; (d) is coming: moving,
      heading within 60 degrees of us. On the cards, nato against pact in all
@@ -1834,8 +1835,11 @@ class Unit {
      guard order's own drift-back radius, was measured first and is too
      short to pay for a hull's two turns: over the same 40 paired fights a
      Khrizantema against a Javelin team won 18 with it against 19 standing
-     still; with five it wins 21 (exchange +0.09 against -0.06). Once the
-     ground is spent it stands and fights, front on.
+     still; with five it won 21 (exchange +0.09 against -0.06) as first
+     built, and wins 20 (+0.06) since kiteStep() stopped turning the hull at
+     twice its rate on the way back into reach. Once the ground is spent it
+     stands and fights, front on; once the fight is over it walks back to
+     where it stood when it gave the first step.
      THE RHYTHM is shot - step - shot, and nothing flips it from tick to
      tick: a step begins only with a round fired, and ends when the reload is
      down to the time it takes to come back on aim, at its end point, when
@@ -1854,8 +1858,20 @@ class Unit {
         w.proj === "arc" || w.indirect || (this.roundsMax && this.rounds <= 0) ||
         (P.aiOff && P.aiOff.has("kite"))) return;
     if (t.kind !== "unit" || t.layer !== "ground" || t.garrisonIn || !(t.def.speed > 0)) return;
+    /* and only on what our side can see: inside our own eyes, the way
+       acquire() takes a contact (acqGate), or past them in our side's
+       picture (G.sideSees). A round also goes out at a contact past our eyes
+       that nobody of ours holds, laid blind (Combat.fire), and where that one
+       is heading is nothing this crew knows. Found in review (kite_check
+       [7]): with the fog on and a tank destroyer alone, its first round at a
+       Javelin team 10.3 tiles off - past its ten tiles of sight - went out
+       blind, and a step was taken on that team's true heading in each of 8
+       fights; now in none, and with a squad of ours watching the team it
+       steps in all 8. */
+    const eyes = this.sightR() * T;
+    if (dist > eyes && g.sideSees && !g.sideSees(P, t, this)) return;
     const re = Unit.reachAt(t, this.targetLayer(), this.armorClass());
-    const stopR = Math.min(range * 0.92, this.sightR() * T * 0.98);
+    const stopR = Math.min(range * 0.92, eyes * 0.98);
     if (!re || stopR < re + T * 0.75) return;
     const map = g.map;
     const vMe = d.speed * this.speedMul() * GameMap.speedAt(map, this.tx, this.ty, this.layer) * T;
@@ -1908,12 +1924,23 @@ class Unit {
       best = L * c; gx = ex; gy = ey;                   // the line that opens the gap most
     }
     if (!best) return;                                  // nowhere to go: it stands
+    /* and the ground is taken back when the fight is over: the attack branch
+       of updateGeneric() walks an order's `resume` as an attack-move, so the
+       crew goes back to where it stood when it gave the first step and is
+       idle there. Without it the ground was given for good - a tank
+       destroyer that beat a Javelin team stood 4.5 tiles behind its post 30 s
+       after the kill, idle, with a guard order handed or without one (the
+       guard order's drift-back never runs again: the fight it picks up
+       replaces it, and ends idle). Now it is 0.4 tiles off (kite_check [3]).
+       An attack-move or a patrol carries its own leg already. */
+    if (!this.order.resume) this.order.resume = { x: this.x, y: this.y };
     if (!(now - this.kiteT < 10)) { this.kiteX = ax; this.kiteY = ay; }
     this.kiteT = now;
     const k = (this.kiteS !== null && this.kiteS.t === t) ? this.kiteS
       : (this.kiteS = { t: t, step: false, wi: 0, gx: 0, gy: 0, re: 0, stopR: 0, vt: 0,
-                        lead: 0, go: 0, ck: 0, cx: 0, cy: 0, nc: 0 });
+                        lead: 0, go: 0, ck: 0, cx: 0, cy: 0, nc: 0, eyes: 0 });
     k.step = true; k.wi = wi; k.gx = gx; k.gy = gy; k.re = re; k.stopR = stopR; k.vt = vThem; k.lead = lead;
+    k.eyes = eyes;
     k.go = now + burstT; k.ck = k.go + tAway + 0.3; k.cx = this.x; k.cy = this.y; k.nc = 0;
     this.path = null; this.repathT = 0;
     /* counted per owner for the scorecard and a census; nothing decides on it */
@@ -1937,26 +1964,43 @@ class Unit {
   }
   /* One tick of a step under way; true when it moved, and engage() then has
      nothing more to do this tick. Between steps a turreted hull brings its
-     front plate back round to the enemy while the turret works. */
-  kiteStep(t, dist, dt) {
+     front plate back round to the enemy while the turret works - but only
+     while it stands to fight: a target out of reach (or inside the arming
+     distance) is engage()'s to drive after (or back off from), stepAlong()
+     steers the hull for that, and turning it here as well turned it at
+     twice its rate or, where the way bends off the bearing, undid that turn
+     tick for tick. Found in review: a tank destroyer with a finished step on
+     record, its target gone round the end of a stretch of water, froze its
+     hull on one heading (0 rad turned in 40 s), drove 5.5 tiles into the
+     bank and never came back into reach; without the record it drove 14.7
+     and did. */
+  kiteStep(t, dist, dt, range, minR) {
     const k = this.kiteS;
     if (k.t !== t) { this.kiteS = null; return false; }
     const want = Math.atan2(t.y - this.y, t.x - this.x);
     if (!k.step) {
-      if (this.def.turret && this.cat === "vehicle")
+      if (this.def.turret && this.cat === "vehicle" && dist <= range && dist >= minR)
         this.ang = U.turnToward(this.ang, want, (this.def.turn || 1) * dt);
       return false;
     }
-    const now = this.game.time;
+    const now = this.game.time, g = this.game;
     if (now < k.go) return false;                 // the burst is still going out: stand for it
     const cd = this.cooldowns[k.wi];
     /* done: back on aim as it loads, or it is not closing as fast as we
        give ground - more would leave it outside our reach when we are
-       loaded, even coming on at its card speed */
-    let end = cd <= k.lead || dist - k.vt * cd >= k.stopR || dist <= k.re ||
-              this.stance !== "guard" || this.speedMul() <= 0;
+       loaded, even coming on at its card speed. The three tests that read
+       the enemy are asked only while our side can see it: opening the gap
+       takes it past our own eyes (stopR is 0.98 of them when loaded, more
+       during the step), and with the fog on a tank destroyer stepping back
+       from a Javelin team had it past its eyes and out of its side's picture
+       for 5.3 s of 15.1 s of stepping over ten fights. Out of the picture the
+       crew keeps to the step it planned - its clock, its ground - and reads
+       nothing of the enemy's. */
+    const seen = dist <= k.eyes || !g.sideSees || g.sideSees(this.owner, t, this);
+    let end = cd <= k.lead || this.stance !== "guard" || this.speedMul() <= 0 ||
+              (seen && (dist - k.vt * cd >= k.stopR || dist <= k.re));
     if (!end) {
-      k.nc = (t.moving && Math.cos(U.angDiff(t.ang, want + Math.PI)) > 0.5) ? 0 : k.nc + dt;
+      if (seen) k.nc = (t.moving && Math.cos(U.angDiff(t.ang, want + Math.PI)) > 0.5) ? 0 : k.nc + dt;
       if (k.nc > 0.4) end = true;
       else if (now >= k.ck) {
         if (U.dist2(this.x, this.y, k.cx, k.cy) < 9) end = true;        // wedged

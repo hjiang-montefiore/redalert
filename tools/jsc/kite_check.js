@@ -30,10 +30,17 @@
          an explicit move order is carried out, given before or during a step;
      [3] the leash: against an enemy it cannot kill, and against four coming
          one after another, it never ends up more than the leash from its post;
+         and when a fight it gave ground in is won it walks back to where it
+         stood, on a guard order or none;
      [4] cornered, with water behind it and on both sides, with water three
          tiles behind it, against the map edge: never on water or off the
          board, and it still fights;
-     [5] the player's unit and the AI's unit, same fight: the same steps.
+     [5] the player's unit and the AI's unit, same fight: the same steps;
+     [6] a turreted hull with a step behind it, its target gone round the end
+         of a stretch of water, drives after it as one with no step behind it;
+     [7] fog on: a round laid blind, at an enemy past its own eyes that its
+         side cannot see, starts no step; with a squad of ours watching that
+         enemy it gives ground.
    "-- ab" prints the paired table over seven pairings instead (the numbers
    in the entities.js comment). */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
@@ -107,7 +114,10 @@ function run() {
      sent in when the last is dead (o.kImmortal: the kiter cannot die);
      o.water: water from this many tiles
      behind the kiter (o.cove: on both sides too); o.edge: the kiter this
-     many tiles from the map's east edge; o.dur: seconds. */
+     many tiles from the map's east edge; o.dur: seconds; o.linger: seconds
+     played on after the last kill; o.guard: the kiter handed a guard order
+     (the G key); o.spot: a squad of the kiter's side on hold that cannot be
+     hurt, this {dx, dy} in tiles off the kiter, to see for it. */
   function duel(o) {
     Combat.reset && Combat.reset();
     G.rng = U.mulberry32(o.seed !== undefined ? o.seed : 7);
@@ -121,17 +131,19 @@ function run() {
         if (Math.abs(y3 - ky) >= 2) paint(x3, y3, WATER);
     }
     Path.invalidate();
-    var K = G.spawnUnitAt(ko, o.k, kx * TT + 16, ky * TT + 16), E = null;
+    var K = G.spawnUnitAt(ko, o.k, kx * TT + 16, ky * TT + 16), E = null, SP = null;
+    if (o.spot) { SP = G.spawnUnitAt(ko, "rifle_p", K.x + o.spot.dx * TT, K.y + o.spot.dy * TT); SP.stance = "hold"; }
     var x0 = K.x, y0 = K.y;
     function send() {
       E = G.spawnUnitAt(eo, o.e, K.x - o.d * TT, y0 + (o.edy || 0) * TT);
       E.ang = 0; E.tang = 0;
       E.give({ type: "attack", target: K });
-      scene = [K, E];
+      scene = SP ? [K, E, SP] : [K, E];
     }
     K.ang = Math.PI; K.tang = Math.PI;
     K.guardX = K.x; K.guardY = K.y;
     if (o.hold) K.stance = "hold";
+    if (o.guard) { K.stance = "guard"; K.give({ type: "guard" }); }
     ko.aiOff = o.off ? new Set(["kite"]) : undefined;
     var k0 = ko.kiteN || 0, kMove = -1;
     send();
@@ -144,7 +156,7 @@ function run() {
       else if (sh === E) r.eShots++;
       return ofire.apply(this, arguments);
     };
-    var was = false, run0 = 0, waves = o.waves || 1;
+    var was = false, run0 = 0, waves = o.waves || 1, counted = null;
     var N = Math.round((o.dur || 60) / DT);
     for (var n = 0; n < N; n++) {
       if (o.move && Math.abs(G.time - r.tStart - (o.moveT || 0)) < DT / 2) {
@@ -153,6 +165,7 @@ function run() {
       }
       if (o.immortal) E.hp = E.maxHp;
       if (o.kImmortal) K.hp = K.maxHp;
+      if (SP) SP.hp = SP.maxHp;
       G.tick(DT);
       sweep();
       var st = !!(K.kiteS && K.kiteS.step && G.time >= K.kiteS.go);
@@ -167,11 +180,12 @@ function run() {
         if (K.x < 0 || K.y < 0 || tx >= M.W || ty >= M.H) r.off++;
         else if (!GameMap.passable(M, tx, ty, K.layer)) r.wet++;
       }
-      if (E.dead) {
-        r.eDmg += r.eHp0; r.kills++;
+      if (E.dead && counted !== E) {
+        counted = E; r.eDmg += r.eHp0; r.kills++;
         if (--waves > 0 && !K.dead) { send(); continue; }
+        r.killT = G.time;
       }
-      if (K.dead || E.dead) { r.end = G.time - r.tStart; break; }
+      if (K.dead || (E.dead && !(o.linger && G.time - r.killT < o.linger))) { r.end = G.time - r.tStart; break; }
     }
     if (!E.dead) r.eDmg += r.eHp0 - Math.max(0, E.hp);
     Combat.fire = ofire;
@@ -181,7 +195,7 @@ function run() {
     r.kDead = K.dead; r.eDead = E.dead; r.won = E.dead && !K.dead;
     r.kEnd = { x: (K.x - x0) / TT, y: (K.y - y0) / TT };
     /* clear the board */
-    [K, E].forEach(function (u) {
+    (SP ? [K, E, SP] : [K, E]).forEach(function (u) {
       var i = G.entities.indexOf(u); if (i >= 0) G.entities.splice(i, 1);
       var j = u.owner.units.indexOf(u); if (j >= 0) u.owner.units.splice(j, 1);
       u.dead = true;
@@ -297,6 +311,17 @@ function run() {
   var wv = duel({ k: "atgmv_p", e: "at_n", d: 10.3, waves: 4, kImmortal: true, dur: 240, label: "four in a row" });
   chk("four enemies one after another cannot walk it back past the leash", wv.kills >= 2 && wv.maxOff <= 5.5,
       wv.kills + " killed, " + wv.steps + " steps, at most " + r1(wv.maxOff) + " t from its post");
+  /* won fights only - a dead crew walks nowhere - the first four the seeds
+     give, every other one with a guard order handed first */
+  var back = [];
+  for (var bi = 0; bi < 16 && back.length < 4; bi++) {
+    var rb = duel({ k: "atgmv_p", e: "at_n", d: 10.3, seed: 300 + bi, guard: back.length % 2 === 1, linger: 30, dur: 120,
+                    label: "the fight over" + (back.length % 2 ? " (guard order)" : "") });
+    if (rb.won && rb.steps) back.push(rb);
+  }
+  chk("when a fight it gave ground in is won it walks back to where it stood (guard order or none)",
+      back.length >= 2 && back.every(function (r) { return r.maxOff > 3 && U.dist(r.kEnd.x, r.kEnd.y, 0, 0) < 1; }),
+      back.map(function (r) { return r1(r.maxOff) + " t back, 30 s after the kill " + r1(U.dist(r.kEnd.x, r.kEnd.y, 0, 0)) + " t off"; }).join("; "));
 
   /* ===== 4. cornered ===== */
   log("\n[4] cornered");
@@ -326,4 +351,77 @@ function run() {
   }
   chk("the same fight gives the same steps and the same result for either seat", same === 6,
       same + " of 6 identical" + (diff.length ? "; " + diff.join("; ") : ""));
+
+  /* ===== 6. a step behind it, and a chase ===== */
+  log("\n[6] a step behind it, a target gone round water");
+  /* A finished step stays on record for as long as the target is the same
+     one; set here by hand, as kiteDecide leaves it once the step is done. The
+     target stands at the far end of a stretch of water open only at its
+     south end, out of reach: the way to it bends away from where it is. */
+  function chase(rec) {
+    G.rng = U.mulberry32(9);
+    for (var y = sy0; y < sy0 + SH; y++) for (var x = sx0; x < sx0 + SW; x++) paint(x, y, GRASS);
+    var kx = sx0 + 30;
+    for (var yw = Math.max(0, sy0 - 12); yw < sy0 + SH - 2; yw++) { paint(kx - 6, yw, WATER); paint(kx - 7, yw, WATER); }
+    Path.invalidate();
+    var K = G.spawnUnitAt(P0, "atgmv_p", kx * TT + 16, midY * TT + 16);
+    var E = G.spawnUnitAt(P1, "at_n", (kx - 16) * TT + 16, (sy0 + 1) * TT + 16);
+    E.stance = "hold"; E.give({ type: "idle" });
+    K.ang = Math.PI; K.tang = Math.PI;
+    K.order = { type: "attack", target: E, auto: true };
+    if (rec) K.kiteS = { t: E, step: false, wi: 0, gx: 0, gy: 0, re: 0, stopR: 0, vt: 0, lead: 0, go: 0,
+                         ck: 0, cx: 0, cy: 0, nc: 0, eyes: 0 };
+    scene = [K, E];
+    var rng = K.weaponRange(WEAPONS[K.def.weapons[0]]), inT = -1, ran = 0, px = K.x, py = K.y;
+    for (var n = 0; n < 40 * 30; n++) {
+      E.hp = E.maxHp;
+      G.tick(DT); sweep();
+      ran += U.dist(K.x, K.y, px, py); px = K.x; py = K.y;
+      if (inT < 0 && U.dist(K.x, K.y, E.x, E.y) <= rng) inT = n * DT;
+    }
+    var res = { inT: inT, ran: ran / TT };
+    [K, E].forEach(function (u) {
+      var i = G.entities.indexOf(u); if (i >= 0) G.entities.splice(i, 1);
+      var j = u.owner.units.indexOf(u); if (j >= 0) u.owner.units.splice(j, 1);
+      u.dead = true;
+    });
+    scene = []; unpaint();
+    return res;
+  }
+  var ch0 = chase(false), ch1 = chase(true);
+  chk("a turreted hull with a step behind it drives round to its target as one without",
+      ch1.inT >= 0 && ch1.inT <= ch0.inT + 1,
+      "in reach after " + (ch1.inT < 0 ? "never" : r1(ch1.inT) + " s") + ", drove " + r1(ch1.ran) + " t; without a step behind it " +
+      (ch0.inT < 0 ? "never" : r1(ch0.inT) + " s") + ", " + r1(ch0.ran) + " t");
+
+  /* ===== 7. the fog ===== */
+  log("\n[7] the fog on");
+  /* Fog on for both seats for this section only (G.sideSees answers "seen"
+     for everything while it is off, which is how [1]-[6] run). A step begun
+     on a round laid blind - the enemy past the kiter's own eyes and outside
+     its side's picture - is counted as it is decided. The tank destroyer sees
+     ten tiles and the Javelin team comes on from 10.3: alone, its first round
+     is laid blind; with a squad of ours on hold off to the side, the enemy
+     is in our picture from the start. */
+  G.fogEnabled = true; G.recomputeFog();
+  var KD = Unit.prototype.kiteDecide, blindShots = 0, blindSteps = 0;
+  Unit.prototype.kiteDecide = function (t, wi, w, range, dist) {
+    var blind = dist > this.sightR() * TT && !G.sideSees(this.owner, t, this), n0 = this.owner.kiteN || 0;
+    KD.apply(this, arguments);
+    if (blind) { blindShots++; if ((this.owner.kiteN || 0) > n0) blindSteps++; }
+  };
+  var alone = 0, spotted = 0;
+  try {
+    for (var fi = 0; fi < 8; fi++) {
+      alone += duel({ k: "atgmv_p", e: "at_n", d: 10.3, seed: 900 + fi, label: "fog, alone " + fi }).steps;
+      spotted += duel({ k: "atgmv_p", e: "at_n", d: 10.3, seed: 900 + fi, spot: { dx: -6, dy: 3 }, label: "fog, watched " + fi }).steps;
+    }
+  } finally {
+    Unit.prototype.kiteDecide = KD;
+    G.fogEnabled = false; G.fog.fill(2);
+  }
+  chk("with the fog on, a round laid blind past its own eyes starts no step", blindShots > 0 && blindSteps === 0,
+      blindShots + " rounds laid blind at a contact past its eyes, " + blindSteps + " steps begun on one; " + alone + " steps in 8 fights alone");
+  chk("...and with a squad of ours watching that enemy it gives ground", spotted >= 6,
+      spotted + " steps in 8 fights");
 }
