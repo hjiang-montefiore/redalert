@@ -1619,7 +1619,11 @@ var Render = (function () {
      rounds at one map point on a fixed RNG put 13 on the aim point and none
      farther out than 43.9 px. A cargo round is ringed where its MINES can
      lie instead, which is wider (olSowR). A box of ground being mined or
-     swept is outlined, with a line to the point the vehicle is working.
+     swept is outlined, with a line to the point the vehicle is working. An
+     AREA ATTACK (entities.js) is outlined too, each unit its own share of
+     it: a gun's strip, with its line to the point being fired on now, and
+     a bomber's lane, with the run down it at height (a stick) or the line
+     to its next aimpoint (stand-off rounds), then the way home.
 
      A LINE GOES ONLY AS FAR AS THE UNIT WILL. The queue (u.orders) is taken
      up only by an order that finishes into nextOrder() (entities.js): a
@@ -1727,6 +1731,23 @@ var Render = (function () {
     const i = OL.nr++ * 4;
     R[i] = x; R[i + 1] = y; R[i + 2] = r; R[i + 3] = k;
   }
+  /* an area attack's share of the ground (entities.js AREA ATTACK): a
+     rectangle on any heading, centre (cx, cy), long side along (ux, uy),
+     half-sides hl and hw. The pen is left at the last corner. */
+  function olArea(a, k, alt) {
+    if (!a || !olNum(a.cx) || !olNum(a.cy) || !olNum(a.ux) || !olNum(a.uy) || !olNum(a.hl) || !olNum(a.hw)) return false;
+    const lx = a.ux * a.hl, ly = a.uy * a.hl, wx = -a.uy * a.hw, wy = a.ux * a.hw;
+    olX = a.cx - lx - wx; olY = a.cy - ly - wy; olA = alt;
+    olLeg(k, a.cx + lx - wx, a.cy + ly - wy, alt, false);
+    olLeg(k, a.cx + lx + wx, a.cy + ly + wy, alt, false);
+    olLeg(k, a.cx - lx + wx, a.cy - ly + wy, alt, false);
+    olLeg(k, a.cx - lx - wx, a.cy - ly - wy, alt, false);
+    return true;
+  }
+  /* the point a stand-off bomber's next round goes to (entities.js areaPoint) */
+  function olAreaPoint(a, k) {
+    return typeof Unit !== "undefined" && Unit.areaPoint ? Unit.areaPoint(a, k) : { x: a.cx, y: a.cy };
+  }
   /* on the player's map now: render.js visible(), for any game */
   function olShown(g, e) {
     if (e.owner === g.human || !g.fogEnabled || !g.fog) return true;
@@ -1780,6 +1801,11 @@ var Render = (function () {
         }
         case "bombard": {
           olLeg(K_FIRE, o.x, o.y, 0, true);
+          /* An area mission: the point being fired on now, and the gun's own
+             strip of the area (entities.js AREA ATTACK) - a ring round each
+             point of the walk would bury the strip. The next order starts
+             from the point, as a point mission's does. */
+          if (o.area && olArea(o.area, K_FIRE, 0)) { olX = o.x; olY = o.y; olA = 0; pull = !air; break; }
           /* the mount the order names (entities.js bombard): a cargo round is
              one round and then the next order; a gun fires until its clock
              and then the next order. Not in the air (above). */
@@ -1787,6 +1813,32 @@ var Render = (function () {
           if (w && w.scatter) olRing(o.x, o.y, olSowR(w), K_AREA);
           else olRing(o.x, o.y, OL_MISS, K_FIRE);
           pull = !air;
+          break;
+        }
+        case "areastrike": {
+          /* A bomber's AREA ATTACK, in the strike colour: a stick is the run
+             down its lane at cruise height - from where it is, by way of the
+             start of the run until it is on it - and a stand-off load the
+             point its next round goes to; then the lane on the ground, and
+             home (areaDone), or what is queued behind it. */
+          const a = o.area;
+          if (!a || !olNum(a.cx)) { next = OL_HOME; break; }
+          if (o.mode === "stick") {
+            const dr = o.dir === -1 ? -1 : 1, rx = a.ux * dr * a.hl, ry = a.uy * dr * a.hl;
+            if (o.phase !== "run") olLeg(K_STRIKE, a.cx - rx, a.cy - ry, 1, true);
+            olLeg(K_STRIKE, a.cx + rx, a.cy + ry, 1, true);
+            const ex = olX, ey = olY;
+            olArea(a, K_STRIKE, 0);
+            olX = ex; olY = ey; olA = 1;
+          } else {
+            const nu = a.nu || 1, nv = a.nv || 1, k = Math.min(o.k || 0, nu * nv - 1);
+            const p = olAreaPoint(a, k);
+            olLeg(K_STRIKE, p.x, p.y, 0, false);
+            olArea(a, K_STRIKE, 0);
+            olX = p.x; olY = p.y; olA = 0;
+          }
+          if (q && qi < q.length) pull = true;
+          else next = OL_HOME;
           break;
         }
         case "clearobstacle":

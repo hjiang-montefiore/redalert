@@ -565,8 +565,11 @@ var UI = (function () {
   let scatMode = false;     // armed: the next map click sows a minefield by rocket
   let obsMode = null;       // armed: the next map click emplaces this obstacle
   /* armed: the next DRAG on the map marks out an area to work automatically */
-  let areaMode = null;      // null | "lay" | "sweep"
+  let areaMode = null;      // null | "lay" | "sweep" | "fire"
   let areaDrag = null;      // {x0,y0,x1,y1} in screen pixels, while dragging
+  /* AREA ATTACK armed from a hangar: the airbase or deck whose picked flight
+     takes it, rather than the selection (areaFireOrder) */
+  let areaHost = null;
 
   function pickSet(b) {
     if (!sortiePick[b.id]) sortiePick[b.id] = new Set();
@@ -694,6 +697,8 @@ var UI = (function () {
     const n = sel.size;
     const up = wing.filter(u => !u.parked).length;
     const ship = b.kind === "unit";
+    const areaN = { any: parked.some(isBomber),
+                    n: parked.filter(u => sel.has(u.id) && isBomber(u) && !u.areaMount().why).length };
     h += '<div class="hbtns">' +
       '<div class="hb" data-hact="all">SELECT READY (' + parked.filter(u =>
         u.fuel >= u.reserveFuel() && !u.ordnanceDry() &&
@@ -704,6 +709,11 @@ var UI = (function () {
         '" data-hact="cap">PATROL' + (n ? " (" + n + ")" : "") + "</div>" +
       '<div class="hb' + (up ? "" : " off") + '" data-hact="recall">' +
         (ship ? "RECALL" : "RECALL") + (up ? " (" + up + ")" : "") + "</div>" +
+      /* AREA ATTACK for the picked flight's heavy and stealth bombers -
+         only on a ramp that has one, so every other hangar keeps its row */
+      (areaN.any ? '<div class="hb' + (areaN.n ? "" : " off") +
+                   (areaMode === "fire" && areaHost === b ? " arm" : "") + '" data-hact="area">AREA' +
+                   (areaN.n ? " (" + areaN.n + ")" : "") + "</div>" : "") +
       "</div>";
     /* Anything of yours living on another ramp - or on none, because the base
        that built it has since been destroyed - can be adopted here while
@@ -739,7 +749,11 @@ var UI = (function () {
       }
     }
     h += deckBuyPanel(b);
-    if (sortieMode)
+    if (areaMode === "fire" && areaHost === b)
+      h += '<div class="hhint">Drag a line or a box on the map. Each bomber picked flies one run ' +
+           "down its own lane of it \u2014 a stick of bombs along the run, or stand-off missiles to " +
+           "separate points across it \u2014 and comes back here to rearm. RMB or Esc cancels.</div>";
+    else if (sortieMode)
       h += '<div class="hhint">' + (sortieMode === "strike"
         ? "Click a target to strike it."
         : "Click a point to patrol over it.") + " RMB or Esc cancels.</div>";
@@ -961,7 +975,9 @@ var UI = (function () {
                                  u.scatterIndex && u.scatterIndex() >= 0);
   }
 
-  function scatterPanel(list) {
+  /* `more`: another button for the same row - AREA FIRE, on a gun that also
+     carries a mine round - so the panel keeps one row of buttons */
+  function scatterPanel(list, more) {
     const left = list.reduce((n, u) => n + u.disp, 0);
     const cap  = list.reduce((n, u) => n + u.dispMax, 0);
     const u0 = list[0], w = WEAPONS[u0.def.weapons[u0.scatterIndex()]];
@@ -971,7 +987,7 @@ var UI = (function () {
     const room = (typeof Mines !== "undefined") ? Mines.CAP : 0;
     let h = '<div class="hbtns"><div class="hb' +
             (left ? (scatMode ? " arm" : "") : " off") +
-            '" data-mact="scatter">SCATTER MINES (' + left + "/" + cap + ")</div></div>";
+            '" data-mact="scatter">SCATTER MINES (' + left + "/" + cap + ")</div>" + (more || "") + "</div>";
     h += '<div class="hhint">' + (scatMode
       ? "Click the ground to sow it. One round puts about " + per +
         " anti-tank mines down where it lands, out to " + rng +
@@ -1119,8 +1135,159 @@ var UI = (function () {
     refreshSelInfo();
   }
 
+  /* ---- AREA ATTACK (B) ----
+     (owner) "long distance rocket, long gun (like paladin), bomber force to
+     attack area." Armed the way MINE AN AREA is - the AREA button in the
+     panel's row, or B - and the next DRAG on the map marks a line or a box.
+     entities.js Unit.areaPlan shares it out (guns a strip each along it,
+     bombers a lane each across it) and says who cannot take it and why;
+     everything about how the rounds are walked and the runs flown is there,
+     under AREA ATTACK. Ctrl+right-click stays the one-point fire mission. */
+  function isBomber(u) { return u.def.role === "heavybomber" || u.def.role === "stealthbomber"; }
+  /* who an armed area order is for: the hangar's picked flight, or the selection */
+  function areaFireUnits(host) {
+    if (host) { const s = pickSet(host); return host.wing().filter(u => s.has(u.id) && u.parked); }
+    return selection.filter(u => u.kind === "unit" && u.owner === G.human && !u.dead);
+  }
+  /* guns, launchers and mortars selected that take it: the panel's row */
+  function selectedAreaGuns() {
+    return selection.filter(u => u.kind === "unit" && u.owner === G.human && !u.dead &&
+                                 u.layer === "ground" && u.areaMount().kind === "gun");
+  }
+  function areaFireOrder(host) {
+    /* the drag goes with it: B pressed again with the mouse still down left
+       areaDrag behind, and the mouseup handed that box to areaCommit with no
+       mode armed - which reads as SWEEP AN AREA, so a mine-clearing vehicle
+       in the selection set off to sweep it */
+    if (areaMode === "fire") { areaMode = null; areaHost = null; areaDrag = null; Sfx.play("click"); refreshSelInfo(); return; }
+    const list = areaFireUnits(host || null);
+    if (!list.length) return;
+    /* refused at the button, with the reason, rather than armed for a drag
+       that nothing selected can carry out */
+    if (!list.some(u => !u.areaMount().why)) {
+      const one = list.every(u => u.def.id === list[0].def.id);
+      alert((one ? list[0].def.name.toUpperCase() : "NOTHING SELECTED TAKES AN AREA ATTACK") +
+            " — " + list[0].areaMount().why, "bad");
+      return;
+    }
+    areaMode = "fire"; areaHost = host || null; areaDrag = null;
+    mineMode = false; obsMode = null; airCmdMode = null; scatMode = false; patrolMode = false;
+    sortieMode = null; sortieHost = null; input.attackMove = false;
+    Sfx.play("click");
+    refreshSelInfo();
+  }
+  /* B: the hangar's flight when an airbase or a deck with aircraft picked is
+     what is selected, the selection otherwise - the two AREA buttons */
+  function areaFireKey() {
+    const e = selection.length === 1 ? selection[0] : null;
+    const host = e && e.owner === G.human && !e.dead && e.ramp && e.ramp() && pickSet(e).size ? e : null;
+    areaFireOrder(host);
+  }
+  /* The drag as a piece of ground: the rectangle the player SAW, on its own
+     heading. Its two centre lines are taken through to the map, and the
+     longer is the long side. The mine-area box takes the two corners'
+     extremes instead, which is square to the map: a road drawn across an
+     isometric or rotated view became the square box round it. Kept inside
+     the map, shrunk about its centre if it hangs off the edge. */
+  function areaFromDrag(x0, y0, x1, y1) {
+    const xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
+    const a0 = Render.unproject(x0, ym), a1 = Render.unproject(x1, ym);
+    const b0 = Render.unproject(xm, y0), b1 = Render.unproject(xm, y1);
+    let ax = a1.x - a0.x, ay = a1.y - a0.y, bx = b1.x - b0.x, by = b1.y - b0.y;
+    if (Math.hypot(bx, by) > Math.hypot(ax, ay)) { const tx = ax, ty = ay; ax = bx; ay = by; bx = tx; by = ty; }
+    const la = Math.hypot(ax, ay);
+    if (!(la >= 1)) return null;
+    const ux = ax / la, uy = ay / la, T = CFG.TILE;
+    const W = G.map.W * T, H = G.map.H * T, m = T * 0.5;
+    const cx = U.clamp((a0.x + a1.x + b0.x + b1.x) / 4, m, W - m);
+    const cy = U.clamp((a0.y + a1.y + b0.y + b1.y) / 4, m, H - m);
+    let hl = la / 2, hw = Math.abs(by * ux - bx * uy) / 2;
+    const ex = Math.abs(ux) * hl + Math.abs(uy) * hw, ey = Math.abs(uy) * hl + Math.abs(ux) * hw;
+    const f = Math.min(1, ex > 0 ? Math.min(cx - m, W - m - cx) / ex : 1,
+                          ey > 0 ? Math.min(cy - m, H - m - cy) / ey : 1);
+    hl *= f; hw *= f;
+    return { cx: cx, cy: cy, ux: ux, uy: uy, hl: hl, hw: hw };
+  }
+  /* The drag has finished: share the ground out and give the orders. A gun
+     is given its mission as any order, Shift queueing it behind the last;
+     a bomber is launched through G.launchSortie, the hangar's own launch,
+     which refuses one still rearming or refuelling - unless it is airborne
+     on an order that hands on to the next one (a move, a sweep, a strike,
+     another area strike) and Shift is held, when it is queued. A cap, a
+     hold and the ramp never hand on (updateAir), so a queue behind them
+     would never be flown. */
+  function areaFireCommit(x0, y0, x1, y1, shift) {
+    const host = areaHost && !areaHost.dead ? areaHost : null;
+    const list = areaFireUnits(host);
+    areaMode = null; areaDrag = null; areaHost = null;
+    const a = areaFromDrag(x0, y0, x1, y1);
+    if (!a || !list.length) { refreshSelInfo(); return; }
+    const plan = Unit.areaPlan(list, a);
+    const HANDS = ["move", "attackmove", "attack", "areastrike"];
+    let guns = 0, air = 0, nFail = 0, fail = null;
+    for (const p of plan.parts) {
+      const u = p.u;
+      if (u.layer !== "air") {
+        const behind = shift && (u.order.type !== "idle" || (u.orders && u.orders.length));
+        const o = u.areaOrder(p.a, behind);
+        if (o) { u.give(o, shift); guns++; }
+        continue;
+      }
+      const queue = shift && !u.parked && HANDS.indexOf(u.order.type) >= 0;
+      const o = u.areaOrder(p.a, queue);
+      if (!o) continue;
+      if (queue) { u.give(o, true); air++; continue; }
+      const why = G.launchSortie(u, o);
+      if (why) { fail = why; nFail++; continue; }
+      if (host) pickSet(host).delete(u.id);
+      air++;
+    }
+    const notes = [];
+    const dryN = plan.dry.filter(d => d.why === "OUT OF ROUNDS").length, wait = plan.dry.filter(d => d.why !== "OUT OF ROUNDS");
+    if (dryN) notes.push(dryN + " OUT OF ROUNDS");
+    if (wait.length) notes.push(wait.length + " " + wait[0].why);
+    if (nFail) notes.push(nFail + " " + fail);
+    if (plan.no.length)
+      notes.push(plan.no.length + " CANNOT — " + plan.no[0].u.def.name.toUpperCase() + ": " + plan.no[0].why);
+    if (guns || air) {
+      const said = [];
+      if (guns) said.push(guns + (guns === 1 ? " GUN" : " GUNS") + " ON AREA FIRE");
+      if (air) said.push(air + (air === 1 ? " BOMBER" : " BOMBERS") + " ON AREA STRIKE");
+      Sfx.play("ack_atk");
+      G.pingEvent(a.cx, a.cy);
+      Combat.addEffect({ t: "text", x: a.cx, y: a.cy, s: "AREA FIRE", life: 1.0, max: 1.0, c: "#e07cff" });
+      alert(said.join(" · ") + (notes.length ? "  (" + notes.join(" · ") + ")" : ""), "good");
+    } else if (dryN && !wait.length && !nFail && !plan.no.length) {
+      alert("OUT OF ROUNDS — WAITING ON SUPPLY", "bad");
+    } else alert(notes.join(" · ") || "NOTHING SELECTED TAKES AN AREA ATTACK", "bad");
+    refreshSelInfo();
+  }
+  /* the button, in whichever row it joins, and the line under it */
+  function areaFireBtn(label) {
+    return '<div class="hb' + (areaMode === "fire" && !areaHost ? " arm" : "") +
+           '" data-fact="area">' + (label || "AREA FIRE (B)") + "</div>";
+  }
+  function areaFireHint() {
+    return '<div class="hhint">' + (areaMode === "fire" && !areaHost
+      ? "Drag a line or a box on the map. Each gun takes a strip of it, drives into range if it " +
+        "must, and walks its ready rounds across its strip; a launcher ripples every salvo over it. " +
+        "The mission ends when the rack is empty. Shift-drag queues it. RMB or Esc cancels."
+      : "B fires on an AREA: drag a line or a box and the guns share it out and walk their rounds " +
+        "across it, on ground you cannot see as readily as on ground you can. CTRL+RIGHT-CLICK is " +
+        "still the one-point mission.") + "</div>";
+  }
+  function bindAreaFire(root) {
+    root.querySelectorAll("[data-fact]").forEach(btn => {
+      btn.addEventListener("mousedown", (ev) => {
+        ev.stopPropagation();
+        areaFireOrder(null);
+      });
+    });
+  }
+
   /* the drag has finished: hand the rectangle to whoever was selected */
-  function areaCommit(x0, y0, x1, y1) {
+  function areaCommit(x0, y0, x1, y1, shift) {
+    if (areaMode === "fire") { areaFireCommit(x0, y0, x1, y1, shift); return; }
     const w0 = Render.unproject(x0, y0), w1 = Render.unproject(x1, y1);
     const kind = areaMode;
     const list = kind === "lay" ? selectedLayers() : selectedSweepUnits();
@@ -1186,19 +1353,33 @@ var UI = (function () {
 
   function airOrderPanel(air) {
     const home = air.filter(u => u.order && (u.order.type === "rtb" || u.order.type === "parked")).length;
+    /* AREA, for a heavy or stealth bomber - greyed, with the reason below,
+       for one that carries a single weapon a sortie (entities.js areaMount) */
+    const bombers = air.filter(isBomber), areaOk = bombers.filter(u => !u.areaMount().why);
+    const areaArm = areaMode === "fire" && !areaHost;
     let h = '<div class="hbtns">' +
       '<div class="hb" data-aact="rtb">BASE' + (home ? " \u2713" : "") + "</div>" +
       '<div class="hb' + (airCmdMode === "cap" ? " arm" : "") + '" data-aact="cap">PATROL</div>' +
       '<div class="hb' + (airCmdMode === "strike" ? " arm" : "") + '" data-aact="strike">STRIKE</div>' +
+      (bombers.length ? '<div class="hb' + (areaOk.length ? (areaArm ? " arm" : "") : " off") +
+                        '" data-aact="area">AREA</div>' : "") +
       "</div>";
     h += '<div class="hhint">' + (
       airCmdMode === "cap"    ? "Click a point to patrol over it. RMB or Esc cancels."
     : airCmdMode === "strike" ? (air.some(u => u.def.jam && !u.def.awacs)
         ? "Click a target to strike it. A jammer flies in over what you click and jams it. RMB or Esc cancels."
         : "Click a target to strike it. RMB or Esc cancels.")
+    : areaArm && bombers.length
+      ? "Drag a line or a box on the map. Each bomber flies one run down its own lane of it: a " +
+        "bomb load goes as a stick along the run, stand-off missiles to separate points across it " +
+        "from outside the rings it knows of. Then home to rearm. RMB or Esc cancels."
     : "BASE (R) sends them home to refuel and rearm, and right-clicking a base " +
       "or a deck sends them to THAT one. PATROL (Y) holds a point " +
-      "and engages what comes. STRIKE (T) aims a run.") + "</div>";
+      "and engages what comes. STRIKE (T) aims a run." +
+      (!bombers.length ? ""
+        : areaOk.length ? " AREA (B) bombs a line or a box."
+        : " AREA: " + bombers[0].def.name.toUpperCase() + " \u2014 " + bombers[0].areaMount().why + ".")) +
+      "</div>";
     return h;
   }
 
@@ -1215,6 +1396,7 @@ var UI = (function () {
   function airOrder(act) {
     const air = selectedAircraft();
     if (!air.length) return;
+    if (act === "area") { areaFireOrder(null); return; }
     if (act === "rtb") {
       for (const u of air) { u.parked = false; u.give({ type: "rtb" }); }
       alert(air.length === 1 ? "RETURNING TO BASE" : air.length + " AIRCRAFT RETURNING TO BASE", "good");
@@ -1223,6 +1405,8 @@ var UI = (function () {
     } else {
       airCmdMode = (airCmdMode === act) ? null : act;
       sortieMode = null;
+      /* and an armed AREA goes, as arming AREA drops this (areaFireOrder) */
+      if (airCmdMode && areaMode === "fire") { areaMode = null; areaHost = null; areaDrag = null; }
       Sfx.play("click");
     }
     refreshSelInfo();
@@ -1421,6 +1605,13 @@ var UI = (function () {
           refreshSelInfo();
           return;
         }
+        if (act === "area") {
+          /* the picked flight's bombers - the rest of it stays on the ramp,
+             counted in the toast (areaFireCommit) */
+          if (!sel.size) return;
+          areaFireOrder(b);
+          return;
+        }
         if (act === "all") {
           sel.clear();
           for (const u of b.onRamp())
@@ -1430,6 +1621,10 @@ var UI = (function () {
           if (!sel.size) return;
           sortieMode = (sortieMode === act) ? null : act;
           sortieHost = sortieMode ? b : null;
+          /* one armed order at a time, as arming AREA disarms this: with
+             both, the click went to the sortie and the drag after it to an
+             area strike nobody had meant any more */
+          if (sortieMode && areaMode === "fire") { areaMode = null; areaHost = null; areaDrag = null; }
         }
         refreshSelInfo();
       });
@@ -1636,8 +1831,9 @@ var UI = (function () {
       const swp1 = selectedSweepUnits();
       if (swp1.length && !lay1.length) h += sweepPanel();
       if (e.kind === "unit" && e.owner === G.human) h += releasePanel([e]);
-      const dsp1 = selectedDispensers();
-      if (dsp1.length) h += scatterPanel(dsp1);
+      const dsp1 = selectedDispensers(), afg1 = selectedAreaGuns();
+      if (dsp1.length) h += scatterPanel(dsp1, afg1.length ? areaFireBtn() : "");
+      if (afg1.length) h += (dsp1.length ? "" : '<div class="hbtns">' + areaFireBtn() + "</div>") + areaFireHint();
       h += armedHint();
       h += introBlock(e);
       const air1 = selectedAircraft();
@@ -1651,6 +1847,7 @@ var UI = (function () {
       if (e.ramp && e.ramp()) bindHangar(e, el);
       if (air1.length) bindAirOrders(el);
       if (lay1.length || swp1.length || selectedDispensers().length) bindMineOrders(el);
+      if (afg1.length) bindAreaFire(el);
       if (eng1.length) bindObstacles(el);
       const pk = e.kind === "building" && !e.packing && el.querySelector("[data-pack]");
       if (pk) pk.addEventListener("mousedown", (ev) => {
@@ -1715,8 +1912,9 @@ var UI = (function () {
       if (swpN.length && !layN.length) h += sweepPanel();
       const heldN = selectedHeld();
       if (heldN.length) h += releasePanel(heldN);
-      const dspN = selectedDispensers();
-      if (dspN.length) h += scatterPanel(dspN);
+      const dspN = selectedDispensers(), afgN = selectedAreaGuns();
+      if (dspN.length) h += scatterPanel(dspN, afgN.length ? areaFireBtn() : "");
+      if (afgN.length) h += (dspN.length ? "" : '<div class="hbtns">' + areaFireBtn() + "</div>") + areaFireHint();
       const airN = selectedAircraft();
       if (airN.length) h += airOrderPanel(airN);
       el.innerHTML = h;
@@ -1725,6 +1923,7 @@ var UI = (function () {
       }));
       if (airN.length) bindAirOrders(el);
       if (layN.length || swpN.length || selectedDispensers().length) bindMineOrders(el);
+      if (afgN.length) bindAreaFire(el);
       if (engN.length) bindObstacles(el);
     }
   }
@@ -1859,7 +2058,7 @@ var UI = (function () {
            meant. */
         const ddx = Math.abs(d.x1 - d.x0), ddy = Math.abs(d.y1 - d.y0);
         const big = ddx > 12 || ddy > 12;
-        if (big) areaCommit(d.x0, d.y0, d.x1, d.y1);
+        if (big) areaCommit(d.x0, d.y0, d.x1, d.y1, e.shiftKey);
         else { areaDrag = null; alert("DRAG A LINE OR A BOX TO MARK THE AREA", "bad"); refreshSelInfo(); }
         return;
       }
@@ -1964,6 +2163,9 @@ var UI = (function () {
       if (k === "r") { cmdRecall(); return; }
       if (k === "y" && selectedAircraft().length) { airOrder("cap"); return; }
       if (k === "t" && selectedAircraft().length) { airOrder("strike"); return; }
+      /* B: AREA ATTACK - a key nothing used: not this handler, not the
+         command bar, not the controls line on the menu */
+      if (k === "b" && !e.ctrlKey && !e.metaKey) { areaFireKey(); return; }
       /* T is Red Alert 2's select-same-type. Measured before this line, T
          did nothing at all unless aircraft were selected, so taking it for
          every other selection breaks nothing; with aircraft in the selection
@@ -3841,5 +4043,13 @@ var UI = (function () {
            setSell, setRepair,
            /* for the suites: the command bar's buttons by id, freshly synced */
            cmdbar: () => { syncCmdBar(true); return cmdEls; },
+           /* for the suites: what the AREA buttons do (a hangar's, with these
+              aircraft picked in its flight, when a host is named) - jsc
+              parses no panel markup, so their own listeners never bind */
+           areaFire: (host, picked) => {
+             if (host && picked) { const s = pickSet(host); s.clear(); picked.forEach(u => s.add(u.id)); }
+             areaFireOrder(host || null);
+           },
+           areaArmed: () => areaMode === "fire" ? (areaHost || true) : null,
            get input() { return input; }, get selection() { return selection; } };
 })();

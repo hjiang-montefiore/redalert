@@ -167,6 +167,25 @@ var SaveGame = (function () {
       return { type: o.type, x0: Math.round(o.x0), y0: Math.round(o.y0),
                x1: Math.round(o.x1), y1: Math.round(o.y1) };
     }
+    /* An AREA ATTACK resumes where it was (entities.js, AREA ATTACK). The
+       ground share and the walk's place in it are all plain numbers, so they
+       travel: a gun's mission goes out as a fire mission with its `area`
+       (below), and a bomber's strike as itself - its lane, which way down
+       it, which pass, how far into the stick or the lattice, and the
+       release the player gave it. What is rebuilt on the first tick is
+       left behind: the launch plan, the route round the rings and the
+       aimpoint's phantom. A stick saved mid-run carries on down the line
+       from where the aircraft comes back. */
+    if (o.type === "areastrike") {
+      if (!o.area || !isFinite(o.area.cx)) return { type: "rtb" };
+      const l = { type: "areastrike", mode: o.mode, wi: o.wi, area: liteArea(o.area),
+                  k: o.k || 0, pass: o.pass || 0 };
+      if (o.dir) l.dir = o.dir;
+      if (o.phase) l.phase = o.phase;
+      if (o.n !== undefined) l.n = o.n;
+      if (o.release) l.release = true;
+      return l;
+    }
     /* A patrol is a beat, not a point: without its home end (x0, y0) and
        which way it was walking, a reload restarted the beat from wherever
        the unit stood, heading out, so a save made on the way home cut the
@@ -204,9 +223,18 @@ var SaveGame = (function () {
       if (o.commit) l.commit = true;
       if (o.wi !== undefined) l.wi = o.wi;
       if (o.until !== undefined) l.until = Math.round(o.until);
+      /* a gun's share of an area and how far its walk has got */
+      if (o.area && isFinite(o.area.cx)) l.area = liteArea(o.area);
+      if (l.area && o.ext > 0) l.ext = Math.round(o.ext * 10) / 10;     // and how wide its next ripple
       return l;
     }
     return { type: o.type };
+  }
+  function liteArea(a) {
+    const r = (v) => Math.round(v * 10) / 10, q = (v) => Math.round(v * 1e5) / 1e5;
+    const l = { cx: r(a.cx), cy: r(a.cy), ux: q(a.ux), uy: q(a.uy), hl: r(a.hl), hw: r(a.hw) };
+    if (a.nu !== undefined) { l.nu = a.nu; l.nv = a.nv; l.out = a.out; l.su = a.su; l.sv = a.sv; l.k = a.k || 0; }
+    return l;
   }
   function serializeQueues(qs) {
     const out = {};

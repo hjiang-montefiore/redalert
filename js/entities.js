@@ -373,13 +373,16 @@ class Unit {
        assigned straight to this.order and never comes through here: the eight
        auto sites, retaliate(), the counter-battery plot, afterAttack().
 
-       Only `attack` and `bombard` release, because only those two name what is
-       to be shot - a thing, or a piece of ground. Attack-move in particular is
-       a standing authority to engage whatever you meet, which is precisely
-       what a held round must not have. `auto` is honoured even here, for the
-       one commanded order that is explicitly a reflex: ai.js defendBase. */
+       Only `attack`, `bombard` and `areastrike` release, because only those
+       name what is to be shot - a thing, or a piece of ground (a bomber's
+       AREA ATTACK names a box of it, see areaStrike). Attack-move in
+       particular is a standing authority to engage whatever you meet, which
+       is precisely what a held round must not have. `auto` is honoured even
+       here, for the one commanded order that is explicitly a reflex: ai.js
+       defendBase. */
     if (order && !order.auto &&
-        (order.type === "attack" || order.type === "bombard")) order.release = true;
+        (order.type === "attack" || order.type === "bombard" ||
+         order.type === "areastrike")) order.release = true;
     /* any order other than the group move that set it releases the pace cap */
     if (!(order && order.type === "move")) this.groupSpeed = 0;
     this.order = order;
@@ -812,7 +815,16 @@ class Unit {
        missions fired in sequence, as in C&C and WARNO. Every mission still
        gets its whole window before the next begins. ai.js never queues an
        order, so every mission the AI gives still ends idle, as before. */
+    /* (an area ripple still leaving the launcher holds it here: areaVolley) */
+    if (o.area && o.hold > this.game.time) return;
     if (this.game.time > o.until) { if (!this.nextOrder()) this.order = { type: "idle" }; return; }
+    /* ---- an AREA mission is over when the ready rack is ----
+       (owner) "until its ready rounds are spent". A point mission waits on
+       its clock for the supply chain's next round (below); a mission walked
+       across a box is the rack's worth of rounds the player asked for, so the
+       gun hands on - or stands - as soon as the last of them is away, and
+       tryFire() has already said OUT OF ROUNDS. */
+    if (o.area && this.roundsMax && this.rounds <= 0) { if (!this.nextOrder()) this.order = { type: "idle" }; return; }
     /* ---- ...and a gun with nothing to fire does not hold the queue ----
        Dry, out of supply - updateSupply gives nothing back out of contact -
        and with something queued behind: no round is coming for this mission,
@@ -876,15 +888,23 @@ class Unit {
     }
     const range = this.weaponRange(w), minR = (w.minRange || 0) * CFG.TILE;
     const dist = U.dist(this.x, this.y, o.x, o.y);
+    /* an area ripple lands as far as o.ext round (o.x, o.y), and all of it
+       is to be in reach, not only its middle (areaVolley); 0 on a point
+       mission and on a gun's walk, so far and near are range and minR. At
+       most 0.4 of the band, so a fifth of it is left to stand in (the
+       drive below stops inside it); a ripple wider than that has its
+       outermost rockets pulled onto the band as they leave. */
+    const ext = o.area && o.ext > 0 ? Math.max(0, Math.min(o.ext, (range - minR) * 0.4)) : 0;
+    const far = range - ext, near = minR + ext;
     /* A launcher that has to drive to its firing point sets up again when it
        gets there, as engage() has it. Queued missions made that the ordinary
        case, and bombard() never struck the set-up: a HIMARS (deploySec 3)
        that had fired on one point and was sent on to one beyond its reach
        drove 17.5 s with its jacks down and fired the tick it came into
        range. It now sets up there, and fires 3.1 s after. */
-    if ((dist > range || dist < minR) && this.def.deploy && this.deployed) this.deployed = false;
-    if (dist > range) { this.stepAlong(o.x, o.y, dt, range * 0.85); return; }
-    if (dist < minR) {
+    if ((dist > far || dist < near) && this.def.deploy && this.deployed) this.deployed = false;
+    if (dist > far) { this.stepAlong(o.x, o.y, dt, ext > 0 ? Math.max(far * 0.85, (far + near) / 2) : far * 0.85); return; }
+    if (dist < near) {
       const a = Math.atan2(this.y - o.y, this.x - o.x);
       this.stepAlong(this.x + Math.cos(a) * CFG.TILE * 3, this.y + Math.sin(a) * CFG.TILE * 3, dt);
       return;
@@ -905,6 +925,10 @@ class Unit {
     }
     /* fire at the ground: a phantom target the shell falls on */
     if (this.cooldowns[wi] > 0) return;
+    /* an area mission puts this round, and the rest of its ripple, on the
+       next points of its walk (areaVolley) - everything above, the drive,
+       the set-up, the minimum range and the laying, is the point mission's */
+    if (o.area) { this.areaVolley(o, wi); return; }
     /* A bombard order used to ignore the ready-round magazine entirely, which
        tryFire has always respected: the gun that shot itself dry on a target
        could turn round and shell a map square for ever. It matters more now
@@ -944,10 +968,7 @@ class Unit {
         this.game.alert(this.def.name.toUpperCase() +
                         " \u2014 MINE RACK EMPTY, RETURN TO BASE", "bad");
     }
-    Combat.fire(this.game, this, w, {
-      x: o.x, y: o.y, layer: "ground", dead: false, armor: "structure",
-      def: {}, owner: null, r: 0, tx: (o.x / CFG.TILE) | 0, ty: (o.y / CFG.TILE) | 0,
-    });
+    Combat.fire(this.game, this, w, Unit.groundAim(o.x, o.y));
     /* rationing also slows the rate of fire: rounds are being husbanded */
     this.cooldowns[wi] = w.reload / CFG.VET_ROF[this.vet] *
       (1 + 0.55 * (this.supplyStrain ? this.supplyStrain() : 0));
@@ -968,6 +989,243 @@ class Unit {
        Keyed on layer, like every other submarine check in the codebase, so it
        cannot drift away from the roster the way def.submerged did. */
     if (this.layer === "sub") this.recentlyFired = this.game.time;
+  }
+
+  /* ================= AREA ATTACK =================
+     (owner) "we would like to make long distance rocket, long gun (like
+     paladin), bomber force to attack area." A fire mission named ONE point
+     (ui.js forceFire, Ctrl+right-click), and a bomber could only be sent at a
+     thing or on a sweep. This is the order to put a weapon on a piece of
+     ground: the player drags a line or a box (ui.js areaFireCommit) and
+     every unit selected that can take it is handed its own share of it.
+
+     WHO TAKES IT, and the rest are refused with the reason (areaMount):
+       - a gun, rocket launcher or mortar on the ground - the mount bombard()
+         fires on a point mission with no mount named: the first lobbed round
+         that is neither a mine cargo nor held. A TEL's ballistic round is
+         held, so a TEL keeps its one-aimpoint mission and is told so;
+       - a heavy or stealth bomber with a load it can spread: a bomb load (a
+         stick) or stand-off missiles to ground targets, two rounds a sortie
+         at the least. The V-force and the Mirage IV carry ONE weapon a
+         sortie (heavyair.js: one Blue Danube, Yellow Sun, Blue Steel, AN-11
+         or ASMP) - nothing to spread over an area - and are refused, as are
+         strike aircraft, fighters, gunships and ships.
+
+     HOW THE GROUND IS SHARED (areaPlan). The area is a rectangle in world
+     pixels on any heading - {cx, cy, ux, uy, hl, hw}: its centre, a unit
+     vector down its long side, half its length and half its width - which
+     is what the drag looked like on the screen (ui.js areaFromDrag), so a
+     road drawn across a rotated or isometric view is a strip along that
+     road and not the square box round it. Guns cut it into strips along its
+     LONG side, one each, as ui.js areaCommit cuts a minefield belt, handed
+     out in the order the guns stand along it so that no two cross to get
+     to theirs. Bombers cut it ACROSS: lanes side by side, each the whole
+     length, so a cell flies parallel runs the way an Arc Light cell laid
+     its box - and on a line target the lanes all but coincide, which is a
+     cell bombing a road. Splitting the length instead would put each bomber
+     on a shorter run of the same line, in trail.
+
+     The rounds are walked over a lattice laid on each strip (areaLay,
+     areaPoint) with about as many points as the unit has rounds to put
+     there - the ready rack times the burst for a gun, the load for a
+     bomber - from the corner nearest the shooter, across the short side and
+     a step along the long one, back and forth: rounds walked across the
+     ground, not piled on one point. Past the last point the walk goes round
+     again half a cell over, so a gun resupplied mid-mission fills the gaps.
+     The aimpoint is coordinates, so ground nobody can see is fired on as
+     readily as ground in sight, and the rounds hit whatever is really
+     there (Combat.fire), exactly as a point mission's do. */
+
+  /* the phantom a round is fired at when it is aimed at ground, not a thing */
+  static groundAim(x, y) {
+    return { x: x, y: y, layer: "ground", dead: false, armor: "structure", def: {}, owner: null,
+             r: 0, tx: (x / CFG.TILE) | 0, ty: (y / CFG.TILE) | 0 };
+  }
+  /* piece i of n: along the long side (a gun's strip) or across it (a lane) */
+  static areaPart(a, n, i, along) {
+    const f = (2 * i + 1) / n - 1;
+    if (along) return { cx: a.cx + a.ux * a.hl * f, cy: a.cy + a.uy * a.hl * f,
+                        ux: a.ux, uy: a.uy, hl: a.hl / n, hw: a.hw };
+    return { cx: a.cx - a.uy * a.hw * f, cy: a.cy + a.ux * a.hw * f,
+             ux: a.ux, uy: a.uy, hl: a.hl, hw: a.hw / n };
+  }
+  /* about n lattice points over a, in the proportions of a; a strip less
+     than half a tile across is a line of them. The walk steps along the
+     longer side and sweeps the shorter, from the corner nearest (fx, fy). */
+  static areaLay(a, n, fx, fy) {
+    const T = CFG.TILE, N = Math.max(1, Math.round(n)), Lu = 2 * a.hl, Lv = 2 * a.hw;
+    if (Lv < T * 0.5) { a.nu = N; a.nv = 1; }
+    else if (Lu < T * 0.5) { a.nu = 1; a.nv = N; }
+    else {
+      a.nu = Math.max(1, Math.min(N, Math.round(Math.sqrt(N * Lu / Lv))));
+      a.nv = Math.max(1, Math.ceil(N / a.nu));
+    }
+    a.out = Lu >= Lv ? "u" : "v";
+    const dx = fx - a.cx, dy = fy - a.cy;
+    a.su = dx * a.ux + dy * a.uy < 0 ? 1 : -1;
+    a.sv = dy * a.ux - dx * a.uy < 0 ? 1 : -1;
+    a.k = 0;
+    return a;
+  }
+  static areaPoint(a, idx) {
+    const nu = a.nu || 1, nv = a.nv || 1, M = nu * nv;
+    const pass = Math.floor(idx / M), j = idx - pass * M;
+    const byU = a.out !== "v", nIn = byU ? nv : nu;
+    const row = Math.floor(j / nIn);
+    let col = j - row * nIn;
+    if (row & 1) col = nIn - 1 - col;                 // back and forth
+    const iu = byU ? row : col, iv = byU ? col : row;
+    const off = (pass & 1) ? 0.5 : 0;                 // the next pass falls between this one's
+    let fu = ((iu + 0.5 + off) % nu) / nu, fv = ((iv + 0.5 + off) % nv) / nv;
+    if (a.su < 0) fu = 1 - fu;
+    if (a.sv < 0) fv = 1 - fv;
+    const du = (fu * 2 - 1) * a.hl, dv = (fv * 2 - 1) * a.hw;
+    return { x: a.cx + a.ux * du - a.uy * dv, y: a.cy + a.uy * du + a.ux * dv };
+  }
+  /* Who takes which piece. Returns the pieces, and who sat it out and why:
+     `dry` for a gun with an empty rack and a bomber not yet rearmed or
+     refuelled - forceFire's "OUT OF ROUNDS", the hangar's REARMING - and
+     `no` for anything that cannot take the order at all. */
+  static areaPlan(units, a) {
+    const guns = [], air = [], dry = [], no = [];
+    for (const u of units) {
+      if (!u || u.dead || u.kind !== "unit" || u.carried || u.garrisonIn) continue;
+      const m = u.areaMount();
+      if (m.why) { no.push({ u: u, why: m.why }); continue; }
+      if (u.layer === "air") {
+        if (u.ordnanceDry()) dry.push({ u: u, why: "REARMING" });
+        else if (u.fuel < u.reserveFuel()) dry.push({ u: u, why: "REFUELLING" });
+        else air.push(u);
+      } else if (u.roundsMax && u.rounds <= 0) dry.push({ u: u, why: "OUT OF ROUNDS" });
+      else guns.push(u);
+    }
+    const along = (u) => (u.x - a.cx) * a.ux + (u.y - a.cy) * a.uy;
+    const across = (u) => (u.y - a.cy) * a.ux - (u.x - a.cx) * a.uy;
+    guns.sort((p, q) => along(p) - along(q));
+    air.sort((p, q) => across(p) - across(q));
+    const parts = [];
+    guns.forEach((u, i) => parts.push({ u: u, a: Unit.areaPart(a, guns.length, i, true) }));
+    air.forEach((u, i) => parts.push({ u: u, a: Unit.areaPart(a, air.length, i, false) }));
+    return { parts: parts, dry: dry, no: no, guns: guns.length, air: air.length };
+  }
+  /* What this unit would put on an area: { wi, kind } - "gun", "stick" or
+     "standoff" - or { why } it cannot take the order at all. Asked of the
+     airframe's full load, not what is aboard now: an aircraft rearming on
+     the ramp can take it, and is told it is rearming (areaPlan). */
+  areaMount() {
+    const d = this.def, ws = d.weapons || [];
+    if (this.layer === "ground") {
+      for (let i = 0; i < ws.length; i++) {
+        const w = WEAPONS[ws[i]];
+        if (!w || w.scatter || this.manualWeapon(w)) continue;
+        if (w.proj === "arc" || w.indirect) return { wi: i, kind: "gun" };
+      }
+      return { why: this.isIndirect()
+        ? "A BALLISTIC MISSILE GOES ON ONE AIMPOINT — CTRL+RIGHT-CLICK IT"
+        : "NOTHING ABOARD FIRES OVER THE HORIZON" };
+    }
+    if (this.layer !== "air")
+      return { why: this.isIndirect() ? "A SHIP'S GUNS TAKE A POINT MISSION — CTRL+RIGHT-CLICK"
+                                      : "NOTHING ABOARD FIRES OVER THE HORIZON" };
+    if (d.role !== "heavybomber" && d.role !== "stealthbomber")
+      return { why: "ONLY HEAVY BOMBERS BOMB AN AREA" };
+    let best = -1, kind = null, one = null;
+    for (let i = 0; i < ws.length; i++) {
+      const w = WEAPONS[ws[i]];
+      if (!w || !w.tgt || !w.tgt.ground || w.nuke || w.antiRadiation) continue;
+      const so = Unit.standoffRound(w);
+      if (w.proj !== "bomb" && !so) continue;
+      const n = this.ammoMax ? Math.floor((this.ammoMax + 0.01) / (w.ammo || 1)) * (w.burst || 1) : 2;
+      if (n < 2) { one = one || w; continue; }
+      /* a stand-off round leads: it is why the airframe can stay outside */
+      if (best < 0 || (so && kind !== "standoff")) { best = i; kind = so ? "standoff" : "stick"; }
+    }
+    if (best >= 0) return { wi: best, kind: kind };
+    if (one) return { why: "ONE " + String(one.name).toUpperCase() + " A SORTIE — RIGHT-CLICK ITS TARGET" };
+    return { why: "NOTHING ABOARD FOR GROUND TARGETS" };
+  }
+  /* the order this unit takes for its piece `a` of an area; `queued` sizes
+     a gun's walk for the full rack it will have by then */
+  areaOrder(a, queued) {
+    const m = this.areaMount();
+    if (m.why) return null;
+    const w = WEAPONS[this.def.weapons[m.wi]], T = CFG.TILE, g = this.game, burst = w.burst || 1;
+    if (m.kind === "gun") {
+      const rounds = this.roundsMax ? Math.max(1, queued ? this.roundsMax : this.rounds) : 12;
+      const s = Unit.areaLay(Object.assign({}, a), rounds * burst, this.x, this.y);
+      const p = Unit.areaNext(s, burst);
+      /* The window: the drive into range, the set-up, the rack fired at the
+         gun's own rate and twenty seconds over - a point mission's flat 90 s
+         is less than a Paladin's fourteen rounds take (8.5 s apart, 119 s).
+         Out of supply contact the rate is the rationed one, up to 1.55 times
+         the reload (bombard, tryFire): sized at the unrationed rate, a
+         Paladin out of contact got 12 of its 14 rounds away before its
+         window closed. It is a ceiling: the mission ends when the rack does. */
+      const far = Math.max(0, U.dist(this.x, this.y, a.cx, a.cy) - this.weaponRange(w) * 0.85);
+      const ration = this.inSupply && !this.inSupply() ? 1.55 : 1;
+      const span = far / Math.max(0.2, (this.def.speed || 1) * T) * 1.4 + (this.def.deploySec || 1.6) +
+                   rounds * w.reload / CFG.VET_ROF[this.vet] * ration + 20;
+      const o = { type: "bombard", wi: m.wi, x: p.x, y: p.y, area: s, until: g.time + Math.min(300, span) };
+      if (p.ext > 0) o.ext = p.ext;
+      return o;
+    }
+    const n = this.ammoMax ? Math.floor((this.ammo + 0.01) / (w.ammo || 1)) * burst : burst;
+    if (m.kind === "standoff")
+      return { type: "areastrike", mode: "standoff", wi: m.wi, k: 0,
+               area: Unit.areaLay(Object.assign({}, a), Math.max(1, n), this.x, this.y) };
+    return { type: "areastrike", mode: "stick", wi: m.wi, k: 0, pass: 0,
+             dir: this.areaEntry(a, w), area: Object.assign({}, a) };
+  }
+  /* One round of an area mission, and the rest of its burst, each on the
+     next point of the walk. Fired through tryFire(), the gun's own fire
+     control: its ready rack, its reload and supply strain, the counter-
+     battery contact every lobbed round leaves (Combat.fire) - and its
+     burst, which bombard() never fired: a point mission puts one rocket of
+     an M270's twelve on the ground per ready round. Here a ready round is
+     what it is everywhere else in the game, the whole ripple, laid down
+     twelve points of the walk.
+     ---- and the whole ripple inside the tube's reach ----
+     bombard() tests its reach against (o.x, o.y), and with that the next
+     point of the walk only a ripple's first rocket was sure to be in reach:
+     the other eleven went where the walk said, however far that was. And
+     (o.x, o.y) moved on as the ripple left, so a launcher whose next point
+     was out of reach drove off with the rest of it still to go. Measured
+     on a 20-tile line drawn straight away from an M270 out of supply, 35 of
+     its 84 rockets landed beyond its 25.1-tile reach (by up to 0.3 tiles -
+     a ripple is an eighth of its rack's walk) and 59 were fired on the
+     move. (o.x, o.y) is now the middle of the coming ripple and o.ext the
+     farthest of its points from it (areaNext), and bombard() keeps the
+     middle within reach less that, so every point is in reach from where
+     the launcher lays; a ripple too wide for the band between the minimum
+     and the maximum range has the rockets that fall outside it pulled onto
+     it, along their bearing. While the ripple leaves (o.hold) the launcher
+     stays where it is. A gun fires one round a volley: ext is 0 and
+     (o.x, o.y) is the point, as before. */
+  areaVolley(o, wi) {
+    const a = o.area, w = WEAPONS[this.def.weapons[wi]], k0 = a.k || 0, n = w.burst || 1;
+    const range = this.weaponRange(w), minR = (w.minRange || 0) * CFG.TILE;
+    const at = (j) => {
+      const p = Unit.areaPoint(a, k0 + j);
+      const dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy), dd = U.clamp(d, minR, range);
+      return dd === d || !(d > 0) ? Unit.groundAim(p.x, p.y)
+                                  : Unit.groundAim(this.x + dx * dd / d, this.y + dy * dd / d);
+    };
+    this.tryFire(wi, at(0), n > 1 ? at : null);
+    if (!(this.cooldowns[wi] > 0)) return;            // nothing left the tube
+    a.k = k0 + n;
+    const p = Unit.areaNext(a, n);
+    o.x = p.x; o.y = p.y; o.ext = p.ext;
+    if (n > 1) o.hold = this.game.time + (n - 1) * (w.burstDelay || 0.1) + 0.05;
+  }
+  /* the next n points of the walk from a.k: their middle, and how far the
+     farthest of them lies from it (one point: the point, and 0) */
+  static areaNext(a, n) {
+    const k = a.k || 0;
+    let sx = 0, sy = 0, e = 0;
+    for (let j = 0; j < n; j++) { const p = Unit.areaPoint(a, k + j); sx += p.x; sy += p.y; }
+    const cx = sx / n, cy = sy / n;
+    for (let j = 0; n > 1 && j < n; j++) { const p = Unit.areaPoint(a, k + j); e = Math.max(e, Math.hypot(p.x - cx, p.y - cy)); }
+    return { x: cx, y: cy, ext: e };
   }
 
   /* run for the nearest friendly structure, or straight away from the shooter */
@@ -2643,7 +2901,10 @@ class Unit {
     return spends ? true : this.ammo < 0.99;
   }
 
-  tryFire(wi, t) {
+  /* `aim`, when given, is where the burst's later rounds go: aim(j) is the
+     target of round j + 1 of the burst (an area mission's walk, areaVolley).
+     Left out, every round of the burst goes at t, as it always has. */
+  tryFire(wi, t, aim) {
     if (this.cooldowns[wi] > 0) return;
     const w = WEAPONS[this.def.weapons[wi]];
     /* ---- an anti-radiation seeker needs something to home on ----
@@ -2725,7 +2986,7 @@ class Unit {
 
     if (burstN > 1) {
       /* schedule remaining rounds of the burst */
-      let n = burstN - 1;
+      let n = burstN - 1, j = 0;
       const delay = w.burstDelay || 0.1;
       const shooter = this, game = this.game;
       const tick = () => {
@@ -2734,7 +2995,7 @@ class Unit {
            off between them keeps them on the rail (radarOffMount) - the AI's
            drill goes dark exactly then, as a Weasel shows */
         if (Unit.prototype.radarOffMount.call(shooter, w)) return;
-        Combat.fire(game, shooter, w, t);
+        Combat.fire(game, shooter, w, aim ? aim(++j) : t);
         game.defer(delay, tick);
       };
       game.defer(delay, tick);
@@ -3710,7 +3971,25 @@ class Unit {
     const bingo = Math.max(this.reserveFuel(), this.fuelMax * 0.40);
     const dry = !this.def.hover && this.fuel < bingo;
     const dryAmmo = this.ordnanceDry();
-    const needRTB = dryAmmo || dry;
+    /* A stick being laid is finished first. Its bombs come off a release at
+       a time (areaStick), so with the last release only partly gone the
+       magazine already reads dry - measured, a B-52D Big Belly turned for
+       home on its run with 8 of its 108 bombs still aboard - and a run is a
+       few seconds of the fuel. */
+    const onRun = o.type === "areastrike" && o.phase === "run" && o.k < o.n;
+    /* ...but for the fuel, only the run itself, and never past what it takes
+       to get home. Joined from behind the run-in point the phase is "run"
+       from the first tick (areaStick), so with the fuel let off on the whole
+       of it the join had no bingo at all: measured, a B-52D Big Belly
+       launched at 42% on a lane drawn away from its base, 155 tiles to the
+       far end, flew 26.2 s below bingo before its first bomb and fell out of
+       the sky on the way home. The first bomb (o.k > 0) is the start of the
+       run; before it bingo is what it is on any leg, and the strike is
+       carried home and back (areaResume): the same bomber now turns for
+       home 2.2 s after launch, comes back on full tanks and lays the stick,
+       never below 20% (tools/jsc/areafire_check.js [11]). */
+    const finish = onRun && o.k > 0 && this.fuel >= this.reserveFuel();
+    const needRTB = (dryAmmo && !onRun) || (dry && !finish);
     /* "tank" must be in this list. Without it the check fired every tick while
        an aircraft was actually taking fuel - fuel is below the bingo figure by
        definition at that moment - and reissued the order from scratch, which
@@ -3750,6 +4029,10 @@ class Unit {
              carried release still does not. */
           ? { type: "attack", target: o.target, resume: o.resume, cap: o.cap,
               auto: o.auto, release: o.release }
+          /* an area strike is carried the same way while there is something
+             to fly it with: one broken off for fuel, or one that came up out
+             of the queue on a dry aircraft (areaDone) */
+          : o.type === "areastrike" && (!dryAmmo || !(o.k > 0)) ? this.areaResume(o)
           : null);
       const tanker = this.game.nearestTanker ? this.game.nearestTanker(this) : null;
       const pad2 = this.game.findPad ? this.game.findPad(this) : null;
@@ -4100,6 +4383,8 @@ class Unit {
           this.tryFire(wi, t);
         }
       }
+    } else if (o.type === "areastrike") {
+      this.areaStrike(o, dt);
     } else if (o.type === "rtb" || o.type === "land") {
       /* The ramp this aircraft is based on. If every slot has gone it lands
          on its own anyway: an over-stacked revetment beats orbiting the field
@@ -4794,11 +5079,21 @@ class Unit {
      again when what the side knows changes, when the target moves, when the
      round in hand changes, and every three seconds from where the aircraft
      then is - never every frame: G.standoffLaunch walks the rings and, when
-     the way is blocked, a small route search. */
-  flyStandoff(o, t, wi, w, range, dist, dt) {
+     the way is blocked, a small route search.
+     `aim`, for an AREA ATTACK (areaStandoff): the circle is planned round
+     t, the middle of the bomber's lane, with the reach cut by `aim.pad` so
+     that the whole lane is in reach from it, and the round goes at aim.t,
+     the point of the lane it is due on. Planned round each aimpoint in
+     turn instead, the plan was remade whenever the next one lay more than
+     1.5 tiles on, and a B-52H joining each new circle came to 15.1 tiles
+     of a SAM Site whose ring it was planning round at 17.5; planned round
+     the middle, it kept 18.8 tiles off it for all 21 rounds
+     (tools/jsc/areafire_check.js). */
+  flyStandoff(o, t, wi, w, range, dist, dt, aim) {
     const g = this.game, TL = CFG.TILE, now = g.time;
     const rr = this.standoffReachOf(t, false);
-    const reach = rr.reach || range, minR = rr.reach ? rr.minR : (w.minRange || 0) * TL;
+    const reach0 = rr.reach || range, minR = rr.reach ? rr.minR : (w.minRange || 0) * TL;
+    const reach = aim ? Math.max(reach0 * 0.5, reach0 - aim.pad) : reach0;
     const rings = g.standoffRings(this.owner);
     let sp = o.so;
     const moved = !!sp && U.dist(sp.tx, sp.ty, t.x, t.y) > TL * 1.5;
@@ -4844,11 +5139,162 @@ class Unit {
     else this.flyOrbit(sp.cx, sp.cy, sp.r, dt, sp.dir, true);
     /* and the round goes whenever the target is inside its reach - the same
        0.968 of range the orbit below has always fired at (hold x 1.10) */
-    if (dist <= range * 0.968 && dist >= (w.minRange || 0) * TL) {
-      this.tryFire(wi, t);
-      if (this.ordnanceDry()) this.order = this.afterAttack(o);
+    const ft = aim ? aim.t : t, fd = aim ? U.dist(this.x, this.y, ft.x, ft.y) : dist;
+    if (fd <= range * 0.968 && fd >= (w.minRange || 0) * TL) {
+      this.tryFire(wi, ft);
+      /* an area strike's last round hands on the way the strike does
+         (areaDone): afterAttack() took the queue up with nothing aboard, and
+         a move queued behind the strike was dropped at the next tick's
+         bingo check (updateAir) instead of being flown after the rearm */
+      if (this.ordnanceDry()) this.order = aim ? this.areaDone() : this.afterAttack(o);
     }
   }
+  /* ---- AREA ATTACK, flown (see AREA ATTACK above bombard) ----
+     One run per bomber down its lane, then home: what is aboard goes on
+     that lane, and the turnaround is the ordinary rtb/rearm. A strike
+     broken off for fuel before it is flown is carried across the
+     turnaround (updateAir, areaResume) as a strike on a named target is. */
+  areaStrike(o, dt) {
+    const w = o.area ? WEAPONS[this.def.weapons[o.wi]] : null;
+    /* setOrder stamped release on this order, so a held round aboard - the
+       Tu-160M's Kh-101 - goes; a round that is still held is not this
+       order's to fire */
+    if (!w || this.holdsFire(w)) { this.order = this.areaDone(); return; }
+    if (o.mode === "stick") this.areaStick(o, w, dt);
+    else this.areaStandoff(o, w, dt);
+  }
+  /* how far out the bomb run begins: room for a heavy aeroplane to turn
+     onto the line and settle on it (three of its own turning radii - 26
+     tiles for a B-52, 11 for a B-2), and the bomb's forward throw */
+  areaRunIn() {
+    return Math.max(3 * this.turnRadius(), 8 * CFG.TILE) +
+           this.def.speed * this.speedMul() * CFG.TILE * 0.7;
+  }
+  /* which way down the lane to run: from the end whose run-in point is
+     nearer, unless that point is off the map and the other is not */
+  areaEntry(a) {
+    const T = CFG.TILE, M = this.game.map, D = a.hl + this.areaRunIn();
+    let best = 1, bd = Infinity;
+    for (const dir of [1, -1]) {
+      const px = a.cx - a.ux * dir * D, py = a.cy - a.uy * dir * D;
+      const off = px < 2 * T || py < 2 * T || px > M.W * T - 2 * T || py > M.H * T - 2 * T;
+      const d = U.dist(this.x, this.y, px, py) + (off ? 1e7 : 0);
+      if (d < bd) { bd = d; best = dir; }
+    }
+    return best;
+  }
+  /* ---- A STICK DOWN THE RUN ----
+     A bomb load goes as a stick: the whole of it, spread evenly down the
+     lane's length, bomb k of n landing (k + 0.5)/n of the way along. The
+     intervalometer is the aircraft's own position, not the weapon's reload
+     and burst figures - those time a strike's passes over one target (the
+     B-52D's six bombs 0.22 s apart, then a second's reload), and at that
+     rate a 48-bomb load would string out over 77 tiles. Each bomb is
+     released lead = 0.7 s of flight short of its point, the 0.7 s a bomb
+     falls in combat.js, so it is carried forward onto the point and not
+     thrown at it; and only while the aircraft is within the bomb's own
+     reach of the line - one that has wandered off it keeps the rest, and
+     lines up again from the far end (at most twice). It is flown to a
+     point a run-in short of the lane (areaRunIn), or from wherever it is
+     if it is already farther back than that, and held on the line by
+     steering for a point a turning radius ahead on it. Every bomb is the
+     airframe's own weapon through Combat.fire, and costs its share of a
+     release from the magazine (w.ammo over the burst). */
+  areaStick(o, w, dt) {
+    const T = CFG.TILE, a = o.area, dir = o.dir === -1 ? -1 : 1;
+    const rx = a.ux * dir, ry = a.uy * dir, L = 2 * a.hl;
+    const ax = a.cx - rx * a.hl, ay = a.cy - ry * a.hl;          // the run begins
+    const tr = this.turnRadius(), lead = this.def.speed * this.speedMul() * T * 0.7;
+    const per = (w.ammo || 1) / (w.burst || 1);
+    const px = this.x - ax, py = this.y - ay;
+    const s = px * rx + py * ry, lat = py * rx - px * ry;         // along the run, and off it
+    if (o.phase !== "run") {
+      /* already behind the start of the run-in, it is on the run from here:
+         the line is joined over all the way still to go. Flown out to the
+         point first, then turned onto the line there, a B-52D was still
+         2.4 tiles off it at the first release, against a bomb's 2.6 tiles
+         of reach; joined from where it was, 1.1. */
+      const D = this.areaRunIn(), M = this.game.map;
+      const ix = U.clamp(ax - rx * D, 2 * T, M.W * T - 2 * T), iy = U.clamp(ay - ry * D, 2 * T, M.H * T - 2 * T);
+      if (s > -D && U.dist(this.x, this.y, ix, iy) > Math.max(2.2 * T, tr * 0.8)) { this.flyTo(ix, iy, dt); return; }
+      o.phase = "run"; o.k = 0;
+      o.n = this.ammoMax ? Math.floor((this.ammo + 0.01) / (w.ammo || 1)) * (w.burst || 1) : (w.burst || 1);
+    }
+    const look = Math.max(tr, 3 * T);
+    this.flyTo(ax + rx * (s + look), ay + ry * (s + look), dt);
+    const reach = this.weaponRange(w);
+    while (o.k < o.n && this.ammo >= per - 0.01) {
+      const sk = L * (o.k + 0.5) / o.n;
+      if (s + lead < sk) break;
+      if (Math.abs(lat) <= reach && s + lead <= sk + reach) {
+        Combat.fire(this.game, this, w, Unit.groundAim(ax + rx * sk, ay + ry * sk));
+        this.ammo = Math.max(0, this.ammo - per);
+      }
+      o.k++;
+    }
+    if (o.k < o.n && s <= L + lead + 2 * T) return;
+    /* the run is over: the bay reloads as after any release */
+    this.cooldowns[o.wi] = w.reload / CFG.VET_ROF[this.vet];
+    if (this.canAfford(w) && (o.pass || 0) < 2) {
+      o.pass = (o.pass || 0) + 1; o.dir = -dir; o.phase = "in";
+      return;
+    }
+    this.order = this.areaDone();
+  }
+  /* ---- STAND-OFF ROUNDS ON SEPARATE AIMPOINTS ----
+     A missile load goes one round to each point of a lattice over the lane,
+     as many points as rounds aboard, and every one is released at
+     coordinates exactly as a strike on a target is: the launch orbit
+     flyStandoff() plans outside the rings the side knows of - round the
+     lane's middle, near enough for the whole lane to be in reach - a
+     phantom at the aimpoint as the target (the coordinates are the cue,
+     Combat.fire), the airframe's own reload between rounds. A new phantom per aimpoint -
+     a guided round re-aims at its target every tick, so moving one phantom
+     on would drag the round already in the air after it. Aggressive stance
+     presses in, as it does on a strike: the attack branch's circle at the
+     edge of reach. */
+  areaStandoff(o, w, dt) {
+    const a = o.area, T = CFG.TILE;
+    if (o.k >= (a.nu || 1) * (a.nv || 1) || !this.canAfford(w)) { this.order = this.areaDone(); return; }
+    if (!o.ph) { const p = Unit.areaPoint(a, o.k); o.ph = Unit.groundAim(p.x, p.y); }
+    if (!o.mid) o.mid = Unit.groundAim(a.cx, a.cy);
+    const t = o.ph, range = this.weaponRange(w), dist = U.dist(this.x, this.y, t.x, t.y);
+    const cd0 = this.cooldowns[o.wi];
+    if (!this.def.hover && this.stance !== "aggressive" && this.standoffAir() && this.game.standoffLaunch) {
+      /* the launch circle round the lane's middle, the round at its point */
+      this.flyStandoff(o, o.mid, o.wi, w, range, U.dist(this.x, this.y, a.cx, a.cy), dt,
+                       { t: t, pad: Math.hypot(a.hl, a.hw) });
+    } else {
+      const hold = range * 0.88;
+      if (dist > hold * 1.06) this.flyTo(t.x, t.y, dt);
+      else this.orbitAround(t, hold, dt);
+      if (dist <= hold * 1.10 && dist >= (w.minRange || 0) * T) this.tryFire(o.wi, t);
+    }
+    if (cd0 <= 0 && this.cooldowns[o.wi] > 0) { o.k++; o.ph = null; }
+    if (this.order === o && this.ordnanceDry()) this.order = this.areaDone();
+  }
+  /* the strike is flown: home to rearm, or on to what was queued behind it -
+     taken through nextOrder(), so setOrder() releases it as it would any
+     queued order, and carried home first when there is nothing aboard to
+     fly it with */
+  areaDone() {
+    if (this.orders && this.orders.length && this.nextOrder()) {
+      const nx = this.order;
+      if (this.ordnanceDry() || this.fuel < Math.max(this.reserveFuel(), this.fuelMax * 0.40))
+        return { type: "rtb", then: nx };
+      return nx;
+    }
+    return { type: "rtb" };
+  }
+  /* The same strike, to be flown again after a turnaround: a stick from the
+     top with what is aboard then, the stand-off lattice from the point it
+     had reached. `release` travels with it, as it does with a strike's
+     (updateAir): the hand-back assigns it straight to this.order. */
+  areaResume(o) {
+    return { type: "areastrike", mode: o.mode, wi: o.wi, area: o.area, dir: o.dir,
+             k: o.mode === "stick" ? 0 : o.k, pass: 0, release: o.release };
+  }
+
   /* The way home round the rings, for a stand-off bomber: having gone round
      them to its launch orbit, a straight line back to the ramp can run
      through the middle of them. Remade every two seconds, like the plan.
