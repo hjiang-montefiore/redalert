@@ -2372,7 +2372,12 @@ class Unit {
   }
   isOutOfSupply() { return this.supplyStrain() > 0.01; }
 
-  /* Top the deck launchers back up while alongside a friendly naval yard. */
+  /* Top the deck launchers back up while alongside a friendly naval yard:
+     one count of the magazine every 3.5 s, or every def.yardReload seconds
+     on a hull that declares its own. Only the Ohios do - their tubes are
+     loaded three times as fast as a surface ship's deck tubes, a Trident in
+     3.5 / 3 s and a pair of Tomahawks in twice that (generations.js, "the
+     Ohio's real load") - and every other hull keeps exactly the 3.5 it had. */
   reloadAtYard(dt) {
     const full = this.def.magazine;
     if (!full) return;
@@ -2386,7 +2391,7 @@ class Unit {
     if (!yard || !this.nearFootprint(yard, 4.5)) { this.reloadT = 0; return; }
     /* a round every few seconds, so rearming a Slava is a real trip home */
     this.reloadT = (this.reloadT || 0) + dt;
-    if (this.reloadT < 3.5) return;
+    if (this.reloadT < (this.def.yardReload || 3.5)) return;
     this.reloadT = 0;
     for (const wi in this.mag) {
       const key = this.def.weapons[wi];

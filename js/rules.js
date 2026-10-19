@@ -3663,8 +3663,11 @@ Object.assign(UNITS, {
     nuclear:true, quiet:0.22, sonar:10.0, radarQ:5, ssbn:true,
     desc:"Ballistic missile submarine. It does not fight surface groups and it does not " +
          "want to be seen - its entire purpose is to remain undetected while holding a " +
-         "strategic weapon at readiness. Twenty-four launch tubes, and the quietest hull " +
-         "the US ever built." },
+         "strategic weapon at readiness. Twenty-four launch tubes, twenty of them loaded " +
+         "with Trident II D5 since New START, and the quietest hull the US ever built. " +
+         "Released, the missiles go about twenty seconds apart; none of them reloads at " +
+         "sea, so an empty boat goes home to a naval yard, where its tubes are filled " +
+         "three times as fast as a surface ship's." },
   /* from:"e00" and not "e60". K-535 Yuriy Dolgorukiy commissioned 10 January
      2013; the 955A this row is named for is Knyaz Vladimir of 12 June 2020;
      and the Bulava it fires was not accepted into service until 2018, after a
@@ -3691,9 +3694,12 @@ Object.assign(UNITS, {
     cost:5200, oil:125, time:62, hp:2500, armor:"heavy", speed:2.1, turn:0.55, sight:6, r:26, mass:0,
     layer:"sub", weapons:["torp_mk48","ssm_harpoon"], prereq:["navalyard","lab"], tech:3,
     nuclear:true, quiet:0.24, sonar:10.0, radarQ:5, layNet:6,
-    desc:"Four Ohio hulls had their ballistic tubes converted to carry 154 Tomahawks. " +
-         "It is a submerged missile magazine that can empty a small war's worth of " +
-         "cruise missiles into a coastline without ever surfacing." },
+    desc:"Four Ohio hulls had their ballistic tubes converted to carry 154 Tomahawks, " +
+         "seven to a tube in twenty-two of the twenty-four - the other two became lock-out " +
+         "chambers for special forces. It is a submerged missile magazine that can empty a " +
+         "small war's worth of cruise missiles into a coastline without ever surfacing: a " +
+         "pair every six or seven seconds for eight and a half minutes, and then home to a " +
+         "naval yard, because none of it reloads at sea." },
   /* from:"e80", not "e60": Project 949 Granit (K-525 Arkhangelsk) commissioned
      30 December 1980 and Project 949A Antey (K-148 Krasnodar) 30 September
      1986, which js/facts.js already records. The Soviet cruise-missile boats
@@ -4187,7 +4193,9 @@ function applyEraSoftkill() {
    A ballistic missile submarine that can only fire torpedoes is a very
    expensive torpedo boat. The whole reason these hulls exist is to hold a
    target ashore at risk from under water, so they get a land-attack missile:
-   slow to reload, long-ranged, and fired while submerged.
+   slow to reload, long-ranged, and fired while submerged. (The Ohio SSBN is
+   the exception since 2026-10-18: twenty Tridents twenty seconds apart from a
+   finite magazine - its own copy of this row, set at the end of generations.js.)
 
    And fired only on an order. (owner) "missiles fired from sub need
    permission": every SLBM here is `manual`, as a TEL's srbm_* round is, and
@@ -4257,8 +4265,9 @@ Object.assign(WEAPONS, {
      more tubes of seven, taking the boat to about forty rounds. Deep enough
      to salvo.
 
-     The converted Ohio SSGN keeps the deepest magazine in the game at
-     reload 20 and a pair per salvo - 154 missiles - and none of these
+     The converted Ohio SSGN keeps the deepest magazine in the game - 154
+     missiles, a pair every 6.7 s from its own copy of tlam_n (the RETIME
+     table at the end of generations.js) - and none of these
      touches it. An attack boat is a Tomahawk carrier; the SSGN is a Tomahawk
      magazine that happens to float. */
   tlam_n_tube: { name:"BGM-109 Tomahawk (torpedo tube)", dmg:320, warhead:"he",

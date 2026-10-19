@@ -2138,6 +2138,94 @@
     console.warn("[generations] " + nRoundsGap + " gun, launcher or battery rows " +
                  "have no ready magazine: " + ROUNDS_ERA_GAPS.join(", "));
 
+  /* ---- HIMARS three times as fast, and the Ohio's real load ----
+     (owner) "increase the refill speed for the Ohio and HIMARS", and then
+     "why does Trident need to wait such a long time? I believe Ohio should
+     have plenty of Trident".
+
+     HIMARS: three times as fast between launches, on every HIMARS row and
+     on nothing else.
+       nato_e00_mlrs  M142, 2000s             w_e00_nato_mlrs  14.28 s -> 4.76 s
+                      (the twelve-rocket ripple)
+       nato_e00_tel   HIMARS / ATACMS, 2000s  srbm_atacms      60 s -> 20 s
+       tel_n          HIMARS / PrSM, 2020s    srbm_mod         58 s -> 19.33 s
+     What each one carries (`rounds`: eight ripples, one ATACMS, two PrSM) is
+     not touched, so a HIMARS now empties its pod three times sooner and then
+     waits on the supply chain exactly as it did.
+
+     THE OHIO. 165 s between Tridents was never a fact about the boat. It
+     was the balance device rules.js names - "slow to reload, long-ranged" -
+     standing in for a magazine the game did not count, and it held the boat
+     that carries more ballistic missiles than any other to one every three
+     minutes, for ever. It now carries what it carries, and fires it as fast
+     as it can:
+       ssbn_n  Ohio SSBN  slbm_n  165 s -> 20 s, from a magazine of twenty
+               Trident II D5: twenty-four tubes, four of each boat's
+               deactivated under New START (twenty a boat by 2018)
+       ssgn_n  Ohio SSGN  tlam_n  20 s -> 6.67 s, still a pair a launch, from
+               a magazine of 77 launches - its 154 Tomahawks, seven to a tube
+               in twenty-two of the twenty-four (the other two are lock-out
+               chambers). The magazine counts launches, not rounds (entities.js
+               tryFire takes one count however many the burst puts out, which
+               is how the burst-2 missile boats have always counted), so 77
+               pairs is 154 missiles - and eight and a half minutes of them.
+     Neither reloads at sea. An empty boat goes home to a naval yard, as the
+     Oscar II, the Slava and every Mk 41 Tomahawk ship already must
+     (entities.js reloadAtYard), and is loaded there three times as fast as
+     a surface ship's deck tubes: `yardReload` is the seconds alongside for
+     one count of the magazine, 3.5 / 3 for a Trident and twice that for a
+     pair of Tomahawks, where every other hull keeps the 3.5 it had. About
+     23 s for the SSBN's twenty and three minutes for the SSGN's 154. The
+     commander's boats go home for it on their own (ai.js REARM); the
+     player's get the MISSILE TUBES EMPTY alert and the move order.
+
+     WHY IN COPIES, AND WHY HERE. srbm_atacms is also the 1990s M270's round
+     (nato_e90_tel), and srbm_mod is the template the domain pass above cut
+     the Iskander's, the DF-16's, the Hwasong-11Ga's and the 2000s
+     Iskander-M's and DF-15B's own rounds from (srbm_mod__tel_p, __tel_c,
+     __tel_k, __pact_e00_tel, __pla_e00_tel). None of those may change, so
+     no row is edited: each of the five gets its own copy, cut by
+     privateWeapon() in this file's "<weapon>__<unit>" convention - every
+     field of the round as it stands at this line, so every stamp of every
+     pass above comes with it - and only the copy is retimed. At the tail,
+     so no later pass can stamp one round for the other: a copy behaves
+     exactly as the round it was cut from but for the figures in this table
+     (tools/jsc/reload_check.js holds every unit in the game to that).
+
+     The PrSM copy also takes the name of what it fires. "9K720 class" is
+     the Iskander's designation, and the American launcher had been carrying
+     it: its round is PrSM Increment 1, two to a pod where ATACMS went one. */
+  var RETIME = {
+    nato_e00_mlrs: { w: "w_e00_nato_mlrs", reload: 4.76 },
+    nato_e00_tel:  { w: "srbm_atacms",     reload: 20 },
+    tel_n:         { w: "srbm_mod",        reload: 19.33, name: "PrSM Increment 1" },
+    ssbn_n:        { w: "slbm_n",          reload: 20,    magazine: 20, yardReload: 3.5 / 3 },
+    ssgn_n:        { w: "tlam_n",          reload: 6.67,  magazine: 77, yardReload: 2 * 3.5 / 3 },
+  };
+  var nRetime = 0, retimeMiss = [];
+  for (var _rk in RETIME) {
+    var _ru = UNITS[_rk], _rt = RETIME[_rk];
+    var _ri = _ru && _ru.weapons ? _ru.weapons.indexOf(_rt.w) : -1;
+    var _rp = _ri >= 0 ? privateWeapon(_rk, _rt.w) : null;
+    if (!_rp) { retimeMiss.push(_rk + ":" + _rt.w); continue; }
+    WEAPONS[_rp].reload = _rt.reload;
+    if (_rt.name) WEAPONS[_rp].name = _rt.name;
+    _ru.weapons = _ru.weapons.slice();
+    _ru.weapons[_ri] = _rp;
+    if (_rt.magazine) {
+      var _rm = {};
+      for (var _rq in (_ru.magazine || {})) _rm[_rq] = _ru.magazine[_rq];
+      _rm[_rp] = _rt.magazine;
+      _ru.magazine = _rm;
+      _ru.yardReload = _rt.yardReload;
+    }
+    nRetime++;
+  }
+  /* a row renamed or a round re-cut above would leave its launcher on the
+     old figures without a word; say so on every page */
+  if (retimeMiss.length && typeof console !== "undefined" && console.warn)
+    console.warn("[generations] HIMARS / Ohio retime found no round to copy: " + retimeMiss.join(", "));
+
   if (typeof console !== "undefined" && console.log)
     console.log("[generations] early warning derived on " + nAew + " airframes, " +
                 "armour on " + nArm + " vehicles, penetration on " +

@@ -947,7 +947,12 @@ var UI = (function () {
       const mi = e.def.weapons.indexOf(held[0]), cap = e.def.magazine[held[0]];
       const left = e.mag && e.mag[mi] !== undefined ? e.mag[mi] : cap;
       const what = /tomahawk/i.test(w0.name || "") ? "TOMAHAWK" : "MISSILES";
-      h += '<div class="stat' + (left > 0 ? "" : " warn") + '">' + what + " <i>" + left + "/" + cap +
+      /* the magazine counts LAUNCHES (tryFire takes one a launch, whatever
+         the burst), so a mount that puts a pair out each time shows its
+         missiles as twice its count - the Ohio SSGN's 77 launches are the
+         154 Tomahawks the card promises */
+      const per = Math.max(1, w0.burst || 1);
+      h += '<div class="stat' + (left > 0 ? "" : " warn") + '">' + what + " <i>" + left * per + "/" + cap * per +
            (left > 0 ? "" : " \u2014 NAVAL YARD TO RELOAD") + "</i></div>";
     }
     return h;

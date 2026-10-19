@@ -516,6 +516,7 @@ function makeCommander() {
   let homeward = [];             // survivors of a broken wave still being walked home
   let homeUntil = 0;             // ...and until when
   let mending = [];              // single hulls stepped out of a wave to be mended (FALLBACK)
+  let rearming = [];             // hulls gone home to a naval yard for a full magazine (REARM)
   let engStat = engBook();       // what all of the above has done, for intel()
   const GATE_HOLD = 22;          // seconds a staged body waits on its stragglers
   const GATE_R = 3.5;            // tiles from its own mark that count as "there"
@@ -728,7 +729,7 @@ function makeCommander() {
     aimShy.clear(); scoutShy.clear(); aimRvT = -1; waveBook = null; oreSites = null;
     waveGate = null; waveGateT = 0; waveMassed = false; waveTurn0 = waveTurn1 = 0;
     flankClock = 0; waveDefer = 0; homeward = []; homeUntil = 0; engStat = engBook();
-    mending = []; fbTick = 0;
+    mending = []; fbTick = 0; rearming = [];
     /* nor an estimate of the enemy, a production count or a recall clock */
     foeMemo = null; foeMemoT = -1; foePeak = 0; foePeakT = 0; fortMemo = 0; fortT = -1;
     for (const k in prodPeakOf) delete prodPeakOf[k];
@@ -934,9 +935,11 @@ function makeCommander() {
     /* The surface Tomahawk driver is off think() for the reason defendBase()
        and the raid driver were taken off it: think() returns early on every
        tick that queues a purchase, and a named strike is a standing order,
-       not a purchase. One think interval, like defendBase() below. */
+       not a purchase. One think interval, like defendBase() below. A hull
+       whose cells that strike has just emptied is sent home for more on the
+       same pass (REARM, driveRearm). */
     strikeT -= dt;
-    if (strikeT <= 0) { strikeT = D.think || 1.6; driveStrikeShips(); }
+    if (strikeT <= 0) { strikeT = D.think || 1.6; driveStrikeShips(); driveRearm(); }
     /* ---- the production we cannot lose ----
        (victory rule) a side with no live production building is beaten.
        defendBase() used to run on the last line of think(), after fifteen
@@ -4345,7 +4348,7 @@ function makeCommander() {
   function engBook() {
     return { held: 0, staged: 0, massBody: 0, massClock: 0, spread: [], waits: 0,
              kept: 0, defers: 0, withdrawals: 0, withdrawn: 0, pad: 0,
-             dropped: 0, handed: 0, fb: fbBook() };
+             dropped: 0, handed: 0, fb: fbBook(), rearm: rlBook() };
   }
   /* FALLBACK's own counters (driveFallback). out is hulls that stepped out,
      by where they went (arv, tender, medic, depot, yard); back rejoined
@@ -5462,7 +5465,9 @@ function makeCommander() {
      names only a structure for it, which is what one round in 165 to 200
      seconds is worth. A boat is named only with that round ready, and a
      strike ends as soon as the next round could not leave inside the
-     window: an SLBM's reload is longer than the whole window, and without
+     window: an SLBM's reload is longer than the whole window (all but the
+     Ohio SSBN's since its real load, generations.js: twenty seconds, so
+     one strike's STRIKE_S has room for three of them), and without
      that - measured, a Borei on a structure that outlived its Bulava - the
      boat sat on the order 43.6 s after its one round had gone; with it, the
      boat is handed back 1.6 s after. */
@@ -5481,6 +5486,7 @@ function makeCommander() {
     for (const u of P.units) {
       if (u.dead || u.cat !== "naval" || (u.layer !== "sea" && u.layer !== "sub")) continue;
       if (u._fb && !u._tlamS) continue;          // out of the line being mended (FALLBACK)
+      if (u._rl) continue;                       // alongside a yard filling its cells (REARM)
       const wi = strikeMount(u);
       if (wi < 0) continue;
       const cap = (u.def.magazine || {})[u.def.weapons[wi]];
@@ -5534,6 +5540,210 @@ function makeCommander() {
       if (resume) order.resume = { x: resume.x, y: resume.y };
       u.give(order);
       u._tlamS = { order: order, t0: now, left0: left };
+    }
+  }
+
+  /* ================= REARM: home for what the sea cannot give =================
+     A counted magazine - rules.js FIXED_MAGAZINE, generations.js TLAM_FIT,
+     the Ohios' loads and the Sinpo's one tube - is filled in one place only:
+     alongside a friendly naval yard (entities.js reloadAtYard). Nothing in
+     this file ever sent a hull there. driveStrikeShips() passes over a dry
+     hull and the fleet drivers never look at a magazine, so the commander's
+     Oscar II put its twenty-four Granit away once and was a torpedo boat for
+     the rest of the battle, a Slava or a missile boat a gun platform, a
+     Burke's twelve Tomahawks the last it would ever fire - and with the Ohios
+     now carrying their real loads (generations.js), an Ohio would empty its
+     twenty Tridents and never strike again.
+
+     So a hull of the commander's whose every counted mount is empty sails to
+     the nearest of its yards, stays alongside until every one is full, and
+     goes back to what it was doing: its wave, if it left one that is still
+     out (an attackmove on the wave's middle, as FALLBACK sends back a mended
+     hull); else the leg it was on; else the post it left.
+       WHEN. Every counted mount at zero - a hull with rounds left in one has
+     a reason to stay - and only from an order that is the commander's to
+     take over: idle, guard, the fleet's advance, or an automatic engagement
+     of a structure, the strike driver's own list. Never a move (the oiler,
+     a road somebody else gave it), a commanded order, or a fight with
+     something that moves: that is finished first and the hull is asked
+     again a pass later. Never a hull FALLBACK has, the hull detailed as eyes,
+     or one on a named strike - driveStrikeShips() ends that itself the
+     moment the cells are dry, on the pass just before this one.
+       WHERE. The yard itself, as fbBerth() puts a ship to be mended: the
+     move ends at the water nearest it. "Alongside" is reloadAtYard()'s own
+     test - the nearest yard, within 4.5 tiles of its footprint. The road
+     gets FALLBACK's allowance (fbPoint: the straight line at the hull's
+     speed, x1.6, and fifteen seconds); alongside, a hull that gains no round
+     for RL_STALL seconds is let go, and so is one whose road ran out.
+     The yard sailed for is the nearest one on the hull's own water (rlYard),
+     not the nearest as the crow flies: korea's two seas never meet, and
+     suwalki, ussuri and northcape each have a second, separate water within
+     thirty tiles of a start. Found in review, on korea, a commander's yard
+     on each sea: a dry corvette 36 tiles across land from the one and 45 by
+     sea from the other sailed for the first, was let go when its road ran
+     out and went again every 130 s - four trips in 400 s, no round gained,
+     and the yard it could reach never tried. Sent to that one it is full
+     34 s later. A hull with no yard on its own water goes nowhere.
+       WHILE AWAY it is out of navalWave, and every driver that hands an idle
+     hull an order passes over it (_rl, beside each of their _fb tests), so
+     nothing sails it off its berth; one dragged off by a fight of its own is
+     sent back, at most once in two seconds.
+       FOG. Nothing here reads anything but this commander's own hulls and
+     yards. The player's boats are never touched: they get the MISSILE TUBES
+     EMPTY alert and their own orders.
+       PEACE (AI.setPeace, the scripted sandbox): off, like every driver here
+     that moves a hull of its own accord. A commander held at peace still
+     defends itself, so its hulls can run dry, and the first cut sent them
+     home: three of the behaviour suite's corvettes went at t=380, and the
+     one match every section of a half plays in came out different from
+     there on - _behtest [75]'s jammer check then met a commander buying on
+     every think through its whole window. A trip already under way when
+     peace begins finishes on its own move order, and the hull is handed
+     back when it ends.
+       A/B: P.aiOff "rearm". */
+  const RL_STALL = 15;           // seconds alongside without a round gained, then let go
+  /* REARM's counters: out sailed for a yard, alongside reached it, full were
+     filled; of those let go, back rejoined their wave, leg resumed the
+     advance they were taken from, post went back to where they stood; lost
+     died on the way or alongside; giveUp were let go short of full (no yard,
+     no road, no round gained). */
+  function rlBook() {
+    return { out: 0, alongside: 0, full: 0, back: 0, leg: 0, post: 0, lost: 0, giveUp: 0 };
+  }
+  /* this hull's counted mounts: how many, rounds left and room, and how many
+     are at zero. A mount never fired has no entry in u.mag and is full. */
+  function rlMag(u) {
+    const full = u.def.magazine, ws = u.def.weapons;
+    let n = 0, left = 0, cap = 0, dry = 0;
+    for (let i = 0; i < ws.length; i++) {
+      const c = full[ws[i]];
+      if (!c) continue;
+      const l = u.mag && u.mag[i] !== undefined ? u.mag[i] : c;
+      n++; left += l; cap += c;
+      if (l <= 0) dry++;
+    }
+    return { n, left, cap, dry };
+  }
+  /* The nearest finished yard of ours on the hull's own water:
+     G.nearestBuilding's test, plus the sea labels (Path.reachable) from the
+     hull's tile to the water beside the yard. Asked only for a hull that
+     has run dry (at most once in ten seconds while it has no yard), or
+     whose yard has just gone. */
+  function rlYard(u) {
+    const M = G.map, T = CFG.TILE, tx = (u.x / T) | 0, ty = (u.y / T) | 0;
+    let best = null, bd = Infinity;
+    for (const b of P.buildings) {
+      if (b.dead || b.def.id !== "navalyard" || b.buildProgress < 1) continue;
+      const d = U.dist2(u.x, u.y, b.x, b.y);
+      if (d >= bd) continue;
+      const w = Path.nearest(M, (b.x / T) | 0, (b.y / T) | 0, "sea", null, 4);
+      if (!w || !Path.reachable(M, tx, ty, w.x, w.y, "sea")) continue;
+      bd = d; best = b;
+    }
+    return best;
+  }
+  /* the road to the yard, and its allowance */
+  function rlRoad(u, r, now) {
+    const to = fbBerth({ src: r.yard, kind: "yard" });
+    r.until = now + U.dist(u.x, u.y, to.x, to.y) * 1.15 /
+                    (Math.max(0.3, u.def.speed || 1) * CFG.TILE) * 1.6 + 15;
+    r.reT = now + 2;
+    u.give({ type: "move", x: to.x, y: to.y });
+  }
+  function rlStart(u, yard, now) {
+    const o = u.order, wi = navalWave.indexOf(u);
+    const leg = o.type === "attackmove" ? { x: o.x, y: o.y }
+              : o.resume ? { x: o.resume.x, y: o.resume.y } : null;
+    const guard = o.type === "guard";
+    u._rl = { yard, wave: wi >= 0, leg, guard,
+              post: guard ? { x: u.guardX, y: u.guardY } : { x: u.x, y: u.y },
+              until: 0, reT: 0, inT: 0, got: 0, gotT: now };
+    if (wi >= 0) navalWave.splice(wi, 1);
+    rearming.push(u);
+    rlRoad(u, u._rl, now);
+    engStat.rearm.out++; asStat("rearmTrips");
+  }
+  function rlRelease(u, i, now, full) {
+    const r = u._rl, T = CFG.TILE;
+    rearming.splice(i, 1);
+    u._rl = null; u._rlNo = now + (full ? 8 : 90);
+    if (u.dead || !r) return;
+    if (full) asStat("rearmFull");
+    if (r.wave) {
+      let cx = 0, cy = 0, n = 0;
+      for (const w of navalWave) if (!w.dead) { cx += w.x; cy += w.y; n++; }
+      if (n) {
+        navalWave.push(u);
+        u.give({ type: "attackmove", x: cx / n, y: cy / n });
+        engStat.rearm.back++;
+        return;
+      }
+    }
+    if (r.leg) { u.give({ type: "attackmove", x: r.leg.x, y: r.leg.y }); engStat.rearm.leg++; return; }
+    /* the post: a move there (which is what sets guardX), and a guard on it
+       queued behind for a hull that was on guard; one already there just
+       takes its stance back. The road to the yard moved guardX to the yard. */
+    const p = r.post, guard = { type: "guard", x: p.x, y: p.y };
+    if (U.dist(u.x, u.y, p.x, p.y) > T * 3) {
+      u.give({ type: "move", x: p.x, y: p.y });
+      if (r.guard) u.give(guard, true);
+      engStat.rearm.post++;
+    } else if (u.order.type === "move") u.give(r.guard ? guard : { type: "idle" });
+    if (r.guard) { u.guardX = p.x; u.guardY = p.y; }
+  }
+  function steerRearm(u, i, now) {
+    const r = u._rl;
+    if (!r || u.dead) {
+      rearming.splice(i, 1);
+      if (r) { u._rl = null; engStat.rearm.lost++; }
+      return;
+    }
+    const m = rlMag(u);
+    if (m.left >= m.cap) { engStat.rearm.full++; rlRelease(u, i, now, true); return; }
+    /* a yard that died, or that an engineer took, loads nobody of ours */
+    if (!r.yard || r.yard.dead || r.yard.owner !== P) {
+      r.yard = rlYard(u);
+      if (!r.yard) { engStat.rearm.giveUp++; rlRelease(u, i, now, false); return; }
+      rlRoad(u, r, now);
+      return;
+    }
+    const ny = G.nearestBuilding(P, "navalyard", u.x, u.y);
+    if (ny && u.nearFootprint(ny, 4.5)) {
+      if (!r.inT) { r.inT = now; r.got = m.left; r.gotT = now; engStat.rearm.alongside++; }
+      /* off the berth again (a fight of its own) it has RL_STALL to return */
+      r.until = Math.max(r.until, now + RL_STALL);
+      if (m.left > r.got) { r.got = m.left; r.gotT = now; }
+      else if (now - r.gotT > RL_STALL) { engStat.rearm.giveUp++; rlRelease(u, i, now, false); }
+      return;
+    }
+    if (now > r.until) { engStat.rearm.giveUp++; rlRelease(u, i, now, false); return; }
+    if (u.routT > 0 || r.reT > now) return;
+    const to = fbBerth({ src: r.yard, kind: "yard" }), o = u.order;
+    if (o.type === "move" && U.dist(o.x, o.y, to.x, to.y) < CFG.TILE * 1.2) return;
+    r.reT = now + 2;
+    u.give({ type: "move", x: to.x, y: to.y });
+  }
+  /* One pass, on the strike driver's clock: steer the hulls already away,
+     then look for a hull that has just run dry. COST: one field test per
+     unit; the magazine is read only for a hull that has fired from it. */
+  function driveRearm() {
+    if (atPeace || (P.aiOff && P.aiOff.has("rearm"))) return;
+    const now = G.time;
+    for (let i = rearming.length - 1; i >= 0; i--) steerRearm(rearming[i], i, now);
+    for (const u of P.units) {
+      if (u.dead || !u.mag || u.cat !== "naval" || !u.def.magazine) continue;
+      /* a trip a commander before this one started (AI.reset) is ours now */
+      if (u._rl) { if (rearming.indexOf(u) < 0) rearming.push(u); continue; }
+      if (u._fb || u._scout || u._tlamS || (u._rlNo || 0) > now) continue;
+      const o = u.order, ot = o.type;
+      const autoBld = ot === "attack" && o.auto && !o.release &&
+                      o.target && o.target.kind === "building";
+      if (!(ot === "idle" || ot === "guard" || ot === "attackmove" || autoBld)) continue;
+      const m = rlMag(u);
+      if (!m.n || m.dry < m.n) continue;
+      const yard = rlYard(u);
+      if (!yard) { u._rlNo = now + 10; continue; }
+      rlStart(u, yard, now);
     }
   }
 
@@ -9060,8 +9270,9 @@ function makeCommander() {
       u.def.role !== "minesweeper" && u.def.role !== "navminelayer" &&
       navalWave.indexOf(u) < 0 &&
       /* the hull detailed as eyes (seaScout) is not a bombardment hull,
-         and one stepped out of the line to be mended (FALLBACK) is not yet */
-      !u._scout && !u._fb);
+         and one stepped out of the line to be mended (FALLBACK) is not yet,
+         nor one alongside a yard filling its magazine (REARM) */
+      !u._scout && !u._fb && !u._rl);
     /* ---- when the bombardment group goes ----
        The thirty-percent roll is kept, and G.rng() is drawn on exactly the
        ticks it always was, so the seeded stream the replay depends on does
@@ -9519,7 +9730,7 @@ function makeCommander() {
       /* escort: any idle warships come along, to the escort station */
       const es = amphib.station || { x: b.seaX, y: b.seaY };
       for (const s2 of P.units) {
-        if (s2.dead || s2.layer !== "sea" || s2.def.amphib || !s2.def.weapons.length || s2._scout || s2._fb) continue;
+        if (s2.dead || s2.layer !== "sea" || s2.def.amphib || !s2.def.weapons.length || s2._scout || s2._fb || s2._rl) continue;
         if (s2.order.type === "idle")
           s2.give({ type: "attackmove", x: es.x, y: es.y });
       }
@@ -9798,7 +10009,7 @@ function makeCommander() {
     /* the guns that are NOT in the wave help too - there is no reason to keep
        a battery at home while the road is being opened */
     for (const u of P.units) {
-      if (u.dead || u._fb || attackWave.indexOf(u) >= 0) continue;      // _fb: being mended
+      if (u.dead || u._fb || u._rl || attackWave.indexOf(u) >= 0) continue;      // _fb: being mended, _rl: rearming
       if (!(u.isIndirect && u.isIndirect()) || u.def.role === "tel") continue;
       if (u.order.type === "idle" || u.order.type === "guard")
         u.give({ type: "bombard", x: spot.x, y: spot.y, until: now + 30 });
@@ -13373,6 +13584,7 @@ function makeCommander() {
       if (u.dead || u.cat !== "naval" || u.layer !== "sea") continue;
       if (u._scout === "sea") { cur = u; continue; }
       if (u._fb) continue;                       // out of the line being mended (FALLBACK)
+      if (u._rl) continue;                       // alongside a yard filling its magazine (REARM)
       const d = u.def;
       if (!d.weapons.length || d.amphib || d.supply || d.repairRate || d.carrier) continue;
       if (d.role === "minesweeper" || d.role === "navminelayer") continue;
@@ -14019,7 +14231,7 @@ function makeCommander() {
       const dm = dat[dat.length - 1];
       let best = null, bd = Infinity;
       for (const u of P.units) {
-        if (u.dead || !u.def.sonar || u._scout || u._fb) continue;
+        if (u.dead || !u.def.sonar || u._scout || u._fb || u._rl) continue;
         if (u.order.type !== "idle" && u.order.type !== "guard") continue;
         const dd = U.dist2(u.x, u.y, dm.x, dm.y);
         if (dd < bd) { bd = dd; best = u; }
@@ -14029,8 +14241,9 @@ function makeCommander() {
 
     const dS = dossier[rival ? rival.idx : -1];
     if (!dS || !dS.sawSub) return;
-    /* not a boat on a berth being mended (FALLBACK): idle there is not idle */
-    const boats = P.units.filter(u => !u.dead && u.netMax > 0 && u.net > 0 && !u._fb &&
+    /* not a boat on a berth being mended (FALLBACK), nor one alongside a yard
+       filling its magazine (REARM - an SSGN lays nets): idle there is not idle */
+    const boats = P.units.filter(u => !u.dead && u.netMax > 0 && u.net > 0 && !u._fb && !u._rl &&
                                  (u.order.type === "idle" || u.order.type === "guard"));
     if (!boats.length) return;
 
@@ -14945,7 +15158,7 @@ function makeCommander() {
        member from a hull at home. The arrays themselves, not copies: reapWave
        replaces attackWave every think, so ask again rather than hold one.
        book() books a wave stood up by hand, as a launch would. */
-    get waves() { return { ground: attackWave, naval: navalWave, homeward, mending, book: bookWave }; },
+    get waves() { return { ground: attackWave, naval: navalWave, homeward, mending, rearming, book: bookWave }; },
     intel() {
       /* the new state is exposed for the same reason `look` already is: so a
          test or a debug overlay can see whether any of this is firing */
@@ -15095,6 +15308,9 @@ function makeCommander() {
                             and `now` of them away at this moment */
                          fallback: Object.assign({ now: mending.length,
                                                    leave: Math.round(fbLeave(false) * 100) / 100 }, engStat.fb),
+                         /* REARM (rlBook): hulls gone home for a full
+                            magazine, and `now` of them away at this moment */
+                         rearm: Object.assign({ now: rearming.length }, engStat.rearm),
                          force: Math.round(ourForce(attackWave) * 100) / 100,
                          foeAtAim: aim ? Math.round(foeNear(aim.x, aim.y, CFG.TILE * 12) * 100) / 100 : 0 },
                /* Exposed for the reason every field around it is: a commander
