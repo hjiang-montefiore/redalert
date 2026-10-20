@@ -1623,7 +1623,10 @@ var Render = (function () {
      AREA ATTACK (entities.js) is outlined too, each unit its own share of
      it: a gun's strip, with its line to the point being fired on now, and
      a bomber's lane, with the run down it at height (a stick) or the line
-     to its next aimpoint (stand-off rounds), then the way home.
+     to its next aimpoint (stand-off rounds), then the way home. A SNIFF
+     patrol's beat (entities.js) is in a colour of its own, with the break
+     it is flying first and a turn-in on a contact drawn as a strike that
+     goes back to the beat.
 
      A LINE GOES ONLY AS FAR AS THE UNIT WILL. The queue (u.orders) is taken
      up only by an order that finishes into nextOrder() (entities.js): a
@@ -1665,16 +1668,17 @@ var Render = (function () {
      trip and a guard post are not orders anyone needs reminding of, and
      draw nothing. */
   const OL_KINDS = ["move", "amove", "attack", "patrol", "unload", "enter",
-                    "strike", "rtb", "cap", "fire", "rally", "area"];
+                    "strike", "rtb", "cap", "fire", "rally", "area", "sniff"];
   const OL_COLS = ["#8fd05f", "#ff9a4a", "#ff4a3a", "#ffe066", "#5ac8ff", "#5ac8ff",
-                   "#ff5a9c", "#a8b8ff", "#ffe066", "#e07cff", "#8fd05f", "#e2c478"];
+                   "#ff5a9c", "#a8b8ff", "#ffe066", "#e07cff", "#8fd05f", "#e2c478", "#3ce8b4"];
   /* a beat walked both ways, a patrol flown over a point, a way home, a
      rally and a box of ground are standing arrangements rather than a single
-     trip: dashed. The box is the colour of the one the player drags out. */
-  const OL_DASH = [0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1];
+     trip: dashed. The box is the colour of the one the player drags out. A
+     SNIFF patrol's beat is too, in a colour of its own. */
+  const OL_DASH = [0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1];
   const OL_DASH_ON = [6, 5], OL_DASH_OFF = [], OL_DASH_RING = [3, 4];
   const K_MOVE = 0, K_AMOVE = 1, K_ATTACK = 2, K_PATROL = 3, K_UNLOAD = 4, K_ENTER = 5,
-        K_STRIKE = 6, K_RTB = 7, K_CAP = 8, K_FIRE = 9, K_RALLY = 10, K_AREA = 11;
+        K_STRIKE = 6, K_RTB = 7, K_CAP = 8, K_FIRE = 9, K_RALLY = 10, K_AREA = 11, K_SNIFF = 12;
   const OL_MAXS = 4096, OL_MAXM = 2048, OL_MAXR = 128;
   const OL_MISS = 44;                      // combat.js fire(): a miss lands 14 + rng*30 px off
   /* Where a cargo round's mines can lie. combat.js scatterMines() lays mine
@@ -1783,7 +1787,8 @@ var Render = (function () {
             /* afterAttack(): back to the resume point - a strike's own ramp -
                as an attack-move, which fights what it meets on the way */
             else { olLeg(K_AMOVE, o.resume.x, o.resume.y, air, true); pull = true; }
-          } else if (air && o.then) next = o.then;
+          } else if (air && o.sniff) next = o.sniff;      // a SNIFF turn-in: back to the beat
+          else if (air && o.then) next = o.then;
           else pull = true;
           break;
         case "patrol": {
@@ -1857,6 +1862,22 @@ var Render = (function () {
           next = o.then || OL_HOME;
           break;
         case "cap": olLeg(K_CAP, o.x, o.y, 1, true); break;
+        case "sniff": {
+          /* A SNIFF patrol (entities.js), at height: a break in progress to
+             the point it is running for, then the beat - a point, or the
+             line, to the end it is flying for and back along the whole of
+             it. Flown until the tanks or the rack send it home and then
+             taken up again, like a combat air patrol, so the line stops. */
+          if (o.ph === "out" && olNum(o.ex) && olNum(o.ey)) olLeg(K_SNIFF, o.ex, o.ey, 1, false);
+          const x1 = olNum(o.x1) ? o.x1 : o.x, y1 = olNum(o.y1) ? o.y1 : o.y;
+          if (x1 === o.x && y1 === o.y) { olLeg(K_SNIFF, o.x, o.y, 1, true); break; }
+          /* not yet joined: it joins at the nearer end (entities.js sniffFly) */
+          const far = o.leg === 1 || (o.leg !== 0 &&
+                      Math.hypot(x1 - olX, y1 - olY) < Math.hypot(o.x - olX, o.y - olY));
+          olLeg(K_SNIFF, far ? x1 : o.x, far ? y1 : o.y, 1, true);
+          olLeg(K_SNIFF, far ? o.x : x1, far ? o.y : y1, 1, true);
+          break;
+        }
         case "autolay": case "autosweep": {
           /* the lattice point being worked, then the box the player drew (a
              saved order comes back without its corners, and draws no box) */

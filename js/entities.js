@@ -145,6 +145,12 @@ function targetPrio(e, base) {
    step still opens the gap, so nothing wider is worth the turn. */
 const KITE_DEV = [0, 0.6, -0.6, 1.1, -1.1];
 
+/* A SNIFF patrol's numbers (Unit, SNIFF): how far past its round's reach it
+   turns in on a contact (tiles), and the bearings off "straight away from
+   the site" its break may take, tried in turn for the first point clear of
+   every ring the side knows. */
+const SNIFF = { APPROACH: 8, BEARINGS: [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6] };
+
 /* =================================================================== UNIT */
 class Unit {
   constructor(game, defId, owner, x, y) {
@@ -1318,8 +1324,13 @@ class Unit {
        - anything that is not part of the air-defence system. A radar or a
          jammer that can also engage aircraft, or a pure sensor. Not an
          airbase, not a warship, not a tank with a rangefinder;
-       - anything out of reach of the round it is actually carrying. */
-  seadTarget(fromRamp) {
+       - anything out of reach of the round it is actually carrying.
+     A SNIFF patrol (below, SNIFF) asks the same question with two more
+     words: `extra` pixels past the round's reach that it will fly in to
+     close (its approach), and `skip`, a contact it leaves alone because a
+     round of its side is already on the way to it. Left out, as by every
+     other caller, the question is exactly what it always was. */
+  seadTarget(fromRamp, extra, skip) {
     const d = this.def;
     if (d.role !== "sead" && d.role !== "ewair") return null;
     if (this.stance === "hold") return null;
@@ -1370,7 +1381,8 @@ class Unit {
            measured, seadTarget() still named a battery 200 tiles away. This is
            the ONE round the game lets an airframe loose without an order, and
            the narrowness of the gate is the whole reason that is allowed. */
-        if (dist > reach) return;
+        if (dist > reach + (extra || 0)) return;
+        if (skip && skip(e)) return;
         /* prefer the one that can actually hurt us, then the closer */
         const sc = (shoots ? 1000 : 0) + emits * 10 - dist / CFG.TILE;
         if (sc > bs) { bs = sc; best = e; }
@@ -3994,7 +4006,11 @@ class Unit {
        home 2.2 s after launch, comes back on full tanks and lays the stick,
        never below 20% (tools/jsc/areafire_check.js [11]). */
     const finish = onRun && o.k > 0 && this.fuel >= this.reserveFuel();
-    const needRTB = (dryAmmo && !onRun) || (dry && !finish);
+    /* A SNIFF patrol's last round finishes its break before it goes home to
+       rearm: the way home from the launch point need not be away from the
+       site. Bingo fuel is not held for it. */
+    const breaking = o.type === "sniff" && o.ph === "out";
+    const needRTB = (dryAmmo && !onRun && !breaking) || (dry && !finish);
     /* "tank" must be in this list. Without it the check fired every tick while
        an aircraft was actually taking fuel - fuel is below the bingo figure by
        definition at that moment - and reissued the order from scratch, which
@@ -4008,7 +4024,14 @@ class Unit {
          the turnaround and resumed once the aircraft is serviceable again. */
       const standing = (o.type === "cap" || o.type === "attackmove")
         ? { type: o.type, x: o.x, y: o.y, commit: o.commit }   // a jammer sent in goes back in
-        : (o.cap && o.resume) ? { type: "cap", x: o.resume.x, y: o.resume.y } : null;
+        : (o.cap && o.resume) ? { type: "cap", x: o.resume.x, y: o.resume.y }
+        /* a SNIFF patrol, or a turn-in it made on a contact: the beat is
+           what is carried, and taken up again from the top (sniffResume) */
+        : o.type === "sniff" ? this.sniffResume(o)
+        : o.type === "attack" && o.sniff ? this.sniffResume(o.sniff) : null;
+      if (o.sniff) this.sniffRelease(o.target);
+      if (standing && standing.type === "sniff" && dryAmmo && this.owner === this.game.human)
+        this.game.alert(this.def.name.toUpperCase() + " \u2014 OUT OF MISSILES, REARMING, THEN BACK TO SNIFF", "good");
       /* A strike is an `attack` order carrying a `resume` point and NO `cap`
          flag - which is exactly what the airbase STRIKE panel and the STRIKE
          button issue - so `standing` above was null for every strike ever
@@ -4249,6 +4272,9 @@ class Unit {
       const w = WEAPONS[this.def.weapons[wi]];
       const range = this.weaponRange(w);
       const dist = U.dist(this.x, this.y, t.x, t.y);
+      /* a SNIFF patrol's turn-in: straight in, the round away at the edge of
+         its reach, and the break (see SNIFF) */
+      if (o.sniff && !this.def.hover) { this.sniffShot(o, t, wi, w, range, dist, dt); return; }
       /* ---- A FIXED-WING AIRCRAFT KEEPS FLYING WHILE IT SHOOTS ----
          (owner) "B52 and ac 130 should move during the attack."
          Two separate reasons they did not, and the second is the older
@@ -4390,6 +4416,8 @@ class Unit {
       }
     } else if (o.type === "areastrike") {
       this.areaStrike(o, dt);
+    } else if (o.type === "sniff") {
+      this.sniffFly(o, dt);
     } else if (o.type === "rtb" || o.type === "land") {
       /* The ramp this aircraft is based on. If every slot has gone it lands
          on its own anyway: an over-stacked revetment beats orbiting the field
@@ -4874,6 +4902,9 @@ class Unit {
 
   /* what an aircraft does when its target dies or its track is lost */
   afterAttack(o, short) {
+    /* a SNIFF patrol's turn-in that ended with no round away goes back to
+       its beat (sniffBack); dry, the turnaround carries the beat home */
+    if (o.sniff) return this.sniffBack(o);
     if (o.cap && o.resume) return { type: "cap", x: o.resume.x, y: o.resume.y };
     if (o.resume) return { type: "attackmove", x: o.resume.x, y: o.resume.y };
     /* AND FLEE. An order that says where to go when the shooting stops is
@@ -5298,6 +5329,338 @@ class Unit {
   areaResume(o) {
     return { type: "areastrike", mode: o.mode, wi: o.wi, area: o.area, dir: o.dir,
              k: o.mode === "stick" ? 0 : o.k, pass: 0, release: o.release };
+  }
+
+  /* ================= SNIFF =================
+     (owner) "can you [make the] electronic war airplane have a sniff mode
+     like patrol, but when it sniffs the radar or SAM, it will launch the
+     missile and run away." A standing order for a SEAD or EW aircraft that
+     carries an anti-radiation round (sniffMount): fly a beat, LISTEN, and
+     when an enemy air-defence set that is transmitting comes within reach,
+     turn in, put a round on it from as far out as the round goes, break
+     away to outside that site's ring, and go back to the beat. Player only:
+     ai.js flies its own SEAD drill and never gives this order.
+
+     THE BEAT is a point (a click: a circle round it at the combat air
+     patrol's radius, or the aeroplane's own turn if that is wider) or a
+     line (a drag: flown end to end, joined at the nearer end). Like a held
+     patrol it keeps out of the rings its side knows (sniffRings): an end, or
+     the circle, inside one is pulled back toward home to the margin outside
+     them by the transit hold's own rule (G.standoffPoint), and one that
+     strays in on a turn goes straight out again, so it never loiters in an
+     envelope. Aggressive stance flies the beat as drawn.
+
+     THE CONTACT is what seadTarget() names for the Weasel's own shot, asked
+     with an approach: an enemy radar, SAM or jammer that can engage
+     aircraft, or whose whole job is to transmit; ON THE AIR (G.jamming - a
+     set its crew switches off cannot be sniffed, which stays the counter);
+     and on the side's air picture, SEEN or HEARD (G.airPlotKnows: our eyes,
+     or a receiver of ours within 1.9 x the set's own reach). Nothing is read
+     that seadTarget does not already read. It has to lie within the round's
+     reach plus SNIFF.APPROACH, 8 tiles: the beat stops 2.5 tiles outside a
+     ring the side knows (1.5 for a jammer), and a HARM (16 tiles, 17.3 with
+     NATO's range) has 2.7 to close to a SAM Site from there (ring 17.5) -
+     but a 1960s Shrike (8.6, 9.3) has 6.2 to an S-75 (ring 13.0) and a
+     Kh-28 (8.2) 7.6 to an Improved HAWK (13.3). At 6.2 to 8.6 tiles a
+     second that is about a second of flight.
+
+     THE SHOT is the self-issued attack the Weasel already gives itself - auto,
+     carrying release, so pickWeapon() finds the held round by the ordinary
+     path and tryFire() fires it, seeker lock test (G.armLock) and all -
+     marked `sniff`, which runs it in on the tangent of the round's reach
+     and lets the round go the first tick the contact is inside it
+     (sniffShot), not at the 0.968 of it the attack orbit fires at.
+     Measured (tools/jsc/sniff_check.js [3]): an F-16CJ that HEARD a SAM
+     Site 24.4 tiles off, and did not see it, put its HARM away at 17.27
+     tiles of its 17.28-tile reach, 1.5 s after it turned in.
+
+     ONE ROUND A PASS from each aircraft, and at most TWO in the air at a
+     site that shoots aircraft (one at a pure sensor or jammer) from the
+     whole side. Measured: a HARM hit is 630 on a SAM Site of 850 and 504 on
+     an S-400 or a Patriot of 600-640, so a site takes two. A lone Weasel puts
+     them in on two passes - shoot, look, shoot - rather than holding at the
+     edge of the envelope through a six-second reload; a pair puts both in on
+     one pass, and a third aircraft looks for other work. Nobody turns in on
+     a contact again while its own round to it is still in the air, nor
+     while two are (owner.sniffOn, sniffBusy).
+
+     AND RUN (sniffEgress): the tick the round is away it breaks from the
+     site, straight and at full speed, for a point outside that site's ring
+     (G.airDefenceReach x 1.25, as G.airThreatRings draws every ring) plus
+     the margin - straight away from the site when that point is clear of
+     every other ring the side knows, else the nearest bearing that is -
+     and then back to the beat. Not the stand-off launch orbit, which can
+     overshoot into a ring. Measured ([4]): 0.2 s inside the ring after the
+     shot, never nearer than 17.2 tiles to a SAM Site that reaches 14.0,
+     the break over 1.5 s after the shot and 25.9 tiles out.
+
+     OUT OF ROUNDS it finishes its break, then goes home, rearms and
+     refuels by the ordinary turnaround with the order carried across it
+     (updateAir, sniffResume) as a patrol and an area strike are, and takes
+     the beat up again by itself. Bingo fuel turns it for home at once, from
+     anywhere, and it comes back after refuelling. Any new order ends it. */
+
+  /* What this airframe sniffs with: { wi, w } - its anti-radiation mount for
+     ground targets, the longest-reaching if it has two - or { why } it
+     cannot take the order. Asked of the airframe, not the magazine: one
+     rearming on its ramp can take it, and is told it is rearming. */
+  sniffMount() {
+    const d = this.def, ws = d.weapons || [];
+    if (this.layer !== "air" || (d.role !== "sead" && d.role !== "ewair"))
+      return { why: "ONLY A SEAD OR EW AIRCRAFT WITH AN ANTI-RADIATION MISSILE SNIFFS" };
+    let wi = -1;
+    for (let i = 0; i < ws.length; i++) {
+      const w = WEAPONS[ws[i]];
+      if (!w || !w.antiRadiation || !w.tgt || !w.tgt.ground) continue;
+      if (wi < 0 || w.range > WEAPONS[ws[wi]].range) wi = i;
+    }
+    if (wi >= 0) return { wi: wi, w: WEAPONS[ws[wi]] };
+    return { why: "NO ANTI-RADIATION MISSILE ABOARD" +
+                  (d.jam ? " \u2014 STRIKE (T) A BATTERY TO JAM IT" : " \u2014 ITS RECEIVERS CUE THE SHOOTERS") };
+  }
+  /* the order for a beat from (x, y) to (x1, y1), a point where they meet */
+  sniffOrder(x, y, x1, y1) {
+    if (this.sniffMount().why) return null;
+    return { type: "sniff", x: x, y: y, x1: x1, y1: y1 };
+  }
+  /* the same beat, from the top, after a turnaround: joined at whichever end
+     is nearer when it gets there */
+  sniffResume(o) {
+    return { type: "sniff", x: o.x, y: o.y, x1: o.x1, y1: o.y1 };
+  }
+  /* the margin it keeps outside a ring, the transit hold's: a jammer may sit
+     a tile closer */
+  sniffMargin() { return 1.5 + (this.def.jam ? 0 : 1.0); }
+  /* The rings this side knows: what it sees and remembers (G.standoffRings,
+     the list the stand-off bomber flies by) and every air-defence set on its
+     electronic picture that it only HEARS - the plot has its place and its
+     signal says what it is, so its ring is known. Remade twice a second,
+     with the plot. */
+  sniffRings(o) {
+    const g = this.game, now = g.time;
+    if (o.rg && now >= o.rg.t && now - o.rg.t < 0.5) return o.rg.R;
+    let R = g.standoffRings ? g.standoffRings(this.owner) : [], mine = false;
+    const heard = g.esmHeard ? g.esmHeard(this.owner) : [];
+    for (const e of heard) {
+      const reach = g.airDefenceReach ? g.airDefenceReach(e.def) : 0;
+      if (!reach) continue;
+      if (!mine) { R = R.slice(); mine = true; }          // the memo is shared: never write into it
+      R.push(e.x, e.y, reach * 1.25);
+    }
+    o.rg = { t: now, R: R };
+    return R;
+  }
+  /* Is this contact somebody else's for now, or this aircraft's own round
+     still on its way to it? `list` is the side's turns-in and rounds on it
+     (owner.sniffOn): a turn-in while that aircraft is still turning in on
+     it (twenty seconds at most), a round until its projectile has gone and
+     the time it needed to arrive has passed. */
+  sniffBusy(e) {
+    const on = this.owner.sniffOn, list = on ? on.get(e.id) : null;
+    if (!list) return false;
+    const now = this.game.time, P = Combat.projectiles;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const r = list[i], ro = r.u.order;
+      const live = r.away ? (!!r.p && !r.p.dead && P.indexOf(r.p) >= 0) || now < r.t
+                          : !r.u.dead && now < r.t && !!ro && !!ro.sniff && ro.target === e;
+      if (!live) list.splice(i, 1);
+    }
+    if (!list.length) { on.delete(e.id); return false; }
+    for (const r of list) if (r.u === this) return true;
+    const g = this.game;
+    return list.length >= ((g.airDefenceReach ? g.airDefenceReach(e.def) : 0) > 0 ? 2 : 1);
+  }
+  /* this aircraft's turn-in on t is over without a round: let it go */
+  sniffRelease(t) {
+    const on = this.owner.sniffOn, list = on && t ? on.get(t.id) : null;
+    if (!list) return;
+    for (let i = list.length - 1; i >= 0; i--) if (list[i].u === this && !list[i].away) list.splice(i, 1);
+    if (!list.length) on.delete(t.id);
+  }
+  /* Flying the order: the break, or the beat - listening on both the beat
+     and the way out to it, twice a second. */
+  sniffFly(o, dt) {
+    const g = this.game, TL = CFG.TILE;
+    if (o.ph === "out") {
+      /* the break: straight for the point outside the ring, and only then
+         back (its clock is a backstop for a point it cannot reach) */
+      if (this.flyTo(o.ex, o.ey, dt) || !(g.time < o.until)) o.ph = "beat";
+      return;
+    }
+    o.scan = (o.scan || 0) - dt;
+    if (o.scan <= 0) {
+      o.scan = 0.5;
+      const m = this.sniffMount();
+      /* a round aboard and off the rail by the time it is in reach: the
+         approach is about a second, the reload six to eight */
+      if (!m.why && this.canAfford(m.w) && !(this.cooldowns[m.wi] > 1)) {
+        const em = this.seadTarget(false, SNIFF.APPROACH * TL, (e) => this.sniffBusy(e));
+        if (em) {
+          const on = this.owner.sniffOn || (this.owner.sniffOn = new Map());
+          if (!on.has(em.id)) on.set(em.id, []);
+          on.get(em.id).push({ u: this, p: null, t: g.time + 20, away: false });
+          this.order = { type: "attack", target: em, auto: true, release: true, sniff: o,
+                         until: g.time + 20, lx: em.x, ly: em.y };
+          this.flyTo(em.x, em.y, dt);
+          return;
+        }
+      }
+    }
+    /* ---- the beat, kept out of the rings the side knows ----
+       An end, or the middle of the orbit, that lies inside a ring is
+       pulled back toward home to the margin outside them (G.standoffPoint,
+       the transit hold); the orbit is a circle flown at its radius
+       (flyOrbit) and its middle is held that much further out, so no lap of
+       it dips in. Strayed inside one all the same - the turn at an end of the
+       line, the way back from a break across the ring, a ring that has just
+       come onto the picture - it heads out of the deepest at once, slanted
+       round it toward where it is going, so it slides round the ring rather
+       than in and out of it. */
+    const m2 = this.sniffMargin(), R = this.sniffRings(o);
+    const safe = this.stance !== "aggressive" && !!g.standoffPoint;
+    const hold = (x, y, pad) => !safe ? { x: x, y: y, held: false }
+      : g.standoffPoint(this.owner, this.owner.homeX, this.owner.homeY, x, y, m2 + pad, R);
+    const x1 = Number.isFinite(o.x1) ? o.x1 : o.x, y1 = Number.isFinite(o.y1) ? o.y1 : o.y;
+    const point = U.dist(o.x, o.y, x1, y1) <= 2 * CFG.CAP_RADIUS * TL;
+    /* a point: a circle round it, the combat air patrol's radius or the
+       aeroplane's own turn if that is wider. A line: end to end, joined at
+       the nearer end. */
+    const r = point ? Math.max(CFG.CAP_RADIUS * TL, this.turnRadius() * 1.1) : 0;
+    if (!point && o.leg !== 0 && o.leg !== 1)
+      o.leg = U.dist2(this.x, this.y, x1, y1) < U.dist2(this.x, this.y, o.x, o.y) ? 1 : 0;
+    const h = point ? hold((o.x + x1) / 2, (o.y + y1) / 2, r / TL)
+                    : o.leg ? hold(x1, y1, 0) : hold(o.x, o.y, 0);
+    if (h.held && !o.warned && this.owner === g.human) {
+      o.warned = true;
+      g.alert(this.def.name.toUpperCase() + " \u2014 SNIFFING SHORT OF AIR DEFENCE", "warn");
+    }
+    if (safe) {
+      let deep = 0, bx = 0, by = 0, br = 0;
+      for (let i = 0; i < R.length; i += 3) {
+        const d = R[i + 2] - U.dist(this.x, this.y, R[i], R[i + 1]) / TL;
+        if (d > deep) { deep = d; bx = R[i]; by = R[i + 1]; br = R[i + 2]; }
+      }
+      if (deep > 0) {
+        const side = (this.x - bx) * (h.y - by) - (this.y - by) * (h.x - bx) >= 0 ? 1 : -1;
+        const a = Math.atan2(this.y - by, this.x - bx) + side * 0.6, run = (br + m2 + 1) * TL;
+        this.flyTo(bx + Math.cos(a) * run, by + Math.sin(a) * run, dt);
+        return;
+      }
+    }
+    if (point) this.flyOrbit(h.x, h.y, r, dt);
+    else if (this.flyTo(h.x, h.y, dt)) o.leg = o.leg ? 0 : 1;
+  }
+  /* ---- the turn-in, flown from the attack branch (updateAir) ----
+     In on the contact while it stays on the air and on our picture, and the
+     round away the first tick it is inside the round's reach; then the
+     break. Anything else ends the turn-in with nothing fired: the set
+     went dark or out of hearing, the contact got out past the approach, or
+     twenty seconds went by. */
+  sniffShot(o, t, wi, w, range, dist, dt) {
+    const g = this.game, TL = CFG.TILE;
+    const known = g.airPlotKnows ? g.airPlotKnows(this.owner, t) : g.visibleTo(this.owner, t);
+    if (!g.jamming(t) || !known || !(g.time < o.until) || dist > range + SNIFF.APPROACH * TL * 1.5) {
+      this.order = this.afterAttack(o);
+      return;
+    }
+    o.lx = t.x; o.ly = t.y;                                // where our picture has it
+    if (dist <= range && dist >= (w.minRange || 0) * TL && !(this.cooldowns[wi] > 0)) {
+      const P = Combat.projectiles, n0 = P.length;
+      this.tryFire(wi, t);
+      if (this.order !== o) return;                        // tryFire gave it up and went back
+      if (this.cooldowns[wi] > 0) {
+        /* away: the round goes on the side's list for this contact until it
+           has arrived, in place of the turn-in */
+        let p = null;
+        for (let i = P.length - 1; i >= n0; i--) if (P[i].shooter === this) { p = P[i]; break; }
+        const on = this.owner.sniffOn || (this.owner.sniffOn = new Map());
+        if (!on.has(t.id)) on.set(t.id, []);
+        let r = on.get(t.id).find(q => q.u === this && !q.away);
+        if (!r) on.get(t.id).push(r = { u: this, p: null, t: 0 });
+        r.away = true; r.p = p; r.t = g.time + dist / Math.max(60, w.speed || 400) + 1;
+        if (this.owner === g.human)
+          g.alert(this.def.name.toUpperCase() + " \u2014 MISSILE AWAY, BREAKING OFF", "good");
+        this.order = this.sniffEgress(o.sniff, t.x, t.y, t.def);
+        this.flyTo(this.order.ex, this.order.ey, dt);
+        return;
+      }
+    }
+    /* in reach with the round still reloading: round it at the edge */
+    if (dist <= range && this.cooldowns[wi] > 0) { this.flyOrbit(t.x, t.y, range, dt); return; }
+    /* ---- the run-in: on the tangent, not at the site ----
+       Flown straight at it, the round left at the edge of its reach with
+       the nose on the site, and the break - half a circle at the
+       aeroplane's own turn - carried it most of a turning radius further
+       in: measured, an F-16CJ that fired at 17.1 tiles came to 13.5 of a
+       SAM Site that reaches 14.0. So it runs in on the tangent of a circle
+       just inside the round's reach, on whichever side is less of a turn:
+       it crosses the reach a few degrees off the tangent, the round goes,
+       and the break turns it outward from there. */
+    const rho = range * 0.97;
+    if (dist > range) {
+      const out = Math.atan2(this.y - t.y, this.x - t.x), off = Math.acos(rho / dist);
+      let best = null, bt = Infinity;
+      for (const s of [1, -1]) {
+        const px = t.x + Math.cos(out + s * off) * rho, py = t.y + Math.sin(out + s * off) * rho;
+        let turn = Math.atan2(py - this.y, px - this.x) - this.ang;
+        turn = Math.abs(Math.atan2(Math.sin(turn), Math.cos(turn)));
+        if (turn < bt) { bt = turn; best = { x: px, y: py }; }
+      }
+      this.flyTo(best.x, best.y, dt);
+    } else this.flyOrbit(t.x, t.y, range, dt);
+  }
+  /* The turn-in ended without a round away (afterAttack): back to the beat,
+     by way of a break when it has come inside the contact's ring, or any
+     ring the side knows. The contact is where our picture last had it. */
+  sniffBack(a) {
+    const o = a.sniff, g = this.game, t = a.target;
+    this.sniffRelease(t);
+    o.ph = "beat";
+    if (t && !t.dead && t.def) {
+      const own = (g.airDefenceReach ? g.airDefenceReach(t.def) : 0) * 1.25, m = this.sniffMargin();
+      const lx = Number.isFinite(a.lx) ? a.lx : t.x, ly = Number.isFinite(a.ly) ? a.ly : t.y;
+      if (U.dist(this.x, this.y, lx, ly) < (own + m) * CFG.TILE ||
+          (g.airThreatAt && g.airThreatAt(this.owner, this.x, this.y, m, this.sniffRings(o)) > 0))
+        return this.sniffEgress(o, lx, ly, t.def);
+    }
+    return o;
+  }
+  /* The break from a site at (sx, sy): the first point, along the bearings
+     in SNIFF.BEARINGS off straight away from it and out to 24 tiles past
+     the first try, that is outside its ring and every ring the side knows,
+     with the margin, and on the map - and out by the 2.2 tiles flyTo()
+     calls arrived, so the break ends outside them. With none clear,
+     straight away to that far from it. And never nearer the site than two
+     of the aeroplane's turning radii and a tile past where it is now: it
+     always opens the range, and a point any closer can lie inside its own
+     turn - measured, an F-16CJ that fired off the tangent at 17.3 tiles,
+     sent for a point 22.2 out, circled it for 8.2 s before it called the
+     break over. */
+  sniffEgress(o, sx, sy, def) {
+    const g = this.game, TL = CFG.TILE, M = g.map, m = this.sniffMargin();
+    const R = this.sniffRings(o);
+    const own = (g.airDefenceReach ? g.airDefenceReach(def) : 0) * 1.25;
+    const away = Math.atan2(this.y - sy, this.x - sx);
+    const d0 = Math.max((own + m + 2.2) * TL, U.dist(this.x, this.y, sx, sy) + 2 * this.turnRadius() + TL);
+    const edge = 3 * TL, W = M.W * TL, H = M.H * TL;
+    let ex = NaN, ey = NaN;
+    search: for (const da of SNIFF.BEARINGS) {
+      for (let k = 0; k <= 12; k++) {
+        const d = d0 + k * 2 * TL, x = sx + Math.cos(away + da) * d, y = sy + Math.sin(away + da) * d;
+        if (x < edge || y < edge || x > W - edge || y > H - edge) break;
+        if (g.airThreatAt && g.airThreatAt(this.owner, x, y, m, R) > 0) continue;
+        ex = x; ey = y;
+        break search;
+      }
+    }
+    if (!(ex === ex)) {
+      ex = U.clamp(sx + Math.cos(away) * d0, edge, W - edge);
+      ey = U.clamp(sy + Math.sin(away) * d0, edge, H - edge);
+    }
+    o.ph = "out"; o.ex = ex; o.ey = ey;
+    const sp = Math.max(0.5, this.def.speed * this.speedMul()) * TL;
+    o.until = g.time + U.dist(this.x, this.y, ex, ey) / sp + Math.PI / Math.max(0.3, this.def.turn) + 6;
+    return o;
   }
 
   /* The way home round the rings, for a stand-off bomber: having gone round

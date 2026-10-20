@@ -148,6 +148,17 @@ var SaveGame = (function () {
   /* orders are kept simple: positions survive, live target objects do not */
   function liteOrder(o) {
     if (!o) return { type: "idle" };
+    /* A SNIFF patrol resumes as itself (entities.js, SNIFF): its beat, and a
+       break in progress - the point it is running for and its clock, which
+       is game time and restored with it. A turn-in on a contact goes out as
+       the beat it was flown from, as a patrol's fight goes out as the
+       patrol; so does the way home to rearm with the beat to come back to,
+       which a bare rtb would drop. The rounds in the air are not saved, so
+       neither is the side's list of them. */
+    if (o.type === "sniff") return liteSniff(o, false);
+    if (o.type === "attack" && o.sniff) return liteSniff(o.sniff, true);
+    if ((o.type === "rtb" || o.type === "land" || o.type === "tank") && o.then && o.then.type === "sniff")
+      return { type: "rtb", then: liteSniff(o.then, true) };
     if (o.type === "attack" || o.type === "enter") {
       /* re-acquire on load rather than trying to rebuild object identity.
          An aircraft pulled off a patrol to intercept goes back to the patrol
@@ -229,6 +240,16 @@ var SaveGame = (function () {
       return l;
     }
     return { type: o.type };
+  }
+  function liteSniff(o, beat) {
+    const r = (v) => Math.round(v);
+    const l = { type: "sniff", x: r(o.x), y: r(o.y) };
+    if (isFinite(o.x1)) { l.x1 = r(o.x1); l.y1 = r(o.y1); }
+    if (o.leg === 0 || o.leg === 1) l.leg = o.leg;
+    if (!beat && o.ph === "out" && isFinite(o.ex)) {
+      l.ph = "out"; l.ex = r(o.ex); l.ey = r(o.ey); l.until = Math.round(o.until * 10) / 10;
+    }
+    return l;
   }
   function liteArea(a) {
     const r = (v) => Math.round(v * 10) / 10, q = (v) => Math.round(v * 1e5) / 1e5;

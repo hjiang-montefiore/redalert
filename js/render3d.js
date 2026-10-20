@@ -3488,6 +3488,21 @@ var Render3D = (function () {
         c.restore();
       }
     }
+    /* ...and the beat being dragged out for a SNIFF patrol: a line, in the
+       colour its order line will have (render.js orderLines). A press that
+       has not moved is a point, and draws nothing. */
+    if (typeof UI !== "undefined" && UI.sniffLine) {
+      const r = UI.sniffLine();
+      if (r && (Math.abs(r.x1 - r.x0) > 12 || Math.abs(r.y1 - r.y0) > 12)) {
+        c.save();
+        c.strokeStyle = olSniffCss || "#3ce8b4";
+        c.lineWidth = 1.6;
+        c.setLineDash([7, 5]);
+        c.beginPath(); c.moveTo(r.x0, r.y0); c.lineTo(r.x1, r.y1); c.stroke();
+        c.setLineDash([]);
+        c.restore();
+      }
+    }
 
     /* Mines are real geometry now (see syncMines). The overlay keeps only a
        faint ring on the ones this player laid, so you can find your own field
@@ -4001,6 +4016,7 @@ var Render3D = (function () {
      leaves out the rest of the army first. */
   const OLV = 16384;                           // vertices: 8,192 pieces of line
   let olObj = null, olPos = null, olCol = null, olRGB = null, olV = 0;
+  let olSniffCss = null;                       // the SNIFF beat's colour, for its drag (drawOverlay)
   function olMake() {
     const geo = new THREE.BufferGeometry();
     olPos = new THREE.BufferAttribute(new Float32Array(OLV * 3), 3);
@@ -4015,7 +4031,9 @@ var Render3D = (function () {
     olObj.frustumCulled = false;               // the box would have to be refitted every frame
     olObj.renderOrder = 999;
     olObj.visible = false;
-    olRGB = Render2D.orderLines(null).colors.map(h => new THREE.Color(h).convertSRGBToLinear());
+    const L0 = Render2D.orderLines(null);
+    olRGB = L0.colors.map(h => new THREE.Color(h).convertSRGBToLinear());
+    olSniffCss = L0.colors[L0.kinds.indexOf("sniff")] || null;
   }
   /* metres above the datum for a point of a leg: flying, or on the ground or
      the sea a metre up */

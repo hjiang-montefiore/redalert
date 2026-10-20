@@ -554,13 +554,16 @@ var UI = (function () {
      patrol. A jet's sortie costs aviation fuel and its endurance is finite;
      a helicopter flies on its own tanks and is charged nothing. */
   let sortiePick = {};      // building id -> Set of selected aircraft ids
-  let sortieMode = null;    // null | "strike" | "cap"
+  let sortieMode = null;    // null | "strike" | "cap" | "sniff"
   /* The same three orders, but for aircraft the player has selected on the map
      rather than ones sitting on a ramp. Until now the only way to send a
      machine home, put it on patrol or aim a strike was through the airbase
      hangar panel, which only lists PARKED aircraft - so anything already
      airborne could not be given any of them. */
-  let airCmdMode = null;    // null | "cap" | "strike"
+  let airCmdMode = null;    // null | "cap" | "strike" | "sniff"
+  /* a SNIFF beat being dragged out, in screen pixels {x0,y0,x1,y1}: a click
+     is a point, a drag a line (sniffCommit) */
+  let sniffDrag = null;
   let mineMode = false;     // armed: the next map click lays a mine
   let scatMode = false;     // armed: the next map click sows a minefield by rocket
   let obsMode = null;       // armed: the next map click emplaces this obstacle
@@ -699,6 +702,8 @@ var UI = (function () {
     const ship = b.kind === "unit";
     const areaN = { any: parked.some(isBomber),
                     n: parked.filter(u => sel.has(u.id) && isBomber(u) && !u.areaMount().why).length };
+    const sniffN = { any: parked.some(isSniffer),
+                     n: parked.filter(u => sel.has(u.id) && !u.sniffMount().why).length };
     h += '<div class="hbtns">' +
       '<div class="hb" data-hact="all">SELECT READY (' + parked.filter(u =>
         u.fuel >= u.reserveFuel() && !u.ordnanceDry() &&
@@ -714,6 +719,11 @@ var UI = (function () {
       (areaN.any ? '<div class="hb' + (areaN.n ? "" : " off") +
                    (areaMode === "fire" && areaHost === b ? " arm" : "") + '" data-hact="area">AREA' +
                    (areaN.n ? " (" + areaN.n + ")" : "") + "</div>" : "") +
+      /* SNIFF for the picked flight's SEAD and EW aircraft - only on a ramp
+         that has one, as AREA is only where a heavy bomber is */
+      (sniffN.any ? '<div class="hb' + (sniffN.n ? "" : " off") +
+                    (sortieMode === "sniff" && sortieHost === b ? " arm" : "") + '" data-hact="sniff">SNIFF' +
+                    (sniffN.n ? " (" + sniffN.n + ")" : "") + "</div>" : "") +
       "</div>";
     /* Anything of yours living on another ramp - or on none, because the base
        that built it has since been destroyed - can be adopted here while
@@ -753,6 +763,8 @@ var UI = (function () {
       h += '<div class="hhint">Drag a line or a box on the map. Each bomber picked flies one run ' +
            "down its own lane of it \u2014 a stick of bombs along the run, or stand-off missiles to " +
            "separate points across it \u2014 and comes back here to rearm. RMB or Esc cancels.</div>";
+    else if (sortieMode === "sniff" && sortieHost === b)
+      h += '<div class="hhint">' + SNIFF_HINT + "</div>";
     else if (sortieMode)
       h += '<div class="hhint">' + (sortieMode === "strike"
         ? "Click a target to strike it."
@@ -1362,12 +1374,17 @@ var UI = (function () {
        for one that carries a single weapon a sortie (entities.js areaMount) */
     const bombers = air.filter(isBomber), areaOk = bombers.filter(u => !u.areaMount().why);
     const areaArm = areaMode === "fire" && !areaHost;
+    /* SNIFF, for a SEAD or EW aircraft - greyed, with the reason below, for a
+       jammer that carries no anti-radiation round (entities.js sniffMount) */
+    const sniffers = air.filter(isSniffer), sniffOk = sniffers.filter(u => !u.sniffMount().why);
     let h = '<div class="hbtns">' +
       '<div class="hb" data-aact="rtb">BASE' + (home ? " \u2713" : "") + "</div>" +
       '<div class="hb' + (airCmdMode === "cap" ? " arm" : "") + '" data-aact="cap">PATROL</div>' +
       '<div class="hb' + (airCmdMode === "strike" ? " arm" : "") + '" data-aact="strike">STRIKE</div>' +
       (bombers.length ? '<div class="hb' + (areaOk.length ? (areaArm ? " arm" : "") : " off") +
                         '" data-aact="area">AREA</div>' : "") +
+      (sniffers.length ? '<div class="hb' + (sniffOk.length ? (airCmdMode === "sniff" ? " arm" : "") : " off") +
+                         '" data-aact="sniff">SNIFF</div>' : "") +
       "</div>";
     h += '<div class="hhint">' + (
       airCmdMode === "cap"    ? "Click a point to patrol over it. RMB or Esc cancels."
@@ -1378,12 +1395,16 @@ var UI = (function () {
       ? "Drag a line or a box on the map. Each bomber flies one run down its own lane of it: a " +
         "bomb load goes as a stick along the run, stand-off missiles to separate points across it " +
         "from outside the rings it knows of. Then home to rearm. RMB or Esc cancels."
+    : airCmdMode === "sniff" ? SNIFF_HINT
     : "BASE (R) sends them home to refuel and rearm, and right-clicking a base " +
       "or a deck sends them to THAT one. PATROL (Y) holds a point " +
       "and engages what comes. STRIKE (T) aims a run." +
       (!bombers.length ? ""
         : areaOk.length ? " AREA (B) bombs a line or a box."
-        : " AREA: " + bombers[0].def.name.toUpperCase() + " \u2014 " + bombers[0].areaMount().why + ".")) +
+        : " AREA: " + bombers[0].def.name.toUpperCase() + " \u2014 " + bombers[0].areaMount().why + ".") +
+      (!sniffers.length ? ""
+        : sniffOk.length ? " SNIFF (W) hunts radars from a beat: it fires on what transmits and breaks away."
+        : " SNIFF: " + sniffers[0].def.name.toUpperCase() + " \u2014 " + sniffers[0].sniffMount().why + ".")) +
       "</div>";
     return h;
   }
@@ -1402,6 +1423,7 @@ var UI = (function () {
     const air = selectedAircraft();
     if (!air.length) return;
     if (act === "area") { areaFireOrder(null); return; }
+    if (act === "sniff") { sniffArm(null); return; }
     if (act === "rtb") {
       for (const u of air) { u.parked = false; u.give({ type: "rtb" }); }
       alert(air.length === 1 ? "RETURNING TO BASE" : air.length + " AIRCRAFT RETURNING TO BASE", "good");
@@ -1497,6 +1519,113 @@ var UI = (function () {
     airCmdMode = null;
     refreshSelInfo();
     return true;
+  }
+
+  /* ---- SNIFF (W) ----
+     (owner) "electronic war airplane have a sniff mode like patrol, but when
+     it sniffs the radar or SAM, it will launch the missile and run away."
+     Armed as PATROL is - the SNIFF button in the aircraft row or in the
+     hangar's, or W - and the next press on the map gives the beat: a click
+     is a point to orbit, a drag a line to fly end to end. Who may take it
+     and all it does is entities.js, under SNIFF; it is refused at the
+     button, with the reason, when nothing picked can take it. */
+  const SNIFF_HINT = "Click a point or drag a line for the beat. They fly it listening: a radar or SAM " +
+    "that transmits within reach of the missile aboard is fired on from the missile's full reach, then " +
+    "they break away outside its ring and come back. Out of missiles they rearm and return by " +
+    "themselves. Shift queues it. RMB or Esc cancels.";
+  function isSniffer(u) { return u.layer === "air" && (u.def.role === "sead" || u.def.role === "ewair"); }
+  /* who an armed SNIFF is for: the hangar's picked flight, or the aircraft selected */
+  function sniffUnits(host) {
+    if (host) { const s = pickSet(host); return host.wing().filter(u => s.has(u.id) && u.parked); }
+    return selectedAircraft().filter(u => !u.dead);
+  }
+  function sniffArmed() {
+    return airCmdMode === "sniff" || (sortieMode === "sniff" && !!sortieHost && !sortieHost.dead);
+  }
+  function sniffDisarm() {
+    if (airCmdMode === "sniff") airCmdMode = null;
+    if (sortieMode === "sniff") { sortieMode = null; sortieHost = null; }
+    sniffDrag = null;
+  }
+  function sniffArm(host) {
+    if (host ? (sortieMode === "sniff" && sortieHost === host) : airCmdMode === "sniff") {
+      sniffDisarm(); Sfx.play("click"); refreshSelInfo(); return;
+    }
+    const list = sniffUnits(host || null);
+    if (!list.length) return;
+    if (!list.some(u => !u.sniffMount().why)) {
+      const one = list.every(u => u.def.id === list[0].def.id);
+      alert((one ? list[0].def.name.toUpperCase() : "NOTHING PICKED CAN SNIFF") +
+            " \u2014 " + list[0].sniffMount().why, "bad");
+      return;
+    }
+    /* one armed order at a time, as AREA and PATROL keep it */
+    areaMode = null; areaHost = null; areaDrag = null;
+    mineMode = false; obsMode = null; scatMode = false; patrolMode = false; input.attackMove = false;
+    sniffDrag = null;
+    if (host) { airCmdMode = null; sortieMode = "sniff"; sortieHost = host; }
+    else { sortieMode = null; sortieHost = null; airCmdMode = "sniff"; }
+    Sfx.play("click");
+    refreshSelInfo();
+  }
+  /* W: the hangar's picked flight when an airbase or a deck is what is
+     selected, the aircraft selected otherwise - the two SNIFF buttons. A
+     key nothing used: not this handler, not the command bar, not the
+     controls line on the menu. */
+  function sniffKey() {
+    const e = selection.length === 1 ? selection[0] : null;
+    const ramp = e && e.owner === G.human && !e.dead && e.ramp && e.ramp() ? e : null;
+    if (ramp && pickSet(ramp).size) { sniffArm(ramp); return; }
+    if (selectedAircraft().length) { sniffArm(null); return; }
+    if (ramp) { alert("PICK THE FLIGHT IN THE HANGAR FIRST", "bad"); return; }
+    if (selection.some(u => u.owner === G.human && !u.dead))
+      alert("NOTHING SELECTED CAN SNIFF \u2014 ONLY A SEAD OR EW AIRCRAFT WITH AN ANTI-RADIATION MISSILE", "bad");
+  }
+  /* The press is over: a click is a point, a drag a line - and one shorter
+     than the orbit a point is flown on is the point in its middle. An
+     aircraft on the ramp is launched through G.launchSortie, which refuses
+     one still rearming or refuelling; one airborne is given it as any
+     order, Shift queueing it behind one that hands on (a move, a sweep, a
+     strike, an area strike - a patrol, a hold and the ramp never do). */
+  function sniffCommit(x0, y0, x1, y1, shift) {
+    const host = sortieMode === "sniff" && sortieHost && !sortieHost.dead ? sortieHost : null;
+    const armed = airCmdMode === "sniff" || !!host;
+    sniffDisarm();
+    if (!armed) { refreshSelInfo(); return; }
+    const list = sniffUnits(host), T = CFG.TILE, m = T * 0.5;
+    const W = G.map.W * T, H = G.map.H * T;
+    const cl = (p) => ({ x: U.clamp(p.x, m, W - m), y: U.clamp(p.y, m, H - m) });
+    let A = cl(Render.unproject(x0, y0)), B = cl(Render.unproject(x1, y1));
+    if (!(Math.abs(x1 - x0) > 12 || Math.abs(y1 - y0) > 12)) A = B;
+    else if (U.dist(A.x, A.y, B.x, B.y) <= 2 * CFG.CAP_RADIUS * T)
+      A = B = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+    const HANDS = ["move", "attackmove", "attack", "areastrike"];
+    const no = [];
+    let sent = 0, nFail = 0, fail = null, dry = 0;
+    for (const u of list) {
+      const why = u.sniffMount().why;
+      if (why) { no.push({ u: u, why: why }); continue; }
+      const o = u.sniffOrder(A.x, A.y, B.x, B.y);
+      if (u.parked || (u.order && u.order.type === "parked")) {
+        const f = G.launchSortie(u, o);
+        if (f) { fail = f; nFail++; continue; }
+        if (host) pickSet(host).delete(u.id);
+      } else {
+        u.give(o, shift && HANDS.indexOf(u.order.type) >= 0);
+        if (u.ordnanceDry()) dry++;
+      }
+      sent++;
+    }
+    const notes = [];
+    if (dry) notes.push(dry + " REARMING FIRST");
+    if (nFail) notes.push(nFail + " " + fail);
+    if (no.length) notes.push(no.length + " CANNOT \u2014 " + no[0].u.def.name.toUpperCase() + ": " + no[0].why);
+    if (sent) {
+      Sfx.play("order");
+      Combat.addEffect({ t: "text", x: (A.x + B.x) / 2, y: (A.y + B.y) / 2, s: "SNIFF", life: 1.0, max: 1.0, c: "#3ce8b4" });
+      alert(sent + " AIRCRAFT ON SNIFF PATROL" + (notes.length ? "  (" + notes.join(" \u00b7 ") + ")" : ""), "good");
+    } else alert(notes.join(" \u00b7 ") || "NOTHING PICKED CAN SNIFF", "bad");
+    refreshSelInfo();
   }
 
   function bindHangar(b, root) {
@@ -1617,6 +1746,13 @@ var UI = (function () {
           areaFireOrder(b);
           return;
         }
+        if (act === "sniff") {
+          /* the picked flight's SEAD and EW shooters - the rest of it stays on
+             the ramp, named in the toast (sniffCommit) */
+          if (!sel.size) return;
+          sniffArm(b);
+          return;
+        }
         if (act === "all") {
           sel.clear();
           for (const u of b.onRamp())
@@ -1685,7 +1821,7 @@ var UI = (function () {
   }
   function cancelSortie() {
     if (!sortieMode) return false;
-    sortieMode = null; sortieHost = null; refreshSelInfo(); return true;
+    sortieMode = null; sortieHost = null; sniffDrag = null; refreshSelInfo(); return true;
   }
 
   /* ================= selection info panel ================= */
@@ -1978,6 +2114,8 @@ var UI = (function () {
         if (obsMode && obsClick(mx, my, e.shiftKey)) return;
         if (mineMode && mineClick(mx, my, e.shiftKey)) return;
         if (scatMode && scatterClick(mx, my, e.shiftKey)) return;
+        /* an armed SNIFF takes the press and the drag after it (sniffCommit) */
+        if (sniffArmed()) { sniffDrag = { x0: mx, y0: my, x1: mx, y1: my }; return; }
         /* an armed aircraft order takes the next click */
         if (airCmdMode && airCmdClick(mx, my)) return;
         if (patrolMode && patrolClick(mx, my, e.shiftKey)) return;
@@ -2006,7 +2144,7 @@ var UI = (function () {
         if (obsMode) { obsMode = null; refreshSelInfo(); G.alert("CANCELLED"); return; }
         if (mineMode) { mineMode = false; refreshSelInfo(); G.alert("MINE LAYING CANCELLED"); return; }
         if (scatMode) { scatMode = false; refreshSelInfo(); G.alert("FIRE MISSION CANCELLED"); return; }
-        if (airCmdMode) { airCmdMode = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
+        if (airCmdMode) { airCmdMode = null; sniffDrag = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
         if (patrolMode) { patrolMode = false; refreshSelInfo(); G.alert("PATROL CANCELLED"); return; }
         /* the bar LATCHES an attack-move, where the key only holds it while
            it is down; right-click undoes the latch as it undoes every other
@@ -2042,6 +2180,7 @@ var UI = (function () {
       input.hasMouse = true;
       input.shift = !!e.shiftKey;
       if (areaDrag) { areaDrag.x1 = mx; areaDrag.y1 = my; }
+      if (sniffDrag) { sniffDrag.x1 = mx; sniffDrag.y1 = my; }
       if (input.dragging) input.dragDist += Math.abs(mx - input.mx) + Math.abs(my - input.my);
       if (input.panMMB) {
         const wp0 = Render.unproject(input.lastMx, input.lastMy);
@@ -2054,6 +2193,12 @@ var UI = (function () {
       input.mx = mx; input.my = my;
     });
     window.addEventListener("mouseup", (e) => {
+      if (e.button === 0 && sniffDrag) {
+        const d = sniffDrag;
+        sniffDrag = null;
+        sniffCommit(d.x0, d.y0, d.x1, d.y1, e.shiftKey);
+        return;
+      }
       if (e.button === 0 && areaDrag) {
         const d = areaDrag;
         /* A drag counts if it is LONG, not if it is wide in both axes. The AND
@@ -2139,7 +2284,7 @@ var UI = (function () {
       if (k === "escape" && obsMode) { obsMode = null; refreshSelInfo(); G.alert("CANCELLED"); return; }
       if (k === "escape" && mineMode) { mineMode = false; refreshSelInfo(); G.alert("MINE LAYING CANCELLED"); return; }
       if (k === "escape" && scatMode) { scatMode = false; refreshSelInfo(); G.alert("FIRE MISSION CANCELLED"); return; }
-      if (k === "escape" && airCmdMode) { airCmdMode = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
+      if (k === "escape" && airCmdMode) { airCmdMode = null; sniffDrag = null; refreshSelInfo(); G.alert("ORDER CANCELLED"); return; }
       if (k === "escape" && patrolMode) { patrolMode = false; refreshSelInfo(); G.alert("PATROL CANCELLED"); return; }
       if (k === "escape" && input.attackMove) { input.attackMove = false; G.alert("ATTACK-MOVE CANCELLED"); return; }
       if (k === "escape" && sortieMode) { cancelSortie(); G.alert("SORTIE CANCELLED"); return; }
@@ -2171,6 +2316,8 @@ var UI = (function () {
       /* B: AREA ATTACK - a key nothing used: not this handler, not the
          command bar, not the controls line on the menu */
       if (k === "b" && !e.ctrlKey && !e.metaKey) { areaFireKey(); return; }
+      /* W: SNIFF - for a Wild Weasel (sniffKey) */
+      if (k === "w" && !e.ctrlKey && !e.metaKey) { sniffKey(); return; }
       /* T is Red Alert 2's select-same-type. Measured before this line, T
          did nothing at all unless aircraft were selected, so taking it for
          every other selection breaks nothing; with aircraft in the selection
@@ -4056,5 +4203,14 @@ var UI = (function () {
              areaFireOrder(host || null);
            },
            areaArmed: () => areaMode === "fire" ? (areaHost || true) : null,
+           /* the same for SNIFF: the button (a hangar's, with these aircraft
+              picked, when a host is named), what is armed, and the beat being
+              dragged out, which render3d.js draws */
+           sniff: (host, picked) => {
+             if (host && picked) { const s = pickSet(host); s.clear(); picked.forEach(u => s.add(u.id)); }
+             sniffArm(host || null);
+           },
+           sniffArmed: () => !sniffArmed() ? null : (sortieMode === "sniff" ? sortieHost : true),
+           sniffLine: () => sniffDrag,
            get input() { return input; }, get selection() { return selection; } };
 })();
