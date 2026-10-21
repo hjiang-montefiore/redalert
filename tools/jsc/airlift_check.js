@@ -16,7 +16,7 @@
         helicopters are aeroplanes, and every vehicle has a mass;
      1. a Humvee boards a C-130J parked on its airbase, through the page's
         own right-click on #cv, and so does a second; the panel says
-        "2 VEH + 0 INF · 10 OF 20 T · 9.8 OF 16.8 M";
+        "2 VEH + 0 INF · 11 OF 20 T · 9.8 OF 16.8 M";
      2. an Abrams is refused by the C-130J, with the reason, and boards a
         C-17; a C-17 will not take a second Abrams;
      3. the accounting with infantry and vehicles together: two Humvees and
@@ -52,8 +52,8 @@
         corrections of the An-2s, the Po-2 and the Il-76TD;
     12. the matrix: a C-130J-30 three Humvees then the floor says no, a
         C-130H two, a C-17 ten (two lanes of five) or one Abrams and nothing
-        else heavy, an A400M three, an Il-76TD two BMD-2s (its weight) and
-        four Humvees (its floor); too wide, too long; a Black Hawk one
+        else heavy, an A400M three, an Il-76TD three BMD-2s and four Humvees
+        (its floor both times); too wide, too long; a Black Hawk one
         vehicle on the hook, a Chinook one on the hook and more inside;
         the panel and the card say so;
     13. the stage-1 reviewer's cases: a diagonal strip down a one-tile lane
@@ -285,7 +285,10 @@ function secBoard() {
   C130 = spawn("airlift_n", BASE.x, BASE.y); parkOn(C130, BASE);
   var spot = openGround(2, 1, BASE.tx + 1, BASE.ty + 6, 3);
   var h1 = spawn("recon_n", (spot.x + 0.5) * TT, (spot.y + 0.5) * TT), h2 = spawn("recon_n", (spot.x + 1.5) * TT, (spot.y + 0.5) * TT);
-  chk("two Humvees (5 t) by the airbase", !!h1 && !!h2 && h1.def.mass === 5, h1 ? h1.def.full : "none");
+  /* masses are the published figures since the vehicle audit of 2026-10-21
+     (_keep/vehicle_audit_20261021.txt): an M1151 5.5 t (it was 5), an M1A2
+     SEP v3 66.8 t (62), a HIMARS 16.25 t (16), a BMD-2 8.2 t (18) */
+  chk("two Humvees (5.5 t) by the airbase", !!h1 && !!h2 && h1.def.mass === 5.5, h1 ? h1.def.full : "none");
   sel([h1, h2]);
   rclickUnit(C130);
   chk("right-clicking the parked C-130J sends both to it", h1.order.type === "enter" && h1.order.target === C130 &&
@@ -295,10 +298,10 @@ function secBoard() {
       "after " + t.toFixed(1) + " s, cargo " + C130.cargo.length);
   sel([C130]); UI.frame && UI.frame(0);
   var pn = panel();
-  chk("the panel says what is aboard by weight and floor: CARGO 2 VEH + 0 INF · 10 OF 20 T · 9.8 OF 16.8 M",
-      pn.indexOf("2 VEH + 0 INF · 10 OF 20 T · 9.8 OF 16.8 M") >= 0, (pn.match(/CARGO <i>[^<]*/) || ["none"])[0]);
+  chk("the panel says what is aboard by weight and floor: CARGO 2 VEH + 0 INF · 11 OF 20 T · 9.8 OF 16.8 M",
+      pn.indexOf("2 VEH + 0 INF · 11 OF 20 T · 9.8 OF 16.8 M") >= 0, (pn.match(/CARGO <i>[^<]*/) || ["none"])[0]);
   var L = C130.cargoLoad();
-  chk("cargoLoad: 2 vehicles, 10 t of 19.96", L.veh === 2 && L.inf === 0 && Math.abs(L.t - 10) < 1e-9 && L.cap === 19.96,
+  chk("cargoLoad: 2 vehicles, 11 t of 19.96", L.veh === 2 && L.inf === 0 && Math.abs(L.t - 11) < 1e-9 && L.cap === 19.96,
       JSON.stringify(L));
 }
 
@@ -306,11 +309,11 @@ function secHeavy() {
   log("\n[2] an Abrams: refused by the C-130J, carried by a C-17");
   var spot = openGround(1, 1, BASE.tx - 3, BASE.ty + 6, 3);
   var ab = spawn("mbt_n", (spot.x + 0.5) * TT, (spot.y + 0.5) * TT);
-  chk("an M1A2 Abrams (62 t)", !!ab && ab.def.mass === 62, ab ? ab.def.full : "none");
+  chk("an M1A2 SEP v3 Abrams (66.8 t)", !!ab && ab.def.mass === 66.8, ab ? ab.def.full : "none");
   var t0 = Game.time;
   sel([ab]); rclickUnit(C130);
   chk("right-clicked onto the C-130J it is refused, and told why",
-      ab.order.type !== "enter" && said(/M1A2 ABRAMS \(62 T\) — TOO HEAVY FOR THE C-130J SUPER HERCULES \(20 T\)/, t0),
+      ab.order.type !== "enter" && said(/M1A2 ABRAMS \(66\.8 T\) — TOO HEAVY FOR THE C-130J SUPER HERCULES \(20 T\)/, t0),
       ab.order.type + " / " + saidText(t0));
   chk("the refusal is the API's too: C130.canAirlift(abrams) is false", !C130.canAirlift(ab), C130.airliftRefusal(ab));
   /* the C-17 on the same ramp */
@@ -318,8 +321,8 @@ function secHeavy() {
   chk("a C-17A Globemaster III (77.52 t) on the ramp", c17.def.payload === 77.52 && c17.parked, c17.def.full);
   var ab2 = spawn("mbt_n", ab.x + TT, ab.y);
   sel([ab, ab2]); t0 = Game.time; rclickUnit(c17);
-  chk("two Abrams right-clicked onto it: the first is sent, the second is refused - 124 t is not 77.5",
-      ab.order.type === "enter" && ab2.order.type !== "enter" && said(/C-17 GLOBEMASTER III HAS 15\.5 T LEFT \u2014 M1A2 ABRAMS \(62 T\) DOES NOT FIT/, t0),
+  chk("two Abrams right-clicked onto it: the first is sent, the second is refused - 133.6 t is not 77.5",
+      ab.order.type === "enter" && ab2.order.type !== "enter" && said(/C-17 GLOBEMASTER III HAS 10\.7 T LEFT \u2014 M1A2 ABRAMS \(66\.8 T\) DOES NOT FIT/, t0),
       ab.order.type + "/" + ab2.order.type + " " + saidText(t0));
   ticks(40, function () { return ab.carried; });
   chk("the Abrams boards the C-17", ab.carried && c17.cargo.indexOf(ab) >= 0, "cargo " + c17.cargo.length);
@@ -329,7 +332,7 @@ function secHeavy() {
 
 function secMixed() {
   log("\n[3] seats and tonnes together, and infantry alone as before");
-  /* C130 holds two Humvees (10 t); a seat is 19.96 / 8 = 2.495 t */
+  /* C130 holds two Humvees (11 t); a seat is 19.96 / 8 = 2.495 t */
   var spot = openGround(4, 2, BASE.tx + 1, BASE.ty + 6, 3);
   var sq = [];
   for (var i = 0; i < 4; i++) sq.push(spawn("rifle_n", (spot.x + i + 0.5) * TT, (spot.y + 0.5) * TT));
@@ -339,18 +342,18 @@ function secMixed() {
   sel(sq); rclickUnit(C130);
   ticks(30, function () { return sq.every(function (s) { return s.carried || s.order.type === "idle"; }); });
   var aboard = sq.filter(function (s) { return s.carried; }).length;
-  chk("three squads board on top of two Humvees and the fourth does not: 10 + 3 x 2.495 = 17.5 t, a fourth would be 19.98; " +
+  chk("three squads board on top of two Humvees and the fourth does not: 11 + 3 x 2.495 = 18.5 t, a fourth would be 20.98; " +
       "9.8 + 3 x 2.095 = 16.1 m of floor, a fourth 18.2",
       aboard === 3 && C130.cargo.length === 5, aboard + " aboard, cargo " + C130.cargo.length);
   var L = C130.cargoLoad();
-  chk("the accounting: 2 vehicles, 3 infantry, 17.49 t", L.veh === 2 && L.inf === 3 && Math.abs(L.t - 17.485) < 1e-6, JSON.stringify(L));
+  chk("the accounting: 2 vehicles, 3 infantry, 18.49 t", L.veh === 2 && L.inf === 3 && Math.abs(L.t - 18.485) < 1e-6, JSON.stringify(L));
   var t0 = Game.time;
   sel([h3]); rclickUnit(C130);
   chk("the third Humvee is refused, and told why: the floor (9.8 m of Humvees and 3 x 2.1 m of seats) is the first to say no",
       h3.order.type !== "enter" &&
       said(/C-130J SUPER HERCULES — NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)/, t0), saidText(t0));
   sel([C130]); UI.frame && UI.frame(0);
-  chk("the panel: CARGO 2 VEH + 3 INF · 17.5 OF 20 T", panel().indexOf("2 VEH + 3 INF · 17.5 OF 20 T") >= 0,
+  chk("the panel: CARGO 2 VEH + 3 INF · 18.5 OF 20 T", panel().indexOf("2 VEH + 3 INF · 18.5 OF 20 T") >= 0,
       (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
   /* put the infantry down again, keep the two Humvees for [5] */
   for (var k = C130.cargo.length - 1; k >= 0; k--) {
@@ -378,7 +381,7 @@ function secPack() {
   var spot = openGround(1, 1, BASE.tx - 2, BASE.ty + 6, 3);
   var hm = spawn("tel_n", (spot.x + 0.5) * TT, (spot.y + 0.5) * TT);
   hm.deployed = true;
-  chk("a HIMARS (16 t), set up", !!hm && hm.def.mass === 16 && hm.deployed, hm ? hm.def.full + ", deploySec " + hm.def.deploySec : "none");
+  chk("a HIMARS (16.25 t), set up", !!hm && hm.def.mass === 16.25 && hm.deployed, hm ? hm.def.full + ", deploySec " + hm.def.deploySec : "none");
   sel([hm]); rclickUnit(c);
   var t0 = Game.time, near = -1;
   var t = ticks(40, function () {
@@ -399,8 +402,8 @@ function secHelo() {
   var hv = spawn("recon_n", cx, cy), hv2 = spawn("recon_n", cx + TT, cy), jk = spawn("recon_n", cx - TT, cy);
   var t0 = Game.time;
   sel([hv]); rclickUnit(bh);
-  chk("a UH-60M Black Hawk (4.08 t) refuses a Humvee (5 t), with the reason",
-      hv.order.type !== "enter" && said(/HUMVEE \(5 T\) — TOO HEAVY FOR THE BLACK HAWK \(4\.1 T\)/, t0), saidText(t0));
+  chk("a UH-60M Black Hawk (4.08 t) refuses a Humvee (5.5 t), with the reason",
+      hv.order.type !== "enter" && said(/HUMVEE \(5\.5 T\) — TOO HEAVY FOR THE BLACK HAWK \(4\.1 T\)/, t0), saidText(t0));
   gone(bh);
   var ch = spawn("trans_b", cx + 9 * TT, cy - 9 * TT); ch.order = { type: "hover" }; ch.parked = false;
   chk("a Chinook HC6A (10 t, a 9.3 x 2.29 m cabin) hovering nine tiles off", ch.def.payload === 10 && ch.def.cabin, ch.def.full);
@@ -415,8 +418,8 @@ function secHelo() {
   var t = ticks(40, function () { return hv.carried; });
   chk("it boards, on the hook", hv.carried && ch.cargo.length === 1 && ch.cargoLoad().hook === 1, "after " + t.toFixed(1) + " s");
   sel([ch]); UI.frame && UI.frame(0);
-  chk("the panel: CARGO 1 VEH + 0 INF · 5 OF 10 T · 0.0 OF 9.3 M · 1 ON THE HOOK",
-      panel().indexOf("1 VEH + 0 INF · 5 OF 10 T · 0.0 OF 9.3 M · 1 ON THE HOOK") >= 0, (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
+  chk("the panel: CARGO 1 VEH + 0 INF · 5.5 OF 10 T · 0.0 OF 9.3 M · 1 ON THE HOOK",
+      panel().indexOf("1 VEH + 0 INF · 5.5 OF 10 T · 0.0 OF 9.3 M · 1 ON THE HOOK") >= 0, (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
   /* U: put it down where it is */
   t0 = Game.time;
   key("u");
@@ -795,7 +798,7 @@ function secHold() {
       f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
   var pt = spawn("pact_e50_lighttank", BASE.x, BASE.y + 6 * TT);
   emptyHold(c);
-  chk("a PT-76 (18 t, 3.10 m wide) is light enough and too wide for its hold",
+  chk("a PT-76 (14 t, 3.10 m wide) is light enough and too wide for its hold",
       c.airliftRefusal(pt) === "PT-76 (3.10 M WIDE) — TOO WIDE FOR THE HOLD OF THE C-130J SUPER HERCULES (3.02 M)", c.airliftRefusal(pt));
   gone(pt); gone(c);
   c = liftOn("nato_e80_airlift"); f = fill(c, "recon_n");
@@ -807,22 +810,22 @@ function secHold() {
       c.airliftRefusal(s75) === "S-75 DVINA (12.6 M) — TOO LONG FOR THE HOLD OF THE C-130H HERCULES (12.2 M)", c.airliftRefusal(s75));
   gone(s75); gone(c);
   c = liftOn("gbr_e00_airlift"); f = fill(c, "recon_n"); L = c.cargoLoad();
-  chk("C-17 (26.82 x 5.49 m): ten Humvees, two abreast in two lanes of five, then the floor - weight (50 of 77.5 t) would take fifteen",
+  chk("C-17 (26.82 x 5.49 m): ten Humvees, two abreast in two lanes of five, then the floor - weight (55 of 77.5 t) would take fourteen",
       f.n === 10 && /NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)$/.test(f.why) && Math.abs(L.floor - 24.5) < 1e-6,
       f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
   sel([c]); UI.frame && UI.frame(0);
-  chk("its panel: CARGO 10 VEH + 0 INF · 50 OF 77.5 T · 24.5 OF 26.8 M",
-      panel().indexOf("10 VEH + 0 INF · 50 OF 77.5 T · 24.5 OF 26.8 M") >= 0, (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
+  chk("its panel: CARGO 10 VEH + 0 INF · 55 OF 77.5 T · 24.5 OF 26.8 M",
+      panel().indexOf("10 VEH + 0 INF · 55 OF 77.5 T · 24.5 OF 26.8 M") >= 0, (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
   emptyHold(c);
   var ab = spawn("mbt_n", BASE.x, BASE.y + 6 * TT); c.cargo.push(ab); ab.carried = true;
   var ab2 = spawn("mbt_n", BASE.x + TT, BASE.y + 6 * TT), br = spawn("ifv_n", BASE.x - TT, BASE.y + 6 * TT);
   var w2 = c.airliftRefusal(ab2), wb = c.airliftRefusal(br);
-  chk("C-17 with one Abrams: a second Abrams and a Bradley are refused - 15.5 t left",
-      /HAS 15\.5 T LEFT — M1A2 ABRAMS \(62 T\) DOES NOT FIT/.test(w2) && /HAS 15\.5 T LEFT — BRADLEY IFV \(30 T\) DOES NOT FIT/.test(wb), w2 + " | " + wb);
+  chk("C-17 with one Abrams: a second Abrams and a Bradley are refused - 10.7 t left",
+      /HAS 10\.7 T LEFT — M1A2 ABRAMS \(66\.8 T\) DOES NOT FIT/.test(w2) && /HAS 10\.7 T LEFT — BRADLEY IFV \(29\.9 T\) DOES NOT FIT/.test(wb), w2 + " | " + wb);
   gone(ab2); gone(br);
   f = fill(c, "recon_n"); L = c.cargoLoad();
-  chk("...and only light vehicles go beside it: three Humvees, then the weight (77 of 77.5 t); the Abrams down the middle, 7.9 + 9.8 m of floor",
-      f.n === 3 && /HAS 0\.5 T LEFT — HUMVEE \(5 T\) DOES NOT FIT/.test(f.why) && Math.abs(L.floor - 17.7) < 1e-6,
+  chk("...and only light vehicles go beside it: one Humvee, then the weight (72.3 of 77.5 t); the Abrams down the middle, 7.9 + 4.9 m of floor",
+      f.n === 1 && /HAS 5\.2 T LEFT — HUMVEE \(5\.5 T\) DOES NOT FIT/.test(f.why) && Math.abs(L.floor - 12.8) < 1e-6,
       f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
   /* the same load in another order lays out the same */
   var hv3 = c.cargo.filter(function (v) { return v.def.id === "recon_n"; });
@@ -831,19 +834,19 @@ function secHold() {
   emptyHold(c);
   var abr = spawn("mbt_n", BASE.x, BASE.y + 6 * TT); c.cargo.push(abr); abr.carried = true;
   f = fill(c, "rifle_n"); L = c.cargoLoad();
-  chk("an Abrams and riflemen: four squads (62 + 4 x 3.876 t), then the weight", f.n === 4 && /DOES NOT FIT/.test(f.why), f.n + " then: " + f.why);
+  chk("an Abrams and riflemen: two squads (66.8 + 2 x 3.876 t), then the weight", f.n === 2 && /DOES NOT FIT/.test(f.why), f.n + " then: " + f.why);
   emptyHold(c); gone(c);
   c = liftOn("airlift_g"); f = fill(c, "recon_n");
-  chk("A400M (17.71 x 4.00 m: too narrow for two Humvees abreast): three Humvees, then the floor - 37 t would take seven",
+  chk("A400M (17.71 x 4.00 m: too narrow for two Humvees abreast): three Humvees, then the floor - 37 t would take six",
       f.n === 3 && /^A400M ATLAS — NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)$/.test(f.why), f.n + " aboard, then: " + f.why);
   emptyHold(c); gone(c);
   c = liftOn("kpa_e90_transport"); f = fill(c, "pact_e80_lighttank"); L = c.cargoLoad();
-  chk("Il-76TD (20 x 3.46 m, 48 t): two BMD-2s, then its weight - the floor (10.8 m used) would take a third",
-      f.n === 2 && /^IL-76TD HAS 12 T LEFT — BMD-2 \(18 T\) DOES NOT FIT$/.test(f.why) && Math.abs(L.floor - 10.8) < 1e-6,
+  chk("Il-76TD (20 x 3.46 m, 48 t): three BMD-2s (8.2 t), then its floor (16.2 of 20 m) - its weight (24.6 of 48 t) would take five",
+      f.n === 3 && /^IL-76TD — NO FLOOR SPACE LEFT FOR A BMD-2 \(5\.4 M\)$/.test(f.why) && Math.abs(L.floor - 16.2) < 1e-6,
       f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
   emptyHold(c);
   f = fill(c, "recon_n");
-  chk("...and four Humvees, then its floor (19.6 of 20 m; 20 of 48 t)", f.n === 4 && /NO FLOOR SPACE LEFT FOR A HUMVEE/.test(f.why), f.n + " then: " + f.why);
+  chk("...and four Humvees, then its floor (19.6 of 20 m; 22 of 48 t)", f.n === 4 && /NO FLOOR SPACE LEFT FOR A HUMVEE/.test(f.why), f.n + " then: " + f.why);
   emptyHold(c); gone(c);
   /* helicopters: one on the hook */
   c = spawn("trans_n", BASE.x + 10 * TT, BASE.y); c.parked = false; c.order = { type: "hover" };
@@ -1121,6 +1124,7 @@ function secSave() {
   var LL = null;
   if (snapL) Game.entities.forEach(function (e) {
     if (e.kind === "unit" && e.def.id === LC.id && e.owner === P && Math.hypot(e.x - snapL.x, e.y - snapL.y) < 3) LL = e; });
+  var LLsq = LL ? LL.cargo.slice() : [];
   chk("the landing craft is back on its run in, its two squads aboard and its order to put them ashore",
       !!snapL && snapL.n === 2 && snapL.u && !!LL && LL.cargo.length === 2 && LL.cargo.every(function (c) { return c.carried; }) &&
       !!LL.order.unloadAt, snapL ? (LL ? LL.order.type + " unloadAt " + !!LL.order.unloadAt + " cargo " + LL.cargo.length : "not found") : "no beach");
@@ -1141,13 +1145,23 @@ function secSave() {
       hv.every(function (h) { return !h.carried && !h.dead && Math.hypot(h.x - snapA.bx, h.y - snapA.by) < 4 * TT; }) && out.home,
       out.phases.join(" ") + " home " + out.home);
   if (LL) {
-    var sq = LL.cargo.slice();
     ticks(20, function () { return LL.cargo.length === 0; });
+    /* the two squads that were aboard as the save loaded: each off the craft
+       and on land by the beach. Whether they are still alive afterwards is
+       not this check's business - the peace-mode AI's gunships can be over
+       that beach when they land (they are, since the vehicle audit of
+       2026-10-21 moved this match's clock by three seconds: two Mi-28Ns
+       shot both squads after they came ashore), so a dead squad counts if
+       it died on the beach and not in the hold. */
+    var ashore = LLsq.filter(function (q) {
+      return !q.carried && GameMap.passable(M, (q.x / TT) | 0, (q.y / TT) | 0, "ground") &&
+             Math.hypot(q.x - (LC.beach.x + 0.5) * TT, q.y - (LC.beach.y + 0.5) * TT) < 4 * TT; });
     chk("...and, the load behind it, the landing craft has put both squads ashore",
-        LL.cargo.length === 0 && Game.entities.filter(function (e) {
-          return e.kind === "unit" && e.def.id === "rifle_n" && e.owner === P && !e.carried && !e.dead &&
-                 Math.hypot(e.x - (LC.beach.x + 0.5) * TT, e.y - (LC.beach.y + 0.5) * TT) < 4 * TT; }).length >= 2,
-        "cargo " + LL.cargo.length + ", order " + LL.order.type + " at " + tiles(LL.x) + "," + tiles(LL.y) + " beach " + LC.beach.x + "," + LC.beach.y);
+        LL.cargo.length === 0 && LLsq.length === 2 && ashore.length === 2,
+        "cargo " + LL.cargo.length + ", order " + LL.order.type + " at " + tiles(LL.x) + "," + tiles(LL.y) + " beach " + LC.beach.x + "," + LC.beach.y +
+        "; ashore " + ashore.length + " of " + LLsq.length + ", alive " + LLsq.filter(function (q) { return !q.dead; }).length +
+        LLsq.filter(function (q) { return q.dead; }).map(function (q) {
+          return " (one killed by " + (q.lastHitBy && q.lastHitBy.def ? q.lastHitBy.def.full || q.lastHitBy.def.id : "?") + ")"; }).join(""));
   }
 }
 /* a landing craft eleven tiles out from the beach nearest home, two squads aboard, running in to put them ashore */

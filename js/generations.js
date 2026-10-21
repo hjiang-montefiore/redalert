@@ -2230,7 +2230,9 @@
      (owner) "the C-130 and other transportation airplane/helicopter should
      be able to carry some car, mobile, light tank, right?" - anything that
      REALLY fits. Every vehicle row already carries its real `mass` in
-     tonnes, so what was missing was the other half: what each airframe
+     tonnes (audited against published figures 2026-10-21; the rows with no
+     figure found are listed in _keep/vehicle_audit_20261021.txt), so what
+     was missing was the other half: what each airframe
      really lifts. `payload` is that figure in tonnes, for the exact type
      and period where a figure is published; `cargo` (the infantry seats)
      is not touched, and entities.js shares the payload out over the seats
@@ -2429,6 +2431,7 @@
     spaag_n:          [6.95, 2.72, "pub"],  // Stryker A1 IM-SHORAD: the Stryker's 6.95 x 2.72 m (en.wikipedia Stryker); its spec row is a Gepard
     atgmv_r:          M1151,                // M1167 HMMWV TOW: the ECV chassis it shares with the M1151 (below); its spec row is a CM-32
     nato_e50_recon:   [4.70, 2.31, "pub"],  // M8 Greyhound: 15 ft 5 in x 7 ft 7 in (en.wikipedia, TM 9-743); its spec row is a Ferret
+    roc_e50_recon:    [4.70, 2.31, "pub"],  // M8 Greyhound, Taiwan's: the same TM 9-743 figure - its spec row's 5.0 x 2.5 m is the drawing's round number (zh.wikipedia rounds to 5 x 2.54), and the two M8 rows disagreed
     nato_e60_ifv:     M113,                 // M113 ACAV: the M113's 4.863 x 2.686 m (en.wikipedia M113); its spec row is a Marder
     nato_e80_spaag:   [4.86, 2.85, "pub"],  // M163 VADS: 191.5 x 112.4 in (en.wikipedia M163); its spec row is a Gepard
     /* spec rows a hero file corrects */
@@ -2498,12 +2501,23 @@
     pact_e00_buk:     BUK,                  // 9A317: the Buk hull the hero file scales it to - the 9A310M1's figure, not its own
     pact_e00_buk_m3:  BUK,                  // 9A317M: the same
     sam_p:            [15.3, 3.3, "hero"],  // S-400 5P85TE2 rig: NO maker figure; 15.3 x 3.3 m from the 1:35 kit (js/hero/ru_s400.js)
+    /* vehicle audit 2026-10-21: three rows that were on the class default */
+    nato_e80_radarv:  [7.0, 2.5, "spec"],   // AN/TPQ-37 Firefinder: armour_specs.js radarv_r, the same radar (was the radarv class default, the same numbers under the wrong label)
+    spg_b:            [14.3, 3.0, "pub"],   // Archer on the Volvo A30D: 14.3 x 3 m (en.wikipedia Archer table)
+    gbr_e00_radarv:   [6.9, 1.87, "pub"],   // MAMBA, ARTHUR on the Bv206: the Bv206's 6.9 x 1.87 m (en.wikipedia Bandvagn 206)
   };
   /* CLASS DEFAULTS - not any vehicle's figure. The median length and width
      of the armour_specs.js rows of the role (368 rows, counted 2026-10-21),
      for a vehicle in none of the above; a role with no spec row at all (the
      construction rig, the recovery vehicle, the mine vehicles, the ore
-     hauler) takes the median of every row, 6.8 x 3.0 m. */
+     hauler) takes the median of every row, 6.8 x 3.0 m.
+     STILL ON IT after the vehicle audit of 2026-10-21 (_keep/vehicle_audit_
+     20261021.txt), because no launcher or carrier size was in any source
+     fetched (en/de/fr/it/ru/zh.wikipedia): the towed SAM launchers - Rapier
+     FSA (built to go in a C-130, and the 12.6 m default refuses it the short
+     Hercules), HAWK M192, S-75 SM-63, S-125 5P73, S-200 5P72, Bloodhound -
+     and the other SAM, TEL, radar and truck rows of this group. Each wants
+     its real size, not a better guess. */
   var VEHCLASS = {
     ewveh: [8.0, 2.6], heavy: [7.7, 3.6], ifv: [6.7, 2.9], lighttank: [6.3, 3.0], mbt: [6.9, 3.5],
     mlrs: [7.5, 2.7], radarv: [7.0, 2.5], recon: [5.5, 2.3], sam: [12.6, 3.0], spaag: [6.3, 3.0],

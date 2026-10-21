@@ -690,7 +690,7 @@ var UNITS = {
     desc:"Unfolds into a second Construction Yard. The only way to build a forward base or an expansion." },
 
   recon_n: { fac:"nato", role:"recon", name:"Humvee", full:"M1151 HMMWV (armed)", cat:"vehicle",
-    cost:400, oil:5, time:7, hp:340, armor:"light", speed:2.85, turn:3.2, sight:9.5, r:11, mass:5,
+    cost:400, oil:5, time:7, hp:340, armor:"light", speed:2.85, turn:3.2, sight:9.5, r:11, mass:5.5,  // mass: M1151: about 5.5 t, the AM General figure for the M1114/M1151 (js/hero/us_humvee.js)
     layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
     desc:"Fast wheeled scout with a ring-mounted .50 cal. Finds the enemy; dies to anything that finds it back." },
   recon_p: { fac:"pact", role:"recon", name:"BRDM-2", full:"BRDM-2 Scout Car", cat:"vehicle",
@@ -699,16 +699,16 @@ var UNITS = {
     desc:"Amphibious-hulled 4x4 recon car with a KPVT heavy machine gun." },
 
   ifv_n: { fac:"nato", role:"ifv", name:"Bradley IFV", full:"M2A3 Bradley", cat:"vehicle",
-    cost:900, oil:10, time:14, hp:820, armor:"light", speed:1.75, turn:2.0, sight:7.5, r:14, mass:30,
+    cost:900, oil:10, time:14, hp:820, armor:"light", speed:1.75, turn:2.0, sight:7.5, r:14, mass:29.9,  // mass: M2A3: 66,000 lb combat loaded (en.wikipedia M2 Bradley table)
     layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.8, cargo:5,
     desc:"25mm Bushmaster IFV carrying five dismounts. Kills light armour, carries the infantry that hold ground." },
   ifv_p: { fac:"pact", role:"ifv", name:"BMP-3", full:"BMP-3 IFV", cat:"vehicle",
-    cost:850, oil:10, time:13, hp:880, armor:"light", speed:1.8, turn:2.0, sight:7.0, r:14, mass:19,
+    cost:850, oil:10, time:13, hp:880, armor:"light", speed:1.8, turn:2.0, sight:7.0, r:14, mass:18.7,  // mass: BMP-3: 18.7 t (en.wikipedia)
     layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.8, cargo:6,
     desc:"Low-slung IFV with a 100mm/30mm combination mount. Carries six and swims across rivers." },
 
   lt_n: { fac:"nato", role:"lighttank", name:"Stryker MGS", full:"M1128 Mobile Gun System", cat:"vehicle",
-    cost:750, oil:9, time:12, hp:700, armor:"light", speed:2.1, turn:2.4, sight:7.5, r:13, mass:20,
+    cost:750, oil:9, time:12, hp:700, armor:"light", speed:2.1, turn:2.4, sight:7.5, r:13, mass:21.4,  // mass: M1128 MGS: 21,351 kg gross, production vehicle (en.wikipedia M1128; the Stryker page gives 18.77 t)
     layer:"ground", weapons:["gun_light"], prereq:["factory"], tech:1, turret:true, tturn:1.6,
     desc:"Wheeled 105mm assault gun. Quick to reposition, thin-skinned in a stand-up fight." },
   lt_p: { fac:"pact", role:"lighttank", name:"Sprut-SD", full:"2S25 Sprut-SD", cat:"vehicle",
@@ -717,7 +717,7 @@ var UNITS = {
     desc:"Airborne tank destroyer mounting a full 125mm gun on a paper-thin hull." },
 
   mbt_n: { fac:"nato", role:"mbt", name:"M1A2 Abrams", full:"M1A2 SEP v3", cat:"vehicle",
-    cost:1500, oil:22, time:22, hp:1750, armor:"heavy", speed:1.55, turn:1.5, sight:8.0, r:16, mass:62,
+    cost:1500, oil:22, time:22, hp:1750, armor:"heavy", speed:1.55, turn:1.5, sight:8.0, r:16, mass:66.8,  // mass: M1A2 SEP v3: 73.6 short tons (en.wikipedia M1 Abrams)
     layer:"ground", weapons:["gun_120"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.5, crush:true,
     desc:"Main battle tank. M256 120mm smoothbore firing depleted-uranium long rods, Chobham composite front, gas-turbine drive, and hunter-killer thermal sights that see through night and dust." },
   /* T-90M, not the T-90A. The T-90A of 2004 is already the e00 row
@@ -730,12 +730,12 @@ var UNITS = {
      (units3d.js) is still the T-90A's: a T-90M one - Relikt, the turret
      bustle box - is later work. */
   mbt_p: { fac:"pact", role:"mbt", name:"T-90M", full:"T-90M Proryv MBT", cat:"vehicle",
-    cost:1400, oil:20, time:20, hp:1820, armor:"heavy", speed:1.6, turn:1.6, sight:7.4, r:15, mass:47,
+    cost:1400, oil:20, time:20, hp:1820, armor:"heavy", speed:1.6, turn:1.6, sight:7.4, r:15, mass:48,  // mass: T-90M: 48 t (ru.wikipedia T-90)
     layer:"ground", weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.3, crush:true,
     desc:"125mm smoothbore with an autoloader and reactive armour. Hits harder, aims slower, costs less." },
 
   hvy_n: { from:"e20", fac:"nato", role:"heavy", name:"M1A2C Trophy", full:"M1A2C w/ Trophy APS", cat:"vehicle",
-    cost:2400, oil:38, time:32, hp:2450, armor:"heavy", speed:1.4, turn:1.35, sight:8.5, r:18, mass:70,
+    cost:2400, oil:38, time:32, hp:2450, armor:"heavy", speed:1.4, turn:1.35, sight:8.5, r:18, mass:66.8,  // mass: M1A2C (SEP v3): 73.6 short tons (en.wikipedia M1 Abrams); the Trophy kit is not in the figure
     layer:"ground", weapons:["gun_120"], prereq:["factory","lab"], tech:3, turret:true, tturn:1.5, crush:true, aps:0.45,
     desc:"Upgraded Abrams with an active protection system: a 45% chance to hard-kill any incoming missile." },
   hvy_p: { fac:"pact", role:"heavy", name:"T-14 Armata", full:"T-14 Armata MBT", cat:"vehicle",
@@ -765,7 +765,7 @@ var UNITS = {
      of any kind until the 3M6 Shmel of 1960, and the 9K11 Malyutka was not
      accepted until 16 September 1963. */
   atgmv_p: { from:"e00", fac:"pact", role:"tankdestroyer", name:"Khrizantema-S", full:"9P157-2 Khrizantema-S", cat:"vehicle",
-    cost:1050, oil:14, time:15, hp:680, armor:"light", speed:2.0, turn:2.2, sight:8.4, r:13, mass:20,
+    cost:1050, oil:14, time:15, hp:680, armor:"light", speed:2.0, turn:2.2, sight:8.4, r:13, mass:19.4,  // mass: 9P157-2 Khrizantema-S: 19.4 t (ru.wikipedia)
     layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
     desc:"Radar-guided ATGM carrier that can engage through smoke and dust." },
 
@@ -779,7 +779,7 @@ var UNITS = {
     desc:"Guns-and-missiles air defence vehicle. The bane of low-flying attack helicopters." },
 
   spg_n: { fac:"nato", role:"spg", name:"M109 Paladin", full:"M109A7 Paladin", cat:"vehicle",
-    cost:1500, oil:20, time:22, hp:780, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:39,
+    cost:1500, oil:20, time:22, hp:780, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:38.1,  // mass: M109A7: 84,000 lb combat (en.wikipedia M109)
     layer:"ground", weapons:["howitzer","scat_raams"], dispenser:8,
     prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
     desc:"155mm self-propelled howitzer. Fires far past its own eyesight — it needs a spotter to be useful. It is also NATO's only way to sow a minefield: M741 RAAMS, nine M73 anti-tank mines in a cargo shell, in service since 1982." },
@@ -797,7 +797,7 @@ var UNITS = {
          "no longer carries mines at all — the 155mm RAAMS shell does it instead, shorter and smaller but " +
          "impossible to intercept." },
   mlrs_p: { fac:"pact", role:"mlrs", name:"BM-30 Smerch", full:"9A52 Smerch MRL", cat:"vehicle",
-    cost:2100, oil:32, time:29, hp:720, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:44,
+    cost:2100, oil:32, time:29, hp:720, armor:"light", speed:1.3, turn:1.3, sight:5.5, r:15, mass:43.7,  // mass: 9A52 Smerch: 43.7 t in firing order (ru.wikipedia; js/hero/ru_smerch.js)
     layer:"ground", weapons:["mlrs","scat_ptm3"], dispenser:6,
     prereq:["factory","lab"], tech:3, turret:true, tturn:0.8,
     desc:"300mm rocket artillery. Enormous beaten zone, catastrophic against massed infantry. It also sows anti-tank minefields by rocket, which this army has done without a break since the BM-27 Uragan fired the 9M27K2 in 1977." },
@@ -1057,7 +1057,7 @@ Object.assign(UNITS, {
          "and its radar, its numbers and its reliability are all unverified, so it shoots and " +
          "mostly misses. Unreachable by re-equipping: this army is capped at 1990." },
   tel_n: { fac:"nato", role:"tel", name:"HIMARS / PrSM", full:"M142 HIMARS with PrSM", cat:"vehicle",
-    cost:2900, oil:48, time:34, hp:520, armor:"light", speed:1.55, turn:1.4, sight:5.0, r:15, mass:16,
+    cost:2900, oil:48, time:34, hp:520, armor:"light", speed:1.55, turn:1.4, sight:5.0, r:15, mass:16.25,  // mass: M142 HIMARS: 16.25 t combat weight (en.wikipedia; 13.5 t GVW)
     layer:"ground", weapons:["srbm_mod"], prereq:["factory","lab","radar"], tech:3, turret:false,
     deploy:true, deploySec:3.0, rounds:2, from:"e20",
     desc:"Two rounds in one pod on the same five-ton truck that fires the rocket artillery. NATO " +
@@ -1089,7 +1089,7 @@ Object.assign(UNITS, {
          "inventory of the five and the worst of everything else - and it cannot re-equip to " +
          "reach this, so it must start here." },
   nato_e60_sam: {"fac":"nato","role":"sam","cat":"vehicle","layer":"ground","name":"SP-HAWK","full":"M727 Self-Propelled Improved HAWK","cost":1900,"oil":26,"time":24,"hp":540,"armor":"light","speed":1.35,"turn":1.3,"sight":10.4,"r":15,"mass":18,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1969","confidence":"high","desc":"Three MIM-23 rounds on an open frame on a tracked cargo hull. The first Western area SAM that could move at all - the Nike sites it replaced took days to build.","turret":true,"tturn":0.7,"deploy":true,"radar":9,"radarQ":12,"rounds":3},
-  pact_e60_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"2K11 Krug","full":"2K11 Krug, 2P24 launcher","cost":2050,"oil":28,"time":26,"hp":640,"armor":"light","speed":1.30,"turn":1.2,"sight":10.4,"r":16,"mass":30,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1965","confidence":"high","desc":"Two ramjet missiles on a tracked launcher: the first genuinely mobile long-range SAM anywhere, and it belonged to the field army rather than to the air defence troops.","turret":true,"tturn":0.7,"deploy":true,"radar":9,"radarQ":11,"rounds":2},
+  pact_e60_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"2K11 Krug","full":"2K11 Krug, 2P24 launcher","cost":2050,"oil":28,"time":26,"hp":640,"armor":"light","speed":1.30,"turn":1.2,"sight":10.4,"r":16,"mass":28.2,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e60","service":"1965","confidence":"high","desc":"Two ramjet missiles on a tracked launcher: the first genuinely mobile long-range SAM anywhere, and it belonged to the field army rather than to the air defence troops.","turret":true,"tturn":0.7,"deploy":true,"radar":9,"radarQ":11,"rounds":2}, /* mass: 2K11 Krug 2P24: 28,200 kg (en.wikipedia) */
   pla_e60_sam: {"fac":"pla","role":"sam","cat":"vehicle","layer":"ground","name":"HQ-2 (SP)","full":"HQ-2B on a Type 63 tracked chassis","cost":1750,"oil":24,"time":24,"hp":520,"armor":"light","speed":1.10,"turn":1.0,"sight":10.4,"r":16,"mass":22,"weapons":["sam_area1"],"prereq":["factory","radar"],"tech":3,"from":"e60","to":"e80","service":"1967","confidence":"medium","desc":"A Chinese S-75 on one rail on a tracked hull: mobile in the crudest sense, one round, and a 1950s missile underneath. China's first SAM kill was scored by a fixed Soviet site over Beijing in 1959.","turret":true,"tturn":0.5,"deploy":true,"radar":8,"radarQ":9,"rounds":1},
   nato_e80_sam: {"fac":"nato","role":"sam","cat":"vehicle","layer":"ground","name":"Patriot PAC-2","full":"MIM-104C Patriot, M901 launching station","cost":2450,"oil":34,"time":31,"hp":580,"armor":"light","speed":1.05,"turn":1.0,"sight":12.1,"r":16,"mass":34,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e80","to":"e80","service":"1984","confidence":"high","desc":"Four sealed canisters on a semitrailer behind an eight-wheeled tractor. Under an hour into action, which is fast for the West and slow beside the thing it was built to answer.","turret":true,"tturn":0.5,"deploy":true,"deploySec":6.0,"radar":12,"radarQ":18,"rounds":4},
   pact_e80_sam: {"fac":"pact","role":"sam","cat":"vehicle","layer":"ground","name":"S-300PS","full":"S-300PS, 5P85S TEL","cost":2500,"oil":36,"time":30,"hp":630,"armor":"light","speed":1.25,"turn":1.2,"sight":12.1,"r":16,"mass":42,"weapons":["sam_area2"],"prereq":["factory","radar","lab"],"tech":3,"from":"e80","to":"e80","service":"1982","confidence":"high","desc":"Four vertical cold-launch tubes on an eight-wheeled tractor, five minutes into action. A gas generator throws the round clear before the motor lights, and the five minutes is the design point that rewrote Western air planning.","turret":true,"tturn":0.6,"deploy":true,"deploySec":4.0,"radar":12,"radarQ":16,"rounds":4},
@@ -1133,13 +1133,13 @@ Object.assign(UNITS, {
   nato_e60_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"Pershing 1a","full":"MGM-31A Pershing 1a, M790 erector-launcher","cost":2900,"oil":50,"time":37,"hp":500,"armor":"light","speed":1.15,"turn":1.0,"sight":5.0,"r":17,"mass":20,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e60","to":"e60","service":"1969","confidence":"high","desc":"Solid-fuelled, and the wheeled erector cut the reaction time hard against the tracked launcher it replaced. The divisional weapon alongside it was MGM-52 Lance.","turret":false,"deploy":true,"deploySec":6.0,"rounds":1},
   pact_e60_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Scud-B","full":"R-17 Elbrus on the 9P117 Uragan","cost":2700,"oil":48,"time":36,"hp":540,"armor":"light","speed":1.25,"turn":0.95,"sight":5.0,"r":17,"mass":37,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e60","to":"e80","service":"1962","confidence":"high","desc":"The archetype of the whole class and the shape everything else is measured against. A 985kg warhead and a CEP of about 450 metres: this is an area weapon aimed at a city or an airfield, not at a vehicle.","turret":false,"deploy":true,"deploySec":6.0,"rounds":1},
   nato_e80_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"Pershing II","full":"MGM-31B Pershing II","cost":3400,"oil":62,"time":40,"hp":520,"armor":"light","speed":1.20,"turn":0.95,"sight":5.0,"r":17,"mass":38,"weapons":["srbm_p2"],"prereq":["factory","lab","radar"],"tech":3,"from":"e80","to":"e80","service":"1983","confidence":"high","desc":"Radar area-correlation terminal guidance and a CEP around thirty metres, which made it the most accurate ballistic missile of its generation by a distance. Every one was destroyed between 1988 and 1991 under the INF Treaty, which is why NATO has fired its ballistic rounds out of a rocket launcher ever since.","turret":false,"deploy":true,"deploySec":6.0,"rounds":1},
-  pact_e80_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Tochka","full":"OTR-21 Tochka, 9P129 launcher","cost":2900,"oil":50,"time":36,"hp":540,"armor":"light","speed":1.45,"turn":1.1,"sight":5.0,"r":16,"mass":18,"weapons":["srbm_short"],"prereq":["factory","lab","radar"],"tech":3,"from":"e80","to":"e80","service":"1976","confidence":"high","desc":"Much shorter reach than a Scud and far better accuracy, which is the whole trade. Amphibious, fast, and it moves the moment the round is away. The off-map SUPPORT power of the same name is this weapon fired from somebody else's map.","turret":false,"deploy":true,"deploySec":4.0,"rounds":1},
+  pact_e80_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Tochka","full":"OTR-21 Tochka, 9P129 launcher","cost":2900,"oil":50,"time":36,"hp":540,"armor":"light","speed":1.45,"turn":1.1,"sight":5.0,"r":16,"mass":18.1,"weapons":["srbm_short"],"prereq":["factory","lab","radar"],"tech":3,"from":"e80","to":"e80","service":"1976","confidence":"high","desc":"Much shorter reach than a Scud and far better accuracy, which is the whole trade. Amphibious, fast, and it moves the moment the round is away. The off-map SUPPORT power of the same name is this weapon fired from somebody else's map.","turret":false,"deploy":true,"deploySec":4.0,"rounds":1}, /* mass: 9P129 with missile and crew: 18,145 kg (ru.wikipedia Tochka; js/hero/ru_tochka.js about 18 t) */
   kpa_e80_tel: {"fac":"kpa","role":"tel","cat":"vehicle","layer":"ground","name":"Hwasong-5","full":"Hwasong-5 (Scud-B derivative)","cost":2400,"oil":44,"time":34,"hp":540,"armor":"light","speed":1.20,"turn":0.95,"sight":5.0,"r":17,"mass":37,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e80","to":"e80","service":"1985","confidence":"medium","desc":"A Scud-B reverse-engineered from examples obtained by way of Egypt, in series production from about 1985. The start of the deepest ballistic inventory of the five armies here.","turret":false,"deploy":true,"deploySec":6.5,"rounds":1},
   nato_e90_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"M270 / ATACMS","full":"M270 MLRS with MGM-140 ATACMS Block I","cost":2800,"oil":50,"time":34,"hp":700,"armor":"light","speed":1.30,"turn":1.3,"sight":5.0,"r":16,"mass":25,"weapons":["srbm_atacms"],"prereq":["factory","lab","radar"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"Two missiles in place of twelve rockets, in the launcher the battery already owns. First fired in January 1991 and the reason the United States never built another dedicated erector after INF.","turret":true,"tturn":0.8,"deploy":true,"deploySec":3.0,"rounds":2},
   pact_e90_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Tochka-U","full":"OTR-21 Tochka-U","cost":2950,"oil":50,"time":36,"hp":540,"armor":"light","speed":1.45,"turn":1.1,"sight":5.0,"r":16,"mass":18,"weapons":["srbm_short"],"prereq":["factory","lab","radar"],"tech":3,"from":"e90","to":"e90","service":"1989","confidence":"high","desc":"All this army had that was new. The Oka was destroyed under INF and the Iskander that should have replaced it slipped fifteen years, so the 1990s force is a 1976 missile with a better warhead.","turret":false,"deploy":true,"deploySec":4.0,"rounds":1},
   pla_e90_tel: {"fac":"pla","role":"tel","cat":"vehicle","layer":"ground","name":"DF-15","full":"DF-15 (M-9) on a WS2400 TEL","cost":3100,"oil":56,"time":38,"hp":560,"armor":"light","speed":1.25,"turn":0.95,"sight":5.0,"r":17,"mass":42,"weapons":["srbm_scud"],"prereq":["factory","lab","radar"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"high","desc":"The missile fired into the sea off Keelung and Kaohsiung during the 1995-96 Strait crisis. The PLA had no mobile ballistic missile of any kind before the DF-11 in 1992; this is where that force begins.","turret":false,"deploy":true,"deploySec":5.0,"rounds":1},
   kpa_e90_tel: {"fac":"kpa","role":"tel","cat":"vehicle","layer":"ground","name":"Hwasong-6","full":"Hwasong-6 (Scud-C derivative)","cost":2500,"oil":46,"time":35,"hp":540,"armor":"light","speed":1.20,"turn":0.95,"sight":5.0,"r":17,"mass":37,"weapons":["srbm_scud"],"prereq":["factory","lab"],"tech":3,"from":"e90","to":"e90","service":"1991","confidence":"medium","desc":"Five hundred kilometres bought by throwing away two hundred kilogrammes of warhead and accepting a miss distance of one to two kilometres. That trade is the design, and it is why this army's missiles are aimed at cities. This is as far as it can go - it cannot re-equip past 1990.","turret":false,"deploy":true,"deploySec":6.5,"rounds":1},
-  nato_e00_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"HIMARS / ATACMS","full":"M142 HIMARS with M57 ATACMS Unitary","cost":2850,"oil":48,"time":33,"hp":520,"armor":"light","speed":1.55,"turn":1.4,"sight":5.0,"r":15,"mass":16,"weapons":["srbm_atacms"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2004","confidence":"high","desc":"One round, a 227kg unitary warhead in place of 950 bomblets, and a wheeled truck that can be flown in. Fast into action and faster out of it.","turret":false,"deploy":true,"deploySec":3.0,"rounds":1},
+  nato_e00_tel: {"fac":"nato","role":"tel","cat":"vehicle","layer":"ground","name":"HIMARS / ATACMS","full":"M142 HIMARS with M57 ATACMS Unitary","cost":2850,"oil":48,"time":33,"hp":520,"armor":"light","speed":1.55,"turn":1.4,"sight":5.0,"r":15,"mass":16.25,"weapons":["srbm_atacms"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2004","confidence":"high","desc":"One round, a 227kg unitary warhead in place of 950 bomblets, and a wheeled truck that can be flown in. Fast into action and faster out of it.","turret":false,"deploy":true,"deploySec":3.0,"rounds":1}, /* mass: M142 HIMARS: 16.25 t combat weight (en.wikipedia; 13.5 t GVW) */
   pact_e00_tel: {"fac":"pact","role":"tel","cat":"vehicle","layer":"ground","name":"Iskander-M","full":"9K720 Iskander-M, 9P78-1 TEL","cost":3200,"oil":58,"time":38,"hp":580,"armor":"light","speed":1.30,"turn":1.0,"sight":5.0,"r":17,"mass":42,"weapons":["srbm_mod"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2006","confidence":"high","desc":"Two rounds under a shared hinged cover, a depressed flight path and a terminal manoeuvre. Twenty years late, because the treaty that killed the Oka killed the programme with it.","turret":false,"deploy":true,"deploySec":4.0,"rounds":2},
   pla_e00_tel: {"fac":"pla","role":"tel","cat":"vehicle","layer":"ground","name":"DF-15B","full":"DF-15B on a WS2400 TEL","cost":3300,"oil":58,"time":38,"hp":560,"armor":"light","speed":1.25,"turn":0.95,"sight":5.0,"r":17,"mass":42,"weapons":["srbm_mod"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2006","confidence":"medium","desc":"A separating manoeuvring re-entry vehicle drops the miss distance from hundreds of metres to single figures. The same launcher as 1995 with a completely different weapon on it.","turret":false,"deploy":true,"deploySec":5.0,"rounds":1},
   kpa_e00_tel: {"fac":"kpa","role":"tel","cat":"vehicle","layer":"ground","name":"KN-02 Toksa","full":"KN-02 Toksa (OTR-21 derivative)","cost":2600,"oil":46,"time":34,"hp":530,"armor":"light","speed":1.40,"turn":1.1,"sight":5.0,"r":16,"mass":18,"weapons":["srbm_short"],"prereq":["factory","lab"],"tech":3,"from":"e00","to":"e00","service":"2007","confidence":"medium","desc":"A reverse-engineered Tochka and this army's first accurate solid-fuelled battlefield missile - short, quick, and aimed at a target rather than at a map square. Reachable only by starting here: the KPA cannot re-equip past 1990.","turret":false,"deploy":true,"deploySec":4.5,"rounds":1},
@@ -1296,7 +1296,7 @@ Object.assign(UNITS, {
     desc:"12.7mm anti-materiel rifle. Kills infantry outright and spots for the guns." },
 
   recon_c: { fac:"pla", role:"recon", name:"Mengshi Scout", full:"CSK-131 Mengshi", cat:"vehicle",
-    cost:385, oil:5, time:6.6, hp:360, armor:"light", speed:2.8, turn:3.1, sight:9.2, r:11, mass:6,
+    cost:385, oil:5, time:6.6, hp:360, armor:"light", speed:2.8, turn:3.1, sight:9.2, r:11, mass:6.3,  // mass: CSK-131 Mengshi: 6,300 kg loaded (zh.wikipedia Dongfeng Mengshi)
     layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.3,
     desc:"Protected 4x4 scout with a remote weapon station. Fast eyes for the armoured push." },
   ifv_c: { fac:"pla", role:"ifv", name:"ZBD-04A", full:"ZBD-04A IFV", cat:"vehicle",
@@ -1304,11 +1304,11 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.8, cargo:6,
     desc:"Tracked IFV with a 100mm gun-launcher and a 30mm autocannon. Carries six dismounts." },
   lt_c: { fac:"pla", role:"lighttank", name:"ZTQ-15 Black Panther", full:"ZTQ-15 Light Tank", cat:"vehicle",
-    cost:735, oil:9, time:11.7, hp:760, armor:"light", speed:2.05, turn:2.4, sight:7.4, r:13, mass:35,
+    cost:735, oil:9, time:11.7, hp:760, armor:"light", speed:2.05, turn:2.4, sight:7.4, r:13, mass:32.5,  // mass: ZTQ-15: 32.5 t with the standard add-on ERA (zh.wikipedia; 28.5 t base, 35 t urban kit)
     layer:"ground", weapons:["gun_light"], prereq:["factory"], tech:1, turret:true, tturn:1.6,
     desc:"Highland light tank: a 105mm gun on a hull light enough for soft ground and mountain roads." },
   mbt_c: { fac:"pla", role:"mbt", name:"Type 99A", full:"ZTZ-99A MBT", cat:"vehicle",
-    cost:1450, oil:21, time:21, hp:1800, armor:"heavy", speed:1.6, turn:1.55, sight:7.8, r:16, mass:58,
+    cost:1450, oil:21, time:21, hp:1800, armor:"heavy", speed:1.6, turn:1.55, sight:7.8, r:16, mass:55,  // mass: ZTZ-99A: 55 t with standard add-on ERA (zh.wikipedia; en.wikipedia 55 t)
     layer:"ground", weapons:["gun_125"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4, crush:true,
     desc:"125mm smoothbore, autoloader, welded composite turret. The backbone of the armoured corps." },
   hvy_c: { fac:"pla", role:"heavy", name:"Type 99A2 GL5", full:"ZTZ-99A2 w/ GL5 APS", cat:"vehicle",
@@ -1332,7 +1332,7 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6,
     desc:"Twin 35mm radar-directed AA on a tracked hull. Clears the sky over a moving column." },
   spg_c: { fac:"pla", role:"spg", name:"PLZ-05", full:"PLZ-05 155mm SPH", cat:"vehicle",
-    cost:1470, oil:20, time:21.5, hp:800, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:35,
+    cost:1470, oil:20, time:21.5, hp:800, armor:"light", speed:1.35, turn:1.5, sight:5.5, r:15, mass:45,  // mass: PLZ-05: 45 t (zh.wikipedia; en gives 35-45 t)
     layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
     desc:"155mm/52 self-propelled howitzer with a long tube and an autoloader." },
   mlrs_c: { fac:"pla", role:"mlrs", name:"PHL-03", full:"PHL-03 300mm MRL", cat:"vehicle",
@@ -1402,11 +1402,11 @@ Object.assign(UNITS, {
    push runs dry two thirds of the way to the objective and stops dead.       */
 Object.assign(UNITS, {
   supply_n: { fac:"nato", role:"supply", name:"HEMTT Supply Truck", full:"M977 HEMTT", cat:"vehicle",
-    cost:700, oil:6, time:11, hp:600, armor:"light", speed:1.9, turn:2.0, sight:6, r:14, mass:16,
+    cost:700, oil:6, time:11, hp:600, armor:"light", speed:1.9, turn:2.0, sight:6, r:14, mass:31.3,  // mass: M977A4 HEMTT: 69,000 lb laden, A-kit (en.wikipedia HEMTT, Jane's); 42,500 lb unladen
     layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:900, supplyRange:5.0,
     desc:"Rolling fuel and ammunition point. Refuels and rearms anything within five tiles, then drives back to a depot to reload." },
   supply_p: { fac:"pact", role:"supply", name:"KamAZ Supply Truck", full:"KamAZ-6350", cat:"vehicle",
-    cost:650, oil:6, time:10, hp:640, armor:"light", speed:1.95, turn:2.0, sight:6, r:14, mass:15,
+    cost:650, oil:6, time:10, hp:640, armor:"light", speed:1.95, turn:2.0, sight:6, r:14, mass:22.6,  // mass: KamAZ-6350: 22,600 kg gross, 12,400 kg kerb (ru.wikipedia KAMAZ-6350)
     layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:900, supplyRange:5.0,
     desc:"8x8 logistics truck hauling fuel bladders and ammunition pallets to the forward edge." },
   supply_c: { fac:"pla", role:"supply", name:"Shaanxi Supply Truck", full:"SX2306 Logistics Truck", cat:"vehicle",
@@ -2208,7 +2208,7 @@ Object.assign(UNITS, {
      reason - the earlier bands are held by the M18, the M113A1 TOW and the
      CM-25 in eras.js, not by this vehicle. */
   atgmv_r: { from:"e20", fac:"roc", role:"tankdestroyer", name:"M1167 TOW", full:"M1167 HMMWV, M41A7 ITAS TOW", cat:"vehicle",
-    cost:1280, oil:14, time:17, hp:600, armor:"light", speed:2.1, turn:2.2, sight:9.4, r:13, mass:22,
+    cost:1280, oil:14, time:17, hp:600, armor:"light", speed:2.1, turn:2.2, sight:9.4, r:13, mass:5.5,  // mass: M1167 on the ECV chassis: the M1114/M1151 5.5 t (AM General, js/hero/us_humvee.js); the TOW turret is not in it
     layer:"ground", weapons:["atgm_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4,
     desc:"An armoured-cab Humvee with the improved target acquisition system: a thermal sight with its own laser rangefinder that finds and hands over a target far beyond the range of the missile, so the gunner shoots from a reverse slope and moves. Light enough to be hidden anywhere on a small island and thin enough that anything which sees it first wins." },
   spaag_r: { fac:"roc", role:"spaag", name:"Antelope AD", full:"Antelope Air Defence System", cat:"vehicle",
@@ -2216,7 +2216,7 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["sam_veh"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.6, radar:10,
     desc:"Chaparral-successor firing Sky Sword missiles from a Humvee-class chassis. A true SAM vehicle rather than a gun system: longer reach than any rival SPAAG, and it carries its own radar." },
   spg_r: { fac:"roc", role:"spg", name:"M109A6 Paladin", full:"M109A6 Paladin", cat:"vehicle",
-    cost:1800, oil:22, time:26, hp:780, armor:"light", speed:1.35, turn:1.5, sight:6.2, r:15, mass:29,
+    cost:1800, oil:22, time:26, hp:780, armor:"light", speed:1.35, turn:1.5, sight:6.2, r:15, mass:28.5,  // mass: M109A6: 62,000-63,615 lb combat, 28.1-28.9 t (en.wikipedia M109) - 28.5 representative
     layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.9,
     desc:"Digitised 155mm howitzer with autonomous laying. Same shell as everyone else's, delivered more accurately." },
   mlrs_r: { fac:"roc", role:"mlrs", name:"Thunderbolt-2000", full:"RT-2000 Thunderbolt", cat:"vehicle",
@@ -2224,7 +2224,7 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["mlrs"], prereq:["factory","lab"], tech:3, turret:true, tturn:0.85,
     desc:"Indigenous multiple rocket launcher built to break up landing craft at the waterline. Accurate for its class." },
   supply_r: { fac:"roc", role:"supply", name:"Supply Truck", full:"M977 HEMTT", cat:"vehicle",
-    cost:880, oil:7, time:13, hp:600, armor:"light", speed:1.9, turn:2.0, sight:6.2, r:14, mass:16,
+    cost:880, oil:7, time:13, hp:600, armor:"light", speed:1.9, turn:2.0, sight:6.2, r:14, mass:31.3,  // mass: M977A4 HEMTT: 69,000 lb laden, A-kit (en.wikipedia HEMTT, Jane's); 42,500 lb unladen
     layer:"ground", weapons:[], prereq:["factory"], tech:1, supply:1000, supplyRange:5.4,
     desc:"Imported heavy logistics truck with the largest supply pool available." },
   radarv_r: { from:"e80", fac:"roc", role:"radarv", name:"AN/TPQ-37 Radar", full:"AN/TPQ-37 Firefinder", cat:"vehicle",
@@ -2357,7 +2357,7 @@ Object.assign(UNITS, {
     desc:"Unimog and MAN trucks, armoured cab, and a logistics branch sized for a defensive war fought at home. Germany can sustain a corps on its own ground and struggles to sustain a brigade a long way from it, which is what supplyMul 0.94 is." },
 
   recon_g: { from:"e00", fac:"deu", role:"recon", name:"Fennek", full:"Spaehwagen Fennek", cat:"vehicle",
-    cost:500, oil:6, time:9, hp:400, armor:"light", speed:2.70, turn:3.0, sight:10.4, r:12, mass:10,
+    cost:500, oil:6, time:9, hp:400, armor:"light", speed:2.70, turn:3.0, sight:10.4, r:12, mass:10.7,  // mass: Fennek: 10.7 t Gefechtsgewicht (de.wikipedia; 10.3 t Gesamtgewicht)
     layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
     desc:"A Dutch-German 4x4 built around one idea: an observation head on a telescopic mast that lifts a thermal imager and a laser rangefinder 1.5 m above the roof, so the vehicle watches from behind cover it never has to leave. Fielded 2003. The Luchs it replaced was an 8x8 with a rear driver that could reverse at full speed." },
   ifv_g: { fac:"deu", role:"ifv", name:"Puma", full:"Schuetzenpanzer Puma S1", cat:"vehicle",
@@ -2365,19 +2365,19 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:2.0, cargo:6,
     desc:"The most heavily protected IFV in service anywhere, and it carries six rather than the eight the Marder did, because the protection took the space. Unmanned turret with a 30mm MK 30-2/ABM firing airburst rounds. Fielded 2015 and famously unreliable in its first years; the S1 standard is the fix." },
   mbt_g: { fac:"deu", role:"mbt", name:"Leopard 2A7V", full:"Leopard 2A7V", cat:"vehicle",
-    cost:1780, oil:24, time:26, hp:1780, armor:"heavy", speed:1.45, turn:1.45, sight:9.2, r:16, mass:66,
+    cost:1780, oil:24, time:26, hp:1780, armor:"heavy", speed:1.45, turn:1.45, sight:9.2, r:16, mass:66.5,  // mass: Leopard 2A7V: 66.5 t (en/de.wikipedia Leopard 2 infobox)
     layer:"ground", weapons:["gun_120_l55"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.6, crush:true,
     desc:"The gun is the point. Rheinmetall designed the Rh-120, the United States licence-built it as the M256 in 1985, and an Abrams has fired a German gun ever since. The L/55 barrel arrived on the 2A6 in 2001. No active protection system: Trophy was contracted for the 2A8 in 2023 and nothing has been delivered, which is why Germany has no tech-3 heavy armour in this game." },
   atgmv_g: { from:"e00", fac:"deu", role:"tankdestroyer", name:"Wiesel 1 TOW", full:"Wiesel 1 TOW", cat:"vehicle",
-    cost:900, oil:8, time:12, hp:330, armor:"light", speed:2.15, turn:2.6, sight:8.8, r:12, mass:5,
+    cost:900, oil:8, time:12, hp:330, armor:"light", speed:2.15, turn:2.6, sight:8.8, r:12, mass:3,  // mass: Wiesel 1 TOW: 2.75-3.30 t for the Wiesel 1 variants (de.wikipedia) - 3.0 representative
     layer:"ground", weapons:["tow_wiesel"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.5,
     desc:"A tracked vehicle weighing under three tonnes with a TOW launcher on the roof, built so that two of them fit in a CH-53. It is the airborne brigade's anti-armour weapon and it dies to anything that sees it first. Germany has fielded no full-size tank destroyer since the Jaguar went in the mid-2000s." },
   spaag_g: { fac:"deu", role:"spaag", name:"Ozelot", full:"LeFlaSys Ozelot (ASRAD)", cat:"vehicle",
-    cost:980, oil:11, time:14, hp:400, armor:"light", speed:2.00, turn:2.4, sight:9.6, r:13, mass:5,
+    cost:980, oil:11, time:14, hp:400, armor:"light", speed:2.00, turn:2.4, sight:9.6, r:13, mass:4.4,  // mass: Ozelot on the Wiesel 2: 4.1-4.78 t for the Wiesel 2 variants (de.wikipedia Wiesel) - 4.4 representative
     layer:"ground", weapons:["manpad"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.8, radar:4.0,
     desc:"Four Stingers on a Wiesel 2, and it is a placeholder for something that is not there. Germany fielded the finest gun-based air defence ever built — the Gepard, twin 35mm with separate search and tracking radars, engaging on the move, in service 1976 — and retired the vehicle in 2010 and the whole army air defence branch in 2012. Skyranger 30 was contracted in 2024 and is not in service. Ozelot cannot engage a ground target at all." },
   spg_g: { from:"e90", fac:"deu", role:"spg", name:"PzH 2000", full:"Panzerhaubitze 2000 A2", cat:"vehicle",
-    cost:1950, oil:24, time:28, hp:820, armor:"light", speed:1.35, turn:1.5, sight:6.4, r:15, mass:56,
+    cost:1950, oil:24, time:28, hp:820, armor:"light", speed:1.35, turn:1.5, sight:6.4, r:15, mass:55.8,  // mass: PzH 2000: 55.8 t combat (en.wikipedia)
     layer:"ground", weapons:["pzh2000_l52"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.95,
     desc:"A 155mm L/52 with a fully automatic magazine: three rounds in under ten seconds, and it will put all three on the same point at the same moment. In service 1998 and still the longest-reaching tube gun any of these four armies fields. It fires SMArt 155, a German sensor-fuzed top-attack cargo round, since about 2000 — but no scatterable mine round, because Germany destroyed its AT-2 stocks under the Ottawa Convention." },
   mlrs_g: { from:"e00", fac:"deu", role:"mlrs", name:"MARS II", full:"Mittleres Artillerieraketensystem II", cat:"vehicle",
@@ -2502,7 +2502,7 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4,
     desc:"Air-sprung, open-topped and fast, on the argument that seeing and hearing the ambush beats surviving it. Foxhound is the opposite bet - a fully protected pod - and the Army fields both because it never settled the question." },
   ifv_b: { fac:"gbr", role:"ifv", name:"Warrior", full:"FV510 Warrior", cat:"vehicle",
-    cost:870, oil:10, time:14, hp:840, armor:"light", speed:1.72, turn:2.0, sight:7.2, r:14, mass:32,
+    cost:870, oil:10, time:14, hp:840, armor:"light", speed:1.72, turn:2.0, sight:7.2, r:14, mass:25.4,  // mass: FV510 Warrior: 25.4 t (en.wikipedia)
     layer:"ground", weapons:["autocannon"], prereq:["factory"], tech:1, turret:true, tturn:1.7, cargo:6,
     desc:"Thirty-eight years old and unmodernised. The Rarden cannon is manually stabilised and cannot be fired accurately on the move; the turret upgrade that would have fixed that was cancelled in 2021 after a decade and 430 million pounds. It also carries no anti-tank missile, so it cannot fight armour at all." },
   lt_b: { from:"e20", fac:"gbr", role:"lighttank", name:"Ajax", full:"Ajax reconnaissance vehicle", cat:"vehicle",
@@ -2510,7 +2510,7 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["ct40"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.7,
     desc:"A 38-tonne reconnaissance vehicle with a stabilised 40mm cased-telescoped cannon and the best sensor fit in the British Army - it is meant to find, not to be found. Ordered in 2014, halted twice when vibration and noise injured crews, and only declared initially operational in 2025." },
   mbt_b: { fac:"gbr", role:"mbt", name:"Challenger 2", full:"Challenger 2", cat:"vehicle",
-    cost:1500, oil:22, time:22, hp:1820, armor:"heavy", speed:1.38, turn:1.4, sight:8.0, r:16, mass:64,
+    cost:1500, oil:22, time:22, hp:1820, armor:"heavy", speed:1.38, turn:1.4, sight:8.0, r:16, mass:62.5,  // mass: Challenger 2: 62.5 t (de.wikipedia; en.wikipedia now gives 64 t)
     layer:"ground", weapons:["gun_120_rifled"], prereq:["factory","radar"], tech:2, turret:true, tturn:1.4, crush:true,
     desc:"The last rifled tank gun in NATO, kept because the British Army will not give up the HESH round - which means one country in the world makes its ammunition. Dorchester armour that has never been defeated frontally, a 1998 fire-control system, and a fleet down to 148 hulls." },
   hvy_b: { from:"e20", fac:"gbr", role:"heavy", name:"Challenger 3", full:"Challenger 3 (in service 2027)", cat:"vehicle",
@@ -2519,7 +2519,7 @@ Object.assign(UNITS, {
     turret:true, tturn:1.5, crush:true, aps:0.45,
     desc:"148 Challenger 2 hulls rebuilt with a new turret, modular armour, Trophy active protection and - finally - a 120mm smoothbore, ending fifty years of British rifled tank guns and putting the fleet on NATO ammunition. First deliveries 2025; it is NOT yet in service, with an in-service date of 2027." },
   spaag_b: { fac:"gbr", role:"spaag", name:"Stormer HVM", full:"Stormer HVM", cat:"vehicle",
-    cost:980, oil:13, time:15, hp:700, armor:"light", speed:1.9, turn:2.1, sight:9.2, r:13, mass:13,
+    cost:980, oil:13, time:15, hp:700, armor:"light", speed:1.9, turn:2.1, sight:9.2, r:13, mass:12.7,  // mass: Stormer HVM: the Stormer's 12.7 t (en.wikipedia Alvis Stormer); the HVM launcher is not in it
     layer:"ground", weapons:["hvm"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.8,
     desc:"Eight Starstreak on tracks, cued by a passive infrared sight that never emits - so an anti-radiation missile has nothing to home on. It has no gun and no ground capability whatsoever: it cannot defend itself against infantry, and its ceiling is a third of a Tunguska's." },
   spg_b: { fac:"gbr", role:"spg", name:"Archer", full:"Archer FH77BW L5 155mm", cat:"vehicle",
@@ -2693,7 +2693,7 @@ Object.assign(UNITS, {
 
 /* -------- vehicles -------- */
   recon_f: { fac:"fra", role:"recon", name:"VBL Ultima", full:"Panhard VBL Ultima", cat:"vehicle",
-    cost:400, oil:5, time:7, hp:330, armor:"light", speed:2.85, turn:3.3, sight:9.5, r:11, mass:5,
+    cost:400, oil:5, time:7, hp:330, armor:"light", speed:2.85, turn:3.3, sight:9.5, r:11, mass:5.2,  // mass: VBL Ultima: up to 5.2 t (fr.wikipedia VBL)
     layer:"ground", weapons:["hmg"], prereq:["factory"], tech:1, turret:true, tturn:2.4, from:"e20",
     desc:"A five-tonne armoured car, smaller than a Humvee and actually armoured, rebuilt in 2021 to run to 2035 because its replacement keeps slipping. Amphibious, air-portable, and now carrying more weight than the chassis was ever designed for." },
   ifv_f: { fac:"fra", role:"ifv", name:"VBCI", full:"Nexter VBCI 25mm", cat:"vehicle",
@@ -2713,7 +2713,7 @@ Object.assign(UNITS, {
     layer:"ground", weapons:["spaag"], prereq:["factory","radar"], tech:2, turret:true, tturn:2.4, from:"e20",
     desc:"Pulse-Doppler search, TWT tracker, TV and IR channels, eight VT-1 missiles. It belongs to the air force and defends airfields. The Armee de Terre gave up Roland in the late 2000s and has had no vehicle-mounted short-range air defence since - Mistral teams and towed 20mm guns are the whole of it, which Ukraine has made look like a serious mistake." },
   spg_f: { fac:"fra", role:"spg", name:"CAESAR", full:"CAESAR 155mm 52-cal on 6x6", cat:"vehicle",
-    cost:1250, oil:14, time:17, hp:460, armor:"light", speed:2.35, turn:2.6, sight:5.5, r:14, mass:18,
+    cost:1250, oil:14, time:17, hp:460, armor:"light", speed:2.35, turn:2.6, sight:5.5, r:14, mass:17.7,  // mass: CAESAR Mk1 on the Sherpa 5 6x6: 17.7 t (en.wikipedia)
     layer:"ground", weapons:["howitzer"], prereq:["factory","radar"], tech:2, turret:true, tturn:0.7,
     deploy:true, deploySec:4, from:"e20",
     desc:"A 52-calibre 155 bolted to an eighteen-tonne lorry with an unarmoured cab - a different idea from a tracked SPG, not a cheaper one. In action in sixty seconds, out again in sixty, 40 km with a base-bleed shell, and it fits inside an A400M. It cannot take a single fragment, and both halves of that bargain have been proved in Ukraine. It cannot lay a minefield: France signed Ottawa and Oslo and has no cargo-mine shell." },
