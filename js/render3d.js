@@ -2531,7 +2531,14 @@ var Render3D = (function () {
                the approach and the cruise are measured from the ground, as before */
             const ground = heightAt(e.x, e.y);
             const rest = landRest(e, rec, onDeck ? host : null, ground);
-            my = easeAlt(rec, onDeck ? rest : landing ? rest + 2.8 : Math.max(ground + 6, AIR_ALT), dt);
+            /* a transport landing on open ground to unload (entities.js AIRLIFT
+               LANDING): on its wheels on the strip, and on the last turn and
+               the finals coming down a glide of 5 m a tile to the threshold */
+            const al = e.order && e.order.type === "airland" ? e.order : null;
+            const glide = al && (al.ph === "d3" || al.ph === "final") && isFinite(al.ax)
+              ? rest + Math.hypot(e.x - al.ax, e.y - al.ay) / CFG.TILE * 5 : Infinity;
+            my = easeAlt(rec, onDeck || e.grounded ? rest
+                            : landing ? rest + 2.8 : Math.min(glide, Math.max(ground + 6, AIR_ALT)), dt);
             if (rec.fold) foldOnDeck(rec, false, dt);   // wings spread off a deck
           }
         } else if (e.layer === "sea" || e.layer === "sub") {
@@ -4162,7 +4169,8 @@ var Render3D = (function () {
        aeroplane you can see on the ramp cannot be clicked, and right-clicking
        it to order a strike misses by a whole cruise altitude. */
     if (e.layer === "air") {
-      const parked = e.parked || (e.order && e.order.type === "parked");
+      /* a transport stopped on open ground to unload is as down as a parked one */
+      const parked = e.parked || e.grounded || (e.order && e.order.type === "parked");
       /* ...and where it is drawn: at its feet on the pad or the deck it
          stands on - on a ship a spot of her own deck, not the slot the game
          keeps for it (seatOnDeck) - and at the model while it lifts off a

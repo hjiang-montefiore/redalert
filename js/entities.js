@@ -226,6 +226,7 @@ class Unit {
 
     this.cargo = [];                                        // transports
     this.carried = false;
+    this.grounded = false;              // an airlifter stopped on open ground (AIRLIFT)
     this.load = 0;                                          // harvester ore
     this.repathT = 0; this.stuckT = 0;
     this.guardX = x; this.guardY = y;
@@ -433,7 +434,9 @@ class Unit {
      deck to the frigate. */
   targetLayer() {
     if (this.layer !== "air") return this.layer;
-    return (this.parked || (this.order && this.order.type === "parked")) ? "ground" : "air";
+    /* and a transport stopped on a strip of open ground to unload (AIRLIFT
+       LANDING) is standing on its wheels in a field, exactly as exposed */
+    return (this.parked || this.grounded || (this.order && this.order.type === "parked")) ? "ground" : "air";
   }
   /* The armour class the round actually meets. CFG.DMG scores "air" at zero
      against he, frag, cannon and nuclear - right for an aeroplane in flight,
@@ -628,7 +631,7 @@ class Unit {
     }
     /* An aircraft that runs the tanks dry does not glide home. Lose your
        airbases while the wing is airborne and you lose the wing with them. */
-    if (this.layer === "air" && !this.def.hover && this.fuelMax && this.fuel <= 0 && !this.parked) {
+    if (this.layer === "air" && !this.def.hover && this.fuelMax && this.fuel <= 0 && !this.parked && !this.grounded) {
       this.fuelOut = (this.fuelOut || 0) + dt;
       if (this.fuelOut > 4) {
         /* This used to be an `he` round, and CFG.DMG.he.air is 0.00 - the air
@@ -3970,6 +3973,10 @@ class Unit {
 
   /* ---- aircraft: fly, fight, RTB to rearm/refuel ---- */
   updateAir(dt) {
+    /* A transport standing on a strip of open ground (AIRLIFT LANDING) is on
+       its wheels: whatever it is told next starts with the take-off run, not
+       with a jump to cruise speed off the grass. */
+    if (this.grounded && !Unit.airGround(this.order)) this.order = this.airlandLeave(this.order);
     const o = this.order;
     this.moving = true;                     // airframes never idle their engines
 
@@ -4010,7 +4017,9 @@ class Unit {
        rearm: the way home from the launch point need not be away from the
        site. Bingo fuel is not held for it. */
     const breaking = o.type === "sniff" && o.ph === "out";
-    const needRTB = (dryAmmo && !onRun && !breaking) || (dry && !finish);
+    /* ...and a transport on the ground at the far end of a delivery takes
+       off before it does anything about fuel: the run home starts with it */
+    const needRTB = ((dryAmmo && !onRun && !breaking) || (dry && !finish)) && !this.grounded;
     /* "tank" must be in this list. Without it the check fired every tick while
        an aircraft was actually taking fuel - fuel is below the bingo figure by
        definition at that moment - and reissued the order from scratch, which
@@ -4061,6 +4070,9 @@ class Unit {
              to fly it with: one broken off for fuel, or one that came up out
              of the queue on a dry aircraft (areaDone) */
           : o.type === "areastrike" && (!dryAmmo || !(o.k > 0)) ? this.areaResume(o)
+          /* a delivery broken off for fuel is flown again once refuelled,
+             the cargo still aboard (AIRLIFT LANDING) */
+          : o.type === "airland" ? this.airlandResume(o)
           : null);
       const tanker = this.game.nearestTanker ? this.game.nearestTanker(this) : null;
       const pad2 = this.game.findPad ? this.game.findPad(this) : null;
@@ -4416,6 +4428,8 @@ class Unit {
       }
     } else if (o.type === "areastrike") {
       this.areaStrike(o, dt);
+    } else if (o.type === "airland") {
+      this.airland(o, dt);
     } else if (o.type === "sniff") {
       this.sniffFly(o, dt);
     } else if (o.type === "rtb" || o.type === "land") {
@@ -5869,7 +5883,11 @@ class Unit {
   updateEnter(dt) {
     const o = this.order, t = o.target;
     if (!t || t.dead) { this.order = { type: "idle" }; return; }
-    const near = U.dist(this.x, this.y, t.x, t.y) < (t.r || 20) + this.r + 10;
+    const near = U.dist(this.x, this.y, t.x, t.y) < (t.r || 20) + this.r + 10 ||
+                 (t.kind === "unit" && this.besideRamp(t));
+    /* an aeroplane that has taken off is not waited for under its flight path */
+    if (!near && this.cat === "vehicle" && t.kind === "unit" && t.layer === "air" && t.def.payload &&
+        !t.def.hover && !t.grounded && !t.loadingNow()) { this.boardAirlifter(t, dt); return; }
     if (!near) {
       if (this.layer === "air") this.flyTo(t.x, t.y, dt);
       else this.stepAlong(t.x, t.y, dt);
@@ -5881,6 +5899,9 @@ class Unit {
       return;
     }
     if (t.kind === "unit" && t.def.cargo && t.owner === this.owner) {
+      /* an airlifter takes its load by weight (AIRLIFT); everything else
+         that carries troops still counts seats */
+      if (t.def.payload && t.layer === "air") { this.boardAirlifter(t, dt); return; }
       if (t.cargo.length < t.def.cargo) { t.cargo.push(this); this.carried = true; }
       this.order = { type: "idle" };
     } else if (t.kind === "building" && this.def.engineer) {
@@ -5969,12 +5990,14 @@ class Unit {
      hold was handed the same tile and they all landed on top of each other.
 
      Returns how many actually got off, so the caller can report it.        */
-  unload(aimX, aimY) {
+  unload(aimX, aimY, keepClear) {
     if (!this.cargo.length) return 0;
     const T = CFG.TILE;
     const ax = aimX === undefined ? this.x : aimX;
     const ay = aimY === undefined ? this.y : aimY;
-    const taken = new Set();
+    /* keepClear: tiles nobody is put down on - the strip a transport has
+       landed on and has to take off from again (AIRLIFT LANDING) */
+    const taken = new Set(keepClear || []);
     let out = 0;
     for (let i = this.cargo.length - 1; i >= 0; i--) {
       const u = this.cargo[i];
@@ -6012,6 +6035,472 @@ class Unit {
       if (best && stop === MAXR) stop = Math.min(MAXR, r + 1);
     }
     return best;
+  }
+
+  /* ================================ AIRLIFT ================================
+     (owner) "the C-130 and other transportation airplane/helicopter should be
+     able to carry some car, mobile, light tank, right?" - anything that REALLY
+     fits. Until this the only thing that boarded an aircraft was infantry, one
+     seat a man (updateEnter), and a C-17 that can carry an Abrams carried
+     twenty riflemen and nothing else.
+
+     WEIGHT. Every vehicle row carries its real mass in tonnes and every
+     transport and airlift row now carries its real `payload` (generations.js
+     AIRLIFT, with the source of each figure). A vehicle uses its own mass of
+     the payload. The infantry seats stay what they were and share the
+     payload between them - a seat weighs payload / cargo - so a hold with no
+     vehicle in it takes exactly the riflemen it always did, a mixed load is
+     held to the payload and the seats at once, and nothing rides in less
+     room than a seat. A C-130J-30's 19.96 t is three Humvees (a fourth is
+     20 t), or two Humvees and three riflemen, or a HIMARS and a rifleman; a
+     C-17's 77.52 t is one Abrams and four riflemen.
+
+     WHAT DOES NOT GO. Any ground vehicle within the payload boards, the
+     construction rig included (55 t: a C-17 lifts it, nothing else does),
+     except the ore hauler - a forty-tonne mining truck is not air-portable
+     and its refinery loop owns it - and except a vehicle with troops aboard
+     of its own, which unloads them first. A launcher or a gun set up where it
+     stands packs up before it drives up the ramp - its own deploySec, three
+     seconds for a HIMARS and sixteen for an S-200, the longest - rather than
+     being refused. Something already carried or garrisoned cannot board.
+
+     WHERE IT LOADS. A helicopter takes a vehicle wherever it sits or hovers,
+     internal or on the hook, as it takes a squad. An aeroplane takes one only
+     on the ground: shut down on its ramp, or stopped on a strip of open
+     ground after a landing (below). Infantry board as they always have. */
+  static fmtT(t) {
+    const r = Math.round(t * 10) / 10;
+    return r === Math.round(r) ? String(Math.round(r)) : r.toFixed(1);
+  }
+  static liftName(u) { return String((u.def && (u.def.name || u.def.id)) || "").toUpperCase(); }
+  /* the share of the payload one infantry seat stands for */
+  seatWeight() {
+    const d = this.def;
+    return d.payload && d.cargo ? d.payload / d.cargo : 0;
+  }
+  /* what a passenger weighs against this airframe: a vehicle its real mass,
+     never less than a seat; a soldier, one seat */
+  liftWeight(u) {
+    const sw = this.seatWeight();
+    return u.cat === "vehicle" ? Math.max(u.def.mass || 0, sw) : sw;
+  }
+  /* what is aboard: vehicles, infantry, and tonnes of the payload used */
+  cargoLoad() {
+    let veh = 0, inf = 0, t = 0;
+    for (const c of this.cargo) {
+      if (!c || c.dead) continue;
+      if (c.cat === "vehicle") veh++; else inf++;
+      t += this.liftWeight(c);
+    }
+    return { veh, inf, t, cap: this.def.payload || 0, seats: this.def.cargo || 0 };
+  }
+  /* Can a vehicle drive up the ramp now? A helicopter: wherever it is. An
+     aeroplane: shut down on a ramp, or stopped on a strip with its ramp down
+     - not while it is still rolling out or already rolling for take-off. */
+  loadingNow() {
+    if (this.layer !== "air") return true;
+    if (this.def.hover) return true;
+    if (this.parked || (this.order && this.order.type === "parked")) return true;
+    const o = this.order;
+    return !!(o && o.type === "airland" && (o.ph === "unload" || o.ph === "wait"));
+  }
+  /* "" if v may board this airframe now (with `reserved` tonnes already
+     promised to others on their way), else the reason, as the alert says it.
+     Not an airlifter: "" - the seat count in updateEnter decides, as before. */
+  airliftRefusal(v, reserved) {
+    const d = this.def;
+    if (!d.payload || this.layer !== "air" || !v || v.dead) return "";
+    const name = Unit.liftName(this), vn = Unit.liftName(v);
+    if (v.carried || v.garrisonIn) return vn + " IS ALREADY ABOARD";
+    if (v.cat === "vehicle") {
+      if (v.layer !== "ground") return vn + " CANNOT BE AIRLIFTED";
+      if (v.def.harvester) return vn + " IS NOT AIR-PORTABLE — A FORTY-TONNE MINING TRUCK";
+      if (v.cargo && v.cargo.length) return vn + " HAS TROOPS ABOARD — UNLOAD THEM FIRST";
+      if (!(v.def.mass > 0)) return vn + " CANNOT BE AIRLIFTED";
+      if (v.def.mass > d.payload + 1e-6)
+        return vn + " (" + Unit.fmtT(v.def.mass) + " T) — TOO HEAVY FOR THE " + name +
+               " (" + Unit.fmtT(d.payload) + " T)";
+      if (!this.loadingNow())
+        return this.grounded ? name + " IS STILL ROLLING \u2014 VEHICLES LOAD ONCE IT HAS STOPPED"
+                             : name + " IS IN THE AIR \u2014 VEHICLES LOAD ON THE GROUND";
+    } else if (v.cat !== "infantry") return vn + " CANNOT BE AIRLIFTED";
+    const w = this.liftWeight(v), left = d.payload - this.cargoLoad().t - (reserved || 0);
+    if (w > left + 1e-6)
+      return name + " HAS " + Unit.fmtT(Math.max(0, left)) + " T LEFT — " + vn +
+             " (" + Unit.fmtT(w) + " T) DOES NOT FIT";
+    return "";
+  }
+  canAirlift(v, reserved) { return !!this.def.payload && !this.airliftRefusal(v, reserved); }
+
+  /* An aircraft shut down on an airbase stands inside the footprint, which is
+     a structure to the pathfinder, so nothing on wheels can drive up to it:
+     for boarding, the edge of its base is alongside. */
+  besideRamp(t) {
+    const h = t.layer === "air" && t.padOn && !t.padOn.dead && t.padOn.kind === "building" &&
+              (t.parked || (t.order && t.order.type === "parked")) ? t.padOn : null;
+    if (!h || this.layer === "air") return false;
+    const T = CFG.TILE, x0 = h.tx * T, y0 = h.ty * T;
+    const x1 = x0 + h.def.w * T, y1 = y0 + h.def.h * T;
+    if (t.x < x0 || t.x > x1 || t.y < y0 || t.y > y1) return false;     // parked on it, not near it
+    const dx = Math.max(x0 - this.x, 0, this.x - x1), dy = Math.max(y0 - this.y, 0, this.y - y1);
+    return Math.hypot(dx, dy) < T * 1.5;
+  }
+  /* updateEnter has brought this unit alongside an airlifter */
+  boardAirlifter(t, dt) {
+    const why = t.airliftRefusal(this);
+    if (why) {
+      /* Infantry turned away from a full hold go idle without a word, as they
+         always have; a vehicle says why, since its driver came a long way */
+      if (this.cat === "vehicle" && this.owner === this.game.human) this.game.alert(why, "bad");
+      this.order = { type: "idle" };
+      this.packT = 0;                    // a pack-up broken off starts again next time
+      return;
+    }
+    if (this.deployed) {
+      this.packT = (this.packT || 0) + dt;
+      this.moving = false;
+      if (this.packT < (this.def.deploySec || 1.6)) return;
+      this.deployed = false;
+    }
+    this.packT = 0;
+    t.cargo.push(this);
+    this.carried = true; this.moving = false; this.path = null;
+    this.order = { type: "idle" };
+  }
+
+  /* ---------------------------- AIRLIFT LANDING ----------------------------
+     A helicopter puts a vehicle down wherever it can set down, as it puts a
+     squad down - unload() on the spot, or the `airland` order below flown to a
+     point. An aeroplane cannot: (owner) planes "deliver vehicles by landing
+     on open ground near the drop point", rough-field, "unloading, and taking
+     off again".
+
+     G.findStrip (game.js) picks the strip: the nearest straight run of flat,
+     clear, open ground near the point - sand, grass, dirt or road, one level
+     of elevation all along it, nothing built on it and nobody standing on it,
+     and no wood, rock, built-up block or structure under either wingtip - as
+     long as this type needs (def.strip, generations.js AIRLIFT). No strip,
+     no landing, and the order is refused with the reason. The crew lands
+     where the player cannot see, as a real crew can: what is standing on the
+     strip is what they see on finals, and they go round for it.
+
+     The order flies in phases, kept on the order as plain numbers so a save
+     carries a delivery from wherever it was:
+       d1, d2, d3  the approach: a turn, a straight and a turn onto the
+                   extended centreline, at this airframe's own turning circle
+                   (a Dubins path - the shortest such path, and one it can
+                   actually fly, since flyTo turns at def.turn at full speed)
+       final       down the centreline to the threshold; not lined up by then,
+                   it goes round and plans the approach again
+       roll        rolls out to the far end, slowing evenly to a stop
+       unload      ramp down, everything aboard driven off beside the strip
+       wait        on the ground while anyone ordered aboard is on the way
+       turn        turns on the strip
+       takeoff     rolls back down it, lifts off, and goes home - or flies
+                   what was queued behind the delivery
+     A helicopter flies `fly` and `down` instead.
+
+     The order is G.airLand(transport, x, y): the U key with the transport
+     selected, or the AI. Shot down at any point, the cargo dies with it
+     (game.js, the existing rule). */
+  static airGround(o) {
+    return !!(o && o.type === "airland" &&
+      (o.ph === "roll" || o.ph === "unload" || o.ph === "wait" || o.ph === "turn" ||
+       o.ph === "takeoff" || o.ph === "down"));
+  }
+  /* every tile of the strip and the ground under its wingtips, as indices -
+     on a diagonal run with the two tiles at each corner it crosses, which
+     stand nearer its centreline than the wingtip tiles (game.js stripFits) */
+  static stripTiles(map, o) {
+    const out = [];
+    if (!o || !(o.n > 0)) return out;
+    const px = -o.sy, py = o.sx;                       // perpendicular, in tile steps
+    const add = (x, y) => { if (x >= 0 && y >= 0 && x < map.W && y < map.H) out.push(y * map.W + x); };
+    for (let i = 0; i < o.n; i++) {
+      const cx = o.tax + i * o.sx, cy = o.tay + i * o.sy;
+      for (let k = -1; k <= 1; k++) add(cx + k * px, cy + k * py);
+      if (o.sx && o.sy && i < o.n - 1) { add(cx + o.sx, cy); add(cx, cy + o.sy); }
+    }
+    return out;
+  }
+  airland(o, dt) {
+    if (this.def.hover) { this.airlandHelo(o, dt); return; }
+    const T = CFG.TILE, G = this.game;
+    const sp = this.def.speed * this.speedMul() * T;           // px a second
+    const hdg = Math.atan2(o.uy, o.ux);
+    this.grounded = Unit.airGround(o);
+    switch (o.ph) {
+      case "d1": case "d2": case "d3": case undefined: case "app": {
+        if (o.ph === undefined || o.ph === "app" || !isFinite(o.phi)) { this.airlandPlan(o); if (o.ph === "final") break; }
+        if (o.ph === "d1" || o.ph === "d3") {
+          /* a turn at full rate, the way the plan has it, until the heading
+             it ends on - turnToward() would take the short way round, and the
+             short way is not always the one that comes out on the line */
+          const want = o.ph === "d1" ? o.phi : hdg, s = o.ph === "d1" ? o.s1 : o.s2;
+          const step = this.def.turn * dt;
+          let rem = s * U.angDiff(this.ang, want);
+          if (rem < 0) rem += U.PI2;
+          if (rem <= step || rem >= U.PI2 - 1e-6) {
+            this.ang = want;
+            o.ph = o.ph === "d1" ? "d2" : "final";
+          } else this.ang += s * step;
+          this.airStep(sp, dt);
+        } else {
+          /* the straight: flown at its far end, which corrects what the turn
+             left over */
+          this.flyTo(o.t2x, o.t2y, dt);
+          const along = (this.x - o.t2x) * Math.cos(o.phi) + (this.y - o.t2y) * Math.sin(o.phi);
+          if (along >= -sp * dt) o.ph = "d3";
+        }
+        /* a plan flown for twice its length has gone wrong somewhere: plan again */
+        o.pt = (o.pt || 0) + dt;
+        if (o.pt > Math.max(20, 2 * (o.plen || 0) / Math.max(1, sp))) o.ph = "app";
+        break;
+      }
+      case "final": {
+        const along = (this.x - o.ax) * o.ux + (this.y - o.ay) * o.uy;
+        const lat = -(this.x - o.ax) * o.uy + (this.y - o.ay) * o.ux;
+        const turnR = sp / Math.max(0.05, this.def.turn);
+        /* the strip is looked at once, on finals, as the crew would: anything
+           that has driven onto it since the plan sends this one round for the
+           next strip, or home with the cargo when there is none */
+        if (!o.seen && along > -2.5 * turnR - 3 * T) {
+          o.seen = true;
+          if (!G.stripClear(this, o)) {
+            if (!this.airlandReplan(o, "STRIP BLOCKED")) return;
+            break;
+          }
+        }
+        if (along >= -0.3 * T) {
+          if (Math.abs(lat) < 0.8 * T && Math.abs(U.angDiff(this.ang, hdg)) < 0.5) {
+            /* on its wheels: snapped onto the centreline it was all but on */
+            this.x = o.ax + o.ux * Math.max(0, along);
+            this.y = o.ay + o.uy * Math.max(0, along);
+            this.ang = hdg; o.gs = sp; o.ph = "roll"; o.t = 0;
+            this.grounded = true;
+            this.field = Unit.fieldOf(o);
+            break;
+          }
+          /* not lined up: go round, and plan the approach again from here */
+          o.goes = (o.goes || 0) + 1;
+          if (o.goes > 4) { this.airlandAbort(o, "COULD NOT LINE UP ON THE STRIP"); return; }
+          o.ph = "app";
+          this.airStep(sp, dt);
+          break;
+        }
+        const look = Math.max(1.5 * T, 0.9 * turnR);
+        this.flyTo(o.ax + o.ux * (along + look), o.ay + o.uy * (along + look), dt);
+        break;
+      }
+      case "roll": {
+        /* slowing evenly from flying speed to a stop at the far end */
+        const along = (this.x - o.ax) * o.ux + (this.y - o.ay) * o.uy;
+        const left = Math.max(1, o.len - along);
+        o.gs = Math.max(0, o.gs - (o.gs * o.gs) / (2 * left) * dt);
+        const d = Math.min(o.gs * dt, Math.max(0, o.len - along));
+        this.x += o.ux * d; this.y += o.uy * d;
+        if (o.gs < 0.06 * sp || along + d >= o.len - 0.5) { o.ph = "unload"; o.t = 0; this.moving = false; }
+        break;
+      }
+      case "unload": {
+        this.moving = false;
+        if (!o.off) { o.off = 1; this.airlandUnload(o); }
+        o.t = (o.t || 0) + dt;
+        if (o.t >= 3) { o.ph = "wait"; o.t = 0; }
+        break;
+      }
+      case "wait": {
+        this.moving = false;
+        o.t = (o.t || 0) + dt;
+        /* stays down while anyone ordered aboard is still coming, and a while
+           anyway when it landed empty to be loaded - never for ever */
+        const coming = this.boardersComing();
+        const hold = o.load ? 20 : 2;
+        if (o.t >= 90 || (o.t >= hold && !coming)) { o.ph = "turn"; o.t = 0; }
+        break;
+      }
+      case "turn": {
+        /* round to face the longer run left, at taxiing speed */
+        this.moving = false;
+        const along = (this.x - o.ax) * o.ux + (this.y - o.ay) * o.uy;
+        const back = along > o.len / 2;
+        const want = back ? hdg + Math.PI : hdg;
+        this.ang = U.turnToward(this.ang, want, 1.2 * dt);
+        if (Math.abs(U.angDiff(this.ang, want)) < 0.01) {
+          this.ang = want; o.ph = "takeoff"; o.gs = 0;
+          o.run = Math.max(T, back ? along : o.len - along);
+        }
+        break;
+      }
+      case "takeoff": {
+        o.gs = Math.min(sp, o.gs + (sp * sp) / (2 * (o.run || o.len || T)) * dt);
+        this.x += Math.cos(this.ang) * o.gs * dt;
+        this.y += Math.sin(this.ang) * o.gs * dt;
+        if (o.gs >= sp - 1e-6) this.airlandDone(o);
+        break;
+      }
+      default: o.ph = "app";
+    }
+    this.x = U.clamp(this.x, 8, G.map.W * T - 8);
+    this.y = U.clamp(this.y, 8, G.map.H * T - 8);
+  }
+  /* straight ahead at speed, as flyTo moves */
+  airStep(sp, dt) {
+    this.x += Math.cos(this.ang) * sp * dt;
+    this.y += Math.sin(this.ang) * sp * dt;
+    this.x = U.clamp(this.x, 8, this.game.map.W * CFG.TILE - 8);
+    this.y = U.clamp(this.y, 8, this.game.map.H * CFG.TILE - 8);
+  }
+  /* ---- the approach: a Dubins path onto the extended centreline ----
+     A turn, a straight, a turn, at this airframe's own turning radius, ending
+     at the gate on the centreline - far enough out to settle on it - pointing
+     down the strip. Of the four turn-straight-turn shapes the shortest is
+     flown; at least two exist from anywhere, so there is always a plan. */
+  airlandPlan(o) {
+    const T = CFG.TILE;
+    const sp = this.def.speed * this.speedMul() * T;
+    const r = sp / Math.max(0.05, this.def.turn);
+    const hdg = Math.atan2(o.uy, o.ux);
+    const fin = Math.max(2 * T, 1.5 * r);
+    const gx = o.ax - o.ux * fin, gy = o.ay - o.uy * fin;
+    o.pt = 0; o.seen = false;
+    /* already on the line, behind the gate and pointing down it */
+    const along = (this.x - o.ax) * o.ux + (this.y - o.ay) * o.uy;
+    const lat = -(this.x - o.ax) * o.uy + (this.y - o.ay) * o.ux;
+    if (along <= -fin && Math.abs(lat) < 0.5 * T && Math.abs(U.angDiff(this.ang, hdg)) < 0.3) {
+      o.ph = "final"; return;
+    }
+    const P = Unit.dubins(this.x, this.y, this.ang, gx, gy, hdg, r);
+    o.s1 = P.s1; o.phi = P.phi; o.s2 = P.s2; o.t2x = P.t2x; o.t2y = P.t2y; o.plen = P.len;
+    o.ph = "d1";
+  }
+  static dubins(x0, y0, a0, x1, y1, a1, r) {
+    const TAU = Math.PI * 2, md = (a) => ((a % TAU) + TAU) % TAU;
+    let best = null;
+    for (const s1 of [1, -1]) for (const s2 of [1, -1]) {
+      /* the centre of a turn of sign s: positive turns the heading up */
+      const c1x = x0 - s1 * r * Math.sin(a0), c1y = y0 + s1 * r * Math.cos(a0);
+      const c2x = x1 - s2 * r * Math.sin(a1), c2y = y1 + s2 * r * Math.cos(a1);
+      const dx = c2x - c1x, dy = c2y - c1y, D = Math.hypot(dx, dy), b = Math.atan2(dy, dx);
+      let phi;
+      if (s1 === s2) phi = b;                                   // outer tangent
+      else {                                                    // inner tangent
+        if (D < 2 * r) continue;
+        phi = b + s1 * Math.asin(2 * r / D);
+      }
+      const t1x = c1x + s1 * r * Math.sin(phi), t1y = c1y - s1 * r * Math.cos(phi);
+      const t2x = c2x + s2 * r * Math.sin(phi), t2y = c2y - s2 * r * Math.cos(phi);
+      const st = (t2x - t1x) * Math.cos(phi) + (t2y - t1y) * Math.sin(phi);
+      if (st < -1e-6) continue;
+      const len = r * md(s1 * (phi - a0)) + Math.max(0, st) + r * md(s2 * (a1 - phi));
+      if (!best || len < best.len) best = { s1, s2, phi, t2x, t2y, len };
+    }
+    return best || { s1: 1, s2: 1, phi: a1, t2x: x1, t2y: y1, len: Math.hypot(x1 - x0, y1 - y0) };
+  }
+  /* the strip, as a field it is standing on: kept on the unit so an order
+     given on the ground can start with the take-off run */
+  static fieldOf(o) {
+    return { ax: o.ax, ay: o.ay, bx: o.bx, by: o.by, ux: o.ux, uy: o.uy, len: o.len,
+             tax: o.tax, tay: o.tay, sx: o.sx, sy: o.sy, n: o.n, x: o.x, y: o.y };
+  }
+  /* Everything aboard off, beside the far end of the strip, and none of it
+     left standing on the strip it has to take off from again. */
+  airlandUnload(o) {
+    const n0 = this.cargo.length;
+    if (!n0) return 0;
+    const veh = this.cargo.filter(c => c.cat === "vehicle").length;
+    const T = CFG.TILE, px = -o.uy, py = o.ux;
+    const keep = Unit.stripTiles(this.game.map, o);
+    let n = this.unload(this.x + px * 2 * T, this.y + py * 2 * T, keep);
+    if (n < n0) n += this.unload(this.x - px * 2 * T, this.y - py * 2 * T, keep);
+    if (this.owner === this.game.human && n) {
+      const v = Math.min(veh, n), i = n - v;
+      this.game.alert(Unit.liftName(this) + " DOWN — " +
+        (v ? v + (v === 1 ? " VEHICLE" : " VEHICLES") : "") + (v && i ? " AND " : "") +
+        (i ? i + (i === 1 ? " SOLDIER" : " SOLDIERS") : "") + " UNLOADED", "good");
+    }
+    return n;
+  }
+  /* anyone of ours with an order to board this airframe, still on the way */
+  boardersComing() {
+    for (const u of this.owner.units)
+      if (!u.dead && !u.carried && u.order && u.order.type === "enter" && u.order.target === this) return true;
+    return false;
+  }
+  /* off the ground, and on to what comes next: the order given while it was
+     down, then what was queued behind the delivery, else home */
+  airlandDone(o) {
+    this.grounded = false; this.field = null;
+    if (o.then) { this.order = o.then; return; }
+    if (this.nextOrder()) return;
+    this.order = { type: "rtb" };
+  }
+  /* given an order while on the ground: the take-off run first, then it */
+  airlandLeave(next) {
+    const f = this.field;
+    if (this.def.hover || !f) { this.grounded = false; this.field = null; return next; }
+    return Object.assign({ type: "airland" }, f, { ph: "turn", t: 0, gs: 0, then: next });
+  }
+  /* a delivery carried home for fuel comes back to the same point and
+     plans its approach from wherever it then is */
+  airlandResume(o) {
+    if (!this.cargo.length && !o.load) return null;
+    const r = Object.assign({}, o);
+    r.ph = this.def.hover ? "fly" : "app"; r.goes = 0; r.t = 0; r.seen = false;
+    delete r.then;
+    return r;
+  }
+  /* the strip went bad on finals: the next one near the same point, or home */
+  airlandReplan(o, why) {
+    const s = this.game.findStrip ? this.game.findStrip(this, o.x, o.y) : null;
+    if (!s) { this.airlandAbort(o, why); return false; }
+    Object.assign(o, s);
+    o.ph = "app"; o.goes = (o.goes || 0) + 1;
+    if (o.goes > 4) { this.airlandAbort(o, why); return false; }
+    return true;
+  }
+  airlandAbort(o, why) {
+    this.grounded = false; this.field = null;
+    if (this.owner === this.game.human)
+      this.game.alert(Unit.liftName(this) + " — " + why +
+        (this.cargo.length ? ", RETURNING WITH THE CARGO" : ", RETURNING"), "bad");
+    this.order = { type: "rtb" };
+  }
+  /* a helicopter sets down at the point, puts its load off and lifts again */
+  airlandHelo(o, dt) {
+    if (o.ph !== "down") {
+      this.grounded = false;
+      if (this.flyTo(o.x, o.y, dt)) { o.ph = "down"; o.t = 0; }
+      return;
+    }
+    /* on its wheels only where there is ground to stand on: over water, or
+       on top of a structure, it hovers at the point while the load goes off
+       to the nearest open ground. G.airLand takes any point for a
+       helicopter, and one sent to a point off the shore of fulda "set down"
+       in the sea - drawn standing in the water and presented to every gun
+       as a vehicle on the ground (targetLayer). */
+    this.grounded = GameMap.passable(this.game.map, this.tx, this.ty, "ground") &&
+                    !this.game.tileBlocked(this.tx, this.ty, null);
+    this.moving = false;
+    if (!o.off) {
+      o.off = 1;
+      const veh = this.cargo.filter(c => c.cat === "vehicle").length;
+      const n = this.unload(o.x, o.y);
+      if (n && this.owner === this.game.human) {
+        const v = Math.min(veh, n), i = n - v;
+        this.game.alert(Unit.liftName(this) + " SET DOWN — " +
+          (v ? v + (v === 1 ? " VEHICLE" : " VEHICLES") : "") + (v && i ? " AND " : "") +
+          (i ? i + (i === 1 ? " SOLDIER" : " SOLDIERS") : "") + " UNLOADED", "good");
+      } else if (!n && this.cargo.length && this.owner === this.game.human)
+        this.game.alert(Unit.liftName(this) + " — NO CLEAR GROUND TO SET DOWN ON", "bad");
+    }
+    o.t = (o.t || 0) + dt;
+    const hold = o.load ? 20 : 2;
+    if (o.t >= 90 || (o.t >= hold && !this.boardersComing())) {
+      this.grounded = false;
+      if (o.then) this.order = o.then;
+      else if (!this.nextOrder()) this.order = { type: "hover" };
+    }
   }
 }
 

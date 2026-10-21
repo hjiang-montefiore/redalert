@@ -119,6 +119,13 @@ var SaveGame = (function () {
            commander's force book counts its barrels (ai.js forceBook), and a
            load that dropped the mark dropped 102 of a Kuznetsov's 281 */
         dB: u.deckBought ? 1 : undefined,
+        /* Who is aboard, as indices into this same list. A transport's hold
+           is a list of entity references and was simply dropped, so a load
+           put every passenger back on the map where it had boarded and the
+           transport came back empty - with vehicles now riding aircraft
+           (entities.js AIRLIFT) that would put a Humvee down at the airbase
+           it flew out of in the middle of a delivery. */
+        cg: u.cargo && u.cargo.length ? u.cargo.filter(c => uIdx.has(c)).map(c => uIdx.get(c)) : undefined,
       })),
       buildings: bl.map(b => ({
         d: b.def.id, o: b.owner.idx, tx: b.tx, ty: b.ty,
@@ -159,6 +166,21 @@ var SaveGame = (function () {
     if (o.type === "attack" && o.sniff) return liteSniff(o.sniff, true);
     if ((o.type === "rtb" || o.type === "land" || o.type === "tank") && o.then && o.then.type === "sniff")
       return { type: "rtb", then: liteSniff(o.then, true) };
+    /* A delivery by air (entities.js AIRLIFT LANDING) is all plain numbers -
+       the drop point, the strip, the approach planned onto it and how far
+       through it the aircraft is - so it travels whole, and a transport
+       saved on its approach, on the strip or rolling for take-off carries
+       on from there. What it was told to do after goes with it. */
+    if (o.type === "airland") {
+      const l = { type: "airland" };
+      for (const k of AIRLAND_KEYS) if (typeof o[k] === "number" && isFinite(o[k])) l[k] = o[k];
+      if (typeof o.ph === "string") l.ph = o.ph;
+      if (o.then) l.then = liteOrder(o.then);
+      return l;
+    }
+    /* ...and a delivery carried home for fuel comes back out after it */
+    if ((o.type === "rtb" || o.type === "land" || o.type === "tank") && o.then && o.then.type === "airland")
+      return { type: "rtb", then: liteOrder(o.then) };
     if (o.type === "attack" || o.type === "enter") {
       /* re-acquire on load rather than trying to rebuild object identity.
          An aircraft pulled off a patrol to intercept goes back to the patrol
@@ -232,6 +254,13 @@ var SaveGame = (function () {
       /* a jammer sent in over a battery (entities.js) is still sent in after a
          reload, rather than coming back as a patrol that holds short */
       if (o.commit) l.commit = true;
+      /* A landing craft running for a beach to put its troops ashore (ui.js,
+         ai.js runAmphib: a move marked unloadAt). Dropped, it was harmless
+         while a load emptied every hold; now the hold comes back aboard (cg
+         above) and the craft came back on a plain move - measured on hormuz,
+         an LCAC saved two squads aboard on its run in reached the beach and
+         stopped there, idle, with both still in the hold. */
+      if (o.unloadAt) l.unloadAt = true;
       if (o.wi !== undefined) l.wi = o.wi;
       if (o.until !== undefined) l.until = Math.round(o.until);
       /* a gun's share of an area and how far its walk has got */
@@ -241,6 +270,8 @@ var SaveGame = (function () {
     }
     return { type: o.type };
   }
+  const AIRLAND_KEYS = ["x", "y", "ax", "ay", "bx", "by", "ux", "uy", "len", "tax", "tay", "sx", "sy", "n",
+                        "load", "goes", "t", "gs", "run", "off", "s1", "s2", "phi", "t2x", "t2y", "plen", "pt"];
   function liteSniff(o, beat) {
     const r = (v) => Math.round(v);
     const l = { type: "sniff", x: r(o.x), y: r(o.y) };
@@ -447,6 +478,17 @@ var SaveGame = (function () {
       const host = su.pb !== undefined ? bref[su.pb]
                  : su.pu !== undefined ? uref[su.pu] : null;
       if (host && !host.dead) u.padOn = host;
+      /* the hold, put back aboard (cg above); a save from before it has none */
+      if (su.cg) for (const ci of su.cg) {
+        const c = uref[ci];
+        if (!c || c === u || c.carried) continue;
+        c.carried = true; c.order = { type: "idle" };
+        u.cargo.push(c);
+      }
+      /* a transport saved standing on its strip is standing on it again */
+      if (u.layer === "air" && typeof Unit !== "undefined" && Unit.airGround(u.order)) {
+        u.grounded = true; u.field = Unit.fieldOf(u.order);
+      }
     }
     for (const pass of [true, false])
       for (const p2 of G.players)

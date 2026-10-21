@@ -2226,6 +2226,138 @@
   if (retimeMiss.length && typeof console !== "undefined" && console.warn)
     console.warn("[generations] HIMARS / Ohio retime found no round to copy: " + retimeMiss.join(", "));
 
+  /* ---- AIRLIFT: what each transport really lifts, by weight ----
+     (owner) "the C-130 and other transportation airplane/helicopter should
+     be able to carry some car, mobile, light tank, right?" - anything that
+     REALLY fits. Every vehicle row already carries its real `mass` in
+     tonnes, so what was missing was the other half: what each airframe
+     really lifts. `payload` is that figure in tonnes, for the exact type
+     and period where a figure is published; `cargo` (the infantry seats)
+     is not touched, and entities.js shares the payload out over the seats
+     (seat weight = payload / cargo), so a hold with no vehicle in it takes
+     exactly the infantry it always did.
+
+     A helicopter's figure is the heavier of what it lifts inside and on
+     its hook, since a vehicle goes either way (a Chinook slings a Humvee;
+     a Mi-8 takes a jeep up its clamshell ramp). An aeroplane's is its
+     maximum cargo payload. Fetched 2026-10-21 from en.wikipedia (the
+     infobox unless noted) and two de.wikipedia tables. The UH-60A's and
+     the S-70C-2's 8,000 lb were not in anything fetched; where no cargo
+     figure is published at all (Po-2, H-19D, Whirlwind, H-34G) the row
+     takes gross less empty weight, and the Z-8 row its Mi-171's - each
+     line says which.
+
+     `strip` is the run a fixed-wing type needs to land on open ground (see
+     entities.js AIRLIFT LANDING): one tile of strip for every hundred
+     metres of its published landing run, rounded up, never under three.
+     The tile is twenty metres to the eye (render3d.js) but the game folds
+     distance much harder than that - a Patriot's ring is 17.5 tiles - and
+     at twenty metres a tile a Hercules would need half the map. A hundred
+     keeps the ORDER of the types: the Beverley and the An-2 put down in
+     three tiles, the Hercules in five, the A400M in eight and the C-17 in
+     eleven, which is what each was built for.
+
+     FOUR AEROPLANES FILED AS HELICOPTERS. The An-2 rows (trans_k and the
+     e60, e80 and e00 KPA rows), the Po-2, the KPA's Il-76TD and Taiwan's
+     C-46 Commando are role "transport", and rules.js reindexRoles() gives
+     every "transport" the hover flag, so all seven rows hovered, stopped
+     dead in the air, burnt no fuel and set down on a pad like a Black Hawk. They
+     are aeroplanes - rotor_specs.js already says kind:"wing" for each and
+     builds them with the fixed-wing kit - so they take the fixed-wing
+     transport role, "airlift", which carries no hover flag, and fly, land
+     and run out of fuel like the Hercules. The KPA is then left with no
+     helicopter transport in the roster, which is a gap in the roster (it
+     flies the Mi-2, the Mi-8 and the Hughes 500) and not one to fill by
+     invention here; the AI never built an air transport, and its one use
+     of the role - a hovering transport as a spotter (ai.js) - simply finds
+     none on that side. */
+  var LB = 0.00045359237;                      // tonnes in a pound
+  var AIRLIFT = {
+    /* ---- aeroplanes: payload, and strip in tiles ---- */
+    nato_e50_airlift:  { t: 16.6,           strip: 5 },  // C-130A: 16,600 kg (de.wikipedia "Lockheed C-130", Flug Revue 3/2010)
+    nato_e80_airlift:  { t: 42000 * LB,     strip: 5 },  // C-130H: 42,000 lb (en.wikipedia C-130 infobox)
+    airlift_n:         { t: 44000 * LB,     strip: 5 },  // C-130J-30: 44,000 lb max allowable (en.wikipedia C-130J; the short J 42,000); landing roll 1,630 ft = 497 m
+    gbr_e60_airlift:   { t: 42000 * LB,     strip: 5 },  // C-130K C.1: built to the C-130H standard, the H's 42,000 lb
+    gbr_e80_airlift:   { t: 42000 * LB,     strip: 5 },  // C-130K C.3, the stretched C.1: the same 42,000 lb
+    gbr_e90_airlift:   { t: 42000 * LB,     strip: 5 },  // C-130K C.1/C.3
+    gbr_e00_airlift:   { t: 170900 * LB,    strip: 11 }, // C-17A: 170,900 lb (en.wikipedia, USAF); landing distance 3,500 ft = 1,067 m
+    airlift_g:         { t: 37,             strip: 8 },  // A400M: 37,000 kg (en.wikipedia); tactical landing distance 770 m
+    airlift_b:         { t: 37,             strip: 8 },  // A400M Atlas C.1
+    airlift_f:         { t: 37,             strip: 8 },  // A400M
+    fra_e00_airlift:   { t: 37,             strip: 8 },  // A400M
+    deu_e50_airlift:   { t: 8.458,          strip: 5 },  // Noratlas: 8,458 kg (en.wikipedia); landing run 420 m with reverse pitch
+    fra_e50_airlift:   { t: 8.458,          strip: 5 },  // Noratlas
+    deu_e60_airlift:   { t: 16,             strip: 4 },  // Transall C-160: 16,000 kg (en.wikipedia); "airstrips as short as 400 metres"
+    fra_e60_airlift:   { t: 16,             strip: 4 },  // C-160F
+    fra_e80_airlift:   { t: 16,             strip: 4 },  // C-160NG
+    fra_e90_airlift:   { t: 16,             strip: 4 },  // C-160NG
+    gbr_e50_airlift:   { t: 22,             strip: 3 },  // Beverley: "Nutzlast von rund 22 Tonnen", landing 277 m from 15 m (de.wikipedia)
+    trans_k:           { t: 2.14, strip: 3, plane: 1 },  // An-2: 2,140 kg (en.wikipedia); landing run 215 m
+    kpa_e60_transport: { t: 2.14, strip: 3, plane: 1 },  // An-2 / Y-5
+    kpa_e80_transport: { t: 2.14, strip: 3, plane: 1 },  // An-2 / Y-5
+    kpa_e00_transport: { t: 2.14, strip: 3, plane: 1 },  // An-2 / Y-5
+    kpa_e50_transport: { t: 0.26, strip: 3, plane: 1 },  // Po-2: no cargo figure published; gross 1,030 kg less empty 770 kg (en.wikipedia)
+    kpa_e90_transport: { t: 48,   strip: 5, plane: 1 },  // Il-76TD, the civil MD: the MD's 48,000 kg (en.wikipedia); landing run 450 m with reversers
+    roc_e50_transport: { t: 15000 * LB, strip: 6, plane: 1 }, // C-46D: 15,000 lb (en.wikipedia, Bowers 1979); no landing run fetched, a twin-piston transport's ~600 m
+    /* ---- helicopters: the heavier of internal and hook ---- */
+    nato_e50_transport: { t: 2705 * LB },  // H-19D: no cargo figure published; gross 7,500 lb less empty 4,795 lb (en.wikipedia H-19)
+    gbr_e50_transport:  { t: 2705 * LB },  // Whirlwind HAR.3/HC.2, the licence S-55: the H-19's figure
+    deu_e50_transport:  { t: 4221 * LB },  // H-34G: no cargo figure published; gross 11,867 lb less empty 7,646 lb (en.wikipedia H-34)
+    fra_e50_transport:  { t: 5000 * LB },  // H-21: 5,000 lb slung (en.wikipedia, given for the H-21/Vertol 44 family)
+    pact_e50_transport: { t: 1.6 },        // Mi-4: 1,600 kg (en.wikipedia)
+    pla_e50_transport:  { t: 1.6 },        // Mi-4
+    pla_e60_transport:  { t: 1.55 },       // Z-5: 1,550 kg maximum internal (en.wikipedia)
+    nato_e60_transport: { t: 3880 * LB },  // UH-1D: 3,880 lb "including troops or equivalent cargo" (en.wikipedia UH-1, the H)
+    deu_e60_transport:  { t: 3880 * LB },  // UH-1D (Dornier)
+    roc_e60_transport:  { t: 3880 * LB },  // UH-1H
+    roc_e80_transport:  { t: 3880 * LB },  // UH-1H
+    roc_e90_transport:  { t: 3880 * LB },  // UH-1H
+    gbr_e60_transport:  { t: 4000 * LB },  // Wessex HU.5: "16 troops or a 4,000-pound payload" (en.wikipedia)
+    fra_e60_transport:  { t: 2.5 },        // SA 330B Puma: 2,500 kg internal or slung (en.wikipedia)
+    fra_e80_transport:  { t: 2.5 },        // SA 330Ba Puma
+    fra_e90_transport:  { t: 4.5 },        // AS 532UL Cougar: "can lift 4.5 tons by means of a sling" (en.wikipedia)
+    pact_e60_transport: { t: 4 },          // Mi-8T: 4,000 kg internal (en.wikipedia Mi-8)
+    pact_e80_transport: { t: 4 },          // Mi-8MT / Mi-17: 4,000 kg internal or on the hook (en.wikipedia Mi-8)
+    pact_e90_transport: { t: 4 },          // Mi-8MT / Mi-17
+    pla_e90_transport:  { t: 4 },          // Mi-17 / Mi-171: 4,000 kg internal (en.wikipedia Mi-17)
+    pla_e00_transport:  { t: 4 },          // Z-8 / Mi-171 / Z-20: no Z-8 figure in the sources fetched; the Mi-171 the row names
+    trans_p:            { t: 4 },          // Mi-8AMTSh: 4,000 kg
+    pact_e00_transport: { t: 4 },          // Mi-8AMTSh
+    trans_c:            { t: 4 },          // Z-20: 4,000 kg slung (en.wikipedia, CN Defense)
+    nato_e80_transport: { t: 8000 * LB },  // UH-60A: 8,000 lb on the hook - the US Army figure; NOT in the article fetched, which gives 9,000 for the L/M only
+    pla_e80_transport:  { t: 8000 * LB },  // S-70C-2, the export UH-60A: the same, and NOT fetched
+    nato_e90_transport: { t: 9000 * LB },  // UH-60L: 9,000 lb slung (en.wikipedia)
+    nato_e00_transport: { t: 9000 * LB },  // UH-60M
+    trans_n:            { t: 9000 * LB },  // UH-60M
+    trans_r:            { t: 9000 * LB },  // UH-60M
+    roc_e00_transport:  { t: 9000 * LB },  // UH-60M
+    trans_g:            { t: 4.2 },        // NH90 TTH: 4,200 kg external slung load (en.wikipedia)
+    trans_f:            { t: 4.2 },        // NH90 Caiman
+    fra_e00_transport:  { t: 4.2 },        // NH90 Caiman
+    gbr_e80_transport:  { t: 10 },         // Chinook HC.1: "up to 10 tonnes of freight" (en.wikipedia, Chinook UK variants)
+    gbr_e90_transport:  { t: 10 },         // Chinook HC.2
+    gbr_e00_transport:  { t: 10 },         // Chinook HC.4
+    trans_b:            { t: 10 },         // Chinook HC.6A
+  };
+  var liftMiss = [], nLift = 0, rerole = false;
+  for (var _lk in AIRLIFT) {
+    var _lu = UNITS[_lk], _la = AIRLIFT[_lk];
+    if (!_lu) { liftMiss.push(_lk); continue; }
+    _lu.payload = Math.round(_la.t * 100) / 100;
+    if (_la.strip) _lu.strip = _la.strip;
+    if (_la.plane) { _lu.role = "airlift"; delete _lu.hover; rerole = true; }
+    nLift++;
+  }
+  /* a transport added later without a figure carries infantry as before and
+     no vehicle at all; say so rather than let it pass unnoticed */
+  for (var _lt in UNITS) {
+    var _ld = UNITS[_lt];
+    if (_ld.layer === "air" && _ld.cargo && !_ld.payload) liftMiss.push(_lt + " (no payload)");
+  }
+  if (rerole && typeof reindexRoles === "function") reindexRoles();
+  if (liftMiss.length && typeof console !== "undefined" && console.warn)
+    console.warn("[generations] airlift table out of step with the roster: " + liftMiss.join(", "));
+
   if (typeof console !== "undefined" && console.log)
     console.log("[generations] early warning derived on " + nAew + " airframes, " +
                 "armour on " + nArm + " vehicles, penetration on " +

@@ -441,7 +441,9 @@ var UI = (function () {
       if (rest.length) rows.push('<span class="alt">ALSO ' + rest.join(" · ").toUpperCase() + "</span>");
     }
     if (d.speed) rows.push("SPD " + d.speed);
-    if (d.cargo) rows.push("CARRIES " + d.cargo);
+    if (d.cargo) rows.push("CARRIES " + d.cargo + (d.payload && d.layer === "air"
+      ? " \u00b7 LIFTS " + Unit.fmtT(d.payload) + " T" + (d.strip && !d.hover ? " \u00b7 LANDS IN " + d.strip + " TILES" : "")
+      : ""));
     if (d.carrier) rows.push("DECK " + d.carrier + " AIRCRAFT");
     if (d.ammo) rows.push("ORDNANCE " + d.ammo);
 
@@ -1938,7 +1940,12 @@ var UI = (function () {
       }
       if (e.def.supply) h += '<div class="stat">SUPPLY <i>' + Math.round(e.supplyLeft) + "</i></div>";
       if (e.def.harvester) h += '<div class="stat">ORE <i>$' + Math.round(e.load) + "</i></div>";
-      if (e.cargo && e.def.cargo) h += '<div class="stat">CARGO <i>' + e.cargo.length + "/" + e.def.cargo + "</i></div>";
+      /* an airlifter's hold by weight as well as seats (entities.js AIRLIFT) */
+      if (e.cargo && e.def.cargo && e.def.payload && e.layer === "air") {
+        const L = e.cargoLoad();
+        h += '<div class="stat">CARGO <i>' + (L.veh ? L.veh + " VEH + " + L.inf + " INF" : L.inf + "/" + e.def.cargo) +
+             " \u00b7 " + Unit.fmtT(L.t) + " OF " + Unit.fmtT(L.cap) + " T</i></div>";
+      } else if (e.cargo && e.def.cargo) h += '<div class="stat">CARGO <i>' + e.cargo.length + "/" + e.def.cargo + "</i></div>";
       if (e.kind === "building" && e.def.produces) {
         const isPri = G.human.primary && G.human.primary[e.def.id] === e;
         const many = G.human.buildings.filter(b => !b.dead && b.def.id === e.def.id).length > 1;
@@ -2306,7 +2313,7 @@ var UI = (function () {
         if (e.shiftKey && G.eventX) Render.setCam(G.eventX, G.eventY);   // last event
         else jumpToAttention();                                          // what needs me
       }
-      if (k === "u") unloadSelection();
+      if (k === "u") unloadSelection(true);
       /* aircraft orders from the keyboard as well as the panel */
       if (k === "m" && selectedLayers().length) { mineOrder(); return; }
       if (k === "l" && selectedDispensers().length) { scatterOrder(); return; }
@@ -2763,13 +2770,32 @@ var UI = (function () {
      reason, and concluded the control was broken. */
   function areaRect() { return areaMode && areaDrag ? areaDrag : null; }
 
-  function unloadSelection() {
+  function unloadSelection(landEmpty) {
     let moved = 0, stuck = 0, touched = 0;
+    const landing = [], refused = [];
     for (const u of selection) {
       if (u.owner !== G.human) continue;
+      /* An aeroplane in the air cannot put a vehicle out of the door: it
+         lands on open ground near where it was going and unloads there
+         (entities.js AIRLIFT LANDING). With nothing aboard at all, and only
+         on UNLOAD itself (U, or its button - not D), it lands there to be
+         loaded. Infantry alone still go out of the door as they always have,
+         and on the ground everything comes off where it stands. */
+      if (u.kind === "unit" && u.layer === "air" && !u.def.hover && u.def.payload && !u.dead &&
+          !u.grounded && !u.parked && !(u.order && u.order.type === "parked") &&
+          (u.cargo.length ? u.cargo.some(c => c.cat === "vehicle") : landEmpty)) {
+        touched++;
+        const p = airDropPoint(u), why = G.airLand(u, p.x, p.y);
+        if (why) refused.push(why); else landing.push(u);
+        continue;
+      }
       if (u.kind === "unit" && u.cargo && u.cargo.length) {
         touched++;
-        const n = u.unload();
+        /* an aeroplane standing on its strip puts nobody down on the run it
+           has to take off from again, as its own unload does (entities.js
+           airlandUnload) */
+        const n = u.unload(undefined, undefined,
+                           u.grounded && u.field ? Unit.stripTiles(G.map, u.field) : undefined);
         moved += n;
         if (!n) stuck++;
       }
@@ -2784,7 +2810,25 @@ var UI = (function () {
     } else if (stuck) {
       alert("NO CLEAR GROUND TO UNLOAD ONTO \u2014 MOVE CLOSER TO SHORE", "bad");
     }
+    if (landing.length) {
+      const u0 = landing[0], veh = u0.cargo.filter(c => c.cat === "vehicle").length;
+      alert(landing.length > 1 ? landing.length + " TRANSPORTS LANDING ON OPEN GROUND TO UNLOAD"
+            : Unit.liftName(u0) + (u0.cargo.length
+                ? " LANDING ON OPEN GROUND TO UNLOAD " + veh + (veh === 1 ? " VEHICLE" : " VEHICLES")
+                : " LANDING ON OPEN GROUND TO LOAD"), "good");
+      Sfx.play("order");
+    }
+    if (refused.length) alert(refused[0], "bad");
     return touched;
+  }
+  /* where a transport in the air is taken to mean: where it was going, or
+     the middle of the circle it is holding, or where it is */
+  function airDropPoint(u) {
+    const o = u.order;
+    if (o && (o.type === "move" || o.type === "attackmove" || o.type === "cap" || o.type === "airland") &&
+        isFinite(o.x) && isFinite(o.y)) return { x: o.x, y: o.y };
+    if (o && isFinite(o.hx) && isFinite(o.hy)) return { x: o.hx, y: o.hy };
+    return { x: u.x, y: u.y };
   }
 
   function issueOrder(mx, my, shift) {
@@ -3117,6 +3161,16 @@ var UI = (function () {
         for (const e of u.owner.units) if (e !== u && !e.dead && e.layer === "air" && e.padOn === b) used++;
         return (b.def.pads || 0) - used;
       };
+      /* A vehicle boarding an airlifter is weighed (entities.js AIRLIFT):
+         what is already on its way aboard counts against the payload, and
+         so does each vehicle this click sends, so the click itself says
+         which of them fit and why the rest do not. */
+      const lifter = target.kind === "unit" && target.layer === "air" && target.def.payload ? target : null;
+      let liftRes = 0, liftWhy = "";
+      const lifted = [];
+      if (lifter) for (const e of G.human.units)
+        if (!e.dead && !e.carried && !e.selected && e.order && e.order.type === "enter" &&
+            e.order.target === lifter) liftRes += lifter.liftWeight(e);
       for (const u of units) {
         let host = landingHost(u);
         if (host && host.kind === "building" && host.def.pads && padsLeft(host, u) <= 0) {
@@ -3134,14 +3188,32 @@ var UI = (function () {
           u.give({ type: "rtb" }, shift);
           sentHome++;
         }
-        else if (target.kind === "unit" && target.def.cargo && !target.def.carrier && u.cat === "infantry")
+        else if (target.kind === "unit" && target.def.cargo && !target.def.carrier && u.cat === "infantry") {
           u.give({ type: "enter", target });
+          if (lifter) liftRes += lifter.liftWeight(u);       // a squad's seat is weight a vehicle cannot have
+        }
+        else if (lifter && u.cat === "vehicle") {
+          const why = lifter.airliftRefusal(u, liftRes);
+          if (why) { if (!liftWhy) liftWhy = why; }
+          else { u.give({ type: "enter", target }); liftRes += lifter.liftWeight(u); lifted.push(u); }
+        }
         else if (target.kind === "unit" && target.def.cargo && target.def.amphib && (u.cat === "vehicle" || u.cat === "infantry"))
           u.give({ type: "enter", target });
         else if (target.kind === "building" && u.def.engineer)
           u.give({ type: "enter", target });
         else { movers.push(u); if (u.layer === "air") airMoved++; }
       }
+      /* A helicopter hovering with nothing else to do comes to the vehicles
+         sent to it and sets down beside them, rather than have them drive
+         under it - a helicopter loads where it sits or where they are. */
+      if (lifter && lifted.length && lifter.def.hover && !lifter.parked && lifter.order &&
+          (lifter.order.type === "hover" || lifter.order.type === "idle") && lifter.owner === G.human) {
+        let mx = 0, my = 0;
+        for (const v of lifted) { mx += v.x; my += v.y; }
+        mx /= lifted.length; my /= lifted.length;
+        if (U.dist(mx, my, lifter.x, lifter.y) > CFG.TILE * 4) lifter.give({ type: "move", x: mx, y: my });
+      }
+      if (liftWhy) alert(liftWhy, "bad");
       /* the rest walk to the point - each to a spot of its own beside it,
          not all onto the unit or the structure that was clicked */
       for (const sl of groupSlots(movers, wx, wy)) sl.u.give({ type: "move", x: sl.x, y: sl.y }, shift);
@@ -3598,7 +3670,7 @@ var UI = (function () {
 
   /* What the selection holds that the bar cares about, counted in one pass. */
   function cmdContext() {
-    const c = { units: [], air: 0, beat: 0, scat: 0, hold: 0, rigs: 0, loaded: 0, garrison: 0,
+    const c = { units: [], air: 0, beat: 0, scat: 0, hold: 0, rigs: 0, loaded: 0, lifters: 0, garrison: 0,
                 yards: 0, guns: 0, cb: 0, subs: 0, quiet: 0, recall: 0, why: "SELECT A UNIT",
                 emit: 0, dark: 0 };
     const kinds = { depot: 0, navalyard: 0 };
@@ -3618,6 +3690,9 @@ var UI = (function () {
       c.units.push(e);
       if (e.stance === "hold") c.hold++;
       if (e.cargo && e.cargo.length) c.loaded++;
+      /* an empty aeroplane transport in the air: UNLOAD lands it to be loaded */
+      else if (e.layer === "air" && e.def.payload && !e.def.hover && !e.grounded && !e.parked &&
+               !(e.order && e.order.type === "parked")) c.lifters++;
       if (e.def.deployTo) c.rigs++;
       if (e.isIndirect && e.isIndirect()) { c.guns++; if (e.stance === "counterbattery") c.cb++; }
       if (e.layer === "sub") { c.subs++; if (e.stance === "quiet") c.quiet++; }
@@ -3662,9 +3737,9 @@ var UI = (function () {
     { id: "deploy", key: "D", label: "DEPLOY", run: () => cmdDeploy(),
       can: (c) => (c.rigs || c.loaded || c.garrison || c.yards) ? true : "NOTHING SELECTED DEPLOYS",
       tip: "DEPLOY (D) \u2014 unfold a construction rig where it stands, put a transport's cargo down, or turn a garrison out." },
-    { id: "unload", key: "U", label: "UNLOAD", run: () => unloadSelection(),
-      can: (c) => (c.loaded || c.garrison) ? true : "NOTHING SELECTED IS CARRYING ANYONE",
-      tip: "UNLOAD (U) \u2014 put a transport's cargo down, or turn a garrison out." },
+    { id: "unload", key: "U", label: "UNLOAD", run: () => unloadSelection(true),
+      can: (c) => (c.loaded || c.garrison || c.lifters) ? true : "NOTHING SELECTED IS CARRYING ANYONE",
+      tip: "UNLOAD (U) \u2014 put a transport's cargo down, or turn a garrison out. An aeroplane in the air lands on open ground to do it, or to be loaded." },
     { id: "recall", key: "R", label: "RECALL", run: () => cmdRecall(),
       can: (c) => (c.air || c.recall) ? true : c.why,
       tip: "RECALL (R) \u2014 aircraft to base; ships to the nearest naval yard, which mends and refuels them and reloads their deck launchers; vehicles to the service depot, which mends them." },

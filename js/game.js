@@ -1427,7 +1427,10 @@ var Game = (function () {
         G.pingEvent(e.x, e.y, "note");
       }
     } else {
-      if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; Combat.kill(G, c, null); }
+      /* what it carried dies with it, where it fell - a passenger keeps the
+         place it boarded at while carried, and a Humvee lost in a shot-down
+         Hercules was otherwise marked lost back on the airbase it left */
+      if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; c.x = e.x; c.y = e.y; Combat.kill(G, c, null); }
       if (e.owner === G.human) Sfx.announce(e.def.harvester ? "hauler_lost" : "unit_lost", e);
       if (e.owner === G.human && e.def.harvester) G.alert("ORE HAULER LOST", "bad");
       /* A destroyed unit leaves a mark. The damage path pings once every three
@@ -1850,6 +1853,126 @@ var Game = (function () {
        thirty times a second. */
     if (claim && best && u) u.padOn = best.host;
     return best;
+  };
+
+  /* ---- AIRLIFT LANDING: open ground to put a transport down on ----
+     entities.js AIRLIFT LANDING flies the order; this finds the ground. A
+     strip is a straight run of tiles, along a row, a column or a diagonal,
+     as long as the type needs (def.strip, generations.js AIRLIFT):
+       - every tile sand, grass, dirt or road - a rough field, not a wood, a
+         marsh, a rock face or a built-up block - and all at one level of
+         elevation, so it is flat;
+       - nothing built on it, no field obstacle, and nobody standing on it,
+         ours or theirs: the crew sees what is on the strip on finals;
+       - no wood, rock, built-up block or structure under either wingtip
+         (water and marsh beside it are flat, and do not matter);
+       - not a strip another transport is landing on or standing on;
+       - the approach gate behind it, and room for the last turn onto it,
+         inside the map.
+     Of those, the one whose far end - where the vehicles come off - is
+     nearest the drop point, by a little more when the aircraft would have
+     to turn back on itself to land on it rather than come straight in.
+     Searched out to STRIP_SEARCH tiles from the point. */
+  const STRIP_OK = {}, WINGTIP_BAD = {};
+  STRIP_OK[T.SAND] = STRIP_OK[T.GRASS] = STRIP_OK[T.DIRT] = STRIP_OK[T.ROAD] = 1;
+  WINGTIP_BAD[T.TREE] = WINGTIP_BAD[T.ROCK] = WINGTIP_BAD[T.URBAN] = 1;
+  const STRIP_DIRS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+  const STRIP_SEARCH = 12;
+  /* ground units standing on the map, and the strips other transports hold,
+     as a mask over a window of tiles */
+  function stripBusy(u, x0, y0, x1, y1) {
+    const W = G.map.W, bw = x1 - x0 + 1, busy = new Uint8Array(bw * (y1 - y0 + 1));
+    const mark = (x, y) => { if (x >= x0 && x <= x1 && y >= y0 && y <= y1) busy[(y - y0) * bw + (x - x0)] = 1; };
+    for (const e of G.entities) {
+      if (e.dead || e.kind !== "unit") continue;
+      if (e.layer === "ground" && !e.carried && !e.garrisonIn) mark(e.tx, e.ty);
+      else if (e !== u && e.layer === "air" && e.order && e.order.type === "airland" && e.order.n > 0)
+        for (const i of Unit.stripTiles(G.map, e.order)) mark(i % W, (i / W) | 0);
+    }
+    return (x, y) => x < x0 || x > x1 || y < y0 || y > y1 ? false : !!busy[(y - y0) * bw + (x - x0)];
+  }
+  function stripFits(ax, ay, sx, sy, n, busy) {
+    const map = G.map, W = map.W, H = map.H, lvl = map.elev[ay * W + ax];
+    for (let i = 0; i < n; i++) {
+      const x = ax + i * sx, y = ay + i * sy;
+      if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) return false;
+      const k = y * W + x;
+      if (!STRIP_OK[map.terrain[k]] || map.elev[k] !== lvl || G.occ[k] || busy(x, y)) return false;
+      for (const s of [-1, 1]) {
+        const k2 = (y + s * sx) * W + (x - s * sy);
+        if (G.occ[k2] || WINGTIP_BAD[map.terrain[k2]]) return false;
+      }
+      /* A diagonal run goes from one tile to the next through their corner,
+         and the two tiles that meet it there stand 0.7 of a tile off the
+         centreline - nearer than the wingtip tiles, which on a diagonal are
+         1.4 off - so they are held to the wingtip rule too. Unchecked, a
+         C-130J was given a strip down a one-tile diagonal lane cut through
+         a wood, with trees 0.7 of a tile either side of its wheels. */
+      if (sx && sy && i < n - 1)
+        for (const k2 of [y * W + x + sx, (y + sy) * W + x])
+          if (G.occ[k2] || WINGTIP_BAD[map.terrain[k2]]) return false;
+    }
+    return true;
+  }
+  G.findStrip = function (u, px, py) {
+    if (!u || !u.def) return null;
+    const map = G.map, W = map.W, H = map.H, TS = CFG.TILE, d = u.def;
+    const L = Math.max(3, d.strip || 5);
+    const turnR = (d.speed || 3) / Math.max(0.05, d.turn || 1);       // tiles
+    const fin = Math.max(2, 1.5 * turnR), edge = turnR + 1;          // entities.js airlandPlan
+    const cx = U.clamp((px / TS) | 0, 0, W - 1), cy = U.clamp((py / TS) | 0, 0, H - 1);
+    const R = STRIP_SEARCH, pad = R + L + 2;
+    const busy = stripBusy(u, Math.max(0, cx - pad), Math.max(0, cy - pad),
+                           Math.min(W - 1, cx + pad), Math.min(H - 1, cy + pad));
+    const vx = px - u.x, vy = py - u.y, vl = Math.hypot(vx, vy) || 1;
+    let best = null, bs = Infinity;
+    for (let by = cy - R; by <= cy + R; by++) for (let bx = cx - R; bx <= cx + R; bx++) {
+      const dB = Math.hypot(bx - cx, by - cy);
+      if (dB > R || dB >= bs) continue;
+      for (const sd of STRIP_DIRS) {
+        const sx = sd[0], sy = sd[1], step = Math.hypot(sx, sy);
+        const n = Math.ceil((L - 1) / step - 1e-9) + 1;
+        const ax = bx - (n - 1) * sx, ay = by - (n - 1) * sy;
+        const ux = sx / step, uy = sy / step;
+        const score = dB + (1 - (ux * vx + uy * vy) / vl) * 1.5;
+        if (score >= bs) continue;
+        const gx = ax + 0.5 - ux * fin, gy = ay + 0.5 - uy * fin;
+        if (gx < edge || gy < edge || gx > W - edge || gy > H - edge) continue;
+        if (!stripFits(ax, ay, sx, sy, n, busy)) continue;
+        bs = score;
+        best = { ax: (ax + 0.5) * TS, ay: (ay + 0.5) * TS, bx: (bx + 0.5) * TS, by: (by + 0.5) * TS,
+                 ux, uy, len: (n - 1) * step * TS, tax: ax, tay: ay, sx, sy, n };
+      }
+    }
+    return best;
+  };
+  /* the strip looked at again on finals: still nobody on it */
+  G.stripClear = function (u, o) {
+    if (!o || !(o.n > 0)) return false;
+    const pad = 2, xs = [o.tax, o.tax + (o.n - 1) * o.sx], ys = [o.tay, o.tay + (o.n - 1) * o.sy];
+    const busy = stripBusy(u, Math.max(0, Math.min(xs[0], xs[1]) - pad), Math.max(0, Math.min(ys[0], ys[1]) - pad),
+                           Math.min(G.map.W - 1, Math.max(xs[0], xs[1]) + pad), Math.min(G.map.H - 1, Math.max(ys[0], ys[1]) + pad));
+    return stripFits(o.tax, o.tay, o.sx, o.sy, o.n, busy);
+  };
+  /* ---- the order: land near a point, put the load down, take off ----
+     An aeroplane on a strip G.findStrip chooses; a helicopter on the point
+     itself. With nothing aboard it lands to BE loaded, and waits on the
+     ground a while for whoever is ordered aboard (entities.js, wait). Returns
+     "" when the order is given, or the reason it cannot be, in the words of
+     the alert. The player's U key gives it (ui.js unloadSelection); it is
+     written for the AI as much: G.airLand(transport, x, y). */
+  G.airLand = function (u, x, y, queue) {
+    if (!u || u.dead || u.kind !== "unit" || u.layer !== "air" || !u.def.payload) return "NOT A TRANSPORT";
+    const o = { type: "airland", x: x, y: y, ph: u.def.hover ? "fly" : "app", goes: 0 };
+    if (!u.cargo.length) o.load = 1;
+    if (!u.def.hover) {
+      const s = G.findStrip(u, x, y);
+      if (!s) return "NO STRIP NEAR THERE FOR THE " + Unit.liftName(u) + " — IT NEEDS " +
+                     Math.max(3, u.def.strip || 5) + " TILES OF FLAT, CLEAR OPEN GROUND";
+      Object.assign(o, s);
+    }
+    u.give(o, queue);
+    return "";
   };
 
   /* ---------------- sensors ----------------

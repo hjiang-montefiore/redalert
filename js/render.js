@@ -1760,7 +1760,7 @@ var Render = (function () {
     return e.kind === "building" ? f >= 1 : f === 2;
   }
   function olFlying(e) {
-    return e.layer === "air" && !e.parked && !(e.order && e.order.type === "parked") ? 1 : 0;
+    return e.layer === "air" && !e.parked && !e.grounded && !(e.order && e.order.type === "parked") ? 1 : 0;
   }
   function olNum(v) { return typeof v === "number" && v === v; }
   function olUnit(g, u) {
@@ -1856,6 +1856,18 @@ var Render = (function () {
         case "rtb": case "land":
           olLeg(K_RTB, pad ? pad.x : u.owner.homeX, pad ? pad.y : u.owner.homeY, 0, true);
           next = o.then || null;
+          break;
+        case "airland":
+          /* a transport landing to unload (entities.js AIRLIFT LANDING), in
+             the unload colour: down onto the strip it has chosen and along
+             it to where the load comes off - a helicopter, to the point -
+             then what it does after, or home */
+          if (olNum(o.ax) && olNum(o.bx)) {
+            if (!u.grounded) olLeg(K_UNLOAD, o.ax, o.ay, 0, false);
+            olLeg(K_UNLOAD, o.bx, o.by, 0, true);
+          } else if (olNum(o.x)) olLeg(K_UNLOAD, o.x, o.y, air, true);
+          next = o.then || (q && qi < q.length || u.def.hover ? null : OL_HOME);
+          pull = !o.then;
           break;
         case "tank":
           if (t && !t.dead) olLeg(K_RTB, t.x, t.y, 1, false);
