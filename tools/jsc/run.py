@@ -161,6 +161,11 @@ __toutFlush();
     errs = re.search(r"runtime errors: \n((?:  .*\n?)+)", text)
     if "[jsc runner] TIME LIMIT" in text or "[load handler error]" in text or proc.returncode or errs:
         sys.exit(2)
+    # A --test file that does not load (a syntax error prints "[test load error]",
+    # and nothing of the test runs) used to exit 0 with no pass/fail line at all -
+    # a broken check read as a clean one (found by the airlift 1b reviewer, 2026-10-21).
+    if opt("--test") and "[test load error]" in text:
+        print("[jsc runner] the --test file did not load"); sys.exit(2)
     if real: sys.exit(1)
     sys.exit(0)
 
