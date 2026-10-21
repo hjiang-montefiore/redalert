@@ -441,8 +441,13 @@ var UI = (function () {
       if (rest.length) rows.push('<span class="alt">ALSO ' + rest.join(" · ").toUpperCase() + "</span>");
     }
     if (d.speed) rows.push("SPD " + d.speed);
+    /* an airlifter: its seats, its payload, the strip it lands on, and the
+       floor its vehicles stand on - or, a helicopter, its hook (entities.js
+       AIRLIFT, HOLD SPACE) */
     if (d.cargo) rows.push("CARRIES " + d.cargo + (d.payload && d.layer === "air"
-      ? " \u00b7 LIFTS " + Unit.fmtT(d.payload) + " T" + (d.strip && !d.hover ? " \u00b7 LANDS IN " + d.strip + " TILES" : "")
+      ? " \u00b7 LIFTS " + Unit.fmtT(d.payload) + " T" + (d.strip && !d.hover ? " \u00b7 LANDS IN " + d.strip + " TILES" : "") +
+        (d.hover ? " \u00b7 ONE VEHICLE ON THE HOOK" + (d.cabin ? ", MORE IN A " + Unit.fmtM(d.cabin[0]) + " \u00d7 " + Unit.fmtM(d.cabin[1]) + " M CABIN" : "")
+                 : d.hold ? " \u00b7 FLOOR " + Unit.fmtM(d.hold[0]) + " \u00d7 " + Unit.fmtM(d.hold[1]) + " M" : "")
       : ""));
     if (d.carrier) rows.push("DECK " + d.carrier + " AIRCRAFT");
     if (d.ammo) rows.push("ORDNANCE " + d.ammo);
@@ -1944,7 +1949,10 @@ var UI = (function () {
       if (e.cargo && e.def.cargo && e.def.payload && e.layer === "air") {
         const L = e.cargoLoad();
         h += '<div class="stat">CARGO <i>' + (L.veh ? L.veh + " VEH + " + L.inf + " INF" : L.inf + "/" + e.def.cargo) +
-             " \u00b7 " + Unit.fmtT(L.t) + " OF " + Unit.fmtT(L.cap) + " T</i></div>";
+             " \u00b7 " + Unit.fmtT(L.t) + " OF " + Unit.fmtT(L.cap) + " T" +
+             /* ...and the floor (HOLD SPACE), or the hook */
+             (L.floorCap ? " \u00b7 " + Unit.fmtM(L.floor) + " OF " + Unit.fmtM(L.floorCap) + " M" : "") +
+             (L.hook ? " \u00b7 1 ON THE HOOK" : "") + "</i></div>";
       } else if (e.cargo && e.def.cargo) h += '<div class="stat">CARGO <i>' + e.cargo.length + "/" + e.def.cargo + "</i></div>";
       if (e.kind === "building" && e.def.produces) {
         const isPri = G.human.primary && G.human.primary[e.def.id] === e;
@@ -2812,10 +2820,13 @@ var UI = (function () {
     }
     if (landing.length) {
       const u0 = landing[0], veh = u0.cargo.filter(c => c.cat === "vehicle").length;
-      alert(landing.length > 1 ? landing.length + " TRANSPORTS LANDING ON OPEN GROUND TO UNLOAD"
+      /* short of fuel for it now, G.airLand sends it home first (entities.js, FUEL) */
+      const first = (u) => u.order && u.order.type === "rtb" && u.order.then && u.order.then.type === "airland";
+      alert((landing.length > 1 ? landing.length + " TRANSPORTS LANDING ON OPEN GROUND TO UNLOAD"
             : Unit.liftName(u0) + (u0.cargo.length
                 ? " LANDING ON OPEN GROUND TO UNLOAD " + veh + (veh === 1 ? " VEHICLE" : " VEHICLES")
-                : " LANDING ON OPEN GROUND TO LOAD"), "good");
+                : " LANDING ON OPEN GROUND TO LOAD")) +
+            (landing.some(first) ? " \u2014 REFUELLING FIRST" : ""), "good");
       Sfx.play("order");
     }
     if (refused.length) alert(refused[0], "bad");
@@ -3161,16 +3172,17 @@ var UI = (function () {
         for (const e of u.owner.units) if (e !== u && !e.dead && e.layer === "air" && e.padOn === b) used++;
         return (b.def.pads || 0) - used;
       };
-      /* A vehicle boarding an airlifter is weighed (entities.js AIRLIFT):
-         what is already on its way aboard counts against the payload, and
-         so does each vehicle this click sends, so the click itself says
-         which of them fit and why the rest do not. */
+      /* A vehicle boarding an airlifter is weighed and measured (entities.js
+         AIRLIFT, HOLD SPACE): what is already on its way aboard counts
+         against the payload and the floor, and so does each one this click
+         sends, so the click itself says which of them fit and why the rest
+         do not. */
       const lifter = target.kind === "unit" && target.layer === "air" && target.def.payload ? target : null;
-      let liftRes = 0, liftWhy = "";
-      const lifted = [];
+      let liftWhy = "";
+      const lifted = [], liftPend = [];
       if (lifter) for (const e of G.human.units)
         if (!e.dead && !e.carried && !e.selected && e.order && e.order.type === "enter" &&
-            e.order.target === lifter) liftRes += lifter.liftWeight(e);
+            e.order.target === lifter) liftPend.push(e);
       for (const u of units) {
         let host = landingHost(u);
         if (host && host.kind === "building" && host.def.pads && padsLeft(host, u) <= 0) {
@@ -3190,12 +3202,12 @@ var UI = (function () {
         }
         else if (target.kind === "unit" && target.def.cargo && !target.def.carrier && u.cat === "infantry") {
           u.give({ type: "enter", target });
-          if (lifter) liftRes += lifter.liftWeight(u);       // a squad's seat is weight a vehicle cannot have
+          if (lifter) liftPend.push(u);      // a squad's seat is weight and floor a vehicle cannot have
         }
         else if (lifter && u.cat === "vehicle") {
-          const why = lifter.airliftRefusal(u, liftRes);
+          const why = lifter.airliftRefusal(u, liftPend);
           if (why) { if (!liftWhy) liftWhy = why; }
-          else { u.give({ type: "enter", target }); liftRes += lifter.liftWeight(u); lifted.push(u); }
+          else { u.give({ type: "enter", target }); liftPend.push(u); lifted.push(u); }
         }
         else if (target.kind === "unit" && target.def.cargo && target.def.amphib && (u.cat === "vehicle" || u.cat === "infantry"))
           u.give({ type: "enter", target });

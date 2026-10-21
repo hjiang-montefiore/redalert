@@ -1863,7 +1863,13 @@ var Game = (function () {
          marsh, a rock face or a built-up block - and all at one level of
          elevation, so it is flat;
        - nothing built on it, no field obstacle, and nobody standing on it,
-         ours or theirs: the crew sees what is on the strip on finals;
+         ours or theirs: the crew sees what is on the strip on finals - but
+         only what its side can see counts. An enemy unit hidden in the fog
+         is simply there (the game has no collision), and a structure on a
+         tile the side has never explored the same, until the crew's own eyes
+         find it on finals and send it round (stripClear). Before this the
+         strip finder stepped round every hidden unit, and so told the player
+         where they were;
        - no wood, rock, built-up block or structure under either wingtip
          (water and marsh beside it are flat, and do not matter);
        - not a strip another transport is landing on or standing on;
@@ -1883,13 +1889,26 @@ var Game = (function () {
   function stripBusy(u, x0, y0, x1, y1) {
     const W = G.map.W, bw = x1 - x0 + 1, busy = new Uint8Array(bw * (y1 - y0 + 1));
     const mark = (x, y) => { if (x >= x0 && x <= x1 && y >= y0 && y <= y1) busy[(y - y0) * bw + (x - x0)] = 1; };
+    const side = u && u.owner;
     for (const e of G.entities) {
       if (e.dead || e.kind !== "unit") continue;
-      if (e.layer === "ground" && !e.carried && !e.garrisonIn) mark(e.tx, e.ty);
+      if (e.layer === "ground" && !e.carried && !e.garrisonIn) {
+        if (e.tx < x0 || e.tx > x1 || e.ty < y0 || e.ty > y1) continue;
+        /* what its side cannot see is not avoided (above) */
+        if (side && e.owner !== side && !G.allied(side, e.owner) && !G.visibleTo(side, e)) continue;
+        mark(e.tx, e.ty);
+      }
       else if (e !== u && e.layer === "air" && e.order && e.order.type === "airland" && e.order.n > 0)
         for (const i of Unit.stripTiles(G.map, e.order)) mark(i % W, (i / W) | 0);
     }
-    return (x, y) => x < x0 || x > x1 || y < y0 || y > y1 ? false : !!busy[(y - y0) * bw + (x - x0)];
+    const f = (x, y) => x < x0 || x > x1 || y < y0 || y > y1 ? false : !!busy[(y - y0) * bw + (x - x0)];
+    f.side = side;
+    return f;
+  }
+  /* a structure on tile k, as the side choosing the strip knows of it: one
+     on a tile it has never explored is not known (above) */
+  function builtOn(k, busy) {
+    return !!G.occ[k] && (!busy.side || G.explored(busy.side, k));
   }
   function stripFits(ax, ay, sx, sy, n, busy) {
     const map = G.map, W = map.W, H = map.H, lvl = map.elev[ay * W + ax];
@@ -1897,10 +1916,10 @@ var Game = (function () {
       const x = ax + i * sx, y = ay + i * sy;
       if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) return false;
       const k = y * W + x;
-      if (!STRIP_OK[map.terrain[k]] || map.elev[k] !== lvl || G.occ[k] || busy(x, y)) return false;
+      if (!STRIP_OK[map.terrain[k]] || map.elev[k] !== lvl || builtOn(k, busy) || busy(x, y)) return false;
       for (const s of [-1, 1]) {
         const k2 = (y + s * sx) * W + (x - s * sy);
-        if (G.occ[k2] || WINGTIP_BAD[map.terrain[k2]]) return false;
+        if (builtOn(k2, busy) || WINGTIP_BAD[map.terrain[k2]]) return false;
       }
       /* A diagonal run goes from one tile to the next through their corner,
          and the two tiles that meet it there stand 0.7 of a tile off the
@@ -1910,7 +1929,7 @@ var Game = (function () {
          a wood, with trees 0.7 of a tile either side of its wheels. */
       if (sx && sy && i < n - 1)
         for (const k2 of [y * W + x + sx, (y + sy) * W + x])
-          if (G.occ[k2] || WINGTIP_BAD[map.terrain[k2]]) return false;
+          if (builtOn(k2, busy) || WINGTIP_BAD[map.terrain[k2]]) return false;
     }
     return true;
   }
@@ -1970,9 +1989,38 @@ var Game = (function () {
       if (!s) return "NO STRIP NEAR THERE FOR THE " + Unit.liftName(u) + " — IT NEEDS " +
                      Math.max(3, u.def.strip || 5) + " TILES OF FLAT, CLEAR OPEN GROUND";
       Object.assign(o, s);
+      /* the fuel to land there and get home (entities.js, FUEL) */
+      const f = G.airlandFuel(u, o);
+      if (!f.reach) return Unit.liftName(u) + " CANNOT LAND THERE AND GET HOME — " + f.d +
+                           " TILES FROM ITS AIRBASE, BEYOND ITS REACH";
+      if (!f.now && !queue) { u.give({ type: "rtb", then: o }); return ""; }
     }
     u.give(o, queue);
     return "";
+  };
+  /* Whether an aeroplane can land on strip o and still get home. It has to
+     reach the threshold holding what bingo would turn it home at there - the
+     fuel to fly from the strip to its airbase with the usual margin, and
+     never under the 40% of the tanks every sortie keeps (entities.js
+     updateAir) - since below that it turns for home before it lands. The
+     flight there is the straight line plus the approach: the gate on the
+     centreline and half a turning circle onto it (entities.js airlandPlan).
+       reach: from its airbase on full tanks;  now: from here, on what it has;
+       d: tiles from its airbase to the strip. */
+  G.airlandFuel = function (u, o) {
+    const TS = CFG.TILE, d = u.def;
+    const burn = u.airBurn() * ((FACTIONS[u.owner.faction] || {}).fuelMul || 1);
+    const pad = G.findPad(u);
+    const hx = pad ? pad.x : u.owner.homeX, hy = pad ? pad.y : u.owner.homeY;
+    const dHome = U.dist(hx, hy, o.ax, o.ay) / TS;
+    if (!u.fuelMax || !(burn > 0)) return { reach: true, now: true, d: Math.round(dHome) };
+    const sp = Math.max(0.5, d.speed), r = sp / Math.max(0.05, d.turn || 1);
+    const app = Math.max(2, 1.5 * r) + Math.PI * r;
+    const need = (tiles) => burn * (tiles + app) / sp;
+    const keep = Math.max(u.reserveAt(o.bx, o.by, true), u.fuelMax * 0.40);
+    return { reach: u.fuelMax - need(dHome) >= keep,
+             now: u.fuel - need(U.dist(u.x, u.y, o.ax, o.ay) / TS) >= keep,
+             d: Math.round(dHome) };
   };
 
   /* ---------------- sensors ----------------

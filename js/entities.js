@@ -4890,22 +4890,40 @@ class Unit {
   }
 
   /* fuel needed to get back to the nearest ramp, plus a margin for the
-     approach. This is what gives each airframe a real combat radius. */
-  reserveFuel() {
+     approach. This is what gives each airframe a real combat radius.
+     `raw`: without the cap at nine tenths of the tanks - the true figure,
+     for a transport deciding whether it can leave a strip at all (AIRLIFT
+     LANDING, airlandCanGo), where "more than it holds" has to read as that -
+     and to the ramp, never to a tanker: what a transport flies off a strip
+     is a plain rtb, and an rtb goes to the ramp (stage-1b review, measured:
+     a C-17 down 62 tiles out, let go on 10.5 by a tanker beside its strip,
+     reached its ramp on 0.0, inside the four seconds the tanks may stand
+     empty before it falls). */
+  reserveFuel(raw) {
     const pad = this.game.findPad ? this.game.findPad(this) : null;
     let hx = pad ? pad.x : this.owner.homeX, hy = pad ? pad.y : this.owner.homeY;
     /* A tanker orbiting forward IS somewhere to get fuel, and a nearer one
        than the airfield. Measuring the reserve to it is what lets a fighter
        hold station instead of turning for home - the tanker does not add
        fuel to the aircraft so much as it moves the edge of the map. */
-    const tk = this.game.nearestTanker ? this.game.nearestTanker(this) : null;
+    const tk = !raw && this.game.nearestTanker ? this.game.nearestTanker(this) : null;
     if (tk && U.dist2(this.x, this.y, tk.x, tk.y) < U.dist2(this.x, this.y, hx, hy)) {
       hx = tk.x; hy = tk.y;
     }
     const d = U.dist(this.x, this.y, hx, hy) / CFG.TILE;          // tiles home
     const sp = Math.max(0.5, this.def.speed);                     // tiles/sec
     const burn = this.airBurn() * ((FACTIONS[this.owner.faction] || {}).fuelMul || 1);
-    return U.clamp(d / sp * burn * 1.35 + 8, 10, this.fuelMax * 0.9);
+    const need = d / sp * burn * 1.35 + 8;
+    return raw ? Math.max(10, need) : U.clamp(need, 10, this.fuelMax * 0.9);
+  }
+  /* the same, as if it stood at (x, y): what a transport must still hold
+     when it gets to a strip there (game.js G.airlandFuel) */
+  reserveAt(x, y, raw) {
+    const ox = this.x, oy = this.y;
+    this.x = x; this.y = y;
+    const r = this.reserveFuel(raw);
+    this.x = ox; this.y = oy;
+    return r;
   }
   /* the radius this airframe can strike to and still get home, in tiles */
   combatRadius() {
@@ -6084,7 +6102,8 @@ class Unit {
     const sw = this.seatWeight();
     return u.cat === "vehicle" ? Math.max(u.def.mass || 0, sw) : sw;
   }
-  /* what is aboard: vehicles, infantry, and tonnes of the payload used */
+  /* what is aboard: vehicles, infantry, tonnes of the payload used, metres
+     of the floor used (HOLD SPACE, below) and whether a vehicle is on the hook */
   cargoLoad() {
     let veh = 0, inf = 0, t = 0;
     for (const c of this.cargo) {
@@ -6092,7 +6111,106 @@ class Unit {
       if (c.cat === "vehicle") veh++; else inf++;
       t += this.liftWeight(c);
     }
-    return { veh, inf, t, cap: this.def.payload || 0, seats: this.def.cargo || 0 };
+    const F = this.def.hold || this.def.cabin || null, plan = this.holdPlan(this.cargo);
+    return { veh, inf, t, cap: this.def.payload || 0, seats: this.def.cargo || 0,
+             floor: plan.used, floorCap: F ? F[0] : 0, hook: plan.hook ? 1 : 0 };
+  }
+
+  /* ------------------------------ HOLD SPACE ------------------------------
+     (owner) weight alone let a C-17 take fifteen Humvees: "add a REAL
+     HOLD-SPACE limit". Each aeroplane's cargo floor (generations.js AIRLIFT
+     `hold`, published per airframe) and each vehicle's own length and width
+     (vehSize) now have to fit as well as the weight.
+
+     THE RULE, as a loadmaster lays out a hold - and the same whatever order
+     the load drove up the ramp in, so a vehicle the click accepted is not
+     turned away at the ramp for arriving before or after the others:
+       - a vehicle wider than the floor, or longer, does not go at all;
+       - one narrow enough to stand two abreast (twice its width within the
+         floor's) goes in one of two lanes, longest first, each into the lane
+         with less in it; anything wider runs down the middle and takes the
+         whole width for its length;
+       - vehicles stand end to end with no gap: no spacing figure was found
+         to put between them, and none is invented;
+       - an infantry seat takes floor / seats of the floor, as it takes
+         payload / seats of the weight, so an empty hold still takes exactly
+         its seats in riflemen.
+     The floor used is the middle run, plus the longer lane, plus the seats.
+     A C-130J-30's 16.8 m takes three Humvees (4.9 m each) and not a fourth,
+     a short C-130's 12.2 m two; a C-17's 26.8 x 5.5 m takes them two
+     abreast, five a lane, or one Abrams (3.7 m wide: the middle) with 15.5 t
+     left for light vehicles. Heights are not tested (generations.js says
+     why). An aeroplane with no published floor - the Noratlas, the C-46,
+     the Po-2 - is held to its weight alone, as before.
+
+     HELICOPTERS. A helicopter carries a vehicle on its hook, ONE at a time
+     (the owner's rule; every transport here has a hook), and infantry as its
+     payload allows: the hook is not floor. A Chinook also takes vehicles
+     inside, up its ramp (generations.js `cabin`): the cabin is laid out by
+     the rule above, and of the vehicles aboard the one that fits the cabin
+     worst - else the longest - rides the hook. */
+  /* a vehicle's length and width in metres: the size table in
+     generations.js, else the spec it is drawn from (armour_specs.js, which
+     loads after generations.js and so is read here), else its role's class
+     default; `src` says which */
+  static vehSize(d) {
+    if (d._size) return d._size;
+    let s = null;
+    if (d.sizeL > 0 && d.sizeW > 0) s = { L: d.sizeL, W: d.sizeW, src: d.sizeSrc || "table" };
+    else {
+      const a = typeof ARMOUR !== "undefined" ? ARMOUR[d.id] : null;
+      if (a && a.len > 0 && a.width > 0) s = { L: a.len, W: a.width, src: "armour" };
+    }
+    if (!s) { const c = d.sizeClass || [6.8, 3.0]; s = { L: c[0], W: c[1], src: "class" }; }
+    d._size = s;
+    return s;
+  }
+  static fmtM(m) { return (Math.round(m * 10) / 10).toFixed(1); }
+  static fmtW(m) { return (Math.round(m * 100) / 100).toFixed(2); }     // widths: 2.30 against 2.29
+  static anA(n) { return /^([AEIOU]|[FHLMNRSX][-\d])/.test(n) ? "AN " : "A "; }
+  /* The floor a set of passengers needs in this airframe, laid out by the
+     rule above: { ok, why ("hook" | "wide" | "long" | "floor"), v (the
+     vehicle that does not go), used and cap (metres), hook (the vehicle on
+     the hook, a helicopter's) }. */
+  holdPlan(list) {
+    const d = this.def, F = d.hold || d.cabin || null;
+    const r = { ok: true, why: "", v: null, used: 0, cap: F ? F[0] : 0, hook: null };
+    const veh = [];
+    let inf = 0;
+    for (const c of list) {
+      if (!c || c.dead) continue;
+      if (c.cat === "vehicle") veh.push(c); else inf++;
+    }
+    let inside = veh;
+    if (d.hover) {
+      /* what does not fit the cabin has to go on the hook, and only one can */
+      const fits = (v) => { const s = Unit.vehSize(v.def); return !!F && s.W <= F[1] + 1e-6 && s.L <= F[0] + 1e-6; };
+      const out = veh.filter(v => !fits(v));
+      if (out.length > 1) { r.ok = false; r.why = "hook"; r.v = out[out.length - 1]; return r; }
+      inside = veh.filter(fits);
+      if (out.length) r.hook = out[0];
+      else if (inside.length) {
+        let k = 0;
+        for (let i = 1; i < inside.length; i++)
+          if (Unit.vehSize(inside[i].def).L > Unit.vehSize(inside[k].def).L) k = i;
+        r.hook = inside[k];
+        inside = inside.filter((v, i) => i !== k);
+      }
+    }
+    if (!F) return r;                          // no floor on record: weight decides
+    const FL = F[0], FW = F[1], lanes = [];
+    let mid = 0;
+    for (const v of inside) {
+      const s = Unit.vehSize(v.def);
+      if (s.W > FW + 1e-6 || s.L > FL + 1e-6) { r.ok = false; r.why = s.W > FW + 1e-6 ? "wide" : "long"; r.v = v; return r; }
+      if (2 * s.W <= FW + 1e-6) lanes.push(s.L); else mid += s.L;
+    }
+    lanes.sort((a, b) => b - a);
+    let A = 0, B = 0;
+    for (const L of lanes) { if (A <= B) A += L; else B += L; }
+    r.used = mid + Math.max(A, B) + inf * FL / Math.max(1, d.cargo || 1);
+    if (r.used > FL + 1e-6) { r.ok = false; r.why = "floor"; }
+    return r;
   }
   /* Can a vehicle drive up the ramp now? A helicopter: wherever it is. An
      aeroplane: shut down on a ramp, or stopped on a strip with its ramp down
@@ -6102,16 +6220,19 @@ class Unit {
     if (this.def.hover) return true;
     if (this.parked || (this.order && this.order.type === "parked")) return true;
     const o = this.order;
-    return !!(o && o.type === "airland" && (o.ph === "unload" || o.ph === "wait"));
+    return !!(o && o.type === "airland" && (o.ph === "unload" || o.ph === "wait" || o.ph === "dry"));
   }
-  /* "" if v may board this airframe now (with `reserved` tonnes already
-     promised to others on their way), else the reason, as the alert says it.
-     Not an airlifter: "" - the seat count in updateEnter decides, as before. */
-  airliftRefusal(v, reserved) {
+  /* "" if v may board this airframe now, else the reason, as the alert says
+     it. `pending` is who else is already promised to it and on the way (a
+     list of units; a number is taken as tonnes, with no floor): they count
+     against the weight and the floor as if aboard. Not an airlifter: "" -
+     the seat count in updateEnter decides, as before. */
+  airliftRefusal(v, pending) {
     const d = this.def;
     if (!d.payload || this.layer !== "air" || !v || v.dead) return "";
     const name = Unit.liftName(this), vn = Unit.liftName(v);
     if (v.carried || v.garrisonIn) return vn + " IS ALREADY ABOARD";
+    const hold = d.hover ? null : d.hold;
     if (v.cat === "vehicle") {
       if (v.layer !== "ground") return vn + " CANNOT BE AIRLIFTED";
       if (v.def.harvester) return vn + " IS NOT AIR-PORTABLE — A FORTY-TONNE MINING TRUCK";
@@ -6120,17 +6241,41 @@ class Unit {
       if (v.def.mass > d.payload + 1e-6)
         return vn + " (" + Unit.fmtT(v.def.mass) + " T) — TOO HEAVY FOR THE " + name +
                " (" + Unit.fmtT(d.payload) + " T)";
+      /* ...and on its own against the floor (HOLD SPACE) */
+      const s = Unit.vehSize(v.def);
+      if (hold && s.W > hold[1] + 1e-6)
+        return vn + " (" + Unit.fmtW(s.W) + " M WIDE) — TOO WIDE FOR THE HOLD OF THE " + name +
+               " (" + Unit.fmtW(hold[1]) + " M)";
+      if (hold && s.L > hold[0] + 1e-6)
+        return vn + " (" + Unit.fmtM(s.L) + " M) — TOO LONG FOR THE HOLD OF THE " + name +
+               " (" + Unit.fmtM(hold[0]) + " M)";
       if (!this.loadingNow())
-        return this.grounded ? name + " IS STILL ROLLING \u2014 VEHICLES LOAD ONCE IT HAS STOPPED"
-                             : name + " IS IN THE AIR \u2014 VEHICLES LOAD ON THE GROUND";
+        return this.grounded ? name + " IS STILL ROLLING — VEHICLES LOAD ONCE IT HAS STOPPED"
+                             : name + " IS IN THE AIR — VEHICLES LOAD ON THE GROUND";
     } else if (v.cat !== "infantry") return vn + " CANNOT BE AIRLIFTED";
-    const w = this.liftWeight(v), left = d.payload - this.cargoLoad().t - (reserved || 0);
+    const pend = Array.isArray(pending)
+      ? pending.filter(p => p && p !== v && !p.dead && this.cargo.indexOf(p) < 0) : [];
+    /* the floor: everything aboard, everything on its way, and this one */
+    const plan = this.holdPlan(this.cargo.concat(pend, [v]));
+    if (!plan.ok) {
+      if (plan.why === "hook") {
+        const s = Unit.vehSize(v.def);
+        return d.cabin ? name + " HAS A VEHICLE ON THE HOOK ALREADY — " + Unit.anA(vn) + vn + " (" +
+                         Unit.fmtW(s.W) + " M WIDE) DOES NOT GO IN ITS CABIN (" + Unit.fmtW(d.cabin[1]) + " M)"
+                       : name + " HAS A VEHICLE ON THE HOOK ALREADY — ONE AT A TIME";
+      }
+      return name + " — NO FLOOR SPACE LEFT FOR " + Unit.anA(vn) + vn +
+             (v.cat === "vehicle" ? " (" + Unit.fmtM(Unit.vehSize(v.def).L) + " M)" : "");
+    }
+    let reserved = typeof pending === "number" ? pending : 0;
+    for (const p of pend) reserved += this.liftWeight(p);
+    const w = this.liftWeight(v), left = d.payload - this.cargoLoad().t - reserved;
     if (w > left + 1e-6)
       return name + " HAS " + Unit.fmtT(Math.max(0, left)) + " T LEFT — " + vn +
              " (" + Unit.fmtT(w) + " T) DOES NOT FIT";
     return "";
   }
-  canAirlift(v, reserved) { return !!this.def.payload && !this.airliftRefusal(v, reserved); }
+  canAirlift(v, pending) { return !!this.def.payload && !this.airliftRefusal(v, pending); }
 
   /* An aircraft shut down on an airbase stands inside the footprint, which is
      a structure to the pathfinder, so nothing on wheels can drive up to it:
@@ -6181,8 +6326,10 @@ class Unit {
      and no wood, rock, built-up block or structure under either wingtip - as
      long as this type needs (def.strip, generations.js AIRLIFT). No strip,
      no landing, and the order is refused with the reason. The crew lands
-     where the player cannot see, as a real crew can: what is standing on the
-     strip is what they see on finals, and they go round for it.
+     where the player cannot see, as a real crew can: the strip is chosen
+     from what its side can see - an enemy hidden in the fog does not move it
+     (game.js stripBusy) - and what is standing on it is what they see on
+     finals, and they go round for it.
 
      The order flies in phases, kept on the order as plain numbers so a save
      carries a delivery from wherever it was:
@@ -6195,6 +6342,8 @@ class Unit {
        roll        rolls out to the far end, slowing evenly to a stop
        unload      ramp down, everything aboard driven off beside the strip
        wait        on the ground while anyone ordered aboard is on the way
+       dry         stays on the ground: no airbase, or not the fuel to
+                   reach one (airlandCanGo, below)
        turn        turns on the strip
        takeoff     rolls back down it, lifts off, and goes home - or flies
                    what was queued behind the delivery
@@ -6205,7 +6354,7 @@ class Unit {
      (game.js, the existing rule). */
   static airGround(o) {
     return !!(o && o.type === "airland" &&
-      (o.ph === "roll" || o.ph === "unload" || o.ph === "wait" || o.ph === "turn" ||
+      (o.ph === "roll" || o.ph === "unload" || o.ph === "wait" || o.ph === "dry" || o.ph === "turn" ||
        o.ph === "takeoff" || o.ph === "down"));
   }
   /* every tile of the strip and the ground under its wingtips, as indices -
@@ -6320,6 +6469,8 @@ class Unit {
         break;
       }
       case "turn": {
+        /* never off the ground without the fuel to reach an airbase */
+        if (!this.airlandCanGo(o)) break;
         /* round to face the longer run left, at taxiing speed */
         this.moving = false;
         const along = (this.x - o.ax) * o.ux + (this.y - o.ay) * o.uy;
@@ -6330,6 +6481,17 @@ class Unit {
           this.ang = want; o.ph = "takeoff"; o.gs = 0;
           o.run = Math.max(T, back ? along : o.len - along);
         }
+        break;
+      }
+      case "dry": {
+        /* down with too little fuel to get home, or no airbase to go home
+           to (airlandCanGo): it stays where it is, ramp down, and looks again
+           every two seconds - an airbase built or taken, or nearer, lets it
+           go (a tanker does not: reserveFuel says why); what it was told to
+           do meanwhile waits in o.then */
+        this.moving = false;
+        o.t = (o.t || 0) + dt;
+        if (o.t >= 2) { o.t = 0; if (this.airlandFuelOK()) { o.ph = "turn"; o.dw = 0; } }
         break;
       }
       case "takeoff": {
@@ -6426,6 +6588,49 @@ class Unit {
     for (const u of this.owner.units)
       if (!u.dead && !u.carried && u.order && u.order.type === "enter" && u.order.target === this) return true;
     return false;
+  }
+  /* ---- FUEL: never land where it cannot get home ----
+     Two checks, one at each end (stage-1 review):
+       - before the order is given, G.airlandFuel (game.js) asks whether a
+         full tank from its airbase reaches the strip with bingo fuel still
+         aboard - what it needs there to get home - and refuses a strip
+         beyond that, with the reason; within reach but short of fuel now, it
+         goes home first and flies the delivery after (a { rtb, then });
+       - on the ground the engines stop (unload, wait, turn and dry burn
+         nothing - the fuel burn runs only while moving), so one that landed
+         with fuel to get home still has it; one that has not - its airbase
+         lost while it waited, or the tanks emptied by a test - would take
+         off and fall out of the sky on the way, as the stage-1 build did
+         (measured: down at t=11 s after a dry take-off). It stays on the
+         strip instead, says so once, and goes when it can.
+     "An airbase" is one to land on: with every ramp gone the reserve was
+     measured to the owner's home point instead, which is not a runway, and a
+     C-130J down 30 tiles out with 90% aboard took off on it, orbited home -
+     "NO RUNWAY TO RECOVER TO" - and fell out of the sky (stage-1b review).
+     Standing on its strip it is still a transport: it stays. */
+  airlandCanGo(o) {
+    if (this.airlandFuelOK()) return true;
+    o.ph = "dry"; o.t = 0;
+    if (!o.dw) {
+      o.dw = 1;
+      if (this.owner === this.game.human)
+        this.game.alert(Unit.liftName(this) + (this.airlandRamp()
+          ? " — NOT ENOUGH FUEL TO REACH AN AIRBASE: STAYING ON THE GROUND"
+          : " — NO AIRBASE TO RECOVER TO: STAYING ON THE GROUND"), "bad");
+    }
+    return false;
+  }
+  /* the ramp an rtb from here would land on (updateAir rtb: the pad
+     findPad gives, else its own over-stacked one), or null - none at all */
+  airlandRamp() {
+    const own = this.padOn;
+    return (this.game.findPad && this.game.findPad(this)) ||
+           (own && !own.dead && (own.kind !== "building" || own.buildProgress >= 1) ? own : null);
+  }
+  /* may it leave the ground: a ramp to go to, and the fuel to get there */
+  airlandFuelOK() {
+    if (this.def.hover || !this.fuelMax) return true;
+    return !!this.airlandRamp() && this.fuel >= this.reserveFuel(true);
   }
   /* off the ground, and on to what comes next: the order given while it was
      down, then what was queued behind the delivery, else home */

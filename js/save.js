@@ -271,7 +271,8 @@ var SaveGame = (function () {
     return { type: o.type };
   }
   const AIRLAND_KEYS = ["x", "y", "ax", "ay", "bx", "by", "ux", "uy", "len", "tax", "tay", "sx", "sy", "n",
-                        "load", "goes", "t", "gs", "run", "off", "s1", "s2", "phi", "t2x", "t2y", "plen", "pt"];
+                        "load", "goes", "t", "gs", "run", "off", "s1", "s2", "phi", "t2x", "t2y", "plen", "pt",
+                        "dw"];      // "said it is staying down" (entities.js airlandCanGo), so a load does not say it twice
   function liteSniff(o, beat) {
     const r = (v) => Math.round(v);
     const l = { type: "sniff", x: r(o.x), y: r(o.y) };

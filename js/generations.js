@@ -2272,34 +2272,77 @@
      of the role - a hovering transport as a spotter (ai.js) - simply finds
      none on that side. */
   var LB = 0.00045359237;                      // tonnes in a pound
+  var FT = 0.3048, IN = 0.0254;                // metres in a foot, an inch
+  /* ---- HOLD SPACE (stage 1b) ----
+     (owner) weight alone let a C-17 take fifteen Humvees: "add a REAL
+     HOLD-SPACE limit". `hold` is the cargo floor of each aeroplane, length x
+     width in metres, as published for that airframe. It is the floor ahead
+     of the ramp wherever the figure separates them - a ramp is the loading
+     slope on the ground and carries a fraction of a floor's load in the air -
+     with one exception said where it is made: the C-17's published 88 ft
+     compartment includes its ramp, which takes rolling stock, and no figure
+     for the floor without it was in any source fetched, so the 88 ft is
+     what it has.
+     The short Hercules (A, E, H and the RAF's C.1) all have the one 40 ft
+     hold; the J-30 and the RAF's C.3 are the 15 ft stretch, 55 ft. A row with
+     no figure in any source fetched has no `hold` and is held to its weight
+     alone, and its line says so. Heights are not used: the heights on record
+     are travel heights and many vehicles are built to be lowered for the
+     hold (the HMMWV from 6 ft to 4 ft 6 in), so a height test would refuse
+     loads that are flown. How the floor is shared out is entities.js
+     AIRLIFT, HOLD SPACE. Fetched 2026-10-21 with a generic agent string;
+     the sources are on each line.
+
+     RANGE. The An-2s, the Po-2 and the Il-76TD were filed as helicopters
+     until stage 1 and kept a helicopter's `radius` (24 to 26 tiles) when
+     they became aeroplanes. `range` puts each on the C-130J's scale - the
+     C-130J's 62 tiles stand for its published 1,800 nmi (3,334 km) at
+     maximum normal payload (en.wikipedia C-130J) - by its own published
+     range: radius = 62 x range / 3,334, rounded. The C-46 keeps its 31: its
+     published ranges (5,070 km at economical cruise, en.wikipedia; 2,897 km,
+     de.wikipedia) carry no payload and disagree by three quarters, so there
+     is no honest figure to scale by. */
+  var HERC = [40 * FT, 119 * IN], HERC30 = [55 * FT, 119 * IN];
+  var A400 = [17.71, 4.00], C160 = [13.5, 3.15], AN2 = [4.1, 1.6];
   var AIRLIFT = {
-    /* ---- aeroplanes: payload, and strip in tiles ---- */
-    nato_e50_airlift:  { t: 16.6,           strip: 5 },  // C-130A: 16,600 kg (de.wikipedia "Lockheed C-130", Flug Revue 3/2010)
-    nato_e80_airlift:  { t: 42000 * LB,     strip: 5 },  // C-130H: 42,000 lb (en.wikipedia C-130 infobox)
-    airlift_n:         { t: 44000 * LB,     strip: 5 },  // C-130J-30: 44,000 lb max allowable (en.wikipedia C-130J; the short J 42,000); landing roll 1,630 ft = 497 m
-    gbr_e60_airlift:   { t: 42000 * LB,     strip: 5 },  // C-130K C.1: built to the C-130H standard, the H's 42,000 lb
-    gbr_e80_airlift:   { t: 42000 * LB,     strip: 5 },  // C-130K C.3, the stretched C.1: the same 42,000 lb
-    gbr_e90_airlift:   { t: 42000 * LB,     strip: 5 },  // C-130K C.1/C.3
-    gbr_e00_airlift:   { t: 170900 * LB,    strip: 11 }, // C-17A: 170,900 lb (en.wikipedia, USAF); landing distance 3,500 ft = 1,067 m
-    airlift_g:         { t: 37,             strip: 8 },  // A400M: 37,000 kg (en.wikipedia); tactical landing distance 770 m
-    airlift_b:         { t: 37,             strip: 8 },  // A400M Atlas C.1
-    airlift_f:         { t: 37,             strip: 8 },  // A400M
-    fra_e00_airlift:   { t: 37,             strip: 8 },  // A400M
-    deu_e50_airlift:   { t: 8.458,          strip: 5 },  // Noratlas: 8,458 kg (en.wikipedia); landing run 420 m with reverse pitch
+    /* ---- aeroplanes: payload, strip in tiles, hold floor in metres ---- */
+    nato_e50_airlift:  { t: 16.6,           strip: 5, hold: HERC },   // C-130A: 16,600 kg (de.wikipedia "Lockheed C-130", Flug Revue 3/2010); the short Hercules hold, below
+    nato_e80_airlift:  { t: 42000 * LB,     strip: 5, hold: HERC },   // C-130H: 42,000 lb; hold 40 ft x 9 ft 11 in, ramp 123 in more (en.wikipedia C-130 infobox, "C-130E/H/J cargo hold")
+    airlift_n:         { t: 44000 * LB,     strip: 5, hold: HERC30 }, // C-130J-30: 44,000 lb max allowable (en.wikipedia C-130J; the short J 42,000); landing roll 1,630 ft = 497 m; hold 55 ft x 9 ft 11 in (en.wikipedia C-130 infobox)
+    gbr_e60_airlift:   { t: 42000 * LB,     strip: 5, hold: HERC },   // C-130K C.1: built to the C-130H standard, the H's 42,000 lb and its hold
+    gbr_e80_airlift:   { t: 42000 * LB,     strip: 5, hold: HERC30 }, // C-130K C.3, the C.1 stretched 15 ft (js/hero/us_c130_hercules.js): the same 42,000 lb, a 55 ft hold
+    gbr_e90_airlift:   { t: 42000 * LB,     strip: 5, hold: HERC30 }, // C-130K C.1/C.3: the row is named and drawn as the C.3
+    gbr_e00_airlift:   { t: 170900 * LB,    strip: 11, hold: [88 * FT, 18 * FT] }, // C-17A: 170,900 lb (en.wikipedia, USAF); landing distance 3,500 ft = 1,067 m; compartment 88 x 18 ft with the ramp (en.wikipedia; de.wikipedia 26.82 x 5.49 m)
+    airlift_g:         { t: 37,             strip: 8, hold: A400 },   // A400M: 37,000 kg (en.wikipedia); tactical landing distance 770 m; cargo box 17.71 x 4.00 m without the 5.40 m ramp (en.wikipedia)
+    airlift_b:         { t: 37,             strip: 8, hold: A400 },   // A400M Atlas C.1
+    airlift_f:         { t: 37,             strip: 8, hold: A400 },   // A400M
+    fra_e00_airlift:   { t: 37,             strip: 8, hold: A400 },   // A400M
+    deu_e50_airlift:   { t: 8.458,          strip: 5 },  // Noratlas: 8,458 kg (en.wikipedia); landing run 420 m with reverse pitch; NO hold figure in en/de/fr.wikipedia - weight alone (one light vehicle)
     fra_e50_airlift:   { t: 8.458,          strip: 5 },  // Noratlas
-    deu_e60_airlift:   { t: 16,             strip: 4 },  // Transall C-160: 16,000 kg (en.wikipedia); "airstrips as short as 400 metres"
-    fra_e60_airlift:   { t: 16,             strip: 4 },  // C-160F
-    fra_e80_airlift:   { t: 16,             strip: 4 },  // C-160NG
-    fra_e90_airlift:   { t: 16,             strip: 4 },  // C-160NG
-    gbr_e50_airlift:   { t: 22,             strip: 3 },  // Beverley: "Nutzlast von rund 22 Tonnen", landing 277 m from 15 m (de.wikipedia)
-    trans_k:           { t: 2.14, strip: 3, plane: 1 },  // An-2: 2,140 kg (en.wikipedia); landing run 215 m
-    kpa_e60_transport: { t: 2.14, strip: 3, plane: 1 },  // An-2 / Y-5
-    kpa_e80_transport: { t: 2.14, strip: 3, plane: 1 },  // An-2 / Y-5
-    kpa_e00_transport: { t: 2.14, strip: 3, plane: 1 },  // An-2 / Y-5
-    kpa_e50_transport: { t: 0.26, strip: 3, plane: 1 },  // Po-2: no cargo figure published; gross 1,030 kg less empty 770 kg (en.wikipedia)
-    kpa_e90_transport: { t: 48,   strip: 5, plane: 1 },  // Il-76TD, the civil MD: the MD's 48,000 kg (en.wikipedia); landing run 450 m with reversers
-    roc_e50_transport: { t: 15000 * LB, strip: 6, plane: 1 }, // C-46D: 15,000 lb (en.wikipedia, Bowers 1979); no landing run fetched, a twin-piston transport's ~600 m
-    /* ---- helicopters: the heavier of internal and hook ---- */
+    deu_e60_airlift:   { t: 16,             strip: 4, hold: C160 },   // Transall C-160: 16,000 kg (en.wikipedia); "airstrips as short as 400 metres"; Laderaum 13.5 x 3.15 m (de.wikipedia; en's 17.20 m counts the ramp)
+    fra_e60_airlift:   { t: 16,             strip: 4, hold: C160 },   // C-160F
+    fra_e80_airlift:   { t: 16,             strip: 4, hold: C160 },   // C-160NG
+    fra_e90_airlift:   { t: 16,             strip: 4, hold: C160 },   // C-160NG
+    gbr_e50_airlift:   { t: 22,             strip: 3, hold: [12.2, 2.59] }, // Beverley: "Nutzlast von rund 22 Tonnen", landing 277 m from 15 m; lower hold 12.2 x 2.59 m (de.wikipedia; the tail-boom deck above is for troops)
+    trans_k:           { t: 2.14, strip: 3, plane: 1, hold: AN2, range: 845 },  // An-2: 2,140 kg, range 845 km (en.wikipedia); landing run 215 m; cabin 4.1 x 1.6 m (ru.wikipedia)
+    kpa_e60_transport: { t: 2.14, strip: 3, plane: 1, hold: AN2, range: 845 },  // An-2 / Y-5
+    kpa_e80_transport: { t: 2.14, strip: 3, plane: 1, hold: AN2, range: 845 },  // An-2 / Y-5
+    kpa_e00_transport: { t: 2.14, strip: 3, plane: 1, hold: AN2, range: 845 },  // An-2 / Y-5
+    kpa_e50_transport: { t: 0.26, strip: 3, plane: 1, range: 630 },  // Po-2: no cargo figure published; gross 1,030 kg less empty 770 kg; range 630 km (en.wikipedia); open cockpits and no hold - its 0.26 t refuses every vehicle
+    kpa_e90_transport: { t: 48,   strip: 5, plane: 1, hold: [20, 3.46], range: 3600 },  // Il-76TD, the civil MD: the MD's 48,000 kg (en.wikipedia); landing run 450 m with reversers; hold 24.5 m of which 4.5 m ramp, 3.46 m wide; TD range 3,600 km at maximum load (ru.wikipedia)
+    roc_e50_transport: { t: 15000 * LB, strip: 6, plane: 1 }, // C-46D: 15,000 lb (en.wikipedia, Bowers 1979); no landing run fetched, a twin-piston transport's ~600 m; NO hold figure fetched - weight alone (one light vehicle)
+    /* ---- helicopters: the heavier of internal and hook ----
+       Every one carries ONE vehicle, on its hook (entities.js HOLD SPACE).
+       The Chinook also takes vehicles inside, up its rear ramp ("a wide
+       loading ramp ... can carry heavy payloads internally", en.wikipedia
+       CH-47), so it has a `cabin` floor like an aeroplane's hold. Its
+       figure, 30 ft 6 in x 7 ft 6 in, is the commonly published CH-47
+       cargo compartment and was NOT in any source fetched this round (en.
+       wikipedia and boeing.com give only the fuselage): flagged to be
+       checked. The Mi-8/Mi-17 clamshell doors and the NH90's ramp do take a
+       light car in reality, but no vehicle in the roster is inside their
+       4 to 4.2 t, and no cabin floor was fetched, so they carry theirs on
+       the hook. */
     nato_e50_transport: { t: 2705 * LB },  // H-19D: no cargo figure published; gross 7,500 lb less empty 4,795 lb (en.wikipedia H-19)
     gbr_e50_transport:  { t: 2705 * LB },  // Whirlwind HAR.3/HC.2, the licence S-55: the H-19's figure
     deu_e50_transport:  { t: 4221 * LB },  // H-34G: no cargo figure published; gross 11,867 lb less empty 7,646 lb (en.wikipedia H-34)
@@ -2334,18 +2377,23 @@
     trans_g:            { t: 4.2 },        // NH90 TTH: 4,200 kg external slung load (en.wikipedia)
     trans_f:            { t: 4.2 },        // NH90 Caiman
     fra_e00_transport:  { t: 4.2 },        // NH90 Caiman
-    gbr_e80_transport:  { t: 10 },         // Chinook HC.1: "up to 10 tonnes of freight" (en.wikipedia, Chinook UK variants)
-    gbr_e90_transport:  { t: 10 },         // Chinook HC.2
-    gbr_e00_transport:  { t: 10 },         // Chinook HC.4
-    trans_b:            { t: 10 },         // Chinook HC.6A
+    gbr_e80_transport:  { t: 10, cabin: [30.5 * FT, 7.5 * FT] },  // Chinook HC.1: "up to 10 tonnes of freight" (en.wikipedia, Chinook UK variants); cabin as above, NOT fetched
+    gbr_e90_transport:  { t: 10, cabin: [30.5 * FT, 7.5 * FT] },  // Chinook HC.2
+    gbr_e00_transport:  { t: 10, cabin: [30.5 * FT, 7.5 * FT] },  // Chinook HC.4
+    trans_b:            { t: 10, cabin: [30.5 * FT, 7.5 * FT] },  // Chinook HC.6A
   };
   var liftMiss = [], nLift = 0, rerole = false;
+  var R130 = UNITS.airlift_n && UNITS.airlift_n.radius;            // 62: the C-130J's 3,334 km
+  var m2 = function (a) { return [Math.round(a[0] * 100) / 100, Math.round(a[1] * 100) / 100]; };
   for (var _lk in AIRLIFT) {
     var _lu = UNITS[_lk], _la = AIRLIFT[_lk];
     if (!_lu) { liftMiss.push(_lk); continue; }
     _lu.payload = Math.round(_la.t * 100) / 100;
     if (_la.strip) _lu.strip = _la.strip;
     if (_la.plane) { _lu.role = "airlift"; delete _lu.hover; rerole = true; }
+    if (_la.hold) _lu.hold = m2(_la.hold);
+    if (_la.cabin) _lu.cabin = m2(_la.cabin);
+    if (_la.range && R130) _lu.radius = Math.round(R130 * _la.range / 3334);
     nLift++;
   }
   /* a transport added later without a figure carries infantry as before and
@@ -2357,6 +2405,122 @@
   if (rerole && typeof reindexRoles === "function") reindexRoles();
   if (liftMiss.length && typeof console !== "undefined" && console.warn)
     console.warn("[generations] airlift table out of step with the roster: " + liftMiss.join(", "));
+
+  /* ---- HOLD SPACE: how long and how wide each vehicle is ----
+     A vehicle's floor is its own length and width in metres. The first
+     source is the model spec it is drawn from, js/armour_specs.js (`len`,
+     `width`: the hull - a gun is not counted, it is laid over the deck), and
+     entities.js reads that at run time, since that file loads after this
+     one. This table is what that cannot answer: a spec row that is another
+     vehicle (five of them), a spec row a hero file corrects from a published
+     figure, a vehicle with no spec row that is the same vehicle as another
+     row or rides another row's chassis, and published figures fetched for
+     the rest (2026-10-21, en/de.wikipedia with a generic agent string).
+     The third field says which: "pub" fetched, "hero" a published figure
+     quoted in a js/hero/ file, "spec" another spec row of the same vehicle
+     or chassis. Where only an overall length with the gun forward is
+     published, that is used, and the line says so - it is the longer
+     figure. What is in none of these takes its role's CLASS DEFAULT below. */
+  var M113 = [4.863, 2.686, "pub"], M1151 = [4.9, 2.3, "hero"], PAT = [15.4, 2.9, "spec"];
+  var M270 = [6.85, 2.97, "hero"], AMX30 = [6.59, 3.1, "spec"], M548 = [5.89, 2.686, "pub"];
+  var BUK = [9.3, 3.25, "hero"], ISK = [12.7, 3.0, "hero"];
+  var VEHSIZE = {
+    /* spec rows that are another vehicle */
+    spaag_n:          [6.95, 2.72, "pub"],  // Stryker A1 IM-SHORAD: the Stryker's 6.95 x 2.72 m (en.wikipedia Stryker); its spec row is a Gepard
+    atgmv_r:          M1151,                // M1167 HMMWV TOW: the ECV chassis it shares with the M1151 (below); its spec row is a CM-32
+    nato_e50_recon:   [4.70, 2.31, "pub"],  // M8 Greyhound: 15 ft 5 in x 7 ft 7 in (en.wikipedia, TM 9-743); its spec row is a Ferret
+    nato_e60_ifv:     M113,                 // M113 ACAV: the M113's 4.863 x 2.686 m (en.wikipedia M113); its spec row is a Marder
+    nato_e80_spaag:   [4.86, 2.85, "pub"],  // M163 VADS: 191.5 x 112.4 in (en.wikipedia M163); its spec row is a Gepard
+    /* spec rows a hero file corrects */
+    recon_n:          M1151,                // M1151: about 4.9 x 2.3 m, the AM General figure (js/hero/us_humvee.js); the spec row's 4.8 x 2.2 is not published
+    nato_e00_recon:   M1151,                // M1151 ECV, no spec row
+    nato_e90_spaag:   [4.95, 2.18, "hero"], // M1097 Avenger: 4.95 m on the fact sheet, the body 2.18 m (js/hero/us_humvee.js)
+    pact_e60_tel:     [11.75, 3.05, "hero"],// 9P117: 11.75 x 3.05 m (js/hero/ru_scud_b.js, a 9P117 data sheet); the spec row's 13.4 m is not published
+    pact_e00_tel:     ISK,                  // 9P78-1 on the MZKT-7930: the chassis' published 12.7 x 3.0 m (Wikipedia MZKT-7930, js/hero/ru_iskander.js)
+    tel_p:            ISK,
+    /* no spec row: the same vehicle, or the chassis it rides, as another row */
+    sam_n:            PAT,                  // Patriot launching station and tractor: armour_specs.js nato_e00_sam
+    sam_g:            PAT,
+    deu_e90_sam:      PAT,
+    sam_c:            [13.0, 3.1, "spec"],  // HQ-9B on the TAS-5380: armour_specs.js pla_e00_sam, the same truck
+    mlrs_b:           M270,                 // M270A2: 6.85 x 2.97 m (js/hero/us_m270_himars.js)
+    mlrs_f:           M270,                 // LRU, the M270
+    mlrs_g:           M270,                 // MARS II, the M270
+    mbt_g:            [7.7, 3.8, "spec"],   // Leopard 2A7V: the Leopard 2 hull of armour_specs.js deu_e00_mbt (3.81 m wide, de.wikipedia)
+    supply_g:         [8.7, 2.5, "spec"],   // MAN gl 7 t: the MAN 7 t chassis of armour_specs.js deu_e80_mlrs
+    spaag_f:          [6.5, 2.7, "spec"],   // Crotale NG: armour_specs.js fra_e00_spaag, the same system
+    fra_e80_sam:      [6.92, 3.24, "spec"], // Roland 2 on the AMX-30R: armour_specs.js fra_e90_spaag
+    fra_e60_tel:      AMX30,                // Pluton: the AMX-30 chassis, armour_specs.js fra_e60_mbt (the container's overhang laid over it, like a gun)
+    fra_e80_tel:      AMX30,
+    gbr_e50_tel:      [11.6, 2.6, "spec"],  // Corporal: armour_specs.js nato_e50_tel, the same system
+    kpa_e50_tankdestroyer: [6.1, 3.0, "spec"], // SU-100: armour_specs.js pact_e50_spg
+    kpa_e60_tankdestroyer: [5.8, 2.4, "spec"], // 9P133 on the BRDM-2: armour_specs.js pact_e60_recon
+    pla_e80_tankdestroyer: [5.5, 3.0, "spec"], // HJ-73 on the Type 63 / YW531: armour_specs.js pla_e60_ifv
+    /* published figures */
+    tel_n:            [6.94, 2.44, "pub"],  // M142 HIMARS (en.wikipedia)
+    recon_g:          [5.58, 2.55, "pub"],  // Fennek (en.wikipedia)
+    ifv_g:            [7.4, 3.7, "pub"],    // Puma, base armour (en.wikipedia)
+    atgmv_g:          [3.55, 1.82, "pub"],  // Wiesel 1 (en.wikipedia)
+    spaag_g:          [4.78, 1.87, "pub"],  // Ozelot on the Wiesel 2 (en.wikipedia Wiesel, the Wiesel 2 figures)
+    spg_g:            [11.7, 3.6, "pub"],   // PzH 2000: OVERALL, gun forward - no hull figure found (en.wikipedia)
+    recon_b:          [5.39, 2.00, "pub"],  // Jackal (de.wikipedia)
+    ifv_b:            [6.3, 3.03, "pub"],   // FV510 Warrior (en.wikipedia)
+    lt_b:             [7.62, 3.35, "pub"],  // Ajax (en.wikipedia)
+    mbt_b:            [8.3, 3.5, "pub"],    // Challenger 2 hull (en.wikipedia)
+    hvy_b:            [8.3, 3.5, "pub"],    // Challenger 3: the Challenger 2 hull it is rebuilt on
+    spaag_b:          [5.27, 2.76, "pub"],  // Stormer (en.wikipedia Alvis Stormer)
+    recon_f:          [3.80, 2.02, "pub"],  // VBL (en.wikipedia)
+    ifv_f:            [7.6, 2.98, "pub"],   // VBCI (en.wikipedia)
+    lt_f:             [7.1, 2.99, "pub"],   // EBRC Jaguar, the chassis (en.wikipedia)
+    mbt_f:            [6.88, 3.60, "pub"],  // Leclerc without the gun (en.wikipedia)
+    spg_f:            [10, 2.55, "pub"],    // CAESAR Mk1 on the 6x6 (en.wikipedia)
+    gbr_e80_sam:      M548,                 // Tracked Rapier on the M548 (en.wikipedia M548)
+    nato_e80_ewveh:   M548,                 // TACJAM on the M1015, an M548-family carrier (en.wikipedia M548)
+    gbr_e60_radarv:   [5.25, 2.8, "pub"],   // FV436, the FV430 series (en.wikipedia)
+    deu_e60_radarv:   M113,                 // Green Archer on the M113 (en.wikipedia M113)
+    deu_e80_radarv:   M113,                 // ABRA on the M113
+    deu_e90_radarv:   M113,
+    nato_e60_tankdestroyer: M113,           // M113A1 TOW
+    nato_e80_tankdestroyer: M113,           // M901 ITV, an M113A2 hull
+    nato_e90_tankdestroyer: M113,
+    roc_e80_tankdestroyer:  M113,
+    roc_e90_tankdestroyer:  [4.863, 2.686, "pub"], // CM-25 on the CM-21 hull (en.wikipedia CM21)
+    roc_e50_tankdestroyer:  [5.28, 2.87, "pub"],   // M18 Hellcat hull, 17 ft 4 in x 9 ft 5 in (en.wikipedia)
+    nato_e50_tankdestroyer: [4.55, 2.57, "pub"],   // M56 Scorpion without the gun (en.wikipedia)
+    nato_e50_heavy:   [11.39, 3.63, "hero"],// M103: OVERALL, gun forward - the hull length is not published (js/hero/us_m103.js, Hunnicutt)
+    nato_e60_heavy:   [11.23, 3.63, "hero"],// M103A2: the same, 442.2 in
+    pact_e60_heavy:   [7.41, 3.56, "pub"],  // T-10 hull (en.wikipedia)
+    pact_e60_tankdestroyer: [5.7, 2.25, "pub"],    // 9P110 on the BRDM-1 (en.wikipedia BRDM-1)
+    pact_e80_tankdestroyer: [6.45, 2.86, "pub"],   // Shturm-S on the MT-LB (en.wikipedia MT-LB)
+    nato_e90_ewveh:   [4.57, 2.16, "pub"],  // TRAFFIC JAM on the HMMWV: the M998's 15 ft x 7 ft 1 in (en.wikipedia Humvee)
+    pla_e90_tankdestroyer: [5.6, 2.8, "pub"],      // PTZ-89 (en.wikipedia Type 89 tank destroyer)
+    pact_e80_buk:     BUK,                  // 9A310M1: 9.3 x 3.25 m published (js/hero/ru_buk.js)
+    pact_e00_buk:     BUK,                  // 9A317: the Buk hull the hero file scales it to - the 9A310M1's figure, not its own
+    pact_e00_buk_m3:  BUK,                  // 9A317M: the same
+    sam_p:            [15.3, 3.3, "hero"],  // S-400 5P85TE2 rig: NO maker figure; 15.3 x 3.3 m from the 1:35 kit (js/hero/ru_s400.js)
+  };
+  /* CLASS DEFAULTS - not any vehicle's figure. The median length and width
+     of the armour_specs.js rows of the role (368 rows, counted 2026-10-21),
+     for a vehicle in none of the above; a role with no spec row at all (the
+     construction rig, the recovery vehicle, the mine vehicles, the ore
+     hauler) takes the median of every row, 6.8 x 3.0 m. */
+  var VEHCLASS = {
+    ewveh: [8.0, 2.6], heavy: [7.7, 3.6], ifv: [6.7, 2.9], lighttank: [6.3, 3.0], mbt: [6.9, 3.5],
+    mlrs: [7.5, 2.7], radarv: [7.0, 2.5], recon: [5.5, 2.3], sam: [12.6, 3.0], spaag: [6.3, 3.0],
+    spg: [6.2, 3.2], supply: [9.3, 2.4], tankdestroyer: [6.5, 2.8], tel: [11.6, 3.0], _: [6.8, 3.0],
+  };
+  var sizeMiss = [];
+  for (var _vk in VEHSIZE) {
+    var _vu = UNITS[_vk], _vs = VEHSIZE[_vk];
+    if (!_vu || _vu.cat !== "vehicle") { sizeMiss.push(_vk); continue; }
+    _vu.sizeL = _vs[0]; _vu.sizeW = _vs[1]; _vu.sizeSrc = _vs[2];
+  }
+  for (var _vt in UNITS) {
+    var _vd = UNITS[_vt];
+    if (_vd.cat === "vehicle" && _vd.layer === "ground") _vd.sizeClass = VEHCLASS[_vd.role] || VEHCLASS._;
+  }
+  if (sizeMiss.length && typeof console !== "undefined" && console.warn)
+    console.warn("[generations] vehicle size table out of step with the roster: " + sizeMiss.join(", "));
 
   if (typeof console !== "undefined" && console.log)
     console.log("[generations] early warning derived on " + nAew + " airframes, " +

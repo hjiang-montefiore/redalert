@@ -16,16 +16,17 @@
         helicopters are aeroplanes, and every vehicle has a mass;
      1. a Humvee boards a C-130J parked on its airbase, through the page's
         own right-click on #cv, and so does a second; the panel says
-        "2 VEH + 0 INF · 10 OF 20 T";
+        "2 VEH + 0 INF · 10 OF 20 T · 9.8 OF 16.8 M";
      2. an Abrams is refused by the C-130J, with the reason, and boards a
         C-17; a C-17 will not take a second Abrams;
      3. the accounting with infantry and vehicles together: two Humvees and
-        three riflemen fill a C-130J's 20 t, the fourth rifleman and a third
-        Humvee do not get on, and the Humvee is told why; eight riflemen
-        alone fill its eight seats as before;
-     4. a Black Hawk refuses a Humvee and a Chinook takes two of them (the
-        Wikipedia photograph), coming to them to do it; U puts them down; a
-        helicopter sent to a point with G.airLand sets them down there;
+        three riflemen fill a C-130J's 20 t and its floor, the fourth
+        rifleman and a third Humvee do not get on, and the Humvee is told
+        why; eight riflemen alone fill its eight seats as before;
+     4. a Black Hawk refuses a Humvee; a Chinook takes one on its hook -
+        one at a time (stage 1b), and an M1151 is too wide for its cabin -
+        coming to it to do it; U puts it down; a helicopter sent to a point
+        with G.airLand sets it down there;
      5. a C-130J in the air with two Humvees, U: it picks a strip near where
         it was going, lands on it lined up, rolls out, puts the Humvees down
         beside the strip and not on it, takes off and lands back at its
@@ -41,7 +42,31 @@
     10. the build card says what it lifts and the strip it needs;
     11. a save made mid-delivery - one transport on its approach with its
         load, one standing on its strip - loads into the same delivery, and
-        both finish it (last: the load rebuilds the match). */
+        both finish it; a landing craft saved on its run to a beach with
+        troops aboard still puts them ashore (last: the load rebuilds the
+        match).
+   Stage 1b, HOLD SPACE (owner: "add a REAL HOLD-SPACE limit"): every
+   aeroplane's published cargo floor and every vehicle's own length and width
+   have to fit as well as the weight (entities.js HOLD SPACE):
+     0. the floors, the vehicle sizes and where each came from, the range
+        corrections of the An-2s, the Po-2 and the Il-76TD;
+    12. the matrix: a C-130J-30 three Humvees then the floor says no, a
+        C-130H two, a C-17 ten (two lanes of five) or one Abrams and nothing
+        else heavy, an A400M three, an Il-76TD two BMD-2s (its weight) and
+        four Humvees (its floor); too wide, too long; a Black Hawk one
+        vehicle on the hook, a Chinook one on the hook and more inside;
+        the panel and the card say so;
+    13. the stage-1 reviewer's cases: a diagonal strip down a one-tile lane
+        in a wood is refused; a helicopter sent to set down on water is
+        never "on the ground" there; U on an aeroplane standing on its strip
+        puts nobody on the strip;
+    14. fuel: a strip beyond a full tank's reach is refused with the reason;
+        short of fuel now, it goes home first and then delivers; a transport
+        down on its strip without the fuel to get home stays down, says so,
+        does not take off to crash, and goes once it can; nor with no
+        airbase left, nor on a tanker beside the strip (the review);
+    15. fog: the strip finder steps round an enemy its side can see, and not
+        round one hidden in the fog. */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
 var TRACE = typeof __ARGS !== "undefined" && __ARGS.indexOf("trace") >= 0;
 function log(s) { print(s); }
@@ -167,8 +192,9 @@ function run() {
   if (BASE) { BASE.buildProgress = 1; P.primary = P.primary || {}; P.primary.airbase = BASE; }
   chk("an airbase for the transports", !!BASE, ab ? "(" + ab.x + "," + ab.y + ") faction " + P.faction : "no plot");
   if (!BASE) return;
-  var sections = [secData, secBoard, secHeavy, secMixed, secPack, secHelo, secDeliver, secSweep, secGroundOrder,
-                  secPickup, secBlocked, secBingo, secNoStrip, secShotDown, secPlanes, secInfantry, secCard];
+  var sections = [secData, secBoard, secHeavy, secMixed, secHold, secPack, secHelo, secDeliver, secSweep, secGroundOrder,
+                  secPickup, secBlocked, secBingo, secNoStrip, secShotDown, secPlanes, secInfantry, secCard,
+                  secReview, secFuel, secFog];
   sections.forEach(function (f) {
     var w0 = Date.now();
     readBox();
@@ -206,6 +232,50 @@ function secData() {
   /* nothing that hovered before has lost it except the four aeroplanes */
   var rot = Object.keys(UNITS).filter(function (id) { var d = UNITS[id]; return d.role === "transport" && !d.hover; });
   chk("every transport helicopter still hovers", !rot.length, rot.join(", ") || "all");
+
+  /* ---- stage 1b: HOLD SPACE ---- */
+  var holdWant = { airlift_n: [16.76, 3.02], nato_e80_airlift: [12.19, 3.02], nato_e50_airlift: [12.19, 3.02],
+                   gbr_e60_airlift: [12.19, 3.02], gbr_e80_airlift: [16.76, 3.02], gbr_e00_airlift: [26.82, 5.49],
+                   airlift_g: [17.71, 4], deu_e60_airlift: [13.5, 3.15], gbr_e50_airlift: [12.2, 2.59],
+                   trans_k: [4.1, 1.6], kpa_e90_transport: [20, 3.46] };
+  var offH = Object.keys(holdWant).filter(function (id) {
+    var h = UNITS[id].hold; return !h || Math.abs(h[0] - holdWant[id][0]) > 0.006 || Math.abs(h[1] - holdWant[id][1]) > 0.006; });
+  chk("the floors: C-130J-30 16.76 x 3.02 m, the short Hercules 12.19, C-17 26.82 x 5.49, A400M 17.71 x 4.00, " +
+      "C-160 13.5 x 3.15, Beverley 12.2 x 2.59, An-2 4.1 x 1.6, Il-76TD 20 x 3.46", !offH.length,
+      offH.map(function (id) { return id + " " + JSON.stringify(UNITS[id].hold); }).join(", "));
+  var noHold = [], cab = [];
+  for (var id2 in UNITS) {
+    var d2 = UNITS[id2];
+    if (d2.layer === "air" && d2.payload && !d2.hover && !d2.hold) noHold.push(id2);
+    if (d2.cabin) cab.push(id2);
+  }
+  chk("the aeroplanes with no published floor are exactly the Noratlas, the C-46 and the Po-2: weight alone",
+      noHold.sort().join(",") === "deu_e50_airlift,fra_e50_airlift,kpa_e50_transport,roc_e50_transport", noHold.join(", "));
+  chk("the Chinooks, and only they, take vehicles inside a cabin as well as on the hook",
+      cab.sort().join(",") === "gbr_e00_transport,gbr_e80_transport,gbr_e90_transport,trans_b", cab.join(", "));
+  var src = {}, nosize = [];
+  for (var id3 in UNITS) {
+    var d3 = UNITS[id3];
+    if (d3.cat !== "vehicle" || d3.layer !== "ground") continue;
+    var sz = Unit.vehSize(d3);
+    src[sz.src] = (src[sz.src] || 0) + 1;
+    if (!(sz.L > 0 && sz.W > 0)) nosize.push(id3);
+  }
+  log("     vehicle sizes by source: " + JSON.stringify(src) +
+      "  (armour = its own armour_specs.js row; spec = another row of the same vehicle or chassis; hero = a published figure in js/hero/; pub = fetched; class = CLASS DEFAULT)");
+  chk("every ground vehicle has a length and a width, most of them from their own model spec",
+      !nosize.length && (src.armour || 0) > 340, nosize.join(", ") || JSON.stringify(src));
+  var mis = ["spaag_n", "atgmv_r", "nato_e50_recon", "nato_e60_ifv", "nato_e80_spaag"].filter(function (id) {
+    return Unit.vehSize(UNITS[id]).src === "armour"; });
+  chk("the five spec rows that draw another vehicle are not taken for its size", !mis.length, mis.join(", "));
+  var hz = Unit.vehSize(UNITS.recon_n), az = Unit.vehSize(UNITS.mbt_n);
+  chk("a Humvee (M1151) is 4.9 x 2.3 m, the AM General figure; an Abrams 7.9 x 3.7, its hull",
+      hz.L === 4.9 && hz.W === 2.3 && az.L === 7.9 && az.W === 3.7, hz.L + " x " + hz.W + " " + hz.src + ", " + az.L + " x " + az.W + " " + az.src);
+  var rw = { trans_k: 16, kpa_e60_transport: 16, kpa_e80_transport: 16, kpa_e00_transport: 16, kpa_e50_transport: 12,
+             kpa_e90_transport: 67, roc_e50_transport: 31, airlift_n: 62 };
+  var offR = Object.keys(rw).filter(function (id) { return UNITS[id].radius !== rw[id]; });
+  chk("radius on the C-130J's scale (62 for 3,334 km): An-2 16 (845 km), Po-2 12 (630 km), Il-76TD 67 (3,600 km); the C-46 left at 31",
+      !offR.length, offR.map(function (id) { return id + " " + UNITS[id].radius; }).join(", "));
 }
 
 /* a C-130J on the ramp, two Humvees beside the airbase */
@@ -225,8 +295,8 @@ function secBoard() {
       "after " + t.toFixed(1) + " s, cargo " + C130.cargo.length);
   sel([C130]); UI.frame && UI.frame(0);
   var pn = panel();
-  chk("the panel says what is aboard by weight: CARGO 2 VEH + 0 INF · 10 OF 20 T",
-      pn.indexOf("2 VEH + 0 INF · 10 OF 20 T") >= 0, (pn.match(/CARGO <i>[^<]*/) || ["none"])[0]);
+  chk("the panel says what is aboard by weight and floor: CARGO 2 VEH + 0 INF · 10 OF 20 T · 9.8 OF 16.8 M",
+      pn.indexOf("2 VEH + 0 INF · 10 OF 20 T · 9.8 OF 16.8 M") >= 0, (pn.match(/CARGO <i>[^<]*/) || ["none"])[0]);
   var L = C130.cargoLoad();
   chk("cargoLoad: 2 vehicles, 10 t of 19.96", L.veh === 2 && L.inf === 0 && Math.abs(L.t - 10) < 1e-9 && L.cap === 19.96,
       JSON.stringify(L));
@@ -269,14 +339,16 @@ function secMixed() {
   sel(sq); rclickUnit(C130);
   ticks(30, function () { return sq.every(function (s) { return s.carried || s.order.type === "idle"; }); });
   var aboard = sq.filter(function (s) { return s.carried; }).length;
-  chk("three squads board on top of two Humvees and the fourth does not: 10 + 3 x 2.495 = 17.5 t, a fourth would be 19.98",
+  chk("three squads board on top of two Humvees and the fourth does not: 10 + 3 x 2.495 = 17.5 t, a fourth would be 19.98; " +
+      "9.8 + 3 x 2.095 = 16.1 m of floor, a fourth 18.2",
       aboard === 3 && C130.cargo.length === 5, aboard + " aboard, cargo " + C130.cargo.length);
   var L = C130.cargoLoad();
   chk("the accounting: 2 vehicles, 3 infantry, 17.49 t", L.veh === 2 && L.inf === 3 && Math.abs(L.t - 17.485) < 1e-6, JSON.stringify(L));
   var t0 = Game.time;
   sel([h3]); rclickUnit(C130);
-  chk("the third Humvee is refused, and told why", h3.order.type !== "enter" &&
-      said(/C-130J SUPER HERCULES HAS 2\.5 T LEFT — HUMVEE \(5 T\) DOES NOT FIT/, t0), saidText(t0));
+  chk("the third Humvee is refused, and told why: the floor (9.8 m of Humvees and 3 x 2.1 m of seats) is the first to say no",
+      h3.order.type !== "enter" &&
+      said(/C-130J SUPER HERCULES — NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)/, t0), saidText(t0));
   sel([C130]); UI.frame && UI.frame(0);
   chk("the panel: CARGO 2 VEH + 3 INF · 17.5 OF 20 T", panel().indexOf("2 VEH + 3 INF · 17.5 OF 20 T") >= 0,
       (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
@@ -320,7 +392,7 @@ function secPack() {
 }
 
 function secHelo() {
-  log("\n[4] helicopters: a Black Hawk refuses a Humvee, a Chinook takes two and comes for them");
+  log("\n[4] helicopters: a Black Hawk refuses a Humvee, a Chinook takes one on its hook and comes for it");
   var g = openGround(8, 8, BASE.tx + 14, BASE.ty, 6, 30);
   var cx = (g.x + 4) * TT, cy = (g.y + 4) * TT;
   var bh = spawn("trans_n", cx, cy - 6 * TT); bh.order = { type: "hover" }; bh.parked = false;
@@ -331,32 +403,36 @@ function secHelo() {
       hv.order.type !== "enter" && said(/HUMVEE \(5 T\) — TOO HEAVY FOR THE BLACK HAWK \(4\.1 T\)/, t0), saidText(t0));
   gone(bh);
   var ch = spawn("trans_b", cx + 9 * TT, cy - 9 * TT); ch.order = { type: "hover" }; ch.parked = false;
-  chk("a Chinook HC6A (10 t) hovering nine tiles off", ch.def.payload === 10, ch.def.full);
+  chk("a Chinook HC6A (10 t, a 9.3 x 2.29 m cabin) hovering nine tiles off", ch.def.payload === 10 && ch.def.cabin, ch.def.full);
   t0 = Game.time;
   sel([hv, hv2, jk]); rclickUnit(ch);
-  chk("three Humvees right-clicked onto it: two are sent and the third is refused - 15 t is not 10",
-      hv.order.type === "enter" && hv2.order.type === "enter" && jk.order.type !== "enter" &&
-      said(/CHINOOK HC6A HAS 0 T LEFT \u2014 HUMVEE \(5 T\) DOES NOT FIT/, t0), [hv.order.type, hv2.order.type, jk.order.type].join("/") + " " + saidText(t0));
-  chk("the Chinook comes to them rather than make them drive under it", ch.order.type === "move" &&
+  chk("three Humvees right-clicked onto it: one is sent, for the hook; the next is too wide for its cabin and the hook is taken - told so",
+      hv.order.type === "enter" && hv2.order.type !== "enter" && jk.order.type !== "enter" &&
+      said(/CHINOOK HC6A HAS A VEHICLE ON THE HOOK ALREADY \u2014 A HUMVEE \(2\.30 M WIDE\) DOES NOT GO IN ITS CABIN \(2\.29 M\)/, t0),
+      [hv.order.type, hv2.order.type, jk.order.type].join("/") + " " + saidText(t0));
+  chk("the Chinook comes to it rather than make it drive under it", ch.order.type === "move" &&
       Math.hypot(ch.order.x - cx, ch.order.y - cy) < 2 * TT, ch.order.type + " " + tiles(ch.order.x || 0) + "," + tiles(ch.order.y || 0));
-  var t = ticks(40, function () { return hv.carried && hv2.carried; });
-  chk("both board it, sling or ramp", hv.carried && hv2.carried && ch.cargo.length === 2, "after " + t.toFixed(1) + " s");
-  /* U: put them down where it is */
-  sel([ch]); t0 = Game.time;
+  var t = ticks(40, function () { return hv.carried; });
+  chk("it boards, on the hook", hv.carried && ch.cargo.length === 1 && ch.cargoLoad().hook === 1, "after " + t.toFixed(1) + " s");
+  sel([ch]); UI.frame && UI.frame(0);
+  chk("the panel: CARGO 1 VEH + 0 INF · 5 OF 10 T · 0.0 OF 9.3 M · 1 ON THE HOOK",
+      panel().indexOf("1 VEH + 0 INF · 5 OF 10 T · 0.0 OF 9.3 M · 1 ON THE HOOK") >= 0, (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
+  /* U: put it down where it is */
+  t0 = Game.time;
   key("u");
-  chk("U puts them down beside it, on the ground", !hv.carried && !hv2.carried && ch.cargo.length === 0 &&
+  chk("U puts it down beside it, on the ground", !hv.carried && ch.cargo.length === 0 &&
       Math.hypot(hv.x - ch.x, hv.y - ch.y) < 3 * TT, "dist " + tiles(Math.hypot(hv.x - ch.x, hv.y - ch.y)) + " " + saidText(t0));
   /* board again, then G.airLand to a point twenty tiles away */
-  sel([hv, hv2]); rclickUnit(ch);
-  ticks(40, function () { return hv.carried && hv2.carried; });
+  sel([hv]); rclickUnit(ch);
+  ticks(40, function () { return hv.carried; });
   var dx = cx + 20 * TT, dy = cy;
   var g2 = openGround(4, 4, dx / TT, dy / TT, 4, 20);
   if (g2) { dx = (g2.x + 2) * TT; dy = (g2.y + 2) * TT; }
   var why = Game.airLand(ch, dx, dy);
   chk("G.airLand(chinook, point 20 tiles off) is given", why === "" && ch.order.type === "airland", why || ch.order.type);
   var down = false, t1 = ticks(40, function () { if (ch.grounded) down = true; return down && !ch.grounded; });
-  chk("it flies there, sets down, puts both Humvees off at the point and lifts again",
-      down && !hv.carried && !hv2.carried && Math.hypot(hv.x - dx, hv.y - dy) < 3 * TT && ch.order.type === "hover",
+  chk("it flies there, sets down, puts the Humvee off at the point and lifts again",
+      down && !hv.carried && Math.hypot(hv.x - dx, hv.y - dy) < 3 * TT && ch.order.type === "hover",
       "after " + t1.toFixed(1) + " s, " + tiles(Math.hypot(hv.x - dx, hv.y - dy)) + " tiles from the point, order " + ch.order.type);
   gone(ch); gone(hv); gone(hv2); gone(jk);
 }
@@ -645,11 +721,15 @@ function secInfantry() {
   }
   chk("every airlifter takes exactly its seats in riflemen by weight", !bad.length, bad.slice(0, 6).join(", ") || "all");
   /* a squad boards a C-130 in flight, as infantry always could */
+  /* the squad starts under it: a fixed-wing "hover" is an orbit about three
+     tiles across, and a squad two tiles off chases it round for as long as
+     the geometry of the moment decides (stage 1b measured 30 s of misses
+     after the sections before it moved the clock on) */
   var c = spawn("airlift_n", BASE.x + 12 * TT, BASE.y); c.parked = false; c.order = { type: "hover" };
-  var sq = spawn("rifle_n", BASE.x + 12 * TT, BASE.y + 2 * TT);
+  var sq = spawn("rifle_n", c.x, c.y);
   sq.order = { type: "enter", target: c };
   ticks(30, function () { return sq.carried; });
-  chk("a squad still boards a C-130J in flight by catching it up", sq.carried, sq.order.type);
+  chk("a squad still boards a C-130J in flight", sq.carried, sq.order.type);
   /* U puts them out in the air - no landing */
   sel([c]); var t0 = Game.time;
   key("u");
@@ -685,9 +765,304 @@ function secCard() {
   if (!card) { chk("the C-130J card on the AIR tab", false, "tab " + tabNow() + ", faction " + P.faction); return; }
   card.dispatchEvent({ type: "mouseenter" });
   var th = (document.getElementById("tooltip") || {}).innerHTML || "";
-  chk("its card says CARRIES 8 · LIFTS 20 T · LANDS IN 5 TILES", th.indexOf("CARRIES 8 · LIFTS 20 T · LANDS IN 5 TILES") >= 0,
+  chk("its card says CARRIES 8 · LIFTS 20 T · LANDS IN 5 TILES · FLOOR 16.8 \u00d7 3.0 M",
+      th.indexOf("CARRIES 8 · LIFTS 20 T · LANDS IN 5 TILES · FLOOR 16.8 \u00d7 3.0 M") >= 0,
       (th.match(/CARRIES[^<]*/) || ["none"])[0]);
   card.dispatchEvent({ type: "mouseleave" });
+}
+
+/* ---- 12. HOLD SPACE: the matrix (stage 1b) ----
+   Each airframe parked on the ramp, vehicles put to it one at a time through
+   airliftRefusal - the test boardAirlifter makes at the ramp - and put aboard
+   while it says yes. */
+function liftOn(id) { var c = spawn(id, BASE.x, BASE.y); parkOn(c, BASE); return c; }
+function emptyHold(c) { c.cargo.forEach(function (v) { v.carried = false; gone(v); }); c.cargo.length = 0; }
+function fill(c, vid, max) {
+  var n = 0, why = "";
+  for (var i = 0; i < (max || 30); i++) {
+    var v = spawn(vid, BASE.x + (i % 6 - 3) * TT, BASE.y + (6 + ((i / 6) | 0)) * TT);
+    why = c.airliftRefusal(v);
+    if (why) { gone(v); break; }
+    c.cargo.push(v); v.carried = true; n++;
+  }
+  return { n: n, why: why };
+}
+function secHold() {
+  log("\n[12] HOLD SPACE: floor and weight together, airframe by airframe");
+  var c = liftOn("airlift_n"), f = fill(c, "recon_n"), L = c.cargoLoad();
+  chk("C-130J-30 (16.76 m floor, one lane): three Humvees, then the floor says no",
+      f.n === 3 && /^C-130J SUPER HERCULES — NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)$/.test(f.why) && Math.abs(L.floor - 14.7) < 1e-6,
+      f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
+  var pt = spawn("pact_e50_lighttank", BASE.x, BASE.y + 6 * TT);
+  emptyHold(c);
+  chk("a PT-76 (18 t, 3.10 m wide) is light enough and too wide for its hold",
+      c.airliftRefusal(pt) === "PT-76 (3.10 M WIDE) — TOO WIDE FOR THE HOLD OF THE C-130J SUPER HERCULES (3.02 M)", c.airliftRefusal(pt));
+  gone(pt); gone(c);
+  c = liftOn("nato_e80_airlift"); f = fill(c, "recon_n");
+  chk("C-130H (12.19 m, the short hold): two Humvees, then the floor - its 19 t would have taken a third",
+      f.n === 2 && /^C-130H HERCULES — NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)$/.test(f.why), f.n + " aboard, then: " + f.why);
+  emptyHold(c);
+  var s75 = spawn("kpa_e60_sam", BASE.x, BASE.y + 6 * TT);
+  chk("an S-75 battery (12 t; the SAM CLASS DEFAULT 12.6 m - no figure on record) is too long for it",
+      c.airliftRefusal(s75) === "S-75 DVINA (12.6 M) — TOO LONG FOR THE HOLD OF THE C-130H HERCULES (12.2 M)", c.airliftRefusal(s75));
+  gone(s75); gone(c);
+  c = liftOn("gbr_e00_airlift"); f = fill(c, "recon_n"); L = c.cargoLoad();
+  chk("C-17 (26.82 x 5.49 m): ten Humvees, two abreast in two lanes of five, then the floor - weight (50 of 77.5 t) would take fifteen",
+      f.n === 10 && /NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)$/.test(f.why) && Math.abs(L.floor - 24.5) < 1e-6,
+      f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
+  sel([c]); UI.frame && UI.frame(0);
+  chk("its panel: CARGO 10 VEH + 0 INF · 50 OF 77.5 T · 24.5 OF 26.8 M",
+      panel().indexOf("10 VEH + 0 INF · 50 OF 77.5 T · 24.5 OF 26.8 M") >= 0, (panel().match(/CARGO <i>[^<]*/) || ["none"])[0]);
+  emptyHold(c);
+  var ab = spawn("mbt_n", BASE.x, BASE.y + 6 * TT); c.cargo.push(ab); ab.carried = true;
+  var ab2 = spawn("mbt_n", BASE.x + TT, BASE.y + 6 * TT), br = spawn("ifv_n", BASE.x - TT, BASE.y + 6 * TT);
+  var w2 = c.airliftRefusal(ab2), wb = c.airliftRefusal(br);
+  chk("C-17 with one Abrams: a second Abrams and a Bradley are refused - 15.5 t left",
+      /HAS 15\.5 T LEFT — M1A2 ABRAMS \(62 T\) DOES NOT FIT/.test(w2) && /HAS 15\.5 T LEFT — BRADLEY IFV \(30 T\) DOES NOT FIT/.test(wb), w2 + " | " + wb);
+  gone(ab2); gone(br);
+  f = fill(c, "recon_n"); L = c.cargoLoad();
+  chk("...and only light vehicles go beside it: three Humvees, then the weight (77 of 77.5 t); the Abrams down the middle, 7.9 + 9.8 m of floor",
+      f.n === 3 && /HAS 0\.5 T LEFT — HUMVEE \(5 T\) DOES NOT FIT/.test(f.why) && Math.abs(L.floor - 17.7) < 1e-6,
+      f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
+  /* the same load in another order lays out the same */
+  var hv3 = c.cargo.filter(function (v) { return v.def.id === "recon_n"; });
+  var p1 = c.holdPlan([ab].concat(hv3)).used, p2 = c.holdPlan(hv3.concat([ab])).used, p3 = c.holdPlan([hv3[0], ab, hv3[1], hv3[2]]).used;
+  chk("the layout does not depend on the order they drove up the ramp", p1 === p2 && p2 === p3, p1 + " / " + p2 + " / " + p3);
+  emptyHold(c);
+  var abr = spawn("mbt_n", BASE.x, BASE.y + 6 * TT); c.cargo.push(abr); abr.carried = true;
+  f = fill(c, "rifle_n"); L = c.cargoLoad();
+  chk("an Abrams and riflemen: four squads (62 + 4 x 3.876 t), then the weight", f.n === 4 && /DOES NOT FIT/.test(f.why), f.n + " then: " + f.why);
+  emptyHold(c); gone(c);
+  c = liftOn("airlift_g"); f = fill(c, "recon_n");
+  chk("A400M (17.71 x 4.00 m: too narrow for two Humvees abreast): three Humvees, then the floor - 37 t would take seven",
+      f.n === 3 && /^A400M ATLAS — NO FLOOR SPACE LEFT FOR A HUMVEE \(4\.9 M\)$/.test(f.why), f.n + " aboard, then: " + f.why);
+  emptyHold(c); gone(c);
+  c = liftOn("kpa_e90_transport"); f = fill(c, "pact_e80_lighttank"); L = c.cargoLoad();
+  chk("Il-76TD (20 x 3.46 m, 48 t): two BMD-2s, then its weight - the floor (10.8 m used) would take a third",
+      f.n === 2 && /^IL-76TD HAS 12 T LEFT — BMD-2 \(18 T\) DOES NOT FIT$/.test(f.why) && Math.abs(L.floor - 10.8) < 1e-6,
+      f.n + " aboard, " + L.floor.toFixed(2) + " m, then: " + f.why);
+  emptyHold(c);
+  f = fill(c, "recon_n");
+  chk("...and four Humvees, then its floor (19.6 of 20 m; 20 of 48 t)", f.n === 4 && /NO FLOOR SPACE LEFT FOR A HUMVEE/.test(f.why), f.n + " then: " + f.why);
+  emptyHold(c); gone(c);
+  /* helicopters: one on the hook */
+  c = spawn("trans_n", BASE.x + 10 * TT, BASE.y); c.parked = false; c.order = { type: "hover" };
+  f = fill(c, "gbr_e60_sam");
+  chk("a Black Hawk (4.08 t) slings one Rapier launcher (1.2 t), and not a second: one at a time",
+      f.n === 1 && f.why === "BLACK HAWK HAS A VEHICLE ON THE HOOK ALREADY — ONE AT A TIME" && c.cargoLoad().hook === 1, f.n + " then: " + f.why);
+  var g = fill(c, "rifle_n");
+  chk("...and still takes riflemen as its payload allows: five squads (1.2 + 5 x 0.51 t)", g.n === 5, g.n + " then: " + g.why);
+  emptyHold(c); gone(c);
+  c = spawn("trans_b", BASE.x + 10 * TT, BASE.y); c.parked = false; c.order = { type: "hover" };
+  f = fill(c, "nato_e80_recon"); L = c.cargoLoad();
+  chk("a Chinook takes two M998 HMMWVs (2.2 m wide): one on the hook and one in its cabin, then its 10 t",
+      f.n === 2 && L.hook === 1 && Math.abs(L.floor - 4.6) < 1e-6 && /HAS 0 T LEFT/.test(f.why), f.n + ", cabin " + L.floor + " m, then: " + f.why);
+  emptyHold(c); gone(c);
+}
+
+/* ---- 13. the stage-1 reviewer's cases ---- */
+function secReview() {
+  log("\n[13] the stage-1 reviewer's cases");
+  /* a diagonal lane one tile wide through a wood: the tiles 0.7 of a tile off its centreline are trees */
+  var g = openGround(2, 2, BASE.tx + 40, BASE.ty + 20, 20, 60), cx = g.x, cy = g.y, saved = [];
+  for (var y = cy - 18; y <= cy + 18; y++) for (var x = cx - 18; x <= cx + 18; x++) {
+    if (x < 1 || y < 1 || x >= M.W - 1 || y >= M.H - 1) continue;
+    var k = y * M.W + x; saved.push([k, M.terrain[k], M.elev[k]]);
+    var dd = x - cx - (y - cy);
+    M.terrain[k] = (dd === 0 || dd === 2 || dd === -2) ? T.GRASS : T.TREE;
+    M.elev[k] = M.elev[cy * M.W + cx];
+  }
+  clearArea(cx * TT, cy * TT, 22);
+  var c = liftOn("airlift_n");
+  var s = Game.findStrip(c, (cx + 0.5) * TT, (cy + 0.5) * TT);
+  chk("no strip down a one-tile diagonal lane in a wood (its corner tiles 0.7 tile off the centreline are trees)", !s,
+      s ? "strip " + s.tax + "," + s.tay + " dir " + s.sx + "," + s.sy + " n " + s.n : "none");
+  saved.forEach(function (q) { M.terrain[q[0]] = q[1]; M.elev[q[0]] = q[2]; });
+  gone(c);
+  /* a helicopter sent to set down on water */
+  var w = null;
+  for (var wy = 4; wy < M.H - 4 && !w; wy++) for (var wx = 4; wx < M.W - 4; wx++) {
+    var all = true;
+    for (var j = -1; j <= 1 && all; j++) for (var i = -1; i <= 1; i++) if (M.terrain[(wy + j) * M.W + wx + i] !== T.WATER) { all = false; break; }
+    if (all) { w = { x: wx, y: wy }; break; }
+  }
+  if (!w) chk("water on this map for the helicopter case", false, "none");
+  else {
+    var ch = spawn("trans_b", (w.x + 6) * TT, (w.y + 6) * TT); ch.parked = false; ch.order = { type: "hover" };
+    var hv = spawn("recon_n", BASE.x, BASE.y + 6 * TT); ch.cargo.push(hv); hv.carried = true;
+    var why = Game.airLand(ch, (w.x + 0.5) * TT, (w.y + 0.5) * TT), wet = 0, ph = [];
+    ticks(30, function () {
+      var k2 = ch.ty * M.W + ch.tx;
+      if (ch.grounded && M.terrain[k2] === T.WATER) wet++;
+      var q = ch.order.type + "/" + (ch.order.ph || ""); if (ph[ph.length - 1] !== q) ph.push(q);
+      return ch.order.type !== "airland";
+    });
+    var hk = hv.carried ? -1 : hv.ty * M.W + hv.tx;
+    chk("a Chinook sent to set down on water hovers there - never 'on the ground' over water - and the Humvee goes off onto land",
+        why === "" && wet === 0 && !hv.carried && M.terrain[hk] !== T.WATER && GameMap.passable(M, hv.tx, hv.ty, "ground"),
+        "grounded over water " + wet + " ticks; " + ph.join(" ") + "; Humvee " + (hv.carried ? "aboard" : CFG.TERRAIN[M.terrain[hk]].name));
+    gone(ch); hv.carried = false; gone(hv);
+  }
+  /* U on an aeroplane standing on its strip, with vehicles that boarded there */
+  var p = farPoint(30, 14, 24);
+  c = liftOn("airlift_n"); Game.airLand(c, p.x, p.y);
+  ticks(120, function () { return c.order.type === "airland" && c.order.ph === "wait"; });
+  var o = c.order, hs = [];
+  for (var n = 0; n < 3; n++) {
+    var h = spawn("recon_n", o.bx - o.uy * (3 + n) * TT, o.by + o.ux * (3 + n) * TT);
+    h.order = { type: "enter", target: c }; hs.push(h);
+  }
+  ticks(15, function () { return hs.every(function (q) { return q.carried; }); });
+  var aboard = hs.filter(function (q) { return q.carried; }).length;
+  sel([c]); key("u");
+  var on = hs.filter(function (q) { return !q.carried && onStrip(q, o); }).length;
+  chk("U on a C-130J standing on its strip puts the three Humvees that boarded there down, and none on the strip",
+      aboard === 3 && hs.every(function (q) { return !q.carried; }) && on === 0, aboard + " boarded, " + on + " put on the strip");
+  hs.forEach(gone); gone(c);
+}
+
+/* ---- 14. fuel: never land where it cannot get home ---- */
+function secFuel() {
+  log("\n[14] fuel: refused beyond reach, refuels first, stays down when dry");
+  /* an An-2 (radius 16: about 78 tiles out and back) to a strip ~95 tiles from its airbase */
+  var far = null, near = null;
+  for (var r = 0; r < 60 && (!far || !near); r++) {
+    var a = r * 0.7;
+    if (!far) { var gf = openGround(10, 10, BASE.tx - Math.cos(a) * 95, BASE.ty - Math.sin(a) * 95, 6, 12);
+      if (gf) far = { x: (gf.x + 5) * TT, y: (gf.y + 5) * TT }; }
+    if (!near) { var gn = openGround(10, 10, BASE.tx - Math.cos(a) * 40, BASE.ty - Math.sin(a) * 40, 6, 12);
+      if (gn) near = { x: (gn.x + 5) * TT, y: (gn.y + 5) * TT }; }
+  }
+  var an = liftOn("kpa_e60_transport");
+  if (far) clearArea(far.x, far.y, 16);
+  if (near) clearArea(near.x, near.y, 16);
+  var w1 = far ? Game.airLand(an, far.x, far.y) : "no far point";
+  chk("an An-2 sent to land ~95 tiles from its airbase is refused: it could not get home",
+      /^AN-2 COLT CANNOT LAND THERE AND GET HOME — \d+ TILES FROM ITS AIRBASE, BEYOND ITS REACH$/.test(w1) && an.order.type === "parked", w1);
+  var w2 = near ? Game.airLand(an, near.x, near.y) : "no near point";
+  chk("...and one ~40 tiles off is given", w2 === "" && an.order.type === "airland", w2 || an.order.type);
+  gone(an);
+  /* short of fuel for it now: home first, then the delivery */
+  var p = farPoint(-30, 14, 20);
+  var c = spawn("airlift_n", BASE.x + 6 * TT, BASE.y - 6 * TT); c.parked = false; c.padOn = BASE; c.order = { type: "hover" };
+  var hv = spawn("recon_n", BASE.x, BASE.y + 6 * TT); c.cargo.push(hv); hv.carried = true;
+  c.fuel = c.fuelMax * 0.45;
+  var f = Game.airlandFuel(c, Game.findStrip(c, p.x, p.y));
+  var why = Game.airLand(c, p.x, p.y);
+  chk("a C-130J at 45% with a Humvee, sent 30 tiles out: within a full tank's reach but not this one's - it goes home first, the delivery queued",
+      why === "" && f.reach && !f.now && c.order.type === "rtb" && c.order.then && c.order.then.type === "airland",
+      why + " reach " + f.reach + " now " + f.now + " order " + c.order.type + (c.order.then ? "/" + c.order.then.type : ""));
+  var r1 = fly(c, 260, false), j = r1.phases.join(" ");
+  chk("...lands, refuels, flies the delivery and puts the Humvee down at the point",
+      /parked@|rtb@/.test(j) && /unload@/.test(j) && !hv.carried && Math.hypot(hv.x - p.x, hv.y - p.y) < 6 * TT && !c.dead,
+      j + "; Humvee " + (hv.carried ? "aboard" : tiles(Math.hypot(hv.x - p.x, hv.y - p.y)) + " tiles from the point"));
+  gone(hv); gone(c);
+  /* down on its strip with too little fuel to get home */
+  var p2 = farPoint(28, -16, 20);
+  var L = landAt("airlift_n", p2.x, p2.y, ["recon_n"]); c = L.c;
+  ticks(120, function () { return c.order.type === "airland" && c.order.ph === "wait"; });
+  chk("a C-130J down on its strip, its Humvee off", c.grounded && c.order.ph === "wait" && !c.cargo.length, c.order.type + "/" + c.order.ph);
+  c.fuel = 3;
+  var t0 = Game.time, phs = [];
+  ticks(25, function () { var q = c.order.type + "/" + (c.order.ph || ""); if (phs[phs.length - 1] !== q) phs.push(q); return c.dead; });
+  chk("tanks all but dry: it stays on the ground, alive, and says so - no take-off to crash",
+      !c.dead && c.grounded && c.order.ph === "dry" &&
+      said(/C-130J SUPER HERCULES — NOT ENOUGH FUEL TO REACH AN AIRBASE: STAYING ON THE GROUND/, t0),
+      phs.join(" ") + " dead " + c.dead + " " + saidText(t0));
+  sel([c]); rclickGround(c.x + 30 * TT, c.y);
+  ticks(15, function () { return c.dead || !c.grounded; });
+  chk("ordered away, it still stays down rather than fly off dry", !c.dead && c.grounded && c.order.ph === "dry" && c.order.then && c.order.then.type === "move",
+      c.order.type + "/" + c.order.ph + (c.order.then ? " then " + c.order.then.type : "") + " dead " + c.dead);
+  c.fuel = c.fuelMax;            // a tanker, or an airbase within reach - here, simply fuel
+  var tt = ticks(20, function () { return !c.grounded; });
+  chk("with the fuel to get home it turns, takes off and flies the order it was given", tt > 0 && !c.dead && c.order.type === "move",
+      "airborne after " + tt.toFixed(1) + " s, order " + c.order.type);
+  gone(c);
+  /* (stage-1b review) its airbase lost while it stands there: the reserve
+     had been measured to the home point, it took off on full tanks, orbited
+     home - "NO RUNWAY TO RECOVER TO" - and fell out of the sky. Stood on
+     its strip directly (downOn), so the section costs seconds of the clock,
+     not minutes: the landing craft of [11] is put ashore near home later,
+     and a commander's helicopter comes by there in time. */
+  c = downOn("airlift_n", p2);
+  var bi = P.buildings.indexOf(BASE);
+  P.buildings.splice(bi, 1); c.padOn = null;             // no ramp anywhere: the airbase is gone
+  t0 = Game.time; phs = [];
+  ticks(4, function () { var q = c.order.type + "/" + (c.order.ph || ""); if (phs[phs.length - 1] !== q) phs.push(q); return c.dead || !c.grounded; });
+  chk("its airbase lost while it is down, full tanks and all: it stays on its strip and says why",
+      !c.dead && c.grounded && c.order.ph === "dry" && c.fuel > c.fuelMax * 0.8 &&
+      said(/C-130J SUPER HERCULES — NO AIRBASE TO RECOVER TO: STAYING ON THE GROUND/, t0),
+      phs.join(" ") + " dead " + c.dead + " fuel " + c.fuel.toFixed(0) + " " + saidText(t0));
+  P.buildings.splice(bi, 0, BASE);                     // ...built again
+  tt = ticks(12, function () { return c.dead || !c.grounded; });
+  chk("...and with an airbase again it takes off for it", tt > 0 && !c.dead && c.order.type === "rtb" && Game.findPad(c).host === BASE,
+      "airborne after " + tt.toFixed(1) + " s, order " + c.order.type);
+  gone(c);
+  /* (stage-1b review) a tanker beside the strip is not a ramp: a C-17 let
+     go on the reserve to it flew a plain rtb to its airbase on empty tanks */
+  var tkid = Object.keys(UNITS).filter(function (id) { return UNITS[id].tanker && UNITS[id].layer === "air" && !UNITS[id].hover; })[0];
+  var p3 = null;
+  [[-60, 0], [0, -60], [-50, -40], [40, -50], [-60, 30], [60, 0], [0, 60]].forEach(function (dd) {
+    if (!p3) { var q = farPoint(dd[0], dd[1], 20); if (q && Math.hypot(q.x - BASE.x, q.y - BASE.y) > 45 * TT) p3 = q; } });
+  c = p3 ? downOn("gbr_e00_airlift", p3) : null;
+  var tk = c && tkid ? spawn(tkid, c.x + TT, c.y - TT) : null;
+  if (tk) { tk.parked = false; tk.order = { type: "hover" }; }
+  var rRamp = c ? c.reserveFuel(true) : 0, rTk = c ? c.reserveFuel() : 0;
+  if (c) c.fuel = 12;                                    // over the reserve to the tanker (its floor, 10), short of the ramp
+  if (c) ticks(4, function () { return c.dead || !c.grounded; });
+  chk("a C-17 down " + (c ? tiles(Math.hypot(c.x - BASE.x, c.y - BASE.y)) : "?") + " tiles out on 12 of fuel, a tanker beside it: it stays down (" +
+      rRamp.toFixed(1) + " to reach its ramp, " + rTk.toFixed(1) + " to the tanker)",
+      !!c && !!tk && !c.dead && c.grounded && c.order.ph === "dry" && rRamp > 12 && rTk < 12,
+      c ? c.order.type + "/" + c.order.ph + " grounded " + c.grounded + " dead " + c.dead : "no far strip");
+  gone(tk); gone(c);
+}
+/* a transport of ours standing on a strip near p, stopped and waiting, as
+   one that has just landed and unloaded there */
+function downOn(id, p) {
+  var c = spawn(id, BASE.x, BASE.y); parkOn(c, BASE);
+  var s = Game.findStrip(c, p.x, p.y);
+  if (!s) { gone(c); return null; }
+  c.parked = false; c.x = s.bx; c.y = s.by; c.ang = Math.atan2(s.uy, s.ux);
+  c.order = Object.assign({ type: "airland", x: p.x, y: p.y, goes: 0 }, s, { ph: "wait", t: 0, off: 1 });
+  c.grounded = true; c.field = Unit.fieldOf(c.order);
+  return c;
+}
+
+/* ---- 15. fog: the strip finder sees what its side sees ---- */
+function secFog() {
+  log("\n[15] fog: a hidden enemy does not move the strip, a seen one does");
+  var c = liftOn("airlift_n"), best = null;
+  /* a point no unit of ours can see */
+  for (var r = 0; r < 40 && !best; r++) {
+    var a = r * 0.9, gx = BASE.tx - Math.cos(a) * 45, gy = BASE.ty - Math.sin(a) * 45;
+    var g = openGround(12, 12, gx, gy, 8, 14);
+    if (!g) continue;
+    var px = (g.x + 6) * TT, py = (g.y + 6) * TT;
+    clearArea(px, py, 18);
+    var s0 = Game.findStrip(c, px, py);
+    if (!s0) continue;
+    var mid = Math.floor(s0.n / 2), mx = s0.tax + mid * s0.sx, my = s0.tay + mid * s0.sy;
+    if (Game.fog[my * M.W + mx] === 2) continue;           // in sight: not the case wanted
+    best = { px: px, py: py, s0: s0, mx: mx, my: my };
+  }
+  if (!best) { chk("a fogged point with a strip", false, "none found"); gone(c); return; }
+  var en = spawn(E && UNITS.rifle_p ? "rifle_p" : "rifle_n", (best.mx + 0.5) * TT, (best.my + 0.5) * TT, E);
+  en.stance = "hold"; en.order = { type: "idle" };
+  var same = function (s) { return s && s.tax === best.s0.tax && s.tay === best.s0.tay && s.sx === best.s0.sx && s.sy === best.s0.sy; };
+  var s1 = Game.findStrip(c, best.px, best.py);
+  chk("an enemy squad standing on that strip, hidden in the fog: the same strip is chosen - the side does not know it is there",
+      !!en && en.owner === E && !Game.visibleTo(P, en) && same(s1),
+      "enemy at " + best.mx + "," + best.my + " visible " + Game.visibleTo(P, en) + ", strip " + (s1 ? s1.tax + "," + s1.tay + " " + s1.sx + "," + s1.sy : "none"));
+  var k = en.ty * M.W + en.tx, f0 = Game.fog[k];
+  Game.fog[k] = 2;                                          // in sight now
+  var s2 = Game.findStrip(c, best.px, best.py);
+  chk("the same squad in sight: the strip finder steps round it", Game.visibleTo(P, en) && !same(s2) && !!s2,
+      "strip " + (s2 ? s2.tax + "," + s2.tay + " " + s2.sx + "," + s2.sy : "none"));
+  Game.fog[k] = f0;
+  gone(en);
+  var own = spawn("rifle_n", (best.mx + 0.5) * TT, (best.my + 0.5) * TT); own.order = { type: "idle" };
+  chk("one of ours on it, fog or not: stepped round", !same(Game.findStrip(c, best.px, best.py)), "");
+  gone(own); gone(c);
 }
 
 function secSave() {
@@ -716,10 +1091,16 @@ function secSave() {
   chk("the moment of the save: one on its approach with two Humvees aboard, one standing on its strip",
       a.order.type === "airland" && /^d|final/.test(aph) && a.cargo.length === 2 && b.grounded && bph === "wait",
       "a " + a.order.type + "/" + aph + " cargo " + a.cargo.length + ", b " + b.order.type + "/" + bph + " grounded " + b.grounded);
+  /* and a landing craft on its run to a beach with two squads aboard (the
+     stage-1 review: a load lost its order to put them ashore) - half a
+     second into an eleven-tile run, so it is still on the way at the save */
+  var LC = beachRun();
+  if (LC) ticks(0.5);
   /* put the squad back aboard b, so the load has to carry a hold on the ground too */
   if (!r1.carried) { b.cargo.push(r1); r1.carried = true; }
   b.order.load = 0;               // from here it waits only its two seconds: it leaves soon after the load
-  var snapA = { x: a.x, y: a.y, ph: aph, bx: a.order.bx, by: a.order.by }, snapB = { x: b.x, y: b.y, bx: b.order.bx };
+  var snapA = { x: a.x, y: a.y, ph: a.order.ph, bx: a.order.bx, by: a.order.by }, snapB = { x: b.x, y: b.y, bx: b.order.bx };
+  var snapL = LC ? { x: LC.l.x, y: LC.l.y, n: LC.l.cargo.length, u: !!LC.l.order.unloadAt } : null;
   var ia = Game.entities.indexOf(a), ib = Game.entities.indexOf(b);
   var r = SaveGame.save(Game, "ironfront.airlift");
   chk("the save is written", r.ok, r.error || r.bytes + " bytes");
@@ -737,6 +1118,12 @@ function secSave() {
   });
   chk("both transports are back", !!A && !!B2, "");
   if (!A || !B2) return;
+  var LL = null;
+  if (snapL) Game.entities.forEach(function (e) {
+    if (e.kind === "unit" && e.def.id === LC.id && e.owner === P && Math.hypot(e.x - snapL.x, e.y - snapL.y) < 3) LL = e; });
+  chk("the landing craft is back on its run in, its two squads aboard and its order to put them ashore",
+      !!snapL && snapL.n === 2 && snapL.u && !!LL && LL.cargo.length === 2 && LL.cargo.every(function (c) { return c.carried; }) &&
+      !!LL.order.unloadAt, snapL ? (LL ? LL.order.type + " unloadAt " + !!LL.order.unloadAt + " cargo " + LL.cargo.length : "not found") : "no beach");
   chk("the one on its approach: same phase, same strip, two Humvees aboard and carried",
       A.order.type === "airland" && A.order.ph === snapA.ph && A.order.bx === snapA.bx && A.cargo.length === 2 &&
       A.cargo.every(function (c) { return c.carried && c.def.id === "recon_n"; }),
@@ -753,4 +1140,38 @@ function secSave() {
   chk("the approach carries on: it lands, puts both Humvees down near the point and comes home",
       hv.every(function (h) { return !h.carried && !h.dead && Math.hypot(h.x - snapA.bx, h.y - snapA.by) < 4 * TT; }) && out.home,
       out.phases.join(" ") + " home " + out.home);
+  if (LL) {
+    var sq = LL.cargo.slice();
+    ticks(20, function () { return LL.cargo.length === 0; });
+    chk("...and, the load behind it, the landing craft has put both squads ashore",
+        LL.cargo.length === 0 && Game.entities.filter(function (e) {
+          return e.kind === "unit" && e.def.id === "rifle_n" && e.owner === P && !e.carried && !e.dead &&
+                 Math.hypot(e.x - (LC.beach.x + 0.5) * TT, e.y - (LC.beach.y + 0.5) * TT) < 4 * TT; }).length >= 2,
+        "cargo " + LL.cargo.length + ", order " + LL.order.type + " at " + tiles(LL.x) + "," + tiles(LL.y) + " beach " + LC.beach.x + "," + LC.beach.y);
+  }
+}
+/* a landing craft eleven tiles out from the beach nearest home, two squads aboard, running in to put them ashore */
+function beachRun() {
+  var id = unitFor(P.faction, "transport_sea", Game.era || "e20");
+  var hx = P.homeX / TT | 0, hy = P.homeY / TT | 0, best = null, bd = Infinity;
+  for (var y = 6; y < M.H - 6; y++) for (var x = 6; x < M.W - 6; x++) {
+    if (!GameMap.passable(M, x, y, "ground") || Game.tileBlocked(x, y, null)) continue;
+    for (var d = 0; d < 4; d++) {
+      var dx = [1, -1, 0, 0][d], dy = [0, 0, 1, -1][d], ok = true;
+      for (var k = 1; k <= 12; k++) {
+        var xx = x + dx * k, yy = y + dy * k;
+        if (xx < 0 || yy < 0 || xx >= M.W || yy >= M.H || M.terrain[yy * M.W + xx] !== T.WATER) { ok = false; break; }
+      }
+      if (!ok) continue;
+      var dd = Math.hypot(x - hx, y - hy);
+      if (dd < bd) { bd = dd; best = { x: x, y: y, dx: dx, dy: dy }; }
+    }
+  }
+  if (!best || !UNITS[id]) return null;
+  var l = spawn(id, (best.x + best.dx * 11 + 0.5) * TT, (best.y + best.dy * 11 + 0.5) * TT);
+  l.stance = "guard";
+  [spawn("rifle_n", P.homeX, P.homeY + 2 * TT), spawn("rifle_n", P.homeX + TT, P.homeY + 2 * TT)].forEach(function (c) {
+    l.cargo.push(c); c.carried = true; c.order = { type: "idle" }; });
+  l.give({ type: "move", x: (best.x + 0.5) * TT, y: (best.y + 0.5) * TT, unloadAt: true });
+  return { l: l, id: id, beach: best };
 }
