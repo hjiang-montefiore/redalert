@@ -276,7 +276,8 @@ Object.assign(WARSHIPS, {
    Taiwan's LCU row above is already drawn at, which is this craft's -
    NavSource "LCU-1610", 134 ft 9 in by 29 ft (41.1 by 8.8 m), two .50 cal -
    with its pointed bow and its deckhouse amidships, where the real craft has
-   a bow ramp and its pilothouse aft, until it has a model of its own. */
+   a bow ramp and its pilothouse at the forward end of a long starboard
+   deckhouse. js/hero/us_lcu1610.js now draws it; this row is the fallback. */
 Object.assign(WARSHIPS, {
   nato_lcu: {era:"e50", fac:"nato", role:"landing_craft", designation:"LCU 1610", len:41.1, beam:8.8, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:12.7, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
 });
