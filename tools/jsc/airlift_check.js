@@ -66,7 +66,22 @@
         does not take off to crash, and goes once it can; nor with no
         airbase left, nor on a tanker beside the strip (the review);
     15. fog: the strip finder steps round an enemy its side can see, and not
-        round one hidden in the fog. */
+        round one hidden in the fog.
+   The Air Force's jet transports (owner: "i didn't see good us
+   transportation airplane"; eras.js, role "stratlift"):
+    16. each row only in its periods and only for NATO; the Hercules rows,
+        unitFor("airlift") and the AIR tab's C-130 card unchanged, the jets
+        beside it; their cards; the period's MBT and the published loads by
+        the weight and floor rules - one Abrams in a C-17A, two tanks in a
+        C-5 where the figures allow it (the M60A1, the M1A1, the M1A2 SEP in
+        a C-5M) and one where they do not (the M1A2 in a C-5B, the SEP v3 in
+        a C-5M), five Bradleys in a C-5B, two Bradleys or three Strykers in a
+        C-17A; the C-141s refuse every tank and a Bradley; the C-17A lands on
+        open ground in 11 tiles and the C-5 in 15 (the review: 4,900 ft at
+        maximum load, "paved or earth surfaces", en.wikipedia), the C-141 is
+        refused it (G.airLand, U - loaded or empty, the toast saying which)
+        and unloads standing on an airbase. A C-141B in flight with a load
+        and a C-5M on the ramp go through the save (11). */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
 var TRACE = typeof __ARGS !== "undefined" && __ARGS.indexOf("trace") >= 0;
 function log(s) { print(s); }
@@ -194,7 +209,7 @@ function run() {
   if (!BASE) return;
   var sections = [secData, secBoard, secHeavy, secMixed, secHold, secPack, secHelo, secDeliver, secSweep, secGroundOrder,
                   secPickup, secBlocked, secBingo, secNoStrip, secShotDown, secPlanes, secInfantry, secCard,
-                  secReview, secFuel, secFog];
+                  secReview, secFuel, secFog, secJets];
   sections.forEach(function (f) {
     var w0 = Date.now();
     readBox();
@@ -212,12 +227,12 @@ function secData() {
     var d = UNITS[id];
     if (d.layer === "air" && (d.cargo || d.role === "transport" || d.role === "airlift")) {
       if (!(d.payload > 0)) noPay.push(id);
-      if (!d.hover && !(d.strip >= 3)) noStrip.push(id);
+      if (!d.hover && !(d.strip >= 3) && !d.runway) noStrip.push(id);
     }
     if (d.cat === "vehicle" && d.layer === "ground") { nVeh++; if (!(d.mass > 0)) noMass.push(id); }
   }
   chk("every transport and airlift row has its payload in tonnes", !noPay.length, noPay.join(", ") || "all");
-  chk("every fixed-wing one has a strip length of 3 tiles or more", !noStrip.length, noStrip.join(", ") || "all");
+  chk("every fixed-wing one has a strip length of 3 tiles or more, or lands only on an airbase (runway)", !noStrip.length, noStrip.join(", ") || "all");
   chk("every ground vehicle has a mass", nVeh > 400 && !noMass.length, nVeh + " vehicles, " + noMass.length + " without");
   var planes = ["trans_k", "kpa_e50_transport", "kpa_e60_transport", "kpa_e80_transport", "kpa_e90_transport",
                 "kpa_e00_transport", "roc_e50_transport"];
@@ -625,7 +640,7 @@ function secSweep() {
   var px = (g.x + 8) * TT, py = (g.y + 8) * TT;
   clearArea(px, py, 24);
   var types = {}, ids = [];
-  for (var id in UNITS) { var d = UNITS[id]; if (d.layer === "air" && d.payload && !d.hover && !types[d.full]) { types[d.full] = 1; ids.push(id); } }
+  for (var id in UNITS) { var d = UNITS[id]; if (d.layer === "air" && d.payload && !d.hover && !d.runway && !types[d.full]) { types[d.full] = 1; ids.push(id); } }
   var fails = [], worst = 0, worstId = "", n = 0, goes = 0;
   ids.forEach(function (id) {
     [8, 25].forEach(function (R) {
@@ -717,7 +732,7 @@ function secInfantry() {
     if (!(d.layer === "air" && d.payload && d.cargo)) continue;
     var u = spawn(id, BASE.x, BASE.y); parkOn(u, BASE);
     var r = spawn("rifle_n", BASE.x, BASE.y + 3 * TT), n = 0;
-    while (n < 40 && u.canAirlift(r)) { u.cargo.push(r); n++; }
+    while (n < 80 && u.canAirlift(r)) { u.cargo.push(r); n++; }      // 80: past the C-5's 51 seats
     u.cargo.length = 0;
     if (n !== d.cargo) bad.push(id + " " + n + "/" + d.cargo);
     gone(r); gone(u);
@@ -1068,6 +1083,175 @@ function secFog() {
   gone(own); gone(c);
 }
 
+/* ---- 16. the Air Force's jet transports (eras.js, role "stratlift") ---- */
+var JETS = ["nato_e60_c141", "nato_e80_c141", "nato_e60_c5", "nato_e80_c5", "nato_e00_c5", "nato_e90_c17"];
+function airCards(era) {
+  var e0 = P.era, out = [];
+  P.era = era;
+  sel([]); UI.refreshCards && UI.refreshCards();
+  var box = document.getElementById("cards"), kind = function () {
+    var c = box && box.children[0], kd = c && c.dataset && c.dataset.kind;
+    return (kd === "upgrade" || kd === "era") ? "building" : (kd || ""); };
+  for (var i = 0; i < 7 && kind() !== "aircraft"; i++) key("Tab");
+  for (var j = 0; box && j < box.children.length; j++) if (box.children[j].dataset) out.push(box.children[j]);
+  P.era = e0;
+  return out;
+}
+function tipOf(card) {
+  card.dispatchEvent({ type: "mouseenter" });
+  var th = (document.getElementById("tooltip") || {}).innerHTML || "";
+  card.dispatchEvent({ type: "mouseleave" });
+  return (th.match(/CARRIES[^<]*/) || ["none"])[0];
+}
+function secJets() {
+  log("\n[16] the Air Force's jet transports beside the Hercules: C-141, C-5, C-17");
+  /* a. the rows, each in its periods, NATO's alone */
+  var WANT = { e50: "", e60: "nato_e60_c141,nato_e60_c5", e80: "nato_e80_c141,nato_e80_c5",
+               e90: "nato_e80_c141,nato_e80_c5,nato_e90_c17", e00: "nato_e00_c5,nato_e80_c141,nato_e90_c17",
+               e20: "nato_e00_c5,nato_e90_c17" };
+  var offP = [], other = [];
+  ERAS.forEach(function (e) {
+    var have = unitsFor("nato", "stratlift", e).slice().sort().join(",");
+    if (have !== WANT[e]) offP.push(e + ": " + (have || "none") + " (want " + (WANT[e] || "none") + ")");
+    Object.keys(FACTIONS).forEach(function (f) { if (f !== "nato" && unitsFor(f, "stratlift", e).length) other.push(f + "/" + e); });
+  });
+  chk("each in its periods: C-141A and C-5A in the 1960s-70s, C-141B 1980s-2000s, C-5B 1980s-90s, C-5M 2000s on, C-17A 1990s on",
+      !offP.length && (ROLES.stratlift || []).slice().sort().join() === JETS.slice().sort().join(), offP.join("; ") || ERAS.map(function (e) { return e + " " + (WANT[e] || "-"); }).join(" | "));
+  chk("and no other army fields one", !other.length, other.join(", ") || "none");
+  /* strip: the C-17A's 3,500 ft and the C-5's 4,900 ft at maximum load (en.wikipedia) at a tile a hundred metres; 0 = runway (the C-141: no figure) */
+  var FIG = { nato_e60_c141: [28.8, 21.34, 3.05, 0], nato_e80_c141: [42.5, 28.45, 3.05, 0], nato_e60_c5: [118.39, 36.88, 5.79, 15],
+              nato_e80_c5: [118.39, 36.88, 5.79, 15], nato_e00_c5: [127.46, 36.88, 5.79, 15], nato_e90_c17: [77.52, 26.82, 5.49, 11] };
+  var badF = JETS.filter(function (id) {
+    var d = UNITS[id], w = FIG[id];
+    return !d || d.fac !== "nato" || d.cat !== "aircraft" || !d.jet || d.hover || d.weapons.length || d.payload !== w[0] ||
+           !d.hold || d.hold[0] !== w[1] || d.hold[1] !== w[2] || (w[3] ? d.strip !== w[3] || d.runway : !d.runway || d.strip);
+  });
+  chk("their figures: C-141A 28.8 t on 21.34 x 3.05 m, C-141B 42.5 t on 28.45 x 3.05, C-5A/B 118.39 t and C-5M 127.46 t on 36.88 x 5.79, " +
+      "C-17A 77.52 t on 26.82 x 5.49 in 11 tiles; the C-5s in 15 tiles, the C-141s runway only; unarmed jets", !badF.length,
+      badF.map(function (id) { var d = UNITS[id]; return id + " " + d.payload + " " + JSON.stringify(d.hold) + " strip " + d.strip + " runway " + d.runway; }).join("; "));
+
+  /* b. the Hercules: unchanged, and still unitFor's answer */
+  var HERC = { e50: "nato_e50_airlift", e60: "nato_e50_airlift", e80: "nato_e80_airlift", e90: "nato_e80_airlift",
+               e00: "nato_e80_airlift", e20: "airlift_n" };
+  var offH = ERAS.filter(function (e) { return unitFor("nato", "airlift", e) !== HERC[e] || unitsFor("nato", "airlift", e).join() !== HERC[e]; });
+  chk("unitFor(\"airlift\") is still the period's Hercules, and the only NATO airlift row: C-130A, C-130H, C-130J",
+      !offH.length, offH.map(function (e) { return e + " " + unitFor("nato", "airlift", e) + " [" + unitsFor("nato", "airlift", e).join() + "]"; }).join("; ") || "all six periods");
+  var HF = { nato_e50_airlift: [16.6, 12.19, 5, 1200, 5, "e50", "e60"], nato_e80_airlift: [19.05, 12.19, 5, 1400, 6, "e80", "e00"],
+             airlift_n: [19.96, 16.76, 5, 1600, 8, "e20", undefined] };
+  var offHF = Object.keys(HF).filter(function (id) { var d = UNITS[id], w = HF[id];
+    return d.role !== "airlift" || d.payload !== w[0] || d.hold[0] !== w[1] || d.strip !== w[2] || d.cost !== w[3] || d.cargo !== w[4] ||
+           d.from !== w[5] || d.to !== w[6] || d.runway; });
+  chk("the three Hercules rows as they were: 16.6 / 19.05 / 19.96 t, 5 tiles, $1,200 / 1,400 / 1,600, 5 / 6 / 8 seats, the same periods",
+      !offHF.length, offHF.join(", "));
+  var ids90 = airCards("e90").map(function (c) { return c.dataset.id; });
+  chk("the 1990s AIR tab: the C-130H card, and the C-141B, the C-5B and the C-17A beside it",
+      ["nato_e80_airlift", "nato_e80_c141", "nato_e80_c5", "nato_e90_c17"].every(function (id) { return ids90.indexOf(id) >= 0; }) &&
+      ids90.indexOf("airlift_n") < 0 && ids90.indexOf("nato_e00_c5") < 0, ids90.filter(function (id) { return /lift|c141|c5|c17/.test(id); }).join(", "));
+  var cs = airCards("e20"), byId = {};
+  cs.forEach(function (c) { byId[c.dataset.id] = c; });
+  var t5 = byId.nato_e00_c5 ? tipOf(byId.nato_e00_c5) : "no card", t17 = byId.nato_e90_c17 ? tipOf(byId.nato_e90_c17) : "no card",
+      t130 = byId.airlift_n ? tipOf(byId.airlift_n) : "no card";
+  chk("today's AIR tab: the C-130J card says what it said; the C-5M's CARRIES 51 · LIFTS 127.5 T · LANDS IN 15 TILES · FLOOR 36.9 × 5.8 M; " +
+      "the C-17A's CARRIES 20 · LIFTS 77.5 T · LANDS IN 11 TILES · FLOOR 26.8 × 5.5 M",
+      t130 === "CARRIES 8 · LIFTS 20 T · LANDS IN 5 TILES · FLOOR 16.8 × 3.0 M" &&
+      t5 === "CARRIES 51 · LIFTS 127.5 T · LANDS IN 15 TILES · FLOOR 36.9 × 5.8 M" &&
+      t17 === "CARRIES 20 · LIFTS 77.5 T · LANDS IN 11 TILES · FLOOR 26.8 × 5.5 M", t130 + " | " + t5 + " | " + t17);
+  var c00 = airCards("e00"), t141 = "no card";
+  c00.forEach(function (c) { if (c.dataset.id === "nato_e80_c141") t141 = tipOf(c); });
+  chk("the 2000s AIR tab: the C-141B's card says RUNWAY ONLY: LANDS ON AN AIRBASE",
+      t141 === "CARRIES 31 · LIFTS 42.5 T · RUNWAY ONLY: LANDS ON AN AIRBASE · FLOOR 28.5 × 3.1 M", t141);
+  sel([]); UI.refreshCards && UI.refreshCards();
+
+  /* c. the loads, by weight and floor (entities.js AIRLIFT, HOLD SPACE) */
+  var rows = [];
+  function load(lift, veh, want, re) {
+    var c = liftOn(lift), f = fill(c, veh), L = c.cargoLoad();
+    var ok = f.n === want && (!re || re.test(f.why));
+    rows.push((ok ? "" : "WRONG ") + UNITS[lift].name + " + " + UNITS[veh].name + " (" + UNITS[veh].mass + " t): " + f.n +
+              " (" + Unit.fmtT(L.t) + " t, " + Unit.fmtM(L.floor) + " m), then " + (f.why || "-"));
+    emptyHold(c); gone(c);
+    return ok;
+  }
+  var HEAVY = /DOES NOT FIT$/, WIDE = /TOO WIDE FOR THE HOLD/, TOO = /TOO HEAVY FOR THE/;
+  var okL = [
+    load("nato_e90_c17", "nato_e90_mbt", 1, HEAVY), load("nato_e90_c17", "nato_e00_mbt", 1, HEAVY), load("nato_e90_c17", "mbt_n", 1, HEAVY),
+    load("nato_e90_c17", "nato_e90_ifv", 2, HEAVY), load("nato_e90_c17", "nato_e00_lighttank", 3, HEAVY),
+    load("nato_e60_c5", "nato_e60_mbt", 2, HEAVY), load("nato_e80_c5", "nato_e80_mbt", 2, HEAVY), load("nato_e80_c5", "nato_e90_mbt", 1, HEAVY),
+    load("nato_e80_c5", "nato_e80_ifv", 5, /NO FLOOR SPACE LEFT FOR AN M2 BRADLEY/), load("nato_e00_c5", "nato_e00_mbt", 2, HEAVY), load("nato_e00_c5", "mbt_n", 1, HEAVY),
+    load("nato_e60_c141", "nato_e60_mbt", 0, TOO), load("nato_e80_c141", "nato_e80_mbt", 0, TOO), load("nato_e80_c141", "mbt_n", 0, TOO),
+    load("nato_e80_c141", "nato_e80_ifv", 0, WIDE), load("nato_e60_c141", "nato_e60_ifv", 2, HEAVY), load("nato_e80_c141", "nato_e60_ifv", 4, HEAVY),
+    load("nato_e80_c141", "nato_e80_lighttank", 2, HEAVY)
+  ];
+  rows.forEach(function (r) { log("       " + r); });
+  chk("C-17A: one tank of each period from the M1A2 (63 t) on, two Bradleys, three Strykers - each time the weight says no to the next",
+      okL.slice(0, 5).every(Boolean), rows.slice(0, 5).join(" | "));
+  chk("C-5: two M60A1s in a C-5A, two M1A1s in a C-5B, two M1A2 SEPs in a C-5M (126 of 127.5 t); one M1A2 in a C-5B (126 > 118.4) and one SEP v3 in a C-5M (133.6 > 127.5); five Bradleys in a C-5B (32.5 m of its 36.9; the floor, and the weight, say no to a sixth)",
+      okL.slice(5, 11).every(Boolean), rows.slice(5, 11).join(" | "));
+  chk("C-141: every tank refused (too heavy), a Bradley refused (3.20 m, too wide for its 3.05 m); M113s and Sheridans until the weight is gone",
+      okL.slice(11).every(Boolean), rows.slice(11).join(" | "));
+
+  /* d. where they land */
+  var g = openGround(16, 16, M.W / 2, M.H / 2, 20, 40), px = (g.x + 8) * TT, py = (g.y + 8) * TT;
+  clearArea(px, py, 24);
+  var c17 = spawn("nato_e90_c17", px + 20 * TT, py);
+  c17.parked = false; c17.order = { type: "hover" }; c17.fuel = c17.fuelMax; c17.padOn = BASE;
+  var w17 = Game.airLand(c17, px, py), down = false;
+  for (var k = 0; k < 120 / DT && !w17 && !down; k++) { c17.update(DT); if (c17.order.type === "airland" && c17.order.ph === "unload") down = true; }
+  chk("the C-17A lands on open ground (11 tiles) like a Hercules", !w17 && down, w17 || c17.order.type + "/" + c17.order.ph);
+  gone(c17);
+  /* the C-5M with two M1A2 SEPs: open ground too, on a strip of fifteen
+     tiles, and the tanks come off it (the review: generations.js AIRLIFT) */
+  var c5 = spawn("nato_e00_c5", px + 20 * TT, py);
+  c5.parked = false; c5.order = { type: "hover" }; c5.fuel = c5.fuelMax; c5.padOn = BASE;
+  var tanks = [spawn("nato_e00_mbt", BASE.x, BASE.y + 6 * TT), spawn("nato_e00_mbt", BASE.x + TT, BASE.y + 6 * TT)];
+  tanks.forEach(function (v) { c5.cargo.push(v); v.carried = true; });
+  var w5 = Game.airLand(c5, px, py), len5 = c5.order.type === "airland" ? c5.order.len / TT : 0, down5 = false;
+  for (k = 0; k < 150 / DT && !w5 && !down5; k++) { c5.update(DT); if (c5.order.type === "airland" && c5.order.ph === "unload") down5 = true; }
+  if (down5) ticks(10, function () { return !c5.cargo.length; });
+  chk("the C-5M lands on open ground on a strip of 15 tiles and puts both tanks down beside it",
+      !w5 && down5 && len5 >= 14 - 1e-6 && !c5.cargo.length && tanks.every(function (v) { return !v.carried && !v.dead && v.layer === "ground"; }),
+      (w5 || c5.order.type + "/" + c5.order.ph) + ", strip " + len5.toFixed(1) + " tiles long, cargo " + c5.cargo.length);
+  tanks.forEach(gone); gone(c5);
+  /* the C-141B: a runway or nothing */
+  var c141 = spawn("nato_e80_c141", px + 20 * TT, py);
+  c141.parked = false; c141.fuel = c141.fuelMax; c141.padOn = BASE;
+  c141.order = { type: "move", x: px, y: py };
+  var m113 = [spawn("nato_e60_ifv", BASE.x, BASE.y + 6 * TT), spawn("nato_e60_ifv", BASE.x + TT, BASE.y + 6 * TT)];
+  m113.forEach(function (v) { c141.cargo.push(v); v.carried = true; });
+  var w141 = Game.airLand(c141, px, py);
+  chk("the C-141B is refused open ground, with the reason (G.airLand), and has no strip (G.findStrip)",
+      /^C-141B STARLIFTER NEEDS A RUNWAY — LAND IT ON AN AIRBASE AND UNLOAD IT THERE$/.test(w141) && !Game.findStrip(c141, px, py) &&
+      c141.order.type === "move", w141);
+  ticks(1);
+  sel([c141]); var t0 = Game.time;
+  key("u");
+  chk("U over open ground with two M113s aboard: refused and told why; the order and the load are untouched",
+      c141.order.type === "move" && c141.cargo.length === 2 && said(/C-141B STARLIFTER NEEDS A RUNWAY — LAND IT ON AN AIRBASE AND UNLOAD IT THERE/, t0),
+      c141.order.type + " " + c141.cargo.length + " / " + saidText(t0));
+  /* empty, U asks it to land to be loaded: refused, and the toast says load, not unload */
+  var e141 = spawn("nato_e60_c141", px + 20 * TT, py - 6 * TT);
+  e141.parked = false; e141.fuel = e141.fuelMax; e141.padOn = BASE; e141.order = { type: "move", x: px, y: py };
+  ticks(1);
+  sel([e141]); t0 = Game.time;
+  key("u");
+  chk("U on an empty one over open ground: refused, and told to land it on an airbase and LOAD it there",
+      e141.order.type === "move" && said(/C-141A STARLIFTER NEEDS A RUNWAY — LAND IT ON AN AIRBASE AND LOAD IT THERE/, t0) &&
+      !said(/C-141A STARLIFTER NEEDS A RUNWAY — LAND IT ON AN AIRBASE AND UNLOAD/, t0), e141.order.type + " / " + saidText(t0));
+  gone(e141);
+  /* sent to the airbase, as a right-click on it sends it (ui.js), it lands there and unloads standing on it */
+  c141.padOn = BASE; c141.parked = false; c141.give({ type: "rtb" });
+  var tp = ticks(150, function () { return c141.parked; });
+  sel([c141]); t0 = Game.time;
+  key("u");
+  var offB = m113.map(function (v) { return v.carried || v.dead ? 99 : Math.round(Math.hypot(v.x - BASE.x, v.y - BASE.y) / TT * 10) / 10; });
+  chk("sent to the airbase it lands and parks; U there puts both M113s on the ground beside it",
+      c141.parked && c141.padOn === BASE && !c141.cargo.length && offB.every(function (d) { return d < 8; }) &&
+      m113.every(function (v) { return v.layer === "ground" && !v.carried; }),
+      "parked after " + tp.toFixed(1) + " s, cargo " + c141.cargo.length + ", M113s " + offB.join(" / ") + " tiles from the base; " + saidText(t0));
+  m113.forEach(gone); gone(c141);
+  sel([]);
+}
+
 function secSave() {
   log("\n[11] a save mid-delivery loads into the same delivery (last: the load rebuilds the match)");
   /* one C-130J on its approach with two Humvees, one standing on its strip with a rifle squad still aboard */
@@ -1102,6 +1286,14 @@ function secSave() {
   /* put the squad back aboard b, so the load has to carry a hold on the ground too */
   if (!r1.carried) { b.cargo.push(r1); r1.carried = true; }
   b.order.load = 0;               // from here it waits only its two seconds: it leaves soon after the load
+  /* the jets through the save as well (16): a C-141B in the air with an M113
+     aboard, and a C-5M shut down on the ramp - placed by hand, since a tick
+     here would move the two above on from the moment being saved */
+  var j141 = spawn("nato_e80_c141", BASE.x, BASE.y - 4 * TT), jm = spawn("nato_e60_ifv", BASE.x - 3 * TT, BASE.y + 8 * TT);
+  j141.parked = false; j141.fuel = j141.fuelMax; j141.padOn = BASE; j141.order = { type: "move", x: BASE.x + 10 * TT, y: BASE.y - 4 * TT };
+  j141.cargo.push(jm); jm.carried = true;
+  var j5 = spawn("nato_e00_c5", BASE.x, BASE.y);
+  j5.padOn = BASE; j5.parked = true; j5.order = { type: "parked" }; j5.fuel = j5.fuelMax;
   var snapA = { x: a.x, y: a.y, ph: a.order.ph, bx: a.order.bx, by: a.order.by }, snapB = { x: b.x, y: b.y, bx: b.order.bx };
   var snapL = LC ? { x: LC.l.x, y: LC.l.y, n: LC.l.cargo.length, u: !!LC.l.order.unloadAt } : null;
   var ia = Game.entities.indexOf(a), ib = Game.entities.indexOf(b);
@@ -1121,6 +1313,21 @@ function secSave() {
   });
   chk("both transports are back", !!A && !!B2, "");
   if (!A || !B2) return;
+  var J141 = null, J5 = null;
+  Game.entities.forEach(function (e) {
+    if (e.kind !== "unit" || e.dead || e.owner !== P) return;
+    if (e.def.id === "nato_e80_c141") J141 = e;
+    if (e.def.id === "nato_e00_c5") J5 = e;
+  });
+  var w141 = J141 ? Game.airLand(J141, J141.x, J141.y) : "";
+  chk("the jets are back (16): the C-141B in the air, its M113 aboard and its order, still runway only and refused open ground; the C-5M on the ramp, 15 tiles",
+      !!J141 && !!J5 && J141.def.runway === true && !J141.def.strip && !J141.parked && J141.order.type === "move" &&
+      J141.cargo.length === 1 && J141.cargo[0].carried && J141.cargo[0].def.id === "nato_e60_ifv" && /NEEDS A RUNWAY/.test(w141) &&
+      J5.parked && J5.def.strip === 15 && !J5.def.runway,
+      (J141 ? "C-141B " + J141.order.type + " cargo " + J141.cargo.length + " runway " + J141.def.runway + " / " + w141 : "no C-141B") +
+      (J5 ? "; C-5M parked " + J5.parked + " strip " + J5.def.strip : "; no C-5M"));
+  if (J141) { J141.cargo.forEach(gone); J141.cargo.length = 0; gone(J141); }
+  if (J5) gone(J5);
   var LL = null;
   if (snapL) Game.entities.forEach(function (e) {
     if (e.kind === "unit" && e.def.id === LC.id && e.owner === P && Math.hypot(e.x - snapL.x, e.y - snapL.y) < 3) LL = e; });

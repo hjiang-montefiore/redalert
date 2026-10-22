@@ -442,11 +442,11 @@ var UI = (function () {
       if (rest.length) rows.push('<span class="alt">ALSO ' + rest.join(" · ").toUpperCase() + "</span>");
     }
     if (d.speed) rows.push("SPD " + d.speed);
-    /* an airlifter: its seats, its payload, the strip it lands on, and the
-       floor its vehicles stand on - or, a helicopter, its hook (entities.js
-       AIRLIFT, HOLD SPACE) */
+    /* an airlifter: its seats, its payload, the strip it lands on (or that
+       it needs a runway: a C-141), and the floor its vehicles stand
+       on - or, a helicopter, its hook (entities.js AIRLIFT, HOLD SPACE) */
     if (d.cargo) rows.push("CARRIES " + d.cargo + (d.payload && d.layer === "air"
-      ? " \u00b7 LIFTS " + Unit.fmtT(d.payload) + " T" + (d.strip && !d.hover ? " \u00b7 LANDS IN " + d.strip + " TILES" : "") +
+      ? " \u00b7 LIFTS " + Unit.fmtT(d.payload) + " T" + (d.strip && !d.hover ? " \u00b7 LANDS IN " + d.strip + " TILES" : d.runway ? " \u00b7 RUNWAY ONLY: LANDS ON AN AIRBASE" : "") +
         (d.hover ? " \u00b7 ONE VEHICLE ON THE HOOK" + (d.cabin ? ", MORE IN A " + Unit.fmtM(d.cabin[0]) + " \u00d7 " + Unit.fmtM(d.cabin[1]) + " M CABIN" : "")
                  : d.hold ? " \u00b7 FLOOR " + Unit.fmtM(d.hold[0]) + " \u00d7 " + Unit.fmtM(d.hold[1]) + " M" : "")
       /* an assault ship with no well deck (entities.js holdRefusal), or

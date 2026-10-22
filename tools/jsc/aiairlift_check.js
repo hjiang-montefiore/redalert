@@ -57,7 +57,14 @@
         squads are put off there, free and in no wave; a delivery under way
         that no sortie holds (a save loaded: the sorties, and the queued way
         home, are not saved) is taken back, its squads join the wave as a
-        landed party and the helicopter comes home. */
+        landed party and the helicopter comes home.
+    11. The Air Force's jet transports (eras.js, role "stratlift") are cards
+        beside the Hercules and not the commander's: in every period from
+        the 1960s its airlift card is still the period's C-130, and in the
+        1990s, with the C-141B, the C-5B and the C-17A on its AIR tab, a load
+        of Sheridans waiting a minute for an aeroplane orders no jet; filed
+        as "airlift" instead (the design not taken, measured and undone),
+        the C-17A would be the card and the same scene would order one. */
 var PASS = 0, FAIL = 0, TT = 32, DT = 1 / 30;
 var TRACE = typeof __ARGS !== "undefined" && __ARGS.indexOf("trace") >= 0;
 function log(s) { print(s); }
@@ -207,6 +214,7 @@ function run() {
   lostInFlight();
   farUse();
   inTheHold();
+  jets();
 }
 
 /* standing infantry at home: n rifle squads in a block `dy` tiles south */
@@ -624,4 +632,61 @@ function inTheHold() {
     chk("its squads join the wave as a landed party, and the helicopter comes home",
         inW.length === load.length && hel.parked, inW.length + " of " + load.length + " in the wave; helicopter " + orderOf(hel));
   });
+}
+
+/* ---- 11. the jet transports are the player's, not the commander's ---- */
+function jets() {
+  log("\n[11] the jet transports (stratlift) beside the Hercules: the airlift card is still the C-130, and the commander buys no jet");
+  var HERC = { e60: "nato_e50_airlift", e80: "nato_e80_airlift", e90: "nato_e80_airlift", e00: "nato_e80_airlift", e20: "airlift_n" };
+  var picks = [], bad = [];
+  Object.keys(HERC).forEach(function (era) {
+    if (!scene({ era: era })) { bad.push(era + " no scene"); return; }
+    var pk = AI.pickOf(E, "airlift"), nj = unitsFor("nato", "stratlift", era).length;
+    picks.push(era + " " + pk + " (+" + nj + " jets on the tab)");
+    if (pk !== HERC[era] || !nj) bad.push(era);
+  });
+  chk("NATO's airlift card in each period is still its Hercules, with the jets on the same AIR tab", !bad.length, picks.join("; "));
+  /* the 1990s on taiwan, a radar dome built (the jets' prerequisite), a
+     load standing at home that a Black Hawk cannot
+     take and an aeroplane can - four Sheridans (15.2 t), with four M1A2s
+     (63 t) that fit no transport standing beside them - waiting a minute,
+     pass after pass, for an aeroplane, with a body ashore across the strait:
+     what goes on order. Then the same scene with the jets filed as "airlift"
+     (the design not taken), to measure what the role keeps from happening. */
+  function lift90() {
+    if (!scene({ era: "e90" })) return null;
+    base(); rivalSeen();
+    var hr = home();
+    bld(E, "radar", { x: hr.x + 7, y: hr.y - 6 });         // the jets' prerequisite
+    put(E, AI.pickOf(E, "fighter"), home()); put(E, AI.pickOf(E, "fighter"), home());
+    var fs = farSide(30); if (fs) bodyAshore(3, fs);
+    think(40);
+    var h = home();
+    for (var i = 0; i < 4; i++) {
+      put(E, "nato_e80_lighttank", { x: h.x - 3 + i, y: h.y + 12 });
+      put(E, AI.pickOf(E, "mbt"), { x: h.x - 3 + i, y: h.y + 14 });
+    }
+    var held = hold(62), card = AI.pickOf(E, "airlift");
+    var ok = L.buy(), fixed = [], jet = [];
+    [E.queues.aircraft.items, E.queues.aircraft.ready].forEach(function (l) { (l || []).forEach(function (it) {
+      var id = it.id || it, d = UNITS[id];
+      if (d && d.payload && !d.hover) fixed.push(id);
+      if (/c141|c5|c17/.test(id)) jet.push(id); }); });
+    E.units.forEach(function (u) { if (!u.dead && /c141|c5|c17/.test(u.def.id)) jet.push(u.def.id); });
+    return { card: card, bought: ok, fixed: fixed.join() || "none", jet: jet.join() || "none", passes: held,
+             why: JSON.stringify(AI.intelOf(E).lift.why) };
+  }
+  var as = lift90();
+  chk("1990s, the C-141B, C-5B and C-17A on its tab: the airlift card is the C-130H, and no jet goes on order " +
+      "(nor a C-130H here: the far shore is past its 62-tile radius from the airbase, as before)",
+      !!as && as.card === "nato_e80_airlift" && as.jet === "none" && /^(none|nato_e80_airlift)$/.test(as.fixed), JSON.stringify(as));
+  var JET = ["nato_e60_c141", "nato_e80_c141", "nato_e60_c5", "nato_e80_c5", "nato_e00_c5", "nato_e90_c17"];
+  JET.forEach(function (id) { UNITS[id].role = "airlift"; });
+  reindexRoles();
+  var cf = null;
+  try { cf = lift90(); } finally { JET.forEach(function (id) { UNITS[id].role = "stratlift"; }); reindexRoles(); }
+  log("     as built: " + JSON.stringify(as) + "\n     filed as airlift: " + JSON.stringify(cf));
+  chk("measured against the design not taken: filed as \"airlift\", the C-17A would be the 1990s card and the same scene would order one",
+      !!cf && cf.card === "nato_e90_c17" && cf.fixed === "nato_e90_c17" && (ROLES.stratlift || []).length === 6 && unitFor("nato", "airlift", "e90") === "nato_e80_airlift",
+      JSON.stringify(cf));
 }

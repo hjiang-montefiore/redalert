@@ -1264,6 +1264,8 @@ var Airframe3D = (function () {
         return [];                                  /* it all goes inside */
       case "awacs": case "cawacs":
         return [];
+      case "airlift": case "stratlift":           /* a transport hangs nothing */
+        return [];
       case "ewair":
         return [{ k: "pod", n: 2, at: 0.52 }, { k: "pod", n: 2, at: 0.80 },
                 { k: "tank", n: 2, at: 0.34 }];

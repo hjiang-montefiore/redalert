@@ -1963,6 +1963,7 @@ var Game = (function () {
   }
   G.findStrip = function (u, px, py) {
     if (!u || !u.def) return null;
+    if (u.def.runway) return null;      // a C-141 needs a runway: no open ground (generations.js AIRLIFT)
     const map = G.map, W = map.W, H = map.H, TS = CFG.TILE, d = u.def;
     const L = Math.max(3, d.strip || 5);
     const turnR = (d.speed || 3) / Math.max(0.05, d.turn || 1);       // tiles
@@ -2013,6 +2014,11 @@ var Game = (function () {
     const o = { type: "airland", x: x, y: y, ph: u.def.hover ? "fly" : "app", goes: 0 };
     if (!u.cargo.length) o.load = 1;
     if (!u.def.hover) {
+      /* a runway type lands only on an airbase: right-clicked onto one of
+         ours it lands there, and loads or unloads standing on it (ui.js) -
+         the toast says which, since U on an empty one asks to land and load */
+      if (u.def.runway) return Unit.liftName(u) + " NEEDS A RUNWAY — LAND IT ON AN AIRBASE AND " +
+                               (u.cargo.length ? "UNLOAD" : "LOAD") + " IT THERE";
       const s = G.findStrip(u, x, y);
       if (!s) return "NO STRIP NEAR THERE FOR THE " + Unit.liftName(u) + " — IT NEEDS " +
                      Math.max(3, u.def.strip || 5) + " TILES OF FLAT, CLEAR OPEN GROUND";

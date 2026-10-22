@@ -14374,3 +14374,134 @@ Object.assign(UNITS, {
     .forEach(function (k) { if (UNITS[k]) UNITS[k].carrierCapable = true; });
 })();
 if (typeof reindexRoles === "function") reindexRoles();
+
+/* ==================================================================
+   THE AIR FORCE'S JET TRANSPORTS ("stratlift")
+   (owner) "i didn't see good us transportation airplane": every American
+   airlift row was a Hercules - nato_e50_airlift (C-130A), nato_e80_airlift
+   (C-130H), airlift_n (C-130J). The Air Force flew the C-130 as its
+   tactical lifter beside the strategic jets in every period from 1965, so
+   the Hercules rows stay exactly as they are and these join them. Sources,
+   read 2026-10-22: en.wikipedia "Lockheed C-141 Starlifter", "Lockheed C-5
+   Galaxy" and "Boeing C-17 Globemaster III" (infobox, specification table
+   and text of each); de.wikipedia "Lockheed C-141" and "Lockheed C-5"
+   (their Technische Daten tables).
+
+   THE ROWS, each variant in the periods it was the one in service:
+     C-141A Starlifter     e60      in service April 1965; 154 troops, 123
+                                    paratroopers or ten pallets; a hold
+                                    70 x 10 x 9 ft; 28.8 t
+     C-141B Starlifter     e80-e00  270 As stretched 23 ft 4 in, the first
+                                    delivered December 1979, the last in
+                                    1982 - the 1970s fleet was the A, so the
+                                    B starts in the 1980s; 205 troops or 13
+                                    pallets, 42.5 t; 63 upgraded in the
+                                    1990s as the C-141C (avionics, not a new
+                                    airframe); the last retired May 2006
+     C-5A Galaxy           e60      first operational aircraft June 1970;
+                                    hold 121 x 19 x 13.5 ft, 36 pallets
+     C-5B Galaxy           e80-e90  fifty built new, delivered January 1986
+                                    to April 1989, with the A's fixes built in
+     C-5M Super Galaxy     e00-e20  52 A, B and C airframes re-engined and
+                                    re-cockpited; the first delivered December
+                                    2008 (en.wikipedia; the owner's brief gave
+                                    2014, which no source fetched names)
+     C-17A Globemaster III e90-e20  first squadron operational 17 January 1995
+   The C-141B in the 2000s and the C-5M in the same period never flew
+   together (May 2006, December 2008); the period is twenty years wide and
+   each served in it, as the Beverley and the Hercules C.1 share the 1960s.
+
+   A ROLE OF THEIR OWN, "stratlift", as the Marines' helicopters took
+   "assaulthelo" (navy piece 5a). unitFor() answers "the newest of a role in
+   this period", and unitFor("airlift") is the aeroplane the commander's air
+   bridge buys (ai.js liftTry, pickFor); filed as "airlift", the C-17A (e90)
+   would have replaced the C-130H as the 1990s answer and the C-5B as the
+   1980s one, and the commander would have bought jets: measured on taiwan
+   in the 1990s (tools/jsc/aiairlift_check.js [11]), a load of Sheridans
+   waiting for an aeroplane orders a C-17A that way, and nothing as built -
+   the Hercules' 62 tiles do not reach that far shore, as before. Under
+   their own role they are cards in the AIR
+   tab beside the Hercules (ui.js lists every aircraft row of the faction
+   and period) and change no answer: the commander has no table naming the
+   role and never buys one. Everything else an airlifter does reads its
+   payload, hold and strip, not its role (entities.js AIRLIFT, HOLD SPACE).
+
+   WHERE THEY LAND. The C-17A was designed for runways of 3,500 ft and "can
+   also operate from unpaved, unimproved runways" (en.wikipedia): it lands
+   on open ground like the Hercules, in 11 tiles, as the RAF's C-17A
+   (gbr_e00_airlift) does. The C-5 lands on open ground too, in 15 tiles on
+   the same scale: it needs 4,900 ft at maximum load (en.wikipedia), the
+   kind of figure the C-17's 3,500 ft is, and its 28-wheel gear spreads its
+   weight "on paved or earth surfaces" (en) - the CX-HLS requirement asked
+   for a landing on 4,000 ft of semi-prepared strip (de.wikipedia). (The
+   review, 2026-10-22: the first cut held it to a runway on an unsourced
+   brief.) The C-141 needs a runway: `runway` in generations.js AIRLIFT,
+   and G.airLand refuses it open ground - it loads and unloads standing on
+   an airbase, ours, the far one as well as the home one. Its article gives
+   no landing distance and says the C-130 kept the short fields and the
+   "austere airstrips" (en.wikipedia).
+
+   THE FIGURES. PAYLOAD and HOLD: generations.js AIRLIFT, sourced line by
+   line. SEATS on the C-17A row's scale - its 20 for 134 troops: the C-141A's
+   154 troops 23, the B's 205 31, the C-5's 345 51 (de.wikipedia, 270 on
+   pallet seats below and 75 above). PRICE, BARRELS, BUILD TIME and HP by
+   payload, on the straight lines through the three airlift rows of the
+   ladder that a payload sits between - C-130H (19.05 t: 1,400, 42, 22, 620),
+   A400M (37 t: 2,100, 52, 28, 760), C-17A (77.52 t: 2,450, 58, 30, 820) -
+   and past the C-17A on its own line; cost to the nearest 50, hp to 10.
+   RADIUS on the C-17A row's 120 tiles for its 2,420 nmi with 157,000 lb
+   (en.wikipedia): the C-141A's 6,566 km and the B's 4,723 km at maximum
+   load (de.wikipedia; en gives the B's 2,550 nmi), the C-5A's 4,390 km and
+   the B's 4,440 at maximum load (de), the C-5M's 2,300 nmi at maximum cargo
+   (en). SPEED on the C-17A row's 4.30 for 450 kn cruise, which the C-5M
+   shares (en.wikipedia); the C-5A/B and the C-141s by their maximum speeds
+   against the C-5M's in the one table set that gives all of them
+   (de.wikipedia: 919, 919, 912 against 932 km/h). SIZE r and SIGNATURE rcs
+   by length on the line from the Hercules (29.8 m: r 20, rcs 3.6) to the
+   C-17A (53.0 m: r 24, rcs 5.0) - C-141A 44.2 m, B 51.3, C-5 75.3. TURN,
+   SIGHT, TECH and PREREQUISITES the C-17A row's. Unarmed, as every
+   transport row.
+
+   3D: no hero model yet. js/air_specs.js draws each on the parametric
+   airframe builder at its real length and span until the hero models are
+   built.
+   ================================================================== */
+Object.assign(UNITS, {
+  nato_e60_c141: { fac:"nato", role:"stratlift", cat:"aircraft", layer:"air", name:"C-141A Starlifter", full:"Lockheed C-141A Starlifter",
+    cost:1800, oil:47, time:25, hp:700, armor:"air", speed:4.24, turn:1.0, sight:8.5, r:22, mass:0,
+    weapons:[], prereq:["airbase", "radar"], tech:2, jet:true, ammo:0, radarQ:0,
+    cargo:23, radius:176, rcs:4.5,
+    from:"e60", to:"e60", service:"1965", confidence:"high",
+    desc:"The first large jet designed from the start to carry freight: four TF33 turbofans under a high swept wing, a T-tail and a ramp at the back. In service from April 1965 and straight into the Vietnam airlift - 154 troops, 123 paratroopers or ten pallets. Its hold is 70 ft long and 10 ft wide, too narrow for a tank, and it filled before its weight did: it bulked out before it grossed out. It needs a runway; the short dirt strips stayed the Hercules' job." },
+  nato_e80_c141: { fac:"nato", role:"stratlift", cat:"aircraft", layer:"air", name:"C-141B Starlifter", full:"Lockheed C-141B Starlifter",
+    cost:2150, oil:53, time:28, hp:770, armor:"air", speed:4.21, turn:1.0, sight:8.5, r:24, mass:0,
+    weapons:[], prereq:["airbase", "radar"], tech:2, jet:true, ammo:0, radarQ:0,
+    cargo:31, radius:126, rcs:4.9,
+    from:"e80", to:"e00", service:"1979", confidence:"high",
+    desc:"270 of the A-models cut and stretched 23 ft 4 in, with plugs ahead of and behind the wing, and given an in-flight refuelling receptacle - by the Air Force's reckoning the same as buying ninety new aircraft. 205 troops or 13 pallets and 42.5 tonnes, but still only 10 ft wide: a Humvee or an M113, never a tank or a Bradley. A C-141 flew the first strategic airlift mission of Desert Shield on 7 August 1990; the last, Hanoi Taxi, retired in May 2006." },
+  nato_e60_c5: { fac:"nato", role:"stratlift", cat:"aircraft", layer:"air", name:"C-5A Galaxy", full:"Lockheed C-5A Galaxy",
+    cost:2800, oil:64, time:32, hp:880, armor:"air", speed:4.24, turn:1.0, sight:8.5, r:28, mass:0,
+    weapons:[], prereq:["airbase", "radar"], tech:2, jet:true, ammo:0, radarQ:0,
+    cargo:51, radius:118, rcs:6.3,
+    from:"e60", to:"e60", service:"1970", confidence:"high",
+    desc:"The largest aircraft in the world when it reached Charleston in June 1970: a hold 121 ft long and 19 ft wide with a nose that hinges up and a ramp at each end, 28 wheels and an undercarriage that kneels to bring the floor down to a truck's bed. It takes two tanks of the day at once. Its wing cracked in fatigue testing and the fleet flew restricted for years until a new wing went on from 1976. It needs 4,900 ft to land at full load, on paving or on earth." },
+  nato_e80_c5: { fac:"nato", role:"stratlift", cat:"aircraft", layer:"air", name:"C-5B Galaxy", full:"Lockheed C-5B Galaxy",
+    cost:2800, oil:64, time:32, hp:880, armor:"air", speed:4.24, turn:1.0, sight:8.5, r:28, mass:0,
+    weapons:[], prereq:["airbase", "radar"], tech:2, jet:true, ammo:0, radarQ:0,
+    cargo:51, radius:119, rcs:6.3,
+    from:"e80", to:"e90", service:"1986", confidence:"high",
+    desc:"Fifty more, bought under Reagan with the C-17 still years away and delivered from January 1986 to April 1989, with every fix the A had needed built in: the stronger wing, simpler landing gear, TF39-GE-1C engines and new avionics. Two M1A1s or five Bradleys at once - and in the 1990s, with the heavier M1A2, one tank and the weight left over. It lands in 4,900 ft at full load, on paving or on earth." },
+  nato_e00_c5: { fac:"nato", role:"stratlift", cat:"aircraft", layer:"air", name:"C-5M Super Galaxy", full:"Lockheed Martin C-5M Super Galaxy",
+    cost:2900, oil:65, time:32, hp:890, armor:"air", speed:4.30, turn:1.0, sight:8.5, r:28, mass:0,
+    weapons:[], prereq:["airbase", "radar"], tech:2, jet:true, ammo:0, radarQ:0,
+    cargo:51, radius:114, rcs:6.3,
+    from:"e00", service:"2008", confidence:"high",
+    desc:"Fifty-two Galaxies - 49 Bs, both Cs and one A - rebuilt with General Electric F138 engines, a glass cockpit and new systems, the first delivered in December 2008. 281,000 lb or 36 pallets; in 2009 one set 41 records in a single flight. Two M1A2 SEPs fit its weight; two of today's heavier SEP v3s do not. The new engines shortened its take-off; nothing published shortens the airframe's 4,900 ft landing at full load." },
+  nato_e90_c17: { fac:"nato", role:"stratlift", cat:"aircraft", layer:"air", name:"C-17 Globemaster III", full:"Boeing C-17A Globemaster III",
+    cost:2450, oil:58, time:30, hp:820, armor:"air", speed:4.30, turn:1.0, sight:8.5, r:24, mass:0,
+    weapons:[], prereq:["airbase", "radar"], tech:2, jet:true, ammo:0, radarQ:0,
+    cargo:20, radius:120, rcs:5.0,
+    from:"e90", service:"1995", confidence:"high",
+    desc:"A strategic jet that lands where a Hercules does: 3,500 ft of runway, or an unpaved one. The first squadron went operational on 17 January 1995 after a troubled, over-budget development. One Abrams, two Bradleys or three Strykers, or 102 paratroopers, with a crew of three. On 26 March 2003 fifteen of them dropped a thousand paratroopers of the 173rd Airborne over Bashur, in northern Iraq, and then flew in their Abrams and Bradleys." },
+});
+if (typeof reindexRoles === "function") reindexRoles();

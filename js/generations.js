@@ -2281,7 +2281,12 @@
      at twenty metres a tile a Hercules would need half the map. A hundred
      keeps the ORDER of the types: the Beverley and the An-2 put down in
      three tiles, the Hercules in five, the A400M in eight and the C-17 in
-     eleven, which is what each was built for.
+     eleven, which is what each was built for. The C-5 puts down in
+     fifteen: its 4,900 ft at maximum load is the same kind of figure as the
+     C-17's 3,500 ft, and its gear is built for earth as well as paving. A
+     type marked `runway` - the C-141, with no landing figure published and
+     the rough strips left to the Hercules - has no strip at all: it lands
+     only on an airbase (game.js G.airLand refuses it open ground).
 
      FOUR AEROPLANES FILED AS HELICOPTERS. The An-2 rows (trans_k and the
      e60, e80 and e00 KPA rows), the Po-2, the KPA's Il-76TD and Taiwan's
@@ -2357,6 +2362,23 @@
     kpa_e50_transport: { t: 0.26, strip: 3, plane: 1, range: 630 },  // Po-2: no cargo figure published; gross 1,030 kg less empty 770 kg; range 630 km (en.wikipedia); open cockpits and no hold - its 0.26 t refuses every vehicle
     kpa_e90_transport: { t: 48,   strip: 5, plane: 1, hold: [20, 3.46], range: 3600 },  // Il-76TD, the civil MD: the MD's 48,000 kg (en.wikipedia); landing run 450 m with reversers; hold 24.5 m of which 4.5 m ramp, 3.46 m wide; TD range 3,600 km at maximum load (ru.wikipedia)
     roc_e50_transport: { t: 15000 * LB, strip: 6, plane: 1 }, // C-46D: 15,000 lb (en.wikipedia, Bowers 1979); no landing run fetched, a twin-piston transport's ~600 m; NO hold figure fetched - weight alone (one light vehicle)
+    /* the Air Force's jet transports (eras.js, "stratlift"), fetched
+       2026-10-22. `runway`: lands only on an airbase, never on open ground
+       (eras.js says why). Heights are given on the line and not used, as above.
+       The C-5's strip (review, en/de.wikipedia re-read 2026-10-22): en gives
+       "takeoff and landing distance requirements ... at maximum-load weights"
+       of 8,300 and 4,900 ft and gear for "paved or earth surfaces"; de, gear
+       for "unbefestigtem Untergrund" and engines hung high for "halbbefestigte
+       Pisten". 4,900 ft = 1,494 m, fifteen tiles, the measure of the C-17's
+       3,500 ft. en's 3,600 ft "landing run" for the M is de's 1,100 m
+       Landestrecke for the A/B - the roll, not the field - so the three share
+       the fifteen. */
+    nato_e60_c141:     { t: 28.8,  runway: 1, hold: [70 * FT, 10 * FT] },   // C-141A: max. Zuladung 28.8 t (de.wikipedia table; en's "total cargo capacity of 62,700 lb" is 28.4); compartment 70 x 10 x 9 ft (en.wikipedia); no landing figure in either, and en: the C-130 kept "short-field takeoff performance and suitability for austere airstrips" - runway
+    nato_e80_c141:     { t: 42.5,  runway: 1, hold: [(70 + 23 + 4 / 12) * FT, 10 * FT] }, // C-141B: 42.5 t (de.wikipedia table); the A's 70 ft hold and the 23 ft 4 in stretch (en.wikipedia) - de.wikipedia's 31.8 x 3.1 x 2.7 m does not say whether it counts the ramp; no landing figure either - runway
+    nato_e60_c5:       { t: 118.387, strip: 15, hold: [121 * FT, 19 * FT] }, // C-5A: max. Zuladung 118,387 kg (de.wikipedia, the Galaxy column); compartment 121 x 19 x 13.5 ft (en.wikipedia; de's text 37 x 5.8 x 4.1 m, its table 43.80 m); 4,900 ft to land at maximum load, paved or earth (en) = 1,494 m
+    nato_e80_c5:       { t: 118.387, strip: 15, hold: [121 * FT, 19 * FT] }, // C-5B: the same column, hold and landing distance
+    nato_e00_c5:       { t: 281000 * LB, strip: 15, hold: [121 * FT, 19 * FT] }, // C-5M: 281,000 lb (en.wikipedia infobox, the af.mil fact sheet; de 129,274 kg); the A/B's airframe and gear re-engined (en: "a 30% shorter takeoff"; nothing on the landing) - their 4,900 ft
+    nato_e90_c17:      { t: 170900 * LB, strip: 11, hold: [88 * FT, 18 * FT] }, // C-17A: gbr_e00_airlift's figures, the same aeroplane; 12 ft 4 in high (en.wikipedia)
     /* ---- helicopters: the heavier of internal and hook ----
        Every one carries ONE vehicle, on its hook (entities.js HOLD SPACE).
        The Chinook also takes vehicles inside, up its rear ramp ("a wide
@@ -2428,6 +2450,7 @@
     if (!_lu) { liftMiss.push(_lk); continue; }
     _lu.payload = Math.round(_la.t * 100) / 100;
     if (_la.strip) _lu.strip = _la.strip;
+    if (_la.runway) { _lu.runway = true; delete _lu.strip; }
     if (_la.plane) { _lu.role = "airlift"; delete _lu.hover; rerole = true; }
     if (_la.hold) _lu.hold = m2(_la.hold);
     if (_la.cabin) _lu.cabin = m2(_la.cabin);

@@ -38,7 +38,8 @@ var Gallery = (function () {
      Consulted only after LoadScreen has been asked. */
   const ROLE_WORD = {
     awacs: "Airborne early warning", cawacs: "Carrier-borne early warning",
-    airlift: "Transport aircraft", tanker: "Aerial tanker",
+    airlift: "Transport aircraft", stratlift: "Strategic transport aircraft",
+    tanker: "Aerial tanker",
     radarv: "Radar vehicle", supply: "Supply truck",
     transport_sea: "Landing ship", oiler: "Replenishment oiler",
     assault_sea: "Amphibious assault ship", landing_craft: "Landing craft",

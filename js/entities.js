@@ -99,7 +99,7 @@ const TGT_PRIO = {
   sam: 0.70, aa: 0.80, spaag: 0.75,
   /* a scout is a few hundred credits, and shooting one is how a column gets
      led around the map; an empty lorry is not the fight either */
-  recon: 1.70, transport: 1.35, transport_sea: 1.35, airlift: 1.35,
+  recon: 1.70, transport: 1.35, transport_sea: 1.35, airlift: 1.35, stratlift: 1.35,
 };
 /* The table's answer for one class of vehicle, with the documented
    fall-through: a hauler that carries some other role is still a hauler.
