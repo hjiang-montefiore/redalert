@@ -7,7 +7,7 @@ var Render3D = (function () {
   const PXM = 0.625;                 // metres per game px
   const TILE_M = 20;
   const ELEV_M = 10;                 // metres per elevation level
-  const AIR_ALT = 46;                // cruise altitude, metres
+  const AIR_ALT = CFG.AIR_ALT;       // cruise altitude, metres (config.js: the rules time a touchdown by it)
 
   let G = null, three = null;        // three = { renderer, scene, camera, ... }
   let cv2d = null, ctx2d = null;     // transparent overlay canvas (UI adornments)
@@ -1030,9 +1030,14 @@ var Render3D = (function () {
   function landRest(e, rec, host, ground) {
     return (host ? Math.max(padTop(host, e, ground), ground) : ground) - rec.foot;
   }
+  /* up at CFG.AIR_CLIMB, down at CFG.AIR_SINK, metres a second of GAME time:
+     at 2x or 3x it climbs and comes down that much faster to the eye, as
+     everything else moves, so a transport set down to unload is on the
+     ground in the drawing by the time the rules let its load off
+     (entities.js TOUCHDOWN, timed by the same two figures) */
   function easeAlt(rec, want, dt) {
     if (rec.alt === undefined) rec.alt = want;      // spawns at its real height
-    const rate = (want > rec.alt ? 26 : 17) * dt;   // metres a second
+    const rate = (want > rec.alt ? CFG.AIR_CLIMB : CFG.AIR_SINK) * dt * (G.speed || 1);
     rec.alt += U.clamp(want - rec.alt, -rate, rate);
     return rec.alt;
   }

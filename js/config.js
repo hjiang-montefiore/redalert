@@ -127,6 +127,18 @@ var CFG = {
      helicopter is not on that clock at all. */
   CAP_RADIUS: 3.2,         // tiles an aircraft orbits its patrol point
 
+  /* ---- an aircraft's height in the 3D view ----
+     It flies AIR_ALT metres up and eases to and from the ground at AIR_CLIMB
+     metres a second going up and AIR_SINK coming down, in game seconds
+     (render3d.js easeAlt). The rules never draw anything, but they read
+     these too: a transport set down to unload puts nobody off until it has
+     had AIR_ALT / AIR_SINK seconds to come down (entities.js TOUCHDOWN).
+     Before that an MV-22B put its squad out the moment the rules had it on
+     the ground, while it was still drawn at its cruise height. */
+  AIR_ALT: 46,             // m, cruise
+  AIR_CLIMB: 26,           // m a second
+  AIR_SINK: 17,            // m a second
+
   /* --- logistics ---
      Guns run out of shells. An artillery piece or a heavy launcher carries a
      limited number of rounds and has to be replenished from a depot, a supply

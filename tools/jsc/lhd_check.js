@@ -72,9 +72,11 @@
         assault ship's deck laid out for, refilled with and delivered with
         her period's Marine helicopter first, at her old price; one of them
         lands on each period's ship with a squad, launches and puts it on a
-        beach; the CH-53E slings a Humvee on its hook, one at a time, and
-        refuses an Abrams; and the commander never buys one. (Run before 9,
-        since the load rebuilds the match.)
+        beach - set down there TOUCHDOWN seconds before the squad gets out,
+        and still down when they do (entities.js; the owner: "so they don't
+        drop from 13 m"); the CH-53E slings a Humvee on its hook, one at a
+        time, and refuses an Abrams; and the commander never buys one.
+        (Run before 9, since the load rebuilds the match.)
     8b. the gate (entities.js WELL TRANSIT): every well-deck ship has her
         well in her hull's geometry (eras.js def.wellPts) and no other ship
         has; launched, a Wasp's three LCACs start at their berths nose to
@@ -168,6 +170,21 @@ function ashore(key, rMin, rMax, wet) {
     if (b) { b.buildProgress = 1; return b; }
   }
   return null;
+}
+/* where a helicopter puts a squad ashore: the nearest tile to p with the
+   whole 3x3 round it open, unbuilt ground. Two tiles in from this beach is
+   the naval yard [2] builds, and over a structure a helicopter hovers and
+   puts its load out at once (entities.js airlandHelo) instead of setting
+   down for TOUCHDOWN first */
+function clearDrop(p) {
+  var cx = (p.x / TT) | 0, cy = (p.y / TT) | 0, best = null, bd = Infinity;
+  for (var y = cy - 6; y <= cy + 6; y++) for (var x = cx - 6; x <= cx + 6; x++) {
+    var d = Math.hypot(x - cx, y - cy), ok = d < bd;
+    for (var j = -1; j <= 1 && ok; j++) for (var i = -1; i <= 1; i++)
+      if (!GameMap.passable(M, x + i, y + j, "ground") || Game.tileBlocked(x + i, y + j, null)) { ok = false; break; }
+    if (ok) { bd = d; best = { x: (x + 0.5) * TT, y: (y + 0.5) * TT }; }
+  }
+  return best || p;
 }
 /* the beach nearest home with twelve tiles of open water straight out from it */
 function findBeach() {
@@ -1579,7 +1596,7 @@ function secAssault() {
   for (var e2 in FLY) {
     useEra(e2);
     var sh = spawn(ROW[e2], off.x, off.y);
-    var hp = land(2), qp = land(3), aim = land(2);
+    var hp = land(2), qp = land(3), aim = clearDrop(land(2));
     var h = spawn(FLY[e2], hp.x, hp.y), q = spawn("rifle_n", qp.x, qp.y);
     q.give({ type: "enter", target: h });
     var tq = ticks(20, function () { return q.carried; });
@@ -1588,15 +1605,19 @@ function secAssault() {
     var landed = t1 > 0 && sh.wing().indexOf(h) >= 0 && q.carried && h.cargo.indexOf(q) >= 0;
     var out = Math.hypot(sh.x - aim.x, sh.y - aim.y) / TT;
     var why = Game.airLand(h, aim.x, aim.y);
-    var t2 = ticks(90, function () { return !q.carried; });
+    /* on the beach in the rules for TOUCHDOWN before the squad gets out,
+       and still there when it does (entities.js) */
+    var tg = -1, t2 = ticks(90, function () { if (tg < 0 && Unit.airGround(h.order)) tg = Game.time; return !q.carried; });
+    var dn = Game.time - tg, still = h.grounded && h.order.type === "airland" && h.order.ph === "down";
     ticks(1);
     var dq = Math.hypot(q.x - aim.x, q.y - aim.y);
     var ashore = !q.carried && !q.dead && GameMap.passable(M, (q.x / TT) | 0, (q.y / TT) | 0, "ground") && dq < 4 * TT;
     chk(e2 + ": a " + UNITS[FLY[e2]].name + " takes a rifle squad aboard on the beach, lands on the " + UNITS[ROW[e2]].name + " " + out.toFixed(1) +
-        " tiles out with it, launches from her and puts the squad ashore",
-        tq > 0 && landed && why === "" && t2 > 0 && ashore && !h.parked,
+        " tiles out with it, launches from her and puts the squad ashore, once it is down on the beach",
+        tq > 0 && landed && why === "" && t2 > 0 && ashore && !h.parked && tg > 0 && dn >= TOUCHDOWN - 1e-6 && still,
         "boarded after " + tq.toFixed(1) + " s; landed " + landed + " after " + t1.toFixed(1) + " s; " + (why || "airLand given") +
-        "; ashore after " + t2.toFixed(1) + " s, " + tiles(dq) + " tiles from the point; helicopter parked " + h.parked);
+        "; ashore after " + t2.toFixed(1) + " s, " + tiles(dq) + " tiles from the point, " + (tg > 0 ? dn.toFixed(2) : "-") +
+        " s after it was down, and it was " + (still ? "still down" : "NOT down") + "; helicopter parked " + h.parked);
     gone(q); gone(h); sh.wing().forEach(gone); gone(sh);
   }
 
@@ -1733,7 +1754,7 @@ function secAssault5b() {
    ["pla", "e20", "lhd_c", "trans_c"], ["pact", "e80", "pact_e80_lpd", "pact_e80_ka29"]].forEach(function (pr) {
     as(pr[0], pr[1]);
     var sh = spawn(pr[2], off.x, off.y);
-    var hp = land(2), qp = land(3), aim = land(2);
+    var hp = land(2), qp = land(3), aim = clearDrop(land(2));
     var h = spawn(pr[3], hp.x, hp.y), q = spawn("rifle_n", qp.x, qp.y);
     q.give({ type: "enter", target: h });
     var tq = ticks(20, function () { return q.carried; });
@@ -1742,15 +1763,19 @@ function secAssault5b() {
     var landed = t1 > 0 && sh.wing().indexOf(h) >= 0 && q.carried && h.cargo.indexOf(q) >= 0;
     var out = Math.hypot(sh.x - aim.x, sh.y - aim.y) / TT;
     var why = Game.airLand(h, aim.x, aim.y);
-    var t2 = ticks(90, function () { return !q.carried; });
+    /* on the beach in the rules for TOUCHDOWN before the squad gets out,
+       and still there when it does (entities.js) */
+    var tg = -1, t2 = ticks(90, function () { if (tg < 0 && Unit.airGround(h.order)) tg = Game.time; return !q.carried; });
+    var dn = Game.time - tg, still = h.grounded && h.order.type === "airland" && h.order.ph === "down";
     ticks(1);
     var dq = Math.hypot(q.x - aim.x, q.y - aim.y);
     var ashore = !q.carried && !q.dead && GameMap.passable(M, (q.x / TT) | 0, (q.y / TT) | 0, "ground") && dq < 4 * TT;
     chk(pr[1] + ": a " + UNITS[pr[3]].name + " takes a rifle squad aboard on the beach, lands on the " + UNITS[pr[2]].name + " " + out.toFixed(1) +
-        " tiles out with it, launches from her and puts the squad ashore",
-        tq > 0 && landed && why === "" && t2 > 0 && ashore && !h.parked,
+        " tiles out with it, launches from her and puts the squad ashore, once it is down on the beach",
+        tq > 0 && landed && why === "" && t2 > 0 && ashore && !h.parked && tg > 0 && dn >= TOUCHDOWN - 1e-6 && still,
         "boarded after " + tq.toFixed(1) + " s; landed " + landed + " after " + t1.toFixed(1) + " s; " + (why || "airLand given") +
-        "; ashore after " + t2.toFixed(1) + " s, " + tiles(dq) + " tiles from the point; helicopter parked " + h.parked);
+        "; ashore after " + t2.toFixed(1) + " s, " + tiles(dq) + " tiles from the point, " + (tg > 0 ? dn.toFixed(2) : "-") +
+        " s after it was down, and it was " + (still ? "still down" : "NOT down") + "; helicopter parked " + h.parked);
     gone(q); gone(h); sh.wing().forEach(gone); gone(sh);
   });
 

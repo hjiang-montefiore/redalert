@@ -81,7 +81,22 @@
         maximum load, "paved or earth surfaces", en.wikipedia), the C-141 is
         refused it (G.airLand, U - loaded or empty, the toast saying which)
         and unloads standing on an airbase. A C-141B in flight with a load
-        and a C-5M on the ramp go through the save (11). */
+        and a C-5M on the ramp go through the save (11).
+   TOUCHDOWN (owner: "Hold the aircraft on the ground until the drawn model
+   has actually landed before troops get out, so they don't drop from
+   13 m"; entities.js TOUCHDOWN = CFG.AIR_ALT / CFG.AIR_SINK):
+    17. an MV-22B and a UH-60M set down with a rifle squad: the squad is put
+        down TOUCHDOWN seconds after the helicopter is on the ground and
+        not before, it is still on the ground then and two seconds more,
+        and the delivery takes the touchdown longer and no more; a C-130J
+        with a Humvee drives it off no sooner than TOUCHDOWN after its
+        wheels touched and no later than that or the end of the roll-out,
+        a C-17A's long roll-out covers it with nothing to wait; and what
+        goes out of the door in flight still goes at once - a squad out of
+        a hovering helicopter and out of a C-130J. A helicopter saved half
+        way down with its squad aboard goes through the save (11) and
+        waits out only the rest of it. The drawing itself:
+        tools/jsc/touchdown3d_check.js. */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
 var TRACE = typeof __ARGS !== "undefined" && __ARGS.indexOf("trace") >= 0;
 function log(s) { print(s); }
@@ -209,7 +224,7 @@ function run() {
   if (!BASE) return;
   var sections = [secData, secBoard, secHeavy, secMixed, secHold, secPack, secHelo, secDeliver, secSweep, secGroundOrder,
                   secPickup, secBlocked, secBingo, secNoStrip, secShotDown, secPlanes, secInfantry, secCard,
-                  secReview, secFuel, secFog, secJets];
+                  secReview, secFuel, secFog, secJets, secTouch];
   sections.forEach(function (f) {
     var w0 = Date.now();
     readBox();
@@ -1252,6 +1267,100 @@ function secJets() {
   sel([]);
 }
 
+/* ---- 17. TOUCHDOWN ---- */
+/* one delivery, a tick at a time: when it is on the ground in the rules
+   (`gnd`: a helicopter's `touch`, an aeroplane's `roll`), when it has
+   stopped (`unload`), when the load is off - and in what phase, on the
+   ground or not - and when it leaves the ground again */
+function touchRun(u, load, px, py, maxT) {
+  var t0 = Game.time, r = { why: Game.airLand(u, px, py), gnd: -1, stop: -1, off: -1, lift: -1, offGnd: false, offPh: "" };
+  if (r.why) return r;
+  ticks(maxT, function () {
+    var o = u.order, t = Game.time - t0, ph = o.type === "airland" ? o.ph : o.type;
+    if (r.gnd < 0 && (ph === "touch" || ph === "roll")) r.gnd = t;
+    if (r.stop < 0 && (ph === "touch" || ph === "unload")) r.stop = t;
+    if (r.off < 0) {
+      if (load.every(function (v) { return !v.carried; })) { r.off = t; r.offGnd = !!u.grounded; r.offPh = o.type + "/" + o.ph; }
+      return false;
+    }
+    if (!u.grounded) { r.lift = t; return true; }
+    return u.order.type === "airland" && (u.order.ph === "turn" || u.order.ph === "dry");      // an aeroplane: off, and turning to go
+  });
+  return r;
+}
+function secTouch() {
+  log("\n[17] TOUCHDOWN: a transport set down to unload keeps its load aboard until it is down in the drawing too");
+  var TD = CFG.AIR_ALT / CFG.AIR_SINK;
+  chk("TOUCHDOWN is the 3D view's cruise height over the rate it brings an aircraft down (config.js): " + CFG.AIR_ALT + " m / " + CFG.AIR_SINK + " m/s",
+      typeof TOUCHDOWN === "number" && Math.abs(TOUCHDOWN - TD) < 1e-9 && TD > 2.5 && TD < 3,
+      (typeof TOUCHDOWN === "number" ? TOUCHDOWN.toFixed(3) : "missing") + " s");
+  var p = farPoint(14, -12, 16) || farPoint(-14, 12, 16);
+  if (!p) { chk("open ground for the helicopters", false, ""); return; }
+  /* helicopters, a rifle squad each, to the point */
+  ["nato_e00_mv22", "trans_n"].forEach(function (id) {
+    var h = spawn(id, p.x - 10 * TT, p.y - 4 * TT); h.parked = false; h.order = { type: "hover" };
+    var q = spawn("rifle_n", BASE.x, BASE.y + 6 * TT); h.cargo.push(q); q.carried = true;
+    var r = touchRun(h, [q], p.x, p.y, 40), dq = Math.hypot(q.x - p.x, q.y - p.y);
+    chk(h.def.name + " sets down with a rifle squad: the squad is put down TOUCHDOWN after it is on the ground and not before, at the point, with it still standing there",
+        !r.why && r.gnd > 0 && r.off - r.gnd >= TD - 1e-6 && r.off - r.gnd <= TD + DT + 1e-6 && r.offGnd && r.offPh === "airland/down" &&
+        !q.carried && !q.dead && dq < 3 * TT,
+        r.why || "on the ground at t=" + r.gnd.toFixed(2) + ", squad out at t=" + r.off.toFixed(2) + " (" + (r.off - r.gnd).toFixed(2) + " s later, " +
+        r.offPh + ", grounded " + r.offGnd + "), " + tiles(dq) + " tiles from the point");
+    chk("...it stays down two seconds more, as before, so the delivery is the flight, the touchdown and the old hold - TOUCHDOWN longer, no more",
+        r.lift > r.off && Math.abs(r.lift - r.off - 2) <= 2 * DT + 1e-6 && Math.abs(r.lift - r.gnd - (TD + 2)) <= 2 * DT + 1e-6,
+        "lifts at t=" + r.lift.toFixed(2) + ": " + (r.lift - r.off).toFixed(2) + " s after the squad, " + (r.lift - r.gnd).toFixed(2) +
+        " s on the ground (" + TD.toFixed(2) + " + 2)");
+    gone(q); gone(h);
+  });
+  /* a C-130J with a Humvee, on open ground */
+  var p2 = farPoint(-30, 10, 20) || farPoint(30, 14, 20);
+  if (p2) {
+    var L = landAt("airlift_n", p2.x, p2.y, ["recon_n"]), hv = L.c.cargo.slice();
+    var r2 = L.why ? { why: L.why } : touchRun(L.c, hv, p2.x, p2.y, 150);
+    chk("C-130J with a Humvee: it drives off no sooner than TOUCHDOWN after the wheels touched, and no later than that or the end of the roll-out, with the aircraft stopped on its strip",
+        !r2.why && r2.gnd > 0 && r2.stop > r2.gnd && r2.off - r2.gnd >= TD - 1e-6 && r2.off <= Math.max(r2.stop, r2.gnd + TD) + DT + 1e-6 &&
+        r2.offGnd && r2.offPh === "airland/unload" && hv.every(function (v) { return !v.carried && !v.dead && v.layer === "ground"; }),
+        r2.why || "wheels on at t=" + r2.gnd.toFixed(2) + ", stopped at t=" + r2.stop.toFixed(2) + " (a " + (r2.stop - r2.gnd).toFixed(2) +
+        " s roll-out), Humvee off at t=" + r2.off.toFixed(2) + " (" + (r2.off - r2.gnd).toFixed(2) + " s after the wheels, " +
+        Math.max(0, r2.off - r2.stop - DT).toFixed(2) + " s waited stopped; " + r2.offPh + ", grounded " + r2.offGnd + ")");
+    hv.forEach(gone); gone(L.c);
+  } else chk("open ground for the C-130J", false, "");
+  /* a C-17A with a Humvee: its 11-tile roll-out is longer than the touchdown */
+  var g = openGround(16, 16, M.W / 2, M.H / 2, 20, 40);
+  if (g) {
+    var px = (g.x + 8) * TT, py = (g.y + 8) * TT;
+    clearArea(px, py, 24);
+    var c17 = spawn("nato_e90_c17", px + 20 * TT, py);
+    c17.parked = false; c17.order = { type: "hover" }; c17.fuel = c17.fuelMax; c17.padOn = BASE;
+    var v17 = spawn("recon_n", BASE.x, BASE.y + 6 * TT); c17.cargo.push(v17); v17.carried = true;
+    var r3 = touchRun(c17, [v17], px, py, 150);
+    chk("C-17A with a Humvee: its roll-out on 11 tiles is longer than the touchdown, so it drives off as soon as it has stopped, as before",
+        !r3.why && r3.stop - r3.gnd >= TD && r3.off > r3.stop && r3.off - r3.stop <= DT + 1e-6 && r3.offGnd && !v17.carried,
+        r3.why || "a " + (r3.stop - r3.gnd).toFixed(2) + " s roll-out, off " + (r3.off - r3.stop).toFixed(3) + " s after it stopped (" + r3.offPh + ")");
+    gone(v17); gone(c17);
+  } else chk("open ground for the C-17A", false, "");
+  /* out of the door in flight: at once, as before */
+  var hh = spawn("trans_n", p.x, p.y - 6 * TT); hh.parked = false; hh.order = { type: "hover" };
+  var hq = spawn("rifle_n", BASE.x, BASE.y + 6 * TT); hh.cargo.push(hq); hq.carried = true;
+  ticks(1);
+  sel([hh]); var t0 = Game.time;
+  key("u");
+  chk("U on a hovering Black Hawk puts its squad out at once - no touchdown, no landing",
+      !hq.carried && !hq.dead && !hh.grounded && hh.order.type !== "airland" && Game.time === t0 && said(/1 UNIT DISEMBARKED/, t0),
+      "carried " + hq.carried + ", order " + hh.order.type + ", grounded " + hh.grounded + " / " + saidText(t0));
+  gone(hq); gone(hh);
+  var cc = spawn("airlift_n", BASE.x + 12 * TT, BASE.y); cc.parked = false; cc.order = { type: "hover" };
+  var cq = spawn("rifle_n", BASE.x, BASE.y + 6 * TT); cc.cargo.push(cq); cq.carried = true;
+  ticks(1);
+  sel([cc]); t0 = Game.time;
+  key("u");
+  chk("U on a C-130J in flight with a squad: out of the door at once, as before",
+      !cq.carried && !cq.dead && cc.order.type !== "airland" && !cc.grounded && Game.time === t0,
+      "carried " + cq.carried + ", order " + cc.order.type + ", grounded " + cc.grounded);
+  gone(cq); gone(cc);
+  sel([]);
+}
+
 function secSave() {
   log("\n[11] a save mid-delivery loads into the same delivery (last: the load rebuilds the match)");
   /* one C-130J on its approach with two Humvees, one standing on its strip with a rifle squad still aboard */
@@ -1294,7 +1403,22 @@ function secSave() {
   j141.cargo.push(jm); jm.carried = true;
   var j5 = spawn("nato_e00_c5", BASE.x, BASE.y);
   j5.padOn = BASE; j5.parked = true; j5.order = { type: "parked" }; j5.fuel = j5.fuelMax;
-  var snapA = { x: a.x, y: a.y, ph: a.order.ph, bx: a.order.bx, by: a.order.by }, snapB = { x: b.x, y: b.y, bx: b.order.bx };
+  /* and a Black Hawk half way down onto its point with a rifle squad aboard
+     (17, TOUCHDOWN): flown there and down on its own, a tick at a time, for
+     the same reason */
+  var tg = openGround(3, 3, BASE.tx + 8, BASE.ty - 10, 3, 20), snapH = null, TD = CFG.AIR_ALT / CFG.AIR_SINK;
+  if (tg) {
+    var tpx = (tg.x + 1.5) * TT, tpy = (tg.y + 1.5) * TT;
+    var th = spawn("trans_n", tpx - 3 * TT, tpy); th.parked = false; th.order = { type: "hover" };
+    var tq = spawn("rifle_n", BASE.x, BASE.y + 6 * TT); th.cargo.push(tq); tq.carried = true;
+    Game.airLand(th, tpx, tpy);
+    for (var s = 0; s < 600 && !(th.order.ph === "touch" && th.order.t >= 1.2); s++) th.update(DT);
+    snapH = { x: th.x, y: th.y, ph: th.order.ph, t: th.order.t, g: th.grounded, n: th.cargo.length };
+  }
+  chk("and a Black Hawk coming down onto its point, 1.2 s into its " + TD.toFixed(2) + " s touchdown, on the ground in the rules, its squad still aboard",
+      !!snapH && snapH.ph === "touch" && snapH.t >= 1.2 && snapH.t < TD && snapH.g && snapH.n === 1,
+      snapH ? snapH.ph + " t=" + snapH.t.toFixed(2) + " grounded " + snapH.g + " cargo " + snapH.n : "no ground for it");
+  var snapA ={ x: a.x, y: a.y, ph: a.order.ph, bx: a.order.bx, by: a.order.by }, snapB = { x: b.x, y: b.y, bx: b.order.bx };
   var snapL = LC ? { x: LC.l.x, y: LC.l.y, n: LC.l.cargo.length, u: !!LC.l.order.unloadAt } : null;
   var ia = Game.entities.indexOf(a), ib = Game.entities.indexOf(b);
   var r = SaveGame.save(Game, "ironfront.airlift");
@@ -1328,6 +1452,24 @@ function secSave() {
       (J5 ? "; C-5M parked " + J5.parked + " strip " + J5.def.strip : "; no C-5M"));
   if (J141) { J141.cargo.forEach(gone); J141.cargo.length = 0; gone(J141); }
   if (J5) gone(J5);
+  /* the Black Hawk half way down: stepped on its own again, as it was saved */
+  var TH = null;
+  if (snapH) Game.entities.forEach(function (e) {
+    if (e.kind === "unit" && e.def.id === "trans_n" && e.owner === P && Math.hypot(e.x - snapH.x, e.y - snapH.y) < 2) TH = e; });
+  var tho = TH ? TH.order : {};
+  chk("the Black Hawk is back half way down: the same phase, as far through it, on the ground, its squad aboard",
+      !!TH && tho.type === "airland" && tho.ph === "touch" && Math.abs(tho.t - snapH.t) < 1e-6 && TH.grounded &&
+      TH.targetLayer() === "ground" && TH.cargo.length === 1 && TH.cargo[0].carried,
+      TH ? tho.type + "/" + tho.ph + " t=" + (tho.t || 0).toFixed(2) + " grounded " + TH.grounded + " cargo " + TH.cargo.length : "not found");
+  if (TH) {
+    var tsq = TH.cargo[0], k2 = 0;
+    for (; k2 < 300 && tsq && tsq.carried; k2++) TH.update(DT);
+    var left = k2 * DT, rest = TD - snapH.t;
+    chk("...and waits out only the rest of it: the squad is out " + rest.toFixed(2) + " s on, the helicopter still on the ground",
+        !!tsq && !tsq.carried && !tsq.dead && left >= rest - 1e-6 && left <= rest + DT + 1e-6 && TH.grounded && TH.order.ph === "down",
+        "out after " + left.toFixed(2) + " s, " + (TH.order.type + "/" + TH.order.ph) + " grounded " + TH.grounded);
+    gone(tsq); gone(TH);
+  }
   var LL = null;
   if (snapL) Game.entities.forEach(function (e) {
     if (e.kind === "unit" && e.def.id === LC.id && e.owner === P && Math.hypot(e.x - snapL.x, e.y - snapL.y) < 3) LL = e; });

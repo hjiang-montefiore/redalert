@@ -160,6 +160,15 @@ const SNIFF = { APPROACH: 8, BEARINGS: [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6,
    a craft driven out of the well in minutes, not seconds. */
 const WELL_GO = { GATE: 2, HOLD: 3, V: 12, RAMP: 4 };
 
+/* A transport set down to unload (Unit, AIRLIFT LANDING) keeps its load
+   aboard this many seconds from the moment the rules put it on the ground:
+   the 3D view draws it AIR_ALT metres up in flight and brings it down at
+   AIR_SINK metres a second (config.js, render3d.js easeAlt), so by then it
+   is on its wheels there too - 46 / 17, 2.7 s. The rules own the clock and
+   read nothing back from the drawing, which a headless match does not
+   have. A squad going out of the door in flight does not wait for it. */
+const TOUCHDOWN = CFG.AIR_ALT / CFG.AIR_SINK;
+
 /* =================================================================== UNIT */
 class Unit {
   constructor(game, defId, owner, x, y) {
@@ -6951,13 +6960,16 @@ class Unit {
                    it goes round and plans the approach again
        roll        rolls out to the far end, slowing evenly to a stop
        unload      ramp down, everything aboard driven off beside the strip
+                   - not before TOUCHDOWN seconds since the wheels touched,
+                   the roll-out counted in, so it is drawn down by then
        wait        on the ground while anyone ordered aboard is on the way
        dry         stays on the ground: no airbase, or not the fuel to
                    reach one (airlandCanGo, below)
        turn        turns on the strip
        takeoff     rolls back down it, lifts off, and goes home - or flies
                    what was queued behind the delivery
-     A helicopter flies `fly` and `down` instead.
+     A helicopter flies `fly`, `touch` and `down` instead: to the point,
+     coming down onto it for TOUCHDOWN seconds, and the load off.
 
      The order is G.airLand(transport, x, y): the U key with the transport
      selected, or the AI. Shot down at any point, the cargo dies with it
@@ -6965,7 +6977,7 @@ class Unit {
   static airGround(o) {
     return !!(o && o.type === "airland" &&
       (o.ph === "roll" || o.ph === "unload" || o.ph === "wait" || o.ph === "dry" || o.ph === "turn" ||
-       o.ph === "takeoff" || o.ph === "down"));
+       o.ph === "takeoff" || o.ph === "touch" || o.ph === "down"));
   }
   /* every tile of the strip and the ground under its wingtips, as indices -
      on a diagonal run with the two tiles at each corner it crosses, which
@@ -7052,18 +7064,28 @@ class Unit {
         break;
       }
       case "roll": {
-        /* slowing evenly from flying speed to a stop at the far end */
+        /* slowing evenly from flying speed to a stop at the far end; o.t is
+           the time since the wheels touched, which `unload` goes on with */
+        o.t = (o.t || 0) + dt;
         const along = (this.x - o.ax) * o.ux + (this.y - o.ay) * o.uy;
         const left = Math.max(1, o.len - along);
         o.gs = Math.max(0, o.gs - (o.gs * o.gs) / (2 * left) * dt);
         const d = Math.min(o.gs * dt, Math.max(0, o.len - along));
         this.x += o.ux * d; this.y += o.uy * d;
-        if (o.gs < 0.06 * sp || along + d >= o.len - 0.5) { o.ph = "unload"; o.t = 0; this.moving = false; }
+        if (o.gs < 0.06 * sp || along + d >= o.len - 0.5) { o.ph = "unload"; this.moving = false; }
         break;
       }
       case "unload": {
         this.moving = false;
-        if (!o.off) { o.off = 1; this.airlandUnload(o); }
+        /* the ramp goes down once it is on its wheels in the drawing too
+           (TOUCHDOWN): the roll-out is most of that or all of it - a
+           C-130J's on its 5-tile strip 2.3 s, so it waits 0.4 s more here;
+           a C-17A's on 11 tiles 5 s, so it waits for nothing */
+        if (!o.off) {
+          o.t = (o.t || 0) + dt;
+          if (o.t < TOUCHDOWN) break;
+          o.off = 1; o.t = 0; this.airlandUnload(o);
+        }
         o.t = (o.t || 0) + dt;
         if (o.t >= 3) { o.ph = "wait"; o.t = 0; }
         break;
@@ -7283,9 +7305,9 @@ class Unit {
   }
   /* a helicopter sets down at the point, puts its load off and lifts again */
   airlandHelo(o, dt) {
-    if (o.ph !== "down") {
+    if (o.ph !== "touch" && o.ph !== "down") {
       this.grounded = false;
-      if (this.flyTo(o.x, o.y, dt)) { o.ph = "down"; o.t = 0; }
+      if (this.flyTo(o.x, o.y, dt)) { o.ph = "touch"; o.t = 0; }
       return;
     }
     /* on its wheels only where there is ground to stand on: over water, or
@@ -7297,6 +7319,17 @@ class Unit {
     this.grounded = GameMap.passable(this.game.map, this.tx, this.ty, "ground") &&
                     !this.game.tileBlocked(this.tx, this.ty, null);
     this.moving = false;
+    /* coming down onto it: nobody out until it is on its wheels in the
+       drawing too (TOUCHDOWN) - an MV-22B put its squad down the moment it
+       arrived, drawn still at cruise height, and lifted again 2 s later
+       before the drawing had brought it down. It is on the ground in the
+       rules from the start of it, as it was from the moment it arrived.
+       Hovering where it cannot set down there is nothing to wait for. */
+    if (o.ph === "touch") {
+      o.t = (o.t || 0) + dt;
+      if (this.grounded && o.t < TOUCHDOWN) return;
+      o.ph = "down"; o.t = 0;
+    }
     if (!o.off) {
       o.off = 1;
       const veh = this.cargo.filter(c => c.cat === "vehicle").length;
