@@ -273,6 +273,14 @@ var SaveGame = (function () {
          an LCAC saved two squads aboard on its run in reached the beach and
          stopped there, idle, with both still in the hold. */
       if (o.unloadAt) l.unloadAt = true;
+      /* ...and an air-cushion craft's run-in: the berth at the waterline it
+         is running for and the land its ramp goes down on (entities.js
+         AIR-CUSHION LANDING). Dropped, it would choose again from where it
+         is - another tile, if another of ours has claimed one meanwhile. */
+      if (o.unloadAt && o.rampX >= 0) {
+        const q = (v) => Math.round(v * 10) / 10;
+        l.sx = q(o.sx); l.sy = q(o.sy); l.rampX = q(o.rampX); l.rampY = q(o.rampY);
+      }
       if (o.wi !== undefined) l.wi = o.wi;
       if (o.until !== undefined) l.until = Math.round(o.until);
       /* a gun's share of an area and how far its walk has got */

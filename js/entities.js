@@ -1429,6 +1429,9 @@ class Unit {
     this.moving = false;
 
     if (o.type === "move") {
+      /* a loaded air-cushion craft sent to a beach picks the waterline it
+         runs in to before it sets off (AIR-CUSHION LANDING, planBeach) */
+      if (o.unloadAt && o.rampX === undefined && this.def.aircushion && this.cargo && this.cargo.length) this.planBeach(o);
       /* A scout is not handled here AT ALL. ai.js's scouting sweep owns recon
          units and does strictly more than this can: it writes the refused cell
          into scoutShy so the next bid cannot hand back the same goal. Two
@@ -1467,9 +1470,14 @@ class Unit {
          A TRANSPORT" and then "3 UNITS ASHORE", and 261 water tiles of that
          one map are the nearest water to a land aim 2-4.5 tiles inland, so it
          is the ordinary shape of a landing and not an edge case. */
+      /* An air-cushion craft with a waterline chosen (planBeach) is not
+         held to that: it goes on to the sand edge and puts its load off
+         over its ramp there (beachRun, rampOff). 1: still gliding up. */
+      const ramp = o.rampX >= 0 && this.cargo && this.cargo.length ? this.beachRun(o, arrived, dt) : 0;
+      if (ramp === 1) return;
       if (o.unloadAt && this.cargo && this.cargo.length &&
-          U.dist(this.x, this.y, o.x, o.y) < CFG.TILE * 4.5) {
-        const n = this.unload(o.x, o.y);
+          (ramp ? ramp === 2 : U.dist(this.x, this.y, o.x, o.y) < CFG.TILE * 4.5)) {
+        const n = ramp ? this.rampOff(o) : this.unload(o.x, o.y);
         /* what a well-deck ship keeps aboard goes in her landing craft */
         const kept = this.vehiclesKept();
         if (n || (kept && kept === this.cargo.length)) {
@@ -6524,6 +6532,112 @@ class Unit {
        for WELL_GO.RAMP seconds where her model has one (workGate) */
     if (out && this.def.bowRamp) this.rampHold = WELL_GO.RAMP;
     return out;
+  }
+
+  /* ============================ AIR-CUSHION LANDING ============================
+     (owner) "Air-cushion craft run up to the waterline (LCAC onto the sand
+     edge) and unload there; the vehicle rolls off the ramp and drives to
+     your aim point instead of appearing 4.5 tiles away. The LST's beaching
+     stays as it is."
+     Every craft put its load off the moment it came inside 4.5 tiles of the
+     aim (updateGeneric), each passenger set down at once on the tile
+     nearest the aim that unload() reaches. Measured on hormuz (e00, a Wasp's
+     LCAC with an M1A2, right-clicked two tiles up a beach): it stopped 1.94
+     tiles off the sand and the tank appeared 3.49 tiles from it, a tile
+     short of the aim, having driven nowhere. A real LCAC is a hovercraft
+     and its row (rules.js lst) says it "drives them straight up onto the
+     beach", so a craft with def.aircushion does that instead:
+       - planBeach: with the order, it picks its waterline - the sea tile of
+         its own water nearest the aim with dry, clear ground straight off it
+         on the aim's side of any water - and the land its ramp goes down on.
+         A tile another of our craft is already running for, or one a hull
+         lies on, is passed over while another is free, so three LCACs sent
+         to one beach land side by side, not on top of each other;
+       - it runs in to that tile (legDone steers for o.sx), then glides the
+         last stretch to a third of a tile off its centre toward the land,
+         bow to the beach - the berth ai.js loadingHards gives a craft on a
+         hard, "so the hull ends within about twenty pixels of the beach".
+         Its position stays on its sea tile and its layer stays "sea";
+       - only there does it unload, through unload() itself and so by its
+         rules (what may go ashore, blocked tiles, one to a tile), onto the
+         land at its ramp and the tiles nearest it; each passenger is then
+         handed an ordinary move to the aim, and a crowd arriving there is
+         spaced round it as any other is (crowdStop).
+     The new state is on the order (sx, sy: the berth; rampX, rampY: the
+     land tile's centre; rampX -1: no waterline within fourteen tiles of the
+     aim, the reach Path.find gives a hull, so the order works as before),
+     and save.js carries it. A craft that cannot reach its berth (no route)
+     drops the plan and is held to the 4.5-tile rule like any other. Without
+     the flag - an LCU, a CTM, every landing and amphibious ship, the Ivan
+     Rogov over her bow ramp - nothing here runs. */
+  planBeach(o) {
+    const g = this.game, M = g.map, W = M.W, H = M.H, T = CFG.TILE, R = 14;
+    o.rampX = -1;
+    const atx = U.clamp((o.x / T) | 0, 0, W - 1), aty = U.clamp((o.y / T) | 0, 0, H - 1);
+    const sea = Path.components(M, this.layer), gnd = Path.components(M, "ground");
+    const mine = sea ? sea[this.ty * W + this.tx] : 0, want = gnd ? gnd[aty * W + atx] : 0;
+    /* the berths our other craft are already running for */
+    const claim = [];
+    for (const u of this.owner.units) {
+      const uo = u.order;
+      if (u !== this && !u.dead && !u.carried && uo && uo.unloadAt && uo.rampX >= 0)
+        claim.push(((uo.sx / T) | 0) + ((uo.sy / T) | 0) * W);
+    }
+    const D4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    let best = null, bd = Infinity, free = null, fd = Infinity;
+    for (let y = Math.max(0, aty - R); y <= Math.min(H - 1, aty + R); y++)
+      for (let x = Math.max(0, atx - R); x <= Math.min(W - 1, atx + R); x++) {
+        if (!GameMap.passable(M, x, y, this.layer) || g.tileBlocked(x, y, this)) continue;
+        if (mine && sea[y * W + x] !== mine) continue;
+        /* dry ground straight off the bow, clear, and joined to the aim */
+        let land = null, ld = Infinity;
+        for (const k of D4) {
+          const nx = x + k[0], ny = y + k[1];
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          if (!GameMap.passable(M, nx, ny, "ground") || g.tileBlocked(nx, ny, null)) continue;
+          if (want && gnd[ny * W + nx] !== want) continue;
+          const d = U.dist2((nx + 0.5) * T, (ny + 0.5) * T, o.x, o.y);
+          if (d < ld) { ld = d; land = k; }
+        }
+        if (!land) continue;
+        const d = U.dist2((x + 0.5) * T, (y + 0.5) * T, o.x, o.y);
+        const c = { x, y, k: land };
+        if (d < bd) { bd = d; best = c; }
+        if (d >= fd) continue;
+        let taken = false;
+        for (const i of claim) {
+          if (Math.max(Math.abs(i % W - x), Math.abs(((i / W) | 0) - y)) <= 1) { taken = true; break; }
+        }
+        if (!taken) g.grid.query((x + 0.5) * T, (y + 0.5) * T, T * 0.5, (e) => {
+          if (!taken && e !== this && !e.dead && e.kind === "unit" && e.layer === this.layer && !e.carried && !e.moving) taken = true;
+        });
+        if (!taken) { fd = d; free = c; }
+      }
+    const c = free || best;
+    if (!c) return;
+    o.sx = (c.x + 0.5 + c.k[0] / 3) * T; o.sy = (c.y + 0.5 + c.k[1] / 3) * T;
+    o.rampX = (c.x + c.k[0] + 0.5) * T; o.rampY = (c.y + c.k[1] + 0.5) * T;
+  }
+  /* the run-in, once a waterline is chosen: 3 running in, 1 gliding up to
+     the sand edge, 2 there, 0 the plan given up (as any landing craft) */
+  beachRun(o, arrived, dt) {
+    if (!arrived) return 3;
+    const d = U.dist(this.x, this.y, o.sx, o.sy);
+    if (this.pathFail || d > CFG.TILE) { o.rampX = -1; return 0; }
+    this.ang = U.turnToward(this.ang, Math.atan2(o.rampY - this.y, o.rampX - this.x), this.def.turn * dt);
+    if (d < 1) return 2;
+    const step = Math.min(d, this.def.speed * this.speedMul() * CFG.TILE * dt);
+    this.x += (o.sx - this.x) / d * step; this.y += (o.sy - this.y) / d * step;
+    this.moving = true;
+    return 1;
+  }
+  /* down the ramp onto the land at it, then on to the aim */
+  rampOff(o) {
+    const aboard = this.cargo.slice();
+    const n = this.unload(o.rampX, o.rampY);
+    for (const u of aboard)
+      if (!u.carried && !u.dead && this.cargo.indexOf(u) < 0) u.give({ type: "move", x: o.x, y: o.y });
+    return n;
   }
 
   /* Nearest tile this passenger can actually stand on, skipping any tile

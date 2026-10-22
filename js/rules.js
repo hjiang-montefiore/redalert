@@ -934,6 +934,14 @@ var UNITS = {
   lst: { from:"e80", service:"1986", fac:"both", role:"transport_sea", name:"Landing Craft", full:"LCAC Air-Cushion Landing Craft", cat:"naval",
     cost:900, oil:12, time:14, hp:900, armor:"light", speed:2.8, turn:1.6, sight:6.5, r:18, mass:0,
     layer:"sea", weapons:[], prereq:["navalyard"], tech:1, cargo:6, amphib:true,
+    /* aircushion: it rides an air cushion, so it runs in to the waterline and up onto the sand
+       edge and puts its load off over its ramp there (entities.js AIR-CUSHION LANDING). The row
+       is the Landing Craft Air Cushion (full name above; FACTS.lst: "Air cushion lets it cross
+       roughly 70 percent of world beaches"), and it is the only air-cushion row in the game: the
+       Type 075's Type 726 (lhd_c) and the Ivan Rogov's Project 1206 (eras.js pact_e80_lpd) are
+       this row standing in. The LCU 1610, the CTM and every landing ship are conventional
+       hulls and do not carry it. */
+    aircushion:true,
     desc:"Carries six vehicles or infantry across water and drives them straight up onto the beach." },
 
   carrier_n: { fac:"nato", role:"carrier", name:"Gerald R. Ford CVN", full:"USS Gerald R. Ford (CVN-78)", cat:"naval",
