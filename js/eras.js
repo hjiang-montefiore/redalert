@@ -13619,10 +13619,9 @@ var ERA_DECKS = {
    seat, as on every ship. VEHICLES ONLY THROUGH A WELL DECK (def.wellDeck,
    entities.js holdRefusal): an Iwo Jima and an America have none and landed
    everything by helicopter, so they take troops and refuse every vehicle; a
-   Tarawa (four LCU 1610) and a Wasp (three LCAC) have one, and until their
-   landing craft are in the game (a later piece, built on def.wellDeck) the
-   ship running in to the beach and putting vehicles ashore herself stands in
-   for them.
+   Tarawa (four LCU 1610) and a Wasp (three LCAC) have one, and their
+   vehicles go ashore in the landing craft out of it (def.wellCraft, navy
+   piece 3: THE WELL DECK at the end of this file).
 
    THE FIGURES are the carrier ladder's, read at these ships' size. hp by
    full-load displacement, on a log scale between the LSTs and the carriers
@@ -13664,7 +13663,7 @@ WEAPONS.sam_bpdms = Object.assign({}, WEAPONS.sam_seasparrow,
          two Phalanx replaced the BPDMS later, RAM by 1998 */
       weapons:["sam_bpdms"], prereq:["navalyard","airbase"], tech:2,
       carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60.concat(["nato_e80_stovl"]),
-      cargo:24, amphib:true, wellDeck:true, ciws:0.45, rcs:2.6,
+      cargo:24, amphib:true, wellDeck:true, wellCraft:{ nato_lcu:4, lst:1 }, ciws:0.45, rcs:2.6,
       from:"e80", to:"e80", service:"1976", confidence:"high",
       desc:"Commissioned in 1976 at twice the Iwo Jima's size: a flight deck for up to 26 CH-46 or 19 CH-53, a well deck in the stern for four LCU landing craft, berths for 1,703 Marines, and three 5-inch guns to support them ashore. Five served until 2015. Her Marine helicopters are not in the game yet; the deck takes a UH-60 Black Hawk and the Marines' AV-8B Harrier II, six of which she could operate." },
     nato_e90_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"USS Wasp (LHD-1), Wasp-class amphibious assault ship",
@@ -13672,7 +13671,7 @@ WEAPONS.sam_bpdms = Object.assign({}, WEAPONS.sam_seasparrow,
       /* as commissioned in 1989: two Mk 29 Sea Sparrow, three Phalanx */
       weapons:["sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
       carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["nato_e90_aswhelo"].concat(UH60, ["nato_e90_stovl"]),
-      cargo:24, amphib:true, wellDeck:true, ciws:0.61, rcs:2.6,
+      cargo:24, amphib:true, wellDeck:true, wellCraft:{ lst:3, nato_lcu:2 }, ciws:0.61, rcs:2.6,
       from:"e90", to:"e90", service:"1989", confidence:"high",
       desc:"Commissioned in 1989: the Tarawa lengthened to carry three LCAC hovercraft in her well deck and AV-8B Harriers on her flight deck, the first ship designed for both, with nine helicopter spots and berths for 1,687 Marines. Her Marine helicopters are not in the game yet; the deck takes the AV-8B Harrier II Plus, the Navy's SH-60F - six of them fly beside twenty Harriers in her sea-control load - and a UH-60." },
     nato_e00_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"Wasp-class amphibious assault ship (LHD-1 to LHD-8)",
@@ -13680,7 +13679,7 @@ WEAPONS.sam_bpdms = Object.assign({}, WEAPONS.sam_seasparrow,
       /* two RAM launchers beside the Sea Sparrows and Phalanx (Iwo Jima, LHD-7, commissioned with them in 2001) */
       weapons:["sam_ram","sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
       carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60.concat(["nato_e90_stovl"]),
-      cargo:24, amphib:true, wellDeck:true, ciws:0.66, rcs:2.6,
+      cargo:24, amphib:true, wellDeck:true, wellCraft:{ lst:3, nato_lcu:2 }, ciws:0.66, rcs:2.6,
       from:"e00", to:"e00", service:"1989", confidence:"high",
       desc:"The Wasp class through the 2000s and 2010s, with RAM launchers added and the eighth ship, Makin Island (2009), on gas turbines instead of steam. A Marine Expeditionary Unit's battalion, its tanks, amphibious tractors and guns go ashore from her by LCAC and helicopter. Her Marine helicopters are not in the game yet; the deck takes the AV-8B Harrier II Plus and a UH-60, as Army Black Hawks have qualified on her decks." },
   });
@@ -13773,5 +13772,72 @@ Object.assign(UNITS, {
     jet:true, ammo:7, radius:28, rcs:0.9, gen:4, radar:6, radarQ:11, carrierCapable:true, refuelable:true,
     from:"e90", to:"e00", service:"1993", confidence:"high",
     desc:"The Harrier II with the Hornet's APG-65 radar in a longer nose, new from 1993 and rebuilt from older airframes after it, beside the Night Attack aircraft with their FLIR and night-vision cockpits. It flew from the Wasp-class decks over Iraq, Afghanistan and Libya - in 2016 against the Islamic State from USS Wasp herself - dropping laser-guided bombs and Mk 82s close to Marines on the ground. It served on until the F-35B took over its squadrons one by one." },
+});
+if (typeof reindexRoles === "function") reindexRoles();
+
+/* ==================================================================
+   THE WELL DECK - LANDING CRAFT FROM THE TARAWA AND THE WASP (navy piece 3)
+   (owner) "An amphibious assault ship which can carry F-35B, helicopters
+   and landing ships." The Tarawa and the Wasp carry their landing craft in a
+   floodable dock in the stern and put the vehicles ashore in them; the
+   machinery is entities.js THE WELL DECK, the panel ui.js wellPanel.
+
+   WHAT EACH WELL HOLDS (def.wellCraft: how many of each type it holds on
+   its own; a mixed load is held where the fractions add up to one):
+     Tarawa  4 LCU 1610 (en.wikipedia "Tarawa-class amphibious assault ship",
+             after Sharpe, Jane's Fighting Ships 1996-97 p. 822: "up to four
+             LCU 1610", or two LCU and two LCM-8, 17 LCM-6 or 45 AAVs), or
+             1 LCAC (en.wikipedia "Landing Craft Air Cushion": "Tarawa (1)").
+     Wasp    3 LCAC or 2 LCU (US Navy fact file "Amphibious Assault Ships -
+             LHD/LHA(R)", 2016, in en.wikipedia "Wasp-class amphibious
+             assault ship"), or 12 LCM-8; the class was lengthened 24 ft over
+             the Tarawa to carry the LCACs.
+   No LCM-8, LCM-6 or AAV row exists, so those loads are not offered.
+   Iwo Jima and America have no well deck, so no wellCraft: they refuse a
+   landing craft as they refuse a vehicle (entities.js wellRefusal).
+
+   THE SCALE. One craft in the game is one real craft, as the LCAC row (lst)
+   always was one hovercraft. Piece 1 gave the hold 24 seats by real troops
+   against the Newport LST's 431 for 6 seats; an LCU 1610 takes 400 troops,
+   a Newport's worth, so its 6 seats are on the same scale - and a Tarawa's
+   four LCUs lift her whole 24-seat hold (1,703 Marines) in one wave, as four
+   LCUs at 400 really did. The LCAC row keeps its 6 seats as it was (a real
+   LCAC lifts 60 tons, one M1 tank, or 24 troops and 180 with a personnel
+   module): three of them take 18 of a Wasp's 24 in a wave.
+
+   THE PRICE. The ships were priced in piece 1 as hulls delivered empty
+   (emptyDeck), so the well is delivered empty too and its craft are bought
+   for it, as her helicopters are: from her panel, at the craft's own price,
+   barrels and build time, floated in alongside a naval yard. The LCAC is
+   also still built at the yard and sails on its own as it always has, and
+   can be taken into a well from there.
+
+   THE LCU 1610. Built from 1957 (LCU-1610 herself delivered and placed in
+   service in 1957 - NavSource "LCU-1610 / YFU-100") and still in service; 32
+   were active in 2013 (Jane's Navy International, 28 January 2013, in
+   en.wikipedia "Landing craft utility"). 134 ft 9 in, 29 ft 10 in beam,
+   353 long tons full load (en.wikipedia's table, after Friedman 2002 and the
+   Navy fact file; NavSource 375 t), two diesels, 11 knots, 1,200 nm at 8
+   knots, 400 troops or 170-180 tons of cargo, two .50 cal machine guns,
+   crew of 14. Figures as the two other utility craft of its size: the
+   11-knot Barbe (430 t, 1.9, hp 520, cost 520) and the EDIC; a little
+   lighter, so hp and cost 500. Its two machine guns are not carried, as
+   the Barbe's and the EDIC's 20 mm are not.
+   ITS OWN ROLE, landing_craft, and wellOnly: as a transport_sea card it
+   would join the LST and the LCAC in the commander's landing-ship mix
+   (ai.js pickFor) and in the player's sidebar as a 500-credit LST - the
+   game's six-seat hold makes a 375-ton craft the equal of a 4,800-ton
+   tank landing ship. So it is bought for a well deck only (ui.js
+   refreshCards leaves it out), and the commander, which never builds an
+   assault ship, never meets it. Drawn as a stand-in on the parametric hull
+   at its real 41.1 by 8.8 metres (warship_specs.js), the size Taiwan's LCU
+   row is already drawn at.
+   ================================================================== */
+Object.assign(UNITS, {
+  nato_lcu: { fac:"nato", role:"landing_craft", cat:"naval", layer:"sea", name:"LCU 1610", full:"LCU 1610-class utility landing craft",
+    cost:500, oil:6, time:9, hp:500, armor:"light", speed:1.9, turn:1.8, sight:5.4, r:16, mass:0,
+    weapons:[], prereq:["navalyard"], tech:1, cargo:6, amphib:true, wellOnly:true,
+    from:"e50", service:"1957", confidence:"high",
+    desc:"The Navy's utility landing craft since 1957: 135 feet, 11 knots, a bow ramp and 170 tons of cargo or 400 troops on an open well. A Tarawa carries four in her well deck and a Wasp two, floated out of the stern to carry the Marines' vehicles ashore and back in again. Bought for a well deck from the ship's panel." },
 });
 if (typeof reindexRoles === "function") reindexRoles();

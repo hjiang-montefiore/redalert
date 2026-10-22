@@ -181,7 +181,8 @@ var UI = (function () {
     cards.innerHTML = "";
     const p = G.human;
     let items = curTab === "naval"
-      ? Object.keys(UNITS).filter(id => UNITS[id].cat === "naval" && (UNITS[id].fac === "both" || UNITS[id].fac === p.faction))
+      /* a craft bought only for a well deck (eras.js nato_lcu) has no card */
+      ? Object.keys(UNITS).filter(id => UNITS[id].cat === "naval" && !UNITS[id].wellOnly && (UNITS[id].fac === "both" || UNITS[id].fac === p.faction))
           .map(id => ({ id, def: UNITS[id], kind: "naval" }))
       : itemsForTab(curTab);
     /* equipment from another century does not appear at all, rather than
@@ -448,8 +449,12 @@ var UI = (function () {
       ? " \u00b7 LIFTS " + Unit.fmtT(d.payload) + " T" + (d.strip && !d.hover ? " \u00b7 LANDS IN " + d.strip + " TILES" : "") +
         (d.hover ? " \u00b7 ONE VEHICLE ON THE HOOK" + (d.cabin ? ", MORE IN A " + Unit.fmtM(d.cabin[0]) + " \u00d7 " + Unit.fmtM(d.cabin[1]) + " M CABIN" : "")
                  : d.hold ? " \u00b7 FLOOR " + Unit.fmtM(d.hold[0]) + " \u00d7 " + Unit.fmtM(d.hold[1]) + " M" : "")
-      /* an assault ship with no well deck (entities.js holdRefusal) */
-      : Unit.troopsOnly(d) ? " TROOPS \u00b7 NO WELL DECK, NO VEHICLES" : ""));
+      /* an assault ship with no well deck (entities.js holdRefusal), or
+         one whose vehicles go ashore in her landing craft (THE WELL DECK) */
+      : Unit.troopsOnly(d) ? " TROOPS \u00b7 NO WELL DECK, NO VEHICLES"
+      : Unit.craftOnly(d) ? " \u00b7 VEHICLES ASHORE BY LANDING CRAFT" : ""));
+    if (d.wellCraft) rows.push("WELL DECK " + Object.keys(d.wellCraft).filter(id => UNITS[id])
+      .map(id => d.wellCraft[id] + " " + Unit.craftLabel(UNITS[id]).toUpperCase()).join(" OR "));
     if (d.carrier) rows.push("DECK " + d.carrier + " AIRCRAFT");
     if (d.ammo) rows.push("ORDNANCE " + d.ammo);
 
@@ -648,6 +653,96 @@ var UI = (function () {
         ? "At sea: flown out from the airbase " + Math.round(dv.tiles) + " tiles away when built."
         : "Cannot be delivered: " + dv.why + ".") + "</div>";
     return h;
+  }
+
+  /* ---- THE WELL DECK (entities.js) ----
+     Her landing craft, each with what it carries. LAUNCH floats every one out
+     of the stern gate, each filled from the hold in turn, vehicles first, and
+     the arrow one alone; a craft at sea comes back by being right-clicked
+     onto her. What is on order shows its progress and x cancels and refunds,
+     as a deck order does; + buys one for the well, alongside a naval yard. */
+  function wellPanel(b) {
+    const well = b.well || [], q = b.wellQ || [];
+    const fill = Math.min(1, b.wellFill());
+    let h = '<div class="hangar well"><div class="hh">WELL DECK <i>' + well.length +
+            " CRAFT \u00b7 " + Math.round(fill * 100) + "% FULL</i></div>";
+    if (!well.length) h += '<div class="hempty">No landing craft aboard.</div>';
+    well.forEach((c, i) => {
+      const v = c.cargo.filter(u => u.cat === "vehicle").length, t = c.cargo.length - v;
+      h += '<div class="hrow" title="' + (c.def.full || c.def.name) + " \u00b7 " + c.cargo.length + "/" + c.def.cargo + ' aboard">' +
+           '<canvas class="hi" width="34" height="21" data-thumb="' + c.def.id + '"></canvas>' +
+           '<span class="hn">' + Unit.craftLabel(c.def) + "</span>" +
+           '<span class="hs ready">' + (c.cargo.length ? (v ? v + " VEH" : "") + (v && t ? " + " : "") + (t ? t + " INF" : "") : "EMPTY") + "</span>" +
+           '<span class="hf">' + Math.ceil(100 * c.hp / c.maxHp) + "%</span>" +
+           '<span class="hx go" data-welllaunch="' + i + '" title="Launch this craft out of the stern">\u21e9</span></div>';
+    });
+    const veh = b.cargo.filter(u => u.cat === "vehicle").length;
+    h += '<div class="hbtns"><div class="hb' + (well.length ? "" : " off") + '" data-wellall="1" title="' +
+         "Float every craft out of the stern, loaded from the hold, vehicles first" + '">LAUNCH CRAFT' +
+         (well.length ? " (" + well.length + ")" : "") + "</div></div>";
+    if (veh) h += '<div class="hempty">' + veh + (veh === 1 ? " vehicle" : " vehicles") +
+                  " in the hold go ashore in the landing craft, loaded as they launch.</div>";
+    if (q.length) {
+      h += '<div class="hh sub">ON ORDER <i>' + q.length + "</i></div>";
+      q.forEach((it, i) => {
+        const d = UNITS[it.id];
+        const pct = Math.floor(100 * it.paid / Math.max(1, G.human.factionCost(d)));
+        h += '<div class="hrow xfer" title="' + (it.why || (d.full || d.name)) + '">' +
+             '<canvas class="hi" width="34" height="21" data-thumb="' + d.id + '"></canvas>' +
+             '<span class="hn">' + Unit.craftLabel(d) + "</span>" +
+             '<span class="hs ' + (it.why ? "rearming" : "airborne") + '">' + (it.done ? (it.why ? "WAITING" : "READY") : "BUILD " + pct + "%") + "</span>" +
+             '<span class="hf"></span>' +
+             '<span class="hx go" data-wellcancel="' + i + '" title="Cancel and refund">\u2715</span></div>';
+        if (it.done && it.why) h += '<div class="hempty">' + it.why + "</div>";
+      });
+    }
+    const types = b.wellTypes(), yard = b.wellYard();
+    if (fill < 1 - 1e-6 && types.length) {
+      h += '<div class="hh sub">BUY FOR THE WELL</div>';
+      for (const id of types) {
+        const d = UNITS[id], why = b.wellOrderReason(id);
+        h += '<div class="hrow xfer' + (why ? " off" : "") + '" title="' +
+             (why || ((d.full || d.name) + " \u00b7 $" + G.human.factionCost(d) + (d.oil ? " \u00b7 " + d.oil + " bbl" : "") +
+                      " \u00b7 " + Math.round(G.human.factionTime(d)) + "s")) + '">' +
+             '<canvas class="hi" width="34" height="21" data-thumb="' + id + '"></canvas>' +
+             '<span class="hn">' + Unit.craftLabel(d) + "</span>" +
+             '<span class="hs ready">$' + G.human.factionCost(d) + "</span>" +
+             '<span class="hf">' + (d.oil ? d.oil + "b" : "") + "</span>" +
+             (why ? '<span class="hx"></span>'
+                  : '<span class="hx go" data-wellbuy="' + id + '" title="Buy for this well deck">+</span>') + "</div>";
+        if (why && yard) h += '<div class="hempty">' + why + "</div>";
+      }
+      h += '<div class="hempty">' + (yard ? "Alongside the naval yard: floated in when built."
+                                         : "Bought alongside a naval yard.") + "</div>";
+    }
+    return h + "</div>";
+  }
+  function bindWell(b, root) {
+    const box = root.querySelector(".well");
+    if (!box) return;
+    box.querySelectorAll("canvas[data-thumb]").forEach(cv2 => {
+      try { drawIcon(cv2, { id: cv2.dataset.thumb, kind: "unit", def: UNITS[cv2.dataset.thumb] || {} }); } catch (e) {}
+    });
+    const on = (sel, fn) => box.querySelectorAll(sel).forEach(btn =>
+      btn.addEventListener("mousedown", (ev) => { ev.stopPropagation(); fn(btn); refreshSelInfo(); }));
+    on("[data-welllaunch]", (btn) => {
+      const c = (b.well || [])[+btn.dataset.welllaunch];
+      const r = c ? b.launchCraft(c) : "NOT IN THE WELL";
+      if (typeof r === "string") { alert(r, "bad"); return; }
+      alert(Unit.craftLabel(c.def).toUpperCase() + " LAUNCHED FROM " + b.def.name.toUpperCase() +
+            (c.cargo.length ? " \u2014 " + c.cargo.length + " ABOARD" : ""), "good");
+      Sfx.play("order");
+    });
+    on("[data-wellall]", () => { if (b.launchAll()) Sfx.play("order"); });
+    on("[data-wellbuy]", (btn) => {
+      const id = btn.dataset.wellbuy, why = b.orderWellCraft(id);
+      if (why) { Sfx.announce("refused", null, why); alert(why, "bad"); return; }
+      alert(Unit.craftLabel(UNITS[id]).toUpperCase() + " ORDERED FOR " + b.def.name.toUpperCase(), "good");
+      Sfx.play("order");
+    });
+    on("[data-wellcancel]", (btn) => {
+      if (b.cancelWellOrder(+btn.dataset.wellcancel)) { alert("WELL DECK ORDER CANCELLED \u2014 REFUNDED", "good"); Sfx.play("click"); }
+    });
   }
 
   function hangarPanel(b) {
@@ -1981,6 +2076,7 @@ var UI = (function () {
         }
       }
       if (e.ramp && e.ramp()) h += hangarPanel(e);
+      if (e.kind === "unit" && e.def.wellCraft && e.owner === G.human) h += wellPanel(e);
       const eng1 = selectedEngineers();
       if (eng1.length) h += obstaclePanel();
       const lay1 = selectedLayers();
@@ -2002,6 +2098,7 @@ var UI = (function () {
         h += counterRows(e.def.id, e.kind, e.owner, e.def);
       el.innerHTML = h;
       if (e.ramp && e.ramp()) bindHangar(e, el);
+      if (e.kind === "unit" && e.def.wellCraft && e.owner === G.human) bindWell(e, el);
       if (air1.length) bindAirOrders(el);
       if (lay1.length || swp1.length || selectedDispensers().length) bindMineOrders(el);
       if (afg1.length) bindAreaFire(el);
@@ -2780,7 +2877,7 @@ var UI = (function () {
   function areaRect() { return areaMode && areaDrag ? areaDrag : null; }
 
   function unloadSelection(landEmpty) {
-    let moved = 0, stuck = 0, touched = 0;
+    let moved = 0, stuck = 0, touched = 0, keptN = 0;
     const landing = [], refused = [];
     for (const u of selection) {
       if (u.owner !== G.human) continue;
@@ -2806,7 +2903,10 @@ var UI = (function () {
         const n = u.unload(undefined, undefined,
                            u.grounded && u.field ? Unit.stripTiles(G.map, u.field) : undefined);
         moved += n;
-        if (!n) stuck++;
+        /* a well-deck ship's vehicles stay for her landing craft */
+        const kept = u.vehiclesKept ? u.vehiclesKept() : 0;
+        if (kept) keptN += kept;
+        if (!n && !(kept && kept === u.cargo.length)) stuck++;
       }
       if (u.kind === "building" && u.garrison && u.garrison.length) {
         touched++;
@@ -2819,6 +2919,7 @@ var UI = (function () {
     } else if (stuck) {
       alert("NO CLEAR GROUND TO UNLOAD ONTO \u2014 MOVE CLOSER TO SHORE", "bad");
     }
+    if (keptN) alert(Unit.keptLine(keptN), "warn");
     if (landing.length) {
       const u0 = landing[0], veh = u0.cargo.filter(c => c.cat === "vehicle").length;
       /* short of fuel for it now, G.airLand sends it home first (entities.js, FUEL) */
@@ -3215,6 +3316,14 @@ var UI = (function () {
         }
         else if (target.kind === "unit" && target.def.cargo && target.def.amphib && (u.cat === "vehicle" || u.cat === "infantry"))
           u.give({ type: "enter", target });
+        /* a landing craft right-clicked onto an assault ship sails into her
+           well deck - or is told why she has none (entities.js THE WELL DECK) */
+        else if (target.kind === "unit" && target !== u && target.def.carrier && target.def.amphib &&
+                 u.cat === "naval" && u.def.amphib && u.def.cargo && !u.def.carrier) {
+          const why = target.wellRefusal(u);
+          if (why) { alert(why, "bad"); movers.push(u); }
+          else u.give({ type: "enter", target });
+        }
         else if (target.kind === "building" && u.def.engineer)
           u.give({ type: "enter", target });
         else { movers.push(u); if (u.layer === "air") airMoved++; }

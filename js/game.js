@@ -1451,6 +1451,8 @@ var Game = (function () {
          place it boarded at while carried, and a Humvee lost in a shot-down
          Hercules was otherwise marked lost back on the airbase it left */
       if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; c.x = e.x; c.y = e.y; Combat.kill(G, c, null); }
+      /* ...and so do the landing craft in her well deck, with their loads */
+      if (e.well && e.well.length) for (const c of e.well) { c.carried = false; c.x = e.x; c.y = e.y; Combat.kill(G, c, null); }
       if (e.owner === G.human) Sfx.announce(e.def.harvester ? "hauler_lost" : "unit_lost", e);
       if (e.owner === G.human && e.def.harvester) G.alert("ORE HAULER LOST", "bad");
       /* A destroyed unit leaves a mark. The damage path pings once every three
@@ -4331,6 +4333,8 @@ var Game = (function () {
            cancelled and refunded, as her captain could have done a second
            earlier (G.cancelDeckOrder) - there is no deck left to deliver to */
         if (e.deckQ && e.deckQ.length) while (e.deckQ.length) G.cancelDeckOrder(e, 0);
+        /* ...and a landing craft on order for her well deck (entities.js) */
+        if (e.wellQ && e.wellQ.length) while (e.wellQ.length) e.cancelWellOrder(0);
       }
     }
   };

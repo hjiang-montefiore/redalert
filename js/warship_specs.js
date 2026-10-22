@@ -271,4 +271,13 @@ Object.assign(WARSHIPS, {
   nato_e00_lhd: {era:"e00", fac:"nato", role:"assault_sea", designation:"LHD-1 Wasp class", len:257.0, beam:31.8, spots:9, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"box", ciws:3, helo:"hangar", radar:"both", camo:"haze"},
   lha_n:        {era:"e20", fac:"nato", role:"assault_sea", designation:"LHA-6 America class", len:257.3, beam:32.3, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"box", ciws:2, helo:"hangar", radar:"both", camo:"haze"},
 });
+/* ---- the LCU 1610 (eras.js nato_lcu, navy piece 3) ----
+   A STAND-IN, as the EDIC and the Barbe are: the parametric hull at the size
+   Taiwan's LCU row above is already drawn at, which is this craft's -
+   NavSource "LCU-1610", 134 ft 9 in by 29 ft (41.1 by 8.8 m), two .50 cal -
+   with its pointed bow and its deckhouse amidships, where the real craft has
+   a bow ramp and its pilothouse aft, until it has a model of its own. */
+Object.assign(WARSHIPS, {
+  nato_lcu: {era:"e50", fac:"nato", role:"landing_craft", designation:"LCU 1610", len:41.1, beam:8.8, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:12.7, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+});
 if (typeof Warship3D !== "undefined" && Warship3D.registerAll) Warship3D.registerAll();

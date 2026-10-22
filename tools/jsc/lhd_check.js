@@ -32,8 +32,23 @@
         Plus on a Wasp and an F-35B on the America; bought from her panel;
         and the commander, even as a 1980s or present-day American with an
         empty Tarawa or America of its own, never buys one;
-     8. a save with a helicopter on her deck and two aboard her hold loads
-        with both. (last: the load rebuilds the match) */
+     8. the well deck (navy piece 3: eras.js THE WELL DECK, entities.js
+        THE WELL DECK): the Tarawa's four LCU 1610 or one LCAC, the Wasp's
+        three LCAC or two LCU, none on the Iwo Jima or the America, which
+        refuse a craft; craft bought from her panel alongside the yard are
+        floated into the well, and refused away from it; the Wasp launches
+        them off a coast, the hold feeding them vehicles first, one carries
+        a tank to the beach and comes back into the well, leaving the
+        player's selection as it goes in; she no longer puts a vehicle on a
+        beach herself; a ship sunk takes her craft with her; an LCAC on its
+        own is built, loads and lands as it always did, and a tank and a
+        squad on the sand board one lying a tile off the beach; her panel's
+        own buttons buy, cancel and launch; and the commander never meets
+        any of it;
+     9. a save with a helicopter on her deck and two aboard her hold loads
+        with both, and a Wasp's well - two craft in it, one loaded, one at
+        sea and one on order - comes back as it was. (last: the load
+        rebuilds the match) */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -122,6 +137,7 @@ function run() {
   secHold();
   secJets();
   secMarines();
+  secWell();
   secSave();
 }
 
@@ -153,6 +169,13 @@ function secPeriods() {
   for (var e2 in ROW) if (ROW[e2] && UNITS[ROW[e2]].wellDeck) wd.push(ROW[e2]);
   chk("a well deck (def.wellDeck) on the Tarawa and the Wasps only, not the Iwo Jima or the America",
       same(wd, ["nato_e80_lha", "nato_e90_lhd", "nato_e00_lhd"]), wd.join(","));
+  var WC = { nato_e80_lha: { nato_lcu: 4, lst: 1 }, nato_e90_lhd: { lst: 3, nato_lcu: 2 }, nato_e00_lhd: { lst: 3, nato_lcu: 2 } }, wcBad = [];
+  for (var e3 in ROW) if (ROW[e3]) {
+    var wc = UNITS[ROW[e3]].wellCraft, want3 = WC[ROW[e3]];
+    if (JSON.stringify(wc || null) !== JSON.stringify(want3 || null)) wcBad.push(ROW[e3] + "=" + JSON.stringify(wc));
+  }
+  chk("the well holds 4 LCU 1610 or 1 LCAC on the Tarawa, 3 LCAC or 2 LCU on the Wasps, nothing on the Iwo Jima or the America",
+      wcBad.length === 0, wcBad.join(" "));
   var lst = Object.keys(UNITS).filter(function (id) { return UNITS[id].amphib && !UNITS[id].carrier && Unit.troopsOnly(UNITS[id]); });
   chk("no landing ship is troops-only", lst.length === 0, lst.join(","));
 }
@@ -305,12 +328,17 @@ function secHold() {
   var out = Math.hypot(s.x - (B.x + 0.5) * TT, s.y - (B.y + 0.5) * TT) / TT;
   var aim = land(1);
   s.give({ type: "move", x: aim.x, y: aim.y, unloadAt: true });
-  var t = ticks(90, function () { return s.cargo.length === 0; });
+  var t = ticks(90, function () { return !sq.carried; });
+  ticks(1);
   var ashore = [sq, tk].filter(function (u) {
     return !u.carried && !u.dead && GameMap.passable(M, (u.x / TT) | 0, (u.y / TT) | 0, "ground") &&
            Math.hypot(u.x - aim.x, u.y - aim.y) < 5 * TT; });
-  chk("she sails out " + out.toFixed(1) + " tiles, runs in to the beach and puts both ashore beside it",
-      out > 8 && t > 0 && ashore.length === 2, "after " + t.toFixed(1) + " s, ashore " + ashore.length + "/2, she is at " + tiles(s.x) + "," + tiles(s.y));
+  /* navy piece 3: her vehicles go ashore in her landing craft, not over her side */
+  chk("she sails out " + out.toFixed(1) + " tiles, runs in to the beach and puts the squad ashore beside it; the tank stays aboard for her landing craft",
+      out > 8 && t > 0 && ashore.length === 1 && ashore[0] === sq && tk.carried && s.cargo.indexOf(tk) >= 0 &&
+      s.vehiclesKept() === 1 && s.order.type === "idle",
+      "after " + t.toFixed(1) + " s, ashore " + ashore.map(function (u) { return u.def.id; }).join(",") + ", tank carried " + tk.carried +
+      ", her order " + s.order.type + ", she is at " + tiles(s.x) + "," + tiles(s.y));
   gone(s); gone(sq); gone(tk);
   /* no well deck: the America (and the Iwo Jima) take the squad and turn the tank away */
   [["e20", "lha_n"], ["e60", "nato_e60_lph"]].forEach(function (pr) {
@@ -332,7 +360,7 @@ function secHold() {
   var wells = ["nato_e80_lha", "nato_e90_lhd", "nato_e00_lhd"].filter(function (id) {
     var a = spawn(id, P.homeX, P.homeY), v = spawn("mbt_n", P.homeX, P.homeY), r = a.holdRefusal(v);
     gone(a); gone(v); return r === ""; });
-  chk("the Tarawa and both Wasps take vehicles (their ship stands in for her landing craft)", wells.length === 3, wells.join(","));
+  chk("the Tarawa and both Wasps take vehicles aboard (their landing craft carry them ashore)", wells.length === 3, wells.join(","));
   useEra("e20");
 }
 
@@ -540,9 +568,280 @@ function secMarines() {
   useEra("e20");
 }
 
-/* ---------------- 8. save and load with a wing and a hold ---------------- */
+/* ---------------- 8. the well deck (navy piece 3) ---------------- */
+/* a sea tile at least `far` tiles from every naval yard of ours, with sea all round it */
+function seaAway(far) {
+  var yards = P.buildings.filter(function (b) { return b.def.id === "navalyard" && !b.dead; });
+  for (var y = 4; y < M.H - 4; y++) for (var x = 4; x < M.W - 4; x++) {
+    var ok = true;
+    for (var j = -2; j <= 2 && ok; j++) for (var i = -2; i <= 2 && ok; i++)
+      if (M.terrain[(y + j) * M.W + x + i] !== T.WATER) ok = false;
+    if (!ok) continue;
+    if (yards.every(function (b) { return Math.hypot(b.x - (x + 0.5) * TT, b.y - (y + 0.5) * TT) > far * TT; })) return { x: x, y: y };
+  }
+  return null;
+}
+function secWell() {
+  log("\n[8] the well deck: landing craft bought for it, launched off a coast, landing a tank, recovered");
+  var yard = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
+  var at = yard ? Path.nearest(M, (yard.x / TT) | 0, (yard.y / TT) | 0, "sea", null, 12) : null;
+  if (!at || !BEACH) { chk("open water by the yard, and a beach", false, ""); return; }
+  var ax = at.x * TT + 16, ay = at.y * TT + 16;
+  /* the LCU 1610 row */
+  var rf = function (f) { return typeof readFile === "function" ? readFile(f) : ""; };
+  var L = UNITS.nato_lcu, uiSrc = rf("js/ui.js"), aiSrc = rf("js/ai.js");
+  chk("the LCU 1610: in service 1957, six seats, amphibious, its own role, bought for a well only (no sidebar card), a field-manual entry and a hull",
+      !!L && L.service === "1957" && L.from === "e50" && L.cargo === 6 && L.amphib && L.role === "landing_craft" && L.wellOnly &&
+      !!FACTS.nato_lcu && !!WARSHIPS.nato_lcu && same(ROLES.landing_craft || [], ["nato_lcu"]) &&
+      (ROLES.transport_sea || []).indexOf("nato_lcu") < 0 && (!uiSrc || uiSrc.indexOf("!UNITS[id].wellOnly") >= 0),
+      L ? L.service + " " + L.role + " cargo " + L.cargo : "no row");
+  var tsea = ["e60", "e80", "e90", "e20"].map(function (e) { return unitFor("nato", "transport_sea", e); });
+  chk("the landing ship each period offers is as it was (Newport, then the LCAC)",
+      same(tsea, ["nato_e60_lst", "lst", "lst", "lst"]) && tsea[0] === "nato_e60_lst", tsea.join(","));
+  var aiNames = ["wellQ", "orderWellCraft", "launchCraft", "launchAll", "wellCraft", "nato_lcu", "landing_craft"].filter(function (k) { return aiSrc.indexOf(k) >= 0; });
+  chk("js/ai.js names none of it: the commander builds no assault ship and meets no well deck", aiNames.length === 0, aiNames.join(","));
+  /* what each well takes, in her period */
+  var TY = { e80: ["nato_lcu", "lst"], e90: ["lst", "nato_lcu"], e00: ["lst", "nato_lcu"] }, tyBad = [];
+  for (var e in ROW) if (ROW[e]) {
+    useEra(e);
+    var s0 = spawn(ROW[e], ax, ay), w0 = s0.wellTypes();
+    if (!same(w0, TY[e] || [])) tyBad.push(e + ":" + w0.join("+"));
+    gone(s0);
+  }
+  chk("in her period the Tarawa's well takes the LCU 1610 and the LCAC, the Wasps' the LCAC and the LCU, the Iwo Jima's and the America's nothing",
+      tyBad.length === 0, tyBad.join(" "));
+
+  /* the Tarawa: four LCUs, or one LCAC, never both */
+  useEra("e80");
+  var ta = spawn("nato_e80_lha", ax, ay);
+  var r = ["nato_lcu", "nato_lcu", "nato_lcu", "nato_lcu"].map(function (id) { return ta.orderWellCraft(id); });
+  var r5 = ta.orderWellCraft("nato_lcu"), r6 = ta.orderWellCraft("lst");
+  chk("e80, a Tarawa alongside the yard: four LCU 1610 ordered; a fifth and an LCAC refused, the well full",
+      r.every(function (x) { return x === null; }) && /WELL DECK FULL/.test(r5 || "") && /WELL DECK FULL/.test(r6 || "") && ta.wellQ.length === 4,
+      r.join(",") + " | " + r5 + " | " + r6);
+  ticks(3);
+  var paid = ta.wellQ.reduce(function (a, it) { return a + it.paid; }, 0), c0 = P.cash;
+  while (ta.wellQ.length) ta.cancelWellOrder(0);
+  chk("...cancelled, every credit paid comes back", paid > 0 && Math.abs(P.cash - c0 - paid) < 1, "paid " + paid.toFixed(0) + ", back " + (P.cash - c0).toFixed(0));
+  var r7 = ta.orderWellCraft("lst"), r8 = ta.orderWellCraft("nato_lcu");
+  chk("...one LCAC fills her well: an LCU beside it is refused", r7 === null && /WELL DECK FULL/.test(r8 || ""), r7 + " | " + r8);
+  ta.cancelWellOrder(0);
+  ["nato_lcu", "nato_lcu", "nato_lcu", "nato_lcu"].forEach(function (id) { ta.orderWellCraft(id); });
+  var tl = ticks(120, function () { return ta.well.length === 4; });
+  chk("...four LCUs bought from her panel are built and floated into her well, carried, empty",
+      tl > 0 && ta.well.every(function (c) { return c.def.id === "nato_lcu" && c.carried && !c.dead && c.cargo.length === 0; }) && !ta.wellQ.length,
+      "after " + tl.toFixed(1) + " s, " + ta.well.length + " in the well (list " + P.factionTime(L) + " s each)");
+  ta.well.forEach(gone); ta.well.length = 0; gone(ta);
+
+  /* the Wasp: three LCACs bought alongside, none away from a yard */
+  useEra("e00");
+  var s = spawn("nato_e00_lhd", ax, ay);
+  var cash0 = P.cash, oil0 = P.oil;
+  var o = [1, 2, 3].map(function () { return s.orderWellCraft("lst"); }), o4 = s.orderWellCraft("lst"), o5 = s.orderWellCraft("nato_lcu");
+  var tw = ticks(150, function () { return s.well.length === 3; });
+  var cost = 3 * P.factionCost(UNITS.lst), spent = cash0 - P.cash, burnt = oil0 - P.oil;
+  chk("e00, a Wasp alongside the yard: three LCACs ordered and floated into her well; a fourth and an LCU refused, the well full",
+      o.every(function (x) { return x === null; }) && /FULL/.test(o4 || "") && /FULL/.test(o5 || "") && tw > 0 &&
+      s.well.every(function (c) { return c.def.id === "lst" && c.carried; }),
+      "after " + tw.toFixed(1) + " s; " + o.join(",") + " | " + o4 + " | " + o5);
+  chk("...at their own price and barrels (" + cost + " credits, " + 3 * UNITS.lst.oil + " bbl) and no faster than the yard builds three (" +
+      (3 * P.factionTime(UNITS.lst) / P.prodSpeed("naval")).toFixed(0) + " s)",
+      spent > cost * 0.85 && burnt >= 3 * UNITS.lst.oil && tw >= 3 * P.factionTime(UNITS.lst) / P.prodSpeed("naval") - 1,
+      "spent " + spent.toFixed(0) + " credits (with the base income running), " + burnt + " bbl, " + tw.toFixed(1) + " s");
+  var far = seaAway(14), sF = far ? spawn("nato_e00_lhd", far.x * TT + 16, far.y * TT + 16) : null;
+  var rF = sF ? sF.orderWellCraft("lst") : "no water away from the yard";
+  chk("a Wasp at sea away from any naval yard cannot buy one", /NOT ALONGSIDE A NAVAL YARD/.test(rF || ""), rF);
+  if (sF) gone(sF);
+
+  /* off a coast: the hold feeds the craft, vehicles first */
+  var B = BEACH, land = function (k) { return { x: (B.x - B.dx * k + 0.5) * TT, y: (B.y - B.dy * k + 0.5) * TT }; };
+  s.x = (B.x + B.dx * 8 + 0.5) * TT; s.y = (B.y + B.dy * 8 + 0.5) * TT; s.order = { type: "idle" }; s.path = null;
+  s.ang = Math.atan2(-B.dy, -B.dx);                         // bows to the beach, stern to the sea
+  var tk1 = spawn("mbt_n", P.homeX, P.homeY), tk2 = spawn("mbt_n", P.homeX, P.homeY), sq = spawn("rifle_n", P.homeX, P.homeY);
+  [sq, tk1, tk2].forEach(function (u) { s.cargo.push(u); u.carried = true; });
+  var craft = s.well.slice(), n = s.launchAll();
+  var c1 = craft[0], wet = craft.filter(function (c) {
+    return !c.carried && GameMap.passable(M, (c.x / TT) | 0, (c.y / TT) | 0, "sea") && Math.hypot(c.x - s.x, c.y - s.y) < 5 * TT; });
+  var tilesU = {}; craft.forEach(function (c) { tilesU[((c.x / TT) | 0) + "," + ((c.y / TT) | 0)] = 1; });
+  var astern = craft.every(function (c) { return (c.x - s.x) * Math.cos(s.ang) + (c.y - s.y) * Math.sin(s.ang) < 0; });
+  chk("8 tiles off the beach she launches all three out of her stern onto open water, each on its own tile",
+      n === 3 && s.well.length === 0 && wet.length === 3 && Object.keys(tilesU).length === 3 && astern,
+      n + " launched, " + wet.length + " afloat within 5 tiles, " + Object.keys(tilesU).length + " tiles, astern " + astern);
+  chk("...the first takes the hold: both tanks first, then the squad; the hold is empty",
+      c1.cargo.length === 3 && c1.cargo[0].cat === "vehicle" && c1.cargo[1].cat === "vehicle" && c1.cargo[2] === sq &&
+      s.cargo.length === 0 && [tk1, tk2, sq].every(function (u) { return u.carried; }),
+      c1.cargo.map(function (u) { return u.def.id; }).join(",") + "; hold " + s.cargo.length);
+  /* to the beach, as a right-click on the shore orders it (ui.js unloadAt) */
+  var aim = land(1);
+  c1.give({ type: "move", x: aim.x, y: aim.y, unloadAt: true });
+  var tb = ticks(60, function () { return c1.cargo.length === 0; });
+  ticks(0.5);
+  var up = [tk1, tk2, sq].filter(function (u) {
+    return !u.carried && !u.dead && GameMap.passable(M, (u.x / TT) | 0, (u.y / TT) | 0, "ground") && Math.hypot(u.x - aim.x, u.y - aim.y) < 5 * TT; });
+  chk("...an LCAC sent to the beach lands both tanks and the squad on it", tb > 0 && up.length === 3,
+      "after " + tb.toFixed(1) + " s, ashore " + up.length + "/3");
+  /* and back into the well - picked with her, they leave the selection as
+     they go in, and she stays in it */
+  sel(craft.concat([s]));
+  craft.forEach(function (c) { c.give({ type: "enter", target: s }); });
+  var tr = ticks(60, function () { return s.well.length === 3; });
+  var selNow = UI.selection.slice();
+  chk("...right-clicked back onto her, all three sail into her well and are carried again, and leave the selection she is still in",
+      tr > 0 && craft.every(function (c) { return c.carried && s.well.indexOf(c) >= 0 && selNow.indexOf(c) < 0 && !c.selected; }) &&
+      selNow.length === 1 && selNow[0] === s,
+      "after " + tr.toFixed(1) + " s, " + s.well.length + " in the well; selection " + selNow.map(function (u) { return u.def.id; }).join(","));
+  sel([]);
+  var c4 = spawn("lst", s.x + Math.cos(s.ang) * 3 * TT, s.y + Math.sin(s.ang) * 3 * TT);
+  var w4 = s.wellRefusal(c4);
+  c4.give({ type: "enter", target: s });
+  ticks(3);
+  chk("...a fourth LCAC is refused: the well is full", /WELL DECK FULL/.test(w4) && !c4.carried && c4.order.type === "idle" && s.well.length === 3,
+      "\"" + w4 + "\", carried " + c4.carried + ", order " + c4.order.type);
+
+  /* no well deck: the America and the Iwo Jima refuse a craft */
+  [["e20", "lha_n"], ["e60", "nato_e60_lph"]].forEach(function (pr) {
+    useEra(pr[0]);
+    var a = spawn(pr[1], c4.x + 2 * TT, c4.y);
+    var why = a.wellRefusal(c4), whyO = a.orderWellCraft("lst");
+    c4.give({ type: "enter", target: a });
+    ticks(3);
+    chk(pr[0] + ": the " + UNITS[pr[1]].name + " has no well deck: she refuses the LCAC (it stays at sea), sells none, and lists none",
+        /NO WELL DECK/.test(why) && /NO WELL DECK/.test(whyO || "") && !c4.carried && c4.order.type === "idle" && a.wellTypes().length === 0 && !a.well.length,
+        "\"" + why + "\" | \"" + whyO + "\", carried " + c4.carried);
+    gone(a);
+  });
+  useEra("e00");
+
+  /* sunk with her craft in the well, they go down with her - and what they carry */
+  var rider = spawn("rifle_n", P.homeX, P.homeY);
+  s.well[0].cargo.push(rider); rider.carried = true;
+  var inWell = s.well.slice();
+  s.wellQ = [{ id: "lst", paid: 200 }];                   // and one on order, part paid
+  var cK = P.cash;
+  Combat.kill(Game, s, null);
+  ticks(0.5);
+  chk("a Wasp sunk with three craft in her well takes them down with her, and the squad aboard one; what was paid on order comes back",
+      s.dead && inWell.every(function (c) { return c.dead; }) && rider.dead && P.cash - cK >= 199.5 && !s.wellQ.length,
+      inWell.map(function (c) { return c.dead; }).join(",") + " rider " + rider.dead + ", refunded " + (P.cash - cK).toFixed(0));
+  [tk1, tk2, sq].forEach(gone);
+
+  /* an LCAC on its own: still built at the yard, and still lands a tank it carries */
+  var lk = P.lockReason(UNITS.lst);
+  c4.x = (B.x + B.dx * 9 + 0.5) * TT; c4.y = (B.y + B.dy * 9 + 0.5) * TT; c4.order = { type: "idle" }; c4.path = null;
+  var tk3 = spawn("mbt_n", P.homeX, P.homeY);
+  c4.cargo.push(tk3); tk3.carried = true;
+  c4.give({ type: "move", x: aim.x, y: aim.y, unloadAt: true });
+  var tu = ticks(60, function () { return !tk3.carried; });
+  ticks(0.5);
+  var nonDeck = Object.keys(UNITS).filter(function (id) { var d = UNITS[id]; return d.amphib && !d.carrier && Unit.craftOnly(d); });
+  chk("an LCAC on its own is still built at the yard and still runs a tank in to the beach and lands it; no landing craft or ship keeps vehicles back",
+      lk === null && tu > 0 && !tk3.carried && GameMap.passable(M, (tk3.x / TT) | 0, (tk3.y / TT) | 0, "ground") &&
+      Math.hypot(tk3.x - aim.x, tk3.y - aim.y) < 5 * TT && nonDeck.length === 0,
+      "lock " + lk + ", landed after " + tu.toFixed(1) + " s" + (nonDeck.length ? "; " + nonDeck.join(",") : ""));
+  gone(tk3); gone(c4);
+
+  /* boarding from the beach (entities.js updateEnter, the reach): a tank and
+     a squad on the sand step into an LCAC lying one tile off it, where they
+     used to stop on the sand for good; one two tiles off is still out of reach */
+  var off = function (k) { return { x: (B.x + B.dx * k + 0.5) * TT, y: (B.y + B.dy * k + 0.5) * TT }; };
+  var sand = { x: (B.x + 0.5) * TT, y: (B.y + 0.5) * TT };
+  var o1 = off(2), bc1 = spawn("lst", o1.x, o1.y), btk = spawn("mbt_n", sand.x, sand.y), bsq = spawn("rifle_n", sand.x, sand.y);
+  var g1 = Math.hypot(bc1.x - btk.x, bc1.y - btk.y) / TT;
+  btk.give({ type: "enter", target: bc1 }); bsq.give({ type: "enter", target: bc1 });
+  var tbd = ticks(10, function () { return btk.carried && bsq.carried; });
+  chk("a tank and a squad on the beach board an LCAC lying one tile off it (" + g1.toFixed(1) + " tiles centre to centre)",
+      tbd > 0 && bc1.cargo.indexOf(btk) >= 0 && bc1.cargo.indexOf(bsq) >= 0,
+      "after " + tbd.toFixed(1) + " s; tank carried " + btk.carried + " (" + btk.order.type + "), squad carried " + bsq.carried + " (" + bsq.order.type + ")");
+  var o2 = off(3), bc2 = spawn("lst", o2.x, o2.y), btk2 = spawn("mbt_n", sand.x, sand.y);
+  btk2.give({ type: "enter", target: bc2 });
+  ticks(5);
+  chk("...one lying two tiles off is out of reach: the tank stays on the sand",
+      !btk2.carried && bc2.cargo.length === 0, (Math.hypot(bc2.x - btk2.x, bc2.y - btk2.y) / TT).toFixed(1) + " tiles, carried " + btk2.carried);
+  [btk, bsq, btk2, bc1, bc2].forEach(gone);
+
+  /* her panel's own buttons (ui.js wellPanel, bindWell), pressed */
+  var pw = spawn("nato_e00_lhd", ax, ay), pk1 = spawn("lst", ax, ay), pk2 = spawn("lst", ax, ay);
+  pw.dockCraft(pk1); pw.dockCraft(pk2);
+  var pt1 = spawn("mbt_n", P.homeX, P.homeY), pt2 = spawn("mbt_n", P.homeX, P.homeY);
+  [pt1, pt2].forEach(function (u) { pw.cargo.push(u); u.carried = true; });
+  sel([pw]);
+  var btn = panelButtons(), h0 = panel();
+  var buys = (btn.wellbuy || []).map(function (b) { return b.dataset.wellbuy; });
+  chk("her panel shows the well: two LCACs each with a launch arrow, LAUNCH CRAFT (2), and an LCAC to buy (an LCU will not fit beside two)",
+      /WELL DECK/.test(h0) && h0.indexOf("LAUNCH CRAFT (2)") >= 0 && (btn.welllaunch || []).length === 2 && (btn.wellall || []).length === 1 &&
+      same(buys, ["lst"]),
+      Object.keys(btn).map(function (k) { return k + " x" + btn[k].length; }).join(", ") + "; buys " + buys.join(","));
+  press(btn, "wellbuy", 0);
+  var qd = pw.wellQ.length;
+  ticks(1);
+  btn = panelButtons();
+  var pPaid = pw.wellQ.length ? pw.wellQ[0].paid : 0, cB = P.cash;
+  press(btn, "wellcancel", 0);
+  chk("+ orders an LCAC for her well; x cancels it and every credit paid comes back",
+      qd === 1 && pPaid > 0 && !pw.wellQ.length && Math.abs(P.cash - cB - pPaid) < 1,
+      "ordered " + qd + ", paid " + pPaid.toFixed(0) + ", back " + (P.cash - cB).toFixed(0));
+  btn = panelButtons();
+  press(btn, "welllaunch", 1);
+  chk("the arrow on the second craft launches it alone, with both tanks from the hold",
+      !pk2.carried && pk2.cargo.length === 2 && pk2.cargo.indexOf(pt1) >= 0 && pk2.cargo.indexOf(pt2) >= 0 &&
+      pw.well.length === 1 && pw.well[0] === pk1 && !pw.cargo.length,
+      "well " + pw.well.length + ", it carries " + pk2.cargo.length + ", hold " + pw.cargo.length);
+  btn = panelButtons();
+  press(btn, "wellall", 0);
+  chk("LAUNCH CRAFT floats out the other, onto open water", !pk1.carried && !pw.well.length &&
+      GameMap.passable(M, (pk1.x / TT) | 0, (pk1.y / TT) | 0, "sea"),
+      "well " + pw.well.length + ", carried " + pk1.carried + ", at " + tiles(pk1.x) + "," + tiles(pk1.y));
+  panelButtons(true);
+  sel([]);
+  [pt1, pt2, pk1, pk2, pw].forEach(gone);
+  useEra("e20");
+}
+/* The well panel's buttons (ui.js bindWell). jsc parses no panel markup, so
+   the ".well" box the binder asks #selinfo for is a stand-in that lists the
+   buttons the markup names; the page's own listeners bind to those, and
+   press() runs them as a mousedown would. panelButtons(true) puts #selinfo
+   back. */
+var BTN = null;
+function panelButtons(done) {
+  var el = document.getElementById("selinfo");
+  if (done) { if (el.__wellQS) { el.querySelector = el.__wellQS; el.__wellQS = null; } return null; }
+  if (!el.__wellQS) {
+    el.__wellQS = el.querySelector;
+    el.querySelector = function (q) {
+      if (q !== ".well" || !BTN) return el.__wellQS.call(this, q);
+      return { querySelectorAll: function (s2) {
+        var m = /^\[data-([\w-]+)\]$/.exec(s2), out = [];
+        if (!m) return out;
+        var re = new RegExp("data-" + m[1] + "=\"([^\"]*)\"", "g"), mm, html = panel();
+        while ((mm = re.exec(html))) {
+          var b = { dataset: {}, fns: [], addEventListener: function (ty, f) { if (ty === "mousedown") this.fns.push(f); } };
+          b.dataset[m[1]] = mm[1];
+          out.push(b); (BTN[m[1]] = BTN[m[1]] || []).push(b);
+        }
+        return out;
+      } };
+    };
+  }
+  BTN = {};
+  UI.frame(DT);
+  var got = BTN; BTN = null;
+  return got;
+}
+function press(btns, kind, i) {
+  var b = btns[kind] && btns[kind][i];
+  if (!b) return false;
+  b.fns.forEach(function (f) { f({ type: "mousedown", button: 0, stopPropagation: function () {}, preventDefault: function () {} }); });
+  return true;
+}
+function sel(list) {
+  var s = UI.selection; for (var i = 0; i < s.length; i++) s[i].selected = false; s.length = 0;
+  list.forEach(function (u) { u.selected = true; s.push(u); });
+}
+function panel() { return String((document.getElementById("selinfo") || {}).innerHTML || ""); }
+
+/* ---------------- 9. save and load with a wing and a hold ---------------- */
 function secSave() {
-  log("\n[8] a save with a helicopter on her deck and two in her hold (last: the load rebuilds the match)");
+  log("\n[9] a save with a helicopter on her deck and two in her hold, and a Wasp's well (last: the load rebuilds the match)");
   useEra("e20");
   var yard = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
   var at = yard ? Path.nearest(M, (yard.x / TT) | 0, (yard.y / TT) | 0, "sea", null, 12) : null;
@@ -551,7 +850,20 @@ function secSave() {
   var h = spawn("trans_n", s.x, s.y); h.padOn = s; h.parked = true; h.order = { type: "parked" };
   var a = spawn("rifle_n", P.homeX, P.homeY), b = spawn("rifle_n", P.homeX, P.homeY);
   [a, b].forEach(function (u) { s.cargo.push(u); u.carried = true; });
+  /* a Wasp: two LCACs in her well, one with a tank aboard; a third at sea
+     with a squad; a fourth on order, part paid */
+  var wx = s.x + 6 * TT, wy = s.y;
+  var wsp = Path.nearest(M, (wx / TT) | 0, (wy / TT) | 0, "sea", null, 8);
+  if (wsp) { wx = wsp.x * TT + 16; wy = wsp.y * TT + 16; }
+  var ws = spawn("nato_e00_lhd", wx, wy);
+  var k1 = spawn("lst", wx, wy), k2 = spawn("lst", wx, wy), k3 = spawn("lst", wx + 3 * TT, wy);
+  ws.dockCraft(k1); ws.dockCraft(k2);
+  var wt = spawn("mbt_n", P.homeX, P.homeY), wq = spawn("rifle_n", P.homeX, P.homeY);
+  k1.cargo.push(wt); wt.carried = true; k3.cargo.push(wq); wq.carried = true;
+  ws.wellQ = [{ id: "lst", paid: 300 }];
   ticks(0.5);
+  var wpaid = Math.round(ws.wellQ[0].paid);
+  var wsx = ws.x, wsy = ws.y, k3x = k3.x, k3y = k3.y;
   var sx = s.x, sy = s.y;
   var r = SaveGame.save(Game, "ironfront.lhdcheck");
   chk("the save is written", r.ok, r.error || r.bytes + " bytes");
@@ -570,4 +882,23 @@ function secSave() {
       c.length === 2 && c.every(function (u) { return u.carried && !u.dead; }) &&
       same(c.map(function (u) { return u.def.id; }), ["rifle_n", "rifle_n"]), c.map(function (u) { return u.def.id; }).join(","));
   chk("and her deck still takes what it took", same(Game.deckTypesFor(S), TAKES.e20), Game.deckTypesFor(S).join(","));
+  var WS = null, K3 = null;
+  Game.entities.forEach(function (e) {
+    if (e.kind !== "unit" || e.dead) return;
+    if (e.def.id === "nato_e00_lhd" && Math.hypot(e.x - wsx, e.y - wsy) < 3) WS = e;
+    if (e.def.id === "lst" && !e.carried && Math.hypot(e.x - k3x, e.y - k3y) < 3) K3 = e;
+  });
+  var WW = WS ? WS.well : [];
+  chk("the Wasp's well is back: two LCACs, carried, one with the tank aboard it, carried too",
+      !!WS && WW.length === 2 && WW.every(function (c) { return c.def.id === "lst" && c.carried && !c.dead; }) &&
+      WW.filter(function (c) { return c.cargo.length === 1 && c.cargo[0].def.id === "mbt_n" && c.cargo[0].carried; }).length === 1,
+      WS ? WW.map(function (c) { return c.def.id + "[" + c.cargo.map(function (u) { return u.def.id; }).join("+") + "]" + (c.carried ? " carried" : " LOOSE"); }).join(", ") : "no Wasp");
+  chk("...the LCAC at sea is back at sea with its squad, and her order with what was paid (" + wpaid + ")",
+      !!K3 && K3.cargo.length === 1 && K3.cargo[0].def.id === "rifle_n" && !!WS && WS.wellQ && WS.wellQ.length === 1 &&
+      WS.wellQ[0].id === "lst" && WS.wellQ[0].paid === wpaid,
+      (K3 ? "at sea with " + K3.cargo.length : "no craft at sea") + "; order " + (WS && WS.wellQ ? JSON.stringify(WS.wellQ) : "none"));
+  if (WS && WW.length) {
+    var n9 = WS.launchAll();
+    chk("...and launches again from the loaded game", n9 === 2 && WS.well.length === 0, n9 + " launched");
+  }
 }

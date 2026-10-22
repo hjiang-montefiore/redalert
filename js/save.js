@@ -126,6 +126,10 @@ var SaveGame = (function () {
            (entities.js AIRLIFT) that would put a Humvee down at the airbase
            it flew out of in the middle of a delivery. */
         cg: u.cargo && u.cargo.length ? u.cargo.filter(c => uIdx.has(c)).map(c => uIdx.get(c)) : undefined,
+        /* the landing craft in a well deck, the same way, and any on order
+           for it (entities.js THE WELL DECK) */
+        wl: u.well && u.well.length ? u.well.filter(c => uIdx.has(c)).map(c => uIdx.get(c)) : undefined,
+        wq: u.wellQ && u.wellQ.length ? u.wellQ.map(it => ({ id: it.id, paid: Math.round(it.paid), done: it.done ? 1 : 0 })) : undefined,
       })),
       buildings: bl.map(b => ({
         d: b.def.id, o: b.owner.idx, tx: b.tx, ty: b.ty,
@@ -486,6 +490,13 @@ var SaveGame = (function () {
         c.carried = true; c.order = { type: "idle" };
         u.cargo.push(c);
       }
+      if (su.wl) for (const ci of su.wl) {
+        const c = uref[ci];
+        if (!c || c === u || c.carried) continue;
+        c.carried = true; c.order = { type: "idle" };
+        u.well.push(c);
+      }
+      if (su.wq) u.wellQ = su.wq.filter(it => UNITS[it.id]).map(it => ({ id: it.id, paid: it.paid || 0, done: !!it.done }));
       /* a transport saved standing on its strip is standing on it again */
       if (u.layer === "air" && typeof Unit !== "undefined" && Unit.airGround(u.order)) {
         u.grounded = true; u.field = Unit.fieldOf(u.order);

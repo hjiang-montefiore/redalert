@@ -225,6 +225,7 @@ class Unit {
     this.supplyLeft = d.supply || 0;                       // trucks / oilers
 
     this.cargo = [];                                        // transports
+    this.well = [];                     // landing craft in a well deck (THE WELL DECK)
     this.carried = false;
     this.grounded = false;              // an airlifter stopped on open ground (AIRLIFT)
     this.load = 0;                                          // harvester ore
@@ -561,6 +562,8 @@ class Unit {
        no `helo` at all - so the one ship built to operate aircraft was the one
        ship that could never replace a loss alongside its own yard. */
     if (this.cat === "naval" && (this.def.helo || this.def.carrier)) this.replenishDeck(dt);
+    /* a landing craft on order for her well deck (THE WELL DECK) */
+    if (this.wellQ && this.wellQ.length) this.workWell(dt);
 
     /* An empty tanker is just a large slow target, so it takes itself home,
        and it can only be replenished on a ramp. */
@@ -1442,10 +1445,14 @@ class Unit {
       if (o.unloadAt && this.cargo && this.cargo.length &&
           U.dist(this.x, this.y, o.x, o.y) < CFG.TILE * 4.5) {
         const n = this.unload(o.x, o.y);
-        if (n) {
-          if (this.owner === this.game.human)
-            this.game.alert(n + (n === 1 ? " UNIT ASHORE" : " UNITS ASHORE"), "good");
-          if (!this.cargo.length && !this.nextOrder()) this.order = { type: "idle" };
+        /* what a well-deck ship keeps aboard goes in her landing craft */
+        const kept = this.vehiclesKept();
+        if (n || (kept && kept === this.cargo.length)) {
+          if (this.owner === this.game.human) {
+            if (n) this.game.alert(n + (n === 1 ? " UNIT ASHORE" : " UNITS ASHORE"), "good");
+            if (kept) this.game.alert(Unit.keptLine(kept), "warn");
+          }
+          if ((!this.cargo.length || kept === this.cargo.length) && !this.nextOrder()) this.order = { type: "idle" };
           return;
         }
       }
@@ -5905,15 +5912,235 @@ class Unit {
      ... rules.js lha_n) puts its Marines ashore by helicopter, and its
      vehicles only by landing craft out of a WELL DECK (def.wellDeck). The Iwo
      Jima LPH and the America LHA-6 had none - everything went ashore by air -
-     so they take troops and no vehicle. The Tarawa and the Wasp have one, and
-     until their landing craft are in the game (a later piece, built on
-     def.wellDeck) the ship running in to the beach and putting vehicles
-     ashore herself stands in for them. A landing ship (no deck) beaches and
+     so they take troops and no vehicle. The Tarawa and the Wasp have one, so
+     they take vehicles, and the vehicles go ashore in the landing craft out
+     of it (THE WELL DECK, below): the ship herself puts only troops on a
+     beach - the stand-in for her helicopters and boats - and keeps her
+     vehicles aboard (craftOnly, unload). A landing ship (no deck) beaches and
      is not asked. "" when it may come aboard. */
   static troopsOnly(def) { return !!(def && def.amphib && def.carrier && !def.wellDeck); }
+  static craftOnly(def) { return !!(def && def.amphib && def.carrier && def.wellDeck); }
+  /* the vehicles a well-deck ship is keeping aboard for her craft */
+  vehiclesKept() {
+    return Unit.craftOnly(this.def) ? this.cargo.filter(u => u.cat === "vehicle").length : 0;
+  }
+  static keptLine(n) {
+    return n + (n === 1 ? " VEHICLE STAYS" : " VEHICLES STAY") +
+      " ABOARD \u2014 VEHICLES GO ASHORE BY LANDING CRAFT: LAUNCH THEM FROM THE WELL DECK";
+  }
   holdRefusal(v) {
+    /* a landing craft comes into the well, not the hold */
+    if (v && v.cat === "naval") return this.wellRefusal(v);
     if (!v || v.cat !== "vehicle" || !Unit.troopsOnly(this.def)) return "";
     return "NO WELL DECK — VEHICLES GO ASHORE BY LANDING CRAFT FROM A WELL-DECK SHIP";
+  }
+
+  /* ---- THE WELL DECK (navy piece 3) ----
+     (owner) "...an amphibious assault ship which can carry F-35B,
+     helicopters, and landing ships." A Tarawa or a Wasp carries her landing
+     craft in a floodable dock in her stern (def.wellCraft, eras.js THE WELL
+     DECK: how many of each type the well holds on its own; a mixed load fits
+     where the fractions add up to one - a Wasp's three LCACs, two LCUs, or one
+     of each).
+     IN THE WELL a craft is carried the way a passenger is (carried, off the
+     map, doing nothing), in ship.well rather than ship.cargo, so it takes no
+     seat in the hold, and its own load stays aboard it. This is the hold's
+     model, not the flight deck's: wing(), padOn and findPad are about
+     aircraft that sit on a deck in the world and fly to it, and a craft in
+     the well is inside the hull - and has a hold of its own to keep.
+     LAUNCHED (launchCraft), it is floated out of the stern gate onto open
+     water astern, with as much of the ship's hold as it has seats for,
+     vehicles first - the vehicle decks feed the well by ramp - and is then
+     the ordinary amphibious transport it always was: right-click a beach to
+     land what it carries. A Wasp at sea launches over the horizon, as the
+     LCAC was built to, so no coast is needed to launch.
+     RECOVERED by being right-clicked back onto her (an enter order,
+     updateEnter): it sails up astern and is carried again, with whatever it
+     brought back aboard it.
+     BOUGHT (orderWellCraft): the ship is delivered with an empty well, as
+     with an empty deck (eras.js THE WELL DECK, THE PRICE), and a craft is
+     bought for it from her panel at its own price, barrels and build time,
+     paid as it builds at the naval yards' rate and floated in alongside a
+     naval yard - the reach the deck's yard delivery uses (game.js
+     DECK_YARD_R). */
+  /* what a craft is called in a well: the LCAC's row is named "Landing
+     Craft", which beside the LCU 1610 says nothing */
+  static craftLabel(def) {
+    return def && /LCAC/.test(def.full || "") && !/LCAC/.test(def.name) ? "LCAC" : (def ? def.name : "");
+  }
+  /* the types her well takes in her owner's period */
+  wellTypes() {
+    const w = this.def.wellCraft, out = [];
+    if (!w) return out;
+    const era = (this.owner && this.owner.era) || CUR_ERA;
+    for (const id in w) if (UNITS[id] && inEra(UNITS[id], era)) out.push(id);
+    return out;
+  }
+  /* how full the well is, 1 being full: the craft in it and on order for
+     it, and `plus` (a type) counted in */
+  wellFill(plus) {
+    const w = this.def.wellCraft;
+    if (!w) return Infinity;
+    let f = 0;
+    const add = (id) => { f += w[id] ? 1 / w[id] : Infinity; };
+    for (const c of this.well || []) add(c.def.id);
+    for (const it of this.wellQ || []) add(it.id);
+    if (plus) add(plus);
+    return f;
+  }
+  /* "" when this landing craft may come into her well, else why not */
+  wellRefusal(c) {
+    if (!c || c.cat !== "naval") return "";
+    if (!this.def.wellCraft)
+      return Unit.troopsOnly(this.def)
+        ? "NO WELL DECK \u2014 " + this.def.name.toUpperCase() + " PUTS HER MARINES ASHORE BY AIR"
+        : "NO WELL DECK";
+    if (c.owner !== this.owner) return "NOT OURS";
+    if (this.wellTypes().indexOf(c.def.id) < 0)
+      return Unit.craftLabel(c.def).toUpperCase() + " IS NOT CARRIED IN " + this.def.name.toUpperCase() + "'S WELL DECK";
+    if (this.wellFill(c.def.id) > 1 + 1e-6) return "WELL DECK FULL";
+    return "";
+  }
+  /* into the well */
+  dockCraft(c) {
+    (this.well || (this.well = [])).push(c);
+    c.carried = true; c.selected = false;
+    c.order = { type: "idle" }; c.orders = []; c.path = null; c.moving = false;
+    c.x = this.x; c.y = this.y;
+    /* and out of the player's selection: it is inside the hull, where
+       give() takes no order, and the panel belongs to whatever is still
+       afloat (the list is ui.js's own array, as game.js finishPack edits it) */
+    if (typeof UI !== "undefined" && Array.isArray(UI.selection)) {
+      const s = UI.selection, k = s.indexOf(c);
+      if (k >= 0) s.splice(k, 1);
+    }
+    if (this.owner === this.game.human)
+      this.game.alert(Unit.craftLabel(c.def).toUpperCase() + " RECOVERED INTO " + this.def.name.toUpperCase() + "'S WELL DECK" +
+        (c.cargo.length ? " WITH " + c.cargo.length + " ABOARD" : ""), "good");
+  }
+  /* Out of the stern gate, loaded from the hold. `taken` collects the water
+     tiles already given to craft launched in the same breath. Returns the
+     number of the hold it took aboard, or a reason (a string). */
+  launchCraft(c, taken) {
+    const g = this.game, T = CFG.TILE, W = g.map.W;
+    const i = (this.well || []).indexOf(c);
+    if (i < 0 || c.dead) return "NOT IN THE WELL";
+    const used = taken || new Set();
+    /* astern, beyond her own length's half and the craft's, spread abreast */
+    const k = used.size, side = (k % 2 ? 1 : -1) * Math.ceil(k / 2);
+    const back = (this.r || 30) + (c.r || 16) + T * 0.5;
+    const ax = this.x - Math.cos(this.ang) * back - Math.sin(this.ang) * side * T;
+    const ay = this.y - Math.sin(this.ang) * back + Math.cos(this.ang) * side * T;
+    /* only water the ship herself floats on: a lake or river within four
+       tiles of the stern would otherwise take the craft and strand it there */
+    const own = (a, b) => !Path.reachable(g.map, this.tx, this.ty, a, b, "sea");
+    const spot = Path.nearest(g.map, (ax / T) | 0, (ay / T) | 0, "sea",
+                              (a, b) => used.has(b * W + a) || g.tileBlocked(a, b, null) || own(a, b), 4) ||
+                 Path.nearest(g.map, (ax / T) | 0, (ay / T) | 0, "sea", own, 4);
+    if (!spot) return "NO OPEN WATER ASTERN";
+    used.add(spot.y * W + spot.x);
+    this.well.splice(i, 1);
+    /* the hold feeds the craft: vehicles first, then troops, seat for seat */
+    const seats = c.def.cargo || 0;
+    const feed = this.cargo.filter(u => u.cat === "vehicle").concat(this.cargo.filter(u => u.cat !== "vehicle"));
+    let n = 0;
+    for (const u of feed) {
+      if (c.cargo.length >= seats) break;
+      this.cargo.splice(this.cargo.indexOf(u), 1);
+      c.cargo.push(u); u.carried = true;
+      n++;
+    }
+    c.carried = false;
+    c.x = spot.x * T + T / 2; c.y = spot.y * T + T / 2;
+    c.ang = this.ang + Math.PI;
+    c.order = { type: "idle" }; c.orders = []; c.path = null;
+    return n;
+  }
+  /* every craft in the well out, each filled from the hold in turn */
+  launchAll() {
+    const taken = new Set();
+    let out = 0, aboard = 0, why = "";
+    for (const c of (this.well || []).slice()) {
+      const r = this.launchCraft(c, taken);
+      if (typeof r === "string") { why = why || r; continue; }
+      out++; aboard += r;
+    }
+    if (this.owner === this.game.human) {
+      if (out) this.game.alert(out + (out === 1 ? " LANDING CRAFT" : " LANDING CRAFT") + " LAUNCHED FROM " +
+        this.def.name.toUpperCase() + (aboard ? " \u2014 " + aboard + " OF THE LANDING FORCE ABOARD" : ""), "good");
+      else this.game.alert(why || "NO LANDING CRAFT IN THE WELL DECK", "bad");
+    }
+    return out;
+  }
+  /* null if this craft may be ordered for her well now, else the reason */
+  wellOrderReason(id) {
+    const def = UNITS[id], p = this.owner, g = this.game;
+    if (!this.def.wellCraft) return "NO WELL DECK";
+    if (!def || this.wellTypes().indexOf(id) < 0)
+      return (def ? Unit.craftLabel(def).toUpperCase() : "THAT") + " IS NOT CARRIED IN " + this.def.name.toUpperCase() + "'S WELL DECK";
+    const lock = p.lockReason(def);
+    if (lock) return lock;
+    if (this.wellFill(id) > 1 + 1e-6) return "WELL DECK FULL";
+    if (!this.wellYard()) return "NOT ALONGSIDE A NAVAL YARD";
+    return null;
+  }
+  /* the naval yard she lies alongside, if she does (the deck's 7 tiles) */
+  wellYard() {
+    const y = this.game.nearestBuilding(this.owner, "navalyard", this.x, this.y);
+    return y && U.dist(this.x, this.y, y.x, y.y) <= CFG.TILE * 7 ? y : null;
+  }
+  orderWellCraft(id) {
+    const why = this.wellOrderReason(id);
+    if (why) return why;
+    (this.wellQ || (this.wellQ = [])).push({ id: id, paid: 0 });
+    return null;
+  }
+  /* everything paid comes back */
+  cancelWellOrder(i) {
+    const q = this.wellQ;
+    if (!q || !q[i]) return false;
+    this.owner.refund(q.splice(i, 1)[0].paid);
+    return true;
+  }
+  /* The head of her order is paid for as it builds, at the naval yards'
+     rate (Player.prodSpeed: their number and the power), and when it is
+     finished and she lies alongside a yard its barrels are drawn and it is
+     floated into the well. Until then it waits, and says why once. */
+  workWell(dt) {
+    const q = this.wellQ;
+    if (!q || !q.length) return;
+    const p = this.owner, it = q[0], def = UNITS[it.id];
+    if (!def) { q.shift(); return; }
+    if (!it.done) {
+      const speed = p.prodSpeed("naval");
+      if (speed <= 0) return;
+      const cost = p.factionCost(def);
+      const pay = Math.min(cost * dt * speed / p.factionTime(def), cost - it.paid, p.cash);
+      if (pay > 0) { p.cash -= pay; it.paid += pay; }
+      if (it.paid < cost - 0.01) return;
+      it.done = true; it.t = 0;
+    }
+    it.t = (it.t || 0) - dt;
+    if (it.t > 0) return;
+    it.t = 1;
+    let why = null;
+    if (def.oil && p.oil < def.oil) why = "AWAITING FUEL (" + def.oil + " bbl)";
+    else if (!this.wellYard()) why = "BRING HER ALONGSIDE A NAVAL YARD";
+    if (why) {
+      if (!it.why && p === this.game.human)
+        this.game.alert(Unit.craftLabel(def).toUpperCase() + " FOR " + this.def.name.toUpperCase() + " \u2014 " + why, "bad");
+      it.why = why;
+      return;
+    }
+    if (def.oil) p.spendOil(def.oil, "naval");
+    q.shift();
+    const c = this.game.spawnUnitAt(p, it.id, this.x, this.y);
+    if (!c) return;
+    p.stats.built++;
+    (this.well || (this.well = [])).push(c);
+    c.carried = true; c.order = { type: "idle" };
+    if (p === this.game.human)
+      this.game.alert(Unit.craftLabel(def).toUpperCase() + " FLOATED INTO " + this.def.name.toUpperCase() + "'S WELL DECK", "good");
   }
 
   /* ---- transports & structures entry (engineer/infantry into buildings) ---- */
@@ -5927,7 +6154,18 @@ class Unit {
       this.order = { type: "idle" };
       return;
     }
-    const near = U.dist(this.x, this.y, t.x, t.y) < (t.r || 20) + this.r + 10 ||
+    /* How close is alongside. A landing craft comes up to her stern (THE
+       WELL DECK). A tank or a squad boarding a landing craft or a landing
+       ship stops on the sand, and a craft lying one tile off the beach -
+       it lands a load from up to 4.5 tiles off its mark - has its centre
+       two tiles out, or 2.2 on the diagonal, which the 10 px every other
+       boarding allows never reached: the tank sat on the beach with its
+       order for good (measured, hormuz: a 2.00-tile gap against a reach of
+       1.38). A tile and a half reaches the craft one tile out and not one
+       further. */
+    const reach = this.cat === "naval" ? CFG.TILE
+                : this.layer === "ground" && t.kind === "unit" && t.layer === "sea" && t.def.amphib ? CFG.TILE * 1.5 : 10;
+    const near = U.dist(this.x, this.y, t.x, t.y) < (t.r || 20) + this.r + reach ||
                  (t.kind === "unit" && this.besideRamp(t));
     /* an aeroplane that has taken off is not waited for under its flight path */
     if (!near && this.cat === "vehicle" && t.kind === "unit" && t.layer === "air" && t.def.payload &&
@@ -5938,6 +6176,13 @@ class Unit {
       return;
     }
     /* arrived */
+    /* a landing craft goes into the well, never into a hold (THE WELL DECK;
+       holdRefusal above has already turned away a ship without room) */
+    if (this.cat === "naval") {
+      if (t.kind === "unit" && t.def.wellCraft && t.owner === this.owner) t.dockCraft(this);
+      else this.order = { type: "idle" };
+      return;
+    }
     if (t.kind === "building" && t.def.garrison && this.canGarrison(t)) {
       this.enterGarrison(t);
       return;
@@ -6042,9 +6287,13 @@ class Unit {
     /* keepClear: tiles nobody is put down on - the strip a transport has
        landed on and has to take off from again (AIRLIFT LANDING) */
     const taken = new Set(keepClear || []);
+    /* a Tarawa or a Wasp lands her vehicles in her landing craft, not over
+       her own side (craftOnly, THE WELL DECK) */
+    const keepVeh = Unit.craftOnly(this.def);
     let out = 0;
     for (let i = this.cargo.length - 1; i >= 0; i--) {
       const u = this.cargo[i];
+      if (keepVeh && u.cat === "vehicle") continue;
       const spot = this.landingSpot(u, taken, ax, ay);
       if (!spot) continue;
       taken.add(spot.y * this.game.map.W + spot.x);
