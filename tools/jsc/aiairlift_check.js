@@ -16,10 +16,15 @@
         transport there with money in the bank; aiOff "airlift" reads
         nothing on taiwan either and buys nothing.
      2. Purchase on taiwan: with an airbase, two armed aircraft and the
-        money, one transport helicopter goes on order (and the counter
-        says so); with one already on order, nothing more; a Warsaw Pact
-        commander, whose roster has no fixed-wing transport, never orders
-        one.
+        money, a load seen on one pass of the driver buys nothing (counted
+        as held back, "brief"); the same load waiting a minute, pass after
+        pass, puts one transport helicopter on order (and the counter says
+        so); with one already on order, nothing more. Six tanks and two
+        squads standing - the old demand by heads - buy nothing after a
+        minute, since two squads are all a Black Hawk would load (counted
+        as "load"); six more squads and another minute, and one goes on
+        order. A Warsaw Pact commander, whose roster has no fixed-wing
+        transport, never orders one.
      3. A helicopter sortie: infantry standing at home is called to a
         Black Hawk on its pad, which flies to them and lands beside them
         (a pick-up), they board, the helicopter flies to a drop point
@@ -218,6 +223,17 @@ function queued(pred) {
   [q.items, q.ready].forEach(function (l) { (l || []).forEach(function (it) { var d = UNITS[it.id || it]; if (d && pred(d)) n++; }); });
   return n;
 }
+/* `sec` seconds of the battle with a pass of the driver every second, the
+   bank empty meanwhile so the commander's own think() buys nothing, then the
+   money back and one more pass: how many passes saw a load waiting is read
+   back from the intel (why.ramp) */
+function hold(sec) {
+  var r0 = (AI.intelOf(E).lift.why || {}).ramp || 0;
+  for (var i = 0; i < sec; i++) { E.cash = 0; tick(1); L.tick(); }
+  E.cash = 20000; E.oil = 500;
+  L.tick();
+  return ((AI.intelOf(E).lift.why || {}).ramp || 0) - r0;
+}
 function orderOf(u) { return u.dead ? "dead" : u.carried ? "aboard" : u.order.type + (u.order.ph ? "/" + u.order.ph : ""); }
 
 /* ---- 1. when the bridge has a use ---- */
@@ -265,11 +281,44 @@ function purchase() {
       "bought " + none2 + " " + JSON.stringify(AI.intelOf(E).lift.why));
   var fs = farSide(26); if (fs) bodyAshore(3, fs);
   L.tick();
+  var brief = L.buy();
+  chk("a body ashore and the load seen on one pass only: no transport yet (it must have waited the window), and the held-back purchase is counted",
+      !brief && queued(function (d) { return !!d.payload; }) === 0 && stats().airliftBuySkipped === 1 && stats().airliftSkip_brief === 1,
+      "bought " + brief + " " + JSON.stringify(stats()));
+  var held = hold(62);
   var ok = L.buy(), qh = queued(function (d) { return !!d.payload && !!d.hover; });
-  chk("and a body ashore to reinforce: a transport helicopter goes on order, and the counter says so",
-      ok && qh === 1 && stats().airliftBought === 1, "bought " + ok + ", helicopters queued " + qh + " " + JSON.stringify(stats()));
+  chk("the same load waiting, pass after pass, for a minute: a transport helicopter goes on order, and the counter says so",
+      ok && qh === 1 && stats().airliftBought === 1, "bought " + ok + ", helicopters queued " + qh + ", passes " + held + " " + JSON.stringify(stats()));
   var again = L.buy();
   chk("with one on order, nothing more", !again && queued(function (d) { return !!d.payload; }) === 1, "bought again " + again);
+  /* the old demand - bodies enough standing at home, a body ashore, a drop
+     point, and one of them (a squad) that fits - but what the Black Hawk
+     would actually load (two squads; the tanks are 50-odd tonnes against
+     its 4) is under half its eight seats: nothing bought, however long it
+     stands, and the held-back purchase is counted as a load that does not fit */
+  if (scene()) {
+    base(); rivalSeen();
+    put(E, "nato_e80_fighter", home()); put(E, "nato_e80_fighter", home());
+    var fs3 = farSide(26); if (fs3) bodyAshore(3, fs3);
+    think(40);
+    var h = home(), tk = [];
+    for (var i = 0; i < 6; i++) tk.push(put(E, AI.pickOf(E, "mbt") || "mbt_n", { x: h.x - 3 + (i % 3), y: h.y + 11 + ((i / 3) | 0) }));
+    var sq2 = squads(2);
+    var held2 = hold(62);
+    var nofit = L.buy(), why = AI.intelOf(E).lift.why;
+    chk("six tanks and two squads standing (the old demand) but two squads are all a Black Hawk would load: no transport, counted as \"load\"",
+        !nofit && queued(function (d) { return !!d.payload; }) === 0 && !stats().airliftBought &&
+        stats().airliftBuySkipped === 1 && stats().airliftSkip_load === 1,
+        "bought " + nofit + ", passes " + held2 + ", tanks " + tk.filter(function (u) { return u && !u.dead; }).length +
+        " (" + (tk[0] && tk[0].def.mass) + " t), squads " + sq2.length + " " + JSON.stringify(stats()) + " " + JSON.stringify(why));
+    /* six more squads join them: now a load that fits has waited the window */
+    squads(6, 17);
+    var held3 = hold(62);
+    var fit = L.buy();
+    chk("six more squads join them and wait the window: now a transport helicopter goes on order",
+        fit && queued(function (d) { return !!d.payload && !!d.hover; }) === 1 && stats().airliftBought === 1,
+        "bought " + fit + ", passes " + held3 + " " + JSON.stringify(stats()));
+  } else chk("the scene is raised", false);
   /* the Warsaw Pact: no fixed-wing transport in the roster, ever */
   var pk = [];
   ["e60", "e80", "e00", "e20"].forEach(function (era) {

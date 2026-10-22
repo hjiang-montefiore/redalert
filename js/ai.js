@@ -777,7 +777,8 @@ function makeCommander() {
     /* nor a sortie in hand, a use read, a loss remembered or a drop point (AIR BRIDGE) */
     liftTick = 0; liftOps = []; liftUseV = null; liftUseT = -1e9;
     liftShy = []; liftDropMemo = null; liftWhy = {};
-    liftDemandT = -1e9; liftFlown = 0;
+    liftDemandT = -1e9; liftFlown = 0; liftSkipT = -1e9;
+    for (const k in liftDem) liftDem[k] = { t0: -1e9, t: -1e9 };
     intelT = 0; lastDigest = 0; aim = null;
     /* the plan's income average, budget and survey belong to one battle */
     macro = macroBook();
@@ -9886,7 +9887,9 @@ function makeCommander() {
      and lostInFlightCr (transport and load, credits), airliftNoDrop,
      airliftRefused, airliftDry, airliftBack (a delivery given up with the
      load aboard), airliftTaken (one under way taken back after a save is
-     loaded), and airliftWhy_* - per pass of the driver
+     loaded), airliftBuySkipped and airliftSkip_* (a purchase held back for
+     want of a load waiting for it, and why: liftWant), and airliftWhy_* -
+     per pass of the driver
      with a use, why no sortie started (wait: nothing due; core: the base
      held; ramp: no transport free; pool, load: too few standing at home;
      drop: nowhere safe) or that one did (go).
@@ -9909,6 +9912,10 @@ function makeCommander() {
   let liftDropMemo = null;       // the last drop point chosen, for a few seconds
   let liftWhy = {};              // why the next sortie did or did not start, counted (intel)
   let liftDemandT = -1e9;        // when a load last stood at home with no transport free
+  /* the same, by the kind that would be bought (liftWant): t0 when this run
+     of passes with a load waiting for it began, t the last pass that saw it */
+  const liftDem = { transport: { t0: -1e9, t: -1e9 }, airlift: { t0: -1e9, t: -1e9 } };
+  let liftSkipT = -1e9;          // a purchase last held back by liftWant (counted once a window)
   let liftFlown = 0;             // sorties flown this battle
   function liftOn() { return (D.read || 0) >= 0.35 && !(P.aiOff && P.aiOff.has("airlift")); }
   function liftStat(k, n) { asStat(k, n); }
@@ -10079,6 +10086,25 @@ function makeCommander() {
     if (load.some(u => u.cat === "vehicle") || t.cargo.some(u => u.cat === "vehicle")) return n > 0;
     return n >= Math.ceil((t.def.cargo || 3) / 3);
   }
+  /* a sortie is due: a body to join, or (split) a landing under way or a
+     launch due to make one */
+  function liftDue(use) {
+    return !!liftBody(use) || (use === "split" && (opReady || amphib.state !== "idle"));
+  }
+  /* What transport t, free where it stands, would be sent with: { why, load }
+     - why "" and the load if it would go; "pool" (too few standing at home),
+     "load" (too little of it fits) or "drop" (nowhere safe) if not. The
+     sortie below and the purchase (liftWant) both ask this, so a transport
+     is bought only on a load the sortie would take. */
+  function liftFit(t, use, min) {
+    const pool = liftPool(t);
+    if (pool.length <= liftKeep()) return { why: "pool", load: null };
+    const load = liftLoad(t, pool);
+    if (!liftEnough(t, load) || (min && load.length < min && !load.some(u => u.cat === "vehicle")))
+      return { why: "load", load: null };
+    if (!liftDrop(t, use)) return { why: "drop", load: null };
+    return { why: "", load };
+  }
   function liftStart(t, use, load) {
     const now = G.time, T2 = CFG.TILE;
     const op = { t, use, ph: "load", plan: [], seen: new Set(), until: now + LIFT_LOAD, t0: now, flyT: 0 };
@@ -10128,6 +10154,20 @@ function makeCommander() {
     t._lift = op;
     liftOps.push(op);
     liftStat("airliftTaken");
+  }
+  /* a transport free for the next sortie: on none and scouting for nobody,
+     not hit hard, a helicopter set down or holding within LIFT_GATHER of
+     home; an aeroplane takes vehicles only shut down on its ramp, and goes
+     with the tanks it will need (G.airLand sends it home first). The
+     purchase asks it of the one it would buy (liftWant) too. */
+  function liftReady(t, now) {
+    if (!isLifter(t) || t._lift || t._scout || t.carried) return false;
+    if (t._liftNo > now || t.hp < t.maxHp * 0.5) return false;
+    const ot = t.order && t.order.type;
+    if (t.def.hover)
+      return (t.parked || ot === "parked" || ot === "hover" || ot === "idle") &&
+             U.dist2(t.x, t.y, P.homeX, P.homeY) <= Math.pow(LIFT_GATHER * CFG.TILE, 2);
+    return t.loadingNow() && !t.grounded && t.fuel >= t.fuelMax * 0.8;
   }
   /* the passengers that never got aboard stay home */
   function liftStandDown(op) {
@@ -10274,38 +10314,31 @@ function makeCommander() {
     /* why the next sortie did or did not start, a pass at a time, in the
        intel and (as airliftWhy_*) in P.aiStats for the scorecard */
     const why = (k) => { liftWhy[k] = (liftWhy[k] || 0) + 1; liftStat("airliftWhy_" + k); };
-    if (coreHeld(now)) { why("core"); return; }
-    if (!liftBody(use) && !(use === "split" && (opReady || amphib.state !== "idle"))) { why("wait"); return; }
-    const T2 = CFG.TILE, H2 = Math.pow(LIFT_GATHER * T2, 2);
+    if (coreHeld(now)) { why("core"); liftDemand(use, now, false); return; }
+    if (!liftDue(use)) { why("wait"); liftDemand(use, now, false); return; }
     let any = false;
     for (const t of P.units) {
-      if (!isLifter(t) || t._lift || t._scout || t.carried) continue;
-      if (t._liftNo > now || t.hp < t.maxHp * 0.5) continue;
-      const ot = t.order && t.order.type;
-      if (t.def.hover) {
-        if (!t.parked && ot !== "parked" && ot !== "hover" && ot !== "idle") continue;
-        if (U.dist2(t.x, t.y, P.homeX, P.homeY) > H2) continue;
-      } else {
-        /* an aeroplane takes vehicles only shut down on its ramp, and goes
-           with the tanks it will need (G.airLand sends it home first) */
-        if (!t.loadingNow() || t.grounded || t.fuel < t.fuelMax * 0.8) continue;
-      }
+      if (!liftReady(t, now)) continue;
       any = true;
-      const pool = liftPool(t);
-      if (pool.length <= liftKeep()) { why("pool"); continue; }
-      const load = liftLoad(t, pool);
-      if (!liftEnough(t, load)) { why("load"); t._liftNo = now + 10; continue; }
-      if (!liftDrop(t, use)) { why("drop"); liftStat("airliftNoDrop"); t._liftNo = now + 10; continue; }
-      liftStart(t, use, load);
+      const f = liftFit(t, use);
+      if (f.why === "pool") { why("pool"); continue; }
+      if (f.why === "load") { why("load"); t._liftNo = now + 10; continue; }
+      if (f.why === "drop") { why("drop"); liftStat("airliftNoDrop"); t._liftNo = now + 10; continue; }
+      liftStart(t, use, f.load);
       why("go");
       break;
     }
+    /* a transport free (none bought on the passes it stands there), or none
+       and a load waiting for the kind that would be bought */
+    liftDemand(use, now, !any);
     if (!any) {
       why("ramp");
       /* A load standing at home, and somewhere safe to take it, with no
-         transport free to carry it: the measurement every transport is
-         bought on (liftBuy). The drop point is asked for a transport of the
-         kind the army would buy, standing on its airbase. */
+         transport free to carry it: the first reading every transport is
+         bought on (liftBuy), by heads; liftDemand above is the second, by
+         what fits, and what airliftBuySkipped is counted against. The drop
+         point is asked for a transport of the kind the army would buy,
+         standing on its airbase. */
       const id = pickFor("transport") || pickFor("airlift"), def = id ? UNITS[id] : null;
       if (def && !underThreat() &&
           liftPool(null).length - liftKeep() >= Math.max(3, Math.ceil((def.cargo || 6) / 2))) {
@@ -10329,7 +10362,65 @@ function makeCommander() {
      in a fight at home or under a ring. One helicopter; a second only from
      Elite and only once the first has flown two sorties; the aeroplane
      (Veteran up) only once a vehicle that fits its payload and its hold is
-     standing at home too. */
+     standing at home too.
+
+     A LOAD WAITING FOR IT. That bought a transport in 12 of 16 matches of
+     the paired scorecard and flew one in 3: the load counted was bodies,
+     not what fits, and a minute's glimpse of it - the landing craft and the
+     base defence had taken most of it by the time the transport was out
+     ("pool" the commonest reason a sortie then did not start, with "wait"
+     and "core"). So the kind about to be bought is asked, as a transport of
+     it shut down on our airbase, exactly what the sortie asks a free one
+     (liftFit: the army standing at home past the home guard, loaded with
+     what passes its canAirlift, enough of it, and a drop point; liftReady:
+     the airbase within reach of home) - and the
+     load must be half its seats, never under three, or a vehicle. It must
+     have been so on every pass of the driver for LIFT_WANT seconds with no
+     transport free, with a sortie due and the core not held, and still be
+     so when it is bought (liftWant). A purchase the old reading would have
+     made and this one holds back is counted, once a window
+     (airliftBuySkipped, and airliftSkip_<why>: the first test it failed).
+     Measured (the same paired scorecard, two seeds): a transport bought in 1
+     of 8 matches, and that one never flew either - the load had waited its
+     minute and was gone by the time the Mi-8 was out ("pool" 654 passes);
+     held back 11 times in 6 matches (brief 5, pool 3, wait 2, load 1). */
+  const LIFT_WANT = 60;          // s a load has waited, pass after pass, before a transport is bought for it
+  const LIFT_GAP = 5;            // s between passes past which a run of them is broken
+  /* A transport of this kind as one delivered stands: shut down on our
+     airbase, empty. Its tanks are not read (airBurn shadowed): liftDrop
+     takes its published radius from the airbase, as it did before. */
+  function liftStub(def) {
+    const ab = G.nearestBuilding(P, "airbase", P.homeX, P.homeY);
+    const s = Object.create(Unit.prototype);
+    return Object.assign(s, { game: G, def, owner: P, kind: "unit", cat: def.cat, layer: def.layer || "air",
+                              x: ab ? ab.x : P.homeX, y: ab ? ab.y : P.homeY, cargo: [], orders: [],
+                              parked: true, order: { type: "parked" }, grounded: false, dead: false,
+                              hp: 1, maxHp: 1, fuel: 1, fuelMax: 1, airBurn: null });
+  }
+  /* "" if a transport of this kind, delivered now, would take a load out at
+     once; else why not (the reasons the sortie gives, and "threat") */
+  function liftWant(def, use, now) {
+    if (underThreat()) return "threat";
+    if (coreHeld(now)) return "core";
+    if (!liftDue(use)) return "wait";
+    const t = liftStub(def);
+    if (!liftReady(t, now)) return "ramp";             // our airbase further from home than a sortie is sent from
+    return liftFit(t, use, Math.max(3, Math.ceil((def.cargo || 6) / 2))).why;
+  }
+  /* one pass of the driver: open, no transport free and a sortie due */
+  function liftDemand(use, now, open) {
+    for (const role in liftDem) {
+      const d = liftDem[role];
+      let ok = false;
+      if (open && (role === "transport" || (D.read || 0) >= 0.6)) {
+        const id = pickFor(role), def = id ? UNITS[id] : null;
+        ok = !!(def && def.payload) && !liftWant(def, use, now);
+      }
+      if (!ok) { d.t0 = -1e9; d.t = -1e9; continue; }
+      if (now - d.t > LIFT_GAP) d.t0 = now;
+      d.t = now;
+    }
+  }
   function liftWorth(def) {
     if (!def || !def.payload) return false;
     for (const u of liftPool(null)) {
@@ -10341,11 +10432,24 @@ function makeCommander() {
     }
     return false;
   }
-  function liftTry(role) {
-    if (roleCool[role] > G.time) return false;
+  function liftTry(role, use) {
+    const now = G.time;
+    if (roleCool[role] > now) return false;
     const id = pickFor(role), def = id ? UNITS[id] : null;
-    if (!def || !def.payload) { roleCool[role] = G.time + 60; return false; }
+    if (!def || !def.payload) { roleCool[role] = now + 60; return false; }
     if (!liftWorth(def) || P.cash < P.factionCost(def) + 500) return false;
+    /* the old reading would buy here: a load waiting for this kind now, and
+       on every pass of the window, or no purchase ("brief": now only) */
+    const d = liftDem[role];
+    const no = liftWant(def, use, now) || (now - d.t > LIFT_GAP || now - d.t0 < LIFT_WANT ? "brief" : "");
+    if (no) {
+      liftWhy["noBuy_" + no] = (liftWhy["noBuy_" + no] || 0) + 1;
+      if (now - liftSkipT > LIFT_WANT) {
+        liftSkipT = now;
+        liftStat("airliftBuySkipped"); liftStat("airliftSkip_" + no);
+      }
+      return false;
+    }
     if (tryBuildUnit(role)) { liftStat("airliftBought"); return true; }
     return false;
   }
@@ -10360,8 +10464,8 @@ function makeCommander() {
     for (const u of P.units)
       if (isLifter(u) && !u._scout) { if (u.def.hover) helos++; else planes++; }
     if (now - liftDemandT > 60) return false;
-    if ((!helos || (helos < 2 && read >= 0.8 && liftFlown >= 2)) && liftTry("transport")) return true;
-    if (read >= 0.6 && planes < 1 && liftTry("airlift")) return true;
+    if ((!helos || (helos < 2 && read >= 0.8 && liftFlown >= 2)) && liftTry("transport", use)) return true;
+    if (read >= 0.6 && planes < 1 && liftTry("airlift", use)) return true;
     return false;
   }
   function liftIntel() {
