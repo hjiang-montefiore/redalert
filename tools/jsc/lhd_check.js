@@ -108,7 +108,11 @@
     13. saved with two craft driving out of a Wasp's well and one driving in,
         the load puts each back where it was in her frame, in her transit,
         her gate open; driven on, the two reach their water and the third
-        docks, and the gate shuts. (Last: the load rebuilds the match.) */
+        docks, and the gate shuts. (Last: the load rebuilds the match.)
+    15. a right-click on a ship, through the canvas handler, lands a
+        helicopter only if her deck takes it (G.deckTypesFor): a Chinook HC4
+        not on a British destroyer, an Apache not on a US one, a Chinook on
+        an Ocean with a spot free, a destroyer's own type on her. (Run before 9.) */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -205,6 +209,7 @@ function run() {
   secOthers();
   secAssault();
   secAssault5b();
+  secRightLand();
   secSave();
   secSave4();
   secGateSave();
@@ -1771,6 +1776,53 @@ function secAssault5b() {
   chk("the commander, made a 2000s British and a 1980s Soviet with " + seen.length + " purchases, never buys a Sea King HC4 or a Ka-29 or an assault ship" +
       (src !== null ? ", and js/ai.js names neither" : ""),
       bad.length === 0 && built.length === 0 && named.length === 0, bad.concat(built, named).join(","));
+  P.faction = fac0;
+  useEra("e20");
+}
+
+/* ---------------- 15. a right-click on a ship lands only what her deck takes (ui.js landingHost) ---------------- */
+/* select `us` and right-click `t` through the canvas's own mousedown handler,
+   as tools/jsc/airspread_check.js does for an airbase */
+function rclick(us, t) {
+  var s = UI.selection; for (var i = 0; i < s.length; i++) s[i].selected = false; s.length = 0;
+  us.forEach(function (u) { u.selected = true; s.push(u); });
+  Render.setCam(t.x, t.y); Render.draw(DT, UI.input);
+  var at = Render.entityScreen ? Render.entityScreen(t) : { x: Render.sx(t.x, t.y), y: Render.sy(t.x, t.y) };
+  var cv = document.getElementById("cv"), rc = cv.getBoundingClientRect();
+  cv.dispatchEvent({ type: "mousedown", button: 2, clientX: rc.left + at.x, clientY: rc.top + at.y,
+                     shiftKey: false, ctrlKey: false, metaKey: false });
+  s.forEach(function (u) { u.selected = false; }); s.length = 0;
+}
+function secRightLand() {
+  log("\n[15] a right-click on a ship lands only what her deck takes (ui.js landingHost)");
+  P = Game.human; M = Game.map;
+  var fac0 = P.faction, O = openSea(3);
+  if (!O) { chk("open sea", false, ""); return; }
+  /* [army, period, ship, helicopter, should she take it, free a spot first] */
+  [["gbr", "e00", "gbr_e00_destroyer", "gbr_e00_transport", false, false],
+   ["nato", "e00", "nato_e00_destroyer", "nato_e00_gunship", false, false],
+   ["gbr", "e00", "gbr_e00_lph", "gbr_e00_transport", true, true],
+   ["nato", "e00", "nato_e00_destroyer", null, true, true]].forEach(function (c) {
+    if (!UNITS[c[2]]) { chk(c[2] + " exists", false, ""); return; }
+    as(c[0], c[1]);
+    var s = spawn(c[2], O.x, O.y);
+    Game.embarkComplement(s);
+    if (c[5] && s.wing().length) gone(s.wing()[0]);
+    var id = c[3] || Game.deckTypesFor(s)[0];
+    var h = id && spawn(id, O.x + 4 * TT, O.y + 3 * TT);
+    if (!h) { chk(c[2] + ": a helicopter for her", false, String(id)); gone(s); return; }
+    rclick([h], s);
+    var sent = h.padOn === s;
+    var t = ticks(60, function () { return h.parked; });
+    var on = h.parked && h.padOn === s, n = s.wing().length, slots = s.deckSlots();
+    var takes = Game.deckTypesFor(s).indexOf(h.def.id) >= 0;
+    chk(c[1] + ": a " + h.def.name + " right-clicked onto a " + UNITS[c[2]].name + (c[4] ? " lands on her" : " does not land on her") +
+        " (her deck " + (takes ? "takes" : "does not take") + " it)",
+        takes === c[4] && sent === c[4] && on === c[4] && n <= slots,
+        "sent to her " + sent + "; parked on her " + on + (t > 0 ? " after " + t.toFixed(1) + " s" : "") + "; her deck " + n + "/" + slots +
+        "; order " + (h.order && h.order.type));
+    gone(h); s.wing().forEach(gone); gone(s);
+  });
   P.faction = fac0;
   useEra("e20");
 }

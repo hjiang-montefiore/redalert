@@ -3233,10 +3233,14 @@ var UI = (function () {
         const fits = (h) => !h || h.dead || h.owner !== G.human ? false
           : h.kind === "building"
             ? !!(h.def.pads && h.buildProgress >= 1)
-            /* a helicopter-only deck (def.heloCarrier) is a landing host only
-               for what she operates (G.deckTypesFor), never for a jet */
-            : h.def.heloCarrier ? !!(h.deckSlots && G.deckTypesFor(h).indexOf(u.def.id) >= 0)
-            : !!(u.def.carrierCapable && (h.def.carrier || (u.def.hover && h.def.helo)));
+            /* a deck is a landing host only for what she operates
+               (G.deckTypesFor), the list delivery, findPad and airCapacity
+               already go by. Only the helicopter-only decks asked it here:
+               an escort or a fleet carrier took any carrierCapable machine,
+               and entities.js's rtb lands on the ship it was sent to even
+               with no spot free - measured, a Chinook HC4 right-clicked onto
+               a Type 45 parked on her one-spot deck, two machines on it. */
+            : !!(h.deckSlots && G.deckTypesFor(h).indexOf(u.def.id) >= 0);
         if (fits(target)) return target;
         /* an airframe shut down on a ramp IS that ramp, as far as another
            aircraft is concerned - this is the carrier case, where the deck is
