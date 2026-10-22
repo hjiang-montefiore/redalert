@@ -1,7 +1,7 @@
 /* ============================================================================
    us_spruance_dd.js -- HERO model: the Spruance-class destroyer, USS Spruance
-   (DD-963) herself, for nato_e80_destroyer, in the fit she wore between her
-   1983 yard period and the overhaul of 1986-87 that gave her the Mk 41.
+   (DD-963) herself, for nato_e80_destroyer, in the fit she wore from the
+   overhaul of 1986-87 that gave her the Mk 41 to the end of the decade.
 
    THE FIT, and why. The row is "USS Spruance (DD-963)", service 1975, era e80,
    weapons two 5-inch/54 Mk 45 and Sea Sparrow. Her own record (en.wikipedia,
@@ -12,11 +12,12 @@
    quadruple Harpoons amidships in the early 1980s). The armored box launchers
    went to seven OTHER ships - Comte de Grasse, Merrill, Conolly, John Rodgers,
    Leftwich, Deyo and Ingersoll (class article) - never to DD-963, so none are
-   drawn. Her photographs of 1975, February 1983 and November 1986 all show
-   the Mk 16 ASROC box on the forecastle, so that is her decade's fit up to
-   the VLS overhaul: ASROC forward, Sea Sparrow aft, two quadruple Harpoons
-   amidships, two Phalanx. The Mk 23 TAS of 1983 is NOT drawn: none of these
-   photographs shows where it stood.
+   drawn. The row's eight Tomahawks (generations.js TLAM_FIT) are the VLS
+   ship's, so this is her late-1980s fit as NH 96851 shows it in June 1987:
+   the 61-cell Mk 41 forward where the Mk 16 ASROC box had stood (her
+   photographs of 1975, February 1983 and November 1986 show the box), Sea
+   Sparrow aft, two quadruple Harpoons amidships, two Phalanx. The Mk 23 TAS
+   of 1983 is NOT drawn: none of these photographs shows where it stood.
 
    References (Wikimedia Commons, US Navy / NHHC photographs):
      r02  USS Spruance (DD-963) in Feb 1983 (330-CFD-DN-SC-84-00619): her
@@ -58,8 +59,8 @@
         forward platform, the SPG-60 dish over it and the SPS-55 at the top
         (the Mk 86 fire control), the mainmast with the SPS-40B on a forward
         platform and the TACAN at its head;
-     6. the Mk 16 ASROC box on the forecastle just ahead of the bridge (r02,
-        r05, r06);
+     6. the 61-cell Mk 41 VLS flush in a low housing on the forecastle just
+        ahead of the bridge, in the ASROC's place (r10, r01, r11);
      7. the hangar with its wide roller door and the flight deck on the 01
         level, its after corners cut (r07, r08);
      8. the Mk 29 Sea Sparrow on its own round-fronted house abaft the flight
@@ -85,8 +86,9 @@
    deckhouses #747a80, the same level as the accepted Ticonderoga. Masts
    black above the stack tops. No hull number, name or flag.
 
-   Materials (9): painted hull, non-skid deck, deckhouse plate, flight deck,
-   radome white, black, bare metal, glass and the team material, exactly
+   Materials (10): painted hull, non-skid deck, deckhouse plate, flight
+   deck, VLS lids, radome white, black, bare metal, glass and the team
+   material, exactly
    C.team. Every static part is merged into one mesh per material; the
    forward 5-inch is the named "turret" with its own three. The flight deck
    is marked for render3d's deckOf by a hidden "helipad" node: her after
@@ -204,7 +206,8 @@ var HeroSpruanceDD = (function () {
      Painted once per page: they depend on nothing but the ship.            */
   var _tx = null;
   function textures(THREE) {
-    if (!_tx) _tx = { hull: hullTex(THREE), sup: supTex(THREE), deck: deckTex(THREE), pad: padTex(THREE) };
+    if (!_tx) _tx = { hull: hullTex(THREE), sup: supTex(THREE), deck: deckTex(THREE), pad: padTex(THREE),
+                      vls: vlsTex(THREE) };
     return _tx;
   }
 
@@ -375,6 +378,33 @@ var HeroSpruanceDD = (function () {
     return tex(THREE, cv, false);
   }
 
+  /* the 61-cell Mk 41 field, 8 x 8 lids as the Ticonderoga hero paints it:
+     v runs fore and aft, four module rows of two cell rows with the uptake
+     hatch between them; u runs athwart, two modules of four cells; the
+     strikedown crane's three cells left blank                             */
+  function vlsTex(THREE) {
+    var W = 512, H = 512, cv = cvs(W, H), g = cv.getContext("2d");
+    var n = 8, cw = W / n, ch = H / n, i, j;
+    g.fillStyle = "#3f454a"; g.fillRect(0, 0, W, H);
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) {
+      var px = i * cw, py = j * ch;
+      if (j === 7 && i >= 3 && i <= 5) {
+        g.fillStyle = "#565d63"; g.fillRect(px, py + 2, cw, ch - 4);
+        continue;
+      }
+      g.fillStyle = "#22262a";
+      g.fillRect(px + cw * 0.07, py + ch * 0.07, cw * 0.86, ch * 0.86);
+      g.fillStyle = "#5d656b";
+      g.fillRect(px + cw * 0.07, py + ch * 0.07, cw * 0.86, ch * 0.10);
+      g.fillStyle = "#14171a";
+      g.fillRect(px + cw * 0.47, py + ch * 0.12, cw * 0.06, ch * 0.76);
+    }
+    g.fillStyle = "#16191c";
+    for (j = 0; j < 4; j++) g.fillRect(0, (j * 2 + 1) * ch - 3, W, 6);
+    g.fillRect(W * 0.5 - 3, 0, 6, H);
+    return tex(THREE, cv, false);
+  }
+
   /* ============================================================== materials */
   function makeMats(THREE, team) {
     var T = textures(THREE), M = {};
@@ -387,6 +417,7 @@ var HeroSpruanceDD = (function () {
                   polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
     M.pad   = S({ map: T.pad, roughness: 0.95, metalness: 0.04,
                   polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    M.vls   = S({ map: T.vls, roughness: 0.86, metalness: 0.08 });
     M.rad   = S({ color: 0xc9ccc6, roughness: 0.90, metalness: 0.03 });
     M.dark  = S({ color: 0x24272b, roughness: 0.88, metalness: 0.06 });
     M.metal = S({ color: 0x80878d, roughness: 0.55, metalness: 0.50 });
@@ -566,7 +597,7 @@ var HeroSpruanceDD = (function () {
     var team = (C && C.team !== undefined) ? C.team : "#4b8fe0";
     var M = makeMats(THREE, team);
     var G = new THREE.Group();
-    var KEYS = ["sup", "pad", "rad", "dark", "metal", "team", "glass"];
+    var KEYS = ["sup", "pad", "vls", "rad", "dark", "metal", "team", "glass"];
     var Bt = {}, cur;
     KEYS.forEach(function (k) { Bt[k] = new Batch(); });
     cur = Bt;
@@ -1262,23 +1293,35 @@ var HeroSpruanceDD = (function () {
     /* the after mount on the open fantail, pointing aft (r06, r07, r11) */
     stamp(-71.3, 0, topZ(-71.3, 0), PI, gun);
 
-    /* ----------------------------------------------------------- ASROC ---- */
-    /* the Mk 16 launcher on the forecastle ahead of the bridge: two boxes of
-       four cells side by side on a trainable stand, laid level and pointing
-       forward (r02, r05, r06)                                              */
-    var XA = 35.0, ZA = topZ(XA, 0);
-    stamp(XA, 0, ZA, 0, function () {
-      cz("sup", 1.6, 1.75, 0.3, 18, 0, 0, -0.02);
-      cz("sup", 1.0, 1.15, 0.9, 14, 0, 0, 0.28);
-      bx("sup", 1.8, 3.3, 0.8, -0.2, 0, 1.5);
-      for (var q = -1; q <= 1; q += 2) {
-        bx("sup", 5.4, 1.5, 1.7, 0.4, q * 0.88, 2.4);
-        /* the cell doors, two by two, at the forward end */
-        for (var a = -1; a <= 1; a += 2) for (var b = -1; b <= 1; b += 2)
-          bx("dark", 0.06, 0.6, 0.66, 3.11, q * 0.88 + a * 0.36, 2.4 + b * 0.4);
-        bx("dark", 5.2, 0.05, 0.04, 0.4, q * 0.88 + q * 0.76, 2.4);
-      }
-    });
+    /* ------------------------------------------------------- Mk 41 VLS -- */
+    /* the 61-cell launcher where the ASROC box and its magazine were: eight
+       modules, 8.7 m fore and aft by 6.3 m athwart, its lids flush in a low
+       housing that stands about a metre proud of the sheering forecastle -
+       r11 shows the housing in profile from 31.8 to 43.6 m, r10 and r01 the
+       lid field with its coaming from above, 1987 and the 1990s           */
+    var XV0 = 31.9, XV1 = 43.4, ZV = 8.95, XVC = 37.6;
+    var VH = [[XV0, -4.1], [XV1 - 1.2, -4.1], [XV1, -2.9], [XV1, 2.9], [XV1 - 1.2, 4.1], [XV0, 4.1]];
+    prism("sup", VH, topZ(XV1, 0) - 0.35, ZV, 0.1, 4.0, true);
+    flat("sup", XV0 + 0.1, -4.0, XVC - 4.45, 4.0, ZV, 0, 0, 1, 1);
+    flat("sup", XVC + 4.45, -2.9, XV1 - 0.1, 2.9, ZV, 0, 0, 1, 1);
+    flat("sup", XVC - 4.45, -4.0, XVC + 4.45, -3.25, ZV, 0, 0, 1, 1);
+    flat("sup", XVC - 4.45, 3.25, XVC + 4.45, 4.0, ZV, 0, 0, 1, 1);
+    cur.sup.tri([XV1 - 1.2, -4.0, ZV, 0, 0], [XV1 - 0.1, -2.9, ZV, 1, 0], [XVC + 4.45, -2.9, ZV, 1, 1]);
+    cur.sup.tri([XV1 - 1.2, -4.0, ZV, 0, 0], [XVC + 4.45, -2.9, ZV, 1, 1], [XVC + 4.45, -4.0, ZV, 0, 1]);
+    cur.sup.tri([XV1 - 1.2, 4.0, ZV, 0, 0], [XVC + 4.45, 2.9, ZV, 1, 1], [XV1 - 0.1, 2.9, ZV, 1, 0]);
+    cur.sup.tri([XV1 - 1.2, 4.0, ZV, 0, 0], [XVC + 4.45, 4.0, ZV, 0, 1], [XVC + 4.45, 2.9, ZV, 1, 1]);
+    /* the lid field: u athwart, v fore and aft (vlsTex) */
+    cur.vls.add(place(THREE, new THREE.BoxGeometry(6.3, 8.7, 0.16), XVC, 0, ZV - 0.02, 0, 0, PI / 2));
+    /* the coaming round the field and the joint between its two columns of
+       modules, light-edged as r10 shows it                                 */
+    for (s = -1; s <= 1; s += 2) {
+      bx("sup", 9.1, 0.22, 0.22, XVC, s * 3.26, ZV + 0.1);
+      bx("sup", 0.22, 6.74, 0.22, XVC + s * 4.46, 0, ZV + 0.1);
+    }
+    bx("metal", 8.7, 0.1, 0.16, XVC, 0, ZV + 0.08);
+    /* lifelines round the housing's top */
+    railRun("metal", [[XV0 + 0.2, -4.0, ZV], [XV1 - 1.25, -4.0, ZV], [XV1 - 0.1, -2.85, ZV],
+                      [XV1 - 0.1, 2.85, ZV], [XV1 - 1.25, 4.0, ZV], [XV0 + 0.2, 4.0, ZV]], 1.0, 3.0);
 
     /* ------------------------------------------------- weather deck gear -- */
     /* lifelines along the deck edge, the forecastle included: she has no
