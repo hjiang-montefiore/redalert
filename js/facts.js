@@ -416,6 +416,22 @@ Object.assign(FACTS, {
 });
 FACTS.kpa_e80_md500 = FACTS.kpa_e90_md500 = FACTS.kpa_e00_md500 = FACTS.md500_k;
 FACTS.nato_e00_lhd = FACTS.nato_e90_lhd;     /* the same class, 2000s fit */
+/* the other navies' amphibious assault ships and the Mistral's CTM (navy
+   piece 4; eras.js, rules.js lhd_f / lhd_c). en.wikipedia "HMS Ocean (L12)",
+   "Mistral-class landing helicopter dock", "Type 075 landing helicopter
+   dock", "Ivan Rogov-class landing ship", "Chaland de transport de
+   materiel"; ru.wikipedia "Bolshie desantnye korabli proekta 1174" (read
+   2026-10-22). speed_kmh is the maximum, as for the American ships. */
+Object.assign(FACTS, {
+  gbr_e90_lph: { name: "HMS Ocean (L12), landing platform helicopter", origin: "United Kingdom", armament: "3x Phalanx CIWS; 4x 30 mm DS30M Mk2 (replacing her 20 mm), miniguns and general-purpose machine guns", protection: "-", note: "Commissioned 30 September 1998, decommissioned 27 March 2018 and transferred to Brazil as Atlantico. Up to 18 helicopters - commando Sea Kings, Lynx, Merlin, Chinook, and Army Apaches over Libya in 2011 - 830 Royal Marines, 40 vehicles and four LCVP Mk5 on davits; no well deck.", confidence: "high", service: 1998, crew: 465, weight_t: 21500, speed_kmh: 39 },
+  fra_e00_lhd: { name: "Mistral-class amphibious assault ship (BPC; PHA from 2019)", origin: "France", armament: "2x Simbad twin Mistral launchers and 4x 12.7 mm M2HB as built; 2x 20 mm modele F2 and 2x M134 later; 2x 30 mm Breda-Mauser designed, not fitted", protection: "-", note: "Mistral commissioned 15 December 2006, Tonnerre 1 August 2007, Dixmude 2012. 16 heavy or 35 light helicopters on six spots, 450 troops (900 briefly), 70 vehicles including 13 Leclerc, a 69-bed hospital, and a well deck for four CTM or EDA-R landing craft; two LCAC would fit, but France never bought any.", confidence: "high", service: 2006, crew: 160, weight_t: 21500, speed_kmh: 35 },
+  lhd_c: { name: "Type 075 landing helicopter dock", origin: "China", armament: "2x H/PJ-14 30 mm CIWS, 2x HQ-10 SAM", protection: "-", note: "Hainan commissioned April 2021, Guangxi April 2022, Anhui October 2022, Hubei August 2025. 232 m, 35,000-40,000 t; seven flight spots and 28 helicopters (Z-8, Z-18, Z-20 and the Army's Z-10), 800 troops, 60 armoured vehicles and three Type 726 LCAC in the well deck.", confidence: "high", service: 2021, weight_t: 37500 },
+  pact_e80_lpd: { name: "Project 1174 Nosorog (Ivan Rogov class) large landing ship", origin: "Soviet Union", armament: "1x twin Osa-M SAM launcher (20 missiles), 1x twin 76 mm AK-726, 4x 30 mm AK-630, 1x A-215 Grad-M 122 mm rocket launcher", protection: "-", note: "Three built at Yantar, Kaliningrad: Ivan Rogov (1978, struck 1996), Aleksandr Nikolayev (1982, reserve from 1997) and Mitrofan Moskalenko (1990, struck 2006). A bow ramp and a 75 m well deck: a battalion of 520 naval infantry and 25 tanks, 2,500 t of cargo; three Project 1206 air-cushion craft or six Project 1785 or 1176 boats in the well; four Ka-29 or Ka-27 helicopters.", confidence: "high", service: 1978, crew: 239, weight_t: 14060, speed_kmh: 37 },
+  fra_ctm: { name: "Chaland de transport de materiel (CTM)", origin: "France", armament: "2x 12.7 mm machine guns", protection: "-", note: "Built on the American LCM-8: CTM 1-16 from 1965 for the Pacific nuclear tests, a second series ordered in 1982, being replaced from 2021 by the EDA-S. 23.8 m, 150 t, 9.5 knots, 200 troops or 90 t of cargo; four in a Mistral's well deck.", confidence: "high", service: 1965, crew: 4, weight_t: 150, speed_kmh: 18 },
+});
+FACTS.gbr_e00_lph = FACTS.gbr_e90_lph;                          /* the same ship, 2000s */
+FACTS.lhd_f = FACTS.fra_e00_lhd;                                /* the same class, now */
+FACTS.pact_e90_lpd = FACTS.pact_e00_lpd = FACTS.pact_e80_lpd;   /* the same class */
 /* the Marine Corps' STOVL jets (navy piece 2; eras.js, rules.js stovl_n).
    en.wikipedia "McDonnell Douglas AV-8B Harrier II" and "Lockheed Martin F-35
    Lightning II", read 2026-10-22; weight_t is the take-off weight on a

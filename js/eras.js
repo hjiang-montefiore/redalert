@@ -13841,3 +13841,164 @@ Object.assign(UNITS, {
     desc:"The Navy's utility landing craft since 1957: 135 feet, 11 knots, a bow ramp and 170 tons of cargo or 400 troops on an open well. A Tarawa carries four in her well deck and a Wasp two, floated out of the stern to carry the Marines' vehicles ashore and back in again. Bought for a well deck from the ship's panel." },
 });
 if (typeof reindexRoles === "function") reindexRoles();
+
+/* ==================================================================
+   THE OTHER NAVIES' AMPHIBIOUS ASSAULT SHIPS (navy piece 4)
+   (owner) "An amphibious assault ship which can carry F-35B, helicopters
+   and landing ships" - for every navy that really had one. Britain's HMS
+   Ocean, France's Mistral class, China's Type 075 (lhd_f and lhd_c, the
+   present-day rows, are in rules.js) and the Soviet and Russian Ivan Rogov
+   class, which the owner chose to include although it is a dock landing
+   ship. One class a period where it existed, as for the United States
+   (nato_e60_lph ... lha_n), on the same machinery: role assault_sea, a
+   helicopter deck delivered empty (deckTakes), a hold for troops and,
+   where she has one, a well deck for her real landing craft (wellCraft).
+   Germany, Taiwan and North Korea never had one, so they have none.
+   Sources (read 2026-10-22): en.wikipedia "HMS Ocean (L12)", "Mistral-class
+   landing helicopter dock", "Type 075 landing helicopter dock", "Ivan
+   Rogov-class landing ship", "Chaland de transport de materiel", and
+   ru.wikipedia "Bolshie desantnye korabli proekta 1174" (the well deck's
+   craft, the speed, the fate of each hull).
+
+   THE FIGURES are piece 1's, read the same way. hp by full-load
+   displacement on a log scale between the Newport (8,300 t, 1,200) and the
+   period's reference carrier (Clemenceau 32,800 t: e60 1,980, e80 2,320;
+   Foch e90 2,560; de Gaulle 42,500 t: e00 3,220, e20 3,400), rounded to 50.
+   Cost 1.1 times hp, oil 0.022 of cost, build time as the carriers of the
+   same price. Speed under the faction's OWN carrier of the period: piece 1
+   put 22-24 knot decks 0.12 under a 30-plus-knot carrier, and these 18-20
+   knot ships sit about 0.012 lower for each knot under 22. Sight: that
+   carrier's less 1.8. Armour heavy, tech 2, an airbase and a naval yard.
+   THE DECK: 3 spots, as the Moskva's fourteen Ka-25s and the Iwo Jima's
+   twenty-odd helicopters (piece 1) - Ocean's up to 18, the Mistral's 16
+   heavy or 35 light, the Type 075's 28. The Ivan Rogov carried four
+   helicopters on two pads, fore and aft: 2, a destroyer's two LAMPS
+   (Spruance, helo 2) being 2 as well. Helicopters only - none of these
+   ever operated a jet. deckTakes lists only the types the game has that
+   flew from them AND can work from a deck in the game (carrierCapable);
+   the Army helicopters that flew from Ocean and the Mistrals are in the
+   game but are not deck-capable rows, so they are named below and left
+   for the helicopter piece rather than flagged here.
+   THE HOLD by embarked troops, on piece 1's scale (431 troops, a Newport,
+   is the game's 6-seat hold; 72 a seat): Ocean 830, 12; Mistral 450, 6;
+   Type 075 800, 11; Ivan Rogov 520, 7.
+   ================================================================== */
+/* France's Simbad is a twin launcher for the Mistral round the Army's
+   SATCP fires (en.wikipedia "Mistral-class": as built, two Simbad and four
+   12.7 mm): the same round's figures under its own name, as sam_bpdms */
+WEAPONS.sam_simbad = Object.assign({}, WEAPONS.w_e00_fra_aa,
+  { name: "Mistral, Simbad twin launcher", tgt: Object.assign({}, WEAPONS.w_e00_fra_aa.tgt) });
+(function () {
+  Object.assign(UNITS, {
+    /* ---- BRITAIN: HMS Ocean (L12), 1998-2018 ----
+       Commissioned 30 September 1998, decommissioned 27 March 2018 (to Brazil
+       as Atlantico): e90 and e00. 21,500 t full load, 203.4 m, 18 knots
+       (21 at most), 830 Royal Marines and 40 vehicles, up to 18 helicopters.
+       hp e90 2,150 (Foch), e00 2,400 (de Gaulle); speed 0.17 under Invincible
+       (e90) and Queen Elizabeth (e00). NO WELL DECK: four LCVP Mk5 on davits
+       (9 Assault Squadron RM). A davit boat is not a well-deck craft - it is
+       hoisted, not floated in - so she is troops-only like the Iwo Jima
+       (entities.js troopsOnly): the ship putting her Marines on a beach
+       stands in for her boats, and her light vehicles, which went ashore by
+       LCVP and under Chinooks, are not carried. THE DECK: the Fleet Air Arm's
+       Super Lynx (four flew from her for the 2012 Olympics: the game's Lynx
+       HMA.8, e90) and the Merlin (her infobox's air group: the game's
+       Merlin of e00 is the HM1). Not on it: the Sea King HC4 commando
+       helicopter (not in the game), the Army Apache AH1 (Libya 2011, five
+       from her deck), Lynx AH7 and Chinook (in the game, not deck rows).
+       Albion and Bulwark are dock landing ships, not assault ships: not here. */
+    gbr_e90_lph: { fac:"gbr", role:"assault_sea", cat:"naval", layer:"sea", name:"Ocean LPH", full:"HMS Ocean (L12), landing platform helicopter",
+      cost:2350, oil:52, time:46, hp:2150, armor:"heavy", speed:1.35, turn:0.6, sight:9.5, r:30, mass:0,
+      /* three Phalanx; her 20 mm (later 30 mm DS30M) and miniguns are not modelled, as the Wasp's 25 mm */
+      weapons:["ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["gbr_e90_aswhelo"],
+      cargo:12, amphib:true, ciws:0.50, rcs:2.2,
+      from:"e90", to:"e90", service:"1998", confidence:"high",
+      desc:"Commissioned in 1998: a deck for up to eighteen helicopters, 830 Royal Marines and four landing craft on davits, and no well deck - everything went ashore by air or by boat. Her commando Sea Kings are not in the game yet; the deck takes the Fleet Air Arm's Lynx, which flew from her." },
+    gbr_e00_lph: { fac:"gbr", role:"assault_sea", cat:"naval", layer:"sea", name:"Ocean LPH", full:"HMS Ocean (L12), landing platform helicopter",
+      cost:2650, oil:58, time:48, hp:2400, armor:"heavy", speed:1.41, turn:0.6, sight:11.1, r:30, mass:0,
+      weapons:["ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["gbr_e00_aswhelo"],
+      cargo:12, amphib:true, ciws:0.50, rcs:2.2,
+      from:"e00", to:"e00", service:"1998", confidence:"high",
+      desc:"The Royal Navy's helicopter carrier through Iraq in 2003 and Libya in 2011, where Army Apaches flew into action from her deck for the first time, until she was sold to Brazil in 2018. 830 Royal Marines go ashore by helicopter or in her four davit landing craft. Her Sea Kings and the Army's Apaches are not deck aircraft in the game yet; the deck takes the Fleet Air Arm's Merlin." },
+
+    /* ---- FRANCE: the Mistral class, 2006 to now (lhd_f in rules.js) ----
+       Mistral commissioned 15 December 2006, Tonnerre 1 August 2007, Dixmude
+       2012: BPC, PHA since 2019. 21,500 t full load, 199 m, 18.8 knots, 450
+       troops (900 briefly), 70 vehicles including 13 Leclerc, six spots for
+       16 heavy or 35 light helicopters. hp 2,400 (de Gaulle e00); speed 0.16
+       under de Gaulle. THE WELL takes four CTM or EDA-R landing craft; two
+       LCAC would fit "but not acquired by French Navy", so no LCAC. The CTM
+       is below (fra_ctm); the EDA-R and the EDA-S that replaces the CTMs from
+       2021 are not in the game, so not offered. THE DECK: "half NH90, half
+       Tigre", the first NH90 landed 9 March 2006, and Army Puma, Gazelle and
+       Cougar, and Panther and Ecureuil, have flown from them. The game's
+       deck-capable NH90 is the Navy's NFH Caiman (e00, asw_helo_f e20); the
+       Army's NH90 TTH, Tigre and Puma are in it but are not deck rows, and the
+       Caracal is not in it. */
+    fra_e00_lhd: { fac:"fra", role:"assault_sea", cat:"naval", layer:"sea", name:"Mistral BPC", full:"Mistral (L9013), Mistral-class projection and command ship",
+      cost:2650, oil:58, time:48, hp:2400, armor:"heavy", speed:1.38, turn:0.6, sight:11.1, r:30, mass:0,
+      /* two Simbad and four 12.7 mm as built; the two 30 mm Breda-Mauser of the design were not fitted (2009) */
+      weapons:["sam_simbad"], prereq:["navalyard","airbase"], tech:2,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["fra_e00_aswhelo"],
+      cargo:6, amphib:true, wellDeck:true, wellCraft:{ fra_ctm:4 }, ciws:0.30, rcs:2.2,
+      from:"e00", to:"e00", service:"2006", confidence:"high",
+      desc:"Commissioned in 2006 and driven by electric pods: a deck for sixteen heavy helicopters on six spots, a hangar under it, 450 troops, seventy vehicles including thirteen Leclerc tanks, and a well deck for four CTM landing craft. Tonnerre's Army attack helicopters struck Libya beside HMS Ocean's Apaches in 2011. Her Army helicopters are not deck aircraft in the game yet; the deck takes the Navy's NH90." },
+
+    /* ---- THE SOVIET UNION AND RUSSIA: Project 1174 (Ivan Rogov), 1978-2006 ----
+       Ivan Rogov 15 June 1978 (struck 1996), Aleksandr Nikolayev 30 December
+       1982 (reserve from 1997), Mitrofan Moskalenko 23 September 1990 (struck
+       2006): e80, e90 and e00. 14,060 t full load, 157 m, 19-20 knots, a
+       battalion of 520 marines and 25 tanks, 2,500 t of cargo; four Ka-29 or
+       Ka-27. hp e80 1,650, e90 1,700, e00 1,850; speed 0.14 under Kiev (e80)
+       and Kuznetsov. A BOW RAMP AND A WELL DECK (def.bowRamp): she beaches as
+       an LST and puts her vehicles ashore herself, and her 75 m well holds
+       three Project 1206 air-cushion craft - the game's air-cushion landing
+       craft (lst) stands in for them, as it already does in this army's
+       sidebar - or six Project 1785 or 1176 boats, which the game does not
+       have. THE DECK: the Ka-27 (the game's Ka-27PL in e80, Ka-27 after);
+       the Ka-29 assault helicopter is not in the game. Weapons: twin Osa-M,
+       four AK-630, a twin 76 mm AK-726 (generations.js DECK_GUN); her A-215
+       Grad-M rocket launcher has no naval row and is not carried. */
+    pact_e80_lpd: { fac:"pact", role:"assault_sea", cat:"naval", layer:"sea", name:"Project 1174 Ivan Rogov", full:"Ivan Rogov, Project 1174 Nosorog large landing ship",
+      cost:1800, oil:40, time:42, hp:1650, armor:"heavy", speed:1.28, turn:0.6, sight:7.2, r:23, mass:0,
+      weapons:["sam_osa","ciws_ak630"], prereq:["navalyard","airbase"], tech:2,
+      carrier:2, heloCarrier:true, emptyDeck:true, deckTakes:["pact_e80_aswhelo"],
+      cargo:7, amphib:true, wellDeck:true, bowRamp:true, wellCraft:{ lst:3 }, ciws:0.33, rcs:2.0,
+      from:"e80", to:"e80", service:"1978", confidence:"high",
+      desc:"The largest Soviet landing ship, able to work as a tank landing ship or a dock landing ship: a bow ramp to put tanks on a beach, a 75-metre well deck in the stern for three hovercraft, two helicopter pads and a hangar, and a battalion of 520 naval infantry with 25 tanks. Three were built. Her Ka-29 assault helicopters are not in the game yet; the deck takes the Ka-27." },
+    pact_e90_lpd: { fac:"pact", role:"assault_sea", cat:"naval", layer:"sea", name:"Project 1174 Ivan Rogov", full:"Mitrofan Moskalenko, Project 1174 Nosorog large landing ship",
+      cost:1850, oil:41, time:43, hp:1700, armor:"heavy", speed:1.33, turn:0.6, sight:7.9, r:23, mass:0,
+      weapons:["sam_osa","ciws_ak630"], prereq:["navalyard","airbase"], tech:2,
+      carrier:2, heloCarrier:true, emptyDeck:true, deckTakes:["asw_helo_p"],
+      cargo:7, amphib:true, wellDeck:true, bowRamp:true, wellCraft:{ lst:3 }, ciws:0.33, rcs:2.0,
+      from:"e90", to:"e90", service:"1990", confidence:"high",
+      desc:"The third and last of the class, Mitrofan Moskalenko, joined the Northern Fleet in 1990 as the Soviet Union ended; Ivan Rogov was struck in 1996 and Aleksandr Nikolayev laid up in 1997. A bow ramp, a well deck for three hovercraft and a battalion of naval infantry with its tanks. Her Ka-29s are not in the game yet; the deck takes the Ka-27." },
+    pact_e00_lpd: { fac:"pact", role:"assault_sea", cat:"naval", layer:"sea", name:"Project 1174 Ivan Rogov", full:"Mitrofan Moskalenko, Project 1174 Nosorog large landing ship",
+      cost:2050, oil:45, time:44, hp:1850, armor:"heavy", speed:1.35, turn:0.6, sight:8.1, r:23, mass:0,
+      weapons:["sam_osa","ciws_ak630"], prereq:["navalyard","airbase"], tech:2,
+      carrier:2, heloCarrier:true, emptyDeck:true, deckTakes:["asw_helo_p"],
+      cargo:7, amphib:true, wellDeck:true, bowRamp:true, wellCraft:{ lst:3 }, ciws:0.33, rcs:2.0,
+      from:"e00", to:"e00", service:"1990", confidence:"medium",
+      desc:"Russia's only ship of her kind until the French Mistrals, which were never delivered: Mitrofan Moskalenko stayed in commission until 2006, when modernising her was judged to cost as much as a new ship. A bow ramp, a well deck for three hovercraft and a battalion of naval infantry with its tanks. Her Ka-29s are not in the game yet; the deck takes the Ka-27." },
+
+    /* ---- the CTM, the Mistral's landing craft ----
+       Chaland de transport de materiel: built on the American LCM-8, CTM 1 in
+       service in 1965 (CTM 1-16 for the Pacific nuclear tests), a second
+       series ordered in 1982, being replaced by the EDA-S from 2021. 150 t,
+       23.8 by 6.35 m, 9.5 knots, 200 troops or 90 t, two 12.7 mm, crew of 4.
+       As the LCU 1610 (eras.js THE WELL DECK): one craft a craft, 200 troops
+       3 seats on the 400-troop LCU's 6, its own landing_craft role and
+       wellOnly, so it is bought for a Mistral's well only. hp and cost 400:
+       the LCU's 500 at 375 t, the Barbe's 520 at 430 t, read down to 150 t;
+       speed 1.8 for 9.5 knots against their 1.9 for 11; its machine guns are
+       not carried, as the LCU's are not. */
+    fra_ctm: { fac:"fra", role:"landing_craft", cat:"naval", layer:"sea", name:"CTM", full:"Chaland de transport de materiel (CTM) landing craft",
+      cost:400, oil:5, time:8, hp:400, armor:"light", speed:1.8, turn:1.8, sight:5.4, r:14, mass:0,
+      weapons:[], prereq:["navalyard"], tech:1, cargo:3, amphib:true, wellOnly:true,
+      from:"e60", service:"1965", confidence:"high",
+      desc:"The French Navy's landing craft since 1965, built on the American LCM-8: 24 metres, 9.5 knots, a bow ramp and 90 tonnes of cargo or 200 troops. A Mistral carries four in her well deck, floated out of the stern to put her vehicles ashore. Bought for a well deck from the ship's panel." },
+  });
+})();
+if (typeof reindexRoles === "function") reindexRoles();

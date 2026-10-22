@@ -280,4 +280,27 @@ Object.assign(WARSHIPS, {
 Object.assign(WARSHIPS, {
   nato_lcu: {era:"e50", fac:"nato", role:"landing_craft", designation:"LCU 1610", len:41.1, beam:8.8, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:12.7, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
 });
+/* ---- the other navies' amphibious assault ships (navy piece 4: eras.js,
+   rules.js lhd_f / lhd_c) and the Mistral's CTM ----
+   STAND-INS until hero models, as the American ones above. The flat-tops on
+   the axial deck: length from the class articles; the one beam each prints
+   (Ocean 35 m, Royal Navy Handbook; Mistral 32 m; Type 075 36.8 m, the MSA
+   notice) is the flight deck's, so it is deckBeam and the hull is drawn at
+   the stand-in's own ratio (deckBeam / 1.25); spots where printed (six on a
+   Mistral, seven on a Type 075). The Ivan Rogov is NOT a flat-top: a raised
+   hull with a bow ramp, a big superstructure amidships, a pad forward and a
+   pad and hangar aft - drawn as a conventional hull with its 76 mm forward
+   and a pad and hangar aft, 157 by 23.8 m, until her model is made. The
+   CTM at its 23.8 by 6.35 m, drawn as the LCU 1610 is. */
+Object.assign(WARSHIPS, {
+  gbr_e90_lph:  {era:"e90", fac:"gbr", role:"assault_sea", designation:"L12 Ocean", len:203.4, beam:28.0, deckBeam:35.0, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"none", ciws:3, helo:"hangar", radar:"dish", camo:"haze"},
+  gbr_e00_lph:  {era:"e00", fac:"gbr", role:"assault_sea", designation:"L12 Ocean", len:203.4, beam:28.0, deckBeam:35.0, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"none", ciws:3, helo:"hangar", radar:"dish", camo:"haze"},
+  fra_e00_lhd:  {era:"e00", fac:"fra", role:"assault_sea", designation:"L9013 Mistral class", len:199.0, beam:25.6, deckBeam:32.0, spots:6, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"enclosed", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"none", ciws:0, helo:"hangar", radar:"dish", camo:"haze"},
+  lhd_f:        {era:"e20", fac:"fra", role:"assault_sea", designation:"L9013 Mistral class", len:199.0, beam:25.6, deckBeam:32.0, spots:6, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"enclosed", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"none", ciws:0, helo:"hangar", radar:"dish", camo:"haze"},
+  lhd_c:        {era:"e20", fac:"pla", role:"assault_sea", designation:"Type 075", len:232.0, beam:29.4, deckBeam:36.8, spots:7, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"enclosed", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"box", ciws:2, helo:"hangar", radar:"dish", camo:"bluegrey"},
+  pact_e80_lpd: {era:"e80", fac:"pact", role:"assault_sea", designation:"Project 1174 Ivan Rogov", len:157.0, beam:23.8, bow:"raised", super:"boxy", funnels:1, funnelStyle:"stack", mast:"lattice", guns:1, gunCal:76, gunPos:"fore", vls:0, launchers:"box", ciws:4, helo:"hangar", radar:"dish", camo:"bluegrey"},
+  pact_e90_lpd: {era:"e90", fac:"pact", role:"assault_sea", designation:"Project 1174 Ivan Rogov", len:157.0, beam:23.8, bow:"raised", super:"boxy", funnels:1, funnelStyle:"stack", mast:"lattice", guns:1, gunCal:76, gunPos:"fore", vls:0, launchers:"box", ciws:4, helo:"hangar", radar:"dish", camo:"bluegrey"},
+  pact_e00_lpd: {era:"e00", fac:"pact", role:"assault_sea", designation:"Project 1174 Ivan Rogov", len:157.0, beam:23.8, bow:"raised", super:"boxy", funnels:1, funnelStyle:"stack", mast:"lattice", guns:1, gunCal:76, gunPos:"fore", vls:0, launchers:"box", ciws:4, helo:"hangar", radar:"dish", camo:"bluegrey"},
+  fra_ctm:      {era:"e60", fac:"fra", role:"landing_craft", designation:"CTM", len:23.8, beam:6.35, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:12.7, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
+});
 if (typeof Warship3D !== "undefined" && Warship3D.registerAll) Warship3D.registerAll();

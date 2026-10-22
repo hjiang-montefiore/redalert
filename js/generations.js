@@ -1166,6 +1166,10 @@
     nato_e50_carrier:     ["gun_n127", "8 x 5in/54 Mk 42"],
     /* the Tarawa's fire-support battery, removed in 1997-98 (eras.js) */
     nato_e80_lha:         ["gun_n127", "3 x 5in/54 Mk 45"],
+    /* the Ivan Rogov's single twin 76 mm forward (eras.js, navy piece 4) */
+    pact_e80_lpd:         ["gun_n76t", "twin 76mm AK-726"],
+    pact_e90_lpd:         ["gun_n76t", "twin 76mm AK-726"],
+    pact_e00_lpd:         ["gun_n76t", "twin 76mm AK-726"],
     gbr_e50_carrier:      ["gun_n127", "8 x twin 4.5in dual-purpose"],
     fra_e60_carrier:      ["gun_n100", "8 x 100mm Mle 1953"],
     fra_e80_carrier:      ["gun_n100", "4 x 100mm Mle 1953"],

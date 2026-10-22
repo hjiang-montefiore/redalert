@@ -452,7 +452,9 @@ var UI = (function () {
       /* an assault ship with no well deck (entities.js holdRefusal), or
          one whose vehicles go ashore in her landing craft (THE WELL DECK) */
       : Unit.troopsOnly(d) ? " TROOPS \u00b7 NO WELL DECK, NO VEHICLES"
-      : Unit.craftOnly(d) ? " \u00b7 VEHICLES ASHORE BY LANDING CRAFT" : ""));
+      : Unit.craftOnly(d) ? " \u00b7 VEHICLES ASHORE BY LANDING CRAFT"
+      /* the Ivan Rogov: a bow ramp beside her well deck (def.bowRamp) */
+      : d.bowRamp && d.wellCraft ? " \u00b7 VEHICLES ASHORE OVER THE BOW RAMP OR BY LANDING CRAFT" : ""));
     if (d.wellCraft) rows.push("WELL DECK " + Object.keys(d.wellCraft).filter(id => UNITS[id])
       .map(id => d.wellCraft[id] + " " + Unit.craftLabel(UNITS[id]).toUpperCase()).join(" OR "));
     if (d.carrier) rows.push("DECK " + d.carrier + " AIRCRAFT");

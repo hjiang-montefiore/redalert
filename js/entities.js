@@ -5917,9 +5917,13 @@ class Unit {
      of it (THE WELL DECK, below): the ship herself puts only troops on a
      beach - the stand-in for her helicopters and boats - and keeps her
      vehicles aboard (craftOnly, unload). A landing ship (no deck) beaches and
-     is not asked. "" when it may come aboard. */
+     is not asked. The Soviet Ivan Rogov (eras.js pact_e80_lpd, navy piece 4)
+     has a bow ramp as well as her well deck (def.bowRamp) - she was built to
+     work as a tank landing ship or a dock landing ship - so she puts her
+     vehicles on a beach herself as well as in her craft. "" when it may
+     come aboard. */
   static troopsOnly(def) { return !!(def && def.amphib && def.carrier && !def.wellDeck); }
-  static craftOnly(def) { return !!(def && def.amphib && def.carrier && def.wellDeck); }
+  static craftOnly(def) { return !!(def && def.amphib && def.carrier && def.wellDeck && !def.bowRamp); }
   /* the vehicles a well-deck ship is keeping aboard for her craft */
   vehiclesKept() {
     return Unit.craftOnly(this.def) ? this.cargo.filter(u => u.cat === "vehicle").length : 0;

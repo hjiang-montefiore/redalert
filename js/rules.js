@@ -989,6 +989,38 @@ var UNITS = {
     layer:"air", weapons:["aam_lo"], prereq:["airbase"], tech:3, jet:true, ammo:4, stealth:0.62,
     gen:5, rcs:0.008, radarQ:17, radius:34, carrierCapable:true, refuelable:true, radar:8, confidence:"high",
     desc:"The Marine Corps went straight from the Harrier to a fifth-generation jet: the F-35B's lift fan behind the cockpit and swivelling nozzle let it land vertically on an amphibious assault ship, so every America and Wasp is a small stealth carrier. The Marines declared it operational in July 2015, before either of the other services' variants, and flew its first combat strikes over Afghanistan in 2018. The lift fan costs fuel and bay length: shorter legs than the F-35C, and 1,000 lb bombs where the others carry 2,000 lb." },
+
+  /* The other navies' present-day amphibious assault ships (navy piece 4).
+     Their forerunners, the scaling and the sources are at the end of eras.js
+     (THE OTHER NAVIES' AMPHIBIOUS ASSAULT SHIPS).
+     lhd_f: the Mistral class as it is now - Mistral, Tonnerre and Dixmude,
+     PHA since 2019; the same ship as fra_e00_lhd. hp 2,500 (21,500 t against
+     de Gaulle's 3,400 in this period), speed 0.16 under carrier_f, sight
+     carrier_f's less 1.8. Well: four CTM (fra_ctm); the EDA-R and EDA-S are
+     not in the game, and France never bought the LCAC her well would take.
+     Deck: the Navy's NH90 NFH; the Army's NH90 TTH and Tigre that fly from
+     her are not deck rows in the game.
+     lhd_c: Type 075 - Hainan commissioned April 2021, IOC March 2022,
+     Guangxi (April 2022), Anhui (October 2022) and Hubei (August 2025)
+     after her. 232 by 36.8 m, 35,000-40,000 t (CSIS 2020):
+     hp 3,250 at the middle, 37,500 t. Seven flight spots, 28 helicopters,
+     800 troops (11 seats), 60 armoured vehicles, and three
+     Type 726 LCAC in the well (The Military Balance 2023), for which the
+     game's air-cushion landing craft (lst) stands in. Two H/PJ-14 30 mm
+     CIWS (not the H/PJ-11 the game models: in her ciws figure, not as a
+     mount) and two HQ-10. No speed is published: taken as 20 knots, 0.14
+     under carrier_c. Deck: the Z-20 and the Army's Z-10 of her listed air
+     group; the Z-8 (no row after e00) and the Z-18 are not in the game. */
+  lhd_f: { from:"e20", service:"2006", confidence:"high", fac:"fra", role:"assault_sea", name:"Mistral PHA", full:"Mistral-class amphibious helicopter carrier (PHA)", cat:"naval",
+    cost:2750, oil:61, time:48, hp:2500, armor:"heavy", speed:1.39, turn:0.6, sight:11.2, r:30, mass:0,
+    layer:"sea", weapons:["sam_simbad"], prereq:["navalyard","airbase"], tech:2, ciws:0.30, rcs:2.2,
+    carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["asw_helo_f"], cargo:6, amphib:true, wellDeck:true, wellCraft:{ fra_ctm:4 },
+    desc:"Three Mistrals - Mistral, Tonnerre and Dixmude - are France's amphibious force: sixteen heavy helicopters on six spots, 450 troops, seventy vehicles including thirteen Leclerc tanks, and a well deck for four landing craft, with a 69-bed hospital and a command staff aboard. Renamed amphibious helicopter carriers in 2019. Her Army helicopters are not deck aircraft in the game yet; the deck takes the Navy's NH90." },
+  lhd_c: { from:"e20", service:"2021", confidence:"high", fac:"pla", role:"assault_sea", name:"Type 075 LHD", full:"Hainan, Type 075 landing helicopter dock", cat:"naval",
+    cost:3600, oil:79, time:52, hp:3250, armor:"heavy", speed:1.46, turn:0.6, sight:11.2, r:30, mass:0,
+    layer:"sea", weapons:["sam_hq10"], prereq:["navalyard","airbase"], tech:2, ciws:0.60, rcs:2.5,
+    carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["trans_c","helo_c"], cargo:11, amphib:true, wellDeck:true, wellCraft:{ lst:3 },
+    desc:"China's first amphibious assault ship, commissioned in 2021: 232 metres, seven helicopter spots and a hangar for 28 helicopters, 800 marines and sixty armoured vehicles, with three hovercraft in the well deck. Four serve. Her Z-8 and Z-18 are not in the game; the deck takes the Z-20 and the Army's Z-10." },
 };
 
 
