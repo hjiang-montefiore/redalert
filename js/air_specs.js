@@ -325,7 +325,7 @@ if (typeof Airframe3D !== "undefined" && Airframe3D.registerAll) Airframe3D.regi
    render3d's period finish (ERA_KIT) is not laid over it. */
 (function () {
   if (typeof UNIT_MODELS === "undefined") return;     /* a headless run loads no 3D */
-  var AS = { nato_e80_stovl: "cfighter_n", nato_e90_stovl: "cfighter_n" };
+  var AS = {};        /* both rows now have their own hero (hero/harrier2_family.js) */
   Object.keys(AS).forEach(function (id) {
     var src = AS[id];
     UNIT_MODELS[id] = {

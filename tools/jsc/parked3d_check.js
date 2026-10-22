@@ -437,9 +437,9 @@ var OVERSIZE = {};
      finds it 0.82 m into a revetment wall (the game scales an aircraft by its length) */
   "pact_e60_awacs",
   /* the A-10 model, 35.9 m of wing, and the twelve CAS types drawn with it */
-  "bomber_n bomber_g deu_e50_cas deu_e60_cas deu_e80_cas gbr_e50_cas gbr_e60_cas gbr_e80_cas gbr_e00_cas fra_e50_cas fra_e60_cas fra_e80_cas fra_e00_cas",
+  "bomber_n bomber_g deu_e50_cas deu_e60_cas deu_e80_cas gbr_e50_cas gbr_e60_cas gbr_e00_cas fra_e50_cas fra_e60_cas fra_e80_cas fra_e00_cas",
   "nato_e80_cas nato_e00_cas",                                /* A-10, A-10C */
-  "bomber_b bomber_f gbr_e90_cas fra_e90_cas",                /* the strike stand-in */
+  "bomber_b bomber_f fra_e90_cas",                /* the strike stand-in */
   /* the Su-25 left this list with its hero model (js/hero/pact_su25_frogfoot.js),
      which stands in a revetment clear of the walls */
   "nato_e50_cas pact_e50_cas kpa_e50_cas pla_e50_cas",        /* A-1 Skyraider, Il-10 */
