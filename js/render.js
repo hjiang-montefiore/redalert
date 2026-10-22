@@ -512,7 +512,9 @@ var Render = (function () {
     /* collect drawables, painter's order by iso depth */
     const items = [];
     for (const e of G.entities) {
-      if (e.dead || e.carried) continue;
+      /* a landing craft inside a ship's hull is under her deck (entities.js
+         WELL TRANSIT) */
+      if (e.dead || e.carried || (e.wellT && e.inWell())) continue;
       if (!visible(e)) continue;
       items.push(e);
     }

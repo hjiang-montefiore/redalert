@@ -2439,6 +2439,9 @@ var Render3D = (function () {
     const seen = new Set();
     for (const e of G.entities) {
       if (e.dead || e.carried) continue;
+      /* a landing craft inside a ship's hull (entities.js WELL TRANSIT) is
+         drawn only where her model has a gate to see it through */
+      if (e.wellT && e.inWell()) { const sr = ents.get(e.wellT.ship.id); if (!sr || !sr.gate) continue; }
       /* visibility: enemies hidden by fog / submersion */
       let vis = true;
       if (e.owner !== G.human && G.fogEnabled) {
@@ -2477,6 +2480,8 @@ var Render3D = (function () {
           elev: findPart(inst, "podelev"),   // a launcher's elevating pod (poseLauncher)
           pose: findPart(inst, "deploypose"),   // a towed launcher set up (e.deployed) ...
           march: findPart(inst, "travelpose"),  // ... and on the march behind its tractor
+          gate: e.def.wellPts ? findPart(inst, "wellgate") : null,   // a well deck's stern gate ...
+          ramp: e.def.bowRamp ? findPart(inst, "bowramp") : null,    // ... and a bow ramp (swingGates)
           kind: e.kind,
           tpl,                     // the cached template: what is measured once per model
         };
@@ -2704,6 +2709,7 @@ var Render3D = (function () {
             if (rec.march) rec.march.visible = !up;
           }
         }
+        if (rec.gate || rec.ramp) swingGates(e, rec, dt);
         /* wheels come down only when the aircraft is actually near the
            ground: on the apron, or on an approach to land */
         if (rec.gear) {
@@ -2931,6 +2937,24 @@ var Render3D = (function () {
      a ghost is a fresh copy of the template, so a contact in the fog shows
      its pod stowed. */
   const HOLD_EL = 3;
+  /* A well deck's stern gate and a bow ramp (entities.js WELL TRANSIT). A
+     model with a "wellgate" node hinged at the gate's foot - rotation.y 0
+     shut, 1.45 rad swung aft and down - has it lowered while a landing craft
+     drives through it: by the ship's own gateT, which the craft waits on, so
+     the gate is down when the craft reaches it, eased at both ends. A
+     "bowramp" node (the Ivan Rogov) the same way, eased here over
+     WELL_GO.GATE seconds while she has just put a load over it (rampHold).
+     Models without the nodes are not touched. */
+  function swingGates(e, rec, dt) {
+    if (rec.gate) {
+      const g = e.gateT || 0, a = 1.45 * g * g * (3 - 2 * g);
+      if (rec.gate.rotation.y !== a) rec.gate.rotation.y = a;
+    }
+    if (rec.ramp) {
+      const want = e.rampHold > 0 ? 1.45 : 0, r0 = rec.ramp.rotation.y;
+      if (r0 !== want) rec.ramp.rotation.y = r0 + U.clamp(want - r0, -0.725 * dt, 0.725 * dt);
+    }
+  }
   function poseLauncher(e, rec, dt) {
     const el = rec.elev.userData.el || 0.61, rate = e.def.tturn || 0.8, o = e.order;
     let up = rec.lastShot !== undefined && G.time - rec.lastShot < HOLD_EL && !e.moving, tx, ty;

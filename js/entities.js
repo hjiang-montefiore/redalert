@@ -151,6 +151,15 @@ const KITE_DEV = [0, 0.6, -0.6, 1.1, -1.1];
    every ring the side knows. */
 const SNIFF = { APPROACH: 8, BEARINGS: [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2, 1.6, -1.6] };
 
+/* A well deck's gate and the craft through it (Unit, WELL TRANSIT): how long
+   the stern gate takes to swing open or shut (s), how long it stays open
+   after the last craft has passed the sill (s), how fast a craft moves in
+   the well (px a second: 0.375 tiles, about 5 knots on the scale that puts
+   a 40-knot LCAC at 2.8), and how long a bow ramp stays down after a load
+   has gone over it (s). Compressed for the game: a real gate is lowered and
+   a craft driven out of the well in minutes, not seconds. */
+const WELL_GO = { GATE: 2, HOLD: 3, V: 12, RAMP: 4 };
+
 /* =================================================================== UNIT */
 class Unit {
   constructor(game, defId, owner, x, y) {
@@ -348,6 +357,17 @@ class Unit {
   give(order, queue) {
     if (this.carried) return;
     if (!this.orders) this.orders = [];
+    /* a landing craft driving through a well's gate takes its orders when
+       it is clear (WELL TRANSIT): until then they wait, the last plain one
+       in place of the ones before it. One still gliding up to her sill
+       ("app") is on the water, and an order calls it off: held, it would
+       be wiped when it docked (dockCraft) */
+    if (this.wellT && this.wellT.ph === "app") { this.wellT = null; this.moving = false; }
+    if (this.wellT) {
+      if (!queue) this.orders.length = 0;
+      if (this.orders.length < 12) this.orders.push(order);
+      return;
+    }
     if (queue && (this.order.type !== "idle" || this.orders.length)) {
       /* A fire mission's clock (until) is how long the gun is given to get
          its rounds away, and the caller stamps it at the click (ui.js
@@ -492,6 +512,11 @@ class Unit {
        engineer exclusion, all written and all unreachable. Occupying a civilian
        block did precisely nothing except remove the squad from the battle. */
     if (this.dead || (this.carried && !this.garrisonIn)) return;
+    /* a landing craft driving through a well's gate does only that, and
+       the ship's gate and bow ramp work whatever else she is doing (WELL
+       TRANSIT) */
+    if (this.wellT) { this.updateWellT(dt); return; }
+    if (this.gateT || this.gateHold || this.rampHold || (this.wellGo && this.wellGo.length)) this.workGate(dt);
     const d = this.def;
 
     for (let i = 0; i < this.cooldowns.length; i++)
@@ -5989,6 +6014,8 @@ class Unit {
     const add = (id) => { f += w[id] ? 1 / w[id] : Infinity; };
     for (const c of this.well || []) add(c.def.id);
     for (const it of this.wellQ || []) add(it.id);
+    /* and those on their way in through her gate (WELL TRANSIT) */
+    for (const c of this.wellGo || []) if (c.wellT && (c.wellT.ph === "app" || c.wellT.ph === "in")) add(c.def.id);
     if (plus) add(plus);
     return f;
   }
@@ -6025,14 +6052,16 @@ class Unit {
   /* Out of the stern gate, loaded from the hold. `taken` collects the water
      tiles already given to craft launched in the same breath. Returns the
      number of the hold it took aboard, or a reason (a string). */
-  launchCraft(c, taken) {
+  launchCraft(c, taken, slot) {
     const g = this.game, T = CFG.TILE, W = g.map.W;
     const i = (this.well || []).indexOf(c);
     if (i < 0 || c.dead) return "NOT IN THE WELL";
     const used = taken || new Set();
-    /* astern, beyond her own length's half and the craft's, spread abreast */
+    /* astern, beyond her own length's half and the craft's, spread abreast;
+       where it drives out through her gate (WELL TRANSIT), beyond the sill */
+    const wa = Unit.wellAxis(this.def), berth = slot !== undefined ? slot : this.wellSlot(i);
     const k = used.size, side = (k % 2 ? 1 : -1) * Math.ceil(k / 2);
-    const back = (this.r || 30) + (c.r || 16) + T * 0.5;
+    const back = (wa ? -wa.exit : (this.r || 30)) + (c.r || 16) + T * 0.5;
     const ax = this.x - Math.cos(this.ang) * back - Math.sin(this.ang) * side * T;
     const ay = this.y - Math.sin(this.ang) * back + Math.cos(this.ang) * side * T;
     /* only water the ship herself floats on: a lake or river within four
@@ -6055,17 +6084,27 @@ class Unit {
       n++;
     }
     c.carried = false;
-    c.x = spot.x * T + T / 2; c.y = spot.y * T + T / 2;
-    c.ang = this.ang + Math.PI;
     c.order = { type: "idle" }; c.orders = []; c.path = null;
+    const sx = spot.x * T + T / 2, sy = spot.y * T + T / 2;
+    c.ang = this.ang + Math.PI;
+    if (wa) {
+      /* from its berth in the well, out through the gate once she has it
+         open, and on to that water (updateWellT) */
+      c.wellT = { ship: this, ph: "out", s: berth, lat: 0, to: berth, sx: sx, sy: sy };
+      (this.wellGo || (this.wellGo = [])).push(c);
+      this.gateHold = WELL_GO.HOLD; this.gateOpen = true;
+      c.placeInWell();
+    } else { c.x = sx; c.y = sy; }
     return n;
   }
   /* every craft in the well out, each filled from the hold in turn */
   launchAll() {
-    const taken = new Set();
+    const taken = new Set(), list = (this.well || []).slice();
+    /* each from the berth it lay in, read before the first one leaves */
+    const slots = list.map((c, i) => this.wellSlot(i));
     let out = 0, aboard = 0, why = "";
-    for (const c of (this.well || []).slice()) {
-      const r = this.launchCraft(c, taken);
+    for (let j = 0; j < list.length; j++) {
+      const c = list[j], r = this.launchCraft(c, taken, slots[j]);
       if (typeof r === "string") { why = why || r; continue; }
       out++; aboard += r;
     }
@@ -6075,6 +6114,167 @@ class Unit {
       else this.game.alert(why || "NO LANDING CRAFT IN THE WELL DECK", "bad");
     }
     return out;
+  }
+  /* ---- WELL TRANSIT ----
+     (owner) "Can the gate open and see the craft in and out?" A craft no
+     longer jumps between her well and the water: it drives through her stern
+     gate, and the gate swings down for it.
+     WHERE: def.wellPts (eras.js WHERE THE WELL LIES IN HER HULL), metres
+     along her from amidships, read in proportion onto the length the ship is
+     drawn at (wellAxis) - game data, never the 3D model, so 2D, 3D and a
+     headless test all run the same match. Each craft has a berth in the
+     well, the first at its middle and the next ones aft of it in turn
+     (wellSlot), nose to tail.
+     OUT (launchCraft): the craft is put at its berth, "out", and waits
+     there until her gate is open (gateT 1); then it runs aft along her
+     centreline at WELL_GO.V to the sill and on until its own length is
+     clear of it, then, "off", in a straight line to the water picked for it
+     astern, where it is free.
+     IN (updateEnter): a craft sent into her steers for her sill, not her
+     middle (wellDoor), and she opens the gate as it comes within four tiles.
+     There it is taken into the transit, "app": it glides onto her
+     centreline at the sill, waits for the gate, runs up the well, "in", to
+     the berth behind the craft already there and is docked (dockCraft).
+     HER MOTION: the craft in the well is placed in her own frame - how far
+     along her and across - each tick, so it moves with her if she moves
+     while it is inside, as a craft in a real well does; she need not stop.
+     Only the "off" run to its water is in the world's frame.
+     ORDERS given to a craft in the transit wait until it is clear (give);
+     one inside her is off the board's grid (game.js), so nothing shoots it
+     or is pushed by it through her side, and it cannot be clicked (ui.js).
+     THE GATE (workGate): open while a craft is in the transit and
+     WELL_GO.HOLD seconds after the last has passed the sill (gateOpen), and
+     gateT runs to 1 or back to 0 over WELL_GO.GATE seconds; render3d.js
+     swings a model's "wellgate" node by it. Lost with her, a craft inside
+     goes down with her (game.js); one gliding up to her sill or out to its
+     water stays afloat. Saved with its phase and place (save.js). */
+  /* her well's sill and its middle (the first berth), px along her from
+     her own middle */
+  static wellAxis(def) {
+    const wp = def && def.wellPts;
+    if (!wp) return null;
+    if (def._wellAx) return def._wellAx;
+    /* the length render3d.js getModel draws a ship at, in px (her r, not
+       her length, sets it) - from config, as the renderer reads it */
+    const k = def.r * 2.1 * 1.9 * CFG.MODEL_SCALE / wp.len;
+    return (def._wellAx = { exit: wp.exit * k, inner: wp.inner * k });
+  }
+  /* the berth of the craft that has the first n of her well before it */
+  wellSlot(n) {
+    const ax = Unit.wellAxis(this.def), w = this.def.wellCraft || {};
+    if (!ax) return 0;
+    let f = 0;
+    for (let j = 0; j < n && j < this.well.length; j++) f += 1 / (w[this.well[j].def.id] || 1);
+    return this.wellBerth(f);
+  }
+  /* the berth `f` of her well (a fraction, as wellFill) aft of the first */
+  wellBerth(f) {
+    const ax = Unit.wellAxis(this.def);
+    return ax.inner + (ax.exit - ax.inner) * Math.min(f, 0.95);
+  }
+  /* where a craft is clear of her sill, astern, in the world; null where
+     that is not water it can float on and reach (a dock's tile, or a pool
+     cut off from it: Path.find would bring it only to the nearest tile, and
+     it would wait there for good) */
+  wellDoor(c) {
+    const ax = Unit.wellAxis(this.def);
+    if (!ax) return null;
+    const s = ax.exit - (c.r || 16) - 2, x = this.x + Math.cos(this.ang) * s, y = this.y + Math.sin(this.ang) * s;
+    const map = this.game.map, tx = (x / CFG.TILE) | 0, ty = (y / CFG.TILE) | 0;
+    if (tx < 0 || ty < 0 || tx >= map.W || ty >= map.H || !GameMap.passable(map, tx, ty, c.layer) ||
+        this.game.tileBlocked(tx, ty, c) || !Path.reachable(map, c.tx, c.ty, tx, ty, c.layer)) return null;
+    return { x: x, y: y };
+  }
+  /* a craft come up to her stern goes into the transit, bound for the
+     berth behind those in the well and those already coming in */
+  takeIntoWell(c) {
+    const w = this.def.wellCraft || {};
+    let f = 0;
+    for (const o of this.well || []) f += 1 / (w[o.def.id] || 1);
+    for (const o of this.wellGo || []) if (o.wellT && (o.wellT.ph === "app" || o.wellT.ph === "in")) f += 1 / (w[o.def.id] || 1);
+    const dx = c.x - this.x, dy = c.y - this.y, co = Math.cos(this.ang), si = Math.sin(this.ang);
+    c.wellT = { ship: this, ph: "app", s: dx * co + dy * si, lat: -dx * si + dy * co, to: this.wellBerth(f), sx: 0, sy: 0 };
+    (this.wellGo || (this.wellGo = [])).push(c);
+    c.order = { type: "idle" }; c.orders = []; c.path = null; c.moving = false;
+    this.gateHold = WELL_GO.HOLD; this.gateOpen = true;
+  }
+  /* inside her hull: in the well or between it and the sill */
+  inWell() { const w = this.wellT; return !!w && (w.ph === "out" || w.ph === "in"); }
+  /* put a craft in the transit where it is in her frame (wellT.s, lat) */
+  placeInWell() {
+    const w = this.wellT, s = w.ship, co = Math.cos(s.ang), si = Math.sin(s.ang);
+    this.x = s.x + co * w.s - si * w.lat;
+    this.y = s.y + si * w.s + co * w.lat;
+  }
+  updateWellT(dt) {
+    const w = this.wellT, s = w.ship;
+    if (w.ph === "off") {
+      /* clear of her: on to its own water, at half its speed */
+      const dx = w.sx - this.x, dy = w.sy - this.y, d = Math.hypot(dx, dy);
+      const v = Math.max(WELL_GO.V, this.def.speed * this.speedMul() * CFG.TILE * 0.5) * dt;
+      if (d <= v) {
+        this.x = w.sx; this.y = w.sy; this.wellT = null; this.moving = false;
+        if (!this.nextOrder()) this.order = { type: "idle" };
+        return;
+      }
+      this.x += dx / d * v; this.y += dy / d * v; this.moving = true;
+      this.ang = U.turnToward(this.ang, Math.atan2(dy, dx), (this.def.turn || 1) * dt);
+      return;
+    }
+    /* she is gone: one afloat outside her stays afloat where it is (one
+       inside went down with her, game.js) */
+    if (!s || s.dead) { this.wellT = null; this.moving = false; this.order = { type: "idle" }; return; }
+    const ax = Unit.wellAxis(s.def), door = ax.exit - this.r, v = WELL_GO.V * dt, open = (s.gateT || 0) >= 1;
+    if (w.ph === "out") {
+      if (open) w.s = Math.max(door, w.s - v);
+      this.moving = open;
+      this.ang = s.ang + Math.PI;
+      this.placeInWell();
+      if (w.s <= door) w.ph = "off";
+      return;
+    }
+    if (w.ph === "app") {
+      /* onto her centreline at the sill */
+      const ds = door - w.s, dl = -w.lat, d = Math.hypot(ds, dl);
+      const st = Math.max(v, this.def.speed * this.speedMul() * CFG.TILE * 0.5 * dt);
+      if (d <= st) {
+        w.s = door; w.lat = 0; w.ph = "in";
+        /* inside her now: out of the player's selection, as dockCraft does
+           it, or an order to it would be held and then wiped at the dock */
+        this.selected = false;
+        if (typeof UI !== "undefined" && Array.isArray(UI.selection)) {
+          const k = UI.selection.indexOf(this);
+          if (k >= 0) UI.selection.splice(k, 1);
+        }
+      }
+      else { w.s += ds / d * st; w.lat += dl / d * st; }
+      this.moving = true;
+    } else if (open) {
+      /* "in": up the well to its berth */
+      w.s = Math.min(w.to, w.s + v);
+      this.moving = true;
+    } else this.moving = false;
+    this.ang = U.turnToward(this.ang, s.ang, (this.def.turn || 1) * dt);
+    this.placeInWell();
+    if (w.ph === "in" && w.s >= w.to - 1e-6) {
+      this.wellT = null; this.moving = false;
+      s.dockCraft(this);
+    }
+  }
+  /* her gate (and a bow ramp's hold) */
+  workGate(dt) {
+    const go = this.wellGo;
+    if (go) for (let i = go.length - 1; i >= 0; i--) {
+      const c = go[i];
+      if (c.dead || !c.wellT || c.wellT.ship !== this || c.wellT.ph === "off") go.splice(i, 1);
+    }
+    if (go && go.length) this.gateHold = WELL_GO.HOLD;
+    else if (this.gateHold > 0) this.gateHold = Math.max(0, this.gateHold - dt);
+    this.gateOpen = this.gateHold > 0;
+    const g0 = this.gateT || 0, step = dt / WELL_GO.GATE;
+    /* (a whole swing in whole ticks: 1/60 summed sixty times is short of 1) */
+    this.gateT = this.gateOpen ? (g0 + step > 1 - 1e-9 ? 1 : g0 + step) : (g0 - step < 1e-9 ? 0 : g0 - step);
+    if (this.rampHold > 0) this.rampHold = Math.max(0, this.rampHold - dt);
   }
   /* null if this craft may be ordered for her well now, else the reason */
   wellOrderReason(id) {
@@ -6158,6 +6358,19 @@ class Unit {
       this.order = { type: "idle" };
       return;
     }
+    /* A landing craft bound for a well with a gate steers for her sill and
+       goes in through it (WELL TRANSIT); she lowers the gate as it comes
+       within four tiles. Where her sill is not water it can reach, it comes
+       alongside as below and glides round to the sill from there. */
+    const wellIn = this.cat === "naval" && t.kind === "unit" && t.def.wellPts && t.owner === this.owner;
+    const door = wellIn ? t.wellDoor(this) : null;
+    if (door) {
+      const dd = U.dist(this.x, this.y, door.x, door.y);
+      if (dd < CFG.TILE * 4) t.gateHold = Math.max(t.gateHold || 0, 1);
+      if (dd < CFG.TILE * 0.6) t.takeIntoWell(this);
+      else this.stepAlong(door.x, door.y, dt);
+      return;
+    }
     /* How close is alongside. A landing craft comes up to her stern (THE
        WELL DECK). A tank or a squad boarding a landing craft or a landing
        ship stops on the sand, and a craft lying one tile off the beach -
@@ -6183,7 +6396,8 @@ class Unit {
     /* a landing craft goes into the well, never into a hold (THE WELL DECK;
        holdRefusal above has already turned away a ship without room) */
     if (this.cat === "naval") {
-      if (t.kind === "unit" && t.def.wellCraft && t.owner === this.owner) t.dockCraft(this);
+      if (wellIn) t.takeIntoWell(this);
+      else if (t.kind === "unit" && t.def.wellCraft && t.owner === this.owner) t.dockCraft(this);
       else this.order = { type: "idle" };
       return;
     }
@@ -6306,6 +6520,9 @@ class Unit {
       this.cargo.splice(i, 1);
       out++;
     }
+    /* an Ivan Rogov's load goes over her bow ramp, which render3d.js lowers
+       for WELL_GO.RAMP seconds where her model has one (workGate) */
+    if (out && this.def.bowRamp) this.rampHold = WELL_GO.RAMP;
     return out;
   }
 

@@ -2704,7 +2704,9 @@ var UI = (function () {
   function pickAt(mx, my, includeBuildings, only, stack) {
     let best = null, bd = Infinity;
     for (const e of G.entities) {
-      if (e.dead || e.carried) continue;
+      /* a landing craft inside a ship's hull is not there to be clicked
+         (entities.js WELL TRANSIT) */
+      if (e.dead || e.carried || (e.wellT && e.inWell())) continue;
       if (only && !only(e)) continue;
       if (!includeBuildings && e.kind === "building") continue;
       let ex, ey;
@@ -2850,7 +2852,7 @@ var UI = (function () {
     const x0 = Math.min(input.dragX0, input.mx), x1 = Math.max(input.dragX0, input.mx);
     const y0 = Math.min(input.dragY0, input.my), y1 = Math.max(input.dragY0, input.my);
     for (const u of G.human.units) {
-      if (u.dead || u.carried) continue;
+      if (u.dead || u.carried || (u.wellT && u.inWell())) continue;
       const p = entityScreenPos(u);
       if (!p) continue;
       const ex = p.x, ey = p.y;
@@ -3773,7 +3775,7 @@ var UI = (function () {
   function selectSameType(ids, add, like) {
     const hits = [];
     for (const u of G.human.units) {
-      if (u.dead || u.carried || (add && u.selected)) continue;
+      if (u.dead || u.carried || (u.wellT && u.inWell()) || (add && u.selected)) continue;
       if (ids.indexOf(u.def.id) < 0 || !onScreen(u)) continue;
       hits.push(u);
     }

@@ -14015,6 +14015,51 @@ WEAPONS.sam_simbad = Object.assign({}, WEAPONS.w_e00_fra_aa,
 })();
 if (typeof reindexRoles === "function") reindexRoles();
 
+/* ---- WHERE THE WELL LIES IN HER HULL (entities.js WELL TRANSIT) ----
+   (owner) "Can the gate open and see the craft in and out?" A craft is
+   launched by driving out of the well through the stern gate, and recovered
+   by driving in through it, so the game has to know where the well is:
+   def.wellPts, in metres along her from amidships (+ forward) - the stern
+   gate's sill (exit), and the middle of the well (inner), the berth of the
+   first craft in it, the others lying aft of it in turn. Her overall
+   length, the well's length and the sill:
+     Tarawa      254.2 m (834 ft), well 268 x 78 ft (81.7 m long; en.wikipedia
+                 "Tarawa-class amphibious assault ship"), sill at her
+                 transom 126.8 m aft - js/hero/nato_e80_lha.js's hull
+     Wasp        257 m, well 81 x 15.2 m (en.wikipedia "Wasp-class
+                 amphibious assault ship"), sill 121.4 m aft, under the
+                 overhang of her flight deck - js/hero/nato_lhd_wasp.js,
+                 drawn from the overhead photograph it names
+     Mistral     199 m and a well of 885 m2 (en.wikipedia "Mistral-class
+                 landing helicopter dock"), 57.5 x 15.4 x 8.2 m (fr.wikipedia
+                 "Classe Mistral", its note on the radier; re-read 2026-10-22),
+                 sill taken at her stern
+     Type 075    232 m, sill at her transom 112.9 m aft (js/hero/
+                 pla_lhd_type075.js); the well "may be 80-90 m long"
+                 (en.wikipedia "Type 075 landing helicopter dock", after
+                 Kennedy & Caldwell 2022, pp. 15-16): the middle of that,
+                 85 m, the length her hero model's well is drawn at - the
+                 range is published, the one figure in it is not
+     Ivan Rogov  157 m (en.wikipedia "Ivan Rogov-class landing ship"), a
+                 docking chamber 75 x 12 m (ru.wikipedia "Bolshie
+                 desantnye korabli proekta 1174", after Vasiliev), sill
+                 taken at her stern
+   The simulation reads these and never the 3D model: a hero model that
+   draws the gate puts the same two points in its userData (wellExit,
+   wellInner), and tools/jsc/wellgate3d_check.js holds the two to each other
+   on the drawn hull. */
+(function () {
+  /* overall length, well length, sill (metres aft of amidships; omitted:
+     half her length, her stern) */
+  var HULL = { nato_e80_lha: [254.2, 81.7, 126.8], nato_e90_lhd: [257, 81, 121.4], nato_e00_lhd: [257, 81, 121.4],
+               fra_e00_lhd: [199, 57.5], lhd_f: [199, 57.5], lhd_c: [232, 85, 112.9],
+               pact_e80_lpd: [157, 75], pact_e90_lpd: [157, 75], pact_e00_lpd: [157, 75] };
+  for (var id in HULL) {
+    var d = UNITS[id], h = HULL[id], L = h[0], W = h[1], X = -(h[2] || L / 2);
+    if (d && d.wellDeck) d.wellPts = { len: L, well: W, exit: X, inner: X + W / 2 };
+  }
+})();
+
 /* ==================================================================
    THE MARINE CORPS' ASSAULT HELICOPTERS (navy piece 5a)
    (owner) "We want the navy helicopter to have more roles" - the first of

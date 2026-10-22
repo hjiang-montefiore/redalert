@@ -130,6 +130,14 @@ var SaveGame = (function () {
            for it (entities.js THE WELL DECK) */
         wl: u.well && u.well.length ? u.well.filter(c => uIdx.has(c)).map(c => uIdx.get(c)) : undefined,
         wq: u.wellQ && u.wellQ.length ? u.wellQ.map(it => ({ id: it.id, paid: Math.round(it.paid), done: it.done ? 1 : 0 })) : undefined,
+        /* a craft driving through a well's gate (entities.js WELL TRANSIT):
+           her index, its phase, where it is in her frame (px along her and
+           across), its berth and the water it is bound for; and her gate */
+        wt: u.wellT ? [u.wellT.ship && uIdx.has(u.wellT.ship) ? uIdx.get(u.wellT.ship) : -1, u.wellT.ph,
+                       +u.wellT.s.toFixed(2), +u.wellT.lat.toFixed(2), +u.wellT.to.toFixed(2),
+                       Math.round(u.wellT.sx), Math.round(u.wellT.sy)] : undefined,
+        gt: u.gateT ? +u.gateT.toFixed(3) : undefined,
+        gh: u.gateHold ? +u.gateHold.toFixed(2) : undefined,
       })),
       buildings: bl.map(b => ({
         d: b.def.id, o: b.owner.idx, tx: b.tx, ty: b.ty,
@@ -497,6 +505,18 @@ var SaveGame = (function () {
         u.well.push(c);
       }
       if (su.wq) u.wellQ = su.wq.filter(it => UNITS[it.id]).map(it => ({ id: it.id, paid: it.paid || 0, done: !!it.done }));
+      /* her gate, and a craft going through it (wt above); one whose ship
+         did not come back is left afloat where it was */
+      if (su.gt) u.gateT = su.gt;
+      if (su.gh) { u.gateHold = su.gh; u.gateOpen = true; }
+      if (su.wt && !u.carried) {
+        const sh = su.wt[0] >= 0 ? uref[su.wt[0]] : null, ph = su.wt[1];
+        if (ph === "off" || (sh && !sh.dead && sh.def.wellPts)) {
+          u.wellT = { ship: ph === "off" ? null : sh, ph: ph, s: su.wt[2], lat: su.wt[3], to: su.wt[4], sx: su.wt[5], sy: su.wt[6] };
+          if (ph !== "off") (sh.wellGo || (sh.wellGo = [])).push(u);
+          u.order = { type: "idle" };
+        }
+      }
       /* a transport saved standing on its strip is standing on it again */
       if (u.layer === "air" && typeof Unit !== "undefined" && Unit.airGround(u.order)) {
         u.grounded = true; u.field = Unit.fieldOf(u.order);

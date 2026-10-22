@@ -1455,6 +1455,9 @@ var Game = (function () {
       if (e.cargo && e.cargo.length) for (const c of e.cargo) { c.carried = false; c.x = e.x; c.y = e.y; Combat.kill(G, c, null); }
       /* ...and so do the landing craft in her well deck, with their loads */
       if (e.well && e.well.length) for (const c of e.well) { c.carried = false; c.x = e.x; c.y = e.y; Combat.kill(G, c, null); }
+      /* ...and those inside her driving through her gate (WELL TRANSIT) */
+      if (e.wellGo && e.wellGo.length)
+        for (const c of e.wellGo.slice()) if (!c.dead && c.wellT && c.wellT.ship === e && c.inWell()) { c.wellT = null; Combat.kill(G, c, null); }
       if (e.owner === G.human) Sfx.announce(e.def.harvester ? "hauler_lost" : "unit_lost", e);
       if (e.owner === G.human && e.def.harvester) G.alert("ORE HAULER LOST", "bad");
       /* A destroyed unit leaves a mark. The damage path pings once every three
@@ -4268,8 +4271,10 @@ var Game = (function () {
        a squad manning a building is emphatically on it, and has to be findable
        or nothing can ever shoot at it - which is what the garrison damage table
        in combat.js exists to resolve. */
+    /* A landing craft inside a ship's hull, in her well or between it and
+       the gate (entities.js WELL TRANSIT), is as far off the board. */
     for (const e of G.entities)
-      if (!e.dead && (!e.carried || e.garrisonIn)) G.grid.insert(e);
+      if (!e.dead && (!e.carried || e.garrisonIn) && !(e.wellT && e.inWell())) G.grid.insert(e);
 
     /* ore regrowth from seed tiles */
     const map = G.map;

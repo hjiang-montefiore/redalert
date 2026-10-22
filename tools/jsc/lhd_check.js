@@ -74,7 +74,31 @@
         lands on each period's ship with a squad, launches and puts it on a
         beach; the CH-53E slings a Humvee on its hook, one at a time, and
         refuses an Abrams; and the commander never buys one. (Run before 9,
-        since the load rebuilds the match.) */
+        since the load rebuilds the match.)
+    8b. the gate (entities.js WELL TRANSIT): every well-deck ship has her
+        well in her hull's geometry (eras.js def.wellPts) and no other ship
+        has; launched, a Wasp's three LCACs start at their berths nose to
+        tail inside her, off the board's grid, an order given to one waiting;
+        her gate takes 2 s to open and none moves until it is open; each
+        runs aft along her centreline, never forward, through the sill and
+        clear of it, then to water of its own astern, free, the first taking
+        the order it was given; gateOpen holds while any is inside and 3 s
+        after the last has passed the sill, and gateT is 0 again 2 s later;
+        right-clicked back onto her, each steers for her sill, her gate is
+        coming down before it gets there, it glides onto her centreline,
+        never passes the sill with the gate short of open, runs up the well
+        and is docked at a berth behind the one before it, and the gate
+        shuts after; launched while she steams on, the craft keeps to her
+        centreline as she moves, and recovered while she steams it comes in
+        the same way; sunk with one craft inside her and one clear, the one
+        inside goes down with her and the other reaches its water; an
+        America (no well) never opens a gate, an LCAC on its own sails as
+        before, and an Ivan Rogov putting a tank on a beach lowers her bow
+        ramp for 4 s;
+    13. saved with two craft driving out of a Wasp's well and one driving in,
+        the load puts each back where it was in her frame, in her transit,
+        her gate open; driven on, the two reach their water and the third
+        docks, and the gate shuts. (Last: the load rebuilds the match.) */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -167,10 +191,12 @@ function run() {
   secJets();
   secMarines();
   secWell();
+  secGate();
   secOthers();
   secAssault();
   secSave();
   secSave4();
+  secGateSave();
 }
 
 /* ---------------- 1. one class a period, the United States only ---------------- */
@@ -696,13 +722,15 @@ function secWell() {
   var tk1 = spawn("mbt_n", P.homeX, P.homeY), tk2 = spawn("mbt_n", P.homeX, P.homeY), sq = spawn("rifle_n", P.homeX, P.homeY);
   [sq, tk1, tk2].forEach(function (u) { s.cargo.push(u); u.carried = true; });
   var craft = s.well.slice(), n = s.launchAll();
+  /* they drive out through her stern gate (WELL TRANSIT, section 8b) */
+  var tclr = ticks(30, function () { return craft.every(function (c) { return !c.wellT; }); });
   var c1 = craft[0], wet = craft.filter(function (c) {
     return !c.carried && GameMap.passable(M, (c.x / TT) | 0, (c.y / TT) | 0, "sea") && Math.hypot(c.x - s.x, c.y - s.y) < 5 * TT; });
   var tilesU = {}; craft.forEach(function (c) { tilesU[((c.x / TT) | 0) + "," + ((c.y / TT) | 0)] = 1; });
   var astern = craft.every(function (c) { return (c.x - s.x) * Math.cos(s.ang) + (c.y - s.y) * Math.sin(s.ang) < 0; });
   chk("8 tiles off the beach she launches all three out of her stern onto open water, each on its own tile",
       n === 3 && s.well.length === 0 && wet.length === 3 && Object.keys(tilesU).length === 3 && astern,
-      n + " launched, " + wet.length + " afloat within 5 tiles, " + Object.keys(tilesU).length + " tiles, astern " + astern);
+      n + " launched, clear of her after " + tclr.toFixed(1) + " s, " + wet.length + " afloat within 5 tiles, " + Object.keys(tilesU).length + " tiles, astern " + astern);
   chk("...the first takes the hold: both tanks first, then the squad; the hold is empty",
       c1.cargo.length === 3 && c1.cargo[0].cat === "vehicle" && c1.cargo[1].cat === "vehicle" && c1.cargo[2] === sq &&
       s.cargo.length === 0 && [tk1, tk2, sq].every(function (u) { return u.carried; }),
@@ -824,7 +852,8 @@ function secWell() {
       "well " + pw.well.length + ", it carries " + pk2.cargo.length + ", hold " + pw.cargo.length);
   btn = panelButtons();
   press(btn, "wellall", 0);
-  chk("LAUNCH CRAFT floats out the other, onto open water", !pk1.carried && !pw.well.length &&
+  ticks(30, function () { return !pk1.wellT && !pk2.wellT; });
+  chk("LAUNCH CRAFT floats out the other, onto open water", !pk1.carried && !pw.well.length && !pk1.wellT &&
       GameMap.passable(M, (pk1.x / TT) | 0, (pk1.y / TT) | 0, "sea"),
       "well " + pw.well.length + ", carried " + pk1.carried + ", at " + tiles(pk1.x) + "," + tiles(pk1.y));
   panelButtons(true);
@@ -874,6 +903,208 @@ function sel(list) {
   list.forEach(function (u) { u.selected = true; s.push(u); });
 }
 function panel() { return String((document.getElementById("selinfo") || {}).innerHTML || ""); }
+
+/* ---------------- 8b. the gate: craft driven out of the well and back in ---------------- */
+/* entities.js WELL TRANSIT. A sea tile with water all round it for R tiles */
+function openSea(R) {
+  for (var y = R + 1; y < M.H - R - 1; y++) for (var x = R + 1; x < M.W - R - 1; x++) {
+    var ok = true;
+    for (var j = -R; j <= R && ok; j++) for (var i = -R; i <= R && ok; i++)
+      if (M.terrain[(y + j) * M.W + x + i] !== T.WATER) ok = false;
+    if (ok) return { x: (x + 0.5) * TT, y: (y + 0.5) * TT };
+  }
+  return null;
+}
+/* where c is in s's frame: px along her (+ forward) and across */
+function rel(s, c) {
+  var dx = c.x - s.x, dy = c.y - s.y, co = Math.cos(s.ang), si = Math.sin(s.ang);
+  return { s: dx * co + dy * si, l: -dx * si + dy * co };
+}
+function inGrid(c) { var f = false; Game.grid.query(c.x, c.y, 4, function (e) { if (e === c) f = true; }); return f; }
+function onSea(c) { return GameMap.passable(M, (c.x / TT) | 0, (c.y / TT) | 0, "sea"); }
+function secGate() {
+  log("\n[8b] the gate: craft driven out of her well through the stern gate and back in (WELL TRANSIT)");
+  useEra("e00");
+  /* (a) where the well lies, in the game's own data */
+  var wd = Object.keys(UNITS).filter(function (id) { return UNITS[id].wellDeck; }), badW = [];
+  wd.forEach(function (id) {
+    var wp = UNITS[id].wellPts;
+    if (!wp || !(wp.exit >= -wp.len / 2 - 1e-6 && wp.exit < -wp.len / 2 + 10) || Math.abs(wp.inner - wp.exit - wp.well / 2) > 1e-6) badW.push(id);
+  });
+  var nw = Object.keys(UNITS).filter(function (id) { return UNITS[id].wellPts && !UNITS[id].wellDeck; });
+  var ax = Unit.wellAxis(UNITS.nato_e00_lhd);
+  chk("every well-deck ship (" + wd.length + ") has her well in her hull's geometry - the sill at her stern, the first berth mid-well - and no other ship has",
+      wd.length >= 9 && !badW.length && !nw.length && !!ax && ax.exit < ax.inner && ax.inner < 0,
+      badW.concat(nw).join(",") + (ax ? " Wasp: sill " + ax.exit.toFixed(1) + " px, first berth " + ax.inner.toFixed(1) + " px" : ""));
+  var O = openSea(8) || openSea(5);
+  if (!O || !ax) { chk("open sea for the gate", false, ""); return; }
+  var G0 = WELL_GO;
+
+  /* (b) launched */
+  var s = spawn("nato_e00_lhd", O.x, O.y); s.ang = 0.6;
+  var k = [spawn("lst", O.x, O.y), spawn("lst", O.x, O.y), spawn("lst", O.x, O.y)];
+  k.forEach(function (c) { s.dockCraft(c); });
+  var tk = spawn("mbt_n", P.homeX, P.homeY); s.cargo.push(tk); tk.carried = true;
+  var n = s.launchAll(), r0 = k.map(function (c) { return rel(s, c); });
+  var far = { x: s.x - Math.cos(s.ang) * 7 * TT, y: s.y - Math.sin(s.ang) * 7 * TT };
+  k[0].give({ type: "move", x: far.x, y: far.y });
+  ticks(DT);
+  chk("launched, the three LCACs start at their berths in her well, nose to tail aft from its middle, inside her and off the board's grid; her gate is ordered open and still shut",
+      n === 3 && k.every(function (c) { return c.wellT && c.wellT.ph === "out" && !c.carried && c.inWell() && !inGrid(c); }) &&
+      Math.abs(r0[0].s - ax.inner) < 0.5 && r0[1].s < r0[0].s - 5 && r0[2].s < r0[1].s - 5 && r0[2].s > ax.exit &&
+      r0.every(function (r) { return Math.abs(r.l) < 0.5; }) && s.gateOpen && s.gateT < 0.1,
+      "berths " + r0.map(function (r) { return r.s.toFixed(1); }).join(", ") + " px (sill " + ax.exit.toFixed(1) + "); gate " + s.gateT.toFixed(2));
+  chk("...an order given to one in the well waits", k[0].order.type === "idle" && k[0].orders.length === 1 && k[0].orders[0].type === "move",
+      k[0].order.type + ", " + k[0].orders.length + " waiting");
+  var t = DT, tOpen = -1, waitOk = true, mono = true, maxL = 0, prevS = r0.map(function (r) { return r.s; }), minS = prevS.slice();
+  var clearAt = [-1, -1, -1], ordAt = [], gateDuring = true, tSill = -1, tOff = -1, tShut = -1;
+  for (var i = 0; i < 40 / DT; i++) {
+    Game.tick(DT); t += DT;
+    if (tOpen < 0 && s.gateT >= 1) tOpen = t;
+    var anyIn = false;
+    k.forEach(function (c, j) {
+      if (c.wellT && c.wellT.ph === "out") {
+        anyIn = true;
+        var r = rel(s, c);
+        if (s.gateT < 1 && Math.abs(r.s - prevS[j]) > 0.01) waitOk = false;
+        if (r.s > prevS[j] + 0.01) mono = false;
+        maxL = Math.max(maxL, Math.abs(r.l));
+        prevS[j] = r.s; minS[j] = Math.min(minS[j], r.s);
+      }
+      if (clearAt[j] < 0 && !c.wellT) { clearAt[j] = t; ordAt[j] = c.order.type; }
+    });
+    if (anyIn && !s.gateOpen) gateDuring = false;
+    if (!anyIn && tSill < 0) tSill = t;
+    if (tSill > 0 && tOff < 0 && !s.gateOpen) tOff = t;
+    if (tOff > 0 && s.gateT === 0) { tShut = t; break; }
+  }
+  var door = ax.exit - k[0].r;
+  chk("her gate takes " + G0.GATE + " s to open, and no craft moves in the well until it is open",
+      Math.abs(tOpen - G0.GATE) < 0.1 && waitOk, "open at " + tOpen.toFixed(2) + " s");
+  chk("...each runs aft along her centreline, never forward, through the sill until its length is clear of it",
+      mono && maxL < 0.5 && minS.every(function (m) { return m <= door + 1; }),
+      "furthest aft in her frame " + minS.map(function (m) { return m.toFixed(1); }).join(", ") + " px (clear at " + door.toFixed(1) + "), off her centreline " + maxL.toFixed(2) + " px");
+  var tiles3 = {}; k.forEach(function (c) { tiles3[((c.x / TT) | 0) + "," + ((c.y / TT) | 0)] = 1; });
+  chk("...then each goes on to water of its own astern and is free; the one ordered in the well takes its order",
+      clearAt.every(function (x) { return x > 0; }) && k.every(function (c) { return !c.wellT && onSea(c) && rel(s, c).s < ax.exit && inGrid(c); }) &&
+      Object.keys(tiles3).length === 3 && ordAt[0] === "move" && ordAt[1] === "idle" && k[0].cargo.indexOf(tk) >= 0,
+      "free at " + clearAt.map(function (x) { return x.toFixed(1); }).join(", ") + " s; " + Object.keys(tiles3).length + " tiles; then " + ordAt.join(", "));
+  chk("her gate is open (gateOpen) while any is inside, shuts " + G0.HOLD + " s after the last has passed the sill and is closed (gateT 0) " + G0.GATE + " s later",
+      gateDuring && tSill > 0 && Math.abs(tOff - tSill - G0.HOLD) < 0.1 && Math.abs(tShut - tOff - G0.GATE) < 0.1,
+      "last past the sill " + tSill.toFixed(2) + " s, gateOpen false " + tOff.toFixed(2) + " s, shut " + tShut.toFixed(2) + " s");
+
+  /* (c) recovered */
+  k.forEach(function (c) { c.give({ type: "enter", target: s }); });
+  var appAt = [], gateAtApp = [], shutInside = false, monoIn = true, prevIn = [null, null, null], fillMax = 0, maxL2 = 0, docked = [];
+  t = 0; tSill = -1; tOff = -1; tShut = -1;
+  for (i = 0; i < 90 / DT; i++) {
+    Game.tick(DT); t += DT;
+    fillMax = Math.max(fillMax, s.wellFill());
+    k.forEach(function (c, j) {
+      var w = c.wellT;
+      if (w && w.ship === s && appAt[j] === undefined) {
+        var r = rel(s, c);
+        appAt[j] = Math.hypot(r.s - (ax.exit - c.r - 2), r.l); gateAtApp[j] = s.gateT;
+      }
+      if (w && w.ph === "in") {
+        var r2 = rel(s, c);
+        if (r2.s > ax.exit - c.r + 0.5 && s.gateT < 1) shutInside = true;
+        if (prevIn[j] !== null && r2.s < prevIn[j] - 0.01) monoIn = false;
+        maxL2 = Math.max(maxL2, Math.abs(r2.l));
+        prevIn[j] = r2.s;
+      }
+      if (c.carried && docked.indexOf(c) < 0) docked.push(c);
+    });
+    if (docked.length === 3 && tSill < 0) tSill = t;
+    if (tSill > 0 && tOff < 0 && !s.gateOpen) tOff = t;
+    if (tOff > 0 && s.gateT === 0) { tShut = t; break; }
+  }
+  chk("right-clicked back onto her, each steers for her sill (taken in within 0.6 tiles of it), and her gate is already coming down when the first gets there",
+      appAt.length === 3 && appAt.every(function (d) { return d < 0.6 * TT + 1; }) && Math.max.apply(null, gateAtApp) > 0,
+      "taken in " + appAt.map(function (d) { return (d / TT).toFixed(2); }).join(", ") + " tiles from the sill, gate " + gateAtApp.map(function (g) { return g.toFixed(2); }).join(", "));
+  chk("...none passes the sill with the gate short of open; each runs up the well on her centreline, never back, and is docked",
+      !shutInside && monoIn && maxL2 < 0.5 && docked.length === 3 && k.every(function (c) { return c.carried && s.well.indexOf(c) >= 0 && !c.wellT; }) && fillMax <= 1 + 1e-6,
+      docked.length + " docked after " + tSill.toFixed(1) + " s; off her centreline " + maxL2.toFixed(2) + " px; the well at most " + fillMax.toFixed(2) + " full");
+  chk("...and her gate shuts " + G0.HOLD + " s after the last is in and is closed " + G0.GATE + " s later",
+      tOff > 0 && Math.abs(tOff - tSill - G0.HOLD) < 0.1 && tShut > 0 && Math.abs(tShut - tOff - G0.GATE) < 0.1 && !s.wellGo.length,
+      "in " + tSill.toFixed(2) + " s, gateOpen false " + tOff.toFixed(2) + " s, shut " + tShut.toFixed(2) + " s");
+  k.forEach(function (c) { c.cargo.forEach(gone); c.cargo.length = 0; });
+  [k[1], k[2]].forEach(function (c) { s.well.splice(s.well.indexOf(c), 1); gone(c); });
+
+  /* (d) launched and recovered while she steams on */
+  var go = { x: s.x + Math.cos(s.ang) * 30 * TT, y: s.y + Math.sin(s.ang) * 30 * TT };
+  var goT = Path.nearest(M, (go.x / TT) | 0, (go.y / TT) | 0, "sea", null, 6);
+  if (goT) go = { x: (goT.x + 0.5) * TT, y: (goT.y + 0.5) * TT };
+  s.give({ type: "move", x: go.x, y: go.y });
+  ticks(3);
+  var c0 = k[0], x0 = s.x, y0 = s.y, ln = s.launchCraft(c0), maxL3 = 0, outOk = true, moved = 0;
+  for (i = 0; i < 20 / DT && c0.wellT && c0.wellT.ph === "out"; i++) {
+    Game.tick(DT);
+    if (c0.wellT && c0.wellT.ph === "out") {
+      var r3 = rel(s, c0);
+      maxL3 = Math.max(maxL3, Math.abs(r3.l));
+      if (r3.s > c0.wellT.to + 0.5 || r3.s < ax.exit - c0.r - 0.5) outOk = false;
+      moved = Math.hypot(s.x - x0, s.y - y0);
+    }
+  }
+  ticks(10, function () { return !c0.wellT; });
+  chk("launched while she steams on, the craft keeps to her centreline in the well as she moves, and reaches its water",
+      typeof ln === "number" && outOk && maxL3 < 0.5 && moved > TT && s.order.type === "move" && !c0.wellT && onSea(c0),
+      "she made " + tiles(moved) + " tiles while it was in the well; off her centreline " + maxL3.toFixed(2) + " px; she " + s.order.type);
+  s.give({ type: "move", x: O.x, y: O.y });                // and on, back the way she came
+  c0.give({ type: "enter", target: s });
+  var maxL4 = 0, sawIn = false, inX = null, moved2 = 0;
+  var tin = ticks(60, function () {
+    if (c0.wellT && c0.wellT.ph === "in") {
+      sawIn = true; maxL4 = Math.max(maxL4, Math.abs(rel(s, c0).l));
+      if (!inX) inX = { x: s.x, y: s.y };
+      moved2 = Math.hypot(s.x - inX.x, s.y - inX.y);
+    }
+    return c0.carried;
+  });
+  chk("...and recovered while she still steams, it comes in through the gate on her centreline",
+      tin > 0 && sawIn && maxL4 < 0.5 && s.well.indexOf(c0) >= 0 && moved2 > TT * 0.5,
+      "in after " + tin.toFixed(1) + " s, she made " + tiles(moved2) + " tiles while it ran up the well, off her centreline " + maxL4.toFixed(2) + " px");
+  s.order = { type: "idle" }; s.path = null;
+
+  /* (e) sunk with one inside and one clear of her */
+  var k2 = spawn("lst", s.x, s.y); s.dockCraft(k2);
+  var both = s.well.slice();                               // c0 at the head, k2 behind it
+  s.launchAll();
+  ticks(20, function () { return both[1].wellT && both[1].wellT.ph === "off"; });
+  var inside = both[0].inWell(), clear = both[1].wellT && both[1].wellT.ph === "off";
+  Combat.kill(Game, s, null);
+  ticks(10, function () { return !both[1].wellT; });
+  chk("sunk with one craft inside her and one clear of her sill, the one inside goes down with her; the other reaches its water",
+      inside && clear && s.dead && both[0].dead && !both[1].dead && !both[1].wellT && onSea(both[1]),
+      "inside " + inside + " dead " + both[0].dead + "; clear " + clear + " dead " + both[1].dead + " free " + !both[1].wellT);
+  gone(both[1]); gone(tk);
+
+  /* (f) untouched: a ship without a well, an LCAC on its own */
+  useEra("e20");
+  var am = spawn("lha_n", O.x, O.y), lc = spawn("lst", O.x + 3 * TT, O.y);
+  lc.give({ type: "move", x: O.x + 3 * TT, y: O.y + 4 * TT });
+  var tl = ticks(15, function () { return Math.hypot(lc.x - O.x - 3 * TT, lc.y - O.y - 4 * TT) < TT * 0.8; });
+  chk("an America (no well) has no gate and never opens one; an LCAC on its own sails where it is sent, as before",
+      !Unit.wellAxis(am.def) && !am.gateT && !am.gateHold && !am.gateOpen && !(am.wellGo && am.wellGo.length) &&
+      tl > 0 && !lc.wellT && inGrid(lc),
+      "America gate " + am.gateT + "; LCAC there after " + tl.toFixed(1) + " s");
+  gone(am); gone(lc);
+
+  /* (g) the Ivan Rogov's bow ramp */
+  var fac0 = P.faction;
+  as("pact", "e80");
+  var B = BEACH, ir = spawn("pact_e80_lpd", (B.x + B.dx * 2 + 0.5) * TT, (B.y + B.dy * 2 + 0.5) * TT);
+  ir.ang = Math.atan2(-B.dy, -B.dx);
+  var rt = spawn("mbt_n", P.homeX, P.homeY); ir.cargo.push(rt); rt.carried = true;
+  var nu = ir.unload((B.x - B.dx + 0.5) * TT, (B.y - B.dy + 0.5) * TT), rh = ir.rampHold;
+  var tr0 = ticks(G0.RAMP + 1, function () { return !(ir.rampHold > 0); });
+  chk("an Ivan Rogov putting a tank on a beach lowers her bow ramp for " + G0.RAMP + " s; her stern gate stays shut",
+      nu === 1 && rh === G0.RAMP && Math.abs(tr0 - G0.RAMP) < 0.1 && !ir.gateT && !ir.gateOpen,
+      nu + " landed, ramp held " + rh + " s, up after " + tr0.toFixed(2) + " s");
+  gone(rt); gone(ir);
+  P.faction = fac0; useEra("e20");
+}
 
 /* ---------------- 9. save and load with a wing and a hold ---------------- */
 function secSave() {
@@ -1367,4 +1598,51 @@ function secAssault() {
       bad.length === 0 && built.length === 0 && named.length === 0, bad.concat(built, named).join(","));
   P.faction = fac0;
   useEra("e20");
+}
+
+/* ---------------- 13. saved and loaded with craft in her gate (WELL TRANSIT) ---------------- */
+function secGateSave() {
+  log("\n[13] saved with two craft driving out of a Wasp's well and one driving in, loaded and driven on (last: the load rebuilds the match)");
+  P = Game.human; M = Game.map;
+  useEra("e00");
+  var O = openSea(8) || openSea(5);
+  if (!O) { chk("open sea for the gate", false, ""); return; }
+  var s = spawn("nato_e00_lhd", O.x, O.y); s.ang = -0.9;
+  var a = spawn("lst", O.x, O.y), b = spawn("lst", O.x, O.y);
+  s.dockCraft(a); s.dockCraft(b);
+  var c = spawn("lst", O.x, O.y), dp = s.wellDoor(c);
+  c.x = dp.x; c.y = dp.y;
+  s.launchAll(); s.takeIntoWell(c);
+  ticks(3);
+  var before = [a, b, c].map(function (u) { return { ph: u.wellT && u.wellT.ph, ws: u.wellT ? u.wellT.s : NaN, x: u.x, y: u.y }; });
+  var g0 = s.gateT, sx = s.x, sy = s.y;
+  var r = SaveGame.save(Game, "ironfront.lhdcheck13");
+  var ld = r.ok ? SaveGame.load("ironfront.lhdcheck13") : { ok: false, error: r.error };
+  chk("saved at 3 s - two craft in her well on their way out, one on its way in - and loaded",
+      r.ok && ld.ok && before[0].ph === "out" && before[1].ph === "out" && before[2].ph === "in",
+      (r.error || "") + (ld.error || "") + " phases " + before.map(function (x) { return x.ph; }).join(","));
+  if (!ld.ok) return;
+  P = Game.human; M = Game.map;
+  useEra("e00");
+  var S = null, K = [];
+  Game.entities.forEach(function (e) {
+    if (e.kind === "unit" && !e.dead && e.def.id === "nato_e00_lhd" && Math.hypot(e.x - sx, e.y - sy) < 3) S = e;
+  });
+  before.forEach(function (bf) {
+    var f = null;
+    Game.entities.forEach(function (e) { if (e.kind === "unit" && !e.dead && e.def.id === "lst" && Math.hypot(e.x - bf.x, e.y - bf.y) < 2) f = e; });
+    K.push(f);
+  });
+  var back = !!S && K.every(function (u, j) {
+    return u && u.wellT && u.wellT.ship === S && u.wellT.ph === before[j].ph && S.wellGo.indexOf(u) >= 0 &&
+           Math.abs(u.wellT.s - before[j].ws) < 0.01 && Math.abs(rel(S, u).s - before[j].ws) < 2 && Math.abs(rel(S, u).l) < 2 && !u.carried; });
+  chk("...each craft is back in her transit, in its phase, where it was in her frame; her gate is open as it was",
+      back && Math.abs(S.gateT - g0) < 0.01 && S.gateOpen,
+      S ? K.map(function (u, j) { return u ? u.wellT ? u.wellT.ph + " " + rel(S, u).s.toFixed(1) + "/" + before[j].ws.toFixed(1) : "free" : "missing"; }).join(", ") +
+          "; gate " + S.gateT + " (" + g0 + ")" : "no Wasp");
+  if (!back) return;
+  var tg = ticks(40, function () { return !K[0].wellT && !K[1].wellT && K[2].carried && S.gateT === 0; });
+  chk("...driven on, the two reach their water, the third is docked in her well, and her gate shuts",
+      tg > 0 && onSea(K[0]) && onSea(K[1]) && !K[0].carried && S.well.length === 1 && S.well[0] === K[2] && !S.gateOpen,
+      "after " + tg.toFixed(1) + " s; well " + S.well.length);
 }
