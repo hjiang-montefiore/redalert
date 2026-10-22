@@ -774,6 +774,10 @@ function makeCommander() {
     asTick = 0; asBook.clear(); asStMemo = null;
     for (const k in asQuick) delete asQuick[k];
     for (const k in asHold) delete asHold[k];
+    /* nor a sortie in hand, a use read, a loss remembered or a drop point (AIR BRIDGE) */
+    liftTick = 0; liftOps = []; liftUseV = null; liftUseT = -1e9;
+    liftShy = []; liftDropMemo = null; liftWhy = {};
+    liftDemandT = -1e9; liftFlown = 0;
     intelT = 0; lastDigest = 0; aim = null;
     /* the plan's income average, budget and survey belong to one battle */
     macro = macroBook();
@@ -920,6 +924,15 @@ function makeCommander() {
     if (asTick <= 0) {
       asTick = Math.max(0.5, (D.think || 1.6) * 0.5);
       driveAirSafe();
+    }
+    /* ---- the army by air (AIR BRIDGE) ----
+       The same clock for the same reason: a transport waiting on its ramp
+       for a load that is aboard, or a party just put down beside a strip,
+       must not wait for a quiet factory. */
+    liftTick -= dt;
+    if (liftTick <= 0) {
+      liftTick = Math.max(0.5, (D.think || 1.6) * 0.5);
+      driveLift();
     }
     /* ---- the eyes ----
        Off think() for the reason the raid is: think() returns early on every
@@ -6219,6 +6232,7 @@ function makeCommander() {
          the exact bug the AWACS used to have. updateAir clears `parked` the
          moment it is given anything that is not a parked order. */
       if (ot === "rtb" || ot === "land") continue;   // going home: leave it alone
+      if (ot === "airland") continue;                // on a strip, or flying a delivery (AIRLIFT LANDING)
       if (t.offload <= 0) continue;                  // dry boom: entities.js takes it home
       if (t.fuel < t.reserveFuel()) continue;        // ONE reserveFuel call, for one aircraft
       if (!logiOrbit) {                              // no legal station: hold over our own
@@ -8935,6 +8949,14 @@ function makeCommander() {
     if (D.radar && P.hasBuilding("radar") && fielded("vehicle", d => d.radar) < 2 &&
         queueLen("vehicle") < 3 && P.cash > 1400) tryBuildUnit("radarv");
 
+    /* -------- AIR BRIDGE --------
+       Transports only where carrying the army by air has a use (see AIR
+       BRIDGE), and only once two armed aircraft are fielded: ahead of the
+       rest of the air force's growth, which is never finished - its
+       ceilings rise with the fuel (armSurge) - so a transport placed after
+       it would wait for the whole battle. */
+    if (liftBuy(nAir)) return;
+
     /* -------- AIR FORCE -------- */
     if (nAir >= 1 && queueLen("aircraft") < 2) {
       const helos = count(u => u.def.role === "gunship");
@@ -9299,8 +9321,10 @@ function makeCommander() {
        whole match, and the air force existed only as a bill. */
     for (const a of P.units) {
       if (a.dead || a.layer !== "air") continue;
-      /* the airframe detailed as eyes (airScout) is flown by driveScouts */
-      if (a._scout) continue;
+      /* the airframe detailed as eyes (airScout) is flown by driveScouts,
+         a transport on a sortie by driveLift (AIR BRIDGE) - and a delivery
+         in hand, on the ground or on its way, is nobody's to re-task here */
+      if (a._scout || a._lift || (a.order && a.order.type === "airland")) continue;
       const idle = a.order.type === "hover" || a.order.type === "parked" ||
                    a.order.type === "idle";
       /* ---- a jammer with nothing to shoot is flown by flyJammer() ----
@@ -9773,6 +9797,581 @@ function makeCommander() {
         if (l._hard) l.give({ type: "move", x: l._hard.x, y: l._hard.y });
       amphib.state = "idle";
     }
+  }
+
+  /* ================= AIR BRIDGE: the army carried by air =================
+     (owner) "the computers airlift vehicles too, measured with the same-seed
+     scorecard before committing" - stage 2 of AIRLIFT. The engine carries a
+     vehicle by its real weight and floor and puts it down on open ground
+     (entities.js AIRLIFT, HOLD SPACE, AIRLIFT LANDING; game.js G.findStrip,
+     G.airLand); until this the commander never bought a transport at all,
+     and its one use of the role was a hovering transport as a spotter
+     (airScout) that no army of its ever owned.
+
+     WHEN. Carrying the army by air is worth its price in exactly two places,
+     and nowhere else:
+       SPLIT  the rival lives across water - groundConnected has read false
+              for thirty seconds, runAmphib's own hold. The landing craft are
+              the only other way over. The bridge flies ALONGSIDE them: its
+              loads go to the body already ashore - a held forward point -
+              else beside the beach the landing is making for, else (no craft
+              under way) to quiet ground near the objective, scored the way
+              findBeach scores a beach; and whatever it puts down joins the
+              wave as a landed party does (_landed, so the split-theatre prune
+              in runAmphib keeps it).
+       FAR    (Veteran up) the rival's believed home is more than LIFT_FAR
+              tiles off in a straight line - which is what the transport
+              flies, and the road is only ever longer. A vehicle's tank is a
+              hundred units at CFG.FUEL_BURN_LAND 1.5/s, 67 s of movement, a
+              hundred tiles at a wave's 1.5 tiles a second; 120 tiles in a
+              straight line is more than that by any road. There the loads
+              go only to a body already out and at least half that far from
+              home: the bridge reinforces a fight at the end of a long road,
+              it does not open one.
+     It is the straight line and not pickRival's route that decides: that
+     route winds - measured, 128 tiles of it between fulda's two bases,
+     61 apart - and the drive, which supply trucks and the depot already
+     serve, is not what the transport would replace. Of the 144-tile
+     theatres only kuwait's bases (123 tiles) are that far apart; fulda (61),
+     korea (71) and the rest have no use, buy nothing and play exactly as
+     they did. On the 240 and 288 theatres most do.
+
+     WHAT IT BUYS. The real transports the army has in that decade
+     (unitFor: the "transport" helicopter, the "airlift" aeroplane): a
+     helicopter for infantry - none of the army's vehicles is inside a
+     Black Hawk's or a Mi-8's 3.6 to 4.1 t - and, Veteran up, an aeroplane
+     only if a vehicle the army fields fits its payload and its hold (a
+     C-130H takes an M551 or an M163, not an M60 or a Bradley; no Warsaw
+     Pact row is a
+     fixed-wing transport, so that side never buys one and the role is
+     cooled, not invented). Each on a measured demand (liftBuy below), one
+     order at a time, after the first two armed aircraft, through
+     tryBuildUnit (bank, hoard, the air service's fuel claim) and only with
+     its price plus 500 in the bank.
+
+     LOADING. A load is called from the army standing at home - idle or on
+     guard, within LIFT_GATHER tiles, in no wave, no landing, no raid - and
+     never its last two bodies - LIFT_KEEP while a real force has been at
+     our works in the last 45 s - nor while the core is held (coreHeld).
+     Vehicles first, the most valuable that fits (canAirlift with everything
+     already promised counted against the weight and the floor), then
+     infantry to the seats. A helicopter flies to the load and holds over a
+     clear tile beside it (liftStart says why); an aeroplane is loaded only
+     shut down on its ramp (loadingNow) - a vehicle sent at one that is
+     rolling is refused "IN THE AIR" / "STILL ROLLING" - and the load is
+     waited for up to LIFT_LOAD seconds, then it goes with what is aboard. Those called are
+     marked (_lift) and groundArmy() leaves them out, so the landing, the
+     wave and the base defence cannot hand them a second order.
+
+     THE DROP POINT, off this commander's own picture only: known air
+     defence rings (G.standoffRings, AIRSAFE's list) with a turning circle
+     and two tiles of margin for an aeroplane, since a delivery is flown
+     straight and does not route round a ring; Veteran up, the straight leg
+     from the transport too; the threat field (exposureAt) and enemy weight
+     on the plot near the point (foeNear); a recent alarm (a party with no
+     body to join) or a transport lost there inside LIFT_LOST_SHY seconds;
+     the ground the anchor stands on (Path.components). An aeroplane also
+     needs a strip there (G.findStrip, itself fog-honest), its ends outside
+     the rings, and the fuel to land and get home (G.airlandFuel).
+
+     DIFFICULTY (D.read): Recruit never; Regular one helicopter on a split
+     theatre, its drop point checked where it lands; Veteran the leg in as
+     well, an aeroplane, and the far use; Elite up a second helicopter once
+     the first has earned it.
+
+     A/B: P.aiOff "airlift" switches every part of it off, and nothing it
+     adds to the shared code (groundArmy, airScout, the sortie loop, the
+     tanker loop) then has anything to act on. COUNTERS in P.aiStats:
+     airliftBought, airliftSorties, vehiclesFlown, troopsFlown, lostInFlight
+     and lostInFlightCr (transport and load, credits), airliftNoDrop,
+     airliftRefused, airliftDry, airliftBack (a delivery given up with the
+     load aboard), airliftTaken (one under way taken back after a save is
+     loaded), and airliftWhy_* - per pass of the driver
+     with a use, why no sortie started (wait: nothing due; core: the base
+     held; ramp: no transport free; pool, load: too few standing at home;
+     drop: nowhere safe) or that one did (go).
+
+     MEASURED (tools/jsc/scorecard.py --paired --off airlift, taiwan and
+     hormuz at e80 and e20): see the commit; the bridge flies in a minority
+     of split-theatre battles, because the army standing at home is what the
+     landing craft and the base defence have left - "pool" is the commonest
+     reason a sortie does not start. */
+  const LIFT_LOAD = 45;          // s a load is waited for before it goes with what is aboard
+  const LIFT_GATHER = 30;        // tiles from the transport a passenger is called from
+  const LIFT_KEEP = 4;           // standing bodies the bridge leaves at home under threat (2 otherwise)
+  const LIFT_FAR = 120;          // tiles in a straight line: more than a vehicle's tank by any road
+  const LIFT_LOST_SHY = 180;     // s a drop point near a lost transport is avoided
+  const LIFT_FLY_MAX = 300;      // s a sortie is followed before it is let go
+  let liftTick = 0;
+  let liftOps = [];              // sorties in hand: { t, use, ph, plan, seen, until, t0, flyT }
+  let liftUseV = null, liftUseT = -1e9;
+  let liftShy = [];              // { x, y, until }: where a transport of ours went down
+  let liftDropMemo = null;       // the last drop point chosen, for a few seconds
+  let liftWhy = {};              // why the next sortie did or did not start, counted (intel)
+  let liftDemandT = -1e9;        // when a load last stood at home with no transport free
+  let liftFlown = 0;             // sorties flown this battle
+  function liftOn() { return (D.read || 0) >= 0.35 && !(P.aiOff && P.aiOff.has("airlift")); }
+  function liftStat(k, n) { asStat(k, n); }
+  /* "split", "far" or null - read every five seconds */
+  function liftUse() {
+    if (!liftOn() || !rival) return null;
+    const now = G.time;
+    if (now - liftUseT < 5) return liftUseV;
+    liftUseT = now; liftUseV = null;
+    const at = intelHome(rival);
+    if (!at) return null;
+    if (!groundConnected) { if (splitSince >= 0 && now - splitSince > 30) liftUseV = "split"; }
+    else if ((D.read || 0) >= 0.6 && U.dist(P.homeX, P.homeY, at.x, at.y) / CFG.TILE > LIFT_FAR) liftUseV = "far";
+    return liftUseV;
+  }
+  function isLifter(u) { return !u.dead && u.layer === "air" && !!u.def.payload; }
+  /* a transport the bridge keeps for itself while it has a use (airScout) */
+  function liftKeeps(u) { return !!u.def.payload && (!!u._lift || !!liftUse()); }
+  function liftFree(u) { if (u && u._lift) u._lift = null; }
+  /* the body a load joins: the wave on the far shore (split), or the wave
+     out at the end of a long road (far) */
+  function liftBody(use) {
+    /* on a split theatre only what stands on the rival's ground counts: a
+       landed party that came back to fight on our own shore (measured on
+       taiwan, ten tiles from home) is not a forward point */
+    const lab = use === "split" ? compOf("ground") : null;
+    const at = lab ? intelHome(rival) : null;
+    const far = at ? compAt(lab, at.x, at.y) : 0;
+    let x = 0, y = 0, n = 0;
+    for (const u of attackWave) {
+      if (!u || u.dead || u.carried || u.layer !== "ground") continue;
+      if (use === "split" && (!u._landed || !far || compAt(lab, u.x, u.y) !== far)) continue;
+      x += u.x; y += u.y; n++;
+    }
+    if (n < 2) return null;
+    x /= n; y /= n;
+    if (use === "far" && U.dist(x, y, P.homeX, P.homeY) / CFG.TILE < LIFT_FAR * 0.5) return null;
+    return { x, y, n };
+  }
+  /* where a load is put down near: the body, the beach the landing is
+     making for, or the objective itself (split, with nothing ashore) */
+  function liftAnchor(use) {
+    const b = liftBody(use);
+    if (b) return { x: b.x, y: b.y, near: true, why: "body" };
+    if (use !== "split") return null;
+    if (amphib.state !== "idle" && amphib.beach)
+      return { x: amphib.beach.landX, y: amphib.beach.landY, near: true, why: "beach" };
+    const o = warAim();
+    if (!o || o.raid) return null;
+    return { x: o.x, y: o.y, near: false, why: "aim" };
+  }
+  /* somewhere a transport of ours was lost, lately */
+  function liftHot(px, py) {
+    const now = G.time, R2 = Math.pow(CFG.TILE * 10, 2);
+    for (let i = liftShy.length - 1; i >= 0; i--) {
+      if (liftShy[i].until < now) { liftShy.splice(i, 1); continue; }
+      if (U.dist2(liftShy[i].x, liftShy[i].y, px, py) < R2) return true;
+    }
+    return false;
+  }
+  /* The point transport t puts its load down near, or null (above, THE DROP
+     POINT). Scored as findBeach scores a beach - fire on the point in
+     credits, plus the walk to what it is joining - over rings of candidates
+     round the anchor; the best six are tried for a strip. */
+  function liftDrop(t, use) {
+    const now = G.time, plane = !t.def.hover, stub = !t.airBurn;
+    const memo = liftDropMemo;
+    if (memo && memo.plane === plane && memo.stub === stub && memo.use === use && now - memo.t < 6 &&
+        U.dist2(memo.fx, memo.fy, t.x, t.y) < Math.pow(CFG.TILE * 8, 2)) return memo.res;
+    const res = liftDrop0(t, use, plane);
+    liftDropMemo = { t: now, plane, stub, use, fx: t.x, fy: t.y, res };
+    return res;
+  }
+  function liftDrop0(t, use, plane) {
+    const a = liftAnchor(use);
+    if (!a) { liftWhy.noAnchor = (liftWhy.noAnchor || 0) + 1; return null; }
+    const M = G.map, T2 = CFG.TILE, W = M.W, now = G.time;
+    const turnR = plane ? (t.def.speed || 3) / Math.max(0.05, t.def.turn || 1) : 0;
+    const m = plane ? turnR + 2 : 1.5;              // tiles round every ring
+    const R = asRings(), full = (D.read || 0) >= 0.6;
+    const lab = compOf("ground"), comp = lab ? compAt(lab, a.x, a.y) : 0;
+    const atx = (a.x / T2) | 0, aty = (a.y / T2) | 0;
+    const r0 = a.near ? 2 : 4, r1 = a.near ? 14 : 36;
+    const n0 = Math.max(0, alarms.length - 80);
+    const cand = [];
+    for (let r = r0; r <= r1; r += 2) {
+      for (let k = 0; k < 24; k++) {
+        const ang = k / 24 * U.PI2;
+        const tx = (atx + Math.cos(ang) * r) | 0, ty = (aty + Math.sin(ang) * r) | 0;
+        if (tx < 2 || ty < 2 || tx >= W - 2 || ty >= M.H - 2) continue;
+        if (!GameMap.passable(M, tx, ty, "ground")) continue;
+        if (comp && lab[ty * W + tx] !== comp) continue;
+        const px = (tx + 0.5) * T2, py = (ty + 0.5) * T2;
+        if (G.airThreatAt(P, px, py, m, R) > 0) continue;
+        if (full && asLegHot(R, t.x, t.y, px, py)) continue;
+        if (liftHot(px, py)) continue;
+        /* a party with no body to join keeps off ground where ours were
+           shot at lately and nobody saw by what (findBeach's veto); beside a
+           body in a fight every tile has an alarm on it */
+        let hot = false;
+        if (!a.near)
+          for (let i = alarms.length - 1; i >= n0; i--) {
+            const al = alarms[i];
+            if (now - al.t > 120) break;
+            if (U.dist2(al.x, al.y, px, py) < T2 * T2 * 36) { hot = true; break; }
+          }
+        if (hot) continue;
+        const foe = foeNear(px, py, T2 * 8);
+        if (foe > 2.5) continue;
+        const dps = exposureAt(px, py, 0.5);
+        const walk = U.dist(px, py, a.x, a.y) / T2;
+        cand.push({ x: px, y: py, score: -(dps * BEACH_DWELL / HP_CR) - foe * 400 - walk * 40 });
+      }
+    }
+    if (!cand.length) { liftWhy["noCand_" + a.why] = (liftWhy["noCand_" + a.why] || 0) + 1; return null; }
+    cand.sort((p, q2) => q2.score - p.score);
+    for (let i = 0; i < Math.min(6, cand.length); i++) {
+      const c = cand[i];
+      if (!plane) return { x: c.x, y: c.y, why: a.why };
+      const s = G.findStrip(t, c.x, c.y);
+      if (!s) continue;
+      if (G.airThreatAt(P, s.ax, s.ay, m, R) > 0 || G.airThreatAt(P, s.bx, s.by, m, R) > 0) continue;
+      if (full && asLegHot(R, t.x, t.y, s.ax, s.ay)) continue;
+      if (t.airBurn ? !G.airlandFuel(t, s).reach
+                    /* a type asked about before it is bought has no tanks to
+                       read: its published radius from the airbase, then */
+                    : U.dist(t.x, t.y, s.bx, s.by) / T2 > (t.def.radius || 0)) continue;
+      return { x: c.x, y: c.y, why: a.why };
+    }
+    liftWhy.noStrip = (liftWhy.noStrip || 0) + 1;
+    return null;
+  }
+  /* who may be called: the army standing at home, near the transport (or
+     near home, t null) */
+  function liftPool(t) {
+    const R2 = Math.pow(LIFT_GATHER * CFG.TILE, 2), out = [];
+    const cx = t ? t.x : P.homeX, cy = t ? t.y : P.homeY;
+    for (const u of groundArmy()) {
+      if (u.carried || u.garrisonIn || u.noWave || u._landed) continue;
+      const ot = u.order && u.order.type;
+      if (ot !== "idle" && ot !== "guard") continue;
+      if (attackWave.indexOf(u) >= 0 || homeward.indexOf(u) >= 0) continue;
+      if (U.dist2(u.x, u.y, cx, cy) > R2) continue;
+      out.push(u);
+    }
+    return out;
+  }
+  /* the home guard: LIFT_KEEP while a real force has been at our works in
+     the last 45 s (underThreat), two otherwise */
+  function liftKeep() { return underThreat() ? LIFT_KEEP : 2; }
+  /* what goes: vehicles first, the most valuable that fits, then infantry
+     to the seats - never the home guard */
+  function liftLoad(t, pool) {
+    const room = pool.length - liftKeep();
+    if (room <= 0) return [];
+    const near = (a, b) => U.dist2(a.x, a.y, t.x, t.y) - U.dist2(b.x, b.y, t.x, t.y);
+    const veh = pool.filter(u => u.cat === "vehicle")
+      .sort((a, b) => (P.factionCost(b.def) - P.factionCost(a.def)) || near(a, b));
+    const inf = pool.filter(u => u.cat === "infantry").sort(near);
+    const pend = [];
+    for (const v of veh) if (pend.length < room && t.canAirlift(v, pend)) pend.push(v);
+    for (const i of inf) if (pend.length < room && t.canAirlift(i, pend)) pend.push(i);
+    return pend;
+  }
+  /* enough to be worth a sortie: a vehicle, or a third of the seats */
+  function liftEnough(t, load) {
+    const n = load.length + t.cargo.length;
+    if (load.some(u => u.cat === "vehicle") || t.cargo.some(u => u.cat === "vehicle")) return n > 0;
+    return n >= Math.ceil((t.def.cargo || 3) / 3);
+  }
+  function liftStart(t, use, load) {
+    const now = G.time, T2 = CFG.TILE;
+    const op = { t, use, ph: "load", plan: [], seen: new Set(), until: now + LIFT_LOAD, t0: now, flyT: 0 };
+    for (const c of t.cargo) if (!c.dead) { op.plan.push(c); op.seen.add(c.id); c._lift = op; }
+    for (const u of load) { u._lift = op; u.give({ type: "enter", target: t }); op.plan.push(u); }
+    /* A helicopter goes to its load rather than wait on its pad for it:
+       infantry walks a tile a second and the pad is twenty to thirty tiles
+       from where the squads stand, so on a split theatre (measured, taiwan
+       e80) loads called to the pad ran out of LIFT_LOAD and went home dry.
+       It flies to the middle of the load and holds over the centre of a
+       clear tile there: a squad boards a helicopter wherever it hovers, but
+       only from within about a tile of it (updateEnter: r + r + 10 pixels),
+       so over a tile somebody stands on the squads stopped a tile short and
+       never got in. Not by landing to be loaded (G.airLand on an empty
+       transport): that order sets down and puts off whatever is aboard, and
+       squads that had climbed in under it on the way were put straight back
+       out (measured: four of five). */
+    if (t.def.hover && load.length) {
+      let cx = 0, cy = 0;
+      for (const u of load) { cx += u.x; cy += u.y; }
+      cx /= load.length; cy /= load.length;
+      if (U.dist(cx, cy, t.x, t.y) > T2 * 6) {
+        const g = Path.nearest(G.map, U.clamp((cx / T2) | 0, 0, G.map.W - 1), U.clamp((cy / T2) | 0, 0, G.map.H - 1),
+                               "ground", (a, b) => G.tileBlocked(a, b, null), 6);
+        if (g) { t.give({ type: "move", x: (g.x + 0.5) * T2, y: (g.y + 0.5) * T2 }); op.pickup = true; }
+      }
+    }
+    t._lift = op; t._liftLet = false;
+    liftOps.push(op);
+    return op;
+  }
+  /* A delivery under way that no sortie holds: a save loaded mid-sortie
+     (the commander's sorties are not saved; the transport, its airland
+     order and its cargo are - save.js). Taken back as a sortie in flight,
+     or the load is put down as nobody's: on a split theatre a party on the
+     far shore in no wave, and a helicopter, whose queued way home is not
+     saved either, hovering over the drop point for the rest of the battle.
+     Split or far by the ground the drop point stands on. */
+  function liftTake(t) {
+    const o = t.order.type === "airland" ? t.order : t.order.then, now = G.time;
+    const lab = compOf("ground");
+    const ca = lab ? compAt(lab, o.x, o.y) : 0, ch = lab ? compAt(lab, P.homeX, P.homeY) : 0;
+    const op = { t, use: ca && ch && ca !== ch ? "split" : "far", ph: "fly", plan: [], seen: new Set(),
+                 until: now, t0: now, flyT: now };
+    for (const c of t.cargo) if (!c.dead) { op.plan.push(c); op.seen.add(c.id); c._lift = op; }
+    if (t.def.hover && !(t.orders && t.orders.length)) t.give({ type: "rtb" }, true);
+    t._lift = op;
+    liftOps.push(op);
+    liftStat("airliftTaken");
+  }
+  /* the passengers that never got aboard stay home */
+  function liftStandDown(op) {
+    for (const u of op.plan) {
+      if (u.dead || u.carried) continue;
+      if (u.order && u.order.type === "enter" && u.order.target === op.t) u.give({ type: "idle" });
+      if (u._lift === op) liftFree(u);
+    }
+  }
+  /* put down: into the wave, at the objective it is fighting for */
+  function liftAshore(u, op, tg) {
+    liftFree(u);
+    if (tg) {
+      if (tg.mode === "siege" && tg.stand) u.give({ type: "guard", x: tg.stand.x, y: tg.stand.y });
+      else u.give({ type: "attackmove", x: tg.x, y: tg.y });
+    }
+    if (op.use === "split") u._landed = true;
+    if (attackWave.indexOf(u) < 0) attackWave.push(u);
+    liftStat(u.cat === "vehicle" ? "vehiclesFlown" : "troopsFlown");
+  }
+  function liftEnd(op) {
+    if (op.t && op.t._lift === op) op.t._lift = null;
+    for (const u of op.plan) if (u._lift === op) liftFree(u);
+    const i = liftOps.indexOf(op);
+    if (i >= 0) liftOps.splice(i, 1);
+  }
+  /* the sorties in hand, and the next one (update(), on its own clock) */
+  function driveLift() {
+    if (!liftOn()) {
+      /* switched off with a sortie in hand: let everybody go */
+      if (liftOps.length) for (const op of liftOps.slice()) { liftStandDown(op); liftEnd(op); }
+      return;
+    }
+    const now = G.time;
+    let joined = false, tg = null;
+    for (const op of liftOps.slice()) {
+      const t = op.t;
+      op.plan = op.plan.filter(u => !u.dead);
+      /* ---- down: whoever of the load stands on the ground at the drop
+         joins the wave - ahead of the transport's loss, because one shot
+         down in the seconds it stands at the point, the load just off it,
+         has still put the load there (else it was let go below as nobody's,
+         in no wave, on the far shore) ---- */
+      if (op.ph === "fly")
+        for (const u of op.plan) {
+          if (u.dead || u.carried || u._lift !== op || !op.seen.has(u.id)) continue;
+          if (!tg) tg = groundTarget();
+          liftAshore(u, op, tg);
+          joined = true;
+        }
+      if (t.dead) {
+        /* shot down on a sortie, or picking its load up with some of it
+           aboard: what was aboard went with it (game.js) */
+        if (op.ph === "fly" || (op.inside && op.inside.length)) {
+          let cr = P.factionCost(t.def);
+          for (const u of op.inside || []) cr += P.factionCost(u.def);
+          liftStat("lostInFlight"); liftStat("lostInFlightCr", cr);
+          liftShy.push({ x: t.x, y: t.y, until: now + LIFT_LOST_SHY });
+        }
+        liftStandDown(op); liftEnd(op);
+        continue;
+      }
+      for (const u of op.plan) if (u.carried && t.cargo.indexOf(u) >= 0) op.seen.add(u.id);
+      op.inside = t.cargo.filter(c => !c.dead);
+      if (op.ph === "load") {
+        /* a passenger turned away at the ramp, or given another order, is let go */
+        for (const u of op.plan)
+          if (!u.carried && u._lift === op && !(u.order && u.order.type === "enter" && u.order.target === t)) liftFree(u);
+        op.plan = op.plan.filter(u => u._lift === op);
+        const plane = !t.def.hover;
+        const coming = op.plan.some(u => !u.carried);
+        if (coming && now <= op.until && (!plane || t.loadingNow())) continue;
+        liftStandDown(op);
+        op.plan = op.plan.filter(u => u.carried && t.cargo.indexOf(u) >= 0);
+        /* A helicopter that flew out to its load and goes nowhere after all
+           is sent home: no other code flies an idle transport (the sortie
+           loop leaves them to wait for a task, and burns no fuel on a
+           hover), and the next sortie is asked only of one within
+           LIFT_GATHER of home - the load's middle can be twice that out. */
+        const back = () => { if (op.pickup) t.give({ type: "rtb" }); };
+        if (!t.cargo.length) { liftStat("airliftDry"); back(); liftEnd(op); continue; }
+        const d = liftDrop(t, op.use);
+        const why = d ? G.airLand(t, d.x, d.y) : "NO DROP POINT";
+        if (why) {
+          /* nowhere to take it after all: everybody off, at home */
+          liftStat(d ? "airliftRefused" : "airliftNoDrop");
+          t.unload(t.x, t.y);
+          back();
+          liftEnd(op);
+          continue;
+        }
+        if (t.def.hover) t.give({ type: "rtb" }, true);   // a helicopter stays over the point otherwise
+        op.ph = "fly"; op.flyT = now;
+        liftFlown++;
+        liftStat("airliftSorties");
+        continue;
+      }
+      /* ---- in the air ----
+         A delivery carried home for fuel, or to a tanker, comes back out
+         after it (entities.js airlandResume; save.js keeps all three) */
+      const o = t.order, busy = !!o && (o.type === "airland" ||
+        ((o.type === "rtb" || o.type === "land" || o.type === "tank") && !!o.then && o.then.type === "airland"));
+      if (!busy && t.cargo.length) {
+        /* Given up with the load aboard - a strip found blocked on finals
+           and no other near (our own wave drives across it), no line-up in
+           five goes (entities.js airlandAbort), no clear ground under a
+           helicopter: it is on its way home with them. Let go now, and the
+           load is put off once it is down there (below). */
+        liftStat("airliftBack");
+        liftEnd(op);
+        continue;
+      }
+      if (!t.cargo.length && !busy) liftEnd(op);
+      else if (now - op.flyT > LIFT_FLY_MAX) { t._liftLet = true; liftEnd(op); }
+    }
+    /* re-book, as a landing joining mid-assault does (runAmphib) */
+    if (joined) bookWave();
+
+    /* ---- a load aboard that no sortie holds ----
+       Carried, it is out of every order - groundArmy() leaves out what is
+       carried - and before this only a sortie that happened to start from
+       the same transport let it out again, which "pool" (the commonest
+       reason none starts) could hold off for the rest of the battle: a
+       delivery given up (above), one let go at LIFT_FLY_MAX that comes
+       home with some of it, a save loaded with the load called aboard.
+       Down at home, everybody off; a helicopter idle anywhere else is
+       brought home first; a delivery still under way is taken back
+       (liftTake), unless it is the one let go. */
+    for (const t of P.units) {
+      if (!isLifter(t) || t._lift || t._scout || t.carried || !t.cargo.length) continue;
+      const o = t.order, ot = o && o.type;
+      if (ot === "airland" || (o && o.then && o.then.type === "airland")) { if (!t._liftLet) liftTake(t); continue; }
+      if (t.def.hover) {
+        if (!t.parked && ot !== "parked" && ot !== "hover" && ot !== "idle") continue;   // on its way
+        if (U.dist2(t.x, t.y, P.homeX, P.homeY) > Math.pow(LIFT_GATHER * CFG.TILE, 2)) { t.give({ type: "rtb" }); continue; }
+      } else if (!t.parked) continue;                  // shut down on a ramp only
+      t.unload(t.x, t.y);
+    }
+
+    /* ---- the next sortie: one a pass ---- */
+    if (atPeace) return;
+    const use = liftUse();
+    if (!use) return;
+    /* why the next sortie did or did not start, a pass at a time, in the
+       intel and (as airliftWhy_*) in P.aiStats for the scorecard */
+    const why = (k) => { liftWhy[k] = (liftWhy[k] || 0) + 1; liftStat("airliftWhy_" + k); };
+    if (coreHeld(now)) { why("core"); return; }
+    if (!liftBody(use) && !(use === "split" && (opReady || amphib.state !== "idle"))) { why("wait"); return; }
+    const T2 = CFG.TILE, H2 = Math.pow(LIFT_GATHER * T2, 2);
+    let any = false;
+    for (const t of P.units) {
+      if (!isLifter(t) || t._lift || t._scout || t.carried) continue;
+      if (t._liftNo > now || t.hp < t.maxHp * 0.5) continue;
+      const ot = t.order && t.order.type;
+      if (t.def.hover) {
+        if (!t.parked && ot !== "parked" && ot !== "hover" && ot !== "idle") continue;
+        if (U.dist2(t.x, t.y, P.homeX, P.homeY) > H2) continue;
+      } else {
+        /* an aeroplane takes vehicles only shut down on its ramp, and goes
+           with the tanks it will need (G.airLand sends it home first) */
+        if (!t.loadingNow() || t.grounded || t.fuel < t.fuelMax * 0.8) continue;
+      }
+      any = true;
+      const pool = liftPool(t);
+      if (pool.length <= liftKeep()) { why("pool"); continue; }
+      const load = liftLoad(t, pool);
+      if (!liftEnough(t, load)) { why("load"); t._liftNo = now + 10; continue; }
+      if (!liftDrop(t, use)) { why("drop"); liftStat("airliftNoDrop"); t._liftNo = now + 10; continue; }
+      liftStart(t, use, load);
+      why("go");
+      break;
+    }
+    if (!any) {
+      why("ramp");
+      /* A load standing at home, and somewhere safe to take it, with no
+         transport free to carry it: the measurement every transport is
+         bought on (liftBuy). The drop point is asked for a transport of the
+         kind the army would buy, standing on its airbase. */
+      const id = pickFor("transport") || pickFor("airlift"), def = id ? UNITS[id] : null;
+      if (def && !underThreat() &&
+          liftPool(null).length - liftKeep() >= Math.max(3, Math.ceil((def.cargo || 6) / 2))) {
+        const ab = G.nearestBuilding(P, "airbase", P.homeX, P.homeY);
+        if (liftDrop({ def: def, owner: P, x: ab ? ab.x : P.homeX, y: ab ? ab.y : P.homeY }, use))
+          liftDemandT = now;
+      }
+    }
+  }
+  /* ---- buying the transports (think(), ahead of the air force) ----
+     On a measurement, never on the theatre alone: a transport is bought only
+     when, in the last minute, a load - half the seats of the type it would
+     buy, never under three - has stood at home past the home guard, with a
+     sortie due and a safe drop point to fly it to,
+     no transport free to take it and no enemy force at our works in the last
+     45 s (liftDemandT; underThreat - a base being raided has no troops to
+     spare, and on hormuz a NATO commander bought two Black Hawks between
+     raids and flew neither). The first cut bought two
+     helicopters on the theatre and the bank, and on taiwan the Warsaw Pact
+     side flew neither once in 900 s: its army was all at the landing craft,
+     in a fight at home or under a ring. One helicopter; a second only from
+     Elite and only once the first has flown two sorties; the aeroplane
+     (Veteran up) only once a vehicle that fits its payload and its hold is
+     standing at home too. */
+  function liftWorth(def) {
+    if (!def || !def.payload) return false;
+    for (const u of liftPool(null)) {
+      if (u.cat === "infantry") { if (def.hover) return true; continue; }
+      if (u.cat !== "vehicle" || !(u.def.mass > 0) || u.def.mass > def.payload) continue;
+      if (def.hover) return true;                  // on the hook
+      const s = Unit.vehSize(u.def), F = def.hold;
+      if (!F || (s.W <= F[1] && s.L <= F[0])) return true;
+    }
+    return false;
+  }
+  function liftTry(role) {
+    if (roleCool[role] > G.time) return false;
+    const id = pickFor(role), def = id ? UNITS[id] : null;
+    if (!def || !def.payload) { roleCool[role] = G.time + 60; return false; }
+    if (!liftWorth(def) || P.cash < P.factionCost(def) + 500) return false;
+    if (tryBuildUnit(role)) { liftStat("airliftBought"); return true; }
+    return false;
+  }
+  function liftBuy(nAir) {
+    if (nAir < 1 || P.tech < 2 || queueLen("aircraft") >= 2) return false;
+    const use = liftUse();
+    if (!use) return false;
+    if (queuedRole("aircraft", d => !!d.payload)) return false;          // one on order at a time
+    if (fielded("aircraft", d => d.weapons.length > 0) < 2) return false; // cover first
+    const read = D.read || 0, now = G.time;
+    let helos = 0, planes = 0;
+    for (const u of P.units)
+      if (isLifter(u) && !u._scout) { if (u.def.hover) helos++; else planes++; }
+    if (now - liftDemandT > 60) return false;
+    if ((!helos || (helos < 2 && read >= 0.8 && liftFlown >= 2)) && liftTry("transport")) return true;
+    if (read >= 0.6 && planes < 1 && liftTry("airlift")) return true;
+    return false;
+  }
+  function liftIntel() {
+    const at = rival ? intelHome(rival) : null;
+    return { on: liftOn(), use: liftUse(),
+             apart: at ? Math.round(U.dist(P.homeX, P.homeY, at.x, at.y) / CFG.TILE) : -1,
+             ops: liftOps.map(op => ({ id: op.t.id, kind: op.t.def.id, ph: op.ph, use: op.use,
+                                       plan: op.plan.length, aboard: op.t.cargo.length,
+                                       order: op.t.order && op.t.order.type })),
+             shy: liftShy.length, why: Object.assign({}, liftWhy) };
   }
 
   /* ---- manoeuvre ----
@@ -11197,7 +11796,10 @@ function makeCommander() {
       (!raidParty.length || raidParty.indexOf(u) < 0) &&
       /* nor is a hull stepped out of the line to be mended (FALLBACK): it
          rejoins its wave, or this list, when it is mended */
-      !u._fb);
+      !u._fb &&
+      /* nor one called to a transport, or aboard one (AIR BRIDGE): the
+         landing and the wave would hand it a second order */
+      !u._lift);
   }
 
   /* ---- the plot, priced ----
@@ -13636,7 +14238,12 @@ function makeCommander() {
     }
     const want = wantAirEyes();
     if (cur) {
-      if (want || G.time - (cur._scoutSince || 0) < 60) return (airRef = cur);
+      /* a transport taken as eyes before the air bridge had a use for it is
+         handed back to the bridge the moment it has one (liftKeeps) - on a
+         split theatre `want` never lapses, so it would otherwise be a
+         spotter for the rest of the battle */
+      const kept = cur.def.payload && liftKeeps(cur);
+      if (!kept && (want || G.time - (cur._scoutSince || 0) < 60)) return (airRef = cur);
       cur._scout = null; cur._scoutJob = null; clearGoal(cur);
       /* Home first, THEN weapons free. Handing the stance back where the
          airframe happened to be left a released scout gunship hovering over
@@ -13655,7 +14262,14 @@ function makeCommander() {
     for (const u of pool) {
       const r = u.def.role;
       let v;
-      if (r === "transport" && u.def.hover) v = 0;
+      if (r === "transport" && u.def.hover) {
+        /* never one with a load aboard, or one the air bridge has called a
+           load to or keeps for its next sortie (AIR BRIDGE liftKeeps): a
+           loaded helicopter sent forty tiles out as a spotter takes its
+           passengers to the enemy's base and back */
+        if ((u.cargo && u.cargo.length) || liftKeeps(u)) continue;
+        v = 0;
+      }
       else if (r === "gunship" && u.def.hover && n.gunship >= 2) v = 1;
       else if (r === "aswhelo" && n.aswhelo >= 2) v = 2;
       else if (r === "fighter" && n.fighter >= 3) v = 3;
@@ -15144,6 +15758,24 @@ function makeCommander() {
         on: asOn(), full: asFull(),
       };
     },
+    /* AIR BRIDGE, for tools/jsc/aiairlift_check.js: use() the use it reads
+       now (memo cleared), drop(t) the point transport t would be sent to,
+       tick() one pass of the driver now, its peace aside, buy() one
+       purchase attempt as think() makes it, keeps(u) the spotter test,
+       load(t) what transport t would be loaded with now, scout() one pass
+       of the air scout's pick, ops the sorties in hand */
+    get lift() {
+      return {
+        use() { liftUseT = -1e9; return liftUse(); },
+        drop(t) { liftDropMemo = null; return liftDrop(t, liftUse()); },
+        tick() { const was = atPeace; atPeace = false; try { driveLift(); } finally { atPeace = was; } },
+        buy() { return liftBuy(P.countBuilding("airbase")); },
+        keeps(u) { return liftKeeps(u); },
+        load(t) { return liftLoad(t, liftPool(t)); },
+        scout() { return airScout(); },
+        get ops() { return liftOps; },
+      };
+    },
     /* The explored map, so the engine can hold this commander's harvesters to
        the same rule the human's obey, and so a test can see what it knows. */
     get look() { return look; },
@@ -15232,6 +15864,9 @@ function makeCommander() {
                   holds the fuel and how often it lapses, whether the craft ever
                   put anybody ashore, and whether the phases actually cycle. */
                forces: forceIntel(),
+               /* the air bridge: switched on, the use it reads, the sorties
+                  in hand and where a transport was lost lately */
+               lift: liftIntel(),
                /* WHEN AND WHAT TO ATTACK, for the census. gate is the launch rule
                   open now (full / edge / stall / end, "home" when held for the
                   base, "shut") with what it weighed: n bodies against full,
@@ -15420,6 +16055,11 @@ return {
   /* a commander's AIRSAFE hooks (see `airsafe`), or null for a seat none runs */
   airsafeOf(player) {
     for (const c of commanders) if (c.player === player) return c.airsafe;
+    return null;
+  },
+  /* a commander's AIR BRIDGE hooks (see `lift`), or null for a seat none runs */
+  liftOf(player) {
+    for (const c of commanders) if (c.player === player) return c.lift;
     return null;
   },
   /* hold a commander at peace (see atPeace) - for scripted sandboxes */
