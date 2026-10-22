@@ -458,6 +458,10 @@ var OVERSIZE = {};
      length; the game scales an aircraft by its length, so at its real proportions it reaches 0.58 m into a
      revetment wall below its top */
   "gbr_e00_airlift nato_e90_c17",
+  /* the C-141A and C-141B Starlifter (js/hero/us_c141_starlifter.js): 48.8 m of drooping wing on 44.2 m (A) and
+     51.3 m (B) of length; the game scales an aircraft by its length, so at its real proportions the A reaches
+     1.03 m and the B 0.58 m into a revetment wall below its top */
+  "nato_e60_c141 nato_e80_c141",
   /* the Su-24M with Kh-31P (js/hero/ru_su24.js): 17.64 m of wing spread at 16 deg on 24.59 m of length over the
      nose boom, the wingtips about 2.1 m up with the real -4.5 deg anhedral; the game scales an aircraft by its
      length, so its three r 16 rows reach 0.43 m into a revetment wall below its top */
