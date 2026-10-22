@@ -158,20 +158,7 @@ var ROTORCRAFT = {
 
 /* the rotorcraft build here; the aeroplanes join the fixed-wing table */
 if (typeof Rotor3D !== "undefined" && Rotor3D.registerAll) Rotor3D.registerAll();
-/* The MV-22B Osprey (eras.js, navy piece 5a) is a tiltrotor - two rotors
-   side by side on wingtip nacelles - and the builder above makes single,
-   coaxial, fenestron and tandem helicopters only. Until a tiltrotor is
-   modelled it is drawn as a STAND-IN: the CH-46E it replaced in the
-   Marines' medium squadrons, read when it is built so a later CH-46 model
-   carries over. Its own id, so render3d.js lays no period finish on it. */
-(function () {
-  if (typeof UNIT_MODELS === "undefined" || UNIT_MODELS.nato_e00_mv22) return;
-  var src = "nato_e80_ch46";
-  UNIT_MODELS.nato_e00_mv22 = {
-    get len() { return UNIT_MODELS[src] ? UNIT_MODELS[src].len : 15.2; },
-    build: function (THREE, M, C) { return UNIT_MODELS[src].build(THREE, M, C); },
-  };
-})();
+/* The MV-22B Osprey (a tiltrotor, which the builder above does not make) is drawn by its own hero model, js/hero/us_mv22_osprey.js. */
 if (typeof AIRFRAMES !== "undefined" && typeof Airframe3D !== "undefined") {
   for (var _k in ROTORCRAFT) {
     if (ROTORCRAFT[_k].kind === "wing" && !AIRFRAMES[_k]) AIRFRAMES[_k] = ROTORCRAFT[_k];

@@ -451,6 +451,9 @@ var OVERSIZE = {};
   /* the MiG-17F (js/hero/ru_mig17.js): 9.63 m of wing on 11.36 m of length, drawn to its real proportions (the old stand-in
      was 13.9 m long); the game scales an aircraft by length, so it reaches 1.03 m into a revetment wall, like the F-86F above */
   "pact_e50_fighter",
+  /* the MV-22B Osprey (js/hero/us_mv22_osprey.js): 15.5 m across its vertical nacelles on 17.48 m of length; the game
+     scales an aircraft by its length, so at its real proportions the nacelles and the wing go through a revetment wall */
+  "nato_e00_mv22",
   /* the Su-24M with Kh-31P (js/hero/ru_su24.js): 17.64 m of wing spread at 16 deg on 24.59 m of length over the
      nose boom, the wingtips about 2.1 m up with the real -4.5 deg anhedral; the game scales an aircraft by its
      length, so its three r 16 rows reach 0.43 m into a revetment wall below its top */

@@ -1539,7 +1539,7 @@ function secAssault() {
           (id === "nato_e00_mv22" || (typeof ROTORCRAFT !== "undefined" && ROTORCRAFT[id] && ROTORCRAFT[id].kind === "rotor"))))
       badR.push(id + (d ? ": payload " + d.payload + " seats " + d.cargo + " hover " + d.hover + " deck " + d.carrierCapable : " missing"));
   });
-  chk("all six hover and work from a deck, need only an airbase, carry their sourced payload on the hook (CH-46 4.54 t, CH-53D 5.9, CH-53E 16.33, MV-22B 6.8, UH-1N 2.27) and their seats, unarmed, each with a field-manual entry and a rotorcraft row (the MV-22B a stand-in)",
+  chk("all six hover and work from a deck, need only an airbase, carry their sourced payload on the hook (CH-46 4.54 t, CH-53D 5.9, CH-53E 16.33, MV-22B 6.8, UH-1N 2.27) and their seats, unarmed, each with a field-manual entry and a rotorcraft row (the MV-22B drawn by its own hero, js/hero/us_mv22_osprey.js)",
       badR.length === 0 && same(ROLES.assaulthelo || [], MAR.concat(NEW5B)), badR.join("; ") + " | role " + (ROLES.assaulthelo || []).join(","));
   /* (c) the Army's transport card of every period is as it was */
   var ARMY = { e50: "nato_e50_transport", e60: "nato_e60_transport", e80: "nato_e80_transport", e90: "nato_e90_transport",
