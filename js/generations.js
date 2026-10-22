@@ -2411,6 +2411,10 @@
     nato_e80_ch53:      { t: 36000 * LB }, // CH-53E: 36,000 lb outside, 32,000 lb inside (en.wikipedia CH-53E)
     nato_e00_mv22:      { t: 15000 * LB }, // MV-22B: 15,000 lb on its two hooks (en.wikipedia V-22); its 20,000 lb inside is not the figure, as the cabin takes no vehicle in the roster (only the M1161 Growler)
     nato_e60_uh1n:      { t: 5000 * LB },  // UH-1N: 5,000 lb outside, 4,400 lb inside (en.wikipedia UH-1N)
+    /* the other navies' assault helicopters (eras.js, navy piece 5b), fetched
+       2026-10-22: one vehicle each, on the hook; the Ka-29 has no figure of its own */
+    gbr_e80_seaking4:   { t: 8000 * LB },  // Sea King HC4: "a lifting capacity of 8,000 lb" (en.wikipedia "846 Naval Air Squadron", Thetford 1991 p. 378) - its own figure, in place of the HAS.5's gross less empty (6,949 lb) the first cut took
+    pact_e80_ka29:      { t: 4 },          // Ka-29TB: no Ka-29 figure in the source fetched; the 4,000 kg payload en.wikipedia "Kamov Ka-27" gives its Ka-32 sister
   };
   var liftMiss = [], nLift = 0, rerole = false;
   var R130 = UNITS.airlift_n && UNITS.airlift_n.radius;            // 62: the C-130J's 3,334 km

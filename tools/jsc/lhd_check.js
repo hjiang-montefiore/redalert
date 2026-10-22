@@ -95,6 +95,16 @@
         America (no well) never opens a gate, an LCAC on its own sails as
         before, and an Ivan Rogov putting a tank on a beach lowers her bow
         ramp for 4 s;
+    14. the other navies' assault helicopters (navy piece 5b: eras.js THE
+        OTHER NAVIES' ASSAULT HELICOPTERS) - the new Sea King HC4 and Ka-29
+        each in its own army and periods only, deck-capable, with their
+        payloads; the Army's Chinook HC4, Apache AH1, NH90 TTH and Tigre HAD
+        reused as deck rows, keeping their roles; every army's transport card
+        unchanged; Ocean, Mistral, Type 075 and Ivan Rogov laid out for and
+        delivered with their faithful type first, at their old price; one of
+        each navy's lands on her with a squad, launches and puts it ashore;
+        the commander buys neither; and (in 11) an Ocean saved with her three
+        Sea Kings loads with three. (Run before 9.)
     13. saved with two craft driving out of a Wasp's well and one driving in,
         the load puts each back where it was in her frame, in her transit,
         her gate open; driven on, the two reach their water and the third
@@ -194,6 +204,7 @@ function run() {
   secGate();
   secOthers();
   secAssault();
+  secAssault5b();
   secSave();
   secSave4();
   secGateSave();
@@ -1174,15 +1185,18 @@ function secSave() {
 /* eras.js THE OTHER NAVIES' AMPHIBIOUS ASSAULT SHIPS, rules.js lhd_f / lhd_c:
    faction, period, deck spots, hold seats, what the deck takes, the well */
 var OTH = {
-  gbr_e90_lph:  { f: "gbr",  e: "e90", spots: 3, cargo: 12, takes: ["gbr_e90_aswhelo"], well: null },
-  gbr_e00_lph:  { f: "gbr",  e: "e00", spots: 3, cargo: 12, takes: ["gbr_e00_aswhelo"], well: null },
-  fra_e00_lhd:  { f: "fra",  e: "e00", spots: 3, cargo: 6,  takes: ["fra_e00_aswhelo"], well: { fra_ctm: 4 } },
-  lhd_f:        { f: "fra",  e: "e20", spots: 3, cargo: 6,  takes: ["asw_helo_f"], well: { fra_ctm: 4 } },
+  gbr_e90_lph:  { f: "gbr",  e: "e90", spots: 3, cargo: 12, takes: ["gbr_e80_seaking4", "gbr_e90_aswhelo"], well: null },
+  gbr_e00_lph:  { f: "gbr",  e: "e00", spots: 3, cargo: 12, takes: ["gbr_e80_seaking4", "gbr_e00_transport", "gbr_e00_gunship", "gbr_e00_aswhelo"], well: null },
+  fra_e00_lhd:  { f: "fra",  e: "e00", spots: 3, cargo: 6,  takes: ["fra_e00_transport", "fra_e00_gunship", "fra_e00_aswhelo"], well: { fra_ctm: 4 } },
+  lhd_f:        { f: "fra",  e: "e20", spots: 3, cargo: 6,  takes: ["trans_f", "helo_f", "asw_helo_f"], well: { fra_ctm: 4 } },
   lhd_c:        { f: "pla",  e: "e20", spots: 3, cargo: 11, takes: ["trans_c", "helo_c"], well: { lst: 3 } },
-  pact_e80_lpd: { f: "pact", e: "e80", spots: 2, cargo: 7,  takes: ["pact_e80_aswhelo"], well: { lst: 3 }, ramp: true },
-  pact_e90_lpd: { f: "pact", e: "e90", spots: 2, cargo: 7,  takes: ["asw_helo_p"], well: { lst: 3 }, ramp: true },
-  pact_e00_lpd: { f: "pact", e: "e00", spots: 2, cargo: 7,  takes: ["asw_helo_p"], well: { lst: 3 }, ramp: true },
+  pact_e80_lpd: { f: "pact", e: "e80", spots: 2, cargo: 7,  takes: ["pact_e80_ka29", "pact_e80_aswhelo"], well: { lst: 3 }, ramp: true },
+  pact_e90_lpd: { f: "pact", e: "e90", spots: 2, cargo: 7,  takes: ["pact_e80_ka29", "asw_helo_p"], well: { lst: 3 }, ramp: true },
+  pact_e00_lpd: { f: "pact", e: "e00", spots: 2, cargo: 7,  takes: ["pact_e80_ka29", "asw_helo_p"], well: { lst: 3 }, ramp: true },
 };
+/* navy piece 5b put each ship's real assault helicopter first (the Sea King HC4,
+   the Army's NH90 TTH, the Z-20, the Ka-29), and she sails with it (no emptyDeck);
+   the stand-ins piece 4 sourced follow, and the Army rows reused are deck rows */
 function as(f, e) { P.faction = f; useEra(e); }
 function secOthers() {
   log("\n[10] the other navies' amphibious assault ships: Ocean, Mistral, Type 075, Ivan Rogov");
@@ -1211,7 +1225,7 @@ function secOthers() {
   var shape = [];
   ids.forEach(function (id) {
     var d = UNITS[id], o = OTH[id], w = WARSHIPS[id];
-    var ok = d && d.carrier === o.spots && d.heloCarrier && d.emptyDeck && d.cargo === o.cargo && d.amphib && d.layer === "sea" &&
+    var ok = d && d.carrier === o.spots && d.heloCarrier && !d.emptyDeck && d.cargo === o.cargo && d.amphib && d.layer === "sea" &&
       d.role === "assault_sea" && d.fac === o.f && same(d.prereq, ["navalyard", "airbase"]) && d.tech === 2 &&
       !!FACTS[id] && !!w && (o.ramp ? w.deck !== "axial" : w.deck === "axial") && d.service && d.desc &&
       !!d.wellDeck === !!o.well && JSON.stringify(d.wellCraft || null) === JSON.stringify(o.well) && !!d.bowRamp === !!o.ramp &&
@@ -1220,7 +1234,7 @@ function secOthers() {
       (d.weapons || []).every(function (wk) { return !!WEAPONS[wk]; });
     if (!ok) shape.push(id);
   });
-  chk("every row: its deck spots (3, the Ivan Rogov's two pads 2) delivered empty, helicopters only, its hold by troops (12, 6, 11, 7), a well deck and craft where she had one, the Ivan Rogov's bow ramp, a field-manual entry and a stand-in hull",
+  chk("every row: its deck spots (3, the Ivan Rogov's two pads 2) delivered with her complement (navy piece 5b), helicopters only, its hold by troops (12, 6, 11, 7), a well deck and craft where she had one, the Ivan Rogov's bow ramp, a field-manual entry and a stand-in hull",
       shape.length === 0, shape.join(" "));
   var wn = function (id) { return (UNITS[id].weapons || []).map(function (k) { return WEAPONS[k].name; }).join(" / "); };
   chk("their real fits from existing rounds: 3 Phalanx; Mistral on Simbad; HQ-10; Osa-M, AK-630 and the twin AK-726 - and the Army's Mistral 2 row is unchanged",
@@ -1245,9 +1259,12 @@ function secOthers() {
     if (unitFor(f, "carrier", e) !== CV[f][i]) moved.push(f + "/" + e + " carrier " + unitFor(f, "carrier", e));
     if (unitFor(f, "transport_sea", e) !== LS[f][i]) moved.push(f + "/" + e + " landing ship " + unitFor(f, "transport_sea", e));
   });
-  var flags = ["gbr_e00_gunship", "gbr_e90_gunship", "gbr_e00_transport", "fra_e00_gunship", "fra_e00_transport", "helo_f", "trans_f"]
-    .filter(function (id) { return UNITS[id] && UNITS[id].carrierCapable; });
-  chk("every army's carrier and landing ship of every period is the one it was, and the British and French Army helicopters are still not deck rows",
+  /* navy piece 5b made the Army rows that really flew from Ocean and the Mistrals deck rows, and no other */
+  var DECKROW = ["gbr_e00_gunship", "gbr_e00_transport", "fra_e00_gunship", "fra_e00_transport", "helo_f", "trans_f"];
+  var flags = DECKROW.filter(function (id) { return !(UNITS[id] && UNITS[id].carrierCapable); })
+    .concat(["gbr_e90_gunship", "gbr_e90_transport", "gbr_e80_transport", "fra_e90_transport", "fra_e90_gunship"]
+      .filter(function (id) { return UNITS[id] && UNITS[id].carrierCapable; }).map(function (id) { return id + " flagged"; }));
+  chk("every army's carrier and landing ship of every period is the one it was; the Chinook HC4, Apache AH1, NH90 TTH and Tigre HAD are deck rows (navy piece 5b) and the other British and French Army helicopters still are not",
       moved.length === 0 && flags.length === 0, moved.concat(flags).join("; "));
 
   /* (d) built at its faction's naval yard in its period, refused elsewhere */
@@ -1273,10 +1290,12 @@ function secOthers() {
     var t = ticks(400, function () {
       for (var i = 0; i < P.units.length; i++) { var u = P.units[i]; if (!u.dead && u.def.id === pr[2]) { made = u; return true; } }
       return false; });
-    chk(pr[1] + " " + UNITS[pr[2]].name + " comes off her own army's naval slip, " + OTH[pr[2]].spots + " empty spots and an empty hold",
-        ok && !!made && made.deckSlots() === OTH[pr[2]].spots && made.wing().length === 0 && made.cargo.length === 0 && !(made.well && made.well.length),
-        "queued " + ok + ", after " + t.toFixed(1) + " s" + (made ? ", spots " + made.deckSlots() + " aboard " + made.wing().length : ""));
-    if (made) gone(made);
+    var first = OTH[pr[2]].takes[0], wg = made ? made.wing() : [];
+    chk(pr[1] + " " + UNITS[pr[2]].name + " comes off her own army's naval slip with her " + OTH[pr[2]].spots + " spots filled with the " + UNITS[first].name + " (navy piece 5b) and an empty hold",
+        ok && !!made && made.deckSlots() === OTH[pr[2]].spots && wg.length === OTH[pr[2]].spots && wg.every(function (u) { return u.def.id === first && u.parked; }) &&
+        made.cargo.length === 0 && !(made.well && made.well.length),
+        "queued " + ok + ", after " + t.toFixed(1) + " s" + (made ? ", spots " + made.deckSlots() + " aboard " + wg.map(function (u) { return u.def.id; }).join(",") : ""));
+    if (made) { made.wing().forEach(gone); gone(made); }
   });
 
   /* (e) the deck: its helicopters, laid out for the first, and no jet of any army or period */
@@ -1296,7 +1315,7 @@ function secOthers() {
     if (!same(types, o.takes) || plan !== o.takes[0] || let_.length || jetIn.length || capH - capH0 !== o.spots)
       dk.push(id + ": takes " + types.join(",") + " plan " + plan + " jets sold " + let_.join(",") + " ramp +" + (capH - capH0));
   });
-  chk("each deck takes its own helicopters (Lynx HMA.8; Merlin HM1; NH90 NFH; Z-20 and Z-10; Ka-27PL, Ka-27), is laid out for the first, gives it her spots as ramp, and sells no jet of her army",
+  chk("each deck takes its own helicopters (Sea King HC4 then Lynx HMA.8; Sea King HC4, Chinook HC4, Apache AH1, Merlin HM1; NH90 TTH, Tigre HAD, NH90 NFH; Z-20 and Z-10; Ka-29 then Ka-27PL or Ka-27), is laid out for the first, gives it her spots as ramp, and sells no jet of her army",
       dk.length === 0, dk.join("; "));
 
   /* (f) a helicopter lands on her; one is bought from her panel */
@@ -1401,14 +1420,19 @@ function secOthers() {
   var enq = A.enqueue, owc = Unit.prototype.orderWellCraft;
   A.enqueue = function (q, id) { seen.push(id); return enq.apply(this, arguments); };
   Unit.prototype.orderWellCraft = function (id) { if (this.owner === A) seen.push("well:" + id); return owc.apply(this, arguments); };
-  var built = [];
+  var built = [], refill = 0;
   try {
     [["gbr", "e00", "gbr_e00_lph"], ["fra", "e20", "lhd_f"], ["pla", "e20", "lhd_c"], ["pact", "e80", "pact_e80_lpd"]].forEach(function (pr) {
       A.faction = pr[0]; A.era = pr[1]; A.cash = 300000; A.oil = 60000; A.tech = 3;
+      var before = A.units.slice();
       var s = Game.spawnUnitAt(A, pr[2], ax, ay);
       if (s) { s.stance = "hold"; s.order = { type: "idle" }; }
       ticks(60);
       A.units.forEach(function (u) { if (!u.dead && (u.def.role === "assault_sea" || u.def.role === "landing_craft") && u !== s) built.push(u.def.id); });
+      /* a deck the test hands it is refilled by ai.js driveDecks, as any ship
+         of its own is (G.deckWants: her faithful type since navy piece 5b);
+         the commander never owns one in a match, so take those off again */
+      A.units.slice().forEach(function (u) { if (before.indexOf(u) < 0 && u !== s && OTH[pr[2]].takes.indexOf(u.def.id) >= 0) { refill++; gone(u); } });
       if (s) { s.wing().forEach(gone); (s.deckQ || []).length = 0; (s.wellQ || []).length = 0; gone(s); }
     });
   } catch (err) { built.push("CRASH " + err); }
@@ -1417,14 +1441,14 @@ function secOthers() {
   var badA = seen.filter(function (id) { var d = UNITS[String(id).replace("well:", "")]; return /^well:/.test(id) || (d && (d.role === "assault_sea" || d.role === "landing_craft")); });
   chk("the commander, made British, French, Chinese and Soviet with " + seen.length + " purchases and an assault ship of its own, never buys one or a craft for one" +
       (src !== null ? ", and js/ai.js names no assault_sea" : ""),
-      badA.length === 0 && built.length === 0 && (src === null || src.indexOf("assault_sea") < 0), badA.concat(built).join(","));
+      badA.length === 0 && built.length === 0 && (src === null || src.indexOf("assault_sea") < 0), badA.concat(built).join(",") + " | deck refills for the ships it was handed, taken off: " + refill);
   P.faction = fac0;
   useEra("e20");
 }
 
 /* ---------------- 11. save and load a Mistral with her deck, hold and well ---------------- */
 function secSave4() {
-  log("\n[11] a Mistral saved with an NH90 on deck, a squad aboard and two CTM in her well (one with a tank) loads as she was");
+  log("\n[11] a Mistral saved with an NH90 on deck, a squad aboard and two CTM in her well (one with a tank) loads as she was, and an Ocean with her complement");
   P = Game.human; M = Game.map;
   useEra("e00");
   var yard = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
@@ -1437,6 +1461,12 @@ function secSave4() {
   s.dockCraft(c1); s.dockCraft(c2);
   var tk = spawn("mbt_n", P.homeX, P.homeY); c1.cargo.push(tk); tk.carried = true;
   var sx = s.x, sy = s.y;
+  /* navy piece 5b: an Ocean delivered with her three Sea King HC4s, which a
+     load must not deliver a second time */
+  var ox = s.x + 6 * TT, oy = s.y, osp = Path.nearest(M, (ox / TT) | 0, (oy / TT) | 0, "sea", null, 8);
+  if (osp) { ox = osp.x * TT + 16; oy = osp.y * TT + 16; }
+  var oc = spawn("gbr_e00_lph", ox, oy), on = Game.embarkComplement(oc);
+  ox = oc.x; oy = oc.y;
   var r = SaveGame.save(Game, "ironfront.lhdcheck4");
   var ld = r.ok ? SaveGame.load("ironfront.lhdcheck4") : { ok: false, error: r.error };
   chk("the save is written and loads", r.ok && ld.ok, (r.error || "") + (ld.error || ""));
@@ -1452,8 +1482,19 @@ function secSave4() {
       W.filter(function (c) { return c.cargo.length === 1 && c.cargo[0].def.id === "mbt_n" && c.cargo[0].carried; }).length === 1,
       S ? "deck " + w.map(function (u) { return u.def.id; }).join(",") + "; hold " + S.cargo.length + "; well " +
           W.map(function (c) { return c.def.id + "[" + c.cargo.length + "]"; }).join(",") : "no Mistral");
-  chk("...and her deck and well take what they took", !!S && same(Game.deckTypesFor(S), ["fra_e00_aswhelo"]) && same(S.wellTypes(), ["fra_ctm"]),
+  chk("...and her deck and well take what they took", !!S && same(Game.deckTypesFor(S), OTH.fra_e00_lhd.takes) && same(S.wellTypes(), ["fra_ctm"]),
       S ? Game.deckTypesFor(S).join(",") + " | " + S.wellTypes().join(",") : "");
+  var OC = null, nSK = 0;
+  Game.entities.forEach(function (e) {
+    if (e.kind !== "unit" || e.dead) return;
+    if (e.def.id === "gbr_e00_lph" && Math.hypot(e.x - ox, e.y - oy) < 3) OC = e;
+    if (e.def.id === "gbr_e80_seaking4" && e.owner === Game.human) nSK++;
+  });
+  var ow = OC ? OC.wing() : [];
+  chk("an Ocean saved with the three Sea King HC4s she sailed with loads with those three on her deck, parked, and no more - the load does not deliver her complement again (navy piece 5b)",
+      on === 3 && !!OC && ow.length === 3 && ow.every(function (u) { return u.def.id === "gbr_e80_seaking4" && u.parked && u.padOn === OC; }) && nSK === 3 &&
+      !!S && S.wing().length === 1,
+      "embarked " + on + "; after the load " + (OC ? ow.length + " on her deck" : "no Ocean") + ", " + nSK + " Sea King HC4 in the match, the Mistral's deck " + (S ? S.wing().length : "-"));
 }
 
 /* ---------------- 12. the Marine Corps' assault helicopters (navy piece 5a) ---------------- */
@@ -1480,8 +1521,9 @@ function secAssault() {
   });
   var other = [];
   ["pact", "pla", "kpa", "roc", "gbr", "fra", "deu"].forEach(function (f) {
-    ERAS.forEach(function (e) { unitsFor(f, "assaulthelo", e).forEach(function (id) { other.push(f + "/" + e + "=" + id); }); }); });
-  chk("each in its periods only, in the AIR tab: CH-46D, CH-53D and UH-1N in the 1960s-70s; CH-46E, CH-53E and UH-1N in the 1980s and 1990s; the MV-22B joins in the 2000s; MV-22B and CH-53E today; no other army has one",
+    ERAS.forEach(function (e) { unitsFor(f, "assaulthelo", e).forEach(function (id) { if (UNITS[id].fac === "nato") other.push(f + "/" + e + "=" + id); }); }); });
+  /* the other navies' own (navy piece 5b) are section 14's */
+  chk("each in its periods only, in the AIR tab: CH-46D, CH-53D and UH-1N in the 1960s-70s; CH-46E, CH-53E and UH-1N in the 1980s and 1990s; the MV-22B joins in the 2000s; MV-22B and CH-53E today; no other army has an American one",
       badP.length === 0 && other.length === 0, badP.concat(other).join(" "));
   /* (b) the rows */
   var badR = [];
@@ -1493,7 +1535,7 @@ function secAssault() {
       badR.push(id + (d ? ": payload " + d.payload + " seats " + d.cargo + " hover " + d.hover + " deck " + d.carrierCapable : " missing"));
   });
   chk("all six hover and work from a deck, need only an airbase, carry their sourced payload on the hook (CH-46 4.54 t, CH-53D 5.9, CH-53E 16.33, MV-22B 6.8, UH-1N 2.27) and their seats, unarmed, each with a field-manual entry and a rotorcraft row (the MV-22B a stand-in)",
-      badR.length === 0 && same(ROLES.assaulthelo || [], MAR), badR.join("; ") + " | role " + (ROLES.assaulthelo || []).join(","));
+      badR.length === 0 && same(ROLES.assaulthelo || [], MAR.concat(NEW5B)), badR.join("; ") + " | role " + (ROLES.assaulthelo || []).join(","));
   /* (c) the Army's transport card of every period is as it was */
   var ARMY = { e50: "nato_e50_transport", e60: "nato_e60_transport", e80: "nato_e80_transport", e90: "nato_e90_transport",
                e00: "nato_e00_transport", e20: "trans_n" };
@@ -1595,6 +1637,139 @@ function secAssault() {
   var bad = seen.filter(function (id) { return MAR.indexOf(String(id).replace("deck:", "")) >= 0; });
   chk("the commander, made a 1960s and a 2000s American with " + seen.length + " purchases, never buys one" +
       (src !== null ? ", and js/ai.js names neither the role nor any of the six" : ""),
+      bad.length === 0 && built.length === 0 && named.length === 0, bad.concat(built, named).join(","));
+  P.faction = fac0;
+  useEra("e20");
+}
+
+/* ---------------- 14. the other navies' assault helicopters (navy piece 5b) ---------------- */
+/* eras.js THE OTHER NAVIES' ASSAULT HELICOPTERS: the two new rows (the Sea King
+   HC4 and the Ka-29), their periods, payload (tonnes, generations.js AIRLIFT) and
+   seats; the four Army rows reused (Chinook HC4, Apache AH1, NH90 TTH, Tigre HAD) */
+var NEW5B = ["gbr_e80_seaking4", "pact_e80_ka29"];
+var NEW_ERA = { gbr: { e80: ["gbr_e80_seaking4"], e90: ["gbr_e80_seaking4"], e00: ["gbr_e80_seaking4"] },
+                pact: { e80: ["pact_e80_ka29"], e90: ["pact_e80_ka29"], e00: ["pact_e80_ka29"], e20: ["pact_e80_ka29"] } };
+/* the Sea King HC4's own 8,000 lb lift (en.wikipedia "846 Naval Air Squadron"), 3.63 t */
+var NEW_LIFT = { gbr_e80_seaking4: [3.63, 11], pact_e80_ka29: [4, 9] };
+function secAssault5b() {
+  log("\n[14] the other navies' assault helicopters: Sea King HC4, NH90 TTH, Z-20, Ka-29");
+  P = Game.human; M = Game.map;
+  var fac0 = P.faction;
+  /* (a) each in its own army and periods only, in the AIR tab (ui.js refreshCards) */
+  var badP = [];
+  ["nato", "pact", "pla", "kpa", "roc", "gbr", "fra", "deu"].forEach(function (f) {
+    ERAS.forEach(function (e) {
+      var want = (NEW_ERA[f] && NEW_ERA[f][e]) || [];
+      var have = unitsFor(f, "assaulthelo", e).filter(function (id) { return NEW5B.indexOf(id) >= 0; });
+      var air = Object.keys(UNITS).filter(function (id) {
+        var d = UNITS[id]; return NEW5B.indexOf(id) >= 0 && d.cat === "aircraft" && (d.fac === "both" || d.fac === f) && inEra(d, e); });
+      if (!same(have, want) || !same(air, want)) badP.push(f + "/" + e + ":" + have.join("+") + "|" + air.join("+"));
+    });
+  });
+  chk("the Sea King HC4 is Britain's in the 1980s, 1990s and 2000s-10s only, the Ka-29 the East's from the 1980s on, each in its AIR tab; no other army has either",
+      badP.length === 0, badP.join(" "));
+  /* (b) the rows */
+  var badR = [];
+  NEW5B.forEach(function (id) {
+    var d = UNITS[id], L = NEW_LIFT[id];
+    if (!(d && d.role === "assaulthelo" && d.cat === "aircraft" && d.hover && d.carrierCapable && !d.jet && same(d.prereq, ["airbase"]) &&
+          d.weapons.length === 0 && d.payload === L[0] && d.cargo === L[1] && !d.hold && !d.cabin && FACTS[id] && d.desc && d.service &&
+          typeof ROTORCRAFT !== "undefined" && ROTORCRAFT[id] && ROTORCRAFT[id].kind === "rotor"))
+      badR.push(id + (d ? ": payload " + d.payload + " seats " + d.cargo + " hover " + d.hover + " deck " + d.carrierCapable : " missing"));
+  });
+  var REUSE = { gbr_e00_transport: "transport", gbr_e00_gunship: "gunship", fra_e00_transport: "transport", fra_e00_gunship: "gunship",
+                trans_f: "transport", helo_f: "gunship" }, badU = [];
+  for (var ru in REUSE) if (!(UNITS[ru] && UNITS[ru].role === REUSE[ru] && UNITS[ru].carrierCapable && UNITS[ru].hover)) badU.push(ru);
+  chk("both hover and work from a deck, need only an airbase, carry their payload on the hook (Sea King HC4 3.63 t, Ka-29 4 t) and their seats (11, 9), unarmed, each with a field-manual entry and a rotorcraft row; the four Army rows reused keep their roles and are deck rows",
+      badR.length === 0 && badU.length === 0, badR.concat(badU).join("; "));
+  /* (c) the Army's transport and gunship cards of every period are as they were */
+  var ARMY = { gbr: ["gbr_e50_transport", "gbr_e60_transport", "gbr_e80_transport", "gbr_e90_transport", "gbr_e00_transport", "trans_b"],
+               fra: ["fra_e50_transport", "fra_e60_transport", "fra_e80_transport", "fra_e90_transport", "fra_e00_transport", "trans_f"],
+               pla: ["pla_e50_transport", "pla_e60_transport", "pla_e80_transport", "pla_e90_transport", "pla_e00_transport", "trans_c"],
+               pact: ["pact_e50_transport", "pact_e60_transport", "pact_e80_transport", "pact_e90_transport", "pact_e00_transport", "trans_p"] };
+  var GUN = { gbr: [null, "gbr_e60_gunship", "gbr_e80_gunship", "gbr_e90_gunship", "gbr_e00_gunship", "helo_b"],
+              fra: ["fra_e50_gunship", "fra_e60_gunship", "fra_e80_gunship", "fra_e90_gunship", "fra_e00_gunship", "helo_f"] };
+  var moved = [], inT = (ROLES.transport || []).concat(ROLES.gunship || []).filter(function (id) { return NEW5B.indexOf(id) >= 0; });
+  for (var f in ARMY) ERAS.forEach(function (e, i) {
+    if (unitFor(f, "transport", e) !== ARMY[f][i]) moved.push(f + "/" + e + "=" + unitFor(f, "transport", e));
+    if (GUN[f] && unitFor(f, "gunship", e) !== GUN[f][i]) moved.push(f + "/" + e + " gunship=" + unitFor(f, "gunship", e));
+  });
+  chk("the British, French, Chinese and Soviet Army transport card of every period is the one it was (and the British and French gunship), and neither new row is a transport or a gunship",
+      moved.length === 0 && inT.length === 0, moved.concat(inT).join(" "));
+
+  var yard = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
+  var at = yard ? Path.nearest(M, (yard.x / TT) | 0, (yard.y / TT) | 0, "sea", null, 12) : null;
+  if (!at || !BEACH) { chk("open water by the yard, and a beach", false, ""); P.faction = fac0; useEra("e20"); return; }
+  /* (d) every one of these ships asks for her faithful type first and sails with it, at her old price */
+  var PRICE = { gbr_e90_lph: 2350, gbr_e00_lph: 2650, fra_e00_lhd: 2650, lhd_f: 2750, lhd_c: 3600, pact_e80_lpd: 1800, pact_e90_lpd: 1850, pact_e00_lpd: 2050 };
+  var badD = [], firsts = [];
+  Object.keys(OTH).forEach(function (id) {
+    var o = OTH[id];
+    as(o.f, o.e);
+    var s = spawn(id, at.x * TT + 16, at.y * TT + 16), first = o.takes[0];
+    var plan = []; for (var i = 0; i < o.spots; i++) plan.push(Game.deckAircraftFor(s, i));
+    var w = Game.deckWants(s), types = Game.deckTypesFor(s);
+    var n = Game.embarkComplement(s), aboard = s.wing().map(function (u) { return u.def.id; });
+    firsts.push(UNITS[id].name + " " + o.e + ": " + n + " " + UNITS[first].name);
+    if (!(plan.every(function (x) { return x === first; }) && w === first && types[0] === first &&
+          n === o.spots && aboard.length === o.spots && aboard.every(function (x) { return x === first; }) && !UNITS[id].emptyDeck &&
+          UNITS[id].cost === PRICE[id]))
+      badD.push(id + ": plan " + plan.join("/") + " wants " + w + " embarked " + aboard.join(",") + " cost " + UNITS[id].cost);
+    s.wing().forEach(gone); gone(s);
+  });
+  chk("each lays her deck out for, refills with and sails with her faithful type, at her old price (" + firsts.join("; ") + ")",
+      badD.length === 0, badD.join("; "));
+
+  /* (e) one of each navy's takes a squad aboard on a beach, lands on her, launches and puts it ashore */
+  var B = BEACH;
+  var land = function (k) { return { x: (B.x - B.dx * k + 0.5) * TT, y: (B.y - B.dy * k + 0.5) * TT }; };
+  var off = { x: (B.x + B.dx * 10 + 0.5) * TT, y: (B.y + B.dy * 10 + 0.5) * TT };
+  [["gbr", "e00", "gbr_e00_lph", "gbr_e80_seaking4"], ["fra", "e00", "fra_e00_lhd", "fra_e00_transport"],
+   ["pla", "e20", "lhd_c", "trans_c"], ["pact", "e80", "pact_e80_lpd", "pact_e80_ka29"]].forEach(function (pr) {
+    as(pr[0], pr[1]);
+    var sh = spawn(pr[2], off.x, off.y);
+    var hp = land(2), qp = land(3), aim = land(2);
+    var h = spawn(pr[3], hp.x, hp.y), q = spawn("rifle_n", qp.x, qp.y);
+    q.give({ type: "enter", target: h });
+    var tq = ticks(20, function () { return q.carried; });
+    h.padOn = sh; h.parked = false; h.give({ type: "rtb" });           // the right-click on her deck
+    var t1 = ticks(60, function () { return h.parked && h.padOn === sh; });
+    var landed = t1 > 0 && sh.wing().indexOf(h) >= 0 && q.carried && h.cargo.indexOf(q) >= 0;
+    var out = Math.hypot(sh.x - aim.x, sh.y - aim.y) / TT;
+    var why = Game.airLand(h, aim.x, aim.y);
+    var t2 = ticks(90, function () { return !q.carried; });
+    ticks(1);
+    var dq = Math.hypot(q.x - aim.x, q.y - aim.y);
+    var ashore = !q.carried && !q.dead && GameMap.passable(M, (q.x / TT) | 0, (q.y / TT) | 0, "ground") && dq < 4 * TT;
+    chk(pr[1] + ": a " + UNITS[pr[3]].name + " takes a rifle squad aboard on the beach, lands on the " + UNITS[pr[2]].name + " " + out.toFixed(1) +
+        " tiles out with it, launches from her and puts the squad ashore",
+        tq > 0 && landed && why === "" && t2 > 0 && ashore && !h.parked,
+        "boarded after " + tq.toFixed(1) + " s; landed " + landed + " after " + t1.toFixed(1) + " s; " + (why || "airLand given") +
+        "; ashore after " + t2.toFixed(1) + " s, " + tiles(dq) + " tiles from the point; helicopter parked " + h.parked);
+    gone(q); gone(h); sh.wing().forEach(gone); gone(sh);
+  });
+
+  /* (f) the commander never buys a new one, nor anything for a deck */
+  var src = (typeof readFile === "function") ? readFile("js/ai.js") : null;
+  var named = src === null ? [] : NEW5B.filter(function (k) { return src.indexOf(k) >= 0; });
+  var A = Game.players.filter(function (p) { return p.isAI && !p.defeated; })[0];
+  if (!A) { chk("an AI commander to watch", false, ""); P.faction = fac0; useEra("e20"); return; }
+  var keep = { faction: A.faction, era: A.era, cash: A.cash, oil: A.oil, tech: A.tech }, seen = [], built = [];
+  var enq = A.enqueue, ord = Game.orderDeckAircraft;
+  A.enqueue = function (q2, id) { seen.push(id); return enq.apply(this, arguments); };
+  Game.orderDeckAircraft = function (ship, id) { if (ship.owner === A) seen.push("deck:" + id); return ord.apply(this, arguments); };
+  try {
+    [["gbr", "e00"], ["pact", "e80"]].forEach(function (fe) {
+      A.faction = fe[0]; A.era = fe[1]; A.cash = 300000; A.oil = 60000; A.tech = 3;
+      ticks(60);
+      A.units.forEach(function (u) { if (!u.dead && (NEW5B.indexOf(u.def.id) >= 0 || u.def.role === "assault_sea")) built.push(u.def.id); });
+    });
+  } catch (err) { built.push("CRASH " + err); }
+  A.enqueue = enq; Game.orderDeckAircraft = ord;
+  for (var kk in keep) A[kk] = keep[kk];
+  var bad = seen.filter(function (id) { return NEW5B.indexOf(id) >= 0 || /^deck:/.test(String(id)); });
+  chk("the commander, made a 2000s British and a 1980s Soviet with " + seen.length + " purchases, never buys a Sea King HC4 or a Ka-29 or an assault ship" +
+      (src !== null ? ", and js/ai.js names neither" : ""),
       bad.length === 0 && built.length === 0 && named.length === 0, bad.concat(built, named).join(","));
   P.faction = fac0;
   useEra("e20");

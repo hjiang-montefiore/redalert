@@ -456,6 +456,16 @@ Object.assign(FACTS, {
   nato_e00_mv22: { name: "Bell Boeing MV-22B Osprey", origin: "United States", service: 2007, crew: 4, weight_t: 23.9, speed_kmh: 509, range_km: 1628, armament: "One ramp-mounted 7.62 mm M240 or .50 cal M2; optional belly GAU-17 turret", protection: "-", note: "Initial operational capability 13 June 2007; VMM-263 the first squadron (2006). Tiltrotor: 24 troops seated (32 on the floor), 20,000 lb inside or 15,000 lb on two hooks; 275 kn at sea level, 305 kn at 15,000 ft; combat range 390 nmi.", confidence: "high" },
   nato_e60_uh1n: { name: "Bell UH-1N Twin Huey", origin: "United States / Canada", service: 1971, crew: 4, weight_t: 4.8, speed_kmh: 241, range_km: 459, armament: "2.75 in rocket pods, GAU-16 .50 cal, GAU-17 7.62 mm minigun or M240", protection: "-", note: "First delivered to the Navy and Marine Corps in 1971 (205 bought), with Pratt & Whitney Canada's twin-pac T400 coupled turboshaft. 6-8 combat-equipped troops, 4,400 lb inside or 5,000 lb outside; up to three radios for a commander aloft. Retired by the Marines in 2014 (HMLA-773); the UH-1Y replaced it.", confidence: "high" },
 });
+/* the other navies' assault helicopters (navy piece 5b; eras.js). en.wikipedia
+   "Westland Sea King" (text and variant list; the specification table is the
+   HAS.5's), "Commando Helicopter Force" and "Kamov Ka-27" (variant list and
+   specification table), read 2026-10-22. speed_kmh is the Sea King HAS.5's
+   maximum cruise at sea level and the Ka-27's maximum speed; range_km the
+   HC4's 600 nmi and the Ka-27's range. */
+Object.assign(FACTS, {
+  gbr_e80_seaking4: { name: "Westland Sea King HC4 (Commando)", origin: "United Kingdom", service: 1979, speed_kmh: 207, range_km: 1111, armament: "-", protection: "-", note: "The Commando, first flown 26 September 1979: the Sea King without its sonar and side floats, its main wheels on stub sponsons, a lengthened cabin for 28 fully equipped troops and 600 nmi without refuelling; 42 built for the Royal Navy. Falklands, the Balkans, both Gulf Wars, Sierra Leone, Lebanon and Afghanistan; retired 31 March 2016, replaced by the Merlin HC3.", confidence: "high" },
+  pact_e80_ka29: { name: "Kamov Ka-29TB Helix-B", origin: "Soviet Union", service: 1987, crew: 2, speed_kmh: 270, range_km: 980, armament: "Four-barrel 7.62 mm machine gun or 30 mm 2A42; four pylons for rockets, gun pods, bombs and 9K114 Shturm missiles", protection: "Armoured", note: "Assault transport for the amphibious landing ships and the aircraft carriers: two pilots and 16 troops. Production from about 1984, over 60 built; entered Soviet service in 1987. The Ka-27's airframe: 11.3 m, two 15.8 m coaxial rotors.", confidence: "high" },
+});
 
 /* one-line summary for tooltips */
 function factLine(id) {

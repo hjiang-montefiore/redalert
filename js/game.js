@@ -678,10 +678,11 @@ var Game = (function () {
        laid out for and what G.deckWants asks to have bought. For the American
        ships that is the period's Marine helicopter (navy piece 5a), and they
        sail with it, as a carrier sails with her air wing; the other navies'
-       lists hold only stand-ins until their own assault helicopters exist, so
-       those are delivered empty (def.emptyDeck). With nothing of the period
-       on the list the deck plans nothing rather than the navy's carrier ASW
-       helicopter, which was never her complement. */
+       ships do the same with theirs since navy piece 5b (the Sea King HC4,
+       the Army's NH90, the Z-20, the Ka-29). A deck delivered empty is
+       marked def.emptyDeck; no assault ship is any more. With nothing of
+       the period on the list the deck plans nothing rather than the navy's
+       carrier ASW helicopter, which was never her complement. */
     if (host && host.def && host.def.deckTakes) return deckTakesFor(host.def, era)[0] || null;
     const helo = deckHelo(p, era, host) ||
                  deckLegal(unitFor(p.faction, "transport", era));

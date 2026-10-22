@@ -147,6 +147,13 @@ var ROTORCRAFT = {
   nato_e80_ch53: {era:"e80", fac:"nato", role:"assaulthelo", designation:"Sikorsky CH-53E Super Stallion", kind:"rotor", len:22.4, rotorD:24.1, config:"single", blades:7, tblades:4, body:"utility", engine:"turbine", engines:3, gear:"sponson", stubs:false, mast:false, nose:"plain", tandemseat:false, camo:"darkgrey"},
   /* The Huey's long cabin and two-blade rotor on skids, with the twin-pac's wider engine housing behind the mast: 48 ft rotor; the fuselage the UH-1H row's 12.8 m (no 212 figure fetched). */
   nato_e60_uh1n: {era:"e60", fac:"nato", role:"assaulthelo", designation:"Bell UH-1N Twin Huey", kind:"rotor", len:12.8, rotorD:14.6, config:"single", blades:2, tblades:2, body:"utility", engine:"turbine", engines:2, gear:"skid", stubs:false, mast:false, nose:"glass", tandemseat:false, camo:"olive"},
+
+  /* ---- the other navies' assault helicopters (eras.js, navy piece 5b) ----
+     en.wikipedia "Westland Sea King" and "Kamov Ka-27", read 2026-10-22. */
+  /* The Sea King with its side floats taken off and the main wheels on stub sponsons: 55 ft 10 in fuselage and 62 ft rotor (the HAS.5's table; the HC4 has the same airframe). Five blades on each rotor as photographed, not a fetched figure. Commando green. */
+  gbr_e80_seaking4: {era:"e80", fac:"gbr", role:"assaulthelo", designation:"Westland Sea King HC4", kind:"rotor", len:17.0, rotorD:18.9, config:"single", blades:5, tblades:5, body:"utility", engine:"turbine", engines:2, gear:"sponson", stubs:false, mast:false, nose:"plain", tandemseat:false, camo:"olive"},
+  /* The Ka-27's stubby hull under two three-blade coaxial rotors and no tail rotor, twin fins: 11.3 m, 15.8 m rotors. */
+  pact_e80_ka29: {era:"e80", fac:"pact", role:"assaulthelo", designation:"Kamov Ka-29TB Helix-B", kind:"rotor", len:11.3, rotorD:15.8, config:"coaxial", blades:3, tblades:0, body:"utility", engine:"turbine", engines:2, gear:"wheel", stubs:false, mast:false, nose:"plain", tandemseat:false, camo:"bluegrey"},
 };
 
 /* the rotorcraft build here; the aeroplanes join the fixed-wing table */

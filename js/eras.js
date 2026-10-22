@@ -13890,7 +13890,10 @@ if (typeof reindexRoles === "function") reindexRoles();
    flew from them AND can work from a deck in the game (carrierCapable);
    the Army helicopters that flew from Ocean and the Mistrals are in the
    game but are not deck-capable rows, so they are named below and left
-   for the helicopter piece rather than flagged here.
+   for the helicopter piece rather than flagged here. (Navy piece 5b, THE
+   OTHER NAVIES' ASSAULT HELICOPTERS at the end of this file, adds or
+   reuses each ship's real assault helicopter, puts it first on her list
+   and delivers her with it; the decks below are as piece 4 left them.)
    THE HOLD by embarked troops, on piece 1's scale (431 troops, a Newport,
    is the game's 6-seat hold; 72 a seat): Ocean 830, 12; Mistral 450, 6;
    Type 075 800, 11; Ivan Rogov 520, 7.
@@ -13923,17 +13926,17 @@ WEAPONS.sam_simbad = Object.assign({}, WEAPONS.w_e00_fra_aa,
       cost:2350, oil:52, time:46, hp:2150, armor:"heavy", speed:1.35, turn:0.6, sight:9.5, r:30, mass:0,
       /* three Phalanx; her 20 mm (later 30 mm DS30M) and miniguns are not modelled, as the Wasp's 25 mm */
       weapons:["ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["gbr_e90_aswhelo"],
+      carrier:3, heloCarrier:true, deckTakes:["gbr_e80_seaking4", "gbr_e90_aswhelo"],
       cargo:12, amphib:true, ciws:0.50, rcs:2.2,
       from:"e90", to:"e90", service:"1998", confidence:"high",
-      desc:"Commissioned in 1998: a deck for up to eighteen helicopters, 830 Royal Marines and four landing craft on davits, and no well deck - everything went ashore by air or by boat. Her commando Sea Kings are not in the game yet; the deck takes the Fleet Air Arm's Lynx, which flew from her." },
+      desc:"Commissioned in 1998: a deck for up to eighteen helicopters, 830 Royal Marines and four landing craft on davits, and no well deck - everything went ashore by air or by boat. She sails with three commando Sea King HC4s; her deck also takes the Fleet Air Arm's Lynx, which flew from her." },
     gbr_e00_lph: { fac:"gbr", role:"assault_sea", cat:"naval", layer:"sea", name:"Ocean LPH", full:"HMS Ocean (L12), landing platform helicopter",
       cost:2650, oil:58, time:48, hp:2400, armor:"heavy", speed:1.41, turn:0.6, sight:11.1, r:30, mass:0,
       weapons:["ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["gbr_e00_aswhelo"],
+      carrier:3, heloCarrier:true, deckTakes:["gbr_e80_seaking4", "gbr_e00_transport", "gbr_e00_gunship", "gbr_e00_aswhelo"],
       cargo:12, amphib:true, ciws:0.50, rcs:2.2,
       from:"e00", to:"e00", service:"1998", confidence:"high",
-      desc:"The Royal Navy's helicopter carrier through Iraq in 2003 and Libya in 2011, where Army Apaches flew into action from her deck for the first time, until she was sold to Brazil in 2018. 830 Royal Marines go ashore by helicopter or in her four davit landing craft. Her Sea Kings and the Army's Apaches are not deck aircraft in the game yet; the deck takes the Fleet Air Arm's Merlin." },
+      desc:"The Royal Navy's helicopter carrier through Iraq in 2003 and Libya in 2011, where Army Apaches flew into action from her deck for the first time, until she was sold to Brazil in 2018. 830 Royal Marines go ashore by helicopter or in her four davit landing craft. She sails with three commando Sea King HC4s; her deck also takes the RAF's Chinook, the Army's Apache and the Fleet Air Arm's Merlin." },
 
     /* ---- FRANCE: the Mistral class, 2006 to now (lhd_f in rules.js) ----
        Mistral commissioned 15 December 2006, Tonnerre 1 August 2007, Dixmude
@@ -13953,10 +13956,10 @@ WEAPONS.sam_simbad = Object.assign({}, WEAPONS.w_e00_fra_aa,
       cost:2650, oil:58, time:48, hp:2400, armor:"heavy", speed:1.38, turn:0.6, sight:11.1, r:30, mass:0,
       /* two Simbad and four 12.7 mm as built; the two 30 mm Breda-Mauser of the design were not fitted (2009) */
       weapons:["sam_simbad"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["fra_e00_aswhelo"],
+      carrier:3, heloCarrier:true, deckTakes:["fra_e00_transport", "fra_e00_gunship", "fra_e00_aswhelo"],
       cargo:6, amphib:true, wellDeck:true, wellCraft:{ fra_ctm:4 }, ciws:0.30, rcs:2.2,
       from:"e00", to:"e00", service:"2006", confidence:"high",
-      desc:"Commissioned in 2006 and driven by electric pods: a deck for sixteen heavy helicopters on six spots, a hangar under it, 450 troops, seventy vehicles including thirteen Leclerc tanks, and a well deck for four CTM landing craft. Tonnerre's Army attack helicopters struck Libya beside HMS Ocean's Apaches in 2011. Her Army helicopters are not deck aircraft in the game yet; the deck takes the Navy's NH90." },
+      desc:"Commissioned in 2006 and driven by electric pods: a deck for sixteen heavy helicopters on six spots, a hangar under it, 450 troops, seventy vehicles including thirteen Leclerc tanks, and a well deck for four CTM landing craft. Tonnerre's Army attack helicopters struck Libya beside HMS Ocean's Apaches in 2011. She sails with three of the Army's NH90 Caiman transports; her deck also takes its Tigre and the Navy's NH90." },
 
     /* ---- THE SOVIET UNION AND RUSSIA: Project 1174 (Ivan Rogov), 1978-2006 ----
        Ivan Rogov 15 June 1978 (struck 1996), Aleksandr Nikolayev 30 December
@@ -13976,24 +13979,24 @@ WEAPONS.sam_simbad = Object.assign({}, WEAPONS.w_e00_fra_aa,
     pact_e80_lpd: { fac:"pact", role:"assault_sea", cat:"naval", layer:"sea", name:"Project 1174 Ivan Rogov", full:"Ivan Rogov, Project 1174 Nosorog large landing ship",
       cost:1800, oil:40, time:42, hp:1650, armor:"heavy", speed:1.28, turn:0.6, sight:7.2, r:23, mass:0,
       weapons:["sam_osa","ciws_ak630"], prereq:["navalyard","airbase"], tech:2,
-      carrier:2, heloCarrier:true, emptyDeck:true, deckTakes:["pact_e80_aswhelo"],
+      carrier:2, heloCarrier:true, deckTakes:["pact_e80_ka29", "pact_e80_aswhelo"],
       cargo:7, amphib:true, wellDeck:true, bowRamp:true, wellCraft:{ lst:3 }, ciws:0.33, rcs:2.0,
       from:"e80", to:"e80", service:"1978", confidence:"high",
-      desc:"The largest Soviet landing ship, able to work as a tank landing ship or a dock landing ship: a bow ramp to put tanks on a beach, a 75-metre well deck in the stern for three hovercraft, two helicopter pads and a hangar, and a battalion of 520 naval infantry with 25 tanks. Three were built. Her Ka-29 assault helicopters are not in the game yet; the deck takes the Ka-27." },
+      desc:"The largest Soviet landing ship, able to work as a tank landing ship or a dock landing ship: a bow ramp to put tanks on a beach, a 75-metre well deck in the stern for three hovercraft, two helicopter pads and a hangar, and a battalion of 520 naval infantry with 25 tanks. Three were built. She sails with two Ka-29 assault helicopters; her deck also takes the Ka-27." },
     pact_e90_lpd: { fac:"pact", role:"assault_sea", cat:"naval", layer:"sea", name:"Project 1174 Ivan Rogov", full:"Mitrofan Moskalenko, Project 1174 Nosorog large landing ship",
       cost:1850, oil:41, time:43, hp:1700, armor:"heavy", speed:1.33, turn:0.6, sight:7.9, r:23, mass:0,
       weapons:["sam_osa","ciws_ak630"], prereq:["navalyard","airbase"], tech:2,
-      carrier:2, heloCarrier:true, emptyDeck:true, deckTakes:["asw_helo_p"],
+      carrier:2, heloCarrier:true, deckTakes:["pact_e80_ka29", "asw_helo_p"],
       cargo:7, amphib:true, wellDeck:true, bowRamp:true, wellCraft:{ lst:3 }, ciws:0.33, rcs:2.0,
       from:"e90", to:"e90", service:"1990", confidence:"high",
-      desc:"The third and last of the class, Mitrofan Moskalenko, joined the Northern Fleet in 1990 as the Soviet Union ended; Ivan Rogov was struck in 1996 and Aleksandr Nikolayev laid up in 1997. A bow ramp, a well deck for three hovercraft and a battalion of naval infantry with its tanks. Her Ka-29s are not in the game yet; the deck takes the Ka-27." },
+      desc:"The third and last of the class, Mitrofan Moskalenko, joined the Northern Fleet in 1990 as the Soviet Union ended; Ivan Rogov was struck in 1996 and Aleksandr Nikolayev laid up in 1997. A bow ramp, a well deck for three hovercraft and a battalion of naval infantry with its tanks. She sails with two Ka-29s; her deck also takes the Ka-27." },
     pact_e00_lpd: { fac:"pact", role:"assault_sea", cat:"naval", layer:"sea", name:"Project 1174 Ivan Rogov", full:"Mitrofan Moskalenko, Project 1174 Nosorog large landing ship",
       cost:2050, oil:45, time:44, hp:1850, armor:"heavy", speed:1.35, turn:0.6, sight:8.1, r:23, mass:0,
       weapons:["sam_osa","ciws_ak630"], prereq:["navalyard","airbase"], tech:2,
-      carrier:2, heloCarrier:true, emptyDeck:true, deckTakes:["asw_helo_p"],
+      carrier:2, heloCarrier:true, deckTakes:["pact_e80_ka29", "asw_helo_p"],
       cargo:7, amphib:true, wellDeck:true, bowRamp:true, wellCraft:{ lst:3 }, ciws:0.33, rcs:2.0,
       from:"e00", to:"e00", service:"1990", confidence:"medium",
-      desc:"Russia's only ship of her kind until the French Mistrals, which were never delivered: Mitrofan Moskalenko stayed in commission until 2006, when modernising her was judged to cost as much as a new ship. A bow ramp, a well deck for three hovercraft and a battalion of naval infantry with its tanks. Her Ka-29s are not in the game yet; the deck takes the Ka-27." },
+      desc:"Russia's only ship of her kind until the French Mistrals, which were never delivered: Mitrofan Moskalenko stayed in commission until 2006, when modernising her was judged to cost as much as a new ship. A bow ramp, a well deck for three hovercraft and a battalion of naval infantry with its tanks. She sails with two Ka-29s; her deck also takes the Ka-27." },
 
     /* ---- the CTM, the Mistral's landing craft ----
        Chaland de transport de materiel: built on the American LCM-8, CTM 1 in
@@ -14182,8 +14185,9 @@ if (typeof reindexRoles === "function") reindexRoles();
    MV-22B) and 0.78 (America, MV-22B) - inside the band, or just under it
    for the 1990s Wasp, whose hull also buys a well deck. Her jets are not
    part of it, and her well is still delivered empty, its craft bought (THE
-   WELL DECK). The other navies' ships keep emptyDeck until their own
-   assault helicopters are in the game.
+   WELL DECK). The other navies' ships kept emptyDeck until their own
+   assault helicopters were in the game (navy piece 5b, the end of this
+   file, which gives them theirs).
 
    3D: no hero model yet. js/rotor_specs.js draws the CH-46s (tandem
    rotors), the CH-53s and the UH-1N on the parametric rotorcraft builder at
@@ -14228,4 +14232,145 @@ Object.assign(UNITS, {
     from:"e60", to:"e00", service:"1971", confidence:"high",
     desc:"The Huey with two coupled turbines driving its one rotor, so it can keep flying on either. The Marines took it from 1971 as their utility helicopter - six to eight combat-equipped troops, a commander and his radios, casualties, or 5,000 lb on its hook - and flew it from the amphibious assault ships for over forty years, until the UH-1Y replaced it in 2014." },
 });
+if (typeof reindexRoles === "function") reindexRoles();
+
+/* ==================================================================
+   THE OTHER NAVIES' ASSAULT HELICOPTERS (navy piece 5b)
+   (owner) "We want the navy helicopter to have more roles" - the assault
+   transport, second half: the helicopters that flew troops ashore from the
+   other navies' assault ships (navy piece 4, THE OTHER NAVIES' AMPHIBIOUS
+   ASSAULT SHIPS above; rules.js lhd_f, lhd_c). Two new rows under 5a's role
+   "assaulthelo", where the game had no row of the type; four existing rows
+   reused, where it had one; and every one of these ships now sails with
+   her complement. Sources, read 2026-10-22: en.wikipedia "HMS Ocean (L12)",
+   "Westland Sea King", "Commando Helicopter Force", "845 Naval Air
+   Squadron", "AgustaWestland AW101" and "Kamov Ka-27" (text, variant list
+   and specification table of each).
+
+   BRITAIN, HMS OCEAN (e90, e00). Her article: "four to six Westland Apache
+   AH1 helicopters operated by the Army Air Corps, as well as helicopters of
+   the Fleet Air Arm (Seaking Mk4) and Royal Air Force, including the larger
+   twin-rotor Boeing Chinook transports".
+     Sea King HC4 (Westland Commando)  NEW, gbr_e80_seaking4, e80-e00. The
+                    Royal Navy's commando transport: first flown 26
+                    September 1979, in the Falklands in 1982, the Balkans,
+                    both Gulf Wars, Sierra Leone (846 NAS, 2000), Al Faw from
+                    Ocean's task force in 2003 (845 NAS), Afghanistan; retired
+                    31 March 2016 (Commando Helicopter Force). 28 fully
+                    equipped troops; 600 nmi without refuelling; no side
+                    floats, the main wheels on stub sponsons.
+     Chinook HC4    REUSED, gbr_e00_transport (the RAF's, e00): "Apache and
+                    Chinook training on Ocean in November 2014 following her
+                    refit" (the article's MOD photograph). Not in e90: no
+                    source fetched puts a Chinook HC2 on her before 2000.
+     Apache AH1     REUSED, gbr_e00_gunship (the Army Air Corps', e00): three,
+                    then five, flew into action from her over Libya in 2011,
+                    "the first time that Apache helicopters were sent directly
+                    into action from a Royal Navy ship".
+   Then piece 4's stand-ins, which it sourced: the Lynx HMA.8 (e90) and the
+   Merlin HM1 (e00). NOT ADDED: the Merlin HC3 - the RAF's from January 2001,
+   the Commando Helicopter Force's from 30 September 2014 (846 NAS) in place
+   of the Sea King HC4 - since no source fetched puts one on Ocean's deck
+   (her infobox says only "Merlin"); the Army Lynx (her four Army Super
+   Lynx of the 2012 Olympics are not the game's e90 Lynx AH7, and its e00
+   Army row is the Apache); the Wildcat (first on her in April 2015; not in
+   the game).
+
+   FRANCE, THE MISTRALS (e00, e20). France has no naval assault helicopter:
+   the air group is the Army's (ALAT), "half NH90, half Tigre" (en.wikipedia
+   "Mistral-class", piece 4's source), and Tonnerre's Army attack
+   helicopters struck Libya beside Ocean's Apaches in 2011.
+     NH90 Caiman TTH  REUSED, fra_e00_transport (2011) and trans_f: the Army's
+                    tactical transport, first on her deck.
+     Tigre HAD      REUSED, fra_e00_gunship (2013) and helo_f. (Over Libya the
+                    Tigre was the HAP; the game's Tigre of the period is the
+                    HAD.)
+   Then the Navy's NH90 NFH, piece 4's stand-in. Puma and Cougar flew from
+   her too, but the game's Puma ends with the 1980s and its Cougar with the
+   1990s; the Caracal and the Gazelle of her period are not in the game.
+
+   CHINA, TYPE 075 (e20). Her listed air group: Z-8, Z-18, Z-20 and the
+   Army's Z-10. trans_c IS the Z-20 (rotor_specs.js "Z-20 Transport
+   Helicopter", 4,000 kg slung) and helo_c the Z-10: piece 4's list holds
+   only types she really carries, so it stays, the Z-20 first. A Z-8 or
+   Z-18 row would be the heavier naval type, but no figure for either was
+   fetched (generations.js AIRLIFT already says so for the Z-8), so neither
+   is added.
+
+   THE SOVIET UNION AND RUSSIA, IVAN ROGOV (e80-e00).
+     Ka-29TB Helix-B  NEW, pact_e80_ka29, e80 on: "assault transport armored
+                    helicopter, operated from amphibious landing ships or
+                    aircraft carriers, with accommodation for two pilots and
+                    16 troops"; production from about 1984, "entered Soviet
+                    service in 1987"; still flying (one was reportedly shot
+                    down over Crimea in June 2024). The Ka-27's airframe: 11.3 m, two 15.8 m
+                    coaxial rotors, 270 km/h, 980 km.
+   Then piece 4's Ka-27 (Ka-27PL in e80). Ivan Rogov commissioned in 1978,
+   nine years before the Ka-29; what flew from her before it is not in the
+   sources fetched, and the game's Ka-25 ends with the 1970s, so her 1980s
+   deck takes the Ka-29 of the decade's end.
+
+   THE FIGURES, on 5a's ladder (THE MARINE CORPS' ASSAULT HELICOPTERS), from
+   the American card of the row's first period (UH-60A for both: 655 / 10
+   bbl / 12 s, hp 410, 3.99, sight 6.7). SEATS by troops: 12 troops are 8
+   seats and 24 are 10, a seat for six - the Ka-29's 16 troops 9, the Sea
+   King's 28 troops 11 (under the Chinook's 14 for 33-55). PRICE, BARRELS,
+   TIME, HP, RCS, TURN: (s - 8) / 6 of the step to the Chinook - a half for
+   the Sea King (cost x1.205, barrels x1.235, time x1.15, hp x1.16, rcs
+   1.25, turn 2.25), a sixth for the Ka-29 (x1.068, x1.078, x1.05, x1.053,
+   rcs 1.0, turn 2.35). SPEED: 0.0045 a km/h from the card's 294: the Ka-29's
+   published 270 km/h gives 3.88; the only Sea King speed fetched is the
+   HAS.5's 112 kt maximum cruise at sea level (207 km/h, Air International
+   1981), 3.60 - the HC4 is the same airframe and engines without the sonar.
+   RADIUS 34 tiles a 590 km: the HC4's 600 nmi 64, the Ka-27 family's 980 km
+   56. r 17 for the Sea King (17.02 m fuselage, longer than a Chinook's) as
+   the CH-46 and CH-53; 15 for the Ka-29. UNARMED, as every transport row:
+   the Ka-29's 7.62 mm or 30 mm gun and its four pylons, and the HC4's door
+   guns, are not carried. PAYLOAD: generations.js AIRLIFT.
+
+   THE DECKS AND THEIR COMPLEMENT. As 5a did for the American ships: the
+   faithful type heads each list, piece 4's sourced stand-ins after it, and
+   with a faithful type of every period on the list no ship is delivered
+   empty any more (no emptyDeck) - she sails with her spots filled with it,
+   at her unchanged price (piece 4 priced every hull at 1.1 times hp, the
+   carriers' ratio, whose price includes their aircraft). At list price the
+   complement is worth: Ocean 1.01 (e90) and 0.89 (e00) of her hull, three
+   Sea King HC4s; the Mistral 1.02 (e00) and 1.04 (e20), three NH90 TTH; the
+   Type 075 0.73, three Z-20s; the Ivan Rogov 0.78, 0.76 and 0.68 on her two
+   pads, two Ka-29s - the carriers' band is 0.78-1.61 and the American assault
+   ships' 0.72-0.97, and the Type 075 and the 2000s Ivan Rogov sit just
+   under it, both hulls that also buy a well deck (and the Rogov a bow ramp
+   and her rocket launcher) with their price.
+   THE ARMY ROWS reused here (Chinook HC4, Apache AH1, NH90 TTH, Tigre HAD)
+   are made deck-capable (carrierCapable), as every American, Chinese and
+   Soviet Army helicopter already is (game.js: any rotorcraft model row;
+   rules.js trans_n ... trans_p). That lets them land on these decks, be
+   delivered to one, and count a deck as their airbase where it takes them
+   (player.js) - nothing else: an escort or a carrier takes only the types
+   of its own plan and air-wing roles (game.js G.deckTypesFor). Their roles,
+   prices and unitFor answers are unchanged, and the British Army's Lynx
+   AH7, which no source puts on Ocean, is left as it was.
+
+   3D: no hero model. js/rotor_specs.js draws the Sea King HC4 and the Ka-29
+   on the parametric rotorcraft builder at their real size.
+   ================================================================== */
+Object.assign(UNITS, {
+  gbr_e80_seaking4: { fac:"gbr", role:"assaulthelo", cat:"aircraft", layer:"air", name:"Sea King HC4", full:"Westland Sea King HC4 (Commando), Royal Navy",
+    cost:790, oil:12, time:14, hp:475, armor:"air", speed:3.60, turn:2.25, sight:6.7, r:17, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:11, radius:64, rcs:1.25,
+    from:"e80", to:"e00", service:"1979", confidence:"high",
+    desc:"The Royal Navy's commando helicopter: the Sea King built as a troop carrier, with its sonar and side floats gone and its wheels on stub sponsons, for 28 fully equipped Royal Marines and 600 nautical miles without refuelling. First flown in 1979, it carried the commandos in the Falklands, the Balkans, both Gulf Wars and Afghanistan, flew them ashore from HMS Ocean, and was retired in March 2016 for the Merlin." },
+  pact_e80_ka29: { fac:"pact", role:"assaulthelo", cat:"aircraft", layer:"air", name:"Ka-29 Helix-B", full:"Kamov Ka-29TB Helix-B assault transport (Soviet / Russian Navy)",
+    cost:700, oil:11, time:13, hp:430, armor:"air", speed:3.88, turn:2.35, sight:6.7, r:15, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:9, radius:56, rcs:1.0,
+    from:"e80", service:"1987", confidence:"high",
+    desc:"The naval infantry's assault helicopter: the Ka-27's coaxial airframe, with no tail rotor, armoured and fitted out for two pilots and sixteen troops, to fly from the amphibious landing ships and the aircraft carriers. In Soviet service from 1987, and still flying. Its gun and four weapon pylons are not carried here." },
+});
+(function () {
+  /* the Army rows that really flew from Ocean and the Mistrals (above) */
+  ["gbr_e00_transport", "gbr_e00_gunship", "fra_e00_transport", "fra_e00_gunship", "trans_f", "helo_f"]
+    .forEach(function (k) { if (UNITS[k]) UNITS[k].carrierCapable = true; });
+})();
 if (typeof reindexRoles === "function") reindexRoles();
