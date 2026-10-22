@@ -13590,10 +13590,12 @@ var ERA_DECKS = {
 
    WHAT FLIES FROM IT. Their real air groups were Marine helicopters (UH-34,
    CH-46, CH-53, UH-1, AH-1, MV-22) and the Navy's MH-60S, none of which the
-   game has yet, so every deck is DELIVERED EMPTY (emptyDeck) and priced as
-   a hull without aircraft, and `deckTakes` lists the helicopters the game
-   does have that really flew from these decks (G.deckAircraftFor, game.js),
-   taken in the owner's period:
+   game had at first, so every deck was DELIVERED EMPTY (emptyDeck) and
+   `deckTakes` listed the helicopters the game does have that really flew
+   from these decks (G.deckAircraftFor, game.js), taken in the owner's
+   period. Navy piece 5a (THE MARINE CORPS' ASSAULT HELICOPTERS, the end of
+   this file) puts the CH-46, CH-53, MV-22 and UH-1N first on each list, and
+   the ships now sail with them; the stand-ins below stay after them:
      SH-3 Sea King   Helicopter 66, an HS-4 SH-3D, landed Apollo 13's crew
                      on USS Iwo Jima (LPH-2) on 17 April 1970.
      UH-60           an Army UH-60 landed aboard USS Guam (LPH-9) under fire
@@ -13648,40 +13650,46 @@ WEAPONS.sam_bpdms = Object.assign({}, WEAPONS.sam_seasparrow,
 (function () {
   /* the UH-60 chain (see above), each read in its own period */
   var UH60 = ["nato_e80_transport", "nato_e90_transport", "nato_e00_transport", "trans_n"];
+  /* the Marine Corps' own helicopters (navy piece 5a, the end of this file),
+     first on every list and read in the period like the UH-60s: the CH-46,
+     CH-53 and UH-1N of the 1960s-70s; the CH-46E, CH-53E and UH-1N of the
+     1980s and 1990s; the MV-22B first from the 2000s (it replaced the CH-46),
+     then the CH-46E, CH-53E and UH-1N; the MV-22B and CH-53E today */
+  var USMC = ["nato_e00_mv22", "nato_e80_ch46", "nato_e60_ch46", "nato_e80_ch53", "nato_e60_ch53", "nato_e60_uh1n"];
   Object.assign(UNITS, {
     nato_e60_lph: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Iwo Jima LPH", full:"USS Iwo Jima (LPH-2), Iwo Jima-class amphibious assault ship",
       cost:1800, oil:40, time:42, hp:1650, armor:"heavy", speed:1.30, turn:0.6, sight:8.0, r:30, mass:0,
       /* as built: two twin 3in/50; Sea Sparrow BPDMS and Phalanx came later */
       weapons:["aagun_3in50"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["nato_e60_aswhelo"].concat(UH60),
+      carrier:3, heloCarrier:true, deckTakes:USMC.concat(["nato_e60_aswhelo"], UH60),
       cargo:24, amphib:true, ciws:0.35, rcs:2.2,
       from:"e60", to:"e60", service:"1961", confidence:"high",
-      desc:"Commissioned in 1961, the first ship built from the keel up to put Marines ashore by helicopter rather than by boat: about 1,800 Marines, a deck for some twenty helicopters, one shaft and 22 knots, and no well deck - everything went ashore by air. Seven served until 2002. Her Marine squadron is not in the game yet; the deck takes the Navy's SH-3 Sea King, which flew from her on the Apollo recoveries." },
+      desc:"Commissioned in 1961, the first ship built from the keel up to put Marines ashore by helicopter rather than by boat: about 1,800 Marines, a deck for some twenty helicopters, one shaft and 22 knots, and no well deck - everything went ashore by air. Seven served until 2002. She sails with three Marine CH-46 Sea Knights; her deck also takes the CH-53 Sea Stallion, the UH-1N and the Navy's SH-3 Sea King, which flew from her on the Apollo recoveries." },
     nato_e80_lha: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Tarawa LHA", full:"USS Tarawa (LHA-1), Tarawa-class amphibious assault ship",
       cost:2750, oil:61, time:48, hp:2500, armor:"heavy", speed:1.42, turn:0.6, sight:10.0, r:30, mass:0,
       /* as built: two Mk 25 BPDMS and three 5in/54 Mk 45 (generations.js DECK_GUN);
          two Phalanx replaced the BPDMS later, RAM by 1998 */
       weapons:["sam_bpdms"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60.concat(["nato_e80_stovl"]),
+      carrier:3, heloCarrier:true, deckTakes:USMC.concat(UH60, ["nato_e80_stovl"]),
       cargo:24, amphib:true, wellDeck:true, wellCraft:{ nato_lcu:4, lst:1 }, ciws:0.45, rcs:2.6,
       from:"e80", to:"e80", service:"1976", confidence:"high",
-      desc:"Commissioned in 1976 at twice the Iwo Jima's size: a flight deck for up to 26 CH-46 or 19 CH-53, a well deck in the stern for four LCU landing craft, berths for 1,703 Marines, and three 5-inch guns to support them ashore. Five served until 2015. Her Marine helicopters are not in the game yet; the deck takes a UH-60 Black Hawk and the Marines' AV-8B Harrier II, six of which she could operate." },
+      desc:"Commissioned in 1976 at twice the Iwo Jima's size: a flight deck for up to 26 CH-46 or 19 CH-53, a well deck in the stern for four LCU landing craft, berths for 1,703 Marines, and three 5-inch guns to support them ashore. Five served until 2015. She sails with three CH-46E Sea Knights; her deck also takes the CH-53E Super Stallion, the UH-1N, a UH-60 Black Hawk and the Marines' AV-8B Harrier II, six of which she could operate." },
     nato_e90_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"USS Wasp (LHD-1), Wasp-class amphibious assault ship",
       cost:3100, oil:68, time:50, hp:2800, armor:"heavy", speed:1.45, turn:0.6, sight:11.1, r:30, mass:0,
       /* as commissioned in 1989: two Mk 29 Sea Sparrow, three Phalanx */
       weapons:["sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["nato_e90_aswhelo"].concat(UH60, ["nato_e90_stovl"]),
+      carrier:3, heloCarrier:true, deckTakes:USMC.concat(["nato_e90_aswhelo"], UH60, ["nato_e90_stovl"]),
       cargo:24, amphib:true, wellDeck:true, wellCraft:{ lst:3, nato_lcu:2 }, ciws:0.61, rcs:2.6,
       from:"e90", to:"e90", service:"1989", confidence:"high",
-      desc:"Commissioned in 1989: the Tarawa lengthened to carry three LCAC hovercraft in her well deck and AV-8B Harriers on her flight deck, the first ship designed for both, with nine helicopter spots and berths for 1,687 Marines. Her Marine helicopters are not in the game yet; the deck takes the AV-8B Harrier II Plus, the Navy's SH-60F - six of them fly beside twenty Harriers in her sea-control load - and a UH-60." },
+      desc:"Commissioned in 1989: the Tarawa lengthened to carry three LCAC hovercraft in her well deck and AV-8B Harriers on her flight deck, the first ship designed for both, with nine helicopter spots and berths for 1,687 Marines. She sails with three CH-46E Sea Knights; her deck also takes the CH-53E Super Stallion, the UH-1N, the AV-8B Harrier II Plus, the Navy's SH-60F - six of them fly beside twenty Harriers in her sea-control load - and a UH-60." },
     nato_e00_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"Wasp-class amphibious assault ship (LHD-1 to LHD-8)",
       cost:3500, oil:77, time:52, hp:3200, armor:"heavy", speed:1.46, turn:0.6, sight:11.8, r:30, mass:0,
       /* two RAM launchers beside the Sea Sparrows and Phalanx (Iwo Jima, LHD-7, commissioned with them in 2001) */
       weapons:["sam_ram","sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60.concat(["nato_e90_stovl"]),
+      carrier:3, heloCarrier:true, deckTakes:USMC.concat(UH60, ["nato_e90_stovl"]),
       cargo:24, amphib:true, wellDeck:true, wellCraft:{ lst:3, nato_lcu:2 }, ciws:0.66, rcs:2.6,
       from:"e00", to:"e00", service:"1989", confidence:"high",
-      desc:"The Wasp class through the 2000s and 2010s, with RAM launchers added and the eighth ship, Makin Island (2009), on gas turbines instead of steam. A Marine Expeditionary Unit's battalion, its tanks, amphibious tractors and guns go ashore from her by LCAC and helicopter. Her Marine helicopters are not in the game yet; the deck takes the AV-8B Harrier II Plus and a UH-60, as Army Black Hawks have qualified on her decks." },
+      desc:"The Wasp class through the 2000s and 2010s, with RAM launchers added and the eighth ship, Makin Island (2009), on gas turbines instead of steam. A Marine Expeditionary Unit's battalion, its tanks, amphibious tractors and guns go ashore from her by LCAC and helicopter. She sails with three MV-22B Ospreys, which took over from the CH-46 from 2007; her deck also takes the CH-46E, the CH-53E Super Stallion, the UH-1N, the AV-8B Harrier II Plus and a UH-60, as Army Black Hawks have qualified on her decks." },
   });
 })();
 
@@ -13743,7 +13751,9 @@ WEAPONS.sam_bpdms = Object.assign({}, WEAPONS.sam_seasparrow,
    sails with them (the carriers), and these hulls were priced bare. Their
    real air element is mostly the Marine helicopters (CH-46, CH-53, MV-22,
    AH-1, UH-1) a later piece adds; six Harriers or F-35Bs of some thirty
-   aircraft would not be her complement on their own.
+   aircraft would not be her complement on their own. (Navy piece 5a added
+   them, and the decks now sail with the period's first Marine helicopter -
+   the jets still come after the helicopters and are still bought.)
    NOT ON THE IWO JIMA: the AV-8A (1971-87) flew from LPHs (Guam as the
    interim sea-control ship, 1972-74), but it is a Harrier GR.1/GR.3 airframe
    with American Sidewinder wiring and a row of its own would be a new
@@ -13807,8 +13817,10 @@ if (typeof reindexRoles === "function") reindexRoles();
 
    THE PRICE. The ships were priced in piece 1 as hulls delivered empty
    (emptyDeck), so the well is delivered empty too and its craft are bought
-   for it, as her helicopters are: from her panel, at the craft's own price,
-   barrels and build time, floated in alongside a naval yard. The LCAC is
+   for it, as her helicopters were until navy piece 5a gave her deck its
+   complement (the well was not changed with it): from her panel, at the
+   craft's own price, barrels and build time, floated in alongside a naval
+   yard. The LCAC is
    also still built at the yard and sails on its own as it always has, and
    can be taken into a well from there.
 
@@ -14001,4 +14013,174 @@ WEAPONS.sam_simbad = Object.assign({}, WEAPONS.w_e00_fra_aa,
       desc:"The French Navy's landing craft since 1965, built on the American LCM-8: 24 metres, 9.5 knots, a bow ramp and 90 tonnes of cargo or 200 troops. A Mistral carries four in her well deck, floated out of the stern to put her vehicles ashore. Bought for a well deck from the ship's panel." },
   });
 })();
+if (typeof reindexRoles === "function") reindexRoles();
+
+/* ==================================================================
+   THE MARINE CORPS' ASSAULT HELICOPTERS (navy piece 5a)
+   (owner) "We want the navy helicopter to have more roles" - the first of
+   the four he chose is the assault transport: the Marines' ship-to-shore
+   helicopters, which fly from the American amphibious assault ships above
+   (nato_e60_lph ... rules.js lha_n) and are now first on their decks.
+   Sources, read 2026-10-22: en.wikipedia "Boeing Vertol CH-46 Sea Knight",
+   "Sikorsky CH-53 Sea Stallion", "Sikorsky CH-53E Super Stallion",
+   "Bell Boeing V-22 Osprey" and "Bell UH-1N Twin Huey" (infobox,
+   specification table and text of each); Naval Historical Center, "CH-46
+   and UH-46 Sea Knight" (history.navy.mil/planes/ch46.htm, archived 2000).
+
+   THE ROWS, one a type in each period it served, as the periods allow:
+     CH-46D Sea Knight     e60      fleet introduction November 1964 (the A;
+                                    Navy); the D in production from 1966 and
+                                    in Vietnam from late 1967 with 25 troops
+                                    or 7,000 lb; built to hoist 10,000 lb
+                                    externally (Navy); 144 kn
+     CH-46E Sea Knight     e80-e00  about 275 A, D and F airframes rebuilt
+                                    with T58-GE-16 engines; 24 troops or
+                                    7,000 lb; 144 kn; the Marines' until
+                                    2015 (the Navy's until 2004)
+     CH-53D Sea Stallion   e60      the A to squadrons from 12 September
+                                    1966, the D flown January 1969; 38
+                                    troops (55 in the D), 8,000 lb inside or
+                                    13,000 lb on the hook; 170 kn; the last
+                                    Marine D retired in 2012
+     CH-53E Super Stallion e80-e20  in service February 1981; a third engine
+                                    and a seventh blade: 37 troops (55 with
+                                    a centre row), 32,000 lb inside or
+                                    36,000 lb outside - an LAV-25, an M198
+                                    with its crew, a Humvee; 170 kn
+     MV-22B Osprey         e00-e20  initial operational capability 13 June
+                                    2007; 24 troops seated, 20,000 lb inside
+                                    or 15,000 lb on its two hooks; 275 kn at
+                                    sea level, 879 nmi
+     UH-1N Twin Huey       e60-e00  first delivered to the Navy and Marines
+                                    in 1971, gone from the Marines in 2014;
+                                    6-8 combat-equipped troops, 4,400 lb
+                                    inside or 5,000 lb outside; 130 kn
+   Not added, each a row of its own: the UH-34D before the CH-46; the AH-1,
+   an attack helicopter; the UH-1Y Venom (which replaced the UH-1N); the
+   CH-53K King Stallion (initial operational capability 22 April 2022); the
+   Navy's MH-60S. So the present day is the MV-22B and the CH-53E, which
+   still fly most of it.
+
+   A ROLE OF THEIR OWN, "assaulthelo". unitFor() answers "the newest of a
+   role in this period", and the transport cards are the Army's: the UH-1D,
+   then the UH-60A, L and M (trans_n today). Filed as "transport", a CH-53E
+   (1981) would tie the UH-60A in the 1980s and an MV-22B (2007) the UH-60M
+   in the 2000s, and either could take its place as the period's answer -
+   and unitFor("transport") is the helicopter the commander's air bridge
+   buys (ai.js pickFor), the one an escort or a carrier puts on her deck
+   when her navy has no ASW helicopter (G.deckAircraftFor), and the AIR
+   tab's transport card. As the Marine jets (piece 2, "stovl"), they sit in
+   the AIR tab beside those cards and change none of them, and in her
+   deck panel; the commander has no table naming the role and builds no
+   assault ship, so no deck of its own ever asks for one, and it never buys
+   one. The role is the ship-to-shore assault transport, so the other
+   navies' (the commando Sea King and Merlin, the Ka-29, the Caiman, the
+   Z-8) can join it. Hover and deck flags come with it (rules.js
+   reindexRoles), as for "aswhelo".
+
+   THE MV-22B IS A TILTROTOR: it takes off, hovers and lands on a deck spot
+   as a helicopter, nacelles up, and cruises as an aeroplane. The game has
+   two kinds of flight - the hover machinery (stops dead, lands on a pad or
+   a deck spot, burns no fuel: entities.js airBurn) and the fixed-wing one
+   (a landing run, a fuel clock, a circuit to land) - and its deck work is
+   the first kind's, so it flies with the helicopters' hover; its aeroplane
+   cruise is its speed alone, and its 879 nmi a card figure, as every
+   helicopter's range is.
+
+   THE FIGURES, on the game's transport-helicopter ladder; each period's
+   reference is the American transport card (UH-1D e60, UH-60A e80, UH-60M
+   e00). SEATS by troops on that ladder's own scale - eleven or twelve
+   troops 8 (UH-1D, UH-60), 24 the Mi-8's 10, 33-55 the Chinook's 14: the
+   CH-46s and the MV-22B 10, the CH-53s 14, the UH-1N 6 (the Marines' 6-8
+   combat-equipped troops, under the Army's eleven). PRICE, BARRELS, BUILD
+   TIME, HP by seats: the Chinook (14 seats) costs 1.41 times the US card
+   of its period (900/655, 1,120/775, 1,230/855, 1,250/900), with 1.47 its
+   barrels, 1.30 its build time and 1.32 its hp; a row of s seats takes
+   (s - 8) / 6 of that step - 10 seats a third (cost x1.14, barrels x1.16,
+   time x1.10, hp x1.11). rcs and turn the same way, from the UH-60's 0.9
+   and 2.4 to the Chinook's 1.6 and 2.1. The UH-1N is priced on the ladder
+   for its 6 seats but keeps the UH-1D's hp, rcs and turn: the same Huey
+   airframe, its seats fewer for the Marines' kit and not for its size.
+   SPEED: the period's card plus 0.0045 for each km/h of published maximum
+   speed over the Black Hawk's 294 - the step between the game's two
+   present-day transports with a speed in facts.js (UH-60M 294 km/h at
+   4.2, Mi-8AMTSh 250 at 4.0). That puts the MV-22B's 509 km/h at 5.13: the
+   helicopters' scale, on which a UH-60 already outruns a C-130J (3.4), and
+   so above the Harrier's 5.0, which is on the jets'. RADIUS is only shown
+   on the card (a helicopter burns no fuel): 34 tiles, the UH-60M's, for
+   each 590 km of published range (its facts.js figure) - the CH-46's 550
+   nmi (en.wikipedia, with a 2,400 lb load; the Navy's page gives 160), the
+   CH-53s' 540, the MV-22B's 879, the UH-1N's 248. r 15 as every transport
+   helicopter; 17 for the CH-53s, as the Chinook HC2 to HC6A, both bigger
+   than a Chinook. PAYLOAD and the hook: generations.js AIRLIFT.
+   UNARMED as every transport row: their door and ramp guns (GAU-15, GAU-21,
+   M240) and the UH-1N's rocket pods and minigun are not carried.
+
+   THE DECKS. Every American assault ship's deckTakes now starts with the
+   Marine helicopters of her period (the USMC chain at nato_e60_lph), so her
+   spots are laid out for, refilled with (G.deckWants) and offered in her
+   panel the Marine type first: the CH-46D on an Iwo Jima, the CH-46E on a
+   Tarawa or a 1990s Wasp, the MV-22B on a 2000s Wasp and an America. The
+   stand-ins piece 1 sourced stay after them, and the jets after those.
+   THE COMPLEMENT. Piece 1 delivered these decks empty only because their
+   helicopters were not in the game. A carrier sails with her complement,
+   its price in the hull's, and so do these ships now (no emptyDeck), with
+   three of the period's first Marine type. Their prices stay: piece 1 set
+   each hull at 1.1 times its hp, the cost-to-hp ratio of the carriers
+   (Enterprise 1.06, Nimitz 1.10, Moskva 1.00, Clemenceau 1.14), which is
+   the ratio of hulls whose price includes their aircraft. MEASURED at each
+   faction's price, spawning every flat-top and embarking its complement
+   (2026-10-22): the carriers sail with aircraft worth 0.78 to 1.61 of their
+   own price (the Kiev 0.78, the Moskva 0.82, carrier_n 1.27, the 1960s
+   Enterprise 1.61); these now sail with 0.97 (Iwo Jima, three CH-46D),
+   0.81 (Tarawa, CH-46E), 0.72 (1990s Wasp, CH-46E), 0.83 (2000s Wasp,
+   MV-22B) and 0.78 (America, MV-22B) - inside the band, or just under it
+   for the 1990s Wasp, whose hull also buys a well deck. Her jets are not
+   part of it, and her well is still delivered empty, its craft bought (THE
+   WELL DECK). The other navies' ships keep emptyDeck until their own
+   assault helicopters are in the game.
+
+   3D: no hero model yet. js/rotor_specs.js draws the CH-46s (tandem
+   rotors), the CH-53s and the UH-1N on the parametric rotorcraft builder at
+   their real size; the MV-22B is a stand-in, the CH-46E it replaced, until
+   a tiltrotor is modelled.
+   ================================================================== */
+Object.assign(UNITS, {
+  nato_e60_ch46: { fac:"nato", role:"assaulthelo", cat:"aircraft", layer:"air", name:"CH-46D Sea Knight", full:"Boeing Vertol CH-46D Sea Knight (USMC)",
+    cost:585, oil:9, time:13, hp:370, armor:"air", speed:3.67, turn:2.3, sight:5.6, r:17, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:10, radius:59, rcs:1.1,
+    from:"e60", to:"e60", service:"1964", confidence:"high",
+    desc:"The Marines' medium assault helicopter from 1964: Boeing Vertol's tandem-rotor 107, with a rear ramp that could stay open in flight, folding blades for the ships and a hull that could set down on the water. The D's stronger engines gave it 25 troops or 7,000 lb. In Vietnam it carried the Marines between the small Huey and the big Sea Stallion, and it flew them ashore from the Iwo Jima-class decks." },
+  nato_e80_ch46: { fac:"nato", role:"assaulthelo", cat:"aircraft", layer:"air", name:"CH-46E Sea Knight", full:"Boeing Vertol CH-46E Sea Knight (USMC)",
+    cost:745, oil:12, time:13, hp:455, armor:"air", speed:3.88, turn:2.3, sight:6.7, r:17, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:10, radius:59, rcs:1.1,
+    from:"e80", to:"e00", service:"1964", confidence:"high",
+    desc:"The Sea Knights of the 1960s rebuilt with stronger engines, new hydraulics and drive train: 24 troops or 7,000 lb, flown from the Tarawas and the Wasps for thirty years - Grenada in 1983, Afghanistan, Iraq in 2003, where it was the Marines' casualty evacuation helicopter. The Marines called it the Phrog and flew it until 2015, when the MV-22B had taken over its squadrons." },
+  nato_e60_ch53: { fac:"nato", role:"assaulthelo", cat:"aircraft", layer:"air", name:"CH-53D Sea Stallion", full:"Sikorsky CH-53A/D Sea Stallion (USMC)",
+    cost:725, oil:12, time:16, hp:440, armor:"air", speed:3.86, turn:2.1, sight:5.6, r:17, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:14, radius:58, rcs:1.6,
+    from:"e60", to:"e60", service:"1966", confidence:"high",
+    desc:"Sikorsky's heavy assault helicopter for the Marines, in squadron service from September 1966: two T64 turbines, a six-blade rotor, a rear ramp and 38 troops - 55 in the D of 1969 - or 13,000 lb on its hook. In Vietnam it recovered more downed aircraft than the Army's flying crane, and at the end of the war it flew the evacuation of Saigon, Operation Frequent Wind." },
+  nato_e80_ch53: { fac:"nato", role:"assaulthelo", cat:"aircraft", layer:"air", name:"CH-53E Super Stallion", full:"Sikorsky CH-53E Super Stallion (USMC)",
+    cost:925, oil:15, time:16, hp:540, armor:"air", speed:4.07, turn:2.1, sight:6.7, r:17, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:14, radius:58, rcs:1.6,
+    from:"e80", service:"1981", confidence:"high",
+    desc:"A third engine and a seventh rotor blade made the Sea Stallion the heaviest-lifting helicopter in the West from 1981: 36,000 lb on its hook - an LAV-25 armoured car, an M198 howitzer with its ammunition and crew, or a Humvee - or 37 troops inside. It carries one vehicle at a time on the hook, and it still flies the Marines' heavy loads from the Wasps and Americas as the CH-53K comes in." },
+  nato_e00_mv22: { fac:"nato", role:"assaulthelo", cat:"aircraft", layer:"air", name:"MV-22B Osprey", full:"Bell Boeing MV-22B Osprey (USMC)",
+    cost:970, oil:15, time:15, hp:555, armor:"air", speed:5.13, turn:2.3, sight:7.8, r:15, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:10, radius:94, rcs:1.1,
+    from:"e00", service:"2007", confidence:"high",
+    desc:"A tiltrotor: it takes off and lands like a helicopter, then tilts its rotors forward and cruises like an aeroplane, at nearly twice a helicopter's speed and with several times its range. After a long development marred by fatal crashes the Marines declared it operational in June 2007; it replaced the CH-46 squadron by squadron and carries their Marines ashore from the Wasps and Americas: 24 troops, or 15,000 lb on its two hooks." },
+  nato_e60_uh1n: { fac:"nato", role:"assaulthelo", cat:"aircraft", layer:"air", name:"UH-1N Twin Huey", full:"Bell UH-1N Twin Huey (USMC)",
+    cost:445, oil:7, time:11, hp:335, armor:"air", speed:3.57, turn:2.4, sight:5.6, r:15, mass:0,
+    weapons:[], prereq:["airbase"], tech:2, ammo:0, hover:true, carrierCapable:true,
+    cargo:6, radius:26, rcs:0.9,
+    from:"e60", to:"e00", service:"1971", confidence:"high",
+    desc:"The Huey with two coupled turbines driving its one rotor, so it can keep flying on either. The Marines took it from 1971 as their utility helicopter - six to eight combat-equipped troops, a commander and his radios, casualties, or 5,000 lb on its hook - and flew it from the amphibious assault ships for over forty years, until the UH-1Y replaced it in 2014." },
+});
 if (typeof reindexRoles === "function") reindexRoles();

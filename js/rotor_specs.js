@@ -132,10 +132,39 @@ var ROTORCRAFT = {
   roc_e90_gunship: {era:"e90", fac:"roc", role:"gunship", designation:"AH-1W SuperCobra", kind:"rotor", len:13.9, rotorD:14.6, config:"single", blades:2, tblades:2, body:"gunship", engine:"turbine", engines:2, gear:"skid", stubs:true, mast:false, nose:"stepped", tandemseat:true, camo:"olive"},
   /* The two-blade rotor with its stabiliser bar crossed at ninety degrees above a slab-sided greenhouse cabin on plain skids - the classic Huey cross. */
   roc_e90_transport: {era:"e90", fac:"roc", role:"transport", designation:"UH-1H Iroquois", kind:"rotor", len:12.8, rotorD:14.6, config:"single", blades:2, tblades:2, body:"utility", engine:"turbine", engines:1, gear:"skid", stubs:false, mast:false, nose:"glass", tandemseat:false, camo:"olive"},
+
+  /* ---- the Marine Corps' assault helicopters (eras.js, navy piece 5a) ----
+     Sizes from en.wikipedia (each type's specification table) and the Naval
+     Historical Center's CH-46 page, read 2026-10-22: len the fuselage, rotorD
+     one main rotor. Marine green in the 1960s-70s rows, grey after. */
+  /* Two three-blade rotors in tandem, the rear one on a tall pylon, over a boxy cabin with a rear ramp and the main wheels in stub sponsons aft: 45 ft 3 in fuselage (Navy), 50 ft rotors. */
+  nato_e60_ch46: {era:"e60", fac:"nato", role:"assaulthelo", designation:"Boeing Vertol CH-46D Sea Knight", kind:"rotor", len:13.8, rotorD:15.2, config:"tandem", blades:3, tblades:0, body:"utility", engine:"turbine", engines:2, gear:"sponson", stubs:false, mast:false, nose:"plain", tandemseat:false, camo:"olive"},
+  /* The same tandem Sea Knight rebuilt to E standard: 44 ft 10 in fuselage, 50 ft rotors. */
+  nato_e80_ch46: {era:"e80", fac:"nato", role:"assaulthelo", designation:"Boeing Vertol CH-46E Sea Knight", kind:"rotor", len:13.7, rotorD:15.2, config:"tandem", blades:3, tblades:0, body:"utility", engine:"turbine", engines:2, gear:"sponson", stubs:false, mast:false, nose:"plain", tandemseat:false, camo:"darkgrey"},
+  /* A long slab-sided hull with fuel sponsons along both flanks, a six-blade main rotor and a four-blade tail rotor: 67 ft 6 in fuselage, 72 ft 3 in rotor. The utility section, not the Z-8's "heavy" one, which drew it some 6 m wide against its 15 ft 6 in across the sponsons. */
+  nato_e60_ch53: {era:"e60", fac:"nato", role:"assaulthelo", designation:"Sikorsky CH-53D Sea Stallion", kind:"rotor", len:20.6, rotorD:22.0, config:"single", blades:6, tblades:4, body:"utility", engine:"turbine", engines:2, gear:"sponson", stubs:false, mast:false, nose:"plain", tandemseat:false, camo:"olive"},
+  /* The Sea Stallion stretched 6 ft 2 in, with a third engine and a seventh blade (73 ft 8 in fuselage, 79 ft rotor), its tail rotor canted 20 degrees on a tall fin. */
+  nato_e80_ch53: {era:"e80", fac:"nato", role:"assaulthelo", designation:"Sikorsky CH-53E Super Stallion", kind:"rotor", len:22.4, rotorD:24.1, config:"single", blades:7, tblades:4, body:"utility", engine:"turbine", engines:3, gear:"sponson", stubs:false, mast:false, nose:"plain", tandemseat:false, camo:"darkgrey"},
+  /* The Huey's long cabin and two-blade rotor on skids, with the twin-pac's wider engine housing behind the mast: 48 ft rotor; the fuselage the UH-1H row's 12.8 m (no 212 figure fetched). */
+  nato_e60_uh1n: {era:"e60", fac:"nato", role:"assaulthelo", designation:"Bell UH-1N Twin Huey", kind:"rotor", len:12.8, rotorD:14.6, config:"single", blades:2, tblades:2, body:"utility", engine:"turbine", engines:2, gear:"skid", stubs:false, mast:false, nose:"glass", tandemseat:false, camo:"olive"},
 };
 
 /* the rotorcraft build here; the aeroplanes join the fixed-wing table */
 if (typeof Rotor3D !== "undefined" && Rotor3D.registerAll) Rotor3D.registerAll();
+/* The MV-22B Osprey (eras.js, navy piece 5a) is a tiltrotor - two rotors
+   side by side on wingtip nacelles - and the builder above makes single,
+   coaxial, fenestron and tandem helicopters only. Until a tiltrotor is
+   modelled it is drawn as a STAND-IN: the CH-46E it replaced in the
+   Marines' medium squadrons, read when it is built so a later CH-46 model
+   carries over. Its own id, so render3d.js lays no period finish on it. */
+(function () {
+  if (typeof UNIT_MODELS === "undefined" || UNIT_MODELS.nato_e00_mv22) return;
+  var src = "nato_e80_ch46";
+  UNIT_MODELS.nato_e00_mv22 = {
+    get len() { return UNIT_MODELS[src] ? UNIT_MODELS[src].len : 15.2; },
+    build: function (THREE, M, C) { return UNIT_MODELS[src].build(THREE, M, C); },
+  };
+})();
 if (typeof AIRFRAMES !== "undefined" && typeof Airframe3D !== "undefined") {
   for (var _k in ROTORCRAFT) {
     if (ROTORCRAFT[_k].kind === "wing" && !AIRFRAMES[_k]) AIRFRAMES[_k] = ROTORCRAFT[_k];

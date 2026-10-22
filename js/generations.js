@@ -2403,6 +2403,14 @@
     gbr_e90_transport:  { t: 10, cabin: [30.5 * FT, 7.5 * FT] },  // Chinook HC.2
     gbr_e00_transport:  { t: 10, cabin: [30.5 * FT, 7.5 * FT] },  // Chinook HC.4
     trans_b:            { t: 10, cabin: [30.5 * FT, 7.5 * FT] },  // Chinook HC.6A
+    /* the Marine Corps' assault helicopters (eras.js, navy piece 5a), fetched
+       2026-10-22: one vehicle each, on the hook - no cabin floor is given */
+    nato_e60_ch46:      { t: 10000 * LB }, // CH-46: built with "provisions for hoisting 10,000 pounds externally" (Naval Historical Center, "CH-46 and UH-46 Sea Knight"); 7,000 lb inside (en.wikipedia)
+    nato_e80_ch46:      { t: 10000 * LB }, // CH-46E: the same hook; 7,000 lb inside (en.wikipedia)
+    nato_e60_ch53:      { t: 13000 * LB }, // CH-53A/D: 13,000 lb on the single-point sling hook, 8,000 lb inside (en.wikipedia CH-53)
+    nato_e80_ch53:      { t: 36000 * LB }, // CH-53E: 36,000 lb outside, 32,000 lb inside (en.wikipedia CH-53E)
+    nato_e00_mv22:      { t: 15000 * LB }, // MV-22B: 15,000 lb on its two hooks (en.wikipedia V-22); its 20,000 lb inside is not the figure, as the cabin takes no vehicle in the roster (only the M1161 Growler)
+    nato_e60_uh1n:      { t: 5000 * LB },  // UH-1N: 5,000 lb outside, 4,400 lb inside (en.wikipedia UH-1N)
   };
   var liftMiss = [], nLift = 0, rerole = false;
   var R130 = UNITS.airlift_n && UNITS.airlift_n.radius;            // 62: the C-130J's 3,334 km

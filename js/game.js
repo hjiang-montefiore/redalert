@@ -675,9 +675,11 @@ var Game = (function () {
     /* An amphibious assault ship (eras.js, nato_e60_lph ... rules.js lha_n)
        lists what the game has that really flew from her (def.deckTakes); the
        first of them her owner fields in this period is what her spots are
-       laid out for and what G.deckWants asks to have bought. None of them is her
-       real air group - that is the Marine helicopters of a later piece - so
-       she is delivered empty (def.emptyDeck), and with nothing of the period
+       laid out for and what G.deckWants asks to have bought. For the American
+       ships that is the period's Marine helicopter (navy piece 5a), and they
+       sail with it, as a carrier sails with her air wing; the other navies'
+       lists hold only stand-ins until their own assault helicopters exist, so
+       those are delivered empty (def.emptyDeck). With nothing of the period
        on the list the deck plans nothing rather than the navy's carrier ASW
        helicopter, which was never her complement. */
     if (host && host.def && host.def.deckTakes) return deckTakesFor(host.def, era)[0] || null;

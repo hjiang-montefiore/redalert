@@ -390,9 +390,21 @@ var Rotor3D = (function () {
       [-0.040, 0.130, 0.136, 0.006],
       [-0.160, 0.092, 0.096, 0.022],
     ],
+    /* A tandem-rotor machine has no boom: the cabin runs the whole length to
+       the aft pylon (CH-46, navy piece 5a: a 2.2 m wide, box-section hull on
+       a 13.7 m fuselage). The first row to use the tandem config; until it
+       the cabin above stopped at -0.16 and the aft rotor stood on nothing. */
+    tandem: [
+      [ 0.490, 0.034, 0.044, 0.004],
+      [ 0.430, 0.066, 0.076, 0.004],
+      [ 0.300, 0.080, 0.088, 0.000],
+      [ 0.000, 0.081, 0.090, 0.000],
+      [-0.330, 0.078, 0.088, 0.006],
+      [-0.490, 0.046, 0.072, 0.026],
+    ],
   };
 
-  function bodyOf(P) { return CABIN[P.body] || CABIN.utility; }
+  function bodyOf(P) { return CABIN[P.config === "tandem" ? "tandem" : P.body] || CABIN.utility; }
   function cabinTop(P, L) { var t = bodyOf(P); return (t[3][2] + t[3][3]) * L; }
   function cabinW(P, L)   { return bodyOf(P)[3][1] * L; }
 
@@ -811,13 +823,15 @@ var Rotor3D = (function () {
     g.add(buildCabin(THREE, M, P, L, skin));
 
     if (P.config === "tandem") {
-      /* two mains, the rear one on a raised pylon; no tail rotor, no boom */
+      /* two mains, the rear one on a raised pylon; no tail rotor, no boom.
+         Hubs 0.74 of the fuselage apart: the CH-46's 83 ft 4 in turning
+         less one 50 ft disc, on its 13.7 m fuselage (navy piece 5a) */
       var top = cabinTop(P, L);
       var pyl = new THREE.Mesh(new THREE.BoxGeometry(L * 0.13, L * 0.10, L * 0.16), skin);
-      pyl.position.set(-L * 0.38, 0, top + L * 0.055);
+      pyl.position.set(-L * 0.40, 0, top + L * 0.055);
       g.add(pyl);
-      rotorHead(THREE, g, P, L, R, L * 0.28, top + L * 0.075, P.blades, skin, dark);
-      rotorHead(THREE, g, P, L, R, -L * 0.38, top + L * 0.145, P.blades, skin, dark);
+      rotorHead(THREE, g, P, L, R, L * 0.34, top + L * 0.075, P.blades, skin, dark);
+      rotorHead(THREE, g, P, L, R, -L * 0.40, top + L * 0.145, P.blades, skin, dark);
     } else {
       g.add(buildBoom(THREE, M, P, L, boomSkin));
       empennage(THREE, M, g, P, L, panel);
