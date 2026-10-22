@@ -1973,9 +1973,13 @@
      here, the answer does not depend on it.)
 
      WHO:
-       Spruance (e80)          Mk 143 armored boxes from 1983, then Mk 41 on
-                               24 hulls from 1986. Eight rounds, because the
-                               row's 3D fit draws the boxes.
+       Spruance (e80)          the Mk 41 the row's hero model draws (her VLS
+                               fit from about 1987). USS Spruance herself was
+                               never one of the seven armored-box ships (Comte
+                               de Grasse, Merrill, Conolly, John Rodgers,
+                               Leftwich, Deyo, Ingersoll); her Tomahawks came
+                               with the cells. Eight rounds, as before (owner,
+                               2026-10-22: keep her strike, via the VLS).
        Burke (e90, e00, e20)   Mk 41 from DDG-51's commissioning in 1991.
        Ticonderoga (e90, e20)  CG-52 Bunker Hill onward, from 1986.
        Iowa (e80, e90)         eight boxes, thirty-two rounds.
@@ -1992,7 +1996,7 @@
      Slava's deck tubes already live by. Merged into any magazine the hull
      already declares. */
   var TLAM_FIT = {
-    nato_e80_destroyer:  ["tlam_n_abl", 8],
+    nato_e80_destroyer:  ["tlam_n_ship", 8],
     nato_e90_destroyer:  ["tlam_n_ship", 12],
     nato_e00_destroyer:  ["tlam_n_ship", 12],
     destroyer_n:         ["tlam_n_ship", 12],
