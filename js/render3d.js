@@ -2710,6 +2710,7 @@ var Render3D = (function () {
           }
         }
         if (rec.gate || rec.ramp) swingGates(e, rec, dt);
+        if (e.wellT || rec.wellKt !== undefined || (e.order && e.order.type === "enter" && e.cat === "naval")) wellScale(e, rec, dt);
         /* wheels come down only when the aircraft is actually near the
            ground: on the apron, or on an approach to land */
         if (rec.gear) {
@@ -2954,6 +2955,57 @@ var Render3D = (function () {
       const want = e.rampHold > 0 ? 1.45 : 0, r0 = rec.ramp.rotation.y;
       if (r0 !== want) rec.ramp.rotation.y = r0 + U.clamp(want - r0, -0.725 * dt, 0.725 * dt);
     }
+  }
+  /* A landing craft going through a ship's gate, drawn to HER proportion.
+     getModel draws every ship and craft at a gameplay size set by its
+     radius, not its length: the Wasp (257 m) at 104.7 m, 0.41 of true, and
+     her LCAC (26.8 m) at 62.8 m, 2.34 of true. Drawn so in her well (81 x
+     15.2 m, drawn 33.2 x 6.2 m) the craft stood 12 m out past her stern and
+     4 m out over each side and rose 9 m through her flight deck, and the
+     gate opening for it was lost inside it (tools/jsc/wellgate3d_check.js).
+     So while it is inside a ship whose model has a gate - "out", from its
+     berth until it is clear of her sill, and "in", from there to its berth -
+     its group is drawn at her scale: her model's metres over its own (the
+     heroes are built in metres: the LCAC measures 26.8 m against its 26.8,
+     the LCU 1610 41.1 against 41.1, the CTM 24.0 against 23.8), the LCAC
+     10.9 x 5.8 m in the Wasp's well, 0.2 m inside each wall. On its run to
+     its own water ("off") it grows back to its game size, eased over the
+     distance that run has to go, taken on its first frame. Coming in it
+     shrinks by its distance from the point where it is taken into her
+     (her sill less its own radius): from WELL_SHRINK tiles out, on the
+     last of its run up to her stern under the "enter" order and on its
+     glide in ("app"), so it is at her scale as it reaches that point. An
+     order changed half way grows it back over a second. Only the drawn
+     group is scaled, about the craft's own middle: where it is, its hit
+     circle and its selection stay the game's. A ship whose model has no
+     gate is left alone: the craft is hidden inside her and appears at its
+     game size at the sill, as it always did. */
+  const WELL_SHRINK = 2;
+  function wellScale(e, rec, dt) {
+    const w = e.wellT, o = e.order;
+    const s = w ? w.ship : o && o.type === "enter" && o.target && o.target.def && o.target.def.wellPts &&
+              o.target.owner === e.owner ? o.target : null;
+    const sr = s && ents.get(s.id);
+    /* her scale over its own, kept for the run if she is lost or unseen */
+    if (sr && sr.gate) rec.wellKt = sr.tpl.userData.inner.scale.x / rec.tpl.userData.inner.scale.x;
+    const kt = rec.wellKt;
+    if (kt === undefined) return;
+    let k;
+    if (w && (w.ph === "out" || w.ph === "in")) k = kt;
+    else if (w && w.ph === "off") {
+      const d = Math.hypot(w.sx - e.x, w.sy - e.y);
+      if (rec.wellD0 === undefined) rec.wellD0 = d;
+      const f = rec.wellD0 > 0 ? U.clamp(1 - d / rec.wellD0, 0, 1) : 1;
+      k = kt + (1 - kt) * f * f * (3 - 2 * f);
+    } else if (sr && sr.gate && !s.dead) {
+      const door = Unit.wellAxis(s.def).exit - e.r;
+      const f = U.clamp(1 - Math.hypot(e.x - s.x - Math.cos(s.ang) * door, e.y - s.y - Math.sin(s.ang) * door) /
+                        (WELL_SHRINK * CFG.TILE), 0, 1);
+      k = 1 - (1 - kt) * f * f * (3 - 2 * f);
+    } else k = Math.min(1, rec.grp.scale.x + (1 - kt) * dt);
+    if (!w || w.ph !== "off") rec.wellD0 = undefined;
+    if (k === 1 && !s) rec.wellKt = undefined;
+    if (rec.grp.scale.x !== k) rec.grp.scale.setScalar(k);
   }
   function poseLauncher(e, rec, dt) {
     const el = rec.elev.userData.el || 0.61, rate = e.def.tturn || 0.8, o = e.order;

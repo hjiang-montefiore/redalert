@@ -33,7 +33,26 @@
      4. a ship with no well (the America) has no gate record and is
         untouched by the launch beside her;
      5. a stub Ivan Rogov (pact_e80_lpd) with a "bowramp" node: putting a
-        tank on a beach she lowers it to 1.45 rad and raises it again. */
+        tank on a beach she lowers it to 1.45 rad and raises it again;
+     6. THE CRAFT TO HER PROPORTION (render3d.js wellScale): in every gated
+        hero - Tarawa, Wasp (e90 and e00), Mistral (lhd_f), Type 075,
+        Ivan Rogov (pact_e90_lpd) - each craft her well takes, launched:
+        drawn at her scale, its box at its berth and as its middle crosses
+        her sill inside her well (aft of its forward end and, at the berth,
+        forward of the sill; inside its walls; under the deck over it, by
+        rays through her model), the gate not inside that box; on its run
+        to its water it grows back to its game length, within 1% of it on
+        the last frame of the run and exactly it once free, never more than
+        STEP of its game length in a frame; recovered from six tiles astern
+        the same in reverse: at its game length when sent in, shrinking
+        frame by frame as it comes up to her stern and glides to her sill,
+        at her scale from there to its berth, inside the well at the sill
+        and the berth. A craft wider than her well (her own craft is not
+        modelled and a wider one stands in) can fit no proportion: it is
+        listed, held centred between her walls and otherwise as above;
+     7. a ship whose model has no gate (a stub, pact_e00_lpd): her craft is
+        not drawn inside her and is drawn at its game size whenever it is,
+        out and back in. */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30, H = null;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -65,6 +84,12 @@ UNIT_MODELS.pact_e80_lpd = { len: 157, build: function (T3) {
   var hull = new T3.Mesh(new T3.BoxGeometry(157, 24, 16), m); hull.position.set(0, 0, 3); root.add(hull);
   var ramp = new T3.Group(); ramp.name = "bowramp"; ramp.position.set(78.5, 0, 0.5); root.add(ramp);
   var leaf = new T3.Mesh(new T3.BoxGeometry(0.5, 8, 7), m); leaf.position.set(0, 0, 3.5); ramp.add(leaf);
+  return root;
+} };
+/* and one with a well and no gate (7): her hull alone */
+UNIT_MODELS.pact_e00_lpd = { len: 157, build: function (T3) {
+  var root = new T3.Group(), m = new T3.MeshStandardMaterial({ color: 0x6a7a6a });
+  var hull = new T3.Mesh(new T3.BoxGeometry(157, 24, 16), m); hull.position.set(0, 0, 3); root.add(hull);
   return root;
 } };
 
@@ -212,6 +237,10 @@ function run() {
         maxT > 1.44 && rt.gate.rotation.y === 0 && tIn > 0 && tInDrawn === tIn, "most " + maxT.toFixed(3) + " rad, " + tInDrawn + "/" + tIn + " frames drawn");
   chk("the America beside them is untouched", same(amPose, pose(ra.inst)) && !am.gateT, "");
 
+  /* 6 and 7, on the same water, the ships above taken off it first */
+  clearAway([mi, wa, ta, am].concat(km, kw, kt));
+  proportion(O, spawnAt, frames);
+
   /* 5. a bow ramp (a stub Ivan Rogov), put down for a tank on a beach */
   var bch = null;
   for (var y = 4; y < M.H - 4 && !bch; y++) for (var x = 4; x < M.W - 4 && !bch; x++) {
@@ -234,4 +263,214 @@ function run() {
   chk("a stub Ivan Rogov putting a tank on a beach lowers her bow ramp to 1.45 rad and raises it again; her stern gate is not touched",
       !!ri && !!ri.ramp && r0 === 0 && nu === 1 && maxR > 1.44 && maxR <= 1.4501 && ri.ramp.rotation.y === 0 && !ri.gate && !ir.gateT,
       nu + " landed, ramp most " + maxR.toFixed(3) + " rad, up again " + (i * DT).toFixed(1) + " s after");
+}
+
+function clearAway(list) { list.forEach(function (e) { if (e && !e.dead) e.dead = true; }); Game.sweepDead(); }
+
+/* ---- 6 and 7: the craft to her proportion ----
+   Everything is measured in HER model's metres: the craft's drawn meshes,
+   corner by corner, taken through her drawn model's inverse (boxIn), so
+   her heading and her own roll and pitch fall out and what is left is where
+   the craft is drawn against her well, its own roll included. The well
+   itself is found by rays through
+   a fresh build of her hero (wellOf), every surface two-sided and the gate
+   left out: from its first berth (wellInner) forward to its end, out to
+   each wall and up to its deckhead; from a metre inside her sill out to the
+   walls and up; and down from above her over the berth and the sill, the
+   first surface met being the deck over the well (her flight deck). */
+var STEP = 0.10;            // most of a craft's game length it may grow or shrink by in one frame (1/30 s)
+var _bv = null;
+function boxIn(obj, inv) {
+  var b = new THREE.Box3(); _bv = _bv || new THREE.Vector3();
+  obj.traverse(function (o) {
+    if (!o.isMesh || !o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    var bb = o.geometry.boundingBox;
+    for (var c = 0; c < 8; c++) {
+      _bv.set(c & 1 ? bb.max.x : bb.min.x, c & 2 ? bb.max.y : bb.min.y, c & 4 ? bb.max.z : bb.min.z);
+      _bv.applyMatrix4(o.matrixWorld).applyMatrix4(inv);
+      b.expandByPoint(_bv);
+    }
+  });
+  return b;
+}
+function underGate(o) { for (var p = o; p; p = p.parent) if (p.name === "wellgate") return true; return false; }
+function wellOf(id) {
+  var root = UNIT_MODELS[id].build(THREE, typeof Models3D !== "undefined" ? Models3D : null, { team: "#4a7bd0" }), ud = root.userData;
+  root.updateMatrixWorld(true);
+  var meshes = [], sides = [], all = new THREE.Box3().setFromObject(root);
+  root.traverse(function (o) {
+    if (!o.isMesh || underGate(o)) return;
+    meshes.push(o);
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { sides.push([m, m.side]); m.side = THREE.DoubleSide; });
+  });
+  var rc = new THREE.Raycaster();
+  function ray(p, d) {
+    rc.set(new THREE.Vector3(p[0], p[1], p[2]), new THREE.Vector3(d[0], d[1], d[2]));
+    var h = rc.intersectObjects(meshes, false);
+    return h.length ? h[0].distance : Infinity;
+  }
+  var z = ud.wellInner.z + 1.5, bi = [ud.wellInner.x, 0, z], si = [ud.wellExit.x + 1, 0, z], up = all.max.z + 5;
+  var w = {
+    exit: ud.wellExit.x, inner: ud.wellInner.x, fwd: ud.wellInner.x + ray(bi, [1, 0, 0]),
+    port: ray(bi, [0, 1, 0]), stbd: ray(bi, [0, -1, 0]), top: z + ray(bi, [0, 0, 1]),
+    sPort: ray(si, [0, 1, 0]), sStbd: ray(si, [0, -1, 0]), sTop: z + ray(si, [0, 0, 1]),
+    deckB: up - ray([ud.wellInner.x, 0, up], [0, 0, -1]), deckS: up - ray([ud.wellExit.x + 1, 0, up], [0, 0, -1]),
+    stern: all.min.x, side: Math.max(all.max.y, -all.min.y), len: all.max.x - all.min.x
+  };
+  sides.forEach(function (s) { s[0].side = s[1]; });
+  return w;
+}
+function m1(x) { return x.toFixed(1); }
+
+function proportion(O, spawnAt, frames) {
+  var WELLS = ["nato_e80_lha", "nato_e90_lhd", "nato_e00_lhd", "lhd_f", "lhd_c", "pact_e90_lpd"];
+  WELLS.forEach(function (sid) {
+    var wc = UNITS[sid] && UNITS[sid].wellCraft;
+    if (!wc) { chk(sid + " has a well", false, ""); return; }
+    Object.keys(wc).forEach(function (cid) { if (UNITS[cid]) transit(sid, cid, O, spawnAt, frames, wellOf(sid)); });
+  });
+  gateless(O, spawnAt, frames);
+}
+
+/* one craft out of her well and back into it */
+function transit(sid, cid, O, spawnAt, frames, wb) {
+  var s = spawnAt(sid, O.x, O.y), c = spawnAt(cid, O.x, O.y), tag = sid + " / " + cid;
+  s.ang = 0.4; s.dockCraft(c);
+  Render.setCam(O.x, O.y); frames(2);
+  var rs = recOf(s), ax = Unit.wellAxis(s.def);
+  if (!rs || !rs.gate) { chk(tag + ": her model is drawn with its gate", false, ""); clearAway([s, c]); return; }
+  var sS = rs.tpl.userData.inner.scale.x;                        // world metres to her model's metre
+  var Lg = c.def.r * 2.1 * H.PXM * 1.9 * CFG.MODEL_SCALE;         // its game length, drawn (getModel)
+  /* its length at her proportion, from fresh builds of the two models: its
+     measured length in metres times her drawn length over her measured one */
+  var cb = new THREE.Box3().setFromObject(UNIT_MODELS[cid].build(THREE, typeof Models3D !== "undefined" ? Models3D : null, { team: "#4a7bd0" }));
+  var kt = (cb.max.x - cb.min.x) * (s.def.r * 2.1 * H.PXM * 1.9 * CFG.MODEL_SCALE / wb.len) / Lg;
+  var inv = new THREE.Matrix4(), lastL = null, jump = 0, jumpAt = "";
+  function rel() { return (c.x - s.x) * Math.cos(s.ang) + (c.y - s.y) * Math.sin(s.ang); }
+  /* the craft's drawn box and the gate's, in her model metres, this frame */
+  function look() {
+    var rc = recOf(c);
+    if (!rc) { lastL = null; return null; }
+    rs.grp.updateMatrixWorld(true); rc.grp.updateMatrixWorld(true);
+    inv.copy(rs.inst.children[0].matrixWorld).invert();
+    var k = rc.grp.scale.x, L = k * Lg, ph = c.wellT ? c.wellT.ph : c.order && c.order.type === "enter" ? "sent in" : "free";
+    if (lastL !== null && Math.abs(L - lastL) > jump) { jump = Math.abs(L - lastL); jumpAt = ph; }
+    lastL = L;
+    return { k: k, ph: ph, b: boxIn(rc.inst, inv), g: boxIn(rs.gate, inv) };
+  }
+  /* inside her well? (measured in her model metres, 5 cm allowed for the
+     sea's roll; what is out is said in drawn metres) */
+  var E = 0.05;
+  function fits(v, atSill) {
+    var b = v.b, why = [];
+    if (b.max.x > wb.fwd + E) why.push("fore end " + m1((b.max.x - wb.fwd) * sS) + " m past the well's end");
+    if (!atSill && b.min.x < wb.exit - E) why.push(m1((wb.exit - b.min.x) * sS) + " m out past the sill");
+    var p = atSill ? wb.sPort : wb.port, q = atSill ? wb.sStbd : wb.stbd;
+    if (b.max.y > p + E || b.min.y < -q - E) why.push(m1(Math.max(b.max.y - p, -q - b.min.y) * sS) + " m through a wall");
+    var dk = atSill ? wb.deckS : wb.deckB;
+    if (b.max.z > dk + E) why.push(m1((b.max.z - dk) * sS) + " m up through the deck over the well");
+    return why;
+  }
+  /* the craft's size and how it lies, drawn metres (world) */
+  function says(v, atSill) {
+    var b = v.b, f = sS;
+    return m1((b.max.x - b.min.x) * f) + " x " + m1((b.max.y - b.min.y) * f) + " x " + m1((b.max.z - b.min.z) * f) + " m drawn (k " + v.k.toFixed(3) + ")" +
+      (atSill ? "" : ", " + m1((wb.stern - b.min.x) * f) + " m past her stern, " + m1((Math.max(b.max.y, -b.min.y) - wb.side) * f) + " m out over her side, top " +
+       m1((b.max.z - wb.deckB) * f) + " m against her flight deck, " + m1((b.max.z - wb.top) * f) + " m against the well's deckhead") +
+      (v.g ? "; gate " + m1((v.g.max.y - v.g.min.y) * f) + " m wide " + (v.b.containsBox(v.g) ? "INSIDE the craft" : "not inside it") : "");
+  }
+  log("  -- " + tag + ": her well drawn " + m1((wb.fwd - wb.exit) * sS) + " m long behind the sill, " + m1((wb.port + wb.stbd) * sS) + " m between the walls, deckhead " +
+      m1(wb.top * sS) + " m, flight deck " + m1(wb.deckB * sS) + " m over the berth (" + m1(wb.deckS * sS) + " at the sill); craft's game length " + m1(Lg) + " m, at her scale " + m1(Lg * kt) + " m");
+
+  /* OUT */
+  s.launchAll();
+  var berth = null, sill = null, outK = [], offK = [], freeK = null, inWellHid = 0;
+  for (var i = 0; i < 40 / DT; i++) {
+    frames(1);
+    var w = c.wellT, v = look();
+    if (!w) { freeK = v ? v.k : null; break; }
+    if (w.ph === "out") {
+      if (!v) { inWellHid++; continue; }
+      outK.push(v.k);
+      if (!berth) berth = v;
+      if (!sill && rel() <= ax.exit) sill = v;
+    } else if (w.ph === "off" && v) offK.push(v.k);
+  }
+  frames(1); look();
+  var fB = berth ? fits(berth, false) : ["not drawn"], fS = sill ? fits(sill, true) : ["not seen at the sill"];
+  var wide = berth && (berth.b.max.y - berth.b.min.y) > wb.port + wb.stbd;
+  var atK = outK.length && outK.every(function (k) { return Math.abs(k / kt - 1) < 1e-4; });
+  var gateSeen = sill && !sill.b.containsBox(sill.g) && berth && !berth.b.containsBox(berth.g);
+  var noWall = function (x) { return !/wall/.test(x); };
+  if (wide) {
+    /* the craft's own model is wider than her well: no proportion fits it,
+       and wider than her gate it rides over it at the sill */
+    var ctr = Math.abs(berth.b.max.y + berth.b.min.y) / 2;
+    chk(tag + ": launched, drawn at her proportion - THE CRAFT'S MODEL IS WIDER THAN HER WELL (" + m1(berth.b.max.y - berth.b.min.y) + " m in " + m1(wb.port + wb.stbd) +
+        " m, her model metres): centred between her walls, otherwise inside, the gate not inside it at the berth",
+        atK && ctr < 0.1 && !fB.filter(noWall).length && !fS.filter(noWall).length && !berth.b.containsBox(berth.g) && !inWellHid,
+        "berth " + says(berth, false) + (fB.length ? " [" + fB.join(", ") + "]" : "") + " | sill " + says(sill, true) + (fS.length ? " [" + fS.join(", ") + "]" : ""));
+  } else
+    chk(tag + ": launched, drawn at her proportion inside her well at the berth and at the sill, the gate not inside it",
+        atK && !fB.length && !fS.length && gateSeen && !inWellHid,
+        "berth " + (berth ? says(berth, false) : "-") + (fB.length ? " [" + fB.join(", ") + "]" : "") + " | sill " + (sill ? says(sill, true) : "-") + (fS.length ? " [" + fS.join(", ") + "]" : ""));
+  var grows = offK.length > 1 && Math.abs(offK[0] / kt - 1) < 0.05 && offK.every(function (k, j) { return !j || k >= offK[j - 1] - 1e-9; });
+  chk(tag + ": on its run to its water it grows back to its game length, never more than " + (STEP * 100) + "% of it a frame",
+      grows && offK[offK.length - 1] > 0.99 && freeK === 1 && jump <= STEP * Lg,
+      offK.length + " frames, k " + (offK.length ? offK[0].toFixed(3) + " to " + offK[offK.length - 1].toFixed(3) : "-") + ", then " + freeK + "; largest step " + m1(jump) + " m (" + jumpAt + ")");
+
+  /* BACK IN, from six tiles astern of her */
+  c.give({ type: "move", x: s.x - Math.cos(s.ang) * 6 * TT, y: s.y - Math.sin(s.ang) * 6 * TT });
+  for (i = 0; i < 30 / DT && (c.moving || c.order.type !== "idle"); i++) { frames(1); look(); }
+  c.give({ type: "enter", target: s });
+  jump = 0; jumpAt = "";
+  var appK = [], appN = 0, inK = [], bSill = null, bBerth = null, hid = 0;
+  for (i = 0; i < 60 / DT && !c.carried; i++) {
+    frames(1);
+    w = c.wellT; v = look();
+    if (c.carried) continue;
+    /* sent in: up to her stern, then the glide to her sill */
+    if (!w || w.ph === "app") { if (v) appK.push(v.k); if (w) appN++; continue; }
+    if (w.ph === "in") {
+      if (!v) { hid++; continue; }
+      inK.push(v.k);
+      if (!bSill && rel() >= ax.exit) bSill = v;
+      bBerth = v;
+    }
+  }
+  var fS2 = bSill ? fits(bSill, true) : ["not seen at the sill"], fB2 = bBerth ? fits(bBerth, false) : ["not drawn"];
+  if (wide) { fS2 = fS2.filter(noWall); fB2 = fB2.filter(noWall); }
+  var shrank = appK.filter(function (k) { return k < 1; }).length;
+  var shrinks = appN > 0 && appK.length > 1 && appK[0] === 1 && appK.every(function (k, j) { return !j || k <= appK[j - 1] + 1e-9; }) &&
+                inK.length && inK.every(function (k) { return Math.abs(k / kt - 1) < 1e-4; });
+  chk(tag + ": recovered, it shrinks as it comes up to her stern and glides to her sill, and is at her proportion from there to its berth, inside her well, never more than " + (STEP * 100) + "% a frame",
+      c.carried && shrinks && !fS2.length && !fB2.length && !hid && jump <= STEP * Lg,
+      (c.carried ? "docked" : "NOT docked") + "; shrinking over " + shrank + " frames (" + appN + " of them the glide), k " + (appK.length ? appK[0].toFixed(3) + " to " + appK[appK.length - 1].toFixed(3) : "-") +
+      ", in " + inK.length + " frames at " + (inK.length ? inK[0].toFixed(3) : "-") + "; largest step " + m1(jump) + " m (" + jumpAt + ")" +
+      " | sill " + (bSill ? says(bSill, true) : "-") + (fS2.length ? " [" + fS2.join(", ") + "]" : "") + " | berth " + (bBerth ? says(bBerth, false) : "-") + (fB2.length ? " [" + fB2.join(", ") + "]" : ""));
+  clearAway([s, c]); frames(1);
+}
+/* 7. a well and no gate: the craft hidden inside her, at its game size whenever it is drawn */
+function gateless(O, spawnAt, frames) {
+  var s = spawnAt("pact_e00_lpd", O.x, O.y), c = spawnAt("lst", O.x, O.y);
+  s.ang = 0.4; s.dockCraft(c);
+  Render.setCam(O.x, O.y); frames(2);
+  var rs = recOf(s), seen = 0, inside = 0, insideDrawn = 0, notOne = 0, phs = {};
+  function look() {
+    var rc = recOf(c), w = c.wellT;
+    if (w) phs[w.ph] = 1;
+    if (c.inWell()) { inside++; if (rc) insideDrawn++; }
+    if (rc) { seen++; if (rc.grp.scale.x !== 1 || rc.grp.scale.y !== 1 || rc.grp.scale.z !== 1) notOne++; }
+  }
+  s.launchAll();
+  for (var i = 0; i < 40 / DT && (c.wellT || c.carried); i++) { frames(1); look(); }
+  c.give({ type: "move", x: s.x - Math.cos(s.ang) * 6 * TT, y: s.y - Math.sin(s.ang) * 6 * TT });
+  for (i = 0; i < 30 / DT && (c.moving || c.order.type !== "idle"); i++) { frames(1); look(); }
+  c.give({ type: "enter", target: s });
+  for (i = 0; i < 60 / DT && !c.carried; i++) { frames(1); look(); }
+  chk("a ship whose model has no gate (stub pact_e00_lpd): her craft is not drawn inside her, and at its game size whenever it is, out and back in",
+      !!rs && !rs.gate && c.carried && phs.out && phs.off && phs.app && phs["in"] && inside > 0 && insideDrawn === 0 && seen > 0 && notOne === 0,
+      "phases " + Object.keys(phs).join(" ") + "; inside " + insideDrawn + "/" + inside + " frames drawn; drawn " + seen + " frames, " + notOne + " not at 1");
+  clearAway([s, c]); frames(1);
 }
