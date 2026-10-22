@@ -2882,7 +2882,7 @@ var UI = (function () {
 
   function unloadSelection(landEmpty) {
     let moved = 0, stuck = 0, touched = 0, keptN = 0;
-    const landing = [], refused = [];
+    const landing = [], refused = [], settling = [];
     for (const u of selection) {
       if (u.owner !== G.human) continue;
       /* An aeroplane in the air cannot put a vehicle out of the door: it
@@ -2897,6 +2897,19 @@ var UI = (function () {
         touched++;
         const p = airDropPoint(u), why = G.airLand(u, p.x, p.y);
         if (why) refused.push(why); else landing.push(u);
+        continue;
+      }
+      /* A helicopter in the hover sets down where it is before anyone gets
+         out (entities.js airland, TOUCHDOWN): U had its squad step out of a
+         machine still drawn 46 m up. A vehicle on the hook alone is released
+         from the hover, as a sling load is. Over water or a roof the airland
+         order cannot set down and unloads from the hover at once, as U did. */
+      if (u.kind === "unit" && u.layer === "air" && u.def.hover && u.def.payload && !u.dead &&
+          !u.grounded && !u.parked && !(u.order && u.order.type === "parked") &&
+          u.cargo.length > (u.cargoLoad ? u.cargoLoad().hook : 0)) {
+        touched++;
+        const why = G.airLand(u, u.x, u.y);
+        if (why) refused.push(why); else settling.push(u);
         continue;
       }
       if (u.kind === "unit" && u.cargo && u.cargo.length) {
@@ -2933,6 +2946,11 @@ var UI = (function () {
                 ? " LANDING ON OPEN GROUND TO UNLOAD " + veh + (veh === 1 ? " VEHICLE" : " VEHICLES")
                 : " LANDING ON OPEN GROUND TO LOAD")) +
             (landing.some(first) ? " \u2014 REFUELLING FIRST" : ""), "good");
+      Sfx.play("order");
+    }
+    if (settling.length) {
+      alert((settling.length > 1 ? settling.length + " HELICOPTERS" : Unit.liftName(settling[0])) +
+            " SETTING DOWN TO UNLOAD", "good");
       Sfx.play("order");
     }
     if (refused.length) alert(refused[0], "bad");

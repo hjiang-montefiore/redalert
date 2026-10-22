@@ -1345,9 +1345,22 @@ function secTouch() {
   ticks(1);
   sel([hh]); var t0 = Game.time;
   key("u");
-  chk("U on a hovering Black Hawk puts its squad out at once - no touchdown, no landing",
-      !hq.carried && !hq.dead && !hh.grounded && hh.order.type !== "airland" && Game.time === t0 && said(/1 UNIT DISEMBARKED/, t0),
-      "carried " + hq.carried + ", order " + hh.order.type + ", grounded " + hh.grounded + " / " + saidText(t0));
+  /* U on a hovering helicopter over open ground sets it down where it is
+     (ui.js unloadSelection): the squad stepped out of a machine still
+     drawn 46 m up until this */
+  chk("U on a hovering Black Hawk over open ground: it sets down where it is, the squad still aboard, and says so",
+      hq.carried && hh.order.type === "airland" && said(/SETTING DOWN TO UNLOAD/, t0),
+      "carried " + hq.carried + ", order " + hh.order.type + " / " + saidText(t0));
+  var gU = -1, offU = -1, offGndU = false;
+  ticks(20, function () {
+    if (gU < 0 && hh.grounded) gU = Game.time;
+    if (!hq.carried) { offU = Game.time; offGndU = !!hh.grounded; return true; }
+    return false;
+  });
+  chk("...and its squad gets out TOUCHDOWN after it is on the ground, with it still standing there",
+      /* gU is the first tick seen grounded, so allow that tick either way */
+      gU > 0 && offU > 0 && offU - gU >= TD - DT - 1e-6 && offU - gU <= TD + DT + 1e-6 && offGndU && !hq.dead,
+      "on the ground at t=" + (gU - t0).toFixed(2) + ", squad out at t=" + (offU - t0).toFixed(2) + ", grounded " + offGndU);
   gone(hq); gone(hh);
   var cc = spawn("airlift_n", BASE.x + 12 * TT, BASE.y); cc.parked = false; cc.order = { type: "hover" };
   var cq = spawn("rifle_n", BASE.x, BASE.y + 6 * TT); cc.cargo.push(cq); cq.carried = true;
