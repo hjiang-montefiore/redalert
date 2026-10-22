@@ -1,6 +1,6 @@
 /* ================= us_f35_family.js  -  HERO MODEL =================
    Lockheed Martin F-35 Lightning II: the A, the B and the C, one airframe
-   in three guises. Four rows draw it:
+   in three guises. Five rows draw it:
        nato_e00_stealthfighter   F-35A  (the e00 row; replaces the old
                                  nato_e00_stealthfighter.js hero, which
                                  is still loaded and is simply overridden)
@@ -9,6 +9,8 @@
                                  two rows are the same aeroplane. stealth_b
                                  used to draw the F-22 through stealth_n and
                                  cstealth_b the parametric C stand-in.)
+       stovl_n                   F-35B  (US Marine Corps: the same B with the
+                                 US star-and-bar, VARS.BU)
    gbr_e00_cstealth (eras.js) is a placeholder, "no British carrier stealth
    fighter in this period": rules.js purgePhantomUnits() deletes it, so it
    draws nothing and gets no key.
@@ -140,6 +142,9 @@ var HeroF35 = (function () {
       lift: false, hook: true, gun: false, fold: 4.50
     }
   };
+  /* the Marine Corps' B (rules.js stovl_n): the same airframe, with the US
+     star-and-bar where the RAF's has roundels, so a sheet of its own */
+  VARS.BU = Object.assign({}, VARS.B, { sheet: "BU", us: true });
   function stabTE(v, y) { return v.tailS - (y - 0.90) * v.sSlope; }
 
   /* ---- body stations: [s, w chine half-width, chine h, shoulder h,
@@ -407,7 +412,7 @@ var HeroF35 = (function () {
     var g = cv.getContext("2d");
     var R = rngFor(v.id === "A" ? 3501 : v.id === "B" ? 3502 : 3503);
     var i, k, y, sd, ys, pts, band, S, T;
-    var uk = v.id === "B";
+    var uk = v.id === "B" && !v.us;
     function tp(s, yy, bot) { return [cu(X(s)), bot ? rBot(yy) : rTop(yy)]; }
 
     g.fillStyle = BASE; g.fillRect(0, 0, TW, TH);
@@ -516,7 +521,7 @@ var HeroF35 = (function () {
       g.fillStyle = "rgba(24,28,32,0.70)";
       g.fillRect(SS(2.60, 2.02)[0], SS(2.60, 2.02)[1], 10, 8);
       g.fillRect(SS(6.10, 1.92)[0], SS(6.10, 1.92)[1], 10, 8);
-      if (v.id === "B") insignia(g, SS(10.6, 2.45)[0], SS(10.6, 2.45)[1], 15, true);
+      if (uk) insignia(g, SS(10.6, 2.45)[0], SS(10.6, 2.45)[1], 15, true);
     }
     var tex = new V.CanvasTexture(cv);
     tex.wrapS = tex.wrapT = V.ClampToEdgeWrapping;
@@ -525,9 +530,10 @@ var HeroF35 = (function () {
     return tex;
   }
   function sheet(v) {
-    if (_tex[v.id] !== undefined) return _tex[v.id];
-    try { _tex[v.id] = paintSheet(v); } catch (e) { _tex[v.id] = false; }
-    return _tex[v.id];
+    var k = v.sheet || v.id;
+    if (_tex[k] !== undefined) return _tex[k];
+    try { _tex[k] = paintSheet(v); } catch (e) { _tex[k] = false; }
+    return _tex[k];
   }
 
   /* projected UVs: each triangle into the band its normal faces. Faces that
@@ -882,4 +888,9 @@ UNIT_MODELS["stealth_b"] = {
 UNIT_MODELS["cstealth_b"] = {
   len: 15.60,
   build: function (THREE, M, C) { return HeroF35.build(THREE, M, C, "B"); }
+};
+/* the US Marine Corps' F-35B (navy piece 2) */
+UNIT_MODELS["stovl_n"] = {
+  len: 15.60,
+  build: function (THREE, M, C) { return HeroF35.build(THREE, M, C, "BU"); }
 };

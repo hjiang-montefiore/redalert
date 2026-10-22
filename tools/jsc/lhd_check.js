@@ -24,7 +24,15 @@
         down and only an LHA/LHD/LPH or the Moskva afloat a carrier jet is
         refused for want of an airbase, the deck's own helicopter is not, and
         a real carrier still stands in for the airbase for her jets;
-     7. a save with a helicopter on her deck and two aboard her hold loads
+     7. the Marine Corps' STOVL jets (navy piece 2: eras.js nato_e80_stovl,
+        nato_e90_stovl, rules.js stovl_n): each in its periods only, under a
+        role of its own that leaves every other role's card where it was;
+        the Tarawa, Wasps and America take theirs and the CVNs none; an
+        AV-8B lands on, launches from and rearms on a Tarawa, a Harrier II
+        Plus on a Wasp and an F-35B on the America; bought from her panel;
+        and the commander, even as a 1980s or present-day American with an
+        empty Tarawa or America of its own, never buys one;
+     8. a save with a helicopter on her deck and two aboard her hold loads
         with both. (last: the load rebuilds the match) */
 var TT = 32, PASS = 0, FAIL = 0, DT = 1 / 30;
 function log(s) { print(s); }
@@ -44,8 +52,11 @@ window.addEventListener("load", function () {
 var P, M;
 var ROW = { e50: null, e60: "nato_e60_lph", e80: "nato_e80_lha", e90: "nato_e90_lhd", e00: "nato_e00_lhd", e20: "lha_n" };
 /* what each deck takes in each period (eras.js deckTakes, read in the owner's era) */
-var TAKES = { e60: ["nato_e60_aswhelo"], e80: ["nato_e80_transport"], e90: ["nato_e90_aswhelo", "nato_e90_transport"],
-              e00: ["nato_e00_transport"], e20: ["trans_n", "helo_n"] };
+var TAKES = { e60: ["nato_e60_aswhelo"], e80: ["nato_e80_transport", "nato_e80_stovl"],
+              e90: ["nato_e90_aswhelo", "nato_e90_transport", "nato_e90_stovl"],
+              e00: ["nato_e00_transport", "nato_e90_stovl"], e20: ["trans_n", "helo_n", "stovl_n"] };
+/* the Marine jet each period fields (navy piece 2) */
+var STOVL = { e50: null, e60: null, e80: "nato_e80_stovl", e90: "nato_e90_stovl", e00: "nato_e90_stovl", e20: "stovl_n" };
 function ticks(sec, stop) {
   var n = Math.round(sec / DT);
   for (var i = 0; i < n; i++) { Game.tick(DT); if (stop && stop()) return (i + 1) * DT; }
@@ -110,6 +121,7 @@ function run() {
   secFly(yard);
   secHold();
   secJets();
+  secMarines();
   secSave();
 }
 
@@ -185,7 +197,7 @@ function secBuild() {
 
 /* ---------------- 3. what each deck takes ---------------- */
 function secDecks() {
-  log("\n[3] the deck takes its helicopters and nothing else");
+  log("\n[3] the deck takes its helicopters and the Marine jet of the period, and nothing else");
   var sea = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
   var at = sea ? Path.nearest(M, (sea.x / TT) | 0, (sea.y / TT) | 0, "sea", null, 12) : null;
   if (!at) { chk("open water by the yard", false, ""); return; }
@@ -202,7 +214,7 @@ function secDecks() {
     var jet = jets.filter(function (id) { return !UNITS[id].hover; })[0];
     var capJ = jet ? P.airCapacity(UNITS[jet]) : 0, capH = P.airCapacity(UNITS[TAKES[e][0]]);
     chk(e + " " + UNITS[ROW[e]].name + ": takes " + TAKES[e].map(function (id) { return UNITS[id].name; }).join(", ") +
-        ", laid out for the first, refuses " + jets.length + " others",
+        ", laid out for the first (a helicopter), refuses " + jets.length + " others",
         same(types, TAKES[e]) && plan === TAKES[e][0] && refused.length === jets.length && jets.length > 0,
         "takes " + types.join(",") + " plan " + plan + "; refused " + refused.length + "/" + jets.length +
         (refused.length < jets.length ? " NOT " + jets.filter(function (j) { return refused.indexOf(j) < 0; }).join(",") : ""));
@@ -326,7 +338,7 @@ function secHold() {
 
 /* ---------------- 6. a helicopter-only deck is no airbase for a jet ---------------- */
 function secJets() {
-  log("\n[6] a helicopter-only deck does not stand in for the airbase for a jet");
+  log("\n[6] an assault ship's deck stands in for the airbase for her Marine jet only, the Moskva's for no jet");
   var yard = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
   var at = yard ? Path.nearest(M, (yard.x / TT) | 0, (yard.y / TT) | 0, "sea", null, 12) : null;
   if (!at) { chk("open water by the yard", false, ""); return; }
@@ -343,15 +355,17 @@ function secJets() {
     /* every carrier-capable fixed-wing type of any navy and decade: the deck is no airbase for one */
     var jets = Object.keys(UNITS).filter(function (id) { var d = UNITS[id]; return d.cat === "aircraft" && d.carrierCapable && !d.hover; });
     var counted = jets.filter(function (id) { return P.hasDeck(UNITS[id]); });
+    var mj = h[0] === "nato" ? STOVL[h[1]] : null;      // her Marine jet (navy piece 2), which does count
     /* the period's own carrier jets, through the AIR tab's gate */
     var own = [];
     ["cfighter", "cstealth", "cstrike", "cawacs", "ewair"].forEach(function (r) {
       unitsFor(h[0], r, h[1]).forEach(function (id) { if (UNITS[id].carrierCapable && !UNITS[id].hover && own.indexOf(id) < 0) own.push(id); }); });
     var let_ = own.filter(function (id) { return P.lockReason(UNITS[id]) !== NO_AB; });
     var helo = types[0], hr = helo ? P.lockReason(UNITS[helo]) : "none";
-    chk(h[1] + " " + UNITS[h[2]].name + " alone: no jet counts her deck as an airbase, the " + own.length + " carrier jets of the period are refused \"" + NO_AB + "\", her " + (helo ? UNITS[helo].name : "helicopter") + " is not",
-        counted.length === 0 && let_.length === 0 && !!helo && P.hasDeck(UNITS[helo]) && hr !== NO_AB,
-        "counted " + counted.slice(0, 4).join(",") + "; let through " + let_.map(function (id) { return id + "=" + P.lockReason(UNITS[id]); }).slice(0, 3).join(",") + "; helicopter " + helo + "=" + hr);
+    var mr = mj ? P.lockReason(UNITS[mj]) : null;
+    chk(h[1] + " " + UNITS[h[2]].name + " alone: " + (mj ? "only her " + UNITS[mj].name + " counts" : "no jet counts") + " her deck as an airbase, the " + own.length + " carrier jets of the period are refused \"" + NO_AB + "\", her " + (helo ? UNITS[helo].name : "helicopter") + (mj ? " and " + UNITS[mj].name + " are" : " is") + " not",
+        same(counted, mj ? [mj] : []) && let_.length === 0 && !!helo && P.hasDeck(UNITS[helo]) && hr !== NO_AB && (!mj || (mr !== NO_AB && types.indexOf(mj) >= 0)),
+        "counted " + counted.slice(0, 4).join(",") + (mj ? "; " + mj + "=" + mr : "") + "; let through " + let_.map(function (id) { return id + "=" + P.lockReason(UNITS[id]); }).slice(0, 3).join(",") + "; helicopter " + helo + "=" + hr);
     gone(s);
   });
   P.faction = fac0;
@@ -370,9 +384,165 @@ function secJets() {
   useEra("e20");
 }
 
-/* ---------------- 7. save and load with a wing and a hold ---------------- */
+/* ---------------- 7. the Marine Corps' STOVL jets (navy piece 2) ---------------- */
+function secMarines() {
+  log("\n[7] the Marine Corps' AV-8B Harrier II and F-35B");
+  var IDS = ["nato_e80_stovl", "nato_e90_stovl", "stovl_n"];
+  /* each in its periods only, for the United States only, in the AIR tab */
+  var badP = [];
+  ERAS.forEach(function (e) {
+    var want = STOVL[e] ? [STOVL[e]] : [], have = unitsFor("nato", "stovl", e);
+    var side = Object.keys(UNITS).filter(function (id) {
+      var d = UNITS[id]; return d.cat === "aircraft" && (d.fac === "both" || d.fac === "nato") && d.role === "stovl" && inEra(d, e); });
+    if (!same(have, want) || !same(side, want)) badP.push(e + ":" + have.join("+") + "|" + side.join("+"));
+  });
+  chk("each is in its periods only: AV-8B e80, Harrier II Plus e90-e00, F-35B e20, nothing before 1985", badP.length === 0, badP.join(" "));
+  var other = [];
+  ["pact", "pla", "kpa", "roc", "gbr", "fra", "deu"].forEach(function (f) {
+    ERAS.forEach(function (e) { if (unitsFor(f, "stovl", e).length) other.push(f + "/" + e); }); });
+  var rows = IDS.filter(function (id) {
+    var d = UNITS[id]; return d && d.cat === "aircraft" && d.jet && !d.hover && d.carrierCapable && same(d.prereq, ["airbase"]) && FACTS[id] && d.desc && d.service; });
+  chk("no other army is handed one; all three are carrier-capable jets that need only an airbase, with a field-manual entry",
+      other.length === 0 && rows.length === 3 && same(ROLES.stovl || [], IDS), other.join(" ") + " rows " + rows.join(","));
+  /* their own role: no other role's card moved */
+  var CARD = { e80: { cas: "nato_e80_cas", fighter: "nato_e80_fighter", cfighter: "nato_e80_cfighter" },
+               e90: { cas: "nato_e90_cas", fighter: "nato_e90_fighter", cfighter: "nato_e90_cfighter" },
+               e00: { cas: "nato_e00_cas", stealthfighter: "nato_e00_stealthfighter" },
+               e20: { cstealth: "cstealth_n", fighter: "fighter_n", stealthfighter: "stealth_n" } };
+  var moved = [];
+  for (var e in CARD) for (var r in CARD[e]) if (unitFor("nato", r, e) !== CARD[e][r]) moved.push(e + "/" + r + "=" + unitFor("nato", r, e));
+  var inOther = [];
+  for (var r2 in ROLES) if (r2 !== "stovl") ROLES[r2].forEach(function (id) { if (IDS.indexOf(id) >= 0) inOther.push(r2 + ":" + id); });
+  chk("the A-10A, F-15E, A-10C, F-15C, F-16C, F-14A, F/A-18C, F-35A, F-35C and F-22 are still each period's answer for their roles",
+      moved.length === 0 && inOther.length === 0, moved.concat(inOther).join(" "));
+  var wn = function (id) { return (UNITS[id].weapons || []).map(function (w) { return WEAPONS[w] && WEAPONS[w].name; }).join(" / "); };
+  var KEEP = { nato_e80_cas: "GAU-8 Avenger 30mm / AGM-65 Maverick / 500lb guided bomb",
+               cstealth_n: "AIM-260 (LO) / 2x GBU-31 JDAM (internal bay)",
+               cstealth_b: "AIM-120C-7 AMRAAM and ASRAAM (internal) / 2x Paveway IV (internal bay)",
+               gbr_e80_cfighter: "AIM-9L Sidewinder / 1,000 lb retarded bombs and BL755 cluster" };
+  var chg = [];
+  for (var k in KEEP) if (wn(k) !== KEEP[k]) chg.push(k + ": " + wn(k));
+  chk("the A-10A's, F-35C's and Britain's F-35B and Sea Harrier's weapons are as they were (the Marine jets' are their own copies)",
+      chg.length === 0 && WEAPONS.w_e80_nato_cas.name === "500lb guided bomb" && WEAPONS.aam_lo.name === "AIM-260 (LO)" &&
+      WEAPONS.w_e80_gbr_cfighter.name === "AIM-9L Sidewinder", chg.join("; "));
+  chk("their real fits: AIM-9L and Mk 82/Rockeye; AIM-9M and GBU-12/Mk 82; AMRAAM and two GBU-32 in the short bay",
+      wn("nato_e80_stovl") === "AIM-9L Sidewinder / Mk 82 bombs and Mk 20 Rockeye (ARBS)" &&
+      wn("nato_e90_stovl") === "AIM-9M Sidewinder / GBU-12 Paveway II and Mk 82 bombs" &&
+      wn("stovl_n") === "AIM-120 AMRAAM (internal bays) / 2x GBU-32 JDAM (short bay)",
+      IDS.map(wn).join(" | "));
+
+  var yard = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
+  var at = yard ? Path.nearest(M, (yard.x / TT) | 0, (yard.y / TT) | 0, "sea", null, 12) : null;
+  if (!at) { chk("open water by the yard", false, ""); return; }
+  /* the US carriers take exactly what their rule gave them, and no Marine jet */
+  var cv = [];
+  ["e50", "e60", "e80", "e90", "e00", "e20"].forEach(function (e) {
+    useEra(e);
+    var id = unitFor("nato", "carrier", e);
+    if (!id) return;
+    var s = spawn(id, at.x * TT + 16, at.y * TT + 16), types = Game.deckTypesFor(s), want = [];
+    for (var i = 0; i < s.deckSlots(); i++) { var a = Game.deckAircraftFor(s, i); if (a && want.indexOf(a) < 0) want.push(a); }
+    if (want.some(function (x) { return !UNITS[x].hover; }))
+      ["cfighter", "cstealth", "cstrike", "cawacs", "ewair"].forEach(function (r) {
+        unitsFor("nato", r, e).forEach(function (x) { if (UNITS[x].carrierCapable && want.indexOf(x) < 0) want.push(x); }); });
+    if (!same(types, want) || types.some(function (x) { return IDS.indexOf(x) >= 0; })) cv.push(e + " " + id + ": " + types.join(","));
+    s.wing().forEach(gone); gone(s);
+  });
+  useEra("e20");
+  var qe = UNITS.carrier_b ? (function () { var f0 = P.faction; P.faction = "gbr"; var s = spawn("carrier_b", at.x * TT + 16, at.y * TT + 16);
+    var t = Game.deckTypesFor(s); s.wing().forEach(gone); gone(s); P.faction = f0; return t; })() : [];
+  chk("the American carriers of every period take their air wing's types and no Marine jet, nor does the Queen Elizabeth",
+      cv.length === 0 && qe.indexOf("stovl_n") < 0, cv.join("; ") + " | QE " + qe.join(","));
+
+  /* with every airbase down: her deck is the AV-8B's airbase and not an F-16's; the Iwo Jima's is no jet's */
+  var bases = P.buildings.filter(function (b) { return b.def.pads; });
+  bases.forEach(function (b) { b.buildProgress = 0.5; });
+  var NO_AB = "REQUIRES " + BUILDINGS.airbase.name.toUpperCase();
+  useEra("e80");
+  var lha = spawn("nato_e80_lha", at.x * TT + 16, at.y * TT + 16);
+  /* the F-16C is a 1990s row here; the Tarawa's own decade has the F-15C */
+  var f16 = UNITS.nato_e90_fighter, f15 = UNITS.nato_e80_fighter;
+  var rA = P.lockReason(UNITS.nato_e80_stovl), rF = P.lockReason(f15);
+  chk("e80, a Tarawa alone: she is the AV-8B's airbase (buildable) and not an F-16's or an F-15C's (\"" + NO_AB + "\")",
+      P.hasDeck(UNITS.nato_e80_stovl) && !P.hasDeck(f16) && !P.hasDeck(f15) && rA === null && rF === NO_AB, "AV-8B " + rA + ", F-15C " + rF);
+  gone(lha);
+  var lph = spawn("nato_e60_lph", at.x * TT + 16, at.y * TT + 16);
+  var av = spawn("nato_e80_stovl", lph.x + 6 * TT, lph.y), pad = Game.findPad(av);
+  var why = Game.deckOrderReason(lph, "nato_e80_stovl");
+  chk("e80, an Iwo Jima alone: no jet on her deck - the AV-8B is not her airbase's, not landed on her, not sold for her",
+      !P.hasDeck(UNITS.nato_e80_stovl) && P.lockReason(UNITS.nato_e80_stovl) === NO_AB && !(pad && pad.host === lph) &&
+      /CANNOT OPERATE/.test(why || "") && Game.deckTypesFor(lph).every(function (x) { return UNITS[x].hover; }),
+      "types " + Game.deckTypesFor(lph).join(",") + "; pad " + (pad && pad.host ? pad.host.def.id : "none") + "; " + why);
+  gone(av); gone(lph);
+  bases.forEach(function (b) { b.buildProgress = 1; });
+
+  /* each lands on her, rearms there, launches and comes home; one more is bought from her panel */
+  [["e80", "nato_e80_lha", "nato_e80_stovl"], ["e90", "nato_e90_lhd", "nato_e90_stovl"], ["e20", "lha_n", "stovl_n"]].forEach(function (pr) {
+    useEra(pr[0]);
+    var s = spawn(pr[1], at.x * TT + 16, at.y * TT + 16);
+    var j = spawn(pr[2], s.x + 9 * TT, s.y - 4 * TT);
+    j.padOn = s; j.parked = false; j.ammo = 0; j.give({ type: "rtb" });
+    var t1 = ticks(90, function () { return j.parked && j.padOn === s; });
+    chk(pr[0] + ": an " + UNITS[pr[2]].name + " sent to the " + UNITS[pr[1]].name + " lands on her deck",
+        t1 > 0 && s.wing().indexOf(j) >= 0, "after " + t1.toFixed(1) + " s, parked " + j.parked + " on " + (j.padOn && j.padOn.def.id));
+    var t1b = ticks(60, function () { return j.ammo >= j.ammoMax; });
+    chk("...rearms there (" + j.ammoMax + " points of ordnance)", t1b >= 0 && j.ammo >= j.ammoMax, "after " + t1b.toFixed(1) + " s, " + j.ammo + "/" + j.ammoMax);
+    j.give({ type: "move", x: s.x - 14 * TT, y: s.y + 3 * TT });
+    var t2 = ticks(30, function () { return !j.parked && Math.hypot(j.x - s.x, j.y - s.y) > 5 * TT; });
+    chk("...launches from her when sent away", t2 > 0 && !j.parked, "after " + t2.toFixed(1) + " s at " + tiles(Math.hypot(j.x - s.x, j.y - s.y)) + " tiles");
+    j.give({ type: "rtb" });
+    var t3 = ticks(90, function () { return j.parked && j.padOn === s; });
+    chk("...and comes home to her", t3 > 0, "after " + t3.toFixed(1) + " s, home " + (j.padOn && j.padOn.def.id));
+    var why2 = Game.orderDeckAircraft(s, pr[2]);
+    var t4 = ticks(90, function () { return s.wing().length === 2; });
+    chk(pr[0] + ": a second " + UNITS[pr[2]].name + " bought from her panel alongside the yard comes aboard",
+        !why2 && t4 > 0 && s.wing().every(function (u) { return u.def.id === pr[2]; }), (why2 || "") + " after " + t4.toFixed(1) + " s, " + s.wing().length + " aboard");
+    /* the deck is still planned, delivered and refilled with her helicopter */
+    var wants = [];
+    s.wing().forEach(gone);
+    for (var n = 0; n < 3; n++) {
+      var w = Game.deckWants(s); wants.push(w);
+      if (!w) break;
+      var h = spawn(w, s.x, s.y); h.padOn = s; h.parked = true; h.order = { type: "parked" };
+    }
+    chk("...and an empty deck still asks for her helicopter, never the jet (what the commander refills with)",
+        wants.length === 3 && wants.every(function (x) { return x === TAKES[pr[0]][0]; }), wants.join(","));
+    s.wing().forEach(gone); gone(s);
+  });
+
+  /* the commander never buys one */
+  var src = (typeof readFile === "function") ? readFile("js/ai.js") : null;
+  var A = Game.players.filter(function (p) { return p.isAI && !p.defeated; })[0];
+  if (!A) { chk("an AI commander to watch", false, ""); useEra("e20"); return; }
+  var keep = { faction: A.faction, era: A.era, cash: A.cash, oil: A.oil, tech: A.tech }, seen = [];
+  var enq = A.enqueue, ord = Game.orderDeckAircraft;
+  A.enqueue = function (q, id) { seen.push(id); return enq.apply(this, arguments); };
+  Game.orderDeckAircraft = function (ship, id) { if (ship.owner === A) seen.push("deck:" + id); return ord.apply(this, arguments); };
+  var deckFor = { e80: "nato_e80_lha", e20: "lha_n" };
+  var built = [];
+  try {
+    ["e80", "e20"].forEach(function (e) {
+      A.faction = "nato"; A.era = e; A.cash = 300000; A.oil = 60000; A.tech = 3;
+      var s = Game.spawnUnitAt(A, deckFor[e], at.x * TT + 16, at.y * TT + 16);
+      if (s) { s.stance = "hold"; s.order = { type: "idle" }; }
+      ticks(120);
+      A.units.forEach(function (u) { if (!u.dead && u.def.role === "stovl") built.push(u.def.id); });
+      if (s) { s.wing().forEach(gone); (s.deckQ || []).length = 0; gone(s); }
+    });
+  } catch (err) { built.push("CRASH " + err); }
+  A.enqueue = enq; Game.orderDeckAircraft = ord;
+  for (var kk in keep) A[kk] = keep[kk];
+  var bad = seen.filter(function (id) { return IDS.indexOf(String(id).replace("deck:", "")) >= 0; });
+  chk("the commander, made a 1980s and a present-day American with " + seen.length + " purchases and an empty Tarawa and America of its own, never buys a Marine jet" +
+      (src !== null ? ", and js/ai.js names no \"stovl\"" : ""),
+      bad.length === 0 && built.length === 0 && (src === null || src.indexOf("stovl") < 0),
+      "bought " + bad.concat(built).join(",") + "; deck orders " + seen.filter(function (x) { return /^deck:/.test(x); }).join(","));
+  useEra("e20");
+}
+
+/* ---------------- 8. save and load with a wing and a hold ---------------- */
 function secSave() {
-  log("\n[7] a save with a helicopter on her deck and two in her hold (last: the load rebuilds the match)");
+  log("\n[8] a save with a helicopter on her deck and two in her hold (last: the load rebuilds the match)");
   useEra("e20");
   var yard = Game.nearestBuilding(P, "navalyard", P.homeX, P.homeY);
   var at = yard ? Path.nearest(M, (yard.x / TT) | 0, (yard.y / TT) | 0, "sea", null, 12) : null;

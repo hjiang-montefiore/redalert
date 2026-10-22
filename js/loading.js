@@ -62,6 +62,7 @@ var LoadScreen = (function () {
     aswhelo: "Naval helicopter", fighter: "Fighter",
     cfighter: "Carrier-borne combat aircraft", cstrike: "Carrier strike aircraft",
     cstealth: "Carrier stealth fighter", cas: "Ground attack",
+    stovl: "Vertical-landing jet (Marine Corps)",
     stealthfighter: "Stealth aircraft", stealthbomber: "Stealth bomber",
     heavybomber: "Bomber", sead: "Air-defence suppression",
     ewair: "Electronic warfare", gunshipair: "Fixed-wing gunship",

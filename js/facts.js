@@ -415,6 +415,15 @@ Object.assign(FACTS, {
 });
 FACTS.kpa_e80_md500 = FACTS.kpa_e90_md500 = FACTS.kpa_e00_md500 = FACTS.md500_k;
 FACTS.nato_e00_lhd = FACTS.nato_e90_lhd;     /* the same class, 2000s fit */
+/* the Marine Corps' STOVL jets (navy piece 2; eras.js, rules.js stovl_n).
+   en.wikipedia "McDonnell Douglas AV-8B Harrier II" and "Lockheed Martin F-35
+   Lightning II", read 2026-10-22; weight_t is the take-off weight on a
+   rolling (short) take-off, as the other jets' maximum. */
+Object.assign(FACTS, {
+  nato_e80_stovl: { name: "McDonnell Douglas AV-8B Harrier II", origin: "United States / United Kingdom", service: 1985, crew: 1, weight_t: 14.1, speed_kmh: 1083, range_km: 3300, armament: "GAU-12 25 mm gun pod, AIM-9 Sidewinder, Mk 82 and Mk 83 bombs, Mk 20 Rockeye, AGM-65E Maverick", protection: "-", note: "Initial operating capability in January 1985 with VMA-331. One centreline and six wing stations, a combat radius of about 556 km; a vertical take-off cuts the take-off weight to 9.4 t. The RAF's Harrier GR5 is the same aeroplane.", confidence: "high" },
+  nato_e90_stovl: { name: "McDonnell Douglas AV-8B Harrier II Plus", origin: "United States / United Kingdom", service: 1993, crew: 1, weight_t: 14.1, speed_kmh: 1083, range_km: 3300, armament: "GAU-12 25 mm gun pod, AIM-9 Sidewinder, GBU-12 and GBU-16 Paveway II, Mk 82 and Mk 83 bombs, AGM-65 Maverick", protection: "-", note: "The APG-65 multi-mode pulse-Doppler radar of the F/A-18 in an extended nose; prototype flown 22 September 1992, new aircraft delivered from April 1993 to 1995 and older ones remanufactured to the standard after them. Flown from USS Wasp against the Islamic State in Libya in 2016.", confidence: "high" },
+  stovl_n: { name: "Lockheed Martin F-35B Lightning II", origin: "United States", service: 2015, crew: 1, speed_kmh: 1960, armament: "Two AIM-120 AMRAAM and two 1,000 lb GBU-32 JDAM internally (outboard bay stations limited to 1,500 lb on the B); GAU-22/A 25 mm in an external pod", protection: "-", note: "Introduced by the US Marine Corps on 31 July 2015, first of the three variants; first combat use in strikes in Afghanistan in 2018. A shaft-driven lift fan behind the cockpit and a swivelling nozzle give vertical landing; no internal gun.", confidence: "high" },
+});
 
 /* one-line summary for tooltips */
 function factLine(id) {

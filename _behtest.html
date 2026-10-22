@@ -5668,7 +5668,9 @@ try{
        lists rotorcraft, a carrier only ever lists carrier-capable types of
        its own army and decade, fixed-wing only where deckAircraftFor itself
        puts a fixed-wing aboard, and none at all on a hull built as a
-       helicopter carrier */
+       helicopter carrier - but for the Marine Corps' vertical-landing jets
+       an amphibious assault ship lists by name (def.deckTakes, role
+       "stovl": the AV-8B and F-35B, eras.js navy piece 2) */
     var bad=[], hulls=0, cvs=0, noAir=0, heloCv=0;
     Object.keys(FACTIONS).forEach(function(f){ ERAS.forEach(function(e){
       Object.keys(UNITS).forEach(function(k){ var d=UNITS[k];
@@ -5681,8 +5683,9 @@ try{
         if(d.heloCarrier) heloCv++;
         var fixed=G.deckAircraftFor(stub,0); if(d.carrier&&fixed&&UNITS[fixed].hover) noAir++;
         ts.forEach(function(id){ var a=UNITS[id];
+          var marine=!!(d.heloCarrier&&!a.hover&&a.role==="stovl"&&(d.deckTakes||[]).indexOf(id)>=0);
           var why=!a.carrierCapable?"not deck-capable":(a.fac!==f&&a.fac!=="both")?"another army's":!inEra(a,e)?"out of its decade":
-                  (!d.carrier&&!a.hover)?"fixed-wing on an escort":(d.heloCarrier&&!a.hover)?"fixed-wing on a helicopter carrier":
+                  (!d.carrier&&!a.hover)?"fixed-wing on an escort":marine?null:(d.heloCarrier&&!a.hover)?"fixed-wing on a helicopter carrier":
                   (d.carrier&&!a.hover&&UNITS[fixed].hover)?"fixed-wing where the navy had none":null;
           if(why) bad.push(k+"@"+e+":"+id+" "+why); }); }); }); });
     chk("across every army and decade, no hull is offered an airframe it never operated",

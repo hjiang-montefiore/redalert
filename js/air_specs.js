@@ -310,3 +310,31 @@ var AIRFRAMES = {
   roc_e90_fighter: {era:"e90", fac:"roc", role:"fighter", designation:"F-16A/B Block 20 MLU", len:15, span:9.4, planform:"trap", sweep:40, taper:0.23, dihedral:0, prop:"none", engines:1, engMount:"fuselage", intake:"chin", tail:"single", htail:"slab", wingpos:"mid", fuselage:"slim", canard:false, rotodome:false, canoe:false, stealth:0, camo:"twotone"},
 };
 if (typeof Airframe3D !== "undefined" && Airframe3D.registerAll) Airframe3D.registerAll();
+
+/* ---- the Marine Corps' AV-8B Harrier II and II Plus (eras.js, navy piece 2) ----
+   No Harrier is modelled anywhere in the game: Britain's deck Harriers (Sea
+   Harrier FRS.1 and FA2, GR9) draw the F/A-18E hero through render3d.js
+   modelKeyFor's same-role peer, and its land ones (GR.1 to GR7) the A-10. A new role has
+   no peer, and the first peer with a model would have been the F-35B
+   (stovl_n), so these two are pointed at the deck Harriers' stand-in by
+   hand - the existing model as it is, not a new one - until a Harrier is
+   built for all eight rows. Resolved when it is drawn (cfighter_n is a hero
+   loaded after this file). A Harrier's wing does not fold, so the stand-in's
+   folding panels ("wingfold" groups, render3d.js foldOnDeck) are kept as
+   plain wing: it stands on a deck spread. Registered under its own id, so
+   render3d's period finish (ERA_KIT) is not laid over it. */
+(function () {
+  if (typeof UNIT_MODELS === "undefined") return;     /* a headless run loads no 3D */
+  var AS = { nato_e80_stovl: "cfighter_n", nato_e90_stovl: "cfighter_n" };
+  Object.keys(AS).forEach(function (id) {
+    var src = AS[id];
+    UNIT_MODELS[id] = {
+      get len() { return UNIT_MODELS[src] ? UNIT_MODELS[src].len : 15; },
+      build: function (THREE, M, C) {
+        var g = UNIT_MODELS[src].build(THREE, M, C);
+        g.traverse(function (o) { if (o.name === "wingfold") { o.name = "wing"; delete o.userData.fold; } });
+        return g;
+      }
+    };
+  });
+})();

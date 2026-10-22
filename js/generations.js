@@ -1427,7 +1427,8 @@
 
   /* keyed by unit id, because the three variants do not carry the same bomb */
   var BAY = { cstealth_n: "jdam_int", nato_e00_stealthfighter: "jdam_int",
-              cstealth_b: "jdam_int_b", cstealth_c: "sdb" };
+              cstealth_b: "jdam_int_b", cstealth_c: "sdb",
+              stovl_n: "jdam_int_b" };          /* the Marine Corps' F-35B (rules.js) */
   var nBay = 0;
   for (var bu in BAY) {
     var bd = UNITS[bu];
@@ -1552,6 +1553,11 @@
     ["stealth_b",   "AIM-260 (LO)", "AIM-120C-7 AMRAAM and ASRAAM (internal)"],   /* UK F-35B */
     ["cstealth_b",  "AIM-260 (LO)", "AIM-120C-7 AMRAAM and ASRAAM (internal)"],
     ["roc_e00_fighter", "AN/APG-83 SABR AESA", "AIM-120C-5 AMRAAM and AIM-9M"],   /* the radar is not a missile */
+    /* the Marine Corps' STOVL jets (eras.js, rules.js stovl_n): the Plus
+       flew the AIM-9M, and the F-35B carries AMRAAM in its bays - the
+       AIM-260 has not been integrated on the B */
+    ["nato_e90_stovl", "AIM-9L Sidewinder", "AIM-9M Sidewinder"],
+    ["stovl_n",     "AIM-260 (LO)", "AIM-120 AMRAAM (internal bays)"],
     ["fra_e00_cfighter", "AIM-120 AMRAAM and AIM-9 internally", "MICA EM / MICA IR"],   /* Rafale M */
     /* The Super Etendard carried Magic for self-defence and nothing longer:
        a short-range infrared round in place of a Sparrow or an AMRAAM, so
@@ -1612,6 +1618,14 @@
        for the bombs it models - the stand-off rounds are not in it. */
     ["nato_e90_cas",     "LANTIRN navigation and targeting pods", "GBU-12 Paveway II and Mk 82 bombs"],
     ["nato_e90_cstrike", "SWIP: Paveway, Harpoon and SLAM", "Mk 83 and Paveway II bombs"],
+    /* The Marines' Harriers carry the American attack-bomb row of their
+       period (eras.js, THE MARINE CORPS' STOVL JETS): the A-10A's for the
+       1985 AV-8B, whose Angle Rate Bombing Set - a laser spot and TV tracker
+       - aimed Mk 82s and Rockeye cluster as closely as the A-10A's row is
+       drawn, so the figures stay; the F-15E's for the Harrier II Plus, which
+       dropped the same GBU-12 and Mk 82s. */
+    ["nato_e80_stovl",   "500lb guided bomb", "Mk 82 bombs and Mk 20 Rockeye (ARBS)"],
+    ["nato_e90_stovl",   "LANTIRN navigation and targeting pods", "GBU-12 Paveway II and Mk 82 bombs"],
     /* "Brimstone and Paveway IV" was a bomb mount, and the GR9 beside the
        GR4 never carried Brimstone; Brimstone is now the GR4's missile */
     ["gbr_e00_cas",      "Brimstone and Paveway IV", "Paveway II and Paveway IV"],

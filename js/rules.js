@@ -957,10 +957,11 @@ var UNITS = {
      assault ship": commissioned 2014, 44,971 long tons full load, 257 m,
      over 20 knots, 1,687 Marines, no well deck in the first two ships; two
      RAM, two ESSM and two Phalanx. Her air element (DOT&E 2008: 12 MV-22B,
-     6 F-35B, 4 CH-53E, 7 AH-1Z/UH-1Y, 2 MH-60S) is not in the game yet, so
-     the deck sails empty and takes the Army's UH-60M and AH-64E, which made
-     deck landing qualifications on her sister Tripoli (LHA-7) in January
-     2023 (Seapower). No well deck (no def.wellDeck), so her hold takes
+     6 F-35B, 4 CH-53E, 7 AH-1Z/UH-1Y, 2 MH-60S) is in the game only as its
+     F-35B (stovl_n, below), so the deck sails empty and takes the Marines'
+     F-35B and the Army's UH-60M and AH-64E, which made deck landing
+     qualifications on her sister Tripoli (LHA-7) in January 2023
+     (Seapower). No well deck (no def.wellDeck), so her hold takes
      troops and no vehicle (entities.js holdRefusal). hp 3,400 as de Gaulle
      (42,500 t) in this period, cost
      1.1 times hp, speed 0.12 under the Ford's. There is no ESSM round in the
@@ -969,8 +970,25 @@ var UNITS = {
   lha_n: { from:"e20", service:"2014", confidence:"high", fac:"nato", role:"assault_sea", name:"America LHA", full:"USS America (LHA-6), America-class amphibious assault ship", cat:"naval",
     cost:3750, oil:79, time:53, hp:3400, armor:"heavy", speed:1.48, turn:0.6, sight:12.2, r:30, mass:0,
     layer:"sea", weapons:["sam_ram","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2, ciws:0.64, rcs:2.6,
-    carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["trans_n","helo_n"], cargo:24, amphib:true,
-    desc:"Commissioned in 2014 and built for aircraft rather than boats: the Makin Island design with the well deck taken out for a larger hangar, more aviation fuel and spares, so her 1,687 Marines go ashore by air alone. The third ship, Bougainville, puts the well deck back. Her Marine air group and F-35Bs are not in the game yet; the deck takes the Army's UH-60M and AH-64E, which have qualified on her sister Tripoli." },
+    carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["trans_n","helo_n","stovl_n"], cargo:24, amphib:true,
+    desc:"Commissioned in 2014 and built for aircraft rather than boats: the Makin Island design with the well deck taken out for a larger hangar, more aviation fuel and spares, so her 1,687 Marines go ashore by air alone. The third ship, Bougainville, puts the well deck back. Her Marine helicopters are not in the game yet; the deck takes the Marines' F-35B, and the Army's UH-60M and AH-64E, which have qualified on her sister Tripoli." },
+
+  /* The Marine Corps' F-35B, which flies from the America above and from
+     any airbase. Its own role ("stovl") and the two AV-8B rows before it
+     are explained at the end of eras.js. The same
+     aeroplane as the Fleet Air Arm's deck card cstealth_b, so the same
+     figures and price; the bay is the B's short one, two 1,000 lb GBU-32
+     JDAM (generations.js BAY), beside the AMRAAM (generations.js REAL_FIT).
+     en.wikipedia "Lockheed Martin F-35 Lightning II" (read 2026-10-22): USMC
+     introduction 31 July 2015, first combat use in Afghanistan in 2018, no
+     internal gun on the B (the GAU-22 pod is not modelled, as on Britain's).
+     First at sea on USS America herself, for developmental test III in
+     late 2016; first deployed aboard USS Wasp with the 31st MEU in 2018. */
+  stovl_n: { from:"e20", fac:"nato", role:"stovl", name:"F-35B Lightning II", service:"2015", full:"Lockheed Martin F-35B Lightning II (USMC)", cat:"aircraft",
+    cost:1780, oil:34, time:22, hp:440, armor:"air", speed:7.9, turn:2.1, sight:11.0, r:16, mass:0,
+    layer:"air", weapons:["aam_lo"], prereq:["airbase"], tech:3, jet:true, ammo:4, stealth:0.62,
+    gen:5, rcs:0.008, radarQ:17, radius:34, carrierCapable:true, refuelable:true, radar:8, confidence:"high",
+    desc:"The Marine Corps went straight from the Harrier to a fifth-generation jet: the F-35B's lift fan behind the cockpit and swivelling nozzle let it land vertically on an amphibious assault ship, so every America and Wasp is a small stealth carrier. The Marines declared it operational in July 2015, before either of the other services' variants, and flew its first combat strikes over Afghanistan in 2018. The lift fan costs fuel and bay length: shorter legs than the F-35C, and 1,000 lb bombs where the others carry 2,000 lb." },
 };
 
 

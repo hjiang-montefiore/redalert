@@ -13584,7 +13584,9 @@ var ERA_DECKS = {
    ninety (Forrestal to Ford). So all four are 3: the Iwo Jima carried more
    and bigger helicopters than the Moskva, the only other helicopter-only
    deck, and the LHAs and LHDs sit with the thirty-to-forty-five decks.
-   def.heloCarrier: no jets in this piece - the AV-8B and F-35B come later.
+   def.heloCarrier: the deck takes what deckTakes lists and nothing of a
+   carrier air wing - helicopters, and from piece 2 the Marine Corps' own
+   STOVL jets (the AV-8B and F-35B, below).
 
    WHAT FLIES FROM IT. Their real air groups were Marine helicopters (UH-34,
    CH-46, CH-53, UH-1, AH-1, MV-22) and the Navy's MH-60S, none of which the
@@ -13661,26 +13663,115 @@ WEAPONS.sam_bpdms = Object.assign({}, WEAPONS.sam_seasparrow,
       /* as built: two Mk 25 BPDMS and three 5in/54 Mk 45 (generations.js DECK_GUN);
          two Phalanx replaced the BPDMS later, RAM by 1998 */
       weapons:["sam_bpdms"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60.concat(["nato_e80_stovl"]),
       cargo:24, amphib:true, wellDeck:true, ciws:0.45, rcs:2.6,
       from:"e80", to:"e80", service:"1976", confidence:"high",
-      desc:"Commissioned in 1976 at twice the Iwo Jima's size: a flight deck for up to 26 CH-46 or 19 CH-53, a well deck in the stern for four LCU landing craft, berths for 1,703 Marines, and three 5-inch guns to support them ashore. Five served until 2015. Her Marine helicopters are not in the game yet; the deck takes a UH-60 Black Hawk." },
+      desc:"Commissioned in 1976 at twice the Iwo Jima's size: a flight deck for up to 26 CH-46 or 19 CH-53, a well deck in the stern for four LCU landing craft, berths for 1,703 Marines, and three 5-inch guns to support them ashore. Five served until 2015. Her Marine helicopters are not in the game yet; the deck takes a UH-60 Black Hawk and the Marines' AV-8B Harrier II, six of which she could operate." },
     nato_e90_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"USS Wasp (LHD-1), Wasp-class amphibious assault ship",
       cost:3100, oil:68, time:50, hp:2800, armor:"heavy", speed:1.45, turn:0.6, sight:11.1, r:30, mass:0,
       /* as commissioned in 1989: two Mk 29 Sea Sparrow, three Phalanx */
       weapons:["sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["nato_e90_aswhelo"].concat(UH60),
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["nato_e90_aswhelo"].concat(UH60, ["nato_e90_stovl"]),
       cargo:24, amphib:true, wellDeck:true, ciws:0.61, rcs:2.6,
       from:"e90", to:"e90", service:"1989", confidence:"high",
-      desc:"Commissioned in 1989: the Tarawa lengthened to carry three LCAC hovercraft in her well deck and AV-8B Harriers on her flight deck, the first ship designed for both, with nine helicopter spots and berths for 1,687 Marines. Her Marine air group is not in the game yet; the deck takes the Navy's SH-60F, six of which fly beside twenty Harriers in her sea-control load, and a UH-60." },
+      desc:"Commissioned in 1989: the Tarawa lengthened to carry three LCAC hovercraft in her well deck and AV-8B Harriers on her flight deck, the first ship designed for both, with nine helicopter spots and berths for 1,687 Marines. Her Marine helicopters are not in the game yet; the deck takes the AV-8B Harrier II Plus, the Navy's SH-60F - six of them fly beside twenty Harriers in her sea-control load - and a UH-60." },
     nato_e00_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"Wasp-class amphibious assault ship (LHD-1 to LHD-8)",
       cost:3500, oil:77, time:52, hp:3200, armor:"heavy", speed:1.46, turn:0.6, sight:11.8, r:30, mass:0,
       /* two RAM launchers beside the Sea Sparrows and Phalanx (Iwo Jima, LHD-7, commissioned with them in 2001) */
       weapons:["sam_ram","sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
-      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60.concat(["nato_e90_stovl"]),
       cargo:24, amphib:true, wellDeck:true, ciws:0.66, rcs:2.6,
       from:"e00", to:"e00", service:"1989", confidence:"high",
-      desc:"The Wasp class through the 2000s and 2010s, with RAM launchers added and the eighth ship, Makin Island (2009), on gas turbines instead of steam. A Marine Expeditionary Unit's battalion, its tanks, amphibious tractors and guns go ashore from her by LCAC and helicopter. Her Marine air group is not in the game yet; the deck takes a UH-60, as Army Black Hawks have qualified on her decks." },
+      desc:"The Wasp class through the 2000s and 2010s, with RAM launchers added and the eighth ship, Makin Island (2009), on gas turbines instead of steam. A Marine Expeditionary Unit's battalion, its tanks, amphibious tractors and guns go ashore from her by LCAC and helicopter. Her Marine helicopters are not in the game yet; the deck takes the AV-8B Harrier II Plus and a UH-60, as Army Black Hawks have qualified on her decks." },
   });
 })();
+
+/* ==================================================================
+   THE MARINE CORPS' STOVL JETS - AV-8B HARRIER II AND F-35B (navy piece 2)
+   (owner) "An amphibious assault ship which can carry F-35B, helicopters
+   and landing ships." The jets that fly from the LHAs and LHDs above, and
+   from an airbase like any other jet: the AV-8B Harrier II (USMC from
+   January 1985, VMA-331), the Harrier II Plus with the F/A-18's APG-65 radar
+   (new and remanufactured aircraft delivered from April 1993), and the
+   F-35B (USMC initial operational capability 31 July 2015; first combat
+   strikes in Afghanistan in 2018). The present-day row is stovl_n in
+   rules.js. Sources: en.wikipedia "McDonnell Douglas AV-8B Harrier II"
+   (service, variants, 14,100 kg rolling take-off, 556 km radius, 3,300 km
+   ferry, one centreline and six wing stations) and "Lockheed Martin F-35
+   Lightning II" (introduction, Mach 1.6, the B's bays: two AMRAAM inboard
+   and 1,500 lb stations outboard), both read 2026-10-22.
+
+   A ROLE OF THEIR OWN, "stovl". unitFor() answers "the newest of a role in
+   this period", and under cas, cfighter or cstealth an AV-8B would have
+   tied with the A-10A (cas, e80) or the F-14A (cfighter, e80) and could
+   have taken their place as the period's answer - the commander's purchase
+   tables, the carrier's air wing (G.deckAircraftFor asks cfighter and
+   cstealth, so a Harrier would have gone aboard a Nimitz) and the deck types
+   a CVN takes all read those roles. Britain files its Sea Harriers as
+   cfighter because they WERE the Royal Navy's carrier fighters; the Marine
+   jets are not the US Navy's. Under a role nobody asks for they sit in the
+   AIR tab beside those cards and change none of them; the commander has no
+   table naming the role, so it never buys one (its use is a later piece).
+
+   THE FIGURES are the British rows of the same aeroplane. The Harrier GR.5
+   (gbr_e80_cas) is the RAF's AV-8B and gives the e80 row its hp, speed,
+   turn, sight, radius and price; the GR7 (gbr_e90_cas), the RAF's Night
+   Attack AV-8B, gives the Harrier II Plus its hp, turn and price, with the
+   F/A-18C's APG-65 figures (radar 6, radarQ 11, gen 4: nato_e90_cfighter)
+   and the radar Sea Harrier FA2's sight (8.6); the e80 row has no radar
+   (the GR9's radar 0 / radarQ 2). Radius 28 for both, the GR.5's: the same
+   556 km for the AV-8B and the Plus. Both as the deck Harriers are bought
+   (Sea Harrier, GR9): an airbase and tech 2, no laboratory, so a ship's
+   deck can stand in for the airbase. The F-35B is the Fleet Air Arm's deck
+   card (cstealth_b), the same aeroplane.
+   WEAPONS, the rounds the game has, named for this airframe in
+   generations.js REAL_FIT: the AIM-9L (the Sea Harrier's row; AIM-9M on the
+   Plus) and the period's American attack bomb row - the A-10A's for the
+   AV-8B, aimed by its ARBS laser and TV tracker; the F-15E's for the Plus,
+   which drops GBU-12 Paveway II and Mk 82. The F-35B's bay is the B's short
+   bay, 2x GBU-32 JDAM (generations.js BAY), beside the AMRAAM. Not carried:
+   the GAU-12 and GAU-22 gun pods (no Harrier row in the game models its
+   gun), the AGM-65E Maverick, and an AIM-120 on the Plus (the article ties
+   it to the Italian and Spanish aircraft).
+
+   THE DECKS. Added to deckTakes AFTER the helicopters, so each deck is still
+   laid out for, delivered empty and refilled (G.deckWants) as before: the
+   Tarawa takes the AV-8B, the Wasps the Plus, the America the F-35B. They
+   can be bought for her from her panel, land on her, launch, rearm and are
+   ferried to her like any deck type, and Player.hasDeck counts her as their
+   airbase - and still not as an F-16's or a Hornet's. DELIVERED EMPTY, as
+   piece 1 priced them: a hull's price includes its aircraft only where it
+   sails with them (the carriers), and these hulls were priced bare. Their
+   real air element is mostly the Marine helicopters (CH-46, CH-53, MV-22,
+   AH-1, UH-1) a later piece adds; six Harriers or F-35Bs of some thirty
+   aircraft would not be her complement on their own.
+   NOT ON THE IWO JIMA: the AV-8A (1971-87) flew from LPHs (Guam as the
+   interim sea-control ship, 1972-74), but it is a Harrier GR.1/GR.3 airframe
+   with American Sidewinder wiring and a row of its own would be a new
+   e60 aircraft beside the Tarawa's - left for a later piece, so the
+   Iwo Jima's deck stays helicopters only.
+
+   STOVL: the game models no short take-off or vertical landing for any
+   Harrier or F-35B (Britain's rows included), so these land and take off
+   from an airbase and a deck exactly as the others do.
+   3D: no Harrier model exists - Britain's Harriers draw the F/A-18E (deck
+   rows) and the A-10 (land rows) through render3d modelKeyFor's same-role
+   peer. These borrow the deck rows' Super Hornet, its wings left unfolded
+   (air_specs.js), until a Harrier is modelled; the F-35B draws the F-35
+   family hero's B with American insignia (js/hero/us_f35_family.js).
+   ================================================================== */
+Object.assign(UNITS, {
+  nato_e80_stovl: { fac:"nato", role:"stovl", cat:"aircraft", layer:"air", name:"AV-8B Harrier II", full:"McDonnell Douglas AV-8B Harrier II (USMC)",
+    cost:1380, oil:25, time:23, hp:480, armor:"air", speed:5.0, turn:1.8, sight:7.2, r:16, mass:0,
+    weapons:["w_e80_gbr_cfighter","w_e80_nato_cas"], prereq:["airbase"], tech:2,
+    jet:true, ammo:7, radius:28, rcs:0.9, gen:3.5, radar:0, radarQ:2, carrierCapable:true, refuelable:true,
+    from:"e80", to:"e80", service:"1985", confidence:"high",
+    desc:"The Marine Corps' own attack jet from 1985: the Harrier rebuilt by McDonnell Douglas with a bigger composite wing that nearly doubled the first Harrier's load, and an Angle Rate Bombing Set - a laser spot and TV tracker in the nose - to put its bombs where the Marines on the ground want them. It needs no runway: it flies from the deck of a Tarawa or from a strip behind the beach, and two Sidewinders let it look after itself. The RAF flew the same aeroplane as the Harrier GR5." },
+  nato_e90_stovl: { fac:"nato", role:"stovl", cat:"aircraft", layer:"air", name:"AV-8B Harrier II Plus", full:"McDonnell Douglas AV-8B Harrier II Plus (USMC)",
+    cost:1490, oil:30, time:24, hp:560, armor:"air", speed:5.0, turn:1.7, sight:8.6, r:16, mass:0,
+    weapons:["w_e80_gbr_cfighter","w_e90_nato_cas"], prereq:["airbase"], tech:2,
+    jet:true, ammo:7, radius:28, rcs:0.9, gen:4, radar:6, radarQ:11, carrierCapable:true, refuelable:true,
+    from:"e90", to:"e00", service:"1993", confidence:"high",
+    desc:"The Harrier II with the Hornet's APG-65 radar in a longer nose, new from 1993 and rebuilt from older airframes after it, beside the Night Attack aircraft with their FLIR and night-vision cockpits. It flew from the Wasp-class decks over Iraq, Afghanistan and Libya - in 2016 against the Islamic State from USS Wasp herself - dropping laser-guided bombs and Mk 82s close to Marines on the ground. It served on until the F-35B took over its squadrons one by one." },
+});
 if (typeof reindexRoles === "function") reindexRoles();
