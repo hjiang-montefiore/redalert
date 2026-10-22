@@ -803,6 +803,43 @@ var Warship3D = (function () {
     }
   }
 
+  /* An amphibious assault ship's deck (spec deck:"axial") is NOT a carrier's:
+     one straight deck the length of the hull, with no angled landing area, no
+     catapults and no arresting gear, a row of helicopter landing spots and a
+     line along them painted down the port side, and a deck-edge lift each side
+     aft of amidships. A stand-in until each class has a model of its own. */
+  function axialDeck(K, M, W, fdz, dh, nSpots) {
+    var T = K.T, S = K.S, m = K.m, L = S.L, i;
+    var o = [[0.500, -0.34], [0.470, -0.82], [0.420, -1.00], [-0.500, -1.00],
+             [-0.500, 1.00], [0.420, 1.00], [0.470, 0.82], [0.500, 0.34]];
+    var pts = [];
+    for (i = 0; i < o.length; i++) pts.push([o[i][0] * L, o[i][1] * W]);
+    var th = dh * 0.55;
+    var slab = new T.Mesh(M.slab(T, pts, th), m.fdeck);
+    slab.geometry.computeBoundingBox();
+    slab.position.z = fdz - slab.geometry.boundingBox.max.z; K.G.add(slab);
+    if (W > S.Bh * 1.05)
+      for (i = -1; i <= 1; i += 2) {
+        var gal = new T.Mesh(new T.BoxGeometry(L * 0.80, (W - S.Bh) * 1.2, dh * 1.5), m.hull);
+        gal.position.set(-L * 0.04, i * (S.Bh + (W - S.Bh) * 0.4), fdz - th - dh * 0.75); K.G.add(gal);
+      }
+    var cl = new T.Mesh(new T.PlaneGeometry(L * 0.90, L * 0.004), m.mark);
+    cl.position.set(-L * 0.02, W * 0.30, fdz + 0.12); K.G.add(cl);
+    var n = Math.max(4, nSpots | 0), y = W * 0.55;
+    for (i = 0; i < n; i++) {
+      var x = L * (0.40 - 0.80 * i / (n - 1));
+      for (var a = 0; a < 2; a++) {
+        var bar = new T.Mesh(new T.PlaneGeometry(W * 0.30, L * 0.006), m.mark);
+        bar.position.set(x, y, fdz + 0.13); bar.rotation.z = a ? PI / 4 : -PI / 4; K.G.add(bar);
+      }
+    }
+    var lifts = [[-0.12, 0.88], [-0.30, -0.88]];
+    for (i = 0; i < 2; i++) {
+      var lf = new T.Mesh(new T.PlaneGeometry(L * 0.065, W * 0.26), m.lift);
+      lf.position.set(lifts[i][0] * L, lifts[i][1] * W, fdz + 0.11); K.G.add(lf);
+    }
+  }
+
   /* ================================================================ build */
   function gunSplit(P) {
     var pos = String(P.gunPos || "none"), n = P.guns | 0;
@@ -878,9 +915,14 @@ var Warship3D = (function () {
 
     /* =================================================== carrier variant */
     if (carrier) {
-      var W = Math.max(Bfull, hullB * 1.85) * 0.5;
+      /* an axial deck overhangs the hull a little (deckBeam, the published
+         flight-deck width, where the row has it), not the angled deck's
+         sponson out over the port quarter */
+      var axial = P.deck === "axial";
+      var W = axial ? (P.deckBeam || hullB * 1.25) * 0.5 : Math.max(Bfull, hullB * 1.85) * 0.5;
       var fdz = F + dh * 0.30;
-      carrierDeck(K, M, W, fdz, dh);
+      if (axial) axialDeck(K, M, W, fdz, dh, P.spots);
+      else carrierDeck(K, M, W, fdz, dh);
       K.blocks.push({ x0: -L * 0.5, x1: L * 0.5, z: fdz });
 
       var isL = L * 0.125, isW = L * 0.030, isH = L * 0.055;

@@ -633,6 +633,14 @@ var Game = (function () {
   /* an id only if that machine can actually operate from a deck: whatever is
      put on one has to be allowed to land back on it by G.findPad */
   function deckLegal(id) { return (id && UNITS[id] && UNITS[id].carrierCapable) ? id : null; }
+  /* an assault ship's list (def.deckTakes), the ones fielded in `era` that can
+     work from a deck at all, in the row's order */
+  function deckTakesFor(def, era) {
+    const out = [];
+    for (const id of def.deckTakes || [])
+      if (deckLegal(id) && inEra(UNITS[id], era) && out.indexOf(id) < 0) out.push(id);
+    return out;
+  }
   /* The navy's anti-submarine helicopter for THIS deck. Every other navy
      here flew one shipborne ASW helicopter a decade and every deck takes it,
      which is unitFor()'s answer. The US Navy flew two for thirty-five years
@@ -664,6 +672,15 @@ var Game = (function () {
     const p = host && host.owner ? host.owner : host;      // a bare player still works
     if (!p) return null;
     const era = p.era || G.era;
+    /* An amphibious assault ship (eras.js, nato_e60_lph ... rules.js lha_n)
+       lists what the game has that really flew from her (def.deckTakes); the
+       first of them her owner fields in this period is what her spots are
+       laid out for and what G.deckWants asks to have bought. None of them is her
+       real air group - that is the Marine helicopters of a later piece - so
+       she is delivered empty (def.emptyDeck), and with nothing of the period
+       on the list the deck plans nothing rather than the navy's carrier ASW
+       helicopter, which was never her complement. */
+    if (host && host.def && host.def.deckTakes) return deckTakesFor(host.def, era)[0] || null;
     const helo = deckHelo(p, era, host) ||
                  deckLegal(unitFor(p.faction, "transport", era));
     if (!host || !host.def || !host.def.carrier) return helo;
@@ -793,7 +810,10 @@ var Game = (function () {
     const out = [];
     const add = (id) => { if (id && UNITS[id] && out.indexOf(id) < 0) out.push(id); };
     for (let i = 0; i < slots; i++) add(G.deckAircraftFor(ship, i));
-    if (ship.def.carrier && out.some(id => !UNITS[id].hover))
+    /* an assault ship takes her whole list, and nothing of the air wing's
+       roles: no jet goes aboard a helicopter deck in this piece */
+    if (ship.def.deckTakes) for (const id of deckTakesFor(ship.def, era)) add(id);
+    else if (ship.def.carrier && out.some(id => !UNITS[id].hover))
       for (const r of ["cfighter", "cstealth", "cstrike", "cawacs", "ewair"])
         /* every card of the role, not only the newest: "the carrier types of
            its navy and decade" is plural wherever the navy flew two, and a

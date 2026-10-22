@@ -41,6 +41,7 @@ var Gallery = (function () {
     airlift: "Transport aircraft", tanker: "Aerial tanker",
     radarv: "Radar vehicle", supply: "Supply truck",
     transport_sea: "Landing ship", oiler: "Replenishment oiler",
+    assault_sea: "Amphibious assault ship",
     mcv: "Construction vehicle", harvester: "Ore hauler",
     repair: "Repair vehicle", repair_sea: "Repair ship",
     engineer: "Engineer", medic: "Medic",

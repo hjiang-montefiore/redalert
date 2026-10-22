@@ -237,7 +237,7 @@ class Player {
     if (def.tech && !isUpgrade && this.tech < def.tech) return "REQUIRES TECH " + def.tech;
     for (const rq of (def.prereq || []))
       if (!this.hasBuilding(rq)) {
-        if (rq === "airbase" && def.carrierCapable && this.hasDeck()) continue;   // the deck IS the airbase
+        if (rq === "airbase" && def.carrierCapable && this.hasDeck(def)) continue;   // the deck IS the airbase
         return "REQUIRES " + BUILDINGS[rq].name.toUpperCase();
       }
     if (def.oil && this.oil < def.oil) return "INSUFFICIENT FUEL (" + Math.floor(this.oil) + "/" + def.oil + " bbl)";
@@ -610,9 +610,20 @@ class Player {
   }
   airSpaceLeft(def) { return Math.max(0, this.airCapacity(def) - this.airOwned(def)); }
   /* a carrier is a floating airbase, so it satisfies the airbase prerequisite
-     for anything that can fly off a deck */
-  hasDeck() {
-    for (const u of this.units) if (!u.dead && u.def.carrier) return true;
+     for anything that can fly off a deck - off THAT deck. A helicopter-only
+     deck (def.heloCarrier: the Moskva, the amphibious assault ships) is no
+     airbase for a jet, which could land nowhere: with `def`, a deck counts
+     only where it operates that type (G.deckTypesFor - what findPad lands on
+     it, airCapacity counts as ramp and the flight-deck panel sells). A
+     catapult or ski-jump carrier takes the carrier types of her navy and
+     decade, so every jet she took before still counts. */
+  hasDeck(def) {
+    const gm = this.game;
+    for (const u of this.units) {
+      if (u.dead || !u.def.carrier) continue;
+      if (def && gm && gm.deckTypesFor && gm.deckTypesFor(u).indexOf(def.id) < 0) continue;
+      return true;
+    }
     return false;
   }
 

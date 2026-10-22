@@ -448,7 +448,8 @@ var UI = (function () {
       ? " \u00b7 LIFTS " + Unit.fmtT(d.payload) + " T" + (d.strip && !d.hover ? " \u00b7 LANDS IN " + d.strip + " TILES" : "") +
         (d.hover ? " \u00b7 ONE VEHICLE ON THE HOOK" + (d.cabin ? ", MORE IN A " + Unit.fmtM(d.cabin[0]) + " \u00d7 " + Unit.fmtM(d.cabin[1]) + " M CABIN" : "")
                  : d.hold ? " \u00b7 FLOOR " + Unit.fmtM(d.hold[0]) + " \u00d7 " + Unit.fmtM(d.hold[1]) + " M" : "")
-      : ""));
+      /* an assault ship with no well deck (entities.js holdRefusal) */
+      : Unit.troopsOnly(d) ? " TROOPS \u00b7 NO WELL DECK, NO VEHICLES" : ""));
     if (d.carrier) rows.push("DECK " + d.carrier + " AIRCRAFT");
     if (d.ammo) rows.push("ORDNANCE " + d.ammo);
 
@@ -3127,6 +3128,9 @@ var UI = (function () {
         const fits = (h) => !h || h.dead || h.owner !== G.human ? false
           : h.kind === "building"
             ? !!(h.def.pads && h.buildProgress >= 1)
+            /* a helicopter-only deck (def.heloCarrier) is a landing host only
+               for what she operates (G.deckTypesFor), never for a jet */
+            : h.def.heloCarrier ? !!(h.deckSlots && G.deckTypesFor(h).indexOf(u.def.id) >= 0)
             : !!(u.def.carrierCapable && (h.def.carrier || (u.def.hover && h.def.helo)));
         if (fits(target)) return target;
         /* an airframe shut down on a ramp IS that ramp, as far as another

@@ -1164,6 +1164,8 @@
        decade the roster puts them in, and Arromanches carried only 40 mm AA,
        so those are left as they are. */
     nato_e50_carrier:     ["gun_n127", "8 x 5in/54 Mk 42"],
+    /* the Tarawa's fire-support battery, removed in 1997-98 (eras.js) */
+    nato_e80_lha:         ["gun_n127", "3 x 5in/54 Mk 45"],
     gbr_e50_carrier:      ["gun_n127", "8 x twin 4.5in dual-purpose"],
     fra_e60_carrier:      ["gun_n100", "8 x 100mm Mle 1953"],
     fra_e80_carrier:      ["gun_n100", "4 x 100mm Mle 1953"],

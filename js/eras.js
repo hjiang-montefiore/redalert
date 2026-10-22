@@ -13556,3 +13556,131 @@ var ERA_DECKS = {
     });
   }
 })();
+
+/* ==================================================================
+   AMPHIBIOUS ASSAULT SHIPS - THE UNITED STATES, 1961 TO THE PRESENT
+   (owner) "We want an amphibious assault ship which can carry F-35B,
+   helicopters, and landing ships." This is the first piece: the American
+   flat-tops as a helicopter deck and a hold. The Marine helicopters, the
+   AV-8B and F-35B, the well deck and its landing craft, the other navies'
+   ships and the commander's use of them are later pieces.
+
+   ONE CLASS A PERIOD, as the carrier chain does (nato_e60_carrier ...
+   carrier_n): the class that defines the decade, not every hull still
+   afloat. The real windows overlap - Iwo Jima class 1961-2002, Tarawa
+   1976-2015, Wasp 1989 to now, America 2014 to now - and the 1976 Tarawa
+   goes to e80 for the reason the 1975 Nimitz does. The present-day row is
+   lha_n in rules.js. Sources: en.wikipedia "Iwo Jima-class amphibious
+   assault ship", "Tarawa-class ...", "Wasp-class ...", "America-class ..."
+   (infoboxes and text, read 2026-10-22).
+
+   THE DECK. Every American flat-top here carried 20 to 45 aircraft: about
+   20-25 helicopters for an Iwo Jima (Friedman 2002), 19 CH-53 or 26 CH-46
+   for a Tarawa, a standard air element of 29-30 machines for a Wasp, 31 for
+   an America (DOT&E 2008). The game's decks are 2 spots for a light
+   carrier's twenty-odd aircraft (Arromanches, Invincible), 3 for a deck of
+   thirty to forty-five (Clemenceau, Kiev, Kuznetsov, Queen Elizabeth - and
+   Moskva's fourteen Ka-25s), and 4 only for a supercarrier's sixty to
+   ninety (Forrestal to Ford). So all four are 3: the Iwo Jima carried more
+   and bigger helicopters than the Moskva, the only other helicopter-only
+   deck, and the LHAs and LHDs sit with the thirty-to-forty-five decks.
+   def.heloCarrier: no jets in this piece - the AV-8B and F-35B come later.
+
+   WHAT FLIES FROM IT. Their real air groups were Marine helicopters (UH-34,
+   CH-46, CH-53, UH-1, AH-1, MV-22) and the Navy's MH-60S, none of which the
+   game has yet, so every deck is DELIVERED EMPTY (emptyDeck) and priced as
+   a hull without aircraft, and `deckTakes` lists the helicopters the game
+   does have that really flew from these decks (G.deckAircraftFor, game.js),
+   taken in the owner's period:
+     SH-3 Sea King   Helicopter 66, an HS-4 SH-3D, landed Apollo 13's crew
+                     on USS Iwo Jima (LPH-2) on 17 April 1970.
+     UH-60           an Army UH-60 landed aboard USS Guam (LPH-9) under fire
+                     during Urgent Fury, 25 October 1983 (US Navy photo
+                     caption); a UH-60 of 1-137th Aviation made deck landing
+                     qualifications on USS Essex (LHD-2), September 2015
+                     (DVIDS); Army UH-60Ms did the same on USS Tripoli
+                     (LHA-7), January 2023 (Seapower). Not found on a Tarawa
+                     in the 1980s: her row takes it on the Guam's evidence.
+     SH-60F          the Wasp's sea-control load is twenty Harriers and six
+                     SH-60F/HH-60H (FAS "LHD-1 Wasp class", 2000; Bishop &
+                     Chant), so the 1990s Wasp takes the 1990s Oceanhawk.
+     AH-64E          Army Apaches qualified on USS Tripoli, the second America,
+                     in January 2023 (Seapower), so the America takes one.
+   Not the MH-60R: the Seahawk on an America is the MH-60S (HSC-23 in 2017,
+   HSC-25 in 2020-21), which the game does not have.
+
+   THE HOLD. The two American LSTs berth 395 and 431 troops and are cargo 6,
+   the game's landing-ship hold. Each of these berths about four times the
+   Newport's 431 - some 1,800 Marines in an Iwo Jima (Friedman), 1,703 in a
+   Tarawa, 1,687 in a Wasp or an America - so each is four holds, cargo 24,
+   and puts them ashore as the LSTs do (amphib, unload). One vehicle is one
+   seat, as on every ship. VEHICLES ONLY THROUGH A WELL DECK (def.wellDeck,
+   entities.js holdRefusal): an Iwo Jima and an America have none and landed
+   everything by helicopter, so they take troops and refuse every vehicle; a
+   Tarawa (four LCU 1610) and a Wasp (three LCAC) have one, and until their
+   landing craft are in the game (a later piece, built on def.wellDeck) the
+   ship running in to the beach and putting vehicles ashore herself stands in
+   for them.
+
+   THE FIGURES are the carrier ladder's, read at these ships' size. hp by
+   full-load displacement, on a log scale between the LSTs and the carriers
+   of the same period (Newport 8,300 t 1,200; Clemenceau 32,800 t e60 1,980,
+   e80 2,320; Foch e90 2,560; de Gaulle 42,500 t e00 3,220, e20 3,400):
+   Iwo Jima 18,474 t 1,650; Tarawa 39,967 t 2,500; Wasp 41,150 t 2,800 and
+   3,200; America 45,693 t 3,400 (rules.js). Cost 1.1 times hp, the ratio
+   the big decks carry (Enterprise 1.06, Nimitz 1.10, Moskva 1.00,
+   Clemenceau 1.14); oil 0.022 of cost and build time as the carriers of the
+   same price (Moskva 2,620 / 48 s, Foch 3,180 / 50 s). Speed: the carriers
+   put 25- to 33-knot decks at 1.35-1.6 by period; at 22-24 knots these sit
+   about 0.12 under the American carrier of their period. Sight: the
+   carrier's less 1.8, the same air-search sets and no AEW aircraft. Armour
+   heavy, as every warship hull. r 30, as every flat-top including the
+   189-metre Moskva. tech 2 and an airbase: an aviation ship without the
+   catapult carrier's laboratory. rcs: unshaped flat-tops, the Moskva's 2.2
+   at 18,000 t and the Nimitz's 2.6 above 40,000 t.
+   ================================================================== */
+/* the Tarawa's Sea Sparrow was the Mk 25 Basic Point Defense Missile System,
+   not the Mk 29 NATO system sam_seasparrow is named for: the same round's
+   figures, under its own name */
+WEAPONS.sam_bpdms = Object.assign({}, WEAPONS.sam_seasparrow,
+  { name: "Sea Sparrow, Mk 25 BPDMS", tgt: Object.assign({}, WEAPONS.sam_seasparrow.tgt) });
+(function () {
+  /* the UH-60 chain (see above), each read in its own period */
+  var UH60 = ["nato_e80_transport", "nato_e90_transport", "nato_e00_transport", "trans_n"];
+  Object.assign(UNITS, {
+    nato_e60_lph: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Iwo Jima LPH", full:"USS Iwo Jima (LPH-2), Iwo Jima-class amphibious assault ship",
+      cost:1800, oil:40, time:42, hp:1650, armor:"heavy", speed:1.30, turn:0.6, sight:8.0, r:30, mass:0,
+      /* as built: two twin 3in/50; Sea Sparrow BPDMS and Phalanx came later */
+      weapons:["aagun_3in50"], prereq:["navalyard","airbase"], tech:2,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["nato_e60_aswhelo"].concat(UH60),
+      cargo:24, amphib:true, ciws:0.35, rcs:2.2,
+      from:"e60", to:"e60", service:"1961", confidence:"high",
+      desc:"Commissioned in 1961, the first ship built from the keel up to put Marines ashore by helicopter rather than by boat: about 1,800 Marines, a deck for some twenty helicopters, one shaft and 22 knots, and no well deck - everything went ashore by air. Seven served until 2002. Her Marine squadron is not in the game yet; the deck takes the Navy's SH-3 Sea King, which flew from her on the Apollo recoveries." },
+    nato_e80_lha: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Tarawa LHA", full:"USS Tarawa (LHA-1), Tarawa-class amphibious assault ship",
+      cost:2750, oil:61, time:48, hp:2500, armor:"heavy", speed:1.42, turn:0.6, sight:10.0, r:30, mass:0,
+      /* as built: two Mk 25 BPDMS and three 5in/54 Mk 45 (generations.js DECK_GUN);
+         two Phalanx replaced the BPDMS later, RAM by 1998 */
+      weapons:["sam_bpdms"], prereq:["navalyard","airbase"], tech:2,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60,
+      cargo:24, amphib:true, wellDeck:true, ciws:0.45, rcs:2.6,
+      from:"e80", to:"e80", service:"1976", confidence:"high",
+      desc:"Commissioned in 1976 at twice the Iwo Jima's size: a flight deck for up to 26 CH-46 or 19 CH-53, a well deck in the stern for four LCU landing craft, berths for 1,703 Marines, and three 5-inch guns to support them ashore. Five served until 2015. Her Marine helicopters are not in the game yet; the deck takes a UH-60 Black Hawk." },
+    nato_e90_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"USS Wasp (LHD-1), Wasp-class amphibious assault ship",
+      cost:3100, oil:68, time:50, hp:2800, armor:"heavy", speed:1.45, turn:0.6, sight:11.1, r:30, mass:0,
+      /* as commissioned in 1989: two Mk 29 Sea Sparrow, three Phalanx */
+      weapons:["sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["nato_e90_aswhelo"].concat(UH60),
+      cargo:24, amphib:true, wellDeck:true, ciws:0.61, rcs:2.6,
+      from:"e90", to:"e90", service:"1989", confidence:"high",
+      desc:"Commissioned in 1989: the Tarawa lengthened to carry three LCAC hovercraft in her well deck and AV-8B Harriers on her flight deck, the first ship designed for both, with nine helicopter spots and berths for 1,687 Marines. Her Marine air group is not in the game yet; the deck takes the Navy's SH-60F, six of which fly beside twenty Harriers in her sea-control load, and a UH-60." },
+    nato_e00_lhd: { fac:"nato", role:"assault_sea", cat:"naval", layer:"sea", name:"Wasp LHD", full:"Wasp-class amphibious assault ship (LHD-1 to LHD-8)",
+      cost:3500, oil:77, time:52, hp:3200, armor:"heavy", speed:1.46, turn:0.6, sight:11.8, r:30, mass:0,
+      /* two RAM launchers beside the Sea Sparrows and Phalanx (Iwo Jima, LHD-7, commissioned with them in 2001) */
+      weapons:["sam_ram","sam_seasparrow","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2,
+      carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:UH60,
+      cargo:24, amphib:true, wellDeck:true, ciws:0.66, rcs:2.6,
+      from:"e00", to:"e00", service:"1989", confidence:"high",
+      desc:"The Wasp class through the 2000s and 2010s, with RAM launchers added and the eighth ship, Makin Island (2009), on gas turbines instead of steam. A Marine Expeditionary Unit's battalion, its tanks, amphibious tractors and guns go ashore from her by LCAC and helicopter. Her Marine air group is not in the game yet; the deck takes a UH-60, as Army Black Hawks have qualified on her decks." },
+  });
+})();
+if (typeof reindexRoles === "function") reindexRoles();

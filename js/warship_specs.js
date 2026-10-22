@@ -253,4 +253,22 @@ Object.assign(WARSHIPS, {
   fra_e50_lst: {era:"e50", fac:"fra", role:"transport_sea", designation:"EDIC", len:41.1, beam:8.8, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:20, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
   deu_e60_lst: {era:"e60", fac:"deu", role:"transport_sea", designation:"Type 520 Barbe", len:41.1, beam:8.8, bow:"flush", super:"boxy", funnels:0, funnelStyle:"none", mast:"pole", guns:2, gunCal:20, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"none", radar:"dish", camo:"haze"},
 });
+/* ---- the American amphibious assault ships (eras.js, rules.js lha_n) ----
+   A new role has no same-role peer, so modelKeyFor() would draw the renderer's
+   plain box. These are STAND-INS on the parametric flat-top with its axial
+   deck (warship3d.js axialDeck): a straight deck with helicopter spots down the
+   port side and no angled deck or catapults, the island to starboard - not a
+   carrier's deck and not an LST. Measured from en.wikipedia's class articles:
+   length and waterline beam; deckBeam where the flight-deck width is printed
+   (Iwo Jima 105 ft, Tarawa 118.1 ft); spots where the number is printed (nine
+   CH-53s at once on a Tarawa, nine landing spots on a Wasp). No well-deck
+   stern gate, no Tarawa's long island and no America's aft-moved island yet:
+   hero models are a later piece. */
+Object.assign(WARSHIPS, {
+  nato_e60_lph: {era:"e60", fac:"nato", role:"assault_sea", designation:"LPH-2 Iwo Jima class", len:180.4, beam:25.6, deckBeam:32.0, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:2, gunCal:76, gunPos:"foreaft", vls:0, launchers:"none", ciws:0, helo:"hangar", radar:"dish", camo:"haze"},
+  nato_e80_lha: {era:"e80", fac:"nato", role:"assault_sea", designation:"LHA-1 Tarawa class", len:254.2, beam:40.2, deckBeam:36.0, spots:9, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:3, gunCal:127, gunPos:"foreaft", vls:0, launchers:"box", ciws:0, helo:"hangar", radar:"both", camo:"haze"},
+  nato_e90_lhd: {era:"e90", fac:"nato", role:"assault_sea", designation:"LHD-1 Wasp class", len:257.0, beam:31.8, spots:9, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"box", ciws:3, helo:"hangar", radar:"both", camo:"haze"},
+  nato_e00_lhd: {era:"e00", fac:"nato", role:"assault_sea", designation:"LHD-1 Wasp class", len:257.0, beam:31.8, spots:9, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"box", ciws:3, helo:"hangar", radar:"both", camo:"haze"},
+  lha_n:        {era:"e20", fac:"nato", role:"assault_sea", designation:"LHA-6 America class", len:257.3, beam:32.3, bow:"carrier", deck:"axial", super:"island", funnels:1, funnelStyle:"capped", mast:"lattice", guns:0, gunCal:0, gunPos:"none", vls:0, launchers:"box", ciws:2, helo:"hangar", radar:"both", camo:"haze"},
+});
 if (typeof Warship3D !== "undefined" && Warship3D.registerAll) Warship3D.registerAll();

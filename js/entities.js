@@ -1481,7 +1481,10 @@ class Unit {
           if (this.layer === "ground") {
             for (const u of g.human.units) {
               if (u.dead || !u.def.cargo) continue;
-              if (this.cat === "infantry" ? !u.def.carrier : !!u.def.amphib) { lift = true; break; }
+              /* an amphibious assault ship has a deck and a hold: it is a ride,
+                 for a vehicle only where she has a well deck (holdRefusal) */
+              if (this.cat === "infantry" ? (!u.def.carrier || u.def.amphib)
+                                          : !!u.def.amphib && !u.holdRefusal(this)) { lift = true; break; }
             }
           }
           g.alert(lift ? "NO ROUTE \u2014 THAT GROUND NEEDS A TRANSPORT"
@@ -5897,10 +5900,33 @@ class Unit {
   onRamp() { return this.wing().filter(u => u.parked); }
   ramp() { return this.deckSlots(); }
 
+  /* ---- what an amphibious assault ship's hold takes ----
+     A flat-top with a hold (def.carrier and def.amphib: eras.js nato_e60_lph
+     ... rules.js lha_n) puts its Marines ashore by helicopter, and its
+     vehicles only by landing craft out of a WELL DECK (def.wellDeck). The Iwo
+     Jima LPH and the America LHA-6 had none - everything went ashore by air -
+     so they take troops and no vehicle. The Tarawa and the Wasp have one, and
+     until their landing craft are in the game (a later piece, built on
+     def.wellDeck) the ship running in to the beach and putting vehicles
+     ashore herself stands in for them. A landing ship (no deck) beaches and
+     is not asked. "" when it may come aboard. */
+  static troopsOnly(def) { return !!(def && def.amphib && def.carrier && !def.wellDeck); }
+  holdRefusal(v) {
+    if (!v || v.cat !== "vehicle" || !Unit.troopsOnly(this.def)) return "";
+    return "NO WELL DECK — VEHICLES GO ASHORE BY LANDING CRAFT FROM A WELL-DECK SHIP";
+  }
+
   /* ---- transports & structures entry (engineer/infantry into buildings) ---- */
   updateEnter(dt) {
     const o = this.order, t = o.target;
     if (!t || t.dead) { this.order = { type: "idle" }; return; }
+    /* a hull that will not take this aboard at all is not driven to */
+    const noHold = t.kind === "unit" && t.holdRefusal ? t.holdRefusal(this) : "";
+    if (noHold) {
+      if (this.owner === this.game.human) this.game.alert(noHold, "bad");
+      this.order = { type: "idle" };
+      return;
+    }
     const near = U.dist(this.x, this.y, t.x, t.y) < (t.r || 20) + this.r + 10 ||
                  (t.kind === "unit" && this.besideRamp(t));
     /* an aeroplane that has taken off is not waited for under its flight path */

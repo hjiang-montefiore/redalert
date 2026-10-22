@@ -949,6 +949,28 @@ var UNITS = {
     cost:4800, oil:105, time:58, hp:4400, armor:"heavy", speed:1.6, turn:0.6, sight:13, r:30, mass:0,
     layer:"sea", weapons:["sam_ship"], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.55, carrier:3,
     desc:"Heavy aviation cruiser: three aircraft plus its own SAM battery and a very heavy hull." },
+
+  /* The present-day American amphibious assault ship. Its forerunners, the
+     scaling of its deck (carrier 3) and its hold (cargo 24, four LST holds),
+     and the sources for what flies from it are at the end of eras.js
+     (nato_e60_lph ... nato_e00_lhd). en.wikipedia "America-class amphibious
+     assault ship": commissioned 2014, 44,971 long tons full load, 257 m,
+     over 20 knots, 1,687 Marines, no well deck in the first two ships; two
+     RAM, two ESSM and two Phalanx. Her air element (DOT&E 2008: 12 MV-22B,
+     6 F-35B, 4 CH-53E, 7 AH-1Z/UH-1Y, 2 MH-60S) is not in the game yet, so
+     the deck sails empty and takes the Army's UH-60M and AH-64E, which made
+     deck landing qualifications on her sister Tripoli (LHA-7) in January
+     2023 (Seapower). No well deck (no def.wellDeck), so her hold takes
+     troops and no vehicle (entities.js holdRefusal). hp 3,400 as de Gaulle
+     (42,500 t) in this period, cost
+     1.1 times hp, speed 0.12 under the Ford's. There is no ESSM round in the
+     game, so her Sea Sparrow launchers are not carried rather than given the
+     older RIM-7M's figures. */
+  lha_n: { from:"e20", service:"2014", confidence:"high", fac:"nato", role:"assault_sea", name:"America LHA", full:"USS America (LHA-6), America-class amphibious assault ship", cat:"naval",
+    cost:3750, oil:79, time:53, hp:3400, armor:"heavy", speed:1.48, turn:0.6, sight:12.2, r:30, mass:0,
+    layer:"sea", weapons:["sam_ram","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2, ciws:0.64, rcs:2.6,
+    carrier:3, heloCarrier:true, emptyDeck:true, deckTakes:["trans_n","helo_n"], cargo:24, amphib:true,
+    desc:"Commissioned in 2014 and built for aircraft rather than boats: the Makin Island design with the well deck taken out for a larger hangar, more aviation fuel and spares, so her 1,687 Marines go ashore by air alone. The third ship, Bougainville, puts the well deck back. Her Marine air group and F-35Bs are not in the game yet; the deck takes the Army's UH-60M and AH-64E, which have qualified on her sister Tripoli." },
 };
 
 
