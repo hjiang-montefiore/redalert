@@ -37,7 +37,9 @@ function autoTargetable(e) {
    fight up and lets it go, so a target on the edge cannot flip a unit
    between the two every tick. */
 function patrolFights(u, o, e) {
-  const R = u.sightR() * CFG.TILE * (u.stance === "aggressive" ? 1.25 : 1);
+  /* the crew's sight toward e: as on a clear day if our radar holds it
+     (Unit.sightOn), so a patrol fights what acquire() handed it */
+  const R = u.sightOn(e) * CFG.TILE * (u.stance === "aggressive" ? 1.25 : 1);
   /* A hull carrying a round fired on a cue looks as far as acquire() does
      (Unit.acqReach), and past its own eyes it fights only what its SIDE holds
      - the very test acqGate() let the contact through on - so a patrolling
@@ -339,6 +341,26 @@ class Unit {
        has thermal sights, which is the whole coalition advantage in 1991 */
     if (this.game && this.game.visionMul) r *= this.game.visionMul(this);
     return r;
+  }
+  /* ---- the weather, given back under our own radar ----
+     A contact this side's radar holds (game.js G.radarHolds - never a boat
+     under the water; the rule and its sources are at RADAR GIVES THE WEATHER
+     BACK) is a track with a position, and a crew it is passed to sees and
+     lays on it as on a clear day.
+     clearSightR() is sightR() without the weather term. radarCued() is who
+     the rule reaches: not a dismounted squad, which no track helps to see down
+     its sights, and not a garrison, whose sight never had a weather term.
+     sightOn(t) is this crew's sight, in tiles, toward the contact t (or a
+     point {x, y}): its clear-day sight where the rule applies, its sight on
+     the day otherwise. On a clear day the two are equal and the radar is
+     never asked. */
+  clearSightR() { return this.def.sight * (this.owner.upgrades.optics ? 1.25 : 1); }
+  radarCued() { return this.cat !== "infantry" && !(this.garrisonIn && !this.garrisonIn.dead); }
+  sightOn(t) {
+    const r = this.sightR();
+    if (!this.game || !this.game.radarHolds || !this.radarCued()) return r;
+    const c = this.clearSightR();
+    return c > r && this.game.radarHolds(this.owner, t) ? c : r;
   }
   /* how much punishment this unit absorbs before it goes to ground. Vehicles
      and ships are far steadier than dismounted infantry. */
@@ -2193,7 +2215,7 @@ class Unit {
        blind, and a step was taken on that team's true heading in each of 8
        fights; now in none, and with a squad of ours watching the team it
        steps in all 8. */
-    const eyes = this.sightR() * T;
+    const eyes = this.sightOn(t) * T;              // as on a clear day if our radar holds it
     if (dist > eyes && g.sideSees && !g.sideSees(P, t, this)) return;
     const re = Unit.reachAt(t, this.targetLayer(), this.armorClass());
     const stopR = Math.min(range * 0.92, eyes * 0.98);
@@ -3093,12 +3115,36 @@ class Unit {
      class Unit. That preference never walks a crew toward something it
      cannot yet hit: see THE TWO TIERS at the bottom of this method. */
   acquire() {
-    const R = this.sightR() * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
+    const k = this.stance === "aggressive" ? 1.25 : 1;
+    const R = this.sightR() * CFG.TILE * k;
     /* A round fired on a cue reaches past the crew's own eyes (firesOnCue,
        rules.js), so the scan goes out as far as the longest of them and
        acqGate() lets a contact out there through only if the SIDE holds it.
        Everything else scans exactly R, as it always has (acqReach). */
     const Rq = this.acqReach(R);
+    /* ---- and on a contact our own radar holds, as on a clear day ----
+       (game.js RADAR GIVES THE WEATHER BACK.) When the weather has cut this
+       crew's eyes, R0 is the clear-day radius and a candidate the side's radar
+       holds is judged against it - acqGate's stealth band and its "past the
+       crew's own eyes" test included - while every other candidate is judged
+       against R exactly as before. The scan itself stays the grid query it
+       always was, out to Rq; only a crew with a held contact further out than
+       that pays for a second one, over the ring of cells between the two
+       squares (SpatialGrid.queryRing), which hands back only what the first
+       did not and is taken only where the radar holds it. Measured
+       (tools/jsc/weather_radar_check.js [4]): a Pact T-90M at night, eyes 4.5
+       tiles, never took a held tank 7 tiles off; now it does, as on a clear
+       day, and with the dome dark it does not. On a clear day R0 is R, and
+       nothing here asks the radar. */
+    let R0 = R;
+    if (this.game.radarHolds && this.radarCued()) {
+      const c = this.clearSightR() * CFG.TILE * k;
+      /* (and only if a set of ours is up: with none, nothing is held, and
+         the wider sweep and its per-candidate test were pure cost) */
+      if (c > R && this.game.radarUp(this.owner)) R0 = c;
+    }
+    const Rq0 = R0 > R ? this.acqReach(R0) : Rq;
+    let ring = false;
     /* A Weasel weights an emitter a hundredfold below - 0.06 against 6 - but
        only for a round it may actually fire. acquire() is the automatic
        question by definition, so a held ARM contributes nothing to it;
@@ -3128,9 +3174,14 @@ class Unit {
        few compares per candidate. */
     let bestIn = null, bdIn = Infinity, bestOut = null, bdOut = Infinity;
     let best0 = null, bd0 = Infinity;
-    this.game.grid.query(this.x, this.y, Rq, (e) => {
+    const scan = (e) => {
+      /* the radius this candidate is judged by: R0 if our radar holds it */
+      let Re = R;
+      /* (our own hulls, which acqGate turns away first anyway, are not asked) */
+      if (R0 > R && e.owner !== this.owner && this.game.radarHolds(this.owner, e)) Re = R0;
+      else if (ring) return;               // past the first scan, and nothing of ours holds it
       /* every gate, in acqGate() below, so retarget() can ask the same ones */
-      if (!this.acqGate(e, R)) return;
+      if (!this.acqGate(e, Re)) return;
       if (rG2 < 0) {
         let wG = null, wSe = null, wSu = null, wA = null;
         const ws = this.def.weapons;
@@ -3171,7 +3222,9 @@ class Unit {
       if (inReach) { if (d < bdIn) { bdIn = d; bestIn = e; } }
       else if (d < bdOut) { bdOut = d; bestOut = e; }
       if (d0 < bd0) { bd0 = d0; best0 = e; }
-    });
+    };
+    this.game.grid.query(this.x, this.y, Rq, scan);
+    if (Rq0 > Rq && this.game.grid.queryRing) { ring = true; this.game.grid.queryRing(this.x, this.y, Rq, Rq0, scan); }
     /* THE TWO TIERS. targetPrio() can score an in-reach candidate up to 1.9
        times its squared distance - a scout, an empty lorry - and a single
        ranking would then let something 1.3 times as far, and OUT of reach,
@@ -3382,7 +3435,8 @@ class Unit {
     const o = this.order;
     if (!o || o.type !== "attack" || !o.auto || o.release) return false;
     if (!t || t === o.target || this.stance === "hold") return false;
-    const R = this.sightR() * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
+    /* the crew's sight toward this one: as on a clear day if our radar holds it (sightOn) */
+    const R = this.sightOn(t) * CFG.TILE * (this.stance === "aggressive" ? 1.25 : 1);
     const d = U.dist(this.x, this.y, t.x, t.y);
     if (d > this.acqReach(R) || !this.acqGate(t, R)) return false;
     const wi = this.pickWeapon(t);
@@ -4659,10 +4713,21 @@ class Unit {
       else if (this.capScanT <= 0) {
         this.capScanT = 1;
         const RR = (this.sightR() + CFG.CAP_RADIUS) * CFG.TILE;
+        /* and on a contact our own radar holds, the clear-day sight
+           (game.js RADAR GIVES THE WEATHER BACK): the sweep reaches out to
+           it, and anything the radar does not hold is held to RR as before */
+        const c = this.radarCued() ? (this.clearSightR() + CFG.CAP_RADIUS) * CFG.TILE : 0;
+        const RR0 = c > RR && this.game.radarHolds ? c : RR;
         let best = null, bd = Infinity;
-        this.game.grid.query(o.x, o.y, RR, (e) => {
-          if (e === this || !this.acqGate(e, RR)) return;
-          if (U.dist2(o.x, o.y, e.x, e.y) > RR * RR) return;
+        this.game.grid.query(o.x, o.y, RR0, (e) => {
+          if (e === this) return;
+          let Re = RR;
+          if (RR0 > RR && U.dist2(o.x, o.y, e.x, e.y) > RR * RR) {
+            if (!this.game.radarHolds(this.owner, e)) return;
+            Re = RR0;
+          }
+          if (!this.acqGate(e, Re)) return;
+          if (U.dist2(o.x, o.y, e.x, e.y) > Re * Re) return;
           const d2 = U.dist2(this.x, this.y, e.x, e.y);
           if (d2 < bd) { bd = d2; best = e; }
         });

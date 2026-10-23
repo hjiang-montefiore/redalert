@@ -60,13 +60,26 @@ var Combat = (function () {
        structure's sight was never stretched, and nothing here changes for it. */
     const cued = shooter.kind === "unit" && typeof firesOnCue === "function" &&
                  firesOnCue(shooter.def, w);
+    /* ...and a target our own radar holds is laid on as on a clear day
+       (game.js RADAR GIVES THE WEATHER BACK): `eyes` is the shooter's sight
+       toward it (Unit.sightOn) - the clear-day sight for a crew a track can
+       cue when the side's radar holds the target, its sight on the day
+       otherwise - and where the radar has given the weather back there is
+       no weather term to pay. A jammed or dark radar holds nothing, and a
+       rifle squad is not given it (Unit.radarCued). Measured
+       (tools/jsc/weather_radar_check.js [3]), a T-90M's 125 mm at a held tank
+       7 tiles off: 0.609 clear, 0.551 night, 0.504 sandstorm before; 0.609
+       in all five weathers now, and at night with the dome switched off
+       0.240 as it always was (blind past the crew's 4.5 tiles of eyes). A
+       structure has no sightOn: its sight never had a weather term. */
+    const sight = (shooter.sightR ? shooter.sightR() : 6) * CFG.TILE;
+    const eyes = shooter.sightOn ? shooter.sightOn(target) * CFG.TILE : sight;
     let visMul = 1;
-    if (game.visionMul && !cued) {
+    if (game.visionMul && !cued && eyes <= sight) {
       const v = game.visionMul(shooter);
       if (v < 1) {
-        const reach = shooter.sightR() * CFG.TILE;
         const d = U.dist(shooter.x, shooter.y, target.x, target.y);
-        if (d > reach * 0.6) visMul = U.clamp(v + 0.35, 0.35, 1);
+        if (d > sight * 0.6) visMul = U.clamp(v + 0.35, 0.35, 1);
       }
     }
 
@@ -83,7 +96,7 @@ var Combat = (function () {
 
     let sensorMul = 1;
     const rangePx = U.dist(shooter.x, shooter.y, target.x, target.y);
-    const organic = (shooter.sightR ? shooter.sightR() : 6) * CFG.TILE;
+    const organic = eyes;          // the crew's own picture: its sight toward the target, above
     /* ...except a land-attack cruise missile, which is not aimed from the
        ship at all: it flies TERCOM and DSMAC (GPS from Block III, 1993) to
        coordinates taken off the plot, so the launching hull's own eyes and

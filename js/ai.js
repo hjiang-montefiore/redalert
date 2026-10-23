@@ -3804,7 +3804,14 @@ function makeCommander() {
       if (u.dead || u.carried) continue;
       const r = u.sightR();
       paint(u.tx, u.ty, r);
-      G.grid.query(u.x, u.y, r * CFG.TILE, (e) => noteContact(e, u, r, now));
+      /* a contact our own radar holds is seen as far as on a clear day by a
+         crew a track can cue (game.js RADAR GIVES THE WEATHER BACK) - what
+         the player's fog does for the player, whose radar lights those
+         tiles; the ground painted stays what the crew overlooks. On a clear
+         day c is r and this is the one query it always was. */
+      const c = G.radarHolds && u.radarCued() ? u.clearSightR() : 0;
+      if (c > r) G.grid.query(u.x, u.y, c * CFG.TILE, (e) => noteContact(e, u, G.radarHolds(P, e) ? c : r, now));
+      else G.grid.query(u.x, u.y, r * CFG.TILE, (e) => noteContact(e, u, r, now));
     }
     for (const b of P.buildings) {
       if (b.dead || b.buildProgress < 1) continue;

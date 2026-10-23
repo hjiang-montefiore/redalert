@@ -94,6 +94,24 @@ var U = (function () {
         }
       }
     }
+    /* the cells query(x, y, rOut) visits that query(x, y, rIn) does not, so a
+       caller widening a scan it has already made is handed each entity once
+       (entities.js Unit.acquire, under its own radar in bad weather) */
+    queryRing(x, y, rIn, rOut, fn) {
+      const c = this.cell;
+      const i0 = clamp(((x - rIn) / c) | 0, 0, this.cw - 1), i1 = clamp(((x + rIn) / c) | 0, 0, this.cw - 1);
+      const j0 = clamp(((y - rIn) / c) | 0, 0, this.ch - 1), j1 = clamp(((y + rIn) / c) | 0, 0, this.ch - 1);
+      const x0 = clamp(((x - rOut) / c) | 0, 0, this.cw - 1), x1 = clamp(((x + rOut) / c) | 0, 0, this.cw - 1);
+      const y0 = clamp(((y - rOut) / c) | 0, 0, this.ch - 1), y1 = clamp(((y + rOut) / c) | 0, 0, this.ch - 1);
+      for (let cy = y0; cy <= y1; cy++) {
+        const row = cy * this.cw, inner = cy >= j0 && cy <= j1;
+        for (let cx = x0; cx <= x1; cx++) {
+          if (inner && cx >= i0 && cx <= i1) continue;
+          const b = this.buckets[row + cx];
+          for (let i = 0; i < b.length; i++) fn(b[i]);
+        }
+      }
+    }
   }
 
   function fmt(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }

@@ -3392,7 +3392,29 @@ var Render3D = (function () {
     night:     { sky: 0x04070c, fog: 0x1d2735, near: 1000, far: 2800, sun: 0.34, hemi: 0.22, sunC: 0x9fb6d8 },
     sandstorm: { sky: 0x2a2015, fog: 0xa8865a, near:  420, far: 1500, sun: 0.80, hemi: 0.48, sunC: 0xd8a468 },
   };
-  let wxCur = null, wxMix = 1;
+  /* ---- ...except over what our own radar holds ----
+     (owner) "weather should not be affect the area with rador" - the night,
+     the rain and the dust in this view hid ships, aircraft and vehicles the
+     player's radar was holding and his fog showed (game.js RADAR GIVES THE
+     WEATHER BACK). Measured before, tools/jsc/weather_radar_check.js [6]: in
+     a sandstorm the haze starts 420 m from the camera, so a view centre at
+     the default 430 m was already in it and one zoomed out to 1200 m sat 72%
+     inside ochre; at night the sun is 0.34 and the sky 0.22 of light.
+     So while the view centre stands inside the player's own radar picture
+     (G.radarHeld - a dark or jammed set holds nothing) the haze eases back to
+     the clear day's 1500-4200 m and the light up to at least an overcast
+     day's, over about 0.7 s each way. The weather still reads: the sky, the
+     fog's colour, the sun's and the dust are the weather's own, and night
+     stays a grey day rather than noon - a radar puts a contact on the screen,
+     it does not light the ground. Nothing changes what is drawn: the fog of
+     war (G.fog, read by syncEntities and the fog layer) alone decides that,
+     and this only stops the atmosphere hiding what it shows. One radarHeld
+     lookup a frame, an array index; no allocation - the eased look is
+     updated in place, and the per-frame lerp closure this used to make is
+     gone with it. */
+  const WX_RADAR = { near: WX_LOOK.clear.near, far: WX_LOOK.clear.far,
+                     sun: WX_LOOK.overcast.sun, hemi: WX_LOOK.overcast.hemi };
+  let wxCur = null, wxMix = 1, wxCov = 0;
   function applyWeather(dt) {
     if (!G.weather) return;
     const key = G.weatherKey || "clear";
@@ -3402,12 +3424,21 @@ var Render3D = (function () {
     /* ease into the new conditions over a few seconds rather than snapping */
     if (wxMix < 1) wxMix = Math.min(1, wxMix + dt * 0.35);
     const k = wxMix < 1 ? dt * 1.4 : 0;
-    const lerp = (a, b) => a + (b - a) * Math.min(1, k || 1);
+    const f = Math.min(1, k || 1);
+    /* how far the view stands under our radar: eased, so a pan across the
+       edge of the picture is a fade and not a flicker */
+    const cov = key !== "clear" && G.radarHeld && G.human && G.radarHeld(G.human, cam.x, cam.y) ? 1 : 0;
+    wxCov = cov > wxCov ? Math.min(cov, wxCov + dt * 1.4) : Math.max(cov, wxCov - dt * 1.4);
+    const c = wxCov;
+    const tNear = want.near + (Math.max(want.near, WX_RADAR.near) - want.near) * c;
+    const tFar  = want.far  + (Math.max(want.far,  WX_RADAR.far)  - want.far)  * c;
+    const tSun  = want.sun  + (Math.max(want.sun,  WX_RADAR.sun)  - want.sun)  * c;
+    const tHemi = want.hemi + (Math.max(want.hemi, WX_RADAR.hemi) - want.hemi) * c;
 
-    wxCur.near = lerp(wxCur.near, want.near);
-    wxCur.far  = lerp(wxCur.far,  want.far);
-    wxCur.sun  = lerp(wxCur.sun,  want.sun);
-    wxCur.hemi = lerp(wxCur.hemi, want.hemi);
+    wxCur.near += (tNear - wxCur.near) * f;
+    wxCur.far  += (tFar  - wxCur.far)  * f;
+    wxCur.sun  += (tSun  - wxCur.sun)  * f;
+    wxCur.hemi += (tHemi - wxCur.hemi) * f;
     three.scene.fog.near = wxCur.near;
     three.scene.fog.far  = wxCur.far;
     three.scene.fog.color.set(want.fog).convertSRGBToLinear();

@@ -2244,7 +2244,7 @@ var Game = (function () {
      Pairs are pushed flat (entity, ecm) so nothing is allocated per jammer.
 
      ONLY for those callers. The single-radar ones - G.ewCovers, the
-     radarReveal inside G.recomputeFog, the sidebar readout in js/ui.js and the
+     radarDisc that paints G.recomputeFog's radar, the sidebar readout in js/ui.js and the
      selection readout in js/render3d.js - keep the original body below, which
      allocates nothing at all. Routing them through a gathered list cost them a
      throwaway array they use exactly once: measured on a board carrying 21
@@ -2955,13 +2955,13 @@ var Game = (function () {
   };
   /* How far one radar of p's still reaches, in pixels, given the hostile
      jamming it sits in: blinded past 0.55, cut down past 0.15 - the same law
-     recomputeFog's radarReveal and G.radarCovers apply. */
+     recomputeFog's radar paint (radarDisc) and G.radarCovers apply. */
   function radarLeft(p, ent, r) {
     const jam = G.jamAgainst(p, ent);
     if (jam > 0.55) return 0;
     return jam > 0.15 ? r * Math.max(0.15, 1 - jam) : r;
   }
-  /* The radar picture recomputeFog's radarReveal lifts the human's fog with,
+  /* The radar picture recomputeFog's paint (radarPaint) lifts the human's fog with,
      asked of one point for any side: a set that is transmitting (G.emitting,
      so not one shut down on its ramp or switched off), cut down by the
      hostile jamming it sits in, and a structure's set only once it is built
@@ -2990,6 +2990,169 @@ var Game = (function () {
       if (seen(b, b.def.radar * TL)) return true;
     }
     return false;
+  };
+
+  /* ---------------- RADAR GIVES THE WEATHER BACK ----------------
+     (owner) "weather should not be affect the area with rador" - and, asked
+     what goes wrong, all three: the screen haze hides it, units fight worse
+     there, and the fog closes. The weather in this game is a cut to a crew's
+     EYES (G.visionMul, Unit.sightR): dark, rain and dust stand between an
+     optic and a hull. A radar is the sensor that does not care - search
+     radar went to sea and into the air defence of Britain in 1940 precisely
+     because it saw at night and through cloud - and the game's sets are no
+     worse at midnight or in a shamal than at noon: a set's own weather, rain
+     clutter on a short wavelength, is not modelled and is left out rather
+     than invented. So inside a side's own radar picture the weather's cut is
+     given back, wherever the game asks:
+       - THE FOG was right already and is kept: the player's is lifted over a
+         radar's whole reach with no weather term (recomputeFog), and a
+         commander's G.sideSees asks G.radarPicture, which has none either.
+         Measured before this, tools/jsc/weather_radar_check.js [1]: a Radar
+         Dome's and a Burke's contacts - a tank, a ship, a helicopter, 14 to
+         19 tiles out, past their eyes - stayed lit in all five weathers.
+       - A CREW'S EYES ON A HELD CONTACT. A contact the side's radar holds is a
+         track with a position, and a crew handed it knows where to look and
+         lays on it as on a clear day: the automatic scan (Unit.acquire,
+         retarget, the patrol and CAP sweeps, kiteDecide), the round itself
+         (combat.js: its weather term and the "organic" edge past which a shot
+         needs radar), and a commander's own eyes (G.visibleTo below, ai.js
+         intelSweep) all take the crew's clear-day sight on it (Unit.sightOn).
+         Measured before ([3], [4]): a Pact T-90M's 125 mm at a held tank 7
+         tiles off hit 0.609 on a clear day, 0.551 at night and 0.504 in a
+         sandstorm, a Burke's 5-inch at a held hull 10 tiles off 0.698 and
+         0.578, and at night, in rain or in dust the tank never picked the
+         other up at all; the commander's tank was held to the same numbers.
+       - THE 3D LOOK: render3d.js applyWeather.
+     WHO: a crew a track can be passed to and laid from - every vehicle, ship
+     and aircraft. Not a dismounted squad: a rifleman given a grid reference
+     at night still cannot see down his sights, and nothing in the game puts a
+     radar terminal in a squad, so G.visionMul's 0.6 of the thermal fit stays
+     its own (Unit.radarCued). A structure's and a garrison's sight never had
+     a weather term to give back.
+     WHAT COUNTS AS HELD is exactly the picture that lifts the player's fog,
+     tile for tile, because it is the same paint: a set on the air
+     (G.emitting - an aircraft on its ramp or a set switched off is no set), cut
+     by the hostile jamming it sits in and blinded past burn-through (0.55), a
+     structure's only built and on a full grid. A dark or jammed radar gives
+     nothing back, and the rule can never reach past what the side already
+     sees on its own radar. Nor does it hold a boat under the water: the
+     paint lights the sea over it, but a radar does not see below the
+     surface, so every caller asks G.radarHolds, which leaves a submarine out.
+     COST. One byte per tile per side, kept on the player and painted at most
+     once per FOG_UPDATE: the human's by recomputeFog itself, so the fog and
+     this are one picture; anybody else's - and the human's with the fog off -
+     the first time it is asked after the last one went stale. Read with one
+     array index. On a clear day nothing asks it at all: G.visionMul is 1, a
+     crew's sight is already its clear-day sight, and every caller tests that
+     before it looks (weather_radar_check [5] counts the calls). */
+  function radarDisc(p, ent, cx, cy, r, m, W, H, fog) {
+    if (!r) return 0;
+    const jam = G.jamAgainst(p, ent);
+    if (jam > 0.55) return 0;                       // burned through: no picture at all
+    const eff = jam > 0.15 ? r * Math.max(0.15, 1 - jam) : r;
+    const r2 = eff * eff;
+    const x0 = Math.max(0, cx - eff | 0), x1 = Math.min(W - 1, cx + eff | 0);
+    const y0 = Math.max(0, cy - eff | 0), y1 = Math.min(H - 1, cy + eff | 0);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const dx = x - cx, dy = y - cy;
+      if (dx * dx + dy * dy <= r2) { m[y * W + x] = 1; if (fog) fog[y * W + x] = 2; }
+    }
+    return 1;
+  }
+  /* every set of p's that is up, painted into m - and, handed the fog grid,
+     lit on it in the same stroke; the number painted */
+  function radarPaint(p, m, fog) {
+    const W = G.map.W, H = G.map.H;
+    m.fill(0);
+    let n = 0;
+    /* ---- AND THE ROTODOME HAS TO BE TURNING ----
+       (owner) "parked fighter/e2 should not have the rador or Jam since their
+       electronic weapon does not open when landed."
+       G.emitting() has said exactly this since it was written - "a radar
+       aircraft shut down on its ramp has its rotodome stationary and its crew
+       on the ground, it should not be lighting up half the map from inside the
+       hangar" - and jamAt(), jamAgainst() and radarCovers() all ask it. The
+       fog's loop never did, so the one thing a parked E-3 or E-2 still did from
+       the hangar was the biggest: lift the fog. Measured on a parked E-3G, radar
+       34: emitting() false, and 34 tiles of map open anyway. */
+    for (const u of p.units) {
+      if (u.dead || u.carried || !u.def.radar) continue;
+      if (!G.emitting(u)) continue;                   // shut down on the ramp
+      n += radarDisc(p, u, u.tx, u.ty, u.def.radar, m, W, H, fog);
+    }
+    /* ---- and the grid carries all of it ----
+       A radar picture is the first thing a brownout costs you. The minimap has
+       always known this - render.js:1461 tests powerRatio() and prints "RADAR
+       OFFLINE - LOW POWER" across a dark panel - but the FOG did not, so the
+       map stayed peeled open while the panel said the radar was down. The
+       player was looking at two widgets contradicting each other.
+
+       The `!b.powered` test below was there all along and did nothing, because
+       powered is `!def.needPower || ratio >= 1` and the Radar Dome never
+       declared needPower. The airbase and the AA battery did not either. So
+       the test passed for exactly the structures it existed to stop.
+
+       Gated on the ratio directly, so it covers every structure that lifts fog
+       rather than only the ones that remembered to ask. What survives a
+       brownout is what the units and buildings can SEE - sightR(), their own
+       eyes - which is the honest picture and the one the AI has always been
+       held to: Building.sightR() at entities.js:2483 is def.sight with no
+       radar term at all, so an AI commander has never had radar-extended fog
+       lifting in the first place. This closes that asymmetry in the one
+       direction that was open. Vehicles keep their sets: a radar vehicle
+       carries its own generator and is not on the base grid. (The ratio is
+       asked once, and only when a structure's set reaches the test: it walks
+       the structure list.) */
+    let gridUp = -1;
+    for (const b of p.buildings) {
+      if (b.dead || !b.def.radar || b.buildProgress < 1 || !b.powered) continue;
+      if (b.emcon && G.radarDark(b)) continue;          // switched off: no picture
+      if (gridUp < 0) gridUp = p.powerRatio() >= 1 ? 1 : 0;
+      if (!gridUp) continue;
+      n += radarDisc(p, b, b.tx + b.def.w / 2, b.ty + b.def.h / 2, b.def.radar, m, W, H, fog);
+    }
+    return n;
+  }
+  /* p's radar picture as a tile mask (1 = held); `fresh` paints it now, and
+     `fog` (recomputeFog's, the human's only) is lit with it */
+  G.radarMask = function (p, fresh, fog) {
+    const N = G.map.W * G.map.H;
+    let m = p._radarM;
+    if (!m || m.length !== N) { m = p._radarM = new Uint8Array(N); p._radarT = -1; p._radarN = 0; }
+    const fogOwns = p === G.human && G.fogEnabled;    // recomputeFog keeps the human's
+    if (fresh || (!fogOwns && (p._radarT < 0 || G.time < p._radarT || G.time - p._radarT >= CFG.FOG_UPDATE))) {
+      p._radarN = radarPaint(p, m, fog || null);
+      p._radarT = G.time;
+    }
+    return m;
+  };
+  /* is any set of p's up at all - so a crew's scan can skip the wider
+     sweep, and the radar test on every candidate in it, when nothing of
+     its side's could hold a contact. Fresh on the same clock as radarHeld. */
+  G.radarUp = function (p) {
+    if (!p || !p.units || !G.map) return false;
+    G.radarMask(p);
+    return p._radarN > 0;
+  };
+  /* does p's own radar hold the point (x, y), in game px */
+  G.radarHeld = function (p, x, y) {
+    if (!p || !p.units || !G.map) return false;
+    const m = G.radarMask(p);
+    if (!p._radarN) return false;                     // not one set of p's is up
+    const W = G.map.W;
+    const tx = U.clamp((x / CFG.TILE) | 0, 0, W - 1), ty = U.clamp((y / CFG.TILE) | 0, 0, G.map.H - 1);
+    return m[ty * W + tx] === 1;
+  };
+  /* ---- does p's own radar hold the CONTACT e ----
+     Its point (G.radarHeld), and never a boat under the water: a radar sees
+     the sea's surface and the sky over it, and a submerged hull is on sonar
+     alone (G.canSeeSub), whatever the fog's paint lights over it. Every
+     caller of the weather rule asks this one, so a sub on a held tile keeps
+     the weather's cut. Found in review (weather_radar_check [7]): a Burke's
+     sightOn at night on a submarine 6 tiles off under her own radar was the
+     clear day's 11.9 tiles, and her Mk 54 paid no weather term. */
+  G.radarHolds = function (p, e) {
+    return !!e && e.layer !== "sub" && G.radarHeld(p, e.x, e.y);
   };
   /* ---- a hull on the water that the side holds ----
      Two sensors hold a surface hull and nothing else - not the sky over it,
@@ -3735,10 +3898,25 @@ var Game = (function () {
        the hottest leaf in the whole profile: 3,095,259 visibleTo calls, and
        127,039,002 sightR() calls underneath them, in the 350 game-seconds
        around t=850 - 131.3 s of a 253.8 s window. */
+    /* ...and on a contact this side's own radar holds, a crew a track can
+       cue sees it as far as on a clear day (RADAR GIVES THE WEATHER BACK,
+       above) - what the player's fog already does for the player, since his
+       radar lights those tiles. Hot path, so in that order of cost: the
+       weather is asked once and only once a crew's eyes have fallen short,
+       the clear-day reach is a multiply, and the radar once per call, only
+       for a contact inside somebody's clear-day reach. A clear day never
+       gets past the first test. */
+    let wx = -1, held = -1;
     for (const u of p.units) {
       if (u.dead) continue;
-      const r = u.sightR() * CFG.TILE;
-      if (U.dist2(u.x, u.y, e.x, e.y) < r * r) return true;
+      const r = u.sightR() * CFG.TILE, d2 = U.dist2(u.x, u.y, e.x, e.y);
+      if (d2 < r * r) return true;
+      if (wx < 0) wx = G.weather().vis < 1 ? 1 : 0;
+      if (!wx) continue;
+      const c = u.clearSightR() * CFG.TILE;
+      if (d2 >= c * c || c <= r || !u.radarCued()) continue;
+      if (held < 0) held = G.radarHolds(p, e) ? 1 : 0;
+      if (held) return true;
     }
     for (const b of p.buildings) {
       if (b.dead) continue;
@@ -4103,57 +4281,12 @@ var Game = (function () {
        up, or sail an Aegis ship forward: it shows you what is out there long
        before anything of yours can see it. Jamming is the counter - a radar
        sitting inside a hostile electronic-attack bubble has its reach cut
-       down, and a strong enough bubble blinds it completely. */
-    const radarReveal = (ent, cx, cy, r) => {
-      if (!r) return;
-      const jam = G.jamAgainst(G.human, ent);
-      if (jam > 0.55) return;                       // burned through: no picture at all
-      const eff = jam > 0.15 ? r * Math.max(0.15, 1 - jam) : r;
-      reveal(cx, cy, eff);
-    };
-    /* ---- AND THE ROTODOME HAS TO BE TURNING ----
-       (owner) "parked fighter/e2 should not have the rador or Jam since their
-       electronic weapon does not open when landed."
-       G.emitting() has said exactly this since it was written - "a radar
-       aircraft shut down on its ramp has its rotodome stationary and its crew
-       on the ground, it should not be lighting up half the map from inside the
-       hangar" - and jamAt(), jamAgainst() and radarCovers() all ask it. THIS
-       loop never did, so the one thing a parked E-3 or E-2 still did from the
-       hangar was the biggest: lift the fog. Measured on a parked E-3G, radar
-       34: emitting() false, and 34 tiles of map open anyway. */
-    for (const u of G.human.units) {
-      if (u.dead || u.carried || !u.def.radar) continue;
-      if (!G.emitting(u)) continue;                   // shut down on the ramp
-      radarReveal(u, u.tx, u.ty, u.def.radar);
-    }
-    /* ---- and the grid carries all of it ----
-       A radar picture is the first thing a brownout costs you. The minimap has
-       always known this - render.js:1461 tests powerRatio() and prints "RADAR
-       OFFLINE - LOW POWER" across a dark panel - but the FOG did not, so the
-       map stayed peeled open while the panel said the radar was down. The
-       player was looking at two widgets contradicting each other.
-
-       The `!b.powered` test below was there all along and did nothing, because
-       powered is `!def.needPower || ratio >= 1` and the Radar Dome never
-       declared needPower. The airbase and the AA battery did not either. So
-       the test passed for exactly the structures it existed to stop.
-
-       Gated on the ratio directly, so it covers every structure that lifts fog
-       rather than only the ones that remembered to ask. What survives a
-       brownout is what the units and buildings can SEE - sightR(), their own
-       eyes - which is the honest picture and the one the AI has always been
-       held to: Building.sightR() at entities.js:2483 is def.sight with no
-       radar term at all, so an AI commander has never had radar-extended fog
-       lifting in the first place. This closes that asymmetry in the one
-       direction that was open. Vehicles keep their sets: a radar vehicle
-       carries its own generator and is not on the base grid. */
-    const gridUp = G.human.powerRatio() >= 1;
-    for (const b of G.human.buildings) {
-      if (b.dead || !b.def.radar || b.buildProgress < 1 || !b.powered) continue;
-      if (b.emcon && G.radarDark(b)) continue;          // switched off: no picture
-      if (!gridUp) continue;
-      radarReveal(b, b.tx + b.def.w / 2, b.ty + b.def.h / 2, b.def.radar);
-    }
+       down, and a strong enough bubble blinds it completely.
+       Painted by radarPaint (RADAR GIVES THE WEATHER BACK, above), the same
+       paint G.radarHeld reads for every side - the parked-aircraft and
+       brownout rules are written there - so the tiles our radar lifts and
+       the tiles the weather rule treats as held cannot drift apart. */
+    G.radarMask(G.human, true, fog);
   };
 
   /* ---------------- sorties ----------------
