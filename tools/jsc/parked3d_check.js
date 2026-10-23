@@ -431,86 +431,22 @@ function volInside(u, S, inv) {
    the rest 0.175 (the transport-EW stand-in's wingtips on a wall's face). */
 var VOL_TOL = 0.15;
 /* The types drawn too big for a revetment. The game draws an aircraft at
-   about twice its real size and the airbase's walls are real ones, 22.8 m
-   apart (25.1 m in the world; js/hero/airbase_revetments.js); each of these
-   reaches into a wall below its top, on every pad, by more than VOL_TOL. By
-   the model they are drawn with: */
+   about twice its real size; the runway airbase's revetments
+   (js/hero/airbase_runway.js) are the 60 m of their bays, earth-filled bin
+   walls 3.66 m high on the lines between the bays and on the plot's edges,
+   57.5 m between the faces of an end bay and 58.3 m of an inner one, and
+   the tower, the hut, the fuel point and the windsock stand in the band
+   behind them that only tails reach over. Measured 2026-10-23 with that
+   model: the 110 types listed for the old 3 x 3 field's 22.8 m bays all
+   stand clear of it now, the B-2 and five of the six B-52 rows among them
+   (their wings pass over the walls). What still reaches into the base, on
+   every pad, by more than VOL_TOL: */
 var OVERSIZE = {};
 [
-  /* the EC-121D Warning Star (js/hero/us_ec121.js): 38.5 m of wing on 35.4 m of length. The game scales an
-     aircraft by its length and a Super Constellation is as wide as it is long, so at its real proportions it
-     reaches 0.7 m into a revetment wall (the one row on this list that is a 1950s piston airliner) */
-  "nato_e50_awacs",
-  /* the Tu-126 Moss (js/hero/ru_tu126.js): 51.2 m of swept wing on 55.2 m of length - without this entry the parked check
-     finds it 0.82 m into a revetment wall (the game scales an aircraft by its length) */
-  "pact_e60_awacs",
-  /* the A-10 model, 35.9 m of wing, and the twelve CAS types drawn with it */
-  "bomber_n bomber_g deu_e50_cas deu_e60_cas deu_e80_cas gbr_e50_cas gbr_e60_cas gbr_e00_cas fra_e50_cas fra_e60_cas fra_e80_cas fra_e00_cas",
-  "nato_e80_cas nato_e00_cas",                                /* A-10, A-10C */
-  "bomber_b bomber_f fra_e90_cas",                /* the strike stand-in */
-  /* the Su-25 left this list with its hero model (js/hero/pact_su25_frogfoot.js),
-     which stands in a revetment clear of the walls */
-  "nato_e50_cas pact_e50_cas kpa_e50_cas pla_e50_cas",        /* A-1 Skyraider, Il-10 */
-  "roc_e50_cas roc_e80_cas roc_e50_fighter",                  /* F-84G, AT-3, F-86F */
-  /* the Su-17M with Kh-28 (js/hero/ru_su17.js): 13.7 m of spread wing on 18.8 m of length, the lower
-     surface level about 1.9 m up; its row (r 16) draws it smaller than the bombing row (r 17), which
-     clears, and its wingtips go 0.37 m under the tops of the walls */
-  "pact_e60_sead",
-  /* the MiG-17F (js/hero/ru_mig17.js): 9.63 m of wing on 11.36 m of length, drawn to its real proportions (the old stand-in
-     was 13.9 m long); the game scales an aircraft by length, so it reaches 1.03 m into a revetment wall, like the F-86F above */
-  "pact_e50_fighter",
-  /* the MV-22B Osprey (js/hero/us_mv22_osprey.js): 15.5 m across its vertical nacelles on 17.48 m of length; the game
-     scales an aircraft by its length, so at its real proportions the nacelles and the wing go through a revetment wall */
-  "nato_e00_mv22",
-  /* the Chinook HC.1 to HC6A (js/hero/ch47_chinook_family.js): two 60 ft three-blade rotors on a 15.5 m fuselage.
-     Three blades always reach at least R sin 60 = 7.9 m to the side, and the game scales an aircraft by its length
-     (here the blades' 26.1 m of X extent), so at its real proportions the forward head's blades reach about 1.0 m
-     into a revetment wall below its top */
-  "gbr_e80_transport gbr_e90_transport gbr_e00_transport trans_b",
-  /* the CH-46D and CH-46E Sea Knight (js/hero/us_ch46_seaknight.js): two 50 ft three-blade rotors on a 13.7 m
-     fuselage. Three blades always reach at least R sin 60 = 6.6 m to the side, and the game scales an aircraft by its
-     length (here the blades' 21.7 m of X extent), so at its real proportions the blades reach 1.03 m into a
-     revetment wall below its top */
-  "nato_e60_ch46 nato_e80_ch46",
-  /* the C-17A Globemaster III (js/hero/us_c17_globemaster.js): 51.75 m of wing over the winglets on 53.0 m of
-     length; the game scales an aircraft by its length, so at its real proportions it reaches 0.58 m into a
-     revetment wall below its top */
-  "gbr_e00_airlift nato_e90_c17",
-  /* the C-141A and C-141B Starlifter (js/hero/us_c141_starlifter.js): 48.8 m of drooping wing on 44.2 m (A) and
-     51.3 m (B) of length; the game scales an aircraft by its length, so at its real proportions the A reaches
-     1.03 m and the B 0.58 m into a revetment wall below its top */
-  "nato_e60_c141 nato_e80_c141",
-  /* the F9F-8 Cougar (js/hero/us_f9f_cougar.js): 10.52 m of wing on 13.93 m of length over the nose refuelling
-     probe (the BuAer descriptive arrangement's own figures); the game scales an aircraft by its length, so at its
-     real proportions its wingtips reach 0.82 m into a revetment wall below its top. On a carrier it stands folded */
-  "nato_e50_cfighter",
-  /* the Su-24M with Kh-31P (js/hero/ru_su24.js): 17.64 m of wing spread at 16 deg on 24.59 m of length over the
-     nose boom, the wingtips about 2.1 m up with the real -4.5 deg anhedral; the game scales an aircraft by its
-     length, so its three r 16 rows reach 0.43 m into a revetment wall below its top */
-  "pact_e90_sead pact_e00_sead sead_p",
-  /* the E-3 model and the AEW types drawn with it; E-3, E-8C */
-  "awacs_b awacs_f awacs_n nato_e00_awacs gbr_e60_awacs gbr_e90_awacs gbr_e00_awacs fra_e90_awacs fra_e00_awacs nato_e80_awacs nato_e90_awacs pact_e80_awacs pact_e90_awacs pact_e00_awacs awacs_p",
-  /* the transport-EW stand-in (C-160G, Nimrod R.1, Airseeker), EA-6B */
-  "ew_b ew_f gbr_e80_ewair fra_e60_ewair fra_e80_ewair fra_e90_ewair fra_e00_ewair nato_e60_ewair nato_e90_ewair",
-  /* the KC-135 and KC-46 models (js/hero/us_tankers.js) and every tanker row drawn with them: at their real
-     proportions the wing's underside is about 3 m up where the revetment walls stand, inside the 3.66 m bins
-     (the tankers that keep a model of their own, tanker_p and tanker_c, still fit) */
-  "nato_e60_tanker nato_e90_tanker tanker_n nato_e50_tanker nato_e80_tanker tanker_g tanker_b tanker_f pact_e50_tanker pact_e60_tanker",
-  "gbr_e50_tanker gbr_e60_tanker gbr_e90_tanker gbr_e00_tanker fra_e60_tanker fra_e80_tanker fra_e90_tanker fra_e00_tanker deu_e00_tanker pla_e90_tanker",
-  "cstealth_b",                                               /* F-35B */
-  /* the B-52, D to H: the old model fitted only because it was drawn 56.2 m
-     long for a 48.5 m aeroplane, and the game scales an aircraft by its
-     length; drawn to its real proportions its 56.4 m wing reaches through
-     the walls (js/hero/us_b52_stratofortress.js) */
-  "nato_e50_heavybomber nato_e60_heavybomber nato_e80_heavybomber nato_e90_heavybomber nato_e00_heavybomber hbomber_n",
-  /* H-6, Tu-160, B-2 */
-  "sbomber_p pla_e60_heavybomber pla_e80_heavybomber pla_e00_heavybomber sbomber_c pact_e80_stealthbomber sbomber_n nato_e90_stealthbomber",
-  /* the airlift rows that stand in on the C.1 Hercules model (the first of their role in ROLES): its real 40.4 m of
-     span on 29.8 m of length is wider for its length than the old 34 m stand-in, and the game scales an aircraft by
-     length, so the UK and French A400M rows and fra_e00_airlift reach into a wall by more than VOL_TOL. The ten
-     Hercules rows themselves, drawn at r 20, fit. They leave when they get a model of their own. */
-  "airlift_b airlift_f fra_e00_airlift",
-  "trans_k kpa_e50_transport kpa_e60_transport kpa_e80_transport kpa_e00_transport roc_e50_transport"   /* An-2, Po-2, C-46 */
+  /* the B-52G/H row of the 1980s (js/hero/us_b52_stratofortress.js), drawn 77.3 m across where the other B-52 rows are
+     drawn 79.5: its wing comes down to 1.6 m where the wall between two bays stands, 29.2 m from its pad and 7 m
+     behind it, and goes 0.18 m into the wall's face */
+  "nato_e80_heavybomber"
 ].forEach(function (s) { s.split(" ").forEach(function (id) { OVERSIZE[id] = true; }); });
 
 function run() {
