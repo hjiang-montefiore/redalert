@@ -1,5 +1,6 @@
 /* tools/jsc/navradar_check.js - the warships that carried no radar figure
-   now carry their set's, and it lifts the fog in bad weather.
+   now carry their set's, and it lifts the fog in bad weather. So do the
+   amphibious ships.
 
      python3 tools/jsc/run.py index.html --test tools/jsc/navradar_check.js
 
@@ -34,7 +35,22 @@
         own guns and missiles (combat.js fcMul), so a round at a held target
         hits more often with the figure than without it.
    Run on HEAD's data, the first check of [1], [3] and [4] and the one of
-   [5] failed, for all fifteen rows; [2] is the guard and passes on both. */
+   [5] failed, for all fifteen rows; [2] is the guard and passes on both.
+
+   THE AMPHIBIOUS SHIPS. (owner) "amphibious ships should have the radar
+   figures". No assault_sea row of any navy carried a radius, and all
+   thirteen now carry one (rules.js lha_n, lhd_c and lhd_f; eras.js
+   ERA_RADAR_SETS, "the amphibious ships"), held by every check above as the
+   fifteen are. Eight take the figure of a row that carries their set; the
+   Mistral's MRR3D-NG and the Ivan Rogov's MR-310 are carried by no row
+   themselves, so those five take the nearest set of their class - the
+   TRS-3D's and the Head Net-A's - and [1] pins them apart, so that the
+   choice stays visible. [1] also walks each navy's assault slot decade by
+   decade: it never covers or tracks less later. [2] still holds the
+   landing craft, LSTs and support ships to navigation radar only. Run on
+   the data before this change, five checks failed, all on amphibious hulls:
+   the amphibious figures and the slot walk of [1], the first check of [3]
+   and of [4], and [5]. The other checks pass on both. */
 var TT = 32, PASS = 0, FAIL = 0;
 var WX = ["overcast", "night", "rain", "sandstorm"];
 function log(s) { print(s); }
@@ -70,6 +86,29 @@ var FILLED = [
   ["nato_e00_corvette", 14.2, 14, "TRS-3D"],
   ["pact_e50_corvette", 6.6, 7, "Fut-N"]
 ];
+/* the amphibious ships with a set another row carries: [id, radar, radarQ, the set] */
+var AMPH = [
+  ["lha_n", 17.5, 19, "SPS-48G / SPS-49 / SPQ-9B (the Reagan's)"],
+  ["nato_e00_lhd", 17, 18, "SPS-48E / SPS-49 (the Nimitz's pair)"],
+  ["nato_e90_lhd", 16.1, 18, "SPS-52C or SPS-48 / SPS-49"],
+  ["nato_e80_lha", 14.7, 15, "SPS-52B / SPS-40B (the Spruance's SPS-40B)"],
+  ["nato_e60_lph", 12.3, 15, "SPS-40 / SPS-10 (the Knox's fit)"],
+  ["gbr_e90_lph", 16.4, 13, "Type 996 (the Type 23's)"],
+  ["gbr_e00_lph", 17.2, 13, "Type 996 (the Type 23's)"],
+  ["lhd_c", 16.5, 16, "Type 382 (the Liaoning's)"]
+];
+/* and the five whose set no row carries itself: the nearest set of its class */
+var AMPH_NEAREST = [
+  ["lhd_f", 14.6, 11, "MRR3D-NG -> TRS-3D (the K130's)"],
+  ["fra_e00_lhd", 14.6, 11, "MRR3D-NG -> TRS-3D (the K130's)"],
+  ["pact_e80_lpd", 9.8, 12, "MR-310 Head Net-C -> MR-300 Head Net-A (the Grozny's)"],
+  ["pact_e90_lpd", 9.8, 12, "MR-310 Head Net-C -> MR-300 Head Net-A (the Grozny's)"],
+  ["pact_e00_lpd", 9.8, 12, "MR-310 Head Net-C -> MR-300 Head Net-A (the Grozny's)"]
+];
+/* the rows each nearest-class figure is taken from, which must still say it */
+var NEAREST_FROM = [["deu_e00_corvette", 14.6, 11], ["pact_e60_cruiser", 9.8, 12]];
+AMPH = AMPH.concat(AMPH_NEAREST);
+var ALL = FILLED.concat(AMPH);
 /* Every other surface row as HEAD carried it: id radar radarQ ("-" = none),
    measured before the change. */
 var HEAD_SEA = "carrier_c 17 19|carrier_n 18 20|carrier_p 13 14|corvette_r 9 12|cruiser_c 23 41|cruiser_n 22 40|cruiser_p 14 21|" +
@@ -101,10 +140,8 @@ var HEAD_SEA = "carrier_c 17 19|carrier_n 18 20|carrier_p 13 14|corvette_r 9 12|
   "missileboat_c - 8|missileboat_k - 4|missileboat_p - 7|deu_e00_missileboat - -|kpa_e00_missileboat - -|pact_e00_missileboat - -|" +
   "pla_e00_missileboat - -|deu_e60_missileboat - -|kpa_e60_missileboat - -|pact_e60_missileboat - -|pla_e60_missileboat - -|" +
   "deu_e80_missileboat - -|kpa_e80_missileboat - -|nato_e80_missileboat - -|pact_e80_missileboat - -|deu_e90_missileboat - -|" +
-  "kpa_e90_missileboat - -|pla_e90_missileboat - -|" +
-  /* amphibious ships: no assault_sea row of any navy carries a radius */
-  "fra_e00_lhd - -|gbr_e00_lph - -|nato_e00_lhd - -|pact_e00_lpd - -|lha_n - -|lhd_c - -|lhd_f - -|nato_e60_lph - -|nato_e80_lha - -|" +
-  "pact_e80_lpd - -|gbr_e90_lph - -|nato_e90_lhd - -|pact_e90_lpd - -";
+  "kpa_e90_missileboat - -|pla_e90_missileboat - -";
+  /* (the amphibious ships all carry a figure now: AMPH, above) */
 /* the roles held to "navigation radar only", as the roster always had them */
 var NAV_ONLY = ["landing_craft", "transport_sea", "patrol", "minesweeper", "oiler", "repair_sea", "navminelayer"];
 
@@ -182,7 +219,7 @@ function run() {
   setWx("clear");
 
   /* ---------------- 1. data ---------------- */
-  log("[1] the fifteen rows");
+  log("[1] the fifteen rows, and the amphibious ships");
   var bad = [];
   FILLED.forEach(function (f) {
     var d = UNITS[f[0]];
@@ -192,13 +229,57 @@ function run() {
   });
   chk("[1] each carries its set's coverage radius and track quality", !bad.length,
       bad.join("; ") || FILLED.map(function (f) { return f[0] + " " + f[1] + "/" + f[2]; }).join(", "));
+  var abad = [];
+  AMPH.forEach(function (f) {
+    var d = UNITS[f[0]];
+    if (!d) { abad.push(f[0] + " missing"); return; }
+    if (d.radar !== f[1] || d.radarQ !== f[2]) abad.push(f[0] + " " + d.radar + "/" + d.radarQ + " not " + f[1] + "/" + f[2]);
+    if (d.role !== "assault_sea") abad.push(f[0] + " is " + d.role + ", not an amphibious ship");
+  });
+  chk("[1] the amphibious ships carry their set's coverage radius and track quality", !abad.length,
+      abad.join("; ") || AMPH.map(function (f) { return f[0] + " " + f[1] + "/" + f[2]; }).join(", "));
+  var near = [];
+  AMPH_NEAREST.forEach(function (f) { near.push(f[0] + " " + f[3]); });
+  NEAREST_FROM.forEach(function (f) {
+    var d = UNITS[f[0]];
+    if (!d || d.radar !== f[1] || d.radarQ !== f[2]) near.push("BAD " + f[0] + " " + (d && d.radar) + "/" + (d && d.radarQ) + " not " + f[1] + "/" + f[2]);
+  });
+  chk("[1] the Mistral and the Ivan Rogov take the nearest set of its class, and the rows it comes from still say so",
+      !near.some(function (s) { return s.indexOf("BAD ") === 0; }), near.join("; "));
+  /* every assault_sea row is one or the other, so a new one cannot slip in */
+  var aStray = [];
+  for (var ak in UNITS) {
+    var ad = UNITS[ak];
+    if (!ad || ad.role !== "assault_sea") continue;
+    if (!AMPH.some(function (f) { return f[0] === ak; })) aStray.push(ak);
+  }
+  chk("[1] and every amphibious assault row is one of those thirteen", !aStray.length && AMPH.length === 13,
+      aStray.join(", ") || AMPH.length + " rows");
+  /* each navy's assault slot, decade by decade into the present day: a
+     later ship never tracks worse (the _behtest [55] fleet walk does the
+     same over every hull role) */
+  var aDrop = [], aSteps = 0;
+  ["nato", "pact", "pla", "roc", "gbr", "fra", "deu", "kpa"].forEach(function (fc) {
+    var pq = null, pr = null, pe = null;
+    ["e50", "e60", "e80", "e90", "e00", "e20"].forEach(function (e) {
+      var id = unitFor(fc, "assault_sea", e), d = id && UNITS[id];
+      if (!d || d.radarQ === undefined) return;
+      if (pq !== null) {
+        aSteps++;
+        if (d.radarQ < pq || d.radar < pr) aDrop.push(fc + " " + pe + "->" + e + " " + pr + "/" + pq + " -> " + d.radar + "/" + d.radarQ);
+      }
+      pq = d.radarQ; pr = d.radar; pe = e;
+    });
+  });
+  chk("[1] an amphibious slot never covers or tracks less in a later decade", !aDrop.length && aSteps >= 8,
+      aDrop.join("; ") || aSteps + " decade-to-decade steps");
   chk("[1] no era row with a radius is left without a track quality (ERA_RADAR_GAPS)",
       typeof ERA_RADAR_GAPS !== "undefined" && ERA_RADAR_GAPS.length === 0,
       typeof ERA_RADAR_GAPS === "undefined" ? "no gap list" : ERA_RADAR_GAPS.slice(0, 4).join("; "));
   /* no new figure is shorter than the hull's own anti-aircraft weapon
      (_behtest [55] check 7: entities.js needsTrack would gag the gun) */
   var mute = [];
-  FILLED.forEach(function (f) {
+  ALL.forEach(function (f) {
     var d = UNITS[f[0]], far = 0;
     (d.weapons || []).forEach(function (w) { var W = WEAPONS[w]; if (W && W.tgt && W.tgt.air && (W.range || 0) > far) far = W.range; });
     if (far - d.radarQ > 1.0) mute.push(f[0] + " radarQ " + d.radarQ + " vs " + far);
@@ -208,7 +289,7 @@ function run() {
   /* ---------------- 2. nothing else moved ---------------- */
   log("\n[2] every other surface row");
   var moved = [], seen = {}, filled = {};
-  FILLED.forEach(function (f) { filled[f[0]] = 1; });
+  ALL.forEach(function (f) { filled[f[0]] = 1; });
   HEAD_SEA.split("|").forEach(function (s) {
     var a = s.split(" "), d = UNITS[a[0]];
     seen[a[0]] = 1;
@@ -236,7 +317,7 @@ function run() {
   if (!S) return;
   log("  site " + S.x + "," + S.y + " looking " + (S.s > 0 ? "east" : "west"));
   var lostNow = [], litPast = [], keptEyes = [], lostBefore = [], rows3 = [];
-  FILLED.forEach(function (f) {
+  ALL.forEach(function (f) {
     var id = f[0], d = UNITS[id], n = Math.floor(f[1]);
     clearAll();
     var me = put(P, id, S.x, S.y), tIn = put(E, "helo_p", S.x + S.s * n, S.y), tOut = put(E, "helo_p", S.x + S.s * (n + 2), S.y);
@@ -265,17 +346,17 @@ function run() {
   setWx("clear"); Game.recomputeFog();
   rows3.forEach(function (s) { log("  " + s); });
   chk("[3] overcast, night, rain, sandstorm: each hull's radar lights a contact floor(radar) tiles off (G.radarHeld, the fog grid)",
-      !lostNow.length, lostNow.slice(0, 6).join("; ") || FILLED.length * WX.length + " hull-weathers");
+      !lostNow.length, lostNow.slice(0, 6).join("; ") || ALL.length * WX.length + " hull-weathers");
   chk("[3] and nothing two tiles past its radius: the radius is the figure", !litPast.length, litPast.slice(0, 6).join("; "));
   chk("[3] without the figure, as on HEAD, the night loses that contact wherever the crew's eyes fall short",
-      !lostBefore.length && keptEyes.length < FILLED.length, lostBefore.join("; ") ||
-      (FILLED.length - keptEyes.length) + " of " + FILLED.length + " lost" + (keptEyes.length ? "; inside night eyes anyway: " + keptEyes.join(", ") : ""));
+      !lostBefore.length && keptEyes.length < ALL.length, lostBefore.join("; ") ||
+      (ALL.length - keptEyes.length) + " of " + ALL.length + " lost" + (keptEyes.length ? "; inside night eyes anyway: " + keptEyes.join(", ") : ""));
 
   /* ---------------- 4. the commander's picture ---------------- */
   log("\n[4] the commander's picture at night");
   var aiLost = [], aiBefore = [], aiN = 0;
   setWx("night");
-  FILLED.forEach(function (f) {
+  ALL.forEach(function (f) {
     var id = f[0], d = UNITS[id], n = Math.floor(f[1]);
     clearAll();
     var me = put(E, id, S.x, S.y), t = put(P, "helo_p", S.x + S.s * n, S.y);
@@ -296,7 +377,7 @@ function run() {
   /* ---------------- 5. fire control ---------------- */
   log("\n[5] the set lays the ship's own rounds (combat.js fcMul), clear day, nobody else's radar");
   var worse = [], lines = [];
-  FILLED.forEach(function (f) {
+  ALL.forEach(function (f) {
     var id = f[0], d = UNITS[id];
     var wk = null;
     (d.weapons || []).forEach(function (w) { var W = WEAPONS[w]; if (!wk && W && W.tgt && W.tgt.sea && W.dmg > 0 && !W.landAttack) wk = w; });

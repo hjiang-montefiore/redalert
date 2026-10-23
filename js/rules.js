@@ -1026,6 +1026,7 @@ var UNITS = {
   lha_n: { from:"e20", service:"2014", confidence:"high", fac:"nato", role:"assault_sea", name:"America LHA", full:"USS America (LHA-6), America-class amphibious assault ship", cat:"naval",
     cost:3750, oil:79, time:53, hp:3400, armor:"heavy", speed:1.48, turn:0.6, sight:12.2, r:30, mass:0,
     layer:"sea", weapons:["sam_ram","ciws_phalanx"], prereq:["navalyard","airbase"], tech:2, ciws:0.64, rcs:2.6,
+    radar:17.5, radarQ:19,   /* AN/SPS-48G three-dimensional, AN/SPS-49 two-dimensional and AN/SPQ-9B (en.wikipedia, America class): the three sets the Reagan carries, so nato_e00_carrier's figures. eras.js ramps the American era amphibious ships from this 17.5 (ERA_RADAR_SETS, "the amphibious ships"). */
     carrier:3, heloCarrier:true, deckTakes:["nato_e00_mv22","nato_e80_ch53","trans_n","helo_n","stovl_n"], cargo:24, amphib:true,
     desc:"Commissioned in 2014 and built for aircraft rather than boats: the Makin Island design with the well deck taken out for a larger hangar, more aviation fuel and spares, so her 1,687 Marines go ashore by air alone. The third ship, Bougainville, puts the well deck back. She sails with three MV-22B Ospreys; her deck also takes the CH-53E Super Stallion, the Marines' F-35B, and the Army's UH-60M and AH-64E, which have qualified on her sister Tripoli." },
 
@@ -1072,11 +1073,13 @@ var UNITS = {
   lhd_f: { from:"e20", service:"2006", confidence:"high", fac:"fra", role:"assault_sea", name:"Mistral PHA", full:"Mistral-class amphibious helicopter carrier (PHA)", cat:"naval",
     cost:2750, oil:61, time:48, hp:2500, armor:"heavy", speed:1.39, turn:0.6, sight:11.2, r:30, mass:0,
     layer:"sea", weapons:["sam_simbad"], prereq:["navalyard","airbase"], tech:2, ciws:0.30, rcs:2.2,
+    radar:14.6, radarQ:11,   /* Thales MRR3D-NG, a C-band medium-range three-dimensional air and surface search set, with a DRBN-38A navigation radar (en.wikipedia, Mistral class; fr.wikipedia, Classe Mistral). NO ROW CARRIES THE MRR3D-NG ITSELF, so this is the nearest set of its class: the TRS-3D, also a C-band medium-range 3-D air and surface set, at the K130's 14.6 and 11 (deu_e00_corvette; see eras.js ERA_RADAR_SETS, "the amphibious ships"). */
     carrier:3, heloCarrier:true, deckTakes:["trans_f", "helo_f", "asw_helo_f"], cargo:6, amphib:true, wellDeck:true, wellCraft:{ fra_ctm:4 },
     desc:"Three Mistrals - Mistral, Tonnerre and Dixmude - are France's amphibious force: sixteen heavy helicopters on six spots, 450 troops, seventy vehicles including thirteen Leclerc tanks, and a well deck for four landing craft, with a 69-bed hospital and a command staff aboard. Renamed amphibious helicopter carriers in 2019. She sails with three of the Army's NH90 Caiman transports; her deck also takes its Tigre and the Navy's NH90." },
   lhd_c: { from:"e20", service:"2021", confidence:"high", fac:"pla", role:"assault_sea", name:"Type 075 LHD", full:"Hainan, Type 075 landing helicopter dock", cat:"naval",
     cost:3600, oil:79, time:52, hp:3250, armor:"heavy", speed:1.46, turn:0.6, sight:11.2, r:30, mass:0,
     layer:"sea", weapons:["sam_hq10"], prereq:["navalyard","airbase"], tech:2, ciws:0.60, rcs:2.5,
+    radar:16.5, radarQ:16,   /* Type 382 (H/LJQ-382) long-range three-dimensional search, with a small active array beside it (en.wikipedia, Type 075, after Wertheim, USNI Proceedings, August 2024; ja.wikipedia, the latest Type 382). The Liaoning row, pla_e00_carrier, carries the Type 382, so its figures. */
     carrier:3, heloCarrier:true, deckTakes:["trans_c","helo_c"], cargo:11, amphib:true, wellDeck:true, wellCraft:{ lst:3 },
     desc:"China's first amphibious assault ship, commissioned in 2021: 232 metres, seven helicopter spots and a hangar for 28 helicopters, 800 marines and sixty armoured vehicles, with three hovercraft in the well deck. Four serve. She sails with three Z-20s; her Z-8 and Z-18 are not in the game, and her deck also takes the Army's Z-10." },
 };

@@ -13265,6 +13265,57 @@ var ERA_RADAR_SETS = {
   nato_e00_corvette: { radar: 14.2, radarQ: 14 },  /* LCS: the Freedom's TRS-3D (en.wikipedia, Freedom class), and the 14 the present-day corvette_n already holds for the same ship. Under the Perry's 20, and rightly: a medium-range set on a littoral hull with no area missile, in the slot the SPS-49 left. */
   pact_e50_corvette: { radar: 6.6,  radarQ: 7 },   /* Riga: Fut-N 'Slim Net', Guys-1M4 on the first ships (ru.wikipedia, Project 50) - the Kotlin's set, so the Kotlin's 6.6 and 7. */
 
+  /* ---- the amphibious ships ----
+     (owner) "amphibious ships should have the radar figures". No assault_sea
+     row in any navy carried a radius, so the generator had nothing to ramp
+     from: these hulls lifted no fog, held no air track of their own, fired
+     at aircraft by eye and radiated nothing an enemy receiver could hear,
+     although every one of them carries a real air-search set. Each now takes
+     the figure of a row that already carries that set, by the rule in
+     rules.js RADAR_COVERAGE and the frigates above - or, for the two classes
+     whose set no row carries, the nearest set of its class:
+       - the America (lha_n, rules.js) carries the SPS-48, SPS-49 and SPQ-9B,
+         the Reagan's three sets, so nato_e00_carrier's 17.5 and 19; and the
+         American era rows take the generator's own ramp from that 17.5 -
+         12.3, 14.7, 16.1, 17.0 for e60 to e00 - as the American frigates do
+         from the LCS. Cross-checks, the same sets in the same decade: the
+         Nimitz's SPS-48C and SPS-49 at 15.1 in e80, its SPS-48E and
+         SPS-49(V)5 at 16.6 in e90, the Reagan at 17.5 in e00. (The Knox's
+         SPS-40 stands at 10.2 against the Iwo Jima's 12.3: the Knox is on
+         the LCS's ramp, not this one.)
+       - the Ocean carries the Type 996 alone, as the Type 23 does in the
+         same two decades, so the Type 23's figures (gbr_e90_corvette and
+         gbr_e00_corvette).
+       - the Type 075 (lhd_c, rules.js) carries the Type 382, the Liaoning's
+         set, so pla_e00_carrier's 16.5 and 16.
+       - the Mistral and the Ivan Rogov carry sets that NO row in the game
+         carries itself, so each takes the nearest set of its class, and the
+         rows say so (below; decided for the owner, who asked that the
+         amphibious ships have figures): the Mistral's MRR3D-NG, a C-band
+         medium-range 3-D set, takes the TRS-3D's figures, the same class of
+         set, from the K130 (deu_e00_corvette, 14.6 and 11); the Ivan Rogov's
+         MR-310 Angara, Head Net-C, the 3-D development of the Head Net
+         family, takes the Head Net-A's, the MR-300 Angara on the Grozny
+         (pact_e60_cruiser, 9.8 and 12). The MR-310 is on the Moskva and the
+         Kiev, but only under the MR-600 Top Sail whose figure those rows
+         carry, so neither is its own figure.
+     radarQ comes from the same row as the radius, as everywhere else in
+     this table. radarGen is left alone, as it is on
+     the frigates above. These ten rows are hand-written further down this
+     file (navy piece 5 and the British, French and Soviet amphibious
+     blocks), after this table's first pass, so it is applied again at the
+     end of the file (below). */
+  nato_e60_lph: { radar: 12.3, radarQ: 15 },  /* Iwo Jima: commissioned with an AN/SPS-12, soon replaced by the AN/SPS-40, over an SPS-10 for the surface (de.wikipedia, Iwo-Jima-Klasse; ja.wikipedia, after Sharpe 1989 and Prezelin 1990). The 15 is the SPS-40 on the Knox, the same fit in the same decade, and on the Spruance. */
+  nato_e80_lha: { radar: 14.7, radarQ: 15 },  /* Tarawa: AN/SPS-52B three-dimensional and AN/SPS-40B two-dimensional (en.wikipedia AN/SPS-40 and AN/SPS-52; ja.wikipedia Tarawa class, after Prezelin 1990 pp. 818-819); the SPS-48E and SPS-40E came later (FAS, LHA-1). The 15 is the Spruance's SPS-40B, the same set in the same navy and decade. The one row with the SPS-52 and SPS-40 together, the Lutjens, says 14 - taken, the slot would track worse with a 3-D set added than the Iwo Jima did without one. */
+  nato_e90_lhd: { radar: 16.1, radarQ: 18 },  /* Wasp: an AN/SPS-52C or SPS-48 three-dimensional set backed by an AN/SPS-49 (en.wikipedia, Wasp class, after Bishop and Chant). The 18 is the Nimitz's SPS-48E and SPS-49(V)5 in the same decade. */
+  nato_e00_lhd: { radar: 17.0, radarQ: 18 },  /* Wasp: SPS-48E and SPS-49(V)7 with the Mk 23 TAS (FAS, LHD-1 class). The 18 is the same pair on the Nimitz; the Reagan's 19 adds the SPQ-9B, which the America carries and these lists do not show on a Wasp. */
+  gbr_e90_lph:  { radar: 16.4, radarQ: 13 },  /* Ocean: the Type 996, replaced by the Type 997 Artisan only in 2015 (fr.wikipedia, HMS Ocean (L12); en.wikipedia, Type 997 Artisan). The Type 23's Type 996 in the same decade. Over the Illustrious's 14.6 beside it, which carries the Type 996 with a Type 1022: that gap is the carrier role's ramp, not the set. */
+  gbr_e00_lph:  { radar: 17.2, radarQ: 13 },  /* Ocean: still the Type 996 (as above), and gbr_e00_corvette's figures, the same set in the same decade. */
+  fra_e00_lhd:  { radar: 14.6, radarQ: 11 },  /* Mistral: the Thales MRR3D-NG, a C-band medium-range 3-D air and surface search set, with a DRBN-38A navigation radar (en.wikipedia, Mistral class; fr.wikipedia, Classe Mistral). NO ROW CARRIES THE MRR3D-NG ITSELF, so this is the nearest set of its class: the TRS-3D, also a C-band medium-range 3-D air and surface set, at the K130's 14.6 and 11 (deu_e00_corvette). The same figures as the present-day lhd_f, which is this class. */
+  pact_e80_lpd: { radar: 9.8,  radarQ: 12 },  /* Ivan Rogov: the MR-310 Angara, NATO 'Head Net-C', for general search (ru.wikipedia, Aleksandr Nikolayev, the second ship of Project 1174; en.wikipedia gives "E-band surveillance radar"), with two navigation sets and fire-control sets for the 76 mm, the AK-630s and Osa-M. NO ROW CARRIES THE MR-310 ITSELF - the Moskva and the Kiev have it only under the MR-600 Top Sail, whose figure those rows carry - so this is the nearest set of its class: the MR-300 Angara, 'Head Net-A', of which the MR-310 is the 3-D development (ru.wikipedia lists the MR-310 Angara-A among three-coordinate sets), at the Grozny's 9.8 and 12 (pact_e60_cruiser). */
+  pact_e90_lpd: { radar: 9.8,  radarQ: 12 },  /* Mitrofan Moskalenko: the same ship and the same MR-310, so the same nearest-class figure as above - no row carries the MR-310 itself. */
+  pact_e00_lpd: { radar: 9.8,  radarQ: 12 },  /* The same, and still no row carrying the MR-310 itself: the Head Net-A's figure, as above. */
+
   /* ---- missile boats ----
      A fast attack craft's radar is a surface-search set. It hunts ships and
      it is not an air-defence platform, and the numbers refuse to pretend. */
@@ -13282,7 +13333,17 @@ var ERA_RADAR_SETS = {
    them. Any row it names that no longer exists is skipped in silence; the
    gap list below is what a test reads. */
 var ERA_RADAR_GAPS = [];
-(function () {
+/* AND IT RUNS AGAIN at the end of this file. The amphibious ships are
+   hand-written further down (navy piece 5, and the British, French and
+   Soviet blocks), so this first pass found no row for any of their entries
+   and skipped them in silence: measured, every one was still bare after it,
+   and the gap sweep never saw them. The second pass fills them and sweeps
+   every era row again - measured before this change, no era row in the
+   finished roster has a radius without a track quality, so the list stays
+   empty. Fills only what is missing, so running it twice changes nothing it
+   already did. */
+function applyEraRadarSets() {
+  ERA_RADAR_GAPS.length = 0;
   var qn = 0, gn = 0;
   for (var _rid in ERA_RADAR_SETS) {
     var _ru = UNITS[_rid];
@@ -13301,7 +13362,8 @@ var ERA_RADAR_GAPS = [];
     if (!_cu.radar || _cu.role === "spaag") continue;
     if (_cu.radarQ === undefined) ERA_RADAR_GAPS.push(_cid + " radar=" + _cu.radar);
   }
-})();
+}
+applyEraRadarSets();
 
 /* ==================================================================
    THE UNITED STATES NAVY'S ANTI-SUBMARINE HELICOPTERS, DECADE BY DECADE
@@ -14534,4 +14596,7 @@ Object.assign(UNITS, {
     from:"e90", service:"1995", confidence:"high",
     desc:"A strategic jet that lands where a Hercules does: 3,500 ft of runway, or an unpaved one. The first squadron went operational on 17 January 1995 after a troubled, over-budget development. One Abrams, two Bradleys or three Strykers, or 102 paratroopers, with a crew of three. On 26 March 2003 fifteen of them dropped a thousand paratroopers of the 173rd Airborne over Bashur, in northern Iraq, and then flew in their Abrams and Bradleys." },
 });
+/* ERA_RADAR_SETS once more, now that every row in this file exists: the
+   amphibious ships were defined after its first pass (see there). */
+if (typeof applyEraRadarSets === "function") applyEraRadarSets();
 if (typeof reindexRoles === "function") reindexRoles();

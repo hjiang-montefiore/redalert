@@ -2992,7 +2992,7 @@ try{
     /* ---- 1. no era platform is left on the radar * 1.6 fallback ---- */
     var blind = [], sensors = 0;
     ["awacs","cawacs","destroyer","cruiser","carrier","corvette","missileboat",
-     "sead","ewair","ewveh","radarv","sam","fighter","stealthfighter"].forEach(function(r){
+     "sead","ewair","ewveh","radarv","sam","fighter","stealthfighter","assault_sea"].forEach(function(r){
       facs.forEach(function(f){
         eraOrd.forEach(function(e){
           var id = unitFor(f, r, e);
@@ -3147,7 +3147,11 @@ try{
        littoral hull with a medium-range TRS-3D and no area missile in the
        slot a Perry's SPS-49 left. Anything else
        dropping - a Ticonderoga's SPY-1A quietly cut below the Long Beach
-       beside it, say - fails here. */
+       beside it, say - fails here. The amphibious slots are walked too, now
+       that they carry figures (eras.js ERA_RADAR_SETS, "the amphibious
+       ships"): Iwo Jima, Tarawa, Wasp twice and the America, the Ocean's two
+       decades, the Mistral's two, the Ivan Rogov's three and the Type 075,
+       and none of them goes down. */
     var HULL_DROP = {
       "nato/destroyer e60->e80": "Spruance: an ASW hull with SPS-40B and no area missile",
       "fra/destroyer e60->e80":  "Tourville F67: an ASW hull with only Crotale",
@@ -3157,7 +3161,7 @@ try{
     };
     var hdrop = [], hsteps = 0;
     facs.forEach(function(f){
-      ["destroyer","cruiser","carrier","corvette","missileboat"].forEach(function(r){
+      ["destroyer","cruiser","carrier","corvette","missileboat","assault_sea"].forEach(function(r){
         var pq = null, pe = null;
         eraOrd.concat(["e20"]).forEach(function(e){
           var id = unitFor(f, r, e);
