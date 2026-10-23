@@ -649,9 +649,16 @@ var Render3D = (function () {
      vertical and holds its height; a tail rotor stops wherever it stops, so
      its whole disc counts - none of the rotorcraft reaches below its skids
      or wheels with it, but a new model may. And where it is: every point
-     within 2 cm of it, a metre apart - wheels level with each other, which a
-     carrier's deck markings, 4 to 5 cm proud, can stand at two heights.
-     Once per template. */
+     within FOOT_BAND of it, a quarter of a metre apart, each with its height
+     over the lowest - wheels level with each other, which a carrier's deck
+     markings, 4 to 5 cm proud, can stand at two heights. settle counts the
+     points within 2 cm of the lowest AS DRAWN, which aboard a ship
+     (aboardK) is 2 cm over k at its game size: a UH-1N's skid toes, 6 cm
+     over its lowest point at game size and 2 cm over it at the Iwo Jima's
+     proportion, stood 8 cm into her after flash while only the points
+     within 2 cm at game size, and a metre apart, were asked. Once per
+     template. */
+  const FOOT_BAND = 0.15, FOOT_MAX = 96;
   function footOf(tpl) {
     if (tpl._foot !== undefined) return tpl._foot;
     tpl.updateMatrixWorld(true);
@@ -670,9 +677,13 @@ var Render3D = (function () {
     const pts = [];
     walk(tpl, false, 0, 0, (y) => { if (y < lo) lo = y; });
     walk(tpl, false, 0, 0, (y, x, z) => {
-      if (y > lo + 0.02 || pts.length >= 32) return;
-      for (let i = 0; i < pts.length; i += 2) if (Math.abs(pts[i] - x) < 1 && Math.abs(pts[i + 1] - z) < 1) return;
-      pts.push(x, z);
+      const dy = y - lo;
+      if (dy > FOOT_BAND) return;
+      for (let i = 0; i < pts.length; i += 3) if (Math.abs(pts[i] - x) < 0.25 && Math.abs(pts[i + 1] - z) < 0.25) {
+        if (dy < pts[i + 2]) { pts[i] = x; pts[i + 1] = z; pts[i + 2] = dy; }   // the lowest of each quarter metre
+        return;
+      }
+      if (pts.length < 3 * FOOT_MAX) pts.push(x, z, dy);
     });
     tpl._footPts = pts;
     return (tpl._foot = lo < Infinity ? lo : 0);
@@ -1015,7 +1026,8 @@ var Render3D = (function () {
     for (let n = 0; n < (nudge ? NUDGE.length : 2); n += 2) {
       const ox = sp.x + NUDGE[n], oz = sp.z + NUDGE[n + 1];
       let y = -Infinity, y0 = Infinity;
-      for (let i = 0; i < P.length; i += 2) {
+      for (let i = 0; i < P.length; i += 3) {
+        if (P[i + 2] * q > 0.02) continue;                // over 2 cm above its lowest point as drawn
         const h = surfaceUnder(stpl, ox + (P[i] * c + P[i + 1] * sn) * q, sp.L + 1, oz + (-P[i] * sn + P[i + 1] * c) * q);
         if (Math.abs(h - sp.L) < 1) { if (h > y) y = h; if (h < y0) y0 = h; }
       }
