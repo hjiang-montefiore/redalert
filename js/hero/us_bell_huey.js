@@ -539,4 +539,5 @@ var HeroBellHuey = (function () {
 })();
 
 UNIT_MODELS["nato_e60_gunship"]   = { len: 16.4, build: HeroBellHuey.ah1g };
-UNIT_MODELS["nato_e60_transport"] = { len: 17.1, build: HeroBellHuey.uh1d };
+/* nato_e60_transport is drawn by hero/us_uh1_huey_family.js (the UH-1D,
+   H and N family, 2026-10-22); this file keeps the AH-1G. */

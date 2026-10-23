@@ -462,6 +462,11 @@ var OVERSIZE = {};
   /* the MV-22B Osprey (js/hero/us_mv22_osprey.js): 15.5 m across its vertical nacelles on 17.48 m of length; the game
      scales an aircraft by its length, so at its real proportions the nacelles and the wing go through a revetment wall */
   "nato_e00_mv22",
+  /* the Chinook HC.1 to HC6A (js/hero/ch47_chinook_family.js): two 60 ft three-blade rotors on a 15.5 m fuselage.
+     Three blades always reach at least R sin 60 = 7.9 m to the side, and the game scales an aircraft by its length
+     (here the blades' 26.1 m of X extent), so at its real proportions the forward head's blades reach about 1.0 m
+     into a revetment wall below its top */
+  "gbr_e80_transport gbr_e90_transport gbr_e00_transport trans_b",
   /* the C-17A Globemaster III (js/hero/us_c17_globemaster.js): 51.75 m of wing over the winglets on 53.0 m of
      length; the game scales an aircraft by its length, so at its real proportions it reaches 0.58 m into a
      revetment wall below its top */
@@ -470,6 +475,10 @@ var OVERSIZE = {};
      51.3 m (B) of length; the game scales an aircraft by its length, so at its real proportions the A reaches
      1.03 m and the B 0.58 m into a revetment wall below its top */
   "nato_e60_c141 nato_e80_c141",
+  /* the F9F-8 Cougar (js/hero/us_f9f_cougar.js): 10.52 m of wing on 13.93 m of length over the nose refuelling
+     probe (the BuAer descriptive arrangement's own figures); the game scales an aircraft by its length, so at its
+     real proportions its wingtips reach 0.82 m into a revetment wall below its top. On a carrier it stands folded */
+  "nato_e50_cfighter",
   /* the Su-24M with Kh-31P (js/hero/ru_su24.js): 17.64 m of wing spread at 16 deg on 24.59 m of length over the
      nose boom, the wingtips about 2.1 m up with the real -4.5 deg anhedral; the game scales an aircraft by its
      length, so its three r 16 rows reach 0.43 m into a revetment wall below its top */
