@@ -149,10 +149,13 @@ function contract(id, entry) {
   var wp = def.wellPts, ex = ud.wellExit, inn = ud.wellInner;
   var pts = Math.abs(ex.x - wp.exit) < 3 && Math.abs(ex.y) < 2 && Math.abs(inn.y) < 2 && inn.x > ex.x && inn.x < wp.exit + wp.well;
   d.push("sill " + ex.x.toFixed(1) + " m (game " + wp.exit.toFixed(1) + "), first berth " + inn.x.toFixed(1) + " m (game " + wp.inner.toFixed(1) + ")");
-  /* on her drawn hull: render3d.js getModel's naval length over the model's measured one */
-  var bb = new THREE.Box3().setFromObject(root), act = Math.max(0.5, bb.max.x - bb.min.x);
-  var pxm = def.r * 2.1 * 1.9 * CFG.MODEL_SCALE / act, ax = Unit.wellAxis(def);
-  var dE = Math.abs(ex.x * pxm - ax.exit), dI = Math.abs(inn.x * pxm - ax.inner);
+  /* on her drawn hull: render3d.js getModel's naval length over the model's
+     measured one; the game's points drawn on her as render3d.js wellScale
+     draws a craft at them (times Unit.navalDraw: the game's well keeps its
+     length whatever size she is drawn at) */
+  var bb = new THREE.Box3().setFromObject(root), act = Math.max(0.5, bb.max.x - bb.min.x), nd = Unit.navalDraw(def);
+  var pxm = def.r * 2.1 * 1.9 * CFG.MODEL_SCALE * nd / act, ax = Unit.wellAxis(def);
+  var dE = Math.abs(ex.x * pxm - ax.exit * nd), dI = Math.abs(inn.x * pxm - ax.inner * nd);
   var px = dE < TT * 0.25 && dI < TT * 0.25;
   d.push("drawn " + dE.toFixed(1) + " and " + dI.toFixed(1) + " px from the game's sill and berth");
   return { ok: swing && pts && px, d: d.join("; ") };
@@ -199,7 +202,7 @@ function run() {
   /* where the stub's hinge is in the world, against the game's sill */
   rm.grp.updateMatrixWorld(true);
   var hp = new THREE.Vector3(); rm.gate.getWorldPosition(hp);
-  var ax = Unit.wellAxis(mi.def), gx = mi.x + Math.cos(mi.ang) * ax.exit, gy = mi.y + Math.sin(mi.ang) * ax.exit;
+  var ax = Unit.wellAxis(mi.def), nM = Unit.navalDraw(mi.def), gx = mi.x + Math.cos(mi.ang) * ax.exit * nM, gy = mi.y + Math.sin(mi.ang) * ax.exit * nM;
   var off = Math.hypot(hp.x / H.PXM - gx, hp.z / H.PXM - gy);
   chk("the Mistral (stub) has her gate record, shut at rest, and its hinge on the game's sill",
       !!rm.gate && rm.gate.rotation.y === 0 && off < TT * 0.25, "hinge " + off.toFixed(1) + " px from the sill");
@@ -341,11 +344,11 @@ function transit(sid, cid, O, spawnAt, frames, wb) {
   var rs = recOf(s), ax = Unit.wellAxis(s.def);
   if (!rs || !rs.gate) { chk(tag + ": her model is drawn with its gate", false, ""); clearAway([s, c]); return; }
   var sS = rs.tpl.userData.inner.scale.x;                        // world metres to her model's metre
-  var Lg = c.def.r * 2.1 * H.PXM * 1.9 * CFG.MODEL_SCALE;         // its game length, drawn (getModel)
+  var Lg = c.def.r * 2.1 * H.PXM * 1.9 * CFG.MODEL_SCALE * Unit.navalDraw(c.def);   // its game length, drawn (getModel)
   /* its length at her proportion, from fresh builds of the two models: its
      measured length in metres times her drawn length over her measured one */
   var cb = new THREE.Box3().setFromObject(UNIT_MODELS[cid].build(THREE, typeof Models3D !== "undefined" ? Models3D : null, { team: "#4a7bd0" }));
-  var kt = (cb.max.x - cb.min.x) * (s.def.r * 2.1 * H.PXM * 1.9 * CFG.MODEL_SCALE / wb.len) / Lg;
+  var kt = (cb.max.x - cb.min.x) * (s.def.r * 2.1 * H.PXM * 1.9 * CFG.MODEL_SCALE * Unit.navalDraw(s.def) / wb.len) / Lg;
   var inv = new THREE.Matrix4(), lastL = null, jump = 0, jumpAt = "";
   function rel() { return (c.x - s.x) * Math.cos(s.ang) + (c.y - s.y) * Math.sin(s.ang); }
   /* the craft's drawn box and the gate's, in her model metres, this frame */

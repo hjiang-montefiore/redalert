@@ -44,6 +44,14 @@
      F. moved to another ship's deck, or to an airbase, while it stands on
         one, and on a ship sunk under it: it leaves from where it is drawn;
      G. an enemy deck machine does not jump when its ship goes into the fog;
+     H. TRUE RATIO (render3d.js aboardK): a machine on a ship's deck or pad
+        is drawn at her proportion - an F/A-18E on the Ford (carrier_n) and
+        an MH-60R on a Burke's pad (destroyer_n), their drawn length against
+        hers as their models' metres are against hers - and it grows back to
+        its game size as it climbs away and shrinks to her proportion coming
+        down to her, never more than STEP of its game length in a frame
+        (tools/jsc/wellgate3d_check.js holds a landing craft in her well to
+        the same), and is exactly its game size once clear of her;
    and what must not move: an aircraft in flight keeps its cruise altitude
    and the game's position; the mouse picks a parked machine where it is
    drawn, and its selection ring stands over it; the damage module's fire
@@ -924,6 +932,85 @@ function run() {
     for (var i2 = 0; i2 < Game.fog.length; i2++) Game.fog[i2] = 2;
     Game.fogEnabled = false;
     drop(ec.wing().concat([ec]));
+  }
+
+  /* ---- H. at her proportion on her deck, and back to its game size off it ---- */
+  if (want("H")) {
+    var STEP = 0.10, sH = seaSpot(16, 12) || s1;
+    P.faction = "nato"; P.era = "e20";
+    Render3D.setCam(sH.x * TT, sH.y * TT);
+    /* a group's drawn length and beam along its own axes (its heading, roll
+       and pitch taken off for the measure), rotors and blurs left out: they
+       stop wherever they stop */
+    var skipR = function (o) { for (var a = o; a; a = a.parent) if (a.name === "rotor" || a.name === "rotordisc" || a.name === "tailrotor") return true; return false; };
+    var boxOf = function (obj) {
+      var b = new THREE.Box3();
+      obj.updateMatrixWorld(true);
+      obj.traverse(function (o) {
+        if (!o.isMesh || !o.geometry || !shown(o) || blur(o) || skipR(o)) return;
+        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+        var bb = o.geometry.boundingBox;
+        for (var c = 0; c < 8; c++) b.expandByPoint(_v.set(c & 1 ? bb.max.x : bb.min.x, c & 2 ? bb.max.y : bb.min.y, c & 4 ? bb.max.z : bb.min.z).applyMatrix4(o.matrixWorld));
+      });
+      return b;
+    };
+    var drawnL = function (u) {
+      var g = recOf(u).grp, rx = g.rotation.x, ry = g.rotation.y, rz = g.rotation.z;
+      g.rotation.set(0, 0, 0);
+      var b = boxOf(g);
+      g.rotation.set(rx, ry, rz); g.updateMatrixWorld(true);
+      return b.max.x - b.min.x;
+    };
+    /* its model's own length, in its metres, from a fresh build */
+    var modelL = function (id) {
+      var M = UNIT_MODELS[id]; if (!M) return NaN;
+      var b = boxOf(M.build(THREE, typeof Models3D !== "undefined" ? Models3D : null, { team: "#4a7bd0" }));
+      return b.max.x - b.min.x;
+    };
+    var cases = [["carrier_n", "cfighter_n", "an F/A-18E on the Ford"], ["destroyer_n", "asw_helo_n", "an MH-60R on a Burke's pad"]];
+    cases.forEach(function (cs) {
+      var ship = Game.spawnUnitAt(P, cs[0], sH.x * TT + 16, sH.y * TT + 16), m = Game.spawnUnitAt(P, cs[1], sH.x * TT + 16, sH.y * TT + 16);
+      ship.ang = 0.6; ship.moving = false;
+      park([m], ship);
+      frames(4, true);
+      var r = recOf(m), k = r ? r.grp.scale.x : NaN, Ls = drawnL(ship), La = drawnL(m), Lg = La / k;
+      var mS = modelL(cs[0]), mA = modelL(cs[1]), want2 = mA / mS, got = La / Ls;
+      var gap = onDeck(m, ship).gap;
+      chk("H. " + cs[2] + " is drawn at her proportion, standing on her deck",
+          k > 0.02 && k < 1 && Math.abs(got / want2 - 1) < 0.01 && Math.abs(gap) <= TOL,
+          "drawn " + La.toFixed(1) + " m (" + Lg.toFixed(1) + " m at its game size, scale " + k.toFixed(3) + ") on a hull drawn " + Ls.toFixed(1) + " m: " +
+          got.toFixed(4) + " of her; its model " + mA.toFixed(1) + " m to hers " + mS.toFixed(1) + " m: " + want2.toFixed(4) + "; its lowest point " + f2(gap) + " m off her deck");
+      /* off her deck: it grows back to its game size as it climbs */
+      var tr = tracker(m), ks = [], step = 0, prev = k;
+      m.stance = "fire";
+      m.give({ type: "move", x: m.x + Math.cos(1.1) * 14 * TT, y: m.y + Math.sin(1.1) * 14 * TT });
+      tr.sample();
+      for (var f = 0; f < 120; f++) {
+        frames(1, true); tr.sample();
+        var q = recOf(m).grp.scale.x;
+        ks.push(q); step = Math.max(step, Math.abs(q - prev) * Lg); prev = q;
+      }
+      var up = ks.every(function (q, j) { return q >= (j ? ks[j - 1] : k) - 1e-9; }), grown = ks.filter(function (q) { return q < 1; }).length;
+      chk("H. " + cs[2] + ": lifting off, it grows back to its game size as it climbs, never more than " + (STEP * 100) + "% of it a frame, without a jump in place",
+          up && ks[ks.length - 1] === 1 && grown > 5 && step <= STEP * Lg && tr.step < 2.5,
+          "over " + grown + " frames, " + (k * Lg).toFixed(1) + " m to " + (ks[ks.length - 1] * Lg).toFixed(1) + " m; the most it grew in a frame " + step.toFixed(2) +
+          " m (" + (step / Lg * 100).toFixed(1) + "% of its game length); the most a frame moved it beyond the game's own step " + tr.step.toFixed(2) + " m");
+      /* and back to her: it shrinks to her proportion as it comes down */
+      m.give({ type: "rtb" });
+      var kd = [], stepD = 0, prevD = 1, onAt = -1;
+      for (var f2_ = 0; f2_ < 1500 && onAt < 0; f2_++) {
+        frames(1, true);
+        var q2 = recOf(m).grp.scale.x;
+        kd.push(q2); stepD = Math.max(stepD, Math.abs(q2 - prevD) * Lg); prevD = q2;
+        if (m.order.type === "parked" && Math.abs(onDeck(m, ship).gap) <= TOL && Math.abs(q2 - k) < 1e-9) onAt = f2_;
+      }
+      var down = kd.every(function (q, j) { return !j || q <= kd[j - 1] + 1e-3; }), shrank = kd.filter(function (q) { return q < 1 && q > k + 1e-9; }).length;
+      chk("H. " + cs[2] + ": coming back, it shrinks to her proportion as it comes down onto her deck, never more than " + (STEP * 100) + "% of its game length a frame",
+          onAt > 0 && down && shrank > 5 && stepD <= STEP * Lg,
+          (onAt > 0 ? "on her deck at " + k.toFixed(3) + " after " + (onAt / 30).toFixed(1) + " s" : "NOT back on her deck") + ", shrinking over " + shrank +
+          " frames; the most it shrank in a frame " + stepD.toFixed(2) + " m (" + (stepD / Lg * 100).toFixed(1) + "%)");
+      drop([m, ship]);
+    });
   }
 
   /* ---- the mouse picks a parked machine where it is drawn; its ring stands over it ---- */

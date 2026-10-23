@@ -207,19 +207,21 @@ function run() {
   box(2); Game.trackGhosts();
   for (var i2 = 0; i2 < 3; i2++) Render.draw(DT, UI.input);
   var parked = ec.wing().filter(function (u) { return u.parked && recOf(u); });
-  var pose = parked.map(function (u) { var r = recOf(u).grp; return { u: u, p: r.position.clone(), r: r.rotation.clone() }; });
+  var pose = parked.map(function (u) { var r = recOf(u).grp; return { u: u, p: r.position.clone(), r: r.rotation.clone(), s: r.scale.x }; });
   box(1); Game.trackGhosts();
   Render.draw(DT, UI.input);
-  var worst = 0, drawn = 0, sea = 0;
+  var worst = 0, drawn = 0, sea = 0, small = 0;
   pose.forEach(function (q) {
     var gq = ghostFor(q.u.id); if (!gq) return;
     drawn++;
-    worst = Math.max(worst, gq.position.distanceTo(q.p), Math.abs(gq.rotation.x - q.r.x), Math.abs(gq.rotation.z - q.r.z));
+    /* and at the size it was drawn there: her proportion (render3d.js aboardK) */
+    if (q.s < 1) small++;
+    worst = Math.max(worst, gq.position.distanceTo(q.p), Math.abs(gq.rotation.x - q.r.x), Math.abs(gq.rotation.z - q.r.z), Math.abs(gq.scale.x - q.s));
     sea = Math.max(sea, Math.abs(q.p.y - (H ? H.heightAt(q.u.x, q.u.y) : 0)));
   });
-  chk("a machine parked on her deck leaves its ghost where it stood on her deck, rolled with her",
-      pose.length >= 2 && drawn === pose.length && worst < 0.01 && !!ghostFor(ec.id),
-      drawn + " of " + pose.length + " deck machines, worst " + worst.toFixed(4) + " m/rad off where they were drawn (the first cut: at the sea under them, up to " +
+  chk("a machine parked on her deck leaves its ghost where it stood on her deck, rolled with her, at the size it was drawn there",
+      pose.length >= 2 && drawn === pose.length && worst < 0.01 && small === drawn && !!ghostFor(ec.id),
+      drawn + " of " + pose.length + " deck machines (" + small + " drawn at her proportion), worst " + worst.toFixed(4) + " m/rad/scale off where they were drawn (the first cut: at the sea under them, up to " +
       sea.toFixed(1) + " m off)");
   [ec].concat(ec.wing()).forEach(function (u) { u.dead = true; });
   Game.ghosts = [];

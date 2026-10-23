@@ -154,6 +154,13 @@ var CFG = {
      player can tell a tank from an APC at a glance. These are the knobs. */
   MODEL_SCALE: 1.40,        // ground vehicles, ships, aircraft
   MODEL_SCALE_INF: 1.25,    // infantry, already exaggerated
+  /* TRUE RATIO (owner: "the cvs is too crowded to the airplane"). Every
+     ship but a landing craft is drawn NAVAL_SCALE times the size MODEL_SCALE
+     gives her - render only: her r, picking, spacing and her well's length
+     in the game (Unit.wellAxis) are not touched - and whatever stands on her
+     deck or rides in her well is drawn at her own proportion (render3d.js
+     aboardK). Unit.navalDraw reads it. 1: ships at the size they always were. */
+  NAVAL_SCALE: 1,
   BLD_SCALE: 1.10,          // structures; kept modest so they stay on plot
 
   /* Maximum flight time per projectile type, in seconds. Anything still alive

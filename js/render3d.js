@@ -450,6 +450,7 @@ var Render3D = (function () {
       if (typeof UNIT_MODELS !== "undefined" && UNIT_MODELS[key]) {
         tpl = UNIT_MODELS[key].build(THREE, Models3D, { team: team.main });
         tpl.userData.len = UNIT_MODELS[key].len || 10;
+        tpl.userData.metric = true;                  // its own model, in metres (aboardK)
       } else if (key === "fighter_n" && typeof Models3D !== "undefined") {
         tpl = Models3D.buildF16(THREE, { teamColor: team.main, gear: false });
         tpl.userData.len = 15;
@@ -478,6 +479,8 @@ var Render3D = (function () {
                      UNIT_MODELS[key].len) || 0;
       if (def.layer === "sub" && realM > 20)
         targetLen = (realM / 110) * 17 * 2.1 * PXM * 1.9 * CFG.MODEL_SCALE;
+      /* TRUE RATIO: a ship drawn CFG.NAVAL_SCALE times that (Unit.navalDraw) */
+      if (typeof Unit !== "undefined" && Unit.navalDraw) targetLen *= Unit.navalDraw(def);
     }
     /* aircraft were already exaggerated before the global readability bump,
        so they take a smaller share of it or they dwarf the airbase */
@@ -492,6 +495,9 @@ var Render3D = (function () {
     tpl.rotation.x = -Math.PI / 2;
     wrap.add(tpl);
     wrap.userData.inner = tpl;
+    /* built from a model of its own, in metres: the proportion between two
+       of them is the ratio of their scales (aboardK) only then */
+    wrap.userData.metric = !!tpl.userData.metric;
     modelCache[ck] = wrap;
     return wrap;
   }
@@ -751,17 +757,24 @@ var Render3D = (function () {
      cell each way, which is what an airframe has to clear (a 1 m raster can
      put the side of an island half a metre from where it is drawn); and her
      deck's level at the stern, the aft eighth, where every flight deck in
-     the game is - a carrier's full length, an escort's pad aft of her hangar. */
+     the game is - a carrier's full length, an escort's pad aft of her hangar.
+     And the same shrunk by a cell each way (inner), for what a machine
+     stands on: a cell's top is the highest of what is drawn over it, so a
+     cell on her round-down or her deck edge reads as deck though most of it
+     is below - a machine at her proportion (aboardK), its wheels all inside
+     one or two cells, stood on one stood 6 cm to 1.1 m over what is there. */
   function deckOf(stpl) {
     if (stpl._deckTop) return stpl._deckTop;
     const P = planOf(stpl, o => !o.visible), nx = P.nx, nz = P.nz, top = P.hi;
-    const grown = new Float32Array(nx * nz);
+    const grown = new Float32Array(nx * nz), inner = new Float32Array(nx * nz);
     for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) {
-      let m = -Infinity;
+      let m = -Infinity, q = i > 0 && k > 0 && i < nx - 1 && k < nz - 1 ? Infinity : -Infinity;
       for (let a = Math.max(0, i - 1); a <= Math.min(nx - 1, i + 1); a++)
-        for (let b = Math.max(0, k - 1); b <= Math.min(nz - 1, k + 1); b++)
+        for (let b = Math.max(0, k - 1); b <= Math.min(nz - 1, k + 1); b++) {
           if (top[a * nz + b] > m) m = top[a * nz + b];
-      grown[i * nz + k] = m;
+          if (top[a * nz + b] < q) q = top[a * nz + b];
+        }
+      grown[i * nz + k] = m; inner[i * nz + k] = q;
     }
     const n = new Map(), sum = new Map();
     let best = 0, L0 = 0;
@@ -786,13 +799,43 @@ var Render3D = (function () {
       pad = { i: Math.min(nx - 1, Math.max(0, Math.floor((_pv.x - P.x0) / PARK.CELL))),
               k: Math.min(nz - 1, Math.max(0, Math.floor((_pv.z - P.z0) / PARK.CELL))) };
     }
-    return (stpl._deckTop = { x0: P.x0, z0: P.z0, nx, nz, top, grown, L0, pad });
+    return (stpl._deckTop = { x0: P.x0, z0: P.z0, nx, nz, top, grown, inner, L0, pad });
   }
   /* An airframe's plan relative to its lowest point: what it would hit on a
      deck. The gear counts whether or not it is down; the rotor blades do not
      - they stop wherever they stop, and they ride high. Cells within WHEEL of
-     the lowest point are what it stands on. Once per template. */
-  function airPlanOf(tpl) {
+     the lowest point are what it stands on. Once per template; at k times
+     its drawn size, for a deck it stands on at k (aboardK), once per k. */
+  function airPlanOf(tpl, k) {
+    const A = airPlan1(tpl);
+    if (!k || k === 1) return A;
+    const c = tpl._airPlanK || (tpl._airPlanK = new Map());
+    let B = c.get(k);
+    if (!B) {
+      const m = (a) => a.map(v => v * k);
+      B = { n: A.n, dx: m(A.dx), dz: m(A.dz), lo: m(A.lo), hi: m(A.hi), sup: A.sup };
+      c.set(k, B);
+    }
+    return B;
+  }
+  /* TRUE RATIO: a machine on a ship's deck or pad is drawn at HER
+     proportion. getModel draws a ship at a size set by her radius and an
+     aircraft at one set by its own: the Ford (337 m) at 105 m, 0.31 of
+     true, and her F/A-18E (18.3 m) at 36 m, 1.96 of true, so her deck was a
+     pile of airframes each a third of her length. Both models are built in
+     metres, so her scale over its own is the size that puts it in her true
+     proportion: the Super Hornet 5.7 m on her deck. Never bigger than its
+     game size; 1 where either model is not one of its own. The deck is laid
+     out with its plan at that size (airPlanOf), it is set down on its foot at
+     that size (settle, seatOnDeck), and it grows back to its game size as
+     it climbs away. The same ratio as a landing craft's in her well
+     (wellScale). */
+  function aboardK(stpl, tpl) {
+    if (!stpl || !tpl || !stpl.userData.metric || !tpl.userData.metric) return 1;
+    const k = stpl.userData.inner.scale.x / tpl.userData.inner.scale.x;
+    return k > 0.02 && k < 1 ? k : 1;
+  }
+  function airPlan1(tpl) {
     if (tpl._airPlan) return tpl._airPlan;
     const foot = footOf(tpl);
     /* on a deck its wings are folded (seatOnDeck), so its plan is the folded
@@ -820,8 +863,8 @@ var Render3D = (function () {
   }
   /* A carrier's spots: every cell of her deck, at each of a few headings,
      scored, and the lowest wins. It stands at her deck level; each cell of
-     what it stands on (WHEEL) over the side or over a lower level costs 30;
-     whatever of it goes into her - island, hangar, the aircraft her modellers
+     what it stands on (WHEEL) over the side or over a lower level, or next
+     to either (deckOf inner), costs 30; whatever of it goes into her - island, hangar, the aircraft her modellers
      parked on her deck - 100 a metre; 4 a cell where it would stand in an
      aircraft already placed; 0.1 a cell hanging over the water, where a tail
      or a wingtip may. A deck park angles aircraft or turns them aft, so
@@ -847,7 +890,7 @@ var Render3D = (function () {
         let cost = aft * ci * s;
         for (let q = 0; q < ns && cost < bc; q++) {
           const j = A.sup[q], i = Math.floor(ci + _sx[j]), k = Math.floor(ck + _sz[j]);
-          if (i < 0 || k < 0 || i >= nx || k >= nz || !(D.top[i * nz + k] >= L - 0.3)) cost += 30;
+          if (i < 0 || k < 0 || i >= nx || k >= nz || !(D.inner[i * nz + k] >= L - 0.3)) cost += 30;
         }
         for (let j = 0; j < n && cost < bc; j++) {
           const i = Math.floor(ci + _sx[j]), k = Math.floor(ck + _sz[j]);
@@ -935,16 +978,31 @@ var Render3D = (function () {
   }
   /* the deck under the spot's lowest points, from her own drawn mesh: a
      downward ray under each, once per model and spot; it stands on the
-     highest of them */
-  function settle(sp, tpl, stpl) {
+     highest of them; its points at k times its drawn size (aboardK). On a
+     carrier's deck (`nudge`), where they do not all find one level - a
+     wheel on the edge of a plate - it is moved up to half a metre along or
+     across her to where they do, if anywhere: at her proportion a machine's
+     wheels are a cell or two of the deck's raster apart, which cannot see a
+     plate that misses a cell's middle, and a Tiger on the Mistral, its tail
+     wheel on the edge of one 9 cm proud, stood with its main wheels 9 cm
+     over her deck. An escort's pad is left as it is laid out (padSpot). */
+  const NUDGE = [0, 0, 0.25, 0, -0.25, 0, 0, 0.25, 0, -0.25, 0.5, 0, -0.5, 0, 0, 0.5, 0, -0.5];
+  function settle(sp, tpl, stpl, k, nudge) {
     footOf(tpl);
-    const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw), P = tpl._footPts;
-    let y = -Infinity;
-    for (let i = 0; i < P.length; i += 2) {
-      const h = surfaceUnder(stpl, sp.x + P[i] * c + P[i + 1] * sn, sp.L + 1, sp.z - P[i] * sn + P[i + 1] * c);
-      if (Math.abs(h - sp.L) < 1 && h > y) y = h;
+    const c = Math.cos(sp.yaw), sn = Math.sin(sp.yaw), P = tpl._footPts, q = k || 1;
+    let bx = sp.x, bz = sp.z, by = -Infinity;
+    for (let n = 0; n < (nudge ? NUDGE.length : 2); n += 2) {
+      const ox = sp.x + NUDGE[n], oz = sp.z + NUDGE[n + 1];
+      let y = -Infinity, y0 = Infinity;
+      for (let i = 0; i < P.length; i += 2) {
+        const h = surfaceUnder(stpl, ox + (P[i] * c + P[i + 1] * sn) * q, sp.L + 1, oz + (-P[i] * sn + P[i + 1] * c) * q);
+        if (Math.abs(h - sp.L) < 1) { if (h > y) y = h; if (h < y0) y0 = h; }
+      }
+      if (!n) by = y;
+      if (y > -Infinity && y - y0 <= 0.03) { bx = ox; bz = oz; by = y; break; }
     }
-    sp.y = y > -Infinity ? y : sp.L;
+    sp.x = bx; sp.z = bz;
+    sp.y = by > -Infinity ? by : sp.L;
     return sp;
   }
   function freshOcc(D) {
@@ -971,12 +1029,13 @@ var Render3D = (function () {
     const kept = stpl._deck || (stpl._deck = {});
     if (kept[key]) return kept[key];
     const D = deckOf(stpl), escort = !S.def.carrier, rotor = escort || !!S.def.heloCarrier;
-    const era = S.owner.era || (G.era || "e20"), tpls = [], plans = [], hover = [];
+    const era = S.owner.era || (G.era || "e20"), tpls = [], plans = [], hover = [], ks = [];
     for (let i = 0; i < n; i++) {
       let id = G.deckAircraftFor ? G.deckAircraftFor(S, i) : null;
       if (!id || !UNITS[id]) id = (G.deckTypesFor ? G.deckTypesFor(S) : [])[0];
       const t = id && UNITS[id] ? getModel(UNITS[id], S.owner.color, era) : null;
-      tpls.push(t); plans.push(t ? airPlanOf(t) : null); hover.push(!!(id && UNITS[id] && UNITS[id].hover));
+      const k = aboardK(stpl, t);                    // at her proportion
+      tpls.push(t); ks.push(k); plans.push(t ? airPlanOf(t, k) : null); hover.push(!!(id && UNITS[id] && UNITS[id].hover));
     }
     const order = tpls.map((t, i) => i).sort((a, b) => (plans[b] ? plans[b].n : 0) - (plans[a] ? plans[a].n : 0) || a - b);
     const occ = freshOcc(D), spots = new Array(n);
@@ -985,7 +1044,7 @@ var Render3D = (function () {
       if (!plans[i] || (escort && first)) continue;
       const sp = escort ? padSpot(D, plans[i]) : placeOn(D, plans[i], occ, rotor);
       if (sp && (!first || sp.cost < PARK.SHARE)) {
-        spots[i] = settle(sp, tpls[i], stpl); stamp(D, plans[i], sp, occ);
+        spots[i] = settle(sp, tpls[i], stpl, ks[i], !escort); stamp(D, plans[i], sp, occ);
         if (!first) first = sp;
       }
     }
@@ -1003,9 +1062,9 @@ var Render3D = (function () {
     const m = lay.alt[k] || (lay.alt[k] = new Map());
     let sp = m.get(tpl);
     if (!sp) {
-      const A = airPlanOf(tpl), occ = freshOcc(lay.D);
+      const q = aboardK(stpl, tpl), A = airPlanOf(tpl, q), occ = freshOcc(lay.D);
       for (let i = 0; i < lay.n; i++) if (lay.spots[i] !== lay.spots[k] && lay.plans[i]) stamp(lay.D, lay.plans[i], lay.spots[i], occ);
-      sp = settle((lay.escort ? padSpot(lay.D, A) : placeOn(lay.D, A, occ, lay.rotor)) || Object.assign({}, lay.spots[k]), tpl, stpl);
+      sp = settle((lay.escort ? padSpot(lay.D, A) : placeOn(lay.D, A, occ, lay.rotor)) || Object.assign({}, lay.spots[k]), tpl, stpl, q, !lay.escort);
       m.set(tpl, sp);
     }
     return sp;
@@ -1093,6 +1152,13 @@ var Render3D = (function () {
        up and then racing to catch it (a jet fell 24.5 m behind); and a home
        moved to another ship, or a ship sunk under it, no longer snaps it to
        the new spot or the game's slot (338 m and 45 m in one frame).
+     - TRUE RATIO: on her deck it is drawn at her proportion (aboardK), and
+       the same blend takes it there coming down and back to its game size
+       climbing away, so it never changes size in a step. The blend is 30 m
+       times the size she is drawn at over her game size (Unit.navalDraw):
+       a spot on a hull drawn bigger is further from her middle, and dying
+       over the same 30 m its offset moved the machine up to 4 m a frame
+       (deckBlend).
      Nothing allocated: arithmetic on what is cached. */
   function seatOnDeck(e, rec, dt, seen) {
     const g = rec.grp, mx = gx2m(e.x), mz = gx2m(e.y);
@@ -1106,6 +1172,8 @@ var Render3D = (function () {
       const lay = deckLayout(S, rec.deckTpl);
       rec.deckK = claimSpot(S, lay, rec, e);
       rec.deckSp = spotFor(lay, rec.deckK, rec.tpl, rec.deckTpl);
+      rec.deckKs = aboardK(rec.deckTpl, rec.tpl);
+      rec.deckBl = PARK.BLEND * (typeof Unit !== "undefined" && Unit.navalDraw ? Unit.navalDraw(S.def) : 1);
       rec.deckMode = 0; rec.deckW = 0; rec.lsX = rec.lsZ = rec.lsY = 0; rec.gameX = mx; rec.gameZ = mz;
     }
     let my, w, rest = false;
@@ -1124,7 +1192,7 @@ var Render3D = (function () {
       rx += rec.lsX; rz += rec.lsZ; py += rec.lsY;
       /* the spot, raised by the machine's own foot, turned as three.js turns
          her group (Euler YXZ: roll, then pitch, then heading) */
-      const sp = rec.deckSp, lx = sp.x, ly = sp.y - rec.foot, lz = sp.z;
+      const sp = rec.deckSp, lx = sp.x, ly = sp.y - rec.foot * rec.deckKs, lz = sp.z;
       const cz = Math.cos(rz), snz = Math.sin(rz), cx = Math.cos(rx), snx = Math.sin(rx);
       const cy = Math.cos(ry), sny = Math.sin(ry);
       const x1 = lx * cz - ly * snz, y1 = lx * snz + ly * cz;
@@ -1136,7 +1204,7 @@ var Render3D = (function () {
       rec.deckRest = ay;
       my = easeAlt(rec, onDeck ? ay : ay + 2.8, dt);
       rest = onDeck && my <= ay + 0.05;
-      const h = U.clamp((my - ay) / PARK.BLEND, 0, 1);
+      const h = U.clamp((my - ay) / deckBlend(rec, ay), 0, 1);
       w = 1 - h * h * (3 - 2 * h);
       let dh;
       if (rec.deckMode !== 1) {
@@ -1154,6 +1222,7 @@ var Render3D = (function () {
       rec.dh = dh;
       g.position.set(mx + (ax - mx) * w, my, mz + (az - mz) * w);
       g.rotation.set(arx * w, rec.parkYaw + dh * w, arz * w);
+      g.scale.setScalar(1 + (rec.deckKs - 1) * w);   // to her proportion as it comes down
     } else if (!(Math.hypot(mx - rec.gameX, mz - rec.gameZ) > PARK.JUMP)) {
       if (rec.deckMode !== 2) {
         rec.deckMode = 2;
@@ -1164,12 +1233,13 @@ var Render3D = (function () {
         rec.dRX = g.rotation.x; rec.dRZ = g.rotation.z;
       }
       my = easeAlt(rec, Math.max(heightAt(e.x, e.y) + 6, AIR_ALT), dt);
-      const h = U.clamp((my - rec.deckRest) / PARK.BLEND, 0, 1);
+      const h = U.clamp((my - rec.deckRest) / deckBlend(rec, rec.deckRest), 0, 1);
       w = 1 - h * h * (3 - 2 * h);
       const f = rec.dW0 > 1e-3 ? Math.min(1, w / rec.dW0) : 0;
       g.position.set(mx + rec.dX * f, my, mz + rec.dZ * f);
       g.rotation.set(rec.dRX * f, -e.ang + rec.dYaw * f, rec.dRZ * f);
-      if (f <= 0) { rec.deckShip = null; rec.deckK = -1; rec.deckMode = 0; w = 0; }
+      g.scale.setScalar(1 + (rec.deckKs - 1) * w);   // and back to its game size as it climbs
+      if (f <= 0) { rec.deckShip = null; rec.deckK = -1; rec.deckMode = 0; w = 0; g.scale.setScalar(1); }
     } else {
       /* the game moved it further than a jet flies in a frame, onto a ramp
          far off - a carrier sunk under what was parked on her re-homes it to
@@ -1177,6 +1247,7 @@ var Render3D = (function () {
          probe: that is drawn as the game has it, straight onto its spot or
          its pad there, not slid across the sea */
       rec.deckShip = null; rec.deckK = -1; rec.deckMode = 0; rec.deckW = 0; rec.alt = undefined;
+      g.scale.setScalar(1);
       if (host && (onDeck || landing)) { seatOnDeck(e, rec, dt, seen); return; }
       const pad = e.padOn && !e.padOn.dead ? e.padOn : null, ground = heightAt(e.x, e.y);
       my = easeAlt(rec, onDeck ? landRest(e, rec, pad, ground) : Math.max(ground + 6, AIR_ALT), dt);
@@ -1186,6 +1257,14 @@ var Render3D = (function () {
     rec.deckW = w; rec.deckX = g.position.x; rec.deckZ = g.position.z; rec.gameX = mx; rec.gameZ = mz;
     if (rec.gear) rec.gear.visible = my < rec.deckRest + 18;
     foldOnDeck(rec, rest, dt);
+  }
+  /* the height over her deck the blend runs: PARK.BLEND times her drawn
+     size (rec.deckBl), ending a metre short of the cruise altitude however
+     high her deck is drawn. A blend longer than the climb never ends - the
+     machine flies on part-way to its game size with her offset - and one
+     begun above it starts part-way: a jump in size as it comes aboard. */
+  function deckBlend(rec, rest) {
+    return Math.min(rec.deckBl, Math.max(1, AIR_ALT - rest - 1));
   }
 
   /* ---------------- faction architecture ----------------
@@ -2180,6 +2259,7 @@ var Render3D = (function () {
         if (!q) ghostPose.set(e.id, q = { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, f: 0, fold: 0 });
         const gp = rec.grp.position, gr = rec.grp.rotation;
         q.x = gp.x; q.y = gp.y; q.z = gp.z; q.rx = gr.x; q.ry = gr.y; q.rz = gr.z; q.f = ghostFrame;
+        q.s = rec.grp.scale.x;                       // at her proportion on her deck (aboardK)
         q.fold = rec.fold || 0;                      // its wings as seen (foldOnDeck)
       }
     }
@@ -2213,6 +2293,7 @@ var Render3D = (function () {
         if (q) {
           grp.position.set(q.x, q.y, q.z);
           grp.rotation.set(q.rx, q.ry, q.rz);
+          if (q.s) grp.scale.setScalar(q.s);
           if (q.fold) poseFold(findParts(inst, "wingfold"), q.fold);
         } else {
           let my;
@@ -2984,7 +3065,13 @@ var Render3D = (function () {
      group is scaled, about the craft's own middle: where it is, its hit
      circle and its selection stay the game's. A ship whose model has no
      gate is left alone: the craft is hidden inside her and appears at its
-     game size at the sill, as it always did. */
+     game size at the sill, as it always did.
+     TRUE RATIO: her scale over its own is aboardK's, as for a machine on her
+     deck, so the two are drawn to one proportion. Her well is as long in the
+     game whatever size she is drawn at (Unit.wellAxis), so a craft is drawn
+     at its offset from her middle times the size she is drawn at over her
+     game size (Unit.navalDraw) - in full inside her, and on its way in or
+     out by as much as it is at her proportion. At 1 nothing moves. */
   const WELL_SHRINK = 2;
   function wellScale(e, rec, dt) {
     const w = e.wellT, o = e.order;
@@ -2992,7 +3079,7 @@ var Render3D = (function () {
               o.target.owner === e.owner ? o.target : null;
     const sr = s && ents.get(s.id);
     /* her scale over its own, kept for the run if she is lost or unseen */
-    if (sr && sr.gate) rec.wellKt = sr.tpl.userData.inner.scale.x / rec.tpl.userData.inner.scale.x;
+    if (sr && sr.gate) { rec.wellKt = aboardK(sr.tpl, rec.tpl); rec.wellShip = s; }
     const kt = rec.wellKt;
     if (kt === undefined) return;
     let k;
@@ -3009,8 +3096,14 @@ var Render3D = (function () {
       k = 1 - (1 - kt) * f * f * (3 - 2 * f);
     } else k = Math.min(1, rec.grp.scale.x + (1 - kt) * dt);
     if (!w || w.ph !== "off") rec.wellD0 = undefined;
-    if (k === 1 && !s) rec.wellKt = undefined;
+    const S = s || rec.wellShip, nd = S && S.def && typeof Unit !== "undefined" && Unit.navalDraw ? Unit.navalDraw(S.def) : 1;
+    if (k === 1 && !s) rec.wellKt = rec.wellShip = undefined;
     if (rec.grp.scale.x !== k) rec.grp.scale.setScalar(k);
+    if (nd !== 1) {
+      const u = kt < 1 ? U.clamp((1 - k) / (1 - kt), 0, 1) : w && (w.ph === "out" || w.ph === "in") ? 1 : 0;
+      const p = rec.grp.position, sx = gx2m(S.x), sz = gx2m(S.y), m = (nd - 1) * u;
+      p.x += (p.x - sx) * m; p.z += (p.z - sz) * m;
+    }
   }
   function poseLauncher(e, rec, dt) {
     const el = rec.elev.userData.el || 0.61, rate = e.def.tturn || 0.8, o = e.order;
@@ -4285,12 +4378,13 @@ var Render3D = (function () {
       const parked = e.parked || e.grounded || (e.order && e.order.type === "parked");
       /* ...and where it is drawn: at its feet on the pad or the deck it
          stands on - on a ship a spot of her own deck, not the slot the game
-         keeps for it (seatOnDeck) - and at the model while it lifts off a
-         deck or comes down to one */
+         keeps for it (seatOnDeck), its foot as low as the size it is drawn at
+         there (aboardK) - and at the model while it lifts off a deck or
+         comes down to one */
       const rec = ents.get(e.id);
       if (rec && rec.foot !== undefined && (parked || rec.deckShip)) {
         const p = rec.grp.position;
-        return project(m2gx(p.x), m2gx(p.z), parked ? p.y + rec.foot : p.y);
+        return project(m2gx(p.x), m2gx(p.z), parked ? p.y + rec.foot * rec.grp.scale.y : p.y);
       }
       alt = parked ? undefined : AIR_ALT;
     } else if (e.layer === "sea") alt = 2;

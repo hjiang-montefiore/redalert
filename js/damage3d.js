@@ -1001,6 +1001,11 @@ var Damage3D = (function () {
     let lx = q.x, ly = q.ys ? q.ys[vi] : q.y, lz = q.z;
     if (q.ys) { lx = q.ox + lx * em.fore; lz = q.oz + lz * em.side; }   // the holed side and end
     _w.lx = lx; _w.ly = ly; _w.lz = lz;
+    /* a group render3d draws smaller than its template - a machine on a
+       ship's deck at her proportion (aboardK), a craft in her well - burns
+       from the same points on it, nearer its middle */
+    const ks = g ? g.scale.x : 1;
+    if (ks !== 1) { lx *= ks; ly *= ks; lz *= ks; }
     if (P.ship && g) {
       const cr = Math.cos(g.rotation.z), sr = Math.sin(g.rotation.z);
       const cl = Math.cos(g.rotation.x), sl = Math.sin(g.rotation.x);

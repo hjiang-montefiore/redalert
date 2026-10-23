@@ -6241,6 +6241,22 @@ class Unit {
     const k = def.r * 2.1 * 1.9 * CFG.MODEL_SCALE / wp.len;
     return (def._wellAx = { exit: wp.exit * k, inner: wp.inner * k });
   }
+  /* TRUE RATIO: how many times the size MODEL_SCALE gives it a naval unit
+     is drawn - CFG.NAVAL_SCALE for a ship; 1 for a landing craft (a type
+     some ship's well carries: it is already near its true size against a
+     tank) and for anything else. Render only: render3d.js getModel draws a
+     ship at it and puts a craft in her well at it (wellScale). wellAxis
+     above does not read it - her well is as long in the game whatever she
+     is drawn at, so a craft's run through it takes the same time. */
+  static navalDraw(def) {
+    const n = CFG.NAVAL_SCALE || 1;
+    if (n === 1 || !def || def.cat !== "naval") return 1;
+    if (!Unit._craftIds) {
+      Unit._craftIds = new Set();
+      for (const id in UNITS) { const w = UNITS[id].wellCraft; if (w) for (const c in w) Unit._craftIds.add(c); }
+    }
+    return Unit._craftIds.has(def.id) ? 1 : n;
+  }
   /* the berth of the craft that has the first n of her well before it */
   wellSlot(n) {
     const ax = Unit.wellAxis(this.def), w = this.def.wellCraft || {};
