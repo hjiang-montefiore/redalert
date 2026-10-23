@@ -914,6 +914,12 @@ BLD_DETAIL["airbase"] = {
   }
 };
 
+/* ...and turned a quarter (rules.js BUILDING_LEGACY airbase_r): the same
+   painter, turned with it */
+BLD_DETAIL["airbase_r"] = {
+  draw: function (ctx, C, t) { ctx.save(); ctx.rotate(Math.PI / 2); BLD_DETAIL["airbase"].draw(ctx, C, t); ctx.restore(); }
+};
+
 BLD_DETAIL["radar"] = {
   draw: function (ctx, C, t) {
     ctx.lineWidth = 1;

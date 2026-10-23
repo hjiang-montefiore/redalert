@@ -7603,8 +7603,13 @@ class Building {
     const d = this.def, P = d.padPts, T = CFG.TILE, x0 = this.tx * T, y0 = this.ty * T;
     if (slot < P.length) return { x: x0 + P[slot][0] * T, y: y0 + P[slot][1] * T, ang: d.padAng || 0 };
     const k = slot - P.length, R = d.runway, row = ((k / 6) | 0) % 2;
-    return { x: x0 + (R.x0 + 0.9 + 1.8 * (k % 6) + 0.9 * (((k / 12) | 0) % 2)) * T,
-             y: y0 + (row ? R.y + R.half - 0.35 : R.y - R.half + 0.35) * T, ang: 0 };
+    /* along the runway from its first end, on the revetments' side of it and
+       then the far side: n is the side the revetments are on */
+    const L = Math.hypot(R.x1 - R.x0, R.y1 - R.y0) || 1, ux = (R.x1 - R.x0) / L, uy = (R.y1 - R.y0) / L;
+    let nx = uy, ny = -ux;
+    if ((P[0][0] - R.x0) * nx + (P[0][1] - R.y0) * ny < 0) { nx = -nx; ny = -ny; }
+    const s = 0.9 + 1.8 * (k % 6) + 0.9 * (((k / 12) | 0) % 2), o = (R.half - 0.35) * (row ? -1 : 1);
+    return { x: x0 + (R.x0 + ux * s + nx * o) * T, y: y0 + (R.y0 + uy * s + ny * o) * T, ang: Math.atan2(uy, ux) };
   }
   ramp() { return this.def.pads || this.def.carrier || 0; }
   tryFire(wi, t) { Unit.prototype.tryFire.call(this, wi, t); }

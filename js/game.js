@@ -1023,7 +1023,9 @@ var Game = (function () {
 
   /* ---------------- construction ---------------- */
   G.canPlace = function (p, defId, tx, ty) {
-    const def = BUILDINGS[defId];
+    /* or the key of a turned shape (rules.js BUILDING_LEGACY airbase_r) */
+    const def = BUILDINGS[defId] || (typeof bldDefOf === "function" ? bldDefOf(defId) : null);
+    if (!def) return false;
     if (tx < 0 || ty < 0 || tx + def.w > G.map.W || ty + def.h > G.map.H) return false;
     let touchesShoreWater = false, anyLand = false;
     for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++) {

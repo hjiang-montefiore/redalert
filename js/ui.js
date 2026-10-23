@@ -5,6 +5,9 @@ var UI = (function () {
   const input = {
     mx: 0, my: 0, dragging: false, dragX0: 0, dragY0: 0, dragDist: 0,
     placing: null, placeKind: null, placeTx: 0, placeTy: 0,
+    /* R while placing a structure that turns (def.rot, the runway airbase):
+       the key of the shape being placed is def.rot then (placeKey) */
+    placeRot: false,
     attackMove: false, sellMode: false, repairMode: false,
     panMMB: false, lastMx: 0, lastMy: 0,
   };
@@ -306,6 +309,7 @@ var UI = (function () {
       /* a finished structure of this type is waiting: go straight to placing it */
       if (p.readyItem(kind, it.id)) {
         input.placing = it.id; input.placeKind = kind;
+        if (BUILDINGS[it.id].rot) G.alert("R TURNS THE " + BUILDINGS[it.id].name.toUpperCase() + " A QUARTER", "good", true);
         Sfx.play("click");
         return;
       }
@@ -2370,6 +2374,11 @@ var UI = (function () {
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
       keys[k] = true;
+      /* R while placing a structure that turns turns it; R otherwise is
+         the aircraft recall, as before */
+      if (k === "r" && !e.ctrlKey && !e.metaKey && input.placing && BUILDINGS[input.placing] && BUILDINGS[input.placing].rot) {
+        input.placeRot = !input.placeRot; Sfx.play("click"); e.preventDefault(); return;
+      }
       /* Shift held shows the orders of every unit of the player's, not only
          the selection (render.js orderLines), so its state is kept on
          `input`, which both renderers are handed. Every key, a mouse move
@@ -3458,12 +3467,18 @@ var UI = (function () {
     Sfx.play("ack_atk");
   }
 
+  /* the key of the shape being placed: the turned one after R (def.rot) */
+  function placeKey() {
+    const d = input.placing && BUILDINGS[input.placing];
+    return d && d.rot && input.placeRot ? d.rot : input.placing;
+  }
   function tryPlace() {
     const id = input.placing;
     if (!id) return;
-    if (G.canPlace(G.human, id, input.placeTx, input.placeTy)) {
+    const pk = placeKey();
+    if (G.canPlace(G.human, pk, input.placeTx, input.placeTy)) {
       const kind = input.placeKind;
-      G.placeBuilding(G.human, id, input.placeTx, input.placeTy, false);
+      G.placeBuilding(G.human, pk, input.placeTx, input.placeTy, false);
       /* construction over time */
       const b = G.human.buildings[G.human.buildings.length - 1];
       b.buildProgress = 0;

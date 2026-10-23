@@ -2029,12 +2029,14 @@ var Render = (function () {
     }
     /* building placement ghost */
     if (input.placing) {
-      const def = BUILDINGS[input.placing];
+      /* the shape being placed: turned by R (ui.js placeKey) */
+      const d0 = BUILDINGS[input.placing], pk = d0 && d0.rot && input.placeRot ? d0.rot : input.placing;
+      const def = BUILDINGS[pk] || bldDefOf(pk);
       const wp = unproject(input.mx, input.my);
       const tx = ((wp.x / CFG.TILE) | 0) - ((def.w / 2) | 0);
       const ty = ((wp.y / CFG.TILE) | 0) - ((def.h / 2) | 0);
       input.placeTx = tx; input.placeTy = ty;
-      const ok = G.canPlace(G.human, input.placing, tx, ty);
+      const ok = G.canPlace(G.human, pk, tx, ty);
       for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++) {
         const e = GameMap.elevAt(G.map, x, y);
         const wx = (x + 0.5) * CFG.TILE, wy = (y + 0.5) * CFG.TILE;

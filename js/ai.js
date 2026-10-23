@@ -2130,7 +2130,7 @@ function makeCommander() {
      after canPlace has said yes, plus a flood of at most 24 tiles for a
      production candidate. */
   function keepsLanes(defId, tx, ty) {
-    const def = BUILDINGS[defId];
+    const def = BUILDINGS[defId] || bldDefOf(defId);     // or a turned shape's key
     if (!def || def.oilNode) return true;
     const x1 = tx + def.w - 1, y1 = ty + def.h - 1;
     for (const b of P.buildings) {
@@ -2216,8 +2216,12 @@ function makeCommander() {
     /* asked twice in one think when macroSpot's anchor is the yard the
        fallback names too (placeReady): the same scan, so the same answer */
     if (rwMemo && rwMemo.t === G.time && rwMemo.ax === ax && rwMemo.ay === ay) return rwMemo.s;
-    const def = BUILDINGS[defId], map = G.map, W = map.W, H = map.H, w = def.w, h = def.h;
-    const open = (x, y) => {
+    const def = BUILDINGS[defId], map = G.map, W = map.W, H = map.H;
+    /* both ways round: the base as built and turned a quarter (def.rot,
+       rules.js airbase_r), whichever fits nearer the anchor */
+    const shapes = [{ key: defId, d: def }];
+    if (def.rot && bldDefOf(def.rot)) shapes.push({ key: def.rot, d: bldDefOf(def.rot) });
+    const open = (x, y, w, h) => {
       if (x < 1 || y < 1 || x + w >= W || y + h >= H) return false;
       const lvl = map.elev[y * W + x];
       for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) {
@@ -2231,11 +2235,15 @@ function makeCommander() {
        48 grid queries) is passed over first */
     let s = null;
     for (let r = 2; r < 30 && !s; r++) {
-      for (let dy = -r; dy <= r && !s; dy++) for (let dx = -r; dx <= r; dx++) {
+      for (let dy = -r; dy <= r && !s; dy++) for (let dx = -r; dx <= r && !s; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-        const tx = ax + dx - (w >> 1), ty = ay + dy - (h >> 1);
-        if (!P.inBaseRadius(tx + w / 2, ty + h / 2, CFG.BUILD_RADIUS)) continue;
-        if (open(tx, ty) && G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) { s = { tx, ty }; break; }
+        for (const sh of shapes) {
+          const w = sh.d.w, h = sh.d.h, tx = ax + dx - (w >> 1), ty = ay + dy - (h >> 1);
+          if (!P.inBaseRadius(tx + w / 2, ty + h / 2, CFG.BUILD_RADIUS)) continue;
+          if (open(tx, ty, w, h) && G.canPlace(P, sh.key, tx, ty) && siteOK(sh.key, tx, ty)) {
+            s = { tx, ty, as: sh.key === defId ? null : sh.key }; break;
+          }
+        }
       }
     }
     rwMemo = { t: G.time, ax, ay, s };
@@ -2434,7 +2442,7 @@ function makeCommander() {
      through the 64-pixel grid cells, and a squad is a tile across. Cost: a
      dozen rectangle tests, and callers ask it only after canPlace said yes. */
   function padClash(defId, tx, ty) {
-    const def = BUILDINGS[defId], mem = oilMem(true);
+    const def = BUILDINGS[defId] || bldDefOf(defId), mem = oilMem(true);     // or a turned shape's key
     if (!def || def.oilNode || !mem) return false;
     const N = G.map.oilNodes;
     const rally = def.produces && def.produces !== "aircraft";
@@ -3765,7 +3773,7 @@ function makeCommander() {
       } else spot = macroSpot(id) ||
                     findSpot(id, P.buildings.find(b => !b.dead && b.def.id === "conyard"));
       if (spot) {
-        G.placeBuilding(P, id, spot.tx, spot.ty, false);
+        G.placeBuilding(P, spot.as || id, spot.tx, spot.ty, false);   // a turned shape (findRunwaySpot)
         if (id === "derrick") oilPlaced(spot);
         constructionStart(P, id, spot);
         P.consumeReady(kind, id); rq.failN = 0;

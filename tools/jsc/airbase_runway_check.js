@@ -26,7 +26,9 @@
          to a free one and stays down, and nobody moves (the review of
          d6d31a1: it used to be bounced back into the air);
      [9] an enemy's base is in sight where any of it is (G.fogAt), and its
-         edge is its footprint's (Building.edge), not a circle's. */
+         edge is its footprint's (Building.edge), not a circle's;
+     [10] turned a quarter (R when placing; rules.js airbase_r) it is the
+         same base point for point, placed, parked and saved turned. */
 var TT = 32, DT = 1 / 30, PASS = 0, FAIL = 0, P = null, E = null;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -78,11 +80,11 @@ function run() {
   /* ---------------- 1. the def ---------------- */
   var R = D.runway || {}, pts = D.padPts || [];
   var inPlot = pts.every(function (q) { return q[0] > 0 && q[0] < D.w && q[1] > 0 && q[1] < D.h; });
-  var offRw = pts.every(function (q) { return q[1] < R.y - R.half; });
+  var offRw = pts.every(function (q) { return q[1] < R.y0 - R.half; });
   chk("[1] the airbase is 12 x 4: four revetments in the plot, north of the runway, the runway in the plot",
-      D.w === 12 && D.h === 4 && D.pads === 4 && pts.length === 4 && inPlot && offRw &&
-      R.y - R.half >= 0 && R.y + R.half <= D.h && R.x0 >= 0 && R.x1 <= D.w && Math.abs(D.padAng - Math.PI / 2) < 1e-9,
-      D.w + " x " + D.h + ", pads " + JSON.stringify(pts) + ", runway row " + R.y + " +- " + R.half);
+      D.w === 12 && D.h === 4 && D.pads === 4 && pts.length === 4 && inPlot && offRw && R.y0 === R.y1 &&
+      R.y0 - R.half >= 0 && R.y0 + R.half <= D.h && R.x0 >= 0 && R.x1 <= D.w && Math.abs(D.padAng - Math.PI / 2) < 1e-9,
+      D.w + " x " + D.h + ", pads " + JSON.stringify(pts) + ", runway row " + R.y0 + " +- " + R.half);
   chk("[1] the 3 x 3 of older saves has none of it", !!L && L.w === 3 && L.padPts === null && L.runway === null && L.padAng === null && !L.bare);
 
   /* ---------------- 2. one level ---------------- */
@@ -123,7 +125,7 @@ function run() {
   /* ---------------- 6. a fifth ---------------- */
   var fifth = Game.spawnUnit(P, fid);
   ticks(3);
-  var q4 = a.padPoint(4), rw = a.ty * TT + (D.runway.y - D.runway.half) * TT;
+  var q4 = a.padPoint(4), rw = a.ty * TT + (D.runway.y0 - D.runway.half) * TT;
   chk("[6] a fifth stands at the runway's west end, on its north edge, inside the plot",
       !!fifth && fifth.bay === 4 && Math.abs(fifth.x - q4.x) < 0.5 && Math.abs(fifth.y - q4.y) < 0.5 &&
       fifth.x > a.tx * TT && fifth.x < a.x && fifth.y > rw && fifth.y < a.ty * TT + D.h * TT,
@@ -171,7 +173,46 @@ function run() {
   chk("[9] its edge is its footprint's: 3 tiles off its long side is 3 tiles, inside is 0, 2 off its end is 2",
       Math.abs(side - 3 * TT) < 0.01 && inside === 0 && Math.abs(endOff - 2 * TT) < 0.01 && a.long() && !Game.entities.some(function (b) { return b.kind === "building" && !b.dead && b.def.w === b.def.h && b.long(); }),
       (side / TT).toFixed(2) + " / " + inside + " / " + (endOff / TT).toFixed(2) + " tiles");
-  a.hp = 0; Game.tick(DT);
+  a.hp = 0; Game.tick(DT); Game.sweepDead();
+
+  /* ---------------- 10. turned a quarter ---------------- */
+  var Q = bldDefOf("airbase_r"), RQ = Q ? Q.runway : {};
+  /* every point (x, y) of the 12 x 4 is (4 - y, x) turned */
+  var mapped = Q && D.padPts.every(function (q, k) { return Math.abs(Q.padPts[k][0] - (4 - q[1])) < 1e-9 && Math.abs(Q.padPts[k][1] - q[0]) < 1e-9; }) &&
+               RQ.x0 === 4 - D.runway.y0 && RQ.x1 === 4 - D.runway.y1 && RQ.y0 === D.runway.x0 && RQ.y1 === D.runway.x1;
+  chk("[10] turned a quarter it is 4 x 12, the 12 x 4 turned point for point, nose west to the runway, an airbase, turning back",
+      !!Q && Q.id === "airbase" && Q.w === 4 && Q.h === 12 && mapped && Math.abs(Q.padAng - Math.PI) < 1e-9 &&
+      bldLegacyKey(Q) === "airbase_r" && Q.rot === "airbase" && D.rot === "airbase_r" && !BUILDINGS.airbase_r,
+      Q ? Q.w + " x " + Q.h + ", pads " + JSON.stringify(Q.padPts) + ", runway x " + RQ.x0 : "no def");
+  var lt = null, M = Game.map, Wm = M.W;
+  for (var r10 = 4; r10 < 60 && !lt; r10++) for (var a10 = 0; a10 < 96 && !lt; a10++) {
+    var x10 = ((P.homeX / TT) | 0) + (Math.cos(a10 / 96 * 6.283) * r10 | 0), y10 = ((P.homeY / TT) | 0) + (Math.sin(a10 / 96 * 6.283) * r10 | 0);
+    if (Game.canPlace(P, "airbase_r", x10, y10)) lt = { x: x10, y: y10 };
+  }
+  var t = lt ? Game.placeBuilding(P, "airbase_r", lt.x, lt.y, true) : null;
+  chk("[10] canPlace takes the turned shape by its key, and placed it holds its 4 x 12",
+      !!t && t.def === Q && cells(t) === 48 && t.sideKey === "airbase_r" && P.hasBuilding("airbase"),
+      t ? lt.x + "," + lt.y + ", " + cells(t) + " tiles" : "no level 4 x 12 near home");
+  if (t) {
+    var four10 = [0, 1, 2, 3].map(function () { var u = Game.spawnUnit(P, fid); if (u && u.padOn !== t) { u.padOn = t; u.order = { type: "parked" }; u.parked = true; } return u; });
+    ticks(3);
+    var at10 = four10.every(function (u) { if (!u) return false; var q = t.padPoint(u.bay); return u.padOn === t && Math.abs(u.x - q.x) < 0.5 && Math.abs(u.y - q.y) < 0.5 && Math.abs(u.ang - Math.PI) < 1e-6; });
+    var x5 = t.padPoint(4), xr = t.tx * TT + (RQ.x0 + RQ.half) * TT;
+    chk("[10] four stand in its revetments nose west; a fifth would stand on the runway's revetment side",
+        at10 && x5.x < xr && x5.x > t.tx * TT + RQ.x0 * TT && Math.abs(x5.ang - Math.PI / 2) < 1e-9,
+        "bays " + four10.map(function (u) { return u ? u.bay : "-"; }).join(",") + "; overflow at " + f1(x5.x / TT - t.tx) + "," + f1(x5.y / TT - t.ty));
+    var res10 = SaveGame.save(Game, "ironfront.abturn"), snap10 = null;
+    try { snap10 = JSON.parse(localStorage.getItem("ironfront.abturn")); } catch (e) {}
+    var rec10 = snap10 ? snap10.buildings.filter(function (r) { return r.d === "airbase" && r.tx === lt.x && r.ty === lt.y; })[0] : null;
+    var ld10 = SaveGame.load("ironfront.abturn"); localStorage.removeItem("ironfront.abturn");
+    var back = null; Game.human.buildings.forEach(function (b) { if (!b.dead && b.def.id === "airbase" && b.tx === lt.x && b.ty === lt.y) back = b; });
+    chk("[10] saved and loaded it is turned still", res10.ok && !!rec10 && rec10.lg === "airbase_r" && rec10.w === 4 && ld10.ok && !!back && back.def === Q && cells(back) === 48,
+        (rec10 ? "lg " + rec10.lg + " " + rec10.w + " x " + rec10.h : "no record") + "; " + (back ? bldDefKey(back.def) : "missing"));
+    P = Game.human;
+    E = Game.players.filter(function (p) { return p !== P && !Game.allied(P, p); })[0];
+    AI.setPeace(E, true); Game.checkVictory = function () {};
+    Game.human.buildings.forEach(function (b) { if (!b.dead && b.def.id === "airbase") b.hp = 0; }); Game.tick(DT); Game.sweepDead();
+  }
 
   /* ---------------- 7. the commander finds ground ---------------- */
   var C = E; AI.setPeace(C, false); Game.checkVictory = function () {};

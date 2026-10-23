@@ -8896,10 +8896,21 @@ try{
         chk("and a commander's concentrate() and a patrol are offered what that scan takes",
             mb.retarget(lcs) && patrolFights(mb,beat,lcs), "retarget and patrolFights at 11 tiles, past its 7.4-tile sight (the first draft of this change: retarget refused)");
         mb.order={type:"idle"}; mb.stance="hold";
-        Game.emitting=function(u){ return u===mb ? false : emit0(u); };
+        /* ...and our hulls silent too: since 29443ef the LCS carries a radar
+           figure, so a commander's hull within 1.9 x its reach HEARS it (G.esmPlot)
+           and the side holds it that way - true, and not the boat's own */
+        Game.emitting=function(u){ return (u===mb||u===lcs||u===lcs2) ? false : emit0(u); };
         fresh();
+        /* "of its own": the commander's other hulls and boats out of the side's
+           picture for the one question (G.seaHolds skips one that is carried) -
+           where the match has sailed them is the match's, and one of its
+           corvettes once stood 23 tiles off the scene */
+        var others=E.units.filter(function(u){ return u!==mb && !u.dead && !u.carried && (u.layer==="sea"||u.layer==="sub"); });
+        others.forEach(function(u){ u.carried=true; });
+        var heldOff=holds(E,lcs);
+        others.forEach(function(u){ u.carried=false; });
         chk("with its radar off it holds nothing of its own",
-            !holds(E,lcs) && !mb.acqGate(lcs,Rm), "G.emitting false for the boat");
+            !heldOff && !mb.acqGate(lcs,Rm), "G.emitting false for the boat and our hulls"+(others.length?" ("+others.length+" other hulls of its side set aside)":""));
         Game.emitting=emit0;
         mb.dead=true; lcs.dead=true; lcs2.dead=true;
       } else chk("sea scenario built", false, "no open water");

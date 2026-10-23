@@ -987,3 +987,12 @@ var HeroAirbaseRunway = (function () {
   return { build: build };
 })();
 BLD_MODELS["airbase"] = { build: HeroAirbaseRunway.build };
+/* The base turned a quarter clockwise (rules.js BUILDING_LEGACY airbase_r, R
+   when placing): the same field turned about its middle, the runway along
+   the west side and the revetments facing it from the east. */
+BLD_MODELS["airbase_r"] = { build: function (THREE, M, C) {
+  var g = new THREE.Group(), m = HeroAirbaseRunway.build(THREE, M, C);
+  m.rotation.z = -Math.PI / 2;
+  g.add(m); g.name = "airbase";
+  return g;
+} };

@@ -3999,12 +3999,14 @@ var Render3D = (function () {
     }
     /* placement ghost */
     if (input.placing) {
-      const def = BUILDINGS[input.placing];
+      /* the shape being placed: turned by R (ui.js placeKey) */
+      const d0 = BUILDINGS[input.placing], pk = d0 && d0.rot && input.placeRot ? d0.rot : input.placing;
+      const def = BUILDINGS[pk] || bldDefOf(pk);
       const wp = unproject(input.mx, input.my);
       const tx = ((wp.x / CFG.TILE) | 0) - ((def.w / 2) | 0);
       const ty = ((wp.y / CFG.TILE) | 0) - ((def.h / 2) | 0);
       input.placeTx = tx; input.placeTy = ty;
-      const ok = G.canPlace(G.human, input.placing, tx, ty);
+      const ok = G.canPlace(G.human, pk, tx, ty);
       c.strokeStyle = ok ? "rgba(110,255,110,0.9)" : "rgba(255,90,70,0.9)";
       c.fillStyle = ok ? "rgba(110,255,110,0.18)" : "rgba(255,90,70,0.2)";
       c.lineWidth = 2;
