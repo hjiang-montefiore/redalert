@@ -2184,8 +2184,12 @@ function makeCommander() {
   /* choose a legal placement spot near a base anchor, spiralling outward */
   function findSpot(defId, anchorB) {
     const def = BUILDINGS[defId];
-    const ax = anchorB ? anchorB.tx : (P.homeX / CFG.TILE) | 0;
-    const ay = anchorB ? anchorB.ty : (P.homeY / CFG.TILE) | 0;
+    /* a long anchor from its middle: its north-west tile is 11 tiles from the
+       far end of a 12 x 4 airbase (a square one's is within a tile of it, and
+       every base laid out so far was laid out from it) */
+    const mid = anchorB && anchorB.long && anchorB.long();
+    const ax = anchorB ? anchorB.tx + (mid ? anchorB.def.w >> 1 : 0) : (P.homeX / CFG.TILE) | 0;
+    const ay = anchorB ? anchorB.ty + (mid ? anchorB.def.h >> 1 : 0) : (P.homeY / CFG.TILE) | 0;
     if (def.runway) return findRunwaySpot(defId, ax, ay);
     for (let r = 2; r < 26; r++) {
       for (let attempt = 0; attempt < 14; attempt++) {
@@ -2207,7 +2211,11 @@ function makeCommander() {
      walked (findShoreSpot), and ask canPlace only of a footprint that is
      all passable, unpaved, ore-free open ground on one level - the cheap
      half of its test, from the map's own arrays. */
+  let rwMemo = null;
   function findRunwaySpot(defId, ax, ay) {
+    /* asked twice in one think when macroSpot's anchor is the yard the
+       fallback names too (placeReady): the same scan, so the same answer */
+    if (rwMemo && rwMemo.t === G.time && rwMemo.ax === ax && rwMemo.ay === ay) return rwMemo.s;
     const def = BUILDINGS[defId], map = G.map, W = map.W, H = map.H, w = def.w, h = def.h;
     const open = (x, y) => {
       if (x < 1 || y < 1 || x + w >= W || y + h >= H) return false;
@@ -2218,15 +2226,20 @@ function makeCommander() {
       }
       return true;
     };
-    /* ring r holds the footprints whose middle is r tiles (Chebyshev) from the anchor */
-    for (let r = 2; r < 30; r++) {
-      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    /* ring r holds the footprints whose middle is r tiles (Chebyshev) from
+       the anchor; one outside the build radius (canPlace's last test, after
+       48 grid queries) is passed over first */
+    let s = null;
+    for (let r = 2; r < 30 && !s; r++) {
+      for (let dy = -r; dy <= r && !s; dy++) for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const tx = ax + dx - (w >> 1), ty = ay + dy - (h >> 1);
-        if (open(tx, ty) && G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) return { tx, ty };
+        if (!P.inBaseRadius(tx + w / 2, ty + h / 2, CFG.BUILD_RADIUS)) continue;
+        if (open(tx, ty) && G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) { s = { tx, ty }; break; }
       }
     }
-    return null;
+    rwMemo = { t: G.time, ax, ay, s };
+    return s;
   }
   /* naval yard needs shoreline: walk the coast near home */
   function findShoreSpot() {
@@ -3778,14 +3791,19 @@ function makeCommander() {
     const b0 = bearing();
     if (!b0) return findSpot(defId, anchor);
     const ex = b0.x / CFG.TILE, ey = b0.y / CFG.TILE;
-    const dx = ex - anchor.tx, dy = ey - anchor.ty;
+    /* a long anchor from its middle (findSpot): guns laid out from the west end
+       of a 12 x 4 airbase left its eastern revetments bare, and defAnchor,
+       counting round the middle, went on calling it uncovered */
+    const mid = anchor.long && anchor.long();
+    const ax0 = anchor.tx + (mid ? anchor.def.w >> 1 : 0), ay0 = anchor.ty + (mid ? anchor.def.h >> 1 : 0);
+    const dx = ex - ax0, dy = ey - ay0;
     const L = Math.sqrt(dx * dx + dy * dy) || 1;
     for (let r = 4; r < 14; r++) {
       for (let a = 0; a < 8; a++) {
         const spread = (G.rng() - 0.5) * 1.6;
         const ang = Math.atan2(dy, dx) + spread;
-        const tx = (anchor.tx + Math.cos(ang) * r) | 0;
-        const ty = (anchor.ty + Math.sin(ang) * r) | 0;
+        const tx = (ax0 + Math.cos(ang) * r) | 0;
+        const ty = (ay0 + Math.sin(ang) * r) | 0;
         if (G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) return { tx, ty };
       }
     }

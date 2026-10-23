@@ -960,7 +960,8 @@ var Combat = (function () {
     game.grid.query(px, py, aoe + 24, (e) => {
       if (e.dead || e === skipEnt) return;
       if (!canHurtLayer(w, e)) return;
-      const d = U.dist(px, py, e.x, e.y) - (e.r || 8);
+      /* a long structure by its footprint (Building.edge) */
+      const d = e.kind === "building" && e.long && e.long() ? e.edge(px, py) : U.dist(px, py, e.x, e.y) - (e.r || 8);
       if (d > aoe) return;
       const f = U.clamp(1 - Math.max(0, d) / aoe, 0, 1);
       applyDamage(game, e, dmg * f * mul, w, shooter);

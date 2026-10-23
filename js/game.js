@@ -2677,7 +2677,8 @@ var Game = (function () {
       if (opts.owner && (e.owner === opts.owner || G.allied(opts.owner, e.owner))) {
         if (!opts.friendlyFire) return;
       }
-      const d = U.dist(wx, wy, e.x, e.y) - (e.r || 8);
+      /* a long structure by its footprint (Building.edge) */
+      const d = e.kind === "building" && e.long && e.long() ? e.edge(wx, wy) : U.dist(wx, wy, e.x, e.y) - (e.r || 8);
       if (d > R) return;
       const f = U.clamp(1 - Math.max(0, d) / R, 0, 1);
       Combat.applyDamage(G, e, dmg * (0.35 + 0.65 * f), w, null);
@@ -3894,11 +3895,30 @@ var Game = (function () {
     const lk = (typeof AI !== "undefined" && AI.lookOf) ? AI.lookOf(p) : null;
     return lk ? lk[i] !== 0 : true;
   };
+  /* ---- A STRUCTURE IS SEEN WHERE ANY OF IT IS ----
+     The player's fog was read at a structure's north-west tile alone: right
+     for a 2 x 2, wrong for the 12 x 4 airbase (2026-10-23), whose far end is
+     11 tiles from that tile - scouted from the east it was neither drawn nor
+     clickable while its aircraft were. Over a long structure it is the best
+     of its footprint's tiles; anything else is its own tile, as before - a
+     square one's north-west tile is within a tile of all of it, and the
+     stand-off scenes of _behtest [91] are built on exactly when a battery
+     comes into sight. */
+  G.fogAt = function (e) {
+    const W = G.map.W;
+    if (e.kind !== "building" || !e.def || !(e.long && e.long())) return G.fog[e.ty * W + e.tx];
+    let best = 0;
+    for (let y = e.ty; y < e.ty + e.def.h; y++) for (let x = e.tx; x < e.tx + e.def.w; x++) {
+      const f = G.fog[y * W + x];
+      if (f > best) { best = f; if (f === 2) return 2; }
+    }
+    return best;
+  };
   G.visibleTo = function (p, e) {
     if (e.owner === p) return true;
     if (p === G.human) {
       if (!G.fogEnabled) return true;
-      return G.fog[e.ty * G.map.W + e.tx] === 2;
+      return G.fogAt(e) === 2;
     }
     /* a firing point this side saw flash (G.revealFire): the same lit tiles
        the player's fog is lifted over, read off the same grid */
@@ -3918,9 +3938,13 @@ var Game = (function () {
        for a contact inside somebody's clear-day reach. A clear day never
        gets past the first test. */
     let wx = -1, held = -1;
+    /* a long structure is seen where any of it is, as the player's fog has
+       it (G.fogAt): by its footprint, not its middle */
+    const lng = e.kind === "building" && e.long && e.long();
     for (const u of p.units) {
       if (u.dead) continue;
-      const r = u.sightR() * CFG.TILE, d2 = U.dist2(u.x, u.y, e.x, e.y);
+      const ed = lng ? e.edge(u.x, u.y) : 0;
+      const r = u.sightR() * CFG.TILE, d2 = lng ? ed * ed : U.dist2(u.x, u.y, e.x, e.y);
       if (d2 < r * r) return true;
       if (wx < 0) wx = G.weather().vis < 1 ? 1 : 0;
       if (!wx) continue;
@@ -3931,8 +3955,8 @@ var Game = (function () {
     }
     for (const b of p.buildings) {
       if (b.dead) continue;
-      const r = b.sightR() * CFG.TILE;
-      if (U.dist2(b.x, b.y, e.x, e.y) < r * r) return true;
+      const r = b.sightR() * CFG.TILE, ed = lng ? e.edge(b.x, b.y) : 0;
+      if ((lng ? ed * ed : U.dist2(b.x, b.y, e.x, e.y)) < r * r) return true;
     }
     return false;
   };

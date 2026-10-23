@@ -662,7 +662,7 @@ var Render = (function () {
        targets - and even then only the hull: G.seaHolds (game.js) lights the
        one tile it sits on, never the water, the sky or the ground round it. */
     if (e.layer === "sub") return G.canSeeSub(G.human, e);
-    const f = G.fog[e.ty * G.map.W + e.tx];
+    const f = G.fogAt ? G.fogAt(e) : G.fog[e.ty * G.map.W + e.tx];   // a structure over its footprint
     if (e.kind === "building") return f >= 1;        // structures stay on map once seen
     return f === 2;
   }
@@ -2285,7 +2285,7 @@ var Render = (function () {
            dome and whether or not that water is fogged */
         if (e.layer === "sub") { if (!G.canSeeSub(G.human, e)) continue; }
         else if (!hasRadar) { if (!visible(e)) continue; }
-        else if (G.fogEnabled && G.fog[e.ty * map.W + e.tx] === 0) continue;
+        else if (G.fogEnabled && (G.fogAt ? G.fogAt(e) : G.fog[e.ty * map.W + e.tx]) === 0) continue;
       }
       /* OURS GREEN, AN ALLY ITS OWN COLOUR, EVERYONE ELSE RED. The slot list
          lets commanders share a team, and a red dot on a friendly tank is
@@ -2396,8 +2396,8 @@ var Render = (function () {
       if (!own) {
         if (e.layer === "sub") { if (!G.canSeeSub(G.human, e)) continue; }
         else if (!hasRadar) {
-          if (G.fogEnabled && G.fog[e.ty * map.W + e.tx] !== 2) continue;
-        } else if (G.fogEnabled && G.fog[e.ty * map.W + e.tx] === 0) continue;
+          if (G.fogEnabled && (G.fogAt ? G.fogAt(e) : G.fog[e.ty * map.W + e.tx]) !== 2) continue;
+        } else if (G.fogEnabled && (G.fogAt ? G.fogAt(e) : G.fog[e.ty * map.W + e.tx]) === 0) continue;
       }
       /* ours green, an ally its own colour, everyone else red - see the
          note in drawMinimap above */

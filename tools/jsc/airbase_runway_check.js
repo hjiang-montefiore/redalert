@@ -21,7 +21,12 @@
          the revetment it had, straight onto its point;
      [6] a fifth stands on the open ground at the runway's west end;
      [7] the commander finds ground for one: the AI's own placement, run on
-         this map (findRunwaySpot through the ordinary build queue). */
+         this map (findRunwaySpot through the ordinary build queue);
+     [8] one away while another is delivered into its revetment comes home
+         to a free one and stays down, and nobody moves (the review of
+         d6d31a1: it used to be bounced back into the air);
+     [9] an enemy's base is in sight where any of it is (G.fogAt), and its
+         edge is its footprint's (Building.edge), not a circle's. */
 var TT = 32, DT = 1 / 30, PASS = 0, FAIL = 0, P = null, E = null;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -124,6 +129,48 @@ function run() {
       fifth.x > a.tx * TT && fifth.x < a.x && fifth.y > rw && fifth.y < a.ty * TT + D.h * TT,
       fifth ? "bay " + fifth.bay + " at " + f1(fifth.x / TT - a.tx) + "," + f1(fifth.y / TT - a.ty) + " tiles in" : "none");
   [four[0], four[1], four[2], four[3], fifth].forEach(function (u) { if (u && !u.dead) { u.hp = 0; u.dead = true; } });
+  Game.sweepDead();
+
+  /* ---------------- 8. a bay taken while it was away ---------------- */
+  var A8 = Game.spawnUnit(P, fid), B8 = Game.spawnUnit(P, fid);
+  ticks(3);
+  A8.parked = false; A8.order = { type: "move", x: a.x, y: a.y - 25 * TT }; A8.moving = true;
+  ticks(5 * 30);
+  var C8 = Game.spawnUnit(P, fid);
+  ticks(3);
+  var cBay = C8 ? C8.bay : -1, bounced = 0, wasDown = false;
+  A8.order = { type: "rtb" };
+  var n8 = ticks(120 * 30, function () {
+    if (A8.order && A8.order.down) wasDown = true;
+    if (wasDown && A8.order && A8.order.type === "rtb" && !A8.order.down) bounced++;
+    return A8.order && A8.order.type === "parked";
+  });
+  ticks(5 * 30);
+  var qa = a.padPoint(A8.bay), qc = C8 ? a.padPoint(C8.bay) : null;
+  chk("[8] home to a base where its revetment was given away meanwhile, it lands in a free one and stays down; nobody moves",
+      A8.parked && !bounced && C8 && C8.bay === cBay && A8.bay !== cBay && A8.bay !== B8.bay &&
+      Math.abs(A8.x - qa.x) < 0.5 && Math.abs(C8.x - qc.x) < 0.5,
+      f1(n8 / 30) + " s, A bay " + A8.bay + ", B " + B8.bay + ", C " + (C8 ? C8.bay : "-") + " (was " + cBay + ")" + (bounced ? ", bounced " + bounced : ""));
+  [A8, B8, C8].forEach(function (u) { if (u && !u.dead) { u.hp = 0; u.dead = true; } });
+  Game.sweepDead();
+
+  /* ---------------- 9. a long structure: seen and hit on its footprint ---------------- */
+  var W = Game.map.W, F = Game.fog, keep = [], east = (a.ty + 1) * W + a.tx + 11;
+  for (var j9 = a.ty; j9 < a.ty + 4; j9++) for (var i9 = a.tx; i9 < a.tx + 12; i9++) { keep.push(F[j9 * W + i9]); F[j9 * W + i9] = 0; }
+  var wasFog = Game.fogEnabled; Game.fogEnabled = true;
+  var eOwner = a.owner; a.owner = E;
+  F[east] = 2;
+  var seen = Game.fogAt(a) === 2 && Game.visibleTo(P, a) && F[a.ty * W + a.tx] === 0;
+  F[east] = 0;
+  var unseen = Game.fogAt(a) === 0 && !Game.visibleTo(P, a);
+  var k9 = 0; for (j9 = a.ty; j9 < a.ty + 4; j9++) for (i9 = a.tx; i9 < a.tx + 12; i9++) F[j9 * W + i9] = keep[k9++];
+  a.owner = eOwner; Game.fogEnabled = wasFog;
+  chk("[9] an enemy's runway base is in sight when only its far end is, and not when none of it is",
+      seen && unseen, "far end in sight: " + seen + "; none: " + unseen);
+  var side = a.edge(a.x, a.ty * TT - 3 * TT), inside = a.edge(a.x + 5 * TT, a.y), endOff = a.edge(a.tx * TT - 2 * TT, a.y);
+  chk("[9] its edge is its footprint's: 3 tiles off its long side is 3 tiles, inside is 0, 2 off its end is 2",
+      Math.abs(side - 3 * TT) < 0.01 && inside === 0 && Math.abs(endOff - 2 * TT) < 0.01 && a.long() && !Game.entities.some(function (b) { return b.kind === "building" && !b.dead && b.def.w === b.def.h && b.long(); }),
+      (side / TT).toFixed(2) + " / " + inside + " / " + (endOff / TT).toFixed(2) + " tiles");
   a.hp = 0; Game.tick(DT);
 
   /* ---------------- 7. the commander finds ground ---------------- */

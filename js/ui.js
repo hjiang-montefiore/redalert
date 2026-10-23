@@ -2702,7 +2702,7 @@ var UI = (function () {
   /* `stack`, when passed, collects every candidate under the point with its
      score, so clickSelect() can walk down a pile */
   function pickAt(mx, my, includeBuildings, only, stack) {
-    let best = null, bd = Infinity;
+    let best = null, bd = Infinity, wpk = null;
     for (const e of G.entities) {
       /* a landing craft inside a ship's hull is not there to be clicked
          (entities.js WELL TRANSIT) */
@@ -2721,6 +2721,12 @@ var UI = (function () {
       }
       const rr = Math.max(12, (e.r + 6) * Render.cam.z);
       let d = U.dist(mx, my, ex, ey - (e.kind === "building" ? 8 : 0));
+      /* a long structure (the 12 x 4 airbase) is hit on its footprint, not
+         inside the circle of r round its middle (Building.edge) */
+      if (e.kind === "building" && e.long && e.long()) {
+        if (!wpk) wpk = (Render.unproject && Render.unproject(mx, my)) || { x: NaN, y: NaN };
+        d = e.edge(wpk.x, wpk.y) <= 6 ? Math.min(d, rr - 1) : Infinity;
+      }
       /* A unit standing on a structure must win the click, or aircraft parked
          on their own airbase can never be selected at all - the building is
          always underneath them and always wins on distance. */
@@ -2749,7 +2755,7 @@ var UI = (function () {
              that meant shelling a base you had never found, through fog, on turn
              one. The exemption was presumably meant to express "you remember
              what you have seen"; it actually expressed "you know everything". */
-          const fg = G.fog[e.ty * G.map.W + e.tx];
+          const fg = G.fogAt ? G.fogAt(e) : G.fog[e.ty * G.map.W + e.tx];   // a structure over its footprint
           if (e.kind === "building" ? fg === 0 : fg !== 2) continue;
         }
         if (stack) stack.push({ e, d });

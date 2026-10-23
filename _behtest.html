@@ -1335,16 +1335,43 @@ try{
         if(ok9){ el={x:x9,y:y9}; break; } } }
     var sam=el?Game.placeBuilding(E,"sam",el.x,el.y,true):null;
     if(sam) sam.buildProgress=1;
-    for(var i=0;i<10 && el;i++){ var pw=Game.placeBuilding(E,"power",el.x+3+i*2,el.y+4,true);
-      if(pw) pw.buildProgress=1; }
+    /* on the air whatever the commander's grid is by now - its 12 x 4
+       airbases (2026-10-23) draw on it - as the heard-SAM scene powers its
+       one site: radiating, it is what the Weasel finds, shoots and leaves */
+    if(sam) Object.defineProperty(sam, "powered", { value:true, configurable:true });
+    /* ...each plant on the free ground nearest its place in the row: beside
+       the player's ramp a row laid blind could cross the airbase, and
+       removing it after would hole its footprint - and a plant left out
+       is a grid too weak to keep the battery radiating */
+    var pws9=[];
+    for(var i=0;i<10 && el;i++){ var at9=null;
+      for(var r8=0;r8<8&&!at9;r8++) for(var dy8=-r8;dy8<=r8&&!at9;dy8++) for(var dx8=-r8;dx8<=r8;dx8++){
+        if(Math.max(Math.abs(dx8),Math.abs(dy8))!==r8) continue;
+        var px9=el.x+3+i*2+dx8, py9=el.y+4+dy8, free9=true;
+        for(var j8=0;j8<2&&free9;j8++) for(var i8=0;i8<2;i8++)
+          if(Game.tileBlocked(px9+i8,py9+j8,null)||!GameMap.passable(Game.map,px9+i8,py9+j8,"ground")){ free9=false; break; }
+        if(free9){ at9={x:px9,y:py9}; break; } }
+      if(!at9) continue;
+      var pw=Game.placeBuilding(E,"power",at9.x,at9.y,true);
+      if(pw){ pw.buildProgress=1; pws9.push(pw); } }
     tick(2);
 
     function ramp(id){
       var u=Game.spawnUnitAt(P,id,(base.x+2)*32+16,(base.y+3)*32+16);
       if(!u) return null;
       u.parked=true; u.order={type:"parked"}; u.fuel=u.fuelMax; u.ammo=u.ammoMax;
+      /* the Weasel lives through the battery's answer, as the stand-off scenes'
+         bombers do ([91]): what is measured is that it launches itself,
+         shoots and comes home, and with its battery powered whatever the
+         grid (above) one HARM leaves it alive to shoot the Weasel down
+         before the second */
+      if(id==="ew_n") u.hp=u.maxHp=1e5;
       u.r39={launched:false, fired:0, home:false, scramble:false};
       for(var k=0;k<60*30;k++){ tick(1);
+        /* the battery stands, as [91]'s do: the Weasel spends its rounds on
+           it and comes home, and no commander has lost a site to a HARM
+           going into the sections after */
+        if(sam&&!sam.dead) sam.hp=sam.maxHp;
         if(!u.parked && u.order.type!=="parked") u.r39.launched=true;
         /* strip alert - scrambling at an aeroplane already overhead - is air
            defence and is deliberately still automatic for everyone */
@@ -1391,7 +1418,7 @@ try{
     /* the battery and its grid are the Weasel's scene only: off again before
        anything else flies from this ramp past them */
     if(sam&&!sam.dead) Game.removeBuilding(sam);
-    E.buildings.slice().forEach(function(b9){ if(!b9.dead&&b9.def.id==="power"&&el&&b9.ty===el.y+4&&b9.tx>el.x&&b9.tx<=el.x+21) Game.removeBuilding(b9); });
+    pws9.forEach(function(b9){ if(!b9.dead) Game.removeBuilding(b9); });
     Game.sweepDead();
 
     /* (owner) "b2 f18 navy ef18 are attacking automatically and don't land the

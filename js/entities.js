@@ -4565,8 +4565,14 @@ class Unit {
         return;
       }
       this.noPadSaid = false;
-      /* on the runway base, down onto the revetment it will park in */
-      const bayQ = pad.host && pad.host.padPoint && pad.host.def.padPts ? pad.host.padPoint(pad.host.bayFor(this)) : null;
+      /* on the runway base, down onto the revetment it will park in - and
+         that revetment is its from now, so another one coming home or being
+         delivered meanwhile is given another (Building.bayFor) */
+      let bayQ = null;
+      if (pad.host && pad.host.padPoint && pad.host.def.padPts) {
+        this.bay = pad.host.bayFor(this); this.bayHost = pad.host;
+        bayQ = pad.host.padPoint(this.bay);
+      }
       const px = bayQ ? bayQ.x : pad.x, py = bayQ ? bayQ.y : pad.y;
       /* flyTo moves first and tests the capture radius afterwards, and this
          branch went on calling it after the aircraft had reported itself
@@ -6488,7 +6494,8 @@ class Unit {
        further. */
     const reach = this.cat === "naval" ? CFG.TILE
                 : this.layer === "ground" && t.kind === "unit" && t.layer === "sea" && t.def.amphib ? CFG.TILE * 1.5 : 10;
-    const near = U.dist(this.x, this.y, t.x, t.y) < (t.r || 20) + this.r + reach ||
+    const near = (t.kind === "building" && t.long && t.long() ? t.edge(this.x, this.y) < this.r + reach
+                                                               : U.dist(this.x, this.y, t.x, t.y) < (t.r || 20) + this.r + reach) ||
                  (t.kind === "unit" && this.besideRamp(t));
     /* an aeroplane that has taken off is not waited for under its flight path */
     if (!near && this.cat === "vehicle" && t.kind === "unit" && t.layer === "air" && t.def.payload &&
@@ -7552,6 +7559,16 @@ class Building {
   weaponRange(w) { return Unit.prototype.weaponRange.call(this, w); }
   sightR() { return this.def.sight * (this.owner.upgrades.optics ? 1.25 : 1); }
 
+  /* How far a point is from this structure's footprint, 0 inside it. A long
+     structure (the 12 x 4 airbase) is measured by this, not by the circle
+     of r round its middle, which reached 4.6 tiles off its long sides (a
+     click, a blast, an engineer's reach). */
+  edge(x, y) {
+    const T = CFG.TILE, x0 = this.tx * T, y0 = this.ty * T, x1 = x0 + this.def.w * T, y1 = y0 + this.def.h * T;
+    const dx = x < x0 ? x0 - x : x > x1 ? x - x1 : 0, dy = y < y0 ? y0 - y : y > y1 ? y - y1 : 0;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  long() { return this.def.w !== this.def.h; }
   /* aircraft based here, whether on the ramp or currently flying */
   wing() {
     const out = [];
@@ -7564,25 +7581,30 @@ class Building {
   /* ---- THE REVETMENTS OF THE RUNWAY BASE (def.padPts) ----
      An aircraft keeps the revetment it had while it is free: the slot used
      to be its place in the owner's unit list among those parked, so one
-     taking off moved every other one along a bay. Not saved: after a load
-     each takes the first free one again. */
+     taking off moved every other one along a bay. One coming home claims
+     its revetment as it turns for the base (the rtb branch), so nothing
+     else is given it meanwhile. Not saved: after a load each takes the
+     first free one again. */
   bayFor(u) {
     const taken = new Set();
     for (const w of this.wing())
-      if (w !== u && w.parked && w.bayHost === this && w.bay !== undefined) taken.add(w.bay);
+      if (w !== u && w.bayHost === this && w.bay !== undefined &&
+          (w.parked || (w.order && (w.order.type === "rtb" || w.order.type === "land")))) taken.add(w.bay);
     if (u.bayHost === this && u.bay !== undefined && !taken.has(u.bay)) return u.bay;
     let i = 0;
     while (taken.has(i)) i++;
     return i;
   }
   /* A revetment's world point and heading. A field holding more than it has
-     bays stands the rest at the runway's west end along its north edge, nose
-     east, one drawn length apart - the only open ground it has. */
+     bays stands the rest at the runway's west end, nose east, one drawn
+     length apart along its north edge, then its south edge - the only open
+     ground it has. */
   padPoint(slot) {
     const d = this.def, P = d.padPts, T = CFG.TILE, x0 = this.tx * T, y0 = this.ty * T;
     if (slot < P.length) return { x: x0 + P[slot][0] * T, y: y0 + P[slot][1] * T, ang: d.padAng || 0 };
-    const k = slot - P.length, R = d.runway;
-    return { x: x0 + (R.x0 + 0.9 + 1.8 * (k % 6)) * T, y: y0 + (R.y - R.half + 0.35) * T, ang: 0 };
+    const k = slot - P.length, R = d.runway, row = ((k / 6) | 0) % 2;
+    return { x: x0 + (R.x0 + 0.9 + 1.8 * (k % 6) + 0.9 * (((k / 12) | 0) % 2)) * T,
+             y: y0 + (row ? R.y + R.half - 0.35 : R.y - R.half + 0.35) * T, ang: 0 };
   }
   ramp() { return this.def.pads || this.def.carrier || 0; }
   tryFire(wi, t) { Unit.prototype.tryFire.call(this, wi, t); }

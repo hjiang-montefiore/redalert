@@ -2574,7 +2574,7 @@ var Render3D = (function () {
            contact from a sightless sensor an invisible one. */
         if (e.layer === "sub") vis = G.canSeeSub(G.human, e);
         else {
-          const f = G.fog[e.ty * G.map.W + e.tx];
+          const f = G.fogAt ? G.fogAt(e) : G.fog[e.ty * G.map.W + e.tx];   // a structure over its footprint
           vis = e.kind === "building" ? f >= 1 : f === 2;
         }
       }
