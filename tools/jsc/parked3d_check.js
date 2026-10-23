@@ -467,6 +467,11 @@ var OVERSIZE = {};
      (here the blades' 26.1 m of X extent), so at its real proportions the forward head's blades reach about 1.0 m
      into a revetment wall below its top */
   "gbr_e80_transport gbr_e90_transport gbr_e00_transport trans_b",
+  /* the CH-46D and CH-46E Sea Knight (js/hero/us_ch46_seaknight.js): two 50 ft three-blade rotors on a 13.7 m
+     fuselage. Three blades always reach at least R sin 60 = 6.6 m to the side, and the game scales an aircraft by its
+     length (here the blades' 21.7 m of X extent), so at its real proportions the blades reach 1.03 m into a
+     revetment wall below its top */
+  "nato_e60_ch46 nato_e80_ch46",
   /* the C-17A Globemaster III (js/hero/us_c17_globemaster.js): 51.75 m of wing over the winglets on 53.0 m of
      length; the game scales an aircraft by its length, so at its real proportions it reaches 0.58 m into a
      revetment wall below its top */

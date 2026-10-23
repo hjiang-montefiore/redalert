@@ -49,13 +49,18 @@ function recOf(e) { return H ? H.recOf(e.id) : null; }
    Yak-38: 7.022 m spread, 4.45 m folded, the outer panels up through 102 deg
    (Russian figures as given on migflug.com's Yak-38 data page; the Western
    tables' 7.32 m is not used); the F9F-8 Cougar: 414 in (34'-6") and 188 in
-   (15'-8") folded, the BuAer descriptive arrangement of 15 October 1956 */
+   (15'-8") folded, the BuAer descriptive arrangement of 15 October 1956;
+   the F-14A Tomcat: 64 ft 1.5 in at the 20 deg minimum sweep (Wikipedia's
+   specification table) and 10.15 m at the 75 deg deck oversweep (German
+   Wikipedia's F-14A table, after Winchester 2011): its "wingfold" is the
+   sweep about the pivot, not a fold */
 var PUB = {
   nato_e60_cstrike: [16.15, 7.72], nato_e80_cstrike: [16.15, 7.72], nato_e90_cstrike: [16.15, 7.72],
   nato_e60_ewair: [16.15, 7.595], nato_e90_ewair: [16.15, 7.595],
   nato_e60_cfighter: [11.70, 8.41], nato_e60_fighter: [11.70, 8.41], nato_e80_sead: [11.70, 8.41],
   pact_e60_cfighter: [7.022, 4.45], pact_e80_cfighter: [7.022, 4.45],
-  nato_e50_cfighter: [10.516, 4.775]
+  nato_e50_cfighter: [10.516, 4.775],
+  nato_e80_cfighter: [19.545, 10.15]
 };
 var _v = new THREE.Vector3(), _ax = new THREE.Vector3();
 function foldsOf(o) { var L = []; o.traverse(function (x) { if (x.name === "wingfold") L.push(x); }); return L; }

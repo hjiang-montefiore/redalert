@@ -7,9 +7,8 @@
      nato_e00_ewair     EA-18G Growler (2009), ALQ-99 jamming pods
      ew_n               EA-18G Growler of the 2020s, NGJ-MB pods
    No other row draws any of them: there is no F/A-18A and no two-seat D or F
-   in the roster. The e50 Cougar and the e60 Phantom have models of their own
-   (us_f9f_cougar.js, us_f4_phantom.js); the e80 Tomcat has none and borrows
-   the first same-role peer, which stays cfighter_n.
+   in the roster. The e50 Cougar, the e60 Phantom and the e80 Tomcat have
+   models of their own (us_f9f_cougar.js, us_f4_phantom.js, us_f14_tomcat.js).
 
    TWO AIRFRAMES, NOT ONE. The Super Hornet is not a stretched Hornet from the
    outside, and the two are told apart at once from the game camera:
