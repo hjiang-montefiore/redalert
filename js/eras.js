@@ -13236,6 +13236,35 @@ var ERA_RADAR_SETS = {
   roc_e90_corvette: { radarQ: 5, radarGen: "e80" },   /* Chin Chiang: the same class of fit a decade on, twelve small gunboats built at Kaohsiung. */
   roc_e00_corvette: { radarQ: 11 },  /* Tuo Chiang: a stealth catamaran with a modern search and fire-control fit, and just under the present-day corvette_r, which is the improved batch. */
 
+  /* ---- the frigates the generator left with no radar at all ----
+     These rows carried neither field. An era row's `radar` is generated from
+     the present-day row of the same faction and role times 0.60, 0.70, 0.84,
+     0.92 or 0.97 for e50 to e00 - every American, Pact, Chinese and Taiwanese
+     era hull whose present-day row has a radius matches that to the
+     rounding, bar the Kiev - and
+     corvette_n, corvette_p, corvette_c and corvette_k had no radius to
+     multiply. So nineteen era frigates lifted no fog: their crews' eyes,
+     which the weather cuts, were the whole picture (owner: "the fog of war
+     closes"). This is the one place a hull's `radar` is filled from this
+     table, and only where the row has none (the loop below).
+     corvette_n now carries the TRS-3D's 14.6 (rules.js RADAR_COVERAGE, from
+     the K130 that carries the same set), and the American rows take the
+     generator's own ramp from it: 8.8, 10.2, 12.3, 13.4, 14.2. Cross-check:
+     the ROC's Cheng Kung, a Perry with the same SPS-49, stands at 13.8 in
+     e90. radarQ is the named set's figure on a row that already carries that
+     set, as everywhere else in this table. The Riga takes the Kotlin's two
+     figures: the same set, in the same navy and the same decade.
+     LEFT WITHOUT, and not an oversight: the Pact frigates after the Riga and
+     every Chinese and North Korean one. No row in the game carries a figure
+     for any of their sets, and their navy's present-day corvette has no
+     radius to ramp from, so a number here would be made up. */
+  nato_e50_corvette: { radar: 8.8,  radarQ: 9 },   /* Dealey: AN/SPS-6 air search (en.wikipedia, Dealey class; Gardiner & Chumbley 1995). The 9 is the SPS-6 on the ROC's wartime destroyers. */
+  nato_e60_corvette: { radar: 10.2, radarQ: 15 },  /* Knox: AN/SPS-40 air search over an SPS-10 (en.wikipedia, Knox class). The 15 is the Spruance's SPS-40B, which that ship carried alone. */
+  nato_e80_corvette: { radar: 12.3, radarQ: 20 },  /* Oliver Hazard Perry: AN/SPS-49 with an SPS-55 for the surface (en.wikipedia, Perry class). The 20 is the SPS-49 on the Cheng Kung, the same class and set. */
+  nato_e90_corvette: { radar: 13.4, radarQ: 20 },  /* Perry: the same SPS-49, and it stayed aboard when the Mk 13 came off in 2003-05. */
+  nato_e00_corvette: { radar: 14.2, radarQ: 14 },  /* LCS: the Freedom's TRS-3D (en.wikipedia, Freedom class), and the 14 the present-day corvette_n already holds for the same ship. Under the Perry's 20, and rightly: a medium-range set on a littoral hull with no area missile, in the slot the SPS-49 left. */
+  pact_e50_corvette: { radar: 6.6,  radarQ: 7 },   /* Riga: Fut-N 'Slim Net', Guys-1M4 on the first ships (ru.wikipedia, Project 50) - the Kotlin's set, so the Kotlin's 6.6 and 7. */
+
   /* ---- missile boats ----
      A fast attack craft's radar is a surface-search set. It hunts ships and
      it is not an air-defence platform, and the numbers refuse to pretend. */
@@ -13261,6 +13290,7 @@ var ERA_RADAR_GAPS = [];
     var _rs = ERA_RADAR_SETS[_rid];
     if (_rs.radarQ !== undefined && _ru.radarQ === undefined) { _ru.radarQ = _rs.radarQ; qn++; }
     if (_rs.radarGen && !_ru.radarGen) { _ru.radarGen = _rs.radarGen; gn++; }
+    if (_rs.radar !== undefined && _ru.radar === undefined) _ru.radar = _rs.radar;   // the frigates the generator left bare (above)
   }
   /* Every era row that carries a coverage radius must now carry a track
      quality too, or it is back on the radar * 1.6 fallback. spaag is the one

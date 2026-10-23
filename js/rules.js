@@ -3890,11 +3890,13 @@ Object.assign(UNITS, {
     cost:1290, oil:17, time:17, hp:1120, armor:"light", speed:2.9, turn:1.7, sight:9.8, r:17, mass:0,
     layer:"sea", weapons:["navgun_76","sam_camm","asw_stingray"], prereq:["navalyard"], tech:1,
     turret:true, tturn:2.0, sonar:11.0, ciws:0.46,
+    radar:17.2, radarQ:13,   /* Type 997 Artisan, which replaced the Type 996 from 2010. No row carries an Artisan figure of its own, so the class's: gbr_e00_corvette, the same ship (see RADAR_COVERAGE). */
     desc:"Designed in the 1980s as a cheap towed-array hull to sit quietly in the Atlantic and listen, and still the best submarine hunter in this game: Sonar 2087 is a low-frequency active-passive array with no equal in any other fleet here. Harpoon was withdrawn in 2023 with nothing to replace it, so a British frigate now has a gun, a short-range SAM and a torpedo, and nothing at all with which to sink a ship beyond the horizon. Type 26 and Type 31 are building; neither is in service." },
   destroyer_b: { from:"e20", fac:"gbr", role:"destroyer", name:"Type 45 Daring DDG", full:"HMS Daring (D32), Type 45 Daring-class", cat:"naval",
     cost:2280, oil:35, time:29, hp:1980, armor:"heavy", speed:2.5, turn:1.2, sight:11.6, r:20, mass:0,
     layer:"sea", weapons:["navgun_76","sam_aster30","sam_aster15"], prereq:["navalyard","radar"], tech:2,
     turret:true, tturn:1.4, ciws:0.58, sonar:6.4,
+    radar:19.6, radarQ:33,   /* SAMPSON over S1850M: gbr_e00_destroyer's figures, the same ship and the same two sets */
     desc:"SAMPSON on a mast at 27 metres and Aster 30 beneath it: the best air-defence ship in Europe and, on a good day, in the world - six of them, and often two at sea. It was built with no anti-ship missile whatsoever and had none for fourteen years, until NSM began appearing in 2023-24; the propulsion plant tripped repeatedly in warm water and every hull has been through a power-improvement refit. Superb at one job, thin everywhere else." },
   sub_b: { from:"e20", fac:"gbr", role:"sub", name:"Astute SSN", full:"HMS Astute (S119), Astute-class", cat:"naval",
     cost:2520, oil:42, time:31, hp:1230, armor:"light", speed:2.4, turn:1.1, sight:8.6, r:17, mass:0,
@@ -3909,6 +3911,7 @@ Object.assign(UNITS, {
   carrier_b: { from:"e20", fac:"gbr", role:"carrier", name:"Queen Elizabeth CV", full:"HMS Queen Elizabeth (R08), Queen Elizabeth-class", cat:"naval",
     cost:4150, oil:88, time:53, hp:3300, armor:"heavy", speed:1.6, turn:0.6, sight:13, r:30, mass:0,
     layer:"sea", weapons:["ciws_phalanx"], prereq:["navalyard","lab","airbase"], tech:3, ciws:0.5, carrier:3, storage:0,
+    radar:16.2, radarQ:15,   /* S1850M and the Type 997 Artisan: gbr_e00_carrier's figures, the same ship and sets */
     desc:"Sixty-five thousand tonnes, two islands, a ski-jump and no catapult - so it flies F-35B and nothing else, and can never operate a fixed-wing early-warning aircraft. Britain invented the steam catapult, the angled deck and the mirror landing sight, gave all three to the United States Navy, and then built a carrier that uses none of them. Two ships, and for years not enough escorts to screen one." },
   cstealth_b: { from:"e20", fac:"gbr", role:"cstealth", name:"F-35B Lightning (deck)", service:"2018", full:"Lockheed Martin F-35B Lightning II, embarked (Queen Elizabeth class)", cat:"aircraft",
     cost:1780, oil:34, time:22, hp:440, armor:"air", speed:7.9, turn:2.1, sight:11.0, r:16, mass:0,
@@ -3935,11 +3938,13 @@ Object.assign(UNITS, {
     cost:1340, oil:18, time:17, hp:1180, armor:"light", speed:2.9, turn:1.7, sight:9.8, r:17, mass:0,
     layer:"sea", weapons:["navgun_76","sam_aster15","ssm_exocet"], prereq:["navalyard"], tech:1,
     turret:true, tturn:2.0, sonar:9.2, ciws:0.44,
+    radar:18.2, radarQ:20,   /* Herakles: fra_e00_corvette's figures, the same ship and set */
     desc:"Six thousand tonnes on a shaped hull with a variable-depth sonar aft, Aster 15 in Sylver cells, Exocet on the beam and - on the ASW hulls - the naval cruise missile MdCN, which no other European escort carries. The frigate France sells: Morocco, Egypt and Greece all bought it. Not quite a British towed array, and considerably better armed." },
   destroyer_f: { from:"e20", fac:"fra", role:"destroyer", name:"Horizon DDG", full:"Forbin (D620), Horizon-class air-defence destroyer", cat:"naval",
     cost:2240, oil:34, time:28, hp:2020, armor:"heavy", speed:2.4, turn:1.2, sight:11.2, r:20, mass:0,
     layer:"sea", weapons:["navgun_76","sam_aster30","ssm_exocet"], prereq:["navalyard","radar"], tech:2,
     turret:true, tturn:1.4, ciws:0.56, sonar:6.8,
+    radar:19.2, radarQ:30,   /* EMPAR over S1850M: fra_e00_destroyer's figures, the same ship and sets */
     desc:"The same PAAMS system as a Type 45, under a rotating EMPAR instead of SAMPSON, on a hull France and Italy designed together after Britain walked out of the three-nation Horizon programme in 1999. Two ships. Unlike the Type 45 it went to sea with an anti-ship missile from the first day, because it is French and Exocet is the point." },
   sub_f: { from:"e20", fac:"fra", role:"sub", name:"Suffren SSN", full:"Suffren (S635), Barracuda-class", cat:"naval",
     cost:2460, oil:41, time:30, hp:1210, armor:"light", speed:2.35, turn:1.1, sight:8.4, r:17, mass:0,
@@ -3960,6 +3965,7 @@ Object.assign(UNITS, {
     cost:4400, oil:96, time:55, hp:3400, armor:"heavy", speed:1.55, turn:0.6, sight:13.4, r:30, mass:0,
     layer:"sea", weapons:["sam_aster15"], prereq:["navalyard","lab","airbase"], tech:3,
     ciws:0.52, carrier:3, nuclear:true, storage:0,
+    radar:16, radarQ:18,     /* DRBJ 11B, now giving way to a SMART-S Mk2, over DRBV 26D: fra_e00_carrier's figures, the same ship. No row carries a SMART-S figure. */
     desc:"The only nuclear-powered aircraft carrier outside the United States Navy, and the only carrier in the world besides an American one with catapults, arrestor wires and a fixed-wing early-warning aircraft. Forty-two thousand tonnes, two K15 reactors from the SSBN programme, a flight deck that had to be lengthened before the E-2C could use it, and one ship - when she is in refit France has no carrier at all. Rafale M off this deck carries ASMP-A: nuclear strike from the sea, which nobody else here can do." },
   asw_helo_f: { from:"e20", fac:"fra", role:"aswhelo", name:"NH90 NFH Caiman", full:"NHIndustries NH90 NFH Caiman Marine", cat:"aircraft",
     cost:1430, oil:26, time:16, hp:395, armor:"air", speed:3.3, turn:2.3, sight:8.4, r:13, mass:0,
@@ -3972,11 +3978,13 @@ Object.assign(UNITS, {
     cost:1180, oil:15, time:16, hp:980, armor:"light", speed:3.0, turn:1.9, sight:9.0, r:17, mass:0,
     layer:"sea", weapons:["navgun_76","sam_ram","ssm_exocet"], prereq:["navalyard"], tech:1,
     turret:true, tturn:2.0, sonar:2.4, ciws:0.5,
+    radar:14.6, radarQ:11,   /* TRS-4D on Batch 2, TRS-3D on Batch 1: deu_e00_corvette's figures, the same class */
     desc:"Eighteen hundred tonnes, a shaped topside, two RAM launchers, four RBS15 and no sonar worth the name - a Baltic ship built to fight from the coast, not to hunt submarines in the Atlantic. It is also now the SMALLEST combatant Germany owns: the last Gepard-class fast attack craft paid off in 2016 and the navy that operated thirty missile boats through the Cold War cannot buy a cheap hull any more." },
   destroyer_g: { from:"e20", fac:"deu", role:"destroyer", name:"Sachsen F124", full:"Sachsen (F219), Type 124 air-defence frigate", cat:"naval",
     cost:2150, oil:33, time:28, hp:2060, armor:"heavy", speed:2.35, turn:1.2, sight:11.0, r:20, mass:0,
     layer:"sea", weapons:["navgun_76","sam_sm2","sam_ram"], prereq:["navalyard","radar"], tech:2,
     turret:true, tturn:1.4, ciws:0.54, sonar:7.4,
+    radar:19, radarQ:28,     /* APAR over SMART-L: deu_e00_destroyer's figures, the same ship and sets */
     desc:"APAR - four fixed active phased-array faces, and one of the few radars in the world in the class of SPY-1 and SAMPSON - over SM-2 and ESSM. Three ships, and Germany has no others like them: the newest German class, the Type 125 Baden-Wurttemberg of 2019, is a seven-thousand-tonne stabilisation frigate with a 127 mm gun, no towed array and no anti-submarine torpedoes at all, and cannot escort anything against a submarine. There is no German cruiser and there never has been." },
   sub_g: { from:"e20", fac:"deu", role:"sub", name:"Type 212A", full:"U-31 (S181), Type 212A", cat:"naval",
     cost:2050, oil:30, time:26, hp:820, armor:"light", speed:1.9, turn:1.3, sight:7.4, r:15, mass:0,
@@ -4490,6 +4498,21 @@ var RADAR_COVERAGE = {
      receiver, so it earns a collection radius and no jamming. */
   awacs_f: 32, cawacs_f: 28, ew_f: 16, fighter_f: 7, cfighter_f: 7,
   fighter_k: 1.5,          // a MiG-21 ranging set contributes almost nothing
+
+  /* The LCS was missing, and so were the British, French and German hulls,
+     which now carry theirs on their own rows in the block above. A ship
+     with no radius here has no radar picture at all - the fog lifts only as
+     far as its crew can see, and the weather cuts that (owner: "the fog of
+     war closes"). These figures are not a published range put through a
+     formula, as generations.js R() does for weapons: they are the coverage
+     radius of a fire-control-quality picture, ranked by capability - the
+     Slava's 14 under the Burke's 20 is networking, as the note above says,
+     not reach. So a set the table lacks takes the figure of the row that
+     already carries THAT set. The LCS (Freedom, LCS-1) went to sea with the
+     TRS-3D, and the one row with a TRS-3D is the K130 of the 2000s,
+     deu_e00_corvette, at 14.6. eras.js ramps the American era frigates from
+     this number (ERA_RADAR_SETS). */
+  corvette_n: 14.6,        // TRS-3D (TRS-4D from LCS-17): the K130's figure
 };
 /* Anything with a probe or a receptacle can take fuel from a tanker. That is
    fixed-wing jets: a helicopter needs a specially fitted tanker and none of

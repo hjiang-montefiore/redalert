@@ -3099,13 +3099,15 @@ try{
     chk("and enough decades were walked to mean something", steps >= 14, steps+" steps");
 
     /* ---- and the same walk over the fleet, which is most of this table ----
-       Four steps go down and all four are a different SHIP standing in the
+       Five steps go down and all five are a different SHIP standing in the
        same slot, not a radar getting worse. Each is already argued in the
        table's own comment for that row: the Spruance and the Tourville are
        anti-submarine hulls with no area missile replacing 1960s missile
        ships, the Bremen is an escort frigate with Sea Sparrow replacing a
-       Charles F. Adams, and the Nimitz went back to conventional antennas
-       rather than keep paying SCANFAR's maintenance bill. Anything else
+       Charles F. Adams, the Nimitz went back to conventional antennas
+       rather than keep paying SCANFAR's maintenance bill, and the LCS is a
+       littoral hull with a medium-range TRS-3D and no area missile in the
+       slot a Perry's SPS-49 left. Anything else
        dropping - a Ticonderoga's SPY-1A quietly cut below the Long Beach
        beside it, say - fails here. */
     var HULL_DROP = {
@@ -3113,6 +3115,7 @@ try{
       "fra/destroyer e60->e80":  "Tourville F67: an ASW hull with only Crotale",
       "deu/destroyer e60->e80":  "Bremen F122: an escort frigate, not an air-defence ship",
       "nato/carrier e60->e80":   "Nimitz: conventional antennas after SCANFAR's maintenance bill",
+      "nato/corvette e90->e00":  "LCS: a littoral hull with a medium-range TRS-3D after the Perry's SPS-49",
     };
     var hdrop = [], hsteps = 0;
     facs.forEach(function(f){
