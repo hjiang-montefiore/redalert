@@ -2073,6 +2073,8 @@ var Render3D = (function () {
      its captor's colours. Without it the palette says, as the build menu's
      thumbnail asks it. */
   function bldKeyFor(def, team, era, fac) {
+    const lk = typeof bldLegacyKey === "function" && bldLegacyKey(def);   // an older save's shape
+    if (lk && typeof BLD_MODELS !== "undefined" && BLD_MODELS[lk]) return lk;
     const f = fac ? (CFG.FACTION_COLORS[fac] ? fac : null) : sideOf(team);
     const k = f ? def.id + "_" + f + "_" + (era || "e20") : null;
     return k && typeof BLD_MODELS !== "undefined" && BLD_MODELS[k] ? k : def.id;
@@ -2098,7 +2100,8 @@ var Render3D = (function () {
   function getBuildingModel(def, team, era, from) {
     /* the dug-by site when there is one, in the period it was dug in */
     let bk = from ? bldKeyFor(def, team, from.era, from.fac) : def.id;
-    if (bk !== def.id) era = from.era;
+    /* an older save's shape is not a dug-by site: the owner's period, as before */
+    if (bk !== def.id && !(typeof bldLegacyKey === "function" && bldLegacyKey(def))) era = from.era;
     else if (!from) bk = bldKeyFor(def, team, era);
     /* the period is part of the identity, so it is part of the cache key */
     const E = (typeof ERA_ARCH !== "undefined" && ERA_ARCH[era]) ? ERA_ARCH[era] : null;
@@ -2124,9 +2127,11 @@ var Render3D = (function () {
       const rc = roofCv.getContext("2d");
       rc.fillStyle = "#565b54"; rc.fillRect(0, 0, 128, 128);
       try {
-        if (typeof BLD_DETAIL !== "undefined" && BLD_DETAIL[def.id]) {
+        const lk = typeof bldLegacyKey === "function" && bldLegacyKey(def);
+        const dk = lk && typeof BLD_DETAIL !== "undefined" && BLD_DETAIL[lk] ? lk : def.id;
+        if (typeof BLD_DETAIL !== "undefined" && BLD_DETAIL[dk]) {
           rc.save(); rc.translate(64, 64); rc.scale(3.2, 3.2);
-          BLD_DETAIL[def.id].draw(rc, Sprites.pal(team), 1.0);
+          BLD_DETAIL[dk].draw(rc, Sprites.pal(team), 1.0);
           rc.restore();
         }
       } catch (e2) {}

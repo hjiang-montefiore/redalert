@@ -7792,9 +7792,11 @@ function makeCommander() {
        and the army ceiling still decides how many are bought. */
     bar = Math.min(bar, 1 + Math.ceil(0.6 * Math.max(1, nFac)) + (rich ? 1 : 0));
     const ab = D.airBias || 1, nb = D.navalBias || 1;
-    const pads = (BUILDINGS.airbase && BUILDINGS.airbase.pads) || 4;
-    /* ramp space is the ceiling on the air force: four pads a base */
-    const rampFull = nAir >= 1 && planes >= nAir * pads - 1;
+    /* ramp space is the ceiling on the air force: its own bases' pads, as
+       each was built (an older save's airbase has its own, BUILDING_LEGACY) */
+    let padSum = 0;
+    for (const b of P.buildings) if (!b.dead && b.def.id === "airbase") padSum += b.def.pads || 4;
+    const rampFull = nAir >= 1 && planes >= padSum - 1;
     let air = 0;
     if (P.tech >= 2 && nRadar >= 1) {
       air = 1;

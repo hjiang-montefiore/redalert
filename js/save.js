@@ -141,6 +141,11 @@ var SaveGame = (function () {
       })),
       buildings: bl.map(b => ({
         d: b.def.id, o: b.owner.idx, tx: b.tx, ty: b.ty,
+        /* its footprint, and the key of an older shape (rules.js
+           BUILDING_LEGACY): a structure whose shape a later build changes
+           loads as it was saved (shapeKey) */
+        w: b.def.w, h: b.def.h,
+        lg: (typeof bldLegacyKey === "function" && bldLegacyKey(b.def)) || undefined,
         hp: Math.round(b.hp), prog: +b.buildProgress.toFixed(3),
         rep: !!b.repairing, sw: +(b.swCharge || 0).toFixed(3),
         ta: +(b.tang || 0).toFixed(3),
@@ -438,7 +443,9 @@ var SaveGame = (function () {
       const sb = d.buildings[bi];
       const p = G.players[sb.o];
       if (!p || !BUILDINGS[sb.d]) continue;
-      const b = G.placeBuilding(p, sb.d, sb.tx, sb.ty, "restored");
+      const lg = shapeKey(sb);
+      if (lg === false) continue;
+      const b = G.placeBuilding(p, lg || sb.d, sb.tx, sb.ty, "restored");
       bref[bi] = b;
       /* the army and the period that dug it again (be, bf above): its guns,
          and the site it is drawn as */
@@ -561,6 +568,23 @@ var SaveGame = (function () {
       else if (!ai) Render.markDirty();
     };
     G.defer(every, step);
+  }
+  /* The shape a structure was saved in: null for today's, an older one's
+     BUILDING_LEGACY key, or false for a shape this build cannot lay - left
+     out rather than laid at today's size over its neighbours. A record from
+     before records carried a footprint is from before the airbase grew its
+     runway, so an airbase without one is the 3 x 3. */
+  function shapeKey(sb) {
+    const base = BUILDINGS[sb.d];
+    if (sb.lg) return typeof BUILDING_LEGACY !== "undefined" && BUILDING_LEGACY[sb.lg] ? sb.lg : false;
+    const w = sb.w || (sb.d === "airbase" ? 3 : base.w), h = sb.h || (sb.d === "airbase" ? 3 : base.h);
+    if (w === base.w && h === base.h) return null;
+    if (typeof BUILDING_LEGACY !== "undefined")
+      for (const k in BUILDING_LEGACY) {
+        const L = BUILDING_LEGACY[k];
+        if (L.of === sb.d && L.w === w && L.h === h) return k;
+      }
+    return false;
   }
   function defOf(kind, id) {
     if (kind === "upgrade") { const u = UPGRADES[id]; if (u) u._key = id; return u; }

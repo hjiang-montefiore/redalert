@@ -1075,11 +1075,14 @@ var Render = (function () {
   }
   function detail(b, cx, cy, z, col) {
     const id = b.def.id;
-    /* rich painter from the art pack, if present */
-    if (BLD_DETAIL[id]) {
+    /* rich painter from the art pack, if present; an older save's shape
+       (rules.js BUILDING_LEGACY) by its own */
+    const lk = typeof bldLegacyKey === "function" && bldLegacyKey(b.def);
+    const dk = lk && BLD_DETAIL[lk] ? lk : id;
+    if (BLD_DETAIL[dk]) {
       const k = Math.max(1, Math.min(b.def.w, b.def.h) * CFG.TILE / 42);
       ctx.save(); ctx.translate(cx, cy); ctx.scale(z * k, z * k);
-      try { BLD_DETAIL[id].draw(ctx, Sprites.pal(col), G.time); } catch (e) {}
+      try { BLD_DETAIL[dk].draw(ctx, Sprites.pal(col), G.time); } catch (e) {}
       ctx.restore();
       /* rotating defence mount on top */
       const dm = Sprites.getDef("def_" + id, col);

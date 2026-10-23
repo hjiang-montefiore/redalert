@@ -468,8 +468,36 @@ function bldSideKey(id, fac, era) {
    airDefenceReach) sees one. */
 var BLD_SIDE_DEF = {};
 var BLD_SIDE_OF = typeof Map !== "undefined" ? new Map() : null;     // copy -> its key
+/* ---- A STRUCTURE AS AN OLDER SAVE HAS IT ----
+   A structure whose shape a later build changed is kept as it was for the
+   games saved before the change: the shared def with the old shape put over
+   it, its id unchanged - so every rule that asks for an "airbase" (a prereq
+   on every aircraft, hasBuilding, the AI) finds one - and filed under a key
+   of its own the way an army's row is (BLD_SIDE_OF), which render3d draws by
+   (bldKeyFor) and save.js writes (`lg`). Nobody builds one: it is not in
+   BUILDINGS, so no build tab, gallery or commander can name it. save.js
+   hands it to a structure saved in its shape (shapeKey). Every SHAPE field
+   the newer def has is put back here, to null where the old shape had none:
+   the copy takes everything else from it.
+     airbase3  the 3 x 3 field of four revetments the airbase was before it
+               grew a runway (_keep/airbase_study/PLAN.md, 2026-10-23); until
+               that piece lands it is the airbase's own shape. */
+var BUILDING_LEGACY = {
+  airbase3: { of: "airbase", w: 3, h: 3, pads: 4, padPts: null, runway: null,
+    desc: "Hardened strip with four revetments. Aircraft must return here to rearm and refuel." },
+};
 function bldDefOf(key) {
   if (BUILDINGS[key]) return BUILDINGS[key];
+  var lg = BUILDING_LEGACY[key];
+  if (lg) {
+    var ld = BLD_SIDE_DEF[key];
+    if (!ld && BUILDINGS[lg.of]) {
+      ld = BLD_SIDE_DEF[key] = Object.assign({}, BUILDINGS[lg.of], lg);
+      delete ld.of;
+      if (BLD_SIDE_OF) BLD_SIDE_OF.set(ld, key);
+    }
+    return ld || null;
+  }
   var row = BUILDING_SIDE[key], m = /^(.+)_([a-z]+)_(e\d\d)$/.exec(key || "");
   var base = row && m ? BUILDINGS[m[1]] : null;
   if (!base) return null;
@@ -485,6 +513,11 @@ function bldDefFor(id, fac, era) { return bldDefOf(bldSideKey(id, fac, era)) || 
 /* the key a def is filed under - a row's for a row's copy, else its id - for
    anything that caches by structure: "flak" alone no longer says which guns */
 function bldDefKey(def) { return (def && BLD_SIDE_OF && BLD_SIDE_OF.get(def)) || (def && def.id); }
+/* the BUILDING_LEGACY key of an older save's structure, else null */
+function bldLegacyKey(def) {
+  var k = def && BLD_SIDE_OF && BLD_SIDE_OF.get(def);
+  return k && BUILDING_LEGACY[k] ? k : null;
+}
 /* is this a structure's def, shared or one army's? A row's copy is not
    BUILDINGS[def.id], which is the test render3d's ghosts used */
 function bldIsDef(def) {

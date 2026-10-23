@@ -775,7 +775,7 @@ var Impact3D = (function () {
   function startRubble(r, rec) {
     r.type = "rubble";
     const d = BUILDINGS[r.fx.def] || { w: 1, h: 1, cat: "" };
-    r.bw = d.w || 1; r.bh = d.h || 1;
+    r.bw = r.fx.bw || d.w || 1; r.bh = r.fx.bh || d.h || 1;     // the footprint it stood on
     r.tx = Math.round(r.x / CFG.TILE - r.bw / 2); r.ty = Math.round(r.y / CFG.TILE - r.bh / 2);
     /* a civilian block becomes the game's own rubble structure the same moment
        (G.onDeath), and a wall section is too small to burn: both just fall */

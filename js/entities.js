@@ -7456,7 +7456,9 @@ class Building {
     this.era = (owner && owner.era) || (game && game.era) || "e20";
     this.builtBy = (owner && owner.faction) || null;
     this.sideKey = typeof bldSideKey === "function" ? bldSideKey(defId, this.builtBy, this.era) : defId;
-    const d = (this.sideKey !== defId && bldDefOf(this.sideKey)) || BUILDINGS[defId];
+    /* ...or the shape an older save has it in (rules.js BUILDING_LEGACY):
+       not in BUILDINGS, so its own key is the def */
+    const d = (this.sideKey !== defId && bldDefOf(this.sideKey)) || BUILDINGS[defId] || bldDefOf(defId);
     if (d === BUILDINGS[defId]) this.sideKey = defId;
     this.id = EID++;
     this.game = game; this.def = d; this.owner = owner;
@@ -7504,7 +7506,9 @@ class Building {
     const id = this.def.id;
     if (fac && FACTIONS[fac]) this.builtBy = fac;
     if (era && (typeof ERAS === "undefined" || ERAS.indexOf(era) >= 0)) this.era = era;
-    const d = (typeof bldDefFor === "function" && bldDefFor(id, this.builtBy, this.era)) || BUILDINGS[id];
+    /* an older save's shape stays the shape it was laid out in */
+    const d = (typeof bldLegacyKey === "function" && bldLegacyKey(this.def)) ? this.def
+      : (typeof bldDefFor === "function" && bldDefFor(id, this.builtBy, this.era)) || BUILDINGS[id];
     this.sideKey = typeof bldDefKey === "function" ? bldDefKey(d) : id;
     if (d !== this.def) {
       this.def = d;

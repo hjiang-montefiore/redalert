@@ -1253,8 +1253,8 @@ var Game = (function () {
 
   G.placeBuilding = function (p, defId, tx, ty, instant) {
     G.bumpOcc();
-    const def = BUILDINGS[defId];
-    const b = new Building(G, defId, p, tx, ty);
+    /* its own def: an army's row, or an older save's shape (BUILDING_LEGACY) */
+    const b = new Building(G, defId, p, tx, ty), def = b.def;
     b.buildProgress = instant ? 1 : 0;
     G.entities.push(b); p.buildings.push(b);
     for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++) {

@@ -717,8 +717,10 @@ var Damage3D = (function () {
     /* a model drawn in two poses has a profile for each: render3d's
        rec.pose is its deploy pose, shown or not (measure) */
     const C = (rec && rec.inst ? (rec.pose && rec.pose.visible ? cacheD : cacheM) : cacheE)[e.kind === "building" ? "b" : "u"];
-    let per = C[e.def.id];
-    if (!per) per = C[e.def.id] = {};
+    /* an older save's shape (rules.js BUILDING_LEGACY) is a model of its own */
+    const pk = (e.kind === "building" && typeof bldLegacyKey === "function" && bldLegacyKey(e.def)) || e.def.id;
+    let per = C[pk];
+    if (!per) per = C[pk] = {};
     const era = (e.owner && e.owner.era) || "e20";
     let P = per[era];
     if (e.kind === "building") {

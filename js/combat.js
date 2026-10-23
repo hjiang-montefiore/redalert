@@ -1282,7 +1282,10 @@ var Combat = (function () {
     const tl = e.targetLayer ? e.targetLayer() : e.layer;
     const dfx = { t: "death", x: e.x, y: e.y, id: e.id, def: e.def.id, kind: e.kind, cat: e.cat,
                   layer: (tl === "ground" && e.layer === "air" && isWater(game, e.x, e.y)) ? "deck" : tl,
-                  r: e.r || 10, ang: e.ang || 0, own: e.owner === game.human, cata: false, life: 45, max: 45 };
+                  r: e.r || 10, ang: e.ang || 0, own: e.owner === game.human, cata: false, life: 45, max: 45,
+                  /* a structure's own footprint: an older save's airbase is not
+                     BUILDINGS.airbase's shape (rules.js BUILDING_LEGACY) */
+                  bw: e.kind === "building" ? e.def.w : undefined, bh: e.kind === "building" ? e.def.h : undefined };
     if (e.kind === "building") dfx.life = dfx.max = 60;
     else if (e.cat === "infantry") dfx.life = dfx.max = 5;
     /* The 2D hulk, as before for every ground hull - and now for an airframe

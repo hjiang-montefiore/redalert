@@ -876,6 +876,10 @@ BLD_DETAIL["airbase"] = {
   }
 };
 
+/* the 3 x 3 airbase of a save made before the runway (rules.js
+   BUILDING_LEGACY airbase3) is this field */
+BLD_DETAIL["airbase3"] = BLD_DETAIL["airbase"];
+
 BLD_DETAIL["radar"] = {
   draw: function (ctx, C, t) {
     ctx.lineWidth = 1;
