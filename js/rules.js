@@ -301,9 +301,23 @@ var BUILDINGS = {
     repair:true, repairSea:true,
     desc:"Slipway for warships. Builds and repairs: bring a damaged hull alongside and it is put right. MUST be laid down on a shoreline with open water to seaward." },
 
-  airbase: { name:"Airbase", cat:"building", cost:1700, time:22, w:3, h:3, hp:1200, armor:"structure",
+  /* (owner, 2026-10-23) "the airport model should be re-design and we should
+     see the aircraft taking off and landing and then put the base": a runway
+     along the south side, 2 tiles (40 m) wide, and four revetments in a row
+     along the north, 60 m of it each (_keep/airbase_study/REPORT.md, option
+     B). padPts are the revetments' points in tiles from the north-west
+     corner and padAng the way an aircraft stands in one, nose to the runway;
+     runway is its centreline row, half-width and ends, in tiles. The whole
+     field stands on one elevation level (G.canPlace). The 3 x 3 field it
+     replaces is BUILDING_LEGACY.airbase3, for older saves. */
+  airbase: { name:"Airbase", cat:"building", cost:1700, time:22, w:12, h:4, hp:1200, armor:"structure",
     power:-55, sight:7, tech:2, prereq:["conyard","radar"], produces:"aircraft", pads:4,
-    desc:"Hardened strip with four revetments. Aircraft must return here to rearm and refuel." },
+    padPts: [[1.5, 0.9], [4.5, 0.9], [7.5, 0.9], [10.5, 0.9]], padAng: Math.PI / 2,
+    runway: { y: 3, half: 1, x0: 0, x1: 12 },
+    /* no rooftop kit: the interim field (hero/airbase_runway.js) is flat, and
+       render3d would stand a radome on the runway */
+    bare: true,
+    desc:"Runway and four revetments, 12 x 4 on level ground. Aircraft must return here to rearm and refuel." },
 
   /* An unpowered hydrophone array does not hear. */
   sonararray: { name:"Coastal Sonar Array", cat:"defense", cost:800, time:14, w:2, h:2, hp:700, needPower:true,
@@ -483,7 +497,7 @@ var BLD_SIDE_OF = typeof Map !== "undefined" ? new Map() : null;     // copy -> 
                grew a runway (_keep/airbase_study/PLAN.md, 2026-10-23); until
                that piece lands it is the airbase's own shape. */
 var BUILDING_LEGACY = {
-  airbase3: { of: "airbase", w: 3, h: 3, pads: 4, padPts: null, runway: null,
+  airbase3: { of: "airbase", w: 3, h: 3, pads: 4, padPts: null, padAng: null, runway: null, bare: undefined,
     desc: "Hardened strip with four revetments. Aircraft must return here to rearm and refuel." },
 };
 function bldDefOf(key) {

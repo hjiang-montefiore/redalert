@@ -125,8 +125,19 @@ function clear(x, y, w, h) { for (var i = -1; i < (w || 3); i++) for (var j = -1
 function spot(p, w, h) { for (var r = 0; r < 14; r++) for (var a = 0; a < 32; a++) {
   var x = Math.round(p.x + Math.cos(a / 32 * 6.283) * r), y = Math.round(p.y + Math.sin(a / 32 * 6.283) * r);
   if (clear(x, y, w, h)) return { x: x, y: y }; } return null; }
+/* The airbase is 12 x 4 on one level (rules.js, 2026-10-23): no 13 x 5 of
+   clear land within 14 tiles of the commander's home on taiwan, so it goes
+   where G.canPlace - the commander's own rule - takes it, nearest the spot
+   asked for. */
+function abSpot(p, pos) {
+  for (var r = 0; r < 30; r++) for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+    if (Game.canPlace(p, "airbase", pos.x + dx, pos.y + dy)) return { x: pos.x + dx, y: pos.y + dy };
+  }
+  return null;
+}
 function bld(p, id, pos) {
-  var d = BUILDINGS[id], s = spot(pos, d.w + 1, d.h + 1);
+  var d = BUILDINGS[id], s = id === "airbase" ? abSpot(p, pos) : spot(pos, d.w + 1, d.h + 1);
   var b = s ? Game.placeBuilding(p, id, s.x, s.y, true) : null; if (b) b.buildProgress = 1; return b;
 }
 function put(p, id, pos) {

@@ -4565,7 +4565,9 @@ class Unit {
         return;
       }
       this.noPadSaid = false;
-      const px = pad.x, py = pad.y;
+      /* on the runway base, down onto the revetment it will park in */
+      const bayQ = pad.host && pad.host.padPoint && pad.host.def.padPts ? pad.host.padPoint(pad.host.bayFor(this)) : null;
+      const px = bayQ ? bayQ.x : pad.x, py = bayQ ? bayQ.y : pad.y;
       /* flyTo moves first and tests the capture radius afterwards, and this
          branch went on calling it after the aircraft had reported itself
          down - so it flew straight over the strip, took fuel for the two or
@@ -4761,7 +4763,13 @@ class Unit {
         host = pad ? pad.host : null;
         if (host) this.padOn = host;
       }
-      if (host && !host.dead) {
+      if (host && !host.dead && host.padPoint && host.def.padPts) {
+        /* a revetment of its own on the runway base, the one it had if it is
+           still free (Building.bayFor), nose to the runway */
+        this.bay = host.bayFor(this); this.bayHost = host;
+        const q = host.padPoint(this.bay);
+        this.x = q.x; this.y = q.y; this.ang = q.ang;
+      } else if (host && !host.dead) {
         /* Park in a revetment of its own rather than stacking every airframe
            on the same point - four aircraft in one spot reads as one aircraft. */
         const wing = host.wing ? host.wing().filter(u => u.parked) : [this];
@@ -7553,6 +7561,29 @@ class Building {
   }
   /* just the ones sitting on the ramp, available to send */
   onRamp() { return this.wing().filter(u => u.parked); }
+  /* ---- THE REVETMENTS OF THE RUNWAY BASE (def.padPts) ----
+     An aircraft keeps the revetment it had while it is free: the slot used
+     to be its place in the owner's unit list among those parked, so one
+     taking off moved every other one along a bay. Not saved: after a load
+     each takes the first free one again. */
+  bayFor(u) {
+    const taken = new Set();
+    for (const w of this.wing())
+      if (w !== u && w.parked && w.bayHost === this && w.bay !== undefined) taken.add(w.bay);
+    if (u.bayHost === this && u.bay !== undefined && !taken.has(u.bay)) return u.bay;
+    let i = 0;
+    while (taken.has(i)) i++;
+    return i;
+  }
+  /* A revetment's world point and heading. A field holding more than it has
+     bays stands the rest at the runway's west end along its north edge, nose
+     east, one drawn length apart - the only open ground it has. */
+  padPoint(slot) {
+    const d = this.def, P = d.padPts, T = CFG.TILE, x0 = this.tx * T, y0 = this.ty * T;
+    if (slot < P.length) return { x: x0 + P[slot][0] * T, y: y0 + P[slot][1] * T, ang: d.padAng || 0 };
+    const k = slot - P.length, R = d.runway;
+    return { x: x0 + (R.x0 + 0.9 + 1.8 * (k % 6)) * T, y: y0 + (R.y - R.half + 0.35) * T, ang: 0 };
+  }
   ramp() { return this.def.pads || this.def.carrier || 0; }
   tryFire(wi, t) { Unit.prototype.tryFire.call(this, wi, t); }
 

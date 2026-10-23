@@ -18,9 +18,9 @@
          (`lg`), and loads it back as itself; an airbase of today's shape
          loads as today's;
      [5] save.js shapeKey: a record from before records carried a footprint
-         is the 3 x 3; once today's airbase is another shape, a record of the
-         3 x 3 loads as airbase3; a shape this build has no def for is left
-         out rather than laid over its neighbours;
+         is the 3 x 3; by its footprint alone a record of the 3 x 3 loads as
+         airbase3 and one of today's as today's; a shape this build has no
+         def for is left out rather than laid over its neighbours;
      [6] the period and the army it is re-dated with on load do not change
          its shape;
      [7] a minute of play with it standing, and the commander's own. */
@@ -104,7 +104,7 @@ function run() {
   }
 
   /* ---------------- 4. save and load ---------------- */
-  var S2 = site(P, 8, 60, 3, 3, E);
+  var S2 = site(P, 8, 60, BUILDINGS.airbase.w, BUILDINGS.airbase.h, E);
   var n = S2 ? Game.placeBuilding(P, "airbase", S2.x, S2.y, true) : null;
   var res = SaveGame.save(Game, "ironfront.ablegacy"), snap = null;
   try { snap = JSON.parse(localStorage.getItem("ironfront.ablegacy")); } catch (e) {}
@@ -136,14 +136,12 @@ function run() {
     var ka = kinds(Game.human), wantA = BUILDINGS.airbase.w === 3 && BUILDINGS.airbase.h === 3 ? "airbase:9" : "airbase3:9";
     chk("[5] a record from before saves carried a footprint is the 3 x 3 (today's airbase while that is 3 x 3, else airbase3)",
         la5.ok && ka[0] === wantA && ka[1] === wantA, la5.ok ? ka.join(", ") : la5.error);
-    /* (b) today's airbase another shape: the 3 x 3 records find airbase3 */
-    var A = BUILDINGS.airbase, w0 = A.w, h0 = A.h;
-    A.w = 4; A.h = 12;
-    var lb5;
-    try { lb5 = reload(function (s2) { s2.buildings.forEach(function (r) { delete r.lg; }); }); } finally { A.w = w0; A.h = h0; }
-    var kb = kinds(Game.human);
-    chk("[5] once today's airbase is another shape, a record of the 3 x 3 loads as airbase3",
-        lb5.ok && kb[0] === "airbase3:9" && kb[1] === "airbase3:9", lb5.ok ? kb.join(", ") : lb5.error);
+    /* (b) with their footprints: the 3 x 3 finds airbase3 by its shape, today's is today's */
+    var lb5 = reload(function (s2) { s2.buildings.forEach(function (r) { delete r.lg; }); });
+    var kb = kinds(Game.human), today = "airbase:" + BUILDINGS.airbase.w * BUILDINGS.airbase.h;
+    chk("[5] by its saved footprint alone, a record of the 3 x 3 loads as airbase3 and one of today's as today's",
+        lb5.ok && kb[0] === (BUILDINGS.airbase.w === 3 && BUILDINGS.airbase.h === 3 ? "airbase:9" : "airbase3:9") && kb[1] === today,
+        lb5.ok ? kb.join(", ") : lb5.error);
     /* (c) a shape this build has no def for */
     var lc5 = reload(function (s2) { var r = s2.buildings.filter(function (r) { return r.d === "airbase" && r.tx === S2.x && r.ty === S2.y; })[0]; if (r) { r.w = 5; r.h = 5; } });
     var kc = kinds(Game.human), b1 = S ? at(Game.human, S) : null, b2 = S2 ? at(Game.human, S2) : null;

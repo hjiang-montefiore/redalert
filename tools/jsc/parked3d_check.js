@@ -558,7 +558,7 @@ function run() {
   for (var i0 = 0, v = 0; want("B") && i0 < AIR.length; v++) {
     var fac = ARCHS[v % 3], era = ERAS[((v / 3) | 0) % 6], c = CFG.FACTION_COLORS[fac];
     P.color = { main: c.main, dark: c.dark, light: c.light, fac: fac }; P.faction = fac; P.era = era;
-    var base = Game.placeBuilding(P, "airbase", g.x - 1, g.y - 1, true);
+    var base = Game.placeBuilding(P, "airbase", g.x - (BUILDINGS.airbase.w >> 1), g.y - (BUILDINGS.airbase.h >> 1), true);
     if (!base) { log("  (no airbase placed)"); break; }
     base.buildProgress = 1; nb++;
     /* four to a base; one base in six takes nine, the overflow grid */
@@ -575,8 +575,13 @@ function run() {
          aircraft in one, the first thing of the base is its pad - no roof,
          and none of the faction's or the period's rooftop kit, which
          render3d.js used to hang over one of them */
+      /* in a revetment: on the runway base one of def.padPts (Building.padPoint),
+         on the 3 x 3 one of the 2 x 2 grid's four */
       var ox = Math.abs((u.x - base.x) * PXM), oz = (u.y - base.y) * PXM;
-      if (Math.abs(ox - 18.6) < 0.2 && (Math.abs(oz + 14.9) < 0.2 || Math.abs(oz - 22.3) < 0.2) && m.pad !== undefined) {
+      var inBay = base.def.padPts
+        ? base.def.padPts.some(function (pp, k) { var q = base.padPoint(k); return Math.abs((q.x - u.x) * PXM) < 0.2 && Math.abs((q.y - u.y) * PXM) < 0.2; })
+        : Math.abs(ox - 18.6) < 0.2 && (Math.abs(oz + 14.9) < 0.2 || Math.abs(oz - 22.3) < 0.2);
+      if (inBay && m.pad !== undefined) {
         var r = recOf(u), br = recOf(base), p = r.grp.position;
         var top = firstHit(br.grp, _from.set(p.x, 400, p.z), _down.set(0, -1, 0));
         var over = top ? top.y - br.grp.position.y - m.pad : NaN;
@@ -613,7 +618,7 @@ function run() {
     AIR.forEach(function (id, k) {
       var fac = ARCHS[k % 3], c = CFG.FACTION_COLORS[fac], own = "#4b" + ("0000" + (k + 1).toString(16)).slice(-4);
       P.color = { main: own, dark: c.dark, light: c.light, fac: fac }; P.faction = fac; P.era = eraOf(id);
-      var vb = Game.placeBuilding(P, "airbase", g.x - 1, g.y - 1, true);
+      var vb = Game.placeBuilding(P, "airbase", g.x - (BUILDINGS.airbase.w >> 1), g.y - (BUILDINGS.airbase.h >> 1), true);
       if (!vb) return;
       vb.buildProgress = 1;
       var four = [0, 1, 2, 3].map(function () { return Game.spawnUnitAt(P, id, vb.x, vb.y); });
@@ -894,7 +899,7 @@ function run() {
         "to a destroyer 290 m off: the most a frame moved it beyond the game's own step " + tF.step.toFixed(2) + " m; to one alongside (the game sets it on her at once): " +
         tG.step.toFixed(2) + " m, on her deck after " + (onC / 30).toFixed(1) + " s");
     /* a carrier jet moved to an airbase ashore */
-    var ab0 = Game.placeBuilding(P, "airbase", g.x - 1, g.y - 1, true); ab0.buildProgress = 1;
+    var ab0 = Game.placeBuilding(P, "airbase", g.x - (BUILDINGS.airbase.w >> 1), g.y - (BUILDINGS.airbase.h >> 1), true); ab0.buildProgress = 1;
     var jc = cv.wing().filter(function (u) { return !u.def.hover && u.parked; })[0], tJ = tracker(jc);
     frames(2, true); tJ.sample();
     jc.padOn = ab0; jc.parked = false; jc.order = { type: "rtb" };
@@ -1072,7 +1077,7 @@ function run() {
   /* ---- a steady frame casts no ray, and what the frame costs ---- */
   /* nothing else in the air to come aboard a deck in the middle of it */
   drop(P.units.filter(function (u) { return u.layer === "air" && !u.dead && ((u.padOn !== dd && u.padOn !== cv2) || !u.order || u.order.type !== "parked"); }));
-  var ab = Game.placeBuilding(P, "airbase", g.x - 1, g.y - 1, true);
+  var ab = Game.placeBuilding(P, "airbase", g.x - (BUILDINGS.airbase.w >> 1), g.y - (BUILDINGS.airbase.h >> 1), true);
   ab.buildProgress = 1;
   var onAb = ["fighter_n", "trans_n", "asw_helo_n", "awacs_n"].map(function (id) { return Game.spawnUnitAt(P, id, ab.x, ab.y); });
   park(onAb, ab);

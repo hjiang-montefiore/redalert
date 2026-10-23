@@ -350,6 +350,18 @@ function tile(P,kind,r0){
     if(GameMap.passable(M,x,y,kind) && !Game.tileBlocked(x,y,null)) return {x:x,y:y};
   } return null;
 }
+/* ---- THE AIRBASE IS 12 x 4, ON ONE LEVEL (rules.js, 2026-10-23) ----
+   A scene that put it down on one free tile laid it over whatever stood
+   there, which the 3 x 3 had had room for. abPut puts it at the nearest spot
+   to the one asked for that Game.canPlace takes - the player's own rule -
+   and at the one asked for only where there is none. */
+function abPut(X,x,y){
+  for(var r=0;r<30;r++) for(var dy=-r;dy<=r;dy++) for(var dx=-r;dx<=r;dx++){
+    if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
+    if(Game.canPlace(X,"airbase",x+dx,y+dy)) return Game.placeBuilding(X,"airbase",x+dx,y+dy,true);
+  }
+  return Game.placeBuilding(X,"airbase",x,y,true);
+}
 function spawn(P,id,t,dx,dy){ if(!t||!UNITS[id]) return null;
   return Game.spawnUnitAt(P,id,(t.x+(dx||0))*32+16,(t.y+(dy||0))*32+16); }
 /* ---- A SCENE OF ITS OWN ----
@@ -580,7 +592,7 @@ try{
     var ab=null;
     for(var i=0;i<P.buildings.length;i++) if(P.buildings[i].def.id==="airbase") ab=P.buildings[i];
     if(!ab){ var sp=tile(P,"ground",3);
-      Game.placeBuilding(P,"airbase",sp.x,sp.y,true);
+      abPut(P,sp.x,sp.y);
       ab=P.buildings[P.buildings.length-1]; }
     var jetDef=UNITS[unitFor(P.faction,"fighter",P.era)];
     var capBefore=P.airCapacity(jetDef), ownBefore=P.airOwned(jetDef);
@@ -641,8 +653,10 @@ try{
        is the same control that holds a Weasel's rounds. Held, the airframe
        stays on the ramp through a full service cycle; released, it goes. Both
        halves are tested, because either one alone can silently rot. */
-    chk("a HELD jet sits on its pad", U.dist(jet.x,jet.y,ab.x,ab.y)<32*2.5,
-        "d="+(U.dist(jet.x,jet.y,ab.x,ab.y)/32).toFixed(1)+"t");
+    /* its revetment on the runway base (Building.padPoint), the field on the 3 x 3 */
+    var jq=ab.def.padPts&&jet.bay!==undefined ? ab.padPoint(jet.bay) : ab;
+    chk("a HELD jet sits on its pad", U.dist(jet.x,jet.y,jq.x,jq.y)<32*2.5,
+        "d="+(U.dist(jet.x,jet.y,jq.x,jq.y)/32).toFixed(1)+"t");
     jet.stance = "guard";
     tick(60);
     /* WHOSE APRON IT IS. The owner asked for both of these, five weeks apart,
@@ -662,7 +676,7 @@ try{
     (function(){
       var eL=tile(E,"ground",5);
       if(!eL){ chk("a COMMANDER's serviceable jet does not", false, "no ground"); return; }
-      var eab=Game.placeBuilding(E,"airbase",eL.x,eL.y,true);
+      var eab=abPut(E,eL.x,eL.y);
       if(eab) eab.buildProgress=1;
       var aij=spawn(E,"fighter_p",eL,1,1) || spawn(E,"fighter_n",eL,1,1);
       if(!aij){ chk("a COMMANDER's serviceable jet does not", false, "no AI jet"); return; }
@@ -785,7 +799,14 @@ try{
   (function(){
     /* Everything goes down next to the building. Put the shooters at the far
        end of the map and the test measures pathfinding instead of the bug. */
-    var spot = tile(P,"ground",14);
+    /* ...and out of reach of anything of ours already there: a destroyer from
+       [2] shelled the plant from 14.9 tiles once the 12 x 4 airbase
+       (2026-10-23) had moved the ground the scene was built on */
+    var spot=null;
+    for(var r8=14;r8<70&&!spot;r8++){
+      var t8=tile(P,"ground",r8); if(!t8) break;
+      var near8=P.units.some(function(u){ return !u.dead&&u.layer==="sea"&&Math.hypot(u.x/32-t8.x,u.y/32-t8.y)<22; });
+      if(!near8) spot=t8; }
     if(!spot){ chk("capture scenario built", false, "no open ground"); return; }
     var b = Game.placeBuilding(E,"power",spot.x,spot.y,true);
     if(!b){ chk("capture scenario built", false, "placeBuilding failed"); return; }
@@ -1296,10 +1317,22 @@ try{
   (function(){
     var base=tile(P,"ground",4);
     if(!base){ chk("aircraft scenario built", false, "no ground"); return; }
-    var ab=Game.placeBuilding(P,"airbase",base.x,base.y,true);
+    var ab=abPut(P,base.x,base.y);
     if(ab) ab.buildProgress=1;
-    /* a radiating battery for the Weasel to find, with a grid that can light it */
-    var el=tile(E,"ground",6);
+    /* a radiating battery for the Weasel to find, with a grid that can light it,
+       11 to 14 tiles off the ramp: inside the 16-tile HARM it carries, at the
+       stand-off it would shoot from (at 6 it stayed on the attack). It
+       stood at the commander's home, 69 to 90 tiles away, and the launch the
+       section measured was at whatever else radiated near the player's home -
+       found out when the 12 x 4 airbase (2026-10-23) went down on ground the
+       rule allows, 21 tiles from the tile beside home the 3 x 3 had used */
+    var el=null;
+    if(ab){ var bq=ab.def.padPts?ab.padPoint(0):ab, bx=(bq.x/32)|0, by=(bq.y/32)|0;
+      for(var r9=11;r9<=14&&!el;r9++) for(var a9=0;a9<32;a9++){
+        var x9=(bx+Math.cos(a9/32*6.283)*r9)|0, y9=(by+Math.sin(a9/32*6.283)*r9)|0, ok9=true;
+        for(var j9=-1;j9<3&&ok9;j9++) for(var i9=-1;i9<3;i9++)
+          if(!GameMap.passable(Game.map,x9+i9,y9+j9,"ground")||Game.tileBlocked(x9+i9,y9+j9,null)){ ok9=false; break; }
+        if(ok9){ el={x:x9,y:y9}; break; } } }
     var sam=el?Game.placeBuilding(E,"sam",el.x,el.y,true):null;
     if(sam) sam.buildProgress=1;
     for(var i=0;i<10 && el;i++){ var pw=Game.placeBuilding(E,"power",el.x+3+i*2,el.y+4,true);
@@ -1355,6 +1388,11 @@ try{
       far.dead=true;
     })();
     if(ew&&!ew.dead) ew.dead=true;
+    /* the battery and its grid are the Weasel's scene only: off again before
+       anything else flies from this ramp past them */
+    if(sam&&!sam.dead) Game.removeBuilding(sam);
+    E.buildings.slice().forEach(function(b9){ if(!b9.dead&&b9.def.id==="power"&&el&&b9.ty===el.y+4&&b9.tx>el.x&&b9.tx<=el.x+21) Game.removeBuilding(b9); });
+    Game.sweepDead();
 
     /* (owner) "b2 f18 navy ef18 are attacking automatically and don't land the
        airbase." Everything that is NOT an EW aircraft waits to be sent. */
@@ -1406,7 +1444,7 @@ try{
     var wasFog=Game.fogEnabled; Game.fogEnabled=true;
     var base=tile(P,"ground",4);
     if(!base){ chk("AEW scenario built", false, "no ground"); Game.fogEnabled=wasFog; return; }
-    var ab=Game.placeBuilding(P,"airbase",base.x,base.y,true); if(ab) ab.buildProgress=1;
+    var ab=abPut(P,base.x,base.y); if(ab) ab.buildProgress=1;
     tick(2);
     /* WHAT IS ASSERTED HERE IS THE CONTRACT, and the reason is worth writing
        down rather than quietly narrowing the test. G.emitting() is what the
@@ -1458,7 +1496,7 @@ try{
        t=100 with ammo 20/20 and fuel 100/100, target untouched from then on. */
     var land=tile(P,"ground",6);
     if(!land){ chk("strike scenario built", false, "no ground"); return; }
-    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    var ab=abPut(P,land.x-4,land.y);
     if(ab) ab.buildProgress=1;
     tick(2);
     var bId=unitFor("nato","heavybomber","e20"), gId=unitFor("nato","gunshipair","e20");
@@ -1514,7 +1552,7 @@ try{
        stopped for 1,294 of them and got off 17 rounds. */
     var land=tile(P,"ground",6);
     if(!land){ chk("orbit scenario built", false, "no ground"); return; }
-    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    var ab=abPut(P,land.x-4,land.y);
     if(ab) ab.buildProgress=1;
     tick(1);
     var bad=[], seen=[];
@@ -1555,7 +1593,7 @@ try{
        3 and was left holding 1 after every first pass. */
     var land=tile(P,"ground",6);
     if(!land){ chk("part-load scenario built", false, "no ground"); return; }
-    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    var ab=abPut(P,land.x-4,land.y);
     if(ab) ab.buildProgress=1;
     tick(1);
     [["sbomber_n",1.6,"B-2 (today) launched holding 1.6"],
@@ -2400,7 +2438,7 @@ try{
   (function(){
     var land=tile(P,"ground",6);
     if(!land){ chk("bomb-run scenario built", false, "no ground"); return; }
-    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true);
+    var ab=abPut(P,land.x-4,land.y);
     if(ab) ab.buildProgress=1;
     tick(1);
     /* A B-2 carries ONE mount and it is a bomb, so pickWeapon cannot take the
@@ -2676,7 +2714,7 @@ try{
        land - so what was missing is the telling. */
     var land=tile(P,"ground",9);
     if(!land){ chk("runway scenario built", false, "no ground"); return; }
-    var ab=Game.placeBuilding(P,"airbase",land.x-4,land.y,true); if(ab) ab.buildProgress=1;
+    var ab=abPut(P,land.x-4,land.y); if(ab) ab.buildProgress=1;
     tick(2);
     var id=unitFor("nato","heavybomber","e20");
     var b2=id?Game.spawnUnitAt(P,id,land.x*32+16,land.y*32+16):null;
@@ -2703,7 +2741,7 @@ try{
     var ab2=null;
     for(var a2=0;a2<40 && !ab2;a2++){
       var t2=tile(P,"ground",9+a2);
-      if(t2) ab2=Game.placeBuilding(P,"airbase",t2.x,t2.y,true);
+      if(t2) ab2=abPut(P,t2.x,t2.y);
     }
     if(!ab2){ chk("a replacement strip goes down", false, "placeBuilding refused everywhere"); if(!b2.dead)b2.dead=true; return; }
     ab2.buildProgress=1;
@@ -10029,7 +10067,10 @@ try{
          scene along the coast and tries again - never a named or fired shot
          while blind, which fails at once. */
       var et=tl("nato_e80_destroyer"), hA=null, tries=[];
-      for (var att=0; att<3 && !hA; att++){
+      /* six places along the coast, not three: the commander's 12 x 4
+         airbases (2026-10-23) stand elsewhere than its 3 x 3s did, and its
+         aircraft looked at the first three before the scene could be held */
+      for (var att=0; att<6 && !hA; att++){
         var hs=scene(E, 15.5, 5+att*9, { pl:E, land:13, sea:6 });
         if (!hs) { tries.push("no scene"); break; }
         var site=bld(P,"sam",hs.lx,hs.ly), sp=mk(E,"nato_e80_destroyer",hs.sx,hs.sy);
@@ -13271,9 +13312,14 @@ try{
       var h6=mk(E, "sbomber_c", hx, hy);
       if (h6){ h6.parked=false; h6.order={ type:"idle" }; h6.fuel=h6.fuelMax; h6.ammo=h6.ammoMax; }
       tick(45);
+      /* asked where it was put: idle, it drifts home to its ramp meanwhile -
+         once toward the commander's own airbases 60 tiles off, until the far
+         tank was the nearer (the 12 x 4 airbase, 2026-10-23, moved them) */
+      if (h6){ h6.x=hx; h6.y=hy; }
       var pick1=(h6 && AI.airTargetOf) ? AI.airTargetOf(E, h6) : null;
       var near=h6 && tA && tB && U.dist(h6.x,h6.y,tA.x,tA.y)<U.dist(h6.x,h6.y,tB.x,tB.y);
       off([pS]); tick(20);
+      if (h6){ h6.x=hx; h6.y=hy; }
       var pick2=(h6 && AI.airTargetOf) ? AI.airTargetOf(E, h6) : null;
       chk("of two of our tanks it holds tracks on, the commander names for its bomber the one outside our battery's ring though the other is nearer - and the nearer once the battery is gone",
           !!near && pick1===tB && pick2===tA,

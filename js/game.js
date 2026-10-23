@@ -1057,6 +1057,13 @@ var Game = (function () {
       if (blocked) return false;
     }
     if (def.shore && !(touchesShoreWater && anyLand)) return false;
+    /* a runway on one level: no step in it (the transport strip has the same
+       rule, G.findStrip) */
+    if (def.runway) {
+      const lvl = G.map.elev[ty * G.map.W + tx];
+      for (let y = ty; y < ty + def.h; y++) for (let x = tx; x < tx + def.w; x++)
+        if (G.map.elev[y * G.map.W + x] !== lvl) return false;
+    }
     /* oil derricks only on surveyed nodes */
     if (def.oilNode) {
       let onNode = false;

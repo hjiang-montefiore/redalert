@@ -966,7 +966,6 @@ var HeroAirbase = (function () {
 /* Registration: BLD_MODELS is looked up by the def's own id, and this file
    loads after units3d_salvage.js, so the plain assignment replaces the
    hangar model; icons3d.js draws the same build() for the sidebar. */
-BLD_MODELS["airbase"] = { build: HeroAirbase.build };
 /* the 3 x 3 airbase of a save made before the runway (rules.js
-   BUILDING_LEGACY airbase3) is this field */
-BLD_MODELS["airbase3"] = BLD_MODELS["airbase"];
+   BUILDING_LEGACY airbase3); the airbase itself is hero/airbase_runway.js */
+BLD_MODELS["airbase3"] = { build: HeroAirbase.build };

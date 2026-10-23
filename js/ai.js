@@ -2186,6 +2186,7 @@ function makeCommander() {
     const def = BUILDINGS[defId];
     const ax = anchorB ? anchorB.tx : (P.homeX / CFG.TILE) | 0;
     const ay = anchorB ? anchorB.ty : (P.homeY / CFG.TILE) | 0;
+    if (def.runway) return findRunwaySpot(defId, ax, ay);
     for (let r = 2; r < 26; r++) {
       for (let attempt = 0; attempt < 14; attempt++) {
         const ang = G.rng() * U.PI2;
@@ -2193,6 +2194,36 @@ function makeCommander() {
         const ty = (ay + Math.sin(ang) * r) | 0;
         /* never on a free well's pad or across a door (siteOK) */
         if (G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) return { tx, ty };
+      }
+    }
+    return null;
+  }
+  /* ---- THE RUNWAY BASE ----
+     12 x 4 on one elevation level (rules.js airbase, G.canPlace). The random
+     tries above all but never land on one: the airbase study counted 30
+     level 12 x 4 places within 25 tiles of the worst start of the fourteen
+     theatres (Hormuz, start 1, at 144), out of thousands of footprints. So
+     walk square rings out from the anchor, nearest first, as the shore is
+     walked (findShoreSpot), and ask canPlace only of a footprint that is
+     all passable, unpaved, ore-free open ground on one level - the cheap
+     half of its test, from the map's own arrays. */
+  function findRunwaySpot(defId, ax, ay) {
+    const def = BUILDINGS[defId], map = G.map, W = map.W, H = map.H, w = def.w, h = def.h;
+    const open = (x, y) => {
+      if (x < 1 || y < 1 || x + w >= W || y + h >= H) return false;
+      const lvl = map.elev[y * W + x];
+      for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) {
+        const k = yy * W + xx, t = map.terrain[k];
+        if (G.occ[k] || map.elev[k] !== lvl || map.ore[k] > 25 || !CFG.TERRAIN[t].pass || t === T.TREE) return false;
+      }
+      return true;
+    };
+    /* ring r holds the footprints whose middle is r tiles (Chebyshev) from the anchor */
+    for (let r = 2; r < 30; r++) {
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const tx = ax + dx - (w >> 1), ty = ay + dy - (h >> 1);
+        if (open(tx, ty) && G.canPlace(P, defId, tx, ty) && siteOK(defId, tx, ty)) return { tx, ty };
       }
     }
     return null;

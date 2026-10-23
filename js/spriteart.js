@@ -879,6 +879,40 @@ BLD_DETAIL["airbase"] = {
 /* the 3 x 3 airbase of a save made before the runway (rules.js
    BUILDING_LEGACY airbase3) is this field */
 BLD_DETAIL["airbase3"] = BLD_DETAIL["airbase"];
+/* The runway airbase, 12 x 4 (rules.js airbase): drawn at min(w, h) tiles to
+   42 units (render.js detail), so its plot is 126 x 42 units - the runway the
+   southern half, the four hardstands along the north at def.padPts. */
+BLD_DETAIL["airbase"] = {
+  draw: function (ctx, C, t) {
+    var U = 10.5;                                   // units a tile
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#7b7d77"; ctx.fillRect(-63, -21, 126, 42);
+    ctx.strokeStyle = C.dk; ctx.strokeRect(-63, -21, 126, 42);
+    // runway: rows 2..4, threshold bars and a dashed centreline
+    ctx.fillStyle = "#3d4043"; ctx.fillRect(-62, 0.6, 124, 19.8);
+    ctx.fillStyle = "#d8d8d2";
+    for (var i = 0; i < 6; i++) { ctx.fillRect(-60.5, 2.2 + i * 3, 6, 1.4); ctx.fillRect(54.5, 2.2 + i * 3, 6, 1.4); }
+    ctx.strokeStyle = "#d8d8d2"; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(-50, 10.5); ctx.lineTo(50, 10.5); ctx.stroke();
+    ctx.setLineDash([]);
+    // the four hardstands, their lead-ins and the owner's flash
+    [1.5, 4.5, 7.5, 10.5].forEach(function (px) {
+      var x = (px - 6) * U;
+      ctx.fillStyle = "#94958f"; ctx.fillRect(x - 11, -20.2, 22, 18);
+      ctx.strokeStyle = "#c9a43a";
+      ctx.beginPath(); ctx.moveTo(x, -10); ctx.lineTo(x, 0.6); ctx.stroke();
+      ctx.fillStyle = C.main; ctx.fillRect(x - 3, -20.2, 6, 1.2);
+    });
+    // windsock at the north-east corner
+    var wx = 60, wy = -17;
+    ctx.strokeStyle = C.dk;
+    ctx.beginPath(); ctx.moveTo(wx, wy + 3); ctx.lineTo(wx, wy); ctx.stroke();
+    var sway = Math.sin(t * 3) * 0.8;
+    ctx.fillStyle = "#e08a3c";
+    ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx - 4, wy + 0.8 + sway * 0.4); ctx.lineTo(wx - 4, wy - 0.8 + sway);
+    ctx.closePath(); ctx.fill();
+  }
+};
 
 BLD_DETAIL["radar"] = {
   draw: function (ctx, C, t) {
