@@ -61,12 +61,27 @@ var Render = (function () {
      lives on its own overlay so depletions never trigger a full repaint.  */
   let worldTex = null;        // top-down texture, PPT px per tile
   let oreTex = null;          // ore/dynamic overlay, same space
-  /* pixels per tile in the world texture — scaled so a bigger theatre does not
-     quadruple texture memory (144x144 would otherwise be a 2304px square). */
-  /* Ground texture detail, in pixels per tile. Raised from a 2048-wide budget
-     to 3072: the terrain is the thing the player looks at for the whole game,
-     and it is painted once when the battle loads. */
-  const PPT = Math.max(10, Math.min(22, Math.round(3072 / Math.max(CFG.MAP_W, CFG.MAP_H))));
+  let texMap = null;          // the map the two were painted for
+  /* Ground texture detail, in pixels per tile, worked out for each battle
+     when its ground is painted (texPPT). It was a constant taken when this
+     file loaded, while CFG.MAP_W still held the 144 default, so every theatre
+     was painted at 21 px a tile whatever its size: a 288-tile battle baked a
+     6048 px square, 146 MB a canvas, held three times over (this texture,
+     the ore layer and the 3D renderer's copy) and again on the GPU.
+     Now a battle keeps 21 px a tile until the square would pass TEX_SIDE and
+     thins past it: 21 at 144 and 192 (3024 and 4032 px), 17 at 240 (4080),
+     14 at 288 (4032), 10 at the 384 the size box allows (3840). 4096 is a
+     side every WebGL card takes without three.js shrinking it first, and a
+     tile is magnified on screen at every zoom either way (about 60 px at the
+     3D default, 200 px at its closest), so 14 against 21 px softens the
+     close view without losing anything the eye reads at play distance.
+     Measured under JavaScriptCore (_keep/mapstudy/scripts/startprof.js),
+     battle start-up on taiwan went from 29.6 s to 15.3 s at 288 and from
+     20.9 s to 14.9 s at 240, nearly all of it this paint; 144 and 192 are
+     painted as before (7.1 and 14.7 s). */
+  const TEX_SIDE = 4096;
+  let PPT = 21;
+  function texPPT(map) { return Math.max(10, Math.min(21, Math.floor(TEX_SIDE / Math.max(map.W, map.H)))); }
 
   function noiseMk(seed) {
     /* deterministic 2D value noise with 2 octaves */
@@ -87,6 +102,9 @@ var Render = (function () {
 
   function buildWorldTexture() {
     const map = G.map, W0 = map.W, H0 = map.H;
+    /* this battle's detail; the ore layer, the iso cache and the minimap's
+       thumbnail follow the new size (buildOreTexture, renderTerrain) */
+    PPT = texPPT(map); texMap = map; mmBaseDirty = true;
     const TW = W0 * PPT, TH = H0 * PPT;
     worldTex = document.createElement("canvas");
     worldTex.width = TW; worldTex.height = TH;
@@ -377,7 +395,7 @@ var Render = (function () {
 
   function buildOreTexture() {
     const map = G.map, W0 = map.W, H0 = map.H;
-    if (!oreTex) {
+    if (!oreTex || oreTex.width !== W0 * PPT || oreTex.height !== H0 * PPT) {
       oreTex = document.createElement("canvas");
       oreTex.width = W0 * PPT; oreTex.height = H0 * PPT;
     }
@@ -418,11 +436,14 @@ var Render = (function () {
     const map = G.map, TL = CFG.TILE;
     const wpx = (map.W + map.H) * TL * SQ2;
     const hpx = (map.W + map.H) * TL * SQ2 * ISO + 60;
-    if (!terrainCache) {
+    /* A save loaded from the pause menu is a new map in the same page, maybe
+       of another size: the ground is painted again for it, at its own
+       detail, and the iso cache is cut to its size. */
+    if (!terrainCache || terrainCache.width !== Math.ceil(wpx) || terrainCache.height !== Math.ceil(hpx)) {
       terrainCache = document.createElement("canvas");
       terrainCache.width = Math.ceil(wpx); terrainCache.height = Math.ceil(hpx);
     }
-    if (!worldTex) buildWorldTexture();
+    if (!worldTex || texMap !== map) buildWorldTexture();
     buildOreTexture();
 
     const tc = terrainCache.getContext("2d");
@@ -2303,8 +2324,10 @@ var Render = (function () {
   /* ---- services for the 3D renderer ---- */
   function getWorldTex(game) {
     G = game;
-    if (!worldTex) buildWorldTexture();
-    if (!oreTex) buildOreTexture();
+    /* a new map (a save loaded over this battle) is painted again: see renderTerrain */
+    const fresh = !worldTex || texMap !== G.map;
+    if (fresh) buildWorldTexture();
+    if (fresh || !oreTex) buildOreTexture();
     return { world: worldTex, ore: oreTex };
   }
   function refreshOre(game) { G = game; buildOreTexture(); }

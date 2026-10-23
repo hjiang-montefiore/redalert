@@ -182,19 +182,37 @@ var Render3D = (function () {
   let bloom = null;
   function buildTerrain() {
     const map = G.map;
-    /* Terrain geometry resolution. At 192 over a 144-tile map this was 1.33
-       segments per tile, so every slope was visibly faceted. The mesh is built
-       once per battle, so paying for a finer grid here costs nothing per frame. */
-    const SEG = 384;
+    /* Terrain geometry resolution: 8/3 segments a tile, the 384 a side that
+       replaced 192 over the 144-tile default (1.33 a tile, every slope
+       visibly faceted). It stayed a fixed 384 whatever the map, so a 288-tile
+       theatre was back at 1.33 a tile. The density now holds to SEG_MAX a
+       side - 576, reached at 216 - and thins past it: 2 a tile at 288 (333k
+       vertices), 1.5 at the 384 the size box allows. The cap is the GPU: the
+       ground and the fog overlay both draw it, so 576 is 1.33M triangles a
+       frame (295k at 144, 2.36M had the 8/3 held to 288, too many for a
+       laptop's own graphics). Heights and normals are built once a battle
+       (tools/jsc/terrain3d_check.js times them). The fog overlay draws this
+       same geometry, not a copy, so it is held once (buildFogLayer), and the
+       ground is picked without testing its triangles (groundHit). */
+    const SEG_MAX = 576;
+    const spt = Math.min(8 / 3, SEG_MAX / Math.max(map.W, map.H));
+    const SEGX = Math.round(map.W * spt), SEGY = Math.round(map.H * spt);
     const sizeX = map.W * TILE_M, sizeY = map.H * TILE_M;
-    const geo = new THREE.PlaneGeometry(sizeX, sizeY, SEG, SEG);
+    const geo = new THREE.PlaneGeometry(sizeX, sizeY, SEGX, SEGY);
     geo.rotateX(-Math.PI / 2);                 // ground plane XZ, +Z = south (wy)
     const pos = geo.attributes.position;
+    let lo = Infinity, hi = -Infinity;
     for (let i = 0; i < pos.count; i++) {
       const mx = pos.getX(i) + sizeX / 2;      // 0..sizeX metres
       const mz = pos.getZ(i) + sizeY / 2;
-      pos.setY(i, heightAt(m2gx(mx), m2gx(mz)));
+      const h = heightAt(m2gx(mx), m2gx(mz));
+      pos.setY(i, h);
+      if (h < lo) lo = h;
+      if (h > hi) hi = h;
     }
+    /* the band of heights groundHit walks a ray through, with room for the
+       ground between vertices to stand a little proud of them */
+    terrLo = lo - 2; terrHi = hi + 2;
     geo.computeVertexNormals();
     terraTex = terrainTexture();
     const mat = new THREE.MeshStandardMaterial({
@@ -241,7 +259,10 @@ var Render3D = (function () {
     fogTex = new THREE.CanvasTexture(fogCanvas);
     fogTex.magFilter = THREE.LinearFilter;
     fogTex.minFilter = THREE.LinearFilter;
-    const geo = terrainMesh.geometry.clone();
+    /* the ground's own geometry, not a copy of it: the overlay is lifted by
+       its mesh's position, so the vertices are the same and are held (and
+       uploaded) once - 591k of them at 288 tiles */
+    const geo = terrainMesh.geometry;
     const mat = new THREE.MeshBasicMaterial({
       color: 0x04070a, transparent: true, alphaMap: fogTex,
       depthWrite: false,
@@ -3662,10 +3683,47 @@ var Render3D = (function () {
     return { x: m2gx(o.x + d.x * t), y: m2gx(o.z + d.z * t) };
   }
 
+  /* Where a ray from the camera meets the ground. This was three.js's
+     raycast against the terrain mesh, which tests every one of its
+     triangles: 47 ms a call at 144 tiles (295k triangles) under
+     JavaScriptCore, 190 ms at 288 with the mesh at full density there - paid
+     on every frame a building is being placed or a strike aimed, and twice a
+     mouse move while the middle button drags the view. Instead the ray is
+     walked down through the band of heights the mesh spans (terrLo..terrHi,
+     kept by buildTerrain) in steps of 2.5 m across the ground, against
+     heightAt - the function the mesh's vertices were sampled from - and the
+     step that goes under is halved until the point is found: 9 us a call at
+     144 and at 288, and within 0.75 m of the point on the mesh's own
+     triangles (0.04 m on average; tools/jsc/terrain3d_check.js). Off the
+     edge of the drawn ground there is nothing to meet, as with the mesh. */
+  let terrLo = -9, terrHi = 60;
+  function groundHit(o, d) {
+    if (!(d.y < -1e-6)) return null;
+    const sizeX = G.map.W * TILE_M, sizeY = G.map.H * TILE_M;
+    const above = (t) => {
+      const x = o.x + d.x * t, z = o.z + d.z * t;
+      if (x < 0 || z < 0 || x > sizeX || z > sizeY) return true;
+      return o.y + d.y * t > heightAt(m2gx(x), m2gx(z));
+    };
+    const hz = Math.max(1e-3, Math.hypot(d.x, d.z));
+    let t = Math.max(0, (o.y - terrHi) / -d.y);
+    const tEnd = Math.min((o.y - terrLo) / -d.y, t + Math.hypot(sizeX, sizeY) / hz);
+    const step = 2.5 / hz;
+    if (!above(t)) return { x: m2gx(o.x + d.x * t), y: m2gx(o.z + d.z * t) };
+    while (t < tEnd) {
+      const t0 = t;
+      t = Math.min(tEnd, t + step);
+      if (above(t)) continue;
+      let a = t0, b = t;
+      for (let k = 0; k < 16; k++) { const m = (a + b) / 2; if (above(m)) a = m; else b = m; }
+      return { x: m2gx(o.x + d.x * b), y: m2gx(o.z + d.z * b) };
+    }
+    return null;
+  }
   function unproject(px, py) {
     raycaster.setFromCamera({ x: px / W * 2 - 1, y: 1 - py / H * 2 }, three.camera);
-    const hit = raycaster.intersectObject(terrainMesh, false)[0];
-    if (hit) return { x: m2gx(hit.point.x), y: m2gx(hit.point.z) };
+    const hit = groundHit(raycaster.ray.origin, raycaster.ray.direction);
+    if (hit) return hit;
     /* fallback: sea-level plane */
     const o = raycaster.ray.origin, d = raycaster.ray.direction;
     const t = -o.y / (d.y || -0.0001);

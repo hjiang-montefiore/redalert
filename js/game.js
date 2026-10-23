@@ -20,10 +20,14 @@ var Game = (function () {
     if (typeof setEra === "function") setEra(G.era);
     G.rng = U.mulberry32(opts.seed);
     /* A battle may be fought on a bigger theatre than the 144x144 default.
-       CFG.MAP_W is updated to match because render.js sizes the ground texture
-       from it (PPT = 3072 / max(MAP_W, MAP_H)) and would otherwise paint a
-       288-tile map at the detail budget of a 144-tile one. Everything else in
-       the engine already reads G.map.W / G.map.H. The value rides in opts, so
+       CFG.MAP_W is updated to match, as the size the setup screen offers
+       next (main.js) and the one a theatre with no size of its own is built
+       at (map.js). The ground texture does NOT read it: render.js works out
+       its detail from the map it paints (texPPT), because it once took it
+       from CFG.MAP_W when that file loaded - before this line had ever run -
+       and painted a 288-tile map at the 144 default's 21 px a tile, a 6048 px
+       square. Everything else in the engine reads G.map.W / G.map.H. The
+       value rides in opts, so
        save.js - which stores G.opts wholesale and re-inits from it - carries
        the map size through a save and reload with no change of its own. */
     /* A map drawn in the editor carries the grid it was drawn at: its
