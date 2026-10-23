@@ -2558,7 +2558,7 @@ var Render3D = (function () {
     const ek = G.players.map(p => p.era || "e20").join(",");
     if (ek !== lastEraKey) {
       lastEraKey = ek;
-      for (const [id, rec] of ents) { three.scene.remove(rec.grp); ents.delete(id); }
+      for (const [id, rec] of ents) { three.scene.remove(rec.grp); if (rec.sling) dropSling(rec); ents.delete(id); }
     }
     const seen = new Set();
     for (const e of G.entities) {
@@ -2888,8 +2888,10 @@ var Render3D = (function () {
     }
     for (let i = 0; i < nRiders; i++) { seatOnDeck(riders[i], ents.get(riders[i].id), dt, seen); riders[i] = null; }
     nRiders = 0;
+    drawSlings();
     for (const [id, rec] of ents) {
       if (!seen.has(id)) {
+        if (rec.sling) dropSling(rec);
         /* An entity that died this frame keeps its model: Impact3D claims it
            a moment later, when the death event is read, and turns it into
            what the kill leaves. Anything else that stopped being drawn -
@@ -2897,6 +2899,78 @@ var Render3D = (function () {
         if (!(typeof Impact3D !== "undefined" && Impact3D.adopt(id, rec))) three.scene.remove(rec.grp);
         ents.delete(id);
       }
+    }
+  }
+
+  /* ---- A VEHICLE ON THE HOOK ----
+     (owner) "the veichle is disapearing but not under the mv22". A vehicle a
+     helicopter carries on its hook (Unit.holdPlan: one, the one its cabin
+     does not take - every vehicle, on a machine with no cabin for one) is
+     `carried`, and a carried entity is not drawn: it vanished at the pick-up
+     and came back at the drop. It hangs under the machine now, at its own
+     game size and on the machine's heading, SLING_M of cable below its
+     lowest point; lower than that over the ground it stands on the ground,
+     moved out beside the machine as it comes down, clear of its rotors. Render
+     only: the game's rules are as they were. */
+  const SLING_M = 7;
+  function hookLoad(e, rec) {
+    let key = "";
+    for (const c of e.cargo) key += (c && !c.dead ? c.id : 0) + ",";
+    if (rec.hookKey !== key) {
+      rec.hookKey = key;
+      const plan = e.holdPlan(e.cargo.filter(c => c && !c.dead));
+      rec.hookV = plan && plan.hook ? plan.hook : null;
+    }
+    return rec.hookV && !rec.hookV.dead ? rec.hookV : null;
+  }
+  function makeSling(v) {
+    const tpl = getModel(v.def, v.owner.color, v.owner.era || (G.era || "e20"));
+    const grp = new THREE.Group();
+    grp.add(tpl.clone());
+    tpl.updateMatrixWorld(true);                       // its stand-up turn, before it is measured
+    const bb = new THREE.Box3().setFromObject(tpl);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+    const cable = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x1d1f20 }));
+    cable.frustumCulled = false;
+    three.scene.add(grp); three.scene.add(cable);
+    return { id: v.id, grp, cable, h: bb.max.y - bb.min.y,
+             hw: Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) / 2 };
+  }
+  function dropSling(rec) {
+    three.scene.remove(rec.sling.grp); three.scene.remove(rec.sling.cable);
+    rec.sling.cable.geometry.dispose();
+    rec.sling = null;
+  }
+  function drawSlings() {
+    for (const e of G.entities) {
+      if (e.dead || e.kind !== "unit" || e.layer !== "air" || !e.def.hover || !e.holdPlan) continue;
+      const rec = ents.get(e.id);
+      if (!rec) continue;
+      const v = e.cargo && e.cargo.length ? hookLoad(e, rec) : null;
+      if (!v) { if (rec.sling) dropSling(rec); continue; }
+      if (!rec.sling || rec.sling.id !== v.id) { if (rec.sling) dropSling(rec); rec.sling = makeSling(v); }
+      const s = rec.sling, g = rec.grp, sc = g.scale.y;
+      if (rec.foot === undefined) rec.foot = footOf(rec.tpl);
+      if (rec.slingR === undefined) {
+        rec.tpl.updateMatrixWorld(true);
+        const bb = new THREE.Box3().setFromObject(rec.tpl);
+        rec.slingR = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) / 2;
+      }
+      const belly = g.position.y + rec.foot * sc;
+      /* what it comes down on: the ground, or the deck the machine stands on */
+      const floor = rec.deckShip ? belly : heightAt(e.x, e.y);
+      const hang = belly - SLING_M - s.h, bottom = Math.max(hang, floor);
+      /* 0 hanging free, 1 down on the ground - out beside it by then */
+      const t = U.clamp((bottom - hang) / (SLING_M + s.h), 0, 1);
+      const side = (rec.slingR * sc + s.hw) * t;
+      const ox = -Math.sin(e.ang) * side, oz = Math.cos(e.ang) * side;
+      s.grp.position.set(g.position.x + ox, bottom, g.position.z + oz);
+      s.grp.rotation.y = g.rotation.y;
+      const a = s.cable.geometry.attributes.position;
+      a.setXYZ(0, g.position.x, belly, g.position.z);
+      a.setXYZ(1, g.position.x + ox, bottom + s.h, g.position.z + oz);
+      a.needsUpdate = true;
     }
   }
 
