@@ -14663,7 +14663,10 @@ Object.assign(UNITS, {
   /* S-2 Sopka (SSC-2b Samlet), ru.wikipedia "Sopka": accepted by the Soviet
      Navy on 19 December 1958; six coastal regiments by 1960; to Cuba in 1962.
      The B-163 launcher is a two-axle trailer towed by an AT-S tractor, one
-     missile on its rail (eight for a battalion's four launchers); separate
+     missile on its rail (eight for a battalion's four launchers); the rail
+     lies with the missile's nose over the trailer's tail, away from the
+     drawbar (the Dresden, Gdansk and Varna museum launchers), and trains on
+     an electric drive, so it fires over its tail (fireAft); separate
      Mys search and Burun tracking radars, so it fires only on a cue; up to
      17 minutes of pre-launch preparation (13.6 s on the S-300's scale).
      A towed missile battery: speed, cost and hit points the towed S-75's
@@ -14672,8 +14675,7 @@ Object.assign(UNITS, {
   pact_e50_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Sopka",
     full:"S-2 Sopka (SSC-2b Samlet), B-163 towed launcher",
     cost:1650, oil:22, time:24, hp:470, armor:"light", speed:0.70, turn:0.9, sight:5.0, r:16, mass:18,
-    weapons:["ssm_s2"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:13.6, rounds:1,
-    modelAs:"pact_e50_s75",
+    weapons:["ssm_s2"], prereq:["factory", "lab"], tech:3, turret:false, fireAft:true, deploy:true, deploySec:13.6, rounds:1,
     from:"e50", to:"e60", service:"1958", confidence:"high",
     desc:"The first coastal missile: a Kometa air-to-ship missile with a rocket booster, on a towed rail. One missile a launcher, seventeen minutes to make it ready, and no radar of its own - its regiment's Mys and Burun sets find and track the ship. Slow, blind and heavy-hitting." },
   /* 4K44 Redut (SSC-1b Sepal), ru.wikipedia "Redut": the P-35B on an
