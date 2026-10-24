@@ -4020,12 +4020,15 @@ function makeCommander() {
     for (let i = 0; i < dossier.length; i++) {
       const d = dossier[i];
       if (!d) continue;
-      let air = 0, all = 0;
+      let air = 0, all = 0, sea = 0;
       for (const r of seenU.values()) {
         if (r.own !== i || now - r.t > 14) continue;
-        all++; if (r.layer === "air") air++;
+        all++; if (r.layer === "air") air++; else if (r.layer === "sea") sea++;
       }
       if (air > d.peakAir) d.peakAir = air;
+      /* and the most hulls held at once, as peakAir is the most aircraft: a
+         second coastal launcher answers a surface group, not one boat */
+      if (sea > (d.peakSea || 0)) d.peakSea = sea;
       if (all > d.peakUnits) d.peakUnits = all;
     }
     /* ONE threat field, rebuilt here and nowhere else, and version-gated so
@@ -4086,6 +4089,13 @@ function makeCommander() {
       return;
     }
     if (e.layer === "sub") d.sawSub = true;
+    /* A rival hull on the water: what the coastal missile block buys against
+       (PLAN.md B5). Written here and nowhere else, so only a hull this side
+       has actually held - an eye, a warship's or a launcher's own surface
+       radar (G.seaHolds), a flash - and never off the enemy's roster or its
+       shipyard queue: (owner) "ai should have the same fog like us." Where it
+       was is kept with it: the water a launcher is sited to face. */
+    if (e.layer === "sea") { d.sawHull = true; d.seaX = e.x; d.seaY = e.y; d.seaT = now; }
     if ((e.def.radar || e.def.jam) && G.emitting && G.emitting(e)) d.sawRadar = true;
     if (e.def.stealth) d.sawStealth = true;
     if (e.armor === "heavy") d.sawHeavy = true;
@@ -5476,6 +5486,165 @@ function makeCommander() {
       if (dup) continue;
       telFired.push({ x: spot.x, y: spot.y, t: now });
       u.give({ type: "bombard", x: spot.x, y: spot.y, until: now + 12 });
+    }
+  }
+
+  /* ---- siting the coastal missile launchers ----
+     (PLAN.md B5; coastssm/REPORT.md "AI": "site 2-6 t inland behind a
+     beach, inside the dome's 22 t".) A coastal battery stands behind the
+     beach, not on it - the Bal's are "sited up to 10 km inland"
+     (ru.wikipedia "Bal", eras.js), out of the surf and a destroyer's gun
+     line, with the sea in front of it inside its missiles' reach. So the
+     site is a land tile it can drive to from home, two to six tiles back
+     from the water (Chebyshev: the tiles a player counts), on its own side
+     of the map - inside the base's build radius, or under one of its own
+     finished radar domes, where the cue it fires on comes from - and never
+     on a free well's pad, which the oil driver would shove it off
+     (shoveOff). Of those, the one nearest the water where the rival's
+     hulls were last seen (dossier seaX/seaY), whose own stretch of water
+     joins that water: a lake inside the base is not the sea it guards.
+     Nearest is the facing: the sea between it and the hulls is the sea it
+     covers, which on hormuz is the cape over the narrows (Iran fired its
+     Silkworms from there in 1987, REPORT.md).
+     PERF: one breadth-first pass out from the water over the box the base
+     and its domes span, a few thousand tiles of typed arrays, and only the
+     tiles it leaves two to six deep are asked anything dearer (the
+     labels, the base radius). The list is memoised for thirty seconds and
+     while the hulls stay in one eight-tile cell, as findRunwaySpot keeps
+     its scan, so the buy block and the driver asking on every think cost
+     a key compare; a land-locked base memoises its empty list the same
+     way, and so never buys. */
+  let coastMemo = null;
+  const COAST_MIN = 2, COAST_MAX = 6;
+  function coastSites(fx, fy) {
+    const TL = CFG.TILE, M = G.map, W = M.W, H = M.H;
+    const hx = U.clamp((fx / TL) | 0, 0, W - 1), hy = U.clamp((fy / TL) | 0, 0, H - 1);
+    const key = (hx >> 3) * 4096 + (hy >> 3);
+    if (coastMemo && coastMemo.k === key && G.time - coastMemo.t < 30) return coastMemo.list;
+    const list = [];
+    coastMemo = { k: key, t: G.time, list };
+    /* the box: every structure's build radius and every finished dome's cover */
+    let x0 = W, y0 = H, x1 = -1, y1 = -1;
+    const domes = [];
+    for (const b of P.buildings) {
+      if (b.dead || (b.def && b.def.obstacle)) continue;
+      const cx = b.tx + b.def.w / 2, cy = b.ty + b.def.h / 2;
+      let r = CFG.BUILD_RADIUS;
+      if (b.def.radar && b.buildProgress >= 1) {
+        /* an army's own dome carries its set's reach (rules.js, 24-26);
+           the generic row says only `true`: the 22 tiles REPORT.md cites */
+        const rr = typeof b.def.radar === "number" ? b.def.radar : 22;
+        domes.push(cx, cy, rr);
+        if (rr > r) r = rr;
+      }
+      if (cx - r < x0) x0 = cx - r; if (cy - r < y0) y0 = cy - r;
+      if (cx + r > x1) x1 = cx + r; if (cy + r > y1) y1 = cy + r;
+    }
+    if (x1 < 0) return list;
+    x0 = Math.max(1, x0 | 0); y0 = Math.max(1, y0 | 0);
+    x1 = Math.min(W - 2, Math.ceil(x1)); y1 = Math.min(H - 2, Math.ceil(y1));
+    /* depth from the water out to COAST_MAX, over the box and a margin, so a
+       tile at the box's edge is measured against water just outside it */
+    const bx0 = Math.max(0, x0 - COAST_MAX - 1), by0 = Math.max(0, y0 - COAST_MAX - 1);
+    const bx1 = Math.min(W - 1, x1 + COAST_MAX + 1), by1 = Math.min(H - 1, y1 + COAST_MAX + 1);
+    const bw = bx1 - bx0 + 1, bh = by1 - by0 + 1, n = bw * bh;
+    const dep = new Int8Array(n).fill(-1), src = new Int32Array(n), qu = new Int32Array(n);
+    let qh = 0, qt = 0;
+    for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
+      const k = y * W + x;
+      if (M.terrain[k] !== T.WATER) continue;
+      const i = (y - by0) * bw + (x - bx0);
+      dep[i] = 0; src[i] = k; qu[qt++] = i;
+    }
+    if (!qt) return list;
+    while (qh < qt) {
+      const i = qu[qh++], dd = dep[i];
+      if (dd >= COAST_MAX) continue;
+      const ix = i % bw, iy = (i / bw) | 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const nx = ix + ox, ny = iy + oy;
+        if (nx < 0 || ny < 0 || nx >= bw || ny >= bh) continue;
+        const j = ny * bw + nx;
+        if (dep[j] >= 0) continue;
+        dep[j] = dd + 1; src[j] = src[i]; qu[qt++] = j;
+      }
+    }
+    const homeTx = U.clamp((P.homeX / TL) | 0, 0, W - 1), homeTy = U.clamp((P.homeY / TL) | 0, 0, H - 1);
+    const wells = M.oilNodes || [];
+    const joins = new Map();                 // a water tile -> it joins the hulls' water
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = (y - by0) * bw + (x - bx0);
+      if (dep[i] < COAST_MIN) continue;      // on the beach, or -1: deeper than COAST_MAX
+      const k = y * W + x;
+      if (!GameMap.passable(M, x, y, "ground") || G.occ[k]) continue;
+      let pad = false;
+      for (const w of wells) if (Math.abs(w.x - x) <= 3 && Math.abs(w.y - y) <= 3) { pad = true; break; }
+      if (pad) continue;
+      const wk = src[i];
+      let j = joins.get(wk);
+      if (j === undefined) { j = Path.reachable(M, wk % W, (wk / W) | 0, hx, hy, "sea"); joins.set(wk, j); }
+      if (!j) continue;
+      if (!Path.reachable(M, homeTx, homeTy, x, y, "ground")) continue;
+      let ours = false;
+      for (let d = 0; d < domes.length && !ours; d += 3)
+        if (U.dist2(x + 0.5, y + 0.5, domes[d], domes[d + 1]) <= domes[d + 2] * domes[d + 2]) ours = true;
+      if (!ours && !P.inBaseRadius(x + 0.5, y + 0.5, CFG.BUILD_RADIUS)) continue;
+      list.push({ x, y, d2: (x - hx) * (x - hx) + (y - hy) * (y - hy) });
+    }
+    list.sort((a, b) => a.d2 - b.d2);
+    if (list.length > 48) list.length = 48;
+    return list;
+  }
+  /* the nearest free site of the memoised list, three tiles clear of every
+     site already given to a launcher of ours, in pixels; null if none */
+  function coastPick(fx, fy, taken) {
+    const TL = CFG.TILE, W = G.map.W, R2 = 9 * TL * TL;
+    for (const c of coastSites(fx, fy)) {
+      if (G.occ[c.y * W + c.x]) continue;              // a structure since the scan
+      const px = (c.x + 0.5) * TL, py = (c.y + 0.5) * TL;
+      let near = false;
+      for (const t of taken) if (U.dist2(t.x, t.y, px, py) < R2) { near = true; break; }
+      if (!near) return { x: px, y: py };
+    }
+    return null;
+  }
+  function coastTaken() {
+    const out = [];
+    for (const u of P.units) if (!u.dead && u._coastAt) out.push(u._coastAt);
+    return out;
+  }
+  /* ---- and taking them there ----
+     It sets itself up when it stops on idle or guard (entities.js, as a SAM
+     does), so all the commander does is drive it to its site: one move, given
+     again only if it stopped more than two tiles short, not more often than
+     every twelve seconds and four times at most - a site it cannot get to is
+     given up and it sets up where it stands. Guard stance, so it fires on the
+     hulls its side holds (rules.js firesOnCue) without being told, and stays
+     on its shore when one sails out of reach. Not held by peace, as the air
+     defence's stationing is not: siting is not firing. When to fire, moving
+     off after a salvo and the reload run are piece B6. */
+  function driveCoastal() {
+    let cs = null;
+    for (const u of P.units) if (!u.dead && u.def.role === "coastssm") (cs || (cs = [])).push(u);
+    if (!cs) return;
+    const dC = dossier[rival ? rival.idx : -1];
+    const TL = CFG.TILE;
+    for (const u of cs) {
+      if (u.carried) continue;
+      if (u.stance !== "guard") u.stance = "guard";
+      if (!u._coastAt) {
+        if (!dC || !dC.sawHull) continue;
+        u._coastAt = coastPick(dC.seaX, dC.seaY, coastTaken());
+        u._coastN = 0; u._coastT = -99;
+        if (!u._coastAt) continue;
+      }
+      const s = u._coastAt;
+      if (U.dist2(u.x, u.y, s.x, s.y) <= 4 * TL * TL) continue;
+      const ot = u.order.type;
+      if (ot !== "idle" && ot !== "guard") continue;
+      if (u._coastN >= 4 || G.time - u._coastT < 12) continue;
+      u._coastN++; u._coastT = G.time;
+      u.give({ type: "move", x: s.x, y: s.y });
     }
   }
 
@@ -9012,6 +9181,37 @@ function makeCommander() {
       if (unitsOf("tel").length < telCap && tryBuildUnit("tel")) return;
     }
 
+    /* -------- COASTAL ANTI-SHIP MISSILES --------
+       (PLAN.md B5; coastssm/REPORT.md "AI": "buy 1-2 once a rival hull is
+       seen".) Bought against a hull this commander has actually HELD -
+       dossier.sawHull, written by noteSighting and nowhere else - never
+       against the enemy's yard: (owner) "ai should have the same fog like
+       us." One launcher once a hull has been seen, a second once three have
+       been held at once (peakSea, sized as peakAir sizes the SAM batteries):
+       a surface group, not a lone boat. Gated on D.navy as the anti-submarine
+       helicopter is, because these are naval troops in every army that has
+       them - the Rubezh was accepted by the Soviet Navy, the YJ-62 serves the
+       PLA Navy's Coastal Defence Force, the Hsiung Feng II the ROC Navy's
+       Haifeng group, NMESIS a Marine littoral regiment (eras.js) - so a
+       Recruit never fields one. The rows' own needs are a factory, a lab and
+       tech 3; then money to spare, the launcher's full price and a thousand
+       more, so it is never the war chest's last credits, and not while the
+       mine is short. And only where there is a shore to put it on:
+       coastPick() answers null for a base with no sea in reach, and nothing
+       is bought there. pickFor() answers null where the army has no row
+       (France, West Germany, and most armies in most decades), and the money
+       goes on down the list. */
+    if (D.navy && P.tech >= 3 && nLab >= 1 && nFac >= 1 &&
+        queueLen("vehicle") < 3 && !mineShort) {
+      const dC = dossier[rival ? rival.idx : -1];
+      if (dC && dC.sawHull) {
+        const want = (dC.peakSea || 0) >= 3 ? 2 : 1;
+        const cid = fielded("vehicle", d => d.role === "coastssm") < want ? pickFor("coastssm") : null;
+        if (cid && P.cash >= P.factionCost(UNITS[cid]) + 1000 &&
+            coastPick(dC.seaX, dC.seaY, coastTaken()) && tryBuildUnit("coastssm")) return;
+      }
+    }
+
     /* -------- SENSORS: radar vehicles make everything else shoot straight -------- */
     if (D.radar && P.hasBuilding("radar") && fielded("vehicle", d => d.radar) < 2 &&
         queueLen("vehicle") < 3 && P.cash > 1400) tryBuildUnit("radarv");
@@ -9287,6 +9487,7 @@ function makeCommander() {
 
     driveAirDefence();
     driveLaunchers();
+    driveCoastal();
     driveBarrier();
     /* Standing-orders drivers, not purchases, so they run every think tick
        whatever was bought. Both self-gate on D.read and driveMines keeps its
@@ -11958,6 +12159,9 @@ function makeCommander() {
     return P.units.filter(u => !u.dead && u.cat !== "aircraft" && !u.def.harvester &&
       !u.def.supply && u.def.role !== "recon" && u.def.role !== "sam" &&
       u.def.role !== "tel" && u.def.role !== "mineclear" &&
+      /* nor a coastal missile launcher: it waits on its shore for ships
+         (driveCoastal) and has no round for anything ashore */
+      u.def.role !== "coastssm" &&
       u.def.weapons.length && u.layer === "ground" &&
       /* A raider is out on the second front (formRaid). It is left out HERE
          so that no caller - launchGroundWave, defendBase, startAmphib - can
