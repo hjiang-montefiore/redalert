@@ -1,60 +1,78 @@
-/* ============ ru_tunguska.js - HERO models: the 2S6 Tunguska family ============
-   The Soviet / Russian gun-and-missile air-defence vehicle in three guises:
-     pact_e80_spaag   2S6 Tunguska          (1980s, Soviet green)
-     pact_e90_spaag   2S6M Tunguska-M       (1990s, Soviet green)
-     spaag_p          2S6M Tunguska         (present day, Russian grey-green)
+/* ============ ru_tunguska.js - HERO models: the 2K22 Tunguska family ============
+   The Soviet / Russian gun-and-missile air-defence vehicle (combat vehicle 2S6
+   on the GM-352 tracked chassis) in the three guises the rows name:
+     pact_e80_spaag   2S6 Tunguska         (2K22, in service 8 Sep 1982; Soviet green)
+     pact_e90_spaag   2S6M Tunguska-M      (2K22M, in service 1990; Soviet green)
+     spaag_p          2S6M Tunguska        (present day, Russian grey-green)
+   Full-quality redo of 2026-10-24.  References (Wikimedia Commons, fetched at
+   width 960):
+     [S26] 2S6M combat vehicle 2K22M Tunguska-M - TankBiathlon14part2-26.jpg
+           (Vitaly V. Kuzmin, CC-BY-SA): the RIGHT side square on.  The six
+           road-wheel centres sit at an even 1.0 m pitch in it, so it is the
+           orthographic reference: 114 px per metre from the published 7.93 m
+           hull length, z from the track's ground line.
+     [S29] the same vehicle, -29.jpg, LEFT side.  The old model was measured
+           from it, but the hull is turned in it (its wheel pitch falls from
+           1.16 m at the nose to 0.74 m at the tail), so every station of the
+           old model aft of the nose had crept forward; the redo takes x from
+           [S26] and uses [S29] only for the left side's fittings.
+     [S25] -25.jpg (right front 3/4) and [S27] -27.jpg (right rear 3/4): the
+           tracking-radar drum, the gun mounts, the empty launcher cradles and
+           the folded search antenna seen from behind.
+     [MUS1], [MUS2] 2K22 Tunguska, SA-19 Grison, Artillery museum,
+           Saint-Petersburg pic1 / pic2: a 2S6 with the search antenna raised
+           and dummy 9M311 containers in the launchers.
+     [AMD] Amd 2s6.jpg and [P08] 2008 Moscow Victory Day Parade - 9K22
+           Tunguska.jpg: loaded launchers from the front, four containers a side.
+     en.wikipedia "2K22 Tunguska" / ru.wikipedia "Tunguska (ZPRK)": dates,
+     GM-352 with six road wheels, rear sprocket and three return rollers,
+     the search radar on the turret's rear top, the tracking radar on its front.
 
-   What each feature rests on (references fetched from Wikimedia Commons):
-     - Vitaly Kuzmin's side photograph of a 2S6M (File:2S6M combat vehicle
-       2K22M Tunguska-M - TankBiathlon14part2-29.jpg), scaled at 93.7 px per
-       metre from the published 7.93 m hull length, heights trimmed about 6
-       per cent for the camera's perspective so the cupola top (3.31 m)
-       stays under the published 3.36 m (radar folded):  a FLAT-roofed
-       GM-352 hull, deck 2.05 m, its side wall
-       standing on a lit fender ledge at 1.40 m with a short skirt below; a
-       short sloped upper glacis (0.66 m long) meeting a short lower plate at
-       a nose edge 1.54 m up; three stowage boxes, a latched box and two
-       filler caps on the hull side, the louvred engine grille and the small
-       panels over it at the rear.  SIX road wheels a side (dual, rubber
-       tyred) at the measured uneven spacing, the raised idler at the FRONT,
-       the raised toothed sprocket at the REAR, the track wrapped round all
-       of them with its top run held up under the skirt.
-       The turret: a wide low turret-base drum (2.9 m across) sitting on
-       the deck, the big flat-roofed body on it reaching from the tracking
-       dish at the front to the antenna housing that overhangs the engine
-       deck, the commander's cupola and the sight dome on the roof; on EACH
-       side a long flat gun housing over the rear half of the turret side,
-       from whose front the twin 30 mm 2A38 barrels run 2.1 m forward (one
-       barrel above the other, tied by a link near the muzzle, the muzzles
-       just ahead of the dish); the round tracking-radar dish on its mount at
-       the turret front; the search-radar antenna folded down as a broad
-       panel over the turret rear (arched across the width, as the rear
-       views TankBiathlon14part2-27 / -28 show it).
-     - 2s6.jpg (an earlier 2S6, front three-quarter): the same layout on the
-       1980s vehicle, and the 9M311 containers LOADED, a bundle of four a
-       side outboard of the guns, angled up.  The 2S6M photographs show the
-       launcher arms empty; the game rows are armed, so all three carry the
-       containers (2.7 m long, from the missile's published 2.56 m),
-       drawn 15 degrees nose-up on the arm behind the gun housing.
-   Published figures: length 7.93 m, width 3.24 m, height 3.36 m with the
-   search radar folded, GM-352 chassis, 8 ready 9M311 missiles and four 2A38
-   barrels on the 2S6 and 2S6M alike.  armour_specs.js gives pact_e90_spaag
-   a 3.6 m width - a data note, not edited here.
-   NOT CONFIRMED from references, so not drawn differently: any visible
-   2S6 / 2S6M difference.  The three rows share the geometry and differ only
-   in the paint.  No tactical markings; the whip aerial is left off.
-   Three return rollers a side are drawn where the side photograph shows
-   the track's top run held up in the dark under the skirt.
+   Recognition list (each drawn; where it rests):
+     1. Long low GM-352 hull: flat deck at 2.05 m, short upper glacis to a nose
+        edge 1.50 m up, a thick fender ledge at 1.24-1.40 m running the whole
+        length and turning down at the nose [S26] [S29].
+     2. Six dual rubber-tyred road wheels a side at a 1.0 m pitch, the raised
+        idler at the FRONT, the raised toothed sprocket at the REAR, three
+        return rollers under the ledge [S26], en.wiki.
+     3. Hull-side stowage boxes, the vertical louvred grille and small louvre
+        on the right [S26]; the horizontal engine grille, the slotted panel
+        and two filler caps on the left [S29].
+     4. A wide, low turret-base drum, 3.1 m across [S26] [P08].
+     5. The tall slab-sided turret body with a flat roof at 3.10 m, rounded at
+        its front top edge [S26] [S25].
+     6. The round tracking-radar drum on the turret FRONT, offset to the
+        RIGHT of the centre line on a pedestal and yoke [S25] [P08] [MUS2].
+     7. On each side a 2A38 twin 30 mm gun, barrels one above the other, run
+        forward from a big flat-sided round-cornered mount housing (0.81 to
+        -0.66 m) to muzzles 2.54 m forward of mid-hull [S26] [S29] [S25].
+     8. The 9M311 containers: four a side, 2 x 2, outboard of the guns [AMD]
+        [P08].  The 2S6M display vehicle [S26] has empty cradles; the game rows
+        are armed, so all three carry them.
+     9. The search-radar antenna folded down over the turret rear: a broad
+        arched reflector drooping at both ends, with its feed-support ladder
+        and drive box over the rear wall [S27] [S26].
+    10. The sight head on its stalk and the commander's cupola on the roof [S26].
 
-   Five materials: PAINT (textured), DARK (track, barrels, grilles), GLASS
-   (sights, vision blocks), the plain C.team (turret roof plate and the
-   glacis plate) and WHEEL (vertex-coloured: green discs, black tyres, so a
-   road-wheel group stays one draw call).  Named nodes: "turret" (at the
-   ring centre, 0.60 m ahead of mid-hull; guns along +X) and six "roadwheel"
-   groups (both sides of each station).
-
-   Model space: +X nose, +Y left, +Z up, metres, tracks on z = 0.
-   ASCII only.  */
+   Variant differences and what was NOT drawn:
+     - en.wikipedia: the first 2K22 / 2S6 of 1982 carried four ready missiles,
+       two a side; the 2K22M of 1990 eight.  No photograph found shows how the
+       two-a-side launcher looked, and the 1980s 2S6 photographs to hand [AMD]
+       [MUS2] show four a side, so the e80 row keeps four a side.  Not
+       confirmed: any other 2S6 / 2S6M difference visible from outside, so the
+       rows share the geometry.
+     - Tunguska-M1 (2K22M1, 2003, GM-5975 chassis) is not a row; not drawn.
+     - No whip aerial, no markings or numbers.
+   Paint: [S26] lit hull side samples #555953-#575c57 (overcast); spaag_p
+   takes that to 0.9 (#4d524c).  [MUS1] museum green #808b61 at 0.7 gives
+   the Soviet green of the e80 / e90 rows (#5a6144); the 1990 2S6M kept the
+   Soviet green (no 1990s colour photograph found to show otherwise).
+   Published: hull 7.93 m, width 3.24 m, height 3.36 m radar folded; drawn
+   7.98 x 3.24 x 3.46 m (to the sight head; roof 3.10, cupola 3.24).
+   Six materials: PAINT (canvas texture), DARK, GLASS, C.team (a roof plate and
+   the glacis plate), WHEEL (vertex colours).  Named nodes: "turret" (ring
+   centre, x = 0.47) and six "roadwheel" groups.
+   Model space: +X nose, +Y left, +Z up, metres, tracks on z = 0.  ASCII only. */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -64,20 +82,19 @@ var HeroTunguska = (function () {
   var TAU = Math.PI * 2;
 
   var VARIANTS = {
-    E80: { paint: { base: "#4a5935", blots: ["#3e4b2d", "#56653f"], seed: 5 } },
-    E90: { paint: { base: "#4a5a3c", blots: ["#3e4c32", "#566444"], seed: 17 } },
-    P:   { paint: { base: "#4d5948", blots: ["#424d3f", "#58634f"], seed: 29 } }
+    E80: { paint: { base: "#5a6144", dark: "#4b5238", lite: "#666d4f", seed: 5 } },
+    E90: { paint: { base: "#576042", dark: "#4a5137", lite: "#636b4d", seed: 17 } },
+    P:   { paint: { base: "#4d524c", dark: "#434740", lite: "#585d56", seed: 29 } }
   };
 
-  /* running gear, all measured off the side photograph */
-  var XW = [2.05, 0.91, -0.12, -1.11, -2.02, -2.74], RW = 0.37, ZW = 0.48;
+  /* running gear, from [S26] */
+  var XW = [2.50, 1.47, 0.45, -0.59, -1.58, -2.51], RW = 0.365, ZW = 0.45;
   var TY = 1.40, TH = 0.19;               /* track centre line and half width */
-  var XI = 2.89, ZI = 0.90, RI = 0.33;    /* idler, front, raised */
-  var XS = -3.44, ZS = 0.97, RS = 0.30;   /* sprocket, rear, raised */
-  var XR = [1.45, -0.05, -1.55], ZR = 1.02, RR = 0.09;  /* return rollers */
+  var XI = 3.11, ZI = 0.89, RI = 0.31;    /* idler, front, raised */
+  var XS = -3.34, ZS = 0.89, RS = 0.31;   /* sprocket, rear, raised */
+  var XR = [1.98, -0.07, -2.05], ZR = 1.00, RR = 0.085;  /* return rollers */
   var DZ = 2.05;                          /* hull deck */
-  var TZ = -0.05;                         /* turret node height (built for a 2.10 deck) */
-  var HX = 0.60;                          /* turret ring centre */
+  var HX = 0.47;                          /* turret ring centre */
 
   /* -------------------------------------------------------- geometry kit */
   function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
@@ -89,12 +106,15 @@ var HeroTunguska = (function () {
     return [Math.pow(((n >> 16) & 255) / 255, 2.2), Math.pow(((n >> 8) & 255) / 255, 2.2), Math.pow((n & 255) / 255, 2.2)];
   }
 
-  /* one bin of triangles per material; the painted bin also gets planar UVs
-     taken from the dominant axis of each face, so camouflage never stretches;
-     the wheel bin carries a vertex colour (bin.col) instead */
+  /* one bin of triangles per material; the painted bin gets planar UVs from
+     the dominant axis of each face (metres x 0.30, the texture repeating),
+     the wheel bin a vertex colour (bin.col) instead.  Zero-area triangles,
+     which the lofts' clipped stations make, are dropped. */
   function Bin(mat, uv, vc) { this.mat = mat; this.P = []; this.N = []; this.U = uv ? [] : null; this.C = vc ? [] : null; this.col = [1, 1, 1]; }
   Bin.prototype.tri = function (a, b, c, na, nb, nc) {
-    var f = unit(cross(sub(b, a), sub(c, a))), v = [a, b, c], n = [na || f, nb || f, nc || f];
+    var cr = cross(sub(b, a), sub(c, a));
+    if (dot(cr, cr) < 1e-12) return;
+    var f = unit(cr), v = [a, b, c], n = [na || f, nb || f, nc || f];
     var i, q, ax = Math.abs(f[0]), ay = Math.abs(f[1]), az = Math.abs(f[2]);
     for (i = 0; i < 3; i++) {
       q = v[i];
@@ -102,21 +122,19 @@ var HeroTunguska = (function () {
       this.N.push(n[i][0], n[i][1], n[i][2]);
       if (this.C) this.C.push(this.col[0], this.col[1], this.col[2]);
       if (this.U) {
-        if (az >= ax && az >= ay) this.U.push(q[0] * 0.34, q[1] * 0.34);
-        else if (ay >= ax) this.U.push(q[0] * 0.34, q[2] * 0.34);
-        else this.U.push(q[1] * 0.34, q[2] * 0.34);
+        if (az >= ax && az >= ay) this.U.push(q[0] * 0.30, q[1] * 0.30);
+        else if (ay >= ax) this.U.push(q[0] * 0.30, q[2] * 0.30);
+        else this.U.push(q[1] * 0.30, q[2] * 0.30);
       }
     }
   };
-  /* a flat quad wound so that its normal points along "want" */
   function quad(bin, a, b, c, d, want) {
     var f = cross(sub(b, a), sub(c, a));
     if (dot(f, want) >= 0) { bin.tri(a, b, c); bin.tri(a, c, d); }
     else { bin.tri(a, c, b); bin.tri(a, d, c); }
   }
 
-  /* a closed solid: whatever order the corners came in, the signed volume
-     says whether the faces point out, and they are turned if they do not */
+  /* a closed solid: the signed volume says whether the faces point out */
   function solid(bin, V, F, Nv) {
     var vol = 0, i, f, a, b, c;
     for (i = 0; i < F.length; i++) { f = F[i]; vol += dot(V[f[0]], cross(V[f[1]], V[f[2]])); }
@@ -137,7 +155,6 @@ var HeroTunguska = (function () {
     hexa(bin, [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
                [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]);
   }
-  /* a box on a tilted plane: origin P0, in-plane axes U and W, normal N */
   function planeBox(bin, P0, U, W, N, u0, u1, w0, w1, h0, h1) {
     function pt(u, w, h) {
       return [P0[0] + U[0] * u + W[0] * w + N[0] * h, P0[1] + U[1] * u + W[1] * w + N[1] * h,
@@ -146,7 +163,6 @@ var HeroTunguska = (function () {
     hexa(bin, [pt(u0, w0, h0), pt(u1, w0, h0), pt(u1, w1, h0), pt(u0, w1, h0),
                pt(u0, w0, h1), pt(u1, w0, h1), pt(u1, w1, h1), pt(u0, w1, h1)]);
   }
-  /* a capped cylinder or cone between two centres, smooth round the side */
   function cyl(bin, A, B, r0, r1, seg, nocap) {
     var ax = unit(sub(B, A)), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
     var u = unit(cross(ax, t)), v = cross(ax, u), V = [], N = [], F = [], i, j, c, s, rn, base, rA, rB, na;
@@ -170,12 +186,7 @@ var HeroTunguska = (function () {
   function cylY(bin, x, y0, y1, z, r, seg) { cyl(bin, [x, y0, z], [x, y1, z], r, r, seg); }
   function cylZ(bin, x, y, z0, z1, r, seg) { cyl(bin, [x, y, z0], [x, y, z1], r, r, seg); }
   function cylX(bin, x0, x1, y, z, r, seg) { cyl(bin, [x0, y, z], [x1, y, z], r, r, seg); }
-
-  /* a prism: convex outline in the XZ plane, from y0 to y1 */
   function prism(bin, pts, y0, y1) { taper(bin, pts, -1, 1, 0, 1, y0, y1); }
-  /* a convex XZ outline whose side faces lean in: half width wa at z = za,
-     wb at z = zb (planar side faces, since the width is linear in z); with
-     y0 / y1 given it is a straight prism between them instead */
   function taper(bin, pts, wa, wb, za, zb, y0, y1) {
     var n = pts.length, V = [], F = [], i, j, w;
     for (i = 0; i < n; i++) {
@@ -190,6 +201,42 @@ var HeroTunguska = (function () {
     for (i = 0; i < n; i++) { j = (i + 1) % n; F.push([i, n + j, j], [i, n + i, n + j]); }
     solid(bin, V, F);
   }
+  /* a round-cornered slab in the XZ plane (corner radius r), y0..y1 */
+  function slab(bin, x0, x1, z0, z1, r, y0, y1) {
+    var pts = [], k, a, cs = [[x1 - r, z1 - r, 0], [x0 + r, z1 - r, 1], [x0 + r, z0 + r, 2], [x1 - r, z0 + r, 3]];
+    for (k = 0; k < 4; k++) for (a = 0; a <= 3; a++) {
+      var t = (cs[k][2] + a / 3) * Math.PI / 2;
+      pts.push([cs[k][0] + Math.cos(t) * r, cs[k][1] + Math.sin(t) * r]);
+    }
+    prism(bin, pts, y0, y1);
+  }
+
+  /* the loft: rings of (y, z) points (same count) at stations along x,
+     bridged and capped into one closed solid */
+  function loft(bin, X, R) {
+    var V = [], F = [], n = R[0].length, m = X.length, i, k, j, c0, c1, cy, cz;
+    for (k = 0; k < m; k++) for (i = 0; i < n; i++) V.push([X[k], R[k][i][0], R[k][i][1]]);
+    for (k = 0; k < m - 1; k++) for (i = 0; i < n; i++) {
+      j = (i + 1) % n;
+      F.push([k * n + i, (k + 1) * n + j, (k + 1) * n + i], [k * n + i, k * n + j, (k + 1) * n + j]);
+    }
+    for (k = 0; k < m; k += m - 1) {
+      cy = 0; cz = 0;
+      for (i = 0; i < n; i++) { cy += R[k][i][0]; cz += R[k][i][1]; }
+      V.push([X[k], cy / n, cz / n]); c0 = V.length - 1;
+      for (i = 0; i < n; i++) { j = (i + 1) % n; F.push(k ? [c0, k * n + i, k * n + j] : [c0, k * n + j, k * n + i]); }
+      if (m === 1) break;
+    }
+    c1 = solid(bin, V, F);
+    return c1;
+  }
+  /* mirror a half profile (y >= 0, from bottom centre up to top centre) */
+  function ring(half) {
+    var R = [], i;
+    for (i = 0; i < half.length; i++) R.push([half[i][0], half[i][1]]);
+    for (i = half.length - 2; i >= 1; i--) R.push([-half[i][0], half[i][1]]);
+    return R;
+  }
 
   /* ----------------------------------------------------------- materials */
   var _tex = {};
@@ -199,26 +246,39 @@ var HeroTunguska = (function () {
     var t = null;
     try {
       var cv = document.createElement("canvas");
-      cv.width = 256; cv.height = 256;
+      cv.width = 512; cv.height = 512;
       var q = cv.getContext("2d"), s = P.seed >>> 0, i, k, a, x, y, rr, ang, rd;
       var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-      q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
-      for (k = 0; k < P.blots.length; k++) {
-        q.fillStyle = P.blots[k];
-        for (i = 0; i < 9; i++) {
-          x = R() * 256; y = R() * 256; rr = 16 + R() * 34;
+      q.fillStyle = P.base; q.fillRect(0, 0, 512, 512);
+      /* faint mottling of the single-colour finish */
+      for (k = 0; k < 2; k++) {
+        q.fillStyle = k ? P.lite : P.dark;
+        q.globalAlpha = 0.35;
+        for (i = 0; i < 14; i++) {
+          x = R() * 512; y = R() * 512; rr = 24 + R() * 60;
           q.beginPath();
-          for (a = 0; a < 7; a++) {
-            ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
-            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+          for (a = 0; a < 8; a++) {
+            ang = a / 8 * TAU; rd = rr * (0.6 + R() * 0.6);
+            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.5, y + Math.sin(ang) * rd);
+            else q.lineTo(x + Math.cos(ang) * rd * 1.5, y + Math.sin(ang) * rd);
           }
           q.closePath(); q.fill();
         }
       }
-      for (i = 0; i < 70; i++) {
-        q.fillStyle = (i % 2) ? "rgba(15,14,10,0.07)" : "rgba(240,236,215,0.05)";
-        q.fillRect(R() * 256, R() * 256, 3 + R() * 30, 2 + R() * 18);
+      q.globalAlpha = 1;
+      /* weld seams and plate joints: thin dark lines on a 0.6 m-ish grid */
+      q.strokeStyle = "rgba(20,22,18,0.30)"; q.lineWidth = 1.2;
+      for (i = 0; i < 6; i++) {
+        x = Math.floor(R() * 512) + 0.5; q.beginPath(); q.moveTo(x, 0); q.lineTo(x, 512); q.stroke();
+        y = Math.floor(R() * 512) + 0.5; q.beginPath(); q.moveTo(0, y); q.lineTo(512, y); q.stroke();
+      }
+      /* rivet / bolt dots along some seams */
+      q.fillStyle = "rgba(18,20,16,0.35)";
+      for (i = 0; i < 160; i++) q.fillRect(Math.floor(R() * 64) * 8, Math.floor(R() * 8) * 64 + 3, 2, 2);
+      /* dust and wear */
+      for (i = 0; i < 120; i++) {
+        q.fillStyle = (i % 3) ? "rgba(15,14,10,0.06)" : "rgba(196,186,150,0.07)";
+        q.fillRect(R() * 512, R() * 512, 4 + R() * 46, 2 + R() * 10);
       }
       t = new THREE.CanvasTexture(cv);
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -229,31 +289,29 @@ var HeroTunguska = (function () {
     return t;
   }
 
-  /* five materials: PAINT (textured), DARK (track, guns, grilles), GLASS,
-     the team colour exactly as handed in (so the era kit can leave it alone
-     when this hull stands in) and WHEEL (vertex colours) */
   function materials(THREE, C, V) {
     var T = {}, tx = paintTex(THREE, V.paint);
-    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.05 });
+    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.06 });
     if (tx) T.paint.map = tx; else T.paint.color.set(V.paint.base);
-    T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
-    T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
+    T.dark = new THREE.MeshStandardMaterial({ color: 0x232527, roughness: 0.74, metalness: 0.35 });
+    T.glass = new THREE.MeshStandardMaterial({ color: 0x1b2833, roughness: 0.12, metalness: 0.4 });
     T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
     T.wheel = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.85, metalness: 0.08 });
     T.steel = lin(V.paint.base);
-    T.rubber = lin(0x1e1f20);
-    T.hubc = lin(0x2c2e2c);
+    T.rubber = lin(0x1d1e1f);
+    T.hubc = lin(0x2b2d2b);
     return T;
   }
   function bins(T) {
     return { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false),
              glass: new Bin(T.glass, false), team: new Bin(T.team, false) };
   }
-  function flush(THREE, group, B) {
-    var k, b, geo;
+  function flush(THREE, group, B, dx) {
+    var k, b, geo, i;
     for (k in B) {
       b = B[k];
       if (!b.P.length) continue;
+      if (dx) for (i = 0; i < b.P.length; i += 3) b.P[i] -= dx;
       geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.P), 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.N), 3));
@@ -264,10 +322,6 @@ var HeroTunguska = (function () {
   }
 
   /* ------------------------------------------------------------- the track */
-  /* the track's centre line: the convex hull of idler, sprocket and end
-     road wheels, each grown by half the track thickness, its top run then
-     let down onto the return rollers;
-     returned counter-clockwise in (x, z) */
   function trackLine() {
     var C = [[XI, ZI, RI], [XW[0], ZW, RW], [XW[5], ZW, RW], [XS, ZS, RS]], pts = [], i, k, a, r;
     for (i = 0; i < C.length; i++) {
@@ -287,9 +341,6 @@ var HeroTunguska = (function () {
     }
     lo.pop(); up.pop();
     var H = lo.concat(up), best = -1, bl = 0, l;
-    /* the top run sags onto the return rollers: replace the long straight
-       top segment (idler to sprocket, running nose to tail) by a line
-       through the roller tops */
     for (i = 0; i < H.length; i++) {
       k = (i + 1) % H.length;
       l = H[i][0] - H[k][0];
@@ -303,8 +354,6 @@ var HeroTunguska = (function () {
     }
     return H;
   }
-
-  /* the track band round the line (thickness 0.08) and its shoe grousers */
   function addTrack(D, L, y0, y1) {
     var n = L.length, i, j, O = [], I = [], NS = [], e, l, nx, nz, h = 0.04;
     for (i = 0; i < n; i++) {
@@ -328,7 +377,6 @@ var HeroTunguska = (function () {
       quad(D, [O[i][0], y0, O[i][1]], [O[j][0], y0, O[j][1]], [I[j][0], y0, I[j][1]], [I[i][0], y0, I[i][1]], [0, -1, 0]);
       quad(D, [O[i][0], y1, O[i][1]], [O[j][0], y1, O[j][1]], [I[j][0], y1, I[j][1]], [I[i][0], y1, I[i][1]], [0, 1, 0]);
     }
-    /* grousers every 0.3 m round the loop */
     var acc = 0.1, seg, t;
     for (i = 0; i < n; i++) {
       j = (i + 1) % n;
@@ -338,196 +386,262 @@ var HeroTunguska = (function () {
         var px = L[i][0] + e[0] * t / seg, pz = L[i][1] + e[1] * t / seg;
         planeBox(D, [px, 0, pz], [e[0] / seg, 0, e[1] / seg], [0, 1, 0], [NS[i][0], 0, NS[i][1]],
                  -0.035, 0.035, y0 - 0.008, y1 + 0.008, h - 0.01, h + 0.03);
-        t += 0.30;
+        t += 0.25;
       }
       acc = t - seg;
     }
   }
 
   /* ----------------------------------------------------------- hull + tracks */
-  function addHull(B) {
-    var P = B.paint, D = B.dark, G = B.glass, T = B.team, s, i, x, ys, L = trackLine();
-    /* lower hull between the tracks with its lower nose plate */
-    prism(P, [[-3.88, 0.45], [3.08, 0.45], [3.34, 1.02], [3.34, 1.52], [-3.88, 1.52]], -1.19, 1.19);
-    prism(P, [[3.30, 1.02], [3.90, 1.52], [3.30, 1.52]], -1.19, 1.19);
-    /* upper hull over the tracks: side walls, flat deck, short glacis */
-    prism(P, [[-3.97, 1.40], [3.62, 1.40], [3.96, 1.54], [3.30, DZ], [-3.97, DZ]], -1.48, 1.48);
-    /* glacis: team plate, two lamp housings, tow hooks at the nose edge */
-    var GU = unit([-0.66, 0, DZ - 1.54]), GN = unit([DZ - 1.54, 0, 0.66]);
-    planeBox(T, [3.96, 0, 1.54], GU, [0, 1, 0], GN, 0.12, 0.55, -0.42, 0.42, -0.01, 0.012);
-    for (s = -1; s <= 1; s += 2) {
-      planeBox(P, [3.96, 0, 1.54], GU, [0, 1, 0], GN, 0.62, 0.78, s * 1.12, s * 1.34, -0.01, 0.10);
-      planeBox(G, [3.96, 0, 1.54], GU, [0, 1, 0], GN, 0.66, 0.74, s * 1.15, s * 1.31, 0.09, 0.105);
-      box(D, 3.82, 3.96, s * 0.62, s * 0.78, 1.46, 1.57);
-      /* rear: tow eyes and lamp clusters */
-      box(D, -3.985, -3.95, s * 0.55, s * 0.72, 1.55, 1.70);
-      box(D, -3.982, -3.96, s * 1.15, s * 1.38, 1.86, 1.98);
-      box(G, -3.985, -3.981, s * 1.18, s * 1.26, 1.88, 1.96);
+  /* hull half-section (y, z) from [S26] and the front view [P08]: the lower
+     hull between the tracks, the fender ledge's sloped underside, its outer
+     face, the side wall leaning in a little to the deck edge */
+  var HULL_HALF = [[0, 0.45], [1.08, 0.45], [1.19, 0.56], [1.19, 1.18], [1.55, 1.24], [1.60, 1.27],
+                   [1.60, 1.40], [1.50, 1.42], [1.48, 1.99], [1.45, DZ], [0, DZ]];
+  /* station x, deck/glacis top and belly/nose-plate bottom (side profile [S26]) */
+  var HULL_ST = [
+    [-3.97, DZ - 0.04, 0.95], [-3.88, DZ, 0.80], [-3.60, DZ, 0.50], [-3.40, DZ, 0.45],
+    [3.00, DZ, 0.45], [3.38, DZ, 0.98], [3.55, 1.90, 1.11], [3.70, 1.76, 1.23],
+    [3.85, 1.62, 1.36], [3.97, 1.50, 1.47]];
+  function addHull(B, V) {
+    var P = B.paint, D = B.dark, G = B.glass, T = B.team, s, i, x, z, ys, L = trackLine();
+    var X = [], R = [], k, base = ring(HULL_HALF);
+    for (k = 0; k < HULL_ST.length; k++) {
+      var st = HULL_ST[k], rr = [];
+      for (i = 0; i < base.length; i++) rr.push([base[i][0], Math.max(st[2], Math.min(st[1], base[i][1]))]);
+      X.push(st[0]); R.push(rr);
     }
-    /* driver's hatch (front left) with three periscopes, engine deck grille */
-    cylZ(P, 2.72, 0.80, DZ - 0.02, DZ + 0.07, 0.29, 18);
-    cylZ(P, 2.72, 0.80, DZ + 0.07, DZ + 0.10, 0.23, 18);
-    for (i = 0; i < 3; i++) box(G, 3.02, 3.10, 0.52 + i * 0.20, 0.66 + i * 0.20, DZ - 0.01, DZ + 0.07);
-    box(D, -3.75, -2.25, -1.02, 1.02, DZ - 0.01, DZ + 0.015);
-    for (x = -3.68; x < -2.3; x += 0.2) box(P, x, x + 0.06, -1.00, 1.00, DZ - 0.01, DZ + 0.035);
-    box(P, -2.10, -1.55, -0.95, -0.25, DZ - 0.01, DZ + 0.04);
-    box(P, -2.10, -1.55, 0.25, 0.95, DZ - 0.01, DZ + 0.04);
+    loft(P, X, R);
+
+    /* glacis: the team plate, two lamp housings, tow hooks at the nose edge */
+    var GU = unit([-0.59, 0, DZ - 1.50]), GN = unit([DZ - 1.50, 0, 0.59]);
+    planeBox(T, [3.97, 0, 1.50], GU, [0, 1, 0], GN, 0.14, 0.52, -0.42, 0.42, -0.01, 0.012);
+    for (s = -1; s <= 1; s += 2) {
+      planeBox(P, [3.97, 0, 1.50], GU, [0, 1, 0], GN, 0.56, 0.74, s * 1.10, s * 1.34, -0.01, 0.11);
+      planeBox(G, [3.97, 0, 1.50], GU, [0, 1, 0], GN, 0.60, 0.70, s * 1.14, s * 1.30, 0.10, 0.115);
+      box(D, 3.86, 3.99, s * 0.62, s * 0.78, 1.40, 1.52);
+      /* rear: tow eyes, lamp clusters, the stowage rails */
+      box(D, -3.99, -3.95, s * 0.55, s * 0.72, 1.20, 1.34);
+      box(D, -3.985, -3.95, s * 1.15, s * 1.38, 1.80, 1.92);
+      box(G, -3.99, -3.985, s * 1.18, s * 1.26, 1.82, 1.90);
+      box(P, -3.99, -3.95, s * 0.95, s * 1.42, 1.48, 1.54);
+    }
+    /* rear plate: the round access door (left) and a box (right) [S27] */
+    cylX(P, -3.99, -3.95, 0.62, 1.66, 0.27, 18);
+    cylX(D, -4.00, -3.99, 0.62, 1.66, 0.05, 8);
+    box(P, -3.99, -3.95, -0.95, -0.25, 1.58, 1.92);
+    /* driver's hatch (front left) with three periscopes */
+    cylZ(P, 2.86, 0.80, DZ - 0.02, DZ + 0.07, 0.29, 18);
+    cylZ(P, 2.86, 0.80, DZ + 0.07, DZ + 0.10, 0.23, 18);
+    for (i = 0; i < 3; i++) box(G, 3.16, 3.24, 0.52 + i * 0.20, 0.66 + i * 0.20, DZ - 0.01, DZ + 0.07);
+    /* the raised plate ahead of the turret [S26] */
+    box(P, 2.10, 3.30, -1.30, 0.40, DZ - 0.01, DZ + 0.05);
+    /* engine deck: the grille and the two access panels */
+    box(D, -3.78, -2.30, -1.02, 1.02, DZ - 0.01, DZ + 0.015);
+    for (x = -3.72; x < -2.36; x += 0.17) box(P, x, x + 0.06, -1.00, 1.00, DZ - 0.01, DZ + 0.035);
+    box(P, -2.20, -1.62, -0.95, -0.25, DZ - 0.01, DZ + 0.04);
+    box(P, -2.20, -1.62, 0.25, 0.95, DZ - 0.01, DZ + 0.04);
 
     for (s = -1; s <= 1; s += 2) {
       ys = s * 1.48;
-      /* fender ledge and the short skirt over the track's top run */
-      box(P, -3.95, 3.62, s * 1.46, s * 1.62, 1.38, 1.42);
-      box(P, -3.92, 3.50, s * 1.585, s * 1.62, 1.22, 1.38);
-      /* stowage boxes, latched box, filler caps, engine grille, small panels */
-      box(P, 1.90, 2.81, ys, s * 1.545, 1.49, 2.03);
-      box(P, 1.16, 1.80, ys, s * 1.545, 1.49, 2.03);
-      box(P, -1.32, -0.60, ys, s * 1.545, 1.49, 2.03);
-      box(P, -0.36, 0.81, ys, s * 1.52, 1.72, 2.02);
-      box(D, 2.20, 2.30, s * 1.54, s * 1.56, 1.84, 1.96);
-      box(D, 2.42, 2.52, s * 1.54, s * 1.56, 1.84, 1.96);
-      box(D, 1.43, 1.53, s * 1.54, s * 1.56, 1.84, 1.96);
-      box(D, -1.01, -0.91, s * 1.54, s * 1.56, 1.84, 1.96);
-      box(D, -0.08, 0.02, s * 1.515, s * 1.535, 1.86, 1.98);
-      box(D, 0.43, 0.53, s * 1.515, s * 1.535, 1.86, 1.98);
-      cylY(P, -0.18, ys, s * 1.52, 1.60, 0.075, 12);
-      cylY(P, -0.46, ys, s * 1.52, 1.60, 0.075, 12);
-      box(D, -3.19, -1.54, ys, s * 1.50, 1.49, 1.67);
-      for (x = -3.15; x < -1.6; x += 0.17) box(P, x, x + 0.05, ys, s * 1.515, 1.49, 1.67);
-      for (x = -3.28; x < -1.6; x += 0.28) box(P, x, x + 0.22, ys, s * 1.50, 1.72, 1.94);
+      /* the fender ledge's top lip and the skirt strip over the track's top run */
+      box(P, -3.95, 3.60, s * 1.58, s * 1.62, 1.26, 1.30);
+      for (x = -3.0; x < 3.5; x += 1.62) box(D, x, x + 0.03, s * 1.60, s * 1.618, 1.27, 1.39);
+      if (s < 0) {
+        /* RIGHT side [S26]: four stowage boxes, the long nose box, the
+           vertical louvred grille and the small louvre, handles, a port */
+        var RB = [[-3.36, -2.84], [-1.65, -0.90], [-0.75, 0.01], [1.27, 1.84], [2.41, 3.40]];
+        for (i = 0; i < RB.length; i++) {
+          slab(P, RB[i][0], RB[i][1], 1.42, i === 4 ? 1.88 : 1.92, 0.06, -1.48, -1.545);
+          box(D, RB[i][1] - 0.05, RB[i][1] - 0.02, -1.545, -1.56, 1.62, 1.76);
+        }
+        box(D, -2.33, -1.98, -1.47, -1.50, 1.42, 1.95);
+        for (x = -2.30; x < -2.0; x += 0.07) box(P, x, x + 0.025, -1.48, -1.53, 1.45, 1.92);
+        box(D, -1.89, -1.70, -1.47, -1.50, 1.46, 1.65);
+        for (z = 1.48; z < 1.64; z += 0.04) box(P, -1.88, -1.71, -1.48, -1.515, z, z + 0.015);
+        for (i = 0; i < 4; i++) planeBox(D, [0.20 + i * 0.30, -1.50, 1.70], unit([0.3, 0, 1]), [0, 1, 0], [0, -1, 0], -0.10, 0.10, -0.015, 0.015, 0, 0.03);
+        cylY(P, 2.01, -1.48, -1.53, 1.75, 0.08, 12);
+      } else {
+        /* LEFT side [S29], x re-taken at [S26]'s scale */
+        var LB = [[1.92, 2.90], [1.06, 1.72], [-0.80, -0.08], [-3.36, -2.84]];
+        for (i = 0; i < LB.length; i++) {
+          slab(P, LB[i][0], LB[i][1], 1.42, 1.94, 0.06, 1.48, 1.545);
+          box(D, LB[i][0] + 0.02, LB[i][0] + 0.05, 1.545, 1.56, 1.62, 1.76);
+        }
+        /* the long panel with its slot, two filler caps, a lifting eye */
+        box(P, 0.05, 1.00, 1.48, 1.52, 1.74, 1.98);
+        box(D, 0.20, 0.82, 1.52, 1.525, 1.80, 1.84);
+        cylY(P, -0.20, 1.48, 1.53, 1.58, 0.075, 12);
+        cylY(P, -0.46, 1.48, 1.53, 1.58, 0.075, 12);
+        /* the horizontal engine grille and the small panels above it */
+        box(D, -2.70, -1.10, 1.47, 1.50, 1.48, 1.62);
+        for (x = -2.66; x < -1.14; x += 0.09) box(P, x, x + 0.03, 1.48, 1.515, 1.49, 1.61);
+        for (x = -2.62; x < -1.0; x += 0.33) box(P, x, x + 0.26, 1.48, 1.50, 1.74, 1.90);
+      }
 
       /* the track: band and grousers round idler, wheels, sprocket, rollers */
       addTrack(D, L, s * TY - TH, s * TY + TH);
-      /* idler: twin steel discs with a hub */
-      cylY(P, XI, s * (TY - 0.17), s * (TY - 0.05), ZI, RI, 14);
+      cylY(P, XI, s * (TY - 0.17), s * (TY - 0.05), ZI, RI, 16);
       cylY(P, XI, s * (TY + 0.05), s * (TY + 0.17), ZI, RI, 16);
       cylY(D, XI, s * (TY - 0.05), s * (TY + 0.05), ZI, 0.14, 10);
       cylY(P, XI, s * (TY + 0.17), s * (TY + 0.21), ZI, 0.11, 10);
-      /* sprocket: hub, two toothed rings */
       cylY(P, XS, s * (TY - 0.17), s * (TY + 0.17), ZS, RS - 0.06, 18);
       cylY(P, XS, s * (TY + 0.17), s * (TY + 0.21), ZS, 0.12, 10);
-      for (i = 0; i < 11; i++) {
-        var a = i / 11 * TAU, cx = XS + Math.cos(a) * (RS - 0.02), cz = ZS + Math.sin(a) * (RS - 0.02);
+      for (i = 0; i < 12; i++) {
+        var a = i / 12 * TAU, cx = XS + Math.cos(a) * (RS - 0.02), cz = ZS + Math.sin(a) * (RS - 0.02);
         planeBox(D, [cx, 0, cz], [-Math.sin(a), 0, Math.cos(a)], [0, 1, 0], [Math.cos(a), 0, Math.sin(a)],
                  -0.035, 0.035, s * TY - 0.15, s * TY + 0.15, -0.04, 0.06);
       }
-      /* return rollers */
       for (i = 0; i < XR.length; i++) cylY(P, XR[i], s * (TY - 0.12), s * (TY + 0.12), ZR, RR, 10);
-      /* road-wheel arms trailing from their pivots on the lower hull */
-      for (i = 0; i < XW.length; i++)
+      /* road-wheel arms trailing from their pivots, and the bump stops */
+      for (i = 0; i < XW.length; i++) {
         planeBox(D, [XW[i], 0, ZW], unit([0.38, 0, 0.16]), [0, 1, 0], unit([-0.16, 0, 0.38]), 0, 0.42, s * 1.185, s * 1.225, -0.05, 0.05);
+        box(D, XW[i] + 0.30, XW[i] + 0.42, s * 1.19, s * 1.22, 0.86, 1.00);
+      }
     }
   }
 
   function wheelStation(W, T) {
-    var s, c;
+    var s, c, k, a;
     for (s = -1; s <= 1; s += 2) {
       c = s * TY;
       W.col = T.rubber;
-      cyl(W, [0, c - s * 0.17, 0], [0, c - s * 0.05, 0], RW, RW, 12);
-      cyl(W, [0, c + s * 0.05, 0], [0, c + s * 0.17, 0], RW, RW, 14);
+      cyl(W, [0, c - s * 0.17, 0], [0, c - s * 0.05, 0], RW, RW, 14);
+      cyl(W, [0, c + s * 0.05, 0], [0, c + s * 0.17, 0], RW, RW, 16);
       W.col = T.steel;
-      cyl(W, [0, c + s * 0.04, 0], [0, c + s * 0.18, 0], 0.29, 0.29, 14);
-      cyl(W, [0, c + s * 0.18, 0], [0, c + s * 0.19, 0], 0.20, 0.17, 12);
+      cyl(W, [0, c + s * 0.04, 0], [0, c + s * 0.18, 0], 0.29, 0.29, 16);
+      cyl(W, [0, c + s * 0.18, 0], [0, c + s * 0.195, 0], 0.21, 0.17, 14);
       W.col = T.hubc;
-      cyl(W, [0, c + s * 0.19, 0], [0, c + s * 0.22, 0], 0.085, 0.07, 8);
+      cyl(W, [0, c + s * 0.195, 0], [0, c + s * 0.225, 0], 0.085, 0.07, 8);
+      for (k = 0; k < 6; k++) {
+        a = k / 6 * TAU;
+        cyl(W, [Math.cos(a) * 0.13, c + s * 0.19, Math.sin(a) * 0.13], [Math.cos(a) * 0.13, c + s * 0.205, Math.sin(a) * 0.13], 0.02, 0.02, 6);
+      }
     }
   }
 
   /* ---------------------------------------------------------------- turret */
-  /* built about the ring centre (the node sits at x = HX) */
+  /* built in MODEL coordinates (from [S26]); flush() shifts it to the ring */
+  var TURRET_HALF = [[0, 2.30], [0.74, 2.30], [0.73, 2.98], [0.70, 3.06], [0.64, 3.10], [0, 3.10]];
   function addTurret(B) {
-    var P = B.paint, D = B.dark, G = B.glass, T = B.team, s, i, j, y, zb;
-    /* the wide, low turret base on the deck, its rim bevelled */
-    cylZ(P, 0, 0, 2.07, 2.30, 1.40, 32);
-    cyl(P, [0, 0, 2.30], [0, 0, 2.40], 1.40, 1.20, 32);
-    /* main body, sides leaning in, the front roof edge rounded off */
-    taper(P, [[0.80, 2.38], [0.80, 2.96], [0.72, 3.10], [0.58, 3.16], [-1.30, 3.16], [-1.42, 3.08], [-1.42, 2.38]],
-          0.90, 0.76, 2.38, 3.16);
-    /* rear housing over the engine deck (antenna drive, electronics) */
-    taper(P, [[-1.40, 2.50], [-1.40, 3.12], [-2.25, 3.08], [-2.47, 2.92], [-2.47, 2.64], [-2.30, 2.50]],
-          0.82, 0.70, 2.50, 3.12);
-    box(P, -2.30, -1.80, -0.36, 0.36, 3.05, 3.22);
-    box(T, -1.28, -0.92, -0.52, 0.52, 3.155, 3.175);
-    /* body front: TV-sight window and the tracking-radar mount with its dish */
-    box(G, 0.79, 0.82, -0.62, -0.40, 2.74, 2.90);
-    taper(P, [[0.78, 2.56], [1.22, 2.62], [1.22, 2.96], [0.78, 3.02]], 0.30, 0.24, 2.56, 3.02);
-    for (s = -1; s <= 1; s += 2) {
-      box(P, 1.10, 1.40, s * 0.36, s * 0.44, 2.72, 2.88);
-      cylY(D, 1.30, s * 0.32, s * 0.47, 2.80, 0.05, 10);
+    var P = B.paint, D = B.dark, G = B.glass, T = B.team, s, i, j, k, y, zb, x;
+    /* the wide, low base drum on the deck, its rim bevelled */
+    cylZ(P, HX, 0, DZ - 0.02, 2.26, 1.55, 40);
+    cyl(P, [HX, 0, 2.26], [HX, 0, 2.34], 1.55, 1.42, 40);
+    /* the body: a loft whose front top edge rounds off, sides a touch in */
+    var bx = [-1.16, -1.10, 1.10, 1.30, 1.44, 1.53, 1.58], bR = [], base = ring(TURRET_HALF);
+    var topz = [3.06, 3.10, 3.10, 3.06, 2.97, 2.86, 2.74];
+    for (k = 0; k < bx.length; k++) {
+      var rr = [];
+      for (i = 0; i < base.length; i++) {
+        var yy = base[i][0] * (k === 0 ? 0.97 : 1), zz = Math.min(base[i][1], topz[k]);
+        rr.push([yy, zz]);
+      }
+      bR.push(rr);
     }
-    cyl(P, [1.20, 0, 2.80], [1.38, 0, 2.80], 0.15, 0.39, 24);
-    cyl(P, [1.38, 0, 2.80], [1.47, 0, 2.80], 0.40, 0.40, 24);
-    cyl(D, [1.47, 0, 2.80], [1.49, 0, 2.80], 0.33, 0.33, 20);
-    cyl(D, [1.49, 0, 2.80], [1.56, 0, 2.80], 0.07, 0.05, 10);
-    /* commander's cupola with vision blocks, the gunner's sight dome */
-    cylZ(P, -0.55, 0.38, 3.14, 3.30, 0.30, 18);
-    cylZ(P, -0.55, 0.38, 3.30, 3.36, 0.26, 18);
+    loft(P, bx, bR);
+    box(T, -0.62, -0.26, -0.35, 0.35, 3.095, 3.112);
+    /* roof fittings: vents, the hatch hinge lines, the aerial base */
+    box(P, -0.95, -0.75, -0.62, -0.40, 3.10, 3.16);
+    cylZ(P, -0.88, 0.62, 3.10, 3.24, 0.06, 10);
+    cylZ(D, -0.20, -0.62, 3.10, 3.16, 0.05, 8);
+    /* rear tower (the antenna drive) and the drive box on top [S26] [S27] */
+    taper(P, [[-1.12, 2.36], [-1.12, 3.16], [-1.62, 3.16], [-1.68, 3.08], [-1.68, 2.44]], 0.70, 0.66, 2.36, 3.16);
+    box(P, -2.10, -1.56, -0.46, 0.46, 3.00, 3.22);
+    for (i = 0; i < 4; i++) box(D, -2.08 + i * 0.12, -2.02 + i * 0.12, -0.47, 0.47, 3.20, 3.24);
+    box(P, -2.12, -1.66, -0.50, 0.50, 2.46, 2.96);
+    box(D, -2.13, -2.11, -0.36, 0.36, 2.55, 2.90);
+    /* the sight head on its stalk (right of centre) and the commander's
+       cupola with vision blocks (left of centre) */
+    cylZ(P, 0.94, -0.30, 3.10, 3.24, 0.09, 12);
+    cyl(P, [0.94, -0.42, 3.33], [0.94, -0.18, 3.33], 0.11, 0.11, 14);
+    box(G, 1.04, 1.06, -0.36, -0.24, 3.28, 3.38);
+    cylZ(P, 0.44, 0.35, 3.10, 3.19, 0.25, 18);
+    cylZ(P, 0.44, 0.35, 3.19, 3.24, 0.21, 18);
     for (i = 0; i < 6; i++) {
-      var a = (i / 6 - 0.08) * TAU, cx = -0.55 + Math.cos(a) * 0.29, cy = 0.38 + Math.sin(a) * 0.29;
-      planeBox(G, [cx, cy, 3.20], [-Math.sin(a), Math.cos(a), 0], [0, 0, 1], [Math.cos(a), Math.sin(a), 0],
-               -0.05, 0.05, 0, 0.06, -0.01, 0.02);
+      var a = (i / 6 + 0.04) * TAU, cx = 0.44 + Math.cos(a) * 0.245, cy = 0.35 + Math.sin(a) * 0.245;
+      planeBox(G, [cx, cy, 3.12], [-Math.sin(a), Math.cos(a), 0], [0, 0, 1], [Math.cos(a), Math.sin(a), 0],
+               -0.04, 0.04, 0, 0.05, -0.01, 0.015);
     }
-    cylZ(P, 0.20, -0.40, 3.14, 3.24, 0.18, 14);
-    cyl(P, [0.20, -0.40, 3.24], [0.20, -0.40, 3.38], 0.18, 0.09, 14);
-    box(G, 0.33, 0.37, -0.48, -0.32, 3.24, 3.31);
+    /* front face: the TV sight window left of the drum */
+    box(P, 1.50, 1.66, 0.10, 0.42, 2.62, 2.92);
+    box(G, 1.66, 1.67, 0.15, 0.37, 2.70, 2.86);
+
+    /* the tracking-radar drum, right of centre on its pedestal and yoke */
+    var dy = -0.38, dz = 2.62;
+    box(P, 1.50, 1.96, dy - 0.24, dy + 0.24, 2.30, 2.50);
+    for (s = -1; s <= 1; s += 2) box(P, 1.80, 2.06, dy + s * 0.38, dy + s * 0.44, 2.40, 2.80);
+    cylY(D, 1.98, dy - 0.46, dy + 0.46, dz, 0.05, 10);
+    cyl(P, [1.94, dy, dz], [2.20, dy, dz], 0.36, 0.37, 28);
+    cyl(P, [2.20, dy, dz], [2.26, dy, dz], 0.37, 0.34, 28);
+    cyl(D, [2.26, dy, dz], [2.265, dy, dz], 0.30, 0.30, 24);
+    box(P, 1.86, 1.96, dy - 0.10, dy + 0.10, dz - 0.40, dz + 0.40);
 
     for (s = -1; s <= 1; s += 2) {
-      /* gun housing over the rear half of the turret side */
-      prism(P, [[-0.45, 2.48], [-0.45, 2.90], [-0.53, 2.98], [-1.76, 2.98], [-1.84, 2.90], [-1.84, 2.48], [-1.76, 2.42], [-0.53, 2.42]],
-            s * 0.84, s * 1.24);
-      box(P, -1.70, -0.62, s * 1.24, s * 1.26, 2.50, 2.90);
-      box(D, -0.70, -0.62, s * 1.26, s * 1.27, 2.60, 2.80);
-      /* the twin 2A38, one barrel over the other: jacket, barrel, collar,
-         muzzle brake, and the link that ties the pair near the muzzle */
-      y = s * 1.04;
+      /* the gun mount housing: a round-cornered flat-sided box on the side */
+      slab(P, -0.66, 0.81, 2.36, 2.90, 0.10, s * 0.72, s * 1.01);
+      box(D, 0.70, 0.82, s * 1.01, s * 1.02, 2.48, 2.78);
+      box(P, -0.50, 0.60, s * 1.01, s * 1.025, 2.44, 2.82);
+      /* a strut from the housing back to the rear tower [S26] */
+      cyl(D, [-0.66, s * 0.92, 2.70], [-1.12, s * 0.62, 2.95], 0.025, 0.025, 6);
+      /* the 2A38: receiver, two barrels one above the other, a link and the
+         muzzle brakes */
+      y = s * 0.87;
+      box(D, 0.70, 1.05, y - 0.09, y + 0.09, 2.68, 2.92);
       for (j = 0; j < 2; j++) {
-        zb = j ? 2.68 : 2.88;
-        cylX(D, -0.46, -0.02, y, zb, 0.062, 10);
-        cylX(D, -0.02, 1.56, y, zb, 0.036, 8);
-        cylX(D, 0.52, 0.60, y, zb, 0.050, 8);
-        cylX(D, 1.56, 1.68, y, zb, 0.052, 10);
+        zb = j ? 2.75 : 2.85;
+        cylX(D, 1.05, 1.55, y, zb, 0.055, 10);
+        cylX(D, 1.55, 2.38, y, zb, 0.032, 8);
+        cylX(D, 2.38, 2.54, y, zb, 0.046, 10);
       }
-      box(D, 0.98, 1.04, y - 0.022, y + 0.022, 2.66, 2.90);
-      box(D, -0.10, -0.04, y - 0.03, y + 0.03, 2.66, 2.90);
-      /* the 9M311 containers: four a side, 2 x 2, fifteen degrees nose-up on
-         the arm behind the gun housing, with two clamp bands */
-      var ca = 15 * Math.PI / 180, d = [Math.cos(ca), 0, Math.sin(ca)], nn = [-Math.sin(ca), 0, Math.cos(ca)];
-      var O = [-2.30, 0, 2.655], yy = [1.335, 1.515], hh = [-0.095, 0.095], k, m;
-      for (k = 0; k < 2; k++) for (m = 0; m < 2; m++) {
-        var A = [O[0] + hh[m] * nn[0], s * yy[k], O[2] + hh[m] * nn[2]];
-        var Bp = [A[0] + 2.70 * d[0], A[1], A[2] + 2.70 * d[2]];
-        cyl(P, A, Bp, 0.086, 0.086, 8);
-        cyl(D, [Bp[0] - 0.02 * d[0], Bp[1], Bp[2] - 0.02 * d[2]], [Bp[0] + 0.006 * d[0], Bp[1], Bp[2] + 0.006 * d[2]], 0.068, 0.068, 8);
+      box(D, 2.22, 2.30, y - 0.025, y + 0.025, 2.71, 2.89);
+      box(D, 1.50, 1.56, y - 0.03, y + 0.03, 2.71, 2.89);
+
+      /* the 9M311 containers: four a side, 2 x 2, outboard of the gun, on the
+         launcher cradle with two clamp bands and the rear frame */
+      var YC = [s * 1.15, s * 1.42], ZC = [2.34, 2.61], RC = 0.135;
+      for (k = 0; k < 2; k++) for (j = 0; j < 2; j++) {
+        cyl(P, [-0.24, YC[k], ZC[j]], [2.38, YC[k], ZC[j]], RC, RC, 10);
+        cyl(D, [2.38, YC[k], ZC[j]], [2.40, YC[k], ZC[j]], RC - 0.02, RC - 0.02, 10);
       }
       for (k = 0; k < 2; k++) {
-        var u = k ? 2.00 : 0.35;
-        planeBox(P, O, d, [0, 1, 0], nn, u - 0.05, u + 0.05, s > 0 ? 1.235 : -1.615, s > 0 ? 1.615 : -1.235, -0.20, 0.20);
+        x = k ? 1.70 : 0.30;
+        box(P, x - 0.05, x + 0.05, s * 1.00, s * 1.575, 2.19, 2.77);
       }
-      box(P, -2.20, -1.84, s * 1.22, s * 1.26, 2.48, 2.84);
+      box(P, -0.30, -0.18, s * 0.99, s * 1.575, 2.17, 2.79);
+      box(D, -0.20, 0.20, s * 1.00, s * 1.02, 2.30, 2.70);
     }
 
-    /* the search-radar antenna folded down over the turret rear: a broad
-       panel arched across the width, on two hinge arms */
-    var NSEG = 6, yA, yB, hA, hB, xf = -2.02, zf = 3.18, xr = -2.95, zr = 2.90, th = 0.05;
-    for (i = 0; i < NSEG; i++) {
-      yA = -0.86 + 1.72 * i / NSEG; yB = -0.86 + 1.72 * (i + 1) / NSEG;
-      hA = 0.13 * (1 - (yA / 0.86) * (yA / 0.86)); hB = 0.13 * (1 - (yB / 0.86) * (yB / 0.86));
-      hexa(P, [[xf, yA, zf + hA - th], [xr, yA, zr + hA - th], [xr, yB, zr + hB - th], [xf, yB, zf + hB - th],
-               [xf, yA, zf + hA], [xr, yA, zr + hA], [xr, yB, zr + hB], [xf, yB, zf + hB]]);
+    /* the search-radar reflector folded down over the turret rear: an arch
+       across the width drooping at both ends, its upper face carrying the
+       dark lightening holes [S27], on its feed-support ladder */
+    var NU = 12, NV = 3, hu, hv, th = 0.05, xH = -1.95, zH = 3.24, xT = -2.72, zT = 2.92, HW = 1.15, sag = 0.36;
+    function arch(u, v, off) {
+      var xx = xH + (xT - xH) * v, zz = zH + (zT - zH) * v - sag * u * u + off;
+      return [xx, u * HW, zz];
+    }
+    for (hu = 0; hu < NU; hu++) for (hv = 0; hv < NV; hv++) {
+      var u0 = -1 + 2 * hu / NU, u1 = -1 + 2 * (hu + 1) / NU, v0 = hv / NV, v1 = (hv + 1) / NV;
+      hexa(P, [arch(u0, v0, -th), arch(u1, v0, -th), arch(u1, v1, -th), arch(u0, v1, -th),
+               arch(u0, v0, 0), arch(u1, v0, 0), arch(u1, v1, 0), arch(u0, v1, 0)]);
+    }
+    for (hu = 0; hu < 4; hu++) for (hv = 0; hv < 2; hv++) {
+      var uc = -0.72 + hu * 0.48, vc = 0.30 + hv * 0.42, du = 0.15, dv = 0.13, A0, A1, A2;
+      A0 = arch(uc - du, vc - dv, 0.006); A1 = arch(uc + du, vc - dv, 0.006); A2 = arch(uc, vc + dv, 0.006);
+      if (hv) { A0 = arch(uc - du, vc + dv, 0.006); A1 = arch(uc + du, vc + dv, 0.006); A2 = arch(uc, vc - dv, 0.006); }
+      quad(D, A0, A1, A2, A2, [0, 0, 1]);
     }
     for (s = -1; s <= 1; s += 2) {
-      box(P, -2.18, -1.98, s * 0.42, s * 0.52, 3.04, 3.20);
-      /* stiffening ribs under the panel, an X each half */
-      var p0 = [xf - 0.08, s * 0.10, zf - th - 0.01], p1 = [xr + 0.08, s * 0.78, zr - th - 0.01 + 0.04];
-      cyl(D, p0, p1, 0.022, 0.022, 6);
-      cyl(D, [p0[0], s * 0.78, p0[2] + 0.02], [p1[0], s * 0.10, p1[2] + 0.06], 0.022, 0.022, 6);
+      box(P, -2.04, -1.86, s * 0.30, s * 0.40, 3.14, 3.27);
+      cyl(D, [-2.10, s * 0.25, 3.16], [-2.45, s * 0.12, 2.45], 0.02, 0.02, 6);
     }
+    for (i = 0; i < 6; i++) box(D, -2.14 - i * 0.055, -2.12 - i * 0.055, -0.20, 0.20, 3.08 - i * 0.11, 3.10 - i * 0.11);
   }
 
   function build(THREE, M, C, which) {
     var V = VARIANTS[which] || VARIANTS.P, Tm = materials(THREE, C, V), g = new THREE.Group();
     var HB = bins(Tm), TB = bins(Tm), i, wg, W;
-    addHull(HB);
+    addHull(HB, V);
     flush(THREE, g, HB);
     for (i = 0; i < XW.length; i++) {
       W = new Bin(Tm.wheel, false, true);
@@ -541,8 +655,8 @@ var HeroTunguska = (function () {
     addTurret(TB);
     wg = new THREE.Group();
     wg.name = "turret";
-    wg.position.set(HX, 0, TZ);
-    flush(THREE, wg, TB);
+    wg.position.set(HX, 0, 0);
+    flush(THREE, wg, TB, HX);
     g.add(wg);
     return g;
   }
