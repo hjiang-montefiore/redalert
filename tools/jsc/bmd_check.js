@@ -23,7 +23,17 @@
      [6] the real Iskander round, fired at the point, dies at the rate the
          layer's own formula gives (abm x 0.75 x intercept x 0.62), within
          three standard deviations;
-     [7] the Strategic Silo fires no round at all: nothing to engage. */
+     [7] the Strategic Silo fires no round at all: nothing to engage.
+   Piece A2 (bmd/REPORT.md R2): a ballistic shot is fired from the battery's
+   own magazine. The battery fires its weapon's burst (two for a PAC-3) as
+   one round, then reloads; each interceptor has its own chance.
+     [6] so the rate is 1 - (1 - p)^2, p = abm x 0.75 x intercept x 0.62;
+     [8] one engagement spends one round of its magazine;
+     [9] an empty battery engages nothing;
+     [10] nor one still reloading from its last shot;
+     [11] nor one packed up.
+   [1]-[6] put the battery back in order before each round - full, set up,
+   reloaded - so they measure the engagement and not the magazine. */
 var PASS = 0, FAIL = 0, TT = 32, DT = 1 / 30;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -87,7 +97,7 @@ function run() {
   var dx = E.homeX - b.x, dy = E.homeY - b.y, d = Math.hypot(dx, dy);
   var tel = put(E, "tel_p", b.x + dx / d * 24 * TT, b.y + dy / d * 24 * TT);
   if (!b || !sam || !tel) { chk("the scene", false, "yard " + !!b + ", PAC-3 " + !!sam + ", launcher " + !!tel); return; }
-  var keep = function () { b.hp = b.maxHp = 1e7; sam.hp = sam.maxHp; };
+  var keep = function () { b.hp = b.maxHp = 1e7; sam.hp = sam.maxHp; sam.rounds = sam.roundsMax; sam.deployed = true; sam.cooldowns = sam.cooldowns.map(function () { return 0; }); };
   var w = WEAPONS[tel.def.weapons[0]];
   var abm = 0;
   sam.def.weapons.forEach(function (k) { var w2 = WEAPONS[k]; if (w2 && w2.abm > abm) abm = w2.abm; });
@@ -121,9 +131,30 @@ function run() {
       bare ? r5.kills + " engaged, " + r5.landed + " came down" : "no bare ground");
 
   var n6 = 400, r6 = volley(tel, w, point, n6, keep);
-  var pk = Math.min(1, abm * 0.75 * (w.intercept !== undefined ? w.intercept : 1) * 0.62), mean = n6 * pk, sd = Math.sqrt(n6 * pk * (1 - pk));
-  chk("[6] the real round at the point dies at the layer's own rate (abm x 0.75 x intercept x 0.62)",
-      Math.abs(r6.kills - mean) <= 3 * sd + 1, r6.kills + " of " + n6 + " against " + mean.toFixed(1) + " +- " + (3 * sd).toFixed(1));
+  var burst = 1; sam.def.weapons.forEach(function (k) { var w2 = WEAPONS[k]; if (w2 && w2.abm) burst = Math.max(1, w2.burst || 1); });
+  var p1 = Math.min(1, abm * 0.75 * (w.intercept !== undefined ? w.intercept : 1) * 0.62);
+  var pk = 1 - Math.pow(1 - p1, burst), mean = n6 * pk, sd = Math.sqrt(n6 * pk * (1 - pk));
+  chk("[6] the real round at the point dies at the layer's own rate, one chance an interceptor of the burst: 1 - (1 - p)^" + burst,
+      burst === 2 && Math.abs(r6.kills - mean) <= 3 * sd + 1, r6.kills + " of " + n6 + " against " + mean.toFixed(1) + " +- " + (3 * sd).toFixed(1) + " (p " + p1.toFixed(3) + ")");
+
+  /* ---- the magazine ---- */
+  var none = function () {};
+  keep();
+  var m0 = sam.rounds, r8 = volley(tel, sure(), point, 1, none);
+  chk("[8] one engagement spends one round of the battery's magazine, and it reloads after", r8.kills === 1 && sam.rounds === m0 - 1 && sam.cooldowns.some(function (c) { return c > 0; }),
+      m0 + " -> " + sam.rounds + " rounds; reloading " + sam.cooldowns.map(function (c) { return c.toFixed(1); }).join(","));
+  /* out of supply too: three tiles from the yard it is refilled as it stands */
+  keep(); sam.rounds = 0;
+  var sup0 = sam.inSupply; sam.inSupply = function () { return false; };
+  var r9 = volley(tel, sure(), point, 3, function () { sam.cooldowns = sam.cooldowns.map(function () { return 0; }); });
+  sam.inSupply = sup0;
+  chk("[9] an empty battery engages nothing", r9.kills === 0 && r9.landed === 3 && sam.rounds === 0, r9.kills + " engaged of 3, " + sam.rounds + " rounds");
+  keep(); sam.cooldowns = sam.cooldowns.map(function () { return 60; });
+  var r10 = volley(tel, sure(), point, 3, none);
+  chk("[10] nor one still reloading from its last shot", r10.kills === 0 && r10.landed === 3, r10.kills + " engaged of 3");
+  keep(); sam.deployed = false;
+  var r11 = volley(tel, sure(), point, 3, function () { sam.deployed = false; sam.moving = false; });
+  chk("[11] nor one packed up", r11.kills === 0 && r11.landed === 3, r11.kills + " engaged of 3");
 
   /* the Strategic Silo: a launch, and no round anywhere */
   var silo = Game.placeBuilding(E, "missilesilo", ((E.homeX / TT) | 0) + 4, ((E.homeY / TT) | 0) + 4, true);

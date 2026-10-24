@@ -302,15 +302,25 @@ var Combat = (function () {
      structure has to be finished and powered, because an unpowered SAM site
      is already treated as cold everywhere else in the game. */
   function areaSam(game, prot, p) {
-    let score = 0, host = null;
+    let score = 0, host = null, wi = -1;
+    const ballistic = p.w && p.w.profile === "ballistic";
     const rate = (e) => {
       if (!e || e.dead || !e.def) return;
       if (e.kind === "building" && (e.buildProgress < 1 || e.powered === false)) return;
       /* an airframe shut down on its ramp is not defending anything */
       if (e.targetLayer && e.layer === "air" && e.targetLayer() !== "air") return;
-      for (const k of (e.def.weapons || [])) {
-        const w2 = WEAPONS[k];
+      /* A ballistic shot is fired from the battery's own magazine (layer 1
+         below spends it): a battery that is packed up, empty, or still
+         reloading from its last one has nothing to fire, and the next one
+         covering the ground takes the shot. (owner, 2026-10-23: "fix the
+         missile-defence holes first" - interceptors were free.) */
+      if (ballistic && e.kind === "unit" &&
+          ((e.def.deploy && !e.deployed) || (e.roundsMax && e.rounds <= 0))) return;
+      const ws = e.def.weapons || [];
+      for (let j = 0; j < ws.length; j++) {
+        const k = ws[j], w2 = WEAPONS[k];
         if (!w2 || !w2.tgt || !w2.tgt.air || w2.proj !== "missile") continue;
+        if (ballistic && e.kind === "unit" && e.cooldowns && e.cooldowns[j] > 0) continue;
         /* a round its own set guides does not leave the rail while the set
            is off (game.js G.ownRadarMount) - not at an aircraft, not here */
         if (e.emcon && game.radarDark(e) && game.ownRadarMount(w2)) continue;
@@ -323,9 +333,8 @@ var Combat = (function () {
            take the shot at all. A Krug will happily engage an aeroplane and
            can do nothing whatever about a Scud, which is the historically
            honest answer and the reason the modern batteries cost what they do. */
-        const ballistic = p.w && p.w.profile === "ballistic";
         const v = ballistic ? (w2.abm || 0) * 0.75 : (w2.acc || 0.7) * 0.45;
-        if (v > score) { score = v; host = e; }
+        if (v > score) { score = v; host = e; wi = j; }
       }
     };
     rate(prot);                                   // it defends itself first
@@ -339,7 +348,7 @@ var Combat = (function () {
         rate(e);
       });
     }
-    return { score, host };
+    return { score, host, wi };
   }
 
   /* The best gun air-defence system covering this target. Same shape as
@@ -547,7 +556,30 @@ var Combat = (function () {
              shot with the interceptor's own `abm` figure, and halving it again
              would mean a PAC-3 - which exists to make exactly this shot - was
              quietly worse at it than the number in the table says. */
-          if (sam && game.rng() < sam * 0.62) {
+          /* ---- A BALLISTIC SHOT SPENDS ITS INTERCEPTORS ----
+             The battery fires its weapon's own burst at it - two for a
+             PAC-3, the shoot-shoot every battery uses on a ballistic target -
+             as one round of its magazine, the same as the burst it fires at
+             an aircraft (entities.js tryFire spends one a trigger), and is
+             then reloading for that weapon's reload; each interceptor of the
+             burst has its own chance, so 1 - (1 - p)^n. It was free and a
+             single roll before: a battery engaged every ballistic round that
+             came, for nothing (bmd/REPORT.md, R2). A ship's magazine and a
+             fixed site keep their own rules. */
+          let kill = sam * 0.62;
+          const hb = best.host, ballR = p.w && p.w.profile === "ballistic";
+          if (sam && ballR && hb && hb.kind === "unit" && best.wi >= 0) {
+            const bw = WEAPONS[hb.def.weapons[best.wi]];
+            const n = Math.max(1, (bw && bw.burst) || 1);
+            if (hb.roundsMax) {
+              hb.rounds--;
+              if (hb.rounds === 0 && hb.owner === game.human && game.alert)
+                game.alert(hb.def.name.toUpperCase() + " \u2014 OUT OF ROUNDS", "bad");
+            }
+            if (hb.cooldowns) hb.cooldowns[best.wi] = (bw && bw.reload) || 1;
+            kill = 1 - Math.pow(1 - Math.min(1, kill), n);
+          }
+          if (sam && game.rng() < kill) {
             killMsg("SAM KILL", "#9fd8ff");
             projectiles.splice(i, 1); continue;
           }
