@@ -1,34 +1,103 @@
-/* ============================================================================
-   pact_e60_fighter.js  --  HERO reference model: MiG-21 "Fishbed"
-   ----------------------------------------------------------------------------
-   This is the hand-built style anchor for the e60 era. Everything else in that
-   decade gets tuned against it, so the shapes here are drawn from the real
-   aeroplane rather than from a generic jet-fighter template.
+/* ========== pact_e60_fighter -- the MiG-21bis "Fishbed" (HERO MODEL) ==========
 
-   What a Fishbed actually is, and what this file therefore builds:
+   Redrawn 2026-10-24 from a scale three-view and photographs. Every primary
+   shape below is a station table measured off the drawing, not a generic
+   delta tuned by eye.
 
-     * a needle. 14.7 m long on a fuselage 1.24 m across -- barely wider than
-       the man sitting in it. The whole airframe is a tube wrapped round one
-       engine, with a pilot squeezed on top of the intake duct.
-     * the nose IS the air intake. A translating shock cone slides out of the
-       lip on rails: a separate body with a flat base standing 150 mm PROUD of
-       the ring, filling 93% of the bore, and a dead straight taper. Buried in
-       the lip or tapered as an ogive it stops being a shock cone and the
-       aeroplane turns into a Super Sabre -- which is what the first cut of
-       this file did, and why the numbers below are so specific.
-     * a 57-degree delta with a straight, unswept trailing edge and a tiny
-       clipped tip, carried mid-body with a couple of degrees of anhedral.
-     * an all-moving slab tailplane, mounted LOW on the rear fuselage, well
-       below the wing line and well aft of the wing trailing edge.
-     * a long pitot boom standing over the intake lip, offset to starboard,
-       reaching a metre past the tip of the cone.
+   WHICH FISHBED. The row (eras.js) is "MiG-21F-13 / MiG-21bis Fishbed",
+   armed (generations.js w_e60_pact_fighter) with a 23 mm GSh-23 and two to
+   four R-3S / R-60 missiles. The F-13 carried an NR-30 and two R-3S on two
+   pylons and could not take an R-60; the GSh-23, four pylons and the R-60
+   belong to the late airframes, and the row names the bis. So this is the
+   MiG-21bis (1972) and nothing earlier: the big dorsal spine, the fixed
+   windscreen with the starboard-hinged hood, the broad fin with the brake
+   chute at its foot, four pylons, the ventral GSh-23L. The old file drew the
+   same late spine, so the key does not change type.
 
-   Model space: +X nose, +Y left, +Z up, real metres. render3d.js lays the
-   model down with rotation.x = -PI/2 and renormalises the overall length.
+   REFERENCES (Wikimedia Commons, fetched at 960 px)
+     D  "MiG-21bisD HRZ 3 view.jpg" -- side, plan and head-on of the bis
+        airframe (the bisD is a bis with Western avionics; the shape is the
+        bis). Plan scale: span 419 px = 7.154 m, so 0.01707 m/px; on that
+        scale the side view measures 15.80 m probe to fin tip against the
+        published 15.76 m. Head-on view drawn at 0.01499 m/px (span 477 px).
+     L  "Mikoyan-Gurevich MiG-21 3-view line drawing.png" -- a late Fishbed
+        three-view: the spine running into the fin, four pylons.
+     A  "Mikoyan MiG-21bis Fishbed-L N 48 blue (10041307004).jpg" and
+     B  "48 Blue Mikoyan Mig-21bis Russian Air Force (7985683801).jpg" and
+     C  "MiG-21bis at Central Air Force Museum Monino pic1.JPG": a Soviet bis
+        at Monino, starboard side and front three-quarter -- light grey
+        overall, dark green shock cone, green dielectric fin cap, red star.
+     G  "Mikoyan-Gurevich MiG-21 75021148, Monino - muzei VVS RP1435.jpg":
+        a second Monino Fishbed, port side -- the same grey, green fin cap.
+     P  "MiG-21 bis MLP 02.jpg", "MiG-21 bis MLP 04.jpg" (Polish bis 9204):
+        the upper wing with the wheel-well blister, the cone running into
+        the duct, the lip ring, the boom; natural metal (Polish finish,
+        used for shape only).
+     R  "Back of a MiG-21.JPG": the afterburner nozzle and its petal ring.
 
-   Materials are the three house tiers only: SKIN (procedural CanvasTexture),
-   METAL (fittings, gear, nozzle, boom) and GLASS (canopy).
-   ========================================================================== */
+   RECOGNITION LIST (each must show at game zoom)
+     1. Tailed delta: 57 deg leading edge, straight unswept trailing edge,
+        clipped 0.58 m tip chord, 2 deg anhedral (D plan and head-on) -- WING.
+     2. Round nose intake with the shock cone: a straight cone of about
+        15 deg half angle, 1.0 m proud of the lip and 0.53 m across where it
+        enters it, running on into the duct (D side, P) -- CONE, LIP.
+     3. The bis dorsal spine: from the hood back the top line holds at
+        1.13-1.16 m and runs straight into the fin; no dip behind the
+        cockpit (D side, A, G) -- SPINE.
+     4. The bis canopy: a fixed windscreen and a low hood hinged to
+        starboard, faired into the spine, the periscope on top (D side, A).
+     5. The broad fin: 65 deg leading edge, 2.0 m tip chord, trailing edge
+        raked forward to the brake-chute housing at its foot; green
+        dielectric cap (D side, A, G) -- FIN, CHUTE.
+     6. Ventral fin under the rear fuselage, its lower edge rising aft
+        (D side, A) -- VENT.
+     7. All-moving stabilators on the fuselage axis, swept 53 deg, with the
+        anti-flutter rods at the tips (D plan and head-on).
+     8. Four underwing pylons at 2.02 and 2.63 m (D head-on and plan), R-3S
+        inboard and R-60 outboard -- the row's own weapons.
+     9. Pitot boom over the nose, 0.22 m to starboard, 1.0 m past the cone
+        tip (D side and plan, A).
+    10. Wheel-well blisters on the upper wing roots (P) and two low fences
+        per wing at 1.97 and 2.94 m (D head-on).
+    11. Paint: Soviet light grey, dark green cone, green fin cap, red star
+        with a white edge on both faces of the fin (A, B, G). Heat-stained
+        rear fuselage and nozzle ring (R).
+
+   MEASUREMENTS (drawing D against published figures)
+     span 7.154 m (published 7.154; model 7.154); length with probe 15.80 m
+     (published 15.76; model X extent 15.81); cone tip to nozzle 13.33 m;
+     fuselage width 1.15 m (D plan and head-on); main track 2.81 m (D
+     head-on; published 2.787); wheelbase 4.61 m (D side); height on the
+     wheels 3.92 m to the fin top (D side; published 4.125 m -- the drawing
+     stands the aeroplane lower, and the drawing is followed); wing area of
+     this planform 23.9 m2 (published 23.0 incl. the body).
+
+   CORRECTED FROM THE OLD FILE
+     - its shock cone stood on a flat base 0.15 m proud of the lip filling
+       93% of the bore. D and P show a straight cone running into the duct,
+       0.53 m across at a 0.85 m lip: about 62%.
+     - its fuselage ran 14.4 m from cone tip to jetpipe; D gives 13.33 m,
+       with the fin tip overhanging the nozzle by 1.46 m (the old fin did
+       not reach past the nozzle at all).
+     - its fin root chord was 4.85 m with a 1.64 m tip; D: 3.9 m at the
+       spine, 2.0 m at the tip, the trailing edge raked, not upright.
+     - the stabilators sat "well below the wing line" at z -0.22; D head-on
+       puts them 0.07 m ABOVE the wing root, on the fuselage axis.
+     - it fitted a nosewheel mudguard; neither D nor any photograph here
+       shows one on the bis, so there is none.
+     - its blue-grey mottle came from a parametric paint table; no
+       photograph here shows it. Monino's Soviet bis is light grey.
+     Kept: the 57 deg delta, 7.154 m span, 2 deg anhedral, the starboard
+     pitot a metre past the cone, the GSh-23 pack, four pylons.
+     NOT CONFIRMED: no colour photograph of a Soviet bis in squadron service
+     in the 1970s was found; the grey is Monino's (A, B, G). The gun pack's
+     exact station is drawn from the general arrangement, not a drawing.
+
+   Model space: +X nose, +Y left (port), +Z up, metres; the shock-cone axis
+   is z 0 and the ground z -1.46. The gear RETRACTS (nose leg forward, mains
+   into the wing roots and fuselage), so its group is "gear". Merged to one
+   mesh per material.
+   ============================================================================ */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -36,850 +105,838 @@ var HeroMiG21 = (function () {
   "use strict";
 
   var D2R = Math.PI / 180;
+  var PI = Math.PI;
+  var HALF_PI = PI / 2;
 
-  /* ---------------------------------------------------------------- paint */
-  /* Straight out of the PAINT table at the top of js/air3d_era.js: the spec
-     for this unit id is camo "bluegrey", the Soviet blue-grey that Warsaw
-     Pact Fishbeds wore over natural metal.  0x7b8b9b, tones as listed. */
-  var BASE   = 0x7b8b9b;
-  /* The table tones are #6a7d8e / #93a4b2. Used literally they came out of
-     this renderer as flat pale grey with no blue in it at all -- ACES plus a
-     1.4 key light eats the separation. So the mottle tones are pushed well
-     past where they look right in the hex value, which is the only way the
-     blue survives to the screen. */
-  var TONE_A = "#3f5b74";
-  var TONE_B = "#92acc4";
-  var BELLY  = "#9aabba";
-
-  function hex(c) { return "#" + ("000000" + (c >>> 0).toString(16)).slice(-6); }
+  /* ---------------------------------------------------------- paint ------
+     Sampled off A (sunlit side #cfd8d4 / #d6e1d4, cone #375b33..#608961,
+     fin cap #8fa367) and taken to about 0.8 of their level; the ACES pass
+     lifts mid tones. lt: field; bl: belly; cone: the dielectric shock
+     cone; cap: the fin-tip dielectric. */
+  var PAL = { lt: "#a8b0ab", bl: "#b3bab7", dk: "#8d9590", cone: "#34532f",
+              cap: "#6f8158", hot: "#4a4a46" };
+  var SKIN_R = 0.84, SKIN_M = 0.10;
 
   function rngFor(seed) {
-    var s = (seed >>> 0) || 1;
+    var s = seed >>> 0 || 1;
     return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   }
-
-  /* ------------------------------------------------------------- the skin */
-  /* One 1024x512 sheet does all the work the geometry is forbidden to do:
-     camouflage mottle, the lighter underside, frame and stringer seams, rivet
-     rows following those frames, access panels, and grime -- heaviest on the
-     belly and in a long soot plume off the afterburner.
-
-     The lofted body carries cylindrical UVs, so u runs tail (0) to nose (1)
-     and v runs round the section: v = 0.25 is the spine, v = 0.75 the belly.
-     With the default flipY that puts the spine at canvas y = 0.75H and the
-     belly at y = 0.25H, which is where the light paint and the dirt go.     */
-  var _tex = null;
-
-  function skinCanvas(THREE) {
-    var W = 1024, H = 512;
-    var cv = document.createElement("canvas");
-    cv.width = W; cv.height = H;
-    var g = cv.getContext("2d");
-    var R = rngFor(210771);
-    var i, x, y;
-
-    g.fillStyle = hex(BASE); g.fillRect(0, 0, W, H);
-
-    /* soft mottle: two tones of the same grey, not a disruptive scheme */
-    for (i = 0; i < 30; i++) {
-      g.globalAlpha = 0.30 + R() * 0.16;
-      g.fillStyle = (i & 1) ? TONE_A : TONE_B;
-      g.beginPath();
-      g.ellipse(R() * W, R() * H, 60 + R() * 150, 26 + R() * 62, R() * 3.14, 0, 6.29);
-      g.fill();
-    }
-    g.globalAlpha = 1;
-
-    /* the underside is lighter than the top on every fighter ever painted.
-       v = 0.75 -> canvas y = 0.25H = 128 */
-    var bg = g.createLinearGradient(0, 40, 0, 216);
-    bg.addColorStop(0.00, "rgba(154,171,186,0.00)");
-    bg.addColorStop(0.30, "rgba(154,171,186,0.62)");
-    bg.addColorStop(0.70, "rgba(154,171,186,0.62)");
-    bg.addColorStop(1.00, "rgba(154,171,186,0.00)");
-    g.fillStyle = bg; g.fillRect(0, 40, W, 176);
-    g.fillStyle = BELLY; g.globalAlpha = 0.34;
-    g.fillRect(0, 100, W, 56); g.globalAlpha = 1;
-
-    /* ---- panel seams: frames across the body, stringers along it -------- */
-    g.strokeStyle = "rgba(0,0,0,0.34)"; g.lineWidth = 1.7;
-    x = 0;
-    while (x < W) {
-      x += 22 + R() * 58;
-      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-    }
-    g.strokeStyle = "rgba(0,0,0,0.24)"; g.lineWidth = 1.4;
-    y = 0;
-    while (y < H) {
-      y += 40 + R() * 74;
-      g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke();
-    }
-    /* short local seams round hatches and fairings */
-    g.strokeStyle = "rgba(0,0,0,0.20)"; g.lineWidth = 1;
-    for (i = 0; i < 58; i++) {
-      var qx = R() * W, qy = R() * H, ql = 34 + R() * 130;
-      g.beginPath();
-      if (R() < 0.5) { g.moveTo(qx, qy); g.lineTo(qx + ql, qy); }
-      else           { g.moveTo(qx, qy); g.lineTo(qx, qy + ql * 0.55); }
-      g.stroke();
-    }
-    /* a highlight on one side of the long seams reads as a raised lap joint */
-    g.strokeStyle = "rgba(255,255,255,0.13)"; g.lineWidth = 1;
-    x = 6;
-    while (x < W) {
-      x += 22 + R() * 58;
-      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-    }
-
-    /* ---- rivet and bolt rows, following the frames --------------------- */
-    g.fillStyle = "rgba(0,0,0,0.26)";
-    for (i = 0; i < 46; i++) {
-      var ry = R() * H, rx0 = R() * W * 0.72, n = 20 + ((R() * 46) | 0);
-      for (var k = 0; k < n; k++) g.fillRect(rx0 + k * 6.5, ry, 1.7, 1.7);
-    }
-    /* a couple of dense bolt circles: engine bay and gun bay fasteners */
-    for (i = 0; i < 5; i++) {
-      var cx = R() * W, cy = R() * H, rr = 16 + R() * 26;
-      for (var a = 0; a < 22; a++) {
-        g.fillRect(cx + Math.cos(a / 22 * 6.283) * rr,
-                   cy + Math.sin(a / 22 * 6.283) * rr, 1.8, 1.8);
-      }
-    }
-
-    /* ---- access hatches and inspection panels -------------------------- */
-    g.lineWidth = 1.3;
-    for (i = 0; i < 24; i++) {
-      var hx = R() * W, hy = R() * H, hw = 16 + R() * 40, hh = 12 + R() * 26;
-      g.strokeStyle = "rgba(0,0,0,0.38)";
-      g.strokeRect(hx, hy, hw, hh);
-      g.globalAlpha = 0.10; g.fillStyle = "#000";
-      g.fillRect(hx, hy, hw, hh); g.globalAlpha = 1;
-      g.fillStyle = "rgba(0,0,0,0.30)";
-      g.fillRect(hx + 2, hy + 2, 2, 2);
-      g.fillRect(hx + hw - 4, hy + hh - 4, 2, 2);
-    }
-    /* the ventral airbrake outlines, which the geometry does not model */
-    g.strokeStyle = "rgba(0,0,0,0.45)"; g.lineWidth = 2.2;
-    g.strokeRect(W * 0.63, 104, 78, 52);
-    g.strokeRect(W * 0.63, 160, 78, 52);
-    g.strokeRect(W * 0.30, 108, 96, 46);
-
-    /* ---- weathering ---------------------------------------------------- */
-    /* u = 0 is the tail, so the afterburner soot lives on the LEFT edge */
-    var soot = g.createLinearGradient(0, 0, W * 0.34, 0);
-    soot.addColorStop(0, "rgba(18,16,15,0.52)");
-    soot.addColorStop(1, "rgba(18,16,15,0)");
-    g.fillStyle = soot; g.fillRect(0, 0, W * 0.34, H);
-    /* a hotter ring right at the nozzle -- kept nearly neutral, because a
-       warm stain that reads well on the jetpipe reads as mud when a wing
-       panel happens to sample the same corner of the sheet */
-    var burn = g.createLinearGradient(0, 0, W * 0.07, 0);
-    burn.addColorStop(0, "rgba(64,54,46,0.30)");
-    burn.addColorStop(1, "rgba(64,54,46,0)");
-    g.fillStyle = burn; g.fillRect(0, 0, W * 0.07, H);
-
-    /* grime is heaviest low down: bias the streaks toward the belly band */
-    for (i = 0; i < 150; i++) {
-      var sx = R() * W;
-      var bias = R();
-      var sy = 40 + bias * bias * 210;               /* crowds toward y ~ 40..250 */
-      g.fillStyle = "rgba(30,27,24," + (0.06 + R() * 0.13).toFixed(3) + ")";
-      g.fillRect(sx, sy, 2 + R() * 5, 20 + R() * 110);
-    }
-    /* lighter general dirt everywhere, so the top is not clinically clean */
-    for (i = 0; i < 60; i++) {
-      g.fillStyle = "rgba(38,34,30,0.05)";
-      g.fillRect(R() * W, R() * H, 3 + R() * 7, 18 + R() * 70);
-    }
-    /* fuel and hydraulic stains trailing aft from the belly panels */
-    for (i = 0; i < 26; i++) {
-      var fx = 120 + R() * (W - 260);
-      g.fillStyle = "rgba(40,37,32,0.13)";
-      g.fillRect(fx, 96 + R() * 70, 30 + R() * 90, 3 + R() * 5);
-    }
-
-    /* ---- markings ------------------------------------------------------ */
-    /* walkway line along the wing root and the intake danger stripe */
-    g.strokeStyle = "rgba(22,22,22,0.42)"; g.lineWidth = 3;
-    g.setLineDash([10, 8]);
-    g.beginPath(); g.moveTo(W * 0.34, H * 0.62); g.lineTo(W * 0.74, H * 0.62); g.stroke();
-    g.setLineDash([]);
-    /* Warning flashes stay SHORT. A full-height stripe drawn here for the
-       intake lip came out as a red band across the fin, because the tail
-       panels sample this sheet at their own scale and offset. */
-    g.fillStyle = "rgba(178,42,32,0.45)";
-    g.fillRect(W * 0.52, H * 0.56, 52, 5);
-    g.fillRect(W * 0.21, H * 0.61, 40, 4);
-
+  function canvas(W, H) {
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = H; return cv;
+  }
+  function texOf(THREE, cv) {
     var t = new THREE.CanvasTexture(cv);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
     t.anisotropy = 8;
     return t;
   }
-
-  function texture(THREE) {
-    if (_tex === null) {
-      try { _tex = skinCanvas(THREE); } catch (e) { _tex = false; }
+  function star(g, cx, cy, r) {
+    function path(k) {
+      g.beginPath();
+      for (var i = 0; i < 10; i++) {
+        var a = -PI / 2 + i * PI / 5, q = (i & 1) ? 0.40 : 1;
+        var x = cx + Math.cos(a) * q * r * k, y = cy + Math.sin(a) * q * r * k;
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.closePath();
     }
-    return _tex;
+    g.fillStyle = "#d9dad6"; path(1.16); g.fill();
+    g.fillStyle = "#a8241c"; path(1.0); g.fill();
   }
-
-  /* -------------------------------------------------- the three materials */
-  function skinMat(THREE) {                        /* tier 1: painted surface */
-    var m = new THREE.MeshStandardMaterial({
-      color: 0xffffff, roughness: 0.87, metalness: 0.08, side: THREE.DoubleSide });
-    var t = texture(THREE);
-    if (t) m.map = t; else m.color.setHex(BASE);
-    return m;
-  }
-  /* Extruded slabs carry UVs in model metres, so the sheet has to be scaled
-     down or a six-metre wing tiles the panel lines six times over. */
-  function panelMat(THREE, span, offU, offV) {
-    var m = new THREE.MeshStandardMaterial({
-      color: 0xffffff, roughness: 0.87, metalness: 0.08, side: THREE.DoubleSide });
-    var t = texture(THREE);
-    if (!t) { m.color.setHex(BASE); return m; }
-    var c = t.clone(); c.needsUpdate = true;
-    c.wrapS = c.wrapT = THREE.RepeatWrapping;
-    var k = 1 / span;
-    c.repeat.set(k, k);
-    c.offset.set(offU, offV);
-    m.map = c;
-    return m;
-  }
-  function metalMat(THREE, col, r, mt) {           /* tier 2: bare fittings */
-    return new THREE.MeshStandardMaterial({
-      color: col, roughness: r, metalness: mt, side: THREE.DoubleSide });
-  }
-  function glassMat(THREE) {                       /* tier 3: the canopy */
-    return new THREE.MeshPhysicalMaterial({
-      color: 0x4e7f95, roughness: 0.11, metalness: 0.0,
-      transparent: true, opacity: 0.82,
-      clearcoat: 0.8, clearcoatRoughness: 0.10, side: THREE.DoubleSide });
-  }
-
-  /* ------------------------------------------------------------- helpers */
-  function sec(x, w, h, zc, sq) {
-    return { x: x, w: w, h: h, zc: zc || 0, sq: sq === undefined ? 1 : sq };
-  }
-  function body(THREE, M, tbl, segs, mat) {
-    return new THREE.Mesh(M.loft(THREE, tbl, segs), mat);
-  }
-  function box(THREE, sx, sy, sz, px, py, pz, mat) {
-    var b = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
-    b.position.set(px, py, pz);
-    return b;
-  }
-  function cyl(THREE, rt, rb, h, seg, open, mat) {
-    return new THREE.Mesh(
-      new THREE.CylinderGeometry(rt, rb, h, seg, 1, !!open), mat);
-  }
-  /* a lifting surface and its mirror image */
-  function pair(THREE, M, g, pts, thick, z, anhedralDeg, mat) {
-    for (var s = -1; s <= 1; s += 2) {
-      var q = [], i;
-      for (i = 0; i < pts.length; i++) q.push([pts[i][0], pts[i][1] * s]);
-      var m = new THREE.Mesh(M.slab(THREE, q, thick), mat);
-      m.position.z = z - thick * 0.5;
-      m.rotation.x = s * (anhedralDeg || 0) * D2R;
-      g.add(m);
+  /* panel seams, rivet rows and hatches, light enough to read as a painted
+     airframe rather than a quilt */
+  function seams(g, W, H, R, n) {
+    var i, x = 0;
+    g.strokeStyle = "rgba(22,24,24,0.30)"; g.lineWidth = 1.3;
+    while (x < W) { x += 28 + R() * 52; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+    g.strokeStyle = "rgba(255,255,255,0.10)"; x = 3;
+    while (x < W) { x += 28 + R() * 52; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+    g.strokeStyle = "rgba(22,24,24,0.18)"; g.lineWidth = 1;
+    for (i = 0; i < n; i++) {
+      var px = R() * W, py = R() * H, L = 30 + R() * 120;
+      g.beginPath();
+      if (R() < 0.55) { g.moveTo(px, py); g.lineTo(px + L, py); }
+      else { g.moveTo(px, py); g.lineTo(px, py + L * 0.5); }
+      g.stroke();
+    }
+    g.strokeStyle = "rgba(22,24,24,0.34)";
+    for (i = 0; i < 22; i++) g.strokeRect(R() * W, R() * H, 12 + R() * 30, 8 + R() * 18);
+    g.fillStyle = "rgba(0,0,0,0.20)";
+    for (i = 0; i < 34; i++) {
+      var ry = R() * H, rx = R() * W * 0.85, m = 14 + ((R() * 30) | 0);
+      for (var k = 0; k < m; k++) g.fillRect(rx + k * 6.5, ry, 1.5, 1.5);
     }
   }
-  /* A vertical surface drawn in the XZ plane. slab() extrudes toward +Z and
-     the "xz" rotation sends that to -Y, so the raw plate lies entirely on the
-     starboard side; half a thickness of +Y puts it back on the centreline.
-     Passing an extra offset here on top of that is how the fin ended up
-     85 mm off centre the first time round. */
-  function finPlate(THREE, M, pts, thick, mat) {
-    var m = new THREE.Mesh(M.slab(THREE, pts, thick, "xz"), mat);
-    m.position.y = thick * 0.5;
-    return m;
+
+  /* ============================================================ textures ==
+     The fuselage loft runs nose first from the lip (x 5.86) to x -5.40, so
+     u = (5.86 - x) / 11.26; v = 0 on the port side, 0.25 on top, 0.5 on
+     starboard, 0.75 on the belly. After flipY the top lands at canvas row
+     0.75H and the belly at 0.25H. */
+  var BODY_X0 = 5.86, BODY_L = 11.26;
+  function bu(x) { return (BODY_X0 - x) / BODY_L; }
+  var _bd = null;
+  function bodySheet(THREE) {
+    if (_bd !== null) return _bd;
+    try {
+      var W = 1024, H = 512, cv = canvas(W, H), g = cv.getContext("2d"), R = rngFor(21071);
+      g.fillStyle = PAL.lt; g.fillRect(0, 0, W, H);
+      /* a faint second tone: repainted panels on a museum and squadron
+         airframe alike (A, G show it) */
+      g.fillStyle = PAL.dk;
+      for (var i = 0; i < 16; i++) {
+        g.globalAlpha = 0.16 + R() * 0.10;
+        g.fillRect(R() * W, R() * H, 30 + R() * 90, 14 + R() * 40);
+      }
+      g.globalAlpha = 1;
+      var b = g.createLinearGradient(0, H * 0.05, 0, H * 0.45);
+      b.addColorStop(0.0, "rgba(0,0,0,0)"); b.addColorStop(0.3, PAL.bl);
+      b.addColorStop(0.7, PAL.bl); b.addColorStop(1.0, "rgba(0,0,0,0)");
+      g.globalAlpha = 0.85; g.fillStyle = b; g.fillRect(0, H * 0.05, W, H * 0.40); g.globalAlpha = 1;
+      seams(g, W, H, R, 60);
+      /* the production breaks: cockpit section, the wing-root frame and the
+         detachable tail at frame 28, ahead of the stabilators */
+      g.strokeStyle = "rgba(20,22,22,0.55)"; g.lineWidth = 2.2;
+      [bu(4.00), bu(2.25), bu(-0.10), bu(-2.60), bu(-4.30)].forEach(function (u) {
+        g.beginPath(); g.moveTo(u * W, 0); g.lineTo(u * W, H); g.stroke();
+      });
+      /* the auxiliary intake doors low on each side below the cockpit */
+      g.fillStyle = "rgba(16,18,18,0.55)";
+      g.fillRect(bu(3.30) * W, H * 0.90, (bu(2.85) - bu(3.30)) * W, H * 0.05);
+      g.fillRect(bu(3.30) * W, H * 0.55, (bu(2.85) - bu(3.30)) * W, H * 0.05);
+      /* the two forward airbrakes either side of the belly and the rear one
+         on the centreline ahead of the ventral fin */
+      g.strokeStyle = "rgba(16,18,18,0.60)"; g.lineWidth = 2.4;
+      g.strokeRect(bu(1.55) * W, H * 0.13, (bu(0.75) - bu(1.55)) * W, H * 0.07);
+      g.strokeRect(bu(1.55) * W, H * 0.30, (bu(0.75) - bu(1.55)) * W, H * 0.07);
+      g.strokeRect(bu(-1.90) * W, H * 0.21, (bu(-2.70) - bu(-1.90)) * W, H * 0.08);
+      /* oil and soot streaks off the belly panels */
+      for (i = 0; i < 40; i++) {
+        g.fillStyle = "rgba(40,38,34," + (0.05 + R() * 0.08).toFixed(3) + ")";
+        g.fillRect(R() * W, H * (0.12 + R() * 0.28), 30 + R() * 90, 2 + R() * 4);
+      }
+      /* engine-bay heat and soot over the last fifth (u -> 1 is aft) */
+      var s = g.createLinearGradient(W * 0.80, 0, W, 0);
+      s.addColorStop(0, "rgba(40,36,32,0)"); s.addColorStop(1, "rgba(40,36,32,0.40)");
+      g.fillStyle = s; g.fillRect(W * 0.80, 0, W * 0.20, H);
+      _bd = texOf(THREE, cv);
+    } catch (e) { _bd = null; }
+    return _bd;
   }
 
-  /* ===================================================== the airframe ==== */
-  /* Longitudinal datum, metres. The intake lip is the front of the tube; the
-     shock cone lives ahead of it and the pitot boom ahead of that. */
-  var LIP  =  5.55;     /* intake lip plane                                  */
-  var CBASE=  5.70;     /* flat base of the shock cone, standing PROUD of it */
-  var TIP  =  7.05;     /* tip of the shock cone -- nose of the aeroplane    */
-  var TAIL = -7.35;     /* jetpipe exit plane                                */
+  /* wings, stabilators and fences: planform UVs (u along x over WBOX, v
+     across |y|), so the hinge lines land where D puts them. */
+  var WX0 = -3.45, WX1 = 2.95, WS1 = 3.65;
+  var _wg = null;
+  function wingSheet(THREE) {
+    if (_wg !== null) return _wg;
+    try {
+      var W = 1024, H = 512, cv = canvas(W, H), g = cv.getContext("2d"), R = rngFor(7307);
+      function U(x) { return (x - WX0) / (WX1 - WX0) * W; }
+      function V(y) { return (1 - y / WS1) * H; }
+      g.fillStyle = PAL.lt; g.fillRect(0, 0, W, H);
+      g.fillStyle = PAL.dk;
+      for (var i = 0; i < 10; i++) {
+        g.globalAlpha = 0.14 + R() * 0.10;
+        g.fillRect(R() * W, R() * H, 40 + R() * 120, 20 + R() * 50);
+      }
+      g.globalAlpha = 1;
+      seams(g, W, H, R, 40);
+      /* flap (inboard) and aileron (outboard) hinge lines, the gap between */
+      g.strokeStyle = "rgba(16,18,18,0.62)"; g.lineWidth = 2.6;
+      g.beginPath(); g.moveTo(U(-2.45), V(0.62)); g.lineTo(U(-2.45), V(1.86)); g.stroke();
+      g.beginPath(); g.moveTo(U(-2.45), V(1.86)); g.lineTo(U(-3.29), V(1.86)); g.stroke();
+      g.beginPath(); g.moveTo(U(-2.80), V(1.92)); g.lineTo(U(-2.80), V(3.40)); g.stroke();
+      g.beginPath(); g.moveTo(U(-2.80), V(3.40)); g.lineTo(U(-3.29), V(3.40)); g.stroke();
+      g.beginPath(); g.moveTo(U(-2.80), V(1.92)); g.lineTo(U(-3.29), V(1.92)); g.stroke();
+      /* main spar and the integral tank panels between the ribs */
+      g.strokeStyle = "rgba(16,18,18,0.30)"; g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(U(-1.70), V(0.6)); g.lineTo(U(-2.55), V(3.4)); g.stroke();
+      g.beginPath(); g.moveTo(U(0.90), V(0.6)); g.lineTo(U(-2.30), V(3.2)); g.stroke();
+      for (var r = 0; r < 5; r++) {
+        var y = 0.9 + r * 0.5;
+        g.strokeRect(U(-1.0 - r * 0.35), V(y + 0.22), U(0.0) - U(0.70), V(y) - V(y + 0.22));
+      }
+      _wg = texOf(THREE, cv);
+    } catch (e) { _wg = null; }
+    return _wg;
+  }
 
-  var SWEEP   = 57;                       /* delta leading edge, degrees     */
-  var TANSW   = Math.tan(SWEEP * D2R);
-  var SEMI    = 3.577;                    /* half of 7.154 m span            */
-  var ROOT_LE =  1.05;
-  var ROOT_TE = -4.92;                    /* trailing edge is unswept        */
-  var WZ      = -0.10;                    /* mid-set, a touch low            */
-  var WT      =  0.13;                    /* wing thickness                  */
+  /* fin: planform UVs in (x, z); the green dielectric cap over the top
+     leading corner and the red star on both faces (A, G) */
+  var FX0 = -8.00, FX1 = -2.20, FZ0 = 0.60, FZ1 = 2.60;
+  var _fn = null;
+  function finSheet(THREE) {
+    if (_fn !== null) return _fn;
+    try {
+      var W = 512, H = 256, cv = canvas(W, H), g = cv.getContext("2d"), R = rngFor(4431);
+      function U(x) { return (x - FX0) / (FX1 - FX0) * W; }
+      function V(z) { return (1 - (z - FZ0) / (FZ1 - FZ0)) * H; }
+      g.fillStyle = PAL.lt; g.fillRect(0, 0, W, H);
+      seams(g, W, H, R, 10);
+      /* the rudder, its hinge parallel to the raked trailing edge */
+      g.strokeStyle = "rgba(16,18,18,0.60)"; g.lineWidth = 2.2;
+      g.beginPath(); g.moveTo(U(-7.25), V(2.18)); g.lineTo(U(-6.05), V(0.92)); g.stroke();
+      g.beginPath(); g.moveTo(U(-7.25), V(2.18)); g.lineTo(U(-7.68), V(2.18)); g.stroke();
+      g.fillStyle = PAL.cap;
+      g.beginPath();
+      g.moveTo(U(-5.10), V(2.08)); g.lineTo(U(-5.95), V(2.50)); g.lineTo(U(-7.05), V(2.50));
+      g.lineTo(U(-6.90), V(2.08)); g.closePath(); g.fill();
+      star(g, U(-5.75), V(1.52), 0.30 / (FZ1 - FZ0) * H);
+      _fn = texOf(THREE, cv);
+    } catch (e) { _fn = null; }
+    return _fn;
+  }
+
+  var _cn = null;
+  function coneSheet(THREE) {
+    if (_cn !== null) return _cn;
+    try {
+      var W = 64, H = 64, cv = canvas(W, H), g = cv.getContext("2d");
+      g.fillStyle = PAL.cone; g.fillRect(0, 0, W, H);
+      /* the tip is weathered paler where the paint wears (A, P) */
+      g.fillStyle = "rgba(160,170,150,0.22)"; g.fillRect(0, 0, W * 0.12, H);
+      _cn = texOf(THREE, cv);
+    } catch (e) { _cn = null; }
+    return _cn;
+  }
+
+  /* ============================================================ materials */
+  function materials(THREE, C) {
+    function sk(tex, fall) {
+      var m = new THREE.MeshStandardMaterial({
+        color: 0xffffff, roughness: SKIN_R, metalness: SKIN_M, side: THREE.DoubleSide });
+      if (tex) m.map = tex; else m.color.set(fall);
+      return m;
+    }
+    var cone = sk(coneSheet(THREE), PAL.cone);
+    cone.roughness = 0.62;
+    return {
+      body: sk(bodySheet(THREE), PAL.lt),
+      wing: sk(wingSheet(THREE), PAL.lt),
+      fin: sk(finSheet(THREE), PAL.lt),
+      cone: cone,
+      team: new THREE.MeshStandardMaterial({
+        color: new THREE.Color((C && C.team !== undefined) ? C.team : 0x3f7fd0),
+        roughness: SKIN_R, metalness: SKIN_M, side: THREE.DoubleSide }),
+      metal: new THREE.MeshStandardMaterial({
+        color: 0x5a6064, roughness: 0.50, metalness: 0.55, side: THREE.DoubleSide }),
+      hot: new THREE.MeshStandardMaterial({
+        color: 0x262624, roughness: 0.58, metalness: 0.50, side: THREE.DoubleSide }),
+      ink: new THREE.MeshStandardMaterial({
+        color: 0x060708, roughness: 0.95, metalness: 0.03, side: THREE.DoubleSide }),
+      glass: new THREE.MeshPhysicalMaterial({
+        color: 0x27383f, roughness: 0.13, metalness: 0.30, clearcoat: 0.35,
+        transparent: true, opacity: 0.84, side: THREE.DoubleSide }),
+    };
+  }
+
+  /* ================================================================ loft ==
+     Superellipse sections {x, w, h, zc, sq, yc}, nose first (winds the skin
+     outward), u along the loft, v round the section. */
+  function loftR(THREE, secs, segs) {
+    var pos = [], uv = [], idx = [];
+    var x0 = secs[0].x, x1 = secs[secs.length - 1].x;
+    for (var i = 0; i < secs.length; i++) {
+      var s = secs[i], e = s.sq || 1;
+      for (var j = 0; j <= segs; j++) {
+        var t = j / segs * PI * 2, cy = Math.cos(t), sz = Math.sin(t);
+        var y = (s.yc || 0) + s.w * Math.sign(cy) * Math.pow(Math.abs(cy), e);
+        var dz = s.h * Math.sign(sz) * Math.pow(Math.abs(sz), e);
+        pos.push(s.x, y, (s.zc || 0) + dz);
+        uv.push(x1 === x0 ? 0 : (s.x - x0) / (x1 - x0), j / segs);
+      }
+    }
+    var ring = segs + 1;
+    for (i = 0; i < secs.length - 1; i++)
+      for (j = 0; j < segs; j++) {
+        var a = i * ring + j, b = a + 1, c = a + ring, d = c + 1;
+        idx.push(a, c, b, b, c, d);
+      }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+  /* a round section helper: top and bottom z, half width */
+  function tb(x, top, bot, w, sq) {
+    return { x: x, w: w, h: (top - bot) * 0.5, zc: (top + bot) * 0.5, sq: sq || 1 };
+  }
+
+  /* ===================================================== lifting surfaces ==
+     surf(): an aerofoil lofted spanwise through stations {s, le, te, t, h}
+     (s the span coordinate, h the chord plane's offset, t the thickness,
+     pad an optional skin added all round, for a band laid over a surface).
+     The section is a thin rounded-nose profile, thickest at 43% chord. UVs
+     are planform, fitted to the box given. vert: span along +Z (the plane
+     is turned +90 deg about X, which keeps the winding). mirror: Y -> -Y.
+     Winding is fixed so normals point out whichever way the span runs. */
+  function surf(THREE, sts, opt) {
+    var K = 9, pos = [], uv = [], idx = [], ring = 2 * K;
+    var box = opt.box;
+    for (var i = 0; i < sts.length; i++) {
+      var st = sts[i];
+      for (var k = 0; k < ring; k++) {
+        var up = k <= K, kk = up ? k : 2 * K - k;
+        var xc = (1 - Math.cos(PI * kk / K)) * 0.5;
+        var f = Math.pow(xc, 0.75) * (1 - xc) / 0.3027;
+        var ht = (Math.max(0.003, st.t * 0.5 * f) + (st.pad || 0)) * (up ? 1 : -1);
+        if (k === 0 || k === K) ht = 0;
+        var X = st.le - xc * (st.le - st.te);
+        var S = st.s, Z = st.h + ht;
+        uv.push((X - box.x0) / (box.x1 - box.x0), (Math.abs(S) - box.s0) / (box.s1 - box.s0));
+        if (opt.vert) pos.push(X, -Z, S); else pos.push(X, S, Z);
+      }
+    }
+    /* the ring repeats nothing: k = 0 is the LE, k = K the TE */
+    var flip = (sts[sts.length - 1].s < sts[0].s) !== !!opt.mirror;
+    function tri(a, b, c) { if (flip) idx.push(a, c, b); else idx.push(a, b, c); }
+    for (i = 0; i < sts.length - 1; i++)
+      for (k = 0; k < ring; k++) {
+        var a = i * ring + k, b = i * ring + (k + 1) % ring;
+        var c = a + ring, d = b + ring;
+        tri(a, c, b); tri(b, c, d);
+      }
+    /* tip cap: a fan from the tip section's centre */
+    var last = sts.length - 1, base = last * ring, cx = 0, cy = 0, cz = 0;
+    for (k = 0; k < ring; k++) { cx += pos[(base + k) * 3]; cy += pos[(base + k) * 3 + 1]; cz += pos[(base + k) * 3 + 2]; }
+    var ci = pos.length / 3;
+    pos.push(cx / ring, cy / ring, cz / ring);
+    uv.push(uv[base * 2], uv[base * 2 + 1]);
+    for (k = 0; k < ring; k++) tri(ci, base + (k + 1) % ring, base + k);
+    if (opt.mirror) for (i = 1; i < pos.length; i += 3) pos[i] = -pos[i];
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+
+  /* ========================================================= station tables
+     Measured off D: x = (465 - px) * 0.01707, z = (515 - py) * 0.01707,
+     half widths from the plan (874.5 - py) * 0.01707.
+
+     BODY -- the round tube from the intake lip to the start of the hot
+     tail section at x -5.40. Top line under the canopy and spine is the
+     tube's own top; the spine and canopy are separate tables. */
+  var BODY = [
+    tb( 5.86, 0.485, -0.415, 0.452),
+    tb( 5.50, 0.530, -0.440, 0.505),
+    tb( 5.00, 0.585, -0.455, 0.540),
+    tb( 4.50, 0.630, -0.470, 0.552),
+    tb( 3.90, 0.700, -0.480, 0.568),
+    tb( 3.20, 0.735, -0.485, 0.580),
+    tb( 2.30, 0.700, -0.490, 0.590),
+    tb( 1.50, 0.670, -0.500, 0.592),
+    tb( 0.00, 0.645, -0.510, 0.590),
+    tb(-1.50, 0.625, -0.525, 0.586),
+    tb(-2.70, 0.600, -0.550, 0.578),
+    tb(-3.60, 0.575, -0.540, 0.562),
+    tb(-4.40, 0.550, -0.520, 0.548),
+    tb(-5.40, 0.500, -0.480, 0.505),
+  ];
+  /* the heat-stained detachable tail round the afterburner (D, R) */
+  var HOT = [
+    tb(-5.40, 0.500, -0.480, 0.505),
+    tb(-6.00, 0.468, -0.452, 0.472),
+    tb(-6.43, 0.448, -0.432, 0.448),
+  ];
+  /* SPINE -- the bis saddle tank: top 1.15 from the hood back, 1.13 at
+     x -0.94, 1.06 at the fin root (x -2.80), then down the fin's foot to
+     the chute housing at 0.81. Its sides sink into the tube at z 0.35. */
+  var SPINE = [
+    tb( 2.55, 1.000, 0.40, 0.200, 0.80),
+    tb( 2.30, 1.140, 0.36, 0.315, 0.78),
+    tb( 1.90, 1.160, 0.35, 0.335, 0.78),
+    tb( 1.10, 1.162, 0.35, 0.345, 0.78),
+    tb( 0.20, 1.150, 0.35, 0.345, 0.78),
+    tb(-0.94, 1.130, 0.35, 0.335, 0.78),
+    tb(-1.70, 1.110, 0.35, 0.318, 0.80),
+    tb(-2.40, 1.080, 0.35, 0.292, 0.82),
+    tb(-2.90, 1.040, 0.35, 0.262, 0.84),
+    tb(-3.80, 0.975, 0.35, 0.215, 0.86),
+    tb(-4.80, 0.905, 0.36, 0.178, 0.88),
+    tb(-5.50, 0.850, 0.38, 0.150, 0.90),
+    tb(-6.05, 0.800, 0.42, 0.120, 0.92),
+    tb(-6.15, 0.760, 0.48, 0.060, 0.95),
+  ];
+  /* CANOPY -- windscreen base x 3.90 (z 0.71), its top frame at 3.38
+     (1.05), hood top 1.13-1.15 back to x 2.28 (D side); 0.66 m wide
+     (D head-on). */
+  var CANOPY = [
+    tb( 3.95, 0.700, 0.62, 0.240, 0.90),
+    tb( 3.70, 0.840, 0.60, 0.296, 0.86),
+    tb( 3.40, 1.040, 0.60, 0.328, 0.84),
+    tb( 3.10, 1.120, 0.60, 0.334, 0.84),
+    tb( 2.80, 1.148, 0.60, 0.334, 0.84),
+    tb( 2.50, 1.152, 0.60, 0.330, 0.84),
+    tb( 2.26, 1.150, 0.60, 0.322, 0.84),
+  ];
+  /* CONE -- tip x 6.88 on the axis; 0.53 m across at the lip (x 5.88),
+     on into the duct to its widest, 0.60 m, then closed (D side, P). */
+  var CONE_Z = 0.035;
+  var CONE = [
+    { x: 6.88, w: 0.006, h: 0.006, zc: CONE_Z },
+    { x: 6.72, w: 0.042, h: 0.042, zc: CONE_Z },
+    { x: 6.45, w: 0.108, h: 0.108, zc: CONE_Z },
+    { x: 6.40, w: 0.118, h: 0.118, zc: CONE_Z },
+    { x: 6.12, w: 0.190, h: 0.190, zc: CONE_Z },
+    { x: 5.88, w: 0.262, h: 0.262, zc: CONE_Z },
+    { x: 5.55, w: 0.292, h: 0.292, zc: CONE_Z },
+    { x: 5.20, w: 0.298, h: 0.298, zc: CONE_Z },
+    { x: 5.00, w: 0.200, h: 0.200, zc: CONE_Z },
+    { x: 4.95, w: 0.010, h: 0.010, zc: CONE_Z },
+  ];
+
+  /* WING -- LE 2.80 - 1.54 y (57 deg), TE -3.29 straight, tip y 3.577;
+     wing plane at z 0.02 at the root, 2 deg anhedral; t/c 5% at the root
+     to 4.2% at the tip (S-12 section, published). */
+  var SEMI = 3.577, WZ = 0.02, TAN_ANH = Math.tan(2 * D2R);
+  function leAt(y) { return 2.80 - 1.54 * y; }
+  var TE = -3.29;
+  function wz(y) { return WZ - Math.abs(y) * TAN_ANH; }
+  function wingStations() {
+    var ys = [0.0, 0.60, 1.20, 1.90, 2.60, 3.20, SEMI], o = [];
+    for (var i = 0; i < ys.length; i++) {
+      var y = ys[i], c = leAt(y) - TE, tc = 0.050 - 0.008 * (y / SEMI);
+      o.push({ s: y, le: leAt(y), te: TE, t: c * tc, h: wz(y) });
+    }
+    return o;
+  }
+  /* STAB -- root LE -4.44 / TE -6.45 at y 0.52, tip LE -6.19 / TE -7.51
+     at y 1.85 (D plan); on the axis at z 0.10 (D side, head-on). */
+  var STAB_Z = 0.10;
+  function stabStations() {
+    var ys = [0.25, 0.52, 1.20, 1.85], o = [];
+    for (var i = 0; i < ys.length; i++) {
+      var y = ys[i], le = -4.44 - 1.316 * (y - 0.52), te = -6.45 - 0.797 * (y - 0.52);
+      o.push({ s: y, le: le, te: te, t: (le - te) * 0.035, h: STAB_Z });
+    }
+    return o;
+  }
+  /* FIN -- LE from (-2.80, 1.03) to (-5.89, 2.46); TE raked from
+     (-6.53, 0.81) to (-7.90, 2.46) (D side). */
+  function finStations() {
+    var zs = [0.72, 1.03, 1.60, 2.10, 2.46], o = [];
+    for (var i = 0; i < zs.length; i++) {
+      var z = zs[i], le = -2.80 - 2.161 * (z - 1.03), te = -6.53 - 0.830 * (z - 0.81);
+      o.push({ s: z, le: le, te: te, t: 0.20 - 0.11 * (z - 0.72) / 1.74, h: 0 });
+    }
+    return o;
+  }
+  /* VENT -- the ventral fin: LE (-2.99, -0.51) to (-3.46, -0.94), its
+     lower edge rising aft to (-5.97, -0.61), the rear edge at -6.0 (D) */
+  var VENT = [
+    { s: -0.42, le: -2.90, te: -6.06, t: 0.11, h: 0 },
+    { s: -0.61, le: -3.10, te: -5.97, t: 0.10, h: 0 },
+    { s: -0.80, le: -3.31, te: -4.52, t: 0.08, h: 0 },
+    { s: -0.94, le: -3.46, te: -3.64, t: 0.04, h: 0 },
+  ];
+
+  var GROUND = -1.46;
+
+  /* =============================================================== build */
+  var THREE_ = null;
+  function add(g, geo, mat, x, y, z) {
+    var m = new THREE_.Mesh(geo, mat);
+    m.position.set(x || 0, y || 0, z || 0);
+    g.add(m);
+    return m;
+  }
+  /* a thin strut between two points */
+  function rod(g, mat, r, a, b, seg) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+    var L = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    var m = new THREE_.Mesh(new THREE_.CylinderGeometry(r, r, L, seg || 6), mat);
+    m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+    m.quaternion.setFromUnitVectors(new THREE_.Vector3(0, 1, 0),
+      new THREE_.Vector3(dx / L, dy / L, dz / L));
+    g.add(m);
+    return m;
+  }
 
   function build(THREE, M, C) {
+    THREE_ = THREE;
+    var T = materials(THREE, C);
     var g = new THREE.Group();
-    g.name = "mig21";
+    addBody(THREE, g, T);
+    addIntake(THREE, g, T);
+    addCockpit(THREE, g, T);
+    addWings(THREE, g, T);
+    addTail(THREE, g, T);
+    addKit(THREE, g, T);
+    addStores(THREE, g, T);
+    addGear(THREE, g, T);
+    addTeam(THREE, g, T);
+    var out = mergeByMaterial(THREE, g);
+    out.name = "mig21";
+    return out;
+  }
 
-    var skin   = skinMat(THREE);
-    var panel  = panelMat(THREE, 13.2, 0.34, 0.30);
-    var panelB = panelMat(THREE, 9.0, 0.74, 0.42);     /* smaller surfaces */
-    var metal  = metalMat(THREE, 0x9aa2a8, 0.55, 0.50);
-    var steel  = metalMat(THREE, 0x6f767c, 0.50, 0.60);
-    var dark   = metalMat(THREE, 0x1d2023, 0.60, 0.40);
-    var soot   = metalMat(THREE, 0x14161a, 0.62, 0.45);
-    var rubber = metalMat(THREE, 0x131416, 0.95, 0.04);
-    var team   = metalMat(THREE, C && C.team !== undefined ? C.team : 0x3f7fd0, 0.55, 0.40);
-    var glass  = glassMat(THREE);
-
-    /* ------------------------------------------------------- the needle -- */
-    /* Circular section end to end. Widest (1.24 m) just behind the cockpit,
-       tapering gently both ways: the whole thing is a duct with an engine in
-       it. sq = 1 keeps it round; anything lower would square off a tube that
-       is not square. */
-    g.add(body(THREE, M, [
-      sec(TAIL,  0.435, 0.435,  0.030),
-      sec(-7.05, 0.445, 0.445,  0.030),
-      sec(-6.55, 0.465, 0.465,  0.028),
-      sec(-5.90, 0.495, 0.495,  0.024),
-      sec(-5.10, 0.530, 0.530,  0.019),
-      sec(-4.20, 0.565, 0.565,  0.012),
-      sec(-3.20, 0.595, 0.595,  0.006),
-      sec(-2.10, 0.615, 0.615,  0.000),
-      sec(-1.00, 0.622, 0.622,  0.000),
-      sec( 0.10, 0.620, 0.620,  0.000),
-      sec( 1.20, 0.610, 0.612, -0.005),
-      sec( 2.20, 0.596, 0.600, -0.012),
-      sec( 3.10, 0.586, 0.590, -0.022),
-      sec( 3.90, 0.573, 0.577, -0.032),
-      sec( 4.60, 0.563, 0.566, -0.042),
-      sec( 5.15, 0.557, 0.560, -0.050),
-      sec( 5.40, 0.554, 0.557, -0.054),
-      sec( LIP,  0.552, 0.555, -0.056),
-    ], 32, skin));
-
-    /* ---- dorsal spine ---------------------------------------------------
-       The MF/bis spine is a broad flat-topped fairing carrying fuel and
-       control runs from behind the canopy back into the fin fillet. It is
-       what makes the top line of a late Fishbed one long straight sweep
-       instead of a dip behind the cockpit, so it changes the silhouette. */
-    /* It ran out at x = -5.30 in the first cut, which left a bare metre of
-       round fuselage between the end of the spine and the front of the fin
-       and killed the one-long-line look. It now runs all the way aft into
-       the fin root, and it is 0.67 m across at its widest -- half again the
-       width of the man underneath it. */
-    g.add(body(THREE, M, [
-      sec(-7.22, 0.244, 0.146, 0.454, 0.50),
-      sec(-6.40, 0.266, 0.174, 0.486, 0.50),
-      sec(-5.50, 0.284, 0.196, 0.510, 0.50),
-      sec(-4.40, 0.302, 0.214, 0.534, 0.50),
-      sec(-3.20, 0.318, 0.228, 0.554, 0.50),
-      sec(-2.00, 0.330, 0.238, 0.572, 0.50),
-      sec(-0.60, 0.336, 0.244, 0.582, 0.50),
-      sec( 0.80, 0.322, 0.226, 0.578, 0.50),
-      sec( 1.70, 0.262, 0.166, 0.556, 0.50),
-      sec( 2.30, 0.106, 0.064, 0.512, 0.50),
-    ], 20, skin));
-
-    /* ---- intake: lip, duct and translating shock cone -------------------
-       The defining feature. The nose is a hole; the cone stands proud of it
-       on a collar with a real step, because on the aeroplane it slides fore
-       and aft to hold the shock on the lip at speed. */
-    /* The lip is a fat rolled ring at the very front of the barrel. Its bore
-       is 0.92 m across; nothing forward of this plane belongs to the duct. */
-    var lipRing = new THREE.Mesh(new THREE.TorusGeometry(0.505, 0.050, 8, 34), skin);
-    lipRing.rotation.y = Math.PI / 2;
-    lipRing.position.set(LIP, 0, -0.056);
-    g.add(lipRing);
-    /* an inner lip in bare metal, so the bore rim catches light separately
-       from the painted barrel and the annulus round the cone reads as a HOLE */
-    var lipIn = cyl(THREE, 0.462, 0.470, 0.20, 30, true, steel);
-    lipIn.rotation.z = -Math.PI / 2;
-    lipIn.position.set(LIP - 0.09, 0, -0.056);
-    g.add(lipIn);
-
-    /* the duct receding into the aeroplane -- near black, because what makes
-       an intake read as an intake is that you cannot see the back of it */
-    var duct = cyl(THREE, 0.456, 0.390, 2.30, 28, true, dark);
-    duct.rotation.z = -Math.PI / 2;
-    duct.position.set(LIP - 1.20, 0, -0.056);
-    g.add(duct);
-    var ductEnd = new THREE.Mesh(new THREE.CircleGeometry(0.392, 24), soot);
-    ductEnd.rotation.y = -Math.PI / 2;
-    ductEnd.position.set(LIP - 2.34, 0, -0.056);
-    g.add(ductEnd);
-
-    /* ---- the shock cone -------------------------------------------------
-       This is the whole point of the aeroplane's face and the first version
-       of this file got it wrong: the cone was tucked inside the lip and
-       tapered so gently out of the barrel that the nose read as one smooth
-       radome -- an F-100, not a MiG. Three things fix it.
-
-         1. the base plane sits 0.15 m PROUD of the lip, so there is a real
-            annular gap you can see the dark bore through from three-quarters;
-         2. the base is 0.86 m across against a 0.92 m bore -- it fills 93%
-            of the hole, which is what a translating centrebody looks like;
-         3. the base is FLAT and the taper is straight, so the side profile
-            steps down from the 1.11 m barrel to the cone and then runs dead
-            straight to the tip. That step is the silhouette.
-
-       Length forward of the lip is 1.50 m on a 0.92 m bore -- the ratio the
-       real centrebody shows at full extension. */
-    g.add(body(THREE, M, [
-      sec(CBASE,        0.430, 0.430, -0.056),
-      sec(CBASE + 0.20, 0.426, 0.426, -0.055),
-      sec(CBASE + 0.23, 0.398, 0.398, -0.055),   /* step: cone section joint */
-      sec(CBASE + 0.55, 0.284, 0.284, -0.052),
-      sec(CBASE + 0.90, 0.160, 0.160, -0.048),
-      sec(CBASE + 1.18, 0.060, 0.060, -0.044),
-      sec(TIP - 0.05,   0.032, 0.032, -0.042),
-      sec(TIP,          0.008, 0.008, -0.042),
-    ], 30, skin));
-    /* the flat annular disc that closes the base of the cone. Without it the
-       loft is open and you see straight up the inside of the cone. */
-    var coneBase = new THREE.Mesh(new THREE.CircleGeometry(0.430, 30), steel);
-    coneBase.rotation.y = -Math.PI / 2;
-    coneBase.position.set(CBASE - 0.002, 0, -0.056);
-    g.add(coneBase);
-    /* the rails the centrebody slides on, bridging the gap at four points --
-       small, but they are what stops the cone looking like it floats */
-    for (var cr = 0; cr < 4; cr++) {
-      var ca = cr / 4 * Math.PI * 2 + Math.PI / 4;
-      var rail = box(THREE, 0.20, 0.055, 0.055, LIP + 0.06,
-                     Math.cos(ca) * 0.445, -0.056 + Math.sin(ca) * 0.445, steel);
-      rail.rotation.x = ca;
-      g.add(rail);
+  /* ------------------------------------------------ fuselage and spine -- */
+  function addBody(THREE, g, T) {
+    g.add(new THREE.Mesh(loftR(THREE, BODY, 36), T.body));
+    g.add(new THREE.Mesh(loftR(THREE, HOT, 30), T.hot));
+    g.add(new THREE.Mesh(loftR(THREE, SPINE, 28), T.body));
+    /* the brake-chute housing at the foot of the rudder: a 0.22 m tube from
+       x -5.40 to its pointed cap at -7.03, axis z 0.70 (D side) */
+    g.add(new THREE.Mesh(loftR(THREE, [
+      { x: -5.30, w: 0.06, h: 0.06, zc: 0.70 },
+      { x: -5.55, w: 0.112, h: 0.112, zc: 0.70 },
+      { x: -6.60, w: 0.112, h: 0.112, zc: 0.70 },
+      { x: -6.85, w: 0.085, h: 0.085, zc: 0.70 },
+      { x: -7.03, w: 0.012, h: 0.012, zc: 0.70 },
+    ], 14), T.body));
+    /* wing-root fillets ahead of the leading edge (D plan: the side grows
+       from 0.59 to 0.67 between x 2.4 and 1.8) */
+    for (var s = -1; s <= 1; s += 2) {
+      g.add(new THREE.Mesh(loftR(THREE, [
+        { x: 2.45, yc: s * 0.55, w: 0.02, h: 0.02, zc: WZ },
+        { x: 2.10, yc: s * 0.57, w: 0.07, h: 0.07, zc: WZ, sq: 0.9 },
+        { x: 1.60, yc: s * 0.60, w: 0.12, h: 0.10, zc: WZ, sq: 0.9 },
+        { x: 0.60, yc: s * 0.60, w: 0.10, h: 0.08, zc: WZ, sq: 0.9 },
+      ], 12), T.body));
     }
-
-    /* ---- afterburner nozzle --------------------------------------------- */
-    g.add(body(THREE, M, [
-      sec(TAIL,  0.435, 0.435, 0.030),
-      sec(-7.48, 0.446, 0.446, 0.030),
-      sec(-7.62, 0.452, 0.452, 0.030),
-    ], 26, metal));
-    /* the dark throat receding into the aeroplane */
-    g.add(body(THREE, M, [
-      sec(-7.64, 0.402, 0.402, 0.030),
-      sec(-7.30, 0.396, 0.396, 0.030),
-      sec(-6.80, 0.330, 0.330, 0.028),
-      sec(-6.40, 0.250, 0.250, 0.026),
-    ], 22, soot));
-    /* nozzle petals: twelve of them round the rim, which is what makes an
-       afterburner nozzle read as an afterburner nozzle */
-    for (var pz = 0; pz < 14; pz++) {
-      var pa = pz / 14 * Math.PI * 2;
-      var pet = box(THREE, 0.26, 0.115, 0.028, -7.50,
-                    Math.cos(pa) * 0.438, 0.030 + Math.sin(pa) * 0.438, steel);
-      pet.rotation.x = pa;
-      g.add(pet);
+    /* the heat-stained jetpipe end: exit ring, the petals' shroud lip, the
+       dark throat and the flame-holder ring inside (R) */
+    var ring = add(g, new THREE.CylinderGeometry(0.452, 0.448, 0.10, 28, 1, true), T.metal, -6.40, 0, 0.008);
+    ring.rotation.z = HALF_PI;
+    var thr = add(g, new THREE.CylinderGeometry(0.420, 0.360, 0.75, 24, 1, true), T.ink, -6.06, 0, 0.008);
+    thr.rotation.z = HALF_PI;
+    var fh = add(g, new THREE.CylinderGeometry(0.30, 0.30, 0.03, 20), T.hot, -5.72, 0, 0.008);
+    fh.rotation.z = HALF_PI;
+    for (var p = 0; p < 12; p++) {
+      var a = p / 12 * PI * 2;
+      var sm = add(g, new THREE.BoxGeometry(0.42, 0.025, 0.02), T.ink,
+        -6.20, Math.cos(a) * 0.462, 0.008 + Math.sin(a) * 0.462);
+      sm.rotation.x = a;
     }
+  }
 
-    /* ---- the delta ------------------------------------------------------
-       57 degrees on the leading edge, trailing edge square across, tip clipped
-       to just under half a metre of chord. Two degrees of anhedral. */
-    var tipLE = ROOT_LE - SEMI * TANSW;
-    var wing = [
-      [ROOT_LE,  0.00],
-      [tipLE,    SEMI],
-      [ROOT_TE,  SEMI],
-      [ROOT_TE,  0.00],
-    ];
-    pair(THREE, M, g, wing, WT, WZ, -2, panel);
+  /* ----------------------------------------------------- intake and cone --
+     The lip is a thin rolled ring, 0.85 m inside, 0.90 outside (D side and
+     head-on); behind it a black duct; out of it the cone. */
+  function addIntake(THREE, g, T) {
+    /* inner face first, so both faces wind outward of the ring */
+    g.add(new THREE.Mesh(loftR(THREE, [
+      { x: 5.78, w: 0.405, h: 0.405, zc: CONE_Z },
+      { x: 5.885, w: 0.412, h: 0.412, zc: CONE_Z },
+      { x: 5.915, w: 0.428, h: 0.428, zc: CONE_Z },
+      { x: 5.885, w: 0.446, h: 0.446, zc: CONE_Z },
+      { x: 5.80, w: 0.452, h: 0.452, zc: CONE_Z },
+    ], 36), T.metal));
+    g.add(new THREE.Mesh(loftR(THREE, [
+      { x: 5.80, w: 0.405, h: 0.405, zc: CONE_Z },
+      { x: 4.60, w: 0.370, h: 0.370, zc: CONE_Z },
+      { x: 4.58, w: 0.010, h: 0.010, zc: CONE_Z },
+    ], 28), T.ink));
+    g.add(new THREE.Mesh(loftR(THREE, CONE, 30), T.cone));
+    /* the joint ring where the fixed cone tip meets the translating part */
+    var jr = add(g, new THREE.CylinderGeometry(0.120, 0.120, 0.018, 20, 1, true), T.metal, 6.40, 0, CONE_Z);
+    jr.rotation.z = HALF_PI;
+  }
 
-    /* wing-root fairing: a shallow lens along the fuselage flank that blends
-       the delta into the tube. There is no leading-edge extension on a
-       Fishbed -- the wing root simply runs into the side of the body. */
-    for (var rs = -1; rs <= 1; rs += 2) {
-      var rf = body(THREE, M, [
-        sec(ROOT_TE - 0.10, 0.055, 0.045, WZ - 0.03, 0.70),
-        sec(-4.00,          0.170, 0.105, WZ - 0.02, 0.70),
-        sec(-1.50,          0.205, 0.130, WZ,        0.70),
-        sec( 0.40,          0.165, 0.100, WZ + 0.01, 0.70),
-        sec(ROOT_LE + 0.06, 0.050, 0.040, WZ + 0.01, 0.70),
-      ], 12, skin);
-      rf.position.y = rs * 0.595;
-      g.add(rf);
+  /* ---------------------------------------------------- canopy, cockpit -- */
+  function addCockpit(THREE, g, T) {
+    g.add(new THREE.Mesh(loftR(THREE, CANOPY, 26), T.glass));
+    /* coaming, seat and headrest seen through the glass */
+    add(g, new THREE.BoxGeometry(0.30, 0.48, 0.14), T.ink, 3.55, 0, 0.74);
+    add(g, new THREE.BoxGeometry(0.42, 0.40, 0.30), T.ink, 2.62, 0, 0.82);
+    add(g, new THREE.BoxGeometry(0.16, 0.30, 0.22), T.ink, 2.42, 0, 0.98);
+    /* frames: the windscreen arch, its two posts either side of the flat
+       armoured centre panel, the hood's rear bow, and the sills */
+    var arch = add(g, new THREE.TorusGeometry(0.300, 0.022, 5, 18, PI), T.metal, 3.40, 0, 0.745);
+    arch.rotation.set(HALF_PI, HALF_PI, 0);
+    arch.scale.set(1.09, 1.0, 1.0);
+    for (var s = -1; s <= 1; s += 2) {
+      rod(g, T.metal, 0.016, [3.92, s * 0.12, 0.70], [3.42, s * 0.16, 1.03]);
+      add(g, new THREE.BoxGeometry(1.70, 0.035, 0.05), T.metal, 3.08, s * 0.318, 0.655);
     }
+    var bow = add(g, new THREE.TorusGeometry(0.31, 0.03, 5, 18, PI), T.body, 2.30, 0, 0.84);
+    bow.rotation.set(HALF_PI, HALF_PI, 0);
+    bow.scale.set(1.0, 1.0, 1.0);
+    /* the rear-view periscope on the hood (D side x 2.95, A) */
+    add(g, new THREE.BoxGeometry(0.22, 0.10, 0.09), T.metal, 2.98, 0, 1.19);
+    add(g, new THREE.BoxGeometry(0.05, 0.11, 0.08), T.ink, 3.10, 0, 1.19);
+  }
 
-    /* boundary-layer fences, one per wing, standing proud of the upper
-       surface at a bit over half span -- small, but they are a Fishbed
-       fingerprint and they catch the light from three-quarters on */
-    var fy = 1.95, fLE = ROOT_LE - fy * TANSW;
-    for (var fs = -1; fs <= 1; fs += 2) {
-      var fz = WZ - fy * Math.tan(2 * D2R);
-      var fen = finPlate(THREE, M, [
-        [fLE + 0.05, fz - 0.09], [fLE - 0.28, fz + 0.09],
-        [fLE - 1.02, fz + 0.09], [fLE - 1.10, fz - 0.09],
-      ], 0.035, panelB);
-      fen.position.y = fs * fy;
-      g.add(fen);
-    }
-    /* the wheel-well blisters on the upper wing surface, inboard */
-    for (var bs = -1; bs <= 1; bs += 2) {
-      var bz = WZ - 1.16 * Math.tan(2 * D2R);
-      var bl = body(THREE, M, [
-        sec(-3.55, 0.10, 0.030, bz - 0.05, 0.6),
-        sec(-3.00, 0.24, 0.095, bz - 0.03, 0.6),
-        sec(-2.10, 0.28, 0.115, bz - 0.02, 0.6),
-        sec(-1.35, 0.26, 0.108, bz - 0.02, 0.6),
-        sec(-0.85, 0.16, 0.055, bz - 0.04, 0.6),
-      ], 14, skin);
-      bl.position.y = bs * 1.16;
-      g.add(bl);
-    }
-
-    /* ---- all-moving slab tailplane --------------------------------------
-       Low on the rear fuselage, comfortably below the wing plane and aft of
-       its trailing edge, so the two surfaces read as separate from the side.
-       The whole panel pivots -- there is no fixed stabiliser and no elevator
-       hinge line, which is why the outline is one clean plate. */
-    var tSemi = 1.87, tRootLE = -5.30, tRootTE = -7.20;
-    var tTipLE = tRootLE - tSemi * Math.tan(50 * D2R);
-    var stab = [
-      [tRootLE,        0.00],
-      [tTipLE,         tSemi],
-      [tTipLE - 0.62,  tSemi],
-      [tRootTE,        0.00],
-    ];
-    pair(THREE, M, g, stab, 0.11, -0.22, 0, panelB);
-    /* the pivot fairings where the stabilators enter the fuselage */
-    for (var ts = -1; ts <= 1; ts += 2) {
-      var tf = body(THREE, M, [
-        sec(-7.32, 0.070, 0.065, -0.22, 0.7),
-        sec(-6.80, 0.135, 0.120, -0.22, 0.7),
-        sec(-6.00, 0.148, 0.132, -0.22, 0.7),
-        sec(-5.40, 0.088, 0.078, -0.22, 0.7),
-      ], 12, skin);
-      tf.position.y = ts * 0.50;
-      g.add(tf);
-    }
-
-    /* ---- fin, fillet, ventral fin ---------------------------------------
-       Broad-chorded and blunt-tipped, not a needle: the tip still carries
-       1.3 m of chord. The fillet ahead of it is the tail end of the spine. */
-    /* A BROAD LOW TRAPEZOID, which is the shape people actually recognise.
-       Root chord 4.85 m -- a third of the whole aeroplane -- against 1.79 m
-       of height above the spine and a tip that still carries 1.64 m of
-       chord. Leading edge sweep 60.5 degrees. Built tall and narrow it looks
-       like a Sabre's fin, which is exactly what the first cut looked like. */
-    g.add(finPlate(THREE, M, [
-      [-2.45, 0.55], [-5.62, 2.34], [-7.26, 2.34], [-7.52, 1.10], [-7.30, 0.55],
-    ], 0.195, panel));
-
-    /* the dorsal fillet: a broad low fairing that flares out either side of
-       the fin root and runs forward along the spine. On the aeroplane it is
-       structure, not decoration -- it carries the fin loads into the frames
-       -- and from three-quarters it is the difference between a fin that
-       grows out of the aeroplane and a plate stuck on top of it. */
-    g.add(body(THREE, M, [
-      sec(-7.30, 0.222, 0.128, 0.520, 0.42),
-      sec(-6.50, 0.252, 0.150, 0.552, 0.42),
-      sec(-5.60, 0.256, 0.155, 0.564, 0.42),
-      sec(-4.60, 0.240, 0.146, 0.560, 0.42),
-      sec(-3.60, 0.204, 0.124, 0.542, 0.42),
-      sec(-2.70, 0.148, 0.090, 0.512, 0.42),
-      sec(-1.90, 0.078, 0.048, 0.482, 0.42),
-    ], 16, skin));
-
-    /* the dielectric cap on top of the fin */
-    g.add(body(THREE, M, [
-      sec(-7.28, 0.052, 0.034, 2.352, 0.6),
-      sec(-6.90, 0.090, 0.066, 2.392, 0.6),
-      sec(-6.20, 0.094, 0.072, 2.400, 0.6),
-      sec(-5.70, 0.054, 0.038, 2.372, 0.6),
-    ], 12, skin));
-    /* rudder hinge line, three bracket fairings down the fin trailing edge */
-    for (var rh = 0; rh < 3; rh++) {
-      g.add(box(THREE, 0.22, 0.255, 0.16, -7.20, 0, 1.24 + rh * 0.50, steel));
-    }
-
-    /* ventral fin under the jetpipe. Head on it is half the reason a Fishbed
-       looks like a Fishbed, so it is deep enough to break the belly line:
-       0.75 m below the bottom of the fuselage. */
-    g.add(finPlate(THREE, M, [
-      [-3.52, -0.360], [-6.62, -0.440], [-6.30, -1.185], [-4.66, -1.110],
-    ], 0.155, panelB));
-
-    /* ---- cockpit -------------------------------------------------------- */
-    /* One canopy loft covers the raked windscreen and the hood behind it,
-       because on a Fishbed they are one continuous glazed line falling into
-       the spine. */
-    g.add(body(THREE, M, [
-      sec(2.02, 0.094, 0.050, 0.628, 0.80),
-      sec(2.32, 0.292, 0.222, 0.686, 0.80),
-      sec(2.72, 0.348, 0.306, 0.700, 0.80),
-      sec(3.12, 0.344, 0.298, 0.694, 0.80),
-      sec(3.44, 0.318, 0.256, 0.678, 0.80),
-      sec(3.72, 0.268, 0.180, 0.650, 0.80),
-      sec(4.00, 0.212, 0.096, 0.614, 0.80),
-    ], 20, glass));
-
-    /* what shows through the glass: coaming, seat, headrest. Not instruments
-       -- those are texture's business, and there is no texture in here. */
-    g.add(box(THREE, 0.30, 0.42, 0.13, 3.46, 0, 0.600, dark));
-    g.add(box(THREE, 0.30, 0.36, 0.40, 2.56, 0, 0.585, dark));
-    g.add(box(THREE, 0.15, 0.30, 0.20, 2.32, 0, 0.775, dark));
-    /* canopy framing: the bow between screen and hood, and the two sills */
-    var bow = new THREE.Mesh(new THREE.TorusGeometry(0.305, 0.024, 5, 16), steel);
-    bow.rotation.y = Math.PI / 2;
-    bow.position.set(3.46, 0, 0.678);
-    g.add(bow);
-    var arc = new THREE.Mesh(new THREE.TorusGeometry(0.195, 0.022, 5, 14), steel);
-    arc.rotation.y = Math.PI / 2;
-    arc.position.set(4.00, 0, 0.612);
-    g.add(arc);
-    for (var cs = -1; cs <= 1; cs += 2) {
-      g.add(box(THREE, 1.72, 0.045, 0.055, 2.92, cs * 0.298, 0.586, steel));
-    }
-    /* the rear-view periscope on the canopy spine */
-    g.add(box(THREE, 0.20, 0.10, 0.13, 3.02, 0, 0.978, steel));
-    g.add(box(THREE, 0.06, 0.11, 0.10, 3.13, 0, 0.952, dark));
-
-    /* ---- GSh-23 gun pack ------------------------------------------------ */
-    g.add(body(THREE, M, [
-      sec(1.52, 0.110, 0.075, -0.615, 0.55),
-      sec(1.95, 0.205, 0.150, -0.678, 0.55),
-      sec(2.45, 0.228, 0.168, -0.700, 0.55),
-      sec(2.90, 0.205, 0.148, -0.686, 0.55),
-      sec(3.16, 0.120, 0.080, -0.648, 0.55),
-    ], 16, skin));
-    for (var gs = -1; gs <= 1; gs += 2) {
-      var bar = cyl(THREE, 0.032, 0.036, 0.34, 8, false, steel);
-      bar.rotation.z = -Math.PI / 2;
-      bar.position.set(3.28, gs * 0.055, -0.660);
-      g.add(bar);
-    }
-
-    /* ---- stores: centreline tank, four pylons, four missiles ------------ */
-    g.add(body(THREE, M, [
-      sec(-2.62, 0.048, 0.048, -1.000),
-      sec(-2.30, 0.126, 0.126, -1.005),
-      sec(-1.84, 0.206, 0.206, -1.010),
-      sec(-1.04, 0.266, 0.266, -1.012),
-      sec( 0.00, 0.282, 0.282, -1.012),
-      sec( 0.70, 0.272, 0.272, -1.010),
-      sec( 1.04, 0.216, 0.216, -1.006),
-      sec( 1.22, 0.122, 0.122, -1.002),
-      sec( 1.31, 0.036, 0.036, -1.000),
-    ], 20, skin));
-    g.add(box(THREE, 0.62, 0.09, 0.20, -0.20, 0, -0.700, panelB));
-    for (var tk = 0; tk < 4; tk++) {
-      var ta = tk / 4 * Math.PI * 2 + Math.PI / 4;
-      var tfn = box(THREE, 0.52, 0.035, 0.30, -2.28,
-                    Math.cos(ta) * 0.16, -1.005 + Math.sin(ta) * 0.16, panelB);
-      tfn.rotation.x = ta;
-      g.add(tfn);
-    }
-
-    /* a K-13 on each pylon: fat body, four canards, four tail fins */
-    function missile(xc, y, z) {
-      var mg = new THREE.Group();
-      mg.add(body(THREE, M, [
-        sec(xc - 1.42, 0.040, 0.040, z),
-        sec(xc - 1.30, 0.086, 0.086, z),
-        sec(xc - 0.60, 0.092, 0.092, z),
-        sec(xc + 0.86, 0.092, 0.092, z),
-        sec(xc + 1.10, 0.070, 0.070, z),
-        sec(xc + 1.30, 0.028, 0.028, z),
-      ], 12, skin));
-      var q;
-      for (q = 0; q < 4; q++) {
-        var qa = q / 4 * Math.PI * 2 + Math.PI / 4;
-        var tail = box(THREE, 0.46, 0.026, 0.22, xc - 1.18,
-                       Math.cos(qa) * 0.15, z + Math.sin(qa) * 0.15, metal);
-        tail.rotation.x = qa; mg.add(tail);
-        var can = box(THREE, 0.30, 0.024, 0.16, xc + 0.62,
-                      Math.cos(qa) * 0.13, z + Math.sin(qa) * 0.13, metal);
-        can.rotation.x = qa; mg.add(can);
-      }
-      var see = cyl(THREE, 0.030, 0.030, 0.07, 8, false, dark);
-      see.rotation.z = -Math.PI / 2;
-      see.position.set(xc + 1.33, 0, z);
-      mg.add(see);
-      mg.position.y = y;
-      return mg;
-    }
-    var PY = [[1.55, -2.25], [2.55, -3.62]];
-    for (var ps = -1; ps <= 1; ps += 2) {
-      for (var pi = 0; pi < PY.length; pi++) {
-        var py = PY[pi][0], px = PY[pi][1];
-        g.add(box(THREE, 0.86, 0.085, 0.32, px, ps * py, WZ - 0.24, panelB));
-        g.add(missile(px + 0.10, ps * py, WZ - 0.52));
+  /* -------------------------------------------------------------- wings -- */
+  function addWings(THREE, g, T) {
+    var WB = { x0: WX0, x1: WX1, s0: 0, s1: WS1 };
+    var st = wingStations();
+    g.add(new THREE.Mesh(surf(THREE, st, { box: WB }), T.wing));
+    g.add(new THREE.Mesh(surf(THREE, st, { box: WB, mirror: true }), T.wing));
+    for (var s = -1; s <= 1; s += 2) {
+      /* the main-wheel blister on the upper wing root (P) */
+      /* the wing is 0.28 m thick here, so the blister rides on its top */
+      var by = 0.80, bz = wz(by) + 0.13;
+      g.add(new THREE.Mesh(loftR(THREE, [
+        { x: 0.25, yc: s * by, w: 0.03, h: 0.02, zc: bz },
+        { x: -0.05, yc: s * by, w: 0.15, h: 0.07, zc: bz, sq: 0.9 },
+        { x: -0.60, yc: s * by, w: 0.19, h: 0.09, zc: bz, sq: 0.9 },
+        { x: -1.20, yc: s * by, w: 0.16, h: 0.07, zc: bz, sq: 0.9 },
+        { x: -1.55, yc: s * by, w: 0.03, h: 0.02, zc: bz },
+      ], 14), T.wing));
+      /* two low fences per wing at 1.97 and 2.94 m (D head-on) */
+      /* each plate rises from the chord plane to 7 cm over the skin */
+      var fy = [1.97, 2.94];
+      for (var f = 0; f < 2; f++) {
+        var y = fy[f], x0 = leAt(y), c = x0 - TE, L = c * 0.62;
+        var fh = c * (0.050 - 0.008 * y / SEMI) * 0.5 + 0.07;
+        var fe = add(g, new THREE.BoxGeometry(L, 0.022, fh), T.wing,
+          x0 - L * 0.5 - 0.02, s * y, wz(y) + fh * 0.5);
+        fe.rotation.x = s * 2 * D2R;
       }
     }
+  }
 
-    /* ---- undercarriage --------------------------------------------------
-       Named "gear" so render3d can stow it in cruise and drop it on the
-       apron. Nose leg retracts forward under the duct; the mains fold into
-       the wing root, which is why the blisters above them exist. */
-    var gear = new THREE.Group();
-    gear.name = "gear";
-    g.add(gear);
-
-    /* nose leg */
-    var nl = cyl(THREE, 0.052, 0.060, 0.92, 8, false, steel);
-    nl.rotation.x = Math.PI / 2;
-    nl.position.set(2.90, 0, -1.01);
-    gear.add(nl);
-    gear.add(box(THREE, 0.13, 0.30, 0.26, 2.90, 0, -1.40, steel));
-    var nw = cyl(THREE, 0.245, 0.245, 0.155, 16, false, rubber);
-    nw.position.set(2.90, 0, -1.47);
-    gear.add(nw);
-    var nhub = cyl(THREE, 0.085, 0.085, 0.165, 10, false, steel);
-    nhub.position.set(2.90, 0, -1.47);
-    gear.add(nhub);
-    /* the mudguard over the nosewheel, which every Fishbed carries */
-    gear.add(box(THREE, 0.52, 0.22, 0.035, 2.98, 0, -1.24, steel));
-    var nbrace = cyl(THREE, 0.030, 0.030, 0.62, 6, false, steel);
-    nbrace.rotation.x = Math.PI / 2; nbrace.rotation.y = 0.55;
-    nbrace.position.set(3.16, 0, -0.86);
-    gear.add(nbrace);
-    for (var ns = -1; ns <= 1; ns += 2) {
-      var nd = box(THREE, 1.15, 0.035, 0.30, 2.86, ns * 0.20, -0.62, panelB);
-      nd.rotation.x = ns * 0.38;
-      gear.add(nd);
+  /* ---------------------------------------------- fin, stabs, ventral ---- */
+  function addTail(THREE, g, T) {
+    g.add(new THREE.Mesh(surf(THREE, finStations(),
+      { vert: true, box: { x0: FX0, x1: FX1, s0: FZ0, s1: FZ1 } }), T.fin));
+    var VB = { x0: WX0, x1: WX1, s0: 0, s1: WS1 };
+    g.add(new THREE.Mesh(surf(THREE, VENT, { vert: true, box: VB }), T.wing));
+    var sb = { x0: -7.6, x1: -4.2, s0: 0, s1: 3.6 };
+    var st = stabStations();
+    g.add(new THREE.Mesh(surf(THREE, st, { box: sb }), T.wing));
+    g.add(new THREE.Mesh(surf(THREE, st, { box: sb, mirror: true }), T.wing));
+    for (var s = -1; s <= 1; s += 2) {
+      /* anti-flutter rods ahead of the stabilator tips (D plan, head-on) */
+      g.add(new THREE.Mesh(loftR(THREE, [
+        { x: -5.98, yc: s * 1.82, w: 0.004, h: 0.004, zc: STAB_Z },
+        { x: -6.12, yc: s * 1.82, w: 0.032, h: 0.032, zc: STAB_Z },
+        { x: -6.80, yc: s * 1.82, w: 0.032, h: 0.032, zc: STAB_Z },
+        { x: -6.84, yc: s * 1.82, w: 0.010, h: 0.010, zc: STAB_Z },
+      ], 8), T.metal));
+      /* the stabilator pivot fairing on the tail section */
+      g.add(new THREE.Mesh(loftR(THREE, [
+        { x: -4.30, yc: s * 0.50, w: 0.02, h: 0.02, zc: STAB_Z },
+        { x: -4.70, yc: s * 0.52, w: 0.07, h: 0.08, zc: STAB_Z, sq: 0.9 },
+        { x: -5.60, yc: s * 0.50, w: 0.07, h: 0.08, zc: STAB_Z, sq: 0.9 },
+        { x: -6.00, yc: s * 0.47, w: 0.02, h: 0.02, zc: STAB_Z },
+      ], 10), T.body));
     }
+    /* fin-tip fairing and the rudder's lower hinge fairing */
+    g.add(new THREE.Mesh(loftR(THREE, [
+      { x: -5.85, w: 0.010, h: 0.010, zc: 2.47 },
+      { x: -6.05, w: 0.040, h: 0.030, zc: 2.47 },
+      { x: -7.30, w: 0.040, h: 0.030, zc: 2.47 },
+      { x: -7.88, w: 0.008, h: 0.008, zc: 2.47 },
+    ], 10), T.fin));
+  }
 
-    /* main legs: straight struts leaning out to a 2.69 m track */
-    var MY = 1.345, MZ = -1.30, MX = -1.35;
-    var dy = MY - 0.60, dz = MZ - (-0.34);
-    var legL = Math.sqrt(dy * dy + dz * dz);
-    for (var ms = -1; ms <= 1; ms += 2) {
-      /* the cylinder's own axis is +Y; rotating it about X by ang sends that
-         axis to (0, cos ang, sin ang), so ang aims the leg down and out */
-      var ang = Math.atan2(dz, ms * dy);
-      var lg = cyl(THREE, 0.058, 0.068, legL, 8, false, steel);
-      lg.rotation.x = ang;
-      lg.position.set(MX + 0.10, ms * (0.60 + dy * 0.5), -0.34 + dz * 0.5);
-      gear.add(lg);
-
-      var mw = cyl(THREE, 0.395, 0.395, 0.20, 18, false, rubber);
-      mw.position.set(MX, ms * MY, MZ);
-      gear.add(mw);
-      var hub = cyl(THREE, 0.145, 0.145, 0.215, 10, false, steel);
-      hub.position.set(MX, ms * MY, MZ);
-      gear.add(hub);
-
-      /* drag brace and the two doors: one on the fuselage, one on the wing */
-      var br = cyl(THREE, 0.032, 0.032, 0.86, 6, false, steel);
-      br.rotation.x = ang; br.rotation.z = 0.42;
-      br.position.set(MX + 0.62, ms * 0.92, -0.74);
-      gear.add(br);
-      var d1 = box(THREE, 1.30, 0.035, 0.44, MX + 0.10, ms * 0.60, -0.52, panelB);
-      d1.rotation.x = ms * 0.30;
-      gear.add(d1);
-      var d2 = box(THREE, 1.05, 0.42, 0.035, MX - 0.05, ms * 1.20, WZ - 0.16, panelB);
-      gear.add(d2);
+  /* ----------------------------------------------- probes, gun, antennas -- */
+  function addKit(THREE, g, T) {
+    /* PVD-7 pitot boom: 0.22 m to starboard over the nose, its root
+       fairing on the nose top, the yaw and pitch vanes at x 7.08 (D) */
+    var PY = -0.22, PZ = 0.57;
+    g.add(new THREE.Mesh(loftR(THREE, [
+      { x: 5.75, yc: PY, w: 0.035, h: 0.035, zc: PZ },
+      { x: 5.40, yc: PY, w: 0.075, h: 0.075, zc: PZ - 0.01, sq: 0.9 },
+      { x: 4.95, yc: PY, w: 0.075, h: 0.060, zc: PZ - 0.04, sq: 0.9 },
+      { x: 4.60, yc: PY, w: 0.030, h: 0.020, zc: PZ - 0.07 },
+    ], 10), T.body));
+    var boom = add(g, new THREE.CylinderGeometry(0.018, 0.034, 1.99, 8), T.metal, 6.695, PY, PZ);
+    boom.rotation.z = -HALF_PI;
+    var tip = add(g, new THREE.CylinderGeometry(0.004, 0.016, 0.22, 6), T.metal, 7.80, PY, PZ);
+    tip.rotation.z = -HALF_PI;
+    add(g, new THREE.BoxGeometry(0.10, 0.012, 0.20), T.metal, 7.08, PY, PZ);
+    add(g, new THREE.BoxGeometry(0.10, 0.20, 0.012), T.metal, 7.00, PY, PZ);
+    /* GSh-23L ventral pack: a flat gondola under the belly between the
+       nose bay and the forward airbrakes, the twin muzzles at its front */
+    g.add(new THREE.Mesh(loftR(THREE, [
+      { x: 2.20, w: 0.08, h: 0.04, zc: -0.50 },
+      { x: 1.95, w: 0.17, h: 0.09, zc: -0.53, sq: 0.8 },
+      { x: 1.10, w: 0.18, h: 0.10, zc: -0.54, sq: 0.8 },
+      { x: 0.55, w: 0.12, h: 0.06, zc: -0.52, sq: 0.8 },
+      { x: 0.30, w: 0.03, h: 0.02, zc: -0.50 },
+    ], 14), T.body));
+    for (var b = -1; b <= 1; b += 2) {
+      var br = add(g, new THREE.CylinderGeometry(0.022, 0.026, 0.26, 8), T.ink, 2.18, b * 0.05, -0.56);
+      br.rotation.z = HALF_PI;
     }
-
-    /* ---- probes, antennas, lights --------------------------------------- */
-    /* The pitot boom: long, offset to starboard, standing over the intake lip
-       and reaching a good metre past the tip of the cone. On the real machine
-       it carries the static ports and the yaw and pitch vanes. */
-    var bx0 = 5.30, bx1 = 8.25;
-    var boomY = -0.300, boomZ = 0.408;
-    var boom = cyl(THREE, 0.022, 0.052, bx1 - bx0, 8, false, steel);
-    boom.rotation.z = -Math.PI / 2;
-    boom.position.set((bx0 + bx1) * 0.5, boomY, boomZ);
-    g.add(boom);
-    var bfair = body(THREE, M, [
-      sec(4.86, 0.052, 0.048, boomZ - 0.115, 0.7),
-      sec(5.20, 0.092, 0.086, boomZ - 0.055, 0.7),
-      sec(5.55, 0.098, 0.092, boomZ - 0.020, 0.7),
-      sec(5.95, 0.066, 0.060, boomZ, 0.7),
-    ], 12, skin);
-    bfair.position.y = boomY;
-    g.add(bfair);
-    /* the two vanes near the tip, one in each plane */
-    g.add(box(THREE, 0.10, 0.020, 0.20, 7.70, boomY, boomZ + 0.11, steel));
-    g.add(box(THREE, 0.10, 0.20, 0.020, 7.50, boomY + 0.11, boomZ, steel));
-    var ntip = cyl(THREE, 0.008, 0.022, 0.26, 6, false, steel);
-    ntip.rotation.z = -Math.PI / 2;
-    ntip.position.set(bx1 + 0.11, boomY, boomZ);
-    g.add(ntip);
-
-    /* blade antennas above the spine and under the belly, and the little
-       triangular IFF fin under the nose */
-    g.add(box(THREE, 0.28, 0.035, 0.20, -1.10, 0, 0.905, dark));
-    g.add(box(THREE, 0.24, 0.035, 0.18, -0.20, 0, -0.700, dark));
-    g.add(finPlate(THREE, M, [
-      [4.35, -0.520], [4.05, -0.760], [3.55, -0.755], [3.60, -0.548],
-    ], 0.05, dark));
-
-    /* engine bay cooling scoops on the rear fuselage flanks */
-    for (var ss = -1; ss <= 1; ss += 2) {
-      var sc = box(THREE, 0.46, 0.10, 0.20, -5.35, ss * 0.50, 0.14, skin);
-      sc.rotation.x = ss * 0.25;
-      g.add(sc);
+    /* blade antenna on the spine (D side x 0.72) and one under the belly */
+    var ba = add(g, new THREE.BoxGeometry(0.30, 0.02, 0.12), T.metal, 0.72, 0, 1.21);
+    ba.rotation.y = -0.20;
+    add(g, new THREE.BoxGeometry(0.26, 0.02, 0.12), T.metal, -0.60, 0, -0.57);
+    /* rear-fuselage cooling scoops either side of the tail section */
+    for (var s = -1; s <= 1; s += 2) {
+      var sc = add(g, new THREE.BoxGeometry(0.42, 0.06, 0.10), T.body, -4.70, s * 0.535, 0.24);
+      sc.rotation.x = s * 0.40;
     }
+  }
 
-    /* navigation lights on the clipped tips: port red, starboard green */
-    var portLamp = metalMat(THREE, 0xc4362a, 0.45, 0.35);
-    var stbdLamp = metalMat(THREE, 0x2fa851, 0.45, 0.35);
-    for (var ls = -1; ls <= 1; ls += 2) {
-      var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.058, 8, 6),
-                                ls > 0 ? portLamp : stbdLamp);
-      lamp.position.set(ROOT_TE + 0.28, ls * (SEMI - 0.03), WZ - 0.02);
-      g.add(lamp);
+  /* ------------------------------------------------------------- stores --
+     Four pylons at 2.02 and 2.63 m (D head-on), their noses standing ahead
+     of the leading edge (D plan: x -0.21 and -1.15). R-3S inboard (2.84 m,
+     127 mm body, 0.53 m fins), R-60 outboard (2.09 m, 120 mm, 0.39 m). */
+  function missile(THREE, g, T, cx, y, z, len, rad, span, canard) {
+    var grp = new THREE.Group();
+    grp.add(new THREE.Mesh(loftR(THREE, [
+      { x: len * 0.50, w: rad * 0.10, h: rad * 0.10 },
+      { x: len * 0.46, w: rad * 0.70, h: rad * 0.70 },
+      { x: len * 0.40, w: rad, h: rad },
+      { x: -len * 0.48, w: rad, h: rad },
+      { x: -len * 0.50, w: rad * 0.80, h: rad * 0.80 },
+    ], 10), T.body));
+    var fs = span * 0.5 - rad;
+    for (var k = 0; k < 4; k++) {
+      var pv = new THREE.Group();
+      var f = new THREE.Mesh(new THREE.BoxGeometry(len * 0.13, fs, 0.012), T.metal);
+      f.position.set(-len * 0.42, rad + fs * 0.5, 0);
+      pv.add(f);
+      var c = new THREE.Mesh(new THREE.BoxGeometry(len * 0.06, canard, 0.012), T.metal);
+      c.position.set(len * 0.33, rad + canard * 0.5, 0);
+      pv.add(c);
+      pv.rotation.x = k * HALF_PI + PI / 4;
+      grp.add(pv);
     }
-
-    /* ---- team colour ----------------------------------------------------
-       Three flashes, so ownership reads from any angle on a busy map: a band
-       round the nose behind the intake lip, a stripe on each wing, and a
-       flash on both faces of the fin. */
-    var nband = cyl(THREE, 0.578, 0.584, 0.36, 26, true, team);
-    nband.rotation.z = -Math.PI / 2;
-    nband.position.set(5.02, 0, -0.050);
-    g.add(nband);
-
-    /* Wing flashes. The first attempt straddled the wing section with a thin
-       box and vanished: it stood 12 mm proud, which at the scale this thing
-       is drawn is a third of a pixel. What reads on a busy map is AREA, so
-       these are proper panels laid on the skin.
-
-       The z figures below are not guesses. M.slab clamps its bevel to 5% of
-       the outline's smaller dimension, so an extrusion is thicker than the
-       thickness you asked for: the wing is nominally 0.13 but its flat upper
-       plateau actually sits 0.117 above the section centre, and the flash's
-       own plateaus sit at -0.020 and +0.070 in its local frame. Sitting one
-       on the other means working from those numbers, not from WT. Both
-       panels get the wing's own anhedral so they stay flush out to the tip.
-
-       Kept outboard of the boundary-layer fence at y = 1.95 so the fence does
-       not stab through the flash. */
-    var flash = [
-      [-2.90, 2.15], [-4.30, 3.15], [-4.66, 3.15], [-4.66, 2.15],
+    grp.position.set(cx, y, z);
+    g.add(grp);
+  }
+  function addStores(THREE, g, T) {
+    var racks = [
+      { y: 2.02, x0: -0.15, len: 1.45, m: [2.84, 0.0635, 0.53, 0.12] },
+      { y: 2.63, x0: -1.10, len: 1.20, m: [2.09, 0.060, 0.39, 0.08] },
     ];
-    for (var wsn = -1; wsn <= 1; wsn += 2) {
-      var qf = [], qi;
-      for (qi = 0; qi < flash.length; qi++) {
-        qf.push([flash[qi][0], flash[qi][1] * wsn]);
+    for (var s = -1; s <= 1; s += 2)
+      for (var i = 0; i < racks.length; i++) {
+        var r = racks[i], y = s * r.y, zb = wz(r.y) - 0.045;
+        g.add(new THREE.Mesh(loftR(THREE, [
+          { x: r.x0, yc: y, w: 0.02, h: 0.05, zc: zb - 0.07 },
+          { x: r.x0 - 0.20, yc: y, w: 0.06, h: 0.10, zc: zb - 0.09, sq: 0.7 },
+          { x: r.x0 - r.len + 0.15, yc: y, w: 0.06, h: 0.10, zc: zb - 0.09, sq: 0.7 },
+          { x: r.x0 - r.len, yc: y, w: 0.02, h: 0.04, zc: zb - 0.05 },
+        ], 10), T.body));
+        /* the launch rail under it */
+        add(g, new THREE.BoxGeometry(r.len * 0.85, 0.05, 0.05), T.metal,
+          r.x0 - r.len * 0.5, y, zb - 0.215);
+        missile(THREE, g, T, r.x0 - r.len * 0.5 + 0.05, y, zb - 0.24 - r.m[1],
+          r.m[0], r.m[1], r.m[2], r.m[3]);
       }
-      var up = new THREE.Mesh(M.slab(THREE, qf, 0.05), team);
-      up.position.z = 0.010;            /* plateau 63 mm above the wing */
-      up.rotation.x = wsn * -2 * D2R;
-      g.add(up);
-      var dn = new THREE.Mesh(M.slab(THREE, qf, 0.05), team);
-      dn.position.z = -0.257;           /* and the same underneath */
-      dn.rotation.x = wsn * -2 * D2R;
-      g.add(dn);
-    }
+  }
 
-    /* Fin flash, one on each face. Same arithmetic: the fin plate asks for
-       0.195 of thickness and its faces end up at +/- 0.1755. */
-    var finFlash = [
-      [-5.35, 1.42], [-6.05, 2.22], [-7.16, 2.22], [-7.16, 1.42],
-    ];
-    for (var fsn = -1; fsn <= 1; fsn += 2) {
-      var ff = new THREE.Mesh(M.slab(THREE, finFlash, 0.055, "xz"), team);
-      ff.position.y = fsn > 0 ? 0.2225 : -0.1675;
-      g.add(ff);
+  /* --------------------------------------------------------------- gear --
+     Nose wheel x 3.36, r 0.25; mains x -1.25, r 0.40, track 2.81 m, the
+     legs outboard of the wheels at 1.58 m with the big leg door outboard
+     of them (D side and head-on). All three tyres touch z -1.46. */
+  function addGear(THREE, g, T) {
+    var gr = new THREE.Group();
+    gr.name = "gear";
+    g.add(gr);
+    var NX = 3.36, nr = 0.25, nz = GROUND + nr;
+    rod(gr, T.metal, 0.050, [3.46, 0, -0.47], [NX + 0.04, 0, nz + 0.12], 8);
+    rod(gr, T.metal, 0.030, [3.80, 0, -0.50], [NX + 0.08, 0, nz + 0.36], 6);
+    for (var f = -1; f <= 1; f += 2)
+      add(gr, new THREE.BoxGeometry(0.10, 0.03, 0.34), T.metal, NX + 0.03, f * 0.11, nz + 0.12);
+    add(gr, new THREE.CylinderGeometry(nr, nr, 0.17, 16), T.ink, NX, 0, nz);
+    add(gr, new THREE.CylinderGeometry(0.11, 0.11, 0.18, 10), T.metal, NX, 0, nz);
+    /* the nose-bay doors open either side (D side x 4.5-3.55, head-on) */
+    for (var d = -1; d <= 1; d += 2) {
+      var nd = add(gr, new THREE.BoxGeometry(0.95, 0.03, 0.30), T.body, 4.02, d * 0.22, -0.62);
+      nd.rotation.x = d * 0.45;
     }
+    var MX = -1.25, mr = 0.40, mz = GROUND + mr, MY = 1.405, LY = 1.58;
+    for (var s = -1; s <= 1; s += 2) {
+      rod(gr, T.metal, 0.065, [MX + 0.10, s * LY, wz(LY) - 0.04], [MX, s * LY, mz + 0.05], 8);
+      rod(gr, T.metal, 0.035, [MX + 0.75, s * 1.05, wz(1.05) - 0.06], [MX + 0.05, s * LY, mz + 0.45], 6);
+      rod(gr, T.metal, 0.045, [MX, s * LY, mz], [MX, s * (MY - 0.05), mz], 6);
+      add(gr, new THREE.CylinderGeometry(mr, mr, 0.20, 18), T.ink, MX, s * MY, mz);
+      add(gr, new THREE.CylinderGeometry(0.17, 0.17, 0.21, 12), T.metal, MX, s * MY, mz);
+      /* the leg door, outboard of the leg (D side: x -0.03..-0.94, z -0.09
+         ..-0.94) */
+      add(gr, new THREE.BoxGeometry(0.92, 0.03, 0.80), T.body, -0.50, s * (LY + 0.08), -0.52);
+      /* the fuselage-side bay door hanging below the wing root */
+      var bd = add(gr, new THREE.BoxGeometry(1.10, 0.03, 0.40), T.body, -0.70, s * 0.66, -0.36);
+      bd.rotation.x = s * 0.30;
+    }
+  }
 
-    return g;
+  /* --------------------------------------------------------- team flash --
+     Modest and exactly C.team: a chordwise band on each upper wing outboard
+     of the fences, and a short stripe across the spine for the top view. */
+  function addTeam(THREE, g, T) {
+    /* the bands wrap the aerofoil, 2 cm proud of it everywhere so the depth
+       buffer never has to choose between band and wing */
+    var WB = { x0: WX0, x1: WX1, s0: 0, s1: WS1 }, band = [];
+    [2.98, 3.40].forEach(function (y) {
+      var c = leAt(y) - TE, t = c * (0.050 - 0.008 * y / SEMI);
+      band.push({ s: y, le: leAt(y) + 0.030, te: TE - 0.022, t: t, pad: 0.018, h: wz(y) });
+    });
+    g.add(new THREE.Mesh(surf(THREE, band, { box: WB }), T.team));
+    g.add(new THREE.Mesh(surf(THREE, band, { box: WB, mirror: true }), T.team));
+    /* and a band round the spine, its sections the spine's own grown 2.5 cm */
+    var sb = [];
+    [-1.35, -1.75].forEach(function (x) {
+      var q = null;
+      for (var i = 1; i < SPINE.length; i++) {
+        var a = SPINE[i - 1], b = SPINE[i];
+        if (x <= a.x && x >= b.x) {
+          var k = (a.x - x) / (a.x - b.x);
+          q = { x: x, w: a.w + (b.w - a.w) * k + 0.025, h: a.h + (b.h - a.h) * k + 0.025,
+                zc: a.zc + (b.zc - a.zc) * k, sq: a.sq + (b.sq - a.sq) * k };
+        }
+      }
+      sb.push(q);
+    });
+    g.add(new THREE.Mesh(loftR(THREE, sb, 28), T.team));
+  }
+
+  /* --------------------------------------------------------------- merge -- */
+  function mergeByMaterial(THREE, root) {
+    var main = { order: [], by: {} }, gear = { order: [], by: {} };
+    (function walk(node, pm, inGear) {
+      for (var i = 0; i < node.children.length; i++) {
+        var c = node.children[i];
+        c.updateMatrix();
+        var m = pm.clone().multiply(c.matrix);
+        var ing = inGear || c.name === "gear";
+        if (c.isMesh) {
+          var b = ing ? gear : main, key = c.material.uuid;
+          if (!b.by[key]) { b.by[key] = { mat: c.material, parts: [] }; b.order.push(key); }
+          var geo = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+          geo.applyMatrix4(m);
+          b.by[key].parts.push(geo);
+        } else walk(c, m, ing);
+      }
+    })(root, new THREE.Matrix4(), false);
+    function emit(bucket, into) {
+      for (var i = 0; i < bucket.order.length; i++) {
+        var e = bucket.by[bucket.order[i]], n = 0, k, o = 0;
+        for (k = 0; k < e.parts.length; k++) n += e.parts[k].attributes.position.count;
+        var P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2);
+        for (k = 0; k < e.parts.length; k++) {
+          var a = e.parts[k].attributes;
+          P.set(a.position.array, o * 3);
+          N.set(a.normal.array, o * 3);
+          if (a.uv) U.set(a.uv.array, o * 2);
+          o += a.position.count;
+        }
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
+        geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
+        geo.setAttribute("uv", new THREE.BufferAttribute(U, 2));
+        into.add(new THREE.Mesh(geo, e.mat));
+      }
+    }
+    var out = new THREE.Group();
+    emit(main, out);
+    var gr = new THREE.Group();
+    gr.name = "gear";
+    emit(gear, gr);
+    out.add(gr);
+    return out;
   }
 
   return { build: build };
 })();
 
-/* A hero model replaces whatever parametric stand-in exists for this id. */
+/* len: the measured X extent, pitot tip (7.91) to fin tip (-7.90) */
 UNIT_MODELS["pact_e60_fighter"] = {
-  len: 14.7,
+  len: 15.8,
   build: function (THREE, M, C) { return HeroMiG21.build(THREE, M, C); },
 };
