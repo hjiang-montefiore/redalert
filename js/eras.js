@@ -14443,8 +14443,9 @@ if (typeof reindexRoles === "function") reindexRoles();
    prices and unitFor answers are unchanged, and the British Army's Lynx
    AH7, which no source puts on Ocean, is left as it was.
 
-   3D: no hero model. js/rotor_specs.js draws the Sea King HC4 and the Ka-29
-   on the parametric rotorcraft builder at their real size.
+   3D: the Sea King HC4 has no hero model; js/rotor_specs.js draws it on the
+   parametric rotorcraft builder at its real size. The Ka-29 has its own
+   hero in js/hero/pact_ka27_helix.js (2026-10-24), beside the Ka-27.
    ================================================================== */
 Object.assign(UNITS, {
   gbr_e80_seaking4: { fac:"gbr", role:"assaulthelo", cat:"aircraft", layer:"air", name:"Sea King HC4", full:"Westland Sea King HC4 (Commando), Royal Navy",
