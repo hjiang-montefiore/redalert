@@ -34,9 +34,13 @@
        G "Russian Air Force, RF-95475, Sukhoi Su-35S (37372972745).jpg" -
        side-on in flight: the profile, the canopy, the sting, the pods.
      F "Su-35S - MAKS-2013Firstpixflights06.jpg" - taxiing, three-quarter
-       front: the nose leg under the cockpit, the main legs outboard of the
-       intakes, the canopy and IRST ball (its dark prototype paint is NOT
-       used).
+       front: the main legs outboard of the intakes, the canopy and IRST
+       ball (its dark prototype paint is NOT used; its strong perspective
+       is not used for gear stations).
+     I "Sukhoi Su-35S ‘RF-95242 - 03 red’ (37309806592).jpg" - rolling
+       out under its drag chute, seen
+       side-on from the port side about 20 deg aft of the beam: the gear
+       stations.
      H "Sukhoi Su-35S 07 RED PAS 2013 07.jpg" - the AL-41F1S nozzle close-
        up: a long bare-metal petal section with a pale lining inside, the
        stabilator root above it.
@@ -74,16 +78,22 @@
    Markings: the Russian red star with a white edge on the outer face of
    each fin, on each upper wing near the trailing edge and under each wing
    (B, C). No bort numbers, no flag, no lettering, no serial.
-   Gear (F, A): it RETRACTS, so the group is named "gear". Twin-wheel nose
-   leg under the cockpit, single-wheel main legs outboard of the nacelles.
-   Wheelbase 5.9 m and track 4.3 m (the Flanker figures; F agrees within
-   its perspective); the nose leg station (s 6.0) is read off F, estimated.
+   Gear (I, D): it RETRACTS, so the group is named "gear". Twin-wheel nose
+   leg between the intake mouths, behind the cockpit; single-wheel main
+   legs outboard of the nacelles. Stations read off I, side-on: along the
+   centreline (25.5 px/m nose tip to sting end) the nose wheels stand at
+   s 8.0 and the mains (mean of the near and far wheel) at s 13.8, a
+   5.81 m wheelbase against the published Flanker 5.88 m; the mains stand
+   1.2 m ahead of the fin-root leading edge (s 15.2 here). Drawn at s 8.12
+   and s 14.0: the published 5.88 m wheelbase, 4.34 m track.
+   (The 2026-10-24 first issue had them at s 6.0 and 11.9, read off the
+   three-quarter photograph F; that was 2 m too far forward.)
    Stores: the row names R-77-1 and R-73 (generations.js): two of each on
    wing pylons, as the old file had them; the Su-35S has twelve stations.
    Corrected from the old file: it drew a 1.2 m nose probe (the Su-35S has
    none, B, E, G); its main gear stood ahead of the wing root (A puts the
-   wing root at s 10.6; F shows the main legs behind the intake mouths);
-   its trailing edge sat 1.5 m too far forward (A).
+   wing root at s 10.6; I puts the main wheels at s 13.8-14.0); its
+   trailing edge sat 1.5 m too far forward (A).
    Team colour exactly C.team: one modest strip on each upper outer wing.
    ======================================================================== */
 
@@ -721,29 +731,29 @@ var HeroSu35 = (function () {
     mesh(g, K.team, T.team, "team");
     mesh(g, K.pale, T.pale, "stores");
 
-    /* ---- landing gear (A, D, F): it retracts, so the group is "gear";
-       the tyres are the lowest opaque part */
+    /* ---- landing gear (I, D): it retracts, so the group is "gear";
+       the tyres are the lowest opaque part. Nose leg s 8.12, mains s 14.0 */
     var gr = new V.Group();
     gr.name = "gear";
     g.add(gr);
-    var nxs = X(6.0), nr = 0.34, nz = GROUND + nr;
-    G.metal.push(bar([nxs + 0.08, 0, 0.20], [nxs, 0, nz + 0.10], 0.065, 10));
+    var nxs = X(8.12), nr = 0.34, nz = GROUND + nr;
+    G.metal.push(bar([nxs + 0.08, 0, 0.45], [nxs, 0, nz + 0.10], 0.065, 10));
     G.metal.push(bar([nxs, -0.20, nz], [nxs, 0.20, nz], 0.04, 6));
     for (s = -1; s <= 1; s += 2) {
       G.tyre.push(cyl(nr, nr, 0.24, 24, "y", nxs, s * 0.21, nz));
       G.metal.push(cyl(nr * 0.55, nr * 0.55, 0.25, 12, "y", nxs, s * 0.21, nz));
     }
     G.dark.push(box(0.78, 0.62, 0.03, nxs + 0.04, 0, nz + nr + 0.06));                  /* mudguard */
-    G.metal.push(bar([nxs - 1.0, 0, 0.20], [nxs + 0.02, 0, -0.55], 0.035, 6));           /* drag brace */
-    G.dark.push(box(1.6, 0.03, 0.40, nxs - 0.6, 0.28, 0.00));                            /* bay doors */
-    G.dark.push(box(1.6, 0.03, 0.40, nxs - 0.6, -0.28, 0.00));
-    var mxs = X(11.9), mr = 0.515, mz = GROUND + mr, my = 2.17;
+    G.metal.push(bar([nxs - 1.0, 0, 0.50], [nxs + 0.02, 0, -0.55], 0.035, 6));           /* drag brace */
+    G.dark.push(box(1.6, 0.03, 0.40, nxs - 0.6, 0.28, 0.20));                            /* bay doors */
+    G.dark.push(box(1.6, 0.03, 0.40, nxs - 0.6, -0.28, 0.20));
+    var mxs = X(14.0), mr = 0.515, mz = GROUND + mr, my = 2.17;
     for (s = -1; s <= 1; s += 2) {
-      G.metal.push(bar([mxs + 0.15, s * 1.62, 0.40], [mxs, s * (my - 0.22), mz + 0.12], 0.085, 10));
+      G.metal.push(bar([mxs + 0.15, s * 1.70, 0.82], [mxs, s * (my - 0.22), mz + 0.12], 0.085, 10));
       G.metal.push(cyl(0.06, 0.06, 0.30, 8, "y", mxs, s * (my - 0.10), mz));
       G.tyre.push(cyl(mr, mr, 0.35, 28, "y", mxs, s * my, mz));
       G.metal.push(cyl(mr * 0.55, mr * 0.55, 0.36, 14, "y", mxs, s * my, mz));
-      G.metal.push(bar([mxs - 0.9, s * 1.62, 0.45], [mxs - 0.02, s * (my - 0.22), mz + 0.45], 0.04, 6));
+      G.metal.push(bar([mxs - 0.9, s * 1.70, 0.80], [mxs - 0.02, s * (my - 0.22), mz + 0.45], 0.04, 6));
       G.dark.push(box(1.3, 0.03, 0.55, mxs + 0.25, s * 1.60, 0.02));                     /* leg door */
     }
     mesh(gr, G.metal, T.metal, "gear_metal");
