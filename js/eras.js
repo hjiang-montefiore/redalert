@@ -14698,7 +14698,6 @@ Object.assign(UNITS, {
     full:"3K60 Bal (SSC-6 Sennight), launcher on the MZKT-7930",
     cost:3200, oil:58, time:38, hp:580, armor:"light", speed:1.30, turn:1.0, sight:5.0, r:17, mass:42,
     weapons:["ssm_kh35_bal"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:8,
-    modelAs:"pact_e00_tel",
     from:"e00", service:"2008", confidence:"high",
     desc:"Eight subsonic Kh-35s in box canisters on an MZKT-7930, fired three seconds apart: a salvo that saturates a ship's close-in defence. Sited up to ten kilometres inland, behind the coast it covers." },
   /* K-300P Bastion-P (SSC-5 Stooge), ru and en.wikipedia "Bastion-P": two
@@ -14710,7 +14709,6 @@ Object.assign(UNITS, {
     full:"K-300P Bastion-P (SSC-5 Stooge), K340P launcher",
     cost:3200, oil:58, time:38, hp:580, armor:"light", speed:1.30, turn:1.0, sight:5.0, r:17, mass:42,
     weapons:["ssm_oniks_bastion"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
-    modelAs:"pact_e00_tel",
     from:"e00", service:"2011", confidence:"high",
     desc:"Two supersonic Oniks missiles in vertical tubes on an MZKT-7930, and five minutes from the march to the launch. The coastal brigades of all four Russian fleets and Crimea have it." },
 });
