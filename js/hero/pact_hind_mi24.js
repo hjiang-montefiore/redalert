@@ -1,4 +1,37 @@
 /* ======= pact_hind_mi24.js - HERO model: Mil Mi-24D (Hind-D) and Mi-24V (Hind-E) =======
+   REDO 2026-10-24 (owner: "the russia aircrafts are still using a lot of
+   inaccurate 3d models"). Laid over the Commons side drawing ("Mil Mi-24
+   1-view line drawing.svg", the side view of the US Army three-view) and
+   over a Soviet Mi-24D "05" in flight ("Mi-24D Hind D.jpg", all but square
+   to its port side), the first cut had its tail 0.9 m too low: the fin
+   boom, fin and tail rotor sat under the drawing's and the photograph's
+   by the same amount, and the boom's underside drooped to 1.4 m where
+   the drawing has 1.95. Corrected here, from the drawing (scaled on the
+   17.51 m fuselage): the boom's top runs level at 3.0-2.9 m from the cowl
+   to the fin and its underside rises from 1.74 m at x -4.45 to 2.42 m at
+   the fin; the fin's leading edge rises from (x -8.84, 2.88 m) to
+   (-10.93, 4.78 m), 42.3 deg, which is ru.wikipedia's 42 deg 30 for the
+   fin boom's inclined part; its tip at 4.68-4.78 m; the tail rotor hub
+   4.40 m up (the drawing 4.36; en.wikipedia's 6.5 m height less the
+   1.954 m blade gives 4.55), so the first cut's 3.52 m hub and its
+   "5.47 m overall height" are withdrawn; the stabiliser on the boom end at 2.62 m (the drawing's
+   section, x -8.53 to -9.30); the tail bumper 0.7 m long, its heel 1.68 m
+   up. The two engines are drawn as two round nacelles side by side, each
+   behind its own intake, with the gearbox fairing between and behind them
+   (the Polish D "Mi-24D Polish Army (23819169433).jpg" and the Monino D
+   "Mil Mi-24D (60 white) (24106306497).jpg" from the port bow), where the
+   first cut had one wide cowl. Frames run along both canopies (the same
+   photographs). The camouflage covered nearly 80 % instead of its share
+   (see skinCanvas). Everything else below stands as the first cut
+   sourced it, and was checked against the same overlays (the plan view
+   against the three-view's, its spans taken 1.25 too wide as noted
+   below). Not followed: the three-view's plan puts the tail rotor to
+   starboard, but the Polish D, the Monino D "60 white" and the Czech V
+   7353 all show it to port, as the D and V had it; and the second
+   aerofoil section the side drawing shows just aft of the fin root,
+   which no photograph explains, is not drawn. The e60 row names the
+   Mi-24D (eras.js: "Mil Mi-24D Hind-D", 1976), so it is drawn as the D,
+   not the glasshouse Mi-24A.
    Six gunship keys that rotor_specs.js drew with one parametric row of
    2,432 triangles and 52 draw calls: a tube with generic canopies, no
    undercarriage, and the same machine for the D and the V.
@@ -74,10 +107,10 @@
    nose wheels 2.71, the main wheels 7.10, the tail rotor hub 16.57 and
    the fin's top trailing corner 17.51, the fuselage length. Heights
    are from the same fit, the head-on photograph and the 4.73 m column:
-   blade plane 4.25 m, cowl 3.66 m, cabin roof 2.62 m, belly 0.77 m; the
-   tail rotor hub 3.52 m, which with its 1.954 m blades gives the
-   published 5.47 m overall height with the rotors turning. The model was laid over the "70 red"
-   photograph through the fit to check every outline.
+   blade plane 4.25 m, cowl 3.66 m, cabin roof 2.62 m, belly 0.77 m (the
+   side drawing agrees on the blade plane, 4.29 m, and the cowl, 3.68 m);
+   the tail rotor hub 4.40 m, from the side drawing (see REDO above: the
+   first cut's 3.52 m from the "70 red" fit was 0.9 m low).
 
    Not drawn, and why:
      - the parking attitude. The real Mi-24 sits 3.5 deg nose up on its
@@ -177,7 +210,7 @@ var HeroMi24 = (function () {
   var MAST_TILT = 4.5 * D2R;               /* shaft leans 4 deg 30 forward */
   var TR_R     =  1.954;                   /* 3.908 m, three blades        */
   var TR_CHORD =  0.25;
-  var TR_X = -10.77, TR_Y = 0.42, TR_H = 3.52;
+  var TR_X = -10.77, TR_Y = 0.42, TR_H = 4.40;
   var X_TAIL   = -11.71;                   /* fin tip trailing edge: 17.51 m */
   /* stub wing: root at the fuselage side, 12 deg anhedral, 19 deg incidence */
   var WR_Y = 0.78, WT_Y = 3.25, WR_C = 1.60, WT_C = 1.15;
@@ -208,7 +241,7 @@ var HeroMi24 = (function () {
   var TW = 1024, TH = 1024, BAND = 256;
   var UX0 = -12.2, UX1 = 6.8;
   var QY = 3.7;
-  var QZ0 = Z(0.25), QZ1 = Z(4.05);
+  var QZ0 = Z(0.25), QZ1 = Z(4.90);
   var SX = TW / (UX1 - UX0);
   function pxX(x)       { return (x - UX0) * SX; }
   function pyTop(y)     { return (QY - y) / (2 * QY) * BAND; }
@@ -285,7 +318,11 @@ var HeroMi24 = (function () {
       g.save();
       g.beginPath(); g.rect(0, b * BAND, TW, BAND); g.clip();
       var area = (UX1 - UX0) * (b === 0 ? 2 * QY : QZ1 - QZ0);
-      var n = Math.round(-Math.log(1 - S.share) * area / 1.6);
+      /* a blob is 1.5r by r with r 0.55-1.30 m and its rim at 0.70-1.20 of
+         that, about 3.9 m2 on average, so this many cover S.share of the
+         band (the first cut divided by 1.6 m2 and covered nearly 80 %, a
+         dark airframe with light patches, which no photograph shows) */
+      var n = Math.round(-Math.log(1 - S.share) * area / 3.9);
       for (i = 0; i < n; i++) {
         var r = 0.55 + R() * 0.75;
         x = UX0 + R() * (UX1 - UX0);
@@ -701,7 +738,8 @@ var HeroMi24 = (function () {
        0.77 m up; then the rear fuselage, whose belly rises into the tail
        boom. The boom is deep and narrow ("oval, narrowing", ru.wikipedia),
        1.7 m at its root and 0.3 m at its end inside the fin, its top
-       falling from 2.9 to 2.3 m as the "70 red" side view shows.
+       running level at 3.06-2.88 m and its underside rising from 1.74 to
+       2.42 m, as the side drawing and the Soviet D "05" show (REDO).
                 x      zb    zt    zm    wb    wm    wt    e              */
     var FUS = [
       sec( 5.78, 1.04, 1.42, 1.22, 0.24, 0.30, 0.22, 0.75),
@@ -716,34 +754,48 @@ var HeroMi24 = (function () {
       sec( 1.80, 0.78, 2.60, 1.58, 0.70, 0.86, 0.66, 0.40),
       sec( 0.00, 0.77, 2.62, 1.60, 0.72, 0.87, 0.68, 0.40),
       sec(-1.30, 0.78, 2.62, 1.62, 0.70, 0.86, 0.66, 0.40),
-      sec(-2.40, 0.92, 2.62, 1.70, 0.60, 0.78, 0.60, 0.45),
-      sec(-3.40, 1.08, 2.75, 1.85, 0.48, 0.62, 0.48, 0.52),
-      sec(-4.50, 1.22, 2.92, 2.02, 0.34, 0.44, 0.34, 0.58),
-      sec(-6.00, 1.40, 2.78, 2.08, 0.28, 0.36, 0.27, 0.62),
-      sec(-7.20, 1.62, 2.65, 2.14, 0.23, 0.30, 0.22, 0.66),
-      sec(-8.20, 1.84, 2.54, 2.20, 0.19, 0.25, 0.18, 0.70),
-      sec(-9.00, 1.95, 2.42, 2.19, 0.15, 0.20, 0.14, 0.74),
-      sec(-9.80, 2.02, 2.30, 2.16, 0.10, 0.14, 0.09, 0.80),
+      sec(-2.40, 0.92, 2.66, 1.72, 0.60, 0.78, 0.60, 0.45),
+      sec(-3.00, 1.08, 2.84, 1.88, 0.53, 0.70, 0.53, 0.48),
+      sec(-3.70, 1.36, 3.00, 2.12, 0.44, 0.56, 0.42, 0.53),
+      sec(-4.45, 1.74, 3.06, 2.38, 0.34, 0.43, 0.32, 0.58),
+      sec(-6.00, 1.95, 3.02, 2.47, 0.27, 0.34, 0.25, 0.62),
+      sec(-7.20, 2.11, 2.97, 2.53, 0.23, 0.29, 0.21, 0.66),
+      sec(-8.20, 2.25, 2.92, 2.58, 0.19, 0.24, 0.17, 0.70),
+      sec(-8.84, 2.33, 2.88, 2.60, 0.16, 0.21, 0.15, 0.74),
+      sec(-9.24, 2.42, 2.70, 2.56, 0.10, 0.14, 0.09, 0.80),
     ];
     var fl = loft(FUS, 14, 0.07, 0.08);
     for (i = 0; i < fl.length; i++) skin.push(fl[i]);
     function fusAt(x) { return secAt(FUS, x); }
 
     /* ------------------------------------------------ engine cowling ----
-       Over the cabin roof: the two TV3-117s side by side ahead of the main
-       gearbox, the cowl highest (3.66 m) under the mast and running down
-       aft into the top of the boom. */
+       Over the cabin roof: the two TV3-117s in two round nacelles side by
+       side, each with its own intake in front and a valley between them
+       (the Polish D and the Monino "60 white" from the port bow; the
+       three-view's plan), ahead of the main gearbox fairing, which is
+       highest (3.66 m) under the mast and runs down aft into the top of
+       the boom (the three-view's profile: the cowl meets the boom at about
+       x -3.1, 3.1 m up). */
+    var NAC = [
+      sec( 2.66, 2.66, 3.34, 3.02, 0.29, 0.33, 0.28, 0.55, 0.36),
+      sec( 2.40, 2.60, 3.42, 3.02, 0.34, 0.39, 0.32, 0.52, 0.36),
+      sec( 1.60, 2.58, 3.45, 3.02, 0.35, 0.40, 0.33, 0.50, 0.36),
+      sec( 0.40, 2.58, 3.45, 3.02, 0.35, 0.40, 0.33, 0.50, 0.36),
+      sec(-0.60, 2.58, 3.40, 3.00, 0.34, 0.38, 0.30, 0.52, 0.36),
+      sec(-1.40, 2.58, 3.25, 2.95, 0.28, 0.31, 0.22, 0.56, 0.36),
+      sec(-2.00, 2.62, 3.04, 2.85, 0.16, 0.18, 0.12, 0.62, 0.36),
+    ];
+    var nc = loft(NAC, 10, null, 0.06);
+    for (i = 0; i < nc.length; i++) both(skin, nc[i]);
     var COWL = [
-      sec( 2.62, 2.46, 3.22, 2.86, 0.52, 0.60, 0.40, 0.60),
-      sec( 2.48, 2.46, 3.40, 2.95, 0.60, 0.68, 0.48, 0.55),
-      sec( 2.00, 2.46, 3.50, 3.00, 0.64, 0.71, 0.52, 0.52),
-      sec( 1.20, 2.46, 3.58, 3.02, 0.66, 0.72, 0.54, 0.50),
-      sec( 0.20, 2.46, 3.64, 3.05, 0.66, 0.72, 0.54, 0.50),
-      sec(-0.70, 2.46, 3.66, 3.05, 0.64, 0.70, 0.52, 0.50),
+      sec( 1.95, 2.56, 3.30, 3.05, 0.26, 0.30, 0.20, 0.60),
+      sec( 1.50, 2.56, 3.58, 3.08, 0.40, 0.46, 0.32, 0.55),
+      sec( 0.20, 2.50, 3.64, 3.08, 0.46, 0.53, 0.38, 0.52),
+      sec(-0.70, 2.46, 3.66, 3.05, 0.50, 0.58, 0.42, 0.50),
       sec(-1.60, 2.46, 3.62, 3.02, 0.60, 0.66, 0.48, 0.52),
-      sec(-2.60, 2.48, 3.45, 2.95, 0.52, 0.58, 0.40, 0.55),
-      sec(-3.60, 2.54, 3.16, 2.86, 0.40, 0.44, 0.30, 0.60),
-      sec(-4.60, 2.60, 2.93, 2.78, 0.26, 0.30, 0.20, 0.70),
+      sec(-2.60, 2.48, 3.40, 2.95, 0.52, 0.58, 0.40, 0.55),
+      sec(-3.40, 2.60, 3.14, 2.90, 0.40, 0.44, 0.30, 0.60),
+      sec(-4.10, 2.70, 3.06, 2.92, 0.28, 0.32, 0.22, 0.70),
     ];
     var cw = loft(COWL, 12, 0.03, 0.05);
     for (i = 0; i < cw.length; i++) skin.push(cw[i]);
@@ -753,7 +805,7 @@ var HeroMi24 = (function () {
        as built has the plain drum intake round its centre body, as the
        Monino Mi-24A still shows; from the Afghan war on the intakes wear
        the PZU dust filters, the domes every later photograph shows. */
-    var IN_Y = 0.33, IN_H = 3.02, IN_R = 0.29;
+    var IN_Y = 0.36, IN_H = 3.02, IN_R = 0.29;
     both(skin, cyl(IN_R, IN_R, 0.40, 18, "x", 2.72, IN_Y, Z(IN_H), true));
     if (!VR.pzu) {
       both(skin, place(new V.TorusGeometry(IN_R - 0.02, 0.035, 4, 18), 2.92, IN_Y, Z(IN_H), 0, PI / 2, 0));
@@ -826,6 +878,24 @@ var HeroMi24 = (function () {
     }
     hoop(GUN, 5.30, 0.028, skin); hoop(GUN, 4.70, 0.026, skin);
     hoop(PIL, 4.05, 0.028, skin); hoop(PIL, 3.40, 0.026, skin);
+    /* and the frames along the glazing, both sides: the gunner's flat
+       armoured windscreen and the edges of his side panels and top hatch,
+       the pilot's windscreen posts and the sill of his bulged side windows
+       (the Polish D and "60 white" from the port bow, "70 red") */
+    function stringer(secs, th, x0, x1, r, list, n) {
+      var pts = [], q;
+      for (q = 0; q <= n; q++) {
+        var x = x0 + (x1 - x0) * q / n, S2 = secAt(secs, x), pp = ringPt(S2, th);
+        pts.push([x, pp[0] * 1.025, S2.zm + (pp[1] - S2.zm) * 1.02]);
+      }
+      for (q = 0; q < n; q++) {
+        both(list, bar(pts[q], pts[q + 1], r, 4, false));
+      }
+    }
+    stringer(GUN, 0.95, 5.50, 4.30, 0.026, skin, 5);
+    stringer(GUN, 0.30, 5.40, 4.30, 0.024, skin, 4);
+    stringer(PIL, 0.95, 4.32, 3.02, 0.026, skin, 5);
+    stringer(PIL, 0.12, 4.20, 3.02, 0.024, skin, 4);
 
     /* ---------------------------------------------------- the nose kit ---- */
     /* USPU-24: the turret in the very front of the nose, under the
@@ -990,26 +1060,26 @@ var HeroMi24 = (function () {
        root aerofoil lies along the boom's end, from the top at the leading
        edge to the bottom at the trailing edge; its tip carries the tail
        rotor gearbox, with the hub low on the LEFT face near the front. */
-    var finRoot = foil3([-8.95, 0, Z(2.42)], [-9.82, 0, Z(2.02)], 0.18, [0, 1, 0]);
-    var finTip = foil3([-10.62, 0, Z(3.88)], [X_TAIL, 0, Z(3.80)], 0.13, [0, 1, 0]);
+    var finRoot = foil3([-8.84, 0, Z(2.88)], [-9.26, 0, Z(2.42)], 0.18, [0, 1, 0]);
+    var finTip = foil3([-10.93, 0, Z(4.78)], [X_TAIL, 0, Z(4.68)], 0.13, [0, 1, 0]);
     skin.push(solid(finRoot, finTip));
     /* the tail rotor gearbox fairing on the fin tip, its bulge to port */
-    skin.push(latheX([[-10.52, 0.0], [-10.58, 0.08], [-10.75, 0.13], [-11.35, 0.12], [-11.62, 0.06], [-11.70, 0.0]],
-                     10, 0, Z(3.80)));
+    skin.push(latheX([[-10.86, 0.0], [-10.90, 0.07], [-11.02, 0.12], [-11.45, 0.11], [-11.64, 0.05], [-11.70, 0.0]],
+                     10, 0.02, Z(4.62)));
     skin.push(sph(0.20, 12, 6, TR_X, 0.14, Z(TR_H), 1.2, 0.9, 1.1));
     skin.push(cyl(0.09, 0.11, 0.24, 12, "y", TR_X, 0.30, Z(TR_H)));
     /* The stabiliser: all-moving, on the fin boom under the fin. 2.8 m
        across: the three-view draws it 0.43 of the wing's span. */
-    var stRoot = foil3([-9.00, 0.12, Z(2.22)], [-9.85, 0.12, Z(2.22)], 0.10, [0, 0, 1]);
-    var stTip = foil3([-9.16, 1.40, Z(2.22)], [-9.77, 1.40, Z(2.22)], 0.07, [0, 0, 1]);
+    var stRoot = foil3([-8.53, 0.12, Z(2.62)], [-9.30, 0.12, Z(2.62)], 0.10, [0, 0, 1]);
+    var stTip = foil3([-8.70, 1.40, Z(2.62)], [-9.24, 1.40, Z(2.62)], 0.07, [0, 0, 1]);
     both(skin, solid(stRoot, stTip));
     /* the tail skid: two struts and the heel */
-    metal.push(bar([-8.90, 0, Z(1.98)], [-9.50, 0, Z(0.80)], 0.045, 8, true));
-    metal.push(bar([-9.80, 0, Z(2.06)], [-9.52, 0, Z(0.82)], 0.035, 8, true));
-    metal.push(box(0.30, 0.10, 0.08, -9.52, 0, Z(0.76)));
+    metal.push(bar([-8.80, 0, Z(2.40)], [-9.50, 0, Z(1.72)], 0.045, 8, true));
+    metal.push(bar([-9.22, 0, Z(2.46)], [-9.54, 0, Z(1.74)], 0.035, 8, true));
+    metal.push(box(0.30, 0.10, 0.08, -9.55, 0, Z(1.68)));
     /* aerials on the boom */
-    dark.push(bar([-4.70, 0, Z(2.90)], [-4.95, 0, Z(3.35)], 0.012, 4, true));
-    dark.push(bar([-6.20, 0, Z(2.75)], [-6.45, 0, Z(3.20)], 0.012, 4, true));
+    dark.push(bar([-4.75, 0, Z(3.04)], [-5.00, 0, Z(3.50)], 0.012, 4, true));
+    dark.push(bar([-6.00, 0, Z(3.00)], [-6.25, 0, Z(3.46)], 0.012, 4, true));
 
     /* ------------------------------------------------- team flashes ---- */
     function wingTop(y, f, lift) {
@@ -1022,7 +1092,7 @@ var HeroMi24 = (function () {
     var fa = [wingTop(2.45, 0.18, 0.010), wingTop(2.45, 0.70, 0.010), wingTop(3.15, 0.70, 0.010), wingTop(3.15, 0.18, 0.010)];
     var fb = [wingTop(2.45, 0.18, 0.024), wingTop(2.45, 0.70, 0.024), wingTop(3.15, 0.70, 0.024), wingTop(3.15, 0.18, 0.024)];
     both(team, solid(fa, fb));
-    var sa = [[-9.10, 0.50, Z(2.22 + 0.045)], [-9.70, 0.50, Z(2.22 + 0.035)], [-9.72, 1.28, Z(2.22 + 0.030)], [-9.20, 1.28, Z(2.22 + 0.038)]];
+    var sa = [[-8.72, 0.50, Z(2.62 + 0.045)], [-9.20, 0.50, Z(2.62 + 0.035)], [-9.20, 1.28, Z(2.62 + 0.030)], [-8.80, 1.28, Z(2.62 + 0.038)]];
     var sb2 = sa.map(function (p) { return [p[0], p[1], p[2] + 0.014]; });
     both(team, solid(sa, sb2));
     var bandSecs = [], bx = [-7.00, -7.60];
