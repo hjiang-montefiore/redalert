@@ -1,516 +1,657 @@
-/* ================= ru_tu16.js  -  HERO MODEL =================
-   Tupolev Tu-16Z wing-to-wing tanker (pact_e50_tanker), the Soviet Union's
-   first tanker (1950s): the Tu-16 "Badger" airframe -- 35-degree swept
-   mid-wing carrying two AM-3 turbojets buried in the roots (intakes in the
-   leading edge beside the fuselage, jets out past the trailing edge), a
-   round fuselage with a glazed navigator's nose and a two-seat cockpit
-   under a raised canopy, the main gear folding into two long pods behind the
-   wing trailing edges, a swept fin with a high-set swept tailplane, and the
-   defensive cannon turrets (dorsal, ventral and tail) the bomber kept.
+/* ============ ru_tu16.js -- TUPOLEV Tu-16Z BADGER, wing-to-wing tanker (HERO MODEL) ============
 
-   References (each fetched once, Wikimedia Commons, generic user agent):
-     - "Tupolev Tu-16 3-view line drawing.png": the planform (wing sweep
-       about 35 deg, root and tip chords, the gear pods behind the trailing
-       edge at about a seventh of the span out, engine roots beside the
-       fuselage), the swept fin and tailplane, the glazed nose, the side
-       profile (cockpit position, turret blisters, fin height). Published
-       figures used for the scale: length 34.80 m, span 32.99 m, height
-       10.36 m, wing area 164.65 sq m.
-     - Four Wikimedia Commons photographs of Soviet Tu-16 bombers (an
-       underside view in flight, DPLA f45e6555...; USN photographs of the
-       aircraft intercepted by F-4s, 1963 and 1975; one over USS Kitty Hawk,
-       1963): the slender round fuselage (about 2.6 m deep), glazed nose
-       with the chin glazing, the raised canopy, the AM-3 nacelles in the
-       wing roots with intakes at the leading edge, the long main-gear pods
-       trailing the wing, the swept fin and the tailplane set on the top of
-       the rear fuselage, the dorsal / ventral / tail gun turrets, natural
-       metal, and the red stars: on the fin, in a roundel on the rear
-       fuselage, and on the upper and lower wing faces.
-   NOT confirmed by any source found and kept deliberately plain: a
-   photograph of the Z itself (none turned up), the shape of the starboard
-   wingtip hose-reel fairing (a simple streamlined pod, nothing more), any
-   difference from the bomber's gun fit on the Z (the bomber's three
-   turrets are kept), panel lines and lettering. No bort number, no unit
-   mark.
+   One row draws it:
+     pact_e50_tanker  "Tu-16Z"  (js/eras.js; service 1957, e50 only)
+   No other key uses this file. The Chinese H-6 rows (sbomber_c, pla_e90_tanker) are drawn
+   elsewhere (js/models3d_east.js and the parametric layer) and are not touched here.
 
-   Parking: 33 m of span on a 34.8 m body: pact_e50_tanker is already on the
-   OVERSIZE list of tools/jsc/parked3d_check.js and stays there.
+   THE VARIANT. The Tu-16Z (Tu-16Yu, "izdeliye NZ") was not a new build: more than a hundred
+   Tu-16A bombers were converted to the wing-to-wing system from 1955 (ru.wikipedia "Tu-16",
+   modifications), and they kept the bomber role (en.wikipedia "Tupolev Tu-16", variants). So the
+   airframe drawn is the Tu-16A's, with the bomber's seven-gun defensive fit. The tanker streamed
+   its hose from the STARBOARD wingtip (the row's desc; eras.js notes on the 1955 trials). No
+   photograph of a Tu-16Z and no drawing of its wingtip hose outlet turned up on Commons,
+   ru.wikipedia or airwar.ru, so NO hose fairing is drawn: the tip is the bomber's tip. (The
+   earlier file hung a 6 m pod there and said itself it was unconfirmed; it is taken off.)
 
-   Model space: +X nose, +Y left (port), +Z up, metres; d is metres aft of
-   the nose; the fuselage axis is z = 0, the ground z = -2.7. One mesh per
-   material; the gear is a group named "gear" (the tyres are the lowest
-   opaque thing). Team colour exactly C.team: two small flat strips, one on each
-   upper wingtip, nothing else. National stars: fin, rear fuselage and both faces
-   of each wing (as the photographs of Soviet Tu-16s show them).
-   ========================================================================= */
+   REFERENCES (Wikimedia Commons, fetched for this redo at width 960, generic user agent)
+     A "Tupolev Tu-16 3-view line drawing.png" (574 x 385 px): plan, front and side view. Its side
+       view gives 8.42 px/m on the published 34.8 m and 10.33 m of height (published 10.355 m);
+       its plan and front views are drawn narrower, 30.6 m of span against the published
+       32.989 m, so every spanwise figure taken off them is multiplied by 1.077. The drawing is
+       of a missile carrier (the KS-1 pylons at 7.9 m out are on it); the pylons are not drawn.
+     B "Tu-16 Badger Soviet Air Force (cropped).jpg": upper side in flight: natural metal, the
+       glazed nose, canopy and dorsal turret just behind it, the two nacelles running past the
+       wing root trailing edge, the gear pods bulging over the wing and trailing it, two fences
+       on each wing outboard of the pod, red stars on the upper wings and the fin, the tail
+       gunner's glazing and the tail guns.
+     C "A left underside view of a Soviet Tu-16 Badger aircraft - DPLA - f45e6555....jpeg": the
+       chin radome under the glazed nose, the big round intakes, the pods, the ventral turret
+       aft of the bomb bay, the teardrop side blisters near the tail, stars under the wings.
+     D "Tupolev Tu-16 "Badger A", Monino, Russia, Sep93 (51584953162).jpg": front three-quarter
+       on the ground: the framed nose glazing, the chin radome, the raised canopy, the dorsal
+       turret, twin nose wheels set back under the cockpit, the four-wheel main bogies under
+       the pods with their long doors open.
+     E "Kulbakino Tu-16.jpg": head-on from below: the round intakes beside the fuselage, the
+       pods and bogies, the wing's anhedral.
+     F "F-14A Tomcat of VF-1 escorting two Tu-16 Badgers in 1984.JPEG": side views in flight
+       (later recce variants; used only for the common outline): fin and fillet, the low
+       tailplane at the fin root, the side blister, the nozzles at the wing root.
+     Published figures (ru.wikipedia "Tu-16", technical data; airwar.ru): length 34.8 m, span
+       32.989 m, height 10.355 m, wing area 164.65 sq m, 35 deg sweep at quarter chord, anhedral
+       3 deg, track 9.775 m, wheelbase 10.913 m, 1100 x 330 main wheels on four-wheel bogies,
+       twin nose wheels; AM-3 nozzles turned 4 deg outward; DT-V7 upper, DT-N7S lower and DK-7
+       tail turrets (two AM-23 each) and one fixed AM-23 low on the starboard nose (7 guns);
+       the radio operator's two teardrop blisters, about half screened by metal plates; the
+       PRS-1 tail-warning radar above the tail gunner's glazing; the RBP-4 radar under the cabin
+       floor, in a radome.
+
+   RECOGNITION LIST (each drawn; the reference; where it shows)
+     1. the long round cigar fuselage, round at the front and pinched on the sides towards the
+        tail (ru.wikipedia), 2.5 m deep (A side view)              [skin loft, 34 stations]
+     2. the glazed navigator's nose, framed, and the chin radome behind it (A, C, D)
+                                                                     [glass, metal frames, skin]
+     3. the raised two-seat canopy with its framing, the dorsal turret just behind it (B, D)
+                                                                     [glass, metal, skin]
+     4. the swept wing, 35 deg at quarter chord, 3 deg anhedral, planform measured off A,
+        two fences a side (B)                                        [skin loft, metal fences]
+     5. the AM-3s buried in the wing roots: big round intakes ahead of the leading edge beside
+        the fuselage, nacelles running past the root trailing edge to nozzles turned 4 deg out
+        (A, B, C, E)                                                 [skin, ink, metal]
+     6. the main-gear pods: 6.8 m bodies at the 9.8 m track (14.6 to 21.4 m aft of the nose)
+        that bulge over the wing and trail it by 2 m (A plan, B, C, D)  [skin]
+     7. the tall swept fin with its dorsal fillet; the flat tailplane on the fin root just above
+        the rear fuselage, 1.5 m over the axis (A side and front, B, F)
+                                                                     [skin]
+     8. the tail gunner's glazed position with the twin-gun DK-7 below it and the PRS-1 bulge
+        above; the ventral turret aft of the bomb bay; the side blisters (B, C, F)
+                                                                     [glass, skin, metal]
+     9. retracting gear: twin nose wheels at 6.3 m, two four-wheel bogies at 17.2 m, pod doors
+        open (D, E)                                                  ["gear"]
+    10. natural metal, panel to panel, with the Soviet star on the fin and on both faces of
+        each wing (B, C, D)                                          [canvas paint]
+
+   CORRECTIONS TO THE EARLIER FILE (references above): the wing had a dihedral; it has a 3 deg
+   anhedral. The dorsal turret sat mid-fuselage at 16 m; it is just behind the canopy, about
+   7.9 m aft of the nose (B, D, F; ru.wikipedia puts it in the F-3 section over the nose-gear
+   bay). The two "fences" are kept and moved out to where B shows them; the gear pods now bulge
+   over the wing as B shows. The intakes started 11 m aft of the nose; A puts the lips at 9.9 m,
+   and the nozzles at 20.7 m. The star on the rear fuselage is dropped: none of B-E shows one.
+   The starboard wingtip pod is dropped (above). Kept as the references confirm: 34.8 m,
+   33 m span, 10.36 m height, three turrets, natural metal, stars on fin and wings.
+
+   Parking: tools/jsc/parked3d_check.js measures it; see the hand-back report for whether it
+   needs an OVERSIZE entry. Markings: no bort number, no unit mark, no text. Team colour,
+   exactly C.team: a small strip on each upper wingtip. Model space +X nose, +Y port, +Z up,
+   metres; d below is metres aft of the nose; z = 0 is the fuselage axis, the ground z = -3.35.
+   ========================================================================================== */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroTu16Z = (function () {
   "use strict";
-
-  var D2R = Math.PI / 180;
-  var L = 34.8, NOSE = L / 2, GROUND = -2.7;
+  var V = null, PI = Math.PI;
+  var NOSE = 17.4, GROUND = -3.35;
   function X(d) { return NOSE - d; }
-  function rngFor(seed) {
-    var s = seed >>> 0 || 1;
-    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-  }
-
-  /* fuselage: d, half-width, half-height, centre z */
-  var FUS = [
-    [0.00, 0.04, 0.04, -0.40], [0.30, 0.38, 0.38, -0.42], [0.90, 0.72, 0.72, -0.34], [1.80, 1.02, 1.04, -0.14],
-    [3.20, 1.22, 1.26, 0.00], [5.00, 1.27, 1.32, 0.02], [9.00, 1.28, 1.30, 0.00], [16.0, 1.28, 1.30, 0.00],
-    [21.0, 1.24, 1.26, 0.02], [25.0, 1.04, 1.06, 0.06], [29.0, 0.78, 0.80, 0.12], [32.0, 0.50, 0.52, 0.16],
-    [33.4, 0.30, 0.32, 0.18]
-  ];
-  /* wing: y, leading-edge d, trailing-edge d */
-  var WING = [[1.0, 11.2, 19.9], [5.5, 13.9, 20.4], [11.0, 17.7, 22.0], [16.5, 20.9, 23.5]];
-  function wz(y) { return -0.30 + 0.017 * y; }
-  function wtc(y) { return 0.125 - 0.035 * Math.min(1, y / 16.5); }
-  var STAB = [[0.3, 28.6, 32.8], [2.5, 29.4, 32.9], [5.88, 31.0, 33.4]];
-  var STABZ = 0.85;
-  var FIN = [[0.6, 24.6, 33.4, 0.11], [3.0, 27.0, 33.8, 0.10], [5.5, 29.6, 34.0, 0.09], [7.66, 31.6, 34.1, 0.08]];
-  var ENG = [[0.0, 0.62], [0.25, 0.80], [1.5, 0.86], [6.0, 0.84], [9.5, 0.68], [11.0, 0.52], [11.3, 0.42]];
-  var POD = [[0.0, 0.22], [0.8, 0.52], [2.0, 0.62], [6.0, 0.62], [8.0, 0.46], [9.5, 0.20]];
-  var YE = 2.15, YP = 4.9;
-
-  var _sheet;
-  function skinSheet(THREE) {
-    if (_sheet !== undefined) return _sheet;
-    var tex = null;
-    try {
-      var S = 512, cv = document.createElement("canvas");
-      cv.width = S; cv.height = S;
-      var g = cv.getContext("2d"), R = rngFor(971), i, k;
-      g.fillStyle = "#c4cacd"; g.fillRect(0, 0, S, S);
-      for (k = 0; k < 90; k++) {
-        g.fillStyle = (k & 1) ? "#cfd4d7" : "#b9c0c4";
-        g.fillRect(R() * S, R() * S, 20 + R() * 90, 3 + R() * 10);
-      }
-      g.strokeStyle = "rgba(0,0,0,0.17)"; g.lineWidth = 1;
-      for (i = 0; i < S; i += 19) { g.beginPath(); g.moveTo(i + 0.5, 0); g.lineTo(i + 0.5, S); g.stroke(); }
-      for (i = 0; i < S; i += 38) { g.beginPath(); g.moveTo(0, i + 0.5); g.lineTo(S, i + 0.5); g.stroke(); }
-      tex = new THREE.CanvasTexture(cv);
-      tex.encoding = THREE.sRGBEncoding;
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.anisotropy = 4;
-    } catch (e) { tex = null; }
-    _sheet = tex;
-    return tex;
-  }
-  /* ---------------------------------------------------------- geometry */
-  function geoFrom(THREE, pos, idx) {
-    var g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    g.setIndex(idx);
-    return g;
-  }
-  function gridGeo(THREE, rings, capA, capB) {
-    var nr = rings.length, N = rings[0].length, pos = [], idx = [], i, j;
-    for (i = 0; i < nr; i++) for (j = 0; j < N; j++) pos.push(rings[i][j][0], rings[i][j][1], rings[i][j][2]);
-    for (i = 0; i < nr - 1; i++) for (j = 0; j < N; j++) {
-      var a = i * N + j, b = i * N + (j + 1) % N, c = (i + 1) * N + j, d = (i + 1) * N + (j + 1) % N;
-      idx.push(a, c, b, b, c, d);
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function pl(tab, d) {
+    var i;
+    if (d <= tab[0][0]) return tab[0][1];
+    for (i = 0; i + 1 < tab.length; i++) if (d <= tab[i + 1][0]) {
+      return lerp(tab[i][1], tab[i + 1][1], (d - tab[i][0]) / (tab[i + 1][0] - tab[i][0]));
     }
-    function cap(r, base, flip) {
-      var cx = 0, cy = 0, cz = 0, k;
-      for (k = 0; k < N; k++) { cx += r[k][0]; cy += r[k][1]; cz += r[k][2]; }
-      var ci = pos.length / 3;
-      pos.push(cx / N, cy / N, cz / N);
-      for (k = 0; k < N; k++) {
-        var a = base + k, b = base + (k + 1) % N;
-        if (flip) idx.push(ci, b, a); else idx.push(ci, a, b);
-      }
-    }
-    if (capA) cap(rings[0], 0, false);
-    if (capB) cap(rings[nr - 1], (nr - 1) * N, true);
-    return geoFrom(THREE, pos, idx);
-  }
-  function outward(g) {
-    var p = g.attributes.position.array, ix = g.index.array, n = p.length / 3, cx = 0, cy = 0, cz = 0, i, v = 0;
-    for (i = 0; i < n; i++) { cx += p[3 * i]; cy += p[3 * i + 1]; cz += p[3 * i + 2]; }
-    cx /= n; cy /= n; cz /= n;
-    for (i = 0; i < ix.length; i += 3) {
-      var a = 3 * ix[i], b = 3 * ix[i + 1], c = 3 * ix[i + 2];
-      var ax = p[a] - cx, ay = p[a + 1] - cy, az = p[a + 2] - cz;
-      var bx = p[b] - cx, by = p[b + 1] - cy, bz = p[b + 2] - cz;
-      var qx = p[c] - cx, qy = p[c + 1] - cy, qz = p[c + 2] - cz;
-      v += ax * (by * qz - bz * qy) + ay * (bz * qx - bx * qz) + az * (bx * qy - by * qx);
-    }
-    if (v < 0) for (i = 0; i < ix.length; i += 3) { var t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; }
-    return g;
-  }
-  function planarUV(THREE, g) {
-    var p = g.attributes.position.array, n = p.length / 3, uv = new Float32Array(n * 2), i;
-    for (i = 0; i < n; i++) { uv[2 * i] = p[3 * i] / 40; uv[2 * i + 1] = (p[3 * i + 1] + 0.55 * p[3 * i + 2]) / 40; }
-    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-  }
-  /* a finished skin part, its triangles shared out between materials by rule */
-  function emit(THREE, grp, g, T, rule) {
-    outward(g);
-    g.computeVertexNormals();
-    planarUV(THREE, g);
-    var p = g.attributes.position.array, ix = g.index.array, out = {}, order = [], i;
-    for (i = 0; i < ix.length; i += 3) {
-      var a = 3 * ix[i], b = 3 * ix[i + 1], c = 3 * ix[i + 2];
-      var ux = p[b] - p[a], uy = p[b + 1] - p[a + 1], uz = p[b + 2] - p[a + 2];
-      var vx = p[c] - p[a], vy = p[c + 1] - p[a + 1], vz = p[c + 2] - p[a + 2];
-      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-      var l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-      var k = rule ? rule((p[a] + p[b] + p[c]) / 3, (p[a + 1] + p[b + 1] + p[c + 1]) / 3,
-                          (p[a + 2] + p[b + 2] + p[c + 2]) / 3, nx / l, ny / l, nz / l) : "skin";
-      if (!out[k]) { out[k] = []; order.push(k); }
-      out[k].push(ix[i], ix[i + 1], ix[i + 2]);
-    }
-    for (i = 0; i < order.length; i++) {
-      var s = new THREE.BufferGeometry();
-      s.setAttribute("position", g.attributes.position);
-      s.setAttribute("normal", g.attributes.normal);
-      s.setAttribute("uv", g.attributes.uv);
-      s.setIndex(out[order[i]]);
-      grp.add(new THREE.Mesh(s, T[order[i]]));
-    }
-  }
-  function plate(THREE, ol, y0, t) {
-    var n = ol.length, pos = [], idx = [], i;
-    for (i = 0; i < n; i++) pos.push(ol[i][0], y0 + t, ol[i][1]);
-    for (i = 0; i < n; i++) pos.push(ol[i][0], y0 - t, ol[i][1]);
-    for (i = 1; i < n - 1; i++) { idx.push(0, i, i + 1); idx.push(n, n + i + 1, n + i); }
-    for (i = 0; i < n; i++) { var j = (i + 1) % n; idx.push(i, n + i, j, j, n + i, n + j); }
-    return geoFrom(THREE, pos, idx);
-  }
-  function taper(THREE, mat, a, b, r0, r1, seg) {
-    var dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], Ln = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    var m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, Ln, seg || 8, 1), mat);
-    m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
-    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx / Ln, dy / Ln, dz / Ln));
-    return m;
-  }
-  function box(THREE, mat, sx, sy, sz, px, py, pz) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
-    m.position.set(px, py, pz);
-    return m;
-  }
-  function egg(THREE, mat, rx, ry, rz, x, y, z, ws, hs) {
-    var geo = new THREE.SphereGeometry(1, ws || 12, hs || 8);
-    geo.rotateZ(Math.PI / 2);
-    geo.scale(rx, ry, rz);
-    geo.translate(x, y, z);
-    planarUV(THREE, geo);
-    return new THREE.Mesh(geo, mat);
-  }
-  function disc(THREE, mat, r, x, y, z, n) {
-    var m = new THREE.Mesh(new THREE.CircleGeometry(r, n || 14), mat);
-    m.rotation.y = Math.PI / 2;
-    m.position.set(x, y, z);
-    return m;
-  }
-  function naca(x, tc) {
-    return 5 * tc * (0.2969 * Math.sqrt(x) - 0.1260 * x - 0.3516 * x * x + 0.2843 * x * x * x - 0.1036 * x * x * x * x);
-  }
-  function foil(n, tc, cam) {
-    var pts = [], i, x;
-    for (i = 0; i < n; i++) {
-      x = 0.5 * (1 + Math.cos(Math.PI * i / (n - 1)));
-      pts.push([x, cam * 4 * x * (1 - x) + naca(x, tc)]);
-    }
-    for (i = n - 2; i >= 1; i--) {
-      x = 0.5 * (1 + Math.cos(Math.PI * i / (n - 1)));
-      pts.push([x, cam * 4 * x * (1 - x) - naca(x, tc)]);
-    }
-    return pts;
+    return tab[tab.length - 1][1];
   }
   function cr1(p0, p1, p2, p3, t) {
     var t2 = t * t, t3 = t2 * t;
     return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
   }
-  function lathe(THREE, prof, N, x0, yc, zc, capA, capB) {
-    var rings = [], i, j;
-    for (i = 0; i < prof.length; i++) {
-      var w = Math.max(prof[i][1], 0.004), r = [];
-      for (j = 0; j < N; j++) { var t = j / N * Math.PI * 2; r.push([x0 - prof[i][0], yc + w * Math.cos(t), zc + w * Math.sin(t)]); }
-      rings.push(r);
-    }
-    return gridGeo(THREE, rings, capA, capB);
-  }
 
-  /* ---------------------------------------------------------- fuselage */
-  function fusAt(d) {
-    var k = 0, q;
-    for (q = 0; q < FUS.length - 1; q++) if (FUS[q][0] <= d) k = q;
-    var A = FUS[k], B = FUS[Math.min(k + 1, FUS.length - 1)], t = Math.min(1, (d - A[0]) / Math.max(1e-6, B[0] - A[0]));
-    var p0 = FUS[Math.max(0, k - 1)], p3 = FUS[Math.min(FUS.length - 1, k + 2)], r = [d], c;
-    for (c = 1; c < 4; c++) r.push(cr1(p0[c], A[c], B[c], p3[c], t));
-    r[1] = Math.max(0.02, r[1]); r[2] = Math.max(0.02, r[2]);
-    return r;
-  }
-  function addFuselage(THREE, g, T) {
-    var rings = [], i, j, N = 30, NR = 52;
-    for (i = 0; i < NR; i++) {
-      var s = fusAt(33.4 * i / (NR - 1)), ring = [];
-      for (j = 0; j < N; j++) {
-        var t = j / N * Math.PI * 2;
-        ring.push([X(s[0]), s[1] * Math.cos(t), s[3] + s[2] * Math.sin(t)]);
-      }
-      rings.push(ring);
-    }
-    emit(THREE, g, gridGeo(THREE, rings, true, true), T, function () { return "skin"; });
-  }
-  function star(THREE, g, T, dC, yS, zC, r, side) {
-    /* the Soviet star: white border, red star inside; flat on the surface */
-    var k, pos, idx, m, rr;
-    [[r, "white"], [r * 0.78, "red"]].forEach(function (lay, li) {
-      pos = [dC && 0, 0, 0]; pos = [X(dC), yS + side * 0.012 * (li + 1), zC]; idx = [];
-      for (k = 0; k < 10; k++) {
-        rr = (k & 1) ? lay[0] * 0.4 : lay[0];
-        var a = Math.PI / 2 + k * Math.PI / 5;
-        pos.push(X(dC) - rr * Math.cos(a), yS + side * 0.012 * (li + 1), zC + rr * Math.sin(a));
-      }
-      for (k = 0; k < 10; k++) idx.push(0, 1 + k, 1 + (k + 1) % 10);
-      m = new THREE.Mesh(geoFrom(THREE, pos, idx), T[lay[1]]);
-      m.geometry.computeVertexNormals();
-      g.add(m);
-    });
-  }
-  function addCockpit(THREE, g, T) {
-    /* the glazed navigator's nose, low and forward */
-    g.add(egg(THREE, T.glass, 1.15, 0.78, 0.62, X(1.45), 0, -0.62, 14, 8));
-    /* the raised two-seat canopy */
-    g.add(egg(THREE, T.glass, 1.35, 0.82, 0.46, X(4.9), 0, 1.02, 14, 7));
-    /* the navigator's side windows */
-    g.add(egg(THREE, T.glass, 0.5, 0.06, 0.28, X(3.0), 1.10, 0.28, 8, 5));
-    g.add(egg(THREE, T.glass, 0.5, 0.06, 0.28, X(3.0), -1.10, 0.28, 8, 5));
-  }
-
-  /* ---------------------------------------------------------- tail / wings */
-  function addTail(THREE, g, T) {
-    var rings = [], s;
-    FIN.forEach(function (f) {
-      var c = f[2] - f[1];
-      rings.push(foil(9, f[3], 0).map(function (p) { return [X(f[1] + p[0] * c), p[1] * c, f[0]]; }));
-    });
-    emit(THREE, g, gridGeo(THREE, rings, true, true), T, function () { return "skin"; });
-    for (s = -1; s <= 1; s += 2) {
-      var sr = STAB.map(function (st) {
-        var y = st[0], c = st[2] - st[1], tc = 0.09 - 0.03 * Math.min(1, y / 5.88);
-        return foil(9, tc, 0).map(function (p) { return [X(st[1] + p[0] * c), s * y, STABZ + p[1] * c - 0.003 * y]; });
-      });
-      emit(THREE, g, gridGeo(THREE, sr, true, true), T, function () { return "skin"; });
-    }
-    /* red stars on both sides of the fin */
-    var fc = 4.3, i0 = 1, f0 = FIN[1], f1 = FIN[2], t = (fc - f0[0]) / (f1[0] - f0[0]);
-    var dl = f0[1] + (f1[1] - f0[1]) * t, dt = f0[2] + (f1[2] - f0[2]) * t, tc = f0[3] + (f1[3] - f0[3]) * t, c = dt - dl;
-    var hy = naca(0.55, tc) * c + 0.01;
-    for (s = -1; s <= 1; s += 2) star(THREE, g, T, dl + 0.55 * c, s * hy, fc, 0.62, s);
-    /* and on the rear fuselage, aft of the wing */
-    var fs = fusAt(27.2);
-    for (s = -1; s <= 1; s += 2) star(THREE, g, T, 27.2, s * (fs[1] + 0.012), fs[3], 0.36, s);
-  }
+  /* ---------------- station tables (A, measured; spanwise x 1.077) ---------------- */
+  /* fuselage: d, half width, half height above / below the centre, centre z, superellipse power */
+  var FUS = [
+    [0.00, 0.07, 0.07, 0.07, -0.20, 2.0], [0.25, 0.34, 0.33, 0.36, -0.24, 2.0], [0.70, 0.62, 0.58, 0.64, -0.27, 2.0],
+    [1.30, 0.86, 0.80, 0.86, -0.25, 2.0], [2.00, 1.03, 0.98, 1.02, -0.18, 2.0], [2.80, 1.14, 1.12, 1.13, -0.09, 2.0],
+    [3.80, 1.21, 1.21, 1.21, -0.03, 2.0], [5.00, 1.25, 1.25, 1.25, 0.00, 2.0], [9.00, 1.25, 1.25, 1.25, 0.00, 2.0],
+    [15.0, 1.25, 1.25, 1.25, 0.00, 2.05], [19.0, 1.22, 1.25, 1.24, 0.02, 2.1], [22.0, 1.12, 1.22, 1.19, 0.06, 2.2],
+    [25.0, 0.98, 1.15, 1.10, 0.13, 2.3], [27.5, 0.86, 1.08, 1.03, 0.18, 2.35], [30.0, 0.74, 0.98, 0.95, 0.20, 2.35],
+    [32.0, 0.62, 0.86, 0.84, 0.30, 2.3], [33.2, 0.50, 0.72, 0.74, 0.34, 2.2], [33.8, 0.36, 0.52, 0.56, 0.36, 2.1],
+    [34.05, 0.10, 0.16, 0.18, 0.38, 2.0]
+  ];
+  var FUS_D = [0, 0.08, 0.2, 0.4, 0.7, 1.0, 1.4, 1.8, 2.15, 2.6, 3.1, 3.7, 4.4, 5.3, 6.5, 8, 10, 12, 14, 16, 18,
+               19.8, 21.5, 23, 24.5, 26, 27.5, 29, 30.5, 31.7, 32.6, 33.2, 33.6, 33.85, 34.05];
+  /* wing: real y, leading-edge d, trailing-edge d, t/c */
+  var WING = [[1.0, 10.63, 18.2, 0.150], [2.68, 12.0, 18.3, 0.145], [4.8, 13.75, 19.4, 0.140], [7.4, 15.86, 20.7, 0.132],
+              [9.2, 17.34, 21.6, 0.126], [11.3, 18.9, 22.75, 0.120], [13.4, 20.43, 23.87, 0.115],
+              [15.4, 21.9, 24.85, 0.110], [16.2, 22.6, 25.0, 0.105], [16.49, 23.35, 24.75, 0.10]];
+  var ANH = Math.tan(3 * PI / 180);
+  function wz(y) { return 0.25 - ANH * (Math.abs(y) - 1.0); }
   function wingAt(y) {
-    var i, a, b, t;
-    y = Math.abs(y);
-    if (y <= WING[0][0]) return { dLE: WING[0][1], dTE: WING[0][2] };
+    var i, a, b, t; y = Math.abs(y);
+    if (y <= WING[0][0]) return WING[0];
     for (i = 1; i < WING.length; i++) if (WING[i][0] >= y) {
       a = WING[i - 1]; b = WING[i]; t = (y - a[0]) / (b[0] - a[0]);
-      return { dLE: a[1] + (b[1] - a[1]) * t, dTE: a[2] + (b[2] - a[2]) * t };
+      return [y, lerp(a[1], b[1], t), lerp(a[2], b[2], t), lerp(a[3], b[3], t)];
     }
-    b = WING[WING.length - 1];
-    return { dLE: b[1], dTE: b[2] };
+    return WING[WING.length - 1];
   }
-  /* point on the wing's upper (up = 1) or lower (up = -1) skin at span y, chord fraction f */
-  function wingSkin(y, f, up) {
-    var w = wingAt(y), c = w.dTE - w.dLE, cam = 0.012, tc = wtc(y);
-    var yy = cam * 4 * f * (1 - f) + up * naca(f, tc);
-    return [X(w.dLE + f * c), wz(y) + yy * c];
-  }
-  function flatStar(THREE, g, T, y, f, up, r) {
-    /* a red star with a white border lying on the wing skin (photographs show it on both faces) */
-    var p = wingSkin(Math.abs(y), f, up), k, lay, li, rr, a, pos, idx, m, lays = [[r, "white"], [r * 0.78, "red"]];
-    for (li = 0; li < 2; li++) {
-      lay = lays[li];
-      pos = [p[0], y, p[1] + up * 0.03 * (li + 1)]; idx = [];
-      for (k = 0; k < 10; k++) {
-        rr = (k & 1) ? lay[0] * 0.4 : lay[0];
-        a = k * Math.PI / 5;
-        pos.push(p[0] - rr * Math.cos(a), y + rr * Math.sin(a), p[1] + up * 0.03 * (li + 1));
-      }
-      for (k = 0; k < 10; k++) idx.push(0, 1 + k, 1 + (k + 1) % 10);
-      m = new THREE.Mesh(geoFrom(THREE, pos, idx), T[lay[1]]);
-      m.geometry.computeVertexNormals();
-      g.add(m);
-    }
-  }
-  function addWingMarks(THREE, g, T, s) {
-    var y0 = 14.6, y1 = 16.1, f0 = 0.28, f1 = 0.62, pos = [], idx = [], i, j, NY = 3, NF = 3;
-    /* the team strip: one small flat plate on the upper wingtip, just above the skin */
-    for (i = 0; i <= NY; i++) for (j = 0; j <= NF; j++) {
-      var y = y0 + (y1 - y0) * i / NY, f = f0 + (f1 - f0) * j / NF, p = wingSkin(y, f, 1);
-      pos.push(p[0], s * y, p[1] + 0.025);
-    }
-    for (i = 0; i < NY; i++) for (j = 0; j < NF; j++) {
-      var a = i * (NF + 1) + j, b = a + 1, c = a + NF + 1, d = c + 1;
+  /* tailplane: y, LE d, TE d (A plan x 1.077), flat at z = STZ */
+  var STAB = [[0.15, 27.95, 32.55], [1.08, 28.62, 32.31], [2.94, 30.52, 33.49], [4.85, 32.4, 34.3], [5.63, 33.14, 34.75]];
+  var STZ = 1.5;
+  /* fin: z, LE d, TE d, t/c (A side view: LE 46 deg above the fillet, tip at 6.95 m) */
+  var FIN = [[0.9, 24.4, 33.45, 0.06], [1.55, 25.3, 33.5, 0.07], [2.15, 27.4, 33.6, 0.09], [2.7, 28.05, 33.65, 0.10],
+             [4.5, 29.85, 33.95, 0.10], [6.35, 31.8, 34.25, 0.09], [6.85, 32.35, 34.33, 0.08], [7.0, 32.9, 34.3, 0.07]];
+  /* nacelle: d, radius; centre y from 1.80 to 1.97 (4 deg out), z 0 to 0.05 */
+  var ENG = [[9.9, 0.66], [10.15, 0.74], [10.6, 0.81], [11.5, 0.86], [13.5, 0.88], [16.0, 0.85], [18.0, 0.76],
+             [19.5, 0.63], [20.6, 0.54]];
+  function engC(d) { var t = clamp((d - 9.9) / 10.7, 0, 1); return [1.80 + 0.17 * t * t, 0.05 * t]; }
+  /* gear pod: d, radius (height x 1.08) */
+  var POD = [[14.6, 0.04], [14.85, 0.28], [15.35, 0.48], [16.1, 0.6], [17.0, 0.64], [19.0, 0.64], [20.0, 0.56],
+             [20.7, 0.40], [21.15, 0.20], [21.4, 0.03]];
+  var YP = 4.89;
+  function podZ() { return wz(YP) - 0.2; }
+
+  /* ---------------- geometry helpers ---------------- */
+  function loft(rings, open) {
+    var n = rings[0].length, pos = [], idx = [], i, j, r, a, b, c, d;
+    for (r = 0; r < rings.length; r++) for (j = 0; j < n; j++) pos.push(rings[r][j][0], rings[r][j][1], rings[r][j][2]);
+    for (r = 0; r + 1 < rings.length; r++) for (j = 0; j < n; j++) {
+      a = r * n + j; b = r * n + (j + 1) % n; c = (r + 1) * n + j; d = (r + 1) * n + (j + 1) % n;
       idx.push(a, b, c, b, d, c);
     }
-    var tg = geoFrom(THREE, pos, idx);
-    tg.computeVertexNormals();
-    g.add(new THREE.Mesh(tg, T.team));
-    /* national star: upper and lower face, about 60 per cent out */
-    flatStar(THREE, g, T, s * 9.0, 0.50, 1, 0.95);
-    flatStar(THREE, g, T, s * 9.0, 0.50, -1, 0.95);
-  }
-  function addWings(THREE, g, T) {
-    for (var s = -1; s <= 1; s += 2) {
-      var rings = WING.map(function (st) {
-        var y = st[0], c = st[2] - st[1];
-        return foil(15, wtc(y), 0.012).map(function (p) { return [X(st[1] + p[0] * c), s * y, wz(y) + p[1] * c]; });
-      });
-      emit(THREE, g, gridGeo(THREE, rings, true, true), T, function () { return "skin"; });
-      addWingMarks(THREE, g, T, s);
-      /* two boundary-layer fences on the upper surface */
-      [7.6, 12.2].forEach(function (y) {
-        var w = wingAt(y), dd = w.dLE + 0.12 * (w.dTE - w.dLE);
-        g.add(box(THREE, T.skin, (w.dTE - w.dLE) * 0.5, 0.03, 0.30, X(dd + (w.dTE - w.dLE) * 0.25), s * y, wz(y) + 0.5 * wtc(y) * (w.dTE - w.dLE) * 0.5 + 0.1));
-      });
+    if (!open) [0, rings.length - 1].forEach(function (e) {
+      var cx = 0, cy = 0, cz = 0;
+      for (j = 0; j < n; j++) { cx += rings[e][j][0]; cy += rings[e][j][1]; cz += rings[e][j][2]; }
+      var ci = pos.length / 3; pos.push(cx / n, cy / n, cz / n);
+      for (j = 0; j < n; j++) { var p = e * n + j, q = e * n + (j + 1) % n; if (e === 0) idx.push(ci, q, p); else idx.push(ci, p, q); }
+    });
+    var vol = 0, mx = 0, my = 0, mz = 0, np = pos.length / 3;
+    for (i = 0; i < np; i++) { mx += pos[3 * i]; my += pos[3 * i + 1]; mz += pos[3 * i + 2]; }
+    mx /= np; my /= np; mz /= np;
+    for (i = 0; i < idx.length; i += 3) {
+      var A = idx[i] * 3, B = idx[i + 1] * 3, Cc = idx[i + 2] * 3;
+      var ax = pos[A] - mx, ay = pos[A + 1] - my, az = pos[A + 2] - mz;
+      var bx = pos[B] - mx, by = pos[B + 1] - my, bz = pos[B + 2] - mz;
+      var qx = pos[Cc] - mx, qy = pos[Cc + 1] - my, qz = pos[Cc + 2] - mz;
+      vol += ax * (by * qz - bz * qy) - ay * (bx * qz - bz * qx) + az * (bx * qy - by * qx);
     }
-    /* the starboard wingtip hose-reel fairing of the wing-to-wing fit (shape plain, not confirmed) */
-    var wy = -16.5, w = wingAt(16.5);
-    var fr = lathe(THREE, [[0, 0.05], [0.4, 0.2], [1.2, 0.3], [4.2, 0.3], [5.4, 0.2], [6.0, 0.06]], 12, X(w.dLE - 1.4), wy + 0.1, wz(16.5), false, true);
-    emit(THREE, g, fr, T, function () { return "skin"; });
-    g.add(disc(THREE, T.ink, 0.04, X(w.dLE - 1.38), wy + 0.1, wz(16.5), 8));
+    if (vol < 0) for (i = 0; i < idx.length; i += 3) { var t = idx[i + 1]; idx[i + 1] = idx[i + 2]; idx[i + 2] = t; }
+    var g = new V.BufferGeometry();
+    g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+  /* a body of revolution along x: prof [d, r], centre (cy(d), cz(d)), height factor k */
+  function lathe(prof, N, cfun, k, open) {
+    return loft(prof.map(function (q) {
+      var c = cfun(q[0]), r = Math.max(q[1], 0.004), ring = [], j;
+      for (j = 0; j < N; j++) { var t = j / N * 2 * PI; ring.push([X(q[0]), c[0] + r * Math.cos(t), c[1] + r * (k || 1) * Math.sin(t)]); }
+      return ring;
+    }), open);
+  }
+  function rod(a, b, r, seg) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], Ln = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
+    var g = new V.CylinderGeometry(r, r, Ln, seg || 8, 1, true);
+    var q = new V.Quaternion().setFromUnitVectors(new V.Vector3(0, 1, 0), new V.Vector3(dx / Ln, dy / Ln, dz / Ln));
+    var m = new V.Matrix4().makeRotationFromQuaternion(q);
+    m.setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+    g.applyMatrix4(m); return g;
+  }
+  function ell(rx, ry, rz, x, y, z, ws, hs) {
+    var g = new V.SphereGeometry(1, ws || 14, hs || 9);
+    g.scale(rx, ry, rz); g.translate(x, y, z); return g;
+  }
+  function box(sx, sy, sz, x, y, z) { var g = new V.BoxGeometry(sx, sy, sz); g.translate(x, y, z); return g; }
+  function cylY(r, w, x, y, z, seg) { var g = new V.CylinderGeometry(r, r, w, seg || 18, 1); g.translate(x, y, z); return g; }
+  function disc(r, x, y, z, n) {
+    var g = new V.CircleGeometry(r, n || 18); g.rotateY(PI / 2); g.translate(x, y, z); return g;
+  }
+  function merge(list) {
+    var pos = [], nor = [], i, j;
+    for (i = 0; i < list.length; i++) {
+      var g = list[i].index ? list[i].toNonIndexed() : list[i];
+      if (!g.attributes.normal) g.computeVertexNormals();
+      var p = g.attributes.position.array, n = g.attributes.normal.array;
+      for (j = 0; j < p.length; j++) { pos.push(p[j]); nor.push(n[j]); }
+    }
+    var out = new V.BufferGeometry();
+    out.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    out.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    out.setAttribute("uv", new V.Float32BufferAttribute(new Float32Array(pos.length / 3 * 2), 2));
+    return out;
+  }
+  /* split an indexed geometry's faces between two lists by a rule on the face centre */
+  function split(g, rule, A, B) {
+    var ng = g.toNonIndexed(), p = ng.attributes.position.array, n = ng.attributes.normal.array, pa = [], na = [], pb = [], nb = [], t, k;
+    for (t = 0; t < p.length; t += 9) {
+      var cx = (p[t] + p[t + 3] + p[t + 6]) / 3, cy = (p[t + 1] + p[t + 4] + p[t + 7]) / 3, cz = (p[t + 2] + p[t + 5] + p[t + 8]) / 3;
+      var to = rule(cx, cy, cz) ? [pa, na] : [pb, nb];
+      for (k = 0; k < 9; k++) { to[0].push(p[t + k]); to[1].push(n[t + k]); }
+    }
+    function mk(P, Nn) {
+      var o = new V.BufferGeometry();
+      o.setAttribute("position", new V.Float32BufferAttribute(P, 3));
+      o.setAttribute("normal", new V.Float32BufferAttribute(Nn, 3));
+      return o;
+    }
+    if (pa.length) A.push(mk(pa, na));
+    if (pb.length) B.push(mk(pb, nb));
+  }
+  /* airfoil: [chord fraction, thickness offset] around, LE first */
+  function yt(f, tc) { return tc * (1.4845 * Math.sqrt(f) - 0.6300 * f - 1.7580 * f * f + 1.4215 * f * f * f - 0.5075 * f * f * f * f); }
+  function foil(m, tc, cam) {
+    var p = [], i, f;
+    for (i = 0; i <= m; i++) { f = 0.5 * (1 - Math.cos(PI * i / m)); p.push([f, cam * 4 * f * (1 - f) + yt(f, tc)]); }
+    for (i = m - 1; i >= 1; i--) { f = 0.5 * (1 - Math.cos(PI * i / m)); p.push([f, cam * 4 * f * (1 - f) - yt(f, tc)]); }
+    return p;
   }
 
-  /* ---------------------------------------------------------- engines, pods, guns */
-  function addEngines(THREE, g, T) {
-    for (var s = -1; s <= 1; s += 2) {
-      var yc = s * YE, zc = wz(YE) - 0.02, dF = 11.0;
-      emit(THREE, g, lathe(THREE, ENG, 24, X(dF), yc, zc, false, true), T, function (cx, cy, cz, nx) { return nx < -0.8 ? "ink" : "skin"; });
-      g.add(disc(THREE, T.ink, ENG[0][1] + 0.01, X(dF), yc, zc, 18));
-      /* the gear pod behind the trailing edge */
-      var yp = s * YP, zp = wz(YP) - 0.12;
-      emit(THREE, g, lathe(THREE, POD, 22, X(16.8), yp, zp, true, true), T, function () { return "skin"; });
-    }
+  /* ---------------- fuselage ---------------- */
+  function fusAt(d) {
+    var k = 0, q, n = FUS.length;
+    for (q = 0; q < n - 1; q++) if (FUS[q][0] <= d) k = q;
+    var A = FUS[k], B = FUS[Math.min(k + 1, n - 1)], t = clamp((d - A[0]) / Math.max(1e-6, B[0] - A[0]), 0, 1);
+    var p0 = FUS[Math.max(0, k - 1)], p3 = FUS[Math.min(n - 1, k + 2)], r = [d], c;
+    for (c = 1; c < 6; c++) r.push(cr1(p0[c], A[c], B[c], p3[c], t));
+    r[1] = Math.max(0.03, r[1]); r[2] = Math.max(0.03, r[2]); r[3] = Math.max(0.03, r[3]);
+    return r;
   }
-  function addGuns(THREE, g, T) {
-    var s;
-    /* dorsal turret */
-    g.add(egg(THREE, T.skin, 0.55, 0.38, 0.30, X(16.0), 0, 1.30, 10, 6));
-    for (s = -1; s <= 1; s += 2) g.add(box(THREE, T.metal, 1.1, 0.06, 0.06, X(17.2), s * 0.16, 1.32));
-    /* ventral turret */
-    g.add(egg(THREE, T.skin, 0.6, 0.38, 0.28, X(19.8), 0, -1.30, 10, 6));
-    for (s = -1; s <= 1; s += 2) g.add(box(THREE, T.metal, 1.0, 0.06, 0.06, X(20.9), s * 0.15, -1.40));
-    /* tail turret: the fuselage ends in it, the barrels set the length */
-    g.add(egg(THREE, T.skin, 0.75, 0.30, 0.30, X(33.6), 0, 0.18, 10, 6));
-    for (s = -1; s <= 1; s += 2) g.add(box(THREE, T.metal, 1.4, 0.07, 0.07, X(34.1), s * 0.15, 0.2));
-    g.add(box(THREE, T.metal, 0.4, 0.04, 0.04, X(L - 0.2) - 0.0, 0.15, 0.2 + 0.001));
+  function sgnp(v, e) { return (v < 0 ? -1 : 1) * Math.pow(Math.abs(v), e); }
+  function fusPt(s, t) {
+    var e = 2 / s[5], c = Math.cos(t), sn = Math.sin(t);
+    return [X(s[0]), s[1] * sgnp(c, e), s[4] + (sn >= 0 ? s[2] : s[3]) * sgnp(sn, e)];
+  }
+  function fusTop(d) { var s = fusAt(d); return s[4] + s[2]; }
+  function fusBot(d) { var s = fusAt(d); return s[4] - s[3]; }
+  function addFuselage(K) {
+    var N = 28, rings = FUS_D.map(function (d) {
+      var s = fusAt(d), r = [], j;
+      for (j = 0; j < N; j++) r.push(fusPt(s, j / N * 2 * PI));
+      return r;
+    });
+    /* the glazed nose (to 2.15 m, all round but the keel), and the tail gunner's glazing above the DK-7 */
+    split(loft(rings), function (x, y, z) {
+      var d = NOSE - x, s = fusAt(d);
+      if (d < 2.12 && d > 0.05 && z > s[4] - 0.62 * s[3]) return true;
+      if (d > 33.25 && z > s[4] - 0.05 && z < s[4] + 0.42) return true;
+      return false;
+    }, K.glass, K.skin);
+    /* frames of the nose glazing: three rings and five longitudinals (D) */
+    [0.55, 1.12, 1.66, 2.12].forEach(function (d) {
+      var s = fusAt(d), j, a0 = -0.32 * PI, a1 = 1.32 * PI, n = 10, prev = null;
+      for (j = 0; j <= n; j++) {
+        var p = fusPt([s[0], s[1] + 0.02, s[2] + 0.02, s[3] + 0.02, s[4], s[5]], lerp(a0, a1, j / n));
+        if (prev) K.metal.push(rod(prev, p, 0.026, 4));
+        prev = p;
+      }
+    });
+    [0.5 * PI, 0.25 * PI, 0.75 * PI, 0, PI].forEach(function (a) {
+      var prev = null, d;
+      for (d = 0.1; d <= 2.13; d += 0.4) {
+        var s = fusAt(d), p = fusPt([d, s[1] + 0.02, s[2] + 0.02, s[3] + 0.02, s[4], s[5]], a);
+        if (prev) K.metal.push(rod(prev, p, 0.024, 4));
+        prev = p;
+      }
+    });
+    K.metal.push(lathe([[0.0, 0.10], [0.05, 0.13], [0.12, 0.16]], 12, function () { return [0, -0.2]; }));   /* nose cap */
+    /* the RBP-4 chin radome (A side view: 0.25 m below the keel, 2.2 to 5.4 m; C, D) */
+    K.skin.push(lathe([[2.1, 0.05], [2.4, 0.36], [3.0, 0.56], [3.9, 0.62], [4.7, 0.58], [5.3, 0.38], [5.6, 0.06]], 18,
+      function (d) { return [0, fusBot(d) + 0.28]; }, 0.62));
+    /* the fixed AM-23 low on the starboard nose (ru.wikipedia) */
+    K.skin.push(lathe([[2.2, 0.03], [2.5, 0.11], [3.6, 0.12], [4.1, 0.03]], 8, function () { return [-0.80, -0.78]; }));
+    K.metal.push(rod([X(1.75), -0.80, -0.78], [X(2.3), -0.80, -0.78], 0.035, 6));
+  }
+  function addCanopy(K) {
+    /* the pilots' canopy: a hump 0.3 m over the crown from 2.4 to 5.9 m (A, B, D) */
+    var H = [[2.3, 0.0, 0.40], [2.55, 0.12, 0.55], [2.9, 0.24, 0.66], [3.4, 0.31, 0.72], [4.3, 0.33, 0.74],
+             [5.0, 0.30, 0.70], [5.5, 0.20, 0.6], [5.95, 0.04, 0.45]];
+    var rings = H.map(function (h) {
+      var ring = [], j, n = 14, top = fusTop(h[0]);
+      for (j = 0; j <= n; j++) { var a = PI * j / n; ring.push([X(h[0]), h[2] * Math.cos(a), top - 0.22 + (h[1] + 0.22) * Math.sin(a)]); }
+      ring.push([X(h[0]), -h[2] * 0.6, top - 0.35]); ring.push([X(h[0]), h[2] * 0.6, top - 0.35]);
+      return ring;
+    });
+    K.glass.push(loft(rings));
+    /* bows and the windscreen frame */
+    [2.55, 2.95, 3.6, 4.4, 5.2].forEach(function (d) {
+      var h = [pl(H.map(function (q) { return [q[0], q[1]]; }), d), pl(H.map(function (q) { return [q[0], q[2]]; }), d)];
+      var top = fusTop(d), prev = null, j, n = 6;
+      for (j = 0; j <= n; j++) {
+        var a = PI * j / n, p = [X(d), (h[1] + 0.02) * Math.cos(a), top - 0.22 + (h[0] + 0.24) * Math.sin(a)];
+        if (prev) K.metal.push(rod(prev, p, 0.03, 4));
+        prev = p;
+      }
+    });
+    K.metal.push(rod([X(2.5), 0, fusTop(2.5) + 0.13], [X(5.6), 0, fusTop(5.6) + 0.22], 0.03, 4));
+    /* the spine fairing from the canopy back over the dorsal turret ring */
+    K.skin.push(lathe([[5.6, 0.05], [6.0, 0.32], [7.0, 0.38], [8.6, 0.38], [9.4, 0.2], [9.9, 0.04]], 12,
+      function () { return [0, 1.13]; }, 0.45));
   }
 
-  /* ---------------------------------------------------------- gear */
-  function addGear(THREE, g, T) {
-    var gear = new THREE.Group(), s, o;
-    gear.name = "gear";
-    function wheel(R, W, x, y, z) {
-      var t = new THREE.Mesh(new THREE.CylinderGeometry(R, R, W, 16, 1), T.tyre);
-      t.position.set(x, y, z);
-      gear.add(t);
-      var h = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.55, R * 0.55, W + 0.03, 10, 1), T.metal);
-      h.position.set(x, y, z);
-      gear.add(h);
-    }
-    /* nose: twin tyres under the cockpit */
-    var nz = GROUND + 0.4;
-    for (s = -1; s <= 1; s += 2) wheel(0.4, 0.2, X(5.2), s * 0.2, nz);
-    gear.add(taper(THREE, T.metal, [X(5.0), 0, -1.2], [X(5.2), 0, nz], 0.1, 0.07, 8));
-    /* mains: a four-wheel bogie under each pod */
-    var mz = GROUND + 0.55;
+  /* ---------------- wings, fences, team strips ---------------- */
+  function wingRing(st, s) {
+    var c = st[2] - st[1];
+    return foil(10, st[3], 0.012).map(function (p) { return [X(st[1] + p[0] * c), s * st[0], wz(st[0]) + p[1] * c]; });
+  }
+  function wingSkinZ(y, f, up) {
+    var w = wingAt(y), c = w[2] - w[1];
+    return wz(y) + (0.012 * 4 * f * (1 - f) + up * yt(f, w[3])) * c;
+  }
+  function addWings(K) {
+    [1, -1].forEach(function (s) {
+      K.skin.push(loft(WING.map(function (st) { return wingRing(st, s); })));
+      /* two fences over the upper surface, wrapping the leading edge (B) */
+      [7.4, 10.6].forEach(function (y) {
+        var w = wingAt(y), c = w[2] - w[1], ol = [], i;
+        for (i = 0; i <= 8; i++) { var f = 0.85 * i / 8; ol.push([w[1] + f * c, wingSkinZ(y, f, 1) + 0.16 - 0.1 * (i / 8)]); }
+        ol.push([w[1] + 0.85 * c, wingSkinZ(y, 0.85, 1) - 0.01]);
+        for (i = 8; i >= 0; i--) { var f2 = 0.85 * i / 8; ol.push([w[1] + f2 * c, wingSkinZ(y, f2, 1) - 0.01]); }
+        ol.push([w[1] - 0.04, wz(y) - 0.08]);
+        var g = loft([ol.map(function (q) { return [X(q[0]), s * y + 0.02, q[1]]; }), ol.map(function (q) { return [X(q[0]), s * y - 0.02, q[1]]; })]);
+        K.metal.push(g);
+      });
+      /* team strip: a small flat panel on the upper wing near the tip */
+      var y0 = 14.5, y1 = 15.7, f0 = 0.3, f1 = 0.62, rows = [], i, j;
+      for (i = 0; i <= 3; i++) {
+        var y = lerp(y0, y1, i / 3), w = wingAt(y), c = w[2] - w[1], r = [];
+        for (j = 0; j <= 3; j++) { var f = lerp(f0, f1, j / 3); r.push([X(w[1] + f * c), s * y, wingSkinZ(y, f, 1) + 0.025]); }
+        rows.push(r);
+      }
+      var pos = [], ii;
+      for (i = 0; i < 3; i++) for (j = 0; j < 3; j++) {
+        var a = rows[i][j], b = rows[i + 1][j], cc = rows[i + 1][j + 1], dd = rows[i][j + 1];
+        [a, b, cc, a, cc, dd].forEach(function (p) { pos.push(p[0], p[1], p[2]); });
+      }
+      var tg = new V.BufferGeometry();
+      tg.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+      tg.computeVertexNormals();
+      var nn = tg.attributes.normal.array;
+      if (nn[2] < 0) { for (ii = 0; ii < pos.length; ii += 9) { var t3 = [pos[ii + 3], pos[ii + 4], pos[ii + 5]]; pos[ii + 3] = pos[ii + 6]; pos[ii + 4] = pos[ii + 7]; pos[ii + 5] = pos[ii + 8]; pos[ii + 6] = t3[0]; pos[ii + 7] = t3[1]; pos[ii + 8] = t3[2]; }
+        tg.setAttribute("position", new V.Float32BufferAttribute(pos, 3)); tg.computeVertexNormals(); }
+      K.team.push(tg);
+    });
+  }
+
+  /* ---------------- tail ---------------- */
+  function addTail(K) {
+    K.skin.push(loft(FIN.map(function (f) {
+      var c = f[2] - f[1];
+      return foil(10, f[3], 0).map(function (p) { return [X(f[1] + p[0] * c), p[1] * c, f[0]]; });
+    })));
+    /* rudder hinge strip (skin, slightly proud) left to the paint; the tailplane, flat, on the fin root */
+    [1, -1].forEach(function (s) {
+      K.skin.push(loft(STAB.map(function (st) {
+        var c = st[2] - st[1], tc = 0.09 - 0.025 * st[0] / 5.63;
+        return foil(9, tc, 0).map(function (p) { return [X(st[1] + p[0] * c), s * st[0], STZ + p[1] * c]; });
+      })));
+    });
+    /* the tail gunner's position: PRS-1 bulge above the glazing, DK-7 below with its two guns (ru.wikipedia; B, F) */
+    K.skin.push(lathe([[32.75, 0.03], [33.0, 0.2], [33.5, 0.26], [33.85, 0.2], [34.0, 0.03]], 12,
+      function (d) { return [0, fusTop(Math.min(d, 33.6)) - 0.08]; }, 0.7));
+    K.metal.push(ell(0.36, 0.34, 0.32, X(33.82), 0, 0.02, 12, 8));
+    [1, -1].forEach(function (s) {
+      K.metal.push(rod([X(33.9), s * 0.13, 0.0], [X(34.8), s * 0.13, 0.0], 0.045, 6));
+      K.ink.push(disc(0.03, X(34.81), s * 0.13, 0.0, 6));
+    });
+    /* the radio operator's teardrop blisters, about half screened (ru.wikipedia; C, F) */
+    [1, -1].forEach(function (s) {
+      var y = s * (fusAt(31.6)[1] - 0.06);
+      K.glass.push(ell(0.75, 0.24, 0.36, X(31.6), y, 0.28, 12, 8));
+      K.skin.push(ell(0.78, 0.26, 0.2, X(31.55), y, 0.12, 12, 6));
+    });
+  }
+
+  /* ---------------- engines, pods, turrets ---------------- */
+  function addEngines(K) {
+    [1, -1].forEach(function (s) {
+      var cf = function (d) { var c = engC(d); return [s * c[0], c[1]]; };
+      K.skin.push(lathe(ENG, 22, cf, 1, true));
+      /* the lip's inner face and the duct, dark (B, D, E) */
+      K.ink.push(lathe([[9.9, 0.66], [10.05, 0.6], [10.8, 0.56]], 22, cf, 1, true));
+      K.ink.push(disc(0.57, X(10.8), s * engC(10.8)[0], engC(10.8)[1], 22));
+      K.metal.push(lathe([[9.88, 0.67], [9.95, 0.70], [10.05, 0.68]], 22, cf, 1, true));
+      /* nozzle: a metal ring and the dark pipe */
+      K.metal.push(lathe([[20.2, 0.56], [20.62, 0.53], [20.7, 0.47]], 20, cf, 1, true));
+      K.ink.push(disc(0.48, X(20.55), s * engC(20.55)[0], engC(20.55)[1], 20));
+      /* the main-gear pod, over and under the wing, trailing it */
+      K.skin.push(lathe(POD, 18, function () { return [s * YP, podZ()]; }, 1.08));
+    });
+  }
+  function addTurrets(K) {
+    /* DT-V7 upper turret just behind the canopy, guns stowed aft (B, D, F) */
+    K.skin.push(ell(0.55, 0.5, 0.32, X(7.9), 0, 1.38, 12, 7));
+    K.ink.push(ell(0.4, 0.36, 0.08, X(7.9), 0, 1.66, 10, 4));
+    [1, -1].forEach(function (s) { K.metal.push(rod([X(8.1), s * 0.14, 1.52], [X(9.8), s * 0.14, 1.49], 0.04, 6)); });
+    /* DT-N7S lower turret aft of the bomb bay (A, C) */
+    var zb = fusBot(22.6);
+    K.skin.push(ell(0.55, 0.5, 0.3, X(22.6), 0, zb + 0.02, 12, 7));
+    [1, -1].forEach(function (s) { K.metal.push(rod([X(22.8), s * 0.14, zb - 0.14], [X(24.4), s * 0.14, zb - 0.12], 0.04, 6)); });
+  }
+
+  /* ---------------- gear: retracting; group "gear" ---------------- */
+  function addGear(G) {
+    var s, o;
+    /* nose: twin 900 x 275 wheels under the cockpit, set back of the radome (D) */
+    var nd = 6.3, nz = GROUND + 0.45;
+    [1, -1].forEach(function (k) {
+      G.tyre.push(cylY(0.45, 0.27, X(nd), k * 0.24, nz, 18));
+      G.leg.push(cylY(0.25, 0.29, X(nd), k * 0.24, nz, 10));
+    });
+    G.leg.push(rod([X(nd - 0.15), 0, fusBot(nd) + 0.1], [X(nd), 0, nz], 0.09, 8));
+    G.leg.push(rod([X(nd), -0.36, nz], [X(nd), 0.36, nz], 0.05, 6));
+    G.leg.push(rod([X(nd - 0.9), 0, fusBot(nd - 0.9) + 0.05], [X(nd - 0.1), 0, nz + 0.9], 0.05, 6));
+    [1, -1].forEach(function (k) { G.door.push(box(2.0, 0.03, 0.75, X(nd + 0.1), k * 0.42, fusBot(nd) - 0.3)); });
+    /* mains: four-wheel bogies, 1100 x 330, at the 9.775 m track, 10.9 m behind the nose wheels */
+    var md = nd + 10.913, mz = GROUND + 0.55, pz = podZ() - 0.64 * 1.08;
     for (s = -1; s <= 1; s += 2) {
       var yc = s * YP;
-      for (o = -1; o <= 1; o += 2) wheel(0.55, 0.32, X(21.8 + o * 0.7), yc, mz);
-      gear.add(taper(THREE, T.metal, [X(21.1), yc, mz], [X(22.5), yc, mz], 0.06, 0.06, 6));
-      gear.add(taper(THREE, T.metal, [X(21.8), yc, wz(YP) - 0.55], [X(21.8), yc, mz + 0.05], 0.13, 0.1, 8));
+      for (o = -1; o <= 1; o += 2) [1, -1].forEach(function (k) {
+        G.tyre.push(cylY(0.55, 0.33, X(md + o * 0.68), yc + k * 0.3, mz, 16));
+        G.leg.push(cylY(0.3, 0.35, X(md + o * 0.68), yc + k * 0.3, mz, 8));
+      });
+      for (o = -1; o <= 1; o += 2) G.leg.push(rod([X(md + o * 0.68), yc - 0.48, mz], [X(md + o * 0.68), yc + 0.48, mz], 0.06, 6));
+      G.leg.push(rod([X(md - 0.8), yc, mz + 0.05], [X(md + 0.8), yc, mz + 0.05], 0.09, 8));
+      G.leg.push(rod([X(md - 0.2), yc, pz + 0.15], [X(md), yc, mz + 0.05], 0.13, 10));
+      G.leg.push(rod([X(md - 1.6), yc, pz + 0.12], [X(md - 0.15), yc, mz + 0.9], 0.06, 6));
+      /* the long pod doors, open (D) */
+      [1, -1].forEach(function (k) { G.door.push(box(4.4, 0.03, 0.8, X(md - 0.5), yc + k * 0.42, pz - 0.32)); });
     }
-    g.add(gear);
   }
-  function mergeByMaterial(THREE, root) {
-    var main = { order: [], by: {} }, gear = { order: [], by: {} };
-    (function walk(node, pm, inGear) {
-      for (var i = 0; i < node.children.length; i++) {
-        var c = node.children[i];
-        c.updateMatrix();
-        var m = pm.clone().multiply(c.matrix);
-        var ing = inGear || c.name === "gear";
-        if (c.isMesh) {
-          var b = ing ? gear : main, key = c.material.uuid;
-          if (!b.by[key]) { b.by[key] = { mat: c.material, parts: [] }; b.order.push(key); }
-          var geo = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
-          geo.applyMatrix4(m);
-          b.by[key].parts.push(geo);
-        } else walk(c, m, ing);
+
+  /* ---------------- paint: canvas in four bands (top, port, starboard, belly) ---------------- */
+  var PXM = 24, DMIN = -0.4, TWPX = 864;           /* along the aircraft */
+  var PYM = 16, YMAX = 17.0, TOPH = 544;           /* across: top and belly bands */
+  var PZM = 18, ZTOP = 7.2, SIDEH = 194;           /* height: side bands */
+  var TH = TOPH * 2 + SIDEH * 2;
+  function pxD(d) { return clamp((d - DMIN) * PXM, 1, TWPX - 1); }
+  function pxY(y) { return clamp((YMAX - y) * PYM, 1, TOPH - 1); }
+  function pxZ(z) { return clamp((ZTOP - z) * PZM, 1, SIDEH - 1); }
+  function starPath(g, cx, cy, rx, ry, k, rot) {
+    g.beginPath();
+    for (var i = 0; i < 10; i++) {
+      var a = (rot || -PI / 2) + i * PI / 5, q = (i & 1) ? 0.40 : 1;
+      var x = cx + Math.cos(a) * q * rx * k, y = cy + Math.sin(a) * q * ry * k;
+      if (i) g.lineTo(x, y); else g.moveTo(x, y);
+    }
+    g.closePath();
+  }
+  /* the Soviet star of the period photographs: red, a white border and a thin red edge (B, C) */
+  function star(g, cx, cy, rx, ry, rot) {
+    g.fillStyle = "#9c2a22"; starPath(g, cx, cy, rx, ry, 1.22, rot); g.fill();
+    g.fillStyle = "#d8d8d2"; starPath(g, cx, cy, rx, ry, 1.12, rot); g.fill();
+    g.fillStyle = "#b02a22"; starPath(g, cx, cy, rx, ry, 1.0, rot); g.fill();
+  }
+  var _cv = null;
+  function paint() {
+    if (_cv) return _cv;
+    var cv = document.createElement("canvas");
+    cv.width = TWPX; cv.height = TH;
+    var g = cv.getContext("2d"), sd = 4111, i, b, d, y;
+    function R() { sd = (sd * 16807) % 2147483647; return sd / 2147483647; }
+    function line(x0, y0, x1, y1) { g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); }
+    var BY = [0, TOPH, TOPH + SIDEH, TOPH + 2 * SIDEH];
+    /* natural metal: D and E sample #bbb9b5 / #a9b1b1, taken to about 0.85 */
+    g.fillStyle = "#aaacad"; g.fillRect(0, 0, TWPX, TH);
+    /* panel to panel: bare sheets differ a little in tone (B, D) */
+    for (i = 0; i < 420; i++) {
+      var v = R(), col = v < 0.5 ? "rgba(188,190,192," : "rgba(120,124,128,";
+      g.fillStyle = col + (0.06 + R() * 0.12).toFixed(3) + ")";
+      g.fillRect(Math.floor(R() * 36) * PXM, R() * TH, (0.9 + R() * 1.6) * PXM, (0.5 + R() * 1.4) * PYM);
+    }
+    g.lineWidth = 1;
+    /* fuselage frames and stringers on every band */
+    for (b = 0; b < 4; b++) {
+      var o = BY[b], hh = b === 0 || b === 3 ? TOPH : SIDEH;
+      g.strokeStyle = "rgba(46,50,54,0.20)";
+      for (d = 2.6; d < 33.6; d += 1.05) {
+        if (b === 0 || b === 3) { var hw = fusAt(d)[1] * 0.97; line(pxD(d), o + pxY(hw), pxD(d), o + pxY(-hw)); }
+        else line(pxD(d), o + pxZ(fusTop(d) - 0.05), pxD(d), o + pxZ(fusBot(d) + 0.05));
       }
-    })(root, new THREE.Matrix4(), false);
-    function out(bucket, into) {
-      for (var i = 0; i < bucket.order.length; i++) {
-        var e = bucket.by[bucket.order[i]], n = 0, k, o = 0;
-        for (k = 0; k < e.parts.length; k++) n += e.parts[k].attributes.position.count;
-        var P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2);
-        for (k = 0; k < e.parts.length; k++) {
-          var a = e.parts[k].attributes;
-          P.set(a.position.array, o * 3);
-          N.set(a.normal.array, o * 3);
-          if (a.uv) U.set(a.uv.array, o * 2);
-          o += a.position.count;
+      g.strokeStyle = "rgba(46,50,54,0.11)";
+      if (b === 0 || b === 3) { [0.45, -0.45].forEach(function (yy) { line(pxD(2.4), o + pxY(yy), pxD(33), o + pxY(yy * 0.7)); }); }
+      else { [0.6, -0.4].forEach(function (zz) { line(pxD(2.4), o + pxZ(zz), pxD(33), o + pxZ(zz * 0.7 + 0.2)); }); }
+    }
+    /* wings, top and belly: ribs, front and rear spar, the flap and aileron lines (A) */
+    [0, 3].forEach(function (bi) {
+      var o = BY[bi];
+      [1, -1].forEach(function (s) {
+        var yy, w, c;
+        g.strokeStyle = "rgba(46,50,54,0.22)";
+        for (yy = 2.8; yy <= 16.3; yy += 0.9) {
+          w = wingAt(yy); c = w[2] - w[1];
+          line(pxD(w[1] + 0.08 * c), o + pxY(s * yy), pxD(w[1] + 0.72 * c), o + pxY(s * yy));
         }
-        var geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
-        geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
-        geo.setAttribute("uv", new THREE.BufferAttribute(U, 2));
-        into.add(new THREE.Mesh(geo, e.mat));
+        [0.15, 0.62, 0.74].forEach(function (f) {
+          var a = wingAt(2.8), e = wingAt(16.2);
+          line(pxD(a[1] + f * (a[2] - a[1])), o + pxY(s * 2.8), pxD(e[1] + f * (e[2] - e[1])), o + pxY(s * 16.2));
+        });
+        g.strokeStyle = "rgba(30,32,36,0.40)";
+        [2.9, 7.0, 10.9, 16.0].forEach(function (yb) {                 /* flap / aileron breaks (A) */
+          w = wingAt(yb); c = w[2] - w[1];
+          line(pxD(w[1] + 0.74 * c), o + pxY(s * yb), pxD(w[2]), o + pxY(s * yb));
+        });
+        /* tailplane: elevator line */
+        var ta = STAB[0], te = STAB[STAB.length - 1];
+        line(pxD(ta[1] + 0.7 * (ta[2] - ta[1])), o + pxY(s * 0.6), pxD(te[1] + 0.7 * (te[2] - te[1])), o + pxY(s * 5.5));
+      });
+    });
+    /* the fin's rudder line and a hinge on the side bands (A) */
+    [1, 2].forEach(function (bi) {
+      var o = BY[bi];
+      g.strokeStyle = "rgba(30,32,36,0.40)";
+      line(pxD(33.1), o + pxZ(1.6), pxD(33.75), o + pxZ(6.7));
+      g.strokeStyle = "rgba(46,50,54,0.2)";
+      [2.7, 4.0, 5.4].forEach(function (zz) { line(pxD(pl(FIN.map(function (f) { return [f[0], f[1]]; }), zz) + 0.2), o + pxZ(zz), pxD(33.0), o + pxZ(zz)); });
+      /* crew door, the navigator's side windows behind the glazing, the rear crew's side windows */
+      g.strokeRect(pxD(9.3), o + pxZ(-0.1), 0.8 * PXM, 0.9 * PZM);
+      g.fillStyle = "rgba(24,30,34,0.85)";
+      g.fillRect(pxD(2.25), o + pxZ(0.62), 0.32 * PXM, 0.28 * PZM);
+      g.fillRect(pxD(2.7), o + pxZ(0.66), 0.32 * PXM, 0.28 * PZM);
+      /* exhaust soot along the fuselage side behind the nozzles (F) */
+      var gr = g.createLinearGradient(pxD(20.4), 0, pxD(27), 0);
+      gr.addColorStop(0, "rgba(58,52,46,0.42)"); gr.addColorStop(1, "rgba(58,52,46,0)");
+      g.fillStyle = gr; g.fillRect(pxD(20.4), o + pxZ(0.75), pxD(27) - pxD(20.4), pxZ(-0.85) - pxZ(0.75));
+      /* the national star on both sides of the fin (B, C, D) */
+      star(g, pxD(31.35), o + pxZ(4.25), 0.62 * PXM, 0.62 * PZM);
+    });
+    /* belly soot behind the nozzles */
+    (function () {
+      var gr = g.createLinearGradient(pxD(20.4), 0, pxD(26), 0);
+      gr.addColorStop(0, "rgba(58,52,46,0.35)"); gr.addColorStop(1, "rgba(58,52,46,0)");
+      g.fillStyle = gr; g.fillRect(pxD(20.4), BY[3] + pxY(1.6), pxD(26) - pxD(20.4), pxY(-1.6) - pxY(1.6));
+    })();
+    /* stars on both faces of each wing, outboard of the outer fence (B, C) */
+    [1, -1].forEach(function (s) {
+      var w = wingAt(12.6), c = w[2] - w[1], dc = w[1] + 0.5 * c;
+      star(g, pxD(dc), BY[0] + pxY(s * 12.6), 0.85 * PXM, 0.85 * PYM, PI);
+      star(g, pxD(dc), BY[3] + pxY(s * 12.6), 0.85 * PXM, 0.85 * PYM, PI);
+    });
+    /* light grime */
+    for (i = 0; i < 90; i++) {
+      g.fillStyle = "rgba(70,66,60," + (0.02 + R() * 0.05).toFixed(3) + ")";
+      g.fillRect(R() * TWPX, R() * TH, 6 + R() * 30, 2 + R() * 5);
+    }
+    _cv = cv;
+    return cv;
+  }
+  var _tex;
+  function skinTexture() {
+    if (_tex !== undefined) return _tex;
+    var t = false;
+    try {
+      t = new V.CanvasTexture(paint());
+      t.wrapS = t.wrapT = V.ClampToEdgeWrapping;
+      t.anisotropy = 4;
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+    } catch (e) { t = false; }
+    _tex = t;
+    return t;
+  }
+  /* each face takes the band its normal looks into; UVs in 0..1 */
+  function projUV(geo) {
+    var p = geo.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+    for (t = 0; t < p.length; t += 9) {
+      var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+      var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1, cy = (p[t + 1] + p[t + 4] + p[t + 7]) / 3;
+      nz /= nl; ny /= nl;
+      var band = nz > 0.5 ? 0 : nz < -0.5 ? 3 : (Math.abs(ny) > 0.05 ? (ny > 0 ? 1 : 2) : (cy >= 0 ? 1 : 2));
+      for (k = 0; k < 3; k++) {
+        var x = p[t + 3 * k], y = p[t + 3 * k + 1], z = p[t + 3 * k + 2], U = pxD(NOSE - x), W;
+        if (band === 0) W = pxY(y);
+        else if (band === 3) W = TOPH + 2 * SIDEH + pxY(y);
+        else W = TOPH + (band - 1) * SIDEH + pxZ(z);
+        uv[(t / 3 + k) * 2] = U / TWPX;
+        uv[(t / 3 + k) * 2 + 1] = 1 - W / TH;
       }
     }
-    var res = new THREE.Group();
-    out(main, res);
-    var gr = new THREE.Group();
-    gr.name = "gear";
-    out(gear, gr);
-    res.add(gr);
-    return res;
+    geo.setAttribute("uv", new V.BufferAttribute(uv, 2));
+    return geo;
   }
 
-
-  function materials(THREE, C) {
-    var skin = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.45, side: THREE.DoubleSide });
-    var t = skinSheet(THREE);
-    if (t) skin.map = t; else skin.color.set("#c4cacd");
-    return {
-      skin: skin,
-      team: new THREE.MeshStandardMaterial({
-        color: new THREE.Color((C && C.team !== undefined) ? C.team : 0x3f7fd0),
-        roughness: 0.82, metalness: 0.06, side: THREE.DoubleSide }),
-      metal: new THREE.MeshStandardMaterial({ color: 0x474d52, roughness: 0.52, metalness: 0.55, side: THREE.DoubleSide }),
-      ink: new THREE.MeshStandardMaterial({ color: 0x060708, roughness: 0.95, metalness: 0.03, side: THREE.DoubleSide }),
-      tyre: new THREE.MeshStandardMaterial({ color: 0x070809, roughness: 0.95, metalness: 0.04 }),
-      red: new THREE.MeshStandardMaterial({ color: 0xc8161d, roughness: 0.7, metalness: 0.02, side: THREE.DoubleSide }),
-      white: new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.7, metalness: 0.02, side: THREE.DoubleSide }),
-      glass: new THREE.MeshPhysicalMaterial({ color: 0x27383f, roughness: 0.13, metalness: 0.30, clearcoat: 0.35,
-        transparent: true, opacity: 0.83, side: THREE.DoubleSide })
-    };
+  function makeMats(C) {
+    var m = {}, tc = (C && C.team !== undefined) ? C.team : "#3f7fd0", tex = skinTexture();
+    m.skin = new V.MeshStandardMaterial({ color: tex ? 0xffffff : 0xaaacad, map: tex || null, roughness: 0.42,
+                                          metalness: 0.10, side: V.DoubleSide });
+    m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.82, metalness: 0.06, side: V.DoubleSide });
+    m.metal = new V.MeshStandardMaterial({ color: 0x55595d, roughness: 0.45, metalness: 0.6, side: V.DoubleSide });
+    m.ink = new V.MeshStandardMaterial({ color: 0x0c0d0e, roughness: 0.92, metalness: 0.04, side: V.DoubleSide });
+    m.glass = new V.MeshStandardMaterial({ color: 0x2a3a42, roughness: 0.10, metalness: 0.5, side: V.DoubleSide,
+                                           polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    m.leg = new V.MeshStandardMaterial({ color: 0x7c8186, roughness: 0.45, metalness: 0.55 });
+    m.tyre = new V.MeshStandardMaterial({ color: 0x141516, roughness: 0.95, metalness: 0.02 });
+    m.door = new V.MeshStandardMaterial({ color: 0x9a9c9e, roughness: 0.45, metalness: 0.15, side: V.DoubleSide });
+    return m;
   }
 
   function build(THREE, M, C) {
-    var T = materials(THREE, C);
-    var g = new THREE.Group();
-    addFuselage(THREE, g, T);
-    addCockpit(THREE, g, T);
-    addTail(THREE, g, T);
-    addWings(THREE, g, T);
-    addEngines(THREE, g, T);
-    addGuns(THREE, g, T);
-    addGear(THREE, g, T);
-    return mergeByMaterial(THREE, g);
+    V = THREE;
+    var K = { skin: [], team: [], metal: [], ink: [], glass: [] }, G = { leg: [], tyre: [], door: [] };
+    addFuselage(K);
+    addCanopy(K);
+    addWings(K);
+    addTail(K);
+    addEngines(K);
+    addTurrets(K);
+    addGear(G);
+    var mats = makeMats(C), root = new V.Group();
+    ["skin", "team", "metal", "ink", "glass"].forEach(function (key) {
+      if (!K[key].length) return;
+      var geo = merge(K[key]);
+      if (key === "skin") projUV(geo);
+      root.add(new V.Mesh(geo, mats[key]));
+    });
+    var gear = new V.Group(); gear.name = "gear";
+    ["leg", "tyre", "door"].forEach(function (key) { if (G[key].length) gear.add(new V.Mesh(merge(G[key]), mats[key])); });
+    root.add(gear);
+    return root;
   }
   return { build: build };
 })();
 
-/* len: the measured X extent, nose to the tail-gun muzzles */
+/* len: the measured X extent, glazed nose tip to the tail-gun muzzles */
 UNIT_MODELS["pact_e50_tanker"] = {
   len: 34.8,
   build: function (THREE, M, C) { return HeroTu16Z.build(THREE, M, C); }
