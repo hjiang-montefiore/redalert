@@ -4,89 +4,78 @@
    Registered as corvette_p, the PACT e20 corvette. No other def borrows
    this key, so nothing else in the roster changes when it loads.
 
-   The old corvette_p was the parametric Warship3D row: 33 meshes of
-   generic blocks, and a gun group called "gunmount" that the renderer
-   never found, so the one weapon on the ship could not train.
+   REDO, 2026-10-24 (the Russian front-line quality round). The lofted hull,
+   the station tables and the superstructure stacks of the first hero are
+   kept: every one was checked again against the photographs below and
+   holds. What the redo changed, and why:
+     - PAINT. The first hero took the warship3d.js "darkgrey" storm grey
+       (hull 0x353c43). No photograph of 368, 375, 383 or 363 shows a dark
+       ship: the class is a medium-light grey, the superstructure a step
+       lighter than the hull. Resampled; see PAINT.
+     - No pennant number and no name on the side (the house rule).
+     - The transom opening is 8.6 m wide and centred (it was 7.6 m, set
+       0.6 m to port), 1.9 to 4.65 m up, with its pillars, beam and bitts
+       (stern-quarter shot).
+     - The dome on the forward face of the mast is 2 m across, two thirds
+       of the radome above it (gun close-up of 383); it was a 0.8 m drum.
+     - The topmast is a lattice, not a square pole; the wire curtain
+       hangs from the main yard; the anchors sit in their pockets; the
+       gunhouse has its knee and its hard-leaning upper walls; the glass
+       is double-sided, so no pane drops out on either side.
+     - The hull is lofted through 72 stations (it was 37).
 
-   Measured off photographs read at known scale (LOA 94.0 m end to end),
-   all on Wikimedia Commons unless said otherwise:
-     - "Vasiliy Bykov" (368, 21 Aug 2018). Starboard broadside from near
-       sea level, 18.5 px a metre. The sheer, the knuckle, the gun, the
-       front slope, the bridge band and wings, the mast and radome, the
-       raked leg and the vertical topmast on it, the 02 deckhouse, the
-       boat, its davit and radome post, the scuttles, the raft racks and
-       the two waterline exhaust hoods all come off a metre grid laid
-       over this one, and the model's profile was laid back over it.
-     - "Dmitriy Rogachyov in Sevastopol" (375, 12 Apr 2019). Port side
-       from a hillside, 10.6 px a metre: the same stations to within half
-       a metre, and the freeboard with the camera's height taken out.
-     - "Vasiliy Bykov" at the Navy Day parade (368, 26 Jul 2020): the
-       black band aft with the name on it, which the 2018 shot lacks.
-     - "Vasiliy-Bykov-1200" (368 from the port bow, 2020): the mast rig,
-       the length of the main yard, both davit jibs pointing forward.
-     - "Sergei-Kotov 4f1-37" (383) alongside at Novorossiysk, from a drone:
-       the only picture that looks DOWN on the class. Flight deck markings,
-       the raft racks, the davits, the mast and radome from above.
-     - "Sergei-Kotov 03-vmf-kotov-29", her launch (29 Jan 2021): the
-       underwater body, red below a white boot line, and a straight raked
-       stem running down to the keel.
-     - "Sergei-Kotov chf1" (8 Dec 2021): the AK-176MA gunhouse close up.
-     - "VMF 27 01 2021 3 (5)": the stern quarter, the transom and the big
-       opening in it, 2.0 to 4.95 m up and about 7.6 m wide.
-     - The Army-2016 display model (three photographs): the plan of the
-       superstructure and the aperture panels on the mast.
-     - Zelenodolsk's own brochure for Project 22160 (reproduced on
-       balancer.ru, 2016): the plan view, from which every half-breadth
-       station comes. 94.0 m, 14.0 m, 3.4 m navigational draught, about
-       1,300 t standard and 1,700 t full, the Pozitiv-ME1 3D radar.
+   References, all Wikimedia Commons:
+     [A] "Patrol ship Vasily Bykov.jpg" (368 in harbour, port side, dressed overall).
+     [B] "Vasiliy-Bykov-1200.jpg" (368 from the port bow, overcast).
+     [C] "Sergei-Kotov 4f1-37-550.jpg" (383 alongside, from a drone): the
+         only picture that looks down on the class.
+     [D] "VMF 27 01 2021 3 (5) 550.jpg": the stern quarter, the transom.
+     [E] "Sergei-Kotov chf1 08122021 550.JPG": the AK-176MA and the mast
+         head-on.
+     [F] "Model patrol ship project 22160 to Army 2016 1.jpg": the builder's
+         display model, the plan of the superstructure.
+     The first hero's measurements came off the 2018 starboard broadside
+     ("Vasiliy Bykov", 18.5 px a metre), the 2019 port side of 375, 383's
+     launch (the underwater body, the straight raked stem) and Zelenodolsk's
+     brochure (the plan view; 94.0 m, 14.0 m, 3.4 m navigational draught,
+     about 1,300 t standard and 1,700 t full, the Pozitiv-ME1 3D radar).
+     [A]-[E] agree with them to half a metre.
 
-   What has to read at a glance, in order:
-     - The long faceted superstructure. Its forward block is the hull's
-       own tumblehome carried straight on up from the deck edge to the
-       bridge roof, one leaning plane, ending in a huge front slope (35
-       deg off the deck) that narrows forward like a prow. Abaft it the 01
-       deck is a lower, near-upright wall set half a metre in, and the join
-       is cut on a diagonal: the "V" on every broadside of the class.
-     - The tall enclosed pyramid mast over the bridge with the 3 m radome
-       of the Pozitiv radar on top. Behind it a heavy tapered leg rakes aft
-       30 deg off the pyramid's back to a white dome at 21 m, and a
-       VERTICAL lattice topmast stands on that leg, 27.1 m to the whip.
-       The main yard crosses it at 20.1 m and is 13 m long, very nearly
-       the beam: head-on (the gunhouse close-up), from the port bow (368,
-       2020) and from the starboard quarter it spans the ship.
-     - The single 76.2 mm AK-176MA forward, in its faceted gunhouse on a
-       low plinth, 19 m back from the stem. It is the named "turret".
-     - The hull: a knuckle running the length of the ship. Below it the
-       side flares out, above it the side leans in, so in any light the
-       ship reads as two bands. The sheer climbs through amidships to its
-       peak at the foot of the front slope and DROOPS to a low, sharp stem
-       head (5.45 m, against 7.25 m); every broadside above shows it.
-     - A flight deck over the after quarter of the ship: a 9.4 m ring with
-       an inner ring, a chamfered deck-edge box round it, per the drone
-       photograph.
-     - Abaft the bridge a narrower 02 deckhouse, 12.1 m to its roof, whose
-       after end ramps up to 13 m as the pedestal of the two davits: the
-       lit wall behind the boat in the 2018 and 2020 broadsides. Two 8.3 m
-       rigid inflatables sit outboard of it on the 01 deck roof, each
-       under a box-beam davit that leans aft with its jib pointing FORWARD
-       over the boat, and a small white radome on a post beside it.
-     - The transom is open over most of its width, the mooring deck under
-       the flight deck: a real recess, 2.4 m deep, not a painted panel.
-     - No funnel. The two diesels exhaust through hoods at the waterline
-       21-25 m from the stern, both sides, and from 2020 a black band runs
-       aft from them to the transom to hide the soot.
+   Recognition, in the order the eye takes it, and where each comes from:
+     1. The long hull with a knuckle the whole length: flare below it,
+        tumblehome above, two bands in any light [A][B][C]. ZK, YK, YW.
+     2. The high flared bow: the sheer climbs to its peak at the foot of
+        the front slope and droops to a low, sharp stem head; the stem a
+        straight 38 deg rake [A][B]. ZD, xStem, KW.
+     3. The single 76.2 mm AK-176MA forward, 19 m from the stem, in its
+        faceted gunhouse with the canvas blast bag [E][B]. The "turret".
+     4. The integrated faceted superstructure: the hull's own tumblehome
+        carried up to the bridge roof, a huge 35 deg front slope narrowing
+        like a prow, and the diagonal "V" where the lower 01 deck joins it
+        [A][B][C]. RF0-RF3, w01.
+     5. The enclosed pyramid mast with the 3 m Pozitiv-ME1 radome on top
+        and a 2 m dome on its face [E][B].
+     6. The raked leg abaft it, the vertical lattice topmast on it, and the
+        13 m main yard with its curtain of wire aerials [B][E].
+     7. Two rigid inflatables on the 01 roof under davits that lean aft
+        with their jibs FORWARD, a white radome on a post beside each [B][C].
+     8. The flight deck over the after quarter: a chamfered box, a 9.4 m
+        touchdown ring and an inner ring, lighter than the rest [C].
+     9. The open transom over the mooring deck and module bay [D].
+    10. No funnel: exhaust hoods at the waterline 21-25 m from the stern and
+        the black soot band aft of them, 2020 on [C][A].
+    11. Medium-light grey all over, the superstructure a step lighter [B][C].
 
    What is deliberately NOT here:
-     - The hangar. The builder's brochure draws a "helicopter in a sliding
-       hangar", but no photograph of 368, 375, 363 or 383 shows one: the
-       01 deck abaft the bridge is 2.3 m high, far too low for a Ka-27,
-       and the drone shot shows open deck from the superstructure to the
-       stern. So the deck is modelled and the hangar is not.
-     - Missiles, CIWS and container modules. The game's weapon list gives
-       this ship Oniks and an AK-630; neither was ever photographed on the
-       hull. The 2022 Tor-M2KM that was lashed to the flight deck of 368
-       and 363 is left off too: it would sit on the deck markings, and
-       the photographs here are the 2018-2021 fit.
+     - A hangar. The brochure draws a "helicopter in a sliding hangar"; no
+       photograph shows one. [C] looks down on 383 and shows open deck from
+       the after face of the 01 deck to the stern, and the 01 deck is 2.3 m
+       high, far too low for a Ka-27. The pad is drawn, the hangar is not.
+     - Missile containers. The row lists Oniks (rules.js) and an AK-630;
+       neither, nor a Kalibr container, appears on the hull in any of these
+       photographs, and the module bay behind the transom is empty in [D].
+       The 2022 Tor-M2KM lashed to the flight deck of 368 and 363 is left
+       off: it was a temporary fit standing on the pad.
 
    Model space: +X bow, +Y port, +Z up, real metres, waterline at z = 0,
    keel at z -2.8 (3.4 m to the bottom of the rudders), stem head x +47.0,
@@ -97,10 +86,8 @@
    Materials are the house three tiers. SKIN is painted steel through
    procedural CanvasTextures (the hull elevation, the deck plan, a plate
    tile for the superstructure); METAL, GLASS; a few flat colours; and the
-   team material, exactly C.team. The paint is the darkgrey row of the
-   warship3d.js PAINT table (hull 0x353c43, superstructure 0x3e464d, deck
-   0x252a2f): the Pact fleet's storm grey, so this ship sits with the rest
-   of its navy under the renderer's ACES pass.
+   team material, exactly C.team, on the band round the mast head and two
+   flashes on the 01 roof.
 
    Every static part is merged into ONE mesh per material, as the Ford
    does: thirteen draws in all. The gun is the one exception, in its own
@@ -128,7 +115,7 @@ var HeroBykov22160 = (function () {
      4.95 m up, y -3.5 to +4.1, and a recess 2.4 m deep behind it. A dark
      panel laid on the transom instead sat 1 cm proud, 6 mm after the naval
      scale, under one depth step from 460 m out: it flickered.            */
-  var TR_Y0 = -3.5, TR_Y1 = 4.1, TR_Z0 = 2.0, TR_Z1 = 4.95, TR_D = 2.4;
+  var TR_Y0 = -4.3, TR_Y1 = 4.3, TR_Z0 = 1.9, TR_Z1 = 4.65, TR_D = 2.4;
 
   /* The hull as station tables, stern to stem, x in metres from midships.
      Heights were read off the 2018 broadside at 18.5 px/m and checked on
@@ -183,9 +170,13 @@ var HeroBykov22160 = (function () {
   function xStem(z) { return 42.8 + 0.78 * z; }
   var KW = [[-2.8, 0.22], [0, 0.30], [2.5, 0.42], [5.4, 0.62], [9, 0.62]];
 
-  var STATIONS = [-47, -46.4, -45, -42.5, -39.5, -36, -32, -28, -24, -20, -16, -12, -8, -4,
-                  0, 4, 8, 12, 16, 20, 23.5, 27, 30, 33, 35.5, 37.5, 39.2, 40.5, 41.6,
-                  42.6, 43.5, 44.3, 45.0, 45.6, 46.1, 46.6, 47.0];
+  /* 72 stations: every 2 m amidships so the sheer and the knuckle read as
+     curves at the closest zoom, closer through the entry and the stem    */
+  var STATIONS = [-47, -46.6, -46.0, -45, -44, -42.5, -41, -39.5, -38, -36, -34, -32, -30, -28,
+                  -26, -24, -22, -20, -18, -16, -14, -12, -10, -8, -6, -4, -2,
+                  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 23.5, 25, 27, 28.5, 30, 31.5, 33,
+                  34.3, 35.5, 36.5, 37.5, 38.4, 39.2, 40.0, 40.5, 41.1, 41.6, 42.1,
+                  42.6, 43.1, 43.5, 43.9, 44.3, 44.7, 45.0, 45.3, 45.6, 45.85, 46.1, 46.35, 46.6, 46.8, 47.0];
 
   /* ================================================================ helpers */
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -430,15 +421,21 @@ var HeroBykov22160 = (function () {
   }
 
   /* ============================================================= textures */
-  var PAINT = { hull: 0x353c43, sup: 0x3e464d, deck: 0x252a2f };
-  var C_FOUL = 0x3a1d18, C_BOOT = 0x111315, C_BAND = 0x15171a, C_MARK = 0xc6cbcd;
+  /* Paint sampled off the photographs and taken to about 0.8 of its level
+     for the renderer's ACES lift. Topsides below the knuckle, 1200 (port
+     bow, overcast): rgb 107-130 / 118-142 / 129-154; the drone shot of 383
+     in sun: 127/136/137. The superstructure is a step lighter in every
+     shot: 139-149 / 151-158 / 157-166. Forecastle 109-140 / 121-147 /
+     134-154, the flight deck lighter still (153/161/164) and painted on
+     the deck canvas as a lighter field. The soot band: 24/26/27.         */
+  var PAINT = { hull: 0x5d666d, sup: 0x737c82, deck: 0x5a6066 };
+  var C_FOUL = 0x4a221c, C_BOOT = 0x131517, C_BAND = 0x17191b, C_MARK = 0xc9cdcf;
 
   /* --- the hull elevation. u runs transom (0) to stem head (1). The canvas
      holds two copies of the side, the PORT one in the top half and the
      STARBOARD one in the bottom half, each z -3.4 (bottom row) to +7.6
-     (top row). Seen from port the bow is on the left, so everything with
-     a reading direction is drawn mirrored in the port half: both sides
-     then read 368 and the name the right way round.                    */
+     (top row). Seen from port the bow is on the left; nothing on the side
+     has a reading direction, so the two halves are painted alike.      */
   var HZ0 = -3.4, HZ1 = 7.6;
   var TEX = {};
   function hullTex(THREE, team) {
@@ -523,27 +520,7 @@ var HeroBykov22160 = (function () {
       }
       g.restore();
 
-      /* lettering. Starboard reads left to right as painted; port is drawn
-         mirrored about each word's own centre.                            */
-      var words = function (txt, x0, x1, zb, zt, fill, stroke, font) {
-        var cx = (U(x0) + U(x1)) * 0.5, h = Y(zb) - Y(zt);
-        g.save();
-        g.translate(cx, Y(zb));
-        if (s === 0) g.scale(-1, 1);
-        g.font = font.replace("%", String(Math.round(h * 1.32)));
-        g.textAlign = "center"; g.textBaseline = "alphabetic";
-        var wmax = U(x1) - U(x0), tw = g.measureText ? (g.measureText(txt).width || wmax) : wmax;
-        if (tw > wmax) g.scale(wmax / tw, 1);
-        if (stroke) { g.lineWidth = 3; g.strokeStyle = stroke; g.strokeText(txt, 0, 0); }
-        g.fillStyle = fill; g.fillText(txt, 0, 0);
-        g.restore();
-      };
-      /* pennant 368 on each bow in the team colour, outlined in the white
-         the real numbers are painted in: 8 m long, 3 m high               */
-      words("368", 22.7, 30.8, 0.85, 3.85, hx(team), "rgba(226,230,232,0.9)", "bold %px Arial");
-      /* the name on the soot band, white Cyrillic, 0.7 m letters           */
-      words("\u0412\u0410\u0421\u0418\u041b\u0418\u0419 \u0411\u042b\u041a\u041e\u0412",
-            -33.5, -25.5, 0.75, 1.45, "rgba(214,218,220,0.92)", null, "bold %px Arial");
+      /* No pennant number and no name: the house rule for every hero. */
     }
     TEX[key] = finish(THREE, cv);
     return TEX[key];
@@ -590,7 +567,7 @@ var HeroBykov22160 = (function () {
     g.beginPath(); g.arc(cx(GUN_X), cy(0), 1.5 * SX, 0, 2 * PI); g.stroke();
 
     /* flight deck: a lighter non-skid field, then the markings            */
-    g.fillStyle = "rgba(255,255,255,0.05)";
+    g.fillStyle = "rgba(255,255,255,0.13)";
     g.fillRect(cx(-47), cy(6.3), cx(-31.0) - cx(-47), 12.6 * SY);
     var WH = hx(C_MARK);
     g.strokeStyle = WH;
@@ -804,18 +781,26 @@ var HeroBykov22160 = (function () {
   function gunParts(THREE) {
     var P = [];
     P.push(["K", cylZ(THREE, 1.30, 1.36, 0.28, 16, 0, 0, 0)]);
+    /* three rings: the lower walls near upright to a knee 1.5 m up, then
+       the upper walls leaning in hard to a roof 2.0 m across, and the
+       front raked back in two facets, as the close-up of 383 shows      */
     var base = chamRect(-1.95, 1.95, 1.45, 0.35);
-    var top = chamRect(-1.80, 0.75, 1.28, 0.30);
-    P.push(["S", stack(THREE, [[base, 0.28], [top, 2.30]], true, false)]);
+    var knee = chamRect(-1.92, 1.55, 1.42, 0.35);
+    var top = chamRect(-1.80, 0.75, 1.02, 0.28);
+    P.push(["S", stack(THREE, [[base, 0.28], [knee, 1.50], [top, 2.30]], true, false)]);
     /* the barrel slot and its blast bag                                  */
-    P.push(["K", box(THREE, 0.10, 0.62, 1.05, 1.48, 0, 1.12, 0, -0.52, 0)]);
+    P.push(["K", box(THREE, 0.10, 0.62, 1.05, 1.60, 0, 1.12, 0, -0.30, 0)]);
+    /* roof hatch and the sight cupola at the rear of the roof            */
+    P.push(["K", box(THREE, 0.7, 0.7, 0.08, -0.9, 0.35, 2.32)]);
+    P.push(["S", box(THREE, 0.45, 0.4, 0.3, -1.35, -0.5, 2.42)]);
     var bag = strut(THREE, 1.25, 0, 1.18, 2.25, 0, 1.18, 0.40, 10, 0.20);
     P.push(["W", bag]);
     P.push(["M", strut(THREE, 1.6, 0, 1.18, 4.65, 0, 1.18, 0.12, 10, 0.085)]);
     P.push(["M", strut(THREE, 4.45, 0, 1.18, 4.72, 0, 1.18, 0.105, 10)]);
     P.push(["M", strut(THREE, 2.1, 0, 0.98, 4.1, 0, 1.03, 0.045, 6)]);
     /* ammunition hatch and ladder rungs on the port side of the house    */
-    P.push(["K", box(THREE, 0.9, 0.04, 1.1, -0.9, 1.40, 1.05, -0.08, 0, 0)]);
+    P.push(["K", box(THREE, 0.9, 0.06, 1.0, -0.9, 1.42, 0.95, -0.03, 0, 0)]);
+    P.push(["K", box(THREE, 0.9, 0.06, 1.0, -0.9, -1.42, 0.95, 0.03, 0, 0)]);
     return P;
   }
 
@@ -860,15 +845,16 @@ var HeroBykov22160 = (function () {
     T.H = new THREE.MeshStandardMaterial({ color: 0xffffff, map: hullTex(THREE, team), roughness: 0.86, metalness: 0.08 });
     T.D = new THREE.MeshStandardMaterial({ color: 0xffffff, map: deckTex(THREE), roughness: 0.94, metalness: 0.04 });
     T.S = new THREE.MeshStandardMaterial({ color: 0xffffff, map: supTex(THREE), roughness: 0.87, metalness: 0.07 });
-    T.M = new THREE.MeshStandardMaterial({ color: 0x3c4349, roughness: 0.55, metalness: 0.40 });
+    T.M = new THREE.MeshStandardMaterial({ color: 0x5b636a, roughness: 0.58, metalness: 0.35 });
     T.K = new THREE.MeshStandardMaterial({ color: 0x15181b, roughness: 0.80, metalness: 0.10 });
     /* glass lies 5 cm off the window band, 3 cm after the naval scale:
        pulled toward the camera like the team flashes, so it never
        flickers against the band at full zoom-out                          */
     T.G = new THREE.MeshStandardMaterial({ color: 0x0f1a22, roughness: 0.10, metalness: 0.0, transparent: true, opacity: 0.88,
+                                           side: THREE.DoubleSide,
                                            polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
-    T.W = new THREE.MeshStandardMaterial({ color: 0xb4b8b6, roughness: 0.70, metalness: 0.04 });
-    T.A = new THREE.MeshStandardMaterial({ color: 0x5c646b, roughness: 0.62, metalness: 0.05 });
+    T.W = new THREE.MeshStandardMaterial({ color: 0xb2ada0, roughness: 0.72, metalness: 0.04 });
+    T.A = new THREE.MeshStandardMaterial({ color: 0x7c858b, roughness: 0.62, metalness: 0.05 });
     /* the team material, pulled a couple of depth steps toward the camera
        because its flashes lie flat on a roof, as the Ford's do            */
     T.T = new THREE.MeshStandardMaterial({ color: new THREE.Color(team), roughness: 0.60, metalness: 0.10,
@@ -937,6 +923,13 @@ var HeroBykov22160 = (function () {
       panel(B.K, [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, -1]);
       panel(B.K, [x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1], [0, -1, 0]);
       panel(B.K, [x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [0, 1, 0]);
+      /* inside it, the frames the stern-quarter shot shows: two pillars,
+         a beam under the deckhead, and a pair of bitts on its floor      */
+      [-2.2, 2.2].forEach(function (yy) {
+        B.M.add(box(THREE, 0.22, 0.22, z1 - z0, x0 + 1.3, yy, (z0 + z1) * 0.5));
+        B.M.add(cylZ(THREE, 0.15, 0.15, 0.5, 6, x0 + 0.9, yy * 1.45, z0));
+      });
+      B.M.add(box(THREE, 0.2, y1 - y0 - 0.1, 0.25, x0 + 1.3, 0, z1 - 0.14));
     })();
 
     /* two exhaust hoods a side at the waterline, 21-25 m from the stern   */
@@ -1096,11 +1089,15 @@ var HeroBykov22160 = (function () {
     /* radome: 3.0 m across, top 20.3 m, as the 2018 broadside measures   */
     B.A.add(cylZ(THREE, 1.15, 1.2, 0.62, 20, 4.4, 0, ZMT + 0.22));
     B.A.add(cylZ(THREE, 1.5, 1.5, 0.72, 24, 4.4, 0, ZMT + 0.84));
-    B.A.add(sphere(THREE, 1.5, 24, 7, 4.4, 0, ZMT + 1.56, true));
-    /* small radome drum on the forward face, and the two navigation radar
-       arrays on brackets either side                                     */
-    B.A.add(cylZ(THREE, 0.42, 0.42, 0.85, 12, 8.0, 0, 16.1));
-    B.S.add(box(THREE, 0.9, 0.5, 0.18, 7.75, 0, 16.0));
+    B.A.add(sphere(THREE, 1.5, 24, 9, 4.4, 0, ZMT + 1.56, true));
+    /* the second dome on the forward face of the pyramid, on its bracket:
+       head-on (the gun close-up of 383) it is two thirds the width of the
+       radome above it, about 2 m, and its crown sits just under the
+       radome's drum. Then the two navigation radar arrays on brackets
+       either side                                                        */
+    B.S.add(box(THREE, 1.6, 1.4, 0.22, 7.9, 0, 15.25));
+    B.A.add(cylZ(THREE, 0.98, 0.98, 0.85, 20, 8.35, 0, 15.36));
+    B.A.add(sphere(THREE, 0.98, 20, 6, 8.35, 0, 16.21, true));
     [1, -1].forEach(function (sd) {
       B.S.add(box(THREE, 1.6, 1.3, 0.14, 5.6, sd * 2.95, 15.55));
       B.M.add(cylZ(THREE, 0.08, 0.08, 0.35, 6, 5.6, sd * 3.1, 15.62));
@@ -1126,7 +1123,26 @@ var HeroBykov22160 = (function () {
     ], true, true));
     B.A.add(sphere(THREE, 0.45, 12, 8, -2.25, 0, 20.85));
     var TMX = -0.85, ZY = 20.1;
-    B.M.add(cylZ(THREE, 0.18, 0.24, 25.3 - 19.4, 4, TMX, 0, 19.4));
+    /* the topmast as the lattice it is (1200, the gun close-up): four
+       corner posts tapering from 0.5 to 0.3 m square, X-braced a metre at
+       a time                                                            */
+    (function () {
+      var z0 = 19.4, z1 = 25.3, h0 = 0.25, h1 = 0.15, nB = 6, q;
+      function hw(z) { return lerp(h0, h1, (z - z0) / (z1 - z0)); }
+      [[1, 1], [1, -1], [-1, -1], [-1, 1]].forEach(function (c) {
+        B.M.add(strut(THREE, TMX + c[0] * h0, c[1] * h0, z0, TMX + c[0] * h1, c[1] * h1, z1, 0.045, 4, 0.035, true));
+      });
+      for (q = 0; q < nB; q++) {
+        var za = z0 + (z1 - z0) * q / nB, zb = z0 + (z1 - z0) * (q + 1) / nB, a = hw(za), b = hw(zb);
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+          if (d[0]) {
+            B.M.add(strut(THREE, TMX + d[0] * a, -a, za, TMX + d[0] * b, b, zb, 0.022, 3, 0.022, true));
+          } else {
+            B.M.add(strut(THREE, TMX - a, d[1] * a, za, TMX + b, d[1] * b, zb, 0.022, 3, 0.022, true));
+          }
+        });
+      }
+    })();
     B.M.add(cylZ(THREE, 0.03, 0.07, 27.1 - 25.3, 5, TMX, 0, 25.3));
     [1, -1].forEach(function (sd) {
       B.M.add(strut(THREE, TMX, 0, ZY, TMX, sd * 6.5, ZY, 0.11, 6, 0.06));
@@ -1145,6 +1161,17 @@ var HeroBykov22160 = (function () {
     });
     [1, -1].forEach(function (sd) {
       B.K.add(box(THREE, 0.18, 0.42, 0.5, TMX + 0.1, sd * 0.3, 24.4));
+    });
+    /* The wire curtain: five wire aerials a side hang from the main yard
+       to the bridge roof and the wing bulwarks, the vertical lines that
+       frame the mast head-on (gun close-up of 383) and from the port bow
+       (1200). Each has a dark insulator at its head.                     */
+    [1, -1].forEach(function (sd) {
+      [2.5, 3.5, 4.5, 5.4, 6.2].forEach(function (yy) {
+        var zb = yy > 4.2 ? 12.62 : ZRF + 0.02, yb = yy > 4.2 ? Math.min(yy, 6.35) : yy - 0.15;
+        B.K.add(strut(THREE, TMX, sd * yy, ZY - 0.35, TMX - 0.25, sd * yb, zb, 0.022, 3, 0.022, true));
+        B.K.add(cylZ(THREE, 0.06, 0.06, 0.3, 4, TMX, sd * yy, ZY - 0.38));
+      });
     });
 
     /* electro-optical spheres on pedestals at the forward corners of the
@@ -1232,6 +1259,14 @@ var HeroBykov22160 = (function () {
     /* windlass drums over the chain pipes                                  */
     [1.25, -1.25].forEach(function (yy) {
       B.M.add(cylZ(THREE, 0.34, 0.38, 0.55, 10, 37.4, yy, deckZ(37.4, yy)));
+    });
+    /* the anchors, stowed in their pockets in the flare a side (1200 from
+       the port bow, both broadsides): a stockless head, flukes down      */
+    [1, -1].forEach(function (sd) {
+      var ax = 41.85, ys = hullY(ax, 3.05), yf = hullY(ax, 2.3);
+      B.K.add(box(THREE, 0.26, 0.2, 1.25, ax, sd * (ys + 0.04), 3.1, sd * 0.5, 0, 0));
+      B.K.add(box(THREE, 1.15, 0.32, 0.36, ax, sd * (yf + 0.06), 2.32, sd * 0.5, 0, 0));
+      B.M.add(box(THREE, 0.5, 0.16, 0.2, ax, sd * (yf + 0.14), 2.12, sd * 0.5, 0, 0));
     });
     /* jackstaff at the stem head                                           */
     B.M.add(strut(THREE, 45.9, 0, deckZ(45.9, 0), 45.8, 0, 10.2, 0.06, 5, 0.035));
