@@ -1,55 +1,74 @@
 /* ============ ru_su57.js - HERO model: Sukhoi Su-57 "Felon" ============
-   Registers stealth_p ("Su-57 Felon", present day; rules.js row, air_specs
+   Registers stealth_p ("Su-57 Felon", present day: rules.js row, air_specs
    20.1 m x 14.1 m). pact_e00_stealthfighter ("none in service") is NOT
-   registered here and keeps resolving as before.
+   registered here and keeps resolving as before. One key, one variant: the
+   series Su-57 as delivered from 2020 (AL-41F1 "izdeliye 117" engines, the
+   "digital" camouflage), with the bays closed.
 
-   References (Wikimedia Commons, fetched for this file):
-     A "Sukhoi T-50 3-view.svg" - top, side and front line drawing of the
-       Su-57 airframe. Every station, the planform and the heights rest on
-       it: the wide flat blended body, the LERX flowing into the 40 degree
-       wing (a straight leading edge, a short raked tip), the widely spaced
-       engine nacelles with the tunnel between them and the tail sting that
-       runs out past the nozzles, the caret-section intakes under the LERX,
-       the canted fins on the outboard booms (about 23 degrees off the
-       vertical), the low tailplanes, the canopy on the nose, and the IRST
-       ball ahead of the windscreen on the starboard side of the nose. The
-       drawing is scaled to 20.1 m (nose to sting) and gives a span of
-       14.1 m and a height of 4.6 m; this model measures 20.1 x 14.1 x 4.5.
-     B "Sukhoi Su-57 RF-81775 Army-2022.jpg" - an in-service Su-57 parked,
-       seen from the port bow: tricycle gear (twin-wheel nose leg ahead of
-       the intakes, single-wheel main legs under the wing roots, gear doors),
-       the closed bays, the light silver-grey paint with darker grey
-       "digital" patches, the red Russian star low on the fin, the grey radome.
-     C "Sukhoi Su-57 bn058 Kubinka 2020.jpg" - an in-service Su-57 in a bank,
-       seen from below and ahead: nothing under the wings or belly (the
-       weapons stay in the internal bays), a Russian star near the tip of
-       each lower wing, the nacelle tunnel and the nozzles.
-   What each part rests on:
-     - body, nacelles (centre y 1.42), wing, tailplanes (root chord x -5.5 to
-       -9.2 at y 2.5, tip y 5.0), canopy, IRST, the tail sting: A.
-     - Fins: A (top and side views) gives the root on the outboard boom at
-       y 2.6, the tip at y 3.4 (about 22 degrees off the vertical), root
-       chord x -4.75 to -7.7, tip chord 0.7 m. A is the T-50 prototype; the
-       serial aircraft's fins (B) look smaller, but no dimensioned drawing of
-       them was found, so the prototype size is kept (a risk, see the report).
-     - LEVCONs: real flush slabs on the LERX edge between the kink (x 4.1)
-       and the wing root (A, B) with dark hinge and gap lines; the surfaces
-       are fixed in neutral, as are the fins and tailplanes.
-     - Intakes: caret mouths under the LERX with a swept lip frame, a splitter
-       and the inner ramp (A, C); the bays stay closed.
-     - Nozzles: sixteen petals closing from 0.58 m to 0.38 m radius at x
-       -8.65 (A), a dark bore; no thrust-vector canting is drawn.
-     - Gear (B): twin-wheel nose leg with two doors, single-wheel main legs
-       with a leg door and an inner bay door; the stations and tyre sizes are
-       estimated from A and B only roughly.
-     - Paint: plain light grey with a slightly darker top and a pale belly
-       (B, C); the "digital" pixel patches seen in B and C are NOT drawn - no
-       labelled layout was available. No bort number, no T-50 prototype
-       marking. The red star with a thin white edge: both sides of both fins,
-       low on the fin (B), and the lower side of both wings near the tip (C).
-       No upper-wing star: neither photograph shows one.
-     - No stores of any kind: the internal bays are closed.
-   Team colour exactly C.team: one small strip on each upper outer wing.
+   Model space: +X nose, +Y left (port), +Z up, metres. The tables below are
+   written in DRAWING units and converted once: s is metres aft of the nose
+   tip, y is metres off the centreline, h is metres above the lowest line of
+   the nacelles. X = 10.05 - s, Y = y * 0.983, Z = h - 0.85.
+
+   References (Wikimedia Commons, fetched for this file, 960 px):
+     A "Sukhoi T-50 3-view.svg" - top, side and front line drawing. Scaled
+       to 20.1 m nose to sting it gives 26.37 px/m; the planform, the side
+       profile and the front view below were read off it by a pixel scan at
+       half-metre stations. Its span comes out at 14.33 m against the
+       published 14.1 m, so every y is taken at 0.983 (the game sizes the
+       aircraft by its length; only the proportion survives). Its height,
+       fin tip over the nacelle bottoms, is 3.15 m; the published 4.6 m puts
+       the nacelles 1.4 m above the ground.
+     B "Sukhoi Su-57 RF-81775 Army-2022.jpg" - a series Su-57 parked, seen
+       from the starboard bow (the old header said port): the gear, the intakes, the LEVCON, the canopy, the IRST ball, the
+       light grey nose and the "digital" camouflage, the red star on the fin.
+     C "Sukhoi Su-57 bn058 Kubinka 2020.jpg" - in a bank from below and
+       ahead: nothing under the wings or belly, the camouflage on the lower
+       surfaces, the nacelle tunnel.
+     D "Су57 на макс2021.jpg" - taxiing, side-on (proportions of the gear).
+     E "MAKS Airshow 2019 (2019-08-30) 303.jpg" - in a turn, upper surface.
+     F "Sukhoi Design Bureau, 054, Sukhoi Su-57 (49581306132).jpg" - from
+       below and behind: the widely spaced nozzles, the central sting, the
+       red stars near the lower wing tips, the camouflage on the belly.
+
+   Recognition list (what makes it a Su-57 at RTS zoom; each shows here):
+     1. Two engines WIDELY spaced (nacelle centres 1.38 m off the centreline,
+        A), a flat tunnel between them and a long central tail sting that
+        runs 1.3 m past the nozzles (A side and top, F).
+     2. A wide, flat lifting body: the LERX runs from the forebody chine at
+        6 m straight out to the wing root at 3.1 m (A).
+     3. LEVCONs: the movable leading-edge root surfaces at the front of the
+        LERX, 6.0-8.3 m aft of the nose, their hinge line painted and gapped
+        (A, B).
+     4. The 49 degree wing (A: leading edge 10.1 m at the root to 14.7 m at
+        the tip), the trailing edge swept forward 10 degrees, cropped tips.
+     5. All-moving fins canted 21 degrees out, small and well aft on the
+        outboard booms, leading edge swept 45 degrees (A front and side).
+     6. All-moving tailplanes level with the wing, on the booms (A).
+     7. Raked trapezoid intakes UNDER the LERX, the top lip 1.25 m ahead of
+        the bottom lip (A side, B).
+     8. The IRST ball ahead of the windscreen, starboard of the centreline
+        (A top: 2.45 m aft of the nose, 0.18 m to starboard; B).
+     9. A long one-piece canopy behind a framed windscreen, on a chined nose
+        (A, B).
+    10. Internal bays closed: nothing hangs under it (C, F); the tandem main
+        bay doors and the wing-root side bays are painted, with the side-bay
+        fairings under the wing roots (A side view).
+    11. The "digital" camouflage: light grey with mid and dark grey pixel
+        blocks, heaviest on the upper surfaces and fins, the nose ahead of
+        the windscreen left plain (B, C, F). The blocks follow no one
+        airframe's layout: the pattern is seeded, the density per surface
+        is read off B, C and F.
+   Paint, sampled from B and taken to about 0.85 of its level: base
+   (176,181,194), mid grey (135,144,157), dark grey (111,115,127).
+   Markings: the red star with a thin white edge on both sides of both fins
+   (B) and under both wing tips (F). No bort number, no serial.
+   Gear (B, D): it RETRACTS, so the group is named "gear": a twin-wheel nose
+   leg raked forward, single-wheel main legs outboard of the nacelles. The
+   stations are read off D, which is side-on (fin and canopy land within
+   0.3 m of A at 71.9 px/m): nose wheel 6.5 m, main wheels 12.6 m aft of the
+   nose (the old file had 5.0 and 10.65). The track (4.1 m) is estimated.
+   Team colour exactly C.team: one modest strip on each upper outer wing.
    ======================================================================== */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -59,20 +78,114 @@ var HeroSu57 = (function () {
 
   var V = null;
   var PI = Math.PI;
-  var GROUND = -2.30;                 /* tyre bottoms: 4.6 m under the fin tip */
-  var HALFSPAN = 7.05;
+  var KY = 0.983;
+  function X(s) { return 10.05 - s; }
+  function Y(y) { return y * KY; }
+  function Z(h) { return h - 0.85; }
+  var GROUND = Z(-1.40);              /* tyre bottoms: fin tip 4.55 m above */
 
-  var PXM = 36, XMIN = -10.4, TW = 800;
-  var TOPH = 534, SIDEH = 172, TH = TOPH + 2 * SIDEH + TOPH;
-  var YMAX = 7.4, ZTOP = 2.4, ZSPAN = 5.0;
+  /* ------------------------------------------------------- the tables -- */
+  /* body (forebody, spine, sting): [s, half-width at the chine, chine h,
+     crown h, keel h, upper exponent, lower exponent]; A side and top views */
+  var BODY = [
+    [0.00, 0.02, 0.70, 0.72, 0.68, 1.3, 1.3],
+    [0.25, 0.10, 0.70, 0.80, 0.58, 1.3, 1.3],
+    [0.50, 0.19, 0.69, 0.87, 0.49, 1.3, 1.3],
+    [1.00, 0.38, 0.68, 1.02, 0.38, 1.25, 1.2],
+    [1.50, 0.49, 0.68, 1.18, 0.31, 1.2, 1.1],
+    [2.00, 0.61, 0.69, 1.29, 0.28, 1.15, 1.0],
+    [2.50, 0.68, 0.70, 1.38, 0.26, 1.1, 0.9],
+    [3.00, 0.76, 0.72, 1.46, 0.26, 1.0, 0.85],
+    [4.00, 0.83, 0.76, 1.56, 0.27, 0.95, 0.8],
+    [5.00, 0.91, 0.82, 1.68, 0.27, 0.9, 0.75],
+    [5.75, 0.97, 0.88, 1.84, 0.28, 0.85, 0.7],
+    [6.50, 0.98, 0.92, 1.90, 0.29, 0.8, 0.65],
+    [7.50, 0.98, 0.95, 1.80, 0.30, 0.8, 0.6],
+    [8.50, 0.98, 0.95, 1.68, 0.30, 0.8, 0.6],
+    [10.0, 0.95, 0.95, 1.52, 0.30, 0.8, 0.6],
+    [11.5, 0.92, 0.95, 1.42, 0.32, 0.8, 0.6],
+    [13.0, 0.90, 0.95, 1.38, 0.34, 0.8, 0.6],
+    [15.0, 0.88, 0.95, 1.32, 0.36, 0.8, 0.6],
+    [17.0, 0.80, 0.93, 1.25, 0.38, 0.85, 0.65],
+    [18.0, 0.70, 0.90, 1.20, 0.40, 0.9, 0.7],
+    [18.8, 0.52, 0.88, 1.15, 0.48, 0.95, 0.8],
+    [19.4, 0.38, 0.87, 1.08, 0.64, 1.0, 0.9],
+    [19.8, 0.22, 0.88, 1.02, 0.76, 1.0, 1.0],
+    [20.1, 0.04, 0.90, 0.95, 0.86, 1.0, 1.0]
+  ];
+  /* LERX and blended inner body: [s, half-width (the planform edge, A),
+     mid-plane h, upper and lower thickness at the centre]. The edge points
+     are A's: forebody kink 6.03/0.96, LEVCON tip 7.80/2.54, wing root
+     10.14/3.17. */
+  var PLATE = [
+    [6.03, 0.96, 0.92, 0.05, 0.05],
+    [6.50, 1.37, 0.94, 0.30, 0.16],
+    [7.00, 1.86, 0.95, 0.38, 0.16],
+    [7.50, 2.28, 0.95, 0.42, 0.16],
+    [7.80, 2.54, 0.95, 0.44, 0.16],
+    [8.50, 2.73, 0.95, 0.46, 0.16],
+    [9.50, 3.00, 0.96, 0.48, 0.18],
+    [10.14, 3.17, 0.97, 0.48, 0.26],
+    [12.0, 3.20, 0.98, 0.48, 0.36],
+    [14.0, 3.20, 0.98, 0.45, 0.38],
+    [15.5, 3.15, 0.98, 0.40, 0.36],
+    [16.3, 2.95, 0.98, 0.36, 0.33],
+    [17.0, 2.70, 0.97, 0.32, 0.30],
+    [18.0, 2.30, 0.95, 0.25, 0.24],
+    [18.8, 1.90, 0.92, 0.14, 0.14]
+  ];
+  /* nacelles: [s, centre y, half-width, centre h, half-height, squareness];
+     A front view puts the intake bottoms at 0.72-1.82 m out and the nozzle
+     centres 1.42 m out (they splay), the side view the nozzles at h 0.85 */
+  var NAC = [
+    [9.75, 1.30, 0.60, 0.42, 0.42, 0.45],
+    [10.5, 1.32, 0.63, 0.58, 0.58, 0.5],
+    [11.5, 1.35, 0.64, 0.71, 0.71, 0.55],
+    [13.5, 1.38, 0.63, 0.75, 0.75, 0.55],
+    [15.5, 1.40, 0.62, 0.76, 0.74, 0.6],
+    [16.8, 1.41, 0.60, 0.83, 0.70, 0.75],
+    [17.7, 1.42, 0.58, 0.85, 0.60, 0.95]
+  ];
+  /* outboard booms carrying the fin and tailplane (A): [s, y, h, w, hh] */
+  var BOOM = [
+    [14.3, 2.48, 1.02, 0.10, 0.08],
+    [15.0, 2.48, 1.08, 0.22, 0.28],
+    [17.9, 2.46, 1.08, 0.22, 0.28],
+    [18.7, 2.44, 1.03, 0.14, 0.18],
+    [19.4, 2.42, 1.00, 0.03, 0.03]
+  ];
+  /* canopy glass: [s, sill h, half-width, height above the sill] (A side) */
+  var CANOPY = [
+    [2.75, 1.40, 0.10, 0.04], [3.00, 1.42, 0.30, 0.20], [3.50, 1.46, 0.45, 0.45],
+    [4.00, 1.50, 0.52, 0.62], [4.50, 1.55, 0.53, 0.65], [5.00, 1.62, 0.50, 0.52],
+    [5.50, 1.72, 0.42, 0.33], [5.95, 1.84, 0.22, 0.10]
+  ];
+  /* wing (A): leading edge 10.14 m at y 3.17 to 14.52 m at y 7.0 (49 deg),
+     the cropped tip to 7.17; trailing edge 16.04 m at y 6.5, swept forward
+     10 deg inboard, raked to 15.45 m at the tip */
+  var WH = 0.98;
+  function wLE(y) { return y <= 7.0 ? 10.14 + (y - 3.17) * 1.144 : 14.52 + (y - 7.0) * 1.2; }
+  function wTE(y) { return y <= 6.5 ? 16.04 + (6.5 - y) * 0.18 : y <= 7.0 ? 16.04 - (y - 6.5) * 0.76 : 15.66 - (y - 7.0) * 1.2; }
+  function wT(y) { return Math.max(0.06, 0.30 - 0.058 * (y - 3.0)); }
+  /* tailplane (A): leading edge 17.94 m at y 5.0, 50 deg; trailing edge
+     19.30 m at the boom to 18.92 m at y 4.75, tip at 5.08 */
+  var TH = 0.88;
+  function tLE(y) { return 17.94 - (5.0 - y) * 1.2; }
+  function tTE(y) { return y <= 4.75 ? 19.30 - (y - 2.6) * 0.177 : 18.92 - (y - 4.75) * 1.1; }
+  /* fin (A): root on the boom at y 2.62, h 1.38; tip y 3.38, h 3.15 (21 deg
+     cant); leading edge 15.0 -> 16.56, trailing edge 17.84 -> 17.24 */
+  var CANT = 21 * PI / 180;
 
-  var PAL = { up: "#98a3ab", side: "#a9b3ba", belly: "#a2acb3" };
+  /* ------------------------------------------------------------- paint -- */
+  var PXM = 40, XMIN = -10.4, TW = 840;
+  var TOPH = 600, SIDEH = 170, TEXH = TOPH + 2 * SIDEH + TOPH;
+  var YMAX = 7.5, ZTOP = 2.45, ZSPAN = 4.25;
+  var COL = { base: "#9ca1ad", belly: "#a2a7b2", mid: "#737a85", dark: "#595d68" };
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
-  function pxX(x) { return clamp((x - XMIN) * PXM, 2, TW - 2); }
+  function pxX(x) { return clamp((x - XMIN) * PXM, 1, TW - 1); }
   function pxY(y) { return (YMAX - y) * PXM; }
 
-  /* the Russian star: red with a thin white edge */
   function star(g, cx, cy, rx, ry) {
     function path(k) {
       g.beginPath();
@@ -83,53 +196,101 @@ var HeroSu57 = (function () {
       }
       g.closePath();
     }
-    g.fillStyle = "#e6e6e0"; path(1.14); g.fill();
-    g.fillStyle = "#c1281f"; path(1.0); g.fill();
+    g.fillStyle = "#d9dad6"; path(1.16); g.fill();
+    g.fillStyle = "#b3261e"; path(1.0); g.fill();
+  }
+
+  /* a smooth seeded field for the pixel camouflage */
+  function field(x, y) {
+    return 0.55 * Math.sin(x * 0.83 + y * 0.37 + 1.3) * Math.cos(y * 0.71 - x * 0.21 + 0.4)
+         + 0.30 * Math.sin(x * 1.91 - y * 1.37 + 2.1) + 0.22 * Math.cos(x * 2.73 + y * 2.29 + 0.7)
+         + 0.12 * Math.sin(x * 4.9 + y * 4.1);
   }
 
   var _cv = null;
   function paint() {
     if (_cv) return _cv;
     var cv = document.createElement("canvas");
-    cv.width = TW; cv.height = TH;
-    var g = cv.getContext("2d"), s = 57011, i, b, x, y, k;
-    function R() { s = (s * 16807) % 2147483647; return s / 2147483647; }
-    var bandY = [0, TOPH, TOPH + SIDEH, TOPH + 2 * SIDEH];
-    var bandH = [TOPH, SIDEH, SIDEH, TOPH];
-    function sideZ(z, band) { return bandY[band] + clamp((ZTOP - z) / ZSPAN * SIDEH, 0, SIDEH); }
-    g.fillStyle = PAL.up; g.fillRect(0, 0, TW, TOPH);
-    g.fillStyle = PAL.side; g.fillRect(0, TOPH, TW, 2 * SIDEH);
-    g.fillStyle = PAL.belly; g.fillRect(0, bandY[3], TW, TOPH);
-    /* panel lines */
-    g.strokeStyle = "rgba(0,0,0,0.14)"; g.lineWidth = 1;
-    var PANEL_X = [8.2, 6.6, 3.8, 1.8, -0.2, -2.2, -4.2, -6.2, -8.2];
-    for (b = 0; b < 4; b++) for (i = 0; i < PANEL_X.length; i++) {
-      x = pxX(PANEL_X[i]); g.beginPath(); g.moveTo(x, bandY[b]); g.lineTo(x, bandY[b] + bandH[b]); g.stroke();
+    cv.width = TW; cv.height = TEXH;
+    var g = cv.getContext("2d"), i, j, b, x, y, z, v, sd = 57011;
+    function R() { sd = (sd * 16807) % 2147483647; return sd / 2147483647; }
+    var BAND = [0, TOPH, TOPH + SIDEH, TOPH + 2 * SIDEH];
+    function sideV(z, band) { return BAND[band] + clamp((ZTOP - z) / ZSPAN * SIDEH, 0, SIDEH); }
+    g.fillStyle = COL.base; g.fillRect(0, 0, TW, TOPH + 2 * SIDEH);
+    g.fillStyle = COL.belly; g.fillRect(0, BAND[3], TW, TOPH);
+
+    /* pixel camouflage in 0.3 m blocks, streaked along the chord as in B
+       and F; the nose ahead of the windscreen stays plain (B) */
+    var C = 12, NOSE = X(2.7);
+    for (i = 0; i < TW; i += C) {
+      x = XMIN + (i + C / 2) / PXM;
+      if (x > NOSE) continue;
+      for (j = 0; j < TOPH; j += C) {
+        y = YMAX - (j + C / 2) / PXM;
+        v = field(x * 1.1, y * 1.9);
+        if (v > 0.50) { g.fillStyle = COL.dark; g.fillRect(i, j, C, C); }
+        else if (v > 0.12) { g.fillStyle = COL.mid; g.fillRect(i, j, C, C); }
+        /* the lower surfaces carry the pattern too, a little sparser (C, F) */
+        v = field(x * 1.1 + 31.7, y * 1.9 - 13.1);
+        if (v > 0.58) { g.fillStyle = COL.dark; g.fillRect(i, BAND[3] + j, C, C); }
+        else if (v > 0.22) { g.fillStyle = COL.mid; g.fillRect(i, BAND[3] + j, C, C); }
+      }
+      for (b = 1; b <= 2; b++) for (j = 0; j < SIDEH; j += C) {
+        z = ZTOP - (j + C / 2) / SIDEH * ZSPAN;
+        v = field(x * 1.1 + b * 7.3, z * 3.4) + (z - 0.6) * 0.18;
+        if (v > 0.48) { g.fillStyle = COL.dark; g.fillRect(i, BAND[b] + j, C, C); }
+        else if (v > 0.10) { g.fillStyle = COL.mid; g.fillRect(i, BAND[b] + j, C, C); }
+      }
     }
-    /* internal bay doors on the belly, bottom band (A, C): main bay between
-       the nacelles, two side bays */
-    g.strokeStyle = "rgba(20,24,28,0.40)"; g.lineWidth = 1.2;
-    function bandRect(x0, x1, y0, y1) {
-      g.strokeRect(pxX(x1), bandY[3] + pxY(y1), pxX(x0) - pxX(x1), pxY(y0) - pxY(y1));
+
+    /* panel and hinge lines */
+    function line(pts, band, col, lw) {
+      g.strokeStyle = col; g.lineWidth = lw; g.beginPath();
+      for (var k = 0; k < pts.length; k++) {
+        var u = pxX(X(pts[k][0])), w = BAND[band] + pxY(Y(pts[k][1]));
+        if (k) g.lineTo(u, w); else g.moveTo(u, w);
+      }
+      g.stroke();
     }
-    bandRect(3.4, -3.6, -0.55, 0.55);
-    bandRect(2.0, -1.2, 1.25, 2.1); bandRect(2.0, -1.2, -2.1, -1.25);
-    /* soot behind the nozzles, rivet rows, light weathering */
-    g.fillStyle = "rgba(30,28,26,0.20)";
-    for (b = -1; b <= 1; b += 2) g.fillRect(pxX(-6.6), bandY[3] + pxY(b * 1.4 + 0.5), pxX(-9.2) - pxX(-6.6) + 0, 1.0 * PXM);
-    g.fillStyle = "rgba(0,0,0,0.10)";
-    for (i = 0; i < 50; i++) {
-      x = R() * TW * 0.92; y = R() * TH; k = 8 + ((R() * 24) | 0);
-      for (b = 0; b < k; b++) g.fillRect(x + b * 5, y, 1.3, 1.3);
+    var HINGE = "rgba(18,20,24,0.55)", PANEL = "rgba(20,22,26,0.22)";
+    for (b = 0; b <= 3; b += 3) for (var sg = -1; sg <= 1; sg += 2) {
+      /* LEVCON hinge and tip (A) */
+      if (b === 0) {
+        line([[7.48, sg * 1.15], [8.31, sg * 2.61]], b, HINGE, 2);
+        line([[7.80, sg * 2.54], [8.31, sg * 2.61]], b, HINGE, 1.5);
+      }
+      /* leading-edge flap, 0.55 m behind the wing leading edge */
+      line([[wLE(3.3) + 0.55, sg * 3.3], [wLE(6.8) + 0.45, sg * 6.8]], b, HINGE, 1.5);
+      /* flaperon (inboard) and aileron, 0.85 m ahead of the trailing edge */
+      line([[wTE(3.3) - 0.85, sg * 3.3], [wTE(5.1) - 0.85, sg * 5.1], [wTE(6.4) - 0.70, sg * 6.4]], b, HINGE, 1.5);
+      line([[wTE(5.1) - 0.85, sg * 5.1], [wTE(5.1), sg * 5.1]], b, HINGE, 1.5);
+      line([[wTE(6.4) - 0.70, sg * 6.4], [wTE(6.4), sg * 6.4]], b, HINGE, 1.5);
+      /* tailplane root gap and the fuselage panel joints */
+      line([[tLE(2.75), sg * 2.75], [tTE(2.75), sg * 2.75]], b, HINGE, 1.5);
+      for (i = 0; i < 6; i++) line([[6.5 + i * 2.0, sg * 0.2], [6.5 + i * 2.0, sg * 2.9]], b, PANEL, 1);
+      line([[3.0, sg * 0.70], [16.5, sg * 0.86]], b, PANEL, 1);
+      line([[9.5, sg * 1.95], [17.6, sg * 1.95]], b, PANEL, 1);
     }
-    for (i = 0; i < 30; i++) {
-      g.fillStyle = "rgba(24,22,20," + (0.03 + R() * 0.06).toFixed(3) + ")";
-      g.fillRect(R() * TW, R() * TH, 10 + R() * 50, 2 + R() * 8);
+    /* belly: the tandem main bays between the nacelles, serrated ends, and
+       the side bays in the wing-root fairings (A) */
+    function bay(s0, s1, y0, y1) {
+      var p = [[s0, y0], [s0 + 0.25, (y0 + y1) / 2], [s0, y1], [s1, y1], [s1 + 0.25, (y0 + y1) / 2], [s1, y0], [s0, y0]];
+      line(p, 3, "rgba(16,18,22,0.6)", 2);
     }
-    /* stars: both sides of both fins (B), lower wings near the tip (C) */
-    for (b = 1; b <= 2; b++) star(g, pxX(-6.40), sideZ(1.0, b), 0.22 * PXM, 0.22 * SIDEH / ZSPAN * 1.04);
-    star(g, pxX(-4.35), bandY[3] + pxY(5.7), 0.32 * PXM, 0.32 * PXM);
-    star(g, pxX(-4.35), bandY[3] + pxY(-5.7), 0.32 * PXM, 0.32 * PXM);
+    bay(8.9, 12.8, -0.62, 0.62); bay(13.1, 16.8, -0.62, 0.62);
+    line([[8.9, 0], [16.8, 0]], 3, "rgba(16,18,22,0.45)", 1.5);
+    for (sg = -1; sg <= 1; sg += 2) bay(10.9, 13.9, sg * 2.18, sg * 2.62);
+    /* soot behind the nozzles, on the tunnel and the sting */
+    g.fillStyle = "rgba(34,30,26,0.22)";
+    for (sg = -1; sg <= 1; sg += 2) g.fillRect(pxX(X(18.9)), BAND[3] + pxY(Y(sg * 1.42 + 0.45)), (X(17.2) - X(18.9)) * PXM, 0.9 * PXM);
+    /* light grime */
+    for (i = 0; i < 40; i++) {
+      g.fillStyle = "rgba(24,24,28," + (0.03 + R() * 0.05).toFixed(3) + ")";
+      g.fillRect(R() * TW, R() * TEXH, 10 + R() * 40, 2 + R() * 6);
+    }
+    /* stars: fins both sides, low (B); under the wing tips (F) */
+    for (b = 1; b <= 2; b++) star(g, pxX(X(16.55)), sideV(Z(1.95), b), 0.24 * PXM, 0.24 * SIDEH / ZSPAN);
+    for (sg = -1; sg <= 1; sg += 2) star(g, pxX(X(15.05)), BAND[3] + pxY(Y(sg * 6.15)), 0.36 * PXM, 0.36 * PXM);
     _cv = cv;
     return cv;
   }
@@ -148,8 +309,8 @@ var HeroSu57 = (function () {
     return t;
   }
 
-
-  /* each face takes the band its normal looks into: top, port, starboard, belly */
+  /* each face takes the band its normal looks into: top, port, starboard,
+     belly; the canvas is laid out in metres, so the UVs land on the skin */
   function projUV(geo) {
     var p = geo.attributes.position.array;
     var uv = new Float32Array(p.length / 3 * 2);
@@ -160,35 +321,29 @@ var HeroSu57 = (function () {
       var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
       var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
       nx /= nl; ny /= nl; nz /= nl;
-      var band = nz > 0.55 ? 0 : nz < -0.55 ? 3 : (ny >= 0 ? 1 : 2);
-      var endOn = Math.abs(nx) > Math.abs(ny) * 1.4;
+      var band = nz > 0.5 ? 0 : nz < -0.5 ? 3 : (ny >= 0 ? 1 : 2);
       for (k = 0; k < 3; k++) {
         var x = p[t + 3 * k], y = p[t + 3 * k + 1], z = p[t + 3 * k + 2], U, W;
-        if (band === 0) { U = pxX(x); W = clamp(pxY(y), 2, TOPH - 2); }
-        else if (band === 3) { U = pxX(x); W = TOPH + 2 * SIDEH + clamp(pxY(y), 2, TOPH - 2); }
-        else {
-          U = pxX(endOn ? x + y : x);
-          W = TOPH + (band - 1) * SIDEH + clamp((ZTOP - z) / ZSPAN * SIDEH, 2, SIDEH - 2);
-        }
+        U = pxX(x);
+        if (band === 0) W = clamp(pxY(y), 1, TOPH - 1);
+        else if (band === 3) W = TOPH + 2 * SIDEH + clamp(pxY(y), 1, TOPH - 1);
+        else W = TOPH + (band - 1) * SIDEH + clamp((ZTOP - z) / ZSPAN * SIDEH, 1, SIDEH - 1);
         uv[(t / 3 + k) * 2] = U / TW;
-        uv[(t / 3 + k) * 2 + 1] = 1 - W / TH;
+        uv[(t / 3 + k) * 2 + 1] = 1 - W / TEXH;
       }
     }
     geo.setAttribute("uv", new V.BufferAttribute(uv, 2));
     return geo;
   }
 
-
   function makeMats(C) {
     var tex = skinTexture(), m = {};
-    m.skin = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.84, metalness: 0.08 });
-    if (tex) m.skin.map = tex; else m.skin.color.setHex(0x9bb2c9);
-    m.radome = new V.MeshStandardMaterial({ color: 0xa9b2b8, roughness: 0.70, metalness: 0.10 });
-    m.dark  = new V.MeshStandardMaterial({ color: 0x17191b, roughness: 0.70, metalness: 0.30 });
-    m.metal = new V.MeshStandardMaterial({ color: 0x6a6f72, roughness: 0.45, metalness: 0.62 });
+    m.skin = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.84, metalness: 0.08, side: V.DoubleSide });
+    if (tex) m.skin.map = tex; else m.skin.color.setHex(0x9ca1ad);
+    m.dark  = new V.MeshStandardMaterial({ color: 0x16181b, roughness: 0.72, metalness: 0.25 });
+    m.metal = new V.MeshStandardMaterial({ color: 0x676c70, roughness: 0.45, metalness: 0.62 });
     m.tyre  = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
-    m.glass = new V.MeshStandardMaterial({ color: 0x2a3d44, roughness: 0.10, metalness: 0.35 });
-    m.pale  = new V.MeshStandardMaterial({ color: 0xc4c9c8, roughness: 0.55, metalness: 0.15 });
+    m.glass = new V.MeshStandardMaterial({ color: 0x2b3a42, roughness: 0.10, metalness: 0.40 });
     var tc = (C && C.team !== undefined) ? C.team : "#c0392b";
     m.team  = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                            emissive: new V.Color(tc), emissiveIntensity: 0.10 });
@@ -196,23 +351,19 @@ var HeroSu57 = (function () {
   }
 
   /* ------------------------------------------------------ geometry kit -- */
-  function place(geo, x, y, z, rx, ry, rz) {
-    if (rx || ry || rz)
-      geo.applyMatrix4(new V.Matrix4().makeRotationFromEuler(new V.Euler(rx || 0, ry || 0, rz || 0)));
-    if (x || y || z) geo.translate(x || 0, y || 0, z || 0);
-    return geo;
-  }
-  function box(sx, sy, sz, x, y, z, rx, ry, rz) {
-    return place(new V.BoxGeometry(sx, sy, sz), x, y, z, rx, ry, rz);
-  }
-  /* a cylinder along model x, y or z; r0 is the end toward +axis */
   function cyl(r0, r1, len, seg, axis, x, y, z) {
     var g = new V.CylinderGeometry(r0, r1, len, seg, 1, false);
     if (axis === "x") g.rotateZ(-PI / 2);
     else if (axis === "z") g.rotateX(PI / 2);
-    return place(g, x, y, z);
+    g.translate(x, y, z);
+    return g;
   }
-  /* a round bar from p to q */
+  function box(sx, sy, sz, x, y, z, rz) {
+    var g = new V.BoxGeometry(sx, sy, sz);
+    if (rz) g.rotateX(rz);
+    g.translate(x, y, z);
+    return g;
+  }
   function bar(p, q, r, seg) {
     var dx = q[0] - p[0], dy = q[1] - p[1], dz = q[2] - p[2];
     var L = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -223,8 +374,6 @@ var HeroSu57 = (function () {
     return g;
   }
   function flat(geo) { return geo.index ? geo.toNonIndexed() : geo; }
-  /* one buffer per material: a single draw call (and one shadow draw) for what
-     would otherwise be dozens */
   function merge(list) {
     var pos = [], nor = [], uvs = [], i, j;
     for (i = 0; i < list.length; i++) {
@@ -250,11 +399,6 @@ var HeroSu57 = (function () {
     parent.add(m);
     return m;
   }
-  function push(list, geos) {
-    if (geos instanceof Array) for (var i = 0; i < geos.length; i++) list.push(geos[i]);
-    else list.push(geos);
-  }
-  /* flat-shaded triangles from corners, three per triangle */
   function tris(pts) {
     var pos = [], i;
     for (i = 0; i < pts.length; i++) pos.push(pts[i][0], pts[i][1], pts[i][2]);
@@ -263,369 +407,328 @@ var HeroSu57 = (function () {
     g.computeVertexNormals();
     return g;
   }
-  /* A convex solid from its faces; every face is wound away from the centre,
-     so the caller need not get the order right. */
-  function convex(faces) {
-    var c = [0, 0, 0], n = 0, i, j, out = [];
-    for (i = 0; i < faces.length; i++) for (j = 0; j < faces[i].length; j++) {
-      c[0] += faces[i][j][0]; c[1] += faces[i][j][1]; c[2] += faces[i][j][2]; n++;
+  /* rings of equal length, nose first, bridged by quads, end caps as fans;
+     the whole solid is turned outward by its signed volume */
+  function bridge(rings, capA, capB) {
+    var n = rings[0].length, out = [], i, k, vol = 0;
+    for (k = 0; k < rings.length - 1; k++) for (i = 0; i < n; i++) {
+      var j = (i + 1) % n, P = rings[k], Q = rings[k + 1];
+      out.push(P[i], P[j], Q[j]); out.push(P[i], Q[j], Q[i]);
     }
-    c[0] /= n; c[1] /= n; c[2] /= n;
-    for (i = 0; i < faces.length; i++) {
-      var f = faces[i], a = f[0], fc = [0, 0, 0];
-      /* test each triangle against the centre of ITS face, not its first
-         corner: on a long thin swept panel with anhedral the first corner
-         sits far inboard of the solid's centre and turned the top skin in */
-      for (j = 0; j < f.length; j++) { fc[0] += f[j][0] / f.length; fc[1] += f[j][1] / f.length; fc[2] += f[j][2] / f.length; }
-      for (j = 1; j < f.length - 1; j++) {
-        var b = f[j], d = f[j + 1];
-        var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-        var vx = d[0] - a[0], vy = d[1] - a[1], vz = d[2] - a[2];
-        var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-        var o = (fc[0] - c[0]) * nx + (fc[1] - c[1]) * ny + (fc[2] - c[2]) * nz;
-        if (o >= 0) out.push(a, b, d); else out.push(a, d, b);
-      }
+    function cap(r) {
+      var c = [0, 0, 0];
+      for (i = 0; i < n; i++) { c[0] += r[i][0] / n; c[1] += r[i][1] / n; c[2] += r[i][2] / n; }
+      for (i = 0; i < n; i++) out.push(c, r[(i + 1) % n], r[i]);
     }
-    return tris(out);
-  }
-  /* a closed solid between two sections with the same number of corners:
-     built with consistent topology (caps as fans, sides as quads), then the
-     signed volume decides whether the whole solid is turned inside out */
-  function solid(A, B) {
-    var n = A.length, i, out = [], vol = 0;
-    for (i = 1; i < n - 1; i++) { out.push(A[0], A[i + 1], A[i]); out.push(B[0], B[i], B[i + 1]); }
-    for (i = 0; i < n; i++) {
-      var j = (i + 1) % n;
-      out.push(A[i], A[j], B[j]); out.push(A[i], B[j], B[i]);
-    }
+    if (capA) cap(rings[0]);
+    if (capB) { var last = rings[rings.length - 1].slice().reverse(); cap(last); }
     for (i = 0; i < out.length; i += 3) {
       var a = out[i], b = out[i + 1], c = out[i + 2];
       vol += a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
     }
+    if (!capA && !capB) {
+      /* an open tube: judge by the first quad against its ring's centre */
+      var r0 = rings[0], c0 = [0, 0, 0];
+      for (i = 0; i < n; i++) { c0[0] += r0[i][0] / n; c0[1] += r0[i][1] / n; c0[2] += r0[i][2] / n; }
+      var A = out[0], B = out[1], D = out[2];
+      var ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], wx = D[0] - A[0], wy = D[1] - A[1], wz = D[2] - A[2];
+      vol = (uy * wz - uz * wy) * (A[0] - c0[0]) + (uz * wx - ux * wz) * (A[1] - c0[1]) + (ux * wy - uy * wx) * (A[2] - c0[2]);
+    }
     if (vol < 0) for (i = 0; i < out.length; i += 3) { var t = out[i + 1]; out[i + 1] = out[i + 2]; out[i + 2] = t; }
-    return tris(out);
+    var g = tris(out);
+    return g;
   }
-  /* aerofoil section: leading edge, crest 15% back, after-body at 75%, sharp
-     trailing edge; thickness t along the unit normal nrm */
+  /* smooth the normals of a lofted skin: average by position */
+  function smooth(g) {
+    var p = g.attributes.position.array, n = g.attributes.normal.array, acc = {}, i, k;
+    for (i = 0; i < p.length; i += 3) {
+      k = p[i].toFixed(3) + "," + p[i + 1].toFixed(3) + "," + p[i + 2].toFixed(3);
+      var a = acc[k] || (acc[k] = [0, 0, 0]);
+      a[0] += n[i]; a[1] += n[i + 1]; a[2] += n[i + 2];
+    }
+    for (i = 0; i < p.length; i += 3) {
+      k = p[i].toFixed(3) + "," + p[i + 1].toFixed(3) + "," + p[i + 2].toFixed(3);
+      var b = acc[k], l = Math.sqrt(b[0] * b[0] + b[1] * b[1] + b[2] * b[2]) || 1;
+      n[i] = b[0] / l; n[i + 1] = b[1] / l; n[i + 2] = b[2] / l;
+    }
+    return g;
+  }
+  /* split-exponent superellipse ring in the y-z plane at x */
+  function ring(x, yc, w, zc, up, dn, eu, el, ey, n) {
+    var o = [], j;
+    for (j = 0; j < n; j++) {
+      var t = 2 * PI * j / n, c = Math.cos(t), s = Math.sin(t);
+      var yy = yc + w * (c < 0 ? -1 : 1) * Math.pow(Math.abs(c), ey);
+      var zz = s >= 0 ? zc + up * Math.pow(s, eu) : zc - dn * Math.pow(-s, el);
+      o.push([x, yy, zz]);
+    }
+    return o;
+  }
+  /* aerofoil: leading edge, crest at 15 %, after-body, sharp trailing edge */
   function foil(le, te, t, nrm) {
     function p(f, k) {
       return [le[0] + (te[0] - le[0]) * f + nrm[0] * k, le[1] + (te[1] - le[1]) * f + nrm[1] * k,
               le[2] + (te[2] - le[2]) * f + nrm[2] * k];
     }
-    return [p(0, 0), p(0.15, t / 2), p(0.75, t * 0.38), p(1, 0), p(0.75, -t * 0.38), p(0.15, -t / 2)];
-  }
-  /* a rectangular block section on a lifting surface, between chord fractions
-     f0 and f1, half-thickness h along nrm: the team flashes */
-  function blk(le, te, f0, f1, h, nrm) {
-    function p(f, k) {
-      return [le[0] + (te[0] - le[0]) * f + nrm[0] * k, le[1] + (te[1] - le[1]) * f + nrm[1] * k,
-              le[2] + (te[2] - le[2]) * f + nrm[2] * k];
-    }
-    return [p(f0, h), p(f1, h), p(f1, -h), p(f0, -h)];
+    return [p(0, 0), p(0.06, t * 0.34), p(0.18, t / 2), p(0.45, t * 0.46), p(0.75, t * 0.30), p(1, 0),
+            p(0.75, -t * 0.26), p(0.45, -t * 0.40), p(0.18, -t * 0.42), p(0.06, -t * 0.30)];
   }
 
-  /* ---- the loft. A section is a superellipse: e 1 is round, lower e is a
-     flat-sided box with rounded corners. Sections run from the nose to the
-     tail (decreasing x) and the quads are wound (a, c, b), which for that
-     order puts every normal outward. */
-  function ls(x, yc, zc, w, h, e) { return { x: x, yc: yc, zc: zc, w: w, h: h, e: e || 1 }; }
-  function sgn(v) { return v < 0 ? -1 : 1; }
-  function ringOf(s, n) {
-    var o = [], j, t, c, sn;
-    for (j = 0; j < n; j++) {
-      t = 2 * PI * j / n; c = Math.cos(t); sn = Math.sin(t);
-      o.push([s.yc + s.w * sgn(c) * Math.pow(Math.abs(c), s.e), s.zc + s.h * sgn(sn) * Math.pow(Math.abs(sn), s.e)]);
-    }
-    return o;
+  /* resample a station table by Catmull-Rom for a fair loft */
+  function cr1(p0, p1, p2, p3, t) {
+    var t2 = t * t, t3 = t2 * t;
+    return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
   }
-  function loft(secs, n, noseDx, tailDx) {
-    var pos = [], idx = [], i, j, r;
-    for (i = 0; i < secs.length; i++) {
-      r = ringOf(secs[i], n);
-      for (j = 0; j < n; j++) pos.push(secs[i].x, r[j][0], r[j][1]);
+  function fair(tab, per) {
+    var out = [], i, k, c;
+    for (i = 0; i < tab.length - 1; i++) for (k = 0; k < per; k++) {
+      var t = k / per, row = [];
+      for (c = 0; c < tab[0].length; c++)
+        row.push(cr1(tab[Math.max(0, i - 1)][c], tab[i][c], tab[i + 1][c], tab[Math.min(tab.length - 1, i + 2)][c], t));
+      out.push(row);
     }
-    for (i = 0; i < secs.length - 1; i++) for (j = 0; j < n; j++) {
-      var a = i * n + j, b = i * n + (j + 1) % n, c = (i + 1) * n + j, d = (i + 1) * n + (j + 1) % n;
-      idx.push(a, c, b, b, c, d);
-    }
-    var geo = new V.BufferGeometry();
-    geo.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
-    geo.setIndex(idx);
-    geo.computeVertexNormals();
-    var out = [geo];
-    function cap(k, dx, front) {
-      var s = secs[k], rr = ringOf(s, n), t = [], cy = 0, cz = 0;
-      for (j = 0; j < n; j++) { cy += rr[j][0]; cz += rr[j][1]; }
-      var o = [s.x + dx, cy / n, cz / n];
-      for (j = 0; j < n; j++) {
-        var p0 = [s.x, rr[j][0], rr[j][1]], p1 = [s.x, rr[(j + 1) % n][0], rr[(j + 1) % n][1]];
-        if (front) t.push(o, p0, p1); else t.push(o, p1, p0);
-      }
-      out.push(tris(t));
-    }
-    if (noseDx !== null && noseDx !== undefined) cap(0, noseDx, true);
-    if (tailDx !== null && tailDx !== undefined) cap(secs.length - 1, -tailDx, false);
+    out.push(tab[tab.length - 1].slice());
     return out;
   }
-  /* a round body of revolution along x from a profile of [xFraction, radiusFraction],
-     nose first, centred on (x, y, z) */
-  function revolve(prof, len, r, x, y, z, n, capNose, capTail) {
-    var secs = [], i;
-    for (i = 0; i < prof.length; i++) secs.push(ls(x + prof[i][0] * len, y, z, r * prof[i][1], r * prof[i][1], 1));
-    return loft(secs, n, capNose === undefined ? 0 : capNose, capTail === undefined ? 0 : capTail);
-  }
 
-  /* ------------------------------------------------------------ planform --
-     Drawing A scaled to 20.1 m, x 0 at mid length (nose +10.05, sting end
-     -10.05), +y to port. Wing: leading edge straight from the body (x -0.07,
-     y 3.15) to the tip (x -5.5, y 7.05); trailing edge from x -6.45 at the
-     root to -6.0 at the tip. */
-  var WY0 = 2.80;
-  function wLE(y) { return -0.07 - (y - 3.15) * 1.361; }
-  function wTE(y) { return -6.45 + (y - 3.10) * 0.113; }
-  function wT(y)  { return Math.max(0.08, 0.32 - 0.058 * (y - WY0)); }
-  function wPart(y, s, f0, f1) {
-    var le = wLE(y), te = wTE(y), c = le - te;
-    return foil([le - c * f0, s * y, 0], [le - c * f1, s * y, 0], wT(y), [0, 0, 1]);
-  }
-  function blk2(y, s, f0, f1, h) {
-    var le = wLE(y), te = wTE(y);
-    return blk([le, s * y, 0], [te, s * y, 0], f0, f1, h, [0, 0, 1]);
-  }
-
-  /* canted fin: root on the outboard boom (y 2.6), tip y 3.4, about 22
-     degrees off the vertical; drawing A: root chord x -4.75 to -7.7, tip
-     chord x -6.45 to -7.15, 1.9 m above the boom. */
-  var FIN_R = [0, 2.55, 0.15], FIN_D = [0, 0.85, 2.05];
-  function finPart(f, s) {
-    var le = -4.75 - 1.70 * f, te = -7.70 + 0.55 * f;
-    var cy = FIN_R[1] + FIN_D[1] * f, cz = FIN_R[2] + FIN_D[2] * f;
-    var th = 0.24 - 0.14 * f, nl = Math.sqrt(0.92 * 0.92 + 0.39 * 0.39);
-    return foil([le, s * cy, cz], [te, s * cy, cz], th, [0, s * 0.92 / nl, -0.39 / nl]);
-  }
-
-  /* sections: x, y centre, z centre, half-width, half-height, squareness.
-     LERX edge after drawing A: kink at x 4.1 (y 1.0), straight to x 1.7
-     (y 2.65), then the wing leading edge. */
-  var PLATE = [ls(10.05, 0, -0.15, 0.02, 0.02), ls(9.40, 0, -0.15, 0.25, 0.14, 0.9), ls(8.40, 0, -0.10, 0.62, 0.30, 0.85),
-               ls(7.20, 0, 0.00, 0.80, 0.42, 0.8), ls(5.60, 0, 0.00, 0.90, 0.50, 0.65), ls(4.10, 0, -0.05, 1.02, 0.48, 0.55),
-               ls(3.30, 0, -0.10, 1.55, 0.42, 0.5), ls(2.30, 0, -0.10, 2.30, 0.34, 0.5), ls(1.70, 0, -0.09, 2.66, 0.33, 0.5),
-               ls(0.00, 0, -0.08, 3.15, 0.32, 0.5),
-               ls(-2.0, 0, -0.08, 3.15, 0.32, 0.5), ls(-4.5, 0, -0.06, 3.00, 0.30, 0.5), ls(-5.6, 0, -0.04, 2.80, 0.22, 0.5),
-               ls(-6.8, 0, 0.00, 2.30, 0.08, 0.5)];
-  var BEAM = [ls(3.50, 0, 0.05, 0.55, 0.40, 0.7), ls(0.00, 0, 0.00, 0.90, 0.42, 0.7), ls(-4.5, 0, -0.05, 0.90, 0.42, 0.7),
-              ls(-7.5, 0, -0.05, 0.80, 0.40, 0.75), ls(-8.8, 0, -0.05, 0.50, 0.30, 0.85), ls(-9.6, 0, -0.05, 0.22, 0.20),
-              ls(-10.05, 0, -0.05, 0.03, 0.03)];
-  /* nacelles: centre y 1.42 (drawing A), nozzles end at x -8.65 */
-  var NAC_Y = 1.42;
-  var NAC = [ls(2.60, 0, -0.65, 0.54, 0.31, 0.5), ls(2.10, 0, -0.74, 0.60, 0.40, 0.5), ls(1.00, 0, -0.80, 0.66, 0.55, 0.55),
-             ls(-2.00, 0, -0.55, 0.70, 0.60, 0.65), ls(-5.00, 0, -0.25, 0.68, 0.55, 0.8), ls(-7.00, 0, -0.10, 0.60, 0.52, 0.95),
-             ls(-7.95, 0, -0.10, 0.58, 0.51, 1)];
-  var BOOM_Y = 2.50;
-  var BOOM = [ls(-3.5, 0, 0.02, 0.10, 0.10, 0.8), ls(-4.5, 0, 0.04, 0.40, 0.28, 0.7), ls(-7.0, 0, 0.04, 0.38, 0.26, 0.8),
-              ls(-8.5, 0, 0.0, 0.14, 0.14, 1), ls(-9.2, 0, 0.0, 0.03, 0.03, 1)];
-  var CANOPY = [ls(7.40, 0, 0.42, 0.08, 0.03), ls(6.90, 0, 0.62, 0.40, 0.26), ls(5.80, 0, 0.72, 0.52, 0.48),
-                ls(4.90, 0, 0.62, 0.50, 0.38), ls(4.20, 0, 0.50, 0.30, 0.14)];
-
-  /* the height of the body-plate top skin at (x, y), for panels laid on it */
-  function topZ(x, y) {
-    var i, a, b, f, w, h, zc, e, r;
-    y = Math.abs(y);
-    for (i = 0; i < PLATE.length - 1; i++) {
-      a = PLATE[i]; b = PLATE[i + 1];
-      if (x <= a.x && x >= b.x) {
-        f = (a.x - x) / (a.x - b.x);
-        w = a.w + (b.w - a.w) * f; h = a.h + (b.h - a.h) * f; zc = a.zc + (b.zc - a.zc) * f; e = a.e + (b.e - a.e) * f;
-        r = 1 - Math.pow(Math.min(1, y / w), 2 / e);
-        return zc + h * Math.pow(Math.max(0, r), e / 2);
+  /* the plate's top skin at (s, y), for parts laid on it */
+  function plateTop(sx, y) {
+    for (var q = 0; q < PLATE.length - 1; q++) {
+      var A0 = PLATE[q], B0 = PLATE[q + 1];
+      if (sx >= A0[0] && sx <= B0[0]) {
+        var u = (sx - A0[0]) / (B0[0] - A0[0]), w = A0[1] + (B0[1] - A0[1]) * u;
+        var zc = A0[2] + (B0[2] - A0[2]) * u, tu = A0[3] + (B0[3] - A0[3]) * u;
+        var c = Math.pow(Math.min(1, Math.abs(y) / w), 1 / 0.55), sn = Math.sqrt(Math.max(0, 1 - c * c));
+        return zc + tu * Math.pow(sn, 1.7);
       }
     }
-    return 0;
-  }
-  /* a chain of sections as ONE closed solid (caps only at the two ends, no
-     faces buried between segments) */
-  function chain(secs) {
-    var n = secs[0].length, k, i, out = [], vol = 0, A = secs[0], B = secs[secs.length - 1];
-    for (i = 1; i < n - 1; i++) { out.push(A[0], A[i + 1], A[i]); out.push(B[0], B[i], B[i + 1]); }
-    for (k = 0; k < secs.length - 1; k++) for (i = 0; i < n; i++) {
-      var j = (i + 1) % n, P = secs[k], Q = secs[k + 1];
-      out.push(P[i], P[j], Q[j]); out.push(P[i], Q[j], Q[i]);
-    }
-    for (i = 0; i < out.length; i += 3) {
-      var a = out[i], b = out[i + 1], c = out[i + 2];
-      vol += a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
-    }
-    if (vol < 0) for (i = 0; i < out.length; i += 3) { var t = out[i + 1]; out[i + 1] = out[i + 2]; out[i + 2] = t; }
-    return tris(out);
-  }
-  /* a thin flat slab over four plan corners (x, y) lying on the top skin,
-     raised rz above it and sunk dz into it */
-  function skinSlab(P, rz, dz) {
-    var top = [], bot = [], i;
-    for (i = 0; i < 4; i++) {
-      var z = topZ(P[i][0], P[i][1]);
-      top.push([P[i][0], P[i][1], z + rz]); bot.push([P[i][0], P[i][1], z - dz]);
-    }
-    return solid(top, bot);
+    return 0.95;
   }
 
+  /* ------------------------------------------------------------- build -- */
   function buildAirframe(THREE, C) {
     V = THREE;
     var T = makeMats(C);
     var g = new V.Group();
     g.name = "su57";
-    var K = { skin: [], radome: [], dark: [], metal: [], glass: [], team: [] };
-    var G = { metal: [], tyre: [], dark: [] };
-    var s, i, j, k;
+    var K = { skin: [], dark: [], metal: [], glass: [], team: [] };
+    var G = { metal: [], tyre: [], dark: [], door: [] };
+    var s, i, j, k, R;
 
-    /* ---- body plate (LERX, flat blended body), nose cone, centre beam */
-    push(K.skin, loft(PLATE.slice(3), 64, null, 0.0));
-    push(K.radome, loft(PLATE.slice(0, 4), 40, 0.0, null));
-    push(K.skin, loft(BEAM, 40, 0.0, 0.02));
-
-    /* ---- LEVCONs: the leading-edge root surfaces on the LERX edge from the
-       kink to the wing root (photo B, drawing A), flush, with dark hinge
-       and gap lines */
-    for (s = -1; s <= 1; s += 2) {
-      K.skin.push(skinSlab([[4.00, s * 1.12], [3.62, s * 0.66], [1.52, s * 2.18], [1.86, s * 2.60]], 0.022, 0.05));
-      K.dark.push(bar([4.00, s * 1.12, topZ(4.0, 1.12) + 0.03], [1.86, s * 2.60, topZ(1.86, 2.6) + 0.03], 0.012, 4));
-      K.dark.push(bar([3.62, s * 0.66, topZ(3.62, 0.66) + 0.03], [1.52, s * 2.18, topZ(1.52, 2.18) + 0.03], 0.014, 4));
-      K.dark.push(bar([4.00, s * 1.12, topZ(4.0, 1.12) + 0.03], [3.62, s * 0.66, topZ(3.62, 0.66) + 0.03], 0.012, 4));
-      K.dark.push(bar([1.52, s * 2.18, topZ(1.52, 2.18) + 0.03], [1.86, s * 2.60, topZ(1.86, 2.6) + 0.03], 0.012, 4));
+    /* ---- body: chined forebody, spine, the sting (recognition 1, 9) */
+    var bt = fair(BODY, 2), rings = [];
+    for (i = 0; i < bt.length; i++) {
+      var b = bt[i];
+      rings.push(ring(X(b[0]), 0, Y(b[1]), Z(b[2]), b[3] - b[2], b[2] - b[4], b[5], b[6], 1.0, 28));
     }
+    K.skin.push(smooth(bridge(rings, true, true)));
 
-    /* ---- nacelles, caret intakes, nozzles with petals */
+    /* ---- LERX / blended plate (recognition 2) */
+    rings = [];
+    for (i = 0; i < PLATE.length; i++) {
+      var q = PLATE[i];
+      rings.push(ring(X(q[0]), 0, Y(q[1]), Z(q[2]), q[3], q[4], 1.7, 1.7, 0.55, 28));
+    }
+    K.skin.push(smooth(bridge(rings, true, true)));
+
+    /* ---- nacelles, intakes, nozzles, booms (recognition 1, 6, 7) */
+    var nt = fair(NAC, 2);
     for (s = -1; s <= 1; s += 2) {
-      var secs = [];
-      for (i = 0; i < NAC.length; i++) { var n0 = NAC[i]; secs.push(ls(n0.x, s * NAC_Y, n0.zc, n0.w, n0.h, n0.e)); }
-      push(K.skin, loft(secs, 48, 0.0, 0.0));
-      /* intake: raked dark mouth, caret lip frame, a splitter plate and the
-         inner ramp, the cowl lip swept so the top edge leads (A, B) */
-      var ix = 2.62, iy = s * NAC_Y, iz0 = -0.35, iz1 = -0.96, hw = 0.50;
-      K.dark.push(solid([[ix + 0.02, iy - hw, iz0], [ix + 0.02, iy + hw, iz0], [ix - 0.04, iy + hw, iz1], [ix - 0.04, iy - hw, iz1]],
-                        [[ix - 0.05, iy - hw, iz0], [ix - 0.05, iy + hw, iz0], [ix - 0.10, iy + hw, iz1], [ix - 0.10, iy - hw, iz1]]));
-      K.skin.push(solid([[ix + 0.10, iy - hw - 0.07, iz0 + 0.04], [ix + 0.10, iy + hw + 0.07, iz0 + 0.04], [ix + 0.10, iy + hw + 0.07, iz0 - 0.05], [ix + 0.10, iy - hw - 0.07, iz0 - 0.05]],
-                        [[ix - 0.30, iy - hw - 0.09, iz0 + 0.04], [ix - 0.30, iy + hw + 0.09, iz0 + 0.04], [ix - 0.30, iy + hw + 0.09, iz0 - 0.05], [ix - 0.30, iy - hw - 0.09, iz0 - 0.05]]));
-      K.skin.push(solid([[ix - 0.04, iy - hw - 0.07, iz1 + 0.03], [ix - 0.04, iy + hw + 0.07, iz1 + 0.03], [ix - 0.04, iy + hw + 0.07, iz1 - 0.05], [ix - 0.04, iy - hw - 0.07, iz1 - 0.05]],
-                        [[ix - 0.40, iy - hw - 0.09, iz1 + 0.03], [ix - 0.40, iy + hw + 0.09, iz1 + 0.03], [ix - 0.40, iy + hw + 0.09, iz1 - 0.05], [ix - 0.40, iy - hw - 0.09, iz1 - 0.05]]));
-      for (j = -1; j <= 1; j += 2) {
-        K.skin.push(solid([[ix + 0.06, iy + j * (hw + 0.02), iz0 + 0.02], [ix + 0.06, iy + j * (hw + 0.10), iz0 + 0.02], [ix - 0.02, iy + j * (hw + 0.10), iz1 + 0.02], [ix - 0.02, iy + j * (hw + 0.02), iz1 + 0.02]],
-                          [[ix + 0.06, iy + j * (hw + 0.02), iz0 - 0.04], [ix + 0.06, iy + j * (hw + 0.10), iz0 - 0.04], [ix - 0.02, iy + j * (hw + 0.10), iz1 - 0.04], [ix - 0.02, iy + j * (hw + 0.02), iz1 - 0.04]]));
+      rings = [];
+      for (i = 0; i < nt.length; i++) {
+        var a = nt[i];
+        rings.push(ring(X(a[0]), s * Y(a[1]), Y(a[2]), Z(a[3]), a[4], a[4], a[5], a[5], a[5], 24));
       }
-      /* the inner ramp and splitter plate seen through the mouth */
-      K.metal.push(solid([[ix - 0.12, iy - hw + 0.03, iz0 - 0.03], [ix - 0.12, iy + hw - 0.03, iz0 - 0.03], [ix - 0.12, iy + hw - 0.03, iz0 - 0.07], [ix - 0.12, iy - hw + 0.03, iz0 - 0.07]],
-                         [[ix - 0.50, iy - hw + 0.03, iz0 - 0.30], [ix - 0.50, iy + hw - 0.03, iz0 - 0.30], [ix - 0.50, iy + hw - 0.03, iz0 - 0.34], [ix - 0.50, iy - hw + 0.03, iz0 - 0.34]]));
-      /* nozzle: sixteen petals closing to the exit, a dark bore */
-      for (i = 0; i < 16; i++) {
-        var a0 = i * 2 * PI / 16, a1 = (i + 0.86) * 2 * PI / 16;
-        function np(r, a, x) { return [x, s * NAC_Y + Math.cos(a) * r, -0.10 + Math.sin(a) * r * 0.88]; }
-        var pet = solid([np(0.585, a0, -7.95), np(0.585, a1, -7.95), np(0.545, a1, -7.95), np(0.545, a0, -7.95)],
-                        [np(0.385, a0, -8.65), np(0.385, a1, -8.65), np(0.345, a1, -8.65), np(0.345, a0, -8.65)]);
+      K.skin.push(smooth(bridge(rings, false, false)));
+
+      /* the raked intake: top lip under the LERX 1.25 m ahead of the bottom
+         lip; outer wall leans out (A front view: 1.82 m at the bottom, 2.05
+         m at the top), inner wall 0.72 -> 0.52 */
+      var SB = 9.20, ST = 7.95, SBK = 9.75, hB = 0.02, hT = 0.84;
+      var oB = 1.82, oT = 2.05, iB = 0.72, iT = 0.52, wt = 0.07;
+      function wall(yb, yt, d) {
+        var A1 = [[X(ST), s * Y(yt), Z(hT)], [X(SB), s * Y(yb), Z(hB)], [X(SBK), s * Y(yb), Z(hB)], [X(SBK), s * Y(yt), Z(hT)]];
+        var A2 = A1.map(function (p) { return [p[0], p[1] + s * d * KY, p[2]]; });
+        return bridge([A1, A2], true, true);
+      }
+      K.skin.push(wall(oB, oT, wt));
+      K.skin.push(wall(iB, iT, -wt));
+      /* bottom lip */
+      K.skin.push(bridge([[[X(SB), s * Y(iB - 0.04), Z(hB)], [X(SB), s * Y(oB + 0.04), Z(hB)], [X(SBK), s * Y(oB + 0.04), Z(hB)], [X(SBK), s * Y(iB - 0.04), Z(hB)]],
+                          [[X(SB), s * Y(iB - 0.04), Z(hB + 0.07)], [X(SB), s * Y(oB + 0.04), Z(hB + 0.07)], [X(SBK), s * Y(oB + 0.04), Z(hB + 0.07)], [X(SBK), s * Y(iB - 0.04), Z(hB + 0.07)]]], true, true));
+      /* the cowl roof under the LERX */
+      K.skin.push(bridge([[[X(ST), s * Y(iT), Z(hT)], [X(ST), s * Y(oT), Z(hT)], [X(SBK + 0.3), s * Y(oT), Z(hT)], [X(SBK + 0.3), s * Y(iT), Z(hT)]],
+                          [[X(ST), s * Y(iT), Z(hT + 0.10)], [X(ST), s * Y(oT), Z(hT + 0.10)], [X(SBK + 0.3), s * Y(oT), Z(hT + 0.10)], [X(SBK + 0.3), s * Y(iT), Z(hT + 0.10)]]], true, true));
+      /* the duct: a dark throat set back behind the mouth plane, and the
+         compression ramp under the roof */
+      var d0 = 0.50;
+      K.dark.push(bridge([[[X(ST + d0), s * Y(iT + 0.03), Z(hT - 0.02)], [X(ST + d0), s * Y(oT - 0.03), Z(hT - 0.02)], [X(SB + d0), s * Y(oB - 0.03), Z(hB + 0.08)], [X(SB + d0), s * Y(iB + 0.03), Z(hB + 0.08)]],
+                          [[X(ST + d0 + 0.05), s * Y(iT + 0.03), Z(hT - 0.02)], [X(ST + d0 + 0.05), s * Y(oT - 0.03), Z(hT - 0.02)], [X(SB + d0 + 0.05), s * Y(oB - 0.03), Z(hB + 0.08)], [X(SB + d0 + 0.05), s * Y(iB + 0.03), Z(hB + 0.08)]]], true, true));
+      K.metal.push(bridge([[[X(ST + 0.05), s * Y(iT + 0.05), Z(hT - 0.04)], [X(ST + 0.05), s * Y(oT - 0.05), Z(hT - 0.04)], [X(ST + 0.50), s * Y(oT - 0.08), Z(hT - 0.30)], [X(ST + 0.50), s * Y(iT + 0.08), Z(hT - 0.30)]],
+                           [[X(ST + 0.05), s * Y(iT + 0.05), Z(hT - 0.08)], [X(ST + 0.05), s * Y(oT - 0.05), Z(hT - 0.08)], [X(ST + 0.50), s * Y(oT - 0.08), Z(hT - 0.34)], [X(ST + 0.50), s * Y(iT + 0.08), Z(hT - 0.34)]]], true, true));
+
+      /* nozzle: eighteen petals closing from 0.58 m to 0.43 m (A), dark
+         bore, a hot ring inside */
+      var ny = s * Y(1.42), nz = Z(0.85);
+      for (i = 0; i < 18; i++) {
+        var a0 = i * 2 * PI / 18, a1 = (i + 0.88) * 2 * PI / 18;
+        var np = function (r, ang, x) { return [x, ny + Math.cos(ang) * r, nz + Math.sin(ang) * r]; };
+        var pet = bridge([[np(0.585, a0, X(17.66)), np(0.585, a1, X(17.66)), np(0.545, a1, X(17.66)), np(0.545, a0, X(17.66))],
+                          [np(0.435, a0, X(18.80)), np(0.435, a1, X(18.80)), np(0.395, a1, X(18.80)), np(0.395, a0, X(18.80))]], true, true);
         if (i & 1) K.metal.push(pet); else K.dark.push(pet);
       }
-      push(K.dark, loft([ls(-7.96, s * NAC_Y, -0.10, 0.52, 0.46), ls(-8.64, s * NAC_Y, -0.10, 0.34, 0.30)], 24, null, 0.0));
-      /* outboard tail boom */
-      var bs = [];
-      for (i = 0; i < BOOM.length; i++) { var b0 = BOOM[i]; bs.push(ls(b0.x, s * BOOM_Y, b0.zc, b0.w, b0.h, b0.e)); }
-      push(K.skin, loft(bs, 24, null, 0.0));
+      /* the bore: a closed dark frustum whose aft face sits 0.45 m inside
+         the petal exit, so the nozzle reads as a cavity */
+      K.dark.push(bridge([ring(X(17.70), ny, 0.54, nz, 0.54, 0.54, 1, 1, 1, 20), ring(X(18.35), ny, 0.44, nz, 0.44, 0.44, 1, 1, 1, 20)], true, true));
+      K.metal.push(bridge([ring(X(18.30), ny, 0.30, nz, 0.30, 0.30, 1, 1, 1, 12), ring(X(18.36), ny, 0.30, nz, 0.30, 0.30, 1, 1, 1, 12)], true, true));
+
+      /* outboard boom */
+      rings = [];
+      for (i = 0; i < BOOM.length; i++) {
+        var bm = BOOM[i];
+        rings.push(ring(X(bm[0]), s * Y(bm[1]), Y(bm[3]), Z(bm[2]), bm[4], bm[4] * 0.8, 0.8, 0.8, 0.8, 16));
+      }
+      K.skin.push(smooth(bridge(rings, true, true)));
+
+      /* side-bay fairing under the wing root (A side view, s 10.6-14.3) */
+      rings = [];
+      var FB = [[10.6, 0.05, 0.02], [11.2, 0.22, 0.20], [13.6, 0.24, 0.24], [14.3, 0.04, 0.03]];
+      for (i = 0; i < FB.length; i++)
+        rings.push(ring(X(FB[i][0]), s * Y(2.38), Y(FB[i][1]), Z(0.80), 0.18, FB[i][2] + 0.04, 1, 0.8, 0.8, 14));
+      K.skin.push(smooth(bridge(rings, true, true)));
     }
 
-    /* ---- canopy, sill rails, arch frames, windscreen bow; IRST on the nose */
-    push(K.glass, loft(CANOPY, 28, 0.02, 0.02));
-    function canopyAt(x) {
+    /* ---- wings: one chained solid a side (recognition 4); team strip */
+    for (s = -1; s <= 1; s += 2) {
+      var sts = [3.0, 3.6, 4.3, 5.0, 5.7, 6.3, 6.5, 6.8, 7.0, 7.17], wl = [];
+      for (i = 0; i < sts.length; i++) {
+        var yy = sts[i];
+        wl.push(foil([X(wLE(yy)), s * Y(yy), Z(WH)], [X(wTE(yy)), s * Y(yy), Z(WH)], wT(yy), [0, 0, 1]));
+      }
+      K.skin.push(smooth(bridge(wl, true, true)));
+      var f0 = 0.30, f1 = 0.58, ya = 5.55, yb = 6.15;
+      function tb(y, k) {
+        var le = wLE(y), te = wTE(y), c = le - te, hz = wT(y) * 0.47 + 0.012;
+        return [[X(le - c * f0), s * Y(y), Z(WH) + k * hz], [X(le - c * f1), s * Y(y), Z(WH) + k * hz]];
+      }
+      var ta = tb(ya, 1), tbb = tb(yb, 1), tc = tb(ya, 0.6), td = tb(yb, 0.6);
+      K.team.push(bridge([[ta[0], ta[1], tc[1], tc[0]], [tbb[0], tbb[1], td[1], td[0]]], true, true));
+    }
+
+    /* ---- tailplanes: all-moving, level with the wing, pivots (rec. 6) */
+    for (s = -1; s <= 1; s += 2) {
+      var tl = [], ys = [2.55, 3.4, 4.2, 4.75, 5.08];
+      for (i = 0; i < ys.length; i++) {
+        var y2 = ys[i];
+        tl.push(foil([X(Math.max(tLE(y2), 15.1)), s * Y(y2), Z(TH)], [X(tTE(y2)), s * Y(y2), Z(TH)], 0.20 - 0.028 * (y2 - 2.55), [0, 0, 1]));
+      }
+      K.skin.push(smooth(bridge(tl, true, true)));
+      K.metal.push(cyl(0.11, 0.11, 0.30, 12, "y", X(17.6), s * Y(2.60), Z(TH)));
+    }
+
+    /* ---- all-moving canted fins (recognition 5) and their root stubs */
+    var cc = Math.cos(CANT), sn = Math.sin(CANT);
+    for (s = -1; s <= 1; s += 2) {
+      var fl = [];
+      for (i = 0; i <= 4; i++) {
+        var f = i / 4, span = f * (1.77 / cc);
+        var fy = 2.62 + span * sn, fh = 1.38 + span * cc;
+        var le2 = 15.0 + f * 1.56, te2 = 17.84 - f * 0.60;
+        fl.push(foil([X(le2), s * Y(fy), Z(fh)], [X(te2), s * Y(fy), Z(fh)], 0.20 - 0.13 * f, [0, s * cc, -sn]));
+      }
+      K.skin.push(smooth(bridge(fl, true, true)));
+      /* the pivot gap at the root of the moving fin */
+      K.dark.push(bar([X(15.1), s * Y(2.66), Z(1.48)], [X(17.75), s * Y(2.66), Z(1.48)], 0.03, 5));
+    }
+
+    /* ---- canopy (recognition 9): glass, windscreen arch, sill rails */
+    rings = [];
+    var ct = fair(CANOPY, 2);
+    for (i = 0; i < ct.length; i++) {
+      var cq = ct[i];
+      rings.push(ring(X(cq[0]), 0, cq[2], Z(cq[1]), cq[3], 0.12, 0.85, 1, 1, 22));
+    }
+    K.glass.push(smooth(bridge(rings, true, true)));
+    function canopyRing(sx) {
       for (var q = 0; q < CANOPY.length - 1; q++) {
-        var a = CANOPY[q], b = CANOPY[q + 1];
-        if (x <= a.x && x >= b.x) {
-          var f = (a.x - x) / (a.x - b.x);
-          return ls(x, 0, a.zc + (b.zc - a.zc) * f, a.w + (b.w - a.w) * f, a.h + (b.h - a.h) * f, 1);
+        var A0 = CANOPY[q], B0 = CANOPY[q + 1];
+        if (sx >= A0[0] && sx <= B0[0]) {
+          var u = (sx - A0[0]) / (B0[0] - A0[0]);
+          return [A0[1] + (B0[1] - A0[1]) * u, A0[2] + (B0[2] - A0[2]) * u, A0[3] + (B0[3] - A0[3]) * u];
         }
       }
-      return CANOPY[0];
+      return CANOPY[0].slice(1);
     }
-    var archX = [6.55, 5.50, 4.55];
-    for (j = 0; j < archX.length; j++) {
-      var cs = canopyAt(archX[j]), pr = ringOf(cs, 24), prev = null;
-      for (k = 0; k < pr.length; k++) {
-        if (pr[k][1] < cs.zc - 0.02) { prev = null; continue; }
-        var cur = [archX[j], pr[k][0], pr[k][1] + 0.012];
-        if (prev) K.dark.push(bar(prev, cur, j === 0 ? 0.026 : 0.018, 4));
-        prev = cur;
+    var arc = canopyRing(3.70), prev = null;
+    for (k = 0; k <= 14; k++) {
+      var tt = PI * k / 14, cur = [X(3.70), Math.cos(tt) * (arc[1] + 0.015), Z(arc[0]) + Math.pow(Math.sin(tt), 0.85) * (arc[2] + 0.015)];
+      if (prev) K.dark.push(bar(prev, cur, 0.035, 5));
+      prev = cur;
+    }
+    for (s = -1; s <= 1; s += 2) {
+      var sill = [];
+      for (k = 0; k <= 6; k++) {
+        var sx2 = 2.85 + k * (5.85 - 2.85) / 6, cr = canopyRing(sx2);
+        sill.push([X(sx2), s * (cr[1] + 0.01), Z(cr[0]) + 0.02]);
       }
+      for (k = 0; k < sill.length - 1; k++) K.dark.push(bar(sill[k], sill[k + 1], 0.025, 4));
     }
+    /* ---- IRST ball ahead of the windscreen, to starboard (recognition 8) */
+    K.skin.push(smooth(bridge([ring(X(2.15), Y(-0.19), 0.03, Z(1.30), 0.02, 0.02, 1, 1, 1, 16),
+                               ring(X(2.35), Y(-0.19), 0.13, Z(1.33), 0.08, 0.06, 1, 1, 1, 16),
+                               ring(X(2.70), Y(-0.19), 0.15, Z(1.34), 0.06, 0.06, 1, 1, 1, 16)], true, true)));
+    K.glass.push(new V.SphereGeometry(0.12, 16, 10).translate(X(2.45), Y(-0.19), Z(1.42)));
+    /* the dorsal aerial mast, raked aft, 12.7 m aft of the nose (D, B) */
+    K.dark.push(bar([X(12.55), 0, Z(1.36)], [X(12.95), 0, Z(1.86)], 0.022, 5));
+    /* the LEVCON hinge gaps on the top skin (recognition 3) */
     for (s = -1; s <= 1; s += 2) {
-      K.dark.push(bar([7.15, s * 0.22, 0.44], [5.80, s * 0.52, 0.24], 0.022, 4));
-      K.dark.push(bar([5.80, s * 0.52, 0.24], [4.35, s * 0.30, 0.48], 0.022, 4));
-    }
-    K.dark.push(bar([7.15, -0.22, 0.44], [7.15, 0.22, 0.44], 0.02, 4));
-    /* IRST: fairing and ball ahead of the windscreen, just starboard (A) */
-    K.metal.push(cyl(0.12, 0.14, 0.30, 16, "x", 7.62, -0.14, 0.34));
-    K.glass.push(new V.SphereGeometry(0.115, 16, 10).translate(7.80, -0.14, 0.34));
-
-    /* ---- wings: one chained solid a side; team strips on the outer wing */
-    for (s = -1; s <= 1; s += 2) {
-      var sts = [WY0, 3.6, 4.6, 5.6, 6.4, HALFSPAN], wl = [];
-      for (i = 0; i < sts.length; i++) wl.push(wPart(sts[i], s, 0, 1));
-      K.skin.push(chain(wl));
-      K.team.push(solid(blk2(5.6, s, 0.30, 0.62, wT(5.6) * 0.47 + 0.01), blk2(6.3, s, 0.30, 0.62, wT(6.3) * 0.47 + 0.01)));
-    }
-
-    /* ---- tailplanes (A: root chord x -5.5 to -9.2 at y 2.5, tip chord
-       x -8.0 to -8.8 at y 5.0): all-moving, low; pivots */
-    for (s = -1; s <= 1; s += 2) {
-      K.skin.push(chain([foil([-5.50, s * 2.55, 0.0], [-9.20, s * 2.55, 0.0], 0.22, [0, 0, 1]),
-                         foil([-6.70, s * 3.75, 0.0], [-9.00, s * 3.75, 0.0], 0.13, [0, 0, 1]),
-                         foil([-8.00, s * 5.00, 0.0], [-8.80, s * 5.00, 0.0], 0.05, [0, 0, 1])]));
-      K.metal.push(cyl(0.10, 0.10, 0.40, 12, "y", -7.40, s * 2.55, 0.0));
-    }
-
-    /* ---- all-moving canted fins, a root fairing */
-    for (s = -1; s <= 1; s += 2) {
-      K.skin.push(chain([finPart(0, s), finPart(0.5, s), finPart(1.0, s)]));
-      K.skin.push(box(1.8, 0.22, 0.12, -6.2, s * 2.62, 0.20));
+      for (k = 0; k < 4; k++) {
+        var hs0 = 7.48 + k * 0.2075, hy0 = 1.15 + k * 0.365, hs1 = hs0 + 0.2075, hy1 = hy0 + 0.365;
+        K.dark.push(bar([X(hs0), s * Y(hy0), Z(plateTop(hs0, hy0) + 0.012)], [X(hs1), s * Y(hy1), Z(plateTop(hs1, hy1) + 0.012)], 0.018, 4));
+      }
     }
 
     mesh(g, K.skin, T.skin, "skin", true);
-    mesh(g, K.radome, T.radome, "radome");
     mesh(g, K.dark, T.dark, "dark");
     mesh(g, K.metal, T.metal, "metal");
     mesh(g, K.glass, T.glass, "glass");
     mesh(g, K.team, T.team, "team");
 
-    /* ---- landing gear (B): twin-wheel nose leg under the cockpit with two
-       doors, single-wheel main legs at the wing roots with a leg door each;
-       tyres are the lowest part */
+    /* ---- landing gear (B, D): it retracts, so the group is "gear"; tyres
+       are its lowest part */
     var gr = new V.Group();
     gr.name = "gear";
     g.add(gr);
-    var nx = 5.00, nr = 0.30, nz = GROUND + nr;
-    G.metal.push(bar([nx + 0.1, 0, -0.45], [nx, 0, nz + 0.10], 0.055, 10));
-    G.metal.push(bar([nx + 0.07, 0, -0.78], [nx + 0.03, 0, nz + 0.30], 0.075, 12));   /* oleo sleeve */
-    G.metal.push(bar([nx, -0.15, nz], [nx, 0.15, nz], 0.035, 6));
+    /* nose leg raked: the axle 0.4 m ahead of the leg root (D) */
+    var nx = X(6.5), nr = 0.31, nzz = GROUND + nr;
+    G.metal.push(bar([nx - 0.40, 0, Z(0.30)], [nx, 0, nzz + 0.08], 0.055, 10));
+    G.metal.push(bar([nx - 0.36, 0, Z(0.14)], [nx - 0.13, 0, nzz + 0.42], 0.078, 12));
+    G.metal.push(bar([nx, -0.16, nzz], [nx, 0.16, nzz], 0.035, 6));
+    G.metal.push(bar([nx + 0.55, 0, Z(0.30)], [nx - 0.16, 0, nzz + 0.78], 0.03, 6));
+    G.metal.push(box(0.10, 0.08, 0.07, nx - 0.05, 0, nzz + 0.62));
     for (s = -1; s <= 1; s += 2) {
-      G.tyre.push(cyl(nr, nr, 0.16, 28, "y", nx, s * 0.15, nz));
-      G.metal.push(cyl(nr * 0.55, nr * 0.55, 0.17, 16, "y", nx, s * 0.15, nz));
-      G.dark.push(cyl(nr * 0.30, nr * 0.30, 0.19, 10, "y", nx, s * 0.15, nz));
-      G.dark.push(box(0.60, 0.04, 0.48, nx + 0.15, s * 0.42, -0.50, 0, 0, s * 0.28));      /* nose gear doors */
+      G.tyre.push(cyl(nr, nr, 0.17, 18, "y", nx, s * 0.16, nzz));
+      G.metal.push(cyl(nr * 0.55, nr * 0.55, 0.18, 14, "y", nx, s * 0.16, nzz));
+      G.door.push(box(0.80, 0.04, 0.30, nx - 0.35, s * 0.26, Z(0.14), s * 0.20));
     }
-    G.dark.push(box(0.50, 0.04, 0.34, nx + 0.55, 0, -0.52));
-    G.metal.push(bar([nx - 0.9, 0, -0.45], [nx + 0.04, 0, nz + 0.9], 0.03, 6));  /* drag strut */
-    G.metal.push(bar([nx + 0.20, 0, -0.55], [nx - 0.15, 0, -0.95], 0.02, 5));    /* torque links */
-    G.metal.push(box(0.10, 0.06, 0.07, nx + 0.28, 0.0, nz + 0.45));              /* landing light */
-    var mx = -0.60, mr = 0.50, mz = GROUND + mr, my = 2.15;
+    var mx = X(12.6), mr = 0.515, mzz = GROUND + mr, my = 2.05;
     for (s = -1; s <= 1; s += 2) {
-      G.metal.push(bar([mx + 0.05, s * my, -0.42], [mx, s * my, mz + 0.05], 0.07, 10));
-      G.metal.push(bar([mx + 0.07, s * my, -0.85], [mx + 0.03, s * my, mz + 0.35], 0.095, 12));
-      G.tyre.push(cyl(mr, mr, 0.32, 36, "y", mx, s * (my + 0.14), mz));
-      G.metal.push(cyl(mr * 0.58, mr * 0.58, 0.33, 18, "y", mx, s * (my + 0.14), mz));
-      G.dark.push(cyl(mr * 0.34, mr * 0.34, 0.35, 12, "y", mx, s * (my + 0.14), mz));
-      G.metal.push(bar([mx - 0.7, s * my, -0.42], [mx - 0.05, s * my, mz + 0.35], 0.03, 6));
-      G.metal.push(bar([mx + 0.25, s * my, -0.60], [mx - 0.1, s * my, mz + 0.55], 0.022, 5));
-      G.dark.push(box(1.10, 0.05, 0.55, mx - 0.1, s * (my - 0.52), -0.55, 0, 0, s * 0.35));   /* leg door */
-      G.dark.push(box(0.90, 0.05, 0.40, mx - 0.1, s * (my - 1.00), -0.40, 0, 0, s * 0.10));   /* inner bay door */
+      G.metal.push(bar([mx + 0.05, s * (my - 0.05), Z(0.55)], [mx, s * my, mzz + 0.05], 0.075, 10));
+      G.metal.push(bar([mx + 0.06, s * (my - 0.04), Z(0.40)], [mx + 0.03, s * my, mzz + 0.40], 0.10, 12));
+      G.tyre.push(cyl(mr, mr, 0.34, 24, "y", mx, s * (my + 0.10), mzz));
+      G.metal.push(cyl(mr * 0.58, mr * 0.58, 0.35, 16, "y", mx, s * (my + 0.10), mzz));
+      G.dark.push(cyl(mr * 0.30, mr * 0.30, 0.37, 10, "y", mx, s * (my + 0.10), mzz));
+      G.metal.push(bar([mx - 0.8, s * (my - 0.05), Z(0.55)], [mx - 0.02, s * my, mzz + 0.40], 0.035, 6));
+      G.metal.push(bar([mx + 0.25, s * my, Z(0.2)], [mx - 0.05, s * my, mzz + 0.55], 0.022, 5));
+      /* the leg door, outboard of the leg, and the bay door under the
+         wing-root fairing */
+      G.door.push(box(1.20, 0.05, 0.62, mx - 0.15, s * (my + 0.38), Z(0.25), -s * 0.12));
+      G.door.push(box(1.30, 0.05, 0.45, mx - 0.25, s * (my - 0.55), Z(0.18), s * 0.25));
     }
     mesh(gr, G.metal, T.metal, "gear_metal");
     mesh(gr, G.tyre, T.tyre, "gear_tyres");
     mesh(gr, G.dark, T.dark, "gear_dark");
+    mesh(gr, G.door, T.skin, "gear_doors", true);
     return g;
   }
 
