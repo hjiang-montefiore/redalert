@@ -27,7 +27,32 @@
      [6] (run after [3], in its scene) three hulls held at once - a surface
          group, dossier.peakSea - buy a second launcher and no third, and it
          sets up at a site of its own, two to six tiles back from the water
-         and clear of the first. */
+         and clear of the first.
+   After the launch (ai.js driveCoastal, coastShots, coastRefill; PLAN.md
+   B6), each on a launcher put down by hand rather than bought, so the
+   minutes of the buy are not paid again:
+     [7] a Rubezh set up launches at the held ship; the ship gone (the
+         salvo over, a missile still in the magazine), it drives to another
+         site of the siting search, five tiles or more from the place it
+         fired from, and sets up again there, on guard;
+     [7b] a fresh hull held off the same coast and left there: it fires
+         all it carries, fills, and leaves the site it fired from with the
+         hull still held, for one five tiles or more away;
+     [8] a Rubezh dry on a stretch of shore out of supply (no structure of
+         its side within the base radius, no lorry) drives for its base,
+         comes into supply, fills its magazine there (entities.js
+         updateSupply), and goes back to a coastal site - five tiles or more
+         from the place it was dry at - and sets up;
+     [9] the Rubezh's own Garpun (def.seaRadar) and the commander's
+         emission-control drill: with a Weasel in its crew's sight, one pass
+         of the drill takes the SAM beside it dark (the drill saw the
+         Weasel) and leaves the Garpun on the air - because no
+         anti-radiation round in the game can home on it: G.armLock and the
+         Weasel's own seadTarget read def.radar || def.jam only, though its
+         receivers hear the set (G.esmPlot). Going dark would blind the
+         launcher for a threat that cannot touch it. Should an ARM ever be
+         let home on a sea set, this fails, and the drill must take the set
+         in (ai.js emconDiscipline). */
 var PASS = 0, FAIL = 0, TT = 32, DT = 1 / 30;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -246,12 +271,21 @@ function run() {
     return !!(L2 && L2.deployed && !L2.moving && L2._coastAt);
   });
   var cs6 = coastals(), n6 = onOrder() + cs6.length;
-  var gap = cs6.length > 1 ? Math.hypot(cs6[0].x - cs6[1].x, cs6[0].y - cs6[1].y) / TT : 0;
+  /* site to site where both hold one. Since B6 the first launcher has not
+     stood still: the ship held in [3] is never sunk, so it fires its two,
+     moves off five tiles or more and sets up again, over and over, and the
+     second can be given the site it has just left. What coastPick keeps is
+     three tiles between the SITES; each sets up within two tiles of its own
+     (driveCoastal), so two launchers' bodies can stand closer than that.
+     A launcher between sites (no _coastAt: driving to be refilled) is
+     measured where it is. */
+  var at6 = function (u) { return u._coastAt || u; };
+  var gap = cs6.length > 1 ? Math.hypot(at6(cs6[0]).x - at6(cs6[1]).x, at6(cs6[0]).y - at6(cs6[1]).y) / TT : 0;
   var dp6 = L2 ? depth((L2.x / TT) | 0, (L2.y / TT) | 0) : -1;
-  chk("[6] three hulls held at once: a second launcher, and no third; it sets up at a site of its own, three tiles or more from the first and two to six back from the water",
+  chk("[6] three hulls held at once: a second launcher, and no third; it sets up at a site of its own, three tiles or more from the first's and two to six back from the water",
       !!(d6 && d6.peakSea >= 3) && n6 === 2 && !!L2 && L2.deployed && gap >= 2.5 && dp6 >= 2 && dp6 <= 6,
       "peak held " + (d6 && d6.peakSea) + ", " + n6 + " in all, the second " + (L2 ? "deployed " + L2.deployed + ", " + dp6 + " tiles back" : "none") +
-      ", " + gap.toFixed(1) + " tiles from the first");
+      ", its site " + gap.toFixed(1) + " tiles from the first's");
   g.forEach(function (u) { if (u) u.dead = true; });
 
   /* ---- [4] an army with no row ---- */
@@ -273,4 +307,132 @@ function run() {
   chk("[5] a Recruit commander (no navy programme) holds the same ship and buys none",
       !!(d5 && d5.sawHull) && t5 < 0,
       "dossier hull " + !!(d5 && d5.sawHull) + ", launchers " + (onOrder() + coastals().length));
+
+  afterLaunch();
+}
+
+/* a Rubezh of the commander's, put down at tile `at`, hard to kill (the
+   destroyer is on hold, but its guns still answer) */
+function rubezh(at) {
+  var u = put(E, "pact_e80_coastssm", at);
+  if (u) { u.hp = u.maxHp = 1e6; }
+  return u;
+}
+function atSite(u) { return !!(u && u._coastAt && Math.hypot(u.x - u._coastAt.x, u.y - u._coastAt.y) <= 2 * TT); }
+function settled(u) { return !!(u && u.deployed && !u.moving && atSite(u)); }
+function tileOf(u) { return { x: (u.x / TT) | 0, y: (u.y / TT) | 0 }; }
+/* land two to six tiles back from the water, ground-reachable from home and
+   further than `clearOf` tiles from every structure of the commander's: out
+   of its base's radius (CFG.BUILD_RADIUS), so out of supply */
+function shoreOutOfSupply(clearOf) {
+  var h = home(), best = null, bd = 1e9;
+  for (var y = 6; y < Game.map.H - 6; y++) for (var x = 6; x < Game.map.W - 6; x++) {
+    var d = (x - h.x) * (x - h.x) + (y - h.y) * (y - h.y);
+    if (d >= bd || !clear(x, y, 1, 1)) continue;
+    var dp = depth(x, y);
+    if (dp < 2 || dp > 6) continue;
+    var near = E.buildings.some(function (b) { return !b.dead && Math.hypot(x + 0.5 - (b.tx + b.def.w / 2), y + 0.5 - (b.ty + b.def.h / 2)) <= clearOf; });
+    if (near || !Path.reachable(Game.map, h.x, h.y, x, y, "ground")) continue;
+    bd = d; best = { x: x, y: y };
+  }
+  return best;
+}
+
+function afterLaunch() {
+  /* ---- [7] it fires, the salvo is over, it moves off ---- */
+  scene();
+  var near = seaNearHome(), s7 = ship(near);
+  holdShip(near);
+  tick(3);
+  var h = home(), L = rubezh({ x: h.x + 2, y: h.y + 5 });
+  if (!L) { chk("[7] a Rubezh put down at home", false, "no spot"); return; }
+  /* wherever it first sets up - its site, or the spot it was put down on
+     if the ship is in reach from there - it fires */
+  var tFire = tick(150, function () { return L.rounds < L.roundsMax; });
+  var from = { x: L.x, y: L.y }, rd = L.rounds, ft = tileOf(L);
+  /* the ship gone: nothing held in reach, so the engagement ends */
+  s7.dead = true;
+  var tOff = tFire < 0 ? -1 : tick(150, function () {
+    return settled(L) && Math.hypot(L.x - from.x, L.y - from.y) >= 5 * TT;
+  });
+  var t7 = tileOf(L), dp7 = depth(t7.x, t7.y), off = Math.hypot(L.x - from.x, L.y - from.y) / TT;
+  chk("[7] set up, it launches at the held ship; the ship gone, it drives to another site five tiles or more from the one it fired from (two to six back from the water) and sets up again, on guard",
+      tFire >= 0 && tOff >= 0 && L.deployed && off >= 5 && dp7 >= 2 && dp7 <= 6 && L.stance === "guard",
+      "first launch after " + (tFire >= 0 ? tFire.toFixed(1) + " s at " + ft.x + "," + ft.y + " (" + rd + " of " + L.roundsMax + " left)" : "never") +
+      ", set up again " + (tOff >= 0 ? tOff.toFixed(1) + " s after the ship went" : "never") + " at " + t7.x + "," + t7.y +
+      ", " + off.toFixed(1) + " tiles from the firing point, " + dp7 + " back from the water, deployed " + L.deployed + ", stance " + L.stance);
+
+  /* ---- [7b] the whole salvo away at a hull still held: it moves off ----
+     The same launcher, a fresh hull held off the same coast and left
+     there: it fires what it has, is empty, fills (in the base's radius, or
+     by driving for it) and leaves the site it emptied its magazine from
+     with the hull still held, for one five tiles or more away. */
+  /* launches counted off the rail's reload clock, every tick: a site in
+     the base's radius refills a round in two seconds, so the magazine of
+     two is never seen empty there */
+  var s7b = ship(near), from2 = null, shots = 0, cd0 = L.cooldowns[0];
+  var tOff2 = tick(240, function () {
+    if (L.cooldowns[0] > cd0 + 1e-3) { shots++; if (!from2) from2 = { x: L.x, y: L.y }; }
+    cd0 = L.cooldowns[0];
+    return shots >= L.roundsMax && from2 && settled(L) && Math.hypot(L.x - from2.x, L.y - from2.y) >= 5 * TT;
+  });
+  var t7b = tileOf(L), off2 = from2 ? Math.hypot(L.x - from2.x, L.y - from2.y) / TT : 0;
+  chk("[7b] a hull held and left there: it fires all it carries (a magazine's worth of launches from the one site), and moves off five tiles or more from where it fired, the hull still held, and sets up again",
+      tOff2 >= 0 && !s7b.dead && Game.sideSees(E, s7b) && off2 >= 5 && L.deployed,
+      "fired from " + (from2 ? ((from2.x / TT) | 0) + "," + ((from2.y / TT) | 0) : "nowhere") + ", " + shots + " launches" +
+      ", set up again " + (tOff2 >= 0 ? tOff2.toFixed(1) + " s on" : "never") + " at " + t7b.x + "," + t7b.y + ", " + off2.toFixed(1) + " tiles off" +
+      ", rounds " + L.rounds + "/" + L.roundsMax + ", hull still held " + Game.sideSees(E, s7b));
+  s7b.dead = true;
+
+  /* ---- [8] dry out of supply: to the base, filled, back to the coast ---- */
+  scene();
+  near = seaNearHome();
+  ship(near); holdShip(near);
+  tick(3);
+  var at8 = shoreOutOfSupply(CFG.BUILD_RADIUS + 2);
+  if (!at8) { chk("[8] a stretch of shore out of supply on hormuz", false, "none found"); }
+  else {
+    var L8 = rubezh(at8);
+    var out0 = L8 ? !L8.inSupply() : false;
+    /* it has just fired its last: the magazine empty and the rail's reload
+       clock running, as tryFire leaves them */
+    if (L8) { L8.rounds = 0; L8.cooldowns[0] = 20; }
+    var dry = L8 ? { x: L8.x, y: L8.y } : null, tIn = -1, inAt = null, tFull = -1, gone = 0;
+    var t8 = !L8 ? -1 : tick(300, function () {
+      if (L8.moving && Math.hypot(L8.x - dry.x, L8.y - dry.y) > gone) gone = Math.hypot(L8.x - dry.x, L8.y - dry.y);
+      if (tIn < 0 && L8.inSupply()) { tIn = Game.time; inAt = tileOf(L8); }
+      if (tFull < 0 && L8.rounds >= L8.roundsMax) tFull = Game.time;
+      return tFull >= 0 && settled(L8);
+    });
+    var e8 = L8 ? tileOf(L8) : { x: 0, y: 0 }, dp8 = depth(e8.x, e8.y);
+    var back = L8 ? Math.hypot(L8.x - dry.x, L8.y - dry.y) / TT : 0;
+    chk("[8] dry on a stretch of shore out of supply, it drives for its base, comes into supply and fills its magazine there, then goes back to a coastal site five tiles or more from where it was dry, and sets up",
+        !!L8 && out0 && tIn >= 0 && tFull >= tIn && t8 >= 0 && L8.rounds === L8.roundsMax && L8.deployed &&
+        dp8 >= 2 && dp8 <= 6 && back >= 5,
+        "dry at " + at8.x + "," + at8.y + " (out of supply " + out0 + ", " + depth(at8.x, at8.y) + " back from the water)" +
+        ", in supply " + (tIn >= 0 ? "at " + inAt.x + "," + inAt.y : "never") +
+        ", full " + (tFull >= 0 ? (tFull - tIn).toFixed(1) + " s after" : "never") +
+        ", set up again " + (t8 >= 0 ? "at " + e8.x + "," + e8.y + ", " + dp8 + " back from the water, " + back.toFixed(1) + " tiles from where it was dry" : "never") +
+        ", rounds " + (L8 ? L8.rounds + "/" + L8.roundsMax : "-"));
+  }
+
+  /* ---- [9] the Garpun and the emission-control drill ---- */
+  scene();
+  h = home();
+  var L9 = rubezh({ x: h.x + 2, y: h.y + 6 });
+  var sam = put(E, unitFor("pact", "sam", "e80") || "sam_p", { x: h.x + 4, y: h.y + 6 });
+  var wz = put(H, unitFor("nato", "sead", "e80") || "sead_n", { x: h.x + 3, y: h.y + 8 });
+  if (!L9 || !sam || !wz) { chk("[9] a Rubezh, a SAM and a Weasel", false, "rubezh " + !!L9 + " sam " + !!sam + " weasel " + !!wz); return; }
+  [L9, sam].forEach(function (u) { u.stance = "hold"; u.hp = u.maxHp = 1e6; });
+  wz.parked = false; wz.order = { type: "hover" }; wz.fuel = wz.fuelMax; wz.ammo = wz.ammoMax; wz.stance = "hold"; wz.hp = wz.maxHp = 1e6;
+  tick(1);
+  L9.deployed = true; sam.deployed = true;
+  var seen = Game.visibleTo(E, wz), heard = !!(Game.esmPlot(H) && Game.esmPlot(H).has(L9.id));
+  AI.emconPass(E);
+  var samDark = Game.radarDark(sam), lit = !Game.radarDark(L9) && Game.emitting(L9);
+  var lock = Game.armLock(L9), named = wz.seadTarget(true) === L9;
+  chk("[9] a Weasel in its crew's sight: the drill takes the SAM beside it dark and leaves the Garpun on the air - no anti-radiation round can home on a sea set (G.armLock, seadTarget), though the Weasel's receiver hears it",
+      seen && samDark && lit && !lock && !named,
+      "Weasel " + wz.def.id + " seen " + seen + ", SAM " + sam.def.id + " dark " + samDark + ", Garpun lit " + lit +
+      ", heard by the Weasel's side " + heard + ", ARM lock " + lock + ", Weasel's own pick the Rubezh " + named);
 }

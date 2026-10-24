@@ -1004,7 +1004,16 @@ function makeCommander() {
      direction-finding receiver, and the jamming sites - is left on, because
      the moment a strike package arrives is the moment its jamming is for:
      dark, it drops the umbrella over the very batteries it is there to
-     cover (found in review). The player may still switch one off. Ground
+     cover (found in review). The player may still switch one off. Nor a
+     coastal launcher's own sea set (def.seaRadar, the Rubezh's Garpun;
+     PLAN.md B6): it can be switched off (G.canEmcon) and is heard
+     (G.esmPlot), but no anti-radiation round in the game can home on it -
+     G.armLock, the Weasel's self-launch (entities.js seadTarget), the
+     round's own fix (combat.js) and pickEmitter all read def.radar ||
+     def.jam - so this drill, whose one reason to go dark is such a round,
+     would blind the launcher's own targeting for a threat that cannot
+     touch it. Let an ARM home on a sea set and it belongs here
+     (coastssm_ai_check [9] says so). Ground
      sets only:
      seadTarget never goes after a ship, and a darkened escort cannot see
      the sea-skimmer coming, so the fleet keeps its radars on. Not an
@@ -5592,37 +5601,174 @@ function makeCommander() {
       list.push({ x, y, d2: (x - hx) * (x - hx) + (y - hy) * (y - hy) });
     }
     list.sort((a, b) => a.d2 - b.d2);
-    if (list.length > 48) list.length = 48;
+    /* 192, not the 48 B5 kept: a launcher moving off after a launch (B6,
+       driveCoastal) wants a site COAST_MOVE tiles or more from the one it
+       fired from, and the band two to six tiles deep holds about fifty tiles
+       within five of any one of them - so the 48 nearest the hulls could all
+       be the firing site's own neighbours. The picks still take the nearest
+       first; only the list a pick may fall back on is longer. */
+    if (list.length > 192) list.length = 192;
     return list;
   }
   /* the nearest free site of the memoised list, three tiles clear of every
-     site already given to a launcher of ours, in pixels; null if none */
-  function coastPick(fx, fy, taken) {
-    const TL = CFG.TILE, W = G.map.W, R2 = 9 * TL * TL;
+     site already given to a launcher of ours, in pixels; null if none.
+     `away` (B6): a point the site must be COAST_MOVE tiles or more from -
+     the place a launcher fired from. */
+  function coastPick(fx, fy, taken, away) {
+    const TL = CFG.TILE, W = G.map.W, R2 = 9 * TL * TL, A2 = COAST_MOVE * COAST_MOVE * TL * TL;
     for (const c of coastSites(fx, fy)) {
       if (G.occ[c.y * W + c.x]) continue;              // a structure since the scan
       const px = (c.x + 0.5) * TL, py = (c.y + 0.5) * TL;
+      if (away && U.dist2(away.x, away.y, px, py) < A2) continue;
       let near = false;
       for (const t of taken) if (U.dist2(t.x, t.y, px, py) < R2) { near = true; break; }
       if (!near) return { x: px, y: py };
     }
     return null;
   }
-  function coastTaken() {
+  /* every launcher's site but `self`'s own (B6: the site it is leaving) */
+  function coastTaken(self) {
     const out = [];
-    for (const u of P.units) if (!u.dead && u._coastAt) out.push(u._coastAt);
+    for (const u of P.units) if (!u.dead && u !== self && u._coastAt) out.push(u._coastAt);
     return out;
   }
   /* ---- and taking them there ----
      It sets itself up when it stops on idle or guard (entities.js, as a SAM
      does), so all the commander does is drive it to its site: one move, given
-     again only if it stopped more than two tiles short, not more often than
+     again only if it stopped more than 3/4 of a tile short, not more often than
      every twelve seconds and four times at most - a site it cannot get to is
      given up and it sets up where it stands. Guard stance, so it fires on the
      hulls its side holds (rules.js firesOnCue) without being told, and stays
      on its shore when one sails out of reach. Not held by peace, as the air
-     defence's stationing is not: siting is not firing. When to fire, moving
-     off after a salvo and the reload run are piece B6. */
+     defence's stationing is not: siting is not firing. When to fire is the
+     crew's (firesOnCue, on guard); moving off after a salvo and the reload
+     run are below (B6).
+
+     ---- after the launch (PLAN.md B6; coastssm/REPORT.md "AI": "deploy,
+     salvo at held hulls, move off") ----
+     A launch is a plume and a booster on the shore that every eye and radar
+     over the water sees, and the place it rose from is where the reply goes:
+     the ships' land-attack driver below goes for "guns ashore and air
+     defence first", and an aircraft over the shore sees a launcher standing
+     where it fired. So once it has fired and its salvo is over, a launcher
+     leaves the site it fired from for another the siting search found, and
+     sets up again there. Nothing here is a leak: everything asked is the
+     launcher's own - its reload clock and its magazine, what its crew knows
+     it has just done - and its own side's sites and lorries.
+     NOT the counter-battery plot. game.reportIndirectFire is called only for
+     an arcing round or an `indirect` one (combat.js), and an anti-ship
+     missile is neither, so no contact is ever left by this launch; the
+     reason to move is the sighting, not a plot. And not driveLaunchers'
+     shape, which has none to copy: a ballistic launcher never displaces
+     (driveLaunchers fires and stays; a dry one waits for resupply where it
+     stands). The shape is the guns' own (ARTILLERY: shoot-and-scoot, in
+     think()): fire, count it, hop.
+     A LAUNCH is read off the launcher: the reload clock on its rail
+     (cooldowns, set by tryFire on every round that leaves) rising since the
+     last look, or a missile fewer in the magazine. Both, because a site in
+     its base's radius refills a round every two seconds (CFG.RESUPPLY_RATE)
+     and a think can come later than that.
+     THE SALVO IS OVER when it has fired all it carries - its magazine
+     empty, or as many launches from the one site as the magazine holds
+     ("salvo at held hulls, move off") - or when it is no longer
+     engaging, its order back to idle or guard: the hull it fired at has
+     sunk, sailed out of its reach (entities.js drops an automatic
+     engagement of a ship out of reach, still set up) or gone off its side's
+     picture. While a held hull is still in reach and a missile is left it
+     keeps the attack order and stays to fire it; no clock of this file's
+     own is set on it. Once the magazine has been emptied it goes even with
+     the hull still held - taken off its automatic engagement - since the
+     same shore and the same hull would otherwise keep it on the one site
+     for ever: a site inside the base's radius refills it there (below).
+     HOW FAR: COAST_MOVE, five tiles or more from where it fired - the
+     shortest hop this commander's own guns take after a salvo (5 plus up to
+     4 tiles, ARTILLERY), and clear of the three tiles coastPick keeps
+     between two launchers, so the new site is not the old one's neighbour.
+     A coast with no such site keeps it on the site it has, set up again
+     (or, back from being refilled, sends it to the nearest free one).
+     EMPTY: the game refills a magazine only in supply (entities.js
+     inSupply: inside its own base's radius, within CFG.SUPPLY_RANGE of a
+     finished depot, or of a supply lorry with stock left), at
+     CFG.RESUPPLY_RATE a second. A site inside the base's radius is in
+     supply, so a launcher dry there refills where it stands; one sited
+     under a dome alone drives for the nearest of its side's structures (any
+     one puts it inside the base's radius, a depot included) or a ground
+     supply lorry with stock, stops the moment it is in supply, and once full
+     goes back to a coastal site - away from the one it fired from, as
+     above. Four drives at most, twelve seconds apart, as the siting is: a
+     launcher that cannot get there waits where it is for a lorry.
+     PERF: no scan here but the launcher's own few numbers; the refill point
+     is looked for once a drive, over this side's own structures and
+     lorries, and the new site comes off coastSites' memoised list. */
+  const COAST_MOVE = 5;
+  /* a launch since the last look: the rail's reload clock risen, or a
+     missile fewer. The first launch since it last moved off marks where it
+     fired from (_coastFired); _coastSpent says the whole salvo is away - a
+     magazine's worth of launches from there (_coastSalvo), or the
+     magazine empty (coastRefill). Counted, not read off `rounds` alone,
+     because a site inside the base's radius tops a Rubezh's two rounds up
+     in four seconds against a 22.8-second reload, so its magazine is
+     never seen empty there. */
+  function coastShots(u) {
+    let cd = 0;
+    for (const c of u.cooldowns) if (c > cd) cd = c;
+    const fewer = u._coastRd !== undefined ? u._coastRd - u.rounds : 0;
+    const n = Math.max(cd > (u._coastCd || 0) + 1e-3 ? 1 : 0, fewer);
+    u._coastCd = cd; u._coastRd = u.rounds;
+    if (n <= 0) return;
+    if (!u._coastFired) { u._coastFired = { x: u.x, y: u.y }; u._coastSpent = false; u._coastSalvo = 0; }
+    /* a magazine's worth away from the one site is the whole salvo, even
+       where the base's radius has been refilling it between launches */
+    u._coastSalvo += n;
+    if (u._coastSalvo >= (u.roundsMax || 1)) u._coastSpent = true;
+  }
+  /* the nearest place this side refills a magazine: a structure of its own
+     (its base radius is in supply; CFG.BUILD_RADIUS reaches past a depot's
+     CFG.SUPPLY_RANGE, so a depot is one of these) or a ground supply lorry
+     with stock left */
+  function coastFillAt(u) {
+    const TL = CFG.TILE;
+    let best = null, bd = Infinity;
+    for (const b of P.buildings) {
+      if (b.dead || (b.def && b.def.obstacle)) continue;
+      const x = (b.tx + b.def.w / 2) * TL, y = (b.ty + b.def.h / 2) * TL, d = U.dist2(u.x, u.y, x, y);
+      if (d < bd) { bd = d; best = { x, y }; }
+    }
+    for (const t of P.units) {
+      if (t.dead || t.carried || !t.def.supply || t.layer !== "ground" || !(t.supplyLeft > 0)) continue;
+      const d = U.dist2(u.x, u.y, t.x, t.y);
+      if (d < bd) { bd = d; best = { x: t.x, y: t.y }; }
+    }
+    return best;
+  }
+  /* true while the launcher is out of rounds and being refilled */
+  function coastRefill(u) {
+    if (!u.roundsMax) return false;
+    const f = u._coastFill;
+    if (!f) {
+      if (u.rounds > 0) return false;
+      u._coastFill = { n: 0, t: -99 };
+      u._coastSpent = true;              // the whole salvo is away
+      return coastRefill(u);
+    }
+    if (u.rounds >= u.roundsMax) { u._coastFill = null; return false; }
+    const ot = u.order.type;
+    if (u.inSupply()) {
+      /* in supply: it stops here and fills (entities.js updateSupply) */
+      if (ot === "move") u.give({ type: "idle" });
+      return true;
+    }
+    /* on its way (a drive of this driver's own; an empty launcher still
+       holding an engagement it cannot fire in is taken off it) */
+    if (ot === "move" && f.n > 0) return true;
+    if (f.n >= 4 || G.time - f.t < 12) return true;
+    const at = coastFillAt(u);
+    if (!at) return true;
+    f.n++; f.t = G.time;
+    u._coastAt = null;                   // it gives up its site for the drive
+    u.give({ type: "move", x: at.x, y: at.y });
+    return true;
+  }
   function driveCoastal() {
     let cs = null;
     for (const u of P.units) if (!u.dead && u.def.role === "coastssm") (cs || (cs = [])).push(u);
@@ -5632,6 +5778,22 @@ function makeCommander() {
     for (const u of cs) {
       if (u.carried) continue;
       if (u.stance !== "guard") u.stance = "guard";
+      coastShots(u);
+      if (coastRefill(u)) continue;
+      /* the salvo is over: off to another site, away from the one it fired
+         from - or, with none on this coast, set up again where it is */
+      const ot0 = u.order.type;
+      if (u._coastFired && (ot0 === "idle" || ot0 === "guard" ||
+                            (u._coastSpent && ot0 === "attack" && u.order.auto))) {
+        const from = u._coastFired;
+        u._coastFired = null; u._coastSpent = false;
+        const s = dC && dC.sawHull ? coastPick(dC.seaX, dC.seaY, coastTaken(u), from) : null;
+        if (s) {
+          u._coastAt = s; u._coastN = 0; u._coastT = -99;
+          /* the siting drive below waits for idle or guard; this one does not */
+          if (ot0 === "attack") { u._coastN = 1; u._coastT = G.time; u.give({ type: "move", x: s.x, y: s.y }); }
+        }
+      }
       if (!u._coastAt) {
         if (!dC || !dC.sawHull) continue;
         u._coastAt = coastPick(dC.seaX, dC.seaY, coastTaken());
@@ -5639,9 +5801,22 @@ function makeCommander() {
         if (!u._coastAt) continue;
       }
       const s = u._coastAt;
-      if (U.dist2(u.x, u.y, s.x, s.y) <= 4 * TL * TL) continue;
+      /* on it, not near it: the site is two to six tiles back from the water
+         and a tile or two off it can be the beach (found 2026-10-24: a
+         launcher off the line 1.3 tiles from its site, two tiles being "at
+         it", set up one tile from the water) */
+      if (U.dist2(u.x, u.y, s.x, s.y) <= 0.5625 * TL * TL) { u._coastHere = s; continue; }
       const ot = u.order.type;
-      if (ot !== "idle" && ot !== "guard") continue;
+      /* An engagement it took up by itself on the way does not pin it short
+         of its site: guard stance puts a launcher on a held hull in reach the
+         moment it rolls off the line, and it set up where it stood - one tile
+         from the water, on the beach the site rule keeps it off (found
+         2026-10-24, coastssm_ai_check [6]). So until it has reached this site
+         an automatic attack is overridden and it drives on, to fire from
+         there; once at a site its fights are its own, and the salvo rule
+         above decides when it leaves. */
+      const enRoute = ot === "attack" && u.order.auto && u._coastHere !== s;
+      if (ot !== "idle" && ot !== "guard" && !enRoute) continue;
       if (u._coastN >= 4 || G.time - u._coastT < 12) continue;
       u._coastN++; u._coastT = G.time;
       u.give({ type: "move", x: s.x, y: s.y });
