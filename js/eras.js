@@ -14611,6 +14611,27 @@ Object.assign(UNITS, {
 WEAPONS.ssm_p15m = Object.assign({}, WEAPONS.w_e60_pact_missileboat, {
   name: "2 x P-15M Termit (shore)", range: 12.4,
   tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* The S-2 of the Sopka: the KS-1 Kometa with a booster (ru.wikipedia
+   "Sopka"), 15 to 95 km, 1,050 km/h, a 1,010 kg warhead. Range by rank,
+   between the P-15M's 80 km and the Moskit's 120: 12.45; its 15 km minimum
+   on the P-15M's 8 km = 2.1 tiles: 3.9. The damage figures do not follow
+   warhead weight (the Uran's 145 kg is 240, the P-15's ~480 kg 179), so the
+   heaviest warhead of its period takes the period's heaviest Soviet figure,
+   the P-35's 300. */
+WEAPONS.ssm_s2 = Object.assign({}, WEAPONS.w_e60_pact_missileboat, {
+  name: "S-2 Sopka", range: 12.45, minRange: 3.9, dmg: 300,
+  tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* the Redut's P-35B, the cruisers' P-35 row ashore */
+WEAPONS.ssm_p35b = Object.assign({}, WEAPONS.w_e60_pact_cruiser, {
+  name: "P-35B Progress (shore)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* the Bal's Kh-35, the corvettes' Uran row ashore; its salvo at no more than
+   three seconds a missile (ru.wikipedia "Bal") */
+WEAPONS.ssm_kh35_bal = Object.assign({}, WEAPONS.w_e00_pact_corvette, {
+  name: "Kh-35 (Bal)", reload: 3.0, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* the Bastion-P's Oniks, the ships' row ashore: ships only, as the owner
+   chose for now, though Russia fired it at land targets in Syria in 2016 */
+WEAPONS.ssm_oniks_bastion = Object.assign({}, WEAPONS.ssm_oniks, {
+  name: "P-800 Oniks (Bastion-P)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 Object.assign(UNITS, {
   /* 4K51 Rubezh (SSC-3), ru.wikipedia "Rubezh (beregovoy raketny kompleks)":
      accepted by the Soviet Navy on 22 October 1978 (Council of Ministers
@@ -14630,6 +14651,65 @@ Object.assign(UNITS, {
     modelAs:"pact_e60_tel",
     from:"e80", to:"e90", service:"1978", confidence:"high",
     desc:"A whole coastal missile battery on one truck: two P-15M missiles, its own Garpun search radar on a mast it raises to 7.3 m, and five minutes from the march to the first launch. It sees ships only to its own short horizon, so it fires best on what the radar dome, an aircraft or a warship of its side has found. Ships only - it cannot touch anything ashore." },
+  /* S-2 Sopka (SSC-2b Samlet), ru.wikipedia "Sopka": accepted by the Soviet
+     Navy on 19 December 1958; six coastal regiments by 1960; to Cuba in 1962.
+     The B-163 launcher is a two-axle trailer towed by an AT-S tractor, one
+     missile on its rail (eight for a battalion's four launchers); separate
+     Mys search and Burun tracking radars, so it fires only on a cue; up to
+     17 minutes of pre-launch preparation (13.6 s on the S-300's scale).
+     A towed missile battery: speed, cost and hit points the towed S-75's
+     (pact_e50_s75), there being no figure of its own. Retired in the 1980s,
+     when the Rubezh row takes over. */
+  pact_e50_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Sopka",
+    full:"S-2 Sopka (SSC-2b Samlet), B-163 towed launcher",
+    cost:1650, oil:22, time:24, hp:470, armor:"light", speed:0.70, turn:0.9, sight:5.0, r:16, mass:18,
+    weapons:["ssm_s2"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:13.6, rounds:1,
+    modelAs:"pact_e50_s75",
+    from:"e50", to:"e60", service:"1958", confidence:"high",
+    desc:"The first coastal missile: a Kometa air-to-ship missile with a rocket booster, on a towed rail. One missile a launcher, seventeen minutes to make it ready, and no radar of its own - its regiment's Mys and Burun sets find and track the ship. Slow, blind and heavy-hitting." },
+  /* 4K44 Redut (SSC-1b Sepal), ru.wikipedia "Redut": the P-35B on an
+     SPU-35B self-propelled launcher on the BAZ-135MB, 21 tonnes, 40 km/h on
+     a road, crew five; a towed Mys radar, and target data from Tu-95RTs,
+     Tu-16 and Ka-25Ts aircraft - so a cue, not a radar of its own. Accepted
+     11 August 1966 (_keep/weapons_study/coastssm/REPORT.md). Speed is the
+     MZKT-7930's 1.30 (pact_e00_tel, 60 km/h) for its 40: 0.87. No figure
+     found for its time into action: the Rubezh's five minutes. Cost and hit
+     points the Scud-B launcher's. Kept in service long after (about eight in
+     2022); its card ends where the Bal's begins. */
+  pact_e60_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Redut",
+    full:"4K44 Redut (SSC-1b Sepal), SPU-35B on the BAZ-135MB",
+    cost:2700, oil:48, time:36, hp:540, armor:"light", speed:0.87, turn:0.9, sight:5.0, r:17, mass:21,
+    weapons:["ssm_p35b"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:1,
+    modelAs:"pact_e60_tel",
+    from:"e60", to:"e90", service:"1966", confidence:"high",
+    desc:"One big supersonic P-35B on an eight-wheeled truck, reaching far beyond any radar on the shore - so it is aimed by someone else's: a towed Mys set, or a Tu-95 or Ka-25 out over the sea passing the target back. Twenty-one tonnes and slow on a road." },
+  /* 3K60 Bal (SSC-6 Sennight), ru.wikipedia "Bal": state trials finished
+     2004, accepted 2008; up to eight Kh-35 a launcher on the MZKT-7930, at
+     no more than three seconds a missile; 120 km (260 with the Kh-35U); the
+     battery's own command and radar vehicles; sited up to 10 km inland.
+     60 km/h on a road, 20 across country. The MZKT-7930 is the Iskander-M
+     launcher's chassis: its cost, hit points and speed (pact_e00_tel). No
+     figure found for its time into action: the Bastion-P's, on the same
+     chassis, under five minutes. Its radar is piece B4. */
+  pact_e00_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Bal",
+    full:"3K60 Bal (SSC-6 Sennight), launcher on the MZKT-7930",
+    cost:3200, oil:58, time:38, hp:580, armor:"light", speed:1.30, turn:1.0, sight:5.0, r:17, mass:42,
+    weapons:["ssm_kh35_bal"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:8,
+    modelAs:"pact_e00_tel",
+    from:"e00", service:"2008", confidence:"high",
+    desc:"Eight subsonic Kh-35s in box canisters on an MZKT-7930, fired three seconds apart: a salvo that saturates a ship's close-in defence. Sited up to ten kilometres inland, behind the coast it covers." },
+  /* K-300P Bastion-P (SSC-5 Stooge), ru and en.wikipedia "Bastion-P": two
+     P-800 Oniks a launcher, K340P on the MZKT-7930, crew three; into action
+     in under five minutes (4.0 s); in service 2011, so the 2020s card only
+     (2011 is past the 2000s card; the study's recommendation). An optional Monolit-B over-the-horizon radar: piece B4.
+     Cost, hit points and speed the MZKT-7930's Iskander-M launcher's. */
+  pact_e20_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Bastion-P",
+    full:"K-300P Bastion-P (SSC-5 Stooge), K340P launcher",
+    cost:3200, oil:58, time:38, hp:580, armor:"light", speed:1.30, turn:1.0, sight:5.0, r:17, mass:42,
+    weapons:["ssm_oniks_bastion"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
+    modelAs:"pact_e00_tel",
+    from:"e20", service:"2011", confidence:"high",
+    desc:"Two supersonic Oniks missiles in vertical tubes on an MZKT-7930, and five minutes from the march to the launch. The coastal brigades of all four Russian fleets and Crimea have it." },
 });
 
 /* ERA_RADAR_SETS once more, now that every row in this file exists: the

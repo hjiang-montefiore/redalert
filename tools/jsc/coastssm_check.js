@@ -62,13 +62,30 @@ function run() {
 
   /* ---- 1. the role and the row ---- */
   var D = UNITS.pact_e80_coastssm, W = WEAPONS.ssm_p15m;
+  var ERAS6 = ["e50", "e60", "e80", "e90", "e00", "e20"];
   var only = ["pact", "nato", "pla", "kpa", "roc", "deu", "gbr", "fra"].map(function (f) {
-    return ["e60", "e80", "e90", "e00"].map(function (e) { return unitFor(f, "coastssm", e) || "-"; }).join("/"); });
-  chk("[1] the Rubezh: two P-15Ms at 12.4 tiles, ships only, five minutes to set up, the Pact's in the 1980s and 1990s only",
+    return ERAS6.map(function (e) { return unitFor(f, "coastssm", e) || "-"; }).join("/"); });
+  chk("[1] the Rubezh: two P-15Ms at 12.4 tiles, ships only, five minutes to set up; the Pact's card each period, nobody else's yet",
       !!D && D.role === "coastssm" && D.rounds === 2 && D.deploySec === 4.0 && D.deploy && !!W && W.range === 12.4 &&
-      W.tgt.sea === 1 && !W.tgt.ground && !W.tgt.air && only[0] === "-/pact_e80_coastssm/pact_e80_coastssm/-" &&
-      only.slice(1).every(function (s) { return s === "-/-/-/-"; }) && ROUNDS_REQUIRED.indexOf("coastssm") >= 0 && ROUNDS_ERA_GAPS.length === 0,
+      W.tgt.sea === 1 && !W.tgt.ground && !W.tgt.air &&
+      only[0] === "pact_e50_coastssm/pact_e60_coastssm/pact_e80_coastssm/pact_e80_coastssm/pact_e00_coastssm/pact_e20_coastssm" &&
+      only.slice(1).every(function (s) { return s === "-/-/-/-/-/-"; }) && ROUNDS_REQUIRED.indexOf("coastssm") >= 0 && ROUNDS_ERA_GAPS.length === 0,
       only.join(" | "));
+  /* B2: the rest of the Soviet and Russian rows, each period's cards */
+  var rows = { pact_e50_coastssm: ["ssm_s2", 12.45, 1, 13.6, "e50", "e60"], pact_e60_coastssm: ["ssm_p35b", 14.0, 1, 4.0, "e60", "e90"],
+               pact_e00_coastssm: ["ssm_kh35_bal", 13.5, 8, 4.0, "e00", undefined], pact_e20_coastssm: ["ssm_oniks_bastion", 15.0, 2, 4.0, "e20", undefined] };
+  var bad = [];
+  Object.keys(rows).forEach(function (k) {
+    var r = rows[k], u = UNITS[k], w = u && WEAPONS[u.weapons[0]];
+    if (!u || !w) { bad.push(k + " missing"); return; }
+    if (u.weapons[0].split("__")[0] !== r[0] || w.range !== r[1] || u.rounds !== r[2] || u.deploySec !== r[3] || u.from !== r[4] || u.to !== r[5] || u.role !== "coastssm")
+      bad.push(k + " " + u.weapons[0] + " " + w.range + " r" + u.rounds + " d" + u.deploySec + " " + u.from + "-" + u.to);
+    if (w.tgt.ground || w.tgt.air || !w.tgt.sea) bad.push(k + " not ships only");
+  });
+  var cards = ERAS6.map(function (e) { return e + ":" + Object.keys(UNITS).filter(function (k) { var u = UNITS[k]; return u.role === "coastssm" && u.fac === "pact" && inEra(u, e); }).map(function (k) { return UNITS[k].name; }).join("+"); });
+  chk("[7] Sopka (1958, one S-2, 17 min), Redut (1966, one P-35B), Bal (2008, eight Kh-35), Bastion-P (2011, two Oniks), ships only, each in its periods",
+      !bad.length && cards.join(" ") === "e50:Sopka e60:Sopka+Redut e80:Rubezh+Redut e90:Rubezh+Redut e00:Bal e20:Bal+Bastion-P",
+      (bad.join("; ") || "figures as sourced") + "; cards " + cards.join(" "));
 
   var S = shore(9);
   if (!S) { chk("a shore with open sea nine tiles off", false, "none on hormuz"); return; }
