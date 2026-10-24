@@ -1649,7 +1649,10 @@ function firesOnCue(def, w) {
   if (def.noAuto || w.manual || w.nuke || w.indirect || w.antiRadiation) return true;
   if (w.proj !== "missile" || !w.tgt) return false;
   var surf = !!(w.tgt.ground || w.tgt.sea);
-  if (surf) return def.layer === "sea" || def.role === "heavybomber" || def.role === "stealthbomber";
+  /* a coastal anti-ship launcher fires on the hulls its side holds past its
+     crew's sight, as the shore batteries did on a radar's or an aircraft's
+     report (coastssm/REPORT.md) */
+  if (surf) return def.layer === "sea" || def.role === "heavybomber" || def.role === "stealthbomber" || def.role === "coastssm";
   return !!w.tgt.air && w.range > 11;
 }
 Object.assign(WEAPONS, {
@@ -5290,7 +5293,7 @@ var ROUNDS_ERA_GAPS = [];
    exactly. That case is caught in _behtest [54], which walks the finished
    UNITS table through unitFor() and does not consult this list at all. Neither
    guard is sufficient on its own, which is why there are two. */
-var ROUNDS_REQUIRED = ["spg", "mlrs", "mortar", "tel", "sam"];
+var ROUNDS_REQUIRED = ["spg", "mlrs", "mortar", "tel", "sam", "coastssm"];
 function applyRoleRounds() {
   ROUNDS_ERA_GAPS.length = 0;
   var n = 0;

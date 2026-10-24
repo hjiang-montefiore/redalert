@@ -605,7 +605,9 @@ class Unit {
          artillery or the ballistic launchers, which carry the same flag and
          aim at the ground. The AI's launchers live by the same rule: they set
          up wherever they stand on guard, as the player's do. */
-      if (d.deploy && d.role === "sam") {
+      /* ...and a coastal anti-ship launcher, which waits on its shore for
+         the ships its side finds (coastssm/REPORT.md) */
+      if (d.deploy && (d.role === "sam" || d.role === "coastssm")) {
         if (this.moving) { this.deployed = false; this.deployT = 0; }
         else if (!this.deployed && (this.order.type === "idle" || this.order.type === "guard")) {
           this.deployT = (this.deployT || 0) + dt;
@@ -2063,8 +2065,12 @@ class Unit {
            - an order given by hand still pursues. The AI's home-defence
              order is `auto` - ai.js calls it "a reflex and not a release" -
              so its set-up launchers get exactly the player's launchers' rule. */
+      /* A coastal anti-ship launcher is held to the same rule for a ship: it
+         was sited on its shore for the water it covers, and does not pack up
+         to drive inland after a hull that has sailed out of its reach. */
       if (this.def.deploy && this.order.auto && this.layer === "ground" &&
-          t.def && !t.def.hover && t.targetLayer && t.targetLayer() === "air") {
+          (this.def.role === "coastssm" ||
+           (t.def && !t.def.hover && t.targetLayer && t.targetLayer() === "air"))) {
         const ro = this.order.resume;
         if (ro) this.order = ro.patrol || { type: "attackmove", x: ro.x, y: ro.y };
         else if (!this.nextOrder()) this.order = { type: "idle" };

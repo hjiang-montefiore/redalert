@@ -14596,6 +14596,42 @@ Object.assign(UNITS, {
     from:"e90", service:"1995", confidence:"high",
     desc:"A strategic jet that lands where a Hercules does: 3,500 ft of runway, or an unpaved one. The first squadron went operational on 17 January 1995 after a troubled, over-budget development. One Abrams, two Bradleys or three Strykers, or 102 paratroopers, with a crew of three. On 26 March 2003 fifteen of them dropped a thousand paratroopers of the 173rd Airborne over Bashur, in northern Iraq, and then flew in their Abrams and Bradleys." },
 });
+/* ======================= COASTAL ANTI-SHIP MISSILES =======================
+   (owner, 2026-10-23) "yes take your recommendation", then "launchers now,
+   sites later": role `coastssm`, a launcher on wheels that drives to the
+   coast, sets up where it stops (entities.js, as a SAM does), and fires on
+   the hulls its side holds past its crew's sight (rules.js firesOnCue). It
+   aims at ships only and does not drive inland after one that sails out of
+   reach. _keep/weapons_study/coastssm/REPORT.md; the build plan is
+   _keep/weapons_study/PLAN.md, B1-B7.
+   Its missiles are the ships' own rows where they exist. A range is placed
+   by rank in the band the ship rows use, not put through R(): P-15 12.3
+   (40 km), P-270 Moskit 12.5 (120 km), P-120 13.0, Uran 13.5, P-35 14.0.
+   The P-15M's 80 km ranks it between the P-15 and the Moskit: 12.4. */
+WEAPONS.ssm_p15m = Object.assign({}, WEAPONS.w_e60_pact_missileboat, {
+  name: "2 x P-15M Termit (shore)", range: 12.4,
+  tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+Object.assign(UNITS, {
+  /* 4K51 Rubezh (SSC-3), ru.wikipedia "Rubezh (beregovoy raketny kompleks)":
+     accepted by the Soviet Navy on 22 October 1978 (Council of Ministers
+     decree 853-875); P-15M, 8 to 80 km; a 3S51 launcher on the MAZ-543 8x8
+     carrying TWO missiles in KT-161 containers - eight on a battalion's four
+     launchers and eight more on its four reload vehicles - with its own
+     Garpun radar (detection to 100 km) on a mast raised to 7.3 m, so a launcher
+     finds and fires at ships on its own; into action in up to five minutes.
+     Taken into all four Soviet fleets in the 1980s; still with the Russian
+     fleets in 2018. deploySec on the S-300's scale (five minutes = 4.0 s).
+     Cost, hit points and speed are the Scud-B launcher's on the same MAZ-543
+     family (pact_e60_tel), there being no figure of the game's own for it. */
+  pact_e80_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Rubezh",
+    full:"4K51 Rubezh (SSC-3 Styx), 3S51 launcher on the MAZ-543",
+    cost:2700, oil:48, time:36, hp:540, armor:"light", speed:1.25, turn:0.95, sight:5.0, r:17, mass:37,
+    weapons:["ssm_p15m"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
+    modelAs:"pact_e60_tel",
+    from:"e80", to:"e90", service:"1978", confidence:"high",
+    desc:"A whole coastal missile battery on one truck: two P-15M missiles, its own Garpun search radar on a mast it raises to 7.3 m, and five minutes from the march to the first launch. It sees ships only to its own short horizon, so it fires best on what the radar dome, an aircraft or a warship of its side has found. Ships only - it cannot touch anything ashore." },
+});
+
 /* ERA_RADAR_SETS once more, now that every row in this file exists: the
    amphibious ships were defined after its first pass (see there). */
 if (typeof applyEraRadarSets === "function") applyEraRadarSets();

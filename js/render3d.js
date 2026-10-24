@@ -335,6 +335,10 @@ var Render3D = (function () {
   function modelKeyFor(def) {
     const own = def.cat === "infantry" ? "inf_" + def.role : def.id;
     if (typeof UNIT_MODELS !== "undefined" && UNIT_MODELS[own]) return own;
+    /* a row of a new role has no peer to borrow from: `modelAs` names the
+       model it is drawn as until its own is built (the Rubezh, the Scud-B's
+       MAZ-543) */
+    if (def.modelAs && typeof UNIT_MODELS !== "undefined" && UNIT_MODELS[def.modelAs]) return def.modelAs;
     const peers = (typeof ROLES !== "undefined" && ROLES[def.role]) || [];
     /* prefer a peer of the same category so a ship never stands in for a tank */
     for (const id of peers) {
