@@ -14688,8 +14688,7 @@ Object.assign(UNITS, {
   pact_e60_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Redut",
     full:"4K44 Redut (SSC-1b Sepal), SPU-35B on the BAZ-135MB",
     cost:2700, oil:48, time:36, hp:540, armor:"light", speed:0.87, turn:0.9, sight:5.0, r:17, mass:21,
-    weapons:["ssm_p35b"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:1,
-    modelAs:"pact_e60_tel",
+    weapons:["ssm_p35b"], prereq:["factory", "lab"], tech:3, turret:false, fireAft:true, deploy:true, deploySec:4.0, rounds:1,
     from:"e60", to:"e90", service:"1966", confidence:"high",
     desc:"One big supersonic P-35B on an eight-wheeled truck, reaching far beyond any radar on the shore - so it is aimed by someone else's: a towed Mys set, or a Tu-95 or Ka-25 out over the sea passing the target back. Twenty-one tonnes and slow on a road." },
   /* 3K60 Bal (SSC-6 Sennight), ru.wikipedia "Bal": state trials finished
