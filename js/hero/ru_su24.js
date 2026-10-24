@@ -1,67 +1,100 @@
 /* ============ ru_su24.js - HERO model: Sukhoi Su-24M "Fencer-D" with Kh-31P ===
-   One airframe, one plain finish, registered for every Su-24M SEAD row:
-     pact_e90_sead  "Su-24M SEAD"  Sukhoi Su-24M carrying Kh-31P
-     pact_e00_sead  "Su-24M SEAD"  Sukhoi Su-24M (Kh-31P)
-     sead_p         "Su-24M SEAD"  Su-24M (Kh-31P)   (js/rules.js)
+   One airframe, the Su-24M, drawn for each SEAD row in the paint of its period:
+     pact_e90_sead  "Su-24M SEAD"  Sukhoi Su-24M carrying Kh-31P      1990s
+     pact_e00_sead  "Su-24M SEAD"  Sukhoi Su-24M (Kh-31P)             2000s
+     sead_p         "Su-24M SEAD"  Su-24M (Kh-31P)  (js/rules.js)      today
 
    References (Wikimedia Commons / Wikipedia, fetched for this file):
      A "Sukhoi Su-24 3-view line drawing.png" (plan with the wings spread
-       dashed, front and side views). Its length and span do not agree with
-       the published figures (the fuselage comes out about 15% short against
-       the span), so it is used only for the layout: where the intakes, the
-       glove, the wing root, the tailplane and the tail sit along the body,
-       the wide flat rear fuselage and the tailplane planform.
+       dashed, front and side views). Its fuselage comes out about 15% short
+       against the span, so it is used for the layout only: where the
+       intakes, the glove, the wing root, the tailplane and the tail sit
+       along the body, the wide flat rear fuselage, the tailplane planform,
+       and in the front view the pair of stores under the belly between the
+       intake trunks and one under each outer wing.
      B "Sukhoi Su-24M and Su-24MP side-view silhouettes.png" - the Su-24M
-       side profile, station by station: the drooped radome, the low
-       windscreen, the canopy roof barely above the straight spine, the long
-       fin (leading edge about 63 deg) and the belly line rising to the
-       nozzles. Its fin is a little taller than the published height allows
-       with the ground clearance photo D shows; the fin here is that profile
-       brought down to the published 6.19 m.
-     C "Sukhoi Su-24 silhouettes illustrating external stores.png" (front
-       views: the pylons under the fixed gloves).
-     D "Sukhoi Su-24M on the MAKS-2009 (01).jpg" - a Su-24M on the ground from
-       the front quarter: the big blunt white radome nearly as wide as the
-       body, the long nose boom with vanes, the wide side-by-side cockpit with
-       two roof hatches hinged on the centre line, the tall rectangular side
-       intakes with splitter plates standing off the fuselage, the glove
-       fence, the twin nose wheels under a mudguard, twin-wheel main legs on
-       long legs well outboard, about 1.1 m of clearance under the belly, the
-       light grey finish and the red star on the fin.
-     E "Suhkoi Su-24M Fencer-D formation - Zhukovsky 2012.jpg" (the grey
-       finish in 2012, wings spread, single tall fin).
-     F "Kh-31 Armia-2018 1.jpg" (the missile: ogive nose, plain cylinder, four
-       mid-body wings, four ramjet ducts and four tail fins).
-     G ru.wikipedia "Су-24" (Su-24M figures): length 24.594 m with the nose
+       profile, measured column by column at 14.19 px/m (boom tip to fin-tip
+       trailing edge = 24.59 m): the pointed radome on a drooped centre line,
+       the windscreen rising to a canopy roof flush with the straight spine,
+       the fin (leading edge about 63 deg) with its tip fairing and the stubs
+       on its trailing edge, the belly rising to the nozzles and the ventral
+       fins under the engine section. Its fin stands taller than the
+       published 6.19 m height allows with the ground clearance C shows, so
+       the fin here keeps the profile's planform brought down to 6.19 m.
+     C "Sukhoi Su-24M on the MAKS-2009 (01).jpg" - front quarter, on the
+       ground: the big white radome nearly as wide as the body, the boom with
+       its vanes, the wide side-by-side cockpit whose two roof hatches hinge
+       up, the tall rectangular intakes standing off the fuselage on their
+       splitter plates, the twin nose wheels under a mudguard, the twin-wheel
+       main legs well outboard, the red star with a white border on the fin.
+     D "Sukhoi Su-24M on the MAKS-2009 (02).jpg" - rear quarter: the fin with
+       its tip fairing, the brake-chute fairing and the aerial stubs on the
+       fin trailing edge, the two nozzles side by side in the wide flat tail,
+       the low all-moving tailplane, a ventral fin, the glove pylon and fence.
+     E "Su-24 Fencer left side.jpg" (US DoD, 29 Sep 1989, public domain) -
+       the late-Soviet finish: light grey all over, white radome, red star.
+     F "Sukhoi Su-24 inflight Mishin.jpg" (Su-24M, May 2009) - the 2000s
+       finish: one blue-grey all over, white radome.
+     G "Russian Sukhoi Su-24 at Latakia (1).jpg" (3 Oct 2015, mil.ru, CC BY
+       4.0) and "Sukhoi Su24M bn08 2021.jpg" (Russian Navy, 22 Jul 2021) -
+       today's finish: a two-tone disruptive grey (large dark blue-grey
+       patches over light grey) on the upper surfaces, sides and fin, light
+       grey underneath, white radome. "Sukhoi Su-24M RF-92246 ARMY-2022.jpg"
+       shows that a plain light grey one also flies today; the row is drawn
+       in the two-tone scheme the two dated photographs show.
+     H ru.wikipedia "Су-24" (Su-24M figures): length 24.594 m with the nose
        boom, span 17.638 m at 16 deg and 10.366 m at 69 deg, height 6.193 m,
        wing anhedral -4.5 deg, wheelbase 8.51 m, track 3.31 m.
        en.wikipedia "Sukhoi Su-24": the Su-24M's refuelling probe is
-       RETRACTABLE (so a parked aircraft shows none), the Kaira-24 sight sits
-       in a bulge on the port lower fuselage, and Kh-31A/P came to the Su-24M
-       with the 2000 Sukhoi upgrade. en.wikipedia "Kh-31": 4.7 m, 0.36 m body,
-       0.914 m span; the Kh-31P entered service in 1988.
+       RETRACTABLE (a parked or cruising aircraft shows only its door), the
+       Kaira-24 sight sits in a bulge on the port lower fuselage, Kh-31A/P
+       came to the Su-24M with the 2000 upgrade; eight hardpoints - two under
+       the fixed gloves, two pivoting under the outer wings, four under the
+       fuselage. en.wikipedia "Kh-31": 4.7 m, 0.36 m body, 0.914 m span.
+     I "Kh-31 Armia-2018 1.jpg" (the missile: ogive nose, plain cylinder, four
+       mid-body wings, four ramjet ducts and four tail fins).
 
-   What each part rests on:
-     - length 24.59 m boom tip to fin-tip trailing edge, span 17.64 m,
-       height 6.19 m, wheelbase 8.51 m, track 3.31 m: G.
-     - radome, canopy, spine, fin, belly and nozzle line: B, in its own
-       stations; radome width and bluntness, canopy width (about 1.5 m) and
-       forward-fuselage width (about 1.85 m): D and A.
-     - intakes (about 0.6 x 1.2 m mouths), splitter plates, trunks: D, A.
-     - glove (69 deg leading edge), outer panels at the 16 deg spread a parked
-       aircraft shows (render3d.js moves no wing panels), -4.5 deg anhedral: A,
-       G. Wide flat rear fuselage between the two AL-21F nozzles, low
-       all-moving tailplane (about 54 deg leading edge, about 8.5 m span): A, B.
-     - gear: D for the layout (twin nose wheels with mudguard, twin-wheel main
-       legs), G for wheelbase and track; tyre sizes estimated from D.
-     - Kaira-24 bulge: G names it and its side; its exact place is estimated.
-     - stores: two Kh-31P on the glove pylons (C shows the glove pylons; F the
-       missile). Nothing else is hung: no tanks, no pod, no R-60.
-     - paint: D and E (2009, 2012) - light blue-grey upper surfaces and sides,
-       a paler underside, a white radome. No labelled 1990s photograph showing
-       another scheme was found, so the same plain finish serves all rows.
-       Red star (red, white and red border, as pact_hind_mi24.js draws it) on
-       both sides of the fin where D shows it. No bort number, no other mark.
+   Recognition list (each shows in the model, with the reference it rests on):
+     1. side-by-side two-seat cockpit under a WIDE short canopy, windscreen
+        posts, two roof hatches meeting on the centre line, roof flush with
+        the straight spine (B, C, G)                         [glass, dark]
+     2. long nose: pointed white radome on a drooped centre line, about 3.4 m
+        long, and the long boom with its vanes (B, C, G)     [radome, metal]
+     3. the M's retractable refuelling probe: drawn stowed, its door outline
+        on the nose ahead of the windscreen (H; the door's exact place is
+        estimated)                                           [skin texture]
+     4. tall rectangular box intakes standing off the body on splitter
+        plates, trunks running back into the wide engine section (A, C, D)
+     5. variable-sweep shoulder wing: the fixed glove (69 deg leading edge)
+        with its fence, outer panels at the 16 deg spread with -4.5 deg
+        anhedral, slats and flaps, pivot fairing (A, H)      [skin]
+     6. the big single fin, leading edge about 63 deg, rudder, tip fairing,
+        brake-chute fairing and aerial stubs on the trailing edge (B, D)
+     7. twin ventral fins under the engine section, canted out (B, D, E)
+     8. wide flat rear fuselage with the two AL-21F nozzles side by side and
+        low all-moving tailplanes (A, B, D)                  [metal, dark]
+     9. pylons: glove pylons with the Kh-31P pair, empty pivoting pylons
+        under the outer wings, the four fuselage stations (A, H, I)
+    10. long-legged gear: twin nose wheels under a mudguard, twin-wheel main
+        legs well outboard, about 1 m of clearance under the belly (C, H)
+    11. paint by period: E for the 1990s row, F for the 2000s row, G for
+        today's row; red star with white and red border on the fin (C-G)
+
+   The sweep. The wing is drawn at the 16 deg spread, as the Su-24 parks and
+   cruises in the photographs. The game's wing-fold convention
+   (tools/jsc/wingfold_check.js) gives a "wingfold" group only to carrier
+   aircraft that fold or oversweep on a deck (the F-14A's sweep is its
+   deck fold); a land-based swing-wing such as the EF-111A (us_ef111a.js) is
+   drawn spread with no fold group, and the Su-24 follows it.
+
+   Not drawn, for want of a reference: the Kh-58 the e00 row's weapon also
+   names (the pair hung is the Kh-31P every row names), the L-080
+   Fantasmagoria pod a data comment in eras.js mentions, external tanks.
+   Corrections to the earlier file: its canopy ran 3.4 m back to the intake
+   lips; B and G give a short canopy (about 2.2 m) ending well ahead of them.
+   Its radome was blunt; B and G show a pointed cone. Its black anti-glare
+   panel ahead of the windscreen is gone: none of C, F, G shows one. It had no ventral fins,
+   no fin-tip fairing, no brake-chute fairing and one finish for all rows.
    Team colour exactly C.team, on two small strips on the upper outer wings.
    ======================================================================== */
 
@@ -72,7 +105,7 @@ var HeroSu24 = (function () {
 
   var V = null;
   var PI = Math.PI;
-  var GROUND = -2.10;                 /* tyre bottoms: 6.19 m under the fin tip (G) */
+  var GROUND = -2.10;                 /* tyre bottoms: 6.19 m under the fin tip (H) */
   var FIN_TOP = 4.09;
 
   var PXM = 37, XMIN = -12.4, TW = 920;
@@ -80,7 +113,16 @@ var HeroSu24 = (function () {
   var TOPH = 432, SIDEH = 190, TH = TOPH + 2 * SIDEH + TOPH;
   var ZTOP = 4.3, ZSPAN = 6.3;
 
-  var PAL = { top: "#8d9ba2", side: "#97a4aa", belly: "#b4bdc0", dark: "#6f7d84" };
+  /* the finishes, sampled off the dated photographs and taken to about 0.85
+     of their level for the renderer's ACES lift:
+       e90  E (1989): light grey #c2c5c9 sides, #acb3bc fin
+       e00  F (2009): blue-grey #aab5ba in sun, #777576 overcast (C)
+       e20  G (2015, 2021): light grey #c7cbce, dark blue-grey #676969 */
+  var PALS = {
+    e90: { top: "#a2a7ab", side: "#a6abaf", belly: "#b4b8bb", dark: null },
+    e00: { top: "#8c979c", side: "#919ba0", belly: "#aab1b4", dark: null },
+    e20: { top: "#a3a9ad", side: "#a6acaf", belly: "#adb3b6", dark: "#5c6569" }
+  };
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
   function pxX(x) { return clamp((x - XMIN) * PXM, 2, TW - 2); }
@@ -102,55 +144,87 @@ var HeroSu24 = (function () {
     g.fillStyle = "#b22a22"; path(1.0); g.fill();
   }
 
-  var _cv = null;
-  function paint() {
-    if (_cv) return _cv;
+  var _cv = {};
+  function paint(per) {
+    if (_cv[per]) return _cv[per];
+    var P = PALS[per] || PALS.e20;
     var cv = document.createElement("canvas");
     cv.width = TW; cv.height = TH;
-    var g = cv.getContext("2d"), s = 24101, i, b, x, y;
+    var g = cv.getContext("2d"), s = 24101, i, b, x, y, k;
     function R() { s = (s * 16807) % 2147483647; return s / 2147483647; }
     var bandY = [0, TOPH, TOPH + SIDEH, TOPH + 2 * SIDEH];
     var bandH = [TOPH, SIDEH, SIDEH, TOPH];
     function sideZ(z, band) { return bandY[band] + clamp((ZTOP - z) / ZSPAN * SIDEH, 0, SIDEH); }
-    g.fillStyle = PAL.top; g.fillRect(0, 0, TW, TOPH);
-    g.fillStyle = PAL.side; g.fillRect(0, TOPH, TW, 2 * SIDEH);
-    g.fillStyle = PAL.belly; g.fillRect(0, TOPH + 2 * SIDEH, TW, TOPH);
+    g.fillStyle = P.top; g.fillRect(0, 0, TW, TOPH);
+    g.fillStyle = P.side; g.fillRect(0, TOPH, TW, 2 * SIDEH);
+    g.fillStyle = P.belly; g.fillRect(0, TOPH + 2 * SIDEH, TW, TOPH);
+    /* today's two-tone scheme (G): large irregular dark blue-grey patches
+       over the light grey, on the upper surfaces, the sides from the
+       intakes back, and the fin; the nose section and the belly stay light */
+    if (P.dark) {
+      g.fillStyle = P.dark;
+      var blob = function (cx, cy, rx, ry) {
+        g.beginPath();
+        for (k = 0; k < 5; k++) {
+          var a = k / 5 * 2 * PI + R() * 0.7, q = 0.55 + R() * 0.6;
+          var bx = cx + Math.cos(a) * rx * q, by = cy + Math.sin(a) * ry * q;
+          if (k) g.lineTo(bx, by); else g.moveTo(bx, by);
+        }
+        g.closePath(); g.fill();
+      };
+      for (i = 0; i < 15; i++)
+        blob(pxX(-12 + (i % 5) * 3.6 + R() * 1.5), (Math.floor(i / 5) + 0.2 + R() * 0.6) * TOPH / 3,
+             (1.5 + R() * 1.2) * PXM, (2.0 + R() * 1.8) * PYM);
+      for (b = 1; b <= 2; b++) for (i = 0; i < 7; i++)
+        blob(pxX(-11.5 + i * 2.3 + R() * 0.8), sideZ(-0.2 + R() * 3.4, b), (1.2 + R() * 0.9) * PXM, (1.0 + R() * 1.0) * SIDEH / ZSPAN);
+    }
     /* the lower sides take the paler underside colour */
     for (b = 1; b <= 2; b++) {
-      g.fillStyle = PAL.belly;
-      g.fillRect(0, sideZ(-0.55, b), TW, bandY[b] + SIDEH - sideZ(-0.55, b));
+      g.fillStyle = P.belly;
+      g.fillRect(0, sideZ(-0.62, b), TW, bandY[b] + SIDEH - sideZ(-0.62, b));
     }
-    /* panel lines */
-    g.strokeStyle = "rgba(0,0,0,0.16)"; g.lineWidth = 1;
-    var PANEL_X = [6.6, 4.6, 3.2, 1.0, -1.2, -3.4, -5.6, -7.8, -9.6];
+    /* panel lines: the frames and the access panels */
+    g.strokeStyle = "rgba(0,0,0,0.17)"; g.lineWidth = 1;
+    var PANEL_X = [6.6, 4.4, 3.2, 1.0, -1.2, -3.4, -5.6, -7.8, -9.6];
     for (b = 0; b < 4; b++) for (i = 0; i < PANEL_X.length; i++) {
       x = pxX(PANEL_X[i]); g.beginPath(); g.moveTo(x, bandY[b]); g.lineTo(x, bandY[b] + bandH[b]); g.stroke();
     }
+    g.strokeStyle = "rgba(0,0,0,0.12)";
+    for (b = 1; b <= 2; b++) for (i = 0; i < 14; i++) {
+      x = pxX(6.4 - i * 1.25 + R() * 0.3); y = sideZ(0.2 - R() * 0.8, b);
+      g.strokeRect(x, y, 0.45 * PXM + R() * 12, 0.30 * SIDEH / ZSPAN + R() * 4);
+    }
+    /* the stowed refuelling probe's door, on the nose ahead of the
+       windscreen on the centre line (H; place estimated) */
+    g.strokeStyle = "rgba(0,0,0,0.30)";
+    g.strokeRect(pxX(6.86), pxY(0.11), 0.42 * PXM, 0.22 * PYM);
+    /* the dielectric strip on the fin leading edge (D) is light: the fin
+       sides near the leading edge take the belly tone */
     /* soot behind the nozzles and light weathering */
     var sx = pxX(-11.2), gr = g.createLinearGradient(sx, 0, pxX(-8.6), 0);
     gr.addColorStop(0, "rgba(22,18,14,0.42)"); gr.addColorStop(1, "rgba(22,18,14,0)");
     g.fillStyle = gr; g.fillRect(sx, 0, pxX(-8.6) - sx, TH);
     for (i = 0; i < 60; i++) {
-      g.fillStyle = "rgba(24,20,16," + (0.03 + R() * 0.08).toFixed(3) + ")";
+      g.fillStyle = "rgba(24,20,16," + (0.03 + R() * 0.07).toFixed(3) + ")";
       g.fillRect(R() * TW, R() * TH, 10 + R() * 50, 2 + R() * 8);
     }
-    /* red star on both sides of the fin (D) */
-    for (b = 1; b <= 2; b++) star(g, pxX(-9.35), sideZ(2.35, b), 0.46 * PXM, 0.46 * SIDEH / ZSPAN);
-    _cv = cv;
+    /* red star on both sides of the fin (C-G) */
+    for (b = 1; b <= 2; b++) star(g, pxX(-9.55), sideZ(2.25, b), 0.48 * PXM, 0.48 * SIDEH / ZSPAN);
+    _cv[per] = cv;
     return cv;
   }
 
-  var _tex = null;
-  function skinTexture() {
-    if (_tex !== null) return _tex;
+  var _tex = {};
+  function skinTexture(per) {
+    if (_tex[per] !== undefined) return _tex[per];
     var t = false;
     try {
-      t = new V.CanvasTexture(paint());
+      t = new V.CanvasTexture(paint(per));
       t.wrapS = t.wrapT = V.ClampToEdgeWrapping;
       t.anisotropy = 4;
       if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
     } catch (e) { t = false; }
-    _tex = t;
+    _tex[per] = t;
     return t;
   }
 
@@ -183,11 +257,10 @@ var HeroSu24 = (function () {
     return geo;
   }
 
-
-  function makeMats(C) {
-    var tex = skinTexture(), m = {};
+  function makeMats(C, per) {
+    var tex = skinTexture(per), m = {};
     m.skin = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.80, metalness: 0.10 });
-    if (tex) m.skin.map = tex; else m.skin.color.setHex(0x8d9ba2);
+    if (tex) m.skin.map = tex; else m.skin.color.setHex(0x9aa2a6);
     m.dark  = new V.MeshStandardMaterial({ color: 0x17191b, roughness: 0.70, metalness: 0.30 });
     m.metal = new V.MeshStandardMaterial({ color: 0x5d6468, roughness: 0.48, metalness: 0.60 });
     m.tyre  = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
@@ -396,8 +469,8 @@ var HeroSu24 = (function () {
      Glove (fixed, A): leading edge 69 deg, 2.36 m forward of the wing root
      where it meets the intake trunk (y 1.55), out to the panel joint at
      y 2.95; straight trailing edge at x -4.55.
-     Outer panel at the 16 deg spread (G): root chord 3.41 m at y 2.95, tip
-     at y 8.82 (17.64 m span), tip chord 1.5 m, -4.5 deg anhedral (G). */
+     Outer panel at the 16 deg spread (H): root chord 3.41 m at y 2.95, tip
+     at y 8.82 (17.64 m span), tip chord 1.5 m, -4.5 deg anhedral (H). */
   var ROOT = 0.90, PO = 2.95, TIP = 8.82;
   function gLE(y) { return 2.36 - (y - 1.55) * 2.605; }
   function gTE(y) { return -4.55; }
@@ -427,37 +500,55 @@ var HeroSu24 = (function () {
     return foil([le - c * f0, 0, z], [le - c * f1, 0, z], finT(z), [0, 1, 0]);
   }
 
-  /* ---- sections, nose to tail (B for the side profile, D and A for widths) */
-  /* white radome: drooped, blunt, nearly the full body width at the joint */
-  var NOSE = [ls(10.85, 0, -0.39, 0.06, 0.05), ls(10.70, 0, -0.385, 0.25, 0.17), ls(10.45, 0, -0.375, 0.41, 0.29),
-              ls(10.05, 0, -0.36, 0.54, 0.40), ls(9.50, 0, -0.33, 0.66, 0.50), ls(8.90, 0, -0.30, 0.75, 0.59),
-              ls(8.20, 0, -0.26, 0.82, 0.68, 0.95), ls(7.30, 0, -0.20, 0.87, 0.77, 0.9)];
+  /* ---- station table, nose to tail. Side profile from B (measured at
+     14.19 px/m, x = 12.34 - (374 - px) / 14.19, the body's depth taken at
+     0.066 m/px so that fin, body and gear fit the published 6.19 m);
+     widths from C and A.
+       x      top    bottom   (B)
+     10.72   -0.43   -0.43    radome tip
+     10.30   -0.29   -0.56
+      9.94   -0.16   -0.62
+      9.24    0.00   -0.76
+      8.53    0.17   -0.90
+      7.13    0.43   -0.95    radome joint about 7.3 (G)
+      6.85    0.56   -0.95    windscreen base
+      5.9-5.0 1.10           canopy roof, a low hump over the spine (B, C)
+      4.5-1.0 0.96   -0.98    spine; belly
+     -5.6 to -9.2            ventral fins under the engine section
+     -12.25                  fin-tip trailing edge                      */
+  /* white radome: a pointed cone on a drooped centre line (B, G) */
+  var NOSE = [ls(10.72, 0, -0.43, 0.03, 0.03), ls(10.58, 0, -0.428, 0.11, 0.09), ls(10.30, 0, -0.42, 0.22, 0.17),
+              ls(9.94, 0, -0.405, 0.34, 0.26), ls(9.50, 0, -0.39, 0.47, 0.36), ls(8.90, 0, -0.37, 0.61, 0.47),
+              ls(8.20, 0, -0.34, 0.74, 0.58, 0.95), ls(7.30, 0, -0.28, 0.85, 0.70, 0.90)];
   /* the body: wide flat-sided cockpit section (side-by-side seats), the
-     straight spine behind the canopy, tapering to the brake-chute fairing */
-  var FUS = [ls(7.30, 0, -0.20, 0.87, 0.77, 0.90), ls(6.80, 0, -0.18, 0.91, 0.80, 0.75),
-             ls(6.00, 0, -0.18, 0.93, 0.80, 0.62), ls(4.80, 0, -0.18, 0.94, 0.80, 0.58),
-             ls(3.70, 0, -0.18, 0.94, 0.80, 0.58), ls(3.30, 0, -0.01, 0.94, 0.97, 0.58),
-             ls(1.00, 0, -0.01, 0.93, 0.97, 0.56), ls(-2.00, 0, -0.01, 0.92, 0.97, 0.56),
-             ls(-4.50, 0, -0.01, 0.90, 0.97, 0.58), ls(-6.50, 0, 0.02, 0.84, 0.92, 0.62),
-             ls(-8.50, 0, 0.10, 0.72, 0.78, 0.70), ls(-10.00, 0, 0.18, 0.55, 0.55, 0.75),
-             ls(-10.90, 0, 0.20, 0.38, 0.38, 0.80), ls(-11.35, 0, 0.20, 0.20, 0.22, 0.90)];
+     straight spine from the canopy back, tapering to the tail cone */
+  var FUS = [ls(7.30, 0, -0.28, 0.85, 0.70, 0.90), ls(6.85, 0, -0.22, 0.90, 0.78, 0.78),
+             ls(6.20, 0, -0.19, 0.93, 0.80, 0.66), ls(5.00, 0, -0.18, 0.94, 0.80, 0.60),
+             ls(4.65, 0, -0.12, 0.94, 0.88, 0.58), ls(4.30, 0, -0.03, 0.94, 0.98, 0.58),
+             ls(3.30, 0, -0.01, 0.94, 0.97, 0.58), ls(1.00, 0, -0.01, 0.93, 0.97, 0.56),
+             ls(-2.00, 0, -0.01, 0.92, 0.97, 0.56), ls(-4.50, 0, -0.01, 0.90, 0.97, 0.58),
+             ls(-6.50, 0, 0.02, 0.84, 0.92, 0.62), ls(-8.50, 0, 0.10, 0.72, 0.78, 0.70),
+             ls(-10.00, 0, 0.18, 0.55, 0.55, 0.75), ls(-10.90, 0, 0.20, 0.38, 0.38, 0.80),
+             ls(-11.35, 0, 0.20, 0.20, 0.22, 0.90)];
   /* the broad flat engine section: intake trunks run into it, the two
      AL-21F nozzles leave it side by side; belly rising to the nozzles (B) */
   var REAR = [ls(0.60, 0, -0.25, 1.20, 0.60, 0.45), ls(-0.20, 0, -0.22, 1.50, 0.70, 0.40),
               ls(-2.50, 0, -0.22, 1.56, 0.72, 0.40), ls(-5.00, 0, -0.20, 1.52, 0.72, 0.42),
               ls(-7.00, 0, -0.14, 1.45, 0.68, 0.45), ls(-8.60, 0, -0.06, 1.36, 0.60, 0.50),
               ls(-9.80, 0, 0.06, 1.28, 0.50, 0.55), ls(-10.40, 0, 0.08, 1.24, 0.48, 0.60)];
-  /* wide two-seat canopy, roof barely above the spine (B), two roof hatches */
-  var CAN = [ls(6.75, 0, 0.60, 0.22, 0.04), ls(6.40, 0, 0.66, 0.64, 0.20, 0.8),
-             ls(5.90, 0, 0.72, 0.75, 0.33, 0.74), ls(5.20, 0, 0.75, 0.77, 0.36, 0.72),
-             ls(4.40, 0, 0.75, 0.76, 0.36, 0.72), ls(3.70, 0, 0.75, 0.70, 0.31, 0.76),
-             ls(3.35, 0, 0.72, 0.58, 0.23, 0.82)];
+  /* the wide two-seat canopy: about 2.3 m from the windscreen base to the
+     hatch rear (B, G), nearly the body's width (C), roof just above the spine */
+  var CAN = [ls(6.85, 0, 0.55, 0.26, 0.03), ls(6.62, 0, 0.58, 0.62, 0.22, 0.80),
+             ls(6.25, 0, 0.61, 0.74, 0.39, 0.74), ls(5.80, 0, 0.62, 0.78, 0.47, 0.72),
+             ls(5.10, 0, 0.62, 0.78, 0.48, 0.72), ls(4.75, 0, 0.62, 0.73, 0.44, 0.75),
+             ls(4.50, 0, 0.62, 0.60, 0.38, 0.80)];
   function trunk(s) {
     return [ls(3.30, s * 1.29, -0.17, 0.29, 0.62, 0.22), ls(2.00, s * 1.30, -0.18, 0.30, 0.64, 0.28),
             ls(0.00, s * 1.30, -0.22, 0.29, 0.68, 0.35), ls(-1.50, s * 1.28, -0.24, 0.26, 0.66, 0.40)];
   }
   var P_KH = [[0.50, 0.03], [0.44, 0.45], [0.36, 0.80], [0.26, 0.96], [0.15, 1.0], [-0.10, 1.0], [-0.30, 0.95], [-0.50, 0.82]];
   var P_RAM = [[0.50, 0.30], [0.46, 0.90], [0.36, 1.0], [-0.40, 1.0], [-0.50, 0.70]];
+  var P_POD = [[0.50, 0.05], [0.40, 0.70], [0.25, 1.0], [-0.30, 1.0], [-0.50, 0.45]];
 
   /* a section of a loft at any x, for the canopy frames */
   function secAt(secs, x) {
@@ -484,11 +575,11 @@ var HeroSu24 = (function () {
   }
   function topAt(x) { var s = secAt(CAN, x); return s.zc + s.h * 1.01; }
 
-  /* Kh-31P: 4.7 m, 0.36 m across, 0.914 m span (G); ramjet ducts and fins from F */
+  /* Kh-31P: 4.7 m, 0.36 m across, 0.914 m span (H); ramjet ducts and fins from I */
   function kh31(K, x, y, zTop) {
     var len = 4.7, r = 0.18, zc = zTop - 0.08 - r, i, a;
-    push(K.msl, revolve(P_KH, len, r, x, y, zc, 22, 0, 0));
-    push(K.pale, revolve([[0.50, 0.02], [0.44, 0.45], [0.38, 0.78]], 0.55, r, x + len * 0.5 - 0.14, y, zc, 22, 0, 0));  /* seeker radome */
+    push(K.msl, revolve(P_KH, len, r, x, y, zc, 20, 0, 0));
+    push(K.pale, revolve([[0.50, 0.02], [0.44, 0.45], [0.38, 0.78]], 0.55, r, x + len * 0.5 - 0.14, y, zc, 20, 0, 0));  /* seeker radome */
     K.dark.push(cyl(r * 0.8, r * 0.7, 0.05, 14, "x", x - len * 0.5 - 0.02, y, zc));
     for (i = 0; i < 4; i++) {            /* ramjet ducts along the rear body */
       a = PI / 4 + i * PI / 2;
@@ -505,51 +596,65 @@ var HeroSu24 = (function () {
     g.translate(x, y, z);
     return g;
   }
+  /* the engine section's underside at x, a little inside the skin */
+  function rearBottom(x) {
+    var s = secAt(REAR, x);
+    return s.zc - s.h * 0.97;
+  }
 
-  function buildAirframe(THREE, C) {
+  function buildAirframe(THREE, C, per) {
     V = THREE;
-    var T = makeMats(C);
+    var T = makeMats(C, per);
     var g = new V.Group();
     g.name = "su24";
     var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], msl: [] };
     var G = { metal: [], tyre: [], dark: [], skin: [] };
-    var s, i, x;
+    var s, i, x, z;
 
     /* ---- radome (white), body, engine section, canopy */
-    push(K.pale, loft(NOSE, 48, 0.03, null));
-    push(K.skin, loft(FUS, 56, null, 0.03));
-    push(K.skin, loft(REAR, 48, 0, 0));
+    push(K.pale, loft(NOSE, 40, 0.02, null));
+    push(K.skin, loft(FUS, 48, null, 0.03));
+    push(K.skin, loft(REAR, 44, 0, 0));
     push(K.glass, loft(CAN, 36, 0.02, 0));
-    /* canopy frames: windscreen arch, mid arch, rear arch, the centre line
-       the two roof hatches hinge on, the sills */
-    arch(K.dark, 5.95, 0.60, 0.032);
-    arch(K.dark, 4.70, 0.62, 0.022);
-    arch(K.dark, 3.70, 0.62, 0.032);
-    for (x = 6.55; x > 3.5; x -= 0.5) K.dark.push(bar([x, 0, topAt(x)], [Math.max(3.45, x - 0.5), 0, topAt(Math.max(3.45, x - 0.5))], 0.03, 6));
-    for (s = -1; s <= 1; s += 2) K.dark.push(bar([6.1, s * 0.86, 0.64], [3.6, s * 0.82, 0.64], 0.025, 6));
-    K.dark.push(box(0.55, 1.10, 0.02, 6.98, 0, 0.55, 0, 0.32, 0));            /* anti-glare panel */
-    K.skin.push(box(0.36, 0.04, 0.40, 2.95, 0, 1.13, 0, 0, 0));               /* spine blade aerial (B) */
-    /* nose boom with its vanes (D) */
-    K.metal.push(cyl(0.022, 0.06, 1.54, 10, "x", 11.57, 0, -0.39));
-    K.metal.push(box(0.10, 0.24, 0.012, 11.80, 0, -0.39));
-    K.metal.push(box(0.10, 0.012, 0.24, 11.95, 0, -0.39));
-    /* Kaira-24 sight bulge, port lower fuselage (G; place estimated) */
+    /* canopy frames (C): the windscreen arch and its two posts, the two
+       roof hatches meeting on the centre line, the hatch rear arch, sills */
+    arch(K.dark, 6.25, 0.60, 0.034);
+    arch(K.dark, 4.62, 0.62, 0.034);
+    for (s = -1; s <= 1; s += 2) {
+      K.dark.push(bar([6.80, s * 0.30, 0.60], [6.27, s * 0.40, topAt(6.27) - 0.10], 0.024, 6));
+      K.dark.push(bar([6.25, s * 0.80, 0.63], [4.62, s * 0.76, 0.63], 0.026, 6));
+    }
+    for (x = 6.25; x > 4.62; x -= 0.40) K.dark.push(bar([x, 0, topAt(x)], [Math.max(4.62, x - 0.40), 0, topAt(Math.max(4.62, x - 0.40))], 0.030, 6));
+    /* aerials on the spine: the mast behind the canopy (G) and the blade (B) */
+    K.metal.push(bar([3.25, 0, 0.95], [3.15, 0, 1.30], 0.022, 6));
+    K.metal.push(box(0.04, 0.22, 0.03, 3.15, 0, 1.30));
+    K.skin.push(box(0.30, 0.04, 0.22, 1.50, 0, 1.05));
+    /* the low fairing on the spine over the wing centre section (B, D) */
+    push(K.skin, loft([ls(-1.45, 0, 0.93, 0.06, 0.03), ls(-1.75, 0, 0.93, 0.24, 0.13, 0.8), ls(-3.00, 0, 0.93, 0.26, 0.14, 0.8),
+                       ls(-3.45, 0, 0.93, 0.06, 0.03)], 14, 0.02, 0.02));
+    /* nose boom with its vanes (C), from the radome tip */
+    K.metal.push(cyl(0.022, 0.06, 1.62, 10, "x", 11.53, 0, -0.43));
+    K.metal.push(box(0.10, 0.24, 0.012, 11.84, 0, -0.43));
+    K.metal.push(box(0.10, 0.012, 0.24, 11.98, 0, -0.43));
+    /* Kaira-24 sight bulge, port lower fuselage (H; place estimated) */
     push(K.skin, loft([ls(5.30, 0.60, -0.92, 0.05, 0.03), ls(5.00, 0.60, -0.97, 0.20, 0.13), ls(4.20, 0.60, -0.97, 0.22, 0.13),
-                       ls(3.90, 0.60, -0.94, 0.07, 0.05)], 16, 0.02, 0.02));
+                       ls(3.90, 0.60, -0.94, 0.07, 0.05)], 14, 0.02, 0.02));
     K.dark.push(box(0.30, 0.20, 0.02, 4.75, 0.60, -1.101));
 
-    /* ---- the two tall rectangular side intakes, trunks and splitter plates (D, A) */
+    /* ---- the two tall rectangular side intakes, trunks and splitter plates (C, A) */
     for (s = -1; s <= 1; s += 2) {
       push(K.skin, loft(trunk(s), 28, 0, 0));
       K.dark.push(box(0.02, 0.48, 1.12, 3.31, s * 1.29, -0.17));              /* the mouth */
       K.skin.push(box(2.20, 0.03, 1.36, 2.50, s * 0.965, -0.18));             /* splitter plate */
       K.skin.push(box(1.60, 0.10, 0.04, 2.40, s * 0.975, 0.44));              /* its top bracket */
+      K.skin.push(box(0.06, 0.62, 0.05, 3.33, s * 1.29, 0.47));               /* the mouth's top lip */
+      K.skin.push(box(0.06, 0.62, 0.05, 3.33, s * 1.29, -0.81));              /* and its bottom lip */
     }
     /* ---- twin AL-21F nozzles: metal shrouds, closed by a dark exit disc */
     for (s = -1; s <= 1; s += 2) {
       push(K.metal, loft([ls(-9.60, s * 0.72, 0.08, 0.57, 0.57), ls(-10.40, s * 0.72, 0.08, 0.56, 0.56),
-                          ls(-11.02, s * 0.72, 0.08, 0.51, 0.51)], 30, null, 0));
-      K.dark.push(aftDisc(0.44, 24, -11.025, s * 0.72, 0.08));
+                          ls(-11.02, s * 0.72, 0.08, 0.51, 0.51)], 28, null, 0));
+      K.dark.push(aftDisc(0.44, 22, -11.025, s * 0.72, 0.08));
     }
 
     /* ---- glove, outer panels, flaps, glove fences, team strips */
@@ -573,6 +678,9 @@ var HeroSu24 = (function () {
         return blk([le, s * yy, z], [te, s * yy, z], 0.28, 0.66, h, [0, 0, 1]);
       };
       K.team.push(solid(tb(6.3), tb(6.8)));
+      /* the pivot's fairing under the glove trailing edge */
+      push(K.skin, loft([ls(-3.20, s * 2.55, gZ(2.55) - 0.10, 0.05, 0.04), ls(-3.70, s * 2.55, gZ(2.55) - 0.12, 0.20, 0.13),
+                         ls(-4.90, s * 2.55, gZ(2.55) - 0.10, 0.18, 0.11), ls(-5.30, s * 2.55, gZ(2.55) - 0.08, 0.04, 0.03)], 12, 0, 0));
     }
 
     /* ---- tailplane: low, all-moving slabs on the engine-section sides (A, B) */
@@ -581,18 +689,42 @@ var HeroSu24 = (function () {
                         foil([-9.75, s * 4.25, -0.50], [-10.95, s * 4.25, -0.50], 0.08, [0, 0, 1])));
       K.metal.push(cyl(0.12, 0.12, 0.10, 12, "y", -8.10, s * 1.37, -0.50));
     }
+    /* ---- twin ventral fins under the engine section, canted out (B, D, E):
+       root -5.2 to -8.7, about 0.5 m deep, the lower edge rising aft */
+    for (s = -1; s <= 1; s += 2) {
+      var ca = 0.26, vy = 0.80, rA = rearBottom(-5.20) + 0.04, rB = rearBottom(-8.70) + 0.04;
+      var P0 = [-5.20, s * vy, rA], P1 = [-8.70, s * vy, rB];
+      var P2 = [-8.45, s * (vy + 0.30 * Math.sin(ca)), rB - 0.30 * Math.cos(ca)];
+      var P3 = [-6.00, s * (vy + 0.52 * Math.sin(ca)), rA - 0.52 * Math.cos(ca)];
+      var ny = Math.cos(ca) * 0.035 * s, nz = Math.sin(ca) * 0.035;
+      var off = function (p, k) { return [p[0], p[1] + ny * k, p[2] + nz * k]; };
+      K.skin.push(solid([off(P0, 1), off(P1, 1), off(P2, 1), off(P3, 1)], [off(P0, -1), off(P1, -1), off(P2, -1), off(P3, -1)]));
+    }
     /* ---- fin with rudder */
     K.skin.push(solid(finPart(FIN_BASE, 0, 0.80), finPart(2.20, 0, 0.80)));
     K.skin.push(solid(finPart(2.20, 0, 0.80), finPart(FIN_TOP, 0, 0.80)));
     K.skin.push(solid(finPart(FIN_BASE, 0.80, 1.0), finPart(1.25, 0.80, 1.0)));
     K.skin.push(solid(finPart(1.27, 0.815, 1.0), finPart(FIN_TOP - 0.14, 0.815, 1.0)));     /* rudder */
     K.skin.push(solid(finPart(FIN_TOP - 0.12, 0.80, 1.0), finPart(FIN_TOP, 0.80, 1.0)));
+    /* the fin-tip fairing, standing a little proud fore and aft (B, D) */
+    push(K.skin, revolve(P_POD, 1.50, 0.09, -11.48, 0, FIN_TOP - 0.08, 12, 0, 0));
+    /* on the fin trailing edge (B, D): the brake-chute fairing at its base
+       and an aerial pod halfway up */
+    push(K.skin, revolve([[0.50, 0.70], [0.42, 1.0], [-0.20, 1.0], [-0.50, 0.30]], 1.90, 0.21, -11.12, 0, 0.66, 14, 0, 0));
+    z = 1.75;
+    push(K.skin, revolve(P_POD, 0.95, 0.07, finTE(z) - 0.12, 0, z, 10, 0, 0));
 
-    /* ---- glove pylons and the two Kh-31P (C puts the SEAD pair under the
-       gloves at about y 1.8, A's glove stores at about 2.2) */
+    /* ---- pylons (A, H): glove pylons with the two Kh-31P (I); the pivoting
+       outer-wing pylons and the four fuselage stations, empty. The fuselage
+       stations stand in two side-by-side pairs between the trunks, as A's
+       front view shows the pair; their tandem spacing is estimated. */
     for (s = -1; s <= 1; s += 2) {
       pylon(K.skin, 0.30, -2.50, s * 2.10, gZ(2.10), 0.06, 0.13);
       kh31(K, -0.85, s * 2.10, 0.06);
+      var py = 5.0;
+      pylon(K.skin, oLE(py) - 0.40, oLE(py) - 2.20, s * py, oZ(py) - 0.02, oZ(py) - 0.40, 0.12);
+      pylon(K.skin, 1.40, 0.10, s * 0.45, -0.90, -1.17, 0.11);
+      pylon(K.skin, -1.70, -3.00, s * 0.45, -0.90, -1.17, 0.11);
     }
 
     mesh(g, K.skin, T.skin, "skin", true);
@@ -603,8 +735,8 @@ var HeroSu24 = (function () {
     mesh(g, K.team, T.team, "team");
     mesh(g, K.msl, T.msl, "stores");
 
-    /* ---- landing gear (D; wheelbase 8.51 m and track 3.31 m from G):
-       named "gear", the tyres are the lowest points */
+    /* ---- landing gear (C; wheelbase 8.51 m and track 3.31 m from H): it
+       retracts, so the group is named "gear"; the tyres are the lowest points */
     var gr = new V.Group();
     gr.name = "gear";
     g.add(gr);
@@ -613,11 +745,11 @@ var HeroSu24 = (function () {
     G.metal.push(cyl(0.045, 0.045, 0.62, 8, "y", nx, 0, nz));
     G.metal.push(bar([5.20, 0, -0.95], [nx + 0.02, 0, nz + 0.50], 0.035, 6));
     for (s = -1; s <= 1; s += 2) {
-      G.tyre.push(cyl(nr, nr, 0.20, 24, "y", nx, s * 0.20, nz));
+      G.tyre.push(cyl(nr, nr, 0.20, 22, "y", nx, s * 0.20, nz));
       G.metal.push(cyl(nr * 0.55, nr * 0.55, 0.21, 12, "y", nx, s * 0.20, nz));
       G.skin.push(box(1.40, 0.02, 0.42, 5.95, s * 0.33, -1.17));               /* bay doors */
     }
-    G.dark.push(box(0.78, 0.66, 0.04, nx - 0.02, 0, nz + nr + 0.07));         /* mudguard (D) */
+    G.dark.push(box(0.78, 0.66, 0.04, nx - 0.02, 0, nz + nr + 0.07));         /* mudguard (C) */
     G.metal.push(bar([nx + 0.28, 0, nz + nr + 0.07], [6.20, 0, nz + nr + 0.30], 0.025, 6));
     var mx = -2.45, mr = 0.46, mz = GROUND + mr, my = 1.655;
     for (s = -1; s <= 1; s += 2) {
@@ -625,7 +757,7 @@ var HeroSu24 = (function () {
       G.metal.push(cyl(0.06, 0.06, 0.66, 8, "y", mx, s * my, mz));
       G.metal.push(bar([-0.70, s * 1.36, -0.86], [mx + 0.05, s * (my - 0.04), mz + 0.55], 0.045, 6));
       for (i = -1; i <= 1; i += 2) {
-        G.tyre.push(cyl(mr, mr, 0.28, 28, "y", mx, s * my + i * 0.18, mz));
+        G.tyre.push(cyl(mr, mr, 0.28, 26, "y", mx, s * my + i * 0.18, mz));
         G.metal.push(cyl(mr * 0.52, mr * 0.52, 0.29, 14, "y", mx, s * my + i * 0.18, mz));
       }
       G.skin.push(box(1.40, 0.025, 0.52, -1.20, s * 1.60, -1.06));            /* main bay door */
@@ -637,10 +769,11 @@ var HeroSu24 = (function () {
     return g;
   }
 
-  return { build: function (THREE, M, C) { return buildAirframe(THREE, C); } };
+  return { build: function (THREE, M, C, per) { return buildAirframe(THREE, C, per || "e20"); } };
 })();
 
-/* len is the measured x extent: nose-boom tip to the fin-tip trailing edge */
-UNIT_MODELS["pact_e90_sead"] = { len: 24.6, build: HeroSu24.build };
-UNIT_MODELS["pact_e00_sead"] = { len: 24.6, build: HeroSu24.build };
-UNIT_MODELS["sead_p"]        = { len: 24.6, build: HeroSu24.build };
+/* len is the measured x extent: nose-boom tip to the fin-tip fairing; each
+   row takes the finish of its period */
+UNIT_MODELS["pact_e90_sead"] = { len: 24.6, build: function (THREE, M, C) { return HeroSu24.build(THREE, M, C, "e90"); } };
+UNIT_MODELS["pact_e00_sead"] = { len: 24.6, build: function (THREE, M, C) { return HeroSu24.build(THREE, M, C, "e00"); } };
+UNIT_MODELS["sead_p"]        = { len: 24.6, build: function (THREE, M, C) { return HeroSu24.build(THREE, M, C, "e20"); } };
