@@ -1,32 +1,65 @@
-/* ============ ru_s300.js - HERO model: the S-300P family launcher (5P85S / 5P85SE) on the MAZ-543M/7910 8x8 ============
+/* ============ ru_s300.js - HERO model: the S-300P family launcher (5P85S / 5P85SE / 5P85SE2) on the MAZ-543M 8x8 ============
    Three rows (rules.js, deploy:true, turret:true, rounds 4): pact_e80_sam "S-300PS, 5P85S TEL" 1982, pact_e90_sam
-   "S-300PM / PMU-1, 5P85SE TEL" 1993, pact_e00_sam "S-300PMU-2 Favorit" 2001. NOT registered: sam_p, pla_e90_sam.
-   One truck for all three: the photographs of the S-300PS TEL (Slovak, Kyiv) and of the PMU-1 (Slovak SIAF 2017) and
-   of a Moscow 2008 launcher captioned S-300PMU2 show the SAME cab and housing, so no variant differences are drawn.
-   Paint: plain Soviet green (e80, e90); a slightly different plain olive (e00). No parade camouflage, no markings.
+   "S-300PM / PMU-1, 5P85SE TEL" 1993, pact_e00_sam "S-300PMU-2 Favorit" 2001 (the 5P85SE2). All self-propelled on the
+   MAZ-543M; no row names the towed 5P85T, so none is drawn.  Redone 2026-10-24 to the full-quality standard (lofted cab,
+   measured layout, three photo-compare passes).
+   CORRECTED from the earlier header: it drew one truck for all three ("the same cab and housing").  The photographs split
+   the rows: the 5P85S carries the tall launch-control housing behind the cab; the 5P85SE (MAKS-2007) and the 5P85SE2
+   (MAKS, Moscow 2008/2009 parades) carry no housing, only a low box, a raised box and tubular hand rails.
 
-   What each feature rests on (Wikimedia Commons, cached in the scratchpad s300_ref):
-     "Slovak S-300 PS TEL at SIAF-2021" (front 3/4) and "S-300, Kyiv 2018, 12" (front 3/4, close): the cab is SPLIT in
-         plan, not one full-width cab: a full-width low front body with the louvred grille in its face between round
-         headlamp wings and a flat deck on top; on the PORT (driver's) side a cab pod rising from the deck with the
-         windscreen (two panes), side windows and a roof lamp; on the starboard side a pod with a CLOSED front (louvres)
-         and side windows; behind both, the tall control housing sloping down to the rear.
-     "S-300PS TEL, Kyiv 2021, 10", "Slovak S-300PMU at SIAF 2017" (side, canisters erected), "2008 Moscow Victory Day
-         Parade - S-300 TEL" (side, caption S-300PMU2 launcher): the 8x8 with the cab over the first axles, 2x2 ribbed
-         canisters lying level behind the housing, equipment cases along the frame, the erected block standing on the
-         rear with a lattice erector and rams in front of it.
+   Recognition list, each with the photograph it rests on (Wikimedia Commons, cached in the scratchpad q_s300_ref):
+     1. The MAZ-543M split cab: a full-width front body with the big vertical-bar radiator grille between round headlamp
+        wings and a heavy bumper with tow eyes and the coiled tow cable; on its deck, set back, the PORT pod (driver) with a
+        two-pane windscreen raked back, door and rear windows, and the STARBOARD pod with a closed louvred front
+        ("Slovak S-300 PS TEL at SIAF-2021", "5P85SE2 of the SAM system S-300 PMU-2", "S-300PS TEL, Kyiv 2021, 10").
+     2. Eight wheels in two pairs, 2.2 + 3.3 + 2.2 m apart: two axles under the cab, the long gap, two under the rear
+        ("Side view of a S-300 launcher", "2008 Moscow Victory Day Parade - S-300 TEL").
+     3. e80 only: the tall launch-control housing behind the pods, nearly full width, a sloped front face from the pod
+        roofs up to its roof, louvred and door panels on its sides, a whip antenna, the amber beacon ahead of it
+        ("Slovak S-300 PS TEL at SIAF-2021", "Slovak S-300PMU at SIAF 2017", the tarp-covered housing in "Kyiv 2021, 10").
+     4. e90 / e00: no housing; a low box behind the pods, a raised box just ahead of the tubes and the tubular hand rails
+        arching over them ("5P85SE TEL at MAKS-2007", "5P85SE2 of the SAM system S-300 PMU-2", "Side view of a S-300
+        launcher").  e90 also: the amber beacon on a post at the port pod's inboard corner ("5P85SE TEL at MAKS-2007").
+     5. Four canisters 2 x 2 lying level, about 1 m across and 7.1 m long, ring hoops about 0.5 m apart, domed tails
+        overhanging the frame's rear by about 0.9 m, flat covers forward, the lower row slightly further aft ("Side view").
+     6. Ribbed equipment boxes along both sides of the deck, fuel tanks slung between the second and third axles, flat
+        rear mudguards ("Side view", "2008 Moscow Victory Day Parade - S-300 TEL").
+     7. Set up: the block stood vertical over the rear, the lattice erector spine on its face toward the cab, two rams
+        ("Slovak S-300 PS TEL at SIAF-2021", "5P85SE2 ...", "Slovak S-300PMU at SIAF 2017", "5P85SE TEL at MAKS-2007").
+     8. Mirrors on long arms at both pods' outer front corners; the searchlight on the port pod's roof ("5P85SE2 ...").
+     9. Plain green all over, by period (below).
+
+   Station table (metres back from the bumper face, scaled off "Side view of a S-300 launcher" at 65 px/m from the
+   1.5 m tyres, checked on "2008 Moscow Victory Day Parade - S-300 TEL"):
+       0.00 bumper face        0.30/0.48 grille face (bottom/deck)   0.60-0.78 port windscreen (sill/top)
+       2.70 pods' rear         2.75 / 4.95 front axles               2.72-4.92 e80 housing (roof 4.00, slope to 3.50)
+       2.72-3.75 e90/e00 low box (2.80)   4.05-4.95 raised box (3.35)   4.97 canister covers
+       5.75-11.10 side boxes   5.75-7.45 fuel tanks                  8.25 / 10.45 rear axles
+      11.35 frame rear         12.07 / 12.22 domed tails (upper / lower row)
+     Heights: bumper 1.00-1.30, front body deck 2.12, pod roofs 2.88-2.92, canisters lying 1.76-3.89 (axes 2.30 / 3.33).
    Published: truck-encyclopedia.com 5P85 page: 5P85S/5P85D on the MAZ-7910 (MAZ-543M family) 11,450 x 3,050 x 3,550 mm,
-     wheelbase 7.7 m, track 2,375 mm (the model: 11.47 x 3.2 x 3.6 m, 3.2 with the mirrors; wheelbase 7.7 m, 1500x600 tyres).
-     Same page: the 5P85S/D chassis has a left cab only (matches the port windscreen). The PMU-2 row uses the 5P85SE2 on the
-     same family (armyrecognition: 5P85SE on a MAZ-7910 variant); the flat-fronted cab of an Iran photo is NOT used.
-   NOT confirmed and not drawn: jack count and positions (four legs drawn: two stations), roof antennas, nets, spare wheel,
-     any marking; the travel-pose rams (hidden); 5P85S vs 5P85SE differences. The tubes are 1.0 m x 7.2 m (TPK about 7.5 m).
+     wheelbase 7.7 m, track 2,375 mm, 1500x600 tyres; the 5P85S/D has the left (port) cab only.  The model: 11.35 m
+     bumper to the rear beam (11.41 with the tow eyes), 12.28 m to the canister tails; 3.04 m body, 3.48 m over the mirrors;
+     wheelbase 7.7 m, track 2.38 m, 1.5 m tyres.  CORRECTED: the 3.55 m height is not what the side photographs show (the
+     upper canisters' top at 3.8-3.95 m on both); the canisters are drawn at 3.89 m and overhang the rear by 0.9 m.
+   Deliberate departure: set up, the photographs stand the block BEHIND the frame with its tails near the ground.  render3d
+     scales by the box of both poses, so a hidden block there would shrink the whole truck by about 8%, and the forward row
+     would cut through the rear tyres.  The block stands instead on a foot table over the frame's rear, its rear face at the
+     travel length and its tails at 1.6-1.7 m, so it stands about 1.6 m taller than in the photographs.
+   Paint, by period, plain (no parade camouflage, no show schemes, no Ukrainian light-grey canisters, no markings):
+     e80 Soviet green #4a5538, e90 Russian green #4b5639, e00 Russian green #4f573f, the canisters in the vehicle colour.
+     Sampled: "5P85SE2 ..." lit front 76,78,70; "Anti-AircraftExercise2018-05" (S-300PM1, mil.ru) canisters 82,89,85 under
+     overcast; taken to about 0.8-0.9 of their level and kept on the green side of those greys.
+   NOT confirmed and not drawn: the jack count and positions (four drawn, as before), any 5P85SE / 5P85SE2 difference
+     beyond the beacon, the housing's inside, cable runs, the exact hand-rail and erector geometry, roof nets, spare wheels.
 
-   Poses (render3d finds them by name, shows one from e.deployed): "travelpose" = canisters lying level, jacks up;
-   "deploypose" = canisters stood vertical at the rear on a foot table with two erector rams, jacks down. The truck, cab and the
-   eight "roadwheel" groups stay outside both. Nothing is named "turret" (the block never traverses).
-   Materials (5): paint, dark, glass, tyre, C.team (three small up-facing strips on the cab roofs and housing roof).
-   14 draw calls, about 9,600 triangles (travel) / 9,800 (deployed pose). +X nose, +Y left, +Z up, metres, tyres on z = 0. ASCII only. */
+   Poses (render3d finds them by name, shows one from e.deployed): "travelpose" = canisters lying level on the spine with
+   the front saddle and rear brackets, jacks up; "deploypose" = the block stood vertical on its foot table, rams, jacks
+   down.  The truck, cab and the eight "roadwheel" groups stay outside both.  Nothing is named "turret" (the block never
+   traverses) and nothing "podelev" (the old file had neither).
+   Materials (6): paint (canvas texture), dark, glass, tyre, lamp, C.team (small up-facing strips on the pod and box roofs).
+   15 draw calls, about 13,700 triangles counting both poses.  +X nose, +Y left (port), +Z up, metres, tyres on z = 0.
+   ASCII only. */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -309,31 +342,37 @@ var HeroS300 = (function () {
   }
 
 
-  var XT = -5.20, XN = 5.95;
-  var AX = [4.46, 2.26, -1.04, -3.24], TY = 1.19, RT = 0.75;
-  var PVX = -4.25, PVZ = 2.53;              /* canister block pivot (world) */
-  var CR = 0.5, CS = 0.52, CL = 6.95;        /* canister radius, row/column offset, body length */
-  var JX = [-2.14, -4.85];                   /* levelling jack stations */
+  /* --------------------------------------------------------------- layout */
+  /* every station is given in metres BACK from the bumper face (the header's table); X() turns it into model x */
+  var XF = 6.10;
+  function X(d) { return XF - d; }
+  var AXD = [2.75, 4.95, 8.25, 10.45], TY = 1.19, RT = 0.75;   /* MAZ-543M axles 2.2 + 3.3 + 2.2 m, track 2.375 m */
+  var DREAR = 11.35;                                            /* frame rear */
+  var CR = 0.50, CRIB = 0.56, CSY = 0.53, CSZ = 0.515;         /* tube radius, rib radius, column / row half offsets */
+  var CL = 7.10, LOW = 0.15;                                    /* tube length tail tip to front cover; lower row aft */
+  var TRZ = 2.815, TAILD = 12.07;                               /* travel: block axis height, upper-row tail station */
+  var DPX = X(11.10), DPZ = 1.72;                               /* set up: block centre plane x, upper-row tail height */
 
   var PAINTS = {
-    soviet: { base: "#47523a", blots: ["#39422e", "#556047", "#414b36"], seed: 30082 },
-    parade: { base: "#4c5a38", blots: ["#2d3626", "#5e5236", "#3a4a2c", "#6a5d3c"], seed: 30093 },
-    olive:  { base: "#4b5538", blots: ["#3d4730", "#566141", "#444e33"], seed: 30001 }
+    soviet: { base: "#4a5538", blots: ["#3e482f", "#57624a", "#434d34"], seed: 30082 },
+    ru90:   { base: "#4b5639", blots: ["#3f4930", "#58634a", "#454f35"], seed: 30093 },
+    ru00:   { base: "#4f573f", blots: ["#434a35", "#5b634b", "#495139"], seed: 30001 }
   };
 
   function materials(THREE, C, P) {
     var T = {}, tx = paintTex(THREE, P);
     T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.08 });
     if (tx) T.paint.map = tx; else T.paint.color.set(P.base);
-    T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
+    T.dark = new THREE.MeshStandardMaterial({ color: 0x2a2d29, roughness: 0.78, metalness: 0.3 });
     T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
     T.tyre = new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.95, metalness: 0.02 });
+    T.lamp = new THREE.MeshStandardMaterial({ color: 0xc98a2a, roughness: 0.4, metalness: 0.1, emissive: 0x2a1600 });
     T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
     return T;
   }
-  function bins(T, withAll) {
+  function bins(T, all) {
     var b = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
-    if (withAll) { b.glass = new Bin(T.glass, false); b.team = new Bin(T.team, false); }
+    if (all) { b.glass = new Bin(T.glass, false); b.lamp = new Bin(T.lamp, false); b.team = new Bin(T.team, false); }
     return b;
   }
 
@@ -358,225 +397,340 @@ var HeroS300 = (function () {
     for (k = -1; k <= 1; k += 2) {
       cylY(bin, 0, k * 0.29, k * 0.335, 0, 0.47, 12);
       cylY(bin, 0, k * 0.335, k * 0.385, 0, 0.19, 8);
+      for (j = 0; j < 8; j++) {                                   /* the wheel nuts */
+        a = j / 8 * TAU;
+        cylY(bin, 0.30 * Math.cos(a), k * 0.335, k * 0.355, 0.30 * Math.sin(a), 0.035, 5);
+      }
     }
   }
 
-  /* -------------------------------------------------- the truck (both poses) */
-  function sideBox(B, x0, x1, s, z0, z1, d) { /* a thin panel proud of the side at y = s*? handled by caller */
-    box(B, x0, x1, s > 0 ? d : -d - 0.03, s > 0 ? d + 0.03 : -d, z0, z1);
+  /* a curved fender over a wheel at station d: a strip following the tyre, angles a0..a1 (0 = forward), across y0..y1 */
+  function fender(bin, d, y0, y1, r0, r1, a0, a1, n) {
+    var i, t0, t1, c0, s0, c1, s1, x = X(d);
+    for (i = 0; i < n; i++) {
+      t0 = a0 + (a1 - a0) * i / n; t1 = a0 + (a1 - a0) * (i + 1) / n;
+      c0 = Math.cos(t0); s0 = Math.sin(t0); c1 = Math.cos(t1); s1 = Math.sin(t1);
+      hexa(bin, [[x + c0 * r0, y0, RT + s0 * r0], [x + c1 * r0, y0, RT + s1 * r0], [x + c1 * r0, y1, RT + s1 * r0], [x + c0 * r0, y1, RT + s0 * r0],
+                 [x + c0 * r1, y0, RT + s0 * r1], [x + c1 * r1, y0, RT + s1 * r1], [x + c1 * r1, y1, RT + s1 * r1], [x + c0 * r1, y1, RT + s0 * r1]]);
+    }
   }
 
+  /* ------------------------------------------------------------------ cab */
+  /* station table of the MAZ-543M front (photo-scaled, see the header):
+     the full-width front body, its face raked from d 0.30 at the bumper top to 0.42 at the deck, the corners rounded
+     over the headlamp wings; the two pods on its deck: the PORT pod (driver) with the two-pane windscreen raked back,
+     the STARBOARD pod with a closed front.  Rings are [y, z] outlines at a station. */
+  function ringBody(d, hw, zb, zt, ch) {
+    return [[X(d), -hw, zb], [X(d), hw, zb], [X(d), hw, zt - ch], [X(d), hw - ch * 0.8, zt], [X(d), -hw + ch * 0.8, zt], [X(d), -hw, zt - ch]];
+  }
+  var FRONT = [  /* d,   half width, bottom, top, corner */
+    [0.30, 1.30, 1.22, 1.96, 0.26],
+    [0.36, 1.44, 1.18, 2.06, 0.24],
+    [0.48, 1.51, 1.16, 2.12, 0.18],
+    [1.95, 1.52, 1.16, 2.12, 0.14]];
+  /* a pod: y from ya (inboard) to yb (outboard), the face raked from df (sill) to dt (roof), roof zt, rear dr */
+  function pod(bin, ya, yb, df, dt, dr, zs, zt) {
+    var yi = Math.min(ya, yb), yo = Math.max(ya, yb), c = 0.12;
+    function ring(dl, du) {
+      return [[X(dl), yi, zs], [X(dl), yo, zs], [X(du), yo - 0.03, zt - c], [X(du), yo - 0.03 - c, zt],
+              [X(du), yi + 0.03 + c, zt], [X(du), yi + 0.03, zt - c]];
+    }
+    loft(bin, [ring(df, dt), ring(dr, dr)], false);
+  }
+
+  function addCab(B, v) {
+    var i, s, k, y, x, rings = [];
+    for (i = 0; i < FRONT.length; i++) rings.push(ringBody(FRONT[i][0], FRONT[i][1], FRONT[i][2], FRONT[i][3], FRONT[i][4]));
+    loft(B.paint, rings, false);
+    /* the body over the front axles: side walls with the wheel arches cut by the fenders, the floor between */
+    box(B.paint, X(5.70), X(1.95), -1.52, 1.52, 1.66, 2.12);
+    box(B.paint, X(5.70), X(1.95), -0.86, 0.86, 1.05, 1.66);
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 2; i++) {
+        fender(B.paint, AXD[i], s * 0.86, s * 1.53, 0.84, 0.90, 0.18, Math.PI - 0.18, 9);
+        box(B.dark, X(AXD[i]) - 0.02, X(AXD[i]) + 0.02, s * 1.52, s * 1.545, 1.66, 2.10);       /* panel seam over the axle */
+      }
+      box(B.paint, X(4.02), X(3.68), s * 0.86, s * 1.52, 1.16, 1.66);                           /* web between the arches */
+      /* steps and the grab handle under the pod doors (port: the crew door; starboard: the equipment door) */
+      for (k = 0; k < 2; k++) box(B.dark, X(2.00), X(1.50), s * 1.40, s * 1.56, 1.25 + k * 0.38, 1.29 + k * 0.38);
+      bar(B.dark, [X(0.95), s * 1.55, 2.20], [X(0.95), s * 1.55, 2.80], 0.03);
+    }
+    /* front face: the radiator grille between the headlamp wings (vertical bars, two cross bars, a guard frame) */
+    x = X(0.36);
+    box(B.dark, x - 0.04, x + 0.035, -0.86, 0.86, 1.32, 2.00);
+    for (k = 0; k < 13; k++) { y = -0.80 + k * (1.60 / 12); box(B.paint, x + 0.03, x + 0.06, y - 0.025, y + 0.025, 1.34, 1.98); }
+    for (k = 0; k < 2; k++) box(B.paint, x + 0.05, x + 0.08, -0.86, 0.86, 1.55 + k * 0.25, 1.59 + k * 0.25);
+    box(B.dark, x + 0.06, x + 0.10, -0.90, 0.90, 1.96, 2.02);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, x + 0.06, x + 0.10, s * 0.86 - 0.03, s * 0.86 + 0.03, 1.30, 2.02);
+      /* round headlamp in its wing, the side lamp and the turn lamp under it */
+      cylX(B.dark, X(0.40), X(0.31), s * 1.18, 1.72, 0.125, 14);
+      cylX(B.glass, X(0.31), X(0.29), s * 1.18, 1.72, 0.095, 14);
+      cylX(B.lamp, X(0.33), X(0.30), s * 1.10, 1.42, 0.05, 8);
+      /* the vertical vent slots in the front body's outer corners ("5P85SE2 of the SAM system S-300 PMU-2") */
+      for (k = 0; k < 3; k++) box(B.dark, X(0.95) + k * 0.16, X(0.90) + k * 0.16, s * 1.52, s * 1.535, 1.30, 1.88);
+    }
+    /* the heavy bumper with the tow eyes, the coiled tow cable across it, small lamps at its ends */
+    box(B.dark, X(0.30), X(0.0), -1.42, 1.42, 1.00, 1.30);
+    box(B.paint, X(0.02), X(0.0) + 0.01, -1.40, 1.40, 1.04, 1.26);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, X(0.04), X(-0.06), s * 0.55 - 0.08, s * 0.55 + 0.08, 1.06, 1.20);
+      bar(B.dark, [X(-0.02), s * 0.55, 1.22], [X(-0.04), s * 0.15, 1.38], 0.04);
+      bar(B.dark, [X(-0.04), s * 0.15, 1.38], [X(-0.03), -s * 0.05, 1.36], 0.04);
+      box(B.lamp, X(0.0), X(-0.02), s * 1.20, s * 1.32, 1.12, 1.20);
+    }
+    /* the engine deck between the pods, its intake box and a hatch seam */
+    box(B.paint, X(2.70), X(0.48), -0.36, 0.36, 2.12, 2.30);
+    box(B.dark, X(1.40), X(0.70), -0.30, 0.30, 2.30, 2.33);
+    box(B.paint, X(2.65), X(1.85), -0.32, 0.32, 2.30, 2.62);
+    for (k = 0; k < 4; k++) box(B.dark, X(2.55) + k * 0.18, X(2.48) + k * 0.18, -0.33, 0.33, 2.36, 2.56);
+    /* PORT pod: the crew cab, the windscreen raked back (sill 2.18 at d 0.48, top 2.80 at d 0.62) */
+    pod(B.paint, 0.34, 1.52, 0.60, 0.78, 2.70, 2.12, 2.92);
+    var P0 = [X(0.61), 0, 2.20], U = unit([-0.14, 0, 0.62]), W = [0, 1, 0], N = unit([0.62, 0, 0.14]);
+    planeBox(B.dark, P0, U, W, N, 0.0, 0.64, 0.42, 1.44, -0.06, 0.015);
+    planeBox(B.glass, P0, U, W, N, 0.05, 0.60, 0.47, 0.92, -0.02, 0.022);
+    planeBox(B.glass, P0, U, W, N, 0.05, 0.60, 0.97, 1.39, -0.02, 0.022);
+    for (k = 0; k < 2; k++) bar(B.dark, [X(0.61) + 0.03, 0.62 + k * 0.48, 2.24], [X(0.67) + 0.03, 0.70 + k * 0.48, 2.58], 0.025);
+    box(B.dark, X(0.74), X(0.58), 0.36, 1.50, 2.86, 2.93);                                  /* visor */
+    /* its side: the door (window, seam, handle) and the rear window */
+    y = 1.52;
+    box(B.glass, X(1.62), X(1.02), y - 0.02, y + 0.022, 2.30, 2.76);
+    box(B.dark, X(1.70), X(1.66), y - 0.02, y + 0.015, 1.70, 2.86);
+    box(B.dark, X(0.94), X(0.90), y - 0.02, y + 0.015, 1.70, 2.86);
+    box(B.dark, X(1.58), X(1.42), y - 0.02, y + 0.04, 2.18, 2.22);
+    box(B.glass, X(2.50), X(1.92), y - 0.02, y + 0.022, 2.34, 2.74);
+    box(B.glass, X(2.40), X(1.90), 0.33, 0.35, 2.36, 2.74);                                   /* inboard window */
+    /* STARBOARD pod: closed front with a louvred panel, side windows, louvres low on its outer face */
+    pod(B.paint, -0.34, -1.52, 0.62, 0.64, 2.70, 2.12, 2.88);
+    for (k = 0; k < 5; k++) box(B.dark, X(0.64), X(0.61), -1.30, -0.58, 2.24 + k * 0.11, 2.29 + k * 0.11);
+    y = -1.52;
+    box(B.glass, X(1.62), X(1.02), y - 0.022, y + 0.02, 2.32, 2.72);
+    box(B.glass, X(2.50), X(1.92), y - 0.022, y + 0.02, 2.34, 2.72);
+    box(B.dark, X(1.70), X(1.66), y - 0.015, y + 0.02, 1.70, 2.82);
+    box(B.dark, X(0.94), X(0.90), y - 0.015, y + 0.02, 1.70, 2.82);
+    /* mirrors on their arms at both pods' outer front corners */
+    for (s = -1; s <= 1; s += 2) {
+      bar(B.dark, [X(0.76), s * 1.50, 2.70], [X(0.54), s * 1.70, 2.76], 0.035);
+      bar(B.dark, [X(0.76), s * 1.50, 2.30], [X(0.54), s * 1.70, 2.34], 0.035);
+      box(B.dark, X(0.60), X(0.50), s * 1.66, s * 1.74, 2.28, 2.80);
+    }
+    /* roof fittings: the searchlight on its post (port pod), the amber beacon (starboard pod), vents, team strips */
+    cylZ(B.dark, X(0.99), 0.55, 2.92, 3.10, 0.03, 6);
+    cyl(B.dark, [X(1.09), 0.55, 3.16], [X(0.92), 0.55, 3.16], 0.12, 0.12, 12);
+    cylX(B.glass, X(0.92), X(0.91), 0.55, 3.16, 0.10, 12);
+    if (v === "e90") {                    /* the amber beacon at the port pod's inboard corner ("5P85SE TEL at MAKS-2007") */
+      cylZ(B.dark, X(0.94), 0.42, 2.92, 3.20, 0.03, 6);
+      cylZ(B.lamp, X(0.94), 0.42, 3.20, 3.36, 0.07, 10);
+    }
+    box(B.dark, X(2.30), X(1.80), 0.60, 1.10, 2.92, 2.96);
+    box(B.team, X(2.10), X(1.10), 1.00, 1.30, 2.92, 2.94);
+    box(B.team, X(2.10), X(1.10), -1.30, -1.00, 2.88, 2.90);
+    /* the exhaust stub low on the port side behind the cab */
+    cylY(B.dark, X(5.55), 1.52, 1.62, 1.55, 0.06, 8);
+  }
+
+  /* behind the pods, by row.  5P85S (e80): the tall launch-control housing, full height with the sloped front face
+     ("Slovak S-300 PS TEL at SIAF-2021", "S-300PS TEL, Kyiv 2021, 10", "Slovak S-300PMU at SIAF 2017").
+     5P85SE / 5P85SE2 (e90, e00): no housing; a low equipment box, a raised box just ahead of the tubes and the tubular
+     hand rails arching over them ("5P85SE TEL at MAKS-2007", "5P85SE2 of the SAM system S-300 PMU-2", "Side view of a
+     S-300 launcher", "2008 Moscow Victory Day Parade - S-300 TEL"). */
+  function addAft(B, v) {
+    var s, k, y, x;
+    if (v === "e80") {
+      profY(B.paint, [[X(2.72), 2.12], [X(4.92), 2.12], [X(4.92), 4.00], [X(3.50), 4.00], [X(2.72), 3.02]], -1.32, 1.32);
+      for (s = -1; s <= 1; s += 2) {
+        y = s * 1.32;
+        box(B.dark, X(4.10), X(3.30), y - (s > 0 ? 0 : 0.02), y + (s > 0 ? 0.02 : 0), 2.30, 3.30);       /* door */
+        for (k = 0; k < 6; k++) box(B.dark, X(4.70), X(4.25), y - (s > 0 ? 0 : 0.035), y + (s > 0 ? 0.035 : 0), 2.50 + k * 0.12, 2.54 + k * 0.12);
+        box(B.dark, X(3.20), X(2.85), y - (s > 0 ? 0 : 0.03), y + (s > 0 ? 0.03 : 0), 2.30, 2.70);       /* small hatch */
+        box(B.dark, X(4.00), X(3.85), y - (s > 0 ? 0 : 0.05), y + (s > 0 ? 0.05 : 0), 2.70, 2.74);       /* handle */
+      }
+      /* on the sloped face: the box housing and the hatch; on the roof the whip-antenna base, the vent, a team strip */
+      var P0 = [X(2.72), 0, 3.02], U = unit([-0.78, 0, 0.98]), W = [0, 1, 0], N = unit([0.98, 0, 0.78]);
+      planeBox(B.paint, P0, U, W, N, 0.20, 0.95, 0.20, 0.95, 0.0, 0.28);
+      planeBox(B.dark, P0, U, W, N, 0.25, 0.90, -0.95, -0.15, 0.0, 0.03);
+      cylZ(B.dark, X(4.30), 0.85, 4.00, 4.18, 0.08, 8);
+      cylZ(B.dark, X(4.30), 0.85, 4.18, 5.60, 0.015, 4);
+      box(B.dark, X(4.75), X(4.15), -0.90, -0.30, 4.00, 4.06);
+      box(B.team, X(4.70), X(3.70), -0.12, 0.12, 4.00, 4.02);
+      /* the amber beacon in front of the housing ("Slovak S-300 PS TEL at SIAF-2021") */
+      cylZ(B.dark, X(2.55), -0.10, 2.62, 2.72, 0.08, 10);
+      cylZ(B.lamp, X(2.55), -0.10, 2.72, 2.88, 0.07, 10);
+    } else {
+      /* the low box behind the pods, its top sloped at the front */
+      profY(B.paint, [[X(2.72), 2.12], [X(3.75), 2.12], [X(3.75), 2.80], [X(2.95), 2.80], [X(2.72), 2.62]], -1.30, 1.30);
+      for (s = -1; s <= 1; s += 2) {
+        y = s * 1.30;
+        box(B.dark, X(3.60), X(2.95), y - (s > 0 ? 0 : 0.02), y + (s > 0 ? 0.02 : 0), 2.22, 2.70);
+      }
+      /* the raised box ahead of the tubes, on its frame */
+      box(B.paint, X(4.95), X(4.05), -0.95, 0.95, 2.62, 3.35);
+      box(B.dark, X(4.95), X(4.05), -0.96, 0.96, 3.10, 3.13);
+      for (s = -1; s <= 1; s += 2) box(B.dark, X(4.90), X(4.10), s * 0.80, s * 0.95, 2.12, 2.62);
+      box(B.paint, X(4.95), X(3.75), -1.30, 1.30, 2.12, 2.30);
+      /* the tubular hand rails: from the pods' rear up over the boxes and back to the tubes, posts and cross rails */
+      for (s = -1; s <= 1; s += 2) {
+        y = s * 1.22;
+        bar(B.dark, [X(2.60), y, 2.88], [X(2.95), y, 3.18], 0.05);
+        bar(B.dark, [X(2.95), y, 3.18], [X(3.45), s * 1.18, 3.38], 0.05);
+        bar(B.dark, [X(3.45), s * 1.18, 3.38], [X(4.95), s * 1.12, 3.45], 0.05);
+        bar(B.dark, [X(3.70), s * 1.20, 2.80], [X(3.70), s * 1.18, 3.38], 0.045);
+        bar(B.dark, [X(4.95), s * 1.12, 2.30], [X(4.95), s * 1.12, 3.45], 0.045);
+      }
+      bar(B.dark, [X(3.45), -1.18, 3.38], [X(3.45), 1.18, 3.38], 0.045);
+      box(B.team, X(4.80), X(4.20), -0.12, 0.12, 3.35, 3.37);
+    }
+  }
+
+  /* ------------------------------------------------------- chassis, aft deck */
   function addChassis(B) {
-    var i, s, k, x;
-    box(B.dark, XT + 0.10, 6.20, -0.80, 0.80, 0.95, 1.45);                       /* frame */
-    for (i = 0; i < 4; i++) cylY(B.dark, AX[i], -1.00, 1.00, RT, 0.12, 8);        /* axles */
-    box(B.dark, XT, XT + 0.14, -1.45, 1.45, 0.98, 1.30);                         /* rear bumper beam */
-    box(B.dark, XN, XN + 0.26, -1.46, 1.46, 0.98, 1.24);                         /* front bumper */
+    var i, s, k, x, y;
+    for (s = -1; s <= 1; s += 2) box(B.dark, X(DREAR), X(1.90), s * 0.42, s * 0.62, 0.95, 1.45);     /* frame rails */
+    for (k = 0; k < 7; k++) { x = X(5.9 + k * 0.9); box(B.dark, x - 0.06, x + 0.06, -0.62, 0.62, 1.00, 1.40); }
+    for (i = 0; i < 4; i++) {
+      x = X(AXD[i]);
+      cylY(B.dark, x, -0.95, 0.95, RT, 0.11, 8);
+      cylY(B.dark, x, -0.30, 0.30, RT, 0.24, 10);
+    }
+    box(B.dark, X(DREAR) - 0.02, X(DREAR - 0.16), -1.45, 1.45, 0.98, 1.30);                      /* rear beam */
     for (s = -1; s <= 1; s += 2) {
-      box(B.dark, XT - 0.06, XT, s * 1.10 - 0.07, s * 1.10 + 0.07, 1.00, 1.14);    /* tow hooks */
-      box(B.dark, XT - 0.02, XT, s * 1.30 - 0.07, s * 1.30 + 0.07, 1.14, 1.24);    /* rear lamps */
-      box(B.dark, XN + 0.14, XN + 0.22, s * 0.62 - 0.07, s * 0.62 + 0.07, 1.04, 1.16);   /* front tow eyes */
-      /* fuel tank / equipment box between axles 2 and 3, slung under the frame (r1, r2) */
-      profY(B.paint, [[-0.02, 1.55], [1.32, 1.55], [1.32, 1.08], [1.08, 0.88], [0.22, 0.88], [-0.02, 1.08]],
+      box(B.dark, X(DREAR) - 0.08, X(DREAR), s * 1.05 - 0.07, s * 1.05 + 0.07, 1.02, 1.16);      /* tow hooks */
+      box(B.lamp, X(DREAR) - 0.03, X(DREAR), s * 1.28 - 0.08, s * 1.28 + 0.08, 1.16, 1.26);      /* rear lamps */
+      /* the fuel tanks and the battery box slung between the second and third axles */
+      profY(B.paint, [[X(7.45), 0.86], [X(5.90), 0.86], [X(5.75), 1.02], [X(5.75), 1.40], [X(7.45), 1.40]],
             s > 0 ? 0.92 : -1.46, s > 0 ? 1.46 : -0.92);
-      /* mudguards over the rear pair and the second axle */
-      box(B.paint, -4.15, -2.35, s > 0 ? 1.04 : -1.52, s > 0 ? 1.52 : -1.04, 1.58, 1.64);
-      box(B.paint, -4.15, -2.35, s > 0 ? 1.48 : -1.52, s > 0 ? 1.52 : -1.48, 1.40, 1.64);
-      box(B.paint, 1.60, 2.95, s > 0 ? 1.04 : -1.52, s > 0 ? 1.52 : -1.04, 1.58, 1.64);
-      box(B.paint, 1.60, 2.95, s > 0 ? 1.48 : -1.52, s > 0 ? 1.52 : -1.48, 1.40, 1.64);
+      for (k = 0; k < 2; k++) box(B.dark, X(6.25 + k * 0.80) - 0.04, X(6.25 + k * 0.80) + 0.04, s > 0 ? 0.90 : -1.48, s > 0 ? 1.48 : -0.90, 0.84, 1.42);
+      /* the long equipment boxes on both sides of the deck, ribbed lids, seams and handles */
+      box(B.paint, X(11.10), X(5.75), s > 0 ? 1.02 : -1.50, s > 0 ? 1.50 : -1.02, 1.42, 1.86);
+      y = s * 1.50;
+      for (k = 0; k < 7; k++) { x = X(5.85 + k * 0.85); box(B.dark, x - 0.015, x + 0.015, y - (s > 0 ? 0 : 0.03), y + (s > 0 ? 0.03 : 0), 1.44, 1.84); }
+      for (k = 0; k < 6; k++) { x = X(6.25 + k * 0.85); box(B.dark, x - 0.12, x + 0.12, y - (s > 0 ? 0 : 0.045), y + (s > 0 ? 0.045 : 0), 1.70, 1.74); }
+      box(B.dark, X(11.10), X(5.75), s > 0 ? 1.02 : -1.51, s > 0 ? 1.51 : -1.02, 1.86, 1.88);
+      /* rear mudguards over the third and fourth axles: flat tops and outer valances, flaps behind */
+      box(B.paint, X(11.25), X(7.45), s > 0 ? 0.90 : -1.53, s > 0 ? 1.53 : -0.90, 1.56, 1.62);
+      box(B.paint, X(11.25), X(7.45), s > 0 ? 1.49 : -1.53, s > 0 ? 1.53 : -1.49, 1.42, 1.62);
+      box(B.dark, X(11.30), X(11.24), s * 0.95, s * 1.48, 0.70, 1.56);
+      /* levelling-jack housings (legs are in the poses): between the second and third axles and at the rear */
+      box(B.dark, X(7.80), X(7.50), s * 1.30, s * 1.56, 1.00, 1.88);
+      box(B.dark, X(11.30), X(11.00), s * 1.30, s * 1.56, 1.00, 1.70);
     }
-    cylY(B.dark, 1.40, -1.52, -1.40, 1.52, 0.055, 8);                              /* exhaust stub */
-    /* the equipment boxes down the frame under the block: panels with seams (r1) */
-    for (s = -1; s <= 1; s += 2) {
-      box(B.paint, -3.95, 1.35, s > 0 ? 1.04 : -1.45, s > 0 ? 1.45 : -1.04, 1.62, 2.05);
-      x = s > 0 ? 1.45 : -1.45;
-      for (i = 0; i < 6; i++) {
-        var sx = [-3.95, -2.80, -1.60, -0.40, 0.55, 1.33][i];
-        box(B.dark, sx, sx + 0.02, x - (s > 0 ? 0.0 : 0.03), x + (s > 0 ? 0.03 : 0.0), 1.64, 2.03);
-      }
-      for (i = 0; i < 5; i++) {
-        var hx = -3.5 + i * 1.2;
-        box(B.dark, hx, hx + 0.22, x - (s > 0 ? 0.0 : 0.04), x + (s > 0 ? 0.04 : 0.0), 1.80, 1.84);
-      }
-      box(B.dark, -3.95, 1.35, s > 0 ? 1.04 : -1.45, s > 0 ? 1.45 : -1.04, 2.05, 2.07);
-    }
-    /* the central deck under the block and the rear table with its two pedestals for the pivot */
-    box(B.paint, XT + 0.14, 2.9, -0.62, 0.62, 1.45, 1.49);
-    box(B.paint, XT + 0.14, -4.20, -1.25, 1.25, 1.44, 1.50);
-    box(B.dark, XT + 0.14, XT + 0.40, -1.15, 1.15, 1.50, 1.54);
-    for (k = 0; k < 3; k++) box(B.dark, -4.95 + k * 0.30, -4.85 + k * 0.30, -1.20, 1.20, 1.50, 1.52);
-    for (s = -1; s <= 1; s += 2) {
-      profY(B.paint, [[PVX - 0.34, 1.62], [PVX + 0.34, 1.62], [PVX + 0.16, PVZ + 0.20], [PVX - 0.16, PVZ + 0.20]], s * 0.80, s * 0.98);
-      cylY(B.dark, PVX, s * 0.74, s * 1.04, PVZ, 0.12, 10);
-    }
-    /* levelling-jack housings (legs are in the poses) */
-    for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) {
-      box(B.dark, JX[i] - 0.25, JX[i] + 0.25, s * 0.80 - (s > 0 ? 0 : 0.69), s * 0.80 + (s > 0 ? 0.69 : 0), 1.10, 1.20);
-      box(B.paint, JX[i] - 0.14, JX[i] + 0.14, s * 1.35 - 0.14, s * 1.35 + 0.14, 1.05, 1.62);
-    }
+    /* the deck between the side boxes */
+    box(B.paint, X(DREAR), X(5.75), -1.02, 1.02, 1.42, 1.50);
   }
 
-  /* the 5P85S / 5P85SE cab on the MAZ-543M/7910 truck as the photographs show it (m4, m5, r2, r4): a full-width low
-     front body with the louvred grille in its face and a flat deck on top; on the PORT side (driver's side) a cab
-     pod with a windscreen and side windows; on the starboard side a pod with a closed front and side windows;
-     behind them the tall control housing sloping down to the rear */
-  function addCabMaz(B) {
-    var i, k, s, x, y, NX = 5.95;
-    /* lower body: sides above the tyres, a lower centre block carrying the grille */
-    box(B.paint, 3.95, 5.60, -1.50, 1.50, 1.55, 2.10);
-    box(B.paint, 5.25, NX, -1.50, 1.50, 1.30, 2.10);
-    box(B.paint, 5.10, 5.30, -0.85, 0.85, 1.20, 1.55);
-    /* grille between the headlamp wings: dark field, horizontal bars, centre rails */
-    box(B.dark, NX, NX + 0.04, -0.72, 0.72, 1.42, 2.02);
-    for (k = 0; k < 4; k++) box(B.paint, NX + 0.04, NX + 0.06, -0.72, 0.72, 1.52 + k * 0.14, 1.56 + k * 0.14);
-    for (k = 0; k < 3; k++) box(B.dark, NX + 0.04, NX + 0.07, -0.50 + k * 0.50, -0.46 + k * 0.50, 1.42, 2.02);
-    /* flat deck over the engine, a hatch seam */
-    box(B.dark, 5.30, 5.58, -0.40, 0.40, 2.10, 2.12);
-    for (s = -1; s <= 1; s += 2) {
-      /* headlamp wing: round lamp, amber lamp low, wiring-free */
-      cylX(B.dark, NX, NX + 0.08, s * 1.10, 1.78, 0.115, 12);
-      cylX(B.glass, NX + 0.08, NX + 0.10, s * 1.10, 1.78, 0.085, 12);
-      box(B.dark, NX, NX + 0.07, s * 1.18 - 0.10, s * 1.18 + 0.10, 1.38, 1.52);
-      box(B.glass, NX + 0.07, NX + 0.09, s * 1.18 - 0.08, s * 1.18 + 0.08, 1.40, 1.50);
-      box(B.dark, NX, NX + 0.05, s * 1.50 - (s > 0 ? 0.40 : 0), s * 1.50 + (s > 0 ? 0 : 0.40), 1.40, 1.46);
-      /* the pod sides: door seam, handle, step, mirror on its arm */
-      x = s * 1.50;
-      box(B.dark, 4.55, 4.57, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 1.58, 2.90);
-      box(B.dark, 5.30, 5.33, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 1.58, 2.90);
-      box(B.dark, 5.15, 5.30, x - (s > 0 ? 0 : 0.05), x + (s > 0 ? 0.05 : 0), 2.02, 2.06);
-      box(B.dark, 4.65, 5.30, s * 1.50, s * 1.50 + s * 0.08, 1.34, 1.40);
-      bar(B.dark, [5.50, s * 1.50, 2.55], [5.54, s * 1.58, 2.60], 0.035);
-      box(B.dark, 5.50, 5.57, s * 1.58 - 0.02, s * 1.58 + 0.02, 2.30, 2.74);
-    }
-    /* port pod: the crew cab with the windscreen (two panes) and three side windows */
-    box(B.paint, 3.95, 5.55, 0.35, 1.50, 2.10, 2.95);
-    box(B.dark, 5.55, 5.58, 0.45, 1.40, 2.32, 2.86);
-    box(B.glass, 5.58, 5.60, 0.48, 0.90, 2.36, 2.82);
-    box(B.glass, 5.58, 5.60, 0.95, 1.37, 2.36, 2.82);
-    box(B.dark, 5.55, 5.60, 0.40, 1.45, 2.88, 2.96);                                    /* visor */
-    box(B.dark, 4.60, 5.45, 1.50, 1.53, 2.30, 2.86);
-    box(B.glass, 4.66, 5.38, 1.53, 1.55, 2.36, 2.80);
-    box(B.dark, 4.00, 4.50, 1.50, 1.53, 2.30, 2.86);
-    box(B.glass, 4.06, 4.44, 1.53, 1.55, 2.36, 2.80);
-    /* starboard pod: closed front with a louvred vent, side windows */
-    box(B.paint, 3.95, 5.30, -1.50, -0.35, 2.10, 2.85);
-    for (k = 0; k < 4; k++) box(B.dark, 5.30, 5.32, -1.30, -0.60, 2.20 + k * 0.10, 2.25 + k * 0.10);
-    box(B.dark, 4.60, 5.20, -1.53, -1.50, 2.30, 2.76);
-    box(B.glass, 4.66, 5.14, -1.55, -1.53, 2.36, 2.70);
-    box(B.dark, 4.00, 4.50, -1.53, -1.50, 2.30, 2.76);
-    box(B.glass, 4.06, 4.44, -1.55, -1.53, 2.36, 2.70);
-    /* roof: a lamp on its bracket and a vent on the port pod, a vent on the starboard pod, the team strips */
-    cylZ(B.dark, 5.30, 1.10, 2.95, 3.12, 0.07, 8);
-    cylZ(B.glass, 5.30, 1.10, 3.12, 3.18, 0.07, 8);
-    cylZ(B.paint, 4.40, 0.85, 2.95, 3.01, 0.15, 12);
-    box(B.dark, 4.50, 5.00, -1.10, -0.70, 2.85, 2.89);
-    box(B.team, 4.20, 5.10, 1.05, 1.30, 2.95, 2.97);
-    box(B.team, 4.20, 5.10, -1.30, -1.05, 2.85, 2.87);
-    /* the control housing behind the pods: sloped down to the rear, vents on the sides */
-    profY(B.paint, [[3.00, 1.90], [3.95, 1.90], [3.95, 3.40], [3.60, 3.40], [3.00, 2.80]], -1.30, 1.30);
-    for (s = -1; s <= 1; s += 2) {
-      x = s * 1.30;
-      box(B.dark, 3.30, 3.80, x - (s > 0 ? 0 : 0.02), x + (s > 0 ? 0.02 : 0), 2.30, 3.00);
-      for (k = 0; k < 4; k++) box(B.dark, 3.35 + k * 0.12, 3.37 + k * 0.12, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 2.40, 2.90);
-      box(B.dark, 3.20, 3.22, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 1.95, 2.60);
-    }
-    box(B.dark, 3.70, 4.00, 0.30, 0.70, 3.40, 3.46);                                    /* roof vent */
-    box(B.team, 3.30, 3.90, -0.12, 0.12, 3.40, 3.42);
-    box(B.dark, 3.00, 3.04, -0.90, 0.90, 2.00, 2.60);
-    /* the rear-facing box behind the housing (m3): equipment cases each side below the block */
-  }
-
-  /* ------------------------------------------------------------- the poses */
-  /* the canister block in its own frame: origin at the pivot, axis along +X, rows along Z, columns along Y */
+  /* -------------------------------------------------------------- canisters */
+  /* the block in its own frame: tails at x = 0 (upper row) and -LOW (lower row), front covers toward +x; columns along y,
+     rows along z (+z the upper row).  The erector spine is on the -z face, the side that faces the vehicle when set up. */
   function addBlock(B) {
-    var i, j, k, y, z, rb;
-    for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) {
-      y = i * CS; z = j * CS;
-      cylX(B.paint, 0.0, CL, y, z, CR, 14);                                           /* the tube */
-      for (k = 0; k < 9; k++) {
-        rb = 0.45 + k * 0.76;
-        cylX(B.paint, rb, rb + 0.06, y, z, CR + 0.02, 14);                             /* ring ribs (r1) */
+    var r, c, k, y, z, o, rb, x;
+    for (r = -1; r <= 1; r += 2) for (c = -1; c <= 1; c += 2) {
+      y = c * CSY; z = r * CSZ; o = r > 0 ? 0 : -LOW;
+      revolve(B.paint, [[o, 0.16], [o + 0.06, 0.30], [o + 0.16, 0.41], [o + 0.30, 0.48], [o + 0.40, CR]], y, z, 16);   /* the domed tail */
+      cyl(B.paint, [o + 0.40, y, z], [o + CL - 0.16, y, z], CR, CR, 16, true, true);
+      for (k = 0; k < 12; k++) {
+        rb = o + 0.62 + k * 0.53;
+        cyl(B.paint, [rb, y, z], [rb + 0.07, y, z], CRIB, CRIB, 16, true, true);                       /* ring ribs */
       }
-      cyl(B.paint, [CL, y, z], [CL + 0.28, y, z], CR, CR - 0.06, 14);                  /* domed end cap (r3) */
-      cylX(B.dark, CL + 0.28, CL + 0.31, y, z, CR - 0.12, 12);
-      cylX(B.dark, -0.30, 0.0, y, z, CR - 0.05, 12);                                  /* tail */
-      cylX(B.dark, 0.20, 0.34, y, z, CR + 0.025, 14);                                 /* tail band */
-      cylX(B.dark, CL - 0.34, CL - 0.20, y, z, CR + 0.025, 14);                       /* head band */
+      cyl(B.dark, [o + 0.40, y, z], [o + 0.52, y, z], CRIB + 0.01, CRIB + 0.01, 16, true, true);        /* tail band */
+      cyl(B.paint, [o + CL - 0.42, y, z], [o + CL - 0.16, y, z], CRIB + 0.01, CRIB + 0.01, 16, true, true);   /* head band */
+      cyl(B.paint, [o + CL - 0.16, y, z], [o + CL, y, z], CR, CR - 0.06, 16, true);                      /* front cover */
+      cylX(B.dark, o + CL, o + CL + 0.02, y, z, CR - 0.16, 10);
+      box(B.dark, o + 2.0, o + 5.2, y - 0.03, y + 0.03, z + r * CRIB - 0.01, z + r * CRIB + 0.03);      /* cable duct */
     }
-    /* cradle: the base plate, the column divider and the cross ties that hold the four tubes */
-    for (i = -1; i <= 1; i += 2) box(B.dark, -0.10, CL - 0.20, i * (CS + CR + 0.04) - 0.06, i * (CS + CR + 0.04) + 0.06, -CS - CR - 0.12, -CS - CR + 0.06);
-    for (k = 0; k < 6; k++) {
-      var fx = 0.30 + k * 1.30;
-      box(B.dark, fx - 0.06, fx + 0.06, -CS - CR - 0.02, CS + CR + 0.02, -0.04, 0.04);
-      box(B.dark, fx - 0.06, fx + 0.06, -0.04, 0.04, -CS - CR - 0.05, CS + CR + 0.05);
+    /* frames that tie the four tubes, the spine and its lattice on the -z face, the wide cross frame */
+    for (k = 0; k < 3; k++) {
+      x = [0.55, 3.70, 6.80][k];
+      for (c = -1; c <= 1; c += 2) {
+        box(B.dark, x - 0.05, x + 0.05, -CSY - CRIB, CSY + CRIB, c * (CSZ + CRIB) - 0.03, c * (CSZ + CRIB) + 0.04);
+        box(B.dark, x - 0.05, x + 0.05, c * (CSY + CRIB) - 0.03, c * (CSY + CRIB) + 0.03, -CSZ - CRIB, CSZ + CRIB);
+      }
     }
-    for (j = -1; j <= 1; j += 2) box(B.dark, -0.22, 0.30, -CS - CR - 0.04, CS + CR + 0.04, j * (CS + CR) - 0.04, j * (CS + CR) + 0.04);
-  }
-
-  /* a levelling jack leg at (x, side), the foot pad at height pz */
-  function addJackLeg(B, x, s, pz) {
-    var y = s * 1.35;
-    cylZ(B.dark, x, y, pz + 0.06, 1.12, 0.07, 8);
-    box(B.dark, x - 0.20, x + 0.20, y - 0.20, y + 0.20, pz, pz + 0.07);
+    z = -CSZ - CRIB - 0.04;
+    for (c = -1; c <= 1; c += 2) box(B.paint, -LOW, 6.30, c * 0.30 - 0.06, c * 0.30 + 0.06, z - 0.12, z);
+    for (k = 0; k < 9; k++) {
+      x = -0.05 + k * 0.70;
+      bar(B.dark, [x, -0.30, z - 0.06], [x + 0.70, 0.30, z - 0.06], 0.05);
+      bar(B.dark, [x + 0.35, -0.30, z - 0.06], [x + 0.35, 0.30, z - 0.06], 0.04);
+    }
+    box(B.dark, 3.30, 3.42, -1.20, 1.20, z - 0.14, z);
+    for (c = -1; c <= 1; c += 2) bar(B.dark, [2.55, c * (CSY + CRIB), z - 0.06], [3.36, c * 1.18, z - 0.06], 0.05);
   }
 
   /* copy a bin into another turned about Y by ang and moved to (px, 0, pz) */
   function bake(from, to, px, pz, ang) {
-    var c = Math.cos(ang), sn = Math.sin(ang), k, x, y, z;
+    var c = Math.cos(ang), sn = Math.sin(ang), k, x, z;
     for (k = 0; k < from.P.length; k += 3) {
       x = from.P[k]; z = from.P[k + 2];
       to.P.push(px + x * c + z * sn, from.P[k + 1], pz - x * sn + z * c);
       x = from.N[k]; z = from.N[k + 2];
       to.N.push(x * c + z * sn, from.N[k + 1], -x * sn + z * c);
-      if (to.U) { to.U.push(from.U[k / 3 * 2], from.U[k / 3 * 2 + 1]); }
+      if (to.U) to.U.push(from.U[k / 3 * 2], from.U[k / 3 * 2 + 1]);
+    }
+  }
+
+  /* levelling jacks (four, the count NOT confirmed): stowed, the leg up and the pad clear of the ground; down, on the ground */
+  function addJacks(B, down) {
+    var i, s, d, y, pz;
+    for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) {
+      d = i ? 11.15 : 7.65; y = s * 1.43; pz = down ? 0.0 : 0.80;
+      cylZ(B.dark, X(d), y, pz + 0.07, 1.10, 0.075, 8);
+      cylZ(B.paint, X(d), y, pz, pz + 0.07, 0.24, 12);
     }
   }
 
   function build(THREE, C, variant) {
-    var P = variant === "e00" ? PAINTS.olive : PAINTS.soviet;
-    var T = materials(THREE, C, P), g = new THREE.Group(), HB = bins(T, true), i, s, wg, wm, geo, TB;
+    var P = variant === "e00" ? PAINTS.ru00 : variant === "e90" ? PAINTS.ru90 : PAINTS.soviet;
+    var T = materials(THREE, C, P), g = new THREE.Group(), HB = bins(T, true), i, s, wg, wm, geo, TB, BK, TV, DP, trv, dep, x;
+    addCab(HB, variant);
+    addAft(HB, variant);
     addChassis(HB);
-    addCabMaz(HB);
     flush(THREE, g, HB);
-    /* eight turning wheels outside both poses (one geometry per side, lugs a phase apart) */
-    for (s = -1; s <= 1; s += 2) {
-      TB = new Bin(T.tyre, false);
-      tyre(TB);
-      geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P), 3));
-      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N), 3));
-      for (i = 0; i < 4; i++) {
-        wg = new THREE.Group();
-        wg.name = "roadwheel";
-        wg.position.set(AX[i], s * TY, RT);
-        wm = new THREE.Mesh(geo, T.tyre);
-        if (s < 0) wm.rotation.y = Math.PI / 20;
-        wg.add(wm);
-        g.add(wg);
-      }
+    /* eight turning wheels outside both poses (one geometry, the port side's lugs a phase apart) */
+    TB = new Bin(T.tyre, false);
+    tyre(TB);
+    geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P), 3));
+    geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N), 3));
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 4; i++) {
+      wg = new THREE.Group();
+      wg.name = "roadwheel";
+      wg.position.set(X(AXD[i]), s * TY, RT);
+      wm = new THREE.Mesh(geo, T.tyre);
+      if (s < 0) wm.rotation.y = Math.PI / 20;
+      wg.add(wm);
+      g.add(wg);
     }
-    /* travel pose: the block level over the vehicle, jack legs drawn up.  Each pose is ONE group with two
-       meshes (paint, dark): the block is built in its own frame and baked into the pose's bins. */
-    var TV = bins(T, false), DP = bins(T, false), trv = new THREE.Group(), dep = new THREE.Group(), BK;
-    for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) { addJackLeg(TV, JX[i], s, 0.88); addJackLeg(DP, JX[i], s, 0.0); }
     BK = bins(T, false);
     addBlock(BK);
-    bake(BK.paint, TV.paint, PVX, PVZ, 0); bake(BK.dark, TV.dark, PVX, PVZ, 0);
-    trv.name = "travelpose";
-    flush(THREE, trv, TV);
-    /* deploy pose: the block stood vertical on the rear (local +X turned to up), jack legs down on the ground */
-    bake(BK.paint, DP.paint, PVX, PVZ, -Math.PI / 2); bake(BK.dark, DP.dark, PVX, PVZ, -Math.PI / 2);
-    /* the block's foot table on the rear deck, with its four posts, only when it stands */
-    box(DP.dark, PVX - 0.80, PVX + 0.80, -1.25, 1.25, PVZ - 0.62, PVZ - 0.50);
-    for (i = -1; i <= 1; i += 2) for (s = -1; s <= 1; s += 2) box(DP.paint, PVX + i * 0.62 - 0.10, PVX + i * 0.62 + 0.10, s * 1.0 - 0.10, s * 1.0 + 0.10, 1.62, PVZ - 0.62);
-    /* the erector: two hydraulic rams from the rear deck up to the standing block (m3 shows the green lattice frame and
-       rams in front of the standing tubes); a cylinder and a thinner rod each */
+    /* travel: the block lying level on its spine, the upper-row tails at station 12.07, the lower row's 0.15 m further aft;
+       the front saddle and the rear pivot brackets under it */
+    TV = bins(T, false);
+    bake(BK.paint, TV.paint, X(TAILD), TRZ, 0); bake(BK.dark, TV.dark, X(TAILD), TRZ, 0);
     for (s = -1; s <= 1; s += 2) {
-      cyl(DP.dark, [PVX + 1.45, s * 0.50, 1.62], [PVX + 0.95, s * 0.50, 3.40], 0.085, 0.085, 8);
-      cyl(DP.paint, [PVX + 0.95, s * 0.50, 3.40], [PVX + 0.62, s * 0.50, 4.70], 0.055, 0.055, 8);
-      box(DP.dark, PVX + 1.30, PVX + 1.60, s * 0.50 - 0.12, s * 0.50 + 0.12, 1.50, 1.64);
+      box(TV.dark, X(5.45), X(5.15), s * 0.20, s * 0.42, 1.50, TRZ - CSZ - CRIB - 0.16);
+      box(TV.dark, X(11.30), X(10.90), s * 0.20, s * 0.42, 1.50, TRZ - CSZ - CRIB - 0.16);
+      cylY(TV.dark, X(11.10), s * 0.18, s * 0.45, 1.55, 0.10, 10);
     }
-    dep.name = "deploypose";
+    box(TV.dark, X(5.45), X(5.15), -0.42, 0.42, 1.50, 1.58);
+    addJacks(TV, false);
+    trv = new THREE.Group(); trv.name = "travelpose";
+    flush(THREE, trv, TV);
+    /* set up: the block stood vertical over the rear (local +x up, the upper row aft), its tails on the foot table over
+       the frame's rear, the spine and lattice facing the cab, two erector rams from the deck, jacks down */
+    DP = bins(T, false);
+    bake(BK.paint, DP.paint, DPX, DPZ, -Math.PI / 2); bake(BK.dark, DP.dark, DPX, DPZ, -Math.PI / 2);
+    x = DPX + CSZ + CRIB + 0.16;                                    /* the spine face, x */
+    box(DP.dark, DPX - CSZ - CRIB, x, -1.10, 1.10, 1.48, DPZ - LOW - 0.02);
+    for (s = -1; s <= 1; s += 2) {
+      box(DP.paint, DPX - CSZ - CRIB, DPX - CSZ - CRIB + 0.20, s * 0.95, s * 1.10, 0.0, 1.50);     /* rear legs of the table */
+      box(DP.paint, DPX - CSZ - CRIB, DPX - CSZ - CRIB + 0.45, s * 0.85, s * 1.20, 0.0, 0.08);
+      cyl(DP.dark, [X(8.60), s * 0.45, 1.52], [x + 0.10, s * 0.45, 3.40], 0.11, 0.11, 10);
+      cyl(DP.dark, [x + 0.10, s * 0.45, 3.40], [x + 0.02, s * 0.45, 4.60], 0.065, 0.065, 8);
+      box(DP.dark, X(8.75), X(8.45), s * 0.32, s * 0.58, 1.48, 1.62);
+      bar(DP.dark, [X(9.40), s * 1.00, 1.50], [x, s * 0.80, 2.40], 0.07);
+    }
+    addJacks(DP, true);
+    dep = new THREE.Group(); dep.name = "deploypose";
     flush(THREE, dep, DP);
     dep.visible = false;
     g.add(trv); g.add(dep);
@@ -586,7 +740,7 @@ var HeroS300 = (function () {
   return { build: build };
 })();
 
-/* len is the measured X extent: the rear tow hooks to the front tow eyes */
-UNIT_MODELS["pact_e80_sam"] = { len: 11.5, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e80"); } };
-UNIT_MODELS["pact_e90_sam"] = { len: 11.5, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e90"); } };
-UNIT_MODELS["pact_e00_sam"] = { len: 11.5, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e00"); } };
+/* len is the measured X extent: the front tow eyes to the lower row's domed tails */
+UNIT_MODELS["pact_e80_sam"] = { len: 12.3, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e80"); } };
+UNIT_MODELS["pact_e90_sam"] = { len: 12.3, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e90"); } };
+UNIT_MODELS["pact_e00_sam"] = { len: 12.3, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e00"); } };
