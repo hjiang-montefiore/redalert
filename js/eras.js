@@ -14639,18 +14639,19 @@ Object.assign(UNITS, {
      carrying TWO missiles in KT-161 containers - eight on a battalion's four
      launchers and eight more on its four reload vehicles - with its own
      Garpun radar (detection to 100 km) on a mast raised to 7.3 m, so a launcher
-     finds and fires at ships on its own; into action in up to five minutes.
+     finds and fires at ships on its own (seaRadar: G.seaHolds, piece B4);
+     into action in up to five minutes.
      Taken into all four Soviet fleets in the 1980s; still with the Russian
      fleets in 2018. deploySec on the S-300's scale (five minutes = 4.0 s).
      Cost, hit points and speed are the Scud-B launcher's on the same MAZ-543
      family (pact_e60_tel), there being no figure of the game's own for it. */
   pact_e80_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Rubezh",
     full:"4K51 Rubezh (SSC-3 Styx), 3S51 launcher on the MAZ-543",
-    cost:2700, oil:48, time:36, hp:540, armor:"light", speed:1.25, turn:0.95, sight:5.0, r:17, mass:37,
+    cost:2700, oil:48, time:36, hp:540, armor:"light", speed:1.25, turn:0.95, sight:5.0, seaRadar:true, r:17, mass:37,
     weapons:["ssm_p15m"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
     modelAs:"pact_e60_tel",
     from:"e80", to:"e90", service:"1978", confidence:"high",
-    desc:"A whole coastal missile battery on one truck: two P-15M missiles, its own Garpun search radar on a mast it raises to 7.3 m, and five minutes from the march to the first launch. It sees ships only to its own short horizon, so it fires best on what the radar dome, an aircraft or a warship of its side has found. Ships only - it cannot touch anything ashore." },
+    desc:"A whole coastal missile battery on one truck: two P-15M missiles, its own Garpun search radar on a mast it raises to 7.3 m, and five minutes from the march to the first launch. Set up, its radar holds ships out to its missiles' reach, so it finds its own targets - and anyone listening hears it. With the radar switched off it fires only on what the radar dome, an aircraft or a warship of its side has found. Ships only - it cannot touch anything ashore." },
   /* S-2 Sopka (SSC-2b Samlet), ru.wikipedia "Sopka": accepted by the Soviet
      Navy on 19 December 1958; six coastal regiments by 1960; to Cuba in 1962.
      The B-163 launcher is a two-axle trailer towed by an AT-S tractor, one

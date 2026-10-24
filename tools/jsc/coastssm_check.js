@@ -22,7 +22,14 @@
      [8] the other sides' rows (B3): the PLA's HY-2A, YJ-62 and YJ-12B, the
          KPA's Kumsong-3, the ROC's Hsiung Feng II, the US NMESIS and the
          British Excalibur - each row's figures, and every side's cards in
-         each period. */
+         each period;
+     [9] its own Garpun (B4, def.seaRadar): set up and transmitting, it holds
+         the ship itself and fires with no scout, and the enemy hears it;
+         switched off, or on the march, it holds nothing and is not heard;
+         the Redut, whose radar is another vehicle, holds nothing and has no
+         set to switch off.
+   [2]-[6] run with the Rubezh's radar switched off, so the cue they test is
+   the side's and not its own. */
 var TT = 32, DT = 1 / 30, PASS = 0, FAIL = 0;
 function log(s) { print(s); }
 function chk(name, ok, detail) { (ok ? PASS++ : FAIL++); log((ok ? "  PASS  " : "  FAIL  ") + name + (detail ? "   -- " + detail : "")); }
@@ -135,6 +142,7 @@ function run() {
   SHOOTER = rb;
   rb.stance = "guard";
   ticks(6);
+  Game.setEmcon(rb, true);                 // its own Garpun off until [9]
   var shipId = unitFor("nato", "destroyer", "e80") || "destroyer_n";
   var ship = put(E, shipId, S.sx, S.sy);
   ship.stance = "hold"; ship.hp = ship.maxHp = 1e6;
@@ -142,7 +150,7 @@ function run() {
   /* ---- 3. nobody of its side sees the ship ---- */
   shots = 0;
   ticks(8, count);
-  chk("[3] set up on the shore, it does not fire on a ship nine tiles out that nobody of its side can see",
+  chk("[3] set up on the shore, its radar off, it does not fire on a ship nine tiles out that nobody of its side can see",
       rb.deployed && shots === 0 && !Game.sideSees(P, ship), "deployed " + rb.deployed + ", " + shots + " fired, held " + Game.sideSees(P, ship));
 
   /* ---- 2. a scout of its side sees it ---- */
@@ -180,4 +188,33 @@ function run() {
   chk("[6] it does not drive after a ship that sails out of its reach: still on its shore, still set up",
       o0 === "attack (auto) on the ship" && Math.hypot(rb.x - x0, rb.y - y0) < 2 && rb.deployed,
       "engaged as " + o0 + "; moved " + (Math.hypot(rb.x - x0, rb.y - y0) / TT).toFixed(2) + " tiles, deployed " + rb.deployed);
+
+  /* ---- 9. its own Garpun ---- */
+  sc.dead = true; ship2.dead = true; Game.sweepDead && Game.sweepDead();
+  var ship3 = put(E, shipId, S.sx, S.sy);
+  ship3.hp = ship3.maxHp = 1e6; ship3.stance = "hold";
+  rb.rounds = 2;
+  ticks(1);
+  var heard = function () { var s = Game.esmPlot(E); return !!(s && s.has(rb.id)); };
+  var dark = { held: Game.seaHolds(P, ship3), heard: heard() };
+  Game.setEmcon(rb, false);
+  ticks(Game.relightDelay(rb) + 0.5);
+  var on = { held: Game.seaHolds(P, ship3), heard: heard() };
+  shots = 0;
+  ticks(12, count);
+  on.shots = shots;
+  rb.deployed = false;
+  var march = { held: Game.seaHolds(P, ship3) };
+  rb.deployed = true;
+  chk("[9] set up and transmitting, its Garpun holds the ship nine tiles out and it fires with no scout, and the ship hears it; off, or on the march, nothing",
+      Game.canEmcon(rb) && on.held && on.shots >= 1 && on.heard && !dark.held && !dark.heard && !march.held,
+      "on: held " + on.held + ", " + on.shots + " fired, heard " + on.heard + " (the destroyer's set " + (ship3.def.radar || 0) + ")" +
+      "; off: held " + dark.held + ", heard " + dark.heard + "; on the march: held " + march.held);
+  Game.setEmcon(rb, true);
+  var rd = put(P, "pact_e60_coastssm", S.x, S.y + 1);
+  if (rd) rd.stance = "guard";
+  ticks(6);
+  chk("[9] ...while the Redut beside it, set up, holds nothing: its radar is another vehicle, and it has no set to switch off",
+      !!rd && rd.deployed && !Game.seaHolds(P, ship3) && !Game.canEmcon(rd),
+      rd ? "deployed " + rd.deployed + ", held " + Game.seaHolds(P, ship3) + ", can go dark " + Game.canEmcon(rd) : "no Redut");
 }

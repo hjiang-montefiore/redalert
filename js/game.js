@@ -1548,7 +1548,7 @@ var Game = (function () {
      sensor's emission control is another doctrine, and a parked one is off
      already - and not a submarine, which has silent running (ui.js cmdQuiet). */
   G.canEmcon = function (e) {
-    if (!e || e.dead || !e.def || !(e.def.radar || e.def.jam)) return false;
+    if (!e || e.dead || !e.def || !(e.def.radar || e.def.jam || e.def.seaRadar)) return false;
     if (e.kind === "building") return true;
     return e.kind === "unit" && e.layer !== "air" && e.layer !== "sub";
   };
@@ -2186,7 +2186,11 @@ var Game = (function () {
     if (ears.length) for (const o of G.players) {
       if (o === owner || o.defeated || G.allied(owner, o)) continue;
       const heed = (e) => {
-        const loud = ((e.def && (e.def.radar || e.def.jam)) || 0) * G.ESM_GAIN;
+        /* a coastal launcher's own surface set (def.seaRadar) is on the air
+           only set up, its mast raised, and is as loud as the reach it holds
+           ships to (G.seaHolds) */
+        const sea = e.def && e.def.seaRadar && e.deployed && e.cueReach && e.cueReach();
+        const loud = ((e.def && (e.def.radar || e.def.jam)) || (sea && sea.sea ? e.weaponRange(sea.sea) / CFG.TILE : 0)) * G.ESM_GAIN;
         if (!loud || !G.jamming(e)) return;
         for (const l of ears)
           if (U.dist(l.x, l.y, e.x, e.y) <= loud * CFG.TILE) { set.add(e.id); return; }
@@ -3184,6 +3188,12 @@ var Game = (function () {
          any contact, SEA_NOISE (2.2) times the set's rating - a Virginia's
          11.0 at 24 tiles, a Kilo's 7.2 at 16. A boat's eyes are a periscope,
          and this is how it has always found its targets.
+     And one more on land: a coastal missile launcher that carries its own
+     surface-search set (def.seaRadar - the Rubezh's Garpun on its 7.3 m
+     mast), set up (the mast is raised only then) and transmitting, out to
+     the reach of its own anti-ship rounds as a warship's is. A launcher
+     whose radar rides another vehicle of its battery (the Redut's Mys, the
+     Bal's and Bastion-P's command vehicles) holds nothing of its own.
      Nothing else: not a coastal array, not an acoustic node (render.js
      visible() and ai.js intelSweep say why a hydrophone hands over no
      surface picture), not a helicopter's dipping set - an aircraft finds
@@ -3204,7 +3214,8 @@ var Game = (function () {
         if (U.dist2(u.x, u.y, e.x, e.y) < r * r) return true;
         continue;
       }
-      if (u.layer !== "sea" || !u.cueReach || !G.emitting(u)) continue;
+      if (u.layer === "ground" ? !(u.def.seaRadar && u.deployed) : u.layer !== "sea") continue;
+      if (!u.cueReach || !G.emitting(u)) continue;
       const c = u.cueReach();
       if (!c || !c.sea) continue;
       const r = u.weaponRange(c.sea);
