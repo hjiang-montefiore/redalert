@@ -1,31 +1,63 @@
 /* ============ ru_smerch.js - HERO model: the 9A52 Smerch (BM-30) 300 mm multiple rocket launcher on the MAZ-543M 8x8 ============
-   Four keys: pact_e80_mlrs "BM-30 Smerch, 9A52 Smerch 300mm MRL" 1987, pact_e90_mlrs, pact_e00_mlrs ("9A52 Smerch / 9A53
-   Tornado-S"), mlrs_p (present day, js/rules.js).  All four rows are turret:true, none is deploy:true, and no row asks for the
-   9A52-2 on the MAZ-79112 or the Tornado-S as a distinct vehicle, and no labelled photograph of either was fetched, so ONE model
-   serves all four: the 9A52 as photographed, with per-period paint only (plain Soviet green for e80/e90; a slightly
-   different plain olive for e00 and mlrs_p).  No camouflage pattern, no markings.
+   Full-quality redo (2026-10-24).  Four keys, kept: pact_e80_mlrs "9A52 Smerch 300mm MRL" (1987), pact_e90_mlrs "9A52 BM-30
+   Smerch", pact_e00_mlrs "9A52 Smerch / 9A53 Tornado-S", mlrs_p "9A52 Smerch MRL" (present; js/facts.js calls it the 9A52-2).
+   All four rows are turret:true; none is deploy:true.
 
-   What each feature rests on (Wikimedia Commons, cached in the scratchpad smerch_ref):
-     "9A52 of 300-mm multiple rocket launching system 9K58 Smerch, Artillery museum, Saint-Petersburg pic1" (side, pack raised
-         about 50 degrees): eight tyres in two close pairs with the long gap between axles 2 and 3; the cab at the front with a
-         lower flat-topped equipment housing behind it; a long mudguard over each pair; equipment boxes down the frame; the
-         pack of long round tubes bound by straps, hinged on a trunnion on a turntable over the REAR, mouths forward and up.
-     "Azeri Smerch, parade in Baku, 2013" (front 3/4, pack travelling): the cab is the split MAZ-543M cab (full-width low front
-         with the louvred grille, a taller port pod with the windscreen, a closed starboard pod) - the same as ru_s300.js, so
-         it is reused from there; the pack lies LEVEL along the vehicle with its mouths just behind the housing; three tubes
-         across, tubes stacked four high; lattice frame at the rear end.  The Baku camouflage is NOT copied (an Azeri vehicle).
-     "Kuwait BM-30 Smerch launchers are firing, 2021": launchers firing forward and up over the cab at about 40 degrees.
-   Published (js/armour_specs.js, js/facts.js): 12 tubes of 300 mm, 12.4 x 3.1 x 3.1 m, 4 wheel axles 8x8, 43.7 t.  The model:
-     12.4 m (rear tow hooks to front tow eyes), 3.1 m with mudguards, pack top at 3.1 m, wheelbase 7.7 m, 1500x600 tyres.
-   NOT confirmed and not drawn: jack count and leg positions (two housings at the rear are drawn with legs stowed - the rows are
-     not deploy:true, so there is no lowered pose), the 9A52-2 / MAZ-79112 / Tornado-S, roof antennas, nets, spare wheel,
-     any marking, tube strapping detail beyond plain bands.  The firing elevation is the Kuwait photograph (about 40 degrees).
+   Sources (Wikimedia Commons, at width 960; ru.wikipedia "Smerch (RSZO)" for figures and variants):
+     [S] "9A52 of 300-mm multiple rocket launching system 9K58 Smerch, Artillery museum, Saint-Petersburg pic1" - starboard
+         side, pack raised: the side stations below, the arched mudguards, the jack between the rear pair, the crew cab door.
+     [R] "9A52 TEL 9K58 Smerch system Rear View 2017-12-24" - the tube layout and the tails' collars.
+     [A] "Army2016demo-066" (Vitaly Kuzmin) - 9A52-2 rear three-quarter, pack travelling: tube layout, cradle beam, the
+         braced brackets under the rear, the whip aerial, the deck walkway.
+     [P8] "2008 Moscow Victory Day Parade (58-24)" - starboard front: the full-width crew cab behind a lower driving cab on
+         the PORT side, the grille between, the ladder behind the crew cab.  Its three-colour scheme is the 2008 parade's
+         and is not drawn.
+     [P11] "2011 Moscow Victory Day Parade (358-37)" - port front, plain green: driving cab, roof lamp, grille, headlamps,
+         the lattice frame at the pack's tails.
+     [T] "Tornado-S - Army 2024-08-14 44" - the 9A54 Tornado-S: the guard round the roof lamp, the box on the engine deck.
+     [D] "280MM-Multiple rocket launcher-DIA" - the DIA painting: pack raised about 45 degrees over the cab.
+   Published (ru.wikipedia): length in travel 12 370 mm (9A52; 12 100 for the 9A52-2), width 3050, height 3070, 43.7 t,
+     12 tubes of 300 mm, elevation to 55 degrees.  MAZ-543M: 1500x600 tyres, wheelbase 2.2 + 3.3 + 2.2 m.
+   CORRECTED from the old header: the MAZ-543M cab is not two side pods.  It is a low DRIVING cab on the port side with the
+     grille and engine deck beside it, and behind both a tall full-width CREW cab [P8][P11][T][S].  The pack is not hinged
+     over the turntable centre.  Its trunnion is at the rear of the rotating platform, and the tails swing down behind the
+     vehicle as it rises [S][R].  ru.wikipedia gives the 9A52 on the MAZ-79111 and the 9A52-2 on the MAZ-543M.  The two are
+     not told apart in the photographs, so both are drawn as the photographs show them.
 
-   Mechanisms: the pack is the "turret" node (traverses about the rear turntable, rests pointing +X forward); inside it the
-   "podelev" group (hinged at the trunnion) carries the twelve tubes, lattice and straps; userData.el = firing elevation and
-   userData.cells = the 12 tube mouths [x, y, z, tail x] in the group frame, for the launch flash.  Eight "roadwheel" groups.
-   Materials 5: paint, dark, glass, tyre, C.team (one 1 m strip on the top of the pack, none on the hull).
-   Draw calls 3 (hull) + 8 (wheels, one mesh each) + 2 (turret mount) + 3 (podelev) = 16.  +X nose, +Y left, +Z up, metres, tyres on z = 0. ASCII only. */
+   Recognition list (what each rests on; where it is in the code):
+     1. 8x8 with the axle pairs 2.2 m apart and the long 3.3 m gap between axles 2 and 3 [S]: AX.
+     2. The tall full-width crew cab over the front axle, two high front windows, a door each side [S][P8][T]: addCab.
+     3. The low driving cab on the PORT side ahead of it, with a two-pane windscreen and a door [P11][P8][T]: addCab.
+     4. The wide louvred grille across the rest of the front, the headlamps at the outer ends [P11][T]: addCab.
+     5. Arched mudguards over each axle pair, rounded at both ends [S][P11]: ribbon() in addChassis.
+     6. The ribbed stowage boxes between the pairs under the deck edge, and the dark tank below them [S]: addChassis.
+     7. Twelve 300 mm tubes: four in the top row, two either side in the two lower rows, the middle of the lower rows
+        taken by the cradle beam [R][A]: addPack.
+     8. The tails' heavy collars and the lattice frame at the rear of the pack [R][P11]: addPack.
+     9. The clamp frames round the pack at four stations, following its stepped outline [S][T]: addPack.
+    10. The rotating platform over the rear axle, the trunnion at its rear, the pack laid flat over the deck with its mouths
+        at the crew cab [S][P8][A]: addMount, "turret" and "podelev".
+    11. The stabiliser jack between the rear axle pair, one each side [S]: addChassis (JX).
+    12. The ladder behind the crew cab on the starboard side [P8][T]: addChassis.
+
+   Rows: e80 and e90 are the 9A52 in plain Soviet green (#455437, the protective green of ru_buk.js's 9A310M1).  e00 is the
+     9A52 of the 2008-2011 photographs in plain Russian green (#4b533f).  mlrs_p is the 9A52-2 / Tornado-S of Army-2016 [A]
+     and Army-2024 [T], in their darker green (#4e5842; sampled lit #657259 [T], taken to about 0.8).  It adds what those
+     photographs show: the guard round the roof lamp and the box on the engine deck [T], and the whip aerial [A].  The
+     pact_e00_mlrs row's "9A53" is the Uragan-1M launcher in ru.wikipedia.  The Tornado-S launcher is the 9A54, issued from
+     2016, so that row draws the 9A52 its own decade shows.
+   NOT drawn (not confirmed): the jacks set up.  The row is not deploy:true, and js/entities.js sets e.deployed only for SAM
+     and coastal rows, so a lowered pose would never be shown; the jacks are drawn raised for the road.  Also not drawn: the
+     long cylinders seen lying on the deck in [S] beyond the two elevating rams, nets, the 9A52-2's fire-control fit inside
+     the cab, any marking or number, and the parade scheme of [P8].
+   Elevation: 40 degrees (between [S] about 30 and [D] about 45; 55 is the published limit).
+
+   Mechanisms: "turret" is the rotating platform (origin on the slewing ring at x -4.0, z 1.45).  Inside it, "podelev" is the
+   cradle and tubes, hinged at the rear trunnion (x -5.2, z 1.93 on the hull).  Its userData.el is the launch elevation and
+   userData.cells holds the 12 mouths [x, y, z, tail x] in the group frame.  Eight "roadwheel" groups.
+   Materials 5: paint (canvas texture: a weathered single coat, metre UVs), dark, glass, tyre, C.team (one strip on top of
+   the pack, none on the hull).  Draw calls: hull 3 + wheels 8 + platform 2 + pack 3 = 16.
+   +X nose, +Y port, +Z up, metres, tyres on z = 0.  ASCII only. */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -222,43 +254,6 @@ var HeroSmerch = (function () {
     }
     solid(bin, V, F, smooth);
   }
-  var _tex = {};
-  function paintTex(THREE, P) {
-    var key = P.base + P.seed;
-    if (_tex[key] !== undefined) return _tex[key];
-    var t = null;
-    try {
-      var cv = document.createElement("canvas");
-      cv.width = 256; cv.height = 256;
-      var q = cv.getContext("2d"), s = P.seed >>> 0, i, k, a, x, y, rr, ang, rd;
-      var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-      q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
-      /* a single flat coat gone patchy with weather: low-contrast drift, no pattern */
-      for (k = 0; k < P.blots.length; k++) {
-        q.fillStyle = P.blots[k];
-        for (i = 0; i < 12; i++) {
-          x = R() * 256; y = R() * 256; rr = 18 + R() * 40;
-          q.beginPath();
-          for (a = 0; a < 7; a++) {
-            ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
-            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-          }
-          q.closePath(); q.fill();
-        }
-      }
-      for (i = 0; i < 90; i++) {
-        q.fillStyle = (i % 2) ? "rgba(15,14,10,0.07)" : "rgba(240,236,215,0.05)";
-        q.fillRect(R() * 256, R() * 256, 3 + R() * 30, 2 + R() * 18);
-      }
-      t = new THREE.CanvasTexture(cv);
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-      t.anisotropy = 4;
-    } catch (e) { t = null; }
-    _tex[key] = t;
-    return t;
-  }
   function flush(THREE, group, B) {
     var k, b, geo;
     for (k in B) {
@@ -306,105 +301,109 @@ var HeroSmerch = (function () {
     }
     hexa(bin, V);
   }
+  /* a side-view polyline [x, z] made into a plate across y0..y1, t thick below the line (a mudguard arch) */
+  function ribbon(bin, pts, y0, y1, t) {
+    var i, a, b, dx, dz, L, nx, nz;
+    for (i = 0; i < pts.length - 1; i++) {
+      a = pts[i]; b = pts[i + 1]; dx = b[0] - a[0]; dz = b[1] - a[1]; L = Math.sqrt(dx * dx + dz * dz) || 1;
+      nx = -dz / L * t; nz = dx / L * t;
+      profY(bin, [[a[0], a[1]], [b[0], b[1]], [b[0] - nx, b[1] - nz], [a[0] - nx, a[1] - nz]], y0, y1);
+    }
+  }
+  /* a side-face box on the +y (s > 0) or -y face at |y| = yf, standing d proud of it */
+  function sideBox(bin, s, yf, d, x0, x1, z0, z1) { box(bin, x0, x1, s * yf, s * (yf + d), z0, z1); }
 
-  function addCabMaz(B) {
-    var i, k, s, x, y, NX = 5.95;
-    /* lower body: sides above the tyres, a lower centre block carrying the grille */
-    box(B.paint, 3.95, 5.60, -1.50, 1.50, 1.55, 2.10);
-    box(B.paint, 5.25, NX, -1.50, 1.50, 1.30, 2.10);
-    box(B.paint, 5.10, 5.30, -0.85, 0.85, 1.20, 1.55);
-    /* grille between the headlamp wings: dark field, horizontal bars, centre rails */
-    box(B.dark, NX, NX + 0.04, -0.72, 0.72, 1.42, 2.02);
-    for (k = 0; k < 4; k++) box(B.paint, NX + 0.04, NX + 0.06, -0.72, 0.72, 1.52 + k * 0.14, 1.56 + k * 0.14);
-    for (k = 0; k < 3; k++) box(B.dark, NX + 0.04, NX + 0.07, -0.50 + k * 0.50, -0.46 + k * 0.50, 1.42, 2.02);
-    /* flat deck over the engine, a hatch seam */
-    box(B.dark, 5.30, 5.58, -0.40, 0.40, 2.10, 2.12);
-    for (s = -1; s <= 1; s += 2) {
-      /* headlamp wing: round lamp, amber lamp low, wiring-free */
-      cylX(B.dark, NX, NX + 0.08, s * 1.10, 1.78, 0.115, 12);
-      cylX(B.glass, NX + 0.08, NX + 0.10, s * 1.10, 1.78, 0.085, 12);
-      box(B.dark, NX, NX + 0.07, s * 1.18 - 0.10, s * 1.18 + 0.10, 1.38, 1.52);
-      box(B.glass, NX + 0.07, NX + 0.09, s * 1.18 - 0.08, s * 1.18 + 0.08, 1.40, 1.50);
-      box(B.dark, NX, NX + 0.05, s * 1.50 - (s > 0 ? 0.40 : 0), s * 1.50 + (s > 0 ? 0 : 0.40), 1.40, 1.46);
-      /* the pod sides: door seam, handle, step, mirror on its arm */
-      x = s * 1.50;
-      box(B.dark, 4.55, 4.57, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 1.58, 2.90);
-      box(B.dark, 5.30, 5.33, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 1.58, 2.90);
-      box(B.dark, 5.15, 5.30, x - (s > 0 ? 0 : 0.05), x + (s > 0 ? 0.05 : 0), 2.02, 2.06);
-      box(B.dark, 4.65, 5.30, s * 1.50, s * 1.50 + s * 0.08, 1.34, 1.40);
-      bar(B.dark, [5.50, s * 1.50, 2.55], [5.54, s * 1.58, 2.60], 0.035);
-      box(B.dark, 5.50, 5.57, s * 1.58 - 0.02, s * 1.58 + 0.02, 2.30, 2.74);
-    }
-    /* port pod: the crew cab with the windscreen (two panes) and three side windows */
-    box(B.paint, 3.95, 5.55, 0.35, 1.50, 2.10, 2.95);
-    box(B.dark, 5.55, 5.58, 0.45, 1.40, 2.32, 2.86);
-    box(B.glass, 5.58, 5.60, 0.48, 0.90, 2.36, 2.82);
-    box(B.glass, 5.58, 5.60, 0.95, 1.37, 2.36, 2.82);
-    box(B.dark, 5.55, 5.60, 0.40, 1.45, 2.88, 2.96);                                    /* visor */
-    box(B.dark, 4.60, 5.45, 1.50, 1.53, 2.30, 2.86);
-    box(B.glass, 4.66, 5.38, 1.53, 1.55, 2.36, 2.80);
-    box(B.dark, 4.00, 4.50, 1.50, 1.53, 2.30, 2.86);
-    box(B.glass, 4.06, 4.44, 1.53, 1.55, 2.36, 2.80);
-    /* starboard pod: closed front with a louvred vent, side windows */
-    box(B.paint, 3.95, 5.30, -1.50, -0.35, 2.10, 2.85);
-    for (k = 0; k < 4; k++) box(B.dark, 5.30, 5.32, -1.30, -0.60, 2.20 + k * 0.10, 2.25 + k * 0.10);
-    box(B.dark, 4.60, 5.20, -1.53, -1.50, 2.30, 2.76);
-    box(B.glass, 4.66, 5.14, -1.55, -1.53, 2.36, 2.70);
-    box(B.dark, 4.00, 4.50, -1.53, -1.50, 2.30, 2.76);
-    box(B.glass, 4.06, 4.44, -1.55, -1.53, 2.36, 2.70);
-    /* roof: a lamp on its bracket and a vent on the port pod, a vent on the starboard pod, the team strips */
-    cylZ(B.dark, 5.30, 1.10, 2.95, 3.12, 0.07, 8);
-    cylZ(B.glass, 5.30, 1.10, 3.12, 3.18, 0.07, 8);
-    cylZ(B.paint, 4.40, 0.85, 2.95, 3.01, 0.15, 12);
-    box(B.dark, 4.50, 5.00, -1.10, -0.70, 2.85, 2.89);
-    /* the lower equipment housing behind the pods (museum photograph: lower than the cab roof, flat top, vents) */
-    profY(B.paint, [[1.65, 1.50], [3.95, 1.50], [3.95, 2.70], [1.65, 2.70]], -1.30, 1.30);
-    for (s = -1; s <= 1; s += 2) {
-      x = s * 1.30;
-      box(B.dark, 2.60, 3.50, x - (s > 0 ? 0 : 0.02), x + (s > 0 ? 0.02 : 0), 2.20, 2.55);
-      for (k = 0; k < 4; k++) box(B.dark, 2.65 + k * 0.12, 2.67 + k * 0.12, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 2.25, 2.50);
-    }
-    box(B.dark, 1.65, 1.69, -0.90, 0.90, 2.00, 2.60);
-    /* the rear-facing box behind the housing (m3): equipment cases each side below the block */
+  var _tex = {};
+  /* one flat coat, weathered: low-contrast drift, rain streaks running down, dust and scuffs.
+     The painted bin carries metre UVs (0.34 a metre), so the 256 px tile spans about 2.9 m and repeats. */
+  function paintTex(THREE, P) {
+    var key = P.base + P.seed;
+    if (_tex[key] !== undefined) return _tex[key];
+    var t = null;
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = 256; cv.height = 256;
+      var q = cv.getContext("2d"), s = P.seed >>> 0, i, k, a, x, y, rr, ang, rd, h;
+      var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+      q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
+      for (k = 0; k < P.blots.length; k++) {
+        q.fillStyle = P.blots[k];
+        for (i = 0; i < 10; i++) {
+          x = R() * 256; y = R() * 256; rr = 16 + R() * 36;
+          q.beginPath();
+          for (a = 0; a < 7; a++) {
+            ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
+            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+          }
+          q.closePath(); q.fill();
+        }
+      }
+      /* streaks: thin, long, faint - the texture's v runs with z on the sides */
+      for (i = 0; i < 40; i++) {
+        x = R() * 256; h = 20 + R() * 70; y = R() * 256;
+        q.fillStyle = (i % 3) ? "rgba(20,20,14,0.07)" : "rgba(170,160,130,0.06)";
+        q.fillRect(x, y, 1 + R() * 2, h);
+      }
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 2) ? "rgba(15,14,10,0.06)" : "rgba(235,228,200,0.045)";
+        q.fillRect(R() * 256, R() * 256, 3 + R() * 24, 2 + R() * 12);
+      }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    _tex[key] = t;
+    return t;
   }
 
-  /* ------------------------------------------------------------- the Smerch */
-  var XT = -5.20, XN = 6.20, CABDX = 0.25;
-  var AX = [3.45, 1.25, -2.05, -4.25], TY = 1.19, RT = 0.75;   /* front axle 2.75 m behind the nose, rear axle 0.93 m ahead of the body end (Ukrainian parade side view) */
-  var TX = -4.00, TZ = 1.50, PZ = 1.00;        /* turntable centre, and the trunnion height above it */
-  var TR = 0.18, TPITCH = 0.38, TX0 = -1.80, TX1 = 5.45;   /* tube radius, spacing, tail and mouth in the pack frame */
-  var LAUNCH_EL = 30 * Math.PI / 180;
-  var JXS = -3.15;
+  /* ----------------------------------------------------------- the stations
+     Side view measured off the Saint-Petersburg museum photograph (starboard side, 71 px a metre at the cab, the
+     wheelbase set to the MAZ-543M's published 2.2 + 3.3 + 2.2 m); +X nose, +Y port, +Z up, tyres on z = 0. */
+  var XT = -5.20, XN = 6.08;                         /* rear frame end, front face (bumper 0.28 further) */
+  var AX = [3.45, 1.25, -2.05, -4.25], TY = 1.19, RT = 0.75;   /* axles; track 2.38 m; 1500x600 tyres */
+  var XC0 = 1.70, XC1 = 3.45, ZC = 3.07;             /* the full-width crew cab: rear, front (over the first axle), roof */
+  var ZD = 2.10, ZP = 2.62, YP = 0.55;               /* engine deck, port driving cab roof, its inner wall */
+  var ZK = 1.86;                                     /* the launcher deck */
+  var TX = -4.00, TZ = 1.45;                         /* the turntable centre ("turret" origin) */
+  var PVX = -1.20, PVZ = 0.48;                       /* the trunnion, at the turntable's rear, in the turret frame */
+  var TP = 0.38, TR = 0.17, TX0 = -0.72, TX1 = 6.82; /* tube pitch and radius; tails and mouths from the trunnion */
+  var ROWZ = [0.20, 0.58, 0.96];                     /* tube rows above the trunnion: stowed 2.13, 2.51, 2.89 m */
+  var LAUNCH_EL = 40 * Math.PI / 180;
+  var JX = -3.15, JY = 1.22;                         /* the stabiliser jack, between the rear pair of axles */
 
-  var PAINTS = {
-    soviet: { base: "#47523a", blots: ["#39422e", "#556047", "#414b36"], seed: 30082 },
-    olive:  { base: "#4b5538", blots: ["#3d4730", "#566141", "#444e33"], seed: 30001 }
+  /* fittings by row: the lamp is on the driving-cab roof in the 2008, 2011 and 2024 photographs; the Army-2024
+     Tornado-S adds the guard round it and the box on the engine deck, and the Army-2016 9A52-2 the whip */
+  var ROWS = {
+    e80: { paint: { base: "#455437", blots: ["#3e4c32", "#4d5c3e", "#41503a"], seed: 30082 }, guard: false, box: false, whip: false },
+    e90: { paint: { base: "#455437", blots: ["#3e4c32", "#4d5c3e", "#41503a"], seed: 30090 }, guard: false, box: false, whip: false },
+    e00: { paint: { base: "#4b533f", blots: ["#444c39", "#535b46", "#474f3b"], seed: 30011 }, guard: false, box: false, whip: false },
+    p:   { paint: { base: "#4e5842", blots: ["#47513c", "#56604a", "#4a543f"], seed: 30024 }, guard: true, box: true, whip: true }
   };
 
   function materials(THREE, C, P) {
     var T = {}, tx = paintTex(THREE, P);
     T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.08 });
     if (tx) T.paint.map = tx; else T.paint.color.set(P.base);
-    T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
-    T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
-    T.tyre = new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.95, metalness: 0.02 });
+    T.dark = new THREE.MeshStandardMaterial({ color: 0x24262a, roughness: 0.8, metalness: 0.28 });
+    T.glass = new THREE.MeshStandardMaterial({ color: 0x1b2730, roughness: 0.14, metalness: 0.35 });
+    T.tyre = new THREE.MeshStandardMaterial({ color: 0x1b1c1e, roughness: 0.95, metalness: 0.02 });
     T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
     return T;
   }
-  function bins(T, withAll) {
-    var b = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
-    if (withAll) { b.glass = new Bin(T.glass, false); b.team = new Bin(T.team, false); }
-    return b;
+  function bins(T) {
+    return { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false), glass: new Bin(T.glass, false), team: new Bin(T.team, false) };
   }
 
-  /* 1500x600 tyre with chevron lug tread, dished bolted wheel (as ru_s300.js) */
+  /* 1500x600 tyre: big staggered lug blocks across the crown, the dished wheel with its hub and nut ring */
   function tyre(bin) {
-    var N = 20, R = [[-0.30, 0.50, 0, 0], [-0.30, 0.66, 0, 0], [-0.22, 0.75, 1, 0], [-0.03, 0.75, 1, 0],
-                     [0.03, 0.75, 1, 1], [0.22, 0.75, 1, 1], [0.30, 0.66, 0, 0], [0.30, 0.50, 0, 0]];
+    var N = 22, R = [[-0.30, 0.47, 0, 0], [-0.30, 0.64, 0, 0], [-0.25, 0.73, 1, 0], [-0.10, 0.75, 1, 0], [-0.02, 0.75, 1, 1],
+                     [0.02, 0.75, 1, 0], [0.10, 0.75, 1, 1], [0.25, 0.73, 1, 1], [0.30, 0.64, 0, 0], [0.30, 0.47, 0, 0]];
     var V = [], F = [], i, j, k, r, a, m = R.length;
     for (i = 0; i < m; i++) for (j = 0; j < N; j++) {
       r = R[i][1];
-      if (R[i][2] && ((j + R[i][3]) % 2)) r -= 0.035;
+      if (R[i][2] && ((j + R[i][3]) % 2)) r -= 0.04;
       a = j / N * TAU;
       V.push([r * Math.cos(a), R[i][0], r * Math.sin(a)]);
     }
@@ -416,145 +415,261 @@ var HeroSmerch = (function () {
     for (j = 0; j < N; j++) { k = (j + 1) % N; F.push([m * N, k, j], [m * N + 1, (m - 1) * N + j, (m - 1) * N + k]); }
     solid(bin, V, F, true);
     for (k = -1; k <= 1; k += 2) {
-      cylY(bin, 0, k * 0.29, k * 0.335, 0, 0.47, 12);
-      cylY(bin, 0, k * 0.335, k * 0.385, 0, 0.19, 8);
-    }
-  }
-
-  function addChassis(B) {
-    var i, s, k, x, sx;
-    box(B.dark, XT + 0.10, XN, -0.80, 0.80, 0.95, 1.45);                          /* frame */
-    for (i = 0; i < 4; i++) cylY(B.dark, AX[i], -1.00, 1.00, RT, 0.12, 8);        /* axles */
-    box(B.dark, XT, XT + 0.14, -1.45, 1.45, 0.98, 1.30);                          /* rear bumper beam */
-    box(B.dark, XN, XN + 0.26, -1.46, 1.46, 0.98, 1.24);                          /* front bumper */
-    for (s = -1; s <= 1; s += 2) {
-      box(B.dark, XT - 0.06, XT, s * 1.10 - 0.07, s * 1.10 + 0.07, 1.00, 1.14);    /* tow hooks */
-      box(B.dark, XT - 0.02, XT, s * 1.30 - 0.07, s * 1.30 + 0.07, 1.14, 1.24);    /* rear lamps */
-      box(B.dark, XN + 0.14, XN + 0.22, s * 0.62 - 0.07, s * 0.62 + 0.07, 1.04, 1.16);   /* front tow eyes */
-      profY(B.paint, [[-1.07, 1.55], [0.27, 1.55], [0.27, 1.08], [0.03, 0.88], [-0.83, 0.88], [-1.07, 1.08]],
-            s > 0 ? 0.92 : -1.46, s > 0 ? 1.46 : -0.92);                             /* tank / box between the pairs */
-      /* mudguards over each pair of wheels */
-      box(B.paint, AX[3] - 0.78, AX[2] + 0.78, s > 0 ? 1.04 : -1.52, s > 0 ? 1.52 : -1.04, 1.58, 1.64);
-      box(B.paint, AX[3] - 0.78, AX[2] + 0.78, s > 0 ? 1.48 : -1.52, s > 0 ? 1.52 : -1.48, 1.40, 1.64);
-      box(B.paint, AX[1] - 0.78, AX[0] + 0.50, s > 0 ? 1.04 : -1.52, s > 0 ? 1.52 : -1.04, 1.58, 1.64);
-      box(B.paint, AX[1] - 0.78, AX[0] + 0.50, s > 0 ? 1.48 : -1.52, s > 0 ? 1.52 : -1.48, 1.40, 1.64);
-      /* equipment boxes down the frame: panels, seams, latches */
-      x = s > 0 ? 1.45 : -1.45;
-      for (k = 0; k < 2; k++) {
-        sx = k ? -1.10 : -3.30;
-        box(B.paint, sx, sx + (k ? 1.65 : 1.90), s > 0 ? 1.04 : -1.45, s > 0 ? 1.45 : -1.04, 1.64, 2.05);
-        box(B.dark, sx, sx + (k ? 1.65 : 1.90), s > 0 ? 1.04 : -1.45, s > 0 ? 1.45 : -1.04, 2.05, 2.07);
-        for (i = 0; i < 3; i++) box(B.dark, sx + 0.1 + i * 0.55, sx + 0.12 + i * 0.55, x - (s > 0 ? 0 : 0.03), x + (s > 0 ? 0.03 : 0), 1.66, 2.03);
-        box(B.dark, sx + 0.2, sx + 0.44, x - (s > 0 ? 0 : 0.04), x + (s > 0 ? 0.04 : 0), 1.80, 1.84);
+      cyl(bin, [0, k * 0.29, 0], [0, k * 0.33, 0], 0.46, 0.40, 16, true, false);     /* dished rim face */
+      cylY(bin, 0, k * 0.33, k * 0.40, 0, 0.17, 10);                                  /* hub */
+      for (j = 0; j < 8; j++) {                                                      /* nut ring */
+        a = j / 8 * TAU;
+        cylY(bin, 0.24 * Math.cos(a), k * 0.33, k * 0.355, 0.24 * Math.sin(a), 0.025, 4);
       }
-      /* stabiliser jack, stowed: a housing beside the frame between the rear pair of wheels (Tula rear view, Saint-Petersburg side view: one each side, leg down only when firing) */
-      box(B.dark, JXS - 0.20, JXS + 0.20, s * 1.10 - 0.20, s * 1.10 + 0.20, 1.00, 1.08);   /* foot pad, stowed clear of the ground */
-      box(B.paint, JXS - 0.12, JXS + 0.12, s * 1.10 - 0.12, s * 1.10 + 0.12, 1.08, 1.60);
-      box(B.dark, JXS - 0.14, JXS + 0.14, s * 1.10 - 0.14, s * 1.10 + 0.14, 1.40, 1.46);
-      box(B.paint, JXS - 0.16, JXS + 0.16, s * 0.84 - 0.12, s * 0.84 + 0.12, 1.20, 1.45);
     }
-    cylY(B.dark, -0.4, -1.52, -1.40, 1.52, 0.055, 8);                               /* exhaust stub */
-    /* the turntable seat on the frame and the front rest for the pack's travel position */
-    box(B.paint, XT + 0.14, -3.00, -1.20, 1.20, 1.44, 1.50);
-    box(B.dark, XT + 0.14, XT + 0.40, -1.15, 1.15, 1.50, 1.54);
-    for (k = 0; k < 3; k++) box(B.dark, -4.85 + k * 0.30, -4.75 + k * 0.30, -1.15, 1.15, 1.50, 1.52);
-    box(B.paint, 0.55, 1.00, -0.50, 0.50, 1.45, 1.80);
-    box(B.dark, 0.55, 1.00, -0.40, 0.40, 1.80, 1.86);
   }
 
-  /* the turntable, wide base platform and trunnion cheeks (node "turret", origin on the turntable axis, z = 1.5).
-     The cheeks stand outside the tube bundle, so nothing passes through the tubes when the pack elevates. */
+  function addChassis(B, R) {
+    var s, k, i, yo, x;
+    box(B.dark, XT + 0.10, XN, -0.55, 0.55, 0.95, 1.45);                                 /* frame rails */
+    for (i = 0; i < 4; i++) cylY(B.dark, AX[i], -0.95, 0.95, RT, 0.11, 8);               /* axles and hubs reductions */
+    for (i = 0; i < 4; i++) box(B.dark, AX[i] - 0.22, AX[i] + 0.22, -0.30, 0.30, 0.55, 0.95);   /* axle housings */
+    /* rear: beam, tow hooks, lamps, and the two braced brackets under the cradle (Army-2016 rear view) */
+    box(B.dark, XT, XT + 0.16, -1.40, 1.40, 0.98, 1.32);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, XT - 0.08, XT, s * 1.05 - 0.07, s * 1.05 + 0.07, 1.00, 1.14);
+      bar(B.dark, [XT + 0.05, s * 0.45, 1.00], [XT - 0.05, s * 0.62, 0.62], 0.10);
+      bar(B.dark, [XT + 0.05, s * 0.85, 1.00], [XT - 0.05, s * 0.62, 0.62], 0.10);
+      box(B.dark, XT - 0.12, XT + 0.02, s * 0.62 - 0.14, s * 0.62 + 0.14, 0.56, 0.64);
+    }
+    /* front bumper with the tow eyes */
+    box(B.dark, XN, XN + 0.28, -1.48, 1.48, 0.95, 1.28);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, XN + 0.28, XN + 0.35, s * 0.55 - 0.08, s * 0.55 + 0.08, 1.02, 1.18);
+      box(B.dark, XN + 0.10, XN + 0.24, s * 1.05 - 0.10, s * 1.05 + 0.10, 0.80, 0.95);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      yo = s > 0 ? [1.00, 1.52] : [-1.52, -1.00];
+      /* mudguard arches over each pair, rounded at both ends as the museum side view shows them */
+      /* the rear one ends in a flat upright plate at the back, carrying the tail lamp (Army-2016 rear view) */
+      ribbon(B.paint, [[XT + 0.02, 0.92], [XT + 0.02, 1.62], [XT + 0.30, 1.70], [AX[3], 1.70], [AX[2], 1.70],
+                       [AX[2] + 0.42, 1.62], [AX[2] + 0.70, 1.40], [AX[2] + 0.82, 1.02]], yo[0], yo[1], 0.05);
+      ribbon(B.paint, [[AX[1] - 0.82, 1.02], [AX[1] - 0.70, 1.40], [AX[1] - 0.42, 1.62], [AX[1], 1.70], [AX[0], 1.70],
+                       [AX[0] + 0.45, 1.66], [AX[0] + 0.80, 1.50], [AX[0] + 0.90, 1.22]], yo[0], yo[1], 0.05);
+      /* mud flaps behind each pair */
+      box(B.dark, XT + 0.02, XT + 0.06, yo[0] + 0.04, yo[1] - 0.04, 0.42, 0.95);
+      box(B.glass, XT - 0.04, XT + 0.0, s * 1.30 - 0.09, s * 1.30 + 0.09, 1.48, 1.58);
+      box(B.dark, AX[1] - 0.86, AX[1] - 0.82, yo[0] + 0.04, yo[1] - 0.04, 0.45, 1.05);
+      /* the ribbed stowage boxes between the pairs, lids under the deck edge, and the dark tank below them */
+      box(B.paint, AX[2] + 0.70, AX[1] - 0.84, s > 0 ? 0.55 : -1.48, s > 0 ? 1.48 : -0.55, 1.32, 1.80);
+      for (k = 0; k < 9; k++) sideBox(B.paint, s, 1.48, 0.025, AX[2] + 0.80 + k * 0.17, AX[2] + 0.84 + k * 0.17, 1.36, 1.76);
+      for (k = 0; k < 2; k++) sideBox(B.dark, s, 1.48, 0.04, AX[2] + 1.05 + k * 0.80, AX[2] + 1.20 + k * 0.80, 1.56, 1.62);
+      box(B.dark, AX[2] + 0.85, AX[1] - 1.05, s > 0 ? 0.60 : -1.36, s > 0 ? 1.36 : -0.60, 0.62, 1.24);
+      for (k = 0; k < 3; k++) sideBox(B.paint, s, 1.36, 0.02, AX[2] + 0.95 + k * 0.55, AX[2] + 1.00 + k * 0.55, 0.64, 1.22);
+      /* the stabiliser jack between the rear pair: cylinder down the frame side, ram and foot plate raised for the road */
+      cylZ(B.paint, JX, s * JY, 0.80, 1.80, 0.12, 10);
+      cylZ(B.dark, JX, s * JY, 1.62, 1.70, 0.15, 10);
+      cylZ(B.dark, JX, s * JY, 0.46, 0.80, 0.075, 8);
+      cylZ(B.dark, JX, s * JY, 0.38, 0.46, 0.24, 12);
+      box(B.dark, JX - 0.10, JX + 0.10, s > 0 ? 0.55 : -JY, s > 0 ? JY : -0.55, 1.30, 1.45);
+      /* the ladder up behind the crew cab, starboard (2008 and 2024 photographs); a step under the port cab door */
+      if (s < 0) {
+        box(B.dark, XC0 - 0.30, XC0 - 0.27, -1.53, -1.50, 0.62, 1.86);
+        box(B.dark, XC0 - 0.05, XC0 - 0.02, -1.53, -1.50, 0.62, 1.86);
+        for (k = 0; k < 5; k++) box(B.dark, XC0 - 0.30, XC0 - 0.02, -1.53, -1.51, 0.72 + k * 0.25, 0.75 + k * 0.25);
+      }
+    }
+    /* the launcher deck from the crew cab back to the turntable, walkway edges */
+    box(B.paint, -2.80, XC0, -1.44, 1.44, ZK - 0.06, ZK);
+    for (s = -1; s <= 1; s += 2) box(B.dark, -2.80, XC0, s > 0 ? 1.40 : -1.46, s > 0 ? 1.46 : -1.40, ZK - 0.12, ZK + 0.02);
+    for (k = 0; k < 6; k++) box(B.dark, -2.6 + k * 0.72, -2.56 + k * 0.72, -1.40, 1.40, ZK, ZK + 0.01);
+    box(B.paint, XT + 0.16, -2.80, -1.44, 1.44, 1.46, 1.56);                            /* the rear frame top under the turntable */
+    /* the front travel rest: a saddle on two posts, under the cradle beam's fore end */
+    for (s = -1; s <= 1; s += 2) box(B.paint, 0.70, 0.86, s * 0.20 - 0.07, s * 0.20 + 0.07, ZK, 2.12);
+    box(B.dark, 0.62, 0.94, -0.30, 0.30, 2.08, 2.14);
+    /* exhaust stub, starboard behind the cab */
+    cylY(B.dark, XC0 + 0.30, -1.52, -1.40, 1.52, 0.06, 8);
+  }
+
+  /* the front: full-width engine bay with the louvred grille, the PORT driving cab ahead of the crew cab, and behind
+     both the tall full-width crew cab (2011 parade, 2008 parade, Army-2024 and the museum side view) */
+  function addCab(B, R) {
+    var s, k, x, y;
+    /* engine bay: lower body, side panels with the three louvre panels, the deck */
+    box(B.paint, XC1, XN, -1.50, 1.50, 1.18, ZD);
+    for (s = -1; s <= 1; s += 2) {
+      for (k = 0; k < 3; k++) {
+        sideBox(B.dark, s, 1.50, 0.015, 4.50 + k * 0.30, 4.74 + k * 0.30, 1.22, 1.62);
+        for (x = 0; x < 4; x++) sideBox(B.paint, s, 1.515, 0.015, 4.50 + k * 0.30, 4.74 + k * 0.30, 1.26 + x * 0.09, 1.29 + x * 0.09);
+      }
+      sideBox(B.dark, s, 1.50, 0.012, XC1 + 0.10, XC1 + 0.12, 1.20, ZD - 0.04);
+      sideBox(B.dark, s, 1.50, 0.012, 5.70, 5.72, 1.20, ZD - 0.04);
+    }
+    /* the grille: dark field, 15 vertical slats and two horizontal bars, from the starboard lamp to the port cab */
+    box(B.dark, XN, XN + 0.03, -1.16, YP - 0.02, 1.38, 2.02);
+    for (k = 0; k < 15; k++) { y = -1.12 + k * (YP + 1.08) / 14.5; box(B.paint, XN + 0.01, XN + 0.07, y, y + 0.04, 1.38, 2.02); }
+    for (k = 0; k < 2; k++) box(B.paint, XN + 0.06, XN + 0.10, -1.14, YP - 0.04, 1.55 + k * 0.30, 1.59 + k * 0.30);
+    /* headlamps at the outer ends, marker lamps below them */
+    for (s = -1; s <= 1; s += 2) {
+      y = s * 1.32;
+      cylX(B.dark, XN, XN + 0.08, y, 1.62, 0.12, 12);
+      cylX(B.glass, XN + 0.08, XN + 0.10, y, 1.62, 0.09, 12);
+      box(B.glass, XN, XN + 0.05, y - 0.06, y + 0.06, 1.34, 1.42);
+    }
+    /* engine deck: hatch seams, the raised intake housing before the crew cab on the starboard side (museum side view) */
+    for (k = 0; k < 3; k++) box(B.dark, 4.30 + k * 0.62, 4.33 + k * 0.62, -1.40, YP - 0.05, ZD, ZD + 0.01);
+    box(B.paint, XC1, XC1 + 0.72, -1.48, YP, ZD, 2.66);
+    box(B.dark, XC1 + 0.72, XC1 + 0.74, -1.30, YP - 0.15, 2.20, 2.56);
+    for (k = 0; k < 4; k++) box(B.dark, XC1 + 0.73, XC1 + 0.76, -1.25, YP - 0.20, 2.26 + k * 0.08, 2.29 + k * 0.08);
+    /* the driving cab, port: windscreen in two panes, door and window on the port side, the roof lamp */
+    box(B.paint, XC1, XN, YP, 1.50, ZD, ZP);
+    box(B.dark, XN, XN + 0.02, YP + 0.06, 1.46, ZD + 0.02, ZP - 0.06);
+    box(B.glass, XN + 0.02, XN + 0.03, YP + 0.10, 0.93, ZD + 0.05, ZP - 0.12);
+    box(B.glass, XN + 0.02, XN + 0.03, 0.97, 1.42, ZD + 0.05, ZP - 0.12);
+    box(B.dark, XN - 0.10, XN + 0.06, YP + 0.04, 1.48, ZP - 0.04, ZP + 0.02);                 /* visor lip */
+    box(B.dark, 4.40, 5.40, 1.50, 1.515, 1.30, ZP - 0.06);                                   /* door seam field */
+    box(B.paint, 4.43, 5.37, 1.51, 1.525, 1.33, ZP - 0.09);
+    box(B.glass, 4.75, 5.30, 1.52, 1.535, 2.14, ZP - 0.14);
+    box(B.dark, 4.50, 4.62, 1.525, 1.55, 1.80, 1.84);                                        /* handle */
+    box(B.dark, 4.55, 5.25, 1.50, 1.62, 1.04, 1.08);                                         /* step */
+    box(B.glass, XC1 + 0.20, 4.25, YP - 0.005, YP + 0.005, 2.20, ZP - 0.12);                /* inner side window over the deck */
+    cylZ(B.dark, 5.75, 0.95, ZP, ZP + 0.12, 0.05, 6);
+    cylX(B.dark, 5.62, 5.88, 0.95, ZP + 0.22, 0.12, 12);
+    cylX(B.glass, 5.88, 5.90, 0.95, ZP + 0.22, 0.10, 12);
+    if (R.guard) {                                                                          /* the guard hoop (Army-2024) */
+      for (s = -1; s <= 1; s += 2) bar(B.dark, [5.50, 0.95 + s * 0.22, ZP], [5.96, 0.95 + s * 0.22, ZP + 0.36], 0.03);
+      bar(B.dark, [5.96, 0.73, ZP + 0.36], [5.96, 1.17, ZP + 0.36], 0.03);
+    }
+    /* mirrors: the port cab's front corner and the crew cab's starboard front corner, on arms */
+    bar(B.dark, [XN - 0.05, 1.50, 2.30], [XN + 0.12, 1.62, 2.40], 0.035);
+    box(B.dark, XN + 0.08, XN + 0.16, 1.58, 1.72, 2.18, 2.52);
+    bar(B.dark, [XC1, -1.50, 2.80], [XC1 + 0.22, -1.62, 2.85], 0.035);
+    box(B.dark, XC1 + 0.18, XC1 + 0.26, -1.74, -1.58, 2.45, 2.85);
+    if (R.box) {                                                                            /* the box on the engine deck (Army-2024) */
+      box(B.paint, 4.55, 5.55, -1.30, -0.30, ZD, ZD + 0.34);
+      box(B.dark, 4.55, 5.55, -1.31, -0.29, ZD + 0.26, ZD + 0.28);
+      for (k = 0; k < 2; k++) box(B.dark, 4.80 + k * 0.5, 4.88 + k * 0.5, -1.32, -1.30, ZD + 0.12, ZD + 0.22);
+    }
+    /* the crew cab: full width, tall, two front windows high up, a door each side, roof hatch */
+    box(B.paint, XC0, XC1, -1.50, 1.50, 1.80, ZC - 0.05);
+    box(B.paint, XC0 + 0.05, XC1 - 0.05, -1.45, 1.45, ZC - 0.05, ZC);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, XC1, XC1 + 0.02, s > 0 ? 0.45 : -1.38, s > 0 ? 1.38 : -0.45, 2.66, 3.00);
+      box(B.glass, XC1 + 0.02, XC1 + 0.03, s > 0 ? 0.50 : -1.33, s > 0 ? 1.33 : -0.50, 2.70, 2.96);
+      sideBox(B.dark, s, 1.50, 0.012, 2.05, 3.22, 1.86, 2.98);                                /* door seam field */
+      sideBox(B.paint, s, 1.512, 0.012, 2.08, 3.19, 1.89, 2.95);
+      sideBox(B.glass, s, 1.524, 0.01, 2.55, 3.05, 2.58, 2.90);
+      sideBox(B.dark, s, 1.524, 0.03, 2.15, 2.30, 2.30, 2.34);
+      sideBox(B.dark, s, 1.50, 0.012, XC0 + 0.06, XC0 + 0.24, 2.10, 2.70);                     /* rear vent */
+    }
+    box(B.dark, XC0, XC0 + 0.02, -1.20, 1.20, 2.00, 2.90);                                    /* rear wall seam */
+    box(B.paint, XC0 + 0.02, XC0 + 0.04, -1.10, 1.10, 2.04, 2.86);
+    box(B.dark, 2.20, 2.90, -0.40, 0.40, ZC, ZC + 0.05);                                      /* roof hatch */
+    if (R.whip) {                                                                           /* whip aerial (Army-2016) */
+      cylZ(B.dark, XC0 + 0.20, 0.90, ZC, ZC + 0.15, 0.05, 6);
+      cyl(B.dark, [XC0 + 0.20, 0.90, ZC + 0.15], [XC0 + 0.20, 0.90, ZC + 1.8], 0.014, 0.008, 4, false, false);
+    }
+  }
+
+  /* the turntable and the rotating platform ("turret", origin on the slewing ring): the trunnion cheeks at its rear,
+     and the elevating rams lying forward under the cradle beam */
   function addMount(B) {
     var s, k;
-    cyl(B.dark, [0, 0, 0.0], [0, 0, 0.10], 0.95, 0.95, 28);                       /* slewing ring */
-    box(B.paint, -0.85, 0.85, -1.40, 1.40, 0.10, 0.34);                           /* base platform, as wide as the chassis */
-    box(B.dark, -0.85, 0.85, -1.42, 1.42, 0.34, 0.37);
+    cyl(B.dark, [0, 0, 0.0], [0, 0, 0.10], 0.90, 0.90, 28);
+    box(B.paint, -1.30, 1.15, -0.98, 0.98, 0.10, 0.40);
+    box(B.dark, -1.30, 1.15, -1.00, 1.00, 0.36, 0.40);
+    for (k = 0; k < 3; k++) box(B.dark, -0.90 + k * 0.70, -0.86 + k * 0.70, -1.00, 1.00, 0.12, 0.36);
     for (s = -1; s <= 1; s += 2) {
-      box(B.paint, -0.34, 0.34, s > 0 ? 1.22 : -1.40, s > 0 ? 1.40 : -1.22, 0.30, PZ + 0.32);   /* cheeks */
-      cylY(B.dark, 0, s * 1.18, s * 1.46, PZ, 0.13, 12);                            /* trunnion pins */
+      box(B.paint, PVX - 0.24, PVX + 0.30, s * 0.29, s * 0.35, 0.10, PVZ + 0.12);           /* trunnion cheeks */
+      cylY(B.dark, PVX, s * 0.20, s * 0.37, PVZ, 0.09, 10);                                   /* pins */
+      box(B.dark, -0.60, 1.10, s * 0.70 - 0.20, s * 0.70 + 0.20, 0.40, 0.44);                 /* platform rails */
+      cyl(B.dark, [0.95, s * 0.16, 0.44], [3.15, s * 0.16, 0.46], 0.075, 0.075, 10);         /* elevating rams */
+      cyl(B.paint, [0.75, s * 0.16, 0.44], [1.50, s * 0.16, 0.44], 0.11, 0.11, 10);
     }
-    /* elevating ram bodies between the platform and the cradle (rods ride in the pack): fixed cylinders */
-    for (s = -1; s <= 1; s += 2) cyl(B.dark, [0.45, s * 0.60, 0.37], [1.30, s * 0.60, PZ - 0.62], 0.085, 0.07, 10);
-    for (k = -1; k <= 1; k += 2) box(B.dark, 0.35, 0.85, k * 0.60 - 0.12, k * 0.60 + 0.12, 0.34, 0.40);
+    box(B.paint, 0.60, 1.10, -0.30, 0.30, 0.40, 0.48);
+    /* the raised housing between the trunnion cheeks, standing up into the gap of the lower rows behind the cradle
+       beam: what is left standing under the pack once it is raised (museum side view) */
+    box(B.paint, PVX + 0.30, 0.95, -0.34, 0.34, 0.40, 0.80);
+    box(B.dark, PVX + 0.30, 0.95, -0.35, 0.35, 0.76, 0.80);
+    for (s = -1; s <= 1; s += 2) for (k = 0; k < 3; k++) box(B.dark, -0.55 + k * 0.45, -0.25 + k * 0.45, s * 0.34, s * 0.355, 0.48, 0.72);
   }
 
-  /* the pack: 12 tubes, 4 across at the top and 2 + 2 below (Kuwait front view, Tula rear view: on a six-column grid the
-     top row fills columns 2-5, the two lower rows columns 1, 2, 5, 6, the middle left open on the cradle frame), lying along +X
-     in the trunnion frame (origin at the pivot) */
+  /* the pack: twelve 300 mm tubes, four in the top row (columns 2-5 of six) and two either side in each lower row,
+     the middle of the lower rows taken by the cradle beam (museum rear view and the Army-2016 rear view);
+     group "podelev", origin on the trunnion */
   function addPack(B, cells) {
-    var c, r, y, z, k, v, P = TPITCH, hw = 2.5 * P + TR + 0.035, hh = P + TR + 0.035, ys = [], zs = [];
-    var HY = 1.5 * P + TR, OY = 2.5 * P + TR, tt = P + TR, st = TR;
-    for (c = 0; c < 6; c++) for (r = 0; r < 3; r++) {
-      if (r === 2 ? (c < 1 || c > 4) : (c > 1 && c < 4)) continue;
-      y = (c - 2.5) * P; z = (r - 1) * P;
-      cylX(B.paint, TX0, TX1, y, z, TR, 14);                                         /* tube */
-      cylX(B.dark, TX1 - 0.02, TX1 + 0.03, y, z, TR + 0.012, 14);                     /* muzzle ring */
-      cylX(B.dark, TX1 + 0.03, TX1 + 0.035, y, z, TR - 0.04, 12);                     /* closing disc / bore dark */
-      cylX(B.dark, TX0 - 0.10, TX0, y, z, TR - 0.03, 12);                             /* tail ferrule */
-      cells.push([TX1 + 0.06, y, z, TX0 - 0.1]);
+    var c, r, y, z, k, x, SL = [0.55, 2.20, 3.85, 5.50], yo = 2.5 * TP + TR, yi = 1.5 * TP + TR, zt = ROWZ[2] + TR, zb = ROWZ[0] - TR, zm = ROWZ[1] + TR;
+    var cols = [[1, 2, 3, 4], [0, 1, 4, 5], [0, 1, 4, 5]];
+    for (r = 0; r < 3; r++) for (k = 0; k < 4; k++) {
+      c = cols[2 - r][k]; y = (c - 2.5) * TP; z = ROWZ[r];
+      cylX(B.paint, TX0 + 0.24, TX1 - 0.12, y, z, TR, 14);
+      cyl(B.paint, [TX0, y, z], [TX0 + 0.16, y, z], TR + 0.035, TR + 0.025, 14, true, false);  /* tail collar, flared, open */
+      cyl(B.paint, [TX0 + 0.16, y, z], [TX0 + 0.24, y, z], TR + 0.025, TR, 14, true, true);
+      cylX(B.dark, TX0 + 0.08, TX0 + 0.10, y, z, TR + 0.03, 12);                                /* the bore, seen down it */
+      cyl(B.paint, [TX1 - 0.12, y, z], [TX1, y, z], TR + 0.018, TR + 0.018, 14, false, true);  /* mouth ring, open */
+      cylX(B.dark, TX1 - 0.09, TX1 - 0.07, y, z, TR + 0.012, 12);
+      cells.push([TX1 + 0.05, y, z, TX0]);
     }
-    /* the cradle frame filling the open middle of the two lower rows */
-    box(B.dark, TX0 + 0.1, TX1 - 0.2, -P, P, -P - 0.1, 0.12);
-    /* straps following the stepped outline: top, shelves, flanks and underside */
-    for (k = 0; k < 9; k++) {
-      var bx = 0.2 + k * 0.62;
-      box(B.dark, bx, bx + 0.07, -HY, HY, tt, tt + 0.05);
-      box(B.dark, bx, bx + 0.07, -OY, -HY, st, st + 0.05);
-      box(B.dark, bx, bx + 0.07, HY, OY, st, st + 0.05);
-      box(B.dark, bx, bx + 0.07, -HY - 0.05, -HY, st, tt + 0.05);
-      box(B.dark, bx, bx + 0.07, HY, HY + 0.05, st, tt + 0.05);
-      box(B.dark, bx, bx + 0.07, -OY - 0.05, -OY, -tt, st + 0.05);
-      box(B.dark, bx, bx + 0.07, OY, OY + 0.05, -tt, st + 0.05);
-      box(B.dark, bx, bx + 0.07, -OY, OY, -tt - 0.05, -tt);
+    /* the cradle beam in the gap of the lower rows, and its rail under the pack */
+    box(B.paint, 2.20, TX1 - 0.40, -0.27, 0.27, zb - 0.02, ROWZ[2] - TR + 0.01);
+    box(B.dark, 2.20, TX1 - 0.40, -0.28, 0.28, zb - 0.06, zb - 0.02);
+    for (k = 0; k < 4; k++) box(B.dark, 2.6 + k * 1.0, 2.64 + k * 1.0, -0.28, 0.28, zb, ROWZ[2] - TR);
+    /* the cradle's side plates either side of the housing, from the trunnion lugs to the beam */
+    for (c = -1; c <= 1; c += 2) box(B.paint, 0.30, 2.25, c * 0.36, c * 0.40, -0.12, zb + 0.10);
+    box(B.paint, TX0 + 0.20, 0.10, -0.38, 0.38, ROWZ[2] - TR - 0.10, ROWZ[2] - TR);
+    /* clamp frames at four stations, following the stepped outline: top, shoulders, flanks, belly; side lugs */
+    for (k = 0; k < 4; k++) {
+      x = SL[k];
+      box(B.paint, x, x + 0.09, -yi + 0.02, yi - 0.02, zt, zt + 0.035);
+      box(B.paint, x, x + 0.09, -yi - 0.035, -yi + 0.01, zm, zt + 0.035);
+      box(B.paint, x, x + 0.09, yi - 0.01, yi + 0.035, zm, zt + 0.035);
+      box(B.paint, x, x + 0.09, -yo, -yi + 0.02, zm, zm + 0.035);
+      box(B.paint, x, x + 0.09, yi - 0.02, yo, zm, zm + 0.035);
+      box(B.paint, x, x + 0.09, -yo - 0.035, -yo, zb, zm + 0.035);
+      box(B.paint, x, x + 0.09, yo, yo + 0.035, zb, zm + 0.035);
+      box(B.paint, x, x + 0.09, -yo, yo, zb - 0.035, zb);
+      box(B.dark, x + 0.01, x + 0.08, -yo - 0.10, -yo - 0.035, ROWZ[1] - 0.06, ROWZ[1] + 0.06);
+      box(B.dark, x + 0.01, x + 0.08, yo + 0.035, yo + 0.10, ROWZ[1] - 0.06, ROWZ[1] + 0.06);
     }
-    /* cradle slab below, side rails, front lattice frame and rear plate */
-    box(B.paint, TX0 - 0.1, TX1 - 0.2, -hw, hw, -hh - 0.10, -hh);
-    for (c = -1; c <= 1; c += 2) box(B.paint, TX0 - 0.1, TX1 - 0.2, c * hw - 0.04, c * hw + 0.04, -hh - 0.10, -hh + 0.2);
-    box(B.dark, TX0 - 0.14, TX0 - 0.08, -hw - 0.02, hw + 0.02, -hh, hh - 0.30);
-    for (k = -1; k <= 1; k += 2) {
-      box(B.dark, TX1 - 0.12, TX1 - 0.02, k * hw - 0.04, k * hw + 0.04, -hh, 0.30);
-      for (c = 0; c < 3; c++) box(B.dark, TX1 - 0.12, TX1 - 0.02, k > 0 ? HY : -OY, k > 0 ? OY : -HY, -hh + c * 0.38, -hh + c * 0.38 + 0.04);
-    }
-    /* the trunnion lugs where the cheeks hold the cradle */
-    box(B.paint, -0.30, 0.30, -hw - 0.02, hw + 0.02, -hh - 0.14, -hh);
-    for (c = -1; c <= 1; c += 2) box(B.dark, -0.18, 0.18, c * (hw + 0.06) - 0.06, c * (hw + 0.06) + 0.06, -hh - 0.14, 0.1);
-    /* the one team strip on the top of the pack, up-facing */
-    box(B.team, 2.4, 3.4, -0.12, 0.12, tt + 0.07, tt + 0.09);
-  }
-
-  function shiftX(from, n, dx) { var k; for (k = n; k < from.P.length; k += 3) from.P[k] += dx; }
-
-  function build(THREE, C, variant) {
-    var P = (variant === "e80" || variant === "e90") ? PAINTS.soviet : PAINTS.olive;
-    var T = materials(THREE, C, P), g = new THREE.Group(), HB = bins(T, true), CB = bins(T, true), i, s, wg, wm, geo, TB, k, b;
-    addChassis(HB);
-    addCabMaz(CB);
-    for (k in CB) { shiftX(CB[k], 0, CABDX); b = HB[k]; b.P = b.P.concat(CB[k].P); b.N = b.N.concat(CB[k].N); if (b.U) b.U = b.U.concat(CB[k].U); }
-    flush(THREE, g, HB);
-    for (s = -1; s <= 1; s += 2) {
-      TB = new Bin(T.tyre, false);
-      tyre(TB);
-      geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P), 3));
-      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N), 3));
-      for (i = 0; i < 4; i++) {
-        wg = new THREE.Group();
-        wg.name = "roadwheel";
-        wg.position.set(AX[i], s * TY, RT);
-        wm = new THREE.Mesh(geo, T.tyre);
-        if (s < 0) wm.rotation.y = Math.PI / 20;
-        wg.add(wm);
-        g.add(wg);
+    /* the lattice frame binding the tails (2011 parade, rear) and the one behind the mouths */
+    for (k = 0; k < 2; k++) {
+      x = k ? TX1 - 0.55 : TX0 + 0.30;
+      box(B.dark, x, x + 0.06, -yo, yo, ROWZ[0] + TP / 2 - 0.025, ROWZ[0] + TP / 2 + 0.025);
+      box(B.dark, x, x + 0.06, -yi, yi, ROWZ[1] + TP / 2 - 0.025, ROWZ[1] + TP / 2 + 0.025);
+      for (c = 0; c < 5; c++) {
+        y = (c - 2) * TP;
+        if (c === 2) continue;
+        box(B.dark, x, x + 0.06, y - 0.025, y + 0.025, (c === 0 || c === 4) ? zb : ROWZ[0], (c === 0 || c === 4) ? zm : zt);
       }
     }
-    /* the launcher: "turret" (traverses) holding "podelev" (elevates about the trunnion) */
-    var tur = new THREE.Group(), MB = bins(T, false), EB = bins(T, true), el = new THREE.Group(), cells = [];
+    /* trunnion lugs either side of the beam, round the pins */
+    for (c = -1; c <= 1; c += 2) box(B.dark, -0.22, 0.30, c * 0.20, c * 0.28, -0.14, zb + 0.10);
+    /* the one team strip, across the top two middle tubes */
+    box(B.team, 2.80, 3.60, -0.24, 0.24, zt + 0.005, zt + 0.03);
+  }
+
+  function build(THREE, C, variant) {
+    var R = ROWS[variant] || ROWS.p, T = materials(THREE, C, R.paint), g = new THREE.Group(), HB = bins(T), i, s, wg, wm, geo, TB;
+    addChassis(HB, R);
+    addCab(HB, R);
+    flush(THREE, g, HB);
+    TB = new Bin(T.tyre, false);
+    tyre(TB);
+    geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P), 3));
+    geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N), 3));
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 4; i++) {
+      wg = new THREE.Group();
+      wg.name = "roadwheel";
+      wg.position.set(AX[i], s * TY, RT);
+      wm = new THREE.Mesh(geo, T.tyre);
+      if (s < 0) wm.rotation.y = Math.PI / 22;
+      wg.add(wm);
+      g.add(wg);
+    }
+    /* the launcher: "turret" (traverses on the ring) holding "podelev" (elevates about the rear trunnion) */
+    var tur = new THREE.Group(), MB = bins(T), EB = bins(T), el = new THREE.Group(), cells = [];
     addMount(MB);
     flush(THREE, tur, MB);
     addPack(EB, cells);
     flush(THREE, el, EB);
     el.name = "podelev";
-    el.position.set(0, 0, PZ);
+    el.position.set(PVX, 0, PVZ);
     el.userData.el = LAUNCH_EL;
     el.userData.cells = cells;
     tur.add(el);
@@ -567,7 +682,7 @@ var HeroSmerch = (function () {
   return { build: build };
 })();
 
-/* len is the measured X extent: the rear tow hooks to the front tow eyes */
+/* len is the measured X extent: the tube tails to the front tow eyes, 12.37 m as published for the 9A52 */
 UNIT_MODELS["pact_e80_mlrs"] = { len: 12.4, build: function (THREE, M, C) { return HeroSmerch.build(THREE, C, "e80"); } };
 UNIT_MODELS["pact_e90_mlrs"] = { len: 12.4, build: function (THREE, M, C) { return HeroSmerch.build(THREE, C, "e90"); } };
 UNIT_MODELS["pact_e00_mlrs"] = { len: 12.4, build: function (THREE, M, C) { return HeroSmerch.build(THREE, C, "e00"); } };
