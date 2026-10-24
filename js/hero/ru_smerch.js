@@ -1,6 +1,6 @@
 /* ============ ru_smerch.js - HERO model: the 9A52 Smerch (BM-30) 300 mm multiple rocket launcher on the MAZ-543M 8x8 ============
    Full-quality redo (2026-10-24).  Four keys, kept: pact_e80_mlrs "9A52 Smerch 300mm MRL" (1987), pact_e90_mlrs "9A52 BM-30
-   Smerch", pact_e00_mlrs "9A52 Smerch / 9A53 Tornado-S", mlrs_p "9A52 Smerch MRL" (present; js/facts.js calls it the 9A52-2).
+   Smerch", pact_e00_mlrs "9A52 Smerch / 9A54 Tornado-S", mlrs_p "9A52 Smerch MRL" (present; js/facts.js calls it the 9A52-2).
    All four rows are turret:true; none is deploy:true.
 
    Sources (Wikimedia Commons, at width 960; ru.wikipedia "Smerch (RSZO)" for figures and variants):
@@ -44,7 +44,7 @@
      9A52 of the 2008-2011 photographs in plain Russian green (#4b533f).  mlrs_p is the 9A52-2 / Tornado-S of Army-2016 [A]
      and Army-2024 [T], in their darker green (#4e5842; sampled lit #657259 [T], taken to about 0.8).  It adds what those
      photographs show: the guard round the roof lamp and the box on the engine deck [T], and the whip aerial [A].  The
-     pact_e00_mlrs row's "9A53" is the Uragan-1M launcher in ru.wikipedia.  The Tornado-S launcher is the 9A54, issued from
+     pact_e00_mlrs row named the 9A53 (the Uragan-1M launcher in ru.wikipedia) until 2026-10-24.  The Tornado-S is the 9A54, issued from
      2016, so that row draws the 9A52 its own decade shows.
    NOT drawn (not confirmed): the jacks set up.  The row is not deploy:true, and js/entities.js sets e.deployed only for SAM
      and coastal rows, so a lowered pose would never be shown; the jacks are drawn raised for the road.  Also not drawn: the
