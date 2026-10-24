@@ -14700,15 +14700,15 @@ Object.assign(UNITS, {
     desc:"Eight subsonic Kh-35s in box canisters on an MZKT-7930, fired three seconds apart: a salvo that saturates a ship's close-in defence. Sited up to ten kilometres inland, behind the coast it covers." },
   /* K-300P Bastion-P (SSC-5 Stooge), ru and en.wikipedia "Bastion-P": two
      P-800 Oniks a launcher, K340P on the MZKT-7930, crew three; into action
-     in under five minutes (4.0 s); in service 2011, so the 2020s card only
-     (2011 is past the 2000s card; the study's recommendation). An optional Monolit-B over-the-horizon radar: piece B4.
+     in under five minutes (4.0 s); in service 2011, inside the "2000s-10s"
+     card (rules.js ERA_INFO e00), so from there on beside the Bal. An optional Monolit-B over-the-horizon radar: piece B4.
      Cost, hit points and speed the MZKT-7930's Iskander-M launcher's. */
   pact_e20_coastssm: { fac:"pact", role:"coastssm", cat:"vehicle", layer:"ground", name:"Bastion-P",
     full:"K-300P Bastion-P (SSC-5 Stooge), K340P launcher",
     cost:3200, oil:58, time:38, hp:580, armor:"light", speed:1.30, turn:1.0, sight:5.0, r:17, mass:42,
     weapons:["ssm_oniks_bastion"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
     modelAs:"pact_e00_tel",
-    from:"e20", service:"2011", confidence:"high",
+    from:"e00", service:"2011", confidence:"high",
     desc:"Two supersonic Oniks missiles in vertical tubes on an MZKT-7930, and five minutes from the march to the launch. The coastal brigades of all four Russian fleets and Crimea have it." },
 });
 
