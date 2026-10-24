@@ -14712,6 +14712,162 @@ Object.assign(UNITS, {
     desc:"Two supersonic Oniks missiles in vertical tubes on an MZKT-7930, and five minutes from the march to the launch. The coastal brigades of all four Russian fleets and Crimea have it." },
 });
 
+/* B3: the other sides' coastal launchers, only those with a sourced service
+   date (_keep/weapons_study/coastssm/REPORT.md; PLAN.md B3). Left out, each
+   for want of a source: the PLA's HY-1 ashore (en.wikipedia "Silkworm
+   (missile)": it "lost out to the more-ambitious HY-2 but was adopted for
+   shipboard use"; zh.wikipedia "海鹰二号": the HY-1 shore type was replaced
+   by the HY-2 before it was fielded), so the PLA has no 1960s-70s card; the
+   KPA's KN-01 and Sopka, the ROC's HF-3 ashore and the American Typhon (its
+   one anti-ship firing is an exercise target sunk on 15 July 2025, and the
+   game has no SM-6 anti-ship row to copy), none with a date of its own.
+   A launcher count no source gives is the salvo its ship row already fires
+   (burst), said on each row; time into action the Rubezh's five minutes,
+   as the Redut's and Bal's are. Ranges are placed by rank among the rows of
+   the same navy, which is the band its ships already use. */
+/* HY-2A: the PLA boats' SY-1 row (the P-15 copy, 40 km, 13.9) stretched to
+   95-100 km (zh.wikipedia "海鹰二号": 95 km; en.wikipedia "Silkworm": 100 km).
+   By rank it sits above the PLA's two short rows, the SY-1 (13.9) and the
+   YJ-8 (42 km, 15.1), and below the YJ-83 (180 km, 16.8): 15.2. */
+WEAPONS.ssm_hy2 = Object.assign({}, WEAPONS.w_e60_pla_missileboat, {
+  name: "HY-2A (shore)", range: 15.2, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* YJ-62: en.wikipedia "YJ-62" (JFQ 2014, ONI 2015): subsonic, 280 km for
+   the C-602 export model and "at least 400 km" for the YJ-62 itself. By rank
+   between the YJ-83 (180 km, 16.8) and the YJ-18 (540 km, 17.0): 16.9; the
+   YJ-83 row, the PLA's other subsonic anti-ship round, otherwise. */
+WEAPONS.ssm_yj62 = Object.assign({}, WEAPONS.w_e00_pla_missileboat, {
+  name: "YJ-62 (shore)", range: 16.9, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* YJ-12B: en.wikipedia "YJ-12": the land-based variant, 460 km, Mach 2.5 to
+   4. By rank between the YJ-62 (400 km, 16.9) and the YJ-18 (540 km, 17.0):
+   16.95; the YJ-18 row, the PLA's supersonic round, otherwise. */
+WEAPONS.ssm_yj12b = Object.assign({}, WEAPONS.ssm_yj18, {
+  name: "YJ-12B", range: 16.95, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* Kumsong-3: the same missile as the Nongo boats' row (9.4) ashore */
+WEAPONS.ssm_kumsong3 = Object.assign({}, WEAPONS.w_e00_kpa_missileboat, {
+  name: "Kumsong-3 (shore)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* Hsiung Feng II: the same missile as the Kuang Hua VI boats' row (14.9) */
+WEAPONS.ssm_hf2_shore = Object.assign({}, WEAPONS.w_e00_roc_missileboat, {
+  name: "Hsiung Feng II (shore)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* NMESIS: the ships' Naval Strike Missile row (16.0) ashore */
+WEAPONS.ssm_nsm_nmesis = Object.assign({}, WEAPONS.ssm_nsm, {
+  name: "Naval Strike Missile (NMESIS)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+/* Excalibur: the ships' MM38 Exocet row (9.6) ashore */
+WEAPONS.ssm_exocet38_shore = Object.assign({}, WEAPONS.ssm_exocet38, {
+  name: "MM38 Exocet (Excalibur)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+Object.assign(UNITS, {
+  /* HY-2A (CSSC-3 Seersucker), zh.wikipedia "海鹰二号": the HY-2 was design-
+     certified in March 1970 and fielded only ashore (too long for any PLAN
+     ship of its day); the HY-2A, with an infrared seeker, was certified in
+     1982 and from 1983 went into series production "装备岸舰导弹部队" - to the
+     shore missile units. The basic HY-2's own service year is not given, so
+     the card begins with the HY-2A in the 1980s. Its launcher is described
+     only as mobile or fixed: the Sopka's towed figures (the S-75's), the
+     other rail-launched P-15-family shore missile, and its model. Rounds:
+     the SY-1 row's salvo of two (no count found). No retirement year found:
+     its card ends where the YJ-62's begins. */
+  pla_e80_coastssm: { fac:"pla", role:"coastssm", cat:"vehicle", layer:"ground", name:"HY-2A",
+    full:"HY-2A (CSSC-3 Seersucker) shore missile launcher",
+    cost:1650, oil:22, time:24, hp:470, armor:"light", speed:0.70, turn:0.9, sight:5.0, r:16, mass:18,
+    weapons:["ssm_hy2"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
+    modelAs:"pact_e50_s75",
+    from:"e80", to:"e90", service:"1983", confidence:"medium",
+    desc:"China's own stretch of the Styx: a bigger, longer-legged missile than any PLA ship could carry, so it went only to the shore missile units. No radar of its own - a coastal observation post or a patrol aircraft has to find the ship." },
+  /* YJ-62 shore launcher, zh.wikipedia "鹰击62反舰导弹": the shore launcher
+     vehicle was first shown at the 60th-anniversary National Day parade of
+     2009; en.wikipedia "YJ-62" (operators, from IISS The Military Balance
+     2025): the PLA Navy Coastal Defence Force had "120+ as of 2012". Both in
+     the 2000s-10s card (rules.js ERA_INFO e00). The range
+     needs targeting from other platforms (CMSI 2017), so it fires on a cue.
+     The source names no chassis: the HQ-9's Taian TAS-5380 8x8 (pla_e00_sam),
+     the PLA's canister-launcher truck of the period, for cost, hit points,
+     speed and model. Rounds: the YJ-83 row's salvo of two (no count found). */
+  pla_e00_coastssm: { fac:"pla", role:"coastssm", cat:"vehicle", layer:"ground", name:"YJ-62",
+    full:"YJ-62 shore launcher, PLA Navy Coastal Defence Force",
+    cost:2500, oil:36, time:31, hp:630, armor:"light", speed:1.25, turn:1.2, sight:5.0, r:16, mass:38,
+    weapons:["ssm_yj62"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
+    modelAs:"pla_e00_sam",
+    from:"e00", service:"2009", confidence:"medium",
+    desc:"A long-range subsonic sea-skimmer in box canisters on a truck. It reaches far past anything the launcher can see, so it is aimed by an aircraft, a ship or a radar of its side." },
+  /* YJ-12B, en.wikipedia "YJ-12": the land-based variant "reportedly
+     deployed to the Spratly Islands around April 2018" - inside the 2000s-10s
+     card, so from there on beside the YJ-62 (as the Bastion-P is beside the
+     Bal). zh.wikipedia "鹰击12反舰导弹": shown in November 2018 at the
+     reform-anniversary exhibition and with 16 launchers at the parade of
+     1 October 2019; the launcher is a 10x10 cross-country chassis with a
+     control cabin behind the cab and square launch boxes "呈品字形" - three,
+     set like the strokes of that character. Cost, hit points, speed and
+     model the DF-16's 10x10 TEL (tel_c). */
+  pla_e20_coastssm: { fac:"pla", role:"coastssm", cat:"vehicle", layer:"ground", name:"YJ-12B",
+    full:"YJ-12B shore launcher on a 10x10 chassis",
+    cost:3300, oil:60, time:39, hp:570, armor:"light", speed:1.25, turn:0.95, sight:5.0, r:17, mass:46,
+    weapons:["ssm_yj12b"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:3,
+    modelAs:"tel_c",
+    from:"e00", service:"2018", confidence:"medium",
+    desc:"Three supersonic YJ-12s on a ten-wheeled cross-country truck: 460 km and Mach 2.5 or more, the round the PLA put on its Spratly islands. Like the YJ-62 it is aimed by someone else's sensors." },
+  /* Kumsong-3 (KN-19), en.wikipedia "Kumsong-3": a Kh-35 derivative; "a
+     mobile launcher with four canisters" developed in North Korea, presented
+     in 2017, with a 240 km test on 8 June 2017 (REPORT.md); "lacking
+     over-the-horizon radar capability", so it fires on a cue. In the
+     2000s-10s card on. The source names no chassis: the KN-02's (kpa_e00_tel),
+     the KPA's wheeled missile launcher of the period, for cost, hit points,
+     speed and model. */
+  kpa_e00_coastssm: { fac:"kpa", role:"coastssm", cat:"vehicle", layer:"ground", name:"Kumsong-3",
+    full:"Kumsong-3 (KN-19) four-canister mobile launcher",
+    cost:2600, oil:46, time:34, hp:530, armor:"light", speed:1.40, turn:1.1, sight:5.0, r:16, mass:18,
+    weapons:["ssm_kumsong3"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:4,
+    modelAs:"kpa_e00_tel",
+    from:"e00", service:"2017", confidence:"medium",
+    desc:"North Korea's copy of the Kh-35, four to a truck. It has no radar that sees past the horizon, so it fires only on a ship its side has found." },
+  /* Hsiung Feng II mobile launcher, en.wikipedia "Hsiung Feng II": "accepted
+     in 2005 and went to mass production in 2006", kept in hardened shelters
+     with a mobile command centre and a mobile surface search radar (piece
+     B4); zh.wikipedia "雄風二型反艦飛彈": in service with the Navy's Haifeng
+     group mobile squadron from 2005, one squadron at first and five after
+     the 2010s expansion. In the 2000s-10s card on. The source names no
+     chassis: the Sky Bow III mobile launcher's (sam_r), the ROC's canister
+     launcher truck, for cost, hit points, speed and model. Rounds: the Kuang
+     Hua VI row's salvo of two (no count found). zh.wikipedia "海鋒大隊"
+     dates the Navy's mobile squadron as formed on 21 January 2013, also
+     inside the 2000s-10s card. */
+  roc_e00_coastssm: { fac:"roc", role:"coastssm", cat:"vehicle", layer:"ground", name:"Hsiung Feng II",
+    full:"Hsiung Feng II mobile launcher, Haifeng group",
+    cost:2900, oil:34, time:34, hp:560, armor:"light", speed:1.25, turn:1.2, sight:5.0, r:15, mass:28,
+    weapons:["ssm_hf2_shore"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
+    modelAs:"sam_r",
+    from:"e00", service:"2005", confidence:"high",
+    desc:"Taiwan's anti-invasion missile truck: Hsiung Feng IIs in box launchers, kept in hardened shelters and driven out to fire across the strait. Its battery brings its own surface search radar." },
+  /* NMESIS, en.wikipedia "3rd Marine Littoral Regiment": the regiment
+     "received the NMESIS system for coastal defense" in November 2024 and
+     took it to the Luzon Strait for Balikatan 2025; en.wikipedia "Naval
+     Strike Missile": an NSM launcher on an unmanned JLTV-based vehicle.
+     The 2020s card. Cost, hit points, speed and model the M142 HIMARS's
+     (tel_n), the US wheeled missile launcher nearest a JLTV. Rounds: the
+     NSM row's salvo of two (no count found in these sources). */
+  nato_e20_coastssm: { fac:"nato", role:"coastssm", cat:"vehicle", layer:"ground", name:"NMESIS",
+    full:"Navy/Marine Expeditionary Ship Interdiction System (NSM on a JLTV)",
+    cost:2900, oil:48, time:34, hp:520, armor:"light", speed:1.55, turn:1.4, sight:5.0, r:15, mass:16.25,
+    weapons:["ssm_nsm_nmesis"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:2,
+    modelAs:"tel_n",
+    from:"e20", service:"2024", confidence:"high",
+    desc:"The Marines' unmanned anti-ship launcher: a stealthy Naval Strike Missile pod on a driverless JLTV, put on an island in a strait to close it. The first in American hands since the coastal guns." },
+  /* Excalibur, en.wikipedia "Exocet": "A coast defence version known as
+     'Excalibur' was developed in the United Kingdom and deployed in
+     Gibraltar from 1985 to 1997" - one source, so confidence "medium" (the
+     owner's choice, REPORT.md question 5). The 1980s and 1990s cards. The
+     launcher is not described: the Lance launcher's cost, hit points and
+     speed (gbr_e60_tel), the British Army's missile vehicle of the 1980s,
+     and, the Lance having no model of its own, the HIMARS's box launcher on
+     a wheeled truck (tel_n) to draw it. Rounds: the MM38 row's salvo of one
+     (no count found). */
+  gbr_e80_coastssm: { fac:"gbr", role:"coastssm", cat:"vehicle", layer:"ground", name:"Excalibur",
+    full:"Excalibur coast-defence MM38 Exocet, Gibraltar",
+    cost:2700, oil:46, time:35, hp:470, armor:"light", speed:1.50, turn:1.1, sight:5.0, r:17, mass:16,
+    weapons:["ssm_exocet38_shore"], prereq:["factory", "lab"], tech:3, turret:false, deploy:true, deploySec:4.0, rounds:1,
+    modelAs:"tel_n",
+    from:"e80", to:"e90", service:"1985", confidence:"medium",
+    desc:"The ship's MM38 Exocet set up ashore to guard the Strait of Gibraltar, from 1985 to 1997. A short-range sea-skimmer." },
+});
+
 /* ERA_RADAR_SETS once more, now that every row in this file exists: the
    amphibious ships were defined after its first pass (see there). */
 if (typeof applyEraRadarSets === "function") applyEraRadarSets();
