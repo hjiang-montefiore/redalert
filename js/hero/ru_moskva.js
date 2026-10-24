@@ -1,95 +1,142 @@
 /* ==================== js/hero/ru_moskva.js =============================
    HERO MODEL -- Project 1123 "Kondor" (Moskva class) anti-submarine
-   helicopter cruiser, as built 1967-69 (Moskva, Leningrad).
-   Key: pact_e60_carrier.  Length overall 189 m, waterline beam 23 m,
-   flight deck beam 34 m (js/warship_specs.js: len 189, beam 23); draught
-   drawn as about 7.7 m (published figures vary; not from a fetched source).
+   helicopter cruiser, as built and as photographed 1967 to the early 1980s
+   (Moskva, Leningrad).
+   Key: pact_e60_carrier ("Project 1123 Moskva", service 1967, e60).
+   PUBLISHED FIGURES: length overall 189 m (drawn 189.0; js/warship_specs.js
+   len 189), waterline beam 23 m (drawn 23.0), flight deck beam 34 m (drawn
+   34.2), flight deck area 2,200 m2 (Russian Wikipedia "Kreisera proekta
+   1123"; NOT matched: the plate drawn to the superstructure's after face,
+   82.5 m long as D1 gives it, is about 2,770 m2 - two broadside photographs
+   bracket 75-81 m; D1 is followed), draught 7.7 m (drawn; published figures vary
+   7.6-8.5, not from a fetched source), masthead about 54 m above water
+   (D1; drawn 54.4 to the pole). Armament (English and Russian Wikipedia):
+   1 twin SUW-N-1 (RPK-1 Vikhr, MS-18 launcher), 2 twin SA-N-3 (M-11
+   Shtorm, ZIF-101 launchers), 2 twin 57 mm AK-725, 2 RBU-6000. Radars:
+   MR-600 Voskhod (Top Sail), MR-310 Angara (Head Net), two 4R60 Grom
+   (Head Light) directors for the M-11, ECM radomes (Side Globe).
 
-   REFERENCES (Wikimedia Commons, fetched small; what each feature rests on):
-     - "Moskva-class helicopter carrier profile 1986.png" (recognition
-       profile, 191 m scale bar): every station and height below was scaled
-       off it at 4.78 px/m with the waterline at its hull bottom - the flush
-       upper deck at 9.7 m with sheer rising to 11.2 m at the stem, the
-       superstructure from 76 m to 116 m from the stern with its vertical
-       after face, the stepped forward face, the uptake drum at 36-38 m, the
-       lattice mast and the Top Sail at its head (top 54.6 m), the Head Net on
-       the mast front, two directors stepped down the forward face, the three
-       twin-arm launchers forward (30, 42 and 65 m from the bow; the after one
-       on a raised deckhouse 14.3 m high, the middle one on a magazine trunk),
-       a low deckhouse between them, two identical small launchers on the
-       forecastle at 12 and 22 m from the bow (drawn as the two RBU-6000), and
-       the open stern gallery under the after end of the flight deck (12 m
-       long, 4.6 to 9.2 m above water).
-     - "Moskva class Leningrad flightdeck cruiser, aerial bow view.jpg"
-       (USN, Leningrad): the order forward - a launcher without side panels
-       nearest the bow (taken as the SUW-N-1, the published fit has one twin
-       SUW-N-1 and two twin SA-N-3 launchers), then two launchers each between
-       a pair of rectangular panels (the SA-N-3 pair, the after one raised),
-       two large multi-dish directors stacked on the centreline of the forward
-       face (the SA-N-3 directors), round domed mounts on each side at the
-       forward corners of the superstructure (the two twin 57 mm AK-725), four
-       white spherical radomes on the superstructure sides, a lattice yard
-       across the mast, boats at the deck edge beside the raised launcher.
-     - "Moskva class Moskva flightdeck cruiser, starboard quarter view.jpg"
-       (USN 1982) and "DN-SN-90-07613 Moskva cllass.jpg" (USN 1990, Leningrad
-       from astern): the broad flight deck over the after half with its
-       rounded stern, the big flare of the after hull, the pyramid-shaped
-       superstructure narrowing to the uptake drum with its dark opening, the
-       doors at the foot of the after face, the open stern gallery with its
-       posts and the towed-sonar gear (Vega VDS, Russian Wikipedia), landing
-       circles and lift outlines on the centreline, the fringe of deck-edge
-       netting.
-     - "38MoskvaoffMoroccoJan1970.jpg" (1970 broadside): the as-built layout
-       forward and the flush hull side.
-     - Russian Wikipedia "Kreisera proekta 1123": flight deck area 2200 m2,
-       the hangar under it, strong flare aft, upper deck sheer forward, two
-       capstans on the forecastle, working boats 8.5 m, VDS in the stern.
-       English Wikipedia: 1 twin SUW-N-1, 2 RBU-6000, 2 twin SA-N-3, 2 twin
-       57 mm.
-     - PAINT: sampled from the 1982 colour photograph - mid-grey hull, a
-       lighter superstructure, a pale weathered flight deck; boot topping and
-       anti-fouling kept dark.
-   NOT CONFIRMED and therefore not drawn or drawn plainly: the torpedo tubes
-   (behind the hull side, not visible), the AK-725 directors and every small
-   antenna whose identity I could not read off the references, rudders
-   (number unknown - only the two published shafts and screws are drawn).
-   The lift and landing-circle positions are painted after the 1990 stern
-   photograph and are approximate; the two RBU-6000 are drawn on the
-   centreline where the profile puts them (their athwartships position is
-   not shown by a profile). No hull number, name or ensign.
+   REFERENCES (Wikimedia Commons, fetched at 960 px, all read):
+     D1 "Moskva-class helicopter carrier profile 1986.png" - recognition
+        profile from starboard, 191 m bar (4.79 px/m, waterline at the hull
+        foot y = 283): rows scanned every 2-5 m of height for the stations
+        below. The flush upper deck at 9.4-9.7 m with the forward sheer; the
+        superstructure's after face at x = -12.0 at deck level, leaning aft to
+        -14.8 at 33 m (the old file put it at -17.6, measured off the funnel
+        lip: CORRECTED); the block to 21 m from -12 to +21.6, the next tier to
+        28.5 m forward to +9.0, the tower to 34.6 m forward to -3.0; the
+        funnel drum and lip -16.6 to -9.3 at 35 m; the lattice mast at x -9 to
+        -6 from 35 to 49 m and the pole to 54.6; the Top Sail x -7.8 to -2.2,
+        44 to 53.7 m, leaning back; the Head Net at x -4.8 to 0, 37-40 m; the
+        lower Head Light at x 16-22, 21-28 m; the upper at x 4.8-10.9, 29-36.6
+        m; two pairs of white globes (x 2.2 at 26.5/28.6 m, x 4.8 at 18.3/20.5
+        m: the Side Globes; the 1974 stamp "1974 CPA 4376.jpg" also paints
+        round fittings stacked on the tower side, while the 1970 photograph
+        P3 is too small to show them); the raised launcher deckhouse
+        x 21.6-35.8 to 14.3 m with its
+        launcher at 30.3; the thin pole at x 35.6; the low deckhouse to 44;
+        launchers at 52.1 and 64.6; the two small mounts at 72.6 and 83.4.
+     P1 "Moskva class Leningrad flightdeck cruiser, aerial bow view.jpg" (USN,
+        catalogued 1985, from ahead and above): the forecastle order - an
+        RBU-6000 between the two anchor capstans at the bow (its horseshoe of
+        barrels; Russian Wikipedia: two anchor-mooring capstans on the bow), the second RBU-6000 aft of it on the centreline, the SUW-N-1
+        on its pedestal without side panels, the forward M-11 between two flat
+        panels, the after M-11 raised between two sloped panels, the boats in
+        crutches beside the raised deckhouse, the AK-725 domes at the deck
+        edges abreast the bridge; the two Head Lights stacked on the
+        superstructure front (each: two big dishes with X feed struts, two
+        small dishes above, a dome on top, a small dish under the middle); the
+        white globes on the tower sides; the lattice yards out to both sides at
+        the tower top; the round funnel cap; the Top Sail; the teardrop deck
+        plan widening aft.
+     P2 "Moskva class Moskva flightdeck cruiser, starboard quarter view.jpg"
+        (USN, catalogued 1982, colour): the flight deck spots (concentric
+        circles in darker squares), the open stern gallery on posts, the big
+        flare aft, the door in the superstructure's after face, the pyramid
+        tower with its dark funnel cap and the mast rising from it.
+        PAINT sampled here: hull 0x8d8f91, superstructure 0xadb1b6, flight
+        deck 0xdedacc-0xf1f0e5 (sunlit), funnel cap 0x443830; drawn at about
+        0.8 (hull 0x717476, superstructure 0x8b8f93) and the deck at 0.72
+        (0xa6a398).
+     P3 "38MoskvaoffMoroccoJan1970.jpg" (1970, starboard broadside): the
+        as-built layout - the Top Sail leaning back on the lattice mast, the
+        brimmed funnel cap overhanging aft, the two Head Lights on posts, the
+        Head Net in front of the mast foot; too distant for colours.
+     P4 "A starboard view of the Soviet Moskva class helicopter cruiser
+        LENINGRAD underway - DPLA", "Helicopter carrier "Leningrad" in
+        1990.jpeg", "DoD-Leningrad-DN-ST-90-07636 50pct.jpg" (1990, colour):
+        the forecastle in profile (both RBU-6000 in tandem, the SUW-N-1 with
+        its long arms, the sloped M-11 panels, the thin pole) and the spots
+        staggered port and starboard. Their green flight deck and red-brown
+        forecastle are LATER paint and are not drawn on this 1960s-70s row.
+
+   RECOGNITION LIST (where each shows):
+     1. the teardrop deck plan: narrow raked bow flaring to a broad flat
+        flight deck over the after half, rounded stern (P1, P2) - HW/HD
+        tables, flightDeck;
+     2. the massive pyramidal superstructure amidships with a vertical after
+        face over the flight deck (D1, P2) - tiers T1-T4;
+     3. the single big funnel drum on the tower top with its dark cap and the
+        lattice mast rising out of it (D1, P2);
+     4. the Top Sail at the masthead, leaning back, and the Head Net below it
+        on the mast front (D1, P1);
+     5. the two Head Light directors stacked on the superstructure front (D1,
+        P1, P4);
+     6. the white Side Globe radomes on the tower sides and the lattice yards
+        out at the tower top (D1, P1);
+     7. the stepped forecastle: raised deckhouse with the after M-11 between
+        sloped panels, the forward M-11 between flat panels, the SUW-N-1, the
+        two RBU-6000 in tandem at the bow (D1, P1, P4);
+     8. the two AK-725 domes at the deck edges abreast the bridge (P1);
+     9. the pale flight deck with four staggered spots and two centreline
+        lifts painted on it (P2, P4) - deckTex;
+    10. the open stern gallery under the flight deck's after end (D1, P2);
+    11. the grey hull with dark boot-top and scuttle rows, boats beside the
+        raised deckhouse (P1, P2).
+
+   NOT CONFIRMED, drawn plainly or not at all: the lift sizes (16.5 x 4.5 m
+   drawn, centreline, as in the previous file - the photographs show their
+   outlines only faintly); the spot positions (staggered, after P2 and P4,
+   approximate); the after-face door (one, drawn starboard of centre after P2);
+   the torpedo tubes (behind hull doors; not drawn); the AK-725 directors and
+   the small antennas I could not identify; the rudders. No hull number,
+   name or ensign.
 
    NO TRAINED MOUNT: the row has no turret flag, so nothing is named
-   "turret"; every launcher and gun is baked, at rest pointing forward.
+   "turret"; every mount is baked, at rest pointing forward.
    FLIGHT DECK: one clean flat plate, top at z = 9.75, from the stern
-   (x = -94.5) to the after face of the superstructure (x = -17.6), nothing
-   standing on it (markings are painted into its texture). render3d's deckOf
-   reads it from the aft eighth of the plan.
-
+   (x = -94.5) to the after face of the superstructure (x = -12.0), nothing
+   standing on it (lifts and spots are painted in its texture). render3d's
+   deckOf reads it from the aft eighth of the plan; no "helipad" node.
    MODEL SPACE: +X bow, +Y port, +Z up, metres, waterline z = 0. Every part
-   is merged into one mesh per material (10 materials, 10 draw calls).
-   ASCII only.
+   is merged into one mesh per material. ASCII only.
 ======================================================================== */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroMoskva = (function () {
   "use strict";
   var PI = Math.PI;
-  var LOA = 189.0;
   var XS = -93.0;            /* transom, below the stern gallery            */
+  var XB = 94.5;             /* stem at the deck                            */
   var XFD0 = -94.5;          /* flight deck after edge                      */
-  var XFD1 = -17.6;          /* flight deck forward edge = superstructure   */
-  var XG = -82.5;            /* forward end of the open stern gallery       */
+  var XFD1 = -12.0;          /* flight deck forward edge = superstructure   */
   var FD = 9.75;             /* flight deck top                             */
   var FDU = 9.0;             /* flight deck underside                       */
   var GAL = 4.6;             /* stern gallery floor                         */
+  var HZ0 = -0.45, HZ1 = 11.4;
 
-  /* ------------------------------------------------------ hull tables
+  var PAINT = { hull: "#787b7d", sup: "#8b8f93", deck: "#a6a398", fc: "#8f8e88",
+                boot: "#17191b", under: "#4a2a24", line: "#e4e2d8", spot: "#8c897f" };
+
+  /* ------------------------------------------------------ hull tables (D1, P1)
      xn: nominal station (stern -93 .. stem 94.5) */
   var HW = [[-93, 8.6], [-85, 10.0], [-70, 11.0], [-50, 11.5], [20, 11.5], [40, 11.2],
             [55, 10.2], [68, 8.2], [78, 5.6], [86, 2.8], [91, 0.9], [94.5, 0.0]];
-  var HD = [[-93, 13.2], [-88, 16.6], [-82, 16.8], [-40, 16.8], [-18, 15.6], [0, 14.2],
-            [22, 13.2], [40, 12.4], [55, 11.2], [68, 9.2], [78, 6.8], [86, 4.0],
-            [91, 1.8], [94.5, 0.25]];
+  /* deck-edge half-width: the teardrop of P1 - full width to the bridge,
+     where the AK-725 stand at the edge, then curving in to the bow */
+  var HD = [[-93, 13.2], [-88, 16.6], [-82, 16.8], [-40, 16.8], [-18, 16.8], [0, 16.4],
+            [12, 15.8], [22, 14.8], [32, 13.6], [40, 12.6], [55, 10.8], [68, 8.6],
+            [78, 6.4], [86, 3.8], [91, 1.7], [94.5, 0.25]];
   var KZ = [[-93, -1.6], [-86, -3.8], [-78, -6.4], [-68, -7.7], [94.5, -7.7]];
   var BP = [[-93, 1.6], [-70, 2.6], [-40, 3.2], [30, 3.2], [60, 2.2], [80, 1.4], [94.5, 1.2]];
   var FL = [[-93, 2.2], [-40, 2.0], [0, 1.7], [40, 1.5], [94.5, 1.25]];
@@ -103,14 +150,13 @@ var HeroMoskva = (function () {
   }
   /* upper deck: flush at 9.7 m, sheer rising forward to 11.2 m at the stem */
   function deckZ(x) { return x <= 25 ? 9.7 : 9.7 + 1.5 * Math.pow((x - 25) / 69.5, 2); }
-  /* reference height of the flare: the deck edge, or the flight deck underside aft */
   function zRef(xn) { return xn < XFD1 ? FDU : deckZ(xn); }
   /* the stem: raked above water, a rounded forefoot below */
   function xStem(z) {
     if (z >= 0) return 89.3 + 5.2 * Math.min(1, z / 11.2);
     return 89.3 - 9.3 * Math.pow(Math.min(1, -z / 7.7), 1.5);
   }
-  function xAt(xn, z) { var u = (xn - XS) / (94.5 - XS); return XS + u * (xStem(z) - XS); }
+  function xAt(xn, z) { var u = (xn - XS) / (XB - XS); return XS + u * (xStem(z) - XS); }
   function sideY(xn, z) {
     var hw = tab(HW, xn), k = tab(KZ, xn);
     if (z <= 0) {
@@ -133,102 +179,141 @@ var HeroMoskva = (function () {
     var s = (seed >>> 0) || 7;
     return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   }
-  function plateTex(THREE, rep) {
-    var key = "p" + rep[0] + "_" + rep[1];
+  function cvs(w, h) { var c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+  function finish(THREE, cv, rep) {
+    var t = new THREE.CanvasTexture(cv);
+    if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); }
+    else t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+    return t;
+  }
+  /* plain plate in a colour: seams, a little weathering and rust streaks */
+  function plateTex(THREE, col, seed) {
+    var key = "s" + col + seed;
     if (TEX[key]) return TEX[key];
-    var W = 256, H = 256, cv = document.createElement("canvas");
-    cv.width = W; cv.height = H;
-    var g = cv.getContext("2d"), R = rng(1123), i;
-    g.fillStyle = "#ffffff"; g.fillRect(0, 0, W, H);
-    g.globalAlpha = 0.16; g.strokeStyle = "#000000"; g.lineWidth = 1.5;
-    for (i = 1; i < 6; i++) {
-      g.beginPath(); g.moveTo(0, i * H / 6); g.lineTo(W, i * H / 6); g.stroke();
-      g.beginPath(); g.moveTo(i * W / 6, 0); g.lineTo(i * W / 6, H); g.stroke();
+    var W = 256, H = 256, cv = cvs(W, H), g = cv.getContext("2d"), R = rng(seed + 7), i;
+    g.fillStyle = col; g.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.15; g.strokeStyle = "#000000"; g.lineWidth = 1.5;
+    for (i = 1; i < 4; i++) {
+      g.beginPath(); g.moveTo(0, i * H / 4); g.lineTo(W, i * H / 4); g.stroke();
+      g.beginPath(); g.moveTo(i * W / 4, 0); g.lineTo(i * W / 4, H); g.stroke();
     }
     g.globalAlpha = 0.07;
-    for (i = 0; i < 30; i++) {
+    for (i = 0; i < 40; i++) {
       g.fillStyle = R() < 0.5 ? "#ffffff" : "#000000";
-      g.fillRect(R() * W, R() * H, 16 + R() * 58, 10 + R() * 38);
+      g.fillRect(R() * W, R() * H, 12 + R() * 50, 8 + R() * 30);
     }
+    g.globalAlpha = 0.08; g.fillStyle = "#2a2018";
+    for (i = 0; i < 14; i++) g.fillRect(R() * W, R() * H, 2, 20 + R() * 40);
     g.globalAlpha = 1;
-    var t = new THREE.CanvasTexture(cv);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(rep[0], rep[1]);
-    if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-    TEX[key] = t; return t;
+    return (TEX[key] = finish(THREE, cv, [1, 1]));
   }
-  /* the flight deck, painted in plan: plating, weathering, the deck-edge
-     line, centreline, the two lifts and the landing circles */
+  /* the hull sides along her length: boot-top, plate seams, two scuttle rows
+     forward of the flight deck and one under it, the hawse pipes. Top half
+     of the canvas starboard, lower half port. */
+  function hullUV(xn, z, port) {
+    var f = (z - HZ0) / (HZ1 - HZ0);
+    return [(xn - XS) / (XB - XS), port ? 0.5 * f : 0.5 + 0.5 * f];
+  }
+  function hullTex(THREE) {
+    if (TEX.hull) return TEX.hull;
+    var W = 2048, H = 512, HH = H / 2, cv = cvs(W, H), g = cv.getContext("2d"), R = rng(1123), i, x, s;
+    var px = function (X) { return (X - XS) / (XB - XS) * W; };
+    var pz = function (Z, top) { return (top ? 0 : HH) + (1 - (Z - HZ0) / (HZ1 - HZ0)) * HH; };
+    var mz = HH / (HZ1 - HZ0), mx = W / (XB - XS);
+    for (s = 0; s < 2; s++) {
+      var top = s === 0;
+      g.fillStyle = PAINT.hull; g.fillRect(0, pz(HZ1, top), W, pz(0.55, top) - pz(HZ1, top));
+      g.fillStyle = PAINT.boot; g.fillRect(0, pz(0.55, top), W, pz(HZ0, top) - pz(0.55, top) + 1);
+      g.globalAlpha = 0.12; g.strokeStyle = "#000000"; g.lineWidth = 1;
+      for (x = -90; x < 94; x += 7.0) { g.beginPath(); g.moveTo(px(x), pz(11, top)); g.lineTo(px(x), pz(0.6, top)); g.stroke(); }
+      [2.6, 5.4, 8.0].forEach(function (zz) { g.beginPath(); g.moveTo(0, pz(zz, top)); g.lineTo(W, pz(zz, top)); g.stroke(); });
+      g.globalAlpha = 0.07;
+      for (i = 0; i < 60; i++) {
+        g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff";
+        g.fillRect(R() * W, pz(1.5 + R() * 8, top), 20 + R() * 80, 3 + R() * 8);
+      }
+      g.globalAlpha = 0.14; g.fillStyle = "#3a2a20";
+      for (i = 0; i < 40; i++) g.fillRect(R() * W, pz(8.6 - R() * 6, top), 1.5, 5 + R() * 12);
+      g.globalAlpha = 1;
+      /* scuttles: a row 2.4 m under the deck the whole length, a second row
+         forward of the flight deck 2.4 m lower (P2: sparse) */
+      g.fillStyle = "#15181a";
+      for (x = -84; x <= 82; x += 3.6) {
+        if (x > -16 && x < -9) continue;
+        var zr = 7.1 + (x > 25 ? (deckZ(x) - 9.7) * 0.8 : 0);
+        g.fillRect(px(x) - 0.22 * mx, pz(zr, top), 0.45 * mx, 0.4 * mz);
+        if (x > -8 && x < 70 && (((x + 84) / 3.6) | 0) % 2 === 0) g.fillRect(px(x + 1.8) - 0.22 * mx, pz(zr - 2.4, top), 0.45 * mx, 0.4 * mz);
+      }
+      /* hawse pipes high in the bow flare */
+      g.beginPath(); g.arc(px(85.5), pz(8.4, top), 0.55 * mz, 0, PI * 2); g.fill();
+    }
+    return (TEX.hull = finish(THREE, cv));
+  }
+  /* the flight deck in plan: pale plating (P2), seams, wear, the four
+     staggered spots - two circles and a cross bar in a darker square - the
+     two lifts as outlines on the centreline, the deck-edge line and a thin
+     centreline. No numbers or letters. */
   var FDY = 17.4;
   function deckTex(THREE) {
     if (TEX.fd) return TEX.fd;
-    var W = 1024, H = 464, cv = document.createElement("canvas");
-    cv.width = W; cv.height = H;
-    var g = cv.getContext("2d"), R = rng(6767), i, x, y;
+    var W = 1024, H = 464, cv = cvs(W, H), g = cv.getContext("2d"), R = rng(6767), i, x, y;
     var px = function (X) { return (X - XFD0) / (XFD1 - XFD0) * W; };
     var py = function (Y) { return (1 - (Y + FDY) / (2 * FDY)) * H; };
-    var sm = W / (XFD1 - XFD0);
-    g.fillStyle = "#a3a49e"; g.fillRect(0, 0, W, H);
-    g.globalAlpha = 0.10; g.strokeStyle = "#000000"; g.lineWidth = 1;
+    var sm = W / (XFD1 - XFD0), sn = H / (2 * FDY);
+    g.fillStyle = PAINT.deck; g.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.09; g.strokeStyle = "#000000"; g.lineWidth = 1;
     for (y = -16; y <= 16; y += 2) { g.beginPath(); g.moveTo(0, py(y)); g.lineTo(W, py(y)); g.stroke(); }
-    for (x = -94; x < -18; x += 6) { g.beginPath(); g.moveTo(px(x), 0); g.lineTo(px(x), H); g.stroke(); }
+    for (x = -94; x < -12; x += 6) { g.beginPath(); g.moveTo(px(x), 0); g.lineTo(px(x), H); g.stroke(); }
     g.globalAlpha = 0.07;
-    for (i = 0; i < 70; i++) {
+    for (i = 0; i < 90; i++) {
       g.fillStyle = R() < 0.55 ? "#000000" : "#ffffff";
       g.fillRect(R() * W, R() * H, 10 + R() * 70, 6 + R() * 30);
     }
     g.globalAlpha = 1;
-    /* lifts: two on the centreline, 16.5 x 4.5 m */
-    [[-38.5, -22.0], [-66.0, -49.5]].forEach(function (L) {
-      g.fillStyle = "#8a8c88"; g.fillRect(px(L[0]), py(2.25), (L[1] - L[0]) * sm, 4.5 * sm);
-      g.strokeStyle = "#e6e6df"; g.lineWidth = 3; g.strokeRect(px(L[0]), py(2.25), (L[1] - L[0]) * sm, 4.5 * sm);
+    /* spots: staggered port and starboard (P2, P4) */
+    [[-81, 7.0], [-64, -7.6], [-47, 7.6], [-30, -7.6]].forEach(function (c) {
+      var cx = px(c[0]), cy = py(c[1]);
+      g.fillStyle = PAINT.spot; g.fillRect(cx - 5.0 * sm, cy - 5.0 * sn, 10.0 * sm, 10.0 * sn);
+      g.strokeStyle = PAINT.line; g.lineWidth = 0.35 * sm;
+      g.beginPath(); g.ellipse(cx, cy, 4.2 * sm, 4.2 * sn, 0, 0, PI * 2); g.stroke();
+      g.beginPath(); g.ellipse(cx, cy, 2.5 * sm, 2.5 * sn, 0, 0, PI * 2); g.stroke();
+      g.fillStyle = PAINT.line; g.fillRect(cx - 1.6 * sm, cy - 0.18 * sn, 3.2 * sm, 0.36 * sn);
     });
-    /* centreline dashes */
-    g.fillStyle = "#e6e6df";
-    for (x = -93; x < -20; x += 4) if (!(x > -67 && x < -49) && !(x > -39.5 && x < -21)) g.fillRect(px(x), py(0.15), 2.2 * sm, 0.3 * sm);
-    /* landing circles */
-    g.strokeStyle = "#e6e6df"; g.lineWidth = 4;
-    [[-84, 0], [-58, -8.5], [-30, 8.5]].forEach(function (c) {
-      g.beginPath(); g.arc(px(c[0]), py(c[1]), 3.2 * sm, 0, PI * 2); g.stroke();
-      g.fillRect(px(c[0]) - 1.6 * sm, py(c[1]) - 0.15 * sm, 3.2 * sm, 0.3 * sm);
+    /* lifts: two on the centreline, 16.5 x 4.5 m, a darker tone and an outline */
+    [[-40.0, -23.5], [-73.0, -56.5]].forEach(function (L) {
+      g.fillStyle = "rgba(0,0,0,0.13)"; g.fillRect(px(L[0]), py(2.25), (L[1] - L[0]) * sm, 4.5 * sn);
+      g.strokeStyle = PAINT.line; g.lineWidth = 2; g.strokeRect(px(L[0]), py(2.25), (L[1] - L[0]) * sm, 4.5 * sn);
     });
+    /* thin centreline from the stern to the lifts */
+    g.fillStyle = PAINT.line;
+    for (x = -92; x < -14; x += 4) if (!(x > -74 && x < -56) && !(x > -41 && x < -23)) g.fillRect(px(x), py(0.12), 2.2 * sm, 0.24 * sn);
     /* deck-edge line, inset 0.7 m */
-    g.lineWidth = 3; g.beginPath();
+    g.strokeStyle = PAINT.line; g.lineWidth = 2; g.beginPath();
     for (x = XFD1; x >= XFD0 + 0.8; x -= 1) { var yy = fdHalf(x) - 0.7; if (yy < 0) continue; g.lineTo(px(x), py(yy)); }
     for (x = XFD0 + 0.8; x <= XFD1; x += 1) { var y2 = fdHalf(x) - 0.7; if (y2 < 0) continue; g.lineTo(px(x), py(-y2)); }
     g.stroke();
-    var t = new THREE.CanvasTexture(cv);
-    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
-    if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-    TEX.fd = t; return t;
+    return (TEX.fd = finish(THREE, cv));
   }
 
   function makeMats(THREE, C) {
     var team = (C && C.team) || 0x3f7fd0;
-    var skin = function (col, tex, r) {
-      return new THREE.MeshStandardMaterial({ color: col, map: tex, roughness: r, metalness: 0.06 });
+    var tex = function (map, r) { return new THREE.MeshStandardMaterial({ color: 0xffffff, map: map, roughness: r, metalness: 0.06 }); };
+    var flat = function (col, r, m) { return new THREE.MeshStandardMaterial({ color: col, roughness: r, metalness: m }); };
+    var M = {
+      hull:  tex(hullTex(THREE), 0.88),
+      under: tex(plateTex(THREE, PAINT.under, 5), 0.9),
+      sup:   tex(plateTex(THREE, PAINT.sup, 11), 0.86),
+      deck:  tex(plateTex(THREE, PAINT.fc, 23), 0.93),
+      fdeck: tex(deckTex(THREE), 0.93),
+      dark:  flat(0x15181a, 0.9, 0.05),
+      metal: flat(0x5b6268, 0.55, 0.5),
+      white: flat(0xc4c8ca, 0.6, 0.04),
+      team:  flat(team, 0.8, 0.08),
+      glass: new THREE.MeshStandardMaterial({ color: 0x0c151c, roughness: 0.12, metalness: 0.0,
+                                              transparent: true, opacity: 0.88 })
     };
-    var metal = function (col, r, m) {
-      return new THREE.MeshStandardMaterial({ color: col, roughness: r, metalness: m });
-    };
-    return {
-      hull:  skin(0x8a9297, plateTex(THREE, [16, 1.2]), 0.86),
-      boot:  skin(0x111315, plateTex(THREE, [16, 1]), 0.9),
-      under: skin(0x2a1712, plateTex(THREE, [10, 2]), 0.9),
-      sup:   skin(0xa4abb1, plateTex(THREE, [2, 2]), 0.86),
-      deck:  skin(0x7a8084, plateTex(THREE, [12, 1.5]), 0.95),
-      fdeck: skin(0xffffff, deckTex(THREE), 0.93),
-      dark:  skin(0x0b0d0f, plateTex(THREE, [2, 2]), 0.9),
-      team:  skin(team, plateTex(THREE, [1, 1]), 0.84),
-      metal: metal(0x5b6268, 0.52, 0.55),
-      glass: new THREE.MeshPhysicalMaterial({ color: 0x05090b, roughness: 0.1, metalness: 0,
-                                              transparent: true, opacity: 0.84 })
-    };
-  }
-  function sealMats(M) {
-    for (var k in M) if (M.hasOwnProperty(k)) {
-      M[k].userData = M[k].userData || {}; M[k].userData._srgbDone = true;
-    }
+    for (var k in M) if (M.hasOwnProperty(k)) { M[k].userData = M[k].userData || {}; M[k].userData._srgbDone = true; }
     return M;
   }
 
@@ -260,8 +345,12 @@ var HeroMoskva = (function () {
     s.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx, dy, dz).normalize());
     p.add(s); return s;
   }
+  function sphere(THREE, p, m, r, x, y, z) {
+    var s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), m);
+    s.position.set(x, y, z); p.add(s); return s;
+  }
   /* a block from its bottom rectangle (x0a..x1a, |y| <= ya, z = za) to its
-     top rectangle (x0b..x1b, |y| <= yb, z = zb) */
+     top rectangle (x0b..x1b, |y| <= yb, z = zb): a raked tier */
   function hexa(THREE, p, m, x0a, x1a, ya, za, x0b, x1b, yb, zb) {
     var V = [[x0a, -ya, za], [x1a, -ya, za], [x1a, ya, za], [x0a, ya, za],
              [x0b, -yb, zb], [x1b, -yb, zb], [x1b, yb, zb], [x0b, yb, zb]];
@@ -284,12 +373,37 @@ var HeroMoskva = (function () {
     var mm = hexa(THREE, p, m, -lx0 / 2, lx0 / 2, ly0 / 2, -lz / 2, -lx1 / 2, lx1 / 2, ly1 / 2, lz / 2);
     mm.position.set(x, y, z); return mm;
   }
+  /* a blast panel: a wedge sloping from (yIn, z1) down to (yOut, z0), x0..x1 */
+  function wedge(THREE, p, m, x0, x1, yIn, yOut, z0, z1) {
+    var sh = new THREE.Shape();
+    sh.moveTo(yIn, z0); sh.lineTo(yOut, z0); sh.lineTo(yIn, z1); sh.closePath();
+    var g = new THREE.ExtrudeGeometry(sh, { depth: x1 - x0, bevelEnabled: false, curveSegments: 1 });
+    g.applyMatrix4(new THREE.Matrix4().set(0, 0, 1, x0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1));
+    /* (the extruder winds either hand of the triangle outward itself) */
+    var mm = new THREE.Mesh(g, m); p.add(mm); return mm;
+  }
+  /* a rail along a run of points at height h above them */
+  function rail(THREE, g, T, pts, h) {
+    for (var i = 0; i < pts.length; i++) {
+      var a = pts[i];
+      strut(THREE, g, T.metal, a[0], a[1], a[2], a[0], a[1], a[2] + h, 0.03, 3);
+      if (i) { var b = pts[i - 1]; strut(THREE, g, T.metal, b[0], b[1], b[2] + h, a[0], a[1], a[2] + h, 0.025, 3); }
+    }
+  }
+  /* a parabolic dish, closed (front and back), facing +X, rim radius r */
+  function dish(THREE, p, m, r, depth, x, y, z, ry) {
+    var pts = [], n = 6, i;
+    for (i = 0; i <= n; i++) { var t = i / n; pts.push(new THREE.Vector2(Math.max(0.001, r * t), depth * t * t)); }
+    for (i = n; i >= 0; i--) { var u = i / n; pts.push(new THREE.Vector2(Math.max(0.001, r * u * 0.97), depth * u * u - 0.12)); }
+    var g = new THREE.LatheGeometry(pts, 14); g.rotateZ(-PI / 2);
+    var ix = g.index.array;               /* the loop runs inside-out: turn the faces */
+    for (i = 0; i < ix.length; i += 3) { var t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; }
+    g.computeVertexNormals();
+    var d = new THREE.Mesh(g, m); d.position.set(x, y, z); if (ry) d.rotation.z = ry; p.add(d); return d;
+  }
 
-  /* --------------------------------------------------------------- hull
-     strips of one hull piece: each strip runs between two heights at every
-     station, sampled at the given fractions; both sides, and an end cap at
-     the first station when asked */
-  function hullStrip(THREE, m, xs, zA, zB, F, cap) {
+  /* --------------------------------------------------------------- hull */
+  function hullStrip(THREE, m, xs, zA, zB, F, cap, paint) {
     var pos = [], uv = [], idx = [], n = F.length, i, j, s, xn, z, base;
     for (s = 0; s < 2; s++) {
       var sg = s === 0 ? 1 : -1;
@@ -300,7 +414,7 @@ var HeroMoskva = (function () {
         for (j = 0; j < n; j++) {
           z = a + (b - a) * F[j];
           pos.push(xAt(xn, z), sg * sideY(xn, z), z);
-          uv.push(xn / 12, z / 12);
+          if (paint) uv.push.apply(uv, hullUV(xn, z, s === 0)); else uv.push(xn / 12, z / 12);
         }
       }
       for (i = 0; i < xs.length - 1; i++) for (j = 0; j < n - 1; j++) {
@@ -313,7 +427,9 @@ var HeroMoskva = (function () {
       var a0 = zA(xn), b0 = zB(xn);
       for (j = 0; j < n; j++) {
         z = a0 + (b0 - a0) * F[j]; var y = sideY(xn, z), xx = xAt(xn, z);
-        pos.push(xx, y, z, xx, -y, z); uv.push(y / 12, z / 12, -y / 12, z / 12);
+        pos.push(xx, y, z, xx, -y, z);
+        if (paint) { var q = hullUV(xn + 0.4, z, true); uv.push(q[0], q[1], q[0], q[1]); }
+        else uv.push(y / 12, z / 12, -y / 12, z / 12);
       }
       for (j = 0; j < n - 1; j++) {
         var P0 = base + 2 * j, S0 = P0 + 1, P1 = P0 + 2, S1 = P0 + 3;
@@ -323,13 +439,11 @@ var HeroMoskva = (function () {
     return geoMesh(THREE, pos, idx, uv, m);
   }
   var FU = [0, 0.02, 0.06, 0.13, 0.25, 0.42, 0.62, 0.82, 1.0];
-  var FB = [0, 1];
-  var FT = [0, 0.17, 0.34, 0.5, 0.66, 0.83, 1.0];
+  var FT = [0, 0.1, 0.22, 0.36, 0.5, 0.64, 0.77, 0.89, 1.0];
   function hullPiece(THREE, g, T, xs, top, cap) {
     var kz = function (xn) { return tab(KZ, xn); };
-    g.add(hullStrip(THREE, T.under, xs, kz, function () { return -0.45; }, FU, cap));
-    g.add(hullStrip(THREE, T.boot, xs, function () { return -0.45; }, function () { return 0.55; }, FB, cap));
-    g.add(hullStrip(THREE, T.hull, xs, function () { return 0.55; }, top, FT, cap));
+    g.add(hullStrip(THREE, T.under, xs, kz, function () { return HZ0; }, FU, cap, false));
+    g.add(hullStrip(THREE, T.hull, xs, function () { return HZ0; }, top, FT, cap, true));
   }
   /* a flat deck ribbon over a run of stations at the hull's own edge */
   function ribbon(THREE, m, xs, zf, inset, NC) {
@@ -348,7 +462,6 @@ var HeroMoskva = (function () {
   /* ---------------------------------------------------- the flight deck */
   function flightDeck(THREE, g, T) {
     var out = [], x, i;
-    /* the sides are straight between the HD stations: only those points, no collinear slivers */
     [XFD1, -18, -40, -82].forEach(function (q) { out.push([q, fdHalf(q)]); });
     for (i = 0; i <= 14; i++) {
       var a = i / 14 * PI / 2;                       /* round the stern */
@@ -359,14 +472,12 @@ var HeroMoskva = (function () {
       out.push([-88 - 6.5 * Math.sin(b), -fdHalf(-88) * Math.cos(b)]);
     }
     [-88, -82, -40, -18, XFD1].forEach(function (q) { out.push([q, -fdHalf(q)]); });
-    /* drop near-duplicates */
     var P = [];
     out.forEach(function (q) { var l = P[P.length - 1]; if (!l || Math.abs(l[0] - q[0]) + Math.abs(l[1] - q[1]) > 0.05) P.push(q); });
     var sh = new THREE.Shape();
     sh.moveTo(P[0][0], P[0][1]);
     for (i = 1; i < P.length; i++) sh.lineTo(P[i][0], P[i][1]);
     sh.closePath();
-    /* top: flat plate at FD, UV over the plan box for the painted deck */
     var top = new THREE.ShapeGeometry(sh), pa = top.attributes.position, uv = [];
     for (i = 0; i < pa.count; i++) {
       uv.push((pa.getX(i) - XFD0) / (XFD1 - XFD0), (pa.getY(i) + FDY) / (2 * FDY));
@@ -375,7 +486,6 @@ var HeroMoskva = (function () {
     top.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     top.computeVertexNormals();
     g.add(new THREE.Mesh(top, T.fdeck));
-    /* underside, facing down */
     var bot = new THREE.ShapeGeometry(sh), pb = bot.attributes.position;
     for (i = 0; i < pb.count; i++) pb.setZ(i, FDU);
     var ix = bot.index.array;
@@ -387,7 +497,8 @@ var HeroMoskva = (function () {
     for (i = 0; i < P.length; i++) {
       var p0 = P[i], p1 = P[(i + 1) % P.length], k = pos.length / 3;
       pos.push(p0[0], p0[1], FDU, p1[0], p1[1], FDU, p1[0], p1[1], FD, p0[0], p0[1], FD);
-      uu.push(0, 0, 1, 0, 1, 0.1, 0, 0.1);
+      var q0 = hullUV(p0[0], 9.3, p0[1] > 0), q1 = hullUV(p1[0], 9.3, p0[1] > 0);
+      uu.push(q0[0], q0[1], q1[0], q1[1], q1[0], q1[1], q0[0], q0[1]);
       idx.push(k, k + 1, k + 2, k, k + 2, k + 3);
     }
     g.add(geoMesh(THREE, pos, idx, uu, T.hull));
@@ -395,7 +506,7 @@ var HeroMoskva = (function () {
     var np = [], nu = [], ni = [];
     for (var s = -1; s <= 1; s += 2) {
       var b0 = np.length / 3, xs = [];
-      for (x = -86; x <= -20; x += 3) xs.push(x);
+      for (x = -86; x <= -14; x += 3) xs.push(x);
       xs.forEach(function (xx) {
         var w = fdHalf(xx);
         np.push(xx, s * (w + 0.05), FD - 0.45, xx, s * (w + 1.2), FD - 0.75);
@@ -407,76 +518,88 @@ var HeroMoskva = (function () {
       }
     }
     g.add(geoMesh(THREE, np, ni, nu, T.metal));
-    return P;
+    /* the netting frames: posts every 6 m */
+    for (s = -1; s <= 1; s += 2) for (x = -86; x <= -14; x += 6) {
+      var w2 = fdHalf(x);
+      strut(THREE, g, T.metal, x, s * (w2 + 0.05), FD - 0.45, x, s * (w2 + 1.2), FD + 0.2, 0.04, 3);
+    }
   }
 
   /* ------------------------------------------------------------- weapons */
-  /* twin-arm launcher, at rest trained forward with the arms level
-     (SA-N-3 M-11 Shtorm and SUW-N-1 RPK-1 share the layout) */
-  function twinArm(THREE, g, T, armLen, panels) {
-    cylZ(THREE, g, 1.0, 1.15, 1.8, 12, T.sup, 0, 0, 0.9);
-    tprism(THREE, g, 2.0, 2.0, 1.7, 1.8, 1.0, T.sup, 0, 0, 2.3);
+  /* twin-arm launcher at rest, trained forward, arms level (M-11 ZIF-101 and
+     the SUW-N-1 MS-18 share the layout; P1, P4) */
+  function twinArm(THREE, g, T, armLen) {
+    cylZ(THREE, g, 1.0, 1.15, 1.8, 14, T.sup, 0, 0, 0.9);
+    tprism(THREE, g, 2.2, 2.1, 1.7, 1.8, 1.0, T.sup, 0, 0, 2.3);
     box(THREE, g, 1.4, 3.4, 0.7, T.sup, 0.2, 0, 3.1);
     for (var s = -1; s <= 1; s += 2) {
-      box(THREE, g, armLen, 0.4, 0.5, T.sup, armLen * 0.38, s * 1.35, 3.75);
+      box(THREE, g, armLen, 0.42, 0.5, T.sup, armLen * 0.38, s * 1.35, 3.75);
       box(THREE, g, armLen * 0.85, 0.16, 0.2, T.metal, armLen * 0.36, s * 1.35, 3.4);
       box(THREE, g, 0.6, 0.5, 0.6, T.dark, armLen * 0.38 + armLen * 0.5 - 0.3, s * 1.35, 3.75);
-      if (panels) {
-        var pn = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.0, 0.35), T.sup);
-        pn.position.set(0.4, s * 3.7, 0.55); pn.rotation.x = -s * 0.32; g.add(pn);
-      }
     }
     return g;
   }
-  /* RBU-6000: twelve barrels in a ring on a trained cradle, forward */
+  /* RBU-6000: a horseshoe of twelve barrels on a trained cradle (P1) */
   function rbu(THREE, g, T) {
-    cylZ(THREE, g, 0.7, 0.85, 1.2, 10, T.sup, 0, 0, 0.6);
-    box(THREE, g, 1.2, 1.9, 1.0, T.sup, -0.2, 0, 1.6);
+    cylZ(THREE, g, 0.75, 0.9, 1.1, 12, T.sup, 0, 0, 0.55);
+    box(THREE, g, 1.3, 2.0, 1.0, T.sup, -0.2, 0, 1.55);
+    var c = new THREE.Group(); c.position.set(0.2, 0, 2.5); c.rotation.y = -0.45; g.add(c);
     for (var i = 0; i < 12; i++) {
-      var a = i / 12 * PI * 2;
-      cylX(THREE, g, 0.11, 0.11, 1.7, 6, T.metal, 0.4, Math.cos(a) * 0.55, 2.7 + Math.sin(a) * 0.55);
+      var a = -PI * 0.15 + i / 11 * PI * 1.3;
+      cylX(THREE, c, 0.11, 0.11, 1.8, 6, T.metal, 0.3, Math.cos(a) * 0.6, Math.sin(a) * 0.6);
     }
-    cylX(THREE, g, 0.3, 0.3, 1.2, 8, T.sup, 0.1, 0, 2.7);
+    cylX(THREE, c, 0.32, 0.32, 1.0, 10, T.sup, -0.2, 0, 0);
     return g;
   }
-  /* twin 57 mm AK-725: domed turret, two barrels */
+  /* twin 57 mm AK-725: domed shield, two barrels (P1) */
   function ak725(THREE, g, T) {
-    cylZ(THREE, g, 1.55, 1.65, 0.5, 14, T.sup, 0, 0, 0.25);
-    var dg = new THREE.SphereGeometry(1.5, 14, 6, 0, PI * 2, 0, PI / 2); dg.rotateX(PI / 2); dg.scale(1.15, 1, 0.85);
+    cylZ(THREE, g, 1.6, 1.7, 0.5, 16, T.sup, 0, 0, 0.25);
+    var dg = new THREE.SphereGeometry(1.5, 16, 7, 0, PI * 2, 0, PI / 2); dg.rotateX(PI / 2); dg.scale(1.2, 1, 0.9);
     var d = new THREE.Mesh(dg, T.sup); d.position.set(0, 0, 0.5); g.add(d);
     for (var s = -1; s <= 1; s += 2) {
       cylX(THREE, g, 0.09, 0.09, 3.6, 6, T.metal, 3.0, s * 0.35, 1.05, true);
-      cylX(THREE, g, 0.16, 0.16, 0.6, 6, T.metal, 1.45, s * 0.35, 1.05);
+      cylX(THREE, g, 0.16, 0.16, 0.6, 6, T.metal, 1.6, s * 0.35, 1.05);
     }
     return g;
   }
-  /* SA-N-3 director: pedestal, cabin, two large and two small dishes */
-  function director(THREE, g, T, ped) {
+  /* 4R60 Grom (Head Light) director (P1): pedestal, cabin, two big dishes
+     with X feed struts, two small dishes above, a dome on top and a small
+     dish under the middle */
+  function headLight(THREE, g, T, ped) {
     cylZ(THREE, g, 0.9, 1.1, ped, 12, T.sup, 0, 0, ped / 2);
-    box(THREE, g, 2.8, 3.0, 2.0, T.sup, -0.3, 0, ped + 1.0);
+    cylZ(THREE, g, 1.6, 1.6, 0.5, 14, T.sup, 0, 0, ped + 0.25);
+    box(THREE, g, 2.6, 2.6, 2.4, T.sup, -0.3, 0, ped + 1.7);
+    var z0 = ped + 1.8;
     for (var s = -1; s <= 1; s += 2) {
-      cylX(THREE, g, 1.5, 0.55, 0.7, 14, T.sup, 1.4, s * 1.75, ped + 1.6);
-      cylX(THREE, g, 0.65, 0.3, 0.45, 10, T.sup, 1.2, s * 0.75, ped + 2.75);
-      box(THREE, g, 0.5, 0.18, 0.18, T.metal, 2.0, s * 1.75, ped + 1.6);
+      box(THREE, g, 0.6, 1.0, 0.5, T.sup, 0.4, s * 1.5, z0);
+      dish(THREE, g, T.sup, 1.9, 0.75, 0.9, s * 2.5, z0);
+      var fx = 2.5;
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (q) {
+        strut(THREE, g, T.metal, 1.6, s * 2.5 + q[0] * 1.3, z0 + q[1] * 1.3, fx, s * 2.5, z0, 0.05, 3);
+      });
+      cylX(THREE, g, 0.18, 0.12, 0.5, 6, T.dark, fx + 0.2, s * 2.5, z0);
+      dish(THREE, g, T.sup, 0.85, 0.35, 0.8, s * 1.15, ped + 3.6);
     }
+    var dm = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 5, 0, PI * 2, 0, PI / 2), T.sup);
+    dm.rotation.x = PI / 2; dm.position.set(-0.4, 0, ped + 2.9); g.add(dm);
+    dish(THREE, g, T.sup, 0.6, 0.25, 1.1, 0, ped + 0.9);
     return g;
   }
 
   function build(THREE, M, C) {
     var g = new THREE.Group();
-    var T = sealMats(makeMats(THREE, C));
-    var s, i, x, z;
+    var T = makeMats(THREE, C);
+    var s, i, x;
 
     /* ---------------- hull: the stern below the gallery, then the main body */
     var aftXs = [-93, -91.5, -89.5, -87, -84.5, -82.5];
     hullPiece(THREE, g, T, aftXs, function () { return GAL; }, true);
-    var mainXs = [-82.5, -80, -76, -70, -62, -54, -46, -38, -30, -24, -17.8, -17.4, -10, -2, 6, 14, 22,
+    var mainXs = [-82.5, -80, -76, -70, -62, -54, -46, -38, -30, -24, -18, -12.2, -11.8, -6, 0, 6, 14, 22,
                   30, 38, 46, 54, 61, 67, 72, 76, 80, 83.5, 86.5, 89, 91, 92.6, 93.7, 94.5];
     hullPiece(THREE, g, T, mainXs, zRef, true);
-    /* the stern gallery floor and the forecastle and waist deck */
     g.add(ribbon(THREE, T.deck, aftXs, function () { return GAL + 0.02; }, 0.02, 3));
     var fx = [];
-    for (x = -17.6; x < 93.7; x += 3) fx.push(x);
+    for (x = -12.0; x < 93.7; x += 3) fx.push(x);
     fx.push(93.7, 94.4);
     g.add(ribbon(THREE, T.deck, fx, function (xn) { return deckZ(xn) + 0.04; }, 0.03, 4));
 
@@ -486,150 +609,206 @@ var HeroMoskva = (function () {
     /* stern gallery: posts under the deck's after edge, the towed-sonar gear */
     for (i = -4; i <= 4; i++) {
       var yy = i * 2.3, xp = -92.6 + Math.abs(i) * 0.15;
-      strut(THREE, g, T.metal, xp, yy, GAL, xp, yy, FDU, 0.18, 6);
+      strut(THREE, g, T.metal, xp, yy, GAL, xp, yy, FDU, 0.2, 6);
     }
     for (s = -1; s <= 1; s += 2) [-89.5, -86.0].forEach(function (xq) {
-      strut(THREE, g, T.metal, xq, s * (sideY(xq, GAL) - 0.3), GAL, xq, s * (sideY(xq, GAL) - 0.3), FDU, 0.18, 6);
+      strut(THREE, g, T.metal, xq, s * (sideY(xq, GAL) - 0.3), GAL, xq, s * (sideY(xq, GAL) - 0.3), FDU, 0.2, 6);
     });
     box(THREE, g, 4.2, 3.6, 2.4, T.sup, -88.0, 0, GAL + 1.2);
     cylX(THREE, g, 0.9, 0.9, 3.4, 12, T.dark, -90.2, 0, GAL + 1.6);
     box(THREE, g, 0.3, 5.0, 3.0, T.metal, -91.6, 0, GAL + 2.6);
     for (s = -1; s <= 1; s += 2) strut(THREE, g, T.metal, -91.6, s * 2.4, GAL, -91.6, s * 2.4, GAL + 4.0, 0.12, 6);
+    /* the dark gallery back wall under the deck */
+    box(THREE, g, 0.2, 18.0, FDU - GAL - 0.1, T.dark, -82.6, 0, (GAL + FDU) / 2);
 
-    /* scuttles along both sides, and the hawse pipes */
-    for (x = -78; x <= 84; x += 4.2) {
-      if (x > -22 && x < -14) continue;
-      for (s = -1; s <= 1; s += 2) box(THREE, g, 0.32, 0.06, 0.32, T.dark, xAt(x, 6.6), s * (sideY(x, 6.6) + 0.04), 6.6);
-    }
+    /* ---------------- superstructure (D1 rows, P1, P2) */
+    /* T1 base block, two decks: after face x = -12.0 */
+    hexa(THREE, g, T.sup, -12.0, 21.6, 7.4, 9.7, -12.0, 21.6, 7.4, 15.4);
+    /* T2 to the bridge: front at 20.6 */
+    hexa(THREE, g, T.sup, -12.0, 20.6, 6.9, 15.4, -12.2, 20.4, 6.7, 21.0);
+    /* T3: the tier forward of the tower, to the upper director (D1) */
+    hexa(THREE, g, T.sup, -4.0, 9.0, 6.2, 21.0, -4.0, 8.4, 5.3, 28.5);
+    /* T4: the pyramid tower in one taper from the 21 m deck to the funnel,
+       its after face leaning aft, forward face at -3 (D1, P2) */
+    hexa(THREE, g, T.sup, -12.2, -2.4, 6.6, 21.0, -14.4, -3.4, 4.3, 34.6);
+    /* galleries: thin decks round the tiers' tops */
+    hexa(THREE, g, T.sup, -12.6, 21.8, 7.8, 15.25, -12.6, 21.8, 7.8, 15.45);
+    hexa(THREE, g, T.sup, -12.8, 21.2, 7.3, 20.85, -12.8, 21.2, 7.3, 21.05);
+    hexa(THREE, g, T.sup, -13.8, 9.6, 6.0, 28.35, -13.8, 9.6, 6.0, 28.55);
+    /* bridge front glazing and side windows */
+    box(THREE, g, 0.12, 11.4, 1.0, T.glass, 20.62, 0, 19.6);
     for (s = -1; s <= 1; s += 2) {
-      box(THREE, g, 0.9, 0.1, 0.9, T.dark, xAt(85.5, 8.6), s * (sideY(85.5, 8.6) + 0.02), 8.6);
+      box(THREE, g, 6.0, 0.12, 0.9, T.glass, 16.8, s * 6.86, 19.6);
+      for (i = 0; i < 8; i++) box(THREE, g, 1.0, 0.08, 0.6, T.dark, -9 + i * 4.0, s * 7.43, 13.2);
+      for (i = 0; i < 6; i++) box(THREE, g, 1.0, 0.08, 0.6, T.dark, -7 + i * 4.0, s * 6.88, 17.4);
+      /* side doors and the ladders up the tiers (P1, P2) */
+      box(THREE, g, 1.2, 0.1, 2.0, T.dark, 12.5, s * 7.43, 10.7);
+      box(THREE, g, 1.2, 0.1, 2.0, T.dark, -6.5, s * 7.43, 10.7);
+      strut(THREE, g, T.metal, 8.0, s * 7.9, 9.7, 11.0, s * 7.9, 15.3, 0.12, 3);
+      strut(THREE, g, T.metal, 0.0, s * 7.4, 15.4, 3.0, s * 7.4, 20.9, 0.12, 3);
+      /* side platforms on the tower carrying the globes, with rails */
+      hexa(THREE, g, T.sup, -2.0, 7.0, 1.5, 24.9, -2.0, 7.0, 1.5, 25.15).position.set(0, s * 6.6, 0);
+      for (i = 0; i < 4; i++) strut(THREE, g, T.metal, -2.0 + i * 3.0, s * 8.05, 25.15, -2.0 + i * 3.0, s * 8.05, 26.1, 0.03, 3);
+      strut(THREE, g, T.metal, -2.0, s * 8.05, 26.1, 7.0, s * 8.05, 26.1, 0.03, 3);
     }
+    for (i = 0; i < 6; i++) box(THREE, g, 0.08, 1.0, 0.6, T.dark, 21.63, -6.25 + i * 2.5, 13.2);
+    /* the door in the after face (P2) and a small one beside it */
+    box(THREE, g, 0.14, 4.6, 5.2, T.dark, -12.07, -1.6, FD + 2.6);
+    box(THREE, g, 0.14, 1.2, 2.2, T.dark, -12.07, 4.4, FD + 1.1);
+    /* the after face's platform at 20 m (D1: the bump aft at 20-22 m) */
+    hexa(THREE, g, T.sup, -15.0, -12.0, 5.0, 19.8, -15.0, -12.0, 5.0, 20.1);
+    for (s = -1; s <= 1; s += 2) strut(THREE, g, T.metal, -14.8, s * 4.6, 18.0, -12.1, s * 4.6, 19.8, 0.07, 4);
 
-    /* ---------------- superstructure (stations off the 1986 profile) */
-    /* S1 base block, two decks */
-    hexa(THREE, g, T.sup, -17.6, 22.0, 8.0, 9.7, -17.6, 22.0, 8.0, 18.3);
-    /* S2 tier with the bridge front */
-    hexa(THREE, g, T.sup, -17.6, 15.1, 7.0, 18.3, -17.6, 15.1, 7.0, 21.0);
-    /* S3 the pyramid: after face upright, forward face sloping back */
-    hexa(THREE, g, T.sup, -17.6, 4.0, 6.6, 21.0, -17.4, -1.5, 3.8, 34.0);
-    /* galleries round the pyramid */
-    [25.0, 29.5].forEach(function (zz) {
-      var f = (zz - 21) / 13, xf = 4.0 + (-1.5 - 4.0) * f, w = 6.6 + (3.8 - 6.6) * f;
-      hexa(THREE, g, T.sup, -18.2, xf + 0.7, w + 0.7, zz - 0.15, -18.2, xf + 0.7, w + 0.7, zz + 0.1);
+    /* rails round the tier tops (P1, P2) */
+    rail(THREE, g, T, [[-12.4, 7.75, 15.45], [21.7, 7.75, 15.45], [21.7, -7.75, 15.45], [-12.4, -7.75, 15.45]], 1.0);
+    rail(THREE, g, T, [[-12.6, 7.25, 21.05], [21.1, 7.25, 21.05], [21.1, -7.25, 21.05], [-12.6, -7.25, 21.05]], 1.0);
+    rail(THREE, g, T, [[-3.4, 5.95, 28.55], [9.5, 5.95, 28.55], [9.5, -5.95, 28.55], [-3.4, -5.95, 28.55]], 1.0);
+    /* whips at the funnel's after edge (D1) */
+    for (s = -1; s <= 1; s += 2) strut(THREE, g, T.metal, -16.4, s * 2.2, 37.1, -16.9, s * 2.4, 41.0, 0.05, 3);
+    /* funnel drum on the tower top: flared lip, dark cap (D1, P2) */
+    var ug = new THREE.CylinderGeometry(1.06, 1.0, 2.2, 28, 1); ug.rotateX(PI / 2); ug.scale(3.75, 4.3, 1);
+    var up = new THREE.Mesh(ug, T.sup); up.position.set(-12.9, 0, 35.7); g.add(up);
+    var lg = new THREE.CylinderGeometry(1.0, 1.0, 0.35, 28, 1); lg.rotateX(PI / 2); lg.scale(4.05, 4.6, 1);
+    var lip = new THREE.Mesh(lg, T.sup); lip.position.set(-12.9, 0, 36.95); g.add(lip);
+    var mg = new THREE.CircleGeometry(1, 28); mg.scale(3.8, 4.35, 1);
+    var mouth = new THREE.Mesh(mg, T.dark); mouth.position.set(-12.9, 0, 37.14); g.add(mouth);
+    for (i = -4; i <= 4; i++) box(THREE, g, 7.0 * Math.sqrt(Math.max(0, 1 - Math.pow(i / 4.4, 2))), 0.12, 0.12, T.dark, -12.9, i * 0.95, 37.2);
+
+    /* AK-725 at the deck edges abreast the bridge, on low sponsons (P1) */
+    for (s = -1; s <= 1; s += 2) {
+      hexa(THREE, g, T.sup, 16.0, 22.0, 2.2, 9.7, 16.0, 22.0, 2.2, 10.3).position.set(0, s * 11.8, 0);
+      var gun = new THREE.Group(); gun.position.set(19.0, s * 12.0, 10.3); ak725(THREE, gun, T); g.add(gun);
+    }
+    /* Side Globe radomes: two pairs a side on brackets (D1, P1) */
+    for (s = -1; s <= 1; s += 2) [[2.2, 26.4, 6.95], [2.2, 28.7, 6.6], [4.8, 18.3, 7.95], [4.8, 20.5, 7.8]].forEach(function (q) {
+      sphere(THREE, g, T.white, 0.95, q[0], s * q[2], q[1]);
+      box(THREE, g, 1.3, 1.3, 0.14, T.sup, q[0], s * (q[2] - 0.45), q[1] - 0.98);
+      strut(THREE, g, T.metal, q[0], s * (q[2] - 1.0), q[1] - 0.98, q[0], s * (q[2] - 1.6), q[1] - 2.2, 0.06, 3);
     });
-    /* forward tower carrying the upper director */
-    hexa(THREE, g, T.sup, 2.0, 10.0, 2.7, 21.0, 0.0, 9.2, 2.4, 30.6);
-    /* uptake drum on top, with its dark mouth */
-    var ug = new THREE.CylinderGeometry(1, 1, 4.6, 20, 1); ug.rotateX(PI / 2); ug.scale(4.0, 3.4, 1);
-    var up = new THREE.Mesh(ug, T.sup); up.position.set(-13.5, 0, 35.4); g.add(up);
-    var mg = new THREE.CircleGeometry(1, 20); mg.scale(3.6, 3.0, 1);
-    var mouth = new THREE.Mesh(mg, T.dark); mouth.position.set(-13.5, 0, 37.72); g.add(mouth);
-    /* bridge glazing and windows */
-    box(THREE, g, 0.12, 12.4, 0.95, T.glass, 15.16, 0, 19.75);
-    for (s = -1; s <= 1; s += 2) {
-      box(THREE, g, 7.0, 0.12, 0.85, T.glass, 11.0, s * 7.04, 19.75);
-      for (i = 0; i < 9; i++) box(THREE, g, 1.0, 0.08, 0.6, T.dark, -14 + i * 4.0, s * 8.03, 16.6);
-      for (i = 0; i < 9; i++) box(THREE, g, 1.0, 0.08, 0.6, T.dark, -14 + i * 4.0, s * 8.03, 13.2);
-    }
-    for (i = 0; i < 6; i++) box(THREE, g, 0.08, 1.0, 0.6, T.dark, 22.03, -6.25 + i * 2.5, 16.6);
-    /* doors at the foot of the after face (1982 and 1990 photographs) */
-    for (s = -1; s <= 1; s += 2) box(THREE, g, 0.12, 3.6, 4.4, T.dark, -17.66, s * 3.6, FD + 2.2);
-    /* S1 forward corners: sponsons for the two AK-725 */
-    for (s = -1; s <= 1; s += 2) {
-      hexa(THREE, g, T.sup, 16.5, 21.5, 2.0, 9.7, 16.5, 21.5, 2.0, 10.3).position.set(0, s * 10.6, 0);
-      var gun = new THREE.Group(); gun.position.set(19.0, s * 10.8, 10.3); ak725(THREE, gun, T); g.add(gun);
-    }
-    /* four spherical radomes on the superstructure sides */
-    for (s = -1; s <= 1; s += 2) [[7.0, 25.9], [7.0, 28.0]].forEach(function (q) {
-      var f = (q[1] - 21) / 13, w = 6.6 + (3.8 - 6.6) * f;
-      var sp = new THREE.Mesh(new THREE.SphereGeometry(0.95, 12, 8), T.sup);
-      sp.position.set(q[0] - 7.5, s * (w + 1.0), q[1]); g.add(sp);
-      box(THREE, g, 1.2, 1.2, 0.15, T.sup, q[0] - 7.5, s * (w + 0.6), q[1] - 0.9);
-    });
-    /* the two directors for the SA-N-3 */
-    var d1 = new THREE.Group(); d1.position.set(18.5, 0, 18.3); director(THREE, d1, T, 4.5); g.add(d1);
-    var d2 = new THREE.Group(); d2.position.set(6.4, 0, 30.6); director(THREE, d2, T, 1.6); g.add(d2);
+    /* the two Head Lights stacked on the front (D1, P1) */
+    var d1 = new THREE.Group(); d1.position.set(19.0, 0, 21.0); headLight(THREE, d1, T, 1.4); g.add(d1);
+    var d2 = new THREE.Group(); d2.position.set(6.6, 0, 28.5); headLight(THREE, d2, T, 1.6); g.add(d2);
+    /* their platforms */
+    hexa(THREE, g, T.sup, 15.6, 21.6, 4.2, 20.85, 15.6, 21.6, 4.2, 21.1);
+    hexa(THREE, g, T.sup, 3.4, 9.6, 4.0, 28.35, 3.4, 9.6, 4.0, 28.6);
 
-    /* ---------------- lattice mast, Head Net, Top Sail */
-    var LB = [[-10.6, -3.4], [-10.6, 3.4], [-4.2, -3.4], [-4.2, 3.4]];
-    var mz0 = 34.0, mz1 = 47.0, TP = [[-8.0, -0.9], [-8.0, 0.9], [-5.6, -0.9], [-5.6, 0.9]];
-    for (i = 0; i < 4; i++) strut(THREE, g, T.metal, LB[i][0], LB[i][1], mz0, TP[i][0], TP[i][1], mz1, 0.16, 5);
-    var lev = function (f) { return [LB.map(function (b, k) { return [b[0] + (TP[k][0] - b[0]) * f, b[1] + (TP[k][1] - b[1]) * f, mz0 + (mz1 - mz0) * f]; })]; };
-    [0.25, 0.5, 0.75].forEach(function (f) {
-      var R4 = lev(f)[0], ring = [0, 2, 3, 1, 0];
-      for (var k = 0; k < 4; k++) { var a = R4[ring[k]], b = R4[ring[k + 1]]; strut(THREE, g, T.metal, a[0], a[1], a[2], b[0], b[1], b[2], 0.07, 4); }
+    /* lattice yards out to both sides at the tower top (P1) */
+    for (s = -1; s <= 1; s += 2) {
+      var y0 = s * 4.3, y1 = s * 11.0;
+      [[-10.2, 33.6], [-8.6, 33.6], [-10.2, 34.4], [-8.6, 34.4]].forEach(function (q) {
+        strut(THREE, g, T.metal, q[0], y0, q[1], q[0], y1, q[1], 0.06, 3);
+      });
+      for (i = 0; i <= 6; i++) {
+        var yl = y0 + (y1 - y0) * i / 6;
+        strut(THREE, g, T.metal, -10.2, yl, 33.6, -8.6, yl, 34.4, 0.04, 3);
+        strut(THREE, g, T.metal, -10.2, yl, 34.4, -8.6, yl, 33.6, 0.04, 3);
+      }
+      strut(THREE, g, T.metal, -9.4, y1, 33.6, -9.4, y1, 37.2, 0.07, 4);
+      strut(THREE, g, T.metal, -9.4, y1 - s * 2.5, 34.4, -9.4, y1 - s * 2.5, 36.2, 0.05, 3);
+      strut(THREE, g, T.metal, -9.4, y0, 31.0, -9.4, y1 * 0.8, 33.6, 0.05, 3);
+    }
+
+    /* ---------------- lattice mast out of the funnel drum, Head Net, Top Sail */
+    var LB = [[-10.0, -2.4], [-10.0, 2.4], [-5.6, -2.4], [-5.6, 2.4]];
+    var mz0 = 37.1, mz1 = 48.6, TP = [[-8.0, -0.85], [-8.0, 0.85], [-6.2, -0.85], [-6.2, 0.85]];
+    for (i = 0; i < 4; i++) strut(THREE, g, T.dark, LB[i][0], LB[i][1], mz0, TP[i][0], TP[i][1], mz1, 0.2, 5);
+    var lev = function (f) { return LB.map(function (b, k) { return [b[0] + (TP[k][0] - b[0]) * f, b[1] + (TP[k][1] - b[1]) * f, mz0 + (mz1 - mz0) * f]; }); };
+    [0.2, 0.4, 0.6, 0.8].forEach(function (f) {
+      var R4 = lev(f), ring = [0, 2, 3, 1, 0];
+      for (var k = 0; k < 4; k++) { var a = R4[ring[k]], b = R4[ring[k + 1]]; strut(THREE, g, T.dark, a[0], a[1], a[2], b[0], b[1], b[2], 0.07, 4); }
     });
     [[0, 2], [1, 3], [0, 1], [2, 3]].forEach(function (pr) {
-      [0, 0.25, 0.5, 0.75].forEach(function (f) {
-        var A = lev(f)[0], B = lev(f + 0.25)[0];
-        strut(THREE, g, T.metal, A[pr[0]][0], A[pr[0]][1], A[pr[0]][2], B[pr[1]][0], B[pr[1]][1], B[pr[1]][2], 0.05, 3);
+      [0, 0.2, 0.4, 0.6, 0.8].forEach(function (f) {
+        var A = lev(f), B = lev(f + 0.2);
+        strut(THREE, g, T.dark, A[pr[0]][0], A[pr[0]][1], A[pr[0]][2], B[pr[1]][0], B[pr[1]][1], B[pr[1]][2], 0.06, 3);
       });
     });
-    box(THREE, g, 3.8, 3.0, 0.25, T.metal, -6.8, 0, mz1 + 0.1);
-    box(THREE, g, 3.0, 3.6, 0.2, T.metal, -7.3, 0, 41.0);
-    /* yard across the mast with small antenna posts at its ends */
+    box(THREE, g, 3.4, 2.8, 0.25, T.metal, -7.1, 0, mz1 + 0.1);
+    box(THREE, g, 3.4, 3.8, 0.2, T.metal, -7.6, 0, 42.0);
+    /* yard across the mast */
     for (s = -1; s <= 1; s += 2) {
-      strut(THREE, g, T.metal, -7.6, s * 1.6, 43.6, -7.6, s * 9.0, 43.6, 0.08, 4);
-      strut(THREE, g, T.metal, -7.6, s * 1.6, 44.4, -7.6, s * 9.0, 43.8, 0.06, 4);
-      strut(THREE, g, T.metal, -7.6, s * 9.0, 43.6, -7.6, s * 9.0, 45.0, 0.05, 4);
-      strut(THREE, g, T.metal, -7.6, s * 5.0, 43.6, -7.6, s * 5.0, 44.4, 0.05, 4);
+      strut(THREE, g, T.metal, -7.6, s * 1.4, 44.6, -7.6, s * 6.5, 44.6, 0.08, 4);
+      strut(THREE, g, T.metal, -7.6, s * 1.2, 45.6, -7.6, s * 6.5, 44.8, 0.05, 4);
+      strut(THREE, g, T.metal, -7.6, s * 6.5, 44.6, -7.6, s * 6.5, 45.8, 0.05, 4);
     }
-    /* Head Net (MR-310 Angara) on a bracket on the mast front */
-    box(THREE, g, 2.6, 1.6, 0.25, T.metal, -3.4, 0, 38.6);
-    cylZ(THREE, g, 0.3, 0.35, 0.8, 8, T.metal, -2.3, 0, 39.1);
-    box(THREE, g, 0.35, 5.6, 1.4, T.metal, -2.0, 0, 40.2);
-    box(THREE, g, 0.9, 0.12, 0.12, T.metal, -1.4, 0, 40.2);
-    /* Top Sail (MR-600 Voskhod): the big reflector at the masthead, leaning back */
-    cylZ(THREE, g, 0.6, 0.8, 1.6, 10, T.metal, -6.8, 0, mz1 + 1.0);
-    var ts = new THREE.Group(); ts.position.set(-5.8, 0, 51.0); ts.rotation.y = -0.5; g.add(ts);
-    /* curved in elevation (a cylindrical reflector), concave forward, ribbed */
-    for (i = 0; i < 4; i++) {
-      var f0 = -0.5 + i * 0.25, fm = f0 + 0.125, RR = 9.0;
-      var pnl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.6, 2.3), T.metal);
-      pnl.position.set(RR * (1 - Math.cos(fm)), 0, RR * Math.sin(fm)); pnl.rotation.y = fm; ts.add(pnl);
-      var rib = new THREE.Mesh(new THREE.BoxGeometry(0.35, 4.7, 0.14), T.dark);
-      rib.position.set(RR * (1 - Math.cos(f0 + 0.25)) - 0.08, 0, RR * Math.sin(f0 + 0.25)); rib.rotation.y = f0 + 0.25; ts.add(rib);
+    /* Head Net (MR-310 Angara) on its bracket on the mast front (D1) */
+    box(THREE, g, 3.0, 1.6, 0.25, T.metal, -4.3, 0, 37.6);
+    cylZ(THREE, g, 0.3, 0.35, 1.2, 8, T.metal, -2.6, 0, 38.3);
+    var hn = new THREE.Group(); hn.position.set(-2.6, 0, 39.4); g.add(hn);
+    [0.38, -0.38].forEach(function (ra) {
+      var bar = new THREE.Mesh(new THREE.BoxGeometry(0.5, 5.8, 1.3), T.metal);
+      bar.rotation.x = ra; hn.add(bar);
+    });
+    box(THREE, hn, 0.9, 0.14, 0.14, T.metal, 0.5, 0, 0);
+    /* Top Sail (MR-600 Voskhod): the big reflector at the masthead, curved
+       in elevation, concave forward, leaning back (D1, P1, P2) */
+    cylZ(THREE, g, 0.6, 0.8, 1.6, 10, T.metal, -7.1, 0, mz1 + 1.0);
+    strut(THREE, g, T.metal, -7.6, 0, mz1, -7.6, 0, 54.4, 0.08, 4);
+    var ts = new THREE.Group(); ts.position.set(-5.4, 0, 49.4); ts.rotation.y = -0.42; g.add(ts);
+    var NA = 8, RR = 9.0, HW2 = 3.0, tp = [], ti = [], tu = [];
+    for (i = 0; i <= NA; i++) {
+      var fa = -0.5 + i / NA * 1.0;
+      var px0 = RR * (1 - Math.cos(fa)), pz0 = RR * Math.sin(fa) * 0.94;
+      tp.push(px0, -HW2, pz0, px0, HW2, pz0); tu.push(0, i / NA, 1, i / NA);
     }
-    for (i = -1; i <= 1; i++) box(THREE, ts, 0.4, 0.16, 8.4, T.dark, -0.25, i * 1.9, 0);
-    box(THREE, ts, 0.3, 4.4, 0.3, T.metal, 3.0, 0, -0.4);
-    for (s = -1; s <= 1; s += 2) strut(THREE, ts, T.metal, 0.4, s * 2.1, -2.6, 3.0, s * 2.1, -0.4, 0.06, 4);
-    strut(THREE, g, T.metal, -8.4, 0, mz1, -8.4, 0, 49.6, 0.08, 4);
+    for (i = 0; i < NA; i++) { var q0 = 2 * i; ti.push(q0, q0 + 2, q0 + 1, q0 + 1, q0 + 2, q0 + 3, q0, q0 + 1, q0 + 2, q0 + 1, q0 + 3, q0 + 2); }
+    ts.add(geoMesh(THREE, tp, ti, tu, T.metal));
+    for (i = 0; i <= 4; i++) {
+      var fb = -0.5 + i / 4;
+      box(THREE, ts, 0.3, 6.2, 0.14, T.dark, RR * (1 - Math.cos(fb)) - 0.12, 0, RR * Math.sin(fb) * 0.94);
+    }
+    for (i = -2; i <= 2; i++) box(THREE, ts, 0.35, 0.14, 8.6, T.dark, -0.15, i * 1.45, 0);
+    box(THREE, ts, 0.3, 3.6, 0.3, T.metal, 3.6, 0, -0.6);
+    for (s = -1; s <= 1; s += 2) strut(THREE, ts, T.metal, 0.4, s * 2.6, -3.2, 3.6, s * 1.8, -0.6, 0.06, 4);
 
-    /* ---------------- forward: deckhouses and launchers */
-    /* raised deckhouse with the after SA-N-3 */
-    hexa(THREE, g, T.sup, 23.0, 35.5, 5.0, 9.7, 23.0, 35.0, 4.8, 14.3);
-    var l3 = new THREE.Group(); l3.position.set(30.3, 0, 14.3); twinArm(THREE, l3, T, 6.0, true); g.add(l3);
+    /* ---------------- forward: deckhouses and launchers (D1, P1, P4) */
+    /* raised deckhouse with the after M-11 between sloped panels */
+    hexa(THREE, g, T.sup, 21.6, 35.8, 5.2, 9.7, 21.6, 35.2, 5.0, 14.3);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 3; i++) box(THREE, g, 0.9, 0.08, 0.55, T.dark, 24 + i * 3.6, s * 5.12, 12.6);
+    var l3 = new THREE.Group(); l3.position.set(30.3, 0, 14.3); twinArm(THREE, l3, T, 6.0); g.add(l3);
+    /* its two blast panels sloping up from the roof edges (P1, P2, P4) */
+    for (s = -1; s <= 1; s += 2) wedge(THREE, g, T.sup, 28.0, 32.6, s * 2.0, s * 4.8, 14.3, 16.0);
+    /* the thin pole between the deckhouses */
+    strut(THREE, g, T.metal, 35.6, 0, 14.3, 35.6, 0, 21.4, 0.1, 5);
+    strut(THREE, g, T.metal, 35.6, -1.4, 19.5, 35.6, 1.4, 19.5, 0.05, 3);
     /* low deckhouse */
-    hexa(THREE, g, T.sup, 35.8, 49.1, 4.0, deckZ(35.8), 36.2, 48.6, 3.7, 12.2);
-    /* forward SA-N-3 on its magazine trunk */
+    hexa(THREE, g, T.sup, 35.8, 44.2, 4.0, deckZ(35.8), 36.2, 43.8, 3.7, 12.2);
+    /* forward M-11 on its magazine trunk, flat panels */
     cylZ(THREE, g, 2.4, 2.6, 2.4, 16, T.sup, 52.1, 0, deckZ(52.1) + 1.2);
-    var l2 = new THREE.Group(); l2.position.set(52.1, 0, deckZ(52.1) + 2.3); twinArm(THREE, l2, T, 6.0, true); g.add(l2);
-    /* SUW-N-1 nearest the bow, longer arms, no side panels */
-    cylZ(THREE, g, 2.0, 2.2, 0.8, 16, T.sup, 64.6, 0, deckZ(64.6) + 0.4);
-    var l1 = new THREE.Group(); l1.position.set(64.6, 0, deckZ(64.6) + 0.3); twinArm(THREE, l1, T, 7.4, false); g.add(l1);
-    /* the two RBU-6000 */
-    [72.1, 83.4].forEach(function (xr) {
+    var l2 = new THREE.Group(); l2.position.set(52.1, 0, deckZ(52.1) + 2.3); twinArm(THREE, l2, T, 6.0); g.add(l2);
+    for (s = -1; s <= 1; s += 2) wedge(THREE, g, T.sup, 49.9, 54.3, s * 2.4, s * 5.2, deckZ(52.1), deckZ(52.1) + 2.3);
+    /* SUW-N-1 on its pedestal, longer arms, no panels */
+    cylZ(THREE, g, 1.6, 2.0, 1.4, 16, T.sup, 64.6, 0, deckZ(64.6) + 0.7);
+    var l1 = new THREE.Group(); l1.position.set(64.6, 0, deckZ(64.6) + 0.6); twinArm(THREE, l1, T, 7.6); g.add(l1);
+    /* the two RBU-6000 in tandem; the forward one between the anchor capstans */
+    [72.6, 83.4].forEach(function (xr) {
       var r = new THREE.Group(); r.position.set(xr, 0, deckZ(xr)); rbu(THREE, r, T); g.add(r);
     });
-    /* capstans, bollards */
     for (s = -1; s <= 1; s += 2) {
-      cylZ(THREE, g, 0.55, 0.65, 0.7, 12, T.metal, 87.5, s * 1.7, deckZ(87.5) + 0.35);
+      cylZ(THREE, g, 0.7, 0.8, 0.8, 12, T.metal, 83.4, s * 2.5, deckZ(83.4) + 0.4);
+      strut(THREE, g, T.dark, 83.4, s * 2.5, deckZ(83.4) + 0.08, 86.2, s * 3.3, deckZ(86.2) + 0.08, 0.12, 4);
       for (i = 0; i < 3; i++) cylZ(THREE, g, 0.22, 0.22, 0.6, 8, T.metal, 40 + i * 18, s * (sideY(40 + i * 18, deckZ(40 + i * 18)) - 1.0), deckZ(40 + i * 18) + 0.3);
     }
-    /* jackstaff */
+    /* the low bulwark across the bow (P1) */
+    for (s = -1; s <= 1; s += 2) {
+      var bw = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.6, 0.9), T.sup);
+      bw.position.set(86.0, s * 1.75, deckZ(86) + 0.45); bw.rotation.z = s * 0.5; g.add(bw);
+    }
     strut(THREE, g, T.metal, 93.9, 0, deckZ(93.9), 93.9, 0, deckZ(93.9) + 3.0, 0.05, 4);
 
-    /* working boats at the deck edge beside the raised deckhouse */
+    /* working boats in crutches beside the raised deckhouse (P1) */
     for (s = -1; s <= 1; s += 2) {
-      tprism(THREE, g, 7.4, 1.8, 8.5, 2.5, 1.1, T.sup, 30.0, s * 9.3, 11.1);
-      box(THREE, g, 3.2, 1.9, 0.9, T.sup, 29.0, s * 9.3, 12.1);
-      for (i = -1; i <= 1; i += 2) box(THREE, g, 0.4, 2.2, 0.8, T.metal, 30 + i * 2.6, s * 9.3, 10.2);
+      tprism(THREE, g, 7.4, 1.8, 8.5, 2.5, 1.1, T.white, 30.0, s * 9.9, 11.1);
+      box(THREE, g, 3.2, 1.9, 0.9, T.sup, 29.0, s * 9.9, 12.1);
+      for (i = -1; i <= 1; i += 2) box(THREE, g, 0.4, 2.2, 0.8, T.metal, 30 + i * 2.6, s * 9.9, 10.2);
+      strut(THREE, g, T.metal, 26.2, s * 8.0, 9.7, 26.2, s * 10.2, 13.6, 0.08, 4);
+      strut(THREE, g, T.metal, 33.8, s * 8.0, 9.7, 33.8, s * 10.2, 13.6, 0.08, 4);
     }
 
     /* ---------------- railings: waist and forecastle edges */
     for (s = -1; s <= 1; s += 2) {
       var prev = null;
-      for (x = -16.5; x <= 91.5; x += 3.6) {
+      for (x = -11.0; x <= 91.5; x += 3.6) {
         var zd = deckZ(x) + 0.04, yd = s * (sideY(x, deckZ(x)) - 0.15), xx = xAt(x, deckZ(x));
         strut(THREE, g, T.metal, xx, yd, zd, xx, yd, zd + 1.0, 0.04, 3);
         if (prev) {
@@ -640,7 +819,7 @@ var HeroMoskva = (function () {
       }
     }
 
-    /* ---------------- underwater: two shafts and screws */
+    /* ---------------- underwater: two shafts and screws (rudders not drawn) */
     for (s = -1; s <= 1; s += 2) {
       cylX(THREE, g, 0.32, 0.32, 20.0, 8, T.metal, -68.0, s * 4.6, -5.0);
       strut(THREE, g, T.metal, -74.0, s * 4.6, -5.0, -74.0, s * 3.0, -2.6, 0.14, 4);
@@ -653,9 +832,9 @@ var HeroMoskva = (function () {
     }
 
     /* ---------------- team: three small strips on up-facing roofs, 2 cm proud */
-    box(THREE, g, 4.0, 1.2, 0.04, T.team, 42.4, 0, 12.22);
+    box(THREE, g, 4.0, 1.2, 0.04, T.team, 40.0, 0, 12.22);
     box(THREE, g, 1.2, 4.0, 0.04, T.team, 25.2, 0, 14.32);
-    box(THREE, g, 1.2, 4.0, 0.04, T.team, 12.6, 0, 21.02);
+    box(THREE, g, 1.2, 4.0, 0.04, T.team, 12.0, 0, 21.06);
 
     g.updateMatrixWorld(true);
     return bake(THREE, g);
