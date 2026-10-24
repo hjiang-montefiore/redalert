@@ -1,52 +1,62 @@
 /* ============ ru_iskander.js - HERO model: 9K720 Iskander-M on the 9P78-1 TEL (MZKT-7930 8x8) ============
-   Two rows, one launcher:
+   Two rows, one launcher (the same 9P78-1 in both: no variant difference is published or photographed):
      pact_e00_tel   "9K720 Iskander-M, 9P78-1 TEL"   (2006)
-     tel_p          "9K720 Iskander-M, 9P78-1 TEL"   (the generic pact row)
+     tel_p          "9K720 Iskander-M, 9P78-1 TEL"   (the generic pact row, from e20)
+   The Bal and Bastion-P coastal rows (js/eras.js) borrow this model through modelAs:"pact_e00_tel" until their own lands.
    Do NOT confuse with pact_e80_tel / pact_e90_tel (the Tochka, js/hero/ru_tochka.js).
 
-   What each feature rests on (Wikimedia Commons photographs fetched for this model, cached in the scratchpad):
-     ra  "9P78-1 TEL Iskander-M.JPG" (high three-quarter from above, Moscow parade, Russian green with a diagonal
-         stripe/star marking that is NOT drawn): the long boxy body behind the cab with its roof cover made of
-         transverse panels with raised ribs, a mesh vent panel and a round dome on the fixed roof between the cover
-         and the cab, the cab roof with hatches and a vent box, a whip antenna, three windscreen panes, an angular
-         front bumper with lamps, the fixed rear part of the body, eight big lugged tyres on dished wheels.
-     rb  "Iskander demo Army-2016.jpg" (side view, TEL with the round raised, loader crane on a second vehicle, not
-         drawn): wheel size (about 1.4 m), axle spacing (pairs 2.0 m apart, a long gap between the second and third
-         axle), body behind the cab, cab lower than the body, the round erected about the REAR end of the body
-         upright, its tail flush with the rear end of the body, within a degree or two of vertical (userData.el 1.57 rad,
-         read off this photograph, not a published figure),
-         round colour olive green with a long ogive nose.
-     rc  "CombatLaunching2018-07/-27/-05.jpg" (field photographs, plain dark Russian green, no markings): cab with
-         three flat windscreen panes, a vertical front, lamps on the bumper, wipers, a lower vent grille, mirrors on
-         the front corners, a whip antenna on the cab roof near the centre line between the roof lamps (rc -05/-27; the photographs
-         run off the top of the frame, so only a 2 m stub is drawn: 3.2 m high without it, 5.15 m with it), roof lamps, a ladder and a mesh-windowed hatch panel
-         on the right side of the body, side panel seams, the upper body wider than the chassis with the wheels
-         running under it.
-   Dimensions: 12.0 m long, 3.07 m wide over the body (3.4 over the mirrors), 3.2 m to the roof (cab roof 3.13, whip to 5.15).
-   Published for the MZKT-7930 chassis (Wikipedia, MZKT-7930): 12.7 m x 3.0 m x 3.29 m; the 9M723 round 7.3 m
-   (Wikipedia, 9K720 Iskander).  The model is 5 percent short of the 12.7 m chassis length on purpose: Army-2016 and
-   CombatLaunching2018-27 put the axles at 2.0 / 3.4 / 2.0 m, the tail 2.0 m behind the last axle and the bumper 2.5 m
-   ahead of the first, which is the 12.0 m drawn; the 12.7 m is the bare chassis figure with its tow gear.
-   Round dimensions, tyre (1.5 m) and cab are read off the photographs.
-   TWO ROUNDS: the 9P78-1 raises ONE round at a time; the engine puts both on a single group "podelev", so both
-   lie in the body side by side and BOTH rise together about one hinge at the rear of the body (the model's one
-   limitation; the real launcher erects them singly). userData.cells holds two nozzles (one per round), so
-   the launch flash alternates between them.
-   Poses: the roof cover is drawn twice, closed in "travelpose" and in "deploypose" with its two leaves (CombatLaunching
-   2018-05/-07: low flaps at the wall tops; Army-2016: a bare flat roof with the second round lying in the body, so no
-   standing wall) swung out on their outer hinges and down 45 degrees (the angle, and the split into two leaves, are not
-   confirmed by any photograph; the row text says one shared hinged cover).  The deploy pose also has the stabiliser
-   jacks lowered: two pairs, at the body/cab joint (x = 2.46) and in the gap behind the third axle (x = -3.0); both
-   Army-2016 and CombatLaunching2018-07 show a leg at the cab end of the body, only one shows the rearward one, so the
-   rear pair is a best reading.  The round(s) stand about the hinge at the tail of the body (Army-2016); the engine
-   raises both together (the real launcher erects one).  A round raised before the unit has deployed rises through the
-   closed cover (risk).
-   NOT confirmed and not drawn: the hoist/loader crane (a separate TZM vehicle), the roof railings seen folded
-   in rc, the parade stripes and star, tactical numbers, the antenna mounts beyond one whip, the cab interior,
-   the tow rope on the bumper.  Paint: plain dark Russian green.
+   References (Wikimedia Commons, Category:9P78-1; fetched at 960 px for this model):
+     ra  "9P78-1 TEL Iskander-M.JPG"            high front three-quarter, Moscow parade: the roof, the cab roof, the fixed section
+     rb  "Iskander demo Army-2016.jpg"          a true side view, deployed, a round upright: the SIDE STATIONS below
+     rc  "CombatLaunching2018-05/-07.jpg"        field, plain green, deployed: rails, ladder, jacks, opened cover
+     rd  "2013 Moscow Victory Day Parade (45).jpg"   head-on: the cab front
+     re  "2011 Moscow Victory Day Parade (358-31).jpg", "2008 Moscow Victory Day Parade - Iskander-M.jpg",
+         "Alabino05042017-51.jpg"               side three-quarters, travel: the cover, doors, tanks
+     ru.wikipedia "MZKT-7930": length 12,669 mm, width 3,070, height 3,017; tyres 1500x600-635; fuel 2 x 385 l;
+     ground clearance 400 mm.  The 9M723 round, 7.3 m (en.wikipedia "9K720 Iskander"), as the earlier model had it.
+
+   Recognition list (each is drawn; where it rests):
+     1. A long flat-sided box body behind the cab with a SLOPED HIP BAND between the vertical walls and the flat roof
+        (rb, ra, rc-05, re: every view).
+     2. The roof cover in two leaves meeting on the centre line, transverse panel joints about 1.1 m apart and two long
+        raised strips on each leaf (ra).
+     3. The fixed roof section between cover and cab: horizontal louvres down its hip band, a mesh vent panel on the right,
+        a round flat-topped dome on the left, two antenna posts at the front corners (ra, rc-05).
+     4. The forward-control cab, flat front with chamfered vertical corners, as wide as the body and a little lower than its
+        roof (rb, rd), two compartments under one roof (ra).
+     5. Three equal flat windscreen panes 0.84 m wide, a frame head with rain strips, a louvred panel below (rd).
+     6. A bumper across the full width with round headlamps, outboard indicators, side lamps, dark plates and a tow hook (rd).
+     7. The cab roof: two lamps on the front corners, a whip antenna on the left, a recess with two hatches, a raised box on
+        the right rear (ra; its near side is the starboard side).
+     8. A big-windowed crew door each side, a second window on the left (re 2011, the port side), steps ahead of the front tyres, big mirrors (rb, re).
+     9. Eight 1500x600-635 lugged tyres on dished wheels, in two pairs: 2.08 m, 3.51 m, 2.03 m apart (rb; ru.wikipedia).
+    10. The 385-litre tanks between the pairs, mudguard plates and flaps over each pair (re 2008, rb).
+    11. Deployed: two stabiliser jack pairs in the pair gaps (rb shows both down), the folding guard rails up along the roof
+        edges, a boarding ladder on the right (rc-05/-07, both of the starboard side); the rounds erect about the rear of the body, upright (rb).
+
+   SIDE STATIONS (rb, scaled to the published 12.669 m): bumper +6.335; cab front face +6.18; crew-door window 5.15-5.72;
+   compartment joint 4.50; cab rear +3.24; fixed roof section 3.24 to 2.22; cover 2.22 to the rear plate -6.335.
+   Axles +3.88, +1.80, -1.71, -3.74.  Heights: tyre top 1.44; body underside 1.50; wall top (hip foot) 2.82; roof 3.10;
+   cab roof 2.90 (rb 2.82, rd 3.0; the published 3.017 m chassis height counts the roof fittings); windscreen 1.88-2.64.
+   CROSS-SECTION (rd, ra): walls at +-1.535 (3.07 m published), the hip leaning in to +-1.27 at the roof; the cab the same
+   width, its front corners chamfered 0.14 m and its roof edge 0.12 m.
+   The earlier model was 12.0 m long on a 1.36 m tyre; rb puts the wheels and the overhangs on the published 12.669 m.
+
+   Poses: the roof cover is drawn twice, shut in "travelpose" and in "deploypose" with its two leaves swung over their outer
+   hinges and down at 50 degrees past the horizontal, lying along the hip band with their edges standing out below it (rc-05
+   shows thin plates standing out at the foot of the hip band and the walls uncovered; how far the leaves really swing is NOT
+   confirmed).  The deploy pose also has the two jack pairs down (x -2.75, +2.80, rb: -2.82, +2.73), the guard rails
+   (posts 1.1 m apart, 1.0 m high, rc-05) and the ladder on the right (rc-07).  The engine raises both rounds together on one group
+   "podelev" about the hinge at the rear of the body (the real launcher erects them one at a time); userData.cells holds one
+   nozzle a round.  A round raised before the unit has deployed rises through the shut cover (risk, as before).
+   Paint: plain Russian green, sampled off re 2011 (#4d4d3e in shade) and rc-07 (#43443d, overcast); drawn #4a543e (about 0.9 of a lit
+   wall, less yellow than the earlier #48553a) on a canvas texture of weathered blotches, faint 0.98 m panel seams with rivet
+   rows and rain streaks; the wheels painted the same green (ra, rb) by vertex colour.  The 2008 parade's three-colour camouflage (re 2008) is NOT drawn: it is a parade finish, as the
+   S-400 hero treats the 2009-10 parade camouflage.  NOT drawn: the parade stripes and star, the white squares and tactical
+   numbers, the loader crane (a separate TZM), the cab interior, the antenna above 2 m (it runs out of every frame).
    Nodes: eight "roadwheel" groups, "podelev", "travelpose", "deploypose"; NOTHING named "turret" (turret:false).
-   Budget: 9,584 triangles in travel pose, 9,760 deployed, 16 draw calls at most, 6 materials.
-   Materials (6): paint, dark, glass, tyre, missile paint, C.team (two small up-facing strips on the cab roof).
+   Budget: 11,660 triangles in travel pose, 12,196 deployed; 15 draw calls in travel, 16 deployed; 6 materials (paint with
+   its canvas texture, dark, glass, tyre with vertex colours, missile paint, C.team on two small strips on the cab roof).
    Model space: +X nose, +Y left, +Z up, metres, tyres on z = 0.  ASCII only.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -54,16 +64,20 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 var HeroIskander = (function () {
   "use strict";
 
-  var PAINT = { base: "#48553a", blots: ["#3c472f", "#55623f", "#414d33"], seed: 7930 };
-  var AXL = [3.49, 1.43, -2.03, -4.0], TY = 1.27, RT = 0.682, TS = 1.1;   /* axle x, track half, tyre radius, tyre scale */
-  var HX = -5.55, HZ = 2.05, EL = 1.57;     /* the rounds' hinge (world) at the rear of the body; 86 degrees from rb */
-  var X0 = -6.0, XB = 2.63, XF = 5.55, X1 = 6.0;   /* body rear, body/cab joint, cab front, bumper */
-  var HW = 1.535, ZB = 1.40, ZT = 3.0, ZF = 1.5;   /* body half width, tray bottom, wall top, floor */
-  var COVER_OPEN = 270 * Math.PI / 180;           /* the cover leaves swung right over to hang down the outside of the body walls: low flaps at the
-                                                      wall tops and a bare open roof (CombatLaunching2018-05/-07, Army-2016), never a wall and never
-                                                      wings - how far the real leaves swing is not confirmed by any photograph */
-  var JX = [-3.0, 2.46];                          /* the stabiliser jacks' x: one pair in each long gap between the axles */
+  var PAINT = { base: "#4a543e", blots: ["#404936", "#535e45", "#454f3a"], seed: 7930 };
+  /* Side stations off Army-2016 (rb), scaled to the published 12.669 m chassis length (41.6 px/m):
+     axle pairs 2.08 and 2.03 m apart, 3.51 m between the pairs; the cab 2.94 m long behind a 0.15 m bumper, a fixed roof
+     section 1.02 m long behind it, the cover over the rest; tyre 1.44 m over the tread (published 1500x600-635, loaded) */
+  var AXL = [3.88, 1.80, -1.71, -3.74], TY = 1.21, RT = 0.72;   /* axle x, tyre centre half track, loaded tyre radius */
+  var HX = -5.85, HZ = 2.12, EL = 1.57;     /* the rounds' hinge (world) at the rear of the body; upright, as Army-2016 shows */
+  var X0 = -6.335, XB = 2.22, XC = 3.24, XF = 6.18, XS = 6.27, X1 = 6.335;   /* body rear, cover/fixed-roof joint, cab rear, cab front face, bumper face, tow hook */
+  var HW = 1.535, ZB = 1.50, ZW = 2.82, ZR = 3.10, RW = 1.27;   /* half width (3.07 published), body bottom, wall top (the hip band's foot), roof, roof half width */
+  var ZC = 2.90;                                   /* cab roof: 2.82 on rb, 3.0 on the front view; 3.017 m published over the roof fittings */
+  var COVER_OPEN = 230 * Math.PI / 180;           /* the leaves swung over their outer hinges and down onto the hip band, their edges standing
+                                                      out below it (CombatLaunching2018-05); how far they swing is not published */
+  var JX = [-2.75, 2.80];                          /* the stabiliser jacks: in the gap of each axle pair (Army-2016, both down at -2.82 and 2.73) */
   var RY = 0.72;                                   /* the two rounds at y = +-RY */
+
 
   var TAU = Math.PI * 2;
 
@@ -281,6 +295,15 @@ var HeroIskander = (function () {
         q.fillStyle = (i % 2) ? "rgba(15,14,10,0.07)" : "rgba(240,236,215,0.05)";
         q.fillRect(R() * 256, R() * 256, 3 + R() * 30, 2 + R() * 18);
       }
+      /* panel framing (rc -27, ra: the walls and the cover are riveted sheet on frames): faint seams on a 0.98 m
+         square with rows of rivet heads along them, and thin rain streaks running down */
+      q.fillStyle = "rgba(20,22,16,0.16)";
+      for (i = 0; i < 256; i += 85) { q.fillRect(i, 0, 1, 256); q.fillRect(0, i, 256, 1); }
+      for (i = 0; i < 256; i += 85) for (k = 3; k < 256; k += 7) {
+        q.fillStyle = "rgba(225,228,205,0.10)"; q.fillRect(i + 3, k, 1, 1); q.fillRect(k, i + 3, 1, 1);
+        q.fillStyle = "rgba(10,10,8,0.12)"; q.fillRect(i + 4, k + 1, 1, 1); q.fillRect(k + 1, i + 4, 1, 1);
+      }
+      for (i = 0; i < 26; i++) { q.fillStyle = "rgba(25,24,18,0.06)"; q.fillRect(R() * 256, R() * 256, 1 + R() * 2, 20 + R() * 60); }
       t = new THREE.CanvasTexture(cv);
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
@@ -338,7 +361,6 @@ var HeroIskander = (function () {
   }
 
 
-
   /* -------------------------------------------------------------- materials */
   function materials(THREE, C) {
     var T = {}, tx = paintTex(THREE, PAINT);
@@ -346,8 +368,8 @@ var HeroIskander = (function () {
     if (tx) T.paint.map = tx; else T.paint.color.set(PAINT.base);
     T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
     T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
-    T.tyre = new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.95, metalness: 0.02 });
-    T.msl = new THREE.MeshStandardMaterial({ color: 0x6b7a50, roughness: 0.55, metalness: 0.25 });
+    T.tyre = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.92, metalness: 0.03 });
+    T.msl = new THREE.MeshStandardMaterial({ color: 0x5f6c48, roughness: 0.55, metalness: 0.25 });
     T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
     return T;
   }
@@ -356,16 +378,15 @@ var HeroIskander = (function () {
              msl: new Bin(T.msl, false), team: new Bin(T.team, false) };
   }
 
-  /* a lugged cross-country tyre about the Y axis (two lanes of lugs a half step apart), dished wheel face and hub cap */
-  /* a 1.25 m lugged cross-country tyre about the Y axis (two lanes of lugs a half step apart), with a
-     dished wheel face and a hub cap each side (r1: the wheels are dished with a raised hub) */
-  function tyre(bin) {
-    var N = 24, R = [[-0.21, 0.37, 0, 0], [-0.21, 0.54, 0, 0], [-0.15, 0.62, 1, 0], [-0.02, 0.62, 1, 0],
-                     [0.02, 0.62, 1, 1], [0.15, 0.62, 1, 1], [0.21, 0.54, 0, 0], [0.21, 0.37, 0, 0]];
+  /* the 1500x600-635 cross-country tyre (ru.wikipedia MZKT-7930), loaded to 0.72 m: two lanes of lugs a half
+     step apart over the crown, a dished wheel with a raised hub and four bolts each side (ra, rc) */
+  function tyre(bin, rim) {
+    var N = 28, R = [[-0.29, 0.33, 0, 0], [-0.29, 0.60, 0, 0], [-0.25, 0.70, 1, 0], [-0.03, 0.72, 1, 0],
+                     [0.03, 0.72, 1, 1], [0.25, 0.70, 1, 1], [0.29, 0.60, 0, 0], [0.29, 0.33, 0, 0]];
     var V = [], F = [], i, j, k, r, a, m = R.length;
     for (i = 0; i < m; i++) for (j = 0; j < N; j++) {
       r = R[i][1];
-      if (R[i][2] && ((j + R[i][3]) % 2)) r -= 0.03;
+      if (R[i][2] && ((j + R[i][3]) % 2)) r -= 0.035;
       a = j / N * TAU;
       V.push([r * Math.cos(a), R[i][0], r * Math.sin(a)]);
     }
@@ -377,152 +398,231 @@ var HeroIskander = (function () {
     for (j = 0; j < N; j++) { k = (j + 1) % N; F.push([m * N, k, j], [m * N + 1, (m - 1) * N + j, (m - 1) * N + k]); }
     solid(bin, V, F, true);
     for (k = -1; k <= 1; k += 2) {
-      cylY(bin, 0, k * 0.19, k * 0.235, 0, 0.37, 18);
-      cylY(bin, 0, k * 0.235, k * 0.285, 0, 0.15, 10);
+      cyl(rim, [0, k * 0.27, 0], [0, k * 0.21, 0], 0.34, 0.30, 18, true, false);   /* the wheel dish, its rim proud of the sidewall */
+      cylY(rim, 0, k * 0.21, k * 0.33, 0, 0.14, 10);                               /* the hub */
       for (i = 0; i < 4; i++) {
         a = i / 4 * TAU + 0.4;
-        box(bin, 0.26 * Math.cos(a) - 0.025, 0.26 * Math.cos(a) + 0.025, k * 0.235, k * 0.255, 0.26 * Math.sin(a) - 0.025, 0.26 * Math.sin(a) + 0.025);
+        box(rim, 0.22 * Math.cos(a) - 0.025, 0.22 * Math.cos(a) + 0.025, k * 0.27 - 0.02, k * 0.27 + 0.02, 0.22 * Math.sin(a) - 0.025, 0.22 * Math.sin(a) + 0.025);
       }
     }
   }
 
-
-  /* a ring in (y, z) from half-width/height pairs, one side given from the centre line out; mirrored */
-  function sym(x, half) {      /* half: [[y, z]...] right side from the bottom up to the roof; returns a closed ring */
-    var r = [], i;
-    for (i = 0; i < half.length; i++) r.push([x, half[i][0], half[i][1]]);
-    for (i = half.length - 1; i >= 0; i--) r.push([x, -half[i][0], half[i][1]]);
-    return r;
+  function lin(n) {
+    return [Math.pow(((n >> 16) & 255) / 255, 2.2), Math.pow(((n >> 8) & 255) / 255, 2.2), Math.pow((n & 255) / 255, 2.2)];
   }
-  /* the body tray: an open-topped U (side walls 0.135 m, floor at 1.5 m) with a chamfered underside */
-  function trayRing(x) {
-    return [[x, -1.30, ZB], [x, 1.30, ZB], [x, HW, 1.55], [x, HW, ZT - 0.05], [x, HW - 0.04, ZT], [x, 1.40, ZT],
-            [x, 1.40, ZF], [x, -1.40, ZF], [x, -1.40, ZT], [x, -HW + 0.04, ZT], [x, -HW, ZT - 0.05], [x, -HW, 1.55]];
-  }
-  function cabRing(x, hw) {
-    return sym(x, [[1.05, 0.95], [1.05, 1.40], [hw, 1.40], [hw, 2.82], [hw - 0.10, 2.95]]);
-  }
-  function side(bin, s, x0, x1, z0, z1, y, t) {      /* a thin plate on the side wall at y = s*|y| */
+  function side(bin, s, x0, x1, z0, z1, y, t) {      /* a thin plate on a side face at y = s*|y|, standing out by t */
     box(bin, x0, x1, s > 0 ? y : -y - t, s > 0 ? y + t : -y, z0, z1);
+  }
+  /* the hip band runs from the wall top (HW, ZW) to the roof edge (RW, ZR); a point on it at fraction f up, d out of it */
+  var HIP_N = (function () { var dy = HW - RW, dz = ZR - ZW, l = Math.sqrt(dy * dy + dz * dz); return [dz / l, dy / l]; })();
+  function hipPt(s, x, f, d) {
+    return [x, s * (HW + (RW - HW) * f + HIP_N[0] * d), ZW + (ZR - ZW) * f + HIP_N[1] * d];
+  }
+  function hipStrip(bin, s, x0, x1, f0, f1, d0, d1) {     /* a strip lying on the hip band */
+    hexa(bin, [hipPt(s, x0, f0, d0), hipPt(s, x1, f0, d0), hipPt(s, x1, f1, d0), hipPt(s, x0, f1, d0),
+               hipPt(s, x0, f0, d1), hipPt(s, x1, f0, d1), hipPt(s, x1, f1, d1), hipPt(s, x0, f1, d1)]);
+  }
+
+  /* The body: an open-topped box, wall tops at 2.82 m, a hip band leaning in to the roof edge at 3.10 (rb, ra, rc -05:
+     every photograph shows the sloped band between the vertical wall and the flat roof), floor at 1.62 */
+  function bodyRing(x) {
+    return [[x, -1.30, ZB], [x, 1.30, ZB], [x, HW, ZB + 0.08], [x, HW, ZW], [x, RW, ZR], [x, RW - 0.07, ZR],
+            [x, RW - 0.07, ZR - 0.06], [x, HW - 0.10, ZW - 0.02], [x, HW - 0.10, 1.62], [x, -HW + 0.10, 1.62],
+            [x, -HW + 0.10, ZW - 0.02], [x, -RW + 0.07, ZR - 0.06], [x, -RW + 0.07, ZR], [x, -RW, ZR], [x, -HW, ZW], [x, -HW, ZB + 0.08]];
+  }
+  /* the fixed roof section between the cover and the cab: the same hip, a closed roof */
+  function fixedRing(x) {
+    return [[x, -1.30, ZB], [x, 1.30, ZB], [x, HW, ZB + 0.08], [x, HW, ZW], [x, RW, ZR], [x, -RW, ZR], [x, -HW, ZW], [x, -HW, ZB + 0.08]];
+  }
+  /* the cab: vertical sides, the roof edge chamfered; hw and the roof drawn in at the front for the corner chamfers */
+  function cabRing(x, hw, top, z0) {
+    return [[x, -hw + 0.05, z0], [x, hw - 0.05, z0], [x, hw, z0 + 0.05], [x, hw, top - 0.12], [x, hw - 0.12, top],
+            [x, -hw + 0.12, top], [x, -hw, top - 0.12], [x, -hw, z0 + 0.05]];
   }
 
   function addHull(B) {
-    var s, i, k, x, a;
-    /* body tray, its front wall against the cab, its low rear gate */
-    loft(B.paint, [trayRing(X0), trayRing(XB)], false);
-    box(B.paint, XB - 0.18, XB, -1.40, 1.40, ZF, ZT);
-    box(B.paint, X0, X0 + 0.10, -1.40, 1.40, ZF, 1.85);
-    /* the fixed roof plate between cover and cab, with the mesh vent panel and the round dome (ra) */
-    box(B.paint, 1.98, XB, -HW + 0.03, HW - 0.03, ZT - 0.02, ZT + 0.03);
-    box(B.dark, 2.05, 2.45, 0.35, 1.15, ZT + 0.03, ZT + 0.06);
-    for (k = 0; k < 4; k++) box(B.paint, 2.05 + k * 0.1, 2.08 + k * 0.1, 0.35, 1.15, ZT + 0.06, ZT + 0.075);
-    cylZ(B.paint, 2.28, -0.85, ZT + 0.03, ZT + 0.22, 0.24, 16);
-    cylZ(B.glass, 2.28, -0.85, ZT + 0.22, ZT + 0.235, 0.15, 12);
-    /* cover seats along the wall tops, edge frames fore and aft */
-    for (s = -1; s <= 1; s += 2) box(B.paint, X0 + 0.1, 1.98, s * 1.40 - 0.05, s * 1.40 + 0.05, ZT, ZT + 0.03);
-    /* chassis frame and its fuel tanks, lamps, cross members under the tray */
-    box(B.dark, -5.7, 5.40, -1.05, 1.05, 0.62, ZB);
+    var s, i, k, x, a, f;
+    /* ---- body: the open box from the rear plate to the fixed roof, its rear plate, the fixed roof section ---- */
+    loft(B.paint, [bodyRing(X0 + 0.14), bodyRing(XB)], false);
+    box(B.paint, X0 + 0.08, X0 + 0.14, -HW, HW, ZB + 0.04, ZW);                  /* the rear plate */
+    loft(B.paint, [fixedRing(XB), fixedRing(XC)], false);
+    /* rear plate: lamp clusters, a tow eye, a step rung (r_top34 rear, rc) */
     for (s = -1; s <= 1; s += 2) {
-      cylX(B.dark, -1.30, 0.55, s * 1.18, 0.98, 0.30, 14);
-      /* the stabiliser jack housings under the tray, one pair behind the second axle gap and one at the body/cab joint
-         (CombatLaunching2018-07 and Army-2016 show a leg at the cab end of the body and one further back), and mudguard plates */
-      for (i = 0; i < JX.length; i++) {
-        box(B.paint, JX[i] - 0.14, JX[i] + 0.14, s * 1.20 - 0.15, s * 1.20 + 0.15, 1.00, ZB);
-        box(B.dark, JX[i] - 0.06, JX[i] + 0.06, s * 1.20 - 0.06, s * 1.20 + 0.06, 0.80, 1.00);
+      box(B.glass, X0 + 0.05, X0 + 0.08, s * 1.25 - 0.12, s * 1.25 + 0.12, 1.62, 1.72);
+      box(B.dark, X0 + 0.03, X0 + 0.08, s * 1.25 - 0.16, s * 1.25 + 0.16, 1.58, 1.62);
+    }
+    box(B.dark, X0 + 0.01, X0 + 0.14, -0.20, 0.20, 1.10, 1.30);
+    bar(B.dark, [X0 + 0.025, -0.6, 1.58], [X0 + 0.025, 0.6, 1.58], 0.05);
+    for (s = -1; s <= 1; s += 2) {
+      /* wall panel seams and compartment door frames: vertical seams every 1.10 m and one horizontal stiffener (ra, rc) */
+      for (i = 0; i < 8; i++) {
+        x = -5.75 + i * 1.10;
+        box(B.dark, x, x + 0.025, s > 0 ? HW : -HW - 0.012, s > 0 ? HW + 0.012 : -HW, ZB + 0.12, ZW - 0.05);
+        hipStrip(B.dark, s, x, x + 0.025, 0.03, 0.97, 0, 0.012);
       }
-      for (i = 0; i < 4; i++) box(B.paint, AXL[i] - 0.52, AXL[i] + 0.52, s * 1.37 - 0.02, s * 1.37 + 0.02, 1.37, 1.40);
+      side(B.paint, s, X0 + 0.15, XB - 0.10, 2.22, 2.27, HW, 0.03);
+      side(B.paint, s, X0 + 0.08, XC, ZB + 0.06, ZB + 0.14, HW, 0.03);             /* the bottom rail */
+      side(B.paint, s, X0 + 0.08, XB, ZW - 0.04, ZW + 0.02, HW, 0.025);              /* the rail at the hip's foot */
+      /* compartment doors with their handles: two low in the wall over each axle gap (rc -05 shows them open) */
+      for (i = 0; i < 2; i++) {
+        x = i ? 0.10 : -3.30;
+        side(B.dark, s, x, x + 1.05, 1.66, 1.68, HW, 0.014);
+        side(B.dark, s, x, x + 1.05, 2.14, 2.16, HW, 0.014);
+        side(B.dark, s, x + 0.47, x + 0.58, 1.86, 1.92, HW, 0.03);
+      }
+      /* the forward fixed section: horizontal louvres down its hip band (ra, rc -05), a seam at each end */
+      for (i = 0; i < 6; i++) {
+        f = 0.10 + i * 0.145;
+        hipStrip(B.dark, s, XB + 0.12, XC - 0.12, f, f + 0.06, -0.005, 0.012);
+        hipStrip(B.paint, s, XB + 0.12, XC - 0.12, f + 0.06, f + 0.085, 0, 0.03);
+      }
+      box(B.dark, XB - 0.012, XB + 0.012, s > 0 ? HW - 0.02 : -HW - 0.01, s > 0 ? HW + 0.01 : -HW + 0.02, ZB + 0.1, ZW);
+      /* the cover's seat: a lip along the roof edge either side */
+      box(B.paint, X0 + 0.08, XB, s > 0 ? RW - 0.08 : -RW, s > 0 ? RW : -RW + 0.08, ZR, ZR + 0.02);
     }
-    /* body side panel seams (rc), a mesh-windowed hatch panel and the ladder on the starboard side (rc) */
+    /* the fixed roof: a mesh vent panel on the right, a box at its rear corner, the round dome on the left, two antenna posts (ra) */
+    box(B.dark, XB + 0.10, XC - 0.15, -1.12, -0.10, ZR, ZR + 0.03);
+    for (k = 0; k < 7; k++) box(B.paint, XB + 0.12 + k * 0.125, XB + 0.15 + k * 0.125, -1.12, -0.10, ZR + 0.03, ZR + 0.05);
+    for (k = 0; k < 4; k++) box(B.paint, XB + 0.10, XC - 0.15, -0.18 - k * 0.30, -0.15 - k * 0.30, ZR + 0.03, ZR + 0.05);
+    box(B.paint, XB + 0.06, XB + 0.40, -1.12, -0.72, ZR, ZR + 0.18);
+    k = 8;
+    cyl(B.paint, [2.74, 0.70, ZR], [2.74, 0.70, ZR + 0.20], 0.38, 0.34, k);
+    cyl(B.paint, [2.74, 0.70, ZR + 0.20], [2.74, 0.70, ZR + 0.25], 0.30, 0.22, k);
+    box(B.dark, 2.52, 2.62, 0.60, 0.80, ZR + 0.10, ZR + 0.16);
     for (s = -1; s <= 1; s += 2) {
-      for (i = 0; i < 5; i++) box(B.dark, -4.9 + i * 1.55, -4.88 + i * 1.55, s * HW - (s < 0 ? 0.012 : 0), s * HW + (s > 0 ? 0.012 : 0), 1.62, 2.95);
-      box(B.dark, X0 + 0.25, XB - 0.25, s * HW - (s < 0 ? 0.012 : 0), s * HW + (s > 0 ? 0.012 : 0), 2.12, 2.14);
+      bar(B.dark, [XC - 0.10, s * 1.18, ZR], [XC - 0.10, s * 1.18, ZR + 0.32], 0.04);
+      cylZ(B.dark, XC - 0.10, s * 1.18, ZR + 0.30, ZR + 0.36, 0.05, 8);
     }
-    box(B.dark, -3.3, -2.5, -HW - 0.02, -HW, 1.95, 2.55);
-    for (i = 0; i < 3; i++) box(B.paint, -3.22 + i * 0.26, -3.15 + i * 0.26, -HW - 0.035, -HW - 0.01, 2.0, 2.5);
-    bar(B.dark, [-1.45, -HW - 0.1, 0.9], [-1.45, -HW - 0.1, 2.8], 0.05);
-    bar(B.dark, [-1.05, -HW - 0.1, 0.9], [-1.05, -HW - 0.1, 2.8], 0.05);
-    for (i = 0; i < 6; i++) bar(B.dark, [-1.45, -HW - 0.1, 1.15 + i * 0.32], [-1.05, -HW - 0.1, 1.15 + i * 0.32], 0.035);
-    /* -- the cab (ra, rc): a vertical front, three flat windscreen panes, roof hatches, vent box, lamps -- */
-    loft(B.paint, [cabRing(XB, 1.48), cabRing(XF, 1.48)], false);
-    box(B.paint, XF - 0.02, XF + 0.04, -1.40, 1.40, 2.78, 2.95);                              /* the brow over the panes */
-    box(B.glass, XF, XF + 0.035, -1.34, -0.55, 2.00, 2.72);
-    box(B.glass, XF, XF + 0.035, -0.45, 0.45, 2.00, 2.72);
-    box(B.glass, XF, XF + 0.035, 0.55, 1.34, 2.00, 2.72);
-    box(B.dark, XF, XF + 0.03, -0.45, 0.45, 1.50, 1.82);                                        /* lower vent grille */
-    for (k = 0; k < 4; k++) box(B.paint, XF + 0.03, XF + 0.045, -0.43, 0.43, 1.54 + k * 0.08, 1.57 + k * 0.08);
-    for (s = -1; s <= 1; s += 2) {                                                              /* wipers */
-      bar(B.dark, [XF + 0.05, s * 0.20, 2.03], [XF + 0.05, s * 0.20 + s * 0.22, 2.60], 0.025);
-      bar(B.dark, [XF + 0.05, s * 0.95, 2.03], [XF + 0.05, s * 0.95 + s * 0.22, 2.60], 0.025);
+
+    /* ---- chassis: frame, cross members, axles, the two 385-litre tanks (ru.wikipedia MZKT-7930; r_parade08 shows the left one
+       between the second and third axles), mudguards over each pair ---- */
+    box(B.dark, -6.10, 5.95, -0.62, 0.62, 0.86, ZB);
+    for (i = 0; i < AXL.length; i++) {
+      cylY(B.dark, AXL[i], -1.02, 1.02, RT, 0.11, 10);
+      box(B.dark, AXL[i] - 0.22, AXL[i] + 0.22, -0.30, 0.30, RT - 0.20, RT + 0.24);
     }
-    /* bumper with lamps, tow eyes (rc) */
-    box(B.dark, XF, X1, -1.45, 1.45, 0.90, 1.30);
-    box(B.dark, XF + 0.1, X1, -1.40, 1.40, 1.30, 1.38);
     for (s = -1; s <= 1; s += 2) {
-      box(B.glass, X1 - 0.02, X1 + 0.03, s * 1.28 - 0.10, s * 1.28 + 0.10, 1.00, 1.18);
-      box(B.glass, X1 - 0.02, X1 + 0.03, s * 0.90 - 0.07, s * 0.90 + 0.07, 1.02, 1.16);
-      box(B.dark, X1 - 0.02, X1 + 0.04, s * 0.55 - 0.05, s * 0.55 + 0.05, 0.95, 1.00);
+      cylX(B.paint, -0.25, 0.85, s * 1.12, 1.02, 0.34, 16);
+      for (i = 0; i < 2; i++) box(B.dark, (i ? 0.70 : -0.12) - 0.03, (i ? 0.70 : -0.12) + 0.03, s * 1.12 - 0.36, s * 1.12 + 0.36, 0.72, 1.38);
+      box(B.dark, -0.90, -0.30, s * 1.05 - 0.24, s * 1.05 + 0.24, 0.85, 1.42);                 /* battery and tool boxes */
+      /* the stabiliser jack housings (x = JX) under the body, mudguard plates over each axle pair */
+      for (i = 0; i < JX.length; i++) {
+        box(B.paint, JX[i] - 0.14, JX[i] + 0.14, s * 1.24 - 0.13, s * 1.24 + 0.13, 0.98, ZB);
+        box(B.dark, JX[i] - 0.06, JX[i] + 0.06, s * 1.24 - 0.06, s * 1.24 + 0.06, 0.80, 0.98);
+      }
+      for (i = 0; i < 4; i += 2) box(B.paint, AXL[i + 1] - 0.80, AXL[i] + 0.80, s * 1.21 - 0.31, s * 1.21 + 0.31, ZB - 0.04, ZB);
+      for (i = 0; i < 4; i++) box(B.dark, AXL[i] - 0.80 - 0.02 + (i % 2 ? 0 : 1.62), AXL[i] - 0.80 + 0.02 + (i % 2 ? 0 : 1.62), s * 1.21 - 0.30, s * 1.21 + 0.30, 0.95, ZB - 0.04);
     }
-    /* side doors with window, handle, hinge seams, steps, mirrors on the front corners */
+
+    /* ---- the cab (ra, rc -05, the 2013 front view): two compartments under one roof, crew cab in front, a vertical front with
+       chamfered corners, three windscreen panes, a louvred panel below them, the bumper with its lamps ---- */
+    loft(B.paint, [cabRing(XC, HW, ZC, ZB), cabRing(XF - 0.16, HW, ZC, ZB), cabRing(XF, HW - 0.14, ZC - 0.06, ZB)], false);
+    box(B.paint, 4.66, XF, -HW + 0.08, HW - 0.08, 1.04, ZB + 0.02);                         /* the cab's lower front ahead of the front tyres */
+    box(B.paint, 4.62, 4.70, -HW + 0.04, HW - 0.04, 1.04, ZB);
     for (s = -1; s <= 1; s += 2) {
-      side(B.glass, s, 4.05, 5.00, 1.98, 2.66, 1.48, 0.012);
-      side(B.dark, s, 3.95, 3.97, 1.45, 2.78, 1.48, 0.012);
-      side(B.dark, s, 5.08, 5.10, 1.45, 2.78, 1.48, 0.012);
-      side(B.dark, s, 3.95, 5.10, 1.44, 1.46, 1.48, 0.012);
-      side(B.dark, s, 4.15, 4.35, 1.80, 1.86, 1.49, 0.02);
-      box(B.dark, 4.10, 5.00, s * 1.20 - 0.20, s * 1.20 + 0.20, 1.02, 1.06);                 /* the cab step */
-      bar(B.dark, [5.42, s * 1.50, 2.45], [5.42, s * 1.66, 2.30], 0.04);
-      box(B.dark, 5.38, 5.46, s * 1.66 - (s < 0 ? 0.04 : 0), s * 1.66 + (s > 0 ? 0.04 : 0), 1.90, 2.55);
-      box(B.glass, 5.46, 5.47, s * 1.66 - (s < 0 ? 0.03 : 0), s * 1.66 + (s > 0 ? 0.03 : 0), 1.95, 2.50);
-      box(B.team, 3.10, 4.10, s * 0.98 - 0.125, s * 0.98 + 0.125, 2.95, 2.97);             /* the two small team strips */
+      k = s * 0.90;                                                                         /* the three panes, 0.84 m each, 1.88 to 2.64 m */
+      box(B.glass, XF - 0.01, XF + 0.012, k - 0.42, k + 0.42, 1.88, 2.64);
     }
-    /* cab roof: hatches with handles, the vent box on the rear half, roof lamps, whip antenna on the right (rc) */
-    box(B.paint, 3.15, 3.85, 0.30, 0.80, 2.95, 2.99);
-    box(B.paint, 3.15, 3.85, -0.80, -0.30, 2.95, 2.99);
-    box(B.dark, 3.40, 3.55, 0.45, 0.65, 2.99, 3.02);
-    box(B.dark, 3.40, 3.55, -0.65, -0.45, 2.99, 3.02);
-    box(B.paint, 2.75, 3.05, -1.20, 1.20, 2.95, 3.12);
-    box(B.dark, 2.78, 3.02, -1.0, 1.0, 3.12, 3.13);
+    box(B.glass, XF - 0.01, XF + 0.012, -0.42, 0.42, 1.88, 2.64);
+    box(B.paint, XF - 0.02, XF + 0.035, -1.36, 1.36, 2.64, 2.70);                          /* the frame head and its two rain strips */
+    for (s = -1; s <= 1; s += 2) box(B.paint, XF, XF + 0.10, s * 0.45 - 0.35, s * 0.45 + 0.35, 2.70, 2.72);
+    box(B.paint, XF - 0.02, XF + 0.03, -1.36, 1.36, 1.84, 1.88);
+    for (s = -1; s <= 1; s += 2) box(B.paint, XF - 0.02, XF + 0.03, s * 0.48 - 0.03, s * 0.48 + 0.03, 1.88, 2.64);
+    box(B.dark, XF, XF + 0.02, -0.40, 0.40, 1.44, 1.70);                                     /* the louvred panel */
+    for (k = 0; k < 5; k++) box(B.paint, XF + 0.02, XF + 0.045, -0.38, 0.38, 1.47 + k * 0.05, 1.49 + k * 0.05);
+    for (i = -1; i <= 1; i++) bar(B.dark, [XF + 0.03, i * 0.90 + 0.30, 1.92], [XF + 0.03, i * 0.90 - 0.10, 2.48], 0.022);   /* wipers */
+    /* bumper with headlamps, indicators, side lamps and the tow hook (the 2013 front view) */
+    box(B.paint, XF, XS, -1.50, 1.50, 1.06, 1.38);
+    box(B.dark, XF + 0.02, XS - 0.02, -1.45, 1.45, 1.00, 1.06);
     for (s = -1; s <= 1; s += 2) {
-      box(B.paint, 5.10, 5.35, s * 0.42 - 0.12, s * 0.42 + 0.12, 2.95, 3.07);
-      box(B.glass, 5.35, 5.37, s * 0.42 - 0.09, s * 0.42 + 0.09, 2.97, 3.05);
+      cylX(B.glass, XS - 0.02, XS + 0.02, s * 1.12, 1.25, 0.10, 12);
+      cylX(B.dark, XS - 0.01, XS + 0.005, s * 1.12, 1.25, 0.125, 12);
+      cylX(B.glass, XS - 0.02, XS + 0.02, s * 1.38, 1.27, 0.055, 8);
+      box(B.glass, XS - 0.01, XS + 0.02, s * 1.12 - 0.09, s * 1.12 + 0.09, 1.10, 1.15);
+      box(B.dark, XS - 0.01, XS + 0.02, s * 0.62 - 0.16, s * 0.62 + 0.16, 1.18, 1.30);       /* the dark plates either side of the hook */
     }
-    cylZ(B.dark, 4.95, 0.25, 2.95, 3.08, 0.07, 10);
-    bar(B.dark, [4.95, 0.25, 3.08], [4.95, 0.25, 5.15], 0.025);
+    box(B.dark, XS - 0.02, X1, -0.08, 0.08, 1.10, 1.22);
+    /* doors, windows, steps, grab rails, mirrors (rb, ra, the 2011 parade side): a crew door with a big window each side, a
+       second window in the rear compartment on the left, the cab steps ahead of the front tyres */
+    for (s = -1; s <= 1; s += 2) {
+      side(B.glass, s, 5.15, 5.72, 1.92, 2.42, HW, 0.012);
+      side(B.dark, s, 5.05, 5.07, 1.06, 2.70, HW, 0.014);
+      side(B.dark, s, 5.84, 5.86, 1.06, 2.70, HW, 0.014);
+      side(B.dark, s, 5.05, 5.86, 2.69, 2.71, HW, 0.014);
+      side(B.dark, s, 5.15, 5.30, 1.75, 1.80, HW, 0.03);
+      side(B.dark, s, 4.50, 4.52, 1.55, 2.70, HW, 0.014);                                 /* the joint of the two compartments */
+      for (i = 0; i < 2; i++) box(B.dark, 5.12, 5.80, s * (HW - 0.10) - 0.16, s * (HW - 0.10) + 0.16, 1.10 + i * 0.22, 1.13 + i * 0.22);
+      bar(B.dark, [5.00, s * (HW + 0.06), 1.70], [5.00, s * (HW + 0.06), 2.55], 0.035);
+      bar(B.dark, [XF - 0.05, s * (HW - 0.02), 2.55], [XF + 0.07, s * 1.78, 2.45], 0.04);  /* mirror arms and heads */
+      box(B.dark, XF + 0.02, XF + 0.12, s > 0 ? 1.74 : -1.86, s > 0 ? 1.86 : -1.74, 2.05, 2.62);
+      box(B.glass, XF, XF + 0.02, s > 0 ? 1.76 : -1.84, s > 0 ? 1.84 : -1.76, 2.08, 2.58);
+      box(B.team, 4.75, 5.45, s * 0.98 - 0.125, s * 0.98 + 0.125, ZC, ZC + 0.02);            /* the two small team strips */
+    }
+    side(B.glass, 1, 4.00, 4.40, 1.96, 2.40, HW, 0.012);
+    /* cab roof (ra): the two roof lamps on the front corners, the whip antenna on the left, a recess with two hatches over the
+       rear compartment, a raised box at its right rear */
+    for (s = -1; s <= 1; s += 2) {
+      cylZ(B.dark, 5.85, s * 1.05, ZC, ZC + 0.10, 0.05, 8);
+      cyl(B.glass, [5.92, s * 1.05, ZC + 0.17], [5.98, s * 1.05, ZC + 0.17], 0.08, 0.08, 10);
+      cyl(B.dark, [5.78, s * 1.05, ZC + 0.17], [5.92, s * 1.05, ZC + 0.17], 0.07, 0.085, 10);
+    }
+    cylZ(B.dark, 5.50, 0.55, ZC, ZC + 0.14, 0.08, 10);
+    bar(B.dark, [5.50, 0.55, ZC + 0.14], [5.50, 0.55, ZC + 2.10], 0.025);
+    box(B.dark, 3.70, 4.70, -0.45, 0.85, ZC - 0.02, ZC + 0.005);
+    box(B.paint, 3.78, 4.18, 0.20, 0.75, ZC, ZC + 0.05);
+    box(B.paint, 4.24, 4.64, 0.20, 0.75, ZC, ZC + 0.05);
+    box(B.paint, 3.30, 3.95, -1.30, -0.55, ZC, ZC + 0.22);
+    box(B.dark, 3.32, 3.93, -1.28, -0.57, ZC + 0.22, ZC + 0.235);
+    box(B.paint, 3.24, 3.30, -HW + 0.1, HW - 0.1, ZC, ZC + 0.06);
   }
 
-  /* the deployed legs: two stabiliser jack pairs (x = JX) lowered to the ground, their feet pads on z = 0 */
-  function addLegs(B) {
-    var s, i;
-    for (s = -1; s <= 1; s += 2) for (i = 0; i < JX.length; i++) {
-      cylZ(B.dark, JX[i], s * 1.20, 0.10, 0.82, 0.055, 8);
-      box(B.dark, JX[i] - 0.22, JX[i] + 0.22, s * 1.20 - 0.22, s * 1.20 + 0.22, 0.0, 0.10);
+  /* the deployed fittings: the two stabiliser jack pairs (x = JX) down, the folding guard rails raised along the roof
+     edges (rc -05: posts about 1.1 m apart, a top rail at about a metre), the boarding ladder on the right (rc -07 and -05 look at the starboard side) */
+  function addDeploy(B) {
+    var s, i, x;
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < JX.length; i++) {
+        cylZ(B.dark, JX[i], s * 1.24, 0.10, 0.82, 0.055, 8);
+        box(B.dark, JX[i] - 0.20, JX[i] + 0.20, s * 1.24 - 0.20, s * 1.24 + 0.20, 0.0, 0.10);
+      }
+      for (i = 0; i < 8; i++) {
+        x = -5.70 + i * 1.10;
+        bar(B.dark, [x, s * 1.24, ZR], [x, s * 1.24, ZR + 1.00], 0.04);
+      }
+      bar(B.dark, [-5.70, s * 1.24, ZR + 1.00], [-5.70 + 7 * 1.10, s * 1.24, ZR + 1.00], 0.04);
+      bar(B.dark, [-5.70, s * 1.24, ZR + 0.50], [-5.70 + 7 * 1.10, s * 1.24, ZR + 0.50], 0.03);
     }
+    bar(B.dark, [-0.95, -HW - 0.12, 0.05], [-0.95, -HW - 0.05, ZW - 0.2], 0.05);
+    bar(B.dark, [-0.55, -HW - 0.12, 0.05], [-0.55, -HW - 0.05, ZW - 0.2], 0.05);
+    for (i = 0; i < 8; i++) bar(B.dark, [-0.95, -HW - 0.12 + i * 0.008, 0.30 + i * 0.30], [-0.55, -HW - 0.12 + i * 0.008, 0.30 + i * 0.30], 0.035);
   }
 
-  /* the roof cover: two halves of transverse panels with ribs, hinged on the outer wall tops (y = s*1.50, z = 3.0), meeting on
-     the centre line when shut (ra: panel joints across the cover).  th = rotation from shut about the hinge */
+  /* the roof cover: two leaves of transverse panels, hinged on the roof edges (y = s*RW, z = ZR) and meeting on the centre line
+     (ra: a seam down the middle, panel joints across about every 1.1 m, two long raised strips on each leaf).
+     th = rotation from shut about the hinge */
   function cover(B, th) {
-    var s, c = Math.cos(th), sn = Math.sin(th), i, hw = th > Math.PI ? 1.60 : 1.50, t = 0.06, w = 1.46, x0 = -5.92, x1 = 1.96;
+    var s, c = Math.cos(th), sn = Math.sin(th), i, t = 0.05, w = RW, x0 = X0 + 0.08, x1 = XB - 0.03;
+    var hy = th > Math.PI ? RW + 0.05 : RW, hz = th > Math.PI ? ZR + 0.06 : ZR + 0.02;   /* opened, the hinge pin stands clear of the hip */
     function pt(s, u, h, x) {            /* u inward from the hinge, h above the leaf plane */
-      var dy = -s * c * u + s * sn * h, dz = sn * u + c * h;
-      return [x, s * hw + dy, ZT + 0.03 + dz];
+      return [x, s * (hy - c * u + sn * h), hz + sn * u + c * h];
     }
     function slab(s, xa, xb, ua, ub, ha, hb) {
       hexa(B.paint, [pt(s, ua, ha, xa), pt(s, ub, ha, xa), pt(s, ub, ha, xb), pt(s, ua, ha, xb),
                      pt(s, ua, hb, xa), pt(s, ub, hb, xa), pt(s, ub, hb, xb), pt(s, ua, hb, xb)]);
     }
     for (s = -1; s <= 1; s += 2) {
-      slab(s, x0, x1, 0, w, 0, t);                                   /* the leaf */
-      slab(s, x0, x1, w - 0.05, w, t - 0.01, t + 0.04);                     /* flange rim on the inner edge */
-      slab(s, x0, x1, 0, 0.05, t - 0.01, t + 0.04);                         /* and on the hinge edge */
-      for (i = 0; i < 7; i++) slab(s, x0 + 0.20 + i * 1.10, x0 + 0.27 + i * 1.10, 0.05, w - 0.05, t - 0.01, t + 0.03);   /* panel ribs */
-      for (i = 0; i < 4; i++) slab(s, x0 + 0.1 + i * 1.95, x0 + 1.7 + i * 1.95, -0.05, 0.05, -0.04, 0.05);        /* hinge barrels */
+      slab(s, x0, x1, 0, w, 0, t);                                                   /* the leaf */
+      slab(s, x0, x1, w - 0.04, w, t, t + 0.03);                                     /* the meeting flange on the inner edge */
+      for (i = 0; i < 8; i++) slab(s, x0 + 0.55 + i * 1.10, x0 + 0.60 + i * 1.10, 0.04, w - 0.04, t, t + 0.025);   /* panel joints */
+      slab(s, x0 + 0.1, x1 - 0.1, 0.36, 0.42, t, t + 0.05);                          /* the two long strips */
+      slab(s, x0 + 0.1, x1 - 0.1, 0.86, 0.92, t, t + 0.05);
+      for (i = 0; i < 4; i++) slab(s, x0 + 0.15 + i * 2.15, x0 + 1.85 + i * 2.15, -0.04, 0.05, -0.03, 0.04);     /* hinge barrels */
     }
   }
 
   /* the 9M723 rounds and their cradle, local x along the body from the tail, axis at z = 0 */
   function addRounds(B) {
-    var i, k, a, ca, sa, V, q, hh, pts, c, sx, j, xs = [1.0, 3.1, 4.9];
+    var i, k, a, ca, sa, V, q, hh, pts, c, sx, xs = [1.0, 3.1, 4.9];
     for (c = -1; c <= 1; c += 2) {
       sx = c * RY;
       revolve(B.msl, [[0.00, 0.34], [0.12, 0.40], [0.45, 0.455], [0.95, 0.475], [5.00, 0.475], [5.50, 0.455], [6.00, 0.40],
@@ -540,31 +640,33 @@ var HeroIskander = (function () {
       }
       /* the erector tray under each round and its saddles */
       box(B.dark, 0.05, 5.60, sx - 0.20, sx + 0.20, -0.56, -0.50);
-      for (i = 0; i < 3; i++) {
-        box(B.dark, xs[i] - 0.14, xs[i] + 0.14, sx - 0.36, sx + 0.36, -0.52, -0.30);
-      }
+      for (i = 0; i < 3; i++) box(B.dark, xs[i] - 0.14, xs[i] + 0.14, sx - 0.36, sx + 0.36, -0.52, -0.30);
     }
     box(B.dark, -0.12, 0.12, -1.25, 1.25, -0.58, -0.40);          /* the hinge beam across */
     for (c = -1; c <= 1; c += 2) box(B.dark, -0.18, 0.18, c * 1.25 - 0.06, c * 1.25 + 0.06, -0.58, -0.30);
   }
 
   function build(THREE, M, C, key) {
-    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), EB = bins(T), TR = bins(T), DP = bins(T), i, s, wg, wm, geo, E, TB, trg, dpg;
+    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), EB = bins(T), TR = bins(T), DP = bins(T), i, s, wg, wm, geo, E, TB, RB, trg, dpg;
     addHull(HB);
     flush(THREE, g, HB);
-    TB = new Bin(T.tyre, false);
-    tyre(TB);
+    TB = new Bin(T.tyre, false); RB = new Bin(T.tyre, false);
+    tyre(TB, RB);
+    /* one mesh a wheel: rubber and the green-painted wheel (ra, rb) told apart by vertex colour, linear as ru_buk.js has it */
+    var cr = lin(0x1c1d1f), cw = lin(0x434c37), col = [];
+    for (i = 0; i < TB.P.length / 3; i++) col.push(cr[0], cr[1], cr[2]);
+    for (i = 0; i < RB.P.length / 3; i++) col.push(cw[0], cw[1], cw[2]);
     geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P), 3));
-    geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N), 3));
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P.concat(RB.P)), 3));
+    geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N.concat(RB.N)), 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(col), 3));
     for (s = -1; s <= 1; s += 2) {
       for (i = 0; i < AXL.length; i++) {
         wg = new THREE.Group();
         wg.name = "roadwheel";
         wg.position.set(AXL[i], s * TY, RT);
         wm = new THREE.Mesh(geo, T.tyre);
-        wm.scale.set(TS, TS, TS);
-        if (s < 0) wm.rotation.y = Math.PI / 24;
+        if (s < 0) wm.rotation.y = Math.PI / 28;
         wg.add(wm);
         g.add(wg);
       }
@@ -574,7 +676,7 @@ var HeroIskander = (function () {
     flush(THREE, trg, { paint: TR.paint });
     g.add(trg);
     cover(DP, COVER_OPEN);
-    addLegs(DP);
+    addDeploy(DP);
     dpg = new THREE.Group(); dpg.name = "deploypose"; dpg.visible = false;
     flush(THREE, dpg, { paint: DP.paint, dark: DP.dark });
     g.add(dpg);
@@ -593,12 +695,12 @@ var HeroIskander = (function () {
   return { build: build };
 })();
 
-/* len is the measured X extent: bumper to rear gate */
+/* len is the measured X extent: bumper to rear plate, the published 12.669 m */
 UNIT_MODELS["pact_e00_tel"] = {
-  len: 12.0,
+  len: 12.67,
   build: function (THREE, M, C) { return HeroIskander.build(THREE, M, C, "pact_e00_tel"); }
 };
 UNIT_MODELS["tel_p"] = {
-  len: 12.0,
+  len: 12.67,
   build: function (THREE, M, C) { return HeroIskander.build(THREE, M, C, "tel_p"); }
 };
