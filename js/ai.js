@@ -9785,6 +9785,13 @@ function makeCommander() {
          no sweep point, an E-3 that flew its station within 2.5 s stayed on
          hover over its own base (measured in review of the first cut). */
       if (a.def.jam && !a.def.awacs && !a.def.weapons.length) { flyJammer(a, idle); continue; }
+      /* ---- an early-warning aircraft goes WITH a force (aewEscort) ----
+         Ahead of the idle test for the jammer's reason: an AEW already up on
+         its station is the one unarmed airframe whose order has to CHANGE
+         when the force it should be over forms, sails or is lost - and the
+         idle test never let a patrol be looked at again. Where it has no
+         force to go with, it falls through to the station below, as before. */
+      if (a.def.awacs && !a.def.weapons.length && aewEscort(a, idle)) continue;
       if (!idle) continue;
       /* ---- the aircraft that carry no weapons ----
          An early-warning aircraft, a tanker or a transport was skipped here for
@@ -9815,14 +9822,10 @@ function makeCommander() {
            tanker branch of updateAir(). logisticsStation() flies it, against a
            standoff computed from the enemy's air defence rather than from a
            threat field that cannot see a SAM. */
-        const at = intelHome(rival);
-        /* a third of the way to the enemy, not over them */
-        const ox = at ? P.homeX + (at.x - P.homeX) * 0.30 : P.homeX;
-        const oy = at ? P.homeY + (at.y - P.homeY) * 0.30 : P.homeY;
-        /* and on our side of every ring it knows (AIRSAFE asStation) */
-        const ost = asStation(ox, oy);
-        a.give({ type: "cap", x: ost.x, y: ost.y });
-        asSent(a, ost.moved);
+        /* a third of the way to the enemy, not over them, and on our side of
+           every ring it knows: aewStation, beside aewEscort below, which
+           sends an AEW back to it when the force it was over is gone */
+        aewStation(a);
         continue;
       }
       /* `a.ammoMax &&` is not decoration. Three aircraft in the game declare
@@ -9892,6 +9895,191 @@ function makeCommander() {
     /* The defence reflex runs on its own clock in update() now (defendBase),
        so a tick that returned early on a purchase no longer leaves the base
        unwatched. */
+  }
+
+  /* ================= ESCORT: the early-warning aircraft goes with a force =================
+     (owner, 2026-10-24) on the E-2D: "any idea that early warning aircraft,
+     E2D, to company with other units to enhance other units to ability", and
+     of the proposal, "build both". entities.js ESCORT is the order (piece E1):
+     the aircraft holds station over one unit as it moves, out of every SAM
+     ring its side knows, and goes home for fuel and back to it. This is the
+     commander's use of it. Until now every AEW it owned flew one patrol, a
+     third of the way to the rival (aewStation), and was never looked at
+     again - a fixed point its carrier sailed away from and its wave drove
+     out from under.
+     Which unit, in this order:
+       a) a carrier-capable AEW (def.carrierCapable: the E-1, the E-2s, the
+          Skyraider and Gannet, the Sea Kings and the Merlin with a bag) goes
+          with its carrier group: its own deck when that is a hull; else the
+          nearest flat-top of ours that operates the type (G.deckTypesFor);
+          with no carrier, the lead ship of the group at sea, and with no
+          group at sea the lead ship of whatever surface hulls we have. That
+          is what the aeroplane is for - the fleet's horizon (eras.js, the
+          E-1B row: "the first time a fleet could see past its own horizon
+          from its own deck").
+       b) a land-based one - or a deck one with no ship left at all - goes
+          with the commander's MAIN effort when it has a clear one: the
+          bombardment group at sea (navalWave, ESC_SEA_MIN hulls or more), or
+          the ground wave (attackWave, ESC_LAND_MIN on the ground or more)
+          once its body has gone past the station the aircraft holds anyway;
+          both at once, the dearer of the two. Short of that it is LEFT ON
+          THE STATION, as before: a wave forming at home is behind the
+          station, which already covers the approaches it will take, and a
+          handful of tanks is not where the theatre's one air picture should
+          go. One AEW per main effort: a second one keeps the station, or the
+          approaches go unwatched while two radars look at one column.
+     "Lead ship" is the dearest surface hull - the flagship, by the one
+     measure the commander has of its own ships - and never a submarine: an
+     AEW orbiting a boat that dived to hide is a marker over her.
+     FOG: all of it is the commander's own - its units, its decks, its two
+     wave lists, and for the station intelHome(), its own sighting of the
+     rival. Nothing off the enemy's roster: (owner) "ai should have the same
+     fog like us". Which rings it keeps out of is the order's business
+     (G.standoffRings: the rings its side KNOWS).
+     HOLD: a choice is kept ESC_HOLD = 30 s before it is reviewed for a
+     better one, unless the unit is lost, which is reviewed on the next
+     think. The waves are rebuilt every think (reapWave, 1.6 s) and the
+     body's middle moves with every step, so asked on every think the answer
+     could change on every think, and the aircraft would fly between
+     stations it never reached. 30 s is twice the trip: an E-2D at 4.4
+     tiles a second crosses 60 tiles in about 14 s, and joins from close by
+     in under 12 (tools/jsc/escort_check.js [1]), so a held choice is mostly
+     time on station, not in transit. At a review a unit still in the group
+     chosen is kept: a better GROUP is a reason to move, another member of
+     the same one is not.
+     COST: an aircraft inside its hold costs a time compare. A review walks
+     our units once for the ships and the AEWs, and the two wave lists -
+     memoised on the think (escMemo), as findRunwaySpot keeps its scan, so
+     two aircraft reviewing on one think pay for one walk. aiOff "escort"
+     turns it all off, back to the station as it was. */
+  const ESC_HOLD = 30;
+  const ESC_SEA_MIN = 2, ESC_LAND_MIN = 4;
+  let escMemo = null;
+  /* the patrol point an AEW holds with nothing to go with: a third of the way
+     to the rival as this commander last placed it (intelHome), or over home */
+  function aewStationPoint() {
+    const at = intelHome(rival);
+    return { x: at ? P.homeX + (at.x - P.homeX) * 0.30 : P.homeX,
+             y: at ? P.homeY + (at.y - P.homeY) * 0.30 : P.homeY };
+  }
+  /* ...flown as a patrol, on our side of every ring it knows (AIRSAFE
+     asStation). The sortie loop's own lines, moved here unchanged so that an
+     AEW taken off an escort is sent back to the same place. */
+  function aewStation(a) {
+    const p = aewStationPoint();
+    const ost = asStation(p.x, p.y);
+    a.give({ type: "cap", x: ost.x, y: ost.y });
+    asSent(a, ost.moved);
+  }
+  /* what a review reads, once a think: our surface hulls, our AEWs, and each
+     main effort that is a clear one, with its worth in credits */
+  function escFacts() {
+    if (escMemo && escMemo.t === G.time) return escMemo;
+    const ships = [], aews = [];
+    for (const u of P.units) {
+      if (u.dead || u.carried) continue;
+      if (u.layer === "sea" && u.def.cat === "naval") ships.push(u);
+      else if (u.layer === "air" && u.def.awacs) aews.push(u);
+    }
+    let sea = [], seaCr = 0;
+    for (const u of navalWave) if (!u.dead && !u.carried && u.layer === "sea") { sea.push(u); seaCr += u.def.cost || 0; }
+    if (sea.length < ESC_SEA_MIN) { sea = []; seaCr = 0; }
+    let land = [], landCr = 0, body = null, cx = 0, cy = 0;
+    for (const u of attackWave) if (!u.dead && !u.carried && u.layer === "ground") {
+      land.push(u); landCr += u.def.cost || 0; cx += u.x; cy += u.y;
+    }
+    if (land.length >= ESC_LAND_MIN) {
+      cx /= land.length; cy /= land.length;
+      /* past the station - its middle further from home than the patrol is,
+         by two tiles' slack - and the unit nearest that middle is the body */
+      const st = aewStationPoint();
+      if (U.dist(cx, cy, P.homeX, P.homeY) > U.dist(st.x, st.y, P.homeX, P.homeY) + 2 * CFG.TILE) {
+        let bd = Infinity;
+        for (const u of land) { const d = U.dist2(u.x, u.y, cx, cy); if (d < bd) { bd = d; body = u; } }
+      }
+    }
+    if (!body) { land = []; landCr = 0; }
+    escMemo = { t: G.time, ships, aews, sea, seaCr, land, landCr, body };
+    return escMemo;
+  }
+  /* the flagship of a list of hulls: the dearest one on the surface */
+  function escLead(list) {
+    let best = null, bc = -1;
+    for (const s of list) {
+      if (s.dead || s.layer !== "sea") continue;
+      const c = s.def.cost || 0;
+      if (c > bc) { bc = c; best = s; }
+    }
+    return best;
+  }
+  /* a deck aircraft's carrier: the hull it is based on, else the nearest
+     flat-top of ours that takes its type */
+  function escDeck(a, ships) {
+    const pad = a.padOn;
+    if (pad && !pad.dead && pad.kind === "unit" && pad.layer === "sea" && pad.owner === P) return pad;
+    let best = null, bd = Infinity;
+    for (const s of ships) {
+      if (!s.def.carrier || G.deckTypesFor(s).indexOf(a.def.id) < 0) continue;
+      const d = U.dist2(a.x, a.y, s.x, s.y);
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best;
+  }
+  /* the unit AEW `a` should be over now, and which group it stands for
+     (g: "deck", "sea", "fleet", "land"); null - the station */
+  function escPick(a) {
+    const f = escFacts(), o = a.order || {};
+    const cur = o.type === "escort" ? o.target : (o.then && o.then.type === "escort" ? o.then.target : null);
+    const keep = (grp, pick) => (cur && !cur.dead && grp.indexOf(cur) >= 0 ? cur : pick(grp));
+    if (a.def.carrierCapable) {
+      const deck = escDeck(a, f.ships);
+      if (deck) return { tgt: deck, g: "deck" };
+      /* no carrier, or she is lost: the lead ship of the group at sea, or of
+         what we have in harbour - still the fleet's aeroplane */
+      if (f.sea.length) return { tgt: keep(f.sea, escLead), g: "sea" };
+      const lead = f.ships.length ? keep(f.ships, escLead) : null;
+      if (lead) return { tgt: lead, g: "fleet" };
+    }
+    /* the main effort, if another AEW of ours is not already with it - sent
+       for it, or a deck aircraft over a carrier that sails in it */
+    const taken = (g, grp) => f.aews.some(e => e !== a && !e.dead && e._esc && e.order &&
+      (e._esc.g === g || grp.indexOf(e._esc.tgt) >= 0) &&
+      (e.order.type === "escort" || (e.order.then && e.order.then.type === "escort")));
+    const seaOk = f.sea.length > 0 && !taken("sea", f.sea), landOk = !!f.body && !taken("land", f.land);
+    const g = seaOk && (!landOk || f.seaCr >= f.landCr) ? "sea" : landOk ? "land" : null;
+    if (!g) return null;
+    return g === "sea" ? { tgt: keep(f.sea, escLead), g } : { tgt: keep(f.land, () => f.body), g };
+  }
+  /* The sortie loop's call for an unarmed AEW: true when this has given or
+     kept its order, false to leave it to the station branch (idle with no
+     force to go with) or to the turnaround (going home, tanking, landing - an
+     escort carried across that comes back out by itself, entities.js). */
+  function aewEscort(a, idle) {
+    if (P.aiOff && P.aiOff.has("escort")) return false;
+    const o = a.order, k = a._esc, now = G.time;
+    /* up on a station of its own: an escort, or a patrol - the station, or
+       the one a lost escort turns into over the last place (entities.js) */
+    const up = o.type === "escort" || o.type === "cap";
+    if (!idle && !up) return false;
+    if (idle && a.fuel < a.reserveFuel()) return false;      // the station branch's own test
+    const lost = !!(k && k.tgt && (k.tgt.dead || k.tgt.owner !== P));
+    if (!idle && !lost && k && now - k.t < ESC_HOLD) return false;
+    const was = o.type === "escort" ? o.target : null;
+    const p = escPick(a);
+    a._esc = { t: now, tgt: p ? p.tgt : null, g: p ? p.g : null };
+    if (p) {
+      if (was !== p.tgt) {
+        a.give({ type: "escort", target: p.tgt, x: p.tgt.x, y: p.tgt.y });
+        asSent(a, false);
+      }
+      return true;
+    }
+    /* nothing to go with. Idle: the station branch. Up on an escort whose
+       force is gone or no longer a main effort, or on the patrol a lost one
+       left over the last place: back to the station */
+    if (idle) return false;
+    if (was || lost) aewStation(a);
+    return true;
   }
 
   /* ================= amphibious operations ================= */
@@ -16325,6 +16513,27 @@ function makeCommander() {
         get ops() { return liftOps; },
       };
     },
+    /* ESCORT, for tools/jsc/escort_ai_check.js: pick(a) the unit and group
+       AEW `a` would be sent over now (memo cleared; null, the station);
+       review(a) the sortie loop's handling of it now, hold and all, the
+       station included (memo cleared: a test that has just stood a wave up
+       asks of that wave);
+       hold the seconds a choice is kept (ESC_HOLD); of(a) the choice last
+       made for it */
+    get escort() {
+      return {
+        pick(a) { escMemo = null; const p = escPick(a); return p ? { tgt: p.tgt, g: p.g } : null; },
+        review(a) {
+          escMemo = null;
+          const t = a.order.type, idle = t === "hover" || t === "parked" || t === "idle";
+          const done = aewEscort(a, idle);
+          if (!done && idle && a.fuel >= a.reserveFuel()) aewStation(a);   // the loop's station branch
+          return done;
+        },
+        hold: ESC_HOLD,
+        of(a) { return a._esc ? { t: a._esc.t, tgt: a._esc.tgt, g: a._esc.g } : null; },
+      };
+    },
     /* The explored map, so the engine can hold this commander's harvesters to
        the same rule the human's obey, and so a test can see what it knows. */
     get look() { return look; },
@@ -16609,6 +16818,11 @@ return {
   /* a commander's AIR BRIDGE hooks (see `lift`), or null for a seat none runs */
   liftOf(player) {
     for (const c of commanders) if (c.player === player) return c.lift;
+    return null;
+  },
+  /* a commander's ESCORT hooks (see `escort`), or null for a seat none runs */
+  escortOf(player) {
+    for (const c of commanders) if (c.player === player) return c.escort;
     return null;
   },
   /* hold a commander at peace (see atPeace) - for scripted sandboxes */
