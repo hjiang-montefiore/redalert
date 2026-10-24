@@ -30,6 +30,9 @@
          aft and train either side of the stern);
          the Redut, whose radar is another vehicle, holds nothing and has no
          set to switch off.
+     [10] every coastal launcher fires one missile a launch, so a full load
+         puts out exactly its `rounds` - no more (the ships' pair salvos had
+         the Redut fire two from one container, the Bal sixteen from eight).
    [2]-[6] run with the Rubezh's radar switched off, so the cue they test is
    the side's and not its own. */
 var TT = 32, DT = 1 / 30, PASS = 0, FAIL = 0;
@@ -190,6 +193,14 @@ function run() {
   chk("[6] it does not drive after a ship that sails out of its reach: still on its shore, still set up",
       o0 === "attack (auto) on the ship" && Math.hypot(rb.x - x0, rb.y - y0) < 2 && rb.deployed,
       "engaged as " + o0 + "; moved " + (Math.hypot(rb.x - x0, rb.y - y0) / TT).toFixed(2) + " tiles, deployed " + rb.deployed);
+
+  /* ---- 10. one missile a launch ---- */
+  var twice = Object.keys(UNITS).filter(function (k) { return UNITS[k].role === "coastssm"; }).map(function (k) {
+    var u = UNITS[k], w = WEAPONS[u.weapons[0]]; return { k: k, name: u.name, n: u.rounds * (w.burst || 1), r: u.rounds };
+  });
+  chk("[10] every coastal launcher fires one missile a launch: a full load is its rounds, no more",
+      twice.length >= 12 && twice.every(function (t) { return t.n === t.r; }),
+      twice.map(function (t) { return t.name + " " + t.n + (t.n !== t.r ? " (carries " + t.r + ")" : ""); }).join(", "));
 
   /* ---- 9. its own Garpun ---- */
   sc.dead = true; ship2.dead = true; Game.sweepDead && Game.sweepDead();

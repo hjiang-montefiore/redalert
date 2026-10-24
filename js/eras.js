@@ -14607,7 +14607,13 @@ Object.assign(UNITS, {
    Its missiles are the ships' own rows where they exist. A range is placed
    by rank in the band the ship rows use, not put through R(): P-15 12.3
    (40 km), P-270 Moskit 12.5 (120 km), P-120 13.0, Uran 13.5, P-35 14.0.
-   The P-15M's 80 km ranks it between the P-15 and the Moskit: 12.4. */
+   The P-15M's 80 km ranks it between the P-15 and the Moskit: 12.4.
+   A launcher fires ONE missile a launch, its rows' `rounds` being the
+   missiles it carries ("two P-15M missiles", "eight Kh-35") and a trigger
+   spending one: so every row here is burst 1. Several ships' rows fire
+   theirs in pairs, and copied ashore with their burst the Redut put two
+   P-35Bs out of its one container and the Bal sixteen Kh-35s out of eight
+   (found 2026-10-24, coastssm_check [10]). */
 WEAPONS.ssm_p15m = Object.assign({}, WEAPONS.w_e60_pact_missileboat, {
   name: "2 x P-15M Termit (shore)", range: 12.4,
   tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
@@ -14623,11 +14629,11 @@ WEAPONS.ssm_s2 = Object.assign({}, WEAPONS.w_e60_pact_missileboat, {
   tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* the Redut's P-35B, the cruisers' P-35 row ashore */
 WEAPONS.ssm_p35b = Object.assign({}, WEAPONS.w_e60_pact_cruiser, {
-  name: "P-35B Progress (shore)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+  name: "P-35B Progress (shore)", burst: 1, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* the Bal's Kh-35, the corvettes' Uran row ashore; its salvo at no more than
    three seconds a missile (ru.wikipedia "Bal") */
 WEAPONS.ssm_kh35_bal = Object.assign({}, WEAPONS.w_e00_pact_corvette, {
-  name: "Kh-35 (Bal)", reload: 3.0, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+  name: "Kh-35 (Bal)", burst: 1, reload: 3.0, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* the Bastion-P's Oniks, the ships' row ashore: ships only, as the owner
    chose for now, though Russia fired it at land targets in Syria in 2016 */
 WEAPONS.ssm_oniks_bastion = Object.assign({}, WEAPONS.ssm_oniks, {
@@ -14731,27 +14737,27 @@ Object.assign(UNITS, {
    By rank it sits above the PLA's two short rows, the SY-1 (13.9) and the
    YJ-8 (42 km, 15.1), and below the YJ-83 (180 km, 16.8): 15.2. */
 WEAPONS.ssm_hy2 = Object.assign({}, WEAPONS.w_e60_pla_missileboat, {
-  name: "HY-2A (shore)", range: 15.2, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+  name: "HY-2A (shore)", burst: 1, range: 15.2, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* YJ-62: en.wikipedia "YJ-62" (JFQ 2014, ONI 2015): subsonic, 280 km for
    the C-602 export model and "at least 400 km" for the YJ-62 itself. By rank
    between the YJ-83 (180 km, 16.8) and the YJ-18 (540 km, 17.0): 16.9; the
    YJ-83 row, the PLA's other subsonic anti-ship round, otherwise. */
 WEAPONS.ssm_yj62 = Object.assign({}, WEAPONS.w_e00_pla_missileboat, {
-  name: "YJ-62 (shore)", range: 16.9, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+  name: "YJ-62 (shore)", burst: 1, range: 16.9, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* YJ-12B: en.wikipedia "YJ-12": the land-based variant, 460 km, Mach 2.5 to
    4. By rank between the YJ-62 (400 km, 16.9) and the YJ-18 (540 km, 17.0):
    16.95; the YJ-18 row, the PLA's supersonic round, otherwise. */
 WEAPONS.ssm_yj12b = Object.assign({}, WEAPONS.ssm_yj18, {
-  name: "YJ-12B", range: 16.95, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+  name: "YJ-12B", burst: 1, range: 16.95, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* Kumsong-3: the same missile as the Nongo boats' row (9.4) ashore */
 WEAPONS.ssm_kumsong3 = Object.assign({}, WEAPONS.w_e00_kpa_missileboat, {
   name: "Kumsong-3 (shore)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* Hsiung Feng II: the same missile as the Kuang Hua VI boats' row (14.9) */
 WEAPONS.ssm_hf2_shore = Object.assign({}, WEAPONS.w_e00_roc_missileboat, {
-  name: "Hsiung Feng II (shore)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+  name: "Hsiung Feng II (shore)", burst: 1, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* NMESIS: the ships' Naval Strike Missile row (16.0) ashore */
 WEAPONS.ssm_nsm_nmesis = Object.assign({}, WEAPONS.ssm_nsm, {
-  name: "Naval Strike Missile (NMESIS)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
+  name: "Naval Strike Missile (NMESIS)", burst: 1, tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
 /* Excalibur: the ships' MM38 Exocet row (9.6) ashore */
 WEAPONS.ssm_exocet38_shore = Object.assign({}, WEAPONS.ssm_exocet38, {
   name: "MM38 Exocet (Excalibur)", tgt: { ground: 0, air: 0, sea: 1, sub: 0 } });
