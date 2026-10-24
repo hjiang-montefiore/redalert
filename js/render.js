@@ -1900,6 +1900,9 @@ var Render = (function () {
           next = o.then || OL_HOME;
           break;
         case "cap": olLeg(K_CAP, o.x, o.y, 1, true); break;
+        /* an ESCORT, at height to the unit it is holding over, in the
+           patrol's colour: it flies the patrol's orbit there */
+        case "escort": if (olNum(o.x) && olNum(o.y)) olLeg(K_CAP, o.x, o.y, 1, true); break;
         case "sniff": {
           /* A SNIFF patrol (entities.js), at height: a break in progress to
              the point it is running for, then the beat - a point, or the

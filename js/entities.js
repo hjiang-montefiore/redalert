@@ -4099,6 +4099,31 @@ class Unit {
 
     if (o.type !== "parked") this.parked = false;
 
+    /* ---- ESCORT: where the station is, this tick ----
+       (owner) "any idea that early warning aircraft, E2D, to company with
+       other units to enhance other units to ability". An early-warning
+       aircraft already feeds its side's one radar picture (G.radarPicture,
+       G.sideSees), so what it is worth is WHERE it flies - and nothing kept
+       it with a force that moves: a patrol holds a fixed point, and the
+       column drove out from under it. The escort order names the unit, and
+       its point is moved here, before anything reads it: the bingo test
+       below carries it home and back, the ring hold walks it back out of
+       what the side knows, the branch further down orbits it.
+       Kept fresh on the way home as well (`then`), so a unit lost while its
+       aircraft is on the ramp leaves the spot it was lost on, not the one
+       the aircraft last saw it at. */
+    const eo = o.type === "escort" ? o : (o.then && o.then.type === "escort" ? o.then : null);
+    if (eo) this.escortFix(eo);
+    if (o.type === "escort" && o.lost) {
+      /* The unit is gone: hold over where it was, as an orbit order there
+         would - it becomes that order, a patrol on the last point, flown
+         by the cap branch below and saved and drawn as one. */
+      if (this.owner === this.game.human && this.game.alert)
+        this.game.alert(this.def.name.toUpperCase() + " — ESCORTED UNIT LOST, HOLDING OVER ITS LAST POSITION", "bad");
+      this.order = { type: "cap", x: o.x, y: o.y };
+      return;
+    }
+
     /* Bingo fuel is a distance, not a fixed number: turn for home while there
        is still enough in the tanks to actually reach the ramp. */
     /* Bingo fuel is a distance, not a fixed number: turn for home while there
@@ -4154,6 +4179,10 @@ class Unit {
         /* a SNIFF patrol, or a turn-in it made on a contact: the beat is
            what is carried, and taken up again from the top (sniffResume) */
         : o.type === "sniff" ? this.sniffResume(o)
+        /* an ESCORT is a standing order the same way: the unit it names is
+           carried across the ramp or the boom, and the aircraft flies back
+           to wherever that unit has got to by then (escortFix) */
+        : o.type === "escort" ? { type: "escort", target: o.target, x: o.x, y: o.y }
         : o.type === "attack" && o.sniff ? this.sniffResume(o.sniff) : null;
       if (o.sniff) this.sniffRelease(o.target);
       if (standing && standing.type === "sniff" && dryAmmo && this.owner === this.game.human)
@@ -4348,7 +4377,8 @@ class Unit {
     const committed = o.commit === true && o.type === "cap" &&
                       !!this.def.jam && !this.def.awacs;
     if ((defenceless || transiting) && !committed && this.game.standoffPoint &&
-        (o.type === "move" || o.type === "attackmove" || o.type === "cap")) {
+        (o.type === "move" || o.type === "attackmove" || o.type === "cap" ||
+         o.type === "escort")) {
       const margin = 1.5 + (this.def.jam ? 0 : 1.0);   // a jammer may sit closer
       /* A stand-off bomber flies its transit by the rings its side knows -
          round them, not merely short of the last one, and held on a circle
@@ -4365,13 +4395,42 @@ class Unit {
          and the aircraft simply flies to it and stays. */
       const hx = this.owner.homeX, hy = this.owner.homeY;
       const sp = soT ? { held: false }
-                     : this.game.standoffPoint(this.owner, hx, hy, o.x, o.y, margin);
+                     : this.game.standoffPoint(this.owner, hx, hy, o.x, o.y,
+                         /* an ESCORT's station is the middle of an orbit, so
+                            the ring is held off by the margin AND by how far
+                            the orbit carries the airframe from its middle
+                            (escortReach): held by the station's middle alone,
+                            an orbit round it can swing a whole turning circle
+                            back inside - for an E-2D 8.8 tiles, and a SAM
+                            Site's ring drawn at 17.5 is a battery that
+                            reaches 14 */
+                         o.type === "escort" ? margin + this.escortReach() : margin,
+                         /* ...and an ESCORT by every ring its side KNOWS: a
+                            battery in sight now, a structure on ground the
+                            side has explored, a launcher where the side last
+                            saw it (G.standoffRings) - never one its fog hides,
+                            and never one read off the enemy's roster: (owner)
+                            "ai should have the same fog like us". The list a
+                            patrol reads is the in-sight one, and an escort
+                            cannot live on it: its point moves every tick, an
+                            E-2D sees 14 tiles, and a SAM Site's ring is drawn
+                            at 17.5 plus the margin - backed out to the edge,
+                            the battery drops out of sight, the ring off the
+                            list, and the aircraft turns straight back in, the
+                            oscillation the stand-off bomber had (G.standoffRings,
+                            the same reason). */
+                         o.type === "escort" && this.game.standoffRings
+                           ? this.game.standoffRings(this.owner) : undefined);
       if (sp.held) {
         if (!this.warnedRing && this.owner === this.game.human) {
           this.warnedRing = true;
           this.game.alert(this.def.name.toUpperCase() +
                           " \u2014 HOLDING SHORT OF AIR DEFENCE", "bad");
         }
+        /* an ESCORT flies its own orbit on the station, which the margin
+           above has put clear of the ring, orbit and all; flyTo on the point
+           would fly the loop an aeroplane makes round one instead */
+        if (o.type === "escort") { this.escortOrbit(o, sp.x, sp.y, dt); return; }
         if (this.flyTo(sp.x, sp.y, dt)) this.moving = false;
         return;
       }
@@ -4768,6 +4827,23 @@ class Unit {
         const ox = o.x + Math.cos(o.orbit) * R, oy = o.y + Math.sin(o.orbit) * R;
         this.flyTo(ox, oy, dt);
       }
+    } else if (o.type === "escort") {
+      /* ---- ESCORT: on station over the unit as it moves ----
+         The orbit a patrol flies (cap, above) - the same radius, the same
+         rate - drawn round the point escortFix moves every tick. Nothing
+         here engages: what an early-warning aircraft adds is its radar in
+         the side's picture, and a patrol's sweep would pull it off station
+         to chase a contact it has nothing to shoot at. It is kept out of a
+         known ring by the hold above, sent home and back by the bingo test,
+         and left over the last place when the unit is lost (top of
+         updateAir). */
+      /* Round where the unit is about to be, not where it is: an orbit
+         drawn round a destroyer at 2.1 tiles a second, flown on the spot,
+         was a loop behind her - measured under jsc, an E-2D averaged 6.8
+         tiles off her and fell 14.9 behind. Led by the time a turn of 1.6
+         rad takes this airframe (1.6 s for an E-2D), 5.4 and 11.9. */
+      const lead = this.def.hover ? 0 : 1.6 / Math.max(0.1, this.def.turn);
+      this.escortOrbit(o, o.x + (o.vx || 0) * lead, o.y + (o.vy || 0) * lead, dt);
     } else if (o.type === "parked") {
       /* sitting on the ramp: no fuel burn, engines off, ready to scramble */
       this.moving = false;
@@ -5601,6 +5677,77 @@ class Unit {
      is nearer when it gets there */
   sniffResume(o) {
     return { type: "sniff", x: o.x, y: o.y, x1: o.x1, y1: o.y1 };
+  }
+  /* ---- ESCORT (updateAir) ----
+     The point an escort holds over: the unit's own, or - while it is aboard -
+     the hull, the hold or the building it rides in, so a battalion put aboard
+     a ship is escorted as the ship. Marks the order `lost` when the unit is
+     dead or no longer ours or an ally's, and leaves x, y on the last place it
+     was; aboard something it cannot find, the last point is kept. */
+  escortFix(o) {
+    const t = o.target;
+    if (!t || t.dead || (t.owner !== this.owner && !this.game.allied(this.owner, t.owner))) {
+      o.lost = true; return;
+    }
+    let at = t;
+    if (t.carried) {
+      at = t.garrisonIn && !t.garrisonIn.dead ? t.garrisonIn : this.escortHost(o, t);
+      if (!at) return;
+    }
+    /* and how fast it is going, smoothed over about a second: the orbit is
+       flown round where it is about to be (escortOrbit, the branch) */
+    const now = this.game.time, dtt = o.vt !== undefined ? now - o.vt : 0;
+    if (dtt > 0 && o.x !== undefined) {
+      const k = Math.min(1, dtt * 1.5);
+      o.vx = (o.vx || 0) + ((at.x - o.x) / dtt - (o.vx || 0)) * k;
+      o.vy = (o.vy || 0) + ((at.y - o.y) / dtt - (o.vy || 0)) * k;
+    }
+    o.vt = now;
+    o.x = at.x; o.y = at.y;
+  }
+  /* what a carried unit rides in: a transport's hold or a well deck. Nothing
+     points from a passenger to its ship, so the side's units are walked -
+     once per embarkation: the answer is kept on the order and only checked
+     after that. */
+  /* The patrol's orbit (updateAir, cap) round (cx, cy): straight in from
+     further out than 1.25 of the radius, then chasing a point that walks
+     round the circle. One rule for the station over the unit and for a
+     station held short of a ring. */
+  escortOrbit(o, cx, cy, dt) {
+    const R = this.escortRadius() * CFG.TILE;
+    if (U.dist(this.x, this.y, cx, cy) > R * 1.25) { this.flyTo(cx, cy, dt); return; }
+    o.orbit = (o.orbit || 0) + dt * (this.def.jet ? 0.9 : 0.5);
+    this.flyTo(cx + Math.cos(o.orbit) * R, cy + Math.sin(o.orbit) * R, dt);
+  }
+  /* Its radius, in tiles: the patrol's CAP_RADIUS, or a little more than
+     this airframe's turning radius (speed / turn) where that is wider. The
+     patrol's 3.2-tile circle is tighter than an E-2D can turn (4.4 tiles),
+     so on it the aircraft flies a string of overshoots and loops, each one
+     a turning circle wide - harmless over a fixed point, and the reason an
+     escort fell behind a moving one. */
+  escortRadius() {
+    const turnR = this.def.hover ? 0 : this.def.speed / Math.max(0.001, this.def.turn);
+    return Math.max(CFG.CAP_RADIUS, turnR * 1.15);
+  }
+  /* How far, in tiles, that orbit can carry this airframe from its middle:
+     the join radius, and a whole turning circle beyond it - past the join
+     radius it flies straight for the middle, and the furthest it can be
+     carried before it has turned round is that circle's width. It is the
+     bound tools/jsc/escort_check.js holds a moving escort to (an E-2D: 15.1
+     tiles; measured, 11.9 at worst behind a destroyer making 2.1 tiles a
+     second, 5.4 on average), and what a known ring is held off by on top of
+     the margin. A helicopter turns on the spot. */
+  escortReach() {
+    const turnR = this.def.hover ? 0 : this.def.speed / Math.max(0.001, this.def.turn);
+    return this.escortRadius() * 1.25 + turnR * 2;
+  }
+  escortHost(o, t) {
+    const aboard = (s) => !!s && !s.dead &&
+      ((s.cargo && s.cargo.indexOf(t) >= 0) || (s.well && s.well.indexOf(t) >= 0));
+    if (aboard(o.host)) return o.host;
+    o.host = null;
+    for (const s of t.owner.units) if (aboard(s)) { o.host = s; return s; }
+    return null;
   }
   /* the margin it keeps outside a ring, the transit hold's: a jammer may sit
      a tile closer */

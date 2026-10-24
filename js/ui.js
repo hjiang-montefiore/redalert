@@ -1486,6 +1486,9 @@ var UI = (function () {
     /* SNIFF, for a SEAD or EW aircraft - greyed, with the reason below, for a
        jammer that carries no anti-radiation round (entities.js sniffMount) */
     const sniffers = air.filter(isSniffer), sniffOk = sniffers.filter(u => !u.sniffMount().why);
+    /* ESCORT, for an early-warning aircraft (entities.js ESCORT) - offered
+       only when one is picked, so nothing else in the row moves */
+    const aew = air.filter(u => u.def.awacs);
     let h = '<div class="hbtns">' +
       '<div class="hb" data-aact="rtb">BASE' + (home ? " \u2713" : "") + "</div>" +
       '<div class="hb' + (airCmdMode === "cap" ? " arm" : "") + '" data-aact="cap">PATROL</div>' +
@@ -1494,6 +1497,8 @@ var UI = (function () {
                         '" data-aact="area">AREA</div>' : "") +
       (sniffers.length ? '<div class="hb' + (sniffOk.length ? (airCmdMode === "sniff" ? " arm" : "") : " off") +
                          '" data-aact="sniff">SNIFF</div>' : "") +
+      (aew.length ? '<div class="hb' + (airCmdMode === "escort" ? " arm" : "") +
+                    '" data-aact="escort">ESCORT</div>' : "") +
       "</div>";
     h += '<div class="hhint">' + (
       airCmdMode === "cap"    ? "Click a point to patrol over it. RMB or Esc cancels."
@@ -1505,6 +1510,10 @@ var UI = (function () {
         "bomb load goes as a stick along the run, stand-off missiles to separate points across it " +
         "from outside the rings it knows of. Then home to rearm. RMB or Esc cancels."
     : airCmdMode === "sniff" ? SNIFF_HINT
+    : airCmdMode === "escort"
+      ? "Click a unit or a ship of ours. Each early-warning aircraft picked holds station over it as " +
+        "it moves, outside every SAM ring our side has seen, goes home for fuel and comes back to it; " +
+        "if it is lost they hold over where it was. Other aircraft are left as they were. RMB or Esc cancels."
     : "BASE (R) sends them home to refuel and rearm, and right-clicking a base " +
       "or a deck sends them to THAT one. PATROL (Y) holds a point " +
       "and engages what comes. STRIKE (T) aims a run." +
@@ -1513,7 +1522,8 @@ var UI = (function () {
         : " AREA: " + bombers[0].def.name.toUpperCase() + " \u2014 " + bombers[0].areaMount().why + ".") +
       (!sniffers.length ? ""
         : sniffOk.length ? " SNIFF (W) hunts radars from a beat: it fires on what transmits and breaks away."
-        : " SNIFF: " + sniffers[0].def.name.toUpperCase() + " \u2014 " + sniffers[0].sniffMount().why + ".")) +
+        : " SNIFF: " + sniffers[0].def.name.toUpperCase() + " \u2014 " + sniffers[0].sniffMount().why + ".") +
+      (aew.length ? " ESCORT (J) keeps an early-warning aircraft over a unit or ship of ours as it moves." : "")) +
       "</div>";
     return h;
   }
@@ -1533,6 +1543,14 @@ var UI = (function () {
     if (!air.length) return;
     if (act === "area") { areaFireOrder(null); return; }
     if (act === "sniff") { sniffArm(null); return; }
+    /* ESCORT is the early-warning aircraft's: refused, with the reason, for
+       a selection with none in it. A jammer escorting a package is the same
+       doctrine, but which side of a ring it flies - in with the package, or
+       out where an E-2D is held - and its own shot at a radar (seadTarget)
+       are decisions this order does not make; left for later. */
+    if (act === "escort" && !air.some(u => u.def.awacs)) {
+      alert("ESCORT — EARLY-WARNING AIRCRAFT ONLY", "bad"); return;
+    }
     if (act === "rtb") {
       for (const u of air) { u.parked = false; u.give({ type: "rtb" }); }
       alert(air.length === 1 ? "RETURNING TO BASE" : air.length + " AIRCRAFT RETURNING TO BASE", "good");
@@ -1554,7 +1572,25 @@ var UI = (function () {
     const air = selectedAircraft();
     const wp = Render.unproject(mx, my);
     if (!air.length) { airCmdMode = null; refreshSelInfo(); return true; }
-    if (airCmdMode === "cap") {
+    if (airCmdMode === "escort") {
+      /* ---- ESCORT (J) ----
+         Armed from the row or the key, and the next click names the unit:
+         ours or an ally's, never one of the aircraft being sent, and the
+         ship rather than what rides in it (pickAt never offers a carried
+         unit). Right-clicking a friendly unit keeps the meaning it had; this
+         is the only way to give the order. A click on nothing it can escort
+         says so and leaves the order armed for another try. */
+      const aew = air.filter(u => u.def.awacs);
+      const t = pickAt(mx, my, false, (e) => e.kind === "unit" && air.indexOf(e) < 0 &&
+                       (e.owner === G.human || G.allied(G.human, e.owner)));
+      if (!t) { alert("ESCORT — CLICK A UNIT OR A SHIP OF OURS", "bad"); return true; }
+      for (const u of aew) { u.parked = false; u.give({ type: "escort", target: t, x: t.x, y: t.y }); }
+      const rest = air.length - aew.length;
+      alert(aew.length + (aew.length === 1 ? " EARLY-WARNING AIRCRAFT" : " EARLY-WARNING AIRCRAFT") +
+            " ESCORTING " + String(t.def.name || "UNIT").toUpperCase() +
+            (rest ? " · " + rest + (rest === 1 ? " OTHER LEFT AS IT WAS" : " OTHERS LEFT AS THEY WERE") : ""), "good");
+      Combat.addEffect({ t: "text", x: t.x, y: t.y, s: "ESCORT", life: 1.0, max: 1.0, c: "#8fd05f" });
+    } else if (airCmdMode === "cap") {
       for (const u of air) { u.parked = false; u.give({ type: "cap", x: wp.x, y: wp.y }); }
       alert(air.length + (air.length === 1 ? " AIRCRAFT ON PATROL" : " AIRCRAFT ON PATROL"), "good");
       Combat.addEffect({ t: "text", x: wp.x, y: wp.y, s: "PATROL", life: 1.0, max: 1.0, c: "#8fd05f" });
@@ -2437,6 +2473,9 @@ var UI = (function () {
       if (k === "r") { cmdRecall(); return; }
       if (k === "y" && selectedAircraft().length) { airOrder("cap"); return; }
       if (k === "t" && selectedAircraft().length) { airOrder("strike"); return; }
+      /* J: ESCORT - for an early-warning aircraft; a key nothing used (not
+         this handler, the command bar or the controls line on the menu) */
+      if (k === "j" && !e.ctrlKey && !e.metaKey && selectedAircraft().length) { airOrder("escort"); return; }
       /* B: AREA ATTACK - a key nothing used: not this handler, not the
          command bar, not the controls line on the menu */
       if (k === "b" && !e.ctrlKey && !e.metaKey) { areaFireKey(); return; }

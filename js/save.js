@@ -105,6 +105,11 @@ var SaveGame = (function () {
            magazines is 70 more batteries than it used to be */
         rd: u.roundsMax ? u.rounds : undefined,
         st: u.stance, ord: liteOrder(u.order), pk: u.parked ? 1 : 0,
+        /* the unit an ESCORT names (entities.js), as an index into this same
+           list, as `pu` and `wt` name theirs: the order goes out with its
+           last point (liteOrder), the unit is put back on it once both lists
+           exist on load */
+        es: escortIdx(u.order, uIdx),
         /* emission control: dark, and when a relight lands - absolute game
            time, which is saved and restored before any unit (G.setEmcon) */
         em: u.emcon ? 1 : undefined, rl: u.emcon && u.relightAt ? +u.relightAt.toFixed(2) : undefined,
@@ -169,6 +174,15 @@ var SaveGame = (function () {
       })),
     };
   }
+  /* An ESCORT (entities.js) live or carried home for fuel, and the index of
+     the unit it names - the one live object an order here keeps (es above). */
+  function escortOf(o) {
+    return !o ? null : o.type === "escort" ? o : (o.then && o.then.type === "escort" ? o.then : null);
+  }
+  function escortIdx(o, uIdx) {
+    const e = escortOf(o);
+    return e && e.target && uIdx.has(e.target) ? uIdx.get(e.target) : undefined;
+  }
   /* orders are kept simple: positions survive, live target objects do not */
   function liteOrder(o) {
     if (!o) return { type: "idle" };
@@ -195,6 +209,11 @@ var SaveGame = (function () {
       if (o.then) l.then = liteOrder(o.then);
       return l;
     }
+    /* An ESCORT carried home for fuel comes back out after it - without
+       this the rtb went out bare and the aircraft parked for good. The
+       escort itself goes out by the point rule below, its last x, y. */
+    if ((o.type === "rtb" || o.type === "land" || o.type === "tank") && o.then && o.then.type === "escort")
+      return { type: "rtb", then: liteOrder(o.then) };
     /* ...and a delivery carried home for fuel comes back out after it */
     if ((o.type === "rtb" || o.type === "land" || o.type === "tank") && o.then && o.then.type === "airland")
       return { type: "rtb", then: liteOrder(o.then) };
@@ -506,6 +525,13 @@ var SaveGame = (function () {
       const host = su.pb !== undefined ? bref[su.pb]
                  : su.pu !== undefined ? uref[su.pu] : null;
       if (host && !host.dead) u.padOn = host;
+      /* the unit its ESCORT names (es above); one that did not come back
+         leaves the order on its last point, which it then holds as a
+         patrol (entities.js escortFix) */
+      if (su.es !== undefined) {
+        const eo = escortOf(u.order);
+        if (eo && uref[su.es]) eo.target = uref[su.es];
+      }
       /* the hold, put back aboard (cg above); a save from before it has none */
       if (su.cg) for (const ci of su.cg) {
         const c = uref[ci];
