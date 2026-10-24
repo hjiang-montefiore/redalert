@@ -1,92 +1,109 @@
 /* ======= pact_e20_gunship_mi28n.js - HERO model: Mil Mi-28N Night Hunter =======
-   The helo_p key: the Russian gunship every NATO player fights in the
-   default match. It is built 27-57 times in a half-hour game and flies at
-   46 m, right under the camera, so it gets a hero build of its own.
+   Two rows, both the Mi-28N (Rostvertol, Russian Army Aviation 2009 to
+   date), each drawn as its period shows it:
+     pact_e00_gunship  "Mi-28N Night Hunter", service 2009: HeroMi28N.n09,
+                       the 2009-2010s green camouflage, N025 radome up.
+     helo_p            the 2020s "Mi-28 Havoc" row (full name Mi-28N):
+                       HeroMi28N.n20, the 2020 light camouflage, no radome.
+   Neither row is the Mi-28NM, so neither gets its new nose or N025M; the
+   build draws no fitting the photographs do not show.
 
-   The hand-built units3d.js entry had four things wrong:
-     - a TWIN-barrel chin gun. The 2A42 is a single 30 mm barrel;
-     - a fuselage loft wound inside out;
-     - box blades on a rotor hung straight under the model root, so the
-       renderer spun it about the lateral axis and it windmilled on its side;
-     - no disc for the renderer to fade.
+   REDO, 2026-10-24 (full-quality procedure). References:
+     drawing   Commons "Mil Mi-28 schema.png": side, front and underside
+               views (US DoD style, an early Mi-28 airframe); every height
+               and the boom, fin and nacelle stations come from it.
+     photos    Commons, Mi-28N category: RF-95345 "71" broadside on the
+               ground (MAKS), "82" (Leningrad region), RF-95324 "07" in
+               flight, the four-ship "08" formation (2020), HeliRussia 2012
+               "38" (radome fitted), MAKS 2017 head-on (vitalykuzmin.net).
+   Recognition list, each with the reference it rests on:
+     1  stepped tandem cockpits: gunner low and ahead, pilot half a metre
+        higher behind, flat armoured panes in heavy frames (drawing, "71")
+     2  the nose stack: the Ataka command-link ball on top, the big drum of
+        the day/thermal sight under it (MAKS 2017 head-on, "71")
+     3  the NPPU-28 chin mount with ONE 30 mm 2A42 barrel (all photos)
+     4  two widely spaced engine nacelles high on the shoulders, each with
+        the domed PZU dust protector standing proud of its intake ring
+        (MAKS 2017 head-on, "71")
+     5  the exhaust suppressors turned down and aft (photos, side)
+     6  stub wings, thick at the root, drooping to the tip, two pylons a
+        side: B-8V20 pods inboard, 4+4 Ataka tubes outboard, the
+        countermeasure pods on the tips (HeliRussia, "71", head-on)
+     7  a long tail boom carried HIGH, level with the nacelle bottoms, its
+        underside rising to the fin (drawing; RF-95324 in flight)
+     8  the tall swept fin with the gearbox fairing at the top, the X-form
+        tail rotor on its RIGHT, the single braced stabiliser on its LEFT
+        (drawing underside view, "82" rear quarter)
+     9  five-blade main rotor turning clockwise from above (all photos)
+     10 fixed tailwheel gear: long trailing-arm mains under the cockpits,
+        tailwheel on a short fork under the fin (all photos)
+     11 the N025 radar ball on its stalk above the head on the 2009-2013
+        machine (HeliRussia 2012); the short drum instead on the 2020s one
+        (2020 formation, "82", RF-95324: none carries the ball)
+     12 the paint by period (see PAINT below)
 
-   Reference: Mil Mi-28N as built by Rostvertol and flown by Russian Army
-   Aviation from 2009 to date. Dimensions from the Mi-28NE technical
-   description and the published data sheets:
+   Published dimensions kept from the earlier build, confirmed against the
+   three-view where it can measure them:
      fuselage length  17.01 m   with the cannon; nose sight to fin trailing
-                                edge 16.85 m, so the muzzle stands 0.16 m proud
-     main rotor       17.20 m   five blades of 0.67 m chord, turning CLOCKWISE
-                                seen from above, as every Mil rotor does
-     tail rotor        3.84 m   four blades of 0.24 m chord, set as two
-                                two-blade rotors crossing at 45 degrees, on the
-                                RIGHT side of the fin
+                                edge 16.85 m (drawing 16.7-16.9 m)
+     main rotor       17.20 m   five blades of 0.67 m chord, CLOCKWISE
+                                seen from above, as every Mil rotor turns
+     tail rotor        3.84 m   two two-blade rotors crossing at 45 degrees
      stub wing span    4.88 m   over the wingtip pods
-     height            3.82 m   ground to the top of the hub
-                       4.81 m   ground to the top of the N025 radar ball
-     undercarriage     track 2.29 m, wheelbase 11.0 m, main tyres 720 x 320,
-                       tailwheel 480 x 200, all fixed
-     powerplant        two Klimov TV3-117VMA, one in each of two nacelles set
-                       wide apart so a single hit cannot take both
-     crew              two, in separate armoured cockpits stepped in tandem:
-                       the gunner forward and low, the pilot behind and high
-   Stations along the airframe were measured off two in-flight side views
-   of Russian Air Force Mi-28Ns on Wikimedia Commons (RF-95324 "07" and
-   RF-13492 "52"), whose long lens makes them almost orthographic. Scaled
-   on the 11.0 m wheelbase, both put the main axle 4.2 m, the main hub
-   5.4 m, the tail rotor hub 15.9 m and the tailwheel 15.2 m behind the
-   nose sight. Heights at the tail were measured against the 480 mm
-   tailwheel in ground photographs of "15", "38", "82" and RF-95345: tail
-   rotor hub 3.3 m, boom top at the fin root 1.6-1.7 m, boom bottom
-   0.6-0.8 m. The Mi-28's long tail boom is deep and LOW, carried almost
-   level with the belly, and the tall swept fin rises from its end with
-   the tailwheel on a short fork right under it. A rear view (HeliRussia)
-   shows the single braced stabiliser on the left of the fin tip, and a
-   head-on view (MAKS 2017) the stub wings, thick at the root and drooping
-   about 6 degrees to the tips.
+     height            3.82 m   ground to the top of the hub (model 3.85)
+                       4.81 m   to the top of the N025 ball (model 4.86)
+     undercarriage     wheelbase 11.0 m, track 2.29 m, main tyres 720 x 320,
+                       tailwheel 480 x 200, all FIXED
+   Stations along the airframe (main axle 4.2 m, hub 5.4 m, tailwheel
+   15.2 m, tail rotor hub 15.9 m behind the nose sight) stay as the earlier
+   build measured them off RF-95324 and RF-13492 in flight.
+
+   CORRECTED in this redo:
+     - the earlier build carried the boom LOW, its top falling to 1.6 m and
+       level with the belly. That was the ground attitude read as shape.
+       The three-view, drawn level, puts the boom top 1.76 m above the
+       belly line and level all the way to the fin; on the ground the
+       machine sits about 5 degrees nose-up on its long-stroke mains and
+       the tailwheel. The airframe is now lofted on the level datum and the
+       whole machine pitched by PITCH, so the ground heights the earlier
+       build measured (boom top 1.7, boom bottom 0.6, tail rotor hub
+       3.2-3.3 m) still come out, and in flight the boom is where it is.
+     - cockpits were 0.3 m too low: gunner sill/roof 1.98/2.70 m and pilot
+       2.32/3.20 m on the datum (were 1.70/2.40 and 2.10/2.86).
+     - the hub at 3.78 m on the datum, 3.65 m at the ground attitude.
+     - the N025 radome is no longer drawn on every Mi-28N: the 2020s
+       photographs show none.
+     - one painted scheme became two, by period.
 
    Model space: +X nose, +Y LEFT (port), +Z up, real metres. The origin is
    the point the aircraft is flown at, near the wing root. The wheels stand
    2.05 m below it on GROUND. render3d.js stands the model up with
-   rotation.x = -PI/2 and rescales it by the measured X extent.
-
-   WHAT SETS THE SCALE. The renderer scales by Box3 X extent, and every node
-   counts. The faint rotor disc reaches 8.6 m ahead of the hub, so it (and
-   not the fuselage) is the front of the box; the port stabiliser's
-   trailing edge is the back of it. The measured extent, about 20.1 m, is
-   the airframe plus the turning rotor ahead of the nose, which is the
-   size the machine actually occupies in flight. Blade phase no longer
-   matters: the five blades sit symmetrically at +-36, +-108 and 180
-   degrees, the nearest a five-blade head can come to 45. The tail rotor
-   has no disc of its own. A second 3.84 m disc would add a further 0.8 m
-   behind the fin for a blur that the top-down camera sees edge-on.
+   rotation.x = -PI/2 and rescales it by the measured X extent, which the
+   faint rotor disc ahead of the nose sets (about 20.16 m).
 
    NAMED NODES, and why each mount is built the way it is:
      rotor      render3d.js turns it positively about whichever of its own
                 axes lies along the mast. The head hangs in a mount turned
                 -PI/2 about X, which points that axis, its local +Y, DOWN
                 the mast, so the head turns clockwise seen from above, as a
-                Mil rotor does. (The asw_helo_fit.js mount uses +PI/2 and
-                turns the American way.) Inside the mount, a +PI/2 group
-                puts the head back into model axes, so it is authored like
-                everything else.
+                Mil rotor does. Inside the mount, a +PI/2 group puts the
+                head back into model axes.
      rotordisc  inside the rotor, on its own transparent, depthWrite:false
                 material, which the renderer fades with rpm.
      tailrotor  the asw_helo_fit.js tail mount (+PI/2 about X). Hub axis
                 along local Z, which is the model's lateral axis.
-   The chin gun is NOT named "turret". helo_p has no def.turret, so tang is
-   never steered, and the renderer would slew the gun by whatever heading
-   the aircraft had accumulated since it spawned.
-   The undercarriage is NOT named "gear". The Mi-28's wheels are fixed and
-   stay down in flight, and the renderer hides a "gear" node above 18 m.
+     undercarriage  the FIXED wheels and struts. Not "gear": the renderer
+                hides a "gear" node above 18 m, and these stay down.
+   All of them sit inside the pitched pose group; the mast keeps its own
+   4.5 degree forward lean inside it.
+   The chin gun is NOT named "turret": helo_p has no def.turret.
 
-   Materials are the house tiers: SKIN (one procedural CanvasTexture,
-   roughness 0.86, metalness 0.08), METAL and DARK fittings, RUBBER, the
-   BLADE composite, a STORES olive, GLASS, the TEAM flash and the DISC.
-   Nine in all. The skin UVs are projected from model space by face normal
-   (top, port, starboard, belly bands of one sheet), so a camouflage blob
-   is the same size in metres on a wing as on the fuselage, and every
-   downward-facing surface picks up the pale belly colour without a
-   second material.
+   Materials: SKIN (one CanvasTexture per scheme), DARK fittings, STORES
+   olive, GLASS, TEAM flash, METAL (struts, hub), RUBBER, BLADE, DISC: nine,
+   in eleven draw calls. The skin UVs are projected from model space by
+   face normal (top, port, starboard, belly bands of one sheet), so a
+   camouflage blob is the same size in metres everywhere and every
+   downward-facing surface takes the pale belly.
    ASCII only.                                                              */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -103,14 +120,14 @@ var HeroMi28N = (function () {
   function Z(h) { return GROUND + h; }     /* height above ground -> z    */
   var X_NOSE   =  5.68;                    /* front of the nose sight     */
   var HUB_X    =  0.20;                    /* 5.48 m behind the nose      */
-  var HUB_H    =  3.60;                    /* hub centre; cap top at 3.84 */
+  var HUB_H    =  3.78;                    /* hub centre, level datum     */
   var ROTOR_R  =  8.60;                    /* 17.2 m disc                 */
   var CHORD    =  0.67;                    /* main blade chord            */
   var MAST_TILT = 4.5 * D2R;               /* shaft leans forward         */
   var TR_R     =  1.92;                    /* 3.84 m tail rotor           */
   /* 15.9-16.1 m behind the nose sight: the photographs give 15.9, and
      10.5 m hub to hub keeps the 21.16 m length with rotors turning */
-  var TR_X = -10.32, TR_Y = -0.40, TR_H = 3.30;
+  var TR_X = -10.32, TR_Y = -0.40, TR_H = 4.25;
   var NAC_Y    =  1.02;                    /* engine nacelle centreline   */
   var NAC_H    =  2.55;
   /* Stub wing: mid-plane WING_H at the root, drooping WING_ANH to the
@@ -125,11 +142,15 @@ var HeroMi28N = (function () {
      leading edge leaves the boom top 14.6 m behind the nose, the trailing
      edge meets the boom bottom over the tailwheel, and both sweep back
      about 33 degrees to a tip at 3.40 m. */
-  var FIN_LE0 = [-8.78, 1.45], FIN_LE1 = [-10.08, 3.40];
-  var FIN_TE0 = [-9.72, 0.90], FIN_TE1 = [-11.26, 3.40];
+  var FIN_LE0 = [-8.40, 2.61], FIN_LE1 = [-9.78, 3.96];
+  var FIN_TE0 = [-9.62, 1.45], FIN_TE1 = [-11.12, 3.96];
   var FIN_HT  =  0.14;                     /* half its thickness          */
   /* the stabiliser: port side only, high on the fin, opposite the rotor */
-  var STAB_H = 3.36, STAB_Y0 = 0.06, STAB_Y1 = 1.97;
+  var STAB_H = 4.00, STAB_Y0 = 0.06, STAB_Y1 = 1.97;
+  /* ground attitude: the main wheels and the tailwheel on the ground */
+  var MW_X = 1.50, MW_Y = 1.14, MW_R = 0.36, MW_W = 0.32;
+  var TW_X = -9.50, TW_R = 0.24, TW_W = 0.20, TW_BOT = 0.98;
+  var PITCH = Math.atan(TW_BOT / (MW_X - TW_X));     /* 5.1 deg nose-up */
 
   /* =================================================== the painted skin ===
      One 1024 x 1024 sheet in four 256-pixel bands, each a projection of the
@@ -155,7 +176,19 @@ var HeroMi28N = (function () {
   function pySide(z, b) { return b * BAND + (QZ1 - z) / (QZ1 - QZ0) * BAND; }
   function pyBelly(y)   { return 3 * BAND + (QY - y) / (2 * QY) * BAND; }
 
-  var BASE = "#4c5534", DARKG = "#323a25", BROWN = "#574832", BELLY = "#76858c";
+  /* Paint by period, sampled off the photographs and taken to about 0.8
+     of their level (the ACES pass lifts mid tones):
+       N09  2009-2010s deliveries ("71" RF-95345 at MAKS, "82", RF-95324):
+            mid olive, dark green and a khaki-sand, pale blue-grey belly.
+       N20  the 2020 scheme (the Berkuts' "08" formation, 2020): far more
+            light sand and a light olive, the dark green in smaller
+            patches, pale blue-grey belly. */
+  var PAINT = {
+    n09: { base: "#525636", dark: "#30331f", sand: "#7d7556", belly: "#7f8e9a",
+           nDark: 18, nSand: 16, seed: 2809 },
+    n20: { base: "#6e7048", dark: "#363a27", sand: "#9a9272", belly: "#8090a2",
+           nDark: 16, nSand: 30, seed: 2020 }
+  };
 
   function rngFor(seed) {
     var s = (seed >>> 0) || 1;
@@ -197,11 +230,12 @@ var HeroMi28N = (function () {
     g.fillStyle = "#b22a22"; path(r); g.fill();
   }
 
-  function skinCanvas() {
+  function skinCanvas(pv) {
     var cv = document.createElement("canvas");
     cv.width = TW; cv.height = TH;
     var g = cv.getContext("2d");
-    var R = rngFor(2809);
+    var R = rngFor(pv.seed);
+    var BASE = pv.base, BELLY = pv.belly;
     var i, b, x, y, zb;
     var SQ = BAND / (2 * QY), SZ = BAND / (QZ1 - QZ0);   /* px per metre */
 
@@ -213,12 +247,14 @@ var HeroMi28N = (function () {
     for (b = 0; b < 3; b++) {
       g.save();
       g.beginPath(); g.rect(0, b * BAND, TW, BAND); g.clip();
-      for (i = 0; i < 34; i++) {
-        var r = 0.50 + R() * 0.80;
+      var nb = pv.nDark + pv.nSand;
+      for (i = 0; i < nb; i++) {
+        var sandy = i < pv.nSand;
+        var r = (sandy ? 0.55 : 0.45) + R() * 0.85;
         x = UX0 + R() * (UX1 - UX0);
         var cy = b === 0 ? pyTop((R() * 2 - 1) * QY)
                          : pySide(QZ0 + R() * (QZ1 - QZ0), b);
-        g.fillStyle = (i % 3 === 0) ? BROWN : DARKG;
+        g.fillStyle = sandy ? pv.sand : pv.dark;
         blob(g, pxX(x), cy, r * 1.45 * SX, r * (b === 0 ? SQ : SZ), (R() - 0.5) * 0.9, R);
       }
       g.restore();
@@ -239,8 +275,8 @@ var HeroMi28N = (function () {
       sg.addColorStop(0, "rgba(22,20,18,0.42)");
       sg.addColorStop(1, "rgba(22,20,18,0)");
       g.fillStyle = sg;
-      g.fillRect(pxX(-6.5), pySide(Z(2.25), b), pxX(-2.3) - pxX(-6.5),
-                 pySide(Z(1.05), b) - pySide(Z(2.25), b));
+      g.fillRect(pxX(-6.5), pySide(Z(2.70), b), pxX(-2.3) - pxX(-6.5),
+                 pySide(Z(1.50), b) - pySide(Z(2.70), b));
     }
 
     /* ---- panel seams: frames across the airframe at real stations ---- */
@@ -292,8 +328,8 @@ var HeroMi28N = (function () {
     /* ---- national marking on the tail boom, both sides, just behind the
        hump over the engine bay, where every current Mi-28N carries it
        (the fin is left plain) ---- */
-    star(g, pxX(-3.95), pySide(Z(1.32), 1), 0.22 * SZ);
-    star(g, pxX(-3.95), pySide(Z(1.32), 2), 0.22 * SZ);
+    star(g, pxX(-4.70), pySide(Z(1.98), 1), 0.24 * SZ);
+    star(g, pxX(-4.70), pySide(Z(1.98), 2), 0.24 * SZ);
 
     /* ---- the pale belly, painted LAST so no blob spills into it ---- */
     g.fillStyle = BELLY; g.fillRect(0, 3 * BAND, TW, BAND);
@@ -314,18 +350,19 @@ var HeroMi28N = (function () {
     return cv;
   }
 
-  var _cv = null, _tex = null;             /* module scope: built once   */
-  function skinTexture() {
-    if (_tex !== null) return _tex;
+  var _tex = {};                           /* module scope: one per scheme */
+  function skinTexture(key) {
+    if (_tex[key] !== undefined) return _tex[key];
+    var t = false;
     try {
-      if (!_cv) _cv = skinCanvas();
-      _tex = new V.CanvasTexture(_cv);
-      _tex.wrapS = _tex.wrapT = V.ClampToEdgeWrapping;
-      _tex.anisotropy = 4;
+      t = new V.CanvasTexture(skinCanvas(PAINT[key]));
+      t.wrapS = t.wrapT = V.ClampToEdgeWrapping;
+      t.anisotropy = 4;
       /* r148: Texture.colorSpace does nothing yet; encoding is what works */
-      if (V.sRGBEncoding !== undefined) _tex.encoding = V.sRGBEncoding;
-    } catch (e) { _tex = false; }
-    return _tex;
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+    } catch (e) { t = false; }
+    _tex[key] = t;
+    return t;
   }
 
   /* Face-normal projection into the four bands. Faces looking mostly fore
@@ -360,11 +397,11 @@ var HeroMi28N = (function () {
   }
 
   /* ========================================================= materials == */
-  function makeMats(C) {
-    var tex = skinTexture();
+  function makeMats(C, VAR) {
+    var tex = skinTexture(VAR.paint);
     var m = {};
     m.skin = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.86, metalness: 0.08 });
-    if (tex) m.skin.map = tex; else m.skin.color.setHex(0x4c5534);
+    if (tex) m.skin.map = tex; else m.skin.color.set(PAINT[VAR.paint].base);
     m.metal  = new V.MeshStandardMaterial({ color: 0x5c6367, roughness: 0.46, metalness: 0.62 });
     m.dark   = new V.MeshStandardMaterial({ color: 0x1c1f21, roughness: 0.64, metalness: 0.35 });
     /* composite blades weather to a flat charcoal */
@@ -573,11 +610,21 @@ var HeroMi28N = (function () {
     return out;
   }
   /* ========================================================= the build == */
-  function build(THREE, M, C) {
+  function build(THREE, M, C, VAR) {
     V = THREE;
-    var T = makeMats(C);
+    var T = makeMats(C, VAR);
+    var root = new V.Group();
+    root.name = "mi28n";
+    /* The ground attitude. Everything below is authored on the level
+       datum of the three-view, then the whole machine is pitched nose-up
+       about the main wheels' contact line until the tailwheel touches. */
+    var pose = new V.Group();
+    pose.position.set(MW_X, 0, GROUND);
+    pose.rotation.y = -PITCH;
+    root.add(pose);
     var g = new V.Group();
-    g.name = "mi28n";
+    g.position.set(-MW_X, 0, -GROUND);
+    pose.add(g);
     var i, k, s, a;
 
     /* --------------------------------------------------- the fuselage ----
@@ -594,29 +641,29 @@ var HeroMi28N = (function () {
        The boom ends inside the fin root, over the tailwheel.
                 x      zb    zt    zm    wb    wm    wt    e              */
     var FUS = [
-      sec( 5.30, 1.28, 1.64, 1.46, 0.16, 0.22, 0.14, 0.78),
-      sec( 5.10, 1.16, 1.68, 1.42, 0.26, 0.34, 0.24, 0.68),
-      sec( 4.80, 1.02, 1.72, 1.36, 0.36, 0.45, 0.35, 0.60),
-      sec( 4.45, 0.88, 1.74, 1.30, 0.45, 0.55, 0.49, 0.50),
-      sec( 4.00, 0.81, 1.74, 1.28, 0.51, 0.63, 0.56, 0.42),
-      sec( 3.20, 0.80, 1.75, 1.28, 0.55, 0.67, 0.59, 0.40),
-      sec( 2.86, 0.80, 1.76, 1.30, 0.56, 0.68, 0.60, 0.40),
-      sec( 2.66, 0.80, 2.14, 1.36, 0.56, 0.69, 0.60, 0.40),
-      sec( 2.00, 0.81, 2.16, 1.38, 0.57, 0.71, 0.61, 0.40),
-      sec( 1.05, 0.83, 2.20, 1.42, 0.58, 0.74, 0.60, 0.40),
-      sec( 0.80, 0.84, 2.62, 1.50, 0.59, 0.76, 0.52, 0.42),
-      sec( 0.20, 0.86, 3.10, 1.56, 0.60, 0.78, 0.42, 0.45),
-      sec(-0.60, 0.86, 3.14, 1.60, 0.60, 0.78, 0.40, 0.45),
-      sec(-1.60, 0.86, 3.00, 1.62, 0.58, 0.75, 0.40, 0.46),
-      sec(-2.50, 0.85, 2.84, 1.60, 0.54, 0.70, 0.40, 0.48),
-      sec(-3.20, 0.84, 2.62, 1.54, 0.48, 0.60, 0.36, 0.52),
-      sec(-3.70, 0.83, 2.12, 1.40, 0.40, 0.48, 0.31, 0.58),
-      sec(-4.40, 0.82, 1.86, 1.34, 0.34, 0.40, 0.29, 0.62),
-      sec(-6.00, 0.79, 1.78, 1.29, 0.30, 0.35, 0.26, 0.66),
-      sec(-7.60, 0.77, 1.68, 1.23, 0.27, 0.31, 0.23, 0.70),
-      sec(-8.90, 0.75, 1.62, 1.19, 0.24, 0.28, 0.21, 0.72),
-      sec(-9.45, 0.76, 1.52, 1.15, 0.20, 0.24, 0.18, 0.74),
-      sec(-9.78, 0.84, 1.30, 1.08, 0.13, 0.16, 0.12, 0.80),
+      sec( 5.30, 1.32, 1.96, 1.64, 0.16, 0.22, 0.14, 0.78),
+      sec( 5.10, 1.18, 2.02, 1.60, 0.26, 0.34, 0.24, 0.68),
+      sec( 4.80, 1.02, 2.08, 1.54, 0.36, 0.45, 0.35, 0.60),
+      sec( 4.45, 0.90, 2.10, 1.48, 0.45, 0.55, 0.47, 0.50),
+      sec( 4.00, 0.86, 2.04, 1.44, 0.51, 0.63, 0.54, 0.42),
+      sec( 3.20, 0.85, 2.02, 1.42, 0.55, 0.67, 0.58, 0.40),
+      sec( 2.86, 0.85, 2.02, 1.42, 0.56, 0.68, 0.59, 0.40),
+      sec( 2.66, 0.85, 2.34, 1.48, 0.56, 0.69, 0.60, 0.40),
+      sec( 2.00, 0.85, 2.36, 1.50, 0.57, 0.71, 0.61, 0.40),
+      sec( 1.05, 0.85, 2.40, 1.52, 0.58, 0.74, 0.60, 0.40),
+      sec( 0.80, 0.86, 3.00, 1.60, 0.59, 0.76, 0.52, 0.42),
+      sec( 0.20, 0.87, 3.30, 1.66, 0.60, 0.78, 0.42, 0.45),
+      sec(-0.60, 0.88, 3.36, 1.70, 0.60, 0.78, 0.40, 0.45),
+      sec(-1.60, 0.89, 3.30, 1.74, 0.58, 0.75, 0.40, 0.46),
+      sec(-2.50, 0.91, 3.10, 1.78, 0.54, 0.70, 0.40, 0.48),
+      sec(-3.20, 0.93, 2.86, 1.82, 0.48, 0.60, 0.36, 0.52),
+      sec(-3.90, 0.96, 2.66, 1.84, 0.40, 0.48, 0.31, 0.58),
+      sec(-4.60, 1.02, 2.62, 1.86, 0.34, 0.40, 0.29, 0.62),
+      sec(-5.50, 1.13, 2.62, 1.90, 0.30, 0.35, 0.26, 0.66),
+      sec(-7.40, 1.36, 2.61, 2.00, 0.27, 0.31, 0.23, 0.70),
+      sec(-8.60, 1.50, 2.60, 2.06, 0.24, 0.28, 0.21, 0.72),
+      sec(-9.30, 1.56, 2.50, 2.04, 0.20, 0.24, 0.18, 0.74),
+      sec(-9.72, 1.62, 2.22, 1.94, 0.13, 0.16, 0.12, 0.80),
     ];
     /* the section at any x, for the parts that must sit on the skin */
     function fusAt(x) {
@@ -649,12 +696,16 @@ var HeroMi28N = (function () {
     ];
     var nac = loft(NAC, 10, null, 0.02);
     for (i = 0; i < nac.length; i++) both(skin, nac[i]);
-    var dark = [], metal = [], store = [], rubber = [], team = [], glass = [];
+    var dark = [], store = [], team = [], glass = [];
     /* the intake: a lip, the dark duct face, and the central fairing
        standing proud of it */
-    both(skin, place(new V.TorusGeometry(0.295, 0.040, 5, 16), 1.10, NAC_Y, Z(NAC_H), 0, PI / 2, 0));
+    both(skin, place(new V.TorusGeometry(0.300, 0.045, 6, 18), 1.10, NAC_Y, Z(NAC_H), 0, PI / 2, 0));
     both(dark, cyl(0.30, 0.30, 0.03, 18, "x", 1.06, NAC_Y, Z(NAC_H)));
-    both(skin, sph(0.17, 10, 6, 1.12, NAC_Y, Z(NAC_H), 1.25, 1, 1));
+    /* the PZU dust protector: a big dome standing proud of the intake
+       ring, its own small cap at the nose, the first thing the head-on
+       photographs (MAKS 2017) show of each engine */
+    both(skin, sph(0.25, 16, 10, 1.14, NAC_Y, Z(NAC_H), 1.30, 1, 1));
+    both(dark, sph(0.075, 10, 6, 1.46, NAC_Y, Z(NAC_H), 0.8, 1, 1));
     /* the fairing that carries each nacelle on the fuselage side */
     both(skin, box(3.00, 0.26, 0.46, -0.55, 0.62, Z(2.42)));
     /* Exhaust suppressor: the duct leaves the nacelle heading aft and
@@ -710,14 +761,14 @@ var HeroMi28N = (function () {
     pod.translate(-0.10, PYL_IN, Z(podH));
     both(store, pod);
     both(dark, cyl(0.215, 0.215, 0.02, 16, "x", 0.87, PYL_IN, Z(podH)));
-    both(metal, cyl(0.265, 0.265, 0.06, 14, "x", 0.55, PYL_IN, Z(podH), true));
-    both(metal, cyl(0.265, 0.265, 0.06, 14, "x", -0.55, PYL_IN, Z(podH), true));
+    both(dark, cyl(0.265, 0.265, 0.06, 14, "x", 0.55, PYL_IN, Z(podH), true));
+    both(dark, cyl(0.265, 0.265, 0.06, 14, "x", -0.55, PYL_IN, Z(podH), true));
 
     /* ---- outboard: the 9M120 Ataka launcher. Two four-round packs of
        1.85 m containers, one either side of the pylon beam: eight a side,
        sixteen in all. */
     var beamH = PH_OUT - 0.11 - 0.07;
-    both(metal, box(1.50, 0.07, 0.14, -0.20, PYL_OUT, Z(beamH)));
+    both(dark, box(1.50, 0.07, 0.14, -0.20, PYL_OUT, Z(beamH)));
     var TR = 0.068, tubeLen = 1.85;
     for (s = -1; s <= 1; s += 2) {
       var py = PYL_OUT + s * 0.195;
@@ -728,7 +779,7 @@ var HeroMi28N = (function () {
       }
       /* the two clamp frames round each pack */
       for (k = -1; k <= 1; k += 2)
-        both(metal, box(0.07, 0.33, 0.33, -0.20 + k * 0.55, py, Z(beamH) - 0.17));
+        both(store, box(0.07, 0.33, 0.33, -0.20 + k * 0.55, py, Z(beamH) - 0.17));
     }
 
     /* ------------------------------------------------------ the nose ----
@@ -742,12 +793,14 @@ var HeroMi28N = (function () {
        side of it, which slew with the gun. */
     store.push(sph(0.24, 14, 10, X_NOSE - 0.24, 0, Z(1.60)));
     store.push(cyl(0.14, 0.18, 0.22, 12, "x", X_NOSE - 0.46, 0, Z(1.55)));
-    var DX = 4.62, DR = 0.38;
-    store.push(cyl(DR, DR, 0.56, 20, "z", DX, 0, Z(0.92)));
-    store.push(cyl(DR, DR * 0.82, 0.06, 20, "z", DX, 0, Z(0.61)));
+    /* RF-95324 in flight: the drum 0.85 m across and 0.7 m deep, its face
+       0.6 m behind the front of the antenna ball */
+    var DX = 4.64, DR = 0.42;
+    store.push(cyl(DR, DR, 0.64, 20, "z", DX, 0, Z(0.90)));
+    store.push(cyl(DR, DR * 0.82, 0.06, 20, "z", DX, 0, Z(0.55)));
     /* the window stands just proud of the drum's front, or the drum's own
        curve would cover the middle of it */
-    glass.push(box(0.06, 0.40, 0.26, DX + DR - 0.015, 0, Z(0.95)));
+    glass.push(box(0.06, 0.44, 0.30, DX + DR - 0.015, 0, Z(0.95)));
     /* gun mount: the ring under the belly and the turret shell below it */
     var GX = 3.55, GH = 0.60;
     skin.push(cyl(0.32, 0.34, 0.16, 18, "z", GX, 0, Z(0.76)));
@@ -789,10 +842,11 @@ var HeroMi28N = (function () {
         skin.push(bar(pb, pt, fr * 0.9, 6));
       }
     }
-    /* gunner: sill 1.70, roof 2.40, windscreen raked about 50 degrees */
-    canopy(4.47, 2.64, 0.50, 0.60, 1.70, 3.93, 2.66, 0.37, 0.42, 2.40);
-    /* pilot: 0.45 m higher, the classic step */
-    canopy(2.74, 1.00, 0.58, 0.60, 2.10, 2.20, 1.12, 0.40, 0.42, 2.86);
+    /* gunner: sill 1.98, roof 2.70 on the level datum, the windscreen
+       raked about 45 degrees (three-view) */
+    canopy(4.22, 2.64, 0.49, 0.60, 1.98, 3.36, 2.66, 0.35, 0.41, 2.70);
+    /* pilot: sill 2.32, roof 3.20, half a metre over the gunner: the step */
+    canopy(2.74, 1.00, 0.58, 0.60, 2.32, 2.04, 1.12, 0.39, 0.42, 3.20);
 
     /* ------------------------------------------------ fin and stabiliser --
        The fin is the Mi-28's "keel beam": a thick swept pylon carrying the
@@ -807,11 +861,11 @@ var HeroMi28N = (function () {
     /* the tip fairing over the tail gearbox, rounded at the front where
        the tail rotor shaft comes out on the right */
     var CAP = [
-      sec( -9.96, 3.30, 3.50, 3.40, 0.07, 0.10, 0.06, 0.80),
-      sec(-10.10, 3.24, 3.58, 3.40, 0.15, 0.19, 0.14, 0.62),
-      sec(-10.55, 3.24, 3.60, 3.40, 0.16, 0.20, 0.15, 0.58),
-      sec(-11.00, 3.26, 3.55, 3.40, 0.14, 0.17, 0.13, 0.62),
-      sec(-11.32, 3.31, 3.48, 3.40, 0.08, 0.10, 0.08, 0.80),
+      sec( -9.66, 3.90, 4.12, 4.00, 0.07, 0.10, 0.06, 0.80),
+      sec( -9.84, 3.86, 4.30, 4.08, 0.15, 0.19, 0.14, 0.62),
+      sec(-10.40, 3.86, 4.38, 4.12, 0.17, 0.21, 0.15, 0.58),
+      sec(-10.95, 3.88, 4.30, 4.08, 0.14, 0.17, 0.13, 0.62),
+      sec(-11.34, 3.92, 4.16, 4.02, 0.08, 0.10, 0.08, 0.80),
     ];
     var cap = loft(CAP, 10, 0.06, 0.04);
     for (i = 0; i < cap.length; i++) skin.push(cap[i]);
@@ -827,7 +881,7 @@ var HeroMi28N = (function () {
     var stTip = foil([-10.80, 0], [-11.32, 0], 0.07, stabAt(STAB_Y1));
     skin.push(solid(stRoot, stTip));
     /* the brace, from under the stabiliser near half span to the fin face */
-    metal.push(bar([-11.02, 0.98, Z(STAB_H) - 0.03], [-10.52, 0.09, Z(2.66)], 0.028, 6));
+    dark.push(bar([-11.02, 0.98, Z(STAB_H) - 0.03], [-10.30, 0.09, Z(3.30)], 0.028, 6));
 
     /* ---------------------------------------------- the undercarriage ----
        Fixed, tailwheel type, 11.0 m from the main axles to the tailwheel.
@@ -835,7 +889,7 @@ var HeroMi28N = (function () {
        cockpit, with its oleo standing almost upright above the axle, so the
        wheel sits under the pilot. The tailwheel is on a short fork right
        under the end of the boom. */
-    var MW_X = 1.50, MW_Y = 1.14, MW_R = 0.36, MW_W = 0.32;
+    var metal = [], rubber = [];
     var arm0 = [2.45, 0.58, Z(0.96)], axle = [MW_X, MW_Y - MW_W / 2 - 0.01, Z(MW_R)];
     both(metal, bar(arm0, axle, 0.06, 8));
     both(metal, bar([1.72, 0.62, Z(1.58)], [1.56, 0.95, Z(0.60)], 0.075, 8));
@@ -844,12 +898,22 @@ var HeroMi28N = (function () {
     both(metal, cyl(0.05, 0.05, 0.24, 8, "y", MW_X, MW_Y - 0.10, Z(MW_R)));
     both(rubber, cyl(MW_R, MW_R, MW_W, 18, "y", MW_X, MW_Y, Z(MW_R)));
     both(metal, cyl(0.17, 0.17, MW_W + 0.01, 12, "y", MW_X, MW_Y, Z(MW_R)));
-    var TW_X = -9.50, TW_R = 0.24, TW_W = 0.20;
-    metal.push(bar([-9.30, 0, Z(0.82)], [TW_X + 0.03, 0, Z(0.47)], 0.055, 8));
-    metal.push(box(0.12, TW_W + 0.10, 0.07, TW_X + 0.02, 0, Z(0.45)));
-    both(metal, box(0.07, 0.03, 0.26, TW_X, TW_W / 2 + 0.03, Z(0.33)));
-    metal.push(cyl(0.035, 0.035, TW_W + 0.10, 8, "y", TW_X, 0, Z(TW_R)));
-    rubber.push(cyl(TW_R, TW_R, TW_W, 16, "y", TW_X, 0, Z(TW_R)));
+    /* the tailwheel fork, from under the fin root to the axle: in the
+       level datum its tyre stands TW_BOT clear, and the ground attitude
+       brings it down onto the ground */
+    var TWC = TW_BOT + TW_R;
+    metal.push(bar([-9.32, 0, Z(1.62)], [TW_X + 0.03, 0, Z(TWC + 0.23)], 0.060, 8));
+    metal.push(box(0.12, TW_W + 0.10, 0.07, TW_X + 0.02, 0, Z(TWC + 0.21)));
+    both(metal, box(0.07, 0.03, 0.26, TW_X, TW_W / 2 + 0.03, Z(TWC + 0.09)));
+    metal.push(cyl(0.035, 0.035, TW_W + 0.10, 8, "y", TW_X, 0, Z(TWC)));
+    rubber.push(cyl(TW_R, TW_R, TW_W, 16, "y", TW_X, 0, Z(TWC)));
+    /* FIXED gear: its own group, named "undercarriage" and not "gear", so
+       render3d never hides it in flight */
+    var uc = new V.Group();
+    uc.name = "undercarriage";
+    g.add(uc);
+    mesh(uc, metal, T.metal, "struts");
+    mesh(uc, rubber, T.rubber, "tyres");
 
     /* ------------------------------------------------------ small kit ---- */
     /* whip and blade aerials on top of the boom, blade aerials under the
@@ -892,12 +956,29 @@ var HeroMi28N = (function () {
     team.push(loft(bandSecs, 14, null, null)[0]);
 
     /* --------------------------------------------- airframe meshes ---- */
+    /* The mast, the swashplate's fixed ring and the radar stalk do not
+       turn, so they are laid into the static meshes through the mast's
+       own tilt rather than drawn separately. */
+    var tiltM = new V.Matrix4().makeTranslation(HUB_X, 0, Z(HUB_H))
+      .multiply(new V.Matrix4().makeRotationY(MAST_TILT));
+    [cyl(0.17, 0.19, 0.72, 14, "z", 0, 0, -0.46),
+     cyl(0.42, 0.42, 0.06, 18, "z", 0, 0, -0.36)].forEach(function (q) {
+      dark.push(q.applyMatrix4(tiltM)); });
+    if (VAR.radome) {
+      /* N025 radome: 0.9 m across, a little flattened, on a stalk clear
+         of the hub, as on the 2009-2013 photographs (HeliRussia 2012) */
+      dark.push(cyl(0.075, 0.075, 0.42, 8, "z", 0, 0, 0.38).applyMatrix4(tiltM));
+      skin.push(sph(0.45, 16, 10, 0, 0, 0.83, 1, 1, 0.84).applyMatrix4(tiltM));
+    } else {
+      /* without the radar: the short drum the 2020 photographs show on
+         top of the head */
+      dark.push(cyl(0.15, 0.17, 0.26, 14, "z", 0, 0, 0.33).applyMatrix4(tiltM));
+      dark.push(sph(0.15, 12, 6, 0, 0, 0.46, 1, 1, 0.45).applyMatrix4(tiltM));
+    }
     mesh(g, skin, T.skin, "airframe", true);
     mesh(g, glass, T.glass, "glass");
     mesh(g, dark, T.dark, "fittings_dark");
-    mesh(g, metal, T.metal, "fittings");
     mesh(g, store, T.store, "stores");
-    mesh(g, rubber, T.rubber, "tyres");
     mesh(g, team, T.team, "team");
 
     /* ======================================================= main rotor ==
@@ -909,13 +990,6 @@ var HeroMi28N = (function () {
     tilt.position.set(HUB_X, 0, Z(HUB_H));
     tilt.rotation.y = MAST_TILT;
     g.add(tilt);
-    mesh(tilt, [cyl(0.17, 0.19, 0.72, 14, "z", 0, 0, -0.46),
-                cyl(0.42, 0.42, 0.06, 18, "z", 0, 0, -0.36),
-                cyl(0.075, 0.075, 0.42, 8, "z", 0, 0, 0.38)], T.metal, "mast");
-    /* N025 radome: 0.9 m across, a little flattened, on a stalk clear of
-       the hub; its top is 4.81 m above the ground, the Mi-28N's published
-       overall height */
-    mesh(tilt, [sph(0.45, 16, 10, 0, 0, 0.83, 1, 1, 0.84)], T.skin, "radome", true);
 
     /* The mount. Its -PI/2 about X points the rotor node's local +Y - the
        one of its own axes along the mast, which render3d.js turns it
@@ -932,7 +1006,7 @@ var HeroMi28N = (function () {
     head.rotation.x = PI / 2;
     rotor.add(head);
 
-    var hubM = [], hubD = [], blades = [];
+    var hubM = [], hubD = hubM, blades = [];
     hubM.push(cyl(0.30, 0.34, 0.30, 18, "z", 0, 0, 0));
     hubM.push(cyl(0.20, 0.28, 0.10, 18, "z", 0, 0, 0.19));
     hubM.push(cyl(0.44, 0.44, 0.06, 18, "z", 0, 0, -0.29));     /* turning ring */
@@ -958,7 +1032,6 @@ var HeroMi28N = (function () {
       for (i = 0; i < parts.length; i++) { parts[i][0].rotateZ(a); parts[i][1].push(parts[i][0]); }
     }
     mesh(head, hubM, T.metal, "hub");
-    mesh(head, hubD, T.dark, "hub_dampers");
     mesh(head, blades, T.blade, "blades");
     /* One upward face is all a camera above the machine ever sees. It
        also casts no shadow: under the PCF shadow map three draws a
@@ -995,19 +1068,23 @@ var HeroMi28N = (function () {
       cuff.translate(0, 0, k < 2 ? 0.08 : -0.05);
       trM.push(cuff);
     }
-    mesh(trot, trM, T.metal, "tailrotor_hub");
-    mesh(trot, trB, T.blade, "tailrotor_blades");
+    mesh(trot, trM.concat(trB), T.blade, "tailrotor_blades");
 
-    return g;
+    return root;
   }
 
-  return { build: build };
+  function variant(v) { return function (THREE, M, C) { return build(THREE, M, C, v); }; }
+  return {
+    build: variant({ paint: "n20", radome: false }),
+    n09:   variant({ paint: "n09", radome: true }),
+    n20:   variant({ paint: "n20", radome: false })
+  };
 })();
 
 /* len is the MEASURED x extent, rotor disc front to the trailing edge of
-   the stabiliser; render3d.js normalises on the measurement anyway. */
-UNIT_MODELS["helo_p"] = { len: 20.14, build: HeroMi28N.build };
-/* pact_e00_gunship, the 2000s-10s row, is the same Mi-28N Night Hunter: it
-   entered Russian service in 2009. It was drawn by a 2,244-triangle
-   rotor_specs row. */
-UNIT_MODELS["pact_e00_gunship"] = { len: 20.14, build: HeroMi28N.build };
+   the stabiliser; render3d.js normalises on the measurement anyway.
+   helo_p, the 2020s row: the Mi-28N in the 2020 scheme, no radome. */
+UNIT_MODELS["helo_p"] = { len: 20.16, build: HeroMi28N.n20 };
+/* pact_e00_gunship, the 2000s-10s row: the Mi-28N as it entered service in
+   2009, in its first camouflage and with the N025 radome. */
+UNIT_MODELS["pact_e00_gunship"] = { len: 20.16, build: HeroMi28N.n09 };
