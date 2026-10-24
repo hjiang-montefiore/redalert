@@ -1,44 +1,81 @@
-/* ============ ru_zoopark.js - HERO model: 1L219 Zoopark-1 counter-battery radar on the MT-LBu chassis ============
-   Two rows, one vehicle:
-     pact_e00_radarv  "1L219 Zoopark-1"            (from e90; turret:true)
-     radarv_p         "1L219 Zoopark-1 Radar"      (present day)
-   The Zoopark-1M (1L219M) is the same vehicle on the same chassis in the photographs fetched (r1 is captioned
-   1L219M), so both rows draw ONE model.  Zoopark-2 (1L220U, wheeled) is a different system: not drawn.
+/* ============ ru_zoopark.js - HERO model: 1L219 "Zoopark-1" counter-battery radar on the MT-LBu chassis ============
+   Two rows, both named "Zoopark-1" (rules.js radarv_p, eras.js pact_e00_radarv), one vehicle drawn in two paints:
+     pact_e00_radarv  "1L219 Zoopark-1"         from e90 to e00, service 1993   -> the 2000s 1L219M, MAKS 2005 paint
+     radarv_p         "1L219 Zoopark-1 Radar"   present day                      -> the 2010s service vehicle's paint
+   Neither row is deploy:true, so the antenna is drawn RAISED, its working pose; the folded travel pose is not drawn.
 
-   What each feature rests on (Wikimedia Commons photographs fetched for this model):
-     r1  "1L219 Zoopark-1 radar Tula 2016.JPG" (left side, plain Russian green, antenna raised): the tracked MT-LBu hull
-         with its sloped bow and flat roof, a front sprocket, SEVEN rubber-rimmed dished road wheels and a small rear
-         idler, a louvred grille on the roof edge, a rounded rear hatch, the rotating equipment module (a box with louvre
-         panels and data plates) on the rear half of the roof, a sensor mast with a head at its front, a round dome on its
-         front, the long rod along the module top, and the big flat antenna panel carried on arms at the module's REAR,
-         leaning back about 20 degrees from vertical so that its face looks forward and up over the cab.
-     r2  "1L219M MAKS2005.jpg" (front three-quarter, MAKS 2005): the panel with chamfered corners, a framed array face,
-         edge rivet strips and top corner blocks; two big headlamps and a third small one on the glacis, a guard bar,
-         vision blocks on the glacis, tow eyes, a locker box at the front of the module, the dome and the rectangular
-         sensor horn on the module top; the hull is the same boat-shaped MT-LB family.
-     r3  "Zoopark 1L219 turret Tula 2016.JPG" (front three-quarter, plain green, antenna raised) and "1L219M back view
-         MAKS2005.jpg" (rear three-quarter, flag and whip antennas, rear housing with louvres), both read in the check:
-         they confirm the antenna stands at the REAR of the module on two arms, face looking FORWARD and up over the cab,
-         top leaning back toward the stern; the dome and the horn at the module's FRONT; the module on the rear half of
-         the roof.  r4  "Zoopark Tula 08.10.2017 (37668729276).jpg" (pure left side, read in the check): module spans about
-         33-79 percent of the hull length from the nose, panel slant about 2.5 m at about 20 deg from vertical, panel top
-         about 0.73 x the overall length above the ground (the model: 5.33 m on 7.34 m), sprocket at the nose, SEVEN road
-         wheels and a small rear idler.
-   CHECKED: working height - no published figure was found (English Wikipedia "Zoopark-1" gives none), so the 5.33 m raised
-   height rests on the photographs (proportion above) and is kept; the travelling height in armour_specs is 2.7 m.
-   No fetched photograph shows the antenna folded; the travel pose is not drawn because the rows have no set-up phase.
-   Risk: the photographs suggest the hull roof a little higher and the module a little lower than drawn (roof 1.85 m is the
-   published MT-LB figure); the module top (2.75 m) matches.
-   Published figures: armour_specs.js row 7.2 x 2.9 x 2.7 m (travelling height).  Seven road wheels per r1 (the MT-LB has
-   six; the MT-LBu is longer); the armour_specs row for radarv_p says 6 wheels - a data point reported, not followed.
-   Antenna size (2.0 x 2.5 m), tilt (20 deg), module outline and sensor positions are read off r1/r2 by eye (unpublished).
+   FACTS (ru.wikipedia "Zoopark (radiolokatsionny kompleks)" and "MT-LBu", fetched 2026-10-24):
+     - The Zoopark-1 is GRAU 1L219M; its radar is the 1L259, carried with all its equipment on the MT-LBu
+       tracked chassis (the complex also has a 1I30 maintenance van on a Ural-43203 and a trailer generator: not drawn).
+     - "Zoopark-1M" is a DIFFERENT, later radar, index 1L260 (shown at MAKS-2013).  CORRECTION: the old header called
+       the 1L219M "Zoopark-1M"; it is the Zoopark-1.  No row names the 1L260, so it is not drawn.
+     - Zoopark-2 (1L220U) is a different system from NPK Iskra: not drawn.
+     - MT-LBu = MT-LB hull lengthened 810 mm with a 7th road wheel and raised 200 mm.  With the MT-LB's published
+       6.454 x 2.85 m this gives the 7.26 m x 2.85 m hull drawn here.  Roof 2.12 m: the published MT-LB height + 0.2 m
+       is 2.07, the long-lens side photograph C scaled on the 7.26 m hull gives 2.20.
+       KEPT from the old header: seven road wheels, sprocket at the nose, small raised rear idler, the antenna at the
+       module REAR facing forward over the cab, plain green.  CORRECTED: roof 1.85 -> 2.12 m; the chine (the side runs
+       down to 1.38 m and bevels in to a sponson floor at 1.14 m, C); wheel pitch 0.66 -> 0.71 m and wheel 0.64 m
+       (photograph C: seven wheels, nearly touching, over 6 pitches); the module moved forward and shortened (abs x
+       -1.25 .. +1.50, C, D); the headlamp pair is on the RIGHT of the glacis and the horn on the module's LEFT front
+       (A is a front-RIGHT view, B a rear-RIGHT view; the old header read them as left views); the camera mast of the
+       Tula museum vehicle dropped (see below); grilles on BOTH roof edges confirmed (D left, A right).
 
-   POSE: the rows are NOT deploy:true, so there is no travel/deploy split: the antenna is drawn RAISED, its working pose.
-   The folded-flat travel pose is not drawn.  The whole module with the antenna is the trained node "turret".
-   NOT drawn: radio masts and whips, camouflage nets, flags, plates and markings (the museum and fair stickers in r1/r2 are
-   not copied), the cab interior.  Paint: plain Russian green, a single coat.
-   Nodes: "turret" (origin on the ring centre, rest pointing +X) and seven "roadwheel" groups.  Materials (5): paint, dark,
-   glass, array face, C.team (two small up-facing strips on the forward roof, 0.25 x 1.0 m).
+   REFERENCES (Wikimedia Commons, width 960):
+     A "1L219M MAKS2005.jpg"            front-RIGHT three-quarter, 2005: glacis, lamps, vision blocks, right-side vents,
+                                         dome, horn, the silver ram along the module's right top, the array face.
+     B "1L219M back view MAKS2005.jpg"  rear-RIGHT three-quarter, 2005: ribbed array back, the two top corner units,
+                                         the folding arms, the louvred box on the right rear deck, the horn at the front.
+     C "ArtilleryExercise2014-06.jpg"   LEFT side in service, 2014, long lens (the truest proportions): horn at the module
+                                         front, the diagonal strut and the cranked lower arms, the panel at ~30 deg lean.
+     D "Zoopark Tula 08.10.2017 (37668729276).jpg" and E "1L219 Zoopark-1 radar Tula 2016.JPG"  LEFT side, museum:
+                                         hull profile, chine, left vent hood, side hatch, the seven wheels.
+     F "Zoopark 1L219 turret Tula 2016.JPG", G "1L219M REA 2009.jpg": module and dome detail.
+
+   RECOGNITION LIST (each one drawn):
+     1  MT-LBu boat hull: long flat roof, a 46-deg glacis to a sharp nose, a lower nose plate under it, the upper sides
+        overhanging the tracks with a bevelled chine (A, D).                                  -> hull loft, STATIONS
+     2  seven dished road wheels, no return rollers, front sprocket, small raised rear idler (D, E).  -> running gear
+     3  the rotating equipment module on the rear 60 % of the roof, chamfered front corners (C, D).    -> "turret"
+     4  the big flat phased-array panel standing at the module REAR, leaning back, face forward over the cab, chamfered
+        corners, a framed face with rivet strips (A, C, D).                                    -> panel
+     5  the back of the panel: close horizontal ribs and two vertical stiffeners (B, C).
+     6  the two drum units on the panel's top corners (B, C).
+     7  the cranked lower arms each side and the diagonal strut from the module top to the panel back (B, C).
+     8  the forward-looking dome on the module front (A, D, F, G).
+     9  the tall horn box with the slanted open top at the module's front-left (A, B, C, G).
+     10 louvred vent hoods on the roof edge each side over the engine (A right, D left).
+     11 the glacis: two lamps right of centre, one lamp high on the left, vision blocks on the roof edge (A).
+     12 the louvred equipment box on the right rear deck (B).
+   NOT drawn: radio whips (B), flags, data plates and stickers, museum signs (D), the bort number "104" (C), crew.
+   The museum vehicle in D/E/F carries a camera mast with a cross head where A, B, C (2005, 2014) carry the horn; it
+   could not be dated, so both rows draw the horn the two in-service photographs show.
+
+   STATIONS (x from the hull centre, +X nose; z up from the ground; half widths y), from photograph C (long lens, left
+   side, 2014) scaled on the 7.26 m hull, checked against D, E and A:
+        x      belly z  belly hw   sponson z  side hw   roof z      note
+      +3.63    1.20     0.95       1.22       0.98      1.32        nose edge
+      +3.30    0.97     1.00       1.14       1.20      1.65        45-deg glacis, lower nose plate, plan chamfer
+      +2.83    0.62     1.00       1.14       1.40      2.12        glacis meets the roof
+      +2.50    0.45     1.00       1.14       1.425     2.12        full section: belly 0.45 (MT-LB clearance 0.40)
+      -3.30    0.45     1.00       1.14       1.425     2.12
+      -3.52    0.60     1.00       1.14       1.425     2.12        rear bevel
+      -3.63    0.70     1.00       1.14       1.41      1.97        rear plate, top edge chamfered
+     the chine: the side runs vertical from the roof down to 1.38 m, then bevels in 0.14 m to the sponson floor (C).
+     Running gear (C): road wheels x -2.13 .. +2.11 every 0.707, centre z 0.36, r 0.32; sprocket x 2.80 z 0.67;
+     idler x -2.80 z 0.50; track centre y 1.23, 0.35 wide (MT-LB 350 mm track).  Engine-air hoods on both roof
+     edges x -0.58 .. +0.95 (C, D); the left side door x -1.75 .. -1.10 (C, D).
+     Module (turret local, ring centre abs x +0.10 on the roof): body x -1.35..+1.40, half width 1.0, 0.64 m tall;
+     panel 2.0 x 2.65 m, lower edge 0.93 m above the roof, leaning back 25 deg (D ~23 deg square-on); top 5.45 m,
+     5.57 m over the corner drums (unpublished: from C, D proportions; the old model had 5.33 m).
+
+   PAINT, sampled and taken to about 0.75 of level: A (2005, sun) #82845a -> e00 #5d6040, the bright Russian
+   protective green; C (2014, overcast) #272821 / #292c25 and D (2017) #404333 / #383b2d -> e20 #464b3b,
+   the darker, greener olive.
+   Both plain single-coat green, no pattern; no numbers or insignia.
+
+   Nodes: "turret" (ring centre, at rest facing +X, carries the panel) and seven "roadwheel" groups (the wheel discs;
+   the tyres stay in the hull).  Team colour: two small plain C.team strips on the forward roof.
    Model space: +X nose, +Y left, +Z up, metres, tracks on z = 0.  ASCII only.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -47,12 +84,16 @@ var HeroZoopark = (function () {
   "use strict";
 
   var TAU = Math.PI * 2;
-  var PAINT = { base: "#4f5a34", blots: ["#424c2a", "#5c6841", "#48532f"], seed: 219 };
-  var NW = 7, XW = [-3.0, -2.34, -1.68, -1.02, -0.36, 0.30, 0.96];
-  var FRT = { x: 1.95, z: 0.40, r: 0.31 };     /* front sprocket */
-  var REA = { x: -3.38, z: 0.30, r: 0.26 };    /* rear idler */
-  var ZW = 0.34, RWR = 0.30, TYC = 1.235, THW = 0.18;
-  var TX = -0.45, TZ = 1.85;                   /* the ring centre on the roof */
+  var VARIANTS = {
+    e00: { paint: { base: "#5d6040", tone: ["#666a48", "#53573a"], seed: 2005 }, face: 0x646a49 },
+    e20: { paint: { base: "#464b3b", tone: ["#4e5342", "#3f4435"], seed: 2014 }, face: 0x4d533f }
+  };
+  var NW = 7, XW = [-2.13, -1.43, -0.72, -0.01, 0.69, 1.40, 2.11];
+  var FRT = { x: 2.80, z: 0.67, r: 0.29 };     /* front sprocket */
+  var REA = { x: -2.80, z: 0.50, r: 0.26 };    /* rear idler */
+  var ZW = 0.36, RWR = 0.32, TYC = 1.23, THW = 0.175;
+  var TX = 0.10, TZ = 2.12;                    /* the ring centre on the roof */
+  var ROOF = 2.12;
 
   /* -------------------------------------------------------- geometry kit */
   function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
@@ -239,43 +280,6 @@ var HeroZoopark = (function () {
     solid(bin, V, F, smooth);
   }
 
-  var _tex = {};
-  function paintTex(THREE, P) {
-    var key = P.base + P.seed;
-    if (_tex[key] !== undefined) return _tex[key];
-    var t = null;
-    try {
-      var cv = document.createElement("canvas");
-      cv.width = 256; cv.height = 256;
-      var q = cv.getContext("2d"), s = P.seed >>> 0, i, k, a, x, y, rr, ang, rd;
-      var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-      q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
-      /* a single flat coat gone patchy with weather: low-contrast drift, no pattern */
-      for (k = 0; k < P.blots.length; k++) {
-        q.fillStyle = P.blots[k];
-        for (i = 0; i < 12; i++) {
-          x = R() * 256; y = R() * 256; rr = 18 + R() * 40;
-          q.beginPath();
-          for (a = 0; a < 7; a++) {
-            ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
-            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-          }
-          q.closePath(); q.fill();
-        }
-      }
-      for (i = 0; i < 90; i++) {
-        q.fillStyle = (i % 2) ? "rgba(15,14,10,0.07)" : "rgba(240,236,215,0.05)";
-        q.fillRect(R() * 256, R() * 256, 3 + R() * 30, 2 + R() * 18);
-      }
-      t = new THREE.CanvasTexture(cv);
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-      t.anisotropy = 4;
-    } catch (e) { t = null; }
-    _tex[key] = t;
-    return t;
-  }
   function flush(THREE, group, B) {
     var k, b, geo;
     for (k in B) {
@@ -408,14 +412,57 @@ var HeroZoopark = (function () {
     solid(bin, V, F);
   }
 
-  /* -------------------------------------------------------------- materials */
-  function materials(THREE, C) {
-    var T = {}, tx = paintTex(THREE, PAINT);
-    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.08 });
-    if (tx) T.paint.map = tx; else T.paint.color.set(PAINT.base);
+  /* -------------------------------------------------------------- paint */
+  var _tex = {};
+  function rng(seed) { var s = seed >>> 0; return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+  /* one plain coat per period: soft tonal patches, plate seams, rain streaks and
+     chipped edges; one tile is 2.94 m of surface (UVs are 0.34 per metre) */
+  function paintTex(THREE, P) {
+    var key = "zoo" + P.base + P.seed;
+    if (_tex[key] !== undefined) return _tex[key];
+    var t = null;
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = 256; cv.height = 256;
+      var q = cv.getContext("2d"), R = rng(P.seed), i, k, x, y, w;
+      q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
+      for (k = 0; k < P.tone.length; k++) {
+        q.fillStyle = P.tone[k];
+        for (i = 0; i < 8; i++) {
+          x = R() * 256; y = R() * 256; w = 26 + R() * 60;
+          q.globalAlpha = 0.42; q.beginPath(); q.ellipse(x, y, w, w * (0.35 + R() * 0.5), R() * 3, 0, TAU); q.fill();
+        }
+      }
+      q.globalAlpha = 1;
+      /* welded plate seams about every 0.75 m */
+      q.strokeStyle = "rgba(18,20,14,0.32)"; q.lineWidth = 1.2;
+      for (i = 0; i < 4; i++) {
+        q.beginPath(); q.moveTo(i * 64 + 20.5, 0); q.lineTo(i * 64 + 20.5, 256); q.stroke();
+        q.beginPath(); q.moveTo(0, i * 64 + 44.5); q.lineTo(256, i * 64 + 44.5); q.stroke();
+      }
+      /* bolt rows along two of the seams */
+      q.fillStyle = "rgba(12,13,9,0.35)";
+      for (i = 0; i < 32; i++) { q.fillRect(i * 8 + 2, 40, 2, 2); q.fillRect(84, i * 8 + 3, 2, 2); }
+      for (i = 0; i < 100; i++) {
+        q.fillStyle = (i % 3) ? "rgba(16,16,10,0.08)" : "rgba(235,230,205,0.06)";
+        q.fillRect(R() * 256, R() * 256, 1 + R() * 3, 8 + R() * 40);
+      }
+      for (i = 0; i < 50; i++) { q.fillStyle = "rgba(10,10,8,0.2)"; q.fillRect(R() * 256, R() * 256, 2, 2); }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    _tex[key] = t;
+    return t;
+  }
+  function materials(THREE, C, V) {
+    var T = {}, tx = paintTex(THREE, V.paint);
+    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.07 });
+    if (tx) T.paint.map = tx; else T.paint.color.set(V.paint.base);
     T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
     T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
-    T.face = new THREE.MeshStandardMaterial({ color: 0x5f6a4a, roughness: 0.6, metalness: 0.2 });
+    T.face = new THREE.MeshStandardMaterial({ color: V.face, roughness: 0.62, metalness: 0.15 });
     T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
     return T;
   }
@@ -424,146 +471,232 @@ var HeroZoopark = (function () {
              face: new Bin(T.face, false), team: new Bin(T.team, false) };
   }
 
-  /* a road wheel about the origin: dished steel disc with a rubber lip, hub boss and bolts, both sides (r1) */
+  /* -------------------------------------------------------------- running gear */
+  /* the outer disc of a road wheel about the origin, both sides: dished plate, hub, eight bolts (D, E) */
   function wheel(bin) {
-    var s, k, a, yc, o;
+    var s, k, a, o;
     for (s = -1; s <= 1; s += 2) {
-      yc = s * 1.205;
-      cyl(bin, [0, yc - 0.105, 0], [0, yc + 0.105, 0], RWR, RWR, 24);
-      o = yc + s * 0.105;
-      cyl(bin, [0, o, 0], [0, o + s * 0.022, 0], 0.235, 0.215, 22);
-      cyl(bin, [0, o + s * 0.022, 0], [0, o + s * 0.06, 0], 0.095, 0.085, 14);
-      for (k = 0; k < 6; k++) {
-        a = k / 6 * TAU;
-        box(bin, 0.16 * Math.cos(a) - 0.014, 0.16 * Math.cos(a) + 0.014, o + s * 0.022, o + s * 0.04, 0.16 * Math.sin(a) - 0.014, 0.16 * Math.sin(a) + 0.014);
+      o = s * (TYC + 0.15);
+      cyl(bin, [0, o, 0], [0, o + s * 0.025, 0], RWR - 0.025, RWR - 0.05, 20, false, false);
+      cyl(bin, [0, o + s * 0.025, 0], [0, o + s * 0.06, 0], 0.15, 0.12, 12, true, false);
+      cyl(bin, [0, o + s * 0.06, 0], [0, o + s * 0.10, 0], 0.075, 0.06, 8, true, false);
+      for (k = 0; k < 8; k++) {
+        a = k / 8 * TAU;
+        box(bin, 0.205 * Math.cos(a) - 0.018, 0.205 * Math.cos(a) + 0.018, o + s * 0.02 - 0.01, o + s * 0.042,
+            0.205 * Math.sin(a) - 0.018, 0.205 * Math.sin(a) + 0.018);
       }
-      cyl(bin, [0, yc - s * 0.105, 0], [0, yc - s * 0.14, 0], 0.17, 0.17, 12);
     }
   }
-
-  function hr(x, hw, zb, zt, zs) {
-    var bw = hw * 0.72;
-    return [[x, -bw, zb], [x, bw, zb], [x, hw, zs], [x, hw, zt - 0.06], [x, 0.92 * hw, zt], [x, -0.92 * hw, zt],
-            [x, -hw, zt - 0.06], [x, -hw, zs]];
-  }
-
-  function hull(B) {
-    var s, k, i, bg = beltGeometry(), tg = [0.832, 0, -0.555], ng = [0.555, 0, 0.832];
-    loft(B.paint, [hr(-3.60, 1.40, 0.45, 1.85, 0.95), hr(2.60, 1.45, 0.45, 1.85, 0.95), hr(3.20, 1.30, 0.50, 1.45, 0.90), hr(3.55, 0.95, 0.55, 1.10, 0.85)], false);
+  function running(B) {
+    var s, k, bg = beltGeometry();
     belt(B.dark, bg.path, TYC - THW, TYC + THW);
     belt(B.dark, bg.path, -TYC - THW, -TYC + THW);
     for (s = -1; s <= 1; s += 2) {
-      gear(B.dark, FRT.x, s * TYC - 0.12, s * TYC + 0.12, FRT.z, FRT.r - 0.04, FRT.r + 0.02, 14);
-      cyl(B.dark, [FRT.x, s * (TYC + 0.12), FRT.z], [FRT.x, s * (TYC + 0.18), FRT.z], 0.13, 0.11, 12);
-      cylY(B.dark, REA.x, s * TYC - 0.11, s * TYC + 0.11, REA.z, REA.r - 0.02, 18);
-      cyl(B.dark, [REA.x, s * (TYC + 0.11), REA.z], [REA.x, s * (TYC + 0.17), REA.z], 0.10, 0.09, 10);
-      /* idler crank arm */
-      box(B.dark, REA.x - 0.05, REA.x + 0.30, s * (TYC + 0.12) - 0.02, s * (TYC + 0.12) + 0.02, REA.z - 0.04, REA.z + 0.04);
-      /* headlamps (two close, one on the other side) with guard bars (r2) */
-      /* side lockers and the step */
-      box(B.dark, 0.2, 0.9, s * 1.455 - 0.02, s * 1.455 + 0.02, 1.05, 1.40);
-      box(B.dark, -2.4, -1.8, s * 1.455 - 0.02, s * 1.455 + 0.02, 1.05, 1.40);
-      box(B.dark, 1.40, 1.46, s * 1.455 - 0.02, s * 1.455 + 0.02, 1.0, 1.55);
-      /* tow eyes on the nose, stern eyes */
-      box(B.dark, 3.46, 3.60, s * 0.70 - 0.07, s * 0.70 + 0.07, 0.62, 0.74);
-      box(B.dark, -3.68, -3.58, s * 0.85 - 0.07, s * 0.85 + 0.07, 0.62, 0.78);
-      /* roof grille on each edge (r1): a dark bed with raised slats */
-      box(B.dark, -1.65, -0.10, s * 1.02 - (s < 0 ? 0.36 : 0), s * 1.02 + (s > 0 ? 0.36 : 0), 1.85, 1.875);
-      for (k = 0; k < 9; k++) box(B.paint, -1.62 + k * 0.17, -1.55 + k * 0.17, s * 1.02 - (s < 0 ? 0.36 : 0), s * 1.02 + (s > 0 ? 0.36 : 0), 1.875, 1.91);
-      /* stowage box on the rear deck */
-      box(B.paint, -3.40, -2.78, s * 0.72 - (s < 0 ? 0.52 : 0), s * 0.72 + (s > 0 ? 0.52 : 0), 1.85, 2.18);
-      box(B.dark, -3.40, -2.78, s * 0.72 - (s < 0 ? 0.52 : 0), s * 0.72 + (s > 0 ? 0.52 : 0), 2.18, 2.205);
-      /* the two small team strips on the forward roof */
-      box(B.team, 1.45, 2.45, s * 1.12 - 0.125, s * 1.12 + 0.125, 1.85, 1.87);
-      /* driver and commander hatches and their vision blocks on the glacis */
-      cylZ(B.paint, 2.05, s * 0.55, 1.85, 1.93, 0.27, 18);
-      cylZ(B.dark, 2.05, s * 0.55, 1.93, 1.955, 0.20, 12);
-      onSlope(B.glass, [2.64, 0, 1.83], tg, ng, s * 0.55 - 0.13, s * 0.55 + 0.13, 0.00, 0.12, 0.0, 0.03);
-      /* hull-side hatch seams on the flank */
-      box(B.dark, -1.0, -0.95, s * 1.455 - 0.02, s * 1.455 + 0.02, 0.98, 1.60);
+      /* rubber tyres of the seven stations (the discs are the roadwheel groups) */
+      for (k = 0; k < NW; k++) cyl(B.dark, [XW[k], s * (TYC - 0.15), ZW], [XW[k], s * (TYC + 0.15), ZW], RWR, RWR, 18);
+      for (k = 0; k < NW; k++) cyl(B.dark, [XW[k], s * (TYC - 0.15), ZW], [XW[k], s * 1.01, ZW], 0.09, 0.09, 8, true, true);
+      /* sprocket: two toothed rings and a hub; idler: a spoked disc on a crank */
+      gear(B.dark, FRT.x, s * TYC - 0.14, s * TYC - 0.06, FRT.z, FRT.r - 0.035, FRT.r + 0.02, 13);
+      gear(B.dark, FRT.x, s * TYC + 0.06, s * TYC + 0.14, FRT.z, FRT.r - 0.035, FRT.r + 0.02, 13);
+      cyl(B.paint, [FRT.x, s * (TYC - 0.06), FRT.z], [FRT.x, s * (TYC + 0.06), FRT.z], 0.20, 0.20, 14, true, true);
+      cyl(B.dark, [FRT.x, s * (TYC + 0.14), FRT.z], [FRT.x, s * (TYC + 0.21), FRT.z], 0.12, 0.10, 10);
+      cyl(B.paint, [REA.x, s * (TYC - 0.13), REA.z], [REA.x, s * (TYC + 0.13), REA.z], REA.r, REA.r, 18);
+      cyl(B.dark, [REA.x, s * (TYC + 0.13), REA.z], [REA.x, s * (TYC + 0.18), REA.z], 0.09, 0.08, 8);
+      box(B.dark, REA.x - 0.04, REA.x + 0.34, s * 1.02 - 0.03, s * 1.02 + 0.03, REA.z - 0.05, REA.z + 0.05);
     }
-    /* headlamps on the glacis: two close on the left, one small on the right (r2), guard bar over them */
+  }
+
+  /* -------------------------------------------------------------- hull */
+  /* one station ring: belly, sponson floor, bevelled chine, vertical side, roof edge (see STATIONS) */
+  function ring(x, zb, hb, zs, hw, zt) {
+    var zc = Math.min(zs + 0.24, zt - 0.05), hc = Math.max(hb, hw - 0.14), r = [], i;
+    var half = [[hb, zb], [hb, zs], [hc, zs], [hw, zc], [hw, zt - 0.05], [hw - 0.05, zt]];
+    for (i = 0; i < half.length; i++) r.push([x, -half[i][0], half[i][1]]);
+    for (i = half.length - 1; i >= 0; i--) r.push([x, half[i][0], half[i][1]]);
+    return r;
+  }
+  var STATIONS = [[3.63, 1.20, 0.95, 1.22, 0.98, 1.32], [3.30, 0.97, 1.00, 1.14, 1.20, 1.65],
+                  [2.83, 0.62, 1.00, 1.14, 1.40, 2.12], [2.50, 0.45, 1.00, 1.14, 1.425, 2.12],
+                  [-3.30, 0.45, 1.00, 1.14, 1.425, 2.12], [-3.52, 0.60, 1.00, 1.14, 1.425, 2.12],
+                  [-3.63, 0.70, 1.00, 1.14, 1.41, 1.97]];
+  /* the glacis plane: from the roof edge (2.83, 2.12) down to the nose edge (3.63, 1.32) */
+  var GT = unit([0.80, 0, -0.80]), GN = [-GT[2], 0, GT[0]];
+  function gp(d, y) { return [2.83 + GT[0] * d, y, ROOF + GT[2] * d]; }
+
+  function vent(B, s, x0, x1) {
+    /* a louvred hood on the roof edge (D left, A right): a dark bed and slanted slats */
+    var yo = s * 1.425, k, n = 11, dx = (x1 - x0) / n;
+    box(B.paint, x0 - 0.04, x1 + 0.04, yo - (s > 0 ? 0.01 : 0.05), yo + (s > 0 ? 0.05 : 0.01), 1.66, 1.70);
+    box(B.dark, x0, x1, yo - (s > 0 ? 0.01 : 0.035), yo + (s > 0 ? 0.035 : 0.01), 1.70, ROOF - 0.04);
+    box(B.dark, x0, x1, s * 1.10 - 0.18, s * 1.10 + 0.18, ROOF - 0.01, ROOF + 0.02);
+    for (k = 0; k < n; k++) {
+      box(B.paint, x0 + k * dx + 0.01, x0 + k * dx + dx * 0.55, yo - (s > 0 ? 0.01 : 0.05), yo + (s > 0 ? 0.05 : 0.01), 1.72, ROOF - 0.05);
+      box(B.paint, x0 + k * dx + 0.01, x0 + k * dx + dx * 0.55, s * 1.10 - 0.17, s * 1.10 + 0.17, ROOF + 0.02, ROOF + 0.05);
+    }
+  }
+
+  function hull(B) {
+    var s, k, i, p, y, x, st = [];
+    for (i = 0; i < STATIONS.length; i++) st.push(ring.apply(null, STATIONS[i]));
+    loft(B.paint, st, false);
+    running(B);
+    for (s = -1; s <= 1; s += 2) {
+      vent(B, s, -0.58, 0.95);
+      /* nose tow eyes and the lower-nose plate seam */
+      box(B.dark, 3.50, 3.68, s * 0.62 - 0.07, s * 0.62 + 0.07, 1.05, 1.17);
+      box(B.dark, -3.70, -3.60, s * 0.80 - 0.07, s * 0.80 + 0.07, 0.72, 0.86);
+      /* stern lamps and the rear door hinges */
+      box(B.dark, -3.66, -3.62, s * 1.22 - 0.06, s * 1.22 + 0.06, 1.70, 1.82);
+      for (k = 0; k < 2; k++) box(B.dark, -3.67, -3.62, s * 0.92 - 0.05, s * 0.92 + 0.05, 1.05 + k * 0.55, 1.18 + k * 0.55);
+      /* front fender lip over the sprocket */
+      box(B.paint, 2.45, 3.25, s * 1.425 - (s > 0 ? 0.30 : 0), s * 1.425 + (s < 0 ? 0.30 : 0), 1.10, 1.14);
+      /* flank: grab handles, the cable clamps and a stowage locker */
+      for (k = 0; k < 4; k++) box(B.dark, 2.30 - k * 1.25, 2.45 - k * 1.25, s * 1.43 - 0.02, s * 1.43 + 0.02, 1.94, 1.98);
+      box(B.paint, 1.35, 2.05, s * 1.425 - (s > 0 ? 0 : 0.06), s * 1.425 + (s > 0 ? 0.06 : 0), 1.45, 1.70);
+      box(B.dark, 1.35, 2.05, s * 1.425 - (s > 0 ? 0 : 0.065), s * 1.425 + (s > 0 ? 0.065 : 0), 1.695, 1.71);
+      /* the forward roof: two round hatches with dark seals (E) */
+      cylZ(B.paint, 2.30, s * 0.55, ROOF - 0.01, ROOF + 0.07, 0.30, 18);
+      cylZ(B.dark, 2.30, s * 0.55, ROOF + 0.07, ROOF + 0.085, 0.21, 12);
+      box(B.dark, 2.08, 2.20, s * 0.55 - 0.05, s * 0.55 + 0.05, ROOF + 0.07, ROOF + 0.11);
+      /* team strips on the forward roof, facing up (modest) */
+      box(B.team, 1.65, 2.30, s * 1.17 - 0.11, s * 1.17 + 0.11, ROOF - 0.01, ROOF + 0.02);
+    }
+    /* the side door on the LEFT flank, rear (D): a round-cornered frame and its handle */
+    for (k = 0; k < 2; k++) box(B.dark, -1.75 + k * 0.65, -1.70 + k * 0.65, 1.415, 1.445, 1.42, 1.86);
+    for (k = 0; k < 2; k++) box(B.dark, -1.66, -1.14, 1.415, 1.445, 1.36 + k * 0.54, 1.41 + k * 0.54);
+    box(B.dark, -1.55, -1.35, 1.44, 1.47, 1.60, 1.64);
+    /* glacis lamps: a pair low right of centre and one high on the left (A), with a guard bar */
+    var L = [[0.52, -0.22, 0.11], [0.52, -0.55, 0.11], [0.20, 0.78, 0.10]];
     for (i = 0; i < 3; i++) {
-      var yy = [0.38, 0.80, -1.00][i], rr = i < 2 ? 0.115 : 0.085, zz = 1.85 - (3.08 - 2.60) * 0.667 - 0.10;
-      cylX(B.dark, 3.02, 3.16, yy, zz, rr, 12);
-      box(B.glass, 3.16, 3.175, yy - rr * 0.7, yy + rr * 0.7, zz - rr * 0.7, zz + rr * 0.7);
+      p = gp(L[i][0], L[i][1]);
+      cyl(B.dark, p, [p[0] + GN[0] * 0.13, p[1], p[2] + GN[2] * 0.13], L[i][2], L[i][2] * 0.95, 14);
+      p = [p[0] + GN[0] * 0.13, p[1], p[2] + GN[2] * 0.13];
+      cyl(B.glass, p, [p[0] + GN[0] * 0.015, p[1], p[2] + GN[2] * 0.015], L[i][2] * 0.82, L[i][2] * 0.8, 14);
     }
-    bar(B.dark, [2.95, 0.20, 1.60], [3.17, 0.20, 1.46], 0.035);
-    bar(B.dark, [3.17, 0.20, 1.46], [3.17, 1.05, 1.46], 0.035);
-    /* rear: the round-cornered hatch on the deck, rear door lines */
-    box(B.paint, -3.22, -2.62, -0.25, 0.30, 1.85, 1.88);
-    box(B.dark, -3.62, -3.60, -1.0, 1.0, 0.78, 1.60);
-    box(B.dark, -3.63, -3.60, -0.01, 0.01, 0.55, 1.60);
-    /* trim vane on the glacis (folded) */
-    onSlope(B.paint, [3.22, 0, 1.45], [0.95, 0, -0.30], [0.30, 0, 0.95], -0.8, 0.8, 0.0, 0.22, -0.01, 0.03);
+    p = gp(0.36, -0.08); y = gp(0.36, -0.72);
+    bar(B.dark, [p[0] + GN[0] * 0.20, p[1], p[2] + GN[2] * 0.20], [y[0] + GN[0] * 0.20, y[1], y[2] + GN[2] * 0.20], 0.03);
+    bar(B.dark, p, [p[0] + GN[0] * 0.20, p[1], p[2] + GN[2] * 0.20], 0.03);
+    bar(B.dark, y, [y[0] + GN[0] * 0.20, y[1], y[2] + GN[2] * 0.20], 0.03);
+    /* vision blocks along the top of the glacis (A) */
+    for (i = 0; i < 4; i++) {
+      y = [0.95, 0.42, -0.42, -0.95][i];
+      planeBox(B.dark, gp(0.02, y), [0, 1, 0], GT, GN, -0.12, 0.12, 0.0, 0.14, 0.0, 0.06);
+      planeBox(B.glass, gp(0.02, y), [0, 1, 0], GT, GN, -0.09, 0.09, 0.03, 0.11, 0.06, 0.075);
+    }
+    /* glacis plate seam and the folded trim vane edge */
+    planeBox(B.dark, gp(0.66, 0), [0, 1, 0], GT, GN, -1.0, 1.0, 0.0, 0.03, 0.0, 0.015);
+    /* rear: twin doors (outlines), the right rear louvred equipment box (B) */
+    box(B.dark, -3.645, -3.62, -0.012, 0.012, 0.78, 1.88);
+    box(B.dark, -3.645, -3.62, -0.95, 0.95, 1.86, 1.89);
+    box(B.paint, -3.45, -2.70, -1.36, -0.58, ROOF - 0.01, ROOF + 0.55);
+    box(B.paint, -3.48, -2.67, -1.39, -0.55, ROOF + 0.55, ROOF + 0.59);
+    box(B.dark, -3.46, -3.44, -1.30, -0.64, ROOF + 0.08, ROOF + 0.48);
+    box(B.dark, -3.36, -2.79, -1.38, -1.36, ROOF + 0.08, ROOF + 0.48);
+    for (k = 0; k < 8; k++) {
+      x = -3.33 + k * 0.07;
+      box(B.paint, x, x + 0.035, -1.395, -1.36, ROOF + 0.09, ROOF + 0.47);
+      y = -1.27 + k * 0.08;
+      box(B.paint, -3.475, -3.44, y, y + 0.035, ROOF + 0.09, ROOF + 0.47);
+    }
+    /* left rear deck: a hatch and a cable reel; centre deck lids */
+    box(B.paint, -3.30, -2.70, 0.20, 0.95, ROOF - 0.01, ROOF + 0.04);
+    box(B.dark, -3.25, -2.75, 0.25, 0.90, ROOF + 0.04, ROOF + 0.05);
+    cylY(B.dark, -2.95, 1.05, 1.30, ROOF + 0.14, 0.13, 12);
   }
 
   /* -------------------------------------------------------------- the module and the raised array */
   function pbx(bin, P0, U, W, N, a0, a1, b0, b1, h0, h1) { planeBox(bin, P0, W, U, N, a0, a1, b0, b1, h0, h1); }
-  var BETA = 20 * Math.PI / 180;     /* the face looks 20 degrees above the horizon */
-  function module(B) {
-    var s, k, i, P0, U, W, N, face, pts, inner;
-    /* turntable, the box with its chamfered front */
-    cylZ(B.dark, 0, 0, 0.0, 0.06, 1.12, 32);
-    prism(B.paint, [[-1.70, -1.0], [0.90, -1.0], [1.30, -0.70], [1.30, 0.70], [0.90, 1.0], [-1.70, 1.0]], 0.06, 0.86);
-    /* roof lids, the data plate panel, louvre panels and latch handles on the flanks */
-    box(B.paint, -1.50, -0.20, -0.65, 0.65, 0.86, 0.90);
-    box(B.dark, -1.30, -0.30, -0.45, 0.45, 0.90, 0.92);
+  var BETA = 25 * Math.PI / 180;     /* the panel leans back 25 deg from upright (D ~23; C ~30 seen at an angle) */
+  function at(P0, U, N, u, h, y) { return [P0[0] + U[0] * u + N[0] * h, y, P0[2] + U[2] * u + N[2] * h]; }
+
+  function module(B, V) {
+    var s, k, j, x, P0, U, W, N, pts, inner, A, K, Q, M;
+    /* turntable and the body, the front corners chamfered (C, D): abs x -1.25 .. +1.50, 0.64 m tall */
+    cylZ(B.dark, 0, 0, 0.0, 0.08, 0.95, 28);
+    prism(B.paint, [[-1.35, -1.0], [1.15, -1.0], [1.40, -0.78], [1.40, 0.78], [1.15, 1.0], [-1.35, 1.0]], 0.08, 0.72);
+    box(B.paint, -1.20, 0.55, -0.88, 0.88, 0.72, 0.76);
+    box(B.paint, 0.65, 1.25, -0.90, 0.20, 0.72, 0.77);
+    box(B.dark, -1.35, 1.15, -1.005, 1.005, 0.08, 0.13);
     for (s = -1; s <= 1; s += 2) {
-      box(B.dark, -1.45, -0.55, s * 1.0 - (s < 0 ? 0.015 : 0), s * 1.0 + (s > 0 ? 0.015 : 0), 0.28, 0.72);
-      for (k = 0; k < 7; k++) box(B.paint, -1.42 + k * 0.125, -1.38 + k * 0.125, s * 1.0 - (s < 0 ? 0.035 : 0), s * 1.0 + (s > 0 ? 0.035 : 0), 0.30, 0.70);
-      box(B.dark, -0.30, 0.50, s * 1.0 - (s < 0 ? 0.015 : 0), s * 1.0 + (s > 0 ? 0.015 : 0), 0.25, 0.75);
-      box(B.paint, -0.30, 0.50, s * 1.0 - (s < 0 ? 0.03 : 0), s * 1.0 + (s > 0 ? 0.03 : 0), 0.24, 0.27);
-      box(B.dark, 0.60, 0.62, s * 1.0 - (s < 0 ? 0.02 : 0), s * 1.0 + (s > 0 ? 0.02 : 0), 0.20, 0.80);
-      for (k = 0; k < 3; k++) box(B.dark, 0.05 + k * 0.30, 0.15 + k * 0.30, s * 1.0 - (s < 0 ? 0.04 : 0), s * 1.0 + (s > 0 ? 0.04 : 0), 0.60, 0.66);
-      /* rear brackets that take the lift arms */
-      box(B.paint, -1.80, -1.45, s * 0.82 - 0.09, s * 0.82 + 0.09, 0.30, 0.90);
+      var yo = s * 1.0, d = function (t) { return s > 0 ? [yo - 0.002, yo + t] : [yo - t, yo + 0.002]; }, e;
+      /* two vertical-slat louvres on the rear part (E, F) */
+      for (k = 0; k < 2; k++) {
+        x = -1.22 + k * 0.48;
+        e = d(0.015); box(B.dark, x, x + 0.40, e[0], e[1], 0.24, 0.62);
+        e = d(0.035);
+        for (j = 0; j < 6; j++) box(B.paint, x + 0.02 + j * 0.065, x + 0.05 + j * 0.065, e[0], e[1], 0.26, 0.60);
+      }
+      /* the front block's horizontal louvre and the seam to the main box (E) */
+      e = d(0.015); box(B.dark, 0.72, 1.08, e[0], e[1], 0.34, 0.64);
+      e = d(0.035);
+      for (k = 0; k < 5; k++) box(B.paint, 0.73, 1.07, e[0], e[1], 0.36 + k * 0.056, 0.39 + k * 0.056);
+      e = d(0.012); box(B.dark, 0.55, 0.58, e[0], e[1], 0.13, 0.72);
+      /* the door in the middle of each side and its handle */
+      e = d(0.012);
+      box(B.dark, -0.30, 0.45, e[0], e[1], 0.18, 0.21); box(B.dark, -0.30, 0.45, e[0], e[1], 0.65, 0.68);
+      box(B.dark, -0.30, -0.27, e[0], e[1], 0.18, 0.68); box(B.dark, 0.42, 0.45, e[0], e[1], 0.18, 0.68);
+      e = d(0.05); box(B.dark, 0.28, 0.36, e[0], e[1], 0.40, 0.46);
+      /* the brackets at the rear that carry the lower arms */
+      box(B.paint, -1.55, -1.20, s * 0.88 - 0.10, s * 0.88 + 0.10, 0.15, 0.55);
     }
-    /* the locker box at the front corner (r2) and the dome on the front (r1, r2) */
-    box(B.paint, 0.85, 1.55, -1.38, -0.78, 0.08, 0.60);
-    box(B.dark, 0.85, 1.56, -1.38, -0.78, 0.60, 0.63);
-    box(B.dark, 1.54, 1.57, -1.30, -0.86, 0.20, 0.50);
-    revolve(B.paint, [[1.20, 0.0], [1.23, 0.12], [1.32, 0.23], [1.45, 0.29], [1.58, 0.28], [1.68, 0.20], [1.74, 0.10], [1.76, 0.0]], 0.30, 0.52, 20);
-    /* sensor horn on the top (r2): a tapering box with a dark mouth, on a short pedestal; and the mast head (r1) */
-    box(B.paint, 0.55, 1.00, 0.20, 0.70, 0.86, 1.00);
-    hexa(B.paint, [[0.60, 0.25, 1.00], [0.98, 0.25, 1.00], [1.02, 0.65, 1.00], [0.62, 0.65, 1.00],
-                   [0.52, 0.12, 1.75], [1.08, 0.12, 1.75], [1.08, 0.78, 1.75], [0.52, 0.78, 1.75]]);
-    box(B.dark, 0.60, 0.99, 0.18, 0.72, 1.75, 1.77);
-    box(B.dark, 1.08, 1.10, 0.20, 0.70, 1.20, 1.70);
-    /* the long rod along the module top (r1) with its end blocks */
-    cylX(B.dark, -1.30, 0.55, -0.30, 0.98, 0.05, 10);
-    box(B.paint, -1.30, -1.20, -0.38, -0.22, 0.90, 1.04);
-    box(B.paint, 0.50, 0.60, -0.38, -0.22, 0.90, 1.04);
-    /* the raised array: P0 is the centre of its lower edge, U up the leaning plane, W across, N the face normal */
-    P0 = [-1.45, 0, 1.00];
+    /* the forward-looking dome on the front face, right of centre (A, D, F) */
+    revolve(B.paint, [[1.39, 0.0], [1.40, 0.22], [1.46, 0.30], [1.56, 0.34], [1.69, 0.32], [1.79, 0.25], [1.86, 0.14], [1.88, 0.0]], -0.18, 0.40, 18);
+    cylX(B.dark, 1.35, 1.41, -0.18, 0.40, 0.36, 18);
+    /* the horn at the front-left: a tall box, open on the slanted top, facing forward and up (A, B, C, G) */
+    box(B.paint, 0.75, 1.30, 0.28, 0.92, 0.72, 0.82);
+    hexa(B.paint, [[0.80, 0.34, 0.82], [1.26, 0.34, 0.82], [1.26, 0.86, 0.82], [0.80, 0.86, 0.82],
+                   [0.76, 0.31, 1.48], [1.31, 0.31, 1.15], [1.31, 0.89, 1.15], [0.76, 0.89, 1.48]]);
+    hexa(B.dark, [[0.81, 0.36, 1.462], [1.27, 0.36, 1.180], [1.27, 0.84, 1.180], [0.81, 0.84, 1.462],
+                  [0.81, 0.36, 1.472], [1.27, 0.36, 1.190], [1.27, 0.84, 1.190], [0.81, 0.84, 1.472]]);
+    box(B.dark, 0.73, 0.76, 0.40, 0.80, 0.90, 1.40);
+    /* the raised array: P0 the centre of its lower edge, U up the leaning plane, W across, N the face normal */
+    P0 = [-1.15, 0, 0.93];
     U = [-Math.sin(BETA), 0, Math.cos(BETA)]; W = [0, 1, 0]; N = [Math.cos(BETA), 0, Math.sin(BETA)];
-    pts = [[-0.80, 0.00], [0.80, 0.00], [1.00, 0.25], [1.00, 2.15], [0.75, 2.50], [-0.75, 2.50], [-1.00, 2.15], [-1.00, 0.25]];
-    inner = [[-0.74, 0.10], [0.74, 0.10], [0.90, 0.30], [0.90, 2.10], [0.70, 2.40], [-0.70, 2.40], [-0.90, 2.10], [-0.90, 0.30]];
+    pts = [[-0.80, 0.00], [0.80, 0.00], [1.00, 0.25], [1.00, 2.30], [0.78, 2.65], [-0.78, 2.65], [-1.00, 2.30], [-1.00, 0.25]];
+    inner = [[-0.73, 0.09], [0.73, 0.09], [0.90, 0.30], [0.90, 2.25], [0.72, 2.54], [-0.72, 2.54], [-0.90, 2.25], [-0.90, 0.30]];
     planePrism(B.paint, P0, U, W, N, pts, -0.22, 0.0);
-    planePrism(B.face, P0, U, W, N, inner, 0.0, 0.035);
-    /* array face seams, rim rivet strips, back ribs, corner blocks, hinge lugs */
-    for (k = 1; k < 4; k++) pbx(B.dark, P0, U, W, N, -0.90, 0.90, 0.10 + k * 0.575 - 0.008, 0.10 + k * 0.575 + 0.008, 0.035, 0.045);
-    for (k = 0; k < 14; k++) {
-      pbx(B.dark, P0, U, W, N, 0.93, 0.98, 0.35 + k * 0.125, 0.40 + k * 0.125, -0.01, 0.03);
-      pbx(B.dark, P0, U, W, N, -0.98, -0.93, 0.35 + k * 0.125, 0.40 + k * 0.125, -0.01, 0.03);
+    planePrism(B.face, P0, U, W, N, inner, 0.0, 0.03);
+    /* face: three seams and the rivet strips down both edges (A) */
+    for (k = 1; k < 4; k++) pbx(B.dark, P0, U, W, N, -0.90, 0.90, 0.09 + k * 0.62 - 0.008, 0.09 + k * 0.62 + 0.008, 0.03, 0.04);
+    for (k = 0; k < 15; k++) {
+      pbx(B.dark, P0, U, W, N, 0.93, 0.975, 0.36 + k * 0.128, 0.40 + k * 0.128, -0.01, 0.03);
+      pbx(B.dark, P0, U, W, N, -0.975, -0.93, 0.36 + k * 0.128, 0.40 + k * 0.128, -0.01, 0.03);
     }
-    for (k = 0; k < 3; k++) pbx(B.paint, P0, U, W, N, -0.95, 0.95, 0.45 + k * 0.75, 0.55 + k * 0.75, -0.30, -0.22);
-    for (k = 0; k < 2; k++) pbx(B.paint, P0, U, W, N, -0.50 + k * 0.90, -0.40 + k * 0.90, 0.10, 2.40, -0.30, -0.22);
+    /* back: close horizontal ribs and two vertical stiffeners (B, C) */
+    for (k = 0; k < 18; k++) pbx(B.paint, P0, U, W, N, -0.94, 0.94, 0.12 + k * 0.142, 0.155 + k * 0.142, -0.28, -0.22);
+    for (s = -1; s <= 1; s += 2) pbx(B.paint, P0, U, W, N, s * 0.45 - 0.05, s * 0.45 + 0.05, 0.05, 2.55, -0.32, -0.22);
     for (s = -1; s <= 1; s += 2) {
-      pbx(B.paint, P0, U, W, N, s > 0 ? 0.62 : -0.98, s > 0 ? 0.98 : -0.62, 2.25, 2.58, -0.28, 0.06);
-      pbx(B.dark, P0, U, W, N, s * 0.80 - 0.10, s * 0.80 + 0.10, -0.08, 0.14, -0.30, 0.02);
-      /* the lift arms from the rear brackets to the back of the panel, and the crossed tube */
-      bar(B.paint, [-1.62, s * 0.82, 0.80], [P0[0] + U[0] * 1.30 - N[0] * 0.30, s * 0.80, P0[2] + U[2] * 1.30 - N[2] * 0.30], 0.14);
-      bar(B.dark, [-1.40, s * 0.90, 0.45], [P0[0] + U[0] * 0.60 - N[0] * 0.22, s * 0.88, P0[2] + U[2] * 0.60 - N[2] * 0.22], 0.07);
+      /* the drum units on the two top corners (B, C) */
+      M = at(P0, U, N, 2.52, -0.10, s * 0.62);
+      pbx(B.paint, P0, U, W, N, s > 0 ? 0.50 : -0.95, s > 0 ? 0.95 : -0.50, 2.40, 2.68, -0.30, -0.02);
+      cyl(B.dark, [M[0] - N[0] * 0.10, s * 0.56, M[2] - N[2] * 0.10 + 0.20], [M[0] - N[0] * 0.10, s * 1.02, M[2] - N[2] * 0.10 + 0.20], 0.12, 0.11, 12);
+      cyl(B.dark, [M[0] - N[0] * 0.10, s * 1.02, M[2] - N[2] * 0.10 + 0.20], [M[0] - N[0] * 0.10, s * 1.04, M[2] - N[2] * 0.10 + 0.20], 0.09, 0.09, 12);
+      /* hinge lugs */
+      pbx(B.dark, P0, U, W, N, s * 0.78 - 0.10, s * 0.78 + 0.10, -0.10, 0.16, -0.30, 0.0);
+      /* the cranked lower arm: rear bracket -> knee behind the panel -> panel back (C, B) */
+      A = [-1.40, s * 0.88, 0.35]; K = [-2.65, s * 0.88, 0.98]; Q = at(P0, U, N, 0.55, -0.27, s * 0.88);
+      bar(B.paint, A, K, 0.15);
+      bar(B.paint, K, Q, 0.13);
+      cylY(B.dark, K[0], s * 0.80, s * 0.97, K[2], 0.09, 10);
+      /* the diagonal strut, a ram with its bright rod, from the module top to the panel back (A, C) */
+      A = [0.40, s * 0.74, 0.78]; Q = at(P0, U, N, 1.60, -0.26, s * 0.74);
+      M = [A[0] + (Q[0] - A[0]) * 0.58, A[1], A[2] + (Q[2] - A[2]) * 0.58];
+      cyl(B.paint, A, M, 0.07, 0.07, 10);
+      cyl(B.dark, M, Q, 0.04, 0.04, 8);
+      box(B.paint, 0.30, 0.50, s * 0.74 - 0.08, s * 0.74 + 0.08, 0.72, 0.84);
     }
-    bar(B.dark, [P0[0] + U[0] * 1.30 - N[0] * 0.30, -0.80, P0[2] + U[2] * 1.30 - N[2] * 0.30],
-        [P0[0] + U[0] * 1.30 - N[0] * 0.30, 0.80, P0[2] + U[2] * 1.30 - N[2] * 0.30], 0.09);
+    /* the travel-lock claw on the module top (A) */
+    box(B.dark, 0.10, 0.22, -0.62, -0.50, 0.76, 0.98);
+    box(B.dark, 0.10, 0.30, -0.62, -0.50, 0.94, 1.00);
   }
 
-  function build(THREE, M, C, key) {
-    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), MB = bins(T), k, wg, WB, tur;
+  function build(THREE, M, C, key, vk) {
+    var V = VARIANTS[vk] || VARIANTS.e20, T = materials(THREE, C, V), g = new THREE.Group();
+    var HB = bins(T), MB = bins(T), k, wg, WB, tur;
     hull(HB);
-    flush(THREE, g, HB);
+    var h = new THREE.Group(); h.name = "hull";
+    flush(THREE, h, HB);
+    g.add(h);
     for (k = 0; k < NW; k++) {
       WB = { paint: new Bin(T.paint, true) };
       wheel(WB.paint);
@@ -573,24 +706,25 @@ var HeroZoopark = (function () {
       flush(THREE, wg, WB);
       g.add(wg);
     }
-    module(MB);
+    module(MB, V);
     tur = new THREE.Group();
     tur.name = "turret";
     tur.position.set(TX, 0, TZ);
     flush(THREE, tur, { paint: MB.paint, dark: MB.dark, face: MB.face });
     g.add(tur);
     g.name = key;
+    g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     return g;
   }
 
-  return { build: build };
+  return { build: build, variants: VARIANTS };
 })();
 
 UNIT_MODELS["pact_e00_radarv"] = {
   len: 7.3,
-  build: function (THREE, M, C) { return HeroZoopark.build(THREE, M, C, "pact_e00_radarv"); }
+  build: function (THREE, M, C) { return HeroZoopark.build(THREE, M, C, "pact_e00_radarv", "e00"); }
 };
 UNIT_MODELS["radarv_p"] = {
   len: 7.3,
-  build: function (THREE, M, C) { return HeroZoopark.build(THREE, M, C, "radarv_p"); }
+  build: function (THREE, M, C) { return HeroZoopark.build(THREE, M, C, "radarv_p", "e20"); }
 };
