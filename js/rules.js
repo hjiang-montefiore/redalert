@@ -1286,6 +1286,25 @@ Object.assign(UNITS, {
   pla_e00_tel: {"fac":"pla","role":"tel","cat":"vehicle","layer":"ground","name":"DF-15B","full":"DF-15B on a WS2400 TEL","cost":3300,"oil":58,"time":38,"hp":560,"armor":"light","speed":1.25,"turn":0.95,"sight":5.0,"r":17,"mass":42,"weapons":["srbm_mod"],"prereq":["factory","lab","radar"],"tech":3,"from":"e00","to":"e00","service":"2006","confidence":"medium","desc":"A separating manoeuvring re-entry vehicle drops the miss distance from hundreds of metres to single figures. The same launcher as 1995 with a completely different weapon on it.","turret":false,"deploy":true,"deploySec":5.0,"rounds":1},
   kpa_e00_tel: {"fac":"kpa","role":"tel","cat":"vehicle","layer":"ground","name":"KN-02 Toksa","full":"KN-02 Toksa (OTR-21 derivative)","cost":2600,"oil":46,"time":34,"hp":530,"armor":"light","speed":1.40,"turn":1.1,"sight":5.0,"r":16,"mass":18,"weapons":["srbm_short"],"prereq":["factory","lab"],"tech":3,"from":"e00","to":"e00","service":"2007","confidence":"medium","desc":"A reverse-engineered Tochka and this army's first accurate solid-fuelled battlefield missile - short, quick, and aimed at a target rather than at a map square. Reachable only by starting here: the KPA cannot re-equip past 1990.","turret":false,"deploy":true,"deploySec":4.5,"rounds":1},
 });
+/* The PLA's anti-ship ballistic missiles (rules.js asbm_df21d / asbm_df26,
+   and the study). Two more PLA launcher cards of the 2000s-10s on, defined
+   after the land-attack ones so unitFor's default stays the DF-15B and the
+   DF-16 until the commander is taught to choose (PLAN.md C4). The launchers
+   are not described in the sources fetched: cost, hit points, speed and
+   time into action are the DF-16's 10x10 (tel_c), and they are drawn as it
+   until their own models are built. */
+Object.assign(UNITS, {
+  pla_e00_df21d: { fac:"pla", role:"tel", name:"DF-21D", full:"DF-21D (CSS-5 Mod 4) anti-ship ballistic missile", cat:"vehicle",
+    cost:3300, oil:60, time:39, hp:570, armor:"light", speed:1.25, turn:0.95, sight:5.0, r:17, mass:46,
+    layer:"ground", weapons:["asbm_df21d"], prereq:["factory","lab","radar"], tech:3, turret:false,
+    deploy:true, deploySec:4.5, rounds:1, from:"e00", service:"2010", confidence:"medium", modelAs:"tel_c",
+    desc:"A ballistic missile with a manoeuvring warhead meant for a ship: IOC in 2010, fired into the South China Sea in 2020, and never publicly shown hitting a ship under way. It needs the ship held by somebody - a radar, an aircraft, a ship - and it only reaches the sea." },
+  pla_e00_df26: { fac:"pla", role:"tel", name:"DF-26", full:"DF-26 intermediate-range ballistic missile (anti-ship)", cat:"vehicle",
+    cost:3300, oil:60, time:39, hp:570, armor:"light", speed:1.25, turn:0.95, sight:5.0, r:17, mass:46,
+    layer:"ground", weapons:["asbm_df26"], prereq:["factory","lab","radar"], tech:3, turret:false,
+    deploy:true, deploySec:4.5, rounds:1, from:"e00", service:"2016", confidence:"medium", modelAs:"tel_c",
+    desc:"The 'Guam killer': an intermediate-range missile that can be aimed at a port or a carrier group. In service from 2016; its anti-ship warhead has not been publicly tested against a ship at sea." },
+});
 
 /* ======================= MINE WARFARE =======================
    Mines are older than every period this game covers and every army in it
@@ -4484,6 +4503,27 @@ Object.assign(WEAPONS, {
   srbm_mod:   { name:"9K720 class", dmg:520, warhead:"he", range:30.0, minRange:8.0, reload:58, burst:1,
     acc:0.90, proj:"missile", speed:720, aoe:2.6, suppress:90, indirect:true, manual:true,
     tgt:{ground:1,air:0,sea:0,sub:0}, sfx:"missile" },
+  /* ---- ANTI-SHIP BALLISTIC MISSILES ----
+     (owner, 2026-10-23) "yes take your recommendation" (_keep/weapons_study/
+     asbm/REPORT.md, PLAN.md C1-C3). The two rounds the net at the tail of
+     generations.js leaves their sea reach: they say `asbm`.
+     DF-21D (CSS-5 Mod 4): IOC 2010 (US DoD); ">1,500 km" with a manoeuvring
+     warhead (DoD 2013); its re-entry vehicle likened to Pershing II's, so on
+     the srbm family's hand-placed log scale it sits where Pershing II does,
+     31.0 (a 144-tile map buys nothing from more). DF-21 payload 600 kg: the
+     Pershing II's and the 9K720's 520. Ships only.
+     DF-26: in service 2016 (DoD 2019), confirmed April 2018 (Jane's);
+     3,500-5,000 km, CEP 100 m (USCC); dual role, land and sea: 31.5.
+     Neither had been shown hitting a ship moving at sea (Air Force Magazine
+     2013; still "not tested against targets at sea" in 2019): the owner
+     chose to halve their chance on a ship under way (CFG.ASBM_MOVING,
+     combat.js). Held rounds, aimed by the side's picture like any other. */
+  asbm_df21d: { name:"DF-21D (CSS-5 Mod 4)", dmg:520, warhead:"he", range:31.0, minRange:8.0, reload:58, burst:1,
+    acc:0.90, proj:"missile", speed:730, aoe:2.6, suppress:90, indirect:true, manual:true, asbm:true,
+    tgt:{ground:0,air:0,sea:1,sub:0}, sfx:"missile" },
+  asbm_df26:  { name:"DF-26 (anti-ship)", dmg:520, warhead:"he", range:31.5, minRange:8.0, reload:58, burst:1,
+    acc:0.90, proj:"missile", speed:730, aoe:2.6, suppress:90, indirect:true, manual:true, asbm:true,
+    tgt:{ground:1,air:0,sea:1,sub:0}, sfx:"missile" },
 });
 
 if (UNITS.ssbn_n) UNITS.ssbn_n.weapons = ["slbm_n", "torp_mk48"];
@@ -4749,6 +4789,9 @@ var MISSILE_PROFILE = {
   srbm_atacms: { profile:"ballistic", intercept:0.42 },
   srbm_p2:     { profile:"ballistic", intercept:0.30 },
   srbm_mod:    { profile:"ballistic", intercept:0.28 },
+  /* manoeuvring warheads, the 9K720's and Pershing II's class */
+  asbm_df21d:  { profile:"ballistic", intercept:0.28 },
+  asbm_df26:   { profile:"ballistic", intercept:0.28 },
 };
 for (var _mp in MISSILE_PROFILE) if (WEAPONS[_mp]) Object.assign(WEAPONS[_mp], MISSILE_PROFILE[_mp]);
 
@@ -4777,6 +4820,7 @@ var MISSILE_SPEED = {
   sam_tk3:     690, sam_pongae: 600,
   srbm_early:  620, srbm_short: 700, srbm_scud: 680,
   srbm_atacms: 700, srbm_p2:    730, srbm_mod:  720,
+  asbm_df21d:  730, asbm_df26:  730,
 };
 for (var _ms in MISSILE_SPEED) if (WEAPONS[_ms]) WEAPONS[_ms].speed = MISSILE_SPEED[_ms];
 /* any guided round still on the old scale gets a sane subsonic speed */

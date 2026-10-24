@@ -12374,8 +12374,10 @@ try{
       chk("...while a boat's torpedoes and anti-ship missiles - the SSGN's Harpoon, the Oscar's Granit - stay its own to fire",
           sa.length===2 && auto.every(function(s){ var w=WEAPONS[s.split(":")[1]]; return !w.manual && w.tgt.sea; }),
           auto.length+" automatic mounts, "+sa.join(", "));
+      /* the PLA's DF-21D and DF-26 (owner 2026-10-23, "yes take your recommendation") are anti-ship
+         ballistic rounds by design and declare `asbm`; generations.js leaves them the sea, and so does this */
       var bl=[], nb=0;
-      for (var wk in WEAPONS){ var w=WEAPONS[wk]; if(w && w.profile==="ballistic" && w.proj==="missile" && w.tgt && w.tgt.ground){ nb++; if(w.tgt.sea) bl.push(wk); } }
+      for (var wk in WEAPONS){ var w=WEAPONS[wk]; if(w && w.profile==="ballistic" && w.proj==="missile" && w.tgt && w.tgt.ground){ nb++; if(w.tgt.sea && !w.asbm) bl.push(wk); } }
       var ash=["ssm_harpoon","yj8k"].filter(function(k){ return WEAPONS[k] && WEAPONS[k].tgt.sea; });
       chk("no ballistic missile in the game reaches a ship - a 1950s Corporal no more than a Trident - and the anti-ship missiles still do",
           nb>=40 && bl.length===0 && ash.length===2,

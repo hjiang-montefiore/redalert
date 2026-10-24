@@ -173,7 +173,10 @@ var Combat = (function () {
       if (jam > 0.15) jamMul = Math.max(0.30, 1 - jam * 0.62 * rdep);
     }
 
-    const acc = U.clamp(w.acc * accMul * sensorMul * jamMul * visMul * rcsMul * fcMul + elevBonus, 0.03, 0.98);
+    /* an anti-ship ballistic missile on a ship under way: halved (rules.js
+       asbm_df21d: none has been publicly shown hitting a moving ship) */
+    const asbmMul = w.asbm && target.kind === "unit" && target.layer === "sea" && target.moving ? CFG.ASBM_MOVING : 1;
+    const acc = U.clamp(w.acc * accMul * sensorMul * jamMul * visMul * rcsMul * fcMul * asbmMul + elevBonus, 0.03, 0.98);
     let hit = game.rng() < acc;
     if (!hit && jamMul < 0.7 && (target.owner === game.human || shooter.owner === game.human))
       effects.push({ t: "text", x: shooter.x, y: shooter.y - 26, s: "JAMMED",

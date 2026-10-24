@@ -261,7 +261,10 @@ var CFG = {
      watching the target.  This is what makes radar vehicles, Aegis ships and
      the Radar Dome worth their cost. */
   RADAR_FIRE_ACC: 0.95,      // accuracy multiplier when the target is on radar
-  BLIND_FIRE_ACC: 0.52,      // ...and when nobody can see it at all
+  BLIND_FIRE_ACC: 0.52,
+  /* an anti-ship ballistic missile against a ship under way: none has been
+     shown hitting one (owner, 2026-10-23, "halve it vs moving ships") */
+  ASBM_MOVING: 0.5,      // ...and when nobody can see it at all
   STEALTH_ACQ: 0.55,         // fraction of acquisition range stealth strips away
 };
 
