@@ -1,44 +1,59 @@
 /* ============ ru_s400.js - HERO model: the S-400 Triumf 5P85TE2 launcher, a semi-trailer behind a BAZ-64022 6x6 tractor ============
    One row (rules.js, deploy:true, rounds 4, present day): sam_p "S-400 Triumf, 5P85TE2 TEL" (from e20). The row text says
-   "eight-wheeled tractor"; the photographs show the 5P85TE2 as a SEMI-TRAILER behind a three-axle 6x6 BAZ-64022 cab-over tractor
-   (the 5P85SE2 on the eight-wheel BAZ-6909 is a different launcher, not drawn). Reported as a data wording problem; nothing edited.
-   Paint: plain Russian green, no camouflage, no markings (the parade photograph's door star is NOT drawn).
+   "eight-wheeled tractor"; every photograph shows the 5P85TE2 as a SEMI-TRAILER behind a three-axle 6x6 BAZ-64022 cab-over
+   tractor (the 5P85SE2 on the eight-wheel BAZ-6909 is a different launcher, not drawn). Reported as a data wording problem;
+   nothing edited.  Redone 2026-10-24 to the full-quality standard (lofted cab, measured layout, photo-compared).
 
-   What each feature rests on (Wikimedia Commons, cached in the scratchpad ru_s400_ref):
-     "ParkPatriot2015part8-01" (5P85TE2 TEL, front 3/4 from the starboard side, canisters erected): the flat-faced cab-over
-         cab with TWO windscreen panes under a visor, big front bumper with lamps at each end, three tractor axles with
-         lugged tyres about 1.6 m across, an upright spare wheel and a boarding ladder on the starboard side behind the cab, an
-         equipment housing with two small drums above the tractor frame, the low semi-trailer with its fifth-wheel overlap,
-         equipment cases along the trailer frame, a rear two-axle bogie, levelling jacks with foot pads, and the block of four
-         ribbed canisters (2x2) on a lattice erector with a cross frame.
-     "2013 Moscow Victory Day Parade (37)" (captioned 5P85T2/TE2 TEL, front 3/4 from the port side, canisters lying): the
-         canisters lie level over the tractor with their noses just behind the cab roof and the pivot at the rear of the
-         trailer; amber lamps along the cab roof edge, a roof spotlight on the port corner, big mirrors on arms.
-     "ParkPatriot2015part8-02" (5P85TE2, starboard side, erected): the side view of the tractor (cab ahead of the front axle by
-         about 2.5 m, spare wheel and ladder behind the cab, tandem rear axles) and of the trailer (two close axles with
-         smaller tyres, the equipment cases along its side, inclined jack legs with foot pads at the trailer rear and
-         ahead of the cases), and the erected block of four canisters at the rear.
-     "ParkPatriot2015part12-45" (5P85TE2, from dead ahead): the flat cab face, two windscreen panes, the lower panel with a
-         round badge, the wide bumper with a lamp and a wire guard at each end, big mirrors on arms, roof lamps.
-     "S-400 Triumf launch vehicle" (2010 parade, side on, canisters lying) and "S-400 5P85T2 Moscow 2015" (from above):
-         the lying block of 2 x 2 canisters on the trailer deck from the rear end to over the trailer front, the rig's
-         proportions (length about ten tractor-tyre diameters; the cab roof about two tyre diameters up).
-   Published: no maker figure was found. The only figure is the Hobby Boss 85517 kit (BAZ-64022 with 5P85TE2, 1:35) listed by
-     retailers as 437 mm long, 113.2 mm wide when built (15.3 m and 3.96 m scaled: the width presumably counts mirrors and
-     jack pads). The photographs agree with about 15 m only if the tractor tyres are about 1.6 m (16.00-type), so this model
-     is 15.3 m long, tyres 1.6 m (trailer 1.1 m), cab 3.1 m wide, roof about 3.15 m, stowed width 3.3 m. The canister block
-     (6.3 m body, 1.04 m tubes) is scaled from the photographs; the erected block stands on the trailer's rear table (the
-     photographs show it nearly on the ground behind the trailer, which would put hidden geometry beyond the visible length
-     that render3d scales by; this is the one deliberate departure).
-   NOT confirmed and not drawn: any marking, the whip antenna, the exact jack count (four inclined legs drawn, two
-     stations a side as the photographs show), axle spacing (scaled from the photographs), the interior of the erector.
+   Recognition list, each with the photograph it rests on (Wikimedia Commons, cached in the scratchpad q_s400_ref):
+     1. The flat-faced BAZ-64022 cab standing wholly AHEAD of the front axle, the cab's rear wall over the front tyre's leading
+        edge ("ParkPatriot2015part8-02", side; "BAZ-64022 truck", side; "S-400 Triumf-34", front 3/4).
+     2. Two big, nearly square windscreen panes on a slightly raked upper face, the lower face with the slotted grille band
+        and round badge, a heavy full-width bumper with round headlamps and amber lamps above them at the outer ends
+        ("ParkPatriot2015part12-45", "S-400 Triumf-34", "ParkPatriot2015part8-01").
+     3. Amber marker lamps along the roof's front edge and a spotlight on a post on the roof; big mirrors on arms ("-34", "8-01").
+     4. Behind the cab on the starboard side: the upright spare wheel over the front axle, the boarding ladder outboard of
+        it, and two drum-shaped cylinders behind it ("8-02", "8-01", "BAZ-64022 truck").
+     5. A tandem of rear tractor axles under the gooseneck with the fifth wheel between them; front axle to the first rear
+        axle about three tyre diameters ("BAZ-64022 truck", "S-400 Triumf launch vehicle").
+     6. The launcher equipment unit fixed on the gooseneck: a tall box with a sloped front, louvred side panels and a cable
+        reel at its starboard rear; it stays put when the canisters rise ("8-02", "-34", "BAZ-64022 truck").
+     7. Four ribbed canisters 2 x 2, lying level from just behind that unit to past the trailer's rear, about 7.8 m long and a
+        metre across, rounded caps at the FRONT (missile nose) end, ring ribs about 0.7 m apart ("-34", "launch vehicle").
+     8. The low main trailer deck with ribbed equipment boxes along both sides ahead of a close two-axle bogie; trailer tyres
+        smaller than the tractor's ("-34", "8-02", "launch vehicle").
+     9. Four levelling jacks, their big round foot pads stowed upright on the trailer sides (ahead of the bogie and at the
+        rear corners), let down on inclined legs when set up ("-34" stowed; "8-01", "8-02" down).
+    10. Set up: the block stood vertical at the trailer's rear, the rear row's tails near the ground, a lattice spine and a
+        cross frame on its front face, two erector rams from the trailer deck ("8-01", "8-02").
+    11. Plain Russian green all over (2013 onwards); the 2009-2010 parade camouflage is NOT drawn ("-34", "8-01", "8-02").
 
-   Poses (render3d finds them by name, shows one from e.deployed): "travelpose" = canisters lying level on the trailer
-   deck (tail at the rear end, nose over the trailer front), jacks folded; "deploypose" = canisters stood vertical on the
-   trailer's rear table on four posts with two erector rams, jacks down on inclined legs. Tractor and trailer chassis and the five "roadwheel" axle groups (a tyre each side) stay outside both. Nothing is
-   named "turret" (the block never traverses).
-   Materials (5): paint, dark, glass, tyre, C.team (two small up-facing strips on the cab roof).
-   +X nose, +Y left, +Z up, metres, tyres on z = 0. ASCII only. */
+   Station table (metres back from the bumper; photo-scaled, total 15.3 m from the 1:35 kit, Hobby Boss 85517, 437 mm):
+       0.00 bumper face          0.20/0.32 cab lower/upper face   2.20 cab rear wall      2.90 front axle (tyre 1.40 m)
+       2.95 spare wheel centre   3.85/4.42 the two drums           5.30 equipment unit front 6.85 canister caps (front)
+       7.15/8.55 tractor tandem  7.85 fifth wheel                  9.35 tractor rear       9.75 gooseneck step
+      10.30-11.95 side boxes     11.65 front jacks                 12.60/13.88 trailer bogie (tyre 1.24 m)
+      14.60 trailer rear end     14.85 canister tails              15.30 rear jack pads (stowed)
+     Heights: roof 3.36, windscreen 2.18-3.16, bumper 0.80-1.22, main deck 1.75, gooseneck 2.05, canisters lying 2.05-4.09,
+     equipment unit top 3.78; set up, the canisters stand 0.40-8.45.  Cab width 2.95 m, overall width 3.3 m with mirrors.
+   Published: no maker figure was found for the rig (as before); the length is the kit's 15.3 m (generations.js keeps
+     15.3 x 3.3). Tyres, axle spacing and heights are scaled from "S-400 Triumf launch vehicle" (side on, least perspective)
+     and checked against the three Park Patriot photographs. The earlier header's 1.6 m tractor tyres are corrected to about
+     1.40 m (the side photograph gives 82 px tyres on an 883 px rig), the trailer's 1.1 m to about 1.24 m.
+   Deliberate departure: the photographs put the erected block wholly BEHIND the trailer (its rear row about 2.4 m past the
+     deck end). render3d scales by the box of BOTH poses, so a hidden block there would shrink the whole rig by about 14%.
+     The block stands instead with its rear face at the travel length (0.2 m past it, within the 2% tolerance): its rear
+     row on a foot frame near the ground behind the trailer, its front row down between the bogie's side rails.
+   NOT confirmed and not drawn: any marking (no star, no numbers), the whip antenna, the cable runs, the inside of the
+     equipment unit, the exact jack geometry (four legs drawn), the erector's hidden parts.
+
+   Poses (render3d finds them by name, shows one from e.deployed): "travelpose" = canisters lying level, the rear deck
+   plate under their tails, jack pads stowed upright; "deploypose" = canisters stood vertical at the rear with the foot
+   frame, rams and lattice, jacks down on inclined legs.  The tractor, the trailer and the five "roadwheel" axle groups (a
+   tyre each side) stay outside both.  Nothing is named "turret" (the block never traverses).
+   Paint: sampled off "ParkPatriot2015part8-01" (lit side 138,137,110; shade 71,68,55) and "-34" (overcast 58,61,60),
+   taken to about 0.75 of the lit level: base #5d5e47.
+   Materials (6): paint (canvas texture), dark, glass, tyre, lamp, C.team (two small up-facing strips on the cab roof).
+   +X nose, +Y left (port), +Z up, metres, tyres on z = 0. ASCII only. */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -235,6 +250,8 @@ var HeroS400 = (function () {
     }
     solid(bin, V, F, smooth);
   }
+  /* canvas paint: one flat coat of Russian green gone patchy with weather, rain streaks down the faces and faint
+     panel seams.  Planar UVs at 0.34 a metre (Bin.tri), so the 256 px tile spans about 2.9 m and repeats. */
   var _tex = {};
   function paintTex(THREE, P) {
     var key = P.base + P.seed;
@@ -246,24 +263,29 @@ var HeroS400 = (function () {
       var q = cv.getContext("2d"), s = P.seed >>> 0, i, k, a, x, y, rr, ang, rd;
       var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
       q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
-      /* a single flat coat gone patchy with weather: low-contrast drift, no pattern */
       for (k = 0; k < P.blots.length; k++) {
         q.fillStyle = P.blots[k];
-        for (i = 0; i < 12; i++) {
-          x = R() * 256; y = R() * 256; rr = 18 + R() * 40;
+        for (i = 0; i < 10; i++) {
+          x = R() * 256; y = R() * 256; rr = 16 + R() * 36;
           q.beginPath();
           for (a = 0; a < 7; a++) {
             ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
-            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.3, y + Math.sin(ang) * rd);
+            else q.lineTo(x + Math.cos(ang) * rd * 1.3, y + Math.sin(ang) * rd);
           }
           q.closePath(); q.fill();
         }
       }
-      for (i = 0; i < 90; i++) {
-        q.fillStyle = (i % 2) ? "rgba(15,14,10,0.07)" : "rgba(240,236,215,0.05)";
-        q.fillRect(R() * 256, R() * 256, 3 + R() * 30, 2 + R() * 18);
+      /* rain and dust streaks, running down (v is height on the side faces) */
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 3) ? "rgba(20,20,14,0.06)" : "rgba(214,208,180,0.05)";
+        q.fillRect(R() * 256, R() * 256, 1 + R() * 3, 18 + R() * 60);
       }
+      /* faint panel seams and a few rivet rows */
+      q.fillStyle = "rgba(18,18,12,0.16)";
+      q.fillRect(0, 86, 256, 2); q.fillRect(0, 214, 256, 2); q.fillRect(118, 0, 2, 256);
+      q.fillStyle = "rgba(18,18,12,0.12)";
+      for (i = 0; i < 32; i++) { q.fillRect(i * 8 + 2, 92, 2, 2); q.fillRect(124, i * 8 + 3, 2, 2); }
       t = new THREE.CanvasTexture(cv);
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
@@ -321,209 +343,283 @@ var HeroS400 = (function () {
   }
 
 
+  /* --------------------------------------------------------------- layout */
+  /* every station is given in metres BACK from the bumper face (the header's table); X() turns it into model x */
+  var XF = 7.65;
+  function X(d) { return XF - d; }
+  var AXD = [2.90, 7.15, 8.55, 12.60, 13.88];               /* axles: tractor front, tandem; trailer bogie */
+  var RT = 0.70, RR = 0.62, TYT = 1.10, TYR = 1.15;         /* tyre radii (1.40 m, 1.24 m) and half tracks */
+  var CL = 7.80, CR = 0.48, CRIB = 0.505, CSY = 0.51, CSZ = 0.52;   /* canister body length, radius, rib, column/row half offsets */
+  var LOW = 0.25;                                           /* the lower row sits 0.25 m further aft than the upper */
+  var TRZ = 3.07, TAILD = 14.85;                            /* travel: block axis height, upper-row tail station */
+  var DPX = X(13.95) - CSZ, DPZ = 0.50;                     /* set up: block centre plane x, upper-row tail height */
 
-  /* The rig is drawn in a "kit" frame and stretched into place by xform(): x by SX, y by SY, and the cab part above z 1.45
-     squeezed to 0.78 so the cab roof ends about 3.15 m (the photographs put the roof at about 1.95 tyre diameters).  Round
-     things (spare wheel, drums, fifth wheel) are built after the stretch (the R bins) so they stay round. */
-  var SX = 1.25, SY = 1.05, ZK = 1.45, ZL = 0.30, ZS = 0.78, ZB = 1.75;
-  function zmap(z) { return z <= ZK ? z + ZL : ZB + (z - ZK) * ZS; }
-  var AXTP = [5.05, 1.15, -0.45], AXRP = [-6.60, -5.45];     /* axles in metres: tractor (front, tandem), trailer bogie */
-  var AXT = [AXTP[0] / SX, AXTP[1] / SX, AXTP[2] / SX], AXR = [AXRP[0] / SX, AXRP[1] / SX];
-  var RTT = 0.80, RTR = 0.55;                                /* tyre radii: tractor 1.6 m tyres, trailer 1.1 m */
-  var AXZT = RTT - ZL, AXZR = RTR - ZL;                      /* axle shaft heights in the kit frame */
-  var TY = 1.18;
-  var PVX = -7.17, PVZ = 3.08;                              /* canister block pivot, travel pose (world) */
-  var DPX = -6.55, DPZ = 2.35;                              /* the block stood up on the trailer rear table: axis x, tail height */
-  var CR = 0.52, CS = 0.54, CL = 6.30;                      /* canister radius, row/column offset, body length */
-  var JXP = [-3.20, -7.35];                                 /* jack stations (x), hinged at |y| 1.47 on the trailer side */
-
-  var PAINT = { base: "#4a5a3a", blots: ["#3d4b30", "#566645", "#445234"], seed: 40041 };
+  var PAINT = { base: "#5d5e47", blots: ["#52543f", "#676952", "#585a43"], seed: 40041 };
 
   function materials(THREE, C) {
     var T = {}, tx = paintTex(THREE, PAINT);
-    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.08 });
+    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.86, metalness: 0.08 });
     if (tx) T.paint.map = tx; else T.paint.color.set(PAINT.base);
-    T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
-    T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
-    T.tyre = new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.95, metalness: 0.02 });
+    T.dark = new THREE.MeshStandardMaterial({ color: 0x2c2e2a, roughness: 0.78, metalness: 0.3 });
+    T.glass = new THREE.MeshStandardMaterial({ color: 0x1b2730, roughness: 0.12, metalness: 0.4 });
+    T.tyre = new THREE.MeshStandardMaterial({ color: 0x1d1e1f, roughness: 0.95, metalness: 0.02 });
+    T.lamp = new THREE.MeshStandardMaterial({ color: 0xc98a2a, roughness: 0.4, metalness: 0.1, emissive: 0x2a1600 });
     T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
     return T;
   }
-  function bins(T, withAll) {
-    var b = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
-    if (withAll) { b.glass = new Bin(T.glass, false); b.team = new Bin(T.team, false); }
-    return b;
-  }
 
-  /* a lugged cross-country tyre on the Y axis centred at (0, yc, 0): chevron lugs a half step apart, dished wheel */
-  function tyre(bin, yc, ph, hub, sc, hk) {
-    var N = 18, R = [[-0.30, 0.50, 0, 0], [-0.30, 0.66, 0, 0], [-0.22, 0.75, 1, 0], [-0.03, 0.75, 1, 0],
-                     [0.03, 0.75, 1, 1], [0.22, 0.75, 1, 1], [0.30, 0.66, 0, 0], [0.30, 0.50, 0, 0]];
+  /* a lugged cross-country tyre on the Y axis centred at (cx, yc, cz): chevron lugs a half step apart, dished wheel.
+     sc scales the radius (1 = 0.75 m), wk the width (1 = 0.60 m) */
+  function tyre(bin, cx, yc, cz, ph, hub, sc, wk) {
+    var N = 18, R = [[-0.30, 0.52, 0, 0], [-0.30, 0.66, 0, 0], [-0.22, 0.75, 1, 0], [-0.03, 0.75, 1, 0],
+                     [0.03, 0.75, 1, 1], [0.22, 0.75, 1, 1], [0.30, 0.66, 0, 0], [0.30, 0.52, 0, 0]];
     var V = [], F = [], i, j, k, r, a, m = R.length;
     for (i = 0; i < m; i++) for (j = 0; j < N; j++) {
       r = R[i][1] * sc;
-      if (R[i][2] && ((j + R[i][3]) % 2)) r -= 0.03;
+      if (R[i][2] && ((j + R[i][3]) % 2)) r -= 0.035;
       a = (j + ph) / N * TAU;
-      V.push([r * Math.cos(a), yc + R[i][0], r * Math.sin(a)]);
+      V.push([cx + r * Math.cos(a), yc + R[i][0] * wk, cz + r * Math.sin(a)]);
     }
     for (i = 0; i < m - 1; i++) for (j = 0; j < N; j++) {
       k = (j + 1) % N;
       F.push([i * N + j, i * N + k, (i + 1) * N + k], [i * N + j, (i + 1) * N + k, (i + 1) * N + j]);
     }
-    V.push([0, yc + R[0][0], 0], [0, yc + R[m - 1][0], 0]);
+    V.push([cx, yc + R[0][0] * wk, cz], [cx, yc + R[m - 1][0] * wk, cz]);
     for (j = 0; j < N; j++) { k = (j + 1) % N; F.push([m * N, k, j], [m * N + 1, (m - 1) * N + j, (m - 1) * N + k]); }
     solid(bin, V, F, true);
     if (hub) for (k = -1; k <= 1; k += 2) {
-      cylY(bin, 0, yc + k * 0.29, yc + k * 0.33, 0, 0.40 * hk, 10);
-      cylY(bin, 0, yc + k * 0.33, yc + k * 0.38, 0, 0.16 * hk, 8);
+      cyl(hub, [cx, yc + k * 0.27 * wk, cz], [cx, yc + k * 0.31 * wk, cz], 0.40 * sc, 0.40 * sc, 12);
+      cyl(hub, [cx, yc + k * 0.31 * wk, cz], [cx, yc + k * 0.37 * wk, cz], 0.15 * sc, 0.12 * sc, 8);
     }
   }
 
-  /* ---------------------------------------------- tractor and trailer (both poses) */
-  function sbox(bin, x0, x1, s, y, t, z0, z1) { box(bin, x0, x1, s > 0 ? y : y - t, s > 0 ? y + t : y, z0, z1); }   /* a slab proud of a side face at y */
+  /* ------------------------------------------------------------------ cab */
+  /* cross-section rings: the lower body (face at station dl) and the cabin above the windscreen sill, its face raked
+     back to du at the roof, with chamfered roof edges.  Two lofts, so each front plate is a true plane. */
+  function cabLow(dl, hw, zb, zw) { return [[X(dl), -hw, zb], [X(dl), -hw, zw], [X(dl), hw, zw], [X(dl), hw, zb]]; }
+  function cabUp(dl, du, hw, zw, zt) {
+    return [[X(dl), -hw, zw], [X(du), -hw + 0.03, zt - 0.15], [X(du), -hw + 0.18, zt],
+            [X(du), hw - 0.18, zt], [X(du), hw - 0.03, zt - 0.15], [X(dl), hw, zw]];
+  }
+  var CAB = [  /* dl,   du,   half width, bottom, windscreen sill, roof */
+    [0.20, 0.34, 1.30, 1.24, 2.18, 3.22],
+    [0.27, 0.40, 1.43, 1.18, 2.18, 3.31],
+    [0.36, 0.46, 1.475, 1.15, 2.18, 3.35],
+    [2.20, 2.20, 1.475, 1.15, 2.18, 3.36]];
 
-  function addTractor(B, R) {
-    var i, k, s, a, yy;
-    /* frame, bumper, tow eyes, lamps */
-    box(B.dark, -0.95, 5.95, -0.78, 0.78, 0.95, 1.38);
-    for (i = 0; i < 3; i++) cylY(B.dark, AXT[i], -1.00, 1.00, AXZT, 0.11, 8);
-    box(B.paint, 5.88, 6.15, -1.45, 1.45, 0.78, 1.22);
-    box(B.dark, 5.95, 6.17, -1.40, 1.40, 0.88, 0.94);
-    for (s = -1; s <= 1; s += 2) {
-      cylX(B.dark, 6.10, 6.18, s * 1.22, 1.00, 0.095, 10);
-      cylX(B.glass, 6.18, 6.20, s * 1.22, 1.00, 0.07, 10);
-      box(B.dark, 6.10, 6.18, s * 0.62 - 0.12, s * 0.62 + 0.12, 0.92, 1.06);
-      box(B.dark, 6.10, 6.18, s * 0.86 - 0.12, s * 0.86 + 0.12, 0.92, 1.06);
-      box(B.dark, 6.15, 6.22, s * 0.30 - 0.08, s * 0.30 + 0.08, 0.84, 0.94);        /* tow eyes */
+  function addCab(B) {
+    var i, s, k, y, lo = [], up = [], c;
+    for (i = 0; i < CAB.length; i++) {
+      c = CAB[i];
+      lo.push(cabLow(c[0], c[2], c[3], c[4]));
+      up.push(cabUp(c[0] + (i ? 0 : 0.08), c[1] + (i ? 0 : 0.08), c[2], c[4], c[5]));   /* the cabin face sits behind the screen slab */
     }
-    /* cab: flat face, lower body with the grille panels, windscreen panes under a visor */
-    box(B.paint, 3.55, 5.95, -1.45, 1.45, 1.45, 3.25);
-    box(B.paint, 5.95, 6.00, -1.38, 1.38, 1.50, 2.20);
-    for (k = 0; k < 3; k++) box(B.dark, 5.98, 6.02, -1.00, 1.00, 1.62 + k * 0.17, 1.68 + k * 0.17);
-    box(B.dark, 5.98, 6.02, -0.04, 0.04, 1.55, 2.12);
-    box(B.dark, 5.95, 6.03, -1.38, -1.12, 1.50, 2.12);                               /* corner vents */
-    box(B.dark, 5.95, 6.03, 1.12, 1.38, 1.50, 2.12);
+    loft(B.paint, lo, false);
+    loft(B.paint, up, false);
+    /* the raked upper face: windscreen panes in a dark frame slab that forms the face, centre post, wipers */
+    var P0 = [X(0.20), 0, 2.18], U = unit([-0.14, 0, 0.89]), W = [0, 1, 0], N = unit([0.89, 0, 0.14]);
     for (s = -1; s <= 1; s += 2) {
-      a = s * 0.70;
-      box(B.dark, 5.95, 6.00, a - 0.60, a + 0.60, 2.22, 3.08);                       /* pane frame */
-      box(B.glass, 6.00, 6.03, a - 0.54, a + 0.54, 2.28, 3.02);
-    }
-    box(B.dark, 5.90, 6.06, -1.38, 1.38, 3.08, 3.20);                                 /* visor */
-    for (k = 0; k < 3; k++) cylZ(B.dark, 5.90, -0.60 + k * 0.60, 3.25, 3.31, 0.05, 6);  /* roof edge lamps */
-    box(B.glass, 5.86, 5.94, -1.43, -1.35, 3.28, 3.31);
-    /* side doors: window, seam, handle, step; the mirror arms at the front corners */
-    for (s = -1; s <= 1; s += 2) {
-      yy = s * 1.45;
-      sbox(B.dark, 4.62, 5.60, s, yy, 0.03, 2.20, 3.08);
-      sbox(B.glass, 4.70, 5.52, s, yy + s * 0.03, 0.02, 2.28, 3.02);
-      sbox(B.dark, 4.58, 4.61, s, yy, 0.03, 1.55, 3.10);
-      sbox(B.dark, 5.62, 5.65, s, yy, 0.03, 1.55, 3.10);
-      sbox(B.dark, 4.68, 4.88, s, yy, 0.05, 2.10, 2.15);
-      sbox(B.dark, 4.30, 4.62, s, yy, 0.10, 1.22, 1.30);                     /* step */
-      bar(B.dark, [5.78, s * 1.45, 2.80], [5.84, s * 1.56, 2.70], 0.04);
-      box(B.dark, 5.78, 5.86, s * 1.56 - 0.03, s * 1.56 + 0.03, 2.25, 2.95);         /* mirror */
-      box(B.dark, 5.78, 5.86, s * 1.56 - 0.03, s * 1.56 + 0.03, 2.25, 2.95);
-      box(B.dark, 5.78, 5.84, s * 1.50 - 0.03, s * 1.50 + 0.03, 2.05, 2.28);          /* small mirror */
-      /* wheel arches over the tractor axles: flat guards with a lip */
-      for (i = 0; i < 3; i++) {
-        sbox(B.paint, AXT[i] - 0.78, AXT[i] + 0.78, s, s * 0.82, 0, 1.40, 1.46);
+      planeBox(B.dark, P0, U, W, N, 0.0, 0.98, s > 0 ? 0.04 : -1.29, s > 0 ? 1.29 : -0.04, -0.10, 0.015);
+      planeBox(B.glass, P0, U, W, N, 0.10, 0.93, s > 0 ? 0.09 : -1.19, s > 0 ? 1.19 : -0.09, -0.02, 0.025);
+      for (k = 0; k < 2; k++) {
+        y = s * (0.30 + k * 0.52);
+        bar(B.dark, [X(0.205) + 0.03, y, 2.24], [X(0.25) + 0.03, y + s * 0.08, 2.62], 0.03);
       }
     }
-    /* fenders over the rear tractor pair and the front axle (arch tops, outboard of the cab) */
+    /* lower face: the grille band with its slots, the round badge, the corner turn lamps */
+    for (k = 0; k < 4; k++) box(B.dark, X(0.23), X(0.20) + 0.02, -0.92, 0.92, 1.42 + k * 0.10 + (k > 1 ? 0.22 : 0), 1.47 + k * 0.10 + (k > 1 ? 0.22 : 0));
+    cylX(B.dark, X(0.23), X(0.20) + 0.025, 0, 1.73, 0.10, 12);
     for (s = -1; s <= 1; s += 2) {
-      box(B.paint, -1.05, 1.65, s > 0 ? 0.85 : -1.50, s > 0 ? 1.50 : -0.85, 1.38, 1.44);
-      box(B.paint, -1.05, 1.65, s > 0 ? 1.44 : -1.50, s > 0 ? 1.50 : -1.44, 1.10, 1.44);
-      box(B.paint, AXT[0] - 0.82, AXT[0] + 0.82, s > 0 ? 1.45 : -1.55, s > 0 ? 1.55 : -1.45, 1.20, 1.26);
+      box(B.lamp, X(0.25), X(0.20) + 0.025, s * 1.08, s * 1.24, 1.30, 1.40);
+      box(B.dark, X(0.23), X(0.20) + 0.015, s * 1.00, s * 1.24, 1.98, 2.04);          /* sill trim */
     }
-    /* behind the cab: the housing over the frame with its sloped front, two drums, the ladder, the spare wheel */
-    profY(B.paint, [[-0.65, 1.38], [1.60, 1.38], [1.60, 1.72], [1.10, 2.00], [-0.65, 2.00]], -0.95, 0.95);
-    box(B.dark, -0.65, 1.60, -0.96, -0.93, 1.45, 1.90);
-    box(B.dark, -0.65, 1.60, 0.93, 0.96, 1.45, 1.90);
-    for (k = 0; k < 2; k++) cylY(R.paint, (0.55 + k * 0.40) * SX, -1.05 * SY, -0.60 * SY, zmap(1.62), 0.19, 12);   /* the two drums */
-    box(B.dark, 1.62, 3.55, -0.60, 0.60, 1.38, 1.60);                                  /* frame between cab and housing */
-    box(B.dark, 1.64, 1.68, -1.30, -0.95, 1.45, 2.30);                                 /* ladder rails */
-    box(B.dark, 2.10, 2.14, -1.30, -0.95, 1.45, 2.30);
-    for (k = 0; k < 5; k++) box(B.dark, 1.68, 2.10, -1.28, -0.97, 1.65 + k * 0.14, 1.69 + k * 0.14);
-    cyl(R.tyre, [2.75 * SX, -1.45, 2.30], [2.75 * SX, -1.09, 2.30], 0.80, 0.80, 20);        /* upright spare wheel */
-    cyl(R.paint, [2.75 * SX, -1.45, 2.30], [2.75 * SX, -1.47, 2.30], 0.40, 0.40, 14);
-    box(B.dark, 2.45, 3.05, -1.04, -0.96, 1.40, 1.80);
-    box(B.team, 4.30, 5.30, 0.95, 1.20, 3.25, 3.27);                                  /* team strips (the two, on the cab roof) */
-    box(B.team, 4.30, 5.30, -1.20, -0.95, 3.25, 3.27);
-    cylZ(B.dark, 5.50, 1.15, 3.25, 3.42, 0.065, 8);                                    /* spotlight on its post */
-    cylX(B.dark, 5.50, 5.64, 1.15, 3.50, 0.10, 10);
-    cylX(B.glass, 5.64, 5.66, 1.15, 3.50, 0.075, 10);
-    /* fifth wheel plate */
-    cylZ(R.dark, 0.20 * SX, 0, zmap(1.38), zmap(1.50), 0.50, 16);
+    /* roof: marker lamps on the front edge, spotlight on its post, a roof hatch, team strips */
+    for (s = -1; s <= 1; s += 2) {
+      box(B.lamp, X(0.52), X(0.40), s * 0.88, s * 1.06, 3.34, 3.42);
+      box(B.team, X(1.95), X(1.00), s * 0.70, s * 1.10, 3.36, 3.38);
+    }
+    box(B.lamp, X(0.52), X(0.40), -0.07, 0.07, 3.35, 3.42);
+    cylZ(B.dark, X(0.62), 0.20, 3.35, 3.55, 0.04, 6);
+    cylX(B.dark, X(0.70), X(0.50), 0.20, 3.62, 0.11, 12);
+    cylX(B.glass, X(0.50), X(0.49), 0.20, 3.62, 0.085, 12);
+    box(B.dark, X(1.55), X(1.05), -0.40, 0.40, 3.36, 3.40);
+    /* sides: doors with their windows and seams, handles, the rear quarter window, mirrors on arms */
+    for (s = -1; s <= 1; s += 2) {
+      y = s * 1.475;
+      box(B.glass, X(1.62), X(0.62), y - s * 0.02, y + s * 0.02, 2.28, 3.08);
+      box(B.dark, X(1.66), X(0.58), y - s * 0.02, y + s * 0.012, 2.24, 2.28);
+      box(B.dark, X(1.70), X(1.67), y - s * 0.02, y + s * 0.015, 1.25, 3.18);                  /* door seams */
+      box(B.dark, X(0.55), X(0.52), y - s * 0.02, y + s * 0.015, 1.25, 3.18);
+      box(B.dark, X(1.52), X(1.32), y - s * 0.02, y + s * 0.04, 2.05, 2.10);                   /* handle */
+      box(B.glass, X(2.10), X(1.82), y - s * 0.02, y + s * 0.02, 2.55, 3.05);                  /* rear quarter window */
+      /* steps under the door */
+      box(B.dark, X(1.45), X(0.70), s * 1.30, s * 1.45, 0.66, 0.70);
+      box(B.dark, X(1.45), X(0.70), s * 1.20, s * 1.36, 0.98, 1.02);
+      box(B.dark, X(1.47), X(1.43), s * 1.20, s * 1.45, 0.66, 1.15);
+      box(B.dark, X(0.72), X(0.68), s * 1.20, s * 1.45, 0.66, 1.15);
+      /* mirror arms from the front corner, big and small mirror heads */
+      bar(B.dark, [X(0.45), s * 1.47, 2.95], [X(0.18), s * 1.61, 2.98], 0.04);
+      bar(B.dark, [X(0.45), s * 1.47, 2.25], [X(0.18), s * 1.61, 2.30], 0.04);
+      box(B.dark, X(0.24), X(0.13), s * 1.58, s * 1.65, 2.30, 2.98);
+      box(B.dark, X(0.30), X(0.20), s * 1.56, s * 1.62, 2.02, 2.22);
+    }
+    /* bumper: the heavy full-width beam, headlamps in its ends, tow hooks and a centre step */
+    box(B.paint, X(0.32), X(0.0), -1.43, 1.43, 0.80, 1.22);
+    box(B.dark, X(0.03), X(0.0) + 0.01, -1.40, 1.40, 1.12, 1.15);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, X(0.03), X(0.0) + 0.01, s * 1.00, s * 1.38, 0.86, 1.10);
+      cylX(B.glass, X(0.02), X(0.0) + 0.02, s * 1.20, 0.98, 0.09, 12);
+      box(B.lamp, X(0.02), X(0.0) + 0.02, s * 1.04, s * 1.10, 0.92, 1.04);
+      box(B.dark, X(0.05), X(0.0) + 0.03, s * 0.42 - 0.07, s * 0.42 + 0.07, 0.72, 0.84);   /* tow hooks */
+    }
+    box(B.dark, X(0.04), X(0.0) + 0.01, -0.35, 0.35, 0.84, 1.08);                  /* number plate recess, left blank */
   }
 
-  function addTrailer(B, R) {
-    var i, k, s, x;
-    /* main frame, deck, gooseneck over the fifth wheel */
-    box(B.dark, -6.00, 0.60, -0.85, 0.85, 1.28, 1.52);
-    box(B.paint, -6.00, 0.60, -1.20, 1.20, 1.52, 1.60);
-    box(B.dark, -6.00, -5.88, -1.30, 1.30, 1.15, 1.45);                                /* rear beam */
-    for (i = 0; i < 2; i++) cylY(B.dark, AXR[i], -1.00, 1.00, AXZR, 0.10, 8);
-    for (s = -1; s <= 1; s += 2) {
-      box(B.dark, -6.04, -6.00, s * 1.05 - 0.07, s * 1.05 + 0.07, 1.25, 1.38);          /* rear lamps */
-      /* fenders over the bogie */
-      box(B.paint, -5.95, -3.20, s > 0 ? 0.88 : -1.52, s > 0 ? 1.52 : -0.88, 1.38, 1.44);
-      box(B.paint, -5.95, -3.20, s > 0 ? 1.46 : -1.52, s > 0 ? 1.52 : -1.46, 1.15, 1.44);
-      /* equipment cases along the frame with seams and handles */
-      box(B.paint, -3.05, -0.20, s > 0 ? 1.00 : -1.45, s > 0 ? 1.45 : -1.00, 1.40, 1.95);
-      for (i = 0; i < 4; i++) {
-        x = -3.05 + i * 0.72;
-        box(B.dark, x, x + 0.02, s > 0 ? 1.45 : -1.48, s > 0 ? 1.48 : -1.45, 1.42, 1.93);
-        box(B.dark, x + 0.18, x + 0.40, s > 0 ? 1.45 : -1.49, s > 0 ? 1.49 : -1.45, 1.66, 1.70);
-      }
-      box(B.dark, -3.05, -0.20, s > 0 ? 1.00 : -1.45, s > 0 ? 1.45 : -1.00, 1.95, 1.97);
+  /* ------------------------------------------------------------- tractor */
+  function addTractor(B) {
+    var i, s, k, x;
+    /* frame rails, cross members, axle beams and differentials */
+    for (s = -1; s <= 1; s += 2) box(B.dark, X(9.35), X(0.35), s * 0.40, s * 0.58, 0.95, 1.35);
+    for (k = 0; k < 6; k++) { x = X(0.6 + k * 1.70); box(B.dark, x - 0.06, x + 0.06, -0.58, 0.58, 1.00, 1.28); }
+    for (i = 0; i < 3; i++) {
+      x = X(AXD[i]);
+      cylY(B.dark, x, -0.85, 0.85, RT, 0.11, 8);
+      cylY(B.dark, x, -0.28, 0.28, RT, 0.26, 10);
+      box(B.dark, x - 0.45, x + 0.45, -0.62, -0.50, RT + 0.12, RT + 0.22);        /* springs */
+      box(B.dark, x - 0.45, x + 0.45, 0.50, 0.62, RT + 0.12, RT + 0.22);
     }
-    /* jack housings on the trailer sides (legs are in the poses) */
-    for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2)
-      box(B.dark, JXP[i] / SX - 0.16, JXP[i] / SX + 0.16, s * 1.40 - 0.12, s * 1.40 + 0.12, 1.05, 1.52);
-    /* the rear table the block lies on */
-    box(B.dark, -5.90, -4.10, -1.05, 1.05, 1.60, 1.70);
-    for (k = 0; k < 3; k++) box(B.dark, -5.70 + k * 0.50, -5.62 + k * 0.50, -1.05, 1.05, 1.70, 1.73);
+    /* front mudguard (the tyre stands just behind the cab) and the tandem guards */
+    for (s = -1; s <= 1; s += 2) {
+      box(B.paint, X(3.62), X(2.22), s * 0.80, s * 1.47, 1.48, 1.54);
+      box(B.paint, X(3.68), X(3.58), s * 0.80, s * 1.47, 1.10, 1.54);
+      box(B.paint, X(9.32), X(6.38), s * 0.78, s * 1.47, 1.50, 1.56);
+      box(B.dark, X(9.30), X(9.24), s * 0.80, s * 1.45, 0.95, 1.50);                 /* rear mud flaps */
+      box(B.dark, X(7.88), X(7.82), s * 0.80, s * 1.45, 1.10, 1.50);
+    }
+    /* behind the cab, starboard: the upright spare wheel over the front axle, its carrier, the ladder outboard */
+    tyre(B.tyre, X(2.95), -1.18, 2.55, 0, B.dark, 0.72 / 0.75, 0.75);
+    box(B.dark, X(3.20), X(2.70), -0.98, -0.90, 1.40, 3.20);
+    box(B.dark, X(3.75), X(2.25), -0.98, -0.88, 1.40, 1.50);
+    for (k = 0; k < 2; k++) box(B.dark, X(2.55 + k * 0.80) - 0.03, X(2.55 + k * 0.80) + 0.03, -1.53, -1.47, 1.20, 3.00);
+    for (k = 0; k < 6; k++) box(B.dark, X(3.33), X(2.57), -1.53, -1.47, 1.30 + k * 0.29, 1.34 + k * 0.29);
+    bar(B.dark, [X(2.55), -1.50, 3.00], [X(2.30), -1.40, 3.30], 0.04);
+    /* the two drums behind it on their platform, cross-wise, with their caps */
+    box(B.paint, X(4.85), X(3.45), -1.30, 0.05, 1.40, 2.42);
+    box(B.dark, X(4.85), X(3.45), -1.31, -1.29, 1.90, 1.93);
+    box(B.dark, X(4.20), X(4.16), -1.31, -1.29, 1.45, 2.38);
+    for (k = 0; k < 2; k++) {
+      x = X(3.82 + k * 0.64);
+      cylY(B.paint, x, -1.14, -0.50, 2.75, 0.30, 16);
+      cyl(B.paint, [x, -1.14, 2.75], [x, -1.24, 2.75], 0.30, 0.18, 16);
+      cylY(B.dark, x, -0.86, -0.80, 2.75, 0.315, 16);
+      cylZ(B.dark, x, -0.84, 3.02, 3.14, 0.08, 8);
+      box(B.dark, x - 0.06, x + 0.06, -1.10, -0.55, 2.40, 2.47);
+    }
+    /* port side behind the cab: equipment box with its doors, the air intake pipe */
+    box(B.paint, X(3.55), X(2.28), 0.25, 1.32, 1.40, 2.40);
+    box(B.dark, X(2.93), X(2.90), 1.32, 1.335, 1.48, 2.32);
+    box(B.dark, X(3.40), X(3.20), 1.32, 1.35, 1.90, 1.95);
+    cylZ(B.dark, X(2.36), 1.10, 1.50, 3.40, 0.10, 10);
+    cyl(B.dark, [X(2.36), 1.10, 3.40], [X(2.36), 1.10, 3.52], 0.17, 0.12, 10);
+    /* tanks on the frame sides: fuel (starboard) with straps, air (port) */
+    box(B.paint, X(6.10), X(4.80), -1.38, -0.62, 0.82, 1.36);
+    for (k = 0; k < 2; k++) box(B.dark, X(5.10 + k * 0.70) - 0.04, X(5.10 + k * 0.70) + 0.04, -1.40, -0.62, 0.80, 1.38);
+    /* port side under the gooseneck front: the trailer's own spare wheel (smaller, as "S-400 Triumf launch vehicle"
+       and "S-400 Triumf SAM" show it) in its cradle, an air tank under it */
+    tyre(B.tyre, X(5.45), 1.17, 1.45, 0, B.dark, RR / 0.75, 0.75);
+    box(B.dark, X(5.80), X(5.10), 0.80, 0.90, 0.95, 2.05);
+    box(B.dark, X(6.10), X(4.80), 0.58, 1.00, 0.95, 1.02);
+    cylX(B.paint, X(6.30), X(4.75), 0.80, 0.70, 0.16, 10);
+    /* the fifth wheel between the tandem axles, the rear cross beam with its lamps */
+    cylZ(B.dark, X(7.85), 0, 1.35, 1.50, 0.62, 18);
+    box(B.dark, X(9.38), X(9.25), -1.25, 1.25, 0.92, 1.15);
+    for (s = -1; s <= 1; s += 2) box(B.lamp, X(9.40), X(9.37), s * 0.95, s * 1.18, 0.97, 1.10);
   }
 
-  /* ------------------------------------------------------------- the poses */
-  /* the canister block in its own frame: origin at the pivot, axis along +X, rows along Z, columns along Y */
+  /* ------------------------------------------------------------- trailer */
+  function addTrailer(B) {
+    var i, s, k, x, y;
+    /* gooseneck over the fifth wheel, the step down, the main deck */
+    box(B.paint, X(9.75), X(5.30), -1.15, 1.15, 1.58, 2.05);
+    box(B.dark, X(9.75), X(5.30), -1.16, 1.16, 1.86, 1.89);
+    box(B.dark, X(8.60), X(7.10), -0.70, 0.70, 1.50, 1.58);
+    profY(B.paint, [[X(10.40), 1.05], [X(9.60), 1.50], [X(9.60), 2.05], [X(10.40), 1.75]], -1.15, 1.15);
+    box(B.paint, X(13.35), X(10.30), -1.02, 1.02, 1.05, 1.75);
+    for (s = -1; s <= 1; s += 2) {
+      /* side rails to the rear end (the block stands between them when set up) */
+      box(B.paint, X(14.60), X(10.30), s * 1.02, s * 1.30, 1.36, 1.75);
+      box(B.dark, X(14.60), X(10.30), s * 1.30, s * 1.315, 1.62, 1.66);
+      /* the ribbed equipment boxes ahead of the bogie */
+      box(B.paint, X(11.95), X(10.30), s * 0.95, s * 1.42, 1.00, 1.74);
+      for (k = 0; k < 6; k++) { x = X(10.42 + k * 0.30); box(B.dark, x - 0.03, x + 0.03, s * 1.40, s * 1.45, 1.02, 1.72); }
+      box(B.dark, X(11.95), X(10.30), s * 1.42, s * 1.45, 1.36, 1.39);
+      box(B.dark, X(11.70), X(10.55), s * 1.42, s * 1.46, 1.52, 1.55);
+      /* bogie mudguards, the flap between the tyres, stub axles */
+      box(B.paint, X(14.55), X(11.95), s * 0.90, s * 1.42, 1.36, 1.41);
+      box(B.dark, X(13.27), X(13.21), s * 0.92, s * 1.40, 0.70, 1.36);
+      for (i = 3; i < 5; i++) cylY(B.dark, X(AXD[i]), s * 0.82, s * 0.92, RR, 0.13, 8);
+      /* jack housings: ahead of the bogie and at the rear corners */
+      box(B.dark, X(11.80), X(11.50), s * 1.30, s * 1.46, 1.10, 1.76);
+      box(B.dark, X(14.60), X(14.30), s * 1.30, s * 1.46, 1.10, 1.76);
+      /* rear end of the rails: lamps */
+      box(B.lamp, X(14.62), X(14.59), s * 1.06, s * 1.24, 1.42, 1.52);
+      /* hand rails along the gooseneck */
+      box(B.dark, X(9.60), X(5.40), s * 1.12, s * 1.15, 2.05, 2.30);
+    }
+    /* the launcher equipment unit on the gooseneck: sloped front, louvred sides, top box, connector panel */
+    profY(B.paint, [[X(5.30), 2.05], [X(6.80), 2.05], [X(6.80), 3.30], [X(6.55), 3.78], [X(5.85), 3.78], [X(5.30), 3.05]], -1.15, 1.15);
+    for (s = -1; s <= 1; s += 2) {
+      for (k = 0; k < 7; k++) box(B.dark, X(6.60), X(5.95), s * 1.13, s * 1.175, 2.40 + k * 0.11, 2.44 + k * 0.11);
+      box(B.dark, X(6.78), X(6.74), s * 1.13, s * 1.17, 2.10, 3.25);
+      box(B.dark, X(5.90), X(5.86), s * 1.13, s * 1.17, 2.10, 3.70);
+    }
+    box(B.paint, X(6.45), X(5.95), -0.62, 0.62, 3.78, 4.02);
+    box(B.dark, X(6.45), X(5.95), -0.63, 0.63, 3.88, 3.90);
+    planeBox(B.dark, [X(5.30), 0, 3.05], unit([-0.55, 0, 0.73]), [0, 1, 0], unit([0.73, 0, 0.55]), 0.12, 0.80, -0.80, 0.80, -0.03, 0.07);
+    /* cable reel at the unit's starboard rear, its face outboard */
+    cylY(B.dark, X(7.15), -1.20, -1.24, 2.62, 0.34, 16);
+    cylY(B.dark, X(7.15), -1.52, -1.56, 2.62, 0.34, 16);
+    cylY(B.paint, X(7.15), -1.52, -1.20, 2.62, 0.24, 14);
+    box(B.dark, X(7.30), X(7.00), -1.18, -1.05, 2.05, 2.70);
+    /* the saddle that carries the lower canisters' noses */
+    box(B.dark, X(7.15), X(6.80), -1.02, 1.02, 2.05, 2.40);
+  }
+
+  /* -------------------------------------------------------------- canisters */
+  /* the block in its own frame: tails at x = 0 (upper row) and -LOW (lower row), noses toward +x; columns along y,
+     rows along z (+z the upper row).  The erector lattice is on the -z face, the side that faces the vehicle when set up. */
   function addBlock(B) {
-    var i, j, k, y, z, rb;
-    for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) {
-      y = i * CS; z = j * CS;
-      cylX(B.paint, 0.0, CL, y, z, CR, 14);                                            /* the tube */
-      for (k = 0; k < 7; k++) {
-        rb = 0.55 + k * 0.85;
-        cylX(B.paint, rb, rb + 0.07, y, z, CR + 0.02, 14);                              /* ring ribs */
+    var r, c, k, y, z, o, rb, x;
+    for (r = -1; r <= 1; r += 2) for (c = -1; c <= 1; c += 2) {
+      y = c * CSY; z = r * CSZ; o = r > 0 ? 0 : -LOW;
+      cyl(B.paint, [o + 0.10, y, z], [o + CL, y, z], CR, CR, 16);
+      for (k = 0; k < 10; k++) {
+        rb = o + 0.80 + k * 0.68;
+        cyl(B.paint, [rb, y, z], [rb + 0.06, y, z], CRIB, CRIB, 16, true, true);
       }
-      cyl(B.paint, [CL, y, z], [CL + 0.26, y, z], CR, CR - 0.06, 14);                   /* domed end cap */
-      cylX(B.dark, CL + 0.26, CL + 0.29, y, z, CR - 0.12, 12);
-      cylX(B.dark, -0.28, 0.0, y, z, CR - 0.05, 12);                                    /* tail */
-      cylX(B.dark, 0.20, 0.34, y, z, CR + 0.025, 14);                                   /* tail band */
-      cylX(B.dark, CL - 0.34, CL - 0.20, y, z, CR + 0.025, 14);                         /* head band */
+      cyl(B.paint, [o + 0.22, y, z], [o + 0.44, y, z], CRIB + 0.01, CRIB + 0.01, 16);            /* tail band */
+      cyl(B.paint, [o + CL - 0.50, y, z], [o + CL - 0.30, y, z], CRIB + 0.01, CRIB + 0.01, 16);  /* head band */
+      cyl(B.paint, [o + CL, y, z], [o + CL + 0.12, y, z], CR, CR - 0.08, 16, true, true);       /* the rounded nose cap */
+      cyl(B.paint, [o + CL + 0.12, y, z], [o + CL + 0.20, y, z], CR - 0.08, CR - 0.22, 16, true);
+      cyl(B.dark, [o, y, z], [o + 0.10, y, z], CR - 0.04, CR - 0.04, 14);                       /* tail ring */
     }
-    /* cradle: base beams, the cross ties and the erector frame at the tail */
-    for (i = -1; i <= 1; i += 2) box(B.dark, -0.10, CL - 0.20, i * (CS + CR + 0.04) - 0.06, i * (CS + CR + 0.04) + 0.06, -CS - CR - 0.12, -CS - CR + 0.06);
-    for (k = 0; k < 5; k++) {
-      var fx = 0.30 + k * 1.40;
-      box(B.dark, fx - 0.06, fx + 0.06, -CS - CR - 0.02, CS + CR + 0.02, -0.04, 0.04);
-      box(B.dark, fx - 0.06, fx + 0.06, -0.04, 0.04, -CS - CR - 0.05, CS + CR + 0.05);
+    /* frames round the block, the long beams on the lattice side, the spine lattice, the wide cross frame */
+    for (k = 0; k < 3; k++) {
+      x = [0.62, 3.75, 6.95][k];
+      for (c = -1; c <= 1; c += 2) {
+        box(B.paint, x - 0.05, x + 0.05, -CSY - CRIB, CSY + CRIB, c * (CSZ + CRIB) - 0.03, c * (CSZ + CRIB) + 0.04);
+        box(B.paint, x - 0.05, x + 0.05, c * (CSY + CRIB) - 0.03, c * (CSY + CRIB) + 0.03, -CSZ - CRIB, CSZ + CRIB);
+      }
     }
-    for (j = -1; j <= 1; j += 2) box(B.dark, -0.22, 0.30, -CS - CR - 0.04, CS + CR + 0.04, j * (CS + CR) - 0.04, j * (CS + CR) + 0.04);
-  }
-
-  /* a levelling jack at station i, side s: an inclined leg and foot pad out from the trailer side when down (the pad
-     out at |y| 1.80), folded up against the side when stowed (so the stowed width stays the trailer's 3.2 m) */
-  function addJackLeg(B, i, s, down) {
-    var x = JXP[i], hy = s * 1.47, px = x + (i ? -0.14 : 0.10), py = s * 1.80;
-    if (down) {
-      cyl(B.dark, [x, hy, 1.72], [px, py, 0.08], 0.055, 0.055, 8);
-      box(B.dark, px - 0.20, px + 0.20, py - 0.20, py + 0.20, 0.0, 0.07);
-      cyl(B.dark, [x, hy, 1.40], [x + (px - x) * 0.45, hy + (py - hy) * 0.45, 0.95], 0.035, 0.035, 6);   /* brace */
-    } else {
-      cyl(B.dark, [x, hy, 1.72], [x, hy + s * 0.04, 1.30], 0.055, 0.055, 8);
-      box(B.dark, x - 0.16, x + 0.16, hy + s * 0.04 - 0.14, hy + s * 0.04 + 0.14, 1.23, 1.30);
+    z = -CSZ - CRIB - 0.04;
+    for (c = -1; c <= 1; c += 2) box(B.dark, -LOW, 6.30, c * 0.32 - 0.05, c * 0.32 + 0.05, z - 0.09, z);
+    for (k = 0; k < 9; k++) {
+      x = -0.05 + k * 0.70;
+      bar(B.dark, [x, -0.32, z - 0.05], [x + 0.70, 0.32, z - 0.05], 0.05);
+      bar(B.dark, [x + 0.35, -0.32, z - 0.05], [x + 0.35, 0.32, z - 0.05], 0.04);
     }
+    box(B.dark, 3.30, 3.42, -1.30, 1.30, z - 0.12, z);
+    for (c = -1; c <= 1; c += 2) bar(B.dark, [2.55, c * (CSY + CRIB), z - 0.06], [3.36, c * 1.28, z - 0.06], 0.05);
   }
 
   /* copy a bin into another turned about Y by ang and moved to (px, 0, pz) */
@@ -534,66 +630,90 @@ var HeroS400 = (function () {
       to.P.push(px + x * c + z * sn, from.P[k + 1], pz - x * sn + z * c);
       x = from.N[k]; z = from.N[k + 2];
       to.N.push(x * c + z * sn, from.N[k + 1], -x * sn + z * c);
-      if (to.U) { to.U.push(from.U[k / 3 * 2], from.U[k / 3 * 2 + 1]); }
+      if (to.U) to.U.push(from.U[k / 3 * 2], from.U[k / 3 * 2 + 1]);
     }
   }
 
-  /* stretch a bin from the kit frame into metres (see the constants) */
-  function xform(b) {
-    var k, z, sz;
-    for (k = 0; k < b.P.length; k += 3) {
-      z = b.P[k + 2]; sz = z <= ZK ? 1 : ZS;
-      b.P[k] *= SX; b.P[k + 1] *= SY; b.P[k + 2] = zmap(z);
-      var nx = b.N[k] / SX, ny = b.N[k + 1] / SY, nz = b.N[k + 2] / sz, l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-      b.N[k] = nx / l; b.N[k + 1] = ny / l; b.N[k + 2] = nz / l;
+  /* levelling jacks: stowed, a short leg and the big round pad upright on the side; down, an inclined leg and the pad
+     flat on the ground */
+  function addJacks(B, down) {
+    var s, i, d, hy, px, py;
+    for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) {
+      d = i ? 14.45 : 11.65; hy = s * 1.42;
+      if (down) {
+        px = X(i ? 14.80 : 11.65); py = s * (i ? 1.80 : 1.92);
+        cyl(B.dark, [X(d), hy, 1.70], [px, py, 0.10], 0.075, 0.06, 8);
+        cyl(B.dark, [X(d), hy, 1.20], [X(d) + (px - X(d)) * 0.5, hy + (py - hy) * 0.5, 0.85], 0.04, 0.04, 6);
+        cylZ(B.paint, px, py, 0.0, 0.08, 0.30, 16);
+        cylZ(B.dark, px, py, 0.08, 0.16, 0.10, 8);
+      } else {
+        cyl(B.dark, [X(d), hy, 1.70], [X(d), hy, 1.05], 0.075, 0.075, 8);
+        px = X(i ? 14.95 : 11.65);
+        cylY(B.paint, px, s * 1.47, s * 1.55, i ? 1.42 : 1.20, i ? 0.33 : 0.30, 16);
+        cylY(B.dark, px, s * 1.44, s * 1.47, i ? 1.42 : 1.20, 0.10, 8);
+        if (i) box(B.dark, X(14.95), X(14.55), s * 1.40, s * 1.47, 1.36, 1.48);
+      }
     }
   }
+
+  function bins(T, all) {
+    var b = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
+    if (all) { b.glass = new Bin(T.glass, false); b.tyre = new Bin(T.tyre, false); b.lamp = new Bin(T.lamp, false); b.team = new Bin(T.team, false); }
+    return b;
+  }
+
   function build(THREE, C) {
-    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T, true), i, s, wg, geo, TB, ax;
-    var RB = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false), tyre: new Bin(T.tyre, false) };
-    addTractor(HB, RB);
-    addTrailer(HB, RB);
-    for (i in HB) xform(HB[i]);
+    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T, true), i, s, wg, geo, TB, BK, TV, DP, trv, dep, x, rr;
+    addCab(HB);
+    addTractor(HB);
+    addTrailer(HB);
     flush(THREE, g, HB);
-    flush(THREE, g, RB);
     /* five turning axle groups outside both poses: a tyre each side (one mesh per axle, lugs a phase apart) */
-    ax = AXTP.concat(AXRP);
-    for (i = 0; i < ax.length; i++) {
-      var rr = i < 3 ? RTT : RTR, sc = rr / 0.75;
+    for (i = 0; i < AXD.length; i++) {
+      rr = i < 3 ? RT : RR;
       TB = new Bin(T.tyre, false);
-      tyre(TB, -TY, 0, true, sc, sc / 0.87);
-      tyre(TB, TY, 0.5, true, sc, sc / 0.87);
+      s = i < 3 ? TYT : TYR;
+      tyre(TB, 0, -s, 0, 0, TB, rr / 0.75, i < 3 ? 1.0 : 0.78);
+      tyre(TB, 0, s, 0, 0.5, TB, rr / 0.75, i < 3 ? 1.0 : 0.78);
       geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P), 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N), 3));
       wg = new THREE.Group();
       wg.name = "roadwheel";
-      wg.position.set(ax[i], 0, rr);
+      wg.position.set(X(AXD[i]), 0, rr);
       wg.add(new THREE.Mesh(geo, T.tyre));
       g.add(wg);
     }
-    var TV = bins(T, false), DP = bins(T, false), trv = new THREE.Group(), dep = new THREE.Group(), BK;
-    for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) { addJackLeg(TV, i, s, false); addJackLeg(DP, i, s, true); }
     BK = bins(T, false);
     addBlock(BK);
-    /* travel: the block lies level on the trailer deck, its tail at the rear end, its nose over the trailer front */
-    bake(BK.paint, TV.paint, PVX, PVZ, 0); bake(BK.dark, TV.dark, PVX, PVZ, 0);
-    trv.name = "travelpose";
-    flush(THREE, trv, TV);
-    /* deploy: the block stood vertical (local +X turned up) on the trailer's rear table, on four posts, with two erector
-       rams from the deck to its front face; jacks down.  (The photographs show the block standing nearly on the ground
-       behind the trailer; that would put hidden geometry beyond the visible length, which render3d scales by, so it
-       stands on the table instead.) */
-    bake(BK.paint, DP.paint, DPX, DPZ, -Math.PI / 2); bake(BK.dark, DP.dark, DPX, DPZ, -Math.PI / 2);
-    box(DP.dark, DPX - 1.20, DPX + 1.20, -1.15, 1.15, 1.98, 2.06);                           /* foot table */
-    for (i = -1; i <= 1; i += 2) for (s = -1; s <= 1; s += 2)
-      box(DP.paint, DPX + i * 1.0 - 0.10, DPX + i * 1.0 + 0.10, s * 0.95 - 0.10, s * 0.95 + 0.10, 1.90, 2.10);
+    /* travel: the block lying level, the upper row's tail at station 14.85, the rear deck plate under the tails */
+    TV = bins(T, false);
+    bake(BK.paint, TV.paint, X(TAILD), TRZ, 0); bake(BK.dark, TV.dark, X(TAILD), TRZ, 0);
+    box(TV.paint, X(14.60), X(13.35), -1.02, 1.02, 1.45, 1.75);
+    box(TV.dark, X(14.60), X(14.45), -1.02, 1.02, 1.05, 1.45);
     for (s = -1; s <= 1; s += 2) {
-      cyl(DP.dark, [DPX + 2.05, s * 0.45, 1.95], [DPX + 1.10, s * 0.45, 4.10], 0.09, 0.09, 8);   /* erector rams */
-      cyl(DP.paint, [DPX + 1.10, s * 0.45, 4.10], [DPX + 1.02, s * 0.45, 5.40], 0.055, 0.055, 8);
-      box(DP.dark, DPX + 1.90, DPX + 2.20, s * 0.45 - 0.12, s * 0.45 + 0.12, 1.90, 2.04);
+      box(TV.dark, X(14.40), X(7.40), s * 0.28, s * 0.42, 1.75, TRZ - CSZ - CRIB - 0.04);        /* cradle rails under the block */
+      box(TV.dark, X(13.10), X(12.80), s * 0.70, s * 0.90, 1.75, 2.05);
     }
-    dep.name = "deploypose";
+    addJacks(TV, false);
+    trv = new THREE.Group(); trv.name = "travelpose";
+    flush(THREE, trv, TV);
+    /* set up: the block stood vertical (local +x up, the upper row aft), the foot frame under its tails, two short steep
+       rams from the rear of the deck to the lattice face ("8-01", "8-02"), struts from the rail ends, jacks down */
+    DP = bins(T, false);
+    bake(BK.paint, DP.paint, DPX, DPZ, -Math.PI / 2); bake(BK.dark, DP.dark, DPX, DPZ, -Math.PI / 2);
+    x = DPX + CSZ + CRIB + 0.13;                                     /* the lattice face, x */
+    box(DP.dark, DPX - CSZ - CRIB, x, -1.05, 1.05, 0.04, DPZ - LOW - 0.10);
+    for (s = -1; s <= 1; s += 2) {
+      box(DP.paint, DPX - 0.9, DPX + 0.9, s * 1.05, s * 1.25, 0.0, 0.10);
+      cyl(DP.dark, [X(12.95), s * 0.55, 1.80], [x + 0.08, s * 0.55, 2.75], 0.11, 0.11, 10);
+      cyl(DP.dark, [x + 0.08, s * 0.55, 2.75], [x, s * 0.55, 3.45], 0.065, 0.065, 8);
+      box(DP.dark, X(13.10), X(12.80), s * 0.42, s * 0.68, 1.72, 1.86);
+      bar(DP.dark, [X(14.50), s * 1.16, 1.40], [DPX + 0.2, s * 1.05, 0.12], 0.07);
+      bar(DP.dark, [X(13.30), s * 1.10, 1.74], [x, s * 0.90, 2.30], 0.06);
+    }
+    addJacks(DP, true);
+    dep = new THREE.Group(); dep.name = "deploypose";
     flush(THREE, dep, DP);
     dep.visible = false;
     g.add(trv); g.add(dep);
@@ -603,5 +723,5 @@ var HeroS400 = (function () {
   return { build: build };
 })();
 
-/* len is the measured X extent: the rear lamps to the front tow eyes */
+/* len is the measured X extent: the bumper face to the stowed rear jack pads */
 UNIT_MODELS["sam_p"] = { len: 15.3, build: function (THREE, M, C) { return HeroS400.build(THREE, C); } };

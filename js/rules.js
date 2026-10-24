@@ -1173,8 +1173,8 @@ Object.assign(UNITS, {
     cost:2600, oil:38, time:32, hp:640, armor:"light", speed:1.25, turn:1.2, sight:13.2, r:16, mass:40,
     layer:"ground", weapons:["sam_area3"], prereq:["factory","radar","lab"], tech:3, turret:true, tturn:0.6,
     deploy:true, deploySec:4.0, radar:13, radarQ:18, rounds:4, from:"e20",
-    desc:"Four cold-launch tubes on an eight-wheeled tractor, five minutes into action and five " +
-         "minutes out. Russian ground-based air defence is the one domain where this army is " +
+    desc:"Four cold-launch tubes on a semitrailer behind a six-wheeled BAZ-64022 tractor, five minutes " +
+         "into action and five minutes out. Russian ground-based air defence is the one domain where this army is " +
          "genuinely ahead of NATO, and the reach here is the longest in the class." },
   sam_c: { fac:"pla", role:"sam", name:"HQ-9B", full:"HQ-9B on Taian TAS-5380", cat:"vehicle",
     cost:2550, oil:36, time:31, hp:630, armor:"light", speed:1.25, turn:1.2, sight:13.2, r:16, mass:38,
