@@ -53,15 +53,23 @@ function recOf(e) { return H ? H.recOf(e.id) : null; }
    the F-14A Tomcat: 64 ft 1.5 in at the 20 deg minimum sweep (Wikipedia's
    specification table) and 10.15 m at the 75 deg deck oversweep (German
    Wikipedia's F-14A table, after Winchester 2011): its "wingfold" is the
-   sweep about the pivot, not a fold */
+   sweep about the pivot, not a fold; the Su-33: 14.7 m, 7.40 m with the
+   wings folded and 7.40 m over the folded tailplanes (Russian Wikipedia's
+   Su-33 table, after Fomin) - it folds its tailplanes too, so it has four
+   fold groups (NFOLD) */
 var PUB = {
   nato_e60_cstrike: [16.15, 7.72], nato_e80_cstrike: [16.15, 7.72], nato_e90_cstrike: [16.15, 7.72],
   nato_e60_ewair: [16.15, 7.595], nato_e90_ewair: [16.15, 7.595],
   nato_e60_cfighter: [11.70, 8.41], nato_e60_fighter: [11.70, 8.41], nato_e80_sead: [11.70, 8.41],
   pact_e60_cfighter: [7.022, 4.45], pact_e80_cfighter: [7.022, 4.45],
   nato_e50_cfighter: [10.516, 4.775],
-  nato_e80_cfighter: [19.545, 10.15]
+  nato_e80_cfighter: [19.545, 10.15],
+  cfighter_p: [14.70, 7.40]
 };
+/* fold groups per type where it is not two (outer wings): the Su-33's outer
+   tailplanes fold as well */
+var NFOLD = { cfighter_p: 4 };
+function nFold(k) { return NFOLD[k] || 2; }
 var _v = new THREE.Vector3(), _ax = new THREE.Vector3();
 function foldsOf(o) { var L = []; o.traverse(function (x) { if (x.name === "wingfold") L.push(x); }); return L; }
 function pose(parts, f) {
@@ -137,7 +145,7 @@ function run() {
   var rows = [], bad = [];
   KEYS.forEach(function (k) {
     var m = UNIT_MODELS[k].build(THREE, Models3D, { team: "#3f7fd0" }), parts = foldsOf(m);
-    var ok = parts.length === 2 && parts.every(function (p) { return p.userData.fold && p.userData.fold.axis && typeof p.userData.fold.angle === "number"; });
+    var ok = parts.length === nFold(k) && parts.every(function (p) { return p.userData.fold && p.userData.fold.axis && typeof p.userData.fold.angle === "number"; });
     if (!ok) { bad.push(k + " has " + parts.length + " fold groups"); return; }
     var bb = new THREE.Box3().setFromObject(m), span = bb.max.y - bb.min.y, z0 = bb.min.z, calls = 0;
     m.traverse(function (o) { if (o.isMesh) calls++; });
@@ -155,7 +163,7 @@ function run() {
     if (Math.abs(e1) > 0.02 || Math.abs(e2) > 0.02 || !(pMin > 0) || !(sMax < 0) || fb.min.z < z0 - 1e-6 || calls > 14)
       bad.push(k + ": span " + e1.toFixed(3) + ", folded " + e2.toFixed(3) + ", panels " + pMin.toFixed(3) + "/" + sMax.toFixed(3) + ", low " + (fb.min.z - z0).toFixed(3) + ", calls " + calls);
   });
-  chk("1. " + KEYS.length + " folding types: two fold groups, the published span spread and the published folded span folded (2%), panels clear of each other, nothing below the wheels, at most 14 draw calls",
+  chk("1. " + KEYS.length + " folding types: two fold groups (four with folding tailplanes), the published span spread and the published folded span folded (2%), panels clear of each other, nothing below the wheels, at most 14 draw calls",
       bad.length === 0 && rows.length === KEYS.length, bad.length ? bad.join("; ") : rows.length + " types");
   rows.forEach(function (r) { log("    " + r); });
 
@@ -238,7 +246,7 @@ function run() {
   Render3D.setCam(g0.x * TT, g0.y * TT);
   var fly = KEYS.map(function (k) { var u = Game.spawnUnitAt(P, k, g0.x * TT, g0.y * TT); u.give({ type: "move", x: u.x + 20 * TT, y: u.y }); return u; });
   frames(20, true);
-  var flyBad = fly.filter(function (u) { var r = recOf(u); return !r || !r.folds || r.folds.length !== 2 || foldAmt(r) !== 0; });
+  var flyBad = fly.filter(function (u) { var r = recOf(u); return !r || !r.folds || r.folds.length !== nFold(u.def.id) || foldAmt(r) !== 0; });
   chk("5. in flight every folding type is spread", flyBad.length === 0, fly.length + " in the air; folded or without its groups: " + (flyBad.map(function (u) { return u.def.id; }).join(", ") || "none"));
   drop(fly);
   var ab = Game.placeBuilding(P, "airbase", g0.x - 1, g0.y - 1, true);
@@ -281,7 +289,7 @@ function run() {
       nG++;
       var parts = foldsOf(gq), m = parts.length ? 1 : 0;
       parts.forEach(function (p) { m = Math.min(m, amount(p)); });
-      if (parts.length === 2 && m > 0.999) nF++;
+      if (parts.length === nFold(u.def.id) && m > 0.999) nF++;
     });
     chk("6. the ghost of an enemy machine last seen folded on her deck is folded as it was seen",
         seen6.length > 0 && nG === seen6.length && nF === nG,
