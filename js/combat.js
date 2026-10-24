@@ -482,11 +482,29 @@ var Combat = (function () {
          fixed below: a rocket is interceptable, and the defence is whatever
          friendly system actually covers the ground being shot at. */
       const arcRocket = p.type === "arc" && p.w && p.w.rocket;
+      /* ---- a ballistic round with nobody's name on it ----
+         (owner, 2026-10-23) chose to "fix the missile-defence holes first",
+         and these were the two. A launcher told to fire at a point aims at
+         Unit.groundAim, a phantom whose owner is null, so areaSam had nobody's
+         batteries to ask; and a round that missed its roll leaves the rail
+         with target null and never came in here at all, though it still comes
+         down 0.4-1.4 tiles off with its whole blast. Measured on hormuz e20:
+         an Iskander fired at a point beside a PAC-3 was engaged 0 times in
+         400, and the commander's TELs only ever fire at a point. Such a round
+         is now defended the way a rocket is, by whoever owns the ground it is
+         coming down on (coverAt). Only the ballistic family: the srbm rows
+         say indirect, the SLBMs profile:"ballistic", so a submarine's round
+         is engaged too, at the 0.12-0.22 its row always said. The Strategic
+         Silo fires no round at all (game.js launchSuperweapon) and stays
+         unanswerable, as designed. */
+      const pointBall = p.type === "missile" && p.w && (p.w.indirect || p.w.profile === "ballistic") &&
+                        !(p.target && !p.target.dead && p.target.owner);
       if ((p.type === "missile" || arcRocket) &&
-          (arcRocket || (p.target && !p.target.dead && p.target.owner !== p.owner))) {
+          (arcRocket || pointBall || (p.target && !p.target.dead && p.target.owner !== p.owner))) {
         /* Who is being defended. A guided round names its victim; a lobbed
-           rocket does not, so the impact point stands in for one. */
-        const prot = p.target && !p.target.dead ? p.target
+           rocket does not, so the impact point stands in for one - and so
+           does it for a ballistic round sent to a point or off its mark. */
+        const prot = !pointBall && p.target && !p.target.dead ? p.target
                    : coverAt(game, p.tx, p.ty, p.owner);
         if (!prot) { /* nobody's ground: nothing to defend */ }
         else {
