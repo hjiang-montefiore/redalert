@@ -355,6 +355,92 @@ var Combat = (function () {
     return { score, host, wi };
   }
 
+  /* ---- NIFC-CA: THE E-2D HOLDS THE SEA-SKIMMER THE AEGIS SHIP CANNOT ----
+     (owner, 2026-10-24) asked how the E-2D could "enhance other units'
+     ability", was offered cooperative engagement against sea-skimmers, and
+     said "build both"; this is the second piece. Layer 1 below cuts every
+     area SAM's chance against a sea-skimmer to 0.45, because the round flies
+     in the surface clutter under the ship's radar horizon and is seen late.
+     Naval Integrated Fire Control-Counter Air is the answer the US Navy
+     fielded: the E-2D's look-down radar holds the skimmer far out,
+     Cooperative Engagement Capability passes the track, and an Aegis ship
+     launches an SM-6 - an active seeker, so it needs no illumination from the
+     ship - at a target its own radar cannot yet see.
+     SOURCES (fetched 2026-10-24; nothing below is estimated):
+       - SM-6 IOC on 27 November 2013, fielded aboard USS Kidd (DDG-100) -
+         NAVSEA's release of that day, via en.wikipedia "RIM-174 Standard
+         ERAM", which also lists among its modes "an over-the-horizon shot
+         with Cooperative Engagement Capability", and its purpose as
+         "primarily" very-high or sea-skimming anti-ship missiles.
+       - The first live NIFC-CA engagements found: 18-20 June 2014, USS John
+         Paul Jones (DDG-53), Aegis Baseline 9C, four SM-6s and one SM-2 at
+         six targets; "One of these exercises, designated as NIFC-CA AS-02A,
+         resulted in the longest surface-to-air engagement in naval history"
+         (the Navy's release, quoted by defense-update.com on 28 June 2014).
+         Then on 24 October 2014 (Raytheon's announcement, via en.wikipedia
+         "RIM-174 Standard ERAM") two SM-6s from a cruiser on a destroyer's
+         track - "engage on remote" - killed a low-altitude supersonic
+         GQM-163A and a low-altitude subsonic BQM-74E.
+       - E-2D IOC in October 2014, VAW-125 certified with five aircraft (USNI
+         News, "Navy Declares IOC For E-2D Advanced Hawkeye", 16 October 2014,
+         via en.wikipedia "Grumman E-2 Hawkeye").
+       - The first NIFC-CA deployment: the Theodore Roosevelt group (CSG-12),
+         sailing in March 2015 - "USS Theodore Roosevelt (CVN-71), guided
+         missile cruiser USS Normandy (CG-60) and a squadron of Northrop
+         Grumman E-2D Advanced Hawkeye ... form the backbone of the capability"
+         (USNI News, Sam LaGrone, 5 March 2015).
+       - CEC itself: a prototype at sea in 1990, an acquisition programme from
+         1992 (en.wikipedia "Cooperative Engagement Capability"), its
+         operational evaluation scheduled for spring 2001 (en.wikipedia "USS
+         Hue City"). The E-2C Hawkeye 2000 "carries the USN's new cooperative
+         engagement capability (CEC) data-link system" and first deployed in
+         2003 (en.wikipedia "Grumman E-2 Hawkeye"); VAW-125 flew in the OPEVAL
+         of its AN/USG-3 airborne node (en.wikipedia "VAW-125").
+     WHO, by a data flag on the row (`nifcca: true`, each sourced where it is
+     set in rules.js) and never by a role or a name here:
+       - the sensor is the E-2D, cawacs_n (e20). NOT the E-2C Hawkeye 2000 of
+         e00 (nato_e00_cawacs; France's and Taiwan's are the same aeroplane):
+         its CEC already lets a ship fire on a track the aeroplane holds, and
+         the game's shared picture (G.sideSees) already gives exactly that,
+         but no source found shows the E-2C beating the clutter for the
+         ship's missile - every NIFC-CA source names the E-2D, and the game
+         dates it 2015 and fields it from e20. So the e00 rows get nothing new.
+       - the shooter is the e20 Aegis hull, destroyer_n and cruiser_n, whose
+         "SM-2/SM-6 Standard" (sam_sm2) is the round that makes the shot.
+         Not the e00 Flight IIA (nato_e00_destroyer) although it carries the
+         same row: its band's AEW is the E-2C, the NIFC-CA ships of the
+         sources were refits of 2012-15 (John Paul Jones to Baseline 9C from
+         2012; the Ticonderogas' "most recent upgrade packages include SM-6
+         and NIFC-CA", en.wikipedia "Ticonderoga-class cruiser", as of July
+         2013), and the band has no E-2D to cue it. Not Germany's F124
+         (destroyer_g), which carries the same row: no source puts it in the
+         loop and its side flies no E-2D.
+       - nobody else. Russia's and China's AEW and ships get no equivalent,
+         because no source found shows one fielded - realism over symmetry,
+         not an invented designation to balance the sides.
+     WHEN: the host areaSam chose is a flagged row, and a flagged aircraft of
+     its side (its own or an ally's) is in the air (targetLayer "air"), on the
+     air (G.emitting - an E-2D on its ramp has its rotodome still) and holds
+     THIS round: the round inside the aeroplane's own radar reach after the
+     hostile jamming it sits in (G.setHolds, the radarLeft law G.radarPicture
+     uses). A ship's own radar never counts - the clutter is precisely what it
+     cannot beat. WHAT: the 0.45 is waived and nothing else changes: the
+     interceptor's score, the magazine depth, the round's own `intercept`,
+     and the soft-kill and close-in layers all stand. Asked once per round
+     (p.samCheck), only of a skimmer, only when the host is flagged. */
+  function nifccaHolds(game, host, p) {
+    if (!host || !host.def || !host.def.nifcca || !host.owner) return false;
+    for (const pl of game.players) {
+      if (!game.allied(pl, host.owner)) continue;
+      for (const u of pl.units) {
+        if (u.dead || !u.def.nifcca || u.layer !== "air") continue;
+        if (u.targetLayer && u.targetLayer() !== "air") continue;
+        if (game.setHolds(u, p.x, p.y)) return true;
+      }
+    }
+    return false;
+  }
+
   /* The best gun air-defence system covering this target. Same shape as
      areaSam: a candidate must be alive, on the right side, carry its own
      fire-control radar, and have the thing it is protecting inside its OWN gun
@@ -553,9 +639,11 @@ var Combat = (function () {
           const hard = (p.w && p.w.intercept !== undefined) ? p.w.intercept : 1;
           sam *= hard;
           /* a sea-skimmer hides in the surface clutter until it is close, so
-             the area system gets very little time to engage it at all */
+             the area system gets very little time to engage it at all -
+             unless an E-2D of the side is holding it for an Aegis host that
+             can shoot on its track (NIFC-CA: nifccaHolds, above) */
           const prof2 = p.w && p.w.profile;
-          if (prof2 === "skim") sam *= 0.45;
+          if (prof2 === "skim" && !nifccaHolds(game, best.host, p)) sam *= 0.45;
           /* No blanket ballistic penalty any more: areaSam already scored the
              shot with the interceptor's own `abm` figure, and halving it again
              would mean a PAC-3 - which exists to make exactly this shot - was

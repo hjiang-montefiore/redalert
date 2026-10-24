@@ -3009,6 +3009,23 @@ var Game = (function () {
     }
     return false;
   };
+  /* ---- ONE AIRCRAFT'S SET, ONE POINT ----
+     The question G.radarPicture asks of every set a side owns, asked of one
+     unit: is its own radar on the air (G.emitting - not on its ramp, not
+     switched off) and does what is left of its reach after the hostile
+     jamming it sits in (radarLeft, the one law the fog's paint, the picture
+     and G.seaHolds all use) cover (x, y)? Asked by combat.js's NIFC-CA rule
+     (nifccaHolds), which needs to know that a PARTICULAR aircraft holds an
+     inbound round, not that somebody on the side does - and must not grow a
+     second copy of the jamming law to find out. Measured from the set in
+     pixels, exactly as G.radarPicture's `seen` is. */
+  G.setHolds = function (u, x, y) {
+    if (!u || u.dead || u.carried || !u.def || !u.def.radar || !G.emitting(u)) return false;
+    const r = u.def.radar * CFG.TILE, d2 = U.dist2(u.x, u.y, x, y);
+    if (d2 > r * r) return false;
+    const eff = radarLeft(u.owner, u, r);
+    return eff > 0 && d2 <= eff * eff;
+  };
 
   /* ---------------- RADAR GIVES THE WEATHER BACK ----------------
      (owner) "weather should not be affect the area with rador" - and, asked

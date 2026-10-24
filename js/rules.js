@@ -3427,6 +3427,14 @@ Object.assign(UNITS, {
     cost:3000, oil:60, time:31, hp:520, armor:"air", speed:4.4, turn:1.0, sight:14, r:22, mass:0,
     layer:"air", weapons:[], prereq:["airbase","radar"], tech:3, jet:true, ammo:0,
     radar:12, radarQ:33, rcs:2.6, gen:4.5, radius:55, awacs:true, carrierCapable:true,
+    /* nifcca: the sensor of Naval Integrated Fire Control-Counter Air - an
+       Aegis ship's SM-6 shoots a sea-skimmer on this aeroplane's track
+       (combat.js nifccaHolds). IOC October 2014, VAW-125 certified with five
+       aircraft (USNI News, 16 October 2014); a squadron of them, with USS
+       Normandy (CG-60), the "backbone" of the first NIFC-CA carrier group,
+       March 2015 (USNI News, 5 March 2015). The E-2C Hawkeye 2000 before it
+       has CEC but no source puts it in the NIFC-CA loop: not flagged. */
+    nifcca:true,
     desc:"The carrier's own eyes. Its UHF radar was built specifically to find low-observable " +
          "targets that fighter radars miss, and it feeds them straight to the group." },
 
@@ -3638,10 +3646,19 @@ var NAVY = {
   boat_n:        { weapons:["hmg"], sonar:0, vls:0, helo:0, radarQ:4 },
   corvette_n:    { weapons:["navgun_76","ssm_nsm","ciws_phalanx"], sonar:6.0, vls:8, helo:1,
                    radarQ:14, ciws:0.45 },
+  /* nifcca: the two e20 Aegis hulls are the shooters of Naval Integrated
+     Fire Control-Counter Air (combat.js nifccaHolds): an SM-6 off their rails
+     at a sea-skimmer the E-2D holds and their own radar does not. SM-6 IOC
+     27 November 2013 aboard USS Kidd (DDG-100) (NAVSEA, via en.wikipedia);
+     the first live NIFC-CA shots by USS John Paul Jones (DDG-53), Aegis
+     Baseline 9C, 18-20 June 2014 (Navy release, defense-update.com 28 June
+     2014); the cruiser USS Normandy (CG-60) and the E-2D the "backbone" of
+     the first NIFC-CA group, March 2015 (USNI News, 5 March 2015). Their
+     e00 forebears are left out: the band's AEW is the E-2C, see combat.js. */
   destroyer_n:   { weapons:["navgun_mk45","sam_sm2","ssm_harpoon","asw_mk54","ciws_phalanx"],
-                   sonar:9.5, vls:96, helo:2, radarQ:34, ciws:0.72 },
+                   sonar:9.5, vls:96, helo:2, radarQ:34, ciws:0.72, nifcca:true },
   cruiser_n:     { weapons:["navgun_mk45","sam_sm2","ssm_harpoon","asw_mk54","ciws_phalanx"],
-                   sonar:9.0, vls:122, helo:2, radarQ:40, ciws:0.78 },
+                   sonar:9.0, vls:122, helo:2, radarQ:40, ciws:0.78, nifcca:true },
   carrier_n:     { weapons:["ciws_phalanx"], sonar:5.0, vls:0, helo:2, radarQ:20, ciws:0.65 },
 
   /* ================= PLA ================= */
