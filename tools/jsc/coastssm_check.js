@@ -26,6 +26,8 @@
      [9] its own Garpun (B4, def.seaRadar): set up and transmitting, it holds
          the ship itself and fires with no scout, and the enemy hears it;
          switched off, or on the march, it holds nothing and is not heard;
+         it fires with its stern to the ship (fireAft: its containers point
+         aft and train either side of the stern);
          the Redut, whose radar is another vehicle, holds nothing and has no
          set to switch off.
    [2]-[6] run with the Rubezh's radar switched off, so the cue they test is
@@ -203,12 +205,14 @@ function run() {
   shots = 0;
   ticks(12, count);
   on.shots = shots;
+  on.tail = Math.abs(U.angDiff(rb.ang, Math.atan2(ship3.y - rb.y, ship3.x - rb.x) + Math.PI));
   rb.deployed = false;
   var march = { held: Game.seaHolds(P, ship3) };
   rb.deployed = true;
-  chk("[9] set up and transmitting, its Garpun holds the ship nine tiles out and it fires with no scout, and the ship hears it; off, or on the march, nothing",
-      Game.canEmcon(rb) && on.held && on.shots >= 1 && on.heard && !dark.held && !dark.heard && !march.held,
+  chk("[9] set up and transmitting, its Garpun holds the ship nine tiles out and it fires with no scout, stern to the ship, and the ship hears it; off, or on the march, nothing",
+      Game.canEmcon(rb) && on.held && on.shots >= 1 && on.heard && !dark.held && !dark.heard && !march.held && on.tail < 0.15,
       "on: held " + on.held + ", " + on.shots + " fired, heard " + on.heard + " (the destroyer's set " + (ship3.def.radar || 0) + ")" +
+      ", stern " + (on.tail * 180 / Math.PI).toFixed(0) + " deg off the ship" +
       "; off: held " + dark.held + ", heard " + dark.heard + "; on the march: held " + march.held);
   Game.setEmcon(rb, true);
   var rd = put(P, "pact_e60_coastssm", S.x, S.y + 1);

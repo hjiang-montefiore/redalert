@@ -280,7 +280,8 @@ var Combat = (function () {
       game.reportIndirectFire(shooter, w);
     effects.push({ t: "flash", x: shooter.x, y: shooter.y - alt(shooter),
                    life: 0.08, max: 0.08, big: w.dmg > 100,
-                   ang: shooter.def && shooter.def.turret ? shooter.tang : shooter.ang });
+                   ang: shooter.def && shooter.def.turret ? shooter.tang :
+                        shooter.ang + (shooter.def && shooter.def.fireAft ? Math.PI : 0) });
   }
 
   /* ---- who owns the ground a lobbed round is about to land on ----

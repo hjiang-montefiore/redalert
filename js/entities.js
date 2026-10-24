@@ -2101,8 +2101,13 @@ class Unit {
       this.tang = U.turnToward(this.tang, want, (this.def.tturn || 1.5) * dt);
       if (Math.abs(U.angDiff(this.tang, want)) > 0.12) return;
     } else {
-      this.ang = U.turnToward(this.ang, want, this.def.turn * dt);
-      if (Math.abs(U.angDiff(this.ang, want)) > 0.1) return;
+      /* A launcher whose pack lies over its tail turns its tail to the target
+         (def.fireAft): the Rubezh's two containers point aft on the march and
+         train 110 degrees either side of the stern, never over the cab
+         (ru.wikipedia), so its crews put the stern to the sea. */
+      const face = this.def.fireAft ? want + Math.PI : want;
+      this.ang = U.turnToward(this.ang, face, this.def.turn * dt);
+      if (Math.abs(U.angDiff(this.ang, face)) > 0.1) return;
     }
     const cd0 = this.cooldowns[wi];
     this.tryFire(wi, t);
