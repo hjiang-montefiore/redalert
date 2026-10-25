@@ -393,13 +393,16 @@ var HeroUsSamSite = (function () {
      Germany 1985-87 and Saudi Arabia / Israel 1991), the antenna mast
      group, the tents, the cable runs.
      The launcher is the unit hero's own (js/hero/us_patriot.js, UNIT_MODELS
-     of the same period, built at run time): the trailer, LEM and canister
-     frame come from it unchanged, the tractor is cut off, and the wheels
-     are re-drawn as plain tyre cylinders to keep the triangle count down.
-     Launcher fit per period is the unit hero's: e80 and e90 four PAC-2
-     canisters (M901; the GEM uses the same canister, so e80 and e90 look
-     the same), e00 PAC-3 packs of four (M902, sixteen rounds), e20 the PAC-3
-     MSE twelve-canister frame in the tan paint of the photographs.
+     of the same period, built at run time): the trailer, its set-up pose
+     (outriggers down, mast up) and the launcher with its pod raised to the
+     launch angle come from it unchanged; the tractor, a group of its own,
+     is left behind; the wheels are re-drawn as plain tyre cylinders at the
+     hero's own axles (HeroUsPatriot.site, 2026-10-24: the tandem is at the
+     tail) to keep the triangle count down.
+     Launcher fit and paint per period are the unit hero's: e80 and e90 four
+     PAC-2 canisters (M901; the GEM uses the same canister), e90 in the tan
+     of the 1990s photographs, e00 PAC-3 packs of four (M902, sixteen
+     rounds), e20 the PAC-3 MSE twelve-canister frame.
      Radar set (AN/MPQ-53; the -65 of the PAC-3 years is drawn the same, I
      found no photograph to tell them apart), engagement control station
      and power plant: simple shapes from the Poland and Gulf photographs;
@@ -470,13 +473,33 @@ var HeroUsSamSite = (function () {
   function tyre(K, T, x, y, r, w) {
     K.put(T.rub, new K.T.CylinderGeometry(r, r, w, 14), x, y, r, 0, 0, 0);
   }
-  /* uncoupled-trailer wheels: M860 tandem as in us_patriot.js (r 0.62, duals) */
+  /* uncoupled-trailer wheels: the M860 tandem where the unit hero draws it
+     (HeroUsPatriot.site: axles, tyre radius and width, track); the old
+     layout (r 0.62 duals at -2.10 / -3.55) if the hero is not loaded */
+  function patSite() { return typeof HeroUsPatriot !== "undefined" && HeroUsPatriot.site ? HeroUsPatriot.site : null; }
   function trailerWheels(K, T, dx, y0) {
-    var ax = [-2.10, -3.55], i, s;
+    var S = patSite(), i, s;
+    if (S) {
+      for (i = 0; i < S.axles.length; i++) for (s = -1; s <= 1; s += 2) tyre(K, T, dx + S.axles[i], y0 + s * S.y, S.r, S.w);
+      return;
+    }
+    var ax = [-2.10, -3.55];
     for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) {
       tyre(K, T, dx + ax[i], y0 + s * 1.12, 0.62, 0.37);
       tyre(K, T, dx + ax[i], y0 + s * 0.67, 0.62, 0.37);
     }
+  }
+  /* a launcher's frame group and pod, baked where they stand in it: the pod
+     ("podelev") raised to its launch angle, as an emplaced battery stands */
+  function takeTurret(K, tur, T, tx, ty, tz) {
+    tur.traverse(function (o) {
+      if (!o.isMesh || o.material === T.team) return;
+      o.updateMatrix();
+      var m = o.matrix.clone(), p;
+      for (p = o.parent; p && p !== tur; p = p.parent) { p.updateMatrix(); m.premultiply(p.matrix); }
+      var g = o.geometry.clone(); g.applyMatrix4(m); g.translate(tx, ty, tz);
+      K.add(o.material, g);
+    });
   }
   /* a wheeled box truck of the battery, front toward +X, from x0 to x1 */
   function truck(K, T, x0, y, len, bodyH, wheelsAt) {
@@ -494,25 +517,28 @@ var HeroUsSamSite = (function () {
     var u = UNIT_MODELS[key].build(THREE, {}, C), T = patMats(THREE, u, C);
     var root = new THREE.Group(); root.name = "us_sam_site_patriot_" + key;
     var K = new Baker(THREE), i, j, s;
-    var tur = null, stat = [];
+    var tur = null, stat = [], S = patSite();
     u.children.forEach(function (o) {
       if (o.name === "turret") tur = o;
       else if (o.isMesh) stat.push(o);
+      /* the unit hero's set-up pose: outriggers down, mast up */
+      else if (o.name === "deploypose") o.children.forEach(function (c) { if (c.isMesh) stat.push(c); });
     });
+    var pe = tur.getObjectByName("podelev");
+    if (pe) pe.rotation.y = -(pe.userData.el || 0);
+    var cutX = S ? S.front + 0.05 : 2.8, standX = S ? S.front - 0.65 : 2.1;
     K.bb(T.conc, -13.5, 13.5, -13.5, 13.5, 0, P_Z);                              /* the hard-standing */
     var ZB = P_Z;
     for (j = 0; j < 3; j++) {
       var ly = LY[j];
-      for (i = 0; i < stat.length; i++) if (stat[i].material !== T.team) takeMesh(K, stat[i], PX_OFF, ly, ZB, 2.8);
+      for (i = 0; i < stat.length; i++) if (stat[i].material !== T.team) takeMesh(K, stat[i], PX_OFF, ly, ZB, cutX);
       trailerWheels(K, T, PX_OFF, ly); 
       /* landing stand under the gooseneck (the photographs show a stand at the front of a parked trailer) */
       for (s = -1; s <= 1; s += 2) {
-        K.bb(T.steel, PX_OFF + 2.1, PX_OFF + 2.4, ly + s * 0.9 - 0.08, ly + s * 0.9 + 0.08, ZB, ZB + 1.5);
-        K.bb(T.dark, PX_OFF + 1.95, PX_OFF + 2.55, ly + s * 0.9 - 0.2, ly + s * 0.9 + 0.2, ZB, ZB + 0.06);
+        K.bb(T.steel, PX_OFF + standX, PX_OFF + standX + 0.3, ly + s * 0.9 - 0.08, ly + s * 0.9 + 0.08, ZB, ZB + 1.5);
+        K.bb(T.dark, PX_OFF + standX - 0.15, PX_OFF + standX + 0.45, ly + s * 0.9 - 0.2, ly + s * 0.9 + 0.2, ZB, ZB + 0.06);
       }
-      if (j !== 1) tur.children.forEach(function (o) {
-        if (o.isMesh && o.material !== T.team) takeMesh(K, o, PX_OFF + tur.position.x, ly + tur.position.y, ZB + tur.position.z);
-      });
+      if (j !== 1) takeTurret(K, tur, T, PX_OFF + tur.position.x, ly + tur.position.y, ZB + tur.position.z);
     }
     /* the wheels of tur's unit are skipped on purpose (roadwheel groups) */
     /* radar set: trailer, shelter, tilted array facing +X */
@@ -524,7 +550,9 @@ var HeroUsSamSite = (function () {
     K.put(T.glass, new THREE.CylinderGeometry(0.85, 0.85, 0.02, 20), rx + 6.1, ry, 1.9 + 1.5 * Math.cos(0.26), 0, 0, Math.PI / 2);
     for (j = 0; j < 2; j++) { tyre(K, T, rx + 1.8 + j * 1.0, ry - 1.1, 0.62, 0.37); tyre(K, T, rx + 1.8 + j * 1.0, ry + 1.1, 0.62, 0.37); }
     K.bb(T.team, rx + 0.5, rx + 1.7, ry - 0.45, ry + 0.45, 3.65, 3.67);          /* team panel 1: shelter roof */
-    K.bb(T.team, PX_OFF + 1.50, PX_OFF + 2.30, -0.40, 0.40, ZB + 1.85, ZB + 1.87);   /* team panel 2: the middle launcher's deck */
+    /* team panel 2: the middle launcher's generator roof (its front deck in the old layout) */
+    if (S) K.bb(T.team, PX_OFF + S.front - 2.35, PX_OFF + S.front - 1.0, -0.40, 0.40, ZB + 3.85, ZB + 3.87);
+    else K.bb(T.team, PX_OFF + 1.50, PX_OFF + 2.30, -0.40, 0.40, ZB + 1.85, ZB + 1.87);
     K.bb(T.team, 8.0, 9.2, -1.2 - 0.45, -1.2 + 0.45, 3.64, 3.66);                  /* team panel 3: control-station roof */
     /* engagement control station and power plant: truck-mounted shelters */
     truck(K, T, 5.0, -1.2, 7.6, 2.5, [1.4, 3.0, 5.6]);
