@@ -124,7 +124,7 @@ var Damage3D = (function () {
   const ENGINE_AT = {
     /* engine at the back, in a role that usually carries it forward */
     ifv_p: "rear", pact_e90_ifv: "rear", pact_e00_ifv: "rear",        // BMP-3: UTD-29 under the rear floor
-    recon_p: "rear", pact_e50_recon: "rear", pact_e60_recon: "rear",   // BRDM-1/-2: the GAZ V8 at the back
+    recon_p: "rear", pact_e60_recon: "rear",                           // BRDM-2: the GAZ V8 at the back
     pact_e80_recon: "rear", pact_e90_recon: "rear", pact_e00_recon: "rear",
     kpa_e60_recon: "rear", kpa_e80_recon: "rear",
     spg_p: "rear", pact_e80_spg: "rear", pact_e90_spg: "rear",         // 2S19 Msta-S: T-72 engine, T-80 hull
@@ -148,6 +148,7 @@ var Damage3D = (function () {
     /* engine forward, in a role that usually carries it at the back */
     lt_n: "front", nato_e00_lighttank: "front", atgmv_n: "front",      // Stryker: the C7 front right, by the driver
     spaag_n: "front",                                                  // M-SHORAD on the Stryker A1
+    pact_e60_tankdestroyer: "front",                                   // 9P110 on the BRDM-1: engine forward
     lt_b: "front",                                                     // Ajax (ASCOD): power pack front right
     gbr_e60_lighttank: "front", gbr_e80_lighttank: "front",            // CVR(T) Scorpion, Scimitar, Striker:
     gbr_e90_lighttank: "front", gbr_e00_lighttank: "front",            //   the engine front right
