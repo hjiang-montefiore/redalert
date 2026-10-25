@@ -1,109 +1,90 @@
-/* ===== us_humvee.js - HERO models: the AM General HMMWV ====================
-   The US Army's scout vehicle in four eras, one builder:
-     nato_e80_recon  M1025 armament carrier, 1985: the slant-back hard top
-                     with the roof ring mount and an M2, in MERDC woodland
-                     (the armed HMMWV of the first production family; no
-                     source shows a pedestal gun in an M998's bed then)
-     nato_e90_recon  M1025 armament carrier ("slant-back" hard top), the
-                     Gulf War truck: roof ring mount, M2, desert tan
-     nato_e00_recon  M1114 / M1151 up-armoured, 2005: armoured cab, wire
-                     cutter, spare wheel on the tail, gunner's shield (GPK)
-                     over the roof ring
-     recon_n         the present-day M1151A1: the same armoured body with the
-                     box-shaped enclosed gunner's turret (OGPK) and the
-                     antenna fit of the 2010s
-   The old recon_n drew one box truck for every era.  The wheelbase, track,
-   tyre and the whole of the layout change between the first-generation and
-   the up-armoured family, so this draws each of them.
+/* ===== us_humvee.js - HERO models: the AM General HMMWV and the vehicles built on it ============
+   Full-quality redo (owner 2026-10-24, the US ground set).  Six keys, kept, one builder:
+     nato_e80_recon  "HMMWV", e80, service 1985, turret:true, M2 .50 (js/eras.js).  The row's name is the
+                     M998, but the armed member of the M998 series with a roof-mounted M2 is the M1025
+                     armament carrier: DoD captions use "M998" for the whole family - [P4] is captioned
+                     an M998 and is an M1025 slant-back with the ring and M2.  So the M1025 is drawn.
+     nato_e90_recon  "M1025/M1026 Armament Carrier HMMWV", e90: the same truck (it did not change).
+     nato_e00_recon  "M1151 HMMWV Expanded Capacity Armament Carrier", service 2005: the armoured body
+                     with the gunner's shield (GPK) over the ring.
+     recon_n         "M1151 HMMWV (armed)", present day: the same body with the enclosed box turret
+                     (OGPK) and a second whip.
+     nato_e90_spaag  "M1097 Avenger Pedestal Mounted Stinger", e90, service 1990.
+     nato_e90_ewveh  "AN/TLQ-17A TRAFFIC JAM on the HMMWV", e90, service 1991.
+   Build names kept: HeroHumvee.make, read by nothing else.
 
-   Reference: the Army HMMWV fact file for the M998 (15 ft x 7 ft 1 in x
-   6 ft, i.e. 4.57 x 2.16 x 1.83 m; wheelbase 130 in = 3.30 m; track 71.5 in;
-   36 x 12.5R16.5 tyres: 0.915 m by 0.318 m), the AM General figures for
-   the M1114/M1151 (about 4.9 x 2.3 x 1.9 m on 37 in tyres, 5.5 t), and
-   five press photographs from Wikimedia Commons: an M998 four-door
-   hard-top (flat bonnet with the black vent plate, vertical-slot grille,
-   round lamps in the fender fronts, big rectangular mirrors, pressed X on
-   the body panels), a Spanish M966 TOW carrier (slant-back body, roof
-   platform), an M1114 with a Kevlar-wrapped turret and an M1165A1 in sand
-   paint (spare wheel on the tail, thick flat doors with small armour
-   windows, wire-cutter post, box turret about 0.65 m above the roof), and a
-   green hard-top with a bumper brush guard.  Where the references leave a
-   number open it is read off those photographs against the 3.30 m
-   wheelbase.
+   Published (kept from the old header, confirmed): M998 15 ft x 7 ft 1 in x 6 ft (4.57 x 2.16 x 1.83 m),
+     wheelbase 130 in (3.30 m), track 71.5 in, 36 x 12.5R16.5 tyres (en.wikipedia Humvee); M1114/M1151
+     about 4.9 x 2.3 x 1.9 m on 37 in tyres, 5.5 t (AM General); Avenger 4.95 x 2.18 x 2.64 m, 3,900 kg,
+     two Stinger pods of four, the FN M3P, the FLIR, on the M1097 heavy HMMWV (en.wikipedia Avenger).
+   TRAFFIC JAM (GlobalSecurity "AN/TLQ-17A(V), TRAFFICJAM" [G]): the (V)1 was two M151 jeeps and trailers;
+     the (V)3 "housed the electronics in an S-250 shelter" on the CUCV, and the CUCV was replaced by the
+     HMMWV (fielding FY90-92; deployed to Desert Storm; 66 systems).  Its photograph [G1] shows the
+     antenna: a log-periodic array of about fourteen VERTICAL dipoles on a horizontal boom, longest at
+     one end, on one mast.
 
-   TWO MORE ROWS on the same chassis (the 1990s support variants):
-     nato_e90_spaag  M1097 Avenger (AN/TWQ-1), woodland: the heavy HMMWV with a
-                     hard-top cab and the Boeing turret on the bed - a rivetted
-                     housing with a raked glass front, a Stinger pod each side
-                     (four rounds a pod, 2 x 2 mouths), the FN M3P .50, the
-                     FLIR box and two whips.  The whole turret is the trained node.
-     nato_e90_ewveh  AN/TLQ-17A TRAFFIC JAM, desert tan: the HMMWV carrying a
-                     shelter box on the bed and a roof mast with a directional
-                     antenna head.  The head is the trained node.
-   Avenger evidence.  The Wikipedia fact sheet: 4.95 x 2.18 x 2.64 m, 3,900 kg,
-   crew 2, two Stinger pods "each capable of firing up to 4" missiles, an FN
-   M3P, a Raytheon AN/VLR-1 FLIR, fielded on the M998 and on the M1097 heavy
-   HMMWV (the Humvee article lists "M1097 heavy HMMWV Avenger"); the 2005
-   up-gun fit moved the gun into the RIGHT POD's place, so in the basic fit
-   the gun is not there.  Four press photographs on Wikimedia Commons: a
-   woodland-painted Avenger on a HMMWV (hard-top cab with the doors off, the
-   housing close behind the cab, the glass front hinged up, pods elevated);
-   a Taiwanese vehicle from the front left (flat hard roof, hard doors with
-   windows, a dark raked housing front, pods level with the housing top, two
-   whips, a sensor cluster under the left pod); a Marine LAAD close-up from
-   the front (a gunner in the compartment, a rivetted housing, the FLIR in a
-   bracket on the left, a pod each side as tall as the glass); and a launch
-   seen from behind.
-   The housing (1.2 x 1.1 x 1.35 m) and pods (1.6 x 0.42 x 0.42 m) are read off
-   them against the 3.30 m wheelbase.  NOT confirmed: where the M3P sits (the
-   up-gun text says only that it was moved into the right pod's place; it is
-   drawn low on the right under the pod, a guess) and the exact rake of the
-   glass; the pods are drawn level, the travel posture (the 2.64 m stowed
-   height).  The FLIR on the left is seen in two photographs.  Size against the
-   fact sheet: 4.95 m long (drawn 4.95: the nose 0.09 m and the tail 0.18 m
-   longer than the M998 tub's; the tail figure is read off the woodland
-   photograph, rear bumper face about 0.75 m behind the rear axle), 2.18 m
-   wide (the body is 2.14 m, -1.8 %; the mirrors reach 2.40 m), 2.64 m high
-   (pod tops 2.62 m; the two whips stand above that and their height is not
-   established).  Woodland,
-   because every photograph found is MERDC woodland; a Gulf War vehicle would
-   be tan and no photograph of one was found.  Both rows: 7 materials, the
-   Avenger 13 draw calls and the TRAFFIC JAM 11, the named "turret" node one
-   baked mesh per material.
-   TRAFFIC JAM: THE REFERENCES ARE THIN.  The Wikipedia list of US military
-   electronics (citing Travis 1988) calls the AN/TLQ-17 a 550 W HF/VHF
-   communications countermeasures system carried on the HMMWV, on the M1028
-   CUCV and in the EH-60A; the Humvee article lists the M1037 and M1042 S250
-   shelter carriers; the row says unarmoured, canvas doors, about five
-   tonnes, Desert Storm service.  No photograph or drawing of the AN/TLQ-17A
-   was found (a Commons search finds none; the web searches tried, two search
-   engines and DVIDS, returned nothing usable), so what is drawn is the
-   carrier class and a generic fit: the M998-family cab, an S250-type shelter
-   box on the bed (1.8 x 2.0 x 1.5 m, read off the bed length and the vehicle
-   width), and on its roof one mast with a broadband directional head (a boom
-   and five cross elements).  The
-   shelter, the mast and the head are INFERRED, not seen.  The row's turret
-   flag trains the head.  The row text says canvas doors; no source for the
-   door type of the shelter carrier was found, so the hard cab of the family
-   is drawn.  The carrier keeps the M998 tub's 4.68 m (no length is published
-   for it).
-   What is deliberately NOT drawn: crew, interior beyond the seats, the CROWS
-   remote station (the row's gun is a ring-mounted .50 that aims), any
-   variant the rows do not name.
+   References (Wikimedia Commons at width 960 unless noted; cached in the scratchpad q_humvee_ref):
+     [D1] "M1151.png" - side drawing of the M1151 (nose left, used mirrored): the STATION SOURCE.
+          110.9 px a metre on the 3.30 m wheelbase; bumper 2.21, tail -2.48, pintle -2.63 (axles at
+          +-1.65), bonnet 1.14 m at the nose and 1.34 at the cowl, roof 1.87, sill 0.44, door foot 0.63,
+          armour windows 1.31-1.58, the slant from x -1.19 to the tail at 1.33, louvres -1.42..-2.14.
+     [D2] "HMMWV SECM.png" - side drawing of a two-door shelter carrier: the cab and the box on the bed.
+     [P1] "A left front view of a US Army M998 High-Mobility Multipurpose Wheeled Vehicle" (DoD, DPLA) -
+          front-left, NATO three-colour: the front clip, nine-slot grille, round headlamps, amber lamps.
+     [P2] "HMMWV armament carrier M1025.jpg" - square side, three-colour: the slant-back, four doors with
+          the pressed X, the raked windshield; the profile of the first-generation body.
+     [P3] "M1151 HMMWV.jpg" (2015, tan) - front-left: armoured doors and glass, the GPK shield.
+     [P4] "An airman mans the M-2 .50-caliber machine gun mounted atop an M998 ..." (DoD, DPLA) - an
+          M1025 with the roof ring and the M2, three-colour.
+     [P5] "A view of an Avenger air defense system ... during Operation Desert Shield" (DoD, DPLA, 1990) -
+          the M1097 Avenger from the side in three-colour: the two-door hard cab, the housing behind it.
+     [P6] "HMMWV uparmoured M1114.jpg" - the up-armoured body from the front-left.
+     [P7] "M1097 Avenger AA-System.jpg" (USMC) - front: the housing, both pods, the FLIR under the left pod.
+     [G1] globalsecurity.org/military/systems/ground/images/an-tlq-17-s.jpg - the TRAFFIC JAM antenna.
 
-   Meshes.  Everything fixed is baked, one merged mesh per material; the four
-   tyres are separate "roadwheel" groups (axle on local Y) with a block tread
-   so the spin shows; the weapon station is the named "turret" (origin on the
-   ring centre, gun along +X, one baked mesh per material).  At most 13 draw
-   calls and 8 materials.  The team material is exactly C.team, on the bonnet
-   and on a top-facing recognition panel, as an era stand-in repaints
-   everything else but leaves it alone.
+   Recognition list (what each rests on; where it is in the code):
+     1. Low and wide on four big tyres standing out at the corners, axles 3.30 m apart [D1][P2]: XF/XR, tyreGeo.
+     2. The one-piece front clip: bonnet sloping 1.34 -> 1.14 m to the nose, full-width fenders with chamfered
+        outer top edges, the bonnet centre a little proud, the black vent on its rear [D1][P1][P3]: BON, frontClip.
+     3. The grille face: nine vertical slots, a round headlamp either side, amber lamps outboard [P1][P3][P7].
+     4. The square-topped front wheel opening, the fender's trailing edge sweeping down to the sill [D1][P2].
+     5. The deep black bumper with the two tow shackles; the pintle hook behind [P1][P7][D1]: frontClip, rearEnd.
+     6. The slant-back: flat roof to behind the rear doors, then the long slope to the tail [D1][P2][P4].
+     7. The doors: four with the pressed X and big windows on the M1025 [P1][P2]; thick flat armoured doors
+        with small windows and outside hinges on the M1151 [D1][P3]: door().
+     8. The windshield: raked two-pane on the M1025 [P2]; near-upright armoured on the M1151 [D1][P3].
+     9. The M1151's louvred panel on the slant-back side and the intake stack at the right of the cowl [D1].
+    10. The weapon station: the M1025's roof ring with the M2 [P4]; the GPK shield [P3]; the OGPK box.
+    11. The geared hubs: the wheel face with eight nuts and the hub cap, which turn with the tyre [D1][P1].
+    12. Avenger: two-door hard cab, the turret on the bed - housing with the raked glass front, a pod of four
+        each side (2 x 2 mouths), the M3P low on the right, the FLIR on the left, two whips [P5][P7].
+    13. TRAFFIC JAM: the S-250 shelter on the bed [G][D2] and the vertical-element log-periodic array [G1].
+   Paint (from dated photographs): NATO three-colour CARC for every 1980s-90s row ([P1][P2][P4], and the
+     Avenger in Desert Shield, 1990 [P5]); sampled off [P2] green #697761, brown #665845, black #353a39,
+     drawn at about 0.8.  Desert tan for the armoured pair, as [P3] shows (door in sun #bbb29e, drawn
+     #a1977a).  No markings, numbers, bumper codes or plates ([P3]'s and [P7]'s are not drawn).
 
-   Model space: +X nose, +Y left, +Z up, real metres, tyres on z = 0.  The
-   renderer scales by the measured X extent; the only thing that sticks out
-   along X is the spare wheel on the armoured tail, as on the real vehicle.
-   Colours are authored in sRGB and left to prepModel() to linearise.
-   ASCII only.  */
+   CORRECTED against the old file: the old body was one slab at one width with a box for a bonnet; the front
+     clip is now lofted from [D1]'s bonnet line and [P1]'s section, the fenders stand full width over the
+     tyres and the doors are inset.  The old TRAFFIC JAM antenna was a horizontal Yagi, a guess; [G1] shows
+     a log-periodic array with vertical elements, now drawn.  The old e80 was in MERDC woodland and the old
+     e90 in tan: the 1985-1990 photographs found all show the NATO three-colour.  The old M1151 carried a
+     spare wheel on the tail and a wire-cutter post: neither is in [D1] or [P3], both removed.  The armoured
+     turret ring moves forward to x -0.35, over the rear doors as [D1] draws it.
+   NOT confirmed (drawn as stated): where the TRAFFIC JAM mast stands and how tall it is (on the shelter
+     roof, the array 1.25 m above it); the shelter's size (read off [D2]'s proportions on this cab); the
+     Avenger's 4.95 m is met with the rear overhang read long (the split is not published); the OGPK box
+     (kept from the old file's M1165A1 photograph, not re-checked); the M3P position (under the right pod).
+   DATA NOTES (reported, not changed): armour_specs nato_e80_recon says turret "none" and height 1.8 while
+     eras.js gives turret:true and an M2; armour_specs nato_e90_recon says camo "desert".
+
+   Meshes: everything fixed is baked, one merged mesh per material (8 materials: skin with the canvas paint,
+     dark, tyre, glass, team, white, amber and red lamps); the four tyres are "roadwheel" groups (axle on
+     local Y); the weapon station, the Avenger turret and the TRAFFIC JAM array are the named "turret"
+     (origin on the ring or mast, along +X).  12-14 draw calls, 6,400-6,600 triangles.  The team material
+     is exactly C.team, on a top-facing roof (or shelter) panel.
+   Model space: +X nose, +Y left, +Z up, real metres, tyres on z = 0.  Colours authored in sRGB and left to
+   prepModel() to linearise.  ASCII only.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -111,29 +92,28 @@ var HeroHumvee = (function () {
   "use strict";
 
   /* ------------------------------------------------------------ variants */
-  /* R: tyre radius (36 in on the first-generation family, 37 in on the armoured one);
-     XF/XR: axle stations, 3.30 m apart; nose: grille plane; bump: bumper
-     face; tail: rear body face; hw: half width of the body panels. */
+  /* Stations off the M1151 side drawing [D1] (110.9 px a metre on the 3.30 m wheelbase; the
+     axles at +-1.65) and, for the first-generation body, the M1025 side photograph [P2].
+     R: tyre radius (36 in first generation, 37 in on the armoured family); nose: grille face;
+     bump: bumper face; tail: rear body face; pint: the pintle hook; hwF: half width over the
+     front clip; hwS: half width of the body sides (the doors); roof: roof top. */
+  var XF = 1.65, XR = -1.65;
   var VAR = {
-    e80: { kind: "slant", paint: "wood", fb: 0x4b5a37, R: 0.457, XF: 1.60, XR: -1.70,
-           nose: 2.20, bump: 2.285, tail: -2.14, hw: 1.07 },
-    e90: { kind: "slant", paint: "tan", fb: 0xb09a6e, R: 0.457, XF: 1.60, XR: -1.70,
-           nose: 2.20, bump: 2.285, tail: -2.14, hw: 1.07 },
-    e00: { kind: "arm", paint: "tan", fb: 0xad9970, R: 0.470, XF: 1.62, XR: -1.68,
-           nose: 2.30, bump: 2.45, tail: -2.28, hw: 1.15, turret: "gpk" },
-    n:   { kind: "arm", paint: "tan2", fb: 0xa8946c, R: 0.470, XF: 1.62, XR: -1.68,
-           nose: 2.30, bump: 2.45, tail: -2.28, hw: 1.15, turret: "ogpk" },
-    /* the M1097 heavy HMMWV (36 in tyres, the M998 body) with the Avenger turret.
-       The fact sheet gives 4.95 m overall (16 ft 3 in) against the M998's 4.57 m,
-       so the overhangs are longer than the first-generation tub's: 0.09 m at the
-       nose and 0.18 m at the tail.  The tail figure is read off the woodland
-       photograph (rear bumper face about 0.75 m behind the rear axle); the split
-       is a reading, the total is the published length. */
-    av:  { kind: "avenger", paint: "wood", fb: 0x4b5a37, R: 0.457, XF: 1.60, XR: -1.70,
-           nose: 2.29, bump: 2.375, tail: -2.32, hw: 1.07 },
-    /* the unarmoured shelter carrier of the TRAFFIC JAM */
-    tj:  { kind: "jam", paint: "tan", fb: 0xb09a6e, R: 0.457, XF: 1.60, XR: -1.70,
-           nose: 2.20, bump: 2.285, tail: -2.14, hw: 1.07 }
+    e80: { kind: "slant", paint: "nato", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
+           hwF: 1.08, hwS: 1.03, roof: 1.83 },
+    e90: { kind: "slant", paint: "nato", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
+           hwF: 1.08, hwS: 1.03, roof: 1.83 },
+    e00: { kind: "arm", paint: "tan", R: 0.470, nose: 2.19, bump: 2.245, tail: -2.48, pint: -2.62,
+           hwF: 1.15, hwS: 1.12, roof: 1.87, turret: "gpk" },
+    n:   { kind: "arm", paint: "tan2", R: 0.470, nose: 2.19, bump: 2.245, tail: -2.48, pint: -2.62,
+           hwF: 1.15, hwS: 1.12, roof: 1.87, turret: "ogpk" },
+    /* the M1097 heavy HMMWV with the Avenger: 4.95 m on the fact sheet, so its tail is longer
+       than the M1025's (read off [P5], the rear bumper about 0.75 m behind the rear axle) */
+    av:  { kind: "avenger", paint: "nato", R: 0.457, nose: 2.21, bump: 2.26, tail: -2.45, pint: -2.62,
+           hwF: 1.08, hwS: 1.03, roof: 1.83 },
+    /* the shelter carrier of the TRAFFIC JAM (the M998-family two-door cab) */
+    tj:  { kind: "jam", paint: "nato", R: 0.457, nose: 2.16, bump: 2.21, tail: -2.28, pint: -2.36,
+           hwF: 1.08, hwS: 1.03, roof: 1.83 }
   };
   var TW = 0.318;          /* 12.5 in section width */
   var HALF_TRACK = 0.908;  /* 71.5 in track */
@@ -144,17 +124,18 @@ var HeroHumvee = (function () {
   }
 
   /* --------------------------------------------------------------- paint */
-  /* Cached per paint kind: build() runs once per key, team and era.  The
-     skin is mapped by world position (4.6 m to the canvas), so the pattern
-     runs on from a door into the fender.  "wood" is the MERDC woodland of
-     the 1980s (green, brown, black); "tan" is CARC desert tan with dust and
-     a little rubbed-through brown; "tan2" the same, a touch lighter. */
+  /* Cached per paint kind: build() runs once per key, team and era.  The skin is mapped by
+     world position (4.6 m to the canvas), so the pattern runs on from a door into the fender.
+     "nato": the NATO three-colour CARC of [P1][P2][P4][P5] - green, brown and black in big
+     hard-edged patches.  Sampled off [P2] in daylight: green #697761, brown #665845, black
+     #353a39; drawn at about 0.8 of that (#515c45, #54473a, #262a29).
+     "tan": CARC desert tan as [P3][P6] show (door in sun #bbb29e, drawn #a1977a), with dust. */
   var _cv = {};
-  function blob(q, R, cx, cy, rad, sx) {
-    var n = 9, i, a, r, px, py;
+  function blob(q, R, cx, cy, rad, sx, n) {
+    var i, a, r, px, py;
     q.beginPath();
     for (i = 0; i < n; i++) {
-      a = i / n * Math.PI * 2; r = rad * (0.55 + R() * 0.75);
+      a = i / n * Math.PI * 2 + R() * 0.3; r = rad * (0.6 + R() * 0.6);
       px = cx + Math.cos(a) * r * sx; py = cy + Math.sin(a) * r;
       if (i === 0) q.moveTo(px, py); else q.lineTo(px, py);
     }
@@ -162,33 +143,42 @@ var HeroHumvee = (function () {
   }
   function paint(kind) {
     if (_cv[kind]) return _cv[kind];
-    var R = rng(kind === "wood" ? 8801 : (kind === "tan" ? 9902 : 7703)), W = 256, H = 256, i, gr;
+    var R = rng(kind === "nato" ? 8801 : (kind === "tan" ? 9902 : 7703)), W = 256, H = 256, i, k, gr, x, y;
     var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
     var q = cv.getContext("2d");
-    if (kind === "wood") {
-      q.fillStyle = "#4a5a36"; q.fillRect(0, 0, W, H);
-      var cols = ["#5b4a30", "#22251f", "#3b4b2a", "#5b4a30", "#26291f"];
-      for (i = 0; i < 30; i++) {
-        q.fillStyle = cols[i % cols.length];
-        blob(q, R, R() * W, R() * H, 16 + R() * 30, 1.5 + R() * 0.8);
+    if (kind === "nato") {
+      q.fillStyle = "#515c45"; q.fillRect(0, 0, W, H);
+      /* brown first, black over it: the pattern's black runs as narrower bands across the
+         brown and green fields; drawn three times shifted so the canvas tiles */
+      var cols = ["#54473a", "#54473a", "#262a29"];
+      for (i = 0; i < 21; i++) {
+        q.fillStyle = cols[i % 3];
+        x = R() * W; y = R() * H;
+        var rad = (i % 3 === 2) ? 16 + R() * 12 : 24 + R() * 22, sx = 1.3 + R() * 0.9;
+        for (k = 0; k < 9; k++) {
+          var ox = ((k % 3) - 1) * W, oy = (Math.floor(k / 3) - 1) * H;
+          blob(q, rng(i * 977 + 13), x + ox, y + oy, rad, sx, 7);
+        }
       }
     } else {
-      q.fillStyle = (kind === "tan") ? "#b09a6e" : "#b6a27a"; q.fillRect(0, 0, W, H);
+      q.fillStyle = (kind === "tan") ? "#a1977a" : "#a69c7e"; q.fillRect(0, 0, W, H);
       for (i = 0; i < 26; i++) {
         q.fillStyle = (i % 2) ? "rgba(236,222,186,0.10)" : "rgba(96,76,44,0.09)";
         q.fillRect(R() * W, R() * H, 20 + R() * 70, 12 + R() * 40);
       }
     }
-    /* rubbed paint and grime */
-    q.fillStyle = "rgba(30,26,18,0.20)";
-    for (i = 0; i < 34; i++) q.fillRect(R() * W, R() * H * 0.8, 6 + R() * 26, 1 + R() * 2);
-    q.fillStyle = "rgba(20,18,12,0.35)";
+    /* rubbed paint, rain streaks and grime */
+    for (i = 0; i < 40; i++) {
+      q.fillStyle = (i % 3) ? "rgba(20,20,14,0.07)" : "rgba(170,160,130,0.06)";
+      q.fillRect(R() * W, R() * H, 1 + R() * 2, 20 + R() * 60);
+    }
+    q.fillStyle = "rgba(20,18,12,0.30)";
     for (i = 0; i < 40; i++) q.fillRect(R() * W, R() * H, 2, 2);
     /* road dust on the lowest part of every side */
-    gr = q.createLinearGradient(0, H * 0.74, 0, H);
+    gr = q.createLinearGradient(0, H * 0.78, 0, H);
     gr.addColorStop(0, "rgba(150,126,92,0.00)");
-    gr.addColorStop(1, "rgba(150,126,92,0.50)");
-    q.fillStyle = gr; q.fillRect(0, H * 0.74, W, H * 0.26);
+    gr.addColorStop(1, "rgba(150,126,92,0.45)");
+    q.fillStyle = gr; q.fillRect(0, H * 0.78, W, H * 0.22);
     _cv[kind] = cv;
     return cv;
   }
@@ -203,13 +193,13 @@ var HeroHumvee = (function () {
   }
 
   /* ----------------------------------------------------------- materials */
-  /* skin (painted steel / aluminium), dark (black steel, seats, bezels, gun),
-     rub (tyres), glass, team, lamp, lampR (tail lights).  Seven. */
+  /* skin (painted aluminium and steel), dark (black steel, seats, bezels, guns), rub (tyres),
+     glass, team, lamp (white), lampA (amber), lampR (tail).  Eight. */
   function makeMats(THREE, C, V) {
     var T = {};
     var st = canvasTex(THREE, paint(V.paint));
     T.skin = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.06 });
-    if (st) T.skin.map = st; else T.skin.color.setHex(V.fb);
+    if (st) T.skin.map = st; else T.skin.color.setHex(V.paint === "nato" ? 0x515c45 : 0xa1977a);
     T.skin.userData.worldUV = 4.6;
     T.dark = new THREE.MeshStandardMaterial({ color: 0x24261f, roughness: 0.78, metalness: 0.22 });
     T.rub = new THREE.MeshStandardMaterial({ color: 0x181817, roughness: 0.95, metalness: 0.02 });
@@ -218,6 +208,8 @@ var HeroHumvee = (function () {
                                               roughness: 0.55, metalness: 0.18 });
     T.lamp = new THREE.MeshStandardMaterial({ color: 0xcfc9ac, roughness: 0.3, metalness: 0.1,
                                               emissive: 0x2a2814, emissiveIntensity: 0.7 });
+    T.lampA = new THREE.MeshStandardMaterial({ color: 0xc87a1a, roughness: 0.35, metalness: 0.1,
+                                               emissive: 0x3a2206, emissiveIntensity: 0.7 });
     T.lampR = new THREE.MeshStandardMaterial({ color: 0xa01a10, roughness: 0.35, metalness: 0.1,
                                                emissive: 0x3c0a06, emissiveIntensity: 0.8 });
     return T;
@@ -422,14 +414,43 @@ var HeroHumvee = (function () {
     }
   }
 
+  /* A loft through convex rings of [x, y, z] (same count, all wound the same way), fan-capped
+     at both ends; the faces are turned outward by the signed volume, as ru_kamaz.js does. */
+  Baker.prototype.loft = function (mat, Rg) {
+    var V = [], F = [], m = Rg.length, n = Rg[0].length, i, j, k, c, b0, f, vol = 0, S = { p: [], n: [] };
+    function cr(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    for (i = 0; i < m; i++) for (j = 0; j < n; j++) V.push(Rg[i][j]);
+    for (i = 0; i < m - 1; i++) for (j = 0; j < n; j++) {
+      k = (j + 1) % n;
+      F.push([i * n + j, i * n + k, (i + 1) * n + k], [i * n + j, (i + 1) * n + k, (i + 1) * n + j]);
+    }
+    for (i = 0; i < 2; i++) {
+      var ring = Rg[i ? m - 1 : 0], ctr = [0, 0, 0];
+      for (j = 0; j < n; j++) { ctr[0] += ring[j][0] / n; ctr[1] += ring[j][1] / n; ctr[2] += ring[j][2] / n; }
+      b0 = i ? (m - 1) * n : 0; V.push(ctr); c = V.length - 1;
+      for (j = 0; j < n; j++) { k = (j + 1) % n; F.push(i ? [c, b0 + j, b0 + k] : [c, b0 + k, b0 + j]); }
+    }
+    for (i = 0; i < F.length; i++) { f = F[i]; var q = cr(V[f[1]], V[f[2]]); vol += V[f[0]][0] * q[0] + V[f[0]][1] * q[1] + V[f[0]][2] * q[2]; }
+    for (i = 0; i < F.length; i++) {
+      f = F[i];
+      var a = V[f[0]], b = vol < 0 ? V[f[2]] : V[f[1]], cc = vol < 0 ? V[f[1]] : V[f[2]];
+      var nn = cr([b[0] - a[0], b[1] - a[1], b[2] - a[2]], [cc[0] - a[0], cc[1] - a[1], cc[2] - a[2]]);
+      var L = Math.sqrt(nn[0] * nn[0] + nn[1] * nn[1] + nn[2] * nn[2]);
+      if (L < 1e-12) continue;
+      addTri(S, a, b, cc, [nn[0] / L, nn[1] / L, nn[2] / L]);
+    }
+    this.add(mat, geoFrom(this.T, S));
+  };
+
   /* ------------------------------------------------------------ the tyre */
-  /* 36 x 12.5R16.5 (or 37 in): a lathe about the local Y axle (bead, bulging
-     sidewall, shoulder, flat crown) with twenty block lugs standing on the
-     crown, so the tyre notches its own outline and a turning wheel shows. */
-  function tyreGeo(THREE, R) {
-    var S = { p: [], n: [] }, seg = 20, h = TW / 2, rc = R - 0.026, i, j;
-    var prof = [[0.215, -0.095], [0.262, -0.146], [0.336, -h], [0.405, -0.150], [0.438, -0.126], [rc, -0.105],
-                [rc, 0.105], [0.438, 0.126], [0.405, 0.150], [0.336, h], [0.262, 0.146], [0.215, 0.095]];
+  /* 36 x 12.5R16.5 (37 in on the armoured family): a lathe about the local Y axle (bead,
+     bulging sidewall, shoulder, flat crown) with twenty block lugs on the crown, so the tyre
+     notches its own outline and a turning wheel shows.  On the outer face, the parts that turn
+     with it: the eight wheel nuts and the hub cap over the geared hub [D1][P1]. */
+  function tyreGeo(THREE, R, side) {
+    var S = { p: [], n: [] }, seg = 20, h = TW / 2, rc = R - 0.026, i, j, k = R / 0.457;
+    var prof = [[0.215, -0.095], [0.262, -0.146], [0.336, -h], [0.405 * k, -0.150], [0.438 * k, -0.126], [rc, -0.105],
+                [rc, 0.105], [0.438 * k, 0.126], [0.405 * k, 0.150], [0.336, h], [0.262, 0.146], [0.215, 0.095]];
     for (i = 0; i < prof.length - 1; i++) {
       var r0 = prof[i][0], y0 = prof[i][1], r1 = prof[i + 1][0], y1 = prof[i + 1][1];
       var dr = r1 - r0, dy = y1 - y0, l = Math.sqrt(dr * dr + dy * dy), nr = dy / l, ny = -dr / l;
@@ -443,23 +464,30 @@ var HeroHumvee = (function () {
         if (r1 > 1e-6) triN(S, A, Cc, D, nA, nB, nA);
       }
     }
-    var parts = [geoFrom(THREE, S)], lug = 20;
-    for (j = 0; j < lug; j++) {
-      var a = (j + 0.5) / lug * Math.PI * 2, g = new THREE.BoxGeometry(0.034, 0.225, 0.062);
-      var m = new THREE.Matrix4().compose(
-        new THREE.Vector3(Math.cos(a) * (rc + 0.010), 0, Math.sin(a) * (rc + 0.010)),
-        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -a, 0)),
-        new THREE.Vector3(1, 1, 1));
-      g.applyMatrix4(m);
-      parts.push(g.toNonIndexed());
+    var parts = [geoFrom(THREE, S)], lug = 20, g, m;
+    function put(geo, x, y, z, ry) {
+      geo.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(x, y, z),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry || 0, 0)), new THREE.Vector3(1, 1, 1)));
+      parts.push(geo.index ? geo.toNonIndexed() : geo);
     }
-    var n = 0, o = 0, k;
-    for (k = 0; k < parts.length; k++) n += parts[k].attributes.position.count;
+    for (j = 0; j < lug; j++) {
+      var a = (j + 0.5) / lug * Math.PI * 2;
+      put(new THREE.BoxGeometry(0.034, 0.225, 0.062), Math.cos(a) * (rc + 0.010), 0, Math.sin(a) * (rc + 0.010), -a);
+    }
+    /* outer face (local +Y is outboard on the port wheels, -Y on the starboard ones) */
+    var sy = side;
+    for (j = 0; j < 8; j++) {
+      var b = j / 8 * Math.PI * 2;
+      put(new THREE.CylinderGeometry(0.018, 0.018, 0.03, 6), Math.cos(b) * 0.135, sy * 0.112, Math.sin(b) * 0.135);
+    }
+    put(new THREE.CylinderGeometry(0.07, 0.085, 0.05, 10), 0, sy * 0.118, 0);
+    var n = 0, o = 0, q;
+    for (q = 0; q < parts.length; q++) n += parts[q].attributes.position.count;
     var P = new Float32Array(n * 3), N = new Float32Array(n * 3);
-    for (k = 0; k < parts.length; k++) {
-      P.set(parts[k].attributes.position.array, o * 3);
-      N.set(parts[k].attributes.normal.array, o * 3);
-      o += parts[k].attributes.position.count;
+    for (q = 0; q < parts.length; q++) {
+      P.set(parts[q].attributes.position.array, o * 3);
+      N.set(parts[q].attributes.normal.array, o * 3);
+      o += parts[q].attributes.position.count;
     }
     var geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
@@ -485,73 +513,7 @@ var HeroHumvee = (function () {
     K.bb(d, x0 - 0.02, x0 + 0.08, 0.055, 0.075, z0 - 0.03, z0 + 0.06);        /* feed throat */
   }
 
-  /* ------------------------------------------------------- shared chassis */
-  function chassis(K, T, V) {
-    var R = V.R, ax, s, i, ys = [V.XF, V.XR];
-    /* belly pan, axle beams, differentials, hub-reduction housings, shafts */
-    K.bb(T.dark, V.XR - 0.35, V.XF + 0.35, -0.62, 0.62, 0.36, 0.52);
-    for (i = 0; i < 2; i++) {
-      ax = ys[i];
-      K.cyl(T.dark, 0.045, 1.55, 8, ax, 0, R, "y");
-      K.bb(T.dark, ax - 0.20, ax + 0.20, -0.22, 0.22, 0.40, 0.62);
-      for (s = -1; s <= 1; s += 2) {
-        K.bb(T.dark, ax - 0.13, ax + 0.13, s * 0.60, s * 0.74, R - 0.12, R + 0.16);
-        /* the rim, a solid disc seen between the beads, and its hub cap */
-        K.cyl(T.skin, 0.222, 0.20, 12, ax, s * HALF_TRACK, R, "y");
-        K.cyl(T.dark, 0.075, 0.03, 8, ax, s * (HALF_TRACK + 0.105), R, "y");
-        K.cyl(T.dark, 0.17, 0.012, 12, ax, s * (HALF_TRACK + 0.102), R, "y");
-      }
-    }
-    K.rod(T.dark, 0.03, [V.XR, 0, 0.50], [V.XF, 0, 0.50], 6);
-    K.rod(T.dark, 0.035, [V.XR - 0.1, 0.40, 0.44], [V.XR + 0.9, 0.40, 0.44], 6);   /* exhaust */
-  }
-
-  /* ------------------------------------------------ body: the M1025 tub */
-  /* The aluminium tub the M1025 shares with the M998: bonnet, grille,
-     bumpers, lamps, mirrors; and its windshield */
-  function tub(K, T, V) {
-    var R = V.R, nose = V.nose, tail = V.tail, hw = V.hw, i, ptsA, ptsB, a, s;
-    var zS = 0.50, belt = 1.20, bedTop = 1.16, cowl = 1.05;
-    /* side prisms: fender and cab sill, then the bed side, both with the
-       wheel arches cut through */
-    ptsA = [[-0.30, zS]];
-    a = arch(V.XF, R, 0.52, zS, -0.30);
-    for (i = 0; i < a.length; i++) ptsA.push(a[i]);
-    ptsA.push([nose, zS], [nose, 1.03], [cowl, 1.03], [cowl - 0.05, belt], [-0.30, belt]);
-    K.prism(T.skin, ptsA, 0.58, hw);
-    K.prism(T.skin, ptsA, -hw, -0.58);
-    ptsB = [[tail, bedTop]];
-    a = arch(V.XR, R, 0.52, zS, tail);
-    for (i = 0; i < a.length; i++) ptsB.push(a[i]);
-    ptsB.push([-0.30, zS], [-0.30, bedTop]);
-    K.prism(T.skin, ptsB, 0.74, hw);
-    K.prism(T.skin, ptsB, -hw, -0.74);
-    /* bonnet: the raised centre hump between the fender decks */
-    K.bb(T.skin, cowl, nose, -0.58, 0.58, 0.55, 1.12);
-    /* the black non-slip plate on the rear half of the bonnet */
-    K.bb(T.dark, 1.12, 1.62, -0.38, 0.38, 1.12, 1.134);
-    /* team panel on the front half */
-    K.bb(T.team, 1.70, 2.12, -0.40, 0.40, 1.12, 1.135);
-    /* grille: black slots with seven painted bars */
-    K.bb(T.dark, nose, nose + 0.012, -0.50, 0.50, 0.62, 1.02);
-    for (i = -3; i <= 3; i++) K.bb(T.skin, nose + 0.012, nose + 0.026, i * 0.135 - 0.016, i * 0.135 + 0.016, 0.64, 1.0);
-    /* front bumper, tow hooks; rear bumper, pintle */
-    K.bb(T.dark, nose - 0.06, V.bump, -0.98, 0.98, 0.50, 0.70);
-    K.bbm(T.dark, nose - 0.04, V.bump + 0.02, 0.50, 0.55, 0.44, 0.52);
-    K.bb(T.dark, tail - 0.145, tail + 0.02, -0.98, 0.98, 0.50, 0.68);
-    K.cyl(T.dark, 0.035, 0.12, 8, tail - 0.20, 0, 0.62, "z");
-    /* lamps: round headlights in the fender fronts, tail lights on the tail */
-    for (s = -1; s <= 1; s += 2) {
-      K.cyl(T.dark, 0.088, 0.03, 12, nose - 0.005, s * 0.82, 0.90, "x");
-      K.cyl(T.lamp, 0.07, 0.034, 12, nose + 0.005, s * 0.82, 0.90, "x");
-      K.bb(T.lampR, tail - 0.014, tail, s * 0.90 - 0.07, s * 0.90 + 0.07, 0.80, 0.92);
-    }
-    /* big rectangular mirrors on arms from the A-pillars */
-    for (s = -1; s <= 1; s += 2) {
-      K.rod(T.dark, 0.012, [0.96, s * 0.92, 1.30], [0.96, s * 1.12, 1.52], 5);
-      K.bb(T.dark, 0.93, 0.99, s * 1.12 - 0.08, s * 1.12 + 0.08, 1.46, 1.74);
-    }
-  }
+  /* the windshield: two panes either side of the centre post, in its frame */
   function windshield(K, T, x0, z0, x1, z1, hw, dark) {
     var yin = 0.03, yout = hw - 0.05;
     K.plate(T.glass, x0 + 0.006, z0 + 0.04, x1 + 0.006, z1 - 0.04, 0.016, yin, yout, "fwd");
@@ -563,133 +525,250 @@ var HeroHumvee = (function () {
     K.rod(f, 0.024, [x1, -hw, z1], [x1, hw, z1], 6);
     K.rod(f, 0.024, [x0, -hw, z0], [x0, hw, z0], 6);
   }
-
-  /* --------------------------------------------- the M1025 slant-back */
-  function bodySlant(K, T, V) {
-    var tail = V.tail, ringX = -0.65, zr = 1.83, i, a, s;
-    tub(K, T, V);
-    /* the closed body: cab and rear compartment under one roof that slopes
-       away over the tailgate */
-    K.prism(T.skin, [[tail, 1.10], [1.04, 1.10], [0.90, zr], [-1.50, zr], [tail, 1.34]], -1.00, 1.00);
-    /* the lower body under it, between the wheel wells, so the arches do not
-       show the sky through the vehicle */
-    K.bb(T.skin, tail, -0.30, -0.78, 0.78, 0.50, 1.10);
-    K.bb(T.skin, -0.30, 0.98, -0.60, 0.60, 0.50, 1.10);
-    K.bb(T.skin, 0.98, 1.08, -0.62, 0.62, 0.82, 1.14);
-    windshield(K, T, 1.0055, 1.28, 0.9096, 1.78, 0.95, false);
-    /* side windows: the door glass and the quarter light behind it */
-    K.bbm(T.glass, -0.06, 0.80, 1.00, 1.012, 1.36, 1.74);
-    K.bbm(T.glass, -0.62, -0.20, 1.00, 1.012, 1.36, 1.74);
-    /* door outline and handle; the pressed X of the rear body is a seam pair */
-    K.bbm(T.dark, 0.955, 0.965, 1.00, 1.010, 0.82, 1.82);
-    K.bbm(T.dark, -0.115, -0.105, 1.00, 1.010, 0.82, 1.82);
-    K.bbm(T.dark, -0.10, 0.96, 1.00, 1.010, 0.82, 0.83);
-    K.bbm(T.dark, 0.02, 0.12, 1.00, 1.02, 1.12, 1.15);
-    /* team recognition panel on the front half of the roof */
-    K.bb(T.team, 0.12, 0.72, -0.45, 0.45, zr, zr + 0.013);
-    /* roof ring: a hoop on four posts around the open hatch */
-    K.cyl(T.dark, 0.40, 0.004, 14, ringX, 0, zr + 0.002, "z");
-    K.torus(T.dark, 0.45, 0.02, ringX, 0, zr + 0.16, 5, 20);
-    for (i = 0; i < 4; i++) {
-      a = i * Math.PI / 2 + Math.PI / 4;
-      K.rod(T.dark, 0.016, [ringX + 0.45 * Math.cos(a), 0.45 * Math.sin(a), zr], [ringX + 0.45 * Math.cos(a), 0.45 * Math.sin(a), zr + 0.16], 5);
+  /* ------------------------------------------------------- shared chassis */
+  /* belly pan (16 in ground clearance), axle beams, the differentials, the geared hub-reduction
+     housings at each wheel, the shafts, the exhaust; the painted rims stand still, the nuts and
+     hub caps turn with the tyre */
+  function chassis(K, T, V) {
+    var R = V.R, ax, s, i, ys = [XF, XR];
+    K.bb(T.dark, XR - 0.35, XF + 0.35, -0.62, 0.62, 0.41, 0.52);
+    for (i = 0; i < 2; i++) {
+      ax = ys[i];
+      K.cyl(T.dark, 0.045, 1.55, 8, ax, 0, R, "y");
+      K.bb(T.dark, ax - 0.20, ax + 0.20, -0.22, 0.22, 0.42, 0.62);
+      for (s = -1; s <= 1; s += 2) {
+        K.bb(T.dark, ax - 0.13, ax + 0.13, s * 0.60, s * 0.74, R - 0.12, R + 0.16);
+        K.cyl(T.skin, 0.222, 0.20, 12, ax, s * HALF_TRACK, R, "y");
+        K.cyl(T.skin, 0.17, 0.012, 12, ax, s * (HALF_TRACK + 0.102), R, "y");
+      }
     }
-    /* external jerrycan on the tailgate, the radio whip */
-    K.bb(T.skin, tail - 0.12, tail, -0.88, -0.58, 0.62, 1.04);
-    K.bb(T.dark, -1.30, -1.14, 0.84, 1.00, 1.18, 1.28);
-    K.rod(T.dark, 0.007, [-1.22, 0.92, 1.28], [-1.30, 0.92, 3.00], 4);
+    K.rod(T.dark, 0.03, [XR, 0, 0.50], [XF, 0, 0.50], 6);
+    K.rod(T.dark, 0.035, [XR - 0.1, -0.40, 0.46], [XR + 0.9, -0.40, 0.46], 6);
   }
 
-  /* ------------------------------------------------- the armoured body */
+  /* ------------------------------------------------------- the front clip */
+  /* The one-piece tilting bonnet and fenders.  The top is lofted through the stations below:
+     the bonnet line off [D1] (1.14 m at the nose, 1.34 at the cowl), the section off the front
+     photographs [P1][P3] - full width, the outer top edges chamfered, the bonnet centre a little
+     proud of the fender tops, the black vent at its rear.  Under it: the grille face with the
+     two round headlamps either side of the vertical-slot grille, amber lamps outboard on the
+     fender fronts, and the fender sides with the square-topped wheel opening and the trailing
+     edge that sweeps down and back to the sill [D1][P2]. */
+  var BON = [   /* back from the nose (m), bonnet centre z, fender top z */
+    [0.00, 1.075, 1.055], [0.05, 1.140, 1.110], [0.45, 1.190, 1.155],
+    [0.85, 1.250, 1.205], [1.25, 1.335, 1.280]
+  ];
+  var ZCLIP = 0.98;          /* underside of the clip over the tyres */
+  function frontClip(K, T, V) {
+    var nose = V.nose, hw = V.hwF, R = V.R, i, s, st, x, Rg = [];
+    for (i = 0; i < BON.length; i++) {
+      st = BON[i]; x = nose - st[0];
+      Rg.push([[x, -hw, ZCLIP], [x, hw, ZCLIP], [x, hw, st[2] - 0.08], [x, hw - 0.08, st[2]], [x, 0.50, st[2]],
+               [x, 0.42, st[1]], [x, -0.42, st[1]], [x, -0.50, st[2]], [x, -hw + 0.08, st[2]], [x, -hw, st[2] - 0.08]]);
+    }
+    K.loft(T.skin, Rg);
+    var cowl = nose - 1.25;
+    function zb(x) { var t = (nose - x) / 1.25; return BON[0][1] + (BON[4][1] - BON[0][1]) * Math.max(0, Math.min(1, t)) + 0.004; }
+    /* the black vent on the rear of the bonnet [P1][P3] */
+    K.plate(T.dark, cowl + 0.10, zb(cowl + 0.10) + 0.004, cowl + 0.55, zb(cowl + 0.55) + 0.004, 0.012, -0.36, 0.36, "up");
+    for (i = 0; i < 6; i++) {
+      x = cowl + 0.14 + i * 0.07;
+      K.bb(T.skin, x - 0.008, x + 0.008, -0.34, 0.34, zb(x) + 0.004, zb(x) + 0.022);
+    }
+    /* fender sides: ahead of the wheel a sliver down to the bumper, behind it the trailing
+       edge to the sill; the opening between them is square-topped at the clip's underside */
+    var d = 0.60, xa = Math.sqrt(d * d - (ZCLIP - R) * (ZCLIP - R));
+    var fr = [[nose, ZCLIP], [XF + xa, ZCLIP]], rr = [[XF - xa, ZCLIP]];
+    for (i = 1; i <= 4; i++) {
+      var zz = ZCLIP - i * (ZCLIP - 0.62) / 4, dx = Math.sqrt(Math.max(0, d * d - (zz - R) * (zz - R)));
+      if (XF + dx < nose) fr.push([XF + dx, zz]);
+      rr.push([XF - dx, zz]);
+    }
+    fr.push([nose, Math.max(0.62, R + Math.sqrt(Math.max(0, d * d - (nose - XF) * (nose - XF))))]);
+    rr.push([XF - d + 0.02, 0.52], [0.80, 0.45], [cowl - 0.02, 0.98]);
+    for (s = -1; s <= 1; s += 2) {
+      K.prism(T.skin, fr, s > 0 ? hw - 0.035 : -hw, s > 0 ? hw : -hw + 0.035);
+      K.prism(T.skin, rr, s > 0 ? hw - 0.035 : -hw, s > 0 ? hw : -hw + 0.035);
+      /* the fender's front face outboard of the headlamps, with the amber lamp */
+      K.bb(T.skin, nose - 0.04, nose, s * 0.60, s * hw, fr[fr.length - 1][1], ZCLIP);
+      K.bb(T.lampA, nose, nose + 0.012, s * (hw - 0.30), s * (hw - 0.16), 0.86, 0.94);
+      /* black wheel-well liner, seen through the opening */
+      K.bb(T.dark, XF - 0.62, nose - 0.002, s * 0.58, s * 0.72, 0.52, ZCLIP);
+    }
+    /* the radiator block between the wells and the grille face */
+    K.bb(T.dark, cowl, nose - 0.02, -0.58, 0.58, 0.50, ZCLIP);
+    K.bb(T.skin, nose - 0.02, nose, -0.60, 0.60, 0.62, ZCLIP + 0.02);
+    /* the grille: nine slots between the bars [P1][P3] */
+    K.bb(T.dark, nose, nose + 0.010, -0.37, 0.37, 0.66, 0.97);
+    for (i = -4; i <= 4; i++) K.bb(T.skin, nose + 0.010, nose + 0.024, i * 0.082 - 0.018, i * 0.082 + 0.018, 0.68, 0.95);
+    for (s = -1; s <= 1; s += 2) {
+      K.cyl(T.dark, 0.105, 0.03, 16, nose + 0.005, s * 0.485, 0.84, "x");
+      K.cyl(T.lamp, 0.085, 0.034, 16, nose + 0.012, s * 0.485, 0.84, "x");
+    }
+    /* bumper: a deep channel, its ends turned back, two tow shackles; the lifting eyes */
+    K.bb(T.dark, nose - 0.04, V.bump, -(hw - 0.10), hw - 0.10, 0.50, 0.68);
+    for (s = -1; s <= 1; s += 2) {
+      K.bb(T.dark, nose - 0.20, nose - 0.04, s * (hw - 0.22), s * (hw - 0.10), 0.52, 0.66);
+      K.torus(T.dark, 0.045, 0.012, V.bump + 0.02, s * 0.62, 0.58, 4, 10);
+    }
+  }
+
+  /* ------------------------------------------- the body sides: one profile */
+  /* the whole side of the body as one extrusion: windshield, roof and slant-back (or the cab
+     back and the bed) and the rear wheel opening cut through; door glass and seams on top */
+  function rearArch(V, zs, tail) {
+    var a = arch(XR, V.R, 0.60, zs, tail), out = [], i;
+    for (i = a.length - 1; i >= 0; i--) out.push(a[i]);
+    return out;   /* front to back */
+  }
+  function sideProfile(V, top) {
+    var pts = [[V.nose - 1.27, 0.98]], a = rearArch(V, 0.52, V.tail), i;
+    for (i = 0; i < top.length; i++) pts.push(top[i]);
+    pts.push([V.tail, 0.62]);
+    for (i = a.length - 1; i >= 0; i--) pts.push(a[i]);
+    pts.push([0.82, 0.45]);
+    return pts;
+  }
+  function sideSkin(K, T, V, pts) {
+    K.prism(T.skin, pts, -V.hwS, V.hwS);
+    /* the rear wheel houses, black, closing the openings the profile cuts through */
+    K.bb(T.dark, XR - 0.62, XR + 0.62, -0.72, 0.72, 0.50, 1.12);
+  }
+  /* door: seams, the glass (an armour window on the M1151), the handle, the pressed X of the
+     first-generation door [P1][P2] */
+  function door(K, T, V, x0, x1, zw0, zw1, xw0, xw1, zTop, pressX) {
+    var y = V.hwS, s;
+    for (s = -1; s <= 1; s += 2) {
+      var y0 = s * y, y1 = s * (y + 0.010);
+      K.bb(T.dark, x0 - 0.006, x0 + 0.006, y0, y1, 0.60, zTop);
+      K.bb(T.dark, x1 - 0.006, x1 + 0.006, y0, y1, 0.60, zTop);
+      K.bb(T.dark, x1, x0, y0, y1, 0.60, 0.612);
+      K.bb(T.glass, xw1, xw0, y0, s * (y + 0.012), zw0, zw1);
+      K.bb(T.dark, x1 + 0.10, x1 + 0.22, y0, s * (y + 0.025), zw0 - 0.17, zw0 - 0.14);
+      if (pressX) {
+        K.rod(T.dark, 0.009, [x0 - 0.07, s * (y + 0.006), 0.68], [x1 + 0.07, s * (y + 0.006), zw0 - 0.08], 4);
+        K.rod(T.dark, 0.009, [x1 + 0.07, s * (y + 0.006), 0.68], [x0 - 0.07, s * (y + 0.006), zw0 - 0.08], 4);
+      }
+    }
+  }
+  function windshieldAt(K, T, V, xf, zf, xh, zh, dark) {
+    windshield(K, T, xf + 0.01, zf, xh + 0.01, zh, V.hwS - 0.06, dark);
+  }
+  function mirrors(K, T, V, x, z) {
+    for (var s = -1; s <= 1; s += 2) {
+      K.rod(T.dark, 0.013, [x, s * V.hwS, z], [x, s * (V.hwS + 0.12), z + 0.12], 5);
+      K.bb(T.dark, x - 0.03, x + 0.03, s * (V.hwS + 0.07), s * (V.hwS + 0.19), z + 0.04, z + 0.32);
+    }
+  }
+  function rearEnd(K, T, V) {
+    var s, tail = V.tail;
+    K.bb(T.dark, tail - 0.10, tail + 0.04, -(V.hwS - 0.05), V.hwS - 0.05, 0.50, 0.66);
+    K.bb(T.dark, V.pint, tail - 0.10, -0.06, 0.06, 0.53, 0.62);
+    K.torus(T.dark, 0.05, 0.014, V.pint + 0.03, 0, 0.58, 4, 10);
+    for (s = -1; s <= 1; s += 2) K.bb(T.lampR, tail - 0.012, tail, s * (V.hwS - 0.20), s * (V.hwS - 0.06), 0.74, 0.90);
+  }
+
+  /* --------------------------------------------- the M1025 slant-back */
+  /* [P2][P4]: the raked windshield in its frame, a flat roof to behind the rear doors, the
+     slant-back down to the tailgate; four doors with the pressed X; the roof ring and hatch */
+  var RING_SLANT = -0.60;
+  function bodySlant(K, T, V) {
+    var zr = V.roof;
+    frontClip(K, T, V);
+    var top = [[V.nose - 1.25, 1.30], [0.68, 1.79], [0.62, zr], [-1.08, zr], [-1.16, zr - 0.04], [V.tail + 0.04, 1.22], [V.tail, 1.18]];
+    sideSkin(K, T, V, sideProfile(V, top));
+    windshieldAt(K, T, V, V.nose - 1.25, 1.31, 0.68, 1.79, false);
+    door(K, T, V, 0.86, -0.06, 1.36, 1.72, 0.72, 0.06, 1.80, true);
+    door(K, T, V, -0.06, -0.92, 1.36, 1.72, -0.16, -0.84, 1.80, true);
+    mirrors(K, T, V, 0.84, 1.36);
+    rearEnd(K, T, V);
+    /* the tailgate's two hinges and the rear lid's seam */
+    K.bb(T.dark, V.tail - 0.012, V.tail, -0.80, 0.80, 1.10, 1.12);
+    /* team panel on the roof's front half */
+    K.bb(T.team, 0.05, 0.55, -0.45, 0.45, zr, zr + 0.013);
+    /* roof ring: the hoop on its posts around the hatch */
+    K.cyl(T.dark, 0.40, 0.004, 14, RING_SLANT, 0, zr + 0.002, "z");
+    K.torus(T.dark, 0.45, 0.02, RING_SLANT, 0, zr + 0.16, 5, 20);
+    for (var i = 0; i < 4; i++) {
+      var a = i * Math.PI / 2 + Math.PI / 4;
+      K.rod(T.dark, 0.016, [RING_SLANT + 0.45 * Math.cos(a), 0.45 * Math.sin(a), zr], [RING_SLANT + 0.45 * Math.cos(a), 0.45 * Math.sin(a), zr + 0.16], 5);
+    }
+    /* the radio whip on its mount at the right rear [P2][P4] */
+    K.bb(T.dark, -1.30, -1.14, -(V.hwS - 0.18), -(V.hwS - 0.02), 1.42, 1.52);
+    K.rod(T.dark, 0.007, [-1.22, -(V.hwS - 0.10), 1.52], [-1.30, -(V.hwS - 0.10), 3.00], 4);
+  }
+
+  /* ---------------------------------------------- the M1151 armoured body */
+  /* [D1][P3][P6]: the near-upright armoured windshield, thick flat doors with small armour
+     windows, the slant-back with the louvred panel on its side, the air intake stack at the
+     right of the cowl, the turret ring over the rear doors */
+  var RING_ARM = -0.35;
   function bodyArm(K, T, V) {
-    var R = V.R, nose = V.nose, tail = V.tail, hw = V.hw, i, a, s, pts;
-    var zS = 0.52, belt = 1.30, roof = 1.88, cowl = 1.15, zNose = 1.04, zCowl = 1.17, cw = 1.08;
-    var isN = V.turret === "ogpk";
-    /* lower body: one profile, both arches cut through, belt line at 1.30 */
-    pts = [[tail, belt]];
-    a = arch(V.XR, R, 0.60, zS, tail);
-    for (i = 0; i < a.length; i++) pts.push(a[i]);
-    a = arch(V.XF, R, 0.58, zS, -9);
-    for (i = 0; i < a.length; i++) pts.push(a[i]);
-    pts.push([nose, zS], [nose, zNose], [cowl, zCowl], [cowl, belt]);
-    K.prism(T.skin, pts, 0.62, hw);
-    K.prism(T.skin, pts, -hw, -0.62);
-    /* floor between the sills, and the sloping bonnet hump */
-    K.bb(T.skin, tail, cowl, -0.62, 0.62, 0.52, 1.20);
-    K.prism(T.skin, [[cowl, 0.60], [nose, 0.60], [nose, zNose + 0.05], [cowl, zCowl + 0.05]], -0.62, 0.62);
-    /* bonnet: vent plate and the team panel */
-    var zb = function (x) { return zCowl + 0.05 + (x - cowl) * (zNose - zCowl) / (nose - cowl); };
-    K.plate(T.dark, 1.22, zb(1.22), 1.66, zb(1.66), 0.014, -0.34, 0.34, "up");
-    K.plate(T.team, 1.74, zb(1.74), 2.20, zb(2.20), 0.014, -0.40, 0.40, "up");
-    /* grille, slats */
-    K.bb(T.dark, nose, nose + 0.012, -0.55, 0.55, 0.62, 1.00);
-    for (i = -3; i <= 3; i++) K.bb(T.skin, nose + 0.012, nose + 0.026, i * 0.15 - 0.016, i * 0.15 + 0.016, 0.64, 0.98);
-    /* armoured front bumper with tow hooks, rear bumper */
-    K.bb(T.dark, nose - 0.04, V.bump, -1.05, 1.05, 0.50, 0.72);
-    K.bbm(T.dark, nose - 0.02, V.bump + 0.02, 0.52, 0.57, 0.44, 0.52);
-    K.bb(T.dark, tail - 0.12, tail + 0.02, -1.05, 1.05, 0.50, 0.70);
-    /* lamps */
+    var zr = V.roof, isN = V.turret === "ogpk", i, s;
+    frontClip(K, T, V);
+    var top = [[V.nose - 1.25, 1.33], [0.82, 1.82], [0.78, zr], [-1.19, zr], [-1.24, zr - 0.04], [V.tail + 0.05, 1.36], [V.tail, 1.32]];
+    sideSkin(K, T, V, sideProfile(V, top));
+    windshieldAt(K, T, V, V.nose - 1.25, 1.36, 0.82, 1.80, true);
+    door(K, T, V, 0.74, -0.29, 1.31, 1.58, 0.55, 0.05, 1.82, false);
+    door(K, T, V, -0.29, -1.24, 1.31, 1.58, -0.44, -0.94, 1.82, false);
+    mirrors(K, T, V, 0.80, 1.40);
+    rearEnd(K, T, V);
     for (s = -1; s <= 1; s += 2) {
-      K.cyl(T.dark, 0.09, 0.03, 12, nose - 0.005, s * 0.90, 0.93, "x");
-      K.cyl(T.lamp, 0.072, 0.034, 12, nose + 0.005, s * 0.90, 0.93, "x");
-      K.bb(T.lampR, tail - 0.014, tail, s * 1.00 - 0.07, s * 1.00 + 0.07, 0.80, 0.92);
+      /* the louvred panel on the slant-back side [D1] */
+      K.bb(T.dark, -2.14, -1.42, s * V.hwS, s * (V.hwS + 0.008), 1.31, 1.50);
+      for (i = 0; i < 7; i++) K.bb(T.skin, -2.10 + i * 0.10, -2.06 + i * 0.10, s * V.hwS, s * (V.hwS + 0.016), 1.32, 1.49);
+      /* the door hinges, outside on the armoured doors */
+      K.bb(T.dark, 0.70, 0.76, s * V.hwS, s * (V.hwS + 0.03), 1.05, 1.12);
+      K.bb(T.dark, -0.33, -0.27, s * V.hwS, s * (V.hwS + 0.03), 1.05, 1.12);
     }
-    /* cab: flat roof, near-upright armoured windshield, flat tail */
-    K.prism(T.skin, [[tail, 1.20], [cowl, 1.20], [cowl - 0.14, roof], [tail + 0.12, roof], [tail, roof - 0.14]], -cw, cw);
-    windshield(K, T, cowl - 0.14 * 0.18 / 0.68, 1.38, cowl - 0.14 * 0.62 / 0.68, 1.82, cw - 0.04, true);
-    /* armour windows: front door, rear door, and a slit on the rear body */
-    K.bbm(T.glass, 0.30, 0.90, cw, cw + 0.012, 1.44, 1.76);
-    K.bbm(T.glass, -0.64, -0.06, cw, cw + 0.012, 1.44, 1.76);
-    K.bbm(T.glass, -1.62, -1.30, cw, cw + 0.012, 1.50, 1.70);
-    /* thick doors: seams at the A-pillar, between the doors and behind the
-       rear door, below and above the belt line */
-    for (i = 0; i < 3; i++) {
-      var sx = [1.00, 0.18, -0.84][i];
-      K.bbm(T.dark, sx - 0.006, sx + 0.006, hw, hw + 0.010, 0.64, belt);
-      K.bbm(T.dark, sx - 0.006, sx + 0.006, cw, cw + 0.010, belt, 1.84);
-    }
-    K.bbm(T.dark, -0.84, 1.00, hw, hw + 0.010, 0.64, 0.655);
-    /* doors' handles */
-    K.bbm(T.dark, 0.10, 0.20, hw, hw + 0.025, 1.12, 1.15);
-    K.bbm(T.dark, -0.92, -0.82, hw, hw + 0.025, 1.12, 1.15);
-    /* mirrors */
-    for (s = -1; s <= 1; s += 2) {
-      K.rod(T.dark, 0.014, [1.04, s * 1.00, 1.50], [1.04, s * 1.20, 1.66], 5);
-      K.bb(T.dark, 1.01, 1.07, s * 1.20 - 0.08, s * 1.20 + 0.08, 1.60, 1.88);
-    }
-    /* roof team panel, front half */
-    K.bb(T.team, 0.20, 0.80, -0.45, 0.45, roof, roof + 0.013);
-    /* spare wheel on the tail, wire-cutter post on the bumper */
-    K.cyl(T.dark, R, 0.31, 14, tail - 0.17, -0.18, 1.12, "x");
-    K.cyl(T.skin, 0.20, 0.32, 12, tail - 0.17, -0.18, 1.12, "x");
-    K.rod(T.dark, 0.02, [nose + 0.10, -0.30, 0.72], [nose + 0.10, -0.30, 2.18], 6);
-    K.rod(T.dark, 0.012, [nose + 0.10, -0.30, 2.18], [nose - 0.12, -0.30, 2.36], 5);
-    /* radio whips on the rear roof */
-    K.bb(T.dark, tail + 0.10, tail + 0.30, 0.70, 0.90, roof, roof + 0.07);
-    K.rod(T.dark, 0.007, [tail + 0.20, 0.80, roof + 0.07], [tail + 0.12, 0.80, 3.30], 4);
+    /* the intake stack at the right of the cowl [D1] */
+    K.cyl(T.skin, 0.065, 0.95, 10, 0.88, -(V.hwS - 0.10), 1.43, "z");
+    K.cyl(T.dark, 0.08, 0.10, 10, 0.88, -(V.hwS - 0.10), 1.93, "z");
+    K.bb(T.team, 0.10, 0.62, -0.45, 0.45, zr, zr + 0.013);
+    /* the turret ring around the hatch */
+    K.cyl(T.dark, 0.48, 0.03, 18, RING_ARM, 0, zr + 0.015, "z");
+    /* radio whip at the right rear; the present-day truck carries a second one at the left */
+    K.bb(T.dark, -1.18, -1.02, -(V.hwS - 0.18), -(V.hwS - 0.02), zr - 0.02, zr + 0.06);
+    K.rod(T.dark, 0.007, [-1.10, -(V.hwS - 0.10), zr + 0.06], [-1.18, -(V.hwS - 0.10), 3.30], 4);
     if (isN) {
-      /* present-day fit: a second whip and a jammer cluster on the roof,
-         and the flat tracker antenna ahead of the turret */
-      K.bb(T.dark, tail + 0.10, tail + 0.30, -0.90, -0.70, roof, roof + 0.07);
-      K.rod(T.dark, 0.007, [tail + 0.20, -0.80, roof + 0.07], [tail + 0.14, -0.80, 2.90], 4);
-      K.bb(T.dark, 0.88, 0.98, -0.30, 0.30, roof, roof + 0.05);
-      /* the jammer rods stand behind the turret's swept circle (the box's
-         corner reaches 0.78 m from the ring centre at x = -0.50), not under
-         its walls, so they show at rest and the box never turns through them */
-      for (i = 0; i < 3; i++) K.rod(T.dark, 0.008, [-1.50, -0.55 + i * 0.12, roof], [-1.50, -0.55 + i * 0.12, roof + 0.42 + i * 0.05], 4);
+      K.bb(T.dark, -1.18, -1.02, V.hwS - 0.18, V.hwS - 0.02, zr - 0.02, zr + 0.06);
+      K.rod(T.dark, 0.007, [-1.10, V.hwS - 0.10, zr + 0.06], [-1.16, V.hwS - 0.10, 3.00], 4);
     }
-    /* the turret base: a ring on the roof around the hatch */
-    K.cyl(T.dark, 0.44, 0.012, 16, -0.50, 0, roof + 0.004, "z");
-    K.torus(T.dark, 0.50, 0.025, -0.50, 0, roof + 0.03, 5, 20);
+  }
+
+  /* ------------------------------------------------ the two-door hard cab */
+  /* the M1097 and the shelter carrier: the cab to behind the front doors, then the bed walls */
+  var CAB_BACK = -0.30;
+  function bodyCab(K, T, V) {
+    var zr = V.roof;
+    frontClip(K, T, V);
+    var top = [[V.nose - 1.25, 1.30], [0.68, 1.79], [0.62, zr], [CAB_BACK, zr], [CAB_BACK, 1.12], [V.tail, 1.12]];
+    sideSkin(K, T, V, sideProfile(V, top));
+    windshieldAt(K, T, V, V.nose - 1.25, 1.31, 0.68, 1.79, false);
+    door(K, T, V, 0.86, -0.22, 1.36, 1.72, 0.72, -0.10, 1.80, true);
+    mirrors(K, T, V, 0.84, 1.36);
+    rearEnd(K, T, V);
+    /* the cab's back window */
+    K.bb(T.glass, CAB_BACK - 0.012, CAB_BACK, -0.60, 0.60, 1.42, 1.70);
+    K.bb(T.team, 0.00, 0.50, -0.45, 0.45, zr, zr + 0.013);
+  }
+
+  /* ------------------------------------------------- the M1097 Avenger */
+  var AV_X = -1.25, AV_Z = 1.12;        /* slew ring centre on the bed */
+  function bodyAvenger(K, T, V) {
+    bodyCab(K, T, V);
+    K.cyl(T.dark, 0.60, 0.04, 16, AV_X, 0, 1.12, "z");
+    /* the gunner's step and the rear-quarter grab handles [P5] */
+    K.bb(T.dark, V.tail - 0.02, V.tail + 0.10, -0.40, 0.40, 0.70, 0.74);
   }
 
   /* ----------------------------------------------- weapon stations */
-  function turretRing(THREE, T, g) {
+  function turretRing(THREE, T, g, roof) {
     /* M1025: the gun rides the ring on a swinging arm; it trains about the
        ring's centre, so the arm sweeps the hoop */
     var tg = new THREE.Group(), K = new Baker(THREE);
     tg.name = "turret";
-    tg.position.set(-0.65, 0, 1.83);
+    tg.position.set(RING_SLANT, 0, roof);
     K.cyl(T.dark, 0.05, 0.20, 8, 0, 0, 0.10, "z");
     K.bb(T.dark, -0.05, 0.45, -0.035, 0.035, 0.17, 0.215);
     K.cyl(T.dark, 0.04, 0.34, 8, 0.40, 0, 0.34, "z");
@@ -703,9 +782,9 @@ var HeroHumvee = (function () {
        side of the gun, two side plates, open behind and above */
     var tg = new THREE.Group(), K = new Baker(THREE);
     tg.name = "turret";
-    tg.position.set(-0.50, 0, roof);
+    tg.position.set(RING_ARM, 0, roof);
     K.bb(T.skin, 0.40, 0.46, -0.56, 0.56, 0.04, 0.78);
-    K.bbm(T.skin, -0.34, 0.46, 0.53, 0.59, 0.04, 0.78);
+    K.bbm(T.skin, -0.02, 0.46, 0.53, 0.59, 0.04, 0.78);   /* short side wings [P3][P6] */
     K.bbm(T.glass, 0.46, 0.47, 0.08, 0.46, 0.46, 0.68);
     K.bb(T.skin, -0.36, 0.40, -0.56, 0.56, 0.04, 0.10);
     K.cyl(T.dark, 0.04, 0.34, 8, 0.10, 0, 0.22, "z");
@@ -719,7 +798,7 @@ var HeroHumvee = (function () {
        corner posts, a roof over the front half, the gun out of the front */
     var tg = new THREE.Group(), K = new Baker(THREE), s, sx;
     tg.name = "turret";
-    tg.position.set(-0.50, 0, roof);
+    tg.position.set(RING_ARM, 0, roof);
     K.bb(T.skin, -0.50, 0.50, -0.60, 0.60, 0.04, 0.28);
     for (sx = -1; sx <= 1; sx += 2) for (s = -1; s <= 1; s += 2)
       K.bb(T.skin, sx * 0.50 - 0.04, sx * 0.50 + 0.04, s * 0.60 - 0.04, s * 0.60 + 0.04, 0.28, 0.66);
@@ -734,42 +813,6 @@ var HeroHumvee = (function () {
     g.add(tg);
   }
 
-  /* ------------------------------------------------ the M998-family hard cab */
-  /* What the Avenger carrier and the shelter carrier share: the tub (bonnet,
-     fenders, grille, bumpers, lamps, mirrors, bed sides), a closed cab block
-     from the belt line to a flat roof, the raked windshield, door glass, the
-     door seams and the team panel on the roof, and a floor under the bed so
-     the arches do not show the sky.  The roof is flat and rigid in the Avenger
-     photographs; the doors are drawn closed. */
-  function cabHard(K, T, V) {
-    var zr = 1.83, hw = V.hw, i, sx;
-    tub(K, T, V);
-    K.prism(T.skin, [[-0.30, 1.10], [1.04, 1.10], [0.90, zr], [-0.30, zr]], -1.00, 1.00);
-    K.bb(T.skin, V.tail, -0.30, -0.78, 0.78, 0.50, 1.10);
-    K.bb(T.skin, -0.30, 0.98, -0.60, 0.60, 0.50, 1.10);
-    K.bb(T.skin, 0.98, 1.08, -0.62, 0.62, 0.82, 1.14);
-    windshield(K, T, 1.0055, 1.28, 0.9096, 1.78, 0.95, false);
-    K.bbm(T.glass, -0.06, 0.80, 1.00, 1.012, 1.36, 1.74);
-    /* the door: seams ahead and behind it (above and below the belt line), the
-       sill seam and the handle */
-    for (i = 0; i < 2; i++) {
-      sx = [0.96, -0.20][i];
-      K.bbm(T.dark, sx - 0.005, sx + 0.005, 1.00, 1.010, 1.10, 1.82);
-      K.bbm(T.dark, sx - 0.005, sx + 0.005, hw, hw + 0.010, 0.64, 1.20);
-    }
-    K.bbm(T.dark, -0.20, 0.96, hw, hw + 0.010, 0.64, 0.655);
-    K.bbm(T.dark, 0.02, 0.12, hw, hw + 0.020, 1.12, 1.15);
-    /* team recognition panel on the roof, front half */
-    K.bb(T.team, 0.12, 0.72, -0.45, 0.45, zr, zr + 0.013);
-  }
-
-  /* ------------------------------------------------- the M1097 Avenger */
-  var AV_X = -1.18, AV_Z = 1.14;        /* slew ring centre on the bed, floor + ring */
-  function bodyAvenger(K, T, V) {
-    cabHard(K, T, V);
-    /* the slew ring the turret housing turns on */
-    K.cyl(T.dark, 0.60, 0.04, 16, AV_X, 0, 1.12, "z");
-  }
   /* The Avenger's gun: the FN M3P, the electrically fired .50 (the aircraft
      Browning M3): receiver on (x0, y0, z0), barrel along +X.  About 1.5 m
      overall with the 0.91 m barrel; no ammunition can is drawn, no photograph
@@ -807,27 +850,44 @@ var HeroHumvee = (function () {
   }
 
   /* --------------------------------------------- the TRAFFIC JAM carrier */
-  var JAM_X = -1.45, JAM_Z = 2.69;      /* mast foot on the shelter roof */
+  /* GlobalSecurity [G]: the AN/TLQ-17A(V)3 housed its electronics in an S-250 shelter, first on
+     the CUCV and from FY90-92 on the HMMWV; its photograph [G1] shows the antenna - a
+     log-periodic array of about fourteen VERTICAL elements on a horizontal boom, the longest at
+     one end, on a single mast.  The shelter on the bed and the array on its mast are drawn; where
+     the mast stands on the vehicle is not shown in any source found, so it stands on the shelter
+     roof (the trained node: the array turns to its target). */
+  var JAM_X = -1.30, JAM_Z = 2.65;
   function bodyJam(K, T, V) {
-    cabHard(K, T, V);
-    /* S250-type shelter on the bed: front on the cab back, rear on the tail
-       plane, 2.0 m wide, 1.5 m tall, resting on the bed side walls */
-    K.bb(T.skin, V.tail, -0.34, -1.00, 1.00, 1.16, 2.65);
-    K.bb(T.team, -0.95, -0.42, -0.60, 0.60, 2.65, 2.663);          /* recognition panel, front half of the roof */
-    K.bb(T.dark, JAM_X - 0.16, JAM_X + 0.16, -0.16, 0.16, 2.65, 2.69);   /* the mast foot */
+    bodyCab(K, T, V);
+    /* the S-250-type shelter: on the bed from the cab back to the tail, 2.0 m wide; skid rails,
+       the door on the back with its hinges and handle, the lifting eyes at the roof corners */
+    var x0 = CAB_BACK - 0.04, x1 = V.tail, s, i;
+    K.bb(T.skin, x1, x0, -1.00, 1.00, 1.12, 2.65);
+    K.bb(T.dark, x1, x0, -0.95, -0.85, 1.06, 1.12);
+    K.bb(T.dark, x1, x0, 0.85, 0.95, 1.06, 1.12);
+    K.bb(T.dark, x1 - 0.012, x1, -0.40, 0.40, 1.22, 2.50);
+    K.bb(T.skin, x1 - 0.020, x1 - 0.012, -0.37, 0.37, 1.25, 2.47);
+    K.bb(T.dark, x1 - 0.04, x1 - 0.02, 0.20, 0.30, 1.80, 1.84);
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 2; i++) K.torus(T.dark, 0.04, 0.012, i ? x1 + 0.06 : x0 - 0.06, s * 0.94, 2.69, 4, 10);
+      /* the corner posts the shelter's sides are framed by */
+      K.bb(T.skin, x0 - 0.03, x0 + 0.005, s * 0.97, s * 1.005, 1.12, 2.65);
+      K.bb(T.skin, x1 - 0.005, x1 + 0.03, s * 0.97, s * 1.005, 1.12, 2.65);
+    }
+    K.bb(T.team, -0.95, -0.42, -0.60, 0.60, 2.65, 2.663);
+    K.cyl(T.dark, 0.10, 0.04, 10, JAM_X, 0, 2.67, "z");
   }
   function mastJam(THREE, T, g) {
-    /* A mast and a directional broadband head: a boom along +X with five cross
-       elements, longest at the back.  Generic (see the header): the form of the
-       real antenna was not found. */
-    var tg = new THREE.Group(), K = new Baker(THREE), i;
-    var xs = [-0.60, -0.30, 0.0, 0.28, 0.54], ls = [1.50, 1.25, 1.02, 0.84, 0.70];
+    var tg = new THREE.Group(), K = new Baker(THREE), i, n = 14;
     tg.name = "turret";
     tg.position.set(JAM_X, 0, JAM_Z);
-    K.cyl(T.dark, 0.04, 1.10, 8, 0, 0, 0.55, "z");                  /* the mast */
-    K.cyl(T.dark, 0.022, 1.40, 6, 0, 0, 1.12, "x");                  /* the boom */
-    for (i = 0; i < 5; i++) K.cyl(T.dark, 0.012, ls[i], 5, xs[i], 0, 1.12, "y");
-    K.bb(T.dark, -0.07, 0.07, -0.07, 0.07, 1.06, 1.18);              /* the clamp where the boom meets the mast */
+    K.cyl(T.dark, 0.035, 1.25, 8, 0, 0, 0.625, "z");                 /* the mast */
+    K.cyl(T.dark, 0.022, 1.70, 6, 0, 0, 1.25, "x");                  /* the boom */
+    for (i = 0; i < n; i++) {                                         /* vertical dipoles, longest at the back */
+      var x = -0.80 + i * 1.60 / (n - 1), hl = 0.62 - i * (0.62 - 0.32) / (n - 1);
+      K.cyl(T.dark, 0.008, hl * 2, 4, x, 0, 1.25, "z");
+    }
+    K.bb(T.dark, -0.06, 0.06, -0.05, 0.05, 1.18, 1.31);               /* the clamp on the mast head */
     K.flush(tg);
     g.add(tg);
   }
@@ -840,25 +900,24 @@ var HeroHumvee = (function () {
       g.name = "humvee_" + key;
       var K = new Baker(THREE);
       chassis(K, T, V);
-      var roof = 1.88;
       if (V.kind === "slant") bodySlant(K, T, V);
       else if (V.kind === "avenger") bodyAvenger(K, T, V);
       else if (V.kind === "jam") bodyJam(K, T, V);
       else bodyArm(K, T, V);
       K.flush(g);
-      var tg = tyreGeo(THREE, V.R), s, i, axs = [V.XF, V.XR];
+      var tgL = tyreGeo(THREE, V.R, 1), tgR = tyreGeo(THREE, V.R, -1), s, i, axs = [XF, XR];
       for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) {
         var w = new THREE.Group();
         w.name = "roadwheel";
         w.position.set(axs[i], s * HALF_TRACK, V.R);
-        w.add(new THREE.Mesh(tg, T.rub));
+        w.add(new THREE.Mesh(s > 0 ? tgL : tgR, T.rub));
         g.add(w);
       }
-      if (V.kind === "slant") turretRing(THREE, T, g);
+      if (V.kind === "slant") turretRing(THREE, T, g, V.roof);
       else if (V.kind === "avenger") turretAvenger(THREE, T, g);
       else if (V.kind === "jam") mastJam(THREE, T, g);
-      else if (V.turret === "gpk") turretGpk(THREE, T, g, roof);
-      else turretOgpk(THREE, T, g, roof);
+      else if (V.turret === "gpk") turretGpk(THREE, T, g, V.roof);
+      else turretOgpk(THREE, T, g, V.roof);
       g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       return g;
     };
@@ -867,11 +926,11 @@ var HeroHumvee = (function () {
   return { make: make };
 })();
 
-/* len is the MEASURED x extent (bumper face to tail, spare wheel included on
-   the armoured pair); render3d.js normalises on the measurement. */
+/* len is the MEASURED x extent (the front tow shackles to the pintle hook); render3d.js normalises on
+   the measurement */
 UNIT_MODELS["nato_e80_recon"] = { len: 4.68, build: HeroHumvee.make("e80") };
 UNIT_MODELS["nato_e90_recon"] = { len: 4.68, build: HeroHumvee.make("e90") };
-UNIT_MODELS["nato_e00_recon"] = { len: 5.08, build: HeroHumvee.make("e00") };
-UNIT_MODELS["recon_n"] = { len: 5.08, build: HeroHumvee.make("n") };
-UNIT_MODELS["nato_e90_spaag"] = { len: 4.95, build: HeroHumvee.make("av") };
+UNIT_MODELS["nato_e00_recon"] = { len: 4.98, build: HeroHumvee.make("e00") };
+UNIT_MODELS["recon_n"] = { len: 4.98, build: HeroHumvee.make("n") };
+UNIT_MODELS["nato_e90_spaag"] = { len: 4.99, build: HeroHumvee.make("av") };
 UNIT_MODELS["nato_e90_ewveh"] = { len: 4.68, build: HeroHumvee.make("tj") };
