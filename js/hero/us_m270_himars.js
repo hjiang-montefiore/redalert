@@ -1,84 +1,141 @@
 /* ===== us_m270_himars.js - HERO models: M270 MLRS and M142 HIMARS ==========
-   Seven rows, two vehicles.
+   Full-quality redo (2026-10-24).  Seven rows, two vehicles, every key kept:
 
    TRACKED, the M270 (the M993 carrier, a Bradley-derived chassis with the
-   launcher loader module on its back):
-     nato_e80_mlrs  M270, 1983: two six-rocket pods, NATO three-tone paint
-     nato_e90_mlrs  M270, 1991: two six-rocket pods, desert tan
-     mlrs_n         M270A1/A2, present day: two six-rocket pods, CARC green
+   launcher-loader module, LLM, on its back):
+     nato_e80_mlrs  M270, 1983: two six-rocket pods (M26), MERDC paint
+     nato_e90_mlrs  M270, 1991: two six-rocket pods (M26), NATO three-colour
+     mlrs_n         M270A2, present day: two six-rocket pods (GMLRS), CARC green
      nato_e90_tel   M270 with MGM-140 ATACMS: two ATACMS pods, one missile each
    WHEELED, the M142 HIMARS (the FMTV 6x6 truck, armoured cab, ONE pod):
-     nato_e00_mlrs  HIMARS: one six-rocket pod
+     nato_e00_mlrs  HIMARS: one six-rocket pod (GMLRS)
      nato_e00_tel   HIMARS / ATACMS: one ATACMS pod (row says rounds: 1)
-     tel_n          HIMARS / PrSM: one PrSM pod (row says rounds: 2)
-   Only the pod end face differs between loads: six 227 mm tube mouths, one
-   610 mm ATACMS mouth, two 430 mm PrSM mouths, all in the same pod box, which
-   is the point of the standard pod.  nato_e90_mlrs carries the rocket pods
-   because its weapon row is "12 x 227mm rockets" (+ the AT2 rocket); ATACMS is
-   drawn only on the TEL rows, whose weapon is srbm_atacms.
+     tel_n          HIMARS / PrSM: one PrSM pod, two missiles (rounds: 2)
+   The NMESIS and Excalibur coastal rows (js/eras.js) borrow tel_n through
+   modelAs.  tel3d.js registers tel_n, nato_e00_tel and nato_e90_tel and
+   units3d.js mlrs_n; this file loads after both (index.html), so it wins for
+   all seven keys, as before; nothing in tel3d.js is needed any more for them.
 
-   Published figures (Lockheed Martin / US Army data sheets) and what this
-   file models (render3d rescales by the measured X extent, so only the
-   proportions survive):
-     M270   length 6.85 m, width 2.97 m (over the tracks), height 2.57 m,
-            6 road wheels a side, front sprocket, rear idler, 25 t, 3 crew.
-            Modelled 6.96 x 3.01 x 2.56 m: the tow shackle and tail eyes make
-            the length, the sprocket teeth the width; the module is stowed
-            level, its top 2.53 m, so the height is the published one.
-     HIMARS length 7.0 m, width 2.4 m, height 3.2 m, 6x6, 3 crew, one pod,
-            395/85R20 tyres (1.18 m nominal, as drawn).  Modelled 7.04 x 2.42
-            x 3.20 m: the cab-roof hatch ring is the highest point.
-   Reference photographs (public-domain US Army / DoD images on Wikimedia
-   Commons): Army_mlrs_1982_02, M270A1_..._South_Dakota_ANG, M270_MLRS_-_
-   190911-A-HE359-0085, Fire_support_training_140313-A-DM872-123, HIMARS_
-   Prototype, Romanian_HIMARS_loaded_into_an_RAF_A400M_airplane.  What they
-   fix: the M270 cab is a full-width armoured box on the bow with three front
-   panes, the launcher module is one wide box behind it whose top stands a
-   little proud of the cab roof, the pods fire FORWARD over the cab and raise
-   on a rear trunnion; the HIMARS cab is a tall slab-sided box behind a short
-   sloped hood, with two front panes, a hatch ring in the roof, equipment
-   lockers behind it, and the module riding over the rear tandem.
-   Check-and-fix pass: the nominal tyres lift the HIMARS 0.04 m and its cab
-   roof stands 0.11 m taller (the first draft was 3.05 m against 3.2 m
-   published); the M270 module is stowed level (the draft's 1.7 degrees of
-   elevation made it 2.64 m against 2.57 m); wheels, sprocket teeth and track
-   end connectors are finer, so the rows sit in the 6,000-9,000 triangle band.
+   References (Wikimedia Commons, US Army / DoD public-domain photographs, at
+   width 960; dates from the file pages):
+     [R84] "M270 MLRS (1984).JPEG", 1984-08-15, REFORGER '84: port side, pod
+           raised - the side stations, the six road wheels and their uneven
+           spacing, the sprocket forward and raised, the cab block, the MERDC
+           four-colour paint.
+     [R85] "MLRS in REFORGER 1985.jpg", 1985-01: the same view; the boom frame
+           standing forward over the pod faces, the tube mouths at the FRONT of
+           the module, the rear trunnion, the lifting struts.
+     [F]   "Multiple Launch Rocket System.jpg" (US Army, undated, White Sands):
+           front three-quarter, firing - the three louvred armoured shutters on
+           the sloped cab front, the two lamp clusters, the tow eyes, the two
+           pods of 3 x 2 tubes in the top of the module face, the open cage
+           below them, the boom's two U-frames over them.
+     [S]   "MLRS-1.svg" (vector of [F]): the louvre slats.
+     [K98] "M-270A1 Multiple Launch Rocket System (MLRS).jpg", 1998-10-15,
+           Korea: NATO three-colour on an M270A1, the cab front, shutters up.
+     [G19] "M270 MLRS - 190911-A-HE359-0085.jpg", 2019-09-11: M270A1 in plain
+           CARC green, port front three-quarter, module stowed - module top a
+           little proud of the cab roof, the louvred panel low on the port
+           side of the module, the return rollers.
+     [A24] "Dynamic Front 25 - M270A2 MLRS (8758660).jpg", 2024-11-17: the
+           M270A2 in plain green.
+     [D]   "HIMARS.png" (side drawing, 2024, port side): the HIMARS side
+           stations - axles, cab, the intake tower and box behind it, the
+           module with three access panels and the boom lying on its top.
+     [H07] "M142 himars.jpg", 2007-09-20: armoured cab front three-quarter,
+           plain green, pod face of 3 x 2 tubes, boom up.
+     [H14] "Fire support training 140313-A-DM872-123.jpg", 2014-03-13
+           Bagram: starboard front three-quarter, module raised - the cab's
+           raked upper front with the two windscreens, chamfered corners,
+           lamps, bumper, steps, the boxes behind the cab, the tandem.
+     [H22] "HIMARS delivered to Grafenwoehr ... (7088223).jpg", 2022-03-08:
+           rear view, plain green, the pod face with its six capped tubes.
+     [P]   "Atacms mlrs 01.jpg": the ATACMS round beside a six-rocket pod.
+   Published (Lockheed Martin / US Army fact sheets, en.wikipedia): M270 6.85 m
+     long, 2.97 m wide over the tracks, 2.57 m high stowed, 6 road wheels a
+     side; HIMARS 7.0 x 2.4 x 3.2 m, 6x6, 395/85R20 tyres (1.18 m).
 
-   Elevation: everything of the module that elevates - the box, the pod
-   faces, the HIMARS boom, the team stripe - is the group "podelev", a child
-   of the module hinged at its rear trunnion and turned about its own Y (the
-   model's pitch axis) by render3d.js, which raises it to LAUNCH_EL to fire
-   and lays it level again; the cradle stays on the ring.  Its userData
-   carries the cells (each round's mouth and the pod's rear, in its frame),
-   where render3d starts a round and puts the backblast.  LAUNCH_EL is not a
-   published figure: no reference fetched gives a firing elevation (FAS: the
-   M26's range "is a function of LLM elevation", with no table), so it is
-   the angle the pod and the missile stand at in the owner's picture of a
-   HIMARS firing, read by eye as 30-40 degrees.  The round each row's
-   launcher fires (ord, per weapon key) is declared here and only here, so
-   the same weapon on another row - "mlrs" is also the Smerch's and the
-   PHL-03's, "srbm_mod" the Iskander's - draws exactly as before.
+   Recognition list (what each rests on; where it is in the code):
+     1. M270: the full-width armoured cab block over the front 2.7 m, its
+        upper front sloped back over three LOUVRED SHUTTERS [F][S][K98]:
+        buildM270, loft table CAB270.
+     2. M270: the two lamp clusters at the outer ends of the vertical band
+        under the shutters, tow eyes below [F][G19]: buildM270.
+     3. M270: six road wheels a side, paired by uneven spacing, the sprocket
+        forward and raised, the idler aft, the green-painted wheel discs, an open
+        track loop with its links, two return rollers [R84][R85][G19]: m270Track, WX270.
+     4. M270: the LLM, a long box behind the cab whose top stands a little
+        proud of the cab roof, hinged at its rear trunnion [G19][R85]: launcher().
+     5. Both: the pod faces in the TOP of the module face, 3 x 2 tube mouths
+        per rocket pod, the open cage below [F][H07][H22]: launcher().
+     6. M270: the boom frame lying forward over the pod faces [R85][F]: launcher(o.boom270).
+     7. M270A1/A2: the louvred panel low on the port side of the module [G19]
+        (mlrs_n only; not seen on the 1980s module [R85]).
+     8. HIMARS: the armoured cab - flat sides, chamfered front corners, the
+        raked upper front with two windscreens, vertical lower front with the
+        grille, bumper, round lamps [H14][H07][D]: buildHimars, loft table CAB142.
+     9. HIMARS: three axles, the tandem close-coupled behind a long gap, big
+        lugged tyres [D][H14]: AX142, tyre().
+    10. HIMARS: the intake tower and box behind the cab on the port side, the
+        boxes on the starboard side, the air tanks under the frame [D][H14].
+    11. HIMARS: the module over the tandem with three access panels a side and
+        the stowed boom lying on its top [D][H14]: launcher(o.boom142).
+    12. Paint by period: MERDC 1984 [R84][R85]; NATO three-colour [K98];
+        plain CARC green [G19][A24][H07][H22].
 
-   Turret: the launcher module is the node "turret" on the rows whose def has
-   turret:true (all but nato_e00_tel and tel_n).  entities.js turns the hull
-   of a turret:false unit to its target and leaves tang where it was, so a
-   node named "turret" on those two would swing against the hull; they bake
-   the module instead, as tel3d.js did.  The HIMARS tyres are six groups named
-   "roadwheel" (axle on local Y) with a lugged tread so the spin shows.  The
-   M270 road wheels are six "roadwheel" groups too, one per axle with the
-   wheel of each side in it (the old M270 rows spun twelve wheels); the
-   belts, sprockets and idlers are baked.
+   Paint, by row and why:
+     nato_e80_mlrs  MERDC four colours (forest green, field drab, sand, black)
+                    as [R84] and [R85] show it in 1984-85.
+     nato_e90_mlrs, nato_e90_tel  NATO three-colour CARC (green, brown,
+                    black) as the 1998 photograph [K98] shows it.  The old
+                    file drew these desert tan for Desert Storm; no dated
+                    photograph of a tan M270 was found in this pass, so the
+                    period's three-colour is drawn (not confirmed: the 1991
+                    desert scheme).
+     mlrs_n, HIMARS rows  plain CARC green [G19][A24][H07][H22].  The e00
+                    HIMARS rows were drawn tan before; the dated 2007 photograph
+                    [H07] is green, and no dated tan HIMARS was fetched.
+   Colours are authored at about 0.8 of the standard chips (FS 34079 forest
+   green, 30118 field drab, 30277 sand; CARC green 383, brown 383), as the
+   ACES pass lifts mid tones.
 
-   Draw calls: bodies are baked to one mesh per material.  M270 16, HIMARS 16
-   (hull 5 + module 5 + 6 wheel groups; the HIMARS body 5 + module 5 + 6):
-   the module is the cradle on the ring (1) and the elevating group (4).
-   Materials: SKIN (camo canvas), DARK, STEEL, RUBBER, GLASS, TEAM.  The team
-   flash is exactly C.team (cab roof panel and a stripe along the module top,
-   both up-facing for the RTS camera), which ERA_KIT repainting relies on.
+   THE HIMARS POD FACES FORWARD HERE, and on the real truck it travels with
+   the pod face AFT, over the tail lamps [H22][H14][D].  The renderer trains
+   a launcher by turning "turret" (or the hull, on the turret:false TEL rows)
+   so that the pod group's +X points at the target, and raises the +X end
+   (render3d.js poseLauncher; launcher3d_check.js holds the bearing to
+   0.16 rad).  A pod drawn aft would fire away from its target.  So the
+   module is drawn as it stands traversed 180 degrees, laid over the cab -
+   the attitude it fires forward from - with its boom and access panels
+   mirrored with it.  Showing the travel stow would need a rest yaw of 180
+   degrees on the module in render3d.js (not done here: game logic).
 
+   Elevation: "podelev" (box, pod faces, boom, team stripe) is a child of the
+   module hinged at its rear trunnion; render3d raises it to LAUNCH_EL (35
+   degrees, as before; no reference gives a firing elevation, [R85] reads
+   about 40) and lays it level again.  Its userData.cells holds each round's
+   mouth and the pod's rear, in its frame.  The round each row fires (ord,
+   per weapon key) is declared here and only here.
+
+   Turret: the module is "turret" on the turret:true rows (all but
+   nato_e00_tel and tel_n, which bake it: entities.js turns their hull).
+   Road wheels: the M270's six "roadwheel" groups, one an axle with both
+   sides' dual wheels; the HIMARS' six tyres, one a group.  Both are one mesh
+   with rubber and painted hub told apart by vertex colour (linear).
+   Neither vehicle has outriggers or jacks, so no travel/deploy pose is drawn:
+   set up, the M270 and HIMARS look as they do on the march.
+   NOT drawn: the M270's roof ventilator stack (it stands above the
+   published 2.57 m the check holds), the whip antennas, the camouflage nets
+   on the cab roof [F], markings, numbers, the HIMARS mirrors' heads beyond a
+   stub, the cab interiors.  Not confirmed: the ATACMS pod's end face (one
+   610 mm mouth is drawn, as before); the exact M270 road-wheel spacing (read
+   off two oblique photographs, [R84] and [R85] agree).
+
+   Draw calls: 16 a row (hull 5 + ring 1 + elevating module 4 + 6 wheel
+   groups).  Materials: SKIN (camo canvas, metre UVs), DARK, STEEL, GLASS,
+   TEAM (exactly C.team), WHEEL (vertex colours).
    Model space: +X nose, +Y left (port), +Z up, metres; tyres and track on
-   z = 0.  ASCII only.  Colours are authored in sRGB (prepModel linearises)
-   and pulled down for the ACES pass, as nato_e90_mbt.js does.  */
+   z = 0.  ASCII only.  Colours authored in sRGB (prepModel linearises). */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -90,57 +147,66 @@ var HeroUsMlrs = (function () {
      a weapon not named keeps its old drawing (nato_e90_mlrs' AT2 mine
      rocket).  M26 for the 1983 and 1991 M270s; GMLRS for the present-day
      M270A2 (the M26 family left the US Army's active inventory in June 2009,
-     en.wikipedia M270) and for the 2005 HIMARS row, whose description fields
-     it with GMLRS (GMLRS introduced 2005); ATACMS and PrSM as the rows say. */
+     en.wikipedia M270) and for the 2005 HIMARS row (GMLRS introduced 2005);
+     ATACMS and PrSM as the rows say. */
   var ROWS = {
-    nato_e80_mlrs: { veh: "m270",   paint: "nato",  pods: "rocket", turret: true,  ord: { w_e80_nato_mlrs: "m26" } },
-    nato_e90_mlrs: { veh: "m270",   paint: "sand",  pods: "rocket", turret: true,  ord: { w_e90_nato_mlrs: "m26" } },
-    mlrs_n:        { veh: "m270",   paint: "green", pods: "rocket", turret: true,  ord: { mlrs: "gmlrs" } },
-    nato_e90_tel:  { veh: "m270",   paint: "sand",  pods: "atacms", turret: true,  ord: { srbm_atacms: "atacms" } },
-    nato_e00_mlrs: { veh: "himars", paint: "sand",  pods: "rocket", turret: true,  ord: { w_e00_nato_mlrs: "gmlrs" } },
-    nato_e00_tel:  { veh: "himars", paint: "sand",  pods: "atacms", turret: false, ord: { srbm_atacms: "atacms" } },
-    tel_n:         { veh: "himars", paint: "green", pods: "prsm",   turret: false, ord: { srbm_mod: "prsm" } }
+    nato_e80_mlrs: { veh: "m270",   paint: "merdc", pods: "rocket", turret: true,  louvre: false, ord: { w_e80_nato_mlrs: "m26" } },
+    nato_e90_mlrs: { veh: "m270",   paint: "nato3", pods: "rocket", turret: true,  louvre: false, ord: { w_e90_nato_mlrs: "m26" } },
+    mlrs_n:        { veh: "m270",   paint: "carc",  pods: "rocket", turret: true,  louvre: true,  ord: { mlrs: "gmlrs" } },
+    nato_e90_tel:  { veh: "m270",   paint: "nato3", pods: "atacms", turret: true,  louvre: false, ord: { srbm_atacms: "atacms" } },
+    nato_e00_mlrs: { veh: "himars", paint: "carc",  pods: "rocket", turret: true,  ord: { w_e00_nato_mlrs: "gmlrs" } },
+    nato_e00_tel:  { veh: "himars", paint: "carc",  pods: "atacms", turret: false, ord: { srbm_atacms: "atacms" } },
+    tel_n:         { veh: "himars", paint: "carc",  pods: "prsm",   turret: false, ord: { srbm_mod: "prsm" } }
   };
   /* the pod's firing elevation: see the header (not a published figure) */
   var LAUNCH_EL = 35 * Math.PI / 180;
 
   function rng(seed) {
     var s = (seed >>> 0) || 1;
-    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
   }
 
   /* ---------------------------------------------------------------- paint */
-  /* Base coats authored a little under the finished colour: the ACES pass
-     lifts dark hexes.  nato: forest green with brown and black blocks, the
-     NATO three-tone of the 1980s.  sand: the same 0x9c8759 the M1A1 hero
-     wears for the Gulf.  green: CARC green with light weathering. */
+  /* base: the field colour; blots: [colour, count, radius px] laid in order;
+     the canvas is 256 px over 6 m of surface (worldUV), so 43 px a metre and
+     the MERDC and NATO patches come out 1-2.5 m across, as photographed.
+     hub: the painted road-wheel / wheel colour (vertex colour, sRGB). */
   var PAINT = {
-    nato:  { base: "#3a4a2e", patch: ["#5b4528", "#171914", "#4c5e38"], n: 15, big: 1.1 },
-    sand:  { base: "#9c8759", patch: ["#8d7a4e", "#aa986c"],            n: 22, big: 0.7 },
-    green: { base: "#3a4530", patch: ["#333d29", "#445036"],            n: 22, big: 0.7 }
+    merdc: { base: "#4a5537", blots: [["#6b5b40", 9, 34], ["#a7946c", 7, 20], ["#1d1d19", 9, 10]], hub: 0x4a5537 },
+    nato3: { base: "#424d2f", blots: [["#4f3e2b", 10, 36], ["#1c1c18", 8, 22]], hub: 0x424d2f },
+    carc:  { base: "#4b5442", blots: [["#454e3d", 8, 30], ["#525b48", 8, 26]], hub: 0x4b5442 }
   };
   var _cv = {};
 
   function paintCanvas(kind) {
-    if (_cv[kind]) return _cv[kind];
-    var P = PAINT[kind], R = rng(kind.length * 7919 + 31), W = 256, i, q, cv, x, y;
+    if (_cv[kind] !== undefined) return _cv[kind];
+    var P = PAINT[kind], R = rng(kind.length * 7919 + kind.charCodeAt(0) * 131), W = 256, i, k, j, q, cv, x, y, rr, a, rd;
     try {
       cv = document.createElement("canvas"); cv.width = W; cv.height = W;
       q = cv.getContext("2d");
       q.fillStyle = P.base; q.fillRect(0, 0, W, W);
-      for (i = 0; i < P.n; i++) {
-        q.fillStyle = P.patch[i % P.patch.length];
-        q.beginPath();
-        q.ellipse(R() * W, R() * W, (14 + R() * 38) * P.big, (8 + R() * 22) * P.big, R() * 3.14, 0, 6.2832);
-        q.fill();
+      for (k = 0; k < P.blots.length; k++) {
+        q.fillStyle = P.blots[k][0];
+        for (i = 0; i < P.blots[k][1]; i++) {
+          x = R() * W; y = R() * W; rr = P.blots[k][2] * (0.7 + R() * 0.6);
+          /* an irregular blot, drawn again across each edge it crosses so the tile repeats seamlessly */
+          var pts = [];
+          for (a = 0; a < 9; a++) { rd = rr * (0.5 + R() * 0.75); pts.push([Math.cos(a / 9 * 6.2832) * rd * 1.5, Math.sin(a / 9 * 6.2832) * rd]); }
+          for (j = 0; j < 9; j++) {
+            var ox = ((j % 3) - 1) * W, oy = (((j / 3) | 0) - 1) * W;
+            q.beginPath();
+            for (a = 0; a < 9; a++) { if (a) q.lineTo(x + ox + pts[a][0], y + oy + pts[a][1]); else q.moveTo(x + ox + pts[a][0], y + oy + pts[a][1]); }
+            q.closePath(); q.fill();
+          }
+        }
       }
-      /* dust and wear: pale flecks and dark scuffs */
+      /* dust and wear: pale flecks, dark scuffs, faint rain streaks */
       for (i = 0; i < 70; i++) {
-        q.fillStyle = (i & 1) ? "rgba(214,200,160,0.07)" : "rgba(20,18,12,0.10)";
-        x = R() * W; y = R() * W;
-        q.fillRect(x, y, 3 + R() * 18, 1 + R() * 3);
+        q.fillStyle = (i & 1) ? "rgba(214,200,160,0.06)" : "rgba(20,18,12,0.08)";
+        q.fillRect(R() * W, R() * W, 3 + R() * 18, 1 + R() * 3);
       }
-    } catch (e) { return null; }
+      for (i = 0; i < 30; i++) { q.fillStyle = "rgba(25,25,18,0.06)"; q.fillRect(R() * W, R() * W, 1 + R() * 2, 20 + R() * 50); }
+    } catch (e) { cv = null; }
     _cv[kind] = cv;
     return cv;
   }
@@ -160,20 +226,26 @@ var HeroUsMlrs = (function () {
     T.skin = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.90, metalness: 0.04 });
     if (tx) T.skin.map = tx; else T.skin.color.setHex(parseInt(PAINT[kind].base.slice(1), 16));
     T.skin.userData.worldUV = 6.0;
-    T.dark  = new THREE.MeshStandardMaterial({ color: 0x24251f, roughness: 0.82, metalness: 0.20 });
+    T.dark  = new THREE.MeshStandardMaterial({ color: 0x23241f, roughness: 0.82, metalness: 0.20 });
     T.steel = new THREE.MeshStandardMaterial({ color: 0x4a4d4f, roughness: 0.50, metalness: 0.38 });
-    T.rub   = new THREE.MeshStandardMaterial({ color: 0x151514, roughness: 0.95, metalness: 0.02 });
     T.glass = new THREE.MeshStandardMaterial({ color: 0x1c2a31, roughness: 0.14, metalness: 0.30 });
+    T.wheel = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.92, metalness: 0.04 });
     /* team flash: exactly the owner's colour */
     T.team  = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0,
                                                roughness: 0.60, metalness: 0.10 });
     return T;
   }
+  /* an sRGB hex as a linear vertex colour (vertex colours are not linearised by prepModel) */
+  function lin(hex) {
+    return [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255].map(function (c) {
+      c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+  }
 
   /* ------------------------------------------------------------ triangles */
   /* A flat triangle soup that orients every face away from a hint point; for
      a convex part that is its own middle, so there is no winding to get
-     wrong.  Everything prismatic below is convex. */
+     wrong.  Everything prismatic and lofted below is convex. */
   function Soup() { this.p = []; this.n = []; }
   Soup.prototype.tri = function (a, b, c, away) {
     var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
@@ -219,15 +291,21 @@ var HeroUsMlrs = (function () {
   /* One merged mesh per material.  `pre` is an optional matrix every part is
      put through on the way in: about(px, pz) takes parts authored in the
      module's frame into the elevating group's, whose origin is the rear
-     trunnion; about() clears it. */
-  function Baker(THREE) { this.T = THREE; this.by = []; this.pre = null; }
+     trunnion; about() clears it.  vc: a linear colour stamped on what is
+     added while it is set (the wheel material). */
+  function Baker(THREE) { this.T = THREE; this.by = []; this.pre = null; this.vc = null; }
   Baker.prototype.about = function (px, pz) {
     this.pre = px === undefined ? null : new this.T.Matrix4().makeTranslation(-px, 0, -pz);
   };
   Baker.prototype.add = function (mat, geo) {
     var g = geo.index ? geo.toNonIndexed() : geo;
     if (this.pre) g.applyMatrix4(this.pre);
-    for (var i = 0; i < this.by.length; i++) if (this.by[i].mat === mat) { this.by[i].g.push(g); return; }
+    if (this.vc) {
+      var n = g.attributes.position.count, c = new Float32Array(n * 3), i;
+      for (i = 0; i < n; i++) { c[i * 3] = this.vc[0]; c[i * 3 + 1] = this.vc[1]; c[i * 3 + 2] = this.vc[2]; }
+      g.setAttribute("color", new this.T.BufferAttribute(c, 3));
+    }
+    for (var j = 0; j < this.by.length; j++) if (this.by[j].mat === mat) { this.by[j].g.push(g); return; }
     this.by.push({ mat: mat, g: [g] });
   };
   Baker.prototype.put = function (mat, geo, x, y, z, rx, ry, rz) {
@@ -260,7 +338,7 @@ var HeroUsMlrs = (function () {
   Baker.prototype.mouth = function (mat, r, seg, x, y, z) {
     this.put(mat, new this.T.CircleGeometry(r, seg), x, y, z, 0, Math.PI / 2, 0);
   };
-  /* convex XZ polygon extruded across Y from y0 to y1 */
+  /* convex XZ polygon (side profile) extruded across Y from y0 to y1 */
   Baker.prototype.prism = function (mat, pts, y0, y1) {
     var S = new Soup(), n = pts.length, cx = 0, cz = 0, i;
     for (i = 0; i < n; i++) { cx += pts[i][0]; cz += pts[i][1]; }
@@ -274,31 +352,53 @@ var HeroUsMlrs = (function () {
     }
     this.add(mat, S.geo(this.T));
   };
-  /* convex YZ polygon extruded along X from x0 to x1 */
+  /* convex YZ polygon (cross-section) extruded along X from x0 to x1 */
   Baker.prototype.prismYZ = function (mat, pts, x0, x1) {
-    var S = new Soup(), n = pts.length, cy = 0, cz = 0, i;
-    for (i = 0; i < n; i++) { cy += pts[i][0]; cz += pts[i][1]; }
-    cy /= n; cz /= n;
-    var away = [(x0 + x1) / 2, cy, cz], c0 = [x0, cy, cz], c1 = [x1, cy, cz];
-    for (i = 0; i < n; i++) {
-      var a = pts[i], b = pts[(i + 1) % n];
-      var a0 = [x0, a[0], a[1]], b0 = [x0, b[0], b[1]], a1 = [x1, a[0], a[1]], b1 = [x1, b[0], b[1]];
-      S.tri(c0, a0, b0, away); S.tri(c1, a1, b1, away);
-      S.quad(a0, b0, b1, a1, away);
+    this.loft(mat, [[x0, pts], [x1, pts]]);
+  };
+  /* a lofted solid through a station table: [[x, [[y, z]...]]...], every
+     section convex with the same point count and the whole convex (each
+     station inside the hull of its neighbours), capped at both ends */
+  Baker.prototype.loft = function (mat, st) {
+    var S = new Soup(), m = st.length, n = st[0][1].length, i, j, cx = 0, cy = 0, cz = 0, c = 0, P = [];
+    for (i = 0; i < m; i++) {
+      P.push([]);
+      for (j = 0; j < n; j++) { var q = [st[i][0], st[i][1][j][0], st[i][1][j][1]]; P[i].push(q); cx += q[0]; cy += q[1]; cz += q[2]; c++; }
+    }
+    var away = [cx / c, cy / c, cz / c];
+    for (i = 0; i < m - 1; i++) for (j = 0; j < n; j++) {
+      var k = (j + 1) % n;
+      S.quad(P[i][j], P[i][k], P[i + 1][k], P[i + 1][j], away);
+    }
+    for (i = 0; i < m; i += m - 1) {
+      var ce = [0, 0, 0];
+      for (j = 0; j < n; j++) { ce[0] += P[i][j][0] / n; ce[1] += P[i][j][1] / n; ce[2] += P[i][j][2] / n; }
+      for (j = 0; j < n; j++) S.tri(ce, P[i][j], P[i][(j + 1) % n], away);
+      if (m === 1) break;
     }
     this.add(mat, S.geo(this.T));
+  };
+  /* a plate on a sloped face: the face runs from F0 to F1 in side view
+     ([x, z]); u0..u1 are fractions along it, h0..h1 the stand-off along the
+     outward normal, y0..y1 across */
+  Baker.prototype.onSlope = function (mat, F0, F1, u0, u1, h0, h1, y0, y1) {
+    var dx = F1[0] - F0[0], dz = F1[1] - F0[1], L = Math.sqrt(dx * dx + dz * dz), nx = dz / L, nz = -dx / L;
+    if (nx < 0) { nx = -nx; nz = -nz; }                     /* the face looks forward */
+    function p(u, h) { return [F0[0] + dx * u + nx * h, F0[1] + dz * u + nz * h]; }
+    this.prism(mat, [p(u0, h0), p(u1, h0), p(u1, h1), p(u0, h1)], y0, y1);
   };
   Baker.prototype.flush = function (group) {
     var THREE = this.T;
     for (var i = 0; i < this.by.length; i++) {
-      var e = this.by[i], n = 0, j;
-      for (j = 0; j < e.g.length; j++) n += e.g[j].attributes.position.count;
-      var P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2), o = 0;
+      var e = this.by[i], n = 0, j, hasC = false;
+      for (j = 0; j < e.g.length; j++) { n += e.g[j].attributes.position.count; if (e.g[j].attributes.color) hasC = true; }
+      var P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2), Cc = hasC ? new Float32Array(n * 3) : null, o = 0;
       for (j = 0; j < e.g.length; j++) {
         var g = e.g[j], c = g.attributes.position.count;
         P.set(g.attributes.position.array, o * 3);
         if (g.attributes.normal) N.set(g.attributes.normal.array, o * 3);
         if (g.attributes.uv) U.set(g.attributes.uv.array, o * 2);
+        if (Cc) { if (g.attributes.color) Cc.set(g.attributes.color.array, o * 3); else Cc.fill(1, o * 3, (o + c) * 3); }
         o += c;
       }
       var S = e.mat.userData && e.mat.userData.worldUV;
@@ -307,6 +407,7 @@ var HeroUsMlrs = (function () {
       geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
       geo.setAttribute("uv", new THREE.BufferAttribute(U, 2));
+      if (Cc) geo.setAttribute("color", new THREE.BufferAttribute(Cc, 3));
       geo.computeBoundingSphere();
       var mesh = new THREE.Mesh(geo, e.mat);
       mesh.castShadow = true; mesh.receiveShadow = true;
@@ -316,72 +417,90 @@ var HeroUsMlrs = (function () {
   };
 
   /* ------------------------------------------------------------- the pods */
-  /* The launcher loader module, built about the traverse ring (origin: the
+  /* The launcher-loader module, built about the traverse ring (origin: the
      ring centre on the deck).  o: hw half width, x0/x1 length, z0/z1 height,
      pods [y centres] and kinds [rocket | atacms | prsm, one per pod],
-     px/pz the rear trunnion the module elevates about.  The pods sit
-     inside the box; only their end faces show, standing 0.04 m proud of the
-     module's front, which is where the rockets leave: forward, over the cab.
-     The mouth discs stand 6 and 12 mm beyond that face, apart so they cannot
-     z-fight.
-     Behind the cab they are hidden at rest and show when the module traverses.
+     px/pz the rear trunnion it elevates about.  Each pod face (1.05 x 0.84 m,
+     the standard pod's end) sits in the TOP of the module's front face, 0.04
+     proud, the open loading cage below it [F][H07][H22]; its mouths stand
+     6 and 12 mm beyond, apart so they cannot z-fight.
      Two bakers: KT keeps the cradle, which stays on the traverse ring; KE
      takes everything that elevates, shifted into the trunnion's frame for
      the group "podelev" (elevGroup), and is left in that frame so the caller
      can add its own module parts.  Returns the cells, one per round the
-     pods hold: [mouth x, y, z, pod rear x] in that frame.
-     o.boom: the HIMARS launcher-loader boom (below). */
+     pods hold: [mouth x, y, z, pod rear x] in that frame. */
   function launcher(KT, KE, T, o) {
-    var i, j, k, yc, kind, c = 0.12, zc = (o.z0 + 0.16 + o.z1 - 0.12) / 2, cells = [];
+    var i, j, k, yc, kind, c = 0.10, zc = o.z1 - 0.06 - 0.42, cells = [], xm = (o.x0 + o.x1) / 2, L = o.x1 - o.x0;
     function cell(y, z) { cells.push([o.x1 + 0.06 - o.px, y, z - o.pz, o.x0 - o.px]); }
-    /* the cradle under it, which the traverse ring carries */
-    KT.bb(T.dark, o.x0 + 0.5, o.x1 - 0.6, -o.hw + 0.3, o.hw - 0.3, o.z0 - 0.14, o.z0 + 0.01);
+    /* the cradle under it, which the traverse ring carries, and the two
+       elevating rams lying along it (they show under the raised module [R85]) */
+    KT.bb(T.dark, o.x0 + 0.25, o.x1 - 0.30, -o.hw + 0.25, o.hw - 0.25, o.z0 - 0.12, o.z0 + 0.01);
+    for (j = -1; j <= 1; j += 2) KT.cyl(T.dark, 0.07, L * 0.42, 10, xm + L * 0.12, j * (o.hw - 0.45), o.z0 - 0.02, "x");
     KE.about(o.px, o.pz);
-    /* the module: an octagonal section, chamfered along its top edges */
-    KE.prismYZ(T.skin, [[-o.hw + 0.02, o.z0], [o.hw - 0.02, o.z0], [o.hw, o.z0 + 0.10], [o.hw, o.z1 - c],
-                        [o.hw - c, o.z1], [-o.hw + c, o.z1], [-o.hw, o.z1 - c], [-o.hw, o.z0 + 0.10]],
-               o.x0, o.x1);
-    /* two panel lines down each side, so the box reads as plated, not poured */
-    for (j = -1; j <= 1; j += 2) for (k = 0; k < 2; k++)
-      KE.box(T.dark, o.x1 - o.x0 - 0.3, 0.012, 0.022, (o.x0 + o.x1) / 2, j * (o.hw + 0.004), k ? o.z1 - 0.20 : o.z0 + 0.30);
-    /* the pod end faces: a boxed stub per pod and its mouths */
+    /* the module: a box chamfered along its top edges, plated in panels */
+    KE.prismYZ(T.skin, [[-o.hw + 0.02, o.z0], [o.hw - 0.02, o.z0], [o.hw, o.z0 + 0.08], [o.hw, o.z1 - c],
+                        [o.hw - c, o.z1], [-o.hw + c, o.z1], [-o.hw, o.z1 - c], [-o.hw, o.z0 + 0.08]],
+               o.x0, o.x1 - 0.06);
+    /* the front frame round the face: top rail, side posts, sill */
+    KE.bb(T.skin, o.x1 - 0.06, o.x1, -o.hw, o.hw, o.z1 - 0.06, o.z1 - c * 0.3);
+    for (j = -1; j <= 1; j += 2) KE.bb(T.skin, o.x1 - 0.06, o.x1, j * o.hw, j * (o.hw - 0.08), o.z0 + 0.08, o.z1 - 0.06);
+    KE.bb(T.skin, o.x1 - 0.06, o.x1, -o.hw + 0.08, o.hw - 0.08, o.z0, o.z0 + 0.10);
+    /* the open cage under the pods: the dark interior and its frames [F] */
+    KE.bb(T.dark, o.x1 - 0.07, o.x1 - 0.05, -o.hw + 0.08, o.hw - 0.08, o.z0 + 0.10, zc - 0.42);
+    for (j = 0; j < 3; j++) KE.bb(T.skin, o.x1 - 0.06, o.x1 - 0.02, -o.hw + 0.08, o.hw - 0.08, o.z0 + 0.22 + j * (zc - 0.42 - o.z0 - 0.22) / 2.4, o.z0 + 0.26 + j * (zc - 0.42 - o.z0 - 0.22) / 2.4);
+    for (j = 0; j < o.posts.length; j++) KE.bb(T.skin, o.x1 - 0.06, o.x1 - 0.02, o.posts[j] - 0.04, o.posts[j] + 0.04, o.z0 + 0.10, zc - 0.42);
+    /* panel seams down each side and along it, so the box reads as plated */
+    for (j = -1; j <= 1; j += 2) {
+      for (k = 0; k < 2; k++) KE.box(T.dark, L - 0.3, 0.012, 0.022, xm, j * (o.hw + 0.004), k ? o.z1 - 0.22 : o.z0 + 0.26);
+      for (k = 0; k < o.seams.length; k++) KE.box(T.dark, 0.022, 0.012, o.z1 - o.z0 - 0.5, o.x0 + o.seams[k], j * (o.hw + 0.004), (o.z0 + o.z1) / 2);
+      /* latches on the access panels */
+      for (k = 0; k < o.seams.length - 1; k++) KE.box(T.steel, 0.05, 0.02, 0.07, o.x0 + (o.seams[k] + o.seams[k + 1]) / 2, j * (o.hw + 0.01), o.z1 - 0.40);
+    }
+    /* the pod end faces and their mouths */
     for (i = 0; i < o.pods.length; i++) {
       yc = o.pods[i]; kind = o.kinds[i];
-      KE.bb(T.skin, o.x1 - 0.02, o.x1 + 0.04, yc - 0.49, yc + 0.49, zc - 0.43, zc + 0.43);
+      KE.bb(T.skin, o.x1 - 0.02, o.x1 + 0.04, yc - 0.525, yc + 0.525, zc - 0.42, zc + 0.42);
+      KE.bb(T.dark, o.x1 + 0.04, o.x1 + 0.045, yc - 0.49, yc + 0.49, zc - 0.39, zc + 0.39);
       if (kind === "rocket") {
         for (j = -1; j <= 1; j++) for (k = -1; k <= 1; k += 2)
-          { KE.mouth(T.dark, 0.12, 12, o.x1 + 0.052, yc + j * 0.31, zc + k * 0.215);
-            KE.mouth(T.steel, 0.14, 12, o.x1 + 0.046, yc + j * 0.31, zc + k * 0.215);
-            cell(yc + j * 0.31, zc + k * 0.215); }
+          { KE.mouth(T.dark, 0.125, 14, o.x1 + 0.052, yc + j * 0.33, zc + k * 0.19);
+            KE.mouth(T.steel, 0.150, 14, o.x1 + 0.046, yc + j * 0.33, zc + k * 0.19);
+            cell(yc + j * 0.33, zc + k * 0.19); }
       } else if (kind === "atacms") {
-        KE.mouth(T.dark, 0.31, 20, o.x1 + 0.052, yc, zc);
-        KE.mouth(T.steel, 0.335, 20, o.x1 + 0.046, yc, zc);
+        KE.mouth(T.dark, 0.31, 22, o.x1 + 0.052, yc, zc);
+        KE.mouth(T.steel, 0.34, 22, o.x1 + 0.046, yc, zc);
         cell(yc, zc);
       } else {
         for (j = -1; j <= 1; j += 2) {
-          KE.mouth(T.dark, 0.21, 16, o.x1 + 0.052, yc + j * 0.255, zc);
-          KE.mouth(T.steel, 0.23, 16, o.x1 + 0.046, yc + j * 0.255, zc);
+          KE.mouth(T.dark, 0.22, 18, o.x1 + 0.052, yc + j * 0.255, zc);
+          KE.mouth(T.steel, 0.24, 18, o.x1 + 0.046, yc + j * 0.255, zc);
           cell(yc + j * 0.255, zc);
         }
       }
     }
-    /* The HIMARS launcher-loader boom, stowed: a yoke over the front of the
-       box, an arm along each side of the top rising to a cross bar above the
-       pod face - as it stands over the pod in the owner's picture and the
-       HIMARS training photograph (the integrated loading and hoisting gear,
-       de.wikipedia MLRS).  It is kept behind the face, clear of the cab
-       wall, and under the cab roof.  Section, rise and length are by eye,
-       not published.  The M270 is not given one: its stowed height (2.57 m,
-       which the module top already makes) leaves no room for a yoke standing
-       above it, and its stowed boom could not be made out. */
-    if (o.boom) {
+    /* the M270's boom frame, stowed: an arm along each top edge of the front
+       third and the cross frame standing over the pod faces [R85][F] */
+    if (o.boom270) {
+      for (j = -1; j <= 1; j += 2) {
+        KE.bb(T.skin, o.x1 - 1.30, o.x1 + 0.02, j * (o.hw - 0.10), j * (o.hw - 0.22), o.z1 - 0.01, o.z1 + 0.05);
+        KE.bb(T.skin, o.x1 - 0.12, o.x1 + 0.02, j * (o.hw - 0.10), j * (o.hw - 0.22), o.z1 - 0.40, o.z1 + 0.05);
+      }
+      KE.bb(T.skin, o.x1 - 0.12, o.x1 + 0.02, -(o.hw - 0.10), o.hw - 0.10, o.z1 + 0.0, o.z1 + 0.09);
+      KE.bb(T.skin, o.x1 - 1.10, o.x1 - 0.95, -(o.hw - 0.16), o.hw - 0.16, o.z1, o.z1 + 0.04);
+    }
+    /* the HIMARS boom, stowed: lying on top of the module, its cross frame at
+       the end away from the pod face, lifted a little at its head [D] */
+    if (o.boom142) {
       for (j = -1; j <= 1; j += 2)
-        KE.prism(T.skin, [[o.x1 - 1.05, o.z1 - 0.02], [o.x1 - 0.12, o.z1 + 0.26], [o.x1 - 0.12, o.z1 + 0.36],
-                          [o.x1 - 1.15, o.z1 + 0.06]], j * (o.hw - 0.17) - 0.045, j * (o.hw - 0.17) + 0.045);
-      KE.bb(T.skin, o.x1 - 0.20, o.x1 - 0.06, -(o.hw - 0.12), o.hw - 0.12, o.z1 + 0.26, o.z1 + 0.37);
+        KE.prism(T.skin, [[o.x0 + 0.25, o.z1 + 0.34], [o.x0 + 0.45, o.z1 + 0.06], [o.x0 + 1.75, o.z1 + 0.04],
+                          [o.x0 + 1.75, o.z1 + 0.13], [o.x0 + 0.40, o.z1 + 0.22], [o.x0 + 0.22, o.z1 + 0.40]],
+                 j * (o.hw - 0.14) - 0.05, j * (o.hw - 0.14) + 0.05);
+      KE.bb(T.skin, o.x0 + 0.18, o.x0 + 0.34, -(o.hw - 0.09), o.hw - 0.09, o.z1 + 0.28, o.z1 + 0.42);
+      KE.bb(T.skin, o.x0 + 1.55, o.x0 + 1.80, -(o.hw - 0.20), o.hw - 0.20, o.z1, o.z1 + 0.05);
+      for (j = -1; j <= 1; j += 2) KE.bb(T.skin, o.x0 + 1.60, o.x0 + 1.75, j * (o.hw - 0.09), j * (o.hw - 0.19), o.z1, o.z1 + 0.13);
     }
     /* team stripe along the top, facing the RTS camera */
-    KE.bb(T.team, o.x0 + 0.7, o.x1 - 0.7, -0.26, 0.26, o.z1 + 0.0, o.z1 + 0.025);
+    KE.bb(T.team, xm - L * 0.18, xm + L * 0.12, -0.24, 0.24, o.z1 + 0.0, o.z1 + 0.022);
     return cells;
   }
 
@@ -398,237 +517,309 @@ var HeroUsMlrs = (function () {
     return E;
   }
 
-  /* ------------------------------------------------------------ small parts */
-  /* One road wheel of the M270 carrier, both sides of an axle in one mesh: the
-     tyre, a rim a step proud of it, the hub and six hub nuts.  Local origin is
-     the axle line at the middle of the carrier; the group is named "roadwheel"
-     and spins about its own Y. */
-  function m270Wheel(W, T, s) {
-    var i, a, y = s * 1.40;
-    W.cyl(T.rub, 0.31, 0.17, 32, 0, y, 0, "y");
-    W.cyl(T.rub, 0.215, 0.186, 24, 0, y, 0, "y");
-    W.cyl(T.rub, 0.105, 0.18, 16, 0, y, 0, "y");
-    for (i = 0; i < 6; i++) {
-      a = i * Math.PI / 3 + 0.26;
-      W.box(T.rub, 0.036, 0.02, 0.036, 0.165 * Math.cos(a), s * 1.485, 0.165 * Math.sin(a), 0, -a, 0);
+  /* ----------------------------------------------------------------- M270 */
+  /* Side stations off [R84] and [R85] (76.6 px a metre on the 6.85 m hull),
+     +X nose: hull -3.42 .. +3.42; cab 0.70 .. 3.42, roof 2.40; deck 1.08;
+     module -3.38 .. 0.62, top 2.46; tracks 0.53 wide, 2.97 m over both. */
+  var WX270 = [2.11, 1.37, 0.35, -0.50, -1.49, -2.20], ZW = 0.37, RW = 0.30;
+  var XS = 2.96, ZS = 0.62, RS = 0.33, XI = -2.98, ZI = 0.56, RI = 0.30;
+  var TI = 0.955, TO = 1.485, TC = 1.22, TT = 0.07;
+  /* the cab's cross-section table: station x, then the section [y, z] -
+     full width over the tracks, the roof edges chamfered, the front corners
+     taken in where the louvred upper front meets the lamp band [F][K98] */
+  function sec270(hw, z0, z1, ct) { return [[-hw, z0], [hw, z0], [hw, z1 - ct], [hw - ct, z1], [-hw + ct, z1], [-hw, z1 - ct]]; }
+  var CAB270 = [[0.70, sec270(1.45, 1.06, 2.40, 0.06)], [2.92, sec270(1.45, 1.06, 2.40, 0.06)],
+                [3.40, sec270(1.40, 1.06, 1.52, 0.02)]];
+  var F0 = [3.40, 1.52], F1 = [2.92, 2.40];          /* the sloped upper front, in side view */
+
+  function m270Track(K, T, THREE, s) {
+    var i, a, x, pts = [], segs = [], y0 = s * TI, y1 = s * TO;
+    /* the loop's outer line: bottom run under the wheels, round the sprocket, the top run on the
+       return rollers, round the idler */
+    pts.push([WX270[5] - 0.05, 0], [WX270[0] + 0.05, 0]);
+    for (i = 0; i <= 8; i++) { a = -Math.PI * 0.62 + Math.PI * 1.12 * i / 8; pts.push([XS + (RS + TT) * Math.cos(a), ZS + (RS + TT) * Math.sin(a)]); }
+    for (i = 0; i <= 8; i++) { a = Math.PI / 2 + Math.PI * 0.92 * i / 8; pts.push([XI + (RI + TT) * Math.cos(a), ZI + (RI + TT) * Math.sin(a)]); }
+    pts.push([WX270[5] - 0.05, 0]);
+    for (i = 0; i < pts.length - 1; i++) {
+      var p = pts[i], q = pts[i + 1], dx = q[0] - p[0], dz = q[1] - p[1], L = Math.sqrt(dx * dx + dz * dz);
+      if (L < 1e-4) continue;
+      var nx = -dz / L * TT, nz = dx / L * TT;                 /* inward (the loop runs anticlockwise) */
+      K.prism(T.dark, [[p[0], p[1]], [q[0], q[1]], [q[0] + nx, q[1] + nz], [p[0] + nx, p[1] + nz]], y0, y1);
+      /* links: an end connector across the outer face every 0.155 m */
+      for (x = 0.08; x < L; x += 0.155) {
+        var t = x / L;
+        K.box(T.dark, 0.06, 0.03, TT * 0.8, p[0] + dx * t + nx * 0.5, s * (TO + 0.012), p[1] + dz * t + nz * 0.5, 0, -Math.atan2(dz, dx), 0);
+      }
     }
-  }
-  /* track end-connector blocks round a curved end of the belt (sprocket, idler) */
-  function beltArc(K, mat, THREE, cx, cz, r, a0, a1, n, y) {
-    for (var i = 0; i <= n; i++) {
-      var a = a0 + (a1 - a0) * i / n;
-      K.put(mat, new THREE.BoxGeometry(0.06, 0.075, 0.13), cx + r * Math.cos(a), y, cz + r * Math.sin(a), 0, -a, 0);
+    /* sprocket: drum, hub, and the two toothed rings each side of the guide teeth */
+    K.cyl(T.dark, RS - 0.02, TO - TI - 0.04, 24, XS, s * TC, ZS, "y");
+    K.cyl(T.steel, 0.13, 0.04, 12, XS, s * (TO + 0.005), ZS, "y");
+    for (i = 0; i < 11; i++) {
+      a = i * Math.PI * 2 / 11;
+      K.put(T.steel, new THREE.BoxGeometry(0.07, 0.05, 0.07), XS + (RS - 0.02) * Math.cos(a), s * (TO - 0.02), ZS + (RS - 0.02) * Math.sin(a), 0, -a, 0);
+      K.put(T.dark, new THREE.BoxGeometry(0.06, 0.03, 0.06), XS + 0.20 * Math.cos(a + 0.3), s * (TO - 0.005), ZS + 0.20 * Math.sin(a + 0.3), 0, -a, 0);
     }
-  }
-  /* sprocket or idler: a drum, a ring of teeth on its outer face, a hub cap */
-  function drum(K, T, THREE, s, x, z, r, nt) {
-    var i, a;
-    K.cyl(T.dark, r, 0.17, 28, x, s * 1.40, z, "y");
-    K.cyl(T.steel, r * 0.42, 0.03, 12, x, s * 1.475, z, "y");
-    for (i = 0; i < nt; i++) {
-      a = i * Math.PI * 2 / nt;
-      K.put(T.steel, new THREE.BoxGeometry(0.05, 0.045, 0.07), x + r * 0.78 * Math.cos(a), s * 1.48, z + r * 0.78 * Math.sin(a), 0, -a, 0);
+    /* idler: a dished wheel with six lightening holes, its arm */
+    K.cyl(T.dark, RI - 0.01, TO - TI - 0.04, 24, XI, s * TC, ZI, "y");
+    K.cyl(T.steel, 0.10, 0.03, 12, XI, s * (TO + 0.0), ZI, "y");
+    for (i = 0; i < 6; i++) { a = i * Math.PI / 3; K.cyl(T.steel, 0.045, 0.02, 8, XI + 0.18 * Math.cos(a), s * (TO - 0.005), ZI + 0.18 * Math.sin(a), "y"); }
+    /* the return rollers under the top run, over the gaps between the second and third and the
+       fourth and fifth road wheels [G19] */
+    var RR = [0.86, -1.00];
+    for (i = 0; i < 2; i++) {
+      var zt = ZI + RI + (ZS + RS - ZI - RI) * (RR[i] - XI) / (XS - XI);
+      K.cyl(T.dark, 0.09, TO - TI - 0.1, 12, RR[i], s * TC, zt - 0.09, "y");
+      K.cyl(T.steel, 0.05, 0.03, 8, RR[i], s * (TO - 0.04), zt - 0.09, "y");
     }
   }
 
-  /* ----------------------------------------------------------------- M270 */
-  /* Hull 6.85 m: tail plate -3.42, bow lip +3.42.  Tracks 0.53 wide, 2.97 m
-     over both.  Six road wheels a side at 0.82 m, sprocket forward, idler aft.
-     Hull deck 1.45 m; cab roof 2.42; module top 2.53 m, level (the published
-     height is 2.57 m). */
+  /* one road-wheel station: the dual wheels of each side (rubber tyre, painted disc, hub), both
+     sides in one mesh, axle on local Y through the group origin */
+  function m270Wheel(W, T, hub) {
+    var s, k, i, a, yc;
+    for (s = -1; s <= 1; s += 2) for (k = 0; k < 2; k++) {
+      yc = s * (k ? 1.355 : 1.085);
+      W.vc = lin(0x1b1c1a);
+      W.cyl(T.wheel, RW, 0.17, k ? 22 : 16, 0, yc, 0, "y");
+      W.vc = lin(hub);
+      W.cyl(T.wheel, 0.23, 0.18, k ? 16 : 10, 0, yc, 0, "y");
+      if (!k) continue;                      /* the inner wheel hides behind the outer and the belt */
+      W.vc = lin(0x2a2b27);
+      W.cyl(T.wheel, 0.085, 0.20, 8, 0, yc, 0, "y");
+      for (i = 0; i < 6; i++) {
+        a = i * Math.PI / 3 + 0.26;
+        W.box(T.wheel, 0.035, 0.02, 0.035, 0.15 * Math.cos(a), yc + s * 0.095, 0.15 * Math.sin(a), 0, -a, 0);
+      }
+    }
+    W.vc = null;
+  }
+
   function buildM270(THREE, T, V) {
     var root = new THREE.Group(), K = new Baker(THREE), KT = new Baker(THREE);
-    var s, i, x, a, belt = [];
-    var XA = -3.0, ZA = 0.40, RA = 0.40, XB = 2.85, ZB = 0.50, RB = 0.50;
-    var HW = 1.44, DECK = 1.45;
+    var s, i, x, k, DECK = 1.08, HW = 1.45;
 
-    /* the belt: the convex outline round idler and sprocket */
-    for (i = 0; i <= 6; i++) { a = -Math.PI / 2 + Math.PI * i / 6; belt.push([XB + RB * Math.cos(a), ZB + RB * Math.sin(a)]); }
-    for (i = 0; i <= 6; i++) { a = Math.PI / 2 + Math.PI * i / 6; belt.push([XA + RA * Math.cos(a), ZA + RA * Math.sin(a)]); }
-
+    for (s = -1; s <= 1; s += 2) m270Track(K, T, THREE, s);
+    /* the lower hull between the tracks: belly 0.45 m off the ground, the nose
+       sloping up to the cab front, the rear plate upright [R84][F] */
+    K.prism(T.skin, [[-3.30, 0.45], [2.75, 0.45], [3.40, 0.98], [3.40, 1.06], [-3.42, 1.06], [-3.42, 0.58]], -TI + 0.005, TI - 0.005);
+    /* the deck over the tracks behind the cab, with its edge lip [R84] */
+    K.bb(T.skin, -3.42, 0.70, -HW, HW, 0.98, DECK);
     for (s = -1; s <= 1; s += 2) {
-      K.prism(T.dark, belt, s * 0.99, s * 1.40);
-      /* end connectors along the lower run, the part of the belt anyone sees,
-         and round the lower halves of the two curved ends */
-      for (x = XA + 0.06; x < XB; x += 0.17) K.box(T.dark, 0.10, 0.075, 0.07, x, s * 1.405, 0.04);
-      beltArc(K, T.dark, THREE, XB, ZB, RB + 0.01, -Math.PI / 2 + 0.50, 0.60, 5, s * 1.405);
-      beltArc(K, T.dark, THREE, XA, ZA, RA + 0.01, 1.95, Math.PI * 1.5 - 0.58, 5, s * 1.405);
-      /* sprocket (front, bigger) and idler (rear); the six road wheels are the
-         "roadwheel" groups built below, so they can turn */
-      drum(K, T, THREE, s, XB, ZB, 0.40, 12);
-      drum(K, T, THREE, s, XA, ZA, 0.34, 10);
-      /* tow shackle and a headlamp on the bow, tail lamp and eye aft */
-      K.box(T.steel, 0.06, 0.10, 0.10, 3.445, s * 0.45, 0.95);
-      K.box(T.glass, 0.05, 0.20, 0.12, 3.44, s * 1.05, 1.00);
-      K.box(T.dark, 0.04, 0.26, 0.18, 3.43, s * 1.05, 1.00);
-      K.box(T.glass, 0.04, 0.16, 0.10, -3.43, s * 1.15, 1.10);
-      K.box(T.steel, 0.06, 0.12, 0.12, -3.45, s * 0.55, 0.95);
+      K.bb(T.dark, -3.40, 0.70, s * (HW - 0.01), s * (HW + 0.025), 0.95, 1.03);
+      /* the front fender over the sprocket, ahead of the cab's lower edge */
+      K.bb(T.dark, 0.70, 3.36, s * (TI - 0.01), s * (HW + 0.025), 0.98, 1.06);
     }
-
-    /* belly plate between the tracks, 0.43 m off the ground as published */
-    K.bb(T.dark, -3.30, 3.25, -1.00, 1.00, 0.43, 0.80);
-
-    /* hull: a long slab, bow plate rising back to the deck at the cab */
-    K.prism(T.skin, [[-3.42, 0.80], [-3.42, DECK], [3.12, DECK], [3.42, 1.20], [3.42, 0.80]], -HW, HW);
-
-    /* the cab: full width, three front panes, flat roof */
-    var CHW = 1.38, XF0 = 3.12, XF1 = 2.95, Z0 = DECK, Z1 = 2.42;
-    K.prism(T.skin, [[XF0, Z0], [XF1, Z1], [1.15, Z1], [1.15, Z0]], -CHW, CHW);
-    function fx(z) { return XF0 - (XF0 - XF1) * (z - Z0) / (Z1 - Z0); }
-    var panes = [[-0.36, 0.36], [0.46, 1.08], [-1.08, -0.46]];
+    /* the cab, lofted from CAB270 */
+    K.loft(T.skin, CAB270);
+    /* the three louvred armoured shutters on the sloped front, lowered as in
+       the firing photographs: a dark recess, the frame, five slats [F][S] */
+    var panes = [[-1.30, -0.48], [-0.38, 0.38], [0.48, 1.30]];
     for (i = 0; i < 3; i++) {
       var p0 = panes[i][0], p1 = panes[i][1];
-      K.prism(T.dark, [[fx(1.74) + 0.012, 1.74], [fx(2.34) + 0.012, 2.34], [fx(2.34) - 0.02, 2.34], [fx(1.74) - 0.02, 1.74]],
-              p0 - 0.05, p1 + 0.05);
-      K.prism(T.glass, [[fx(1.78) + 0.026, 1.78], [fx(2.30) + 0.026, 2.30], [fx(2.30) - 0.02, 2.30], [fx(1.78) - 0.02, 1.78]],
-              p0, p1);
-      /* the armoured visor over each pane */
-      K.box(T.skin, 0.12, p1 - p0 + 0.16, 0.06, fx(2.40) + 0.04, (p0 + p1) / 2, 2.395);
+      K.onSlope(T.dark, F0, F1, 0.16, 0.92, -0.01, 0.025, p0, p1);
+      K.onSlope(T.skin, F0, F1, 0.14, 0.18, 0.0, 0.06, p0 - 0.03, p1 + 0.03);
+      K.onSlope(T.skin, F0, F1, 0.90, 0.94, 0.0, 0.06, p0 - 0.03, p1 + 0.03);
+      K.onSlope(T.skin, F0, F1, 0.14, 0.94, 0.0, 0.06, p0 - 0.03, p0);
+      K.onSlope(T.skin, F0, F1, 0.14, 0.94, 0.0, 0.06, p1, p1 + 0.03);
+      for (k = 0; k < 6; k++) K.onSlope(T.skin, F0, F1, 0.22 + k * 0.115, 0.27 + k * 0.115, 0.01, 0.055, p0, p1);
     }
+    /* the lamp band: a cluster at each outer end - guard, two lamps [F][G19] */
     for (s = -1; s <= 1; s += 2) {
-      /* a side pane and its frame, and a roof hatch ring */
-      K.box(T.dark, 0.70, 0.024, 0.44, 2.45, s * (CHW + 0.004), 2.04);
-      K.box(T.glass, 0.60, 0.030, 0.34, 2.45, s * (CHW + 0.010), 2.04);
-      K.cyl(T.steel, 0.27, 0.07, 14, 1.50, s * 0.62, Z1 + 0.035, "z");
-      K.cyl(T.dark, 0.21, 0.075, 14, 1.50, s * 0.62, Z1 + 0.038, "z");
-      /* door seam strap and a handhold on the cab side */
-      K.box(T.dark, 0.03, 0.02, 0.95, 1.70, s * (CHW + 0.002), 1.95);
-      K.box(T.steel, 0.30, 0.04, 0.03, 1.95, s * (CHW + 0.025), 1.70);
+      K.bb(T.dark, 3.40, 3.46, s * 0.96, s * 1.32, 1.20, 1.44);
+      K.mouth(T.glass, 0.055, 12, 3.465, s * 1.06, 1.32);
+      K.mouth(T.glass, 0.055, 12, 3.465, s * 1.22, 1.32);
+      /* tow eyes and the shackles below them on the nose [F] */
+      K.bb(T.steel, 3.36, 3.48, s * 0.55, s * 0.70, 0.94, 1.04);
+      K.cyl(T.steel, 0.05, 0.06, 10, 3.47, s * 0.625, 0.88, "y");
+      /* rear: tail lamps, tow eyes */
+      K.box(T.glass, 0.03, 0.14, 0.10, -3.435, s * 1.20, 0.98);
+      K.bb(T.steel, -3.48, -3.40, s * 0.50, s * 0.62, 0.70, 0.82);
+      /* cab sides: the door seam, a vision block and handholds; the side of
+         the cab block steps in at its lower edge */
+      K.box(T.dark, 0.022, 0.02, 1.05, 2.30, s * (HW + 0.002), 1.68);
+      K.box(T.dark, 0.022, 0.02, 1.05, 1.20, s * (HW + 0.002), 1.68);
+      K.box(T.dark, 1.12, 0.02, 0.022, 1.75, s * (HW + 0.002), 2.21);
+      K.box(T.dark, 0.36, 0.024, 0.20, 1.75, s * (HW + 0.004), 2.03);
+      K.box(T.glass, 0.30, 0.03, 0.14, 1.75, s * (HW + 0.008), 2.03);
+      K.box(T.steel, 0.30, 0.04, 0.03, 1.75, s * (HW + 0.025), 1.55);
+      K.box(T.steel, 0.03, 0.04, 0.30, 2.62, s * (HW + 0.025), 1.80);
+      /* the roof's rear corners: antenna bases [R84] */
+      K.cyl(T.steel, 0.06, 0.10, 8, 0.95, s * 1.20, 2.45, "z");
     }
-    /* team panel on the cab roof */
-    K.bb(T.team, 1.95, 2.80, -0.80, 0.80, Z1, Z1 + 0.025);
+    /* roof: the commander's hatch and a vision block, the team panel */
+    K.cyl(T.steel, 0.30, 0.06, 16, 1.45, 0.55, 2.43, "z");
+    K.cyl(T.dark, 0.24, 0.065, 16, 1.45, 0.55, 2.435, "z");
+    K.bb(T.dark, 2.40, 2.70, -0.30, 0.30, 2.40, 2.46);
+    K.bb(T.team, 1.85, 2.30, -1.05, 0.05, 2.40, 2.42);
+    /* the rear plate: a stowage box and the tail beam */
+    K.bb(T.dark, -3.46, -3.42, -0.80, 0.80, 0.62, 0.98);
 
-    /* the module on its traverse ring: ring centre -0.95, the module 4.15 m,
-       rear trunnion 0.6 m in, front 0.3 m clear of the cab rear wall */
-    var RX = -0.95, KE = new Baker(THREE), cells;
-    KT.cyl(T.dark, 1.02, 0.15, 26, 0, 0, 0.075, "z");
-    cells = launcher(KT, KE, T, { hw: 1.22, x0: -2.25, x1: 1.90, z0: 0.15, z1: 1.08, pods: [0.57, -0.57],
-                                  kinds: [V.pods, V.pods], px: -1.65, pz: 0.15 });
-    /* the louvred panel on the port side of the module, as in the photographs */
-    KE.box(T.dark, 1.10, 0.03, 0.42, 0.75, 1.235, 0.64);
-    for (i = 0; i < 4; i++) KE.box(T.steel, 1.06, 0.035, 0.025, 0.75, 1.24, 0.50 + i * 0.09);
-
+    /* the module on its traverse ring: ring centre -1.30, the module 4.0 m,
+       its rear trunnion 0.18 m in from its rear face, front 0.08 m clear of
+       the cab's rear wall */
+    var RX = -1.30, KE = new Baker(THREE), cells;
+    KT.cyl(T.dark, 0.95, 0.10, 26, 0, 0, 0.05, "z");
+    cells = launcher(KT, KE, T, { hw: 1.22, x0: -2.08, x1: 1.92, z0: 0.20, z1: 1.38, pods: [0.585, -0.585],
+                                  kinds: [V.pods, V.pods], px: -1.90, pz: 0.20, boom270: true,
+                                  posts: [-0.585, 0, 0.585], seams: [0.25, 1.35, 2.55, 3.70] });
+    if (V.louvre) {
+      /* the louvred panel low on the port side of the module, near its front [G19] */
+      KE.bb(T.dark, 0.70, 1.55, 1.222, 1.236, 0.38, 0.92);
+      for (i = 0; i < 6; i++) KE.bb(T.steel, 0.72, 1.53, 1.230, 1.248, 0.42 + i * 0.085, 0.45 + i * 0.085);
+    }
     K.flush(root);
     var G = new THREE.Group();
     G.position.set(RX, 0, DECK);
     KT.flush(G);
-    G.add(elevGroup(THREE, KE, -1.65, 0.15, cells));
+    G.add(elevGroup(THREE, KE, -1.90, 0.20, cells));
     if (V.turret) G.name = "turret";
     root.add(G);
 
-    /* the six road wheels: one "roadwheel" group per axle, the wheel of each
-       side in it, axle on local Y through the group origin */
+    /* the six road-wheel stations [R84][R85] */
     for (i = 0; i < 6; i++) {
       var W = new Baker(THREE), wg = new THREE.Group();
-      m270Wheel(W, T, -1); m270Wheel(W, T, 1);
+      m270Wheel(W, T, PAINT[V.paint].hub);
       W.flush(wg);
       wg.name = "roadwheel";
-      wg.position.set(2.00 - 0.82 * i, 0, 0.40);
+      wg.position.set(WX270[i], 0, ZW);
       root.add(wg);
     }
     return root;
   }
 
   /* --------------------------------------------------------------- HIMARS */
-  /* 7.0 m overall, 2.4 m wide, tyres 1.18 m on 2.0 m tracks, front axle +2.45,
-     tandem at -1.15 and -2.52 (1.37 m apart).  The body is authored for 1.10 m
-     tyres and carried UP = 0.04 m higher on the nominal ones: frame top 1.08,
-     deck 1.28 m.  Cab 2.1 m long and 2.26 m wide, roof 3.10 m, hatch ring to
-     3.19 m.  */
+  /* Side stations off the drawing [D] scaled to the published 7.0 m (105 px a
+     metre), heights off [H14] (the 1.18 m tyre as the yardstick, cab roof
+     2.98 m) and the published 3.2 m (the roof hatch ring is the top):
+     bumper +3.50; cab 1.77 .. 3.38; axles +2.32, -0.92, -2.16; module
+     -3.39 .. +0.20, top 2.60; rear -3.50. */
+  var AX142 = [2.32, -0.92, -2.16], RT = 0.59, YT = 0.99;
+  function sec142(hw, z0, z1, ct) { return [[-hw, z0], [hw, z0], [hw, z1 - ct], [hw - ct, z1], [-hw + ct, z1], [-hw, z1 - ct]]; }
+  /* the armoured cab: flat sides, the front corners chamfered in, the upper
+     front raked back to the roof [H14][H07][D] */
+  var CAB142 = [[1.77, sec142(1.17, 1.22, 2.98, 0.08)], [3.04, sec142(1.17, 1.22, 2.98, 0.08)],
+                [3.30, sec142(1.04, 1.24, 2.32, 0.03)], [3.38, sec142(0.96, 1.26, 2.24, 0.02)]];
+  var G0 = [3.33, 2.30], G1 = [3.04, 2.98];          /* the raked upper front, in side view */
+
+  /* one 395/85R20 tyre: lugged tread, the painted wheel with its nut ring */
+  function tyre(W, T, THREE, hub) {
+    var i, a, j;
+    W.vc = lin(0x1b1c1a);
+    W.cyl(T.wheel, RT - 0.035, 0.38, 32, 0, 0, 0, "y");
+    W.cyl(T.wheel, RT - 0.10, 0.40, 24, 0, 0, 0, "y");
+    for (i = 0; i < 30; i++) {
+      a = i * Math.PI * 2 / 30;
+      W.put(T.wheel, new THREE.BoxGeometry(0.055, 0.17, 0.12), (RT - 0.02) * Math.cos(a), (i & 1 ? 0.095 : -0.095), (RT - 0.02) * Math.sin(a), 0, -a, 0);
+    }
+    W.vc = lin(hub);
+    for (j = -1; j <= 1; j += 2) { W.cyl(T.wheel, 0.36, 0.03, 20, 0, j * 0.19, 0, "y"); W.cyl(T.wheel, 0.30, 0.04, 20, 0, j * 0.175, 0, "y"); }
+    W.vc = lin(0x2a2b27);
+    for (j = -1; j <= 1; j += 2) {
+      W.cyl(T.wheel, 0.12, 0.05, 12, 0, j * 0.21, 0, "y");
+      for (i = 0; i < 10; i++) { a = i * Math.PI / 5; W.box(T.wheel, 0.04, 0.03, 0.04, 0.20 * Math.cos(a), j * 0.205, 0.20 * Math.sin(a), 0, -a, 0); }
+    }
+    W.vc = null;
+  }
+
   function buildHimars(THREE, T, V) {
     var root = new THREE.Group(), K = new Baker(THREE), KT = new Baker(THREE);
-    var s, i, j, a, AX = [2.45, -1.15, -2.52], DECK = 1.24, RAD = 0.59, UP = RAD - 0.55;
-    /* everything above the axles rides UP higher than the 1.10 m tyres drew it */
-    K.pre = new THREE.Matrix4().makeTranslation(0, 0, UP);
+    var s, i, j, DECK = 1.22, CHW = 1.17;
 
-    /* chassis: frame rails, cross members, axle housings and pumpkins */
-    for (s = -1; s <= 1; s += 2) K.bb(T.dark, -3.30, 3.05, s * 0.52, s * 0.38, 0.80, 1.04);
-    for (i = 0; i < 5; i++) K.bb(T.dark, -3.2 + i * 1.5, -3.2 + i * 1.5 + 0.12, -0.52, 0.52, 0.84, 1.00);
+    /* chassis: frame rails, cross members, axle housings, the tandem's walking beams */
+    for (s = -1; s <= 1; s += 2) K.bb(T.dark, -3.42, 3.30, s * 0.52, s * 0.38, 0.82, 1.08);
+    for (i = 0; i < 6; i++) K.bb(T.dark, -3.3 + i * 1.25, -3.3 + i * 1.25 + 0.10, -0.52, 0.52, 0.86, 1.04);
     for (i = 0; i < 3; i++) {
-      K.cyl(T.steel, 0.085, 1.9, 10, AX[i], 0, 0.55, "y");
-      K.box(T.dark, 0.38, 0.34, 0.30, AX[i], 0, 0.55);
+      K.cyl(T.dark, 0.09, 1.70, 10, AX142[i], 0, RT, "y");
+      K.box(T.dark, 0.42, 0.36, 0.34, AX142[i], 0, RT);
     }
-    /* fuel tanks / battery boxes between the axles, low on each side */
-    for (s = -1; s <= 1; s += 2) K.bb(T.dark, -0.30, 0.90, s * 0.62, s * 1.00, 0.74, 1.14);
+    for (s = -1; s <= 1; s += 2) K.bb(T.dark, AX142[2] - 0.15, AX142[1] + 0.15, s * 0.62, s * 0.50, 0.50, 0.70);
+    /* port, under the frame between the axles: battery box and the three air tanks [D];
+       starboard: the fuel tank [H14] */
+    K.bb(T.skin, 0.28, 1.18, 0.55, 1.08, 0.66, 1.10);
+    for (i = 0; i < 3; i++) K.cyl(T.dark, 0.12, 0.50, 12, -0.10 + i * 0.27, 0.82, 0.62, "y");
+    K.bb(T.skin, -0.30, 1.30, -1.08, -0.55, 0.64, 1.10);
+    K.bb(T.dark, -0.30, 1.30, -1.09, -1.08, 0.88, 0.90);
 
-    /* hood and cab */
-    K.prism(T.skin, [[2.65, 0.98], [2.65, 1.75], [3.05, 1.66], [3.46, 1.42], [3.46, 0.98]], -1.00, 1.00);
-    K.bb(T.steel, 3.44, 3.58, -1.12, 1.12, 0.66, 0.94);                     /* bumper */
-    K.bb(T.dark, 3.455, 3.475, -0.62, 0.62, 1.02, 1.38);                    /* grille */
-    for (i = 0; i < 6; i++) K.bb(T.steel, 3.47, 3.50, -0.58, 0.58, 1.06 + i * 0.055, 1.085 + i * 0.055);
+    /* the cab, lofted from CAB142 */
+    K.loft(T.skin, CAB142);
+    /* the two windscreens in the raked upper front, framed [H14][H07] */
     for (s = -1; s <= 1; s += 2) {
-      K.box(T.glass, 0.05, 0.26, 0.15, 3.46, s * 0.82, 1.28);               /* headlamps */
-      K.box(T.steel, 0.08, 0.08, 0.10, 3.54, s * 0.50, 0.80);               /* tow eyes */
+      K.onSlope(T.dark, G0, G1, 0.14, 0.80, -0.01, 0.025, s * 0.10, s * 0.86);
+      K.onSlope(T.glass, G0, G1, 0.18, 0.76, 0.0, 0.035, s * 0.14, s * 0.82);
     }
-    var CHW = 1.13;
-    K.prismYZ(T.skin, [[-CHW, 1.20], [CHW, 1.20], [CHW, 2.66], [1.00, 3.06], [-1.00, 3.06], [-CHW, 2.66]], 0.80, 2.65);
+    /* lamps along the roof's front edge [H14] */
+    for (i = 0; i < 5; i++) K.bb(T.steel, 2.98, 3.08, -0.70 + i * 0.35 - 0.06, -0.70 + i * 0.35 + 0.06, 2.95, 3.03);
+    /* the lower front: grille field and bars, the bumper, round lamps, tow shackles [H14][H07] */
+    K.bb(T.dark, 3.38, 3.40, -0.62, 0.62, 1.30, 1.64);
+    for (i = 0; i < 4; i++) K.bb(T.skin, 3.39, 3.42, -0.58, 0.58, 1.35 + i * 0.08, 1.38 + i * 0.08);
+    /* the bolted armour plate of the lower front [H14][H07] */
+    for (i = 0; i < 7; i++) for (j = 0; j < 2; j++) K.box(T.steel, 0.02, 0.035, 0.035, 3.385, -0.84 + i * 0.28, 1.78 + j * 0.36);
+    K.bb(T.dark, 3.36, 3.52, -1.14, 1.14, 0.78, 1.08);
     for (s = -1; s <= 1; s += 2) {
-      /* the sill under the cab, behind the front wheel arch */
-      K.bb(T.dark, 0.82, 1.80, s * 0.50, s * 1.10, 0.95, 1.20);
-      /* two front panes, set high, each with a frame */
-      K.box(T.dark, 0.03, 0.94, 0.64, 2.66, s * 0.58, 2.57);
-      K.box(T.glass, 0.035, 0.82, 0.52, 2.665, s * 0.58, 2.57);
-      K.box(T.skin, 0.14, 1.02, 0.06, 2.72, s * 0.58, 2.93);                 /* armoured visor */
-      /* side window and the cab-side step and handhold */
-      K.box(T.dark, 0.66, 0.03, 0.50, 2.00, s * (CHW + 0.004), 2.45);
-      K.box(T.glass, 0.54, 0.036, 0.40, 2.00, s * (CHW + 0.008), 2.45);
-      K.box(T.steel, 0.14, 0.04, 0.035, 1.40, s * (CHW + 0.02), 2.06);       /* door handle */
-      K.bb(T.steel, 2.05, 2.55, s * (CHW + 0.08), s * (CHW + 0.01), 1.00, 1.05);
-      K.box(T.steel, 0.04, 0.05, 0.50, 1.50, s * (CHW + 0.03), 1.95);
-      /* fenders over the front wheel and the tandem; lockers behind the cab */
-      K.bb(T.skin, 1.80, 3.15, s * 0.76, s * 1.20, 1.17, 1.23);
-      K.bb(T.skin, -3.30, -0.42, s * 0.76, s * 1.20, 1.17, 1.23);
-      K.bb(T.skin, 0.06, 0.78, s * 0.70, s * 1.16, 1.23, 1.86);
-      K.box(T.dark, 0.02, 0.36, 0.12, 0.80, s * 0.93, 1.60);
-      /* rear lamps */
-      K.box(T.glass, 0.04, 0.14, 0.10, -3.43, s * 0.95, 1.10);
+      K.mouth(T.glass, 0.075, 14, 3.525, s * 0.86, 0.93);
+      K.mouth(T.glass, 0.050, 12, 3.525, s * 0.62, 0.93);
+      K.bb(T.steel, 3.50, 3.58, s * 0.30, s * 0.42, 0.82, 0.96);
+      /* cab sides: door seams, the small high window, handle, steps, bolt rows [H14][D] */
+      K.box(T.dark, 0.022, 0.02, 1.30, 2.05, s * (CHW + 0.002), 2.05);
+      K.box(T.dark, 0.022, 0.02, 1.30, 3.00, s * (CHW + 0.002), 2.05);
+      K.box(T.dark, 0.95, 0.02, 0.022, 2.52, s * (CHW + 0.002), 2.72);
+      K.box(T.dark, 0.40, 0.024, 0.32, 2.75, s * (CHW + 0.004), 2.50);
+      K.box(T.glass, 0.34, 0.03, 0.26, 2.75, s * (CHW + 0.008), 2.50);
+      K.box(T.steel, 0.16, 0.04, 0.035, 2.20, s * (CHW + 0.02), 1.98);
+      for (i = 0; i < 2; i++) K.bb(T.dark, 2.95, 3.35, s * (CHW - 0.02), s * (CHW + 0.10), 0.62 + i * 0.30, 0.66 + i * 0.30);
+      for (i = 0; i < 6; i++) for (j = 0; j < 3; j++) K.box(T.steel, 0.035, 0.02, 0.035, 1.90 + i * 0.22, s * (CHW + 0.004), 1.40 + j * 0.62);
+      /* mirror stubs on the front corners */
+      K.bb(T.dark, 3.05, 3.12, s * CHW, s * (CHW + 0.10), 2.55, 2.85);
+      /* fenders over the front tyres and the tandem */
+      K.bb(T.skin, 1.75, 2.95, s * 0.70, s * 1.20, 1.20, 1.25);
+      K.bb(T.skin, -2.88, -0.20, s * 0.70, s * 1.20, 1.20, 1.25);
+      K.bb(T.dark, -2.88, -2.84, s * 0.75, s * 1.18, 0.62, 1.20);
+      /* rear lamps and the tail beam */
+      K.box(T.glass, 0.04, 0.14, 0.12, -3.47, s * 0.98, 1.12);
+      K.bb(T.dark, -3.50, -3.36, s * 0.86, s * 1.12, 1.02, 1.25);
     }
-    /* roof: hatch ring with its dark opening, team panel, antenna bases */
-    K.cyl(T.steel, 0.38, 0.09, 20, 1.55, 0, 3.105, "z");
-    K.cyl(T.dark, 0.30, 0.095, 20, 1.55, 0, 3.108, "z");
-    K.bb(T.team, 2.05, 2.55, -0.80, 0.80, 3.06, 3.085);
-    K.box(T.steel, 0.12, 0.12, 0.08, 0.95, 0.85, 3.10);
-    K.box(T.steel, 0.12, 0.12, 0.08, 0.95, -0.85, 3.10);
-    /* the rear deck, narrower than the tyres' inner faces */
-    K.bb(T.skin, -3.45, 0.78, -0.76, 0.76, 1.04, DECK);
-    K.bb(T.steel, -3.46, -3.40, -0.95, 0.95, 0.88, 1.00);                    /* tail beam */
+    K.bb(T.dark, -3.48, -3.40, -0.95, 0.95, 0.86, 1.00);
+    /* roof: the gunner's hatch ring [H14], antenna bases, the team panel */
+    K.cyl(T.steel, 0.36, 0.08, 20, 2.15, 0.30, 3.02, "z");
+    K.cyl(T.dark, 0.28, 0.085, 20, 2.15, 0.30, 3.025, "z");
+    K.cyl(T.steel, 0.05, 0.10, 8, 1.90, -0.90, 3.03, "z");
+    K.bb(T.team, 2.30, 2.90, -1.00, -0.10, 2.98, 3.00);
+    /* behind the cab, port: the intake tower with its air cleaner drum and the box [D];
+       starboard: the tall locker and the box under it [H14] */
+    K.bb(T.skin, 1.40, 1.74, 0.62, 1.12, 1.25, 2.96);
+    K.cyl(T.skin, 0.24, 0.42, 16, 1.38, 0.87, 2.15, "y");
+    K.bb(T.skin, 0.55, 1.30, 0.55, 1.12, 1.55, 2.28);
+    K.box(T.dark, 0.60, 0.012, 0.02, 0.925, 1.126, 1.95);
+    K.bb(T.skin, 0.95, 1.72, -1.15, -0.55, 1.35, 2.55);
+    for (i = 0; i < 2; i++) K.box(T.dark, 0.012, 0.012, 1.0, 1.10 + i * 0.47, -1.156, 1.95);
+    K.bb(T.skin, 0.30, 0.92, -1.15, -0.55, 1.25, 1.85);
+    /* the rear deck under the module, narrower than the tyres' inner faces */
+    K.bb(T.skin, -3.45, 0.30, -0.76, 0.76, 1.06, DECK);
 
-    /* the module, over the tandem: ring centre -1.40 */
-    var RX = -1.40, KE = new Baker(THREE), cells;
-    KT.cyl(T.dark, 0.72, 0.15, 24, 0, 0, 0.075, "z");
-    cells = launcher(KT, KE, T, { hw: 0.67, x0: -2.05, x1: 2.13, z0: 0.15, z1: 1.40, pods: [0],
-                                  kinds: [V.pods], px: -1.45, pz: 0.15, boom: true });
-
+    /* the module over the tandem: ring centre -1.60; the access panels and
+       the boom mirrored with it (see the header) */
+    var RX = -1.60, KE = new Baker(THREE), cells;
+    KT.cyl(T.dark, 0.80, 0.10, 24, 0, 0, 0.05, "z");
+    cells = launcher(KT, KE, T, { hw: 1.07, x0: -1.79, x1: 1.80, z0: 0.20, z1: 1.38, pods: [0],
+                                  kinds: [V.pods], px: -1.60, pz: 0.20, boom142: true,
+                                  posts: [-0.60, 0.60], seams: [0.20, 1.00, 2.10, 3.25] });
     K.flush(root);
     var G = new THREE.Group();
-    G.position.set(RX, 0, DECK + UP);
+    G.position.set(RX, 0, DECK);
     KT.flush(G);
-    G.add(elevGroup(THREE, KE, -1.45, 0.15, cells));
+    G.add(elevGroup(THREE, KE, -1.60, 0.20, cells));
     if (V.turret) G.name = "turret";
     root.add(G);
 
     /* six lugged tyres, each a group "roadwheel" with the axle on local Y */
     var W = new Baker(THREE), tmp = new THREE.Group(), wm, wg;
-    W.cyl(T.rub, 0.54, 0.40, 32, 0, 0, 0, "y");
-    W.cyl(T.rub, 0.32, 0.41, 20, 0, 0, 0, "y");
-    for (i = 0; i < 30; i++) {
-      a = i * Math.PI * 2 / 30;
-      /* alternate blocks sit either side of the centre line so the tread
-         reads as a directional pattern when it turns */
-      W.put(T.rub, new THREE.BoxGeometry(0.05, 0.19, 0.15), 0.565 * Math.cos(a), (i & 1 ? 0.10 : -0.10), 0.565 * Math.sin(a), 0, -a, 0);
-    }
-    for (i = 0; i < 10; i++) {
-      a = i * Math.PI / 5;
-      for (j = -1; j <= 1; j += 2)
-        W.put(T.rub, new THREE.BoxGeometry(0.05, 0.04, 0.05), 0.22 * Math.cos(a), j * 0.195, 0.22 * Math.sin(a), 0, -a, 0);
-    }
-    W.cyl(T.rub, 0.09, 0.43, 12, 0, 0, 0, "y");
+    tyre(W, T, THREE, PAINT[V.paint].hub);
     W.flush(tmp);
     wm = tmp.children[0];
     for (i = 0; i < 3; i++) for (s = -1; s <= 1; s += 2) {
       wg = new THREE.Group();
       wg.name = "roadwheel";
-      wg.position.set(AX[i], s * 0.98, RAD);
+      wg.position.set(AX142[i], s * YT, RT);
       wg.add(new THREE.Mesh(wm.geometry, wm.material));
       wg.children[0].castShadow = true; wg.children[0].receiveShadow = true;
       root.add(wg);
@@ -649,9 +840,10 @@ var HeroUsMlrs = (function () {
 
 (function () {
   var k, rows = HeroUsMlrs.rows;
+  /* len: the measured X extent (dump.js), the same in every row of a vehicle */
   function reg(key, len) {
     UNIT_MODELS[key] = { len: len, ord: rows[key].ord,
                          build: function (THREE, M, C) { return HeroUsMlrs.build(key, THREE, M, C); } };
   }
-  for (k in rows) if (Object.prototype.hasOwnProperty.call(rows, k)) reg(k, rows[k].veh === "m270" ? 6.96 : 7.04);
+  for (k in rows) if (Object.prototype.hasOwnProperty.call(rows, k)) reg(k, rows[k].veh === "m270" ? 7.00 : 7.08);
 })();
