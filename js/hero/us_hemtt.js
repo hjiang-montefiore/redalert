@@ -1,575 +1,639 @@
-/* ===== us_hemtt.js - HERO model: Oshkosh M977 HEMTT 8x8 cargo truck ========
-   The "HEMTT Supply Truck" (rules.js supply_n, full name "M977 HEMTT"; the
-   row is offered in every era from e50 to e20).  The old model was a truck
-   with a hand-guessed cab; this one is the present-day production truck, the
-   M977A4, drawn from published figures and photographs.
+/* ===== us_hemtt.js - HERO model: the Oshkosh M977A4 HEMTT 8x8 cargo truck, A-kit (soft) cab ========
+   Full-quality redo (2026-10-24).  One key, kept: supply_n "HEMTT Supply Truck" (js/rules.js, full "M977 HEMTT";
+   its mass note is the M977A4 with the A-kit cab, 69,000 lb laden).  js/armour_specs.js "M977 HEMTT 8x8 Cargo
+   Truck".  Build name kept: HeroUsHemtt.build, read by nothing else (us_patriot.js draws its own M983 tractor).
+   No era rows exist for supply_n; one model serves every era.
 
-   Published figures (Wikipedia infobox for the M977A4, the German article's
-   data table, the older M977A2 figures):
-     length            409 in   10.39 m   (A2: 10.17 m)
-     width              96 in    2.44 m
-     height            118 in    3.00 m   over the spare tyre; the cab roof is
-                                          lower, 2.59 m (102 in) to 2.84 m
-                                          (112 in) "depending on the body"
-     wheelbase                   5.33 m   centre of the front tandem to centre
-                                          of the rear tandem: 1.52 m between
-                                          the axles of each pair and 3.81 m of
-                                          bare frame between the pairs
-     tyres             16.00R20, Michelin XZL: 1.27 m over the lugs, 0.41 m wide
-     engine / drive    Caterpillar C15 diesel, Allison 4500SP; 8x8, the front
-                       two axles steer.  Single tyres on all eight wheels.
-     fuel              155 US gal in one round tank slung under the bed
+   Variant drawn: the M977A4 CARGO truck (the row's mass note; the drawing [D] is captioned "M977A4 Cargo truck")
+   with the integral A-kit cab of the A4 (en.wikipedia: the A4 takes the slightly larger PLS A1 cab, LTAS A-kit
+   integral, B-kit add-on).  The B-kit armour is NOT drawn: [F][L] show the A4 soft, and the row says A-kit.
+   Paint: tan CARC (686A) as every dated A4 photograph shows [F][L][T][I]; no NATO three-colour A4 was found.
 
-   What the photographs show and this builds (the Oshkosh A4 cargo factory
-   photo, US Army / DoD photos of M977s, an Oshkosh 1985 press photo of a
-   cab close up, an Israeli and a Taiwanese truck; the German and French
-   Wikipedia articles for the crane):
-     - the cab is a tall flat-roofed box with a raked two-pane windscreen and
-       a brow over it; below the glass a faceted nose with the grille slanting
-       back, square headlamp pockets in its top corners and a plate bumper
-       with two tow hooks.  The engine is in that nose, AHEAD of the first axle.
-     - behind the cab, a tall louvred cabinet on the left with a vertical
-       exhaust stack on the right, and the spare tyre lying on top of the
-       cabinet and the rear edge of the cab roof.  That is what makes the
-       118 in: roof 2.62 m + 0.40 m tyre.  Between cabinet and body: the air
-       cleaner and the battery box.
-     - an open cargo body with plain steel sides (about 0.7 m), vertical
-       stiffeners and a headboard that stands higher than the sides.
-     - the materiel handling crane (a Grove, 2,500 lb, on the M977 and M985
-       cargo trucks) is mounted at the REAR; the photos show only its slewing
-       head at the tail of the bed, just below the rail line, so the boom is
-       stowed forward along the bed floor, which is how it is drawn here.
-     - the 155 gal tank under the bed on the left, a tool box on the right,
-       mud flaps behind each tandem.
-   WHERE THINGS STAND along the truck was measured on the A4 factory photo by
-   fitting a projective map to the four left-hand hubs (known 1.524 / 3.810 /
-   1.524 m apart) and reading the other features through it: nose 2.34 m
-   ahead of axle 1, door front 1.82 m, cab rear wall 0.39 m, louvre cabinet
-   from 0.39 m ahead to 0.65 m behind it, body 1.59 m behind it (right over
-   axle 2) to 7.29 m, tail 7.99 m: 10.33 m against the published 10.39 m.
-   So the front overhang is 2.40 m and the tail 1.13 m, the cab is only about
-   2.0 m from bumper to rear wall, and the first wheel stands just behind the
-   door.  The cargo body is 5.7 m long and the fuel tank 1.85 m.
-   The load (two strapped pallet stacks and six fuel drums) is a generic cargo
-   truck load, so the truck reads as the game's supply truck.
+   Sources (Wikimedia Commons at width 960; en.wikipedia "Heavy Expanded Mobility Tactical Truck" infobox and text;
+   de.wikipedia "Heavy Expanded Mobility Tactical Truck" data table):
+     [D]  "M977A4.jpg" - the published SIDE DRAWING of the M977A4 cargo truck, port side: the station table below.
+          Measured at 155.5 px a metre (3x enlargement) off the published axle spacing (1.524 / 3.81 / 1.524 m
+          agree to 1 per cent).
+     [F]  "HEMTT A4 Cargo 3 HR.jpg" (Oshkosh) - port front three-quarter of the A4 cargo truck: cab, louvred
+          radiator box, spare on top, intake head, round fuel tank, drop sides, the stowed crane at the tail.
+     [L]  "HEMTT A4 LET 1 HR.jpg" (Oshkosh) - the same A4 cab, port front: headlamp pods, the two amber markers on
+          the corner facet, the door's round reflector, mirrors, step ladder, tow clevises, mud flap behind axle 2.
+     [T]  "HEMTT in Fort Hood.jpg" - an earlier M977 (A0/A2 cab), starboard side: the Grove crane at the tail
+          with its boom raised and its stabiliser leg, the drop-side stake posts, the 10-nut wheels.
+     [C]  "M977A4.1.jpg" - drawing of the M977A4 Common Bridge Transporter (chassis rear only).
+     [I]  "Regimental Support Squadron Muleskinner 01.jpg", "Fort Irwin National Training Center - HEMTT - 1.jpg"
+          - A4s in the field, tan (paint check).
+   Published: length 409 in (10.39 m, en.wikipedia A4; de.wikipedia gives the M977 10.19 m / 401 in), width 96 in
+     (2.44 m), height 118 in (3.00 m) over the spare tyre, wheelbase 5.33 m (210 in, de.wikipedia), 16.00R20 tyres
+     (de.wikipedia, Michelin), 155 US gal fuel, front tandem steers; "a light-duty Grove materials handling crane
+     mounted at the rear of the chassis" on the M977 cargo truck (en.wikipedia; de.wikipedia: Grove, 2,500 lb).
+   CONFIRMED from the old header: 2.44 m wide, 3.00 m over the spare, 1.524 / 3.81 / 1.524 m axle spacing, the
+     16.00R20 single tyres, the louvred box behind the cab with the spare flat on it, the 155 gal round tank under
+     the body on the port side, the crane at the REAR, the A4 in tan CARC.
+   CORRECTED: the old header put the nose 2.34 m ahead of axle 1 (a perspective fit to [F]); the orthographic
+     drawing [D] gives 1.90 m to the headlamp pods, and the cab back wall 0.29 m ahead of axle 1 (old 0.39).  The
+     old "engine in the nose" is not supported (the nose is a short faceted cab front over the vent band); the
+     old flat-faced nose with a plate bumper is not the A4: [F][L][D] show a vertical face carrying the headlamp
+     pods over a chin that slopes back to the tow clevises.  The old crane lay forward along the bed floor; [D][F]
+     show it folded UPRIGHT behind the tailgate with a stabiliser leg.  The old louvred box sat 0.39 m into the
+     cab; [D] puts it right behind the cab wall, 0.93 m deep.  The old tool box and small tank to starboard are
+     not seen on any A4 photograph found and are dropped.
+   LENGTH: [D] measures 10.20 m from the headlamp pods to the pintle hook at the published axle spacing (its tyres
+     come out 1.24 m, the XZL is 1.27 m); en.wikipedia gives 10.39 m for the A4.  The drawing is followed; the
+     difference is reported, not stretched in.
 
-   NOT built, deliberately: the add-on armour (B-kit), the guided-missile
-   transporter fit, the 10x10 LHS conversions.  This is the plain cargo truck.
+   Recognition list (each rests on; where it is in the code):
+     1. 8x8 in two close tandems, 1.524 m within each pair and 3.81 m between them, the cab ahead of axle 1 [D][F]:
+        AX.
+     2. The wide flat-roofed A4 cab: a vertical face, chamfered corner facets, the chin sloping back below it, the
+        rear lower corner cut away over the front tyre [D][F][L]: CAB stations, addCab.
+     3. The big two-pane windscreen, raked about 30 degrees, split by a centre post, a brow over it with five amber
+        markers [F][L][D]: addCab.
+     4. The square headlamp pods at the corners of the face with round lamps, two amber markers on each corner
+        facet, the dark vent band (the grille) across the top of the chin [F][L]: addCab.
+     5. The long door with its window and diagonal bar, the narrow rear-quarter window and grab rail, the round
+        amber reflector low on the door, the hanging step ladder [F][L][D]: addCab.
+     6. The mirrors on long forward arms: a round convex head and a tall flat one below [F][L]: addCab.
+     7. Behind the cab: the tall louvred radiator box, the spare tyre lying flat on it (3.00 m), the black intake
+        head, the air cleaner and the tall hydraulic tank with its filler stack [F][D]: addBehindCab.
+     8. The long drop-side cargo body over the rear of axle 2 to past axle 4: three boards a side between double
+        stake posts, a stiffener in each, latches, top and foot rails [D][F][T]: addBody.
+     9. The Grove materials handling crane folded upright behind the tailgate, its valve bank and stabiliser leg
+        [D][F][T]: addCrane.
+    10. The big round 155 gal fuel tank under the body on the port side, between the tandems [F][L][D]: addChassis.
+    11. The big single 16.00R20 XZL tyres with chunky block lugs on black disc wheels, ten nuts and a hub [F][T]:
+        tyre().
+    12. Tan CARC over everything but the wheels, frame and intake; black mud flaps behind axle 2 [F][L]: PAINT.
+   Paint: tan CARC 686A.  Sampled [F] sunlit cab side #dec8ab and body side #decbb1 (hazy desert sun); drawn
+     #ac9a7c, about 0.78 of that level with the warmer hue of 686A.  No markings, numbers or plates; the OSHKOSH
+     badge and the CAUTION stencils are not drawn.
+   Load: two strapped pallet stacks and six fuel drums, kept from the old model as the game's supply load (the row
+     is a "rolling fuel and ammunition point"); it is cargo, not a fitting, and is plainly generic.
+   NOT drawn or estimated: the B-kit armour and gun ring; the CTIS lines; the starboard side behind the cab and
+     under the body (no A4 photograph from the right was found; only the frame is drawn there); the crane's
+     lateral position (drawn on the centre line) and the starboard stabiliser leg (seen on [T], an older truck);
+     the suspension (Holland air: drawn as plain axle beams and arms), the radiator box's inboard edge, the spare
+     carrier frame (only its outline shows in [D]).
 
-   Game use (render3d.js): supply_n has no turret and no animated part except
-   the wheels, so the only named nodes are the eight "roadwheel" groups, axle
-   on local Y.  supply_n is also the stand-in for the other armies' supply
-   rows that have no model of their own, so the team material is exactly
-   C.team and the paint is a plain tinted material (eraPaint repaints it).
-
-   Draw calls: 14 (six baked meshes by material + eight wheels, which turn).
-   Materials: six.  Wheels carry their paint per vertex (linear, as three
-   reads a colour attribute raw), so tyre, rim and nuts are one mesh each.
-
-   Model space: +X nose, +Y left (port), +Z up, real metres, tyres on z = 0.
-   Nothing sticks out along X past the tow hooks and the pintle, so the
-   measured X extent is the 10.39 m of the truck.
-   ASCII only.                                                              */
+   Mechanisms: eight "roadwheel" groups (render3d spins them about local Y).  No turret, no other named node.
+   Materials 7: paint (canvas texture, metre UVs), dark, glass, tyre, lamp (emissive, vertex colours), vc (load
+   colours per vertex), C.team (a panel on the cab roof and the headboard cap).  Draw calls 7 + 8 wheels = 15.
+   +X nose, +Y port, +Z up, metres, tyres on z = 0.  ASCII only. */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroUsHemtt = (function () {
   "use strict";
 
-  /* ---------------------------------------------------------------- figures */
-  /* Axle stations: 1.524 / 3.810 / 1.524 apart.  The front overhang is 2.40 m and
-     the tail 1.13 m: the engine stands ahead of the first axle and the cab door
-     sits in front of it, so the first wheel is just behind the cab's rear wall
-     (a projective fit of the four hubs in the A4 factory photo puts the nose
-     2.34 m ahead of axle 1, the cab wall 0.39 m ahead of it and the tail 1.15 m
-     behind axle 4 - 10.33 m against the published 10.39 m). */
-  var AX = [2.795, 1.271, -2.539, -4.063];
-  var TR = 0.635;                            /* 16.00R20: 1.27 m over the lugs             */
-  var TY = 1.00;                             /* tyre centre line off the truck's axis      */
-  var Z_DECK = 1.60, Z_RAIL = 2.32, Z_ROOF = 2.62, Z_SILL = 1.10;
-  /* the body stations the same photo gives, measured from the nose (x = +5.195) */
-  var X_CABR = 3.19;    /* rear wall of the cab                                     */
-  var X_CABIN = 2.14;   /* rear of the louvred cabinet (it is 1.05 m deep)          */
-  var X_BEDF = 1.21;    /* headboard: right over the second axle                    */
-  var X_BEDT = -4.50;   /* tail of the cargo body, 0.43 m behind the last axle      */
+  var TAU = Math.PI * 2;
 
-  /* ---------------------------------------------------------------- helpers */
-  function rng(seed) {
-    var s = (seed >>> 0) || 1;
-    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  /* -------------------------------------------------------- geometry kit */
+  function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function unit(v) { var l = Math.sqrt(dot(v, v)) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+
+  /* one bin of triangles per material; painted bins get planar metre UVs from each face's dominant axis */
+  function Bin(mat, uvk, vc) { this.mat = mat; this.P = []; this.N = []; this.U = uvk ? [] : null; this.k = uvk; this.C = vc ? [] : null; this.col = [1, 1, 1]; }
+  Bin.prototype.tri = function (a, b, c, na, nb, nc) {
+    var f = unit(cross(sub(b, a), sub(c, a))), v = [a, b, c], n = [na || f, nb || f, nc || f];
+    var i, q, ax = Math.abs(f[0]), ay = Math.abs(f[1]), az = Math.abs(f[2]), k = this.k;
+    for (i = 0; i < 3; i++) {
+      q = v[i];
+      this.P.push(q[0], q[1], q[2]);
+      this.N.push(n[i][0], n[i][1], n[i][2]);
+      if (this.U) {
+        if (az >= ax && az >= ay) this.U.push(q[0] * k, q[1] * k);
+        else if (ay >= ax) this.U.push(q[0] * k, q[2] * k);
+        else this.U.push(q[1] * k, q[2] * k);
+      }
+      if (this.C) this.C.push(this.col[0], this.col[1], this.col[2]);
+    }
+  };
+
+  /* a closed solid: the signed volume says whether the faces point out, and they are turned if not */
+  function solid(bin, V, F, smooth) {
+    var vol = 0, i, f, a, b, c, N = null, fn, k, q;
+    for (i = 0; i < F.length; i++) { f = F[i]; vol += dot(V[f[0]], cross(V[f[1]], V[f[2]])); }
+    var flip = vol < 0;
+    if (smooth) {
+      N = [];
+      for (i = 0; i < V.length; i++) N.push([0, 0, 0]);
+      for (i = 0; i < F.length; i++) {
+        f = F[i]; a = f[0]; b = flip ? f[2] : f[1]; c = flip ? f[1] : f[2];
+        fn = cross(sub(V[b], V[a]), sub(V[c], V[a]));
+        q = [a, b, c];
+        for (k = 0; k < 3; k++) { N[q[k]][0] += fn[0]; N[q[k]][1] += fn[1]; N[q[k]][2] += fn[2]; }
+      }
+      for (i = 0; i < N.length; i++) N[i] = unit(N[i]);
+    }
+    for (i = 0; i < F.length; i++) {
+      f = F[i]; a = f[0]; b = flip ? f[2] : f[1]; c = flip ? f[1] : f[2];
+      fn = cross(sub(V[b], V[a]), sub(V[c], V[a]));
+      if (dot(fn, fn) < 1e-16) continue;
+      bin.tri(V[a], V[b], V[c], N && N[a], N && N[b], N && N[c]);
+    }
   }
-  /* sRGB hex -> linear triple: a colour ATTRIBUTE is read raw by three, only
-     material colours are linearised by prepModel(). */
+  var HEXF = [[0, 3, 2], [0, 2, 1], [4, 5, 6], [4, 6, 7], [1, 2, 6], [1, 6, 5],
+              [0, 4, 7], [0, 7, 3], [0, 1, 5], [0, 5, 4], [3, 7, 6], [3, 6, 2]];
+  function hexa(bin, P) { solid(bin, P, HEXF); }
+  function box(bin, x0, x1, y0, y1, z0, z1) {
+    var t;
+    if (x0 > x1) { t = x0; x0 = x1; x1 = t; }
+    if (y0 > y1) { t = y0; y0 = y1; y1 = t; }
+    if (z0 > z1) { t = z0; z0 = z1; z1 = t; }
+    hexa(bin, [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
+               [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]);
+  }
+  /* a box on a tilted plane: origin P0, in-plane axes U and W, normal N */
+  function planeBox(bin, P0, U, W, N, u0, u1, w0, w1, h0, h1) {
+    function pt(u, w, h) {
+      return [P0[0] + U[0] * u + W[0] * w + N[0] * h, P0[1] + U[1] * u + W[1] * w + N[1] * h,
+              P0[2] + U[2] * u + W[2] * w + N[2] * h];
+    }
+    hexa(bin, [pt(u0, w0, h0), pt(u1, w0, h0), pt(u1, w1, h0), pt(u0, w1, h0),
+               pt(u0, w0, h1), pt(u1, w0, h1), pt(u1, w1, h1), pt(u0, w1, h1)]);
+  }
+  /* a capped cylinder or cone between two centres, smooth round the side */
+  function cyl(bin, A, B, r0, r1, seg, nocapA, nocapB) {
+    var ax = unit(sub(B, A)), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+    var u = unit(cross(ax, t)), v = cross(ax, u), L = Math.sqrt(dot(sub(B, A), sub(B, A))) || 1;
+    var k = (r0 - r1) / L, na = [-ax[0], -ax[1], -ax[2]], i, j, a0, a1, r0v, r1v, pa, pb, pc, pd, n0, n1, c0, s0, c1, s1;
+    for (i = 0; i < seg; i++) {
+      j = (i + 1) % seg;
+      a0 = i / seg * TAU; a1 = j / seg * TAU;
+      c0 = Math.cos(a0); s0 = Math.sin(a0); c1 = Math.cos(a1); s1 = Math.sin(a1);
+      r0v = [u[0] * c0 + v[0] * s0, u[1] * c0 + v[1] * s0, u[2] * c0 + v[2] * s0];
+      r1v = [u[0] * c1 + v[0] * s1, u[1] * c1 + v[1] * s1, u[2] * c1 + v[2] * s1];
+      pa = [A[0] + r0v[0] * r0, A[1] + r0v[1] * r0, A[2] + r0v[2] * r0];
+      pb = [A[0] + r1v[0] * r0, A[1] + r1v[1] * r0, A[2] + r1v[2] * r0];
+      pc = [B[0] + r1v[0] * r1, B[1] + r1v[1] * r1, B[2] + r1v[2] * r1];
+      pd = [B[0] + r0v[0] * r1, B[1] + r0v[1] * r1, B[2] + r0v[2] * r1];
+      n0 = unit([r0v[0] + ax[0] * k, r0v[1] + ax[1] * k, r0v[2] + ax[2] * k]);
+      n1 = unit([r1v[0] + ax[0] * k, r1v[1] + ax[1] * k, r1v[2] + ax[2] * k]);
+      bin.tri(pa, pb, pc, n0, n1, n1);
+      bin.tri(pa, pc, pd, n0, n1, n0);
+      if (!nocapA) bin.tri(A, pb, pa, na, na, na);
+      if (!nocapB) bin.tri(B, pd, pc, ax, ax, ax);
+    }
+  }
+  function cylY(bin, x, y0, y1, z, r, seg) { cyl(bin, [x, y0, z], [x, y1, z], r, r, seg); }
+  function cylX(bin, x0, x1, y, z, r, seg) { cyl(bin, [x0, y, z], [x1, y, z], r, r, seg); }
+  function cylZ(bin, x, y, z0, z1, r, seg) { cyl(bin, [x, y, z0], [x, y, z1], r, r, seg); }
+  /* a thin bar between two points, square section */
+  function bar(bin, A, B, w) {
+    var d = sub(B, A), ax = unit(d), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+    var u = unit(cross(ax, t)), v = cross(ax, u), h = w / 2, V = [], i, c = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (i = 0; i < 8; i++) {
+      var e = c[i % 4], P = i < 4 ? A : B;
+      V.push([P[0] + (u[0] * e[0] + v[0] * e[1]) * h, P[1] + (u[1] * e[0] + v[1] * e[1]) * h, P[2] + (u[2] * e[0] + v[2] * e[1]) * h]);
+    }
+    hexa(bin, V);
+  }
+  /* a convex side profile [x, z] extruded across y0..y1 */
+  function profY(bin, pts, y0, y1) {
+    var n = pts.length, V = [], F = [], i, k;
+    for (i = 0; i < n; i++) V.push([pts[i][0], y0, pts[i][1]]);
+    for (i = 0; i < n; i++) V.push([pts[i][0], y1, pts[i][1]]);
+    for (i = 1; i < n - 1; i++) { F.push([0, i + 1, i]); F.push([n, n + i, n + i + 1]); }
+    for (i = 0; i < n; i++) { k = (i + 1) % n; F.push([i, k, n + k], [i, n + k, n + i]); }
+    solid(bin, V, F);
+  }
+  /* rings of the same count, lofted and capped with fans on the ring centre (the rings here are convex) */
+  function loftRings(bin, R, smooth) {
+    var m = R.length, n = R[0].length, V = [], F = [], i, j, k, c;
+    for (i = 0; i < m; i++) for (j = 0; j < n; j++) V.push(R[i][j]);
+    for (i = 0; i < m - 1; i++) for (j = 0; j < n; j++) {
+      k = (j + 1) % n;
+      F.push([i * n + j, i * n + k, (i + 1) * n + k], [i * n + j, (i + 1) * n + k, (i + 1) * n + j]);
+    }
+    for (i = 0; i < 2; i++) {
+      var ring = R[i ? m - 1 : 0], ctr = [0, 0, 0], b0 = V.length;
+      for (j = 0; j < n; j++) { ctr[0] += ring[j][0] / n; ctr[1] += ring[j][1] / n; ctr[2] += ring[j][2] / n; }
+      for (j = 0; j < n; j++) V.push(ring[j]);
+      V.push(ctr); c = V.length - 1;
+      for (j = 0; j < n; j++) { k = (j + 1) % n; F.push(i ? [c, b0 + j, b0 + k] : [c, b0 + k, b0 + j]); }
+    }
+    solid(bin, V, F, smooth);
+  }
+  function flush(THREE, group, B) {
+    var k, b, geo, mesh;
+    for (k in B) {
+      b = B[k];
+      if (!b.P.length) continue;
+      geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.P), 3));
+      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.N), 3));
+      if (b.U) geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(b.U), 2));
+      if (b.C) geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(b.C), 3));
+      geo.computeBoundingSphere();
+      mesh = new THREE.Mesh(geo, b.mat);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+  }
+
+  /* ------------------------------------------------------------ paint */
+  /* tan CARC, flat and chalky: low-contrast drift, rain streaks, scuffs, and road dust rising from the foot
+     (metre UVs, 0.34 a metre: on the sides v runs with height, so the bottom of the canvas is the lowest metres) */
+  var _tex = null;
+  function paintTex(THREE) {
+    if (_tex !== null) return _tex || null;
+    var t = false;
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = 256; cv.height = 256;
+      var q = cv.getContext("2d"), s = 977004, i, a, x, y, rr, ang, rd, h;
+      var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+      q.fillStyle = PAINT.base; q.fillRect(0, 0, 256, 256);
+      for (var k = 0; k < PAINT.blots.length; k++) {
+        q.fillStyle = PAINT.blots[k];
+        for (i = 0; i < 9; i++) {
+          x = R() * 256; y = R() * 256; rr = 16 + R() * 36;
+          q.beginPath();
+          for (a = 0; a < 7; a++) {
+            ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
+            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+          }
+          q.closePath(); q.fill();
+        }
+      }
+      for (i = 0; i < 40; i++) {
+        x = R() * 256; h = 20 + R() * 70; y = R() * 256;
+        q.fillStyle = (i % 3) ? "rgba(70,56,36,0.07)" : "rgba(235,222,190,0.06)";
+        q.fillRect(x, y, 1 + R() * 2, h);
+      }
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 2) ? "rgba(60,48,30,0.06)" : "rgba(240,230,205,0.05)";
+        q.fillRect(R() * 256, R() * 256, 3 + R() * 24, 2 + R() * 12);
+      }
+      /* dust: canvas y 256 is v = 0 (three flips the canvas), so the dust band is at the canvas foot */
+      var gr = q.createLinearGradient(0, 150, 0, 256);
+      gr.addColorStop(0, "rgba(150,128,96,0)");
+      gr.addColorStop(1, "rgba(150,128,96,0.32)");
+      q.fillStyle = gr; q.fillRect(0, 150, 256, 106);
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = false; }
+    _tex = t;
+    return t || null;
+  }
+  var PAINT = { base: "#ac9a7c", blots: ["#a39274", "#b4a385", "#a8977a"] };
+
+  /* sRGB hex -> linear: vertex colours are read raw by three; only material colours are linearised by prepModel */
   function lin(hex) {
     function f(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
     return [f((hex >> 16) & 255), f((hex >> 8) & 255), f(hex & 255)];
   }
-  var K = {
-    blk: lin(0x1a1a18), dkg: lin(0x2e2f2b), wood: lin(0x7b6443), strap: lin(0x24241f),
-    olive: lin(0x55603d), tan: lin(0x8c7b55), drum: lin(0x4b5839), drumBand: lin(0x2f3827),
-    rub: lin(0x1c1c1a), rim: lin(0x6d6850), hub: lin(0x8b8e90), nut: lin(0xa5a7a9),
-    lensW: lin(0xfff1c6), amber: lin(0xffa11a), red: lin(0xd4261a)
-  };
+  var AMBER = lin(0xffa11a), WHITE = lin(0xfff1c6), RED = lin(0xd4261a);
+  var OLIVE = lin(0x5c6644), WOOD = lin(0x8a7350), STRAP = lin(0x2a2a24), DRUM = lin(0x5a6542), BAND = lin(0x3a4430),
+      CRATE = lin(0x6b7150);
 
-  /* ------------------------------------------------------------- paint tex */
-  /* CARC desert tan (Tan 686A is a warm sandy khaki).  One canvas per page.
-     The baked paint mesh is mapped by WORLD position (see worldUV), so a cab
-     panel and a bed side carry the same grain; v is height, so the dust
-     band at the foot of the canvas lands on the lowest metre of every side. */
-  var _cv = null;
-  function paintCanvas() {
-    if (_cv) return _cv;
-    var R = rng(686001), W = 256, H = 256, i;
-    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
-    var q = cv.getContext("2d");
-    q.fillStyle = "#b3a078"; q.fillRect(0, 0, W, H);
-    for (i = 0; i < 34; i++) {
-      q.fillStyle = R() < 0.5 ? "rgba(238,226,192,0.07)" : "rgba(72,58,32,0.07)";
-      q.fillRect(R() * W, R() * H, 20 + R() * 80, 14 + R() * 56);
-    }
-    q.fillStyle = "rgba(60,48,26,0.16)";
-    for (i = 0; i < 26; i++) q.fillRect(R() * W, R() * H * 0.8, 6 + R() * 30, 1 + R() * 2);
-    var gr = q.createLinearGradient(0, H * 0.70, 0, H);
-    gr.addColorStop(0, "rgba(128,104,70,0.00)");
-    gr.addColorStop(1, "rgba(128,104,70,0.50)");
-    q.fillStyle = gr; q.fillRect(0, H * 0.70, W, H * 0.30);
-    q.fillStyle = "rgba(48,40,26,0.30)";
-    for (i = 0; i < 40; i++) q.fillRect(R() * (W - 3), R() * (H - 3), 2, 2);
-    _cv = cv;
-    return cv;
-  }
-  function paintTex(THREE) {
-    try {
-      var t = new THREE.CanvasTexture(paintCanvas());
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-      t.anisotropy = 4;
-      return t;
-    } catch (e) { return null; }
-  }
-
-  function makeMats(THREE, C) {
-    var T = {}, tx = paintTex(THREE);
+  function materials(THREE, C) {
+    var T = {}, tp = paintTex(THREE);
     T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.06 });
-    if (tx) T.paint.map = tx; else T.paint.color.setHex(0xb3a078);
-    /* everything dark, black or small and coloured: tyres, frame, grille,
-       cargo.  Per-vertex colour, so it stays ONE mesh. */
-    T.vc = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.84, metalness: 0.06 });
-    T.steel = new THREE.MeshStandardMaterial({ color: 0x8e9194, roughness: 0.42, metalness: 0.55 });
-    T.glass = new THREE.MeshStandardMaterial({ color: 0x1a2830, roughness: 0.12, metalness: 0.35 });
-    /* the owner's colour exactly, so the era kit leaves it alone */
-    T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0,
-                                              roughness: 0.55, metalness: 0.18 });
-    /* lamps: diffuse per vertex (white, amber, red), a little glow */
+    if (tp) T.paint.map = tp; else T.paint.color.set(PAINT.base);
+    T.dark = new THREE.MeshStandardMaterial({ color: 0x26272a, roughness: 0.8, metalness: 0.28 });
+    T.glass = new THREE.MeshStandardMaterial({ color: 0x1b2730, roughness: 0.14, metalness: 0.35 });
+    T.tyre = new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.95, metalness: 0.02 });
     T.lamp = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.35, metalness: 0.1,
                                               emissive: 0x5a4a2a, emissiveIntensity: 0.9 });
+    T.vc = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.86, metalness: 0.05 });
+    T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
     return T;
   }
-
-  /* World-position UVs for the paint: sides take (along, height), tops take
-     the cleaner upper part of the canvas. */
-  function worldUV(P) {
-    var n = P.length / 9, U = new Float32Array(n * 6), t, k;
-    for (t = 0; t < n; t++) {
-      var o = t * 9;
-      var ux = P[o + 3] - P[o], uy = P[o + 4] - P[o + 1], uz = P[o + 5] - P[o + 2];
-      var vx = P[o + 6] - P[o], vy = P[o + 7] - P[o + 1], vz = P[o + 8] - P[o + 2];
-      var nx = Math.abs(uy * vz - uz * vy), ny = Math.abs(uz * vx - ux * vz), nz = Math.abs(ux * vy - uy * vx);
-      for (k = 0; k < 3; k++) {
-        var x = P[o + k * 3], y = P[o + k * 3 + 1], z = P[o + k * 3 + 2], u, v;
-        if (nz >= nx && nz >= ny) { u = x / 4; v = 0.55 + 0.4 * (y / 4 - Math.floor(y / 4)); }
-        else if (ny >= nx) { u = x / 4; v = Math.min(0.999, Math.max(0.001, z / 3.2)); }
-        else { u = y / 4 + 0.37; v = Math.min(0.999, Math.max(0.001, z / 3.2)); }
-        U[t * 6 + k * 2] = u; U[t * 6 + k * 2 + 1] = v;
-      }
-    }
-    return U;
+  function bins(T) {
+    return { paint: new Bin(T.paint, 0.34), dark: new Bin(T.dark), glass: new Bin(T.glass), tyre: new Bin(T.tyre),
+             lamp: new Bin(T.lamp, 0, true), vc: new Bin(T.vc, 0, true), team: new Bin(T.team) };
   }
 
-  /* --------------------------------------------------------------- baking */
-  /* Triangle soup per material, flat normals, one mesh per material at the
-     end.  triAway() winds each triangle so that it faces AWAY from a hint
-     point, which is exact for any convex part and for a flat panel with the
-     hint on its back side. */
-  function Baker(THREE) { this.T = THREE; this.by = []; }
-  Baker.prototype.slot = function (mat) {
-    for (var i = 0; i < this.by.length; i++) if (this.by[i].mat === mat) return this.by[i];
-    var s = { mat: mat, P: [], N: [], C: [], vc: !!mat.vertexColors };
-    this.by.push(s);
-    return s;
-  };
-  Baker.prototype.tri = function (mat, a, b, c, col) {
-    var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-    var vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-    var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-    var l = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    if (l < 1e-9) return;
-    nx /= l; ny /= l; nz /= l;
-    var s = this.slot(mat);
-    s.P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
-    s.N.push(nx, ny, nz, nx, ny, nz, nx, ny, nz);
-    if (s.vc) {
-      var k = col || K.dkg;
-      s.C.push(k[0], k[1], k[2], k[0], k[1], k[2], k[0], k[1], k[2]);
-    }
-  };
-  Baker.prototype.triAway = function (mat, a, b, c, hint, col) {
-    var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-    var vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-    var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-    var mx = (a[0] + b[0] + c[0]) / 3 - hint[0], my = (a[1] + b[1] + c[1]) / 3 - hint[1], mz = (a[2] + b[2] + c[2]) / 3 - hint[2];
-    if (nx * mx + ny * my + nz * mz < 0) this.tri(mat, a, c, b, col); else this.tri(mat, a, b, c, col);
-  };
-  Baker.prototype.quad = function (mat, a, b, c, d, hint, col) {
-    this.triAway(mat, a, b, c, hint, col);
-    this.triAway(mat, a, c, d, hint, col);
-  };
-  /* box from its corners; skip = e.g. "-z" or "-z -x" to leave buried faces off */
-  Baker.prototype.box = function (mat, x0, x1, y0, y1, z0, z1, col, skip) {
-    var c = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
-    var h = [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2];
-    var F = [["-z", 0, 3, 2, 1], ["+z", 4, 5, 6, 7], ["-y", 0, 1, 5, 4], ["+y", 3, 7, 6, 2], ["-x", 0, 4, 7, 3], ["+x", 1, 2, 6, 5]];
-    for (var i = 0; i < 6; i++) {
-      if (skip && skip.indexOf(F[i][0]) >= 0) continue;
-      this.quad(mat, c[F[i][1]], c[F[i][2]], c[F[i][3]], c[F[i][4]], h, col);
-    }
-  };
-  /* box turned about Y through its own centre (positive angle dips the +X end) */
-  Baker.prototype.boxRY = function (mat, cx, cy, cz, sx, sy, sz, ang, col) {
-    var ca = Math.cos(ang), sa = Math.sin(ang), i, c = [];
-    var q = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
-    for (i = 0; i < 8; i++) {
-      var x = q[i][0] * sx / 2, z = q[i][2] * sz / 2;
-      c.push([cx + x * ca + z * sa, cy + q[i][1] * sy / 2, cz - x * sa + z * ca]);
-    }
-    var h = [cx, cy, cz];
-    var F = [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [3, 7, 6, 2], [0, 4, 7, 3], [1, 2, 6, 5]];
-    for (i = 0; i < 6; i++) this.quad(mat, c[F[i][0]], c[F[i][1]], c[F[i][2]], c[F[i][3]], h, col);
-  };
-  /* smooth-sided cylinder along a world axis ("x", "y" or "z") */
-  Baker.prototype.cyl = function (mat, r, len, seg, x, y, z, axis, col) {
-    var THREE = this.T;
-    var geo = new THREE.CylinderGeometry(r, r, len, seg, 1, false).toNonIndexed();
-    var m = new THREE.Matrix4();
-    if (axis === "x") m.makeRotationZ(-Math.PI / 2); else if (axis === "z") m.makeRotationX(Math.PI / 2);
-    m.setPosition(x, y, z);
-    geo.applyMatrix4(m);
-    var p = geo.attributes.position.array, n = geo.attributes.normal.array, s = this.slot(mat), i;
-    for (i = 0; i < p.length; i++) { s.P.push(p[i]); s.N.push(n[i]); }
-    if (s.vc) { var k = col || K.dkg; for (i = 0; i < p.length / 3; i++) s.C.push(k[0], k[1], k[2]); }
-  };
-  /* a lofted prism through rings of 8 points; hint = middle of every ring */
-  Baker.prototype.loft = function (mat, rings, capFirst, capLast, col) {
-    var i, k, h = [0, 0, 0], n = 0, r;
-    for (i = 0; i < rings.length; i++) for (k = 0; k < 8; k++) { h[0] += rings[i][k][0]; h[1] += rings[i][k][1]; h[2] += rings[i][k][2]; n++; }
-    h[0] /= n; h[1] /= n; h[2] /= n;
-    for (i = 0; i + 1 < rings.length; i++) {
-      for (k = 0; k < 8; k++) {
-        var a = rings[i][k], b = rings[i][(k + 1) % 8], c = rings[i + 1][(k + 1) % 8], d = rings[i + 1][k];
-        this.triAway(mat, a, b, c, h, col);
-        this.triAway(mat, a, c, d, h, col);
-      }
-    }
-    function cap(base, bk) {
-      var m = [0, 0, 0], j;
-      for (j = 0; j < 8; j++) { m[0] += base[j][0] / 8; m[1] += base[j][1] / 8; m[2] += base[j][2] / 8; }
-      for (j = 0; j < 8; j++) bk.triAway(mat, m, base[j], base[(j + 1) % 8], h, col);
-    }
-    if (capFirst) cap(rings[0], this);
-    if (capLast) cap(rings[rings.length - 1], this);
-  };
-  Baker.prototype.addSoup = function (mat, S, tf) {
-    var s = this.slot(mat), i, p;
-    for (i = 0; i < S.P.length; i += 3) {
-      p = tf([S.P[i], S.P[i + 1], S.P[i + 2]]);
-      s.P.push(p[0], p[1], p[2]);
-    }
-    for (i = 0; i < S.N.length; i += 3) {
-      p = tf([S.N[i], S.N[i + 1], S.N[i + 2]], true);
-      s.N.push(p[0], p[1], p[2]);
-    }
-    if (s.vc) for (i = 0; i < S.C.length; i++) s.C.push(S.C[i]);
-  };
-  Baker.prototype.flush = function (group) {
-    var THREE = this.T;
-    for (var i = 0; i < this.by.length; i++) {
-      var e = this.by[i];
-      var P = new Float32Array(e.P), N = new Float32Array(e.N);
-      var geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
-      geo.setAttribute("normal", new THREE.BufferAttribute(N, 3));
-      if (e.mat.map) geo.setAttribute("uv", new THREE.BufferAttribute(worldUV(P), 2));
-      if (e.vc) geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(e.C), 3));
-      geo.computeBoundingSphere();
-      var mesh = new THREE.Mesh(geo, e.mat);
-      mesh.castShadow = true; mesh.receiveShadow = true;
-      group.add(mesh);
-    }
-    this.by = [];
-  };
+  /* ----------------------------------------------------------- the stations
+     Side drawing [D]: 155.5 px a metre at 3x, axle 1 at x = 3.20.  x = 3.20 + (340 - px) / 155.5, z = (503 - py) / 155.5.
+     +X nose, +Y port, +Z up, tyres on z = 0. */
+  var AX = [3.20, 1.676, -2.134, -3.658];     /* 1.524 + 3.81 + 1.524 m; tandem centres 5.33 m apart        */
+  var RT = 0.625, TY = 1.015;                 /* 16.00R20 XZL (1.25 m loaded); outer tyre face at 1.22 m     */
+  var XCR = 3.49;                             /* the cab's back wall, 0.29 m ahead of axle 1 [D]             */
+  var XBF = 1.50, XBR = -4.08, ZFL = 1.66, ZBT = 2.30, BW = 1.22;   /* body: headboard, tail, floor, rail, half width [D] */
+  var XRF = XCR, XRR = 2.56, ZR0 = 1.47, ZR1 = 2.56;                /* radiator box [D]                     */
 
-  /* ------------------------------------------------------------------ tyre */
-  /* One wheel as a triangle soup with per-vertex colour, axle on local Y,
-     outer face on +Y for side = +1 and on -Y for side = -1.  A surface of
-     revolution: a profile (radius, y) swept in N steps.  The tread radius
-     alternates lug / groove step by step: that zig-zag is the XZL's chunky
-     tread and it is what shows the wheel turning, because a smooth tyre
-     spinning on its own axis shows nothing.  The lowest vertex is a lug at
-     exactly -TR, so the group sits at z = TR with the lug on the ground.
-     Each profile segment is wound by construction (the profile runs inner
-     face -> tread -> outer face -> hub), which gives outward normals; the
-     other side is the mirror image walked backwards. */
-  function wheelSoup(side, N, nuts) {
-    var S = { P: [], N: [], C: [] };
-    var RT = TR, RG = TR - 0.032;
-    /* r, y, tread-flag, colour of the segment that ENDS at this point */
-    var pts = [
-      [0.00, -0.20, 0, null],
-      [0.30, -0.20, 0, K.rub],
-      [0.585, -0.185, 0, K.rub],
-      [0, -0.15, 1, K.rub],
-      [0, 0.15, 1, K.rub],
-      [0.585, 0.185, 0, K.rub],
-      [0.30, 0.20, 0, K.rub],
-      [0.27, 0.13, 0, K.rim],
-      [0.10, 0.13, 0, K.rim],
-      [0.10, 0.17, 0, K.hub],
-      [0.00, 0.17, 0, K.hub]
-    ];
-    var segs = [], i, k;
-    for (i = 0; i + 1 < pts.length; i++) segs.push({ a: pts[i], b: pts[i + 1], col: pts[i + 1][3] });
-    if (side < 0) {
-      segs = segs.reverse().map(function (s) {
-        function m(p) { return [p[0], -p[1], p[2], p[3]]; }
-        return { a: m(s.b), b: m(s.a), col: s.col };
-      });
-    }
-    function at(p, k) {
-      var r = p[2] ? ((k & 1) === 0 ? RT : RG) : p[0];
-      var th = k * Math.PI * 2 / N;
-      return [r * Math.cos(th), p[1], r * Math.sin(th)];
-    }
-    function tri(a, b, c, col) {
-      var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-      var l = Math.sqrt(nx * nx + ny * ny + nz * nz);
-      if (l < 1e-9) return;
-      nx /= l; ny /= l; nz /= l;
-      S.P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
-      S.N.push(nx, ny, nz, nx, ny, nz, nx, ny, nz);
-      S.C.push(col[0], col[1], col[2], col[0], col[1], col[2], col[0], col[1], col[2]);
-    }
-    for (i = 0; i < segs.length; i++) {
-      for (k = 0; k < N; k++) {
-        var a = at(segs[i].a, k), b = at(segs[i].b, k), c = at(segs[i].b, k + 1), d = at(segs[i].a, k + 1);
-        tri(a, b, c, segs[i].col);
-        tri(a, c, d, segs[i].col);
-      }
-    }
-    /* wheel nuts: small flat squares on the disc face */
-    if (nuts) {
-      var y = side * 0.134, j, ph;
-      for (j = 0; j < 8; j++) {
-        ph = j * Math.PI / 4 + 0.2;
-        var cx = 0.19 * Math.cos(ph), cz = 0.19 * Math.sin(ph), ex = 0.022 * Math.cos(ph), ez = 0.022 * Math.sin(ph), fx = -0.022 * Math.sin(ph), fz = 0.022 * Math.cos(ph);
-        var p0 = [cx - ex - fx, y, cz - ez - fz], p1 = [cx + ex - fx, y, cz + ez - fz],
-            p2 = [cx + ex + fx, y, cz + ez + fz], p3 = [cx - ex + fx, y, cz - ez + fz];
-        /* face outward: +Y for side +1 */
-        var up = side > 0;
-        /* y component of the normal of (p0, p1, p2): uz * vx - ux * vz */
-        var n0 = (p1[2] - p0[2]) * (p2[0] - p0[0]) - (p1[0] - p0[0]) * (p2[2] - p0[2]);
-        if ((n0 > 0) === up) { tri(p0, p1, p2, K.nut); tri(p0, p2, p3, K.nut); }
-        else { tri(p0, p2, p1, K.nut); tri(p0, p3, p2, K.nut); }
-      }
-    }
-    return S;
-  }
-  function soupGeo(THREE, S) {
-    var geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(S.P), 3));
-    geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(S.N), 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(S.C), 3));
-    geo.computeBoundingSphere();
-    return geo;
+  /* cab station table (horizontal sections, [D] side and [F][L] front): z, face x, back x, half width,
+     corner facet across (y) and deep (x).  The chin slopes back from the face to the cab floor; the back
+     wall is cut away below 1.37 m over the front tyre. */
+  var CAB = [
+    [0.97, 4.42, 3.82, 1.10, 0.30, 0.20],
+    [1.22, 4.69, 3.61, 1.20, 0.34, 0.24],
+    [1.37, 4.85, XCR, 1.22, 0.36, 0.26],
+    [1.50, 4.99, XCR, 1.22, 0.36, 0.26],        /* foot of the vertical face                               */
+    [1.86, 4.99, XCR, 1.22, 0.36, 0.26],        /* windscreen foot                                         */
+    [2.47, 4.63, XCR, 1.215, 0.30, 0.22],       /* windscreen head: 0.36 m back over 0.61 m, 30 degrees    */
+    [2.55, 4.58, 3.50, 1.20, 0.28, 0.20],
+    [2.59, 4.55, 3.52, 1.17, 0.26, 0.18]        /* the roof, 2.59 m [D]                                    */
+  ];
+  function cabRing(st) {
+    var z = st[0], xf = st[1], xr = st[2], w = st[3], ch = st[4], cx = st[5], rr = 0.05;
+    /* counter-clockwise seen from above, from the front-starboard corner of the face */
+    return [[xf, -(w - ch), z], [xf, w - ch, z], [xf - cx, w, z], [xr + rr, w, z],
+            [xr, w - rr, z], [xr, -(w - rr), z], [xr + rr, -w, z], [xf - cx, -w, z]];
   }
 
-  /* ------------------------------------------------------------- lofts */
-  /* Eight-point cross-section: w = half width, chamfered at the bottom
-     corners by chB and the top corners by chT; the bottom edge sits at x = xb
-     and the top edge at x = xt, so a face can lean. */
-  function ring(xb, xt, z0, z1, w, chB, chT) {
-    function X(z) { return xb + (z - z0) * (xt - xb) / (z1 - z0); }
-    var c0 = z0 + chB, c1 = z1 - chT;
-    return [
-      [X(z0), -(w - chB), z0], [X(z0), (w - chB), z0],
-      [X(c0), w, c0], [X(c1), w, c1],
-      [X(z1), (w - chT), z1], [X(z1), -(w - chT), z1],
-      [X(c1), -w, c1], [X(c0), -w, c0]
-    ];
+  /* 16.00R20 XZL: big square lug blocks alternating across the crown, black disc wheel, ten nuts, hub.
+     Axle on local Y; centred on (ox, oy, oz). */
+  function tyre(bin, ox, oy, oz, bare) {
+    var N = 24, HW = 0.205;
+    var R = [[-HW, 0.36, 0, 0], [-HW, 0.52, 0, 0], [-0.19, 0.585, 1, 0], [-0.11, RT, 1, 0], [-0.02, RT, 1, 1],
+             [0.02, RT, 1, 0], [0.11, RT, 1, 1], [0.19, 0.585, 1, 1], [HW, 0.52, 0, 0], [HW, 0.36, 0, 0]];
+    var V = [], F = [], i, j, k, r, a, m = R.length;
+    for (i = 0; i < m; i++) for (j = 0; j < N; j++) {
+      r = R[i][1];
+      if (R[i][2] && ((j + R[i][3]) % 2)) r -= 0.045;
+      a = j / N * TAU;
+      V.push([ox + r * Math.cos(a), oy + R[i][0], oz + r * Math.sin(a)]);
+    }
+    for (i = 0; i < m - 1; i++) for (j = 0; j < N; j++) {
+      k = (j + 1) % N;
+      F.push([i * N + j, i * N + k, (i + 1) * N + k], [i * N + j, (i + 1) * N + k, (i + 1) * N + j]);
+    }
+    V.push([ox, oy + R[0][0], oz], [ox, oy + R[m - 1][0], oz]);
+    for (j = 0; j < N; j++) { k = (j + 1) % N; F.push([m * N, k, j], [m * N + 1, (m - 1) * N + j, (m - 1) * N + k]); }
+    solid(bin, V, F, true);
+    for (k = -1; k <= 1; k += 2) {
+      cyl(bin, [ox, oy + k * HW, oz], [ox, oy + k * (HW + 0.012), oz], 0.36, 0.33, 16, true, false);   /* rim flange */
+      cyl(bin, [ox, oy + k * (HW - 0.06), oz], [ox, oy + k * (HW + 0.004), oz], 0.30, 0.28, 16, true, false); /* disc */
+      if (bare) continue;
+      cylY(bin, ox, oy + k * HW, oy + k * (HW + 0.07), oz, 0.12, 12);                                  /* hub      */
+      cylY(bin, ox, oy + k * (HW + 0.07), oy + k * (HW + 0.10), oz, 0.06, 8);                          /* CTIS cap */
+      for (j = 0; j < 10; j++) {                                                                       /* nuts     */
+        a = j / 10 * TAU;
+        box(bin, ox + 0.19 * Math.cos(a) - 0.022, ox + 0.19 * Math.cos(a) + 0.022, oy + k * HW, oy + k * (HW + 0.03),
+            oz + 0.19 * Math.sin(a) - 0.022, oz + 0.19 * Math.sin(a) + 0.022);
+      }
+    }
   }
 
-  /* ========================================================== ASSEMBLY ==== */
-  function build(THREE, M, C) {
-    var T = makeMats(THREE, C);
-    var g = new THREE.Group();
-    g.name = "us_hemtt";
-    var B = new Baker(THREE);
-    var P = T.paint, V = T.vc, ST = T.steel, GL = T.glass, TM = T.team, LP = T.lamp;
-    var s, i, j, x;
+  /* --------------------------------------------------------------- the cab */
+  function addCab(B) {
+    var R = [], i, s, y0, y1, y2;
+    for (i = 0; i < CAB.length; i++) R.push(cabRing(CAB[i]));
+    loftRings(B.paint, R, false);
+    /* the windscreen plane through its foot and head */
+    var A = [CAB[4][1], 0, CAB[4][0]], H = [CAB[5][1], 0, CAB[5][0]];
+    var W = unit(sub(H, A)), N = unit([W[2], 0, -W[0]]), U = [0, 1, 0];
+    var L = Math.sqrt(dot(sub(H, A), sub(H, A)));
+    planeBox(B.dark, A, U, W, N, -0.86, 0.86, 0.02, L - 0.01, -0.02, 0.006);            /* rubber surround        */
+    planeBox(B.glass, A, U, W, N, 0.05, 0.82, 0.05, L - 0.04, 0.0, 0.018);              /* port pane              */
+    planeBox(B.glass, A, U, W, N, -0.82, -0.05, 0.05, L - 0.04, 0.0, 0.018);            /* starboard pane         */
+    planeBox(B.paint, A, U, W, N, -0.05, 0.05, 0.02, L, 0.0, 0.026);                    /* centre post            */
+    /* the brow over the glass and its five amber markers [F] */
+    box(B.paint, 4.44, 4.64, -1.10, 1.10, 2.585, 2.65);
+    B.lamp.col = AMBER;
+    for (i = 0; i < 5; i++) box(B.lamp, 4.60, 4.655, -0.84 + i * 0.42 - 0.05, -0.84 + i * 0.42 + 0.05, 2.595, 2.64);
+    /* the face: headlamp pods at its corners, round lamps, and the dark vent band at the top of the chin [F][L] */
+    for (s = -1; s <= 1; s += 2) {
+      box(B.paint, 4.98, 5.10, s * 0.56, s * 0.86, 1.49, 1.79);
+      box(B.dark, 5.095, 5.105, s * 0.59, s * 0.83, 1.52, 1.76);
+      B.lamp.col = WHITE; cylX(B.lamp, 5.10, 5.115, s * 0.71, 1.64, 0.085, 14);
+      B.lamp.col = AMBER;
+      /* two amber markers on the corner facet, one over the other [F][L] */
+      var fx = CAB[4][1] - CAB[4][5] * 0.5, fy = s * (CAB[4][3] - CAB[4][4] * 0.5);
+      planeBox(B.lamp, [fx, fy, 1.66], unit([-0.26, s * 0.36, 0]), [0, 0, 1], unit([0.36, s * 0.26, 0]), -0.04, 0.04, -0.03, 0.03, 0, 0.02);
+      planeBox(B.lamp, [fx, fy, 1.48], unit([-0.26, s * 0.36, 0]), [0, 0, 1], unit([0.36, s * 0.26, 0]), -0.04, 0.04, -0.03, 0.03, 0, 0.02);
+    }
+    var CA = [CAB[0][1], 0, CAB[0][0]], CH = [CAB[3][1], 0, CAB[3][0]];
+    var CW = unit(sub(CH, CA)), CN = unit([CW[2], 0, -CW[0]]), CL = Math.sqrt(dot(sub(CH, CA), sub(CH, CA)));
+    planeBox(B.dark, CA, U, CW, CN, -0.80, 0.80, CL - 0.24, CL - 0.03, -0.02, 0.004);   /* the vent band          */
+    for (i = 0; i < 3; i++) planeBox(B.paint, CA, U, CW, CN, -0.78, 0.78, CL - 0.20 + i * 0.06, CL - 0.18 + i * 0.06, 0.0, 0.02);
+    /* tow clevises under the chin [F][L] */
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, 4.36, 4.50, s * 0.50, s * 0.62, 0.86, 0.98);
+      bar(B.dark, [4.46, s * 0.56, 0.86], [4.50, s * 0.56, 0.74], 0.04);
+    }
+    /* the sides: door, its window and diagonal bar, rear-quarter window and grab rail, reflector, seams [F][L][D] */
+    for (s = -1; s <= 1; s += 2) {
+      y0 = s * 1.215; y1 = s * 1.226; y2 = s * 1.232;
+      profY(B.glass, [[3.86, 1.88], [4.70, 1.88], [4.62, 2.36], [3.86, 2.36]], y0, y1);
+      profY(B.glass, [[3.57, 1.95], [3.78, 1.95], [3.78, 2.36], [3.57, 2.36]], y0, y1);
+      bar(B.dark, [4.60, y2, 1.90], [4.06, y2, 2.34], 0.025);
+      box(B.dark, 3.80, 3.84, y0, y2, 1.00, 2.40);                       /* door rear seam        */
+      box(B.dark, 3.80, 4.74, y0, y2, 1.10, 1.115);                       /* door foot             */
+      box(B.dark, 3.80, 4.62, y0, y2, 2.40, 2.415);                       /* door head             */
+      box(B.dark, 3.62, 3.645, y0, s * 1.26, 1.60, 2.30);                 /* grab rail             */
+      box(B.dark, 3.62, 3.70, y0, s * 1.26, 1.60, 1.62);
+      box(B.dark, 3.62, 3.70, y0, s * 1.26, 2.28, 2.30);
+      box(B.dark, 3.95, 4.10, y0, s * 1.245, 1.80, 1.83);                 /* door handle           */
+      B.lamp.col = AMBER; cylY(B.lamp, 4.38, y0, s * 1.232, 1.24, 0.045, 10);   /* round reflector  */
+      /* the hanging step ladder under the door [F][L] */
+      bar(B.dark, [3.92, s * 1.14, 0.97], [3.92, s * 1.14, 0.44], 0.03);
+      bar(B.dark, [4.20, s * 1.14, 0.97], [4.20, s * 1.14, 0.44], 0.03);
+      box(B.dark, 3.90, 4.22, s * 1.04, s * 1.20, 0.43, 0.46);
+      box(B.dark, 3.90, 4.22, s * 1.04, s * 1.20, 0.68, 0.71);
+      /* mirrors: a long forward arm off the windscreen head, the round convex head, a tall flat one under it */
+      bar(B.dark, [4.62, s * 1.18, 2.44], [5.12, s * 1.42, 2.40], 0.03);
+      bar(B.dark, [4.95, s * 1.20, 1.88], [5.08, s * 1.42, 1.92], 0.03);
+      bar(B.dark, [5.10, s * 1.42, 1.90], [5.10, s * 1.42, 2.42], 0.025);
+      cylX(B.dark, 5.10, 5.16, s * 1.42, 2.33, 0.10, 12);
+      box(B.dark, 5.07, 5.12, s * 1.36, s * 1.50, 1.96, 2.24);
+      box(B.glass, 5.055, 5.07, s * 1.37, s * 1.49, 1.97, 2.23);
+    }
+    /* roof: team panel, the camera's view of the owner */
+    box(B.team, 3.74, 4.34, -0.62, 0.62, 2.588, 2.602);
+  }
 
-    /* ---- the nose: faceted, the face leans back, engine behind it ---- */
-    B.loft(P, [ring(5.10, 4.93, 0.80, 1.52, 1.19, 0.14, 0.30), ring(4.62, 4.62, 0.80, 1.80, 1.20, 0.06, 0.10)], true, true);
-    /* the front face plane: x = 5.10 - 0.2361 (z - 0.80) */
-    function xf(z) { return 5.10 - 0.2361 * (z - 0.80); }
-    var nfx = 0.9736, nfz = 0.2299;                     /* its outward normal */
-    function fp(y, z, d) { return [xf(z) + nfx * d, y, z + nfz * d]; }
-    var behind = [3.8, 0, 1.2];
-    /* grille: a dark panel with four steel slats across it */
-    B.quad(V, fp(-0.74, 0.90, 0.020), fp(0.74, 0.90, 0.020), fp(0.74, 1.40, 0.020), fp(-0.74, 1.40, 0.020), behind, K.blk);
+  /* --------------------------- behind the cab: radiator box, spare, intake, air cleaner, hydraulic tank [F][D] */
+  function addBehindCab(B) {
+    var i, k, y;
+    /* the deck plate behind the cab, over axle 2, out to the body [F][D] */
+    box(B.paint, XBF, XCR, -1.20, 1.20, 1.40, 1.47);
+    /* the louvred radiator box, its louvres on the port face: four columns of slats [F][D] */
+    box(B.paint, XRR, XRF, -0.30, 1.17, ZR0, ZR1);
+    box(B.dark, XRR + 0.08, XRF - 0.08, 1.17, 1.178, ZR0 + 0.10, ZR1 - 0.10);
+    for (k = 0; k < 13; k++) box(B.paint, XRR + 0.08, XRF - 0.08, 1.17, 1.19, ZR0 + 0.13 + k * 0.066, ZR0 + 0.155 + k * 0.066);
+    for (k = 1; k < 4; k++) box(B.paint, XRR + 0.08 + k * (XRF - XRR - 0.16) / 4 - 0.012, XRR + 0.08 + k * (XRF - XRR - 0.16) / 4 + 0.012,
+                                1.17, 1.195, ZR0 + 0.10, ZR1 - 0.10);
+    box(B.paint, XRR + 0.06, XRF - 0.06, 1.17, 1.20, ZR1 - 0.10, ZR1 - 0.07);
+    cylZ(B.paint, 3.10, 0.95, ZR1, ZR1 + 0.06, 0.07, 10);                 /* filler cap               */
+    /* the spare, flat on its carrier over the box and behind it, 3.00 m over the tread [D][F] */
+    var SB = new Bin(B.tyre.mat);
+    tyre(SB, 0, 0, 0, true);
+    var cx = 2.41, cy = 0.30, cz = 3.00 - 0.217;
+    for (i = 0; i < SB.P.length; i += 3) {
+      B.tyre.P.push(SB.P[i] + cx, -SB.P[i + 2] + cy, SB.P[i + 1] + cz);
+      B.tyre.N.push(SB.N[i], -SB.N[i + 2], SB.N[i + 1]);
+    }
+    /* the carrier: a frame on posts aft of the radiator box */
+    box(B.dark, 1.80, XRR, -0.30, 0.90, ZR1 - 0.04, ZR1);
+    for (y = -0.26; y <= 0.9; y += 1.12) bar(B.dark, [1.84, y, ZR1 - 0.03], [1.84, y, 1.47], 0.06);
+    /* the black intake head at the top behind the box, its short stack [F] */
+    box(B.dark, 2.18, XRR, 0.20, 1.05, 2.22, ZR1 - 0.05);
+    cylZ(B.dark, 2.30, 0.90, ZR1 - 0.05, 2.70, 0.05, 8);
+    /* the air cleaner, a tan drum standing at the port side [F][D] */
+    cylZ(B.paint, 2.30, 0.92, 1.56, 2.10, 0.13, 12);
+    cylZ(B.dark, 2.30, 0.92, 2.10, 2.16, 0.10, 10);
+    /* the tall hydraulic tank on the port side and its filler stack [F][D] */
+    box(B.paint, 1.53, 2.14, 0.55, 1.15, 1.47, 2.17);
+    box(B.dark, 1.55, 2.12, 1.15, 1.157, 1.60, 1.62);
+    cylZ(B.paint, 1.72, 0.80, 2.17, 2.44, 0.08, 10);
+    cylZ(B.paint, 1.72, 0.80, 2.44, 2.47, 0.10, 10);
+    B.lamp.col = AMBER; box(B.lamp, 1.70, 1.80, 1.15, 1.16, 1.68, 1.74);
+    /* the engine enclosure behind the cab, starboard of the box (inboard, estimated: no A4 photograph from the right) */
+    box(B.paint, XRR + 0.10, XCR - 0.02, -1.05, -0.30, 1.47, 2.00);
+    box(B.dark, XRR + 0.10, XCR - 0.04, -1.055, -1.05, 1.90, 1.93);
+    /* the back wall's ribs */
+    box(B.dark, XCR - 0.03, XCR, -1.12, -0.32, 2.12, 2.55);
+  }
+
+  /* --------------------------------------------------------- the chassis */
+  function addChassis(B) {
+    var s, i, x;
+    /* the frame rails are painted with the truck [F] */
+    box(B.paint, -4.80, 4.25, 0.36, 0.48, 1.04, 1.34);
+    box(B.paint, -4.80, 4.25, -0.48, -0.36, 1.04, 1.34);
+    var CM = [4.10, 2.70, 0.90, -0.60, -1.50, -2.90, -4.30];
+    for (i = 0; i < CM.length; i++) box(B.paint, CM[i] - 0.05, CM[i] + 0.05, -0.36, 0.36, 1.10, 1.30);
+    /* transmission and transfer case */
+    box(B.dark, 2.10, 3.40, -0.34, 0.34, 0.86, 1.26);
+    box(B.dark, 0.20, 0.90, -0.32, 0.32, 0.70, 1.04);
+    /* axles: beams, differential housings; the tandems on trailing arms each side */
     for (i = 0; i < 4; i++) {
-      var zs = 0.98 + i * 0.10;
-      B.quad(ST, fp(-0.70, zs, 0.030), fp(0.70, zs, 0.030), fp(0.70, zs + 0.035, 0.030), fp(-0.70, zs + 0.035, 0.030), behind);
+      box(B.dark, AX[i] - 0.07, AX[i] + 0.07, -0.80, 0.80, RT - 0.08, RT + 0.08);
+      cylX(B.dark, AX[i] - 0.21, AX[i] + 0.21, 0, RT, 0.22, 12);
     }
-    /* headlamp pockets in the top corners, an amber marker beside each */
     for (s = -1; s <= 1; s += 2) {
-      B.quad(V, fp(s * 0.78, 1.16, 0.020), fp(s * 0.98, 1.16, 0.020), fp(s * 0.98, 1.34, 0.020), fp(s * 0.78, 1.34, 0.020), behind, K.blk);
-      B.quad(LP, fp(s * 0.82, 1.20, 0.030), fp(s * 0.94, 1.20, 0.030), fp(s * 0.94, 1.30, 0.030), fp(s * 0.82, 1.30, 0.030), behind, K.lensW);
-      B.quad(LP, fp(s * 0.62, 1.20, 0.026), fp(s * 0.72, 1.20, 0.026), fp(s * 0.72, 1.26, 0.026), fp(s * 0.62, 1.26, 0.026), behind, K.amber);
+      box(B.dark, AX[1] - 0.10, AX[0] + 0.10, s * 0.48, s * 0.62, RT + 0.06, RT + 0.20);
+      box(B.dark, AX[3] - 0.10, AX[2] + 0.10, s * 0.48, s * 0.62, RT + 0.06, RT + 0.20);
+      for (i = 0; i < 4; i++) cylZ(B.dark, AX[i] + (i % 2 ? -0.30 : 0.30), s * 0.55, RT + 0.20, 1.04, 0.13, 10);   /* air springs */
+      /* mud flap behind axle 2 [F][L][D] */
+      box(B.dark, AX[1] - 0.76, AX[1] - 0.72, s * 0.80, s * 1.22, 0.30, 1.40);
     }
-    /* plate bumper and two tow hooks */
-    B.box(V, 5.00, 5.14, -1.20, 1.20, 0.58, 0.84, K.dkg);
-    B.box(ST, 5.10, 5.195, -0.60, -0.50, 0.66, 0.74);
-    B.box(ST, 5.10, 5.195, 0.50, 0.60, 0.66, 0.74);
-
-    /* ---- the cab: tall box, raked windscreen, brow over it ---- */
-    B.loft(P, [ring(4.62, 4.62, Z_SILL, 1.80, 1.20, 0.06, 0.10), ring(4.40, 4.40, Z_SILL, Z_ROOF, 1.20, 0.05, 0.10),
-               ring(X_CABR, X_CABR, Z_SILL, Z_ROOF, 1.20, 0.05, 0.10)], false, true);
-    /* sub-floor between the front tyres, so the gap under the cab reads dark */
-    B.box(V, X_CABR, 4.50, -0.78, 0.78, 0.92, Z_SILL, K.dkg);
-    /* windscreen: two panes on the raked plane x = 4.62 - 0.2683 (z - 1.80) */
-    function xw(z) { return 4.62 - 0.2683 * (z - 1.80); }
-    function wp(y, z) { return [xw(z) + 0.0193, y, z + 0.0052]; }
-    var inside = [3.9, 0, 2.2];
-    B.quad(GL, wp(0.07, 1.92), wp(1.08, 1.92), wp(1.08, 2.54), wp(0.07, 2.54), inside);
-    B.quad(GL, wp(-1.08, 1.92), wp(-0.07, 1.92), wp(-0.07, 2.54), wp(-1.08, 2.54), inside);
-    /* the brow over the glass, and five amber roof markers on it */
-    B.boxRY(P, 4.52, 0, 2.62, 0.30, 2.34, 0.05, 0.20);
-    for (i = 0; i < 5; i++) B.box(LP, 4.50, 4.57, -0.88 + i * 0.44, -0.78 + i * 0.44, 2.56, 2.63, K.amber);
-    /* side windows, door unit marks, handles, steps, mirrors */
+    /* steering tie rods across the front tandem */
+    for (i = 0; i < 2; i++) cylY(B.dark, AX[i] - 0.25, -0.85, 0.85, RT, 0.03, 6);
+    /* propeller shafts */
+    cylX(B.dark, AX[1] + 0.2, 2.10, 0, 0.80, 0.05, 6);
+    cylX(B.dark, AX[2] + 0.2, 0.20, 0, 0.80, 0.05, 6);
+    cylX(B.dark, AX[3] + 0.2, AX[2] - 0.2, 0, RT + 0.05, 0.05, 6);
+    /* the round 155 gal tank, port side between the tandems, on two straps; the step box ahead of it [F][D] */
+    cyl(B.paint, [0.30, 0.80, 0.98], [-0.95, 0.80, 0.98], 0.35, 0.35, 18, true, true);
+    cyl(B.paint, [0.30, 0.80, 0.98], [0.42, 0.80, 0.98], 0.35, 0.22, 18, true, false);
+    cyl(B.paint, [-0.95, 0.80, 0.98], [-1.07, 0.80, 0.98], 0.35, 0.22, 18, true, false);
+    for (x = 0.10; x > -1.0; x -= 0.85) cylX(B.dark, x - 0.03, x + 0.03, 0.80, 0.98, 0.362, 18);
+    cylZ(B.paint, -0.20, 0.80, 1.30, 1.38, 0.06, 8);
+    box(B.paint, 0.46, 0.88, 0.70, 1.15, 0.66, 1.11);
+    box(B.dark, 0.48, 0.86, 1.15, 1.16, 0.80, 0.82);
     for (s = -1; s <= 1; s += 2) {
-      var yw = s * 1.222;
-      B.quad(GL, [3.70, yw, 1.92], [4.45, yw, 1.92], [4.33, yw, 2.52], [3.70, yw, 2.52], inside);
-      B.quad(TM, [3.76, s * 1.226, 1.30], [4.30, s * 1.226, 1.30], [4.30, s * 1.226, 1.62], [3.76, s * 1.226, 1.62], inside);
-      B.box(ST, 3.78, 3.90, s * 1.20, s * 1.235, 1.96, 1.99);
-      B.box(V, 3.72, 4.42, s > 0 ? 1.20 : -1.36, s > 0 ? 1.36 : -1.20, 0.80, 0.84, K.dkg);
-      B.box(V, 4.40, 4.46, s * 1.20, s * 1.36, 2.22, 2.26, K.blk);
-      B.box(V, 4.40, 4.46, s * 1.20, s * 1.36, 2.02, 2.06, K.blk);
-      B.box(V, 4.40, 4.46, s > 0 ? 1.34 : -1.46, s > 0 ? 1.46 : -1.34, 1.96, 2.36, K.blk);
-      B.quad(GL, [4.395, s * 1.355, 1.99], [4.395, s * 1.445, 1.99], [4.395, s * 1.445, 2.33], [4.395, s * 1.355, 2.33], [4.7, s * 1.4, 2.15]);
+      /* tail: cross beam, red lamps at its ends [D] */
+      box(B.dark, -4.95, -4.80, -1.05, 1.05, 0.88, 1.12);
+      B.lamp.col = RED; box(B.lamp, -4.96, -4.95, s * 0.80, s * 1.00, 0.94, 1.06);
     }
-    /* team panel on the roof, the surface the game camera sees */
-    B.quad(TM, [3.72, -0.85, 2.636], [4.32, -0.85, 2.636], [4.32, 0.85, 2.636], [3.72, 0.85, 2.636], [4.0, 0, 2.0]);
+    /* the pintle hook [D] */
+    box(B.dark, -5.08, -4.95, -0.10, 0.10, 0.90, 1.04);
+    cylY(B.dark, -5.06, -0.05, 0.05, 0.92, 0.06, 8);
+  }
 
-    /* ---- behind the cab: louvred cabinet, exhaust stack, spare tyre ---- */
-    B.box(P, X_CABIN, X_CABR, -0.20, 1.12, Z_DECK, Z_ROOF - 0.02, undefined, "-z");
-    B.quad(V, [X_CABIN + 0.08, 1.140, 1.72], [X_CABR - 0.09, 1.140, 1.72], [X_CABR - 0.09, 1.140, 2.48], [X_CABIN + 0.08, 1.140, 2.48], [2.7, 0.4, 2.0], K.blk);
-    for (i = 0; i < 5; i++) {
-      var zl = 1.82 + i * 0.13;
-      B.quad(ST, [X_CABIN + 0.10, 1.150, zl], [X_CABR - 0.11, 1.150, zl], [X_CABR - 0.11, 1.150, zl + 0.035], [X_CABIN + 0.10, 1.150, zl + 0.035], [2.7, 0.4, 2.0]);
-    }
-    /* behind the cabinet, on the right: the exhaust stack, and on the left an
-       air cleaner and the battery box, in the 0.9 m between cabinet and body */
-    B.cyl(V, 0.085, 1.30, 8, 1.75, -0.55, 2.20, "z", K.blk);
-    B.cyl(V, 0.11, 0.08, 8, 1.75, -0.55, 2.88, "z", K.dkg);
-    B.cyl(V, 0.13, 0.80, 10, 1.70, 0.95, Z_DECK + 0.40, "z", K.dkg);
-    B.box(P, 1.46, 2.10, 0.18, 0.78, Z_DECK, Z_DECK + 0.46);
-    /* the spare lies flat on the cabinet: roof 2.62 + the tyre = 3.00 m */
-    var sp = wheelSoup(1, 20, false);
-    B.addSoup(V, sp, function (p, isNormal) {
-      /* local +Y -> +Z (turn about X by +90 degrees), then place */
-      var q = [p[0], -p[2], p[1]];
-      return isNormal ? q : [q[0] + 2.99, q[1] + 0.46, q[2] + 2.80];
-    });
-
-    /* ---- the cargo body ---- */
-    /* the whole truck is 2.44 m wide (96 in): the side boards are pressed in
-       0.03 m and their stiffeners fill the rest, so nothing passes y = 1.22 */
-    B.box(P, X_BEDT, X_CABR, -1.22, 1.22, Z_DECK - 0.12, Z_DECK);
+  /* ------------------------------------------------- the drop-side cargo body [D][F][T] */
+  /* posts along the side from [D]: the end posts, the double stake posts that split the three boards, and the
+     stiffener in the middle of each board */
+  var PEND = [XBF - 0.04, XBR + 0.01], PSTAKE = [-0.27, -0.43, -2.10, -2.27], PMID = [0.596, -1.30, -3.13];
+  function addBody(B) {
+    var s, i, x, y0, y1, ys;
+    /* the body's own runners, cross bearers (their ends show under the board) and the floor */
+    box(B.paint, XBR + 0.04, XBF - 0.04, 0.36, 0.50, 1.34, 1.52);
+    box(B.paint, XBR + 0.04, XBF - 0.04, -0.50, -0.36, 1.34, 1.52);
+    for (x = XBF - 0.10; x > XBR; x -= 0.50) box(B.paint, x - 0.04, x + 0.04, -1.19, 1.19, 1.50, 1.60);
+    box(B.paint, XBR, XBF, -1.19, 1.19, 1.60, ZFL);
     for (s = -1; s <= 1; s += 2) {
-      B.box(P, X_BEDT, X_BEDF, s > 0 ? 1.10 : -1.22, s > 0 ? 1.22 : -1.10, Z_DECK - 0.18, Z_DECK - 0.12);
-      B.box(P, X_BEDT, X_BEDF, s > 0 ? 1.12 : -1.19, s > 0 ? 1.19 : -1.12, Z_DECK, Z_RAIL);
-      B.box(TM, X_BEDT, X_BEDF, s > 0 ? 1.12 : -1.22, s > 0 ? 1.22 : -1.12, Z_RAIL, Z_RAIL + 0.035);
-      for (i = 0; i < 6; i++) {
-        x = X_BEDF - 0.55 - i * 1.00;
-        B.box(P, x - 0.05, x + 0.05, s > 0 ? 1.19 : -1.22, s > 0 ? 1.22 : -1.19, Z_DECK + 0.05, Z_RAIL - 0.04);
-      }
+      y0 = s * (BW - 0.04); y1 = s * (BW - 0.02); ys = s * BW;
+      /* the board, its foot rail and top rail */
+      box(B.paint, XBR, XBF, y0, y1, 1.62, ZBT - 0.03);
+      box(B.paint, XBR, XBF, y0, ys, 1.58, 1.69);
+      box(B.paint, XBR, XBF, s * (BW - 0.06), ys, ZBT - 0.05, ZBT);
+      for (i = 0; i < PEND.length; i++) box(B.paint, PEND[i] - 0.04, PEND[i] + 0.04, y1, ys, 1.58, ZBT);
+      for (i = 0; i < PSTAKE.length; i++) box(B.paint, PSTAKE[i] - 0.035, PSTAKE[i] + 0.035, y1, ys, 1.58, ZBT);
+      for (i = 0; i < PMID.length; i++) box(B.paint, PMID[i] - 0.02, PMID[i] + 0.02, y1, s * (BW - 0.005), 1.69, ZBT - 0.05);
+      /* latches on the stake posts, hinge knuckles along the foot */
+      for (i = 0; i < PSTAKE.length; i++) box(B.dark, PSTAKE[i] - 0.05, PSTAKE[i] + 0.05, ys, s * (BW + 0.012), 1.82, 1.90);
+      for (i = 0; i < PMID.length; i++) box(B.dark, PMID[i] - 0.03, PMID[i] + 0.03, ys, s * (BW + 0.01), 1.84, 1.89);
+      for (x = XBF - 0.30; x > XBR; x -= 0.95) box(B.dark, x - 0.05, x + 0.05, ys, s * (BW + 0.015), 1.585, 1.62);
+      B.lamp.col = AMBER; box(B.lamp, XBR + 0.10, XBR + 0.18, ys, s * (BW + 0.01), 1.61, 1.66);
     }
-    B.box(P, X_BEDF - 0.07, X_BEDF, -1.22, 1.22, Z_DECK, Z_RAIL + 0.14);
-    B.box(P, X_BEDT - 0.06, X_BEDT, -1.22, 1.22, Z_DECK, Z_RAIL - 0.25);
+    /* headboard and tailgate */
+    box(B.paint, XBF - 0.06, XBF, -BW, BW, 1.58, ZBT);
+    box(B.team, XBF - 0.07, XBF + 0.01, -0.90, 0.90, ZBT, ZBT + 0.012);
+    box(B.paint, XBR, XBR + 0.05, -BW, BW, 1.58, ZBT);
+    for (s = -1; s <= 1; s += 2) box(B.paint, XBR - 0.02, XBR, s * 0.42 - 0.03, s * 0.42 + 0.03, 1.60, ZBT - 0.02);
+    box(B.paint, XBR - 0.02, XBR, -1.10, 1.10, 1.95, 1.99);
+  }
 
-    /* ---- the materiel handling crane, stowed: head at the tail, boom forward ---- */
-    B.box(P, -5.10, -4.70, -0.22, 0.22, 1.12, 1.75);
-    B.box(P, -5.18, -4.58, -0.32, 0.32, 1.67, 2.27);
-    B.box(P, -4.58, -1.80, -0.14, 0.14, 1.75, 2.03);
-    B.box(P, -1.80, -0.35, -0.11, 0.11, 1.78, 2.00);
-    B.box(ST, -0.39, -0.23, -0.07, 0.07, 1.65, 1.81);
-    B.cyl(ST, 0.035, 1.9, 6, -3.55, 0, 1.69, "x");
-
-    /* ---- the load: two strapped pallet stacks forward, six drums aft ---- */
+  /* ------------------------------------- the Grove materials handling crane, stowed at the tail [D][F][T] */
+  function addCrane(B) {
+    var s;
+    /* the frame extension and the pedestal on it */
+    box(B.paint, -4.86, -4.20, -0.32, 0.32, 1.08, 1.48);
+    /* the slewing column */
+    cylZ(B.paint, -4.55, 0, 1.48, 1.86, 0.17, 14);
+    cylZ(B.dark, -4.55, 0, 1.86, 1.90, 0.19, 14);
+    /* the boom folded upright: inner and outer sections side by side, the knuckle head on top; the head is the
+       widest part, as [D] draws it */
+    box(B.paint, -4.40, -4.64, -0.15, 0.15, 1.90, 2.18);
+    box(B.paint, -4.64, -4.86, -0.13, 0.13, 1.40, 2.18);
+    profY(B.paint, [[-4.36, 2.02], [-4.92, 2.02], [-4.90, 2.12], [-4.84, 2.27], [-4.46, 2.27], [-4.38, 2.12]], -0.20, 0.20);
+    bar(B.dark, [-4.47, 0.13, 1.55], [-4.47, 0.13, 2.15], 0.05);           /* lift cylinder            */
+    cylZ(B.dark, -4.75, 0, 1.30, 1.50, 0.04, 6);                           /* hook block hanging       */
+    box(B.dark, -4.80, -4.70, -0.05, 0.05, 1.22, 1.30);
+    /* the valve bank on the port side, its levers [D] */
+    box(B.paint, -4.66, -5.00, 0.32, 0.72, 0.94, 1.36);
+    for (s = 0; s < 4; s++) bar(B.dark, [-4.98, 0.38 + s * 0.09, 1.30], [-5.04, 0.38 + s * 0.09, 1.46], 0.02);
+    /* stabiliser legs, stowed: a beam across the tail and a tube down each side [F] (port), [T] (starboard) */
+    box(B.paint, -4.42, -4.54, -1.06, 1.06, 1.44, 1.58);
     for (s = -1; s <= 1; s += 2) {
-      var y0 = s > 0 ? 0.28 : -1.14, y1 = s > 0 ? 1.14 : -0.28;
-      var crate = s > 0 ? K.olive : K.tan, top = s > 0 ? 2.50 : 2.28;
-      B.box(V, -0.08, 1.14, y0, y1, Z_DECK, Z_DECK + 0.12, K.wood);
-      B.box(V, -0.04, 1.10, y0 + 0.02, y1 - 0.02, Z_DECK + 0.12, top, crate);
-      B.box(V, 0.23, 0.28, y0 + 0.005, y1 - 0.005, Z_DECK + 0.11, top + 0.012, K.strap);
-      B.box(V, 0.78, 0.83, y0 + 0.005, y1 - 0.005, Z_DECK + 0.11, top + 0.012, K.strap);
+      box(B.paint, -4.42, -4.56, s * 0.94, s * 1.08, 0.62, 1.58);
+      box(B.dark, -4.40, -4.58, s * 0.92, s * 1.10, 0.56, 0.62);
+    }
+  }
+
+  /* ------------------------------------------------- the load: two strapped pallet stacks forward, six drums */
+  function addLoad(B) {
+    var s, i, y0, y1, x, top;
+    for (s = -1; s <= 1; s += 2) {
+      y0 = s > 0 ? 0.20 : -1.12; y1 = s > 0 ? 1.12 : -0.20; top = s > 0 ? 2.52 : 2.30;
+      B.vc.col = WOOD; box(B.vc, 0.10, 1.36, y0, y1, ZFL, ZFL + 0.12);
+      B.vc.col = s > 0 ? OLIVE : CRATE; box(B.vc, 0.14, 1.32, y0 + 0.02, y1 - 0.02, ZFL + 0.12, top);
+      B.vc.col = STRAP;
+      box(B.vc, 0.42, 0.47, y0 + 0.005, y1 - 0.005, ZFL + 0.11, top + 0.012);
+      box(B.vc, 0.98, 1.03, y0 + 0.005, y1 - 0.005, ZFL + 0.11, top + 0.012);
     }
     for (i = 0; i < 3; i++) for (s = -1; s <= 1; s += 2) {
-      x = -1.20 - i * 0.90;
-      B.cyl(V, 0.29, 0.88, 9, x, s * 0.62, Z_DECK + 0.44, "z", K.drum);
-      B.cyl(V, 0.30, 0.05, 9, x, s * 0.62, Z_DECK + 0.44, "z", K.drumBand);
+      x = -1.00 - i * 0.90;
+      B.vc.col = DRUM; cylZ(B.vc, x, s * 0.62, ZFL, ZFL + 0.88, 0.29, 12);
+      B.vc.col = BAND; cylZ(B.vc, x, s * 0.62, ZFL + 0.42, ZFL + 0.47, 0.30, 12);
     }
+  }
 
-    /* ---- chassis: rails, cross-members, axles, tank, boxes, flaps, tail ---- */
-    B.box(V, -5.05, 4.45, 0.34, 0.50, 0.92, 1.40, K.dkg);
-    B.box(V, -5.05, 4.45, -0.50, -0.34, 0.92, 1.40, K.dkg);
-    var cm = [3.95, 2.05, 0.15, -1.30, -3.30];
-    for (i = 0; i < cm.length; i++) B.box(V, cm[i] - 0.06, cm[i] + 0.06, -0.34, 0.34, 1.02, 1.36, K.dkg);
-    for (i = 0; i < 4; i++) {
-      B.box(V, AX[i] - 0.08, AX[i] + 0.08, -0.78, 0.78, 0.50, 0.70, K.dkg);
-      B.box(V, AX[i] - 0.17, AX[i] + 0.17, -0.17, 0.17, 0.42, 0.80, K.dkg);
-    }
-    B.cyl(V, 0.045, 1.52, 6, (AX[0] + AX[1]) / 2, 0, 0.84, "x", K.dkg);
-    B.cyl(V, 0.045, 3.81, 6, (AX[1] + AX[2]) / 2, 0, 0.84, "x", K.dkg);
-    B.cyl(V, 0.045, 1.52, 6, (AX[2] + AX[3]) / 2, 0, 0.84, "x", K.dkg);
-    /* the 155 gal tank, left; strapped */
-    B.cyl(P, 0.37, 1.85, 14, -0.60, 0.84, 1.02, "x");
-    B.cyl(V, 0.38, 0.05, 14, -1.25, 0.84, 1.02, "x", K.strap);
-    B.cyl(V, 0.38, 0.05, 14, 0.05, 0.84, 1.02, "x", K.strap);
-    /* tool box and a small tank, right */
-    B.box(P, -0.80, 0.50, -1.15, -0.60, 0.80, 1.30);
-    B.cyl(V, 0.15, 0.80, 10, -1.35, -0.85, 0.98, "x", K.dkg);
-    /* mud flaps behind the rear tyre of each tandem */
-    for (s = -1; s <= 1; s += 2) {
-      B.box(V, AX[1] - 0.73, AX[1] - 0.69, s > 0 ? 0.80 : -1.20, s > 0 ? 1.20 : -0.80, 0.25, 0.95, K.blk);
-      B.box(V, AX[3] - 0.72, AX[3] - 0.68, s > 0 ? 0.80 : -1.20, s > 0 ? 1.20 : -0.80, 0.25, 0.95, K.blk);
-      B.box(LP, -5.195, -5.16, s > 0 ? 0.96 : -1.12, s > 0 ? 1.12 : -0.96, 1.06, 1.18, K.red);
-    }
-    B.box(V, -5.16, -5.04, -1.14, 1.14, 0.78, 1.04, K.dkg);
-    B.box(ST, -5.195, -5.06, -0.09, 0.09, 0.88, 1.00);
-
-    B.flush(g);
-
-    /* ---- eight wheels, each a turning group ---- */
-    var gL = soupGeo(THREE, wheelSoup(1, 24, true)), gR = soupGeo(THREE, wheelSoup(-1, 24, true));
-    for (i = 0; i < 4; i++) for (s = -1; s <= 1; s += 2) {
-      var w = new THREE.Group();
-      w.name = "roadwheel";
-      w.position.set(AX[i], s * TY, TR);
-      var wm = new THREE.Mesh(s > 0 ? gL : gR, V);
+  function build(THREE, M, C) {
+    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), i, s, wg, wm, geo, TB;
+    g.name = "us_hemtt";
+    addCab(HB);
+    addBehindCab(HB);
+    addChassis(HB);
+    addBody(HB);
+    addCrane(HB);
+    addLoad(HB);
+    flush(THREE, g, HB);
+    TB = new Bin(T.tyre);
+    tyre(TB, 0, 0, 0);
+    geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TB.P), 3));
+    geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(TB.N), 3));
+    geo.computeBoundingSphere();
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 4; i++) {
+      wg = new THREE.Group();
+      wg.name = "roadwheel";
+      wg.position.set(AX[i], s * TY, RT);
+      wm = new THREE.Mesh(geo, T.tyre);
       wm.castShadow = true; wm.receiveShadow = true;
-      w.add(wm);
-      g.add(w);
+      wg.add(wm);
+      g.add(wg);
     }
     return g;
   }
@@ -577,4 +641,6 @@ var HeroUsHemtt = (function () {
   return { build: build };
 })();
 
-UNIT_MODELS["supply_n"] = { len: 10.39, build: HeroUsHemtt.build };
+/* len is the measured X extent (dump.js 10.28 m): the pintle pin (-5.12) to the mirror heads (+5.16); the truck
+   over its headlamp pods and pintle hook is 10.20 m as [D] draws it */
+UNIT_MODELS["supply_n"] = { len: 10.28, build: HeroUsHemtt.build };
