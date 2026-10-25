@@ -162,6 +162,7 @@ var Damage3D = (function () {
     nato_e60_spaag: "front", nato_e80_spaag: "front",                  // M163 Vulcan on the M113
     nato_e60_tankdestroyer: "front", nato_e80_tankdestroyer: "front",  // M113A1 TOW, M901 ITV: the M113's
     nato_e90_tankdestroyer: "front",                                   //   engine front right
+    nato_e50_tankdestroyer: "front",                                   // M56 Scorpion: engine under the front slope
     nato_e90_spaag: "front", roc_e90_spaag: "front",                   // Avenger on the HMMWV
     roc_e00_spaag: "front", spaag_r: "front", atgmv_r: "front",        // Antelope and TOW on the HMMWV
     roc_e80_spaag: "front",                                            // Chaparral on the M730 (M548 family)
