@@ -635,31 +635,34 @@ function makeCommander() {
      hunt. They are off at Recruit, and the navy comes in one tier before the
      air arm because a blind fleet loses hulls faster than a blind air force
      loses airframes. */
+  /* `ssbn` is how many ballistic-missile boats may be alive at once (THE
+     BOOMER, wantSsbn): none below Elite. Not `superweapon`, which is the
+     silos - the rounds these boats carry are conventional. */
   const DIFF = {
     recruit:  { waveTime: 260, waveSize: 4,  aggro: 0.45, rebuild: 0.4,
                 think: 3.6, react: 9.0, econ: 0.7, memory: 30,  scouts: 1, scoutT: 70, repairAt: 0.00,
                 tech: 0.6, radar: false, stealth: false, superweapon: false, micro: 0.2, read: 0,
-                air: false, navy: false },
+                air: false, navy: false, ssbn: 0 },
     regular:  { waveTime: 200, waveSize: 7,  aggro: 0.8,  rebuild: 0.8,
                 think: 2.8, react: 6.5, econ: 0.85, memory: 90,  scouts: 1, scoutT: 55, repairAt: 0.60,
                 tech: 0.85, radar: false, stealth: false, superweapon: false, micro: 0.4, read: 0.35,
-                air: false, navy: true },
+                air: false, navy: true, ssbn: 0 },
     veteran:  { waveTime: 150, waveSize: 10, aggro: 1.1,  rebuild: 1.2,
                 think: 2.1, react: 4.5, econ: 1.0, memory: 150, scouts: 2, scoutT: 42, repairAt: 0.70,
                 tech: 1.0, radar: true, stealth: false, superweapon: false, micro: 0.6, read: 0.60,
-                air: true, navy: true },
+                air: true, navy: true, ssbn: 0 },
     elite:    { waveTime: 118, waveSize: 14, aggro: 1.4,  rebuild: 1.5,
                 think: 1.6, react: 3.0, econ: 1.15, memory: 240, scouts: 2, scoutT: 32, repairAt: 0.80,
                 tech: 1.2, radar: true, stealth: true, superweapon: true, micro: 0.8, read: 0.80,
-                air: true, navy: true },
+                air: true, navy: true, ssbn: 1 },
     commander:{ waveTime: 95,  waveSize: 18, aggro: 1.7,  rebuild: 2.0,
                 think: 1.2, react: 2.0, econ: 1.3, memory: 600, scouts: 3, scoutT: 24, repairAt: 0.85,
                 tech: 1.4, radar: true, stealth: true, superweapon: true, micro: 1.0, read: 1.0,
-                air: true, navy: true },
+                air: true, navy: true, ssbn: 1 },
     warlord:  {  waveTime: 75,  waveSize: 24, aggro: 2.1,  rebuild: 2.6,
                 think: 0.9, react: 1.2, econ: 1.45, memory: 600, scouts: 3, scoutT: 18, repairAt: 0.90,
                 tech: 1.7, radar: true, stealth: true, superweapon: true, micro: 1.0, read: 1.0,
-                air: true, navy: true },
+                air: true, navy: true, ssbn: 2 },
     /* legacy names from earlier builds */
     easy: null, normal: null, hard: null, brutal: null,
   };
@@ -953,7 +956,7 @@ function makeCommander() {
        whose cells that strike has just emptied is sent home for more on the
        same pass (REARM, driveRearm). */
     strikeT -= dt;
-    if (strikeT <= 0) { strikeT = D.think || 1.6; driveStrikeShips(); driveRearm(); }
+    if (strikeT <= 0) { strikeT = D.think || 1.6; driveBoomers(); driveStrikeShips(); driveRearm(); }
     /* ---- the production we cannot lose ----
        (victory rule) a side with no live production building is beaten.
        defendBase() used to run on the last line of think(), after fifteen
@@ -4756,6 +4759,7 @@ function makeCommander() {
 
     const air = U.clamp(s.air / 3, 0, 1);
     const add = (k, v) => { mix[k] = (mix[k] || 0) + v; };
+    const ssg = ssgnCan();
 
     if (s.sSub > 0.10) {
       /* Sonar and a torpedo, and nothing else in the roster has both. */
@@ -4793,6 +4797,11 @@ function makeCommander() {
       if (P.tech >= 2) add("missileboat", 0.20 * s.sCapital * grip);
       if (P.tech >= 2) add("sub", 0.20 * s.sCapital * grip);
       if (P.tech >= 3) add("cruiser", 0.10 * s.sCapital * grip);
+      /* the cruise-missile boat built to put its missiles into ships: the
+         Oscar II and its twenty-four Granit, made to kill a carrier group
+         (see ssgnCan). Sea-only boats: the converted Ohio is a land-attack
+         boat and answers the shore below. */
+      if (P.tech >= 3 && ssg.sea && !ssg.ground) add("ssgn", 0.16 * s.sCapital * grip);
       mix.patrol *= 1 - 0.80 * s.sCapital * grip;
     }
 
@@ -4803,6 +4812,8 @@ function makeCommander() {
     /* ...and so does a sixteen-inch HC shell, which outranges the battery:
        the thing the Iowas were brought back to do */
     if (s.coast > 0 && mix.battleship) add("battleship", 0.12 * U.clamp(s.coast / 3, 0, 1) * grip);
+    /* ...and so does a Tomahawk out of the converted Ohio, at 19 */
+    if (s.coast > 0 && P.tech >= 3 && ssg.ground) add("ssgn", 0.10 * U.clamp(s.coast / 3, 0, 1) * grip);
 
     /* The same guard the ground mixture carries, for the same reason: a fleet
        of nothing but missile boats has no sonar, no SAM and 900 hit points a
@@ -4818,6 +4829,30 @@ function makeCommander() {
       for (const k of genKeys) if (mix[k] !== undefined) mix[k] += share;
     }
     return mix;
+  }
+
+  /* ---- what the cruise-missile boat is FOR ----
+     The SSGN is a counter term in navalMix() and never a standing share: one
+     5,000-credit hull is bought for a job, and each term asks whether THIS
+     navy's row can do that job, off the row's own missiles (the torpedo
+     every boat carries is not the reason to buy this one). Read off the
+     tables: the Oscar II (ssgn_p, 1980s on) carries the P-700 Granit, sea
+     only, so it answers the capital ships and never the shore; the converted
+     Ohio (ssgn_n, 2000s on) carries the Tomahawk, land attack, and answers
+     the shore only (its row also lists a Harpoon; the anti-ship term is kept
+     for the sea-only boat the owner approved it for). A navy with no ssgn row - the US before the
+     conversions, and every navy but those two - gets neither term: unitFor()
+     answers null, and the key is never written into its mixture. */
+  function ssgnCan() {
+    const id = unitFor(P.faction, "ssgn", P.era), d = id ? UNITS[id] : null;
+    const can = { sea: false, ground: false };
+    for (const k of (d ? d.weapons : [])) {
+      const w = WEAPONS[k];
+      if (!w || !w.tgt || w.proj !== "missile") continue;
+      if (w.tgt.sea) can.sea = true;
+      if (w.tgt.ground) can.ground = true;
+    }
+    return can;
   }
 
   /* ---- the unit of account for a fleet cap ----
@@ -6166,6 +6201,216 @@ function makeCommander() {
       const yard = rlYard(u);
       if (!yard) { u._rlNo = now + 10; continue; }
       rlStart(u, yard, now);
+    }
+  }
+
+  /* ================= THE BOOMER: the ballistic-missile boat =================
+     (owner, 2026-10-24) "yes, iam ok for the ballistic missle subs". Measured
+     before this, US against Russia, both Elite, North Cape, thirty minutes,
+     the 1980s and the 2000s: not one Typhoon, Borei or Ohio was ever bought,
+     with 112,000 credits banked, because no line of the naval block named the
+     role. The strike driver already fired a boat's SLBM once it was in reach;
+     nobody bought the boat, and nothing would have taken it into reach.
+
+     BUYING (wantSsbn, from the naval block). Like the tender, OUTSIDE the
+     cap, and left out of fleetHulls() and so out of fleetValue and the
+     mixture's count: a 6,000-credit hull priced against the mixture would
+     stand for three or four warships and starve the fleet that should be
+     escorting it. D.ssbn is how many may be alive at once - Elite and
+     Commander one, Warlord two, nothing below. The gates:
+       a navy worth the name: fleetValue at SSBN_FLEET hulls of the mixture,
+         four, which is the strength the bombardment group needs before it
+         sails, so the boat is never the first thing the yard puts to sea;
+       the faction's own row (unitFor: a navy with none asks nothing) and the
+         row's own prereqs, which tryBuildUnit() asks of lockReason();
+       its price and a reserve of two hulls of the mixture in the bank, so the
+         fleet's next two purchases are still paid for the day it is ordered;
+       one on order at a time, and never more alive than D.ssbn. */
+  const SSBN_FLEET = 4;
+  function wantSsbn(fleetValue, ref) {
+    if (!(D.ssbn > 0) || fleetValue < SSBN_FLEET) return false;
+    const id = unitFor(P.faction, "ssbn", P.era);
+    if (!id) return false;
+    const isB = d => d.role === "ssbn";
+    if (queuedRole("naval", isB) || fielded("naval", isB) >= D.ssbn) return false;
+    return P.cash >= P.factionCost(UNITS[id]) + 2 * ref;
+  }
+  /* The hulls the fleet cap counts: armed, and none of the landing craft,
+     the oiler, the tender, the minesweeper, the minelayer - nor the
+     ballistic-missile boat. */
+  function fleetHulls() {
+    return P.units.filter(u => !u.dead && (u.layer === "sea" || u.layer === "sub") &&
+      u.def.weapons.length && !u.def.amphib && !u.def.supply && !u.def.repairRate &&
+      u.def.role !== "minesweeper" && u.def.role !== "navminelayer" && u.def.role !== "ssbn");
+  }
+
+  /* PATROL (driveBoomers, on the strike driver's clock and just before it).
+     Never a member of the bombardment group - the `fleet` filter in think()
+     passes over role ssbn - because its worth is one strategic round from
+     water nobody is watching, and an attackmove into the enemy's guns spends
+     a 6,000-credit hull to do a destroyer's job. Three legs:
+       OUT   its round ready and a structure of the rival's on ground this
+             commander has LOOKED at - the strike driver's own test, off the
+             same seenB and `look`, so nothing is ever sent at unlooked
+             ground - it sails for a station: open water (the tile and its
+             eight neighbours wet) inside 0.88 of the round's reach of that
+             structure and past its minimum range, on its own water, chosen
+             for distance from every enemy hull seen in the last D.memory
+             seconds first and for the length of the trip second;
+       ON    there it is put on guard, and that is all: driveStrikeShips()
+             names a structure in reach and fires, and ends its own strike.
+             Nothing of the strike is written twice;
+       BACK  the strike over and a round away, it sails for home water - open
+             water by its own yard, again as far from the hulls it has seen
+             as the choice allows - and only from there goes out again, once
+             the round is back (172 to 195 s; twenty for the Ohio, whose
+             twenty Tridents are counted, and whose dry magazine REARM takes
+             to the yard from the guard this leaves it on).
+     A boat REARM or FALLBACK has is theirs (_rl, _fb), and starts again from
+     home when they hand it back. A leg past its allowance (the straight line
+     at the boat's speed, x1.6, plus 20 s: FALLBACK's rule), a station that
+     cannot be found, or a station where nothing was fired in BOOM_WAIT
+     seconds, ends the sortie, and it waits BOOM_RETRY before the next. An
+     order that is not ours (a fight of its own) is left alone; one that ran
+     out is given again, at most once in two seconds. Off at peace, like every
+     driver here that moves a hull of its own accord; the player's boats are
+     never touched. */
+  const BOOM_RETRY = 20, BOOM_WAIT = 30, BOOM_IN = 0.88;
+  /* open water: the tile and every one beside it wet */
+  function boomOpen(M, x, y) {
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++)
+      if (!GameMap.passable(M, x + i, y + j, "sea")) return false;
+    return true;
+  }
+  /* The best open-water point within `rad` tiles of (cx, cy) that `fit`
+     accepts, on the boat's own water: furthest from the enemy hulls seen
+     lately (out to twenty tiles, past which one is as good as another),
+     then nearest the boat. A two-tile lattice; null when there is none. */
+  function boomWater(u, cx, cy, rad, fit) {
+    const M = G.map, T = CFG.TILE, now = G.time, mem = Math.max(14, D.memory || 90);
+    const hulls = [];
+    for (const r of seenU.values())
+      if ((r.layer === "sea" || r.layer === "sub") && r.armed && now - r.t <= mem) hulls.push(r);
+    const x0 = (cx / T) | 0, y0 = (cy / T) | 0, R = Math.ceil(rad), c = [];
+    for (let y = y0 - R; y <= y0 + R; y += 2) for (let x = x0 - R; x <= x0 + R; x += 2) {
+      if (x < 1 || y < 1 || x >= M.W - 1 || y >= M.H - 1) continue;
+      const px = (x + 0.5) * T, py = (y + 0.5) * T;
+      if (!fit(px, py) || !boomOpen(M, x, y)) continue;
+      let far = 20;
+      for (const h of hulls) far = Math.min(far, U.dist(px, py, h.x, h.y) / T);
+      c.push({ x, y, px, py, v: far - U.dist(u.x, u.y, px, py) / T * 0.25 });
+    }
+    c.sort((a, b) => b.v - a.v);
+    const ux = (u.x / T) | 0, uy = (u.y / T) | 0;
+    for (let i = 0; i < c.length && i < 12; i++)
+      if (Path.reachable(M, ux, uy, c[i].x, c[i].y, "sea")) return { x: c[i].px, y: c[i].py };
+    return null;
+  }
+  /* the structure to sail for: the strike driver's own list and values,
+     less a little for every tile of the trip */
+  function boomTarget(u, R) {
+    const rid = rival ? rival.idx : -1, W = G.map.W, T = CFG.TILE;
+    let best = null, bv = 0;
+    for (const r of seenB.values()) {
+      if (r.gone || !r.ref || r.ref.dead || (rid >= 0 && r.own !== rid)) continue;
+      if (!look[r.ty * W + r.tx]) continue;              // heard, never seen
+      const bd = BUILDINGS[r.key];
+      const air = !!(bd && (bd.radar || bd.jam || (bd.weapons || []).some(k =>
+                       WEAPONS[k] && WEAPONS[k].tgt && WEAPONS[k].tgt.air)));
+      let v = (gunProfile(r.key) || air) ? 3 : isProd(r.key) ? 2 : 1;
+      v /= 1 + Math.max(0, U.dist(u.x, u.y, r.x, r.y) - R) / T * 0.02;
+      if (v > bv) { bv = v; best = r; }
+    }
+    return best;
+  }
+  function boomGo(u, b, to, leg, now) {
+    b.leg = leg; b.to = to; b.reT = now + 2;
+    b.until = now + U.dist(u.x, u.y, to.x, to.y) * 1.15 /
+                    (Math.max(0.3, u.def.speed || 1) * CFG.TILE) * 1.6 + 20;
+    u.give({ type: "move", x: to.x, y: to.y });
+  }
+  function boomGuard(u) {
+    u.give({ type: "guard", x: u.x, y: u.y });
+    u.guardX = u.x; u.guardY = u.y;
+  }
+  /* home water: open water within six tiles of the water by its own yard */
+  function boomHome(u) {
+    const M = G.map, T = CFG.TILE, y = rlYard(u);
+    const w = y ? Path.nearest(M, (y.x / T) | 0, (y.y / T) | 0, "sea", null, 6) : null;
+    if (!w) return null;
+    const hx = (w.x + 0.5) * T, hy = (w.y + 0.5) * T;
+    return boomWater(u, hx, hy, 6, (px, py) => U.dist(px, py, hx, hy) <= 6 * T) || { x: hx, y: hy };
+  }
+  function boomBack(u, b, now) {
+    b.shot = false;
+    const h = boomHome(u);
+    if (h && U.dist(u.x, u.y, h.x, h.y) > CFG.TILE * 2) boomGo(u, b, h, "back", now);
+    else { b.leg = "home"; b.retry = now + BOOM_RETRY; boomGuard(u); }
+  }
+  function driveBoomers() {
+    if (atPeace || !look) return;
+    const now = G.time, T = CFG.TILE;
+    for (const u of P.units) {
+      if (u.dead || u.cat !== "naval" || u.def.role !== "ssbn") continue;
+      const wi = strikeMount(u);
+      if (wi < 0) continue;
+      const b = u._boom || (u._boom = { leg: "home", to: null, until: 0, reT: 0, retry: 0, t0: 0, cd: 0, shot: false });
+      if (u._rl || u._fb) { b.leg = "home"; b.shot = false; continue; }
+      const cd = u.cooldowns[wi] || 0;
+      if (cd > b.cd + 0.5) b.shot = true;                 // a round left since the last pass
+      b.cd = cd;
+      if (u._tlamS) continue;                              // the strike driver has it
+      /* idle, guard, or the move this driver gave: anything else is somebody
+         else's order (a fight, the oiler's rendezvous) and is left alone */
+      const ot = u.order.type, ours = ot === "idle" || ot === "guard" ||
+        (ot === "move" && !!b.to && U.dist(u.order.x, u.order.y, b.to.x, b.to.y) < T);
+      if (b.shot && b.leg !== "back") { if (ours) boomBack(u, b, now); continue; }
+      const w = WEAPONS[u.def.weapons[wi]];
+      const R = u.weaponRange(w), minR = (w.minRange || 0) * T;
+      if (b.leg === "home") {
+        const cap = (u.def.magazine || {})[u.def.weapons[wi]];
+        const left = u.mag && u.mag[wi] !== undefined ? u.mag[wi] : cap;
+        if (b.retry > now || cd > 0 || (left !== undefined && left <= 0)) continue;
+        if (ot !== "idle" && ot !== "guard") continue;
+        const t = boomTarget(u, R);
+        if (!t) { b.retry = now + 5; continue; }
+        const d = U.dist(u.x, u.y, t.x, t.y);
+        if (d <= R * BOOM_IN && d > minR) {
+          b.leg = "on"; b.t0 = now; b.tgt = t;
+          if (ot !== "guard") boomGuard(u);
+          continue;
+        }
+        const st = boomWater(u, t.x, t.y, R * BOOM_IN / T, (px, py) => {
+          const e = U.dist(px, py, t.x, t.y);
+          return e <= R * BOOM_IN && e > minR + T;
+        });
+        if (!st) { b.retry = now + BOOM_RETRY; continue; }
+        b.tgt = t;
+        boomGo(u, b, st, "out", now);
+      } else if (b.leg === "out") {
+        const t = b.tgt;
+        if (!t || t.gone || !t.ref || t.ref.dead) { if (ours) boomBack(u, b, now); continue; }
+        const there = U.dist(u.x, u.y, b.to.x, b.to.y) < T * 1.5 ||
+                      (ot !== "move" && U.dist(u.x, u.y, t.x, t.y) <= R * BOOM_IN);
+        if (there && ours) { b.leg = "on"; b.t0 = now; boomGuard(u); continue; }
+        if (now > b.until) { if (ours) { boomBack(u, b, now); b.retry = now + BOOM_RETRY; } continue; }
+        if ((ot === "idle" || ot === "guard") && b.reT <= now) {
+          b.reT = now + 2;
+          u.give({ type: "move", x: b.to.x, y: b.to.y });
+        }
+      } else if (b.leg === "on") {
+        if (now - b.t0 > BOOM_WAIT) { if (ours) { boomBack(u, b, now); b.retry = now + BOOM_RETRY; } continue; }
+        if (ot === "idle") boomGuard(u);
+      } else if (b.leg === "back") {
+        const there = U.dist(u.x, u.y, b.to.x, b.to.y) < T * 2;
+        if ((there || now > b.until) && ours) {
+          b.leg = "home"; b.retry = Math.max(b.retry, now); boomGuard(u); continue;
+        }
+        if ((ot === "idle" || ot === "guard") && b.reT <= now) {
+          b.reT = now + 2;
+          u.give({ type: "move", x: b.to.x, y: b.to.y });
+        }
+      }
     }
   }
 
@@ -9529,9 +9774,7 @@ function makeCommander() {
          tender itself, so buying any one of them silently cost the fleet a
          warship's slot - which is the exact opposite of the intended effect on
          a split-map theatre where the transports already eat two of six. */
-      const ships = P.units.filter(u => !u.dead && (u.layer === "sea" || u.layer === "sub") &&
-        u.def.weapons.length && !u.def.amphib && !u.def.supply && !u.def.repairRate &&
-        u.def.role !== "minesweeper" && u.def.role !== "navminelayer");
+      const ships = fleetHulls();
       /* The fleet we intend, and the cap measured against it. The cap used to
          be `ships.length`, a count of hulls, and a hull is not a unit of
          fighting power. Measured on baltic at Commander with Blue Water on
@@ -9582,7 +9825,10 @@ function makeCommander() {
          - four hulls, which is also exactly the strength the naval wave
          launcher needs before it will sail. */
       if (P.tech >= 2 && !P.hasBuilding("radar")) capN = Math.min(capN, 4);
-      if (fleetValue < capN) {
+      /* the ballistic-missile boat, like the tender outside the cap (THE
+         BOOMER): a think that orders one buys nothing else for the fleet */
+      const boomer = wantSsbn(fleetValue, ref) && tryBuildUnit("ssbn");
+      if (fleetValue < capN && !boomer) {
         /* A carrier with an empty deck is a very expensive target, and it is
            filled by driveDecks() now - bought FOR that deck. This queued a
            fighter on the AIR tab whenever the carrier-capable airframes
@@ -9733,6 +9979,9 @@ function makeCommander() {
     const fleet = P.units.filter(u => !u.dead && (u.layer === "sea" || u.layer === "sub") &&
       u.def.weapons.length && !u.def.supply && !u.def.repairRate &&
       u.def.role !== "minesweeper" && u.def.role !== "navminelayer" &&
+      /* nor a ballistic-missile boat, which keeps a patrol of its own
+         (THE BOOMER, driveBoomers) */
+      u.def.role !== "ssbn" &&
       navalWave.indexOf(u) < 0 &&
       /* the hull detailed as eyes (seaScout) is not a bombardment hull,
          and one stepped out of the line to be mended (FALLBACK) is not yet,
@@ -15583,6 +15832,9 @@ function makeCommander() {
       let best = null, bd = Infinity;
       for (const u of P.units) {
         if (u.dead || !u.def.sonar || u._scout || u._fb || u._rl) continue;
+        /* nor the ballistic-missile boat: it keeps its own patrol (THE
+           BOOMER), and a Typhoon has no torpedo to prosecute a contact with */
+        if (u.def.role === "ssbn") continue;
         if (u.order.type !== "idle" && u.order.type !== "guard") continue;
         const dd = U.dist2(u.x, u.y, dm.x, dm.y);
         if (dd < bd) { bd = dd; best = u; }
@@ -16549,6 +16801,22 @@ function makeCommander() {
        replaces attackWave every think, so ask again rather than hold one.
        book() books a wave stood up by hand, as a launch would. */
     get waves() { return { ground: attackWave, naval: navalWave, homeward, mending, rearming, book: bookWave }; },
+    /* THE BOOMER, for tools/jsc/ssbn_ai_check.js: value() the fleetValue
+       the naval block reads now (fleetHulls against the mixture's
+       yardstick), leg(u) the patrol leg of boat u (null: never driven),
+       mix() the naval mixture now */
+    get boomer() {
+      return {
+        value() {
+          const ref = hullYardstick(navalMix(foeSea()));
+          let v = 0;
+          for (const u of fleetHulls()) v += P.factionCost(u.def) / ref;
+          return v;
+        },
+        leg(u) { return u._boom ? u._boom.leg : null; },
+        mix() { return navalMix(foeSea()); },
+      };
+    },
     intel() {
       /* the new state is exposed for the same reason `look` already is: so a
          test or a debug overlay can see whether any of this is firing */
@@ -16818,6 +17086,11 @@ return {
   /* a commander's AIR BRIDGE hooks (see `lift`), or null for a seat none runs */
   liftOf(player) {
     for (const c of commanders) if (c.player === player) return c.lift;
+    return null;
+  },
+  /* a commander's BOOMER hooks (see `boomer`), or null for a seat none runs */
+  boomerOf(player) {
+    for (const c of commanders) if (c.player === player) return c.boomer;
     return null;
   },
   /* a commander's ESCORT hooks (see `escort`), or null for a seat none runs */
