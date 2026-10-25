@@ -1,77 +1,104 @@
-/* ============ ru_scud_a.js - HERO model: R-11 (8K11, Scud-A) on the 8U218 tracked erector ============
-   One row:  pact_e50_tel   "R-11 (8K11) on the 8U218 erector", 1957.
+/* ============ ru_scud_a.js - HERO model: R-11M (8K11, Scud-A) on the 8U218 tracked launcher ============
+   One row:  pact_e50_tel   "R-11 (8K11) on the 8U218 erector", 1957.  HeroScudA is kept as the name.
 
-   What each feature rests on (Wikimedia Commons photographs fetched for this model):
-     r0  "2U118 Scud-2.jpg" (Polish museum, left-front three-quarter, boom half raised, the missile
-         lying beside it): the full-width armoured box of the crew/command compartment with a sloped
-         front face carrying TWO vision windows and a headlamp in a wire guard on each side, a side
-         door with its own window, a ladder up the side, a box (the ZIP/stowage case) on the roof at
-         the rear, a black cylinder along the roof edge, flared front mudguards over the tracks, the
-         IS-series running gear with disc road wheels and the drive sprocket at the REAR, and the
-         erector: an open tubular lattice trough hinged on a heavy cradle at the back of the roof,
-         with a solid half-pipe at its heel and ring hoops.
-     r1  "Muzeul Militar National - R-11 Zemlya (33381751548).jpg" (Bucharest, from the front, boom
-         erected): the same hull seen head on - sloped glacis with the two windows, the wheel-arch
-         fenders, the lattice trough with its hoop frames, the heel half-pipe and the long grey-green
-         missile standing beside it with a plain ogive nose.
-   Published figures used: R-11 length about 10.4-10.7 m, body diameter 0.88 m; the hull is the 6.77 m
-   ISU-152 hull (armour_specs.js and the old tel3d.js model give the same), 3.07 m over the tracks
-   (550 mm road wheels, six a side), height 3.4 m in travel (armour_specs row).
-   ABOUT THE PHOTOGRAPHS (checked by the second pass): "2U118 Scud-2.jpg" is the same Warsaw museum
-   vehicle that Commons also files as "8U218 missle launcher at the Muzeum Polskiej Techniki
-   Wojskowej in Warsaw.jpg" (2U218 was the first designation of the 8U218, ISU-152K-derived
-   chassis), so the cab, hull and erector ARE the 8U218. The Bucharest "R-11 Zemlya" photograph shows
-   the same type with the boom raised. Differences of the 1957 build from these museum vehicles, if
-   any, are NOT confirmed and not invented.
-   NOT confirmed and not drawn: rear stabiliser jacks, hydraulic rams, return roller count (three, as
-   the old model has them), tail-fin span and set (drawn as four fins, 1.5 m span, X-set, from the
-   published data, not from a photograph), canvas covers, any markings or numerals.
-   1950s Soviet green, no markings.
+   REDO 2026-10-24 (full-quality procedure).  References, Wikimedia Commons at width 960, cached in
+   scratchpad/q_scuda_ref:
+     W0  "8U218 missle launcher at the Muzeum Polskiej Techniki Wojskowej in Warsaw.jpg" (starboard front
+         3/4, erector raised about 15 deg) and W2 "2U118 Scud-2.jpg" (the same vehicle, starboard side): the
+         full-width crew box, its door and window, the ladder, the dark cylinder on the box side at its rear,
+         the roof case, the six wheel pairs, rear sprocket, the erector: a half-pipe trough under the missile
+         body and an open lattice cage forward of it.  ru.wikipedia's R-11 caption: this vehicle carries the
+         missile part WITHOUT its warhead ("s raketnoy chast'yu R-11M (bez GCh)"), so the round "drum" in the
+         middle of the erector is the front face of the missile body, and the cone on the stand beside it is
+         the warhead.  The old model drew the drum as a fitting and the warhead as a separate missile: corrected.
+     W3  "... Warsaw (3).jpg" (port front 3/4): the sloped box front with its TWO windows, the headlamps in
+         wire baskets on its upper corners, the big ribbed box mudguards, the spare track links across the
+         nose, the port door, ladder and eagle panel (the eagle is not drawn).
+     W1  "... Warsaw (1).JPG", the museum plaque: "9K51 na podwoziu dziala samobieznego ISU-152K", missile
+         880 mm, 10,334 mm, launcher in the firing position 40,800 kg, in Polish service 1962-1975.
+     F1  "Paine Field-Lake Stickney ... panoramio (136).jpg" (the Flying Heritage museum's 8U218, starboard
+         side, WITH a complete missile on the erector): the missile lies TAIL AT THE REAR over the engine
+         deck, one X-set fin standing up at the rear corner, the warhead forward in the cage; the curved
+         arms and a plate with four holes at the rear (the erector's heel gear, purpose NOT confirmed).
+     F2  "... panoramio (135).jpg" (the same, port front): the missile in the cage, nose forward.
+     K1  "Kolobrzeg Muzeum Oreza Polskiego 40/41.jpg" (an R-170, the export R-11M, on its 8U218): port
+         front 3/4 and head-on - the cage's elongated hexagonal frames round the warhead.
+     B1  "Muzeul Militar National - R-11 Zemlya (33381751548 / 54022058080).jpg" (Bucharest, port front):
+         the erector raised about 62 deg, pivoted at the rear of the roof, the free end forward and up.
+   IDENTIFICATION: W0-W3 and K1 are labelled 8U218 by their museums (W1's plaque names the ISU-152K
+   chassis; ru.wikipedia: "8U218 (ob"ekt 803) na baze ISU-152K"); F1/F2 and B1 match them part for part.
+   High confidence for the type.  The 2P19 (Skarzysko, Commons files it in the same category) is the
+   later R-17 launcher and is NOT used.  "Raketa R-11 v pokhodnom polozhenii.jpg" shows the R-11 on a
+   ZIL-157 transporter, not on the 8U218: not used for shape.
+   Published: R-11M (8K11) length from the support heels to the tip 10,344 mm, diameter 880 mm, fin span
+   1,800 mm (ru.wikipedia, table "8K11"; the plaque gives 10,334); in service 1957-58.  The chassis is the
+   ISU-152K hull: 6.77 m long (the old model and tel3d.js: 6.75 m drawn), 3.07 m over the tracks, six
+   550 mm road wheel pairs, three return rollers, rear sprocket; 470 mm ground clearance.
+   CORRECTIONS against the old model: the missile lay the wrong way (its tail sits over the engine deck at
+   the rear, F1); fin span 1.5 -> 1.80 m, missile 10.4 -> 10.344 m; the crew box spans nearly the fenders (2.68 m of
+   3.07, W3, F1), it was 2.2 m wide; the erector's drum was a fitting, it is the missile body's front
+   (Warsaw: no warhead); the box mudguards, spare links and rear heel gear were missing.
 
-   Erection: the erector with the missile is the group "podelev" hinged at the cradle (the render3d
-   mechanism the M270/HIMARS use: level when driving, raised when the launcher holds a target).
-   userData.el 1.40 rad (80 deg): the round is fired upright from the erector, so the launch pose is
-   near vertical; the exact angle is NOT a published figure. (The Bucharest photograph shows the boom at
-   about 65 deg, a museum pose; the Warsaw 8U218 photographs show it at about 15 deg.) Clear of the cab
-   and the rear deck at that angle (heel box lowest point stays above 1.5 m). userData.cells puts the
-   motor flash and backblast at the tail of the missile. The missile stays drawn after launch (no hook
-   to hide it).
-   The old tel3d.js model (4,714 triangles, missile on a rigid boom, no podelev) stays untouched
-   for the dispatch on other keys; this file registers over it by load order.
-
-   Nodes: six "roadwheel" groups (one per axle, both sides, axle on local Y), "podelev"; NOTHING named
-   "turret" (turret:false row). Materials (5): paint (camo canvas), dark, glass, missile paint, and the
-   plain C.team (cab roof side strips and engine deck plate, up-facing for the RTS camera).
-   Model space: +X nose, +Y left, +Z up, metres, tracks on z = 0.  ASCII only.  */
+   Recognition list (each drawn; its source):
+     1. the long IS-series tracked hull, six wheel pairs, three return rollers, rear sprocket - W2, F1
+     2. the tall, nearly full-width armoured crew box on the fenders, sloped front with TWO windows - W3, F1
+     3. the headlamps in wire baskets on the upper corners of the box front - W3, F1
+     4. the big ribbed box mudguards over the front of the tracks and the spare links across the nose - W3
+     5. a door with a window and a ladder on each side of the box - W2, W3, F1
+     6. the long dark cylinder on each side of the box at its rear, the case on the roof - W2, F1
+     7. the missile body in a half-pipe trough, tail and X-set fins over the engine deck - F1, W2
+     8. the warhead forward in an open lattice cage of hexagonal frames, reaching far past the nose - K1, F2
+     9. the heel gear at the rear: curved arms and the plate with four holes - F1, W2
+    10. the erector pivoted at the rear, the free end swinging forward and up - B1, W0
+   Poses: the march is the erector level (F1 shows it nearly so, with the missile).  Firing: "podelev",
+   pivoted at the rear on the deck pedestals, raised to VERTICAL (userData.el = pi/2): ru.wikipedia, the R-11
+   is raised to the vertical and fired from a launch table.  NO photograph of an 8U218 with its missile
+   upright was found, so the launch table, any jacks and the boom's swing-back after the transfer are NOT
+   drawn (no deploypose: nothing photographed changes when it sets up), and the round stays on the erector
+   upright over the rear deck.  B1's 62 deg is a museum pose.  turret:false: nothing traverses.
+   Paint: Soviet green.  Sampled: Bucharest hull in shade (53,69,37), the 1950s colour slide of the
+   transporter (101,99,87 sunlit, faded); drawn #4f5935 (as ru_t10.js, about 0.8 of a lit wall), canvas
+   texture of mottling, weld seams and grime.  Missile grey-green, Bucharest lit (188,193,182) taken to
+   0.62.  No numbers, eagles, stars or museum colours (F1's red band and K1's red nose are museum paint).
+   NOT CONFIRMED (drawn as photographed, or judged): the pivot height and the heel gear's purpose; the
+   roof case's size; the warhead's split from the body (6.1 m body, 4.24 m head part, from W2/F1: the body's
+   front face sits over the box front with the erector at 15 deg); return roller
+   and idler positions (W2, the IS-2 layout); the cylinder's purpose.  NOT DRAWN: launch table, hydraulic
+   ram (only its roof saddle), cables, antennas, the Polish eagle.
+   Nodes: six "roadwheel" groups (axle along local Y, both sides), "podelev"; NOTHING named "turret".
+   Budget: 16,256 triangles, 13 draw calls (hull 4, six wheels, erector 3).  len 10.53 m, the measured X
+   extent (the rear heel gear at -3.49 to the missile tip at +7.04, the erector level as in the template;
+   raised upright the round reaches -3.67, which render3d does not count: it sizes from the template).
+   Materials (6): paint (canvas texture), dark, glass, wheel (vertex colours), missile, C.team (two strips
+   on the roof).  Model space: +X nose, +Y left, +Z up, metres, tracks on z = 0.  ASCII only.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroScudA = (function () {
   "use strict";
-
   var TAU = Math.PI * 2;
 
-  var XT = -3.20, XN = 3.55;              /* tail plate, nose                  */
-  var TY = 1.21, TH = 0.325;              /* track centre, half width          */
-  var ZW = 0.335, RW = 0.275;
-  var NW = 6, XW = [-2.05, -1.23, -0.41, 0.41, 1.23, 2.05];
-  var SPR = { x: -2.70, z: 0.55, r: 0.36 };
-  var IDL = { x: 3.05, z: 0.38, r: 0.30 };
-  var RR = 0.11, XROLL = [-1.55, 0.10, 1.75], NROLL = 3;
-  var PX = -2.00, PZ = 2.52;               /* erector hinge (world)             */
-  var EL = 1.40;                           /* raise angle, rad (80 deg)         */
-  var MR = 0.44, MZ = 0.45, MLEN = 10.4;   /* missile radius, axis above hinge, length */
-  var PAINT = { base: "#4f5a35", blots: ["#414a2a", "#5e6944", "#485232"], seed: 82 };
+  /* hull (ISU-152K, 6.75 m drawn, 3.07 m over the tracks) */
+  var XT = -3.20, XN = 3.55, ZB = 0.47, FZ = 1.12, FW = 1.535;
+  /* crew box: rear wall, front foot, the front face's slope top, roof, half width */
+  var BX0 = -1.90, BX1 = 2.58, BXS = 2.22, BZ0 = 1.66, BZR = 2.30, BW = 1.34;
+  /* running gear */
+  var TY = 1.21, TW = 0.325;
+  var XW = [-2.05, -1.23, -0.41, 0.41, 1.23, 2.05], ZW = 0.365, RW = 0.275;
+  var IDL = { x: 3.02, z: 0.56, r: 0.29 }, SPR = { x: -2.80, z: 0.62, r: 0.33 };
+  var XROLL = [-1.64, 0.0, 1.64], ZROLL = 0.82, RROLL = 0.11;
+  /* erector: pivot (world), missile axis over it, tail heel in the pivot frame */
+  var PX = -2.40, PZ = 2.45, MZ = 0.60, U0 = -0.90, MLEN = 10.344, MR = 0.44, UB = 6.1;
+  var EL = Math.PI / 2;
+  var PAINT = { base: "#4f5935", blots: ["#464f30", "#59633f"], seed: 8218 };
 
-  /* -------------------------------------------------------- geometry kit */
+  /* ------------------------------------------------------------ geometry kit */
   function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
   function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
   function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
   function unit(v) { var l = Math.sqrt(dot(v, v)) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
 
-  /* one bin of triangles per material; the painted bin also gets planar UVs
-     taken from the dominant axis of each face, so the paint never stretches */
-  function Bin(mat, uv) { this.mat = mat; this.P = []; this.N = []; this.U = uv ? [] : null; }
+  function Bin(mat, uv, vc) { this.mat = mat; this.P = []; this.N = []; this.U = uv ? [] : null; this.C = vc ? [] : null; this.col = [1, 1, 1]; }
   Bin.prototype.tri = function (a, b, c, na, nb, nc) {
     var f = unit(cross(sub(b, a), sub(c, a))), v = [a, b, c], n = [na || f, nb || f, nc || f];
     var i, q, ax = Math.abs(f[0]), ay = Math.abs(f[1]), az = Math.abs(f[2]);
@@ -79,6 +106,7 @@ var HeroScudA = (function () {
       q = v[i];
       this.P.push(q[0], q[1], q[2]);
       this.N.push(n[i][0], n[i][1], n[i][2]);
+      if (this.C) this.C.push(this.col[0], this.col[1], this.col[2]);
       if (this.U) {
         if (az >= ax && az >= ay) this.U.push(q[0] * 0.34, q[1] * 0.34);
         else if (ay >= ax) this.U.push(q[0] * 0.34, q[2] * 0.34);
@@ -86,10 +114,8 @@ var HeroScudA = (function () {
       }
     }
   };
-
-  /* a closed solid.  Whatever order the corners came in, the signed volume
-     says whether the faces point out, and they are turned if they do not.
-     smooth: average the face normals at shared corners (cast surfaces) */
+  /* a closed solid: the signed volume says whether the faces point out, and they are
+     turned if they do not.  smooth: average the face normals at shared corners */
   function solid(bin, V, F, smooth) {
     var vol = 0, i, f, a, b, c, N = null, fn, k, q;
     for (i = 0; i < F.length; i++) { f = F[i]; vol += dot(V[f[0]], cross(V[f[1]], V[f[2]])); }
@@ -108,11 +134,10 @@ var HeroScudA = (function () {
     for (i = 0; i < F.length; i++) {
       f = F[i]; a = f[0]; b = flip ? f[2] : f[1]; c = flip ? f[1] : f[2];
       fn = cross(sub(V[b], V[a]), sub(V[c], V[a]));
-      if (dot(fn, fn) < 1e-16) continue;                  /* a crease slit */
+      if (dot(fn, fn) < 1e-16) continue;
       bin.tri(V[a], V[b], V[c], N && N[a], N && N[b], N && N[c]);
     }
   }
-
   var HEXF = [[0, 3, 2], [0, 2, 1], [4, 5, 6], [4, 6, 7], [1, 2, 6], [1, 6, 5],
               [0, 4, 7], [0, 7, 3], [0, 1, 5], [0, 5, 4], [3, 7, 6], [3, 6, 2]];
   function hexa(bin, P) { solid(bin, P, HEXF); }
@@ -120,35 +145,22 @@ var HeroScudA = (function () {
     hexa(bin, [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0],
                [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]);
   }
-  /* a box turned about Z: centre (cx, cy), half sizes hx (along ang), hy */
-  function rbox(bin, cx, cy, hx, hy, ang, z0, z1) {
-    var c = Math.cos(ang), s = Math.sin(ang), k, q = [[-hx, -hy], [hx, -hy], [hx, hy], [-hx, hy]], P = [];
-    for (k = 0; k < 8; k++) {
-      var e = q[k % 4];
-      P.push([cx + e[0] * c - e[1] * s, cy + e[0] * s + e[1] * c, k < 4 ? z0 : z1]);
+  /* an oriented slab: centre c, half sizes along unit axes u, v, w */
+  function slab(bin, c, u, v, w, hu, hv, hw) {
+    var P = [], i, sx, sy, sz, s = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
+    for (i = 0; i < 8; i++) {
+      sx = s[i][0] * hu; sy = s[i][1] * hv; sz = s[i][2] * hw;
+      P.push([c[0] + u[0] * sx + v[0] * sy + w[0] * sz, c[1] + u[1] * sx + v[1] * sy + w[1] * sz, c[2] + u[2] * sx + v[2] * sy + w[2] * sz]);
     }
     hexa(bin, P);
   }
-  /* a box on a tilted plane: origin P0, in-plane axes U and W, normal N */
-  function planeBox(bin, P0, U, W, N, u0, u1, w0, w1, h0, h1) {
-    function pt(u, w, h) {
-      return [P0[0] + U[0] * u + W[0] * w + N[0] * h, P0[1] + U[1] * u + W[1] * w + N[1] * h,
-              P0[2] + U[2] * u + W[2] * w + N[2] * h];
-    }
-    hexa(bin, [pt(u0, w0, h0), pt(u1, w0, h0), pt(u1, w1, h0), pt(u0, w1, h0),
-               pt(u0, w0, h1), pt(u1, w0, h1), pt(u1, w1, h1), pt(u0, w1, h1)]);
+  /* a plate in the x-z plane from (x0, z0) to (x1, z1), spanning y0..y1, thickness th */
+  function strip(bin, x0, z0, x1, z1, y0, y1, th) {
+    var dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1, nx = -dz / l * th / 2, nz = dx / l * th / 2;
+    hexa(bin, [[x0 - nx, y0, z0 - nz], [x1 - nx, y0, z1 - nz], [x1 - nx, y1, z1 - nz], [x0 - nx, y1, z0 - nz],
+               [x0 + nx, y0, z0 + nz], [x1 + nx, y0, z1 + nz], [x1 + nx, y1, z1 + nz], [x0 + nx, y1, z0 + nz]]);
   }
-  /* a convex outline in plan, thickened between z0 and z1 */
-  function prism(bin, pts, z0, z1) {
-    var n = pts.length, V = [], F = [], i, k;
-    for (i = 0; i < n; i++) V.push([pts[i][0], pts[i][1], z0]);
-    for (i = 0; i < n; i++) V.push([pts[i][0], pts[i][1], z1]);
-    for (i = 1; i < n - 1; i++) { F.push([0, i + 1, i]); F.push([n, n + i, n + i + 1]); }
-    for (i = 0; i < n; i++) { k = (i + 1) % n; F.push([i, k, n + k], [i, n + k, n + i]); }
-    solid(bin, V, F);
-  }
-  /* a capped cylinder or cone between two centres, smooth round the side.
-     The faces are written outward directly, so a cap can be left off. */
+  /* a capped cylinder or cone between two centres, smooth round the side */
   function cyl(bin, A, B, r0, r1, seg, nocapA, nocapB) {
     var ax = unit(sub(B, A)), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
     var u = unit(cross(ax, t)), v = cross(ax, u), L = Math.sqrt(dot(sub(B, A), sub(B, A))) || 1;
@@ -171,27 +183,29 @@ var HeroScudA = (function () {
       if (!nocapB) bin.tri(B, pd, pc, ax, ax, ax);
     }
   }
-  function cylY(bin, x, y0, y1, z, r, seg, nocapA, nocapB) { cyl(bin, [x, y0, z], [x, y1, z], r, r, seg, nocapA, nocapB); }
+  function cylY(bin, x, y0, y1, z, r, seg) { cyl(bin, [x, y0, z], [x, y1, z], r, r, seg); }
   function cylZ(bin, x, y, z0, z1, r, seg) { cyl(bin, [x, y, z0], [x, y, z1], r, r, seg); }
   function cylX(bin, x0, x1, y, z, r, seg) { cyl(bin, [x0, y, z], [x1, y, z], r, r, seg); }
-
-  /* a toothed wheel standing on the Y axis: nt teeth between radii rr and rt */
-  function gear(bin, cx, y0, y1, cz, rr, rt, nt) {
-    var n = nt * 4, V = [], F = [], i, t, step = TAU / nt, a, r, kk, ph = [0.05, 0.30, 0.55, 0.80], rd = [rr, rt, rt, rr];
-    for (i = 0; i < n; i++) {
-      t = (i / 4) | 0; kk = i % 4; a = (t + ph[kk]) * step; r = rd[kk];
-      V.push([cx + r * Math.cos(a), y0, cz + r * Math.sin(a)]);
+  /* a thin bar between two points, square section */
+  function bar(bin, A, B, w) {
+    var ax = unit(sub(B, A)), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+    var u = unit(cross(ax, t)), v = cross(ax, u), h = w / 2, V = [], i, c = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (i = 0; i < 8; i++) {
+      var e = c[i % 4], P = i < 4 ? A : B;
+      V.push([P[0] + (u[0] * e[0] + v[0] * e[1]) * h, P[1] + (u[1] * e[0] + v[1] * e[1]) * h, P[2] + (u[2] * e[0] + v[2] * e[1]) * h]);
     }
-    for (i = 0; i < n; i++) V.push([V[i][0], y1, V[i][2]]);
-    V.push([cx, y0, cz], [cx, y1, cz]);
-    for (i = 0; i < n; i++) {
-      t = (i + 1) % n;
-      F.push([i, n + i, t], [t, n + i, n + t], [2 * n, i, t], [2 * n + 1, n + t, n + i]);
-    }
+    hexa(bin, V);
+  }
+  /* a convex side profile [x, z] extruded across y0..y1 */
+  function profY(bin, pts, y0, y1) {
+    var n = pts.length, V = [], F = [], i, k;
+    for (i = 0; i < n; i++) V.push([pts[i][0], y0, pts[i][1]]);
+    for (i = 0; i < n; i++) V.push([pts[i][0], y1, pts[i][1]]);
+    for (i = 1; i < n - 1; i++) { F.push([0, i + 1, i]); F.push([n, n + i, n + i + 1]); }
+    for (i = 0; i < n; i++) { k = (i + 1) % n; F.push([i, k, n + k], [i, n + k, n + i]); }
     solid(bin, V, F);
   }
-
-  /* ear clipping, for the end plates of the lofts (some are not convex) */
+  /* ear clipping for the lofts' end plates (the sponsons make them non-convex) */
   function inTri(p, a, b, c) {
     var d1 = (p[0] - b[0]) * (a[1] - b[1]) - (a[0] - b[0]) * (p[1] - b[1]);
     var d2 = (p[0] - c[0]) * (b[1] - c[1]) - (b[0] - c[0]) * (p[1] - c[1]);
@@ -220,13 +234,10 @@ var HeroScudA = (function () {
       if (!found) break;
     }
     if (idx.length === 3) out.push([idx[0], idx[1], idx[2]]);
-    else for (i = 1; i < idx.length - 1; i++) out.push([idx[0], idx[i], idx[i + 1]]);   /* give up cleanly */
+    else for (i = 1; i < idx.length - 1; i++) out.push([idx[0], idx[i], idx[i + 1]]);
     return out;
   }
-
-  /* a skin lofted through cross-section rings (arrays of [x, y, z] with the
-     same count each), capped at both ends.  Rings are re-ordered so they run
-     counter-clockwise in the YZ plane, whatever the caller wrote. */
+  /* a skin lofted through rings in the YZ plane (same count each), capped at both ends */
   function loft(bin, rings, smooth) {
     var m = rings.length, n = rings[0].length, V = [], F = [], i, j, k, R = [], area = 0, a, b, T, b0, ri, tr;
     for (j = 0; j < n; j++) { a = rings[0][j]; b = rings[0][(j + 1) % n]; area += a[1] * b[2] - b[1] * a[2]; }
@@ -247,145 +258,7 @@ var HeroScudA = (function () {
     }
     solid(bin, V, F, smooth);
   }
-
-  var _tex = {};
-  function paintTex(THREE, P) {
-    var key = P.base + P.seed;
-    if (_tex[key] !== undefined) return _tex[key];
-    var t = null;
-    try {
-      var cv = document.createElement("canvas");
-      cv.width = 256; cv.height = 256;
-      var q = cv.getContext("2d"), s = P.seed >>> 0, i, k, a, x, y, rr, ang, rd;
-      var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-      q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
-      /* a single flat coat gone patchy with weather: low-contrast drift, no pattern */
-      for (k = 0; k < P.blots.length; k++) {
-        q.fillStyle = P.blots[k];
-        for (i = 0; i < 12; i++) {
-          x = R() * 256; y = R() * 256; rr = 18 + R() * 40;
-          q.beginPath();
-          for (a = 0; a < 7; a++) {
-            ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
-            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
-          }
-          q.closePath(); q.fill();
-        }
-      }
-      for (i = 0; i < 90; i++) {
-        q.fillStyle = (i % 2) ? "rgba(15,14,10,0.07)" : "rgba(240,236,215,0.05)";
-        q.fillRect(R() * 256, R() * 256, 3 + R() * 30, 2 + R() * 18);
-      }
-      t = new THREE.CanvasTexture(cv);
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-      t.anisotropy = 4;
-    } catch (e) { t = null; }
-    _tex[key] = t;
-    return t;
-  }
-  function flush(THREE, group, B) {
-    var k, b, geo;
-    for (k in B) {
-      b = B[k];
-      if (!b.P.length) continue;
-      geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.P), 3));
-      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.N), 3));
-      if (b.U) geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(b.U), 2));
-      group.add(new THREE.Mesh(geo, b.mat));
-    }
-  }
-  function pickTangent(C, r, P, arrive) {
-    var vx = P[0] - C.x, vz = P[1] - C.z, d = Math.sqrt(vx * vx + vz * vz), phi = Math.atan2(vz, vx), al = Math.acos(r / d);
-    var cand = [phi + al, phi - al], i, th, tx, tz, dx, dz;
-    for (i = 0; i < 2; i++) {
-      th = cand[i]; tx = -Math.sin(th); tz = Math.cos(th);
-      dx = arrive ? (C.x + r * Math.cos(th) - P[0]) : (P[0] - (C.x + r * Math.cos(th)));
-      dz = arrive ? (C.z + r * Math.sin(th) - P[1]) : (P[1] - (C.z + r * Math.sin(th)));
-      if (dx * tx + dz * tz > 0) return th;
-    }
-    return cand[0];
-  }
-  function beltGeometry() {
-    var zb = 0.055, ri = IDL.r + 0.045, rs = SPR.r + 0.045;
-    var Pf = [XW[NW - 1], zb], Pr = [XW[0], zb];
-    var t1 = pickTangent(IDL, ri, Pf, true), t2 = pickTangent(SPR, rs, Pr, false);
-    var Lx = SPR.x - IDL.x, Lz = SPR.z - IDL.z, L = Math.sqrt(Lx * Lx + Lz * Lz), phi = Math.atan2(Lz, Lx);
-    var al = Math.acos((ri - rs) / L), psi = Math.sin(phi + al) > Math.sin(phi - al) ? phi + al : phi - al;
-    while (psi < t1) psi += TAU;
-    while (t2 < psi) t2 += TAU;
-    var p = [], i, n, a, f, T1, T2, Q1, Q2;
-    function line(A, B) {
-      var l = Math.sqrt((B[0] - A[0]) * (B[0] - A[0]) + (B[1] - A[1]) * (B[1] - A[1])), k, nn = Math.max(1, Math.ceil(l / 0.25));
-      for (k = 1; k <= nn; k++) p.push([A[0] + (B[0] - A[0]) * k / nn, A[1] + (B[1] - A[1]) * k / nn]);
-    }
-    function arc(C, r, a0, a1) {
-      var k, nn = Math.max(2, Math.ceil(r * (a1 - a0) / 0.18)), ang;
-      for (k = 1; k <= nn; k++) { ang = a0 + (a1 - a0) * k / nn; p.push([C.x + r * Math.cos(ang), C.z + r * Math.sin(ang)]); }
-    }
-    p.push([Pr[0], Pr[1]]);
-    line(Pr, Pf);
-    T1 = [IDL.x + ri * Math.cos(t1), IDL.z + ri * Math.sin(t1)];
-    line(Pf, T1);
-    arc(IDL, ri, t1, psi);
-    Q1 = [IDL.x + ri * Math.cos(psi), IDL.z + ri * Math.sin(psi)];
-    Q2 = [SPR.x + rs * Math.cos(psi), SPR.z + rs * Math.sin(psi)];
-    line(Q1, Q2);
-    arc(SPR, rs, psi, t2);
-    T2 = [SPR.x + rs * Math.cos(t2), SPR.z + rs * Math.sin(t2)];
-    line(T2, Pr);
-    p.pop();                                        /* the closing point repeats the first */
-    return { path: p, top: [Q1, Q2], nrm: [Math.cos(psi), Math.sin(psi)] };
-  }
-  function belt(bin, path, y0, y1) {
-    var n = path.length, V = [], F = [], i, k, a, b, c, tx, tz, l, nx, nz, to, ti = 0.04, A, B, a0, a1, b0, b1;
-    for (i = 0; i < n; i++) {
-      a = path[(i + n - 1) % n]; b = path[i]; c = path[(i + 1) % n];
-      tx = c[0] - a[0]; tz = c[1] - a[1]; l = Math.sqrt(tx * tx + tz * tz) || 1;
-      nx = tz / l; nz = -tx / l;                    /* outward normal of a counter-clockwise loop */
-      to = (i % 2) ? 0.022 : 0.060;
-      V.push([b[0] + nx * to, y1, b[1] + nz * to], [b[0] + nx * to, y0, b[1] + nz * to],
-             [b[0] - nx * ti, y0, b[1] - nz * ti], [b[0] - nx * ti, y1, b[1] - nz * ti]);
-    }
-    for (i = 0; i < n; i++) {
-      A = i * 4; B = ((i + 1) % n) * 4;
-      for (k = 0; k < 4; k++) {
-        a0 = A + k; a1 = A + (k + 1) % 4; b0 = B + k; b1 = B + (k + 1) % 4;
-        F.push([a0, b0, a1], [a1, b0, b1]);
-      }
-    }
-    solid(bin, V, F);
-  }
-
-
-  /* -------------------------------------------------------------- materials */
-  function materials(THREE, C) {
-    var T = {}, tx = paintTex(THREE, PAINT);
-    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.08 });
-    if (tx) T.paint.map = tx; else T.paint.color.set(PAINT.base);
-    T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
-    T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
-    T.msl = new THREE.MeshStandardMaterial({ color: 0x7d866b, roughness: 0.55, metalness: 0.25 });
-    T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
-    return T;
-  }
-  function bins(T) {
-    return { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false), glass: new Bin(T.glass, false),
-             msl: new Bin(T.msl, false), team: new Bin(T.team, false) };
-  }
-
-  /* a convex side profile [x, z] extruded across y0..y1 */
-  function profY(bin, pts, y0, y1) {
-    var n = pts.length, V = [], F = [], i, k;
-    for (i = 0; i < n; i++) V.push([pts[i][0], y0, pts[i][1]]);
-    for (i = 0; i < n; i++) V.push([pts[i][0], y1, pts[i][1]]);
-    for (i = 1; i < n - 1; i++) { F.push([0, i + 1, i]); F.push([n, n + i, n + i + 1]); }
-    for (i = 0; i < n; i++) { k = (i + 1) % n; F.push([i, k, n + k], [i, n + k, n + i]); }
-    solid(bin, V, F);
-  }
-  /* a body of revolution about the line through (x, y, z) along X: profile [[x, r]...] */
+  /* a body of revolution about the line through (y, z) along X: profile [[x, r]...] */
   function revolve(bin, prof, y, z, seg) {
     var V = [], F = [], i, j, k, a, m = prof.length;
     for (i = 0; i < m; i++) for (j = 0; j < seg; j++) {
@@ -396,196 +269,412 @@ var HeroScudA = (function () {
       k = (j + 1) % seg;
       F.push([i * seg + j, i * seg + k, (i + 1) * seg + k], [i * seg + j, (i + 1) * seg + k, (i + 1) * seg + j]);
     }
-    /* end caps (fans on a centre vertex) */
     V.push([prof[0][0], y, z]); V.push([prof[m - 1][0], y, z]);
     for (j = 0; j < seg; j++) { k = (j + 1) % seg; F.push([m * seg, k, j]); F.push([m * seg + 1, (m - 1) * seg + j, (m - 1) * seg + k]); }
     solid(bin, V, F, true);
   }
-  /* a thin bar between two points, square section */
-  function bar(bin, A, B, w) {
-    var d = sub(B, A), L = Math.sqrt(dot(d, d)), ax = unit(d), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
-    var u = unit(cross(ax, t)), v = cross(ax, u), h = w / 2, V = [], i, c = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-    for (i = 0; i < 8; i++) {
-      var e = c[i % 4], P = i < 4 ? A : B;
-      V.push([P[0] + (u[0] * e[0] + v[0] * e[1]) * h, P[1] + (u[1] * e[0] + v[1] * e[1]) * h, P[2] + (u[2] * e[0] + v[2] * e[1]) * h]);
-    }
-    hexa(bin, V);
+  function hull2(P) {                                   /* convex hull of 2D points, CCW */
+    P = P.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    function cr(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
+    var L = [], U = [], i;
+    for (i = 0; i < P.length; i++) { while (L.length >= 2 && cr(L[L.length - 2], L[L.length - 1], P[i]) <= 0) L.pop(); L.push(P[i]); }
+    for (i = P.length - 1; i >= 0; i--) { while (U.length >= 2 && cr(U[U.length - 2], U[U.length - 1], P[i]) <= 0) U.pop(); U.push(P[i]); }
+    U.pop(); L.pop();
+    return L.concat(U);
   }
 
-  /* ------------------------------------------------------------------- hull */
-  function deckAt(x) { return 1.30 + 0.22 * (x - XT) / 5.75; }
-
-  function addHull(B, WB) {
-    var i, k, s, x, z, fo = 1.55, FZ = 1.12;
-    /* the hull body between the tracks: IS-series pike nose, sloped glacis, flat deck */
-    profY(B.paint, [[XT, 0.50], [3.10, 0.50], [XN, 0.75], [XN, 0.90], [2.55, 1.52], [XT, 1.30]], -1.12, 1.12);
-    /* tail plate: tow hooks, a hatch plate and the two exhaust stubs */
-    box(B.dark, XT - 0.04, XT, -0.55, 0.55, 0.70, 1.15);
-    for (s = -1; s <= 1; s += 2) {
-      box(B.dark, XT - 0.08, XT, s * 0.95 - 0.07, s * 0.95 + 0.07, 0.62, 0.72);
-      cylX(B.dark, XT - 0.14, XT, s * 0.30, 1.22, 0.06, 10);
-    }
-    /* nose: tow eyes */
-    for (s = -1; s <= 1; s += 2) box(B.dark, XN - 0.02, XN + 0.12, s * 0.40 - 0.05, s * 0.40 + 0.05, 0.66, 0.78);
-
-    for (s = -1; s <= 1; s += 2) {
-      /* fenders over the tracks, the front pair flared and drooping at the front edge */
-      prism(B.paint, [[XT + 0.05, s * 1.12], [XT + 0.05, s * fo], [2.20, s * fo], [2.20, s * 1.12]], FZ, FZ + 0.05);
-      prism(B.paint, [[2.20, s * 1.12], [2.20, s * (fo + 0.04)], [3.00, s * (fo + 0.04)], [3.30, s * (fo - 0.12)], [3.30, s * 1.12]], FZ, FZ + 0.05);
-      planeBox(B.paint, [3.28, 0, FZ + 0.05], [0.93, 0, -0.37], [0, 1, 0], [0.37, 0, 0.93], 0, 0.30, s > 0 ? 1.12 : -(fo - 0.12), s > 0 ? (fo - 0.12) : -1.12, 0, 0.04);
-      /* fender edge lip */
-      box(B.paint, XT + 0.05, 3.00, s > 0 ? fo - 0.04 : -fo, s > 0 ? fo : -fo + 0.04, FZ - 0.03, FZ + 0.12);
-      /* headlamp in a wire guard at the glacis foot */
-      cylX(B.dark, 2.62, 2.80, s * 0.92, FZ + 0.30, 0.085, 10);
-      cylX(B.glass, 2.80, 2.815, s * 0.92, FZ + 0.30, 0.06, 10);
-      for (k = 0; k < 3; k++) box(B.dark, 2.80, 2.84, s * 0.92 - 0.11, s * 0.92 - 0.10, FZ + 0.20 + k * 0.10 - 0.003, FZ + 0.20 + k * 0.10 + 0.003);
-      box(B.dark, 2.80, 2.84, s * 0.92 - 0.115, s * 0.92 - 0.105, FZ + 0.19, FZ + 0.42);
-      box(B.dark, 2.80, 2.84, s * 0.92 + 0.105, s * 0.92 + 0.115, FZ + 0.19, FZ + 0.42);
-      /* team strip on each side of the cab roof (up-facing) */
-      box(B.team, -1.2, 1.9, s > 0 ? 0.90 : -1.08, s > 0 ? 1.08 : -0.90, 2.12, 2.145);
-    }
-
-    /* the crew compartment: full-width armoured box with a sloped front */
-    profY(B.paint, [[-1.90, 1.28], [2.52, 1.28], [2.52, 1.60], [2.14, 2.12], [-1.90, 2.12]], -1.10, 1.10);
-    /* two driver vision windows in the front face with their hoods */
-    for (s = -1; s <= 1; s += 2) {
-      planeBox(B.glass, [2.46, s * 0.50, 1.78], [0.70, 0, 0.71], [0, 1, 0], [0.71, 0, -0.70], 0, 0.02, -0.24, 0.24, 0, 0.17);
-      planeBox(B.dark, [2.42, s * 0.50, 1.84], [0.70, 0, 0.71], [0, 1, 0], [0.71, 0, -0.70], -0.02, 0.0, -0.30, 0.30, -0.12, 0.30);
-    }
-    /* a roof hatch each side of the boom line, a periscope pair */
-    for (s = -1; s <= 1; s += 2) {
-      cylZ(B.paint, 1.55, s * 0.82, 2.12, 2.20, 0.17, 14);
-      cylZ(B.dark, 1.55, s * 0.82, 2.20, 2.215, 0.12, 12);
-    }
-    /* side door, window, hinge strap and the ladder (starboard side as photographed) */
-    for (s = -1; s <= 1; s += 2) {
-      box(B.dark, 0.20, 1.10, s * 1.10 - (s > 0 ? 0.01 : 0.02), s * 1.10 + (s > 0 ? 0.02 : 0.01), 1.38, 2.04);
-      box(B.paint, 0.26, 1.04, s * 1.10 - (s > 0 ? 0.0 : 0.05), s * 1.10 + (s > 0 ? 0.05 : 0.0), 1.44, 1.98);
-      box(B.glass, 0.46, 0.86, s * 1.10 - (s > 0 ? 0.0 : 0.06), s * 1.10 + (s > 0 ? 0.06 : 0.0), 1.66, 1.94);
-      box(B.dark, 0.99, 1.03, s * 1.10 - (s > 0 ? 0.0 : 0.07), s * 1.10 + (s > 0 ? 0.07 : 0.0), 1.60, 1.70);
-      /* a rear equipment panel with a louvre bank */
-      for (k = 0; k < 5; k++) box(B.dark, -1.60 + k * 0.18, -1.52 + k * 0.18, s * 1.10 - (s > 0 ? 0.0 : 0.04), s * 1.10 + (s > 0 ? 0.04 : 0.0), 1.50, 1.90);
-    }
-    box(B.dark, 1.20, 1.28, -1.25, -1.17, FZ + 0.05, 2.02);
-    box(B.dark, 1.46, 1.54, -1.25, -1.17, FZ + 0.05, 2.02);
-    for (k = 0; k < 6; k++) box(B.dark, 1.20, 1.54, -1.25, -1.17, FZ + 0.18 + k * 0.14, FZ + 0.205 + k * 0.14);
-
-    /* roof gear: the equipment case at the rear of the roof and the black cylinder at the roof edge */
-    box(B.paint, -1.55, -0.45, 0.62, 1.04, 2.12, 2.48);
-    box(B.dark, -1.55, -0.45, 0.62, 1.04, 2.47, 2.50);
-    box(B.dark, -1.00, -0.98, 0.62, 1.04, 2.12, 2.48);
-    cylX(B.dark, -1.60, -0.20, -0.90, 2.28, 0.115, 14);
-    cylX(B.dark, -1.18, -1.12, -0.90, 2.28, 0.13, 14);
-
-    /* engine deck behind the cab: louvres and two filler caps */
-    for (k = 0; k < 6; k++) box(B.dark, -3.05 + k * 0.17, -3.00 + k * 0.17, -0.70, 0.70, 1.325, 1.35);
-    cylZ(B.paint, -2.05, 0.82, 1.35, 1.42, 0.12, 12);
-    cylZ(B.paint, -2.05, -0.82, 1.35, 1.42, 0.12, 12);
-    box(B.team, -3.10, -2.20, -0.45, 0.45, 1.34, 1.36);
-    /* hinge cradle for the erector: two heavy lugs rising from the deck beside the hinge line */
-    for (s = -1; s <= 1; s += 2) {
-      profY(B.paint, [[PX - 0.28, 1.28], [PX + 0.28, 1.28], [PX + 0.20, PZ - 0.16], [PX - 0.20, PZ - 0.16]], s * 0.78 - 0.07, s * 0.78 + 0.07);
-      cylY(B.dark, PX, s * 0.62, s * 0.92, PZ, 0.09, 12);
-    }
-    box(B.paint, PX - 0.30, PX + 0.30, -0.78, 0.78, 2.00, 2.12);
-
-    /* running gear */
-    var bg = beltGeometry(), nrm = bg.nrm, Q1 = bg.top[0], Q2 = bg.top[1], f, xr, zr;
-    for (s = -1; s <= 1; s += 2) {
-      belt(B.dark, bg.path, s * TY - TH, s * TY + TH);
-      gear(B.paint, SPR.x, s * TY - 0.19, s * TY - 0.12, SPR.z, 0.27, SPR.r - 0.015, 10);
-      gear(B.paint, SPR.x, s * TY + 0.12, s * TY + 0.19, SPR.z, 0.27, SPR.r - 0.015, 10);
-      cylY(B.dark, SPR.x, s * TY - 0.22, s * TY + 0.22, SPR.z, 0.17, 12);
-      cylY(B.dark, IDL.x, s * TY - 0.22, s * TY - 0.04, IDL.z, IDL.r, 14);
-      cylY(B.dark, IDL.x, s * TY + 0.04, s * TY + 0.22, IDL.z, IDL.r, 14);
-      cylY(B.paint, IDL.x, s * TY - 0.25, s * TY + 0.25, IDL.z, 0.15, 10);
-      for (k = 0; k < NROLL; k++) {
-        f = (XROLL[k] - Q1[0]) / (Q2[0] - Q1[0]);
-        xr = XROLL[k]; zr = Q1[1] + (Q2[1] - Q1[1]) * f;
-        xr -= nrm[0] * (0.04 + RR); zr -= nrm[1] * (0.04 + RR);
-        cylY(B.dark, xr, s * TY - 0.10, s * TY + 0.10, zr, RR, 10);
+  /* ----------------------------------------------------------- materials */
+  var _tex = {};
+  function rng(seed) { var s = seed >>> 0; return function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+  /* one tile is 1 / 0.34 = 2.9 m: the brushed green's mottling, weld seams with their bead
+     highlight, rivet rows on the box, grime and rain streaks (W0, W2, F1) */
+  function paintTex(THREE, P) {
+    var key = P.base + P.seed;
+    if (_tex[key] !== undefined) return _tex[key];
+    var t = null;
+    try {
+      var cv = document.createElement("canvas"), S = 512;
+      cv.width = S; cv.height = S;
+      var q = cv.getContext("2d"), R = rng(P.seed), i, k, x, y, w;
+      q.fillStyle = P.base; q.fillRect(0, 0, S, S);
+      for (k = 0; k < P.blots.length; k++) {
+        q.fillStyle = P.blots[k];
+        for (i = 0; i < 16; i++) { q.globalAlpha = 0.30 + R() * 0.4; q.fillRect(R() * S, R() * S, 30 + R() * 120, 20 + R() * 80); }
       }
-    }
-    /* road wheels: tyre rings, a disc with a hub and a ring of bolts, both sides of the axle in one node */
-    for (i = 0; i < NW; i++) for (s = -1; s <= 1; s += 2) {
-      var b = WB[i].bin, yy;
-      for (yy = -1; yy <= 1; yy += 2) {
-        var y = s * TY + yy * 0.16;
-        cylY(b, 0, y - 0.055, y + 0.055, 0, RW, 14);
-        cylY(b, 0, y - 0.03, y + 0.03, 0, RW - 0.07, 10);
-        cylY(b, 0, y - 0.065, y + 0.065, 0, 0.075, 6);
+      q.globalAlpha = 1;
+      for (i = 0; i < 700; i++) {
+        q.fillStyle = (i % 2) ? "rgba(20,22,14,0.08)" : "rgba(220,225,190,0.05)";
+        q.fillRect(R() * S, R() * S, 1 + R() * 2, 1 + R() * 2);
       }
+      for (i = 0; i < 7; i++) {
+        x = Math.floor(R() * S); y = Math.floor(R() * S); w = 90 + R() * 220;
+        q.fillStyle = "rgba(20,22,16,0.30)";
+        if (i % 2) q.fillRect(x, y, w, 3); else q.fillRect(x, y, 3, w);
+        q.fillStyle = "rgba(235,235,215,0.10)";
+        if (i % 2) q.fillRect(x, y + 3, w, 1); else q.fillRect(x + 3, y, 1, w);
+      }
+      for (i = 0; i < S; i += 170) for (k = 4; k < S; k += 12) {
+        q.fillStyle = "rgba(225,228,205,0.10)"; q.fillRect(i + 5, k, 2, 2);
+        q.fillStyle = "rgba(10,10,8,0.12)"; q.fillRect(i + 6, k + 1, 2, 2);
+      }
+      for (i = 0; i < 110; i++) {
+        q.fillStyle = (i % 3) ? "rgba(20,18,12,0.07)" : "rgba(235,230,205,0.05)";
+        q.fillRect(R() * S, R() * S, 3 + R() * 40, 2 + R() * 26);
+      }
+      for (i = 0; i < 26; i++) { q.fillStyle = "rgba(25,22,15,0.06)"; q.fillRect(R() * S, R() * S, 2 + R() * 4, 30 + R() * 90); }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    _tex[key] = t;
+    return t;
+  }
+  function materials(THREE, C) {
+    var T = {}, tx = paintTex(THREE, PAINT);
+    T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.06 });
+    if (tx) T.paint.map = tx; else T.paint.color.set(PAINT.base);
+    T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
+    T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
+    T.wheel = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.86, metalness: 0.08, vertexColors: true });
+    T.msl = new THREE.MeshStandardMaterial({ color: 0x737a6c, roughness: 0.55, metalness: 0.2 });
+    T.team = new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 });
+    return T;
+  }
+  function bins(T) {
+    return { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false), glass: new Bin(T.glass, false),
+             msl: new Bin(T.msl, false), team: new Bin(T.team, false) };
+  }
+  function flush(THREE, group, B) {
+    var k, b, geo;
+    for (k in B) {
+      b = B[k];
+      if (!b.P.length) continue;
+      geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.P), 3));
+      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.N), 3));
+      if (b.U) geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(b.U), 2));
+      if (b.C) geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(b.C), 3));
+      group.add(new THREE.Mesh(geo, b.mat));
+    }
+  }
+
+  /* ---------------------------------------------------------------- hull */
+  /* station table of the ISU-152K lower hull (W2 side, W3 front, scaled to the 6.75 m drawn hull):
+     x, belly half width, belly z, side half width at the sponson, sponson z, deck half width, deck z.
+     The lower sides stand inside the tracks; the sponson floor runs out over them to the fender edge;
+     the nose is the IS-2's: the lower glacis up from the belly to the nose plate, the upper glacis back
+     to the deck.  The engine deck falls a little to the tail plate (W2, F1). */
+  var HS = [
+    [-3.20, 0.86, 0.66, 0.88, 1.06, 1.40, 1.26],
+    [-3.10, 0.88, 0.50, 0.90, 1.08, 1.45, 1.32],
+    [-2.90, 0.90, 0.47, 0.92, 1.10, 1.48, 1.36],
+    [ 2.55, 0.90, 0.47, 0.92, 1.10, 1.48, 1.44],
+    [ 2.95, 0.88, 0.52, 0.90, 1.08, 1.30, 1.32],
+    [ 3.30, 0.84, 0.66, 0.86, 1.02, 1.00, 1.12],
+    [ 3.55, 0.78, 0.80, 0.80, 0.98, 0.80, 0.98]
+  ];
+  function hullRing(S) {
+    var x = S[0], P = [[S[1], S[2]], [S[3], S[4] - 0.02], [S[3] + 0.02, S[4]], [S[5], S[6]],
+                       [-S[5], S[6]], [-S[3] - 0.02, S[4]], [-S[3], S[4] - 0.02], [-S[1], S[2]]];
+    return P.map(function (p) { return [x, p[0], p[1]]; });
+  }
+  /* the crew box: vertical sides on the fenders, the roof edges chamfered; the front rings draw the
+     sloped face (W3, F1) */
+  function boxRing(x, top, hw) {
+    return [[x, -hw, FZ], [x, hw, FZ], [x, hw, top - 0.10], [x, hw - 0.10, top], [x, -hw + 0.10, top], [x, -hw, top - 0.10]];
+  }
+
+  function addHull(B) {
+    var s, i, k, x, z, y;
+    loft(B.paint, HS.map(hullRing), false);
+    /* the fender shelf over each track, its turned-down edge, the rear fender end */
+    for (s = -1; s <= 1; s += 2) {
+      box(B.paint, XT + 0.02, 2.70, s > 0 ? 0.90 : -FW, s > 0 ? FW : -0.90, FZ - 0.04, FZ);
+      box(B.paint, XT + 0.02, 2.70, s > 0 ? FW - 0.025 : -FW, s > 0 ? FW : -FW + 0.025, FZ - 0.09, FZ + 0.01);
+      strip(B.paint, XT + 0.02, FZ - 0.02, XT - 0.10, FZ - 0.20, s > 0 ? 0.92 : -FW, s > 0 ? FW : -0.92, 0.03);
+      /* the big box mudguard over the front of the track (W3, F1): its flat top falls to the nose
+         with ribs across it, deep side cheeks */
+      var MG = [], t, ya = s > 0 ? 0.92 : -FW - 0.01, yb = s > 0 ? FW + 0.01 : -0.92;
+      /* the guard stands up to about the window sill (W3, K1: 1.40 m) and rolls down over the idler */
+      MG = [[2.60, 1.40], [2.85, 1.40], [3.10, 1.38], [3.30, 1.32], [3.45, 1.22], [3.56, 1.10], [3.62, 0.98]];
+      box(B.paint, 2.58, 2.62, ya, yb, FZ - 0.02, 1.40);
+      for (i = 0; i + 1 < MG.length; i++) {
+        strip(B.paint, MG[i][0], MG[i][1], MG[i + 1][0], MG[i + 1][1], ya, yb, 0.04);
+        strip(B.paint, MG[i][0], MG[i][1] - 0.22, MG[i + 1][0], MG[i + 1][1] - 0.22, s > 0 ? FW - 0.03 : -FW - 0.01, s > 0 ? FW + 0.01 : -FW + 0.03, 0.44);
+        strip(B.paint, MG[i][0], MG[i][1] - 0.16, MG[i + 1][0], MG[i + 1][1] - 0.16, s > 0 ? 0.92 : -0.95, s > 0 ? 0.95 : -0.92, 0.32);
+      }
+      for (k = 0; k < 5; k++) {
+        y = s * (1.00 + k * 0.125);
+        for (i = 0; i + 1 < MG.length; i++) strip(B.paint, MG[i][0], MG[i][1] + 0.025, MG[i + 1][0], MG[i + 1][1] + 0.025, y - 0.02, y + 0.02, 0.035);
+      }
+      box(B.paint, MG[6][0] - 0.05, MG[6][0], ya, yb, MG[6][1] - 0.30, MG[6][1] + 0.01);
+      /* the stowage box on the rear fender with its louvred lid (W2, F1) */
+      box(B.paint, -2.95, -1.95, s > 0 ? 1.12 : -FW + 0.04, s > 0 ? FW - 0.04 : -1.12, FZ, FZ + 0.34);
+      for (k = 0; k < 6; k++) box(B.dark, -2.85 + k * 0.15, -2.79 + k * 0.15, s > 0 ? FW - 0.045 : -FW + 0.035, s > 0 ? FW - 0.035 : -FW + 0.045, FZ + 0.08, FZ + 0.26);
+    }
+    /* nose: the spare track links across the upper glacis between the mudguards (W3), tow hooks */
+    for (i = 0; i < 6; i++) {
+      y = -0.62 + i * 0.25;
+      slab(B.dark, [3.12, y, 1.25], unit([0.62, 0, 0.78]), [0, 1, 0], unit([0.78, 0, -0.62]), 0.10, 0.11, 0.035);
+      slab(B.dark, [3.02, y, 1.33], unit([0.62, 0, 0.78]), [0, 1, 0], unit([0.78, 0, -0.62]), 0.03, 0.09, 0.05);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, 3.45, 3.66, s * 0.45 - 0.05, s * 0.45 + 0.05, 0.80, 0.90);
+      box(B.dark, 3.56, 3.66, s * 0.45 - 0.05, s * 0.45 + 0.05, 0.70, 0.82);
+    }
+    /* tail plate: the exhaust stubs and tow hooks */
+    box(B.dark, XT - 0.03, XT, -0.55, 0.55, 0.80, 1.15);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, XT - 0.12, XT, s * 0.75 - 0.07, s * 0.75 + 0.07, 0.62, 0.74);
+      cylX(B.dark, XT - 0.14, XT, s * 0.30, 1.20, 0.07, 10);
+    }
+    /* engine deck: louvred grilles and two filler caps */
+    for (k = 0; k < 7; k++) box(B.dark, -3.08 + k * 0.15, -3.02 + k * 0.15, -0.80, 0.80, 1.34, 1.36);
+    for (s = -1; s <= 1; s += 2) cylZ(B.paint, -2.05, s * 0.95, 1.36, 1.42, 0.11, 12);
+
+    /* ---- the crew box (W3, F1, W2) ---- */
+    loft(B.paint, [boxRing(BX0, BZR, BW), boxRing(BXS, BZR, BW)].concat([0.75, 0.5, 0.25, 0].map(function (f) {
+      return boxRing(BX1 + (BXS - BX1) * f, BZ0 + (BZR - BZ0) * f, BW);
+    })), false);
+    box(B.paint, BX1 - 0.02, BX1 + 0.04, -BW, BW, FZ, BZ0);
+    /* the two windows in the sloped front, their frames and the brow over them (W3) */
+    var FU = unit([BXS - BX1, 0, BZR - BZ0]), FN = unit([BZR - BZ0, 0, BX1 - BXS]);
+    function onFront(f, y, h) { return [BX1 + (BXS - BX1) * f + FN[0] * h, y, BZ0 + (BZR - BZ0) * f + FN[2] * h]; }
+    for (s = -1; s <= 1; s += 2) {
+      y = s * 0.50;
+      slab(B.glass, onFront(0.42, y, 0.030), FU, [0, 1, 0], FN, 0.13, 0.34, 0.012);
+      slab(B.dark, onFront(0.42, y, 0.012), FU, [0, 1, 0], FN, 0.17, 0.38, 0.010);
+      slab(B.paint, onFront(0.66, y, 0.04), FU, [0, 1, 0], FN, 0.025, 0.42, 0.045);
+      /* the headlamp in its wire basket on each upper corner (W3, F1) */
+      var hc = onFront(0.30, s * 1.18, 0.10);
+      cyl(B.paint, [hc[0] - 0.10, hc[1], hc[2]], [hc[0] + 0.06, hc[1], hc[2]], 0.09, 0.10, 12);
+      cyl(B.glass, [hc[0] + 0.06, hc[1], hc[2]], [hc[0] + 0.075, hc[1], hc[2]], 0.085, 0.085, 12);
+      var gq = [[0.10, -0.15, -0.16], [0.10, -0.15, 0.17], [0.10, 0.15, 0.17], [0.10, 0.15, -0.16]], j;
+      for (j = 0; j < 4; j++) {
+        var g0 = gq[j], g1 = gq[(j + 1) % 4];
+        cyl(B.dark, [hc[0] + g0[0], hc[1] + g0[1], hc[2] + g0[2]], [hc[0] + g1[0], hc[1] + g1[1], hc[2] + g1[2]], 0.012, 0.012, 5, true, true);
+        cyl(B.dark, [hc[0] - 0.14, hc[1] + g0[1], hc[2] + g0[2]], [hc[0] + g0[0], hc[1] + g0[1], hc[2] + g0[2]], 0.012, 0.012, 5, true, true);
+      }
+      for (j = 1; j < 4; j++) cyl(B.dark, [hc[0] + 0.10, hc[1] - 0.15, hc[2] - 0.16 + j * 0.083], [hc[0] + 0.10, hc[1] + 0.15, hc[2] - 0.16 + j * 0.083], 0.008, 0.008, 4, true, true);
+      /* doors with windows, hinges and handle; the ladder below the door at the front of the
+         sponson (W2, W3, F1) */
+      var yo = s * BW, ys = function (a, b) { return s > 0 ? [BW + a, BW + b] : [-BW - b, -BW - a]; }, yy;
+      yy = ys(0, 0.015); box(B.dark, 0.75, 1.70, yy[0], yy[1], 1.22, 2.06);
+      yy = ys(0, 0.03); box(B.paint, 0.80, 1.65, yy[0], yy[1], 1.27, 2.01);
+      yy = ys(0.03, 0.04); box(B.glass, 0.98, 1.47, yy[0], yy[1], 1.66, 1.94);
+      yy = ys(0.03, 0.07); box(B.dark, 1.52, 1.60, yy[0], yy[1], 1.58, 1.64);
+      for (j = 0; j < 2; j++) { yy = ys(0.0, 0.05); box(B.dark, 0.74, 0.82, yy[0], yy[1], 1.35 + j * 0.50, 1.47 + j * 0.50); }
+      yy = ys(0.03, 0.07);
+      bar(B.dark, [1.90, yy[0] + s * 0.05, 0.62], [1.90, yy[0] + s * 0.05, 1.10], 0.035);
+      bar(B.dark, [2.20, yy[0] + s * 0.05, 0.62], [2.20, yy[0] + s * 0.05, 1.10], 0.035);
+      for (j = 0; j < 3; j++) bar(B.dark, [1.90, yy[0] + s * 0.05, 0.70 + j * 0.16], [2.20, yy[0] + s * 0.05, 0.70 + j * 0.16], 0.03);
+      /* the long cylinder on the box side at its rear, on two straps (W2 dark, F1) */
+      cylX(B.dark, -1.85, -0.25, s * (BW + 0.13), 1.95, 0.13, 14);
+      cylX(B.dark, -0.25, -0.15, s * (BW + 0.13), 1.95, 0.09, 12);
+      for (j = 0; j < 2; j++) { yy = ys(0, 0.16); box(B.paint, -1.55 + j * 0.95, -1.47 + j * 0.95, yy[0], yy[1], 1.86, 2.10); }
+      /* side panel seams and a louvre bank under the cylinder (W2) */
+      yy = ys(0, 0.012); box(B.dark, -0.10, -0.08, yy[0], yy[1], FZ + 0.05, BZR - 0.12);
+      for (k = 0; k < 5; k++) { yy = ys(0, 0.03); box(B.dark, -1.65 + k * 0.20, -1.57 + k * 0.20, yy[0], yy[1], 1.30, 1.66); }
+      /* roof hatches over the crew seats, a periscope ahead of each */
+      cylZ(B.paint, 1.55, s * 0.80, BZR, BZR + 0.07, 0.30, 16);
+      cylZ(B.dark, 1.55, s * 0.80, BZR + 0.07, BZR + 0.085, 0.22, 14);
+      box(B.paint, 1.95, 2.10, s * 0.80 - 0.10, s * 0.80 + 0.10, BZR, BZR + 0.12);
+      box(B.glass, 2.10, 2.11, s * 0.80 - 0.08, s * 0.80 + 0.08, BZR + 0.03, BZR + 0.09);
+      /* the team colour, two strips on the roof outboard of the erector */
+      box(B.team, 0.10, 1.10, s > 0 ? 1.05 : -1.30, s > 0 ? 1.30 : -1.05, BZR, BZR + 0.015);
+    }
+    /* the case on the roof, right rear (W2, F1), clear of the erector trough */
+    box(B.paint, -1.65, -0.30, -1.30, -0.60, BZR, BZR + 0.27);
+    box(B.paint, -1.67, -0.28, -1.32, -0.58, BZR + 0.24, BZR + 0.29);
+    for (k = 0; k < 2; k++) box(B.dark, -1.30 + k * 0.62, -1.24 + k * 0.62, -1.33, -1.30, BZR + 0.08, BZR + 0.17);
+    /* the erector's saddle on the roof (W2: the strut under the boom ahead of the trough) */
+    for (s = -1; s <= 1; s += 2) box(B.dark, 1.10, 1.30, s * 0.42 - 0.06, s * 0.42 + 0.06, BZR, PZ + MZ - MR - 0.10);
+    box(B.paint, 1.06, 1.34, -0.50, 0.50, PZ + MZ - MR - 0.14, PZ + MZ - MR - 0.10);
+    /* the lower equipment compartment behind the box, ahead of the pivot pedestals (W2, F1), its seams */
+    box(B.paint, -2.36, BX0, -1.22, 1.22, FZ, 1.92);
+    for (s = -1; s <= 1; s += 2) for (k = 0; k < 4; k++) box(B.dark, -2.30, -1.96, s > 0 ? 1.22 : -1.235, s > 0 ? 1.235 : -1.22, 1.30 + k * 0.14, 1.33 + k * 0.14);
+    /* rear wall of the box: a hatch and its rungs */
+    box(B.dark, BX0 - 0.015, BX0, -0.35, 0.35, 1.30, 2.00);
+    /* ---- the erector's pivot pedestals on the rear deck and the heel gear at the rear (F1, W2):
+       curved arms down the tail plate and the upright plate with four holes ---- */
+    for (s = -1; s <= 1; s += 2) {
+      profY(B.paint, [[PX - 0.32, 1.34], [PX + 0.32, 1.38], [PX + 0.14, PZ - 0.10], [PX - 0.14, PZ - 0.10]], s * 0.72 - 0.08, s * 0.72 + 0.08);
+      cylY(B.dark, PX, s * 0.56, s * 0.88, PZ, 0.10, 12);
+      var CA = [[-2.55, 1.98], [-2.95, 2.05], [-3.28, 1.90], [-3.42, 1.62], [-3.38, 1.30], [-3.22, 1.22]], j2;
+      for (j2 = 0; j2 + 1 < CA.length; j2++) cyl(B.paint, [CA[j2][0], s * 0.95, CA[j2][1]], [CA[j2 + 1][0], s * 0.95, CA[j2 + 1][1]], 0.07, 0.07, 8, j2 > 0, j2 + 2 < CA.length);
+      bar(B.dark, [-3.30, s * 0.95, 1.40], [-2.70, s * 0.70, 1.36], 0.06);
+    }
+    box(B.dark, -3.38, -3.34, -1.12, -0.72, 1.85, 2.42);
+    for (k = 0; k < 4; k++) cylX(B.glass, -3.395, -3.335, -1.02 + (k % 2) * 0.20, 1.98 + (k > 1 ? 0.30 : 0), 0.045, 8);
+
+    /* ---- running gear: the track as a convex loop of plates with every other 160 mm link proud,
+       guide horns inside; the rear sprocket, the front idler, three return rollers (W2, F1) ---- */
+    var C = [], pts = [], n, segs = [], tot = 0, a, b, l, cnt, step, q, rem, d, tt, dx, dz, px, pz;
+    for (i = 0; i < XW.length; i++) C.push([XW[i], ZW, RW + 0.05]);
+    for (i = 0; i < XROLL.length; i++) C.push([XROLL[i], ZROLL, RROLL + 0.05]);
+    C.push([IDL.x, IDL.z, IDL.r + 0.05], [SPR.x, SPR.z, SPR.r + 0.05]);
+    for (i = 0; i < C.length; i++) for (k = 0; k < 24; k++) pts.push([C[i][0] + Math.cos(k / 24 * TAU) * C[i][2], C[i][1] + Math.sin(k / 24 * TAU) * C[i][2]]);
+    pts = hull2(pts);
+    n = pts.length;
+    for (i = 0; i < n; i++) {
+      a = pts[i]; b = pts[(i + 1) % n];
+      l = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
+      if (l < 1e-4) continue;
+      segs.push([a, b, l]); tot += l;
+    }
+    n = segs.length;
+    cnt = Math.round(tot / 0.32); step = tot / cnt;
+    for (s = -1; s <= 1; s += 2) {
+      y = s * TY;
+      for (i = 0; i < n; i++) if (segs[i][2] > 0.02) strip(B.dark, segs[i][0][0], segs[i][0][1], segs[i][1][0], segs[i][1][1], y - TW, y + TW, 0.06);
+      q = 0; rem = 0;
+      for (k = 0; k < cnt; k++) {
+        d = (k + 0.5) * step;
+        while (q < n - 1 && rem + segs[q][2] < d) { rem += segs[q][2]; q++; }
+        tt = (d - rem) / segs[q][2];
+        a = segs[q][0]; b = segs[q][1];
+        dx = (b[0] - a[0]) / segs[q][2]; dz = (b[1] - a[1]) / segs[q][2];
+        px = a[0] + (b[0] - a[0]) * tt; pz = a[1] + (b[1] - a[1]) * tt;
+        strip(B.dark, px - dx * 0.07, pz - dz * 0.07, px + dx * 0.07, pz + dz * 0.07, y - TW - 0.01, y + TW + 0.01, 0.08);
+        strip(B.dark, px - dx * 0.035 - dz * 0.085, pz - dz * 0.035 + dx * 0.085, px + dx * 0.035 - dz * 0.085, pz + dz * 0.035 + dx * 0.085, y - 0.03, y + 0.03, 0.07);
+      }
+      /* the sprocket: two toothed rings and the hub */
+      cylY(B.dark, SPR.x, y - 0.22, y + 0.22, SPR.z, SPR.r - 0.05, 18);
+      for (i = 0; i < 14; i++) {
+        var ta = i / 14 * TAU, ca = Math.cos(ta), sa = Math.sin(ta);
+        slab(B.dark, [SPR.x + ca * (SPR.r - 0.01), y - s * 0.14, SPR.z + sa * (SPR.r - 0.01)], [ca, 0, sa], [0, 1, 0], [-sa, 0, ca], 0.05, 0.035, 0.035);
+        slab(B.dark, [SPR.x + ca * (SPR.r - 0.01), y + s * 0.14, SPR.z + sa * (SPR.r - 0.01)], [ca, 0, sa], [0, 1, 0], [-sa, 0, ca], 0.05, 0.035, 0.035);
+      }
+      cylY(B.paint, SPR.x, y + s * 0.20, y + s * 0.26, SPR.z, 0.21, 16);
+      cylY(B.dark, SPR.x, y + s * 0.26, y + s * 0.31, SPR.z, 0.08, 10);
+      /* the idler: a double disc and its crank */
+      cylY(B.paint, IDL.x, y - 0.22, y + 0.22, IDL.z, IDL.r, 18);
+      cylY(B.dark, IDL.x, y - 0.03, y + 0.03, IDL.z, IDL.r + 0.012, 18);
+      cylY(B.dark, IDL.x, y + s * 0.22, y + s * 0.28, IDL.z, 0.10, 10);
+      box(B.dark, IDL.x - 0.36, IDL.x, y + s * 0.30 - 0.035, y + s * 0.30 + 0.035, IDL.z - 0.045, IDL.z + 0.045);
+      for (i = 0; i < XROLL.length; i++) {
+        cylY(B.dark, XROLL[i], y - 0.18, y + 0.18, ZROLL, RROLL, 12);
+        box(B.dark, XROLL[i] - 0.05, XROLL[i] + 0.05, s > 0 ? 0.90 : -1.05, s > 0 ? 1.05 : -0.90, ZROLL - 0.04, ZROLL + 0.04);
+      }
+      for (i = 0; i < XW.length; i++) box(B.dark, XW[i] - 0.06, XW[i] + 0.20, s > 0 ? 0.90 : -0.98, s > 0 ? 0.98 : -0.90, ZW + 0.02, ZW + 0.10);
+    }
+  }
+
+  /* road wheel pair (W2, F1): two dished steel discs on each side of the track's guide horns, a
+     ring of lightening holes, the hub.  Vertex colours: the green disc, the dark rim and holes. */
+  var RIM = [0.19, 0.20, 0.18], HOLE = [0.08, 0.085, 0.07];
+  function addWheel(W) {
+    var s, y, i, a, c = PAINT.base, BODY = [parseInt(c.substr(1, 2), 16) / 255 * 1.12, parseInt(c.substr(3, 2), 16) / 255 * 1.12, parseInt(c.substr(5, 2), 16) / 255 * 1.12];
+    for (s = -1; s <= 1; s += 2) {
+      y = s * TY;
+      W.col = RIM;
+      cylY(W, 0, y - 0.27, y - 0.17, 0, RW, 16);
+      cylY(W, 0, y + 0.17, y + 0.27, 0, RW, 16);
+      W.col = BODY;
+      cylY(W, 0, y - 0.17, y + 0.17, 0, 0.21, 10);
+      cyl(W, [0, y + s * 0.27, 0], [0, y + s * 0.30, 0], 0.255, 0.15, 16);
+      cylY(W, 0, y + s * 0.29, y + s * 0.33, 0, 0.08, 10);
+      W.col = HOLE;
+      for (i = 0; i < 8; i++) {
+        a = (i + 0.5) / 8 * TAU;
+        slab(W, [Math.cos(a) * 0.165, y + s * 0.285, Math.sin(a) * 0.165], [Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0, Math.cos(a)], 0.045, 0.014, 0.045);
+      }
+      W.col = RIM;
+      cylY(W, 0, y + s * 0.32, y + s * 0.345, 0, 0.045, 8);
     }
   }
 
   /* ---------------------------------------------------------------- erector */
-  /* Everything below is in the frame of the hinge: origin at the cradle pin, +X along the boom. */
+  /* in the frame of the pivot: origin on the pin, +X along the boom to the nose, the missile's axis
+     at z = MZ, its heel at x = U0 */
   function addErector(B) {
-    var i, k, s, a, n, x, A, Bp, fx, SC = 1.0;
-    /* the R-11: cylinder body, long ogive warhead, four tail fins */
-    revolve(B.msl, [[-0.10, 0.34], [0.00, 0.40], [0.30, 0.435], [0.80, 0.44], [7.10, 0.44], [7.70, 0.425], [8.50, 0.37],
-                    [9.30, 0.27], [9.90, 0.15], [10.25, 0.05], [10.30, 0.0]], 0, MZ, 24);
-    for (i = 0; i < 3; i++) cylX(B.msl, [1.6, 4.7, 8.1][i] - 0.05, [1.6, 4.7, 8.1][i] + 0.05, 0, MZ, 0.452, 20);
+    var i, k, s, a, x, u, P, Q;
+    /* the R-11M: a plain body of 0.88 m to the warhead joint (UB from the heel), the long warhead cone
+       with its slight ogive (K1, B1, F2), the nozzle skirt, tank joint rings */
+    revolve(B.msl, [[U0, 0.36], [U0 + 0.10, 0.42], [U0 + 0.20, MR], [U0 + UB, MR], [U0 + UB + 0.8, 0.43], [U0 + UB + 1.7, 0.39],
+                    [U0 + UB + 2.6, 0.31], [U0 + UB + 3.4, 0.20], [U0 + MLEN - 0.20, 0.07], [U0 + MLEN, 0.0]], 0, MZ, 24);
+    cyl(B.dark, [U0 - 0.05, 0, MZ], [U0 + 0.02, 0, MZ], 0.30, 0.34, 16);
+    [1.9, 4.0, UB].forEach(function (uu) { cylX(B.dark, U0 + uu - 0.03, U0 + uu + 0.03, 0, MZ, MR + 0.008, 24); });
+    /* four fins in an X, 1.80 m over the tips, the trailing edge at the heel, the leading edge swept (F1) */
     for (i = 0; i < 4; i++) {
       a = Math.PI / 4 + i * Math.PI / 2;
-      var ca = Math.cos(a), sa = Math.sin(a), th = 0.025, pts = [[0.0, 0.40], [1.15, 0.43], [0.95, 0.74], [0.55, 0.74]], V = [];
+      var ca = Math.cos(a), sa = Math.sin(a), th = 0.025, pts = [[U0 + 0.08, MR - 0.02], [U0 + 1.45, MR - 0.02], [U0 + 0.62, 0.90], [U0 + 0.08, 0.90]], V = [];
       for (k = 0; k < 8; k++) {
-        var q = pts[k % 4], hh = k < 4 ? -th : th;
-        V.push([q[0], q[1] * ca - hh * sa, MZ + q[1] * sa + hh * ca]);
+        var qq = pts[k % 4], hh = k < 4 ? -th : th;
+        V.push([qq[0], qq[1] * ca - hh * sa, MZ + qq[1] * sa + hh * ca]);
       }
       hexa(B.msl, V);
     }
-    /* the boom: heel transom, hinge pin, a half-pipe guide under the tail, side trusses, hoop frames */
-    box(B.paint, -0.95, -0.80, -0.62, 0.62, MZ - 0.55, MZ + 0.05);
-    cylY(B.dark, 0, -0.78, 0.78, 0, 0.10, 12);
-    var rings = [], ro, ri, m = 9, xx;
-    for (i = 0; i < 2; i++) {
-      xx = i ? 3.4 : -0.85;
+    /* the half-pipe trough under the body (W0, W2, B1), from the fins to the warhead joint, with its
+       two edge rails and the spine beneath */
+    var rings = [], m = 11, rr0 = MR + 0.04, rr1 = MR + 0.09;
+    [U0 + 1.55, U0 + UB].forEach(function (xx) {
       var ring = [];
-      for (k = 0; k < m; k++) { a = Math.PI + k / (m - 1) * Math.PI; ring.push([xx, 0.66 * Math.cos(a), MZ + 0.66 * Math.sin(a)]); }
-      for (k = m - 1; k >= 0; k--) { a = Math.PI + k / (m - 1) * Math.PI; ring.push([xx, 0.615 * Math.cos(a), MZ + 0.615 * Math.sin(a)]); }
+      for (k = 0; k < m; k++) { a = Math.PI * 1.12 + k / (m - 1) * Math.PI * 0.76; ring.push([xx, rr1 * Math.cos(a), MZ + rr1 * Math.sin(a)]); }
+      for (k = m - 1; k >= 0; k--) { a = Math.PI * 1.12 + k / (m - 1) * Math.PI * 0.76; ring.push([xx, rr0 * Math.cos(a), MZ + rr0 * Math.sin(a)]); }
       rings.push(ring);
-    }
+    });
     loft(B.paint, rings, false);
     for (s = -1; s <= 1; s += 2) {
-      cyl(B.paint, [-0.90, s * 0.68, MZ + 0.02], [10.0, s * 0.68, MZ + 0.02], 0.04, 0.04, 8);
-      cyl(B.paint, [-0.90, s * 0.46, MZ - 0.62], [10.0, s * 0.46, MZ - 0.62], 0.045, 0.045, 8);
-      cyl(B.paint, [3.4, s * 0.64, MZ + 0.42], [10.0, s * 0.62, MZ + 0.40], 0.025, 0.025, 6);
-      for (i = 0; i < 8; i++) {
-        fx = 3.4 + i * 0.82;
-        bar(B.paint, [fx, s * 0.68, MZ + 0.02], [fx, s * 0.46, MZ - 0.62], 0.06);
-        if (i < 7) bar(B.paint, [fx, s * 0.46, MZ - 0.62], [fx + 0.82, s * 0.68, MZ + 0.02], 0.045);
+      a = Math.PI * 1.12;
+      cylX(B.paint, U0 + 1.50, U0 + UB, s * rr1 * Math.cos(a), MZ + rr1 * Math.sin(a), 0.05, 8);
+      /* the trough's side ribs */
+      for (i = 0; i < 5; i++) {
+        x = U0 + 2.0 + i * 0.95;
+        slab(B.paint, [x, s * 0.42, MZ - 0.30], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.03, 0.10, 0.20);
+      }
+      /* the curved heel arms from the pin to the trough (B1, F1) */
+      var HA = [[0, s * 0.72, 0], [0.45, s * 0.66, MZ - 0.30], [U0 + 2.2, s * 0.50, MZ - 0.46]];
+      for (i = 0; i + 1 < HA.length; i++) cyl(B.paint, HA[i], HA[i + 1], 0.075, 0.07, 10, i > 0, false);
+    }
+    box(B.paint, U0 + 1.55, U0 + UB, -0.10, 0.10, MZ - rr1 - 0.14, MZ - rr1 + 0.02);
+    cylY(B.dark, 0, -0.56, 0.56, 0, 0.12, 14);
+    box(B.paint, -0.15, 0.15, -0.62, 0.62, -0.12, 0.10);
+    /* clamp bands over the body */
+    [U0 + 2.5, U0 + 4.6].forEach(function (xx) {
+      for (k = 0; k < 10; k++) {
+        var a0 = k / 10 * Math.PI, a1 = (k + 1) / 10 * Math.PI;
+        bar(B.dark, [xx, (MR + 0.02) * Math.cos(a0), MZ + (MR + 0.02) * Math.sin(a0)], [xx, (MR + 0.02) * Math.cos(a1), MZ + (MR + 0.02) * Math.sin(a1)], 0.05);
+      }
+    });
+    /* the warhead cage: elongated hexagonal frames round the warhead (K1 head-on), longerons at their
+       corners, diagonals down the sides; semicircular saddles under the cone (W0, B1) */
+    var HX = [], NF = 5, CX0 = U0 + UB - 0.10, CX1 = U0 + MLEN - 0.25, cw = 0.58, ch = 0.62, cz = MZ + 0.02;
+    for (k = 0; k < 6; k++) { a = Math.PI / 2 + k * Math.PI / 3; HX.push([cw * Math.cos(a) / Math.cos(Math.PI / 6) * 0.92, ch * Math.sin(a)]); }
+    for (i = 0; i < NF; i++) {
+      x = CX0 + (CX1 - CX0) * i / (NF - 1);
+      for (k = 0; k < 6; k++) bar(B.paint, [x, HX[k][0], cz + HX[k][1]], [x, HX[(k + 1) % 6][0], cz + HX[(k + 1) % 6][1]], 0.05);
+      if (i + 1 < NF) {
+        var x2 = CX0 + (CX1 - CX0) * (i + 1) / (NF - 1);
+        for (s = -1; s <= 1; s += 2) {
+          bar(B.paint, [x, HX[s > 0 ? 1 : 5][0], cz + HX[s > 0 ? 1 : 5][1]], [x2, HX[s > 0 ? 2 : 4][0], cz + HX[s > 0 ? 2 : 4][1]], 0.035);
+        }
       }
     }
-    /* hoop frames: three-quarter rings round the round, every 1.6 m past the guide */
-    for (i = 0; i < 6; i++) {
-      fx = 3.8 + i * 1.15;
-      n = 8;
-      for (k = 0; k < n; k++) {
-        var a0 = Math.PI * 0.95 + k / n * Math.PI * 1.10, a1 = Math.PI * 0.95 + (k + 1) / n * Math.PI * 1.10;
-        bar(B.paint, [fx, 0.70 * Math.cos(a0), MZ + 0.70 * Math.sin(a0)], [fx, 0.70 * Math.cos(a1), MZ + 0.70 * Math.sin(a1)], 0.045);
-      }
-    }
-    /* saddles under the round and the straps over it */
+    for (k = 0; k < 6; k++) cyl(B.paint, [CX0, HX[k][0], cz + HX[k][1]], [CX1, HX[k][0], cz + HX[k][1]], 0.035, 0.035, 6);
     for (i = 0; i < 3; i++) {
-      fx = [1.6, 4.7, 8.1][i];
-      box(B.paint, fx - 0.28, fx + 0.28, -0.30, 0.30, MZ - 0.58, MZ - 0.36);
-      box(B.dark, fx - 0.07, fx + 0.07, -0.47, 0.47, MZ - 0.50, MZ - 0.40);
+      x = U0 + UB + 0.8 + i * 1.1;
+      var rs = [0.43, 0.395, 0.33][i] + 0.04;
+      for (k = 0; k < 8; k++) {
+        var b0 = Math.PI + k / 8 * Math.PI, b1 = Math.PI + (k + 1) / 8 * Math.PI;
+        bar(B.paint, [x, rs * Math.cos(b0), MZ + rs * Math.sin(b0)], [x, rs * Math.cos(b1), MZ + rs * Math.sin(b1)], 0.04);
+      }
+      bar(B.paint, [x, 0, MZ - rs], [x, 0, cz + HX[3][1]], 0.04);
     }
-    /* the nose frame at the end of the boom */
-    cylX(B.paint, 9.95, 10.05, 0, MZ - 0.1, 0.14, 12);
   }
 
   function build(THREE, M, C) {
-    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), EB = bins(T), WB = [], i, wg, E;
-    for (i = 0; i < NW; i++) WB.push({ bin: new Bin(T.dark, false) });
-    addHull(HB, WB);
+    var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), EB = bins(T), i, wg, WB, E;
+    addHull(HB);
     flush(THREE, g, HB);
-    for (i = 0; i < NW; i++) {
+    for (i = 0; i < XW.length; i++) {
+      WB = new Bin(T.wheel, false, true);
+      addWheel(WB);
       wg = new THREE.Group();
       wg.name = "roadwheel";
       wg.position.set(XW[i], 0, ZW);
-      flush(THREE, wg, { dark: WB[i].bin });
+      flush(THREE, wg, { wheel: WB });
       g.add(wg);
     }
     addErector(EB);
@@ -594,8 +683,8 @@ var HeroScudA = (function () {
     E.position.set(PX, 0, PZ);
     flush(THREE, E, EB);
     E.userData.el = EL;
-    /* mouth x, y, z and the rear x, in this group's frame: the motor lights at the tail of the round */
-    E.userData.cells = [[0.60, 0, MZ, -0.10]];
+    /* mouth x, y, z and the rear x, in this group's frame: the motor lights at the heel of the round */
+    E.userData.cells = [[U0 + 0.30, 0, MZ, U0 - 0.10]];
     g.add(E);
     g.name = "pact_e50_tel";
     return g;
@@ -604,8 +693,8 @@ var HeroScudA = (function () {
   return { build: build };
 })();
 
-/* len is the measured X extent: tail plate to missile tip */
+/* len is the measured X extent: the rear heel gear to the missile's tip */
 UNIT_MODELS["pact_e50_tel"] = {
-  len: 11.64,
+  len: 10.53,
   build: function (THREE, M, C) { return HeroScudA.build(THREE, M, C); }
 };
