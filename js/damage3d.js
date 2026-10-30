@@ -160,6 +160,7 @@ var Damage3D = (function () {
     fra_e60_spaag: "front", fra_e80_spaag: "front",                    // AMX-13 DCA
     pla_e00_spaag: "front",                                            // PGZ-09 on the PLZ-05 family chassis
     pla_e00_lighttank: "front",                                        // ZTD-05: the Type 05 family's engine forward, turret aft
+    pla_e90_spaag: "front",                                            // PGZ-95: engine forward, turret aft (Beijing museum)
     fra_e80_tankdestroyer: "front",                                    // VAB: engine behind the driver
     nato_e60_spaag: "front", nato_e80_spaag: "front",                  // M163 Vulcan on the M113
     nato_e90_spaag: "front", roc_e90_spaag: "front",                   // Avenger on the HMMWV
