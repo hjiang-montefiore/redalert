@@ -736,7 +736,7 @@ var HeroIl76 = (function () {
     /* the star: small and forward on the 1988 aeroplane, large mid-fin on today's
        A-50U and Il-78 (the photographs) */
     var sa = P.starAt;
-    star(g, finU(sa[0]), finV(sa[1]), sa[2] * TW / 17, sa[2] * 252 / 10.5, spec.star);
+    if (spec.star) star(g, finU(sa[0]), finV(sa[1]), sa[2] * TW / 17, sa[2] * 252 / 10.5, spec.star);
     /* ---- wing band */
     g.fillStyle = P.wing; g.fillRect(0, 768, TW, 256);
     g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1.5;
@@ -861,7 +861,11 @@ var HeroA50 = { build: function (THREE, M, C, spec) { return HeroIl76.build(THRE
     pact_e80_awacs: { kind: "a50", star: "soviet",  paint: "a50_88" },
     pact_e90_awacs: { kind: "a50", star: "russian", paint: "a50_88" },
     pact_e00_awacs: { kind: "a50", star: "russian", paint: "a50u" },
-    awacs_p:        { kind: "a50", star: "russian", paint: "a50u" }
+    awacs_p:        { kind: "a50", star: "russian", paint: "a50u" },
+    /* the PLAAF's KJ-2000 (2007) is an Il-76 with a FIXED dome carrying three AESA arrays
+       (en.wikipedia "Shaanxi KJ-2000"); drawn as the A-50U, a STAND-IN: the A-50's rotodome and
+       its nose and tail fittings are not the KJ-2000's.  No star (star: null). */
+    pla_e00_awacs:  { kind: "a50", star: null,      paint: "a50u" }
   };
   function reg(key) {
     UNIT_MODELS[key] = {
