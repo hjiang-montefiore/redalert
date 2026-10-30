@@ -700,9 +700,9 @@ UNIT_MODELS["pact_e80_ifv"] = {
 
 /* The PLA's WZ-501 (Type 86, service 1986) is the BMP-1 built in China, reverse-engineered
    from an export BMP-1 obtained from Egypt in 1980 (en.wikipedia "Type 86 (infantry
-   fighting vehicle)"): the
-   same hull, running gear, turret, 73 mm gun and HJ-73 (a Malyutka copy).  Drawn as the
-   BMP-1 (variant A); small differences of the Chinese vehicles are NOT drawn.  No markings. */
+   fighting vehicle)"): the same hull, running gear, turret, 73 mm gun and HJ-73 (a
+   Malyutka copy).  Drawn as the BMP-1 (variant A); small differences of the Chinese
+   vehicles are NOT drawn.  No markings. */
 UNIT_MODELS["pla_e80_ifv"] = {
   len: 6.755,
   build: function (THREE, M, C) { return HeroBMP12.build(THREE, M, C, "A"); }
