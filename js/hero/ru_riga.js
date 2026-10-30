@@ -945,3 +945,12 @@ UNIT_MODELS["pact_e50_corvette"] = {
   len: 91.0,
   build: function (THREE, M, C) { return HeroRiga.build(THREE, M, C); }
 };
+
+/* The PLAN's Type 6601 frigates were Project 50 (Riga) ships: "4 ships were built in kits
+   for the People's Liberation Army Navy to be licence assembled in China as Chengdu class
+   (Type 6601/01) frigate" (en.wikipedia "Riga-class frigate").  Drawn as this Project 50
+   model; any differences of the Chinese-assembled ships are NOT drawn.  No markings. */
+UNIT_MODELS["pla_e50_corvette"] = {
+  len: 91.0,
+  build: function (THREE, M, C) { return HeroRiga.build(THREE, M, C); }
+};
