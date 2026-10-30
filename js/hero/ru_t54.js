@@ -725,3 +725,11 @@ UNIT_MODELS["pact_e50_mbt"] = {
   len: 9.54,
   build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "A"); }
 };
+
+/* The PLA's Type 59 (ZTZ-59, WZ-120) is the T-54A built under licence from 1959: drawn as
+   the T-54A, no markings.  NOT checked against Type 59 photographs: later Type 59s carry
+   an IR searchlight and other refits that are not drawn here. */
+UNIT_MODELS["pla_e60_mbt"] = {
+  len: 9.54,
+  build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "A"); }
+};

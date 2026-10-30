@@ -320,10 +320,12 @@ var HeroIl10 = (function () {
   function blueHalf(sm) {        /* half-width of the blue belly band, in v (C) */
     return sm < 1.2 ? lerp(0.23, 0.215, sm / 1.2) : sm < 6.5 ? lerp(0.215, 0.17, (sm - 1.2) / 5.3) : lerp(0.17, 0.12, clamp((sm - 6.5) / 4.0, 0, 1));
   }
-  var _sheets = null;
-  function sheets() {
-    if (_sheets) return _sheets;
-    _sheets = {};
+  /* plain: no national marking (the PLA row, see the foot of the file); cached per marking */
+  var _sheetsBy = {}, _sheets;
+  function sheets(plain) {
+    var sk = plain ? "plain" : "star";
+    if (_sheetsBy[sk]) return _sheetsBy[sk];
+    _sheets = _sheetsBy[sk] = {};
     try {
       var W = 1024, H = 512, cv = canvas(W, H), g = cv.getContext("2d"), R = rngFor(1044), i;
       g.fillStyle = PAL.top; g.fillRect(0, 0, W, H);
@@ -369,9 +371,11 @@ var HeroIl10 = (function () {
       var sm = 8.45, sd = drw(sm), hw = tab("hw", sd), hh = (tab("zt", sd) - tab("zb", sd)) / 2;
       var girth = PI * (3 * (hw + hh) - Math.sqrt((3 * hw + hh) * (hw + 3 * hh)));
       var sx = 0.9 * W / LEN, sy = H / girth, rr = 0.36;
-      star(g, bu(sm) * W, 0.985 * H - 0.0 * H, rr, sx, sy);           /* port: v ~ 0.015 */
-      star(g, bu(sm) * W, 0.515 * H, rr, sx, -sy);                     /* starboard: v ~ 0.485, point to the top */
-      star(g, bu(sm) * W, -0.015 * H, rr, sx, sy);                     /* port star wrapping over row 0 */
+      if (!plain) {
+        star(g, bu(sm) * W, 0.985 * H - 0.0 * H, rr, sx, sy);           /* port: v ~ 0.015 */
+        star(g, bu(sm) * W, 0.515 * H, rr, sx, -sy);                     /* starboard: v ~ 0.485, point to the top */
+        star(g, bu(sm) * W, -0.015 * H, rr, sx, sy);                     /* port star wrapping over row 0 */
+      }
       _sheets.body = texOf(cv);
     } catch (e) { _sheets.body = null; }
     try {
@@ -404,7 +408,7 @@ var HeroIl10 = (function () {
       });
       /* the star on each upper wing (C), mid outer panel */
       var wsY = 5.05, wsS = wst(wsY), wsX = XN - (wsS.le + wsS.te) / 2;
-      star(g2, U(wsX), Vt(wsY), 0.52, W2 / (WU1 - WU0), H2 / (2 * HS), -PI / 2);   /* a point to the nose */
+      if (!plain) star(g2, U(wsX), Vt(wsY), 0.52, W2 / (WU1 - WU0), H2 / (2 * HS), -PI / 2);   /* a point to the nose */
       _sheets.wing = texOf(cv2);
     } catch (e) { _sheets.wing = null; }
     try {
@@ -417,7 +421,7 @@ var HeroIl10 = (function () {
       seams(g3, W3, H3, R3, 14, 0, W3, 0, H3);
       g3.strokeStyle = "rgba(16,18,14,0.6)"; g3.lineWidth = 2.2;
       g3.beginPath(); g3.moveTo(U3(10.72), V3(0.30)); g3.lineTo(U3(10.72), V3(1.80)); g3.stroke();   /* rudder hinge */
-      star(g3, U3(10.62), V3(1.02), 0.46, W3 / (FU1 - FU0), H3 / (FZ1 - FZ0));
+      if (!plain) star(g3, U3(10.62), V3(1.02), 0.46, W3 / (FU1 - FU0), H3 / (FZ1 - FZ0));
       _sheets.fin = texOf(cv3);
     } catch (e) { _sheets.fin = null; }
     return _sheets;
@@ -425,8 +429,8 @@ var HeroIl10 = (function () {
   var WU0 = 1.6, WU1 = 7.0;          /* wing sheet chord box, Il-10M stations (u along) */
   var FU0 = 9.0, FU1 = 12.0, FZ0 = 0.2, FZ1 = 1.95;
 
-  function makeMats(C) {
-    var S = sheets(), m = {}, tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
+  function makeMats(C, plain) {
+    var S = sheets(plain), m = {}, tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
     function sk(tex, fall) {
       var q = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.74, metalness: 0.10, side: V.DoubleSide });
       if (tex) q.map = tex; else q.color.set(fall);
@@ -605,7 +609,7 @@ var HeroIl10 = (function () {
     ink.push(disk);
   }
 
-  function build(THREE, M, C) {
+  function build(THREE, M, C, plain) {
     V = THREE;
     var side, k;
     var K = { body: [], wing: [], fin: [], under: [], team: [], metal: [], ink: [], glass: [], spin: [], propDisc: [] };
@@ -675,7 +679,7 @@ var HeroIl10 = (function () {
     G.metal.push(rod([XM(TW + 0.05), -0.07, ZG + 0.20], [XM(TW + 0.05), 0.07, ZG + 0.20], 0.03, 6));
     var tw = new V.TorusGeometry(0.13, 0.07, 6, 16); tw.rotateX(PI / 2); tw.translate(XM(TW + 0.05), 0, ZG + 0.20); G.ink.push(tw);
 
-    var mats = makeMats(C);
+    var mats = makeMats(C, plain);
     var root = new V.Group();
     emit(root, K, mats, ["body", "wing", "fin", "under", "team", "ink", "metal", "spin", "glass", "propDisc"]);
     var gear = new V.Group(); gear.name = "gear";
@@ -683,8 +687,15 @@ var HeroIl10 = (function () {
     root.add(gear);
     return root;
   }
-  return { build: build };
+  return { build: build, plain: function (THREE, M, C) { return build(THREE, M, C, true); } };
 })();
 
 /* len: the measured X extent, spinner tip (5.80) to rudder (-6.07) = F's 11.87 m */
 UNIT_MODELS["pact_e50_cas"] = { len: 11.87, build: function (THREE, M, C) { return HeroIl10.build(THREE, M, C); } };
+
+/* The PLA flew Soviet-supplied Il-10s from 1950 (the row says so).  This is the Il-10M,
+   NOT the Il-10 the PLA had: a STAND-IN until the Il-10 is drawn (the Il-10M's fuselage,
+   wing and tail are larger; the layout is the same and it is far nearer than the generic
+   air_specs airframe).  Drawn plain: the Soviet stars are left off and the PLAAF
+   star-and-bars is not drawn (no reference fetched), as the KPA rows do. */
+UNIT_MODELS["pla_e50_cas"] = { len: 11.87, build: HeroIl10.plain };

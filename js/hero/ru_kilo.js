@@ -653,3 +653,7 @@ UNIT_MODELS["pact_e80_sub"] = { len: 72.6, build: function (THREE, M, C) { retur
 UNIT_MODELS["pact_e90_sub"] = { len: 73.8, build: function (THREE, M, C) { return HeroKilo.build(THREE, M, C, "k636"); } };
 UNIT_MODELS["pact_e00_sub"] = { len: 73.8, build: function (THREE, M, C) { return HeroKilo.build(THREE, M, C, "k6363"); } };
 UNIT_MODELS["sub_p"]        = { len: 73.8, build: function (THREE, M, C) { return HeroKilo.build(THREE, M, C, "k6363"); } };
+
+/* The PLA bought Kilos from Russia from 1995 (row: 877EKM and 636); most were 636s, so
+   the row takes the 636 hull.  No markings drawn. */
+UNIT_MODELS["pla_e90_sub"]  = { len: 73.8, build: function (THREE, M, C) { return HeroKilo.build(THREE, M, C, "k636"); } };
