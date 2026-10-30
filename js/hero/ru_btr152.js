@@ -680,3 +680,7 @@ var HeroRuBtr152 = (function () {
 
 /* len is the measured X extent: the towing pintle under the tail to the tow hooks on the bumper */
 UNIT_MODELS["pact_e50_ifv"] = { len: 6.56, build: HeroRuBtr152.build };
+
+/* The PLA's Type 56 APC is the BTR-152 built under licence (row service 1958): same vehicle.
+   This model carries no markings, so it is used as it is. */
+UNIT_MODELS["pla_e50_ifv"] = { len: 6.56, build: HeroRuBtr152.build };

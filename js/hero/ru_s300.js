@@ -744,3 +744,8 @@ var HeroS300 = (function () {
 UNIT_MODELS["pact_e80_sam"] = { len: 12.3, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e80"); } };
 UNIT_MODELS["pact_e90_sam"] = { len: 12.3, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e90"); } };
 UNIT_MODELS["pact_e00_sam"] = { len: 12.3, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e00"); } };
+
+/* The PLA's S-300PMU (imported, row service 1993): drawn as the e90 row's 5P85SE
+   launcher on the MAZ-543M, in its Russian green.  NOT checked against photographs of
+   the PLA's own launchers or their paint. */
+UNIT_MODELS["pla_e90_sam"] = { len: 12.3, build: function (THREE, M, C) { return HeroS300.build(THREE, C, "e90"); } };

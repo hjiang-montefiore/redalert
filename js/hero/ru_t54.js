@@ -100,7 +100,18 @@ var HeroT54 = (function () {
   var VARIANTS = {
     A: { paint: { base: "#4c5636", blots: ["#434c2f", "#56603f"], seed: 54 }, canvas: "#4a4d36",
          dome: { AF: 1.28, AR: 1.24, AY: 1.16, drop: 0.13, H: 0.74 },
-         muz: 6.00, evac: [4.86, 5.95], drums: 2, aaMg: true }
+         muz: 6.00, evac: [4.86, 5.95], drums: 2, aaMg: true },
+    /* the PLA's Type 79 (WZ-121D, 1984): the Type 59's hull and turret with the 105 mm
+       Type 83 (L7) gun, thermal sleeve and fume extractor - see the PLA note at the foot */
+    T79: { paint: { base: "#4f5a3a", blots: ["#465031", "#58633f"], seed: 79 }, canvas: "#4a4d36",
+           dome: { AF: 1.28, AR: 1.24, AY: 1.16, drop: 0.13, H: 0.74 },
+           gun: "l7", muz: 6.45, fume: [2.05, 2.80], drums: 2, aaMg: true },
+    /* the PLA's Type 62 light tank (WZ-131): this model scaled per axis (sc: x, y, z) to
+       its published size, spoked road wheels, the 85 mm gun - see the PLA note at the foot */
+    T62: { paint: { base: "#56603e", blots: ["#4c5636", "#606a46"], seed: 62 }, canvas: "#545a40",
+           dome: { AF: 1.28, AR: 1.24, AY: 1.16, drop: 0.13, H: 0.74 },
+           sc: [0.92, 0.875, 0.97], wheel: "spoke",
+           muz: 4.85, evac: [4.12, 4.74], drums: 2, aaMg: true }
   };
 
   /* running gear (D1, P1, published track centres): pitch 0.88 m, front gap 1.10 m */
@@ -280,11 +291,21 @@ var HeroT54 = (function () {
     return { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false), canvas: new Bin(T.canvas, true, false, 1.0),
              team: new Bin(T.team, false) };
   }
-  function flush(THREE, group, B) {
-    var k, b, geo;
+  /* sc: an optional per-axis scale [sx, sy, sz] applied to the geometry (normals by the
+     inverse), for a variant drawn as this model resized (the Type 62) */
+  function flush(THREE, group, B, sc) {
+    var k, b, geo, i, nx, ny, nz, l;
     for (k in B) {
       b = B[k];
       if (!b.P.length) continue;
+      if (sc) {
+        for (i = 0; i < b.P.length; i += 3) {
+          b.P[i] *= sc[0]; b.P[i + 1] *= sc[1]; b.P[i + 2] *= sc[2];
+          nx = b.N[i] / sc[0]; ny = b.N[i + 1] / sc[1]; nz = b.N[i + 2] / sc[2];
+          l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+          b.N[i] = nx / l; b.N[i + 1] = ny / l; b.N[i + 2] = nz / l;
+        }
+      }
       geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.P), 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.N), 3));
@@ -521,6 +542,19 @@ var HeroT54 = (function () {
       cylY(W, 0, y - 0.15, y + 0.15, 0, 0.34, 16);
       cyl(W, [0, y + s * 0.25, 0], [0, y + s * 0.28, 0], 0.345, 0.20, 18);
       cylY(W, 0, y + s * 0.27, y + s * 0.30, 0, 0.12, 12);
+      if (V.wheel === "spoke") {
+        /* the Type 62's spoked wheel (P8, P9): ten spokes over a dark open dish */
+        W.col = HOLE;
+        cyl(W, [0, y + s * 0.255, 0], [0, y + s * 0.262, 0], 0.33, 0.33, 18);
+        W.col = RIB;
+        for (i = 0; i < 10; i++) {
+          a = i / 10 * TAU;
+          slab(W, [Math.cos(a) * 0.225, y + s * 0.27, Math.sin(a) * 0.225], [Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0, Math.cos(a)], 0.11, 0.014, 0.026);
+        }
+        W.col = TYRE;
+        cylY(W, 0, y + s * 0.27, y + s * 0.30, 0, 0.11, 12);
+        continue;
+      }
       W.col = HOLE;
       for (i = 0; i < 8; i++) {
         a = (i + 0.5) / 8 * TAU;
@@ -591,6 +625,7 @@ var HeroT54 = (function () {
 
   var GZ = 0.30;                                         /* gun axis above the ring (D1, P1) */
   function addGun(B, V) {
+    if (V.gun === "l7") return addL7(B, V);
     var M = V.muz, E0 = V.evac[0], E1 = V.evac[1], X0 = V.dome.AF - 0.25;
     /* the cast gun collar out of the embrasure, under the canvas cover */
     cylX(B.paint, X0, X0 + 0.35, 0, GZ, 0.19, 0.16, 16);
@@ -615,6 +650,28 @@ var HeroT54 = (function () {
     cylX(B.paint, E1, M, 0, GZ, 0.104, 0.100, 16);
     cylX(B.dark, M - 0.004, M + 0.002, 0, GZ, 0.052, 0.052, 12);
     /* coaxial MG port right of the gun, the gunner's sight port left (ru.wiki, P6) */
+    cylX(B.dark, X0 + 0.07, X0 + 0.27, -0.30, GZ - 0.02, 0.028, 0.028, 8);
+    cylX(B.dark, X0 + 0.05, X0 + 0.21, 0.31, GZ + 0.06, 0.05, 0.05, 10);
+  }
+  /* the Type 79's 105 mm Type 83 (P7): a cast collar out of the embrasure (no canvas
+     cover), the thermal sleeve with its clamp bands from the collar to the muzzle, the fume
+     extractor about a third of the way out, a short bare muzzle */
+  function addL7(B, V) {
+    var M = V.muz, X0 = V.dome.AF - 0.25, F0 = X0 + V.fume[0], F1 = X0 + V.fume[1], x;
+    cylX(B.paint, X0, X0 + 0.22, 0, GZ, 0.24, 0.20, 18);
+    cylX(B.paint, X0 + 0.22, X0 + 0.42, 0, GZ, 0.20, 0.13, 18);
+    cylX(B.paint, X0 + 0.42, F0, 0, GZ, 0.112, 0.108, 16);
+    cylX(B.paint, F0, F0 + 0.10, 0, GZ, 0.108, 0.150, 16);
+    cylX(B.paint, F0 + 0.10, F1 - 0.08, 0, GZ, 0.150, 0.150, 16);
+    cylX(B.paint, F1 - 0.08, F1, 0, GZ, 0.150, 0.104, 16);
+    cylX(B.paint, F1, M - 0.30, 0, GZ, 0.104, 0.098, 16);
+    cylX(B.paint, M - 0.30, M, 0, GZ, 0.082, 0.082, 14);
+    cylX(B.dark, M - 0.004, M + 0.002, 0, GZ, 0.050, 0.050, 12);
+    /* the sleeve's clamp bands, closer on the inboard run (P7) */
+    for (x = X0 + 0.62; x < F0 - 0.05; x += 0.36) cylX(B.dark, x, x + 0.04, 0, GZ, 0.120, 0.120, 14);
+    for (x = F1 + 0.30; x < M - 0.45; x += 0.50) cylX(B.dark, x, x + 0.04, 0, GZ, 0.110, 0.110, 14);
+    cylX(B.dark, F0 + 0.30, F0 + 0.34, 0, GZ, 0.156, 0.156, 14);
+    /* coaxial MG port right of the gun, the gunner's sight port left, as the T-54A */
     cylX(B.dark, X0 + 0.07, X0 + 0.27, -0.30, GZ - 0.02, 0.028, 0.028, 8);
     cylX(B.dark, X0 + 0.05, X0 + 0.21, 0.31, GZ + 0.06, 0.05, 0.05, 10);
   }
@@ -695,23 +752,25 @@ var HeroT54 = (function () {
   function build(THREE, M, C, which) {
     var V = VARIANTS[which] || VARIANTS.A, T = materials(THREE, C, V), g = new THREE.Group();
     var HB = bins(T), i, wg, WB, tg, TB = bins(T);
+    /* a resized variant: the wheels keep round (x scaled as z) so they spin true */
+    var sc = V.sc || null, sw = sc ? [sc[2], sc[1], sc[2]] : null, k3 = sc || [1, 1, 1];
     addHull(HB, V);
     addRunning(HB);
-    flush(THREE, g, HB);
+    flush(THREE, g, HB, sc);
     for (i = 0; i < XW.length; i++) {
       WB = new Bin(T.wheel, false, true);
       addWheel(WB, V);
       wg = new THREE.Group();
       wg.name = "roadwheel";
-      wg.position.set(XW[i], 0, ZW);
-      flush(THREE, wg, { wheel: WB });
+      wg.position.set(XW[i] * k3[0], 0, ZW * k3[2]);
+      flush(THREE, wg, { wheel: WB }, sw);
       g.add(wg);
     }
     addTurret(V, TB);
     tg = new THREE.Group();
     tg.name = "turret";
-    tg.position.set(TX, 0, DECK);
-    flush(THREE, tg, TB);
+    tg.position.set(TX * k3[0], 0, DECK * k3[2]);
+    flush(THREE, tg, TB, sc);
     g.add(tg);
     return g;
   }
@@ -724,4 +783,60 @@ var HeroT54 = (function () {
 UNIT_MODELS["pact_e50_mbt"] = {
   len: 9.54,
   build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "A"); }
+};
+
+/* The PLA's Type 59 (ZTZ-59, WZ-120) is the T-54A built under licence from 1959: drawn as
+   the T-54A, no markings.  NOT checked against Type 59 photographs: later Type 59s carry
+   an IR searchlight and other refits that are not drawn here. */
+UNIT_MODELS["pla_e60_mbt"] = {
+  len: 9.54,
+  build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "A"); }
+};
+
+/* ---- PLA: the Type 79 (pla_e80_mbt), drawn on this model (variant T79) ----------------
+   The Type 59 is the T-54A built under licence, and the Type 69 and Type 79 "share almost
+   identical hulls and turrets with the older Type 59" (en.wikipedia "Type 69 tank", citing
+   Gelbart 1996); the Type 79 (Type 69-III, WZ-121D, production 1984) carries the 105 mm Type
+   83 (an L7 development) with a replaceable thermal sleeve.  Published: hull 6.24 m, width
+   3.3 m, height 2.80 m, 36.7 t.
+     P7  "TYPE79-WUHAN-20250929.jpg" (Commons, a Type 79 displayed in Wuhan, 2025, front
+         right): the T-54A hull, five road wheels and dome turret; the long gun with the
+         sleeve's clamp bands and the fume extractor; a cast collar at the embrasure and NO
+         canvas cover; the 12.7 mm gun on the loader's hatch; the fender boxes; no skirts.
+   NOT drawn: side skirts (en.wikipedia lists "side-skirt armor" for the Type 79; the
+   photographed tank has none), the laser rangefinder housing and any IR light (none
+   visible in P7), its museum camouflage and number.  The rear (drums) is the T-54A's, not
+   checked against a Type 79.  Paint: PLA green, as the T-54A's, a different mottle. */
+UNIT_MODELS["pla_e80_mbt"] = {
+  len: 9.99,
+  build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "T79"); }
+};
+
+/* ---- PLA: the Type 62 light tank (pla_e60_lighttank, pla_e80_lighttank), variant T62 ----
+   The Type 62 (WZ-131) is a lightened, scaled-down Type 59 for southern China's soft ground
+   and hills (en.wikipedia "Type 62 tank").  Drawn as this model resized per axis to the
+   published size and given its own wheels and gun:
+     P8  "ChineseType62Tankgraphic.jpg" (Commons line drawing, side): the T-54-like layout -
+         five road wheels with the wide gap behind the first, the dome turret, the 12.7 mm gun
+         on the loader's hatch, a drum at the stern; SPOKED road wheels; the gun's muzzle
+         thickening.  Scaled from the 5.55 m hull: the gun reaches 1.67 m past the nose.
+     P9  "Type 62 light tank front-right 2016 Military Museum Beijing.jpg": the canvas cover
+         on the mantlet, the bore evacuator by the muzzle, the spoked wheels with tyres, the
+         lamps on the right front, the curved front mudguards, the fender boxes.
+     P10 "Type 62 tank - above.jpg": the dome, the hatches, the 12.7 mm, the fender boxes,
+         the louvred engine deck.
+   Published (en.wikipedia): hull 5.55 m, 7.9 m gun forward, width 2.86 m, height 2.25 m,
+   21 t, 85 mm Type 62-85TC gun.  Scale: x 0.92 (5.55 / 6.04), y 0.875 (2.86 / 3.27), z 0.97
+   (the roof a little under the published height, as the T-54A's).
+   NOT CONFIRMED, judgement calls: the per-axis scale (the Type 62 is not a uniform shrink:
+   its wheel pitch, turret and fender stowage are taken as the T-54A's, resized); the wheels'
+   spoke count (ten, P8); the drums (P8 shows one end-on, two drawn as the T-54A).  No stars
+   or numbers (P9, P10 carry them: not drawn).  len: the measured X extent, 7.72 m. */
+UNIT_MODELS["pla_e60_lighttank"] = {
+  len: 7.72,
+  build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "T62"); }
+};
+UNIT_MODELS["pla_e80_lighttank"] = {
+  len: 7.72,
+  build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "T62"); }
 };

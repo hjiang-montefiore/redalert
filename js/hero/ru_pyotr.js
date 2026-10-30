@@ -811,7 +811,7 @@ var HeroPyotr = (function () {
     var root = bake(THREE, g);
     var tb = bake(THREE, tw);
     tw.children.slice().forEach(function (c) { tw.remove(c); });
-    tb.children.forEach(function (c) { tw.add(c); });
+    tb.children.slice().forEach(function (c) { tw.add(c); });
     root.add(tw);
     return root;
   }

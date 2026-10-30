@@ -229,9 +229,11 @@ var HeroMiG17 = (function () {
      u along x over [FX0, FX1], v up z), the tailplane in the lower (v 0 to
      0.45, across |y|). The star sits on the fin where Monino shows it. */
   var FX0 = -5.90, FX1 = -1.20, FZ0 = 0.30, FZ1 = 2.62, TS1 = 3.80;
-  var _fn = null;
-  function finSheet(THREE) {
-    if (_fn !== null) return _fn;
+  /* plain: no national marking (the PLA J-5 row, see the foot of the file) */
+  var _fn = {};
+  function finSheet(THREE, plain) {
+    var fk = plain ? "plain" : "star";
+    if (_fn[fk] !== undefined) return _fn[fk];
     try {
       var W = 1024, H = 512, cv = canvas(W, H), g = cv.getContext("2d"), R = rngFor(4421);
       function U(x) { return (x - FX0) / (FX1 - FX0) * W; }
@@ -247,20 +249,20 @@ var HeroMiG17 = (function () {
       /* the trim tab low on the rudder */
       g.strokeRect(U(-5.05), V(1.30), U(-4.80) - U(-5.05), V(0.95) - V(1.30));
       /* the red star, one each face (Monino) */
-      star(g, U(-4.40), V(2.02), 0.24 * W / (FX1 - FX0), 0.24 * 0.5 * H / (FZ1 - FZ0));
+      if (!plain) star(g, U(-4.40), V(2.02), 0.24 * W / (FX1 - FX0), 0.24 * 0.5 * H / (FZ1 - FZ0));
       /* tailplane: elevator hinge about 0.3 of the chord */
       g.beginPath(); g.moveTo(U(-4.70), VT(0.10)); g.lineTo(U(-5.30), VT(1.55)); g.stroke();
       /* heat staining where the fin's foot hangs over the pipe */
       var hs = g.createLinearGradient(0, V(0.30), 0, V(0.90));
       hs.addColorStop(0, PAL.soot + "0.28)"); hs.addColorStop(1, PAL.soot + "0)");
       g.fillStyle = hs; g.fillRect(U(-4.40), V(0.90), U(-3.50) - U(-4.40), V(0.30) - V(0.90));
-      _fn = texOf(THREE, cv);
-    } catch (e) { _fn = null; }
-    return _fn;
+      _fn[fk] = texOf(THREE, cv);
+    } catch (e) { _fn[fk] = null; }
+    return _fn[fk];
   }
 
   /* ============================================================ materials */
-  function materials(THREE, C) {
+  function materials(THREE, C, plain) {
     function sk(tex, fall) {
       var m = new THREE.MeshStandardMaterial({
         color: 0xffffff, roughness: SKIN_R, metalness: SKIN_M, side: THREE.DoubleSide });
@@ -270,7 +272,7 @@ var HeroMiG17 = (function () {
     return {
       body: sk(bodySheet(THREE), PAL.lt),
       wing: sk(wingSheet(THREE), PAL.lt),
-      fin: sk(finSheet(THREE), PAL.lt),
+      fin: sk(finSheet(THREE, plain), PAL.lt),
       team: new THREE.MeshStandardMaterial({
         color: new THREE.Color((C && C.team !== undefined) ? C.team : 0xd03f3f),
         roughness: SKIN_R, metalness: SKIN_M, side: THREE.DoubleSide }),
@@ -480,9 +482,9 @@ var HeroMiG17 = (function () {
     return m;
   }
 
-  function build(THREE, M, C) {
+  function build(THREE, M, C, plain) {
     THREE_ = THREE;
-    var T = materials(THREE, C);
+    var T = materials(THREE, C, plain);
     var g = new THREE.Group();
     addBody(THREE, g, T);
     addIntake(THREE, g, T);
@@ -782,7 +784,7 @@ var HeroMiG17 = (function () {
     return out;
   }
 
-  return { build: build };
+  return { build: build, plain: function (THREE, M, C) { return build(THREE, M, C, true); } };
 })();
 
 /* len: the measured X extent, the lip fitting (5.535) to the tailplane
@@ -791,3 +793,9 @@ UNIT_MODELS["pact_e50_fighter"] = {
   len: 11.27,
   build: function (THREE, M, C) { return HeroMiG17.build(THREE, M, C); },
 };
+
+/* The PLA's Shenyang J-5 is the MiG-17F built under licence (from 1956), so it takes
+   this airframe whole.  Drawn plain: the Soviet fin star is left off and the PLAAF
+   star-and-bars insignia is not drawn (no reference fetched for it; the house rule of
+   the KPA rows, which drop the stars on their Soviet-built airframes). */
+UNIT_MODELS["pla_e50_fighter"] = { len: 11.27, build: HeroMiG17.plain };

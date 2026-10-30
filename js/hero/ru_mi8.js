@@ -121,7 +121,12 @@ var HeroMi8 = (function () {
     mt90:  { key: "mt90",  side:  1, trx: -12.76, trc: 0.305, oval: true,  pzu: false, radar: false,
              rig: false, star: "soviet",  scheme: "mt" },
     amtsh: { key: "amtsh", side:  1, trx: -12.76, trc: 0.305, oval: true,  pzu: true,  radar: true,
-             rig: true,  star: "russian", scheme: "amtsh" }
+             rig: true,  star: "russian", scheme: "amtsh" },
+    /* the PLA's Mi-17 / Mi-171 bought from Russia (pla_e90_transport): the mt90 airframe,
+       NO star (the PLAAF star-and-bars is not drawn, no reference fetched; the KPA rows'
+       rule); the paint is the mt scheme, NOT confirmed for PLA aircraft */
+    pla:   { key: "pla",   side:  1, trx: -12.76, trc: 0.305, oval: true,  pzu: false, radar: false,
+             rig: false, star: null,      scheme: "mt" }
   };
 
   /* Paint, sampled off the photographs and taken to about 0.8 of their
@@ -744,8 +749,10 @@ var HeroMi8 = (function () {
     var stx = -3.05, stz = Z(2.05);
     var sy0 = sideY(fus, stx, stz), sy1 = sideY(fus, stx, stz + 0.2);
     var lean = Math.atan2(sy0 - sy1, 0.2);
-    starLayers(marks, stx, stz, sy0, 1, 0.34, VR.star, lean);
-    starLayers(marks, stx, stz, sy0, -1, 0.34, VR.star, lean);
+    if (VR.star) {
+      starLayers(marks, stx, stz, sy0, 1, 0.34, VR.star, lean);
+      starLayers(marks, stx, stz, sy0, -1, 0.34, VR.star, lean);
+    }
 
     /* --------------------------------------------------- external tanks --
        Starboard (y-): the long tank with the KO-50 heater in its nose,
@@ -816,9 +823,11 @@ var HeroMi8 = (function () {
     mesh(g, dark, T.dark, "fittings_dark");
     mesh(g, metal, T.metal, "fittings");
     mesh(g, team, T.team, "team");
-    var mk = new V.Mesh(mergeColored(marks), T.mark);
-    mk.name = "markings";
-    g.add(mk);
+    if (marks.length) {
+      var mk = new V.Mesh(mergeColored(marks), T.mark);
+      mk.name = "markings";
+      g.add(mk);
+    }
 
     /* ============================================================ rotor == */
     var tilt = new V.Group();
@@ -891,7 +900,8 @@ var HeroMi8 = (function () {
     t:     function (THREE, M, C) { return build(THREE, M, C, VARIANTS.t); },
     mt80:  function (THREE, M, C) { return build(THREE, M, C, VARIANTS.mt80); },
     mt90:  function (THREE, M, C) { return build(THREE, M, C, VARIANTS.mt90); },
-    amtsh: function (THREE, M, C) { return build(THREE, M, C, VARIANTS.amtsh); }
+    amtsh: function (THREE, M, C) { return build(THREE, M, C, VARIANTS.amtsh); },
+    pla:   function (THREE, M, C) { return build(THREE, M, C, VARIANTS.pla); }
   };
 })();
 
@@ -900,3 +910,4 @@ UNIT_MODELS["pact_e80_transport"] = { len: 25.328, build: HeroMi8.mt80 };
 UNIT_MODELS["pact_e90_transport"] = { len: 25.328, build: HeroMi8.mt90 };
 UNIT_MODELS["pact_e00_transport"] = { len: 25.328, build: HeroMi8.amtsh };
 UNIT_MODELS["trans_p"]            = { len: 25.328, build: HeroMi8.amtsh };
+UNIT_MODELS["pla_e90_transport"]  = { len: 25.328, build: HeroMi8.pla };

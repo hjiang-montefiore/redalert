@@ -2,8 +2,8 @@
 
    One row draws it:
      pact_e50_tanker  "Tu-16Z"  (js/eras.js; service 1957, e50 only)
-   No other key uses this file. The Chinese H-6 rows (sbomber_c, pla_e90_tanker) are drawn
-   elsewhere (js/models3d_east.js and the parametric layer) and are not touched here.
+   Also, drawn plain (no star): pla_e90_tanker, the PLAAF's H-6U - see the note at the foot.
+   sbomber_c (the H-6N) is drawn in js/models3d_east.js and is not touched here.
 
    THE VARIANT. The Tu-16Z (Tu-16Yu, "izdeliye NZ") was not a new build: more than a hundred
    Tu-16A bombers were converted to the wing-to-wing system from 1955 (ru.wikipedia "Tu-16",
@@ -482,9 +482,12 @@ var HeroTu16Z = (function () {
     g.fillStyle = "#d8d8d2"; starPath(g, cx, cy, rx, ry, 1.12, rot); g.fill();
     g.fillStyle = "#b02a22"; starPath(g, cx, cy, rx, ry, 1.0, rot); g.fill();
   }
-  var _cv = null;
-  function paint() {
-    if (_cv) return _cv;
+  /* plain: no national marking (the PLA H-6 tanker row, see the foot of the file);
+     the painted sheet is cached per marking */
+  var _cvBy = {}, _cv = null;
+  function paint(plain) {
+    var pk = plain ? "plain" : "star";
+    if (_cvBy[pk]) return _cvBy[pk];
     var cv = document.createElement("canvas");
     cv.width = TWPX; cv.height = TH;
     var g = cv.getContext("2d"), sd = 4111, i, b, d, y;
@@ -553,7 +556,7 @@ var HeroTu16Z = (function () {
       gr.addColorStop(0, "rgba(58,52,46,0.42)"); gr.addColorStop(1, "rgba(58,52,46,0)");
       g.fillStyle = gr; g.fillRect(pxD(20.4), o + pxZ(0.75), pxD(27) - pxD(20.4), pxZ(-0.85) - pxZ(0.75));
       /* the national star on both sides of the fin (B, C, D) */
-      star(g, pxD(31.35), o + pxZ(4.25), 0.62 * PXM, 0.62 * PZM);
+      if (!plain) star(g, pxD(31.35), o + pxZ(4.25), 0.62 * PXM, 0.62 * PZM);
     });
     /* belly soot behind the nozzles */
     (function () {
@@ -564,6 +567,7 @@ var HeroTu16Z = (function () {
     /* stars on both faces of each wing, outboard of the outer fence (B, C) */
     [1, -1].forEach(function (s) {
       var w = wingAt(12.6), c = w[2] - w[1], dc = w[1] + 0.5 * c;
+      if (plain) return;
       star(g, pxD(dc), BY[0] + pxY(s * 12.6), 0.85 * PXM, 0.85 * PYM, PI);
       star(g, pxD(dc), BY[3] + pxY(s * 12.6), 0.85 * PXM, 0.85 * PYM, PI);
     });
@@ -572,20 +576,21 @@ var HeroTu16Z = (function () {
       g.fillStyle = "rgba(70,66,60," + (0.02 + R() * 0.05).toFixed(3) + ")";
       g.fillRect(R() * TWPX, R() * TH, 6 + R() * 30, 2 + R() * 5);
     }
-    _cv = cv;
+    _cv = _cvBy[pk] = cv;
     return cv;
   }
-  var _tex;
-  function skinTexture() {
-    if (_tex !== undefined) return _tex;
+  var _texBy = {};
+  function skinTexture(plain) {
+    var pk = plain ? "plain" : "star";
+    if (_texBy[pk] !== undefined) return _texBy[pk];
     var t = false;
     try {
-      t = new V.CanvasTexture(paint());
+      t = new V.CanvasTexture(paint(plain));
       t.wrapS = t.wrapT = V.ClampToEdgeWrapping;
       t.anisotropy = 4;
       if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
     } catch (e) { t = false; }
-    _tex = t;
+    _texBy[pk] = t;
     return t;
   }
   /* each face takes the band its normal looks into; UVs in 0..1 */
@@ -611,8 +616,8 @@ var HeroTu16Z = (function () {
     return geo;
   }
 
-  function makeMats(C) {
-    var m = {}, tc = (C && C.team !== undefined) ? C.team : "#3f7fd0", tex = skinTexture();
+  function makeMats(C, plain) {
+    var m = {}, tc = (C && C.team !== undefined) ? C.team : "#3f7fd0", tex = skinTexture(plain);
     m.skin = new V.MeshStandardMaterial({ color: tex ? 0xffffff : 0xaaacad, map: tex || null, roughness: 0.42,
                                           metalness: 0.10, side: V.DoubleSide });
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.82, metalness: 0.06, side: V.DoubleSide });
@@ -626,7 +631,7 @@ var HeroTu16Z = (function () {
     return m;
   }
 
-  function build(THREE, M, C) {
+  function build(THREE, M, C, plain) {
     V = THREE;
     var K = { skin: [], team: [], metal: [], ink: [], glass: [] }, G = { leg: [], tyre: [], door: [] };
     addFuselage(K);
@@ -636,7 +641,7 @@ var HeroTu16Z = (function () {
     addEngines(K);
     addTurrets(K);
     addGear(G);
-    var mats = makeMats(C), root = new V.Group();
+    var mats = makeMats(C, plain), root = new V.Group();
     ["skin", "team", "metal", "ink", "glass"].forEach(function (key) {
       if (!K[key].length) return;
       var geo = merge(K[key]);
@@ -648,11 +653,23 @@ var HeroTu16Z = (function () {
     root.add(gear);
     return root;
   }
-  return { build: build };
+  return { build: build, plain: function (THREE, M, C) { return build(THREE, M, C, true); } };
 })();
 
 /* len: the measured X extent, glazed nose tip to the tail-gun muzzles */
 UNIT_MODELS["pact_e50_tanker"] = {
   len: 34.8,
   build: function (THREE, M, C) { return HeroTu16Z.build(THREE, M, C); }
+};
+
+/* The PLAAF's HY-6U tanker (row pla_e90_tanker) is a Xi'an H-6, the Tu-16 built under licence
+   (en.wikipedia "Xi'an H-6"), so it takes this airframe drawn plain (no star; the PLAAF
+   insignia is not drawn).  A STAND-IN: the HY-6U refuels from two underwing pods, not this
+   Tu-16Z's wingtip hose, and has a metal nose cone in place of the glazed nose, with the
+   PV-23 fire control and the Type 244 radar deleted (the same article, aerial refuelling
+   variants); none of that is drawn.  Before this the row had no model and borrowed a
+   same-role peer's. */
+UNIT_MODELS["pla_e90_tanker"] = {
+  len: 34.8,
+  build: function (THREE, M, C) { return HeroTu16Z.plain(THREE, M, C); }
 };
