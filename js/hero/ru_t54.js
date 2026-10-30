@@ -100,7 +100,12 @@ var HeroT54 = (function () {
   var VARIANTS = {
     A: { paint: { base: "#4c5636", blots: ["#434c2f", "#56603f"], seed: 54 }, canvas: "#4a4d36",
          dome: { AF: 1.28, AR: 1.24, AY: 1.16, drop: 0.13, H: 0.74 },
-         muz: 6.00, evac: [4.86, 5.95], drums: 2, aaMg: true }
+         muz: 6.00, evac: [4.86, 5.95], drums: 2, aaMg: true },
+    /* the PLA's Type 79 (WZ-121D, 1984): the Type 59's hull and turret with the 105 mm
+       Type 83 (L7) gun, thermal sleeve and fume extractor - see the PLA note at the foot */
+    T79: { paint: { base: "#4f5a3a", blots: ["#465031", "#58633f"], seed: 79 }, canvas: "#4a4d36",
+           dome: { AF: 1.28, AR: 1.24, AY: 1.16, drop: 0.13, H: 0.74 },
+           gun: "l7", muz: 6.45, fume: [2.05, 2.80], drums: 2, aaMg: true }
   };
 
   /* running gear (D1, P1, published track centres): pitch 0.88 m, front gap 1.10 m */
@@ -591,6 +596,7 @@ var HeroT54 = (function () {
 
   var GZ = 0.30;                                         /* gun axis above the ring (D1, P1) */
   function addGun(B, V) {
+    if (V.gun === "l7") return addL7(B, V);
     var M = V.muz, E0 = V.evac[0], E1 = V.evac[1], X0 = V.dome.AF - 0.25;
     /* the cast gun collar out of the embrasure, under the canvas cover */
     cylX(B.paint, X0, X0 + 0.35, 0, GZ, 0.19, 0.16, 16);
@@ -615,6 +621,28 @@ var HeroT54 = (function () {
     cylX(B.paint, E1, M, 0, GZ, 0.104, 0.100, 16);
     cylX(B.dark, M - 0.004, M + 0.002, 0, GZ, 0.052, 0.052, 12);
     /* coaxial MG port right of the gun, the gunner's sight port left (ru.wiki, P6) */
+    cylX(B.dark, X0 + 0.07, X0 + 0.27, -0.30, GZ - 0.02, 0.028, 0.028, 8);
+    cylX(B.dark, X0 + 0.05, X0 + 0.21, 0.31, GZ + 0.06, 0.05, 0.05, 10);
+  }
+  /* the Type 79's 105 mm Type 83 (P7): a cast collar out of the embrasure (no canvas
+     cover), the thermal sleeve with its clamp bands from the collar to the muzzle, the fume
+     extractor about a third of the way out, a short bare muzzle */
+  function addL7(B, V) {
+    var M = V.muz, X0 = V.dome.AF - 0.25, F0 = X0 + V.fume[0], F1 = X0 + V.fume[1], x;
+    cylX(B.paint, X0, X0 + 0.22, 0, GZ, 0.24, 0.20, 18);
+    cylX(B.paint, X0 + 0.22, X0 + 0.42, 0, GZ, 0.20, 0.13, 18);
+    cylX(B.paint, X0 + 0.42, F0, 0, GZ, 0.112, 0.108, 16);
+    cylX(B.paint, F0, F0 + 0.10, 0, GZ, 0.108, 0.150, 16);
+    cylX(B.paint, F0 + 0.10, F1 - 0.08, 0, GZ, 0.150, 0.150, 16);
+    cylX(B.paint, F1 - 0.08, F1, 0, GZ, 0.150, 0.104, 16);
+    cylX(B.paint, F1, M - 0.30, 0, GZ, 0.104, 0.098, 16);
+    cylX(B.paint, M - 0.30, M, 0, GZ, 0.082, 0.082, 14);
+    cylX(B.dark, M - 0.004, M + 0.002, 0, GZ, 0.050, 0.050, 12);
+    /* the sleeve's clamp bands, closer on the inboard run (P7) */
+    for (x = X0 + 0.62; x < F0 - 0.05; x += 0.36) cylX(B.dark, x, x + 0.04, 0, GZ, 0.120, 0.120, 14);
+    for (x = F1 + 0.30; x < M - 0.45; x += 0.50) cylX(B.dark, x, x + 0.04, 0, GZ, 0.110, 0.110, 14);
+    cylX(B.dark, F0 + 0.30, F0 + 0.34, 0, GZ, 0.156, 0.156, 14);
+    /* coaxial MG port right of the gun, the gunner's sight port left, as the T-54A */
     cylX(B.dark, X0 + 0.07, X0 + 0.27, -0.30, GZ - 0.02, 0.028, 0.028, 8);
     cylX(B.dark, X0 + 0.05, X0 + 0.21, 0.31, GZ + 0.06, 0.05, 0.05, 10);
   }
@@ -732,4 +760,23 @@ UNIT_MODELS["pact_e50_mbt"] = {
 UNIT_MODELS["pla_e60_mbt"] = {
   len: 9.54,
   build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "A"); }
+};
+
+/* ---- PLA: the Type 79 (pla_e80_mbt), drawn on this model (variant T79) ----------------
+   The Type 59 is the T-54A built under licence, and the Type 69 and Type 79 "share almost
+   identical hulls and turrets with the older Type 59" (en.wikipedia "Type 69 tank", citing
+   Gelbart 1996); the Type 79 (Type 69-III, WZ-121D, production 1984) carries the 105 mm Type
+   83 (an L7 development) with a replaceable thermal sleeve.  Published: hull 6.24 m, width
+   3.3 m, height 2.80 m, 36.7 t.
+     P7  "TYPE79-WUHAN-20250929.jpg" (Commons, a Type 79 displayed in Wuhan, 2025, front
+         right): the T-54A hull, five road wheels and dome turret; the long gun with the
+         sleeve's clamp bands and the fume extractor; a cast collar at the embrasure and NO
+         canvas cover; the 12.7 mm gun on the loader's hatch; the fender boxes; no skirts.
+   NOT drawn: side skirts (en.wikipedia lists "side-skirt armor" for the Type 79; the
+   photographed tank has none), the laser rangefinder housing and any IR light (none
+   visible in P7), its museum camouflage and number.  The rear (drums) is the T-54A's, not
+   checked against a Type 79.  Paint: PLA green, as the T-54A's, a different mottle. */
+UNIT_MODELS["pla_e80_mbt"] = {
+  len: 9.99,
+  build: function (THREE, M, C) { return HeroT54.build(THREE, M, C, "T79"); }
 };
