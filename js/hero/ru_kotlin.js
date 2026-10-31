@@ -1019,7 +1019,7 @@ var HeroKotlin = (function () {
     var root = bake(THREE, g);
     var tbk = bake(THREE, tw);
     tw.children.slice().forEach(function (c) { tw.remove(c); });
-    tbk.children.forEach(function (c) { tw.add(c); });
+    tbk.children.slice().forEach(function (c) { tw.add(c); });
     root.add(tw);
     return root;
   }

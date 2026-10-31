@@ -682,3 +682,10 @@ UNIT_MODELS["pact_e60_missileboat"] = {
   len: 38.6,
   build: function (THREE, M, C) { return HeroOsaBoat.build(THREE, M, C); }
 };
+
+/* The PLA's Type 021 (Huangfeng) is a Chinese-built copy of the Project 205 Osa I: drawn
+   as the Osa I, no markings.  Small differences of the Chinese boats are NOT drawn. */
+UNIT_MODELS["pla_e60_missileboat"] = {
+  len: 38.6,
+  build: function (THREE, M, C) { return HeroOsaBoat.build(THREE, M, C); }
+};
