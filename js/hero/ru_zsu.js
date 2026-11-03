@@ -48,12 +48,22 @@
        P23a, whose 0.70 m wheel and 6.4 m hull agree on its scale;
      - Shilka barrels: two vertical pairs, left and right (ru.wiki: an upper and a lower
        cradle; P23d), not side by side.
+   2026-11-03, the better parts of the GitHub redo (HeroShilka, 3d4c383) moved in after a
+   photo comparison (Dresden, Grenada, "Shilka 01", the 1982 Soviet photograph):
+     - the RPK-2 is a DEEP drum with a painted radome cover on an A-frame each side, the
+       round drive housing on its right; the old shallow dark dish on a box tower is gone
+       (same 0.88 m size, same centre 3.13 m up, same 10 deg look);
+     - the exhaust silencer across the rear plate, seen end-on behind the stern in P23a,
+       was missing.  The rear plate moves 0.25 m forward (-3.27 to -3.02) so the silencer
+       ends at the old -3.33 and the overall length stays 6.66 m; the running gear is
+       unchanged, so the track's rear curve now stands 0.14 m behind the rear plate
+       (P23a shows the hull overhanging it by about 0.18 m: the price of the length).
    Kept from the old header (confirmed, en.wiki infoboxes): 57-2 hull 6.22 m (8.46 m over the
    guns), width 3.27 m, height 2.71 m (2.75 m with the tarpaulin), 28.1 t, four wheels a side,
    rear sprocket, no radar; Shilka length 6.535 m, width 3.125 m, 19 t.
    Drawn: 57-2 hull 6.30 m over the fender ends, 3.30 m wide, rails 2.74 m, 8.39 m over the
-   guns at 20 deg; Shilka 6.66 m (barrel tips at 10 deg), 3.16 m, turret roof 2.47 m, dish
-   top 3.59 m.
+   guns at 20 deg; Shilka 6.66 m (silencer to barrel tips at 10 deg; hull plates 6.29 m),
+   3.16 m, turret roof 2.47 m, radar drum top 3.59 m.
 
    Recognition list (each drawn; where it rests):
      ZSU-57-2
@@ -77,11 +87,13 @@
       4. The big rounded cheek boxes either side of the guns [P23d] [P23a].
       5. Four 23 mm barrels in two vertical pairs, left and right, with the link brackets
          [P23d] [P23c] [D23].
-      6. The RPK-2 dish raised on its mast over the turret rear, the drive box behind it
-         [D23] [P23a] [P23b] [P23c].
+      6. The RPK-2 drum raised on its A-frames over the turret rear, the round drive
+         housing on its right, the low box under it [D23] [P23a] [P23b] [P23c].
       7. The turret-side X panel and the long ribbed box [P23b] [P23c].
       8. Hull-side access plates, the driver's raised hatch cover front left, the lamp box
          front right [P23a] [P23b] [P23d].
+      9. The exhaust silencer lying across the rear plate, its tail pipe turned out to the
+         right [P23a] (GitHub HeroShilka P2).
 
    Variant notes and what was NOT drawn:
      - pact_e60_spaag names the 1965 ZSU-23-4.  The photographs are of later vehicles
@@ -706,15 +718,19 @@ var HeroZsu = (function () {
      raised, REAR sprocket (en.wiki), 382 mm track */
   var S = {
     XW: [2.16, 1.33, 0.50, -0.33, -1.16, -1.99], ZW: 0.43, RW: 0.35, TY: 1.37, TW: 0.19,
-    IDL: [2.92, 0.66, 0.25], SPR: [-2.78, 0.62, 0.28], DECK: 1.76, HX: 0.0
+    IDL: [2.92, 0.66, 0.25], SPR: [-2.78, 0.62, 0.28], DECK: 1.76, HX: 0.0, XR: -3.27
   };
   /* hull half-section [D23 front] [P23d]: belly, the lower hull between the tracks, the
      sponson underside over the track, the vertical upper side, the deck edge */
   var HULL23 = [[0, 0.375], [1.08, 0.375], [1.15, 0.46], [1.15, 1.00], [1.50, 1.02], [1.525, 1.06],
                 [1.525, 1.71], [1.50, S.DECK], [0, S.DECK]];
   /* stations [x, deck/glacis top, belly/plate bottom]: x off [D23], z off [P23a] at 101 px/m
-     (its 0.70 m wheel and 6.4 m hull agree), clearance 375 mm (en.wiki) */
-  var HST23 = [[-3.27, 1.62, 0.78], [-3.22, 1.71, 0.60], [-3.12, S.DECK, 0.40], [-2.95, S.DECK, 0.375],
+     (its 0.70 m wheel and 6.4 m hull agree), clearance 375 mm (en.wiki).  The rear plate
+     S.XR stays at -3.27 with the exhaust silencer behind it, so the hull overhangs the
+     track's rear curve as the Dresden photograph shows (moving the plate forward 0.25 m to
+     keep the old 6.66 m overall left the track standing 0.14 m proud of the plate).  The
+     overall length grows by the silencer; len follows the measured extent */
+  var HST23 = [[S.XR, 1.62, 0.78], [S.XR + 0.05, 1.71, 0.60], [S.XR + 0.15, S.DECK, 0.40], [S.XR + 0.32, S.DECK, 0.375],
                [2.70, S.DECK, 0.375], [2.88, 1.62, 0.50], [3.05, 1.47, 0.72], [3.18, 1.37, 0.98],
                [3.27, 1.30, 1.18]];
   function hull23(B) {
@@ -734,17 +750,29 @@ var HeroZsu = (function () {
     planeBox(T, [3.27, 0, 1.30], gu, [0, 1, 0], gn, 0.10, 0.40, -0.10, 0.12, 0, 0.012);
     for (s = -1; s <= 1; s += 2) {
       box(D, 3.18, 3.30, s * 0.55 - 0.06, s * 0.55 + 0.06, 1.10, 1.22);
-      box(D, -3.33, -3.22, s * 0.62 - 0.06, s * 0.62 + 0.06, 1.05, 1.17);
+      box(D, S.XR - 0.06, S.XR + 0.05, s * 0.62 - 0.06, s * 0.62 + 0.06, 0.84, 0.96);
     }
     /* deck: the plate ahead of the turret, the engine deck louvres and the exhaust grille
        across the stern, the team plate */
     box(P, 1.75, 2.62, -1.30, 1.30, S.DECK - 0.01, S.DECK + 0.03);
-    box(D, -3.05, -1.75, -1.10, 1.10, S.DECK - 0.01, S.DECK + 0.012);
-    for (x = -3.0; x < -1.80; x += 0.13) box(P, x, x + 0.05, -1.08, 1.08, S.DECK + 0.012, S.DECK + 0.035);
+    box(D, S.XR + 0.22, -1.75, -1.10, 1.10, S.DECK - 0.01, S.DECK + 0.012);
+    for (x = S.XR + 0.27; x < -1.80; x += 0.13) box(P, x, x + 0.05, -1.08, 1.08, S.DECK + 0.012, S.DECK + 0.035);
     box(P, -1.65, -1.25, -0.90, -0.30, S.DECK - 0.01, S.DECK + 0.04);
     box(T, -1.60, -1.30, 0.35, 0.85, S.DECK, S.DECK + 0.015);
-    box(D, -3.30, -3.26, -0.90, 0.90, 1.32, 1.56);
-    for (k = 0; k < 5; k++) box(P, -3.31, -3.27, -0.88, 0.88, 1.34 + k * 0.045, 1.355 + k * 0.045);
+    box(D, S.XR - 0.03, S.XR + 0.01, -0.90, 0.90, 1.32, 1.56);
+    for (k = 0; k < 5; k++) box(P, S.XR - 0.04, S.XR, -0.88, 0.88, 1.34 + k * 0.045, 1.355 + k * 0.045);
+    /* the exhaust silencer lying across the rear plate below the grille, on three
+       brackets, two straps round it, the right-hand end coned down to a tail pipe turned
+       out to the right: seen end-on behind the stern in [P23a] (centre 1.17 m up, about
+       0.30 m across), as the GitHub HeroShilka (3d4c383) drew it */
+    var mx = S.XR - 0.16, mz = 1.17;
+    cyl(P, [mx, -1.16, mz], [mx, 0.92, mz], 0.15, 0.15, 18);
+    cyl(P, [mx, 0.92, mz], [mx, 0.98, mz], 0.15, 0.11, 18);
+    cyl(P, [mx, -1.30, mz], [mx, -1.16, mz], 0.09, 0.15, 18);
+    cyl(P, [mx - 0.02, -1.44, mz - 0.03], [mx, -1.30, mz], 0.075, 0.075, 12);
+    cyl(D, [mx - 0.0215, -1.452, mz - 0.032], [mx - 0.02, -1.44, mz - 0.03], 0.06, 0.06, 12);
+    for (k = -1; k <= 1; k++) box(D, S.XR - 0.12, S.XR, k * 0.75 - 0.04, k * 0.75 + 0.04, mz - 0.05, mz + 0.05);
+    for (k = -1; k <= 1; k += 2) cylY(D, mx, k * 0.45 - 0.02, k * 0.45 + 0.02, mz, 0.153, 18);
     /* hull sides.  Right [P23a]: two large access panels and a small one, a filler cap;
        left [P23b]: two round plates, the long grab rail */
     for (s = -1; s <= 1; s += 2) {
@@ -762,7 +790,7 @@ var HeroZsu = (function () {
         box(D, -1.80, 0.40, yo, yo + 0.012, 1.52, 1.55);
       }
       /* the sponson's lower lip */
-      box(D, -3.10, 2.80, s * 1.50, s * 1.53, 1.00, 1.03);
+      box(D, S.XR + 0.17, 2.80, s * 1.50, s * 1.53, 1.00, 1.03);
     }
     /* the track, the raised idler at the front, the toothed sprocket at the rear */
     /* the top run sags onto the wheel tops between idler and sprocket [P23a] [P23e] */
@@ -852,24 +880,32 @@ var HeroZsu = (function () {
     box(P, 0.58, 0.68, -0.72, -0.43, 2.24, 2.34);
     box(T, -0.10, 0.30, -0.25, 0.25, 2.24, 2.255);
     box(D, 0.80, 1.10, 0.30, 0.50, 2.24, 2.27);
-    /* the radar: the drive pedestal over the turret rear, the folding mast, the RPK-2
-       dish raised and facing forward, its feed, and the electronics box behind [P23a]
-       [P23b] [P23c] [D23] */
-    box(P, -1.62, -0.92, -0.42, 0.42, 2.24, 2.40);
-    box(P, -1.70, -1.20, -0.30, 0.30, 2.40, 2.62);
+    /* the RPK-2 radar, raised [P23a] [P23b] [P23c] and the 2026-11-03 sheets: a DEEP drum
+       (0.88 m across, about 0.4 of that deep, a cone closing its back) with a painted
+       radome cover in a raised lip, never an open dish; hung on trunnions, the round
+       drive housing on the RIGHT [P23a, soviet1982]; carried on an A-frame each side whose
+       feet straddle a low box on the roof [P23a, shilka01].  Drum and frame after the
+       GitHub HeroShilka (3d4c383), fitted to this turret: the centre (-1.05, 2.90 before
+       the lift, 3.13 m up), the 0.88 m size and the 10 deg look kept from the old dish */
+    var dc = [-1.05, 0, 2.90], dn = unit([1, 0, 0.18]), TRX = -1.22, TRZ = 2.88;
+    function dp(a) { return [dc[0] + dn[0] * a, 0, dc[2] + dn[2] * a]; }
+    box(P, -1.48, -1.06, -0.26, 0.26, 2.24, 2.42);
+    box(D, -1.485, -1.475, -0.18, 0.18, 2.28, 2.38);
+    cylZ(D, TRX, 0, 2.42, 2.45, 0.12, 14);
     for (s = -1; s <= 1; s += 2) {
-      cyl(P, [-1.30, s * 0.22, 2.40], [-1.22, s * 0.20, 2.88], 0.045, 0.040, 8);
-      cylY(D, -1.22, s * 0.16, s * 0.27, 2.88, 0.06, 10);
+      cyl(P, [-1.48, s * 0.32, 2.24], [TRX, s * 0.50, TRZ - 0.04], 0.032, 0.028, 8);
+      cyl(P, [-0.98, s * 0.32, 2.24], [TRX, s * 0.50, TRZ - 0.04], 0.032, 0.028, 8);
+      cyl(D, [-1.48, s * 0.32, 2.30], [-0.98, s * 0.32, 2.30], 0.018, 0.018, 6);
     }
-    cylY(P, -1.22, -0.18, 0.18, 2.88, 0.07, 12);
-    var dc = [-1.05, 0, 2.90], dn = unit([1, 0, 0.18]);
-    cyl(P, [dc[0] - dn[0] * 0.20, 0, dc[2] - dn[2] * 0.20], dc, 0.10, 0.44, 28);
-    cyl(D, dc, [dc[0] + dn[0] * 0.012, 0, dc[2] + dn[2] * 0.012], 0.42, 0.42, 28);
-    cyl(D, dc, [dc[0] + dn[0] * 0.30, 0, dc[2] + dn[2] * 0.30], 0.018, 0.018, 6);
-    cyl(P, [dc[0] + dn[0] * 0.30, 0, dc[2] + dn[2] * 0.30], [dc[0] + dn[0] * 0.36, 0, dc[2] + dn[2] * 0.36], 0.04, 0.03, 8);
-    for (s = -1; s <= 1; s += 2) cyl(D, [dc[0] + 0.02, s * 0.30, dc[2] + 0.02], [dc[0] + dn[0] * 0.30, 0, dc[2] + dn[2] * 0.30], 0.008, 0.008, 4);
-    box(P, -1.55, -1.24, -0.22, 0.22, 2.70, 3.06);
-    box(D, -1.555, -1.54, -0.15, 0.15, 2.78, 2.98);
+    cylY(P, TRX, -0.57, -0.43, TRZ, 0.15, 18);
+    cylY(D, TRX, -0.61, -0.57, TRZ, 0.06, 10);
+    cylY(P, TRX, 0.43, 0.53, TRZ, 0.09, 12);
+    cylY(D, TRX, 0.53, 0.56, TRZ, 0.045, 8);
+    cyl(P, dp(-0.352), dp(-0.246), 0.264, 0.42, 24);
+    cyl(P, dp(-0.246), dp(0.06), 0.42, 0.44, 28);
+    cyl(P, dp(0.06), dp(0.10), 0.446, 0.446, 28);
+    cyl(P, dp(0.10), dp(0.13), 0.40, 0.30, 28);
+    cyl(D, dp(0.10), dp(0.106), 0.403, 0.403, 28, true);
     var b, j2;
     for (b in B) for (j2 = 2; j2 < B[b].P.length; j2 += 3) B[b].P[j2] += S.DECK - 1.53;
   }
@@ -902,6 +938,6 @@ var HeroZsu = (function () {
 })();
 
 UNIT_MODELS["pact_e50_spaag"] = { len: 8.39, build: function (THREE, M, C) { return HeroZsu.build(THREE, M, C, "Z57"); } };
-UNIT_MODELS["pact_e60_spaag"] = { len: 6.66, build: function (THREE, M, C) { return HeroZsu.build(THREE, M, C, "Z23"); } };
+UNIT_MODELS["pact_e60_spaag"] = { len: 6.91, build: function (THREE, M, C) { return HeroZsu.build(THREE, M, C, "Z23"); } };
 /* the KPA's ZSU-57-2 (row service 1968): the same vehicle, no markings drawn */
 UNIT_MODELS["kpa_e60_spaag"] = { len: 8.39, build: function (THREE, M, C) { return HeroZsu.build(THREE, M, C, "Z57"); } };
