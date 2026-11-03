@@ -1,10 +1,10 @@
 /* ======= ru_mi4.js - HERO model: Mil Mi-4 Hound, the 1950s Soviet transport =======
    One key, the Soviet row:
      pact_e50_transport   "Mil Mi-4 Hound", e50, service 1953.
-   (pla_e50_transport, the PLA's Soviet-supplied Mi-4, and pla_e60_transport,
-   the Harbin Z-5, are separate keys this file does NOT register: they would
-   need Chinese markings. A row with no model of its own reaches a modelled
-   same-role peer through render3d.js modelKeyFor.)
+   Also, drawn plain (HeroMi4.plain: the Soviet star left off; the PLAAF
+   star-and-bars is not drawn, no reference fetched, as the KPA rows do):
+     pla_e50_transport    the PLA's Soviet-supplied Mi-4;
+     pla_e60_transport    the Harbin Z-5, the Mi-4 built under licence.
 
    2026-10-24 full-quality redo. References (fetched with the generic agent
    name, Wikimedia at width 960, one at a time):
@@ -465,7 +465,7 @@ var HeroMi4 = (function () {
   var DOOR = { x0: -1.30, x1: -2.50, h0: 1.05, h1: 2.75 };
   var STAR = { x: -3.05, h: 2.22, r: 0.42 };
 
-  function skinCanvas() {
+  function skinCanvas(plain) {
     var cv = document.createElement("canvas");
     cv.width = TW; cv.height = TH;
     var g = cv.getContext("2d");
@@ -567,20 +567,24 @@ var HeroMi4 = (function () {
         g.closePath(); g.fill();
       });
     }
-    star(1); star(2);
+    if (!plain) { star(1); star(2); }
     return cv;
   }
-  var _cv = null, _tex;
-  function skinTexture() {
-    if (_tex !== undefined) return _tex;
+  /* cached per marking: plain is the PLA rows' skin, no star */
+  var _cvBy = {}, _texBy = {};
+  function skinTexture(plain) {
+    var k = plain ? "plain" : "star";
+    if (_texBy[k] !== undefined) return _texBy[k];
+    var _tex;
     try {
-      if (!_cv) _cv = skinCanvas();
-      var t = new V.CanvasTexture(_cv);
+      if (!_cvBy[k]) _cvBy[k] = skinCanvas(plain);
+      var t = new V.CanvasTexture(_cvBy[k]);
       t.wrapS = t.wrapT = V.ClampToEdgeWrapping;
       t.anisotropy = 4;
       if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
       _tex = t;
     } catch (e) { _tex = false; }
+    _texBy[k] = _tex;
     return _tex;
   }
   /* each face picks its band from its normal; metre UVs remapped to 0..1 */
@@ -612,13 +616,13 @@ var HeroMi4 = (function () {
   }
 
   /* ======================================================== the build */
-  function build(THREE, M, C) {
+  function build(THREE, M, C, plain) {
     V = THREE;
     var g = new V.Group();
     g.name = "mi4";
     var i, k, a, side;
     var tc = (C && C.team !== undefined) ? C.team : "#c0392b";
-    var tex = skinTexture();
+    var tex = skinTexture(plain);
     var T = {
       skin:  new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.86, metalness: 0.07 }),
       glass: new V.MeshPhysicalMaterial({ color: 0x1b262b, roughness: 0.08, metalness: 0.20,
@@ -875,7 +879,9 @@ var HeroMi4 = (function () {
     return g;
   }
 
-  return { build: build };
+  return { build: build, plain: function (THREE, M, C) { return build(THREE, M, C, true); } };
 })();
 
 UNIT_MODELS["pact_e50_transport"] = { len: 25.02, build: HeroMi4.build };
+UNIT_MODELS["pla_e50_transport"]  = { len: 25.02, build: HeroMi4.plain };
+UNIT_MODELS["pla_e60_transport"]  = { len: 25.02, build: HeroMi4.plain };

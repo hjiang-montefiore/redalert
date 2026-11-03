@@ -18,6 +18,8 @@
                                    chord against the Gazelle blade's 0.28 m,
                                    measured off the drawing's plan), and the
                                    wire strike cutters
+     pla_e80_gunship  SA 342L      the export SA 342M the PLA bought in 1988:
+                                   the e80 build with no markings
 
    References. Dimensions are the ALAT's own data sheets for the SA 341F and
    the SA 342M (alat.fr, "Presentation de la Gazelle"), which agree with
@@ -202,6 +204,12 @@ var HeroGazelle = (function () {
     fra_e90_gunship: { name: "SA 342M1", scheme: "ce", arms: "hot", sight: "viviane",
                        doppler: true, manhole: "square", chord: 0.35, blade: 0x3a3f40,
                        marks: 1981, cutters: true },
+    /* the PLA's 24 SA 342L of 1988, the export SA 342M with HOT: built as
+       the SA 342M in vert armee with no markings (no reference shows how
+       the PLA marked or repainted them, so none are drawn) */
+    pla_e80_gunship: { name: "SA 342L", scheme: "va", arms: "hot", sight: "m397",
+                       doppler: true, manhole: "square", chord: 0.28, blade: 0x2c302e,
+                       marks: 0 },
   };
 
   /* =================================================== the painted skin ===
@@ -432,7 +440,7 @@ var HeroGazelle = (function () {
        SA 342M from 1980): a roundel centred on each side of the boom and
        nothing else. From May 1981: "armee de TERRE" along the boom with
        the roundel moved ahead of it, and the army's sticker on the fin. */
-    for (b = 1; b <= 2; b++) {
+    for (b = 1; F.marks && b <= 2; b++) {
       if (F.marks < 1981) {
         roundel(g, pxX(-3.40), pyH(1.28, b), 0.19 * SX, 0.19 * SZ);
       } else {
@@ -1371,3 +1379,4 @@ var HeroGazelle = (function () {
 UNIT_MODELS["fra_e60_gunship"] = { len: 11.96, build: function (T, M, C) { return HeroGazelle.build(T, M, C, "fra_e60_gunship"); } };
 UNIT_MODELS["fra_e80_gunship"] = { len: 11.96, build: function (T, M, C) { return HeroGazelle.build(T, M, C, "fra_e80_gunship"); } };
 UNIT_MODELS["fra_e90_gunship"] = { len: 11.96, build: function (T, M, C) { return HeroGazelle.build(T, M, C, "fra_e90_gunship"); } };
+UNIT_MODELS["pla_e80_gunship"] = { len: 11.96, build: function (T, M, C) { return HeroGazelle.build(T, M, C, "pla_e80_gunship"); } };

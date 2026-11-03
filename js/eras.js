@@ -13096,7 +13096,7 @@ var ERA_RADAR_SETS = {
   pact_e00_fighter: { radarQ: 17 },   /* Su-35S: Irbis-E, a passive array with more transmitter power behind it than anything else on this list. */
   pla_e50_fighter:  { radarQ: 2 },    /* J-5: guns only, no radar, no missile of any kind until the PL-2 in the 1960s. */
   pla_e60_fighter:  { radarQ: 2 },    /* J-6: a MiG-19S clear-weather day fighter. The radar-nosed J-6A was built in tiny numbers and is not this row. */
-  pla_e80_fighter:  { radarQ: 6 },    /* J-8II: the Type 208A, a monopulse set that is the reason the J-8II has a nose intake at all - and the aircraft the American Peace Pearl programme was meant to fix before 1989 ended it. */
+  pla_e80_fighter:  { radarQ: 6 },    /* J-8II: the Type 208A, a monopulse set that is the reason the J-8II gave up the J-8's nose intake for a solid radar nose and side intakes - and the aircraft the American Peace Pearl programme was meant to fix before 1989 ended it. */
   pla_e90_fighter:  { radarQ: 12, radarGen: "e80" },  /* Su-27SK: N001 Myech, bought from Russia in 1992. A 1985 set, and an enormous jump over anything China could build. */
   pla_e00_fighter:  { radarQ: 13 },   /* J-10 with the Type 1473, then the J-10B's passive array from 2014. Just under the present-day J-10C. */
   roc_e50_fighter:  { radarQ: 3 },    /* F-86F: the same APG-30 ranging set, and the aircraft that fought the 1958 Taiwan Strait crisis with the first Sidewinders ever fired in anger. */

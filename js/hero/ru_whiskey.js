@@ -724,3 +724,10 @@ UNIT_MODELS["pact_e50_sub"] = {
   len: 76,
   build: function (THREE, M, C) { return HeroWhiskey613.build(THREE, M, C); }
 };
+
+/* The PLA's Type 03 is the Project 613 (Whiskey), assembled in China from Soviet parts
+   from 1954: the same boat, no markings drawn. */
+UNIT_MODELS["pla_e50_sub"] = {
+  len: 76,
+  build: function (THREE, M, C) { return HeroWhiskey613.build(THREE, M, C); }
+};

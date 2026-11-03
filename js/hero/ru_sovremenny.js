@@ -802,7 +802,7 @@ var HeroSovremenny = (function () {
     var root = bake(THREE, g);
     var tb = bake(THREE, tw);
     tw.children.slice().forEach(function (c) { tw.remove(c); });
-    tb.children.forEach(function (c) { tw.add(c); });
+    tb.children.slice().forEach(function (c) { tw.add(c); });
     root.add(tw);
     /* the middle of the pad's surface, for render3d deckOf/padSpot: the pad
        stands on the 02 block 5.6 m above the quarterdeck (hidden, no geometry) */

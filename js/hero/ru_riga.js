@@ -933,7 +933,7 @@ var HeroRiga = (function () {
     var root = bake(THREE, g);
     var tb = bake(THREE, tw);
     tw.children.slice().forEach(function (c) { tw.remove(c); });
-    tb.children.forEach(function (c) { tw.add(c); });
+    tb.children.slice().forEach(function (c) { tw.add(c); });
     root.add(tw);
     return root;
   }
@@ -942,6 +942,15 @@ var HeroRiga = (function () {
 
 /* Registration: len is the real overall length of Project 50, 91.0 m. */
 UNIT_MODELS["pact_e50_corvette"] = {
+  len: 91.0,
+  build: function (THREE, M, C) { return HeroRiga.build(THREE, M, C); }
+};
+
+/* The PLAN's Type 6601 frigates were Project 50 (Riga) ships: "4 ships were built in kits
+   for the People's Liberation Army Navy to be licence assembled in China as Chengdu class
+   (Type 6601/01) frigate" (en.wikipedia "Riga-class frigate").  Drawn as this Project 50
+   model; any differences of the Chinese-assembled ships are NOT drawn.  No markings. */
+UNIT_MODELS["pla_e50_corvette"] = {
   len: 91.0,
   build: function (THREE, M, C) { return HeroRiga.build(THREE, M, C); }
 };

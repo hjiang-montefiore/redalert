@@ -903,3 +903,5 @@ var HeroZsu = (function () {
 
 UNIT_MODELS["pact_e50_spaag"] = { len: 8.39, build: function (THREE, M, C) { return HeroZsu.build(THREE, M, C, "Z57"); } };
 UNIT_MODELS["pact_e60_spaag"] = { len: 6.66, build: function (THREE, M, C) { return HeroZsu.build(THREE, M, C, "Z23"); } };
+/* the KPA's ZSU-57-2 (row service 1968): the same vehicle, no markings drawn */
+UNIT_MODELS["kpa_e60_spaag"] = { len: 8.39, build: function (THREE, M, C) { return HeroZsu.build(THREE, M, C, "Z57"); } };

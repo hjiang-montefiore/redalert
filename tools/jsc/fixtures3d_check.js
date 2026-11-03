@@ -8,7 +8,9 @@
 
    Every structure render3d draws gets a faction kit (a NATO radome and
    aerial mast, a Pact brick stack and banner board, PLA eave slabs and
-   masts) and a period kit (a 1950s chimney and whip, a 1960s lattice mast,
+   masts, a KPA slogan board and spire, ROC water tanks and stair head,
+   British chimney stacks, a French zinc mansard and lantern, a German tiled
+   gable and mast) and a period kit (a 1950s chimney and whip, a 1960s lattice mast,
    a 1980s camouflage net, a 1990s dish, a present-day array face and
    radome). Every one of the 43 BLD_MODELS keys is built here for all eight
    armies in all six periods (2,064 templates), in a real match: placed,
@@ -226,10 +228,13 @@ function run() {
   var FACS = ["nato", "pact", "pla", "kpa", "roc", "gbr", "fra", "deu"], ERAS = ["e50", "e60", "e80", "e90", "e00", "e20"];
   var KEYS = Object.keys(BLD_MODELS).filter(function (k) { return BUILDINGS[k]; }).sort();
   /* the pieces each kit was drawn with: NATO radome, mast and three yagis;
-     Pact stack, band and board; PLA two eave slabs and two masts. Chimney,
+     Pact stack, band and board; PLA two eave slabs and two masts; KPA two
+     posts, board, spire and finial; ROC stand and two tanks, stair head and
+     its cap; Britain two stacks with two pots each; France mansard, lantern
+     and its cap; Germany gable, mast and yard. Chimney,
      cap and whip; three legs and three rings; net, four poles and a mast;
      pedestal and dish; face and radome. A mesh is a draw and a shadow draw. */
-  var ARCH_N = { nato: 5, pact: 3, pla: 4 }, ERA_N = { e50: 3, e60: 6, e80: 6, e90: 2, e00: 2, e20: 2 };
+  var ARCH_N = { nato: 5, pact: 3, pla: 4, kpa: 5, roc: 5, gbr: 6, fra: 3, deu: 3 }, ERA_N = { e50: 3, e60: 6, e80: 6, e90: 2, e00: 2, e20: 2 };
   function owner(fac, era) {
     var o = Object.create(P), fc = CFG.FACTION_COLORS[fac];
     o.color = { main: fc.main, dark: fc.dark, light: fc.light, fac: fac };
@@ -330,8 +335,7 @@ function run() {
           row.hang = Math.max(row.hang, q.hang); row.air += q.air;
         });
         row.kit[0] = Math.min(row.kit[0], pc.meshes); row.kit[1] = Math.max(row.kit[1], pc.meshes);
-        /* kpa, roc, gbr, fra and deu build in NATO's architecture */
-        var cap = def.bare ? 0 : (def.cat !== "defense" && key !== "wall" ? ARCH_N[ARCH_N[fac] ? fac : "nato"] : 0) + ERA_N[era];
+        var cap = def.bare ? 0 : (def.cat !== "defense" && key !== "wall" ? ARCH_N[fac] : 0) + ERA_N[era];
         if (pc.meshes > cap) over.push(key + " " + fac + " " + era + ": " + pc.meshes + " > " + cap);
         if (def.bare && pc.meshes) bareKit.push(key);
         /* the owner's colour, part by part */
@@ -373,7 +377,7 @@ function run() {
   chk("no kit piece reaches past the model's own plan, and no foot stands over air", hang[0].hang <= HANG && air === 0,
       "furthest " + hang.slice(0, 4).map(function (r) { return r.key + " " + r.hang.toFixed(2) + " m"; }).join(", ") + "; " + air + " foot samples over air");
   chk("the kit costs no more meshes than the pieces it was drawn with", !over.length,
-      over.length ? over.length + " templates over, e.g. " + over.slice(0, 3).join("; ") : "radome, mast and yagis 5, stack, band and board 3, eaves and masts 4; the period's 2-6");
+      over.length ? over.length + " templates over, e.g. " + over.slice(0, 3).join("; ") : "each army's kit 3-6 meshes; the period's 2-6");
   chk("a `bare` structure carries no kit", !bareKit.length, bareKit.length ? bareKit.slice(0, 4).join(", ") : rows.filter(function (r) { return BUILDINGS[r.key].bare; }).length + " bare keys, none");
   chk("the owner's colour survives restyle() and eraRestyle()", teamN > 0 && teamLost === 0,
       teamLost + " of " + teamN + " team-coloured parts repainted" + (teamWhere.length ? ", e.g. " + teamWhere.join(", ") : ""));

@@ -1306,8 +1306,17 @@ var Render3D = (function () {
 
   /* ---------------- faction architecture ----------------
      One shared set of building models, restyled per faction so a base reads
-     as NATO / Eastern / PLA at a glance: different concrete and roof palettes,
-     different trim, and a distinctive rooftop fixture.                      */
+     as its own army at a glance: different concrete and roof palettes,
+     different trim, and a distinctive rooftop fixture. Every army in
+     CFG.FACTION_COLORS has a row (KPA, ROC, Britain, France and Germany fell
+     back to NATO's before). The five later rows are drawn from the building
+     traditions each country is known for, as a stylised signature, not from
+     photographs of particular bases:
+       kpa  pale rendered concrete, a red slogan board, a spire
+       roc  light tiled concrete, stainless rooftop water tanks, a stair head
+       gbr  red brick under slate, brick chimney stacks with pots
+       fra  pale limestone, a zinc mansard with a lantern on top
+       deu  light render, a steep red-tiled gable roof, an aerial mast      */
   const ARCH = {
     nato: { wall: 0x9aa0a0, wall2: 0x7f8688, roof: 0x8e9698, trim: 0x4b8fe0,
             accent: 0xd8dde0, style: "nato" },
@@ -1315,6 +1324,16 @@ var Render3D = (function () {
             accent: 0x8d5a4a, style: "pact" },
     pla:  { wall: 0x9b8f74, wall2: 0x7d735d, roof: 0x6f6a58, trim: 0xe0a33c,
             accent: 0xb8433a, style: "pla" },
+    kpa:  { wall: 0xb9b4a4, wall2: 0x9a9686, roof: 0x6c6a62, trim: 0xb0413a,
+            accent: 0xe6dfcf, style: "kpa" },
+    roc:  { wall: 0xc4c2b8, wall2: 0xa2a39b, roof: 0x7a7f7c, trim: 0x3fb08a,
+            accent: 0xcfd4d6, style: "roc" },
+    gbr:  { wall: 0x96705c, wall2: 0x7c5646, roof: 0x4e555c, trim: 0x8f3f5c,
+            accent: 0x6e4234, style: "gbr" },
+    fra:  { wall: 0xc8bfa6, wall2: 0xa89f88, roof: 0x676d73, trim: 0x5f7fd6,
+            accent: 0x8a9096, style: "fra" },
+    deu:  { wall: 0xbdb7a6, wall2: 0x9c978a, roof: 0x7a4c3e, trim: 0x7a8a72,
+            accent: 0x8c5442, style: "deu" },
   };
 /* ==================================================================
    PERIOD ARCHITECTURE
@@ -1994,6 +2013,97 @@ var Render3D = (function () {
           kitM(new THREE.CylinderGeometry(mn * k * 0.095, mn * k * 0.095, 1.1, 10), trim, 0, mn * k * 0.46, 0)) });
       kitSpot(K, { name: "board", hx: w * 0.17, hz: 0.2, sink: mn * 0.012, kmin: 0.45, turn: true, px: -w * 0.2, pz: d * 0.3,
         mk: (k) => kitG(kitM(new THREE.BoxGeometry(w * k * 0.34, mn * k * 0.16, 0.4), trim, 0, mn * k * 0.08, 0)) });
+    } else if (A.style === "kpa") {
+      /* KPA: a tall red slogan board on two posts, and a thin pale spire
+         with a red finial */
+      const bh = mn * 0.2, bw = w * 0.3;
+      kitSpot(K, { name: "board", hx: bw / 2, hz: 0.3, sink: mn * 0.012, kmin: 0.45, turn: true, px: -w * 0.22, pz: d * 0.28,
+        mk: (k) => kitG(
+          kitM(new THREE.BoxGeometry(0.35, bh * k * 0.45, 0.35), metal, -bw * k * 0.4, bh * k * 0.225, 0),
+          kitM(new THREE.BoxGeometry(0.35, bh * k * 0.45, 0.35), metal, bw * k * 0.4, bh * k * 0.225, 0),
+          kitM(new THREE.BoxGeometry(bw * k, bh * k * 0.55, 0.4), trim, 0, bh * k * 0.725, 0)) });
+      const sh = mn * 0.45;
+      kitSpot(K, { name: "spire", disk: true, hx: mn * 0.035, sink: sh * 0.05, kmin: 0.45, px: w * 0.27, pz: -d * 0.25,
+        mk: (k) => kitG(
+          kitM(new THREE.CylinderGeometry(mn * k * 0.012, mn * k * 0.035, sh * k, 8), acc, 0, sh * k / 2, 0),
+          kitM(new THREE.OctahedronGeometry(mn * k * 0.03), trim, 0, sh * k + mn * k * 0.02, 0)) });
+    } else if (A.style === "roc") {
+      /* ROC: two stainless water tanks on a low stand, and the stair head
+         that rises over a flat concrete roof */
+      const tr = mn * 0.05, th = mn * 0.11;
+      kitSpot(K, { name: "tanks", hx: tr * 2.3, hz: tr * 1.15, sink: mn * 0.01, kmin: 0.45, turn: true, px: w * 0.26, pz: -d * 0.26,
+        mk: (k) => kitG(
+          kitM(new THREE.BoxGeometry(tr * k * 4.6, 0.5, tr * k * 2.3), acc, 0, 0.25, 0),
+          kitM(new THREE.CylinderGeometry(tr * k, tr * k, th * k, 14), metal, -tr * k * 1.15, 0.5 + th * k / 2, 0),
+          kitM(new THREE.CylinderGeometry(tr * k, tr * k, th * k, 14), metal, tr * k * 1.15, 0.5 + th * k / 2, 0)) });
+      const sw = mn * 0.1, shh = mn * 0.09;
+      kitSpot(K, { name: "stairhead", hx: sw * 0.75, hz: sw / 2, sink: mn * 0.01, kmin: 0.45, turn: true, px: -w * 0.24, pz: d * 0.24,
+        mk: (k) => kitG(
+          kitM(new THREE.BoxGeometry(sw * k * 1.5, shh * k, sw * k), acc, 0, shh * k / 2, 0),
+          kitM(new THREE.BoxGeometry(sw * k * 1.6, 0.3, sw * k * 1.1), trim, 0, shh * k + 0.15, 0)) });
+    } else if (A.style === "gbr") {
+      /* Britain: two brick chimney stacks, each with its pair of pots */
+      const cw = mn * 0.13, cd = mn * 0.06, ch = mn * 0.22;
+      const stack = (k) => {
+        const g = kitG(kitM(new THREE.BoxGeometry(cw * k, ch * k, cd * k), acc, 0, ch * k / 2, 0));
+        for (const i of [-1, 1])
+          g.add(kitM(new THREE.CylinderGeometry(cd * k * 0.22, cd * k * 0.28, mn * k * 0.05, 8), trim, i * cw * k * 0.25, ch * k + mn * k * 0.025, 0));
+        return g;
+      };
+      kitSpot(K, { name: "chimney", hx: cw / 2, hz: cd / 2, sink: mn * 0.012, kmin: 0.45, turn: true, px: w * 0.27, pz: -d * 0.25, mk: stack });
+      kitSpot(K, { name: "chimney", hx: cw / 2, hz: cd / 2, sink: mn * 0.012, kmin: 0.45, turn: true, px: -w * 0.27, pz: d * 0.25, mk: stack });
+    } else if (A.style === "fra") {
+      /* France: a zinc mansard on the broadest level roof - steep lower
+         slopes to a flat top - and a small lantern standing on it */
+      const r = kitRect(K, 0.7, w * 0.62, d * 0.62, 7, 7, 0, 0), mh = Math.min(mn * 0.12, 5);
+      if (r) {
+        /* a four-sided frustum: CylinderGeometry with four sides, turned to
+           square, then stretched to the rectangle */
+        const geo = new THREE.CylinderGeometry(Math.SQRT1_2 * 0.78, Math.SQRT1_2, 1, 4, 1);
+        geo.rotateY(Math.PI / 4);
+        geo.scale(r.w, mh, r.d);
+        geo.translate(0, mh / 2, 0);
+        const zinc = new THREE.MeshStandardMaterial({ color: 0x6f767c, roughness: 0.45, metalness: 0.55 });
+        const g = kitG(new THREE.Mesh(geo, zinc));
+        g.position.set(r.x, r.y, r.z);
+        g.name = "kit.mansard";
+        K.put.push(g);
+        kitDeck(K, r.x, r.z, r.w * 0.78, r.d * 0.78, r.y + mh);
+      }
+      const lw = mn * 0.06, lh = mn * 0.08;
+      kitSpot(K, { name: "lantern", hx: lw / 2, hz: lw / 2, sink: mn * 0.01, kmin: 0.45,
+        px: r ? r.x : w * 0.25, pz: r ? r.z : -d * 0.25,
+        mk: (k) => kitG(
+          kitM(new THREE.BoxGeometry(lw * k, lh * k, lw * k), acc, 0, lh * k / 2, 0),
+          kitM(new THREE.ConeGeometry(lw * k * 0.78, lh * k * 0.6, 4), trim, 0, lh * k + lh * k * 0.3, 0)) });
+    } else if (A.style === "deu") {
+      /* Germany: a steep tiled gable roof on the broadest level roof, its
+         ridge along the longer side, and a slim aerial mast elsewhere */
+      const r = kitRect(K, 0.7, w * 0.64, d * 0.64, 7, 7, 0, 0);
+      if (r) {
+        const along = r.w >= r.d, span = along ? r.d : r.w, len = along ? r.w : r.d;
+        const gh = Math.min(span * 0.45, 9);
+        /* a triangular prism, flat side down: ridge along x, then turned */
+        const P = [[-len / 2, 0, -span / 2], [len / 2, 0, -span / 2], [len / 2, 0, span / 2], [-len / 2, 0, span / 2],
+                   [-len / 2, gh, 0], [len / 2, gh, 0]];
+        const F = [[0, 1, 2], [0, 2, 3], [0, 4, 5], [0, 5, 1], [3, 2, 5], [3, 5, 4], [0, 3, 4], [1, 5, 2]];
+        const pos = [];
+        for (const f of F) for (const i of f) pos.push(P[i][0], P[i][1], P[i][2]);
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.computeVertexNormals();
+        if (!along) geo.rotateY(Math.PI / 2);
+        const tile = new THREE.MeshStandardMaterial({ color: 0x8a4a38, roughness: 0.9 });
+        const g = kitG(new THREE.Mesh(geo, tile));
+        g.position.set(r.x, r.y, r.z);
+        g.name = "kit.gable";
+        K.put.push(g);
+        K.keep.push({ x0: r.x - r.w / 2, x1: r.x + r.w / 2, z0: r.z - r.d / 2, z1: r.z + r.d / 2 });
+      }
+      const ah = mn * 0.36;
+      kitSpot(K, { name: "mast", disk: true, hx: 0.35, sink: ah * 0.1, px: -w * 0.3, pz: d * 0.28,
+        mk: () => kitG(kitM(new THREE.CylinderGeometry(0.2, 0.3, ah, 6), metal, 0, ah / 2, 0),
+                       kitM(new THREE.BoxGeometry(mn * 0.08, 0.2, 0.2), metal, 0, ah * 0.85, 0)) });
     } else {
       /* PLA: tiered eave band + paired mast, tile-red accent. The eaves are
          laid on the broadest level roof and sized to it, not to the plot (they

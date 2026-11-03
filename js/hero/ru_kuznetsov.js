@@ -827,3 +827,14 @@ UNIT_MODELS["carrier_p"] = {
   len: 305.0,
   build: function (THREE, M, C) { return HeroKuznetsov.build(THREE, M, C, "e00"); }
 };
+
+/* The PLAN's Type 001 Liaoning is the second Project 1143.5 hull, the ex-Varyag, bought
+   unfinished and completed in China (commissioned 2012); the row also names the Type
+   002 Shandong, a domestic development of it.  Drawn as this model's 2000s-2010s Kuznetsov
+   (variant e00): a STAND-IN.  Not drawn: the Liaoning's island with its Type 346 panel
+   arrays, the absence of the Granit cells (flush under the deck here anyway), the
+   Shandong's longer island and other differences.  No markings. */
+UNIT_MODELS["pla_e00_carrier"] = {
+  len: 305.0,
+  build: function (THREE, M, C) { return HeroKuznetsov.build(THREE, M, C, "e00"); }
+};
