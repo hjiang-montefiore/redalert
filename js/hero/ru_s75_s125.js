@@ -14,64 +14,131 @@
    TWO POSES (render3d shows one by e.deployed, visibility only):
      "deploypose"  the launcher set up at its firing position, loaded, the
                    trained "turret" inside it. Hidden in the template.
+                   Inside the turret the rail(s) hang on a "podelev" group
+                   (render3d poseLauncher): at rest they lie at the low
+                   angle the museum launchers stand at, and while the unit
+                   holds a target in reach they are raised by userData.el to
+                   the steep angle others stand at; userData.cells are the
+                   round noses (mouth x, y, z, tail x in the group's frame),
+                   where render3d first draws a round leaving the rail.
+                   The resting angle is built into the geometry (a turned
+                   node would widen the engine's box), so the group's own
+                   axis lies level at rest: render3d's launch flash points
+                   along it, el above the horizon, lower than the rail by
+                   the resting angle. A picture compromise; the round
+                   itself starts at the nose and takes its own path.
      "travelpose"  the launcher on the march behind its tractor, unloaded,
-                   rail(s) run down level and turned to the rear; its
+                   rail(s) down (the SM-63's boom on its post, the 5P73's
+                   rails level) and turned to the rear; its
                    traversing part is a group "launcher", NOT "turret", so
                    the renderer never trains it. The wheels (tractor and
                    carriage) are "roadwheel" groups. Shown in the template:
                    a unit is built and moves packed up.
    SCALE: the travel convoy is drawn at k of its true scale (k = deployed
-   length / convoy length: 0.600 for the S-75's KrAZ-214 and SM-63, 0.456
-   for the S-125's AT-S and 5P73), centred on the deployed launcher, so
-   that both poses fill the unit's footprint and the deployed launcher -
-   the unit's identity - is drawn full size. len is the deployed pose's
-   length. A choice made for the look; the owner may reverse it (drop
-   fitTravel and len goes back to the convoy's, 17.24 m and 12.31 m).
+   length / convoy length: 0.616 for the S-75's KrAZ-214 and SM-63,
+   0.423 for the S-125's AT-S and 5P73; fitTravel measures it),
+   centred on the deployed launcher, so that both poses fill the unit's
+   footprint and the deployed launcher - the unit's identity - is drawn
+   full size. len is the deployed pose's length. A choice made for the
+   look; the owner may reverse it (drop fitTravel and len goes back to the
+   convoy's).
 
-   References:
-     Commons "ZRK S-75 2007 G1" and "DVINA SA-75 SAM-2 launcher system downed
-       4 x F4S" (SM-63 with V-750): the cruciform ground frame with four
-       jack pads, the turntable, the louvred housing, the A-frame and
-       trunnion, the rail beam with shoe clamps, the missile and its paint.
-     Commons "Forward view of"/"Rear view of S-125 launcher 5P73 in Perm":
-       four rails in a row on one lateral frame with cross-bracing, four
-       V-600; the launcher STANDS ON A ROUND BASE ON THE GROUND (an eight-
-       sided plate, the skirted pedestal, levelling jacks round the rim) -
-       no wheels in the firing position.
-     Commons "S-125 launcher 5P73 desc table in Perm": 10,957 kg, 4 rails,
-       towing speed 60 km/h, loaded by the PR-14M transporter-loader.
-     pvo.guns.ru S-75 history: the launchers were moved "set on detachable
-       wheel carriages" (otdelyaemye kolesnye khoda) and towed by KrAZ-214
-       trucks, 40 km/h on roads, 10 km/h off them (AT-S-59 tracked tractors
-       in northern and desert battalions); the missiles travel on PR-11
-       transporter-loaders (ZiL-151/157 semitrailer), so the launcher
-       marches empty; travel to fire 2 h 20 min.
-     pvo.guns.ru S-125 history: launcher towing "in desert conditions" by
-       AT-S tractors added to the battalions (the only tractor named for the
-       5P73); carrying four missiles on the 5P73 on the march "showed the
-       need for serious modification and weight" - it marches empty, the
-       rounds ride the PR-14 loaders (ZiL-157, later ZiL-131).
-     Ru-wiki KrAZ-214 infobox and the Togliatti museum truck on Commons
-       ("KrAZ-214 in Technical museum Togliatti"); Ru-wiki AT-S infobox and
-       Commons "Artillery tractor AT-S" - see the tractor functions.
-   NOT CONFIRMED and therefore chosen plainly: the resting elevations
-   (22 deg SM-63, 25 deg 5P73), the form of the SM-63's wheel carriages
-   (one twin-tyre axle under each end of the long beam, a drawbar on the
-   front one), whether its side outriggers fold for the road (left as they
-   stand), the 5P73's march carriage (drawn as a two-axle carriage with its
-   jacks wound up, under the ring), that both rails travel level and turned
-   to the rear, the AT-S for the S-125 outside the desert (the only tractor
-   the sources name for it), the paint (1950s-60s Soviet olive green), the
-   lateral spacing of the 5P73 rails, and the red missile bands the museum
-   S-125 wears (left off). No radar, cables or markings are drawn.
+   REFERENCES (Commons, fetched 2026-11-03 at 960 px; texts from the
+   Russian and English Wikipedia articles "S-75" and "S-125"):
+     [K]  "ZRK S-75 2007 G1" - the Kyiv SM-63 with a V-750, front-right
+          three-quarter, rail at about 17 deg: the low cruciform frame of
+          box beams with a jack box at each end, the turntable, the long
+          traversing body (a lower front box with two buffer cylinders
+          facing forward, the tall equipment housing at the rear with
+          ribbed sides and a chamfered, slatted rear top), the boom HINGED
+          AT THE REAR on top of the housing and running forward under the
+          missile, the post hanging under the boom's front, and the missile:
+          dark ogive with four canards, light band, grey sustainer with
+          clipped-delta wings and four tail controls, light booster with
+          four big cropped-delta fins.
+     [P]  "SM-63.jpg" (St Petersburg artillery museum) - the same launcher
+          at about 35 deg, the boom rising from the rear of the housing.
+     [H]  "DVINA SA-75 SAM-2 launcher system downed 4 x F4S on 240765"
+          (Hanoi) - two SM-63 at about 30-35 deg, the slatted housing and
+          the jack pads on the cruciform frame.
+     [F]  "Forward view of S-125 launcher 5P73 in Perm" and
+     [R]  "Rear view of S-125 launcher 5P73 in Perm" - the 5P73: a round
+          base plate on the ground with radial gussets and screw-jack lugs
+          round the rim, a short pedestal, a box housing set ACROSS the
+          firing line with doors and louvred ends, a long tube along its
+          top (the elevation axis) ending in a drive box at one end, four
+          rail arms fixed on that tube, a lateral truss with X-bracing
+          joining the four rails under the missiles, the four V-600 side by
+          side on top of the rails at about 50 deg, boosters at the bottom.
+     [D]  "S-125 launcher 5P73 desc table in Perm" (as the earlier file):
+          10,957 kg, 4 rails, towing speed 60 km/h, PR-14M loader.
+     [W]  en.wikipedia "S-75 Dvina": the 1957 V-750 is 10.6 m long, booster
+          0.65 m, sustainer 0.5 m in diameter (ru.wikipedia: 10,600 mm,
+          first stage 700 mm); the 10.8 m rounds are the later V-750VK.
+          en.wikipedia "S-125": V-601 body diameter 375 mm, length 6.09 m;
+          ru.wikipedia: S-125 Neva (1961) fired the V-600P (5V24).
+     pvo.guns.ru (as the earlier file): SM-63 moved on detachable wheel
+          carriages behind KrAZ-214, missiles on PR-11 loaders (launcher
+          marches empty); 5P73 towed by AT-S, rounds on PR-14 loaders.
+     Ru-wiki KrAZ-214 and AT-S infoboxes, see the tractor functions.
+
+   RECOGNITION (where each shows):
+     1. SM-63 cruciform ground frame, jack box at each arm end [K][H]: sm63Frame.
+     2. SM-63 long traversing body: lower front box with two forward buffer
+        cylinders, tall ribbed housing with chamfered slatted rear top [K][H]: sm63Swing.
+     3. Boom hinged at the housing's rear top, running forward under the
+        missile, post hanging under its front [K][P]: sm63Boom (podelev).
+     4. V-750 at 10.6 m: light booster with four big cropped-delta fins,
+        grey sustainer with clipped-delta wings and tail controls, light
+        band, dark ogive with canards [K][W]: v750.
+     5. Low resting rail (17 deg [K]) raised to 35 deg for the shot [P][H]: podelev.
+     6. 5P73 round base plate with radial gussets and rim lugs, short
+        pedestal [R][F]: p73Ground.
+     7. 5P73 box housing across the firing line, doors, louvred ends, the
+        long elevation tube on top with its drive box at one end [R]: p73Swing.
+     8. Four rails side by side on arms off the tube, lateral X-braced
+        truss under them [F][R]: p73Rails (podelev).
+     9. Four V-600: big light booster with cropped-delta fins, slim grey
+        sustainer (375 mm), mid wings, canards [F][R][W]: v600.
+    10. On the march: launcher empty, rails level and to the rear, on its
+        carriages behind a KrAZ-214 / AT-S (pvo.guns.ru): the travel pose.
+    11. 1950s-60s Soviet olive on the launchers, weathered, by canvas [P][F][R].
+
+   CONFIRMED / CORRECTED against the earlier file: the SM-63's boom pivots
+   at the REAR of the housing [K][P] (the earlier file stood it on an
+   A-frame trunnion at mid-length: corrected); the 5P73's rails hang on a
+   lateral elevation tube over a housing set across the firing line [R]
+   (the earlier file had a small fore-and-aft body: corrected); the V-750
+   is 10.6 m for the 1957 row [W] (was 10.8 m, the V-750VK: corrected);
+   the V-600 sustainer is 375 mm [W] (was 384 mm). The angles are now
+   the photographs' (17 deg at rest [K], 35 deg raised [P][H] for the
+   SM-63; 25 deg at rest, unconfirmed, 50 deg raised [F] for the 5P73).
+   NOT CONFIRMED and therefore chosen plainly: the published launch
+   elevations (the photographs show museum poses, not drill), the form of
+   the SM-63's wheel carriages (one twin-tyre axle under each end of the
+   long beam, a drawbar on the front one), whether its side outriggers
+   fold for the road, the 5P73's march carriage (two axles, jacks wound
+   up) and whether its outer rails fold for the road (drawn as they
+   stand), that the rails travel down and turned to the rear, the AT-S for
+   the S-125 outside the desert (the only tractor the sources name), the
+   5P73 rail spacing (1.1 m, set so the booster fins clear) and whether
+   the housing sits centred on the pedestal ([R] may show it offset), the
+   V-600 booster diameter (0.52 m) and fin span (1.5 m), the V-750 fin
+   spans (booster 2.5 m, wings 2.1 m, read off [K]), the form of the
+   SM-63's elevating drive (only the boom's front post is drawn), and the
+   red bands the museum S-125 rounds wear (left off: museum paint). The
+   Kyiv SM-63 is a dark-grey museum repaint; the period olive follows [P]
+   and the Perm 5P73. No radar, cables or markings are drawn.
    ======================================================================== */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroS75S125 = (function () {
   "use strict";
-  var TAU = Math.PI * 2;
+  var TAU = Math.PI * 2, D2R = Math.PI / 180;
 
-  /* ---------- merging: every part goes into a bin per material ---------- */
+  /* ---------- merging: every part goes into a bin per material; the
+     painted bin also gets planar metre UVs (0.34 a metre, the dominant
+     axis of each face) so the canvas paint lands on every surface ---- */
   function Col(THREE) {
     this.T = THREE; this.bins = {}; this.st = [new THREE.Matrix4()];
   }
@@ -80,11 +147,24 @@ var HeroS75S125 = (function () {
   };
   Col.prototype.pop = function () { this.st.pop(); };
   Col.prototype.add = function (key, g) {
-    var b = this.bins[key] || (this.bins[key] = { P: [], N: [] });
+    var b = this.bins[key] || (this.bins[key] = { P: [], N: [], U: key === "paint" ? [] : null });
     g.applyMatrix4(this.st[this.st.length - 1]);
     if (g.index) g = g.toNonIndexed();
-    var p = g.attributes.position.array, n = g.attributes.normal.array, i;
+    var p = g.attributes.position.array, n = g.attributes.normal.array, i, t, ax, ay, az, ux, uy, ex, ey, ez, fx, fy, fz;
     for (i = 0; i < p.length; i++) { b.P.push(p[i]); b.N.push(n[i]); }
+    if (b.U) {
+      for (t = 0; t + 8 < p.length; t += 9) {
+        ex = p[t + 3] - p[t]; ey = p[t + 4] - p[t + 1]; ez = p[t + 5] - p[t + 2];
+        fx = p[t + 6] - p[t]; fy = p[t + 7] - p[t + 1]; fz = p[t + 8] - p[t + 2];
+        ax = Math.abs(ey * fz - ez * fy); ay = Math.abs(ez * fx - ex * fz); az = Math.abs(ex * fy - ey * fx);
+        for (i = 0; i < 3; i++) {
+          ux = p[t + i * 3]; uy = p[t + i * 3 + 1];
+          if (az >= ax && az >= ay) b.U.push(ux * 0.34, uy * 0.34);
+          else if (ay >= ax) b.U.push(ux * 0.34, p[t + i * 3 + 2] * 0.34);
+          else b.U.push(uy * 0.34, p[t + i * 3 + 2] * 0.34);
+        }
+      }
+    }
     g.dispose();
   };
   Col.prototype.flush = function (group, mats) {
@@ -95,11 +175,64 @@ var HeroS75S125 = (function () {
       geo = new T.BufferGeometry();
       geo.setAttribute("position", new T.BufferAttribute(new Float32Array(b.P), 3));
       geo.setAttribute("normal", new T.BufferAttribute(new Float32Array(b.N), 3));
+      if (b.U) geo.setAttribute("uv", new T.BufferAttribute(new Float32Array(b.U), 2));
       group.add(new T.Mesh(geo, mats[k]));
     }
   };
 
   function tri(Col_) { var n = 0, k; for (k in Col_.bins) n += Col_.bins[k].P.length / 9; return n; }
+
+  /* ---------- the paint: one flat coat of period olive, weathered -------
+     low-contrast drift, rain streaks running down, dust and scuffs; the
+     256 px tile spans about 2.9 m and repeats (as ru_bm14_bm21.js) */
+  var _tex = {};
+  function paintTex(THREE, P) {
+    var key = P.base + P.seed;
+    if (_tex[key] !== undefined) return _tex[key];
+    var t = null;
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = 256; cv.height = 256;
+      var q = cv.getContext("2d"), s = P.seed >>> 0, i, k, a, x, y, rr, ang, rd, h;
+      var R = function () { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+      q.fillStyle = P.base; q.fillRect(0, 0, 256, 256);
+      for (k = 0; k < P.blots.length; k++) {
+        q.fillStyle = P.blots[k];
+        for (i = 0; i < 10; i++) {
+          x = R() * 256; y = R() * 256; rr = 16 + R() * 36;
+          q.beginPath();
+          for (a = 0; a < 7; a++) {
+            ang = a / 7 * TAU; rd = rr * (0.55 + R() * 0.7);
+            if (a === 0) q.moveTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+            else q.lineTo(x + Math.cos(ang) * rd * 1.4, y + Math.sin(ang) * rd);
+          }
+          q.closePath(); q.fill();
+        }
+      }
+      for (i = 0; i < 40; i++) {
+        x = R() * 256; h = 20 + R() * 70; y = R() * 256;
+        q.fillStyle = (i % 3) ? "rgba(20,20,14,0.07)" : "rgba(170,160,130,0.06)";
+        q.fillRect(x, y, 1 + R() * 2, h);
+      }
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 2) ? "rgba(15,14,10,0.06)" : "rgba(235,228,200,0.045)";
+        q.fillRect(R() * 256, R() * 256, 3 + R() * 24, 2 + R() * 12);
+      }
+      /* panel seams: faint dark lines every 1.5 m or so */
+      q.fillStyle = "rgba(18,18,12,0.10)";
+      q.fillRect(0, 127, 256, 2); q.fillRect(127, 0, 2, 256);
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    _tex[key] = t;
+    return t;
+  }
+  /* period olive, sampled off the St Petersburg SM-63 [P] and the Perm
+     5P73 [F][R] (about #6a7446 and #66713f in daylight) and taken to about
+     0.75 of that for the renderer's ACES lift */
+  var PAINT = { base: "#4f5734", blots: ["#4a5230", "#565e3a", "#4c5531"], seed: 75125 };
 
   /* ---------- geometry helpers (all in metres, +X forward) ---------- */
   function G(THREE) {
@@ -161,82 +294,116 @@ var HeroS75S125 = (function () {
     return h;
   }
 
-  /* ---------- the missiles (axis along X, tail at x0, drawn at origin) ---- */
-  /* V-750 of the S-75 */
+  /* a side profile [x, z] (any simple polygon) extruded across y0..y1 */
+  function profY(THREE, pts, y0, y1) {
+    var s = new THREE.Shape(), i;
+    s.moveTo(pts[0][0], pts[0][1]);
+    for (i = 1; i < pts.length; i++) s.lineTo(pts[i][0], pts[i][1]);
+    var g = new THREE.ExtrudeGeometry(s, { depth: y1 - y0, bevelEnabled: false, steps: 1 });
+    g.rotateX(Math.PI / 2);
+    g.translate(0, y1, 0);
+    return g;
+  }
+
+  /* ---------- the missiles (axis along X, tail at x0, drawn at origin) ----
+     Lofted from station tables [x from the nozzle, radius], read off [K]
+     and [R][F] and scaled to the published lengths and diameters [W]. */
+  /* V-750 of the 1957 S-75: 10.6 m; booster 0.654 m, sustainer 0.50 m */
+  var V750 = {
+    noz:  [[0, 0.20], [0.06, 0.25], [0.14, 0.29], [0.18, 0.30]],
+    boo:  [[0.16, 0.314], [0.24, 0.327], [1.2, 0.327], [2.55, 0.327], [2.62, 0.329], [2.70, 0.327]],
+    cone: [[2.70, 0.327], [2.86, 0.318], [3.06, 0.285], [3.22, 0.255], [3.30, 0.25]],
+    sus:  [[3.28, 0.25], [4.2, 0.25], [6.0, 0.25], [7.6, 0.25], [7.98, 0.25]],
+    band: [[7.98, 0.251], [8.4, 0.252], [8.95, 0.252], [9.05, 0.25]],
+    nose: [[9.05, 0.25], [9.30, 0.243], [9.60, 0.222], [9.90, 0.185], [10.15, 0.140], [10.36, 0.088], [10.50, 0.045], [10.56, 0.022]],
+    tip:  [[10.55, 0.012], [10.6, 0.006]]
+  };
   function v750(c, h, x0) {
-    var i, a, seg = 36;
+    var i, a, seg = 28, X = Math.PI / 4;
     c.push(h.T(x0, 0, 0));
-    /* booster: nozzle, cylinder, cone to the sustainer */
-    c.add("steel", h.lathe([[0, 0.20], [0.10, 0.27], [0.32, 0.24], [0.34, 0.22]], seg));
-    c.add("steel", h.lathe([[0.30, 0.24], [0.55, 0.34], [0.60, 0.34]], seg));
-    c.add("mWhite", h.lathe([[0.60, 0.33], [1.6, 0.33], [3.0, 0.33], [3.14, 0.332], [3.20, 0.33]], seg));
-    c.add("mWhite", h.lathe([[3.20, 0.33], [3.45, 0.30], [3.65, 0.25]], seg));
-    /* booster band rings */
-    for (i = 0; i < 4; i++) c.add("steel", h.lathe([[0.9 + i * 0.62, 0.337], [0.93 + i * 0.62, 0.337]], seg));
-    /* sustainer: grey, then white, then the dark ogive */
-    c.add("mBody", h.lathe([[3.55, 0.25], [4.6, 0.25], [6.2, 0.25], [6.4, 0.252], [7.9, 0.252]], seg));
-    c.add("mWhite", h.lathe([[7.9, 0.252], [8.0, 0.254], [9.0, 0.254], [9.55, 0.254]], seg));
-    c.add("mDark", h.lathe([[9.55, 0.254], [9.80, 0.235], [10.2, 0.16], [10.55, 0.07], [10.80, 0.012]], seg));
-    /* panel seams and the radome joint ring */
-    for (i = 0; i < 6; i++) c.add("steel", h.lathe([[4.0 + i * 0.75, 0.254], [4.02 + i * 0.75, 0.254]], seg));
-    c.add("steel", h.lathe([[9.5, 0.256], [9.56, 0.256]], seg));
-    /* booster fins (four, swept back, rolled 45 degrees) */
+    c.add("steel", h.lathe(V750.noz, seg));
+    c.add("mWhite", h.lathe(V750.boo, seg));
+    c.add("mWhite", h.lathe(V750.cone, seg));
+    for (i = 0; i < 3; i++) c.add("steel", h.lathe([[0.8 + i * 0.62, 0.331], [0.83 + i * 0.62, 0.331]], seg));
+    c.add("mBody", h.lathe(V750.sus, seg));
+    c.add("mWhite", h.lathe(V750.band, seg));
+    c.add("mDark", h.lathe(V750.nose, seg));
+    c.add("steel", h.lathe(V750.tip, 6));
+    /* seams, the joint ring and the cable duct along the sustainer [K] */
+    for (i = 0; i < 4; i++) c.add("steel", h.lathe([[4.4 + i * 0.9, 0.253], [4.42 + i * 0.9, 0.253]], seg));
+    c.add("steel", h.lathe([[7.96, 0.255], [8.0, 0.255]], seg));
+    c.add("mBody", h.box(3.4, 7.9, -0.04, 0.04, 0.24, 0.29).applyMatrix4(h.Rx(X / 2)));
+    /* booster fins: four big cropped deltas, root 2.0 m, out to r 1.25 */
     for (i = 0; i < 4; i++) {
-      a = Math.PI / 4 + i * Math.PI / 2;
-      c.add("mBody", h.fin([[0.0, 0.30], [1.9, 0.30], [0.9, 1.20], [0.0, 1.20]], 0.045, a));
+      a = X + i * Math.PI / 2;
+      c.add("mWhite", h.fin([[0.05, 0.31], [2.05, 0.31], [0.95, 1.25], [0.12, 1.25]], 0.05, a));
     }
-    /* mid-body wings (large delta) */
+    /* sustainer tail controls: four trapezoids at its rear [K] */
     for (i = 0; i < 4; i++) {
-      a = Math.PI / 4 + i * Math.PI / 2;
-      c.add("mBody", h.fin([[5.0, 0.24], [7.0, 0.24], [6.5, 1.05], [5.7, 1.05]], 0.04, a));
+      a = X + i * Math.PI / 2;
+      c.add("mBody", h.fin([[3.32, 0.24], [4.05, 0.24], [3.85, 0.62], [3.45, 0.62]], 0.035, a));
     }
-    /* sustainer-rear control fins (small, in the plus position) */
+    /* mid-body wings: four clipped deltas, root 1.9 m, out to r 1.05 */
     for (i = 0; i < 4; i++) {
-      a = i * Math.PI / 2;
-      c.add("mWhite", h.fin([[3.55, 0.24], [4.35, 0.24], [4.1, 0.62], [3.8, 0.62]], 0.035, a));
+      a = X + i * Math.PI / 2;
+      c.add("mBody", h.fin([[5.15, 0.24], [7.05, 0.24], [6.65, 1.05], [5.95, 1.05]], 0.04, a));
     }
-    /* small nose fins */
+    /* nose canards, small swept trapezoids [K] */
     for (i = 0; i < 4; i++) {
-      a = Math.PI / 4 + i * Math.PI / 2;
-      c.add("mDark", h.fin([[9.65, 0.22], [10.05, 0.17], [9.95, 0.46], [9.8, 0.46]], 0.03, a));
+      a = X + i * Math.PI / 2;
+      c.add("mDark", h.fin([[9.55, 0.21], [9.98, 0.17], [9.92, 0.47], [9.76, 0.47]], 0.03, a));
     }
     c.pop();
   }
 
-  /* V-600 of the S-125 */
+  /* V-600 of the 1961 S-125: 5.9 m; booster 0.52 m (not confirmed),
+     sustainer 0.375 m [W] */
+  var V600 = {
+    noz:  [[0, 0.15], [0.06, 0.20], [0.12, 0.23]],
+    boo:  [[0.10, 0.25], [0.18, 0.26], [1.0, 0.26], [1.72, 0.26], [1.78, 0.262], [1.84, 0.26]],
+    cone: [[1.84, 0.26], [1.95, 0.24], [2.06, 0.205], [2.14, 0.19]],
+    sus:  [[2.12, 0.1875], [3.0, 0.1875], [4.4, 0.1875], [4.95, 0.1875]],
+    nose: [[4.95, 0.1875], [5.12, 0.18], [5.34, 0.155], [5.56, 0.11], [5.74, 0.06], [5.86, 0.022], [5.9, 0.006]]
+  };
   function v600(c, h, x0) {
-    var i, a, seg = 12;
+    var i, a, seg = 16, X = Math.PI / 4;
     c.push(h.T(x0, 0, 0));
-    c.add("steel", h.lathe([[0, 0.13], [0.07, 0.18], [0.20, 0.17]], seg));
-    c.add("mWhite", h.lathe([[0.20, 0.26], [0.40, 0.26], [1.6, 0.26], [1.74, 0.262], [1.80, 0.26]], seg));
-    c.add("mWhite", h.lathe([[1.80, 0.26], [1.95, 0.22], [2.10, 0.19]], seg));
-    c.add("mBody", h.lathe([[2.0, 0.19], [3.0, 0.19], [4.2, 0.19], [4.3, 0.192], [5.2, 0.192]], seg));
-    c.add("mDark", h.lathe([[5.2, 0.192], [5.4, 0.18], [5.65, 0.11], [5.85, 0.04], [5.9, 0.008]], seg));
-    for (i = 0; i < 3; i++) c.add("steel", h.lathe([[2.5 + i * 0.9, 0.194], [2.52 + i * 0.9, 0.194]], seg));
+    c.add("steel", h.lathe(V600.noz, seg));
+    c.add("mWhite", h.lathe(V600.boo, seg));
+    c.add("mWhite", h.lathe(V600.cone, seg));
+    c.add("mBody", h.lathe(V600.sus, seg));
+    c.add("mBody", h.lathe(V600.nose, seg));
+    c.add("steel", h.lathe([[1.0, 0.264], [1.03, 0.264]], seg));
+    for (i = 0; i < 2; i++) c.add("steel", h.lathe([[2.9 + i * 1.0, 0.19], [2.92 + i * 1.0, 0.19]], seg));
+    /* booster fins: cropped deltas, span 1.5 m */
     for (i = 0; i < 4; i++) {
-      a = Math.PI / 4 + i * Math.PI / 2;
-      c.add("mBody", h.fin([[0.0, 0.24], [1.3, 0.24], [0.6, 0.86], [0.0, 0.86]], 0.035, a));
+      a = X + i * Math.PI / 2;
+      c.add("mWhite", h.fin([[0.04, 0.25], [1.25, 0.25], [0.62, 0.75], [0.08, 0.75]], 0.035, a));
     }
+    /* sustainer wings at its rear [R][F] */
     for (i = 0; i < 4; i++) {
-      a = Math.PI / 4 + i * Math.PI / 2;
-      c.add("mBody", h.fin([[3.5, 0.18], [4.5, 0.18], [4.2, 0.68], [3.8, 0.68]], 0.03, a));
+      a = X + i * Math.PI / 2;
+      c.add("mBody", h.fin([[2.25, 0.18], [3.25, 0.18], [3.0, 0.62], [2.55, 0.62]], 0.03, a));
     }
+    /* canards near the nose [R] */
     for (i = 0; i < 4; i++) {
-      a = i * Math.PI / 2;
-      c.add("mDark", h.fin([[5.05, 0.19], [5.4, 0.17], [5.3, 0.36], [5.2, 0.36]], 0.025, a));
+      a = X + i * Math.PI / 2;
+      c.add("mBody", h.fin([[4.78, 0.18], [5.1, 0.17], [5.05, 0.36], [4.92, 0.36]], 0.025, a));
     }
     c.pop();
   }
 
   function materials(THREE, C) {
     function std(col, r, m) { return new THREE.MeshStandardMaterial({ color: col, roughness: r, metalness: m }); }
+    var tx = paintTex(THREE, PAINT), paint = std(0xffffff, 0.86, 0.06);
+    if (tx) paint.map = tx; else paint.color.set(PAINT.base);
     return {
-      paint: std(0x4d5636, 0.88, 0.05),
-      steel: std(0x30353a, 0.66, 0.36),
+      paint: paint,
+      steel: std(0x2f3329, 0.7, 0.32),
       rubber: std(0x1b1c1d, 0.92, 0.02),
-      mBody: std(0xa4a69b, 0.78, 0.12),
-      mWhite: std(0xd6d4c8, 0.8, 0.08),
-      mDark: std(0x2a2d30, 0.62, 0.28),
+      mBody: std(0x9c9f97, 0.66, 0.18),
+      mWhite: std(0xc9c9c0, 0.72, 0.1),
+      mDark: std(0x2a2c2e, 0.55, 0.3),
       glass: std(0x26323a, 0.25, 0.5),
       team: new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 })
     };
@@ -461,78 +628,118 @@ var HeroS75S125 = (function () {
     }
     base.pop();
   }
-  /* the traversing part about the ring centre: turntable, platform, housing,
-     A-frames, cradle and rail at ELEV; the V-750 on it when loaded */
-  function sm63Swing(tur, h, THREE, ELEV, loaded) {
-    var i, j, s, x, y, HZ = 1.95;
+  /* the traversing part about the ring centre [K][H]: the turntable, the
+     long body (a low rear deck under the tall equipment housing, a lower
+     front box with two buffer cylinders facing forward), the housing with
+     ribbed sides and a chamfered, slatted rear top, the trunnion cheeks
+     on its top at the rear. The boom is drawn by sm63Boom about PIV. */
+  var SM_PIV = [-2.0, 2.4];          /* boom pivot (x, z) in the turret frame */
+  function sm63Swing(tur, h, THREE) {
+    var i, j, s, x, y;
     tur.add("steel", h.cylZ(0, 0.14, 1.25, 1.25, 28, 0, 0));
-    tur.add("paint", h.cylZ(0.14, 0.22, 1.12, 1.12, 28, 0, 0));
     for (i = 0; i < 12; i++) {
       s = i * TAU / 12;
       tur.add("steel", h.cylZ(0.14, 0.2, 0.045, 0.045, 6, Math.cos(s) * 1.18, Math.sin(s) * 1.18));
     }
-    tur.add("paint", h.box(-1.9, 1.0, -1.0, 1.0, 0.22, 0.42));
-    tur.add("steel", h.box(-1.9, 1.0, -1.02, 1.02, 0.40, 0.44));
-    tur.add("paint", h.box(-1.85, -0.35, -0.85, 0.85, 0.44, 0.74));
-    tur.add("paint", h.box(-1.7, -0.5, -0.78, 0.78, 0.74, 0.80));
-    for (i = 0; i < 12; i++) {
-      x = -1.66 + i * 0.1;
-      tur.add("steel", h.box(x, x + 0.06, -0.72, 0.72, 0.80, 0.84));
-    }
-    for (i = 0; i < 5; i++) {
-      tur.add("steel", h.box(-1.5 + i * 0.28, -1.43 + i * 0.28, 0.85, 0.89, 0.50, 0.70));
-      tur.add("steel", h.box(-1.5 + i * 0.28, -1.43 + i * 0.28, -0.89, -0.85, 0.50, 0.70));
-    }
-    tur.add("steel", h.cylY(0.85, 0.95, 0.05, 8, -1.3, 0.6));
-    tur.add("steel", h.cylY(-0.95, -0.85, 0.05, 8, -1.3, 0.6));
-    tur.add("team", h.box(-1.5, -0.7, -0.4, 0.4, 0.84, 0.855));
+    /* low rear deck and the lower front box */
+    tur.add("paint", h.box(-2.6, 0.9, -0.95, 0.95, 0.14, 0.95));
+    tur.add("paint", profY(THREE, [[0.9, 0.14], [3.0, 0.14], [3.0, 1.38], [2.85, 1.55], [0.9, 1.55]], -0.62, 0.62));
+    tur.add("steel", h.box(0.95, 2.95, -0.64, 0.64, 1.55, 1.59));
+    /* the saddle the boom's post comes down on at rest [K] */
+    tur.add("paint", profY(THREE, [[1.95, 1.59], [2.95, 1.59], [2.95, 2.3], [2.05, 2.12]], -0.46, 0.46));
+    for (j = -1; j <= 1; j += 2) tur.add("steel", h.box(2.2, 2.75, j * 0.46 - 0.012, j * 0.46 + 0.012, 1.7, 2.05));
+    /* the front box's side doors and hinges */
     for (j = -1; j <= 1; j += 2) {
-      y = j * 0.72;
-      tur.add("paint", h.between(new THREE.Vector3(-0.85, y, 0.42), new THREE.Vector3(0, y, HZ), 0.10, 10));
-      tur.add("paint", h.between(new THREE.Vector3(0.85, y, 0.42), new THREE.Vector3(0, y, HZ), 0.10, 10));
-      tur.add("steel", h.between(new THREE.Vector3(-0.6, y, 0.9), new THREE.Vector3(0.6, y, 0.9), 0.04, 6));
-      tur.add("paint", h.box(-0.28, 0.28, y - 0.09, y + 0.09, HZ - 0.28, HZ + 0.26));
-      tur.add("steel", h.box(-0.3, 0.3, y - 0.11, y + 0.11, HZ - 0.06, HZ + 0.06));
-      tur.add("paint", h.box(-1.05, -0.65, y - 0.1, y + 0.1, 0.42, 0.52));
-      tur.add("paint", h.box(0.65, 1.05, y - 0.1, y + 0.1, 0.42, 0.52));
+      for (i = 0; i < 3; i++) {
+        x = 1.05 + i * 0.64;
+        tur.add("paint", h.box(x, x + 0.56, j * 0.62 - 0.012, j * 0.62 + 0.012, 0.32, 1.32));
+        tur.add("steel", h.box(x + 0.02, x + 0.05, j * 0.635 - 0.01, j * 0.635 + 0.01, 0.4, 1.24));
+      }
+      /* the rear deck's side doors */
+      for (i = 0; i < 2; i++) {
+        x = -0.15 + i * 0.5;
+        tur.add("paint", h.box(x, x + 0.44, j * 0.95 - 0.012, j * 0.95 + 0.012, 0.25, 0.85));
+      }
     }
-    tur.add("steel", h.cylY(-0.98, 0.98, 0.09, 14, 0, HZ));
-    tur.add("steel", h.cylY(0.74, 0.92, 0.13, 14, 0, HZ));
-    tur.add("steel", h.cylY(-0.92, -0.74, 0.13, 14, 0, HZ));
-    var Mc = h.T(0, 0, HZ).multiply(h.Ry(-ELEV));
-    tur.push(Mc);
-    tur.add("paint", h.box(-3.5, 3.9, -0.17, 0.17, -0.17, 0.17));
-    tur.add("steel", h.box(-3.5, 3.9, -0.12, 0.12, 0.17, 0.21));
-    tur.add("paint", h.box(-0.35, 0.35, -0.7, 0.7, -0.22, 0.12));
-    for (i = 0; i < 14; i++) {
-      x = -3.2 + i * 0.5;
-      tur.add("steel", h.box(x, x + 0.05, -0.22, 0.22, -0.2, 0.0));
+    /* two buffer cylinders out of the front box, low [K] */
+    for (j = -1; j <= 1; j += 2) {
+      tur.add("steel", h.cylX(3.0, 3.42, 0.12, 0.12, 14, j * 0.28, 0.48));
+      tur.add("steel", h.cylX(3.42, 3.52, 0.16, 0.16, 14, j * 0.28, 0.48));
+      tur.add("paint", h.box(2.98, 3.06, j * 0.28 - 0.2, j * 0.28 + 0.2, 0.26, 0.7));
     }
-    var shoe = [-3.1, -1.7, 1.7, 3.3];
-    for (i = 0; i < 4; i++) {
-      x = shoe[i];
-      tur.add("steel", h.box(x - 0.25, x + 0.25, -0.2, 0.2, 0.21, i < 2 ? 0.25 : 0.33));
-      tur.add("steel", h.box(x - 0.25, x + 0.25, -0.3, -0.25, 0.21, 0.55));
-      tur.add("steel", h.box(x - 0.25, x + 0.25, 0.25, 0.3, 0.21, 0.55));
-      tur.add("steel", h.cylY(-0.3, 0.3, 0.025, 6, x, 0.56));
-    }
-    tur.add("steel", h.cylX(-3.5, 3.9, 0.025, 0.025, 6, 0.2, 0.0));
-    tur.add("steel", h.box(-3.55, -3.5, -0.3, 0.3, -0.1, 0.55));
-    if (loaded) {
-      tur.push(h.T(0, 0, 0.55));
-      v750(tur, h, -3.8);
+    /* the equipment housing: chamfered at the rear top [K][H] */
+    var HP = [[-2.75, 0.95], [-0.2, 0.95], [-0.2, 1.95], [-1.5, 1.95], [-2.75, 1.38]];
+    tur.add("paint", profY(THREE, HP, -1.0, 1.0));
+    tur.add("steel", h.box(-1.55, -0.18, -1.02, 1.02, 1.93, 1.97));
+    /* slats on the chamfer */
+    var ch = Math.atan2(1.95 - 1.38, 2.75 - 1.5);
+    for (i = 0; i < 8; i++) {
+      var u = (i + 0.6) / 8.6, cx = -2.75 + u * 1.25, cz = 1.38 + u * 0.57;
+      tur.push(h.T(cx, 0, cz).multiply(h.Ry(-ch)));
+      tur.add("steel", h.box(-0.05, 0.05, -0.86, 0.86, 0.0, 0.04));
       tur.pop();
     }
-    tur.pop();
+    /* vertical ribs on the housing sides and its rear face [K] */
     for (j = -1; j <= 1; j += 2) {
-      var pa = new THREE.Vector3(-1.5, j * 0.45, 0.74);
-      var pb = new THREE.Vector3(-1.9, j * 0.45, -0.2).applyMatrix4(Mc);
-      var pm = pa.clone().lerp(pb, 0.5);
-      tur.add("steel", h.between(pa, pm, 0.07, 12));
-      tur.add("paint", h.between(pm, pb, 0.05, 12));
-      tur.add("steel", h.between(pa.clone().add(new THREE.Vector3(0, -0.06, 0)), pa.clone().add(new THREE.Vector3(0, 0.06, 0)), 0.07, 8));
+      for (i = 0; i < 8; i++) {
+        x = -2.62 + i * 0.32;
+        var top = x < -1.5 ? 1.38 + (x + 2.75) / 1.25 * 0.57 - 0.04 : 1.91;
+        tur.add("steel", h.box(x, x + 0.05, j * 1.0 - 0.025, j * 1.0 + 0.025, 1.0, top));
+      }
+      tur.add("paint", h.box(-0.95, -0.35, j * 1.0 - 0.012, j * 1.0 + 0.012, 1.1, 1.8));
+      tur.add("steel", h.box(-0.42, -0.38, j * 1.015 - 0.01, j * 1.015 + 0.01, 1.4, 1.5));
+    }
+    for (i = 0; i < 5; i++) tur.add("steel", h.box(-2.77, -2.73, -0.85 + i * 0.42, -0.8 + i * 0.42, 0.98, 1.36));
+    /* trunnion cheeks on the housing top at the rear */
+    for (j = -1; j <= 1; j += 2) {
+      tur.add("paint", profY(THREE, [[-2.35, 1.6], [-1.45, 1.95], [-1.65, 2.62], [-2.35, 2.62]], j > 0 ? 0.31 : -0.43, j > 0 ? 0.43 : -0.31));
+      tur.add("steel", h.cylY(j * 0.43, j * 0.5, 0.17, 14, SM_PIV[0], SM_PIV[1]));
+    }
+    tur.add("steel", h.cylY(-0.52, 0.52, 0.09, 12, SM_PIV[0], SM_PIV[1]));
+    /* a handrail and step at the housing's front */
+    tur.add("steel", h.box(-0.2, -0.05, -0.6, 0.6, 1.2, 1.24));
+    tur.add("steel", h.box(-0.2, 0.25, -0.5, 0.5, 0.95, 0.99));
+    /* the side's modest team mark: a small plate on the housing top */
+    tur.add("team", h.box(-1.25, -0.55, -0.4, 0.4, 1.97, 1.985));
+  }
+  /* the boom in its own frame: origin on the pivot, X along the rail.
+     A box girder with stiffeners, the rail with its shoe clamps on top,
+     the post hanging under its front [K]; the V-750 rides on it, tail
+     just behind the pivot. */
+  var SM_AX = 0.67, SM_TAIL = -0.7;       /* missile axis height, tail x */
+  function sm63Boom(c, h, THREE, loaded) {
+    var i, j, x;
+    c.add("paint", profY(THREE, [[-0.45, -0.45], [4.7, -0.45], [5.6, -0.12], [5.6, 0.2], [-0.45, 0.2]], -0.3, 0.3));
+    c.add("steel", h.cylY(-0.29, 0.29, 0.2, 14, 0, 0));
+    for (i = 0; i < 10; i++) {
+      x = -0.25 + i * 0.55;
+      for (j = -1; j <= 1; j += 2) c.add("steel", h.box(x, x + 0.05, j * 0.3 - 0.02, j * 0.3 + 0.02, x > 4.7 ? -0.1 : -0.43, 0.18));
+    }
+    for (j = -1; j <= 1; j += 2) c.add("steel", h.box(-0.45, 4.7, j * 0.3 - 0.03, j * 0.3 + 0.03, -0.47, -0.41));
+    c.add("steel", h.box(-0.6, 5.7, -0.11, 0.11, 0.2, 0.26));
+    c.add("steel", h.box(-0.6, 5.7, -0.05, 0.05, 0.26, 0.29));
+    /* shoe clamps: booster pair at the rear, sustainer pair forward */
+    var sh = [[-0.2, 0.34], [1.5, 0.34], [3.9, 0.42], [4.9, 0.42]];
+    for (i = 0; i < sh.length; i++) {
+      x = sh[i][0];
+      c.add("steel", h.box(x - 0.2, x + 0.2, -0.13, 0.13, 0.26, sh[i][1]));
+      c.add("steel", h.box(x - 0.2, x + 0.2, -0.17, -0.13, 0.22, sh[i][1] + 0.12));
+      c.add("steel", h.box(x - 0.2, x + 0.2, 0.13, 0.17, 0.22, sh[i][1] + 0.12));
+    }
+    /* the post under the front [K]: a heavy box, ribbed, with a foot that
+       comes down on the saddle of the front box at rest */
+    c.add("paint", h.box(3.9, 4.6, -0.38, 0.38, -1.3, -0.45));
+    for (j = -1; j <= 1; j += 2) for (i = 0; i < 3; i++) c.add("steel", h.box(3.98 + i * 0.25, 4.02 + i * 0.25, j * 0.38 - 0.02, j * 0.38 + 0.02, -1.25, -0.47));
+    c.add("steel", h.box(3.82, 4.68, -0.42, 0.42, -1.38, -1.3));
+    /* the tail stop at the rear end */
+    c.add("steel", h.box(-0.62, -0.56, -0.2, 0.2, -0.15, 0.3));
+    if (loaded) {
+      c.push(h.T(0, 0, SM_AX));
+      v750(c, h, SM_TAIL);
+      c.pop();
     }
   }
+
   /* a detachable wheel carriage under one end of the long beam (travel) */
   function sm63Carriage(c, h, THREE, x, Z, bar) {
     var j, V = THREE.Vector3;
@@ -565,23 +772,45 @@ var HeroS75S125 = (function () {
     trv.userData.k = k;
   }
 
+  /* the rail(s) on a "podelev" hinged on the pivot: render3d raises it by
+     userData.el (rotation.y = -el) while the unit holds a target in reach.
+     The resting angle is built into the geometry, not into a turned node:
+     the engine sizes a unit by the corners of each mesh's box, and a turned
+     node would count wider than it draws (tools/model3d/dump.js). cells:
+     the round noses [mouth x, y, z, tail x] in the group's frame. */
+  function railGroup(THREE, M, col, piv, el, cells) {
+    var pe = new THREE.Group();
+    pe.name = "podelev";
+    pe.position.set(piv[0], piv[1], piv[2]);
+    pe.userData.el = el;
+    pe.userData.cells = cells;
+    col.flush(pe, M);
+    return pe;
+  }
+  /* a point (x, z) of the rail frame laid at the resting angle */
+  function atRest(x, z, rest) { return [x * Math.cos(rest) - z * Math.sin(rest), x * Math.sin(rest) + z * Math.cos(rest)]; }
+
   function buildSM63(THREE, C) {
     var h = G(THREE), M = materials(THREE, C), root = new THREE.Group();
-    var RZ = 0.62, i;
+    var RZ = 0.62, REST = 17 * D2R, FIRE = 35 * D2R;
     /* ---- set up: the launcher on its ground frame, V-750 on the rail ---- */
-    var dep = new THREE.Group(), base = new Col(THREE), tur = new Col(THREE), OX = -1.2;
+    var dep = new THREE.Group(), base = new Col(THREE), tur = new Col(THREE), bm = new Col(THREE), OX = -2.0;
     dep.name = "deploypose";
     base.push(h.T(OX, 0, 0)); sm63Frame(base, h, THREE, 0); base.pop();
-    sm63Swing(tur, h, THREE, 22 * Math.PI / 180, true);
+    sm63Swing(tur, h, THREE);
+    bm.push(h.Ry(-REST)); sm63Boom(bm, h, THREE, true); bm.pop();
     base.flush(dep, M);
     var tg = new THREE.Group();
     tg.name = "turret";
     tg.position.set(OX, 0, RZ);
     tur.flush(tg, M);
+    var mo = atRest(SM_TAIL + 10.6, SM_AX, REST), tl = atRest(SM_TAIL, SM_AX, REST);
+    tg.add(railGroup(THREE, M, bm, [SM_PIV[0], 0, SM_PIV[1]], FIRE - REST, [[mo[0], 0, mo[1], tl[0]]]));
     dep.add(tg);
     dep.visible = false;
     /* ---- on the march: on its two wheel carriages behind a KrAZ-214,
-       rail run down level and turned to the rear, no missile (the round
+       boom down on its post at the resting angle and turned to the rear
+       (laid level it would put the post through the front box), no missile (the round
        travels on its PR-11 transporter-loader) ---- */
     var trv = new THREE.Group(), tb = new Col(THREE), tt = new Col(THREE);
     var LX = -4.68, LZ = 0.6, KX = 8.6;
@@ -594,7 +823,10 @@ var HeroS75S125 = (function () {
     kraz214(tb, h, THREE, M, trv, KX);
     trv.add(wheelSet(THREE, h, M, LX + 1.75, 0.52, [-1.0, 1.0], 0.36, 12, 8));
     trv.add(wheelSet(THREE, h, M, LX - 1.75, 0.52, [-1.0, 1.0], 0.36, 12, 8));
-    sm63Swing(tt, h, THREE, 0, false);
+    sm63Swing(tt, h, THREE);
+    tt.push(h.T(SM_PIV[0], 0, SM_PIV[1]).multiply(h.Ry(-REST)));
+    sm63Boom(tt, h, THREE, false);
+    tt.pop();
     tb.flush(trv, M);
     var lg = new THREE.Group();
     lg.name = "launcher";
@@ -607,94 +839,137 @@ var HeroS75S125 = (function () {
     fitTravel(THREE, trv, dep);
     var wt = 0;
     trv.traverse(function (o) { if (o._tris) wt += o._tris; });
-    root._tris = { deploy: tri(base) + tri(tur), travel: tri(tb) + tri(tt) + wt };
+    root._tris = { deploy: tri(base) + tri(tur) + tri(bm), travel: tri(tb) + tri(tt) + wt };
     return root;
   }
 
   /* ---------------- the S-125 5P73 ---------------- */
-  /* the traversing launcher about the ring centre, beams at ELEV, four
-     V-600 on them when loaded */
-  function p73Swing(tur, h, THREE, ELEV, loaded) {
-    var i, j, s, x, y, HZ = 1.55, V = THREE.Vector3;
-    tur.add("steel", h.cylZ(0, 0.12, 1.0, 1.0, 28, 0, 0));
-    tur.add("paint", h.cylZ(0.12, 0.22, 0.88, 0.88, 28, 0, 0));
-    for (i = 0; i < 10; i++) {
-      s = i * TAU / 10;
-      tur.add("steel", h.cylZ(0.12, 0.18, 0.04, 0.04, 5, Math.cos(s) * 0.94, Math.sin(s) * 0.94));
+  /* set up: the round base plate on the ground [R][F] - radial gussets from
+     the raised centre to the rim, lugs and screw jacks round the rim, the
+     short pedestal the launcher turns on (top at P73_Z) */
+  var P73_Z = 0.85;
+  function p73Ground(c, h, THREE) {
+    var i, s, x, y, g;
+    c.add("paint", h.cylZ(0, 0.12, 1.8, 1.8, 36, 0, 0));
+    c.add("steel", h.cylZ(0.12, 0.14, 1.78, 1.7, 36, 0, 0));
+    c.add("paint", h.cylZ(0.12, 0.55, 0.78, 0.56, 24, 0, 0));
+    c.add("steel", h.cylZ(0.55, 0.6, 0.6, 0.6, 24, 0, 0));
+    c.add("paint", h.cylZ(0.6, P73_Z, 0.42, 0.42, 20, 0, 0));
+    c.add("steel", h.cylZ(P73_Z - 0.06, P73_Z, 0.5, 0.5, 24, 0, 0));
+    for (i = 0; i < 12; i++) {
+      s = (i + 0.5) * TAU / 12;
+      g = profY(THREE, [[0.62, 0.12], [1.62, 0.12], [1.62, 0.2], [0.62, 0.5]], -0.03, 0.03);
+      g.rotateZ(s);
+      c.add("paint", g);
     }
-    tur.add("paint", h.box(-0.55, 0.55, -0.5, 0.5, 0.22, 0.62));
-    tur.add("paint", h.box(-0.4, 0.4, -0.5, 0.5, 0.62, 0.70));
-    for (i = 0; i < 6; i++) tur.add("steel", h.box(-0.5 + i * 0.18, -0.46 + i * 0.18, -0.52, -0.5, 0.3, 0.58));
-    for (j = -1; j <= 1; j += 2) {
-      y = j * 0.46;
-      tur.add("paint", h.between(new V(-0.45, y, 0.65), new V(0, y, HZ), 0.075, 10));
-      tur.add("paint", h.between(new V(0.45, y, 0.65), new V(0, y, HZ), 0.075, 10));
-      tur.add("paint", h.box(-0.2, 0.2, y - 0.07, y + 0.07, HZ - 0.2, HZ + 0.2));
+    for (i = 0; i < 16; i++) {
+      s = i * TAU / 16;
+      x = Math.cos(s); y = Math.sin(s);
+      g = h.box(1.66, 1.86, -0.08, 0.08, 0.0, 0.2);
+      g.rotateZ(s);
+      c.add(i % 2 ? "paint" : "steel", g);
     }
-    tur.add("steel", h.cylY(-0.62, 0.62, 0.075, 12, 0, HZ));
-    var Mc = h.T(0, 0, HZ).multiply(h.Ry(-ELEV));
-    tur.push(Mc);
-    tur.add("paint", h.box(-0.2, 0.2, -2.15, 2.15, -0.14, 0.14));
-    tur.add("steel", h.box(-0.18, 0.18, -2.15, 2.15, 0.14, 0.17));
-    var RY = [-1.35, -0.45, 0.45, 1.35];
-    for (i = 0; i < 4; i++) {
-      y = RY[i];
-      tur.add("paint", h.box(-2.1, 1.6, y - 0.075, y + 0.075, -0.1, 0.1));
-      tur.add("steel", h.box(-2.1, 1.6, y - 0.05, y + 0.05, 0.1, 0.13));
-      var sh = [-1.5, -0.2, 0.9];
-      for (j = 0; j < 3; j++) {
-        x = sh[j];
-        tur.add("steel", h.box(x - 0.14, x + 0.14, y - 0.1, y + 0.1, 0.13, 0.19));
-        tur.add("steel", h.box(x - 0.14, x + 0.14, y - 0.16, y - 0.1, 0.13, 0.36));
-        tur.add("steel", h.box(x - 0.14, x + 0.14, y + 0.1, y + 0.16, 0.13, 0.36));
-      }
-      tur.add("steel", h.box(-2.15, -2.1, y - 0.12, y + 0.12, -0.05, 0.3));
-      if (loaded) {
-        tur.push(h.T(0, y, 0.34));
-        v600(tur, h, -2.05);
-        tur.pop();
-      }
+    /* eight levelling screw jacks round the rim, wound down */
+    for (i = 0; i < 8; i++) {
+      s = i * TAU / 8;
+      x = Math.cos(s) * 1.5; y = Math.sin(s) * 1.5;
+      c.add("steel", h.cylZ(0.12, 0.42, 0.045, 0.045, 8, x, y));
+      c.add("paint", h.cylZ(0.3, 0.46, 0.09, 0.09, 8, x, y));
+      c.add("steel", h.cylZ(0.46, 0.5, 0.05, 0.05, 6, x, y));
     }
-    for (i = 0; i < 3; i++) {
-      for (x = -1.4; x <= 0.9; x += 0.7) {
-        tur.add("paint", h.between(new V(x, RY[i], 0.0), new V(x + 0.7, RY[i + 1], 0.0), 0.028, 6));
-        tur.add("paint", h.between(new V(x + 0.7, RY[i], 0.0), new V(x, RY[i + 1], 0.0), 0.028, 6));
-      }
-    }
-    for (x = -1.4; x <= 1.0; x += 0.7) tur.add("paint", h.cylY(-1.45, 1.45, 0.03, 6, x, -0.05));
-    tur.pop();
-    for (j = -1; j <= 1; j += 2) {
-      var pa = new V(-0.4, j * 0.46, 0.5);
-      var pb = new V(-1.3, j * 0.46, -0.1).applyMatrix4(Mc);
-      var pm = pa.clone().lerp(pb, 0.5);
-      tur.add("steel", h.between(pa, pm, 0.06, 12));
-      tur.add("paint", h.between(pm, pb, 0.045, 12));
-    }
-    tur.add("team", h.box(-0.35, 0.35, -0.38, 0.38, 0.70, 0.715));
   }
 
-  /* set up: the round base on the ground, as the Perm launcher stands -
-     an eight-sided plate, the skirted pedestal, the roller path, levelling
-     jacks round the rim */
-  function p73Ground(c, h, THREE) {
-    var i, s, x, y;
-    c.add("paint", h.cylZ(0, 0.2, 1.85, 1.85, 8, 0, 0).rotateZ(Math.PI / 8));
-    c.add("steel", h.cylZ(0.2, 0.24, 1.7, 1.7, 8, 0, 0).rotateZ(Math.PI / 8));
-    c.add("paint", h.cylZ(0.24, 0.62, 1.35, 1.05, 24, 0, 0));
-    c.add("steel", h.cylZ(0.62, 0.72, 1.0, 1.0, 28, 0, 0));
-    for (i = 0; i < 12; i++) {
-      s = i * TAU / 12;
-      c.add("steel", h.cylZ(0.72, 0.76, 0.04, 0.04, 5, Math.cos(s) * 0.92, Math.sin(s) * 0.92));
+  /* the traversing part on the pedestal [R]: turntable, the box housing set
+     across the firing line (doors front and rear, louvred ends), the
+     bearing saddles of the elevation tube on its top, the tube's drive box
+     at the right-hand end. The rails are drawn by p73Rails about P73_PIV. */
+  var P73_PIV = [0.0, 1.32];
+  function p73Swing(tur, h, THREE) {
+    var i, j, x, y;
+    tur.add("steel", h.cylZ(0, 0.1, 0.62, 0.62, 24, 0, 0));
+    for (i = 0; i < 10; i++) {
+      var s = i * TAU / 10;
+      tur.add("steel", h.cylZ(0.1, 0.15, 0.035, 0.035, 5, Math.cos(s) * 0.56, Math.sin(s) * 0.56));
     }
-    for (i = 0; i < 8; i++) {
-      s = (i + 0.5) * TAU / 8;
-      x = Math.cos(s) * 1.62; y = Math.sin(s) * 1.62;
-      c.add("steel", h.cylZ(0, 0.06, 0.2, 0.22, 10, x * 1.08, y * 1.08));
-      c.add("steel", h.cylZ(0.06, 0.36, 0.05, 0.05, 8, x * 1.08, y * 1.08));
-      c.add("paint", h.cylZ(0.2, 0.42, 0.09, 0.09, 8, x * 1.08, y * 1.08));
-      /* a stiffening rib from the pedestal skirt to each jack */
-      c.add("paint", h.between(new THREE.Vector3(x * 0.72, y * 0.72, 0.5), new THREE.Vector3(x, y, 0.22), 0.05, 6));
+    tur.add("paint", h.box(-0.72, 0.6, -1.9, 1.9, 0.1, 1.0));
+    tur.add("steel", h.box(-0.74, 0.62, -1.92, 1.92, 0.98, 1.02));
+    tur.add("paint", h.box(-0.6, 0.48, -1.75, 1.75, 1.02, 1.06));
+    /* doors on the front and rear faces, with hinges and catches */
+    for (j = -1; j <= 1; j += 2) {
+      x = j > 0 ? 0.6 : -0.72;
+      for (i = 0; i < 5; i++) {
+        y = -1.72 + i * 0.7;
+        tur.add("paint", h.box(x - 0.012, x + 0.012, y, y + 0.62, 0.22, 0.9));
+        tur.add("steel", h.box(x - (j > 0 ? -0.012 : 0.022), x + (j > 0 ? 0.022 : -0.012), y + 0.04, y + 0.08, 0.3, 0.82));
+        tur.add("steel", h.box(x - (j > 0 ? -0.012 : 0.022), x + (j > 0 ? 0.022 : -0.012), y + 0.5, y + 0.56, 0.55, 0.6));
+      }
+      /* louvred ends */
+      y = j * 1.9;
+      for (i = 0; i < 6; i++) tur.add("steel", h.box(-0.35, 0.25, y - 0.012, y + 0.012, 0.42 + i * 0.075, 0.45 + i * 0.075));
+      tur.add("steel", h.box(-0.6, 0.48, y - 0.008, y + 0.008, 0.15, 0.2));
     }
+    /* bearing saddles of the tube */
+    for (i = 0; i < 3; i++) {
+      y = -1.55 + i * 1.55;
+      tur.add("paint", h.box(-0.24, 0.24, y - 0.12, y + 0.12, 1.02, P73_PIV[1]));
+      tur.add("steel", h.cylY(y - 0.14, y + 0.14, 0.22, 14, P73_PIV[0], P73_PIV[1]));
+    }
+    /* the drive box at the right-hand end and its big wheel [R] */
+    tur.add("paint", h.box(-0.38, 0.38, -2.5, -2.12, 0.98, 1.66));
+    tur.add("steel", h.cylY(-2.62, -2.5, 0.32, 18, P73_PIV[0], P73_PIV[1]));
+    tur.add("steel", h.cylY(-2.68, -2.62, 0.12, 10, P73_PIV[0], P73_PIV[1]));
+    tur.add("paint", h.box(-0.3, 0.3, -2.12, -1.92, 0.98, 1.2));
+    tur.add("team", h.box(-0.5, -0.1, 0.9, 1.5, 1.06, 1.075));
+  }
+  /* the rails in their own frame: origin on the tube's axis, X along the
+     rails. The tube, four rail arms clamped on it, four rails with shoe
+     clamps, the lateral X-braced truss under them [F], and the four V-600
+     on top, tails at P73_TAIL. Rail spacing 1.1 m (not confirmed). */
+  var P73_RY = [-1.65, -0.55, 0.55, 1.65], P73_AX = 0.74, P73_TAIL = -1.8;
+  function p73Rails(c, h, THREE, loaded) {
+    var i, j, x, y, V = THREE.Vector3;
+    c.add("steel", h.cylY(-2.12, 2.0, 0.16, 16, 0, 0));
+    for (i = 0; i < 4; i++) {
+      y = P73_RY[i];
+      /* the arm clamped on the tube, the rail on it */
+      c.add("paint", profY(THREE, [[-0.32, -0.2], [0.32, -0.2], [0.55, 0.3], [-0.55, 0.3]], y - 0.09, y + 0.09));
+      c.add("paint", profY(THREE, [[-1.7, 0.28], [3.2, 0.28], [3.2, 0.36], [3.05, 0.42], [-1.7, 0.42]], y - 0.07, y + 0.07));
+      c.add("steel", h.box(-1.7, 3.15, y - 0.045, y + 0.045, 0.42, 0.45));
+      /* the rail's open lattice cradle under it [F]: a lower chord and
+         diagonals on both sides */
+      c.add("paint", h.box(-1.2, 2.7, y - 0.05, y + 0.05, -0.04, 0.04));
+      for (j = 0; j < 6; j++) {
+        x = -1.2 + j * 0.65;
+        c.add("paint", h.between(new V(x, y - 0.06, 0.0), new V(x + 0.65, y - 0.06, 0.3), 0.025, 4));
+        c.add("paint", h.between(new V(x, y + 0.06, 0.3), new V(x + 0.65, y + 0.06, 0.0), 0.025, 4));
+      }
+      /* the diagonal strut from the tube to the rail's front */
+      c.add("paint", h.between(new V(0.15, y, -0.12), new V(1.9, y, 0.3), 0.045, 8));
+      var sh = [[-1.25, 0.48], [0.95, 0.55], [2.6, 0.55]];
+      for (j = 0; j < 3; j++) {
+        x = sh[j][0];
+        c.add("steel", h.box(x - 0.12, x + 0.12, y - 0.07, y + 0.07, 0.45, sh[j][1]));
+        c.add("steel", h.box(x - 0.12, x + 0.12, y - 0.11, y - 0.07, 0.42, sh[j][1] + 0.09));
+        c.add("steel", h.box(x - 0.12, x + 0.12, y + 0.07, y + 0.11, 0.42, sh[j][1] + 0.09));
+      }
+      c.add("steel", h.box(-1.74, -1.7, y - 0.12, y + 0.12, 0.3, 0.62));
+      if (loaded) {
+        c.push(h.T(0, y, P73_AX));
+        v600(c, h, P73_TAIL);
+        c.pop();
+      }
+    }
+    /* the lateral truss under the rails: chords, posts and X-bracing */
+    var tx = 0.95, zu = 0.26, zl = -0.32;
+    c.add("paint", h.box(tx - 0.07, tx + 0.07, -1.75, 1.75, zu - 0.07, zu + 0.03));
+    c.add("paint", h.box(tx - 0.05, tx + 0.05, -1.75, 1.75, zl - 0.05, zl + 0.05));
+    for (i = 0; i < 4; i++) c.add("paint", h.box(tx - 0.05, tx + 0.05, P73_RY[i] - 0.05, P73_RY[i] + 0.05, zl, zu));
+    for (i = 0; i < 3; i++) {
+      c.add("paint", h.between(new V(tx, P73_RY[i], zl), new V(tx, P73_RY[i + 1], zu - 0.04), 0.03, 6));
+      c.add("paint", h.between(new V(tx, P73_RY[i], zu - 0.04), new V(tx, P73_RY[i + 1], zl), 0.03, 6));
+    }
+    c.add("paint", h.between(new V(0.1, -1.6, -0.12), new V(tx, -1.6, zl), 0.035, 6));
+    c.add("paint", h.between(new V(0.1, 1.6, -0.12), new V(tx, 1.6, zl), 0.035, 6));
   }
 
   /* on the march: the two-axle wheeled carriage (jacks up, drawbar) */
@@ -739,20 +1014,24 @@ var HeroS75S125 = (function () {
 
   function buildP73(THREE, C) {
     var h = G(THREE), M = materials(THREE, C), root = new THREE.Group();
-    var ELEV = 25 * Math.PI / 180;
+    var REST = 25 * D2R, FIRE = 50 * D2R, i, cells = [];
     /* ---- set up ---- */
-    var dep = new THREE.Group(), base = new Col(THREE), tur = new Col(THREE);
+    var dep = new THREE.Group(), base = new Col(THREE), tur = new Col(THREE), rl = new Col(THREE);
     dep.name = "deploypose";
     p73Ground(base, h, THREE);
-    p73Swing(tur, h, THREE, ELEV, true);
+    p73Swing(tur, h, THREE);
+    rl.push(h.Ry(-REST)); p73Rails(rl, h, THREE, true); rl.pop();
     base.flush(dep, M);
     var tg = new THREE.Group();
     tg.name = "turret";
-    tg.position.set(0, 0, 0.76);
+    tg.position.set(0, 0, P73_Z);
     tur.flush(tg, M);
+    var mo = atRest(P73_TAIL + 5.9, P73_AX, REST), tl = atRest(P73_TAIL, P73_AX, REST);
+    for (i = 0; i < 4; i++) cells.push([mo[0], P73_RY[i], mo[1], tl[0]]);
+    tg.add(railGroup(THREE, M, rl, [P73_PIV[0], 0, P73_PIV[1]], FIRE - REST, cells));
     dep.add(tg);
     dep.visible = false;
-    /* ---- on the march: on the carriage behind an AT-S, beams level and
+    /* ---- on the march: on the carriage behind an AT-S, rails level and
        turned to the rear, unloaded (the rounds ride the PR-14 loaders) ---- */
     var trv = new THREE.Group(), tb = new Col(THREE), tt = new Col(THREE);
     var LX = -3.64, AX = [-1.15, 0.35];
@@ -763,7 +1042,10 @@ var HeroS75S125 = (function () {
     ats(tb, h, THREE, M, trv, 6.15);
     trv.add(wheelSet(THREE, h, M, LX + AX[0], 0.54, [-1.14, 1.14], 0.3, 12, 8));
     trv.add(wheelSet(THREE, h, M, LX + AX[1], 0.54, [-1.14, 1.14], 0.3, 12, 8));
-    p73Swing(tt, h, THREE, 0, false);
+    p73Swing(tt, h, THREE);
+    tt.push(h.T(P73_PIV[0], 0, P73_PIV[1]));
+    p73Rails(tt, h, THREE, false);
+    tt.pop();
     tb.flush(trv, M);
     var lg = new THREE.Group();
     lg.name = "launcher";
@@ -776,7 +1058,7 @@ var HeroS75S125 = (function () {
     fitTravel(THREE, trv, dep);
     var wt = 0;
     trv.traverse(function (o) { if (o._tris) wt += o._tris; });
-    root._tris = { deploy: tri(base) + tri(tur), travel: tri(tb) + tri(tt) + wt };
+    root._tris = { deploy: tri(base) + tri(tur) + tri(rl), travel: tri(tb) + tri(tt) + wt };
     return root;
   }
 
@@ -784,10 +1066,10 @@ var HeroS75S125 = (function () {
 })();
 
 UNIT_MODELS["pact_e50_s75"] = {
-  len: 10.34,
+  len: 10.39,
   build: function (THREE, M, C) { return HeroS75S125.sm63(THREE, C); }
 };
 UNIT_MODELS["pact_e60_s125"] = {
-  len: 5.61,
+  len: 5.51,
   build: function (THREE, M, C) { return HeroS75S125.p73(THREE, C); }
 };
