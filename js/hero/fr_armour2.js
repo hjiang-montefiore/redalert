@@ -87,10 +87,17 @@
      VBCI: V1's hull at the published 7.60 m makes the tyres 1.26 m, the 14.00 R 20's own size:
        two figures agree at one scale.  The turret roof then stands 3.03 m (published 3 m).
      Mk F3: F1's wheel pitch and wheel diameter agree with fr_tanks.js's AMX-13 table (0.70 /
-       0.61 m) at one scale (261 px/m); at it the hull is 4.42 m, the cradle top 1.90 m, muzzle to
-       folded spades 4.6 m.  The published 6.22 m and 2.085 m are NOT met (the photo puts the muzzle
-       BEHIND the nose; 6.22 is taken to be a firing length with the spades out), and the L/33 tube
-       measures 4.1 m with its breech (NOT CONFIRMED: either the wheel scale or the tube).
+       0.61 m) at one scale (261 px/m); at it the hull is 4.42 m and the cradle top 1.90 m.  The
+       BARREL is drawn at its true length, 33 x 155 mm = 5.12 m from the breech face (X -1.98, the
+       rear of F1's cradle) to X 3.14, with the brake to X 3.44, 1.02 m ahead of the nose: overall
+       5.94 m to the folded spades against the published 6.22 (4.5 % short; NOT CONFIRMED: the spades'
+       folded reach and whether 6.22 counts them further out).  F1 CONTRADICTS this: read at the
+       same scale its brake stands at X 2.10, behind the nose, and the tube with its breech
+       measures only 3.9 m (1012 px).  A scale that gave F1's tube 5.12 m (183 px/m) would make the
+       road wheels 0.87 m and the cradle top 2.73 m, against the AMX-13's 0.61 m wheels and the
+       published 2.085 m, so the scale was kept; the likely reading is that F1's exhibit has its
+       tube run back in the cradle (not confirmed by any reference), so the barrel follows the
+       published calibre length, not F1.
      AuF1: G1 at the AMX-30 wheel pitch (0.93 m) horizontally and the published 3.25 m to the roof
        vertically (the photo's own vertical scale from the wheel diameter read 7-15 % high, a
        three-quarter view): turret rear X -2.59, roof front 0.56, gun axis 2.56 m.
@@ -171,7 +178,7 @@
        RCR 9.31 x 3.12 (side slabs) x 2.87; 7920; 11.
      AMX-10P 6.10 (gun; hull 5.78) x 2.80 x 2.80 (lamp; roof 2.45) / 5.778 x 2.78 x 1.87 hull; 10832; 13.
      VBCI 7.86 (gun and Galix; hull 7.60) x 3.01 x 3.49 (sight head; roof 3.03) / 7.6 x 2.98 x 3; 9424; 12.
-     Mk F3 5.03 x 2.58 x 1.95 / 6.22 x 2.72 x 2.085 (above); 11480; 10.
+     Mk F3 5.94 x 2.58 x 1.95 / 6.22 x 2.72 x 2.085 (above); 11480; 10.
      AuF1 10.36 x 3.20 x 3.77 (MG; roof 3.25) / 10.25 x 3.15 x 3.25; 13196; 12.
      CAESAR 10.08 x 2.83 (mirrors) x 3.87 (fork) / 10 x 2.55 x 3.7; 7664; 10.
      VAB Mephisto 6.22 x 2.74 (mirrors) x 3.16 (launcher up) / 5.98 x 2.49 x 2.06; 5068; 11.
@@ -674,7 +681,7 @@ var HeroFrArmour2 = (function () {
      X = (667 - px) / 261, Z = (735 - py) / 261).  The hull is the AMX-13's shortened: nose at
      X 2.42 (the tank's 2.44), rear at -2.00 (the tank's -2.44); four return rollers. */
   var F3 = { NOSE: 2.42, REAR: -2.00, BELLY: 0.42, FEN: 1.09, DECK: 1.25, BOX: 1.44, HW: 1.255, LW: 0.85,
-             TX: -1.58, TZ: 1.70, GZ: 1.63, MUZ: 2.10 };
+             TX: -1.58, TZ: 1.70, GZ: 1.63, TUBE: 3.14, MUZ: 3.44 };
   var F3G = { xw: [1.41, 0.70, 0.0, -0.71, -1.39], zw: 0.345, rw: 0.305, ty: 1.08, tw: 0.175,
               spr: { x: 2.02, z: 0.77, r: 0.29 }, idl: { x: -1.62, z: 0.52, r: 0.25 },
               rr: [1.02, 0.31, -0.41, -1.05], rrz: 0.90, rrr: 0.075, teeth: 12, pitch: 0.14 };
@@ -728,12 +735,13 @@ var HeroFrArmour2 = (function () {
     /* the cradle block round the breech end, the breech ring behind the trunnion */
     box(P, x0 - 0.40, x0 + 0.55, -0.30, 0.30, F.GZ - 0.18, F.GZ + 0.25);
     cylX(P, x0 - 0.62, x0 - 0.40, 0, F.GZ, 0.20, 0.20, 14);
-    /* the tube, thick at the breech end, to the muzzle at X 2.10 (F1) */
-    cylX(P, x0 + 0.55, 1.75, 0, F.GZ, 0.12, 0.095, 14);
-    cylX(P, 1.75, 1.80, 0, F.GZ, 0.105, 0.105, 14);
-    box(P, 1.80, F.MUZ, -0.13, 0.13, F.GZ - 0.085, F.GZ + 0.085);
-    box(D, 1.86, 1.93, -0.135, 0.135, F.GZ - 0.07, F.GZ + 0.07);
-    box(D, 1.98, 2.05, -0.135, 0.135, F.GZ - 0.07, F.GZ + 0.07);
+    /* the tube at its true length: 33 calibres = 5.12 m from the breech face (X -1.98) to X 3.14,
+       thick at the breech end, then the double-baffle brake (F1) 0.30 m beyond it, to X 3.44 */
+    cylX(P, x0 + 0.55, F.TUBE - 0.05, 0, F.GZ, 0.12, 0.095, 14);
+    cylX(P, F.TUBE - 0.05, F.TUBE, 0, F.GZ, 0.105, 0.105, 14);
+    box(P, F.TUBE, F.MUZ, -0.13, 0.13, F.GZ - 0.085, F.GZ + 0.085);
+    box(D, F.TUBE + 0.06, F.TUBE + 0.13, -0.135, 0.135, F.GZ - 0.07, F.GZ + 0.07);
+    box(D, F.TUBE + 0.18, F.TUBE + 0.25, -0.135, 0.135, F.GZ - 0.07, F.GZ + 0.07);
     /* the recoil cylinders: two above the tube, one below (F1, F2) */
     for (s = -1; s <= 1; s += 2) cylX(P, x0 + 0.40, 0.70, s * 0.12, F.GZ + 0.20, 0.05, 0.05, 10);
     cylX(P, x0 + 0.40, 0.05, 0, F.GZ - 0.19, 0.06, 0.06, 10);
@@ -1305,7 +1313,7 @@ UNIT_MODELS["fra_e60_ifv"] = { len: 6.10, build: HeroFrArmour2.p70 };
 UNIT_MODELS["fra_e80_ifv"] = { len: 6.10, build: HeroFrArmour2.p70 };
 UNIT_MODELS["fra_e90_ifv"] = { len: 6.10, build: HeroFrArmour2.p90 };
 UNIT_MODELS["fra_e00_ifv"] = { len: 7.86, build: HeroFrArmour2.vbci };
-UNIT_MODELS["fra_e60_spg"] = { len: 5.03, build: HeroFrArmour2.mkf3 };
+UNIT_MODELS["fra_e60_spg"] = { len: 5.94, build: HeroFrArmour2.mkf3 };
 UNIT_MODELS["fra_e80_spg"] = { len: 10.36, build: HeroFrArmour2.auf1 };
 UNIT_MODELS["fra_e90_spg"] = { len: 10.36, build: HeroFrArmour2.auf1ce };
 UNIT_MODELS["fra_e80_tankdestroyer"] = { len: 6.22, build: HeroFrArmour2.vab };
