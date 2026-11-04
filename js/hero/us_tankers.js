@@ -780,3 +780,10 @@ UNIT_MODELS["tanker_n"] = {
   len: 50.5,
   build: function (THREE, M, C) { return HeroTankers.build(THREE, M, C, "N"); }
 };
+/* The Armee de l'Air's C-135F (1964) were KC-135A airframes with J57s,
+   re-engined with CFM56s as the C-135FR from 1985: the A and R builds
+   stand in for them (the French boom drogue adapter is not drawn). */
+UNIT_MODELS["fra_e60_tanker"] = { len: 41.5, build: function (THREE, M, C) { return HeroTankers.build(THREE, M, C, "A"); } };
+UNIT_MODELS["fra_e80_tanker"] = { len: 41.5, build: function (THREE, M, C) { return HeroTankers.build(THREE, M, C, "R"); } };
+UNIT_MODELS["fra_e90_tanker"] = { len: 41.5, build: function (THREE, M, C) { return HeroTankers.build(THREE, M, C, "R"); } };
+UNIT_MODELS["fra_e00_tanker"] = { len: 41.5, build: function (THREE, M, C) { return HeroTankers.build(THREE, M, C, "R"); } };
