@@ -7,9 +7,8 @@
    roc_e50_spaag     M16 MGMC (M3 half-track, M45 mount)  NEW  m16()                                   od
    roc_e60_spg       M110A2 203 mm SPH (the row's name;   NEW  m110()                                  od
                      its "full" also names the M108)
-   roc_e60_mlrs      Kung Feng IV, 2 x 20 126 mm, on the  REUSED HeroM113.build (js/hero/us_m113.js)   the module's olive drab
-                     M113A1                                    with a variant of this file's own (below),
-                                                               its turret meshes replaced by the launcher
+   roc_e60_mlrs      Kung Feng IV, 40 x 126 mm, on its    NEW  kf4()  (Wikipedia retry: no photograph  od
+                     two-wheel trailer                         shows it on the M113; HeroM113 no longer used)
    roc_e80_mlrs      Kung Feng VI, 45 x 117 mm, M54 5-ton NEW  kf6(..., "od")                          od
    roc_e90_mlrs      Kung Feng VI (same vehicle)          NEW  kf6(..., "roc")                         roc
    roc_e00_mlrs      RT-2000 (Mk15 pack) on the MAN HX 8x8 NEW rt2000()                                roc (pack rocg)
@@ -32,11 +31,8 @@
    build and their cached canvases are not touched, so the US and German rows they draw do not change
    (js/hero/deu_us_pattern.js repaints HeroPaladin the same way, on per-build materials).  The Patriot's
    canister stack ("podelev") gets its own copy of the skin material first, so it can carry the two-colour
-   scheme while the trailer and tractor are plain.  Kung Feng IV: HeroM113.variants gains one entry,
-   "kf4_roc" ({ kind: "kf4", the ACAV's olive drab }), added at the first build - an exposed table, as
-   deu_us_pattern.js adds a row to HeroUsMlrs.rows; kind "kf4" is none of the module's kinds, so it draws
-   the plain M113A1 hull and a turret group at the M163 ring station (X -0.50 on the roof); this file
-   removes that group's meshes and puts the launcher in it.  Variants used: HeroPaladin "e80" is the
+   scheme while the trailer and tractor are plain.  (The Kung Feng IV no longer touches HeroM113: it is
+   drawn on its own trailer, kf4().)  Variants used: HeroPaladin "e80" is the
    module's M109A2 (39-calibre M185, M178 mount, bustle rack); the M109A1B and M109A5 are drawn as it: the
    A5's M284 tube and M182A1 mount are the same length and outline at game scale (en.wikipedia "M109
    howitzer": the A5 "M284 cannon and M182A1 mount"), so no separate A5 is drawn - NOT CONFIRMED in detail.
@@ -59,8 +55,14 @@
          proportions at the rear station only; lengths come from the published figures below.
      K2  "Kung Feng VI MLRS Side View Oct2011a.jpg" - the other fit (a flat deck with stabiliser legs and a
          rear platform): the pack raised, hinged at its rear on a turntable, tube bands and the handwheels.
-     F1  "Kung Feng IV MLRS Trailer Display at Chengkungling 20131012a.jpg" - the Kung Feng IV launcher (on
-         its trailer): two blocks of 5 rows x 4 tubes either side of a centre plate with a handwheel.
+     F1  "Kung Feng IV MLRS Trailer Display at Chengkungling 20131012a.jpg" (Commons; used by en.wikipedia
+         "Kung Feng multiple launch rocket system") - the trailer from the right front: the nest, the right
+         cheek plate with its disc and cross-spoked handwheel, the A-frame, the trail and stand.
+     F2  "...20131012b.jpg" (Commons; the same article) - square on the mouths: 8 columns x 5 rows touching,
+         the posts and braces, the spring jacks inboard of the wheels: THE WIDTHS.
+     F3  "...20131012c.jpg" (Commons) - near side-on from the left: THE KF IV STATION TABLE (kf4()).
+     F4  "Kung Feng IV MLRS Trailer Display at Chengkungling Right Rear View 20150606.jpg" (Commons) - the
+         right rear: the trail, the drawbar head, the jockey wheel, the tube rear ends.
      C1  "M730A1 Display at Tainan Air Force Base with Soldiers 20130810.jpg" - ROC M730A1 from the rear:
          the launch station (the gunner's cab between two arms, two missiles a side, one over the other),
          the low hull, ROC camouflage; an ROC M110A2 behind it (long tube, three-colour).
@@ -142,7 +144,8 @@
      RT-2000: forward-control cab with deep side windows, the box and upright spare behind it, the folded
        crane, a long boxy pod frame over the rear two axles, mouths forward (T1-T3).
      KF VI: the bonneted M54 cab, the air-cleaner drum, the stake-rack cargo body, a 5 x 9 pack in the bed,
-       mouths forward (K1, K2).  KF IV: the M113 box with the two 20-tube blocks on a pedestal (F1, text).
+       mouths forward (K1, K2).  KF IV: a square nest of 40 tubes between two cheek plates high on a small
+       two-wheel trailer with a long A-trail (F1-F4).
      M730A1: the low M548 hull, the bows, the launch station with two missiles each side (C1-C3).
      M16: the half-track: front wheels and the short rear track unit, the armoured hood and windscreen,
        the M45 with four .50s and tall ammunition chests (H1).
@@ -162,8 +165,9 @@
      rocgb green with black patches only: the Patriot canisters (R1).
    NOT CONFIRMED (proportion or judgement, beyond the tables' own notes): the RT-2000 pack's 3 pods of
      4 x 5 tubes (only the round count is published) and its width (2.16 m); the KF VI pack's 5 x 9 tube
-     arrangement and the turntable's place; the KF IV's place and pedestal height on the M113 (no
-     photograph of the self-propelled fit was found: the launcher is F1's, the M113 is the module's); the
+     arrangement and the turntable's place; the KF IV's tube pitch (0.14 m) and tyre (0.74 m), see
+     kf4(); the published text puts the KF IV on the M113 (and the M151 and LVTP5), but no photograph of
+     any self-propelled fit was found, so the trailer F1-F4 show is drawn; the
      M730A1 bows' heights and the launch station's sizes; the M45's sizes; the M7's bogie stations and
      the M7B1's (M4A3) hull details (the photographs are M7s); the M110A2's deck fittings, mount struts and
      rear rails; everything dimensional on the HF-2 (see its table), its mast cut at 4.6 m (N1 shows it
@@ -177,13 +181,14 @@
      "podelev" hangs on the root and the vehicle turns to lay).  No row here names its round with "ord"
      (tools/jsc/launcher3d_check.js's list is unchanged).  The reused Patriot keeps its module's turret and
      podelev.
-   ENGINE (js/damage3d.js ENGINE_AT, not edited): every row matches - roc_e50_spg "rear" (listed: the
+   ENGINE (js/damage3d.js ENGINE_AT, not edited): roc_e50_spg "rear" (listed: the
      Priest's radial at the back); roc_e50_spaag, roc_e80_spaag, roc_e90_spaag "front" (listed); the spg
      rows default "front" (M110 and M109 engines front right: right); the mlrs rows default "front" (the
-     trucks; the M113's engine front right: right); roc_e00_sam and roc_e00_coastssm default "front" (the
-     tractors: right).  No mismatch to report.
+     trucks: right) - except roc_e60_mlrs, now an unpowered trailer with no engine at all: "front" puts
+     its smoke at the mouths (reported, not edited); roc_e00_sam and roc_e00_coastssm default "front" (the
+     tractors: right).  One mismatch, roc_e60_mlrs (above).
    LOAD ORDER: after js/armour_specs.js, js/sam3d.js and js/tel3d.js (their generic registrations of these
-     keys are replaced) and after js/hero/us_m113.js, us_paladin.js, us_humvee.js and us_patriot.js (whose
+     keys are replaced) and after js/hero/us_paladin.js, us_humvee.js and us_patriot.js (whose
      builders the reused rows call; each such row is registered only if its module is loaded).  Nothing
      else reads this file.
    Materials: PAINT (canvas texture per scheme), DARK, RUB (spare tyres), GLASS, TEAM (exactly C.team: thin
@@ -1010,39 +1015,79 @@ var HeroRocArtillery = (function () {
     return shadows(g);
   }
 
-  /* ========================================== Kung Feng IV on the M113 (roc_e60_mlrs) [F1-F3] */
-  /* The M113A1 of js/hero/us_m113.js, its own olive drab, through a variant of this file's own
-     ("kf4": no row-specific fittings - its builder draws the plain hull and a turret group at
-     the M163's ring station (X -0.50 on the roof), whose meshes are replaced here by the
-     launcher: a pedestal and the two 20-round blocks of the trailer launcher [F1][F2]. */
+  /* ======================================= Kung Feng IV on its two-wheel trailer (roc_e60_mlrs) [F1-F4] */
+  /* Redrawn at the Wikipedia retry: every photograph found (F1-F4, the two of them the ones en.wikipedia
+     "Kung Feng multiple launch rocket system" itself uses) shows the launcher on a two-wheel trailer, none
+     on an M113, so the row is drawn as F1-F4 show it and no longer calls HeroM113.  Corrected against the
+     first build: the tubes are ONE nest of 8 columns x 5 rows (F2, square on: 40 mouths, no gap between
+     columns 4 and 5), not two blocks either side of a centre plate; the cheek plates with the trunnion
+     disc and the handwheel stand OUTSIDE the nest, one each side (F1 right, F3 left, F4 right rear).
+     STATIONS (X forward = toward the mouths, axle at X 0; F3 near side-on from the left at 290 px a
+     metre at the near wheel, the 0.74 m tyre; F2 square on for the widths):  mouths +0.36, tube rear
+     -0.80 (1.16 m of tube; the rocket is 0.91 m, published); cheek plates -0.08 to -0.50, z 1.00-1.80;
+     trunnion disc -0.25 / z 1.40; nest z 1.05-1.75; handwheels -0.23 and -0.53 at z 0.95 (left side);
+     trail to the towing eye at -2.05, z 0.62; jockey wheel -1.75; track 1.74 m (F2: 2.36 tyre
+     diameters between the tyre centres).  The tube pitch 0.14 m (the 126 mm bore and a thin wall,
+     touching in F2) and the tyre 0.74 m are NOT CONFIRMED: F3's ratios at the wheel and at the nest
+     disagree by the depth between them, and these two values sit between them. */
+  var KF4 = { R: 0.37, TY: 0.87, TW: 0.18, PX: -0.25, PZ: 1.40, TX: -0.20, TZ: 0.95, EYE: -2.05, EL: 0.60 };
   function kf4(THREE, M, C) {
-    if (!HeroM113.variants.kf4_roc) HeroM113.variants.kf4_roc = { kind: "kf4", paint: HeroM113.variants.ACAV.paint, vane80: false };
-    var g = HeroM113.build(THREE, M, C, "kf4_roc"), tg = null, i, s, P = null, D = null;
-    g.traverse(function (o) { if (!tg && o.name === "turret") tg = o; });
-    if (!tg) return g;
-    for (i = tg.children.length - 1; i >= 0; i--) {
-      var m = tg.children[i];
-      if (m.isMesh) { if (m.material.map && !P) P = m.material; else if (!m.material.map && m.material.color && m.material.color.r < 0.2 && !D) D = m.material; tg.remove(m); }
+    var T = materials(THREE, C, "od"), g = group(THREE, "roc_e60_mlrs"), B = bins(T), s, i;
+    /* the axle, the two posts and braces up to the cross beam under the launcher (F2) */
+    cylY(B.paint, 0, -KF4.TY + 0.10, KF4.TY - 0.10, KF4.R, 0.045, 10);
+    for (s = -1; s <= 1; s += 2) {
+      var yp = s * 0.62;
+      cyl(B.paint, [0.05, yp, KF4.R], [0.0, yp, KF4.TZ - 0.04], 0.035, 0.035, 8);
+      cyl(B.paint, [0.05, yp, KF4.R + 0.05], [0.0, s * 0.10, KF4.TZ - 0.06], 0.025, 0.025, 8);
+      cyl(B.paint, [-0.75, s * 0.40, 0.58], [-0.05, yp, KF4.TZ - 0.05], 0.025, 0.025, 8);
+      /* the trail: two tubes from the axle ends to the towing eye, and a lower tube (F3, F4) */
+      cyl(B.paint, [0.05, s * (KF4.TY - 0.12), KF4.R + 0.10], [KF4.EYE + 0.25, s * 0.10, 0.62], 0.035, 0.035, 8);
+      cyl(B.paint, [-0.05, s * (KF4.TY - 0.18), KF4.R + 0.02], [KF4.EYE + 0.45, s * 0.12, 0.50], 0.028, 0.028, 8);
+      /* the spring jacks inboard of the wheels, down to their pads (F2, F1) */
+      cylZ(B.dark, 0.20, s * 0.66, 0.06, 0.50, 0.025, 8);
+      cylZ(B.paint, 0.20, s * 0.66, 0.30, 0.50, 0.040, 8);
+      box(B.paint, 0.11, 0.29, s * 0.66 - 0.09, s * 0.66 + 0.09, 0.0, 0.04);
+      /* the folding stand legs under the trail's rear (F3, F4) */
+      cyl(B.paint, [-1.55, s * 0.18, 0.55], [-1.50, s * 0.28, 0.02], 0.022, 0.022, 6);
+      box(B.paint, -1.58, -1.42, s * 0.28 - 0.06, s * 0.28 + 0.06, 0.0, 0.03);
     }
-    var T = { paint: P || paintMat(THREE, "od"), dark: D || new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 }),
-              team: new THREE.MeshStandardMaterial({ color: (C && C.team !== undefined) ? C.team : 0x3f7fd0, roughness: 0.84, metalness: 0.06 }) };
-    T.tube = T.paint;
-    var TB = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
-    cylZ(TB.dark, 0, 0, 0, 0.10, 0.45, 18);
-    box(TB.paint, 0.30, -0.30, -0.25, 0.25, 0.10, 0.30);
-    for (s = -1; s <= 1; s += 2) box(TB.paint, 0.15, -0.15, s * 0.20 - 0.04, s * 0.20 + 0.04, 0.30, 0.45);
+    box(B.paint, -0.10, 0.10, -0.70, 0.70, KF4.TZ - 0.08, KF4.TZ - 0.02);
+    box(B.paint, -0.08, 0.08, -0.62, 0.62, KF4.R + 0.06, KF4.R + 0.12);
+    /* the drawbar head, the towing eye and the jockey wheel (F3, F4) */
+    box(B.paint, KF4.EYE + 0.55, KF4.EYE + 0.20, -0.16, 0.16, 0.54, 0.70);
+    cyl(B.paint, [KF4.EYE + 0.20, 0, 0.62], [KF4.EYE + 0.06, 0, 0.62], 0.03, 0.03, 8);
+    cylY(B.dark, KF4.EYE + 0.03, -0.015, 0.015, 0.62, 0.045, 10);
+    cylZ(B.dark, -1.75, 0.22, 0.11, 0.60, 0.028, 8);
+    cylY(B.rub, -1.75, 0.19, 0.25, 0.11, 0.11, 12);
+    var hg = group(THREE, "hull"); flush(THREE, hg, B); g.add(hg);
+    wheelGroups(THREE, g, T, [[0, KF4.R, function (W) { tyrePair(W, PAINTS.od.base, KF4.TY, KF4.R, KF4.TW, false); }]]);
+    /* "turret": the pivot on the cross beam, the cradle posts up to the trunnion discs, the two
+       handwheels on the left (F3: one above the other behind the disc) */
+    var tg = group(THREE, "turret", KF4.TX, 0, KF4.TZ), TB = bins(T), pz = KF4.PZ - KF4.TZ, px = KF4.PX - KF4.TX;
+    cylZ(TB.dark, 0, 0, 0.0, 0.06, 0.16, 16);
+    box(TB.paint, -0.18, 0.18, -0.62, 0.62, 0.06, 0.12);
+    for (s = -1; s <= 1; s += 2) {
+      box(TB.paint, px - 0.06, px + 0.06, s * 0.64 - 0.03, s * 0.64 + 0.03, 0.06, pz);
+      cylY(TB.paint, px, s * 0.62, s * 0.70, pz, 0.17, 18);
+      cylY(TB.dark, px, s * 0.70, s * 0.74, pz, 0.05, 10);
+    }
+    [[-0.23, 0.0], [-0.53, 0.0]].forEach(function (h) {
+      var hx = h[0] - KF4.TX;
+      cylY(TB.dark, hx, 0.74, 0.76, h[1], 0.09, 14);
+      cylY(TB.paint, hx, 0.64, 0.74, h[1], 0.02, 6);
+    });
+    box(TB.team, -0.10, 0.10, -0.40, 0.40, 0.12, 0.125);
     flush(THREE, tg, TB);
-    var pe = group(THREE, "podelev", 0, 0, 0.45), PB = podBins(T), cells = [];
-    /* two blocks of 5 x 4 tubes either side of the centre plate with its handwheel (F1, F2) */
-    for (s = -1; s <= 1; s += 2) tubeNest(PB, -0.50, 0.55, 0.40, 5, 4, 0.15, 0.066, s * 0.36, cells, { bands: [-0.30, 0.35] });
-    box(PB.frame, -0.40, 0.45, -0.05, 0.05, 0.0, 0.80);
-    cylY(PB.dark, 0.0, 0.05, 0.08, 0.45, 0.10, 10);
-    box(PB.frame, -0.40, 0.40, -0.70, 0.70, -0.03, 0.02);
-    box(PB.team, -0.30, 0.30, -0.04, 0.04, 0.80, 0.81);
+    /* "podelev": the nest of 40 tubes between the cheek plates, on the trunnion (F1-F4) */
+    var pe = group(THREE, "podelev", px, 0, pz), PB = podBins(T), cells = [];
+    tubeNest(PB, -0.55, 0.61, 0, 5, 8, 0.14, 0.066, 0, cells, { bands: [-0.42, 0.48] });
+    for (s = -1; s <= 1; s += 2) box(PB.frame, -0.25, 0.17, s > 0 ? 0.565 : -0.60, s > 0 ? 0.60 : -0.565, -0.40, 0.40);
+    box(PB.team, -0.30, 0.30, -0.04, 0.04, 0.375, 0.385);
     flush(THREE, pe, PB);
-    pe.userData.el = 0.60; pe.userData.cells = cells;
+    pe.userData.el = KF4.EL; pe.userData.cells = cells;
     tg.add(pe);
-    return g;
+    g.add(tg);
+    return shadows(g);
   }
 
   /* ============================================ Hsiung Feng II mobile launcher (roc_e00_coastssm) [N1-N4] */
@@ -1181,12 +1226,11 @@ UNIT_MODELS["roc_e90_mlrs"] = { len: 7.69, build: function (THREE, M, C) { retur
 UNIT_MODELS["roc_e00_mlrs"] = { len: 9.16, build: HeroRocArtillery.rt2000 };
 UNIT_MODELS["roc_e80_spaag"] = { len: 5.84, build: HeroRocArtillery.chaparral };
 UNIT_MODELS["roc_e00_coastssm"] = { len: 17.27, build: HeroRocArtillery.hf2 };
-if (typeof HeroM113 !== "undefined" && HeroM113.variants) {
-  /* roc_e60_mlrs (Kung Feng IV) is NOT registered: the only photos are of
-     the trailer launcher, and none shows it on an M113, so the pairing
-     would be invented; the row keeps its stand-in. */
-  /* UNIT_MODELS["roc_e60_mlrs"] = { len: 4.92, build: HeroRocArtillery.kf4 }; */
-}
+/* roc_e60_mlrs (Kung Feng IV): registered at the Wikipedia retry on its trailer, the only carriage any
+   photograph shows - en.wikipedia "Kung Feng multiple launch rocket system" uses Commons "Kung Feng IV MLRS
+   Trailer Display at Chengkungling 20131012a.jpg" and "...20131012b.jpg" (F1, F2); F3/F4 are the same
+   trailer.  No longer an M113 (see kf4()). */
+UNIT_MODELS["roc_e60_mlrs"] = { len: 2.46, build: HeroRocArtillery.kf4 };
 if (typeof HeroPaladin !== "undefined") {
   UNIT_MODELS["roc_e80_spg"] = { len: 9.12, build: function (THREE, M, C) { return HeroRocArtillery.m109(THREE, M, C, "od"); } };
   UNIT_MODELS["roc_e90_spg"] = { len: 9.12, build: function (THREE, M, C) { return HeroRocArtillery.m109(THREE, M, C, "roc"); } };

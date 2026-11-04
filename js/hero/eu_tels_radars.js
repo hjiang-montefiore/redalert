@@ -1070,7 +1070,13 @@ UNIT_MODELS["fra_e60_tel"] = { len: 8.24, build: function (THREE, M, C) { return
 UNIT_MODELS["fra_e80_tel"] = { len: 8.24, build: function (THREE, M, C) { return HeroPluton.build(THREE, M, C, "fra_e80_tel"); } };
 /* fra_e90_tel (Hades) is NOT registered: no photo or drawing of the
    launcher could be found, so HeroHades rests on published wording alone
-   and the row keeps its stand-in until a reference is measured. */
+   and the row keeps its stand-in until a reference is measured.
+   Wikipedia retry (2026-11-04): still no reference.  en.wikipedia "Hades" (the
+   missile article) has no image at all and its file-namespace search finds
+   none; Commons searches "Hades missile", "intitle:Hades", "Hades Draguignan",
+   "missile nucleaire Hades", "Hades launcher semi-trailer" and a category
+   search found only unrelated files; fr.wikipedia could not be reached from
+   this session (the proxy refuses the host), so its article was not seen. */
 /* UNIT_MODELS["fra_e90_tel"] = { len: 16.66, build: HeroHades.build }; */
 UNIT_MODELS["fra_e00_radarv"] = { len: 11.09, build: HeroCobraFr.build };
 UNIT_MODELS["gbr_e60_radarv"] = { len: 5.22, build: HeroCymbeline.build };
