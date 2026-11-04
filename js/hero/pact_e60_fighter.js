@@ -93,6 +93,11 @@
      in the 1970s was found; the grey is Monino's (A, B, G). The gun pack's
      exact station is drawn from the general arrangement, not a drawing.
 
+   ROWS: pact_e60_fighter (the red star on the fin) and kpa_e90_fighter
+   (the KPAF's ex-Kazakh MiG-21bis, 1999), drawn plain: HeroMiG21.plain
+   leaves the star off the fin sheet (cached separately) and changes
+   nothing else.
+
    Model space: +X nose, +Y left (port), +Z up, metres; the shock-cone axis
    is z 0 and the ground z -1.46. The gear RETRACTS (nose leg forward, mains
    into the wing roots and fuselage), so its group is "gear". Merged to one
@@ -266,9 +271,13 @@ var HeroMiG21 = (function () {
   /* fin: planform UVs in (x, z); the green dielectric cap over the top
      leading corner and the red star on both faces (A, G) */
   var FX0 = -8.00, FX1 = -2.20, FZ0 = 0.60, FZ1 = 2.60;
-  var _fn = null;
-  function finSheet(THREE) {
-    if (_fn !== null) return _fn;
+  /* two cached sheets: with the star (_fn) and plain (_fnPlain, no
+     national marking; the cap, rudder line and seams the same) */
+  var _fn = null, _fnPlain = null;
+  function finSheet(THREE, plain) {
+    if (plain && _fnPlain !== null) return _fnPlain;
+    if (!plain && _fn !== null) return _fn;
+    var out = null;
     try {
       var W = 512, H = 256, cv = canvas(W, H), g = cv.getContext("2d"), R = rngFor(4431);
       function U(x) { return (x - FX0) / (FX1 - FX0) * W; }
@@ -283,10 +292,11 @@ var HeroMiG21 = (function () {
       g.beginPath();
       g.moveTo(U(-5.10), V(2.08)); g.lineTo(U(-5.95), V(2.50)); g.lineTo(U(-7.05), V(2.50));
       g.lineTo(U(-6.90), V(2.08)); g.closePath(); g.fill();
-      star(g, U(-5.75), V(1.52), 0.30 / (FZ1 - FZ0) * H);
-      _fn = texOf(THREE, cv);
-    } catch (e) { _fn = null; }
-    return _fn;
+      if (!plain) star(g, U(-5.75), V(1.52), 0.30 / (FZ1 - FZ0) * H);
+      out = texOf(THREE, cv);
+    } catch (e) { out = null; }
+    if (plain) _fnPlain = out; else _fn = out;
+    return out;
   }
 
   var _cn = null;
@@ -303,7 +313,7 @@ var HeroMiG21 = (function () {
   }
 
   /* ============================================================ materials */
-  function materials(THREE, C) {
+  function materials(THREE, C, plain) {
     function sk(tex, fall) {
       var m = new THREE.MeshStandardMaterial({
         color: 0xffffff, roughness: SKIN_R, metalness: SKIN_M, side: THREE.DoubleSide });
@@ -315,7 +325,7 @@ var HeroMiG21 = (function () {
     return {
       body: sk(bodySheet(THREE), PAL.lt),
       wing: sk(wingSheet(THREE), PAL.lt),
-      fin: sk(finSheet(THREE), PAL.lt),
+      fin: sk(finSheet(THREE, plain), PAL.lt),
       cone: cone,
       team: new THREE.MeshStandardMaterial({
         color: new THREE.Color((C && C.team !== undefined) ? C.team : 0x3f7fd0),
@@ -559,9 +569,9 @@ var HeroMiG21 = (function () {
     return m;
   }
 
-  function build(THREE, M, C) {
+  function build(THREE, M, C, plain) {
     THREE_ = THREE;
-    var T = materials(THREE, C);
+    var T = materials(THREE, C, plain);
     var g = new THREE.Group();
     addBody(THREE, g, T);
     addIntake(THREE, g, T);
@@ -932,7 +942,8 @@ var HeroMiG21 = (function () {
     return out;
   }
 
-  return { build: build };
+  return { build: build,
+           plain: function (THREE, M, C) { return build(THREE, M, C, true); } };
 })();
 
 /* len: the measured X extent, pitot tip (7.91) to fin tip (-7.90) */
@@ -940,3 +951,10 @@ UNIT_MODELS["pact_e60_fighter"] = {
   len: 15.8,
   build: function (THREE, M, C) { return HeroMiG21.build(THREE, M, C); },
 };
+
+/* The KPAF's MiG-21bis, bought second-hand from Kazakhstan in 1999 (the row
+   says so): the same airframe, drawn PLAIN -- no star, no KPAF roundel, no
+   bort number; the fin cap, rudder line and weathering are kept. The Monino
+   grey is kept too: no photograph of a KPAF bis was fetched, so its paint is
+   NOT CONFIRMED. */
+UNIT_MODELS["kpa_e90_fighter"] = { len: 15.8, build: HeroMiG21.plain };
