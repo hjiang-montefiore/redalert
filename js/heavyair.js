@@ -415,14 +415,13 @@ asmp:       { name: "ASMP stand-off missile", dmg: 660, warhead: "he",
       prereq: ["airbase", "lab"], tech: 3, rcs: 5.2, radarQ: 2, gen: 2.5,
     }, o);
   }
-  /* The H-6 shares the B-52's shape of problem and none of its size: half the
-     span, two engines buried in the wing roots, and a glazed navigator's nose
-     until the H-6K replaced it with a radome. Higher radar cross-section than
-     a Buff relative to its size and a far worse self-defence fit, so it lives
-     or dies on the reach of what it carries. */
-  function badger(o) {
+  /* The Soviet heavy bombers: the Tu-16A in the same shape of problem as the H-6
+     it became (two engines in the wing roots, a glazed nose, guns for defence),
+     and the Tu-22M3, a swing-wing Mach 1.9 missile carrier half the weight of a
+     Tu-160. Shared shape, so each row only states what differs. */
+  function pactbomber(o) {
     return Object.assign({
-      fac: "pla", role: "heavybomber", cat: "aircraft", armor: "air", layer: "air",
+      fac: "pact", role: "heavybomber", cat: "aircraft", armor: "air", layer: "air",
       mass: 0, jet: true, turn: 0.9, sight: 9, r: 24,
       prereq: ["airbase", "lab"], tech: 3, rcs: 5.2, radarQ: 2, gen: 2.5,
     }, o);
@@ -565,43 +564,22 @@ asmp:       { name: "ASMP stand-off missile", dmg: 660, warhead: "he",
        KD-20 of the last two rows is the SAME missile on both, because it is:
        what the H-6N adds over the H-6K is a refuelling probe and a recess for
        an air-launched ballistic missile, not a better cruise missile. */
-    pla_e60_heavybomber: badger({
-      name: "H-6A", full: "Xian H-6A, free-fall nuclear bomber",
-      cost: 2900, oil: 78, time: 40, hp: 760, speed: 4.3, ammo: 5, radius: 62,
+    /* ---- the Soviet heavy bombers ----
+       e80 to e00 is the Tu-160 (pact_e80_stealthbomber, role heavybomber, eras.js). The
+       Tu-22M3 is drawn (js/hero/ru_bombers.js) but has no row yet: unitFor() takes the row with
+       the latest `from`, so an e90 or e00 Tu-22M3 would take the slot from the Tu-160. */
+    pact_e60_heavybomber: pactbomber({
+      name: "Tu-16A Badger-A", full: "Tupolev Tu-16A, free-fall nuclear bomber",
+      cost: 2850, oil: 76, time: 40, hp: 760, speed: 4.4, ammo: 6, radius: 62,
       weapons: ["h6_bombs"], from: "e60", to: "e60",
-      service: "1969", confidence: "high",
-      desc: "China's strategic bomber force in one aircraft type. Nine tonnes of " +
-            "bombs in the bay and no way to deliver any of it without flying over " +
-            "the target, which against the air defences of its own decade is a " +
-            "one-way proposition. Its whole claim is that it carried the country's " +
-            "first air-dropped nuclear weapon." }),
-    pla_e80_heavybomber: badger({
-      name: "H-6D", full: "Xian H-6D with two YJ-6 (C-601)",
-      cost: 3200, oil: 82, time: 43, hp: 800, speed: 4.3, ammo: 2, radius: 66,
-      weapons: ["yj6_c601"], from: "e80", to: "e90",
-      service: "1986", confidence: "high",
-      desc: "The moment the aeroplane stopped having to overfly anything. A " +
-            "sea-search radar under the nose and one enormous anti-ship missile " +
-            "under each wing: first flight 29 August 1981, live firing at the end " +
-            "of 1983, in PLA Naval Air Force service from 1986. It is the whole of " +
-            "Chinese maritime strike for the next fifteen years, which is why the " +
-            "row runs to e90 - nothing replaced it until the cruise-missile fits." }),
-    pla_e00_heavybomber: badger({
-      name: "H-6K", full: "Xian H-6K with KD-20 cruise missiles",
-      cost: 3400, oil: 78, time: 45, hp: 850, speed: 4.4, ammo: 4, radius: 78,
-      weapons: ["alcm"], from: "e00", to: "e00",
-      service: "2009", confidence: "high", rcs: 3.4, radarQ: 4, gen: 3.5,
-      desc: "The rebuild that bought the airframe another forty years: the glazed " +
-            "nose replaced by a radome, Russian D-30 turbofans for range, a glass " +
-            "cockpit, and six pylons for cruise missiles. First flight 5 January " +
-            "2007, in service October 2009. It launches from outside every " +
-            "surface-to-air system on the map and turns for home." }),
+      service: "1954", confidence: "high",
+      desc: "The Soviet Union's first jet strategic bomber: two Mikulin AM-3 " +
+            "turbojets buried in the wing roots, a glazed navigator's nose and " +
+            "seven 23 mm guns for defence. In service from 1954; the Tu-16A, " +
+            "modified to carry nuclear bombs, was a main version with 453 built. " +
+            "Nine tonnes of free-fall weapons in the bay, and it has to fly over " +
+            "the target to use any of them." }),
 
-    /* ---- H-6: sixty-five years of the same aeroplane ----
-       e50 is empty. The H-6 did not enter PLAAF service until 1969, and the
-       KD-20 of the last two rows is the SAME missile on both, because it is:
-       what the H-6N adds over the H-6K is a refuelling probe and a recess for
-       an air-launched ballistic missile, not a better cruise missile. */
     pla_e60_heavybomber: badger({
       name: "H-6A", full: "Xian H-6A, free-fall nuclear bomber",
       cost: 2900, oil: 78, time: 40, hp: 760, speed: 4.3, ammo: 5, radius: 62,

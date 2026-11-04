@@ -3,7 +3,7 @@
    One row draws it:
      pact_e50_tanker  "Tu-16Z"  (js/eras.js; service 1957, e50 only)
    Also, drawn plain (no star): pla_e90_tanker, the PLAAF's H-6U - see the note at the foot.
-   sbomber_c (the H-6N) is drawn in js/models3d_east.js and is not touched here.
+   sbomber_c (the H-6N) is drawn in js/hero/pla_air_modern.js, and the H-6A/D/U/K in js/hero/pla_h6.js.
 
    THE VARIANT. The Tu-16Z (Tu-16Yu, "izdeliye NZ") was not a new build: more than a hundred
    Tu-16A bombers were converted to the wing-to-wing system from 1955 (ru.wikipedia "Tu-16",
