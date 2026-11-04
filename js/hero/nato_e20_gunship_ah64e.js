@@ -1205,3 +1205,7 @@ UNIT_MODELS["roc_e00_gunship"] = { len: 17.74, build: HeroAH64E.build };
 UNIT_MODELS["nato_e00_gunship"] = { len: 17.74, build: HeroAH64E.build };
 UNIT_MODELS["nato_e90_gunship"] = { len: 17.74, build: HeroAH64E.buildD };
 UNIT_MODELS["nato_e80_gunship"] = { len: 17.74, build: HeroAH64E.buildA };
+/* the British Army's Apache AH1 (WAH-64D, from 2001) is a Longbow AH-64D;
+   its RTM322 engines and folding-blade fit are not drawn, so this is the
+   AH-64D build as a stand-in */
+UNIT_MODELS["gbr_e00_gunship"] = { len: 17.74, build: HeroAH64E.buildD };

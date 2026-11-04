@@ -150,6 +150,8 @@ var Damage3D = (function () {
     spaag_n: "front",                                                  // M-SHORAD on the Stryker A1
     pact_e60_tankdestroyer: "front",                                   // 9P110 on the BRDM-1: engine forward
     lt_b: "front",                                                     // Ajax (ASCOD): power pack front right
+    kpa_e80_lighttank: "front", kpa_e90_lighttank: "front",           // PT-85: the lengthened VTT-323 (Type 63) hull,
+    kpa_e00_lighttank: "front",                                        //   engine front right, turret aft
     gbr_e60_lighttank: "front", gbr_e80_lighttank: "front",            // CVR(T) Scorpion, Scimitar, Striker:
     gbr_e90_lighttank: "front", gbr_e00_lighttank: "front",            //   the engine front right
     gbr_e80_tankdestroyer: "front", gbr_e90_tankdestroyer: "front",
@@ -165,6 +167,9 @@ var Damage3D = (function () {
     nato_e60_spaag: "front", nato_e80_spaag: "front",                  // M163 Vulcan on the M113
     nato_e60_tankdestroyer: "front", nato_e80_tankdestroyer: "front",  // M113A1 TOW, M901 ITV: the M113's
     nato_e90_tankdestroyer: "front",                                   //   engine front right
+    roc_e80_tankdestroyer: "front", roc_e90_tankdestroyer: "front",   // M113A1 TOW, CM-25: the M113 hull
+    kpa_e00_ifv: "rear",                                               // M2010 on the BTR-80 hull: engine at the back
+    lt_k: "front", spaag_c: "front",                                  // skirmish PT-85 and PGZ-09, as their era rows
     nato_e50_tankdestroyer: "front",                                   // M56 Scorpion: engine under the front slope
     nato_e90_spaag: "front", roc_e90_spaag: "front",                   // Avenger on the HMMWV
     roc_e00_spaag: "front", spaag_r: "front", atgmv_r: "front",        // Antelope and TOW on the HMMWV

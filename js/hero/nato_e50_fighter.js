@@ -59,7 +59,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
   var TEX = {};
 
-  function makeBodyCanvas() {
+  function makeBodyCanvas(plain) {
     var W = 1024, H = 512;
     var cv = document.createElement("canvas");
     cv.width = W; cv.height = H;
@@ -184,6 +184,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       g.fillRect(cx + r * 0.95, cy - r * 0.15, r * 1.01, r * 0.30);
       g.restore();
     }
+    if (!plain) {
     insignia(PX(-2.05), PY(0.045), 30);
     insignia(PX(-2.05), PY(0.455), 30);
 
@@ -198,6 +199,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     g.font = "bold 11px Helvetica, Arial, sans-serif";
     g.fillStyle = "rgba(140,20,24,0.70)";
     g.fillText("RESCUE", PX(2.90), PY(0.115));
+    }
     g.fillStyle = "rgba(18,20,22,0.55)";
     g.fillText("NO STEP", PX(1.60), PY(0.700));
 
@@ -289,14 +291,15 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     return cv;
   }
 
-  function bodyTex(THREE) {
-    if (!TEX.body) {
-      var t = new THREE.CanvasTexture(makeBodyCanvas());
+  function bodyTex(THREE, plain) {
+    var key = plain ? "bodyPlain" : "body";
+    if (!TEX[key]) {
+      var t = new THREE.CanvasTexture(makeBodyCanvas(plain));
       t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
       t.anisotropy = 4;
-      TEX.body = t;
+      TEX[key] = t;
     }
-    return TEX.body;
+    return TEX[key];
   }
   function panelTex(THREE) {
     if (!TEX.panel) {
@@ -310,9 +313,9 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
   /* --------------------------------------------------------- three tiers */
   /* 1. SKIN - painted surface, textured, matte, barely metallic */
-  function skinBody(THREE) {
+  function skinBody(THREE, plain) {
     return new THREE.MeshStandardMaterial({
-      color: 0xffffff, map: bodyTex(THREE),
+      color: 0xffffff, map: bodyTex(THREE, plain),
       roughness: 0.83, metalness: 0.10, side: THREE.DoubleSide });
   }
   function skinPanel(THREE, ru, rv) {
@@ -548,11 +551,11 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
   function tailTE(s) { return -4.95 - s * 0.38565; }
   var TSTA = [0.00, 0.55, 1.10, 1.62, 2.02, 2.18, 2.23];
 
-  function build(THREE, M, C) {
+  function build(THREE, M, C, plain) {
     var g = new THREE.Group();
     var teamCol = (C && C.team !== undefined) ? C.team : 0x3f7fd0;
 
-    var SKIN = skinBody(THREE);
+    var SKIN = skinBody(THREE, plain);
     var PANEL = skinPanel(THREE, 2.4, 1.0);
     var TANKMAT = skinPanel(THREE, 3.2, 1.6);
     var STEEL = metal(THREE, 0x9aa1a7, 0.52, 0.55);
@@ -850,5 +853,12 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
   UNIT_MODELS["nato_e50_fighter"] = {
     len: 11.5,
     build: function (THREE, M, C) { return build(THREE, M, C); },
+  };
+  /* The Luftwaffe's Canadair Sabre Mk 6 (1959): the same 6-3 wing planform
+     and airframe, drawn bare metal with no insignia or titles. Its Orenda
+     engine and restored leading-edge slats are not drawn. */
+  UNIT_MODELS["deu_e50_fighter"] = {
+    len: 11.5,
+    build: function (THREE, M, C) { return build(THREE, M, C, true); },
   };
 })();
