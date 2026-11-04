@@ -1172,7 +1172,9 @@ var HeroRocArtillery = (function () {
    len is the measured X extent of each build (tools/model3d/dump.js).  The reused rows are
    registered only when their module has loaded (see the load order in the header). */
 UNIT_MODELS["roc_e50_spg"] = { len: 6.09, build: HeroRocArtillery.priest };
-UNIT_MODELS["roc_e50_spaag"] = { len: 6.54, build: HeroRocArtillery.m16 };
+/* roc_e50_spaag is registered by roc_ground.js, whose M16 matches the published
+   2.34 m height; this build (3.02 m) is kept but not registered. */
+/* UNIT_MODELS["roc_e50_spaag"] = { len: 6.54, build: HeroRocArtillery.m16 }; */
 UNIT_MODELS["roc_e60_spg"] = { len: 10.79, build: function (THREE, M, C) { return HeroRocArtillery.m110(THREE, M, C, "od"); } };
 UNIT_MODELS["roc_e80_mlrs"] = { len: 7.69, build: function (THREE, M, C) { return HeroRocArtillery.kf6(THREE, M, C, "od"); } };
 UNIT_MODELS["roc_e90_mlrs"] = { len: 7.69, build: function (THREE, M, C) { return HeroRocArtillery.kf6(THREE, M, C, "roc"); } };
