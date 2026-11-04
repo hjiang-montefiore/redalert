@@ -844,6 +844,8 @@ var Warship3D = (function () {
   function gunSplit(P) {
     var pos = String(P.gunPos || "none"), n = P.guns | 0;
     if (n <= 0 || pos.indexOf("none") === 0) return { f: 0, a: 0 };
+    /* one mount forward and the rest aft (the Jiangnan reversed the Riga's two-forward layout) */
+    if (pos === "fore1aft") return { f: 1, a: n - 1 };
     if (pos.indexOf("foreaft") === 0) { var f = Math.ceil(n / 2); return { f: f, a: n - f }; }
     if (pos.indexOf("aft") === 0) return { f: 0, a: n };
     return { f: n, a: 0 };
