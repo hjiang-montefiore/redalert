@@ -40,10 +40,36 @@
    spg_r             nato_e90_spg          M109A6 Paladin
    radarv_r          nato_e80_radarv       AN/TPQ-37 Firefinder
 
+   British, German and French skirmish rows (added later: they had no model at all and drew
+   the American row of the same role, a Challenger 2 as an M1A2):
+   mbt_b             gbr_e90_heavy         Challenger 2 (green; gbr_e00_mbt is the desert one)
+   ifv_b             gbr_e00_ifv           FV510 Warrior
+   recon_b           gbr_e00_recon         Jackal
+   spaag_b           gbr_e00_spaag         Stormer HVM
+   helo_b            helo_r                AH-64E Apache
+   airlift_b         fra_e00_airlift       A400M Atlas
+   ifv_g             deu_e00_ifv           Puma
+   bomber_g          deu_e90_cas           Tornado IDS
+   trans_g           fra_e00_transport     NH90
+   airlift_g         fra_e00_airlift       A400M Atlas
+   radarv_g          fra_e00_radarv        COBRA
+   ifv_f             fra_e00_ifv           VBCI
+   spaag_f           fra_e00_spaag         Crotale NG
+   spg_f             fra_e00_spg           CAESAR
+   mlrs_f            fra_e00_mlrs          LRU
+   sam_f             fra_e00_sam           SAMP/T Mamba
+   radarv_f          fra_e00_radarv        COBRA
+   trans_f           fra_e00_transport     NH90 Caiman
+   fighter_f         fra_e00_fighter       Rafale
+   bomber_f          fra_e90_cas           Mirage 2000D
+   airlift_f         fra_e00_airlift       A400M Atlas
+
    NOT mapped, because the hero model is a different variant from the skirmish row: awacs_c (KJ-500;
    the hero is the Il-76-based A-50 shape), destroyer_c (Type 052D; the hero is the 052B), fighter_c
    (J-10C; the hero is the J-10A), helo_c (Z-10ME), hvy_r (M1A2T; the hero is the M1A2), ifv_r (CM-34;
-   the hero is the CM-33), lst_r (ROC LCU; class not confirmed), atgmv_r (M1167 TOW).
+   the hero is the CM-33), lst_r (ROC LCU; class not confirmed), atgmv_r (M1167 TOW), mbt_f (Leclerc XLR; the hero is the
+   Leclerc), cfighter_f / fra_e00_cfighter (Rafale M; the hero is the Rafale C), mlrs_b (M270A2; the hero
+   is the M270B1), hvy_b (Challenger 3; no hero).
 
    Load order: LAST among the hero files, after every file that registers an era row named above.
    A missing era row leaves its skirmish row on its old model.  ASCII only. */
@@ -63,7 +89,8 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     asw_helo_r: "roc_e00_aswhelo", bomber_r: "roc_e00_cas", corvette_r: "roc_e00_corvette",
     destroyer_r: "roc_e00_destroyer", lt_r: "roc_e90_lighttank", mbt_r: "roc_e90_mbt",
     mlrs_r: "roc_e00_mlrs", recon_r: "roc_e00_recon", sub_r: "roc_e00_sub",
-    spg_r: "nato_e90_spg", radarv_r: "nato_e80_radarv"
+    spg_r: "nato_e90_spg", radarv_r: "nato_e80_radarv",
+    mbt_b: "gbr_e90_heavy", ifv_b: "gbr_e00_ifv", recon_b: "gbr_e00_recon", spaag_b: "gbr_e00_spaag", helo_b: "helo_r", airlift_b: "fra_e00_airlift", ifv_g: "deu_e00_ifv", bomber_g: "deu_e90_cas", trans_g: "fra_e00_transport", airlift_g: "fra_e00_airlift", radarv_g: "fra_e00_radarv", ifv_f: "fra_e00_ifv", spaag_f: "fra_e00_spaag", spg_f: "fra_e00_spg", mlrs_f: "fra_e00_mlrs", sam_f: "fra_e00_sam", radarv_f: "fra_e00_radarv", trans_f: "fra_e00_transport", fighter_f: "fra_e00_fighter", bomber_f: "fra_e90_cas", airlift_f: "fra_e00_airlift"
   };
   Object.keys(MAP).forEach(function (dst) {
     var src = UNIT_MODELS[MAP[dst]];
@@ -72,4 +99,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     Object.keys(src).forEach(function (p) { e[p] = src[p]; });
     UNIT_MODELS[dst] = e;
   });
+  /* a named round is keyed by the firing weapon, and a skirmish row fires its own weapon: the
+     LRU's GMLRS is re-keyed to mlrs_f's "mlrs" (the skirmish M270 rows' weapon, as mlrs_n) */
+  if (UNIT_MODELS.mlrs_f && UNIT_MODELS.mlrs_f.ord) UNIT_MODELS.mlrs_f.ord = { mlrs: "gmlrs" };
 })();
