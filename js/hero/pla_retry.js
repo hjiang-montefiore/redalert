@@ -833,3 +833,15 @@ UNIT_MODELS["awacs_c"] = { len: 36.02, build: HeroPlaRetry.buildKj500 };
 UNIT_MODELS["atgmv_c"] = ...; UNIT_MODELS["pla_e60_sam"] = ...; UNIT_MODELS["pla_e90_tel"] = ...;
 UNIT_MODELS["pla_e80_lst"] = ...; UNIT_MODELS["ewv_c"] = ...; UNIT_MODELS["radarv_c"] = ...;
 */
+
+/* pla_e60_sam (HQ-2): drawn as a STAND-IN on the S-75 SM-63 launcher of js/hero/ru_s75_s125.js
+   (HeroS75S125.sm63, the same call the kpa_e60_sam row makes).  The row names the HQ-2B on a
+   tracked Type 63 chassis, and no photograph of that tracked mount was found.  The Commons
+   photographs of the PLA's HQ-2 ("HQ-2 SAM launcher MW.JPG", "HQ-2 SAM, Military Museum of the
+   Chinese People's Revolution.jpg", found by the Chinese-name search) all show the towed
+   cruciform launcher with its two-axle carriage, which is the SM-63 copy, carrying the S-75-pattern
+   round ("HQ-2 SAM in the Industrial Museum of China 20260331131248.jpg").  So this is the HQ-2
+   as photographed, not the self-propelled version; replace it if a photo of the HQ-2B turns up. */
+if (typeof HeroS75S125 !== "undefined" && typeof HeroS75S125.sm63 === "function") {
+  UNIT_MODELS["pla_e60_sam"] = { len: 10.39, build: function (THREE, M, C) { return HeroS75S125.sm63(THREE, C); } };
+}
