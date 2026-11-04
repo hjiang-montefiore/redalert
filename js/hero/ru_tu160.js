@@ -1,7 +1,7 @@
 /* ============ ru_tu160.js -- TUPOLEV Tu-160 BLACKJACK and Tu-160M (HERO MODEL) ============
 
    Two rows draw it:
-     pact_e80_stealthbomber  "Tu-160 Blackjack"  (js/eras.js; service 1987, e80 to e00)
+     pact_e80_stealthbomber  "Tu-160 Blackjack"  (js/eras.js; service 1987; fielded in e00 only, the Tu-22M3 holds e80/e90)
      sbomber_p               "Tu-160M Blackjack" (js/rules.js; today)
    No other key uses this file. js/models3d_east.js still defines an older HD_MODELS["sbomber_p"];
    this file loads after it (index.html / cmp.html order) and replaces it in UNIT_MODELS.
@@ -609,5 +609,6 @@ var HeroTu160 = (function () {
   return { build: build };
 })();
 
-UNIT_MODELS["pact_e80_stealthbomber"] = { len: 54.1, build: function (THREE, M, C) { return HeroTu160.build(THREE, M, C, "soviet"); } };
+/* the row now flies in e00 only (the Tu-22M3 holds e80/e90), so it wears the Russian finish */
+UNIT_MODELS["pact_e80_stealthbomber"] = { len: 54.1, build: function (THREE, M, C) { return HeroTu160.build(THREE, M, C, "russian"); } };
 UNIT_MODELS["sbomber_p"] = { len: 54.1, build: function (THREE, M, C) { return HeroTu160.build(THREE, M, C, "russian"); } };

@@ -595,5 +595,6 @@ if (typeof HeroTu16Z !== "undefined") {
   };
 }
 /* the Tu-22M3: len the measured X extent, nose tip to the tailplane tips (A; published 42.46 m) */
-UNIT_MODELS["pact_e90_heavybomber"] = { len: 42.46, build: function (THREE, M, C) { return HeroTu22M3.build(THREE, M, C, "soviet"); } };
-UNIT_MODELS["pact_e00_heavybomber"] = { len: 42.46, build: function (THREE, M, C) { return HeroTu22M3.build(THREE, M, C, "russian"); } };
+/* the row runs e80 to e90 (heavyair.js pact_e80_heavybomber): the Soviet-marked build; the
+   "russian" finish is kept in the builder for a later row */
+UNIT_MODELS["pact_e80_heavybomber"] = { len: 42.46, build: function (THREE, M, C) { return HeroTu22M3.build(THREE, M, C, "soviet"); } };
