@@ -795,12 +795,28 @@ function __m3dBuild(kind, key, team) {
   if (!tris.length) bb = [0, 0, 0, 0, 0, 0];
   stats.bbox = { min: [__m3dR(bb[0]), __m3dR(bb[1]), __m3dR(bb[2])], max: [__m3dR(bb[3]), __m3dR(bb[4]), __m3dR(bb[5])],
                  size: [__m3dR(bb[3] - bb[0]), __m3dR(bb[4] - bb[1]), __m3dR(bb[5] - bb[2])] };
-  /* The engine scales a unit by THIS box (render3d getModel), and it is not
-     the visible one twice over: Box3.setFromObject counts hidden meshes, and
-     without `precise` it boxes each mesh's bounding-box corners, so a rotated
-     part counts wider than it is. Both are reported, each with its cause. */
+  /* The engine scales a unit by THIS box (render3d getModel visibleBox): the
+     VISIBLE subtree only, so a hidden pose group does not count, but without
+     `precise` it boxes each mesh's bounding-box corners, so a rotated part
+     counts wider than it is. A difference is reported with its cause. */
+  function visBox(r, precise) {
+    var box = new THREE.Box3(), t = new THREE.Box3(), v = new THREE.Vector3();
+    r.updateWorldMatrix(true, true);
+    r.traverseVisible(function (o) {
+      var g = o.geometry;
+      if (!g) return;
+      if (precise && g.attributes && g.attributes.position) {
+        var pa = g.attributes.position;
+        for (var i = 0; i < pa.count; i++) box.expandByPoint(v.fromBufferAttribute(pa, i).applyMatrix4(o.matrixWorld));
+      } else {
+        if (!g.boundingBox) g.computeBoundingBox();
+        box.union(t.copy(g.boundingBox).applyMatrix4(o.matrixWorld));
+      }
+    });
+    return box;
+  }
   var notes = [];
-  var eb = new THREE.Box3().setFromObject(root), ebp = new THREE.Box3().setFromObject(root, true);
+  var eb = visBox(root, false), ebp = visBox(root, true);
   if (isFinite(eb.min.x)) {
     stats.engineBox = { min: [__m3dR(eb.min.x), __m3dR(eb.min.y), __m3dR(eb.min.z)], max: [__m3dR(eb.max.x), __m3dR(eb.max.y), __m3dR(eb.max.z)] };
     var ex = eb.max.x - eb.min.x, epx = ebp.max.x - ebp.min.x, vx = bb[3] - bb[0], tol = Math.max(0.05, vx * 0.02);
@@ -808,7 +824,7 @@ function __m3dBuild(kind, key, team) {
     if (kind !== "unit") vx = 0;
     if (vx > 0 && Math.abs(epx - vx) > tol)
       issues.push("engine length " + __m3dR(epx) + " m != visible length " + __m3dR(vx) + " m: " +
-        (stats.hiddenMeshes ? stats.hiddenMeshes + " hidden mesh(es)" : "geometry that draws nothing") +
+        "visible geometry that draws no triangles" +
         " change the in-game scale");
     else if (vx > 0 && Math.abs(ex - vx) > tol)
       notes.push("the engine measures " + __m3dR(ex) + " m long (a rotated part counts by its box corners), visible " +

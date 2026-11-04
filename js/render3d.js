@@ -488,8 +488,11 @@ var Render3D = (function () {
       if (kit) tpl.add(kit);
     }
     prepModel(tpl);
-    /* normalise scale by MEASURED extent - immune to bad len metadata */
-    const bb = new THREE.Box3().setFromObject(tpl);
+    /* normalise scale by MEASURED extent - immune to bad len metadata.
+       Only what draws counts: a hidden pose group (a launcher's set-up
+       pose that reaches past the travelling silhouette) must not shrink
+       the unit.  visibleBox mirrors Box3.setFromObject otherwise. */
+    const bb = visibleBox(tpl);
     const actual = Math.max(0.5, bb.max.x - bb.min.x);
     let targetLen;
     if (def.cat === "infantry") targetLen = 4.6 * CFG.MODEL_SCALE_INF;  // oversized soldier, RTS convention
@@ -525,6 +528,25 @@ var Render3D = (function () {
     wrap.userData.metric = !!tpl.userData.metric;
     modelCache[ck] = wrap;
     return wrap;
+  }
+  /* Box3.setFromObject over the VISIBLE subtree only (traverseVisible):
+     each geometry's bounding box in world space, as three's non-precise
+     expandByObject does; precise = true boxes the vertices instead. */
+  function visibleBox(root, precise) {
+    const box = new THREE.Box3(), t = new THREE.Box3(), v = new THREE.Vector3();
+    root.updateWorldMatrix(true, true);
+    root.traverseVisible(o => {
+      const g = o.geometry;
+      if (!g) return;
+      if (precise && g.attributes && g.attributes.position) {
+        const pa = g.attributes.position;
+        for (let i = 0; i < pa.count; i++) box.expandByPoint(v.fromBufferAttribute(pa, i).applyMatrix4(o.matrixWorld));
+      } else {
+        if (!g.boundingBox) g.computeBoundingBox();
+        box.union(t.copy(g.boundingBox).applyMatrix4(o.matrixWorld));
+      }
+    });
+    return box;
   }
   function prepModel(g) {
     g.traverse(o => {
