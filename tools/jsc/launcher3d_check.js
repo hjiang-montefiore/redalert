@@ -50,7 +50,8 @@ window.addEventListener("load", function () {
 });
 
 var CELLS = { nato_e80_mlrs: 12, nato_e90_mlrs: 12, mlrs_n: 12, nato_e90_tel: 2, nato_e00_mlrs: 6, nato_e00_tel: 1, tel_n: 2 };
-var ORDS = { nato_e80_mlrs: "m26", nato_e90_mlrs: "m26", mlrs_n: "gmlrs", nato_e90_tel: "atacms",
+/* deu_e90_mlrs is the Bundeswehr MARS, the same M270 (js/hero/deu_us_pattern.js), firing the M26 */
+var ORDS = { nato_e80_mlrs: "m26", nato_e90_mlrs: "m26", deu_e90_mlrs: "m26", mlrs_n: "gmlrs", nato_e90_tel: "atacms",
              nato_e00_mlrs: "gmlrs", nato_e00_tel: "atacms", tel_n: "prsm" };
 /* mesh counts of FX3D.create(THREE, p) with no round named, measured at 2e41321 */
 var BEFORE = [["arc", null, 3], ["shell", null, 4], ["bullet", null, 4], ["bomb", null, 7], ["torpedo", null, 10],
@@ -170,7 +171,7 @@ function run() {
   });
   chk("every unnamed projectile builds with the part count it had at 2e41321 (" + BEFORE.length + " kinds)", badO.length === 0, badO.join(", "));
   var withOrd = Object.keys(UNIT_MODELS).filter(function (k) { return UNIT_MODELS[k].ord; }).sort();
-  chk("only the seven launcher rows name a round", withOrd.join(",") === Object.keys(ORDS).sort().join(","), withOrd.join(","));
+  chk("only the launcher rows listed in ORDS name a round", withOrd.join(",") === Object.keys(ORDS).sort().join(","), withOrd.join(","));
 
   /* ---------------- in play ---------------- */
   var sp = 0, smerchMs = null, rowMs = null;
