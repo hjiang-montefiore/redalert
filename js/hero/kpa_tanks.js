@@ -1188,10 +1188,18 @@ var HeroKpaTanks = (function () {
 UNIT_MODELS["kpa_e80_mbt"] = { len: 9.95, build: HeroKpaTanks.c1 };
 UNIT_MODELS["kpa_e90_mbt"] = { len: 9.95, build: HeroKpaTanks.c214 };
 UNIT_MODELS["kpa_e00_mbt"] = { len: 10.05, build: HeroKpaTanks.pok };
-/* kpa_e00_heavy (Songun-915) is NOT registered: no photograph of it was
+/* kpa_e00_heavy and hvy_k (Songun-915) are NOT registered: no photograph of it was
    found, so HeroKpaTanks.son rests on ru.wikipedia text and figures alone;
-   the row keeps its stand-in until a photo is measured. */
+   the rows keep their stand-ins until a photo is measured.  Retried 2026-11-04
+   with Wikipedia's own images: en.wikipedia "Songun-915" redirects to
+   "Pokpung-ho" (one image, the Chonma-216); the Songun-915 row of "List of
+   equipment of the Korean People's Army Ground Force" has no photo; ru.wikipedia
+   "Songun (tank)" has an empty image field; file searches ("Songun", "Chonma
+   tank", "Pyongyang parade tank") and Commons "Category:Tanks of North Korea"
+   (Ch'onma-ho, Cheonma-2, Pokpung-ho, T-34-85) hold no Songun-915;
+   ko.wikipedia is not reachable from this machine. */
 /* UNIT_MODELS["kpa_e00_heavy"] = { len: 10.05, build: HeroKpaTanks.son }; */
+/* UNIT_MODELS["hvy_k"] = { len: 10.05, build: HeroKpaTanks.son }; */
 UNIT_MODELS["kpa_e80_lighttank"] = { len: 9.47, build: HeroKpaTanks.pt85e80 };
 UNIT_MODELS["kpa_e90_lighttank"] = { len: 9.47, build: HeroKpaTanks.pt85e90 };
 UNIT_MODELS["kpa_e00_lighttank"] = { len: 9.47, build: HeroKpaTanks.pt85e00 };

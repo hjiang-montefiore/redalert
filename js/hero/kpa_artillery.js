@@ -1,7 +1,7 @@
 /* ========== kpa_artillery.js - HERO models: North Korean artillery, rocket launchers and the VTT-323 carrier ==========
    Rows registered at the foot (and only these):
      kpa_e60_mlrs  "Type 75 122mm MRL" (BM-21 Grad pattern)   the 2B5 pack on the Ural-375D: ru_bm14_bm21.js copied
-     kpa_e80_mlrs  M1985 240 mm MRL, 12 tubes                   the same Ural-375D, a 2 x 6 pack of 240 mm tubes
+     kpa_e80_mlrs  M1985 240 mm MRL, 12 tubes                   its own bonneted 6x6 off [R1], a 2 x (3 + 3) pack [R3]
      kpa_e90_mlrs  M1991 240 mm MRL, 22 tubes                   a cab-over 6x6 off the MCIA drawing, a 7-8-7 pack
      kpa_e80_ifv   VTT-323 (M-1973)                             off the MCIA drawing; the Type 63's hull idiom
      kpa_e90_ifv   VTT-323, as kpa_e80_ifv
@@ -12,6 +12,11 @@
    NOT built: kpa_e00_mlrs (KN-09 300 mm).  No free photograph or drawing of it was found; en.wikipedia gives only
    "6x6", "armored louvers to protect the windshield" and "two pods of four rockets" (and a 12-tube ZIL-135 8x8
    from 2020), which leaves the truck, the pods' length and the layout to invention.  It keeps its generic model.
+   Retried 2026-11-04 with Wikipedia's own images: en.wikipedia "KN-09 (multiple rocket launcher)" carries no image,
+   the KN-09 row of "List of equipment of the Korean People's Army Ground Force" has no photo, Commons "Category:Self-
+   propelled multiple rocket launchers of North Korea" holds only the BM-11, the M-1985 and the M-1991; file searches
+   for "KN-09" and "300 mm multiple rocket launcher North Korea" found nothing; ko/zh.wikipedia are not reachable
+   from this machine.  Still NOT built.
 
    References (Wikimedia Commons at width 960 unless noted; cached in scratchpad/q_kpa_art_ref):
      [HB]  "North Korea Country Handbook", Marine Corps Intelligence Activity, May 1997 (MCIA-2630-NK-016-97; also on
@@ -40,12 +45,20 @@
            [K5] "... 02.jpg" the breech and the jacket close up.
      [M74] "152mm M1974 Tokch'on - North Korea Victory Day-2013 01.jpg" (diacritics in the title) - front left 3/4.
      [M91] "240MM rocket launcher M-1991.jpg" - the MCIA line drawing of the M-1991, side, pack raised: measured.
+     [R1]  "Iranian M-1985 2018.jpg" (Commons, Tasnim News, CC BY 4.0; "One Iranian M-1985 MLRS at a parade in Urmia") -
+           a North Korean-built M-1985 from the front left: MEASURED (perspective solved; see the M-1985 block).
+     [R2]  "M-1985 MLRS.jpg" (Commons, public domain; "a North Korean-built M-1985 MLRS in service with Iranian
+           soldiers during the Iran-Iraq war") - the same truck and pack, front left, pack raised: arrangement only.
+     [R3]  "Fajr-3 at parade.jpg" (Commons, CC BY 4.0; "A Fajr-3 MLRS, followed by a North Korean-built M-1985") -
+           the M-1985 near head-on behind the Fajr-3: the pack's 2 x (3 + 3) mouths and the cab's width, at the
+           240 mm bore's scale.  Found through Commons "Category:M-1985" (2026-11-04 retry).
      The BM-21 / Ural-375D references are ru_bm14_bm21.js's ([D] [L] [F] [S2] [P] [Rr] [M] [Si] [Fi]; see there).
 
    Published figures, and each build against them (L x W x H, metres, as dumped):
      Type 75 (kpa_e60_mlrs): no KPA figure.  BM-21 (ru.wikipedia) 7.35 x 2.40 x 3.09.  Built 7.40 x 2.74 x 3.08 (the
        2.74 is the mirrors, as in ru_bm14_bm21.js).
-     M1985 (kpa_e80_mlrs): none (12 tubes, 2 rows of 6 [HB]).  Built 7.80 x 2.74 x 2.90.
+     M1985 (kpa_e80_mlrs): none (12 tubes, 2 rows of 6 [HB]; "Isuzu 6x6", Foss 2011 via en.wikipedia).  Built 9.75 x
+       2.46 (mirrors) x 3.40, every station measured off [R1] (see the M-1985 block: tyre 1.09 m from the 240 mm bores).
      M1991 (kpa_e90_mlrs): none (22 tubes [HB]).  Built 8.03 x 2.96 (mirrors) x 2.64.
      VTT-323 (kpa_e80/e90_ifv): none found.  Type 63 (en.wikipedia) 5.476 x 2.978 x 2.58.  Built 6.74 x 3.01 x 2.94
        (2.43 to the turret roof, 2.94 to the AT-3's fins; 6.62 m plate to plate).
@@ -69,7 +82,8 @@
        the rear deck: cheeks, breech, the two recoil cylinders over the jacket, the equilibrators [K1][K5]; 4. the
        spades folded up behind, leaning forward [K1][K2]; 5. the rear platform and its hand rails [K1][K2][K3].
      M1991: cab-over 6x6, the box behind the cab, the flat deck with two lockers, the 22-tube pack lying fore and aft
-       from a trunnion at the rear [M91].   M1985: the Ural-375D (stand-in), a 2 x 6 pack [HB].
+       from a trunnion at the rear [M91].   M1985: the square bonneted 6x6 with the long cab, the deck box behind it,
+       the 12 tubes in two halves of three per row lying fore and aft behind the cab [R1][R2][R3].
      M1974: five road wheels, front sprocket, the low cab under the sloping nose, the tall open-topped casemate, the
        152 mm with its double-baffle brake over the cab [M74].
      M-1989: the long glacis, the armoured cab under the gun, the M-1978 mount at the rear [K4].
@@ -80,8 +94,9 @@
    NOT CONFIRMED (judgement, not measured or published):
      - Type 75: the designation, and that the KPA's own Grad copies use the Ural-375D ([HB] puts the BM-21 on it; the
        BM-11 copy on "URAL-375D or Japanese truck").  The Ural-375D and the 2B5 pack are the BM-21's, unchanged.
-     - M1985: the truck (no photograph: the Ural-375D stands in), the mount, the pack's station and height, and its
-       tube length (taken from [M91]); no sight, handwheel or jacks are drawn because none is shown anywhere.
+     - M1985: the widths (only the cab's is measured), the bumper height, the deck box's width, the mount and its
+       pivot (generic, trunnion at the pack's rear), the pack drawn level (about 8 deg nose-up in [R1]); no sight,
+       handwheel or jacks are drawn because none is shown.
      - M1991: the scale (from the tyre taken as 1.12 m), the tube layout 7-8-7 (the count 22 is published; a 0.76 m
        deep pack holds three staggered rows), the width (2.44 m over the cab), the item behind the cab, the launch
        elevation userData.el 35 deg (the drawing shows the pack only 11 deg up; 35 is the BM-21's picture value).
@@ -731,14 +746,17 @@ var HeroKpaRockets = (function () {
      339 px at 69.6 px a metre); the M-1985's tube length is taken to be the same (it fires the same 240 mm round:
      NOT CONFIRMED). */
   var R240 = 0.125, P240 = 0.27, RZ240 = 0.225, L240 = 4.87;
-  function pack240(B, cells, rows, xt, z0) {
-    var i, j, y, z, s, n, nmax = 0, xm = xt + L240, zb = z0 - R240 - 0.01, zt = z0 + (rows.length - 1) * RZ240 + R240 + 0.01, hw;
+  /* opt (the M-1985 only): L the tube length, RZ the row pitch, GAP extra space between the two halves of each row */
+  function pack240(B, cells, rows, xt, z0, opt) {
+    var L = (opt && opt.L) || L240, RZ = (opt && opt.RZ) || RZ240, GAP = (opt && opt.GAP) || 0;
+    var i, j, y, z, s, n, nmax = 0, xm = xt + L, zb = z0 - R240 - 0.01, zt = z0 + (rows.length - 1) * RZ + R240 + 0.01, hw;
     for (j = 0; j < rows.length; j++) nmax = Math.max(nmax, rows[j]);
-    hw = nmax * P240 / 2 + 0.01;
+    hw = nmax * P240 / 2 + GAP / 2 + 0.01;
     for (j = 0; j < rows.length; j++) {
-      n = rows[j]; z = z0 + j * RZ240;
+      n = rows[j]; z = z0 + j * RZ;
       for (i = 0; i < n; i++) {
         y = (i - (n - 1) / 2) * P240;
+        if (GAP) y += (i < n / 2 ? -GAP / 2 : GAP / 2);
         cylX(B.paint, xt + 0.01, xm - 0.04, y, z, R240, 12);
         cyl(B.paint, [xm - 0.04, y, z], [xm, y, z], R240 + 0.008, R240 + 0.008, 12, false, true);
         cylX(B.dark, xm - 0.06, xm - 0.05, y, z, R240 - 0.012, 10);                    /* the bore at the mouth */
@@ -776,22 +794,113 @@ var HeroKpaRockets = (function () {
     if (pvz - 0.16 - bt > 0.12) cyl(B.dark, [pvx + 1.30, 0, bt], [pvx + 1.40, 0, pvz - 0.16], 0.07, 0.07, 10);
   }
 
-  /* ---------------------------------------------------------------- M-1985: twelve tubes on the Ural-375D
-     [HB] A-45: "the 12 round M-1985 ... has 2 rows of 6 tubes and is mounted on a cab behind engine chassis".  The
-     truck is not identified in any source found here: the Ural-375D, which [HB] lists in KPA service under the BM-21
-     and the BM-11, stands in for it (a cab-behind-engine 6x6), copied from ru_bm14_bm21.js.  NOT CONFIRMED: the
-     truck, the mount's station, the pack's height and length; no photograph of an M-1985 was found. */
-  var M85 = { TX: -1.62, TZ: 1.36, PVX: -2.10, PVZ: 0.70, XT: -0.40, Z0: 0.42, EL: 35 * Math.PI / 180 };
+  /* ---------------------------------------------------------------- M-1985: twelve tubes on its own 6x6 truck
+     CORRECTED 2026-11-04 (retry with Wikipedia's images): the Ural-375D stand-in is gone.  [R1] "Iranian M-1985
+     2018.jpg" and [R2] "M-1985 MLRS.jpg" (Commons, category "M-1985"; en.wikipedia "List of equipment of the Korean
+     People's Army Ground Force": "12-tube launcher mounted on an Isuzu 6x6 chassis", Foss 2011) show a North
+     Korean-built M-1985: a square-nosed bonneted 6x6 (big square-mesh grille, flat-topped wings, round headlamps
+     in the wing fronts), a long flat-fronted cab with a two-pane windscreen, a door and a second side window behind
+     it, a fuel tank under the door, a single front axle and a rear tandem; a box on the deck behind the cab under
+     the mount; the pack of 2 rows of 6 in two halves of three (front view [R3] "Fajr-3 at parade.jpg", the
+     M-1985 behind the Fajr-3) lying fore and aft behind the cab, mouths at the cab's back.
+     MEASURED off [R1] alone (800 x 530, read at 1280 wide), through a level pinhole camera: horizon y 407 (the
+     truck's long edges and the lane lines meet at x 1437 on it), the cross direction's vanishing point from the
+     bumper (x -286), so f = 859 px; every ground point on the near side's tyre line then has its depth, and
+     each tyre's diameter comes out the same at all three axles (0.629, 0.636, 0.630 camera heights), which
+     checks the model.  Scale: the cab's front across, 1.09 camera heights in [R1], is 1.87 m in [R3]'s near
+     head-on view, where the 240 mm bores (the one published size) give the metre: so the tyre is 1.09 m
+     across (R 0.545) and every station below follows (metres, from the front axle back): wing front -1.32,
+     cowl 0.39, door back 1.66, cab back 2.72, rear axles 4.32 and 5.80, deck end 6.97, the tube mouths 3.15 and
+     the tails 8.24 (tubes 5.09 m).  Heights: wing top 1.52, bonnet 1.90 at the front to 2.07 at the cowl,
+     windscreen foot 2.16, cab roof 2.72 (2.68-2.79 read), sill 1.35, deck 1.29, mouths of the lower row 3.22
+     over the ground and the tails' lower edge about 2.5 (the pack lies about 8 deg nose-up on the march in [R1];
+     drawn level at the mean, because the game's "podelev" rests level).  The column pitch 0.27 m and the gap
+     between the halves (0.41 m centre to centre) and the row pitch (0.26 m) are [R3]'s, at the 240 mm scale.
+     NOT CONFIRMED: the width (cab 1.90 m from [R3]; wings, bumper, track 1.96 m and deck 2.20 m are judgement:
+     no view across the rear); the bumper's height; the deck box's width; the mount (drawn as the generic
+     turntable and cheeks with the trunnion at the pack's rear: [R1] shows a strutted frame whose pivot is not
+     resolved); the cab's far side is drawn as the near side's mirror. */
+  var M85 = { F0: 3.40, AX: [3.40, -0.92, -2.40], R: 0.545, W: 0.34, TY: 0.98,
+              TX: -3.05, TZ: 1.29, PVX: -1.00, PVZ: 1.24, XT: -0.79, Z0: 0.42, L: 5.09, RZ: 0.26, GAP: 0.14, EL: 35 * Math.PI / 180 };
+  function m85truck(B) {
+    var s, k, x, yo, AX = M85.AX, XW = 4.72, XB = 4.85, CF = 3.01, CR = 0.68, HW = 0.95, ROOF = 2.72;
+    /* chassis: frame rails, axles and housings, the tandem's springs and trunnion */
+    box(B.dark, -3.60, XW - 0.10, -0.46, 0.46, 0.76, 1.00);
+    for (k = 0; k < 3; k++) {
+      cylY(B.dark, AX[k], -0.86, 0.86, M85.R, 0.09, 8);
+      box(B.dark, AX[k] - 0.20, AX[k] + 0.20, -0.32, 0.32, 0.44, 0.74);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, AX[0] - 0.70, AX[0] + 0.70, s * 0.46, s * 0.58, 0.70, 0.78);
+      box(B.dark, AX[2] - 0.30, AX[1] + 0.30, s * 0.46, s * 0.60, 0.68, 0.78);
+      cylY(B.dark, (AX[1] + AX[2]) / 2, s * 0.40, s * 0.70, 0.84, 0.12, 10);
+    }
+    /* front bumper across the whole front [R1] (height NOT CONFIRMED), tow eyes */
+    box(B.paint, XW, XB, -1.15, 1.15, 0.66, 0.96);
+    for (s = -1; s <= 1; s += 2) box(B.dark, XB, XB + 0.06, s * 0.50 - 0.05, s * 0.50 + 0.05, 0.72, 0.84);
+    /* the grille: a square-mesh field in a frame across the bonnet front [R1][R2] */
+    box(B.paint, XW - 0.30, XW - 0.02, -0.62, 0.62, 0.96, 1.90);
+    box(B.dark, XW - 0.02, XW, -0.56, 0.56, 1.02, 1.82);
+    for (k = 0; k < 4; k++) { x = -0.42 + k * 0.28; box(B.paint, XW - 0.01, XW + 0.03, x - 0.03, x + 0.03, 1.02, 1.82); }
+    for (k = 0; k < 6; k++) box(B.paint, XW - 0.01, XW + 0.03, -0.56, 0.56, 1.04 + k * 0.155, 1.08 + k * 0.155);
+    /* the bonnet: flat-sided, its top rising from 1.90 at the front to 2.07 at the cowl [R1] */
+    profY(B.paint, [[XW - 0.02, 0.96], [CF, 0.96], [CF, 2.07], [XW - 0.20, 1.90], [XW - 0.02, 1.86]], -0.66, 0.66);
+    for (s = -1; s <= 1; s += 2) {
+      /* the two slots in the bonnet side [R1] */
+      for (k = 0; k < 2; k++) box(B.dark, 3.95 - k * 0.42, 4.25 - k * 0.42, s * 0.66, s * 0.672, 1.72, 1.80);
+      /* the wing: flat top at 1.52, its front face with the headlamps, sweeping down behind the wheel [R1] */
+      yo = s > 0 ? [0.62, 1.15] : [-1.15, -0.62];
+      ribbon(B.paint, [[2.42, 0.82], [2.50, 1.10], [2.70, 1.38], [3.00, 1.52], [XW, 1.52]], yo[0], yo[1], 0.05);
+      box(B.paint, XW - 0.12, XW, yo[0], yo[1], 0.96, 1.52);
+      cylX(B.dark, XW, XW + 0.05, s * 0.82, 1.27, 0.10, 14);                                 /* headlamp */
+      cylX(B.glass, XW + 0.05, XW + 0.06, s * 0.82, 1.27, 0.085, 14);
+      cylX(B.dark, XW, XW + 0.04, s * 0.82, 1.09, 0.06, 10);                                 /* the lamp under it */
+      cylX(B.glass, XW + 0.04, XW + 0.05, s * 0.82, 1.09, 0.05, 10);
+      box(B.dark, XW - 0.30, XW - 0.10, s * 1.00 - 0.06, s * 1.00 + 0.06, 1.52, 1.58);       /* indicator on the wing */
+    }
+    /* the cab: a long box, flat front, two-pane windscreen, door and the second window behind it [R1] */
+    box(B.paint, CR, CF, -HW, HW, 1.35, ROOF);
+    box(B.paint, CR + 0.04, CF - 0.04, -HW + 0.04, HW - 0.04, ROOF, ROOF + 0.03);
+    box(B.dark, CF, CF + 0.01, -0.90, 0.90, 2.12, 2.58);
+    box(B.glass, CF + 0.01, CF + 0.02, 0.04, 0.86, 2.16, 2.54);
+    box(B.glass, CF + 0.01, CF + 0.02, -0.86, -0.04, 2.16, 2.54);
+    for (s = -1; s <= 1; s += 2) {
+      sideBox(B.glass, s, HW, 0.008, 1.84, 2.88, 2.20, 2.54);                               /* door window */
+      sideBox(B.glass, s, HW, 0.008, 0.82, 1.56, 2.20, 2.54);                               /* the rear window */
+      sideBox(B.dark, s, HW, 0.006, 1.64, 1.68, 1.40, 2.62);                                /* the door's back edge */
+      sideBox(B.dark, s, HW, 0.006, 2.96, 3.00, 1.40, 2.62);
+      sideBox(B.dark, s, HW, 0.03, 1.80, 1.92, 1.90, 1.94);                                 /* handle */
+      box(B.dark, 1.80, 2.70, s * HW, s * (HW + 0.14), 0.72, 0.76);                         /* step */
+      bar(B.dark, [CF - 0.02, s * HW, 2.40], [CF + 0.08, s * (HW + 0.22), 2.50], 0.03);    /* mirror arm */
+      box(B.dark, CF + 0.04, CF + 0.10, s * (HW + 0.18), s * (HW + 0.28), 2.28, 2.58);       /* mirror */
+    }
+    /* the fuel tank under the door, port side as [R1] shows it */
+    cylX(B.paint, 1.74, 2.59, 0.80, 1.09, 0.20, 14);
+    for (k = 0; k < 2; k++) box(B.dark, 1.90 + k * 0.50, 1.95 + k * 0.50, 0.58, 1.02, 0.86, 1.31);
+    /* the deck from the cab back to the end [R1], the box on it behind the cab under the mount (width NOT CONFIRMED) */
+    box(B.paint, -3.57, CR - 0.04, -1.10, 1.10, 1.17, 1.29);
+    box(B.paint, -2.24, CR - 0.08, -0.90, 0.90, 1.29, 2.03);
+    box(B.dark, -2.25, CR - 0.07, -0.91, 0.91, 1.99, 2.01);
+    for (s = -1; s <= 1; s += 2) {
+      yo = s > 0 ? [0.80, 1.16] : [-1.16, -0.80];
+      /* the tandem's mudguard, flat over both wheels */
+      ribbon(B.paint, [[-3.20, 0.86], [-3.10, 1.12], [-2.90, 1.20], [-0.40, 1.20], [-0.20, 1.10], [-0.10, 0.86]], yo[0], yo[1], 0.04);
+      box(B.dark, -3.62, -3.57, s * 0.90 - 0.08, s * 0.90 + 0.08, 0.98, 1.10);              /* tail lamps */
+      box(B.glass, -3.63, -3.62, s * 0.90 - 0.06, s * 0.90 + 0.06, 1.00, 1.08);
+    }
+    box(B.dark, -3.62, -3.50, -0.95, 0.95, 0.86, 1.17);                                      /* rear cross-member */
+    cylX(B.dark, -3.66, -3.60, 0, 0.96, 0.07, 10);
+  }
   function buildM1985(THREE, C, R) {
     var T = materials(THREE, C, R.paint), g = new THREE.Group(), HB = bins(T, true);
-    ural(HB);
+    m85truck(HB);
     flush(THREE, g, HB);
-    addWheels(THREE, g, T, UR.AX, [UR.TY, UR.TY, UR.TY], UR.R, UR.W, 24, 0);
+    addWheels(THREE, g, T, M85.AX, [M85.TY, M85.TY, M85.TY], M85.R, M85.W, 24, 0);
     var tur = new THREE.Group(), MB = bins(T, false), EB = bins(T, false), cells = [];
     mount240(MB, M85.PVX, M85.PVZ, 0.56);
     flush(THREE, tur, MB);
-    pack240(EB, cells, [6, 6], M85.XT, M85.Z0);
-    /* two rows of six in line, not staggered ([HB] "2 rows of 6") */
+    /* two rows of six, each row in two halves of three [R3] */
+    pack240(EB, cells, [6, 6], M85.XT, M85.Z0, { L: M85.L, RZ: M85.RZ, GAP: M85.GAP });
     tur.add(elevGroup(THREE, EB, M85.PVX, M85.PVZ, M85.EL, cells));
     tur.name = "turret";
     tur.position.set(M85.TX, 0, M85.TZ);
@@ -1824,11 +1933,11 @@ var HeroKpaTracked = (function () {
    the muzzle and the folded spades included) */
 (function () {
   function reg(key, len, build) { UNIT_MODELS[key] = { len: len, build: build }; }
-  var LEN = { kpa_e60_mlrs: 7.40, kpa_e80_mlrs: 7.80, kpa_e90_mlrs: 8.03 };
-  /* kpa_e80_mlrs (M1985) is NOT registered: no photo or drawing of it was
-     found (only a line of text in the 1997 handbook), so it keeps its
-     stand-in until one is measured. */
-  ["kpa_e60_mlrs", "kpa_e90_mlrs"].forEach(function (k) {
+  var LEN = { kpa_e60_mlrs: 7.40, kpa_e80_mlrs: 9.75, kpa_e90_mlrs: 8.03 };
+  /* kpa_e80_mlrs (M1985): registered 2026-11-04 on the truck and pack measured off "Iranian M-1985 2018.jpg"
+     (Commons; the M-1985 row of en.wikipedia "List of equipment of the Korean People's Army Ground Force"), with
+     "M-1985 MLRS.jpg" and "Fajr-3 at parade.jpg" (see the M-1985 block). */
+  ["kpa_e60_mlrs", "kpa_e80_mlrs", "kpa_e90_mlrs"].forEach(function (k) {
     reg(k, LEN[k], function (THREE, M, C) { return HeroKpaRockets.build(k, THREE, M, C); });
   });
   function trk(which) { return function (THREE, M, C) { return HeroKpaTracked.build(which, THREE, M, C); }; }
