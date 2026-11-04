@@ -28,7 +28,9 @@
          size of the array only
      CY1 "Cymbeline FA 15 mortar locating radar Hameenlinna 1/2/4.JPG"  the radar head on its trailer, antenna folded
      CY2 "Cyberline Mortar Locating Radar fielded.png"  the head set up on the ground: the curved reflector raised
-     FV1 "FV432 (7527891020).jpg", FV2 "20050626-006-FV-432.jpg"  the FV432 hull (front 3/4 and head-on)
+     FV1 "FV432 (7527891020).jpg", FV2 "20050626-006-FV-432.jpg"  the FV432 hull (front 3/4 and head-on); the
+         Cymbeline's hull now follows the square-on measurement of js/hero/gb_light_armour.js (HeroFv430, its F1-F5:
+         "GKN Sankey FV432 pic2.JPG" side-on and others), whose tables are copied into HeroCymbeline
      MA1 "Mobile Artillery Monitoring Battlefield Radar (MAMBA) MOD 45148327.jpg" (UK MOD, Iraq), MA2 "...45148329.jpg"
          (from the rear), MA3 "ARTHUR in position.JPG", MA4 "Bv206 of Singapore Army mounting ARTHUR counter-battery
          radar.jpg"  the Bv206 pair, the shelter on the rear car, the array on its post at the shelter's rear end
@@ -750,71 +752,153 @@ var HeroCobraFr = (function () {
    CYMBELINE Mk 2 on the FV436 (FV432 hull) (gbr_e60_radarv, 1975-2003)
    The row's "FV436 with Cymbeline" is the FV432 with the radar on its rear roof (published, en.wikipedia
    "Cymbeline (radar)": "Mk 2 was mounted on top of an FV432"; "FV430 series": FV436 "later Cymbeline radar").
+   HULL: REBUILT on the FV432 that js/hero/gb_light_armour.js (HeroFv430) measured off a square-on photograph (its
+   F1, "GKN Sankey FV432 pic2.JPG", 226 px/m at the published 5.25 m; F3 front 3/4, F4 head on, F5 front; the full
+   working is in that file's header, SCALES "FV430 family").  The first version of this module guessed the hull from
+   the two 3/4 photographs FV1/FV2 (a box prism with a bent front plate, roof 1.88 m, 0.70 m wheel pitch, single road
+   wheels); the square-on measurement is the stronger evidence and replaces it.  HeroFv430 exposes only whole-vehicle
+   builders (fv432 / abbot / fv438), no hull builder, so its measured tables are COPIED here (the stations, the
+   glacis line, the roof, the running gear table G) and drawn with this file's kit; gb_light_armour.js is not
+   loaded or called, so the two files keep no load-order dependency.
    Recognition list:
-     1. the FV432 box hull, the big upper front plate with the lamp clusters in guards at its top corners, the short
-        lower plate, the exhaust on the port side (FV1, FV2)
-     2. five road wheels a side, the drive sprocket at the FRONT, the idler at the rear (FV1, FV2)
-     3. the commander's cupola on the starboard front of the roof (FV1, FV2)
-     4. the radar on its circular mounting over the rear compartment: a turntable on three supports, decking around
-        it (published), the long scanner drum box and the curved reflector standing on it (CY1, CY2)
-   MEASURED / PUBLISHED: hull 5.25 m long, 2.28 m to the cupola (published).  WIDTH: the infobox fetched gives 2.55 m;
-   in FV2 (head-on) each track is 0.124 of the overall width and at the 0.343 m FV432 track (NOT CONFIRMED) that is
-   2.77 m, so 2.80 m (the figure most references give) is drawn and 2.55 is NOT used.  The radar head (published):
-   1.7 m wide, 1.5 m long, 1.07 m high folded, 2.29 m with the antenna up, both from its stand's foot.
-   NOT CONFIRMED: road wheel 0.62 m and pitch 0.70, roof 1.88 m, the plates' angles, the turntable's place (the rear
-   compartment's middle, x -1.20), the decking's size, the reflector's curve and lean (CY2: a cylindrical section,
-   concave forward, leaning back).  NOT drawn: the folding grille (stowed down in the working pose: its frame is not
-   shown in any photograph fetched), the interior, the operators' cable drums.  British plain green; no markings.
+     1. the tall plain box with ONE straight glacis (58 deg) from the nose to the roof, vertical sides, the lower
+        nose plate raking back to the belly (HeroFv430 F1, F3, F4)
+     2. five DUAL road wheels a side, two return rollers, the toothed drive sprocket at the FRONT, the idler at the
+        rear (F1, F3)
+     3. the lamp clusters in grilled guards at the glacis's top corners, the triple smoke dischargers (F3, F4)
+     4. the exhaust along the LEFT side and up the rear corner, the box on the left front (F1, F5)
+     5. the driver's hatch front RIGHT with its periscopes, the commander's cupola behind it, the engine grille front
+        LEFT (F5, published)
+     6. the radar on its circular mounting over the rear compartment, in place of the FV432's round roof hatch: a
+        turntable on three supports, decking around it (published), the long scanner drum box and the curved
+        reflector standing on it (CY1, CY2)
+     7. the rear door and the bins on the rear plate either side (F1)
+   MEASURED (HeroFv430, F1): hull 5.22 m drawn (nose tip 2.615 to the rear plate -2.25, the bins to -2.55) for the
+   published 5.25 m; roof 1.73 m; road wheels 0.62 m at a 0.66 m pitch (stations 1.403 .. -1.257), return rollers at
+   1.097 and -0.969; sprocket 2.159, idler -1.92.  WIDTH (F4 head on): hull 2.55 m over the glacis, 2.80 m over the
+   tracks: both published widths drawn.  The radar head (published): 1.7 m wide, 1.5 m long, 1.07 m high folded,
+   2.29 m with the antenna up, both from its stand's foot.
+   KEPT from the first version, re-seated on the 1.73 m roof: the decking (2.50 m long, now cut to the 2.55 m hull's
+   width), the three supports, the circular mount (0.22 m tall), the scanner drum box and the reflector, unchanged
+   in their own frame.  The mount is centred on the FV432's round-hatch station (x -1.00, HeroFv430), which the
+   published text says the radar mounting replaced; it was x -1.20 on the old 5.25 m box.
+   NOT CONFIRMED: everything HeroFv430 lists as NOT CONFIRMED for the FV432 (the widths below the glacis, the belly,
+   the hatch and cupola sizes, the door, the bins); the decking's size and the mount's height (no photograph of the
+   FV436 roof was fetched); the reflector's curve and lean (CY2: a cylindrical section, concave forward, leaning
+   back).  NOT drawn: the folding grille (stowed down in the working pose: only its frame along the deck edge), the
+   cupola's GPMG, the interior, the operators' cable drums.  British plain green; no markings.
    Nodes: "turret" (the turntable; the reflector faces +X at rest), five "roadwheel".  */
 var HeroCymbeline = (function () {
   "use strict";
   var K = HeroEuKit;
   var PAINT = { base: "#4a5236", blots: ["#41492f", "#535b3e"], seed: 4361 };
-  var BOW = 2.625, STERN = -2.625, BELLY = 0.41, ROOF = 1.88, HW = 1.40, SW = 1.25;
-  var RG = { xw: [1.42, 0.72, 0.02, -0.68, -1.38], zw: 0.383, rw: 0.31, ty: 1.23, tw: 0.17, dbl: false,
-             spr: { x: 2.17, z: 0.52, r: 0.28 }, idl: { x: -2.12, z: 0.45, r: 0.27 }, pitch: 0.16, th: 0.05, teeth: 11 };
-  var PIV = { x: -1.20, z: ROOF + 0.22 };
+  /* the FV432 hull, copied from HeroFv430 (gb_light_armour.js; F1 at 226 px/m): nose tip, glacis top, rear plate,
+     fender, roof, half widths (glacis 2.55 m, lower hull between the tracks), belly */
+  var NOSE = 2.615, NZ = 0.765, GX = 2.02, REAR = -2.25, FEN = 1.02, ROOF = 1.73, HW = 1.275, LW = 1.04, BELLY = 0.41;
+  var GSL = (GX - NOSE) / (ROOF - NZ);
+  function glX(z) { return NOSE + (z - NZ) * GSL; }
+  var GA = Math.atan2(ROOF - NZ, NOSE - GX);       /* the glacis from horizontal, 58 deg */
+  /* running gear: HeroFv430's G (XW, ZW, RW, RR at RRZ / RRR, SPR, IDL, TY, TW) in this kit's form; th 0.043 makes
+     the belt stand 0.03 off the wheels as HeroFv430's does */
+  var RG = { xw: [1.403, 0.739, 0.088, -0.562, -1.257], zw: 0.36, rw: 0.31, ty: 1.23, tw: 0.17, dbl: true,
+             rollers: [[1.097, 0.76, 0.11], [-0.969, 0.76, 0.11]],
+             spr: { x: 2.159, z: 0.566, r: 0.29 }, idl: { x: -1.92, z: 0.64, r: 0.29 }, pitch: 0.16, th: 0.043, teeth: 12 };
+  /* the radar mount over the rear compartment, on the FV432's round-hatch station; its decking 2.50 m long */
+  var PIV = { x: -1.00, z: ROOF + 0.22 }, DK0 = PIV.x - 1.25, DK1 = PIV.x + 1.25;
+
+  function u2(x, z) { var l = Math.sqrt(x * x + z * z); return [x / l, 0, z / l]; }
+  function cylX(bin, x0, x1, y, z, r0, r1, seg) { K.cyl(bin, [x0, y, z], [x1, y, z], r0, r1, seg); }
+  /* a slab lying on the glacis (sloping down toward +X at angle a) */
+  function onSlope(bin, x, y, z, a, hu, hv, hw) {
+    var ca = Math.cos(a), sa = Math.sin(a), n = [sa, 0, ca];
+    K.slab(bin, [x + n[0] * hw, y, z + n[2] * hw], [ca, 0, -sa], [0, 1, 0], n, hu, hv, hw);
+  }
+  /* the lamp cluster in its grilled guard (HeroFv430 lampCluster; the lenses in this module's glass) */
+  function lampCluster(B, x, y, z) {
+    var i;
+    K.box(B.paint, x - 0.14, x - 0.02, y - 0.20, y + 0.20, z - 0.14, z + 0.12);
+    cylX(B.glass, x - 0.02, x - 0.01, y - 0.09, z, 0.075, 0.075, 12);
+    cylX(B.glass, x - 0.02, x - 0.01, y + 0.09, z, 0.075, 0.075, 12);
+    for (i = 0; i < 6; i++) K.box(B.dark, x + 0.05, x + 0.07, y - 0.19 + i * 0.076, y - 0.175 + i * 0.076, z - 0.12, z + 0.12);
+    K.box(B.dark, x - 0.02, x + 0.07, y - 0.205, y + 0.205, z + 0.11, z + 0.13);
+    K.box(B.dark, x - 0.02, x + 0.07, y - 0.205, y + 0.205, z - 0.15, z - 0.13);
+  }
+  function smoke(B, x, y, z, n, dy, s) {
+    for (var i = 0; i < n; i++) K.cyl(B.dark, [x - 0.06, y + (i - (n - 1) / 2) * dy, z], [x + 0.08, y + (i - (n - 1) / 2) * dy + s * 0.03, z + 0.10], 0.038, 0.038, 8);
+  }
 
   function hull(B) {
-    var s, i;
-    /* the box: vertical sides, the upper front plate leaning back hard, the lower plate (FV1, FV2) */
-    K.prismY(B.paint, [[STERN, BELLY + 0.1], [STERN + 0.1, BELLY], [1.95, BELLY], [BOW, 0.95], [1.95, ROOF], [STERN, ROOF]], -HW, HW);
+    var P = B.paint, D = B.dark, s, i, x, y, z, a;
+    /* between the tracks: the lower nose plate raking back to the belly (F4), the tail; towing eyes; mudflaps */
+    K.prismY(P, [[NOSE, NZ], [2.25, BELLY], [-2.12, BELLY], [REAR, 0.56], [REAR, FEN], [NOSE - (FEN - NZ) * 0.6, FEN]], -LW, LW);
+    for (s = -1; s <= 1; s += 2) K.box(D, NOSE - 0.20, NOSE + 0.04, s * 0.72 - 0.06, s * 0.72 + 0.06, NZ - 0.20, NZ - 0.06);
+    for (s = -1; s <= 1; s += 2) K.slab(D, [REAR - 0.13, s * RG.ty, 0.93], u2(-0.6, -0.8), [0, 1, 0], u2(0.8, -0.6), 0.14, RG.tw + 0.02, 0.01);
+    /* the upper box over the tracks: vertical sides, the one straight glacis (F1, F3) */
+    K.prismY(P, [[glX(FEN), FEN], [REAR, FEN], [REAR, ROOF], [GX, ROOF]], -HW, HW);
+    K.prismY(P, [[NOSE, NZ], [glX(FEN), FEN], [glX(FEN) - 0.16, FEN]], -HW, HW);
+    for (s = -1; s <= 1; s += 2) K.box(D, REAR, glX(FEN) - 0.05, s > 0 ? HW - 0.01 : -HW - 0.035, s > 0 ? HW + 0.035 : -HW + 0.01, FEN - 0.02, FEN + 0.03);
+    /* the glacis: the access plate and its hinge line, the lamp clusters and the smoke dischargers at the top
+       corners (F3, F4) */
+    onSlope(P, glX(1.20), 0.0, 1.20, GA, 0.30, 0.48, 0.012);
+    onSlope(D, glX(1.47), 0.0, 1.47, GA, 0.015, 0.40, 0.016);
     for (s = -1; s <= 1; s += 2) {
-      /* the fender lip and the side plate's seam */
-      K.box(B.paint, STERN + 0.05, BOW - 0.35, s > 0 ? HW : -HW - 0.04, s > 0 ? HW + 0.04 : -HW, 1.00, 1.04);
-      K.box(B.dark, -0.40, -0.38, s > 0 ? HW : -HW - 0.01, s > 0 ? HW + 0.01 : -HW, 1.05, ROOF - 0.05);
-      /* the lamp clusters in their guards at the top corners of the front plate (FV1, FV2) */
-      var lx = 2.08, ly = s * 1.05;
-      K.cyl(B.paint, [lx - 0.05, ly, 1.70], [lx + 0.12, ly, 1.70], 0.09, 0.10, 12);
-      K.cyl(B.dark, [lx + 0.12, ly, 1.70], [lx + 0.13, ly, 1.70], 0.085, 0.085, 12);
-      K.box(B.dark, lx + 0.14, lx + 0.17, ly - 0.16, ly + 0.16, 1.58, 1.84);
-      K.box(B.dark, lx - 0.05, lx + 0.17, ly - 0.17, ly - 0.14, 1.58, 1.84);
-      K.box(B.dark, lx - 0.05, lx + 0.17, ly + 0.14, ly + 0.17, 1.58, 1.84);
-      K.box(B.dark, BOW - 0.02, BOW + 0.08, s * 0.80 - 0.07, s * 0.80 + 0.07, 0.80, 0.92);   /* towing eyes */
+      z = 1.48; x = glX(z) + 0.05;
+      lampCluster(B, x + 0.04, s * 1.02, z);
+      smoke(B, glX(1.66) - 0.02, s * 0.70, 1.66, 3, 0.09, s);
+      K.box(D, glX(1.66) - 0.10, glX(1.66) + 0.02, s * 0.70 - 0.16, s * 0.70 + 0.16, 1.60, 1.66);
     }
-    /* the hatch on the front plate (FV2) */
-    var ang = Math.atan2(ROOF - 0.95, BOW - 1.95), c = [2.30, 0.10, 0.95 + (BOW - 2.30) * Math.tan(ang) * 1.0];
-    c[2] = 0.95 + (BOW - 2.30) / (BOW - 1.95) * (ROOF - 0.95);
-    K.slab(B.paint, [c[0] + 0.02, 0.10, c[2]], [-Math.cos(ang), 0, Math.sin(ang)], [0, 1, 0], [Math.sin(ang), 0, Math.cos(ang)], 0.30, 0.42, 0.02);
-    /* the exhaust on the port side, high at the front (FV432) */
-    K.cyl(B.dark, [1.55, HW + 0.05, 1.70], [0.30, HW + 0.05, 1.70], 0.08, 0.08, 10);
-    K.box(B.paint, 0.20, 1.65, HW, HW + 0.12, 1.55, 1.85);
-    /* roof: driver's hatch, the commander's cupola on the starboard front (FV1, FV2) */
-    K.box(B.paint, 1.30, 1.85, 0.30, 0.90, ROOF, ROOF + 0.05);
-    K.cylZ(B.paint, 1.05, -0.60, ROOF, ROOF + 0.22, 0.40, 16);
-    K.cylZ(B.dark, 1.05, -0.60, ROOF + 0.22, ROOF + 0.32, 0.33, 16);
-    for (i = 0; i < 6; i++) { var a = i / 6 * K.TAU; K.box(B.glass, 1.05 + Math.cos(a) * 0.37 - 0.04, 1.05 + Math.cos(a) * 0.37 + 0.04, -0.60 + Math.sin(a) * 0.37 - 0.04, -0.60 + Math.sin(a) * 0.37 + 0.04, ROOF + 0.14, ROOF + 0.20); }
-    /* the decking around the circular mount over the rear compartment, the three supports (published) */
-    K.box(B.paint, -2.45, 0.05, -1.30, 1.30, ROOF, ROOF + 0.04);
-    for (i = 0; i < 9; i++) K.box(B.dark, -2.40 + i * 0.28, -2.38 + i * 0.28, -1.28, 1.28, ROOF + 0.04, ROOF + 0.05);
-    for (i = 0; i < 3; i++) { var b = i / 3 * K.TAU + 0.5; K.box(B.paint, PIV.x + Math.cos(b) * 0.80 - 0.08, PIV.x + Math.cos(b) * 0.80 + 0.08, Math.sin(b) * 0.80 - 0.08, Math.sin(b) * 0.80 + 0.08, ROOF, PIV.z); }
-    K.cylZ(B.dark, PIV.x, 0, ROOF, PIV.z - 0.02, 0.95, 24);
-    /* the folded grille's frame lying along the deck edge */
-    for (s = -1; s <= 1; s += 2) K.box(B.dark, -2.45, 0.05, s > 0 ? 1.24 : -1.30, s > 0 ? 1.30 : -1.24, ROOF + 0.04, ROOF + 0.10);
-    K.box(B.team, 1.30, 1.85, -0.20, 0.20, ROOF, ROOF + 0.015);
-    /* rear plate: the door, lamps */
-    K.box(B.paint, STERN - 0.04, STERN, -0.55, 0.55, 0.55, 1.75);
-    for (s = -1; s <= 1; s += 2) K.box(B.dark, STERN - 0.06, STERN, s * 1.15 - 0.10, s * 1.15 + 0.10, 1.55, 1.70);
+    K.box(B.team, GX - 0.10, GX - 0.02, -0.30, 0.30, ROOF, ROOF + 0.012);
+    /* the roof: the driver's hatch front RIGHT and his periscopes, the engine grille front LEFT (F5, published) */
+    K.cylZ(P, 1.72, -0.70, ROOF, ROOF + 0.06, 0.30, 16);
+    K.box(D, 1.46, 1.52, -0.92, -0.48, ROOF + 0.06, ROOF + 0.09);
+    for (i = -1; i <= 1; i++) K.box(B.glass, 1.98, 2.02, -0.70 + i * 0.13 - 0.045, -0.70 + i * 0.13 + 0.045, ROOF, ROOF + 0.07);
+    for (i = 0; i < 9; i++) { x = 1.85 - i * 0.11; K.box(D, x - 0.035, x + 0.035, 0.15, 1.10, ROOF, ROOF + 0.025); }
+    K.box(P, 0.80, 1.92, 0.10, 1.15, ROOF, ROOF + 0.01);
+    /* the commander's cupola behind the driver (published; HeroFv430's cupola, here fixed to the hull): the ring,
+       the vision blocks, the closed lid */
+    var cx = 1.05, cy = -0.62;
+    K.cylZ(P, cx, cy, ROOF, ROOF + 0.18, 0.40, 18);
+    K.cylZ(P, cx, cy, ROOF + 0.18, ROOF + 0.24, 0.36, 18);
+    for (i = 0; i < 8; i++) {
+      a = i / 8 * K.TAU;
+      K.box(B.glass, cx + Math.cos(a) * 0.41 - 0.03, cx + Math.cos(a) * 0.41 + 0.03, cy + Math.sin(a) * 0.41 - 0.03, cy + Math.sin(a) * 0.41 + 0.03, ROOF + 0.10, ROOF + 0.15);
+    }
+    K.cylZ(P, cx - 0.04, cy, ROOF + 0.24, ROOF + 0.28, 0.30, 16);
+    K.box(D, cx - 0.30, cx - 0.24, cy - 0.12, cy + 0.12, ROOF + 0.28, ROOF + 0.31);
+    /* the box on the left front (F1, F5) */
+    K.box(D, 0.49, 1.80, HW, HW + 0.12, 1.05, 1.63);
+    K.box(D, 1.10, 1.14, HW + 0.12, HW + 0.13, 1.06, 1.62);
+    /* the exhaust along the LEFT side: the silencer, its guard, the pipe back and up the rear corner (F1) */
+    y = HW + 0.10;
+    cylX(D, 0.18, 0.49, y, 1.28, 0.07, 0.07, 10);
+    K.box(D, -1.04, 0.18, HW, HW + 0.09, 1.21, 1.41);
+    cylX(D, -2.30, -1.04, y, 1.30, 0.05, 0.05, 8);
+    K.cyl(D, [-2.30, y, 1.30], [-2.42, y, 1.45], 0.05, 0.05, 8);
+    K.cylZ(D, -2.42, y, 1.45, 2.12, 0.05, 8);
+    K.box(D, -2.40, -2.30, y - 0.03, y + 0.03, 1.55, 1.62);
+    /* grab rails and the side's plate seam (F1) */
+    for (s = -1; s <= 1; s += 2) {
+      K.box(D, -2.15, -0.20, s > 0 ? HW : -HW - 0.02, s > 0 ? HW + 0.02 : -HW, ROOF - 0.06, ROOF - 0.03);
+      K.box(D, -0.208, -0.192, s > 0 ? HW : -HW - 0.006, s > 0 ? HW + 0.006 : -HW, 1.06, 1.74);
+    }
+    /* the rear plate: the door hinged on the RIGHT (published), its hinges and handle; the bins either side
+       (F1); the tail lamps */
+    K.box(P, REAR - 0.05, REAR, -0.62, 0.46, 0.60, 1.62);
+    for (i = 0; i < 3; i++) K.box(D, REAR - 0.08, REAR - 0.04, -0.68, -0.58, 0.70 + i * 0.40, 0.84 + i * 0.40);
+    K.box(D, REAR - 0.09, REAR - 0.05, 0.30, 0.40, 1.05, 1.10);
+    for (s = -1; s <= 1; s += 2) {
+      var y0 = s > 0 ? 0.55 : -1.25, y1 = s > 0 ? 1.25 : -0.72;
+      K.box(P, -2.55, REAR, y0, y1, 1.30, 1.70);
+      K.box(D, -2.56, -2.54, y0 + 0.05, y1 - 0.05, 1.62, 1.66);
+      K.box(D, REAR - 0.03, REAR, s * 1.18 - 0.05, s * 1.18 + 0.05, 1.12, 1.20);
+    }
+    /* the radar mounting in place of the round roof hatch: the decking around it, the three supports, the circular
+       mount (published); the folded grille's frame lying along the deck edge */
+    K.box(P, DK0, DK1, -HW, HW, ROOF, ROOF + 0.04);
+    for (i = 0; i < 9; i++) K.box(D, DK0 + 0.05 + i * 0.28, DK0 + 0.07 + i * 0.28, -HW + 0.02, HW - 0.02, ROOF + 0.04, ROOF + 0.05);
+    for (i = 0; i < 3; i++) { var b = i / 3 * K.TAU + 0.5; K.box(P, PIV.x + Math.cos(b) * 0.80 - 0.08, PIV.x + Math.cos(b) * 0.80 + 0.08, Math.sin(b) * 0.80 - 0.08, Math.sin(b) * 0.80 + 0.08, ROOF, PIV.z); }
+    K.cylZ(D, PIV.x, 0, ROOF, PIV.z - 0.02, 0.95, 24);
+    for (s = -1; s <= 1; s += 2) K.box(D, DK0, DK1, s > 0 ? HW - 0.06 : -HW, s > 0 ? HW : -HW + 0.06, ROOF + 0.04, ROOF + 0.10);
   }
 
   /* the radar head on the turntable (CY1, CY2; published 1.7 x 1.5 m, 1.07 m folded, 2.29 m antenna up) */
@@ -979,7 +1063,8 @@ var HeroMamba = (function () {
 
 /* len: the measured X extent of each build (dump.js): Pluton 8.24 x 3.22 x 3.89 m in travel (the hull 6.59 m, the
    nose 1.45 m past the bow); Hades 16.66 x 3.02 x 3.62; COBRA 11.09 x 3.10 (mirrors) x 6.50 (the array up);
-   Cymbeline 5.39 (hull 5.25 published, lamps and towing eyes) x 2.97 (exhaust) x 4.40 (reflector up); MAMBA 7.07
+   Cymbeline 5.22 (HeroFv430's measured hull: nose 2.615 to the rear bins -2.55; 5.25 published) x 2.92 (the road
+   wheel hubs; tracks 2.80, hull 2.55) x 4.27 (reflector up); MAMBA 7.07
    (6.9 published, bull-bar and legs) x 2.71 (legs down; 1.87 body) x 5.05 (the array up) */
 UNIT_MODELS["fra_e60_tel"] = { len: 8.24, build: function (THREE, M, C) { return HeroPluton.build(THREE, M, C, "fra_e60_tel"); } };
 UNIT_MODELS["fra_e80_tel"] = { len: 8.24, build: function (THREE, M, C) { return HeroPluton.build(THREE, M, C, "fra_e80_tel"); } };
@@ -988,5 +1073,5 @@ UNIT_MODELS["fra_e80_tel"] = { len: 8.24, build: function (THREE, M, C) { return
    and the row keeps its stand-in until a reference is measured. */
 /* UNIT_MODELS["fra_e90_tel"] = { len: 16.66, build: HeroHades.build }; */
 UNIT_MODELS["fra_e00_radarv"] = { len: 11.09, build: HeroCobraFr.build };
-UNIT_MODELS["gbr_e60_radarv"] = { len: 5.39, build: HeroCymbeline.build };
+UNIT_MODELS["gbr_e60_radarv"] = { len: 5.22, build: HeroCymbeline.build };
 UNIT_MODELS["gbr_e00_radarv"] = { len: 7.07, build: HeroMamba.build };
