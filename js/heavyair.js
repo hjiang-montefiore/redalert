@@ -278,6 +278,23 @@
                   proj: "missile", speed: 280, aoe: 2.2, suppress: 60, ammo: 1,
                   tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
                   sfx: "missile", profile: "loft", intercept: 0.40 },
+    /* ---- what the Tu-22M3 carried ----
+       Kh-22 (AS-4 Kitchen), in service from 1968: a 5.8-tonne liquid-fuelled
+       rocket missile with a 1,000 kg warhead; the Kh-22M/MA upgrade flies
+       about 600 km at Mach 3.3 (en.wikipedia "Kh-22"). Up to three on a
+       Tu-22M3: `ammo: 2` against the heavybomber pool of 6 is three rounds a
+       sortie. RANGE IS THE OWNER'S CALL: the file's own rule, tiles x (km/km)
+       ^ 0.45, gives 6.2 off the Kh-55SM (12.7 for 3,000 km) and 19.9 off ASMP
+       (14.6 for 300 km). It is set at ASMP's 14.6 - a round that flew twice
+       as far should not reach less - pending the one pass over every
+       stand-off round the THE CHECK note above already asks for. Not manual:
+       the conventional warhead was the main round, and it was fired in
+       numbers at Ukraine from 2022. intercept low: Mach 3+ in a steep dive. */
+    kh22m:      { name: "Kh-22M (AS-4 Kitchen) missile", dmg: 520, warhead: "he",
+                  range: 14.6, minRange: 3.0, reload: 9.0, burst: 1, acc: 0.72,
+                  proj: "missile", speed: 500, aoe: 2.8, suppress: 120, ammo: 2,
+                  tgt: { ground: 1, air: 0, sea: 1, sub: 0 },
+                  sfx: "missile", profile: "loft", intercept: 0.30 },
 
     /* ---- what the V-force carried ----
        `manual`, NOT `nuke`. The nuke flag wants a bombard order carrying
@@ -565,9 +582,11 @@ asmp:       { name: "ASMP stand-off missile", dmg: 660, warhead: "he",
        what the H-6N adds over the H-6K is a refuelling probe and a recess for
        an air-launched ballistic missile, not a better cruise missile. */
     /* ---- the Soviet heavy bombers ----
-       e80 to e00 is the Tu-160 (pact_e80_stealthbomber, role heavybomber, eras.js). The
-       Tu-22M3 is drawn (js/hero/ru_bombers.js) but has no row yet: unitFor() takes the row with
-       the latest `from`, so an e90 or e00 Tu-22M3 would take the slot from the Tu-160. */
+       e60 the Tu-16A; e80 and e90 the Tu-22M3, the mass bomber of the late Cold War (268
+       built from 1983, against some 36 Tu-160s), as the B-52 rather than the B-1B is the
+       American row; e00 the Tu-160 (pact_e80_stealthbomber in eras.js, its key kept), which
+       saw its real use in that era.  unitFor() takes the row with the latest `from`, so the
+       eras must not overlap. */
     pact_e60_heavybomber: pactbomber({
       name: "Tu-16A Badger-A", full: "Tupolev Tu-16A, free-fall nuclear bomber",
       cost: 2850, oil: 76, time: 40, hp: 760, speed: 4.4, ammo: 6, radius: 62,
@@ -580,6 +599,17 @@ asmp:       { name: "ASMP stand-off missile", dmg: 660, warhead: "he",
             "Nine tonnes of free-fall weapons in the bay, and it has to fly over " +
             "the target to use any of them." }),
 
+    pact_e80_heavybomber: pactbomber({
+      name: "Tu-22M3 Backfire-C", full: "Tupolev Tu-22M3 with Kh-22M missiles",
+      cost: 3300, oil: 84, time: 44, hp: 820, speed: 8.5, turn: 0.95, ammo: 6, radius: 72,
+      rcs: 3.0, radarQ: 4, gen: 3,
+      weapons: ["kh22m"], from: "e80", to: "e90",
+      service: "1983", confidence: "high",
+      desc: "A swing-wing supersonic bomber and maritime strike aircraft: two " +
+            "NK-25 turbofans, Mach 1.88, wings from 20 to 65 degrees. First flown " +
+            "1977, introduced into operation in 1983; 268 built until 1993. Up to " +
+            "three Kh-22 missiles, rocket-powered and launched from hundreds of " +
+            "kilometres out at a carrier group or a fixed target." }),
     pla_e60_heavybomber: badger({
       name: "H-6A", full: "Xian H-6A, free-fall nuclear bomber",
       cost: 2900, oil: 78, time: 40, hp: 760, speed: 4.3, ammo: 5, radius: 62,
