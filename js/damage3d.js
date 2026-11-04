@@ -150,6 +150,8 @@ var Damage3D = (function () {
     spaag_n: "front",                                                  // M-SHORAD on the Stryker A1
     pact_e60_tankdestroyer: "front",                                   // 9P110 on the BRDM-1: engine forward
     lt_b: "front",                                                     // Ajax (ASCOD): power pack front right
+    kpa_e80_lighttank: "front", kpa_e90_lighttank: "front",           // PT-85: the lengthened VTT-323 (Type 63) hull,
+    kpa_e00_lighttank: "front",                                        //   engine front right, turret aft
     gbr_e60_lighttank: "front", gbr_e80_lighttank: "front",            // CVR(T) Scorpion, Scimitar, Striker:
     gbr_e90_lighttank: "front", gbr_e00_lighttank: "front",            //   the engine front right
     gbr_e80_tankdestroyer: "front", gbr_e90_tankdestroyer: "front",
