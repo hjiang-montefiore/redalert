@@ -1,0 +1,75 @@
+/* ============ skirmish_reuse.js - skirmish rows drawn on the era hero model of the same vehicle ============
+   A MAPPING file, not a model.  The skirmish rosters (keys ending _k, _c, _r, _n, _p) each register a
+   generic model of their own in js/armour_specs.js, js/air_specs.js, js/warship_specs.js or
+   js/sub_specs.js, so render3d.js never lets them borrow the redone era model of the same vehicle.
+   Each row below names the SAME vehicle and variant as an era row that already has a hero model
+   (checked by the row's full name in js/rules.js against the era row's name and the hero file's
+   header), and is registered on a copy of that era row's entry (len, build, and any named round).
+
+   SKIRMISH ROW      ERA ROW               VEHICLE
+   fighter_k         kpa_e90_fighter       MiG-21bis, plain
+   ifv_k             kpa_e90_ifv           VTT-323
+   lt_k              kpa_e90_lighttank     PT-85
+   mbt_k             kpa_e90_mbt           Ch'onma-214 (Western "Chonma-ho V")
+   md500_k           kpa_e00_md500         MD 500D with the Sagger conversion
+   missileboat_k     kpa_e90_missileboat   Soju class
+   mlrs_k            kpa_e90_mlrs          M1991 240 mm
+   spg_k             kpa_e80_spg           M-1978 Koksan
+   sub_k             kpa_e80_sub           Project 633 Romeo
+   trans_k           kpa_e00_transport     An-2
+   asw_helo_n        nato_e00_aswhelo      MH-60R
+   asw_helo_p        pact_e80_aswhelo      Ka-27PL
+   bomber_c          pla_e00_cas           JH-7A
+   corvette_c        pla_e00_corvette      Type 056
+   ifv_c             pla_e00_ifv           ZBD-04A
+   mlrs_c            pla_e00_mlrs          PHL-03
+   recon_c           pla_e00_recon         CSK-131 Mengshi
+   spaag_c           pla_e00_spaag         PGZ-09
+   spg_c             pla_e00_spg           PLZ-05
+   sub_c             pla_e00_sub           Type 039A/B Yuan
+   missileboat_c     pla_e00_missileboat   Type 022 Houbei
+   asw_helo_r        roc_e00_aswhelo       S-70C(M) Thunderhawk
+   bomber_r          roc_e00_cas           F-CK-1C/D
+   corvette_r        roc_e00_corvette      Tuo Chiang
+   destroyer_r       roc_e00_destroyer     Kee Lung (ex-Kidd)
+   lt_r              roc_e90_lighttank     M60A3 TTS
+   mbt_r             roc_e90_mbt           CM-11 Brave Tiger
+   mlrs_r            roc_e00_mlrs          RT-2000 Thunderbolt
+   recon_r           roc_e00_recon         CM-32 Yunpao
+   sub_r             roc_e00_sub           Hai Lung
+   spg_r             nato_e90_spg          M109A6 Paladin
+   radarv_r          nato_e80_radarv       AN/TPQ-37 Firefinder
+
+   NOT mapped, because the hero model is a different variant from the skirmish row: awacs_c (KJ-500;
+   the hero is the Il-76-based A-50 shape), destroyer_c (Type 052D; the hero is the 052B), fighter_c
+   (J-10C; the hero is the J-10A), helo_c (Z-10ME), hvy_r (M1A2T; the hero is the M1A2), ifv_r (CM-34;
+   the hero is the CM-33), lst_r (ROC LCU; class not confirmed), atgmv_r (M1167 TOW).
+
+   Load order: LAST among the hero files, after every file that registers an era row named above.
+   A missing era row leaves its skirmish row on its old model.  ASCII only. */
+
+if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
+
+(function () {
+  "use strict";
+  var MAP = {
+    fighter_k: "kpa_e90_fighter", ifv_k: "kpa_e90_ifv", lt_k: "kpa_e90_lighttank", mbt_k: "kpa_e90_mbt",
+    md500_k: "kpa_e00_md500", missileboat_k: "kpa_e90_missileboat", mlrs_k: "kpa_e90_mlrs",
+    spg_k: "kpa_e80_spg", sub_k: "kpa_e80_sub", trans_k: "kpa_e00_transport",
+    asw_helo_n: "nato_e00_aswhelo", asw_helo_p: "pact_e80_aswhelo",
+    bomber_c: "pla_e00_cas", corvette_c: "pla_e00_corvette", ifv_c: "pla_e00_ifv", mlrs_c: "pla_e00_mlrs",
+    recon_c: "pla_e00_recon", spaag_c: "pla_e00_spaag", spg_c: "pla_e00_spg", sub_c: "pla_e00_sub",
+    missileboat_c: "pla_e00_missileboat",
+    asw_helo_r: "roc_e00_aswhelo", bomber_r: "roc_e00_cas", corvette_r: "roc_e00_corvette",
+    destroyer_r: "roc_e00_destroyer", lt_r: "roc_e90_lighttank", mbt_r: "roc_e90_mbt",
+    mlrs_r: "roc_e00_mlrs", recon_r: "roc_e00_recon", sub_r: "roc_e00_sub",
+    spg_r: "nato_e90_spg", radarv_r: "nato_e80_radarv"
+  };
+  Object.keys(MAP).forEach(function (dst) {
+    var src = UNIT_MODELS[MAP[dst]];
+    if (!src || typeof src.build !== "function") return;
+    var e = {};
+    Object.keys(src).forEach(function (p) { e[p] = src[p]; });
+    UNIT_MODELS[dst] = e;
+  });
+})();
