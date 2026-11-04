@@ -194,8 +194,10 @@ function run() {
   }
   var mine = [drive("pact_e50_s75", 0), drive("pact_e60_s125", 4)];
 
-  /* models without the groups: every node's visibility as in the template */
-  ["kpa_e60_sam", "mbt_p"].forEach(function (k, i) {
+  /* models without the groups: every node's visibility as in the template.
+     kpa_e60_sam now builds the S-75 launcher (js/hero/roc_kpa_reuse.js) and so
+     has the S-75's poses; kpa_e80_sam is a deploying row still without them. */
+  ["kpa_e80_sam", "mbt_p"].forEach(function (k, i) {
     var u = Game.spawnUnitAt(P, k, (g.x + 16) * TT + 16, (g.y + i * 4) * TT + 16);
     if (!u) { chk(k + ": spawned", false, ""); return; }
     u.order = { type: "idle" }; u.orders = [];
