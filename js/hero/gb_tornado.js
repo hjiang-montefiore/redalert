@@ -1,10 +1,11 @@
-/* ============ gb_tornado.js - HERO model: Panavia Tornado F.3 ADV, GR1, GR4 ======
-   One builder, a VARIANTS table, five British rows:
+/* ============ gb_tornado.js - HERO model: Panavia Tornado F.3 ADV, GR1, GR4, IDS ==
+   One builder, a VARIANTS table, five British rows and one German:
      gbr_e80_fighter  "Tornado F.3"          F.3 ADV, four Skyflash           1980s
      gbr_e90_fighter  "Tornado F3"           F.3 ADV, Skyflash and AIM-9L     1990s
      gbr_e90_sead     "Tornado GR1 / ALARM"  GR.1 carrying ALARM              1991
      gbr_e00_cas      "Tornado GR4"          GR.4, Brimstone and Paveway IV   2000s
      gbr_e00_sead     "Tornado GR4 / ALARM"  GR.4 carrying ALARM              2000s
+     deu_e90_cas      "Tornado IDS"          Luftwaffe IDS, two wing tanks    1980s-90s
    There was no Tornado hero model before this file (grep -i tornado js/hero:
    only a 9A54 "Tornado-S" rocket launcher); the rows were drawn as the
    generic fighter_n, sead_n and bomber_n peers. Nothing here is built on them.
@@ -60,6 +61,37 @@
        0.73 m; Brimstone 1.8 m x 0.18 m; Litening 2.2 m x 0.406 m; AIM-9 3.02 m
        x 0.127 m.
 
+     Luftwaffe IDS (deu_e90_cas), fetched for this row:
+     H "Tornado JaboG31 auf A29 Mrz1984.jpeg" - a JaboG 31 IDS on an autobahn
+       strip, March 1984, port side: the three-tone splinter camouflage
+       carried down the fuselage sides and the fin, black radome, the two
+       big light-grey wing tanks with their ventral fins on the inner pylons,
+       the long shoulder pylons under the fuselage, the port gun fairing
+       under the nose; no probe fairing.
+     I "German Tornado aircraft 44+54 (1).JPEG" (US DoD, 1980s) - starboard
+       side: the same camouflage down to the belly, black radome, the two
+       light-grey wing tanks, the starboard canopy sill clean (no probe
+       fairing), the starboard gun port under the nose.
+     J "F-15C Tornado IDS DFST8901717.JPEG" (1989) - an IDS from above in
+       flight: the splinter over the top of the fuselage, the wings, the
+       tailerons and the fin - a dark green, a lighter grey-green and a
+       near-black grey in angular patches - and the light-grey tanks with
+       their ventral fins under the wings. The colours below are sampled
+       off J, the only one of the three in sunlight with true colour:
+       dark green #303928 / #1c271c, grey-green #495043 / #41493b,
+       black-grey #25242c / #28272e, radome #1f1e25, tank #888a86.
+     K "Panavia Tornado IDS (cn 694 GS220 4279, 45+79) 1992-06-19 ...
+       Andre Gerwing Collection ID 020204.jpg" - starboard side, 1992: the
+       same scheme and black radome, no probe fairing on the starboard sill.
+       (Here clean; the row is drawn with the tanks of H, I and J.)
+     G (en.wikipedia "Panavia Tornado"): two BK-27, "each with 180 rounds in
+       GR.1, GR.1B, and IDS".
+     So the IDS differs from the GR1 row in: no probe fairing (H, I, K show
+     none on either sill), no FLIR fairing, both cannon ports (G, H, I), the
+     splinter paint with a black radome (H-K), and the light-grey wing tanks
+     (H, I, J) without the GR4's outer pods. The airframe is the IDS one A
+     gives, unchanged.
+
    Recognition list (each in the model, with the reference it rests on):
      1. tandem two-seat cockpit under one long canopy hinged at the rear,
         windscreen and one arch between the seats (A, C, F)  [glass, dark]
@@ -83,7 +115,9 @@
         pylon shoulder rails for the 1990s row (G); GR rows ALARM pair (D),
         GR4 tanks, outer pods, Paveway IV, Litening, Brimstone (B, C)
     11. paint: F.3 light grey (F), GR1 desert pink with black radome (E), GR4
-        grey (C). No roundels, fin flashes, codes or squadron marks.
+        grey (C); Luftwaffe IDS three-tone splinter wrapped round the whole
+        airframe with a black radome (H-K). No roundels, crosses, fin flashes,
+        codes or squadron marks.
    Team colour exactly C.team, on two small strips on the upper outer wings.
 
    The sweep: drawn at 25 deg, the spread position a parked Tornado shows in C
@@ -112,6 +146,16 @@
        pod is on which wing (B does not show which side is which).
      - the GR4 FLIR fairing's exact size; the reverser bucket seam lines.
      - wing, glove, fin and taileron thicknesses.
+     - the IDS splinter: the three colours are sampled off J, but the
+       patch layout is generated (angular patches 1.5-2.9 m across, all
+       three colours, over top, sides and belly), not copied panel for
+       panel from a drawing; the
+       scheme's official name (Norm 83) and its RAL / FS numbers are not
+       taken from a fetched source. The belly is drawn in the same splinter
+       because I shows the camouflage reaching the lower fuselage; no
+       reference here shows the underside of the wing.
+     - the German wing tank is drawn with the GR4 tank's shape and size
+       (H, I and J show the same tank with its ventral fin), in light grey.
    Not drawn: AMRAAM/ASRAAM (2000s refits, not these rows), the GR1's LRMTS
    chin fairing and the GR4's Sky Shadow details, the canopy interior.
 
@@ -142,7 +186,9 @@ var HeroTornado = (function () {
     gbr_e90_fighter: { adv: true,  paint: "f3",  fit: "skyflash_aim9",  flir: false, probe: false, guns: ["s"] },
     gbr_e90_sead:    { adv: false, paint: "gr1", fit: "alarm",          flir: false, probe: true,  guns: ["p", "s"] },
     gbr_e00_cas:     { adv: false, paint: "gr4", fit: "cas",            flir: true,  probe: true,  guns: ["s"] },
-    gbr_e00_sead:    { adv: false, paint: "gr4", fit: "alarm_gr4",      flir: true,  probe: true,  guns: ["s"] }
+    gbr_e00_sead:    { adv: false, paint: "gr4", fit: "alarm_gr4",      flir: true,  probe: true,  guns: ["s"] },
+    /* Luftwaffe IDS (H-K): no probe fairing, no FLIR, both guns, wing tanks */
+    deu_e90_cas:     { adv: false, paint: "deu", fit: "tanks",          flir: false, probe: false, guns: ["p", "s"] }
   };
 
   /* the F.3 stretch (G): everything ahead of the plug moves forward 1.36 m,
@@ -161,11 +207,16 @@ var HeroTornado = (function () {
      their level for the renderer's ACES lift:
        f3   F (indoors): light grey #8b8f92 - #8f9499; radome the same grey
        gr1  E: desert pink #cebf9e in shade - #e7d9b9 lit; black radome #1c1e23
-       gr4  C (overcast): grey #767674 - #8b8b88; radome the same */
+       gr4  C (overcast): grey #767674 - #8b8b88; radome the same
+       deu  J (sunlit): the splinter's dark green #303928, grey-green
+            #495043, black-grey #25242c, a touch lifted so that the
+            renderer still separates them; radome black #1f1e25 */
   var PALS = {
     f3:  { top: "#8f9497", side: "#959a9d", belly: "#a2a6a8", radome: 0x868b8e },
     gr1: { top: "#b1a283", side: "#b6a788", belly: "#bbac8d", radome: 0x1f2124 },
-    gr4: { top: "#6c7073", side: "#727679", belly: "#7b7f81", radome: 0x6f7376 }
+    gr4: { top: "#6c7073", side: "#727679", belly: "#7b7f81", radome: 0x6f7376 },
+    deu: { top: "#38412e", side: "#38412e", belly: "#38412e", radome: 0x1f1f24,
+           splinter: ["#38412e", "#525a47", "#2b2b30"] }
   };
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -275,6 +326,7 @@ var HeroTornado = (function () {
     g.fillStyle = P.top; g.fillRect(0, 0, TW, TOPH);
     g.fillStyle = P.side; g.fillRect(0, TOPH, TW, 2 * SIDEH);
     g.fillStyle = P.belly; g.fillRect(0, TOPH + 2 * SIDEH, TW, TOPH);
+    if (P.splinter) splinter(g, P.splinter, bandY, bandH);
     /* panel lines: fuselage frames */
     g.strokeStyle = "rgba(0,0,0,0.16)"; g.lineWidth = 1;
     var FR = [5.85, 4.45, 3.0, 1.75, 0.6, -0.5, -1.5, -2.6, -3.6, -4.6];
@@ -327,6 +379,33 @@ var HeroTornado = (function () {
     }
     _cv[key] = cv;
     return cv;
+  }
+
+  /* the Luftwaffe splinter (H-K): each band starts in one of the three
+     colours and takes angular four-sided patches of all three, one on each
+     cell of a jittered 2.75 m grid, overlapping, 1.5-2.9 m across. Its own
+     random sequence, so the other finishes are untouched. */
+  function splinter(g, cols, bandY, bandH) {
+    var q = 7919, CELL = 110, b, k, gx, gy;
+    function Q() { q = (q * 16807) % 2147483647; return q / 2147483647; }
+    for (b = 0; b < 4; b++) {
+      var y0 = bandY[b], h = bandH[b];
+      g.fillStyle = cols[b % 3]; g.fillRect(0, y0, TW, h);
+      for (gy = -CELL / 2; gy < h + CELL / 2; gy += CELL) {
+        for (gx = -CELL / 2; gx < TW + CELL / 2; gx += CELL) {
+          var cx = gx + Q() * CELL, cy = y0 + gy + Q() * CELL, r = 60 + Q() * 55, a0 = Q() * PI;
+          g.beginPath();
+          for (k = 0; k < 4; k++) {
+            var an = a0 + k * PI / 2 + (Q() - 0.5) * 0.9, rr = r * (0.6 + Q() * 0.6);
+            var px = cx + Math.cos(an) * rr, py = clamp(cy + Math.sin(an) * rr, y0, y0 + h);
+            if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+          }
+          g.closePath();
+          g.fillStyle = cols[Math.floor(Q() * 3)];
+          g.fill();
+        }
+      }
+    }
   }
 
   var _tex = {};
@@ -649,10 +728,10 @@ var HeroTornado = (function () {
     K.dark.push(cyl(r * 0.85, r * 0.85, 0.06, 16, "x", x + len * 0.5 - 0.10, y, zc));
   }
   /* wing tank with its ventral fin (B, C); size NOT CONFIRMED */
-  function tank(K, x, y, zc) {
-    var len = 6.3, r = 0.40;
-    push(K.skin, revolve(P_TANK, len, r, x, y, zc, 22, 0, 0));
-    K.skin.push(solid([[x - 2.05, y - 0.02, zc - 0.20], [x - 2.95, y - 0.02, zc - 0.10], [x - 3.02, y - 0.02, zc - 0.55], [x - 2.55, y - 0.02, zc - 0.62]],
+  function tank(K, x, y, zc, list) {
+    var len = 6.3, r = 0.40, L = list || K.skin;      /* the German tanks: light grey (H, I, J) */
+    push(L, revolve(P_TANK, len, r, x, y, zc, 22, 0, 0));
+    L.push(solid([[x - 2.05, y - 0.02, zc - 0.20], [x - 2.95, y - 0.02, zc - 0.10], [x - 3.02, y - 0.02, zc - 0.55], [x - 2.55, y - 0.02, zc - 0.62]],
                       [[x - 2.05, y + 0.02, zc - 0.20], [x - 2.95, y + 0.02, zc - 0.10], [x - 3.02, y + 0.02, zc - 0.55], [x - 2.55, y + 0.02, zc - 0.62]]));
   }
   /* the two outer-pylon pods of B: one plain, one with small tail fins */
@@ -861,6 +940,10 @@ var HeroTornado = (function () {
         pod(K, wmid(yOut) + 0.20, yOut, pz(yOut) - 0.30 - 0.19, 3.40, false);
         pod(K, wmid(yOut) + 0.20, -yOut, pz(yOut) - 0.30 - 0.19, 3.90, true);
       }
+      if (fit === "tanks") {
+        /* Luftwaffe IDS: the two light-grey tanks on the inner pylons (H, I, J) */
+        for (s = -1; s <= 1; s += 2) tank(K, wmid(yIn) + 0.30, s * yIn, pz(yIn) - 0.36 - 0.40, K.msl);
+      }
     }
 
     mesh(g, K.skin, T.skin, "skin", true);
@@ -911,3 +994,4 @@ UNIT_MODELS["gbr_e90_fighter"] = { len: 18.68, build: function (THREE, M, C) { r
 UNIT_MODELS["gbr_e90_sead"]    = { len: 16.72, build: function (THREE, M, C) { return HeroTornado.build(THREE, M, C, "gbr_e90_sead"); } };
 UNIT_MODELS["gbr_e00_cas"]     = { len: 16.72, build: function (THREE, M, C) { return HeroTornado.build(THREE, M, C, "gbr_e00_cas"); } };
 UNIT_MODELS["gbr_e00_sead"]    = { len: 16.72, build: function (THREE, M, C) { return HeroTornado.build(THREE, M, C, "gbr_e00_sead"); } };
+UNIT_MODELS["deu_e90_cas"]     = { len: 16.72, build: function (THREE, M, C) { return HeroTornado.build(THREE, M, C, "deu_e90_cas"); } };
