@@ -42,6 +42,7 @@
    kpa_e80_tel             pact_e60_tel (ru_scud_b.js)                    HeroScudB (Scud-B on the MAZ-543P; Hwasong-5 is its copy)
    kpa_e90_tel             pact_e60_tel (ru_scud_b.js)                    HeroScudB (js/tel3d.js: Hwasong-6 = the same launcher and round)
    kpa_e00_tel             pact_e80_tel (ru_tochka.js)                    HeroTochka V80 (9P129; the KN-02 is a Tochka copy)
+   kpa_e50_cas             pla_e50_cas (ru_il10.js)                       HeroIl10.plain (Il-10M as an Il-10 STAND-IN, as the PLA row)
 
    CAVEATS carried by the source builds (not changed here, the reviewer should know):
      - roc_e60_destroyer: the Gearing hero paints the ROC bow number "912" (its own pennantTex), the
@@ -60,7 +61,7 @@
      js/hero/us_m41.js, us_early_light.js, us_m113.js, nato_e50_fighter.js, roc_e80_destroyer.js,
      nato_launchers_eu.js, pla_su76.js, pla_bm13.js, ru_su100.js, ru_t54.js, ru_pt76.js,
      ru_btr8x8.js, ru_brdm.js, ru_osa_boat.js, ru_whiskey.js, pla_romeo_ming.js,
-     kpa_e90_missileboat.js, ru_s75_s125.js, ru_scud_b.js, ru_tochka.js.
+     kpa_e90_missileboat.js, ru_s75_s125.js, ru_scud_b.js, ru_tochka.js, ru_il10.js.
    Each mapping checks its builder exists when this file loads and registers nothing if it does not,
    so a missing or misordered source leaves the row on its old model rather than throwing.
    len is the source key's len (the measured X extent of the same build).  ASCII only. */
@@ -125,6 +126,11 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
   var soju = keyBuild("kpa_e90_missileboat");
   reg("kpa_e80_missileboat", 39.0, !!soju, function (THREE, M, C) { return soju(THREE, M, C); });
+
+  /* kpa_e50_cas: the Il-10M drawn plain, the same STAND-IN the pla_e50_cas row uses (ru_il10.js
+     explains it: the Il-10M is larger than the Il-10 the KPA flew, the layout is the same) */
+  reg("kpa_e50_cas", 11.87, typeof HeroIl10 !== "undefined" && typeof HeroIl10.plain === "function",
+      function (THREE, M, C) { return HeroIl10.plain(THREE, M, C); });
 
   reg("kpa_e60_sam", 10.39, typeof HeroS75S125 !== "undefined", function (THREE, M, C) { return HeroS75S125.sm63(THREE, C); });
   ["kpa_e80_tel", "kpa_e90_tel"].forEach(function (k) {
