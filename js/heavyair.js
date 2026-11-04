@@ -597,43 +597,6 @@ asmp:       { name: "ASMP stand-off missile", dmg: 660, warhead: "he",
             "2007, in service October 2009. It launches from outside every " +
             "surface-to-air system on the map and turns for home." }),
 
-    /* ---- H-6: sixty-five years of the same aeroplane ----
-       e50 is empty. The H-6 did not enter PLAAF service until 1969, and the
-       KD-20 of the last two rows is the SAME missile on both, because it is:
-       what the H-6N adds over the H-6K is a refuelling probe and a recess for
-       an air-launched ballistic missile, not a better cruise missile. */
-    pla_e60_heavybomber: badger({
-      name: "H-6A", full: "Xian H-6A, free-fall nuclear bomber",
-      cost: 2900, oil: 78, time: 40, hp: 760, speed: 4.3, ammo: 5, radius: 62,
-      weapons: ["h6_bombs"], from: "e60", to: "e60",
-      service: "1969", confidence: "high",
-      desc: "China's strategic bomber force in one aircraft type. Nine tonnes of " +
-            "bombs in the bay and no way to deliver any of it without flying over " +
-            "the target, which against the air defences of its own decade is a " +
-            "one-way proposition. Its whole claim is that it carried the country's " +
-            "first air-dropped nuclear weapon." }),
-    pla_e80_heavybomber: badger({
-      name: "H-6D", full: "Xian H-6D with two YJ-6 (C-601)",
-      cost: 3200, oil: 82, time: 43, hp: 800, speed: 4.3, ammo: 2, radius: 66,
-      weapons: ["yj6_c601"], from: "e80", to: "e90",
-      service: "1986", confidence: "high",
-      desc: "The moment the aeroplane stopped having to overfly anything. A " +
-            "sea-search radar under the nose and one enormous anti-ship missile " +
-            "under each wing: first flight 29 August 1981, live firing at the end " +
-            "of 1983, in PLA Naval Air Force service from 1986. It is the whole of " +
-            "Chinese maritime strike for the next fifteen years, which is why the " +
-            "row runs to e90 - nothing replaced it until the cruise-missile fits." }),
-    pla_e00_heavybomber: badger({
-      name: "H-6K", full: "Xian H-6K with KD-20 cruise missiles",
-      cost: 3400, oil: 78, time: 45, hp: 850, speed: 4.4, ammo: 4, radius: 78,
-      weapons: ["alcm"], from: "e00", to: "e00",
-      service: "2009", confidence: "high", rcs: 3.4, radarQ: 4, gen: 3.5,
-      desc: "The rebuild that bought the airframe another forty years: the glazed " +
-            "nose replaced by a radome, Russian D-30 turbofans for range, a glass " +
-            "cockpit, and six pylons for cruise missiles. First flight 5 January " +
-            "2007, in service October 2009. It launches from outside every " +
-            "surface-to-air system on the map and turns for home." }),
-
     /* ---- THE V-FORCE: three aeroplanes, three different endings ----
        e90, e00 and e20 are EMPTY and stay empty. 44 Squadron, the last Vulcan
        bomber squadron, disbanded on 21 December 1982; 50 Squadron's Vulcan K.2
