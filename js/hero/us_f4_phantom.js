@@ -19,6 +19,40 @@
                        scheme the A-10 hero in this repo uses for the same decade),
                        an AGM-88 HARM on each inboard pylon, the centreline tank and
                        a pair of AIM-7 in the aft belly recesses.
+     deu_e80_fighter   F-4F of the Luftwaffe (1973 on), 1980s: the F-4E airframe and long
+                       nose, the M61 fairing under the nose, the leading-edge manoeuvring
+                       slats (drawn as the slat seams on the upper skin), two seats (the
+                       single-seat F-4E was proposed and dropped on cost); no Sparrow
+                       capability, so the belly wells are empty. Norm 81 three-grey
+                       waves, black radome. AIM-9 on the inboard LAU-7 rails, 370 US
+                       gal tanks outboard, the 600 US gal centreline tank.
+     deu_e90_fighter   F-4F ICE (1992 on): the same airframe, Norm 90 grey (medium grey
+                       above, lighter below) with the light tan-grey radome of the APG-65
+                       fit, an AIM-120 in each aft belly well, AIM-9 inboard, the three tanks.
+   F-4F references (Wikimedia Commons; en.wikipedia "McDonnell Douglas F-4 Phantom II
+   non-U.S. operators", Germany: F-4E-based, one fuselage cell and the AIM-7 deleted,
+   manoeuvring slats, M61 kept; ICE: APG-65 and AIM-120 from 1991-92):
+     P1 "F-4F Phantom of JG 74 in the 1970s.jpg" - Norm 72 green/grey splinter, two seats,
+        centreline tank (delivery scheme; not used by either row).
+     P2 "F-4F Phantoms in flight over snowy countryside.jpg" - Norm 72, gun fairing.
+     P3 "McDonnell Douglas F-4F Phantom II, Germany - Air Force AN1197136.jpg" - near
+        side-on JG 71 aircraft in Norm 81 waves, black radome, gun fairing, centreline
+        and wing tanks; the muzzle about 0.9-1.0 m behind the radome tip.
+     P4 "German F-4F ICE Phantoms in flight 1990s.jpg", P5 "F-4F ICE Phantoms of JG 72
+        and WTD 61 in flight.jpg" - ICE trials aircraft still in Norm 81: three greys,
+        the light grey a narrow wave; wing tanks outboard.
+     P6 "F-4F ICE Phantom launches AIM-120.jpg" - AIM-120 leaving the aft belly well.
+     P7 "F-4F 38+63 (50061835116).jpg" - Norm 90 side view: tan-grey radome, gun
+        fairing, slats, wing and centreline tanks.
+     P8 "Germany - Air Force McDonnell Douglas F-4F Phantom II 3860 (6022492490).jpg"
+        and "Luftwaffe F-4F Phantom (3552815357).jpg" - Norm 90 from the front quarter,
+        AIM-9 rounds on the inboard pylon rails, slats, three tanks.
+   F-4F NOT CONFIRMED: the Norm 81 / Norm 90 shades (sampled from faded colour
+   photographs, not from RAL / FS chips) and the wave spacing; whether the Norm 81
+   underside carried the waves (drawn wrap-around); the forward pair of belly wells
+   with AIM-120 (no photo; left empty); AIM-9 on the 1980s row (the photo with them,
+   P8, is of the 2000s); the slat chord (seam at 12% chord, estimated); the gun-gas
+   vents. Not drawn: the refuelling receptacle, ICE's extra RWR antennas, markings.
    Published figures: span 11.71 m (38 ft 4.75 in), height 5.02 m (16 ft 5 in),
    wing area 49.2 m2, two GE J79; length 19.2 m (F-4E/G) and 17.76 m (F-4B/C/D).
    The geometry follows the known layout of the type: wing with a flat inner
@@ -75,7 +109,14 @@ var HeroF4 = (function () {
     gull: { name: "gull", seed: 40405, base: "#b9bdbc", blot: ["#aeb2b1", "#c4c7c5"], belly: "#e6e6e1",
             nTop: 10, nSide: 6, nBelly: 0, flat: 0xb9bdbc },
     euro1: { name: "euro1", seed: 40404, base: "#56603c", blot: ["#333f2f", "#47494a"], belly: null,
-             nTop: 46, nSide: 20, nBelly: 34, flat: 0x56603c }
+             nTop: 46, nSide: 20, nBelly: 34, flat: 0x56603c },
+    /* Luftwaffe Norm 81: three greys in long horizontal waves, wrap-around
+       (P3, P4, P5: a dark grey, a medium grey and a narrow light-grey wave) */
+    norm81: { name: "norm81", seed: 40406, base: "#74767c", blot: [], belly: null,
+              wave: ["#505257", "#9b9c9d"], nTop: 0, nSide: 0, nBelly: 0, flat: 0x74767c },
+    /* Luftwaffe Norm 90: plain medium grey above, a lighter grey below (P6, P7, P8) */
+    norm90: { name: "norm90", seed: 40407, base: "#8b9293", blot: ["#858c8d", "#939a9b"], belly: "#a3a9aa",
+              nTop: 8, nSide: 4, nBelly: 0, flat: 0x8b9293 }
   };
 
   function paint(S) {
@@ -87,6 +128,22 @@ var HeroF4 = (function () {
     var bandH = [TOPH, SIDEH, SIDEH, TOPH];
     g.fillStyle = S.base; g.fillRect(0, 0, TW, TH);
     if (S.belly) { g.fillStyle = S.belly; g.fillRect(0, bandY[3], TW, TOPH); }
+    /* Norm 81: per band, wavy stripes - a dark band, then the narrow light
+       wave - every 1.0 m, the waves about 3.5 m long (P3/P5 show three or four
+       light waves down the fuselage side) */
+    if (S.wave) for (b = 0; b < 4; b++) {
+      for (y = bandY[b] - 20; y < bandY[b] + bandH[b] + 20; y += 40) {
+        var ph = R() * 6.283;
+        for (j = 0; j < 2; j++) {
+          var y0 = y + (j === 0 ? 0 : 18), hh = j === 0 ? 15 : 8;
+          g.fillStyle = S.wave[j];
+          g.beginPath();
+          for (x = 0; x <= TW; x += 10) g.lineTo(x, y0 + 9 * Math.sin(x / 140 * 6.283 + ph));
+          for (x = TW; x >= 0; x -= 10) g.lineTo(x, y0 + hh + 9 * Math.sin(x / 140 * 6.283 + ph) + 3 * Math.sin(x / 60 + ph));
+          g.closePath(); g.fill();
+        }
+      }
+    }
     for (b = 0; b < 4; b++) {
       var n = b === 0 ? S.nTop : b === 3 ? S.nBelly : S.nSide;
       var flat = (b === 0 || b === 3) ? 1 : 0.42;
@@ -332,7 +389,7 @@ var HeroF4 = (function () {
   function buildAirframe(THREE, C, F) {
     V = THREE;
     var T = makeMats(C, F.scheme);
-    var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], fin: [] };
+    var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], fin: [], radome: [] };
     var G = { metal: [], tyre: [], dark: [] };
     var g = new V.Group(), s, i;
     g.name = F.node;
@@ -343,7 +400,7 @@ var HeroF4 = (function () {
     var N = 44;
 
     /* radome (dark) and forward fuselage */
-    K.dark.push(loft([
+    (F.radome ? K.radome : K.dark).push(loft([
       [nx(9.6), 0, -0.10, 0.02, 0.02, 1], [nx(9.45), 0, -0.11, 0.14, 0.14, 1], [nx(9.0), 0, -0.12, 0.29, 0.28, 1],
       [nx(8.2), 0, -0.10, 0.43, 0.41, 1], [nx(7.2), 0, -0.05, 0.54, 0.51, 1]], N, true, false));
     K.skin.push(loft([
@@ -363,6 +420,18 @@ var HeroF4 = (function () {
       /* the fin-top antenna housing and the small blade antennas of the SEAD fit */
       K.skin.push(loft([[-6.3, 0, 2.92, 0.04, 0.04, 1], [-6.7, 0, 2.90, 0.20, 0.07, 1], [-7.6, 0, 2.90, 0.20, 0.07, 1],
         [-8.5, 0, 2.91, 0.08, 0.05, 1]], 12, true, true));
+    }
+
+    /* the M61A1 fairing under the nose of the F-4E and F-4F: the same
+       fairing the F-4G's APR-38 took over (so the same lines), with the
+       muzzle about 0.9 m behind the radome tip (P5, P7) */
+    if (F.gun) {
+      K.skin.push(loft([
+        [8.70, 0, -0.50, 0.10, 0.08, 1], [8.55, 0, -0.52, 0.15, 0.12, 1], [7.8, 0, -0.56, 0.24, 0.19, 1],
+        [7.0, 0, -0.60, 0.30, 0.24, 1], [5.8, 0, -0.62, 0.34, 0.28, 1], [4.8, 0, -0.64, 0.36, 0.30, 1],
+        [3.8, 0, -0.66, 0.30, 0.22, 1]], 14, true, true));
+      K.dark.push(cyl(0.055, 0.055, 0.06, 10, "x", 8.70, 0, -0.52));        /* muzzle */
+      for (s = -1; s <= 1; s += 2) K.dark.push(box(0.45, 0.04, 0.08, 7.5, s * 0.25, -0.62));   /* gas vents */
     }
 
     /* radar-warning blade antennas along the spine and wing roots (small fairings) */
@@ -423,6 +492,29 @@ var HeroF4 = (function () {
         foil([wle(3.3) + 0.02, s * 3.3, WZ], [wte(3.3) - 0.02, s * 3.3, WZ], wt(3.3) + 0.03, up),
         foil([wle(3.85) + 0.02, s * 3.85, WZ], [wte(3.85) - 0.02, s * 3.85, WZ], wt(3.85) + 0.03, up)], true, true));
     }
+    /* leading-edge manoeuvring slats of the late F-4E and the F-4F (P7, P8:
+       the slat's rear seam on the upper skin): a dark seam at 12% chord from
+       the intake to the fold, and on the outer panel (that part rides in the
+       wingfold group below) */
+    var SLAT = { "-1": [], "1": [] };
+    function wlo(y) { return y <= 3.1 ? 1.7 - (y - 0.7) : wle(y); }
+    function wtr(y) { return y <= 3.1 ? -5.4 + (y - 0.7) * (0.3 / 2.4) : wte(y); }
+    function wth(y) { return y <= 3.1 ? 0.52 - (y - 0.7) * (0.22 / 2.4) : wt(y); }
+    function wzb(y) { return y <= YF ? WZ : WZ + rise * (y - YF) / (5.85 - YF); }
+    function seam(y) {
+      var f = 0.12, x = wlo(y) + (wtr(y) - wlo(y)) * f;
+      return [x, y, wzb(y) + wth(y) / 2 * (f / 0.3) + 0.012];
+    }
+    if (F.slats) for (s = -1; s <= 1; s += 2) {
+      var sy, sp = [[1.75, 3.1], [3.1, YF - 0.06], [YF + 0.06, 5.55]];
+      for (i = 0; i < sp.length; i++) {
+        var a0 = seam(sp[i][0]), a1 = seam(sp[i][1]);
+        a0[1] *= s; a1[1] *= s;
+        (i < 2 ? K.dark : SLAT[s]).push(bar(a0, a1, 0.02, 4));
+      }
+      sy = seam(YF + 0.06);
+      SLAT[s].push(box(0.30, 0.04, 0.03, sy[0] - 0.12, s * (YF + 0.06), sy[2]));   /* slat's inner end */
+    }
     /* stabilators: 23 deg of anhedral, low at the tail */
     for (s = -1; s <= 1; s += 2) {
       var dn = 2.0 * Math.tan(23 * PI / 180);
@@ -474,6 +566,12 @@ var HeroF4 = (function () {
       K.pale.push(box(0.5, 0.62, 0.02, x - 1.9, y, z)); K.pale.push(box(0.5, 0.02, 0.62, x - 1.9, y, z));
       K.pale.push(box(0.6, 0.62, 0.02, x - 3.6, y, z)); K.pale.push(box(0.6, 0.02, 0.62, x - 3.6, y, z));
     }
+    /* AIM-120: 3.66 m, 178 mm, small clipped mid fins and tail fins */
+    function amraam(x, y, z) {
+      K.pale.push(rev([[0, 0.0], [0.05, 0.55], [0.13, 0.9], [0.25, 1], [1, 1]], 3.66, 0.089, x, y, z, 14));
+      K.pale.push(box(0.32, 0.44, 0.014, x - 1.30, y, z)); K.pale.push(box(0.32, 0.014, 0.44, x - 1.30, y, z));
+      K.pale.push(box(0.30, 0.50, 0.014, x - 3.45, y, z)); K.pale.push(box(0.30, 0.014, 0.50, x - 3.45, y, z));
+    }
     function tank(len, r, x, y, z) {
       K.pale.push(rev([[0, 0.0], [0.04, 0.5], [0.12, 0.85], [0.25, 1], [0.75, 1], [0.92, 0.7], [1, 0.25]], len, r, x, y, z, 24));
       K.pale.push(box(0.6, 0.012 + r * 2.0, 0.012, x - len + 0.8, y, z)); K.pale.push(box(0.6, 0.012, 0.012 + r * 2.0, x - len + 0.8, y, z));
@@ -488,6 +586,8 @@ var HeroF4 = (function () {
     for (i = 0; i < spLine.length; i++) {
       sparrow(spLine[i][0], spLine[i][1], -0.84);
     }
+    var amLine = F.amraams || [];
+    for (i = 0; i < amLine.length; i++) amraam(amLine[i][0], amLine[i][1], -0.86);
     /* wing stations: z of the wing's underside at the pylon */
     var zi = WZ - 0.12, zo = WZ - 0.10;
     for (s = -1; s <= 1; s += 2) {
@@ -513,6 +613,7 @@ var HeroF4 = (function () {
     mesh(g, K.team, T.team, "team");
     mesh(g, K.fin, T.white, "fin");
     mesh(g, K.pale, T.pale, "stores");
+    if (K.radome.length) mesh(g, K.radome, new V.MeshStandardMaterial({ color: F.radome, roughness: 0.7, metalness: 0.05 }), "radome");
     /* the outer panels: one "wingfold" group each, origin on the hinge (the
        upper skin at the break), one skin mesh (its UVs put the underside in
        the belly band); js/render3d.js turns it 78 deg about the hinge on a deck */
@@ -525,6 +626,11 @@ var HeroF4 = (function () {
       var fmesh = new V.Mesh(fgeo, T.skin);
       fmesh.name = "skin_fold";
       fg.add(fmesh);
+      if (SLAT[s].length) {
+        var sgeo = merge(SLAT[s]);
+        sgeo.translate(0, -s * YF, -zh);
+        var smesh = new V.Mesh(sgeo, T.dark); smesh.name = "slat_fold"; fg.add(smesh);
+      }
       g.add(fg);
     }
 
@@ -562,13 +668,23 @@ var HeroF4 = (function () {
     f4c: { node: "f4c", scheme: SCHEMES.sea, long: false, chin: false, bulge: true,
            sparrows: [[2.6, 0.62], [2.6, -0.62], [-1.3, 0.62], [-1.3, -0.62]], inboard: "aim9", outboard: "tank" },
     f4g: { node: "f4g", scheme: SCHEMES.euro1, long: true, chin: true,
-           sparrows: [[-1.3, 0.62], [-1.3, -0.62]], inboard: "harm", outboard: null }
+           sparrows: [[-1.3, 0.62], [-1.3, -0.62]], inboard: "harm", outboard: null },
+    /* F-4F: the F-4E airframe with the gun and the slats, no Sparrow (empty
+       wells), AIM-9 on the inboard rails, 370 US gal tanks outboard */
+    f4f: { node: "f4f", scheme: SCHEMES.norm81, long: true, chin: false, gun: true, slats: true,
+           sparrows: [], inboard: "aim9", outboard: "tank" },
+    /* F-4F ICE: the same, Norm 90 grey with the light radome, two AIM-120 in the aft wells */
+    f4fice: { node: "f4fice", scheme: SCHEMES.norm90, long: true, chin: false, gun: true, slats: true, radome: 0xa2988f,
+              sparrows: [], amraams: [[-1.3, 0.62], [-1.3, -0.62]], inboard: "aim9", outboard: "tank" }
   };
   function maker(f) { return function (THREE, M, C) { return buildAirframe(THREE, C, f); }; }
-  return { f4b: maker(FITS.f4b), f4c: maker(FITS.f4c), f4g: maker(FITS.f4g) };
+  return { f4b: maker(FITS.f4b), f4c: maker(FITS.f4c), f4g: maker(FITS.f4g),
+           f4f: maker(FITS.f4f), f4fice: maker(FITS.f4fice) };
 })();
 
 /* len is the measured x extent: radome tip to the nozzle ends */
 UNIT_MODELS["nato_e60_fighter"] = { len: 17.65, build: HeroF4.f4c };
 UNIT_MODELS["nato_e60_cfighter"] = { len: 17.65, build: HeroF4.f4b };
 UNIT_MODELS["nato_e80_sead"]    = { len: 19.15, build: HeroF4.f4g };
+UNIT_MODELS["deu_e80_fighter"]  = { len: 19.15, build: HeroF4.f4f };
+UNIT_MODELS["deu_e90_fighter"]  = { len: 19.15, build: HeroF4.f4fice };
