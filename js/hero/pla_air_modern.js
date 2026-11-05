@@ -1046,6 +1046,17 @@ var HeroPlaAirModern = (function () {
     var gear = new V.Group(); gear.name = "gear";
     flush(gear, G, mats, null);
     root.add(gear);
+    /* the YY-20's refuelling attach points for render3d.js drawAAR: empty
+       named nodes at the tail of each wing hose-drum pod; the fuselage
+       hose unit is not drawn, so "aar_ctr" is placed under the rear
+       fuselage ahead of the cargo ramp (not measured) */
+    var ple = tab(Y_WING, 19.5, 1), ppz = YZ(ywH(19.5) - 1.05);
+    [["pod_l", [YX(ple + 5.2), 19.5, ppz]], ["pod_r", [YX(ple + 5.2), -19.5, ppz]], ["ctr", [YX(33.0), 0, YZ(2.9)]]].forEach(function (q) {
+      var o = new V.Object3D();
+      o.name = "aar_" + q[0];
+      o.position.set(q[1][0], q[1][1], q[1][2]);
+      root.add(o);
+    });
     return root;
   }
 

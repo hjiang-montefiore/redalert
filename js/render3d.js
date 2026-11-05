@@ -2694,7 +2694,7 @@ var Render3D = (function () {
     const ek = G.players.map(p => p.era || "e20").join(",");
     if (ek !== lastEraKey) {
       lastEraKey = ek;
-      for (const [id, rec] of ents) { three.scene.remove(rec.grp); if (rec.sling) dropSling(rec); ents.delete(id); }
+      for (const [id, rec] of ents) { three.scene.remove(rec.grp); if (rec.sling) dropSling(rec); if (rec.aarFx) dropAAR(rec); ents.delete(id); }
     }
     const seen = new Set();
     for (const e of G.entities) {
@@ -2752,6 +2752,7 @@ var Render3D = (function () {
          is remade in the new owner's colours on the next pass */
       if (e.reskin && rec) {
         three.scene.remove(rec.grp);
+        if (rec.aarFx) dropAAR(rec);
         rec.grp.traverse((o) => { if (o.geometry) { try { o.geometry.dispose(); } catch (err) {} } });
         ents.delete(e.id);
         e.reskin = false;
@@ -3025,9 +3026,11 @@ var Render3D = (function () {
     for (let i = 0; i < nRiders; i++) { seatOnDeck(riders[i], ents.get(riders[i].id), dt, seen); riders[i] = null; }
     nRiders = 0;
     drawSlings();
+    drawAAR(seen, dt);
     for (const [id, rec] of ents) {
       if (!seen.has(id)) {
         if (rec.sling) dropSling(rec);
+        if (rec.aarFx) dropAAR(rec);
         /* An entity that died this frame keeps its model: Impact3D claims it
            a moment later, when the death event is read, and turns it into
            what the kill leaves. Anything else that stopped being drawn -
@@ -3107,6 +3110,286 @@ var Render3D = (function () {
       a.setXYZ(0, g.position.x, belly, g.position.z);
       a.setXYZ(1, g.position.x + ox, bottom + s.h, g.position.z + oz);
       a.needsUpdate = true;
+    }
+  }
+
+  /* ---- AIR-TO-AIR REFUELLING: the boom, the hoses and the drogues ----
+     (owner) "Yes [to visible refuelling]. Fueling two aircraft should fly as
+     well, not static." The game flies both aircraft (entities.js AIR-TO-AIR
+     REFUELLING); this draws what joins them. Each station of a tanker has
+     `ext`, 0 stowed to 1 fully out, run out over AirRefuel.EXT_S while a
+     receiver comes up to it and in again when nobody is on it:
+       boom   the flying boom swings down from its stowed angle under the
+              tail and telescopes out to the receiver's receptacle (or, with
+              a drogue adapter, to its probe, with the basket on the end);
+       hose   the hose reels out of the pod or the centreline unit, a
+              sagging curve, the drogue basket on its end trailing aft and
+              down until a probe comes up into it.
+     Where they come from: the tanker model's named nodes ("aar_boom",
+     "aar_pod_l", "aar_pod_r", "aar_ctr", "aar_tip_r"; the hero tanker files
+     add them, and "aar_boomstow" is the stowed boom, hidden while the drawn
+     one is out), else an estimate off its box. Where they go: the receiver's
+     "aar_probe" / "aar_recept" if it has them, else a nose (probe, beside
+     the nose to starboard) or spine (receptacle, behind the cockpit) point
+     off its box. A tanker and its receivers bank together in the turns, and
+     a receiver sits a little under the tanker in contact, as it really does.
+     A few meshes per station, made once and reused; nothing allocated in a
+     frame. Drawn only for a tanker this player can see. */
+  const AAR_NODE = ["boom", "pod_l", "pod_r", "ctr", "tip_r", "probe", "recept", "boomtip"];
+  const aarV1 = new THREE.Vector3(), aarV2 = new THREE.Vector3(), aarV3 = new THREE.Vector3(),
+        aarV4 = new THREE.Vector3(), aarV5 = new THREE.Vector3(), aarUp = new THREE.Vector3(0, 1, 0);
+  let aarMat = null;
+  const aarL = { along: 0, left: 0, x: 0, y: 0 };   // scratch for AirRefuel's frame
+  const aarRolled = new Set();     // records carrying an AAR bank or drop, eased back when done
+  const AAR_HOSE_N = 14;
+  /* the attach points of a model, in its own model space (metres, +X nose, +Y
+     left, +Z up), measured once per template */
+  function aarPoints(tpl, def) {
+    if (tpl.userData.aarPts) return tpl.userData.aarPts;
+    const inner = tpl.userData.inner || tpl.children[0];
+    inner.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(inner.matrixWorld).invert();
+    const bb = new THREE.Box3(), t = new THREE.Box3(), m = new THREE.Matrix4();
+    let stow = false;
+    inner.traverse(o => {
+      if (o.name === "aar_boomstow") stow = true;
+      if (!o.isMesh || !o.geometry) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      bb.union(t.copy(o.geometry.boundingBox).applyMatrix4(m.multiplyMatrices(inv, o.matrixWorld)));
+    });
+    const L = Math.max(0.5, bb.max.x - bb.min.x), W = Math.max(0.5, bb.max.y - bb.min.y), H = Math.max(0.3, bb.max.z - bb.min.z);
+    const P = {};
+    const node = (k) => {
+      const o = inner.getObjectByName("aar_" + k);
+      if (!o) return null;
+      const v = new THREE.Vector3();
+      o.getWorldPosition(v);
+      return v.applyMatrix4(inv);
+    };
+    const pod = (def && def.aarPod) || 0.34;
+    const est = {
+      boom: [bb.min.x + 0.12 * L, 0, bb.min.z + 0.30 * H],
+      boomtip: [bb.min.x, 0, bb.min.z + 0.42 * H],
+      pod_l: [bb.min.x + 0.40 * L, Math.min(pod * L, 0.46 * W), bb.min.z + 0.22 * H],
+      pod_r: [bb.min.x + 0.40 * L, -Math.min(pod * L, 0.46 * W), bb.min.z + 0.22 * H],
+      ctr: [bb.min.x + 0.12 * L, 0, bb.min.z + 0.22 * H],
+      tip_r: [bb.min.x + 0.38 * L, -0.49 * W, bb.min.z + 0.40 * H],
+      probe: [bb.max.x - 0.04 * L, -0.07 * W, bb.min.z + 0.62 * H],
+      recept: [bb.max.x - 0.30 * L, 0, bb.min.z + 0.66 * H],
+    };
+    for (const k of AAR_NODE) P[k] = node(k) || new THREE.Vector3(est[k][0], est[k][1], est[k][2]);
+    P.tipL = new THREE.Vector3(bb.min.x + 0.38 * L, 0.49 * W, bb.min.z + 0.40 * H);   // a wing-to-wing receiver's port tip
+    P.stow = stow;
+    P.len = L;
+    tpl.userData.aarPts = P;
+    return P;
+  }
+  function aarMats() {
+    if (aarMat) return aarMat;
+    aarMat = {
+      boom: new THREE.MeshStandardMaterial({ color: 0x9ea3a6, roughness: 0.55, metalness: 0.35 }),
+      inner: new THREE.MeshStandardMaterial({ color: 0xc9cdd0, roughness: 0.35, metalness: 0.6 }),
+      hose: new THREE.LineBasicMaterial({ color: 0x1b1d1e }),
+      drogue: new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: 0.6, metalness: 0.1, side: THREE.DoubleSide }),
+    };
+    return aarMat;
+  }
+  /* the meshes of one station, made the first time it runs out */
+  function aarStationFx(k) {
+    const M = aarMats(), g = new THREE.Group();
+    const fx = { g, k };
+    if (k === "boom") {
+      /* a unit tube along +Y from the hinge, scaled to length in place */
+      const tube = new THREE.CylinderGeometry(1, 1, 1, 10, 1); tube.translate(0, 0.5, 0);
+      fx.outer = new THREE.Mesh(tube, M.boom);
+      fx.inner = new THREE.Mesh(tube, M.inner);
+      const fin = new THREE.BoxGeometry(1, 0.05, 0.5);
+      fx.finL = new THREE.Mesh(fin, M.boom); fx.finR = new THREE.Mesh(fin, M.boom);
+      g.add(fx.outer); g.add(fx.inner); g.add(fx.finL); g.add(fx.finR);
+    }
+    const cone = new THREE.CylinderGeometry(1, 0.22, 1, 12, 1, true); cone.translate(0, -0.5, 0);
+    fx.drogue = new THREE.Mesh(cone, M.drogue);
+    g.add(fx.drogue);
+    if (k !== "boom") {
+      const geo = new THREE.BufferGeometry();
+      fx.hp = new Float32Array(AAR_HOSE_N * 3);
+      geo.setAttribute("position", new THREE.BufferAttribute(fx.hp, 3));
+      fx.hose = new THREE.Line(geo, M.hose);
+      fx.hose.frustumCulled = false;
+      g.add(fx.hose);
+    }
+    g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    g.visible = false;
+    three.scene.add(g);
+    return fx;
+  }
+  function dropAAR(rec) {
+    for (const fx of rec.aarFx) {
+      if (!fx) continue;
+      three.scene.remove(fx.g);
+      fx.g.traverse(o => { if (o.geometry) { try { o.geometry.dispose(); } catch (e) {} } });
+    }
+    rec.aarFx = null;
+  }
+  /* model point p (model space) of a drawn record, in world metres -> out */
+  function aarWorld(rec, p, out) {
+    return rec.inst.children[0].localToWorld(out.copy(p));
+  }
+  /* orient a +Y-axis part from a toward b */
+  function aarAlong(o, a, b) {
+    aarV5.subVectors(b, a);
+    const len = aarV5.length();
+    if (len > 1e-6) o.quaternion.setFromUnitVectors(aarUp, aarV5.multiplyScalar(1 / len));
+    return len;
+  }
+  function drawAAR(seen, dt) {
+    for (const rec of aarRolled) rec.aarHit = false;
+    for (const e of G.entities) {
+      if (e.dead || !e.offloadMax || !e.aar || e.layer !== "air") continue;
+      const rec = ents.get(e.id);
+      if (!rec || !seen.has(e.id)) continue;
+      const A = e.aar;
+      const any = A.st.some(s => s.ext > 0);
+      if (!any && !rec.aarFx && !e.aarBusy) continue;
+      if (!rec.aarFx) rec.aarFx = A.st.map(() => null);
+      /* the tanker banks with its turn while it has receivers */
+      let yaw = 0;
+      if (rec.aarPang !== undefined && dt > 0) {
+        let d = e.ang - rec.aarPang;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        yaw = d / dt;
+      }
+      rec.aarPang = e.ang;
+      const want = e.aarBusy ? U.clamp(yaw * 0.6, -0.42, 0.42) : 0;
+      rec.aarRoll = (rec.aarRoll || 0) + (want - (rec.aarRoll || 0)) * Math.min(1, dt * 2.5);
+      rec.grp.rotation.x = rec.aarRoll;
+      rec.aarHit = true; aarRolled.add(rec);
+      rec.grp.updateMatrixWorld(true);
+      const TP = aarPoints(rec.tpl, e.def);
+      const sT = rec.inst.children[0].scale.x;              // model metres -> world metres
+      const Lm = TP.len * sT;                               // the tanker as drawn, metres
+      const stow = TP.stow ? findPart(rec.inst, "aar_boomstow") : null;
+      let boomOut = false;
+      for (let i = 0; i < A.st.length; i++) {
+        const st = A.st[i], k = st.k;
+        let fx = rec.aarFx[i];
+        if (st.ext <= 0) { if (fx) fx.g.visible = false; if (fx) fx.to = false; continue; }
+        if (!fx) fx = rec.aarFx[i] = aarStationFx(k);
+        fx.g.visible = true;
+        /* the receiver, if it is on this station and drawn */
+        const r = st.who && !st.who.dead ? st.who : null;
+        const rr = r ? ents.get(r.id) : null;
+        const rOk = !!(rr && seen.has(r.id));
+        let RP = null;
+        if (rOk) {
+          /* in contact it sits under the tanker by the boom's drop, a little
+             for a hose, and banks with it */
+          rr.aarDrop = (rr.aarDrop || 0) + ((k === "boom" ? 0.16 : 0.05) * Lm * st.ext - (rr.aarDrop || 0)) * Math.min(1, dt * 1.5);
+          rr.aarRoll = (rr.aarRoll || 0) + (rec.aarRoll - (rr.aarRoll || 0)) * Math.min(1, dt * 3);
+          rr.grp.rotation.x = rr.aarRoll;
+          rr.grp.position.y -= rr.aarDrop;
+          rr.aarHit = true; aarRolled.add(rr);
+          rr.grp.updateMatrixWorld(true);
+          const RPm = aarPoints(rr.tpl, r.def);
+          const recv = r.def.aarRecv;
+          const pk = k === "tip_r" ? "tipL" : (k === "boom" && recv !== "probe") ? "recept" : "probe";
+          RP = aarWorld(rr, RPm[pk], aarV2);
+        }
+        const S = aarWorld(rec, TP[k === "tip_r" ? "tip_r" : k], aarV1);      // the hinge or the hose exit
+        /* aft and down in the tanker's own frame */
+        const c = Math.cos(e.ang), sn = Math.sin(e.ang);
+        const bx = -c, bz = -sn;
+        if (k === "boom") {
+          boomOut = true;
+          const tip0 = aarWorld(rec, TP.boomtip, aarV3);                  // the stowed tip
+          const sLen = Math.max(1, tip0.distanceTo(S));
+          /* fully out with no one on it: thirty degrees down, half as long again */
+          const free = aarV4.set(S.x + bx * sLen * 1.3 * 0.87, S.y - sLen * 1.3 * 0.5, S.z + bz * sLen * 1.3 * 0.87);
+          const goal = RP && st.ext > 0 ? RP : free;
+          /* swing from the stowed line toward the goal, telescoping as it goes */
+          const dx = tip0.x - S.x, dy = tip0.y - S.y, dz = tip0.z - S.z;
+          const gx = goal.x - S.x, gy = goal.y - S.y, gz = goal.z - S.z;
+          const gl = Math.hypot(gx, gy, gz) || 1, e1 = st.ext;
+          const ux = dx / sLen * (1 - e1) + gx / gl * e1, uy = dy / sLen * (1 - e1) + gy / gl * e1, uz = dz / sLen * (1 - e1) + gz / gl * e1;
+          const ul = Math.hypot(ux, uy, uz) || 1, len = sLen + (gl - sLen) * e1;
+          const end = aarV4.set(S.x + ux / ul * len, S.y + uy / ul * len, S.z + uz / ul * len);
+          const R0 = Math.max(0.12, 0.012 * Lm);
+          fx.outer.position.copy(S); aarAlong(fx.outer, S, end);
+          const oL = Math.min(len, sLen);
+          fx.outer.scale.set(R0, oL, R0);
+          fx.inner.position.copy(S); fx.inner.quaternion.copy(fx.outer.quaternion);
+          fx.inner.scale.set(R0 * 0.6, len, R0 * 0.6);
+          /* the ruddevators, a V near the end of the outer tube */
+          aarV3.set(S.x + ux / ul * oL * 0.85, S.y + uy / ul * oL * 0.85, S.z + uz / ul * oL * 0.85);
+          for (let f = 0; f < 2; f++) {
+            const fin = f ? fx.finR : fx.finL;
+            fin.position.set(aarV3.x + sn * (f ? -1 : 1) * R0 * 3, aarV3.y + R0 * 1.2, aarV3.z - c * (f ? -1 : 1) * R0 * 3);
+            fin.rotation.set(0, -e.ang, (f ? -1 : 1) * 0.7);
+            fin.scale.set(R0 * 9, R0 * 9, R0 * 9);
+          }
+          /* a drogue adapter's basket on the end, for a probe receiver */
+          const bda = !!e.def.aarBda && r && r.def.aarRecv === "probe";
+          fx.drogue.visible = bda;
+          if (bda) {
+            fx.drogue.position.copy(end); aarAlong(fx.drogue, end, S);
+            const dR = Math.max(0.35, 0.02 * Lm);
+            fx.drogue.scale.set(dR, dR * 1.4, dR);
+          }
+          fx.end = fx.end || new THREE.Vector3(); fx.end.copy(end);
+        } else {
+          /* the hose: reeled out aft and a little down, ext of its length */
+          const hl = AirRefuel.reachOf(k) * Lm;
+          const tx = S.x + bx * hl * st.ext, ty = S.y - hl * 0.14 * st.ext, tz = S.z + bz * hl * st.ext;
+          /* a probe coming up into the basket takes it */
+          let w = 0;
+          if (RP) {
+            /* the basket is the probe's within a third of a hose length of
+               where it trails, and lets go of it by a whole hose length */
+            const gapP = Math.hypot(RP.x - tx, RP.y - ty, RP.z - tz);
+            w = U.clamp(1 - (gapP - 0.35 * hl) / (0.65 * hl), 0, 1) * U.clamp((st.ext - 0.6) / 0.4, 0, 1);
+            /* in the game's contact (or a tile short of it) the basket is on the probe */
+            if (st.ext >= 1) {
+              AirRefuel.contactLocal(e, k, r, aarL);
+              AirRefuel.toWorld(e, aarL.along, aarL.left, aarL);
+              if (Math.hypot(r.x - aarL.x, r.y - aarL.y) < CFG.TILE) w = 1;
+            }
+          }
+          const ex = RP ? tx + (RP.x - tx) * w : tx, ey = RP ? ty + (RP.y - ty) * w : ty, ez = RP ? tz + (RP.z - tz) * w : tz;
+          const span = Math.hypot(ex - S.x, ey - S.y, ez - S.z), sag = span * 0.12 * (1 - 0.6 * w);
+          const mx = (S.x + ex) / 2, my = (S.y + ey) / 2 - sag * 2, mz = (S.z + ez) / 2;
+          for (let j = 0; j < AAR_HOSE_N; j++) {
+            const q = j / (AAR_HOSE_N - 1), a0 = (1 - q) * (1 - q), a1 = 2 * q * (1 - q), a2 = q * q;
+            fx.hp[j * 3] = a0 * S.x + a1 * mx + a2 * ex;
+            fx.hp[j * 3 + 1] = a0 * S.y + a1 * my + a2 * ey;
+            fx.hp[j * 3 + 2] = a0 * S.z + a1 * mz + a2 * ez;
+          }
+          fx.hose.geometry.attributes.position.needsUpdate = true;
+          /* the basket, opening aft along the last of the hose */
+          const n = AAR_HOSE_N - 2;
+          aarV3.set(fx.hp[n * 3], fx.hp[n * 3 + 1], fx.hp[n * 3 + 2]);
+          aarV4.set(ex, ey, ez);
+          fx.drogue.position.copy(aarV4);
+          aarAlong(fx.drogue, aarV4, aarV3);
+          const dR = Math.max(0.35, 0.02 * Lm);
+          fx.drogue.scale.set(dR, dR * 1.4, dR);
+          fx.drogue.visible = true;
+          fx.end = fx.end || new THREE.Vector3(); fx.end.set(ex, ey, ez);
+        }
+        fx.to = !!RP;
+        fx.gap = RP ? fx.end.distanceTo(RP) : Infinity;
+      }
+      if (stow) stow.visible = !boomOut;
+    }
+    /* ease back the bank and the drop of anything no longer refuelling */
+    for (const rec of aarRolled) {
+      if (rec.aarHit) continue;
+      if (!rec.grp.parent) { aarRolled.delete(rec); continue; }   // gone from the scene
+      rec.aarRoll = (rec.aarRoll || 0) * Math.max(0, 1 - dt * 2.5);
+      rec.aarDrop = (rec.aarDrop || 0) * Math.max(0, 1 - dt * 1.2);
+      if (Math.abs(rec.aarRoll) < 1e-3 && rec.aarDrop < 0.02) { rec.aarRoll = 0; rec.aarDrop = 0; aarRolled.delete(rec); }
+      rec.grp.rotation.x = rec.aarRoll;
+      rec.grp.position.y -= rec.aarDrop;
     }
   }
 
@@ -4701,6 +4984,18 @@ var Render3D = (function () {
       const rec = ents.get(e.id);
       if (!rec || !rec.elev) return null;
       return { pose: (dt) => poseLauncher(e, rec, dt), launch: (p) => launchOffset(p, 0, 0, 0) };
+    },
+    /* what is drawn of tanker e's refuelling gear: per station its run-out,
+       whether it shows, whether it reaches a drawn receiver and how far its
+       end is from that receiver's probe or receptacle, metres
+       (tools/jsc/aar_check.js) */
+    aarDebug(e) {
+      const rec = ents.get(e.id);
+      if (!rec || !e.aar) return null;
+      return e.aar.st.map((s, i) => {
+        const fx = rec.aarFx && rec.aarFx[i];
+        return { k: s.k, ext: s.ext, visible: !!(fx && fx.g.visible), to: !!(fx && fx.g.visible && fx.to), gap: fx && fx.to ? fx.gap : Infinity };
+      });
     },
     get cam() { return cam; },
     get three() { return three; },

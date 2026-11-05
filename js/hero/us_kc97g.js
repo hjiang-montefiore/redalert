@@ -413,13 +413,17 @@ var HeroKC97G = (function () {
   /* ---------------------------------------------------------- boom */
   function addBoom(THREE, g, T) {
     g.add(egg(THREE, T.skin, 1.3, 0.38, 0.30, X(28.9), 0, -1.25, 14, 8));
-    g.add(taper(THREE, T.skin, [X(28.6), 0, -1.35], [X(33.56), 0, 0.05], 0.14, 0.07, 10));
-    g.add(disc(THREE, T.ink, 0.075, X(33.57), 0, 0.05, 10));
+    /* the stowed boom, a group of its own (aarNodes) */
+    var stow = new THREE.Group();
+    stow.name = "aar_boomstow";
+    g.add(stow);
+    stow.add(taper(THREE, T.skin, [X(28.6), 0, -1.35], [X(33.56), 0, 0.05], 0.14, 0.07, 10));
+    stow.add(disc(THREE, T.ink, 0.075, X(33.57), 0, 0.05, 10));
     for (var s = -1; s <= 1; s += 2) {
       var rd = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 0.05), T.skin);
       rd.position.set(X(33.0), s * 0.42, -0.1 + 0.35);
       rd.rotation.x = s * 42 * D2R;
-      g.add(rd);
+      stow.add(rd);
     }
   }
 
@@ -451,16 +455,32 @@ var HeroKC97G = (function () {
     g.add(gear);
   }
 
+  /* ---- refuelling attach points (render3d.js drawAAR) ----
+     Empty named nodes, no geometry: where the boom hinges ("aar_boom") and
+     where its stowed tip lies ("aar_boomtip"), and where each hose leaves
+     its pod or unit ("aar_pod_l", "aar_pod_r", "aar_ctr"). The stowed boom
+     itself is the group "aar_boomstow", kept out of the merge so the
+     renderer can hide it while the drawn boom is lowered. */
+  function aarNodes(THREE, root, pts) {
+    for (var k in pts) {
+      var o = new THREE.Object3D();
+      o.name = "aar_" + k;
+      o.position.set(pts[k][0], pts[k][1], pts[k][2]);
+      root.add(o);
+    }
+  }
+
   function mergeByMaterial(THREE, root) {
-    var main = { order: [], by: {} }, gear = { order: [], by: {} };
+    var main = { order: [], by: {} }, gear = { order: [], by: {} }, stow = { order: [], by: {} };
     (function walk(node, pm, inGear) {
       for (var i = 0; i < node.children.length; i++) {
         var c = node.children[i];
         c.updateMatrix();
         var m = pm.clone().multiply(c.matrix);
-        var ing = inGear || c.name === "gear";
+        /* the gear, and the stowed boom (aarNodes), each stay a group of their own */
+        var ing = inGear || (c.name === "gear" ? "gear" : c.name === "aar_boomstow" ? "stow" : false);
         if (c.isMesh) {
-          var b = ing ? gear : main, key = c.material.uuid;
+          var b = ing === "gear" ? gear : ing === "stow" ? stow : main, key = c.material.uuid;
           if (!b.by[key]) { b.by[key] = { mat: c.material, parts: [] }; b.order.push(key); }
           var geo = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
           geo.applyMatrix4(m);
@@ -493,6 +513,12 @@ var HeroKC97G = (function () {
     gr.name = "gear";
     out(gear, gr);
     res.add(gr);
+    if (stow.order.length) {
+      var sg = new THREE.Group();
+      sg.name = "aar_boomstow";
+      out(stow, sg);
+      res.add(sg);
+    }
     return res;
   }
 
@@ -507,7 +533,9 @@ var HeroKC97G = (function () {
     addEngines(THREE, g, T);
     addBoom(THREE, g, T);
     addGear(THREE, g, T);
-    return mergeByMaterial(THREE, g);
+    var res = mergeByMaterial(THREE, g);
+    aarNodes(THREE, res, { boom: [X(28.6), 0, -1.35], boomtip: [X(33.56), 0, 0.05] });
+    return res;
   }
   return { build: build };
 })();

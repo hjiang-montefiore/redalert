@@ -616,13 +616,26 @@ var EuBigKit = (function () {
     return res;
   }
 
+  /* refuelling attach points for render3d.js drawAAR: empty named nodes,
+     no geometry - where each hose leaves its pod or hose-drum unit
+     ("aar_pod_l", "aar_pod_r", "aar_ctr") */
+  function aarNodes(THREE, root, pts) {
+    for (var k in pts) {
+      var o = new THREE.Object3D();
+      o.name = "aar_" + k;
+      o.position.set(pts[k][0], pts[k][1], pts[k][2]);
+      root.add(o);
+    }
+    return root;
+  }
   return {
     D2R: D2R, X: X, Z: Z, materials: materials, gridGeo: gridGeo, outward: outward, emit: emit,
     secRing: secRing, lathe: lathe, plate: plate, hplate: hplate, taper: taper, box: box, egg: egg,
     disc: disc, foil: foil, resampleD: resampleD, secAt: secAt, zwOf: zwOf, wingAt: wingAt,
     wingH: wingH, addBody: addBody, addFuselage: addFuselage, hullPatch: hullPatch, addWings: addWings,
     addStab: addStab, addFin: addFin, engRule: engRule, fanPod: fanPod, pylon: pylon,
-    tyreSet: tyreSet, truck: truck, addBlade: addBlade, mergeByMaterial: mergeByMaterial
+    tyreSet: tyreSet, truck: truck, addBlade: addBlade, mergeByMaterial: mergeByMaterial,
+    aarNodes: aarNodes
   };
 })();
 
@@ -737,7 +750,9 @@ var HeroVC10K3 = (function (K) {
     addHDU(THREE, g, T);
     addDetails(THREE, g, T);
     addGear(THREE, g, T);
-    return K.mergeByMaterial(THREE, g);
+    /* the Mk 32s' tails 14.6 m out, and the HDU's exit on the step at 38.3 m */
+    return K.aarNodes(THREE, K.mergeByMaterial(THREE, g),
+      { pod_l: [X(30.2), 14.6, Z(2.55)], pod_r: [X(30.2), -14.6, Z(2.55)], ctr: [X(38.32), 0, Z(2.25)] });
   }
   return { build: build, len: S.DMAX - S.DMIN };
 })(EuBigKit);
@@ -843,7 +858,9 @@ var HeroTriStarK1 = (function (K) {
     addHDU(THREE, g, T);
     addDetails(THREE, g, T);
     addGear(THREE, g, T);
-    return K.mergeByMaterial(THREE, g);
+    /* the aft HDU's exit (the two are in tandem; one hose is used at a time) */
+    return K.aarNodes(THREE, K.mergeByMaterial(THREE, g),
+      { ctr: [X(39.82), 0, Z(K.secAt(39.8, S.SEC)[3] - 0.06)] });
   }
   return { build: build, len: S.DMAX - S.DMIN };
 })(EuBigKit);
@@ -943,7 +960,9 @@ var HeroA310MRTT = (function (K) {
     addFences(THREE, g, T);
     addDetails(THREE, g, T);
     addGear(THREE, g, T);
-    return K.mergeByMaterial(THREE, g);
+    /* the two pods' tails, 15.4 m out */
+    return K.aarNodes(THREE, K.mergeByMaterial(THREE, g),
+      { pod_l: [X(25.9), 15.4, Z(4.62)], pod_r: [X(25.9), -15.4, Z(4.62)] });
   }
   return { build: build, len: S.DMAX - S.DMIN };
 })(EuBigKit);
