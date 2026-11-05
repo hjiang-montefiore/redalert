@@ -1729,7 +1729,13 @@ var Game = (function () {
   /* The nearest friendly tanker that is airborne, still has fuel to give, and
      is closer than u's own ramp. This is the whole aerial-refuelling
      mechanism: it makes reserveFuel() and the RTB decision measure distance to
-     the TANKER rather than to the airfield. */
+     the TANKER rather than to the airfield.
+     ...and that can actually refuel u: a station of the right system (a
+     probe jet is never sent to a boom with no drogue adapter, a receptacle
+     jet never to a hose - js/aar_specs.js), free or soon free (aarRoom: no
+     more receivers committed to those stations than one on each and one
+     waiting for each). A full tanker is not somewhere to get fuel, so the
+     reserve is measured to the ramp instead. */
   G.nearestTanker = function (u) {
     if (!u || !u.def.refuelable) return null;
     let best = null, bd = Infinity;
@@ -1737,6 +1743,7 @@ var Game = (function () {
       if (t === u || t.dead || t.carried) continue;
       if (!t.def.tanker || t.offload <= 0) continue;
       if (t.parked || (t.order && t.order.type === "parked")) continue;
+      if (t.aarRoom ? !t.aarRoom(u) : !AirRefuel.compatible(t.def, u.def)) continue;
       const d = U.dist2(u.x, u.y, t.x, t.y);
       if (d < bd) { bd = d; best = t; }
     }

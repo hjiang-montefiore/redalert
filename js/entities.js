@@ -171,6 +171,103 @@ const WELL_GO = { GATE: 2, HOLD: 3, V: 12, RAMP: 4 };
    have. A squad going out of the door in flight does not wait for it. */
 const TOUCHDOWN = CFG.AIR_ALT / CFG.AIR_SINK;
 
+/* ======================== AIR-TO-AIR REFUELLING ========================
+   The data - who carries a boom, who a drogue, who a probe - is in
+   js/aar_specs.js; this is the geometry and the rules the two aircraft fly by.
+
+   STATIONS. A tanker has one or more: the flying boom, a wing pod each side,
+   a centreline (or rear-fuselage) hose unit, and on the Tu-16Z a wingtip
+   hose. Each serves ONE receiver at a time, so a two-pod tanker refuels two
+   side by side, and a boom tanker one while the next waits off its left wing
+   in the observation slot and cycles in when the boom is free. Fuel moves at
+   the tanker's refuelRate PER STATION, out of the one shared offload.
+
+   WHERE THE SLOTS ARE. Everything is in the tanker's own frame, scaled by
+   how long each aeroplane is DRAWN (drawLen, the same formula render3d.js
+   sizes an aircraft by), so the receiver's probe really ends up at the end
+   of the hose the renderer reels out: the station's exit point (a fraction
+   of the tanker's length aft and outboard), plus the reach of the boom or the
+   hose, less where the probe or the receptacle is on the receiver.
+
+   FLYING IT. Nothing is snapped or lerped. The receiver flies a speed-matched
+   pursuit of its slot (aarFormate): the tanker's own velocity plus a closure
+   term that shrinks as it closes, turned into a heading it turns toward at
+   its own turn rate and a speed it reaches at a limited acceleration. So it
+   banks into the slot, matches the tanker's track and follows it through the
+   turns. Fuel moves only while it is within TOL of the contact point and the
+   boom or the hose is fully out (ext, run out and back in over EXT_S).
+
+   THE TANKER, while it has a receiver near, flies a racetrack (aarRacetrack)
+   and never turns faster than TURN, and slows to what its slowest receiver
+   can hold, as real tankers do.
+
+   A page that does not load aar_specs.js gets every tanker as a single boom
+   that serves anything refuelable: the behaviour before it existed. */
+var AirRefuel = {
+  EXT_S: 2.5,          // s to run the boom or the hose all the way out
+  TURN: 0.6,           // rad/s: the tanker's turn while it has receivers
+  RT_LEG: 6,           // tiles: half the straight leg of the racetrack
+  TOL: 0.32,           // tiles: within this of the contact point fuel flows
+  NEAR: 8,             // tiles: a committed receiver this close makes the tanker "busy"
+  drawLen(def) { return (def.r || 15) * 2.1 * 1.22 * CFG.MODEL_SCALE; },   // px
+  heavy(def) { return (def.r || 0) >= 20; },
+  stations(def) { return def.aarSt || ["boom"]; },
+  isPod(k) { return k === "pod_l" || k === "pod_r"; },
+  /* can station k of tanker tdef take receiver rdef */
+  accepts(tdef, k, rdef) {
+    const r = rdef.aarRecv;
+    if (!r) return !!rdef.refuelable;                // untagged (a page without aar_specs.js)
+    if (k === "boom") return r === "receptacle" || r === "both" || (!!tdef.aarBda && r === "probe");
+    if (k === "tip_r") return r === "wingtip";
+    return r === "probe" || r === "both";
+  },
+  compatible(tdef, rdef) {
+    if (!tdef || !rdef || !rdef.refuelable) return false;
+    const st = AirRefuel.stations(tdef);
+    for (let i = 0; i < st.length; i++) if (AirRefuel.accepts(tdef, st[i], rdef)) return true;
+    return false;
+  },
+  /* the station's exit, [aft, outboard-left] as fractions of the tanker's length */
+  exitOf(tdef, k) {
+    const p = tdef.aarPod || 0.34;
+    if (k === "pod_l") return [-0.12, p];
+    if (k === "pod_r") return [-0.12, -p];
+    if (k === "tip_r") return [-0.10, -0.47];
+    return [-0.40, 0];                               // boom and centreline: under the tail
+  },
+  /* how far back the boom reaches, or the hose trails, as a fraction of the tanker's length */
+  reachOf(k) { return k === "boom" ? 0.26 : k === "ctr" ? 0.42 : 0.30; },
+  /* where the receiver takes the fuel, [ahead, left] as fractions of its own length */
+  attachOf(rdef, k, tdef) {
+    const r = rdef.aarRecv;
+    if (k === "tip_r" || r === "wingtip") return [-0.05, 0.46];
+    if (k === "boom" && (r === "receptacle" || r === "both" || !r || !tdef.aarBda)) return [0.22, 0];
+    return [0.46, -0.04];                            // the probe, beside the nose
+  },
+  /* tanker frame -> world: `along` ahead, `left` to port */
+  toWorld(t, along, left, out) {
+    const c = Math.cos(t.ang), s = Math.sin(t.ang);
+    out.x = t.x + c * along + s * left;
+    out.y = t.y + s * along - c * left;
+    return out;
+  },
+  /* the receiver's centre in contact on station k, in the tanker frame (px) */
+  contactLocal(t, k, r, out) {
+    const Lt = AirRefuel.drawLen(t.def), Lr = AirRefuel.drawLen(r.def);
+    const e = AirRefuel.exitOf(t.def, k), a = AirRefuel.attachOf(r.def, k, t.def);
+    out.along = (e[0] - AirRefuel.reachOf(k)) * Lt - a[0] * Lr;
+    out.left = e[1] * Lt - a[1] * Lr;
+    return out;
+  },
+  /* the n-th waiting (observation) slot: echelon off the tanker's left wing */
+  waitLocal(t, r, n, out) {
+    const Lt = AirRefuel.drawLen(t.def), Lr = AirRefuel.drawLen(r.def);
+    out.along = -0.15 * Lt - n * 0.5 * Lr;
+    out.left = 0.52 * Lt + 0.45 * Lr + n * 0.8 * Lr;
+    return out;
+  },
+};
+
 /* =================================================================== UNIT */
 class Unit {
   constructor(game, defId, owner, x, y) {
@@ -623,6 +720,9 @@ class Unit {
     /* a landing craft on order for her well deck (THE WELL DECK) */
     if (this.wellQ && this.wellQ.length) this.workWell(dt);
 
+    /* the stations: who is on which, who is waiting, the boom and the hoses
+       running out and in (AIR-TO-AIR REFUELLING) */
+    if (this.offloadMax && this.layer === "air") this.aarTick(dt);
     /* An empty tanker is just a large slow target, so it takes itself home,
        and it can only be replenished on a ramp. */
     if (this.offloadMax) {
@@ -4098,6 +4198,7 @@ class Unit {
     this.moving = true;                     // airframes never idle their engines
 
     if (o.type !== "parked") this.parked = false;
+    if (o.type !== "tank") this.aarV = undefined;   // the formation speed is the tank order's own
 
     /* ---- ESCORT: where the station is, this tick ----
        (owner) "any idea that early warning aircraft, E2D, to company with
@@ -4725,18 +4826,34 @@ class Unit {
     } else if (o.type === "tank") {
       /* Join on the tanker and take fuel. Both aircraft are committed while
          it happens - the receiver is not fighting, and the tanker is flying
-         straight and level with something tucked under its wing. */
+         a steady racetrack with something on its hoses. Both FLY: the tanker
+         its own track (aarRacetrack, or whatever order it has, turn-capped),
+         the receiver a speed-matched pursuit of its slot on the station it
+         was given, or of its place in the queue off the tanker's left wing
+         until one is free (AIR-TO-AIR REFUELLING, above the Unit class). */
       const t = o.target;
-      if (!t || t.dead || t.offload <= 0) {
+      if (!t || t.dead || t.offload <= 0 || !AirRefuel.compatible(t.def, this.def)) {
+        this.aarV = undefined;
         this.order = o.then ? o.then : { type: "rtb" };
         return;
       }
-      const d = U.dist(this.x, this.y, t.x, t.y);
-      if (d > CFG.TILE * 1.6) { this.flyTo(t.x, t.y, dt); return; }
-      /* formate: sit just off the tanker and match its track */
-      this.ang = t.ang;
-      this.x += (t.x - Math.cos(t.ang) * CFG.TILE * 0.9 - this.x) * Math.min(1, dt * 2);
-      this.y += (t.y - Math.sin(t.ang) * CFG.TILE * 0.9 - this.y) * Math.min(1, dt * 2);
+      const T = CFG.TILE;
+      const si = t.aarClaim(this);
+      const P = t.aarSlot(this, si, this.aarP || (this.aarP = { x: 0, y: 0, cx: 0, cy: 0 }));
+      const d = U.dist(this.x, this.y, P.x, P.y);
+      /* the join: flown at its own speed toward where the slot will be, and
+         handed to the formation pursuit inside four tiles (out again past seven) */
+      if (this.aarV === undefined ? d > T * 4 : d > T * 7) {
+        this.aarV = undefined;
+        const lead = Math.min(6, d / Math.max(1, this.def.speed * T));
+        const vt = t.aarSpeed();
+        this.flyTo(P.x + Math.cos(t.ang) * vt * lead, P.y + Math.sin(t.ang) * vt * lead, dt);
+        return;
+      }
+      this.aarFormate(t, P.x, P.y, dt);
+      if (si < 0) return;                                     // waiting its turn
+      const st = t.aar.st[si];
+      if (st.ext < 1 || U.dist(this.x, this.y, P.cx, P.cy) > T * AirRefuel.TOL) return;
       const rate = (t.def.refuelRate || 12) * dt;
       const want = Math.min(rate, this.fuelMax - this.fuel, t.offload);
       this.fuel += want;
@@ -4744,6 +4861,7 @@ class Unit {
       if (this.fuel >= this.fuelMax - 0.5) {
         if (this.owner === this.game.human)
           this.game.alert(this.def.name.toUpperCase() + " TOPPED UP", "good");
+        this.aarV = undefined;
         this.order = o.then ? o.then : { type: "cap", x: this.x, y: this.y };
       } else if (t.offload <= 0) {
         /* The tanker ran dry before this one was full. Going back on station
@@ -4758,6 +4876,7 @@ class Unit {
            all park. This bare rtb, not the offload-empty one, is what made a
            tanker measurably WORSE than no tanker at all - 62.9% on station
            against 74.3% with none. */
+        this.aarV = undefined;
         this.order = o.then ? { type: "rtb", then: o.then } : { type: "rtb" };
       }
     } else if (o.type === "cap") {
@@ -4817,6 +4936,8 @@ class Unit {
       /* a stand-off bomber patrols on a circle clear of the rings its side
          knows (soLoiter) when they are near enough for this one to stray in */
       if (this.soLoiter(o, o.x, o.y, dt)) return;
+      /* a tanker with receivers on it flies its racetrack (AIR-TO-AIR REFUELLING) */
+      if (this.aarBusy) { this.aarRacetrack(o, dt); return; }
       const d = U.dist(this.x, this.y, o.x, o.y);
       const R = CFG.CAP_RADIUS * CFG.TILE;
       if (d > R * 1.25) {
@@ -6140,10 +6261,222 @@ class Unit {
     else this.flyOrbit(p.cx, p.cy, rL, dt, p.dir, true);
     return true;
   }
+  /* ---- AIR-TO-AIR REFUELLING: the tanker's side (see AirRefuel) ---- */
+  aarState() {
+    if (this.aar) return this.aar;
+    const st = AirRefuel.stations(this.def).map(k => ({ k, who: null, ext: 0 }));
+    this.aar = { st, wait: [], p: { x: 0, y: 0 }, l: { along: 0, left: 0 } };
+    return this.aar;
+  }
+  /* is r still flying a tank order on this tanker */
+  aarHolds(r) {
+    return !!r && !r.dead && !r.carried && r.order && r.order.type === "tank" && r.order.target === this;
+  }
+  /* could station i take r now: free, compatible, its tail-mate not in use,
+     and no heavy on the other wing pod (its span would cover both hoses) */
+  aarCanUse(i, r) {
+    const A = this.aar, s = A.st[i];
+    if (s.who && s.who !== r) return false;
+    if (!AirRefuel.accepts(this.def, s.k, r.def)) return false;
+    const ex = this.def.aarExcl;
+    if (ex) for (const g of ex) {
+      if (g.indexOf(s.k) < 0) continue;
+      for (const o of A.st) if (o !== s && o.who && o.who !== r && g.indexOf(o.k) >= 0) return false;
+    }
+    if (AirRefuel.isPod(s.k)) {
+      for (const o of A.st) if (o !== s && o.who && o.who !== r && AirRefuel.isPod(o.k) &&
+                                (AirRefuel.heavy(o.who.def) || AirRefuel.heavy(r.def))) return false;
+      /* a heavy takes a wing pod only on a tanker with no centreline hose for it */
+      if (AirRefuel.heavy(r.def) && A.st.some(o => o.k === "ctr" && AirRefuel.accepts(this.def, "ctr", r.def))) return false;
+    }
+    return true;
+  }
+  /* the station r should take, by preference: a fighter the wing pods first
+     (the centreline is left for the heavies), a heavy the boom or the
+     centreline; -1 if none is free */
+  aarPick(r) {
+    const A = this.aar, heavy = AirRefuel.heavy(r.def);
+    let best = -1, bs = -1;
+    for (let i = 0; i < A.st.length; i++) {
+      if (!this.aarCanUse(i, r)) continue;
+      const k = A.st[i].k;
+      const sc = AirRefuel.isPod(k) ? (heavy ? 1 : 3) : k === "ctr" ? 2 : k === "boom" ? (heavy ? 3 : 2) : 1;
+      if (sc > bs) { bs = sc; best = i; }
+    }
+    return best;
+  }
+  /* r asks for a station: the one it holds, or a free one if nobody who was
+     here first (and is near enough to take it) could use it; otherwise r
+     waits, and is counted. Returns the station index, or -1 while waiting. */
+  aarClaim(r) {
+    const A = this.aarState();
+    for (let i = 0; i < A.st.length; i++) if (A.st[i].who === r) return i;
+    let wi = A.wait.indexOf(r);
+    if (wi < 0) { A.wait.push(r); wi = A.wait.length - 1; }
+    const i = this.aarPick(r);
+    if (i < 0) return -1;
+    const near = CFG.TILE * AirRefuel.NEAR;
+    for (let j = 0; j < wi; j++) {
+      const w = A.wait[j];
+      if (this.aarHolds(w) && U.dist2(w.x, w.y, this.x, this.y) < near * near && this.aarCanUse(i, w)) return -1;
+    }
+    A.st[i].who = r;
+    A.wait.splice(wi, 1);
+    return i;
+  }
+  /* is there room for r here: a compatible station free or soon free -
+     no more receivers already committed to the stations r could use than
+     one on each and one waiting for each */
+  aarRoom(r) {
+    if (!AirRefuel.compatible(this.def, r.def)) return false;
+    const A = this.aarState();
+    let n = 0, c = 0;
+    for (const s of A.st) {
+      if (s.who === r) return true;
+      if (!AirRefuel.accepts(this.def, s.k, r.def)) continue;
+      n++;
+      if (s.who && this.aarHolds(s.who)) c++;
+    }
+    for (const w of A.wait) {
+      if (w === r) return true;
+      if (!this.aarHolds(w)) continue;
+      for (const s of A.st) if (AirRefuel.accepts(this.def, s.k, w.def) && AirRefuel.accepts(this.def, s.k, r.def)) { c++; break; }
+    }
+    return c < n * 2;
+  }
+  /* where r flies now, in world px, written to out: its contact point on
+     station i (cx, cy), and the point it steers for - the pre-contact point
+     astern of it while it is still ahead of or beside the station, so it
+     comes up from behind and never across the tanker - or, waiting, its
+     place in the echelon off the left wing */
+  aarSlot(r, i, out) {
+    const A = this.aarState(), l = A.l;
+    if (i < 0) {
+      let n = 0;
+      for (const w of A.wait) { if (w === r) break; if (this.aarHolds(w)) n++; }
+      AirRefuel.waitLocal(this, r, n, l);
+      AirRefuel.toWorld(this, l.along, l.left, out);
+      out.cx = NaN; out.cy = NaN;
+      return out;
+    }
+    AirRefuel.contactLocal(this, A.st[i].k, r, l);
+    AirRefuel.toWorld(this, l.along, l.left, out);
+    out.cx = out.x; out.cy = out.y;
+    /* r's own position, along the tanker's axis */
+    const c = Math.cos(this.ang), s = Math.sin(this.ang);
+    const ra = (r.x - this.x) * c + (r.y - this.y) * s;
+    const rl = (r.x - this.x) * s - (r.y - this.y) * c;
+    const Lr = AirRefuel.drawLen(r.def);
+    /* once it has come up to the station it stays on the contact point */
+    if (Math.abs(ra - l.along) < 0.6 * Lr && Math.abs(rl - l.left) < 0.6 * Lr) r.aarIn = A.st[i];
+    if (r.aarIn !== A.st[i] && ra > l.along + 0.35 * Lr && Math.abs(rl - l.left) > 0.25 * Lr) {
+      const pre = l.along - 0.7 * Lr;
+      out.x = this.x + c * pre + s * l.left;
+      out.y = this.y + s * pre - c * l.left;
+    }
+    return out;
+  }
+  /* the tanker's speed, px a second: its own, or what its slowest receiver can hold */
+  aarSpeed() {
+    const own = this.def.speed * this.speedMul();
+    return (this.aarSpd && this.aarSpd < own ? this.aarSpd : own) * CFG.TILE;
+  }
+  aarTick(dt) {
+    const A = this.aarState(), T = CFG.TILE, near = T * AirRefuel.NEAR;
+    /* how fast it is turning, for the receivers to lead the slot through a turn */
+    if (A.pa !== undefined && dt > 0) {
+      let da = this.ang - A.pa;
+      while (da > Math.PI) da -= U.PI2;
+      while (da < -Math.PI) da += U.PI2;
+      this.aarW = da / dt;
+    }
+    A.pa = this.ang;
+    let busy = false, vcap = Infinity;
+    for (const s of A.st) {
+      if (s.who && !this.aarHolds(s.who)) s.who = null;
+      let close = false;
+      if (s.who) {
+        const r = s.who;
+        AirRefuel.contactLocal(this, s.k, r, A.l);
+        AirRefuel.toWorld(this, A.l.along, A.l.left, A.p);
+        /* run out for a receiver coming up to it, in for none */
+        close = U.dist2(r.x, r.y, A.p.x, A.p.y) < 9 * T * T;
+      }
+      s.ext = U.clamp(s.ext + (close ? dt : -dt) / AirRefuel.EXT_S, 0, 1);
+    }
+    let k = 0;
+    for (let j = 0; j < A.wait.length; j++) if (this.aarHolds(A.wait[j])) A.wait[k++] = A.wait[j];
+    A.wait.length = k;
+    const look = (r) => {
+      if (!r || U.dist2(r.x, r.y, this.x, this.y) > near * near) return;
+      busy = true;
+      vcap = Math.min(vcap, r.def.speed * r.speedMul() * 0.9);
+    };
+    for (const s of A.st) if (s.who) look(s.who);
+    for (const w of A.wait) look(w);
+    this.aarBusy = busy;
+    this.aarSpd = busy && isFinite(vcap) ? vcap : 0;
+  }
+  /* A tanker with receivers flies a steady racetrack round its patrol point -
+     two straight legs RT_LEG*2 tiles long joined by half turns at TURN rad/s,
+     always to the left - rather than chasing a point round a tight circle at
+     full deflection. Entered from wherever it is: the leg is flown as a
+     pursuit of a point ahead on the leg's line, with the same turn cap. */
+  aarRacetrack(o, dt) {
+    const T = CFG.TILE, w = Math.min(this.def.turn, AirRefuel.TURN), v = this.aarSpeed();
+    const R = v / w, L = AirRefuel.RT_LEG * T;
+    if (o.rtAx === undefined) { o.rtAx = this.ang; o.rtPh = "leg"; o.rtT = 0; }
+    const ax = o.rtAx, ca = Math.cos(ax), sa = Math.sin(ax);
+    const u = (this.x - o.x) * ca + (this.y - o.y) * sa;          // along the axis
+    const dir = Math.cos(this.ang - ax) >= 0 ? 1 : -1;
+    if (o.rtPh === "turn") {
+      this.ang -= w * dt;                                         // a steady left turn
+      if (this.ang < -Math.PI) this.ang += U.PI2;
+      o.rtT += w * dt;
+      if (o.rtT >= Math.PI) o.rtPh = "leg";
+    } else {
+      if (dir * u > L) { o.rtPh = "turn"; o.rtT = 0; }
+      /* the leg flown this way lies to the right of the axis: turning left
+         at its end brings the aircraft onto the other one */
+      const q = -dir * R, ahead = u + dir * 4 * T;
+      const px = o.x + ca * ahead + sa * q, py = o.y + sa * ahead - ca * q;
+      this.ang = U.turnToward(this.ang, Math.atan2(py - this.y, px - this.x), w * dt);
+    }
+    this.x += Math.cos(this.ang) * v * dt;
+    this.y += Math.sin(this.ang) * v * dt;
+    this.x = U.clamp(this.x, 8, this.game.map.W * CFG.TILE - 8);
+    this.y = U.clamp(this.y, 8, this.game.map.H * CFG.TILE - 8);
+  }
+  /* the receiver's side: a speed-matched pursuit of the point (px, py) that
+     moves with tanker t. Desired velocity is the tanker's plus a closure
+     toward the point, capped and shrinking as it closes; the aircraft turns
+     toward that heading at its own rate and changes speed at a limited
+     acceleration, never slower than it can fly. */
+  aarFormate(t, px, py, dt) {
+    const T = CFG.TILE, vt = t.aarSpeed();
+    const vmax = this.def.speed * this.speedMul() * T, vmin = Math.min(vmax, vt) * 0.6;
+    if (this.aarV === undefined) this.aarV = vmax;
+    const ex = px - this.x, ey = py - this.y, e = Math.hypot(ex, ey);
+    const vcl = Math.min(e * 1.4, Math.max(0.6 * T, 0.45 * vt));
+    /* the slot's own velocity: the tanker's, plus its swing about the tanker in a turn */
+    const w = t.aarW || 0;
+    const vx = Math.cos(t.ang) * vt - w * (py - t.y) + (e > 1e-6 ? ex / e * vcl : 0);
+    const vy = Math.sin(t.ang) * vt + w * (px - t.x) + (e > 1e-6 ? ey / e * vcl : 0);
+    this.ang = U.turnToward(this.ang, Math.atan2(vy, vx), this.def.turn * dt);
+    const want = U.clamp(Math.hypot(vx, vy), vmin, vmax), acc = 2.5 * T * dt;
+    this.aarV += U.clamp(want - this.aarV, -acc * 1.5, acc);
+    this.x += Math.cos(this.ang) * this.aarV * dt;
+    this.y += Math.sin(this.ang) * this.aarV * dt;
+    this.x = U.clamp(this.x, 8, this.game.map.W * CFG.TILE - 8);
+    this.y = U.clamp(this.y, 8, this.game.map.H * CFG.TILE - 8);
+  }
+
   flyTo(px, py, dt) {
     const want = Math.atan2(py - this.y, px - this.x);
-    this.ang = U.turnToward(this.ang, want, this.def.turn * dt);
-    const sp = this.def.speed * this.speedMul() * CFG.TILE;
+    /* a tanker with receivers on it never turns harder than a tanker should */
+    const turn = this.aarBusy ? Math.min(this.def.turn, AirRefuel.TURN) : this.def.turn;
+    this.ang = U.turnToward(this.ang, want, turn * dt);
+    const sp = this.aarBusy ? this.aarSpeed() : this.def.speed * this.speedMul() * CFG.TILE;
     this.x += Math.cos(this.ang) * sp * dt;
     this.y += Math.sin(this.ang) * sp * dt;
     this.x = U.clamp(this.x, 8, this.game.map.W * CFG.TILE - 8);

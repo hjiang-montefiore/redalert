@@ -6616,10 +6616,20 @@ function makeCommander() {
      and findPad loops the owner's buildings with usedOn() - itself O(units) -
      nested inside. combatRadius() touches no other object and is safe; the
      distinction is invisible from the call site. */
+  /* the tanker this side flies, or would buy: what a receiver is measured
+     against, because a probe jet is worth nothing to a boom with no drogue
+     adapter and a receptacle jet nothing to a hose (js/aar_specs.js) */
+  function tankerDef() {
+    for (const u of P.units) if (!u.dead && u.def.refuelRate) return u.def;
+    const id = unitFor(P.faction, "tanker", P.era);
+    return id ? UNITS[id] : null;
+  }
   function airDuty() {
     let wing = 0, n = 0, up = 0, cut = 0;
+    const td = tankerDef();
     for (const u of P.units) {
       if (u.dead || u.layer !== "air" || !u.def.refuelable) continue;
+      if (td && !AirRefuel.compatible(td, u.def)) continue;
       wing += P.factionCost(u.def); n++;
       if (u.parked || u.order.type === "parked") continue;
       up++;
@@ -6669,16 +6679,23 @@ function makeCommander() {
     const leg = U.dist(bx, by, at.x, at.y) / CFG.TILE;
     if (leg < 8) return null;                     // nothing to reach out to
     let rc = 1e9;
+    const td = tankerDef();
     for (const u of P.units)
-      if (!u.dead && u.layer === "air" && u.def.refuelable && u.combatRadius)
+      if (!u.dead && u.layer === "air" && u.def.refuelable && u.combatRadius &&
+          (!td || AirRefuel.compatible(td, u.def)))
         rc = Math.min(rc, u.combatRadius());       // cheap: touches no other object
     if (rc > 1e8) return null;
+    /* with receivers on it the tanker flies a racetrack, not the patrol
+       circle (entities.js aarRacetrack): half a leg and one turn radius out
+       from the point, at TURN rad/s and its own speed */
+    const orbitR = td ? Math.max(CFG.CAP_RADIUS,
+      AirRefuel.RT_LEG + td.speed / Math.min(td.turn || 1, AirRefuel.TURN)) : CFG.CAP_RADIUS;
     const hot = (px, py) => {
       for (const r of seenB.values()) {
         if (r.gone) continue;
         const reach = aaProfile(r.sk || r.key);
         if (!reach) continue;
-        if (U.dist(px, py, r.x, r.y) / CFG.TILE < reach + CFG.CAP_RADIUS + 3) return true;
+        if (U.dist(px, py, r.x, r.y) / CFG.TILE < reach + orbitR + 3) return true;
       }
       return false;
     };
@@ -6893,8 +6910,14 @@ function makeCommander() {
         if (ot !== "cap") t.give({ type: "cap", x: P.homeX, y: P.homeY });
         continue;
       }
-      if (ot !== "cap" ||
-          U.dist(t.x, t.y, logiOrbit.x, logiOrbit.y) > T * (CFG.CAP_RADIUS + 3))
+      /* with receivers on it the tanker is flying its racetrack, which
+         reaches well past the patrol circle (entities.js aarRacetrack):
+         re-giving the order there would restart the pattern every think, so
+         it is re-given only if the station itself has moved */
+      const far = t.aarBusy
+        ? U.dist(t.order.x, t.order.y, logiOrbit.x, logiOrbit.y) > T * 3
+        : U.dist(t.x, t.y, logiOrbit.x, logiOrbit.y) > T * (CFG.CAP_RADIUS + 3);
+      if (ot !== "cap" || far)
         t.give({ type: "cap", x: logiOrbit.x, y: logiOrbit.y });
     }
   }

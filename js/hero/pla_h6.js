@@ -638,6 +638,18 @@ var HeroPlaH6 = (function () {
     var gear = new V.Group(); gear.name = "gear";
     flush(gear, G, mats, null);
     root.add(gear);
+    /* the H-6U's refuelling attach points for render3d.js drawAAR: empty
+       named nodes at the tail of each hose-drum pod (hosePod) */
+    if (v.hosePods) {
+      var py = U_POD.y, pz = hwLow(py) - 0.6 * 2 * U_POD.r - U_POD.r;
+      var px = HX(tab(H_WING, py, 1) - 0.38 * U_POD.len + U_POD.len);
+      [["pod_l", 1], ["pod_r", -1]].forEach(function (q) {
+        var o = new V.Object3D();
+        o.name = "aar_" + q[0];
+        o.position.set(px, q[1] * py, pz);
+        root.add(o);
+      });
+    }
     return root;
   }
 

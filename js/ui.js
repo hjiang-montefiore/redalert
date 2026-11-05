@@ -22,6 +22,16 @@ var UI = (function () {
     panMode = localStorage.getItem("ironfront.pan2") || "follow";
     localStorage.removeItem("ironfront.pan");
   } catch (e) {}
+  /* a tanker's refuelling fit in words: "BOOM (+ DROGUE ADAPTER) AND 2 WING PODS" */
+  function aarStationsText(d) {
+    const st = d.aarSt || ["boom"], parts = [];
+    if (st.indexOf("boom") >= 0) parts.push("BOOM" + (d.aarBda ? " WITH DROGUE ADAPTER" : "") + " (RECEPTACLE" + (d.aarBda ? " OR PROBE" : "") + ", ONE AT A TIME)");
+    const pods = st.filter(k => k === "pod_l" || k === "pod_r").length;
+    if (pods) parts.push(pods + " WING POD" + (pods > 1 ? "S" : ""));
+    if (st.indexOf("ctr") >= 0) parts.push("CENTRELINE HOSE");
+    if (st.indexOf("tip_r") >= 0) parts.push("WINGTIP HOSE (WING-TO-WING RECEIVERS)");
+    return parts.join(" + ") + (pods || st.indexOf("ctr") >= 0 ? " FOR PROBES" : "");
+  }
   function panSign() { return panMode === "follow" ? -1 : 1; }
   function setPanMode(m) {
     panMode = m;
@@ -519,6 +529,14 @@ var UI = (function () {
       rows.push('<span class="alt">AERIAL TANKER \u2014 ' + d.tanker +
                 " units of offload</span>");
       rows.push('<span class="warn">EXTENDS TIME ON STATION, NOT COMBAT RADIUS</span>');
+      /* which receivers it can serve, and how many at once (js/aar_specs.js) */
+      if (d.aarSt) rows.push("REFUELS " + aarStationsText(d));
+    } else if (d.cat === "aircraft" && d.jet && !d.hover) {
+      rows.push(d.refuelable
+        ? "IN-FLIGHT REFUELLING: " + (d.aarRecv === "receptacle" ? "BOOM RECEPTACLE"
+          : d.aarRecv === "both" ? "PROBE AND RECEPTACLE" : d.aarRecv === "wingtip" ? "WING-TO-WING"
+          : d.aarRecv === "probe" ? "PROBE" : "YES")
+        : '<span class="warn">NO IN-FLIGHT REFUELLING</span>');
     }
     if (d.carrierCapable) rows.push("CARRIER CAPABLE");
     if (d.thermal !== undefined) rows.push("THERMAL FIT " + Math.round(d.thermal * 100) + "%");
@@ -2065,6 +2083,12 @@ var UI = (function () {
         const joined = e.owner.units.filter(u2 => !u2.dead && u2.order &&
           u2.order.type === "tank" && u2.order.target === e).length;
         h += '<div class="stat">RECEIVERS <i>' + joined + " joined</i></div>";
+        /* what is on each hose or the boom right now */
+        if (e.aar) {
+          const on = e.aar.st.filter(s2 => s2.who && !s2.who.dead && s2.ext >= 1).length;
+          h += '<div class="stat">STATIONS <i>' + on + "/" + e.aar.st.length + " in contact \u00b7 " +
+               aarStationsText(e.def) + "</i></div>";
+        }
       }
       if (e.ammoMax) h += '<div class="stat">ORDNANCE <i>' + (e.ammo).toFixed(1) + "/" + e.ammoMax + "</i></div>";
       if (e.roundsMax) h += '<div class="stat' + (e.rounds === 0 ? " warn" : "") +

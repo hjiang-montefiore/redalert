@@ -847,6 +847,18 @@ var HeroIl76 = (function () {
     gear.name = "gear";
     emit(gear, G, mats, ["metal", "tyre"]);
     root.add(gear);
+    /* the Il-78's refuelling attach points for render3d.js drawAAR: empty
+       named nodes at the tail of each UPAZ (addUPAZ), the third, on the port
+       rear fuselage, standing for the "ctr" station */
+    if (spec.kind === "il78") {
+      var pts = { pod_l: [X(20.9 + 6.21), 17.2, Z(4.55)], pod_r: [X(20.9 + 6.21), -17.2, Z(4.55)], ctr: [X(34.0 + 5.21), 2.55, Z(3.15)] };
+      for (var k in pts) {
+        var o = new V.Object3D();
+        o.name = "aar_" + k;
+        o.position.set(pts[k][0], pts[k][1], pts[k][2]);
+        root.add(o);
+      }
+    }
     return root;
   }
 

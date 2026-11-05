@@ -643,15 +643,20 @@ var HeroTankers = (function () {
   function addBoom(THREE, g, T, V) {
     var B = A.boom, P = A.podBay, s;
     g.add(egg(THREE, T.low, P.rx, P.ry, P.rz, X(P.d), 0, P.z, 14, 8));
-    g.add(taper(THREE, T.low, [X(B.d0), 0, B.z0], [X(B.d1), 0, B.z1], B.r0, B.r1, 10));
+    /* the tube, its nozzle and the ruddevators: the stowed boom, a group of
+       its own (aarNodes) so the renderer can swap it for the lowered one */
+    var stow = new THREE.Group();
+    stow.name = "aar_boomstow";
+    g.add(stow);
+    stow.add(taper(THREE, T.low, [X(B.d0), 0, B.z0], [X(B.d1), 0, B.z1], B.r0, B.r1, 10));
     /* the nozzle end */
-    g.add(disc(THREE, T.hot, B.r1 + 0.01, X(B.d1 + 0.01), 0, B.z1, 10));
+    stow.add(disc(THREE, T.hot, B.r1 + 0.01, X(B.d1 + 0.01), 0, B.z1, 10));
     var big = A.id === "kc46", f = (B.rud - B.d0) / (B.d1 - B.d0), zr = B.z0 + (B.z1 - B.z0) * f;
     for (s = -1; s <= 1; s += 2) {
       var rd = new THREE.Mesh(new THREE.BoxGeometry(big ? 1.5 : 1.0, big ? 2.1 : 1.3, 0.06), T.low);
       rd.position.set(X(B.rud + (big ? 0.7 : 0.5)), s * (big ? 0.75 : 0.5), zr + (big ? 0.62 : 0.4));
       rd.rotation.x = s * 42 * D2R;
-      g.add(rd);
+      stow.add(rd);
     }
   }
 
@@ -698,20 +703,36 @@ var HeroTankers = (function () {
     g.add(gear);
   }
 
+  /* ---- refuelling attach points (render3d.js drawAAR) ----
+     Empty named nodes, no geometry: where the boom hinges ("aar_boom") and
+     where its stowed tip lies ("aar_boomtip"), and where each hose leaves
+     its pod or unit ("aar_pod_l", "aar_pod_r", "aar_ctr"). The stowed boom
+     itself is the group "aar_boomstow", kept out of the merge so the
+     renderer can hide it while the drawn boom is lowered. */
+  function aarNodes(THREE, root, pts) {
+    for (var k in pts) {
+      var o = new THREE.Object3D();
+      o.name = "aar_" + k;
+      o.position.set(pts[k][0], pts[k][1], pts[k][2]);
+      root.add(o);
+    }
+  }
+
   /* ===================================================== merge by material ==
      Each mesh costs a draw call, and one more for the shadow pass, per
      aircraft on screen: everything sharing a material becomes one geometry,
      the "gear" group kept a group of its own so the renderer can stow it. */
   function mergeByMaterial(THREE, root) {
-    var main = { order: [], by: {} }, gear = { order: [], by: {} };
+    var main = { order: [], by: {} }, gear = { order: [], by: {} }, stow = { order: [], by: {} };
     (function walk(node, pm, inGear) {
       for (var i = 0; i < node.children.length; i++) {
         var c = node.children[i];
         c.updateMatrix();
         var m = pm.clone().multiply(c.matrix);
-        var ing = inGear || c.name === "gear";
+        /* the gear, and the stowed boom (aarNodes), each stay a group of their own */
+        var ing = inGear || (c.name === "gear" ? "gear" : c.name === "aar_boomstow" ? "stow" : false);
         if (c.isMesh) {
-          var b = ing ? gear : main, key = c.material.uuid;
+          var b = ing === "gear" ? gear : ing === "stow" ? stow : main, key = c.material.uuid;
           if (!b.by[key]) { b.by[key] = { mat: c.material, parts: [] }; b.order.push(key); }
           var geo = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
           geo.applyMatrix4(m);
@@ -744,6 +765,12 @@ var HeroTankers = (function () {
     gr.name = "gear";
     out(gear, gr);
     res.add(gr);
+    if (stow.order.length) {
+      var sg = new THREE.Group();
+      sg.name = "aar_boomstow";
+      out(stow, sg);
+      res.add(sg);
+    }
     return res;
   }
 
@@ -761,7 +788,18 @@ var HeroTankers = (function () {
     addEngines(THREE, g, T, V);
     addBoom(THREE, g, T, V);
     addGear(THREE, g, T, V);
-    return mergeByMaterial(THREE, g);
+    var res = mergeByMaterial(THREE, g);
+    /* the boom's hinge and stowed tip; the KC-46 also its centreline drogue
+       system, just ahead of the boom, and its two wing pods' hose exits */
+    var B = A.boom, pts = { boom: [X(B.d0), 0, B.z0], boomtip: [X(B.d1), 0, B.z1] };
+    if (A.id === "kc46") {
+      pts.ctr = [X(B.d0 - 1.2), 0, B.z0 - 0.35];
+      var py = 15.2, dpl = wingAt(py).dLE - 2.6, zp = wingZ(py, dpl + 1.5, false) - 0.78;
+      pts.pod_l = [X(dpl + 4.2), py, zp];
+      pts.pod_r = [X(dpl + 4.2), -py, zp];
+    }
+    aarNodes(THREE, res, pts);
+    return res;
   }
 
   return { build: build, variants: VARIANTS };
