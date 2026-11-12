@@ -184,8 +184,8 @@
      fra_e60_cfighter 16.79 x 10.94 x 5.40 m; 6006; 11.
      fra_e80_cfighter, fra_e90_cfighter 14.30 x 9.56 x 4.15 m; 5366; 10.
      fra_e00_spaag 6.68 x 2.84 x 5.48 m; 8720; 14.
-     fra_e50_lst 59.00 x 11.60 x 11.90 m; 1044; 6 (DETAIL_E).
-     fra_ctm 23.80 x 6.38 x 7.60 m; 616; 6 (DETAIL_C).
+     fra_e50_lst 59.00 x 11.88 x 12.05 m (11.60 hull; strakes); 9356; 7 (rework, below).
+     fra_ctm 23.80 x 6.53 x 8.20 m (6.35 hull; strakes); 4207; 7 (rework, below).
    DETAIL PASS (2026-11), the two craft only: the boot-topping and rubbing strakes, scuttles and
      ports, doors, rails on the side decks, the stern and the wheelhouse roofs, bitts, bollards and
      fairleads, the kedge anchor (EDIC), ladders, vents, exhausts (CTM), whips, navigation lights,
@@ -204,6 +204,24 @@
      proportion, NOT CONFIRMED. fra_e60_cfighter 6006 -> 6954 tris, 11 -> 14 draw calls;
      fra_e80/e90_cfighter 5366 -> 6262, 10 -> 12; fra_e00_spaag 8720 -> 12404, 14 -> 14. Extents
      and len unchanged.
+   REWORK (2026-11-12, the owner's visual review: "box hull and well"), the two craft only: each hull
+     is lofted as a U - flat bottom, chine, the side set in 0.22 (EDIC) / 0.07 m (CTM) at a knuckle and
+     flaring out to the sheer, over the wall top and down its inner face - so the well is the hull's
+     own hollow; the bottom under z 0.1 a loft of its own in anti-fouling red (T1 shows it on the CTM;
+     the EDIC's NOT CONFIRMED).  CTM: T1 read again on a 10 px grid - the sheer runs straight from 2.46
+     at the wall's forward end to 1.62 at the transom (the old model stepped the side down at the
+     wheelhouse), the wall's front rising to 2.72 beside the ramp, the two ports re-placed (X 0.44,
+     -5.51, 0.65 - 0.9 up).  Both: the ramp a plate with stiffeners across its inner face, side
+     frames, hinge, lugs, tread cleats and its hoisting chains; frames and a stringer down the well
+     walls; tie-down rings; rails as posts and two wires; bitts, vents, lifebuoys, raft canisters,
+     ladders.  EDIC also: the deckhouse's chamfered fore edge, the wheelhouse's raked window front with
+     its mullions and visor, the bridge wings' decks and solid screens, the mast's platform, radar,
+     yard and lamps, the crane's pedestal and hood, doors and ladders in the bow walls, exhausts.
+     fra_e50_lst 3488 -> 9356 tris, fra_ctm 1548 -> 4207; 6 -> 7 draw calls each; len unchanged.  No
+     named nodes before or after (no "bowramp": the ramps stay raised).  NOT CONFIRMED: the knuckle
+     heights and flares (L1 / T1 by eye), the well floors' frames and ring spacing, the wings' screens,
+     the mast platform; the EDIC's superstructure heights stay L3's lower bounds (L1 suggests it stands
+     higher - not re-measured: L1 is an oblique).
    Model space: +X nose / bow / drawbar, +Y port, +Z up, metres; aircraft and the trailer stand on
    z = 0; the craft float with the waterline at z = 0.  ASCII only. */
 
@@ -955,175 +973,285 @@ var HeroCrotaleNG = (function () {
 var HeroFrLandingCraft = (function () {
   "use strict";
   var KK = HeroFrNavalKit, K = KK.K;
-  /* a hull loft through stations [x, half beam, bottom z, top z]: flat bottom, a 0.35 m chine */
-  function hull(bin, ST, ch) {
-    var rings = ST.map(function (q) {
-      var x = q[0], hb = q[1], zb = q[2], zt = q[3], c = Math.min(ch, (zt - zb) * 0.4, hb * 0.4);
-      return [[x, -hb, zt], [x, -hb, zb + c], [x, -hb + c, zb], [x, hb - c, zb], [x, hb, zb + c], [x, hb, zt]];
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function tab(T, x) {
+    var i;
+    if (x <= T[0][0]) return T[0].slice(1);
+    for (i = 1; i < T.length; i++) if (x <= T[i][0]) {
+      var a = T[i - 1], b = T[i], f = (x - a[0]) / ((b[0] - a[0]) || 1);
+      return a.slice(1).map(function (v, k) { return lerp(v, b[k + 1], f); });
+    }
+    return T[T.length - 1].slice(1);
+  }
+  /* REWORK 2026-11-12 (the owner's review: "box hull and well"): the hull is lofted as a U - the
+     flat bottom, a chine, the side flaring out above a knuckle to the sheer, over the wall top and
+     down its inner face to the well deck - so the well is the hull's own hollow, not a box laid on a
+     barge.  H(x) gives { hb (half beam at the sheer), zb (bottom), zs (sheer / wall top), zk
+     (knuckle), fk (the side's set-in at the knuckle, the flare), yi (the wall's inner face), zf (the
+     well deck or, where there is no well, the deck) }.  The part under z 0.1 is a separate loft in
+     the anti-fouling red. */
+  var ZW = 0.1, CH = 0.3;
+  function sideY(h, z) {
+    if (z >= h.zk) return lerp(h.hb - h.fk, h.hb, (z - h.zk) / ((h.zs - h.zk) || 1));
+    var zc = h.zb + CH;
+    return lerp(h.hb - 0.1, h.hb - h.fk, clamp01((z - zc) / ((h.zk - zc) || 1)));
+  }
+  function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+  function uHull(B, xs, H) {
+    var lo = [], up = [];
+    xs.forEach(function (x) {
+      var h = H(x), zb = Math.min(h.zb, ZW - 0.06), zk = Math.max(h.zk, ZW + 0.05), yw = sideY(h, ZW), yc = h.hb - 0.1;
+      var zc = Math.min(zb + CH, ZW - 0.02);
+      lo.push([[x, yw, ZW], [x, yc, zc], [x, yc - CH, zb], [x, -yc + CH, zb], [x, -yc, zc], [x, -yw, ZW]]);
+      var zf = Math.min(h.zf, h.zs - 0.03), yi = Math.min(h.yi, h.hb - 0.08);
+      up.push([[x, yi, h.zs], [x, h.hb, h.zs], [x, h.hb - h.fk, zk], [x, yw, ZW], [x, -yw, ZW], [x, -(h.hb - h.fk), zk],
+               [x, -h.hb, h.zs], [x, -yi, h.zs], [x, -yi, zf], [x, yi, zf]]);
     });
-    K.loft(bin, rings);
+    K.loft(B.red, lo);
+    K.loft(B.paint, up);
   }
-  function rail(B, pts, zt) {
-    for (var i = 0; i + 1 < pts.length; i++) K.bar(B.dark, [pts[i][0], pts[i][1], zt], [pts[i + 1][0], pts[i + 1][1], zt], 0.04);
+  /* a rail along a polyline of [x, y, zbase] points: posts every ~1.6 m, two wires at h/2 and h */
+  function rail3(B, pts, h) {
+    var i, k;
+    for (i = 0; i + 1 < pts.length; i++) {
+      var a = pts[i], b = pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(L / 1.6));
+      for (k = (i ? 1 : 0); k <= n; k++) {
+        var p = [lerp(a[0], b[0], k / n), lerp(a[1], b[1], k / n), lerp(a[2], b[2], k / n)];
+        K.bar(B.dark, p, [p[0], p[1], p[2] + h], 0.045);
+      }
+      K.bar(B.dark, [a[0], a[1], a[2] + h], [b[0], b[1], b[2] + h], 0.04);
+      K.bar(B.dark, [a[0], a[1], a[2] + h * 0.5], [b[0], b[1], b[2] + h * 0.5], 0.03);
+    }
   }
+  function bitt(B, x, y, z) { K.cylZ(B.dark, x - 0.25, y, z, z + 0.42, 0.12, 8); K.cylZ(B.dark, x + 0.25, y, z, z + 0.42, 0.12, 8); K.box(B.dark, x - 0.42, x + 0.42, y - 0.17, y + 0.17, z, z + 0.07); }
+  function vent(B, x, y, z, r) { K.cylZ(B.light, x, y, z, z + 0.55, r, 8); K.cylZ(B.light, x, y, z + 0.55, z + 0.68, r * 1.9, 8); }
+  /* a raised bow ramp: the plate from its hinge (xh, zh) to its top (xt, zt), half width w, its
+     stiffeners across the inner (well) face, side frames, hinge and the hoisting chains to (xc, zc)
+     on each wall top */
+  function ramp(B, xh, zh, xt, zt, w, xc, zc) {
+    var dx = xt - xh, dz = zt - zh, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, nx = -uz, nz = ux, t = 0.2, i, s;
+    K.profY(B.paint, [[xh, zh], [xt, zt], [xt + nx * t, zt + nz * t], [xh + nx * t, zh + nz * t]], -w, w);
+    for (i = 1; i <= 5; i++) {
+      var f = i / 6, px = xh + dx * f + nx * t, pz = zh + dz * f + nz * t;
+      K.profY(B.paint, [[px - ux * 0.08, pz - uz * 0.08], [px + ux * 0.08, pz + uz * 0.08], [px + ux * 0.08 + nx * 0.16, pz + uz * 0.08 + nz * 0.16], [px - ux * 0.08 + nx * 0.16, pz - uz * 0.08 + nz * 0.16]], -w + 0.15, w - 0.15);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      K.profY(B.paint, [[xh + nx * t, zh + nz * t], [xt + nx * t, zt + nz * t], [xt + nx * (t + 0.22), zt + nz * (t + 0.22)], [xh + nx * (t + 0.22), zh + nz * (t + 0.22)]], s > 0 ? w - 0.15 : -w, s > 0 ? w : -w + 0.15);
+      /* the hoisting chain from the ramp's top corner to the wall top */
+      K.bar(B.dark, [xt + nx * t, s * (w - 0.1), zt], [xc, s * (w + 0.25), zc], 0.05);
+      K.box(B.dark, xh - 0.25, xh + 0.25, s * (w - 0.5) - 0.2, s * (w - 0.5) + 0.2, zh - 0.1, zh + 0.3);
+    }
+    K.cyl(B.dark, [xh, -w + 0.2, zh + 0.12], [xh, w - 0.2, zh + 0.12], 0.13, 0.13, 8);
+    /* the non-slip cleats across the outer face (the vehicles' tread when it is down) */
+    for (i = 1; i < 9; i++) {
+      var g = i / 9, qx = xh + dx * g - nx * 0.01, qz = zh + dz * g - nz * 0.01;
+      K.profY(B.paint, [[qx - ux * 0.05, qz - uz * 0.05], [qx + ux * 0.05, qz + uz * 0.05], [qx + ux * 0.05 - nx * 0.06, qz + uz * 0.05 - nz * 0.06], [qx - ux * 0.05 - nx * 0.06, qz - uz * 0.05 - nz * 0.06]], -w + 0.3, w - 0.3);
+    }
+  }
+  /* frames down a well wall's inner face at y = yi (side s), x0..x1 every dx, z0 up to the top z(x) */
+  function wallFrames(B, s, yi, x0, x1, dx, z0, ztop) {
+    for (var x = x0; x <= x1 + 1e-6; x += dx) K.box(B.paint, x - 0.06, x + 0.06, s > 0 ? yi - 0.14 : -yi, s > 0 ? yi : -yi + 0.14, z0, ztop(x) - 0.12);
+    K.box(B.paint, x0, x1, s > 0 ? yi - 0.1 : -yi, s > 0 ? yi : -yi + 0.1, lerp(z0, ztop(x0), 0.55), lerp(z0, ztop(x0), 0.55) + 0.1);
+  }
+  function lifebuoy(B, x, y, z, s) { K.cyl(B.red, [x, y, z], [x, y + s * 0.12, z], 0.36, 0.36, 12); K.cyl(B.light, [x, y + s * 0.12, z], [x, y + s * 0.125, z], 0.2, 0.2, 10); }
+  function raftCan(B, x, y, z) { K.cyl(B.light, [x - 0.65, y, z + 0.33], [x + 0.65, y, z + 0.33], 0.32, 0.32, 10); K.box(B.dark, x - 0.5, x + 0.5, y - 0.28, y + 0.28, z, z + 0.06); K.box(B.dark, x - 0.04, x + 0.04, y - 0.34, y + 0.34, z + 0.05, z + 0.68); }
 
   /* ---------------------------------------------------------------- EDIC (L1-L4) */
   var EDIC_P = { key: "frnav_edic", base: "#7f888a", blots: [["#879092", 9, 60], ["#778082", 9, 55]], seed: 1958 };
-  /* hull: 59.0 m overall to the raised ramp, 11.6 m beam, 1.7 m draught (published, EDIC III) */
-  var EH = [[-29.50, 5.45, -1.20, 1.50], [-29.00, 5.70, -1.60, 1.50], [-26.00, 5.80, -1.70, 1.50], [20.00, 5.80, -1.60, 1.50],
-            [25.00, 5.80, -1.35, 1.50], [27.60, 5.60, -0.60, 1.50], [28.60, 5.20, 0.10, 1.50]];
+  /* hull: 59.0 m overall to the raised ramp, 11.6 m beam, 1.7 m draught (published, EDIC III);
+     [x, half beam, bottom] as before; the sheer 1.50 aft of the well and 1.85 along it (the coaming
+     top, L1), the knuckle 0.7 m up with the side 0.22 m in below it (the crease L1 shows running aft
+     from the bow: its height and the flare NOT CONFIRMED) */
+  var EH = [[-29.50, 5.45, -1.20], [-29.00, 5.70, -1.60], [-26.00, 5.80, -1.70], [20.00, 5.80, -1.60],
+            [25.00, 5.80, -1.35], [27.60, 5.60, -0.60], [28.60, 5.20, 0.10]];
+  function edicH(x) {
+    var r = tab(EH, x), well = x >= -9.0;
+    return { hb: r[0], zb: r[1], zs: well ? 1.85 : 1.50, zk: 0.70, fk: 0.22, yi: well ? 5.45 : r[0] - 0.1, zf: well ? 0.9 : 1.50 };
+  }
   function edic(B) {
-    var s, i;
-    hull(B.paint, EH, 0.35);
-    K.box(B.deck, -9.0, 27.9, -5.35, 5.35, 1.515, 1.54);
+    var s, i, x;
+    uHull(B, [-29.5, -29.0, -27.5, -26.0, -20, -14, -9.06, -8.98, -4, 3, 10, 16, 20, 22.5, 25, 26.3, 27.6, 28.1, 28.6], edicH);
+    K.box(B.deck, -8.95, 28.3, -5.44, 5.44, 1.42, 1.56);
+    for (i = 0; i < 12; i++) K.box(B.dark, -7.0 + i * 2.9, -6.96 + i * 2.9, -5.3, 5.3, 1.56, 1.58);
+    /* tie-down rings in the well, frames down its walls */
+    for (x = -7.5; x < 26; x += 2.4) for (i = -2; i <= 2; i++) K.cylZ(B.dark, x, i * 2.1, 1.56, 1.6, 0.13, 6);
+    for (s = -1; s <= 1; s += 2) wallFrames(B, s, 5.45, -8.6, 26.0, 1.8, 1.56, function () { return 1.85; });
     for (s = -1; s <= 1; s += 2) {
-      /* the low coaming along the vehicle well with its rails (L1), the high bow walls beside
-         the ramp (L1, L3: their tops level with the ramp's, 3.3 m) */
-      K.box(B.paint, -9.0, 27.9, s > 0 ? 5.45 : -5.78, s > 0 ? 5.78 : -5.45, 1.50, 1.85);
+      /* the high bow walls beside the ramp (L1, L3: their tops level with the ramp's, 3.3 m), the
+         door in each inner face and the ladder up its back (L1) */
       K.box(B.paint, 26.4, 28.6, s > 0 ? 2.80 : -5.70, s > 0 ? 5.70 : -2.80, 0.10, 3.30);
-      rail(B, [[-9.0, s * 5.62], [26.4, s * 5.62]], 2.85);
-      rail(B, [[-9.0, s * 5.62], [26.4, s * 5.62]], 2.35);
-      for (i = 0; i < 10; i++) K.bar(B.dark, [-8.5 + i * 3.6, s * 5.62, 1.85], [-8.5 + i * 3.6, s * 5.62, 2.85], 0.035);
-      /* bitts along the well */
-      for (i = 0; i < 3; i++) K.cylZ(B.dark, -4.0 + i * 12.0, s * 4.9, 1.53, 1.85, 0.12, 8);
+      K.box(B.paint, 26.2, 28.6, s > 0 ? 5.62 : -5.78, s > 0 ? 5.78 : -5.62, 3.1, 3.38);
+      K.box(B.dark, 26.9, 27.8, s > 0 ? 2.78 : -2.82, s > 0 ? 2.82 : -2.78, 1.6, 3.0);
+      K.bar(B.dark, [26.37, s * 4.0, 1.85], [26.37, s * 4.0, 3.3], 0.04); K.bar(B.dark, [26.37, s * 4.5, 1.85], [26.37, s * 4.5, 3.3], 0.04);
+      for (i = 1; i < 5; i++) K.bar(B.dark, [26.37, s * 4.0, 1.85 + i * 0.3], [26.37, s * 4.5, 1.85 + i * 0.3], 0.03);
+      rail3(B, [[26.5, s * 5.55, 3.3], [28.5, s * 5.55, 3.3], [28.5, s * 2.95, 3.3]], 1.0);
+      /* the rails along the coaming, bitts and bollards */
+      rail3(B, [[-9.0, s * 5.62, 1.85], [26.4, s * 5.62, 1.85]], 1.0);
+      for (i = 0; i < 3; i++) bitt(B, -4.0 + i * 12.0, s * 5.05, 1.56);
+      [8.0, 20.0].forEach(function (bx) { K.cylZ(B.dark, bx, s * 5.6, 1.85, 2.10, 0.12, 8); });
+      K.cylZ(B.dark, 27.5, s * 4.3, 3.30, 3.62, 0.14, 8); K.cylZ(B.dark, 26.9, s * 4.3, 3.30, 3.62, 0.14, 8);
+      /* the strakes: rubbing strake at the knuckle, the gunwale bar under the sheer */
+      K.box(B.dark, -29.0, 27.6, s > 0 ? 5.58 : -5.70, s > 0 ? 5.70 : -5.58, 0.64, 0.78);
+      K.box(B.dark, -29.0, 28.3, s > 0 ? 5.78 : -5.88, s > 0 ? 5.88 : -5.78, 1.38, 1.48);
     }
     /* the ramp, raised (L1 shows it lowered; the section the closed bow takes in L2, L3) */
-    K.profY(B.paint, [[28.45, 0.20], [29.50, 3.30], [29.25, 3.35], [28.20, 0.25]], -2.80, 2.80);
-    for (i = 0; i < 4; i++) K.profY(B.dark, [[28.50 + 0.25 * i, 0.4 + 0.75 * i], [28.62 + 0.25 * i, 0.4 + 0.75 * i], [28.70 + 0.25 * i, 0.6 + 0.75 * i], [28.58 + 0.25 * i, 0.6 + 0.75 * i]], -2.6, 2.6);
-    /* the covered crane at the port forward corner of the well (L1) */
-    K.cylZ(B.light, 24.6, 4.85, 1.85, 3.60, 0.30, 12);
-    K.bar(B.light, [24.6, 4.85, 3.50], [26.2, 4.40, 5.10], 0.55);
-    /* the aft superstructure (L1; heights L3): deckhouse, wheelhouse with the bridge wings, mast */
-    K.box(B.light, -28.5, -9.0, -4.80, 4.80, 1.50, 3.30);
-    K.box(B.dark, -9.03, -9.0, -4.0, 4.0, 2.10, 2.60);
-    K.box(B.light, -16.5, -10.5, -2.50, 2.50, 3.30, 5.20);
-    K.box(B.glass, -10.52, -10.45, -2.30, 2.30, 4.40, 4.85);
+    ramp(B, 28.35, 0.20, 29.50, 3.30, 2.78, 27.6, 3.3);
+    /* the covered crane at the port forward corner of the well (L1): pedestal, jib, canvas hood */
+    K.cylZ(B.light, 24.6, 4.85, 1.85, 3.20, 0.34, 12);
+    K.box(B.light, 24.1, 25.1, 4.35, 5.35, 3.2, 4.3);
+    K.bar(B.light, [24.6, 4.85, 4.1], [25.9, 4.45, 5.4], 0.38);
+    K.box(B.dark, 24.3, 24.9, 4.5, 5.2, 3.6, 3.9);
+    K.bar(B.dark, [25.9, 4.45, 5.3], [25.9, 4.45, 4.0], 0.03);
+    /* the aft superstructure (L1; heights L3): the deckhouse with its forward top edge chamfered,
+       the wheelhouse on it with the raked window front and the visor over it, the bridge wings
+       with their solid screens (L1), the mast with its platform, radar and yard */
+    K.profY(B.light, [[-28.5, 1.50], [-9.0, 1.50], [-9.0, 3.0], [-9.3, 3.30], [-28.5, 3.30]], -4.80, 4.80);
+    K.box(B.light, -28.6, -8.9, -4.88, 4.88, 3.30, 3.38);
+    K.profY(B.light, [[-16.5, 3.30], [-10.5, 3.30], [-10.5, 4.30], [-10.85, 5.0], [-11.0, 5.20], [-16.5, 5.20]], -2.50, 2.50);
+    K.box(B.light, -16.7, -10.4, -2.65, 2.65, 5.20, 5.30);
+    K.profY(B.glass, [[-10.48, 4.35], [-10.46, 4.38], [-10.81, 5.0], [-10.84, 4.98]], -2.3, 2.3);
+    for (i = 0; i < 4; i++) K.profY(B.light, [[-10.5 - 0.02, 4.33], [-10.5 + 0.02, 4.33], [-10.83 + 0.02, 5.0], [-10.83 - 0.02, 5.0]], -1.75 + i * 1.17 - 0.04, -1.75 + i * 1.17 + 0.04);
     for (s = -1; s <= 1; s += 2) {
       K.box(B.glass, -15.8, -11.2, s > 0 ? 2.50 : -2.52, s > 0 ? 2.52 : -2.50, 4.40, 4.85);
-      K.box(B.light, -11.6, -10.5, s > 0 ? 2.50 : -4.70, s > 0 ? 4.70 : -2.50, 3.30, 3.42);
-      rail(B, [[-28.4, s * 4.75], [-9.1, s * 4.75]], 4.25);
-      /* rafts in their canisters at the after end of the deckhouse roof (L1) */
-      K.cyl(B.light, [-26.8, s * 3.6, 3.62], [-25.6, s * 3.6, 3.62], 0.30, 0.30, 10);
+      for (i = 0; i < 4; i++) K.box(B.light, -15.8 + i * 1.5, -15.7 + i * 1.5, s > 0 ? 2.50 : -2.53, s > 0 ? 2.53 : -2.50, 4.40, 4.85);
+      /* the wing: its deck, the solid screen round it, a window in the screen */
+      K.box(B.light, -12.2, -10.4, s > 0 ? 2.50 : -4.75, s > 0 ? 4.75 : -2.50, 3.30, 3.44);
+      K.box(B.light, -10.55, -10.4, s > 0 ? 2.50 : -4.75, s > 0 ? 4.75 : -2.50, 3.44, 4.35);
+      K.box(B.light, -12.2, -10.4, s > 0 ? 4.60 : -4.75, s > 0 ? 4.75 : -4.60, 3.44, 4.35);
+      K.box(B.light, -11.6, -10.7, s > 0 ? 4.45 : -4.65, s > 0 ? 4.65 : -4.45, 4.35, 4.60);
+      K.box(B.dark, -10.4, -10.38, s * 3.0 - 0.3, s * 3.0 + 0.3, 3.9, 4.2);
+      rail3(B, [[-28.4, s * 4.75, 3.38], [-12.3, s * 4.75, 3.38]], 0.95);
+      /* rafts in their canisters at the after end of the deckhouse roof (L1), a lifebuoy */
+      raftCan(B, -26.2, s * 3.6, 3.38); raftCan(B, -24.4, s * 3.6, 3.38);
+      lifebuoy(B, -12.2, s * 4.76, 3.95, s);
     }
-    rail(B, [[-10.6, 4.70], [-10.6, -4.70]], 4.25);
-    K.cylZ(B.dark, -13.5, 0, 5.20, 10.20, 0.10, 8);
+    rail3(B, [[-28.4, 4.75, 3.38], [-28.4, -4.75, 3.38]], 0.95);
+    rail3(B, [[-16.6, 2.6, 5.30], [-10.6, 2.6, 5.30], [-10.6, -2.6, 5.30], [-16.6, -2.6, 5.30], [-16.6, 2.6, 5.30]], 0.85);
+    /* the mast (L1): a tapered pole from the wheelhouse roof, its platform with the radar, the yard,
+       the lamps and two tall whips */
+    K.cyl(B.light, [-13.5, 0, 5.30], [-13.5, 0, 10.20], 0.22, 0.09, 8);
+    K.box(B.light, -14.1, -12.9, -0.6, 0.6, 7.0, 7.1);
+    rail3(B, [[-14.1, 0.6, 7.1], [-12.9, 0.6, 7.1], [-12.9, -0.6, 7.1], [-14.1, -0.6, 7.1], [-14.1, 0.6, 7.1]], 0.5);
+    K.box(B.dark, -13.65, -13.35, -1.1, 1.1, 7.55, 7.68);
+    K.cylZ(B.dark, -13.5, 0, 7.1, 7.55, 0.1, 8);
     K.bar(B.dark, [-13.5, -1.30, 8.40], [-13.5, 1.30, 8.40], 0.06);
-    K.box(B.dark, -13.9, -13.1, -0.40, 0.40, 6.90, 7.00);
-    K.box(B.dark, -13.6, -13.4, -0.65, 0.65, 7.05, 7.20);
-    K.box(B.team, -15.8, -14.2, -2.20, -1.20, 5.20, 5.23);
-    K.box(B.team, -15.8, -14.2, 1.20, 2.20, 5.20, 5.23);
-    /* fittings (the detail pass, 2026-11; L1 shows rails, bitts, rafts and the deckhouse's ports;
-       sizes and spacings typical, NOT CONFIRMED one by one) */
+    K.cylZ(B.light, -13.5, 0, 9.4, 9.6, 0.12, 8); K.cylZ(B.light, -13.5, 0, 10.2, 10.35, 0.08, 8);
+    for (s = -1; s <= 1; s += 2) {
+      K.cyl(B.dark, [-16.2, s * 2.3, 5.30], [-16.6, s * 2.6, 10.0], 0.035, 0.02, 4);
+      K.cylZ(B.light, -13.5, s * 1.2, 8.25, 8.4, 0.07, 6);
+    }
+    K.box(B.team, -15.8, -14.2, -2.20, -1.20, 5.30, 5.33);
+    K.box(B.team, -15.8, -14.2, 1.20, 2.20, 5.30, 5.33);
+    /* fittings (the detail pass; sizes typical, NOT CONFIRMED one by one) */
     for (s = -1; s <= 1; s += 2) {
       var ys = s * 5.80;
-      /* the boot-topping and a rubbing strake along the side */
-      K.box(B.dark, -28.8, 27.4, s > 0 ? ys : ys - 0.025, s > 0 ? ys + 0.025 : ys, -0.15, 0.30);
-      K.box(B.dark, -29.0, 27.9, s > 0 ? ys : ys - 0.10, s > 0 ? ys + 0.10 : ys, 1.30, 1.45);
       /* scuttles under the deckhouse, ports and doors in its sides */
-      for (i = 0; i < 8; i++) K.cyl(B.glass, [-27.0 + i * 2.3, ys - 0.02, 0.85], [-27.0 + i * 2.3, ys + s * 0.03, 0.85], 0.15, 0.15, 8);
+      for (i = 0; i < 8; i++) K.cyl(B.glass, [-27.0 + i * 2.3, ys - s * 0.02, 0.95], [-27.0 + i * 2.3, ys + s * 0.03, 0.95], 0.15, 0.15, 8);
       for (i = 0; i < 6; i++) K.box(B.glass, -26.5 + i * 2.9, -26.1 + i * 2.9, s > 0 ? 4.80 : -4.82, s > 0 ? 4.82 : -4.80, 2.35, 2.75);
       K.box(B.dark, -12.8, -12.0, s > 0 ? 4.80 : -4.82, s > 0 ? 4.82 : -4.80, 1.55, 3.05);
+      K.box(B.dark, -22.8, -22.0, s > 0 ? 4.80 : -4.82, s > 0 ? 4.82 : -4.80, 1.55, 3.05);
       /* the side decks abreast the deckhouse: their rail, bitts and fairleads */
-      rail(B, [[-29.3, s * 5.62], [-9.0, s * 5.62]], 2.45);
-      rail(B, [[-29.3, s * 5.62], [-9.0, s * 5.62]], 2.00);
-      for (i = 0; i < 6; i++) K.bar(B.dark, [-29.2 + i * 4.0, s * 5.62, 1.52], [-29.2 + i * 4.0, s * 5.62, 2.45], 0.035);
+      rail3(B, [[-29.3, s * 5.62, 1.50], [-9.0, s * 5.62, 1.50]], 1.0);
       [-27.5, -14.0].forEach(function (bx) {
-        K.cylZ(B.dark, bx, s * 5.15, 1.52, 1.90, 0.13, 8); K.cylZ(B.dark, bx + 0.6, s * 5.15, 1.52, 1.90, 0.13, 8);
+        bitt(B, bx + 0.3, s * 5.15, 1.50);
         K.box(B.dark, bx - 0.1, bx + 0.7, s > 0 ? 5.6 : -5.85, s > 0 ? 5.85 : -5.6, 1.50, 1.75);
       });
-      /* bollards on the bow walls and the well's coaming */
-      K.cylZ(B.dark, 27.5, s * 4.3, 3.30, 3.62, 0.14, 8); K.cylZ(B.dark, 26.9, s * 4.3, 3.30, 3.62, 0.14, 8);
-      [8.0, 20.0].forEach(function (bx) { K.cylZ(B.dark, bx, s * 5.6, 1.85, 2.10, 0.12, 8); });
       /* the kedge anchor in its hawse on the quarter */
-      K.cyl(B.dark, [-26.0, ys - 0.02, 0.85 + 0.0], [-26.0, ys + s * 0.06, 0.85], 0.32, 0.32, 10);
+      K.cyl(B.dark, [-26.0, ys - s * 0.02, 0.95], [-26.0, ys + s * 0.06, 0.95], 0.32, 0.32, 10);
       K.box(B.dark, -26.15, -25.85, s > 0 ? ys + 0.02 : ys - 0.14, s > 0 ? ys + 0.14 : ys - 0.02, -0.2, 0.75);
       /* ladders from the well up to the deckhouse roof */
       K.bar(B.dark, [-8.9, s * 3.2, 1.55], [-8.9, s * 3.2, 3.30], 0.04);
       K.bar(B.dark, [-8.9, s * 3.7, 1.55], [-8.9, s * 3.7, 3.30], 0.04);
       for (i = 1; i < 6; i++) K.bar(B.dark, [-8.9, s * 3.2, 1.55 + i * 0.3], [-8.9, s * 3.7, 1.55 + i * 0.3], 0.03);
-      /* mushroom vents and the engine-room ventilator on the deckhouse roof, the whips */
-      K.cylZ(B.light, -22.0, s * 2.8, 3.30, 3.90, 0.16, 8); K.cylZ(B.light, -22.0, s * 2.8, 3.90, 4.08, 0.32, 8);
-      K.box(B.light, -20.0, -18.6, s > 0 ? 1.0 : -2.2, s > 0 ? 2.2 : -1.0, 3.30, 4.10);
-      K.box(B.dark, -20.02, -19.98, s > 0 ? 1.1 : -2.1, s > 0 ? 2.1 : -1.1, 3.45, 3.95);
-      K.cyl(B.dark, [-16.2, s * 2.3, 5.20], [-16.6, s * 2.6, 10.0], 0.035, 0.02, 4);
-      /* navigation lights on the bridge wings, a searchlight */
-      K.box(B.light, -11.0, -10.7, s > 0 ? 4.45 : -4.65, s > 0 ? 4.65 : -4.45, 3.42, 3.75);
-      K.cylZ(B.dark, -11.0, s * 1.8, 5.20, 5.50, 0.06, 6);
-      K.cylX(B.light, -11.2, -10.8, s * 1.8, 5.62, 0.18, 10);
+      /* doors and windows in the deckhouse front, vents and the engine-room ventilator on the roof */
+      K.box(B.dark, -8.98, -8.95, s * 1.6 - 0.4, s * 1.6 + 0.4, 1.56, 3.0);
+      for (i = 0; i < 2; i++) K.box(B.glass, -8.98, -8.95, s * (2.7 + i * 1.1) - 0.3, s * (2.7 + i * 1.1) + 0.3, 2.3, 2.75);
+      vent(B, -22.0, s * 2.8, 3.38, 0.16);
+      K.box(B.light, -20.0, -18.6, s > 0 ? 1.0 : -2.2, s > 0 ? 2.2 : -1.0, 3.38, 4.10);
+      for (i = 0; i < 5; i++) K.box(B.dark, -20.02, -19.98, s > 0 ? 1.1 : -2.1, s > 0 ? 2.1 : -1.1, 3.5 + i * 0.11, 3.56 + i * 0.11);
+      /* the exhausts abaft the wheelhouse, the searchlights */
+      K.cyl(B.dark, [-17.6, s * 1.6, 3.38], [-17.6, s * 1.6, 6.0], 0.16, 0.16, 8);
+      K.cylZ(B.dark, -11.0, s * 1.8, 5.30, 5.55, 0.06, 6);
+      K.cylX(B.light, -11.2, -10.8, s * 1.8, 5.65, 0.18, 10);
     }
-    /* rails round the wheelhouse roof, across the stern, the deck's panel seams in the well */
-    rail(B, [[-16.4, 2.42], [-10.6, 2.42], [-10.6, -2.42], [-16.4, -2.42], [-16.4, 2.42]], 6.05);
-    for (i = 0; i < 8; i++) K.bar(B.dark, [-16.4 + (i % 4) * 1.95, i < 4 ? 2.42 : -2.42, 5.20], [-16.4 + (i % 4) * 1.95, i < 4 ? 2.42 : -2.42, 6.05], 0.03);
-    rail(B, [[-29.35, 5.5], [-29.35, -5.5]], 2.45);
-    for (i = 0; i < 12; i++) K.box(B.dark, -7.0 + i * 2.9, -6.96 + i * 2.9, -5.3, 5.3, 1.54, 1.548);
-    K.cyl(B.dark, [28.35, -2.7, 0.22], [28.35, 2.7, 0.22], 0.16, 0.16, 8);                     /* the ramp's hinge */
+    rail3(B, [[-29.35, 5.5, 1.50], [-29.35, -5.5, 1.50]], 1.0);
   }
 
   /* ---------------------------------------------------------------- CTM (T1-T3) */
   var CTM_P = { key: "frnav_ctm", base: "#a9adb0", blots: [["#b1b5b8", 9, 55], ["#a1a5a8", 9, 50]], seed: 1965 };
-  /* 23.8 x 6.35 m (published); T1 side-on at 39.0 px/m: X = 11.9 - (px - 138) / 39.0,
-     Z = (518 - py) / 39.0 */
-  var CH = [[-11.90, 3.05, -0.90, 0.30], [-11.50, 3.175, -1.20, 0.30], [6.00, 3.175, -1.10, 0.30], [7.75, 3.00, -0.20, 0.30]];
+  /* 23.8 x 6.35 m (published); T1 side-on at 39.0 px/m: X = 11.9 - (px - 138) / 39.0, Z = (518 - py)
+     / 39.0.  Read again on a 10 px grid (rework): the sheer runs STRAIGHT from 2.46 at the wall's
+     forward end (px 230, X 9.54) to 1.62 at the transom (px 1065) - the side is one plate from bow
+     to stern, the after deck inside it (the earlier model stepped the side down at the wheelhouse);
+     the wall's front rises to 2.72 at the bow (px 140) and rakes down beside the ramp; the
+     anti-fouling red shows at the waterline px 320 - 745; the two square ports at px 585 and 817
+     (X 0.44, -5.51), 0.65 - 0.9 up */
+  var CH2 = [[-11.90, 3.05, -0.90], [-11.50, 3.175, -1.20], [6.00, 3.175, -1.10], [7.75, 3.00, -0.20]];
+  function ctmZs(x) { return Math.min(2.46, 1.62 + (x + 11.9) * 0.84 / 21.44); }
+  function ctmH(x) {
+    var r = tab(CH2, x), well = x >= -7.4;
+    return { hb: r[0], zb: r[1], zs: ctmZs(x), zk: 0.95, fk: 0.07, yi: well ? 2.55 : r[0] - 0.12, zf: well ? -0.3 : 1.62 };
+  }
   function ctm(B) {
-    var s, i;
-    hull(B.paint, CH, 0.30);
-    K.box(B.deck, -6.2, 7.6, -2.55, 2.55, 0.315, 0.34);
-    for (s = -1; s <= 1; s += 2) {
-      /* the wing walls, their tops at 2.46 forward to 2.20 aft (T1), raked at the bow to the ramp */
-      K.profY(B.paint, [[-7.40, 0.30], [8.72, 0.30], [11.60, 2.50], [9.54, 2.46], [-7.40, 2.20]], s > 0 ? 2.55 : -3.175, s > 0 ? 3.175 : -2.55);
-      /* the scuttle and port in the wall (T1) */
-      K.box(B.dark, 1.2, 1.6, s > 0 ? 3.17 : -3.19, s > 0 ? 3.19 : -3.17, 1.20, 1.45);
-      K.box(B.dark, -5.3, -4.9, s > 0 ? 3.17 : -3.19, s > 0 ? 3.19 : -3.17, 1.20, 1.45);
-      rail(B, [[-7.3, s * 2.86], [9.5, s * 2.86]], 3.30);
-      for (i = 0; i < 6; i++) K.bar(B.dark, [-7.0 + i * 3.2, s * 2.86, 2.45], [-7.0 + i * 3.2, s * 2.86, 3.30], 0.03);
-    }
+    var s, i, x;
+    uHull(B, [-11.9, -11.5, -10.0, -7.46, -7.38, -4.0, 0.0, 4.0, 6.0, 6.9, 7.75], ctmH);
+    K.box(B.deck, -7.36, 7.7, -2.54, 2.54, 0.24, 0.36);
+    for (i = 0; i < 6; i++) K.box(B.dark, -5.0 + i * 2.2, -4.96 + i * 2.2, -2.5, 2.5, 0.36, 0.38);
+    for (x = -6.4; x < 7.3; x += 1.6) for (i = -1; i <= 1; i++) K.cylZ(B.dark, x, i * 1.6, 0.36, 0.4, 0.1, 6);
+    for (s = -1; s <= 1; s += 2) wallFrames(B, s, 2.55, -7.0, 7.4, 1.2, 0.36, ctmZs);
+    /* the wall's forward ends: their tops rising to 2.72, the front raked beside the ramp (T1) */
+    for (s = -1; s <= 1; s += 2) K.profY(B.paint, [[7.6, -0.15], [8.5, 0.10], [11.85, 2.72], [9.54, 2.46], [7.6, ctmZs(7.6)]], s > 0 ? 2.55 : -3.0, s > 0 ? 3.0 : -2.55);
     /* the ramp, raised: its top 2.74 m at the bow, its toe at the waterline (T1) */
-    K.profY(B.paint, [[7.75, 0.05], [11.90, 2.74], [11.70, 2.80], [7.55, 0.15]], -2.55, 2.55);
-    /* the after deck over the engines, the wheelhouse aft (T1, T2, T3) */
-    K.box(B.paint, -11.9, -7.4, -3.05, 3.05, 0.30, 1.62);
-    K.box(B.light, -9.9, -7.4, -1.10, 1.10, 1.62, 3.80);
-    K.box(B.glass, -7.42, -7.36, -0.95, 0.95, 3.10, 3.50);
+    ramp(B, 7.75, 0.05, 11.90, 2.74, 2.5, 10.2, 2.55);
+    /* the wheelhouse aft (T1, T2, T3): the window front raked, a visor, windows all round, the door,
+       the lifebuoys on its sides (T1), the pole mast with the radar (T2), lamps, a searchlight */
+    K.profY(B.light, [[-9.9, 1.62], [-7.4, 1.62], [-7.4, 3.0], [-7.6, 3.55], [-7.7, 3.80], [-9.9, 3.80]], -1.10, 1.10);
+    K.box(B.light, -10.0, -7.5, -1.22, 1.22, 3.80, 3.88);
+    K.profY(B.glass, [[-7.39, 3.05], [-7.37, 3.08], [-7.57, 3.56], [-7.59, 3.53]], -0.98, 0.98);
+    for (i = 0; i < 3; i++) K.profY(B.light, [[-7.41, 3.03], [-7.36, 3.03], [-7.56, 3.57], [-7.61, 3.57]], -0.36 + i * 0.72 - 0.03, -0.36 + i * 0.72 + 0.03);
+    K.box(B.glass, -9.93, -9.9, -0.8, 0.8, 3.1, 3.5);
     for (s = -1; s <= 1; s += 2) {
-      K.box(B.glass, -9.4, -8.0, s > 0 ? 1.10 : -1.12, s > 0 ? 1.12 : -1.10, 3.10, 3.45);
-      K.cylZ(B.dark, -11.3, s * 2.5, 1.62, 1.95, 0.12, 8);
-      rail(B, [[-11.7, s * 2.95], [-7.5, s * 2.95]], 2.45);
+      for (i = 0; i < 2; i++) K.box(B.glass, -9.5 + i * 0.8, -8.9 + i * 0.8, s > 0 ? 1.10 : -1.12, s > 0 ? 1.12 : -1.10, 3.10, 3.45);
+      K.box(B.dark, -9.75, -9.1, s > 0 ? 1.10 : -1.115, s > 0 ? 1.115 : -1.10, 1.70, 2.95);
+      lifebuoy(B, -8.1, s * 1.1, 2.45, s);
+      K.box(B.light, -7.6, -7.4, s > 0 ? 1.12 : -1.30, s > 0 ? 1.30 : -1.12, 3.45, 3.62);
     }
-    /* the winch drum at the stern (T2), the pole mast with its radar (T2) */
-    K.cylY(B.dark, -11.0, 0.8, 1.9, 1.95, 0.30, 12);
-    K.cylZ(B.dark, -8.8, 0, 3.80, 6.40, 0.06, 8);
+    rail3(B, [[-9.9, 1.05, 3.88], [-7.6, 1.05, 3.88], [-7.6, -1.05, 3.88], [-9.9, -1.05, 3.88], [-9.9, 1.05, 3.88]], 0.5);
+    K.cylZ(B.dark, -8.8, 0, 3.88, 6.40, 0.06, 8);
+    K.box(B.dark, -9.15, -8.45, -0.12, 0.12, 5.4, 5.48);
     K.cylZ(B.light, -8.8, 0, 5.70, 5.95, 0.28, 12);
-    K.box(B.team, -9.7, -8.9, -0.90, -0.40, 3.80, 3.83);
-    K.box(B.team, -9.7, -8.9, 0.40, 0.90, 3.80, 3.83);
-    /* fittings (the detail pass, 2026-11; T1-T3 show the rails, bitts and the wheelhouse's door
-       and windows; sizes typical, NOT CONFIRMED one by one) */
+    K.cylZ(B.light, -8.8, 0, 6.40, 6.55, 0.07, 6);
+    K.cylX(B.light, -7.95, -7.6, 0.6, 4.05, 0.14, 10); K.cylZ(B.dark, -7.8, 0.6, 3.88, 3.95, 0.05, 6);
+    K.cyl(B.dark, [-8.6, 0.6, 3.88], [-8.9, 0.75, 7.0], 0.03, 0.015, 4);
+    K.box(B.team, -9.7, -8.9, -0.90, -0.40, 3.88, 3.91);
+    K.box(B.team, -9.7, -8.9, 0.40, 0.90, 3.88, 3.91);
+    /* the after deck: the winch drum at the stern (T2), bitts, fairleads, vents, the exhausts, the
+       raft canisters, the ladder down into the well, its rails */
+    K.cylY(B.dark, -11.0, 0.8, 1.9, 1.95, 0.30, 12);
+    K.cylY(B.dark, -11.0, 0.7, 2.0, 1.95, 0.42, 12);
+    K.box(B.dark, -11.4, -10.6, 0.65, 2.05, 1.62, 1.68);
     for (s = -1; s <= 1; s += 2) {
       var ys = s * 3.175;
-      K.box(B.dark, -11.6, 7.6, s > 0 ? ys : ys - 0.025, s > 0 ? ys + 0.025 : ys, -0.15, 0.22);      /* boot-topping */
-      K.box(B.dark, -11.8, 8.6, s > 0 ? ys : ys - 0.09, s > 0 ? ys + 0.09 : ys, 0.95, 1.08);        /* rubbing strake */
-      /* bitts on the wing tops and the after deck, fairleads */
-      [-6.0, 4.0].forEach(function (bx) {
-        var zz = 2.20 + (bx + 7.4) * (0.26 / 16.9);
-        K.cylZ(B.dark, bx, s * 2.86, zz, zz + 0.28, 0.1, 8); K.cylZ(B.dark, bx + 0.45, s * 2.86, zz, zz + 0.28, 0.1, 8);
-      });
-      K.cylZ(B.dark, -10.2, s * 2.5, 1.62, 1.95, 0.12, 8);
-      K.box(B.dark, -11.0, -10.5, s > 0 ? 2.95 : -3.12, s > 0 ? 3.12 : -2.95, 1.62, 1.85);
-      /* the after deck's rail posts, the engine-room vents and the exhausts */
-      for (i = 0; i < 3; i++) K.bar(B.dark, [-11.7 + i * 2.0, s * 2.95, 1.62], [-11.7 + i * 2.0, s * 2.95, 2.45], 0.03);
-      K.cylZ(B.light, -10.6, s * 1.6, 1.62, 2.10, 0.13, 8); K.cylZ(B.light, -10.6, s * 1.6, 2.10, 2.24, 0.26, 8);
-      K.cyl(B.dark, [-9.95, s * 1.3, 3.0], [-9.95, s * 1.3, 4.4], 0.09, 0.09, 8);
-      /* the wheelhouse: door, the rail round its roof, nav lights */
-      K.box(B.dark, -9.2, -8.4, s > 0 ? 1.10 : -1.115, s > 0 ? 1.115 : -1.10, 1.70, 2.95);
-      K.box(B.light, -7.6, -7.4, s > 0 ? 1.12 : -1.30, s > 0 ? 1.30 : -1.12, 3.45, 3.62);
-      rail(B, [[-9.8, s * 1.05], [-7.5, s * 1.05]], 4.35);
-      K.bar(B.dark, [-9.8, s * 1.05, 3.8], [-9.8, s * 1.05, 4.35], 0.03);
-      K.bar(B.dark, [-7.5, s * 1.05, 3.8], [-7.5, s * 1.05, 4.35], 0.03);
-      /* the ramp's hinge lugs and the bow wall's stanchions */
-      K.box(B.dark, 7.5, 7.9, s > 0 ? 2.2 : -2.5, s > 0 ? 2.5 : -2.2, 0.0, 0.35);
+      K.box(B.dark, -11.8, 8.6, s > 0 ? ys : ys - 0.09, s > 0 ? ys + 0.09 : ys, 0.90, 1.02);          /* rubbing strake */
+      /* the two ports (T1) */
+      K.box(B.dark, 0.19, 0.69, s > 0 ? ys - 0.01 : ys - 0.03, s > 0 ? ys + 0.03 : ys + 0.01, 0.65, 0.90);
+      K.box(B.dark, -5.76, -5.26, s > 0 ? ys - 0.01 : ys - 0.03, s > 0 ? ys + 0.03 : ys + 0.01, 0.62, 0.87);
+      /* bitts on the wall tops and the after deck, fairleads */
+      [-6.0, 4.0].forEach(function (bx) { bitt(B, bx, s * 2.86, ctmZs(bx)); });
+      bitt(B, -10.6, s * 2.5, 1.62);
+      K.box(B.dark, -11.9, -11.3, s > 0 ? 2.95 : -3.12, s > 0 ? 3.12 : -2.95, 1.62, 1.85);
+      vent(B, -10.4, s * 1.75, 1.62, 0.13);
+      K.cyl(B.dark, [-9.95, s * 1.3, 2.9], [-9.95, s * 1.3, 4.4], 0.09, 0.09, 8);
+      K.cyl(B.dark, [-9.95, s * 1.3, 4.4], [-10.2, s * 1.3, 4.55], 0.09, 0.08, 8);
+      raftCan(B, -11.0, s * 2.45, 1.62);
+      /* the rails: along the wall tops and round the after deck */
+      rail3(B, [[-7.3, s * 2.86, ctmZs(-7.3)], [9.5, s * 2.86, ctmZs(9.5)]], 0.9);
+      rail3(B, [[-11.8, s * 2.98, 1.62], [-7.4, s * 2.98, 1.62]], 1.0);
+      /* the ladders from the well deck up to the after deck and the wall tops */
+      for (i = 0; i < 2; i++) K.bar(B.dark, [-7.32, s * (1.6 + i * 0.45), 0.36], [-7.32, s * (1.6 + i * 0.45), 1.62], 0.035);
+      for (i = 1; i < 5; i++) K.bar(B.dark, [-7.32, s * 1.6, 0.36 + i * 0.26], [-7.32, s * 2.05, 0.36 + i * 0.26], 0.03);
     }
-    rail(B, [[-9.8, 1.05], [-9.8, -1.05]], 4.35);
-    K.cyl(B.dark, [-8.6, 0.6, 3.80], [-8.9, 0.75, 7.0], 0.03, 0.015, 4);                        /* whip */
-    for (i = 0; i < 6; i++) K.box(B.dark, -5.0 + i * 2.2, -4.96 + i * 2.2, -2.5, 2.5, 0.34, 0.348); /* deck seams */
-    K.cyl(B.dark, [7.7, -2.4, 0.12], [7.7, 2.4, 0.12], 0.12, 0.12, 8);
+    rail3(B, [[-11.8, 2.98, 1.62], [-11.8, -2.98, 1.62]], 1.0);
   }
   /* a white plate texture (seams, rust and salt runs, scuffs) that the plain colours multiply */
   var _gt;
@@ -1152,11 +1280,13 @@ var HeroFrLandingCraft = (function () {
   }
   function make(key, P, light, fn) {
     return function (THREE, M, C) {
-      var T = K.materials(THREE, C, P, { deck: [0x55595a, 0.9, 0.05], light: [light, 0.82, 0.06] });
-      var g = K.group(THREE, key), B = K.bins(T, ["paint", "deck", "light", "dark", "glass", "team"]);
+      /* red: the anti-fouling under the waterline (T1 shows it on the CTM; the EDIC's is NOT
+         CONFIRMED, its photographs show none of the bottom) */
+      var T = K.materials(THREE, C, P, { deck: [0x55595a, 0.9, 0.05], light: [light, 0.82, 0.06], red: [0x6a2c24, 0.88, 0.04] });
+      var g = K.group(THREE, key), B = K.bins(T, ["paint", "deck", "light", "dark", "glass", "team", "red"]);
       /* the detail pass: the superstructure takes a weathered plate texture too */
       var gt = grimeTex(THREE);
-      if (gt) { T.light.map = gt; B.light.U = []; }
+      if (gt) { T.light.map = gt; B.light.U = []; T.red.map = gt; B.red.U = []; }
       fn(B);
       K.flush(THREE, g, B);
       K.shadows(g);
