@@ -19,6 +19,11 @@
    Hai Lung is a Zwaardvis derivative and us_lcu1610.js the US LCU 1610, different hulls. Each
    hull here is drawn new.
 
+   DETAIL PASS (2026-11): limber holes and casing seam lines, deck hatches, retractable cleats,
+   fin portholes and bridge rails, whips, a weathered plate texture (salt and rust runs); on the
+   Barbe the well rails, bitts and fairleads, the kedge anchor and winch, vents, ladders, a whip,
+   lights.  Fittings typical, NOT CONFIRMED one by one.
+
    REFERENCES (Wikimedia Commons, fetched one at a time through thumb.php into the scratchpad
    q_deusubs_ref; d = metres forward of the after end throughout, px = the drawing as fetched):
      [X1] "Tipo XXIII.svg" at 1920 px: side elevation AND plan of the Type XXIII with a 0 - 30 m
@@ -318,6 +323,23 @@ var HeroDeuSubs = (function () {
       g.globalAlpha = 0.04 + R() * 0.05; g.fillStyle = "#5b5650";
       g.fillRect(R() * S, R() * S, 0.08 * m, (0.4 + R() * 1.2) * m);
     }
+    /* weathering (the detail pass): salt runs from the limber holes, rust at the fastenings,
+       scuffed patches where the paint is renewed in a different shade */
+    for (i = 0; i < 40; i++) {
+      var sx = R() * S, sy = R() * S, sl = (0.5 + R() * 1.8) * m;
+      var gr = g.createLinearGradient(0, sy, 0, sy + sl);
+      var c = R() < 0.6 ? "220,222,218" : "92,58,38";
+      gr.addColorStop(0, "rgba(" + c + ",0.22)"); gr.addColorStop(1, "rgba(" + c + ",0)");
+      g.globalAlpha = 1; g.fillStyle = gr; g.fillRect(sx, sy, (0.04 + R() * 0.08) * m, sl);
+    }
+    for (i = 0; i < 12; i++) {
+      g.globalAlpha = 0.05 + R() * 0.05; g.fillStyle = R() < 0.5 ? "#000000" : "#ffffff";
+      g.fillRect(R() * S, R() * S, (1.5 + R() * 3) * m, (0.6 + R() * 1.4) * m);
+    }
+    for (i = 0; i < 60; i++) {
+      g.globalAlpha = 0.18; g.fillStyle = "#2a2622";
+      g.fillRect(R() * S, Math.round(R() * 16) * m - 1, 2, 2);
+    }
     g.globalAlpha = 1;
   }
   /* deck: painted plate, seams every 1.5 x 2 m, scuffed walkways */
@@ -423,6 +445,62 @@ var HeroDeuSubs = (function () {
   }
   function finLoft(bin, X, levels, n) { loft(bin, levels.map(function (L) { return finRing(X, L, n || 14); })); }
 
+
+  /* ------------------------------------------------------------ fittings (the detail pass, 2026-11)
+     What the photographs show on every one of these boats and the profiles leave out: the rows of
+     limber (free-flooding) holes along the casing, the casing's seam lines, the hatches and the
+     retractable cleats on the deck, portholes in the fin, the fin's rails and the whips. Sizes and
+     spacings are typical, NOT CONFIRMED one by one. Every piece lies on the hull, read off the same
+     stations the hull is lofted from. */
+  /* one quad on the hull's side s between d0..d1 and z0..z1, stood off by off, facing outboard */
+  function hullQuad(bin, st, X, d0, d1, z0, z1, s, NE, k, off) {
+    var y00 = halfAt(st, d0, z0, NE, k), y10 = halfAt(st, d1, z0, NE, k), y11 = halfAt(st, d1, z1, NE, k), y01 = halfAt(st, d0, z1, NE, k);
+    if (!(y00 > 0.05 && y10 > 0.05 && y11 > 0.05 && y01 > 0.05)) return;
+    var A = [X(d0), s * (y00 + off), z0], Bq = [X(d1), s * (y10 + off), z0], Cq = [X(d1), s * (y11 + off), z1], Dq = [X(d0), s * (y01 + off), z1];
+    if (s > 0) { okTri(bin, A, Dq, Cq); okTri(bin, A, Cq, Bq); } else { okTri(bin, A, Bq, Cq); okTri(bin, A, Cq, Dq); }
+  }
+  /* a row of limber holes, w x h, every sp metres from d0 to d1, at dz under the deck line */
+  function limbers(bin, st, X, d0, d1, dz, sp, w, h, NE, k) {
+    for (var s = -1; s <= 1; s += 2) for (var d = d0; d <= d1; d += sp) {
+      var z = stAt(st, d).zt - dz;
+      hullQuad(bin, st, X, d - w / 2, d + w / 2, z - h / 2, z + h / 2, s, NE, k, 0.015);
+    }
+  }
+  /* a seam line (4 cm) along the side at dz under the deck line */
+  function seam(bin, st, X, d0, d1, dz, NE, k) {
+    for (var s = -1; s <= 1; s += 2) for (var d = d0; d < d1 - 0.01; d += 1.0) {
+      var e = Math.min(d1, d + 1.0), za = stAt(st, d).zt - dz;
+      hullQuad(bin, st, X, d, e, za - 0.02, za + 0.02, s, NE, k, 0.01);
+    }
+  }
+  /* a deck hatch: a dark rim ring and a lid, flush on the deck line at d */
+  function hatch(B, st, X, d, r, zt) {
+    var z = zt === undefined ? stAt(st, d).zt : zt;
+    cylZ(B.dark, X(d), 0, z - 0.05, z + 0.05, r + 0.06, 12);
+    cylZ(B.hull, X(d), 0, z - 0.03, z + 0.09, r, 12);
+    box(B.metal, X(d) - 0.05, X(d) + 0.05, -r * 0.7, r * 0.7, z + 0.09, z + 0.13);
+  }
+  /* a pair of retractable cleats raised on the deck at d, y +-yc */
+  function cleats(B, st, X, d, yc, zt) {
+    var z = zt === undefined ? stAt(st, d).zt : zt;
+    for (var s = -1; s <= 1; s += 2) {
+      box(B.metal, X(d) - 0.25, X(d) + 0.25, s * yc - 0.06, s * yc + 0.06, z - 0.03, z + 0.22);
+      box(B.metal, X(d) - 0.35, X(d) + 0.35, s * yc - 0.07, s * yc + 0.07, z + 0.22, z + 0.28);
+    }
+  }
+  /* posts and a wire round a polyline [x, y] (model metres) at z */
+  function finRail(B, pts, z, h, sp) {
+    for (var i = 0; i + 1 < pts.length; i++) {
+      var a = pts[i], b = pts[i + 1], n = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / sp)), m;
+      cyl(B.metal, [a[0], a[1], z + h], [b[0], b[1], z + h], 0.02, 0.02, 3);
+      for (m = (i ? 1 : 0); m <= n; m++) cyl(B.metal, [lerp(a[0], b[0], m / n), lerp(a[1], b[1], m / n), z], [lerp(a[0], b[0], m / n), lerp(a[1], b[1], m / n), z + h], 0.022, 0.022, 3);
+    }
+  }
+  /* a porthole on a fin side at x, half width hw, height z */
+  function porthole(B, x, hw, z, r) {
+    for (var s = -1; s <= 1; s += 2) cyl(B.glass, [x, s * (hw - 0.02), z], [x, s * (hw + 0.025), z], r, r, 8);
+  }
+
   /* ============================================================ HAI: Type XXIII [X1][X2]
      52.8 px/m, the after edge of the rudder at x 36 px, the waterline at y 317.8 px
      (the published 3.66 m draught over the drawn keel at y 511). */
@@ -481,6 +559,14 @@ var HeroDeuSubs = (function () {
       /* the bow planes, low on the bow (side y 448, plan to 2.0 m) [X1] */
       plate(B.hull, px(1680), px(1745), px(1695), px(1735), [0, s * 1.0, pz(448)], [0, s * 2.0, pz(448)], 0.12);
     }
+    /* fittings: limbers and a seam along the casing, hatches fore and aft, cleats, the fin's rail */
+    limbers(B.dark, st, X, 3.0, 31.5, 0.22, 0.45, 0.22, 0.1, NE, KK);
+    seam(B.dark, st, X, 2.0, 32.5, 0.45, NE, KK);
+    hatch(B, st, X, 30.8, 0.32); hatch(B, st, X, 9.0, 0.32); hatch(B, st, X, 12.2, 0.28);
+    cleats(B, st, X, 31.8, 0.5); cleats(B, st, X, 6.0, 0.5); cleats(B, st, X, 20.0, 0.48, pz(287));
+    finRail(B, [[px(925), 0.62], [px(1005), 0.5], [px(1028), 0], [px(1005), -0.5], [px(925), -0.62]], pz(103), 0.8, 0.5);
+    porthole(B, px(990), 0.62, pz(135), 0.09);
+    cyl(B.metal, [px(770), 0, pz(110)], [px(700), 0, pz(110) + 4.2], 0.03, 0.015, 4);              /* the whip */
     /* team: a strip on the walkway forward and one on the fin top aft */
     box(B.team, px(1300), px(1360), -0.36, 0.36, pz(287), pz(287) + 0.03);
     box(B.team, px(775), px(840), -0.45, 0.45, pz(118), pz(118) + 0.05);
@@ -558,6 +644,17 @@ var HeroDeuSubs = (function () {
       cylZ(B.hull, px(128), s * 2.3, zp - 0.25, zp + 1.05, 0.17, 10);
     }
     screw(B.bronze, px(24), 0, pz(447), 1.2, 4, 0.5);
+    /* fittings: two rows of limbers and a seam along the casing, the raised casing's seams,
+       hatches, cleats, the bridge rail, portholes in the fin, a whip */
+    limbers(B.dark, st, X, 4.0, 40.5, 0.35, 0.55, 0.26, 0.12, NE, 0);
+    limbers(B.dark, st, X, 16.0, 37.5, 0.75, 1.1, 0.3, 0.14, NE, 0);
+    seam(B.dark, st, X, 2.0, 42.5, 0.55, NE, 0);
+    for (k = 0; k < 7; k++) box(B.dark, px(1290 + k * 44) - 0.02, px(1290 + k * 44) + 0.02, -0.7, 0.7, pz(325), pz(325) + 0.012);
+    hatch(B, st, X, 9.0, 0.35); hatch(B, st, X, 13.0, 0.32); hatch(B, st, X, 38.6, 0.35);
+    cleats(B, st, X, 40.5, 0.6); cleats(B, st, X, 6.5, 0.55); cleats(B, st, X, 15.2, 0.62);
+    finRail(B, [[px(1120), 0.6], [px(1200), 0.6], [px(1222), 0], [px(1200), -0.6], [px(1120), -0.6]], pz(160), 0.8, 0.5);
+    [1150, 1185].forEach(function (x) { porthole(B, px(x), 0.7, pz(185), 0.08); });
+    cyl(B.metal, [px(930), 0, pz(160)], [px(860), 0, pz(160) + 4.0], 0.03, 0.015, 4);
     /* team: on the raised casing and the fin top */
     box(B.team, px(1400), px(1460), -0.5, 0.5, pz(325), pz(325) + 0.03);
     box(B.team, px(930), px(990), -0.4, 0.4, pz(160), pz(160) + 0.03);
@@ -650,6 +747,16 @@ var HeroDeuSubs = (function () {
     var zp = pz(488);
     for (s = -1; s <= 1; s += 2) plate(B.hull, px(130), px(227), px(145), px(215), [0, s * 0.2, zp], [0, s * 2.3, zp], 0.16);
     screw(B.bronze, px(102), 0, pz(424), 0.8, V.blades, 0.3);
+    /* fittings: limbers (two rows) and a seam along the casing, hatches, cleats, the fin's nose
+       porthole [S2], the bridge rail, a whip */
+    limbers(B.dark, st, X, 6.0, 45.5, 0.3, 0.55, 0.26, 0.12, NE, 0);
+    limbers(B.dark, st, X, 18.0, 44.0, 0.7, 1.1, 0.3, 0.14, NE, 0);
+    seam(B.dark, st, X, 3.0, 47.0, 0.5, NE, 0);
+    hatch(B, st, X, 11.5, 0.35); hatch(B, st, X, 15.0, 0.32); hatch(B, st, X, 39.5, 0.35);
+    cleats(B, st, X, 43.5, 0.65); cleats(B, st, X, 9.0, 0.55); cleats(B, st, X, 17.0, 0.62);
+    porthole(B, px(1255), 0.62, pz(240), 0.09);
+    finRail(B, [[px(1160), 0.55], [px(1240), 0.55], [px(1262), 0], [px(1240), -0.55], [px(1160), -0.55]], pz(207), 0.8, 0.5);
+    cyl(B.metal, [px(925), 0, pz(172)], [px(860), 0, pz(172) + 4.0], 0.03, 0.015, 4);
     /* team: on the bow casing and the fin top */
     box(B.team, px(1600), px(1660), -0.5, 0.5, pz(304), pz(304) + 0.04);
     box(B.team, px(960), px(1020), -0.4, 0.4, pz(170), pz(170) + 0.03);
@@ -671,7 +778,7 @@ var HeroDeuSubs = (function () {
   function buildT212(THREE, M, C) {
     var D = F212, S = D.S, L = 56.0;
     var T = materials(THREE, C, { hull: 0x4a4753, deck: 0x413e49, dark: 0x0d0d10, metal: 0x3a3842, light: 0x8a8578, rough: 0.7 });
-    var g = new THREE.Group(), B = bins(T), s, t;
+    var g = new THREE.Group(), B = bins(T), s, t, k;
     function X(d) { return d - L / 2; }
     function px(x) { return X((x - D.X0) / S); }
     function pz(y) { return (D.YW - y) / S; }
@@ -725,6 +832,18 @@ var HeroDeuSubs = (function () {
     /* the screw: a seven-bladed skewback (en.wikipedia), 3.5 m across [T1], on its hub cone */
     cyl(B.metal, [px(6), 0, za], [px(52), 0, za], 0.3, 0.5, 12);
     screw(B.bronze, px(36), 0, za, 1.75, 7, 0.2);
+    /* fittings: the casing's few flood openings low aft and forward, the seam where the GRP
+       casing meets the pressure hull, the deck's panel lines, hatches, cleats, the fin's rail and
+       portholes, a whip */
+    limbers(B.dark, st, X, 8.0, 15.0, 0.6, 0.6, 0.4, 0.14, NE, 0);
+    limbers(B.dark, st, X, 47.0, 52.0, 0.6, 0.6, 0.4, 0.14, NE, 0);
+    seam(B.dark, st, X, 4.0, 54.0, 0.9, NE, 0);
+    for (k = 0; k < 12; k++) { var dl = 18.0 + k * 2.3; if (dl > 27.5 && dl < 41.2) continue; box(B.dark, X(dl) - 0.02, X(dl) + 0.02, -1.2, 1.2, pz(447), pz(447) + 0.012); }
+    hatch(B, st, X, 21.5, 0.4); hatch(B, st, X, 25.0, 0.36); hatch(B, st, X, 46.5, 0.4);
+    cleats(B, st, X, 49.0, 0.9); cleats(B, st, X, 19.0, 0.9); cleats(B, st, X, 43.0, 0.95);
+    finRail(B, [[px(1200), 0.85], [px(1250), 0.85], [px(1262), 0], [px(1250), -0.85], [px(1200), -0.85]], zt, 0.8, 0.5);
+    [1100, 1140].forEach(function (x) { porthole(B, px(x), 0.95, pz(360), 0.08); });
+    cyl(B.metal, [px(1040), 0, zt], [px(980), 0, zt + 3.6], 0.03, 0.015, 4);
     /* team: on the fin top aft and the deck forward of the fin */
     box(B.team, px(1050), px(1065), -0.55, 0.55, zt, zt + 0.03);
     box(B.team, px(1500), px(1570), -0.7, 0.7, pz(447), pz(447) + 0.04);
@@ -820,6 +939,42 @@ var HeroDeuSubs = (function () {
     [16.3, 18.1, 19.9, 21.7].forEach(function (d2) {
       cyl(B.light, [X(d2 - 0.8), 3.88, 4.05], [X(d2 + 0.8), 3.88, 4.05], 0.45, 0.45, 12);
     });
+    /* fittings (the detail pass; [B1]-[B5] show them, sizes NOT CONFIRMED): the inner rails along
+       the well's edges, bollards and fairleads on the wing tops, the stern kedge anchor and its
+       winch on the platform, mushroom vents, ladders down into the well, hatches on the wings,
+       the wheelhouse's whip, life rings, the stern platform's rail */
+    for (s = -1; s <= 1; s += 2) {
+      rail([[3.2, s * (WI + 0.06)], [s < 0 ? 11.4 : 36.4, s * (WI + 0.06)]], sheer(6.0), 0.9, 1.6);
+      if (s < 0) rail([[27.0, s * (WI + 0.06)], [36.4, s * (WI + 0.06)]], 2.62, 0.9, 1.6);
+      [4.2, 10.5, 33.0, 38.0].forEach(function (d2) {
+        if (s < 0 && d2 === 10.5) return;
+        var zz = sheer(d2);
+        cylZ(B.metal, X(d2), s * 3.7, zz, zz + 0.45, 0.16, 8); cylZ(B.metal, X(d2 + 0.6), s * 3.7, zz, zz + 0.45, 0.16, 8);
+        box(B.metal, X(d2 - 0.15), X(d2 + 0.75), s * 3.55, s * 3.85, zz, zz + 0.05);
+        box(B.metal, X(d2 + 0.05), X(d2 + 0.55), s * HB - 0.12, s * HB + 0.06, zz, zz + 0.28);
+      });
+      [7.0, 31.5].forEach(function (d2) {
+        var zz = sheer(d2);
+        cylZ(B.hull, X(d2), s * 3.2, zz, zz + 0.6, 0.14, 8); ellipsoid(B.hull, [X(d2), s * 3.2, zz + 0.66], 0.26, 0.26, 0.12, 3, 8);
+      });
+      box(B.hull, X(8.0), X(9.4), s * 3.0 - 0.55, s * 3.0 + 0.55, sheer(8.7), sheer(8.7) + 0.12);
+      /* the ladder down the wall into the well */
+      for (k = 0; k < 2; k++) box(B.metal, X(5.0 + k * 0.5), X(5.05 + k * 0.5), s * (WI - 0.08), s * (WI - 0.02), ZW, sheer(5.0));
+      for (k = 1; k < 7; k++) box(B.metal, X(5.0), X(5.55), s * (WI - 0.08), s * (WI - 0.03), ZW + k * 0.3, ZW + k * 0.3 + 0.04);
+      /* a life ring on the wheelhouse side and on the port wall */
+      cyl(B.light, [X(s < 0 ? 24.0 : 14.0), s * (HB + 0.03), s < 0 ? 4.0 : 2.2], [X(s < 0 ? 24.0 : 14.0), s * (HB + 0.1), s < 0 ? 4.0 : 2.2], 0.34, 0.34, 10);
+    }
+    /* the stern platform: the kedge anchor and its winch, its rail */
+    box(B.metal, X(0.6), X(1.6), -0.9, 0.9, 0.94, 1.5);
+    cyl(B.metal, [X(1.1), -0.75, 1.65], [X(1.1), 0.75, 1.65], 0.35, 0.35, 10);
+    box(B.metal, X(0.02), X(0.35), -0.25, 0.25, 0.4, 1.0);
+    box(B.metal, X(0.02), X(0.3), -0.8, 0.8, 0.3, 0.5);
+    rail([[2.7, -3.9], [0.15, -3.9], [0.15, -1.3]], 0.94, 0.9, 1.3);
+    rail([[2.7, 3.9], [0.15, 3.9], [0.15, 1.3]], 0.94, 0.9, 1.3);
+    /* the wheelhouse roof: the whip, two navigation lights, a searchlight */
+    cyl(B.metal, [X(24.0), -4.0, 6.3], [X(23.4), -4.2, 11.0], 0.03, 0.015, 4);
+    [-1.6, -4.3].forEach(function (y) { box(B.light, X(26.5), X(26.8), y - 0.1, y + 0.1, 6.3, 6.6); });
+    cylZ(B.metal, X(26.2), -2.2, 6.3, 6.8, 0.07, 6); cyl(B.light, [X(26.0), -2.2, 6.95], [X(26.45), -2.2, 6.95], 0.2, 0.2, 10);
     /* team: on the wheelhouse roof and the bow wing tops */
     box(B.team, X(24.0), X(26.0), -3.9, -2.0, 6.3, 6.33);
     for (s = -1; s <= 1; s += 2) box(B.team, X(34.0), X(36.0), s * 2.8, s * 4.0, 2.62, 2.65);

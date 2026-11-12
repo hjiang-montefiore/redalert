@@ -824,7 +824,7 @@ var HeroDeuNavy = (function () {
     box(B.team, X(94.5), X(97.5), -1.4, 1.4, 13.2, 13.23);
     flush(THREE, g, B);
     g.add(turretGroup(THREE, T, X(113.6), 0, H.zd(113.6), function (F) { oto76(F, 3); }));
-    hidePad(THREE, g, X(14.0), 0, 5.3 + 0.12);
+    hidePad(THREE, g, X(14.0), 0, 5.3 + 0.20);   /* at the pad surface the deck park stands the helicopter on (parked3d_check C) */
     return g;
   }
 
