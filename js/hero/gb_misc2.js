@@ -144,7 +144,15 @@
    DRAWN (dump.js), against the published figures:
      Sea King HC4  22.66 m over the turning rotors (fuselage 16.69 m as scaled; 18.90 m disc);
                    bbox height 5.62 m (rotor dome 5.33, see above; published 5.13)
-                   3456 tris, 13 draw calls
+                   5962 tris, 16 draw calls (3456 / 13 before the detail pass:
+                   window and windscreen frames and wipers, the intake filter boxes
+                   ahead of the cowl [P1], exhaust lips, the cargo door's rails,
+                   steps and handles, twin nose pitots, a roof whip and three blade
+                   aerials, beacons and sponson-tip nav lights, oleo legs with drag
+                   stays, hubs and brakes, the tail-wheel fork, blade root cuffs
+                   and pitch links, the swashplate; seams, fastener rows, access
+                   panels, oil and rain streaks and grime on the skin sheet.  The
+                   small parts' sizes and the aerials' places are NOT confirmed)
      LST (3)       105.85 x 16.80 m (347 ft = 105.8, 55 ft 2 in = 16.8), mast top 26.6 m over
                    the waterline, keel 3.5 m under it aft     5284 tris, 10 draw calls
      Round Table   125.98 x 18.12 m over the hawses (413 ft = 125.9, 59 ft = 18.0), draught 4.0
@@ -212,6 +220,42 @@ var HeroGbSeaKing = (function () {
       g.beginPath(); g.moveTo(0, pySide(Z(3.20), b)); g.lineTo(TW, pySide(Z(3.20), b)); g.stroke();
       g.beginPath(); g.moveTo(0, pySide(Z(1.30), b)); g.lineTo(TW, pySide(Z(1.30), b)); g.stroke();
     }
+    /* the detail pass: more seams with fastener rows beside them, access
+       panels, rain streaks down the sides, oil and grime under the cowl and
+       along the keel */
+    function seam(x0, y0, x1, y1) {
+      g.strokeStyle = "rgba(0,0,0,0.26)"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.fillStyle = "rgba(0,0,0,0.22)";
+      var L = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)), n = Math.floor(L / 5), j;
+      for (j = 0; j <= n; j++) g.fillRect(x0 + (x1 - x0) * j / Math.max(n, 1) + 1.5, y0 + (y1 - y0) * j / Math.max(n, 1) + 1.5, 1, 1);
+    }
+    for (b = 1; b <= 2; b++) {
+      [[4.6, -5.9, 2.20], [3.3, -5.9, 2.85], [4.4, -5.9, 0.95], [-5.9, -11.0, 2.60], [-5.9, -10.5, 3.20], [0.8, -2.8, 4.10]].forEach(function (q) {
+        seam(pxX(q[0]), pySide(Z(q[2]), b), pxX(q[1]), pySide(Z(q[2]), b));
+      });
+      for (i = 0; i < frames.length; i++) seam(pxX(frames[i]) + 2, pySide(Z(3.6), b), pxX(frames[i]) + 2, pySide(Z(0.8), b));
+      [[2.2, 1.6, 1.7, 1.2], [-1.0, -1.8, 1.8, 1.2], [-3.2, -3.8, 3.1, 2.6], [0.6, -0.3, 4.4, 3.95], [-1.0, -1.8, 4.4, 3.95], [-7.5, -8.2, 3.0, 2.5]].forEach(function (q) {
+        g.strokeStyle = "rgba(0,0,0,0.30)";
+        g.strokeRect(pxX(q[0]), pySide(Z(q[2]), b), pxX(q[1]) - pxX(q[0]), pySide(Z(q[3]), b) - pySide(Z(q[2]), b));
+      });
+      var gg = g.createLinearGradient(0, pySide(Z(2.0), b), 0, pySide(Z(0.6), b));
+      gg.addColorStop(0, "rgba(30,26,18,0)"); gg.addColorStop(1, "rgba(30,26,18,0.22)");
+      g.fillStyle = gg; g.fillRect(0, pySide(Z(2.0), b), TW, pySide(Z(0.6), b) - pySide(Z(2.0), b));
+      /* oil streaks down from the cowl's lower edge */
+      for (i = 0; i < 14; i++) {
+        g.fillStyle = "rgba(16,14,10," + (0.06 + R() * 0.08).toFixed(3) + ")";
+        g.fillRect(pxX(0.6 - R() * 3.2), pySide(Z(3.7), b), 1.5, 12 + R() * 40);
+      }
+    }
+    for (i = 0; i < 220; i++) {
+      g.fillStyle = "rgba(20,20,14," + (0.03 + R() * 0.04).toFixed(3) + ")";
+      g.fillRect(R() * TW, BAND + R() * 2 * BAND, 1, 8 + R() * 26);
+    }
+    [[1.2, 0.0, -5.5, 0.0], [0.9, 0.62, -2.8, 0.62], [0.9, -0.62, -2.8, -0.62], [-3.0, 0.5, -5.8, 0.5], [-3.0, -0.5, -5.8, -0.5]].forEach(function (q) {
+      seam(pxX(q[0]), pyTop(q[1]), pxX(q[2]), pyTop(q[3]));
+      seam(pxX(q[0]), pyBelly(q[1]), pxX(q[2]), pyBelly(q[3]));
+    });
     return cv;
   }
   function skinTexture() {
@@ -265,6 +309,8 @@ var HeroGbSeaKing = (function () {
     var tc = (C && C.team !== undefined) ? C.team : "#4b8fe0";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10 });
+    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     m.disc = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.4, metalness: 0.08,
                                           transparent: true, opacity: 0.05, depthWrite: false });
     return m;
@@ -432,13 +478,75 @@ var HeroGbSeaKing = (function () {
     return solid([a[0], a[1], a[3], a[2]], [b[0], b[1], b[3], b[2]]);
   }
 
+  /* ------------------------------------------------ the detail pass
+     The fittings [D] and [P1] show that the first pass left out: window and
+     windscreen frames, the cargo door's rails and the step, the intake
+     filter boxes ahead of the cowl [P1: the box at the cowl's front], the
+     exhaust lips, aerials and lights, the gear's oleos, hubs and brakes, the
+     rotor head's cuffs and pitch links, the swashplate. */
+  function frameOn(L, secs, x0, x1, z0, z1, off, r) {
+    var p = [[x0, z0], [x1, z0], [x1, z1], [x0, z1]], i;
+    for (i = 0; i < 4; i++) {
+      var a = p[i], b = p[(i + 1) % 4];
+      L.push(bar([a[0], sideY(secs, a[0], a[1]) + off, a[1]], [b[0], sideY(secs, b[0], b[1]) + off, b[1]], r, 4));
+    }
+  }
+  function detail(FUS, D) {
+    var s, i;
+    /* the windscreen frames: the centre post, the bows and the corner posts */
+    for (s = -1; s <= 1; s += 2) {
+      D.dark.push(bar([4.58, s * 0.06, Z(2.40)], [3.98, s * 0.06, Z(2.97)], 0.03, 4));
+      D.dark.push(bar([3.98, s * 0.06, Z(2.97)], [3.93, s * 0.80, Z(2.97)], 0.03, 4));
+      D.dark.push(bar([4.58, s * 0.06, Z(2.40)], [4.45, s * 0.76, Z(2.40)], 0.03, 4));
+      D.dark.push(bar([4.45, s * 0.76, Z(2.40)], [3.93, s * 0.80, Z(2.97)], 0.035, 4));
+      D.dark.push(bar([4.42, s * 0.40, Z(2.48)], [4.15, s * 0.36, Z(2.78)], 0.012, 4));        /* the wiper */
+    }
+    for (s = -1; s <= 1; s += 2) {
+      var m = s > 0 ? function (q) { return q; } : mirrorY;
+      var fr = [];
+      frameOn(fr, FUS, 3.85, 3.05, Z(2.30), Z(2.95), 0.03, 0.022);
+      frameOn(fr, FUS, 4.55, 4.10, Z(1.45), Z(2.05), 0.03, 0.022);
+      var WIN = [[0.87, 0.10], [-0.33, -0.98], [-4.0, -4.7]];
+      for (i = 0; i < WIN.length; i++) frameOn(fr, FUS, WIN[i][0], WIN[i][1], Z(2.17), Z(2.72), 0.03, 0.02);
+      for (i = 0; i < fr.length; i++) D.dark.push(m(fr[i]));
+      /* the engine intake filter box ahead of the cowl [P1], a dark mesh face */
+      D.skin.push(m(box(0.42, 0.40, 0.50, 1.02, 0.36, Z(4.02))));
+      D.dark.push(m(box(0.03, 0.34, 0.42, 1.24, 0.36, Z(4.02))));
+      /* the exhaust's lip */
+      D.metal.push(m(cyl(0.21, 0.23, 0.05, 14, "y", 0.80, 0.81, Z(3.65), true)));
+      /* nav lights on the sponson tips, port red */
+      (s > 0 ? D.lampR : D.lampG).push(sph(0.05, 8, 6, 0.45, s * 1.64, Z(1.18)));
+      /* the sponson's walkway step and the grab handle over it */
+      D.metal.push(m(box(0.40, 0.25, 0.03, 1.75, 1.20, Z(0.78))));
+      D.dark.push(m(bar([2.35, sideY(FUS, 2.35, Z(2.2)) + 0.06, Z(2.2)], [2.35, sideY(FUS, 2.35, Z(2.7)) + 0.06, Z(2.7)], 0.018, 4)));
+    }
+    /* the starboard cargo door's rails, above and below it [P1] */
+    var ry0 = -sideY(FUS, 1.5, Z(3.10)) - 0.04, ry1 = -sideY(FUS, 1.5, Z(0.80)) - 0.04;
+    D.dark.push(bar([2.85, ry0, Z(3.10)], [-0.20, ry0, Z(3.10)], 0.025, 4), bar([2.85, ry1, Z(0.80)], [-0.20, ry1, Z(0.80)], 0.025, 4));
+    D.metal.push(box(0.14, 0.04, 0.04, 0.95, ry1 + 0.02, Z(1.95)));
+    /* the port crew door's handle */
+    D.metal.push(box(0.14, 0.04, 0.04, 2.00, sideY(FUS, 2.0, Z(1.9)) + 0.04, Z(1.90)));
+    /* twin pitot tubes over the nose, aerials (a whip on the roof, blades
+       under the tail cone and on the cowl's back), the anti-collision beacons */
+    for (s = -1; s <= 1; s += 2) D.metal.push(bar([4.60, s * 0.30, Z(2.30)], [5.05, s * 0.30, Z(2.30)], 0.015, 4));
+    D.dark.push(bar([2.6, 0.30, Z(3.84)], [2.3, 0.30, Z(4.70)], 0.012, 4));
+    D.skin.push(vplate2(-7.2, 0, Z(1.92), -0.36, 0.30), vplate2(-3.6, 0, Z(1.04 - 0.43), -0.30, 0.26), vplate2(-2.55, 0, Z(3.86), 0.26, 0.28));
+    D.lampR.push(sph(0.06, 8, 5, -6.4, 0, Z(1.62), 1, 1, 0.7), sph(0.06, 8, 5, -3.0, 0, Z(3.56), 1, 1, 0.7));
+  }
+  /* a blade aerial standing in the x-z plane on (x, y, z), height h (negative
+     hangs down), root chord c, raked aft */
+  function vplate2(x, y, z, h, c) {
+    var t = 0.012, P = [[x + c / 2, z], [x - c / 2, z], [x - c / 2 - Math.abs(h) * 0.45, z + h], [x - c / 2 - Math.abs(h) * 0.45 + c * 0.45, z + h]];
+    return solid(P.map(function (q) { return [q[0], y - t, q[1]]; }), P.map(function (q) { return [q[0], y + t, q[1]]; }));
+  }
+
   /* --------------------------------------------------------------------- build */
   function build(THREE, M, C) {
     V = THREE;
     var T = makeMats(C), g = new V.Group();
     g.name = "seaking_hc4";
     var i, k, s, a;
-    var skin = [], dark = [], metal = [], glass = [], team = [], rub = [];
+    var skin = [], dark = [], metal = [], glass = [], team = [], rub = [], lampR = [], lampG = [];
 
     /* the fuselage: the boat hull from the nose to the step, the tail cone and pylon [D] */
     var FUS = [
@@ -458,7 +566,7 @@ var HeroGbSeaKing = (function () {
       sec(-11.09, 3.50, 4.35, 3.85, 0.12, 0.20, 0.14, 0.7),
       sec(-11.74, 3.82, 4.30, 4.05, 0.08, 0.14, 0.08, 0.8)
     ];
-    var L = loft(FUS, 14, -0.04, 0.06);
+    var L = loft(FUS, 20, -0.04, 0.06);
     for (i = 0; i < L.length; i++) skin.push(L[i]);
 
     /* the engine fairing on the roof, its intakes at the front, round exhausts each side [D][P1] */
@@ -470,7 +578,7 @@ var HeroGbSeaKing = (function () {
       sec(-2.40, 3.62, 4.20, 3.90, 0.62, 0.66, 0.42, 0.5),
       sec(-2.83, 3.50, 3.60, 3.55, 0.50, 0.52, 0.30, 0.6)
     ];
-    L = loft(COWL, 10, -0.06, 0.05);
+    L = loft(COWL, 14, -0.06, 0.05);
     for (i = 0; i < L.length; i++) skin.push(L[i]);
     both(dark, box(0.06, 0.50, 0.34, 0.83, 0.32, Z(4.02)));                  /* intake faces */
     both(dark, cyl(0.20, 0.20, 0.12, 14, "y", 0.80, 0.79, Z(3.65)));          /* exhaust mouths */
@@ -492,19 +600,30 @@ var HeroGbSeaKing = (function () {
     skin.push(mirrorY(sidePanel(FUS, 2.70, 0.85, Z(0.85), Z(3.05), 0.0, 0.03)));
 
     /* stub sponsons and the fixed main gear: one leg, one wheel each side [P1] */
-    var undc = [], undm = [];
+    var undc = [], undm = [], undp = undm;      /* the pistons and hub discs go with the legs */
     for (s = -1; s <= 1; s += 2) {
       var y0 = s * 0.95, y1 = s * 1.62;
       skin.push(solid([[1.55, y0, Z(0.95)], [-0.55, y0, Z(0.95)], [-0.55, y0, Z(1.35)], [1.55, y0, Z(1.35)]],
                       [[1.20, y1, Z(1.02)], [-0.25, y1, Z(1.02)], [-0.25, y1, Z(1.28)], [1.20, y1, Z(1.28)]]));
-      undm.push(bar([MW_X, s * 1.50, Z(1.05)], [MW_X, s * MW_Y, Z(MW_R)], 0.07, 8));
+      /* the leg as an oleo: the bright piston below, the cylinder and its collar above */
+      undm.push(bar([MW_X, s * 1.50, Z(1.05)], [MW_X, s * 1.64, Z(0.62)], 0.075, 10));
+      undm.push(cyl(0.095, 0.095, 0.08, 10, "z", MW_X, s * 1.64, Z(0.62)));
+      undp.push(bar([MW_X, s * 1.64, Z(0.62)], [MW_X, s * (MW_Y - 0.12), Z(MW_R)], 0.055, 10));
       undm.push(bar([MW_X, s * 1.10, Z(0.62)], [MW_X, s * (MW_Y - 0.1), Z(MW_R + 0.12)], 0.035, 6));
-      undc.push(cyl(MW_R, MW_R, 0.22, 16, "y", MW_X, s * MW_Y, Z(MW_R)));
+      undm.push(bar([MW_X + 0.45, s * 1.10, Z(0.80)], [MW_X, s * (MW_Y - 0.12), Z(MW_R + 0.10)], 0.03, 6));  /* drag stay */
+      undc.push(cyl(MW_R, MW_R, 0.22, 20, "y", MW_X, s * MW_Y, Z(MW_R)));
       undm.push(cyl(0.13, 0.13, 0.24, 10, "y", MW_X, s * MW_Y, Z(MW_R)));
+      /* hub: the outer disc and its bolts; the brake inboard */
+      undp.push(cyl(0.18, 0.19, 0.03, 16, "y", MW_X, s * (MW_Y + 0.12), Z(MW_R)));
+      for (k = 0; k < 6; k++) undm.push(cyl(0.015, 0.015, 0.03, 5, "y", MW_X + Math.cos(k * PI / 3) * 0.10, s * (MW_Y + 0.135), Z(MW_R) + Math.sin(k * PI / 3) * 0.10));
+      undc.push(cyl(0.17, 0.17, 0.05, 12, "y", MW_X, s * (MW_Y - 0.13), Z(MW_R)));
     }
     /* the tail wheel at the step, a fork on a trailing leg [D][P1] */
-    undm.push(bar([-5.78, 0, Z(0.70)], [TW_X, 0, Z(TW_R + 0.05)], 0.06, 8));
-    undc.push(cyl(TW_R, TW_R, 0.14, 14, "y", TW_X, 0, Z(TW_R)));
+    undm.push(bar([-5.78, 0, Z(0.70)], [-5.86, 0, Z(0.42)], 0.06, 8));
+    undp.push(bar([-5.86, 0, Z(0.42)], [-5.91, 0, Z(0.30)], 0.045, 8));
+    for (s = -1; s <= 1; s += 2) undm.push(bar([-5.90, s * 0.10, Z(0.36)], [TW_X, s * 0.10, Z(TW_R)], 0.025, 5));   /* the fork */
+    undc.push(cyl(TW_R, TW_R, 0.14, 16, "y", TW_X, 0, Z(TW_R)));
+    for (s = -1; s <= 1; s += 2) undp.push(cyl(0.11, 0.11, 0.02, 12, "y", TW_X, s * 0.08, Z(TW_R)));
     var und = new V.Group();
     und.name = "undercarriage";
     mesh(und, undm, T.metal, "legs");
@@ -525,7 +644,11 @@ var HeroGbSeaKing = (function () {
     team.push(solid([[-11.10, 0.6, Z(4.065)], [-11.75, 0.6, Z(4.045)], [-11.65, 1.9, Z(4.015)], [-11.25, 1.9, Z(4.02)]],
                     [[-11.10, 0.6, Z(4.085)], [-11.75, 0.6, Z(4.065)], [-11.65, 1.9, Z(4.035)], [-11.25, 1.9, Z(4.04)]]));
 
+    detail(FUS, { skin: skin, dark: dark, metal: metal, lampR: lampR, lampG: lampG });
     mesh(g, skin, T.skin, "airframe", true);
+    mesh(g, metal, T.metal, "fittings_metal");
+    mesh(g, lampR, T.lampR, "lamps_red");
+    mesh(g, lampG, T.lampG, "lamps_green");
     mesh(g, glass, T.glass, "glass");
     mesh(g, dark, T.dark, "fittings_dark");
     mesh(g, team, T.team, "team");
@@ -534,7 +657,8 @@ var HeroGbSeaKing = (function () {
     var mast = new V.Group();
     mast.position.set(0, 0, Z(HUB_H));
     g.add(mast);
-    mesh(mast, [cyl(0.20, 0.24, 0.30, 14, "z", 0, 0, -0.22), cyl(0.42, 0.42, 0.08, 18, "z", 0, 0, -0.30)], T.metal, "mast");
+    mesh(mast, [cyl(0.20, 0.24, 0.30, 14, "z", 0, 0, -0.22), cyl(0.42, 0.42, 0.08, 18, "z", 0, 0, -0.30),
+                cyl(0.36, 0.36, 0.05, 20, "z", 0, 0, -0.215)], T.metal, "mast");             /* the swashplate, fixed ring */
     var mnt = new V.Group();
     mnt.rotation.x = PI / 2;
     mast.add(mnt);
@@ -562,7 +686,13 @@ var HeroGbSeaKing = (function () {
       for (i = 0; i < arm.length; i++) { arm[i].rotateZ(a); hubM.push(arm[i]); }
       var dmp = cyl(0.045, 0.045, 0.55, 8, "x", 0.75, -0.18, 0.06);
       dmp.rotateZ(a); hubD.push(dmp);
+      /* the blade's root cuff, the pitch horn and its link down to the swashplate */
+      var cuff = [box(0.55, CHORD * 0.75, 0.10, ROOT_CUT + 0.12, LE - CHORD * 0.45, 0), box(0.16, 0.06, 0.06, 0.95, 0.20, -0.07),
+                  bar([0.95, 0.22, -0.09], [0.42, 0.22, -0.16], 0.022, 5)];
+      cuff[0].rotateZ(a); blades.push(cuff[0]);
+      for (i = 1; i < cuff.length; i++) { cuff[i].rotateZ(a); hubM.push(cuff[i]); }
     }
+    hubM.push(cyl(0.40, 0.40, 0.05, 20, "z", 0, 0, -0.165));         /* the swashplate's rotating ring */
     mesh(head, hubM, T.metal, "hub");
     mesh(head, hubD, T.dark, "hub_dampers");
     mesh(head, blades, T.blade, "blades");
