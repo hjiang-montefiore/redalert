@@ -1,7 +1,7 @@
 /* ============ pla_ground_modern.js - HERO models: modern PLA ground vehicles and missile launchers ============
    Keys registered here (rules.js / eras.js rows):
-     hvy_c         "ZTZ-99A2 w/ GL5 APS"            - the ZTZ-99A hero of js/hero/pla_e00_mbt.js, called, its meshes
-                                                       merged per material (no GL5 drawn: see below)
+     hvy_c         "ZTZ-99A2 w/ GL5 APS"            - the ZTZ-99A hero of js/hero/pla_e00_mbt.js, called as it
+                                                       comes (no GL5 drawn: see below)
      pla_e00_sam   "HQ-9 on Taian TAS-5380"         - buildHq9("hq9"), one builder with a VARIANTS table
      sam_c         "HQ-9B on Taian TAS-5380"        - buildHq9("hq9b")
      pla_e00_tel   "DF-15B on a WS2400 TEL"         - buildDf15b
@@ -301,51 +301,12 @@ var HeroPlaGroundModern = (function () {
      builder is called and nothing of it is copied.  What the reference search found to add: NOTHING.  The GL5's
      four radar panels and two-round launchers have no photograph on Commons, on a ZTZ-99 or anything else (the
      en.wikipedia "GL5 Active Protection System" article's only picture is a plain ZTZ-99), and no photograph of a
-     "99A2" was found, so neither is drawn (POLICY 1).  The one change is mechanical: that builder hands back 297
-     meshes, one per part; here they are merged per material inside the hull and inside "turret" (the only named
-     node it has), which takes the draw calls to 9 without moving a vertex.  Its paint, its 7.6 m hull and its
-     11.44 m over the gun are its own (see that file's header). */
-  function mergeGroup(THREE, grp, keep) {
-    var by = {}, order = [], rm = [];
-    grp.updateMatrixWorld(true);
-    var inv = new THREE.Matrix4().copy(grp.matrixWorld).invert(), m = new THREE.Matrix4();
-    grp.traverse(function (o) {
-      if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-      for (var p = o.parent; p && p !== grp; p = p.parent) if (keep(p)) return;
-      if (o.material && o.material.isMaterial === true && !Array.isArray(o.material)) {
-        var id = o.material.uuid;
-        if (!by[id]) { by[id] = { mat: o.material, P: [], N: [], U: [], uv: false }; order.push(id); }
-        var g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry, pa = g.attributes.position, na = g.attributes.normal, ua = g.attributes.uv;
-        m.multiplyMatrices(inv, o.matrixWorld);
-        var nm = new THREE.Matrix3().getNormalMatrix(m), v = new THREE.Vector3(), i, b = by[id];
-        for (i = 0; i < pa.count; i++) {
-          v.fromBufferAttribute(pa, i).applyMatrix4(m); b.P.push(v.x, v.y, v.z);
-          if (na) { v.fromBufferAttribute(na, i).applyMatrix3(nm).normalize(); b.N.push(v.x, v.y, v.z); } else b.N.push(0, 0, 1);
-          if (ua) { b.U.push(ua.getX(i), ua.getY(i)); b.uv = true; } else b.U.push(0, 0);
-        }
-        rm.push(o);
-      }
-    });
-    rm.forEach(function (o) { o.parent.remove(o); });
-    order.forEach(function (id) {
-      var b = by[id], geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(b.P), 3));
-      geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(b.N), 3));
-      if (b.uv) geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(b.U), 2));
-      var mesh = new THREE.Mesh(geo, b.mat);
-      mesh.castShadow = mesh.receiveShadow = true;
-      grp.add(mesh);
-    });
-    /* drop the groups the merge emptied (the builder's part holders) */
-    var empty = [];
-    grp.traverse(function (o) { if (o !== grp && !o.isMesh && !keep(o) && o.children.length === 0 && o.type === "Group") empty.push(o); });
-    empty.forEach(function (o) { if (o.parent) o.parent.remove(o); });
-  }
+     "99A2" was found, so neither is drawn (POLICY 1).  That builder now hands back its own per-material merge (12
+     draw calls, six "roadwheel" groups, "turret"), so it is used as it comes; an earlier pass merged its 297
+     part meshes here, which would now flatten the road wheels and drop their vertex colours.  Its paint, its
+     7.6 m hull and its 11.1 m over the gun are its own (see that file's header). */
   function buildHvyC(THREE, M, C) {
-    var root = HeroPlaE00Mbt.build(THREE, M, C), tur = null;
-    root.traverse(function (o) { if (!tur && o.name === "turret") tur = o; });
-    if (tur) mergeGroup(THREE, tur, function () { return false; });
-    mergeGroup(THREE, root, function (p) { return p.name === "turret"; });
+    var root = HeroPlaE00Mbt.build(THREE, M, C);
     root.name = "hvy_c";
     return root;
   }
@@ -901,7 +862,7 @@ var HeroPlaGroundModern = (function () {
 })();
 
 /* len: the measured X extent of each build */
-UNIT_MODELS["hvy_c"] = { len: 11.44, build: HeroPlaGroundModern.buildHvyC };
+UNIT_MODELS["hvy_c"] = { len: 11.1, build: HeroPlaGroundModern.buildHvyC };
 UNIT_MODELS["pla_e00_sam"] = { len: 11.22, build: function (THREE, M, C) { return HeroPlaGroundModern.buildHq9(THREE, C, "hq9"); } };
 UNIT_MODELS["sam_c"] = { len: 11.22, build: function (THREE, M, C) { return HeroPlaGroundModern.buildHq9(THREE, C, "hq9b"); } };
 UNIT_MODELS["pla_e00_tel"] = { len: 11.38, build: HeroPlaGroundModern.buildDf15b };
