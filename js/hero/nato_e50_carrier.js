@@ -82,6 +82,30 @@
    barricade recess, lowered blast deflectors, fuel stations, tie-downs).
    13 draw calls.  The fittings' sizes are typical, NOT CONFIRMED.
 
+   REWORK (2026-11-12). The overhangs were flat slabs on struts and the
+   lift openings black boxes on the plating. Now:
+     - SPONSONS under every overhang: the gallery's plumb face (2.6 m port,
+       2.2 m starboard) and below it the sponson's bottom sloping back into
+       the hull at the knuckle (11-12.5 m), broken at each lift ([F2] the
+       port sponsons' sloped bottoms; [F3] the light gallery band over the
+       shadow); the eight 5 in sponsons are solid the same way, a lip and a
+       sloped bottom 6.5 m down to the plating, in place of a slab on one
+       strut. Plumb depths and knuckle heights NOT CONFIRMED;
+     - the four hangar openings CUT through the plating (shellBand skips
+       it), 16 m long between guide trunks, hangar deck 12.0 m to 18.0 m
+       (NOT CONFIRMED: set from the 25 ft hangar), the hangar deck, jambs,
+       far bulkhead and overhead frames behind; each lift's girders under
+       its platform and a dark seam round its inboard edge on the deck.
+     The masts, island and deck are as the detail pass left them.
+
+   DECK PAINTING (2026-11-12). The flight deck's markings were mesh strips
+   4 cm proud on a tiled texture; they are now ONE plan-view canvas
+   (flightDeckTex) on the deck slab's top, the slab itself unchanged: the
+   landing area's lines, wires, barricade, catapults and lowered
+   deflectors, lift outlines, round-down, fuel stations, tie-down grid and
+   wear (see the canvas's own note for what is NOT CONFIRMED). 14 draw
+   calls (the canvas is its own material).
+
    MODEL SPACE: +X bow, +Y port, +Z up, metres, WATERLINE z = 0, flight deck
    at z = 21.5.  The forward starboard 5 in mount is the group named
    "turret"; everything else is baked one mesh per material.  The kit is
@@ -182,6 +206,145 @@ var HeroForrestal = (function () {
       g.fillStyle = "#303335"; g.fillRect(w / 2 - 2, 0, 4, h);
     });
   }
+  /* THE FLIGHT DECK, painted once in plan (2048 x 512 over x -164..164,
+     y -35..45), sampled through the deck slab's top in plan uvs.  Every
+     marking is in the canvas: the deck stays one clean surface for the deck
+     park.  From [F1] (May 1957, overhead) and [F2] (1955): the landing
+     area's two solid white edge lines and its solid white centreline from
+     the round-down to the waist, the centreline dashed on forward of it,
+     the axial deck's dashed centreline up the bow, the white outlines of
+     the four lifts, the transverse bands of rubber and the darker worn
+     landing area, the white round-down.  Positions of the pendants, the
+     barricade, the catapults and their deflectors as the old mesh stripes
+     had them, measured off [F1].  The C-7 steam catapults' tracks are a pale
+     slot between dark strips; the deflectors are drawn lowered (flush
+     panels and hinge line), scorched aft.  The tie-down pad-eyes are a grid
+     about 1.6 m square over the parking areas, not on the landing area.
+     NOT CONFIRMED: the catapult tracks' widths, the deflectors' panel
+     count, every line width (typical US practice), the fuel-station
+     marks' size; no foul line is drawn (none shows in [F1]).  No numbers. */
+  var FDK = { x0: -164, lx: 328, y0: -35, ly: 80 };
+  function flightDeckTex(THREE, base) {
+    return canvasTex(THREE, "K_FDECK", 2048, 512, function (g, w, h) {
+      var R = rng(5959), i, x, y, k;
+      function U(px) { return (px - FDK.x0) / FDK.lx * w; }
+      function V(py) { return (FDK.y0 + FDK.ly - py) / FDK.ly * h; }
+      var m = w / FDK.lx, ta = Math.tan(ANG), ay0 = 8.0;
+      function line(x0, y0, x1, y1, col, wm, a) {
+        g.globalAlpha = a === undefined ? 1 : a;
+        g.strokeStyle = col; g.lineWidth = Math.max(1, wm * m); g.beginPath(); g.moveTo(U(x0), V(y0)); g.lineTo(U(x1), V(y1)); g.stroke();
+        g.globalAlpha = 1;
+      }
+      function fill(pts, col, a) {
+        g.globalAlpha = a === undefined ? 1 : a; g.fillStyle = col; g.beginPath();
+        pts.forEach(function (p, q) { if (q) g.lineTo(U(p[0]), V(p[1])); else g.moveTo(U(p[0]), V(p[1])); });
+        g.closePath(); g.fill(); g.globalAlpha = 1;
+      }
+      /* a point s along the landing axis, o to port of it */
+      function A(sx, o) { return [sx - o * Math.sin(ANG), ay0 + (sx + 160) * ta + o * Math.cos(ANG)]; }
+      g.fillStyle = base; g.fillRect(0, 0, w, h);
+      /* non-skid laid in strips across the deck, each a slightly different
+         grey, and mottling over it */
+      for (x = -164; x < 164; x += 6) {
+        g.globalAlpha = 0.015 + R() * 0.025; g.fillStyle = R() < 0.5 ? "#000000" : "#ffffff";
+        g.fillRect(U(x), 0, 6 * m, h);
+        g.globalAlpha = 0.07; g.fillStyle = "#000000"; g.fillRect(U(x), 0, 1, h);
+      }
+      for (i = 0; i < 1100; i++) {
+        g.globalAlpha = 0.03 + R() * 0.05; g.fillStyle = R() < 0.55 ? "#000000" : "#ffffff";
+        g.fillRect(R() * w, R() * h, (2 + R() * 12) * m, (0.6 + R() * 3) * m);
+      }
+      g.globalAlpha = 1;
+      /* the landing area worn darker, the rubber heaviest at the wires */
+      fill([A(-170, 11.5), A(52, 11.5), A(52, -11.5), A(-170, -11.5)], "#101214", 0.22);
+      for (i = 0; i < 520; i++) {
+        var s0 = -150 + Math.pow(R(), 1.4) * 110, o0 = (R() - 0.5) * 12, p0 = A(s0, o0), p1 = A(s0 + 3 + R() * 14, o0 + (R() - 0.5) * 0.6);
+        line(p0[0], p0[1], p1[0], p1[1], "#0a0b0c", 0.25 + R() * 0.3, 0.06 + R() * 0.1);
+      }
+      /* oil and tyre stains on the parking areas: the bow, the waist and
+         abeam the island */
+      for (i = 0; i < 160; i++) {
+        x = -100 + R() * 255; y = -30 + R() * 70;
+        g.globalAlpha = 0.05 + R() * 0.08; g.fillStyle = "#0b0c0d";
+        g.beginPath(); g.ellipse(U(x), V(y), (0.4 + R() * 1.4) * m, (0.3 + R() * 0.9) * m, R() * 3, 0, PI * 2); g.fill();
+      }
+      g.globalAlpha = 1;
+      /* tie-down pad-eyes, off the landing area */
+      g.fillStyle = "rgba(10,11,12,0.32)";
+      for (x = -158; x < 160; x += 1.6) for (y = -33; y <= 43; y += 1.6) {
+        var sl = (x + 160) * ta + ay0, ol = (y - sl) * Math.cos(ANG);
+        if (x < 54 && Math.abs(ol) < 12.5) continue;
+        g.fillRect(U(x) - 1, V(y) - 1, 2, 2);
+      }
+      /* the round-down: white across the stern, dark dashes on it */
+      fill([[-163.05, -13], [-160.4, -13], [-160.4, 27.2], [-163.05, 27.2]], "#d8dcdc");
+      for (y = -11; y < 26; y += 4) fill([[-162.6, y], [-161.0, y], [-161.0, y + 2], [-162.6, y + 2]], "#202326");
+      /* the catapults: the slot between dark strips, the shuttle's start,
+         tyre and exhaust streaks along the track */
+      function cat(x0, y0, x1, y1) {
+        line(x0, y0, x1, y1, "#2a2d30", 1.5);
+        line(x0, y0, x1, y1, "#8d9294", 0.6);
+        line(x0, y0, x1, y1, "#1a1c1e", 0.14);
+        var dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy), nx = -dy / L, ny = dx / L;
+        line(x0 + nx * 1.4, y0 + ny * 1.4, x0 - nx * 1.4, y0 - ny * 1.4, "#d8dcdc", 0.4);
+        for (k = 0; k < 10; k++) {
+          var f = R() * 0.5, o = (R() - 0.5) * 2.6;
+          line(x0 + dx * f + nx * o, y0 + dy * f + ny * o, x0 + dx * (f + 0.08) + nx * o, y0 + dy * (f + 0.08) + ny * o, "#0c0d0e", 0.4, 0.15);
+        }
+      }
+      /* a lowered blast deflector: flush panels, the hinge line forward,
+         the deck scorched black aft of it */
+      function jbd(xc, yc, ang, lw, ww) {
+        var ca = Math.cos(ang), sa = Math.sin(ang);
+        function P(a, b) { return [xc + a * ca - b * sa, yc + a * sa + b * ca]; }
+        for (k = 0; k < 6; k++) fill([P(-lw / 2 - 2 - k * 1.6, -ww / 2 + 0.6), P(-lw / 2 - k * 1.6, -ww / 2 + 0.6), P(-lw / 2 - k * 1.6, ww / 2 - 0.6), P(-lw / 2 - 2 - k * 1.6, ww / 2 - 0.6)], "#0a0a0a", 0.16 - k * 0.02);
+        fill([P(-lw / 2, -ww / 2), P(lw / 2, -ww / 2), P(lw / 2, ww / 2), P(-lw / 2, ww / 2)], "#2e3134");
+        for (k = 1; k < 5; k++) { var a = P(-lw / 2, -ww / 2 + k * ww / 5), b = P(lw / 2, -ww / 2 + k * ww / 5); line(a[0], a[1], b[0], b[1], "#121315", 0.12); }
+        var h0 = P(lw / 2, -ww / 2), h1 = P(lw / 2, ww / 2); line(h0[0], h0[1], h1[0], h1[1], "#0c0d0e", 0.3);
+        var e0 = P(-lw / 2, -ww / 2), e1 = P(-lw / 2, ww / 2); line(e0[0], e0[1], e1[0], e1[1], "#c8ccca", 0.25);
+      }
+      [12.7, -11.8].forEach(function (cy) { cat(60.0, cy, 158.0, cy); jbd(56.2, cy, 0, 2.6, 7.0); });
+      [4.0, 9.0].forEach(function (o) {
+        cat(-10.0, ay0 + o + 150 * ta, 50.0, ay0 + o + 210 * ta);
+        jbd(-13.0, ay0 + o + 147 * ta, ANG, 2.6, 7.0);
+      });
+      /* the landing area's lines: edges, centreline solid to the waist and
+         dashed on forward, the axial centreline dashed up the bow */
+      var e;
+      [-11.5, 11.5].forEach(function (o) { e = [A(-152, o), A(52, o)]; line(e[0][0], e[0][1], e[1][0], e[1][1], "#e2e5e4", 0.45); });
+      e = [A(-160, 0), A(-30, 0)]; line(e[0][0], e[0][1], e[1][0], e[1][1], "#e2e5e4", 0.55);
+      for (x = -30; x < 52; x += 9) { var d0 = A(x, 0), d1 = A(x + 4.5, 0); line(d0[0], d0[1], d1[0], d1[1], "#e2e5e4", 0.4); }
+      for (x = 70; x < 158; x += 9) line(x, 0, x + 4.5, 0, "#e2e5e4", 0.4);
+      /* five pendants and the barricade's recess, with their sheave pads */
+      [-128, -121, -114, -107, -100].forEach(function (wx) {
+        var a = A(wx, -11.0), b = A(wx, 11.0);
+        line(a[0], a[1], b[0], b[1], "#141516", 0.16);
+        [-1, 1].forEach(function (q) {
+          var c0 = A(wx - 0.6, q * 11.6), c1 = A(wx + 0.6, q * 11.6);
+          line(c0[0], c0[1], c1[0], c1[1], "#141516", 1.2);
+        });
+      });
+      e = [A(-86, -11), A(-86, 11)]; line(e[0][0], e[0][1], e[1][0], e[1][1], "#1a1b1c", 0.5);
+      /* fuel stations at the deck edges */
+      [[-60, 42.2], [0, 42.2], [-75, -32.4], [-5, -19.5], [110, 17.6], [120, -17.4]].forEach(function (q) {
+        fill([[q[0] - 1, q[1] - 0.6], [q[0] + 1, q[1] - 0.6], [q[0] + 1, q[1] + 0.6], [q[0] - 1, q[1] + 0.6]], "#16181a");
+      });
+      /* the lifts: white outline, the dark gap round the platform */
+      LIFTS.forEach(function (L) {
+        var lx = L[0], sd = L[1], yo = sd > 0 ? 43.4 : -33.6, yi = sd > 0 ? 24.0 : -17.5;
+        line(lx - 9.6, yi, lx + 9.6, yi, "#0b0c0d", 0.25);
+        line(lx - 9.6, yi, lx - 9.6, yo, "#0b0c0d", 0.25);
+        line(lx + 9.6, yi, lx + 9.6, yo, "#0b0c0d", 0.25);
+        line(lx - 9.0, yi + sd * 0.6, lx + 9.0, yi + sd * 0.6, "#e2e5e4", 0.3);
+        line(lx - 9.0, yi + sd * 0.6, lx - 9.0, yo - sd * 0.6, "#e2e5e4", 0.3);
+        line(lx + 9.0, yi + sd * 0.6, lx + 9.0, yo - sd * 0.6, "#e2e5e4", 0.3);
+      });
+      /* the deck edge's dark gutter all round */
+      g.strokeStyle = "#141618"; g.lineWidth = Math.max(1, 0.3 * m); g.beginPath();
+      DECK.forEach(function (p, q) { if (q) g.lineTo(U(p[0]), V(p[1])); else g.moveTo(U(p[0]), V(p[1])); });
+      g.closePath(); g.stroke();
+    });
+  }
   var PAINT = { hull: 0x8c959b, sup: 0x959ea3, deck: 0x50575c };
   function makeMats(THREE, C, P) {
     P = P || PAINT;
@@ -198,6 +361,7 @@ var HeroForrestal = (function () {
       boot:  skin(0x16181a, hullTex(THREE), 0.9),
       sup:   skin(P.sup, plateTex(THREE), 0.86),
       deck:  skin(P.deck, deckTex(THREE), 0.95),
+      fdeck: skin(0xffffff, flightDeckTex(THREE, "#" + ("000000" + P.deck.toString(16)).slice(-6)), 0.95),
       dark:  skin(0xffffff, grilleTex(THREE), 0.9),
       white: skin(0xc9ccca, plateTex(THREE), 0.8),
       array: skin(0x6c757b, plateTex(THREE), 0.7),
@@ -436,7 +600,7 @@ var HeroForrestal = (function () {
       a.sort(function (p, q) { return p - q; });
       return a.filter(function (v, k) { return v >= XS0 && v <= XS1 && (k === 0 || v - a[k - 1] > 0.05); });
     }
-    function shellBand(THREE, m, zlo, zhi, rows) {
+    function shellBand(THREE, m, zlo, zhi, rows, skip) {
       var X = xs(), pos = [], uv = [], idx = [], i, j, s, NR = rows + 1;
       for (s = -1; s <= 1; s += 2) {
         var base = pos.length / 3;
@@ -459,7 +623,9 @@ var HeroForrestal = (function () {
         var ux = pos[B] - pos[A], uy = pos[B + 1] - pos[A + 1], uz = pos[B + 2] - pos[A + 2];
         var vx = pos[Cc] - pos[A], vy = pos[Cc + 1] - pos[A + 1], vz = pos[Cc + 2] - pos[A + 2];
         var cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
-        if (cx * cx + cy * cy + cz * cz > 1e-8) keep.push(idx[i], idx[i + 1], idx[i + 2]);
+        if (cx * cx + cy * cy + cz * cz > 1e-8 &&
+            !(skip && skip((pos[A] + pos[B] + pos[Cc]) / 3, (pos[A + 1] + pos[B + 1] + pos[Cc + 1]) / 3, (pos[A + 2] + pos[B + 2] + pos[Cc + 2]) / 3)))
+          keep.push(idx[i], idx[i + 1], idx[i + 2]);
       }
       return new THREE.Mesh(geoOf(THREE, pos, uv, keep), m);
     }
@@ -534,6 +700,21 @@ var HeroForrestal = (function () {
     [-104.4, -13.0], [-104.4, -33.6], [41.2, -33.6], [41.2, -20.3], [160.0, -18.4]
   ];
   var LIFTS = [[-87.8, -1], [-43.4, -1], [30.0, -1], [44.2, 1]];
+  /* the hangar openings under the four lifts, CUT through the hull side:
+     16 m of the lift's 19.2 m between its guide trunks, from the hangar
+     deck (FHD) to the plating's top under the lift girders (FOH).  [F3]
+     shows the dark openings under the starboard lifts reaching from
+     about the knuckle line to the gallery; their exact head and sill
+     heights are NOT CONFIRMED (the hangar's 25 ft clear height set them). */
+  var FHD = 12.0, FOH = 18.0;
+  var FOPEN = LIFTS.map(function (L) { return { x0: L[0] - 8.0, x1: L[0] + 8.0, s: L[1] }; });
+  function inFOpen(x, y, z) {
+    for (var k = 0; k < FOPEN.length; k++) {
+      var O = FOPEN[k];
+      if (x > O.x0 && x < O.x1 && z > FHD - 0.01 && z < FOH && y * O.s > 4) return true;
+    }
+    return false;
+  }
   var ANG = 6 * PI / 180;        /* landing area to port [F1] */
 
   /* 5 in/54 Mk 42 at rest pointing +X, origin on its ring: a rounded gun
@@ -547,7 +728,7 @@ var HeroForrestal = (function () {
   }
 
   var HF = {
-    XS0: -152.0, XS1: 158.0, XWL: 150.5, XST: -150.5, step: 4.0, fl: 1.7, stemP: 0.75, extra: [128, 130],
+    XS0: -152.0, XS1: 158.0, XWL: 150.5, XST: -150.5, step: 4.0, fl: 1.7, stemP: 0.75, extra: [128, 130, -95.8, -79.8, -51.4, -35.4, 22.0, 38.0, 36.2, 52.2],
     deckZ: function (x) { return x < 128 ? HULLTOP : x < 130 ? HULLTOP - 6.5 * (x - 128) / 2 : HULLTOP - 6.5; },
     STA: [
       [-152.0, 14.0, 11.0, -2.0, 2.4],
@@ -746,26 +927,7 @@ var HeroForrestal = (function () {
       raft(THREE, g, T, q[0] + 3.6, yout - sg * 0.9, ZS, 0);
     });
 
-    /* --- deck markings that are not numbers [F1]: the white round-down
-       across the stern, the arresting wires across the landing area (five
-       pendants and the barricade's recess), the jet-blast deflectors
-       (lowered, flush) behind the four catapults, the fuel stations at
-       the edges */
-    var ZM = FD + 0.035, ta = Math.tan(ANG), ay0 = 8.0;
-    stripe(THREE, g, T.white, -161.6, -12.6, -161.6, 26.8, 2.2, ZM);
-    for (y = -11; y < 26; y += 4) stripe(THREE, g, T.dark, -159.6, y, -159.6, y + 2, 1.4, ZM);
-    [-128, -121, -114, -107, -100].forEach(function (wx) {
-      var yc = ay0 + (wx + 160) * ta;
-      var sa = Math.sin(ANG) * 11.0, ca = Math.cos(ANG) * 11.0;
-      stripe(THREE, g, T.dark, wx + sa, yc - ca, wx - sa, yc + ca, 0.14, ZM);
-      for (s = -1; s <= 1; s += 2) box(THREE, g, 0.8, 1.2, 0.04, T.dark, wx - s * sa * 1.05, yc + s * ca * 1.05, ZM).rotation.z = ANG;
-    });
-    stripe(THREE, g, T.dark, -86 + Math.sin(ANG) * 11, ay0 + 74 * ta - Math.cos(ANG) * 11, -86 - Math.sin(ANG) * 11, ay0 + 74 * ta + Math.cos(ANG) * 11, 0.5, ZM);
-    [12.7, -11.8].forEach(function (cy) { box(THREE, g, 2.6, 7.0, 0.04, T.dark, 56.2, cy, ZM); });
-    [4.0, 9.0].forEach(function (o) { box(THREE, g, 2.6, 7.0, 0.04, T.dark, -13.0, ay0 + o + 147 * ta, ZM).rotation.z = ANG; });
-    [[-60, 42.2], [0, 42.2], [-75, -32.4], [-5, -19.5], [110, 17.6], [120, -17.4]].forEach(function (q) {
-      box(THREE, g, 2.0, 1.2, 0.04, T.dark, q[0], q[1], ZM);
-    });
+    /* --- the deck's markings are all in its canvas (flightDeckTex) */
 
     /* --- the island: rails round every roof, doors and ports on its
        faces, louvres, the bridge wings and the platform outboard, a ladder
@@ -827,47 +989,85 @@ var HeroForrestal = (function () {
     g.add(Hh.shellBand(THREE, T.under, -12, -0.4, 5));
     /* the boot-topping, 1.4 m of black from just under the waterline */
     g.add(Hh.shellBand(THREE, T.boot, -0.4, 1.0, 1));
-    g.add(Hh.shellBand(THREE, T.hull, 1.0, HULLTOP + 1, 6));
+    /* the topsides in three bands so the hangar openings are cut on row
+       lines: below the hangar deck, the openings' height, and above      */
+    g.add(Hh.shellBand(THREE, T.hull, 1.0, FHD, 3));
+    g.add(Hh.shellBand(THREE, T.hull, FHD, FOH, 2, inFOpen));
+    g.add(Hh.shellBand(THREE, T.hull, FOH, HULLTOP + 1, 1));
     Hh.transom(THREE, g, T.hull, T.under);
     g.add(Hh.deckSheet(THREE, T.deck, HF.XS0, HF.XS1));
 
     /* the flight deck: one slab 1.5 m deep, its uv in 8 m tiles */
-    var dk = plate(THREE, g, T.deck, polyCCW(DECK), FD, FD - HULLTOP, T.sup);
+    var dk = plate(THREE, g, T.fdeck, polyCCW(DECK), FD, FD - HULLTOP, T.sup);
     var uv = dk.geometry.attributes.uv;
-    for (i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 8, uv.getY(i) / 8);
-    /* the gallery under the port sponson and the island's overhang (NOT
-       CONFIRMED depth) */
-    frustum(THREE, g, T.sup, [[-118.0, 20.0], [55.0, 20.0], [55.0, 42.4], [-88.6, 42.4], [-118.0, 26.4]], HULLTOP - 2.6,
-            [[-118.0, 20.0], [55.0, 20.0], [55.0, 42.4], [-88.6, 42.4], [-118.0, 26.4]], HULLTOP + 0.02);
-    frustum(THREE, g, T.sup, [[-103.6, -32.8], [40.4, -32.8], [40.4, -20.0], [-103.6, -20.0]], HULLTOP - 2.2,
-            [[-103.6, -32.8], [40.4, -32.8], [40.4, -20.0], [-103.6, -20.0]], HULLTOP + 0.02);
-    /* brackets from the hull side to the overhangs, and under the open bow */
-    for (x = -110; x <= 50; x += 16) strut(THREE, g, T.metal, x, 19.6, 11.0, x + 4, 38.0, HULLTOP - 2.4, 0.45, 4);
-    for (x = -96; x <= 36; x += 16) strut(THREE, g, T.metal, x, -19.8, 12.0, x + 3, -30.0, HULLTOP - 2.0, 0.4, 4);
+    for (i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) - FDK.x0) / FDK.lx, (uv.getY(i) - FDK.y0) / FDK.ly);
+    /* SPONSONS.  The overhangs are carried on plated sponsons, as on every
+       US supercarrier: the gallery's plumb face under the deck edge, and
+       under it the sponson's bottom sloping back into the hull plating at
+       the knuckle ([F2]: the port sponsons' sloped undersides under the
+       angled deck and the 5 in mounts; [F3]: the light gallery band over
+       the sponsons' shadow, broken at each lift).  The plumb depth and the
+       knuckle's height are NOT CONFIRMED. */
+    function sponsonSolid(poly, zTop, plumb, zKnee, m) {
+      poly = polyCCW(poly);
+      var sd = poly[0][1] > 0 ? 1 : -1;
+      var lo = poly.map(function (q) {
+        var hw = Hh.W(q[0], zKnee) || 4, ya = Math.abs(q[1]);
+        return [q[0], sd * Math.min(ya, hw + 0.25 + (ya - hw) * 0.06)];
+      });
+      var hi = poly.map(function (q) { return [q[0], q[1]]; });
+      frustum(THREE, g, m || T.hull, lo, zKnee, hi, zTop - plumb);
+      frustum(THREE, g, m || T.hull, hi, zTop - plumb, hi, zTop);
+      /* the knuckle's drip strip where the bottom meets the plating */
+      for (var q = 0; q < poly.length; q++) {
+        var a = poly[q], b = poly[(q + 1) % poly.length];
+        if (Math.abs(b[0] - a[0]) > 4 && Math.abs(Math.abs(a[1]) - Math.abs(b[1])) < 0.5 && Math.abs(a[1]) > 22)
+          boxAlong(THREE, g, T.dark, a[0], a[1] + sd * 0.04, b[0], b[1] + sd * 0.04, 0.08, 0.25, zTop - plumb - 0.1);
+      }
+    }
+    var GTOP = HULLTOP + 0.02;
+    sponsonSolid([[-118.0, 20.0], [34.2, 20.0], [34.2, 42.4], [-88.6, 42.4], [-118.0, 26.4]], GTOP, 2.6, 11.0);
+    sponsonSolid([[54.2, 20.0], [61.0, 20.0], [56.6, 40.6], [54.2, 40.6]], GTOP, 2.6, 12.0);
+    [[-103.6, -97.6], [-78.0, -53.2], [-33.6, 20.2]].forEach(function (r) {
+      sponsonSolid([[r[0], -20.0], [r[1], -20.0], [r[1], -32.8], [r[0], -32.8]], GTOP, 2.2, 12.5);
+    });
+    /* the lifts: each platform's girders under it, the guide trunks
+       either side of its opening down the hull, and what shows through
+       the opening -- the hangar deck, the far bulkhead in shadow, the
+       overhead's frames, the jambs */
+    function quadM(m, a, b, c, d, nx, ny, nz) {
+      var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+      var dot = (uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz;
+      var P4 = dot >= 0 ? [a, b, c, d] : [a, d, c, b], pos = [], uvq = [];
+      [0, 1, 2, 0, 2, 3].forEach(function (k) { var q = P4[k]; pos.push(q[0], q[1], q[2]); uvq.push((q[0] + q[1]) / 8, q[2] / 8); });
+      g.add(new THREE.Mesh(geoOf(THREE, pos, uvq), m));
+    }
+    FOPEN.forEach(function (O, n) {
+      var sg = O.s, xm = (O.x0 + O.x1) / 2, hwm = Hh.W(xm, (FHD + FOH) / 2);
+      var yf = sg * hwm, yb = sg * (hwm - 10.0), xa = O.x0, xb = O.x1, z0 = FHD, z1 = FOH;
+      quadM(T.dark, [xa, yb, z0], [xb, yb, z0], [xb, yb, z1], [xa, yb, z1], 0, sg, 0);
+      quadM(T.sup, [xa, yf, z0], [xb, yf, z0], [xb, yb, z0], [xa, yb, z0], 0, 0, 1);
+      quadM(T.dark, [xa, yf, z1], [xb, yf, z1], [xb, yb, z1], [xa, yb, z1], 0, 0, -1);
+      quadM(T.sup, [xa, yf, z0], [xa, yb, z0], [xa, yb, z1], [xa, yf, z1], 1, 0, 0);
+      quadM(T.sup, [xb, yf, z0], [xb, yb, z0], [xb, yb, z1], [xb, yf, z1], -1, 0, 0);
+      for (k = 1; k < 5; k++) {
+        box(THREE, g, 0.3, 9.6, 0.5, T.metal, xa + k * (xb - xa) / 5, (yf + yb) / 2, z1 - 0.25);
+        box(THREE, g, 0.35, 0.25, z1 - z0, T.sup, xa + k * (xb - xa) / 5 + 1.6, yb + sg * 0.13, (z0 + z1) / 2);
+      }
+      box(THREE, g, xb - xa, 0.3, 0.3, T.metal, xm, yf + sg * 0.12, z0 + 0.15);
+      var yo = sg > 0 ? 43.4 : -33.6;
+      for (k = -1; k <= 1; k += 2) {
+        var tx = xm + k * 8.9, tw = Hh.W(tx, 10) || 18;
+        box(THREE, g, 1.4, 2.0, HULLTOP - 3.0, T.sup, tx, sg * (tw + 0.9), (HULLTOP + 3.0) / 2);
+        box(THREE, g, 0.5, 0.1, HULLTOP - 3.4, T.dark, tx, sg * (tw + 1.95), (HULLTOP + 3.0) / 2);
+      }
+      for (k = 0; k < 5; k++) boxAlong(THREE, g, T.metal, xm - 8.6 + k * 4.3, sg * (hwm + 0.2), xm - 8.6 + k * 4.3, yo - sg * 0.6, 0.45, 0.7, HULLTOP - 0.35);
+    });
+    /* brackets under the open bow */
     for (s = -1; s <= 1; s += 2) for (x = 134; x <= 158; x += 8)
       strut(THREE, g, T.metal, x, s * Math.max(0.5, Hh.W(x, 12.0) - 0.4), 12.0, x + 2, s * 15.0, HULLTOP + 0.05, 0.4, 4);
 
-    /* deck markings [F1]: the landing area's edge lines and centreline,
-       the axial centreline, the four catapult tracks, the lift outlines */
-    var ZM = FD + 0.03, ay0 = 8.0, ax0 = -160.0, ax1 = 52.0, ta = Math.tan(ANG);
-    stripe(THREE, g, T.white, ax0, ay0, ax1, ay0 + (ax1 - ax0) * ta, 0.5, ZM);
-    for (s = -1; s <= 1; s += 2)
-      stripe(THREE, g, T.white, ax0 + 8, ay0 + s * 11.5 + 8 * ta, ax1, ay0 + s * 11.5 + (ax1 - ax0) * ta, 0.35, ZM);
-    for (x = 70; x < 158; x += 9) stripe(THREE, g, T.white, x, 0, x + 4.5, 0, 0.4, ZM);
-    [12.7, -11.8].forEach(function (y) { stripe(THREE, g, T.dark, 60.0, y, 158.0, y, 0.6, ZM); });
-    /* the two waist catapults on the angled deck, 4 and 9 m to port of
-       its centreline */
-    [4.0, 9.0].forEach(function (o) {
-      stripe(THREE, g, T.dark, -10.0, ay0 + o + 150 * ta, 50.0, ay0 + o + 210 * ta, 0.6, ZM);
-    });
-    for (k = 0; k < LIFTS.length; k++) {
-      var lx = LIFTS[k][0], sd = LIFTS[k][1], yo = sd > 0 ? 42.0 : -33.0, yi = sd > 0 ? 24.0 : -17.5;
-      stripe(THREE, g, T.white, lx - 9.6, yi, lx + 9.6, yi, 0.3, ZM);
-      stripe(THREE, g, T.white, lx - 9.6, yi, lx - 9.6, yo, 0.3, ZM);
-      stripe(THREE, g, T.white, lx + 9.6, yi, lx + 9.6, yo, 0.3, ZM);
-      /* the lift's opening in the hull side under it */
-      if (sd < 0) box(THREE, g, 17.0, 0.2, 7.0, T.dark, lx, -(Hh.W(lx, 15.0) + 0.05), 15.5);
-    }
+    /* the deck markings: all painted in the flight deck's canvas */
 
     /* the island [F1][F3]: X -21.5..15.1, Y -33.6..-20.7 */
     var YI = -20.7, YO = -33.6, YC = (YI + YO) / 2;
@@ -913,8 +1113,11 @@ var HeroForrestal = (function () {
     GUNS.forEach(function (q, n) {
       var sg = q[1] > 0 ? 1 : -1, hw = Hh.W(q[0], ZS) || 6;
       var yin = sg * Math.max(0.5, hw - 1.0), yout = q[1] + sg * 4.0;
-      plate(THREE, g, T.deck, polyCCW([[q[0] - 6, yin], [q[0] + 6, yin], [q[0] + 5, yout], [q[0] - 5, yout]]), ZS, 0.8, T.sup);
-      strut(THREE, g, T.metal, q[0], sg * (hw - 0.5), ZS - 6.0, q[0], yout - sg * 1.0, ZS - 0.7, 0.45, 4);
+      /* the sponson: its deck, a plumb lip and the bottom sloping back
+         into the plating, as [F2] shows under the port mounts */
+      var sp = [[q[0] - 6, yin], [q[0] + 6, yin], [q[0] + 5, yout], [q[0] - 5, yout]];
+      plate(THREE, g, T.deck, polyCCW(sp), ZS, 0.05, T.sup);
+      sponsonSolid(sp, ZS - 0.05, 0.75, ZS - 6.5);
       var mg = new THREE.Group(); mg.position.set(q[0], q[1], ZS); mg.rotation.z = q[2];
       fiveInch(THREE, mg, T);
       if (n === 2) { mg.name = "turret"; tw = mg; } else g.add(mg);
