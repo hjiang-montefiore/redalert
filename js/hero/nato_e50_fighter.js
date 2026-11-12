@@ -29,7 +29,46 @@
    Intake lip x = +5.81, tailplane tip trailing edge x = -5.81. The fuselage
    itself stops at x = -4.93: on a Sabre the fin and the tailplane overhang
    the jet pipe by nearly a metre, and getting that wrong makes the whole
-   aeroplane read as too long in the tail.                                  */
+   aeroplane read as too long in the tail.
+
+   ---- 2026-11-12 rebuild to the current standard (draw calls, re-measure) ----
+   References (Wikimedia Commons / Wikipedia; cached in the agent scratchpad
+   q_f15f86_ref):
+     [A] "North American F-86F Sabre afg-041110-019.svg" (USAF, rendered at
+         2000 px): plan, side and head-on of an F-86F with the 6-3 wing.
+         Plan and side both 99.0 px/m with the nose lip at 5.808 (the same
+         drawing the first build was taken off). Its own proportions:
+         length 1145 px, span 1114 px.
+     [W1] en.wikipedia "Canadair Sabre", Sabre Mk.6 specification: length
+         37.54 ft (11.44 m), span 37.12 ft (11.31 m), height 14.74 ft
+         (4.49 m).
+     [W2] en.wikipedia "North American F-86 Sabre", F-86F-40 specification:
+         length 37 ft 1 in, span 39 ft 1 in (the extended F-40 tips, not
+         drawn here), height 14 ft 1 in. Its length repeats the classic
+         span figure and disagrees with [W1] and with [A]'s ratio, so the
+         [W1] figures are the ones compared against.
+   Re-measured against [A] on a pixel overlay of this model: fuselage, wing,
+   canopy, gear stance and fin trailing edge lie on the drawing. Corrected:
+   the fin leading edge (40 deg, not 42; 0.15..0.30 m further forward) and
+   the tailplane (LE 39.7 deg and TE both further forward, tip half-span
+   2.30 m), see the tables. As drawn: 11.49 x 11.36 x 4.58 m (L x W x H,
+   span over the tip lamps; wing 11.22 m). Published [W1] 11.44 x 11.31 x
+   4.49 m. Height is NOT fitted: [A] draws the wheels at their free radius
+   with the oleos extended, fin top py 822 to ground py 1270 = 4.53 m on
+   the drawing; the 0.09 m over [W1] is that and the open gear.
+   NOT CONFIRMED: [A]'s own span/length ratio is 2.8 per cent above [W1]'s
+   (length scale kept, span 0.8 per cent short); the tailplane disagrees
+   by 5 cm between [A]'s plan and side views (plan used); section shapes,
+   cockpit tub, gear legs and doors, drop tanks and pylons are as the
+   first build had them, off [A] and its photographs, not re-measured.
+   Kept API: UNIT_MODELS "nato_e50_fighter" (US markings) and
+   "deu_e50_fighter" (plain = true: no insignia or titles; also taken by
+   js/hero/roc_kpa_reuse.js keyBuild("deu_e50_fighter") for
+   roc_e50_fighter), build(THREE, M, C, plain), the "gear" group. No AAR
+   node: js/aar_specs.js has the Sabre rows as non-receivers.
+   Materials, after merge(): 12 tiers (SKIN, PANEL, lip, VOID, HOT, BLACK,
+   GLASS, DARKM, TEAM, STEEL, two lamp lenses); body 12 meshes + gear 4 =
+   16 draw calls (was 82 meshes, 17 materials).                            */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -417,6 +456,56 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     m.position.set(x, y, z);
     return m;
   }
+  function uvScale(geo, su, sv) {
+    var u = geo.attributes.uv;
+    if (u) { for (var i = 0; i < u.count; i++) u.setXY(i, u.getX(i) * su, u.getY(i) * sv); u.needsUpdate = true; }
+    return geo;
+  }
+
+  /* ---- merge per material (the house standard, as js/hero/us_f5.js) ----
+     Every mesh under root is baked, in model space, into one geometry per
+     material. Meshes under the "gear" group go into a fresh "gear" group of
+     their own, also one mesh per material, so render3d.js can still stow
+     the undercarriage in cruise. 82 meshes become 16. */
+  function bake(THREE, root, out, wantGear) {
+    var buckets = [];
+    root.updateMatrixWorld(true);
+    root.traverse(function (o) {
+      if (!o.isMesh || !o.geometry) return;
+      var p = o.parent, inGear = false;
+      while (p) { if (p.name === "gear") inGear = true; p = p.parent; }
+      if (inGear !== wantGear) return;
+      var b = null, k;
+      for (k = 0; k < buckets.length; k++) if (buckets[k].mat === o.material) b = buckets[k];
+      if (!b) { b = { mat: o.material, list: [] }; buckets.push(b); }
+      b.list.push(o);
+    });
+    buckets.forEach(function (b) {
+      var pos = [], nor = [], uv = [], i;
+      b.list.forEach(function (o) {
+        var geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        if (!geo.attributes.normal) geo.computeVertexNormals();
+        geo.applyMatrix4(o.matrixWorld);
+        var P = geo.attributes.position.array, N = geo.attributes.normal.array;
+        var U = geo.attributes.uv ? geo.attributes.uv.array : null;
+        for (i = 0; i < P.length; i++) { pos.push(P[i]); nor.push(N[i]); }
+        for (i = 0; i < P.length / 3 * 2; i++) uv.push(U ? U[i] : 0);
+      });
+      var mg = new THREE.BufferGeometry();
+      mg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      mg.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+      mg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      out.add(new THREE.Mesh(mg, b.mat));
+    });
+  }
+  function merge(THREE, g) {
+    var out = new THREE.Group(), gear = new THREE.Group();
+    bake(THREE, g, out, false);
+    gear.name = "gear";
+    bake(THREE, g, gear, true);
+    out.add(gear);
+    return out;
+  }
 
   /* =================================================================== body
      Station table, measured off the three-view. w and h are HALF width and
@@ -546,24 +635,37 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
   /* Tailplane: an all-flying slab on TOP of the rear fuselage, root at
      z = 0.66 with 10.5 degrees of dihedral, tip trailing edge at x = -5.81
      which is the aft-most point of the whole aeroplane.                  */
-  var TSPAN = 2.23, TROOT_Z = 0.660, TDIH = Math.tan(10.5 * D2R);
-  function tailLE(s) { return -3.60 - s * 0.67265; }
-  function tailTE(s) { return -4.95 - s * 0.38565; }
-  var TSTA = [0.00, 0.55, 1.10, 1.62, 2.02, 2.18, 2.23];
+  /* Re-measured 2026-11-12 on the same drawing [A] (plan view, 99.0 px/m
+     at the 2000 px render, nose px 1145, centreline py 635): LE 39.7 deg
+     (-3.616 at s 0.505 to -5.000 at s 2.172), TE -4.950 to -5.717 over the
+     same span, tip half-span 2.32 m (py 405). The first build had the LE
+     0.15..0.32 m too far aft and the TE 0.07..0.20 m too far aft, which is
+     what made the model 11.54 m long against the published 11.44.        */
+  var TSPAN = 2.30, TROOT_Z = 0.660, TDIH = Math.tan(10.5 * D2R);
+  function tailLE(s) { return -3.197 - s * 0.830; }
+  function tailTE(s) { return -4.718 - s * 0.460; }
+  var TSTA = [0.00, 0.55, 1.10, 1.62, 2.09, 2.25, 2.30];
 
   function build(THREE, M, C, plain) {
     var g = new THREE.Group();
     var teamCol = (C && C.team !== undefined) ? C.team : 0x3f7fd0;
 
+    /* Twelve tiers, every one a draw call after merge(): the old build had
+       seventeen materials on 82 meshes. Folded together, each within a few
+       levels of grey of the colour it replaces:
+         TANKMAT -> PANEL  (the tank's tighter repeat is baked into its UVs)
+         DUCTM   -> VOID   (0x0b0e12 vs 0x030405, both read black)
+         GUN, TRIM, RUBBER -> BLACK  (0x141619 / 0x24282a / 0x1b1c1e)
+         GUNLIP  -> HOT    (both heat-stained metal)                      */
     var SKIN = skinBody(THREE, plain);
     var PANEL = skinPanel(THREE, 2.4, 1.0);
-    var TANKMAT = skinPanel(THREE, 3.2, 1.6);
     var STEEL = metal(THREE, 0x9aa1a7, 0.52, 0.55);
     var DARKM = metal(THREE, 0x5c6167, 0.55, 0.45, true);
-    var DUCTM = metal(THREE, 0x0b0e12, 0.62, 0.38, true);
     var VOID = metal(THREE, 0x030405, 0.65, 0.36, true);
+    var DUCTM = VOID;
     var HOT = metal(THREE, 0x6e6459, 0.50, 0.52, true);
-    var RUBBER = metal(THREE, 0x1b1c1e, 0.95, 0.04);
+    var BLACK = metal(THREE, 0x1b1e21, 0.72, 0.30, true);
+    var RUBBER = BLACK;
     var GLASSM = glass(THREE);
     var TEAM = metal(THREE, punch(THREE, teamCol), 0.58, 0.36, true);
 
@@ -601,8 +703,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     /* Six .50 calibre muzzles, three a side, in the staggered cluster the
        general-arrangement drawing shows beside the duct: the top port sits
        furthest AFT and the middle one furthest forward. */
-    var GUN = metal(THREE, 0x141619, 0.60, 0.35, true);
-    var GUNLIP = metal(THREE, 0x4a3524, 0.58, 0.38, true);
+    var GUN = BLACK, GUNLIP = HOT;
     var PORTS = [[4.43, 0.053], [4.72, -0.121], [4.71, -0.343]];
     for (var gi = 0; gi < PORTS.length; gi++) {
       for (var gs2 = -1; gs2 <= 1; gs2 += 2) {
@@ -639,7 +740,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
     /* cockpit tub, seat and headrest - these read through a clear bubble and
        an empty transparent shell does not. Instruments stay in the texture. */
-    var TRIM = metal(THREE, 0x24282a, 0.62, 0.38, true);
+    var TRIM = BLACK;
     g.add(box(THREE, 1.34, 0.62, 0.40, 2.98, 0, 0.530, TRIM));
     g.add(box(THREE, 0.26, 0.44, 0.48, 2.74, 0, 0.720, TRIM));
     g.add(box(THREE, 0.13, 0.28, 0.18, 2.58, 0, 0.940, TRIM));
@@ -683,7 +784,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       var r = [], i;
       for (i = 0; i < TSTA.length; i++) {
         var s = TSTA[i], le = tailLE(s), te = tailTE(s), th = 0.095;
-        if (s > 2.02) { var k = (s - 2.02) / 0.21; le -= 0.06 * k; te += 0.10 * k; th *= (1 - 0.5 * k); }
+        if (s > 2.09) { var k = (s - 2.09) / 0.21; le -= 0.06 * k; te += 0.10 * k; th *= (1 - 0.5 * k); }
         r.push({ s: sign * s, xle: le, xte: te, t: th, off: TROOT_Z + s * TDIH });
       }
       return r;
@@ -691,17 +792,19 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     g.add(foil(THREE, tailRibs(1), 10, PANEL, false, 0.55));
     g.add(foil(THREE, tailRibs(-1), 10, PANEL, false, 0.55));
 
-    /* fin: leading edge 42 degrees, trailing edge raked 14 degrees AFT so
-       the tip overhangs the jet pipe - measured off the drawing. */
+    /* fin: re-measured 2026-11-12 off [A]'s side view (99.0 px/m, nose px
+       852, ground py 1270 = z -1.78): LE 40 deg, -2.98 at z 1.05 to -4.40
+       at z 2.75; TE raked 14 degrees AFT so the tip overhangs the jet pipe.
+       The first build had the LE 0.15..0.30 m too far aft (42 deg). */
     var FR = [
-      { s: 0.62, xle: -2.72, xte: -4.90, t: 0.072, off: 0 },
-      { s: 1.10, xle: -3.17, xte: -5.02, t: 0.072, off: 0 },
-      { s: 1.50, xle: -3.54, xte: -5.12, t: 0.073, off: 0 },
-      { s: 1.90, xle: -3.91, xte: -5.21, t: 0.074, off: 0 },
-      { s: 2.25, xle: -4.24, xte: -5.30, t: 0.075, off: 0 },
-      { s: 2.55, xle: -4.52, xte: -5.39, t: 0.077, off: 0 },
-      { s: 2.72, xle: -4.66, xte: -5.44, t: 0.080, off: 0 },
-      { s: 2.80, xle: -4.80, xte: -5.38, t: 0.070, off: 0 },
+      { s: 0.62, xle: -2.62, xte: -4.90, t: 0.072, off: 0 },
+      { s: 1.10, xle: -3.02, xte: -5.02, t: 0.072, off: 0 },
+      { s: 1.50, xle: -3.36, xte: -5.12, t: 0.073, off: 0 },
+      { s: 1.90, xle: -3.69, xte: -5.21, t: 0.074, off: 0 },
+      { s: 2.25, xle: -3.99, xte: -5.30, t: 0.075, off: 0 },
+      { s: 2.55, xle: -4.24, xte: -5.37, t: 0.077, off: 0 },
+      { s: 2.72, xle: -4.40, xte: -5.40, t: 0.080, off: 0 },
+      { s: 2.80, xle: -4.52, xte: -5.30, t: 0.070, off: 0 },
     ];
     g.add(foil(THREE, FR, 10, PANEL, true, 0.75));
 
@@ -726,7 +829,9 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     var TKY = 2.10, tkz = WROOT_Z + TKY * WDIH - 0.62;
     function dropTank(sign) {
       var t = new THREE.Group();
-      t.add(new THREE.Mesh(M.loft(THREE, secs([
+      /* the tank shares PANEL; its tighter repeat (3.2 x 1.6 against the
+         wing's 2.4 x 1.0) is baked into the loft's UVs */
+      t.add(new THREE.Mesh(uvScale(M.loft(THREE, secs([
         [-1.95, 0.022, 0.022, 0],
         [-1.72, 0.120, 0.120, 0],
         [-1.30, 0.218, 0.218, 0],
@@ -736,7 +841,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
         [ 1.02, 0.262, 0.262, 0],
         [ 1.28, 0.185, 0.185, 0],
         [ 1.45, 0.055, 0.055, 0],
-      ]), 24), TANKMAT));
+      ]), 24), 3.2 / 2.4, 1.6), PANEL));
       t.position.set(0.65, sign * TKY, tkz);
       return t;
     }
@@ -839,15 +944,26 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     flash.position.y = 0.0375;
     g.add(flash);
 
-    for (var tb = -1; tb <= 1; tb += 2) {
-      var bsn = 3.40, bcx = (wingLE(bsn) + wingTE(bsn)) * 0.5 - 0.10;
-      var band = box(THREE, 0.66, 0.98, 0.070, bcx, tb * bsn,
-                     WROOT_Z + bsn * WDIH + 0.074, TEAM);
-      band.rotation.x = tb * 0.052;
-      g.add(band);
+    /* Wing bands. The first build laid a 70 mm box at the chord line, which
+       sat INSIDE the 9 per cent aerofoil (half-thickness 0.115 m there) and
+       broke through only near the leading and trailing edges: from above it
+       read as ragged blue glyphs, not a band. Now it is a sleeve of the
+       wing's own section, 0.80 m wide across span 3.00..3.80, thickened
+       45 mm a side at its thickest and 30 mm proud of each edge, so it
+       shows on both surfaces as a clean chordwise band. */
+    function bandRibs(sign) {
+      var r = [], st = [3.00, 3.40, 3.80], i;
+      for (i = 0; i < st.length; i++) {
+        var s5 = st[i], c5 = wingLE(s5) - wingTE(s5), th = 0.110 - s5 * 0.0018;
+        r.push({ s: sign * s5, xle: wingLE(s5) + 0.030, xte: wingTE(s5) - 0.030,
+                 t: th + 0.090 / c5, off: WROOT_Z + s5 * WDIH });
+      }
+      return r;
     }
+    g.add(foil(THREE, bandRibs(1), 12, TEAM, false, 0.30));
+    g.add(foil(THREE, bandRibs(-1), 12, TEAM, false, 0.30));
 
-    return g;
+    return merge(THREE, g);
   }
 
   UNIT_MODELS["nato_e50_fighter"] = {

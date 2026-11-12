@@ -9779,6 +9779,19 @@ function makeCommander() {
       const t = pickStrikeTarget();
       if (t) G.launchSuperweapon(b, t.x, t.y);
     }
+    /* ...and an Ohio, on the same charge (js/subnuke.js, the owner's rule):
+       the silo above has had first call on it, so this fires only what is
+       still ready - the boat's own charge when there is no silo, or a
+       silo's that pickStrikeTarget had nothing for (it would have nothing
+       here either). Same target, same rule: seen, and under our radar. */
+    if (!atPeace && typeof SubNuke !== "undefined") {
+      for (const u of P.units) {
+        if (!SubNuke.ready(u)) continue;
+        const t = pickStrikeTarget();
+        if (t) G.launchSuperweapon(u, t.x, t.y);
+        break;
+      }
+    }
 
     /* -------- NAVY -------- */
     if (nYard >= 1 && queueLen("naval") < 2) {

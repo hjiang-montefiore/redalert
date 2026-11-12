@@ -283,6 +283,42 @@ var FX3D = (function () {
               fins: [[4, 1.40 / 2 - 0.305, 0.55, 0.30, 0.32]] },
     prsm:   { L: 3.96,  D: 0.432, nose: 1.00, spin: 0,
               fins: [[4, 0.20, 0.38, 0.18, 0.22]] },
+    /* ---- UGM-133A TRIDENT II D5, the submarine round (buildSlbm below) ----
+       (owner) the Ohio's Trident was drawn as the generic "ballistic" body - a
+       short tube, a cone and four big tail fins - and the D5 has no fins at
+       all. Sources, fetched 2026-11-12, en.wikipedia raw wikitext:
+         "Trident (missile)" infobox   length 13.41 m, width 2.11 m
+         "UGM-133 Trident II" infobox  length 44 ft 6.6 in, diameter 6 ft 11 in
+                                       (1st stage), i.e. 2.11 m; "Three
+                                       solid-fuel rocket motors"; steering "Single
+                                       movable nozzle" - thrust vectoring, which
+                                       is why there is nothing on the outside to
+                                       steer with
+         "UGM-133 Trident II", Design  "a three-stage rocket"; "The nose fairing
+                                       shields the payload and third-stage motor.
+                                       Mounted within the nose cap (above the nose
+                                       fairing) is an extendable aerospike" (its
+                                       ref is the FAS drawing "TRIDENT II (D5)
+                                       DIMENSIONS AND JOINTS", d5_04.gif)
+         "UGM-133 Trident II", Sequence of operation  "an aerospike atop the
+                                       missile deploys shortly after first-stage
+                                       ignition"; "Trident (missile)": "a
+                                       telescoping outward extension that halves
+                                       aerodynamic drag, is then deployed"
+       Length 13.42 m as the owner asked: the 13.41 m of the one article and
+       the 44 ft (13.41 m) of the other's History section ("83 in" across,
+       2.11 m), not the 13.58 m its infobox's 44 ft 6.6 in converts to.
+       NOT in those references, so drawn by eye and not data: where the two
+       stage joints fall (0.46 and 0.70 of the length from the tail), where
+       the fairing starts to close (0.80) and how blunt its cap is, and the
+       spike's reach and the disc on its tip. The FAS drawing that has them
+       could not be fetched here (fas.org refused), and no photograph was
+       measured: Wikimedia's API was rate-limiting. The joints are bands of
+       the nose material, not a claim about paint. Eight meshes: body,
+       fairing, two joint bands, spike rod and disc, flame and core. */
+    trident2: { L: 13.42, D: 2.11, slbm: true, spin: 0, fins: [],
+                joints: [0.46, 0.70], fairAt: 0.80, cap: 0.30,
+                spike: 2.2, disc: 0.42 },
   };
   /* one fin as a thin trapezoid plate: root chord on the body, tip chord at
      height h, trailing edges in line, t thick; triangles wound outward */
@@ -300,7 +336,65 @@ var FX3D = (function () {
       }
     }
   }
+  /* The SLBM: a finless cylinder, its stage joints, the blunt nose fairing
+     and the aerospike stowed in its cap. The spike is a group "spike" whose
+     scale.x render3d runs from ~0 (stowed) to 1 (out) after the first stage
+     lights; at rest here it is stowed, so the round's length is the
+     published one. +x is the nose, as in buildRound. */
+  function buildSlbm(THREE, m, o) {
+    const g = new THREE.Group(), S = VIS;
+    const L = o.L * S, R = o.D * 0.5 * S, xa = -L / 2, xf = xa + o.fairAt * L;
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(R, R, xf - xa, 16), m.missileBody);
+    body.rotation.z = Math.PI / 2;
+    body.position.x = (xa + xf) / 2;
+    g.add(body);
+    /* the fairing: a lathe from the full radius to the flat of the cap, its
+       profile an arc so the shoulder is round and the cap blunt */
+    const fl = L / 2 - xf, rc = R * o.cap, pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10, a = t * Math.PI / 2;
+      pts.push(new THREE.Vector2(rc + (R - rc) * Math.cos(a), fl * Math.sin(a)));
+    }
+    pts.push(new THREE.Vector2(0, fl));        // bottom to top: faces out
+    const fair = new THREE.Mesh(new THREE.LatheGeometry(pts, 16), m.missileBody);
+    fair.rotation.z = -Math.PI / 2;            // lathe +y (its height) onto +x
+    fair.position.x = xf;
+    fair.name = "fairing";
+    g.add(fair);
+    for (const j of o.joints) {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(R * 1.015, R * 1.015, 0.12 * S, 16), m.missileNose);
+      b.rotation.z = Math.PI / 2;
+      b.position.x = xa + j * L;
+      g.add(b);
+    }
+    const sp = new THREE.Group();
+    sp.name = "spike";
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * S, 0.07 * S, o.spike * S, 6), m.missileNose);
+    rod.rotation.z = Math.PI / 2;
+    rod.position.x = o.spike * S / 2;
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(o.disc * S / 2, o.disc * S / 2, 0.05 * S, 10), m.missileNose);
+    disc.rotation.z = Math.PI / 2;
+    disc.position.x = o.spike * S;
+    sp.add(rod, disc);
+    sp.position.x = L / 2;
+    sp.scale.x = 0.02;                         // stowed inside the cap
+    g.add(sp);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(R * 1.2, L * 0.55, 8), m.flame);
+    flame.rotation.z = Math.PI / 2;
+    flame.position.x = xa - L * 0.275;
+    flame.name = "flame";
+    g.add(flame);
+    const core = new THREE.Mesh(new THREE.ConeGeometry(R * 0.65, L * 0.28, 8), m.flameCore);
+    core.rotation.z = Math.PI / 2;
+    core.position.x = xa - L * 0.14;
+    core.name = "core";
+    g.add(core);
+    g.userData.len = L;
+    g.userData.spike = sp;
+    return g;
+  }
   function buildRound(THREE, m, o) {
+    if (o.slbm) return buildSlbm(THREE, m, o);
     const g = new THREE.Group(), S = VIS;
     /* orient() writes yaw into rotation.y and pitch into rotation.z every
        frame and adds the spin to rotation.x. In the default XYZ order that

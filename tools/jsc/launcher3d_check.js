@@ -53,7 +53,11 @@ var CELLS = { nato_e80_mlrs: 12, nato_e90_mlrs: 12, mlrs_n: 12, nato_e90_tel: 2,
 /* deu_e90_mlrs (MARS) and fra_e90 / fra_e00_mlrs (LRM, LRU) are the same M270
    (js/hero/deu_us_pattern.js, js/hero/fr_armour2.js), firing the M26 / GMLRS */
 var ORDS = { nato_e80_mlrs: "m26", nato_e90_mlrs: "m26", deu_e90_mlrs: "m26", fra_e90_mlrs: "m26", fra_e00_mlrs: "gmlrs", gbr_e80_mlrs: "m26", gbr_e90_mlrs: "m26", gbr_e00_mlrs: "gmlrs", mlrs_f: "gmlrs", mlrs_n: "gmlrs", nato_e90_tel: "atacms",
-             nato_e00_mlrs: "gmlrs", nato_e00_tel: "atacms", tel_n: "prsm" };
+             nato_e00_mlrs: "gmlrs", nato_e00_tel: "atacms", tel_n: "prsm",
+             /* Trident II D5: the Ohio and the Vanguard (js/hero/us_ohio_ssbn.js);
+                not in CELLS - a boat has no pod to lay - and checked in play by
+                tools/jsc/ohio_nuke_check.js */
+             ssbn_n: "trident2", ssbn_b: "trident2" };
 /* mesh counts of FX3D.create(THREE, p) with no round named, measured at 2e41321 */
 var BEFORE = [["arc", null, 3], ["shell", null, 4], ["bullet", null, 4], ["bomb", null, 7], ["torpedo", null, 10],
               ["depth", null, 3], ["missile", { dmg: 100, profile: "skim" }, 19], ["missile", { dmg: 300, profile: "cruise" }, 20],
