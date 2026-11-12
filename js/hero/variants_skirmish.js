@@ -116,7 +116,10 @@
      four "roadwheel" axle groups (roc_ground.js).
    LOAD ORDER: after js/hero/pla_j10.js, js/hero/pla_z10.js, js/hero/nato_e90_mbt.js and js/hero/roc_ground.js
      (and after the generic armour/air spec files that register these keys).  A missing base leaves its row on
-     its old model.  Model space: +X nose, +Y left (port), +Z up, metres.  ASCII only.  */
+     its old model.  Model space: +X nose, +Y left (port), +Z up, metres.  ASCII only.
+   DETAIL PASS 2 (the owner: the models looked plainer than the old ones): hvy_r: the plain green is a canvas (dpWeather: seams, bolts, panels, grime; no camouflage), and the
+     crew's kit is added in the bustle rack and on the turret-side boxes in its own canvas-coloured material
+     (mesh "m1a2t_kit").  8452 -> 9196 tris, 13 -> 14 draw calls.  The other three rows are unchanged.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -389,11 +392,79 @@ var HeroVariantsSkirmish = (function () {
 
   /* =========================================================== M1A2T ===
      nato_e90_mbt.js: ground at z 0, turret group "turret" at the ring (0.15, 0, 1.48). */
+  /* DETAIL PASS 2: the weathered paint.  The module's own paint canvas (or a flat base colour) drawn
+     onto a 512 px tile, then plate seams with a lit edge, bolt rows along some of them, access-panel
+     outlines with corner screws, rain streaks, grime and dust, chipped paint and oil spots.  Plain
+     paint: no markings, numbers or camouflage.  Cached per source. */
+  var __DPW = {};
+  function dpWeather(THREE, src, base, seed) {
+    var key = (src && src.uuid ? src.uuid : "flat") + "|" + base + "|" + seed;
+    if (__DPW[key] !== undefined) return __DPW[key];
+    var t = null;
+    try {
+      var S = 512, cv = document.createElement("canvas"), q, i, k, x, y, w, h, n, xs = [];
+      var rs = (seed * 7 + 13) >>> 0, R = function () { rs = (Math.imul(rs, 1664525) + 1013904223) >>> 0; return rs / 4294967296; };
+      cv.width = cv.height = S; q = cv.getContext("2d");
+      q.fillStyle = base || "#555544"; q.fillRect(0, 0, S, S);
+      if (src && src.image) { try { q.drawImage(src.image, 0, 0, S, S); } catch (e) { /* flat base */ } }
+      /* plate seams: four vertical butts, horizontal seams staggered between them, a bolt row on some */
+      for (i = 0; i < 4; i++) xs.push(Math.floor(i * 128 + 20 + R() * 80) + 0.5);
+      for (i = 0; i < 4; i++) {
+        q.globalAlpha = 1; q.strokeStyle = "rgba(14,15,10,0.42)"; q.lineWidth = 2;
+        q.beginPath(); q.moveTo(xs[i], 0); q.lineTo(xs[i], S); q.stroke();
+        q.strokeStyle = "rgba(255,250,225,0.12)"; q.lineWidth = 1;
+        q.beginPath(); q.moveTo(xs[i] + 2, 0); q.lineTo(xs[i] + 2, S); q.stroke();
+        y = Math.floor(60 + R() * 120) + 0.5;
+        for (k = 0; k < 2; k++) {
+          var xa = xs[i], xb = i < 3 ? xs[i + 1] : xs[0] + S;
+          q.strokeStyle = "rgba(14,15,10,0.38)"; q.lineWidth = 2;
+          q.beginPath(); q.moveTo(xa, y); q.lineTo(xb, y); q.stroke();
+          q.beginPath(); q.moveTo(xa - S, y); q.lineTo(xb - S, y); q.stroke();
+          q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1;
+          q.beginPath(); q.moveTo(xa, y + 2); q.lineTo(xb, y + 2); q.stroke();
+          if ((i + k) % 2 === 0) for (x = xa + 8; x < xb - 4; x += 15) {
+            q.fillStyle = "rgba(12,12,8,0.45)"; q.fillRect(x % S, y - 6, 3, 3);
+            q.fillStyle = "rgba(255,250,225,0.18)"; q.fillRect(x % S, y - 7, 2, 1);
+          }
+          y = (y + 200 + Math.floor(R() * 60)) % S;
+        }
+      }
+      /* access panels, a screw at each corner */
+      for (i = 0; i < 6; i++) {
+        x = Math.floor(R() * (S - 90)) + 10.5; y = Math.floor(R() * (S - 70)) + 10.5; w = 26 + Math.floor(R() * 60); h = 18 + Math.floor(R() * 44);
+        q.strokeStyle = "rgba(14,15,10,0.36)"; q.lineWidth = 1.5; q.strokeRect(x, y, w, h);
+        q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1; q.strokeRect(x + 1.5, y + 1.5, w, h);
+        q.fillStyle = "rgba(12,12,8,0.5)";
+        q.fillRect(x + 3, y + 3, 2, 2); q.fillRect(x + w - 5, y + 3, 2, 2); q.fillRect(x + 3, y + h - 5, 2, 2); q.fillRect(x + w - 5, y + h - 5, 2, 2);
+      }
+      /* rain streaks, grime and dust, chips and scratches, oil spots */
+      for (i = 0; i < 260; i++) { q.fillStyle = (i % 4) ? "rgba(18,16,10,0.08)" : "rgba(230,225,200,0.06)"; q.fillRect(R() * S, R() * S, 1 + R() * 2, 8 + R() * 54); }
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 3) ? "rgba(30,25,15,0.08)" : "rgba(150,135,100,0.08)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 8 + R() * 46, 4 + R() * 22, R() * Math.PI, 0, 2 * Math.PI); q.fill();
+      }
+      for (i = 0; i < 180; i++) { q.fillStyle = (i % 2) ? "rgba(205,200,175,0.22)" : "rgba(10,10,8,0.30)"; n = 1 + Math.floor(R() * 3); q.fillRect(R() * S, R() * S, n, n); }
+      q.strokeStyle = "rgba(210,205,180,0.14)"; q.lineWidth = 1;
+      for (i = 0; i < 14; i++) { x = R() * S; y = R() * S; q.beginPath(); q.moveTo(x, y); q.lineTo(x + (R() - 0.5) * 40, y + (R() - 0.5) * 14); q.stroke(); }
+      for (i = 0; i < 8; i++) { q.fillStyle = "rgba(12,10,6,0.16)"; q.beginPath(); q.ellipse(R() * S, R() * S, 5 + R() * 12, 4 + R() * 9, 0, 0, 2 * Math.PI); q.fill(); }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (src && src.repeat && t.repeat) t.repeat.copy(src.repeat);
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    __DPW[key] = t;
+    return t;
+  }
   function buildM1A2T(THREE, M, C) {
     var g = HeroAbrams.build(THREE, M, C, "sepv3");
     V = THREE;
-    /* plain paint: the one textured material (the merged SKIN) becomes plain green */
-    var plain = new V.MeshStandardMaterial({ color: 0x4a5636, roughness: 0.90, metalness: 0.05, flatShading: true });
+    /* plain paint: the one textured material (the merged SKIN) becomes plain green.  DETAIL PASS 2: the
+       green is a canvas now (dpWeather over the flat #4a5636: plate seams, bolt rows, panels, streaks,
+       grime and chips - no camouflage, no markings), in place of the flat colour */
+    var plain = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.90, metalness: 0.05, flatShading: true });
+    var ptx = dpWeather(V, null, "#4a5636", 1992);
+    if (ptx) { ptx.repeat.set(0.85, 0.85); plain.map = ptx; } else plain.color.setHex(0x4a5636);
     g.traverse(function (o) { if (o.isMesh && o.material && o.material.map) o.material = plain; });
     var tur = g.getObjectByName("turret");
     if (!tur) return g;
@@ -411,6 +482,28 @@ var HeroVariantsSkirmish = (function () {
     B.add("skin", bx(FX - 0.34, FX - 0.26, Y1 - 0.04, Y1, WZ0, WZ1));
     B.add("glass", bx(FX - 0.26, FX - 0.02, Y1 - 0.03, Y1 - 0.01, WZ0, WZ1));
     B.add("skin", bx(FX - 0.10, FX - 0.02, Y0 + 0.22, Y0 + 0.30, 0.94, Z0));   /* its post on the hatch ring */
+    /* DETAIL PASS 2: the crew's kit in the bustle rack (A2 shows it loaded; contents by proportion, NOT
+       CONFIRMED) - kit bags strapped in a row, a rolled tarpaulin across the top, two jerrycans at the
+       right end.  The kit is its own canvas-coloured material ("m1a2t_kit", one more draw call, 14) so it
+       reads against the green; the jerrycans are in the plain paint */
+    T.kit = mat(0x6a6247, 0.95, 0.02);
+    var bi, bxs = [-1.22, -0.84, -0.46, -0.08, 0.30];
+    for (bi = 0; bi < bxs.length; bi++) {
+      var bh = 0.40 + (bi % 2) * 0.12;
+      B.add("kit", bx(-2.99, -2.67, bxs[bi], bxs[bi] + 0.36, 0.30, 0.30 + bh));
+      B.add("kit", bx(-3.005, -2.655, bxs[bi] + 0.16, bxs[bi] + 0.20, 0.30, 0.31 + bh));
+    }
+    B.add("kit", cyl(0.11, 0.11, 2.30, 12, "y", -2.83, 0, 0.86));
+    for (bi = 0; bi < 3; bi++) B.add("kit", cyl(0.122, 0.122, 0.05, 12, "y", -2.83, -0.8 + bi * 0.8, 0.86));
+    /* a rolled tarpaulin or net strapped on each turret-side stowage box (A2) */
+    for (bi = -1; bi <= 1; bi += 2) {
+      B.add("kit", cyl(0.09, 0.09, 1.10, 12, "x", -1.10, bi * 1.71, 0.91));
+      for (var bj = 0; bj < 3; bj++) B.add("kit", cyl(0.10, 0.10, 0.04, 12, "x", -1.50 + bj * 0.40, bi * 1.71, 0.91));
+    }
+    for (bi = 0; bi < 2; bi++) {
+      B.add("skin", bx(-2.99, -2.66, 0.80 + bi * 0.18, 0.96 + bi * 0.18, 0.30, 0.77));
+      B.add("skin", bx(-2.90, -2.75, 0.85 + bi * 0.18, 0.91 + bi * 0.18, 0.77, 0.80));
+    }
     flush(tur, B, T, "m1a2t");
     return g;
   }

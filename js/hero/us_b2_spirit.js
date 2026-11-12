@@ -66,6 +66,15 @@
    Paint: the skin is one dark grey; the intake mouths and exhaust troughs
    are near-black (the troughs are heat-resistant tile); the team flash is a
    strip along each outer wing's upper surface, exactly C.team.
+   DETAIL PASS (outline untouched): the two coats' sheets now cover the
+   aircraft once instead of repeating, and carry the RAM tape along the
+   leading and trailing edges, seams parallel to them and spanwise joints,
+   saw-toothed access panels, exhaust deposits aft of the troughs and
+   grime; the bays' aft edges and the wells' edges are laid saw-toothed;
+   the auxiliary inlets open on top; the main and nose gear doors stand open
+   beside their legs with toothed lower edges; hub caps, torque links,
+   collars, brake lines and the nose leg's landing lights. Places are from
+   the rear, head-on and Dyess photographs, NOT measured.
    Everything is baked into one mesh per material before it is returned
    (mergeByMaterial), the gear in a group of its own so the renderer can
    stow it: 7 materials and 7 draw calls.
@@ -168,7 +177,7 @@ var HeroB2 = (function () {
     if (_sheets[key] !== undefined) return _sheets[key];
     var tex = null;
     try {
-      var S = 512, cv = document.createElement("canvas");
+      var S = 1024, cv = document.createElement("canvas");
       cv.width = S; cv.height = S;
       var g = cv.getContext("2d"), R = rngFor(P.seed), i, k;
       g.fillStyle = P.base; g.fillRect(0, 0, S, S);
@@ -177,15 +186,70 @@ var HeroB2 = (function () {
         for (k = 0; k < P.spots[i][1]; k++)
           blob(g, R() * S, R() * S, P.spots[i][2] + (P.spots[i][3] - P.spots[i][2]) * R(), R, S);
       }
-      /* panel seams every 2.4 m each way: the B-2's panels are big and flush */
-      g.strokeStyle = "rgba(0,0,0," + P.seam + ")"; g.lineWidth = 1;
-      for (i = 0; i < S; i += 38) {
-        g.beginPath(); g.moveTo(i + 0.5, 0); g.lineTo(i + 0.5, S); g.stroke();
-        g.beginPath(); g.moveTo(0, i + 0.5); g.lineTo(S, i + 0.5); g.stroke();
+      /* the detail pass: the sheet now maps the whole aircraft once (u along
+         the chord stations, v across the span, see planarUV), so the
+         features land where the photographs have them. Panel seams run
+         parallel to the leading edge and to the trailing-edge saw-teeth
+         (the 35-degree rule of the planform), with spanwise joints between;
+         the lighter grey RAM tape and filler along the leading edge and each
+         trailing-edge segment; saw-toothed access-panel outlines; on the top
+         coat the exhaust deposits aft of the troughs and the walkway
+         outlines over the centre body; fluid streaks and grime. */
+      function A(a) { return a / UA * S; }
+      function Yv(y) { return (y + UY) / (2 * UY) * S; }
+      function line(a0, y0, a1, y1, col, w) {
+        g.strokeStyle = col; g.lineWidth = w || 1;
+        g.beginPath(); g.moveTo(A(a0), Yv(y0)); g.lineTo(A(a1), Yv(y1)); g.stroke();
+      }
+      function zig(a0, y0, a1, y1, n, d, col) {
+        var k, m = 2 * n, da = a1 - a0, dy = y1 - y0, L = Math.sqrt(da * da + dy * dy) || 1;
+        g.strokeStyle = col; g.lineWidth = 1.4;
+        g.beginPath();
+        for (k = 0; k <= m; k++) {
+          var o = (k % 2 ? d : -d) / 2, aa = a0 + da * k / m - dy / L * o, yy = y0 + dy * k / m + da / L * o;
+          if (k) g.lineTo(A(aa), Yv(yy)); else g.moveTo(A(aa), Yv(yy));
+        }
+        g.stroke();
+      }
+      var seam = "rgba(0,0,0," + (P.seam * 2.2).toFixed(3) + ")", tape = "rgba(150,156,160,0.28)", sd2, q;
+      for (sd2 = -1; sd2 <= 1; sd2 += 2) {
+        /* leading-edge tape and two parallel seams behind it */
+        line(0, 0, TAN * HALF, sd2 * HALF, tape, 4);
+        for (q = 1; q <= 3; q++) line(q * 1.6, 0, TAN * HALF + q * 1.0, sd2 * HALF, seam, 1);
+        /* trailing-edge tape, segment by segment, and a seam ahead of each */
+        for (q = 0; q < TEV.length - 1; q++) {
+          line(TEV[q][1], sd2 * TEV[q][0], TEV[q + 1][1], sd2 * TEV[q + 1][0], tape, 3);
+          line(TEV[q][1] - 1.4, sd2 * TEV[q][0], TEV[q + 1][1] - 1.4, sd2 * TEV[q + 1][0], seam, 1);
+        }
+        /* spanwise joints */
+        for (q = 0; q < 9; q++) {
+          var yq = 2.5 + q * 2.6;
+          line(TAN * yq + 0.3, sd2 * yq, teA(yq) - 0.3, sd2 * yq, seam, 1);
+        }
+        /* saw-toothed access panels */
+        for (q = 0; q < 5; q++) {
+          var y1 = 8.0 + q * 3.4, a1 = TAN * y1 + 2.0;
+          zig(a1, sd2 * y1, a1, sd2 * (y1 + 1.4), 3, 0.35, "rgba(0,0,0,0.30)");
+          zig(a1 + 1.2, sd2 * y1, a1 + 1.2, sd2 * (y1 + 1.4), 3, 0.35, "rgba(0,0,0,0.30)");
+          line(a1, sd2 * y1, a1 + 1.2, sd2 * y1, "rgba(0,0,0,0.30)", 1);
+          line(a1, sd2 * (y1 + 1.4), a1 + 1.2, sd2 * (y1 + 1.4), "rgba(0,0,0,0.30)", 1);
+        }
+        if (key === "top") {
+          /* exhaust deposits aft of the trough */
+          var eg = g.createLinearGradient(A(14.0), 0, A(21.0), 0);
+          eg.addColorStop(0, "rgba(90,82,70,0.0)"); eg.addColorStop(1, "rgba(90,82,70,0.30)");
+          g.fillStyle = eg; g.fillRect(A(14.0), Yv(sd2 > 0 ? 2.8 : -5.6), A(21.0) - A(14.0), Yv(5.6) - Yv(2.8));
+          /* walkway outline on the centre body */
+          line(4.5, sd2 * 1.3, 13.0, sd2 * 1.3, "rgba(0,0,0,0.25)", 1);
+        }
+      }
+      for (i = 0; i < 60; i++) {
+        g.fillStyle = "rgba(0,0,0," + (0.03 + R() * 0.05).toFixed(3) + ")";
+        g.fillRect(R() * S, R() * S, 6 + R() * 26, 2 + R() * 5);
       }
       tex = new THREE.CanvasTexture(cv);
       tex.encoding = THREE.sRGBEncoding;
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
       tex.anisotropy = 4;
     } catch (e) { tex = null; }
     _sheets[key] = tex;
@@ -219,9 +283,12 @@ var HeroB2 = (function () {
   }
 
   /* ========================================================== geometry == */
+  /* the detail pass: one sheet over the whole aircraft (it repeated every
+     32 m before), so painted features land in their places */
+  var UA = 22.0, UY = 27.0;
   function planarUV(THREE, g) {
     var p = g.attributes.position.array, n = p.length / 3, uv = new Float32Array(n * 2), i;
-    for (i = 0; i < n; i++) { uv[2 * i] = (NOSE - p[3 * i]) / 32; uv[2 * i + 1] = p[3 * i + 1] / 32; }
+    for (i = 0; i < n; i++) { uv[2 * i] = (NOSE - p[3 * i]) / UA; uv[2 * i + 1] = 1 - (p[3 * i + 1] + UY) / (2 * UY); }
     g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   }
   function triArea(p, A, B, C) {
@@ -348,6 +415,27 @@ var HeroB2 = (function () {
       })(lines[k]);
     }
     patch(THREE, grp, T.ink, -4.4, 4.4, 4, constant(5.86), constant(5.95), 1, false, 0.05);   /* bay front, behind the nose well */
+    /* the detail pass: the bays' aft edges and the gear wells' fore and aft
+       edges saw-toothed, as all the B-2's doors are (Dyess underside) */
+    function toothed(y0, y1, a, n, d, up) {
+      patch(THREE, grp, T.ink, y0, y1, 2 * n, function (y) {
+        var t = (y - y0) / (y1 - y0) * n, f = t - Math.floor(t);
+        return a - d * (1 - Math.abs(2 * f - 1));
+      }, function (y) {
+        var t = (y - y0) / (y1 - y0) * n, f = t - Math.floor(t);
+        return a + 0.09 - d * (1 - Math.abs(2 * f - 1));
+      }, 1, up, 0.05);
+    }
+    toothed(-4.4, 4.4, 13.0, 8, 0.45, false);
+    for (s = -1; s <= 1; s += 2) {
+      toothed(Math.min(s * 5.5, s * 6.9), Math.max(s * 5.5, s * 6.9), 10.2, 2, 0.35, false);
+      toothed(Math.min(s * 5.5, s * 6.9), Math.max(s * 5.5, s * 6.9), 12.6, 2, 0.35, false);
+      /* the auxiliary inlets on top, outboard and aft of each main intake,
+         open on the ground (the rear and head-on photographs) */
+      patch(THREE, grp, T.ink, s * 5.7, s * 6.5, 2, constant(9.0), constant(9.6), 1, true, 0.05);
+      patch(THREE, grp, T.ink, s * 2.4, s * 2.8, 1, constant(9.2), constant(9.8), 1, true, 0.05);
+    }
+    toothed(-0.55, 0.55, 1.6, 2, 0.25, false);
     patch(THREE, grp, T.ink, -0.55, 0.55, 2, constant(1.6), constant(4.6), 3, false, 0.05);   /* nose gear well doors */
     for (s = -1; s <= 1; s += 2)
       patch(THREE, grp, T.ink, s * 5.5, s * 6.9, 2, constant(10.2), constant(12.6), 2, false, 0.05);   /* main gear well doors */
@@ -396,8 +484,39 @@ var HeroB2 = (function () {
         gear.add(strut(THREE, T.metal, [NOSE - 11.4 - a0 * 0.7, y0 - 0.37, G + 0.55], [NOSE - 11.4 - a0 * 0.7, y0 + 0.37, G + 0.55], 0.06, 6));
         gear.add(wheel(THREE, T.tyre, 0.55, 0.4, NOSE - 11.4 - a0 * 0.7, y0 - 0.27, G + 0.55));
         gear.add(wheel(THREE, T.tyre, 0.55, 0.4, NOSE - 11.4 - a0 * 0.7, y0 + 0.27, G + 0.55));
+        /* the detail pass: hub caps */
+        gear.add(wheel(THREE, T.metal, 0.20, 0.82, NOSE - 11.4 - a0 * 0.7, y0, G + 0.55));
       }
+      /* the detail pass: the main gear doors standing open, inboard and
+         outboard of the well, their lower edges saw-toothed (the head-on
+         ramp photograph), the oleo's gland collar, torque links, the brake
+         lines down the leg */
+      for (a0 = -1; a0 <= 1; a0 += 2) {
+        var dy = y0 + a0 * 0.75, top2 = belly(11.4, dy) - 0.02, dpts = [], k, n = 4;
+        var x0 = NOSE - 10.3, x1 = NOSE - 12.5, bot = top2 - 1.15;
+        var shape = new THREE.Shape();
+        shape.moveTo(x0, top2); shape.lineTo(x1, top2);
+        for (k = n; k >= 0; k--) shape.lineTo(x1 + (x0 - x1) * (n - k) / n, k % 2 ? bot : bot + 0.18);
+        var dg = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false });
+        dg.rotateX(Math.PI / 2); dg.translate(0, dy + 0.02, 0);
+        gear.add(new THREE.Mesh(dg, T.low));
+      }
+      gear.add(strut(THREE, T.metal, [NOSE - 11.4, y0, G + 1.62], [NOSE - 11.4, y0, G + 1.72], 0.19, 12));
+      gear.add(strut(THREE, T.metal, [NOSE - 11.35, y0 + s * 0.14, G + 0.95], [NOSE - 11.05, y0 + s * 0.14, G + 1.25], 0.03, 5));
+      gear.add(strut(THREE, T.metal, [NOSE - 11.05, y0 + s * 0.14, G + 1.25], [NOSE - 11.35, y0 + s * 0.14, G + 1.55], 0.03, 5));
+      gear.add(strut(THREE, T.ink, [NOSE - 11.55, y0 - s * 0.14, bz], [NOSE - 11.55, y0 - s * 0.14, G + 0.75], 0.015, 4));
     }
+    /* the nose leg's doors (open, either side of the well), its torque
+       links, collar and landing lights; hub caps */
+    for (s = -1; s <= 1; s += 2) {
+      var ny = s * 0.58, nt = belly(3.0, ny) - 0.02;
+      gear.add(box(THREE, T.low, 2.6, 0.04, 0.85, NOSE - 3.1, ny, nt - 0.42));
+      gear.add(wheel(THREE, T.metal, 0.16, 0.30, NOSE - 3.55, s * 0.24, G + 0.42));
+    }
+    gear.add(strut(THREE, T.metal, [NOSE - 3.60, 0, G + 0.80], [NOSE - 3.38, 0, G + 1.00], 0.025, 5));
+    gear.add(strut(THREE, T.metal, [NOSE - 3.38, 0, G + 1.00], [NOSE - 3.66, 0, G + 1.20], 0.025, 5));
+    gear.add(strut(THREE, T.metal, [NOSE - 3.70, 0, G + 1.30], [NOSE - 3.68, 0, G + 1.38], 0.15, 10));
+    gear.add(box(THREE, T.glass, 0.10, 0.36, 0.12, NOSE - 3.52, 0, G + 1.55));
     root.add(gear);
   }
 

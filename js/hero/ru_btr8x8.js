@@ -66,7 +66,8 @@
      photograph of a BTR-70 was found: taken between the 60PB's and the 80's); the size of the BTR-70 side hatch;
      roof hatch positions on the 70 and 80; the BTR-80 smoke-discharger layout (six 902V, three each side at the
      turret rear); the function of the BTR-80 / 82A rear-roof tube; which side the KPVT sits on in the BPU-1.
-     Not drawn: antennas, stowage and canvas, markings, the 82A's add-on kits and jammers.
+     Not drawn: stowage and canvas, markings, the 82A's add-on kits and jammers (the 60PB / 70 whip aerial is
+     drawn in the detail pass, from A).
    Nodes: "turret" (the ring centre on the roof, at rest pointing forward), four "roadwheel" axle groups (local Y
      the axle, both tyres in each).  Materials: paint (canvas texture, planar UVs), dark, glass, lamp, wheel (vertex
      colours: rubber and green hubs), C.team (two small strips on the roof).
@@ -701,6 +702,70 @@ var HeroRuBtr8x8 = (function () {
     for (s = -1; s <= 1; s += 2) box(B.team, tx0, tx1, s > 0 ? 0.80 : -1.02, s > 0 ? 1.02 : -0.80, zr + 0.01, zr + 0.03);
   }
 
+  /* ---------------------------------------------------------------- fittings
+     The small fittings photograph A shows that the first pass left out ("BTR-60PB-4.jpg", re-fetched for the
+     detail pass): the small latch boxes high on the upper flank, the U handles over the firing-port covers, the
+     width-indicator rods standing at the front corners of the roof, the bolt rows along the chine, the hub nuts
+     (in wheel()); on the 60PB and 70 the ribbed exhaust silencer with its guard at the rear top corner of each
+     flank and the whip aerial on the roof (A); on the 60PB the round ventilator dome on the roof behind the
+     turret and the access panel at the rear of the flank (A).  Positions read off A's proportions: NOT
+     CONFIRMED to better than about 0.1 m; on the 70 and 80 taken from the 60PB. */
+  function addFittings(B, v) {
+    var S = v.S, mid = rowAt(S, 0), zr = mid[7], s, i, x, f, A, E;
+    var LB = v.id === "b60" ? [2.30, 1.55, -0.30, -1.75, -2.55] : [2.30, 1.40, 0.45, -1.45, -2.35];
+    var PX = v.id === "b60" ? [0.45, -0.97, -2.05] : (v.id === "b70" ? [1.70, -0.75, -1.55] : [1.75, -1.30, -2.00]);
+    for (s = -1; s <= 1; s += 2) {
+      /* the latch boxes high on the flank (A) */
+      for (i = 0; i < LB.length; i++) {
+        f = flank(v, LB[i], s);
+        onFlank(B.dark, v, s, LB[i] - 0.05, LB[i] + 0.05, f.len - 0.12, f.len - 0.05, 0.0, 0.045);
+      }
+      /* the U handle over each firing-port cover (A) */
+      for (i = 0; i < PX.length; i++) {
+        A = flankPt(v, s, PX[i] - 0.07, 0.55, 0.0); E = flankPt(v, s, PX[i] + 0.07, 0.55, 0.0);
+        bar(B.dark, A, flankPt(v, s, PX[i] - 0.07, 0.55, 0.05), 0.02);
+        bar(B.dark, E, flankPt(v, s, PX[i] + 0.07, 0.55, 0.05), 0.02);
+        bar(B.dark, flankPt(v, s, PX[i] - 0.07, 0.55, 0.05), flankPt(v, s, PX[i] + 0.07, 0.55, 0.05), 0.02);
+      }
+      /* the bolt row along the chine */
+      for (x = -2.9; x < 2.6; x += 0.36) box(B.dark, x - 0.015, x + 0.015, s > 0 ? rowAt(S, x)[6] - 0.02 : -rowAt(S, x)[6] - 0.01, s > 0 ? rowAt(S, x)[6] + 0.01 : -rowAt(S, x)[6] + 0.02, rowAt(S, x)[5] + 0.03, rowAt(S, x)[5] + 0.06);
+      /* the width-indicator rod at the front corner of the roof, its loop at the top (A) */
+      var rr = rowAt(S, 2.62), ry = s * (rr[8] - 0.05);
+      bar(B.dark, [2.62, ry, rr[7]], [2.62, ry, rr[7] + 0.40], 0.022);
+      bar(B.dark, [2.62, ry, rr[7] + 0.40], [2.52, ry, rr[7] + 0.48], 0.022);
+      bar(B.dark, [2.52, ry, rr[7] + 0.48], [2.42, ry, rr[7] + 0.40], 0.022);
+      cylZ(B.dark, 2.62, ry, rr[7], rr[7] + 0.05, 0.05, 8);
+      if (v.id === "b60" || v.id === "b70") {
+        /* the ribbed exhaust silencer at the rear top corner of the flank, under its bar guard (A) */
+        var x0 = v.id === "b60" ? -3.22 : -3.12, x1 = x0 + 0.70;
+        A = flankPt(v, s, x0, 0.32, 0.085); E = flankPt(v, s, x1, 0.50, 0.085);
+        cyl(B.dark, A, E, 0.07, 0.07, 10);
+        for (i = 0; i <= 6; i++) {
+          var t = i / 6, c = [A[0] + (E[0] - A[0]) * t, A[1] + (E[1] - A[1]) * t, A[2] + (E[2] - A[2]) * t], d = unit(sub(E, A));
+          cyl(B.dark, [c[0] - d[0] * 0.012, c[1] - d[1] * 0.012, c[2] - d[2] * 0.012], [c[0] + d[0] * 0.012, c[1] + d[1] * 0.012, c[2] + d[2] * 0.012], 0.082, 0.082, 10);
+        }
+        for (i = 0; i < 3; i++) {
+          var gx = x0 + 0.10 + i * 0.25, gw = 0.32 + (0.50 - 0.32) * (gx - x0) / 0.70;
+          bar(B.paint, flankPt(v, s, gx, gw - 0.12, 0.0), flankPt(v, s, gx, gw - 0.12, 0.175), 0.02);
+          bar(B.paint, flankPt(v, s, gx, gw - 0.12, 0.175), flankPt(v, s, gx, gw + 0.14, 0.175), 0.02);
+          bar(B.paint, flankPt(v, s, gx, gw + 0.14, 0.175), flankPt(v, s, gx, gw + 0.14, 0.0), 0.02);
+        }
+        cyl(B.dark, A, [A[0] - 0.10, A[1], A[2] - 0.06], 0.05, 0.05, 8);
+      }
+      if (v.id === "b60") flankPanel(B, v, s, -2.42, -1.98, 0.18, 0.56, 0.03);
+    }
+    if (v.id === "b60") {
+      /* the round ventilator dome on the roof behind the turret (A) */
+      cylZ(B.paint, -0.70, -0.35, zr - 0.01, zr + 0.06, 0.17, 14);
+      cyl(B.paint, [-0.70, -0.35, zr + 0.06], [-0.70, -0.35, zr + 0.12], 0.15, 0.08, 14);
+    }
+    if (v.id === "b60" || v.id === "b70") {
+      /* the whip aerial and its base on the roof's left side (A) */
+      cylZ(B.dark, -1.30, 0.86, zr - 0.01, zr + 0.12, 0.05, 8);
+      cyl(B.dark, [-1.30, 0.86, zr + 0.12], [-1.30, 0.86, zr + 1.60], 0.012, 0.006, 5);
+    }
+  }
+
   /* ---------------------------------------------------------------- turrets (local: ring centre, roof at 0) */
   function kpvtPkt(B, gx, gz, kpvtLen) {
     box(B.paint, gx - 0.06, gx + 0.22, -0.24, 0.26, gz - 0.12, gz + 0.11);                   /* mantlet */
@@ -789,6 +854,12 @@ var HeroRuBtr8x8 = (function () {
       a = i / 6 * TAU;
       bar(VB, [0.12 * Math.cos(a), yf + s * 0.02, 0.12 * Math.sin(a)], [0.27 * Math.cos(a), yf + s * 0.02, 0.27 * Math.sin(a)], 0.035);
     }
+    /* the wheel nuts round the disc, and the bolts on the tyre-pressure head (A) */
+    for (i = 0; i < 8; i++) {
+      a = (i + 0.5) / 8 * TAU;
+      cyl(VB, [0.21 * Math.cos(a), yf, 0.21 * Math.sin(a)], [0.21 * Math.cos(a), yf + s * 0.03, 0.21 * Math.sin(a)], 0.022, 0.022, 6);
+    }
+    for (i = 0; i < 4; i++) { a = i / 4 * TAU + 0.4; cyl(VB, [0.10 * Math.cos(a), yf + s * 0.06, 0.10 * Math.sin(a)], [0.10 * Math.cos(a), yf + s * 0.085, 0.10 * Math.sin(a)], 0.018, 0.018, 6); }
   }
 
   /* ---------------------------------------------------------------- build */
@@ -801,6 +872,7 @@ var HeroRuBtr8x8 = (function () {
     addVane(B, v);
     var fr = addFront(B, v);
     addRoofAndFlanks(B, v, fr);
+    addFittings(B, v);
     flush(THREE, g, B);
     /* four turning axle groups, both tyres in each */
     for (i = 0; i < AX.length; i++) {

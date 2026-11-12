@@ -692,11 +692,85 @@ var HeroSopka = (function () {
     box(B.team, A(-2.60), A(-1.80), -0.30, 0.30, 2.533, 2.545);
   }
 
+  /* ------------------------------------------------------------------ fittings (detail pass)
+     The AT-S as "Artillery tractor AT-S.JPG" (front 3/4, fetched for the detail pass) shows it: the two doors a side
+     with their seams, hinges and handles, the vertical louvres down the engine housing's sides, the searchlight on
+     its post at the cab's front right corner, the wipers, the step on the track guard under the doors, the towing
+     hooks and slots in the bumper, the grille's frame; the hubs and their bolts on the road wheels, the track
+     guard's front flaps.  On the trailer: the mudguards' stays, the safety chains and the brake hose along the
+     drawbar's frame, the reflectors and number-plate bracket on the rear beam (positions NOT CONFIRMED). */
+  function atsFittings(B) {
+    var i, s, y, x, YT = 0.98;
+    function A(lx) { return XN + lx; }
+    for (s = -1; s <= 1; s += 2) {
+      y = s * 1.285;
+      /* the doors: seams, hinges, handles */
+      [[-2.10, -1.45], [-2.85, -2.15]].forEach(function (d) {
+        box(B.dark, A(d[0]) - 0.015, A(d[0]) + 0.015, y - 0.01, y + 0.01, 1.05, 2.36);
+        box(B.dark, A(d[1]) - 0.015, A(d[1]) + 0.015, y - 0.01, y + 0.01, 1.05, 2.36);
+        box(B.dark, A(d[0]), A(d[1]), y - 0.01, y + 0.01, 1.05, 1.07);
+        box(B.dark, A(d[1]) - 0.06, A(d[1]), y - s * 0.005, y + s * 0.025, 1.40, 1.50);
+        box(B.dark, A(d[1]) - 0.06, A(d[1]), y - s * 0.005, y + s * 0.025, 2.05, 2.15);
+        box(B.dark, A(d[0]) + 0.05, A(d[0]) + 0.16, y - s * 0.005, y + s * 0.03, 1.72, 1.76);
+      });
+      /* the louvres down the engine housing's side */
+      for (i = 0; i < 9; i++) { x = A(-1.18 + i * 0.09); box(B.dark, x - 0.02, x + 0.02, s * 1.20 - 0.005, s * 1.20 + s * 0.012, 1.15, 1.80); }
+      /* the step on the track guard under the doors */
+      box(B.dark, A(-2.70), A(-1.90), s > 0 ? 1.10 : -1.30, s > 0 ? 1.30 : -1.10, 0.99, 1.02);
+      /* the track guard's front flap */
+      box(B.paint, A(-0.16), A(-0.10), s > 0 ? 0.71 : -1.25, s > 0 ? 1.25 : -0.71, 0.62, 0.94);
+      /* the bumper's towing hooks and slots */
+      box(B.dark, A(-0.02), A(0.0), s * 0.80 - 0.10, s * 0.80 + 0.10, 0.90, 0.95);
+      bar(B.dark, [A(-0.08), s * 0.45, 0.93], [A(-0.03), s * 0.45, 0.90], 0.03);
+      bar(B.dark, [A(-0.03), s * 0.45, 0.90], [A(-0.03), s * 0.45, 0.80], 0.03);
+      /* hubs and bolts on the road wheels */
+      for (i = 0; i < 6; i++) {
+        x = A(-1.20 - i * 0.56);
+        var yh = s * (YT + 0.13), k;
+        for (k = 0; k < 5; k++) { var a = k / 5 * Math.PI * 2; cylY(B.paint, x + Math.cos(a) * 0.065, yh, yh + s * 0.015, 0.30 + Math.sin(a) * 0.065, 0.014, 5); }
+        cylY(B.paint, x, yh, yh + s * 0.03, 0.30, 0.035, 8);
+      }
+    }
+    /* the grille's frame */
+    box(B.paint, A(-0.12), A(-0.07), -0.56, 0.56, 1.06, 1.10);
+    box(B.paint, A(-0.12), A(-0.07), -0.56, 0.56, 1.78, 1.82);
+    /* the searchlight on its post at the cab's front right corner */
+    cylZ(B.dark, A(-1.36), -0.98, 2.38, 2.60, 0.025, 6);
+    cylX(B.dark, A(-1.44), A(-1.28), -0.98, 2.66, 0.09, 12);
+    cylX(B.glass, A(-1.28), A(-1.27), -0.98, 2.66, 0.075, 12);
+    /* the wipers at the windscreen's top */
+    for (s = -1; s <= 1; s += 2) bar(B.dark, [A(-1.27), s * 0.55, 2.32], [A(-1.27), s * 0.35, 2.06], 0.015);
+  }
+  function trailerFittings(B) {
+    var s;
+    for (s = -1; s <= 1; s += 2) {
+      /* the reflectors on the rear beam and the brake hoses / safety chains along the drawbar's root */
+      box(B.dark, X(10.66), X(10.64), s * 0.60 - 0.05, s * 0.60 + 0.05, 0.86, 0.94);
+      bar(B.dark, [X(2.50), s * 0.30, 0.98], [X(3.40), s * 0.30, 1.02], 0.025);
+      /* the mudguards over each dual (recognition item 8; the first pass left them out), an arc of plate from
+         the inner tyre to the outer, and their stays from the frame */
+      [AXD[0], AXD[1]].forEach(function (d) {
+        var k, n = 7, a0, a1, r = RT + 0.10, P, Q, U, L;
+        for (k = 0; k < n; k++) {
+          a0 = (25 + k * 130 / n) * Math.PI / 180; a1 = (25 + (k + 1) * 130 / n) * Math.PI / 180;
+          P = [X(d) + Math.cos(a0) * r, 0, RT + Math.sin(a0) * r]; Q = [X(d) + Math.cos(a1) * r, 0, RT + Math.sin(a1) * r];
+          U = unit(sub(Q, P)); L = Math.sqrt(dot(sub(Q, P), sub(Q, P)));
+          planeBox(B.paint, P, U, [0, 1, 0], [-U[2], 0, U[0]], -0.005, L + 0.005, s > 0 ? TY0 - 0.14 : -TY1 - 0.14, s > 0 ? TY1 + 0.14 : -TY0 + 0.14, 0.0, 0.025);
+        }
+        bar(B.dark, [X(d) - 0.40, s * 0.55, 1.00], [X(d) - 0.40, s * (TY0 - 0.10), RT + 0.62], 0.03);
+        bar(B.dark, [X(d) + 0.40, s * 0.55, 1.00], [X(d) + 0.40, s * (TY0 - 0.10), RT + 0.62], 0.03);
+      });
+    }
+    /* the number-plate bracket under the rear beam's middle */
+    box(B.dark, X(10.66), X(10.60), -0.25, 0.25, 0.66, 0.80);
+  }
+
   /* ------------------------------------------------------------------ assembly */
   function build(THREE, C) {
     var T = materials(THREE, C), g = new THREE.Group(), SB = bins(T, ["paint", "dark", "team"]), i, s, wg, TB, geo;
     var TV, DP, trv, dep, pk, E, EB, LB;
     trailer(SB);
+    trailerFittings(SB);
     flush(THREE, g, SB);
     /* the trailer's two axles, a dual each side, each axle one turning group */
     for (i = 0; i < AXD.length; i++) {
@@ -718,6 +792,7 @@ var HeroSopka = (function () {
        the missiles travelled on PR-15 semi-trailers (ru.wikipedia) */
     TV = bins(T, ["paint", "dark", "glass", "team"]);
     ats(TV);
+    atsFittings(TV);
     drawbar(TV, 0.74);
     jacks(TV, false);
     trv = new THREE.Group(); trv.name = "travelpose";

@@ -165,6 +165,18 @@
    key, team and era.
    ASCII only.                                                              */
 
+/* DETAIL PASS (2026-11): the fittings the first pass left out, placed off the Commons photographs
+   named above ("AEH", "BQN", "ATL", "BXE", "GBF"); sizes read through their perspective, NOT
+   measured: the roof pitot, the boom-top and belly beacons, endplate position lamps (red / green
+   material) and the white tail lamp, the VHF whip, the boom's UHF blade, the belly blade and the
+   radio-compass housing, door hinges, the fold-down step, static vents, skid wear shoes, the
+   boarding step, the ground-handling wheel lugs and the saddle clamps, cowl latches, the oil-cooler
+   grille, gearbox louvres, the cowl hinge line and hoisting lugs, the jet pipe's lip and heat
+   shield, the tail bumper, the Fenestron gearbox fairing, the stabiliser's root fittings; on the
+   head the blade bolts, root cuffs, pitch horns, tip caps, the cap and scissors. The paint gains
+   fastener rows along the boom, the cowl doors' outlines and fasteners, oil streaks, sill scuffing
+   and the roof walkways. 6008-6106 -> 8064-8162 tris, 10 -> 12 draw calls; extents and len
+   unchanged; the rotor node, its mounts and the fan are as before. */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroGazelle = (function () {
@@ -427,6 +439,33 @@ var HeroGazelle = (function () {
       var hx = pxX(-5.0 + R() * 5.2), hy = BAND + R() * 2 * BAND, hw = 10 + R() * 26, hh = 8 + R() * 16;
       g.strokeStyle = "rgba(0,0,0,0.32)"; g.strokeRect(hx, hy, hw, hh);
     }
+    /* detail pass: fastener rows down the boom's stringers and round the
+       cowls' panels, the cowl doors' outlines and their latches, oil and
+       hydraulic streaks running aft and down from the gearbox deck, and
+       scuffing round the doors' sills and the steps */
+    g.fillStyle = "rgba(0,0,0,0.24)";
+    [1.30, 1.45, 1.58].forEach(function (h) {
+      for (var bb = 1; bb <= 2; bb++) for (x = pxX(-5.3); x < pxX(-1.2); x += 5) g.fillRect(x, pyH(h + (pxX(-1.2) - x) / SX * 0.02, bb), 1.2, 1.2);
+    });
+    for (b = 1; b <= 2; b++) {
+      g.strokeStyle = "rgba(0,0,0,0.40)"; g.lineWidth = 1.4;
+      g.strokeRect(pxX(-1.70), pyH(2.08, b), pxX(-1.06) - pxX(-1.70), pyH(1.72, b) - pyH(2.08, b));
+      g.strokeRect(pxX(-0.62), pyH(2.06, b), pxX(0.40) - pxX(-0.62), pyH(1.72, b) - pyH(2.06, b));
+      g.fillStyle = "rgba(0,0,0,0.30)";
+      for (x = pxX(-0.60); x < pxX(0.40); x += 5) { g.fillRect(x, pyH(2.05, b), 1.2, 1.2); g.fillRect(x, pyH(1.73, b), 1.2, 1.2); }
+      for (i = 0; i < 9; i++) {
+        var ox = pxX(-0.5 + R() * 1.6), oy = pyH(1.70 - R() * 0.15, b);
+        g.fillStyle = "rgba(22,18,12," + (0.10 + R() * 0.10).toFixed(3) + ")";
+        g.fillRect(ox, oy, 1.5 + R() * 1.5, 10 + R() * 28);
+      }
+      g.fillStyle = "rgba(120,112,92,0.18)";
+      g.fillRect(pxX(0.95), pyH(0.48, b), pxX(2.05) - pxX(0.95), 4);
+      g.fillRect(pxX(0.50), pyH(0.48, b), pxX(0.95) - pxX(0.50), 3);
+    }
+    /* the walkway either side of the gearbox fairing on the roof */
+    g.fillStyle = "rgba(0,0,0,0.10)";
+    g.fillRect(pxX(-0.55), pyTop(0.55), pxX(0.45) - pxX(-0.55), pyTop(0.30) - pyTop(0.55));
+    g.fillRect(pxX(-0.55), pyTop(-0.30), pxX(0.45) - pxX(-0.55), pyTop(-0.55) - pyTop(-0.30));
     /* the manhole on the RIGHT side behind the cabin: round on the SA 341,
        square on the SA 342 (the ALAT's own recognition note) */
     g.strokeStyle = "rgba(0,0,0,0.55)"; g.lineWidth = 2.2;
@@ -520,6 +559,8 @@ var HeroGazelle = (function () {
     var tc = (C && C.team !== undefined) ? C.team : "#5f7fd6";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10 });
+    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     m.disc = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.40, metalness: 0.08,
                                           transparent: true, opacity: 0.05, depthWrite: false });
     return m;
@@ -1308,6 +1349,97 @@ var HeroGazelle = (function () {
       trB.forEach(function (q) { dark.push(q.applyMatrix4(tm.matrix)); });
     }
 
+    /* ================================================= DETAIL PASS ======
+       The fittings the first pass left out, placed off the Commons
+       photographs named in the header ("AEH", "BQN", "ATL", "BXE", "GBF"):
+       sizes are read through those photographs' perspective, NOT measured. */
+    function rod(p, q, r, sg) {
+      var dx = q[0] - p[0], dy = q[1] - p[1], dz = q[2] - p[2], L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-4;
+      var c = new V.CylinderGeometry(r, r, L, sg || 6, 1, false);
+      c.applyQuaternion(new V.Quaternion().setFromUnitVectors(new V.Vector3(0, 1, 0), new V.Vector3(dx / L, dy / L, dz / L)));
+      c.translate((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2);
+      return c;
+    }
+    var lampR = [], lampG = [];
+    /* the pitot: an L tube on the roof's front, over the windscreen arch,
+       on the right of the central frame ("AEH", "BQN") */
+    var pz = loftZ(1.72, -0.14);
+    metal.push(rod([1.72, -0.14, pz - 0.01], [1.72, -0.14, pz + 0.13], 0.012));
+    metal.push(rod([1.72, -0.14, pz + 0.13], [2.12, -0.14, pz + 0.13], 0.010));
+    dark.push(cyl(0.016, 0.016, 0.07, 6, "x", 2.15, -0.14, pz + 0.13));
+    /* the rotating beacon on the boom top ahead of the tailplane and a
+       second under the belly; nav lamps on the tailplane endplates (port
+       red, starboard green) and a white tail lamp on the fin's trailing edge */
+    var bz = fusAt(-4.55).zt;
+    dark.push(cyl(0.05, 0.055, 0.04, 10, "z", -4.55, 0, bz + 0.035));
+    lampR.push(sph(0.045, 10, 6, -4.55, 0, bz + 0.07, 1, 1, 0.9));
+    dark.push(cyl(0.05, 0.055, 0.035, 10, "z", -0.20, 0, Z(0.345)));
+    lampR.push(sph(0.042, 10, 6, -0.20, 0, Z(0.315), 1, 1, 0.8));
+    lampR.push(sph(0.03, 8, 5, -5.18, STAB_Y + 0.025, Z(1.62), 1.4, 0.7, 1.0));
+    lampG.push(sph(0.03, 8, 5, -5.18, -STAB_Y - 0.025, Z(1.62), 1.4, 0.7, 1.0));
+    metal.push(sph(0.028, 8, 5, -6.60, 0, Z(2.95), 1.3, 0.8, 1.0));
+    /* aerials: a VHF whip raked aft under the boom, a UHF blade on the boom
+       top behind the cowls, a blade and the radio-compass loop housing under
+       the cabin ("AEH" and "BQN" from below) */
+    var wz = fusAt(-2.9).zb;
+    dark.push(rod([-2.9, 0, wz + 0.02], [-3.35, 0, wz - 0.62], 0.008, 5));
+    dark.push(cyl(0.022, 0.026, 0.05, 8, "z", -2.9, 0, wz - 0.005));
+    skin.push(plate([[-2.62, 1.47], [-2.86, 1.47], [-2.98, 1.70], [-2.86, 1.70]], 0.02, 0));
+    dark.push(plate([[0.95, 0.37], [0.70, 0.37], [0.60, 0.16], [0.70, 0.16]], 0.018, -0.18));
+    dark.push(sph(0.13, 12, 4, 0.30, 0.12, Z(0.37), 1.6, 1.0, 0.35));
+    /* the cabin: door hinges on each door's front edge, the fold-down step
+       under the front door, the fuel filler on the left behind the cabin,
+       the static vents */
+    [1, -1].forEach(function (sd) {
+      [0.62, 1.10, 1.55].forEach(function (h) {
+        var p = sideAt(sd > 0 ? Xd(h) - 0.05 : Xd(h) - 0.05, h);
+        dark.push(box(0.06, 0.03, 0.05, p[0], sd * (p[1] + 0.005), p[2]));
+      });
+      [0.62, 1.55].forEach(function (h) {
+        var p = sideAt(0.92, h);
+        dark.push(box(0.05, 0.03, 0.05, p[0], sd * (p[1] + 0.005), p[2]));
+      });
+      var st = loftY(1.30, Z(0.42));
+      metal.push(box(0.26, 0.12, 0.022, 1.30, sd * (st + 0.06), Z(0.40)));
+      dark.push(rod([1.20, sd * st, Z(0.44)], [1.20, sd * (st + 0.11), Z(0.40)], 0.010, 4));
+      dark.push(rod([1.40, sd * st, Z(0.44)], [1.40, sd * (st + 0.11), Z(0.40)], 0.010, 4));
+      var sv = sideAt(-0.80, 1.10);
+      dark.push(cyl(0.025, 0.025, 0.012, 8, "y", sv[0], sd * (sv[1] + 0.004), sv[2]));
+      /* the skids: the wear shoes under each tube, the boarding step on the
+         front cross tube, the ground-handling wheel lugs at the rear cross
+         tube */
+      dark.push(box(1.40, 0.05, 0.016, 0.45, sd * SKID_Y, Z(0.0085)));
+      dark.push(box(0.50, 0.05, 0.016, -0.55, sd * SKID_Y, Z(0.0085)));
+      metal.push(box(0.22, 0.14, 0.02, XS_FWD + 0.02, sd * (SKID_Y - 0.10), Z(0.24)));
+      metal.push(cyl(0.045, 0.045, 0.06, 10, "y", XS_AFT, sd * (SKID_Y + 0.07), Z(0.07)));
+      metal.push(cyl(0.022, 0.022, 0.10, 6, "y", XS_AFT, sd * (SKID_Y + 0.04), Z(0.07)));
+      /* the cross tubes' saddle clamps on each skid */
+      [XS_FWD, XS_AFT].forEach(function (xc) { dark.push(cyl(0.052, 0.052, 0.12, 8, "x", xc, sd * SKID_Y, Z(SKID_R + 0.008))); });
+      /* the engine cowls: latches down each side, the oil cooler grille on
+         the cowl's flank, the gearbox fairing's louvres ("GBF", "BXE") */
+      [-1.15, -1.32, -1.50].forEach(function (xl) {
+        dark.push(box(0.06, 0.02, 0.025, xl, sd * 0.272, EZ + 0.06));
+      });
+      dark.push(box(0.26, 0.02, 0.12, -1.38, sd * 0.268, EZ - 0.11));
+      for (k = 0; k < 4; k++) dark.push(box(0.20, 0.012, 0.012, -1.38, sd * 0.279, EZ - 0.155 + k * 0.03));
+      for (k = 0; k < 4; k++) dark.push(box(0.03, 0.02, 0.11, -0.15 - k * 0.07, sd * 0.262, Z(1.80)));
+      /* the stabiliser's root fairing fillet and its two attachment fittings */
+      dark.push(box(0.09, 0.04, 0.05, -5.00, sd * 0.13, Z(STAB_H) - 0.03));
+      dark.push(box(0.09, 0.04, 0.05, -5.28, sd * 0.13, Z(STAB_H) - 0.03));
+    });
+    /* the cowl's hinge line along the top of the engine and the hoisting
+       lugs on the gearbox fairing */
+    dark.push(rod([-1.04, 0, EZ + 0.282], [-1.70, 0, EZ + 0.282], 0.014, 5));
+    metal.push(box(0.05, 0.03, 0.06, 0.32, 0.20, Z(2.10)), box(0.05, 0.03, 0.06, 0.32, -0.20, Z(2.10)));
+    /* the jet pipe's flanged lip and its heat shield on the boom top */
+    var lip = cyl(0.155, 0.155, 0.04, 16, "x", -0.30, 0, 0, true);
+    lip.rotateY(6 * D2R); lip.translate(-2.11, 0, Z(1.95)); metal.push(lip);
+    metal.push(box(0.70, 0.30, 0.012, -2.72, 0, fusAt(-2.72).zt + 0.004));
+    /* the tail bumper under the ventral fin, the Fenestron gearbox fairing
+       on the arm's root */
+    metal.push(pipe([[-5.66, 0, Z(0.93)], [-5.78, 0, Z(0.84)], [-6.02, 0, Z(0.84)], [-6.10, 0, Z(0.90)]], 0.018, 6, [0, 1, 0]));
+    dark.push(sph(0.08, 10, 6, TR_X + 0.38, -0.07, Z(TR_H), 1.2, 0.6, 0.9));
+
     /* --------------------------------------------- airframe meshes ---- */
     mesh(g, skin, T.skin, "airframe", true);
     mesh(g, glass, T.glass, "glass");
@@ -1315,6 +1447,8 @@ var HeroGazelle = (function () {
     mesh(g, metal, T.metal, "fittings");
     mesh(g, store, T.store, "stores");
     mesh(g, team, T.team, "team");
+    mesh(g, lampR, T.lampR, "lamp_red");
+    mesh(g, lampG, T.lampG, "lamp_green");
 
     /* ======================================================= main rotor ==
        The mount's -PI/2 about X points the rotor node's local +Y - the one
@@ -1359,8 +1493,20 @@ var HeroGazelle = (function () {
                    [cyl(0.028, 0.028, 0.32, 6, "x", 0.38, 0.11, 0.02), hubD],
                    [box(0.10, 0.05, 0.04, 0.26, -0.10, -0.03), hubD],
                    [cyl(0.016, 0.016, 0.22, 6, "z", 0.22, -0.12, -0.14), hubD]];
+      /* detail pass: the blade root's two retaining bolts, the root cuff,
+         the pitch horn and the bright erosion cap on the tip */
+      parts = [[cyl(0.022, 0.022, 0.09, 8, "z", 0.70, -0.03, 0), hubM],
+               [cyl(0.022, 0.022, 0.09, 8, "z", 0.78, 0.04, 0), hubM],
+               [box(0.18, CH * 0.95, 0.045, 0.73, LE + CH / 2 - 0.01, 0), hubD],
+               [box(0.07, 0.10, 0.03, 0.26, -0.13, -0.06), hubM],
+               [box(0.16, CH, 0.034, ROTOR_R - 0.08, LE + CH / 2, 0), hubM],
+               [cyl(0.03, 0.03, 0.03, 8, "z", 0.22, -0.12, -0.25), hubM]];
       for (i = 0; i < parts.length; i++) { parts[i][0].rotateZ(a); parts[i][1].push(parts[i][0]); }
     }
+    /* the hub's top cap and lifting eye, the scissors link to the swashplate */
+    hubM.push(cyl(0.06, 0.07, 0.04, 10, "z", 0, 0, 0.15));
+    hubD.push(box(0.05, 0.02, 0.06, 0, 0, 0.19));
+    hubD.push(box(0.04, 0.03, 0.16, 0.10, 0.10, -0.17), box(0.04, 0.03, 0.12, 0.13, 0.13, -0.10));
     mesh(head, hubM, T.metal, "hub");
     mesh(head, hubD, T.dark, "hub_dampers");
     mesh(head, blades, T.blade, "blades");

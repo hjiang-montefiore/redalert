@@ -201,6 +201,20 @@
      J-35 2984 -> 6292 tris, 9 -> 14 draw calls; Z-20 3016 -> 8056 tris,
      12 -> 15 draw calls.
 
+   DETAIL PASS 2 (J-16, J-16D, H-6N and YY-20; the J-15 and Z-9C untouched): the detail kit and
+   finish() now serve these rows too. J-16/J-16D: nozzle liners, flame holders, centre bodies and
+   petal seams, canopy sills, the L-shaped air-data probes and AoA vanes, intake-trunk position
+   lamps (placement NOT CONFIRMED), intake lips, blade aerials, beacons, the tail lamp, oleos, hubs,
+   brakes, axles and the nose leg's taxi lamps. H-6N: wingtip lamps, beacons, the tail lamp, blade
+   aerials and the long wire, cockpit window frames, intake lips, spinner cones, nozzle liners and
+   turbine cones, oleos, hubs and the bogie's brake rods, the probe's tip ring. YY-20: wingtip lamps,
+   beacons, the tail lamp, blade aerials, the satcom fairing, flight-deck window frames, paratroop
+   door seams, flap-track fairings, intake lips, nozzle liners, reverser seams, oleos and hubs, the
+   nose leg's taxi lamps; the aar_ nodes are as before. Each paint gains seams, fastener rows,
+   access panels, soot and grime (finish()). Sizes read through the references' perspective, NOT
+   measured. sead_c 5176 -> 8280, ew_c 5312 -> 8416, sbomber_c 4598 -> 9338, tanker_c 4950 ->
+   11010 tris; 9-10 -> 12-13 draw calls; extents and len unchanged.
+
    NODES: "gear" on every row; the helicopters also "rotor" (the main head,
    with "rotordisc" inside it) and "tailrotor" (Z-20: the h60_hawk_family.js
    mounts - the main head's local +Y up the mast, turning anti-clockwise from
@@ -505,9 +519,9 @@ var HeroPlaAirModern = (function () {
   }
 
   /* ======================================================= detail kit ==
-     Added in the detail pass, for j35() and z20() only (the other builds in
-     this file do not call it): the fittings and the finish the first pass
-     left out. Paint: finish() draws seams, access panels, fastener rows,
+     Added in the detail pass, for j35() and z20(), and in the second for
+     the J-16/J-16D, H-6N and YY-20 (the J-15 and Z-9C do not call it): the
+     fittings and the finish the first pass left out. Paint: finish() draws seams, access panels, fastener rows,
      exhaust soot, rain and airflow streaks and grime onto a skin sheet. */
   function seg2(g, a, b) { g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
   /* a row of fastener dots from a to b (canvas px), every st px */
@@ -657,13 +671,14 @@ var HeroPlaAirModern = (function () {
   function j16(THREE, M, C, VR) {
     V = THREE;
     var sh = sheet(-11.2, 11.2, 7.6, F_GROUND, 4.6, 26);
-    var B = bins(["skin", "dark", "metal", "glass", "team", "store", "nozzle"]);
-    var G = bins(["leg", "tyre", "dark"]);
+    var B = bins(["skin", "dark", "metal", "glass", "team", "store", "nozzle", "lampR", "lampG"]);
+    var G = bins(["leg", "tyre", "dark", "metal"]);
     j16Body(B, VR);
     j16Wings(B, VR);
     j16Tail(B);
     j16Gear(G);
     j16Stores(B, VR);
+    j16Detail(B, G);
     var pal = { top: "#8a9196", side: "#8a9196", belly: "#92989c" };
     var cv = paintSheet(sh, pal, [FX(3.05), FX(4.1), FX(6.0), FX(8.5), FX(10.4), FX(12.4), FX(14.6), FX(16.3), FX(18.7)], 61601,
       function (g, s) {
@@ -673,10 +688,13 @@ var HeroPlaAirModern = (function () {
         g.fillStyle = "#5d6468";
         g.beginPath(); g.moveTo(s.u(FX(3.3)), s.vy(0.25, 0)); g.lineTo(s.u(FX(4.1)), s.vy(0.5, 0));
         g.lineTo(s.u(FX(4.1)), s.vy(-0.5, 0)); g.lineTo(s.u(FX(3.3)), s.vy(-0.25, 0)); g.closePath(); g.fill();
+        j16Paint(g, s);
       });
     var mats = makeMats(C, cv, pal.side, {
       store:  { color: 0xb9bcbc, roughness: 0.6, metalness: 0.15 },
-      nozzle: { color: 0x5e5446, roughness: 0.42, metalness: 0.60 }
+      nozzle: { color: 0x5e5446, roughness: 0.42, metalness: 0.60 },
+      lampR:  { color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 },
+      lampG:  { color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }
     });
     var root = new V.Group();
     flush(root, B, mats, sh);
@@ -717,6 +735,72 @@ var HeroPlaAirModern = (function () {
                 [5.90, 13.87, 17.13], [7.06, 14.93, 17.47]];
   function fwH(y) { return y <= 2.0 ? 0.56 : 0.56 - (y - 2.0) * 0.035; }          /* 2 deg anhedral */
   function fwT(y) { return y <= 2.2 ? 0.26 : 0.26 - (y - 2.2) / 4.86 * 0.17; }
+  /* ---- J-16 / J-16D detail pass: the fittings A and P1-P5 show that the
+     first pass left out; their sizes are read through those references'
+     scale and perspective, NOT measured ---- */
+  function j16Detail(B, G) {
+    var k;
+    [1, -1].forEach(function (sd) {
+      var ny = sd * F_NAC_Y, nz = -0.23;
+      /* the nozzles: dark liner, flame-holder ring, centre body and the
+         petals' seams (A; P2 from behind) */
+      B.dark.push(inv(cyl(0.47, 0.47, 0.50, 16, "x", FX(19.55), ny, nz, true)));
+      B.metal.push(cyl(0.34, 0.34, 0.04, 16, "x", FX(19.42), ny, nz, true));
+      push(B.metal, lathe([[FX(19.25), 0.16], [FX(19.40), 0.12], [FX(19.55), 0.03]], ny, nz, 10));
+      for (k = 0; k < 14; k++) {
+        var a = k * 2 * PI / 14;
+        B.dark.push(bar([FX(19.20), ny + Math.cos(a) * 0.548, nz + Math.sin(a) * 0.548], [FX(19.86), ny + Math.cos(a) * 0.505, nz + Math.sin(a) * 0.505], 0.010, 3));
+      }
+      /* the canopy sill frame along each side */
+      for (k = 0; k < F_CAN.length - 1; k++) {
+        var p0 = F_CAN[k], p1 = F_CAN[k + 1];
+        B.dark.push(bar([FX(p0[0]), sd * p0[1] * 0.98, crownAt(p0[0]) - 0.07], [FX(p1[0]), sd * p1[1] * 0.98, crownAt(p1[0]) - 0.07], 0.022, 4));
+      }
+      /* the L-shaped air-data probes either side of the forward fuselage */
+      B.metal.push(bar([FX(1.75), sd * 0.60, 0.20], [FX(1.75), sd * 0.74, 0.22], 0.016, 5), bar([FX(1.75), sd * 0.74, 0.22], [FX(1.30), sd * 0.74, 0.22], 0.013, 5));
+      B.metal.push(box(0.10, 0.02, 0.06, FX(2.30), sd * 0.62, 0.05));
+      /* position lamps on the intake trunks' outer faces, port red and
+         starboard green (NOT CONFIRMED placement) */
+      (sd > 0 ? B.lampR : B.lampG).push(sph(0.05, 8, 6, FX(11.2), sd * (F_NAC_Y + 0.63), -0.30, 1.6, 0.6, 0.8));
+      /* the intakes' lips: a bright edge round each raked mouth */
+      B.metal.push(bar([FX(9.72), ny - 0.48, 0.28], [FX(9.72), ny + 0.48, 0.28], 0.02, 5));
+      B.metal.push(bar([FX(10.68), ny - 0.48, -1.20], [FX(10.68), ny + 0.48, -1.20], 0.02, 5));
+      /* the main legs: oleos, hubs, brakes, axles */
+      hubFace(G.metal, 0.515, 0.35, FX(14.0), sd * 2.17, F_GROUND + 0.515, sd);
+      G.dark.push(cyl(0.34, 0.34, 0.05, 14, "y", FX(14.0), sd * 1.98, F_GROUND + 0.515));
+      oleo(G.metal, G.leg, [FX(14.0), sd * 2.0, F_GROUND + 0.515], [FX(13.85), sd * 1.80, F_GROUND + 1.25], 0.09, -0.24);
+      G.metal.push(cyl(0.05, 0.05, 0.40, 8, "y", FX(14.0), sd * 2.05, F_GROUND + 0.515));
+    });
+    /* blade aerials on the spine and belly, the white tail lamp on the
+       sting, beacons on the spine and under the belly */
+    bladeAnt(B.skin, FX(9.6), 0, crownAt(9.6) - 0.02, 0.22, 0.32, 0.025);
+    bladeAnt(B.skin, FX(13.6), 0, crownAt(13.6) - 0.02, 0.16, 0.24, 0.02);
+    bladeAnt(B.skin, FX(7.6), 0, -0.42, -0.18, 0.26, 0.025);
+    bladeAnt(B.skin, FX(16.8), 0, -0.38, -0.14, 0.22, 0.02);
+    B.metal.push(sph(0.04, 8, 5, FX(21.45), 0, -0.10, 1.3, 0.8, 1.0));
+    B.lampR.push(sph(0.05, 8, 5, FX(11.0), 0, crownAt(11.0) + 0.01, 1.4, 1, 0.6), sph(0.05, 8, 5, FX(12.0), 0, -0.43, 1.4, 1, 0.6));
+    /* the nose leg: oleo, hub caps, the twin taxi lamps on the leg */
+    oleo(G.metal, G.leg, [FX(8.2), 0, F_GROUND + 0.31], [FX(8.1), 0, F_GROUND + 1.10], 0.07, 0.20);
+    [0.17, -0.17].forEach(function (y) { hubFace(G.metal, 0.31, 0.18, FX(8.2), y, F_GROUND + 0.31, y > 0 ? 1 : -1); });
+    G.metal.push(sph(0.06, 8, 6, FX(7.95), 0.10, F_GROUND + 1.05), sph(0.06, 8, 6, FX(7.95), -0.10, F_GROUND + 1.05));
+  }
+  /* the J-16's finish: seams and access panels off drawing A, the dorsal
+     airbrake's outline behind the canopy, the flaperons' and the rudders'
+     hinge lines, nozzle soot along the tail beams, grime */
+  function j16Paint(g, s) {
+    finish(g, s, {
+      side: [[FX(1.0), FX(18.5), 0.55], [FX(3.0), FX(9.6), -0.20], [FX(9.6), FX(19.0), 0.10]],
+      sideV: [[FX(4.95), -0.46, 1.20], [FX(6.94), -0.44, 1.30], [FX(9.70), -1.0, 1.56], [FX(11.64), -1.1, 1.17],
+              [FX(13.57), -1.1, 0.80], [FX(15.5), -1.0, 0.58], [FX(17.5), -0.9, 0.52]],
+      top: [[FX(8.3), 0.62, FX(18.0), 0.62], [FX(12.0), 2.3, FX(16.3), 6.8], [FX(15.3), 2.4, FX(15.9), 6.9],
+            [FX(10.0), 0.95, FX(19.0), 0.95]],
+      belly: [[FX(9.6), 0.45, FX(19.0), 0.45], [FX(12.0), 2.3, FX(16.3), 6.8]],
+      box: [[1, FX(2.4), FX(3.0), 0.40, 0.0], [1, FX(5.2), FX(6.2), 0.0, -0.35], [1, FX(15.0), FX(15.8), 0.40, 0.05],
+            [1, FX(12.0), FX(12.8), 0.0, -0.40], [0, FX(8.6), FX(10.4), 0.40, -0.40], [0, FX(13.5), FX(14.3), 0.30, 0.55],
+            [3, FX(10.5), FX(11.5), 0.20, 0.55], [3, FX(17.0), FX(17.8), 0.15, 0.40]],
+      topSoot: [[FX(19.5), FX(21.6), 1.40, 2.40]], soot: [[FX(19.4), FX(21.8), -0.60, 0.20]], grime: 0.55
+    }, 61616);
+  }
   function j16Body(B, VR) {
     var i, s;
     /* fuselage and sting: one loft, nose cone and sting point capped */
@@ -1103,11 +1187,77 @@ var HeroPlaAirModern = (function () {
   var H_TP = [[0.50, 28.20, 33.90], [1.94, 29.40, 33.95], [4.09, 30.80, 34.10], [5.69, 33.55, 34.40]];
   function hwH(y) { return 0.25 - Math.max(0, y - 1.1) * Math.tan(3 * D2R); }
   function hwT(y) { return 0.95 - (y - 1.1) / 15.4 * 0.62; }
+  /* ---- H-6N detail pass: the fittings drawing T and P9 show that the
+     first pass left out; their sizes are read through T's scale and P9's
+     perspective, NOT measured ---- */
+  function h6nDetail(B, G) {
+    var k, wt = H_WING[H_WING.length - 1];
+    /* wingtip position lamps, the white tail lamp under the tail cone,
+       beacons on the spine and the belly */
+    B.lampR.push(sph(0.07, 8, 6, HX((wt[1] + wt[2]) / 2), wt[0] - 0.06, hwH(wt[0]), 1.6, 0.6, 0.7));
+    B.lampG.push(sph(0.07, 8, 6, HX((wt[1] + wt[2]) / 2), -wt[0] + 0.06, hwH(wt[0]), 1.6, 0.6, 0.7));
+    B.metal.push(sph(0.05, 8, 5, HX(33.9), 0, -0.16, 1.3, 0.8, 1.0));
+    B.lampR.push(sph(0.08, 8, 5, HX(12.0), 0, 1.21, 1.4, 1, 0.6), sph(0.08, 8, 5, HX(14.0), 0, -1.21, 1.4, 1, 0.6));
+    /* blade aerials along the spine and under the belly, the long-wire
+       aerial from the cockpit hump to the fin */
+    bladeAnt(B.skin, HX(8.0), 0, 1.19, 0.32, 0.45, 0.03);
+    bladeAnt(B.skin, HX(22.0), 0, 1.18, 0.26, 0.38, 0.03);
+    bladeAnt(B.skin, HX(7.0), 0, -1.19, -0.30, 0.42, 0.03);
+    bladeAnt(B.skin, HX(24.0), 0, -1.10, -0.26, 0.36, 0.03);
+    B.dark.push(bar([HX(6.0), 0, 1.18], [HX(30.0), 0, 3.30], 0.008, 3));
+    /* the cockpit windows' frames */
+    [1, -1].forEach(function (sd) {
+      B.dark.push(bar([HX(2.95), sd * 0.56, 1.08], [HX(3.9), sd * 0.75, 1.29], 0.022, 4), bar([HX(3.9), sd * 0.75, 1.29], [HX(4.6), sd * 0.79, 1.29], 0.022, 4));
+      B.dark.push(bar([HX(3.05), sd * 0.57, 0.96], [HX(3.9), sd * 0.75, 1.10], 0.022, 4), bar([HX(3.9), sd * 0.75, 1.10], [HX(4.6), sd * 0.79, 1.11], 0.022, 4));
+      B.dark.push(bar([HX(3.9), sd * 0.755, 1.10], [HX(3.9), sd * 0.755, 1.29], 0.022, 4), bar([HX(4.6), sd * 0.79, 1.11], [HX(4.6), sd * 0.79, 1.29], 0.022, 4));
+      /* the engines: the intake's bright lip, the fan's spinner cone, the
+         nozzle's liner and the turbine cone */
+      var ny = sd * 1.90, nz = -0.15;
+      B.metal.push(place(new V.TorusGeometry(0.88, 0.045, 6, 22), HX(9.62), ny, nz, 0, PI / 2, 0));
+      push(B.dark, lathe([[HX(9.55), 0.02], [HX(9.70), 0.16], [HX(9.90), 0.24]], ny, nz, 12));
+      for (k = 0; k < 16; k++) {
+        var fb = box(0.03, 0.50, 0.08, HX(9.95), 0, 0); fb.translate(0, 0, 0); fb.rotateX(0.35);
+        fb.translate(0, 0.40, 0); fb.rotateX(k * 2 * PI / 16); fb.translate(0, ny, nz);
+        B.dark.push(fb);
+      }
+      B.dark.push(inv(cyl(0.72, 0.72, 0.60, 16, "x", HX(21.0), ny, nz, true)));
+      push(B.metal, lathe([[HX(20.9), 0.30], [HX(21.1), 0.22], [HX(21.35), 0.04]], ny, nz, 12));
+      /* the main gear: oleos, hubs, the bogie's brake rods; the gear pods'
+         door seams */
+      var y = sd * 5.0;
+      [[16.5, 0.30], [16.5, -0.30], [17.9, 0.30], [17.9, -0.30]].forEach(function (w) {
+        hubFace(G.metal, 0.55, 0.33, HX(w[0]), y + w[1], H_GROUND + 0.55, w[1] > 0 ? 1 : -1);
+      });
+      oleo(G.metal, G.leg, [HX(17.2), y, H_GROUND + 0.62], [HX(17.05), y, hwH(5.0) - 0.75], 0.14, 0.32);
+      G.leg.push(bar([HX(16.5), y, H_GROUND + 0.55], [HX(17.9), y, H_GROUND + 0.55], 0.05, 6));
+    });
+    /* the nose leg: oleo, hub caps, taxi lamp */
+    oleo(G.metal, G.leg, [HX(6.4), 0, H_GROUND + 0.40], [HX(6.25), 0, -1.25], 0.10, 0.22);
+    [0.24, -0.24].forEach(function (y) { hubFace(G.metal, 0.40, 0.25, HX(6.4), y, H_GROUND + 0.40, y > 0 ? 1 : -1); });
+    G.metal.push(sph(0.08, 8, 6, HX(6.10), 0, -1.40));
+    /* the refuelling probe's bright tip ring */
+    B.metal.push(cyl(0.14, 0.14, 0.04, 12, "x", HX(-1.05), 0, 0.78, true));
+  }
+  /* the H-6N's finish: seams, access panels and fastener rows (T), the
+     bomb bay's doors on the belly (T plan), soot behind the nozzles along
+     the fuselage sides, grime */
+  function h6nPaint(g, s) {
+    finish(g, s, {
+      side: [[HX(2.2), HX(33.0), 0.75], [HX(2.2), HX(30.0), -0.60], [HX(5.6), HX(25.0), 0.10]],
+      sideV: [[HX(7.5), -1.2, 1.2], [HX(14.0), -1.2, 1.2], [HX(18.0), -1.2, 1.2], [HX(26.6), -0.9, 1.1], [HX(29.8), -0.6, 1.0]],
+      top: [[HX(12.0), 3.0, HX(22.0), 15.0], [HX(17.5), 2.0, HX(23.0), 15.5], [HX(5.6), 0.50, HX(30.0), 0.50]],
+      belly: [[HX(12.0), 3.0, HX(22.0), 15.0], [HX(5.6), 0.50, HX(30.0), 0.50]],
+      box: [[1, HX(6.0), HX(7.0), 0.40, -0.20], [1, HX(9.5), HX(10.5), 0.80, 0.30], [1, HX(23.0), HX(24.0), 0.60, 0.10],
+            [1, HX(27.0), HX(27.8), 0.50, 0.0], [0, HX(10.0), HX(11.0), 0.30, 0.70], [0, HX(25.0), HX(26.0), 0.25, 0.55],
+            [3, HX(12.5), HX(19.5), 0.10, 0.85], [3, HX(7.0), HX(8.0), 0.20, 0.60]],
+      soot: [[HX(21.2), HX(27.0), -0.60, 0.40]], grime: 0.6
+    }, 60666);
+  }
   function h6n(THREE, M, C) {
     V = THREE;
-    var sh = sheet(-17.6, 18.6, 17.0, H_GROUND, 7.0, 14);
-    var B = bins(["skin", "dark", "metal", "glass", "team", "radome", "nozzle"]);
-    var G = bins(["leg", "tyre", "dark"]);
+    var sh = sheet(-17.6, 18.6, 17.0, H_GROUND, 7.0, 20);
+    var B = bins(["skin", "dark", "metal", "glass", "team", "radome", "nozzle", "lampR", "lampG"]);
+    var G = bins(["leg", "tyre", "dark", "metal"]);
     /* fuselage: one loft, the nose (radome, dark cap) separately */
     var secs = H_FUS.map(function (r) { return sec(HX(r[0]), 0, (r[2] + r[3]) / 2, r[1], (r[2] - r[3]) / 2, (r[2] - r[3]) / 2, 1, 1); });
     push(B.skin, loft(secs.slice(2), 24, null, 0.18));
@@ -1182,10 +1332,13 @@ var HeroPlaAirModern = (function () {
       G.dark.push(box(4.2, 0.04, 0.9, HX(18.0), y - 0.45, hwH(5.0) - 0.95));
     });
     var pal = { top: "#b2b7ba", side: "#b2b7ba", belly: "#b8bdc0" };
-    var cv = paintSheet(sh, pal, [HX(2.2), HX(5.6), HX(9.0), HX(12.5), HX(16.0), HX(20.0), HX(24.0), HX(28.0), HX(31.5)], 60602, null);
+    h6nDetail(B, G);
+    var cv = paintSheet(sh, pal, [HX(2.2), HX(5.6), HX(9.0), HX(12.5), HX(16.0), HX(20.0), HX(24.0), HX(28.0), HX(31.5)], 60602, h6nPaint);
     var mats = makeMats(C, cv, pal.side, {
       radome: { color: 0x2b2f33, roughness: 0.55, metalness: 0.1 },
-      nozzle: { color: 0x55524d, roughness: 0.45, metalness: 0.55 }
+      nozzle: { color: 0x55524d, roughness: 0.45, metalness: 0.55 },
+      lampR:  { color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 },
+      lampG:  { color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }
     });
     var root = new V.Group();
     flush(root, B, mats, sh);
@@ -1214,11 +1367,75 @@ var HeroPlaAirModern = (function () {
   function ywH(y) { return 6.60 - Math.max(0, y - 2.6) * Math.tan(4 * D2R); }
   var Y_WING = [[2.6, 11.40, 23.0], [9.3, 14.52, 23.6], [15.0, 17.18, 24.0], [25.0, 21.84, 24.95]];
   function ywT(y) { return 1.30 - (y - 2.6) / 22.4 * 0.95; }
+  /* ---- YY-20 detail pass: the fittings P10-P12 show that the first pass
+     left out; their sizes are read through those photographs' scale and
+     perspective, NOT measured ---- */
+  function yy20Detail(B, G) {
+    var k, wt = Y_WING[Y_WING.length - 1];
+    B.lampR.push(sph(0.10, 8, 6, YX((wt[1] + wt[2]) / 2), wt[0] - 0.08, YZ(ywH(wt[0])), 1.6, 0.6, 0.7));
+    B.lampG.push(sph(0.10, 8, 6, YX((wt[1] + wt[2]) / 2), -wt[0] + 0.08, YZ(ywH(wt[0])), 1.6, 0.6, 0.7));
+    B.metal.push(sph(0.06, 8, 5, YX(41.6), 0, YZ(8.6), 1.3, 0.8, 1.0));
+    B.lampR.push(sph(0.10, 8, 5, YX(13.0), 0, YZ(6.76), 1.4, 1, 0.6), sph(0.10, 8, 5, YX(25.0), 0, YZ(1.33), 1.4, 1, 0.6));
+    /* blade aerials on the crown and the belly, the satcom fairing */
+    bladeAnt(B.skin, YX(8.0), 0, YZ(6.52), 0.40, 0.55, 0.04);
+    bladeAnt(B.skin, YX(29.5), 0, YZ(6.76), 0.36, 0.50, 0.04);
+    bladeAnt(B.skin, YX(7.0), 0, YZ(1.40), -0.36, 0.50, 0.04);
+    bladeAnt(B.skin, YX(11.5), 0, YZ(1.36), -0.30, 0.44, 0.04);
+    B.skin.push(sph(0.60, 14, 6, YX(31.0), 0, YZ(6.80), 1.8, 1, 0.35));
+    /* the flight deck windows' frames */
+    [1, -1].forEach(function (sd) {
+      [[2.3, 4.95, 2.5, 4.62], [3.0, 5.12, 3.0, 4.75], [4.0, 5.26, 4.0, 4.90], [5.0, 5.40, 5.0, 5.05]].forEach(function (f) {
+        var w = f[0] < 2.6 ? 1.64 : f[0] < 3.5 ? 2.04 : f[0] < 4.5 ? 2.22 : 2.39;
+        B.dark.push(bar([YX(f[0]), sd * w, YZ(f[1])], [YX(f[2]), sd * w, YZ(f[3])], 0.035, 4));
+      });
+      /* the paratroop doors behind the sponsons, the cargo ramp's hinge */
+      B.dark.push(box(0.06, 0.03, 1.9, YX(28.6), sd * 2.36, YZ(3.4)), box(0.06, 0.03, 1.9, YX(29.6), sd * 2.32, YZ(3.6)));
+      /* the flap-track fairings under each wing (P10, P11) */
+      [5.5, 10.5, 15.5, 20.0].forEach(function (fy) {
+        var te = tab(Y_WING, fy, 2), wz = YZ(ywH(fy)) - ywT(fy) * 0.35;
+        push(B.skin, lathe([[YX(te - 2.2), 0.02], [YX(te - 1.6), 0.18], [YX(te - 0.2), 0.24], [YX(te + 0.9), 0.10], [YX(te + 1.2), 0.02]], sd * fy, wz - 0.10, 10));
+      });
+      /* the engines: intake lips, the fan blades behind the spinner, the
+         nozzle's liner and the thrust-reverser seams */
+      [[9.3, 11.6, 3.87], [15.0, 14.9, 3.70]].forEach(function (e) {
+        var ey = sd * e[0], ez = YZ(e[2]), s0 = e[1];
+        B.metal.push(place(new V.TorusGeometry(0.93, 0.05, 6, 22), YX(s0), ey, ez, 0, PI / 2, 0));
+        B.dark.push(inv(cyl(0.72, 0.72, 0.60, 16, "x", YX(s0 + 6.6), ey, ez, true)));
+        B.dark.push(cyl(1.005, 1.005, 0.03, 18, "x", YX(s0 + 2.6), ey, ez, true));
+        B.dark.push(cyl(0.99, 0.99, 0.03, 18, "x", YX(s0 + 3.9), ey, ez, true));
+      });
+      /* the main gear: oleos and the outer wheels' hub caps */
+      [17.5, 19.7, 21.8].forEach(function (ws) {
+        hubFace(G.metal, 0.60, 0.40, YX(ws), sd * 2.85, YZ(0.60), sd);
+        oleo(G.metal, G.leg, [YX(ws), sd * 2.52, YZ(0.62)], [YX(ws) + 0.05, sd * 2.58, YZ(1.55)], 0.10, 0.24);
+      });
+    });
+    /* the nose leg: oleo, hub caps, the taxi lamps */
+    oleo(G.metal, G.leg, [YX(5.1), 0, YZ(0.58)], [YX(5.0), 0, YZ(1.70)], 0.12, 0.26);
+    [0.32, -0.32].forEach(function (y) { hubFace(G.metal, 0.55, 0.30, YX(5.1), y, YZ(0.55), y > 0 ? 1 : -1); });
+    G.metal.push(sph(0.09, 8, 6, YX(4.8), 0.14, YZ(1.55)), sph(0.09, 8, 6, YX(4.8), -0.14, YZ(1.55)));
+  }
+  /* the YY-20's finish: seams and fastener rows along the fuselage and the
+     wings, access panels, the sponsons' doors, soot behind the engines on
+     the wings' undersides and streaks down the rear fuselage, grime */
+  function yy20Paint(g, s) {
+    finish(g, s, {
+      side: [[YX(1.5), YX(39.0), YZ(5.6)], [YX(4.0), YX(27.0), YZ(2.2)], [YX(6.0), YX(30.0), YZ(4.0)]],
+      sideV: [[YX(7.0), YZ(1.4), YZ(6.4)], [YX(11.0), YZ(1.35), YZ(6.6)], [YX(15.0), YZ(1.35), YZ(6.6)], [YX(19.0), YZ(1.35), YZ(6.6)],
+              [YX(23.0), YZ(1.35), YZ(6.6)], [YX(27.4), YZ(2.2), YZ(6.7)], [YX(33.5), YZ(4.2), YZ(7.0)]],
+      top: [[YX(12.0), 3.2, YX(22.0), 24.0], [YX(20.0), 3.2, YX(23.8), 24.0], [YX(4.0), 1.2, YX(38.0), 1.2]],
+      belly: [[YX(12.0), 3.2, YX(22.0), 24.0], [YX(4.0), 1.0, YX(27.0), 1.0]],
+      box: [[1, YX(14.0), YX(15.2), YZ(3.4), YZ(2.6)], [1, YX(24.0), YX(25.2), YZ(3.4), YZ(2.6)], [1, YX(6.2), YX(7.0), YZ(5.6), YZ(4.8)],
+            [1, YX(34.0), YX(35.0), YZ(6.4), YZ(5.6)], [0, YX(15.0), YX(16.4), 0.4, 1.4], [0, YX(30.0), YX(31.2), 0.3, 1.1],
+            [3, YX(8.0), YX(9.0), 0.3, 1.0], [3, YX(14.0), YX(26.0), 1.6, 2.4]],
+      topSoot: [[YX(18.0), YX(24.0), 8.0, 10.5], [YX(21.0), YX(26.0), 13.5, 16.5]], grime: 0.6
+    }, 20849);
+  }
   function yy20(THREE, M, C) {
     V = THREE;
-    var sh = sheet(-24.0, 24.0, 25.5, -4.1, 11.0, 12);
-    var B = bins(["skin", "dark", "metal", "glass", "team", "nozzle", "store"]);
-    var G = bins(["leg", "tyre", "dark"]);
+    var sh = sheet(-24.0, 24.0, 25.5, -4.1, 11.0, 16);
+    var B = bins(["skin", "dark", "metal", "glass", "team", "nozzle", "store", "lampR", "lampG"]);
+    var G = bins(["leg", "tyre", "dark", "metal"]);
     var secs = Y_FUS.map(function (r) { return sec(YX(r[0]), 0, YZ((r[2] + r[3]) / 2), r[1], (r[2] - r[3]) / 2, (r[2] - r[3]) / 2, 0.9, 0.8); });
     push(B.skin, loft(secs, 26, 0.5, 0.25));
     /* the flight-deck windows: a dark band round the nose (P10, P11) */
@@ -1283,16 +1500,20 @@ var HeroPlaAirModern = (function () {
         G.leg.push(bar([YX(ws), sd * 2.52, YZ(0.6)], [YX(ws), sd * 2.6, YZ(1.4)], 0.12, 8));
       });
     });
+    yy20Detail(B, G);
     var pal = { top: "#646a70", side: "#646a70", belly: "#6a7076" };
     var cv = paintSheet(sh, pal, [YX(3.0), YX(7.0), YX(11.0), YX(15.0), YX(19.0), YX(23.0), YX(27.0), YX(31.0), YX(35.0), YX(39.0)], 20848, function (g, s) {
       /* the crew door on the port side, the ramp's hinge lines (P10) */
       g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
       g.strokeRect(s.u(YX(9.1)), s.vz(YZ(3.9), 1), s.u(YX(10.0)) - s.u(YX(9.1)), s.vz(YZ(2.0), 1) - s.vz(YZ(3.9), 1));
       [1, 2].forEach(function (b) { g.beginPath(); g.moveTo(s.u(YX(31.0)), s.vz(YZ(3.0), b)); g.lineTo(s.u(YX(39.5)), s.vz(YZ(6.6), b)); g.stroke(); });
+      yy20Paint(g, s);
     });
     var mats = makeMats(C, cv, pal.side, {
       nozzle: { color: 0x4f4c48, roughness: 0.5, metalness: 0.5 },
-      store:  { color: 0x6e7479, roughness: 0.7, metalness: 0.1 }
+      store:  { color: 0x6e7479, roughness: 0.7, metalness: 0.1 },
+      lampR:  { color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 },
+      lampG:  { color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }
     });
     var root = new V.Group();
     flush(root, B, mats, sh);

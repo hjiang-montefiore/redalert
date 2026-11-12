@@ -97,6 +97,14 @@
    0.51 m ahead of the radome, to the fin cap's trailing edge, which stands
    0.44 m behind the nozzle in every side view. len is that measured extent.
 
+   DETAIL PASS: the trunk-side position lights, the fin's anti-collision
+   light and the tail light, the refuelling receptacle's door, static
+   dischargers, the speed-brake hinge fairings and the strake louvres
+   (two new meshes, "lamp_red" and "lamp_green"); on the gear the torque
+   links, collars, brake lines, hub caps and bolts. The ROCAF roundels the
+   sheet carried are removed (no national markings). Placed from the
+   photographs listed above, NOT measured.
+
    NAMED NODES: "gear", the undercarriage with its doors and wells, which the
    renderer shows only below 18 m. Nothing else here is animated.
 
@@ -407,15 +415,12 @@ var HeroF16 = (function () {
     g.fillStyle = "rgba(220,224,226,0.30)";
     for (i = 0; i < 40; i++) g.fillRect(R() * TW, R() * TH, 4 + R() * 10, 2);
 
-    /* ---- ROCAF: low-visibility roundels on the upper left and lower
-       right wing and on the rear fuselage sides; the Block 20's chaff and
-       flare cartridge rows along the fin-root fairing ---- */
+    /* ---- ROCAF: the Block 20's chaff and flare cartridge rows along the
+       fin-root fairing ---- */
     if (P.roc) {
-      var rw = 0.40;
-      roundel(g, pxD(wingLE(3.6) + 0.75), pyTop(3.6), rw * SX, rw * (BT1 - BT0) / (2 * QY));
-      roundel(g, pxD(wingLE(3.6) + 0.75), pyBelly(-3.6), rw * SX, rw * (BB1 - BB0) / (2 * QY));
-      for (b = 0; b < 2; b++)
-        roundel(g, pxD(12.2), pySide(0.22, !b), 0.26 * SX, 0.26 * (BP1 - BP0) / (QZ1 - QZ0));
+      /* (the low-visibility roundels the first pass painted here are left
+         off in the detail pass: the review policy allows no national
+         markings) */
       if (P.disp) {
         for (b = 0; b < 2; b++) {
           g.fillStyle = "rgba(14,15,16,0.75)";
@@ -1268,6 +1273,35 @@ var HeroF16 = (function () {
     team.push(solid(foil([finLE(2.70) - 0.02, 2.70], [finTE(2.70) + 0.01, 2.70], finT(2.70) + 0.03, finAt),
                     foil([finLE(3.02) - 0.02, 3.02], [finTE(3.02) + 0.01, 3.02], finT(3.02) + 0.03, finAt)));
 
+    /* ------------------------------------------- the detail pass ----
+       Fittings the photographs show that the first pass left out: the
+       red / green position lights on the trunk sides (the red one beside
+       the HTS station, Langley 2009), the red anti-collision light low on
+       the fin's leading edge and the white tail light under the fin cap,
+       the air-refuelling receptacle's door on the spine and its lead-in
+       lines, the static dischargers on the wing tips' trailing edges, the
+       tailplane tips and the fin cap, the speed-brake hinge fairings on the
+       fin-root fairing, and the ECS / gun-gas louvres on the strake. Their
+       sizes and places are NOT measured. */
+    var lampR = [], lampG = [];
+    lampR.push(sph(0.035, 8, 6, S(5.50), 0.652, -0.46, 1.6, 1, 0.8));
+    lampG.push(sph(0.035, 8, 6, S(5.50), -0.652, -0.46, 1.6, 1, 0.8));
+    lampR.push(sph(0.04, 8, 6, S(finLE(1.25)) - 0.02, 0, 1.25, 1.4, 0.8, 1));
+    glass.push(sph(0.03, 8, 6, S(14.82), 0, 3.20, 1.4, 0.8, 1));
+    var rz7 = fusAt(7.2).zt;
+    dark.push(box(0.42, 0.24, 0.012, S(7.25), 0, rz7 + 0.004));
+    dark.push(box(0.70, 0.016, 0.006, S(6.70), 0, fusAt(6.7).zt + 0.006));
+    for (s = -1; s <= 1; s += 2) {
+      for (k = 0; k < 2; k++) {
+        var dy = 4.15 + k * 0.30;
+        dark.push(bar([S(WTE - 0.05), s * dy, wingZ(WTE)], [S(WTE + 0.12), s * dy, wingZ(WTE)], 0.007, 4));
+      }
+      var szt = ST_Z0 - (ST_Y1 - 0.08 - ST_Y0) * ANH;
+      dark.push(bar([S(14.40), s * (ST_Y1 - 0.08), szt], [S(14.56), s * (ST_Y1 - 0.08), szt], 0.007, 4));
+      dark.push(box(0.50, 0.02, 0.05, S(14.25), s * 0.14, 0.80));
+      for (k = 0; k < 5; k++) dark.push(box(0.05, 0.02, 0.09, S(6.55 + k * 0.08), s * 0.71, 0.10));
+    }
+
     /* --------------------------------------------- airframe meshes ---- */
     mesh(g, skin, T.skin, "airframe", true);
     mesh(g, glass, T.glass, "canopy");
@@ -1276,6 +1310,8 @@ var HeroF16 = (function () {
     mesh(g, store, T.store, "missiles");
     mesh(g, pods, T.pod, "pods");
     mesh(g, team, T.team, "team");
+    mesh(g, lampR, new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 }), "lamp_red");
+    mesh(g, lampG, new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }), "lamp_green");
 
     /* ================================================ undercarriage ====
        Named "gear": render3d.js shows it only below 18 m. Tricycle: the
@@ -1315,6 +1351,23 @@ var HeroF16 = (function () {
       gS.push(box(1.20, 0.03, 0.50, MX + 0.15, s * 0.88, -1.02, s * 0.30, 0, 0));
       /* the well, a dark recess in the trunk's lower corner */
       gD.push(box(1.30, 0.34, 0.03, MX + 0.25, s * 0.46, -0.865));
+    }
+    /* the detail pass: torque links on the nose and main legs, the oleo
+       gland collars, brake lines down the main legs, hub caps with their
+       bolts (the Twente and Langley photographs) */
+    gM.push(bar([NX + 0.02, 0, GROUND + NR + 0.12], [NX + 0.14, 0, GROUND + NR + 0.26], 0.014, 4, true));
+    gM.push(bar([NX + 0.14, 0, GROUND + NR + 0.26], [NX + 0.05, 0, GROUND + NR + 0.40], 0.014, 4, true));
+    gM.push(cyl(0.08, 0.08, 0.06, 10, "z", NX + 0.04, 0, GROUND + NR + 0.44));
+    gD.push(cyl(0.06, 0.06, NW + 0.02, 10, "y", NX, 0, GROUND + NR));
+    for (s = -1; s <= 1; s += 2) {
+      var lmz = GROUND + MR;
+      gM.push(bar([MX + 0.03, s * (MY - 0.16), lmz + 0.16], [MX + 0.20, s * (MY - 0.17), lmz + 0.32], 0.016, 4, true));
+      gM.push(bar([MX + 0.20, s * (MY - 0.17), lmz + 0.32], [MX + 0.05, s * (MY - 0.20), lmz + 0.50], 0.016, 4, true));
+      gM.push(cyl(0.095, 0.095, 0.06, 10, "z", MX + 0.06, s * (MY - 0.24), lmz + 0.56));
+      gD.push(bar([MX + 0.12, s * 0.62, -0.66], [MX + 0.0, s * (MY - 0.10), lmz + 0.14], 0.009, 4, true));
+      gD.push(cyl(0.10, 0.10, MW + 0.03, 10, "y", MX, s * MY, lmz));
+      for (k = 0; k < 6; k++)
+        gM.push(cyl(0.013, 0.013, MW + 0.05, 5, "y", MX + Math.cos(k * PI / 3) * 0.135, s * MY, lmz + Math.sin(k * PI / 3) * 0.135));
     }
     mesh(gear, gM, T.metal, "gear_legs");
     mesh(gear, gR, T.rubber, "tyres");

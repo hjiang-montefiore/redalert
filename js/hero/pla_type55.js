@@ -452,6 +452,51 @@ var HeroType55 = (function () {
     cylX(B.dark, -0.40, 0.32, -0.70, 0.62, 0.075, 10);
     cylX(B.dark, -0.62, -0.40, -0.70, 0.62, 0.03, 6);
   }
+  /* ---------------------------------------------------------------- fittings */
+  /* the small fittings P1-P4 show that the first pass left out: the rows of bolt heads under
+     the compartment's rim and down the plate joints of the rear sides, the small U handles on
+     the rear sides, the mirrors on their posts at the front corners, the open towing hooks on
+     the bumper ends, the bonnet hatch's hinge knuckles, the rear lamps and the tail's step, the troop benches. */
+  function addFittings(B) {
+    var s, i, x, z, yo;
+    for (s = -1; s <= 1; s += 2) {
+      yo = s * W;
+      /* the bolt row under the rim, the plate joint columns (P1, P2) */
+      for (i = 0; i < 17; i++) { x = -2.40 + i * 0.12; box(B.dark, x - 0.015, x + 0.015, s > 0 ? W : -W - 0.014, s > 0 ? W + 0.014 : -W, 1.72, 1.75); }
+      [-2.40, -1.25].forEach(function (cx) {
+        for (z = 1.00; z < 1.66; z += 0.12) box(B.dark, cx - 0.015, cx + 0.015, s > 0 ? W : -W - 0.014, s > 0 ? W + 0.014 : -W, Math.max(z, archZ(cx) + 0.04), Math.max(z, archZ(cx) + 0.04) + 0.03);
+      });
+      /* the small U handles on the rear sides (P1) */
+      [-2.15, -0.60].forEach(function (hx) {
+        bar(B.dark, [hx - 0.08, yo, 1.62], [hx - 0.08, s * (W + 0.05), 1.62], 0.018);
+        bar(B.dark, [hx + 0.08, yo, 1.62], [hx + 0.08, s * (W + 0.05), 1.62], 0.018);
+        bar(B.dark, [hx - 0.08, s * (W + 0.05), 1.62], [hx + 0.08, s * (W + 0.05), 1.62], 0.018);
+      });
+      /* the mirror on its post at the front corner of the fender (P1) */
+      bar(B.dark, [1.80, s * 0.86, ZF + 0.01], [1.74, s * 0.92, 1.78], 0.02);
+      box(B.dark, 1.71, 1.75, s * 0.92 - 0.065, s * 0.92 + 0.065, 1.74, 1.92);
+      /* the open hook under each bumper end (P1) */
+      bar(B.dark, [2.36, s * 0.45, 0.62], [2.36, s * 0.45, 0.56], 0.025);
+      bar(B.dark, [2.36, s * 0.45, 0.56], [2.43, s * 0.45, 0.56], 0.025);
+      bar(B.dark, [2.43, s * 0.45, 0.56], [2.44, s * 0.45, 0.62], 0.025);
+      /* tail lamps on the rear plate */
+      box(B.dark, XTAIL - 0.04, XTAIL - 0.01, s * 0.80 - 0.06, s * 0.80 + 0.06, 1.55, 1.65);
+      box(B.lamp, XTAIL - 0.045, XTAIL - 0.035, s * 0.80 - 0.04, s * 0.80 + 0.04, 1.57, 1.63);
+      /* the rivet row along the cab's upper plate over the door (P2) */
+      for (i = 0; i < 6; i++) onUpper(B.dark, s, XD0 + 0.05 + i * 0.12, XD0 + 0.08 + i * 0.12, 0.20, 0.23, 0.0, 0.014);
+    }
+    /* the troop benches along both sides of the open compartment, cushion and back pad, on
+       their legs (P1: the seats seen over the side) */
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, -2.35, -0.50, s > 0 ? W - 0.40 : -W + 0.05, s > 0 ? W - 0.05 : -W + 0.40, 1.34, 1.42);
+      box(B.dark, -2.35, -0.50, s > 0 ? W - 0.12 : -W + 0.05, s > 0 ? W - 0.05 : -W + 0.12, 1.46, 1.72);
+      for (i = 0; i < 4; i++) box(B.paint, -2.25 + i * 0.55, -2.21 + i * 0.55, s > 0 ? W - 0.36 : -W + 0.32, s > 0 ? W - 0.32 : -W + 0.36, 1.02, 1.34);
+    }
+    /* the step and the towing pintle under the rear doors */
+    box(B.dark, XTAIL - 0.05, XTAIL + 0.02, -0.45, 0.45, 0.88, 0.92);
+    bar(B.dark, [XTAIL + 0.02, 0, 0.84], [XTAIL - 0.03, 0, 0.84], 0.03);
+    bar(B.dark, [XTAIL - 0.03, 0, 0.84], [XTAIL - 0.03, 0, 0.74], 0.03);
+  }
   /* a hexahedron given as a trapezoid on a tilted plane (half width hw0 at u0, hw1 at u1) */
   function trap(bin, P0, U, N, u0, u1, hw0, hw1, h0, h1) {
     function pt(u, w, h) { return [P0[0] + U[0] * u + N[0] * h, w, P0[2] + U[2] * u + N[2] * h]; }
@@ -620,6 +665,7 @@ var HeroType55 = (function () {
     addFront(B);
     addInterior(B);
     addChassis(B);
+    addFittings(B);
     flush(THREE, g, B);
     var AX = [XF, XR];
     for (i = 0; i < AX.length; i++) {

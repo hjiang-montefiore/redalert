@@ -107,6 +107,14 @@
    BLADE, RUBBER, GLASS, TEAM (exactly C.team: strips on the floats and the
    stabiliser), DISC. 12 draw calls. ASCII only.                          */
 
+/* DETAIL PASS (2026-11): placed off the three-view and the 2003 and Z-8A photographs; sizes NOT
+   measured: wipers, side pitot probes, cockpit-door hinges, handle and steps, mooring cleats,
+   cowl latches, intake guard rings, exhaust rims, float position lamps (red / green material) and
+   bumper strips, boom fairing hinges, the starboard rescue hoist, the pylon and belly beacons, the
+   white tail lamp, landing lamps, aerial blades and the long wire, the mast fairing's grille, hub
+   caps, oleo pistons and the nose torque link; on the head blade bolts, pitch horns and links and
+   tip caps. The paint gains fastener rows, cowl and boom panels, oil streaks, sill scuffing and
+   walkways. 6052-6768 -> 8984-9700 tris, 12 -> 14 draw calls; extents and len unchanged. */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroZ8 = (function () {
@@ -232,6 +240,27 @@ var HeroZ8 = (function () {
         g.beginPath(); g.moveTo(pxX(p[0]), pyTop(q)); g.lineTo(pxX(p[1]), pyTop(q)); g.stroke();
       });
     });
+    /* detail pass: fastener rows down the cabin's stringers and along the
+       boom, the access panels on the cowl sides and the boom, oil and
+       hydraulic streaks off the transmission deck, scuffing under the
+       sliding door, the walkways either side of the mast on the cowl top */
+    for (b = 1; b <= 2; b++) {
+      g.fillStyle = "rgba(0,0,0,0.22)";
+      [1.15, 1.75, 2.85, 3.35].forEach(function (h) { for (x = pxX(-3.4); x < pxX(4.8); x += 5) g.fillRect(x + 2, pySide(Z(h), b) + 2, 1.2, 1.2); });
+      [2.80, 3.10, 3.40].forEach(function (h) { for (x = pxX(-9.4); x < pxX(-4.4); x += 5) g.fillRect(x, pySide(Z(h), b), 1.2, 1.2); });
+      [[2.6, 1.6, 3.65, 4.15], [0.40, -0.70, 3.65, 4.15], [-1.20, -2.20, 3.65, 4.15], [-5.8, -6.5, 2.85, 3.40], [-7.8, -8.4, 2.80, 3.35], [4.2, 3.6, 1.10, 1.60]].forEach(function (q) {
+        rect(b, q[0], q[1], q[2], q[3], 1.3);
+      });
+      for (i = 0; i < 16; i++) {
+        g.fillStyle = "rgba(22,18,12," + (0.08 + R() * 0.10).toFixed(3) + ")";
+        g.fillRect(pxX(-3.0 + R() * 6.0), pySide(Z(3.62), b), 1.5 + R() * 1.5, 10 + R() * 34);
+      }
+    }
+    g.fillStyle = "rgba(120,112,92,0.16)";
+    g.fillRect(pxX(DOOR_S.x1), pySide(Z(1.10), 2), pxX(DOOR_S.x0) - pxX(DOOR_S.x1), 4);
+    g.fillStyle = "rgba(0,0,0,0.12)";
+    g.fillRect(pxX(-3.0), pyTop(1.05), pxX(2.8) - pxX(-3.0), pyTop(0.70) - pyTop(1.05));
+    g.fillRect(pxX(-3.0), pyTop(-0.70), pxX(2.8) - pxX(-3.0), pyTop(-1.05) - pyTop(-0.70));
     /* the boom fold hinge line ahead of the cranked tail (Stevens 1964) */
     for (b = 1; b <= 2; b++) {
       g.strokeStyle = "rgba(0,0,0,0.55)"; g.lineWidth = 2.6;
@@ -728,6 +757,83 @@ var HeroZ8 = (function () {
       gearM.push(bar([MW_X, sg * (MW_Y0 + MW_Y1) / 2, Z(MW_R)], [MW_X - 0.05, sg * FL_Y, Z(FL_H - 0.30)], 0.08, 10, true));
       gearM.push(bar([MW_X, sg * (MW_Y0 + MW_Y1) / 2, Z(MW_R + 0.05)], [MW_X + 0.55, sg * (FL_Y - 0.30), Z(FL_H - 0.30)], 0.04, 6, true));
     });
+    /* ================================================= DETAIL PASS ======
+       The fittings the first pass left out, placed off the three-view, the
+       2003 photograph and the Z-8A photograph: their sizes are read through
+       the drawing's scale and the photographs' perspective, NOT measured. */
+    var lampR = [], lampG = [];
+    function sy(x, h) { return sideY(fus, x, Z(h)); }
+    [1, -1].forEach(function (sg) {
+      /* the windscreen wipers, parked upright on the outer panes */
+      dark.push(bar([5.70, sg * 0.70, Z(2.40)], [5.45, sg * 0.62, Z(2.95)], 0.012, 4, true));
+      /* the pitot probes on the nose's sides below the windscreen */
+      var py = sy(5.70, 2.05);
+      metal.push(bar([5.70, sg * (py - 0.02), Z(2.05)], [5.70, sg * (py + 0.12), Z(2.08)], 0.015, 5, true));
+      metal.push(bar([5.70, sg * (py + 0.12), Z(2.08)], [6.05, sg * (py + 0.12), Z(2.08)], 0.012, 5, true));
+      /* the cockpit doors' hinges and handles, the steps up to them */
+      [2.45, 3.05].forEach(function (h) { dark.push(box(0.05, 0.03, 0.07, 4.48, sg * (sy(4.48, h) + 0.02), Z(h))); });
+      metal.push(box(0.14, 0.03, 0.03, 4.75, sg * (sy(4.75, 2.10) + 0.03), Z(2.10)));
+      [1.30, 1.75].forEach(function (h) { dark.push(box(0.16, 0.02, 0.05, 4.70, sg * (sy(4.70, h) + 0.008), Z(h))); });
+      /* the boat hull's spray strips over the chine, the mooring cleats */
+      metal.push(box(0.12, 0.08, 0.06, 5.10, sg * (sy(5.10, 1.60) + 0.03), Z(1.60)));
+      metal.push(box(0.12, 0.08, 0.06, -3.40, sg * (sy(-3.40, 2.00) + 0.03), Z(2.00)));
+      /* the cowl's latches down each side and its hinges */
+      [2.40, 1.70, 1.00, -1.40, -2.10, -2.80].forEach(function (xl) {
+        dark.push(box(0.07, 0.02, 0.03, xl, sg * (sideY(cowl, xl, Z(3.75)) + 0.012), Z(3.75)));
+      });
+      /* the intakes' anti-ice guard rings, the exhaust outlets' bright rims */
+      metal.push(place(new V.TorusGeometry(0.31, 0.022, 6, 18), 3.38, sg * 0.50, Z(3.93), 0, PI / 2, 0));
+      [EX_F, EX_R].forEach(function (ex0) {
+        var oy = sideY(cowl, ex0, Z(4.02));
+        metal.push(box(0.03, 0.27, 0.42, ex0 - 0.37, sg * (oy + 0.08), Z(4.02)));
+      });
+      /* position lamps on the floats' outer tops, port red, starboard
+         green; the floats' bumper strip */
+      (sg > 0 ? lampR : lampG).push(sph(0.045, 8, 6, -1.40, sg * (FL_Y + 0.40), Z(FL_H + 0.30), 1.5, 0.8, 0.8));
+      metal.push(bar([FL_X0 - 0.40, sg * (FL_Y + 0.46), Z(FL_H)], [FL_X1 + 0.50, sg * (FL_Y + 0.44), Z(FL_H)], 0.025, 5, true));
+      /* the boom's drive-shaft fairing hinges */
+      [-4.6, -5.6, -6.6, -7.6, -8.6].forEach(function (xh) {
+        var bs = secAt(shf, xh);
+        dark.push(box(0.10, 0.02, 0.05, xh, sg * (bs.wm + 0.004), bs.zm));
+      });
+      /* the main wheels' hub caps and the oleos' bright pistons; the
+         nose wheels' caps */
+      gearM.push(cyl(0.10, 0.10, 0.02, 12, "y", MW_X, sg * (MW_Y1 + MW_W / 2 + 0.01), Z(MW_R)));
+      gearM.push(cyl(0.03, 0.03, 0.04, 8, "y", MW_X, sg * (MW_Y1 + MW_W / 2 + 0.03), Z(MW_R)));
+      gearM.push(bar([MW_X - 0.02, sg * (MW_Y0 + MW_Y1) / 2 + sg * 0.01, Z(MW_R + 0.25)], [MW_X - 0.04, sg * (MW_Y0 + MW_Y1) / 2 + sg * 0.03, Z(MW_R + 0.62)], 0.065, 8, true));
+      gearM.push(cyl(0.08, 0.08, 0.02, 10, "y", NW_X, sg * (NW_Y + NW_W / 2 + 0.01), Z(NW_R)));
+    });
+    /* the nose leg's torque link and its towing lug */
+    gearM.push(bar([NW_X + 0.10, 0, Z(0.55)], [NW_X + 0.14, 0, Z(0.78)], 0.016, 4, true));
+    gearM.push(box(0.10, 0.06, 0.06, NW_X + 0.16, 0, Z(NW_R)));
+    /* the rescue hoist over the starboard sliding door (the 2003
+       photograph's starboard side), its arm and hook block */
+    var hy = -(sy(2.6, 3.6) + 0.05);
+    metal.push(box(0.70, 0.24, 0.24, 2.65, hy - 0.08, Z(3.62)));
+    metal.push(bar([3.00, hy - 0.08, Z(3.62)], [3.15, hy - 0.60, Z(3.60)], 0.045, 6, true));
+    dark.push(cyl(0.05, 0.05, 0.10, 8, "z", 3.15, hy - 0.60, Z(3.50)));
+    /* the anti-collision beacons on the pylon and under the belly, the white
+       tail lamp at the pylon's trailing edge, the landing lamps under the
+       nose */
+    dark.push(cyl(0.06, 0.065, 0.04, 10, "z", -11.60, 0, Z(TR_H + 0.30)));
+    lampR.push(sph(0.05, 10, 6, -11.60, 0, Z(TR_H + 0.32), 1, 1, 0.6));
+    dark.push(cyl(0.06, 0.065, 0.04, 10, "z", -1.00, 0, Z(0.83)));
+    lampR.push(sph(0.05, 10, 6, -1.00, 0, Z(0.81), 1, 1, 0.8));
+    metal.push(sph(0.03, 8, 5, -12.00, 0, Z(TR_H - 0.10), 1.3, 0.8, 1.0));
+    [0.45, -0.45].forEach(function (ly) {
+      metal.push(cyl(0.11, 0.11, 0.05, 12, "z", 5.10, ly, Z(0.99)));
+      glass.push(cyl(0.095, 0.095, 0.012, 12, "z", 5.10, ly, Z(0.962)));
+    });
+    /* aerials: a blade on the cabin roof, two under the belly, the long
+       wire from the cowl to the pylon */
+    dark.push(box(0.36, 0.02, 0.26, 4.00, 0, Z(3.92), 0, -0.25, 0));
+    dark.push(box(0.30, 0.02, 0.22, 3.00, 0.30, Z(0.72), 0, 0.25, 0));
+    dark.push(box(0.30, 0.02, 0.22, -2.20, -0.30, Z(0.72), 0, 0.25, 0));
+    dark.push(bar([-3.40, 0, Z(4.30)], [-9.70, 0, Z(4.00)], 0.006, 3, true));
+    dark.push(bar([-9.70, 0, Z(4.00)], [-9.70, 0, Z(3.60)], 0.012, 4, true));
+    /* the mast fairing's oil-cooler grille behind the head */
+    for (i = 0; i < 5; i++) dark.push(box(0.03, 0.60, 0.10, -0.75 - i * 0.07, 0, Z(4.40)));
+
     mesh(und, gearM, T.metal, "undercarriage_struts");
     mesh(und, gearR, T.rubber, "tyres");
 
@@ -737,6 +843,8 @@ var HeroZ8 = (function () {
     mesh(g, dark, T.dark, "fittings_dark");
     mesh(g, metal, T.metal, "fittings");
     mesh(g, team, T.team, "team");
+    mesh(g, lampR, new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 }), "lamp_red");
+    mesh(g, lampG, new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }), "lamp_green");
 
     /* ============================================================ rotor ==
        Six blades (en.wikipedia), 18.90 m, turning clockwise from above as
@@ -778,6 +886,11 @@ var HeroZ8 = (function () {
                    [cyl(0.045, 0.045, 0.55, 6, "x", 0.62, 0.20, 0.05), hubD],
                    [box(0.10, 0.06, 0.20, 0.42, -0.16, -0.12), hubD]];
       for (i = 0; i < parts.length; i++) { parts[i][0].rotateZ(a); parts[i][1].push(parts[i][0]); }
+      /* detail pass: the sleeve's blade bolts, the pitch horn and its link
+         down to the swashplate, the bright tip cap */
+      [[cyl(0.03, 0.03, 0.22, 8, "z", 1.10, 0.06, -0.02), hubM], [cyl(0.03, 0.03, 0.22, 8, "z", 1.20, -0.06, -0.02), hubM],
+       [box(0.12, 0.10, 0.05, 0.70, -0.18, -0.10), hubM], [bar([0.70, -0.21, -0.12], [0.68, -0.24, -0.38], 0.018, 5, true), hubD],
+       [box(0.20, CHORD, 0.05, ROTOR_R - 0.10, LE + CHORD / 2, -0.022), hubM]].forEach(function (q) { q[0].rotateZ(a); q[1].push(q[0]); });
     }
     mesh(head, hubM, T.metal, "hub");
     mesh(head, hubD, T.dark, "hub_dampers");

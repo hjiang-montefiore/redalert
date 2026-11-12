@@ -25,6 +25,16 @@
    main-gear track (3.0 m), the fin outline and the refuelling receptacle
    (not drawn).
 
+   DETAIL PASS: added the canopy sill rails and mirror, the compressor face
+   in the duct, two blade aerials, red beacons above and below, wingtip
+   position lights, the tail light, static dischargers, the jet pipe's
+   flameholder and turbine cone, the pylons' sway braces; on the gear the
+   oleo collars, torque links, brake lines, hub caps and the taxi lamp; and
+   on the paint sheet the frames and seams with fastener rows, the wing
+   spars and panels, the avionics, engine and speed-brake outlines, fuel
+   caps, gun-gas and exhaust soot and streaks. All placed from photographs
+   of the A-7D, NOT measured.
+
    PAINT: the USAF Southeast Asia scheme of the period, FS 30219 tan with
    FS 34102 and 34079 green blotches on the upper surfaces over FS 36622
    light grey undersides. The pattern is a procedural canvas (blotch
@@ -212,6 +222,68 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       var zy = TOPH + (b - 1) * SIDEH + (ZTOP + 0.30) / ZSPAN * SIDEH;
       g.fillRect(0, zy, TW, TOPH + b * SIDEH - zy);
     }
+    /* the detail pass: frames and longeron seams with a light lip and
+       fastener rows, the wing spars, fold line and access panels, the gun
+       bay and avionics doors, the big belly speed brake's outline seen on
+       the sides, fuel caps, rain streaks, gun-gas and exhaust soot and the
+       usual SEA-era grime (the A-7D photographs show a heavily weathered
+       finish) */
+    function sZ(z, b2) { return TOPH + (b2 - 1) * SIDEH + clamp((ZTOP - z) / ZSPAN * SIDEH, 0, SIDEH); }
+    function tY(y) { return clamp((YMAX - y) * PXM, 2, TOPH - 2); }
+    function seam(x0, y0, x1, y1) {
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.strokeStyle = "rgba(255,255,255,0.09)";
+      g.beginPath(); g.moveTo(x0 + 1, y0 + 1); g.lineTo(x1 + 1, y1 + 1); g.stroke();
+    }
+    function rivets(x0, y0, x1, y1, n) {
+      g.fillStyle = "rgba(0,0,0,0.22)";
+      for (var q = 0; q <= n; q++) g.fillRect(x0 + (x1 - x0) * q / n, y0 + (y1 - y0) * q / n, 1, 1);
+    }
+    var FR = [1.1, 2.0, 3.2, 4.6, 5.6, 6.5, 7.5, 8.5, 9.5, 10.5, 11.4, 12.2];
+    for (b = 1; b < 3; b++) {
+      seam(pxX(X(0.8)), sZ(0.35, b), pxX(X(13.2)), sZ(0.35, b));
+      seam(pxX(X(1.5)), sZ(-0.30, b), pxX(X(12.8)), sZ(-0.30, b));
+      rivets(pxX(X(0.9)), sZ(0.40, b), pxX(X(13.1)), sZ(0.40, b), 160);
+      for (i = 0; i < FR.length; i++) {
+        seam(pxX(X(FR[i])), sZ(0.80, b), pxX(X(FR[i])), sZ(-0.75, b));
+        rivets(pxX(X(FR[i])) + 3, sZ(0.80, b), pxX(X(FR[i])) + 3, sZ(-0.75, b), 20);
+      }
+      g.strokeStyle = "rgba(0,0,0,0.34)";
+      g.strokeRect(pxX(X(1.3)), sZ(0.25, b), 1.3 * PXM, 0.45 / ZSPAN * SIDEH);     /* avionics bay */
+      g.strokeRect(pxX(X(5.9)), sZ(-0.45, b), 2.4 * PXM, 0.25 / ZSPAN * SIDEH);    /* speed brake edge */
+      g.strokeRect(pxX(X(9.8)), sZ(0.30, b), 1.6 * PXM, 0.40 / ZSPAN * SIDEH);     /* engine access */
+      for (i = 0; i < 26; i++) {
+        var rx0 = R() * TW, ry0 = sZ(0.7 - R() * 1.2, b);
+        var rg = g.createLinearGradient(0, ry0, 0, ry0 + 14 + R() * 18);
+        rg.addColorStop(0, "rgba(30,28,24,0.14)"); rg.addColorStop(1, "rgba(30,28,24,0)");
+        g.fillStyle = rg; g.fillRect(rx0, ry0, 1 + R() * 2, 32);
+      }
+    }
+    /* gun gas behind the port muzzle, soot over the tail */
+    var gg = g.createLinearGradient(pxX(X(1.2)), 0, pxX(X(3.4)), 0);
+    gg.addColorStop(0, "rgba(20,18,16,0.45)"); gg.addColorStop(1, "rgba(20,18,16,0)");
+    g.fillStyle = gg; g.fillRect(pxX(X(1.2)), sZ(0.05, 1), pxX(X(3.4)) - pxX(X(1.2)), 0.30 / ZSPAN * SIDEH);
+    var sg2 = g.createLinearGradient(pxX(X(13.6)), 0, pxX(X(11.6)), 0);
+    sg2.addColorStop(0, "rgba(20,18,16,0.40)"); sg2.addColorStop(1, "rgba(20,18,16,0)");
+    g.fillStyle = sg2; g.fillRect(pxX(X(13.6)), 0, pxX(X(11.6)) - pxX(X(13.6)), TH);
+    for (var sgn2 = -1; sgn2 <= 1; sgn2 += 2) {
+      seam(pxX(X(leS(0.9) + 0.35)), tY(sgn2 * 0.9), pxX(X(leS(5.6) + 0.25)), tY(sgn2 * 5.6));
+      seam(pxX(X(teS(0.9) - 0.75)), tY(sgn2 * 0.9), pxX(X(teS(5.6) - 0.55)), tY(sgn2 * 5.6));
+      rivets(pxX(X(leS(0.9) + 0.40)), tY(sgn2 * 0.9), pxX(X(leS(5.6) + 0.30)), tY(sgn2 * 5.6), 70);
+      rivets(pxX(X(teS(0.9) - 0.80)), tY(sgn2 * 0.9), pxX(X(teS(5.6) - 0.60)), tY(sgn2 * 5.6), 70);
+      for (i = 0; i < 4; i++) {
+        var yy = 1.2 + i * 1.1;
+        g.strokeStyle = "rgba(0,0,0,0.24)";
+        g.strokeRect(pxX(X((leS(yy) + teS(yy)) / 2)), tY(sgn2 * yy) - 5, 0.40 * PXM, 10);
+      }
+      g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(pxX(X(7.6)), tY(sgn2 * 2.0) - 3, 6, 6);
+    }
+    seam(pxX(X(4.8)), tY(0), pxX(X(13.0)), tY(0));
+    for (i = 0; i < 70; i++) {
+      g.fillStyle = "rgba(24,22,20," + (0.03 + R() * 0.07).toFixed(3) + ")";
+      g.fillRect(R() * TW, R() * TH, 10 + R() * 50, 2 + R() * 7);
+    }
     return cv;
   }
   var _tex;
@@ -395,6 +467,59 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     }
     g.add(box(THREE, team, 0.80, 0.30, 0.04, X(8.20), 0, 0.84));              /* spine flash */
 
+    /* ------------------------------------------------- the detail pass */
+    /* fittings the A-7D photographs show and the first pass left out: the
+       canopy sill rails and the mirror on the arch, the compressor face down
+       the intake duct, a blade aerial under the belly and one aft, the red
+       anti-collision beacons above and below, the wingtip position lights
+       (port red), the white tail light on the rudder, static dischargers on
+       the wing tips and tailplane tips, the jet pipe's flameholder ring and
+       turbine cone, the pylons' sway braces. Places and sizes NOT measured. */
+    var lampR = new THREE.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1,
+                                                  emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    var lampG = new THREE.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1,
+                                                  emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
+    function lamp(mat, r, px, py, pz) {
+      var lg2 = new THREE.OctahedronGeometry(r, 1); lg2.scale(1.6, 1, 0.8);
+      var lm2 = new THREE.Mesh(lg2, mat); lm2.position.set(px, py, pz); return lm2;
+    }
+    function rod(mat, p, q, r) {
+      var dx = q[0] - p[0], dy = q[1] - p[1], dz = q[2] - p[2], L = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      var rg2 = new THREE.CylinderGeometry(r, r, L, 5, 1, false);
+      rg2.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx / L, dy / L, dz / L)));
+      rg2.translate((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2);
+      return new THREE.Mesh(rg2, mat);
+    }
+    for (sgn = -1; sgn <= 1; sgn += 2) {
+      g.add(rod(metal, [X(2.45), sgn * 0.42, 0.66], [X(4.30), sgn * 0.40, 0.66], 0.016));
+      g.add(lamp(sgn > 0 ? lampR : lampG, 0.045, X(9.75), sgn * 5.76, wingZ(5.76)));
+      for (i = 0; i < 2; i++) {
+        var dy2 = 5.2 + i * 0.4;
+        g.add(rod(ink, [X(teS(dy2) - 0.05), sgn * dy2, wingZ(dy2)], [X(teS(dy2) + 0.12), sgn * dy2, wingZ(dy2)], 0.007));
+      }
+      g.add(rod(ink, [X(13.90), sgn * 2.50, -0.12], [X(14.03), sgn * 2.50, -0.12], 0.007));
+      for (i = 0; i < PY.length; i++) {
+        var pyb = PY[i], scb = leS(pyb) + 0.40 * (teS(pyb) - leS(pyb)), wbb = wingZ(pyb) - (pyb < yK ? 0.19 : 0.07);
+        g.add(rod(metal, [X(scb - 0.30), sgn * (pyb + 0.10), wbb - 0.46], [X(scb - 0.30), sgn * (pyb + 0.10), wbb - 0.56], 0.012));
+        g.add(rod(metal, [X(scb + 0.20), sgn * (pyb + 0.10), wbb - 0.46], [X(scb + 0.20), sgn * (pyb + 0.10), wbb - 0.56], 0.012));
+      }
+    }
+    g.add(box(THREE, metal, 0.03, 0.10, 0.05, X(2.50), 0, 1.03));            /* mirror */
+    var cf = new THREE.CylinderGeometry(0.34, 0.34, 0.02, 20); cf.rotateZ(Math.PI / 2); cf.scale(1, 1.2, 0.85);
+    m = new THREE.Mesh(cf, metal); m.position.set(X(5.4), 0, -0.48); g.add(m);
+    var blade = function (s0, s1, zb, h) {
+      var bp = [[X(s0), zb], [X(s1), zb], [X(s1 + 0.12), zb + h], [X(s0 + 0.06), zb + h]];
+      var bm = new THREE.Mesh(M.slab(THREE, bp, 0.025, "xz"), ink); bm.position.y = 0.0125; return bm;
+    };
+    g.add(blade(10.0, 10.25, -0.60, -0.18));
+    g.add(blade(3.0, 3.22, -0.86, -0.14));
+    g.add(lamp(lampR, 0.05, X(9.3), 0, 0.69));
+    g.add(lamp(lampR, 0.05, X(9.6), 0, -0.66));
+    g.add(lamp(glass, 0.035, X(13.85), 0, 2.40));
+    var fh = new THREE.TorusGeometry(0.30, 0.02, 4, 20); fh.rotateY(Math.PI / 2);
+    m = new THREE.Mesh(fh, metal); m.position.set(X(13.28), 0, 0.04); g.add(m);
+    var tc2 = new THREE.CylinderGeometry(0.03, 0.16, 0.30, 14); tc2.rotateZ(Math.PI / 2);
+    m = new THREE.Mesh(tc2, metal); m.position.set(X(13.0), 0, 0.04); g.add(m);
     /* ---------------------------------------------------------------- gear */
     var gear = new THREE.Group();
     function wheel(px, py, hubZ, r, w) {
@@ -421,6 +546,26 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       m.rotation.y = 0.40; gear.add(m);                                       /* drag brace */
       m = box(THREE, skin, 0.40, 0.04, 0.80, X(8.20), sgn * 1.64, -0.95);
       gear.add(m);                                                            /* leg door */
+    }
+    /* the detail pass: oleo collars, torque links, brake lines, hub caps,
+       the nose leg's taxi lamp */
+    var nlx = X(4.90);
+    m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.06, 12), metal); m.rotation.x = Math.PI / 2;
+    m.position.set(nlx, 0, -1.30); gear.add(m);
+    gear.add(rod(metal, [nlx + 0.06, 0, -1.62], [nlx + 0.20, 0, -1.48], 0.016));
+    gear.add(rod(metal, [nlx + 0.20, 0, -1.48], [nlx + 0.08, 0, -1.34], 0.016));
+    gear.add(box(THREE, metal, 0.10, 0.16, 0.10, nlx + 0.12, 0, -1.05));
+    for (sgn = -1; sgn <= 1; sgn += 2) {
+      var hc = new THREE.CylinderGeometry(0.10, 0.10, 0.18, 10);
+      m = new THREE.Mesh(hc, ink); m.position.set(nlx, sgn * 0.14, GROUND + 0.27); gear.add(m);
+      var mlx = X(8.20);
+      m = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.06, 12), metal); m.rotation.x = Math.PI / 2;
+      m.position.set(mlx, sgn * 1.50, -0.95); gear.add(m);
+      gear.add(rod(metal, [mlx + 0.08, sgn * 1.50, -1.38], [mlx + 0.26, sgn * 1.50, -1.18], 0.02));
+      gear.add(rod(metal, [mlx + 0.26, sgn * 1.50, -1.18], [mlx + 0.10, sgn * 1.50, -0.98], 0.02));
+      gear.add(rod(ink, [mlx - 0.10, sgn * 1.42, 0.0], [mlx - 0.12, sgn * 1.42, -1.42], 0.010));
+      m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.31, 10), ink);
+      m.position.set(mlx, sgn * 1.50, GROUND + 0.35); gear.add(m);
     }
     var root = mergeByMaterial(THREE, g);
     var gm = mergeByMaterial(THREE, gear);

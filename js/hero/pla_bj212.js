@@ -259,7 +259,7 @@ var HeroBj212 = (function () {
 
   /* ---------------------------------------------------------------- body */
   var GLASS = [0.10, 0.12, 0.13], AMBER = [0.85, 0.50, 0.12], RED = [0.55, 0.10, 0.08], LENS = [0.82, 0.80, 0.70];
-  var CANVAS = [0.25, 0.27, 0.19], CANV2 = [0.20, 0.22, 0.15];
+  var CANVAS = [0.25, 0.27, 0.19], CANV2 = [0.20, 0.22, 0.15], HUBC = [0.32, 0.30, 0.22];
   /* an eight-point ring with chamfered corners: half width w, from zb to zt, chamfer c (top
      corners) and cb (bottom corners) */
   function ring8(x, w, zb, zt, c, cb) {
@@ -434,6 +434,82 @@ var HeroBj212 = (function () {
     box(B.dark, TAIL - 0.06, TAIL, -0.50, -0.06, 0.76, 0.84);
   }
 
+  /* ------------------------------------------------------------ fittings */
+  /* the small fittings P2, P5 and P6 show that the first pass left out: the pressed vent
+     panel in the cowl under the screen, the screen frame's posts and hinge knuckles, the
+     interior mirror, the bonnet's hold-down hooks, the door tops' frame tubes and the canvas
+     tie-down straps along the beltline, the bumper's bolt heads and its braces to the frame,
+     the spare wheel's clamp and nuts, the jerrycan in its carrier
+     on the rear left (P6), the rear towing pintle, the tail lamps' guards. */
+  function rope(bin, P, r, seg) { for (var i = 0; i + 1 < P.length; i++) cyl(bin, P[i], P[i + 1], r, r, seg, true); }
+  function addFittings(B) {
+    var s, i, a, ys;
+    /* the cowl vent panel: a pressed rectangle with its louvre lines (P6) */
+    box(B.paint, WX0 + 0.10, WX0 + 0.26, -0.42, 0.42, COWL - 0.02, COWL + 0.005);
+    for (i = 0; i < 4; i++) box(B.dark, WX0 + 0.12 + i * 0.035, WX0 + 0.135 + i * 0.035, -0.38, 0.38, COWL + 0.004, COWL + 0.010);
+    /* the screen frame: header, the side posts and their hinge knuckles at the cowl (P2, P6) */
+    slab(B.paint, wp(0.98, 0, 0.03), WU, [0, 1, 0], WN, 0.03, WW, 0.03);
+    for (s = -1; s <= 1; s += 2) {
+      slab(B.paint, wp(0.5, s * (WW - 0.03), 0.035), WU, [0, 1, 0], WN, WL / 2, 0.03, 0.03);
+      cyl(B.dark, wp(0.02, s * (WW - 0.10), 0.03), wp(0.02, s * (WW - 0.02), 0.03), 0.025, 0.025, 8);
+      /* the bonnet's hold-down hooks on the front corners (P6) */
+      rope(B.dark, [[NOSE - 0.10, s * 0.55, bonZ(NOSE - 0.10) - 0.02], [NOSE - 0.10, s * 0.55, bonZ(NOSE - 0.10) + 0.04], [NOSE - 0.02, s * 0.55, BNZ - 0.04], [NOSE + 0.01, s * 0.55, BNZ - 0.10]], 0.012, 5);
+      /* the door tops' frame tubes along the beltline, under the canvas (P3, P6) */
+      ys = s * (BW + 0.005);
+      rope(B.dark, [[DX0 - 0.03, ys, BELT + 0.01], [DX1 + 0.02, ys, BELT + 0.01]], 0.014, 6);
+      /* the canvas tie-down straps from the curtain's hem to the body's hooks */
+      B.vc.col = CANV2;
+      [0.10, -0.30, -0.70, -1.20, -1.52].forEach(function (tx) {
+        box(B.vc, tx - 0.02, tx + 0.02, s > 0 ? BW - 0.005 : -BW - 0.012, s > 0 ? BW + 0.012 : -BW + 0.005, BELT - 0.06, BELT + 0.14);
+        box(B.dark, tx - 0.02, tx + 0.02, s > 0 ? BW : -BW - 0.02, s > 0 ? BW + 0.02 : -BW, BELT - 0.09, BELT - 0.05);
+      });
+      /* the bumper's top bolt plates and the braces back to the frame horns */
+      for (i = 0; i < 3; i++) box(B.dark, NOSE + 0.04, BUMP - 0.004, s * (0.20 + i * 0.25) - 0.03, s * (0.20 + i * 0.25) + 0.03, 0.50, 0.515);
+      rope(B.dark, [[BUMP - 0.04, s * 0.70, 0.36], [NOSE - 0.10, s * 0.46, 0.42]], 0.018, 6);
+      /* the tail lamps' wire guards */
+      rope(B.dark, [[TAIL + 0.01, s * 0.66, 0.86], [TAIL - 0.06, s * 0.66, 0.86], [TAIL - 0.06, s * 0.66, 1.10], [TAIL + 0.01, s * 0.66, 1.10]], 0.008, 5);
+      rope(B.dark, [[TAIL + 0.01, s * 0.82, 0.86], [TAIL - 0.06, s * 0.82, 0.86], [TAIL - 0.06, s * 0.82, 1.10], [TAIL + 0.01, s * 0.82, 1.10]], 0.008, 5);
+      /* the grab handles at the rear corners of the tub */
+      rope(B.dark, [[TAIL + 0.10, s * (BW + 0.002), BELT - 0.04], [TAIL + 0.10, s * (BW + 0.04), BELT - 0.04], [TAIL + 0.30, s * (BW + 0.04), BELT - 0.04], [TAIL + 0.30, s * (BW + 0.002), BELT - 0.04]], 0.011, 5);
+    }
+    /* the canvas top's stitched seams: the piping along the roof's edges, two seams along the
+       roof, the borders round the curtain windows (P3, P6) */
+    B.vc.col = CANV2;
+    for (s = -1; s <= 1; s += 2) {
+      box(B.vc, TX2, WX1 - 0.05, s * (BW - 0.07) - 0.02, s * (BW - 0.07) + 0.02, ROOF - 0.01, ROOF + 0.012);
+      box(B.vc, TX2, WX1 - 0.05, s * 0.30 - 0.01, s * 0.30 + 0.01, ROOF, ROOF + 0.026);
+      ys = s * (BW - 0.01);
+      [[0.04, -0.46], [-0.58, -1.00], [-1.12, -1.45]].forEach(function (w) {
+        box(B.vc, w[1] - 0.03, w[0] + 0.03, s > 0 ? ys - 0.002 : ys - 0.014, s > 0 ? ys + 0.014 : ys + 0.002, 1.72, 1.75);
+        box(B.vc, w[1] - 0.03, w[0] + 0.03, s > 0 ? ys - 0.002 : ys - 0.014, s > 0 ? ys + 0.014 : ys + 0.002, 1.31, 1.34);
+        box(B.vc, w[0], w[0] + 0.03, s > 0 ? ys - 0.002 : ys - 0.014, s > 0 ? ys + 0.014 : ys + 0.002, 1.34, 1.72);
+        box(B.vc, w[1] - 0.03, w[1], s > 0 ? ys - 0.002 : ys - 0.014, s > 0 ? ys + 0.014 : ys + 0.002, 1.34, 1.72);
+      });
+    }
+    /* the interior mirror hung from the header (P6) */
+    var mh = wp(0.92, 0, -0.06);
+    box(B.dark, mh[0] - 0.04, mh[0] - 0.02, -0.11, 0.11, mh[2] - 0.08, mh[2] - 0.02);
+    /* the spare wheel's clamp, hub cap and nuts (P7) */
+    B.vc.col = HUBC;
+    cyl(B.vc, [SPX - 0.012, -0.28, 0.80], [SPX - 0.0145, -0.28, 0.80], 0.085, 0.08, 10);
+    B.vc.col = [0.09, 0.09, 0.08];
+    for (i = 0; i < 5; i++) { a = i / 5 * TAU; cyl(B.vc, [SPX - 0.010, -0.28 + Math.cos(a) * 0.13, 0.80 + Math.sin(a) * 0.13], [SPX - 0.0145, -0.28 + Math.cos(a) * 0.13, 0.80 + Math.sin(a) * 0.13], 0.018, 0.018, 6); }
+    box(B.dark, SPX - 0.01, TAIL - 0.02, -0.30, -0.26, 1.06, 1.12);
+    /* the jerrycan in its carrier on the rear panel's left (P6: behind the left rear corner),
+       its pressed X, the handles, the carrier's frame and strap */
+    box(B.paint, TAIL - 0.19, TAIL - 0.03, 0.36, 0.70, 0.66, 1.12);
+    box(B.paint, TAIL - 0.17, TAIL - 0.05, 0.42, 0.64, 1.12, 1.16);
+    for (i = 0; i < 2; i++) slab(B.dark, [TAIL - 0.193, 0.53, 0.89], [0, 0, 1], [0, i ? 0.60 : -0.60, 0.80], [1, 0, 0], 0.012, 0.26, 0.004);
+    rope(B.dark, [[TAIL - 0.11, 0.46, 1.16], [TAIL - 0.11, 0.46, 1.21], [TAIL - 0.11, 0.62, 1.21], [TAIL - 0.11, 0.62, 1.16]], 0.012, 5);
+    box(B.dark, TAIL - 0.21, TAIL - 0.02, 0.34, 0.72, 0.63, 0.66);
+    box(B.dark, TAIL - 0.21, TAIL - 0.17, 0.34, 0.37, 0.63, 1.05);
+    box(B.dark, TAIL - 0.21, TAIL - 0.17, 0.69, 0.72, 0.63, 1.05);
+    box(B.dark, TAIL - 0.205, TAIL - 0.185, 0.34, 0.72, 0.96, 1.00);
+    /* the rear towing pintle under the tail, between the bumperettes */
+    box(B.dark, TAIL - 0.10, TAIL + 0.02, -0.08, 0.08, 0.40, 0.48);
+    rope(B.dark, [[TAIL - 0.08, 0, 0.48], [TAIL - 0.16, 0, 0.50], [TAIL - 0.19, 0, 0.44], [TAIL - 0.15, 0, 0.39], [TAIL - 0.10, 0, 0.40]], 0.020, 6);
+  }
+
   /* -------------------------------------------- wheel: one per side of an axle */
   /* 6.50-16 tyres (GAZ-69 figure) with a block tread on black pressed-steel disc wheels, the
      hub with its nuts (P2, P6) */
@@ -476,6 +552,7 @@ var HeroBj212 = (function () {
   function build(THREE, M, C) {
     var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), TB = bins(T), i, wg, WB, tg;
     addBody(HB);
+    addFittings(HB);
     flush(THREE, g, HB);
     for (i = 0; i < XA.length; i++) {
       WB = new Bin(T.wheel, false, true);

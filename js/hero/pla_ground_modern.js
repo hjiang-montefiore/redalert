@@ -277,6 +277,11 @@ var HeroPlaGroundModern = (function () {
     cyl(W, [0, yc + s * 0.29 * kh, 0], [0, yc + s * 0.33 * kh, 0], 0.46 * kr, 0.40 * kr, 16, false);
     W.col = HUB;
     cylY(W, 0, yc + s * 0.33 * kh, yc + s * 0.40 * kh, 0, 0.17 * kr, 10);
+    /* the wheel nuts round the hub (detail pass) */
+    for (j = 0; j < 8; j++) {
+      a = (j + 0.5) / 8 * TAU;
+      cylY(W, Math.cos(a) * 0.26 * kr, yc + s * 0.32 * kh, yc + s * 0.355 * kh, Math.sin(a) * 0.26 * kr, 0.022 * kr, 6);
+    }
   }
   /* one "roadwheel" group per axle, both wheels and the axle beam, origin on the axle centre */
   function addAxles(THREE, g, T, AX, R, H, TY) {
@@ -714,10 +719,36 @@ var HeroPlaGroundModern = (function () {
     cylY(B.dark, 0, -0.45, 0.45, 0, 0.10, 12);
     for (s = -1; s <= 1; s += 2) bar(B.paint, [0, s * 0.35, 0], P(0.40, s * 0.30, zb - 0.11), 0.09);
   }
+  /* ---- fittings (the detail pass), on both TELs: the hinges and latch handles of the body's side hatches, a
+     row of tie-down rings along the body's top edge, the grab handle up the cab's rear corner, the mudflaps behind
+     the front axle pair and the last axle, two whip aerials on the cab roof's rear corners (D1, T1 show the
+     aerial bases; the whips' length is NOT CONFIRMED), the fuel tank under the body between the axle groups with
+     its straps (D1, T2: the dark box there) */
+  function telFittings(B, F, hatches, tank) {
+    var s, k, x;
+    for (s = -1; s <= 1; s += 2) {
+      hatches.forEach(function (q) {
+        sideBox(B.dark, s, F.BW + 0.012, 0.025, q[0] + 0.05, q[0] + 0.10, q[2] - 0.20, q[2] - 0.08);
+        sideBox(B.dark, s, F.BW + 0.012, 0.025, q[0] + 0.05, q[0] + 0.10, q[1] + 0.08, q[1] + 0.20);
+        sideBox(B.dark, s, F.BW + 0.012, 0.035, q[3] - 0.12, q[3] - 0.04, (q[1] + q[2]) / 2 - 0.10, (q[1] + q[2]) / 2 + 0.10);
+      });
+      for (x = F.XT + 0.40; x < F.XC0 - 0.30; x += 0.90) sideBox(B.dark, s, F.BW, 0.03, x - 0.04, x + 0.04, F.ZB - 0.10, F.ZB - 0.04);
+      sideBox(B.dark, s, F.CW, 0.05, F.XC0 + 0.06, F.XC0 + 0.10, 1.50, F.ZC - 0.25);
+      sideBox(B.dark, s, F.BW - 0.40, 0.38, F.AX[1] - F.RT - 0.18, F.AX[1] - F.RT - 0.14, 0.35, 1.30);
+      sideBox(B.dark, s, F.BW - 0.40, 0.38, F.AX[F.AX.length - 1] - F.RT - 0.18, F.AX[F.AX.length - 1] - F.RT - 0.14, 0.35, 1.30);
+      cylZ(B.dark, F.XC0 + 0.20, s * (F.CW - 0.15), F.ZC, F.ZC + 0.10, 0.04, 8);
+      cyl(B.dark, [F.XC0 + 0.20, s * (F.CW - 0.15), F.ZC + 0.10], [F.XC0 + 0.20, s * (F.CW - 0.15), F.ZC + 1.10], 0.010, 0.005, 4);
+      if (tank) {
+        cyl(B.paint, [tank[0], s * 0.95, 0.95], [tank[1], s * 0.95, 0.95], 0.26, 0.26, 12);
+        for (k = 0; k < 2; k++) { x = tank[0] + (tank[1] - tank[0]) * (0.25 + k * 0.5); cyl(B.dark, [x - 0.025, s * 0.95, 0.95], [x + 0.025, s * 0.95, 0.95], 0.275, 0.275, 12); }
+      }
+    }
+  }
   function buildDf15b(THREE, M, C) {
     var F = F15, T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), EB = bins(T), E;
     df15Cab(HB);
     df15Body(HB);
+    telFittings(HB, F, [[-1.62, 1.55, 2.72, -0.20]], [-1.60, -0.10]);
     flush(THREE, g, HB);
     addAxles(THREE, g, T, F.AX, F.RT, F.TH, F.TY);
     df15Round(EB);
@@ -852,6 +883,12 @@ var HeroPlaGroundModern = (function () {
     var F = F16, T = materials(THREE, C), g = new THREE.Group(), HB = bins(T);
     df16Cab(HB);
     df16Body(HB);
+    telFittings(HB, F, [[-1.70, 1.48, 2.30, -0.50], [0.10, 1.48, 2.30, 1.00], [-5.60, 1.48, 2.30, -4.70]], null);
+    /* the clamp latches along the shell's shoulder seam, each a block and its lever (T1: the seam's fittings) */
+    for (var s = -1; s <= 1; s += 2) for (var x = F.SR + 0.40; x < F.SN - 0.20; x += 0.75) {
+      box(HB.dark, x - 0.07, x + 0.07, s > 0 ? F.BW - 0.06 : -F.BW - 0.025, s > 0 ? F.BW + 0.025 : -F.BW + 0.06, F.ZB - 0.02, F.ZB + 0.10);
+      box(HB.dark, x - 0.10, x + 0.10, s > 0 ? F.BW : -F.BW - 0.035, s > 0 ? F.BW + 0.035 : -F.BW, F.ZB + 0.02, F.ZB + 0.05);
+    }
     flush(THREE, g, HB);
     addAxles(THREE, g, T, F.AX, F.RT, F.TH, F.TY);
     g.name = "tel_c";

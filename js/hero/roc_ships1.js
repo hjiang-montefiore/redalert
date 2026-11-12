@@ -183,6 +183,239 @@ var HeroRocShips1 = (function () {
   "use strict";
   var PI = Math.PI;
 
+  /* ------------------------------------------------------- FITTINGS KIT
+     (detail pass) the small deck fittings every photograph shows and a
+     profile drawing leaves out: rails and lifelines, bollards, fairleads,
+     hatches, vents, raft canisters, ladders, the anchor in its hawse,
+     scuttles, whips, davits and boats.  Each one is emitted as outward-
+     wound triangles into a SINK, anything with a tri(a, b, c) method, so it
+     merges into the material bins already here and costs no draw call.
+     FK.Sink() is a sink of its own whose geo(THREE) gives a flat-shaded
+     BufferGeometry for the kit's mesh batches.  All sizes in metres.    */
+  var FK = (function () {
+    var TW = Math.PI * 2;
+    function sb(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function cr(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function dt(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    function nz(v) { var l = Math.sqrt(dt(v, v)) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+    function ad(a, b, k) { return [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]; }
+    /* a triangle; with ref given it is turned to face away from ref     */
+    function tri(s, a, b, c, ref) {
+      var n = cr(sb(b, a), sb(c, a));
+      if (dt(n, n) < 1e-14) return;
+      if (ref) {
+        var m = [(a[0] + b[0] + c[0]) / 3 - ref[0], (a[1] + b[1] + c[1]) / 3 - ref[1], (a[2] + b[2] + c[2]) / 3 - ref[2]];
+        if (dt(n, m) < 0) { s.tri(a, c, b); return; }
+      }
+      s.tri(a, b, c);
+    }
+    function quad(s, a, b, c, d, ref) { tri(s, a, b, c, ref); tri(s, a, c, d, ref); }
+    /* a tube A -> B, radius ra at A and rb at B, n sides, optional caps */
+    function tube(s, A, B, ra, rb, n, caps) {
+      var d = sb(B, A); if (dt(d, d) < 1e-10) return;
+      var ax = nz(d), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+      var u = nz(cr(ax, t)), v = cr(ax, u), RA = [], RB = [], i, j;
+      for (i = 0; i < n; i++) {
+        var c = Math.cos(i / n * TW + 0.5), sn = Math.sin(i / n * TW + 0.5);
+        var r = [u[0] * c + v[0] * sn, u[1] * c + v[1] * sn, u[2] * c + v[2] * sn];
+        RA.push(ad(A, r, ra)); RB.push(ad(B, r, rb));
+      }
+      for (i = 0; i < n; i++) {
+        j = (i + 1) % n;
+        if (ra > 0) tri(s, RA[i], RA[j], RB[j]);
+        if (rb > 0) tri(s, RA[i], RB[j], RB[i]);
+        if (caps) { if (rb > 0) tri(s, B, RB[i], RB[j]); if (ra > 0) tri(s, A, RA[j], RA[i]); }
+      }
+    }
+    /* an oriented box: centre c, the frame (ex along, ey across, ez up)  */
+    function obox(s, c, ex, ey, ez, lx, ly, lz) {
+      var V = [], i, F = [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]];
+      for (i = 0; i < 8; i++) {
+        var a = (i & 1 ? 0.5 : -0.5) * lx, b = (i & 2 ? 0.5 : -0.5) * ly, e = (i & 4 ? 0.5 : -0.5) * lz;
+        V.push([c[0] + ex[0] * a + ey[0] * b + ez[0] * e, c[1] + ex[1] * a + ey[1] * b + ez[1] * e, c[2] + ex[2] * a + ey[2] * b + ez[2] * e]);
+      }
+      F.forEach(function (f) { quad(s, V[f[0]], V[f[1]], V[f[2]], V[f[3]], c); });
+    }
+    /* a box standing on z0, yawed about Z                               */
+    function boxZ(s, x, y, z0, lx, ly, lz, yaw) {
+      var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0);
+      obox(s, [x, y, z0 + lz / 2], [c, sn, 0], [-sn, c, 0], [0, 0, 1], lx, ly, lz);
+    }
+    function cylZ(s, x, y, z0, h, r, n, r2) { tube(s, [x, y, z0], [x, y, z0 + h], r, r2 === undefined ? r : r2, n, true); }
+    /* a flat disc (scuttle, port, hawse mouth) facing nrm               */
+    function disc(s, c, nrm, r, n) {
+      var a = nz(nrm), t = Math.abs(a[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], u = nz(cr(a, t)), v = cr(a, u), P = [], i;
+      for (i = 0; i < n; i++) P.push(ad(ad(c, u, Math.cos(i / n * TW) * r), v, Math.sin(i / n * TW) * r));
+      var back = ad(c, a, -1);
+      for (i = 1; i < n - 1; i++) tri(s, P[0], P[i], P[i + 1], back);
+    }
+    /* guard rail along a polyline of deck points [x, y, z]: stanchions
+       every `step`, a top rail at h and a lifeline at h / 2              */
+    function rail(s, pts, h, step, rp) {
+      var i, k, carry = 0; rp = rp || 0.024; h = h || 1.0; step = step || 1.5;
+      function post(p) { tube(s, p, [p[0], p[1], p[2] + h], rp, rp, 4, false); }
+      for (i = 0; i < pts.length - 1; i++) {
+        var a = pts[i], b = pts[i + 1], d = sb(b, a), L = Math.sqrt(dt(d, d));
+        if (L < 1e-3) continue;
+        tube(s, [a[0], a[1], a[2] + h], [b[0], b[1], b[2] + h], rp * 0.8, rp * 0.8, 3, false);
+        tube(s, [a[0], a[1], a[2] + h * 0.5], [b[0], b[1], b[2] + h * 0.5], rp * 0.55, rp * 0.55, 3, false);
+        for (k = carry; k < L; k += step) post(ad(a, d, k / L));
+        carry = k - L;
+      }
+      post(pts[pts.length - 1]);
+    }
+    /* a toe-rail / deck-edge gutter: a low bar along the deck edge       */
+    function toe(s, pts, r) {
+      for (var i = 0; i < pts.length - 1; i++) tube(s, pts[i], pts[i + 1], r || 0.04, r || 0.04, 3, false);
+    }
+    /* double bollard on its base plate, k = scale (1 = a 1.2 m frigate pair) */
+    function bollard(s, x, y, z, yaw, k) {
+      k = k || 1; var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0);
+      boxZ(s, x, y, z, 0.9 * k, 0.36 * k, 0.05 * k, yaw);
+      [-1, 1].forEach(function (e) {
+        var px = x + c * e * 0.26 * k, py = y + sn * e * 0.26 * k;
+        cylZ(s, px, py, z + 0.05 * k, 0.36 * k, 0.12 * k, 8);
+        cylZ(s, px, py, z + 0.41 * k, 0.05 * k, 0.15 * k, 8);
+      });
+    }
+    function cleat(s, x, y, z, yaw, k) {
+      k = k || 1; var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0);
+      [-1, 1].forEach(function (e) { cylZ(s, x + c * e * 0.09 * k, y + sn * e * 0.09 * k, z, 0.1 * k, 0.035 * k, 4); });
+      boxZ(s, x, y, z + 0.1 * k, 0.42 * k, 0.07 * k, 0.05 * k, yaw);
+    }
+    /* a roller fairlead at the deck edge, yaw = the line of the edge     */
+    function fairlead(s, x, y, z, yaw, k) {
+      k = k || 1; var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0);
+      boxZ(s, x, y, z, 0.8 * k, 0.32 * k, 0.07 * k, yaw);
+      [-1, 1].forEach(function (e) { cylZ(s, x + c * e * 0.22 * k, y + sn * e * 0.22 * k, z + 0.07 * k, 0.26 * k, 0.09 * k, 8); });
+    }
+    /* a deck hatch: coaming, lid, hinge bar and dogs                     */
+    function hatch(s, x, y, z, lx, ly, yaw) {
+      var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0);
+      boxZ(s, x, y, z, lx, ly, 0.10, yaw);
+      boxZ(s, x, y, z + 0.10, lx - 0.08, ly - 0.08, 0.04, yaw);
+      var hx = x - c * lx * 0.5, hy = y - sn * lx * 0.5;
+      tube(s, [hx + sn * ly * 0.4, hy - c * ly * 0.4, z + 0.12], [hx - sn * ly * 0.4, hy + c * ly * 0.4, z + 0.12], 0.035, 0.035, 4, true);
+      [-1, 1].forEach(function (e) {
+        boxZ(s, x + c * lx * 0.5 - sn * e * ly * 0.3, y + sn * lx * 0.5 + c * e * ly * 0.3, z + 0.03, 0.08, 0.06, 0.1, yaw);
+      });
+    }
+    /* a mushroom vent and a gooseneck vent                               */
+    function mushroom(s, x, y, z, r, h) {
+      cylZ(s, x, y, z, h, r, 8);
+      cylZ(s, x, y, z + h, r * 0.5, r * 1.7, 8, r * 0.6);
+    }
+    function goose(s, x, y, z, r, h, yaw) {
+      var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0);
+      tube(s, [x, y, z], [x, y, z + h], r, r, 6, false);
+      tube(s, [x, y, z + h - r], [x + c * r * 2.4, y + sn * r * 2.4, z + h - r * 2.2], r * 1.05, r * 1.15, 6, true);
+    }
+    /* a life-raft canister on its cradle, axis along yaw: shell to sW,
+       the cradle and bands to sM                                         */
+    function raft(sW, sM, x, y, z, yaw, L, r) {
+      L = L || 1.25; r = r || 0.32;
+      var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0), zc = z + r + 0.08;
+      tube(sW, [x - c * L / 2, y - sn * L / 2, zc], [x + c * L / 2, y + sn * L / 2, zc], r, r, 10, true);
+      [-0.3, 0.3].forEach(function (f) {
+        var px = x + c * L * f, py = y + sn * L * f;
+        tube(sM, [px - c * 0.04, py - sn * 0.04, zc], [px + c * 0.04, py + sn * 0.04, zc], r * 1.06, r * 1.06, 10, false);
+        boxZ(sM, px, py, z, 0.1, r * 1.8, 0.22, yaw);
+      });
+    }
+    /* an inclined or vertical ladder from foot A to head B; side = the
+       horizontal unit vector across it                                  */
+    function ladder(s, A, B, side, w, step) {
+      w = (w || 0.5) / 2; step = step || 0.3;
+      var e = [side[0] * w, side[1] * w, 0], d = sb(B, A), L = Math.sqrt(dt(d, d)), n = Math.max(1, Math.floor(L / step)), i;
+      tube(s, ad(A, e, 1), ad(B, e, 1), 0.025, 0.025, 4, false);
+      tube(s, ad(A, e, -1), ad(B, e, -1), 0.025, 0.025, 4, false);
+      for (i = 1; i <= n; i++) { var p = ad(A, d, i / (n + 0.5)); tube(s, ad(p, e, 1), ad(p, e, -1), 0.016, 0.016, 3, false); }
+    }
+    /* a stockless anchor stowed in its hawse on a hull side; (x, y, z) the
+       hawse mouth on the plating, out = outward unit normal [nx, ny, nz] */
+    function anchor(s, x, y, z, out, k) {
+      k = k || 1;
+      var o = nz(out), ez = [0, 0, 1], ex = nz(cr(ez, o)), p = ad([x, y, z], o, 0.10 * k);
+      tube(s, [x, y, z], ad([x, y, z], o, 0.14 * k), 0.30 * k, 0.34 * k, 10, true);       /* hawse lip */
+      obox(s, ad(p, ez, -0.62 * k), ex, o, ez, 0.17 * k, 0.12 * k, 1.0 * k);             /* shank     */
+      obox(s, ad(p, ez, -1.12 * k), ex, o, ez, 0.75 * k, 0.16 * k, 0.16 * k);            /* crown     */
+      [-1, 1].forEach(function (e) {
+        tube(s, ad(ad(p, ez, -1.12 * k), ex, e * 0.36 * k), ad(ad(p, ez, -0.72 * k), ex, e * 0.24 * k), 0.09 * k, 0.04 * k, 4, true);
+      });
+    }
+    /* a whip aerial, tapering, with a small base insulator               */
+    function whip(s, x, y, z, h, r) {
+      r = r || 0.03;
+      cylZ(s, x, y, z, 0.3, r * 2.5, 6);
+      tube(s, [x, y, z + 0.3], [x, y, z + h], r, r * 0.3, 4, false);
+    }
+    /* a boat davit: post, curved arm reaching out along yaw, the fall    */
+    function davit(s, x, y, z, yaw, h, reach) {
+      var c = Math.cos(yaw), sn = Math.sin(yaw), t = [x, y, z + h], e = [x + c * reach, y + sn * reach, z + h - 0.2];
+      tube(s, [x, y, z], t, 0.07, 0.06, 6, false);
+      tube(s, t, [x + c * reach * 0.55, y + sn * reach * 0.55, z + h + 0.2], 0.06, 0.05, 6, false);
+      tube(s, [x + c * reach * 0.55, y + sn * reach * 0.55, z + h + 0.2], e, 0.05, 0.045, 6, true);
+      tube(s, e, [e[0], e[1], e[2] - 0.9], 0.012, 0.012, 3, false);
+    }
+    /* a rigid-hull inflatable: grey sponson tubes to sT, floor/console to sH */
+    function rib(sT, sH, x, y, z, yaw, L, B) {
+      var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0), r = B * 0.2;
+      function P(a, b, h) { return [x + c * a - sn * b, y + sn * a + c * b, z + h]; }
+      [-1, 1].forEach(function (e) {
+        tube(sT, P(-L / 2, e * (B / 2 - r), r), P(L * 0.22, e * (B / 2 - r), r), r, r, 7, true);
+        tube(sT, P(L * 0.22, e * (B / 2 - r), r), P(L / 2, e * r * 0.3, r * 1.4), r, r * 0.6, 7, true);
+      });
+      obox(sH, P(-L * 0.04, 0, r * 0.5), [c, sn, 0], [-sn, c, 0], [0, 0, 1], L * 0.86, B - 2 * r, r * 0.9);
+      boxZ(sH, x - c * L * 0.08, y - sn * L * 0.08, z + r, L * 0.16, B * 0.35, r * 2.2, yaw);
+    }
+    /* a sink of the kit's own                                            */
+    function Sink() { this.p = []; }
+    Sink.prototype.tri = function (a, b, c) { this.p.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); };
+    Sink.prototype.geo = function (THREE, tile) {
+      if (!this.p.length) return null;
+      var P = this.p, U = [], i, q = 1 / (tile || 4);
+      for (i = 0; i < P.length; i += 9) {
+        var n = cr(sb([P[i + 3], P[i + 4], P[i + 5]], [P[i], P[i + 1], P[i + 2]]), sb([P[i + 6], P[i + 7], P[i + 8]], [P[i], P[i + 1], P[i + 2]]));
+        var ax = Math.abs(n[0]), ay = Math.abs(n[1]), az = Math.abs(n[2]);
+        for (var k = 0; k < 9; k += 3) {
+          if (az >= ax && az >= ay) U.push(P[i + k] * q, P[i + k + 1] * q);
+          else if (ay >= ax) U.push(P[i + k] * q, P[i + k + 2] * q);
+          else U.push(P[i + k + 1] * q, P[i + k + 2] * q);
+        }
+      }
+      var g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+      g.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2));
+      g.computeVertexNormals();
+      return g;
+    };
+    /* weathering laid over a painted canvas: rust runs from fittings,
+       salt bloom, grime patches, drips.  w x h the canvas, n the density */
+    function weather(g, w, h, seed, n, strength) {
+      var s = (seed >>> 0) || 11, i, a = strength || 1;
+      function R() { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }
+      n = n || 30;
+      for (i = 0; i < n; i++) {
+        var x = R() * w, y = R() * h, l = h * (0.05 + R() * 0.22), gr = g.createLinearGradient(0, y, 0, y + l);
+        gr.addColorStop(0, "rgba(92,52,30," + (0.30 * a).toFixed(3) + ")"); gr.addColorStop(1, "rgba(92,52,30,0)");
+        g.fillStyle = gr; g.fillRect(x, y, 1 + R() * 2.2, l);
+      }
+      for (i = 0; i < n * 0.6; i++) {
+        var x2 = R() * w, y2 = R() * h, l2 = h * (0.04 + R() * 0.14), g2 = g.createLinearGradient(0, y2, 0, y2 + l2);
+        g2.addColorStop(0, "rgba(20,22,24," + (0.22 * a).toFixed(3) + ")"); g2.addColorStop(1, "rgba(20,22,24,0)");
+        g.fillStyle = g2; g.fillRect(x2, y2, 1 + R() * 3, l2);
+      }
+      g.fillStyle = "#ffffff";
+      for (i = 0; i < n * 0.4; i++) { g.globalAlpha = 0.04 * a + R() * 0.04 * a; g.fillRect(R() * w, R() * h, w * (0.03 + R() * 0.08), h * (0.02 + R() * 0.06)); }
+      g.fillStyle = "#1a1c1e";
+      for (i = 0; i < n * 0.4; i++) { g.globalAlpha = 0.04 * a + R() * 0.05 * a; g.fillRect(R() * w, R() * h, w * (0.04 + R() * 0.1), h * (0.01 + R() * 0.04)); }
+      g.globalAlpha = 1;
+    }
+    return { tri: tri, quad: quad, tube: tube, obox: obox, boxZ: boxZ, cylZ: cylZ, disc: disc, rail: rail, toe: toe,
+             bollard: bollard, cleat: cleat, fairlead: fairlead, hatch: hatch, mushroom: mushroom, goose: goose,
+             raft: raft, ladder: ladder, anchor: anchor, whip: whip, davit: davit, rib: rib, Sink: Sink, weather: weather };
+  })();
+
   /* ------------------------------------------------------- textures */
   var TEX = {};
   function rng(seed) {
@@ -215,6 +448,10 @@ var HeroRocShips1 = (function () {
         g.fillRect(R() * w, R() * h, 2 + R() * 5, 18 + R() * 80);
       }
       g.globalAlpha = 1;
+      /* detail pass: weld beads, rust runs from the scuttles, salt, grime */
+      g.fillStyle = "rgba(0,0,0,0.12)";
+      for (i = 1; i < 5; i++) for (var j = 0; j < 128; j++) g.fillRect(j * 4 + 1, i * h / 5 + 2, 1, 1);
+      FK.weather(g, w, h, 5051, 46, 1.0);
     });
   }
   function plateTex(THREE) {
@@ -232,6 +469,9 @@ var HeroRocShips1 = (function () {
         g.fillRect(R() * w, R() * h, 12 + R() * 50, 8 + R() * 30);
       }
       g.globalAlpha = 1;
+      g.fillStyle = "rgba(0,0,0,0.18)";
+      for (i = 1; i < 4; i++) for (var j = 0; j < 32; j++) { g.fillRect(j * 8 + 3, i * h / 4 + 3, 1.4, 1.4); g.fillRect(i * w / 4 + 3, j * 8 + 3, 1.4, 1.4); }
+      FK.weather(g, w, h, 5018, 24, 0.8);
     });
   }
   function deckTex(THREE) {
@@ -244,6 +484,7 @@ var HeroRocShips1 = (function () {
       g.globalAlpha = 0.08;
       for (i = 0; i < 30; i++) { g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff"; g.fillRect(R() * w, R() * h, 20 + R() * 60, 4 + R() * 16); }
       g.globalAlpha = 1;
+      FK.weather(g, w, h, 5012, 16, 0.6);
     });
   }
   function grilleTex(THREE) {
@@ -893,6 +1134,11 @@ var HeroRocShips1 = (function () {
     return root;
   }
 
+  /* (detail pass) the fitting sinks out as meshes for bake to merge     */
+  function sinkOut(THREE, g, list) {
+    list.forEach(function (q) { var gg = q[0].geo(THREE); if (gg) g.add(new THREE.Mesh(gg, q[1])); });
+  }
+
   /* ===================================================== PCE-842 class */
   var PCE = makeHull({
     XS0: -28.12, XS1: 28.12, XWL: 27.0, XST: -26.5, ZTR: 0.25, BOW: 3, DX: 1.2,
@@ -985,6 +1231,41 @@ var HeroRocShips1 = (function () {
     railRun(THREE, H, g, T, -9.2, 27.6, 2.4, 0.95);
     strut(THREE, g, T.metal, 27.8, 0, H.deckZ(27.8), 27.8, 0, H.deckZ(27.8) + 2.4, 0.04, 4);
     strut(THREE, g, T.metal, -27.9, 0, ZQ, -27.9, 0, ZQ + 3.0, 0.045, 4);
+
+    /* (detail pass) fittings: the anchors in their hawses, bollards,
+       fairleads and the toe rail along both decks, hatches and vents on
+       the forecastle and the quarterdeck, Carley floats on the 01 house
+       sides, ladders up the break and the bridge, whips, the mast's
+       shrouds, a searchlight on the bridge                               */
+    var fm = new FK.Sink(), fd = new FK.Sink(), fs = new FK.Sink();
+    for (s = -1; s <= 1; s += 2) {
+      var hz = H.deckZ(25.6) - 0.8;
+      FK.anchor(fm, 25.6, s * (H.W(25.6, hz) + 0.03), hz, [0.45, s, 0.2], 0.7);
+      FK.tube(fd, [25.4, s * (H.edgeY(25.4) - 0.3), H.deckZ(25.4) + 0.03], [22.6, s * 0.6, H.deckZ(22.6) + 0.3], 0.04, 0.04, 4, false);
+      [[26.0, 0.5], [19.5, 0.6], [-12.5, 0.6], [-25.5, 0.6]].forEach(function (b) {
+        FK.bollard(fm, b[0], s * (H.edgeY(b[0]) - b[1]), H.deckZ(b[0]), 0, 0.7);
+      });
+      [27.0, 21.0, -11.0, -27.0].forEach(function (fx) {
+        FK.fairlead(fm, fx, s * (H.edgeY(fx) - 0.15), H.deckZ(fx), Math.atan2(s * (H.edgeY(fx + 0.5) - H.edgeY(fx)), 0.5), 0.6);
+      });
+      var tp = [], tq = [], xq;
+      for (xq = -27.9; xq <= -9.9; xq += 1.0) tp.push([xq, s * (H.edgeY(xq) + 0.08), H.deckZ(xq) + 0.04]);
+      for (xq = -9.2; xq <= 27.6; xq += 1.0) tq.push([xq, s * (H.edgeY(xq) + 0.08), H.deckZ(xq) + 0.04]);
+      FK.toe(fd, tp, 0.045); FK.toe(fd, tq, 0.045);
+      for (i = 0; i < 2; i++) FK.obox(fs, [4.2 + i * 2.6, s * 3.68, 4.6], [1, 0, 0], [0, s, 0], [0, 0, 1], 2.0, 0.3, 0.9);
+      FK.ladder(fm, [-9.3, s * 2.6, ZQ], [-9.3, s * 2.6, 3.35], [0, 1, 0], 0.45, 0.3);
+      FK.ladder(fm, [4.5, s * 2.0, 5.8], [4.5, s * 2.0, 8.05], [0, 1, 0], 0.45, 0.3);
+      FK.mushroom(fs, 22.0, s * 1.6, H.deckZ(22.0), 0.12, 0.45);
+      FK.goose(fs, -22.5, s * 3.2, ZQ, 0.08, 0.55, s * PI / 2);
+      FK.whip(fm, 6.6, s * 2.9, 8.0, 5.0, 0.035);
+      FK.tube(fm, [3.0, 0, 17.0], [3.0, s * 3.4, 5.85], 0.015, 0.015, 3, false);
+    }
+    FK.hatch(fs, 23.5, 0, H.deckZ(23.5), 0.9, 0.9, 0);
+    FK.hatch(fs, -21.0, 0, ZQ, 1.0, 1.0, 0);
+    FK.hatch(fs, 0.5, 2.0, H.deckZ(0.5), 0.9, 0.9, 0);
+    FK.cylZ(fm, 10.8, -1.6, 9.4, 0.3, 0.06, 6);
+    FK.tube(fm, [10.6, -1.6, 9.95], [11.05, -1.6, 9.95], 0.22, 0.24, 10, true);
+    sinkOut(THREE, g, [[fm, T.metal], [fd, T.soot], [fs, T.sup]]);
 
     box(THREE, g, 1.8, 0.8, 0.04, T.team, 9.0, 0, 10.1);
     box(THREE, g, 1.6, 0.8, 0.04, T.team, -15.0, 1.2, 3.52);
@@ -1281,6 +1562,77 @@ var HeroRocShips1 = (function () {
        trained aft on the fantail [K1][K2] */
     var aft = tw.clone(); aft.name = "gun_aft";
     aft.position.set(-71.3, 0, deckAt(-71.3)); aft.rotation.z = PI; g.add(aft);
+
+    /* (detail pass) fittings round the called hull, which keeps only its
+       hull, deck and pad here: the guard rails along both deck edges, the
+       toe rail, bollards and fairleads, the anchors in their hawses and
+       the windlasses, hatches and vents on the fo'c'sle and the fantail,
+       raft canisters along the 01 level, ladders, whips on the wings.
+       The deck edge is read off the kept deck ribbon (its outer points),
+       the hull's half breadth below it off the kept hull's triangles.   */
+    var EDG = [];
+    for (i = 0; i + 6 < dp.count; i += 7) EDG.push([dp.getX(i), Math.abs(dp.getY(i)), dp.getZ(i)]);
+    EDG.sort(function (a, b) { return a[0] - b[0]; });
+    function edgeAt(x) {
+      if (x <= EDG[0][0]) return EDG[0];
+      for (var k = 1; k < EDG.length; k++) if (x <= EDG[k][0]) {
+        var f = (x - EDG[k - 1][0]) / ((EDG[k][0] - EDG[k - 1][0]) || 1);
+        return [x, EDG[k - 1][1] + (EDG[k][1] - EDG[k - 1][1]) * f, EDG[k - 1][2] + (EDG[k][2] - EDG[k - 1][2]) * f];
+      }
+      return EDG[EDG.length - 1];
+    }
+    var hp0 = by.hull.geometry.getAttribute("position");
+    function hullY(x, z) {
+      var best = 0, q, e;
+      for (q = 0; q + 2 < hp0.count; q += 3) {
+        var P = [0, 1, 2].map(function (o) { return [hp0.getX(q + o), hp0.getY(q + o), hp0.getZ(q + o)]; });
+        var mnx = Math.min(P[0][0], P[1][0], P[2][0]), mxx = Math.max(P[0][0], P[1][0], P[2][0]);
+        if (x < mnx || x > mxx || mxx - mnx < 1e-6) continue;
+        var pts = [];
+        for (e = 0; e < 3; e++) {
+          var A = P[e], Bq = P[(e + 1) % 3];
+          if ((A[0] - x) * (Bq[0] - x) <= 0 && A[0] !== Bq[0]) { var t = (x - A[0]) / (Bq[0] - A[0]); pts.push([A[1] + (Bq[1] - A[1]) * t, A[2] + (Bq[2] - A[2]) * t]); }
+        }
+        if (pts.length < 2) continue;
+        var a = pts[0], b = pts[1];
+        if ((a[1] - z) * (b[1] - z) > 0 || a[1] === b[1]) continue;
+        var yy = Math.abs(a[0] + (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]));
+        if (yy > best) best = yy;
+      }
+      return best;
+    }
+    var xa = EDG[0][0] + 0.6, xb = EDG[EDG.length - 1][0] - 1.5;
+    var fm2 = new FK.Sink(), fd2 = new FK.Sink(), fs2 = new FK.Sink(), fw2 = new FK.Sink();
+    for (s = -1; s <= 1; s += 2) {
+      var rp = [], tp = [], xq, e2;
+      for (xq = xa; xq <= xb; xq += 2.0) { e2 = edgeAt(xq); rp.push([xq, s * (e2[1] - 0.2), e2[2]]); tp.push([xq, s * (e2[1] - 0.05), e2[2] + 0.05]); }
+      FK.rail(fm2, rp, 1.0, 1.8, 0.03);
+      FK.toe(fd2, tp, 0.06);
+      [76.0, 58.0, 40.0, -30.0, -66.0, -80.0].forEach(function (bx) {
+        var eb = edgeAt(bx); FK.bollard(fm2, bx, s * (eb[1] - 0.9), eb[2], 0, 1.0);
+      });
+      [79.0, 61.0, 43.0, -33.0, -69.0, -83.0].forEach(function (fx) {
+        var ef = edgeAt(fx), en = edgeAt(fx + 1);
+        FK.fairlead(fm2, fx, s * (ef[1] - 0.3), ef[2], Math.atan2(s * (en[1] - ef[1]), 1), 1.0);
+      });
+      var ha = 68.0, hz = edgeAt(ha)[2] - 2.2, hy = hullY(ha, hz);
+      if (hy > 0.5) {
+        FK.anchor(fm2, ha, s * (hy + 0.03), hz, [0.3, s, 0.25], 1.3);
+        FK.tube(fd2, [ha, s * (edgeAt(ha)[1] - 0.6), edgeAt(ha)[2] + 0.05], [63.5, s * 1.4, deckAt(63.5) + 0.5], 0.07, 0.07, 4, false);
+        FK.cylZ(fm2, 63.5, s * 1.4, deckAt(63.5), 0.65, 0.55, 12);
+      }
+      [-6.0, -3.5, 3.0, 5.5, 8.0].forEach(function (rx) { FK.raft(fw2, fm2, rx, s * 6.55, Z01, 0, 1.3, 0.3); });
+      FK.ladder(fm2, [16.3, s * 6.4, 6.6], [16.3, s * 6.4, Z01 + 0.1], [0, 1, 0], 0.55, 0.3);
+      FK.ladder(fm2, [-9.3, s * 5.6, Z01], [-9.3, s * 5.6, Z02 + 0.1], [0, 1, 0], 0.5, 0.3);
+      FK.whip(fm2, 27.8, s * 8.5, 17.6, 7.0, 0.05);
+      FK.whip(fm2, -34.0, s * 6.6, Z03, 6.0, 0.05);
+      FK.mushroom(fs2, 50.0, s * 3.5, deckAt(50.0), 0.22, 0.7);
+      FK.mushroom(fs2, -76.0, s * 4.0, deckAt(-76.0), 0.2, 0.65);
+    }
+    FK.hatch(fs2, 55.0, 0, deckAt(55.0), 1.2, 1.2, 0);
+    FK.hatch(fs2, 46.0, 2.6, deckAt(46.0), 1.0, 1.0, 0);
+    FK.hatch(fs2, -79.0, 0, deckAt(-79.0), 1.2, 1.2, 0);
+    sinkOut(THREE, g, [[fm2, T.metal], [fd2, T.dark], [fs2, T.sup], [fw2, T.rad]]);
 
     /* team strips */
     box(THREE, g, 2.0, 1.0, 0.04, T.team, 22.0, 3.6, ZBR + 0.03);

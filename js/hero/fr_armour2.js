@@ -174,6 +174,13 @@
      AML 5.14 x 2.05 x 2.07 / 5.11 x 1.97 x 2.07; 4892 (detail pass: 6948); 10.
      ERC 7.72 x 2.51 x 2.48 (sight 2.28, MG 2.48) / 7.7 x 2.50 x 2.25; 6780; 11.
      VBL 3.82 x 2.28 (mirrors; body 2.02) x 2.14 (MG; roof 1.65, ring 1.71) / 3.80 x 2.02 x 1.70; 4720 (detail pass: 6312); 8.
+     DETAIL PASS 2 (AMX-10 RC / RCR, ERC-90, CAESAR, VAB Mephisto; rcDetail, rcTurretDetail, erDetail,
+       erTurretDetail, caDetail, caGunDetail, vaDetail on the fittings kit dpKit): tow cables, pioneer tools,
+       grab handles, bolt rows, lamp guards, towing hooks and shackles, mudflaps, lifting eyes, hatch hinges
+       and handles, slatted grilles, aerial bases, baskets with kit bags, a rolled net, the cab's hinges,
+       steps and wipers; the paint takes detailTex.  Tris / draw calls: RC 7788 -> 11980 / 11, RCR 7920 ->
+       12112 / 11, ERC 6780 -> 10280 / 11, CAESAR 7664 -> 11388 / 10, VAB 5068 -> 8648 / 11.  X extents,
+       len, names and nodes unchanged.
      DETAIL PASS (VBL and AML only): vlDetail / vlGunDetail / amDetail / amTurretDetail (the parts
        are listed above dbar) and detailTex - the paint's seams, bolt rows, panels, streaks, grime and
        chips over the same olive or three-tone - in place of the plain paint.
@@ -536,11 +543,14 @@ var HeroFrArmour2 = (function () {
     box(B.team, -1.30, -0.80, 0.15, 0.55, 2.43, 2.445);
   }
   function buildRC(THREE, C, scheme, renove) {
-    var T = mats(THREE, C, scheme), g = new THREE.Group(), HB = bins(T), TB = bins(T);
+    var T = mats(THREE, C, scheme), g = new THREE.Group(), HB = bins(T), TB = bins(T), dt = detailTex(THREE, scheme === "ce3" ? CE3 : OLIVE);
+    if (dt) T.paint.map = dt;
     rcHull(HB, renove);
+    rcDetail(HB, renove);
     K.flush(THREE, g, HB);
     axles(THREE, g, T, RC.AX, RC.ZW, RC.TY, RC.R, RC.TW, 1.1, 22);
     rcTurret(TB, renove);
+    rcTurretDetail(TB, renove);
     turretGroup(THREE, g, TB, RC.TX, 0, RC.TZ);
     return g;
   }
@@ -954,8 +964,10 @@ var HeroFrArmour2 = (function () {
     }
   }
   function buildVAB(THREE, C) {
-    var T = mats(THREE, C, "olive"), g = new THREE.Group(), HB = bins(T), TB = bins(T), EB = bins(T), cells = [], tg, pg;
+    var T = mats(THREE, C, "olive"), g = new THREE.Group(), HB = bins(T), TB = bins(T), EB = bins(T), cells = [], tg, pg, dt = detailTex(THREE, OLIVE);
+    if (dt) T.paint.map = dt;
     vaHull(HB);
+    vaDetail(HB);
     K.flush(THREE, g, HB);
     axles(THREE, g, T, VA.AX, VA.ZW, VA.TY, VA.R, VA.TW, 1.1, 22);
     vaColumn(TB);
@@ -1275,6 +1287,443 @@ var HeroFrArmour2 = (function () {
     /* bolt heads round the turret's foot */
     for (i = 0; i < 10; i++) { var bx = x0 - 0.85 + i * 0.16; for (s = -1; s <= 1; s += 2) box(D, bx - 0.012, bx + 0.012, s * 0.79 - 0.012, s * 0.79 + 0.012, A.DECK + 0.05, A.DECK + 0.075); }
   }
+  /* ---------------------------------------------------------------- DETAIL PASS 2: the fittings kit
+     Built on this module's own box(bin, x0, x1, y0, y1, z0, z1) and cyl(bin, A, B, r0, r1, seg); every
+     part lands in the bin it is handed, so the draw calls do not grow.  s = +1 the left (+Y) side, a
+     part on a side face stands off the face y = ys outward.  Sizes are by proportion (NOT CONFIRMED):
+     the 20 l jerrycan 0.345 x 0.165 x 0.47 m, tool handles 0.03-0.04 m, tow cable 0.028 m. */
+  function dpKit(box, cyl) {
+    var TAU = 2 * Math.PI;
+    function oy(s, ys, t0, t1) { return s > 0 ? [ys + t0, ys + t1] : [ys - t1, ys - t0]; }
+    function bar(b, A, B, r, seg) { cyl(b, A, B, r, r, seg || 6); }
+    var D = {
+      bar: bar, oy: oy,
+      /* a bolt row along X on the side face ys */
+      bolts: function (b, x0, x1, n, ys, z, s, r) {
+        r = r || 0.013; var i, x, q = oy(s, ys, -0.004, r * 1.1);
+        for (i = 0; i < n; i++) { x = n > 1 ? x0 + (x1 - x0) * i / (n - 1) : x0; box(b, x - r, x + r, q[0], q[1], z - r, z + r); }
+      },
+      /* a bolt row along X on a top face z, or along Y when y1 is given */
+      boltsTop: function (b, x0, x1, n, y0, y1, z, r) {
+        r = r || 0.013; var i, t;
+        for (i = 0; i < n; i++) { t = n > 1 ? i / (n - 1) : 0; var x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t; box(b, x - r, x + r, y - r, y + r, z - 0.004, z + r * 1.1); }
+      },
+      /* a door hinge on a side face: the barrel up the face and its two leaves */
+      hinge: function (b, x, ys, z0, z1, s) {
+        var q = oy(s, ys, 0, 0.022);
+        cyl(b, [x, (q[0] + q[1]) / 2, z0], [x, (q[0] + q[1]) / 2, z1], 0.02, 0.02, 8);
+        box(b, x - 0.09, x, q[0], q[1], z0 + (z1 - z0) * 0.15, z0 + (z1 - z0) * 0.35);
+        box(b, x - 0.09, x, q[0], q[1], z0 + (z1 - z0) * 0.65, z0 + (z1 - z0) * 0.85);
+      },
+      /* a hatch hinge on a roof: the barrel along X or Y */
+      hingeTop: function (b, x0, x1, y0, y1, z) { cyl(b, [x0, y0, z + 0.02], [x1, y1, z + 0.02], 0.022, 0.022, 8); },
+      /* a U grab handle standing off the side face ys, along X */
+      grab: function (b, s, ys, x0, x1, z) {
+        var q = oy(s, ys, 0, 0.055), yf = s > 0 ? q[1] - 0.012 : q[0] + 0.012;
+        bar(b, [x0, ys, z], [x0, yf, z], 0.011, 5); bar(b, [x1, ys, z], [x1, yf, z], 0.011, 5);
+        bar(b, [x0, yf, z], [x1, yf, z], 0.011, 5);
+      },
+      /* a U grab handle on a top face z, along X (or Y with y1) */
+      grabTop: function (b, x0, x1, y0, y1, z) {
+        bar(b, [x0, y0, z], [x0, y0, z + 0.055], 0.011, 5); bar(b, [x1, y1, z], [x1, y1, z + 0.055], 0.011, 5);
+        bar(b, [x0, y0, z + 0.055], [x1, y1, z + 0.055], 0.011, 5);
+      },
+      /* a U grab handle on a face across X (front or rear), dir = +1 the face looks to +X */
+      grabX: function (b, xs, dir, y0, y1, z) {
+        var xf = xs + dir * 0.05;
+        bar(b, [xs, y0, z], [xf, y0, z], 0.011, 5); bar(b, [xs, y1, z], [xf, y1, z], 0.011, 5);
+        bar(b, [xf, y0, z], [xf, y1, z], 0.011, 5);
+      },
+      /* a wire guard over a lamp on a face across X (dir +1 looks forward): three bars and two hoops */
+      guard: function (b, x, y, z, r, dir) {
+        var i, xf = x + dir * (r * 0.9);
+        for (i = -1; i <= 1; i++) bar(b, [x, y + i * r * 0.65, z + r * 1.2], [xf, y + i * r * 0.65, z], 0.008, 4);
+        for (i = -1; i <= 1; i++) bar(b, [xf, y + i * r * 0.65, z], [x, y + i * r * 0.65, z - r * 1.2], 0.008, 4);
+        bar(b, [x, y - r * 1.25, z + r * 1.2], [x, y + r * 1.25, z + r * 1.2], 0.009, 4);
+        bar(b, [x, y - r * 1.25, z - r * 1.2], [x, y + r * 1.25, z - r * 1.2], 0.009, 4);
+        bar(b, [xf, y - r * 0.7, z], [xf, y + r * 0.7, z], 0.008, 4);
+      },
+      /* a 20 l jerrycan standing in its bracket against the side face ys (x its centre, z0 its foot) */
+      jerry: function (bP, bD, x, ys, z0, s) {
+        var q = oy(s, ys, 0.012, 0.177), yf = s > 0 ? q[1] : q[0];
+        box(bP, x - 0.172, x + 0.172, q[0], q[1], z0, z0 + 0.47);
+        /* the pressed X on its face and the rim */
+        var yr = s > 0 ? [yf, yf + 0.006] : [yf - 0.006, yf];
+        bar(bP, [x - 0.14, (yr[0] + yr[1]) / 2, z0 + 0.05], [x + 0.14, (yr[0] + yr[1]) / 2, z0 + 0.36], 0.012, 4);
+        bar(bP, [x + 0.14, (yr[0] + yr[1]) / 2, z0 + 0.05], [x - 0.14, (yr[0] + yr[1]) / 2, z0 + 0.36], 0.012, 4);
+        /* the three handles and the spout on top */
+        var yc = (q[0] + q[1]) / 2, i;
+        for (i = -1; i <= 1; i++) box(bD, x + i * 0.07 - 0.012, x + i * 0.07 + 0.012, yc - 0.05, yc + 0.05, z0 + 0.47, z0 + 0.50);
+        cyl(bD, [x + 0.13, yc, z0 + 0.47], [x + 0.13, yc, z0 + 0.52], 0.022, 0.022, 6);
+        /* the bracket: a foot tray and the strap round it */
+        box(bD, x - 0.19, x + 0.19, s > 0 ? ys : q[0] - 0.01, s > 0 ? q[1] + 0.01 : ys, z0 - 0.025, z0);
+        box(bD, x - 0.19, x + 0.19, s > 0 ? q[1] : q[0] - 0.008, s > 0 ? q[1] + 0.008 : q[0], z0 + 0.30, z0 + 0.33);
+      },
+      /* a pioneer tool clipped along X on the side face ys (kind: "shovel", "pick", "axe", "bar") */
+      tool: function (bH, bM, kind, x0, x1, ys, z, s) {
+        var q = oy(s, ys, 0.01, 0.06), y = (q[0] + q[1]) / 2, L = x1 - x0, dir = L > 0 ? 1 : -1;
+        bar(bH, [x0, y, z], [x1, y, z], kind === "bar" ? 0.016 : 0.02, 6);
+        if (kind === "shovel") {
+          box(bM, Math.min(x1, x1 + dir * 0.28), Math.max(x1, x1 + dir * 0.28), y - 0.008, y + 0.008, z - 0.11, z + 0.11);
+          bar(bH, [x0, y, z - 0.06], [x0, y, z + 0.06], 0.014, 5);
+        } else if (kind === "pick") {
+          bar(bM, [x1, y, z - 0.30], [x1, y, z + 0.30], 0.022, 5);
+        } else if (kind === "axe") {
+          box(bM, x1 - 0.06, x1 + 0.06, y - 0.012, y + 0.012, z - 0.04, z + 0.15);
+        }
+        /* the clamps */
+        var c, qa = oy(s, ys, 0, 0.07);
+        for (c = 0; c < 2; c++) { var xc = x0 + L * (0.22 + c * 0.5); box(bM, xc - 0.025, xc + 0.025, qa[0], qa[1], z - 0.035, z + 0.035); }
+      },
+      /* the same lying flat on a top face z, the handle along X at y (the blade and the pick head flat) */
+      toolTop: function (bH, bM, kind, x0, x1, y, z) {
+        var L = x1 - x0, dir = L > 0 ? 1 : -1, zc = z + 0.022;
+        bar(bH, [x0, y, zc], [x1, y, zc], kind === "bar" ? 0.016 : 0.02, 6);
+        if (kind === "shovel") {
+          box(bM, Math.min(x1, x1 + dir * 0.28), Math.max(x1, x1 + dir * 0.28), y - 0.11, y + 0.11, z + 0.004, z + 0.02);
+          bar(bH, [x0, y - 0.06, zc], [x0, y + 0.06, zc], 0.014, 5);
+        } else if (kind === "pick") {
+          bar(bM, [x1, y - 0.30, zc], [x1, y + 0.30, zc], 0.022, 5);
+        } else if (kind === "axe") {
+          box(bM, x1 - 0.06, x1 + 0.06, y - 0.04, y + 0.15, z + 0.01, z + 0.034);
+        }
+        for (var c = 0; c < 2; c++) { var xc = x0 + L * (0.22 + c * 0.5); box(bM, xc - 0.025, xc + 0.025, y - 0.035, y + 0.035, z, z + 0.05); }
+      },
+      /* a tow cable along X on the side face ys: two strands, the eyes and three clips */
+      cable: function (b, x0, x1, ys, z, s) {
+        var q = oy(s, ys, 0.01, 0.07), y = (q[0] + q[1]) / 2, i, a, k;
+        bar(b, [x0 + 0.08, y, z + 0.025], [x1 - 0.08, y, z + 0.025], 0.016, 6);
+        bar(b, [x0 + 0.08, y, z - 0.025], [x1 - 0.08, y, z - 0.025], 0.016, 6);
+        for (k = 0; k < 2; k++) {
+          var xe = k ? x1 - 0.06 : x0 + 0.06;
+          for (i = 0; i < 6; i++) { a = i / 6 * TAU; var b2 = (i + 1) / 6 * TAU;
+            bar(b, [xe + Math.cos(a) * 0.06, y, z + Math.sin(a) * 0.06], [xe + Math.cos(b2) * 0.06, y, z + Math.sin(b2) * 0.06], 0.014, 4); }
+        }
+        for (i = 1; i <= 3; i++) { var xc = x0 + (x1 - x0) * i / 4; box(b, xc - 0.03, xc + 0.03, s > 0 ? ys : q[0] - 0.01, s > 0 ? q[1] + 0.01 : ys, z - 0.06, z + 0.06); }
+      },
+      /* a stowage bin: the box, its lid's lip, the hinge along the top and two latches on the face s */
+      stow: function (bP, bD, x0, x1, y0, y1, z0, z1, s) {
+        box(bP, x0, x1, y0, y1, z0, z1);
+        box(bP, x0 - 0.015, x1 + 0.015, y0 - 0.015, y1 + 0.015, z1 - 0.035, z1 + 0.012);
+        var yi = s > 0 ? y0 : y1, yf = s > 0 ? y1 : y0, k;
+        cyl(bD, [x0 + 0.05, yi, z1 + 0.012], [x1 - 0.05, yi, z1 + 0.012], 0.018, 0.018, 6);
+        for (k = 0; k < 2; k++) { var xl = x0 + (x1 - x0) * (0.25 + k * 0.5);
+          box(bD, xl - 0.025, xl + 0.025, s > 0 ? yf : yf - 0.02, s > 0 ? yf + 0.02 : yf, z1 - 0.13, z1 - 0.04); }
+      },
+      /* a rolled tarpaulin or camouflage net along X, with three straps */
+      roll: function (bP, bD, x0, x1, y, z, r) {
+        cyl(bP, [x0, y, z], [x1, y, z], r, r, 12);
+        for (var i = 0; i < 3; i++) { var x = x0 + (x1 - x0) * (0.15 + i * 0.35); cyl(bD, [x - 0.025, y, z], [x + 0.025, y, z], r + 0.012, r + 0.012, 12); }
+      },
+      /* the same rolled across Y */
+      rollY: function (bP, bD, x, y0, y1, z, r) {
+        cyl(bP, [x, y0, z], [x, y1, z], r, r, 12);
+        for (var i = 0; i < 3; i++) { var y = y0 + (y1 - y0) * (0.15 + i * 0.35); cyl(bD, [x, y - 0.025, z], [x, y + 0.025, z], r + 0.012, r + 0.012, 12); }
+      },
+      /* an aerial base: the mount, the spring and the stub of the mast (h, at most 0.5 m: the
+         engine's era kit and sling clearances read the model's height, so no full-length whip) */
+      whip: function (b, x, y, z, h) {
+        h = Math.min(h || 0.4, 0.5);
+        cyl(b, [x, y, z], [x, y, z + 0.09], 0.05, 0.042, 8);
+        cyl(b, [x, y, z + 0.09], [x, y, z + 0.22], 0.024, 0.024, 6);
+        cyl(b, [x, y, z + 0.22], [x, y, z + h], 0.011, 0.008, 4);
+      },
+      /* a mudflap hanging across X behind a wheel */
+      flap: function (b, x, y0, y1, z0, z1) { box(b, x - 0.008, x + 0.008, y0, y1, z0, z1); },
+      /* hub nuts round a wheel centre on the outer face y (axis along Y), ring radius R */
+      nuts: function (b, x, y, z, R, n, s, r) {
+        r = r || 0.018; var i, a;
+        for (i = 0; i < n; i++) { a = i / n * TAU; cyl(b, [x + Math.cos(a) * R, y, z + Math.sin(a) * R], [x + Math.cos(a) * R, y + s * 0.025, z + Math.sin(a) * R], r, r, 6); }
+      },
+      /* grille slats across a top face, n of them along X */
+      slats: function (b, x0, x1, y0, y1, z, n) {
+        for (var i = 0; i < n; i++) { var x = x0 + (x1 - x0) * (i + 0.5) / n; box(b, x - 0.012, x + 0.012, y0, y1, z, z + 0.025); }
+        box(b, x0 - 0.02, x1 + 0.02, y0 - 0.02, y0, z, z + 0.03); box(b, x0 - 0.02, x1 + 0.02, y1, y1 + 0.02, z, z + 0.03);
+      },
+      /* louvres on a side face ys: n slats along Z */
+      louvres: function (b, x0, x1, ys, z0, z1, n, s) {
+        var q = oy(s, ys, 0, 0.022);
+        for (var i = 0; i < n; i++) { var z = z0 + (z1 - z0) * (i + 0.5) / n; box(b, x0, x1, q[0], q[1], z - 0.012, z + 0.012); }
+        box(b, x0 - 0.02, x0, q[0], q[1], z0, z1); box(b, x1, x1 + 0.02, q[0], q[1], z0, z1);
+      },
+      /* a round hatch on a roof: the lid, the hinge and the handle */
+      hatch: function (bP, bD, x, y, z, r, hy) {
+        cyl(bP, [x, y, z], [x, y, z + 0.045], r, r * 0.97, 16);
+        cyl(bD, [x, y, z + 0.045], [x, y, z + 0.055], r * 0.55, r * 0.5, 12);
+        var h = hy || 1;
+        cyl(bD, [x - r * 0.5, y + h * (r + 0.02), z + 0.03], [x + r * 0.5, y + h * (r + 0.02), z + 0.03], 0.028, 0.028, 8);
+        bar(bD, [x - r * 0.3, y - h * r * 0.3, z + 0.06], [x + r * 0.3, y - h * r * 0.3, z + 0.06], 0.012, 5);
+      },
+      /* a periscope / vision block on a roof looking along dir (+1 forward): body and glass */
+      vblock: function (bD, bG, x, y, z, w, dir) {
+        box(bD, x - 0.07, x + 0.07, y - w / 2, y + w / 2, z, z + 0.09);
+        var xf = x + dir * 0.07;
+        box(bG, Math.min(xf, xf + dir * 0.008), Math.max(xf, xf + dir * 0.008), y - w / 2 + 0.015, y + w / 2 - 0.015, z + 0.02, z + 0.07);
+        box(bD, x - 0.09, x + 0.09, y - w / 2 - 0.01, y + w / 2 + 0.01, z + 0.09, z + 0.11);
+      },
+      /* a towing hook or pintle on a face across X (dir +1 looks forward) */
+      /* (L, default 0.19 m, the reach in front of the face; kept inside the model's old length) */
+      hook: function (b, xs, y, z, dir, L) {
+        var k = (L || 0.19) / 0.19;
+        box(b, Math.min(xs, xs + dir * 0.05 * k), Math.max(xs, xs + dir * 0.05 * k), y - 0.09, y + 0.09, z - 0.10, z + 0.10);
+        cyl(b, [xs + dir * 0.05 * k, y, z], [xs + dir * 0.16 * k, y, z], 0.035, 0.035, 8);
+        cyl(b, [xs + dir * 0.16 * k, y, z - 0.07], [xs + dir * 0.16 * k, y, z + 0.05], 0.03, 0.03, 8);
+        cyl(b, [xs + dir * 0.12 * k, y - 0.05, z + 0.06], [xs + dir * 0.12 * k, y + 0.05, z + 0.06], 0.015, 0.015, 5);
+      },
+      /* a lifting eye on a top face */
+      eye: function (b, x, y, z, alongY) {
+        if (alongY) box(b, x - 0.012, x + 0.012, y - 0.04, y + 0.04, z - 0.005, z + 0.06);
+        else box(b, x - 0.04, x + 0.04, y - 0.012, y + 0.012, z - 0.005, z + 0.06);
+      },
+      /* an exhaust: the pipe from A to B with its silencer drum part way and a cap */
+      exhaust: function (b, A, B, r, at) {
+        var t = at === undefined ? 0.5 : at, M = [A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t];
+        cyl(b, A, B, r, r, 8);
+        var d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]), k = Math.min(0.2, l * 0.25) / l;
+        cyl(b, [M[0] - d[0] * k, M[1] - d[1] * k, M[2] - d[2] * k], [M[0] + d[0] * k, M[1] + d[1] * k, M[2] + d[2] * k], r * 2.1, r * 2.1, 10);
+        cyl(b, B, [B[0] + d[0] / l * 0.03, B[1] + d[1] / l * 0.03, B[2] + d[2] / l * 0.03], r * 1.3, r * 1.3, 8);
+      },
+      /* a rack of rails standing on a top face: frame posts and two rails (a basket) */
+      basket: function (b, x0, x1, y0, y1, z0, h) {
+        var i, n = Math.max(2, Math.round((x1 - x0) / 0.3) + 1), x;
+        for (i = 0; i < n; i++) { x = x0 + (x1 - x0) * i / (n - 1);
+          bar(b, [x, y0, z0], [x, y0, z0 + h], 0.012, 4); bar(b, [x, y1, z0], [x, y1, z0 + h], 0.012, 4); }
+        bar(b, [x0, y0, z0 + h], [x1, y0, z0 + h], 0.013, 4); bar(b, [x0, y1, z0 + h], [x1, y1, z0 + h], 0.013, 4);
+        bar(b, [x0, y0, z0 + h * 0.5], [x1, y0, z0 + h * 0.5], 0.01, 4); bar(b, [x0, y1, z0 + h * 0.5], [x1, y1, z0 + h * 0.5], 0.01, 4);
+        bar(b, [x0, y0, z0 + h], [x0, y1, z0 + h], 0.013, 4); bar(b, [x1, y0, z0 + h], [x1, y1, z0 + h], 0.013, 4);
+      },
+      /* kit bags / rucksacks stowed in a basket: lumpy boxes, strapped */
+      bags: function (bP, bD, x0, x1, y0, y1, z0, h, seed) {
+        var r = (seed || 7) >>> 0, n = Math.max(2, Math.round((x1 - x0) / 0.45)), i;
+        function R() { r = (Math.imul(r, 1664525) + 1013904223) >>> 0; return r / 4294967296; }
+        for (i = 0; i < n; i++) {
+          var a = x0 + (x1 - x0) * i / n + 0.02, c = x0 + (x1 - x0) * (i + 1) / n - 0.02, hh = h * (0.6 + R() * 0.4), w = (y1 - y0) * (0.75 + R() * 0.2), yc = (y0 + y1) / 2 + (R() - 0.5) * 0.06;
+          box(bP, a, c, yc - w / 2, yc + w / 2, z0, z0 + hh);
+          box(bD, (a + c) / 2 - 0.02, (a + c) / 2 + 0.02, yc - w / 2 - 0.006, yc + w / 2 + 0.006, z0, z0 + hh + 0.006);
+        }
+      }
+    };
+    return D;
+  }
+  /* ---------------------------------------------------------------- DETAIL PASS 2 (AMX-10 RC / RCR,
+     ERC-90, CAESAR, VAB Mephisto): the fittings the first pass left out, on the kit above.  What is
+     drawn (each a class of fitting the photographs show on these types; places and sizes by
+     proportion, NOT CONFIRMED): tow cables and pioneer tools on the hull sides, grab handles, bolt
+     rows along the deck edges, lamp guards, towing hooks and shackles, mudflaps, lifting eyes,
+     hatch hinges and handles, periscopes, engine-deck slats, whip aerials, a rolled camouflage net,
+     the turret baskets with kit bags, the cab's door hinges, handles, steps and wipers. */
+  var DP = dpKit(box, cyl);
+  function rcDetail(B, renove) {
+    var P = B.paint, D = B.dark, R = RC, s, i, ys = R.HW;
+    for (s = -1; s <= 1; s += 2) {
+      var yf = renove ? ys + 0.07 : ys;
+      /* the tow cable along the upper side, the pick and shovel under it (D1 shows the side bare of
+         lockers between the grille and the bow) */
+      DP.cable(D, -2.25, 1.55, s * yf, 1.60, s);
+      DP.tool(P, D, "shovel", -0.20, -1.25, s * yf, 1.49, s);
+      DP.tool(P, D, "pick", 0.20, 1.30, s * yf, 1.49, s);
+      /* bolt heads along the deck edge, grab handles at the crew stations */
+      DP.bolts(D, -3.00, 1.85, 26, s * ys, R.DECK - 0.035, s);
+      DP.grabTop(D, 0.95, 1.30, s * 1.32, s * 1.32, R.DECK);
+      DP.grabTop(D, -1.85, -1.45, s * 1.38, s * 1.38, R.DECK);
+      /* the guard over each deck lamp, the rear lamp hoods */
+      DP.guard(D, 2.12, s * 1.23, R.DECK + 0.08, 0.075, 1);
+      box(D, R.REAR - 0.13, R.REAR, s * 1.15 - 0.16, s * 1.15 + 0.16, 1.55, 1.57);
+      /* the shackles in the towing eyes, front and rear */
+      cylY(D, 2.80, s * 0.55 - 0.08, s * 0.55 + 0.08, 0.80, 0.035, 8);
+      cyl(D, [2.80, s * 0.55, 0.80], [2.92, s * 0.55, 0.70], 0.03, 0.03, 8);
+      cylY(D, R.REAR - 0.10, s * 0.62 - 0.08, s * 0.62 + 0.08, 0.82, 0.035, 8);
+      /* the mudflaps behind the front and rear tyres */
+      DP.flap(D, R.AX[0] - R.R - 0.10, s > 0 ? R.LW + 0.05 : -R.HW + 0.03, s > 0 ? R.HW - 0.03 : -R.LW - 0.05, 0.55, R.ARCH);
+      DP.flap(D, R.AX[2] - R.R - 0.12, s > 0 ? R.LW + 0.05 : -R.HW + 0.03, s > 0 ? R.HW - 0.03 : -R.LW - 0.05, 0.50, R.ARCH);
+      /* lifting eyes at the deck corners */
+      DP.eye(D, 1.80, s * 1.30, R.DECK); DP.eye(D, -2.95, s * 1.30, R.DECK);
+      /* the engine deck's slatted grilles beside the fans */
+      DP.slats(D, -2.95, -2.30, s > 0 ? 1.00 : -1.38, s > 0 ? 1.38 : -1.00, R.DECK, 8);
+      /* hinges along the access panels */
+      DP.hingeTop(D, -1.98, -1.57, s * 0.70, s * 0.70, R.DECK + 0.01);
+    }
+    /* the rear towing hook, the driver's hatch hinge and handle, the folded camouflage net across
+       the engine deck */
+    DP.hook(D, R.REAR, 0, 1.02, -1, 0.13);
+    DP.hingeTop(D, 1.50, 1.50, 0.20, 0.66, R.DECK + 0.04);
+    DP.grabTop(D, 1.80, 1.80, 0.30, 0.56, R.DECK + 0.05);
+    DP.rollY(P, D, -2.17, -1.15, 1.15, R.DECK + 0.10, 0.10);
+  }
+  function rcTurretDetail(B, renove) {
+    var P = B.paint, D = B.dark, R = RC, s, i, a;
+    /* the whip aerials on the bustle roof, the basket behind the bustle with the crew's kit */
+    DP.whip(D, -1.62, 0.55, 2.37, 0.4);
+    DP.whip(D, -1.62, -0.55, 2.37, 0.4);
+    DP.basket(D, -2.34, -2.03, -0.72, 0.72, 1.90, 0.32);
+    DP.bags(P, D, -2.32, -2.05, -0.70, 0.70, 1.90, 0.28, 11);
+    /* the loader's hatch: hinge, handle, rim; the cupola's hatch hinge */
+    DP.hingeTop(D, 0.12, 0.12, 0.38, 0.72, 2.46);
+    DP.grabTop(D, 0.52, 0.52, 0.45, 0.65, 2.46);
+    DP.hingeTop(D, -0.70, -0.70, -0.62, -0.22, 2.50);
+    /* lifting eyes, bolt rings round the mantlet collar, the sight's wiper hood */
+    for (s = -1; s <= 1; s += 2) {
+      DP.eye(D, 0.90, s * 0.72, 2.38); DP.eye(D, -1.45, s * 0.86, 2.38);
+      /* the smoke dischargers' caps and the cables to them */
+      for (i = 0; i < 2; i++) cyl(D, [-1.12 - i * 0.18, s * 1.05, 2.40], [-1.10 - i * 0.18, s * 1.06, 2.42], 0.066, 0.066, 10);
+      cyl(D, [-1.20, s * 0.98, 2.30], [-0.90, s * 0.95, 2.36], 0.01, 0.01, 4);
+      /* grab handles on the turret cheeks */
+      DP.grab(D, s, s * 1.22, -0.70, -0.30, 2.18);
+    }
+    for (i = 0; i < 10; i++) { a = i / 10 * TAU; cylX(D, 1.68, 1.72, Math.cos(a) * 0.185, R.GZ + Math.sin(a) * 0.185, 0.016, 0.016, 6); }
+    box(D, 1.02, 1.34, 0.28, 0.64, 2.30, 2.33);
+    /* the muzzle reference sensor on the tube, the clamp bands */
+    box(D, 5.30, 5.40, -0.03, 0.03, R.GZ + 0.07, R.GZ + 0.12);
+    for (i = 0; i < 2; i++) cylX(D, 3.20 + i * 1.3, 3.24 + i * 1.3, 0, R.GZ, 0.082, 0.082, 12);
+  }
+  function erDetail(B) {
+    var P = B.paint, D = B.dark, E = ER, s, i;
+    for (s = -1; s <= 1; s += 2) {
+      var ys = s * E.HW;
+      /* the tow cable and the tools along the upper side, between the guard rail and the deck */
+      DP.cable(D, -2.20, 0.60, ys, 1.42, s);
+      DP.tool(P, D, "shovel", -0.40, -1.40, ys, 1.26, s);
+      DP.tool(P, D, "bar", 0.10, 1.20, ys, 1.26, s);
+      DP.bolts(D, -2.55, 1.35, 22, ys, E.DECK - 0.035, s);
+      DP.grabTop(D, 0.75, 1.05, s * 1.00, s * 1.00, E.DECK);
+      /* the guards over the front lamp clusters, the rear lamp hoods */
+      DP.guard(D, E.NOSE + 0.01, s * 0.95, 0.92, 0.075, 1);
+      box(D, E.REAR - 0.02, E.REAR + 0.08, s * 0.95 - 0.09, s * 0.95 + 0.09, 1.41, 1.43);
+      /* the towing shackles front and rear */
+      box(D, E.NOSE - 0.02, E.NOSE + 0.08, s * 0.40 - 0.05, s * 0.40 + 0.05, 0.70, 0.84);
+      cylY(D, E.NOSE + 0.05, s * 0.40 - 0.07, s * 0.40 + 0.07, 0.72, 0.03, 8);
+      box(D, E.REAR - 0.02, E.REAR + 0.06, s * 0.40 - 0.05, s * 0.40 + 0.05, 0.95, 1.08);
+      cylY(D, E.REAR + 0.02, s * 0.40 - 0.07, s * 0.40 + 0.07, 0.99, 0.025, 8);
+      /* the mudflaps behind the front wheel and the rear pair */
+      DP.flap(D, E.AX[0] - E.R - 0.12, s > 0 ? 0.80 : -E.HW + 0.02, s > 0 ? E.HW - 0.02 : -0.80, 0.45, E.CH);
+      DP.flap(D, E.AX[2] - E.R - 0.12, s > 0 ? 0.82 : -E.HW + 0.02, s > 0 ? E.HW - 0.02 : -0.82, 0.42, E.CH - 0.05);
+      DP.eye(D, 1.20, s * 0.95, E.DECK); DP.eye(D, -2.45, s * 0.95, E.DECK);
+      /* the hinges of the engine deck grille */
+      DP.hingeTop(D, -2.40, -1.45, s * 0.62, s * 0.62, E.DECK);
+    }
+    /* the engine grille's slats, the driver's hatch hinge, the rear hook */
+    DP.slats(D, -2.24, -1.45, -0.58, 0.58, E.DECK + 0.02, 10);
+    DP.hingeTop(D, 1.32, 1.32, -0.28, 0.28, E.DECK + 0.04);
+    DP.grabTop(D, 1.55, 1.55, -0.12, 0.12, E.DECK + 0.04);
+  }
+  function erTurretDetail(B) {
+    var P = B.paint, D = B.dark, E = ER, x0 = E.TX, s, i, a;
+    DP.whip(D, x0 - 1.15, 0.45, E.ROOF - 0.04, 0.3);
+    DP.whip(D, x0 - 1.15, -0.45, E.ROOF - 0.04, 0.3);
+    /* kit bags in the side baskets, a net roll on the bustle */
+    for (s = -1; s <= 1; s += 2) {
+      DP.bags(P, D, x0 - 0.58, x0 + 0.38, s > 0 ? 0.96 : -1.13, s > 0 ? 1.13 : -0.96, 1.67, 0.21, 5 + s);
+      for (i = 0; i < 4; i++) box(D, x0 - 0.58 + i * 0.32, x0 - 0.56 + i * 0.32, s * 1.14 - 0.012, s * 1.14 + 0.012, 1.65, 1.90);
+      DP.eye(D, x0 + 0.70, s * 0.70, E.ROOF); DP.eye(D, x0 - 1.00, s * 0.62, E.ROOF - 0.03);
+      DP.grab(D, s, s * 0.95, x0 - 0.30, x0 + 0.10, 2.05);
+    }
+    DP.rollY(P, D, x0 - 1.42, -0.55, 0.55, 1.88, 0.09);
+    /* the cupola's vision blocks, its hatch hinge; the MG's grips and ammunition box */
+    B.vc.col = GLASS;
+    for (i = 0; i < 6; i++) { a = (i + 0.5) / 6 * TAU; box(B.vc, x0 - 0.20 + Math.cos(a) * 0.28 - 0.035, x0 - 0.20 + Math.cos(a) * 0.28 + 0.035, -0.40 + Math.sin(a) * 0.28 - 0.035, -0.40 + Math.sin(a) * 0.28 + 0.035, E.ROOF + 0.03, E.ROOF + 0.08); }
+    DP.hingeTop(D, x0 - 0.50, x0 - 0.50, -0.60, -0.20, E.ROOF + 0.12);
+    box(D, x0 - 0.10, x0 + 0.08, -0.84, -0.74, E.ROOF + 0.12, E.ROOF + 0.24);
+    box(D, x0 - 0.12, x0 - 0.04, -0.74, -0.70, E.ROOF + 0.20, E.ROOF + 0.30);
+    /* the gun's thermal sleeve clamps, the mantlet bolts */
+    for (i = 0; i < 3; i++) cylX(D, x0 + 1.70 + i * 0.45, x0 + 1.74 + i * 0.45, 0, E.GZ, 0.09, 0.09, 12);
+    for (i = 0; i < 8; i++) { a = i / 8 * TAU; cylX(D, x0 + 1.43, x0 + 1.47, Math.cos(a) * 0.12, E.GZ + Math.sin(a) * 0.12, 0.014, 0.014, 6); }
+  }
+  function caDetail(B) {
+    var P = B.paint, D = B.dark, C = CA, s, i, k;
+    for (s = -1; s <= 1; s += 2) {
+      var ys = s * C.HW;
+      /* the doors' hinges at their front edges, the handles, a second step, the grab handles up the
+         cab's sides (C1, C2 show the four doors and the steps) */
+      DP.hinge(D, 2.60, ys, 1.25, 3.05, s);
+      DP.hinge(D, 1.27, ys, 1.25, 3.05, s);
+      box(D, 1.40, 1.52, s > 0 ? C.HW : -C.HW - 0.03, s > 0 ? C.HW + 0.03 : -C.HW, 2.05, 2.09);
+      box(D, -0.08, 0.04, s > 0 ? C.HW : -C.HW - 0.03, s > 0 ? C.HW + 0.03 : -C.HW, 2.05, 2.09);
+      box(D, 0.00, 1.15, s * C.HW - 0.20, s * C.HW + 0.02 * s, 0.85, 0.90);
+      box(D, 1.40, 2.40, s * C.HW - 0.20, s * C.HW + 0.02 * s, 0.55, 0.60);
+      box(D, 0.00, 1.15, s * C.HW - 0.20, s * C.HW + 0.02 * s, 0.55, 0.60);
+      for (k = 0; k < 2; k++) { var xh = k ? -0.20 : 2.70; DP.bar(D, [xh, ys + s * 0.05, 1.40], [xh, ys + s * 0.05, 2.70], 0.014, 5);
+        DP.bar(D, [xh, ys, 1.40], [xh, ys + s * 0.05, 1.40], 0.012, 4); DP.bar(D, [xh, ys, 2.70], [xh, ys + s * 0.05, 2.70], 0.012, 4); }
+      /* the battery and tool lockers under the cab, the air tanks */
+      DP.stow(P, D, 0.05, 1.20, s > 0 ? C.HW - 0.40 : -C.HW + 0.02, s > 0 ? C.HW - 0.02 : -C.HW + 0.40, 0.62, 1.02, s);
+      cylX(D, -0.95, -0.25, s * 0.80, 0.55, 0.13, 0.13, 12);
+      /* the mudflaps behind the front wheel and the tandem */
+      DP.flap(D, C.AX[0] - C.R - 0.15, s > 0 ? 0.80 : -C.HW + 0.02, s > 0 ? C.HW - 0.02 : -0.80, 0.30, 1.30);
+      DP.flap(D, C.AX[2] - C.R - 0.20, s > 0 ? 0.80 : -C.HW + 0.02, s > 0 ? C.HW - 0.02 : -0.80, 0.30, 1.30);
+      /* the guards over the headlamps, the towing hooks in the bumper, the wipers */
+      DP.guard(D, C.BUMP + 0.02, s * 0.95, 1.20, 0.085, 1);
+      DP.hook(D, C.BUMP - 0.08, s * 0.70, 0.70, 1, 0.20);
+      DP.bar(D, [C.CABF - 0.02, s * 0.30, 2.42], [C.CABF - 0.12, s * 0.62, 2.85], 0.008, 4);
+      /* lockers' latches on the ammunition racks, the rack doors' hinges */
+      for (i = 0; i < 3; i++) box(D, -3.60 + i * 0.95, -3.50 + i * 0.95, s > 0 ? C.HW : -C.HW - 0.025, s > 0 ? C.HW + 0.025 : -C.HW, 2.20, 2.30);
+      DP.hingeTop(D, -3.70, -1.25, s * (C.HW - 0.02), s * (C.HW - 0.02), 2.34);
+      /* rear lamp guards, the jerrycans at the tail */
+      DP.guard(D, C.TAIL + 0.14, s * 1.10, 1.14, 0.06, -1);
+      DP.jerry(P, D, -4.70, ys - s * 0.18, C.BED, s);
+      /* the roof's grab rail and the whip aerials */
+      DP.bar(D, [0.20, s * 1.15, C.ROOF + 0.06], [2.20, s * 1.15, C.ROOF + 0.06], 0.014, 5);
+      for (i = 0; i < 3; i++) DP.bar(D, [0.20 + i * 1.0, s * 1.15, C.ROOF], [0.20 + i * 1.0, s * 1.15, C.ROOF + 0.06], 0.012, 4);
+      DP.whip(D, -1.00, s * 1.18, C.ROOF, 0.4);
+    }
+    /* the crew's kit in low baskets either side of the travel lock on the cab roof */
+    for (s = -1; s <= 1; s += 2) {
+      DP.basket(D, -0.95, 0.65, s > 0 ? 0.40 : -1.12, s > 0 ? 1.12 : -0.40, C.ROOF, 0.16);
+      DP.bags(P, D, -0.92, 0.62, s > 0 ? 0.43 : -1.09, s > 0 ? 1.09 : -0.43, C.ROOF, 0.20, 3 + s);
+    }
+    /* the roof hatch with its hinge and handle, the rear hook, the spade's rams */
+    DP.hatch(P, D, 1.30, -0.45, C.ROOF, 0.32);
+    DP.hook(D, C.TAIL + 0.05, 0, 0.95, -1, 0.19);
+    for (s = -1; s <= 1; s += 2) DP.bar(D, [C.TAIL + 0.30, s * 0.40, 1.10], [C.TAIL - 0.05, s * 0.40, 1.75], 0.045, 8);
+  }
+  function caGunDetail(B) {
+    var D = B.dark, C = CA, ce = Math.cos(C.EL), se = Math.sin(C.EL), i;
+    function at(d, h) { return [C.TX + d * ce - h * se, 0, C.TZ + d * se + h * ce]; }
+    /* clamp bands on the tube, bolts along the cradle, the hand wheels on the mount */
+    for (i = 0; i < 3; i++) { var a = at(2.6 + i * 1.3, 0), b = at(2.65 + i * 1.3, 0); cyl(D, a, b, 0.12, 0.12, 12); }
+    for (i = 0; i < 8; i++) { var q = at(-0.85 + i * 0.32, 0.27); box(D, q[0] - 0.02, q[0] + 0.02, -0.14, 0.14, q[2] - 0.01, q[2] + 0.02); }
+    for (var s = -1; s <= 1; s += 2) { cylY(D, C.TX - 0.10, s * 0.72, s * 0.80, 2.60, 0.12, 12); DP.bar(D, [C.TX - 0.10, s * 0.80, 2.60], [C.TX - 0.10, s * 0.86, 2.72], 0.012, 4); }
+  }
+  /* the VAB's upper side leans in from the chine to the roof edge: its y at height z */
+  function vaY(z) { var V = VA; return V.HW - (V.HW - V.RW) * (z - V.CH) / (V.ROOF - V.CH); }
+  function vaDetail(B) {
+    var P = B.paint, D = B.dark, V = VA, s, i;
+    for (s = -1; s <= 1; s += 2) {
+      /* bolts along the chine, grab handles up the upper side, the side hatch's hinges and handle */
+      DP.bolts(D, -2.85, 2.40, 24, s * V.HW, V.CH + 0.02, s);
+      DP.grab(D, s, s * vaY(1.75), -2.40, -1.95, 1.75);
+      DP.grab(D, s, s * vaY(1.75), 0.70, 1.15, 1.75);
+      DP.hinge(D, -0.52, s * (V.HW - 0.02), 0.62, 1.06, s);
+      box(D, -1.12, -1.06, s > 0 ? V.HW : -V.HW - 0.04, s > 0 ? V.HW + 0.04 : -V.HW, 0.82, 0.88);
+      /* tow cable and tools lying on the chine ledge */
+      DP.cable(D, -2.40, -1.25, s * vaY(1.25), 1.25, s);
+      DP.tool(P, D, "shovel", 0.10, 1.10, s * vaY(1.25), 1.25, s);
+      /* the jerrycans on the rear corners of the upper side */
+      DP.jerry(P, D, -2.70, s * vaY(1.30), 1.12, s);
+      /* the wire guards over the headlamps, the mudflaps, the windscreen wipers */
+      DP.guard(D, 2.86, s * 0.98, 0.78, 0.085, 1);
+      DP.flap(D, V.AX[0] - V.R - 0.12, s > 0 ? V.LW : -V.HW + 0.03, s > 0 ? V.HW - 0.03 : -V.LW, 0.40, V.CH);
+      DP.flap(D, V.AX[1] - V.R - 0.12, s > 0 ? V.LW : -V.HW + 0.03, s > 0 ? V.HW - 0.03 : -V.LW, 0.40, V.CH);
+      DP.bar(D, [2.12, s * 0.30, 1.47], [2.00, s * 0.55, 1.80], 0.008, 4);
+      /* the rear doors' hinges and handles, the lifting eyes, the roof's grab rail */
+      DP.bar(D, [V.REAR - 0.03, s * 0.53, 0.92], [V.REAR - 0.03, s * 0.53, 1.78], 0.022, 8);
+      box(D, V.REAR - 0.05, V.REAR - 0.02, s * 0.12 - 0.05, s * 0.12 + 0.05, 1.30, 1.36);
+      DP.eye(D, 1.75, s * 0.85, V.ROOF); DP.eye(D, -2.85, s * 0.85, V.ROOF);
+      DP.bar(D, [-1.60, s * 0.90, V.ROOF + 0.06], [-0.40, s * 0.90, V.ROOF + 0.06], 0.013, 5);
+      DP.bar(D, [-1.60, s * 0.90, V.ROOF], [-1.60, s * 0.90, V.ROOF + 0.06], 0.012, 4);
+      DP.bar(D, [-0.40, s * 0.90, V.ROOF], [-0.40, s * 0.90, V.ROOF + 0.06], 0.012, 4);
+      /* the whip aerials on the rear roof corners */
+      DP.whip(D, -2.45, s * 0.80, V.ROOF, 0.4);
+      /* towing hooks on the nose */
+      DP.hook(D, V.NOSE - 0.15, s * 0.40, 0.74, 1, 0.19);
+      /* a vision block in each rear door */
+      B.vc.col = GLASS; box(B.vc, V.REAR - 0.05, V.REAR - 0.03, s * 0.26 - 0.07, s * 0.26 + 0.07, 1.48, 1.58);
+    }
+    /* the hatches on the cab roof: rims, hinges and handles; the mushroom vents on the box roof */
+    DP.hatch(P, D, 1.30, 0.45, V.ROOF, 0.30, -1);
+    DP.hatch(P, D, 1.30, -0.45, V.ROOF, 0.30, 1);
+    for (i = 0; i < 2; i++) { cylZ(D, 0.70 - i * 2.6, 0, V.ROOF, V.ROOF + 0.08, 0.05, 8); cylZ(D, 0.70 - i * 2.6, 0, V.ROOF + 0.08, V.ROOF + 0.11, 0.11, 12); }
+    DP.slats(D, 2.27, 2.68, 0.07, 0.53, 1.35, 7);
+    DP.hook(D, V.REAR, 0, 0.78, -1);
+  }
   function buildAML(THREE, C) {
     var T = mats(THREE, C, "olive"), g = new THREE.Group(), HB = bins(T), TB = bins(T), dt = detailTex(THREE, OLIVE);
     if (dt) T.paint.map = dt;
@@ -1356,11 +1805,14 @@ var HeroFrArmour2 = (function () {
     box(B.team, x0 - 1.10, x0 - 0.95, -0.35, 0.35, E.ROOF - 0.03, E.ROOF - 0.015);
   }
   function buildERC(THREE, C) {
-    var T = mats(THREE, C, "olive"), g = new THREE.Group(), HB = bins(T), TB = bins(T);
+    var T = mats(THREE, C, "olive"), g = new THREE.Group(), HB = bins(T), TB = bins(T), dt = detailTex(THREE, OLIVE);
+    if (dt) T.paint.map = dt;
     erHull(HB);
+    erDetail(HB);
     K.flush(THREE, g, HB);
     axles(THREE, g, T, ER.AX, ER.ZW, ER.TY, ER.R, ER.TW, 1.1, 20);
     erTurret(TB);
+    erTurretDetail(TB);
     turretGroup(THREE, g, TB, ER.TX, 0, ER.DECK);
     return g;
   }
@@ -1453,11 +1905,14 @@ var HeroFrArmour2 = (function () {
     B.vc.col = GLASS; box(B.vc, q[0] + 0.25, q[0] + 0.26, 0.40, 0.60, q[2] - 0.08, q[2] + 0.10);
   }
   function buildCAESAR(THREE, C) {
-    var T = mats(THREE, C, "ce3"), g = new THREE.Group(), HB = bins(T), TB = bins(T);
+    var T = mats(THREE, C, "ce3"), g = new THREE.Group(), HB = bins(T), TB = bins(T), dt = detailTex(THREE, CE3);
+    if (dt) T.paint.map = dt;
     caTruck(HB);
+    caDetail(HB);
     K.flush(THREE, g, HB);
     axles(THREE, g, T, CA.AX, CA.ZW, CA.TY, CA.R, CA.TW, 0.75, 20);
     caGun(TB);
+    caGunDetail(TB);
     turretGroup(THREE, g, TB, CA.TX, 0, CA.BED);
     return g;
   }

@@ -830,6 +830,7 @@ var HeroOsaStrela = (function () {
       cyl(bin, [0, o, 0], [0, o + s * 0.025, 0], RWR - 0.04, RWR - 0.07, 20, false, false);
       cyl(bin, [0, o + s * 0.025, 0], [0, o + s * 0.06, 0], 0.12, 0.10, 12, true, false);
       cyl(bin, [0, o + s * 0.06, 0], [0, o + s * 0.09, 0], 0.06, 0.05, 8, true, false);
+      for (k = 0; k < 6; k++) { a = (k + 0.5) / 6 * TAU; cyl(bin, [0.085 * Math.cos(a), o + s * 0.055, 0.085 * Math.sin(a)], [0.085 * Math.cos(a), o + s * 0.075, 0.085 * Math.sin(a)], 0.015, 0.015, 6, false, false); }
       for (k = 0; k < 8; k++) {
         a = k / 8 * TAU;
         hexa(bin, [[0.10 * Math.cos(a - 0.08), o, 0.10 * Math.sin(a - 0.08)], [0.25 * Math.cos(a - 0.05), o, 0.25 * Math.sin(a - 0.05)],
@@ -915,6 +916,37 @@ var HeroOsaStrela = (function () {
     for (s = -1; s <= 1; s += 2) box(B.team, 0.15, 0.95, s * 1.20 - 0.10, s * 1.20 + 0.10, SROOF - 0.005, SROOF + 0.012);
   }
 
+  /* the MT-LB's small fittings (the detail pass): the three vision blocks in front of the driver's and the
+     commander's hatches, the firing port with its cover low in each side of the troop compartment, grab handles
+     along the roof's side edges and on the rear doors, the bolt row along the sponson's top edge, the cable coil's
+     two eyes and its clips, the front mudflaps over the sprockets */
+  function stFittings(B) {
+    var D = B.dark, P = B.paint, G = B.glass, s, k, x, y;
+    for (s = -1; s <= 1; s += 2) {
+      for (k = -1; k <= 1; k++) {
+        y = s * 0.55 + k * 0.17;
+        box(P, 2.38, 2.48, y - 0.06, y + 0.06, SROOF - 0.01, SROOF + 0.08);
+        box(G, 2.48, 2.485, y - 0.05, y + 0.05, SROOF + 0.015, SROOF + 0.06);
+      }
+      cylY(P, -1.60, s * 1.425, s * 1.455, 1.15, 0.09, 12);
+      box(D, -1.50, -1.45, s * 1.425, s * 1.46, 1.12, 1.18);
+      for (k = 0; k < 3; k++) {
+        x = -0.80 + k * 0.90;
+        bar(D, [x - 0.12, s * 1.38, SROOF], [x - 0.12, s * 1.38, SROOF + 0.06], 0.022);
+        bar(D, [x + 0.12, s * 1.38, SROOF], [x + 0.12, s * 1.38, SROOF + 0.06], 0.022);
+        bar(D, [x - 0.12, s * 1.38, SROOF + 0.06], [x + 0.12, s * 1.38, SROOF + 0.06], 0.022);
+      }
+      for (x = -3.0; x < 2.5; x += 0.30) box(D, x - 0.015, x + 0.015, s > 0 ? 1.395 : -1.435, s > 0 ? 1.435 : -1.395, 0.82, 0.835);
+      cylY(D, 0.13, s * 1.43, s * 1.465, 1.22, 0.05, 8);
+      cylY(D, 0.97, s * 1.43, s * 1.465, 1.22, 0.05, 8);
+      for (k = 0; k < 3; k++) box(D, 0.30 + k * 0.25, 0.34 + k * 0.25, s > 0 ? 1.425 : -1.465, s > 0 ? 1.465 : -1.425, 1.06, 1.38);
+      box(D, 2.95, 3.00, s > 0 ? 1.02 : -1.44, s > 0 ? 1.44 : -1.02, 0.55, 0.80);
+      bar(D, [-3.25, s * 0.50, 0.95], [-3.285, s * 0.50, 0.95], 0.02);
+      bar(D, [-3.25, s * 0.50, 1.20], [-3.285, s * 0.50, 1.20], 0.02);
+      bar(D, [-3.285, s * 0.50, 0.95], [-3.285, s * 0.50, 1.20], 0.02);
+    }
+  }
+
   /* Stowed and raised.  The launcher (four containers and the range-only radar) is the group "podelev"
      (render3d poseLauncher), hinged at SPV in the turret frame and drawn STOWED: containers level, pointing
      forward, the top of the pack at the published travelling height of 2.3 m.  It turns to userData.el = SEL
@@ -966,6 +998,7 @@ var HeroOsaStrela = (function () {
   function buildStrela(THREE, M, C) {
     var T = materials(THREE, C, STR_PAINT), g = new THREE.Group(), HB = bins(T), TB = bins(T), EB = bins(T), k, wg, WB, tur, E, cells;
     stHull(HB);
+    stFittings(HB);
     flush(THREE, g, HB);
     for (k = 0; k < NW; k++) {
       WB = { paint: new Bin(T.paint, true) };

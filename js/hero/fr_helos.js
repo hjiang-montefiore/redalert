@@ -1180,6 +1180,16 @@ var HeroCougar = (function () {
    Stations off D3 at 57.5 px/m: x = (1122 - px) / 57.5 from the mast,
    h = (958 - py) / 57.5 above the wheels; plan at 57 px/m, x = 5.46 -
    (py - 140) / 57; Z(h) = h - 2.0.                                        */
+/* DETAIL PASS (2026-11), the NH90 only (the Puma, the Cougar and FrHeloKit untouched, so
+   eu_naval_air.js's NFH gets the same API): wipers, side pitot probes, cockpit-door hinges, handles
+   and steps, the cabin door's rail and handles, the sponson step, sponson position lamps (red /
+   green material), intake rails and screens, exhaust rims, cowl latches, boom hinges, gear doors,
+   oleo pistons, torque links and hub caps, the starboard rescue hoist, fin and belly beacons, the
+   white tail lamp, the nose lamp, roof, boom and belly aerials, the tail-rotor gearbox seam; on the
+   head (an extra "hub_links" mesh inside it) blade bolts, pitch horns and links, dampers and tip
+   caps. The paint gains fastener rows, cowl and access panels, oil streaks, sill scuffing,
+   walkways and the ramp's fasteners. Sizes NOT measured. fra_e00_transport 6062 -> 8458 tris,
+   12 -> 15 draw calls; extents and len unchanged. */
 var HeroNH90 = (function () {
   "use strict";
   var PI = Math.PI, D2R = PI / 180, V = null;
@@ -1209,7 +1219,41 @@ var HeroNH90 = (function () {
           K.lineSide(g, SH, b, RAMP.x0, 0.45, RAMP.x1, 1.92, 2.6, 0.6);
           K.lineSide(g, SH, b, RAMP.x0, 0.45, RAMP.x0 + 0.05, 0.75, 2.2, 0.5);
           K.soot(g, SH, b, -2.4, 5.0, 2.70, 3.15, 0.40);
+          /* detail pass: fastener rows along the cabin's stringers and the
+             boom's, the cowl doors and the access panels down each side
+             (D3, N1), oil and hydraulic streaks off the transmission deck,
+             scuffing along the sponson tops and the door sill */
+          g.fillStyle = "rgba(0,0,0,0.22)";
+          [0.62, 1.30, 2.10, 2.70].forEach(function (h) {
+            for (var xx = SH.pxX(-2.2); xx < SH.pxX(3.0); xx += 5) g.fillRect(xx, SH.pyH(h, b), 1.2, 1.2);
+          });
+          [2.20, 2.40, 2.62].forEach(function (h) {
+            for (var xx = SH.pxX(-9.3); xx < SH.pxX(-5.1); xx += 5) g.fillRect(xx, SH.pyH(h, b), 1.2, 1.2);
+          });
+          K.rectSide(g, SH, b, -0.20, -1.60, 2.62, 3.05, 1.4, 0.40);
+          K.rectSide(g, SH, b, -1.70, -3.20, 2.62, 3.05, 1.4, 0.40);
+          K.rectSide(g, SH, b, 2.20, 1.40, 2.55, 2.95, 1.2, 0.35);
+          K.rectSide(g, SH, b, -3.70, -4.40, 2.30, 2.65, 1.2, 0.35);
+          K.rectSide(g, SH, b, -5.60, -6.10, 2.25, 2.60, 1.2, 0.35);
+          K.rectSide(g, SH, b, 4.40, 3.80, 0.55, 1.10, 1.2, 0.35);
+          K.rectSide(g, SH, b, -2.40, -2.90, 0.50, 0.95, 1.2, 0.35);
+          var R2 = function (k) { return ((k * 2654435761) >>> 0) / 4294967296; };
+          for (var q = 0; q < 14; q++) {
+            g.fillStyle = "rgba(22,18,12," + (0.10 + R2(q * 7 + b) * 0.10).toFixed(3) + ")";
+            g.fillRect(SH.pxX(-3.2 + R2(q + b * 31) * 3.6), SH.pyH(2.92, b), 1.5 + R2(q * 3) * 1.5, 10 + R2(q * 5 + b) * 34);
+          }
+          g.fillStyle = "rgba(120,112,92,0.16)";
+          g.fillRect(SH.pxX(DOOR.x0), SH.pyH(0.68, b), SH.pxX(DOOR.x1) - SH.pxX(DOOR.x0), 4);
         }
+        /* the walkways either side of the mast fairing, the cowl doors'
+           hinges, the ramp's fasteners on the belly */
+        g.fillStyle = "rgba(0,0,0,0.12)";
+        g.fillRect(SH.pxX(-3.2), SH.pyTop(1.05), SH.pxX(1.4) - SH.pxX(-3.2), SH.pyTop(0.75) - SH.pyTop(1.05));
+        g.fillRect(SH.pxX(-3.2), SH.pyTop(-0.75), SH.pxX(1.4) - SH.pxX(-3.2), SH.pyTop(-1.05) - SH.pyTop(-0.75));
+        g.fillStyle = "rgba(0,0,0,0.24)";
+        [0.4, 0.0, -0.4].forEach(function (y) {
+          for (var xx = SH.pxX(-2.1); xx < SH.pxX(4.4); xx += 5) g.fillRect(xx, SH.pyBelly(y), 1.2, 1.2);
+        });
         /* the ramp's hinge across the belly */
         g.strokeStyle = "rgba(0,0,0,0.6)"; g.lineWidth = 2.6;
         g.beginPath(); g.moveTo(SH.pxX(RAMP.x0), SH.pyBelly(1.0)); g.lineTo(SH.pxX(RAMP.x0), SH.pyBelly(-1.0)); g.stroke();
@@ -1369,6 +1413,87 @@ var HeroNH90 = (function () {
     K.mesh(gear, gM, T.metal, "gear_struts");
     K.mesh(gear, gR, T.rubber, "tyres");
 
+    /* ================================================= DETAIL PASS ======
+       The fittings the first pass left out, placed off D3, N1 and N2: their
+       sizes are read through those references' scale and perspective, NOT
+       measured. */
+    var lampR = [], lampG = [], hubX = [];
+    function sy(x, h) { return K.sideY(fus, x, Z(h)); }
+    /* the windscreen wipers, parked upright on the screen (N2) */
+    [1, -1].forEach(function (s) {
+      dark.push(K.bar([4.58, s * 0.55, Z(1.45)], [4.20, s * 0.45, Z(2.05)], 0.012, 4, true));
+      /* the pitot probes on the nose's upper sides, ahead of the screen
+         (D3 draws a probe each side) */
+      var py = sy(4.90, 1.20);
+      metal.push(K.bar([4.90, s * (py - 0.02), Z(1.20)], [4.90, s * (py + 0.12), Z(1.24)], 0.014, 5, true));
+      metal.push(K.bar([4.90, s * (py + 0.12), Z(1.24)], [5.22, s * (py + 0.12), Z(1.24)], 0.011, 5, true));
+      /* the cockpit door's hinges, handle and the step under it */
+      [1.55, 2.20].forEach(function (h) { dark.push(K.box(0.05, 0.03, 0.07, 3.68, s * (sy(3.68, h) + 0.02), Z(h))); });
+      metal.push(K.box(0.14, 0.03, 0.03, 3.25, s * (sy(3.25, 1.30) + 0.03), Z(1.30)));
+      metal.push(K.box(0.30, 0.18, 0.025, 3.40, s * (sy(3.40, 0.60) + 0.09), Z(0.55)));
+      /* the sliding cabin door's top rail and its handles (D3's line at
+         2.47 m, N1) and the step on the sponson's nose */
+      metal.push(K.bar([DOOR.x0 + 0.05, s * (sy(0.0, 2.47) + 0.03), Z(2.47)], [-3.0, s * (sy(-3.0, 2.47) + 0.03), Z(2.47)], 0.018, 5, true));
+      metal.push(K.box(0.04, 0.03, 0.18, DOOR.x0 - 0.15, s * (sy(0.8, 1.40) + 0.03), Z(1.40)));
+      metal.push(K.box(0.04, 0.03, 0.18, DOOR.x1 + 0.15, s * (sy(-0.5, 1.40) + 0.03), Z(1.40)));
+      metal.push(K.box(0.40, 0.22, 0.03, 0.20, s * (sy(0.20, 0.45) + 0.10), Z(0.42)));
+      /* position lamps on the sponsons' tops, port red and starboard green;
+         the formation strip along the sponson (N1) */
+      (s > 0 ? lampR : lampG).push(K.sph(0.04, 8, 6, -1.10, s * 1.70, Z(1.16), 1.5, 0.8, 0.8));
+      /* the engine intakes' screens and lips, the exhaust outlets' bright
+         rims (N1) */
+      var gy = K.sideY(fus, -0.55, Z(2.95));
+      metal.push(K.box(0.66, 0.012, 0.03, -0.55, s * (gy + 0.022), Z(3.11)));
+      metal.push(K.box(0.66, 0.012, 0.03, -0.55, s * (gy + 0.022), Z(2.79)));
+      for (i = 0; i < 6; i++) dark.push(K.box(0.012, 0.03, 0.30, -0.80 + i * 0.10, s * (gy + 0.02), Z(2.95)));
+      metal.push(K.place(new V.TorusGeometry(0.175, 0.018, 6, 14), -3.27, s * 0.62, Z(3.07), 0, PI / 2, 0));
+      /* cowl latches down each side of the engine bay */
+      [-0.10, -0.70, -1.30, -1.90, -2.50].forEach(function (xl) {
+        dark.push(K.box(0.07, 0.02, 0.03, xl, s * (sy(xl, 2.75) + 0.012), Z(2.75)));
+      });
+      /* the boom's drive-shaft cover hinges and the stabiliser-root fairing */
+      [-5.5, -6.5, -7.5].forEach(function (xh) { dark.push(K.box(0.10, 0.02, 0.05, xh, s * (sy(xh, 2.62) + 0.01), Z(2.62))); });
+      /* the main gear doors folded against the sponson's underside, the
+         oleo's bright piston, the torque link and the hub caps */
+      gM.push(K.box(0.62, 0.02, 0.36, MW_X + 0.02, s * (MW_Y - 0.36), Z(0.36)));
+      gM.push(K.bar([MW_X + 0.04, s * 1.42, Z(0.40)], [MW_X + 0.02, s * 1.42, Z(0.30)], 0.05, 8, true));
+      gM.push(K.bar([MW_X + 0.14, s * 1.42, Z(0.44)], [MW_X + 0.18, s * 1.42, Z(0.32)], 0.014, 4, true));
+      gM.push(K.cyl(0.08, 0.08, 0.02, 10, "y", MW_X, s * (MW_Y + 0.12), Z(MW_R)));
+      gM.push(K.cyl(0.025, 0.025, 0.03, 6, "y", MW_X, s * (MW_Y + 0.135), Z(MW_R)));
+    });
+    /* the nose gear's doors and the torque link, the hub caps */
+    [1, -1].forEach(function (s) {
+      gM.push(K.box(0.70, 0.02, 0.18, NW_X - 0.15, s * 0.27, Z(0.30)));
+      gM.push(K.cyl(0.06, 0.06, 0.02, 10, "y", NW_X, s * (NW_Y + 0.085), Z(NW_R)));
+    });
+    gM.push(K.bar([NW_X + 0.12, 0, Z(0.36)], [NW_X + 0.14, 0, Z(0.26)], 0.012, 4, true));
+    /* the rescue hoist over the starboard cabin door (French Caiman TTH,
+       N1's side), its arm and the hook block */
+    var hy = -(sy(0.6, 3.0) + 0.05);
+    metal.push(K.box(0.70, 0.22, 0.22, 0.50, hy - 0.08, Z(3.02)));
+    metal.push(K.bar([0.85, hy - 0.08, Z(3.02)], [1.00, hy - 0.55, Z(3.00)], 0.04, 6, true));
+    dark.push(K.cyl(0.05, 0.05, 0.10, 8, "z", 1.00, hy - 0.55, Z(2.90)));
+    /* anti-collision beacons on the fin's top and under the belly; the
+       white tail lamp on the fin's trailing edge; a landing / search lamp
+       under the nose */
+    dark.push(K.cyl(0.06, 0.065, 0.04, 10, "z", -10.30, 0, Z(4.08)));
+    lampR.push(K.sph(0.05, 10, 6, -10.30, 0, Z(4.10), 1, 1, 0.5));
+    dark.push(K.cyl(0.06, 0.065, 0.04, 10, "z", -0.60, 0, Z(0.31)));
+    lampR.push(K.sph(0.05, 10, 6, -0.60, 0, Z(0.29), 1, 1, 0.8));
+    metal.push(K.sph(0.03, 8, 5, -10.12, 0, Z(2.20), 1.3, 0.8, 1.0));
+    metal.push(K.cyl(0.10, 0.10, 0.06, 12, "z", 4.30, 0.30, Z(0.36)));
+    glass.push(K.cyl(0.085, 0.085, 0.012, 12, "z", 4.30, 0.30, Z(0.328)));
+    /* aerials: a blade on the roof ahead of the mast and one on the boom,
+       two blades and a whip under the cabin and the ramp (D3, N1) */
+    dark.push(K.box(0.36, 0.02, 0.26, 2.20, 0, Z(3.13), 0, -0.25, 0));
+    dark.push(K.box(0.30, 0.02, 0.22, -6.80, 0, Z(2.89), 0, -0.25, 0));
+    dark.push(K.box(0.32, 0.02, 0.22, 2.80, 0.30, Z(0.22), 0, 0.25, 0));
+    dark.push(K.box(0.28, 0.02, 0.20, -1.40, -0.30, Z(0.22), 0, 0.25, 0));
+    dark.push(K.bar([-4.40, 0, Z(1.25)], [-4.90, 0, Z(0.75)], 0.008, 4, true));
+    /* the tail-rotor gearbox's fairing seam and the stabiliser's tip
+       fairing lamp mount */
+    metal.push(K.cyl(0.26, 0.26, 0.02, 14, "y", TR_X, 0.34, Z(TR_H)));
+
     /* rotors: four composite blades with swept tips (D3's plan), 16.30 m,
        an upright mast (D3) under a low dome on a flat star */
     K.rotor(g, T, { hubZ: Z(HUB_H), R: ROTOR_R, chord: CHORD, n: 4, tilt: 0, root: 0.95,
@@ -1380,6 +1505,27 @@ var HeroNH90 = (function () {
     K.mesh(g, dark, T.dark, "fittings_dark");
     K.mesh(g, metal, T.metal, "fittings");
     K.mesh(g, team, T.team, "team");
+    var LR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    var LG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
+    K.mesh(g, lampR, LR, "lamp_red");
+    K.mesh(g, lampG, LG, "lamp_green");
+    /* the rotor head's detail, in the head's own frame (blades from 30
+       degrees, four of them): the blade cuffs' bolts, the pitch horns and
+       links down to the swashplate, the lead-lag dampers (N2) */
+    var rh = g.getObjectByName("rotor"), hd = rh && rh.children[0];
+    if (hd) {
+      for (i = 0; i < 4; i++) {
+        var ang = (30 + 90 * i) * D2R, pr = [];
+        pr.push(K.cyl(0.03, 0.03, 0.22, 8, "z", 0.80, 0.06, -0.02), K.cyl(0.03, 0.03, 0.22, 8, "z", 0.80, -0.06, -0.02));
+        pr.push(K.box(0.12, 0.10, 0.05, 0.55, -0.16, -0.10));
+        pr.push(K.bar([0.55, -0.19, -0.12], [0.55, -0.22, -0.44], 0.018, 5, true));
+        pr.push(K.bar([0.30, 0.16, 0.02], [0.78, 0.13, 0.00], 0.035, 6, true));
+        pr.push(K.box(0.20, CHORD, 0.05, ROTOR_R - 0.20, -CHORD / 4 + CHORD / 2, -0.022));
+        pr.forEach(function (q) { q.rotateZ(ang); hubX.push(q); });
+      }
+      hubX.push(K.cyl(0.10, 0.12, 0.08, 10, "z", 0, 0, 0.22));
+      K.mesh(hd, hubX, T.metal, "hub_links");
+    }
     g.traverse(function (o) { if (o.isMesh && o.material !== T.disc) { o.castShadow = true; o.receiveShadow = true; } });
     return g;
   }

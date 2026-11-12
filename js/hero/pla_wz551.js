@@ -365,6 +365,54 @@ var HeroWz551 = (function () {
     }
   }
 
+  /* ------------------------------------------------------------ fittings */
+  /* the small fittings P1 and P2 show that the first pass left out: the tow cable looped along
+     the right flank over the troop compartment, its clips, the row of vision blocks along the
+     roof edges, wire guards over the lamp boxes, grab handles on the nose deck and roof, the
+     open towing hooks at the tail, the tail-lamp guards. */
+  function rope(bin, P, r, seg) { for (var i = 0; i + 1 < P.length; i++) cyl(bin, P[i], P[i + 1], r, r, seg, true); }
+  function fpt(x, z, s, out) { var y = s * flankY(z); return [x, y + s * FN[1] * out, z + FN[2] * out]; }
+  function addFittings(B) {
+    var s, i, x, z, pts = [];
+    /* the tow cable (P1): from the eye over the rear wheel forward in two sags to the cab */
+    for (i = 0; i <= 20; i++) {
+      x = -3.05 + i * (2.75 / 20);
+      z = 1.95 - 0.13 * Math.pow(Math.sin(i / 20 * Math.PI * 2), 2);
+      pts.push(fpt(x, z, -1, 0.03));
+    }
+    rope(B.dark, pts, 0.020, 6);
+    [-3.05, -1.67, -0.30].forEach(function (cx) { onFlank(B.dark, cx, 1.95, -1, 0.035, 0.04, 0.03); });
+    cyl(B.dark, fpt(-3.12, 1.95, -1, 0.0), fpt(-3.12, 1.95, -1, 0.07), 0.05, 0.05, 8);
+    for (s = -1; s <= 1; s += 2) {
+      /* vision blocks along the roof edge (P1: the row of small boxes) */
+      for (i = 0; i < 6; i++) {
+        x = -2.95 + i * 0.42;
+        box(B.paint, x - 0.07, x + 0.07, s * (RFW - 0.10) - 0.06, s * (RFW - 0.10) + 0.06, ROOF, ROOF + 0.07);
+        B.vc.col = GLASS;
+        box(B.vc, x - 0.05, x + 0.05, s > 0 ? RFW - 0.04 : -RFW + 0.035, s > 0 ? RFW - 0.035 : -RFW + 0.04, ROOF + 0.02, ROOF + 0.055);
+      }
+      /* the wire guard over each lamp box (P2) */
+      var ly = s * 1.12;
+      rope(B.dark, [[2.48, ly - 0.13, 1.64], [2.60, ly - 0.13, 1.70], [2.60, ly - 0.13, 1.88], [2.48, ly - 0.13, 1.92]], 0.010, 5);
+      rope(B.dark, [[2.48, ly + 0.13, 1.64], [2.60, ly + 0.13, 1.70], [2.60, ly + 0.13, 1.88], [2.48, ly + 0.13, 1.92]], 0.010, 5);
+      rope(B.dark, [[2.60, ly - 0.13, 1.79], [2.60, ly + 0.13, 1.79]], 0.010, 5);
+      /* grab handles on the nose deck and the roof's front corners */
+      rope(B.dark, [[3.00, s * 0.80, 1.60], [3.00, s * 0.80, 1.66], [3.18, s * 0.80, 1.62], [3.18, s * 0.80, 1.56]], 0.012, 5);
+      rope(B.dark, [[1.50, s * 0.95, ROOF], [1.50, s * 0.95, ROOF + 0.07], [1.70, s * 0.95, ROOF + 0.04], [1.70, s * 0.95, ROOF - 0.03]], 0.012, 5);
+      /* the open towing hooks at the tail */
+      box(B.dark, TAIL + 0.02, TAIL + 0.14, s * 0.40 - 0.05, s * 0.40 + 0.05, 0.98, 1.10);
+      rope(B.dark, [[TAIL + 0.04, s * 0.40, 0.98], [TAIL - 0.03, s * 0.40, 0.94], [TAIL - 0.04, s * 0.40, 0.86], [TAIL + 0.02, s * 0.40, 0.84]], 0.022, 6);
+      /* the tail lamps' guards */
+      rope(B.dark, [[TAIL + 0.04, s * 1.16, CHZ - 0.03], [TAIL - 0.04, s * 1.16, CHZ - 0.03], [TAIL - 0.04, s * 1.16, CHZ + 0.07], [TAIL + 0.04, s * 1.16, CHZ + 0.07]], 0.009, 5);
+      /* the stowed rod's end brackets and a row of plate bolts along the chine */
+      for (i = 0; i < 12; i++) box(B.dark, -3.00 + i * 0.46, -2.97 + i * 0.46, s > 0 ? CHW - 0.04 : -CHW + 0.01, s > 0 ? CHW - 0.01 : -CHW + 0.04, CHZ + 0.005, CHZ + 0.025);
+      /* the mirror's head on its arm (P1) */
+      box(B.dark, 1.47, 1.52, s * 1.27 - 0.07, s * 1.27 + 0.07, 2.12, 2.30);
+    }
+    /* the commander's whip on the right front corner (P1) */
+    cylZ(B.dark, 0.95, -0.90, ROOF, ROOF + 0.10, 0.04, 8);
+  }
+
   /* -------------------------------------------- wheel: one per side of an axle */
   /* tyre (P1): a big radial off-road tyre with a chunky lug tread; the painted ten-nut rim,
      the hub and its cap */
@@ -442,6 +490,7 @@ var HeroWz551 = (function () {
   function build(THREE, M, C) {
     var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), TB = bins(T), i, wg, WB, tg;
     addHull(HB);
+    addFittings(HB);
     flush(THREE, g, HB);
     for (i = 0; i < XA.length; i++) {
       WB = new Bin(T.wheel, false, true);

@@ -64,6 +64,15 @@
    wheelbase, the exact pylon stations, the extent of the camouflage pattern.
    Not drawn: leading-edge slats and flaps, the pitot boom (it would set the
    renderer's scale), the refuelling receptacle, the arrestor hook.
+   DETAIL PASS (all rows; HeroF4's API, groups and mesh names unchanged):
+   the canopy sill rails and mirrors, a spine UHF blade and two belly
+   blades, the ram-air scoop, the red beacons above and below (one new
+   mesh, "lamp_red"), the tail light, the splitter-plate bleed louvres, the
+   aux air doors and engine-bay scoops; on the gear the oleo collars, torque
+   links, brake lines, hub caps with bolts and the nose leg's lamps; on the
+   skin sheet seams with fastener rows, the spars, access and engine-bay
+   panels, fuel caps, rain and hydraulic-oil streaks. Placed from the
+   photographs, NOT measured.
    WING FOLD (all three rows: the F-4E's published figures give a folded
    width, 27 ft 7 in = 8.41 m, so the USAF kept the Navy's folding wing; a
    photograph of the F-4S on the Midway shows the piano hinge on the upper
@@ -171,6 +180,68 @@ var HeroF4 = (function () {
       gr.addColorStop(0, "rgba(22,20,18,0.35)"); gr.addColorStop(1, "rgba(22,20,18,0.12)");
       g.fillStyle = gr;
       g.fillRect(pxX(-9.4), bandY[j] + (YMAX - i * 0.6) * PXM - 0.5 * PXM, pxX(-6.0) - pxX(-9.4), PXM);
+    }
+    /* the detail pass: the structural seams with a light lip and fastener
+       rows (the fuselage longerons and frames, the wing spars and the fold
+       line), the access panels of the nose bay, the engine bay doors on the
+       belly and the intake sides, the fuel caps, rain streaks down the
+       sides and the hydraulic-oil streaks aft of the main wells (the
+       photographs of the F-4B, C, E, F and G show them on every scheme) */
+    function sideZ(z, band) { return bandY[band] + clamp((ZTOP - z) / ZSPAN * SIDEH, 0, SIDEH); }
+    function pY(y, band) { return bandY[band] + clamp((YMAX - y) * PXM, 2, TOPH - 2); }
+    function seam(x0, y0, x1, y1) {
+      g.strokeStyle = "rgba(0,0,0,0.28)"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.strokeStyle = "rgba(255,255,255,0.09)";
+      g.beginPath(); g.moveTo(x0 + 1, y0 + 1); g.lineTo(x1 + 1, y1 + 1); g.stroke();
+    }
+    function rivets(x0, y0, x1, y1, n) {
+      g.fillStyle = "rgba(0,0,0,0.20)";
+      for (var q = 0; q <= n; q++) g.fillRect(x0 + (x1 - x0) * q / n, y0 + (y1 - y0) * q / n, 1, 1);
+    }
+    var FRS = [8.0, 7.2, 6.2, 5.2, 3.0, 1.6, 0.2, -1.4, -3.0, -4.6, -6.2, -7.6];
+    for (b = 1; b <= 2; b++) {
+      seam(pxX(7.2), sideZ(0.45, b), pxX(-7.9), sideZ(0.45, b));
+      seam(pxX(7.2), sideZ(-0.40, b), pxX(-7.9), sideZ(-0.40, b));
+      rivets(pxX(7.1), sideZ(0.50, b), pxX(-7.8), sideZ(0.50, b), 200);
+      rivets(pxX(7.1), sideZ(-0.35, b), pxX(-7.8), sideZ(-0.35, b), 200);
+      for (i = 0; i < FRS.length; i++) {
+        seam(pxX(FRS[i]), sideZ(0.85, b), pxX(FRS[i]), sideZ(-0.80, b));
+        rivets(pxX(FRS[i]) + 3, sideZ(0.85, b), pxX(FRS[i]) + 3, sideZ(-0.80, b), 22);
+      }
+      g.strokeStyle = "rgba(0,0,0,0.32)";
+      g.strokeRect(pxX(7.0), sideZ(0.25, b), 1.0 * PXM, 0.40 / ZSPAN * SIDEH);        /* nose bay */
+      g.strokeRect(pxX(5.9), sideZ(0.20, b), 0.6 * PXM, 0.35 / ZSPAN * SIDEH);
+      g.strokeRect(pxX(-2.0), sideZ(-0.05, b), 2.2 * PXM, 0.40 / ZSPAN * SIDEH);       /* engine bay */
+      g.strokeRect(pxX(-4.6), sideZ(-0.05, b), 1.6 * PXM, 0.40 / ZSPAN * SIDEH);
+      for (i = 0; i < 30; i++) {
+        var rx0 = R() * TW, ry0 = sideZ(0.8 - R() * 1.4, b);
+        var rg = g.createLinearGradient(0, ry0, 0, ry0 + 16 + R() * 20);
+        rg.addColorStop(0, "rgba(30,28,24,0.12)"); rg.addColorStop(1, "rgba(30,28,24,0)");
+        g.fillStyle = rg; g.fillRect(rx0, ry0, 1 + R() * 2, 36);
+      }
+    }
+    for (b = 0; b <= 3; b += 3) for (var sg = -1; sg <= 1; sg += 2) {
+      seam(pxX(1.3), pY(sg * 0.9, b), pxX(-1.3), pY(sg * 3.9, b));          /* front spar */
+      seam(pxX(-3.5), pY(sg * 0.9, b), pxX(-4.0), pY(sg * 5.7, b));          /* rear spar */
+      rivets(pxX(1.25), pY(sg * 0.95, b), pxX(-1.35), pY(sg * 3.95, b), 70);
+      rivets(pxX(-3.45), pY(sg * 0.95, b), pxX(-3.95), pY(sg * 5.7, b), 90);
+      for (i = 0; i < 5; i++) {
+        g.strokeStyle = "rgba(0,0,0,0.22)";
+        g.strokeRect(pxX(-1.6 - i * 0.2), pY(sg * (1.4 + i * 0.85), b) - 5, 0.5 * PXM, 10);
+      }
+      if (b === 0) { g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(pxX(-2.0), pY(sg * 2.4, b) - 3, 6, 6); }
+    }
+    seam(pxX(0.5), pY(0, 0), pxX(-7.8), pY(0, 0));
+    g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(pxX(-0.6), pY(0, 0) - 3, 6, 6);
+    seam(pxX(7.0), pY(0, 3), pxX(-7.8), pY(0, 3));
+    g.strokeStyle = "rgba(0,0,0,0.30)";
+    for (sg = -1; sg <= 1; sg += 2) g.strokeRect(pxX(-2.4), pY(sg * 0.45 + (sg > 0 ? 0.25 : 0), 3), 2.2 * PXM, 0.5 * PXM);
+    for (i = 0; i < 24; i++) {
+      var ox = pxX(-1.6 - R() * 2.5), oy2 = pY((R() - 0.5) * 3.6, 3);
+      var og = g.createLinearGradient(ox, 0, ox - 90 - R() * 90, 0);
+      og.addColorStop(0, "rgba(26,22,16,0.24)"); og.addColorStop(1, "rgba(26,22,16,0)");
+      g.fillStyle = og; g.fillRect(ox - 180, oy2, 180, 2 + R() * 3);
     }
     for (i = 0; i < 60; i++) {
       g.fillStyle = "rgba(24,22,20," + (0.03 + R() * 0.08).toFixed(3) + ")";
@@ -606,8 +677,37 @@ var HeroF4 = (function () {
       if (F.outboard === "tank") tank(4.1, 0.30, -0.55, s * 3.4, zo - 0.52);
     }
 
+
+    /* ---- the detail pass: fittings every photograph of the type shows -
+       the canopy sill rails and the rear-view mirrors on the bow, the UHF
+       blade on the spine and the IFF / TACAN blades under the belly, the
+       anti-collision beacons above the spine and under the belly, the white
+       tail light on the rudder, the engine-bay cooling scoops and the
+       auxiliary air doors on the belly, the ram-air scoop on the spine, the
+       boundary-layer bleed louvres in the splitter plates */
+    var LAMP = [];
+    for (s = -1; s <= 1; s += 2) {
+      K.dark.push(bar([4.70, s * 0.42, 0.86], [0.70, s * 0.30, 0.82], 0.016, 4));
+      K.metal.push(box(0.03, 0.10, 0.05, 4.52, s * 0.30, 1.16));
+      for (i = 0; i < 4; i++) K.dark.push(box(0.10, 0.05, 0.30, 3.0 - i * 0.30, s * 0.86, -0.18));
+      K.dark.push(box(0.50, 0.10, 0.06, -4.0, s * 0.50, -0.86));            /* aux air doors */
+      K.dark.push(box(0.35, 0.06, 0.10, -5.6, s * 0.62, -0.62));            /* engine-bay scoops */
+    }
+    K.skin.push(sol([[[-0.4, 0.012, 0.86], [-0.70, 0.012, 0.86], [-0.86, 0.012, 1.12], [-0.72, 0.012, 1.12]],
+                     [[-0.4, -0.012, 0.86], [-0.70, -0.012, 0.86], [-0.86, -0.012, 1.12], [-0.72, -0.012, 1.12]]], true, true));   /* UHF */
+    K.skin.push(sol([[[0.6, 0.012, -0.86], [0.38, 0.012, -0.86], [0.28, 0.012, -1.04], [0.40, 0.012, -1.04]],
+                     [[0.6, -0.012, -0.86], [0.38, -0.012, -0.86], [0.28, -0.012, -1.04], [0.40, -0.012, -1.04]]], true, true));  /* IFF */
+    K.skin.push(sol([[[-5.0, 0.012, -0.66], [-5.25, 0.012, -0.66], [-5.36, 0.012, -0.86], [-5.22, 0.012, -0.86]],
+                     [[-5.0, -0.012, -0.66], [-5.25, -0.012, -0.66], [-5.36, -0.012, -0.86], [-5.22, -0.012, -0.86]]], true, true)); /* TACAN */
+    K.skin.push(loft([[-1.2, 0, 0.84, 0.02, 0.02, 1], [-1.35, 0, 0.88, 0.10, 0.07, 1], [-1.8, 0, 0.88, 0.10, 0.07, 1]], 10, true, true));  /* ram-air scoop */
+    K.dark.push(box(0.02, 0.14, 0.09, -1.34, 0, 0.88));
+    LAMP.push(cyl(0.06, 0.06, 0.06, 10, "z", -2.9, 0, 0.90));
+    LAMP.push(cyl(0.06, 0.06, 0.06, 10, "z", -0.6, 0, -0.89));
+    K.glass.push(cyl(0.035, 0.035, 0.08, 8, "x", -8.38, 0, 2.70));
+
     mesh(g, K.dark, T.dark, "dark");
     skinMeshes(g, K.skin, T, "skin", !!F.scheme.belly);
+    mesh(g, LAMP, new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 }), "lamp_red");
     mesh(g, K.metal, T.metal, "metal");
     mesh(g, K.glass, T.glass, "glass");
     mesh(g, K.team, T.team, "team");
@@ -654,6 +754,25 @@ var HeroF4 = (function () {
       G.tyre.push(cyl(mr, mr, tw, 40, "y", mx, s * (my + 0.14), mzc));
       G.metal.push(cyl(0.22, 0.22, 0.30, 24, "y", mx, s * (my + 0.14), mzc));
       G.dark.push(box(1.7, 0.04, 0.55, mx + 0.1, s * (my - 0.55), -0.56));    /* gear doors */
+    }
+    /* the detail pass: the nose leg's chromed oleo, its torque links,
+       steering collar and the taxi / landing lamps on it; the main legs'
+       torque links, gland collars and brake lines; hub caps and bolts */
+    G.metal.push(cyl(0.085, 0.085, 0.08, 12, "z", nxg + 0.06, 0, nzc + 0.70));
+    G.metal.push(bar([nxg + 0.02, 0, nzc + 0.15], [nxg + 0.20, 0, nzc + 0.32], 0.016, 4), bar([nxg + 0.20, 0, nzc + 0.32], [nxg + 0.07, 0, nzc + 0.50], 0.016, 4));
+    G.metal.push(box(0.10, 0.14, 0.10, nxg + 0.14, 0, nzc + 0.86));
+    G.dark.push(cyl(0.045, 0.045, 0.02, 10, "x", nxg + 0.20, 0, nzc + 0.86));
+    for (s = -1; s <= 1; s += 2) {
+      G.dark.push(cyl(0.09, 0.09, 0.17, 10, "y", nxg, s * 0.15, nzc));
+      var lt = [mx + 0.35, s * (my - 0.5), -0.55], lb = [mx, s * my, mzc + 0.12];
+      var lm = [lt[0] + (lb[0] - lt[0]) * 0.55, lt[1] + (lb[1] - lt[1]) * 0.55, lt[2] + (lb[2] - lt[2]) * 0.55];
+      G.metal.push(cyl(0.11, 0.11, 0.07, 12, "z", lm[0], lm[1], lm[2]));
+      G.metal.push(bar([mx + 0.03, s * (my - 0.02), mzc + 0.18], [mx + 0.25, s * (my - 0.06), mzc + 0.38], 0.02, 4),
+                   bar([mx + 0.25, s * (my - 0.06), mzc + 0.38], [lm[0] + 0.06, lm[1], lm[2] - 0.05], 0.02, 4));
+      G.dark.push(bar([lt[0] - 0.05, lt[1] + s * 0.06, lt[2]], [mx - 0.04, s * (my + 0.03), mzc + 0.14], 0.010, 4));
+      G.dark.push(cyl(0.12, 0.12, tw + 0.04, 12, "y", mx, s * (my + 0.14), mzc));
+      for (i = 0; i < 6; i++)
+        G.metal.push(cyl(0.014, 0.014, tw + 0.06, 5, "y", mx + Math.cos(i * PI / 3) * 0.17, s * (my + 0.14), mzc + Math.sin(i * PI / 3) * 0.17));
     }
     mesh(gr, G.metal, T.metal, "gear_metal");
     mesh(gr, G.tyre, T.tyre, "gear_tyres");

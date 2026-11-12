@@ -256,6 +256,12 @@ var HeroType63Mrl = (function () {
         q.fillStyle = (i % 2) ? "rgba(15,14,10,0.06)" : "rgba(235,228,200,0.045)";
         q.fillRect(R() * 256, R() * 256, 3 + R() * 24, 2 + R() * 12);
       }
+      /* plate seams with a light catch beside each, and grime in the seams (detail pass) */
+      q.fillStyle = "rgba(18,18,12,0.16)";
+      q.fillRect(0, 95, 256, 2); q.fillRect(171, 0, 2, 256);
+      q.fillStyle = "rgba(230,225,200,0.06)";
+      q.fillRect(0, 97, 256, 1); q.fillRect(173, 0, 1, 256);
+      for (i = 0; i < 30; i++) { q.fillStyle = "rgba(10,10,8,0.14)"; q.fillRect(R() * 256, R() * 256, 2, 2); }
       t = new THREE.CanvasTexture(cv);
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
@@ -379,6 +385,14 @@ var HeroType63Mrl = (function () {
     bar(B.dark, [XE + 0.12, -0.10, z1 + 0.06], [XE + 0.12, -0.10, z1 + 0.18], 0.02);
     bar(B.dark, [XE + 0.12, 0.10, z1 + 0.06], [XE + 0.12, 0.10, z1 + 0.18], 0.02);
     bar(B.dark, [XE + 0.12, -0.11, z1 + 0.18], [XE + 0.12, 0.11, z1 + 0.18], 0.02);
+    /* the carrying handles on the legs near the trail end and the lunette's safety chain lugs (P2) */
+    for (s = -1; s <= 1; s += 2) {
+      var hx0 = XE + 0.55, hy0 = s * (y1 + (y0 - y1) * (hx0 - XE - 0.20) / (-0.02 - XE - 0.20)), hz0 = z1 + (z0 - z1) * (hx0 - XE - 0.20) / (-0.02 - XE - 0.20);
+      bar(B.dark, [hx0, hy0, hz0 + 0.03], [hx0, hy0 + s * 0.10, hz0 + 0.03], 0.016);
+      bar(B.dark, [hx0 + 0.20, hy0 + s * 0.02, hz0 + 0.04], [hx0 + 0.20, hy0 + s * 0.12, hz0 + 0.04], 0.016);
+      bar(B.dark, [hx0, hy0 + s * 0.10, hz0 + 0.03], [hx0 + 0.20, hy0 + s * 0.12, hz0 + 0.04], 0.016);
+      box(B.dark, XE + 0.10, XE + 0.16, s * 0.13, s * 0.16, z1 - 0.03, z1 + 0.03);
+    }
     /* a cross brace between the legs behind the axle */
     k = -0.75;
     bar(B.paint, [k, -(y0 - (y0 - y1) * 0.75 / 2.0), z0 - 0.01], [k, (y0 - (y0 - y1) * 0.75 / 2.0), z0 - 0.01], 0.04);
@@ -459,6 +473,28 @@ var HeroType63Mrl = (function () {
     cylY(B.dark, 0, -hw - 0.045, -hw - 0.06, 0, 0.03, 8);
     /* the team strip on the top plate */
     box(B.team, BX0 + 0.06, BX1 - 0.06, -0.10, 0.10, zt + 0.012, zt + 0.022);
+    /* fittings P2 shows that the first pass left out: the third row of lightening holes in the
+       side plates (P2: three rows), a second clamp band round the tubes ahead of the box, the
+       latch bolts on the bands, the sight bracket with its knobs on the port cheek, the
+       toothed elevating sector under the trunnion on the starboard side */
+    for (y = -1; y <= 1; y += 2) {
+      for (k = 0; k < 5; k++) cylY(B.dark, BX0 + 0.05 + k * 0.075, y * (hw + 0.010), y * (hw + 0.016), Z0 + 2 * RP + 0.02, 0.020, 8);
+    }
+    k = BX1 + 0.04;
+    box(B.paint, k, k + 0.035, -hw + 0.01, hw - 0.01, zt - 0.02, zt);
+    box(B.paint, k, k + 0.035, -hw + 0.01, hw - 0.01, zb, zb + 0.02);
+    for (y = -1; y <= 1; y += 2) {
+      box(B.paint, k, k + 0.035, y > 0 ? hw - 0.02 : -hw, y > 0 ? hw : -hw + 0.02, zb, zt);
+      [k, (BX1 + TX1) / 2 + 0.06].forEach(function (bx) { box(B.dark, bx + 0.005, bx + 0.035, y > 0 ? hw : -hw - 0.02, y > 0 ? hw + 0.02 : -hw, zt - 0.06, zt - 0.02); });
+    }
+    box(B.paint, -0.10, 0.06, hw + 0.012, hw + 0.06, Z0 + RP - 0.06, Z0 + RP + 0.08);
+    cylY(B.dark, -0.06, hw + 0.06, hw + 0.10, Z0 + RP + 0.03, 0.025, 8);
+    cylY(B.dark, 0.03, hw + 0.06, hw + 0.09, Z0 + RP - 0.02, 0.020, 8);
+    box(B.dark, -0.08, 0.04, hw + 0.04, hw + 0.08, Z0 + RP + 0.08, Z0 + RP + 0.16);
+    for (k = 0; k < 7; k++) {
+      var sa = (-150 + k * 12) * Math.PI / 180;
+      box(B.dark, Math.cos(sa) * 0.15 - 0.012, Math.cos(sa) * 0.15 + 0.012, -hw - 0.05, -hw - 0.035, Math.sin(sa) * 0.15 - 0.012, Math.sin(sa) * 0.15 + 0.012);
+    }
   }
 
   function build(THREE, M, C) {

@@ -135,7 +135,11 @@
        checked against a photograph.
      - the camouflage pattern itself (generic disruptive blobs, not an RAF
        pattern drawing) and the demarcation height (z -0.12).
-   Not drawn: the gun camera port, the ranging radar window, aerials, the
+     - detail pass: the blade aerials, position and tail lights, seat,
+       canopy rails, jet-pipe ribs and flameholder, torque links and
+       collars and the painted seams, fastener rows and streaks are placed
+       from photographs B, D and E, not measured.
+   Not drawn: the gun camera port, the ranging radar window, the
    brake parachute fairing, flap and aileron gaps (only painted lines), the
    outboard pylons and 230 gal tanks of later fits.
 
@@ -313,6 +317,53 @@ var HeroHunter = (function () {
       x = pxX(5.5 - i * 0.75 + R() * 0.3);
       g.strokeRect(x, sideZ(0.55 - R() * 1.0, b), 0.30 * PXM + R() * 8, 0.20 * SIDEH / ZSPAN + R() * 3);
     }
+    /* ---- the detail pass: seams with a light lip, fastener rows along
+       the frames, longerons and wing spars, the fuel and oxygen caps, rain
+       streaks down the flanks, oil streaks on the belly aft of the
+       airbrake (B, D: service and museum Hunters) */
+    function seam(x0, y0, x1, y1) {
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.strokeStyle = "rgba(255,255,255,0.10)";
+      g.beginPath(); g.moveTo(x0 + 1, y0 + 1); g.lineTo(x1 + 1, y1 + 1); g.stroke();
+    }
+    function rivets(x0, y0, x1, y1, n) {
+      g.fillStyle = "rgba(0,0,0,0.20)";
+      for (var q = 0; q <= n; q++) g.fillRect(x0 + (x1 - x0) * q / n, y0 + (y1 - y0) * q / n, 1, 1);
+    }
+    for (b = 1; b <= 2; b++) {
+      seam(pxX(6.6), sideZ(0.32, b), pxX(-6.7), sideZ(0.32, b));
+      seam(pxX(6.0), sideZ(-0.40, b), pxX(-6.2), sideZ(-0.40, b));
+      rivets(pxX(6.5), sideZ(0.37, b), pxX(-6.6), sideZ(0.37, b), 130);
+      rivets(pxX(6.0), sideZ(-0.35, b), pxX(-6.1), sideZ(-0.35, b), 120);
+      for (i = 0; i < FR.length; i++) rivets(pxX(px(FR[i])) + 2, sideZ(0.72, b), pxX(px(FR[i])) + 2, sideZ(-0.70, b), 20);
+      for (i = 0; i < 24; i++) {
+        var rx0 = R() * TW, ry0 = sideZ(0.6 - R() * 1.0, b);
+        var rg = g.createLinearGradient(0, ry0, 0, ry0 + 14 + R() * 16);
+        rg.addColorStop(0, "rgba(30,28,24,0.12)"); rg.addColorStop(1, "rgba(30,28,24,0)");
+        g.fillStyle = rg; g.fillRect(rx0, ry0, 1 + R() * 2, 30);
+      }
+    }
+    for (b = 0; b <= 3; b += 3) for (sg = -1; sg <= 1; sg += 2) {
+      var Yq = function (yy) { return bandY[b] + clamp(pxY(sg * yy), 2, TOPH - 2); };
+      seam(pxX(le0(0.8) - 0.55), Yq(0.8), pxX(le0(5.0) - 0.30), Yq(5.0));
+      rivets(pxX(le0(0.8) - 0.60), Yq(0.8), pxX(le0(5.0) - 0.35), Yq(5.0), 60);
+      rivets(pxX(le0(1.5) - 1.35), Yq(1.5), pxX(le0(5.0) - 0.75), Yq(5.0), 50);
+      for (i = 0; i < 4; i++) {
+        var yy = 1.2 + i * 0.95;
+        g.strokeStyle = "rgba(0,0,0,0.20)";
+        g.strokeRect(pxX((wLE(yy) + wTE(yy)) / 2 + 0.15), Yq(yy) - 4, 0.34 * PXM, 8);
+      }
+      if (b === 0) { g.fillStyle = "rgba(0,0,0,0.32)"; g.fillRect(pxX(0.9), Yq(1.6) - 2, 5, 5); }
+    }
+    seam(pxX(2.7), pxY(0), pxX(-6.5), pxY(0));
+    seam(pxX(6.0), bandY[3] + pxY(0), pxX(-6.5), bandY[3] + pxY(0));
+    for (i = 0; i < 16; i++) {
+      var ox = pxX(px(1055) - R() * 1.0), oy2 = bandY[3] + pxY((R() - 0.5) * 0.9);
+      var og = g.createLinearGradient(ox, 0, ox - 50 - R() * 50, 0);
+      og.addColorStop(0, "rgba(26,22,16,0.24)"); og.addColorStop(1, "rgba(26,22,16,0)");
+      g.fillStyle = og; g.fillRect(ox - 100, oy2, 100, 2 + R() * 2);
+    }
     /* ---- gun gas staining aft of the troughs (D) and soot at the tail */
     for (b = 1; b <= 2; b++) {
       var gg = g.createLinearGradient(pxX(4.6), 0, pxX(3.2), 0);
@@ -383,6 +434,10 @@ var HeroHunter = (function () {
     m.tyre  = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
     m.glass = new V.MeshStandardMaterial({ color: 0x34505a, roughness: 0.10, metalness: 0.30 });
     m.door  = new V.MeshStandardMaterial({ color: 0x9a9fa1, roughness: 0.55, metalness: 0.35 });
+    m.navr  = new V.MeshStandardMaterial({ color: 0xc81e1e, roughness: 0.25, metalness: 0.10,
+                                           emissive: new V.Color(0xc81e1e), emissiveIntensity: 0.35 });
+    m.navg  = new V.MeshStandardMaterial({ color: 0x1fae4a, roughness: 0.25, metalness: 0.10,
+                                           emissive: new V.Color(0x1fae4a), emissiveIntensity: 0.35 });
     var tc = (C && C.team !== undefined) ? C.team : "#c0392b";
     m.team  = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                            emissive: new V.Color(tc), emissiveIntensity: 0.10 });
@@ -579,12 +634,51 @@ var HeroHunter = (function () {
   var P_TANK = [[0.50, 0.05], [0.47, 0.55], [0.40, 0.88], [0.28, 1.0], [0.0, 1.0],
                 [-0.25, 0.86], [-0.42, 0.52], [-0.50, 0.12]];
 
+
+  /* ---- detail kit (the fittings pass): dplate - a flat plate along the
+     edge p0..p1 with chord w along +x and thickness t across the unit
+     normal nrm; dblade - a swept blade aerial standing on (x, y, z), up
+     (dz > 0) or down; dring - an annulus facing +x (or -x); dlamp - a
+     flattened lens */
+  function dplate(p0, p1, w, t, nrm) {
+    var h = w / 2, A = [], B = [], k;
+    var c = [[p0[0] + h, p0[1], p0[2]], [p0[0] - h, p0[1], p0[2]], [p1[0] - h, p1[1], p1[2]], [p1[0] + h, p1[1], p1[2]]];
+    for (k = 0; k < 4; k++) {
+      A.push([c[k][0] - nrm[0] * t / 2, c[k][1] - nrm[1] * t / 2, c[k][2] - nrm[2] * t / 2]);
+      B.push([c[k][0] + nrm[0] * t / 2, c[k][1] + nrm[1] * t / 2, c[k][2] + nrm[2] * t / 2]);
+    }
+    return solid(A, B);
+  }
+  function dblade(x, y, z, h, chord, sweep, dz, th) {
+    var t = th || 0.012, d = dz < 0 ? -1 : 1;
+    return solid([[x, y + t, z], [x - chord, y + t, z], [x - chord - sweep + chord * 0.45, y + t, z + d * h], [x - sweep, y + t, z + d * h]],
+                 [[x, y - t, z], [x - chord, y - t, z], [x - chord - sweep + chord * 0.45, y - t, z + d * h], [x - sweep, y - t, z + d * h]]);
+  }
+  function dring(r0, r1, seg, x, y, z, back) {
+    var g = new V.RingGeometry(r0, r1, seg);
+    g.rotateY(back ? -PI / 2 : PI / 2);
+    g.translate(x, y, z);
+    return g;
+  }
+  function dlamp(r, x, y, z) {
+    var g = new V.OctahedronGeometry(r, 1);
+    g.scale(1.6, 1, 0.8);
+    g.translate(x, y, z);
+    return g;
+  }
+  function dtorus(r, tube, x, y, z, axis) {
+    var g = new V.TorusGeometry(r, tube, 4, 20);
+    if (axis === "x") g.rotateY(PI / 2); else if (axis === "y") g.rotateX(PI / 2);
+    g.translate(x, y, z);
+    return g;
+  }
+
   function buildAirframe(THREE, C) {
     V = THREE;
     var T = makeMats(C);
     var g = new V.Group();
     g.name = "hunter";
-    var K = { skin: [], dark: [], metal: [], glass: [], team: [] };
+    var K = { skin: [], dark: [], metal: [], glass: [], team: [], navr: [], navg: [] };
     var G = { metal: [], tyre: [], door: [] };
     var s, i;
 
@@ -714,11 +808,37 @@ var HeroHunter = (function () {
     K.metal.push(bar([wLE(PY) - 0.10, PY, PZ], [px(641), PY, PZ], 0.024, 8));
     K.metal.push(cyl(0.012, 0.024, 0.10, 8, "x", px(641) + 0.03, PY, PZ));
 
+
+    /* ---- fittings (the detail pass; B, D, E show them): the seat
+       headrest and the mirror under the hood, the canopy rails, the UHF
+       blade on the spine and the IFF blade under the belly, the wing-tip
+       position lights and the white tail light on the bullet fairing, the
+       jet pipe's lip ring, liner ribs and flameholder ring */
+    K.dark.push(box(0.16, 0.40, 0.30, 3.82, 0, 0.86));                         /* seat headrest */
+    K.dark.push(box(0.34, 0.38, 0.12, 4.10, 0, 0.66));
+    K.metal.push(box(0.03, 0.10, 0.04, px(244), 0, pz(172) - 0.02));           /* mirror */
+    for (s = -1; s <= 1; s += 2)
+      K.metal.push(bar([px(240), s * py(37.5), SILL + 0.03], [px(350), s * py(35), SILL + 0.03], 0.012, 4));
+    K.skin.push(dblade(1.10, 0, SPINE, 0.24, 0.26, 0.12, 1));                 /* UHF */
+    K.skin.push(dblade(1.60, 0, pz(334), 0.14, 0.16, 0.06, -1));              /* IFF */
+    K.glass.push(dlamp(0.035, px(1366) + 0.02, 0, TZ));                       /* tail light */
+    for (s = -1; s <= 1; s += 2)
+      (s > 0 ? K.navr : K.navg).push(dlamp(0.045, wLE(WTIP) - 0.30, s * (WTIP - 0.05), wZ(WTIP)));
+    K.metal.push(dring(0.295, 0.335, 24, JX - 0.002, 0, JZ, true));
+    for (i = 0; i < 12; i++) {
+      var pa = 2 * PI * (i + 0.5) / 12, cy = Math.cos(pa), sz = Math.sin(pa);
+      K.metal.push(bar([JX + 0.05, cy * 0.30, JZ + sz * 0.30], [JX + 0.30, cy * 0.29, JZ + sz * 0.29], 0.010, 3));
+    }
+    K.metal.push(dtorus(0.20, 0.016, JX + 0.32, 0, JZ, "x"));
+    K.metal.push(aftDisc(0.12, 14, JX + 0.38, 0, JZ));
+
     mesh(g, K.skin, T.skin, "skin", true);
     mesh(g, K.dark, T.dark, "dark");
     mesh(g, K.metal, T.metal, "metal");
     mesh(g, K.glass, T.glass, "glass");
     mesh(g, K.team, T.team, "team");
+    mesh(g, K.navr, T.navr, "nav_red");
+    mesh(g, K.navg, T.navg, "nav_green");
 
     /* ---- landing gear (A side and front views; B, D, E): single nose
        wheel 0.44 m at x 4.98; mains 0.70 m at x 0.45, y +-2.19, on long
@@ -748,6 +868,19 @@ var HeroHunter = (function () {
                          [mx - 0.22, s * (LY - 0.09), mz + 0.42], [mx + 0.26, s * (LY - 0.09), mz + 0.42]],
                         [[mx + 0.32, s * (LY - 0.11), wb - 0.04], [mx - 0.30, s * (LY - 0.11), wb - 0.04],
                          [mx - 0.22, s * (LY - 0.11), mz + 0.42], [mx + 0.26, s * (LY - 0.11), mz + 0.42]]));
+    }
+    /* gear fittings (the detail pass; B, D, E): torque links, the oleo
+       gland collars, brake lines, hub caps */
+    G.metal.push(bar([nx + 0.05, 0, nz + 0.18], [nx + 0.16, 0, nz + 0.31], 0.013, 4));
+    G.metal.push(bar([nx + 0.16, 0, nz + 0.31], [nx + 0.07, 0, nz + 0.44], 0.013, 4));
+    G.metal.push(cyl(0.07, 0.07, 0.05, 10, "z", nx + 0.065, 0, nz + 0.40));
+    G.tyre.push(cyl(0.07, 0.07, 0.165, 10, "y", nx, 0, nz));
+    for (s = -1; s <= 1; s += 2) {
+      G.metal.push(bar([mx + 0.02, s * (LY + 0.01), mz + 0.14], [mx + 0.16, s * (LY + 0.01), mz + 0.33], 0.015, 4));
+      G.metal.push(bar([mx + 0.16, s * (LY + 0.01), mz + 0.33], [mx + 0.05, s * (LY + 0.01), mz + 0.52], 0.015, 4));
+      G.metal.push(cyl(0.09, 0.09, 0.06, 10, "z", mx + 0.04, s * (LY + 0.005), mz + 0.56));
+      G.tyre.push(bar([mx + 0.10, s * (LY + 0.05), wZ(LY) - 0.10], [mx + 0.03, s * (LY + 0.05), mz + 0.12], 0.009, 4));
+      G.tyre.push(cyl(0.10, 0.10, 0.215, 10, "y", mx, s * my, mz));
     }
     mesh(gr, G.metal, T.metal, "gear_metal");
     mesh(gr, G.tyre, T.tyre, "gear_tyres");
