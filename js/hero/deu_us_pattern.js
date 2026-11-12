@@ -756,8 +756,8 @@ HeroUsMlrs.rows.deu_e90_mlrs = { veh: "m270", paint: "nato3", pods: "rocket", tu
 UNIT_MODELS["deu_e50_lighttank"] = { len: 8.15, build: function (THREE, M, C) { return HeroM41.build(THREE, M, C, "M41"); } };
 UNIT_MODELS["deu_e50_spaag"] = { len: 6.464, build: function (THREE, M, C) { return HeroM41.build(THREE, M, C, "M42"); } };
 UNIT_MODELS["deu_e50_spg"] = { len: 6.231, build: function (THREE, M, C) { return HeroM41.build(THREE, M, C, "M44"); } };
-UNIT_MODELS["deu_e60_spg"] = { len: 6.62, build: function (THREE, M, C) { return HeroDeuUsPattern.m109g(THREE, M, C); } };
-UNIT_MODELS["deu_e80_spg"] = { len: 9.12, build: function (THREE, M, C) { return HeroDeuUsPattern.m109a3g(THREE, M, C); } };
+UNIT_MODELS["deu_e60_spg"] = { len: 6.62, build: function (THREE, M, C) { return HeroPaladin.pack(THREE, HeroDeuUsPattern.m109g(THREE, M, C)); } };
+UNIT_MODELS["deu_e80_spg"] = { len: 9.12, build: function (THREE, M, C) { return HeroPaladin.pack(THREE, HeroDeuUsPattern.m109a3g(THREE, M, C)); } };
 UNIT_MODELS["deu_e90_mlrs"] = { len: 7.00, ord: HeroUsMlrs.rows.deu_e90_mlrs.ord,
                                 build: function (THREE, M, C) { return HeroUsMlrs.build("deu_e90_mlrs", THREE, M, C); } };
 UNIT_MODELS["deu_e50_mbt"] = { len: 8.71, build: function (THREE, M, C) { return HeroM47.build(THREE, M, C); } };

@@ -283,7 +283,9 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       face.position.set(-L * 0.09, W * 1.90, 0); face.rotation.z = 0.42; G.add(face);
       var mount = new THREE.Mesh(new THREE.CylinderGeometry(W * 0.16, W * 0.20, W * 0.7, 10), dark);
       mount.position.set(-L * 0.16, W * 1.35, 0); G.add(mount);
-      return upright(THREE, G);
+      /* one mesh a material: the wheels and hubs were a mesh apiece (the draw-call budget) */
+      var R = upright(THREE, G);
+      return typeof Armour3D !== "undefined" && Armour3D.pack ? Armour3D.pack(THREE, R) : R;
     },
   };
 

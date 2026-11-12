@@ -332,6 +332,8 @@ var HeroGbRetry = (function () {
       if (o.skin) scale(o.skin, CARC, GBB1);           /* textured (colour 1) or not (colour = CARC) alike */
       rehub(o, GBB1);
       if (o.skin) b1Fittings(THREE, g, o);
+      /* the fittings' meshes join the hull's of the same material (the draw-call budget) */
+      if (typeof Armour3D !== "undefined" && Armour3D.pack) Armour3D.pack(THREE, g);
     } else {
       t = o.skin ? gbTex(THREE) : null;
       if (t) { o.skin.map = t; o.skin.color.setHex(0xffffff); }

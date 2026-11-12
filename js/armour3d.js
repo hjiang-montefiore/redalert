@@ -1985,5 +1985,107 @@ var Armour3D = (function () {
     return { made: made, kept: kept };
   }
 
-  return { build: build, registerAll: registerAll, HULLS: HULLS, PAINT: PAINT };
+  /* ---------------- the draw-call budget (16 a vehicle) ----------------
+     pack(THREE, root, fold): meshes that share a material and move together
+     become one mesh. Every named node is a frame of its own - render3d trains
+     the "turret", spins each "roadwheel", raises the "podelev" and shows one
+     of "deploypose" / "travelpose" - and nothing crosses into or out of one,
+     except the names in `fold` (an object of names), which only label a part
+     for the modeller: those are baked into the frame above them and stay in
+     the tree, empty. Hidden, transparent, instanced and multi-material
+     meshes, and meshes carrying userData or children, are left as they are.
+     A mirrored part keeps its winding. The heroes call it as
+     Armour3D.pack when it is there. */
+  function pack(THREE, root, fold) {
+    root.updateMatrixWorld(true);
+    packFrame(THREE, root, fold || {});
+    return root;
+  }
+  function packFrame(THREE, F, fold) {
+    var by = {}, order = [], inv = new THREE.Matrix4().copy(F.matrixWorld).invert(), rel = new THREE.Matrix4();
+    (function walk(o) {
+      for (var i = 0; i < o.children.length; i++) {
+        var c = o.children[i], m = c.material, g = c.geometry, k;
+        if ((c.name && !fold[c.name]) || (c.isMesh && c.children.length)) { packFrame(THREE, c, fold); continue; }
+        if (c.visible === false) continue;
+        if (!c.isMesh) { walk(c); continue; }
+        if (c.isInstancedMesh || !m || Array.isArray(m) || m.transparent || !g || !g.attributes.position ||
+            !g.attributes.normal || g.drawRange.start || g.drawRange.count !== Infinity ||
+            Object.keys(g.morphAttributes).length || Object.keys(c.userData).length ||
+            (m.map && !g.attributes.uv) || (m.vertexColors && !g.attributes.color)) continue;
+        k = m.uuid + "|" + c.renderOrder + "|" + (m.vertexColors ? g.attributes.color.itemSize : 0);
+        if (!by[k]) { by[k] = []; order.push(k); }
+        by[k].push(c);
+      }
+    })(F);
+    order.forEach(function (k) {
+      var L = by[k], m = L[0].material, names = ["position", "normal"], n = 0, j, q;
+      if (L.length < 2) return;
+      if (m.map) names.push("uv");
+      if (m.vertexColors) names.push("color");
+      var geos = L.map(function (c) {
+        var g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone(), a, s, t, v, i;
+        rel.multiplyMatrices(inv, c.matrixWorld);
+        g.applyMatrix4(rel);
+        if (rel.determinant() < 0) for (j = 0; j < names.length; j++) {
+          a = g.attributes[names[j]].array; s = g.attributes[names[j]].itemSize;
+          for (t = 0; t < a.length; t += 3 * s) for (i = 0; i < s; i++) { v = a[t + s + i]; a[t + s + i] = a[t + 2 * s + i]; a[t + 2 * s + i] = v; }
+        }
+        n += g.attributes.position.count;
+        return g;
+      });
+      var out = new THREE.BufferGeometry();
+      for (j = 0; j < names.length; j++) {
+        var s = geos[0].attributes[names[j]].itemSize, arr = new Float32Array(n * s), o = 0;
+        for (q = 0; q < geos.length; q++) { arr.set(geos[q].attributes[names[j]].array, o); o += geos[q].attributes[names[j]].array.length; }
+        out.setAttribute(names[j], new THREE.BufferAttribute(arr, s));
+      }
+      var mesh = new THREE.Mesh(out, m);
+      mesh.renderOrder = L[0].renderOrder;
+      mesh.castShadow = L.some(function (c) { return c.castShadow; });
+      mesh.receiveShadow = L.some(function (c) { return c.receiveShadow; });
+      L.forEach(function (c) { c.parent.remove(c); });
+      F.add(mesh);
+    });
+  }
+  /* tint(THREE, frames, list): the plain (unmapped) materials of `list`, each
+     [material, hex] (hex: the colour to keep where the material has none of
+     its own to give, e.g. a camouflage map's ground), are drawn as ONE
+     vertex-coloured material on the meshes of `frames` (a node or an array;
+     the walk stops at named nodes as pack's does). The first is the base: the
+     new material is its copy, white. Each part keeps its colour exactly: the
+     vertex colour is the linear value render3d's sRGB conversion gives the
+     material, scaled by (1 - metalness) / (1 - base metalness), so what each
+     part reflects diffusely is unchanged; its roughness and metalness become
+     the base's. `fold`, as pack's, names nodes the walk goes through. Run pack afterwards to merge
+     them. Returns the material. */
+  function tint(THREE, frames, list, fold) {
+    var base = list[0][0], vm = base.clone(), cols = {}, i;
+    vm.color.setRGB(1, 1, 1); vm.map = null; vm.vertexColors = true;
+    vm.userData = {};
+    for (i = 0; i < list.length; i++) {
+      var mt = list[i][0], c = new THREE.Color(list[i][1] !== undefined ? list[i][1] : mt.color.getHex()).convertSRGBToLinear();
+      c.multiplyScalar((1 - (mt.metalness || 0)) / (1 - (base.metalness || 0)));
+      cols[mt.uuid] = c;
+    }
+    [].concat(frames).forEach(function (F) {
+      (function walk(o) {
+        for (var j = 0; j < o.children.length; j++) {
+          var x = o.children[j];
+          if (x.name && !(fold && fold[x.name])) continue;
+          if (x.isMesh && !Array.isArray(x.material) && cols[x.material.uuid]) {
+            var g = x.geometry.index ? x.geometry.toNonIndexed() : x.geometry.clone(), c = cols[x.material.uuid];
+            var n = g.attributes.position.count, a = new Float32Array(n * 3);
+            for (var k = 0; k < n; k++) { a[k * 3] = c.r; a[k * 3 + 1] = c.g; a[k * 3 + 2] = c.b; }
+            g.setAttribute("color", new THREE.BufferAttribute(a, 3));
+            x.geometry = g; x.material = vm;
+          }
+          walk(x);
+        }
+      })(F);
+    });
+    return vm;
+  }
+
+  return { build: build, registerAll: registerAll, HULLS: HULLS, PAINT: PAINT, pack: pack, tint: tint };
 })();

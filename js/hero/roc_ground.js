@@ -1164,21 +1164,30 @@ var HeroRocGround = (function () {
     box(G, 0.22, 0.225, 0.18, 0.27, 0.48, 0.56);
     for (s = -1; s <= 1; s += 2) smokeBank(D, [0.20, s * 0.34, 0.16], unit([0.85, s * 0.30, 0.42]), s, 4);
   }
+  /* The draw-call budget (16 a vehicle): in the wheel groups listed, the parts of the materials
+     listed are drawn as one vertex-coloured material that keeps each part's colour
+     (Armour3D.tint), then like meshes merge (Armour3D.pack) - every "roadwheel" still turns alone. */
+  function budget(THREE, g, frames, list) {
+    if (typeof Armour3D === "undefined" || !Armour3D.tint || !Armour3D.pack) return g;
+    Armour3D.tint(THREE, frames, list);
+    return Armour3D.pack(THREE, g);
+  }
   function buildYunpao(THREE, C) {
-    var T = materials(THREE, C, PAINT.cm32), g = new THREE.Group(), B = bins(T), i, wg, tg, TB;
+    var T = materials(THREE, C, PAINT.cm32), g = new THREE.Group(), B = bins(T), i, wg, tg, TB, WG = [];
     yHull(B);
     var hg = new THREE.Group(); hg.name = "hull"; flush(THREE, hg, B); g.add(hg);
     for (i = 0; i < YC.AX.length; i++) {
       var WB = { tyre: new Bin(T.tyre, false), paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
       tyrePair(WB.tyre, WB.paint, WB.dark, YC.R, YC.TY, YC.THW, 0.27, 26, 10);
       wg = group(THREE, "roadwheel", YC.AX[i], 0, YC.R);
-      flush(THREE, wg, WB); g.add(wg);
+      flush(THREE, wg, WB); g.add(wg); WG.push(wg);
     }
     TB = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false), glass: new Bin(T.glass, false) };
     yRws(TB);
     tg = group(THREE, "turret", YC.RWS, 0, YC.RZ);
     flush(THREE, tg, TB); g.add(tg);
-    return g;
+    /* each axle: the tyres with the dark hub caps and wheel nuts */
+    return budget(THREE, g, WG, [[T.tyre], [T.dark]]);
   }
 
   /* ================================================================ M3A1 half-track and M16 MGMC */
@@ -1406,18 +1415,22 @@ var HeroRocGround = (function () {
     /* the sprocket and the idler (both sides each), the four bogie wheel stations */
     var parts = [[HT.SPR.x, HT.SPR.z, 1], [HT.IDL.x, HT.IDL.z, 2]];
     for (i = 0; i < HT.BOG.length; i++) parts.push([HT.BOG[i], HT.RB + 0.035, 3]);
+    var BG = [];
     for (i = 0; i < parts.length; i++) {
       var RB = { paint: new Bin(T.paint, true), tyre: new Bin(T.tyre, false) };
       if (parts[i][2] === 1) htSprocket(RB.paint, HT.SPR.r, true);
       else if (parts[i][2] === 2) htSprocket(RB.paint, HT.IDL.r, false);
       else htBogieWheel(RB.paint, RB.tyre);
       wg = group(THREE, "roadwheel", parts[i][0] + dx, 0, parts[i][1]); flush(THREE, wg, RB); g.add(wg);
+      if (parts[i][2] === 3) BG.push(wg);
     }
     TB = { paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
     if (V.m16) { htQuad(TB); tg = group(THREE, "turret", -1.30 + dx, 0, HT.BZ0 + 0.12); }
     else { htPulpitGun(TB); tg = group(THREE, "turret", PUL.x, PUL.y, PUL.z); }
     flush(THREE, tg, TB); g.add(tg);
-    return g;
+    /* each bogie wheel: its tyres with the two small painted hub discs, in the paint's ground colour
+       (the 0.2 m discs cover less than a tenth of a camouflage tile) */
+    return budget(THREE, g, BG, [[T.tyre], [T.paint, PAINT.od.base]]);
   }
 
   return { build113: build113, buildV150: buildV150, buildYunpao: buildYunpao, buildHalftrack: buildHalftrack };

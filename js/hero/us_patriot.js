@@ -710,8 +710,39 @@ var HeroUsPatriot = (function () {
     return root;
   }
 
+  /* The draw-call budget (16 in either pose).  The SAM site copies the raw build (the trailer's
+     direct meshes, the tractor left behind as "m983"), so the unit rows pack it afterwards: the
+     "m983" group joins the root (render3d never moves it), and the podelev's dark, its steel rams
+     and the tan PAC-3 / MSE canisters, and on the tan-tractor row the tractor's tan and the
+     root's dark, are each one vertex-coloured material keeping every colour (Armour3D.tint). */
+  function pack(THREE, g) {
+    if (typeof Armour3D === "undefined" || !Armour3D.pack || !Armour3D.tint) return g;
+    var F = { m983: 1 }, pe = null;
+    Armour3D.pack(THREE, g, F);
+    g.traverse(function (o) { if (!pe && o.name === "podelev") pe = o; });
+    function plain(node, hex) {
+      var f = null;
+      (function walk(n) {
+        n.children.forEach(function (o) {
+          if (!f && o.isMesh && !o.material.map && o.material.color.getHex() === hex) f = o.material;
+          if (F[o.name]) walk(o);
+        });
+      })(node);
+      return f;
+    }
+    function fold(node, hexes) {
+      var L = [];
+      hexes.forEach(function (h) { var m = plain(node, h); if (m) L.push([m]); });
+      if (L.length > 1) Armour3D.tint(THREE, node, L, F);
+    }
+    if (pe) fold(pe, [0xb9aa82, 0x25292b, 0x80868a]);
+    if (plain(g, 0xa1956f)) fold(g, [0xa1956f, 0x25292b]);
+    return Armour3D.pack(THREE, g, F);
+  }
+
   return {
     build: build,
+    pack: pack,
     /* for js/hero/us_sam_site.js: where this trailer's wheels and kingpin are */
     site: { axles: [X(AXL[0]), X(AXL[1])], r: RT, w: HT * 2, y: YL, kingpin: X(XKP), front: X(10.19) }
   };
@@ -727,7 +758,8 @@ var HeroUsPatriot = (function () {
     nato_e00_sam: { gen: "pac3", paint: "camo", tanCans: true },
     sam_n:        { gen: "mse",  paint: "camo", tanCans: true, tanTractor: true }
   };
+  HeroUsPatriot.rows = VARS;
   Object.keys(VARS).forEach(function (k) {
-    UNIT_MODELS[k] = { len: 17.19, build: function (THREE, M, C) { return HeroUsPatriot.build(THREE, C, VARS[k]); } };
+    UNIT_MODELS[k] = { len: 17.19, build: function (THREE, M, C) { return HeroUsPatriot.pack(THREE, HeroUsPatriot.build(THREE, C, VARS[k])); } };
   });
 })();

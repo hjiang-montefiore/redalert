@@ -1265,7 +1265,10 @@ var HeroRocArtillery = (function () {
   }
   /* M109A1B / A2 / A5: HeroPaladin "e80" (the M109A2: 39-calibre M185, M178 mount, bustle rack)
      with the ROC paint (its paint bins map 0.30 per metre) */
-  function m109(THREE, M, C, kind) { return reskin(THREE, HeroPaladin.build(THREE, M, C, "e80"), kind, 1 / 0.30); }
+  function m109(THREE, M, C, kind) {
+    var g = reskin(THREE, HeroPaladin.build(THREE, M, C, "e80"), kind, 1 / 0.30);
+    return HeroPaladin.pack ? HeroPaladin.pack(THREE, g) : g;
+  }
   /* the Avenger on the M1097: HeroHumvee "av" (its skin is mapped by world position, 4.6 m) */
   function avenger(THREE, M, C) {
     return reskin(THREE, HeroHumvee.make("av")(THREE, M, C), "roc", 4.6, function (m) { return m.userData && m.userData.worldUV; });
@@ -1285,7 +1288,8 @@ var HeroRocArtillery = (function () {
         o.material = cp;
       });
     }
-    return reskin(THREE, g, "rocg", 8.0, function (m) { return m.userData && m.userData.worldUV && (!pe || !isPod(pe, m)); });
+    g = reskin(THREE, g, "rocg", 8.0, function (m) { return m.userData && m.userData.worldUV && (!pe || !isPod(pe, m)); });
+    return HeroUsPatriot.pack ? HeroUsPatriot.pack(THREE, g) : g;
   }
   function isPod(pe, m) { var r = false; pe.traverse(function (o) { if (o.isMesh && o.material === m) r = true; }); return r; }
 
