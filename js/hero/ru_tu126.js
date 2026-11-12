@@ -86,7 +86,8 @@
        running into the gear pods behind the trailing edge (addEngines);
      4 eight-blade contra-rotating propellers, 5.6 m, stopped (addProps);
      5 the probe over the blunt glazed nose (addNose);
-     6 the swept fin with its long dorsal fillet and the red star (addTail);
+     6 the swept fin with its long dorsal fillet (addTail; the red star P1/P2
+       show is not drawn: plain paint, AGENT_POLICY 6, 2026-11-12 review);
      7 the ventral fin under the tail (addTail);
      8 the tall stance: the long legs, four-wheel bogies and twin nose
        wheels (addGear);
@@ -401,17 +402,6 @@ var HeroTu126 = (function () {
   }
 
   /* ---------------------------------------------------------- tail */
-  function star(THREE, g, mat, sC, yS, zC, r) {
-    var pos = [X(sC), yS, zC], idx = [], k;
-    for (k = 0; k < 10; k++) {
-      var rr = (k & 1) ? r * 0.4 : r, a = Math.PI / 2 + k * Math.PI / 5;
-      pos.push(X(sC) - rr * Math.cos(a), yS, zC + rr * Math.sin(a));
-    }
-    for (k = 0; k < 10; k++) idx.push(0, 1 + k, 1 + (k + 1) % 10);
-    var sg = geoFrom(THREE, pos, idx);
-    sg.computeVertexNormals();
-    g.add(new THREE.Mesh(sg, mat));
-  }
   function vSurf(THREE, g, mat, rows, n) {
     var rings = rows.map(function (f) {
       var c = f[2] - f[1], tc = 2 * f[3] / c;
@@ -430,10 +420,8 @@ var HeroTu126 = (function () {
       });
       part(THREE, g, gridGeo(THREE, sr, true, true), T.skin, true);
     }
-    /* the red star on both sides of the fin, about 4.3 m above the axis (P1, P2) */
-    var h = 4.6, f = tab(FIN.map(function (r) { return [r[0], r[1], r[2], r[3]]; }), h);
-    var sc = f[0] + 0.42 * (f[1] - f[0]), hy = naca(0.42, 2 * f[2] / (f[1] - f[0])) * (f[1] - f[0]) + 0.02;
-    for (s = -1; s <= 1; s += 2) star(THREE, g, T.red, sc, s * hy, h, 0.7);
+    /* (2026-11-12 review: the red national star P1/P2 show on the fin is no
+       longer drawn - AGENT_POLICY 6, plain paint) */
   }
 
   /* ---------------------------------------------------------- wings */
@@ -629,7 +617,6 @@ var HeroTu126 = (function () {
       blade: new THREE.MeshStandardMaterial({ color: 0x2a2e31, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide }),
       ink: new THREE.MeshStandardMaterial({ color: 0x0b0d0f, roughness: 0.9, metalness: 0.05, side: THREE.DoubleSide }),
       tyre: new THREE.MeshStandardMaterial({ color: 0x0a0b0c, roughness: 0.95, metalness: 0.03 }),
-      red: new THREE.MeshStandardMaterial({ color: 0xb8161c, roughness: 0.7, metalness: 0.02, side: THREE.DoubleSide }),
       glass: new THREE.MeshStandardMaterial({ color: 0x1d2a31, roughness: 0.15, metalness: 0.4, side: THREE.DoubleSide })
     };
   }
