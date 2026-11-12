@@ -879,17 +879,55 @@ var HeroOreHauler = (function () {
     /* seat the lowest lug exactly on z = 0: render3d.js lifts a model
        that dips below the ground but never lowers one that floats */
     var hub = -tOut.boundingBox.min.z;
+    /* DETAIL PASS 3 (draw calls 18 -> 14, nothing lost): each outer wheel's tyre and painted rim
+       are one mesh.  Its material carries a copy of the skin's sheet with one small white square
+       in its top-left corner, and vertex colours: the rim's vertices white, its UVs (rimUV) on the
+       sheet as before; the tyre's UVs on the white square and its vertex colour the old RUBBER
+       hex (#191918, raw as every flat colour here), so in the game both look as they did.  The
+       inner tyres keep RUBBER. */
+    function wheelGeo(tyre, rimG) {
+      var a = tyre.attributes, b = rimG.attributes, na = a.position.count, nb = b.position.count, i;
+      var P = new Float32Array((na + nb) * 3), N = new Float32Array((na + nb) * 3), U = new Float32Array((na + nb) * 2), Cc = new Float32Array((na + nb) * 3);
+      P.set(a.position.array, 0); P.set(b.position.array, na * 3);
+      N.set(a.normal.array, 0); N.set(b.normal.array, na * 3);
+      U.set(b.uv.array, na * 2);
+      for (i = 0; i < na; i++) { U[i * 2] = 0.006; U[i * 2 + 1] = 0.994; Cc[i * 3] = 0.098; Cc[i * 3 + 1] = 0.098; Cc[i * 3 + 2] = 0.094; }
+      for (i = na; i < na + nb; i++) { Cc[i * 3] = 1; Cc[i * 3 + 1] = 1; Cc[i * 3 + 2] = 1; }
+      var w = new THREE.BufferGeometry();
+      w.setAttribute("position", new THREE.BufferAttribute(P, 3));
+      w.setAttribute("normal", new THREE.BufferAttribute(N, 3));
+      w.setAttribute("uv", new THREE.BufferAttribute(U, 2));
+      w.setAttribute("color", new THREE.BufferAttribute(Cc, 3));
+      return w;
+    }
+    var wt = null;
+    try {
+      var wcv = document.createElement("canvas"), sk = skinCanvas();
+      wcv.width = sk.width; wcv.height = sk.height;
+      var wq = wcv.getContext("2d");
+      wq.drawImage(sk, 0, 0);
+      wq.fillStyle = "#ffffff"; wq.fillRect(0, 0, 8, 8);
+      wt = canvasTex(THREE, wcv);
+    } catch (e) { wt = null; }
+    var rimR = mirrorY(THREE, rim), outR = mirrorY(THREE, tOut);
+    var merged = !!(wt && T.skin.map);
     var G = {
-      outL: tOut, outR: mirrorY(THREE, tOut), inL: tIn, inR: mirrorY(THREE, tIn),
-      rimL: rim, rimR: mirrorY(THREE, rim)
+      outL: merged ? wheelGeo(tOut, rim) : tOut, outR: merged ? wheelGeo(outR, rimR) : outR, inL: tIn, inR: mirrorY(THREE, tIn),
+      rimL: rim, rimR: rimR
     };
+    var wm = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.06, vertexColors: true });
+    if (merged) wm.map = wt;
     function wheel(x, y, outer) {
       var w = new THREE.Group();
       w.name = "roadwheel";
       w.position.set(x, y, hub);
       var L = y > 0;
-      w.add(new THREE.Mesh(outer ? (L ? G.outL : G.outR) : (L ? G.inL : G.inR), T.rub));
-      if (outer) w.add(new THREE.Mesh(L ? G.rimL : G.rimR, T.skin));
+      if (outer && merged) w.add(new THREE.Mesh(L ? G.outL : G.outR, wm));
+      else {
+        /* no canvas: the tyre and the rim as two meshes, as before */
+        w.add(new THREE.Mesh(outer ? (L ? G.outL : G.outR) : (L ? G.inL : G.inR), T.rub));
+        if (outer) w.add(new THREE.Mesh(L ? G.rimL : G.rimR, T.skin));
+      }
       g.add(w);
     }
     for (var s = -1; s <= 1; s += 2) {

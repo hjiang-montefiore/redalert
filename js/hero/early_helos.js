@@ -165,8 +165,10 @@
    CanvasTexture), GLASS, DARK, METAL, RUBBER, BLADE, TEAM, DISC. 11-12 draw
    calls. ASCII only.                                                     */
 
-/* DETAIL PASS (2026-11), HeroWhirlwind (gbr_e50_transport) only; HeroS58, HeroH21 and the shared
-   kit are untouched, so every caller (eu_naval_air.js) gets the same API. Placed off the HAR.3
+/* DETAIL PASS (2026-11), HeroWhirlwind (gbr_e50_transport); HeroS58 had its own later (see the
+   DETAIL PASS block in its build: lamps, hoist, pitot, aerials, blade strips and sheet; its API and
+   VARIANTS unchanged); HeroH21 and the shared kit are untouched, so every caller (eu_naval_air.js)
+   gets the same API. Placed off the HAR.3
    photographs and the H-19A three-view; sizes NOT measured: wipers, kick-in steps and handholds,
    the cabin-door step, the clamshell doors' hinges, the door rail's rollers, position lamps (red /
    green material), the boom beacon, the white tail lamp, hub caps and oleo pistons, the boom's
@@ -1110,6 +1112,56 @@ var HeroS58 = (function () {
     });
   }
 
+  /* detail pass helpers: one vertex-coloured mesh for every lamp
+     (L = [[x, y, z, r, "red" | "green" | "white"], ...]); a tiling 2 m sheet
+     for the blades (faded patches, spanwise grime, seams, chips) and planar
+     UVs in the blade disc for it */
+  var LAMPC = { red: [0.86, 0.06, 0.04], green: [0.06, 0.70, 0.18], white: [0.95, 0.93, 0.84] };
+  function lampMesh(V, L) {
+    var pos = [], nor = [], col = [], i, j;
+    for (i = 0; i < L.length; i++) {
+      var q = new V.SphereGeometry(L[i][3], 8, 5).toNonIndexed(), c = LAMPC[L[i][4]];
+      q.translate(L[i][0], L[i][1], L[i][2]);
+      var P = q.attributes.position.array, N = q.attributes.normal.array;
+      for (j = 0; j < P.length; j++) { pos.push(P[j]); nor.push(N[j]); }
+      for (j = 0; j < P.length / 3; j++) col.push(c[0], c[1], c[2]);
+    }
+    var geo = new V.BufferGeometry();
+    geo.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    geo.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    var m = new V.Mesh(geo, new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.1, emissive: 0x2a2a2a }));
+    m.name = "lamps";
+    return m;
+  }
+  var _bt = {};
+  function bladeSheet(V, key) {
+    if (_bt[key] !== undefined) return _bt[key];
+    var t = null;
+    try {
+      var W = 256, cv = document.createElement("canvas"); cv.width = W; cv.height = W;
+      var g = cv.getContext("2d"), sd = 5858, i;
+      function R() { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; }
+      g.fillStyle = "#2a2c2a"; g.fillRect(0, 0, W, W);
+      for (i = 0; i < 40; i++) { g.fillStyle = (i & 1) ? "rgba(255,255,235,0.05)" : "rgba(0,0,0,0.10)"; g.fillRect(R() * W, R() * W, 20 + R() * 90, 10 + R() * 40); }
+      for (i = 0; i < 90; i++) { g.fillStyle = "rgba(0,0,0," + (0.06 + R() * 0.08).toFixed(3) + ")"; g.fillRect(R() * W, R() * W, 20 + R() * 80, 1 + R() * 2); }
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      for (i = 0; i < 4; i++) { g.beginPath(); g.moveTo(0, i * W / 4 + 0.5); g.lineTo(W, i * W / 4 + 0.5); g.stroke(); }
+      for (i = 0; i < 70; i++) { g.fillStyle = "rgba(150,150,140,0.25)"; g.fillRect(R() * W, R() * W, 1.5, 1.5); }
+      t = new V.CanvasTexture(cv);
+      t.wrapS = t.wrapT = V.RepeatWrapping;
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+    } catch (e) { t = null; }
+    _bt[key] = t;
+    return t;
+  }
+  function planarUV(V, geo, k) {
+    var p = geo.attributes.position.array, n = p.length / 3, a = new Float32Array(n * 2), i;
+    for (i = 0; i < n; i++) { a[i * 2] = p[i * 3] * k; a[i * 2 + 1] = p[i * 3 + 1] * k; }
+    geo.setAttribute("uv", new V.BufferAttribute(a, 2));
+    return geo;
+  }
+
   function build(THREE, M, C, VA) {
     VA = VA || VARIANTS.h34g;
     var V = THREE, K = EarlyHeloKit.make(V, GROUND), Z = K.Z;
@@ -1220,6 +1272,58 @@ var HeroS58 = (function () {
     for (s = -1; s <= 1; s += 2) und.push(bar([tw[0], s * 0.09, tw[2]], [-7.45, s * 0.09, Z(0.70)], 0.03, 6, true));
     und.push(bar([-7.45, 0, Z(0.70)], [-7.25, 0, Z(1.00)], 0.06, 8, true));
     und.push(bar([-7.45, 0, Z(0.70)], [-7.85, 0, Z(1.03)], 0.035, 6, true));
+    /* ================================================= DETAIL PASS ======
+       (2026-11, POLICY 10) The fittings the first pass left out, placed off
+       h34g_8109 (H-34G 81+09 head-on), the Wessex photographs and the H-34A
+       three-view; sizes read through the photographs, NOT measured: the
+       windscreen wipers, the kick-in steps and handholds up the port nose,
+       the cockpit door handles, the sliding door's rail, rollers and handle,
+       the rescue hoist's arm over the starboard door, the pitot probe on the
+       starboard nose, the long-wire aerial, the whip, the radio-compass loop,
+       the oleos' bright pistons and the wheels' hub caps, the boom's
+       drive-shaft hanger covers, the tail-wheel's shimmy damper; position
+       lamps (port red, starboard green), the red beacon on the boom and the
+       white tail lamp as one palette-mapped lamp mesh; on the head the
+       blades' leading-edge abrasion strips, tip caps and root bolts, the
+       droop-stop ring; the blades take a weathered sheet. */
+    var lampL = [];
+    for (s = -1; s <= 1; s += 2) {
+      dark.push(bar([2.00, s * 0.42, Z(TOP(2.00, 0.42) + 0.03)], [1.62, s * 0.36, Z(TOP(1.62, 0.36) + 0.03)], 0.010, 4, true));
+      metal.push(box(0.12, 0.03, 0.03, 1.00, s * (SY(1.00, 2.85) + 0.03), Z(2.85)));
+      metal.push(cyl(0.035, 0.035, 0.06, 8, "y", DOOR.x0 - 0.10, s * (SY(DOOR.x0 - 0.10, 2.45) + 0.03), Z(2.45)));
+      if (s > 0) {
+        [0.85, 1.35, 1.85].forEach(function (h) { dark.push(box(0.15, 0.02, 0.05, 1.45, SY(1.45, h) + 0.008, Z(h))); });
+        metal.push(bar([1.15, SY(1.15, 2.30) + 0.05, Z(2.25)], [1.15, SY(1.15, 2.50) + 0.05, Z(2.50)], 0.013, 4, true));
+      } else {
+        metal.push(box(Math.abs(DOOR.x1 - DOOR.x0) + 0.5, 0.05, 0.05, (DOOR.x0 + DOOR.x1) / 2 - 0.15, -(SY((DOOR.x0 + DOOR.x1) / 2, DOOR.h1 + 0.06) + 0.03), Z(DOOR.h1 + 0.06)));
+        metal.push(box(0.14, 0.04, 0.035, DOOR.x0 - 0.12, -(SY(DOOR.x0 - 0.12, 1.55) + 0.03), Z(1.55)));
+        [DOOR.x0 - 0.25, DOOR.x1 + 0.25].forEach(function (xr) { metal.push(cyl(0.035, 0.035, 0.05, 8, "y", xr, -(SY(xr, DOOR.h1) + 0.06), Z(DOOR.h1 + 0.06))); });
+      }
+      und.push(bar([MAIN_W.x + (0.75 - MAIN_W.x) * 0.10, s * (MAIN_W.y - 0.15 + (SY(0.75, 2.29) + 0.04 - MAIN_W.y + 0.15) * 0.10), Z(MAIN_W.h + (2.29 - MAIN_W.h) * 0.10)],
+                   [MAIN_W.x + (0.75 - MAIN_W.x) * 0.40, s * (MAIN_W.y - 0.15 + (SY(0.75, 2.29) + 0.04 - MAIN_W.y + 0.15) * 0.40), Z(MAIN_W.h + (2.29 - MAIN_W.h) * 0.40)], 0.058, 8, true));
+      und.push(cyl(0.10, 0.10, 0.03, 12, "y", MAIN_W.x, s * (MAIN_W.y + 0.12), Z(MAIN_W.h)));
+      und.push(cyl(0.03, 0.03, 0.03, 6, "y", MAIN_W.x, s * (MAIN_W.y + 0.14), Z(MAIN_W.h)));
+      [-4.6, -5.6, -6.6, -7.4].forEach(function (xh) { var sc = K.secAt(FUS, xh); dark.push(box(0.10, 0.025, 0.05, xh, s * (sc.w + 0.004), Z(sc.zt - 0.12))); });
+      lampL.push([-2.60, s * (SY(-2.60, 1.00) + 0.02), Z(1.00), 0.04, s > 0 ? "red" : "green"]);
+    }
+    /* the hoist over the starboard cabin door */
+    var hy = -(SY(-1.30, 3.05) + 0.02);
+    metal.push(bar([-1.30, hy, Z(3.05)], [-1.30, hy - 0.50, Z(3.10)], 0.05, 8, true));
+    dark.push(cyl(0.10, 0.10, 0.28, 10, "z", -1.30, hy - 0.55, Z(3.00)));
+    /* the pitot probe on the starboard side of the nose (h34g_8109) */
+    var pyy = -(SY(2.55, 1.95) + 0.02);
+    metal.push(bar([2.55, pyy, Z(1.95)], [3.05, pyy - 0.20, Z(2.15)], 0.014, 5, true));
+    /* aerials: the long wire from the doghouse to the pylon, the whip under
+       the boom, the radio-compass loop on the cabin roof */
+    dark.push(bar([-4.5, 0, Z(2.95)], [-9.50, 0, Z(3.15)], 0.005, 3, true));
+    dark.push(bar([-5.40, 0, Z(0.90)], [-5.75, 0, Z(0.40)], 0.008, 4, true));
+    dark.push(cyl(0.12, 0.12, 0.05, 12, "z", -1.80, 0, Z(TOP(-1.8, 0) + 0.03)));
+    /* the tail wheel's shimmy damper */
+    und.push(bar([-7.52, 0.06, Z(0.80)], [-7.70, 0.06, Z(0.50)], 0.025, 6, true));
+    /* the beacon on the boom behind the doghouse, the white tail lamp */
+    dark.push(cyl(0.05, 0.055, 0.04, 10, "z", -3.60, 0, Z(TOP(-3.6, 0) + 0.02)));
+    lampL.push([-3.60, 0, Z(TOP(-3.6, 0) + 0.06), 0.05, "red"], [-10.20, 0, Z(2.70), 0.035, "white"]);
+
     K.mesh(undG, und, T.metal, "undercarriage_struts");
     K.mesh(undG, tyres, T.rubber, "tyres");
 
@@ -1228,10 +1332,25 @@ var HeroS58 = (function () {
     mesh(root, dark, T.dark, "fittings_dark");
     mesh(root, metal, T.metal, "fittings");
     mesh(root, team, T.team, "team");
+    root.add(lampMesh(V, lampL));
 
-    K.mainRotor(root, { x: 0, z: Z(HUB_H), R: ROTOR_R, chord: CHORD, nb: 4, phase: 45, root: 0.95,
+    var bt = bladeSheet(V, VA.key);
+    if (bt) { T.blade.map = bt; T.blade.color.set(0xffffff); }
+    var rt = K.mainRotor(root, { x: 0, z: Z(HUB_H), R: ROTOR_R, chord: CHORD, nb: 4, phase: 45, root: 0.95,
                         hubR: 0.28, cap: 0.20, disc: true, mats: T });
-    K.tailRotor(root, { x: TR.x, y: TR.y, z: Z(TR.h), R: TR.R, chord: TR.chord, nb: 4, phase: 0, mats: T });
+    var hx = [];
+    for (i = 0; i < 4; i++) {
+      var ba = (45 + 90 * i) * D2R;
+      [box(ROTOR_R - 1.25, 0.05, 0.05, (ROTOR_R + 1.05) / 2 - 0.10, CHORD * 0.47, 0),
+       box(0.14, CHORD * 0.92, 0.05, ROTOR_R - 0.20, 0, 0),
+       cyl(0.025, 0.025, 0.16, 8, "z", 1.02, 0.06, 0), cyl(0.025, 0.025, 0.16, 8, "z", 1.12, -0.06, 0),
+       box(0.10, 0.08, 0.06, 0.38, 0, -0.15)].forEach(function (q) { q.rotateZ(ba); hx.push(q); });
+    }
+    hx.push(cyl(0.36, 0.36, 0.035, 16, "z", 0, 0, -0.15, true));
+    mesh(rt.children[0], hx, T.metal, "hub_detail");
+    rt.traverse(function (o) { if (o.isMesh && o.name === "blades") planarUV(V, o.geometry, 0.5); });
+    var trn = K.tailRotor(root, { x: TR.x, y: TR.y, z: Z(TR.h), R: TR.R, chord: TR.chord, nb: 4, phase: 0, mats: T });
+    trn.traverse(function (o) { if (o.isMesh && o.name === "tailrotor_blades") planarUV(V, o.geometry, 0.5); });
     return g;
   }
   return {

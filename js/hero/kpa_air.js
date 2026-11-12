@@ -297,6 +297,55 @@ var HeroKpaAir = (function () {
     return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   }
   function canvas(W, H) { var cv = document.createElement("canvas"); cv.width = W; cv.height = H; return cv; }
+  /* rotor blade sheet (detail pass): u along the span, root (0) to tip (1);
+     the canvas top (v 1) the leading edge. The bare root fitting, the
+     leading-edge abrasion strip, the darker trailing edge and its trim tab,
+     the tip cap, spanwise grime and chips. Drawn in the blade's own colour
+     (the material stays white). */
+  function bladeSheet(base, seed) {
+    try {
+      var W = 512, H = 32, cv = canvas(W, H), g = cv.getContext("2d"), R = rngFor(seed), i;
+      g.fillStyle = base; g.fillRect(0, 0, W, H);
+      for (i = 0; i < 70; i++) { g.globalAlpha = 0.05 + R() * 0.08; g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff"; g.fillRect(R() * W, R() * H, 20 + R() * 120, 1 + R() * 2); }
+      g.globalAlpha = 1;
+      g.fillStyle = "rgba(150,154,156,0.55)"; g.fillRect(W * 0.05, 0, W * 0.91, H * 0.16);
+      g.fillStyle = "rgba(0,0,0,0.22)"; g.fillRect(0, H * 0.84, W, H * 0.16);
+      g.fillStyle = "rgba(0,0,0,0.30)"; g.fillRect(W * 0.70, H * 0.80, W * 0.08, H * 0.20);
+      g.fillStyle = "rgba(96,100,102,0.90)"; g.fillRect(0, 0, W * 0.05, H);
+      g.fillStyle = "rgba(176,178,176,0.65)"; g.fillRect(W * 0.965, 0, W * 0.035, H);
+      g.strokeStyle = "rgba(0,0,0,0.35)"; g.lineWidth = 1;
+      [0.25, 0.5, 0.75].forEach(function (f) { g.beginPath(); g.moveTo(W * f + 0.5, H * 0.16); g.lineTo(W * f + 0.5, H); g.stroke(); });
+      for (i = 0; i < 40; i++) { g.globalAlpha = 0.3; g.fillStyle = "#9a9c98"; g.fillRect(W * (0.3 + R() * 0.68), R() * H * 0.3, 1.5, 1.5); }
+      g.globalAlpha = 1;
+      return texOf(cv);
+    } catch (e) { return null; }
+  }
+  /* lamps (detail pass): the position lights, beacons and landing lamp share
+     one material whose map and emissive map are a four-colour palette strip;
+     each lamp's UVs sit on its colour, so all the lamps cost one draw call
+     (the lampCanvas idea of js/hero/airbase_runway.js) */
+  var LAMP_U = { red: 0.125, green: 0.375, white: 0.625, amber: 0.875 }, _lampTex;
+  function lampMat() {
+    var m = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1, emissive: 0xffffff, emissiveIntensity: 0.55 });
+    try {
+      if (!_lampTex) {
+        var cv = canvas(64, 4), g = cv.getContext("2d");
+        ["#e0281e", "#1fc24a", "#f4f1e2", "#f0a020"].forEach(function (c, i) { g.fillStyle = c; g.fillRect(i * 16, 0, 16, 4); });
+        _lampTex = new V.CanvasTexture(cv);
+        if (V.sRGBEncoding !== undefined) _lampTex.encoding = V.sRGBEncoding;
+      }
+      m.map = _lampTex; m.emissiveMap = _lampTex;
+    } catch (e) { m.color.set(0xd8d0c0); m.emissive.set(0x000000); }
+    return m;
+  }
+  function lampGeo(p, r, col, sc) {
+    var g = new V.SphereGeometry(r, 8, 5), u, i;
+    if (sc) g.scale(sc[0], sc[1], sc[2]);
+    g.translate(p[0], p[1], p[2]);
+    u = g.attributes.uv;
+    for (i = 0; i < u.count; i++) u.setXY(i, LAMP_U[col], 0.5);
+    return g;
+  }
   function texOf(cv) {
     var t = new V.CanvasTexture(cv);
     t.wrapS = t.wrapT = V.RepeatWrapping;
@@ -715,8 +764,56 @@ var HeroKpaAir = (function () {
         g.strokeRect(U(0.58), Math.min(Y(e0), Y(e1)), U(0.98), Math.abs(Y(e0) - Y(e1)));
         g.strokeRect(U(1.56), Math.min(Y(e0), Y(e1)), U(0.86), Math.abs(Y(e0) - Y(e1)));
       });
+      /* detail pass: the pod's skin joints - the frame stations aft of the
+         windscreen, behind the doors and at the engine bay, the belt seam
+         below the doors and the keel seam - with rivet rows beside them; the
+         fuel filler and the access panels; grime under the belly and oil
+         streaks running aft below the engine bay; chipped door edges */
+      g.strokeStyle = "rgba(16,18,12,0.42)"; g.lineWidth = 1.4;
+      [0.60, 2.44, 2.86, 3.32].forEach(function (s) { g.beginPath(); g.moveTo(U(s), Y(0.03)); g.lineTo(U(s), Y(0.97)); g.stroke(); });
+      [true, false].forEach(function (pt) {
+        [0.86, 2.02].forEach(function (h) {
+          var y0 = Y(vAt(h, sec(1.5).zc, sec(1.5).hh, 2.2, pt));
+          g.beginPath(); g.moveTo(U(0.58), y0); g.lineTo(U(3.70), y0); g.stroke();
+          g.fillStyle = "rgba(12,14,10,0.30)";
+          for (var r = U(0.62); r < U(3.66); r += 5) g.fillRect(r, y0 + 3, 1.6, 1.6);
+        });
+      });
+      g.fillStyle = "rgba(12,14,10,0.30)";
+      [0.60, 2.44, 2.86, 3.32].forEach(function (s) { for (var r = Y(0.97); r < Y(0.03); r += 5) g.fillRect(U(s) + 3, r, 1.6, 1.6); });
+      /* access panels on the engine bay sides and the fuel filler (starboard) */
+      g.strokeStyle = "rgba(16,18,12,0.45)"; g.lineWidth = 1.2;
+      [[2.92, 3.26, 0.30, 0.40], [2.92, 3.26, 0.60, 0.70]].forEach(function (a) { g.strokeRect(U(a[0]), Y(a[3]), U(a[1]) - U(a[0]), Y(a[2]) - Y(a[3])); });
+      g.fillStyle = "rgba(10,10,8,0.55)"; g.beginPath(); g.arc(U(2.62), Y(0.70), 5, 0, 2 * PI); g.fill();
+      /* belly grime and the oil streaks running aft */
+      for (var i = 0; i < 26; i++) {
+        g.globalAlpha = 0.06 + R() * 0.08; g.fillStyle = "#0e0f0a";
+        var yb = R() < 0.5 ? Y(0.02 + R() * 0.12) : Y(0.86 + R() * 0.12);
+        g.fillRect(U(0.6 + R() * 2.6), yb, 40 + R() * 120, 2 + R() * 5);
+      }
+      for (i = 0; i < 18; i++) { g.globalAlpha = 0.10 + R() * 0.10; g.fillStyle = "#14130e"; g.fillRect(U(2.9 + R() * 0.5), Y(0.15 + R() * 0.7), 30 + R() * 50, 1.5 + R() * 2.5); }
+      /* chipped paint along the door edges */
+      for (i = 0; i < 60; i++) { g.globalAlpha = 0.20 + R() * 0.20; g.fillStyle = "#8a8c7c"; g.fillRect(U([0.60, 1.56, 2.42][i % 3]) + (R() - 0.5) * 8, Y(0.12 + R() * 0.76), 1.5 + R() * 2, 1.5 + R() * 2); }
+      g.globalAlpha = 1;
       _hSheets.pod = texOf(cv);
     } catch (e) { _hSheets.pod = null; }
+    /* the boom, fairing and tail skin: a tiling 1.5 m sheet (UVs in metres,
+       the texture repeat 1/1.5) - joints every 0.75 m along the boom with
+       rivet rows, mottled sun-fade, exhaust soot along the top */
+    try {
+      var W2 = 256, cv2 = canvas(W2, W2), g2 = cv2.getContext("2d"), R2 = rngFor(5370), j;
+      g2.fillStyle = H_PAL.skin; g2.fillRect(0, 0, W2, W2);
+      mottle(g2, R2, H_PAL.dk, 14, 0, W2, 0, W2);
+      g2.strokeStyle = "rgba(16,18,12,0.40)"; g2.lineWidth = 1.3;
+      for (j = 0; j < 2; j++) { g2.beginPath(); g2.moveTo(j * W2 / 2 + 0.5, 0); g2.lineTo(j * W2 / 2 + 0.5, W2); g2.stroke(); }
+      g2.beginPath(); g2.moveTo(0, W2 * 0.25); g2.lineTo(W2, W2 * 0.25); g2.stroke();
+      g2.fillStyle = "rgba(12,14,10,0.30)";
+      for (j = 0; j < 2; j++) for (var r2 = 2; r2 < W2; r2 += 6) { g2.fillRect(j * W2 / 2 + 4, r2, 1.5, 1.5); g2.fillRect(r2, W2 * 0.25 + 4, 1.5, 1.5); }
+      for (j = 0; j < 40; j++) { g2.globalAlpha = 0.05 + R2() * 0.07; g2.fillStyle = R2() < 0.7 ? "#0e0f0a" : "#c8c8b0"; g2.fillRect(R2() * W2, R2() * W2, 30 + R2() * 90, 1.5 + R2() * 4); }
+      g2.globalAlpha = 1;
+      _hSheets.skin = texOf(cv2); _hSheets.skin.repeat.set(1 / 1.5, 1 / 1.5);
+    } catch (e) { _hSheets.skin = null; }
+    _hSheets.blade = bladeSheet("#2e3130", 5371);
     return _hSheets;
   }
   function hMats(C) {
@@ -724,10 +821,14 @@ var HeroKpaAir = (function () {
     m.pod = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.70, metalness: 0.10, side: V.DoubleSide });
     if (S.pod) m.pod.map = S.pod; else m.pod.color.set(H_PAL.skin);
     m.skin = new V.MeshStandardMaterial({ color: H_PAL.skin, roughness: 0.72, metalness: 0.10, side: V.DoubleSide });
+    if (S.skin) { m.skin.map = S.skin; m.skin.color.set(0xffffff); }
     m.metal = new V.MeshStandardMaterial({ color: 0x5a6064, roughness: 0.46, metalness: 0.62 });
     m.dark = new V.MeshStandardMaterial({ color: 0x1c1f21, roughness: 0.66, metalness: 0.32 });
     m.glass = new V.MeshPhysicalMaterial({ color: 0x1e2c33, roughness: 0.06, metalness: 0.20, clearcoat: 1.0, clearcoatRoughness: 0.05, side: V.DoubleSide });
     m.blade = new V.MeshStandardMaterial({ color: 0x2a2d2c, roughness: 0.75, metalness: 0.10, side: V.DoubleSide });
+    if (S.blade) { m.blade.map = S.blade; m.blade.color.set(0xffffff); }
+    m.lamp = lampMat();
+    m.blade.name = "md_blade"; m.lamp.name = "md_lamp";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10 });
     m.disc = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.40, metalness: 0.08,
@@ -751,7 +852,7 @@ var HeroKpaAir = (function () {
   function hTube(rows, N) {
     var rings = rows.map(function (r) {
       var p = [], j;
-      for (j = 0; j <= N; j++) { var a = 2 * PI * j / N; p.push([HX(r[0]), r[2] * Math.cos(a), HZ(r[1]) + r[2] * Math.sin(a), 0.5, 0.5]); }
+      for (j = 0; j <= N; j++) { var a = 2 * PI * j / N; p.push([HX(r[0]), r[2] * Math.cos(a), HZ(r[1]) + r[2] * Math.sin(a), r[0], a * 0.3]); }
       return p;
     });
     return loftUV(rings, true, true);
@@ -761,7 +862,7 @@ var HeroKpaAir = (function () {
     var FR = [[1.78, 2.12, 0.20], [1.88, 2.42, 0.32], [2.10, 2.50, 0.36], [2.70, 2.48, 0.36], [3.10, 2.45, 0.33], [3.42, 2.40, 0.25], [3.52, 2.20, 0.18]];
     var rings = FR.map(function (r) {
       var p = [], j, N = 16, zb = 1.90, zc = (r[1] + zb) / 2, hh = (r[1] - zb) / 2;
-      for (j = 0; j <= N; j++) { var a = -PI / 2 + 2 * PI * j / N, q = secPt(r[2], zc, hh, 3.0, a); p.push([HX(r[0]), q[0], HZ(q[1]), 0.5, 0.5]); }
+      for (j = 0; j <= N; j++) { var a = -PI / 2 + 2 * PI * j / N, q = secPt(r[2], zc, hh, 3.0, a); p.push([HX(r[0]), q[0], HZ(q[1]), r[0], j / N * 1.9]); }
       return p;
     });
     return loftUV(rings, true, true);
@@ -827,10 +928,73 @@ var HeroKpaAir = (function () {
     /* the mast from the fairing top to the head */
     K.metal.push(cylZ(0.07, 0.09, 0.30, HX(H_HUB_S), 0, HZ(2.58), 10));
 
+    /* ---- detail pass (POLICY 10): the fittings the photographs show ----
+       hOn(s, h, side, lift): a point on the pod skin at height h, port
+       (side +1) or starboard (-1), lifted off it */
+    function hOn(s, h, sd2, lift) {
+      var q = hSec(s), a = angAt(Math.min(h, q.zc + q.hh * 0.98), q), pt = secPt(q.hw + lift, q.zc, q.hh + lift, q.e, sd2 > 0 ? a : PI - a);
+      return [HX(s), pt[0], HZ(pt[1])];
+    }
+    function hChain(list, pts, r) { for (var i = 0; i + 1 < pts.length; i++) list.push(rod(pts[i], pts[i + 1], r, 5)); }
+    function hLine(list, s0, h0, s1, h1, sd2, r, n) {
+      var pts = [], i; n = n || 3;
+      for (i = 0; i <= n; i++) pts.push(hOn(lerp(s0, s1, i / n), lerp(h0, h1, i / n), sd2, 0.03));
+      hChain(list, pts, r);
+    }
+    K.lamp = [];
+    for (sd = -1; sd <= 1; sd += 2) {
+      /* the windscreen's frame bar at h 1.58 round the nose and the door
+         window frames (E side) */
+      var fb = [], fs;
+      for (fs = 0.56; fs >= 0.09; fs -= 0.0675) fb.push(hOn(fs, 1.58, sd, 0.032));
+      hChain(K.dark, fb, 0.016);
+      [[0.70, 1.40, 1.05, 1.95], [1.62, 2.28, 1.43, 1.94]].forEach(function (w) {
+        hLine(K.dark, w[0], w[2], w[1], w[2], sd, 0.013); hLine(K.dark, w[0], w[3], w[1], w[3], sd, 0.013);
+        hLine(K.dark, w[0], w[2], w[0], w[3], sd, 0.013, 2); hLine(K.dark, w[1], w[2], w[1], w[3], sd, 0.013, 2);
+      });
+      /* door hinges on the front edge of each door, the handles at the aft edge */
+      [0.62, 1.60].forEach(function (s0) {
+        [1.00, 1.80].forEach(function (h) { var a = hOn(s0, h - 0.06, sd, 0.03), b = hOn(s0, h + 0.06, sd, 0.03); K.metal.push(rod(a, b, 0.02, 6)); });
+      });
+      [1.48, 2.36].forEach(function (s0) { var a = hOn(s0 - 0.07, 1.30, sd, 0.04), b = hOn(s0 + 0.03, 1.30, sd, 0.04); K.metal.push(rod(a, b, 0.014, 5)); });
+      /* the roof window frames */
+      var rf = [], ri;
+      for (ri = 0; ri <= 4; ri++) { var rs = lerp(0.60, 1.66, ri / 4), rq = hSec(rs), rp = secPt(rq.hw + 0.03, rq.zc, rq.hh + 0.03, rq.e, PI / 2 - sd * 0.55); rf.push([HX(rs), rp[0], HZ(rp[1])]); }
+      hChain(K.dark, rf, 0.014);
+      /* the engine air inlet grilles on the fairing sides, five bars each */
+      for (ri = 0; ri < 5; ri++) K.dark.push(box(0.035, 0.02, 0.20, HX(2.20 + ri * 0.075), sd * 0.355, HZ(2.25)));
+      K.dark.push(box(0.40, 0.012, 0.24, HX(2.35), sd * 0.345, HZ(2.25)));
+      /* a step on each forward skid leg */
+      K.metal.push(box(0.16, 0.20, 0.02, HX(1.05), sd * 0.70, HZ(0.36)));
+      /* the position lights on the stabiliser endplates' outer faces: red
+         port, green starboard; the skid's tow-wheel lug at the aft end */
+      K.lamp.push(lampGeo([HX(7.10), sd * 0.90, HZ(2.60)], 0.035, sd > 0 ? "red" : "green"));
+      K.metal.push(box(0.10, 0.04, 0.08, HX(2.30), sd * 0.935, HZ(0.11)));
+    }
+    /* the pitot on the cabin roof's leading edge, the cargo hook and the
+       antennas (two whips under the belly, one under the boom - [ROK2014]) */
+    K.metal.push(rod([HX(0.62), 0, HZ(2.17)], [HX(0.42), 0, HZ(2.19)], 0.010, 5));
+    K.metal.push(rod([HX(0.70), 0, HZ(2.12)], [HX(0.60), 0, HZ(2.20)], 0.014, 5));
+    K.dark.push(box(0.14, 0.10, 0.08, HX(1.55), 0, HZ(0.47)));
+    K.dark.push(rod([HX(1.90), 0.10, HZ(0.49)], [HX(2.20), 0.10, HZ(0.10)], 0.006, 4));
+    K.dark.push(rod([HX(2.40), -0.12, HZ(0.53)], [HX(2.75), -0.12, HZ(0.20)], 0.006, 4));
+    K.dark.push(rod([HX(4.40), 0, HZ(1.58)], [HX(4.95), 0, HZ(1.38)], 0.006, 4));
+    K.dark.push(box(0.10, 0.015, 0.12, HX(5.00), 0, HZ(1.56)));
+    /* lamps: the landing lamp in the chin, the red beacon under the belly,
+       the white tail light at the boom's end */
+    K.lamp.push(lampGeo([HX(0.50), 0, HZ(0.80)], 0.07, "white", [1, 1, 0.5]));
+    K.lamp.push(lampGeo([HX(2.05), 0, HZ(0.49)], 0.055, "red", [1, 1, 0.7]));
+    K.lamp.push(lampGeo([HX(6.66), 0, HZ(1.67)], 0.035, "white"));
+    /* the exhaust's tail pipe stub and lip (E) */
+    K.dark.push(cylY(0.16, 0.05, 0, 0, 0, 14).rotateZ(PI / 2).translate(HX(3.78), 0, HZ(1.14)));
+    /* the tail-rotor gearbox fairing at the boom's end */
+    K.skin.push(cylY(0.10, 0.22, HX(H_TR_S), 0.06, HZ(H_TR_H), 12));
+    K.metal.push(cylZ(0.05, 0.06, 0.10, HX(H_HUB_S), 0, HZ(2.82), 10));
+
     var mats = hMats(C);
     var root = new V.Group();
     root.name = "md500d";
-    emit(root, K, mats, ["pod", "skin", "metal", "dark", "glass", "team"]);
+    emit(root, K, mats, ["pod", "skin", "metal", "dark", "glass", "team", "lamp"]);
 
     /* main rotor: an unrotated group, so its local +Z is the mast, pointing
        up, and render3d.js turns it positively about +Z: anticlockwise from
@@ -844,11 +1008,22 @@ var HeroKpaAir = (function () {
     hubM.push(cylZ(0.08, 0.10, 0.10, 0, 0, 0.09, 10));
     for (k = 0; k < 5; k++) {
       var a = (18 + 72 * k) * D2R;
-      /* blade 0.18 m chord (E plan), from 0.40 m to the 4.015 m tip */
-      var b = box(H_ROTOR_R - 0.40, 0.18, 0.025, 0.40 + (H_ROTOR_R - 0.40) / 2, 0, 0.01);
+      /* blade 0.18 m chord (E plan), from 0.40 m to the 4.015 m tip; detail pass: lofted through
+         a lens section (leading edge at +Y: the head turns anti-clockwise), the root and the tip
+         a little thinner, UVs along the span and across the chord for the blade sheet */
+      var BS = [[0.5, 0], [0.30, 0.5], [-0.05, 0.42], [-0.5, 0], [-0.05, -0.42], [0.30, -0.5], [0.5, 0]];
+      var b = loftUV([[0.40, 0.8], [1.00, 1.0], [3.80, 1.0], [H_ROTOR_R, 0.7]].map(function (st) {
+        return BS.map(function (q) { return [st[0], q[0] * 0.18, 0.01 + q[1] * 0.025 * st[1], (st[0] - 0.40) / (H_ROTOR_R - 0.40), 0.5 + q[0]]; });
+      }), true, true);
       b.rotateZ(a); bl.push(b);
+      var ph = cylY(0.035, 0.22, 0, 0, 0, 8); ph.rotateZ(PI / 2); ph.translate(0.52, 0, 0.01); ph.rotateZ(a); hubM.push(ph);
       var gr = box(0.30, 0.10, 0.07, 0.30, 0, 0.0); gr.rotateZ(a); hubM.push(gr);
+      /* detail pass: the pitch link from the swashplate to each grip's horn,
+         the droop stop under the grip */
+      var pl = rod([0.16, 0.08, -0.16], [0.24, 0.09, -0.01], 0.012, 5); pl.rotateZ(a); hubM.push(pl);
+      var ds = box(0.08, 0.06, 0.03, 0.20, 0, -0.05); ds.rotateZ(a); hubM.push(ds);
     }
+    hubM.push(cylZ(0.17, 0.19, 0.03, 0, 0, -0.16, 14));
     rotor.add(new V.Mesh(merge(hubM), mats.metal));
     rotor.add(new V.Mesh(merge(bl), mats.blade));
     var dsk = new V.CircleGeometry(H_ROTOR_R, 48); dsk.translate(0, 0, 0.03);

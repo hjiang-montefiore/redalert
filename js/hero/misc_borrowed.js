@@ -312,7 +312,8 @@ var HeroMiscBorrowed = (function () {
     usn42: { key: "mb_usn42", base: "#646c72", dark: "#545b60", light: "#767e84", seed: 108, ship: true, streak: "rgba(80,55,35,0.24)" },
     blue:  { key: "mb_blue", base: "#34507a", dark: "#2a4266", light: "#3f5d88", seed: 109 },
     gull:  { key: "mb_gull", base: "#9fa3a6", dark: "#8b8f92", light: "#b1b5b8", seed: 110 },
-    sh2:   { key: "mb_sh2", base: "#868c90", dark: "#74797d", light: "#989ea2", seed: 111 }
+    sh2:   { key: "mb_sh2", base: "#868c90", dark: "#74797d", light: "#989ea2", seed: 111 },
+    blade: { key: "mb_blade", base: "#2e312d", dark: "#232622", light: "#40433e", seed: 112 }
   };
   function mats(THREE, C, P, extra) {
     var T = {}, tx = paintTex(THREE, P), tc = (C && C.team !== undefined) ? C.team : 0x3f7fd0;
@@ -331,7 +332,7 @@ var HeroMiscBorrowed = (function () {
   }
   function bins(T, k) {
     var B = {}, n;
-    for (n in T) B[n] = new Bin(T[n], n === "paint" || n === "deck" || n === "skin2", n === "wheel", k);
+    for (n in T) B[n] = new Bin(T[n], n === "paint" || n === "deck" || n === "skin2" || n === "blade", n === "wheel" || n === "navl", k);
     return B;
   }
   function flush(THREE, group, B) {
@@ -684,6 +685,7 @@ var HeroMiscBorrowed = (function () {
     root.traverse(function (o) {
       if (!o.isMesh || !o.material || o.material.transparent) return;
       var m = o.material;
+      if (m.name === "md_blade" || m.name === "md_lamp") return;
       if (m.map || (m.side === THREE.DoubleSide && Math.abs(m.roughness - 0.72) < 1e-6 && !m.clearcoat)) o.material = paintD;
     });
     var B = bins(T, 0.6), s;
@@ -1281,12 +1283,21 @@ var HeroMiscBorrowed = (function () {
     var rg = grp(THREE, root, "rotor", o.x, 0, o.z), B = bins(T, 0.5), k, a, c, sn;
     cylZ(B.metal, 0, 0, -0.30, 0.05, o.hub * 0.45, 12);
     cylZ(B.metal, 0, 0, 0.0, 0.12, o.hub, 14);
+    cylZ(B.metal, 0, 0, -0.26, -0.20, o.hub * 0.80, 14);
     if (o.dome) cylZ(B.metal, 0, 0, 0.12, 0.22, o.hub * 0.75, 14);
     for (k = 0; k < o.nb; k++) {
       a = (o.phase + 360 / o.nb * k) * D2R; c = Math.cos(a); sn = Math.sin(a);
       var r0 = o.root, L = o.R - r0;
       slab(B.blade, [c * (r0 + L / 2), sn * (r0 + L / 2), 0.02], [c, sn, 0], [-sn, c, 0], [0, 0, 1], L / 2, o.chord / 2, 0.025);
       slab(B.metal, [c * (o.hub + (r0 - o.hub) / 2), sn * (o.hub + (r0 - o.hub) / 2), 0.04], [c, sn, 0], [-sn, c, 0], [0, 0, 1], (r0 - o.hub) / 2 + 0.05, 0.10, 0.07);
+      /* detail pass: the leading-edge abrasion strip (the blade turns toward +(-sn, c)), the tip cap,
+         the pitch link from the swashplate to the horn, the lead-lag damper and the blade-fold hinge */
+      var le = o.chord / 2 - 0.025;
+      slab(B.metal, [c * (r0 + L / 2) - sn * le, sn * (r0 + L / 2) + c * le, 0.02], [c, sn, 0], [-sn, c, 0], [0, 0, 1], L / 2 - 0.05, 0.03, 0.028);
+      if (!o.tip) slab(B.metal, [c * (o.R - 0.06), sn * (o.R - 0.06), 0.02], [c, sn, 0], [-sn, c, 0], [0, 0, 1], 0.06, o.chord / 2 + 0.003, 0.027);
+      bar(B.metal, [c * o.hub * 0.75 - sn * 0.14, sn * o.hub * 0.75 + c * 0.14, -0.24], [c * (o.hub + 0.12) - sn * 0.14, sn * (o.hub + 0.12) + c * 0.14, 0.03], 0.02, 5);
+      bar(B.metal, [c * (o.hub + 0.05) + sn * 0.13, sn * (o.hub + 0.05) - c * 0.13, 0.05], [c * (r0 - 0.15) + sn * 0.08, sn * (r0 - 0.15) - c * 0.08, 0.05], 0.035, 6);
+      cylZ(B.metal, c * (r0 - 0.05), sn * (r0 - 0.05), -0.02, 0.10, 0.06, 8);
       if (o.tip) slab(B.red, [c * (o.R - 0.20), sn * (o.R - 0.20), 0.021], [c, sn, 0], [-sn, c, 0], [0, 0, 1], 0.20, o.chord / 2 + 0.002, 0.027);
       if (o.flap) {
         /* Kaman: the servo flap on its two arms behind the blade's trailing edge at about 3/4 span */
@@ -1314,9 +1325,24 @@ var HeroMiscBorrowed = (function () {
   }
   function heliMats(THREE, C, P) {
     return mats(THREE, C, P, {
-      blade: function (TT) { return new TT.MeshStandardMaterial({ color: 0x2c2f2b, roughness: 0.75, metalness: 0.12, side: TT.DoubleSide }); },
+      /* detail pass: the blades wear a weathered sheet of their own (grime, seams, chips) */
+      blade: function (TT) {
+        var m = new TT.MeshStandardMaterial({ color: 0x2c2f2b, roughness: 0.75, metalness: 0.12, side: TT.DoubleSide }), t = paintTex(TT, PAL.blade);
+        if (t) { m.map = t; m.color.set(0xffffff); }
+        return m;
+      },
+      /* the position lights and beacons: one vertex-coloured material, the colour per lamp (navLamp) */
+      navl: function (TT) { return new TT.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1, emissive: 0x2a2a2a, vertexColors: TT.VertexColors !== undefined ? TT.VertexColors : true }); },
       disc: discMat
     });
+  }
+  /* a lamp lens of radius r at p in colour col ("red", "green", "white") */
+  var NAVCOL = { red: [0.86, 0.06, 0.04], green: [0.06, 0.70, 0.18], white: [0.95, 0.93, 0.84] };
+  function navLamp(bin, p, r, col) { bin.col = NAVCOL[col]; body(bin, [[p[0] + r, p[2], 0.004, 0.004, 0.004, 1, p[1]], [p[0], p[2], r, r, r, 1, p[1]], [p[0] - r, p[2], 0.004, 0.004, 0.004, 1, p[1]]], 8); }
+  /* a frame round a window laid on the skin (skinPanel's arguments), width w, standing proud by off */
+  function winFrame(bin, S, s, x0, x1, z0, z1, w, off) {
+    skinPanel(bin, S, s, x0 - w, x1 + w, z0 - w, z0, off); skinPanel(bin, S, s, x0 - w, x1 + w, z1, z1 + w, off);
+    skinPanel(bin, S, s, x0 - w, x0, z0, z1, off); skinPanel(bin, S, s, x1, x1 + w, z0, z1, off);
   }
 
   /* ====================================================================== nato_e60_aswhelo: SIKORSKY SH-3 SEA KING
@@ -1386,6 +1412,37 @@ var HeroMiscBorrowed = (function () {
     box(B.team, -4.2, -3.0, -0.5, 0.5, 3.52, 3.535);
     /* panel seams along the boat hull and round the cabin */
     for (s = -1; s <= 1; s += 2) [3.26, 1.96, 0.40, -1.52, -2.9, -4.4, -5.85].forEach(function (x) { skinPanel(B.dark, SK, s, x - 0.015, x + 0.015, 0.80, 3.40, 0.0); });
+    /* ---- detail pass (POLICY 10) [S3][D] ----
+       the windscreen's centre post, outer and top frames; frames round every window; the cargo door's
+       rails and handle; kick-in steps below the cockpit; the twin pitot probes on the nose; the
+       position lights on the sponsons (red port, green starboard) and the white tail light; the intake
+       lips and exhaust rims; UHF blade aerials and the radar-altimeter pads under the hull; the main
+       gear's drag brace and torque links, the tail wheel's fork */
+    var wsu = unit([-0.6, 0, 0.55]);
+    bar(B.dark, [4.24 - wsu[0] * 0.42, 0, 2.68 - wsu[2] * 0.42], [4.24 + wsu[0] * 0.42, 0, 2.68 + wsu[2] * 0.42], 0.03, 5);
+    for (s = -1; s <= 1; s += 2) {
+      bar(B.dark, [4.24 - wsu[0] * 0.42, s * 0.77, 2.68 - wsu[2] * 0.42], [4.24 + wsu[0] * 0.42, s * 0.77, 2.68 + wsu[2] * 0.42], 0.03, 5);
+      [[3.05, 3.85, 2.30, 2.95], [4.10, 4.55, 1.45, 2.05], [0.10, 0.87, 2.17, 2.72], [-0.98, -0.33, 2.17, 2.72], [-4.7, -4.0, 2.17, 2.72], [2.05, 2.65, 2.35, 2.75]].forEach(function (w) {
+        winFrame(B.dark, SK, s, w[0], w[1], w[2], w[3], 0.035, 0.012);
+      });
+      skinPanel(B.dark, SK, s, 3.42, 3.47, 2.30, 2.95, 0.014);
+      [1.25, 1.85].forEach(function (z) { skinPanel(B.metal, SK, s, -0.95, 1.85, z + 0.6, z + 0.63, 0.015); });
+      skinPanel(B.metal, SK, s, 1.75, 1.82, 1.80, 1.86, 0.03);
+      [1.35, 1.95].forEach(function (z) { skinPanel(B.dark, SK, s, 3.40, 3.60, z, z + 0.08, -0.03); });
+      bar(B.metal, [4.70, s * 0.28, 1.95], [5.20, s * 0.28, 1.97], 0.014, 5);
+      bar(B.metal, [4.62, s * 0.28, 1.95], [4.78, s * 0.28, 1.95], 0.03, 6);
+      navLamp(B.navl, [0.40, s * 2.27, 1.02], 0.05, s > 0 ? "red" : "green");
+      cyl(B.dark, [1.00, s * 0.34, 4.02], [1.04, s * 0.34, 4.02], 0.26, 0.26, 14);
+      cylY(B.dark, 0.0, s * 0.76, s * 0.82, 3.65, 0.27, 12);
+      bar(G.metal, [1.35, fy, 0.62], [0.75, fy, 0.40], 0.035, 6);
+      bar(G.metal, [1.35, fy + s * 0.07, 0.62], [1.42, fy + s * 0.07, 0.46], 0.02, 4);
+      bar(G.metal, [1.42, fy + s * 0.07, 0.46], [1.35, fy + s * 0.07, 0.36], 0.02, 4);
+    }
+    navLamp(B.navl, [-11.85, 0, 3.95], 0.045, "white");
+    slab(B.dark, [-2.4, 0, 0.57], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.14, 0.012, 0.10);
+    slab(B.dark, [-4.9, 0, 0.57], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.14, 0.012, 0.10);
+    box(B.dark, -1.0, -0.7, -0.25, -0.05, 0.585, 0.61); box(B.dark, -1.0, -0.7, 0.05, 0.25, 0.585, 0.61);
+    bar(G.metal, [-5.85, -0.08, 0.40], [-5.93, -0.08, 0.20], 0.025, 4); bar(G.metal, [-5.85, 0.08, 0.40], [-5.93, 0.08, 0.20], 0.025, 4);
     flush(THREE, g, B);
     var gear = grp(THREE, g, "gear"); flush(THREE, gear, G);
     mainRotor(THREE, g, T, { x: 0, z: 4.83, R: 9.45, chord: 0.46, nb: 5, phase: 36, root: 1.10, hub: 0.42, dome: true });
@@ -1458,6 +1515,29 @@ var HeroMiscBorrowed = (function () {
     cylZ(B.red, -3.0, 0, 2.90, 3.00, 0.06, 8);
     box(B.team, -3.8, -2.8, -0.22, 0.22, 2.75, 2.76);
     for (s = -1; s <= 1; s += 2) box(B.team, -7.4, -7.1, s * 1.1 - 0.25, s * 1.1 + 0.25, 2.38, 2.39);
+    /* ---- detail pass (POLICY 10) [K3] ----
+       the windscreen's centre post and frames, frames round the side, chin and door windows, the door
+       rails and handle, kick-in steps, the nacelle intake lips and exhaust rims, the position lights
+       on the outriggers (red port, green starboard), the white tail light, UHF blades under the boom,
+       the main gear's drag braces and the tail wheel's fork */
+    var wsu2 = unit([-0.65, 0, 0.6]);
+    bar(B.dark, [3.30 - wsu2[0] * 0.44, 0, 2.70 - wsu2[2] * 0.44], [3.30 + wsu2[0] * 0.44, 0, 2.70 + wsu2[2] * 0.44], 0.028, 5);
+    for (s = -1; s <= 1; s += 2) {
+      bar(B.dark, [3.30 - wsu2[0] * 0.44, s * 0.69, 2.70 - wsu2[2] * 0.44], [3.30 + wsu2[0] * 0.44, s * 0.69, 2.70 + wsu2[2] * 0.44], 0.028, 5);
+      [[2.35, 3.05, 2.30, 3.05], [3.20, 3.62, 1.35, 1.85], [1.05, 1.40, 2.35, 2.85]].forEach(function (w) { winFrame(B.dark, KS, s, w[0], w[1], w[2], w[3], 0.035, 0.012); });
+      skinPanel(B.dark, KS, s, 2.68, 2.72, 2.30, 3.05, 0.014);
+      [1.12, 3.10].forEach(function (z) { skinPanel(B.metal, KS, s, 0.70, 1.70, z, z + 0.03, 0.015); });
+      skinPanel(B.metal, KS, s, 0.80, 0.86, 2.05, 2.11, 0.03);
+      [1.45, 2.00].forEach(function (z) { skinPanel(B.dark, KS, s, 2.45, 2.62, z, z + 0.07, -0.03); });
+      cyl(B.metal, [1.10, s * 0.92, 3.05], [1.14, s * 0.92, 3.05], 0.33, 0.33, 14);
+      cyl(B.dark, [-1.30, s * 0.92, 3.05], [-1.38, s * 0.92, 3.05], 0.19, 0.19, 10);
+      navLamp(B.navl, [1.05, s * 1.42, 1.18], 0.045, s > 0 ? "red" : "green");
+      bar(G.metal, [1.06, s * 1.40, 1.05], [0.50, s * 0.95, 1.00], 0.03, 5);
+    }
+    navLamp(B.navl, [-8.25, 0, 3.55], 0.04, "white");
+    slab(B.dark, [-3.2, 0, 1.50], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.12, 0.012, 0.09);
+    slab(B.dark, [-5.6, 0, 1.63], [1, 0, 0], [0, 1, 0], [0, 0, 1], 0.12, 0.012, 0.09);
+    bar(G.metal, [-4.10, -0.07, 0.40], [-4.20, -0.07, 0.21], 0.02, 4); bar(G.metal, [-4.10, 0.07, 0.40], [-4.20, 0.07, 0.21], 0.02, 4);
     flush(THREE, g, B);
     var gear = grp(THREE, g, "gear"); flush(THREE, gear, G);
     mainRotor(THREE, g, T, { x: 0, z: 4.26, R: 6.705, chord: 0.62, nb: 4, phase: 45, root: 0.80, hub: 0.32, dome: false, flap: true });

@@ -2139,9 +2139,134 @@ var HeroPlaAirModern = (function () {
     B.metal.push(bar([0.55, -0.66, 1.04], [0.62, -1.28, 0.98], 0.045, 8));
     B.dark.push(cyl(0.11, 0.11, 0.24, 12, "y", 0.63, -1.33, 0.92));
     B.dark.push(bar([0.63, -1.33, 0.82], [0.63, -1.33, 0.70], 0.02, 6));
+    /* ---- detail pass (POLICY 10) [P15][P16]; sizes NOT measured ----
+       Found on the called airframe itself (its skin's vertices), so the
+       parts sit on HeroZ9's surfaces whatever its stations: the door
+       handles of the front and sliding doors, the kick-in step under the
+       front door, the twin pitot probes on the nose, UHF blade aerials under
+       the cabin and the boom; lamps (one vertex-coloured mesh): the position
+       lights on the stabiliser's end plates (port red, starboard green), the
+       white tail light at the fin's foot, red beacons on the boom and under
+       the belly. On the head: each blade's leading-edge abrasion strip
+       (the head turns clockwise from above: the leading edge on -Y) and tip
+       cap, added to the hub's mesh; the blades take a weathered sheet. And
+       this file's own dark and metal parts join HeroZ9's fittings meshes
+       (two draw calls fewer). */
+    var AP = byName.airframe ? flat(byName.airframe.geometry).attributes.position.array : [];
+    function sideAt(x, z) {
+      var w = 0, j;
+      for (j = 0; j < AP.length; j += 3) if (Math.abs(AP[j] - x) < 0.12 && Math.abs(AP[j + 2] - z) < 0.12) w = Math.max(w, Math.abs(AP[j + 1]));
+      return w;
+    }
+    function topAt(x, y, below, tol) {
+      var t = below ? 1e9 : -1e9, j;
+      for (j = 0; j < AP.length; j += 3) if (Math.abs(AP[j] - x) < (tol || 0.12) && Math.abs(AP[j + 1] - y) < 0.10) t = below ? Math.min(t, AP[j + 2]) : Math.max(t, AP[j + 2]);
+      return t;
+    }
+    var GR = -1.40, sd, lampL = [];
+    for (sd = -1; sd <= 1; sd += 2) {
+      [[2.12, 1.20], [-0.38, 1.10]].forEach(function (q) {
+        var w = sideAt(q[0], GR + q[1]);
+        if (w > 0.3) B.metal.push(box(0.12, 0.04, 0.03, q[0], sd * (w + 0.02), GR + q[1]));
+      });
+      var ws = sideAt(2.40, GR + 0.62);
+      if (ws > 0.3) B.dark.push(box(0.16, 0.03, 0.06, 2.40, sd * (ws + 0.005), GR + 0.62));
+      if (nx > -1e8) B.metal.push(bar([nx - 0.95, sd * 0.24, ntop - 0.02], [nx - 0.35, sd * 0.24, ntop + 0.02], 0.013, 5));
+      lampL.push([-5.40, sd * 1.66, GR + 1.42, 0.045, sd > 0 ? "red" : "green"]);
+    }
+    var zb0 = topAt(-1.20, 0, true, 0.4), zb1 = topAt(-3.40, 0, true, 0.5);
+    if (zb0 < 1e8) B.dark.push(box(0.22, 0.015, 0.12, -1.20, 0, zb0 - 0.06));
+    if (zb1 < 1e8) B.dark.push(box(0.18, 0.015, 0.10, -3.40, 0, zb1 - 0.05));
+    var zr2 = topAt(-3.80, 0, false, 0.5);
+    if (zr2 > -1e8) lampL.push([-3.80, 0, zr2 + 0.04, 0.06, "red"]);
+    var zb2 = topAt(0.40, 0, true, 0.4);
+    if (zb2 < 1e8) lampL.push([0.40, 0, zb2 - 0.03, 0.06, "red"]);
+    var zt = topAt(-6.90, 0, false);
+    if (zt > -1e8) lampL.push([-7.05, 0, GR + 1.10, 0.04, "white"]);
+    function append(mesh, list) {
+      if (!mesh || !list.length) return false;
+      var all = [flat(mesh.geometry)].concat(list.map(function (q) { return flat(q); })), P = [], N = [], U = [];
+      all.forEach(function (q) {
+        if (!q.attributes.normal) q.computeVertexNormals();
+        var pp = q.attributes.position.array, nn = q.attributes.normal.array, uu = q.attributes.uv ? q.attributes.uv.array : null, j;
+        for (j = 0; j < pp.length; j++) { P.push(pp[j]); N.push(nn[j]); }
+        for (j = 0; j < pp.length / 3 * 2; j++) U.push(uu ? uu[j] : 0);
+      });
+      var ng = new V.BufferGeometry();
+      ng.setAttribute("position", new V.Float32BufferAttribute(P, 3));
+      ng.setAttribute("normal", new V.Float32BufferAttribute(N, 3));
+      ng.setAttribute("uv", new V.Float32BufferAttribute(U, 2));
+      mesh.geometry = ng;
+      return true;
+    }
+    var rest = {};
+    if (!append(byName.fittings_dark, B.dark)) rest.dark = B.dark;
+    if (!append(byName.fittings, B.metal)) rest.metal = B.metal;
+    rest.glass = B.glass;
+    var hub = null, bl = null;
+    g.traverse(function (o) { if (o.isMesh && o.name === "hub") hub = o; if (o.isMesh && o.name === "blades") bl = o; });
+    if (hub) {
+      var Lx = [], k2;
+      for (k2 = 0; k2 < 4; k2++) {
+        var ra = (45 + 90 * k2) * D2R, q1 = box(5.97 - 1.20, 0.05, 0.042, (5.97 + 1.00) / 2 - 0.08, -0.37 / 4 + 0.025, 0), q2 = box(0.14, 0.38, 0.04, 5.97 - 0.10, 0.37 / 4, 0);
+        q1.rotateZ(ra); q2.rotateZ(ra); Lx.push(q1, q2);
+      }
+      append(hub, Lx);
+    }
+    if (bl) {
+      var bt = bladeSheet("#33383a", 9097);
+      if (bt) {
+        var bm = bl.material.clone(); bm.map = bt; bm.color.set(0xffffff); bl.material = bm;
+        var bp = flat(bl.geometry), pa = bp.attributes.position.array, ua = new Float32Array(pa.length / 3 * 2), j2;
+        for (j2 = 0; j2 < pa.length / 3; j2++) { ua[j2 * 2] = pa[j2 * 3] * 0.5; ua[j2 * 2 + 1] = pa[j2 * 3 + 1] * 0.5; }
+        bp.setAttribute("uv", new V.BufferAttribute(ua, 2));
+        bl.geometry = bp;
+      }
+    }
     var T = makeMats(C, null, "#000000");
-    flush(g, B, T, null);
+    flush(g, rest, T, null);
+    g.add(lampMesh(lampL));
     return g;
+  }
+  /* detail pass helpers (z9c): a tiling 2 m blade sheet, and every lamp in
+     one vertex-coloured mesh, L = [[x, y, z, r, "red" | "green" | "white"]] */
+  var _bsh = {};
+  function bladeSheet(base, seed) {
+    if (_bsh[base] !== undefined) return _bsh[base];
+    var t = false;
+    try {
+      var W = 256, cv = document.createElement("canvas"); cv.width = W; cv.height = W;
+      var g = cv.getContext("2d"), R = rngFor(seed), i;
+      g.fillStyle = base; g.fillRect(0, 0, W, W);
+      for (i = 0; i < 40; i++) { g.fillStyle = (i & 1) ? "rgba(255,255,235,0.05)" : "rgba(0,0,0,0.10)"; g.fillRect(R() * W, R() * W, 20 + R() * 90, 10 + R() * 40); }
+      for (i = 0; i < 90; i++) { g.fillStyle = "rgba(0,0,0," + (0.06 + R() * 0.08).toFixed(3) + ")"; g.fillRect(R() * W, R() * W, 20 + R() * 80, 1 + R() * 2); }
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      for (i = 0; i < 4; i++) { g.beginPath(); g.moveTo(0, i * W / 4 + 0.5); g.lineTo(W, i * W / 4 + 0.5); g.stroke(); }
+      for (i = 0; i < 70; i++) { g.fillStyle = "rgba(150,150,140,0.25)"; g.fillRect(R() * W, R() * W, 1.5, 1.5); }
+      t = new V.CanvasTexture(cv);
+      t.wrapS = t.wrapT = V.RepeatWrapping;
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+    } catch (e) { t = false; }
+    _bsh[base] = t;
+    return t;
+  }
+  var LAMPC = { red: [0.86, 0.06, 0.04], green: [0.06, 0.70, 0.18], white: [0.95, 0.93, 0.84] };
+  function lampMesh(L) {
+    var pos = [], nor = [], col = [], i, j;
+    for (i = 0; i < L.length; i++) {
+      var q = new V.SphereGeometry(L[i][3], 8, 5).toNonIndexed(), c = LAMPC[L[i][4]];
+      q.translate(L[i][0], L[i][1], L[i][2]);
+      var P = q.attributes.position.array, N = q.attributes.normal.array;
+      for (j = 0; j < P.length; j++) { pos.push(P[j]); nor.push(N[j]); }
+      for (j = 0; j < P.length / 3; j++) col.push(c[0], c[1], c[2]);
+    }
+    var geo = new V.BufferGeometry();
+    geo.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    geo.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    var m = new V.Mesh(geo, new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.1, emissive: 0x2a2a2a }));
+    m.name = "lamps";
+    return m;
   }
 
   function variant(fn, VT, k) { return function (THREE, M, C) { return fn(THREE, M, C, VT[k]); }; }

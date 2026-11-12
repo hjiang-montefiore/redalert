@@ -307,6 +307,48 @@ var HeroKa50 = (function () {
   }
 
   /* ========================================================= materials == */
+  /* detail pass helpers: a tiling 2 m weathered sheet; every lamp in one
+     vertex-coloured mesh, L = [[x, y, z, r, "red" | "green" | "white"]] */
+  var _ws = {};
+  function wornSheet(base, seed) {
+    if (_ws[base] !== undefined) return _ws[base];
+    var t = false;
+    try {
+      var W = 256, cv = document.createElement("canvas"); cv.width = W; cv.height = W;
+      var g = cv.getContext("2d"), R = rngFor(seed), i;
+      g.fillStyle = base; g.fillRect(0, 0, W, W);
+      for (i = 0; i < 40; i++) { g.fillStyle = (i & 1) ? "rgba(255,255,235,0.05)" : "rgba(0,0,0,0.10)"; g.fillRect(R() * W, R() * W, 20 + R() * 90, 10 + R() * 40); }
+      for (i = 0; i < 90; i++) { g.fillStyle = "rgba(0,0,0," + (0.06 + R() * 0.08).toFixed(3) + ")"; g.fillRect(R() * W, R() * W, 20 + R() * 80, 1 + R() * 2); }
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      for (i = 0; i < 4; i++) { g.beginPath(); g.moveTo(0, i * W / 4 + 0.5); g.lineTo(W, i * W / 4 + 0.5); g.stroke(); }
+      for (i = 0; i < 70; i++) { g.fillStyle = "rgba(150,150,140,0.25)"; g.fillRect(R() * W, R() * W, 1.5, 1.5); }
+      t = new V.CanvasTexture(cv);
+      t.wrapS = t.wrapT = V.RepeatWrapping;
+      t.repeat.set(0.5, 0.5);
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+    } catch (e) { t = false; }
+    _ws[base] = t;
+    return t;
+  }
+  var LAMPC = { red: [0.86, 0.06, 0.04], green: [0.06, 0.70, 0.18], white: [0.95, 0.93, 0.84] };
+  function lampMesh(L) {
+    var pos = [], nor = [], col = [], i, j;
+    for (i = 0; i < L.length; i++) {
+      var q = new V.SphereGeometry(L[i][3], 8, 5).toNonIndexed(), c = LAMPC[L[i][4]];
+      q.translate(L[i][0], L[i][1], L[i][2]);
+      var P = q.attributes.position.array, N = q.attributes.normal.array;
+      for (j = 0; j < P.length; j++) { pos.push(P[j]); nor.push(N[j]); }
+      for (j = 0; j < P.length / 3; j++) col.push(c[0], c[1], c[2]);
+    }
+    var geo = new V.BufferGeometry();
+    geo.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    geo.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    var m = new V.Mesh(geo, new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.1, emissive: 0x2a2a2a }));
+    m.name = "lamps";
+    return m;
+  }
+
   function makeMats(C) {
     var tex = skinTexture();
     var m = {};
@@ -318,9 +360,16 @@ var HeroKa50 = (function () {
     /* hubs and blades: the heads are painted black like the airframe and
        the composite blades weather to a dark charcoal (Le Bourget 1993) */
     m.rotor  = new V.MeshStandardMaterial({ color: 0x2b2d2e, roughness: 0.70, metalness: 0.20 });
+    /* detail pass: weathered sheets for the blades and the stores (faded
+       patches, grime streaks, seams, chips), the bare metal of the blades'
+       leading-edge strips and tip caps */
+    var rt = wornSheet("#2b2d2e", 5051), stt = wornSheet("#4d5446", 5052);
+    if (rt) { m.rotor.map = rt; m.rotor.color.set(0xffffff); }
+    m.edge = new V.MeshStandardMaterial({ color: 0x6a7074, roughness: 0.40, metalness: 0.65 });
     m.rubber = new V.MeshStandardMaterial({ color: 0x141515, roughness: 0.95, metalness: 0.02 });
     /* B-8V20A pods and the Vikhr containers: ordnance grey-olive */
     m.store  = new V.MeshStandardMaterial({ color: 0x4d5446, roughness: 0.78, metalness: 0.12 });
+    if (stt) { m.store.map = stt; m.store.color.set(0xffffff); }
     m.glass  = new V.MeshPhysicalMaterial({ color: 0x1d2e33, roughness: 0.08, metalness: 0.20,
                                             clearcoat: 1.0, clearcoatRoughness: 0.05,
                                             polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
@@ -855,8 +904,21 @@ var HeroKa50 = (function () {
       tyres.push(cyl(MW_R, MW_R, MW_W, 22, "y", MG_X, s * MG_Y, Z(MW_R)));
       legs.push(cyl(0.18, 0.18, MW_W + 0.01, 12, "y", MG_X, s * MG_Y, Z(MW_R)));
     }
+    /* detail pass: the main legs' torque links, the hub caps */
+    for (s = -1; s <= 1; s += 2) {
+      legs.push(bar([MG_X + 0.20, s * (MG_Y - 0.30), Z(0.95)], [MG_X + 0.34, s * (MG_Y - 0.26), Z(0.78)], 0.025, 4));
+      legs.push(bar([MG_X + 0.34, s * (MG_Y - 0.26), Z(0.78)], [MG_X + 0.12, s * (MG_Y - 0.22), Z(0.62)], 0.025, 4));
+      legs.push(cyl(0.12, 0.12, 0.03, 12, "y", MG_X, s * (MG_Y + MW_W / 2 + 0.01), Z(MW_R)));
+      legs.push(cyl(0.07, 0.07, 0.02, 10, "y", NG_X - 0.12, s * (0.12 + NW_W / 2 + 0.01), Z(NW_R)));
+    }
     mesh(gear, legs, T.metal, "gear_legs");
     mesh(gear, tyres, T.rubber, "tyres");
+    /* lamps: the position lights on the wing-tip pods (port red, starboard
+       green), the white tail light on the fin, the red beacons on the boom
+       and under the belly (positions NOT measured) */
+    g.add(lampMesh([[0.30, POD_Y + 0.16, Z(1.78), 0.045, "red"], [0.30, -POD_Y - 0.16, Z(1.78), 0.045, "green"],
+                    [-6.40, 0, fAt(-6.40).zt + 0.04, 0.05, "white"], [-3.70, 0, fAt(-3.70).zt + 0.04, 0.07, "red"],
+                    [-0.80, 0, fAt(-0.80).zb - 0.03, 0.07, "red"]]));
 
     /* ======================================================== the heads ==
        The pact_ka27_helix.js mount: +PI/2 about X points the node's local
@@ -875,7 +937,7 @@ var HeroKa50 = (function () {
       var hd = new V.Group();
       hd.rotation.x = -PI / 2;
       rotor.add(hd);
-      var parts = [], j;
+      var parts = [], edge = [], j;
       parts.push(cyl(0.26, 0.30, 0.30, 20, "z", 0, 0, 0));
       parts.push(cyl(0.36, 0.36, 0.05, 20, "z", 0, 0, -0.18));
       if (upper) parts.push(cyl(0.10, 0.22, 0.06, 16, "z", 0, 0, 0.15));    /* cap: top at 4.90 m */
@@ -895,8 +957,14 @@ var HeroKa50 = (function () {
                   box(0.10, 0.20, 0.05, 0.82, -0.22, -0.04),
                   bar([0.86, -0.24, -0.06], [0.30, -0.22, -0.26], 0.022, 5)];
         for (i = 0; i < hp.length; i++) { hp[i].rotateZ(a); parts.push(hp[i]); }
+        /* detail pass: the leading-edge abrasion strip along the blade's
+           -Y edge (the swept edge of BP) and the tip cap */
+        var le = box(ROTOR_R - 0.45 - 1.25, 0.05, 0.05, (ROTOR_R - 0.45 + 1.25) / 2, -CHORD / 2 + 0.025, 0),
+            tc = box(0.10, CHORD - 0.30, 0.05, ROTOR_R - 0.05, 0.15, 0);
+        le.rotateZ(a); tc.rotateZ(a); edge.push(le, tc);
       }
       mesh(hd, parts, T.rotor, "hub_blades");
+      mesh(hd, edge, T.edge, "blade_edges");
       mesh(hd, [place(new V.CircleGeometry(ROTOR_R, 48), 0, 0, 0.03)], T.disc, "rotordisc");
     }
     head(H_LO, false, [40, 160, 280]);

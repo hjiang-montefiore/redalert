@@ -270,6 +270,48 @@ var HeroGbSeaKing = (function () {
     } catch (e) { _tex = false; }
     return _tex;
   }
+  var _ltex, _btex;
+  function lampTexture() {
+    if (_ltex !== undefined) return _ltex;
+    try {
+      var cv = document.createElement("canvas"); cv.width = 32; cv.height = 4;
+      var g = cv.getContext("2d");
+      g.fillStyle = "#c8261e"; g.fillRect(0, 0, 16, 4); g.fillStyle = "#1fa64a"; g.fillRect(16, 0, 16, 4);
+      _ltex = new V.CanvasTexture(cv);
+      if (V.sRGBEncoding !== undefined) _ltex.encoding = V.sRGBEncoding;
+    } catch (e) { _ltex = false; }
+    return _ltex;
+  }
+  function lampUV(geo, red) {
+    var n = geo.attributes.position.count, a = new Float32Array(n * 2), i;
+    for (i = 0; i < n; i++) { a[i * 2] = red ? 0.25 : 0.75; a[i * 2 + 1] = 0.5; }
+    geo.setAttribute("uv", new V.BufferAttribute(a, 2));
+    return geo;
+  }
+  /* a 2 m tile of blade paint: spanwise grime and seams, faded patches, chips */
+  function bladeTexture() {
+    if (_btex !== undefined) return _btex;
+    try {
+      var W = 256, cv = document.createElement("canvas"); cv.width = W; cv.height = W;
+      var g = cv.getContext("2d"), R = rngFor(1980), i;
+      g.fillStyle = "#2c2f2b"; g.fillRect(0, 0, W, W);
+      for (i = 0; i < 40; i++) { g.fillStyle = (i & 1) ? "rgba(255,255,235,0.05)" : "rgba(0,0,0,0.10)"; g.fillRect(R() * W, R() * W, 20 + R() * 90, 10 + R() * 40); }
+      for (i = 0; i < 90; i++) { g.fillStyle = "rgba(0,0,0," + (0.06 + R() * 0.08).toFixed(3) + ")"; g.fillRect(R() * W, R() * W, 1 + R() * 2, 20 + R() * 80); }
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      for (i = 0; i < 4; i++) { g.beginPath(); g.moveTo(i * W / 4 + 0.5, 0); g.lineTo(i * W / 4 + 0.5, W); g.stroke(); }
+      for (i = 0; i < 70; i++) { g.fillStyle = "rgba(150,150,140,0.25)"; g.fillRect(R() * W, R() * W, 1.5, 1.5); }
+      _btex = new V.CanvasTexture(cv);
+      _btex.wrapS = _btex.wrapT = V.RepeatWrapping;
+      if (V.sRGBEncoding !== undefined) _btex.encoding = V.sRGBEncoding;
+    } catch (e) { _btex = false; }
+    return _btex;
+  }
+  function planarUV(geo, k) {
+    var p = geo.attributes.position.array, n = p.length / 3, a = new Float32Array(n * 2), i;
+    for (i = 0; i < n; i++) { a[i * 2] = p[i * 3] * k; a[i * 2 + 1] = p[i * 3 + 1] * k; }
+    geo.setAttribute("uv", new V.BufferAttribute(a, 2));
+    return geo;
+  }
   function projUV(geo) {
     var p = geo.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
     for (t = 0; t < p.length; t += 9) {
@@ -309,8 +351,15 @@ var HeroGbSeaKing = (function () {
     var tc = (C && C.team !== undefined) ? C.team : "#4b8fe0";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10 });
-    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
-    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
+    /* detail pass: the red and green lamps share one material, a two-colour
+       palette strip as its map and emissive map, each lamp's UVs on its colour
+       (one draw call, not two) */
+    m.lamp = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1, emissive: 0xffffff, emissiveIntensity: 0.6 });
+    var lt = lampTexture();
+    if (lt) { m.lamp.map = lt; m.lamp.emissiveMap = lt; } else { m.lamp.color.set(0xc8261e); m.lamp.emissive.set(0x8a1410); }
+    /* and the blades a weathered sheet of their own (UVs planar in the disc) */
+    var bt = bladeTexture();
+    if (bt) { m.blade.map = bt; m.blade.color.set(0xffffff); }
     m.disc = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.4, metalness: 0.08,
                                           transparent: true, opacity: 0.05, depthWrite: false });
     return m;
@@ -515,7 +564,7 @@ var HeroGbSeaKing = (function () {
       /* the exhaust's lip */
       D.metal.push(m(cyl(0.21, 0.23, 0.05, 14, "y", 0.80, 0.81, Z(3.65), true)));
       /* nav lights on the sponson tips, port red */
-      (s > 0 ? D.lampR : D.lampG).push(sph(0.05, 8, 6, 0.45, s * 1.64, Z(1.18)));
+      D.lamp.push(lampUV(sph(0.05, 8, 6, 0.45, s * 1.64, Z(1.18)), s > 0));
       /* the sponson's walkway step and the grab handle over it */
       D.metal.push(m(box(0.40, 0.25, 0.03, 1.75, 1.20, Z(0.78))));
       D.dark.push(m(bar([2.35, sideY(FUS, 2.35, Z(2.2)) + 0.06, Z(2.2)], [2.35, sideY(FUS, 2.35, Z(2.7)) + 0.06, Z(2.7)], 0.018, 4)));
@@ -531,7 +580,7 @@ var HeroGbSeaKing = (function () {
     for (s = -1; s <= 1; s += 2) D.metal.push(bar([4.60, s * 0.30, Z(2.30)], [5.05, s * 0.30, Z(2.30)], 0.015, 4));
     D.dark.push(bar([2.6, 0.30, Z(3.84)], [2.3, 0.30, Z(4.70)], 0.012, 4));
     D.skin.push(vplate2(-7.2, 0, Z(1.92), -0.36, 0.30), vplate2(-3.6, 0, Z(1.04 - 0.43), -0.30, 0.26), vplate2(-2.55, 0, Z(3.86), 0.26, 0.28));
-    D.lampR.push(sph(0.06, 8, 5, -6.4, 0, Z(1.62), 1, 1, 0.7), sph(0.06, 8, 5, -3.0, 0, Z(3.56), 1, 1, 0.7));
+    D.lamp.push(lampUV(sph(0.06, 8, 5, -6.4, 0, Z(1.62), 1, 1, 0.7), true), lampUV(sph(0.06, 8, 5, -3.0, 0, Z(3.56), 1, 1, 0.7), true));
   }
   /* a blade aerial standing in the x-z plane on (x, y, z), height h (negative
      hangs down), root chord c, raked aft */
@@ -644,11 +693,10 @@ var HeroGbSeaKing = (function () {
     team.push(solid([[-11.10, 0.6, Z(4.065)], [-11.75, 0.6, Z(4.045)], [-11.65, 1.9, Z(4.015)], [-11.25, 1.9, Z(4.02)]],
                     [[-11.10, 0.6, Z(4.085)], [-11.75, 0.6, Z(4.065)], [-11.65, 1.9, Z(4.035)], [-11.25, 1.9, Z(4.04)]]));
 
-    detail(FUS, { skin: skin, dark: dark, metal: metal, lampR: lampR, lampG: lampG });
+    detail(FUS, { skin: skin, dark: dark, metal: metal, lamp: lampR });
     mesh(g, skin, T.skin, "airframe", true);
     mesh(g, metal, T.metal, "fittings_metal");
-    mesh(g, lampR, T.lampR, "lamps_red");
-    mesh(g, lampG, T.lampG, "lamps_green");
+    mesh(g, lampR, T.lamp, "lamps");
     mesh(g, glass, T.glass, "glass");
     mesh(g, dark, T.dark, "fittings_dark");
     mesh(g, team, T.team, "team");
@@ -690,12 +738,15 @@ var HeroGbSeaKing = (function () {
       var cuff = [box(0.55, CHORD * 0.75, 0.10, ROOT_CUT + 0.12, LE - CHORD * 0.45, 0), box(0.16, 0.06, 0.06, 0.95, 0.20, -0.07),
                   bar([0.95, 0.22, -0.09], [0.42, 0.22, -0.16], 0.022, 5)];
       cuff[0].rotateZ(a); blades.push(cuff[0]);
+      /* detail pass: the leading-edge abrasion strip and the tip cap */
+      var les = box(ROTOR_R - ROOT_CUT - 0.12, 0.06, 0.068, (ROTOR_R + ROOT_CUT) / 2, LE - 0.03, 0);
+      les.translate(0, 0, -0.0); les.rotateX(5 * D2R); les.rotateZ(a); hubM.push(les);
       for (i = 1; i < cuff.length; i++) { cuff[i].rotateZ(a); hubM.push(cuff[i]); }
     }
     hubM.push(cyl(0.40, 0.40, 0.05, 20, "z", 0, 0, -0.165));         /* the swashplate's rotating ring */
     mesh(head, hubM, T.metal, "hub");
     mesh(head, hubD, T.dark, "hub_dampers");
-    mesh(head, blades, T.blade, "blades");
+    planarUV(mesh(head, blades, T.blade, "blades").geometry, 0.5);
     mesh(head, [place(new V.CircleGeometry(ROTOR_R, 48), 0, 0, 0.12)], T.disc, "rotordisc");
 
     /* tail rotor: six blades on the starboard side of the pylon [D][P1]; hub axis local Z, the
