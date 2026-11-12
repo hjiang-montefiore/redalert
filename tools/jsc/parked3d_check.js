@@ -446,7 +446,11 @@ var OVERSIZE = {};
   /* the B-52G/H row of the 1980s (js/hero/us_b52_stratofortress.js), drawn 77.3 m across where the other B-52 rows are
      drawn 79.5: its wing comes down to 1.6 m where the wall between two bays stands, 29.2 m from its pad and 7 m
      behind it, and goes 0.18 m into the wall's face */
-  "nato_e80_heavybomber"
+  "nato_e80_heavybomber",
+  /* the Vulcan B.2 rows (js/hero/redo_bombers.js, drawn from the three-view, 33.96 m across): the low delta's
+     tips stand about 2.5 m up, under the 3.66 m bin walls between the bays, and reach 1.03 m into one; the
+     generic model they replaced only fitted because its wing was a thin swept slab set high */
+  "gbr_e60_heavybomber gbr_e80_heavybomber"
 ].forEach(function (s) { s.split(" ").forEach(function (id) { OVERSIZE[id] = true; }); });
 
 function run() {
