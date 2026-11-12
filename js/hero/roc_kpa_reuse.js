@@ -45,9 +45,9 @@
    kpa_e50_cas             pla_e50_cas (ru_il10.js)                       HeroIl10.plain (Il-10M as an Il-10 STAND-IN, as the PLA row)
 
    CAVEATS carried by the source builds (not changed here, the reviewer should know):
-     - roc_e60_destroyer: the Gearing hero paints the ROC bow number "912" (its own pennantTex), the
-       ROCN's own hull number, not another nation's marking; draft numerals at bow and stern.
-     - kpa_e80_missileboat: the Soju hero paints the bow number "421" in the team colour.
+     - roc_e60_destroyer: the Gearing hero (rebuilt 2026-11) is drawn plain, with no bow or draft
+       numbers.
+     - kpa_e80_missileboat: the Soju hero (rebuilt 2026-11) is drawn plain, with no bow number.
      - roc_e80_tankdestroyer: the row is turret:true; the M113 TOW build has a FIXED launcher and no
        "turret" node (its own row is turret:false), so the vehicle turns whole to lay the missile.
      - roc_e60_sam / roc_e80_sam: plain Bundeswehr Gelboliv (RAL 6014, #4c4b36), the module's only
