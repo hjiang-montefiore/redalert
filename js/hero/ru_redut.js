@@ -372,6 +372,10 @@ var HeroRedut = (function () {
     if (hub) for (k = -1; k <= 1; k += 2) {
       cyl(hub, [cx, yc + k * 0.27 * wk, cz], [cx, yc + k * 0.31 * wk, cz], 0.40 * sc, 0.40 * sc, 12);
       cyl(hub, [cx, yc + k * 0.31 * wk, cz], [cx, yc + k * 0.37 * wk, cz], 0.15 * sc, 0.12 * sc, 8);
+      for (var q = 0; q < 8; q++) {
+        var qa = (q + 0.5) / 8 * Math.PI * 2;
+        cyl(hub, [cx + Math.cos(qa) * 0.25 * sc, yc + k * 0.31 * wk, cz + Math.sin(qa) * 0.25 * sc], [cx + Math.cos(qa) * 0.25 * sc, yc + k * 0.335 * wk, cz + Math.sin(qa) * 0.25 * sc], 0.025 * sc, 0.025 * sc, 6);
+      }
     }
   }
 
@@ -512,6 +516,38 @@ var HeroRedut = (function () {
     box(B.dark, X(9.75), X(9.58), -0.10, 0.10, 0.80, 0.92);
   }
 
+  /* ---------------------------------------------------- fittings (the detail pass)
+     The small fittings the Park Patriot and Kaliningrad photographs show that the first pass left out: the hinges
+     and the two latch handles on every equipment box, the grab handles beside the cab doors and the cab's rear
+     corner rails, the rubber mudflaps behind the cab axle and the last axle, the bolt heads round the strap rings
+     (in addContainer), the wheel nuts round the hubs (in the tyre groups), the bumper's bolt rows. */
+  function addFittings(B) {
+    var s, k, x, y;
+    for (s = -1; s <= 1; s += 2) {
+      /* the equipment boxes: a hinge strip along the top, two latch handles on the face */
+      [[3.15, 2.22, 1.62], [4.15, 3.25, 1.42], [8.00, 7.10, 1.42]].forEach(function (b) {
+        box(B.dark, X(b[0]) + 0.04, X(b[1]) - 0.04, s * 1.36, s * 1.385, b[2] - 0.05, b[2] - 0.02);
+        for (k = 0; k < 2; k++) {
+          x = X(b[0]) + 0.20 + k * (X(b[1]) - X(b[0]) - 0.40);
+          box(B.dark, x - 0.04, x + 0.04, s * 1.36, s * 1.39, b[2] - 0.30, b[2] - 0.24);
+        }
+      });
+      /* grab handles beside the door and up the cab's rear corner */
+      y = s * (HW + 0.03);
+      bar(B.dark, [X(1.60), s * HW, 1.90], [X(1.60), y, 1.90], 0.025);
+      bar(B.dark, [X(1.60), s * HW, 2.60], [X(1.60), y, 2.60], 0.025);
+      bar(B.dark, [X(1.60), y, 1.90], [X(1.60), y, 2.60], 0.025);
+      bar(B.dark, [X(2.14), s * (HW - 0.10), 3.00], [X(2.14), s * (HW - 0.10), 3.12], 0.025);
+      bar(B.dark, [X(2.14), s * (HW - 0.10), 3.12], [X(0.60), s * (HW - 0.10), 3.12], 0.025);
+      bar(B.dark, [X(0.60), s * (HW - 0.10), 3.12], [X(0.60), s * (HW - 0.10), 3.00], 0.025);
+      /* the mudflaps behind the cab axle and the last axle */
+      box(B.dark, X(AXD[0] + RT + 0.16), X(AXD[0] + RT + 0.12), s * 0.92, s * 1.40, 0.30, RT + 0.30);
+      box(B.dark, X(AXD[3] + RT + 0.16), X(AXD[3] + RT + 0.12), s * 0.92, s * 1.40, 0.30, RT + 0.30);
+      /* the bumper's bolt rows */
+      for (k = 0; k < 6; k++) { y = s * (0.30 + k * 0.20); box(B.dark, X(0.12), X(0.08), y - 0.02, y + 0.02, 1.30, 1.315); box(B.dark, X(0.32), X(0.28), y - 0.02, y + 0.02, 1.30, 1.315); }
+    }
+  }
+
   /* ---------------------------------------------------- the container */
   /* the P-35B's launch container, in the elevating group's frame: +x AFT from the trunnion, z from the trunnion's
      height.  Radii along its length read off "Park Patriot 02/03", the Kaliningrad photograph and
@@ -533,10 +569,14 @@ var HeroRedut = (function () {
   function addContainer(B) {
     var s, k, d, y, z, a, r, q, prev;
     revolve(B.paint, PROF.map(function (p) { return [L(p[0]), p[1]]; }), 0, ZC, 20);
-    /* strap rings */
+    /* strap rings, and the bolt heads round each (detail pass) */
     [5.20, 7.27, 7.55, 9.60, 11.25].forEach(function (d) {
       r = rAt(d) + 0.018;
       cyl(B.dark, [L(d) - 0.03, 0, ZC], [L(d) + 0.03, 0, ZC], r, r, 20, true, true);
+      for (k = 0; k < 12; k++) {
+        a = (k + 0.5) / 12 * Math.PI * 2;
+        cyl(B.dark, [L(d) + 0.03, Math.cos(a) * (r - 0.01), ZC + Math.sin(a) * (r - 0.01)], [L(d) + 0.06, Math.cos(a) * (r - 0.01), ZC + Math.sin(a) * (r - 0.01)], 0.022, 0.022, 5);
+      }
     });
     /* the hood on top of the front end */
     profY(B.paint, [[L(2.58), ZC + 0.50], [L(3.65), ZC + 0.50], [L(3.65), ZC + 1.02], [L(3.10), ZC + 1.02], [L(2.62), ZC + 0.74]], -0.46, 0.46);
@@ -591,6 +631,7 @@ var HeroRedut = (function () {
     var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T, true), i, wg, geo, TB, PB, pk, E;
     addCab(HB);
     addChassis(HB);
+    addFittings(HB);
     flush(THREE, g, HB);
     /* four turning axle groups: a tyre each side (one mesh per axle, lugs a phase apart) */
     for (i = 0; i < AXD.length; i++) {

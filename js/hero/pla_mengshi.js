@@ -378,6 +378,61 @@ var HeroMengshi = (function () {
     [0.95, 1.65].forEach(function (hz) { box(B.dark, TAIL - 0.06, TAIL - 0.02, -0.56, -0.46, hz, hz + 0.10); });
   }
 
+  /* ------------------------------------------------------------ fittings */
+  /* the small fittings P1 and P2 show that the first pass left out: the hand rails along the
+     roof edges on their stand-offs, the bolt rows round the armoured windows and down the
+     door edges, the louvred vent in the front fender's side behind the wheel, the grab handles
+     at the pillars, the rubber bonnet catches, the bumper's shackles, the fender-top marker
+     lamps, the rear towing pintle and the rear grab handles. */
+  function rope(bin, P, r, seg) { for (var i = 0; i + 1 < P.length; i++) cyl(bin, P[i], P[i + 1], r, r, seg, true); }
+  function sp(x, z, s, out) { var y = s * sideY(z); return [x, y + s * SN[1] * out, z + SN[2] * out]; }
+  function addFittings(B) {
+    var s, i, x, k;
+    for (s = -1; s <= 1; s += 2) {
+      /* the roof rail: a tube on five stand-offs along each roof edge (P2) */
+      rope(B.dark, [[-2.30, s * (RFW - 0.07), ROOF + 0.09], [0.45, s * (RFW - 0.07), ROOF + 0.09]], 0.018, 6);
+      for (i = 0; i < 5; i++) { x = -2.30 + i * 0.6875; cylZ(B.dark, x, s * (RFW - 0.07), ROOF - 0.01, ROOF + 0.09, 0.016, 6); }
+      /* the bolt rows round the side windows' frames (P1, P2) */
+      [[0.31, 0.26], [-0.62, 0.28]].forEach(function (w) {
+        for (k = 0; k < 5; k++) {
+          x = w[0] - w[1] - 0.02 + k * (w[1] + 0.02) / 2;
+          onSide(B.dark, x, 1.88, s, 0.012, 0.012, 0.010, 0.03);
+          onSide(B.dark, x, 1.46, s, 0.012, 0.012, 0.010, 0.03);
+        }
+      });
+      /* bolt rows down the door edges on the lower side */
+      [DX0 - 0.04, DXM - 0.04, DX1 + 0.04].forEach(function (dx) {
+        for (k = 0; k < 5; k++) box(B.dark, dx - 0.012, dx + 0.012, s > 0 ? BW : -BW - 0.012, s > 0 ? BW + 0.012 : -BW, SILL + 0.10 + k * 0.17, SILL + 0.124 + k * 0.17);
+      });
+      /* the louvred vent on the front fender's side behind the wheel (P2) */
+      box(B.dark, 1.08, 1.30, s > 0 ? BW - 0.005 : -BW - 0.01, s > 0 ? BW + 0.01 : -BW + 0.005, 1.08, 1.38);
+      for (k = 0; k < 5; k++) box(B.paint, 1.09, 1.29, s > 0 ? BW + 0.005 : -BW - 0.02, s > 0 ? BW + 0.02 : -BW - 0.005, 1.10 + k * 0.055, 1.125 + k * 0.055);
+      /* the grab handles on the B and C pillars (P2) */
+      [DXM + 0.10, DX1 - 0.10].forEach(function (hx) {
+        rope(B.dark, [sp(hx, 1.52, s, 0.0), sp(hx, 1.52, s, 0.05), sp(hx, 1.86, s, 0.05), sp(hx, 1.86, s, 0.0)], 0.012, 5);
+      });
+      /* the rubber bonnet catches at the bonnet's front corners */
+      x = 2.28;
+      box(B.dark, x - 0.04, x + 0.04, s * 0.92 - 0.03, s * 0.92 + 0.03, bonZ(x) - 0.04, bonZ(x) + 0.03);
+      box(B.dark, x + 0.04, x + 0.20, s * 0.92 - 0.02, s * 0.92 + 0.02, bonZ(x) + 0.005, bonZ(x) + 0.025);
+      /* the fender-top marker lamps */
+      box(B.dark, 2.24, 2.34, s * 1.00 - 0.05, s * 1.00 + 0.05, bonZ(2.29) - 0.02, bonZ(2.29) + 0.06);
+      B.vc.col = AMBER;
+      box(B.vc, 2.34, 2.35, s * 1.00 - 0.035, s * 1.00 + 0.035, bonZ(2.29), bonZ(2.29) + 0.045);
+      /* the bumper's shackles (P1) */
+      rope(B.dark, [[2.66, s * 0.82, 0.70], [2.70, s * 0.82, 0.68], [2.70, s * 0.82, 0.56], [2.66, s * 0.82, 0.54]], 0.018, 6);
+      /* the rear grab handles beside the door */
+      rope(B.dark, [[TAIL - 0.01, s * 0.62, 1.20], [TAIL - 0.05, s * 0.62, 1.20], [TAIL - 0.05, s * 0.62, 1.70], [TAIL - 0.01, s * 0.62, 1.70]], 0.013, 5);
+      /* the drip rail along the roof's side edge */
+      box(B.dark, WX1 - 0.02, TAIL + 0.04, s > 0 ? RFW - 0.01 : -RFW - 0.01, s > 0 ? RFW + 0.01 : -RFW + 0.01, ROOF - 0.04, ROOF - 0.01);
+    }
+    /* the rear towing pintle on the frame end (NOT CONFIRMED: the rear is not photographed) */
+    box(B.dark, TAIL - 0.06, TAIL + 0.02, -0.10, 0.10, 0.56, 0.66);
+    rope(B.dark, [[TAIL - 0.04, 0, 0.66], [TAIL - 0.04, 0, 0.72], [TAIL - 0.04, 0.0, 0.50]], 0.020, 6);
+    /* the windscreen frame's bolt row along the header */
+    for (k = 0; k < 9; k++) { var hp = wp(0.97, -0.88 + k * 0.22, 0.05); box(B.dark, hp[0] - 0.012, hp[0] + 0.012, hp[1] - 0.012, hp[1] + 0.012, hp[2] - 0.012, hp[2] + 0.012); }
+  }
+
   /* -------------------------------------------- wheel: one per side of an axle */
   /* tyre (P1, P2): a big off-road tyre with a chunky lug tread; the painted rim, the hub and
      its nuts */
@@ -451,6 +506,7 @@ var HeroMengshi = (function () {
   function build(THREE, M, C) {
     var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), TB = bins(T), i, wg, WB, tg;
     addBody(HB);
+    addFittings(HB);
     flush(THREE, g, HB);
     for (i = 0; i < XA.length; i++) {
       WB = new Bin(T.wheel, false, true);

@@ -454,6 +454,60 @@ var HeroS75S125 = (function () {
     return g;
   }
 
+  /* ---------- fittings (the detail pass): a polyline of round bar ---------- */
+  function rod(c, h, THREE, key, P, r) {
+    for (var i = 0; i + 1 < P.length; i++) c.add(key, h.between(new THREE.Vector3(P[i][0], P[i][1], P[i][2]), new THREE.Vector3(P[i + 1][0], P[i + 1][1], P[i + 1][2]), r, 6));
+  }
+  /* the KrAZ-214's small fittings (the Togliatti truck's and any KrAZ's): mirrors on arms at the windscreen
+     pillars, wipers (kept within the 9,000-triangle
+     budget a pose has, tools/jsc/deploypose_check.js) */
+  function krazFittings(c, h, THREE) {
+    var j, y;
+    for (j = -1; j <= 1; j += 2) {
+      y = j * 1.24;
+      rod(c, h, THREE, "steel", [[-2.14, y, 2.30], [-2.10, j * 1.52, 2.30], [-2.10, j * 1.52, 2.10]], 0.015);
+      c.add("steel", h.box(-2.16, -2.10, j * 1.52 - 0.08, j * 1.52 + 0.08, 2.08, 2.40));
+      c.add("steel", h.box(-2.06, -2.04, j * 0.42 - 0.012, j * 0.42 + 0.012, 2.08, 2.48));
+    }
+  }
+  /* the AT-S's small fittings ("Artillery tractor AT-S.JPG", the same photograph as ru_sopka.js): the
+     searchlight on its post at the cab's front right corner, the wipers, the steps on the track guards, the
+     door handles */
+  function atsFittings(c, h, THREE) {
+    var j;
+    for (j = -1; j <= 1; j += 2) {
+      c.add("steel", h.box(-1.07, -1.05, j * 0.45 - 0.012, j * 0.45 + 0.012, 1.84, 2.28));
+      c.add("steel", h.box(-2.70, -1.90, j > 0 ? 1.10 : -1.30, j > 0 ? 1.30 : -1.10, 1.0, 1.03));
+      c.add("steel", h.box(-2.95, -2.84, j * 1.29 - 0.01, j * 1.29 + j * 0.025, 1.70, 1.74));
+    }
+    c.add("steel", h.cylZ(2.42, 2.64, 0.025, 0.025, 6, -1.14, -0.98));
+    c.add("steel", h.cylX(-1.24, -1.08, 0.09, 0.09, 10, -0.98, 2.70));
+    c.add("glass", h.cylX(-1.08, -1.07, 0.075, 0.075, 10, -0.98, 2.70));
+  }
+  /* the SM-63's swinging part: the ladder up the housing's left side, handles on the front box's doors, the
+     junction box low on the rear deck (NOT CONFIRMED in detail: placed by the housing's form) */
+  function sm63Fittings(tur, h, THREE) {
+    var i, j, x;
+    for (i = 0; i < 5; i++) tur.add("steel", h.box(-0.30, -0.05, 1.03, 1.06, 0.30 + i * 0.30, 0.33 + i * 0.30));
+    for (j = 0; j < 2; j++) tur.add("steel", h.box(j ? -0.07 : -0.30, j ? -0.04 : -0.27, 1.00, 1.06, 0.20, 1.80));
+    for (j = -1; j <= 1; j += 2) {
+      for (i = 0; i < 3; i++) { x = 1.05 + i * 0.64; tur.add("steel", h.box(x + 0.44, x + 0.50, j * 0.635 - 0.01, j * 0.635 + j * 0.03, 0.80, 0.86)); }
+      tur.add("paint", h.box(-2.10, -1.70, j * 0.95 - 0.02, j * 0.95 + j * 0.10, 0.35, 0.75));
+    }
+  }
+  /* the 5P73's traversing part: a junction box low on the front face; on the ground plate the handwheels on
+     the screw jacks */
+  function p73Fittings(tur, h, THREE) {
+    tur.add("paint", h.box(0.62, 0.72, 1.10, 1.50, 0.12, 0.40));
+  }
+  function p73GroundFittings(c, h, THREE) {
+    var i, s;
+    for (i = 0; i < 8; i++) {
+      s = i * TAU / 8;
+      c.add("steel", h.cylZ(0.50, 0.53, 0.11, 0.11, 10, Math.cos(s) * 1.5, Math.sin(s) * 1.5));
+    }
+  }
+
   /* ---------------- the KrAZ-214 6x6 truck (the S-75 launcher's tractor) ----
      Ru-wiki infobox: 8,575 x 2,700 x 2,880 mm (3,180 over the tilt),
      wheelbase 4,600 + 1,400 mm, track 2,030 mm. Shape from the Togliatti
@@ -515,6 +569,7 @@ var HeroS75S125 = (function () {
     /* axles and the rear lamps */
     for (i = 0; i < 3; i++) c.add("steel", h.cylY(-0.88, 0.88, 0.09, 10, AXL[i], R));
     for (j = -1; j <= 1; j += 2) c.add("mDark", h.box(-8.56, -8.5, j * 1.1 - 0.08, j * 1.1 + 0.08, 1.0, 1.1));
+    krazFittings(c, h, THREE);
     c.pop();
     for (i = 0; i < 3; i++) grp.add(wheelSet(THREE, h, M, X + AXL[i], R, [-1.015, 1.015], 0.37, 12, 8));
   }
@@ -584,6 +639,7 @@ var HeroS75S125 = (function () {
     /* towing hook */
     c.add("steel", h.box(-6.0, -5.6, -0.2, 0.2, 0.62, 0.86));
     c.add("steel", h.cylY(-0.08, 0.08, 0.09, 10, -6.04, 0.74));
+    atsFittings(c, h, THREE);
     c.pop();
     /* six road wheels a side (each pair on one axle group), sprocket, idler */
     for (i = 0; i < 6; i++) grp.add(wheelSet(THREE, h, M, X - 1.2 - i * 0.56, RW, [-YT, YT], 0.18, 12, 0, "steel"));
@@ -701,6 +757,7 @@ var HeroS75S125 = (function () {
     tur.add("steel", h.box(-0.2, 0.25, -0.5, 0.5, 0.95, 0.99));
     /* the side's modest team mark: a small plate on the housing top */
     tur.add("team", h.box(-1.25, -0.55, -0.4, 0.4, 1.97, 1.985));
+    sm63Fittings(tur, h, THREE);
   }
   /* the boom in its own frame: origin on the pivot, X along the rail.
      A box girder with stiffeners, the rail with its shoe clamps on top,
@@ -877,6 +934,7 @@ var HeroS75S125 = (function () {
       c.add("paint", h.cylZ(0.3, 0.46, 0.09, 0.09, 8, x, y));
       c.add("steel", h.cylZ(0.46, 0.5, 0.05, 0.05, 6, x, y));
     }
+    p73GroundFittings(c, h, THREE);
   }
 
   /* the traversing part on the pedestal [R]: turntable, the box housing set
@@ -920,6 +978,7 @@ var HeroS75S125 = (function () {
     tur.add("steel", h.cylY(-2.68, -2.62, 0.12, 10, P73_PIV[0], P73_PIV[1]));
     tur.add("paint", h.box(-0.3, 0.3, -2.12, -1.92, 0.98, 1.2));
     tur.add("team", h.box(-0.5, -0.1, 0.9, 1.5, 1.06, 1.075));
+    p73Fittings(tur, h, THREE);
   }
   /* the rails in their own frame: origin on the tube's axis, X along the
      rails. The tube, four rail arms clamped on it, four rails with shoe

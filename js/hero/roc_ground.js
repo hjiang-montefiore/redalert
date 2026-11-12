@@ -973,6 +973,49 @@ var HeroRocGround = (function () {
     /* team colour along the roof edges */
     for (s = -1; s <= 1; s += 2) box(B.team, -2.0, -0.2, s > 0 ? VC.RWD - 0.14 : -VC.RWD + 0.03, s > 0 ? VC.RWD - 0.03 : -VC.RWD + 0.14, VC.RZ, VC.RZ + 0.012);
   }
+  /* the V-150's small fittings P10-P15 show that the first pass left out (detail pass): the two grated steps
+     under the side door, the tow cable coiled on the front deck with its shackles (P10, "v150_side"), the framed
+     vision blocks along the upper side plates, grab handles on the upper plates, the tie-down eyes on the front
+     deck, the hinges of the side door, the hub nuts (tyrePair draws the hub) */
+  function v150Fittings(B) {
+    var P = B.paint, D = B.dark, G = B.glass, s, k, F, a, prev, q, x;
+    for (s = -1; s <= 1; s += 2) {
+      F = vFrame(s);
+      /* the grated steps under the door (v150_side) */
+      for (k = 0; k < 2; k++) {
+        box(D, -0.50, -0.10, s > 0 ? 0.70 : -1.02, s > 0 ? 1.02 : -0.70, 0.55 + k * 0.25, 0.58 + k * 0.25);
+        for (x = -0.46; x < -0.12; x += 0.08) box(D, x, x + 0.02, s > 0 ? 0.72 : -1.00, s > 0 ? 1.00 : -0.72, 0.58 + k * 0.25, 0.60 + k * 0.25);
+      }
+      bar(D, [-0.50, s * 0.86, 0.55], [-0.50, s * 0.86, 0.95], 0.03);
+      bar(D, [-0.10, s * 0.86, 0.55], [-0.10, s * 0.86, 0.95], 0.03);
+      /* framed vision blocks along the upper plate (v150_side: the row of windows) */
+      [1.05, -1.05, -1.70].forEach(function (vx) {
+        onSide(D, F, vx - 0.20, vx + 0.20, 0.30, 0.44, 0.0, 0.03);
+        onSide(G, F, vx - 0.16, vx + 0.16, 0.32, 0.42, 0.03, 0.035);
+      });
+      /* grab handles on the upper plate's front (v150_side) */
+      onSide(D, F, 1.30, 1.34, 0.30, 0.34, 0.0, 0.06);
+      onSide(D, F, 1.60, 1.64, 0.30, 0.34, 0.0, 0.06);
+      onSide(D, F, 1.30, 1.64, 0.30, 0.34, 0.05, 0.07);
+      /* the door's hinges */
+      onSide(D, F, 0.02, 0.07, 0.10, 0.18, 0.02, 0.05);
+      onSide(D, F, 0.02, 0.07, 0.42, 0.50, 0.02, 0.05);
+      /* the tie-down eyes on the front deck */
+      cylY(D, 2.62, s * 0.62 - 0.02, s * 0.62 + 0.02, 1.48, 0.04, 8);
+    }
+    /* the tow cable coiled on the front deck, two loops, its shackles (v150_side) */
+    for (k = 0; k < 2; k++) {
+      prev = null;
+      for (a = 0; a <= 16; a++) {
+        var t = a / 16 * Math.PI * 2;
+        q = [1.90 + Math.cos(t) * (0.30 + k * 0.04), -0.10 + Math.sin(t) * (0.55 + k * 0.04), 1.63 + k * 0.035 - (Math.cos(t) * 0.04)];
+        if (prev) bar(D, prev, q, 0.035);
+        prev = q;
+      }
+    }
+    cylY(D, 1.90, 0.40, 0.50, 1.68, 0.06, 10);
+    cylY(D, 1.90, -0.70, -0.60, 1.68, 0.06, 10);
+  }
   /* the gun ring at the front of the roof with the M2 on its pedestal (P10, P12): origin on the ring centre */
   function v150Turret(TB) {
     var P = TB.paint, D = TB.dark;
@@ -986,6 +1029,7 @@ var HeroRocGround = (function () {
   function buildV150(THREE, C) {
     var T = materials(THREE, C, PAINT.roc), g = new THREE.Group(), B = bins(T), i, wg, tg, TB;
     v150Hull(B);
+    v150Fittings(B);
     var hg = new THREE.Group(); hg.name = "hull"; flush(THREE, hg, B); g.add(hg);
     for (i = 0; i < VC.AX.length; i++) {
       var WB = { tyre: new Bin(T.tyre, false), paint: new Bin(T.paint, true), dark: new Bin(T.dark, false) };
@@ -1286,6 +1330,29 @@ var HeroRocGround = (function () {
     for (s = -1; s <= 1; s += 2) box(B.team, -2.80, -0.60, s > 0 ? HT.BW - 0.03 : -HT.BW - 0.01, s > 0 ? HT.BW + 0.01 : -HT.BW + 0.03, wallTop, wallTop + 0.012);
     htTrack(B);
   }
+  /* the half-track's small fittings P30 shows that the first pass left out (detail pass): the rows of rivet
+     heads along the body's top edge, down its plate joints and along the bonnet's sides, the posts holding the
+     stowage rail off the body, the door's hinges and handle, the stowage box on the running board under the door,
+     the screen's frame bar on its two posts, the hood's side latches, the hubs' nuts on the front wheels (in
+     tyrePair already) */
+  function htFittings(B, V) {
+    var D = B.dark, s, x, y, wallTop = V.m16 ? 1.45 : HT.BZ1, z;
+    for (s = -1; s <= 1; s += 2) {
+      y = s > 0 ? HT.BW : -HT.BW - 0.014;
+      for (x = HT.REAR + 0.10; x < HT.CAB - 0.05; x += 0.22) box(D, x - 0.015, x + 0.015, y, y + 0.014, wallTop - 0.07, wallTop - 0.04);
+      [-2.10, -1.10, -0.20].forEach(function (jx) { for (z = HT.BZ0 + 0.10; z < wallTop - 0.10; z += 0.16) box(D, jx - 0.015, jx + 0.015, y, y + 0.014, z, z + 0.03); });
+      for (x = 1.00; x < HT.HOODF - 0.05; x += 0.20) box(D, x - 0.015, x + 0.015, s > 0 ? 0.70 : -0.73, s > 0 ? 0.73 : -0.70, 1.02, 1.05);
+      if (!V.m16) for (x = -2.85; x < -0.30; x += 0.80) box(D, x - 0.02, x + 0.02, s > 0 ? HT.BW : -HT.BW - 0.05, s > 0 ? HT.BW + 0.05 : -HT.BW, 1.20, 1.33);
+      box(D, 0.84, 0.90, s > 0 ? HT.BW : -HT.BW - 0.02, s > 0 ? HT.BW + 0.02 : -HT.BW, 1.15, 1.25);
+      box(D, 0.84, 0.90, s > 0 ? HT.BW : -HT.BW - 0.02, s > 0 ? HT.BW + 0.02 : -HT.BW, 1.62, 1.72);
+      box(D, 0.18, 0.30, s > 0 ? HT.BW : -HT.BW - 0.03, s > 0 ? HT.BW + 0.03 : -HT.BW, 1.38, 1.42);
+      box(B.paint, 0.25, 0.85, s > 0 ? HT.BW - 0.02 : -1.09, s > 0 ? 1.09 : -HT.BW + 0.02, 0.85, 1.00);
+      box(D, 0.25, 0.85, s > 0 ? 1.09 : -1.095, s > 0 ? 1.095 : -1.09, 0.95, 0.97);
+      cylZ(D, HT.CAB - 0.01, s * (HT.BW - 0.04), 1.97, 2.08, 0.015, 6);
+      box(D, 1.85, 1.95, s > 0 ? 0.69 : -0.73, s > 0 ? 0.73 : -0.69, 1.22, 1.30);
+    }
+    box(D, HT.CAB - 0.03, HT.CAB + 0.01, -HT.BW + 0.04, HT.BW - 0.04, 2.06, 2.09);
+  }
   /* the M3A1 pulpit: the armoured box on posts over the commander's seat, front right (P30, P31, P31) */
   var PUL = { x: 0.50, y: -0.58, z: 2.22 };
   function htPulpit(B) {
@@ -1329,6 +1396,7 @@ var HeroRocGround = (function () {
     var V = { m16: which === "m16" }, T = materials(THREE, C, PAINT.od), g = new THREE.Group(), B = bins(T), i, wg, tg, TB;
     var dx = V.m16 ? -0.165 : 0;
     htBody(B, V);
+    htFittings(B, V);
     if (!V.m16) htPulpit(B);
     var hg = new THREE.Group(); hg.name = "hull"; flush(THREE, hg, B); hg.position.x = dx; g.add(hg);
     /* the front axle */

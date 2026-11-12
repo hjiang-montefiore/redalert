@@ -354,6 +354,11 @@ var HeroRocArtillery = (function () {
         q.fillRect(R() * S, R() * S, 1 + R() * 3, 8 + R() * 36);
       }
       for (i = 0; i < 40; i++) { q.fillStyle = "rgba(10,10,8,0.15)"; q.fillRect(R() * S, R() * S, 2, 2); }
+      /* plate seams, one each way per tile, with a light catch beside each (detail pass) */
+      q.fillStyle = "rgba(18,18,12,0.16)";
+      q.fillRect(0, Math.round(S * 0.37), S, 2); q.fillRect(Math.round(S * 0.63), 0, 2, S);
+      q.fillStyle = "rgba(230,225,200,0.06)";
+      q.fillRect(0, Math.round(S * 0.37) + 2, S, 1); q.fillRect(Math.round(S * 0.63) + 2, 0, 1, S);
     } catch (e) { cv = null; }
     _cv[key] = cv;
     return cv;
@@ -482,6 +487,9 @@ var HeroRocArtillery = (function () {
         W.col = SW; cylY(W, 0, y + s * w / 2, y + s * (w / 2 + 0.012), 0, r * 0.93, 22);
         W.col = RM; cyl(W, [0, y + s * (w / 2 + 0.01), 0], [0, y + s * (w / 2 + 0.03), 0], r * 0.56, r * 0.50, 18);
         W.col = H; cylY(W, 0, y + s * (w / 2 + 0.02), y + s * (w / 2 + 0.09), 0, r * 0.20, 10);
+        /* the wheel nuts round the hub (detail pass) */
+        W.col = SW;
+        for (a = 0; a < 8; a++) { var na = (a + 0.5) / 8 * TAU; cylY(W, Math.cos(na) * r * 0.32, y + s * (w / 2 + 0.025), y + s * (w / 2 + 0.05), Math.sin(na) * r * 0.32, r * 0.035, 6); }
       }
     }
   }
@@ -639,6 +647,60 @@ var HeroRocArtillery = (function () {
   /* ============================================== Kung Feng VI on the M54 5-ton (roc_e80/e90_mlrs) [K1-K4] */
   var KF = { XF: 2.60, XA: [-1.265, -2.635], R: 0.55, TW: 0.28, XB: 3.65, XT: -3.925, ZF: 1.30,
              TX: -2.45, TRX: -3.70, TRZ: 2.20, STOW: 0.10, EL: 0.55 };
+  /* ---- a polyline of round bar (the detail pass) */
+  function rod(bin, P, r) { for (var i = 0; i + 1 < P.length; i++) cyl(bin, P[i], P[i + 1], r, r, 6, true); }
+  /* the KF-6's truck fittings K1-K3 show that the first pass left out (detail pass): the mirrors on their arms,
+     the wipers, the doors' hinges and handles, the step and grab handle at each door, the rope hooks along the
+     body's rails, the towing pintle at the tail, the tie-down cleats on the tailgate, guards over the headlamps */
+  function kf6Fittings(B) {
+    var s, i, x;
+    for (s = -1; s <= 1; s += 2) {
+      rod(B.dark, [[2.10, s * 1.00, 2.30], [2.18, s * 1.17, 2.30], [2.18, s * 1.17, 2.05]], 0.015);
+      box(B.dark, 2.15, 2.21, s * 1.17 - 0.06, s * 1.17 + 0.06, 2.02, 2.32);
+      rod(B.dark, [[2.22, s * 0.50, 2.42], [2.22, s * 0.28, 2.02]], 0.012);
+      box(B.dark, 1.74, 1.70, s > 0 ? 1.00 : -1.03, s > 0 ? 1.03 : -1.00, 1.30, 1.40);
+      box(B.dark, 1.74, 1.70, s > 0 ? 1.00 : -1.03, s > 0 ? 1.03 : -1.00, 1.70, 1.80);
+      box(B.dark, 1.32, 1.20, s > 0 ? 1.00 : -1.035, s > 0 ? 1.035 : -1.00, 1.55, 1.59);
+      rod(B.dark, [[1.22, s * 1.005, 1.30], [1.22, s * 1.05, 1.30], [1.22, s * 1.05, 1.85], [1.22, s * 1.005, 1.85]], 0.014);
+      for (i = 0; i < 7; i++) { x = 0.80 - i * 0.68; box(B.dark, x - 0.03, x + 0.03, s > 0 ? 1.232 : -1.245, s > 0 ? 1.245 : -1.232, 1.55, 1.60); }
+      rod(B.dark, [[3.38, s * 0.68, 1.17], [3.55, s * 0.68, 1.22], [3.55, s * 0.92, 1.22], [3.38, s * 0.92, 1.17]], 0.012);
+      box(B.dark, KF.XT + 0.07, KF.XT + 0.04, s * 0.70 - 0.05, s * 0.70 + 0.05, 1.70, 1.76);
+    }
+    box(B.dark, KF.XT + 0.10, KF.XT + 0.02, -0.12, 0.12, 0.72, 0.86);
+    rod(B.dark, [[KF.XT + 0.04, 0, 0.86], [KF.XT + 0.04, 0, 0.92], [KF.XT + 0.04, 0, 0.66]], 0.025);
+  }
+  /* the Chaparral carrier's fittings (D1, C1-C3): the headlamps' guards, the grab handles up the cab's
+     corners, the tow cable stowed along the fender ledge with its eyes, the lockers' hinges and latches, the
+     rear towing pintle, the bolt row along the ledge */
+  function chFittings(B) {
+    var s, x, i;
+    for (s = -1; s <= 1; s += 2) {
+      rod(B.dark, [[CH.XN - 0.12, s * 0.88, 1.10], [CH.XN + 0.025, s * 0.88, 1.20], [CH.XN + 0.025, s * 1.12, 1.20], [CH.XN - 0.12, s * 1.12, 1.10]], 0.012);
+      rod(B.dark, [[0.98, s * 1.27, 1.12], [0.98, s * 1.31, 1.12], [0.98, s * 1.31, 1.55], [0.98, s * 1.27, 1.55]], 0.014);
+      rod(B.dark, [[2.05, s * 1.30, 0.93], [-2.65, s * 1.30, 0.93]], 0.022);
+      cylZ(B.dark, 2.10, s * 1.30, 0.90, 0.96, 0.05, 8);
+      cylZ(B.dark, -2.70, s * 1.30, 0.90, 0.96, 0.05, 8);
+      for (i = 0; i < 2; i++) { x = 0.60 - i * 0.62; box(B.dark, x - 0.04, x + 0.04, s > 0 ? 1.27 : -1.285, s > 0 ? 1.285 : -1.27, 1.40, 1.48); }
+      box(B.dark, 0.80, -0.25, s > 0 ? 0.85 : -1.27, s > 0 ? 1.27 : -0.85, 1.55, 1.57);
+      for (x = -2.70; x < 2.70; x += 0.36) box(B.dark, x - 0.015, x + 0.015, s > 0 ? CH.HW + 0.02 : -CH.HW - 0.05, s > 0 ? CH.HW + 0.05 : -CH.HW - 0.02, 0.90, 0.91);
+    }
+    box(B.dark, CH.XT - 0.02, CH.XT + 0.06, -0.10, 0.10, 0.62, 0.74);
+  }
+  /* the HF-2 TEL's fittings N1-N2 show that the first pass left out: the cab's mirrors (already as plates) get
+     arms, the steps and grab handles at the cab doors, the rails' posts on the front deck, the lockers'
+     latches, the trailer's rear lamps' guards and the reflector strip, chocks on the trailer's side */
+  function hf2Fittings(B) {
+    var s, i, x;
+    for (s = -1; s <= 1; s += 2) {
+      rod(B.dark, [[8.25, s * 1.24, 2.95], [8.40, s * 1.40, 2.95]], 0.018);
+      for (i = 0; i < 3; i++) box(B.dark, 7.40, 7.95, s > 0 ? 1.10 : -1.32, s > 0 ? 1.32 : -1.10, 0.62 + i * 0.22, 0.65 + i * 0.22);
+      rod(B.dark, [[7.30, s * 1.245, 1.40], [7.30, s * 1.29, 1.40], [7.30, s * 1.29, 2.10], [7.30, s * 1.245, 2.10]], 0.016);
+      for (x = -0.95; x > -5.30; x -= 0.65) box(B.dark, x - 0.04, x + 0.04, s > 0 ? 1.22 : -1.245, s > 0 ? 1.245 : -1.22, 0.95, 1.02);
+      box(B.dark, -6.00, -7.60, s > 0 ? 1.245 : -1.255, s > 0 ? 1.255 : -1.245, 1.11, 1.14);
+      box(B.paint, -5.40, -5.70, s > 0 ? 0.95 : -1.15, s > 0 ? 1.15 : -0.95, 0.55, 0.70);
+      rod(B.dark, [[HF.XT + 0.02, s * 0.80, 0.86], [HF.XT - 0.01, s * 0.80, 0.86], [HF.XT - 0.01, s * 1.10, 0.86], [HF.XT + 0.02, s * 1.10, 0.86]], 0.010);
+    }
+  }
   function kf6(THREE, M, C, paint) {
     var T = materials(THREE, C, paint), g = group(THREE, "kf6"), B = bins(T), s, i, x;
     T.tube = new THREE.MeshStandardMaterial({ color: 0x3a4036, roughness: 0.7, metalness: 0.2 });
@@ -695,6 +757,7 @@ var HeroRocArtillery = (function () {
     /* mudguards over the tandem */
     for (s = -1; s <= 1; s += 2) box(B.dark, -0.55, -3.30, s > 0 ? 0.55 : -1.15, s > 0 ? 1.15 : -0.55, KF.ZF - 0.16, KF.ZF - 0.12);
     box(B.team, 2.05, 1.40, -0.08, 0.08, 2.54, 2.55);
+    kf6Fittings(B);
     var hg = group(THREE, "hull"); flush(THREE, hg, B); flush(THREE, hg, { sp: SP }); g.add(hg);
     var wl = [[KF.XF, KF.R, function (W) { tyrePair(W, PAINTS[paint].base, 0.94, KF.R, KF.TW, false); }]];
     KF.XA.forEach(function (x) { wl.push([x, KF.R, function (W) { tyrePair(W, PAINTS[paint].base, 0.86, KF.R, KF.TW, true); }]); });
@@ -768,6 +831,7 @@ var HeroRocArtillery = (function () {
     track(B.dark, CH.XW.map(function (x) { return [x, CH.ZW, CH.RW + 0.035]; }).concat([[CH.SPR[0], CH.SPR[1], CH.SPR[2] + 0.035], [CH.IDL[0], CH.IDL[1], CH.IDL[2] + 0.035]]), CH.TY, CH.TW, 0.155);
     sprocket(B.dark, CH.SPR[0], CH.SPR[1], CH.SPR[2], CH.TY, 10);
     for (s = -1; s <= 1; s += 2) cylY(B.paint, CH.IDL[0], s * CH.TY - 0.14, s * CH.TY + 0.14, CH.IDL[1], CH.IDL[2], 18);
+    chFittings(B);
     var hg = group(THREE, "hull"); flush(THREE, hg, B); g.add(hg);
     wheelGroups(THREE, g, T, CH.XW.map(function (x) { return [x, CH.ZW, function (W) { wheelPair(W, PAINTS.od.base, CH.TY, CH.RW, 0.25, false); }]; }));
     /* the M54 launch station: turntable, the gunner's cab with its front window, the two arms
@@ -1059,6 +1123,21 @@ var HeroRocArtillery = (function () {
     cylY(B.dark, KF4.EYE + 0.03, -0.015, 0.015, 0.62, 0.045, 10);
     cylZ(B.dark, -1.75, 0.22, 0.11, 0.60, 0.028, 8);
     cylY(B.rub, -1.75, 0.19, 0.25, 0.11, 0.11, 12);
+    /* detail pass (F1-F4): the mudguards over the wheels on their stays, the jacks' cranks, the safety chain
+       lugs at the drawbar head, the trail's carrying handle */
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 6; i++) {
+        var ga = (38 + i * 20) * Math.PI / 180, gb = (38 + (i + 1) * 20) * Math.PI / 180, gr = KF4.R + 0.07;
+        belt(B.paint, Math.cos(ga) * gr, KF4.R + Math.sin(ga) * gr, Math.cos(gb) * gr, KF4.R + Math.sin(gb) * gr, s * (KF4.TY - KF4.TW / 2 - 0.04), s * (KF4.TY + KF4.TW / 2 + 0.03), 0.02);
+      }
+      cyl(B.dark, [0.0, s * 0.70, KF4.R + 0.08], [0.0, s * (KF4.TY - 0.10), KF4.R + 0.40], 0.015, 0.015, 6, true);
+      cyl(B.dark, [0.20, s * 0.66, 0.50], [0.20, s * 0.66, 0.56], 0.012, 0.012, 5, true);
+      cyl(B.dark, [0.14, s * 0.66, 0.56], [0.26, s * 0.66, 0.56], 0.012, 0.012, 5, true);
+      box(B.dark, KF4.EYE + 0.30, KF4.EYE + 0.36, s * 0.16, s * 0.19, 0.58, 0.66);
+    }
+    cyl(B.dark, [-1.10, -0.20, 0.66], [-1.10, -0.20, 0.74], 0.012, 0.012, 5, true);
+    cyl(B.dark, [-1.10, 0.20, 0.66], [-1.10, 0.20, 0.74], 0.012, 0.012, 5, true);
+    cyl(B.dark, [-1.10, -0.20, 0.74], [-1.10, 0.20, 0.74], 0.012, 0.012, 5, true);
     var hg = group(THREE, "hull"); flush(THREE, hg, B); g.add(hg);
     wheelGroups(THREE, g, T, [[0, KF4.R, function (W) { tyrePair(W, PAINTS.od.base, KF4.TY, KF4.R, KF4.TW, false); }]]);
     /* "turret": the pivot on the cross beam, the cradle posts up to the trunnion discs, the two
@@ -1140,6 +1219,7 @@ var HeroRocArtillery = (function () {
     cylZ(B.dark, 4.75, -0.95, 4.40, 4.60, 0.03, 6);
     cyl(B.dark, [4.75, -0.95, 4.62], [4.95, -0.95, 4.70], 0.22, 0.05, 12);
     box(B.team, 4.20, 2.10, -0.08, 0.08, 3.45, 3.46);
+    hf2Fittings(B);
     var hg = group(THREE, "hull"); flush(THREE, hg, B); g.add(hg);
     var wl = [[HF.AXT[0], HF.RT, function (W) { tyrePair(W, PAINTS.roc.base, 1.02, HF.RT, 0.32, false); }]];
     [HF.AXT[1], HF.AXT[2]].forEach(function (x) { wl.push([x, HF.RT, function (W) { tyrePair(W, PAINTS.roc.base, 0.86, HF.RT, 0.30, true); }]); });

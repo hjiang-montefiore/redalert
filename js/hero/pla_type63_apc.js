@@ -266,6 +266,77 @@ var HeroType63Apc = (function () {
     for (s = -1; s <= 1; s += 2) box(B.dark, REAR - 0.12, REAR, s * 0.80 - 0.06, s * 0.80 + 0.06, 0.66, 0.76);
   }
 
+  /* ------------------------------------------------------------ fittings */
+  /* the small fittings the photographs show and the first pass left out (P1 left side, P2
+     right side and nose): tool clips and the round vision-port covers on the leaning upper
+     sides, the tow cable looped along the right side (P2), the rear mudguard flaps over the
+     idler, grab rails on the roof edge, bolt rows, hatch hinges, tail lamps, towing hooks. */
+  var UPL = Math.sqrt((SW - RW2) * (SW - RW2) + (ROOF - BZ1) * (ROOF - BZ1));
+  function upAt(s, x, t, off) {
+    var n = [0, s * (ROOF - BZ1) / UPL, (SW - RW2) / UPL];
+    return [x + 0, s * (SW - (SW - RW2) * t) + n[1] * off, BZ1 + (ROOF - BZ1) * t + n[2] * off];
+  }
+  function onUp(bin, s, x, t, hu, hd, hn) {
+    var n = [0, s * (ROOF - BZ1) / UPL, (SW - RW2) / UPL], d = [0, -s * (SW - RW2) / UPL, (ROOF - BZ1) / UPL];
+    slab(bin, upAt(s, x, t, hn), [1, 0, 0], d, n, hu, hd, hn);
+  }
+  function rope(bin, P, r, seg) { for (var i = 0; i + 1 < P.length; i++) cyl(bin, P[i], P[i + 1], r, r, seg, true); }
+  function addFittings(B) {
+    var s, i, x, pts, a;
+    for (s = -1; s <= 1; s += 2) {
+      /* two round vision-port covers on each upper side (P1), with their hinge lugs */
+      [0.95, -0.35].forEach(function (px) {
+        var c = upAt(s, px, 0.55, 0), n = [0, s * (ROOF - BZ1) / UPL, (SW - RW2) / UPL];
+        cyl(B.paint, c, [c[0], c[1] + n[1] * 0.035, c[2] + n[2] * 0.035], 0.13, 0.12, 14);
+        onUp(B.dark, s, px, 0.80, 0.03, 0.03, 0.03);
+      });
+      /* tool clips: rows of small brackets along the upper side (P1) */
+      for (i = 0; i < 6; i++) { x = -2.25 + i * 0.62; onUp(B.dark, s, x, 0.22, 0.03, 0.035, 0.035); onUp(B.dark, s, x + 0.18, 0.72, 0.03, 0.035, 0.035); }
+      /* the rear mudguard flaps over the idler (P1) and the front flaps' rubber edge */
+      box(B.paint, REAR - 0.02, REAR + 0.26, s > 0 ? SW : -BW + 0.01, s > 0 ? BW - 0.01 : -SW, BZ0 - 0.30, BZ0);
+      box(B.dark, REAR - 0.02, REAR + 0.26, s > 0 ? SW + 0.01 : -BW + 0.01, s > 0 ? BW - 0.01 : -SW - 0.01, BZ0 - 0.36, BZ0 - 0.30);
+      /* the bin lids' latches, two per bay */
+      [-2.05, -0.65, 0.75, 2.20].forEach(function (lx) { box(B.dark, lx - 0.04, lx + 0.04, s > 0 ? BW - 0.005 : -BW - 0.012, s > 0 ? BW + 0.012 : -BW + 0.005, BZ1 - 0.10, BZ1 - 0.02); });
+      /* grab rail along the roof edge, on four stand-offs */
+      rope(B.dark, [[-2.35, s * (RW2 - 0.06), ROOF + 0.07], [-0.20, s * (RW2 - 0.06), ROOF + 0.07]], 0.014, 6);
+      [-2.35, -1.62, -0.92, -0.20].forEach(function (rx) { cylZ(B.dark, rx, s * (RW2 - 0.06), ROOF, ROOF + 0.07, 0.014, 6); });
+      /* bolt row along the roof seam */
+      for (i = 0; i < 14; i++) box(B.dark, -2.55 + i * 0.30, -2.53 + i * 0.30, s * (RW2 - 0.14) - 0.015, s * (RW2 - 0.14) + 0.015, ROOF, ROOF + 0.015);
+      /* tail lamps in their guards on the rear plate */
+      box(B.dark, REAR - 0.05, REAR, s * 1.10 - 0.07, s * 1.10 + 0.07, 1.38, 1.48);
+      box(B.team, REAR - 0.055, REAR - 0.045, s * 1.10 - 0.05, s * 1.10 + 0.05, 1.40, 1.46);
+      rope(B.dark, [[REAR, s * 1.20, 1.36], [REAR - 0.10, s * 1.20, 1.36], [REAR - 0.10, s * 1.20, 1.52], [REAR, s * 1.20, 1.52]], 0.010, 5);
+      /* towing hooks on the nose plate (P2): open hooks below the eyes */
+      a = s * 0.55;
+      rope(B.dark, [[NOSE - 0.02, a, 0.70], [NOSE + 0.05, a, 0.68], [NOSE + 0.07, a, 0.62], [NOSE + 0.05, a, 0.56], [NOSE + 0.01, a, 0.56]], 0.020, 6);
+    }
+    /* the tow cable on the right side (P2): eye on the nose, looped back along the upper side
+       in two sags to the rear, eye over the idler */
+    pts = [];
+    for (i = 0; i <= 18; i++) {
+      x = 2.45 - i * (4.90 / 18);
+      var t = 0.55 - 0.38 * Math.pow(Math.sin(i / 18 * Math.PI * 2), 2);
+      pts.push(upAt(-1, Math.min(x, 1.50), Math.max(0.05, t), 0.03));
+      if (x > 1.50) { pts[pts.length - 1][0] = x; pts[pts.length - 1][2] = BZ1 + 0.02 + (x - 1.50) * 0.18; pts[pts.length - 1][1] = -SW - 0.02; }
+    }
+    rope(B.dark, pts, 0.022, 6);
+    cylY(B.dark, 2.45, -SW - 0.05, -SW + 0.01, BZ1 + 0.20, 0.06, 8);
+    cylY(B.dark, -2.45, -SW - 0.05, -SW + 0.01, BZ1 + 0.08, 0.06, 8);
+    /* the trim vane's hinge knuckles and the rivet row across it (P2) */
+    for (i = 0; i < 9; i++) box(B.dark, 2.48, 2.56, -1.20 + i * 0.30, -1.12 + i * 0.30, BZ1 + 0.05, BZ1 + 0.10);
+    /* hatch hinges and handles on the roof hatches */
+    [-0.55, -1.55].forEach(function (hx) {
+      for (s = -1; s <= 1; s += 2) {
+        cyl(B.dark, [hx - 0.36, s * 0.55, ROOF + 0.05], [hx - 0.20, s * 0.55, ROOF + 0.05], 0.025, 0.025, 6);
+        rope(B.dark, [[hx + 0.10, s * 0.35, ROOF + 0.04], [hx + 0.10, s * 0.35, ROOF + 0.09], [hx + 0.24, s * 0.35, ROOF + 0.09], [hx + 0.24, s * 0.35, ROOF + 0.04]], 0.010, 5);
+      }
+    });
+    /* the driver's vision blocks in front of his hatch */
+    for (i = -1; i <= 1; i++) { box(B.paint, 1.36, 1.46, 0.50 + i * 0.14 - 0.05, 0.50 + i * 0.14 + 0.05, ROOF, ROOF + 0.08); box(B.dark, 1.46, 1.465, 0.50 + i * 0.14 - 0.04, 0.50 + i * 0.14 + 0.04, ROOF + 0.02, ROOF + 0.06); }
+    /* the whip aerial on the rear left base (P2) */
+    cylZ(B.dark, -2.30, 0.85, ROOF + 0.14, ROOF + 1.00, 0.008, 4);
+  }
+
   /* ------------------------------------------------------------ running gear */
   function hull2(P) {
     P = P.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
@@ -335,6 +406,9 @@ var HeroType63Apc = (function () {
       }
       W.col = RIB;
       cylY(W, 0, y + s * 0.17, y + s * 0.20, 0, 0.09, 10);
+      /* the hub cap's nuts */
+      W.col = HOLE;
+      for (i = 0; i < 6; i++) { a = i / 6 * TAU; box(W, Math.cos(a) * 0.06 - 0.012, Math.cos(a) * 0.06 + 0.012, y + s * 0.20 - 0.012, y + s * 0.20 + 0.012, Math.sin(a) * 0.06 - 0.012, Math.sin(a) * 0.06 + 0.012); }
     }
   }
 
@@ -362,6 +436,7 @@ var HeroType63Apc = (function () {
     var T = materials(THREE, C), g = new THREE.Group(), HB = bins(T), TB = bins(T), i, wg, WB, tg;
     addHull(HB);
     addRunning(HB);
+    addFittings(HB);
     addPintle(HB);
     flush(THREE, g, HB);
     for (i = 0; i < XW.length; i++) {
