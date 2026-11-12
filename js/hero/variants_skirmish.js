@@ -387,6 +387,21 @@ var HeroVariantsSkirmish = (function () {
     add.name = "z10me_parts";
     flush(add, B, T, "z10me");
     g.add(add);
+    /* the draw-call budget (16 a vehicle): the radar stalk and drum ribs and the dark discs and nose
+       ball are drawn with pla_z10.js's dark fittings, all static (Armour3D.tint keeps each colour,
+       written linear, and its diffuse; the rib's metalness is the fittings' own, roughness 0.60 /
+       0.70 -> 0.62; all three are closed solids wound outward, so the fittings' single side draws
+       them as the double side did), then join - "z10me_rib" and "z10me_dark" stay, empty. 18 -> 16 */
+    var fd = null, rib = null, dk = null, ch = g.children, i;
+    for (i = 0; i < ch.length; i++) if (ch[i].isMesh && ch[i].name === "fittings_dark") fd = ch[i];
+    for (i = 0; i < add.children.length; i++) {
+      if (add.children[i].name === "z10me_rib") rib = add.children[i];
+      if (add.children[i].name === "z10me_dark") dk = add.children[i];
+    }
+    if (typeof Armour3D !== "undefined" && Armour3D.tint && Armour3D.join && fd && rib && dk) {
+      Armour3D.tint(THREE, [g, add], [[fd.material], [rib.material], [dk.material]], { fittings_dark: 1, z10me_rib: 1, z10me_dark: 1 });
+      Armour3D.join(THREE, fd, [rib, dk]);
+    }
     return g;
   }
 

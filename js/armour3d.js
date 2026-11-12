@@ -2058,13 +2058,16 @@ var Armour3D = (function () {
      material, scaled by (1 - metalness) / (1 - base metalness), so what each
      part reflects diffusely is unchanged; its roughness and metalness become
      the base's. `fold`, as pack's, names nodes the walk goes through. Run pack afterwards to merge
-     them. Returns the material. */
+     them. A material its hero marked userData._srgbDone (render3d's prepModel then leaves it
+     alone, so its colour reaches the GPU as it stands) gives its colour unconverted, and the
+     new material keeps the mark. Returns the material. */
   function tint(THREE, frames, list, fold) {
     var base = list[0][0], vm = base.clone(), cols = {}, i;
     vm.color.setRGB(1, 1, 1); vm.map = null; vm.vertexColors = true;
-    vm.userData = {};
+    vm.userData = base.userData && base.userData._srgbDone ? { _srgbDone: true } : {};
     for (i = 0; i < list.length; i++) {
-      var mt = list[i][0], c = new THREE.Color(list[i][1] !== undefined ? list[i][1] : mt.color.getHex()).convertSRGBToLinear();
+      var mt = list[i][0], c = new THREE.Color(list[i][1] !== undefined ? list[i][1] : mt.color.getHex());
+      if (!(mt.userData && mt.userData._srgbDone)) c.convertSRGBToLinear();
       c.multiplyScalar((1 - (mt.metalness || 0)) / (1 - (base.metalness || 0)));
       cols[mt.uuid] = c;
     }
@@ -2087,5 +2090,58 @@ var Armour3D = (function () {
     return vm;
   }
 
-  return { build: build, registerAll: registerAll, HULLS: HULLS, PAINT: PAINT, pack: pack, tint: tint };
+  /* join(THREE, into, parts): the meshes `parts` are drawn by the mesh `into`, whose material
+     they must share (tint first where they do not): each part's geometry is carried into
+     into's frame, a mirrored one keeping its winding, and appended to into's. A named part
+     leaves an empty group of its name in its place (same parent, position, rotation and
+     scale), so what looks a part up by name still finds it where it was; an unnamed one goes.
+     For the parts pack will not touch - named meshes (an aircraft's "fittings", "hub_links")
+     and meshes in two frames that never move apart. Never join across a frame render3d moves
+     ("rotor", "tailrotor", "gear", "turret", ...). Returns into. */
+  function join(THREE, into, parts) {
+    parts = parts.filter(function (c) { return c && c !== into && c.isMesh && c.material === into.material; });
+    if (!parts.length) return into;
+    var root = into; while (root.parent) root = root.parent;
+    root.updateMatrixWorld(true);
+    var m = into.material, names = ["position", "normal"], inv = new THREE.Matrix4().copy(into.matrixWorld).invert(),
+        rel = new THREE.Matrix4(), list = [into].concat(parts), n = 0, j, q;
+    if (m.map) names.push("uv");
+    if (m.vertexColors) names.push("color");
+    var geos = list.map(function (c) {
+      var g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone(), a, s, t, v, i;
+      if (c !== into) {
+        rel.multiplyMatrices(inv, c.matrixWorld);
+        g.applyMatrix4(rel);
+        if (rel.determinant() < 0) for (j = 0; j < names.length; j++) {
+          a = g.attributes[names[j]].array; s = g.attributes[names[j]].itemSize;
+          for (t = 0; t < a.length; t += 3 * s) for (i = 0; i < s; i++) { v = a[t + s + i]; a[t + s + i] = a[t + 2 * s + i]; a[t + 2 * s + i] = v; }
+        }
+      }
+      n += g.attributes.position.count;
+      return g;
+    });
+    var out = new THREE.BufferGeometry();
+    for (j = 0; j < names.length; j++) {
+      var s = geos[0].attributes[names[j]].itemSize, arr = new Float32Array(n * s), o = 0;
+      for (q = 0; q < geos.length; q++) { arr.set(geos[q].attributes[names[j]].array, o); o += geos[q].attributes[names[j]].array.length; }
+      out.setAttribute(names[j], new THREE.BufferAttribute(arr, s));
+    }
+    into.geometry = out;
+    into.castShadow = list.some(function (c) { return c.castShadow; });
+    into.receiveShadow = list.some(function (c) { return c.receiveShadow; });
+    parts.forEach(function (c) {
+      var P = c.parent, k = P.children.indexOf(c);
+      P.remove(c);
+      if (!c.name) return;
+      var e = new THREE.Group();
+      e.name = c.name;
+      e.position.copy(c.position); e.quaternion.copy(c.quaternion); e.scale.copy(c.scale);
+      P.add(e);
+      P.children.splice(P.children.length - 1, 1);
+      P.children.splice(k, 0, e);
+    });
+    return into;
+  }
+
+  return { build: build, registerAll: registerAll, HULLS: HULLS, PAINT: PAINT, pack: pack, tint: tint, join: join };
 })();

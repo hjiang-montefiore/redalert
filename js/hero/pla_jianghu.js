@@ -994,6 +994,15 @@ var HeroJianghu = (function () {
     tw.children.slice().forEach(function (c) { tw.remove(c); });
     tbk.children.slice().forEach(function (c) { tw.add(c); });
     root.add(tw);
+    /* the draw-call budget (16 a vehicle): the hull's gun-metal parts (both double-sided, untextured)
+       are drawn with its bright metal (Armour3D.tint keeps their colour - these materials are
+       _srgbDone, so as authored - and their diffuse; roughness 0.48 -> 0.52, metalness 0.60 ->
+       0.55), then like meshes merge (Armour3D.pack, each frame apart: the "turret" keeps its own
+       gun metal). 17 -> 16 */
+    if (typeof Armour3D !== "undefined" && Armour3D.tint && Armour3D.pack) {
+      Armour3D.tint(THREE, root, [[T.metal], [T.gun]]);
+      Armour3D.pack(THREE, root);
+    }
     return root;
   }
   return { build: build };

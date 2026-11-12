@@ -1835,6 +1835,22 @@ var HeroRocAir = (function () {
       cap.rotateX(HALF_PI); cap.scale(1, 1, 0.55); cap.translate(0, 0, 0.06);
       rotor.add(new V.Mesh(cap, mats.skin));
     }
+    /* the draw-call budget (16 a vehicle): the TOW kit's bright metal (bands, rods, brackets) is
+       drawn with kpa_air.js's airframe metal, both static (Armour3D.tint keeps its colour, written
+       linear, and its diffuse; roughness 0.48 -> 0.46, metalness 0.58 -> 0.62). Its closed parts are
+       wound outward, so the airframe metal's single side draws them as the double side did (the
+       tube bands' open ends are a centimetre off the tube). Then join. 17 -> 16 */
+    var am = null, tm = null, i;
+    for (i = 0; i < root.children.length; i++) {
+      var c = root.children[i];
+      if (c.isMesh && !c.name && rotor && rotor.children.some(function (r) { return r.isMesh && r.material === c.material; }) &&
+          !c.material.map && !c.material.transparent) am = c;
+    }
+    for (i = 0; i < add.children.length; i++) if (add.children[i].material === mats.metal) tm = add.children[i];
+    if (typeof Armour3D !== "undefined" && Armour3D.tint && Armour3D.join && am && tm) {
+      Armour3D.tint(THREE, [root, add], [[am.material], [tm.material]]);
+      Armour3D.join(THREE, am, [tm]);
+    }
     return root;
   }
 
