@@ -37,6 +37,23 @@
        War, and "USS Wisconsin (BB-64) underway at sea, circa 1988-1991 (NH
        97206-KN)", bow on from above: the SATCOM domes beside the after stack.
      - "Missouri Modernized" (BB-63 in dry dock, 1985): the flare of the bow.
+     - "A stern view of the battleship USS MISSOURI (BB-63) as it lies in dry
+       dock during a yard period" (DPLA, 1980s; fetched 2026-11-12): the
+       knuckle round the stern, the two skegs 8.8 m apart, the twin rudders
+       and the four screws.
+   Rework 2026-11-12, re-measured off the drawing at 1600 px (5.65 px per
+   metre in profile, 5.74 in plan): the tower stood 3-4 m too low and was
+   too slight. The lower tower is one 17 m mass with the forward stack's
+   casing to 29.3 m, the upper tower runs to the director platform at
+   36.2 m, the Mk 38 tops out at about 40.5 m (drawing 41.7 m, ONI "mast
+   134 ft" 40.8 m); the forward stack's cap stands to 31.5 m at its fore
+   edge, the after stack (centre 28.8 m abaft amidships, was 31.2) to
+   30.1 m; the house between the stacks to 18.6 m; the turret bases from
+   the drawing's roofs (No. 1 11.5 m, No. 2 14.4 m, No. 3 11.8 m). The
+   forward sheer rises from 55 m before amidships to 13.2 m at the stem
+   (drawing; it was 12.6 m). The hull is now built in painted bands
+   (topsides, boot topping, red bottom) with the knuckle aft as a hard
+   edge, the bulb faired into the forefoot, the skegs, screws and rudders.
    Published figures: 270.4 m (887 ft 3 in) overall, 262 m on the waterline,
    32.97 m (108 ft 2 in) beam, 11 m draught; 16-inch guns 3.05 m apart.
 
@@ -74,11 +91,24 @@
      - the boats amidships, the small tripod on No. 2's roof (1983 photos
        only, so e80 only), and the SATCOM dome off the tower, seen only on
        Missouri's starboard side and drawn there alone
-   Materials (9): hull, deckhouse, teak, painted fantail (1980s), white
-   domes, black, bare metal, glass and the team material, exactly C.team.
-   15,568 / 14,928 / 15,440 / 15,864 triangles (e50/e60/e80/e90), 10 or 12
+     - the stem height: the drawing gives the deck 13.2 m at the stem (and
+       its bulwark to 14.4 m), ONI's "bow 36 ft" about 11 m; the drawing is
+       followed, as the rest of the profile is
+     - the knuckle aft (2.4 m under the deck edge at the stern, the lower
+       stern set in by a tenth of the half breadth, dying out 35 m forward)
+       and the stations of the skegs, screws and rudders: proportions off
+       the one stern photograph, which is taken from above and behind
+     - the tower's scuttles and the rows along the 01 and 02 levels: one
+       row a level as the drawing shows them, not each one
+     - the 1980s lattice foremast now stands on the raised tower top, its
+       after legs over the forward stack's cap (the 1980s photographs show
+       it there, but not where each leg lands)
+   Materials (10): hull topsides, red bottom, deckhouse, teak, painted
+   fantail (1980s), white canvas and domes, black, bare metal, glass and
+   the team material, exactly C.team.
+   18,782 / 18,142 / 19,654 / 19,958 triangles (e50/e60/e80/e90), 13 or 15
    draw calls: every static part is merged into one mesh per material, and
-   No. 1 turret carries its own three.
+   No. 1 turret carries its own four.
 
    Model space: +X bow, +Y port, +Z up, metres, waterline z = 0, keel -11.
    render3d.js scales the model by its X extent, so nothing passes the stem
@@ -95,7 +125,7 @@ var HeroIowaBB = (function () {
   var LOA = 270.4, XB = LOA * 0.5;
   var HB = 16.48;               /* half beam                                  */
   var DR = 11.0;                /* draught                                    */
-  var ZTOP = 16.0, ZBOT = -2.0; /* the span the hull texture covers           */
+  var ZTOP = 16.0, ZBOT = 0.5;  /* the span the hull texture covers           */
 
   function tbl(k, t) {
     var i;
@@ -113,8 +143,9 @@ var HeroIowaBB = (function () {
   /* the weather deck by x, off the drawing's profile: level at about 7 m
      from the stern to No. 1 turret, then the long sheer up to the stem    */
   var DK = [[-135.2, 7.30], [-110.0, 7.10], [-60.0, 7.00], [0.0, 6.95],
-            [40.0, 7.05], [55.0, 7.20], [65.0, 7.65], [80.0, 8.45],
-            [97.0, 9.60], [112.0, 10.70], [124.0, 11.70], [135.2, 12.60]];
+            [40.0, 7.05], [55.0, 7.20], [65.0, 7.90], [80.0, 9.00],
+            [97.0, 10.10], [112.0, 11.10], [124.0, 12.00], [130.0, 12.60],
+            [135.2, 13.20]];
   function deckZ(x) { return tbl(DK, x); }
 
   /* the deck edge in plan, a fraction of the half beam by t (stern 0, stem
@@ -387,6 +418,7 @@ var HeroIowaBB = (function () {
                   polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
     M.pad   = S({ map: T.pad, roughness: 0.95, metalness: 0.04,
                   polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    M.under = S({ color: 0x5a2c24, roughness: 0.9, metalness: 0.04 });
     M.rad   = S({ color: 0xc9ccc6, roughness: 0.90, metalness: 0.03 });
     M.dark  = S({ color: 0x24282c, roughness: 0.90, metalness: 0.05 });
     M.metal = S({ color: 0x7d848a, roughness: 0.55, metalness: 0.45 });
@@ -491,46 +523,105 @@ var HeroIowaBB = (function () {
   }
   function rectPts(s0, r0, s1, r1) { return [[s0, r0], [s1, r0], [s1, r1], [s0, r1]]; }
 
-  /* ================================================================ the hull */
-  function hullMesh(THREE, mtl) {
-    var pos = [], uv = [], idx = [], i, j, R = 0;
-    for (i = 0; i < XS.length; i++) {
-      var x0 = XS[i], t = tOf(x0), r = ringOf(tbl(VB_K, t));
-      var w = hullHW(x0), kz = keelZ(t), dz = deckZ(x0), dep = dz - kz;
-      var rk = tbl(RAKE_K, t);
-      for (j = 0; j < r.length; j++) {
-        var z = kz + dep * r[j][1];
-        var dd = Math.max(0, Math.min(1, 1 - r[j][1]));
-        pos.push(x0 - rk * tbl(STEM_F, dd), w * r[j][0], z);
-        uv.push(t, (z - ZBOT) / (ZTOP - ZBOT));
-      }
-      R = r.length;
+  /* ================================================================ the hull
+     Built in bands of absolute height, so the paint lines are geometry and
+     the knuckle aft is a hard edge: the topsides (hull texture) from the
+     deck edge to the boot topping, the black boot from 0.95 m above the
+     waterline to 0.55 m below it, and the red bottom under that. Each band
+     is its own strip so its normals stay smooth inside it and break at its
+     edges: the knuckle, the boot line and the deck edge read as lines.
+
+     The knuckle aft: Missouri's stern in dry dock ("A stern view of the
+     battleship USS MISSOURI (BB-63) as it lies in dry dock") shows the
+     round stern as two bodies - the upright topsides, then a hard,
+     downward-facing ledge, then the full, rounded lower stern tucked in
+     under it. The ledge runs about 2.4 m under the deck edge at the stern
+     and slopes down and forward along the quarters, dying out about
+     35 m from the stern; under it the hull is set in by up to a tenth of
+     the half breadth (proportions off that photograph).                  */
+  function knuckleOf(x) {
+    var t = tOf(x), f = Math.max(0, 1 - t / 0.13);
+    return { zk: deckZ(x) - 2.4 - (1 - f) * 1.9, dk: 0.10 * Math.pow(f, 0.7) };
+  }
+  /* the heights of the girth lines of one station, deck edge first      */
+  var ZF_LOW = [0.38, 0.18, 0.085, 0.035, 0.008, 0.0];
+  function stationLevels(x) {
+    var t = tOf(x), kz = keelZ(t), dz = deckZ(x), dep = dz - kz, K = knuckleOf(x);
+    var L = [], i;
+    L.push(dz); L.push(dz - 0.35 * (dz - K.zk)); L.push(dz - 0.75 * (dz - K.zk));
+    L.push(K.zk); L.push(K.zk - 0.55);
+    for (i = 1; i <= 3; i++) L.push(K.zk - 0.55 + (0.95 - K.zk + 0.55) * i / 4);
+    L.push(0.95); L.push(-0.55);
+    for (i = 0; i < ZF_LOW.length; i++) L.push(kz + dep * ZF_LOW[i]);
+    for (i = 0; i < L.length; i++) {
+      L[i] = Math.max(kz, L[i]);
+      if (i && L[i] > L[i - 1]) L[i] = L[i - 1];
     }
-    for (i = 0; i < XS.length - 1; i++) {
-      for (j = 0; j < R; j++) {
-        var a = i * R + j, b = i * R + (j + 1) % R, c = a + R, d = b + R;
-        idx.push(a, b, d, a, d, c);
+    return L;
+  }
+  /* level indices: 0 deck .. 3 knuckle, 4 under it, 8 boot top, 9 boot
+     bottom, 15 keel                                                     */
+  var LV_KN = 3, LV_BT = 8, LV_BB = 9;  /* the keel is level 15 */
+  function hullPoint(x, z, below) {
+    var t = tOf(x), kz = keelZ(t), dz = deckZ(x), dep = dz - kz, K = knuckleOf(x);
+    var y = hullY(x, z) * (below ? 1 - K.dk : 1);
+    var dd = Math.max(0, Math.min(1, (dz - z) / dep));
+    return [x - tbl(RAKE_K, t) * tbl(STEM_F, dd), y, z];
+  }
+  /* adds the hull to the batches: B.hull (topsides), B.dark (boot) and
+     B.under (bottom)                                                     */
+  function hullInto(THREE, B) {
+    var NS = XS.length, LV = [], i, j, s;
+    for (i = 0; i < NS; i++) LV.push(stationLevels(XS[i]));
+    function band(key, l0, l1) {
+      for (s = -1; s <= 1; s += 2) {
+        var pos = [], uv = [], idx = [], n = l1 - l0 + 1;
+        for (i = 0; i < NS; i++) for (j = l0; j <= l1; j++) {
+          var p = hullPoint(XS[i], LV[i][j], j > LV_KN);
+          pos.push(p[0], s * p[1], p[2]);
+          uv.push(tOf(XS[i]), (p[2] - ZBOT) / (ZTOP - ZBOT));
+        }
+        for (i = 0; i < NS - 1; i++) for (j = 0; j < n - 1; j++) {
+          var a = i * n + j, b = a + 1, c = a + n, d = c + 1;
+          if (s > 0) idx.push(a, d, b, a, c, d); else idx.push(a, b, d, a, d, c);
+        }
+        var g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+        g.setIndex(idx); g.computeVertexNormals();
+        B[key].add(g);
       }
     }
-    function cap(sIdx, flip) {
-      var base = sIdx * R, k, cx = 0, cy = 0, cz = 0;
-      for (k = 0; k < R; k++) {
-        cx += pos[(base + k) * 3]; cy += pos[(base + k) * 3 + 1]; cz += pos[(base + k) * 3 + 2];
-      }
-      cx /= R; cy /= R; cz /= R;
-      var ci = pos.length / 3;
-      pos.push(cx, cy, cz); uv.push(sIdx ? 1 : 0, (cz - ZBOT) / (ZTOP - ZBOT));
-      for (k = 0; k < R; k++) {
-        var p = base + k, q = base + (k + 1) % R;
-        if (flip) idx.push(ci, q, p); else idx.push(ci, p, q);
-      }
+    band("hull", 0, LV_KN);
+    band("hull", LV_KN, LV_KN + 1);
+    band("hull", LV_KN + 1, LV_BT);
+    band("dark", LV_BT, LV_BB);
+    band("under", LV_BB, LV[0].length - 1);
+    /* the hull's top, just under the deck ribbon */
+    for (i = 0; i < NS - 1; i++) {
+      var x0 = XS[i], x1 = XS[i + 1];
+      var p0 = hullPoint(x0, LV[i][0], false), p1 = hullPoint(x1, LV[i + 1][0], false);
+      var z0 = LV[i][0] - 0.05, z1 = LV[i + 1][0] - 0.05;
+      B.hull.tri([p0[0], -p0[1], z0, 0, 1], [p1[0], p1[1], z1, 0, 1], [p1[0], -p1[1], z1, 0, 1]);
+      B.hull.tri([p0[0], -p0[1], z0, 0, 1], [p0[0], p0[1], z0, 0, 1], [p1[0], p1[1], z1, 0, 1]);
     }
-    cap(0, true); cap(XS.length - 1, false);
-    var g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-    g.setIndex(idx); g.computeVertexNormals();
-    return new THREE.Mesh(g, mtl);
+    /* the end caps: the narrow round of the stern and the stem's edge */
+    [0, NS - 1].forEach(function (e) {
+      var L = LV[e], q, Cc;
+      var pts = [];
+      for (q = 0; q < L.length; q++) pts.push(hullPoint(XS[e], L[q], q > LV_KN));
+      var cxm = 0, czm = 0;
+      pts.forEach(function (p) { cxm += p[0]; czm += p[2]; });
+      Cc = [cxm / pts.length + (e ? -3 : 3), 0, czm / pts.length];
+      for (q = 0; q < pts.length - 1; q++) {
+        var a = pts[q], b = pts[q + 1], zc = (a[2] + b[2]) * 0.5;
+        var k = zc > 0.95 ? "hull" : (zc > -0.55 ? "dark" : "under");
+        var A = [a[0], a[1], a[2], tOf(a[0]), (a[2] - ZBOT) / (ZTOP - ZBOT)];
+        var Bp = [b[0], b[1], b[2], tOf(b[0]), (b[2] - ZBOT) / (ZTOP - ZBOT)];
+        var Am = [a[0], -a[1], a[2], A[3], A[4]], Bm = [b[0], -b[1], b[2], Bp[3], Bp[4]];
+        B[k].triOut(A, Bp, Bm, Cc); B[k].triOut(A, Bm, Am, Cc);
+      }
+    });
   }
 
   /* the weather deck between x0 and x1: a cambered ribbon on the hull top.
@@ -571,7 +662,7 @@ var HeroIowaBB = (function () {
     var team = (C && C.team !== undefined) ? C.team : "#4b8fe0";
     var M = makeMats(THREE, team);
     var G = new THREE.Group();
-    var KEYS = ["sup", "rad", "dark", "metal", "team", "glass"];
+    var KEYS = ["hull", "under", "sup", "rad", "dark", "metal", "team", "glass"];
     var Bt = {}, cur;
     KEYS.forEach(function (k) { Bt[k] = new Batch(); });
     cur = Bt;
@@ -725,8 +816,11 @@ var HeroIowaBB = (function () {
       cur[k].tri([x0, y0, z, u0, v0], [x1, y1, z, u1, v1], [x0, y1, z, u0, v1]);
     }
     function stamp(x, y, z, yaw, fn) {
-      var prev = Batch.xf;
-      Batch.xf = { x: x, y: y, z: z, c: Math.cos(yaw), s: Math.sin(yaw) };
+      var prev = Batch.xf, c = Math.cos(yaw), sn = Math.sin(yaw);
+      /* stamps nest: the inner one is placed in the outer one's frame */
+      Batch.xf = prev ? { x: prev.x + x * prev.c - y * prev.s, y: prev.y + x * prev.s + y * prev.c,
+                          z: prev.z + z, c: prev.c * c - prev.s * sn, s: prev.s * c + prev.c * sn }
+                      : { x: x, y: y, z: z, c: c, s: sn };
       fn();
       Batch.xf = prev;
     }
@@ -736,7 +830,7 @@ var HeroIowaBB = (function () {
         var a = pts[q], b = pts[q + 1];
         bar(k, a[0], a[1], a[2] + h, b[0], b[1], b[2] + h, 0.04);
         var L = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
-        var n = Math.max(1, Math.round(L / Math.max(step, 3.2)));
+        var n = Math.max(1, Math.round(L / Math.max(step, 4.0)));
         for (jj = (q === 0 ? 0 : 1); jj <= n; jj++) {
           var f = jj / n, x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f;
           var z = a[2] + (b[2] - a[2]) * f;
@@ -780,7 +874,7 @@ var HeroIowaBB = (function () {
     }
 
     /* ------------------------------------------------------------ hull ---- */
-    var hull = hullMesh(THREE, M.hull); hull.name = "hull"; G.add(hull);
+    hullInto(THREE, Bt);
     if (V.pad) {
       var d1 = deckRibbon(THREE, M.teak, -134.6, PAD0, "m"); d1.name = "deck"; G.add(d1);
       var d2 = deckRibbon(THREE, M.pad, PAD0, PAD1, "pad"); d2.name = "deck_pad"; G.add(d2);
@@ -788,15 +882,37 @@ var HeroIowaBB = (function () {
     } else {
       var dk = deckRibbon(THREE, M.teak, -134.6, 134.9, "m"); dk.name = "deck"; G.add(dk);
     }
-    /* bilge keels and the four shafts' skegs, to hold the underwater body
-       together for the moment the camera dips under the surface         */
+    /* the underwater body, off the dry dock photographs ("Missouri
+       Modernized", the 1985 stern view): bilge keels, the two skegs that
+       carry the inner shafts, the four screws and the twin rudders        */
     for (s = -1; s <= 1; s += 2) {
-      bx("dark", 60.0, 0.2, 0.9, -10.0, s * 15.6, -9.2, s * 0.8, 0, 0);
+      bx("under", 60.0, 0.2, 0.9, -10.0, s * 15.6, -9.2, s * 0.8, 0, 0);
+      var FS = frameN(0, s * 4.4 - 0.45, 0, 0, 1);
+      plate("under", FS, [[60, -10.4], [66, -11.0], [108, -11.0], [114, -10.2], [116, -8.6], [112, -6.4]], 0, 0.9);
+      /* the inner screw abaft the skeg, the outer on its shaft and A strut */
+      var screw = function (x, y, z, r, nb) {
+        cx("metal", 0.55, 0.4, 1.4, 8, x - 0.7, y, z);
+        for (var q = 0; q < nb; q++) {
+          var an = q * 2 * PI / nb + (y > 0 ? 0.3 : -0.3);
+          stamp(x, y, z, 0, function () {
+            var g = new THREE.BoxGeometry(0.16, 1.15, r);
+            g.translate(0, 0, r * 0.55); g.rotateZ(0.35); g.rotateX(an);
+            cur.metal.add(g);
+          });
+        }
+      };
+      screw(-117.6, s * 4.85, -8.9, 2.6, 5);
+      tube("metal", -96.0, s * 10.6, -9.3, -70.0, s * 9.6, -9.0, 0.32, 0.32, 6);
+      bar("under", -94.0, s * 10.6, -9.3, -92.0, s * 9.0, -7.6, 0.16);
+      bar("under", -94.0, s * 10.6, -9.3, -92.5, s * 11.9, -7.8, 0.16);
+      screw(-97.2, s * 10.6, -9.3, 2.45, 4);
+      /* the twin rudders on the skeg lines */
+      plate("under", frameN(0, s * 4.85 - 0.3, 0, 0, 1),
+            [[121.0, -4.6], [121.0, -9.7], [126.2, -9.3], [126.6, -4.0]], 0, 0.6);
     }
-    /* the bulb in the forefoot */
-    var bulb = new THREE.SphereGeometry(1, 14, 8);
-    bulb.scale(7.0, 2.2, 2.8);
-    cur.dark.add(place(THREE, bulb, 124.0, 0, -7.6));
+    /* the bulb in the forefoot, faired into the stem */
+    loftX("under", [[112.0, 1.5, -10.4, -4.6], [118.0, 2.05, -10.3, -5.0], [124.0, 2.15, -10.0, -5.3],
+                    [128.0, 1.85, -9.6, -5.8], [130.6, 1.2, -9.0, -6.5], [131.8, 0.02, -7.9, -7.6]], 10, 0.55);
 
     /* anchors in their hawses on both bows, the shank up the pipe */
     for (s = -1; s <= 1; s += 2) {
@@ -845,38 +961,90 @@ var HeroIowaBB = (function () {
     }
 
     /* ========================================================= turrets ===== */
-    /* The Mk 7 gunhouse: 15.4 m long, 3.4 m high, the face sloped back, the
-       rangefinder hoods out of the after corners; the guns 3.05 m apart and
-       their muzzles 21 m before the turret's centre. Built about its own
-       centre on the base ring, guns along +X.                              */
-    function turret16() {
-      loftX("sup", [[-7.40, 5.85, 0.0, 3.05], [-7.15, 6.30, 0.0, 3.40], [-2.0, 6.25, 0.0, 3.40],
-                    [5.60, 5.85, 0.0, 3.40], [6.85, 5.70, 0.0, 1.95], [8.00, 5.55, 0.0, 0.35]], 16, 0.10);
-      /* the roof's sighting hoods, the rangefinder ears and the roof hatches */
-      for (var q = -1; q <= 1; q++) bx("sup", 1.5, 1.0, 0.55, 3.6, q * 3.05, 3.55);
-      for (var e = -1; e <= 1; e += 2) {
-        bx("sup", 2.8, 0.9, 1.1, -5.1, e * 6.55, 2.55);
-        cx("dark", 0.36, 0.36, 0.12, 8, -3.72, e * 6.7, 2.55);
-        bx("dark", 1.1, 0.8, 0.06, -3.0, e * 2.2, 3.43);
+    /* The Mk 7 gunhouse: 15.4 m long, 3.4 m high, built about its own centre
+       on the base ring, guns along +X. From the drawing's plan and the 1980s
+       photographs: the sides close in toward the sloped face plate, the
+       roof edge is chamfered, the rear wall overhangs the barbette as the
+       bustle, and the 46-ft rangefinder's hooded ends stand out of both
+       sides at the after corners, their armoured hoods sloped forward. On
+       the roof: the three sight hoods over the guns, the trainer's and
+       pointers' periscope hoods, two mushroom vents, the hatches and the
+       handrail; the guns run out of canvas blast bags.                    */
+    /* a gunhouse shell from sections [x, half width at the base, half
+       width at the roof edge, roof height]: sloped sides, a chamfered roof
+       edge (ch), flat roof; the ends closed                              */
+    function shell(SEC, chm, zc) {
+      var rings = [], q, m, B = cur.sup, Ct = [0, 0, zc];
+      for (q = 0; q < SEC.length; q++) {
+        var S = SEC[q], zt = S[3], ch = Math.min(chm, zt * 0.2);
+        rings.push([[S[0], -S[1], 0], [S[0], -S[2], zt - ch], [S[0], -S[2] + ch, zt],
+                    [S[0], S[2] - ch, zt], [S[0], S[2], zt - ch], [S[0], S[1], 0]]);
       }
+      for (q = 0; q < rings.length - 1; q++) for (m = 0; m < 5; m++) {
+        var a = rings[q][m], b = rings[q][m + 1], c = rings[q + 1][m + 1], d = rings[q + 1][m];
+        B.triOut([a[0], a[1], a[2], a[0] * 0.25, a[2] * 0.25], [b[0], b[1], b[2], b[0] * 0.25, b[2] * 0.25],
+                 [c[0], c[1], c[2], c[0] * 0.25, c[2] * 0.25], Ct);
+        B.triOut([a[0], a[1], a[2], a[0] * 0.25, a[2] * 0.25], [c[0], c[1], c[2], c[0] * 0.25, c[2] * 0.25],
+                 [d[0], d[1], d[2], d[0] * 0.25, d[2] * 0.25], Ct);
+      }
+      [0, rings.length - 1].forEach(function (e) {
+        var R = rings[e], mid = [R[0][0], 0, Math.min(R[2][2], zc) * 0.5, 0.5, 0.5];
+        for (m = 0; m < 5; m++)
+          B.triOut([R[m][0], R[m][1], R[m][2], 0, 0], [R[m + 1][0], R[m + 1][1], R[m + 1][2], 1, 0], mid, Ct);
+        B.triOut([R[0][0], R[0][1], 0, 0, 0], [R[5][0], R[5][1], 0, 1, 0], mid, Ct);
+      });
+    }
+    function turret16() {
+      /* sections [x, half width at the base, half width at the roof edge,
+         roof height]: the roof edge chamfer is a ring of its own         */
+      var SEC = [[-7.40, 5.55, 5.25, 3.30], [-7.10, 6.05, 5.80, 3.40], [-2.0, 6.15, 5.90, 3.40],
+                 [4.20, 5.85, 5.55, 3.40], [5.60, 5.60, 5.30, 3.40], [6.85, 5.42, 5.10, 2.05],
+                 [8.00, 5.30, 4.95, 0.40]];
+      var q;
+      shell(SEC, 0.35, 1.6);
+      /* the face plate's seam and the rear door */
       bx("dark", 0.08, 7.0, 0.45, -7.42, 0, 1.0);
-      /* the three guns in their bloomers */
+      bx("dark", 0.06, 1.0, 1.7, -7.43, 2.6, 1.6);
+      /* the rangefinder ends: an armoured hood out of each after side */
+      for (var e = -1; e <= 1; e += 2) {
+        stamp(0, e * 6.45, 0, 0, function () {
+          loftX("sup", [[-6.70, 0.55, 1.55, 2.95], [-6.40, 0.70, 1.45, 3.15], [-4.40, 0.70, 1.45, 3.15],
+                        [-3.70, 0.55, 1.55, 2.55]], 8, 0.2);
+        });
+        bx("dark", 0.06, 0.6, 0.45, -3.66, e * 6.45, 2.05);
+      }
+      /* the three sight hoods, the periscope hoods and the vents */
+      for (q = -1; q <= 1; q++) {
+        bx("sup", 1.6, 1.05, 0.5, 3.4, q * 3.05, 3.62);
+        bx("dark", 0.06, 0.8, 0.22, 4.22, q * 3.05, 3.62);
+      }
+      for (e = -1; e <= 1; e += 2) {
+        bx("sup", 1.0, 0.8, 0.55, 1.4, e * 4.7, 3.65);
+        cz("sup", 0.42, 0.42, 0.5, 8, -5.6, e * 2.6, 3.38);
+        cz("sup", 0.62, 0.62, 0.14, 8, -5.6, e * 2.6, 3.88);
+        bx("dark", 1.1, 0.8, 0.06, -3.0, e * 1.6, 3.43);
+      }
+      railRun("metal", [[-7.0, -5.6, 3.4], [4.6, -5.4, 3.4]], 0.75, 2.6);
+      railRun("metal", [[-7.0, 5.6, 3.4], [4.6, 5.4, 3.4]], 0.75, 2.6);
+      /* the three guns: blast bags, the tapered chase and the muzzle swell */
       for (q = -1; q <= 1; q++) {
         var gy = q * 3.05;
-        cx("dark", 0.95, 0.72, 0.9, 10, 6.0, gy, 1.75);
-        cx("sup", 0.64, 0.42, 14.2, 10, 6.8, gy, 1.75);
-        cx("dark", 0.43, 0.43, 0.06, 8, 20.95, gy, 1.75);
+        cx("rad", 1.05, 0.72, 1.3, 10, 5.8, gy, 1.75);
+        cx("sup", 0.66, 0.50, 6.0, 10, 7.0, gy, 1.75);
+        cx("sup", 0.50, 0.42, 7.2, 10, 13.0, gy, 1.75);
+        cx("sup", 0.42, 0.48, 0.8, 10, 20.2, gy, 1.75);
+        cx("dark", 0.36, 0.36, 0.06, 8, 21.0, gy, 1.75);
       }
     }
     var X_T1 = 57.0, X_T2 = 36.4, X_T3 = -65.3;
-    var Z_T1 = 7.55, Z_T2 = 10.6, Z_T3 = 7.85;
+    var Z_T1 = 8.1, Z_T2 = 11.0, Z_T3 = 8.3;
     /* No. 1 trains: it is the node the renderer aims */
     var tw = new THREE.Group();
     tw.name = "turret";
     tw.position.set(X_T1, 0, Z_T1);
-    var TB = { sup: new Batch(), metal: new Batch(), dark: new Batch() };
+    var TB = { sup: new Batch(), metal: new Batch(), dark: new Batch(), rad: new Batch() };
     cur = TB; turret16(); cur = Bt;
-    ["sup", "metal", "dark"].forEach(function (k) {
+    ["sup", "metal", "dark", "rad"].forEach(function (k) {
       var tm = TB[k].mesh(THREE, M[k]); if (tm) tw.add(tm);
     });
     G.add(tw);
@@ -884,9 +1052,9 @@ var HeroIowaBB = (function () {
     stamp(X_T3, 0, Z_T3, PI, turret16);
     /* the barbettes: No. 1 shows a low ring, No. 2 stands 3.4 m clear of the
        deck for the superfiring guns, No. 3 a little over a metre (profile) */
-    cz("sup", 6.3, 6.3, Z_T1 - 6.9, 32, X_T1, 0, 6.9);
-    cz("sup", 6.3, 6.3, Z_T2 - 6.6, 32, X_T2, 0, 6.6);
-    cz("sup", 6.3, 6.3, Z_T3 - 6.6, 32, X_T3, 0, 6.6);
+    cz("sup", 6.3, 6.3, Z_T1 - 6.9, 24, X_T1, 0, 6.9);
+    cz("sup", 6.3, 6.3, Z_T2 - 6.6, 24, X_T2, 0, 6.6);
+    cz("sup", 6.3, 6.3, Z_T3 - 6.6, 24, X_T3, 0, 6.6);
     for (s = -1; s <= 1; s += 2) {
       /* the ladders up No. 2's barbette */
       bx("metal", 0.08, 0.7, 3.2, X_T2 + 1.5, s * 6.35, 8.9);
@@ -903,11 +1071,15 @@ var HeroIowaBB = (function () {
     var P2 = sym([[-51.0, 2.4], [-38.0, 10.3], [-14.0, 10.6], [12.0, 10.6], [22.0, 6.4], [27.0, 3.6]]);
     prism("sup", P2, Z1, Z2, 0.18, 4.0);
     railRoof(roofOf(P1, 0.15, 0.1), Z1, null, 2.4);
+    /* the scuttles along the 01 and 02 level sides (drawing profile; the
+       1980s broadsides show them in one row a level)                     */
+    ports("dark", roofOf(P1, 0.10), 8.5, 0.42, 0.42, 2.6);
+    ports("dark", roofOf(P2, 0.12), 11.3, 0.42, 0.42, 2.6);
     /* the 03 level: forward block round the tower, the after block round the
        after stack and the after director                                 */
     var P3F = sym([[-12.0, 7.6], [20.0, 7.6], [27.0, 4.2]]);
     prism("sup", P3F, Z2, Z3, 0.2, 4.0);
-    var P3A = sym([[-49.0, 3.4], [-44.0, 6.4], [-22.0, 6.4], [-18.0, 5.0]]);
+    var P3A = sym([[-50.5, 2.8], [-46.0, 5.4], [-44.0, 6.4], [-22.0, 6.4], [-18.0, 5.0]]);
     prism("sup", P3A, Z2, Z3, 0.2, 4.0);
     /* the bridge: 04 level and the pilot house ahead of the tower */
     var P4 = sym([[9.5, 7.0], [22.5, 7.0], [26.0, 4.4]]);
@@ -941,25 +1113,66 @@ var HeroIowaBB = (function () {
       plate("dark", frameN(mx, my, 16.6, nxv / nl, nyv / nl), rectPts(-0.4, -0.12, 0.4, 0.12), -0.02, 0.04);
     }
 
-    /* the tower foremast: a rounded tower from the 03 level to 29.5 m, its
-       galleries, the platform on top and the Mk 38 main battery director  */
-    /* the lower tower is eleven metres fore and aft (drawing profile), the
-       upper tower narrower, the galleries round both                      */
-    var TWR = rounded(5.2, 4.3, 0.5, 18, 5.2);
-    prism("sup", TWR, Z3, 26.5, 0.3, 4.0);
-    prism("sup", rounded(5.7, 4.8, 0.5, 18, 5.2), 22.35, 22.6, 0, 4.0);
-    railRoof(rounded(5.6, 4.7, 0.5, 10, 5.2), 22.6, null, 2.4);
+    /* the tower foremast, measured off the drawing's profile (5.65 px per
+       metre, the hull 270.4 m stem to stern): the lower tower is one mass
+       with the forward stack's casing, 17 m fore and aft from 6.6 m abaft
+       amidships to 10.3 m before it, and stands to 29.3 m; round it the
+       galleries and, at 28 m, the broad platform that reaches 8.5 m abaft
+       and 13.4 m before amidships. The upper tower, 7.2 m long, rises from
+       it to the director platform at 36.2 m, a ledge at 32.6 m; the Mk 38
+       on top reaches 41.7 m (drawing; ONI's "mast 134 ft", 40.8 m). The
+       flag bridge stands before the tower to 24.8 m over the pilot house.
+       The old model's tower stopped at 33.4 m and was 10 m long.          */
+    function ports(k, poly, z, w, h, every, minN) {
+      var n = poly.length, q;
+      for (q = 0; q < n; q++) {
+        var a = poly[q], b = poly[(q + 1) % n];
+        var dx = b[0] - a[0], dy = b[1] - a[1], L = Math.sqrt(dx * dx + dy * dy);
+        var nx = dy / L, ny = -dx / L;
+        if (nx < (minN === undefined ? -2 : minN)) continue;
+        var cnt = Math.max(1, Math.floor(L / every)), r;
+        for (r = 0; r < cnt; r++) {
+          var f = (r + 0.5) / cnt;
+          /* one quad standing 4 cm proud of the wall: no sides needed */
+          var F = frameN(a[0] + dx * f, a[1] + dy * f, z, nx, ny);
+          var c0 = fp(F, -w * 0.5, -h * 0.5, 0.04), c1 = fp(F, w * 0.5, -h * 0.5, 0.04);
+          var c2 = fp(F, w * 0.5, h * 0.5, 0.04), c3 = fp(F, -w * 0.5, h * 0.5, 0.04);
+          cur[k].tri([c0[0], c0[1], c0[2], 0, 0], [c1[0], c1[1], c1[2], 1, 0], [c2[0], c2[1], c2[2], 1, 1]);
+          cur[k].tri([c0[0], c0[1], c0[2], 0, 0], [c2[0], c2[1], c2[2], 1, 1], [c3[0], c3[1], c3[2], 0, 1]);
+        }
+      }
+    }
+    var TWR = rounded(8.45, 5.6, 0.55, 22, 1.85);
+    prism("sup", TWR, Z3, 29.3, 0.25, 4.0);
+    [26.4].forEach(function (zr) {
+      var f = (zr - Z3) / (29.3 - Z3);
+      ports("dark", roofOf(TWR, 0.25 * f), zr, 0.42, 0.42, 2.0, -0.2);
+    });
+    [22.6, 25.0].forEach(function (zg) {
+      prism("sup", rounded(9.2, 6.35, 0.55, 22, 1.85), zg - 0.25, zg, 0, 4.0);
+      railRoof(rounded(9.1, 6.25, 0.55, 12, 1.85), zg, null, 2.4);
+    });
+    prism("sup", rounded(10.95, 6.9, 0.5, 22, 2.45), 27.85, 28.1, 0, 4.0);
+    railRoof(rounded(10.85, 6.8, 0.5, 14, 2.45), 28.1, null, 2.4);
+    /* the flag bridge over the pilot house, its windows forward */
+    var P6 = sym([[8.0, 4.7], [12.8, 4.7], [14.6, 3.3]]);
+    prism("sup", P6, Z5, 24.8, 0.12, 4.0);
+    railRoof(roofOf(P6, 0.12, 0.1), 24.8, [0], 1.8);
+    ports("glass", roofOf(P6, 0.06), 23.3, 0.8, 0.85, 1.15, 0.2);
     /* the open bridge: a deck at the pilot house roof wrapping the tower */
     prism("sup", rounded(6.6, 5.6, 0.45, 18, 6.6), Z5 - 0.3, Z5, 0, 4.0);
     railRoof(rounded(6.5, 5.5, 0.45, 12, 6.6), Z5, null, 2.4);
-    prism("sup", rounded(5.4, 4.6, 0.5, 18, 5.4), 24.55, 24.8, 0, 4.0);
-    var TU = rounded(4.2, 3.5, 0.5, 16, 5.6);
-    prism("sup", TU, 26.5, 31.0, 0.2, 4.0);
-    prism("sup", rounded(4.9, 4.1, 0.5, 16, 5.6), 28.75, 29.0, 0, 4.0);
-    railRoof(rounded(4.8, 4.0, 0.5, 10, 5.6), 29.0, null, 2.4);
-    var TT = rounded(4.4, 3.6, 0.5, 14, 5.8);
-    prism("sup", TT, 31.0, 33.4, 0.15, 4.0);
-    railRoof(roofOf(TT, 0.15, 0.08), 33.4, null, 2.4);
+    /* the upper tower, its ledge and the director platform */
+    var TU = rounded(3.6, 3.4, 0.5, 16, 6.5);
+    prism("sup", TU, 29.3, 36.2, 0.12, 4.0);
+    ports("dark", roofOf(TU, 0.06), 30.8, 0.45, 0.45, 1.3, -0.3);
+    ports("glass", roofOf(TU, 0.1), 34.9, 0.7, 0.6, 1.0, 0.1);
+    prism("sup", rounded(4.3, 4.1, 0.5, 16, 6.5), 32.35, 32.6, 0, 4.0);
+    railRoof(rounded(4.2, 4.0, 0.5, 10, 6.5), 32.6, null, 2.4);
+    prism("sup", rounded(4.4, 4.1, 0.5, 16, 7.4), 35.95, 36.25, 0, 4.0);
+    railRoof(rounded(4.3, 4.0, 0.5, 10, 7.4), 36.25, null, 2.4);
+    /* the vertical ladders up the tower's after face */
+    for (s = -1; s <= 1; s += 2) bx("metal", 0.08, 0.6, 7.0, 2.85, s * 2.4, 32.8);
     function mk38(x, z, yaw) {
       stamp(x, 0, z, yaw, function () {
         cz("sup", 1.5, 1.7, 0.6, 14, 0, 0, 0);
@@ -975,7 +1188,7 @@ var HeroIowaBB = (function () {
         cur.dark.add(g);
       });
     }
-    mk38(6.0, 33.4, 0);
+    mk38(7.6, 36.25, 0);
 
     /* the Mk 37 secondary battery directors, forward on the pilot house
        roof and aft on the after superstructure                             */
@@ -999,14 +1212,15 @@ var HeroIowaBB = (function () {
         }
       });
     }
-    mk37(16.4, Z5, 0);
+    mk37(16.8, Z5, 0);
     /* the after superstructure: the after Mk 38 on its round tower, and the
        after Mk 37 lower down at the end of the 02 level                   */
-    prism("sup", rounded(2.6, 2.6, 0.7, 16, -45.6), Z3, 22.4, 0.15, 3.0);
-    railRoof(rounded(2.9, 2.9, 0.7, 10, -45.6), 22.4, null, 1.8);
-    prism("sup", rounded(2.9, 2.9, 0.7, 16, -45.6), 22.2, 22.4, 0, 3.0);
-    mk38(-45.6, 22.4, PI);
-    mk37(-51.2, Z2, PI);
+    prism("sup", rounded(2.6, 2.6, 0.7, 16, -43.7), Z3, 22.4, 0.15, 3.0);
+    ports("dark", rounded(2.5, 2.5, 0.7, 16, -43.7), 19.6, 0.42, 0.42, 1.0);
+    railRoof(rounded(2.9, 2.9, 0.7, 10, -43.7), 22.4, null, 1.8);
+    prism("sup", rounded(2.9, 2.9, 0.7, 16, -43.7), 22.2, 22.4, 0, 3.0);
+    mk38(-43.7, 22.4, PI);
+    mk37(-49.0, Z3, PI);
 
     /* --------------------------------------------------------- the stacks -- */
     /* elliptical casings with their black caps; the forward one stands hard
@@ -1040,22 +1254,32 @@ var HeroIowaBB = (function () {
                      [i0[0], i0[1], z1 - 0.1 + SL * (i0[0] - x), 0, 1]);
       }
     }
-    stack(-4.3, 4.25, 3.9, Z3, 29.4);
-    stack(-31.2, 4.5, 4.0, Z3, 28.6);
+    stack(-2.7, 4.0, 3.6, Z3, 31.0);
+    stack(-28.8, 4.85, 4.2, Z3, 29.3);
     /* the trunk below the after stack, and the house between the stacks */
-    prism("sup", sym([[-36.0, 4.0], [-26.0, 4.0]]), Z3, 18.6, 0.1, 4.0);
-    prism("sup", sym([[-22.0, 4.8], [-9.0, 4.8]]), Z3, 17.4, 0.12, 4.0);
-    railRoof(roofOf(sym([[-22.0, 4.8], [-9.0, 4.8]]), 0.12, 0.1), 17.4, null, 2.0);
+    prism("sup", sym([[-34.4, 4.6], [-23.6, 4.6]]), Z3, 18.6, 0.1, 4.0);
+    var PHS = sym([[-23.0, 4.8], [-7.0, 4.8]]);
+    prism("sup", PHS, Z3, 18.6, 0.12, 4.0);
+    railRoof(roofOf(PHS, 0.12, 0.1), 18.6, null, 2.0);
+    ports("dark", roofOf(PHS, 0.06), 16.8, 0.45, 0.45, 2.2);
 
     /* --------------------------------------------- the 5-inch twin mounts -- */
+    /* the Mk 28 twin 5-inch/38 gunhouse: sloped sides and face, a flat
+       roof with the pointer's and trainer's hoods at its forward corners,
+       the rangefinder-less roof hatch and a vent; the guns out of their
+       blast bags (drawing plan; the 1983 overhead)                       */
     function gun5() {
-      loftX("sup", [[-2.70, 1.55, 0.0, 2.45], [-2.35, 2.15, 0.0, 2.85], [1.40, 2.25, 0.0, 2.85],
-                    [2.35, 2.05, 0.0, 1.70], [2.75, 1.85, 0.0, 0.65]], 10, 0.30);
+      shell([[-2.70, 1.75, 1.55, 2.70], [-2.40, 2.20, 2.00, 2.85], [1.30, 2.25, 2.05, 2.85],
+             [2.30, 2.10, 1.90, 1.85], [2.80, 1.92, 1.72, 0.60]], 0.22, 1.3);
       for (var q = -1; q <= 1; q += 2) {
-        cx("dark", 0.36, 0.26, 0.5, 6, 1.85, q * 0.72, 1.35);
-        bar("sup", 2.2, q * 0.72, 1.35, 6.6, q * 0.72, 1.35, 0.15);
+        cx("rad", 0.36, 0.27, 0.55, 6, 2.35, q * 0.72, 1.35);
+        bar("sup", 2.8, q * 0.72, 1.35, 6.3, q * 0.72, 1.35, 0.14);
+        bx("sup", 0.85, 0.55, 0.42, 0.9, q * 1.5, 3.05);
+        bx("dark", 0.04, 0.4, 0.16, 1.34, q * 1.5, 3.08);
       }
-      bx("sup", 1.4, 1.6, 0.14, -1.0, 0, 2.9);
+      bx("dark", 1.0, 0.9, 0.04, -1.2, 0, 2.87);
+      cz("sup", 0.22, 0.22, 0.35, 6, -1.9, 0.9, 2.85);
+      bx("dark", 0.04, 0.8, 1.6, -2.72, 0, 1.1);
     }
     /* positions and the way the drawing trains each one: outer mounts on
        the 01 edge, inner ones on the 02 level, staggered                 */
@@ -1112,11 +1336,21 @@ var HeroIowaBB = (function () {
       /* the Mk 143 armored box launchers, four a side round the after stack:
          a pair on the 02 level between the stacks and a pair on the 01 level
          abaft the after stack, where Nos. 4 and 5 stood                     */
+      /* each Mk 143: the armoured box on its elevating base, the lid seams,
+         the side stiffeners, the heavy hinge at the after end and the
+         four cell doors in its forward face (1983 photographs)          */
       var ablZ = function (x, y, z, yaw) {
         stamp(x, y, z, yaw, function () {
-          bx("sup", 6.4, 1.9, 2.0, 0, 0, 1.0);
-          bx("dark", 6.5, 0.14, 0.14, 0, 0.0, 2.04);
-          bx("sup", 1.0, 2.0, 0.4, -2.6, 0, 2.2);
+          bx("sup", 6.2, 1.6, 0.35, 0, 0, 0.17);
+          loftX("sup", [[-3.30, 0.97, 0.35, 2.10], [2.95, 0.97, 0.35, 2.22], [3.35, 0.92, 0.42, 1.95]], 8, 0.12);
+          flat("dark", -3.1, -0.05, 2.95, 0.05, 2.235, 0, 0, 1, 1);
+          for (var q = -1; q <= 1; q++) flat("dark", q * 1.9 - 0.05, -0.9, q * 1.9 + 0.05, 0.9, 2.235, 0, 0, 1, 1);
+          for (var e = -1; e <= 1; e += 2) {
+            for (q = 0; q < 3; q++) bar("metal", -1.9 + q * 1.9, e * 0.99, 0.5, -1.9 + q * 1.9, e * 0.99, 2.0, 0.07);
+            bx("dark", 0.04, 0.66, 1.25, 3.37, e * 0.45, 1.2);
+          }
+          bx("sup", 0.9, 2.1, 1.0, -3.2, 0, 0.85);
+          bar("metal", -3.3, -1.15, 0.6, -3.3, 1.15, 0.6, 0.2);
         });
       };
       for (s = -1; s <= 1; s += 2) {
@@ -1129,8 +1363,15 @@ var HeroIowaBB = (function () {
           bx("sup", 2.4, 1.7, 0.2, 0.3, 0, 0.1);
           bx("metal", 0.22, 1.5, 1.85, -0.75, 0, 1.0);
           bx("metal", 0.22, 1.5, 0.75, 1.15, 0, 0.45);
-          for (var a = -1; a <= 1; a += 2) for (var b = -1; b <= 1; b += 2)
-            bx("sup", 4.6, 0.6, 0.6, 0.6, a * 0.36, 2.2 + b * 0.36, 0, -0.61, 0);
+          /* the four round canisters, banded, their end caps dark */
+          var ux = Math.cos(0.61), uz = Math.sin(0.61);
+          for (var a = -1; a <= 1; a += 2) for (var b = -1; b <= 1; b += 2) {
+            var ccx = 0.6, ccy = a * 0.36, ccz = 2.2 + b * 0.36;
+            var cg = new THREE.CylinderGeometry(0.33, 0.33, 4.6, 7, 1, false);
+            cg.rotateZ(-PI / 2); cg.rotateY(-0.61); cg.translate(ccx, ccy, ccz);
+            cur.sup.add(cg);
+            tube("metal", ccx + 1.5 * ux, ccy, ccz + 1.5 * uz, ccx + 1.7 * ux, ccy, ccz + 1.7 * uz, 0.36, 0.36, 6);
+          }
         });
       };
       for (s = -1; s <= 1; s += 2) { harpoon(-36.2, s * 5.0, s); harpoon(-39.4, s * 5.0, s); }
@@ -1138,21 +1379,21 @@ var HeroIowaBB = (function () {
          ahead of the after stack                                            */
       var phalanx = function (x, y, z, yaw) {
         stamp(x, y, z, yaw, function () {
-          cz("sup", 0.72, 0.86, 1.0, 10, 0, 0, 0);
+          cz("sup", 0.72, 0.86, 1.0, 8, 0, 0, 0);
           bx("sup", 0.9, 1.25, 0.95, -0.05, 0, 1.4);
           cx("sup", 0.4, 0.4, 1.25, 8, -0.95, 0, 1.2);
           cx("metal", 0.17, 0.15, 1.95, 6, 0.3, 0, 1.3);
-          cz("rad", 0.56, 0.56, 1.0, 10, -0.2, 0, 1.78);
-          hemi("rad", 0.56, 10, 4, -0.2, 0, 2.78);
+          cz("rad", 0.56, 0.56, 1.0, 8, -0.2, 0, 1.78);
+          hemi("rad", 0.56, 8, 3, -0.2, 0, 2.78);
           bx("rad", 0.42, 0.55, 0.42, 0.25, 0, 2.0);
         });
       };
       for (s = -1; s <= 1; s += 2) {
-        prism("sup", sym([[-4.0, 4.0], [-0.4, 4.0]]).map(function (p) { return [p[0], p[1] + s * 2.4]; }), Z3, 19.2, 0.1, 4.0);
-        cz("sup", 1.45, 1.45, 0.2, 14, -2.2, s * 6.3, 19.2);
-        phalanx(-2.2, s * 6.3, 19.4, s * 0.6);
-        prism("sup", sym([[-25.6, 1.6], [-22.4, 1.6]]).map(function (p) { return [p[0], p[1] + s * 5.6]; }), Z3, 17.4, 0.1, 4.0);
-        phalanx(-24.0, s * 5.6, 17.4, s * 0.5);
+        prism("sup", sym([[-4.0, 4.0], [-0.4, 4.0]]).map(function (p) { return [p[0], p[1] + s * 3.6]; }), Z3, 19.2, 0.1, 4.0);
+        cz("sup", 1.45, 1.45, 0.2, 14, -2.2, s * 7.0, 19.2);
+        phalanx(-2.2, s * 7.0, 19.4, s * 0.6);
+        prism("sup", sym([[-25.6, 1.6], [-22.4, 1.6]]).map(function (p) { return [p[0], p[1] + s * 6.1]; }), Z3, 17.4, 0.1, 4.0);
+        phalanx(-24.0, s * 6.1, 17.4, s * 0.5);
       }
     }
 
@@ -1160,7 +1401,8 @@ var HeroIowaBB = (function () {
     if (V.fore === "e80") {
       /* the black lattice over the tower top and the forward stack, the
          SPS-49 at its head, the pole topmast with the TACAN               */
-      tower("dark", -7.6, 3.0, 4.5, -2.4, 0.9, 1.2, 27.0, 43.4, [0, 0.25, 0.5, 0.75, 1.0], 0.2, 0.06);
+      tower("dark", -2.6, 2.8, 4.0, -1.2, 2.1, 1.2, 29.3, 46.2, [0, 0.25, 0.5, 0.75, 1.0], 0.2, 0.06);
+      stamp(1.2, 0, 2.8, 0, function () {
       bx("dark", 4.0, 3.6, 0.18, -0.75, 0, 43.4);
       railRoof([[-2.7, -1.8], [1.2, -1.8], [1.2, 1.8], [-2.7, 1.8]], 43.5, null, 1.6);
       bar("dark", -1.4, -7.8, 40.8, -1.4, 7.8, 40.8, 0.11);
@@ -1191,9 +1433,10 @@ var HeroIowaBB = (function () {
       cz("dark", 0.55, 0.55, 0.9, 12, 0.4, 0, 52.2);
       /* the SPS-67 and the ECM houses on the tower's sides */
       bx("dark", 0.6, 2.4, 0.5, 1.4, 0, 41.8);
+      });
       for (s = -1; s <= 1; s += 2) {
-        bx("sup", 1.4, 1.2, 1.8, 5.0, s * 5.0, 24.4);
-        bx("rad", 0.08, 0.9, 1.3, 5.75, s * 5.0, 24.4);
+        bx("sup", 1.4, 1.2, 1.8, 5.0, s * 6.1, 24.4);
+        bx("rad", 0.08, 0.9, 1.3, 5.75, s * 6.1, 24.4);
       }
       /* the small pole on the after stack's face */
       tube("metal", -26.4, 0, 22.0, -26.4, 0, 36.5, 0.14, 0.07, 6);
@@ -1209,6 +1452,7 @@ var HeroIowaBB = (function () {
     } else if (V.fore === "e60") {
       /* 1968: a tripod over the tower top, its yards hung with the ECM
          houses, and a tall pole above                                     */
+      stamp(1.2, 0, 2.8, 0, function () {
       for (s = -1; s <= 1; s += 2) bar("metal", 5.0, s * 2.4, 33.4, 2.0, s * 0.3, 43.0, 0.16);
       bar("metal", -1.5, 0, 30.0, 2.0, 0, 43.0, 0.18);
       tube("metal", 2.0, 0, 43.0, 2.0, 0, 51.5, 0.2, 0.08, 6);
@@ -1224,6 +1468,7 @@ var HeroIowaBB = (function () {
       /* the surface search reflector at the head */
       bx("dark", 0.4, 3.2, 0.9, 2.6, 0, 48.4);
       cz("dark", 0.35, 0.35, 0.8, 8, 2.0, 0, 43.15);
+      });
       /* the mainmast: a pole at the after stack's after side, ECM boxes */
       tube("metal", -36.6, 0, 18.6, -36.6, 0, 45.0, 0.3, 0.1, 6);
       for (s = -1; s <= 1; s += 2) bar("metal", -34.2, s * 2.6, 18.6, -36.5, 0, 32.0, 0.12);
@@ -1234,6 +1479,7 @@ var HeroIowaBB = (function () {
       /* 1952: a pole foremast from the tower top, its platform with the air
          search mattress, the surface search at the head; the tripod
          mainmast abaft the after stack with its boom                       */
+      stamp(1.2, 0, 2.8, 0, function () {
       for (s = -1; s <= 1; s += 2) bar("metal", 5.0, s * 2.2, 33.4, 2.0, s * 0.2, 39.6, 0.13);
       tube("metal", -1.0, 0, 30.0, 2.0, 0, 42.0, 0.2, 0.12, 6);
       tube("metal", 2.0, 0, 42.0, 2.0, 0, 46.0, 0.12, 0.06, 6);
@@ -1244,6 +1490,7 @@ var HeroIowaBB = (function () {
       bx("metal", 0.25, 0.25, 0.8, 2.2, 0, 40.0);
       /* the surface search at the masthead */
       bx("dark", 0.3, 2.2, 0.6, 2.4, 0, 44.6);
+      });
       /* the tripod mainmast and its boom */
       tube("metal", -37.4, 0, 18.6, -37.4, 0, 40.0, 0.32, 0.12, 6);
       for (s = -1; s <= 1; s += 2) bar("metal", -40.6, s * 2.8, Z3, -37.5, 0, 33.0, 0.16);
@@ -1258,11 +1505,11 @@ var HeroIowaBB = (function () {
       for (s = -1; s <= 1; s += 2) {
         bar("sup", -28.2, s * 3.8, 26.6, -27.4, s * 5.4, 28.2, 0.12);
         cz("sup", 0.35, 0.4, 0.6, 8, -27.4, s * 5.4, 28.0);
-        sph("rad", 1.15, 10, 7, -27.4, s * 5.4, 29.6);
+        sph("rad", 1.15, 8, 6, -27.4, s * 5.4, 29.6);
       }
       /* the starboard dome on its bracket off the tower (Missouri only) */
       bar("sup", 4.5, -3.4, 27.0, 4.6, -5.4, 27.6, 0.12);
-      sph("rad", 0.95, 10, 7, 4.6, -5.4, 28.7);
+      sph("rad", 0.95, 8, 6, 4.6, -5.4, 28.7);
     }
 
     /* ------------------------------------------------------ the fantail --- */

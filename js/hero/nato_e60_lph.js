@@ -38,6 +38,22 @@
          the port lift, the catwalks and raft racks under the deck edge.
      [N] "Uss iwo jima (LPH-2) 4" (1961): starboard bow, the Essex-like
          flare carried right up to the deck, the curved raked stem.
+     [V] "USS Iwo Jima (LPH-2), portside view" (1980s, from above the port
+         beam; fetched 2026-11-12 for the rework): the hangar opening behind
+         the raised port lift, about two thirds of the platform's length,
+         from the hangar deck up to the gallery deck; the scuttle row under
+         the gallery, the doors and vertical ladders in the hangar side,
+         the strake along the hangar deck, the vertical plating seams and
+         the scuttles on the island's tiers.
+
+   REWORK 2026-11-12: the hangar openings are now cut through the side
+   (the loft leaves its plating out there) and drawn as bays, with the
+   hangar deck running in, jambs, the overhead and its beams, the coaming
+   and a stanchion line; the boot topping is its own band of the loft
+   (two waterlines added to the table at 1.2 m and -0.8 m, interpolated);
+   the topsides carry their scuttles, seams, doors, ladders and strake;
+   the island its scuttle rows, the frames up its outboard face and the
+   knees under its overhang. The flight deck is untouched: one plate.
 
    RECOGNITION LIST (each must read at game zoom):
      1. One long flush deck, 180 x 32 m, with a BLUNT ROUND BOW and a
@@ -73,7 +89,11 @@
    displacement); the stern corners of the deck cut back 3 m over the
    quarter tubs so they show from above as in [S]; the small director on
    the island roof (a shape in [F], type unknown); the crane abaft the
-   island [T]; the whip positions. LEFT OUT: hull number, name, flags; the
+   island [T]; the whip positions; the hangar bay's depth (6 m drawn)
+   and its beams, which [V] shows only dark; the doors', ladders' and
+   seams' stations along the side (spacing as [V], not each one), and the
+   island's outboard scuttles (taken to match the inboard ones in [V]).
+   LEFT OUT: hull number, name, flags; the
    1970s Sea Sparrow, Phalanx and SATCOM fits; parked aircraft.
 
    STATION TABLE (half-breadths in metres; levels in metres above the
@@ -134,6 +154,10 @@ var HeroLPH2 = (function () {
     { x0:   1.5, x1:  20.0, yi:  14.0, yo:  26.4, s:  1 },
     { x0: -46.5, x1: -28.0, yi: -14.0, yo: -26.4, s: -1 },
   ];
+  /* the hangar opening behind each lift: the photographs show it narrower
+     than the platform ("USS Iwo Jima (LPH-2), portside view", 1980s: about
+     two thirds of its length), set in OPEN_IN from each end               */
+  var OPEN_IN = 3.0, OPEN_D = 6.0;
   /* the forward gun sponson cut, starboard edge [O]                         */
   var GSX0 = 9.4, GSX1 = 25.6, GSY = -14.6;
 
@@ -582,6 +606,21 @@ var HeroLPH2 = (function () {
   ];
 
 
+  /* two more waterlines at the boot topping's edges (1.2 m and -0.8 m,
+     [N][T]), interpolated in the table, so the boot is its own band of
+     the loft and reads at any distance                                    */
+  var BOOT_HI = 1.2, BOOT_LO = -0.8;
+  (function () {
+    function ins(zn) {
+      var k = 0;
+      while (WLZ[k + 1] < zn) k++;
+      var f = (zn - WLZ[k]) / (WLZ[k + 1] - WLZ[k]);
+      WLZ.splice(k + 1, 0, zn);
+      STN.forEach(function (r) { r[1].splice(k + 1, 0, lerp(r[1][k], r[1][k + 1], f)); });
+    }
+    ins(BOOT_LO); ins(BOOT_HI);
+  })();
+
   /* keel height along the length: the run rising to a transom whose lower
      edge is just under the waterline [T], the forefoot rounding up into a
      raked stem, then the stem itself up to the deck [N][P]                  */
@@ -639,6 +678,7 @@ var HeroLPH2 = (function () {
     DECK.forEach(function (p) { if (p[0] > HX0 + 0.5 && p[0] < HX1 - 0.3) xs.push(p[0]); });
     LIFTS.forEach(function (L) {
       [L.x0, L.x1].forEach(function (e) { xs.push(e - 0.25); xs.push(e + 0.25); });
+      xs.push(L.x0 + OPEN_IN); xs.push(L.x1 - OPEN_IN);
     });
     xs.sort(function (a, b) { return a - b; });
     var st = [];
@@ -654,7 +694,8 @@ var HeroLPH2 = (function () {
       rings.push(r);
     }
     var nR = rings[0].length;
-    var OUT = { top: { pos: [], nrm: [], uv: [], z0: 0, z1: FD_BOT }, bot: { pos: [], nrm: [], uv: [], z0: KEEL, z1: 0 } };
+    var OUT = { top: { pos: [], nrm: [], uv: [], z0: 0, z1: FD_BOT }, bot: { pos: [], nrm: [], uv: [], z0: KEEL, z1: 0 },
+                boot: { pos: [], nrm: [], uv: [], z0: BOOT_LO, z1: BOOT_HI } };
     /* the transom rakes a little aft as it rises [T]; the deck overhangs
        its top by 2.3 m, the shadowed overhang every stern view shows        */
     function xAt(ii, z) { return ii === 0 ? st[0] - TRAKE * clamp((z + 0.5) / (FD_BOT + 0.5), 0, 1) : st[ii]; }
@@ -683,13 +724,30 @@ var HeroLPH2 = (function () {
     czz /= nR;
     var C = [xAt(0, czz), cyy / nR, czz];
     for (j = 0; j < nR; j++) tri(C, V(0, j), V(0, j + 1), -1, -2 - j, -2 - ((j + 1) % nR));
-    var around = {}, COS = Math.cos(34 * PI / 180);
+    var COS = Math.cos(34 * PI / 180);
+    var vol = 0;
+    /* the hangar openings behind the lifts: the side plating is left out
+       between the hangar deck and the gallery deck                         */
+    faces = faces.filter(function (f) {
+      var x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, ym = 0, c;
+      for (c = 0; c < 3; c++) {
+        x0 = Math.min(x0, f.p[c][0]); x1 = Math.max(x1, f.p[c][0]);
+        z0 = Math.min(z0, f.p[c][2]); z1 = Math.max(z1, f.p[c][2]); ym += f.p[c][1] / 3;
+      }
+      for (c = 0; c < LIFTS.length; c++) {
+        var L = LIFTS[c];
+        if (x0 >= L.x0 + OPEN_IN - 0.05 && x1 <= L.x1 - OPEN_IN + 0.05 && z0 >= KNUCK - 0.01 &&
+            z0 < FD_BOT - 0.01 && L.s * ym > 5) return false;
+      }
+      return true;
+    });
+    var around = {};
     faces.forEach(function (f, fi) {
       f.k.forEach(function (k) { (around[k] || (around[k] = [])).push(fi); });
     });
-    var vol = 0;
     faces.forEach(function (f) {
-      var o = (f.p[0][2] + f.p[1][2] + f.p[2][2]) / 3 >= 0 ? OUT.top : OUT.bot;
+      var zc = (f.p[0][2] + f.p[1][2] + f.p[2][2]) / 3;
+      var o = zc > BOOT_LO && zc < BOOT_HI ? OUT.boot : (zc >= 0 ? OUT.top : OUT.bot);
       for (var c = 0; c < 3; c++) {
         var q = f.p[c], sx = 0, sy = 0, sz = 0;
         around[f.k[c]].forEach(function (gi) {
@@ -710,7 +768,7 @@ var HeroLPH2 = (function () {
       g.setAttribute("uv", new THREE.Float32BufferAttribute(o.uv, 2));
       return g;
     }
-    return { top: geo(OUT.top), bot: geo(OUT.bot), st: st };
+    return { top: geo(OUT.top), bot: geo(OUT.bot), boot: geo(OUT.boot), st: st };
   }
   /* hull half-breadth at the hangar deck (for parts hung on the side)      */
   function sideAt(x, side, z) {
@@ -720,6 +778,20 @@ var HeroLPH2 = (function () {
       if (d < bd) { bd = d; best = R[k][0]; }
     }
     return best;
+  }
+
+  /* the hull's half-breadth at any height, interpolated between the loft's
+     levels (sideAt takes the nearest level)                               */
+  function sideY(x, side, z) {
+    var R = sideRing(x, side), k;
+    if (z <= R[0][1]) return R[0][0];
+    for (k = 1; k < R.length; k++) {
+      if (z <= R[k][1]) {
+        var dz = R[k][1] - R[k - 1][1];
+        return dz < 1e-4 ? R[k][0] : lerp(R[k - 1][0], R[k][0], (z - R[k - 1][1]) / dz);
+      }
+    }
+    return R[R.length - 1][0];
   }
 
   /* ========================================================== the guns
@@ -836,6 +908,7 @@ var HeroLPH2 = (function () {
     var hg = hullGeo(THREE);
     B.H.add(hg.top);
     B.U.add(hg.bot);
+    B.K.add(hg.boot);
 
     /* ------------------------------------------------------ flight deck */
     var shp = new THREE.Shape();
@@ -864,9 +937,32 @@ var HeroLPH2 = (function () {
         var px = lerp(L.x0 + 0.3, L.x1 - 0.3, j / 4);
         B.M.add(box(THREE, 0.08, 0.08, 0.95, px, L.yo - L.s * 0.1, FD_TOP + 0.5));
       }
-      /* the hangar opening: a dark recess in the hull side behind the lift */
+      /* the hangar opening: the side plating is cut away between the
+         hangar deck and the gallery deck (hullGeo), and the opening is a
+         real bay: the hangar deck running in, the jambs, the overhead
+         under the gallery deck with its beams, and the hangar beyond, dark */
       var xm = (L.x0 + L.x1) * 0.5, yh = sideAt(xm, L.s, KNUCK + 4);
-      B.K.add(box(THREE, L.x1 - L.x0 - 1.2, 0.3, FD_BOT - KNUCK - 0.8, xm, L.s * (yh + 0.06), (FD_BOT + KNUCK) * 0.5 - 0.3));
+      var xa = L.x0 + OPEN_IN, xb = L.x1 - OPEN_IN, wo = xb - xa, yb0 = yh - OPEN_D;
+      var ymid = L.s * (yh + yb0) * 0.5, hh = FD_BOT - KNUCK;
+      B.K.add(box(THREE, wo, 0.2, hh, xm, L.s * (yb0 - 0.1), (FD_BOT + KNUCK) * 0.5));
+      B.S.add(box(THREE, wo, OPEN_D, 0.3, xm, ymid, KNUCK - 0.15));
+      B.K.add(box(THREE, wo, OPEN_D, 0.3, xm, ymid, FD_BOT + 0.1));
+      for (j = 0; j < 2; j++) {
+        B.S.add(box(THREE, 0.3, OPEN_D, hh, j ? xb + 0.15 : xa - 0.15, ymid, (FD_BOT + KNUCK) * 0.5));
+      }
+      for (j = 0; j < 3; j++) {
+        B.S.add(box(THREE, 0.45, OPEN_D, 0.7, lerp(xa + 1.5, xb - 1.5, j / 2), ymid, FD_BOT - 0.4));
+      }
+      /* the sill and the hangar deck's edge coaming; a stanchion line and
+         a light bar under the lintel                                        */
+      B.M.add(box(THREE, wo, 0.15, 0.35, xm, L.s * (yh - 0.1), KNUCK + 0.17));
+      B.S.add(box(THREE, wo + 0.6, 0.35, 0.6, xm, L.s * (yh - 0.1), FD_BOT - 0.3));
+      for (j = 0; j <= 5; j++) {
+        var sx = lerp(xa + 0.4, xb - 0.4, j / 5);
+        B.M.add(box(THREE, 0.08, 0.08, 1.1, sx, L.s * (yh - 0.25), KNUCK + 0.55));
+      }
+      B.M.add(box(THREE, wo - 0.6, 0.06, 0.06, xm, L.s * (yh - 0.25), KNUCK + 1.1));
+      B.M.add(box(THREE, wo - 0.6, 0.06, 0.06, xm, L.s * (yh - 0.25), KNUCK + 0.6));
       /* the two guide trunks either end, down to below the hangar deck     */
       for (j = 0; j < 2; j++) {
         var tx = j ? L.x1 - 0.5 : L.x0 + 0.5;
@@ -1012,6 +1108,51 @@ var HeroLPH2 = (function () {
       B.M.add(box(THREE, 4.0, 0.06, 0.06, pr[1], pr[0] * (yy + 1.5), FD_BOT - 3.6));
     });
 
+    /* the topsides' fittings, off the broadsides ([P]; the 1980s portside
+       view): a row of scuttles under the gallery deck, the doors and
+       vertical ladders in the hangar side, the strake along the hangar deck
+       where the flare starts, and the vertical stiffening seams of the side
+       plating. Each laid on the flared side, a few cm proud of it.        */
+    function onSide(k, x, sd, z, w, h, d) {
+      var ya = sideY(x, sd, z - h * 0.5) + d, yb = sideY(x, sd, z + h * 0.5) + d;
+      var P = [[x - w * 0.5, sd * ya, z - h * 0.5], [x + w * 0.5, sd * ya, z - h * 0.5],
+               [x + w * 0.5, sd * yb, z + h * 0.5], [x - w * 0.5, sd * yb, z + h * 0.5]];
+      var gq = new THREE.BufferGeometry(), idx = sd > 0 ? [0, 2, 1, 0, 3, 2] : [0, 1, 2, 0, 2, 3], pos = [], uv = [];
+      idx.forEach(function (q) { pos.push(P[q][0], P[q][1], P[q][2]); uv.push(q === 1 || q === 2 ? 1 : 0, q >= 2 ? 1 : 0); });
+      gq.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      gq.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      gq.computeVertexNormals();
+      B[k].add(gq);
+    }
+    function clearOf(x, sd, pad) {
+      for (var q = 0; q < LIFTS.length; q++) {
+        var L = LIFTS[q];
+        if (L.s === sd && x > L.x0 - pad && x < L.x1 + pad) return false;
+      }
+      if (sd > 0 && x > -26.0 && x < -12.0) return false;     /* the boat recess */
+      return true;
+    }
+    for (s = -1; s <= 1; s += 2) {
+      var xq;
+      for (xq = -80.0; xq <= 66.0; xq += 3.3) {
+        if (clearOf(xq, s, 1.0)) onSide("K", xq, s, 14.6, 0.42, 0.42, 0.10);
+      }
+      for (xq = -82.0; xq <= 72.0; xq += 6.6) {
+        if (clearOf(xq, s, 0.5)) onSide("S", xq, s, 12.6, 0.16, 7.4, 0.10);
+      }
+      [-66.0, -38.0, -3.0, 30.0, 52.0].forEach(function (xd) {
+        if (!clearOf(xd, s, 2.0)) return;
+        onSide("K", xd, s, KNUCK + 1.4, 1.0, 2.1, 0.3);
+        onSide("M", xd + 1.4, s, KNUCK + 4.4, 0.45, 7.0, 0.3);
+      });
+      /* the strake along the hangar deck, in lengths between the openings */
+      for (xq = -84.0; xq < 74.0; xq += 4.0) {
+        if (!clearOf(xq + 2.0, s, 0.2)) continue;
+        var y0 = sideY(xq, s, KNUCK), y1 = sideY(xq + 4.0, s, KNUCK);
+        B.S.add(box(THREE, 4.05, 0.28, 0.3, xq + 2.0, s * ((y0 + y1) * 0.5 + 0.1), KNUCK, 0, 0, s * Math.atan2(y1 - y0, 4.0)));
+      }
+    }
+
     /* ------------------------------------------- forward gun sponson [O][F]
        The two mounts in tandem on the starboard edge, in round tubs whose
        rims are the deck edge, on a platform just below the flight deck.   */
@@ -1097,6 +1238,39 @@ var HeroLPH2 = (function () {
     /* the block at the foot of the forward face, over the gun sponson [F] */
     B.S.add(frustum(THREE, [[ISL_X1 + 1.4, -14.4], [ISL_X1 + 1.4, -10.6], [ISL_X1 - 0.2, -10.2], [ISL_X1 - 0.2, -14.8]], Z0, Z0 + 2.8, 1, 0.97));
     B.K.add(box(THREE, 0.1, 1.0, 2.0, ISL_X1 + 1.45, -12.4, Z0 + 1.0));
+    /* the island's sides: the scuttles in a row on each tier (the 1980s
+       portside view shows them on the inboard face; the outboard face is
+       taken to match), the stiffening frames up the outboard face, which
+       stands flush over the ship's side, and the knees under its overhang  */
+    function tierPorts(P, z, step, skipFwd) {
+      var gp = ccw(grow(P, 0.04)), k;
+      for (k = 0; k < gp.length; k++) {
+        var p0 = gp[k], p1 = gp[(k + 1) % gp.length];
+        var ddx = p1[0] - p0[0], ddy = p1[1] - p0[1], Lg = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (Lg < 2.5) continue;
+        var nxp = ddy / Lg;
+        if (skipFwd && nxp > 0.7) continue;
+        var cnt = Math.floor(Lg / step);
+        for (var q = 0; q < cnt; q++) {
+          var f = (q + 0.5) / cnt;
+          B.K.add(box(THREE, 0.42, 0.06, 0.42, p0[0] + ddx * f, p0[1] + ddy * f, z, 0, 0, Math.atan2(ddy, ddx)));
+        }
+      }
+    }
+    tierPorts(I1, Z0 + 2.0, 2.4, false);
+    tierPorts(I4, Z0 + 11.6, 2.2, true);
+    for (j = 0; j < 7; j++) {
+      var fx = ISL_X0 + 1.5 + j * 3.1;
+      if (fx > ISL_X1 - 2.0) break;
+      B.S.add(box(THREE, 0.2, 0.18, 3.2, fx, ISL_YO - 0.06, Z0 + 1.65));
+      if (fx > ISL_X0 + 1.2 && fx < ISL_X1 - 1.2) B.S.add(box(THREE, 0.2, 0.18, 2.8, fx, ISL_YO + 0.24, Z0 + 5.0));
+    }
+    [-10.5, -2.5, 5.5].forEach(function (kx) {
+      var yi2 = sideY(kx, -1, FD_BOT - 4.2);
+      bracket([[kx - 0.5, ISL_YO + 0.1], [kx + 0.5, ISL_YO + 0.1], [kx + 0.5, -14.2], [kx - 0.5, -14.2]],
+              [[kx - 0.25, -(yi2 + 0.05)], [kx + 0.25, -(yi2 + 0.05)], [kx + 0.25, -(yi2 - 0.3)], [kx - 0.25, -(yi2 - 0.3)]],
+              FD_BOT, FD_BOT - 4.2);
+    });
     /* inclined ladders up the inboard face between the tiers, and the
        vertical one at the after end [S]                                     */
     function ladder(x0, y, z0, x1, z1) {
