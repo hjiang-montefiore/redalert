@@ -129,13 +129,17 @@
      - the paint for the e80 era: the photographs are 2013-2016; the
        ROCAF's 1980s scheme is not shown by any fetched source. Plain grey
        sampled off B is used.
+     - detail pass: the blade aerials, beacons, position lights (placed
+       on the trunk sides), static dischargers, hook, nozzle ribs, the
+       splitter plates, aux doors, torque links and the painted seams,
+       fastener rows, panels and streaks are placed from photographs B-D,
+       not measured.
      - the stabilator anhedral (A's side view only; B and C are too
        oblique to confirm it).
    Not drawn: national markings, serials, badges, tiger or aggressor
    schemes (forbidden); the underwing stores A shows (the row's weapons
    are the tip AIM-9s and the guns); the gun muzzles' blast panels beyond
-   the two troughs; the small antennas on the fin and belly; the tank's
-   tail fins; open airbrakes; the brake chute.
+   the two troughs; the tank's tail fins; open airbrakes; the brake chute.
 
    Materials: SKIN (one painted canvas, projected), RADOME, UNDER (lighter
    grey: the tank, pylons, rails), DARK (intake ducts, gun troughs,
@@ -310,6 +314,64 @@ var HeroF5 = (function () {
       g.fillStyle = "rgba(30,34,38," + (0.03 + R() * 0.05).toFixed(3) + ")";
       g.fillRect(R() * TW, R() * TH, 8 + R() * 30, 2 + R() * 5);
     }
+    /* the detail pass: seams with a light lip, fastener rows along the
+       frames and the wing spars, the gun-bay, avionics and engine-access
+       panels, the belly airbrakes' outlines, the fuel caps, rain streaks
+       down the sides and oil streaks behind the wing on the belly (B, C) */
+    function seam(x0, y0, x1, y1) {
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.strokeStyle = "rgba(255,255,255,0.10)";
+      g.beginPath(); g.moveTo(x0 + 1, y0 + 1); g.lineTo(x1 + 1, y1 + 1); g.stroke();
+    }
+    function rivets(x0, y0, x1, y1, n) {
+      g.fillStyle = "rgba(0,0,0,0.20)";
+      for (var q = 0; q <= n; q++) g.fillRect(x0 + (x1 - x0) * q / n, y0 + (y1 - y0) * q / n, 1, 1);
+    }
+    var SB = [B_PORT, B_STBD, B_IN];
+    for (b = 0; b < 3; b++) {
+      var o = SB[b];
+      seam(pxX(5.3), o + pxZ(0.25), pxX(-7.3), o + pxZ(0.25));
+      seam(pxX(5.3), o + pxZ(-0.35), pxX(-7.3), o + pxZ(-0.35));
+      rivets(pxX(5.2), o + pxZ(0.30), pxX(-7.2), o + pxZ(0.30), 140);
+      rivets(pxX(5.2), o + pxZ(-0.30), pxX(-7.2), o + pxZ(-0.30), 140);
+      for (i = 0; i < FR.length; i++) rivets(pxX(X(FR[i])) + 2, o + pxZ(0.75), pxX(X(FR[i])) + 2, o + pxZ(-0.70), 18);
+      g.strokeStyle = "rgba(0,0,0,0.32)";
+      g.strokeRect(pxX(4.9), o + pxZ(0.20), 1.0 * PXM, 0.26 * PXM);            /* gun bay */
+      g.strokeRect(pxX(3.6), o + pxZ(0.15), 0.8 * PXM, 0.24 * PXM);            /* avionics */
+      g.strokeRect(pxX(-3.2), o + pxZ(0.05), 1.6 * PXM, 0.30 * PXM);           /* engine access */
+      g.strokeRect(pxX(-5.0), o + pxZ(0.10), 1.2 * PXM, 0.28 * PXM);
+      for (i = 0; i < 22; i++) {
+        var rx0 = R() * TW, ry0 = o + pxZ(0.6 - R() * 0.9);
+        var rg = g.createLinearGradient(0, ry0, 0, ry0 + 14 + R() * 14);
+        rg.addColorStop(0, "rgba(30,28,24,0.11)"); rg.addColorStop(1, "rgba(30,28,24,0)");
+        g.fillStyle = rg; g.fillRect(rx0, ry0, 1 + R() * 2, 28);
+      }
+    }
+    for (b = 0; b < 2; b++) {
+      var ob2 = b ? B_BEL : B_TOP;
+      for (k = -1; k <= 1; k += 2) {
+        seam(pxX(wLE(0.95) - 0.55), ob2 + pxY(k * 0.95), pxX(wLE(WTIP) - 0.35), ob2 + pxY(k * WTIP));
+        seam(pxX(wTE(0.95) + 0.65), ob2 + pxY(k * 0.95), pxX(wTE(WTIP) + 0.45), ob2 + pxY(k * WTIP));
+        rivets(pxX(wLE(0.95) - 0.60), ob2 + pxY(k * 0.95), pxX(wLE(WTIP) - 0.40), ob2 + pxY(k * WTIP), 50);
+        rivets(pxX(wTE(0.95) + 0.70), ob2 + pxY(k * 0.95), pxX(wTE(WTIP) + 0.50), ob2 + pxY(k * WTIP), 50);
+        for (i = 0; i < 3; i++) {
+          var yy = 1.3 + i * 0.75;
+          g.strokeStyle = "rgba(0,0,0,0.20)";
+          g.strokeRect(pxX((wLE(yy) + wTE(yy)) / 2 + 0.2), ob2 + pxY(k * yy) - 3, 0.32 * PXM, 6);
+        }
+      }
+      seam(pxX(5.0), ob2 + pxY(0), pxX(-7.0), ob2 + pxY(0));
+    }
+    g.fillStyle = "rgba(0,0,0,0.32)"; g.fillRect(pxX(-0.9), B_TOP + pxY(0) - 3, 5, 5); g.fillRect(pxX(-2.6), B_TOP + pxY(0) - 3, 5, 5);
+    g.strokeStyle = "rgba(0,0,0,0.34)";
+    for (k = -1; k <= 1; k += 2) g.strokeRect(pxX(-0.4), B_BEL + pxY(k * 0.10 + (k > 0 ? 0.30 : 0)), 0.9 * PXM, 0.30 * PXM);   /* airbrakes */
+    for (i = 0; i < 16; i++) {
+      var ox = pxX(-1.2 - R() * 2.0), oy2 = B_BEL + pxY((R() - 0.5) * 1.1);
+      var og = g.createLinearGradient(ox, 0, ox - 60 - R() * 60, 0);
+      og.addColorStop(0, "rgba(26,22,16,0.22)"); og.addColorStop(1, "rgba(26,22,16,0)");
+      g.fillStyle = og; g.fillRect(ox - 120, oy2, 120, 2 + R() * 2);
+    }
     /* exhaust staining over the jet pipes */
     var hs = g.createLinearGradient(pxX(-6.4), 0, pxX(-7.3), 0);
     hs.addColorStop(0, "rgba(40,36,32,0)"); hs.addColorStop(1, "rgba(40,36,32,0.35)");
@@ -374,6 +436,10 @@ var HeroF5 = (function () {
     m.nozzle = new V.MeshStandardMaterial({ color: 0x4f5250, roughness: 0.42, metalness: 0.60 });
     m.glass = new V.MeshStandardMaterial({ color: 0x26353c, roughness: 0.10, metalness: 0.35 });
     m.missile = new V.MeshStandardMaterial({ color: 0xdcdcd8, roughness: 0.50, metalness: 0.15 });
+    m.navr  = new V.MeshStandardMaterial({ color: 0xc81e1e, roughness: 0.25, metalness: 0.10,
+                                           emissive: new V.Color(0xc81e1e), emissiveIntensity: 0.35 });
+    m.navg  = new V.MeshStandardMaterial({ color: 0x1fae4a, roughness: 0.25, metalness: 0.10,
+                                           emissive: new V.Color(0x1fae4a), emissiveIntensity: 0.35 });
     var tc = (C && C.team !== undefined) ? C.team : "#c0392b";
     m.team  = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                            emissive: new V.Color(tc), emissiveIntensity: 0.10 });
@@ -550,6 +616,45 @@ var HeroF5 = (function () {
     }
   }
 
+
+  /* ---- detail kit (the fittings pass): dplate - a flat plate along the
+     edge p0..p1 with chord w along +x and thickness t across the unit
+     normal nrm; dblade - a swept blade aerial standing on (x, y, z), up
+     (dz > 0) or down; dring - an annulus facing +x (or -x); dlamp - a
+     flattened lens */
+  function dplate(p0, p1, w, t, nrm) {
+    var h = w / 2, A = [], B = [], k;
+    var c = [[p0[0] + h, p0[1], p0[2]], [p0[0] - h, p0[1], p0[2]], [p1[0] - h, p1[1], p1[2]], [p1[0] + h, p1[1], p1[2]]];
+    for (k = 0; k < 4; k++) {
+      A.push([c[k][0] - nrm[0] * t / 2, c[k][1] - nrm[1] * t / 2, c[k][2] - nrm[2] * t / 2]);
+      B.push([c[k][0] + nrm[0] * t / 2, c[k][1] + nrm[1] * t / 2, c[k][2] + nrm[2] * t / 2]);
+    }
+    return sloft([A, B]);
+  }
+  function dblade(x, y, z, h, chord, sweep, dz, th) {
+    var t = th || 0.012, d = dz < 0 ? -1 : 1;
+    return sloft([[[x, y + t, z], [x - chord, y + t, z], [x - chord - sweep + chord * 0.45, y + t, z + d * h], [x - sweep, y + t, z + d * h]],
+                 [[x, y - t, z], [x - chord, y - t, z], [x - chord - sweep + chord * 0.45, y - t, z + d * h], [x - sweep, y - t, z + d * h]]]);
+  }
+  function dring(r0, r1, seg, x, y, z, back) {
+    var g = new V.RingGeometry(r0, r1, seg);
+    g.rotateY(back ? -PI / 2 : PI / 2);
+    g.translate(x, y, z);
+    return g;
+  }
+  function dlamp(r, x, y, z) {
+    var g = new V.OctahedronGeometry(r, 1);
+    g.scale(1.6, 1, 0.8);
+    g.translate(x, y, z);
+    return g;
+  }
+  function dtorus(r, tube, x, y, z, axis) {
+    var g = new V.TorusGeometry(r, tube, 4, 20);
+    if (axis === "x") g.rotateY(PI / 2); else if (axis === "y") g.rotateX(PI / 2);
+    g.translate(x, y, z);
+    return g;
+  }
+
   /* ----------------------------------------------------------- stores -- */
   /* 275 US gal tank (A: px 480..910, py 295..345) */
   var P_TANK = [[0.50, 0.03], [0.44, 0.50], [0.33, 0.90], [0.20, 1.0], [-0.20, 1.0], [-0.38, 0.70], [-0.50, 0.10]];
@@ -572,7 +677,8 @@ var HeroF5 = (function () {
     var T = makeMats(C);
     var g = new V.Group();
     g.name = "f5e";
-    var K = { skin: [], radome: [], under: [], dark: [], metal: [], glass: [], team: [], missile: [], nozzle: [] };
+    var K = { skin: [], radome: [], under: [], dark: [], metal: [], glass: [], team: [], missile: [], nozzle: [],
+              navr: [], navg: [] };
     var G = { metal: [], tyre: [], door: [] };
     var s, i, y, r;
 
@@ -699,6 +805,52 @@ var HeroF5 = (function () {
       fins(K.missile, X(880), s * M(737.5 - 393), az, 0.40, 0.10, 0.25, 0.22, 0, 0.006);
     }
 
+
+    /* ---- fittings (the detail pass; B, C, D show them): the windscreen
+       arch, the seat headrest and the mirror under the canopy, the gun
+       muzzles in their troughs, the intake splitter plates and the
+       auxiliary intake doors on the trunks, the UHF blade on the spine and
+       the IFF / TACAN blades under the belly, the anti-collision beacons,
+       the position lights on the trunk sides and the white tail light,
+       static dischargers on the wing, stabilator and rudder, the stowed
+       arrestor hook, the jet pipes' nozzle ribs and flameholder rings */
+    var wa = canAt(358), war = ringOf(sec(X(362), 0, zs, wa[0] + 0.01, wa[1] - zs + 0.02, 0.06), 24);
+    for (j = 0; j < 12; j++) K.dark.push(bar(war[j], war[(j + 1) % 24], 0.018, 4));
+    K.dark.push(box(0.14, 0.34, 0.30, X(522), 0, 0.58));                        /* seat headrest */
+    K.dark.push(box(0.30, 0.26, 0.10, X(500), 0, 0.36));
+    K.metal.push(box(0.03, 0.10, 0.04, X(440), 0, Z(160) - 0.01));             /* mirror */
+    for (s = -1; s <= 1; s += 2) {
+      K.metal.push(cyl(0.016, 0.016, 0.14, 6, "x", X(225) + 0.05, s * M(24), Z(224)));
+      K.skin.push(dplate([X(538), s * 0.525, -0.10], [X(538), s * 0.525, -0.78], 0.34, 0.016, [0, 1, 0]));
+      K.dark.push(dplate([X(650), s * 0.962, -0.33], [X(650), s * 0.962, -0.53], 0.30, 0.012, [0, 1, 0]));
+      K.dark.push(dplate([X(695), s * 0.928, -0.33], [X(695), s * 0.928, -0.53], 0.24, 0.012, [0, 1, 0]));
+      (s > 0 ? K.navr : K.navg).push(dlamp(0.035, X(580), s * 0.975, -0.22));
+      for (i = 0; i < 2; i++) {
+        var dy = 3.55 + i * 0.30, dzs = sZ(STIP - 0.10 - i * 0.35), dys = STIP - 0.10 - i * 0.35;
+        K.dark.push(bar([wTE(dy) + 0.04, s * dy, WZ], [wTE(dy) - 0.13, s * dy, WZ], 0.007, 4));
+        K.dark.push(bar([sTE(dys) + 0.04, s * dys, dzs], [sTE(dys) - 0.13, s * dys, dzs], 0.007, 4));
+      }
+      /* nozzle ribs and the flameholder ring in each pipe */
+      for (i = 0; i < 10; i++) {
+        var pa = 2 * PI * (i + 0.5) / 10, cpy = Math.cos(pa), spz = Math.sin(pa);
+        K.dark.push(bar([NOZ.x0 + 0.02, s * NOZ.y + cpy * (NOZ.r0 + 0.004), NOZ.z + spz * (NOZ.r0 + 0.004)],
+                        [NOZ.x2 + 0.01, s * NOZ.y + cpy * (NOZ.r2 + 0.004), NOZ.z + spz * (NOZ.r2 + 0.004)], 0.008, 3));
+      }
+      K.nozzle.push(dtorus(0.13, 0.013, NOZ.x2 + 0.22, s * NOZ.y, NOZ.z, "x"));
+    }
+    K.skin.push(dblade(X(760), 0, 0.64, 0.22, 0.24, 0.10, 1));                 /* UHF */
+    K.skin.push(dblade(X(1040), 0, -0.25, 0.16, 0.18, 0.07, -1));              /* TACAN */
+    K.skin.push(dblade(X(420), 0, Z(276) + 0.01, 0.10, 0.12, 0.04, -1));       /* IFF */
+    K.navr.push(dlamp(0.045, X(830), 0, Z(170) - 0.005));                       /* beacons */
+    K.navr.push(dlamp(0.045, X(960), 0, -0.285));
+    K.glass.push(dlamp(0.03, fTE(FTOP) + 0.02, 0, FTOP - 0.05));               /* tail light */
+    for (i = 0; i < 3; i++) {
+      var rz = 1.0 + i * 0.45;
+      K.dark.push(bar([fTE(rz) + 0.04, 0, rz], [fTE(rz) - 0.12, 0, rz], 0.007, 4));
+    }
+    K.metal.push(bar([X(1080), 0, -0.29], [X(1160), 0, -0.25], 0.025, 6));      /* arrestor hook */
+    K.dark.push(box(0.08, 0.06, 0.05, X(1162), 0, -0.25));
+
     mesh(g, K.skin, T.skin, "skin", true);
     mesh(g, K.radome, T.radome, "radome");
     mesh(g, K.under, T.under, "under");
@@ -708,6 +860,8 @@ var HeroF5 = (function () {
     mesh(g, K.glass, T.glass, "glass");
     mesh(g, K.team, T.team, "team");
     mesh(g, K.missile, T.missile, "aim9");
+    mesh(g, K.navr, T.navr, "nav_red");
+    mesh(g, K.navg, T.navg, "nav_green");
 
     /* ---- landing gear (A wheels; B, C legs and doors): it retracts, so
        "gear" */
@@ -733,6 +887,22 @@ var HeroF5 = (function () {
       /* the leg door (C: hung inboard of the leg, from the wing to just
          above the wheel) */
       G.door.push(box(0.60, 0.02, (wb - (mz + mr + 0.05)), mx + 0.10, s * (my - 0.24), (wb + mz + mr + 0.05) / 2));
+    }
+    /* gear fittings (the detail pass; B, C): the torque links, the gland
+       collars of the oleos, the brake lines, the hub caps, the nose leg's
+       taxi light */
+    G.metal.push(bar([nx + 0.05, 0, nz + 0.20], [nx + 0.15, 0, nz + 0.33], 0.012, 4));
+    G.metal.push(bar([nx + 0.15, 0, nz + 0.33], [nx + 0.07, 0, nz + 0.45], 0.012, 4));
+    G.metal.push(cyl(0.055, 0.055, 0.05, 10, "z", nx + 0.04, 0, nz + 0.47));
+    G.metal.push(dlamp(0.045, nx + 0.11, 0, nz + 0.72));
+    G.tyre.push(cyl(0.07, 0.07, 0.17, 10, "y", nx, 0, nz));
+    for (s = -1; s <= 1; s += 2) {
+      var ly = s * (my - 0.14);
+      G.metal.push(bar([mx + 0.03, ly, mz + 0.14], [mx + 0.14, ly, mz + 0.31], 0.013, 4));
+      G.metal.push(bar([mx + 0.14, ly, mz + 0.31], [mx + 0.04, ly, mz + 0.48], 0.013, 4));
+      G.metal.push(cyl(0.08, 0.08, 0.05, 10, "z", mx + 0.02, ly, mz + 0.52));
+      G.tyre.push(bar([mx + 0.08, ly + s * 0.05, wb - 0.02], [mx + 0.02, ly + s * 0.05, mz + 0.12], 0.008, 4));
+      G.tyre.push(cyl(0.08, 0.08, 0.225, 10, "y", mx, s * my, mz));
     }
     mesh(gr, G.metal, T.metal, "gear_metal");
     mesh(gr, G.tyre, T.tyre, "gear_tyres");

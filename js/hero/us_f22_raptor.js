@@ -74,6 +74,13 @@
    two AIM-9 in the side bays and the main bay's AMRAAMs, JDAMs or SDBs. The
    bays are drawn shut, their saw-toothed door outlines painted.
 
+   DETAIL PASS: the bypass / bleed doors on the trunk tops, the nose's
+   air-data probes, wing-tip position lights, the nozzles' flap seams and
+   sidewall plates; saw-toothed gear doors, collars, torque links, brake
+   lines and hub bolts on the gear. The low-visibility star insignia the
+   first pass painted are removed (no national markings). Placed from the
+   photographs, NOT measured.
+
    NO VARIANT. The 2005 row and the present-day row are the same airframe:
    the Increment 2, 3.1 and 3.2 upgrades are software, bay racks and
    coatings, and none of them changed the outer mould line. Both keys build
@@ -563,11 +570,9 @@ var HeroF22 = (function () {
     }
     g.globalAlpha = 1;
 
-    /* 8. low-visibility insignia: upper port wing, lower starboard wing, and
-          both intake trunks, as the type wears them */
-    star(g, cu(X(12.0)), rTop(4.9), 0.42 * PXM, "rgba(84,92,98,0.85)");
-    star(g, cu(X(12.0)), rBot(-4.9), 0.42 * PXM, "rgba(84,92,98,0.85)");
-    for (k = 0; k < 2; k++) star(g, cu(X(9.3)), rSide(Z(1.32), k), 0.20 * PXM, "rgba(84,92,98,0.85)");
+    /* 8. (the low-visibility national insignia the first pass painted here
+          are left off in the detail pass: the review policy allows no
+          national markings) */
 
     /* 9. fin rudders: the hinge and the lower aft corner */
     g.strokeStyle = "rgba(20,24,28,0.50)"; g.lineWidth = 1.4;
@@ -654,6 +659,8 @@ var HeroF22 = (function () {
                                          side: V.DoubleSide });
     m.tyre = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
     m.dark = new V.MeshStandardMaterial({ color: 0x17191b, roughness: 0.70, metalness: 0.30 });
+    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     /* the canopy's indium-tin-oxide film photographs gold-bronze from
        outside; dark enough that the tub shows only as a shadow */
     m.glass = new V.MeshStandardMaterial({ color: 0x6a5527, roughness: 0.12, metalness: 0.55,
@@ -801,6 +808,40 @@ var HeroF22 = (function () {
     K.team.push(orient(bridge(mirrorRings(r), null, true, true)));
   }
 
+  /* ======================================================= the details ==
+     The detail pass (the outline is untouched): the intake bypass / bleed
+     doors on the trunk tops behind the caret lips, the four air-data probes
+     on the nose, the wing-tip position lights (port red), the nozzles' flap
+     seams, sidewall plates and the dark throat edges, and on the gear the
+     saw-toothed door edges, oleo collars, torque links, brake lines and hub
+     bolts. Places from the Nellis, Dubai and Reno photographs, NOT measured. */
+  function trunkH(y) { return 2.19 - (y - 1.183) * 0.48; }
+  function addDetail(K) {
+    var side, i;
+    for (side = -1; side <= 1; side += 2) {
+      [[6.45, 6.95], [7.10, 7.55]].forEach(function (r) {
+        var y0 = 1.24, y1 = 1.50, e = 0.018;
+        K.ink.push(orient(bridge([
+          [[X(r[0]), side * y0, Z(trunkH(y0) + e)], [X(r[1]), side * y0, Z(trunkH(y0) + e)], [X(r[1]), side * y1, Z(trunkH(y1) + e)], [X(r[0]), side * y1, Z(trunkH(y1) + e)]],
+          [[X(r[0]), side * y0, Z(trunkH(y0) + e + 0.015)], [X(r[1]), side * y0, Z(trunkH(y0) + e + 0.015)], [X(r[1]), side * y1, Z(trunkH(y1) + e + 0.015)], [X(r[0]), side * y1, Z(trunkH(y1) + e + 0.015)]]
+        ], null, true, true)));
+      });
+      /* air-data probes, two a side on the nose */
+      K.metal.push(rod([X(1.55), side * 0.50, Z(1.62)], [X(1.30), side * 0.48, Z(1.63)], 0.016, 5));
+      K.metal.push(rod([X(1.75), side * 0.42, Z(1.86)], [X(1.50), side * 0.40, Z(1.87)], 0.016, 5));
+      /* wing-tip position lights */
+      var lg = new V.BoxGeometry(0.22, 0.05, 0.05);
+      lg.translate(X(12.85), side * (SEMI - 0.04), Z(wingH(SEMI)));
+      (side > 0 ? K.lampR : K.lampG).push(lg);
+      /* nozzle flap seams and sidewall plates */
+      for (i = -1; i <= 1; i += 2) {
+        K.ink.push(boxG(1.30, 0.02, 0.02, X(16.95), side * 0.71 + i * 0.22, Z(1.87) + 0.355));
+        K.ink.push(boxG(1.30, 0.02, 0.02, X(16.95), side * 0.71 + i * 0.22, Z(1.87) - 0.345));
+      }
+      K.hot.push(boxG(1.20, 0.03, 0.56, X(16.95), side * (0.71 + 0.505), Z(1.87)));
+    }
+  }
+
   /* ================================================================ gear ==
      Tricycle, placed from the 3-view's side view, which the Nellis taxi
      photograph scaled to the 18.92 m length agrees with: a single nose
@@ -833,8 +874,14 @@ var HeroF22 = (function () {
     G.metal.push(wheelG(0.13, 0.20, X(n), 0, Z(nr), 10));
     G.metal.push(boxG(0.10, 0.12, 0.10, X(n - 0.24), 0, Z(0.74)));
     for (var k = -1; k <= 1; k += 2) {
-      G.skin.push(boxG(1.30, 0.035, 0.46, X(n - 0.06), k * 0.29, Z(hn - 0.22)));
+      /* the detail pass: the doors' lower edges saw-toothed (Nellis) */
+      G.skin.push(toothDoor(X(n - 0.06) + 0.65, X(n - 0.06) - 0.65, Z(hn + 0.01), Z(hn - 0.45), k * 0.29, 4, 0.10));
     }
+    /* torque links, the gland collar, hub bolts */
+    G.metal.push(rod([X(n) + 0.04, 0, Z(nr + 0.16)], [X(n) + 0.18, 0, Z(nr + 0.30)], 0.016, 4));
+    G.metal.push(rod([X(n) + 0.18, 0, Z(nr + 0.30)], [X(n - 0.04) + 0.06, 0, Z(nr + 0.44)], 0.016, 4));
+    var nc = new V.CylinderGeometry(0.095, 0.095, 0.06, 12); nc.rotateX(Math.PI / 2); nc.translate(X(n - 0.10), 0, Z(0.80));
+    G.metal.push(nc);
     /* nose well */
     G.ink.push(boxG(1.30, 0.50, 0.04, X(n - 0.06), 0, Z(hn - 0.06)));
 
@@ -849,9 +896,30 @@ var HeroF22 = (function () {
       G.metal.push(rod([X(m), s * 1.42, Z(mr)], [X(m), s * 1.64, Z(mr)], 0.06, 8));
       G.tyre.push(wheelG(mr, 0.29, X(m), s * 1.62, Z(mr), 20));
       G.metal.push(wheelG(0.22, 0.30, X(m), s * 1.62, Z(mr), 12));
-      G.skin.push(boxG(2.00, 0.035, 0.84, X(m + 0.05), s * 1.80, Z(0.84), wTilt));
+      var dd = toothDoor(1.0, -1.0, 0.42, -0.42, 0, 5, 0.13);
+      dd.rotateY(wTilt); dd.translate(X(m + 0.05), s * 1.80, Z(0.84));
+      G.skin.push(dd);
+      /* the detail pass: collar, torque links, brake line, hub cap bolts */
+      var mc = new V.CylinderGeometry(0.12, 0.12, 0.07, 12); mc.rotateX(Math.PI / 2); mc.translate(X(m - 0.08), s * 1.42, Z(1.05));
+      G.metal.push(mc);
+      G.metal.push(rod([X(m) + 0.04, s * 1.44, Z(0.62)], [X(m) + 0.24, s * 1.43, Z(0.82)], 0.02, 4));
+      G.metal.push(rod([X(m) + 0.24, s * 1.43, Z(0.82)], [X(m - 0.08) + 0.06, s * 1.42, Z(1.00)], 0.02, 4));
+      G.ink.push(rod([X(m - 0.10), s * 1.33, Z(hm - 0.05)], [X(m) - 0.04, s * 1.44, Z(0.60)], 0.010, 4));
+      for (var b = 0; b < 6; b++)
+        G.metal.push(wheelG(0.016, 0.31, X(m) + Math.cos(b * Math.PI / 3) * 0.16, s * 1.62, Z(mr) + Math.sin(b * Math.PI / 3) * 0.16, 5));
       G.ink.push(boxG(2.10, 0.52, 0.04, X(m + 0.05), s * 1.36, Z(bellyH(m + 0.05) - 0.012), wTilt));
     }
+  }
+
+  /* a door plate in the x-z plane at y, its lower edge saw-toothed */
+  function toothDoor(x0, x1, zt, zb, y, n, d) {
+    var sh = new V.Shape(), k;
+    sh.moveTo(x0, zt); sh.lineTo(x1, zt);
+    for (k = 0; k <= 2 * n; k++) sh.lineTo(x1 + (x0 - x1) * k / (2 * n), k % 2 ? zb : zb + d);
+    var g = new V.ExtrudeGeometry(sh, { depth: 0.035, bevelEnabled: false });
+    g.rotateX(Math.PI / 2);
+    g.translate(0, y + 0.0175, 0);
+    return g;
   }
 
   /* ============================================================== build == */
@@ -884,7 +952,7 @@ var HeroF22 = (function () {
     V = THREE;
     SEMI = semi || REAL_SEMI;
     _m4 = new V.Matrix4(); _q = new V.Quaternion(); _v = new V.Vector3(); _u = new V.Vector3();
-    var K = { skin: [], team: [], metal: [], hot: [], ink: [], dark: [], glass: [] };
+    var K = { skin: [], team: [], metal: [], hot: [], ink: [], dark: [], glass: [], lampR: [], lampG: [] };
     var G = { skin: [], metal: [], tyre: [], ink: [] };
     addBody(K);
     addCanopy(K);
@@ -892,11 +960,12 @@ var HeroF22 = (function () {
     addTails(K);
     addNozzles(K);
     addFlash(K);
+    addDetail(K);
     addGear(G);
 
     var mats = makeMats(C);
     var root = new V.Group();
-    emit(root, K, mats, ["skin", "team", "hot", "ink", "dark", "metal", "glass"]);
+    emit(root, K, mats, ["skin", "team", "hot", "ink", "dark", "metal", "glass", "lampR", "lampG"]);
     var gear = new V.Group();
     gear.name = "gear";
     emit(gear, G, mats, ["skin", "metal", "tyre", "ink"]);

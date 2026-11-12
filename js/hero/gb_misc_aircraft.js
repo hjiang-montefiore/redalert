@@ -394,6 +394,9 @@ var HeroNimrodR1 = null, HeroShackleton = null, HeroBeverley = null, HeroF84F = 
                                            transparent: true, opacity: 0.86, side: V.DoubleSide });
     m.tyre = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
     m.gskin = m.skin;
+    /* position lights (only builders that put "lampR" / "lampG" draw them) */
+    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     return m;
   }
   function merge(list) {
@@ -440,7 +443,7 @@ var HeroNimrodR1 = null, HeroShackleton = null, HeroBeverley = null, HeroF84F = 
   function finish(C, P, tex) {
     var mats = makeMats(C, P, tex);
     var root = new V.Group();
-    emit(root, K, mats, ["skin", "dome", "team", "metal", "ink", "blade", "glass", "blur"]);
+    emit(root, K, mats, ["skin", "dome", "team", "metal", "ink", "blade", "glass", "blur", "lampR", "lampG"]);
     var gear = new V.Group();
     gear.name = "gear";
     emit(gear, G, mats, ["gskin", "metal", "tyre"]);
@@ -594,6 +597,13 @@ var HeroNimrodR1 = null, HeroShackleton = null, HeroBeverley = null, HeroF84F = 
    doors are not drawn); no stores are drawn (the row's rockets varied from
    sortie to sortie). The red intake lip on P1 is a unit marking and is not
    drawn. Paint: bare aluminium all over (P1, P2).
+   DETAIL PASS: the M3 muzzles in the nose ports, seat headrest, mirror,
+   canopy sill rails, a spine whip and a belly blade, wing-tip position
+   lights and a tail light, the jet pipe's lip ring and liner; on the gear
+   torque links, collars, brake lines, hub caps with bolts, the nose well's
+   doors and taxi lamp; on the sheet longeron seams with fastener rows,
+   access panels, wing spars, fuel caps, gun-gas and exhaust soot and rain
+   streaks. All placed from P1 and P2, NOT measured.
    Model space: x = 6.6 - d, z = h (the intake axis), before the stance. */
   HeroF84F = (function () {
     var NOSE = 6.6;
@@ -713,6 +723,48 @@ var HeroNimrodR1 = null, HeroShackleton = null, HeroBeverley = null, HeroF84F = 
       gput("metal", rod([xn + 0.01, -0.10, Z(NOSEW.h)], [X(0.55), -0.10, Z(-0.50)], 0.05, 8));
       gput("metal", rod([xn, -0.11, Z(NOSEW.h)], [xn, 0.11, Z(NOSEW.h)], 0.035, 6));
       gput("metal", rod([X(0.55), 0, Z(-0.85)], [X(1.25), 0, Z(-0.62)], 0.035, 6));
+      /* the detail pass (P1, P2): the nose leg's torque links, gland collar
+         and taxi lamp, the nose well's doors; the main legs' torque links,
+         collars and brake lines; hub caps with bolts */
+      gput("metal", rod([xn + 0.05, 0, Z(NOSEW.h + 0.14)], [xn - 0.10, 0, Z(NOSEW.h + 0.30)], 0.014, 4));
+      gput("metal", rod([xn - 0.10, 0, Z(NOSEW.h + 0.30)], [xn - 0.20, 0, Z(NOSEW.h + 0.48)], 0.014, 4));
+      gput("metal", rod([X(0.48), 0, Z(-0.80)], [X(0.48), 0, Z(-0.74)], 0.12, 10));
+      gput("metal", boxG(0.08, 0.14, 0.08, X(0.40), 0, Z(-0.66)));
+      for (var sd = -1; sd <= 1; sd += 2) {
+        gput("gskin", boxG(0.80, 0.022, 0.30, X(0.95), sd * 0.20, Z(-0.80)));
+        gput("tyre", wheelG(0.09, 0.18, xn, 0, Z(NOSEW.h), 10));
+        var xm = X(MAIN.d), ym = sd * (MAIN.y - 0.17);
+        gput("metal", rod([xm + 0.02, ym, Z(MAIN.h + 0.10)], [xm + 0.18, ym, Z(MAIN.h + 0.28)], 0.017, 4));
+        gput("metal", rod([xm + 0.18, ym, Z(MAIN.h + 0.28)], [xm - 0.02, ym, Z(MAIN.h + 0.46)], 0.017, 4));
+        gput("metal", rod([xm - 0.03, ym, Z(MAIN.h + 0.52)], [xm - 0.035, ym, Z(MAIN.h + 0.58)], 0.10, 10));
+        gput("tyre", rod([xm - 0.10, ym - sd * 0.06, Z(MAIN.h + 0.95)], [xm - 0.02, ym - sd * 0.06, Z(MAIN.h + 0.12)], 0.009, 4));
+        gput("tyre", wheelG(0.12, 0.235, xm, sd * MAIN.y, Z(MAIN.h), 10));
+        for (var b = 0; b < 6; b++)
+          gput("metal", wheelG(0.015, 0.24, xm + Math.cos(b * Math.PI / 3) * 0.17, sd * MAIN.y, Z(MAIN.h) + Math.sin(b * Math.PI / 3) * 0.17, 5));
+      }
+    }
+    /* ---- the detail pass, airframe (P1, P2; places NOT measured): the
+       M3 muzzles in the four nose ports, the seat headrest and the mirror
+       under the hood, the canopy sill rails, a blade aerial on the spine
+       and one under the belly, the wing-tip position lights (port red) and
+       the tail light, the jet pipe's lip ring and dark liner */
+    function addDetail() {
+      var s;
+      for (s = -1; s <= 1; s += 2) {
+        put("metal", rod([X(0.82), s * 0.41, Z(0.30)], [X(0.62), s * 0.41, Z(0.30)], 0.022, 6));
+        put("metal", rod([X(0.82), s * 0.43, Z(0.18)], [X(0.62), s * 0.43, Z(0.18)], 0.022, 6));
+        put("ink", rod([X(2.0), s * 0.36, Z(0.80)], [X(4.10), s * 0.34, Z(0.80)], 0.016, 4));
+        put(s > 0 ? "lampR" : "lampG", boxG(0.16, 0.05, 0.05, X(wLE(5.04) + 0.30), s * 5.04, Z(wH(5.04))));
+      }
+      put("ink", boxG(0.16, 0.40, 0.30, X(3.85), 0, Z(1.04)));
+      put("metal", boxG(0.03, 0.10, 0.04, X(2.60), 0, Z(1.25)));
+      put("skin", rod([X(5.30), 0, Z(1.10)], [X(5.55), 0, Z(1.36)], 0.012, 4));
+      put("ink", boxG(0.26, 0.025, 0.18, X(5.0), 0, Z(-0.96)));
+      put("glass", boxG(0.06, 0.05, 0.06, X(12.58), 0, Z(2.40)));
+      var lr = new V.TorusGeometry(0.30, 0.02, 4, 24); lr.rotateY(Math.PI / 2); lr.scale(1, 1, 1.0);
+      lr.translate(X(11.78), 0, Z(0.07)); put("metal", lr);
+      var ln = new V.CylinderGeometry(0.26, 0.26, 0.40, 18, 1, true); ln.rotateZ(Math.PI / 2);
+      ln.translate(X(11.60), 0, Z(0.07)); put("ink", ln);
     }
 
     /* ----------------------------------------------------------- paint --
@@ -756,6 +808,41 @@ var HeroNimrodR1 = null, HeroShackleton = null, HeroBeverley = null, HeroF84F = 
         /* the gun ports either side of the intake (P1) */
         pt.disc(S_(0.70, 0.30, st), 0.035, "rgba(10,12,14,0.85)");
         pt.disc(S_(0.70, 0.18, st), 0.035, "rgba(10,12,14,0.85)");
+        /* the detail pass: longeron seams with fastener rows, access panels,
+           gun-gas soot behind the ports, exhaust soot, rain streaks */
+        [0.45, -0.05, -0.55].forEach(function (hh) {
+          pt.line([S_(0.6, hh, st), S_(11.6, hh * 0.7, st)], "rgba(18,22,24,0.16)", 1);
+          for (var q = 0; q < 120; q++) {
+            var dq = 0.6 + q * 11.0 / 120, pq = S_(dq, hh * (1 - 0.3 * (dq - 0.6) / 11) + 0.05, st);
+            pt.g.fillStyle = "rgba(18,22,24,0.22)"; pt.g.fillRect(pq[0], pq[1], 1, 1);
+          }
+        });
+        [[1.3, 0.35, 0.8, 0.30], [5.3, 0.30, 0.9, 0.35], [9.6, 0.25, 0.8, 0.30]].forEach(function (r) {
+          var a0 = S_(r[0], r[1], st), a1 = S_(r[0] + r[2], r[1] - r[3], st);
+          pt.line([a0, [a1[0], a0[1]], a1, [a0[0], a1[1]], a0], "rgba(12,14,16,0.30)", 1);
+        });
+        var gg = pt.g.createLinearGradient(S_(0.75, 0, st)[0], 0, S_(2.2, 0, st)[0], 0);
+        gg.addColorStop(0, "rgba(20,18,16,0.45)"); gg.addColorStop(1, "rgba(20,18,16,0)");
+        pt.g.fillStyle = gg; pt.g.fillRect(S_(0.75, 0.40, st)[0], S_(0.75, 0.40, st)[1], S_(2.2, 0, st)[0] - S_(0.75, 0, st)[0], S_(0.75, 0.08, st)[1] - S_(0.75, 0.40, st)[1]);
+        var eg = pt.g.createLinearGradient(S_(11.8, 0, st)[0], 0, S_(10.2, 0, st)[0], 0);
+        eg.addColorStop(0, "rgba(30,26,22,0.45)"); eg.addColorStop(1, "rgba(30,26,22,0)");
+        pt.g.fillStyle = eg; pt.g.fillRect(S_(11.8, 0.6, st)[0], S_(11.8, 0.6, st)[1], S_(10.2, 0, st)[0] - S_(11.8, 0, st)[0], S_(11.8, -0.5, st)[1] - S_(11.8, 0.6, st)[1]);
+        for (var r2 = 0; r2 < 18; r2++) {
+          var rp = S_(1 + pt.R() * 10, 0.6 - pt.R() * 0.9, st);
+          var rg = pt.g.createLinearGradient(0, rp[1], 0, rp[1] + 16);
+          rg.addColorStop(0, "rgba(40,40,36,0.12)"); rg.addColorStop(1, "rgba(40,40,36,0)");
+          pt.g.fillStyle = rg; pt.g.fillRect(rp[0], rp[1], 1 + pt.R() * 2, 26);
+        }
+      }
+      /* wing spars and fastener rows, the fuel caps, top and belly */
+      for (s = -1; s <= 1; s += 2) {
+        for (var bb = 0; bb < 2; bb++) {
+          var PP = bb ? B_ : T_, sp1 = [], sp2 = [];
+          for (a = 0.7; a <= 4.9; a += 0.35) { sp1.push(PP(wLE(a) + 0.30 * (wTE(a) - wLE(a)), s * a)); sp2.push(PP(wLE(a) + 0.62 * (wTE(a) - wLE(a)), s * a)); }
+          pt.line(sp1, "rgba(18,22,24,0.14)", 1); pt.line(sp2, "rgba(18,22,24,0.14)", 1);
+          for (a = 0; a < sp1.length; a++) { pt.g.fillStyle = "rgba(18,22,24,0.25)"; pt.g.fillRect(sp1[a][0] + 2, sp1[a][1], 1, 1); pt.g.fillRect(sp2[a][0] + 2, sp2[a][1], 1, 1); }
+        }
+        pt.g.fillStyle = "rgba(10,12,14,0.45)"; var fc = T_(wLE(2.0) + 1.0, s * 2.0); pt.g.fillRect(fc[0] - 2, fc[1] - 2, 5, 5);
       }
       return pt.texture();
     }
@@ -767,6 +854,7 @@ var HeroNimrodR1 = null, HeroShackleton = null, HeroBeverley = null, HeroF84F = 
       addWing();
       addTail();
       addGear();
+      addDetail();
       /* the stance: D's ground line, 0.98 deg nose up about the mains */
       var hm = MAIN.h - MAIN.r, hn = NOSEW.h - NOSEW.r;
       pivot(Math.atan2(hn - hm, MAIN.d - NOSEW.d), X(MAIN.d), Z(hm));

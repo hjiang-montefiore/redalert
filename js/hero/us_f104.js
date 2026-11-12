@@ -109,7 +109,12 @@
      - the gear legs and braces between the wheels and the fuselage (A's
        front view shows the main legs' slant, its side view two struts);
        the wheel sizes are A's (the F-104B's): the G's larger tyres (G) are
-       not measured. No gear doors are drawn.
+       not measured. The gear doors, torque links and brake lines (detail
+       pass) are drawn to photographs D and E, not measured.
+     - detail pass: the blade aerials, beacons, position lights, static
+       dischargers, nozzle flaps, speed-brake panels and the painted seams,
+       fastener rows and streaks are placed from photographs C-F and H,
+       not measured.
      - the standing height: A's drawn wheels stand 4.09 m below the fin-top
        fairing after its heights are taken at 0.962, matching the
        published figure; the ground is set from the published 4.09 m.
@@ -307,6 +312,69 @@ var HeroF104 = (function () {
       x = pxX(5.6 - i * 0.70 + R() * 0.3); y = sideZ(0.45 - R() * 0.9, b);
       g.strokeRect(x, y, 0.36 * PXM + R() * 8, 0.22 * SIDEH / ZSPAN + R() * 4);
     }
+    /* the detail pass: seams with a light lip under them and fastener rows
+       along the fuselage frames and the wing spars, the speed-brake and
+       gun-bay panel outlines, rain streaks down the sides, oil and grime
+       aft of the wing root and under the belly (C, F: a weathered G) */
+    function seam(x0, y0, x1, y1) {
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      g.strokeStyle = "rgba(255,255,255,0.10)";
+      g.beginPath(); g.moveTo(x0 + 1, y0 + 1); g.lineTo(x1 + 1, y1 + 1); g.stroke();
+    }
+    function rivets(x0, y0, x1, y1, n) {
+      g.fillStyle = "rgba(0,0,0,0.20)";
+      for (var q = 0; q <= n; q++) g.fillRect(x0 + (x1 - x0) * q / n, y0 + (y1 - y0) * q / n, 1, 1);
+    }
+    for (b = 1; b <= 2; b++) {
+      seam(pxX(6.3), sideZ(0.25, b), pxX(-7.3), sideZ(0.25, b));
+      seam(pxX(6.3), sideZ(-0.30, b), pxX(-7.3), sideZ(-0.30, b));
+      rivets(pxX(6.2), sideZ(0.30, b), pxX(-7.2), sideZ(0.30, b), 160);
+      rivets(pxX(6.2), sideZ(-0.25, b), pxX(-7.2), sideZ(-0.25, b), 160);
+      for (i = 0; i < FR.length; i++) rivets(pxX(FR[i]) + 2, sideZ(0.65, b), pxX(FR[i]) + 2, sideZ(-0.55, b), 20);
+      g.strokeStyle = "rgba(0,0,0,0.32)";
+      g.strokeRect(pxX(-4.55), sideZ(0.24, b), 0.60 * PXM, 0.30 / ZSPAN * SIDEH);          /* speed brake */
+      g.strokeRect(pxX(5.4), sideZ(-0.05, b), 1.1 * PXM, 0.25 / ZSPAN * SIDEH);            /* gun / avionics bay */
+      g.strokeRect(pxX(2.6), sideZ(0.55, b), 0.9 * PXM, 0.18 / ZSPAN * SIDEH);
+      for (i = 0; i < 26; i++) {
+        var rx0 = R() * TW, ry0 = sideZ(0.6 - R() * 0.8, b);
+        var rg = g.createLinearGradient(0, ry0, 0, ry0 + 18 + R() * 20);
+        rg.addColorStop(0, "rgba(30,28,24,0.10)"); rg.addColorStop(1, "rgba(30,28,24,0)");
+        g.fillStyle = rg; g.fillRect(rx0, ry0, 1 + R() * 2, 38);
+      }
+    }
+    for (b = 0; b <= 3; b += 3) for (var sg2 = -1; sg2 <= 1; sg2 += 2) {
+      var Yq = function (yy) { return bandY[b] + clamp(pxY(sg2 * yy), 2, TOPH - 2); };
+      /* front and rear spars, a span-wise access-panel row, root fairing */
+      seam(pxX(wLE(1.10) - 0.35), Yq(1.10), pxX(wLE(3.10) - 0.25), Yq(3.10));
+      seam(pxX(wTE(1.00) + 0.70), Yq(1.00), pxX(wTE(3.10) + 0.48), Yq(3.10));
+      rivets(pxX(wLE(1.10) - 0.40), Yq(1.10), pxX(wLE(3.10) - 0.30), Yq(3.10), 60);
+      rivets(pxX(wTE(1.00) + 0.75), Yq(1.00), pxX(wTE(3.10) + 0.53), Yq(3.10), 60);
+      for (i = 0; i < 4; i++) {
+        var yy = 1.30 + i * 0.42;
+        g.strokeStyle = "rgba(0,0,0,0.20)";
+        g.strokeRect(pxX((wLE(yy) + wTE(yy)) / 2 + 0.15), Yq(yy) - 4, 0.30 * PXM, 8);
+      }
+      /* the tip tank's seam and fuel cap */
+      seam(pxX(-0.6), Yq(TTY), pxX(-2.6), Yq(TTY));
+      g.fillStyle = "rgba(0,0,0,0.30)"; g.fillRect(pxX(-1.1), Yq(TTY) - 2, 4, 4);
+    }
+    /* spine and belly: the centre seam, the fuel caps, oil streaks and grime
+       running back from the wing root and the gear wells */
+    seam(pxX(3.4), pxY(0), pxX(-6.8), pxY(0));
+    g.fillStyle = "rgba(0,0,0,0.32)"; g.fillRect(pxX(1.6), pxY(0) - 3, 6, 6); g.fillRect(pxX(-0.6), pxY(0) - 3, 6, 6);
+    var by = TOPH + 2 * SIDEH;
+    seam(pxX(6.0), by + pxY(0), pxX(-6.8), by + pxY(0));
+    for (i = 0; i < 18; i++) {
+      var ox = pxX(-0.8 - R() * 1.6), oy2 = by + pxY((R() - 0.5) * 1.0);
+      var og = g.createLinearGradient(ox, 0, ox - 90 - R() * 80, 0);
+      og.addColorStop(0, "rgba(26,22,16,0.22)"); og.addColorStop(1, "rgba(26,22,16,0)");
+      g.fillStyle = og; g.fillRect(ox - 170, oy2, 170, 2 + R() * 3);
+    }
+    g.strokeStyle = "rgba(0,0,0,0.30)";
+    g.strokeRect(pxX(3.3), by + pxY(0.15), 1.0 * PXM, 0.30 * PYM);            /* nose well doors */
+    g.strokeRect(pxX(-1.0), by + pxY(0.62), 0.9 * PXM, 0.30 * PYM);           /* main wells */
+    g.strokeRect(pxX(-1.0), by + pxY(-0.32), 0.9 * PXM, 0.30 * PYM);
     /* soot at the tail and light weathering */
     var sx = pxX(-7.6), gr = g.createLinearGradient(sx, 0, pxX(-6.2), 0);
     gr.addColorStop(0, "rgba(22,18,14,0.40)"); gr.addColorStop(1, "rgba(22,18,14,0)");
@@ -373,6 +441,10 @@ var HeroF104 = (function () {
     m.metal = new V.MeshStandardMaterial({ color: 0x5c5f61, roughness: 0.42, metalness: 0.70 });
     m.tyre  = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
     m.glass = new V.MeshStandardMaterial({ color: 0x34505a, roughness: 0.10, metalness: 0.30 });
+    m.navr  = new V.MeshStandardMaterial({ color: 0xc81e1e, roughness: 0.25, metalness: 0.10,
+                                           emissive: new V.Color(0xc81e1e), emissiveIntensity: 0.35 });
+    m.navg  = new V.MeshStandardMaterial({ color: 0x1fae4a, roughness: 0.25, metalness: 0.10,
+                                           emissive: new V.Color(0x1fae4a), emissiveIntensity: 0.35 });
     var tc = (C && C.team !== undefined) ? C.team : "#c0392b";
     m.team  = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                            emissive: new V.Color(tc), emissiveIntensity: 0.10 });
@@ -581,6 +653,35 @@ var HeroF104 = (function () {
     }
   }
 
+  /* ---- detail kit (the fittings pass): a flat plate between two edge
+     points p0, p1 with chord w along +x and thickness t; a swept blade
+     aerial standing on (x, y, z) along unit d; an annulus facing +x */
+  function plate(p0, p1, w, t, nrm) {
+    var h = w / 2, A = [], B = [], k;
+    var c = [[p0[0] + h, p0[1], p0[2]], [p0[0] - h, p0[1], p0[2]], [p1[0] - h, p1[1], p1[2]], [p1[0] + h, p1[1], p1[2]]];
+    for (k = 0; k < 4; k++) {
+      A.push([c[k][0] - nrm[0] * t / 2, c[k][1] - nrm[1] * t / 2, c[k][2] - nrm[2] * t / 2]);
+      B.push([c[k][0] + nrm[0] * t / 2, c[k][1] + nrm[1] * t / 2, c[k][2] + nrm[2] * t / 2]);
+    }
+    return solid(A, B);
+  }
+  function blade(x, y, z, h, chord, sweep, dz, th) {
+    var t = th || 0.012, d = dz < 0 ? -1 : 1;
+    return solid([[x, y + t, z], [x - chord, y + t, z], [x - chord - sweep + chord * 0.45, y + t, z + d * h], [x - sweep, y + t, z + d * h]],
+                 [[x, y - t, z], [x - chord, y - t, z], [x - chord - sweep + chord * 0.45, y - t, z + d * h], [x - sweep, y - t, z + d * h]]);
+  }
+  function annulus(r0, r1, seg, x, y, z, back) {
+    var g = new V.RingGeometry(r0, r1, seg);
+    g.rotateY(back ? -PI / 2 : PI / 2);
+    g.translate(x, y, z);
+    return g;
+  }
+  function lamp(r, x, y, z) {
+    var g = new V.OctahedronGeometry(r, 1);
+    g.scale(1.6, 1, 0.8);
+    return place(g, x, y, z);
+  }
+
   function wSec(y, s) {
     return foil([wLE(y), s * y, wZ(y)], [wTE(y), s * y, wZ(y)], wT(y), [0, 0, 1]);
   }
@@ -610,7 +711,7 @@ var HeroF104 = (function () {
     var T = makeMats(C, P);
     var g = new V.Group();
     g.name = "f104";
-    var K = { skin: [], dark: [], metal: [], glass: [], team: [], radome: [] };
+    var K = { skin: [], dark: [], metal: [], glass: [], team: [], radome: [], navr: [], navg: [] };
     var G = { metal: [], tyre: [] };
     var s, i;
 
@@ -685,12 +786,59 @@ var HeroF104 = (function () {
     K.dark.push(aftDisc(0.355, 24, -7.40, 0, JZ));
     K.metal.push(aftDisc(0.15, 14, -7.42, 0, JZ));
 
+
+    /* ---- fittings (the detail pass; C, D, E, F, H show them):
+       the intake lip ring that closes the duct's open front, the seat
+       headrest and the rear-view mirror in the canopy, the UHF blade on the
+       spine and the IFF / TACAN blades under the belly, the anti-collision
+       beacons, the position lights on the tip tanks and the white tail
+       light, static dischargers on the stabilator and rudder, the speed-
+       brake fairings on the rear sides, the jet pipe's nozzle flaps, ribs
+       and flameholder ring */
+    for (s = -1; s <= 1; s += 2) {
+      K.metal.push(annulus(0.325, 0.375, 24, 1.535, s * IY, IZ));
+      K.dark.push(annulus(0.06, 0.26, 18, 1.22, s * IY, IZ));                 /* compressor face */
+      K.skin.push(plate([1.30, s * 0.235, 0.40], [1.30, s * 0.235, -0.16], 0.40, 0.02, [0, 1, 0]));  /* splitter */
+      K.dark.push(box(0.70, 0.02, 0.10, -5.15, s * 0.655, 0.10));             /* speed brake hinge */
+      K.skin.push(plate([-4.85, s * 0.665, 0.24], [-4.85, s * 0.665, -0.06], 0.60, 0.018, [0, 1, 0]));
+      /* tip-tank position lights, port red / starboard green */
+      (s > 0 ? K.navr : K.navg).push(lamp(0.035, -0.60, s * (TTY + TTR * 0.92), wZ(TTY) + 0.04));
+      /* static dischargers: stabilator tip, rudder */
+      for (i = 0; i < 2; i++)
+        K.dark.push(bar([tTE(TTIP - 0.05 - i * 0.25) + 0.02, s * (TTIP - 0.05 - i * 0.25), TZ],
+                        [tTE(TTIP - 0.05 - i * 0.25) - 0.16, s * (TTIP - 0.05 - i * 0.25), TZ], 0.007, 4));
+    }
+    K.dark.push(box(0.14, 0.40, 0.30, 4.05, 0, 0.78));                          /* seat headrest */
+    K.dark.push(box(0.10, 0.30, 0.10, 4.20, 0, 0.62));
+    K.metal.push(box(0.03, 0.10, 0.04, 5.10, 0, 0.90));                         /* mirror */
+    K.skin.push(blade(1.20, 0, 0.865, 0.24, 0.26, 0.12, 1));                    /* UHF */
+    K.skin.push(blade(-0.40, 0, -0.585, 0.20, 0.20, 0.10, -1));                 /* TACAN */
+    K.skin.push(blade(3.40, 0, -0.575, 0.12, 0.14, 0.05, -1));                  /* IFF */
+    K.navr.push(lamp(0.05, -1.80, 0, 0.88));                                    /* beacons */
+    K.navr.push(lamp(0.05, 0.80, 0, -0.605));
+    K.glass.push(lamp(0.03, -7.98, 0, 2.50));                                   /* tail light */
+    for (i = 0; i < 3; i++) {
+      var dzr = 1.50 + i * 0.38, dxr = -8.42 + (dzr - 0.96) / (2.37 - 0.96) * 0.44;
+      K.dark.push(bar([dxr + 0.06, 0, dzr], [dxr - 0.11, 0, dzr], 0.008, 4));
+    }
+    /* nozzle flaps and their ribs, the flameholder ring */
+    push(K.metal, loft([ls(-7.45, 0, JZ, 0.36, 0.35, 1), ls(-7.62, 0, JZ, 0.33, 0.325, 1)], 24, null, null));
+    for (i = 0; i < 12; i++) {
+      var pa = 2 * PI * i / 12, cy = Math.cos(pa), sz = Math.sin(pa);
+      K.dark.push(bar([-7.22, cy * 0.39, JZ + sz * 0.375], [-7.60, cy * 0.335, JZ + sz * 0.33], 0.012, 4));
+    }
+    var fh = new V.TorusGeometry(0.21, 0.018, 4, 20);
+    fh.rotateY(PI / 2); fh.translate(-7.30, 0, JZ);
+    K.metal.push(fh);
+
     mesh(g, K.skin, T.skin, "skin", true);
     mesh(g, K.radome, T.radome, "radome");
     mesh(g, K.dark, T.dark, "dark");
     mesh(g, K.metal, T.metal, "metal");
     mesh(g, K.glass, T.glass, "glass");
     mesh(g, K.team, T.team, "team");
+    mesh(g, K.navr, T.navr, "nav_red");
+    mesh(g, K.navg, T.navg, "nav_green");
 
     /* ---- landing gear (A side and front views; D, E): single nose wheel
        0.36 m at x 2.76; mains 0.58 m at x -1.53 on a 2.68 m track, the legs
@@ -712,6 +860,29 @@ var HeroF104 = (function () {
       G.metal.push(bar([mx, s * 1.20, mz], [mx, s * (my + 0.02), mz], 0.035, 8));            /* axle */
       G.tyre.push(cyl(mr, mr, 0.19, 26, "y", mx, s * my, mz));
       G.metal.push(cyl(mr * 0.55, mr * 0.55, 0.20, 14, "y", mx, s * my, mz));
+    }
+    /* gear fittings (D, E): the chromed oleo, the torque links, the brake
+       lines, the hub caps, the nose leg's taxi light, and the doors - the
+       nose well's two side doors and each main leg's door on the leg */
+    G.metal.push(bar([nx + 0.03, 0, nz + 0.05], [2.86, 0, nz + 0.36], 0.036, 8));
+    G.metal.push(bar([nx + 0.10, 0, nz + 0.12], [2.98, 0, nz + 0.27], 0.012, 4));
+    G.metal.push(bar([2.98, 0, nz + 0.27], [2.92, 0, nz + 0.42], 0.012, 4));
+    G.metal.push(lamp(0.04, 2.98, 0, nz + 0.55));
+    G.tyre.push(cyl(0.05, 0.05, 0.15, 10, "y", nx, 0, nz));
+    for (s = -1; s <= 1; s += 2) {
+      G.metal.push(solid([[3.45, s * 0.14, -0.58], [2.45, s * 0.14, -0.58], [2.55, s * 0.17, -0.93], [3.35, s * 0.17, -0.93]],
+                         [[3.45, s * 0.16, -0.58], [2.45, s * 0.16, -0.58], [2.55, s * 0.19, -0.93], [3.35, s * 0.19, -0.93]]));
+      var lt = [-1.45, s * 0.62, -0.52], lb = [mx, s * 1.22, mz + 0.04];
+      var ld = [lb[0] - lt[0], lb[1] - lt[1], lb[2] - lt[2]], ll = Math.sqrt(ld[0] * ld[0] + ld[1] * ld[1] + ld[2] * ld[2]);
+      var dn = [0, -ld[2] / ll * s, ld[1] / ll * s];                              /* outboard of the leg */
+      var o = 0.09, f = 0.62;
+      G.metal.push(plate([lt[0] + dn[0] * o, lt[1] + dn[1] * o, lt[2] + dn[2] * o],
+                         [lt[0] + ld[0] * f + dn[0] * o, lt[1] + ld[1] * f + dn[1] * o, lt[2] + ld[2] * f + dn[2] * o],
+                         0.58, 0.022, dn));
+      G.metal.push(bar([mx + 0.02, s * 1.15, mz + 0.10], [mx + 0.12, s * 1.08, mz + 0.30], 0.014, 4));  /* torque link */
+      G.metal.push(bar([mx + 0.12, s * 1.08, mz + 0.30], [mx + 0.03, s * 1.00, mz + 0.48], 0.014, 4));
+      G.tyre.push(bar([-1.47, s * 0.66, -0.55], [mx - 0.04, s * 1.20, mz + 0.06], 0.008, 4));         /* brake line */
+      G.tyre.push(cyl(0.10, 0.10, 0.21, 10, "y", mx, s * my, mz));
     }
     mesh(gr, G.metal, T.metal, "gear_metal");
     mesh(gr, G.tyre, T.tyre, "gear_tyres");

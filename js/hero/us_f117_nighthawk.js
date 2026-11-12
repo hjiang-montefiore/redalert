@@ -58,6 +58,15 @@
    Small things the photographs show and the model keeps: the hexagonal FLIR
    window in the starboard nose facet, four small air-data probes on the nose
    facets, the dorsal refuelling receptacle with its frame.
+   DETAIL PASS (the outline is untouched): the skin carries a painted sheet
+   (RAM sheets a shade apart, the lighter tape along the facet joints and
+   leading edges, saw-toothed panel outlines, streaks and aft-deck grime);
+   saw-toothed seams are laid on the belly bay doors and gear bays, the
+   upper wing, the roof and the side facets; the nose gear doors are
+   serrated like the mains'; wing-tip position lights and a flush roof
+   beacon; hub caps with bolts, torque links, brake lines, a gland collar
+   and a taxi lamp on the gear. Panel places are from the 7th FS and
+   Andrews photographs, NOT measured.
    Nothing hangs outside: the two bays are in the belly and are drawn shut.
    The airframe carries no guns, pylons or tanks.
    Decals (team bands, the dark panels, the grilles) sit a few centimetres off
@@ -565,8 +574,81 @@ var HeroF117 = (function () {
     for (side = -1; side <= 1; side += 2) {
       var ya = side * 0.10, yb = side * 1.06, lo = Math.min(ya, yb), hi = Math.max(ya, yb);
       strip(7.40, 11.60, lo, lo + w); strip(7.40, 11.60, hi - w, hi);
-      strip(7.40, 7.40 + w, lo, hi); strip(11.60 - w, 11.60, lo, hi);
+      /* the detail pass: the bay doors' fore and aft edges are saw-toothed,
+         as on every door of the type (the rear three-quarter photograph) */
+      zigPlane(K.ink, 7.40, lo, 7.40, hi, 4, 0.16, 0.035, function (q) { return hlo(q) - 0.014; }, -1);
+      zigPlane(K.ink, 11.60, lo, 11.60, hi, 4, 0.16, 0.035, function (q) { return hlo(q) - 0.014; }, -1);
+      /* the nose-gear bay and the main bays' outlines, saw-toothed fore and aft */
+      zigPlane(K.ink, 4.30, side * 0.02, 4.30, side * 0.34, 2, 0.12, 0.03, function (q) { return hlo(q) - 0.014; }, -1);
+      zigPlane(K.ink, 9.90, side * 1.55, 9.90, side * 2.45, 3, 0.14, 0.03, function (q) { return hlo(q) - 0.014; }, -1);
+      zigPlane(K.ink, 11.70, side * 1.55, 11.70, side * 2.45, 3, 0.14, 0.03, function (q) { return hlo(q) - 0.014; }, -1);
+      strip(9.90, 11.70, side > 0 ? 2.45 - w : -2.45, side > 0 ? 2.45 : -2.45 + w);
     }
+  }
+
+  /* ---- the detail pass: saw-toothed seams laid on the skin ----------------
+     A zigzag chain of thin strips from (s0, y0) to (s1, y1) on a surface
+     whose height is h(s), n teeth deep d, strips w wide, facing up (+1) or
+     down (-1). The F-117's doors and access panels all have these edges (the
+     7th FS close-up, the Andrews rear view). */
+  function zigPlane(B, s0, y0, s1, y1, n, d, w, h, up) {
+    var pts = [], k, m = 2 * n, ds = s1 - s0, dy = y1 - y0, L = Math.sqrt(ds * ds + dy * dy) || 1;
+    var ps = -dy / L, py = ds / L;
+    for (k = 0; k <= m; k++) {
+      var t = k / m, o = (k % 2 ? d / 2 : -d / 2);
+      pts.push([s0 + ds * t + ps * o, y0 + dy * t + py * o]);
+    }
+    for (k = 0; k < m; k++) {
+      var a = pts[k], b = pts[k + 1], es = b[0] - a[0], ey = b[1] - a[1], el = Math.sqrt(es * es + ey * ey) || 1;
+      var ns = -ey / el * w / 2, ny = es / el * w / 2;
+      quad(B, P(a[0] + ns, a[1] + ny, h(a[0])), P(b[0] + ns, b[1] + ny, h(b[0])),
+              P(b[0] - ns, b[1] - ny, h(b[0])), P(a[0] - ns, a[1] - ny, h(a[0])), [0, 0, up]);
+    }
+  }
+  /* the same on a fuselage side facet, in (s, t) - t across the facet */
+  function zigFacet(B, side, s0, t0, s1, t1, n, d, w) {
+    var pts = [], k, m = 2 * n;
+    for (k = 0; k <= m; k++) {
+      var f = k / m, o = (k % 2 ? d / 2 : -d / 2);
+      var ds = s1 - s0, dt = (t1 - t0) * 1.6, L = Math.sqrt(ds * ds + dt * dt) || 1;
+      pts.push([s0 + ds * f - dt / L * o, t0 + (t1 - t0) * f + ds / L * o / 1.6]);
+    }
+    for (k = 0; k < m; k++) {
+      var a = pts[k], b = pts[k + 1], es = b[0] - a[0], et = (b[1] - a[1]) * 1.6, el = Math.sqrt(es * es + et * et) || 1;
+      var ns = -et / el * w / 2, nt = es / el * w / 2 / 1.6;
+      quad(B, facetAt(side, a[0] + ns, a[1] + nt, 0.014), facetAt(side, b[0] + ns, b[1] + nt, 0.014),
+              facetAt(side, b[0] - ns, b[1] - nt, 0.014), facetAt(side, a[0] - ns, a[1] - nt, 0.014), [0, side * 0.6, 0.8]);
+    }
+  }
+  function addPanels(K) {
+    var side, top = function (q) { return hlo(q) + THK + 0.012; };
+    for (side = -1; side <= 1; side += 2) {
+      /* the upper wing's access panels inboard of the tips and behind the
+         grids, fore and aft edges toothed, the sides straight */
+      [[12.2, 13.3, 3.2, 4.3], [10.6, 11.5, 3.0, 3.7], [8.4, 9.2, 2.75, 3.25]].forEach(function (r) {
+        zigPlane(K.ink, r[0], side * r[2], r[0], side * r[3], 3, 0.13, 0.03, top, 1);
+        zigPlane(K.ink, r[1], side * r[2], r[1], side * r[3], 3, 0.13, 0.03, top, 1);
+        zigPlane(K.ink, r[0], side * r[2], r[1], side * r[2], 1, 0.0, 0.03, top, 1);
+        zigPlane(K.ink, r[0], side * r[3], r[1], side * r[3], 1, 0.0, 0.03, top, 1);
+      });
+      /* the side facets: the avionics bay under the canopy, the engine
+         access panels behind the grids */
+      zigFacet(K.ink, side, 3.60, 0.12, 3.60, 0.55, 2, 0.12, 0.03);
+      zigFacet(K.ink, side, 4.60, 0.12, 4.60, 0.55, 2, 0.12, 0.03);
+      zigFacet(K.ink, side, 3.60, 0.12, 4.60, 0.12, 1, 0.0, 0.03);
+      zigFacet(K.ink, side, 11.30, 0.15, 11.30, 0.80, 3, 0.12, 0.03);
+      zigFacet(K.ink, side, 12.80, 0.15, 12.80, 0.80, 3, 0.12, 0.03);
+      zigFacet(K.ink, side, 11.30, 0.80, 12.80, 0.80, 1, 0.0, 0.03);
+      /* the wing-tip position lights, port red, in the chopped tip */
+      box(side > 0 ? K.lampR : K.lampG, XN - 16.55, XN - 16.25, side * 6.58 - 0.02, side * 6.58 + 0.02,
+          hlo(16.4) + 0.06 + ZG, hlo(16.4) + 0.16 + ZG);
+    }
+    /* the roof panel behind the receptacle */
+    var roof = function (q) { return stationAt(q).hr + 0.014; };
+    zigPlane(K.ink, 7.70, -0.55, 7.70, 0.55, 3, 0.12, 0.03, roof, 1);
+    zigPlane(K.ink, 9.20, -0.55, 9.20, 0.55, 3, 0.12, 0.03, roof, 1);
+    /* the anti-collision light on the roof, retracted flush (a red lens) */
+    box(K.lampR, XN - 10.05, XN - 9.85, -0.07, 0.07, stationAt(9.95).hr + ZG, stationAt(9.95).hr + 0.03 + ZG);
   }
 
   /* ---- team colour: a band across each wing near the tip, parallel to the
@@ -592,7 +674,7 @@ var HeroF117 = (function () {
      wing, so the legs are long; tyres about 0.58 m and 0.78 m across. These
      four numbers are estimates, not published figures. */
   function addGear(G) {
-    var NS = 5.0, MS = 10.8, nr = 0.29, mr = 0.39, side;
+    var NS = 5.0, MS = 10.8, nr = 0.29, mr = 0.39, side, k;
     var hn = hlo(NS) + 0.02, hm = hlo(MS) + 0.02;
     /* nose: leg, fork, wheel, landing light, two long doors */
     rod(G.metal, P(NS - 0.14, 0, hn), P(NS, 0, 0.50), 0.060, 8);
@@ -605,8 +687,18 @@ var HeroF117 = (function () {
     box(G.metal, XN - NS - 0.10, XN - NS + 0.04, -0.07, 0.07, 0.78 + ZG, 0.96 + ZG);
     wheel(G.tyre, nr, 0.18, XN - NS, 0, nr + ZG, 28);
     wheel(G.metal, 0.12, 0.19, XN - NS, 0, nr + ZG, 16);
-    box(G.skin, XN - NS - 0.55, XN - NS + 0.75, -0.30, -0.27, hn - 0.62 + ZG, hn + ZG);
-    box(G.skin, XN - NS - 0.55, XN - NS + 0.75, 0.27, 0.30, hn - 0.62 + ZG, hn + ZG);
+    /* the nose doors, their lower edges saw-toothed like the mains' (the
+       detail pass; they were plain boxes) */
+    for (side = -1; side <= 1; side += 2) {
+      var ny2 = side * 0.285, nd = hn - 0.62, pn = [], kk, nn2 = 4, a0 = NS - 0.75, a1 = NS + 0.55;
+      pn.push(P(a0, ny2, hn)); pn.push(P(a1, ny2, hn));
+      for (kk = nn2; kk >= 0; kk--) pn.push(P(lerp(a0, a1, kk / nn2), ny2, (kk % 2 ? nd : nd + 0.10)));
+      slab(G.skin, pn, 0.03);
+    }
+    /* hub caps, the oleo's gland collar, a taxi lamp lens (detail pass) */
+    wheel(G.tyre, 0.08, 0.20, XN - NS, 0, nr + ZG, 10);
+    rod(G.metal, P(NS - 0.08, 0, 0.98), P(NS - 0.08, 0, 1.04), 0.085, 10);
+    box(G.metal, XN - NS + 0.12, XN - NS + 0.20, -0.06, 0.06, 1.10 + ZG, 1.20 + ZG);
     /* mains: oleo, side brace, axle, wheel, and a serrated door each */
     for (side = -1; side <= 1; side += 2) {
       rod(G.metal, P(MS - 0.10, side * 1.42, hm), P(MS, side * 1.52, 0.52), 0.080, 8);
@@ -618,6 +710,13 @@ var HeroF117 = (function () {
       wheel(G.metal, 0.27, 0.05, XN - MS, side * 1.54, mr + ZG, 16);
       wheel(G.tyre, mr, 0.26, XN - MS, side * 1.65, mr + ZG, 28);
       wheel(G.metal, 0.19, 0.27, XN - MS, side * 1.65, mr + ZG, 16);
+      /* the detail pass: hub cap and bolts, torque links, brake line */
+      wheel(G.tyre, 0.10, 0.29, XN - MS, side * 1.65, mr + ZG, 10);
+      for (k = 0; k < 6; k++)
+        wheel(G.metal, 0.016, 0.30, XN - MS + Math.cos(k * Math.PI / 3) * 0.145, side * 1.65, mr + ZG + Math.sin(k * Math.PI / 3) * 0.145, 5);
+      rod(G.metal, P(MS + 0.02, side * 1.51, 0.62), P(MS - 0.16, side * 1.50, 0.78), 0.018, 5);
+      rod(G.metal, P(MS - 0.16, side * 1.50, 0.78), P(MS - 0.02, side * 1.49, 0.94), 0.018, 5);
+      rod(G.tyre, P(MS + 0.06, side * 1.40, hm - 0.05), P(MS + 0.04, side * 1.48, 0.62), 0.010, 4);
       /* the door: a plate hanging from the bay edge, its lower edge saw-toothed */
       var y = side * 1.98, hd = hm - 0.62, k, pts = [], n = 5, s0 = MS - 0.85, s1 = MS + 0.85;
       pts.push(P(s0, y, hm)); pts.push(P(s1, y, hm));
@@ -626,6 +725,112 @@ var HeroF117 = (function () {
       }
       slab(G.skin, pts, 0.03);
     }
+  }
+
+  /* ---- the detail pass: the skin's paint sheet ----------------------------
+     The radar-absorbent finish is not one flat black: the photographs show
+     the RAM sheets as panels a shade apart, the lighter grey tape and filler
+     along every facet joint and panel edge, the saw-toothed outlines of the
+     doors and access panels, rain and fluid streaks and exhaust grime on the
+     aft deck. Projected by face normal into top / port / starboard / belly. */
+  var TXMIN = -10.3, TPX = 26, TYMAX = 6.9, TPY = 26, TZTOP = 2.4, TZSPAN = 4.0;
+  var TTW = Math.round(20.6 * TPX), TTOPH = Math.round(2 * TYMAX * TPY), TSIDEH = 120, TTH = 2 * TTOPH + 2 * TSIDEH;
+  function cl(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  function tU(x) { return cl((x - TXMIN) * TPX, 2, TTW - 2); }
+  function tY(y, band) { return (band === 3 ? TTOPH + 2 * TSIDEH : 0) + cl((TYMAX - y) * TPY, 2, TTOPH - 2); }
+  function tZ(z, band) { return TTOPH + (band - 1) * TSIDEH + cl((TZTOP - z) / TZSPAN * TSIDEH, 2, TSIDEH - 2); }
+  var _skinTex;
+  function skinTex() {
+    if (_skinTex !== undefined) return _skinTex;
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = TTW; cv.height = TTH;
+      var g = cv.getContext("2d"), sd = 11701, i, b, side;
+      var R = function () { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+      g.fillStyle = "#2e3136"; g.fillRect(0, 0, TTW, TTH);
+      /* RAM sheets a shade apart */
+      for (i = 0; i < 160; i++) {
+        g.fillStyle = (i % 3 === 0) ? "rgba(255,255,255,0.045)" : "rgba(0,0,0,0.07)";
+        g.fillRect(R() * TTW, R() * TTH, 14 + R() * 46, 10 + R() * 30);
+      }
+      function tape(x0, y0, x1, y1, wdt) {
+        g.strokeStyle = "rgba(150,154,158,0.30)"; g.lineWidth = wdt || 2;
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      }
+      function zig(x0, y0, x1, y1, n, dd) {
+        var k, m = 2 * n, dx = x1 - x0, dy = y1 - y0, L = Math.sqrt(dx * dx + dy * dy) || 1;
+        g.strokeStyle = "rgba(10,10,12,0.55)"; g.lineWidth = 1.2;
+        g.beginPath();
+        for (k = 0; k <= m; k++) {
+          var o = (k % 2 ? dd : -dd) / 2, xx = x0 + dx * k / m - dy / L * o, yy = y0 + dy * k / m + dx / L * o;
+          if (k) g.lineTo(xx, yy); else g.moveTo(xx, yy);
+        }
+        g.stroke();
+      }
+      /* top and belly: tape along the leading edges and the plate's joints,
+         spanwise panel tapes, toothed access panels */
+      for (b = 0; b <= 3; b += 3) for (side = -1; side <= 1; side += 2) {
+        tape(tU(XN - 0.4), tY(side * 0.17, b), tU(XN - 15.9), tY(side * 6.55, b), 3);
+        tape(tU(XN - 6.2), tY(side * 2.55, b), tU(XN - 13.8), tY(side * 2.55, b));
+        tape(tU(XN - 13.8), tY(side * 2.55, b), tU(XN - 17.3), tY(side * 5.9, b));
+        for (i = 0; i < 6; i++) {
+          var ss = 8.0 + i * 1.3, yy = Math.min(6.4, ss * 0.4142 - 0.3);
+          tape(tU(XN - ss), tY(side * 2.6, b), tU(XN - ss - 0.9), tY(side * yy, b), 1);
+        }
+        for (i = 0; i < 4; i++) {
+          var s0 = 9.0 + i * 1.6, w0 = 2.9 + i * 0.6;
+          zig(tU(XN - s0), tY(side * w0, b), tU(XN - s0), tY(side * (w0 + 0.7), b), 3, 6);
+          zig(tU(XN - s0 - 0.8), tY(side * w0, b), tU(XN - s0 - 0.8), tY(side * (w0 + 0.7), b), 3, 6);
+        }
+      }
+      /* the roof and the sides: tape along the facet joints, toothed panels */
+      for (b = 1; b <= 2; b++) {
+        tape(tU(XN - 1.0), tZ(1.0 + ZG + 0.6, b), tU(XN - 16.0), tZ(2.3 + ZG, b), 2);
+        tape(tU(XN - 1.0), tZ(1.35 + ZG, b), tU(XN - 16.0), tZ(1.62 + ZG, b), 2);
+        for (i = 0; i < 9; i++) zig(tU(XN - 2.0 - i * 1.6), tZ(2.45 + ZG, b), tU(XN - 2.0 - i * 1.6), tZ(1.50 + ZG, b), 3, 6);
+        for (i = 0; i < 20; i++) {
+          var rx0 = R() * TTW, ry0 = tZ(2.4 + ZG - R() * 1.2, b);
+          var rg = g.createLinearGradient(0, ry0, 0, ry0 + 12 + R() * 12);
+          rg.addColorStop(0, "rgba(120,124,128,0.10)"); rg.addColorStop(1, "rgba(120,124,128,0)");
+          g.fillStyle = rg; g.fillRect(rx0, ry0, 1 + R() * 2, 24);
+        }
+      }
+      tape(tU(XN - 3.0), tY(0, 0), tU(XN - 16.3), tY(0, 0), 1);
+      /* exhaust grime on the aft deck and the platypus */
+      var eg = g.createLinearGradient(tU(XN - 14.6), 0, tU(XN - 18.0), 0);
+      eg.addColorStop(0, "rgba(70,62,52,0.0)"); eg.addColorStop(1, "rgba(70,62,52,0.35)");
+      g.fillStyle = eg; g.fillRect(tU(XN - 18.0), 0, tU(XN - 14.6) - tU(XN - 18.0), TTOPH + 2 * TSIDEH);
+      for (i = 0; i < 50; i++) {
+        g.fillStyle = "rgba(0,0,0," + (0.04 + R() * 0.06).toFixed(3) + ")";
+        g.fillRect(R() * TTW, R() * TTH, 10 + R() * 40, 2 + R() * 6);
+      }
+      _skinTex = new V.CanvasTexture(cv);
+      _skinTex.wrapS = _skinTex.wrapT = V.ClampToEdgeWrapping;
+      _skinTex.anisotropy = 4;
+      if (V.sRGBEncoding !== undefined) _skinTex.encoding = V.sRGBEncoding;
+    } catch (e) { _skinTex = false; }
+    return _skinTex;
+  }
+  function projUV(geo) {
+    var p = geo.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+    for (t = 0; t < p.length; t += 9) {
+      var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+      var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+      nx /= nl; ny /= nl; nz /= nl;
+      var band = nz > 0.55 ? 0 : nz < -0.55 ? 3 : (ny >= 0 ? 1 : 2);
+      var endOn = Math.abs(nx) > Math.abs(ny) * 1.4;
+      for (k = 0; k < 3; k++) {
+        var x = p[t + 3 * k], y = p[t + 3 * k + 1], z = p[t + 3 * k + 2], U, W;
+        if (band === 0 || band === 3) { U = tU(x); W = tY(y, band); }
+        else { U = tU(endOn ? x + y : x); W = tZ(z, band); }
+        uv[(t / 3 + k) * 2] = U / TTW;
+        uv[(t / 3 + k) * 2 + 1] = 1 - W / TTH;
+      }
+    }
+    geo.setAttribute("uv", new V.BufferAttribute(uv, 2));
+    return geo;
   }
 
   /* ========================================================== materials == */
@@ -654,6 +859,10 @@ var HeroF117 = (function () {
     var m = {};
     m.skin = new V.MeshStandardMaterial({ color: 0x2e3136, roughness: 0.60, metalness: 0.18,
                                           side: V.DoubleSide });
+    var st = skinTex();
+    if (st) { m.skin.map = st; m.skin.color.set(0xffffff); }
+    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     var tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
     m.team = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.60, metalness: 0.12,
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10,
@@ -703,14 +912,16 @@ var HeroF117 = (function () {
     for (var i = 0; i < order.length; i++) {
       var key = order[i], B = lists[key];
       if (!B || (!B.p.length && !B.geos.length)) continue;
-      parent.add(new V.Mesh(finish(B), mats[key]));
+      var geo = finish(B);
+      if (key === "skin") projUV(geo);
+      parent.add(new V.Mesh(geo, mats[key]));
     }
   }
 
   function build(THREE, M, C) {
     V = THREE;
     _m4 = new V.Matrix4(); _q = new V.Quaternion(); _v = new V.Vector3(); _u = new V.Vector3();
-    var K = { skin: bag(), team: bag(), hot: bag(), ink: bag(), glass: bag(), grid: bag() };
+    var K = { skin: bag(), team: bag(), hot: bag(), ink: bag(), glass: bag(), grid: bag(), lampR: bag(), lampG: bag() };
     var G = { skin: bag(), metal: bag(), tyre: bag() };
     addPlate(K);
     addHump(K);
@@ -721,12 +932,13 @@ var HeroF117 = (function () {
     addTails(K);
     addBelly(K);
     addFlash(K);
+    addPanels(K);
     addGear(G);
 
     var mats = makeMats(C);
     mats.tyre = mats.ink;
     var root = new V.Group();
-    emit(root, K, mats, ["skin", "team", "hot", "ink", "grid", "glass"]);
+    emit(root, K, mats, ["skin", "team", "hot", "ink", "grid", "glass", "lampR", "lampG"]);
     var gear = new V.Group();
     gear.name = "gear";
     emit(gear, G, mats, ["skin", "metal", "tyre"]);

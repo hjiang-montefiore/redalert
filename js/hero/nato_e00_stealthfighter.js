@@ -28,6 +28,15 @@
    metalness follow the house SKIN tier rather than the parametric values.
 
    Three material tiers only: SKIN (textured), METAL, GLASS.
+
+   NOTE: js/hero/us_f35_family.js loads after this file and registers the
+   same key, so in the game the F-35A of that module is drawn; this builder
+   stays as the reference airframe.
+   DETAIL PASS: merged per material (it was 71 meshes, one draw call each;
+   now 16); added the main legs' torque links, gland collars, brake lines
+   and hub bolts, the nose leg's torque links and collar, wing-tip position
+   lights and the nozzle's actuator ring. Placed from photographs, NOT
+   measured.
 ============================================================================ */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -928,11 +937,86 @@ var HeroF35A = (function () {
     mdm.position.set(0, 0.86, 0);
     mdm.rotation.x = -0.22;
     mg.add(mdm);
+    /* the detail pass: torque links, the gland collar, the brake line and
+       hub bolts on each main leg */
+    mg.add(strut(THREE, P.metal, [0.04, 1.30, -1.50], [0.24, 1.30, -1.36], 0.018, 4));
+    mg.add(strut(THREE, P.metal, [0.24, 1.30, -1.36], [0.07, 1.29, -1.22], 0.018, 4));
+    mg.add(strut(THREE, P.metal, [0.06, 1.28, -1.36], [0.06, 1.28, -1.31], 0.11, 10));
+    mg.add(strut(THREE, P.void_, [0.32, 0.92, -1.02], [0.02, 1.22, -1.52], 0.010, 4));
+    for (i = 0; i < 6; i++) {
+      var hb = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.31, 5), P.dark);
+      hb.position.set(Math.cos(i * Math.PI / 3) * 0.13, 1.32, -1.63 + Math.sin(i * Math.PI / 3) * 0.13);
+      mg.add(hb);
+    }
     var mgR = mg.clone(); mgR.scale.y = -1;
     gear.add(mg); gear.add(mgR);
+    /* the nose leg's torque links and collar, hub bolts */
+    gear.add(strut(THREE, P.metal, [4.30, 0, -1.55], [4.48, 0, -1.42], 0.016, 4));
+    gear.add(strut(THREE, P.metal, [4.48, 0, -1.42], [4.36, 0, -1.28], 0.016, 4));
+    gear.add(strut(THREE, P.metal, [4.40, 0, -1.22], [4.40, 0, -1.17], 0.095, 10));
+
+    /* ---- the detail pass, airframe: wing-tip position lights (port red),
+       the nozzle's actuator ring; places NOT measured */
+    var lampR = new THREE.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    var lampG = new THREE.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
+    g.add(box(THREE, lampR, 0.20, 0.05, 0.05, W_ROOT_LE - W_LE_TAN * (W_TIP - 0.04) - 0.25, W_TIP - 0.04, 0.033));
+    g.add(box(THREE, lampG, 0.20, 0.05, 0.05, W_ROOT_LE - W_LE_TAN * (W_TIP - 0.04) - 0.25, -(W_TIP - 0.04), 0.033));
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.02, 4, 28), P.metal);
+    ring.rotation.y = Math.PI / 2; ring.position.set(-6.75, 0, 0);
+    g.add(ring);
 
     g.add(gear);
-    return g;
+    return mergeByMaterial(THREE, g);
+  }
+
+  /* ===================================================== merge by material ==
+     The detail pass: the model was 71 meshes, one draw call each; it is now
+     one mesh per material, the "gear" group kept a group of its own so the
+     renderer can stow it (the merge js/hero/us_b2_spirit.js uses). */
+  function mergeByMaterial(THREE, root) {
+    var main = { order: [], by: {} }, gear = { order: [], by: {} };
+    (function walk(node, pm, inGear) {
+      for (var i = 0; i < node.children.length; i++) {
+        var c = node.children[i];
+        c.updateMatrix();
+        var m = pm.clone().multiply(c.matrix);
+        var ing = inGear || c.name === "gear";
+        if (c.isMesh) {
+          var b = ing ? gear : main, key = c.material.uuid;
+          if (!b.by[key]) { b.by[key] = { mat: c.material, parts: [] }; b.order.push(key); }
+          var geo = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+          if (!geo.attributes.normal) geo.computeVertexNormals();
+          geo.applyMatrix4(m);
+          b.by[key].parts.push(geo);
+        } else walk(c, m, ing);
+      }
+    })(root, new THREE.Matrix4(), false);
+    function out(bucket, into) {
+      for (var i = 0; i < bucket.order.length; i++) {
+        var e = bucket.by[bucket.order[i]], n = 0, k, o = 0;
+        for (k = 0; k < e.parts.length; k++) n += e.parts[k].attributes.position.count;
+        var P2 = new Float32Array(n * 3), N2 = new Float32Array(n * 3), U2 = new Float32Array(n * 2);
+        for (k = 0; k < e.parts.length; k++) {
+          var a = e.parts[k].attributes;
+          P2.set(a.position.array, o * 3);
+          N2.set(a.normal.array, o * 3);
+          if (a.uv) U2.set(a.uv.array, o * 2);
+          o += a.position.count;
+        }
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(P2, 3));
+        geo.setAttribute("normal", new THREE.BufferAttribute(N2, 3));
+        geo.setAttribute("uv", new THREE.BufferAttribute(U2, 2));
+        into.add(new THREE.Mesh(geo, e.mat));
+      }
+    }
+    var res = new THREE.Group();
+    out(main, res);
+    var gr = new THREE.Group();
+    gr.name = "gear";
+    out(gear, gr);
+    res.add(gr);
+    return res;
   }
 
   return { build: build };

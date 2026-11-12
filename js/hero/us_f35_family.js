@@ -58,8 +58,7 @@
         auxiliary inlet doors aft of them (painted; the spine is raised only
         a few centimetres, as the drawing has it), the swivel nozzle (its
         joint ring), a shorter weapons bay, no gun, a probe door, a belly
-        without the A's dip under the nozzle bay; low-visibility roundels,
-        since this is the RAF's.
+        without the A's dip under the nozzle bay.
      C  the 13.1 m wing with its fold seam and big ailerons, bigger tails,
         the tailhook bay, twin nose wheels on a heavier leg, bigger mains.
    Nothing hangs outside: all weapons are internal; the bay doors are
@@ -72,9 +71,16 @@
    the same as the old A hero's, but the C's wing is the widest yet drawn
    at r 15 (tools/jsc/parked3d_check.js keeps an OVERSIZE list for these).
 
-   Whole airframe merged into one mesh per material (7 root meshes) and the
-   gear one named group of 4, so 11 draw calls and 8 materials. The team
+   Whole airframe merged into one mesh per material (9 root meshes) and the
+   gear one named group of 4, so 13 draw calls and 10 materials. The team
    colour is exactly C.team.
+
+   DETAIL PASS: the sheet loses the low-visibility star-and-bar and roundels
+   (no national markings) and gains saw-toothed bay-door and gear-well
+   edges, fluid and rain streaks; the geometry gains wing-tip position
+   lights, the nozzle's actuator ring and dark liner, saw-toothed gear
+   doors, oleo collars, torque links, brake lines and hub bolts. Placed from
+   the photographs and drawings, NOT measured.
    ================================================================== */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -486,10 +492,8 @@ var HeroF35 = (function () {
     for (sd = -1; sd <= 1; sd += 2) {                      /* fin footprints and boom seams */
       trace(g, [tp(12.00, sd * 1.30, 0), tp(14.80, sd * 1.30, 0)], LINE, 1.0);
     }
-    /* insignia: US low-vis star on the port upper wing, UK roundels on both */
-    T = v.semi * 0.72;
-    insignia(g, tp(pl(v.wTE, T) - 1.0, T, 0)[0], rTop(T), 24, uk);
-    if (uk) insignia(g, tp(pl(v.wTE, T) - 1.0, -T, 0)[0], rTop(-T), 24, true);
+    /* (the low-visibility star-and-bar and roundels the first pass painted
+       are left off in the detail pass: no national markings) */
 
     /* ---- from below ---- */
     S = function (s0, s1, a, b, lw) { rect(g, cu(X(s1)), rBot(b), cu(X(s0)), rBot(a), LINE, lw || 1.3); };
@@ -505,9 +509,26 @@ var HeroF35 = (function () {
     if (v.lift) {
       for (sd = -1; sd <= 1; sd += 2) S(10.0, 10.55, sd > 0 ? 1.78 : -2.20, sd > 0 ? 2.20 : -1.78, 1.0);   /* roll-post doors */
     }
-    T = v.semi * 0.72;
-    insignia(g, tp(pl(v.wTE, T) - 1.0, -T, 1)[0], rBot(-T), 24, uk);
-    if (uk) insignia(g, tp(pl(v.wTE, T) - 1.0, T, 1)[0], rBot(T), 24, true);
+    /* the detail pass: the bay doors' and gear wells' fore and aft edges
+       are saw-toothed on the aeroplane; the toothed edges are painted over
+       the plain outlines above, and fluid streaks run aft from the wells */
+    function zz(s0, a, b, n, bot) {
+      var pts2 = [], q;
+      for (q = 0; q <= 2 * n; q++) pts2.push(tp(s0 + (q % 2 ? 0.10 : -0.05), a + (b - a) * q / (2 * n), bot));
+      trace(g, pts2, LINE, 1.4);
+    }
+    for (sd = -1; sd <= 1; sd += 2) {
+      zz(v.bayMain[0], sd * 0.12, sd * 0.72, 3, 1); zz(v.bayMain[1], sd * 0.12, sd * 0.72, 3, 1);
+      zz(v.bayAam[0], sd * 0.98, sd * 1.36, 2, 1); zz(v.bayAam[1], sd * 0.98, sd * 1.36, 2, 1);
+      zz(8.40, sd * 1.20, sd * 1.90, 3, 1); zz(9.90, sd * 1.20, sd * 1.90, 3, 1);
+      for (i = 0; i < 6; i++) {
+        var sx0 = cu(X(9.9 + R() * 0.2)), sy0 = rBot(sd * (1.25 + R() * 0.6));
+        var sgd = g.createLinearGradient(sx0, 0, sx0 - 60 - R() * 50, 0);
+        sgd.addColorStop(0, "rgba(40,40,36,0.28)"); sgd.addColorStop(1, "rgba(40,40,36,0)");
+        g.fillStyle = sgd; g.fillRect(sx0 - 110, sy0, 110, 2);
+      }
+    }
+    zz(3.10, -0.26, 0.26, 2, 1); zz(4.45, -0.26, 0.26, 2, 1);
 
     /* ---- the sides: the bay doors' edges, the cockpit, inlet and gear
        door lines; the DAS apertures are small dark squares ---- */
@@ -521,7 +542,13 @@ var HeroF35 = (function () {
       g.fillStyle = "rgba(24,28,32,0.70)";
       g.fillRect(SS(2.60, 2.02)[0], SS(2.60, 2.02)[1], 10, 8);
       g.fillRect(SS(6.10, 1.92)[0], SS(6.10, 1.92)[1], 10, 8);
-      if (uk) insignia(g, SS(10.6, 2.45)[0], SS(10.6, 2.45)[1], 15, true);
+      /* rain streaks down the sides and grime round the nozzle */
+      for (i = 0; i < 14; i++) {
+        var rs0 = cu(X(2.0 + R() * 12.0)), rz0 = rSide(2.6 - R() * 0.9, sg);
+        var rgd = g.createLinearGradient(0, rz0, 0, rz0 + 14 + R() * 12);
+        rgd.addColorStop(0, "rgba(40,44,48,0.14)"); rgd.addColorStop(1, "rgba(40,44,48,0)");
+        g.fillStyle = rgd; g.fillRect(rs0, rz0, 1 + R() * 2, 26);
+      }
     }
     var tex = new V.CanvasTexture(cv);
     tex.wrapS = tex.wrapT = V.ClampToEdgeWrapping;
@@ -583,6 +610,8 @@ var HeroF35 = (function () {
                                          side: V.DoubleSide });
     m.tyre = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
     m.dark = new V.MeshStandardMaterial({ color: 0x17191b, roughness: 0.70, metalness: 0.30 });
+    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     m.glass = new V.MeshStandardMaterial({ color: 0x6a5527, roughness: 0.12, metalness: 0.55,
                                            transparent: true, opacity: 0.84, side: V.DoubleSide });
     return m;
@@ -766,6 +795,47 @@ var HeroF35 = (function () {
     K.team.push(orient(bridge(mirrorRings(r), null, true, true)));
   }
 
+  /* ======================================================= the details ==
+     The detail pass (the outline is untouched): the canopy's sill rails and
+     aft bow, the EOTS chin window, the wing-tip position
+     lights (port red), the nozzle's actuator ring and inner liner, the
+     B's swivel duct seams, and on the gear saw-toothed door edges, oleo
+     collars, torque links, brake lines and hub bolts. Placed from the
+     photographs and the three drawings, NOT measured. */
+  function addDetail(K, v) {
+    var side;
+    for (side = -1; side <= 1; side += 2) {
+      var ty = v.semi - 0.04, lg = new V.BoxGeometry(0.20, 0.05, 0.05);
+      lg.translate(X(pl(v.wLE, ty) + 0.25), side * ty, Z(v.wZ0 - v.wDroop * (ty - 1.7)));
+      (side > 0 ? K.lampR : K.lampG).push(lg);
+    }
+    /* the canopy's sill rails and its aft bow where it meets the fairing,
+       and the EOTS's faceted window under the chin */
+    var i, c0, c1;
+    for (side = -1; side <= 1; side += 2)
+      for (i = 1; i < CANOPY.length - 1; i++) {
+        c0 = CANOPY[i]; c1 = CANOPY[i + 1];
+        K.dark.push(rod([X(c0[0]), side * (c0[1] + 0.01), Z(c0[2] + 0.01)], [X(c1[0]), side * (c1[1] + 0.01), Z(c1[2] + 0.01)], 0.016, 4));
+      }
+    var bw = arcRing([4.62, 0.43, 2.50, 3.01], 12, false);
+    for (i = 0; i < bw.length - 1; i++) K.dark.push(rod(bw[i], bw[i + 1], 0.026, 4));
+    var eo = new V.CylinderGeometry(0.17, 0.24, 0.10, 6); eo.rotateX(Math.PI / 2); eo.scale(1.6, 1, 1);
+    eo.translate(X(2.30), 0, Z(1.13)); K.glass.push(eo);
+    var ar = new V.TorusGeometry(0.565, 0.022, 4, 28); ar.rotateY(Math.PI / 2); ar.translate(X(13.20), 0, Z(1.92));
+    K.metal.push(ar);
+    K.ink.push(rod([X(13.40), 0, Z(1.92)], [X(13.95), 0, Z(1.92)], 0.36, 16));
+  }
+  /* a door plate in the x-z plane centred on (0, 0), its lower edge toothed */
+  function toothDoor(hl, ht, hb, n, d) {
+    var sh = new V.Shape(), k;
+    sh.moveTo(hl, ht); sh.lineTo(-hl, ht);
+    for (k = 0; k <= 2 * n; k++) sh.lineTo(-hl + 2 * hl * k / (2 * n), k % 2 ? hb : hb + d);
+    var g = new V.ExtrudeGeometry(sh, { depth: 0.035, bevelEnabled: false });
+    g.rotateX(Math.PI / 2);
+    g.translate(0, 0.0175, 0);
+    return g;
+  }
+
   /* ================================================================ gear ==
      Tricycle: the nose wheel under the cockpit (the C has two, on a heavier
      leg), the mains under the wing roots; stowed inside, drawn only near the
@@ -804,7 +874,16 @@ var HeroF35 = (function () {
       G.metal.push(wheelG(0.13, 0.20, X(n), 0, Z(nr), 10));
     }
     G.metal.push(boxG(0.10, 0.12, 0.10, X(n - 0.20), 0, Z(nr + 0.46)));
-    for (k = -1; k <= 1; k += 2) G.skin.push(boxG(1.15, 0.035, 0.40, X(n - 0.05), k * 0.29, Z(hn - 0.20)));
+    for (k = -1; k <= 1; k += 2) {
+      var nd = toothDoor(0.575, 0.20, -0.20, 4, 0.08);
+      nd.translate(X(n - 0.05), k * 0.29, Z(hn - 0.20));
+      G.skin.push(nd);
+    }
+    /* the detail pass: nose leg torque links, gland collar */
+    G.metal.push(rod([X(n) + 0.04, 0, Z(nr + 0.14)], [X(n) + 0.18, 0, Z(nr + 0.28)], 0.016, 4));
+    G.metal.push(rod([X(n) + 0.18, 0, Z(nr + 0.28)], [X(n - 0.06) + 0.04, 0, Z(nr + 0.42)], 0.016, 4));
+    var ncl = new V.CylinderGeometry(nl + 0.025, nl + 0.025, 0.06, 12); ncl.rotateX(Math.PI / 2);
+    ncl.translate(X(n - 0.12), 0, Z(nr + 0.62)); G.metal.push(ncl);
     G.ink.push(boxG(1.20, 0.50, 0.04, X(n - 0.05), 0, Z(hn - 0.07)));
 
     /* mains: leg, side brace, axle, wheel, the door hanging outboard and the well */
@@ -815,7 +894,17 @@ var HeroF35 = (function () {
       G.metal.push(rod([X(m), s * (my - 0.16), Z(mr)], [X(m), s * (my + 0.14), Z(mr)], 0.06, 8));
       G.tyre.push(wheelG(mr, v.mainW, X(m), s * my, Z(mr), 20));
       G.metal.push(wheelG(0.21, v.mainW + 0.02, X(m), s * my, Z(mr), 12));
-      G.skin.push(boxG(1.10, 0.035, 0.62, X(m + 0.05), s * (my + 0.24), Z(hm - 0.20)));
+      var md = toothDoor(0.55, 0.31, -0.31, 4, 0.10);
+      md.translate(X(m + 0.05), s * (my + 0.24), Z(hm - 0.20));
+      G.skin.push(md);
+      /* the detail pass: collar, torque links, brake line, hub bolts */
+      var mcl = new V.CylinderGeometry(v.legR + 0.03, v.legR + 0.03, 0.07, 12); mcl.rotateX(Math.PI / 2);
+      mcl.translate(X(m - 0.07), s * (my - 0.06), Z(mr + 0.55)); G.metal.push(mcl);
+      G.metal.push(rod([X(m) + 0.04, s * (my - 0.13), Z(mr + 0.14)], [X(m) + 0.22, s * (my - 0.12), Z(mr + 0.32)], 0.018, 4));
+      G.metal.push(rod([X(m) + 0.22, s * (my - 0.12), Z(mr + 0.32)], [X(m - 0.06) + 0.04, s * (my - 0.08), Z(mr + 0.50)], 0.018, 4));
+      G.ink.push(rod([X(m - 0.14), s * 1.24, Z(hm - 0.05)], [X(m) - 0.04, s * (my - 0.15), Z(mr + 0.12)], 0.010, 4));
+      for (k = 0; k < 6; k++)
+        G.metal.push(wheelG(0.015, v.mainW + 0.03, X(m) + Math.cos(k * Math.PI / 3) * 0.15, s * my, Z(mr) + Math.sin(k * Math.PI / 3) * 0.15, 5));
       G.ink.push(boxG(1.50, 0.62, 0.04, X(m + 0.10), s * 1.45, Z(hm - 0.04)));
     }
   }
@@ -849,7 +938,7 @@ var HeroF35 = (function () {
     V = THREE;
     var v = VARS[which];
     _m4 = new V.Matrix4(); _q = new V.Quaternion(); _v = new V.Vector3(); _u = new V.Vector3();
-    var K = { skin: [], team: [], metal: [], hot: [], ink: [], dark: [], glass: [] };
+    var K = { skin: [], team: [], metal: [], hot: [], ink: [], dark: [], glass: [], lampR: [], lampG: [] };
     var G = { skin: [], metal: [], tyre: [], ink: [] };
     addBody(K, v);
     addCanopy(K, v);
@@ -857,11 +946,12 @@ var HeroF35 = (function () {
     addFins(K, v);
     addNozzle(K, v);
     addFlash(K, v);
+    addDetail(K, v);
     addGear(G, v);
 
     var mats = makeMats(C, v);
     var root = new V.Group();
-    emit(root, K, mats, ["skin", "team", "hot", "ink", "dark", "metal", "glass"]);
+    emit(root, K, mats, ["skin", "team", "hot", "ink", "dark", "metal", "glass", "lampR", "lampG"]);
     var gear = new V.Group();
     gear.name = "gear";
     emit(gear, G, mats, ["skin", "metal", "tyre", "ink"]);
