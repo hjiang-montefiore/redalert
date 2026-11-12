@@ -85,6 +85,10 @@
    the nose tip in the E-3's 44.35 m frame, h metres above the ground; the gear
    stands on h = 0. Merged into one mesh per material; the gear is its own
    named group, the lowest opaque thing on the aeroplane.
+   The redo (see "details" below) adds the pods' lips, fan faces, exhaust
+   steps and core plugs, the flap-track fairings, seam ribbons for the
+   panel breaks and hinge lines, the entry door, the windscreen frames,
+   aerials, lamps, gear doors, and a grey-scale paint sheet over the coats.
    ========================================================================= */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -410,6 +414,7 @@ var HeroE3 = (function () {
       for (sd = -1; sd <= 1; sd += 2) {
         xLip = X(sLip);
         addPod(xLip, sd * p.y, p.h, rows, spec.cfm ? 22 : 20);
+        podDetail(xLip, sd * p.y, p.h, rows);
         sec = wingSec(p.y); top = sec.o - 0.05;
         foil(finSecs(sd * p.y, [p.h + (spec.cfm ? 0.80 : 0.50), top],
                      [sLip + 1.2, sLip + 2.7], [3.3, 3.2], [0.075, 0.07]),
@@ -535,10 +540,10 @@ var HeroE3 = (function () {
     g.translate(x, y, z);
     return g;
   }
-  function rod(a, b, r, seg) {
+  function rod(a, b, r, seg, r2) {        /* r2: the radius at b, if not r */
     var dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
     var L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
-    var g = new V.CylinderGeometry(r, r, L, seg || 8);
+    var g = new V.CylinderGeometry(r2 === undefined ? r : r2, r, L, seg || 8);
     _q.setFromUnitVectors(_u.set(0, 1, 0), _v.set(dx / L, dy / L, dz / L));
     _m4.makeRotationFromQuaternion(_q);
     _m4.setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
@@ -574,6 +579,422 @@ var HeroE3 = (function () {
     }
   }
 
+  /* ========================================================= detail kit ==
+     (the redo) Fittings laid on the skin, and a projected paint sheet.
+     ribbon()  a strip along a polyline lying on the skin (outward normal at
+               each point given), lifted a little: panel seams, hinge lines,
+               walkway edges, de-icer boots;
+     blade()   a tapered blade aerial or a fence standing on the skin;
+     lamp()    a small eight-faced lamp in a vertex colour (one material);
+     sheet()   a grey-scale canvas laid over the coloured skins by projected
+               UVs (plan views from above and below, the two sides): panel
+               lines, rivet rows, walkways, exhaust soot and weathering. The
+               skins keep their colour; the sheet only darkens it. */
+  function DK(V) {
+    function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function vnorm(a) { var m = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
+    function geo(pos, col) {
+      var g = new V.BufferGeometry();
+      g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+      if (col) g.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+      g.computeVertexNormals();
+      return g;
+    }
+    function quad(pos, a, b, c, d, n) {
+      var u = vsub(b, a), v = vsub(c, a), f = vcross(u, v);
+      if (n && f[0] * n[0] + f[1] * n[1] + f[2] * n[2] < 0) { var t = b; b = d; d = t; }
+      pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2],
+               a[0], a[1], a[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+    }
+    /* pts: [[x,y,z]...]; nrm: the outward normal at each point, or a
+       function (p) -> normal; w the width, lift the height off the skin */
+    function ribbon(pts, nrm, w, lift) {
+      var pos = [], A = [], B = [], i, n = pts.length;
+      if (n < 2) return null;
+      for (i = 0; i < n; i++) {
+        var p = pts[i], nn = vnorm(typeof nrm === "function" ? nrm(p) : (nrm[0].length ? nrm[i] : nrm));
+        var t = vsub(pts[Math.min(i + 1, n - 1)], pts[Math.max(i - 1, 0)]);
+        var s = vnorm(vcross(t, nn)), l = lift === undefined ? 0.012 : lift;
+        var c = [p[0] + nn[0] * l, p[1] + nn[1] * l, p[2] + nn[2] * l];
+        A.push([c[0] + s[0] * w / 2, c[1] + s[1] * w / 2, c[2] + s[2] * w / 2]);
+        B.push([c[0] - s[0] * w / 2, c[1] - s[1] * w / 2, c[2] - s[2] * w / 2]);
+        A[i].n = nn;
+      }
+      for (i = 0; i + 1 < n; i++) quad(pos, A[i], B[i], B[i + 1], A[i + 1], A[i].n);
+      return geo(pos);
+    }
+    /* a blade from base point p, standing along up, chord along fwd (the
+       leading edge forward); h tall, chord c0 at the root, c1 at the tip,
+       th thick, the tip set back by rake */
+    function blade(p, up, fwd, h, c0, c1, th, rake) {
+      up = vnorm(up); fwd = vnorm(fwd);
+      var sd = vnorm(vcross(up, fwd)), pos = [];
+      function P(f, u, s) {
+        return [p[0] + fwd[0] * f + up[0] * u + sd[0] * s, p[1] + fwd[1] * f + up[1] * u + sd[1] * s,
+                p[2] + fwd[2] * f + up[2] * u + sd[2] * s];
+      }
+      var r = rake || 0, t = th / 2;
+      var a0 = P(c0 / 2, 0, t), a1 = P(-c0 / 2, 0, t), a2 = P(-c0 / 2, 0, -t), a3 = P(c0 / 2, 0, -t);
+      var b0 = P(c1 / 2 - r, h, t), b1 = P(-c1 / 2 - r, h, t), b2 = P(-c1 / 2 - r, h, -t), b3 = P(c1 / 2 - r, h, -t);
+      quad(pos, a0, a1, b1, b0, sd); quad(pos, a3, a2, b2, b3, [-sd[0], -sd[1], -sd[2]]);
+      quad(pos, a0, b0, b3, a3, fwd); quad(pos, a1, a2, b2, b1, [-fwd[0], -fwd[1], -fwd[2]]);
+      quad(pos, b0, b1, b2, b3, up);
+      return geo(pos);
+    }
+    /* an eight-faced lamp of radius r at p, in colour hex (vertex colour) */
+    function lamp(p, r, hex) {
+      var c = [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
+      var pos = [], col = [], i, j;
+      var X = [[r, 0, 0], [-r, 0, 0]], Y = [[0, r, 0], [0, -r, 0]], Z = [[0, 0, r], [0, 0, -r]];
+      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) for (var k = 0; k < 2; k++) {
+        var a = X[i], b = Y[j], d = Z[k];
+        pos.push(p[0] + a[0], p[1] + a[1], p[2] + a[2], p[0] + b[0], p[1] + b[1], p[2] + b[2],
+                 p[0] + d[0], p[1] + d[1], p[2] + d[2]);
+        col.push(c[0], c[1], c[2], c[0], c[1], c[2], c[0], c[1], c[2]);
+      }
+      return geo(pos, col);
+    }
+    /* a closed loop of points around a body: f(angle) -> [x,y,z]; the
+       normal is taken radially from the axis point ax(angle) */
+    function hoop(f, a0, a1, n, ax, w, lift) {
+      var pts = [], nr = [], i;
+      for (i = 0; i <= n; i++) {
+        var a = a0 + (a1 - a0) * i / n, p = f(a), c = ax(a);
+        pts.push(p); nr.push([0, p[1] - c[1], p[2] - c[2]]);
+      }
+      return ribbon(pts, nr, w, lift);
+    }
+
+    /* ------------------------------------------------ the paint sheet --
+       Four bands on a 1024 x 2048 sheet: from above (x, y), the port side
+       (x, z), the starboard side (x, z), from below (x, y). */
+    function layout(xmin, xmax, ymax, zmin, zmax) {
+      var TW = 1024, TH = 2048, PX = (TW - 4) / (xmax - xmin);
+      var PY = Math.min(PX * 1.6, 620 / (2 * ymax)), PZ = Math.min(PX * 1.6, 300 / (zmax - zmin));
+      var TOPH = Math.ceil(2 * ymax * PY) + 2, SIDEH = Math.ceil((zmax - zmin) * PZ) + 2;
+      var B_PORT = TOPH + 4, B_STBD = B_PORT + SIDEH + 4, B_BOT = B_STBD + SIDEH + 4;
+      return { TW: TW, TH: TH, PX: PX, PY: PY, PZ: PZ, XMIN: xmin, YMAX: ymax, ZMAX: zmax,
+               TOPH: TOPH, SIDEH: SIDEH, B_PORT: B_PORT, B_STBD: B_STBD, B_BOT: B_BOT };
+    }
+    function cl(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    function projUV(geo2, L) {
+      var p = geo2.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+      for (t = 0; t + 8 < p.length; t += 9) {
+        var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+        var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+        var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+        nx /= nl; ny /= nl; nz /= nl;
+        var endOn = Math.abs(nx) > 0.85;
+        var band = endOn ? (nz < -0.3 ? 3 : 0) : (nz > 0.45 ? 0 : nz < -0.45 ? 3 : (ny >= 0 ? 1 : 2));
+        for (k = 0; k < 3; k++) {
+          var x = p[t + 3 * k], y = p[t + 3 * k + 1], z = p[t + 3 * k + 2], U, R;
+          U = cl((x - L.XMIN) * L.PX, 1, L.TW - 1);
+          if (band === 0) R = cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else if (band === 3) R = L.B_BOT + cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else R = (band === 2 ? L.B_STBD : L.B_PORT) + cl((L.ZMAX - z) * L.PZ, 1, L.SIDEH - 1);
+          uv[(t / 3 + k) * 2] = U / L.TW;
+          uv[(t / 3 + k) * 2 + 1] = 1 - R / L.TH;
+        }
+      }
+      geo2.setAttribute("uv", new V.BufferAttribute(uv, 2));
+      return geo2;
+    }
+    function rng(seed) {
+      var s = seed >>> 0 || 1;
+      return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    }
+    /* spec: { frames: [[x, half-width], ...] lines round the body;
+               top: [[[x,y],...], ...] polylines seen from above (mirrored
+                    to starboard if spec.mirror);
+               bot: the same from below; side: [[[x,z],...]] both sides;
+               rivets: polylines (above) dotted;
+               walk: [[[x,y],...]] walkway outlines (above);
+               soot: [[x, y, z, length, width]] streaks running aft;
+               grime: count of weathering blots; seam: line darkness 0-1 } */
+    function sheet(L, spec, seed) {
+      var cv = document.createElement("canvas");
+      cv.width = L.TW; cv.height = L.TH;
+      var g = cv.getContext("2d"), R = rng(seed || 7), i, j, sd;
+      function U(x) { return (x - L.XMIN) * L.PX; }
+      function RT(y) { return (L.YMAX - y) * L.PY; }
+      function RB(y) { return L.B_BOT + (L.YMAX - y) * L.PY; }
+      function RS(z, s) { return (s ? L.B_STBD : L.B_PORT) + (L.ZMAX - z) * L.PZ; }
+      g.fillStyle = "#f2f2f2"; g.fillRect(0, 0, L.TW, L.TH);
+      for (i = 0; i < (spec.grime || 140); i++) {          /* weathering */
+        g.fillStyle = R() < 0.6 ? "rgba(40,40,40," + (0.03 + R() * 0.04) + ")" : "rgba(255,255,255,0.05)";
+        g.beginPath(); g.ellipse(R() * L.TW, R() * L.TH, 4 + R() * 26, 2 + R() * 9, 0, 0, Math.PI * 2); g.fill();
+      }
+      var sa = spec.seam === undefined ? 0.55 : spec.seam;
+      var LINE = "rgba(30,32,34," + sa + ")", FAINT = "rgba(30,32,34," + (sa * 0.45) + ")";
+      function path(pts, map, col, lw, dash) {
+        g.strokeStyle = col || LINE; g.lineWidth = lw || 1.2;
+        if (g.setLineDash) g.setLineDash(dash || []);
+        g.beginPath();
+        for (var k = 0; k < pts.length; k++) {
+          var q = map(pts[k]);
+          if (k) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]);
+        }
+        g.stroke();
+        if (g.setLineDash) g.setLineDash([]);
+      }
+      var mirror = spec.mirror !== false;
+      function both(list, fT, col, lw, dash) {
+        for (j = 0; j < (list || []).length; j++) {
+          path(list[j], fT(1), col, lw, dash);
+          if (mirror) path(list[j], fT(-1), col, lw, dash);
+        }
+      }
+      both(spec.top, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; });
+      both(spec.bot, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; });
+      both(spec.rivets, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      both(spec.rivetsB, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      for (j = 0; j < (spec.side || []).length; j++) {
+        for (sd = 0; sd < 2; sd++) {
+          path(spec.side[j], (function (s) { return function (q) { return [U(q[0]), RS(q[1], s)]; }; })(sd));
+        }
+      }
+      for (j = 0; j < (spec.frames || []).length; j++) {
+        var f = spec.frames[j], x = U(f[0]);
+        g.strokeStyle = LINE; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x, RT(f[1])); g.lineTo(x, RT(-f[1])); g.stroke();
+        g.beginPath(); g.moveTo(x, RB(f[1])); g.lineTo(x, RB(-f[1])); g.stroke();
+        for (sd = 0; sd < 2; sd++) {
+          g.beginPath(); g.moveTo(x, RS(L.ZMAX, sd)); g.lineTo(x, RS(L.ZMAX - L.SIDEH / L.PZ, sd)); g.stroke();
+        }
+      }
+      for (j = 0; j < (spec.walk || []).length; j++) {     /* walkways: a darker, non-slip band */
+        for (sd = 1; sd >= (mirror ? -1 : 1); sd -= 2) {
+          var w = spec.walk[j];
+          g.fillStyle = "rgba(20,22,24,0.16)";
+          g.beginPath();
+          for (i = 0; i < w.length; i++) { if (i) g.lineTo(U(w[i][0]), RT(sd * w[i][1])); else g.moveTo(U(w[i][0]), RT(sd * w[i][1])); }
+          g.closePath(); g.fill();
+        }
+      }
+      for (j = 0; j < (spec.soot || []).length; j++) {     /* exhaust soot, fading aft */
+        var s = spec.soot[j], x0 = U(s[0]), x1 = U(s[0] - s[3]), hw = s[4] * L.PY;
+        var grd = g.createLinearGradient(x0, 0, x1, 0);
+        grd.addColorStop(0, "rgba(25,22,20,0.55)"); grd.addColorStop(1, "rgba(25,22,20,0)");
+        g.fillStyle = grd;
+        g.fillRect(x1, RT(s[1]) - hw, x0 - x1, 2 * hw);
+        g.fillRect(x1, RB(s[1]) - hw, x0 - x1, 2 * hw);
+        for (sd = 0; sd < 2; sd++) g.fillRect(x1, RS(s[2], sd) - s[4] * L.PZ, x0 - x1, 2 * s[4] * L.PZ);
+      }
+      var tex = new V.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = V.ClampToEdgeWrapping;
+      tex.anisotropy = 4;
+      return tex;
+    }
+    return { ribbon: ribbon, blade: blade, lamp: lamp, hoop: hoop, layout: layout, projUV: projUV,
+             sheet: sheet, geo: geo, quad: quad };
+  }
+
+  /* ============================================================ details ==
+     (the redo) The shells alone read as a smooth airliner in flat paint.
+     What the photographs named above show and is now drawn:
+       - the pods: a bright intake lip, the dark fan face set back in it,
+         the fan exhaust step two thirds of the way aft and the core nozzle
+         with its plug standing out of the back (TF33 pods; the CFM56 pods
+         of the E-3D / E-3F the same in their own rows' proportions);
+       - four flap-track fairings under each wing (the Souda Bay and Joint
+         STARS photographs), the flap, aileron and spoiler hinge lines;
+       - the body's panel breaks, the forward entry door outline on the
+         port side, the windscreen frames, the E-8C canoe's joints;
+       - blade aerials on the spine and belly (their stations NOT
+         CONFIRMED), the nav lamps, the beacons, the tail cone's lamp;
+       - a grey-scale paint sheet over the coats: panel lines, rivet rows,
+         the walkways over the wing roots, soot behind the four pods. */
+  var DX_ = null;
+  function foilTh(sec, u) {
+    return sec.t * sec.c * (1.4845 * Math.sqrt(u) - 0.63 * u - 1.758 * u * u + 1.4215 * u * u * u - 0.518 * u * u * u * u);
+  }
+  function wPt(sec, u, sg) { return [X(sec.s + u * sec.c), sec.a, Z(sec.o + sg * foilTh(sec, u))]; }
+  function wingLine(secOf, y0, y1, u0, u1, sg, n) {
+    var pts = [], i;
+    for (i = 0; i <= n; i++) {
+      var y = y0 + (y1 - y0) * i / n;
+      pts.push(wPt(secOf(y), u0 + (u1 - u0) * i / n, sg));
+    }
+    return DX_.ribbon(pts, [0, 0, sg], 0.07, 0.015);
+  }
+  function fusHoop(s, a0, a1) {
+    var r = tab(FUS, s), hm = (r[1] + r[2]) / 2;
+    return DX_.hoop(function (a) { return fusPt(s, a, 0); }, a0, a1, 28,
+                    function () { return [0, 0, Z(hm)]; }, 0.045, 0.015);
+  }
+  function fusRun(s0, s1, a, n) {
+    var pts = [], nr = [], i;
+    for (i = 0; i <= n; i++) {
+      var s = s0 + (s1 - s0) * i / n, r = tab(FUS, s), p = fusPt(s, a, 0);
+      pts.push(p); nr.push([0, p[1], p[2] - Z((r[1] + r[2]) / 2)]);
+    }
+    return DX_.ribbon(pts, nr, 0.045, 0.015);
+  }
+  /* a path in (s, angle) on the skin, closed or open */
+  function fusPath(sa, w, push, key) {
+    var pts = [], nr = [], i, k;
+    for (i = 0; i + 1 < sa.length; i++) {
+      for (k = 0; k < 6; k++) {
+        var t = k / 6, s = sa[i][0] + (sa[i + 1][0] - sa[i][0]) * t, a = sa[i][1] + (sa[i + 1][1] - sa[i][1]) * t;
+        var r = tab(FUS, s), p = fusPt(s, a, push);
+        pts.push(p); nr.push([0, p[1], p[2] - Z((r[1] + r[2]) / 2)]);
+      }
+    }
+    var e = sa[sa.length - 1], re = tab(FUS, e[0]), pe = fusPt(e[0], e[1], push);
+    pts.push(pe); nr.push([0, pe[1], pe[2] - Z((re[1] + re[2]) / 2)]);
+    put(key || "seam", DX_.ribbon(pts, nr, w, 0));
+  }
+  function podDetail(xLip, yc, hc, rows) {
+    var R0 = rows[0][1], i, n = 24, last = rows[rows.length - 1], Lp = last[0];
+    var lip = [], fan = [], ring = [];
+    for (i = 0; i < n; i++) {
+      var a = i * 2 * Math.PI / n, c = Math.cos(a), s = Math.sin(a);
+      lip.push([xLip + 0.02, yc + (R0 + 0.03) * c, Z(hc) + (R0 + 0.03) * s]);
+      ring.push([xLip - 0.05, yc + (R0 - 0.06) * c, Z(hc) + (R0 - 0.06) * s]);
+      fan.push([xLip - 0.45, yc + (R0 - 0.08) * c, Z(hc) + (R0 - 0.08) * s]);
+    }
+    var sh = new Shell();
+    sh.loft([lip, ring], function () { return true; }, false, false);
+    sh.emit({ 0: "metal", 1: "metal", 2: "metal" });
+    var sh2 = new Shell();
+    sh2.loft([ring, fan], function () { return true; }, false, true);
+    sh2.emit({ 0: "dark", 1: "dark", 2: "dark" });
+    /* the spinner in the fan face */
+    put("metal", rod([xLip - 0.40, yc, Z(hc)], [xLip - 0.12, yc, Z(hc)], 0.17, 12, 0.02));
+    /* the fan-exhaust step: a band round the pod */
+    var st = Lp * 0.62, rr = tab(rows, st)[0];
+    put("seam", DX_.hoop(function (a) { return [xLip - st, yc + rr * Math.cos(a), Z(hc) + rr * Math.sin(a)]; },
+                         0, 2 * Math.PI, 24, function () { return [xLip - st, yc, Z(hc)]; }, 0.10, 0.012));
+    /* the core nozzle and its plug out of the back */
+    var xe = xLip - Lp, rc = Math.max(last[1], 0.16) + 0.04;
+    put("metal", rod([xe + 0.05, yc, Z(hc)], [xe - 0.55, yc, Z(hc)], rc, 16, rc * 0.92));
+    put("dark", rod([xe - 0.54, yc, Z(hc)], [xe - 0.56, yc, Z(hc)], rc * 0.85, 16));
+    put("metal", rod([xe - 0.5, yc, Z(hc)], [xe - 1.05, yc, Z(hc)], rc * 0.55, 12, 0.02));
+  }
+  function addDetails(spec, G) {
+    var sd, i, s;
+    /* body frames over the top and sides; side seams */
+    [5.0, 7.6, 10.4, 13.6, 16.6, 19.6, 22.6, 25.6, 28.6, 31.6, 34.6, 37.6, 40.4].forEach(function (s0) {
+      put("seam", fusHoop(s0, -112, 112));
+    });
+    for (sd = -1; sd <= 1; sd += 2) {
+      put("seam", fusRun(4.6, 41.0, sd * 92, 24));
+      put("seam", fusRun(4.6, 38.0, sd * 34, 22));
+      /* windscreen and side-window frames */
+      fusPath([[2.35, sd * 58], [3.05, sd * 58]], 0.10, 0.065, "dark");
+      fusPath([[2.35, sd * 20], [3.05, sd * 20]], 0.10, 0.065, "dark");
+      fusPath([[3.15, sd * 60], [4.25, sd * 60]], 0.08, 0.065, "dark");
+      fusPath([[3.15, sd * 84], [4.25, sd * 84]], 0.08, 0.065, "dark");
+      fusPath([[3.70, sd * 60], [3.70, sd * 84]], 0.08, 0.065, "dark");
+    }
+    fusPath([[2.35, -58], [2.35, 58]], 0.10, 0.065, "dark");
+    fusPath([[3.05, -84], [3.05, 84]], 0.10, 0.065, "dark");
+    /* the forward entry door, port side */
+    fusPath([[5.4, 62], [6.4, 62], [6.4, 112], [5.4, 112], [5.4, 62]], 0.07, 0.012);
+    /* wings: flap / aileron line, spoilers, front spar; the flap-track
+       fairings under the trailing edge */
+    for (sd = -1; sd <= 1; sd += 2) {
+      put("seam", wingLine(wingSec, sd * 2.2, sd * 21.8, 0.76, 0.76, 1, 16));
+      put("seam", wingLine(wingSec, sd * 2.2, sd * 21.8, 0.62, 0.62, 1, 16));
+      put("seam", wingLine(wingSec, sd * 2.2, sd * 21.8, 0.16, 0.16, 1, 16));
+      put("seam", wingLine(wingSec, sd * 2.2, sd * 21.8, 0.76, 0.76, -1, 16));
+      [7.0, 11.5].forEach(function (y) { put("seam", wingLine(wingSec, sd * y, sd * y, 0.62, 1.0, 1, 4)); });
+      [5.0, 8.6, 12.6, 15.4].forEach(function (y) {
+        var sec = wingSec(sd * y), rings = [], k, prof = [[0.50, 0.02, 0.02], [0.60, 0.18, 0.24], [0.82, 0.25, 0.36],
+                                                       [1.02, 0.22, 0.32], [1.18, 0.11, 0.18], [1.27, 0.02, 0.04]];
+        for (k = 0; k < prof.length; k++) {
+          var u = prof[k][0], hw = prof[k][1], dp = prof[k][2], sx = sec.s + u * sec.c;
+          var zb = sec.o - (u <= 1 ? foilTh(sec, Math.min(u, 1)) : 0) - 0.02, ring = [], j;
+          for (j = 0; j < 12; j++) {
+            var a = j / 12 * Math.PI * 2, cy = Math.cos(a), sz = Math.sin(a);
+            ring.push([X(sx), sd * y + hw * cy, Z(zb + (sz > 0 ? 0.05 * sz : dp * sz))]);
+          }
+          rings.push(ring);
+        }
+        var shf = new Shell();
+        shf.loft(rings, function () { return false; }, true, true);
+        shf.emit({ 0: "bot", 1: "bot", 2: "bot" });
+      });
+      /* tailplane elevator line; nav lamps on the wingtips */
+      put("seam", wingLine(tpSec, sd * 1.0, sd * 7.0, 0.70, 0.70, 1, 6));
+      var ws = wingSec(sd * WTIP);
+      put("lamp", DX_.lamp([X(ws.s + 0.5), sd * (WTIP - 0.15), Z(ws.o)], 0.12, sd > 0 ? 0xe02218 : 0x18c04a));
+    }
+    /* the rudder line, both faces */
+    for (sd = -1; sd <= 1; sd += 2) {
+      var rp = [];
+      for (i = 0; i <= 6; i++) {
+        var h = 5.9 + (spec.fin - 6.2) * i / 6, f = finSec(h, spec.fin);
+        rp.push([X(f.s + 0.70 * f.c), sd * (foilTh(f, 0.70) + 0.01), Z(h)]);
+      }
+      put("seam", DX_.ribbon(rp, [0, sd, 0], 0.07, 0.008));
+    }
+    /* beacons, the tail lamp */
+    put("lamp", DX_.lamp(fusPt(spec.dome ? 13.0 : 21.0, 0, 0.04), 0.14, 0xe02218));
+    put("lamp", DX_.lamp(fusPt(25.0, 180, 0.04), 0.14, 0xe02218));
+    put("lamp", DX_.lamp(fusPt(44.25, 180, 0.0), 0.08, 0xf4f1e0));
+    /* blade aerials: spine and belly; the E-8C carries more */
+    var AE = [[8.5, 0, 0.55], [30.5, 0, 0.50], [11.5, 180, 0.45], [28.5, 180, 0.40], [33.0, 180, 0.40]];
+    if (spec.canoe) AE.push([16.0, 0, 0.6], [19.0, 0, 0.6], [24.0, 0, 0.5], [35.5, 180, 0.35]);
+    for (i = 0; i < AE.length; i++) {
+      var ap = fusPt(AE[i][0], AE[i][1], 0), up = AE[i][1] ? [0, 0, -1] : [0, 0, 1];
+      put("dark", DX_.blade(ap, up, [1, 0, 0], AE[i][2], 0.55, 0.22, 0.05, 0.25));
+    }
+    /* the canoe's joints */
+    if (spec.canoe) {
+      for (i = 1; i < 6; i++) {
+        s = (6.0 + 12.0 * i / 6) / FX;
+        var hb = tab(FUS, s)[2], cw = tab(CANOE, i / 6)[0], dpt = tab(CANOE, i / 6)[1];
+        put("seam", DX_.hoop((function (ss, hb2, w2, d2) {
+          return function (a) {
+            var top = hb2 + 0.5, bot = hb2 - d2, hm = (top + bot) / 2, hh = (top - bot) / 2;
+            return [X(ss), w2 * sgp(Math.sin(a), 0.9), Z(hm + hh * sgp(Math.cos(a), 0.9))];
+          };
+        })(s, hb, cw, dpt), Math.PI * 0.55, Math.PI * 1.45, 14, (function (ss, hb2) { return function () { return [X(ss), 0, Z(hb2)]; }; })(s, hb), 0.06, 0.012));
+      }
+    }
+    /* gear doors: the nose doors beside the leg, the main doors outboard */
+    for (sd = -1; sd <= 1; sd += 2) {
+      G.bot.push(boxG(1.6, 0.04, 0.85, X(5.0), sd * 0.62, Z(1.30)));
+      G.bot.push(boxG(2.2, 0.05, 1.10, X(22.4), sd * 4.05, Z(1.85)));
+    }
+  }
+
+  var LAY = null, _sheets = {};
+  function paintSheet(spec) {
+    var id = spec.len + (spec.canoe ? "c" : "d");
+    if (_sheets[id] !== undefined) return _sheets[id];
+    try {
+      var top = [], bot = [], riv = [], side = [], fr = [], i, y, ws;
+      function wl(u, y0, y1) {
+        var out = [], k;
+        for (k = 0; k <= 8; k++) { var yy = y0 + (y1 - y0) * k / 8, w = wingSec(yy); out.push([X(w.s + u * w.c), yy]); }
+        return out;
+      }
+      top.push(wl(0.16, 2.0, 22.0), wl(0.62, 2.0, 22.0), wl(0.76, 2.0, 22.0), wl(0.40, 2.0, 22.0));
+      bot.push(wl(0.16, 2.0, 22.0), wl(0.76, 2.0, 22.0));
+      riv.push(wl(0.28, 2.0, 22.0), wl(0.52, 2.0, 22.0));
+      for (y = 3.0; y < 22; y += 1.6) { ws = wingSec(y); top.push([[X(ws.s), y], [X(ws.s + ws.c), y]]); bot.push([[X(ws.s), y], [X(ws.s + ws.c), y]]); }
+      for (i = 1; i < 7; i++) { var tp = tpSec(i); top.push([[X(tp.s), i], [X(tp.s + tp.c), i]]); }
+      for (s = 2.4; s < 44; s += 1.5) fr.push([X(s), tab(FUS, s)[0]]);
+      side.push([[X(1.0), Z(4.2)], [X(43.0), Z(4.2)]], [[X(4.0), Z(2.3)], [X(36.0), Z(2.3)]], [[X(4.0), Z(4.95)], [X(38.0), Z(4.95)]]);
+      var soot = [];
+      for (i = 0; i < PODS.length; i++) {
+        var sLip = wingLE(PODS[i].y) - PODS[i].lead, lp = (spec.cfm ? POD_CFM : POD_TF33);
+        soot.push([X(sLip) - lp[lp.length - 1][0], PODS[i].y, Z(PODS[i].h), 7.0, 0.55]);
+        soot.push([X(sLip) - lp[lp.length - 1][0], -PODS[i].y, Z(PODS[i].h), 7.0, 0.55]);
+      }
+      var s;
+      _sheets[id] = DX_.sheet(LAY, {
+        frames: fr, top: top, bot: bot, rivets: riv, side: side, seam: 0.5, grime: 220, soot: soot,
+        walk: [[[X(14.5), 1.9], [X(14.5), 3.6], [X(20.5), 3.6], [X(20.5), 1.9]]]
+      }, 3301);
+    } catch (e) { _sheets[id] = false; }
+    return _sheets[id];
+  }
+
   /* ========================================================= build / mats == */
   var PAINT = {
     white: { top: 0xe4e7e9, bot: 0xb7bdc1, dome: 0xe8eaeb },   /* E-3B/C: white over light grey   */
@@ -581,7 +1002,7 @@ var HeroE3 = (function () {
     jstar: { top: 0xaeb6bb, bot: 0x9ea7ac, dome: 0xd6dbdd }    /* E-8C: light grey, a paler canoe */
   };
 
-  function makeMats(C, paint) {
+  function makeMats(C, paint, tex) {
     var p = PAINT[paint] || PAINT.grey, m = {};
     function skin(c) {
       return new V.MeshStandardMaterial({ color: c, roughness: 0.78, metalness: 0.08, side: V.DoubleSide });
@@ -592,7 +1013,12 @@ var HeroE3 = (function () {
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10,
                                           side: V.DoubleSide });
     m.metal = new V.MeshStandardMaterial({ color: 0x5d6468, roughness: 0.48, metalness: 0.60 });
-    m.dark = new V.MeshStandardMaterial({ color: 0x24282b, roughness: 0.82, metalness: 0.12 });
+    m.dark = new V.MeshStandardMaterial({ color: 0x24282b, roughness: 0.82, metalness: 0.12, side: V.DoubleSide });
+    m.seam = new V.MeshStandardMaterial({ color: new V.Color(p.bot).multiplyScalar(0.5), roughness: 0.85, metalness: 0.05,
+                                          side: V.DoubleSide });
+    m.lamp = new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.0,
+                                          emissive: 0x333333, emissiveIntensity: 0.6 });
+    if (tex) { m.top.map = tex; m.bot.map = tex; m.dome.map = tex; }
     m.glass = new V.MeshStandardMaterial({ color: 0x2b3a46, roughness: 0.12, metalness: 0.50,
                                            transparent: true, opacity: 0.82, side: V.DoubleSide });
     return m;
@@ -615,7 +1041,9 @@ var HeroE3 = (function () {
     for (var i = 0; i < order.length; i++) {
       var key = order[i];
       if (!lists[key] || !lists[key].length) continue;
-      parent.add(new V.Mesh(merge(lists[key]), mats[key]));
+      var geo = merge(lists[key]);
+      if (mats[key].map && LAY) DX_.projUV(geo, LAY);
+      parent.add(new V.Mesh(geo, mats[key]));
     }
   }
 
@@ -624,6 +1052,7 @@ var HeroE3 = (function () {
     V = THREE;
     _m4 = new V.Matrix4(); _q = new V.Quaternion(); _v = new V.Vector3(); _u = new V.Vector3();
     K = {};
+    DX_ = DK(V);
     XN = spec.len / 2; FX = spec.len / L3;
     addFuselage(spec.canoe);
     addWing();
@@ -633,15 +1062,17 @@ var HeroE3 = (function () {
     if (spec.dome) addDome();
     if (spec.canoe) addCanoe();
     addGlass();
-    var G = { metal: [], dark: [] };
+    var G = { metal: [], dark: [], bot: [] };
     addGear(G);
+    addDetails(spec, G);
 
-    var mats = makeMats(C, spec.paint);
+    LAY = DX_.layout(X(spec.len / FX) - 0.1, XN + 0.1, 22.3, ZG, Z(spec.fin + 0.2));
+    var mats = makeMats(C, spec.paint, paintSheet(spec));
     var root = new V.Group();
-    emit(root, K, mats, ["top", "bot", "dome", "team", "dark", "metal", "glass"]);
+    emit(root, K, mats, ["top", "bot", "dome", "team", "seam", "dark", "metal", "lamp", "glass"]);
     var gear = new V.Group();
     gear.name = "gear";
-    emit(gear, G, mats, ["metal", "dark"]);
+    emit(gear, G, mats, ["metal", "dark", "bot"]);
     root.add(gear);
     return root;
   }

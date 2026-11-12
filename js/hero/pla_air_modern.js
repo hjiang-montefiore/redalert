@@ -1431,10 +1431,306 @@ var HeroPlaAirModern = (function () {
       topSoot: [[YX(18.0), YX(24.0), 8.0, 10.5], [YX(21.0), YX(26.0), 13.5, 16.5]], grime: 0.6
     }, 20849);
   }
+  /* ========================================================= detail kit ==
+     (the redo) Fittings laid on the skin, and a projected paint sheet.
+     ribbon()  a strip along a polyline lying on the skin (outward normal at
+               each point given), lifted a little: panel seams, hinge lines,
+               walkway edges, de-icer boots;
+     blade()   a tapered blade aerial or a fence standing on the skin;
+     lamp()    a small eight-faced lamp in a vertex colour (one material);
+     sheet()   a grey-scale canvas laid over the coloured skins by projected
+               UVs (plan views from above and below, the two sides): panel
+               lines, rivet rows, walkways, exhaust soot and weathering. The
+               skins keep their colour; the sheet only darkens it. */
+  function DK(V) {
+    function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function vnorm(a) { var m = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
+    function geo(pos, col) {
+      var g = new V.BufferGeometry();
+      g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+      if (col) g.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+      g.computeVertexNormals();
+      return g;
+    }
+    function quad(pos, a, b, c, d, n) {
+      var u = vsub(b, a), v = vsub(c, a), f = vcross(u, v);
+      if (n && f[0] * n[0] + f[1] * n[1] + f[2] * n[2] < 0) { var t = b; b = d; d = t; }
+      pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2],
+               a[0], a[1], a[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+    }
+    /* pts: [[x,y,z]...]; nrm: the outward normal at each point, or a
+       function (p) -> normal; w the width, lift the height off the skin */
+    function ribbon(pts, nrm, w, lift) {
+      var pos = [], A = [], B = [], i, n = pts.length;
+      if (n < 2) return null;
+      for (i = 0; i < n; i++) {
+        var p = pts[i], nn = vnorm(typeof nrm === "function" ? nrm(p) : (nrm[0].length ? nrm[i] : nrm));
+        var t = vsub(pts[Math.min(i + 1, n - 1)], pts[Math.max(i - 1, 0)]);
+        var s = vnorm(vcross(t, nn)), l = lift === undefined ? 0.012 : lift;
+        var c = [p[0] + nn[0] * l, p[1] + nn[1] * l, p[2] + nn[2] * l];
+        A.push([c[0] + s[0] * w / 2, c[1] + s[1] * w / 2, c[2] + s[2] * w / 2]);
+        B.push([c[0] - s[0] * w / 2, c[1] - s[1] * w / 2, c[2] - s[2] * w / 2]);
+        A[i].n = nn;
+      }
+      for (i = 0; i + 1 < n; i++) quad(pos, A[i], B[i], B[i + 1], A[i + 1], A[i].n);
+      return geo(pos);
+    }
+    /* a blade from base point p, standing along up, chord along fwd (the
+       leading edge forward); h tall, chord c0 at the root, c1 at the tip,
+       th thick, the tip set back by rake */
+    function blade(p, up, fwd, h, c0, c1, th, rake) {
+      up = vnorm(up); fwd = vnorm(fwd);
+      var sd = vnorm(vcross(up, fwd)), pos = [];
+      function P(f, u, s) {
+        return [p[0] + fwd[0] * f + up[0] * u + sd[0] * s, p[1] + fwd[1] * f + up[1] * u + sd[1] * s,
+                p[2] + fwd[2] * f + up[2] * u + sd[2] * s];
+      }
+      var r = rake || 0, t = th / 2;
+      var a0 = P(c0 / 2, 0, t), a1 = P(-c0 / 2, 0, t), a2 = P(-c0 / 2, 0, -t), a3 = P(c0 / 2, 0, -t);
+      var b0 = P(c1 / 2 - r, h, t), b1 = P(-c1 / 2 - r, h, t), b2 = P(-c1 / 2 - r, h, -t), b3 = P(c1 / 2 - r, h, -t);
+      quad(pos, a0, a1, b1, b0, sd); quad(pos, a3, a2, b2, b3, [-sd[0], -sd[1], -sd[2]]);
+      quad(pos, a0, b0, b3, a3, fwd); quad(pos, a1, a2, b2, b1, [-fwd[0], -fwd[1], -fwd[2]]);
+      quad(pos, b0, b1, b2, b3, up);
+      return geo(pos);
+    }
+    /* an eight-faced lamp of radius r at p, in colour hex (vertex colour) */
+    function lamp(p, r, hex) {
+      var c = [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
+      var pos = [], col = [], i, j;
+      var X = [[r, 0, 0], [-r, 0, 0]], Y = [[0, r, 0], [0, -r, 0]], Z = [[0, 0, r], [0, 0, -r]];
+      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) for (var k = 0; k < 2; k++) {
+        var a = X[i], b = Y[j], d = Z[k];
+        pos.push(p[0] + a[0], p[1] + a[1], p[2] + a[2], p[0] + b[0], p[1] + b[1], p[2] + b[2],
+                 p[0] + d[0], p[1] + d[1], p[2] + d[2]);
+        col.push(c[0], c[1], c[2], c[0], c[1], c[2], c[0], c[1], c[2]);
+      }
+      return geo(pos, col);
+    }
+    /* a closed loop of points around a body: f(angle) -> [x,y,z]; the
+       normal is taken radially from the axis point ax(angle) */
+    function hoop(f, a0, a1, n, ax, w, lift) {
+      var pts = [], nr = [], i;
+      for (i = 0; i <= n; i++) {
+        var a = a0 + (a1 - a0) * i / n, p = f(a), c = ax(a);
+        pts.push(p); nr.push([0, p[1] - c[1], p[2] - c[2]]);
+      }
+      return ribbon(pts, nr, w, lift);
+    }
+
+    /* ------------------------------------------------ the paint sheet --
+       Four bands on a 1024 x 2048 sheet: from above (x, y), the port side
+       (x, z), the starboard side (x, z), from below (x, y). */
+    function layout(xmin, xmax, ymax, zmin, zmax) {
+      var TW = 1024, TH = 2048, PX = (TW - 4) / (xmax - xmin);
+      var PY = Math.min(PX * 1.6, 620 / (2 * ymax)), PZ = Math.min(PX * 1.6, 300 / (zmax - zmin));
+      var TOPH = Math.ceil(2 * ymax * PY) + 2, SIDEH = Math.ceil((zmax - zmin) * PZ) + 2;
+      var B_PORT = TOPH + 4, B_STBD = B_PORT + SIDEH + 4, B_BOT = B_STBD + SIDEH + 4;
+      return { TW: TW, TH: TH, PX: PX, PY: PY, PZ: PZ, XMIN: xmin, YMAX: ymax, ZMAX: zmax,
+               TOPH: TOPH, SIDEH: SIDEH, B_PORT: B_PORT, B_STBD: B_STBD, B_BOT: B_BOT };
+    }
+    function cl(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    function projUV(geo2, L) {
+      var p = geo2.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+      for (t = 0; t + 8 < p.length; t += 9) {
+        var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+        var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+        var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+        nx /= nl; ny /= nl; nz /= nl;
+        var endOn = Math.abs(nx) > 0.85;
+        var band = endOn ? (nz < -0.3 ? 3 : 0) : (nz > 0.45 ? 0 : nz < -0.45 ? 3 : (ny >= 0 ? 1 : 2));
+        for (k = 0; k < 3; k++) {
+          var x = p[t + 3 * k], y = p[t + 3 * k + 1], z = p[t + 3 * k + 2], U, R;
+          U = cl((x - L.XMIN) * L.PX, 1, L.TW - 1);
+          if (band === 0) R = cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else if (band === 3) R = L.B_BOT + cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else R = (band === 2 ? L.B_STBD : L.B_PORT) + cl((L.ZMAX - z) * L.PZ, 1, L.SIDEH - 1);
+          uv[(t / 3 + k) * 2] = U / L.TW;
+          uv[(t / 3 + k) * 2 + 1] = 1 - R / L.TH;
+        }
+      }
+      geo2.setAttribute("uv", new V.BufferAttribute(uv, 2));
+      return geo2;
+    }
+    function rng(seed) {
+      var s = seed >>> 0 || 1;
+      return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    }
+    /* spec: { frames: [[x, half-width], ...] lines round the body;
+               top: [[[x,y],...], ...] polylines seen from above (mirrored
+                    to starboard if spec.mirror);
+               bot: the same from below; side: [[[x,z],...]] both sides;
+               rivets: polylines (above) dotted;
+               walk: [[[x,y],...]] walkway outlines (above);
+               soot: [[x, y, z, length, width]] streaks running aft;
+               grime: count of weathering blots; seam: line darkness 0-1 } */
+    function sheet(L, spec, seed) {
+      var cv = document.createElement("canvas");
+      cv.width = L.TW; cv.height = L.TH;
+      var g = cv.getContext("2d"), R = rng(seed || 7), i, j, sd;
+      function U(x) { return (x - L.XMIN) * L.PX; }
+      function RT(y) { return (L.YMAX - y) * L.PY; }
+      function RB(y) { return L.B_BOT + (L.YMAX - y) * L.PY; }
+      function RS(z, s) { return (s ? L.B_STBD : L.B_PORT) + (L.ZMAX - z) * L.PZ; }
+      g.fillStyle = "#f2f2f2"; g.fillRect(0, 0, L.TW, L.TH);
+      for (i = 0; i < (spec.grime || 140); i++) {          /* weathering */
+        g.fillStyle = R() < 0.6 ? "rgba(40,40,40," + (0.03 + R() * 0.04) + ")" : "rgba(255,255,255,0.05)";
+        g.beginPath(); g.ellipse(R() * L.TW, R() * L.TH, 4 + R() * 26, 2 + R() * 9, 0, 0, Math.PI * 2); g.fill();
+      }
+      var sa = spec.seam === undefined ? 0.55 : spec.seam;
+      var LINE = "rgba(30,32,34," + sa + ")", FAINT = "rgba(30,32,34," + (sa * 0.45) + ")";
+      function path(pts, map, col, lw, dash) {
+        g.strokeStyle = col || LINE; g.lineWidth = lw || 1.2;
+        if (g.setLineDash) g.setLineDash(dash || []);
+        g.beginPath();
+        for (var k = 0; k < pts.length; k++) {
+          var q = map(pts[k]);
+          if (k) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]);
+        }
+        g.stroke();
+        if (g.setLineDash) g.setLineDash([]);
+      }
+      var mirror = spec.mirror !== false;
+      function both(list, fT, col, lw, dash) {
+        for (j = 0; j < (list || []).length; j++) {
+          path(list[j], fT(1), col, lw, dash);
+          if (mirror) path(list[j], fT(-1), col, lw, dash);
+        }
+      }
+      both(spec.top, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; });
+      both(spec.bot, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; });
+      both(spec.rivets, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      both(spec.rivetsB, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      for (j = 0; j < (spec.side || []).length; j++) {
+        for (sd = 0; sd < 2; sd++) {
+          path(spec.side[j], (function (s) { return function (q) { return [U(q[0]), RS(q[1], s)]; }; })(sd));
+        }
+      }
+      for (j = 0; j < (spec.frames || []).length; j++) {
+        var f = spec.frames[j], x = U(f[0]);
+        g.strokeStyle = LINE; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x, RT(f[1])); g.lineTo(x, RT(-f[1])); g.stroke();
+        g.beginPath(); g.moveTo(x, RB(f[1])); g.lineTo(x, RB(-f[1])); g.stroke();
+        for (sd = 0; sd < 2; sd++) {
+          g.beginPath(); g.moveTo(x, RS(L.ZMAX, sd)); g.lineTo(x, RS(L.ZMAX - L.SIDEH / L.PZ, sd)); g.stroke();
+        }
+      }
+      for (j = 0; j < (spec.walk || []).length; j++) {     /* walkways: a darker, non-slip band */
+        for (sd = 1; sd >= (mirror ? -1 : 1); sd -= 2) {
+          var w = spec.walk[j];
+          g.fillStyle = "rgba(20,22,24,0.16)";
+          g.beginPath();
+          for (i = 0; i < w.length; i++) { if (i) g.lineTo(U(w[i][0]), RT(sd * w[i][1])); else g.moveTo(U(w[i][0]), RT(sd * w[i][1])); }
+          g.closePath(); g.fill();
+        }
+      }
+      for (j = 0; j < (spec.soot || []).length; j++) {     /* exhaust soot, fading aft */
+        var s = spec.soot[j], x0 = U(s[0]), x1 = U(s[0] - s[3]), hw = s[4] * L.PY;
+        var grd = g.createLinearGradient(x0, 0, x1, 0);
+        grd.addColorStop(0, "rgba(25,22,20,0.55)"); grd.addColorStop(1, "rgba(25,22,20,0)");
+        g.fillStyle = grd;
+        g.fillRect(x1, RT(s[1]) - hw, x0 - x1, 2 * hw);
+        g.fillRect(x1, RB(s[1]) - hw, x0 - x1, 2 * hw);
+        for (sd = 0; sd < 2; sd++) g.fillRect(x1, RS(s[2], sd) - s[4] * L.PZ, x0 - x1, 2 * s[4] * L.PZ);
+      }
+      var tex = new V.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = V.ClampToEdgeWrapping;
+      tex.anisotropy = 4;
+      return tex;
+    }
+    return { ribbon: ribbon, blade: blade, lamp: lamp, hoop: hoop, layout: layout, projUV: projUV,
+             sheet: sheet, geo: geo, quad: quad };
+  }
+  /* ---- YY-20, the redo (the model evaluation: still plain at the game
+     camera). The joints P10-P12 show, laid on the skin as seam ribbons so
+     they read at any zoom: the fuselage frames over the crown and sides,
+     the side seams, the crew door and the two paratroop doors, the cargo
+     ramp and the aft door's outline under the tail, two escape hatches on
+     the crown; on each wing the slat line, the front spar, the flap and
+     aileron hinge lines above and below and the spoiler panels' breaks;
+     the elevator and rudder hinge lines. Places read off P10 / P11 at their
+     scale, widths NOT measured. ---- */
+  var YDK = null;
+  function yBody(s, ang, push) {
+    var hw = tab(Y_FUS, s, 1), cr = tab(Y_FUS, s, 2), kl = tab(Y_FUS, s, 3), zc = YZ((cr + kl) / 2), h = (cr - kl) / 2;
+    var c = Math.cos(ang), sn = Math.sin(ang), e = sn >= 0 ? 0.9 : 0.8;
+    var y = hw * sgn(c) * Math.pow(Math.abs(c), e), z = zc + h * sgn(sn) * Math.pow(Math.abs(sn), e);
+    var r = Math.sqrt(y * y + (z - zc) * (z - zc)) || 1;
+    return [YX(s), y + (push || 0) * y / r, z + (push || 0) * (z - zc) / r];
+  }
+  function yNorm(s) { var cr = tab(Y_FUS, s, 2), kl = tab(Y_FUS, s, 3); return function (p) { return [0, p[1], p[2] - YZ((cr + kl) / 2)]; }; }
+  function yHoop(s, a0, a1) {
+    return YDK.ribbon((function () { var o = [], k; for (k = 0; k <= 30; k++) o.push(yBody(s, a0 + (a1 - a0) * k / 30, 0)); return o; })(),
+                      yNorm(s), 0.07, 0.02);
+  }
+  /* a path on the body through [s, angle] points */
+  function yPath(L, pts, w) {
+    var out = [], nr = [], i, k;
+    for (i = 0; i + 1 < pts.length; i++) for (k = 0; k < 6; k++) {
+      var t = k / 6, s = lerp(pts[i][0], pts[i + 1][0], t), a = lerp(pts[i][1], pts[i + 1][1], t), p = yBody(s, a, 0);
+      out.push(p); nr.push(yNorm(s)(p));
+    }
+    var e = pts[pts.length - 1], pe = yBody(e[0], e[1], 0);
+    out.push(pe); nr.push(yNorm(e[0])(pe));
+    L.push(YDK.ribbon(out, nr, w || 0.07, 0.02));
+  }
+  /* the wing's skin at chord fraction f (the foil() ring's own outline) */
+  function yWTop(y, f, sg) {
+    var t = ywT(y), k;
+    if (f < 0.05) k = 0.33 * f / 0.05;
+    else if (f < 0.16) k = lerp(0.33, 0.5, (f - 0.05) / 0.11);
+    else if (f < 0.40) k = 0.5;
+    else if (f < 0.70) k = lerp(0.5, 0.32, (f - 0.40) / 0.30);
+    else k = lerp(0.32, 0.004 / t, (f - 0.70) / 0.30);
+    var le = tab(Y_WING, y, 1), te = tab(Y_WING, y, 2);
+    return [YX(le + (te - le) * f), y, YZ(ywH(y)) + sg * k * t];
+  }
+  function yWLine(L, sd, y0, y1, f0, f1, sg, n) {
+    var pts = [], i;
+    for (i = 0; i <= n; i++) { var p = yWTop(y0 + (y1 - y0) * i / n, f0 + (f1 - f0) * i / n, sg); pts.push([p[0], sd * p[1], p[2]]); }
+    L.push(YDK.ribbon(pts, [0, 0, sg], 0.10, 0.02));
+  }
+  function yy20Redo(B) {
+    YDK = DK(V);
+    var a0 = -0.12 * PI, a1 = 1.12 * PI;
+    [7.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0, 25.0, 27.4, 30.4, 33.5].forEach(function (s) {
+      B.seam.push(yHoop(s, s > 11.5 && s < 25.5 ? 0.30 * PI : a0, s > 11.5 && s < 25.5 ? 0.70 * PI : a1));
+    });
+    [1, -1].forEach(function (sd) {
+      var side = sd > 0 ? 0 : PI;
+      yPath(B.seam, [[4.0, side + sd * 0.42], [39.0, side + sd * 0.42]]);
+      yPath(B.seam, [[4.0, side - sd * 0.30], [27.0, side - sd * 0.30]]);
+      /* the paratroop doors behind the sponsons */
+      yPath(B.seam, [[28.3, side - sd * 0.28], [29.9, side - sd * 0.28], [29.9, side + sd * 0.12], [28.3, side + sd * 0.12], [28.3, side - sd * 0.28]], 0.06);
+      /* wing: slat line, spar, flap / aileron hinges top and bottom */
+      yWLine(B.seam, sd, 3.0, 24.6, 0.10, 0.10, 1, 12);
+      yWLine(B.seam, sd, 3.0, 24.6, 0.70, 0.70, 1, 12);
+      yWLine(B.seam, sd, 3.0, 24.6, 0.70, 0.70, -1, 12);
+      yWLine(B.seam, sd, 3.0, 24.6, 0.25, 0.25, 1, 12);
+      [8.0, 12.0, 17.0].forEach(function (y) { yWLine(B.seam, sd, y, y, 0.55, 1.0, 1, 3); });
+      [5.0, 6.5, 9.5, 11.0, 13.5].forEach(function (y) { yWLine(B.seam, sd, y, y, 0.55, 0.70, 1, 2); });
+      /* the elevator's hinge, the rudder's both faces */
+      var tp0 = [YX(43.6), sd * 0.4, YZ(13.9) + 0.13], tp1 = [YX(46.5), sd * 8.2, YZ(13.6) + 0.05];
+      B.seam.push(YDK.ribbon([tp0, tp1], [0, 0, 1], 0.08, 0.02));
+      B.seam.push(YDK.ribbon([[YX(40.9), sd * 0.34, YZ(7.2)], [YX(42.2), sd * 0.31, YZ(9.4)], [YX(43.0), sd * 0.20, YZ(14.0)]],
+                             [0, sd, 0], 0.08, 0.02));
+    });
+    /* the crew door on the port side (P10), the cargo ramp under the tail */
+    yPath(B.seam, [[9.1, 0.10], [10.0, 0.10], [10.0, -0.50], [9.1, -0.50], [9.1, 0.10]], 0.06);
+    yPath(B.seam, [[30.8, -0.62 * PI], [39.6, -0.62 * PI]]);
+    yPath(B.seam, [[30.8, -0.38 * PI], [39.6, -0.38 * PI]]);
+    yPath(B.seam, [[30.8, -0.62 * PI], [30.8, -0.38 * PI]]);
+    yPath(B.seam, [[35.6, -0.62 * PI], [35.6, -0.38 * PI]]);
+    /* two escape hatches on the crown */
+    [[6.4, 7.3], [26.0, 26.9]].forEach(function (h) {
+      yPath(B.seam, [[h[0], 0.45 * PI], [h[1], 0.45 * PI], [h[1], 0.55 * PI], [h[0], 0.55 * PI], [h[0], 0.45 * PI]], 0.06);
+    });
+  }
   function yy20(THREE, M, C) {
     V = THREE;
     var sh = sheet(-24.0, 24.0, 25.5, -4.1, 11.0, 16);
-    var B = bins(["skin", "dark", "metal", "glass", "team", "nozzle", "store", "lampR", "lampG"]);
+    var B = bins(["skin", "seam", "dark", "metal", "glass", "team", "nozzle", "store", "lampR", "lampG"]);
     var G = bins(["leg", "tyre", "dark", "metal"]);
     var secs = Y_FUS.map(function (r) { return sec(YX(r[0]), 0, YZ((r[2] + r[3]) / 2), r[1], (r[2] - r[3]) / 2, (r[2] - r[3]) / 2, 0.9, 0.8); });
     push(B.skin, loft(secs, 26, 0.5, 0.25));
@@ -1501,6 +1797,7 @@ var HeroPlaAirModern = (function () {
       });
     });
     yy20Detail(B, G);
+    yy20Redo(B);
     var pal = { top: "#646a70", side: "#646a70", belly: "#6a7076" };
     var cv = paintSheet(sh, pal, [YX(3.0), YX(7.0), YX(11.0), YX(15.0), YX(19.0), YX(23.0), YX(27.0), YX(31.0), YX(35.0), YX(39.0)], 20848, function (g, s) {
       /* the crew door on the port side, the ramp's hinge lines (P10) */
@@ -1512,6 +1809,7 @@ var HeroPlaAirModern = (function () {
     var mats = makeMats(C, cv, pal.side, {
       nozzle: { color: 0x4f4c48, roughness: 0.5, metalness: 0.5 },
       store:  { color: 0x6e7479, roughness: 0.7, metalness: 0.1 },
+      seam:   { color: 0x2f3337, roughness: 0.85, metalness: 0.05, side: V.DoubleSide },
       lampR:  { color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 },
       lampG:  { color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }
     });
