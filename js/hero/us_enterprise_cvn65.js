@@ -78,6 +78,24 @@
    Naval Vessel Register gives for her final fit and near the 89,000-90,000
    usually quoted for her as built (that figure could not be confirmed).
 
+   REWORK (2026-11-12). The four hangar openings are now CUT through the
+   hull plating (hullGeo skips it inside each) between the lift's guide
+   trunks, hangar deck (9.0 m) to the gallery shelf row (15.4 m), with the
+   rounded head of the Guantanamo print (radius 2.0 m NOT CONFIRMED); the
+   hangar deck, jambs, far bulkhead, overhead frames show through; lift
+   girders under each platform; trunks carried down the side. The island
+   ("Island of USS Enterprise (CVAN-65), in 1963-1964 (NNAM.1996.488.125.038)",
+   re-fetched to scratchpad/q_uscv/ref): the base column gets its deck
+   ledges, ports on every face, a ladder and cable trunks aft, louvres; the
+   box's soffit its girders; every SCANFAR array an edge frame and module
+   seams. Draw calls unchanged (10).
+
+   DECK PAINTING (2026-11-12): the deck canvas adds the dark gutter round
+   the deck outline, the deflectors' panel joints and hinge lines, the deck
+   scorched aft of each, tyre and exhaust streaks up the catapults, oil
+   stains, a darker tie-down grid. No foul line: none shows in the 1960s
+   views. NOT CONFIRMED: the scorch and stain layout.
+
    Model space: +X bow, +Y port, +Z up. Real metres, waterline at z = 0,
    keel at z = -11.9, flight deck at z = 19.0. render3d.js stands the model
    up with rotation.x = -PI/2 and scales it by its X extent, which is the
@@ -159,6 +177,25 @@ var HeroEnterpriseCVN65 = (function () {
     L.y0 = Math.min.apply(null, L.P.map(function (q) { return q[1]; }));
     L.y1 = Math.max.apply(null, L.P.map(function (q) { return q[1]; }));
   });
+
+  /* the hangar openings under the lifts, CUT through the hull side: each
+     between the lift's guide trunks along its inboard edge, from the
+     hangar deck (KNUCK) to the gallery shelf's row at ZOH, with the
+     rounded head the Guantanamo print shows (radius ROC). Through each
+     one the hangar shows: its deck, the far bulkhead, the overhead.     */
+  var ZOH = 15.4, ROC = 2.0;
+  var OPENS = LIFTS.map(function (L) {
+    var ym = Math.min.apply(null, L.P.map(function (q) { return Math.abs(q[1]); }));
+    var xin = L.P.filter(function (q) { return Math.abs(Math.abs(q[1]) - ym) < 0.01; }).map(function (q) { return q[0]; });
+    return { x0: Math.min.apply(null, xin) + 1.8, x1: Math.max.apply(null, xin) - 1.8, s: L.s };
+  });
+  function inOpen(x, y, z) {
+    for (var k = 0; k < OPENS.length; k++) {
+      var O = OPENS[k];
+      if (x > O.x0 && x < O.x1 && z > KNUCK - 0.01 && z < ZOH && y * O.s > 5) return true;
+    }
+    return false;
+  }
 
   /* catapult tracks [start, end] off the plan: two up the bow, two in the
      waist, the outer one running almost parallel to the centreline       */
@@ -496,7 +533,7 @@ var HeroEnterpriseCVN65 = (function () {
     g.globalAlpha = 0.22; g.fillStyle = "#141618";
     for (i = 0; i < 5000; i++) g.fillRect(R() * W, R() * H, 2, 2);
     g.globalAlpha = 1;
-    g.fillStyle = "rgba(12,14,16,0.30)";
+    g.fillStyle = "rgba(10,12,14,0.45)";
     for (p = DX0 + 1.5; p < DX1; p += 3.0)
       for (q = DY0 + 1.5; q < DY1; q += 3.0) g.fillRect(cx(p) - 1, cy(q) - 1, 2.2, 2.2);
     g.strokeStyle = "rgba(0,0,0,0.20)"; g.lineWidth = 1.2;
@@ -554,8 +591,44 @@ var HeroEnterpriseCVN65 = (function () {
     }
     CATS.forEach(function (c) {
       var dx = c[1][0] - c[0][0], dy = c[1][1] - c[0][1], L = Math.sqrt(dx * dx + dy * dy);
-      jbd(c[0][0] - dx / L * 4.5, c[0][1] - dy / L * 4.5, 5.2, Math.atan2(dy, dx));
+      var jx = c[0][0] - dx / L * 4.5, jy = c[0][1] - dy / L * 4.5, ja = Math.atan2(dy, dx);
+      /* the deck scorched black aft of the deflector                       */
+      g.save(); g.translate(cx(jx), cy(jy)); g.rotate(-ja);
+      for (var sk = 0; sk < 7; sk++) {
+        g.fillStyle = "rgba(10,10,11," + (0.20 - sk * 0.025).toFixed(3) + ")";
+        g.fillRect((-4.3 - sk * 2.0) * SX, -4.6 * SY, 2.0 * SX, 9.2 * SY);
+      }
+      g.restore();
+      jbd(jx, jy, 5.2, ja);
+      /* its panel joints, the hinge line forward and the white edge aft   */
+      g.save(); g.translate(cx(jx), cy(jy)); g.rotate(-ja);
+      g.fillStyle = "rgba(10,10,10,0.8)";
+      for (var jk = 1; jk < 4; jk++) g.fillRect(-2.1 * SX, (-5.2 + jk * 2.6) * SY - 0.6, 4.2 * SX, 1.2);
+      g.fillStyle = "#0c0d0e"; g.fillRect(2.0 * SX, -5.2 * SY, 0.3 * SX, 10.4 * SY);
+      g.fillStyle = "rgba(220,224,226,0.7)"; g.fillRect(-2.3 * SX, -5.2 * SY, 0.25 * SX, 10.4 * SY);
+      g.restore();
+      /* tyre and exhaust streaks up the track                              */
+      var nx = -dy / L, ny = dx / L;
+      for (var tk = 0; tk < 14; tk++) {
+        var f0 = R() * 0.45, o0 = (R() - 0.5) * 3.0;
+        g.globalAlpha = 0.10 + R() * 0.10;
+        mline([c[0][0] + dx * f0 + nx * o0, c[0][1] + dy * f0 + ny * o0],
+              [c[0][0] + dx * (f0 + 0.1) + nx * o0, c[0][1] + dy * (f0 + 0.1) + ny * o0], 0.35, "#0b0c0d");
+      }
+      g.globalAlpha = 1;
     });
+    /* oil and tyre stains over the parking areas                           */
+    for (i = 0; i < 220; i++) {
+      p = DX0 + 20 + R() * (DX1 - DX0 - 30); q = DY0 + 4 + R() * (DY1 - DY0 - 8);
+      g.globalAlpha = 0.05 + R() * 0.08; g.fillStyle = "#0b0c0d";
+      g.beginPath(); g.ellipse(cx(p), cy(q), (0.4 + R() * 1.3) * SX, (0.3 + R() * 0.9) * SY, R() * 3, 0, PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+    /* the deck's edge: the dark gutter all round the outline (deck plan)   */
+    g.save(); g.strokeStyle = "#101214"; g.lineWidth = Math.max(1.2, 0.35 * SY);
+    g.beginPath(); g.moveTo(cx(DECK[0][0]), cy(DECK[0][1]));
+    for (i = 1; i < DECK.length; i++) g.lineTo(cx(DECK[i][0]), cy(DECK[i][1]));
+    g.closePath(); g.stroke(); g.restore();
 
     /* --- the four pendants, square to the landing axis -------------------- */
     PEND.forEach(function (sw) {
@@ -692,6 +765,7 @@ var HeroEnterpriseCVN65 = (function () {
         if (e > HX0 + 0.5) { xs.push(e - 0.25); xs.push(e + 0.25); }
       });
     });
+    OPENS.forEach(function (O) { xs.push(O.x0, O.x1); });
     xs.sort(function (a, b) { return a - b; });
     var st = [];
     for (i = 0; i < xs.length; i++) if (!st.length || xs[i] - st[st.length - 1] > 0.2) st.push(xs[i]);
@@ -715,6 +789,8 @@ var HeroEnterpriseCVN65 = (function () {
       var cxp = uy * vz - uz * vy, cyp = uz * vx - ux * vz, czp = ux * vy - uy * vx;
       var ar = cxp * cxp + cyp * cyp + czp * czp;
       if (ar < 4e-6) return;
+      /* the hangar openings are holes in the plating                     */
+      if (inOpen((a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3)) return;
       ar = Math.sqrt(ar);
       faces.push({ p: [a, b, c], k: [ka, kb, kc], n: [cxp, cyp, czp], u: [cxp / ar, cyp / ar, czp / ar] });
     }
@@ -801,6 +877,24 @@ var HeroEnterpriseCVN65 = (function () {
       return g;
     }
 
+    /* one quad (or triangle, d null) facing (nx, ny, nz)                  */
+    function quadG(a, b, c, d, nx, ny, nz, uvf) {
+      var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+      var vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+      var dot = (uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz;
+      var P4 = d ? (dot >= 0 ? [a, b, c, d] : [a, d, c, b]) : (dot >= 0 ? [a, b, c] : [a, c, b]), pos = [], uv = [];
+      (d ? [0, 1, 2, 0, 2, 3] : [0, 1, 2]).forEach(function (q) {
+        var p = P4[q]; pos.push(p[0], p[1], p[2]);
+        if (uvf) { var w = uvf(p); uv.push(w[0], w[1]); } else uv.push((p[0] + p[1]) / 16, p[2] / 16);
+      });
+      var gq = new THREE.BufferGeometry();
+      gq.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      gq.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      gq.computeVertexNormals();
+      return gq;
+    }
+    function hullUV(p) { return [(p[0] - HX0) / (HX1 - HX0), clamp(p[2] / FD_BOT, 0, 1)]; }
+
     /* ------------------------------------------------------------- hull */
     var hg = hullGeo(THREE);
     B.H.add(hg.top);
@@ -822,14 +916,41 @@ var HeroEnterpriseCVN65 = (function () {
       var lg = shapePlate(inner, FD_TOP - 1.1 + 0.02, 1.1);
       Batch.addGroups(lg, [B.D, B.S]);
       var xm = (L.x0 + L.x1) * 0.5, yo = L.s * (lowY(LEV.length - 1, xm) + 0.05);
-      B.K.add(box(THREE, L.x1 - L.x0 - 3.0, 0.3, 6.6, xm, yo, KNUCK + 3.6));
-      B.K.add(place(THREE, new THREE.CylinderGeometry(1.4, 1.4, 0.3, 8), L.x0 + 2.9, yo, KNUCK + 6.9));
-      B.K.add(place(THREE, new THREE.CylinderGeometry(1.4, 1.4, 0.3, 8), L.x1 - 2.9, yo, KNUCK + 6.9));
-      B.K.add(box(THREE, L.x1 - L.x0 - 5.8, 0.3, 1.4, xm, yo, KNUCK + 7.5));
+      var O = OPENS[LIFTS.indexOf(L)];
       for (j = 0; j < 2; j++) {
-        var tx = j ? L.x1 - 0.9 : L.x0 + 0.9;
-        B.S.add(box(THREE, 1.6, 2.4, FD_BOT - KNUCK, tx, yo + L.s * 1.15, (FD_BOT + KNUCK) * 0.5));
+        var tx = j ? O.x1 + 0.9 : O.x0 - 0.9;
+        B.S.add(box(THREE, 1.6, 2.4, FD_BOT - 3.0, tx, yo + L.s * 1.15, (FD_BOT + 3.0) * 0.5));
+        B.K.add(box(THREE, 0.5, 0.12, FD_BOT - 3.4, tx, yo + L.s * 2.4, (FD_BOT + 3.0) * 0.5));
       }
+      /* the girders under the platform                                     */
+      for (j = 0; j < 5; j++)
+        B.M.add(box(THREE, 0.5, L.y1 - L.y0 - 1.0, 0.7, L.x0 + 2.0 + j * (L.x1 - L.x0 - 4.0) / 4, (L.y0 + L.y1) * 0.5, FD_TOP - 1.1 - 0.3));
+      /* what shows through the opening                                     */
+      var sg = O.s, yf = yo - sg * 0.05, yb = sg * (Math.abs(yf) - 12.0), z0 = KNUCK, z1 = ZOH, xa = O.x0, xb = O.x1;
+      B.K.add(quadG([xa, yb, z0], [xb, yb, z0], [xb, yb, z1], [xa, yb, z1], 0, sg, 0));
+      B.S.add(quadG([xa, yf, z0], [xb, yf, z0], [xb, yb, z0], [xa, yb, z0], 0, 0, 1));
+      B.K.add(quadG([xa, yf, z1], [xb, yf, z1], [xb, yb, z1], [xa, yb, z1], 0, 0, -1));
+      B.S.add(quadG([xa, yf, z0], [xa, yb, z0], [xa, yb, z1], [xa, yf, z1], 1, 0, 0));
+      B.S.add(quadG([xb, yf, z0], [xb, yb, z0], [xb, yb, z1], [xb, yf, z1], -1, 0, 0));
+      for (j = 1; j < 6; j++) {
+        var fx = xa + j * (xb - xa) / 6;
+        B.M.add(box(THREE, 0.35, 11.6, 0.6, fx, (yf + yb) * 0.5, z1 - 0.3));
+        B.W.add(box(THREE, 1.2, 0.3, 0.08, fx + 1.6, (yf + yb) * 0.5, z1 - 0.05));
+      }
+      for (j = 1; j < 4; j++) B.S.add(box(THREE, 0.4, 0.3, z1 - z0, xa + j * (xb - xa) / 4, yb + sg * 0.15, (z0 + z1) * 0.5));
+      B.R.add(box(THREE, 2.2, 0.1, 3.6, xa + (xb - xa) * 0.62, yb + sg * 0.06, z0 + 1.8));
+      /* the rounded head: its two upper corners filled back in plate       */
+      [[xa, 1], [xb, -1]].forEach(function (c) {
+        var cx = c[0] + c[1] * ROC, cz = z1 - ROC, NS = 5, k2;
+        for (k2 = 0; k2 < NS; k2++) {
+          var a0 = c[1] > 0 ? PI / 2 + k2 / NS * PI / 2 : k2 / NS * PI / 2;
+          var a1 = c[1] > 0 ? PI / 2 + (k2 + 1) / NS * PI / 2 : (k2 + 1) / NS * PI / 2;
+          var yy = yf + sg * 0.01;
+          B.H.add(quadG([c[0], yy, z1], [cx + Math.cos(a0) * ROC, yy, cz + Math.sin(a0) * ROC],
+                        [cx + Math.cos(a1) * ROC, yy, cz + Math.sin(a1) * ROC], null, 0, sg, 0, hullUV));
+        }
+      });
+      B.M.add(box(THREE, xb - xa, 0.3, 0.3, (xa + xb) * 0.5, yf + sg * 0.1, z0 + 0.15));
     });
 
     /* ---------------------------- catwalks and safety nets round the edge */
@@ -1012,6 +1133,32 @@ var HeroEnterpriseCVN65 = (function () {
     [[IX + IC + 0.06, IY + 3.0, 0], [IX + IC + 0.06, IY - 4.0, 0], [IX - 2.0, IY - IC - 0.06, 1], [IX + 3.5, IY + IC + 0.06, 1]].forEach(function (d) {
       B.K.add(box(THREE, d[2] ? 1.0 : 0.12, d[2] ? 0.12 : 1.0, 2.0, d[0], d[1], Z0 + 1.0));
     });
+    /* the column's plating: a deck ledge every 2.5 m with its drip
+       shadow, rows of square ports on every face, the vertical ladder and
+       cable trunks on its after face, louvred vents low on the forward
+       face (1963-64 close-up: the column's seams, ports and doors)        */
+    for (k = 1; k <= 2; k++) {
+      var zc = Z0 + k * 2.5;
+      B.S.add(frustum(THREE, sq(IX, IY, IC, IC), zc - 0.02, zc + 0.16, 1.012, 1.012));
+      B.K.add(frustum(THREE, sq(IX, IY, IC, IC), zc - 0.16, zc - 0.02, 1.004, 1.004));
+      for (j = -2; j <= 2; j++) {
+        var pu = j * 2.6 + 0.4;
+        B.G.add(box(THREE, 0.5, 0.1, 0.5, IX + pu, IY - IC - 0.03, zc + 1.1));
+        B.G.add(box(THREE, 0.5, 0.1, 0.5, IX + pu - 0.8, IY + IC + 0.03, zc + 1.1));
+        B.G.add(box(THREE, 0.1, 0.5, 0.5, IX + IC + 0.03, IY + pu, zc + 1.1));
+      }
+    }
+    for (j = 0; j < 3; j++) B.S.add(box(THREE, 0.5, 0.7, ZB0 - Z0, IX - IC - 0.25, IY - 4.0 + j * 2.2, (Z0 + ZB0) * 0.5));
+    for (j = 0; j < Math.floor((ZB0 - Z0) / 0.4); j++) B.M.add(box(THREE, 0.06, 0.6, 0.05, IX - IC - 0.12, IY + 3.2, Z0 + 0.3 + j * 0.4));
+    for (s = -1; s <= 1; s += 2) B.M.add(box(THREE, 0.08, 0.08, ZB0 - Z0, IX - IC - 0.12, IY + 3.2 + s * 0.3, (Z0 + ZB0) * 0.5));
+    for (j = 0; j < 6; j++) B.S.add(box(THREE, 0.14, 3.0, 0.07, IX + IC + 0.1, IY - 1.5, Z0 + 0.6 + j * 0.28));
+    /* the box's soffit over the column: the deep girders that carry it,
+       dark ribs under the overhang every 2.75 m both ways                  */
+    for (j = -3; j <= 3; j++) for (s = -1; s <= 1; s += 2) {
+      var gl = IB - IC - 0.3, gc = s * (IC + IB) * 0.5;
+      B.M.add(box(THREE, gl, 0.4, 0.7, IX + gc, IY + j * 2.75, ZB0 - 0.35));
+      B.M.add(box(THREE, 0.4, gl, 0.7, IX + j * 2.75, IY + gc, ZB0 - 0.35));
+    }
     /* team band round the head of the column, under the box's overhang    */
     B.T.add(frustum(THREE, sq(IX, IY, IC, IC), ZB0 - 1.0, ZB0 - 0.2, 1.006, 1.006));
 
@@ -1037,6 +1184,16 @@ var HeroEnterpriseCVN65 = (function () {
       B.R.add(box(THREE, w, 0.8, hgt, cx0 + nx * 0.4, cy0 + ny * 0.4, zc, 0, 0, rot));
       /* the dark joint round its back edge, where it meets the wall       */
       B.K.add(box(THREE, w + 0.3, 0.12, hgt + 0.3, cx0 + nx * 0.06, cy0 + ny * 0.06, zc, 0, 0, rot));
+      /* the array's edge frame, a lip round its face, and the faint seams
+         between its module rows (both close-ups)                            */
+      var fo = 0.84;
+      B.S.add(box(THREE, w + 0.1, 0.12, 0.22, cx0 + nx * fo, cy0 + ny * fo, z1 - 0.11, 0, 0, rot));
+      B.S.add(box(THREE, w + 0.1, 0.12, 0.22, cx0 + nx * fo, cy0 + ny * fo, z0 + 0.11, 0, 0, rot));
+      [-1, 1].forEach(function (e) {
+        B.S.add(box(THREE, 0.22, 0.12, hgt, cx0 + nx * fo + tx * e * (w / 2 - 0.11), cy0 + ny * fo + ty * e * (w / 2 - 0.11), zc, 0, 0, rot));
+      });
+      for (var q = 1; q < 4; q++)
+        B.K.add(box(THREE, w - 0.4, 0.06, 0.05, cx0 + nx * 0.82, cy0 + ny * 0.82, z0 + q * hgt / 4, 0, 0, rot));
     }
     var E = IB - 0.45;
     /* forward face: u runs from starboard (-) to port (+)                  */

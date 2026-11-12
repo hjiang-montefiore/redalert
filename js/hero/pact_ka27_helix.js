@@ -416,12 +416,23 @@ var HeroKa27 = (function () {
     var k = tips ? "t" : "p";
     if (_bt[k] !== undefined) return _bt[k];
     try {
+      /* detail pass: 256 x 16, u along the span (bladeUV), v across the
+         chord (0 at y -0.24): the bare root sleeve, spanwise grime, the
+         pale leading-edge abrasion strip (the lower head turns anti-clockwise
+         from above, its leading edge at +y, the canvas top; the upper head
+         the other way), the dark trailing edge, the red tips on the upper */
       var cv = document.createElement("canvas");
-      cv.width = 128; cv.height = 8;
-      var g = cv.getContext("2d");
-      g.fillStyle = "#3a3e40"; g.fillRect(0, 0, 128, 8);
-      g.fillStyle = "rgba(0,0,0,0.25)"; g.fillRect(0, 0, 128, 1);
-      if (tips) { g.fillStyle = "#a8271f"; g.fillRect(118, 0, 10, 8); }
+      cv.width = 256; cv.height = 16;
+      var g = cv.getContext("2d"), sd = tips ? 2701 : 2702, i;
+      function R() { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; }
+      g.fillStyle = "#3a3e40"; g.fillRect(0, 0, 256, 16);
+      for (i = 0; i < 50; i++) { g.fillStyle = (i & 1) ? "rgba(255,255,240,0.05)" : "rgba(0,0,0,0.10)"; g.fillRect(R() * 256, 2 + R() * 12, 20 + R() * 70, 1); }
+      g.fillStyle = "rgba(0,0,0,0.30)"; g.fillRect(0, 0, 28, 16);
+      g.fillStyle = "rgba(160,164,166,0.55)"; g.fillRect(28, tips ? 14 : 0, 228, 2);
+      g.fillStyle = "rgba(0,0,0,0.28)"; g.fillRect(0, tips ? 0 : 15, 256, 1);
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      [64, 128, 192].forEach(function (u) { g.beginPath(); g.moveTo(u + 0.5, 0); g.lineTo(u + 0.5, 16); g.stroke(); });
+      if (tips) { g.fillStyle = "#a8271f"; g.fillRect(236, 0, 20, 16); }
       _bt[k] = new V.CanvasTexture(cv);
       _bt[k].wrapS = _bt[k].wrapT = V.ClampToEdgeWrapping;
       if (V.sRGBEncoding !== undefined) _bt[k].encoding = V.sRGBEncoding;
@@ -494,7 +505,7 @@ var HeroKa27 = (function () {
     for (i = 0; i < p.length / 3; i++) {
       var x = p[3 * i], y = p[3 * i + 1];
       uv[2 * i] = Math.max(0, Math.min(1, Math.sqrt(x * x + y * y) / ROTOR_R));
-      uv[2 * i + 1] = 0.5;
+      uv[2 * i + 1] = Math.max(0, Math.min(1, (y + 0.24) / 0.48));
     }
     g.setAttribute("uv", new V.BufferAttribute(uv, 2));
     return g;
@@ -510,8 +521,9 @@ var HeroKa27 = (function () {
     m.dark   = new V.MeshStandardMaterial({ color: 0x1c1f21, roughness: 0.64, metalness: 0.35 });
     m.bladeL = new V.MeshStandardMaterial({ color: 0x3a3e40, roughness: 0.80, metalness: 0.10 });
     m.bladeU = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.80, metalness: 0.10 });
-    var bt = bladeTexture(true);
+    var bt = bladeTexture(true), bl = bladeTexture(false);
     if (bt) m.bladeU.map = bt; else m.bladeU.color.setHex(0x3a3e40);
+    if (bl) { m.bladeL.map = bl; m.bladeL.color.setHex(0xffffff); }
     m.rubber = new V.MeshStandardMaterial({ color: 0x141515, roughness: 0.95, metalness: 0.02 });
     /* the panes lie 20 mm off the skin and take a polygon offset */
     m.glass  = new V.MeshPhysicalMaterial({ color: 0x20343a, roughness: 0.08, metalness: 0.20,
@@ -525,6 +537,27 @@ var HeroKa27 = (function () {
                                             emissive: new V.Color(tc), emissiveIntensity: 0.10 });
     m.disc   = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.40, metalness: 0.08,
                                             transparent: true, opacity: 0.05, depthWrite: false });
+    return m;
+  }
+
+  /* detail pass: every lamp in one vertex-coloured mesh;
+     L = [[x, y, z, r, "red" | "green" | "white"], ...] */
+  var LAMPC = { red: [0.86, 0.06, 0.04], green: [0.06, 0.70, 0.18], white: [0.95, 0.93, 0.84] };
+  function lampMesh(L) {
+    var pos = [], nor = [], col = [], i, j;
+    for (i = 0; i < L.length; i++) {
+      var q = new V.SphereGeometry(L[i][3], 8, 5).toNonIndexed(), c = LAMPC[L[i][4]];
+      q.translate(L[i][0], L[i][1], L[i][2]);
+      var P = q.attributes.position.array, N = q.attributes.normal.array;
+      for (j = 0; j < P.length; j++) { pos.push(P[j]); nor.push(N[j]); }
+      for (j = 0; j < P.length / 3; j++) col.push(c[0], c[1], c[2]);
+    }
+    var geo = new V.BufferGeometry();
+    geo.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    geo.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    var m = new V.Mesh(geo, new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.1, emissive: 0x2a2a2a }));
+    m.name = "lamps";
     return m;
   }
 
@@ -895,7 +928,7 @@ var HeroKa27 = (function () {
     skin.push(vent);
     dark.push(box(0.76, 0.12, 0.04, -4.98, 0, Z(0.93)));            /* the bumper strip */
     skin.push(dome(0.60, 0.20, 0.18, -4.25, 0, Z(2.50), 0, 12, 6));  /* dorsal fairing */
-    dark.push(sph(0.15, 10, 8, -7.10, 0, Z(2.05), 1.2, 1, 1));       /* tail light */
+    dark.push(sph(0.15, 10, 8, -7.10, 0, Z(2.05), 1.2, 1, 1));       /* tail light housing */
     for (s = -1; s <= 1; s += 2) {
       metal.push(bar([-5.75, s * 0.24, Z(1.62)], [-6.05, s * 1.30, Z(2.10)], 0.032, 6));
     }
@@ -1058,8 +1091,37 @@ var HeroKa27 = (function () {
     metal.push(cyl(0.26, 0.26, 0.05, 18, "z", 0, 0, Z(4.46)));
     metal.push(cyl(0.33, 0.33, 0.06, 18, "z", 0, 0, Z(3.88)));
 
+    /* ================================================== DETAIL PASS ======
+       (2026-11, POLICY 10) placed off the Vinogradov and Ka-29 photographs;
+       sizes NOT measured: the wipers on the screen, kick-in steps and a
+       handhold under each cockpit door, the door handles, the sliding cabin
+       door's rails (port), UHF blade aerials and whips under the boom, the
+       main legs' torque links and the wheels' hub caps; lamps (one
+       vertex-coloured mesh): position lights on the fins' outer faces (port
+       red, starboard green), the white tail light in its housing, red
+       beacons on the boom's top and under the belly. */
+    var lampL = [];
+    for (s = -1; s <= 1; s += 2) {
+      dark.push(bar([3.70, s * 0.28, Z(2.02)], [3.48, s * 0.25, Z(2.35)], 0.010, 4));
+      [0.95, 1.30].forEach(function (h) { dark.push(box(0.14, 0.03, 0.05, 2.80, s * 0.955, Z(h))); });
+      metal.push(bar([2.30, s * 0.97, Z(1.55)], [2.30, s * 0.97, Z(1.80)], 0.013, 4));
+      metal.push(box(0.12, 0.04, 0.03, 2.45, s * 0.965, Z(1.95)));
+      metal.push(cyl(0.10, 0.10, 0.03, 12, "y", XM, s * 1.86, Z(0.31)));
+      metal.push(bar([XM - 0.06, s * 1.62, Z(0.72)], [XM - 0.20, s * 1.64, Z(0.58)], 0.022, 4));
+      metal.push(bar([XM - 0.20, s * 1.64, Z(0.58)], [XM - 0.06, s * 1.66, Z(0.46)], 0.022, 4));
+      metal.push(cyl(0.07, 0.07, 0.02, 10, "y", XN, s * 0.79, Z(0.225)));
+      lampL.push([-6.30, s * (FIN_Y + 0.07), Z(2.60), 0.05, s > 0 ? "red" : "green"]);
+    }
+    [Z(2.42), Z(0.86)].forEach(function (z) { metal.push(box(3.00, 0.03, 0.03, -0.20, 0.945, z)); });
+    dark.push(box(0.22, 0.015, 0.14, -2.90, 0, Z(0.72)));
+    dark.push(box(0.20, 0.015, 0.12, -5.60, 0, Z(1.48)));
+    dark.push(bar([-3.40, 0, Z(1.10)], [-3.70, 0, Z(0.55)], 0.008, 4));
+    dark.push(box(0.18, 0.015, 0.10, -3.20, 0, Z(2.58)));
+    lampL.push([-7.24, 0, Z(2.05), 0.07, "white"], [-4.90, 0, Z(2.50), 0.07, "red"], [0.20, 0, Z(0.64), 0.07, "red"]);
+
     /* ----------------------------------------------------- airframe ----- */
     mesh(g, skin, T.skin, "airframe", true);
+    g.add(lampMesh(lampL));
     mesh(g, glass, T.glass, "glass");
     mesh(g, dark, T.dark, "fittings_dark");
     mesh(g, metal, T.metal, "fittings");
@@ -1092,10 +1154,10 @@ var HeroKa27 = (function () {
                 [7.78, 0.24], [0.88, 0.24]];
       for (j = 0; j < 3; j++) {
         a = azs[j] * D2R;
-        var bl = M.slab(V, BP, 0.04);
+        var bl = bladeUV(M.slab(V, BP, 0.04));
         bl.translate(0, 0, -0.02);
         bl.rotateZ(a);
-        blades.push(bladeUV(bl));
+        blades.push(bl);
         /* sleeve, flapping-hinge housing, lag damper and pitch horn */
         var parts = [box(0.74, 0.22, 0.15, 0.62, 0, 0),
                      box(0.34, 0.30, 0.17, 0.30, 0, -0.02),

@@ -484,6 +484,20 @@ var HeroHumvee = (function () {
       put(new THREE.CylinderGeometry(0.018, 0.018, 0.03, 6), Math.cos(b) * 0.135, sy * 0.112, Math.sin(b) * 0.135);
     }
     put(new THREE.CylinderGeometry(0.07, 0.085, 0.05, 10), 0, sy * 0.118, 0);
+    /* DETAIL PASS 3: the two-piece rim's bolt ring that clamps the run-flat insert (twelve bolts on
+       the outer rim half), the rim flange, the geared hub's cover bolts round the cap and the CTIS
+       valve stem and its hose to the hub (nuts, flange and stem turn with the tyre) */
+    for (j = 0; j < 12; j++) {
+      var bb2 = (j + 0.5) / 12 * Math.PI * 2;
+      put(new THREE.CylinderGeometry(0.011, 0.011, 0.024, 4), Math.cos(bb2) * 0.195, sy * 0.104, Math.sin(bb2) * 0.195);
+    }
+    g = new THREE.TorusGeometry(0.212, 0.009, 4, 24); g.rotateX(Math.PI / 2); g.translate(0, sy * 0.098, 0); parts.push(g.toNonIndexed());
+    for (j = 0; j < 6; j++) {
+      var bc = j / 6 * Math.PI * 2 + 0.26;
+      put(new THREE.CylinderGeometry(0.009, 0.009, 0.02, 5), Math.cos(bc) * 0.092, sy * 0.142, Math.sin(bc) * 0.092);
+    }
+    put(new THREE.CylinderGeometry(0.008, 0.008, 0.06, 5), 0.16, sy * 0.12, 0.02, Math.PI / 2);
+    m = new THREE.CylinderGeometry(0.006, 0.006, 0.13, 4); m.rotateZ(Math.PI / 2); m.translate(0.095, sy * 0.135, 0.02); parts.push(m.toNonIndexed());
     var n = 0, o = 0, q;
     for (q = 0; q < parts.length; q++) n += parts[q].attributes.position.count;
     var P = new Float32Array(n * 3), N = new Float32Array(n * 3);
@@ -777,6 +791,12 @@ var HeroHumvee = (function () {
     K.cyl(T.dark, 0.04, 0.34, 8, 0.40, 0, 0.34, "z");
     K.bb(T.dark, 0.30, 0.50, -0.07, 0.07, 0.47, 0.55);
     m2(K, T, 0.38, 0.62);
+    /* DETAIL PASS 3: the cradle's pintle and elevation lock, the belt, the sights; the ring's
+       bolts and its traverse lock */
+    m2Detail(K, T, 0.38, 0.62);
+    K.cyl(T.dark, 0.03, 0.06, 8, 0.40, 0, 0.53, "z");
+    K.rod(T.dark, 0.01, [0.40, 0.05, 0.50], [0.30, 0.10, 0.45], 4);
+    ringDetail(K, T, 0.45, 0.0, 12);
     K.flush(tg);
     g.add(tg);
   }
@@ -793,6 +813,21 @@ var HeroHumvee = (function () {
     K.cyl(T.dark, 0.04, 0.34, 8, 0.10, 0, 0.22, "z");
     K.bb(T.dark, 0.0, 0.22, -0.07, 0.07, 0.38, 0.45);
     m2(K, T, 0.22, 0.56);
+    /* DETAIL PASS 3: the ring's bolts, traverse lock and handle; the shield's bolt rows and the
+       frames of its glass blocks, the gun's shield plate, the belt and sights, a brass bag */
+    m2Detail(K, T, 0.22, 0.56);
+    ringDetail(K, T, 0.45, 0.04, 16);
+    for (var bi = 0; bi < 9; bi++) {
+      var by = -0.50 + bi * 0.125;
+      K.bb(T.dark, 0.455, 0.47, by - 0.012, by + 0.012, 0.74, 0.76);
+      K.bb(T.dark, 0.455, 0.47, by - 0.012, by + 0.012, 0.08, 0.10);
+    }
+    K.bbm(T.dark, 0.455, 0.475, 0.06, 0.48, 0.44, 0.46);
+    K.bbm(T.dark, 0.455, 0.475, 0.06, 0.48, 0.68, 0.70);
+    K.bbm(T.dark, 0.455, 0.475, 0.06, 0.08, 0.46, 0.68);
+    K.bbm(T.dark, 0.455, 0.475, 0.46, 0.48, 0.46, 0.68);
+    K.bb(T.skin, 0.40, 0.55, -0.16, 0.16, 0.44, 0.47);
+    K.bb(T.dark, 0.10, 0.26, -0.20, -0.08, 0.40, 0.50);
     K.flush(tg);
     g.add(tg);
   }
@@ -812,6 +847,18 @@ var HeroHumvee = (function () {
     K.bb(T.skin, -0.46, -0.04, -0.62, 0.62, 0.66, 0.70);
     K.bb(T.dark, 0.44, 0.56, -0.12, 0.12, 0.28, 0.54);
     m2(K, T, 0.60, 0.40);
+    /* DETAIL PASS 3: the ring's bolts and traverse handle, the corner posts' bolts, the roof's
+       grab handles and its hatch hinge, the glass blocks' frames, the belt and sights */
+    m2Detail(K, T, 0.60, 0.40);
+    ringDetail(K, T, 0.46, 0.04, 16);
+    for (sx = -1; sx <= 1; sx += 2) for (s = -1; s <= 1; s += 2) for (var bz = 0; bz < 3; bz++)
+      K.bb(T.dark, sx * 0.54 - 0.012, sx * 0.54 + 0.012, s * 0.64 - 0.012, s * 0.64 + 0.012, 0.34 + bz * 0.12, 0.36 + bz * 0.12);
+    for (s = -1; s <= 1; s += 2) K.rod(T.dark, 0.011, [0.10, s * 0.30, 0.72], [0.40, s * 0.30, 0.72], 4);
+    K.cyl(T.dark, 0.018, 1.10, 8, -0.04, 0, 0.72, "y");
+    K.bbm(T.dark, 0.508, 0.518, 0.06, 0.53, 0.31, 0.33);
+    K.bbm(T.dark, 0.508, 0.518, 0.06, 0.53, 0.61, 0.63);
+    K.bbm(T.dark, -0.43, 0.43, 0.61, 0.62, 0.31, 0.33);
+    K.bbm(T.dark, -0.43, 0.43, 0.61, 0.62, 0.61, 0.63);
     K.flush(tg);
     g.add(tg);
   }
@@ -1240,6 +1287,99 @@ var HeroHumvee = (function () {
       for (s = -1; s <= 1; s += 2) DP.hingeTop(D, V.tail + 0.03, V.tail + 0.03, s * 0.45, s * 0.75, 1.32);
     }
   }
+  /* ------------------------------------------------------------ DETAIL PASS 3 (2026-11, POLICY 10)
+     The fittings still missing after pass 2, on every body ([P1]-[P7] show the classes; places and
+     sizes by proportion, NOT CONFIRMED): paddle door handles with their lock barrels, the second
+     (upper) outside hinge and the hinge pins of the armoured doors; mirror glass and a lower brace
+     on each mirror arm; the black-out drive lamp in its guard on the left fender and the black-out
+     markers beside the headlamps; the grille's surround and centre bar, the bonnet's hinge pins
+     and hold-down hooks; the front tow brackets behind the shackles with their bolts, the rear
+     lifting shackles; the fuel filler on the right rear quarter, the trailer socket; the muffler
+     and tail pipe under the right side; a spring and tuner box at each whip mount; ammunition cans
+     strapped by the M1025's roof ring.  No new material, so the draw calls do not grow. */
+  function hvDetail3(K, T, V) {
+    var DP = dpFor(K), D = T.dark, s, i, nose = V.nose, hw = V.hwF, ys = V.hwS, zr = V.roof;
+    var doors = V.kind === "slant" ? [[0.86, -0.06], [-0.06, -0.92]] : V.kind === "arm" ? [[0.74, -0.29], [-0.29, -1.24]] : [[0.86, -0.22]];
+    var zh = V.kind === "arm" ? 1.16 : 1.22;
+    for (s = -1; s <= 1; s += 2) {
+      doors.forEach(function (d) {
+        var x1 = d[1], q = DP.oy(s, ys, 0.012, 0.045);
+        /* the paddle handle in its recess and the lock barrel beside it */
+        K.bb(D, x1 + 0.08, x1 + 0.24, s * ys, s * (ys + 0.008), zh - 0.035, zh + 0.035);
+        K.bb(D, x1 + 0.10, x1 + 0.22, q[0], q[1], zh - 0.015, zh + 0.012);
+        K.cyl(D, 0.014, 0.025, 8, x1 + 0.29, s * (ys + 0.012), zh, "y");
+        if (V.kind === "arm") {
+          /* the second, upper hinge and both hinge pins */
+          K.bb(D, d[0] - 0.04, d[0] + 0.02, s * ys, s * (ys + 0.03), 1.48, 1.55);
+          K.cyl(D, 0.016, 0.12, 8, d[0] + 0.005, s * (ys + 0.034), 1.085, "z");
+          K.cyl(D, 0.016, 0.12, 8, d[0] + 0.005, s * (ys + 0.034), 1.515, "z");
+        }
+      });
+      /* the mirror glass and a lower brace */
+      var mx = V.kind === "arm" ? 0.80 : 0.84, mz = V.kind === "arm" ? 1.40 : 1.36;
+      K.bb(T.glass, mx + 0.031, mx + 0.036, s * (V.hwS + 0.08), s * (V.hwS + 0.18), mz + 0.06, mz + 0.30);
+      K.rod(D, 0.009, [mx, s * V.hwS, mz - 0.10], [mx, s * (V.hwS + 0.13), mz + 0.05], 4);
+      /* the black-out markers beside the headlamps */
+      K.bb(T.lampA, nose, nose + 0.012, s * 0.62, s * 0.68, 0.70, 0.75);
+      /* the front tow brackets behind the shackles, four bolts each; the rear lifting shackles */
+      K.bb(D, V.bump - 0.03, V.bump + 0.012, s * 0.56, s * 0.68, 0.53, 0.65);
+      DP.boltsTop(D, V.bump + 0.012, V.bump + 0.012, 2, s * 0.58, s * 0.66, 0.635, 0.009);
+      DP.boltsTop(D, V.bump + 0.012, V.bump + 0.012, 2, s * 0.58, s * 0.66, 0.545, 0.009);
+      K.torus(D, 0.04, 0.011, V.tail - 0.03, s * (ys - 0.13), 0.45, 4, 10);
+      /* the bonnet's hinge pins at the nose and its hold-down hooks at the cowl */
+      K.cyl(D, 0.016, 0.10, 8, nose - 0.06, s * 0.50, 1.07, "y");
+      K.bb(D, nose - 1.21, nose - 1.17, s * (hw - 0.04), s * (hw + 0.015), 1.12, 1.24);
+    }
+    /* the black-out drive lamp on the left fender top, in its guard */
+    K.bb(T.lamp, nose - 0.10, nose - 0.04, hw - 0.26, hw - 0.12, 1.08, 1.14);
+    K.bb(D, nose - 0.16, nose - 0.10, hw - 0.27, hw - 0.11, 1.06, 1.15);
+    DP.guard(D, nose - 0.08, hw - 0.19, 1.11, 0.05, 1);
+    /* the grille's surround and its centre bar */
+    K.bb(D, nose + 0.010, nose + 0.030, -0.40, 0.40, 0.955, 0.975);
+    K.bb(D, nose + 0.010, nose + 0.030, -0.40, 0.40, 0.655, 0.675);
+    K.bb(D, nose + 0.010, nose + 0.030, -0.40, -0.38, 0.66, 0.97);
+    K.bb(D, nose + 0.010, nose + 0.030, 0.38, 0.40, 0.66, 0.97);
+    K.bb(T.skin, nose + 0.024, nose + 0.034, -0.37, 0.37, 0.805, 0.825);
+    /* the fuel filler on the right rear quarter and the trailer socket on the tail */
+    K.cyl(D, 0.05, 0.02, 12, -1.20, -(ys + 0.01), 1.02, "y");
+    K.bb(D, -1.27, -1.13, -(ys + 0.004), -ys, 0.95, 1.09);
+    K.cyl(D, 0.035, 0.06, 10, V.tail - 0.02, -0.30, 0.60, "x");
+    /* the muffler and the tail pipe, under the right side */
+    K.cyl(D, 0.075, 0.42, 10, XR + 0.55, -0.40, 0.46, "x");
+    K.rod(D, 0.028, [XR - 0.10, -0.40, 0.46], [V.tail + 0.10, -0.55, 0.47], 6);
+    K.cyl(D, 0.032, 0.05, 8, V.tail + 0.08, -0.55, 0.47, "x");
+    /* a spring and a tuner box at each whip mount */
+    var wy = -(ys - 0.10), wx = V.kind === "slant" ? -1.22 : -1.10, wz = V.kind === "slant" ? 1.52 : zr + 0.06;
+    if (V.kind === "slant" || V.kind === "arm") {
+      K.cyl(D, 0.022, 0.12, 8, wx, wy, wz + 0.06, "z");
+      K.bb(D, wx - 0.20, wx - 0.06, wy - 0.06, wy + 0.06, wz - 0.12, wz - 0.02);
+      if (V.turret === "ogpk") { K.cyl(D, 0.022, 0.12, 8, wx, -wy, wz + 0.06, "z"); K.bb(D, wx - 0.20, wx - 0.06, -wy - 0.06, -wy + 0.06, wz - 0.12, wz - 0.02); }
+    }
+    if (V.kind === "slant") {
+      /* two ammunition cans strapped on the roof behind the ring */
+      for (i = 0; i < 2; i++) {
+        var ax = RING_SLANT - 0.62 - i * 0.16;
+        K.bb(D, ax - 0.06, ax + 0.06, 0.18, 0.46, zr, zr + 0.18);
+        K.bb(D, ax - 0.065, ax + 0.065, 0.28, 0.36, zr + 0.18, zr + 0.20);
+      }
+      K.bb(D, RING_SLANT - 0.92, RING_SLANT - 0.56, 0.31, 0.33, zr, zr + 0.19);
+    }
+  }
+  /* turret details shared by the weapon stations: the ring's bolts, its traverse lock and handle */
+  function ringDetail(K, T, r, z, n) {
+    var i, a;
+    for (i = 0; i < n; i++) { a = (i + 0.5) / n * Math.PI * 2; K.bb(T.dark, Math.cos(a) * r - 0.014, Math.cos(a) * r + 0.014, Math.sin(a) * r - 0.014, Math.sin(a) * r + 0.014, z, z + 0.02); }
+    K.bb(T.dark, -r - 0.04, -r + 0.06, -0.05, 0.05, z, z + 0.06);
+    K.rod(T.dark, 0.012, [-r + 0.02, 0.04, z + 0.06], [-r - 0.10, 0.10, z + 0.20], 5);
+    K.cyl(T.dark, 0.018, 0.08, 6, -r - 0.10, 0.10, z + 0.24, "z");
+  }
+  /* the M2's ammunition belt from the can to the feed tray, its rear sight and the front post */
+  function m2Detail(K, T, x0, z0) {
+    K.bb(T.dark, x0 - 0.02, x0 + 0.06, 0.055, 0.12, z0 + 0.02, z0 + 0.035);
+    K.bb(T.dark, x0 - 0.17, x0 - 0.14, -0.012, 0.012, z0 + 0.075, z0 + 0.12);
+    K.bb(T.dark, x0 + 0.33, x0 + 0.35, -0.008, 0.008, z0 + 0.035, z0 + 0.075);
+  }
+
   /* --------------------------------------------------------------- build */
   function make(key) {
     return function (THREE, M, C) {
@@ -1255,6 +1395,7 @@ var HeroHumvee = (function () {
       else if (V.kind === "jam") bodyJam(K, T, V);
       else bodyArm(K, T, V);
       hvDetail(K, T, V);
+      hvDetail3(K, T, V);
       K.flush(g);
       var tgL = tyreGeo(THREE, V.R, 1), tgR = tyreGeo(THREE, V.R, -1), s, i, axs = [XF, XR];
       for (i = 0; i < 2; i++) for (s = -1; s <= 1; s += 2) {

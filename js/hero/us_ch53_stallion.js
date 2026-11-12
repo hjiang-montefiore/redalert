@@ -393,6 +393,8 @@ var HeroCH53 = (function () {
     /* the tyres: black enough for render3d.js eraPaint() to leave alone */
     m.rubber = new V.MeshStandardMaterial({ color: 0x0b0c0c, roughness: 0.95, metalness: 0.02 });
     m.blade  = new V.MeshStandardMaterial({ color: VR.e ? 0x3a3f44 : 0x30322a, roughness: 0.80, metalness: 0.10 });
+    var bt = bladeTexture(VR.e ? "#3a3f44" : "#30322a");
+    if (bt) { m.blade.map = bt; m.blade.color.set(0xffffff); }
     m.glass  = new V.MeshPhysicalMaterial({ color: 0x080d10, roughness: 0.08, metalness: 0.20,
                                             clearcoat: 1.0, clearcoatRoughness: 0.05, side: V.DoubleSide });
     var tc = (C && C.team !== undefined) ? C.team : "#4b8fe0";
@@ -400,6 +402,54 @@ var HeroCH53 = (function () {
                                             emissive: new V.Color(tc), emissiveIntensity: 0.10 });
     m.disc   = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.40, metalness: 0.08,
                                             transparent: true, opacity: 0.05, depthWrite: false });
+    return m;
+  }
+
+  /* detail pass: a tiling 2 m blade sheet (faded patches, spanwise grime,
+     seams, chips; planar UVs in the disc), and every lamp in one
+     vertex-coloured mesh, L = [[x, y, z, r, "red" | "green" | "white"]] */
+  var _bt = {};
+  function bladeTexture(base) {
+    if (_bt[base] !== undefined) return _bt[base];
+    var t = false;
+    try {
+      var W = 256, cv = document.createElement("canvas"); cv.width = W; cv.height = W;
+      var g = cv.getContext("2d"), R = rngFor(5303), i;
+      g.fillStyle = base; g.fillRect(0, 0, W, W);
+      for (i = 0; i < 40; i++) { g.fillStyle = (i & 1) ? "rgba(255,255,235,0.05)" : "rgba(0,0,0,0.10)"; g.fillRect(R() * W, R() * W, 20 + R() * 90, 10 + R() * 40); }
+      for (i = 0; i < 90; i++) { g.fillStyle = "rgba(0,0,0," + (0.06 + R() * 0.08).toFixed(3) + ")"; g.fillRect(R() * W, R() * W, 20 + R() * 80, 1 + R() * 2); }
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      for (i = 0; i < 4; i++) { g.beginPath(); g.moveTo(0, i * W / 4 + 0.5); g.lineTo(W, i * W / 4 + 0.5); g.stroke(); }
+      for (i = 0; i < 70; i++) { g.fillStyle = "rgba(150,150,140,0.25)"; g.fillRect(R() * W, R() * W, 1.5, 1.5); }
+      t = new V.CanvasTexture(cv);
+      t.wrapS = t.wrapT = V.RepeatWrapping;
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+    } catch (e) { t = false; }
+    _bt[base] = t;
+    return t;
+  }
+  function planarUV(geo, k) {
+    var p = geo.attributes.position.array, n = p.length / 3, a = new Float32Array(n * 2), i;
+    for (i = 0; i < n; i++) { a[i * 2] = p[i * 3] * k; a[i * 2 + 1] = p[i * 3 + 1] * k; }
+    geo.setAttribute("uv", new V.BufferAttribute(a, 2));
+    return geo;
+  }
+  var LAMPC = { red: [0.86, 0.06, 0.04], green: [0.06, 0.70, 0.18], white: [0.95, 0.93, 0.84] };
+  function lampMesh(L) {
+    var pos = [], nor = [], col = [], i, j;
+    for (i = 0; i < L.length; i++) {
+      var q = new V.SphereGeometry(L[i][3], 8, 5).toNonIndexed(), c = LAMPC[L[i][4]];
+      q.translate(L[i][0], L[i][1], L[i][2]);
+      var P = q.attributes.position.array, N = q.attributes.normal.array;
+      for (j = 0; j < P.length; j++) { pos.push(P[j]); nor.push(N[j]); }
+      for (j = 0; j < P.length / 3; j++) col.push(c[0], c[1], c[2]);
+    }
+    var geo = new V.BufferGeometry();
+    geo.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    geo.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    var m = new V.Mesh(geo, new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.1, emissive: 0x2a2a2a }));
+    m.name = "lamps";
     return m;
   }
 
@@ -942,6 +992,14 @@ var HeroCH53 = (function () {
     var CW = E ? [[3.44, 2.94, 1.69, 2.54], [0.80, 0.35, 1.97, 2.54], [-1.76, -2.22, 1.97, 2.54], [-3.85, -4.31, 1.97, 2.54]]
                : [[3.31, 2.82, 1.59, 2.42], [0.88, 0.41, 1.82, 2.42], [-1.52, -2.03, 1.82, 2.42], [-3.53, -3.96, 1.82, 2.42]];
     CW.forEach(function (w) { winZ(glass, w[0], w[1], w[2], w[3], 1, 2); });
+    /* detail pass: the window frames - a dark patch 5 cm larger all round
+       each window, lying under the pane (between the skin and the glass) */
+    function frameZ(x0, x1, h0, h1, nx, nt) {
+      both(dark, patch(FUS, x0 + 0.05, x1 - 0.05, function (x) { return thAtZ(FUS, x, Z(h0 - 0.05)); },
+                       function (x) { return thAtZ(FUS, x, Z(h1 + 0.05)); }, nx || 1, nt || 2, OFF * 0.5));
+    }
+    frameZ(NX - 1.00, NX - 1.95, 1.78, 2.72, 3, 3);
+    CW.forEach(function (w) { frameZ(w[0], w[1], w[2], w[3], 1, 2); });
 
     /* -------------------------------------------------- the tail pylon --
        D: upright, swept, from the boom top 11.0-12.3 m aft to its top 12.4-
@@ -1093,6 +1151,34 @@ var HeroCH53 = (function () {
     metal.push(bar([TRp[0], gbC[1] + cn[1] * 0.20, gbC[2] + cn[2] * 0.20],
                    [TRp[0], TRp[1] - cn[1] * 0.12, TRp[2] - cn[2] * 0.12], 0.11, 10, true));
 
+    /* ================================================== DETAIL PASS ======
+       (2026-11, POLICY 10) off the 1981 D and the 2016 E photographs; sizes
+       NOT measured: the wipers, the kick-in steps and handholds up the
+       nose, the crew door's handle, the rescue hoist over the starboard
+       crew door, UHF blade aerials under the cabin, the main legs' torque
+       links and hub caps; lamps (one vertex-coloured mesh): the position
+       lights on the sponson tips (port red, starboard green), the white
+       tail light, red beacons on the hump and under the cabin. On the head:
+       the blades' leading-edge abrasion strips and tip caps, a pitch link
+       per blade; the blades take a weathered sheet. */
+    var lampL = [], sTip = SPON[VR.key][Math.floor(SPON[VR.key].length / 2)];
+    for (s = -1; s <= 1; s += 2) {
+      dark.push(bar([NX - 0.55, s * 0.50, Z(2.25)], [NX - 0.85, s * 0.42, Z(2.70)], 0.012, 4, true));
+      [1.05, 1.45].forEach(function (h) { dark.push(box(0.16, 0.30, 0.05, NX - 1.40, s * 1.05, Z(h))); });
+      metal.push(box(0.14, 0.05, 0.04, CW[0][1] + 0.06, s * 1.20, Z(1.45)));
+      gearM.push(bar([VR.mainX - 0.08, s * (VR.mainY - 0.04), Z(0.80)], [VR.mainX - 0.26, s * (VR.mainY - 0.04), Z(0.62)], 0.03, 4, true));
+      gearM.push(bar([VR.mainX - 0.26, s * (VR.mainY - 0.04), Z(0.62)], [VR.mainX - 0.08, s * (VR.mainY - 0.04), Z(0.46)], 0.03, 4, true));
+      gearM.push(cyl(0.11, 0.11, 0.03, 12, "y", VR.mainX, s * (VR.mainY + 0.15 + WW / 2 + 0.01), Z(WR)));
+      lampL.push([sTip[0], s * (sTip[1] + 0.04), Z((sTip[2] + sTip[3]) / 2), 0.07, s > 0 ? "red" : "green"]);
+    }
+    metal.push(bar([CW[0][0] - 0.2, -1.22, Z(3.05)], [CW[0][0] - 0.2, -1.75, Z(3.10)], 0.07, 8, true));
+    dark.push(cyl(0.12, 0.12, 0.32, 10, "z", CW[0][0] - 0.2, -1.80, Z(2.98)));
+    dark.push(box(0.30, 0.03, 0.18, 1.6, 0, Z(0.50) - 0.09));
+    dark.push(box(0.26, 0.03, 0.16, -5.2, 0, Z(1.10)));
+    var tlp = finPt(1.0)(E ? -14.62 : -12.96, 0, 0);
+    lampL.push([tlp[0], tlp[1], tlp[2], 0.06, "white"], [E ? -3.0 : -2.4, 0, Z(4.48), 0.10, "red"], [0.8, 0, Z(0.48), 0.10, "red"]);
+    g.add(lampMesh(lampL));
+
     mesh(g, skin, T.skin, "airframe", true);
     mesh(g, glass, T.glass, "glass");
     mesh(g, dark, T.dark, "fittings_dark");
@@ -1138,9 +1224,13 @@ var HeroCH53 = (function () {
       bl.rotateY(-2 * D2R);
       bl.rotateZ(a);
       blades.push(bl);
+      var dt = [box(RR - 2.10, 0.07, 0.08, (RR + 1.80) / 2 - 0.10, LE - 0.035, 0), box(0.20, CH + 0.01, 0.075, RR - 0.15, LE - CH / 2, 0),
+                bar([0.60, 0.30, -0.30], [1.00, 0.30, -0.02], 0.03, 5, true)];
+      for (i = 0; i < dt.length; i++) { dt[i].rotateY(-2 * D2R); dt[i].rotateZ(a); hubM.push(dt[i]); }
     }
     mesh(head, hubM, T.metal, "hub");
-    mesh(head, blades, T.blade, "blades");
+    var blm = mesh(head, blades, T.blade, "blades");
+    if (blm) planarUV(blm.geometry, 0.5);
     mesh(head, [place(new V.CircleGeometry(RR, 48), 0, 0, 0.05)], T.disc, "rotordisc");
 
     /* ======================================================= tail rotor ==

@@ -32,6 +32,20 @@
        (starboard amidships): the three tiers of raft canisters, the rails.
      - "IvanRogovLSModel" (museum model, starboard): deck colours, the tiers.
 
+   REWORK (2026-11, the owner: "box hulls"): the hull form, the forecastle,
+   the block, the pads, the well and the gates are those measured off the
+   navypedia drawing above (they were right: the class IS slab-sided); what
+   the old file carried only as paint on the slab sides is now drawn in
+   relief, from the 1994 photograph ("Amphibious landing ship "Mitrofan
+   Moskalenko" in 1994", re-fetched and read for this pass) and 85-07169:
+   the scuttle rows (rimmed ports), the long recessed gallery in the block
+   with its frames and rail, the two openings under the after pad, the
+   louvred panel over the gallery, the rubbing strakes under the forward
+   deck's and the forecastle's edges and along the pad, the bow door seam,
+   the solid bulwark round the stem head, the bilge keels.  NOT CONFIRMED:
+   the bilge keels (under water; length and place estimated), the
+   bulwark's length (the 1994 photograph shows it round the stem head).
+
    RECOGNITION FEATURES (each with where it rests):
      1. A slab-sided hull carried straight up into a full-width block 20 m
         high between the two pads (drawing profile; 85-07169, 1994, 1982).
@@ -394,7 +408,9 @@ var HeroRogov1174 = (function () {
      lifts mid greys (pla_e00_destroyer.js measured 1.8x).                 */
   var C_HULL = "#788085", C_SUP = 0x80888d, C_DECK = "#6f4335", C_PADSQ = "#46483f";
   var C_FOUL = "#3a1d18", C_BOOT = "#15181a", C_MARK = "#d4d6d0";
-  var HZ0 = -6.7, HZ1 = 20.3;
+  /* the topsides canvas runs from just under the boot-top: the bottom
+     (antifouling) is its own material and canvas, underTex (rework)       */
+  var HZ0 = -0.6, HZ1 = 20.3;
   var TEX = {};
   /* the side elevation: port half on top, starboard half below, u transom
      (0) to stem (1); each half z HZ0 (bottom row) to HZ1 (top row). Port is
@@ -535,6 +551,19 @@ var HeroRogov1174 = (function () {
     return TEX[key];
   }
 
+  function underTex(THREE) {
+    if (TEX.under) return TEX.under;
+    var W = 256, H = 128, cv = mkCv(W, H), g = cv.getContext("2d"), R = rngOf(1175), i;
+    g.fillStyle = C_FOUL; g.fillRect(0, 0, W, H);
+    for (i = 0; i < 70; i++) {
+      g.globalAlpha = 0.05 + R() * 0.08; g.fillStyle = R() < 0.6 ? "#000000" : "#9a6a58";
+      g.fillRect(R() * W, R() * H, 4 + R() * 40, 1 + R() * 3);
+    }
+    g.globalAlpha = 0.12; g.fillStyle = "#000000";
+    for (i = 1; i < 8; i++) g.fillRect(i * W / 8, 0, 1, H);
+    g.globalAlpha = 1;
+    return (TEX.under = finish(THREE, cv));
+  }
   function supTex(THREE) {
     if (TEX.sup) return TEX.sup;
     var W = 512, H = 512, cv = mkCv(W, H), g = cv.getContext("2d");
@@ -617,6 +646,7 @@ var HeroRogov1174 = (function () {
 
     var T = {};
     T.H = new THREE.MeshStandardMaterial({ color: 0xffffff, map: hullTex(THREE), roughness: 0.86, metalness: 0.07 });
+    T.U = new THREE.MeshStandardMaterial({ color: 0xffffff, map: underTex(THREE), roughness: 0.9, metalness: 0.04 });
     T.D = new THREE.MeshStandardMaterial({ color: 0xffffff, map: deckTex(THREE, era), roughness: 0.94, metalness: 0.04 });
     T.S = new THREE.MeshStandardMaterial({ color: 0xffffff, map: supTex(THREE), roughness: 0.86, metalness: 0.07 });
     T.M = new THREE.MeshStandardMaterial({ color: 0x4a5258, roughness: 0.55, metalness: 0.40 });
@@ -653,7 +683,22 @@ var HeroRogov1174 = (function () {
         tgt.uv.push(clamp((q[0] - XS) / LOA, 0.0005, 0.9995), (f.s > 0 ? 0.5 : 0) + 0.5 * clamp((q[2] - HZ0) / (HZ1 - HZ0), 0.002, 0.998));
       }
     });
-    B.H.raw(hs.pos, hs.nrm, hs.uv);
+    /* the shell under the waterline to the bottom paint, the rest to the
+       topsides (rework: two canvases)                                     */
+    (function () {
+      var top = { pos: [], nrm: [], uv: [] }, bot = { pos: [], nrm: [], uv: [] }, q;
+      for (q = 0; q < hs.pos.length / 9; q++) {
+        var zmax = Math.max(hs.pos[q * 9 + 2], hs.pos[q * 9 + 5], hs.pos[q * 9 + 8]);
+        var o = zmax <= 0.02 ? bot : top;
+        Array.prototype.push.apply(o.pos, hs.pos.slice(q * 9, q * 9 + 9));
+        Array.prototype.push.apply(o.nrm, hs.nrm.slice(q * 9, q * 9 + 9));
+        var uu = hs.uv.slice(q * 6, q * 6 + 6);
+        if (o === bot) for (var w = 0; w < 3; w++) { uu[w * 2] = hs.pos[q * 9 + w * 3] / 24; uu[w * 2 + 1] = hs.pos[q * 9 + w * 3 + 2] / 6; }
+        Array.prototype.push.apply(o.uv, uu);
+      }
+      B.H.raw(top.pos, top.nrm, top.uv);
+      B.U.raw(bot.pos, bot.nrm, bot.uv);
+    })();
     /* the inside of the static skin above the door seam                    */
     var tin = new Tris();
     HG.inner.forEach(function (q) {
@@ -1203,6 +1248,76 @@ var HeroRogov1174 = (function () {
       Object.keys(RB).forEach(function (kk) { var mm = RB[kk].mesh(THREE, T[kk]); if (mm) br.add(mm); });
     })();
     root.add(br);
+
+    /* ---------------------------------------------- the side, in relief
+       (rework 2026-11): what the 1994 photograph and 85-07169 show on the
+       slab sides, drawn as geometry rather than paint only - the scuttle
+       rows, the long recessed gallery in the block with its frames and
+       rail, the two openings under the after pad, the louvred panel, the
+       rubbing strakes at the forward deck and forecastle edges, the bow
+       door seam, the forecastle's solid bulwark at the stem, and the
+       bilge keels.                                                        */
+    (function () {
+      function scut(xq, zq, sd) {
+        var w = halfB(xq, zq);
+        if (w < 1) return;
+        var c = new THREE.CircleGeometry(0.26, 6);
+        c.rotateX(-sd * PI / 2);
+        B.K.add(place(THREE, c, xq, sd * (w + 0.04), zq));
+        var r = new THREE.RingGeometry(0.26, 0.36, 6, 1);
+        r.rotateX(-sd * PI / 2);
+        B.M.add(place(THREE, r, xq, sd * (w + 0.035), zq));
+      }
+      /* a recess in the side: a dark back, the frame round it, posts */
+      function recess(x0, x1, za, zb, n, sd, rl) {
+        var w = halfB((x0 + x1) / 2, (za + zb) / 2);
+        var t = new Tris(), y0 = sd * (w + 0.02);
+        t.quad([x0, y0, za], [x1, y0, za], [x1, y0, zb], [x0, y0, zb], [0, sd, 0]);
+        addT(B.K, t);
+        B.S.add(box(THREE, x1 - x0 + 0.5, 0.18, 0.3, (x0 + x1) / 2, sd * (w + 0.09), zb + 0.15));
+        B.S.add(box(THREE, x1 - x0 + 0.5, 0.25, 0.25, (x0 + x1) / 2, sd * (w + 0.12), za - 0.12));
+        for (var q = 0; q <= n; q++) B.S.add(box(THREE, 0.3, 0.2, zb - za, lerp(x0, x1, q / n), sd * (w + 0.1), (za + zb) / 2));
+        if (rl) {
+          var rz = za + 1.0;
+          B.M.add(strut(THREE, x0 + 0.3, sd * (w + 0.12), rz, x1 - 0.3, sd * (w + 0.12), rz, 0.045, 3, undefined, true));
+        }
+      }
+      for (s = -1; s <= 1; s += 2) {
+        for (x = -51.0; x < -6.0; x += 2.4) scut(x, 18.4, s);
+        for (x = -50.0; x < -6.0; x += 3.2) if (x < -41.5 || x > -24) scut(x, 15.6, s);
+        for (x = -21.0; x < -6.0; x += 3.2) scut(x, 12.8, s);
+        for (x = -75.0; x < -56.0; x += 4.6) scut(x, 6.2, s);
+        for (x = 6.0; x < 48.0; x += 6.5) scut(x, 5.6, s);
+        recess(-41.0, -24.5, 8.4, 11.4, 6, s, true);
+        recess(-75.6, -69.6, 8.5, 11.4, 2, s, true);
+        recess(-66.2, -57.6, 8.5, 11.4, 3, s, true);
+        recess(-36.5, -31.0, 14.0, 17.0, 1, s, false);
+        for (k = 0; k < 8; k++) B.M.add(box(THREE, 5.3, 0.08, 0.1, -33.75, s * (halfB(-33.75, 15.5) + 0.12), 14.2 + k * 0.36));
+        /* rubbing strakes just under the forward deck's and the forecastle's
+           edges, and along the block at the after pad's level             */
+        var st = [];
+        for (x = XBF + RF + 0.5; x <= 77.5; x += 3.0) {
+          var zt = (x < XFC ? ZFWD : tbl(ZFCT, x)) - 0.45;
+          st.push([x, s * (halfB(x, zt) + 0.12), zt]);
+        }
+        for (k = 1; k < st.length; k++) B.S.add(strut(THREE, st[k - 1][0], st[k - 1][1], st[k - 1][2], st[k][0], st[k][1], st[k][2], 0.18, 4));
+        B.S.add(strut(THREE, XS + 0.4, s * (halfB(XS + 0.4, ZPAD - 0.5) + 0.12), ZPAD - 0.5, XBF - 0.5, s * (halfB(XBF - 0.5, ZPAD - 0.5) + 0.12), ZPAD - 0.5, 0.18, 4));
+        /* the bow door seam (drawing, 1994), on the fixed side of it        */
+        B.K.add(strut(THREE, XDOOR - 0.15, s * (halfB(XDOOR - 0.15, ZSILL + 0.3) + 0.04), ZSILL + 0.3,
+                      XDT - 0.15, s * (halfB(XDT - 0.15, ZDTOP - 0.1) + 0.04), ZDTOP - 0.1, 0.09, 3));
+        /* the solid bulwark round the stem head (1994, 1982)                */
+        var bw = [];
+        for (x = 70.0; x <= 78.4; x += 1.2) { var zb = tbl(ZFCT, x); bw.push([x, s * (halfB(x, zb) - 0.05), zb]); }
+        for (k = 1; k < bw.length; k++) {
+          var t2 = new Tris(), A = bw[k - 1], Bq = bw[k];
+          t2.quad(A, Bq, [Bq[0], Bq[1] * 1.02, Bq[2] + 1.15], [A[0], A[1] * 1.02, A[2] + 1.15], [0.2, s, 0]);
+          t2.quad(A, Bq, [Bq[0], Bq[1] * 1.02, Bq[2] + 1.15], [A[0], A[1] * 1.02, A[2] + 1.15], [-0.2, -s, 0]);
+          addT(B.H, t2);
+        }
+        /* bilge keels                                                       */
+        B.M.add(box(THREE, 48.0, 0.15, 0.7, -8.0, s * (halfB(-8.0, -5.4) + 0.2), -5.4, s * 0.7, 0, 0));
+      }
+    })();
 
     /* ------------------------------------------------ out as one mesh each */
     Object.keys(B).forEach(function (kk) {

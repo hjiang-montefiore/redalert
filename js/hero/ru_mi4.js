@@ -616,6 +616,53 @@ var HeroMi4 = (function () {
   }
 
   /* ======================================================== the build */
+  /* detail pass: a tiling 2 m blade sheet (faded patches, spanwise grime,
+     seams, chips; planar UVs in the disc), and every lamp in one
+     vertex-coloured mesh, L = [[x, y, z, r, "red" | "green" | "white"]] */
+  var _bt;
+  function bladeTexture() {
+    if (_bt !== undefined) return _bt;
+    _bt = false;
+    try {
+      var W = 256, cv = document.createElement("canvas"); cv.width = W; cv.height = W;
+      var g = cv.getContext("2d"), R = rngFor(4404), i;
+      g.fillStyle = "#40453d"; g.fillRect(0, 0, W, W);
+      for (i = 0; i < 40; i++) { g.fillStyle = (i & 1) ? "rgba(255,255,235,0.05)" : "rgba(0,0,0,0.10)"; g.fillRect(R() * W, R() * W, 20 + R() * 90, 10 + R() * 40); }
+      for (i = 0; i < 90; i++) { g.fillStyle = "rgba(0,0,0," + (0.06 + R() * 0.08).toFixed(3) + ")"; g.fillRect(R() * W, R() * W, 20 + R() * 80, 1 + R() * 2); }
+      g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+      for (i = 0; i < 4; i++) { g.beginPath(); g.moveTo(0, i * W / 4 + 0.5); g.lineTo(W, i * W / 4 + 0.5); g.stroke(); }
+      for (i = 0; i < 70; i++) { g.fillStyle = "rgba(150,150,140,0.25)"; g.fillRect(R() * W, R() * W, 1.5, 1.5); }
+      _bt = new V.CanvasTexture(cv);
+      _bt.wrapS = _bt.wrapT = V.RepeatWrapping;
+      if (V.sRGBEncoding !== undefined) _bt.encoding = V.sRGBEncoding;
+    } catch (e) { _bt = false; }
+    return _bt;
+  }
+  function planarUV(geo, k) {
+    var p = geo.attributes.position.array, n = p.length / 3, a = new Float32Array(n * 2), i;
+    for (i = 0; i < n; i++) { a[i * 2] = p[i * 3] * k; a[i * 2 + 1] = p[i * 3 + 1] * k; }
+    geo.setAttribute("uv", new V.BufferAttribute(a, 2));
+    return geo;
+  }
+  var LAMPC = { red: [0.86, 0.06, 0.04], green: [0.06, 0.70, 0.18], white: [0.95, 0.93, 0.84] };
+  function lampMesh(L) {
+    var pos = [], nor = [], col = [], i, j;
+    for (i = 0; i < L.length; i++) {
+      var q = new V.SphereGeometry(L[i][3], 8, 5).toNonIndexed(), c = LAMPC[L[i][4]];
+      q.translate(L[i][0], L[i][1], L[i][2]);
+      var P = q.attributes.position.array, N = q.attributes.normal.array;
+      for (j = 0; j < P.length; j++) { pos.push(P[j]); nor.push(N[j]); }
+      for (j = 0; j < P.length / 3; j++) col.push(c[0], c[1], c[2]);
+    }
+    var geo = new V.BufferGeometry();
+    geo.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    geo.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    var m = new V.Mesh(geo, new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.1, emissive: 0x2a2a2a }));
+    m.name = "lamps";
+    return m;
+  }
+
   function build(THREE, M, C, plain) {
     V = THREE;
     var g = new V.Group();
@@ -637,6 +684,8 @@ var HeroMi4 = (function () {
                                           transparent: true, opacity: 0.05, depthWrite: false })
     };
     if (tex) T.skin.map = tex; else T.skin.color.set(PAINT.base);
+    var btx = bladeTexture();
+    if (btx) { T.blade.map = btx; T.blade.color.set(0xffffff); }
     var skinT = [], glassT = [];
     var skin = [], glass = [], metal = [], dark = [], team = [];
     var undM = [], undR = [];
@@ -805,8 +854,37 @@ var HeroMi4 = (function () {
       undM.push(bar(ax, [0.10, side * 0.62, Z(0.96)], 0.04, 8, true));
       undM.push(bar(ax, [-1.95, side * 0.62, Z(0.96)], 0.04, 8, true));
     }
+    /* ================================================== DETAIL PASS ======
+       (2026-11, POLICY 10) sizes NOT measured: the windscreen wipers, the
+       kick-in steps and handholds up the port side to the cockpit, the
+       cabin door's handle and hinges, the long-wire aerial from the mast
+       aerial to the pylon and a whip under the boom, the wheels' hub caps
+       and the main oleos' bright pistons, the boom's drive-shaft hanger
+       covers; lamps (one vertex-coloured mesh): the position lights on the
+       tailplane tips (port red, starboard green), the white tail light on
+       the pylon, red beacons on the boom and under the belly. On the head:
+       the leading-edge abrasion strips (the head turns clockwise from
+       above, so the leading edge is -Y of each blade), tip caps; the blades
+       take a weathered sheet. */
+    var lampL = [];
+    for (side = -1; side <= 1; side += 2) {
+      dark.push(bar(onTop(2.10, side * 0.30, 0.03), onTop(1.80, side * 0.27, 0.03), 0.010, 4, true));
+      undM.push(cyl(0.10, 0.10, 0.03, 12, "y", MWX, side * (MWY + 0.11), Z(MWR)));
+      undM.push(cyl(0.07, 0.07, 0.02, 10, "y", NWX, side * (NWY + 0.08), Z(NWR)));
+      [-4.8, -6.2, -7.6, -9.0].forEach(function (xh) { var sc = secAt(FUS, xh); dark.push(box(0.10, 0.025, 0.05, xh, side * (sc.w + 0.004), Z(sc.zt - 0.10))); });
+      lampL.push([-9.68, side * 1.17, Z(3.11), 0.045, side > 0 ? "red" : "green"]);
+    }
+    [1.20, 1.75, 2.30].forEach(function (h) { dark.push(box(0.16, 0.02, 0.05, 1.30, SY(1.30, h) + 0.008, Z(h))); });
+    metal.push(bar(onSide(1.05, 2.40, 1, 0.05), onSide(1.05, 2.75, 1, 0.05), 0.013, 4, true));
+    metal.push(box(0.14, 0.04, 0.035, -1.05, SY(-1.05, 1.90) + 0.03, Z(1.90)));
+    [1.30, 2.40].forEach(function (h) { metal.push(box(0.05, 0.03, 0.10, -0.25, SY(-0.25, h) + 0.02, Z(h))); });
+    dark.push(bar([-4.18, 0, Z(3.75)], [-12.40, 0, Z(4.60)], 0.005, 3, true));
+    dark.push(bar([-6.00, 0, Z(1.75)], [-6.30, 0, Z(1.25)], 0.008, 4, true));
+    lampL.push([-12.92, 0, Z(4.52), 0.05, "white"], [-3.20, 0, Z(TOP(-3.2, 0) + 0.05), 0.07, "red"], [-0.60, 0, Z(0.70), 0.07, "red"]);
+
     mesh(und, undM, T.metal, "undercarriage_struts");
     mesh(und, undR, T.rubber, "tyres");
+    g.add(lampMesh(lampL));
 
     /* ------------------------------------------------- airframe meshes */
     mesh(g, skin, T.skin, "airframe", tex ? projUV : null);
@@ -845,10 +923,13 @@ var HeroMi4 = (function () {
         cyl(0.045, 0.045, 0.50, 8, "x", 0.80, 0.22, 0.03),  /* drag damper */
         bar([1.00, -0.16, 0], [0.62, -0.30, -0.22], 0.022, 5, true)  /* pitch horn link */
       ];
+      parts.push(box(ROTOR_R - 1.75, 0.06, 0.06, (ROTOR_R + 1.45) / 2 - 0.15, -CHORD * 0.47, 0),
+                 box(0.18, CHORD * 0.85, 0.05, ROTOR_R - 0.18, 0, 0));
       for (i = 0; i < parts.length; i++) { parts[i].rotateZ(a); hubM.push(parts[i]); }
     }
     mesh(head, hubM, T.metal, "hub");
-    mesh(head, blades, T.blade, "blades");
+    var blm = mesh(head, blades, T.blade, "blades");
+    if (blm) planarUV(blm.geometry, 0.5);
     var dsc = new V.CircleGeometry(ROTOR_R, 48); dsc.translate(0, 0, 0.03);
     mesh(head, [dsc], T.disc, "rotordisc");
 
@@ -874,7 +955,8 @@ var HeroMi4 = (function () {
       trM.push(cuff);
     }
     mesh(trot, trM, T.metal, "tailrotor_hub");
-    mesh(trot, trB, T.blade, "tailrotor_blades");
+    var trm = mesh(trot, trB, T.blade, "tailrotor_blades");
+    if (trm) planarUV(trm.geometry, 0.5);
 
     return g;
   }
