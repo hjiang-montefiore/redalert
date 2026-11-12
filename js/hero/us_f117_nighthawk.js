@@ -73,6 +73,11 @@
    the skin and their materials are polygon-offset, as the other heroes' are,
    so they do not flicker against it at RTS zoom.
 
+   THE REDO (see "the redo" above build()): the wing's upper skin in two
+   facets either side of a ridge, the lighter tape along every facet joint,
+   deep intake frames under an eyebrow lip, the exhaust slots' overhanging
+   lip and the platypus heat tiles, and open gear wells with the gear down.
+
    Model space: +X nose, +Y left (port), +Z up, metres. s below is metres
    aft of the nose tip, h metres above the ground with the gear down.
    The gear stands on z = ZG and is a group named "gear" so render3d.js can
@@ -444,7 +449,7 @@ var HeroF117 = (function () {
   }
   function addGrids(K) {
     var side, j, i, spans = [[7.35, 9.05], [9.15, 10.85]], y0 = 1.05, y1 = 2.30;
-    var NV = 16, NH = 6, W = 0.011, FR = 0.045, O0 = 0.020, O1 = 0.048;
+    var NV = 22, NH = 7, W = 0.010, FR = 0.045, O0 = 0.020, O1 = 0.048;
     /* a bar over the rectangle (s0..s1, ya..yb) of the facet */
     function bar(sd, s0, s1, ya, yb) {
       lift(K.hot, [gridPt(sd, s0, ya, O0), gridPt(sd, s1, ya, O0), gridPt(sd, s1, yb, O0), gridPt(sd, s0, yb, O0),
@@ -456,9 +461,17 @@ var HeroF117 = (function () {
         var a = gridPt(side, sa, y0), b = gridPt(side, sb, y0), c = gridPt(side, sb, y1), d = gridPt(side, sa, y1);
         tri(K.grid, a, b, c, [0, side * 0.4, 1], [0, 0], [1, 0], [1, 1]);
         tri(K.grid, a, c, d, [0, side * 0.4, 1], [0, 0], [1, 1], [0, 1]);
-        /* the frame */
-        bar(side, sa, sa + FR, y0, y1); bar(side, sb - FR, sb, y0, y1);
-        bar(side, sa, sb, y0, y0 + FR); bar(side, sa, sb, y1 - FR, y1);
+        /* the frame (the redo: a deep frame standing proud, and the eyebrow
+           of the upper lip over the panel, as the 7th FS close-up shows) */
+        lift(K.hot, [gridPt(side, sa - 0.04, y0 - 0.06, O0), gridPt(side, sb + 0.04, y0 - 0.06, O0),
+                     gridPt(side, sb + 0.04, y0 + FR, O0), gridPt(side, sa - 0.04, y0 + FR, O0),
+                     gridPt(side, sa - 0.04, y0 - 0.06, 0.12), gridPt(side, sb + 0.04, y0 - 0.06, 0.12),
+                     gridPt(side, sb + 0.04, y0 + FR, 0.10), gridPt(side, sa - 0.04, y0 + FR, 0.10)]);
+        lift(K.hot, [gridPt(side, sa - 0.04, y0, O0), gridPt(side, sa + FR, y0, O0), gridPt(side, sa + FR, y1, O0), gridPt(side, sa - 0.04, y1, O0),
+                     gridPt(side, sa - 0.04, y0, 0.10), gridPt(side, sa + FR, y0, 0.10), gridPt(side, sa + FR, y1, 0.07), gridPt(side, sa - 0.04, y1, 0.07)]);
+        lift(K.hot, [gridPt(side, sb - FR, y0, O0), gridPt(side, sb + 0.04, y0, O0), gridPt(side, sb + 0.04, y1, O0), gridPt(side, sb - FR, y1, O0),
+                     gridPt(side, sb - FR, y0, 0.10), gridPt(side, sb + 0.04, y0, 0.10), gridPt(side, sb + 0.04, y1, 0.07), gridPt(side, sb - FR, y1, 0.07)]);
+        bar(side, sa, sb, y1 - FR, y1);
         /* the mesh: bars across the slope, bars along it */
         for (i = 1; i <= NV; i++) {
           var sv = lerp(sa, sb, i / (NV + 1));
@@ -601,8 +614,8 @@ var HeroF117 = (function () {
     for (k = 0; k < m; k++) {
       var a = pts[k], b = pts[k + 1], es = b[0] - a[0], ey = b[1] - a[1], el = Math.sqrt(es * es + ey * ey) || 1;
       var ns = -ey / el * w / 2, ny = es / el * w / 2;
-      quad(B, P(a[0] + ns, a[1] + ny, h(a[0])), P(b[0] + ns, b[1] + ny, h(b[0])),
-              P(b[0] - ns, b[1] - ny, h(b[0])), P(a[0] - ns, a[1] - ny, h(a[0])), [0, 0, up]);
+      quad(B, P(a[0] + ns, a[1] + ny, h(a[0] + ns, a[1] + ny)), P(b[0] + ns, b[1] + ny, h(b[0] + ns, b[1] + ny)),
+              P(b[0] - ns, b[1] - ny, h(b[0] - ns, b[1] - ny)), P(a[0] - ns, a[1] - ny, h(a[0] - ns, a[1] - ny)), [0, 0, up]);
     }
   }
   /* the same on a fuselage side facet, in (s, t) - t across the facet */
@@ -621,7 +634,7 @@ var HeroF117 = (function () {
     }
   }
   function addPanels(K) {
-    var side, top = function (q) { return hlo(q) + THK + 0.012; };
+    var side, top = function (q, y) { return hlo(q) + THK + 0.02 + tentH(q, Math.abs(y || 0)); };
     for (side = -1; side <= 1; side += 2) {
       /* the upper wing's access panels inboard of the tips and behind the
          grids, fore and aft edges toothed, the sides straight */
@@ -657,10 +670,20 @@ var HeroF117 = (function () {
     var tip = [17.30, 5.90], d = [-0.723, -0.692], nf = [-0.692, 0.723];
     function at(t, o) { return [tip[0] + d[0] * t + nf[0] * o, tip[1] + d[1] * t + nf[1] * o]; }
     var c = [at(0.5, 0.35), at(2.9, 0.35), at(2.9, 1.05), at(0.5, 1.05)], side, i;
+    /* (the redo) laid as a grid over the faceted wing, each corner lifted
+       off the facet under it */
+    var NA = 8, NB = 3, j;
     for (side = -1; side <= 1; side += 2) {
-      var pts = [];
-      for (i = 0; i < c.length; i++) pts.push(P(c[i][0], side * c[i][1], hlo(c[i][0]) + THK + 0.03));
-      poly(K.team, pts, [0, 0, 1]);
+      for (i = 0; i < NA; i++) {
+        for (j = 0; j < NB; j++) {
+          var q = [at(0.5 + 2.4 * i / NA, 0.35 + 0.7 * j / NB), at(0.5 + 2.4 * (i + 1) / NA, 0.35 + 0.7 * j / NB),
+                   at(0.5 + 2.4 * (i + 1) / NA, 0.35 + 0.7 * (j + 1) / NB), at(0.5 + 2.4 * i / NA, 0.35 + 0.7 * (j + 1) / NB)];
+          quad(K.team, P(q[0][0], side * q[0][1], hlo(q[0][0]) + THK + 0.03 + tentH(q[0][0], q[0][1])),
+                       P(q[1][0], side * q[1][1], hlo(q[1][0]) + THK + 0.03 + tentH(q[1][0], q[1][1])),
+                       P(q[2][0], side * q[2][1], hlo(q[2][0]) + THK + 0.03 + tentH(q[2][0], q[2][1])),
+                       P(q[3][0], side * q[3][1], hlo(q[3][0]) + THK + 0.03 + tentH(q[3][0], q[3][1])), [0, 0, 1]);
+        }
+      }
     }
   }
 
@@ -874,6 +897,9 @@ var HeroF117 = (function () {
                                          side: V.DoubleSide,
                                          polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
     m.metal = new V.MeshStandardMaterial({ color: 0x5d6468, roughness: 0.48, metalness: 0.60 });
+    /* the facet-joint tape: a lighter, flatter grey (the 7th FS close-up) */
+    m.tape = new V.MeshStandardMaterial({ color: 0x55595e, roughness: 0.85, metalness: 0.08, side: V.DoubleSide,
+                                          polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
     m.glass = new V.MeshStandardMaterial({ color: 0x41381f, roughness: 0.12, metalness: 0.55,
                                            transparent: true, opacity: 0.86, side: V.DoubleSide });
     m.grid = new V.MeshStandardMaterial({ color: 0xffffff, roughness: 0.80, metalness: 0.10,
@@ -882,6 +908,95 @@ var HeroF117 = (function () {
     var tx = gridTex();
     if (tx) m.grid.map = tx; else m.grid.color.setHex(0x0d0e10);
     return m;
+  }
+
+
+  /* ================================================================ the redo
+     (the model evaluation: still among the plainest; the outline is kept,
+     the facet and edge fidelity raised.) From the photographs named above:
+       - the wing's upper skin is two facets, not one plane: a short facet
+         rising from the leading-edge bevel to a ridge about 38 per cent
+         back, a long one falling to the trailing edge (the Nellis head-on
+         and the Persian Gulf side view, where the light breaks along that
+         ridge); the ridge stands 6.5 cm (NOT CONFIRMED, read as a shading
+         break, not measured);
+       - every facet joint carries the lighter tape (the 7th FS close-up):
+         drawn as raised strips along the bevel line, the ridges, the
+         fuselage foot and roof edges;
+       - the intake grids stand in a deep frame under an eyebrow lip;
+       - the exhaust slots have the overhanging upper lip, and the platypus
+         its heat-tile rows;
+       - with the gear down the bays are open: dark wells with a rim,
+         under the nose and the two mains (the Andrews rear view). */
+  function teSAt(y) {
+    if (y <= 5.90) return 13.80 + (y - 2.55) / (5.90 - 2.55) * (17.30 - 13.80);
+    return 17.30 - (y - 5.90) / 0.70 * 0.45;
+  }
+  function leSAt(y) { return (y + BEV) / TAN_LE; }
+  var RIDGE = 0.38, RH = 0.065, TENT0 = 0.006;
+  function tentH(s, y) {
+    if (y < 2.55 || y > 6.60) return 0;
+    var a = leSAt(y), b = teSAt(y), r = a + RIDGE * (b - a);
+    if (s <= a || s >= b) return 0;
+    return TENT0 + (RH - TENT0) * (s <= r ? (s - a) / (r - a) : (b - s) / (b - r));
+  }
+  function tape(B, a, b, n, w) {
+    var t = sub(b, a), sd = cross(t, n), L = Math.sqrt(dot(sd, sd)) || 1, nl = Math.sqrt(dot(n, n)) || 1;
+    var o = [sd[0] / L * w / 2, sd[1] / L * w / 2, sd[2] / L * w / 2], lf = 0.012 / nl;
+    var A = [a[0] + n[0] * lf, a[1] + n[1] * lf, a[2] + n[2] * lf], Bp = [b[0] + n[0] * lf, b[1] + n[1] * lf, b[2] + n[2] * lf];
+    quad(B, [A[0] + o[0], A[1] + o[1], A[2] + o[2]], [Bp[0] + o[0], Bp[1] + o[1], Bp[2] + o[2]],
+            [Bp[0] - o[0], Bp[1] - o[1], Bp[2] - o[2]], [A[0] - o[0], A[1] - o[1], A[2] - o[2]], n);
+  }
+  function addRedo(K, G) {
+    var side, i, NY = 12, ys = [];
+    for (i = 0; i <= NY; i++) ys.push(2.55 + (6.60 - 2.55) * i / NY);
+    for (side = -1; side <= 1; side += 2) {
+      var Lp = [], Rp = [], Tp = [];
+      for (i = 0; i <= NY; i++) {
+        var y = ys[i], a = leSAt(y), b = teSAt(y), r = a + RIDGE * (b - a);
+        if (i === NY) { a = Math.min(a, 16.85); r = Math.min(r, 16.85); b = 16.85; }
+        Lp.push(P(a, side * y, hlo(a) + THK + TENT0));
+        Rp.push(P(r, side * y, hlo(r) + THK + RH));
+        Tp.push(P(b, side * y, hlo(b) + THK + TENT0));
+      }
+      for (i = 0; i < NY; i++) {
+        quad(K.skin, Lp[i], Lp[i + 1], Rp[i + 1], Rp[i], [0.25, side * 0.08, 1]);
+        quad(K.skin, Rp[i], Rp[i + 1], Tp[i + 1], Tp[i], [-0.12, -side * 0.05, 1]);
+        if (i < NY - 1) tape(K.tape, Rp[i], Rp[i + 1], [0, 0, 1], 0.05);
+      }
+      tri(K.skin, Lp[0], Rp[0], Tp[0], [0, -side, 0]);
+      /* tape: the bevel's inner line, the fuselage foot and roof edges */
+      tape(K.tape, P(BEV / TAN_LE, 0, hlo(BEV / TAN_LE) + THK), P((6.54 + BEV) / TAN_LE, side * 6.54, hlo((6.54 + BEV) / TAN_LE) + THK),
+           [0, side * 0.3, 1], 0.05);
+      for (i = 2; i < HUMP.length - 1; i++) {
+        var r0 = HUMP[i], r1 = HUMP[i + 1];
+        var f0 = P(r0[0], side * r0[1], footH(r0[0])), f1 = P(r1[0], side * r1[1], footH(r1[0]));
+        var e0 = P(r0[0], side * r0[3], r0[4]), e1 = P(r1[0], side * r1[3], r1[4]);
+        if (r0[0] >= 6.16) tape(K.tape, f0, f1, [0, side * 0.5, 1], 0.06);
+        if (r0[0] >= 5.95) tape(K.tape, e0, e1, [0, side * 0.4, 1], 0.05);
+      }
+      /* the exhaust slot's upper lip, overhanging */
+      lift(K.hot, [facetAt(side, 14.70, 0.40, 0.012), facetAt(side, 16.30, 0.40, 0.012),
+                   facetAt(side, 16.30, 0.52, 0.012), facetAt(side, 14.70, 0.52, 0.012),
+                   facetAt(side, 14.70, 0.40, 0.11), facetAt(side, 16.30, 0.40, 0.11),
+                   facetAt(side, 16.30, 0.52, 0.05), facetAt(side, 14.70, 0.52, 0.05)]);
+      /* open gear wells: the mains */
+      var my0 = side * 1.58, my1 = side * 2.42, lo = Math.min(my0, my1), hi = Math.max(my0, my1);
+      quad(G.tyre, P(9.95, lo, hlo(9.95) - 0.02), P(11.65, lo, hlo(11.65) - 0.02), P(11.65, hi, hlo(11.65) - 0.02),
+           P(9.95, hi, hlo(9.95) - 0.02), [0, 0, -1]);
+      box(G.metal, XN - 11.70, XN - 9.90, lo - 0.03, lo, hlo(10.8) - 0.10 + ZG, hlo(10.8) - 0.01 + ZG);
+      box(G.metal, XN - 11.70, XN - 9.90, hi, hi + 0.03, hlo(10.8) - 0.10 + ZG, hlo(10.8) - 0.01 + ZG);
+    }
+    /* the nose well */
+    quad(G.tyre, P(4.30, -0.30, hlo(4.3) - 0.02), P(5.75, -0.30, hlo(5.75) - 0.02), P(5.75, 0.30, hlo(5.75) - 0.02),
+         P(4.30, 0.30, hlo(4.3) - 0.02), [0, 0, -1]);
+    /* the platypus's heat tiles: rows across it */
+    [16.55, 16.80, 17.05].forEach(function (s0) {
+      var h0 = hlo(s0) + lerp(THK, OTK[7], (s0 - 16.35) / 0.85) + 0.012;
+      quad(K.ink, P(s0 - 0.02, -0.86, h0), P(s0 + 0.02, -0.86, h0), P(s0 + 0.02, 0.86, h0), P(s0 - 0.02, 0.86, h0), [0, 0, 1]);
+    });
+    quad(K.ink, P(16.40, -0.02, hlo(16.4) + THK + 0.012), P(17.30, -0.02, hlo(17.3) + OTK[7] + 0.012),
+         P(17.30, 0.02, hlo(17.3) + OTK[7] + 0.012), P(16.40, 0.02, hlo(16.4) + THK + 0.012), [0, 0, 1]);
   }
 
   /* ============================================================== build == */
@@ -921,7 +1036,7 @@ var HeroF117 = (function () {
   function build(THREE, M, C) {
     V = THREE;
     _m4 = new V.Matrix4(); _q = new V.Quaternion(); _v = new V.Vector3(); _u = new V.Vector3();
-    var K = { skin: bag(), team: bag(), hot: bag(), ink: bag(), glass: bag(), grid: bag(), lampR: bag(), lampG: bag() };
+    var K = { skin: bag(), team: bag(), hot: bag(), ink: bag(), glass: bag(), grid: bag(), lampR: bag(), lampG: bag(), tape: bag() };
     var G = { skin: bag(), metal: bag(), tyre: bag() };
     addPlate(K);
     addHump(K);
@@ -934,11 +1049,12 @@ var HeroF117 = (function () {
     addFlash(K);
     addPanels(K);
     addGear(G);
+    addRedo(K, G);
 
     var mats = makeMats(C);
     mats.tyre = mats.ink;
     var root = new V.Group();
-    emit(root, K, mats, ["skin", "team", "hot", "ink", "grid", "glass", "lampR", "lampG"]);
+    emit(root, K, mats, ["skin", "team", "tape", "hot", "ink", "grid", "glass", "lampR", "lampG"]);
     var gear = new V.Group();
     gear.name = "gear";
     emit(gear, G, mats, ["skin", "metal", "tyre"]);

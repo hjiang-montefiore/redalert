@@ -73,6 +73,11 @@
    Model space: +X nose, +Y left (port), +Z up, metres. s below is metres aft of
    the nose tip, h metres above the ground; the gear stands on h = 0.
    Merged into one mesh per material; the gear is its own named group.
+   The redo (see "details" below) adds a grey-scale paint sheet laid over
+   the coats (panel lines, rivet rows, wing-root walkways, weathering), seam
+   ribbons for the panel breaks and hinge lines, the engine and oil-cooler
+   intakes under each spinner, the twin nose wheels, launch bar and gear
+   doors, aerials, pitots and lamps.
    ========================================================================= */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -534,8 +539,15 @@ var HeroE2 = (function () {
     G.metal.push(rod([X(2.05), 0, Z(0.76)], [X(2.58), 0, Z(0.50)], 0.035, 6));
     G.metal.push(rod([X(2.62), 0.12, Z(0.50)], [X(2.62), 0.12, Z(0.30)], 0.03, 6));
     G.metal.push(rod([X(2.62), -0.12, Z(0.50)], [X(2.62), -0.12, Z(0.30)], 0.03, 6));
-    G.dark.push(wheelG(0.30, 0.22, X(2.62), 0, Z(0.30), 20));
-    G.metal.push(wheelG(0.13, 0.25, X(2.62), 0, Z(0.30), 10));
+    /* two nose wheels ("E-2 Hawkeye Pax River Museum-1.jpg"), the axle
+       through the fork, and the catapult launch bar raised ahead of the leg */
+    G.dark.push(wheelG(0.28, 0.15, X(2.62), 0.14, Z(0.28), 20));
+    G.dark.push(wheelG(0.28, 0.15, X(2.62), -0.14, Z(0.28), 20));
+    G.metal.push(wheelG(0.12, 0.17, X(2.62), 0.14, Z(0.28), 10));
+    G.metal.push(wheelG(0.12, 0.17, X(2.62), -0.14, Z(0.28), 10));
+    G.metal.push(wheelG(0.04, 0.44, X(2.62), 0, Z(0.28), 6));
+    G.metal.push(rod([X(2.60), 0, Z(0.62)], [X(2.02), 0, Z(0.80)], 0.03, 6));
+    G.metal.push(boxG(0.10, 0.10, 0.10, X(2.02), 0, Z(0.80)));
     /* mains: a leg and a brace from the nacelle's housing, one wheel a side */
     for (sd = -1; sd <= 1; sd += 2) {
       G.metal.push(rod([X(8.55), sd * NY, Z(1.30)], [X(8.55), sd * NY, Z(0.47)], 0.085, 8));
@@ -543,6 +555,431 @@ var HeroE2 = (function () {
       G.dark.push(wheelG(0.47, 0.30, X(8.55), sd * NY, Z(0.47), 24));
       G.metal.push(wheelG(0.22, 0.32, X(8.55), sd * NY, Z(0.47), 10));
     }
+  }
+
+  /* ========================================================= detail kit ==
+     (the redo) Fittings laid on the skin, and a projected paint sheet.
+     ribbon()  a strip along a polyline lying on the skin (outward normal at
+               each point given), lifted a little: panel seams, hinge lines,
+               walkway edges, de-icer boots;
+     blade()   a tapered blade aerial or a fence standing on the skin;
+     lamp()    a small eight-faced lamp in a vertex colour (one material);
+     sheet()   a grey-scale canvas laid over the coloured skins by projected
+               UVs (plan views from above and below, the two sides): panel
+               lines, rivet rows, walkways, exhaust soot and weathering. The
+               skins keep their colour; the sheet only darkens it. */
+  function DK(V) {
+    function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function vnorm(a) { var m = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
+    function geo(pos, col) {
+      var g = new V.BufferGeometry();
+      g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+      if (col) g.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+      g.computeVertexNormals();
+      return g;
+    }
+    function quad(pos, a, b, c, d, n) {
+      var u = vsub(b, a), v = vsub(c, a), f = vcross(u, v);
+      if (n && f[0] * n[0] + f[1] * n[1] + f[2] * n[2] < 0) { var t = b; b = d; d = t; }
+      pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2],
+               a[0], a[1], a[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+    }
+    /* pts: [[x,y,z]...]; nrm: the outward normal at each point, or a
+       function (p) -> normal; w the width, lift the height off the skin */
+    function ribbon(pts, nrm, w, lift) {
+      var pos = [], A = [], B = [], i, n = pts.length;
+      if (n < 2) return null;
+      for (i = 0; i < n; i++) {
+        var p = pts[i], nn = vnorm(typeof nrm === "function" ? nrm(p) : (nrm[0].length ? nrm[i] : nrm));
+        var t = vsub(pts[Math.min(i + 1, n - 1)], pts[Math.max(i - 1, 0)]);
+        var s = vnorm(vcross(t, nn)), l = lift === undefined ? 0.012 : lift;
+        var c = [p[0] + nn[0] * l, p[1] + nn[1] * l, p[2] + nn[2] * l];
+        A.push([c[0] + s[0] * w / 2, c[1] + s[1] * w / 2, c[2] + s[2] * w / 2]);
+        B.push([c[0] - s[0] * w / 2, c[1] - s[1] * w / 2, c[2] - s[2] * w / 2]);
+        A[i].n = nn;
+      }
+      for (i = 0; i + 1 < n; i++) quad(pos, A[i], B[i], B[i + 1], A[i + 1], A[i].n);
+      return geo(pos);
+    }
+    /* a blade from base point p, standing along up, chord along fwd (the
+       leading edge forward); h tall, chord c0 at the root, c1 at the tip,
+       th thick, the tip set back by rake */
+    function blade(p, up, fwd, h, c0, c1, th, rake) {
+      up = vnorm(up); fwd = vnorm(fwd);
+      var sd = vnorm(vcross(up, fwd)), pos = [];
+      function P(f, u, s) {
+        return [p[0] + fwd[0] * f + up[0] * u + sd[0] * s, p[1] + fwd[1] * f + up[1] * u + sd[1] * s,
+                p[2] + fwd[2] * f + up[2] * u + sd[2] * s];
+      }
+      var r = rake || 0, t = th / 2;
+      var a0 = P(c0 / 2, 0, t), a1 = P(-c0 / 2, 0, t), a2 = P(-c0 / 2, 0, -t), a3 = P(c0 / 2, 0, -t);
+      var b0 = P(c1 / 2 - r, h, t), b1 = P(-c1 / 2 - r, h, t), b2 = P(-c1 / 2 - r, h, -t), b3 = P(c1 / 2 - r, h, -t);
+      quad(pos, a0, a1, b1, b0, sd); quad(pos, a3, a2, b2, b3, [-sd[0], -sd[1], -sd[2]]);
+      quad(pos, a0, b0, b3, a3, fwd); quad(pos, a1, a2, b2, b1, [-fwd[0], -fwd[1], -fwd[2]]);
+      quad(pos, b0, b1, b2, b3, up);
+      return geo(pos);
+    }
+    /* an eight-faced lamp of radius r at p, in colour hex (vertex colour) */
+    function lamp(p, r, hex) {
+      var c = [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
+      var pos = [], col = [], i, j;
+      var X = [[r, 0, 0], [-r, 0, 0]], Y = [[0, r, 0], [0, -r, 0]], Z = [[0, 0, r], [0, 0, -r]];
+      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) for (var k = 0; k < 2; k++) {
+        var a = X[i], b = Y[j], d = Z[k];
+        pos.push(p[0] + a[0], p[1] + a[1], p[2] + a[2], p[0] + b[0], p[1] + b[1], p[2] + b[2],
+                 p[0] + d[0], p[1] + d[1], p[2] + d[2]);
+        col.push(c[0], c[1], c[2], c[0], c[1], c[2], c[0], c[1], c[2]);
+      }
+      return geo(pos, col);
+    }
+    /* a closed loop of points around a body: f(angle) -> [x,y,z]; the
+       normal is taken radially from the axis point ax(angle) */
+    function hoop(f, a0, a1, n, ax, w, lift) {
+      var pts = [], nr = [], i;
+      for (i = 0; i <= n; i++) {
+        var a = a0 + (a1 - a0) * i / n, p = f(a), c = ax(a);
+        pts.push(p); nr.push([0, p[1] - c[1], p[2] - c[2]]);
+      }
+      return ribbon(pts, nr, w, lift);
+    }
+
+    /* ------------------------------------------------ the paint sheet --
+       Four bands on a 1024 x 2048 sheet: from above (x, y), the port side
+       (x, z), the starboard side (x, z), from below (x, y). */
+    function layout(xmin, xmax, ymax, zmin, zmax) {
+      var TW = 1024, TH = 2048, PX = (TW - 4) / (xmax - xmin);
+      var PY = Math.min(PX * 1.6, 620 / (2 * ymax)), PZ = Math.min(PX * 1.6, 300 / (zmax - zmin));
+      var TOPH = Math.ceil(2 * ymax * PY) + 2, SIDEH = Math.ceil((zmax - zmin) * PZ) + 2;
+      var B_PORT = TOPH + 4, B_STBD = B_PORT + SIDEH + 4, B_BOT = B_STBD + SIDEH + 4;
+      return { TW: TW, TH: TH, PX: PX, PY: PY, PZ: PZ, XMIN: xmin, YMAX: ymax, ZMAX: zmax,
+               TOPH: TOPH, SIDEH: SIDEH, B_PORT: B_PORT, B_STBD: B_STBD, B_BOT: B_BOT };
+    }
+    function cl(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    function projUV(geo2, L) {
+      var p = geo2.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+      for (t = 0; t + 8 < p.length; t += 9) {
+        var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+        var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+        var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+        nx /= nl; ny /= nl; nz /= nl;
+        var endOn = Math.abs(nx) > 0.85;
+        var band = endOn ? (nz < -0.3 ? 3 : 0) : (nz > 0.45 ? 0 : nz < -0.45 ? 3 : (ny >= 0 ? 1 : 2));
+        for (k = 0; k < 3; k++) {
+          var x = p[t + 3 * k], y = p[t + 3 * k + 1], z = p[t + 3 * k + 2], U, R;
+          U = cl((x - L.XMIN) * L.PX, 1, L.TW - 1);
+          if (band === 0) R = cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else if (band === 3) R = L.B_BOT + cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else R = (band === 2 ? L.B_STBD : L.B_PORT) + cl((L.ZMAX - z) * L.PZ, 1, L.SIDEH - 1);
+          uv[(t / 3 + k) * 2] = U / L.TW;
+          uv[(t / 3 + k) * 2 + 1] = 1 - R / L.TH;
+        }
+      }
+      geo2.setAttribute("uv", new V.BufferAttribute(uv, 2));
+      return geo2;
+    }
+    function rng(seed) {
+      var s = seed >>> 0 || 1;
+      return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    }
+    /* spec: { frames: [[x, half-width], ...] lines round the body;
+               top: [[[x,y],...], ...] polylines seen from above (mirrored
+                    to starboard if spec.mirror);
+               bot: the same from below; side: [[[x,z],...]] both sides;
+               rivets: polylines (above) dotted;
+               walk: [[[x,y],...]] walkway outlines (above);
+               soot: [[x, y, z, length, width]] streaks running aft;
+               grime: count of weathering blots; seam: line darkness 0-1 } */
+    function sheet(L, spec, seed) {
+      var cv = document.createElement("canvas");
+      cv.width = L.TW; cv.height = L.TH;
+      var g = cv.getContext("2d"), R = rng(seed || 7), i, j, sd;
+      function U(x) { return (x - L.XMIN) * L.PX; }
+      function RT(y) { return (L.YMAX - y) * L.PY; }
+      function RB(y) { return L.B_BOT + (L.YMAX - y) * L.PY; }
+      function RS(z, s) { return (s ? L.B_STBD : L.B_PORT) + (L.ZMAX - z) * L.PZ; }
+      g.fillStyle = "#f2f2f2"; g.fillRect(0, 0, L.TW, L.TH);
+      for (i = 0; i < (spec.grime || 140); i++) {          /* weathering */
+        g.fillStyle = R() < 0.6 ? "rgba(40,40,40," + (0.03 + R() * 0.04) + ")" : "rgba(255,255,255,0.05)";
+        g.beginPath(); g.ellipse(R() * L.TW, R() * L.TH, 4 + R() * 26, 2 + R() * 9, 0, 0, Math.PI * 2); g.fill();
+      }
+      var sa = spec.seam === undefined ? 0.55 : spec.seam;
+      var LINE = "rgba(30,32,34," + sa + ")", FAINT = "rgba(30,32,34," + (sa * 0.45) + ")";
+      function path(pts, map, col, lw, dash) {
+        g.strokeStyle = col || LINE; g.lineWidth = lw || 1.2;
+        if (g.setLineDash) g.setLineDash(dash || []);
+        g.beginPath();
+        for (var k = 0; k < pts.length; k++) {
+          var q = map(pts[k]);
+          if (k) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]);
+        }
+        g.stroke();
+        if (g.setLineDash) g.setLineDash([]);
+      }
+      var mirror = spec.mirror !== false;
+      function both(list, fT, col, lw, dash) {
+        for (j = 0; j < (list || []).length; j++) {
+          path(list[j], fT(1), col, lw, dash);
+          if (mirror) path(list[j], fT(-1), col, lw, dash);
+        }
+      }
+      both(spec.top, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; });
+      both(spec.bot, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; });
+      both(spec.rivets, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      both(spec.rivetsB, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      for (j = 0; j < (spec.side || []).length; j++) {
+        for (sd = 0; sd < 2; sd++) {
+          path(spec.side[j], (function (s) { return function (q) { return [U(q[0]), RS(q[1], s)]; }; })(sd));
+        }
+      }
+      for (j = 0; j < (spec.frames || []).length; j++) {
+        var f = spec.frames[j], x = U(f[0]);
+        g.strokeStyle = LINE; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x, RT(f[1])); g.lineTo(x, RT(-f[1])); g.stroke();
+        g.beginPath(); g.moveTo(x, RB(f[1])); g.lineTo(x, RB(-f[1])); g.stroke();
+        for (sd = 0; sd < 2; sd++) {
+          g.beginPath(); g.moveTo(x, RS(L.ZMAX, sd)); g.lineTo(x, RS(L.ZMAX - L.SIDEH / L.PZ, sd)); g.stroke();
+        }
+      }
+      for (j = 0; j < (spec.walk || []).length; j++) {     /* walkways: a darker, non-slip band */
+        for (sd = 1; sd >= (mirror ? -1 : 1); sd -= 2) {
+          var w = spec.walk[j];
+          g.fillStyle = "rgba(20,22,24,0.16)";
+          g.beginPath();
+          for (i = 0; i < w.length; i++) { if (i) g.lineTo(U(w[i][0]), RT(sd * w[i][1])); else g.moveTo(U(w[i][0]), RT(sd * w[i][1])); }
+          g.closePath(); g.fill();
+        }
+      }
+      for (j = 0; j < (spec.soot || []).length; j++) {     /* exhaust soot, fading aft */
+        var s = spec.soot[j], x0 = U(s[0]), x1 = U(s[0] - s[3]), hw = s[4] * L.PY;
+        var grd = g.createLinearGradient(x0, 0, x1, 0);
+        grd.addColorStop(0, "rgba(25,22,20,0.55)"); grd.addColorStop(1, "rgba(25,22,20,0)");
+        g.fillStyle = grd;
+        g.fillRect(x1, RT(s[1]) - hw, x0 - x1, 2 * hw);
+        g.fillRect(x1, RB(s[1]) - hw, x0 - x1, 2 * hw);
+        for (sd = 0; sd < 2; sd++) g.fillRect(x1, RS(s[2], sd) - s[4] * L.PZ, x0 - x1, 2 * s[4] * L.PZ);
+      }
+      var tex = new V.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = V.ClampToEdgeWrapping;
+      tex.anisotropy = 4;
+      return tex;
+    }
+    return { ribbon: ribbon, blade: blade, lamp: lamp, hoop: hoop, layout: layout, projUV: projUV,
+             sheet: sheet, geo: geo, quad: quad };
+  }
+
+  /* ============================================================ details ==
+     (the redo) What the photographs show that the shells alone did not:
+     "E-2 Hawkeye Pax River Museum-1.jpg" (head-on, close): the round nose
+     cap with its seam and the two lamps in it, the dark windscreen frame,
+     the engine intake as a deep oval UNDER the spinner and a smaller oil-
+     cooler mouth under that (both red-plugged in the photograph), the long
+     white nose-gear doors beside a TWIN-wheel nose leg with its catapult
+     launch bar, the main-gear doors hanging beside each single main wheel;
+     "A right side view of ... VAW-121 E-2C ..." (DPLA, in flight): the
+     panel breaks of the body, the flap and aileron hinge lines, the
+     rudders on all four fins. Laid on the skin as seam ribbons (one dark
+     material), the lamps in one vertex-coloured material. The blade
+     aerials on the spine and belly are placed from the side photograph at
+     its small size: their exact stations are NOT CONFIRMED. */
+  var DX_ = null;
+  function foilTh(sec, u) {
+    return sec.t * sec.c * (1.4845 * Math.sqrt(u) - 0.63 * u - 1.758 * u * u + 1.4215 * u * u * u - 0.518 * u * u * u * u);
+  }
+  /* a point on the upper (sg 1) or lower (sg -1) skin of a wing-frame foil */
+  function wPt(sec, u, sg) { return [X(sec.s + u * sec.c), sec.a, Z(sec.o + sg * foilTh(sec, u))]; }
+  function fPt(sec, u, sg) { return [X(sec.s + u * sec.c), sec.o + sg * foilTh(sec, u), Z(sec.a)]; }
+  function wingLine(secOf, y0, y1, u0, u1, sg, n) {
+    var pts = [], i;
+    for (i = 0; i <= n; i++) {
+      var y = y0 + (y1 - y0) * i / n;
+      pts.push(wPt(secOf(y), u0 + (u1 - u0) * i / n, sg));
+    }
+    return DX_.ribbon(pts, [0, 0, sg], 0.04, 0.012);
+  }
+  function chordLine(secOf, y, u0, u1, sg) {
+    var pts = [], i;
+    for (i = 0; i <= 6; i++) pts.push(wPt(secOf(y), u0 + (u1 - u0) * i / 6, sg));
+    return DX_.ribbon(pts, [0, 0, sg], 0.04, 0.012);
+  }
+  function fusHoop(s, a0, a1, w) {
+    var r = tab(FUS, s), hm = (r[1] + r[2]) / 2;
+    return DX_.hoop(function (a) { return fusPt(s, a, 0); }, a0, a1, 24,
+                    function () { return [0, 0, Z(hm)]; }, w || 0.04, 0.012);
+  }
+  function fusRun(s0, s1, a, n) {
+    var pts = [], nr = [], i;
+    for (i = 0; i <= n; i++) {
+      var s = s0 + (s1 - s0) * i / n, r = tab(FUS, s), p = fusPt(s, a, 0);
+      pts.push(p); nr.push([0, p[1], p[2] - Z((r[1] + r[2]) / 2)]);
+    }
+    return DX_.ribbon(pts, nr, 0.04, 0.012);
+  }
+  function addDetails(G) {
+    var sd, i, s;
+    /* body panel breaks: frames over the top and sides, the side seams */
+    var FR = [3.30, 4.45, 5.75, 7.00, 8.85, 11.30, 13.20, 15.10];
+    for (i = 0; i < FR.length; i++) put("seam", fusHoop(FR[i], -118, 118));
+    put("seam", fusHoop(0.78, 0, 360, 0.035));               /* the nose cap's joint */
+    for (sd = -1; sd <= 1; sd += 2) {
+      put("seam", fusRun(3.3, 16.6, sd * 96, 18));
+      put("seam", fusRun(3.3, 15.2, sd * 38, 16));
+    }
+    /* the windscreen and side-window frames: dark ribbons on the glass edges */
+    var wc = [-56, -19, 19, 56], frm = [];
+    for (i = 0; i < wc.length; i++) frm.push([[1.46, wc[i]], [2.02, wc[i]]]);
+    frm.push([[1.46, -56], [1.46, 56]], [[2.02, -76], [2.02, 76]]);
+    for (sd = -1; sd <= 1; sd += 2) {
+      frm.push([[2.08, sd * 50], [3.14, sd * 50]], [[2.08, sd * 76], [3.14, sd * 76]],
+               [[2.56, sd * 50], [2.56, sd * 76]], [[2.66, sd * 50], [2.66, sd * 76]], [[3.14, sd * 50], [3.14, sd * 76]]);
+    }
+    for (i = 0; i < frm.length; i++) {
+      var pts = [], nr = [], k;
+      for (k = 0; k <= 8; k++) {
+        var t = k / 8, ss = frm[i][0][0] + (frm[i][1][0] - frm[i][0][0]) * t,
+            aa = frm[i][0][1] + (frm[i][1][1] - frm[i][0][1]) * t, rr = tab(FUS, ss);
+        var p = fusPt(ss, aa, 0.045); pts.push(p); nr.push([0, p[1], p[2] - Z((rr[1] + rr[2]) / 2)]);
+      }
+      put("dark", DX_.ribbon(pts, nr, 0.06, 0));
+    }
+    /* the two lamps in the nose cap */
+    put("lamp", DX_.lamp([X(0.10), 0.13, Z(1.40)], 0.07, 0xf4f1e0));
+    put("lamp", DX_.lamp([X(0.10), -0.13, Z(1.40)], 0.07, 0xf4f1e0));
+    /* pitot heads either side of the nose */
+    for (sd = -1; sd <= 1; sd += 2) {
+      var pp = fusPt(1.05, sd * 100, 0);
+      put("metal", rod(pp, [pp[0] + 0.30, pp[1] + sd * 0.12, pp[2]], 0.015, 6));
+    }
+    /* wings: the flap and aileron hinge lines (74 per cent chord), the fold
+       joint outboard of each nacelle, the front spar's rivet line */
+    for (sd = -1; sd <= 1; sd += 2) {
+      put("seam", wingLine(wingSec, sd * 1.05, sd * 8.2, 0.74, 0.74, 1, 10));
+      put("seam", wingLine(wingSec, sd * 8.2, sd * 11.3, 0.72, 0.72, 1, 4));
+      put("seam", chordLine(wingSec, sd * 8.2, 0.72, 1.0, 1));
+      put("seam", chordLine(wingSec, sd * 4.55, 0.0, 1.0, 1));
+      put("seam", chordLine(wingSec, sd * 4.55, 0.0, 1.0, -1));
+      put("seam", wingLine(wingSec, sd * 1.05, sd * 11.3, 0.16, 0.16, 1, 10));
+      put("seam", wingLine(wingSec, sd * 1.05, sd * 11.3, 0.74, 0.74, -1, 10));
+      /* the tailplane's elevator line */
+      put("seam", wingLine(tpSec, sd * 0.4, sd * 3.9, 0.68, 0.68, 1, 6));
+      /* the nav lamps: red to port, green to starboard */
+      var ws = wingSec(sd * 12.28);
+      put("lamp", DX_.lamp([X(ws.s + 0.35), sd * 12.20, Z(ws.o)], 0.07, sd > 0 ? 0xe02218 : 0x18c04a));
+    }
+    /* rudder hinge lines up all four fins, both faces */
+    var fins = [[4.0, 1.75, 4.5, 16.35, 15.75], [1.4, 2.0, 4.85, 16.35, 15.95]];
+    for (i = 0; i < 2; i++) {
+      for (sd = -1; sd <= 1; sd += 2) {
+        for (var face = -1; face <= 1; face += 2) {
+          var yc = sd * fins[i][0], ptsF = [], z0 = fins[i][1], z1 = fins[i][2];
+          for (k = 0; k <= 5; k++) {
+            var h = z0 + (z1 - z0) * k / 5;
+            ptsF.push([X(16.95 - 0.05 * k / 5), yc + face * 0.07, Z(h)]);
+          }
+          put("seam", DX_.ribbon(ptsF, [0, face, 0], 0.03, 0.01));
+        }
+      }
+    }
+    /* the tail lamp */
+    put("lamp", DX_.lamp([X(17.30), 0, Z(3.14)], 0.06, 0xf4f1e0));
+    /* anti-collision beacons, spine and belly */
+    put("lamp", DX_.lamp(fusPt(4.2, 0, 0.03), 0.09, 0xe02218));
+    put("lamp", DX_.lamp(fusPt(6.4, 180, 0.03), 0.09, 0xe02218));
+    /* blade aerials: spine and belly (NOT CONFIRMED stations) */
+    var AE = [[3.7, 0, 0.42], [13.6, 0, 0.38], [4.9, 180, 0.30], [11.9, 180, 0.36], [12.9, 180, 0.30]];
+    for (i = 0; i < AE.length; i++) {
+      var ap = fusPt(AE[i][0], AE[i][1], 0), up = AE[i][1] ? [0, 0, -1] : [0, 0, 1];
+      put("dark", DX_.blade(ap, up, [1, 0, 0], AE[i][2], 0.34, 0.14, 0.03, 0.14));
+    }
+    /* dome: the joint round the rim, the inner ring on top */
+    put("seam", DX_.hoop(function (b) { return [X(DX) + 3.645 * Math.cos(b), 3.645 * Math.sin(b), Z(DC + 0.02)]; },
+                         0, 2 * Math.PI, 72, function () { return [X(DX), 0, Z(DC)]; }, 0.05, 0.01));
+    put("seam", DX_.hoop(function (b) { return [X(DX) + 1.30 * Math.cos(b), 1.30 * Math.sin(b), Z(domeTop(1.30))]; },
+                         0, 2 * Math.PI, 40, function () { return [X(DX), 0, Z(DC - 6)]; }, 0.035, 0.012));
+    /* nacelles: the engine intake under the spinner and the oil-cooler
+       mouth under it (dark, inside a lip), the cowl's panel joints */
+    for (sd = -1; sd <= 1; sd += 2) {
+      var yc2 = sd * NY;
+      intake(yc2, 5.50, NH - 0.53, 0.26, 0.13);
+      intake(yc2, 5.85, NH - 0.86, 0.17, 0.09);
+      for (i = 0; i < 3; i++) {
+        s = [6.3, 7.4, 8.5][i];
+        var row = tab(NAC, s);
+        put("seam", DX_.hoop((function (rw, ss) {
+          return function (a) {
+            var sa = Math.sin(a), ca = Math.cos(a);
+            return [X(ss), yc2 + rw[0] * sgp(sa, NEXP), Z(NH + (ca >= 0 ? rw[1] : rw[2]) * sgp(ca, NEXP))];
+          };
+        })(row, s), -2.2, 2.2, 20, function () { return [0, yc2, Z(NH)]; }, 0.03, 0.012));
+      }
+      /* the main-gear doors, hanging beside the wheel (gear group) */
+      for (var q = -1; q <= 1; q += 2) {
+        G.bot.push(boxG(1.10, 0.03, 0.62, X(8.65), yc2 + q * 0.33, Z(0.98)));
+      }
+      /* the nose-gear doors, long and white */
+      G.bot.push(boxG(0.95, 0.03, 0.42, X(2.35), sd * 0.24, Z(0.62)));
+    }
+  }
+  /* an intake: a dark oval mouth set in a lip, facing forward */
+  function intake(yc, s, h, hw, hh) {
+    var o = [], n = 20, i, lip = [], in2 = [];
+    for (i = 0; i < n; i++) {
+      var a = i * 2 * Math.PI / n;
+      o.push([X(s), yc + hw * Math.cos(a), Z(h) + hh * Math.sin(a)]);
+      lip.push([X(s) - 0.02, yc + (hw - 0.04) * Math.cos(a), Z(h) + (hh - 0.035) * Math.sin(a)]);
+      in2.push([X(s + 0.30), yc + (hw - 0.05) * Math.cos(a), Z(h) + (hh - 0.04) * Math.sin(a)]);
+    }
+    var sh = new Shell();
+    sh.loft([o, lip], function () { return true; }, false, false);
+    sh.emit({ 0: "bot", 1: "bot", 2: "bot" });
+    var sh2 = new Shell();
+    sh2.loft([lip, in2], function () { return true; }, false, true);
+    sh2.emit({ 0: "dark", 1: "dark", 2: "dark" });
+    /* the cowl ahead of it fairs back over the mouth */
+    var sh3 = new Shell(), back = [];
+    for (i = 0; i < n; i++) back.push([X(s + 0.45), o[i][1] * 0.98 + yc * 0.02, Z(h) + (o[i][2] - Z(h)) * 0.6]);
+    sh3.loft([o, back], function () { return true; }, false, false);
+    sh3.emit({ 0: "bot", 1: "bot", 2: "bot" });
+  }
+
+  /* the paint sheet: one grey-scale sheet for every row (the coats stay the
+     materials' colours): the body frames and side seams, the wing's spars,
+     ribs and hinge lines above and below, the walkways on the wing roots
+     either side of the body, the nacelle cowl joints, weathering. Made once. */
+  var LAY = null, _sheet = null;
+  function paintSheet() {
+    if (_sheet !== null) return _sheet;
+    try {
+      var top = [], bot = [], riv = [], side = [], i, y, ws;
+      function wl(u, y0, y1) {
+        var out = [], k;
+        for (k = 0; k <= 6; k++) { var yy = y0 + (y1 - y0) * k / 6, w = wingSec(yy); out.push([X(w.s + u * w.c), yy]); }
+        return out;
+      }
+      top.push(wl(0.16, 1.05, 12.2), wl(0.74, 1.05, 12.2), wl(0.45, 1.05, 12.2));
+      bot.push(wl(0.16, 1.05, 12.2), wl(0.74, 1.05, 12.2));
+      riv.push(wl(0.30, 1.05, 12.2), wl(0.60, 1.05, 12.2));
+      for (y = 1.6; y < 12.2; y += 1.05) {
+        ws = wingSec(y);
+        top.push([[X(ws.s), y], [X(ws.s + ws.c), y]]);
+        bot.push([[X(ws.s), y], [X(ws.s + ws.c), y]]);
+      }
+      for (i = 0; i < 4; i++) {                      /* the tailplane */
+        var tp = tpSec(i);
+        top.push([[X(tp.s), i], [X(tp.s + tp.c), i]]);
+      }
+      top.push([[X(5.8), NY - 0.4], [X(10.2), NY - 0.4]], [[X(5.8), NY + 0.4], [X(10.2), NY + 0.4]]);
+      side.push([[X(1.2), Z(2.35)], [X(16.8), Z(2.35)]], [[X(3.3), Z(1.4)], [X(16.0), Z(1.4)]],
+                [[X(5.7), Z(NH + 0.5)], [X(10.2), Z(NH + 0.5)]], [[X(5.7), Z(NH - 0.5)], [X(9.6), Z(NH - 0.6)]]);
+      var fr = [], FR = [0.78, 1.20, 3.30, 4.45, 5.75, 7.00, 8.85, 10.0, 11.30, 13.20, 15.10, 16.4];
+      for (i = 0; i < FR.length; i++) fr.push([X(FR[i]), tab(FUS, FR[i])[0]]);
+      _sheet = DX_.sheet(LAY, {
+        frames: fr, top: top, bot: bot, rivets: riv, side: side, seam: 0.6, grime: 170,
+        walk: [[[X(7.0), 1.1], [X(7.0), 2.4], [X(9.6), 2.4], [X(9.6), 1.1]]]
+      }, 2211);
+    } catch (e) { _sheet = false; }
+    return _sheet;
   }
 
   /* ========================================================= build / mats == */
@@ -553,7 +990,7 @@ var HeroE2 = (function () {
     roc:   { top: 0x929ca2, bot: 0xb4bcc0, dome: 0xd9dddf }    /* ROCAF grey            */
   };
 
-  function makeMats(C, paint) {
+  function makeMats(C, paint, tex) {
     var p = PAINT[paint] || PAINT.grey, m = {};
     function skin(c) {
       return new V.MeshStandardMaterial({ color: c, roughness: 0.78, metalness: 0.08, side: V.DoubleSide });
@@ -564,7 +1001,13 @@ var HeroE2 = (function () {
                                           emissive: new V.Color(tc), emissiveIntensity: 0.10,
                                           side: V.DoubleSide });
     m.metal = new V.MeshStandardMaterial({ color: 0x5d6468, roughness: 0.48, metalness: 0.60 });
-    m.dark = new V.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.82, metalness: 0.12 });
+    m.dark = new V.MeshStandardMaterial({ color: 0x1a1c1e, roughness: 0.82, metalness: 0.12, side: V.DoubleSide });
+    /* panel seams and hinge lines: the top coat darkened; the lamps */
+    var sc = new V.Color(p.top).multiplyScalar(0.45);
+    m.seam = new V.MeshStandardMaterial({ color: sc, roughness: 0.85, metalness: 0.05, side: V.DoubleSide });
+    m.lamp = new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.0,
+                                          emissive: 0x333333, emissiveIntensity: 0.6 });
+    if (tex) { m.top.map = tex; m.bot.map = tex; m.dome.map = tex; }
     m.glass = new V.MeshStandardMaterial({ color: 0x2b3a46, roughness: 0.12, metalness: 0.50,
                                            transparent: true, opacity: 0.82, side: V.DoubleSide });
     m.propDisc = new V.MeshStandardMaterial({ color: 0x202427, roughness: 1.0, metalness: 0.0,
@@ -593,7 +1036,9 @@ var HeroE2 = (function () {
     for (var i = 0; i < order.length; i++) {
       var key = order[i];
       if (!lists[key] || !lists[key].length) continue;
-      parent.add(new V.Mesh(merge(lists[key]), mats[key]));
+      var geo = merge(lists[key]);
+      if (mats[key].map && LAY) DX_.projUV(geo, LAY);
+      parent.add(new V.Mesh(geo, mats[key]));
     }
   }
 
@@ -602,6 +1047,7 @@ var HeroE2 = (function () {
     V = THREE;
     _m4 = new V.Matrix4(); _q = new V.Quaternion(); _v = new V.Vector3(); _u = new V.Vector3();
     K = {};
+    DX_ = DK(V);
     addFuselage();
     addWing();
     addTail();
@@ -620,15 +1066,17 @@ var HeroE2 = (function () {
       put("metal", rod([X(1.85), -0.50, Z(2.66)], [X(0.35), -0.62, Z(2.84)], 0.03, 8));
       put("metal", boxG(0.40, 0.12, 0.12, X(1.75), -0.50, Z(2.64)));
     }
-    var G = { metal: [], dark: [] };
+    var G = { metal: [], dark: [], bot: [] };
     addGear(G);
+    addDetails(G);
 
-    var mats = makeMats(C, spec.paint);
+    LAY = DX_.layout(-XN, XN, 12.3, ZG, Z(5.6));
+    var mats = makeMats(C, spec.paint, paintSheet());
     var root = new V.Group();
-    emit(root, K, mats, ["top", "bot", "dome", "team", "dark", "metal", "glass", "propDisc", "propBlade"]);
+    emit(root, K, mats, ["top", "bot", "dome", "team", "seam", "dark", "metal", "lamp", "glass", "propDisc", "propBlade"]);
     var gear = new V.Group();
     gear.name = "gear";
-    emit(gear, G, mats, ["metal", "dark"]);
+    emit(gear, G, mats, ["metal", "dark", "bot"]);
     root.add(gear);
     return root;
   }

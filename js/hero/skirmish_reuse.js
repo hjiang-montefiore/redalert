@@ -71,6 +71,16 @@
    Leclerc), cfighter_f / fra_e00_cfighter (Rafale M; the hero is the Rafale C), mlrs_b (M270A2; the hero
    is the M270B1), hvy_b (Challenger 3; no hero).
 
+   Rows that still drew a GENERIC model (found by the model evaluation; each names the same vehicle as
+   a hero row, checked by full name in js/eras.js and the spec designation):
+   boat_c            pla_e00_missileboat   Type 022 Houbei
+   boat_r            roc_e00_missileboat   Kuang Hua VI
+   gbr_e80_spg       nato_e80_spg          M109A2 (British service; plain paint)
+   gbr_e60_mlrs      nato_e50_mlrs         MGR-1 Honest John
+   nato_e50_gunship  fra_e50_gunship       Alouette II with AS.11 (the spec's designation)
+   nato_e00_spaag    nato_e90_spaag        M1097 Avenger (the spec's designation)
+   nato_e60_mlrs     deu_e60_mlrs          110mm LARS (the spec's designation)
+
    Load order: LAST among the hero files, after every file that registers an era row named above.
    A missing era row leaves its skirmish row on its old model.  ASCII only. */
 
@@ -90,7 +100,10 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     destroyer_r: "roc_e00_destroyer", lt_r: "roc_e90_lighttank", mbt_r: "roc_e90_mbt",
     mlrs_r: "roc_e00_mlrs", recon_r: "roc_e00_recon", sub_r: "roc_e00_sub",
     spg_r: "nato_e90_spg", radarv_r: "nato_e80_radarv",
-    mbt_b: "gbr_e90_heavy", ifv_b: "gbr_e00_ifv", recon_b: "gbr_e00_recon", spaag_b: "gbr_e00_spaag", helo_b: "helo_r", airlift_b: "fra_e00_airlift", ifv_g: "deu_e00_ifv", bomber_g: "deu_e90_cas", trans_g: "fra_e00_transport", airlift_g: "fra_e00_airlift", radarv_g: "fra_e00_radarv", ifv_f: "fra_e00_ifv", spaag_f: "fra_e00_spaag", spg_f: "fra_e00_spg", mlrs_f: "fra_e00_mlrs", sam_f: "fra_e00_sam", radarv_f: "fra_e00_radarv", trans_f: "fra_e00_transport", fighter_f: "fra_e00_fighter", bomber_f: "fra_e90_cas", airlift_f: "fra_e00_airlift"
+    mbt_b: "gbr_e90_heavy", ifv_b: "gbr_e00_ifv", recon_b: "gbr_e00_recon", spaag_b: "gbr_e00_spaag", helo_b: "helo_r", airlift_b: "fra_e00_airlift", ifv_g: "deu_e00_ifv", bomber_g: "deu_e90_cas", trans_g: "fra_e00_transport", airlift_g: "fra_e00_airlift", radarv_g: "fra_e00_radarv", ifv_f: "fra_e00_ifv", spaag_f: "fra_e00_spaag", spg_f: "fra_e00_spg", mlrs_f: "fra_e00_mlrs", sam_f: "fra_e00_sam", radarv_f: "fra_e00_radarv", trans_f: "fra_e00_transport", fighter_f: "fra_e00_fighter", bomber_f: "fra_e90_cas", airlift_f: "fra_e00_airlift",
+    boat_c: "pla_e00_missileboat", boat_r: "roc_e00_missileboat", gbr_e80_spg: "nato_e80_spg",
+    gbr_e60_mlrs: "nato_e50_mlrs", nato_e50_gunship: "fra_e50_gunship", nato_e00_spaag: "nato_e90_spaag",
+    nato_e60_mlrs: "deu_e60_mlrs"
   };
   Object.keys(MAP).forEach(function (dst) {
     var src = UNIT_MODELS[MAP[dst]];
