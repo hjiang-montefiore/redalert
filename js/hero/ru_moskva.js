@@ -70,8 +70,29 @@
         staggered port and starboard. Their green flight deck and red-brown
         forecastle are LATER paint and are not drawn on this 1960s-70s row.
 
+   REWORK (2026-11, the owner: "a blank hull with the superstructure stuck
+   on"): D1 measured again at 1042 px (stern px 32 to stem head px 1015 =
+   189 m, 5.2 px/m, waterline row 306):
+     - the STEM: it leaves the water at x 78.3 and rakes 16.2 m forward to
+       the stem head at 11.2 m (the old file drew 5.2 m of rake, from x
+       89.3) - xStem();
+     - the STERN GALLERY: open from the transom to x -72 (D1 px 155; the
+       old file stopped it at -82.5), floor 3.2 m (D1 row 290; was 4.6),
+       its sides open between posts with diagonal braces, a rail along the
+       open sides, a boat stowed on its starboard side (P2);
+     - the BOAT POCKETS: D1 shows two white boats in a recess in each side
+       under the superstructure, x -8.7 to +9.0 at about 3.3 m: drawn as a
+       dark recess with two boats in it, each side;
+     - the hull fitted out: anchors in the hawse (P1), a rubbing strake
+       under the deck edge the whole length (P1, P2), fairleads and
+       bollards along the forecastle edge, ventilators and hatches on the
+       forecastle (P1).
+   NOT CONFIRMED in the rework: the boat pockets' depth and the boats' type
+   (D1 shows only their outline), the second side's pocket (assumed
+   symmetric), the places of the vents and fairleads (P1, approximate).
+
    RECOGNITION LIST (where each shows):
-     1. the teardrop deck plan: narrow raked bow flaring to a broad flat
+     1. the teardrop deck plan: narrow raked bow (16 m of rake) flaring to a broad flat
         flight deck over the after half, rounded stern (P1, P2) - HW/HD
         tables, flightDeck;
      2. the massive pyramidal superstructure amidships with a vertical after
@@ -122,7 +143,7 @@ var HeroMoskva = (function () {
   var XFD1 = -12.0;          /* flight deck forward edge = superstructure   */
   var FD = 9.75;             /* flight deck top                             */
   var FDU = 9.0;             /* flight deck underside                       */
-  var GAL = 4.6;             /* stern gallery floor                         */
+  var GAL = 3.2;             /* stern gallery floor (D1, re-measured)       */
   var HZ0 = -0.45, HZ1 = 11.4;
 
   var PAINT = { hull: "#787b7d", sup: "#8b8f93", deck: "#a6a398", fc: "#8f8e88",
@@ -153,8 +174,8 @@ var HeroMoskva = (function () {
   function zRef(xn) { return xn < XFD1 ? FDU : deckZ(xn); }
   /* the stem: raked above water, a rounded forefoot below */
   function xStem(z) {
-    if (z >= 0) return 89.3 + 5.2 * Math.min(1, z / 11.2);
-    return 89.3 - 9.3 * Math.pow(Math.min(1, -z / 7.7), 1.5);
+    if (z >= 0) return 78.3 + 16.2 * Math.pow(Math.min(1, z / 11.2), 0.92);
+    return 78.3 - 7.0 * Math.pow(Math.min(1, -z / 7.7), 1.5);
   }
   function xAt(xn, z) { var u = (xn - XS) / (XB - XS); return XS + u * (xStem(z) - XS); }
   function sideY(xn, z) {
@@ -592,9 +613,9 @@ var HeroMoskva = (function () {
     var s, i, x;
 
     /* ---------------- hull: the stern below the gallery, then the main body */
-    var aftXs = [-93, -91.5, -89.5, -87, -84.5, -82.5];
+    var aftXs = [-93, -91.5, -89.5, -87, -84.5, -82, -79, -76, -73.5, -72];
     hullPiece(THREE, g, T, aftXs, function () { return GAL; }, true);
-    var mainXs = [-82.5, -80, -76, -70, -62, -54, -46, -38, -30, -24, -18, -12.2, -11.8, -6, 0, 6, 14, 22,
+    var mainXs = [-72, -70, -66, -62, -54, -46, -38, -30, -24, -18, -12.2, -11.8, -6, 0, 6, 14, 22,
                   30, 38, 46, 54, 61, 67, 72, 76, 80, 83.5, 86.5, 89, 91, 92.6, 93.7, 94.5];
     hullPiece(THREE, g, T, mainXs, zRef, true);
     g.add(ribbon(THREE, T.deck, aftXs, function () { return GAL + 0.02; }, 0.02, 3));
@@ -611,7 +632,7 @@ var HeroMoskva = (function () {
       var yy = i * 2.3, xp = -92.6 + Math.abs(i) * 0.15;
       strut(THREE, g, T.metal, xp, yy, GAL, xp, yy, FDU, 0.2, 6);
     }
-    for (s = -1; s <= 1; s += 2) [-89.5, -86.0].forEach(function (xq) {
+    for (s = -1; s <= 1; s += 2) [-89.5, -86.0, -82.0, -78.0, -74.5].forEach(function (xq) {
       strut(THREE, g, T.metal, xq, s * (sideY(xq, GAL) - 0.3), GAL, xq, s * (sideY(xq, GAL) - 0.3), FDU, 0.2, 6);
     });
     box(THREE, g, 4.2, 3.6, 2.4, T.sup, -88.0, 0, GAL + 1.2);
@@ -619,7 +640,21 @@ var HeroMoskva = (function () {
     box(THREE, g, 0.3, 5.0, 3.0, T.metal, -91.6, 0, GAL + 2.6);
     for (s = -1; s <= 1; s += 2) strut(THREE, g, T.metal, -91.6, s * 2.4, GAL, -91.6, s * 2.4, GAL + 4.0, 0.12, 6);
     /* the dark gallery back wall under the deck */
-    box(THREE, g, 0.2, 18.0, FDU - GAL - 0.1, T.dark, -82.6, 0, (GAL + FDU) / 2);
+    box(THREE, g, 0.2, 2 * sideY(-72.0, 6.0) - 0.6, FDU - GAL - 0.1, T.dark, -71.85, 0, (GAL + FDU) / 2);
+    /* a boat stowed on the gallery's starboard side, the diagonal braces of
+       the posts (P2) */
+    tprism(THREE, g, 7.0, 1.8, 7.8, 2.3, 1.1, T.white, -84.0, -(sideY(-84, GAL) - 2.4), GAL + 0.75);
+    box(THREE, g, 2.6, 1.6, 0.7, T.sup, -84.8, -(sideY(-84, GAL) - 2.4), GAL + 1.6);
+    for (s = -1; s <= 1; s += 2) [-89.5, -82.0, -74.5].forEach(function (xq) {
+      var yq = s * (sideY(xq, GAL) - 0.3);
+      strut(THREE, g, T.metal, xq, yq, GAL + 3.4, xq + 3.2, yq, FDU - 0.2, 0.09, 4);
+    });
+    /* a rail along the gallery's open sides (P2) */
+    for (s = -1; s <= 1; s += 2) {
+      var gp = [];
+      for (x = -91.5; x <= -72.5; x += 1.9) gp.push([xAt(x, GAL), s * (sideY(x, GAL) - 0.25), GAL + 0.02]);
+      rail(THREE, g, T, gp, 1.0);
+    }
 
     /* ---------------- superstructure (D1 rows, P1, P2) */
     /* T1 base block, two decks: after face x = -12.0 */
@@ -804,6 +839,56 @@ var HeroMoskva = (function () {
       strut(THREE, g, T.metal, 26.2, s * 8.0, 9.7, 26.2, s * 10.2, 13.6, 0.08, 4);
       strut(THREE, g, T.metal, 33.8, s * 8.0, 9.7, 33.8, s * 10.2, 13.6, 0.08, 4);
     }
+
+    /* ---------------- hull fittings */
+    /* the boat pockets in the sides under the superstructure (D1: x -8.7 to
+       +9.0, about 3 m up): a dark recess with the two boats in it */
+    for (s = -1; s <= 1; s += 2) {
+      var bp0 = -8.4, bp1 = 8.8, bz0 = 1.9, bz1 = 5.4, nb = 6, prvb = null;
+      for (i = 0; i <= nb; i++) {
+        var bx = bp0 + (bp1 - bp0) * i / nb, by = sideY(bx, (bz0 + bz1) / 2) + 0.06;
+        if (prvb) {
+          var pm = new THREE.Mesh(new THREE.PlaneGeometry(bx - prvb[0], bz1 - bz0), T.dark);
+          pm.position.set((bx + prvb[0]) / 2, s * (by + prvb[1]) / 2, (bz0 + bz1) / 2);
+          pm.rotation.x = -s * PI / 2; g.add(pm);
+        }
+        prvb = [bx, by];
+      }
+      [-4.0, 4.4].forEach(function (bx2) {
+        var yb = s * (sideY(bx2, 3.4) - 0.2);
+        tprism(THREE, g, 7.6, 1.9, 8.6, 2.5, 1.2, T.white, bx2, yb, 2.6);
+        box(THREE, g, 3.0, 1.8, 0.8, T.sup, bx2 - 0.6, yb, 3.9);
+        box(THREE, g, 8.6, 0.12, 0.12, T.metal, bx2, yb + s * 0.2, 5.2);
+      });
+      /* anchors in their hawse high in the bow flare, the cable pipes */
+      var ax = 84.0, az = 8.0, aw = sideY(ax, az), xa = xAt(ax, az);
+      cylZ(THREE, g, 0.75, 0.75, 0.25, 12, T.dark, xa, s * (aw + 0.02), az).rotation.x = PI / 2;
+      box(THREE, g, 0.3, 0.3, 1.7, T.metal, xa, s * (aw + 0.25), az - 0.9);
+      box(THREE, g, 1.5, 0.35, 0.35, T.metal, xa, s * (aw + 0.25), az - 1.8);
+      for (i = -1; i <= 1; i += 2) strut(THREE, g, T.metal, xa + i * 0.7, s * (aw + 0.25), az - 1.8, xa + i * 0.45, s * (aw + 0.35), az - 1.0, 0.13, 4);
+      /* the rubbing strake along the deck edge (P1, P2) */
+      var rs = [];
+      for (x = -88.0; x <= 92.0; x += 4.0) {
+        var zr2 = x < XFD1 ? FDU - 0.7 : deckZ(x) - 0.45;
+        rs.push([xAt(x, zr2), s * (sideY(x, zr2) + 0.1), zr2]);
+      }
+      for (i = 1; i < rs.length; i++) strut(THREE, g, T.sup, rs[i - 1][0], rs[i - 1][1], rs[i - 1][2], rs[i][0], rs[i][1], rs[i][2], 0.16, 4);
+      /* fairleads and bollards along the forecastle edge (P1) */
+      [26.0, 46.0, 60.0, 74.0, 88.0].forEach(function (xq) {
+        var zq = deckZ(xq), yq = s * (sideY(xq, zq) - 1.1);
+        cylZ(THREE, g, 0.2, 0.2, 0.6, 6, T.metal, xq - 0.35, yq, zq + 0.3);
+        cylZ(THREE, g, 0.2, 0.2, 0.6, 6, T.metal, xq + 0.35, yq, zq + 0.3);
+        box(THREE, g, 1.4, 0.5, 0.1, T.metal, xq, yq, zq + 0.05);
+      });
+    }
+    /* ventilators and hatches on the forecastle (P1) */
+    [[40.5, 2.6], [40.5, -2.6], [47.0, 3.4], [47.0, -3.4], [58.0, 2.8], [58.0, -2.8], [68.5, 2.2], [68.5, -2.2]].forEach(function (q) {
+      cylZ(THREE, g, 0.35, 0.35, 1.0, 8, T.sup, q[0], q[1], deckZ(q[0]) + 0.5);
+      cylZ(THREE, g, 0.5, 0.35, 0.3, 8, T.sup, q[0], q[1], deckZ(q[0]) + 1.15);
+    });
+    [[44.0, 6.2], [44.0, -6.2], [56.0, 5.4], [56.0, -5.4], [77.0, 0.0]].forEach(function (q) {
+      box(THREE, g, 1.6, 1.4, 0.3, T.sup, q[0], q[1], deckZ(q[0]) + 0.15);
+    });
 
     /* ---------------- railings: waist and forecastle edges */
     for (s = -1; s <= 1; s += 2) {
