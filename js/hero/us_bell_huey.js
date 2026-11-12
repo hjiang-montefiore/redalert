@@ -61,6 +61,14 @@
    WHAT SETS THE SCALE: the faint rotor disc ahead of the mast and the tail
    rotor blade built straight aft; the two main blades sit at 45 degrees.    */
 
+/* DETAIL PASS (2026-11), the AH-1G: a painted skin sheet (seams, fastener rows, access panels, the
+   ammunition bay doors, exhaust soot along the boom, oil streaks, walkways, grime) in place of
+   the flat olive, and the fittings the drawing and photograph show: canopy bows and sills,
+   canopy hinges and kick-in steps, intake and oil-cooler grilles, wingtip position lamps (red /
+   green material), pod sway braces, skid shoes and the boarding step, boom hinges, the exhaust's
+   lip, the cowling and belly beacons, the white tail lamp, blade aerials, the FM whip, the tubular
+   tail skid, the gun's flash hider; on the head the pitch links, grip bolts and tip caps. Sizes NOT
+   measured. nato_e60_gunship 5900 -> 7792 tris, 12 -> 14 draw calls; extents unchanged. */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroBellHuey = (function () {
@@ -123,9 +131,11 @@ var HeroBellHuey = (function () {
     out.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
     return out;
   }
-  function mesh(parent, list, mat, name) {
+  function mesh(parent, list, mat, name, uvFn) {
     if (!list.length) return null;
-    var m = new V.Mesh(merge(list), mat);
+    var geo = merge(list);
+    if (uvFn) uvFn(geo);
+    var m = new V.Mesh(geo, mat);
     if (name) m.name = name;
     parent.add(m);
     return m;
@@ -299,6 +309,11 @@ var HeroBellHuey = (function () {
       for (i = 0; i < parts.length; i++) { parts[i][0].rotateZ(a); parts[i][1].push(parts[i][0]); }
       /* pitch horn and link */
       var ph = box(0.18, 0.05, 0.05, 0.42, LE + 0.12, -0.05); ph.rotateZ(a); hubD.push(ph);
+      /* detail pass: the pitch link down to the swashplate, the grip's
+         blade bolts and the bright tip cap */
+      [bar([0.42, LE + 0.14, -0.07], [0.40, LE + 0.16, -0.14], 0.014, 5, true),
+       cyl(0.026, 0.026, 0.12, 8, "z", 0.66, 0.05, 0), cyl(0.026, 0.026, 0.12, 8, "z", 0.76, -0.05, 0),
+       box(0.16, o.chord * 0.95, 0.04, R - 0.08, (LE + TE) / 2, 0).rotateY(-2 * D2R)].forEach(function (q) { q.rotateZ(a); hubM.push(q); });
       /* the stabiliser bar paddles, at 90 degrees to the blades */
       var b2 = a + PI / 2;
       var pad = prism([[o.bar / 2 - 0.55, -0.11], [o.bar / 2, -0.11], [o.bar / 2, 0.11], [o.bar / 2 - 0.55, 0.11]], -0.015, 0.015, inXY);
@@ -381,6 +396,109 @@ var HeroBellHuey = (function () {
     dark.push(disc(rad * 0.8, 12, [x - len / 2 - len * 0.10 - 0.004, y, z], [-1, 0, 0]));
   }
 
+  /* ------------------------------------------------- the painted skin ===
+     Added in the detail pass, for the AH-1G: one 1024 x 1024 sheet in four
+     256-pixel bands (0 top, 1 port side, 2 starboard side, 3 belly), each a
+     projection of the airframe in model metres picked per face by its
+     normal (the de_bo105.js scheme). The olive drab as before, now with the
+     panel seams at the drawing's stations, fastener rows, the canopy's and
+     the cowling's access panels, repainted panels, exhaust soot along the
+     boom, oil streaks off the transmission deck and grime down the flanks. */
+  var TW = 1024, BAND = 256, CU0 = -9.0, CU1 = 4.4, CQY = 1.7, CH0 = 0.0, CH1 = 3.2, CGR = -1.9;
+  var CSX = TW / (CU1 - CU0);
+  function cX(x) { return (x - CU0) * CSX; }
+  function cTop(y) { return (CQY - y) / (2 * CQY) * BAND; }
+  function cSide(h, b) { return b * BAND + (CH1 - h) / (CH1 - CH0) * BAND; }
+  function cBelly(y) { return 3 * BAND + (CQY - y) / (2 * CQY) * BAND; }
+  function rngFor(seed) {
+    var st = (seed >>> 0) || 1;
+    return function () { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
+  }
+  var _cobTex;
+  function cobraTexture() {
+    if (_cobTex !== undefined) return _cobTex;
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = TW; cv.height = TW;
+      var g = cv.getContext("2d"), R = rngFor(1967), i, b, x, y;
+      g.fillStyle = "#3d462c"; g.fillRect(0, 0, TW, TW);
+      for (i = 0; i < 130; i++) {
+        g.fillStyle = (i & 1) ? "#485134" : "#343b26";
+        g.globalAlpha = 0.22 + R() * 0.30;
+        g.fillRect(R() * TW, R() * TW, (0.3 + R() * 1.0) * CSX, 8 + R() * 24);
+      }
+      g.globalAlpha = 1;
+      g.fillStyle = "rgba(255,255,236,0.05)"; g.fillRect(0, 0, TW, BAND);
+      for (i = 0; i < 160; i++) {
+        g.fillStyle = "rgba(20,20,16," + (0.04 + R() * 0.07).toFixed(3) + ")";
+        g.fillRect(R() * TW, BAND + R() * 2 * BAND, 2 + R() * 4, 8 + R() * 30);
+      }
+      g.fillStyle = "rgba(0,0,0,0.12)"; g.fillRect(0, 3 * BAND, TW, BAND);
+      [3.66, 3.10, 2.06, 0.95, 0.30, -0.90, -1.50, -2.20, -2.60, -3.60, -4.60, -5.60, -6.60, -7.60].forEach(function (xf) {
+        x = cX(xf);
+        g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1.4;
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x, TW); g.stroke();
+        g.fillStyle = "rgba(0,0,0,0.22)";
+        for (y = 3; y < TW; y += 7) g.fillRect(x - 4, y, 1.4, 1.4);
+      });
+      for (b = 1; b <= 2; b++) {
+        g.fillStyle = "rgba(0,0,0,0.22)";
+        [0.75, 1.20, 1.85].forEach(function (h) { for (x = cX(-2.4); x < cX(3.6); x += 5) g.fillRect(x, cSide(h, b), 1.2, 1.2); });
+        [1.00, 1.30, 1.52].forEach(function (h) { for (x = cX(-7.6); x < cX(-2.6); x += 5) g.fillRect(x, cSide(h, b), 1.2, 1.2); });
+        g.strokeStyle = "rgba(0,0,0,0.38)"; g.lineWidth = 1.3;
+        [[0.70, -0.30, 1.95, 2.40], [-0.40, -1.30, 1.95, 2.45], [3.30, 2.70, 0.70, 1.20], [2.40, 1.60, 0.70, 1.15],
+         [-3.00, -3.50, 1.05, 1.45], [-5.00, -5.40, 1.10, 1.45], [-6.80, -7.10, 1.20, 1.50]].forEach(function (q) {
+          g.strokeRect(cX(q[1]), cSide(q[3], b), cX(q[0]) - cX(q[1]), cSide(q[2], b) - cSide(q[3], b));
+        });
+        /* the ammunition bay doors under the cockpits */
+        g.strokeStyle = "rgba(0,0,0,0.48)"; g.lineWidth = 1.8;
+        g.strokeRect(cX(1.10), cSide(1.25, b), cX(2.30) - cX(1.10), cSide(0.65, b) - cSide(1.25, b));
+        for (i = 0; i < 10; i++) {
+          g.fillStyle = "rgba(24,18,10," + (0.10 + R() * 0.12).toFixed(3) + ")";
+          g.fillRect(cX(-1.3 + R() * 1.8), cSide(2.25 - R() * 0.15, b), 1.5 + R() * 1.5, 10 + R() * 28);
+        }
+      }
+      /* exhaust soot along the top of the boom aft of the pipe */
+      var sg = g.createLinearGradient(cX(-1.6), 0, cX(-4.6), 0);
+      sg.addColorStop(0, "rgba(18,16,13,0.50)"); sg.addColorStop(1, "rgba(18,16,13,0)");
+      g.fillStyle = sg; g.fillRect(cX(-4.6), cTop(0.35), cX(-1.6) - cX(-4.6), cTop(-0.35) - cTop(0.35));
+      for (b = 1; b <= 2; b++) g.fillRect(cX(-4.6), cSide(1.66, b), cX(-1.6) - cX(-4.6), cSide(1.40, b) - cSide(1.66, b));
+      /* walkways on the wing roots and the deck either side of the mast */
+      g.fillStyle = "rgba(0,0,0,0.14)";
+      g.fillRect(cX(-0.55), cTop(1.0), cX(0.45) - cX(-0.55), cTop(0.45) - cTop(1.0));
+      g.fillRect(cX(-0.55), cTop(-0.45), cX(0.45) - cX(-0.55), cTop(-1.0) - cTop(-0.45));
+      var t = new V.CanvasTexture(cv);
+      t.wrapS = t.wrapT = V.ClampToEdgeWrapping;
+      t.anisotropy = 4;
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+      _cobTex = t;
+    } catch (e) { _cobTex = false; }
+    return _cobTex;
+  }
+  function cobraUV(geo) {
+    var p = geo.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+    for (t = 0; t < p.length; t += 9) {
+      var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+      var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+      nx /= nl; ny /= nl; nz /= nl;
+      var band = nz > 0.62 ? 0 : nz < -0.62 ? 3 : (ny >= 0 ? 1 : 2);
+      var endOn = Math.abs(nx) > Math.abs(ny) * 1.4;
+      for (k = 0; k < 3; k++) {
+        var x = p[t + 3 * k], y = p[t + 3 * k + 1], h = p[t + 3 * k + 2] - CGR;
+        var U, W, lo = band * BAND + 2, hi = (band + 1) * BAND - 2;
+        if (band === 0) { U = cX(x); W = cTop(y); }
+        else if (band === 3) { U = cX(x); W = cBelly(y); }
+        else { U = cX(endOn ? x + Math.abs(y) * 0.3 : x); W = cSide(h, band); }
+        U = Math.max(2, Math.min(TW - 2, U)); W = Math.max(lo, Math.min(hi, W));
+        uv[(t / 3 + k) * 2] = U / TW; uv[(t / 3 + k) * 2 + 1] = 1 - W / TW;
+      }
+    }
+    geo.setAttribute("uv", new V.BufferAttribute(uv, 2));
+    return geo;
+  }
+
   /* ====================================================== the AH-1G ===== */
   var COB = [   /* x, half width, z bottom, z top  (heights above the ground) */
     [4.30, 0.04, 1.12, 1.30], [4.10, 0.26, 0.85, 1.42], [3.66, 0.40, 0.62, 1.50], [3.10, 0.47, 0.58, 1.90],
@@ -452,10 +570,81 @@ var HeroBellHuey = (function () {
     dark.push(box(0.46, 0.14, 0.34, -8.5, 0.07, Z(2.95)));
     /* skids: 2.0 m track, 3.6 m long */
     skids(dark, { gr: GR, skid: 0.99, skidR: 0.05, belly: 0.58, cy1: 0.78, xt: [1.25, -0.75], sx1: 2.32, sx0: -1.27 });
-    /* the rear tail skid under the ventral fin? none drawn */
+    /* ================================================= DETAIL PASS ======
+       The fittings the first pass left out, placed off the AH-1G drawing and
+       the "AH-1G Cobra Vietnam" photograph: their sizes are read through the
+       drawing's scale and the photograph's perspective, NOT measured. */
+    var lampR = [], lampG = [];
+    function topZ(x) { var q = interp(S, x); return q ? q[3] : Z(1.6); }
+    function halfW(x) { var q = interp(S, x); return q ? q[1] : 0.3; }
+    /* the canopy's bows: the windscreen's frame, the bow between the two
+       cockpits and the one behind the gunner, the sills, the centre frame */
+    [3.70, 2.02, 0.97].forEach(function (xb) {
+      var w = halfW(xb) * 1.02, zt = topZ(xb) + 0.012, zs2 = (interp(S, xb)[2] + topZ(xb)) / 2 + 0.25;
+      metal.push(bar([xb, w * 0.95, zs2], [xb, w * 0.60, zt - 0.06], 0.022, 5, true));
+      metal.push(bar([xb, -w * 0.95, zs2], [xb, -w * 0.60, zt - 0.06], 0.022, 5, true));
+      metal.push(bar([xb, w * 0.60, zt - 0.06], [xb, -w * 0.60, zt - 0.06], 0.022, 5, true));
+    });
+    for (s = -1; s <= 1; s += 2) {
+      var sl = [];
+      [3.70, 3.10, 2.60, 2.02, 1.50, 0.97].forEach(function (xs) { var q = interp(S, xs); sl.push([xs, s * q[1] * 1.015, (q[2] + q[3]) / 2 + 0.25]); });
+      for (i = 0; i < sl.length - 1; i++) metal.push(bar(sl[i], sl[i + 1], 0.018, 4, true));
+      /* the canopy doors' hinges and handles, the kick-in steps below them */
+      [3.30, 1.60].forEach(function (xh) {
+        var q = interp(S, xh), zh = (q[2] + q[3]) / 2 + 0.22;
+        dark.push(box(0.12, 0.03, 0.03, xh, s * (q[1] + 0.02), zh));
+        [0.30, 0.55].forEach(function (hh) { dark.push(box(0.12, 0.02, 0.04, xh - 0.2, s * (halfW(xh - 0.2) + 0.006), Z(0.62 + hh))); });
+      });
+      /* the engine air intakes' grilles either side of the deck, the oil
+         cooler's grille behind them */
+      dark.push(box(0.50, 0.02, 0.22, 0.30, s * 0.56, Z(2.32)));
+      for (i = 0; i < 5; i++) metal.push(box(0.012, 0.02, 0.20, 0.10 + i * 0.10, s * 0.572, Z(2.32)));
+      dark.push(box(0.36, 0.02, 0.14, -1.10, s * 0.55, Z(2.20)));
+      /* position lamps on the stub wing tips: port red, starboard green */
+      (s > 0 ? lampR : lampG).push(sph(0.04, 8, 6, -0.05, s * 1.60, Z(1.30), 1.6, 0.6, 0.8));
+      /* the pylons' sway braces on the pods */
+      [[0.80, 0.20, 0.93], [1.43, 0.135, 1.10]].forEach(function (pd) {
+        [-0.30, 0.20].forEach(function (dx) {
+          metal.push(bar([-0.20 + dx, s * (pd[0] - 0.06), Z(pd[2]) + pd[1] + 0.10], [-0.20 + dx, s * (pd[0] - 0.14), Z(pd[2]) + pd[1] * 0.4], 0.012, 4, true));
+          metal.push(bar([-0.20 + dx, s * (pd[0] + 0.06), Z(pd[2]) + pd[1] + 0.10], [-0.20 + dx, s * (pd[0] + 0.14), Z(pd[2]) + pd[1] * 0.4], 0.012, 4, true));
+        });
+      });
+      /* the skids' wear shoes and the boarding step on the forward cross tube */
+      dark.push(box(2.6, 0.05, 0.016, 0.50, s * 0.99, 0.0085 + GR));
+      metal.push(box(0.24, 0.15, 0.02, 1.25, s * 0.86, Z(0.30)));
+      /* the boom's drive-shaft cover hinges */
+      [-3.0, -4.0, -5.0, -6.0].forEach(function (xh) {
+        var q = interp(S, xh);
+        dark.push(box(0.10, 0.02, 0.05, xh, s * (q[1] + 0.004), q[3] - 0.10));
+      });
+    }
+    /* the exhaust's bright lip */
+    metal.push(cyl(0.155, 0.155, 0.03, 12, "x", -1.60, 0, Z(2.28), true));
+    /* the anti-collision beacons on the cowling's top behind the mast and
+       under the belly, the white tail lamp on the fin's trailing edge */
+    dark.push(cyl(0.05, 0.055, 0.04, 10, "z", -0.95, 0, Z(2.57)));
+    lampR.push(sph(0.045, 10, 6, -0.95, 0, Z(2.60), 1, 1, 0.8));
+    dark.push(cyl(0.05, 0.055, 0.035, 10, "z", -0.40, 0, Z(0.58)));
+    lampR.push(sph(0.042, 10, 6, -0.40, 0, Z(0.56), 1, 1, 0.8));
+    metal.push(sph(0.03, 8, 5, -8.86, 0, Z(2.70), 1.3, 0.8, 1.0));
+    /* aerials: blades under the boom and on the deck, the FM homing whip
+       under the nose */
+    dark.push(box(0.30, 0.02, 0.22, -4.20, 0, Z(0.80), 0, 0.25, 0));
+    dark.push(box(0.26, 0.02, 0.20, -2.20, 0, Z(1.95), 0, -0.25, 0));
+    dark.push(bar([2.80, 0, Z(0.58)], [2.60, 0, Z(0.32)], 0.008, 4, true));
+    /* the tubular tail skid under the ventral fin */
+    metal.push(bar([-7.70, 0, Z(1.12)], [-8.30, 0, Z(0.74)], 0.03, 6, true));
+    metal.push(bar([-8.30, 0, Z(0.74)], [-8.55, 0, Z(0.80)], 0.03, 6, true));
+    /* the turret's ammunition chute fairing and the gun's flash hider */
+    dark.push(cyl(0.05, 0.05, 0.06, 8, "x", 4.43, 0.07, Z(0.64)));
+
+    var ctx = cobraTexture();
+    if (ctx) { T.skin.map = ctx; T.skin.color.setHex(0xffffff); }
     (function () {
-      mesh(g, skin, T.skin, "airframe"); mesh(g, glass, T.glass, "glass"); mesh(g, dark, T.dark, "fittings_dark");
+      mesh(g, skin, T.skin, "airframe", ctx ? cobraUV : null); mesh(g, glass, T.glass, "glass"); mesh(g, dark, T.dark, "fittings_dark");
       mesh(g, metal, T.metal, "fittings"); mesh(g, store, T.store, "stores"); mesh(g, team, T.team, "team");
+      mesh(g, lampR, new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 }), "lamp_red");
+      mesh(g, lampG, new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }), "lamp_green");
       rotors(g, T, { hubZ: Z(3.70), R: 6.705, chord: 0.69, bar: 2.40, barZ: 0.13,
                             trX: -8.40, trY: 0.20, trZ: Z(2.86), trR: 1.295, trC: 0.22 });
     })();

@@ -34,6 +34,15 @@
      gear       the four wheels (twin nose, two main), the lowest opaque
                 part; the rotor, boom and fin are all above them.
    Team colour: exactly C.team on the boom band and the roof patch. */
+/* DETAIL PASS (2026-11): the airframe now carries a painted skin sheet (seams at the drawing's
+   stations, fastener rows, repainted panels, the Cyclone's oil, exhaust soot, grime) in place of
+   the flat olive, and the fittings the photograph shows: windscreen frames and wipers, window
+   frames, kick-in steps and handholds, the cabin-door step, the door rail's rollers, hinges,
+   position lamps (red / green material), the boom beacon and the white tail lamp, boom hanger
+   covers, the landing lamp, the intake grille, the long-wire aerial, the radio-compass loop, the
+   gearbox grilles and lifting eyes, hub caps, oleo pistons and torque links; on the head the root
+   cuffs, bolts, dampers and tip caps. Sizes NOT measured. 4848 -> 7224 tris, 12 -> 14 draw
+   calls; extents and len unchanged. */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroH19 = (function () {
@@ -88,6 +97,10 @@ var HeroH19 = (function () {
   function makeMats(C) {
     var m = {};
     m.skin  = new V.MeshStandardMaterial({ color: 0x424a30, roughness: 0.86, metalness: 0.08 });
+    var tx = skinTexture();
+    if (tx) { m.skin.map = tx; m.skin.color.setHex(0xffffff); }
+    m.lampR = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     m.metal = new V.MeshStandardMaterial({ color: 0x6a7073, roughness: 0.48, metalness: 0.60 });
     m.dark  = new V.MeshStandardMaterial({ color: 0x1f2222, roughness: 0.74, metalness: 0.15 });
     m.glass = new V.MeshPhysicalMaterial({ color: 0x1b2a31, roughness: 0.08, metalness: 0.20,
@@ -98,6 +111,116 @@ var HeroH19 = (function () {
     m.disc  = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.40, metalness: 0.08,
                                            transparent: true, opacity: 0.05, depthWrite: false });
     return m;
+  }
+
+  /* ------------------------------------------------- the painted skin ===
+     Added in the detail pass: one 1024 x 1024 sheet in four 256-pixel
+     bands (0 top, 1 port side, 2 starboard side, 3 belly), each a
+     projection of the airframe in model metres, picked per face by its
+     normal (the de_bo105.js scheme). Olive drab as before, now with the
+     panel seams at the drawing's frame stations, fastener rows, the
+     repainted panels of a hard-used machine, the Cyclone's oil thrown back
+     along the nose and the belly, exhaust soot on the starboard side and
+     grime down the flanks. */
+  var TW = 1024, BAND = 256, UX0 = -10.2, UX1 = 3.4, QY = 1.0, QH0 = 0.0, QH1 = 4.1;
+  var SX = TW / (UX1 - UX0), SZ = BAND / (QH1 - QH0);
+  function pxX(x) { return (x - UX0) * SX; }
+  function pyTop(y) { return (QY - y) / (2 * QY) * BAND; }
+  function pySide(h, b) { return b * BAND + (QH1 - h) / (QH1 - QH0) * BAND; }
+  function pyBelly(y) { return 3 * BAND + (QY - y) / (2 * QY) * BAND; }
+  function rngFor(seed) {
+    var st = (seed >>> 0) || 1;
+    return function () { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
+  }
+  var _tex;
+  function skinTexture() {
+    if (_tex !== undefined) return _tex;
+    try {
+      var cv = document.createElement("canvas");
+      cv.width = TW; cv.height = TW;
+      var g = cv.getContext("2d"), R = rngFor(1955), i, b, x, y;
+      g.fillStyle = "#3f472e"; g.fillRect(0, 0, TW, TW);
+      for (i = 0; i < 130; i++) {
+        g.fillStyle = (i & 1) ? "#4a5236" : "#373e28";
+        g.globalAlpha = 0.22 + R() * 0.30;
+        g.fillRect(R() * TW, R() * TW, (0.3 + R() * 1.1) * SX, 10 + R() * 28);
+      }
+      g.globalAlpha = 1;
+      g.fillStyle = "rgba(255,255,236,0.05)"; g.fillRect(0, 0, TW, BAND);
+      for (i = 0; i < 160; i++) {
+        g.fillStyle = "rgba(20,20,16," + (0.04 + R() * 0.07).toFixed(3) + ")";
+        g.fillRect(R() * TW, BAND + R() * 2 * BAND, 2 + R() * 4, 8 + R() * 34);
+      }
+      g.fillStyle = "rgba(0,0,0,0.12)"; g.fillRect(0, 3 * BAND, TW, BAND);
+      /* frames at the drawing's stations, with fastener rows */
+      [2.45, 1.88, 1.28, 0.50, -0.40, -1.00, -1.70, -2.30, -3.20, -4.50, -5.50, -6.50, -7.50, -8.50].forEach(function (xf) {
+        x = pxX(xf);
+        g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1.4;
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x, TW); g.stroke();
+        g.fillStyle = "rgba(0,0,0,0.22)";
+        for (y = 3; y < TW; y += 7) g.fillRect(x - 4, y, 1.4, 1.4);
+      });
+      for (b = 1; b <= 2; b++) {
+        /* stringers along the cabin and the boom */
+        g.fillStyle = "rgba(0,0,0,0.22)";
+        [0.60, 1.20, 2.30, 2.95].forEach(function (h) { for (x = pxX(-2.3); x < pxX(2.4); x += 5) g.fillRect(x, pySide(h, b), 1.2, 1.2); });
+        [2.10, 2.45, 2.65].forEach(function (h) { for (x = pxX(-8.6); x < pxX(-3.2); x += 5) g.fillRect(x, pySide(h, b), 1.2, 1.2); });
+        g.strokeStyle = "rgba(0,0,0,0.36)"; g.lineWidth = 1.3;
+        [[-4.0, -4.5, 2.05, 2.50], [-6.0, -6.4, 2.20, 2.60], [-7.8, -8.2, 2.35, 2.62], [-2.0, -2.6, 0.70, 1.30], [2.40, 1.95, 0.60, 1.10]].forEach(function (q) {
+          g.strokeRect(pxX(q[1]), pySide(q[3], b), pxX(q[0]) - pxX(q[1]), pySide(q[2], b) - pySide(q[3], b));
+        });
+        /* oil off the clamshell doors, streaking aft along the lower nose */
+        for (i = 0; i < 16; i++) {
+          g.fillStyle = "rgba(24,18,10," + (0.10 + R() * 0.14).toFixed(3) + ")";
+          g.fillRect(pxX(2.6 - R() * 2.8), pySide(0.45 + R() * 0.6, b), (0.5 + R() * 1.0) * SX, 1.5 + R() * 2);
+        }
+        /* scuffing under the cabin door */
+        g.fillStyle = "rgba(120,112,92,0.16)"; g.fillRect(pxX(-0.80), pySide(0.50, b), pxX(1.00) - pxX(-0.80), 4);
+      }
+      /* exhaust soot aft of the stub under the starboard nose */
+      var sg = g.createLinearGradient(pxX(2.1), 0, pxX(-0.2), 0);
+      sg.addColorStop(0, "rgba(20,18,15,0.45)"); sg.addColorStop(1, "rgba(20,18,15,0)");
+      g.fillStyle = sg; g.fillRect(pxX(-0.2), pySide(0.95, 2), pxX(2.1) - pxX(-0.2), pySide(0.35, 2) - pySide(0.95, 2));
+      /* oil on the belly, the walkway on the roof round the gearbox */
+      for (i = 0; i < 24; i++) {
+        g.fillStyle = "rgba(24,18,10," + (0.10 + R() * 0.12).toFixed(3) + ")";
+        g.fillRect(pxX(2.6 - R() * 3.6), pyBelly(-0.6 + R() * 1.2), (0.6 + R() * 1.2) * SX, 2);
+      }
+      g.fillStyle = "rgba(0,0,0,0.12)";
+      g.fillRect(pxX(-1.0), pyTop(0.80), pxX(1.0) - pxX(-1.0), pyTop(0.50) - pyTop(0.80));
+      g.fillRect(pxX(-1.0), pyTop(-0.50), pxX(1.0) - pxX(-1.0), pyTop(-0.80) - pyTop(-0.50));
+      g.strokeStyle = "rgba(0,0,0,0.42)"; g.lineWidth = 1.6;
+      g.strokeRect(pxX(-1.10), pyTop(0.45), pxX(0.85) - pxX(-1.10), pyTop(-0.45) - pyTop(0.45));
+      var t = new V.CanvasTexture(cv);
+      t.wrapS = t.wrapT = V.ClampToEdgeWrapping;
+      t.anisotropy = 4;
+      if (V.sRGBEncoding !== undefined) t.encoding = V.sRGBEncoding;
+      _tex = t;
+    } catch (e) { _tex = false; }
+    return _tex;
+  }
+  function projUV(geo) {
+    var p = geo.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+    for (t = 0; t < p.length; t += 9) {
+      var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+      var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+      nx /= nl; ny /= nl; nz /= nl;
+      var band = nz > 0.62 ? 0 : nz < -0.62 ? 3 : (ny >= 0 ? 1 : 2);
+      var endOn = Math.abs(nx) > Math.abs(ny) * 1.4;
+      for (k = 0; k < 3; k++) {
+        var x = p[t + 3 * k], y = p[t + 3 * k + 1], h = p[t + 3 * k + 2] - GROUND;
+        var U, W, lo = band * BAND + 2, hi = (band + 1) * BAND - 2;
+        if (band === 0) { U = pxX(x); W = pyTop(y); }
+        else if (band === 3) { U = pxX(x); W = pyBelly(y); }
+        else { U = pxX(endOn ? x + Math.abs(y) * 0.3 : x); W = pySide(h, band); }
+        U = Math.max(2, Math.min(TW - 2, U)); W = Math.max(lo, Math.min(hi, W));
+        uv[(t / 3 + k) * 2] = U / TW; uv[(t / 3 + k) * 2 + 1] = 1 - W / TW;
+      }
+    }
+    geo.setAttribute("uv", new V.BufferAttribute(uv, 2));
+    return geo;
   }
 
   /* --------------------------------------------------- geometry kit */
@@ -213,9 +336,11 @@ var HeroH19 = (function () {
     out.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
     return out;
   }
-  function mesh(parent, list, mat, name) {
+  function mesh(parent, list, mat, name, uvFn) {
     if (!list.length) return null;
-    var m = new V.Mesh(merge(list), mat);
+    var geo = merge(list);
+    if (uvFn) uvFn(geo);
+    var m = new V.Mesh(geo, mat);
     if (name) m.name = name;
     parent.add(m);
     return m;
@@ -286,12 +411,66 @@ var HeroH19 = (function () {
     metal.push(bar([-3.6, 0, 2.78], [-4.2, 0, 3.15], 0.012, 4));
     metal.push(bar([2.9, -0.2, 2.05], [3.25, -0.2, 2.05], 0.015, 4));
 
+    /* ================================================= DETAIL PASS ======
+       The fittings the first pass left out, placed off the H-19A three-view
+       and the UH-19B photograph: sizes read through the photograph's
+       perspective, NOT measured. Heights above the ground, as above. */
+    var lampR = [], lampG = [];
+    /* the windscreen's centre post, its frames and the wipers */
+    dark.push(bar([1.90, 0, 2.62], [1.28, 0, 3.16], 0.024, 4));
+    for (s = -1; s <= 1; s += 2) {
+      dark.push(bar([1.90, s * 0.70, 2.62], [1.30, s * 0.70, 3.12], 0.022, 4));
+      dark.push(bar([1.86, s * 0.30, 2.66], [1.62, s * 0.27, 2.86], 0.010, 4));
+      /* window frames round the cockpit and cabin windows */
+      [[1.00, 0.58, 2.70, 0.55], [0.30, 0.55, 2.70, 0.52], [-0.85, 0.36, 2.00, 0.38], [-1.55, 0.36, 2.00, 0.38]].forEach(function (w) {
+        var yy = s * (w[0] < -0.5 ? 0.895 : 0.892);
+        dark.push(box(w[1] + 0.06, 0.02, 0.03, w[0], yy, w[2] + w[3] / 2 + 0.02), box(w[1] + 0.06, 0.02, 0.03, w[0], yy, w[2] - w[3] / 2 - 0.02));
+        dark.push(box(0.03, 0.02, w[3] + 0.04, w[0] + w[1] / 2 + 0.02, yy, w[2]), box(0.03, 0.02, w[3] + 0.04, w[0] - w[1] / 2 - 0.02, yy, w[2]));
+      });
+      /* the kick-in steps and handholds up the nose's side to the cockpit,
+         the step under the cabin door */
+      [0.80, 1.30, 1.80].forEach(function (h) { dark.push(box(0.14, 0.02, 0.05, 2.10, s * 0.87, h)); });
+      metal.push(bar([1.55, s * 0.90, 2.30], [1.55, s * 0.90, 2.48], 0.012, 4));
+      metal.push(box(0.55, 0.18, 0.025, 0.10, s * 0.96, 0.32));
+      metal.push(bar([0.30, s * 0.86, 0.36], [0.30, s * 1.02, 0.32], 0.012, 4), bar([-0.10, s * 0.86, 0.36], [-0.10, s * 1.02, 0.32], 0.012, 4));
+      /* the door rail's rollers, the cockpit door's hinges */
+      metal.push(cyl(0.03, 0.03, 0.05, 8, "y", 0.95, s * 0.90, 2.06), cyl(0.03, 0.03, 0.05, 8, "y", -0.75, s * 0.90, 2.06));
+      dark.push(box(0.05, 0.03, 0.07, 1.30, s * 0.875, 2.45), box(0.05, 0.03, 0.07, 1.30, s * 0.875, 2.95));
+      /* position lamps low on the cabin's rear corners: port red, starboard green */
+      (s > 0 ? lampR : lampG).push(sph(0.035, 8, 5, -1.90, s * 0.86, 0.80, 1.4, 0.6, 0.9));
+      /* the boom's drive-shaft hanger covers */
+      [-4.5, -5.5, -6.5, -7.5].forEach(function (xh) { dark.push(box(0.10, 0.02, 0.05, xh, s * (sect(xh)[3] + 0.005), sect(xh)[2] - 0.12)); });
+      /* the tail plane's tip lamps */
+      (s > 0 ? lampR : lampG).push(sph(0.028, 8, 5, -9.10, s * 0.62, 2.26, 1.4, 0.7, 0.9));
+    }
+    /* the landing lamp under the nose, the carburettor air intake's grille
+       and the oil cooler's face */
+    metal.push(cyl(0.10, 0.10, 0.05, 12, "z", 2.55, 0.35, 0.47));
+    glass.push(cyl(0.085, 0.085, 0.012, 12, "z", 2.55, 0.35, 0.44));
+    for (i = 0; i < 5; i++) metal.push(box(0.02, 0.36, 0.02, 3.01, 0, 1.30 + i * 0.07));
+    /* the beacon on the boom top behind the cabin, the white tail lamp */
+    dark.push(cyl(0.05, 0.055, 0.04, 10, "z", -3.40, 0, 2.80));
+    lampR.push(sph(0.045, 10, 6, -3.40, 0, 2.83, 1, 1, 0.8));
+    metal.push(sph(0.03, 8, 5, -9.92, 0, 3.55, 1.3, 0.8, 1.0));
+    /* the long-wire aerial from the whip's mast to the fin, the radio-
+       compass loop on the roof */
+    dark.push(bar([-4.20, 0, 3.15], [-9.20, 0, 3.40], 0.005, 3));
+    dark.push(cyl(0.12, 0.12, 0.05, 12, "z", 0.75, 0.40, 3.27));
+    /* the gearbox fairing's cooling grilles and lifting eyes */
+    for (s = -1; s <= 1; s += 2) {
+      dark.push(box(0.30, 0.02, 0.14, 0, s * 0.35, 3.33));
+      metal.push(box(0.05, 0.03, 0.06, 0.10, s * 0.18, 3.57));
+    }
+
     /* all body parts so far were authored with height above ground in z:
        shift them to the model's z */
     function lowerAll(list) { for (var j = 0; j < list.length; j++) list[j].translate(0, 0, GROUND); }
     lowerAll(skin); lowerAll(metal); lowerAll(dark); lowerAll(glass); lowerAll(team);
+    lowerAll(lampR); lowerAll(lampG);
 
-    mesh(g, skin, T.skin, "fuselage");
+    mesh(g, skin, T.skin, "fuselage", T.skin.map ? projUV : null);
+    mesh(g, lampR, T.lampR, "lamp_red");
+    mesh(g, lampG, T.lampG, "lamp_green");
     mesh(g, glass, T.glass, "glass");
     mesh(g, team, T.team, "team");
     mesh(g, dark, T.dark, "dark");
@@ -314,6 +493,14 @@ var HeroH19 = (function () {
       gm.push(bar([-0.70, s * 0.86, Z(0.95)], [MX + 0.1, s * 1.55, Z(MR + 0.1)], 0.03, 5));
     }
     gm.push(bar([NX - 0.05, -0.36, Z(0.55)], [NX - 0.05, 0.36, Z(0.55)], 0.03, 5));
+    /* detail pass: hub caps, the main oleos' bright pistons and the nose
+       legs' torque links */
+    for (s = -1; s <= 1; s += 2) {
+      gm.push(cyl(0.07, 0.07, 0.03, 10, "y", MX, s * 1.725, Z(MR)), cyl(0.025, 0.025, 0.03, 6, "y", MX, s * 1.745, Z(MR)));
+      gm.push(cyl(0.05, 0.05, 0.02, 10, "y", NX, s * 0.79, Z(NR)));
+      gm.push(bar([MX - 0.08, s * 1.45, Z(MR + 0.22)], [MX - 0.22, s * 1.22, Z(0.78)], 0.06, 8));
+      gm.push(bar([NX + 0.06, s * 0.55, Z(0.30)], [NX + 0.04, s * 0.45, Z(0.48)], 0.012, 4));
+    }
     mesh(gear, gt, T.dark, "gear_tyres");
     mesh(gear, gm, T.metal, "gear_legs");
 
@@ -347,6 +534,11 @@ var HeroH19 = (function () {
       bl.rotateX(5 * D2R);
       bl.rotateZ(a);
       hb.push(bl);
+      /* detail pass: the blade's root cuff and bolts, the drag damper, the
+         bright tip cap */
+      [cyl(0.075, 0.075, 0.24, 10, "x", 0.82, 0, 0), cyl(0.024, 0.024, 0.16, 8, "z", 0.76, 0.05, 0),
+       cyl(0.024, 0.024, 0.16, 8, "z", 0.86, -0.05, 0), cyl(0.03, 0.03, 0.40, 6, "x", 0.42, 0.14, 0.03),
+       box(0.14, CHORD * 0.92, 0.04, ROTOR_R - 0.07, 0, 0).rotateX(5 * D2R)].forEach(function (q) { q.rotateZ(a); hm.push(q); });
     }
     mesh(head, hm, T.metal, "hub");
     mesh(head, hb, T.dark, "blades");

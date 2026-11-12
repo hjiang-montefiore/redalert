@@ -121,6 +121,16 @@
    camouflage patch is the same size in metres on the boom as on the cabin.
    ASCII only.                                                              */
 
+/* DETAIL PASS (2026-11): the fittings the first pass left out, placed off the photographs named
+   above (86+19, 87+13, the Bundesarchiv views); their sizes are read through those photographs'
+   perspective, NOT measured: door hinges and grab handle, the boarding step on the forward cross
+   tube, skid wear shoes and ground-handling wheel lugs, cowling latches and hinge, the oil cooler
+   frame, the exhaust lips, FM homing aerials on the nose, endplate position lamps (red / green
+   material), the fin-tip and belly beacons, the white tail lamp, the VHF whip, blades and the ADF
+   housing under the cabin, the pitot mast and static plates, the tail skid shoe, the drive-shaft
+   hanger covers; on the head the blade bolts, pitch horns and links, the tip caps. The paint gains
+   fastener rows along the boom, the cowling's panels and fasteners, oil streaks and sill scuffing.
+   deu_e80_gunship 5716 -> 6968 tris, 12 -> 14 draw calls; extents and len unchanged. */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 var HeroBo105P = (function () {
@@ -318,6 +328,24 @@ var HeroBo105P = (function () {
     [-0.42, 0.42].forEach(function (q) {
       g.beginPath(); g.moveTo(pxX(-1.2), pyTop(q)); g.lineTo(pxX(0.3), pyTop(q)); g.stroke();
     });
+    /* detail pass: fastener rows down the boom's stringers, the cowling's
+       panel outlines and fasteners, oil streaks off the gearbox deck and
+       scuffing on the sills under the doors */
+    g.fillStyle = "rgba(0,0,0,0.24)";
+    for (b = 1; b <= 2; b++) {
+      [1.56, 1.70, 1.84].forEach(function (h) { for (x = pxX(-5.3); x < pxX(-1.5); x += 5) g.fillRect(x, pySide(Z(h), b), 1.2, 1.2); });
+      g.strokeStyle = "rgba(0,0,0,0.40)"; g.lineWidth = 1.4;
+      g.strokeRect(pxX(-1.20), pySide(Z(2.32), b), pxX(-0.30) - pxX(-1.20), pySide(Z(1.95), b) - pySide(Z(2.32), b));
+      g.strokeRect(pxX(-0.25), pySide(Z(2.32), b), pxX(0.35) - pxX(-0.25), pySide(Z(1.95), b) - pySide(Z(2.32), b));
+      g.fillStyle = "rgba(0,0,0,0.30)";
+      for (x = pxX(-1.20); x < pxX(0.35); x += 5) { g.fillRect(x, pySide(Z(2.31), b), 1.2, 1.2); g.fillRect(x, pySide(Z(1.96), b), 1.2, 1.2); }
+      for (i = 0; i < 10; i++) {
+        g.fillStyle = "rgba(22,18,12," + (0.10 + R() * 0.10).toFixed(3) + ")";
+        g.fillRect(pxX(-1.4 + R() * 1.8), pySide(Z(1.92 - R() * 0.1), b), 1.5 + R() * 1.5, 10 + R() * 30);
+      }
+      g.fillStyle = "rgba(120,112,92,0.18)";
+      g.fillRect(pxX(0.54), pySide(Z(0.86), b), pxX(1.70) - pxX(0.54), 4);
+    }
     /* access hatches and inspection panels */
     g.lineWidth = 1.2;
     for (i = 0; i < 50; i++) {
@@ -396,6 +424,8 @@ var HeroBo105P = (function () {
     var tc = (C && C.team !== undefined) ? C.team : "#4b8fe0";
     m.team   = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                             emissive: new V.Color(tc), emissiveIntensity: 0.10 });
+    m.lampR  = new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 });
+    m.lampG  = new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 });
     m.disc   = new V.MeshStandardMaterial({ color: 0xd6dde3, roughness: 0.40, metalness: 0.08,
                                             transparent: true, opacity: 0.05, depthWrite: false });
     return m;
@@ -922,6 +952,71 @@ var HeroBo105P = (function () {
     var CT = Z(2.36);
     team.push(box(0.62, 0.48, 0.012, -0.59, 0, CT + 0.016));
 
+    /* ================================================= DETAIL PASS ======
+       The fittings the first pass left out, placed off the photographs the
+       header names (86+19 side-on, 87+13 at Northolt, the 1983 and 1986
+       Bundesarchiv views): their sizes are read through those photographs'
+       perspective, NOT measured. */
+    var lampR = [], lampG = [];
+    var podAt = function (x, h) { var q = onSec(lerpSec(POD, x), thAt(lerpSec(POD, x), h)); return q; };
+    [1, -1].forEach(function (sd) {
+      /* door hinges on each door's forward edge, the door's grab handle */
+      [1.04, 1.70].forEach(function (h) {
+        var q1 = podAt(1.70, h), q2 = podAt(1.16, h);
+        dark.push(box(0.06, 0.03, 0.05, 1.68, sd * (q1[1] + 0.008), Z(h)));
+        dark.push(box(0.06, 0.03, 0.05, 1.14, sd * (q2[1] + 0.008), Z(h)));
+      });
+      var qh = podAt(0.90, 1.60);
+      metal.push(bar([0.80, sd * (qh[1] + 0.03), Z(1.60)], [1.00, sd * (qh[1] + 0.03), Z(1.60)], 0.010, 4, true));
+      /* the boarding step on the forward crosstube and the skid's wear
+         shoes and its ground-handling wheel lugs */
+      metal.push(box(0.24, 0.16, 0.02, XT_F + 0.02, sd * (SKID_Y - 0.25), Z(0.20)));
+      dark.push(box(1.60, 0.05, 0.016, 0.70, sd * SKID_Y, Z(0.0085)));
+      metal.push(cyl(0.045, 0.045, 0.06, 10, "y", XT_R, sd * (SKID_Y + 0.07), Z(0.07)));
+      metal.push(cyl(0.022, 0.022, 0.10, 6, "y", XT_R, sd * (SKID_Y + 0.04), Z(0.07)));
+      /* the cowling's latches down each side and its hinge, the oil cooler
+         outlet's frame, the gearbox fairing's lifting eye */
+      [-0.20, -0.45, -0.80, -1.10].forEach(function (xl) {
+        dark.push(box(0.06, 0.02, 0.03, xl, sd * 0.525, Z(2.10)));
+      });
+      dark.push(box(0.40, 0.015, 0.34, -0.64, sd * 0.523, Z(1.70)));
+      metal.push(bar([-1.25, sd * 0.47, Z(2.24)], [0.20, sd * 0.51, Z(2.30)], 0.010, 4, true));
+      metal.push(box(0.05, 0.03, 0.06, 0.10, sd * 0.30, Z(2.40)));
+      /* the exhaust stacks' bright lips */
+      metal.push(cyl(0.10, 0.10, 0.025, 10, "z", -0.98, sd * 0.36, Z(2.27)));
+      /* the FM homing aerials on the nose, either side under the chin
+         windows' sill, raked forward */
+      var qa = podAt(2.10, 0.72);
+      dark.push(bar([2.10, sd * qa[1], Z(0.72)], [2.34, sd * (qa[1] + 0.04), Z(0.62)], 0.008, 4, true));
+      /* the tailplane's endplate lights: port red, starboard green */
+      (sd > 0 ? lampR : lampG).push(sph(0.028, 8, 5, -4.46, sd * (STAB_Y1 + 0.04), Z(1.98), 1.4, 0.7, 1.0));
+      /* the boom's tail-rotor drive shaft hanger covers */
+      [-2.4, -3.2, -4.0].forEach(function (xh) {
+        var bb = lerpSec(BOOM, xh);
+        dark.push(box(0.10, 0.03, 0.06, xh, sd * (bb.wm + 0.005), bb.zm + 0.04));
+      });
+    });
+    /* the anti-collision light's red lens on the fin tip, a second beacon
+       under the belly, the white tail lamp on the fin's trailing edge */
+    lampR.push(sph(0.04, 10, 6, -5.80, 0, Z(2.99), 1, 1, 0.6));
+    dark.push(cyl(0.05, 0.055, 0.035, 10, "z", -0.30, 0, Z(0.335)));
+    lampR.push(sph(0.042, 10, 6, -0.30, 0, Z(0.31), 1, 1, 0.8));
+    metal.push(sph(0.028, 8, 5, -6.00, 0, Z(2.70), 1.3, 0.8, 1.0));
+    /* aerials: the VHF whip raked aft under the boom, two blades under the
+       cabin, a UHF blade on the boom behind the cowling, the ADF loop
+       housing flush under the pod's rear */
+    dark.push(bar([-2.70, 0, Z(1.48)], [-3.10, 0, Z(0.92)], 0.008, 5, true));
+    dark.push(cyl(0.022, 0.026, 0.05, 8, "z", -2.70, 0, Z(1.47)));
+    dark.push(box(0.26, 0.018, 0.20, 0.40, 0.20, Z(0.25), 0, -0.25, 0));
+    dark.push(box(0.22, 0.018, 0.16, -0.40, -0.20, Z(0.27), 0, -0.25, 0));
+    skin.push(box(0.26, 0.02, 0.20, -2.30, 0, Z(1.98), 0, -0.25, 0));
+    dark.push(sph(0.14, 12, 4, -0.85, 0, Z(0.38), 1.7, 1.0, 0.30));
+    /* the pitot's mast and the static plates on the nose sides */
+    metal.push(bar([1.70, 0.12, Z(1.94)], [1.70, 0.12, Z(2.00)], 0.014, 5, true));
+    both(dark, cyl(0.025, 0.025, 0.012, 8, "y", 1.90, onSec(lerpSec(POD, 1.90), 0)[1] + 0.003, Z(1.10)));
+    /* the tail skid's bright wear shoe */
+    metal.push(box(0.16, 0.05, 0.02, -5.78, 0, Z(1.32)));
+
     /* --------------------------------------------- airframe meshes ---- */
     /* the mast, the swashplate and its fixed ring: they do not turn with
        the head, so they go in the fixed fittings */
@@ -934,6 +1029,8 @@ var HeroBo105P = (function () {
     mesh(g, metal, T.metal, "fittings");
     mesh(g, store, T.store, "stores");
     mesh(g, team, T.team, "team");
+    mesh(g, lampR, T.lampR, "lamp_red");
+    mesh(g, lampG, T.lampG, "lamp_green");
 
     /* ======================================================= main rotor ==
        The mount. Its +PI/2 about X points the rotor node's local +Y - the
@@ -981,8 +1078,16 @@ var HeroBo105P = (function () {
                    [sph(0.045, 6, 3, 0.62, 0.10, -0.16), hubD],
                    [sph(0.045, 6, 3, 0.62, -0.10, -0.16), hubD],
                    [bar([0.30, 0.12, -0.03], [0.30, 0.12, -0.22], 0.015, 4, true), hubD]];
+      /* detail pass: the blade's root bolts through the housing, the
+         pitch horn and its link down to the turning ring, the tip cap */
+      parts = [[cyl(0.024, 0.024, 0.11, 8, "z", 0.68, 0.035, 0), hubM],
+               [cyl(0.024, 0.024, 0.11, 8, "z", 0.76, -0.035, 0), hubM],
+               [box(0.10, 0.08, 0.03, 0.36, -0.12, -0.05), hubM],
+               [bar([0.36, -0.15, -0.06], [0.36, -0.17, -0.22], 0.013, 4, true), hubD],
+               [box(0.14, CHORD, 0.036, ROTOR_R - 0.07, LE - CHORD / 2, 0), hubM]];
       for (i = 0; i < parts.length; i++) { parts[i][0].rotateZ(a); parts[i][1].push(parts[i][0]); }
     }
+    hubD.push(box(0.04, 0.03, 0.16, 0.12, 0.12, -0.17));
     mesh(head, hubM, T.metal, "hub");
     mesh(head, hubD, T.dark, "hub_absorbers");
     mesh(head, blades, T.blade, "blades");

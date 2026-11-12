@@ -192,6 +192,18 @@
      searchlights, the ramp hinges, the deck seams, and a weathered plate texture on the
      superstructure.  Fittings typical, NOT CONFIRMED one by one.  The hulls stay the
      box sections the craft have (flat-bottomed landing craft, published beam to the chine).
+   DETAIL PASS 2 (2026-11), the jets and the Crotale NG: the jets take an airframe finish (airTex:
+     riveted seams, access panels, streaks, grime) and wingtip position lamps, beacons, the white
+     tail lamp, blade aerials, canopy sills, gun ports and blast panels, speed-brake outlines, AoA
+     vanes, nozzle rims, rudder hinges, oleo pistons and torque links; the F-8E(FN) its stowed hook;
+     the Super Etendard its intake lips and wing-fold line. The Crotale NG takes the kit's detail
+     texture and bolt rows, the rear door's hinges and locks, grab handles, louvres, corner jacks
+     (stowed; NOT CONFIRMED), mudflaps, reflectors, safety chains, the jockey wheel (NOT
+     CONFIRMED), the cable reel, the ladder hoop, roof slats, a stub aerial, the turret's bolt ring,
+     hinges and handles, the dish rim, the containers' end rings and the launcher straps. Sizes by
+     proportion, NOT CONFIRMED. fra_e60_cfighter 6006 -> 6954 tris, 11 -> 14 draw calls;
+     fra_e80/e90_cfighter 5366 -> 6262, 10 -> 12; fra_e00_spaag 8720 -> 12404, 14 -> 14. Extents
+     and len unchanged.
    Model space: +X nose / bow / drawbar, +Y port, +Z up, metres; aircraft and the trailer stand on
    z = 0; the craft float with the waterline at z = 0.  ASCII only. */
 
@@ -322,8 +334,68 @@ var HeroFrNavalKit = (function () {
   function wheel(B, x, y, z, r, w, s, rim) {
     K.tyre({ rub: at(B.rub, x, 0, z), paint: at(B.paint, x, 0, z), dark: at(B.dark, x, 0, z) }, y, r, w, s, rim);
   }
+  /* DETAIL PASS: an airframe finish for the two jets - a 512 px tile over the kit's 2.94 m of
+     surface (UVs 0.34 a metre): the base and its blots, riveted panel seams (frames across, stringers
+     along, staggered), access panels with corner fasteners, airflow streaks, grime and exhaust soot
+     smudges.  Plain paint: no markings. */
+  var _airTex = {};
+  function airTex(THREE, P) {
+    if (_airTex[P.key] !== undefined) return _airTex[P.key];
+    var t = null;
+    try {
+      var S = 512, cv = document.createElement("canvas"), q, i, k, x, y, w, h;
+      var sd = (P.seed * 31 + 7) >>> 0, R = function () { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; return sd / 4294967296; };
+      cv.width = cv.height = S; q = cv.getContext("2d");
+      q.fillStyle = P.base; q.fillRect(0, 0, S, S);
+      for (k = 0; k < P.blots.length; k++) {
+        q.fillStyle = P.blots[k][0];
+        for (i = 0; i < 18; i++) { q.globalAlpha = 0.25 + R() * 0.3; q.fillRect(R() * S, R() * S, 30 + R() * 110, 16 + R() * 60); }
+      }
+      q.globalAlpha = 1;
+      /* frames: five across the tile, each with a fastener row; stringers between them */
+      var xs = [];
+      for (i = 0; i < 5; i++) xs.push(Math.floor(i * 102 + 10 + R() * 60) + 0.5);
+      for (i = 0; i < 5; i++) {
+        q.strokeStyle = "rgba(10,12,12,0.34)"; q.lineWidth = 1.4;
+        q.beginPath(); q.moveTo(xs[i], 0); q.lineTo(xs[i], S); q.stroke();
+        q.strokeStyle = "rgba(255,255,250,0.10)"; q.lineWidth = 1;
+        q.beginPath(); q.moveTo(xs[i] + 1.5, 0); q.lineTo(xs[i] + 1.5, S); q.stroke();
+        q.fillStyle = "rgba(10,12,12,0.34)";
+        for (y = 3; y < S; y += 7) q.fillRect(xs[i] + 4, y, 1.6, 1.6);
+        var xa = xs[i], xb = i < 4 ? xs[i + 1] : xs[0] + S;
+        for (k = 0; k < 3; k++) {
+          y = Math.floor(R() * S) + 0.5;
+          q.strokeStyle = "rgba(10,12,12,0.26)"; q.lineWidth = 1.2;
+          q.beginPath(); q.moveTo(xa, y); q.lineTo(xb, y); q.stroke();
+          q.beginPath(); q.moveTo(xa - S, y); q.lineTo(xb - S, y); q.stroke();
+          q.fillStyle = "rgba(10,12,12,0.28)";
+          for (x = xa + 3; x < xb; x += 7) q.fillRect(x % S, y + 3, 1.5, 1.5);
+        }
+      }
+      for (i = 0; i < 9; i++) {
+        x = Math.floor(R() * (S - 70)) + 4.5; y = Math.floor(R() * (S - 50)) + 4.5; w = 18 + Math.floor(R() * 50); h = 12 + Math.floor(R() * 34);
+        q.strokeStyle = "rgba(10,12,12,0.36)"; q.lineWidth = 1.2; q.strokeRect(x, y, w, h);
+        q.fillStyle = "rgba(10,12,12,0.45)";
+        q.fillRect(x + 2, y + 2, 2, 2); q.fillRect(x + w - 4, y + 2, 2, 2); q.fillRect(x + 2, y + h - 4, 2, 2); q.fillRect(x + w - 4, y + h - 4, 2, 2);
+      }
+      for (i = 0; i < 200; i++) {
+        q.fillStyle = (i % 4) ? "rgba(20,20,16,0.06)" : "rgba(240,240,232,0.05)";
+        q.fillRect(R() * S, R() * S, 20 + R() * 80, 1 + R() * 1.5);
+      }
+      for (i = 0; i < 50; i++) {
+        q.fillStyle = "rgba(28,26,20,0.07)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 10 + R() * 40, 4 + R() * 16, 0, 0, 2 * PI); q.fill();
+      }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    _airTex[P.key] = t;
+    return t;
+  }
   return { K: K, skin: skin, seRing: seRing, fuselage: fuselage, capOnly: capOnly, surface: surface, mirrorSt: mirrorSt,
-           at: at, I3: I3, wheel: wheel, avg: avg };
+           at: at, I3: I3, wheel: wheel, avg: avg, airTex: airTex };
 })();
 
 /* ===================================================== F-8E(FN) Crusader (fra_e60_cfighter) */
@@ -441,16 +513,69 @@ var HeroCrusaderFN = (function () {
       K.profY(new K.XF(B.paint, K.roll(s * 0.62), [0, s * 0.95, 0]), [[MX + 0.75, 0.95], [MX - 0.55, 0.95], [MX - 0.45, 0.45], [MX + 0.55, 0.45]], -0.012, 0.012);
     }
   }
+  /* DETAIL PASS: the fittings D and C1-C6 show that the first pass left out, placed off D; sizes
+     by proportion (NOT CONFIRMED one by one): wingtip position lamps, beacons on the spine and the
+     belly, the white tail lamp, blade aerials, the canopy's sills, the four 20 mm cannon ports and
+     the gun blast panels, the ventral speed brake's outline, the arrester hook stowed under the
+     tail, the angle-of-attack vane, the nozzle's bright rim and the fin's rudder hinge */
+  function detail(B) {
+    var s, i, wt = WING[WING.length - 2];
+    for (s = -1; s <= 1; s += 2) {
+      K.cyl(s > 0 ? B.lampR : B.lampG, [(wt[1] + wt[2]) / 2 + 0.25, s * (wt[0] - 0.02), wz(wt[0])], [(wt[1] + wt[2]) / 2 - 0.05, s * (wt[0] - 0.02), wz(wt[0])], 0.04, 0.03, 8);
+      /* the canopy's sill rails */
+      for (i = 0; i < CAN.length - 2; i++) K.bar(B.dark, [CAN[i][0], s * CAN[i][3] * 1.02, CAN[i][2] + 0.01], [CAN[i + 1][0], s * CAN[i + 1][3] * 1.02, CAN[i + 1][2] + 0.01], 0.02);
+      /* the cannon ports in the forward fuselage sides and their blast panels (C1, C5) */
+      [1.62, 1.92].forEach(function (z) {
+        K.cyl(B.dark, [5.25, s * 0.66, z], [5.10, s * 0.66, z], 0.035, 0.035, 8);
+        K.box(B.metal, 4.70, 5.20, s > 0 ? 0.64 : -0.68, s > 0 ? 0.68 : -0.64, z - 0.06, z + 0.06);
+      });
+      /* the angle-of-attack vane on the nose side */
+      K.box(B.metal, 6.30, 6.42, s > 0 ? 0.62 : -0.66, s > 0 ? 0.66 : -0.62, 2.18, 2.22);
+    }
+    /* beacons on the spine and the belly; the white tail lamp on the fin's trailing edge */
+    K.cylZ(B.dark, 0.60, 0, 2.91, 2.95, 0.05, 10); K.cylZ(B.lampR, 0.60, 0, 2.95, 3.00, 0.045, 10);
+    K.cylZ(B.dark, 0.20, 0, 0.85, 0.89, 0.05, 10); K.cylZ(B.lampR, 0.20, 0, 0.80, 0.85, 0.045, 10);
+    K.cyl(B.metal, [-8.62, 0, 5.05], [-8.68, 0, 5.05], 0.035, 0.03, 8);
+    /* blade aerials on the spine and under the belly */
+    K.fin(KK.at(B.paint, 0, 0, 0), [[2.40, 2.95], [2.05, 2.95], [1.95, 3.20], [2.15, 3.20]], 0.025);
+    K.fin(KK.at(B.paint, 0, 0, 0), [[-1.60, 2.87], [-1.90, 2.87], [-1.98, 3.06], [-1.80, 3.06]], 0.02);
+    K.fin(KK.at(B.under, 0, 0, 0), [[0.90, 0.90], [0.55, 0.90], [0.45, 0.68], [0.65, 0.68]], 0.025);
+    /* the ventral speed brake's outline under the centre fuselage (D side) */
+    K.box(B.dark, 1.30, 3.20, -0.38, -0.34, 0.95, 0.97); K.box(B.dark, 1.30, 3.20, 0.34, 0.38, 0.95, 0.97);
+    K.box(B.dark, 1.28, 1.32, -0.38, 0.38, 0.95, 0.97);
+    /* the arrester hook stowed under the tail, its shank and point */
+    K.bar(B.metal, [-5.80, 0, 0.86], [-7.70, 0, 0.92], 0.05);
+    K.box(B.dark, -7.95, -7.70, -0.05, 0.05, 0.86, 0.98);
+    /* the nozzle's bright rim and the rudder's hinge line */
+    K.cyl(B.metal, [-8.14, 0, 1.40], [-8.17, 0, 1.40], 0.505, 0.505, 22, true, true);
+    K.bar(B.dark, [-7.30, 0.03, 2.40], [-8.15, 0.025, 5.20], 0.012);
+    K.bar(B.dark, [-7.30, -0.03, 2.40], [-8.15, -0.025, 5.20], 0.012);
+  }
+  /* the gear's oleo pistons, torque links and the taxi lamp on the nose leg */
+  function gearDetail(B) {
+    var s;
+    K.cyl(B.metal, [NX, 0, NR + 0.10], [NX + 0.03, 0, NR + 0.48], 0.04, 0.04, 8);
+    K.bar(B.metal, [NX + 0.02, 0, NR + 0.15], [NX + 0.18, 0, NR + 0.30], 0.012);
+    K.bar(B.metal, [NX + 0.18, 0, NR + 0.30], [NX + 0.04, 0, NR + 0.46], 0.012);
+    K.cyl(B.metal, [NX + 0.12, 0, 0.95], [NX + 0.18, 0, 0.95], 0.05, 0.05, 10);
+    for (s = -1; s <= 1; s += 2) {
+      K.cyl(B.metal, [MX, s * (MY - 0.10), MR + 0.05], [MX + 0.08, s * (MY - 0.30), MR + 0.40], 0.05, 0.05, 8);
+      K.bar(B.metal, [MX - 0.02, s * (MY - 0.10), MR + 0.10], [MX - 0.20, s * (MY - 0.20), MR + 0.25], 0.012);
+      K.bar(B.metal, [MX - 0.20, s * (MY - 0.20), MR + 0.25], [MX + 0.04, s * (MY - 0.28), MR + 0.38], 0.012);
+    }
+  }
   function build(THREE, M, C) {
     var T = K.materials(THREE, C, PAINT, { under: [0xdcddd6, 0.78, 0.06], metal: [0x8a8e90, 0.45, 0.55],
-      hot: [0x3c3a37, 0.6, 0.5], rnd: [0xd9d9d2, 0.6, 0.1] });
+      hot: [0x3c3a37, 0.6, 0.5], rnd: [0xd9d9d2, 0.6, 0.1], lampR: [0xc8261e, 0.3, 0.1], lampG: [0x1fa64a, 0.3, 0.1] });
+    var atx = KK.airTex(THREE, PAINT);
+    if (atx) T.paint.map = atx;
     var g = K.group(THREE, "fra_e60_cfighter"), B;
-    B = K.bins(T, ["paint", "under", "dark", "glass", "team", "hot", "rnd"]);
-    body(B); wings(B); magic(B);
+    B = K.bins(T, ["paint", "under", "dark", "glass", "team", "hot", "rnd", "lampR", "lampG", "metal"]);
+    body(B); wings(B); magic(B); detail(B);
     K.flush(THREE, g, B);
     var gr = K.group(THREE, "gear");
     B = K.bins(T, ["paint", "dark", "rub", "metal"]);
-    gear(B);
+    gear(B); gearDetail(B);
     K.flush(THREE, gr, B); g.add(gr);
     K.shadows(g);
     return g;
@@ -562,17 +687,63 @@ var HeroSuperEtendard = (function () {
       K.profY(new K.XF(B.paint, KK.I3, [0, s * (MY - 0.32), 0]), [[MX + 0.45, wz(1.45) - 0.06], [MX - 0.40, wz(1.45) - 0.06], [MX - 0.30, MR + 0.25], [MX + 0.35, MR + 0.25]], -0.012, 0.012);
     }
   }
+  /* DETAIL PASS: the fittings D and E1-E3 show that the first pass left out, placed off D; sizes
+     by proportion (NOT CONFIRMED one by one): wingtip position lamps, beacons, the white tail lamp,
+     blade aerials, the canopy's sills, the two 30 mm DEFA ports under the intakes, the intakes'
+     bright lips, the wing-fold hinge line, the airbrakes' outlines under the fuselage, the
+     angle-of-attack vane, the nozzle's bright rim, the rudder's hinge */
+  function detail(B) {
+    var s, i, wt = WING[WING.length - 2];
+    for (s = -1; s <= 1; s += 2) {
+      K.cyl(s > 0 ? B.lampR : B.lampG, [(wt[1] + wt[2]) / 2 + 0.25, s * (wt[0] - 0.02), wz(wt[0])], [(wt[1] + wt[2]) / 2 - 0.05, s * (wt[0] - 0.02), wz(wt[0])], 0.04, 0.03, 8);
+      for (i = 0; i < CAN.length - 2; i++) K.bar(B.dark, [CAN[i][0], s * CAN[i][3] * 1.02, CAN[i][2] + 0.01], [CAN[i + 1][0], s * CAN[i + 1][3] * 1.02, CAN[i + 1][2] + 0.01], 0.018);
+      /* the DEFA ports under the intakes */
+      K.cyl(B.dark, [IX - 0.20, s * 0.45, 0.98], [IX - 0.35, s * 0.45, 0.98], 0.04, 0.04, 8);
+      K.box(B.metal, IX - 1.00, IX - 0.30, s > 0 ? 0.43 : -0.47, s > 0 ? 0.47 : -0.43, 0.92, 1.04);
+      /* the intake's bright lip */
+      K.cyl(B.metal, [IX + 0.015, s * 0.70, (IZ0 + IZ1) / 2], [IX - 0.01, s * 0.70, (IZ0 + IZ1) / 2], 0.225, 0.225, 16, true, true);
+      /* the wing-fold hinge line across each wing (E1: the outer panels fold up) */
+      K.bar(B.dark, [-0.95, s * 2.90, wz(2.90) + 0.06], [-3.55, s * 2.90, wz(2.90) + 0.04], 0.012);
+      /* the airbrakes under the centre fuselage (D side) */
+      K.box(B.dark, 0.20, 1.40, s > 0 ? 0.30 : -0.34, s > 0 ? 0.34 : -0.30, 0.82, 0.84);
+      /* the angle-of-attack vane */
+      K.box(B.metal, 5.70, 5.82, s > 0 ? 0.40 : -0.44, s > 0 ? 0.44 : -0.40, 1.30, 1.34);
+    }
+    K.cylZ(B.dark, 0.40, 0, 2.28, 2.32, 0.05, 10); K.cylZ(B.lampR, 0.40, 0, 2.32, 2.37, 0.045, 10);
+    K.cylZ(B.dark, -0.60, 0, 0.77, 0.80, 0.05, 10); K.cylZ(B.lampR, -0.60, 0, 0.72, 0.77, 0.045, 10);
+    K.cyl(B.metal, [-6.80, 0, 3.95], [-6.84, 0, 3.95], 0.035, 0.03, 8);
+    K.fin(KK.at(B.paint, 0, 0, 0), [[1.80, 2.27], [1.50, 2.27], [1.42, 2.47], [1.60, 2.47]], 0.025);
+    K.fin(KK.at(B.paint, 0, 0, 0), [[2.40, 0.84], [2.10, 0.84], [2.02, 0.64], [2.20, 0.64]], 0.025);
+    K.cyl(B.metal, [-6.29, 0, 1.75], [-6.32, 0, 1.75], 0.425, 0.425, 20, true, true);
+    K.bar(B.dark, [-5.20, 0.03, 2.30], [-6.40, 0.025, 4.00], 0.012);
+    K.bar(B.dark, [-5.20, -0.03, 2.30], [-6.40, -0.025, 4.00], 0.012);
+  }
+  function gearDetail(B) {
+    var s;
+    K.cyl(B.metal, [NX, 0, NR + 0.08], [NX - 0.02, 0, NR + 0.38], 0.035, 0.035, 8);
+    K.bar(B.metal, [NX + 0.02, 0, NR + 0.12], [NX + 0.15, 0, NR + 0.24], 0.010);
+    K.bar(B.metal, [NX + 0.15, 0, NR + 0.24], [NX + 0.02, 0, NR + 0.36], 0.010);
+    K.cyl(B.metal, [NX + 0.05, 0, 0.70], [NX + 0.10, 0, 0.70], 0.045, 0.045, 10);
+    for (s = -1; s <= 1; s += 2) {
+      K.cyl(B.metal, [MX, s * (MY - 0.12), MR + 0.05], [MX + 0.03, s * (MY - 0.18), MR + 0.40], 0.045, 0.045, 8);
+      K.bar(B.metal, [MX - 0.02, s * (MY - 0.12), MR + 0.10], [MX - 0.18, s * (MY - 0.16), MR + 0.24], 0.011);
+      K.bar(B.metal, [MX - 0.18, s * (MY - 0.16), MR + 0.24], [MX + 0.02, s * (MY - 0.18), MR + 0.38], 0.011);
+    }
+  }
   function build(vk) {
     var V = VARIANTS[vk];
     return function (THREE, M, C) {
-      var T = K.materials(THREE, C, V.paint, { metal: [0x7c8083, 0.45, 0.55], hot: [0x3a3835, 0.6, 0.5] });
+      var T = K.materials(THREE, C, V.paint, { metal: [0x7c8083, 0.45, 0.55], hot: [0x3a3835, 0.6, 0.5],
+        lampR: [0xc8261e, 0.3, 0.1], lampG: [0x1fa64a, 0.3, 0.1] });
+      var atx = KK.airTex(THREE, V.paint);
+      if (atx) T.paint.map = atx;
       var g = K.group(THREE, V.key), B;
-      B = K.bins(T, ["paint", "dark", "glass", "team", "hot", "metal"]);
-      body(B); wings(B); tanks(B);
+      B = K.bins(T, ["paint", "dark", "glass", "team", "hot", "metal", "lampR", "lampG"]);
+      body(B); wings(B); tanks(B); detail(B);
       K.flush(THREE, g, B);
       var gr = K.group(THREE, "gear");
       B = K.bins(T, ["paint", "dark", "rub", "metal"]);
-      gear(B);
+      gear(B); gearDetail(B);
       K.flush(THREE, gr, B); g.add(gr);
       K.shadows(g);
       return g;
@@ -627,6 +798,65 @@ var HeroCrotaleNG = (function () {
     for (i = 0; i < 9; i++) K.box(B.dark, XFB + 0.30, XFB + 0.74, HW + 0.02, HW + 0.05, ZB + 0.15 + i * 0.20, ZB + 0.18 + i * 0.20);
     K.box(B.team, XR0 + 0.20, XR0 + 0.75, 0.70, 1.05, ZR, ZR + 0.03);
     K.box(B.team, XR0 + 0.20, XR0 + 0.75, -1.05, -0.70, ZR, ZR + 0.03);
+    chassisDetail(B);
+  }
+  /* DETAIL PASS: the fittings K2 and K3 show or a shelter on a trailer carries, placed by
+     proportion (NOT CONFIRMED one by one): bolt rows along the shelter's roof edge and bed, the rear
+     door's hinges and handles, grab handles and the ladder's top hoop, the front box's louvres, the
+     roof walkway and lifting eyes, a stub aerial, the drawbar's safety chains and jockey wheel, the
+     frame's corner jacks (stowed), mudflaps, side reflectors and a cable reel on the rear */
+  function chassisDetail(B) {
+    var D = K.dp, s, i;
+    for (s = -1; s <= 1; s += 2) {
+      D.bolts(B.dark, XR0 + 0.10, XFB - 0.10, 14, s * HW, ZR - 0.06, s);
+      D.bolts(B.dark, XR0 + 0.10, XF0 - 0.10, 16, s * HW, ZB + 0.05, s);
+      D.bolts(B.dark, XFB + 0.10, XF0 - 0.10, 4, s * HW, ZFB - 0.06, s);
+      if (s < 0) {
+        D.grab(B.dark, s, s * HW, XR0 + 0.40, XR0 + 0.75, 1.75);
+        D.grab(B.dark, s, s * HW, XFB - 0.70, XFB - 0.35, 1.75);
+      }
+      /* the front box's louvred cooling panels (K3: the lower front box) */
+      D.louvres(B.dark, XFB + 0.20, XF0 - 0.25, s * HW, ZB + 0.30, ZFB - 0.25, 6, s);
+      /* the frame's corner jacks, wound up: a tube, its foot pad and the crank */
+      [XR0 + 0.25, XF0 - 0.30].forEach(function (xj) {
+        K.cyl(B.dark, [xj, s * 0.62, 0.55], [xj, s * 0.62, 1.20], 0.05, 0.05, 8);
+        K.box(B.dark, xj - 0.12, xj + 0.12, s * 0.62 - 0.12, s * 0.62 + 0.12, 0.50, 0.53);
+        K.bar(B.dark, [xj, s * 0.62, 1.20], [xj, s * 0.62 + s * 0.14, 1.26], 0.012);
+      });
+      /* mudflaps behind both axle sets, side reflectors */
+      D.flap(B.dark, AXF - 0.66, s > 0 ? 0.58 : -1.20, s > 0 ? 1.20 : -0.58, 0.55, 1.12);
+      D.flap(B.dark, AXR[1] - 0.66, s > 0 ? 0.58 : -1.20, s > 0 ? 1.20 : -0.58, 0.55, 1.12);
+      K.box(B.red, AXR[0] + 0.70, AXR[0] + 0.80, s > 0 ? HW : -HW - 0.01, s > 0 ? HW + 0.01 : -HW, 1.24, 1.30);
+      K.box(B.red, AXF + 0.70, AXF + 0.80, s > 0 ? HW : -HW - 0.01, s > 0 ? HW + 0.01 : -HW, 1.24, 1.30);
+      /* the drawbar's safety chains to the towing eye */
+      K.bar(B.dark, [XF0 + 0.10, s * 0.30, 0.98], [3.40, s * 0.12, 0.80], 0.012);
+      K.bar(B.dark, [3.40, s * 0.12, 0.80], [3.55, s * 0.06, 0.86], 0.012);
+      /* the roof's lifting eyes at the corners */
+      D.eye(B.dark, XR0 + 0.30, s * (HW - 0.20), ZR, false);
+      D.eye(B.dark, XFB - 0.30, s * (HW - 0.20), ZR, false);
+    }
+    /* the rear door: its frame, three hinges up the left edge, the lock bars and handle */
+    K.box(B.dark, XR0 - 0.03, XR0, -0.94, -0.88, 1.56, 2.94);
+    K.box(B.dark, XR0 - 0.03, XR0, 0.36, 0.44, 1.56, 2.94);
+    for (i = 0; i < 3; i++) K.cyl(B.dark, [XR0 - 0.008, 0.42, 1.70 + i * 0.55], [XR0 - 0.008, 0.42, 1.86 + i * 0.55], 0.02, 0.02, 8);
+    K.bar(B.dark, [XR0 - 0.014, -0.70, 1.62], [XR0 - 0.014, -0.70, 2.88], 0.014);
+    K.bar(B.dark, [XR0 - 0.014, -0.40, 1.62], [XR0 - 0.014, -0.40, 2.88], 0.014);
+    K.box(B.dark, XR0 - 0.03, XR0, -0.72, -0.38, 2.16, 2.22);
+    /* the cable reel slung under the bed at the rear, the power sockets on the rear face */
+    K.cyl(B.dark, [XR0 + 0.70, -0.25, 0.92], [XR0 + 0.70, 0.25, 0.92], 0.17, 0.17, 14);
+    K.box(B.dark, XR0 - 0.03, XR0, -0.30, 0.10, 1.34, 1.50);
+    /* the ladder's top hoop over the roof edge */
+    K.bar(B.dark, [XFB + 0.32, HW + 0.03, ZR + 0.10], [XFB + 0.32, HW + 0.03, ZR + 0.45], 0.016);
+    K.bar(B.dark, [XFB + 0.72, HW + 0.03, ZR + 0.10], [XFB + 0.72, HW + 0.03, ZR + 0.45], 0.016);
+    K.bar(B.dark, [XFB + 0.32, HW + 0.03, ZR + 0.45], [XFB + 0.72, HW + 0.03, ZR + 0.45], 0.016);
+    /* the roof walkway: anti-slip slats beside the turret, a stub aerial at the front */
+    D.slats(B.dark, XFB - 0.70, XFB - 0.15, 0.60, 1.05, ZR, 6);
+    D.whip(B.dark, XFB - 0.25, -0.95, ZR, 0.45);
+    /* the front box's top: an air-conditioning unit's grille */
+    D.slats(B.dark, XFB + 0.15, XF0 - 0.15, -0.80, -0.20, ZFB, 8);
+    /* the jockey wheel stowed up on the drawbar */
+    K.cyl(B.dark, [2.95, 0.30, 0.90], [2.95, 0.30, 1.30], 0.04, 0.04, 8);
+    K.cyl(B.dark, [2.95, 0.24, 0.78], [2.95, 0.36, 0.78], 0.11, 0.11, 12);
   }
   /* the turret (K1, K2, K4): the base ring, the central body with the tracking dish facing
      forward and the TV/IR head on its left, the column with the search radar box on top */
@@ -649,6 +879,22 @@ var HeroCrotaleNG = (function () {
     K.cylZ(B.dark, -0.22, 0, 1.62, 1.72, 0.14, 12);
     K.box(B.paint, -0.42, -0.02, -0.50, 0.50, 1.72, 2.36);
     K.box(B.dark, -0.025, -0.01, -0.36, 0.36, 1.98, 2.06);
+    /* DETAIL PASS (K1, K2, K4; sizes by proportion): the bolt ring on the base, the body's access
+       panels' fasteners and handles, the dish's rim, the TV/IR head's hood, the radar box's hinges,
+       the cable run up the column */
+    var D = K.dp, k2;
+    for (k2 = 0; k2 < 16; k2++) {
+      var ba = k2 / 16 * TAU;
+      K.cyl(B.dark, [Math.cos(ba) * 0.58, Math.sin(ba) * 0.58, 0.22], [Math.cos(ba) * 0.58, Math.sin(ba) * 0.58, 0.245], 0.018, 0.018, 6);
+    }
+    for (var s2 = -1; s2 <= 1; s2 += 2) {
+      D.bolts(B.dark, -0.50, 0.35, 8, s2 * 0.48, 0.98, s2);
+      D.grab(B.dark, s2, s2 * 0.48, -0.40, -0.15, 0.62);
+      D.hinge(B.dark, -0.38, s2 * 0.50, 1.80, 2.28, s2);
+    }
+    K.cyl(B.dark, [DX + 0.04, 0, DZ], [DX + 0.07, 0, DZ], DR + 0.015, DR + 0.015, 22, true, true);
+    K.box(B.dark, 0.53, 0.60, 0.42, 0.62, 1.15, 1.18);
+    K.cyl(B.dark, [-0.06, 0.12, 1.06], [-0.06, 0.12, 1.70], 0.025, 0.025, 6);
   }
   /* the two launchers of four VT-1 containers in 2 x 2 (K1, K4) on their arms */
   function pod(B) {
@@ -657,10 +903,19 @@ var HeroCrotaleNG = (function () {
       K.cylY(B.dark, 0, s * 0.46, s * 0.70, 0, 0.09, 10);
       K.box(B.paint, -0.22, 0.22, s > 0 ? 0.70 : -1.42, s > 0 ? 1.42 : -0.70, -0.36, -0.24);
       K.box(B.paint, -0.30, 0.10, s > 0 ? 0.74 : -1.38, s > 0 ? 1.38 : -0.74, -0.24, 0.30);
+      /* DETAIL PASS: the launcher frame's straps over the containers and its bolts (K1, K4) */
+      [0.35, 1.95].forEach(function (xs) {
+        K.box(B.dark, x0 + xs - 0.03, x0 + xs + 0.03, s > 0 ? 0.78 : -1.34, s > 0 ? 1.34 : -0.78, 0.12 + CR, 0.15 + CR);
+      });
+      K.dp.boltsTop(B.dark, -0.26, 0.06, 4, s * 0.80, s * 0.80, 0.30);
+      K.dp.boltsTop(B.dark, -0.26, 0.06, 4, s * 1.32, s * 1.32, 0.30);
       for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) {
         y = s * (0.92 + i * 0.24); z = -0.12 + j * 0.24;
         K.cyl(B.rnd, [x0, y, z], [x0 + CL, y, z], CR, CR, 12);
         K.cyl(B.blue, [x0 + 0.62, y, z], [x0 + 0.70, y, z], CR + 0.004, CR + 0.004, 12, true, true);
+        /* DETAIL PASS: the containers' end rings and the frangible front cover's rim (K1, K4) */
+        K.cyl(B.dark, [x0 + CL - 0.04, y, z], [x0 + CL - 0.01, y, z], CR + 0.008, CR + 0.008, 12, true, true);
+        K.cyl(B.dark, [x0 + 0.01, y, z], [x0 + 0.05, y, z], CR + 0.008, CR + 0.008, 12, true, true);
         cells.push([x0 + CL, y, z, x0]);
       }
     }
@@ -669,6 +924,10 @@ var HeroCrotaleNG = (function () {
   function build(THREE, M, C) {
     var T = K.materials(THREE, C, PAINT, { red: [0x9a3326, 0.5, 0.1], rnd: [0x6f7262, 0.7, 0.1], blue: [0x3f7fb5, 0.6, 0.1] });
     var g = K.group(THREE, "fra_e00_spaag"), B, wg, tg, pg, s, ax, all = [AXF].concat(AXR);
+    /* the detail pass: the plate seams, bolt rows, panels, streaks and grime of the kit's detail
+       texture in place of the plain blotted one */
+    var dtx = K.detailTex(THREE, PAINT);
+    if (dtx) T.paint.map = dtx;
     B = K.bins(T, ["paint", "dark", "glass", "team", "red"]);
     chassis(B);
     var hg = K.group(THREE, "hull"); K.flush(THREE, hg, B); g.add(hg);
