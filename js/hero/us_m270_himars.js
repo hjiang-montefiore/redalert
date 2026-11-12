@@ -126,10 +126,51 @@
    set up, the M270 and HIMARS look as they do on the march.
    NOT drawn: the M270's roof ventilator stack (it stands above the
    published 2.57 m the check holds), the whip antennas, the camouflage nets
-   on the cab roof [F], markings, numbers, the HIMARS mirrors' heads beyond a
-   stub, the cab interiors.  Not confirmed: the ATACMS pod's end face (one
+   spread on the cab roof [F] (a rolled net is drawn since the 2026-11
+   rework), markings, numbers, the cab interiors.  Not confirmed: the ATACMS pod's end face (one
    610 mm mouth is drawn, as before); the exact M270 road-wheel spacing (read
    off two oblique photographs, [R84] and [R85] agree).
+
+   REWORK 2026-11 (the owner's visual review: the cab and launcher module
+   "read plain" at the game camera; the geometry was right, so it is kept,
+   with every key, row, builder, "turret", "podelev", "roadwheel", cells,
+   ord and len). Added, all inside the existing six materials (16 draw
+   calls a row, unchanged):
+     [RIAT] Commons "M270 at RIAT 1998.jpg" (port side, module raised): the
+            module's plain plated sides, longeron, cable run, boom hoist.
+     [BST]  Commons "MLRS (Multiple Launch Rocket System) Vehicles at Camp
+            Bastion, Afghanistan MOD 4.jpg": the cab front - the shutters'
+            heavy frames, lamp boxes, nose tow shackles, the pod faces.
+     [HS18] Commons "180614-A-IY962-102 - M142 High Mobility Artillery
+            Rocket System (HIMARS) firing during Saber Strike 18 (Image 4 of
+            7).jpg": port front three-quarter of the armoured cab - framed
+            windscreens, the louvred grilles low on the chamfered corners, the
+            door's hinges, long grab handle and window frame, the bolt rows,
+            bumper lamps, steps, the front mudguard's raked ends.
+     - module (moduleDetail, both vehicles): the lower longeron and the top
+       edge rails, proud stiffeners and bolt rows over every panel joint, the
+       cable run in its clips, lifting rings, the trunnion bosses, the closed
+       rear face with handles and lamp, top rim, transverse ribs, two hinged
+       rear lids, the pod faces' frames and corner castings, the boom's hoist
+       cables and hook blocks;
+     - M270 (m270Detail): the shutters' frame bolts, hinge knuckles and lift
+       arms, lamp guards, hanging nose shackles, cab bolt rows, door hinges,
+       grab handles, a step, roof grab rails, periscopes round the hatch, a
+       rolled camouflage net, the nose access panel and its bolts, tow cables
+       and tie-downs on the deck edges, tools (NOT CONFIRMED placement), tail
+       lamp guards, rear handles, pintle;
+     - HIMARS (himarsDetail): the windscreen frames, bolts and wipers, corner
+       grilles, door hinges, handle, window frame and latch, the mirrors on
+       their arms (NOT CONFIRMED size: [HS18] shows the arm, not the head),
+       corner and roof grab rails, lamp lenses, the hatch hinge, periscope,
+       headlamp guards, tow shackles, step hangers, the front mudguard's ends,
+       ribbed mudflaps, tail lamp guards, rear tow eyes, pintle, stowage
+       behind the cab (NOT CONFIRMED: a tarpaulin and two water cans);
+     - paint: the canvas keeps its camouflage and adds mud and dust over the
+       bottom metre, rain streaks, panel-joint grime, chips and oil spots.
+   mlrs_b (js/hero/eu_land_skirmish.js) lays its M270A2 cab shell over this
+   cab, so the cab fittings show there only where they stand clear of it.
+   Tris: M270 rows 11.0-11.5k -> 18.3-18.8k; HIMARS 10.3-10.4k -> 15.5-15.6k.
 
    Draw calls: 16 a row (hull 5 + ring 1 + elevating module 4 + 6 wheel
    groups).  Materials: SKIN (camo canvas, metre UVs), DARK, STEEL, GLASS,
@@ -206,6 +247,45 @@ var HeroUsMlrs = (function () {
         q.fillRect(R() * W, R() * W, 3 + R() * 18, 1 + R() * 3);
       }
       for (i = 0; i < 30; i++) { q.fillStyle = "rgba(25,25,18,0.06)"; q.fillRect(R() * W, R() * W, 1 + R() * 2, 20 + R() * 50); }
+      /* REWORK 2026-11, the weathering the photographs show [G19][A24][H14]:
+         the canvas is laid on 6 m of surface with v up the sides, so its
+         bottom rows are the first metre off the ground. Mud and dust thrown
+         up by the tracks and tyres, heaviest at the bottom and fading by
+         about 1.3 m; rain streaks running down from seams and fittings; the
+         grime that collects in plate joints and round bolt heads (a faint
+         grid at the panel spacing); chipped paint on edges, and oil spots. */
+      var mud = q.createLinearGradient(0, W, 0, W * 0.76);
+      mud.addColorStop(0.0, "rgba(92,78,54,0.42)");
+      mud.addColorStop(0.45, "rgba(104,90,64,0.20)");
+      mud.addColorStop(1.0, "rgba(110,96,70,0.0)");
+      q.fillStyle = mud; q.fillRect(0, W * 0.76, W, W * 0.24);
+      for (i = 0; i < 90; i++) {
+        q.fillStyle = (i % 3) ? "rgba(84,70,48,0.16)" : "rgba(150,132,98,0.12)";
+        x = R() * W; y = W * (0.80 + R() * 0.20);
+        q.beginPath(); q.ellipse(x, y, 2 + R() * 9, 1 + R() * 4, 0, 0, 6.2832); q.fill();
+      }
+      for (i = 0; i < 60; i++) {
+        x = R() * W; y = R() * W * 0.8;
+        q.fillStyle = (i & 1) ? "rgba(24,24,18,0.10)" : "rgba(190,180,150,0.07)";
+        q.fillRect(x, y, 1 + R() * 1.5, 14 + R() * 60);
+      }
+      q.strokeStyle = "rgba(18,18,12,0.16)"; q.lineWidth = 1;
+      for (i = 0; i < 6; i++) {
+        x = Math.floor(i * W / 6 + R() * 10) + 0.5;
+        q.beginPath(); q.moveTo(x, 0); q.lineTo(x, W); q.stroke();
+      }
+      for (i = 0; i < 4; i++) {
+        y = Math.floor(i * W / 4 + R() * 12) + 0.5;
+        q.beginPath(); q.moveTo(0, y); q.lineTo(W, y); q.stroke();
+      }
+      for (i = 0; i < 120; i++) {
+        q.fillStyle = (i % 3) ? "rgba(30,30,24,0.22)" : "rgba(200,192,160,0.16)";
+        q.fillRect(R() * W, R() * W, 1 + R() * 3, 1 + R() * 2);
+      }
+      for (i = 0; i < 7; i++) {
+        q.fillStyle = "rgba(14,12,8,0.12)";
+        q.beginPath(); q.ellipse(R() * W, R() * W, 3 + R() * 8, 2 + R() * 6, R() * 3, 0, 6.2832); q.fill();
+      }
     } catch (e) { cv = null; }
     _cv[kind] = cv;
     return cv;
@@ -333,6 +413,26 @@ var HeroUsMlrs = (function () {
     if (axis === "x") this.put(mat, g, x, y, z, 0, 0, -Math.PI / 2);
     else if (axis === "z") this.put(mat, g, x, y, z, Math.PI / 2, 0, 0);
     else this.put(mat, g, x, y, z);
+  };
+  /* REWORK 2026-11: a round bar from point a to point b (grab handles,
+     guards, cables, mirror arms) and a bar bent through several points */
+  Baker.prototype.bar = function (mat, a, b, r, seg) {
+    var T = this.T, dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+    var L = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (L < 1e-6) return;
+    var g = new T.CylinderGeometry(r, r, L, seg || 6), m = new T.Matrix4();
+    m.compose(new T.Vector3((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2),
+              new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), new T.Vector3(dx / L, dy / L, dz / L)),
+              new T.Vector3(1, 1, 1));
+    g.applyMatrix4(m);
+    this.add(mat, g);
+  };
+  Baker.prototype.rod = function (mat, pts, r, seg) {
+    for (var i = 0; i < pts.length - 1; i++) this.bar(mat, pts[i], pts[i + 1], r, seg);
+  };
+  /* a ring (a tow eye, a lifting ring, a shackle when arc < 2 pi) */
+  Baker.prototype.torus = function (mat, R, r, x, y, z, rx, ry, rz, arc) {
+    this.put(mat, new this.T.TorusGeometry(R, r, 5, 10, arc || Math.PI * 2), x, y, z, rx, ry, rz);
   };
   /* a flat disc facing +X (a tube mouth) */
   Baker.prototype.mouth = function (mat, r, seg, x, y, z) {
@@ -517,6 +617,90 @@ var HeroUsMlrs = (function () {
     return E;
   }
 
+  /* ------------------------------------------- REWORK 2026-11: the fittings */
+  /* The module's structure, in the module frame (launcher() leaves KE in it):
+     the lower longeron and top edge rail on each side, bolt rows down every
+     panel joint, the data and power cable run in its clips along the upper
+     side, lifting rings at the four top corners, the trunnion bosses and
+     the closed rear face with its panel, handles and lamp; round each pod
+     face its cast frame and the four corner castings by which the pod is
+     lifted [F][H07][H22][G19][RIAT]. */
+  function moduleDetail(KE, T, o) {
+    var j, k, xm = (o.x0 + o.x1) / 2, L = o.x1 - o.x0, zc = o.z1 - 0.06 - 0.42, i, yc;
+    for (j = -1; j <= 1; j += 2) {
+      var yo = j * (o.hw + 0.02);
+      KE.bb(T.skin, o.x0 + 0.04, o.x1 - 0.10, j * o.hw, j * (o.hw + 0.035), o.z0 + 0.10, o.z0 + 0.22);
+      KE.bb(T.skin, o.x0 + 0.04, o.x1 - 0.10, j * (o.hw - 0.01), j * (o.hw + 0.02), o.z1 - 0.16, o.z1 - 0.11);
+      for (k = 0; k < o.seams.length; k++)
+        for (i = 0; i < 6; i++)
+          KE.box(T.steel, 0.026, 0.02, 0.026, o.x0 + o.seams[k] + 0.04, yo, o.z0 + 0.32 + i * (o.z1 - o.z0 - 0.62) / 5);
+      for (i = 0; i < Math.round(L / 0.26); i++)
+        KE.box(T.steel, 0.026, 0.02, 0.026, o.x0 + 0.15 + i * 0.26, j * (o.hw + 0.040), o.z0 + 0.16);
+      /* the cable run and its clips */
+      KE.cyl(T.dark, 0.028, L - 0.60, 8, xm - 0.10, j * (o.hw + 0.03), o.z1 - 0.26, "x");
+      for (i = 0; i < 6; i++) KE.box(T.steel, 0.03, 0.05, 0.07, o.x0 + 0.45 + i * (L - 1.0) / 5, j * (o.hw + 0.025), o.z1 - 0.26);
+      /* lifting rings at the top corners and the trunnion boss at the rear */
+      for (k = 0; k < 2; k++) {
+        var xr = k ? o.x1 - 0.22 : o.x0 + 0.18;
+        KE.box(T.steel, 0.10, 0.04, 0.08, xr, j * (o.hw + 0.02), o.z1 - 0.06);
+        KE.torus(T.steel, 0.05, 0.012, xr, j * (o.hw + 0.05), o.z1 - 0.02, 0, 0, 0);
+      }
+      KE.cyl(T.steel, 0.11, 0.06, 14, o.px, j * (o.hw + 0.03), o.pz + 0.10, "y");
+      KE.cyl(T.dark, 0.06, 0.08, 10, o.px, j * (o.hw + 0.05), o.pz + 0.10, "y");
+    }
+    /* the rear face: a framed panel, two handles, the module lamp */
+    KE.bb(T.skin, o.x0 - 0.025, o.x0, -o.hw + 0.12, o.hw - 0.12, o.z0 + 0.14, o.z1 - 0.14);
+    KE.bb(T.dark, o.x0 - 0.03, o.x0 - 0.02, -o.hw + 0.20, o.hw - 0.20, o.z1 - 0.20, o.z1 - 0.18);
+    KE.bb(T.dark, o.x0 - 0.03, o.x0 - 0.02, -o.hw + 0.20, o.hw - 0.20, o.z0 + 0.18, o.z0 + 0.20);
+    for (j = -1; j <= 1; j += 2) {
+      KE.rod(T.steel, [[o.x0 - 0.01, j * 0.55, o.z0 + 0.62], [o.x0 - 0.07, j * 0.55, o.z0 + 0.62],
+                       [o.x0 - 0.07, j * 0.55, o.z0 + 0.82], [o.x0 - 0.01, j * 0.55, o.z0 + 0.82]], 0.014, 5);
+      KE.bb(T.dark, o.x0 - 0.05, o.x0, j * (o.hw - 0.18), j * (o.hw - 0.32), o.z1 - 0.34, o.z1 - 0.24);
+    }
+    /* the top: a raised rim along both edges, transverse stiffening ribs
+       (clear of the boom and the team stripe), and the two hinged access
+       lids at the rear with their hinges and handles; on each side a proud
+       stiffener over every panel joint */
+    for (j = -1; j <= 1; j += 2) {
+      KE.bb(T.skin, o.x0 + 0.05, o.x1 - 0.10, j * (o.hw - 0.12), j * (o.hw - 0.06), o.z1, o.z1 + 0.04);
+      for (k = 0; k < o.seams.length; k++)
+        KE.bb(T.skin, o.x0 + o.seams[k] - 0.035, o.x0 + o.seams[k] + 0.035, j * o.hw, j * (o.hw + 0.03), o.z0 + 0.22, o.z1 - 0.16);
+      KE.bb(T.skin, o.x0 + 0.08, o.x0 + 0.62, j * 0.06, j * 0.62, o.z1, o.z1 + 0.025);
+      KE.cyl(T.steel, 0.025, 0.50, 8, o.x0 + 0.66, j * 0.34, o.z1 + 0.02, "y");
+      KE.rod(T.steel, [[o.x0 + 0.20, j * 0.30, o.z1 + 0.025], [o.x0 + 0.20, j * 0.30, o.z1 + 0.06],
+                       [o.x0 + 0.20, j * 0.44, o.z1 + 0.06], [o.x0 + 0.20, j * 0.44, o.z1 + 0.025]], 0.012, 5);
+    }
+    for (k = 0; k < o.ribs.length; k++)
+      KE.bb(T.skin, o.x0 + o.ribs[k] - 0.03, o.x0 + o.ribs[k] + 0.03, -(o.hw - 0.28), o.hw - 0.28, o.z1, o.z1 + 0.035);
+    /* round each pod face: the frame and the four corner castings */
+    for (i = 0; i < o.pods.length; i++) {
+      yc = o.pods[i];
+      for (j = -1; j <= 1; j += 2) {
+        KE.bb(T.skin, o.x1 + 0.04, o.x1 + 0.07, yc + j * 0.525, yc + j * 0.475, zc - 0.42, zc + 0.42);
+        for (k = -1; k <= 1; k += 2)
+          KE.box(T.steel, 0.07, 0.08, 0.08, o.x1 + 0.045, yc + j * 0.49, zc + k * 0.38);
+      }
+      KE.bb(T.skin, o.x1 + 0.04, o.x1 + 0.065, yc - 0.475, yc + 0.475, zc + 0.39, zc + 0.42);
+      KE.bb(T.skin, o.x1 + 0.04, o.x1 + 0.065, yc - 0.475, yc + 0.475, zc - 0.42, zc - 0.39);
+    }
+    /* the boom's hoist: two cables down from the cross frame to the hook
+       blocks, stowed against the frame (M270 [R85][RIAT]; HIMARS [D]) */
+    if (o.boom270) {
+      for (j = -1; j <= 1; j += 2) {
+        KE.bar(T.dark, [o.x1 - 0.05, j * 0.70, o.z1 + 0.04], [o.x1 - 0.05, j * 0.70, o.z1 - 0.30], 0.012, 5);
+        KE.box(T.steel, 0.08, 0.10, 0.12, o.x1 - 0.05, j * 0.70, o.z1 - 0.34);
+        KE.torus(T.steel, 0.04, 0.012, o.x1 - 0.05, j * 0.70, o.z1 - 0.43, Math.PI / 2, 0, 0);
+      }
+    }
+    if (o.boom142) {
+      for (j = -1; j <= 1; j += 2) {
+        KE.bar(T.dark, [o.x0 + 0.26, j * 0.60, o.z1 + 0.30], [o.x0 + 1.60, j * 0.60, o.z1 + 0.10], 0.012, 5);
+        KE.box(T.steel, 0.12, 0.10, 0.08, o.x0 + 0.50, j * 0.60, o.z1 + 0.27);
+      }
+    }
+  }
+
+
   /* ----------------------------------------------------------------- M270 */
   /* Side stations off [R84] and [R85] (76.6 px a metre on the 6.85 m hull),
      +X nose: hull -3.42 .. +3.42; cab 0.70 .. 3.42, roof 2.40; deck 1.08;
@@ -594,6 +778,109 @@ var HeroUsMlrs = (function () {
     W.vc = null;
   }
 
+  /* The M270's own fittings on the hull and cab [F][G19][K98][RIAT][BST]:
+     the shutters' armoured frames with their bolts, hinge knuckles and lift
+     arms; the lamp clusters' guards; bolt rows and grab handles on the cab;
+     the door hinges and the step; on the roof the periscopes round the
+     hatch, the grab rails and a rolled camouflage net; the nose plate's
+     bolted access panel and the hanging tow shackles; the tow cable, tools
+     and tie-downs on the deck edges; the tail lamps' guards, the pintle and
+     the rear grab handles. */
+  function m270Detail(K, T, HW) {
+    var s, i, k, x;
+    function sp(u, h) {
+      var dx = F1[0] - F0[0], dz = F1[1] - F0[1], L = Math.sqrt(dx * dx + dz * dz), nx = dz / L, nz = -dx / L;
+      if (nx < 0) { nx = -nx; nz = -nz; }
+      return [F0[0] + dx * u + nx * h, F0[1] + dz * u + nz * h];
+    }
+    var panes = [[-1.30, -0.48], [-0.38, 0.38], [0.48, 1.30]];
+    for (i = 0; i < 3; i++) {
+      var p0 = panes[i][0], p1 = panes[i][1], ym = (p0 + p1) / 2;
+      /* bolt heads round the frame */
+      for (k = 0; k < 6; k++) {
+        var yb = p0 + 0.05 + k * (p1 - p0 - 0.10) / 5;
+        K.onSlope(T.steel, F0, F1, 0.150, 0.170, 0.06, 0.085, yb - 0.015, yb + 0.015);
+        K.onSlope(T.steel, F0, F1, 0.910, 0.930, 0.06, 0.085, yb - 0.015, yb + 0.015);
+      }
+      /* the hinge knuckles along the top and the two lift arms */
+      var hp = sp(0.97, 0.06);
+      for (k = 0; k < 3; k++) K.cyl(T.steel, 0.035, 0.14, 8, hp[0], p0 + 0.12 + k * (p1 - p0 - 0.24) / 2, hp[1], "y");
+      for (k = -1; k <= 1; k += 2) {
+        var a0 = sp(0.30, 0.06), a1 = sp(0.90, 0.10);
+        K.bar(T.steel, [a0[0], ym + k * 0.22, a0[1]], [a1[0], ym + k * 0.22, a1[1]], 0.016, 5);
+      }
+    }
+    for (s = -1; s <= 1; s += 2) {
+      /* the lamp clusters' guards: a bent bar over each */
+      K.rod(T.steel, [[3.40, s * 0.94, 1.48], [3.49, s * 0.94, 1.48], [3.49, s * 1.34, 1.48], [3.40, s * 1.34, 1.48]], 0.014, 5);
+      K.bar(T.steel, [3.49, s * 0.94, 1.48], [3.49, s * 0.94, 1.18], 0.014, 5);
+      K.bar(T.steel, [3.49, s * 1.34, 1.48], [3.49, s * 1.34, 1.18], 0.014, 5);
+      K.bar(T.steel, [3.49, s * 1.14, 1.48], [3.49, s * 1.14, 1.18], 0.010, 5);
+      /* the tow shackle hanging in each nose eye */
+      K.torus(T.steel, 0.06, 0.015, 3.44, s * 0.625, 0.80, Math.PI / 2, 0, 0, Math.PI);
+      /* cab sides: bolt rows along the top and bottom edges, the door
+         hinges, a grab handle at the door and one by the front corner, the
+         step under the door */
+      for (x = 0.82; x < 2.86; x += 0.20) {
+        K.box(T.steel, 0.026, 0.02, 0.026, x, s * (HW + 0.006), 1.14);
+        K.box(T.steel, 0.026, 0.02, 0.026, x, s * (HW + 0.006), 2.30);
+      }
+      for (k = 0; k < 2; k++) K.cyl(T.steel, 0.03, 0.16, 8, 2.31, s * (HW + 0.025), 1.42 + k * 0.62, "z");
+      K.rod(T.steel, [[2.62, s * HW, 1.62], [2.62, s * (HW + 0.07), 1.62], [2.62, s * (HW + 0.07), 1.98], [2.62, s * HW, 1.98]], 0.014, 5);
+      K.rod(T.steel, [[0.80, s * HW, 1.40], [0.80, s * (HW + 0.07), 1.40], [0.80, s * (HW + 0.07), 2.10], [0.80, s * HW, 2.10]], 0.014, 5);
+      K.rod(T.steel, [[1.55, s * (HW - 0.04), 1.06], [1.55, s * (HW + 0.02), 0.84], [1.95, s * (HW + 0.02), 0.84], [1.95, s * (HW - 0.04), 1.06]], 0.016, 5);
+      /* the roof grab rails on their posts */
+      K.bar(T.steel, [0.95, s * 1.28, 2.50], [2.55, s * 1.28, 2.50], 0.016, 6);
+      for (k = 0; k < 3; k++) K.bar(T.steel, [1.0 + k * 0.75, s * 1.28, 2.40], [1.0 + k * 0.75, s * 1.28, 2.50], 0.014, 5);
+      /* deck edges: the tow cable along each side, its two eyes, and the
+         tie-down rings */
+      K.cyl(T.dark, 0.025, 3.10, 8, -1.55, s * 1.36, 1.115, "x");
+      K.cyl(T.dark, 0.025, 3.10, 8, -1.55, s * 1.30, 1.115, "x");
+      K.torus(T.steel, 0.07, 0.02, 0.05, s * 1.33, 1.115, 0, 0, 0);
+      K.torus(T.steel, 0.07, 0.02, -3.15, s * 1.33, 1.115, 0, 0, 0);
+      for (k = 0; k < 4; k++) K.box(T.steel, 0.05, 0.16, 0.035, -2.70 + k * 0.85, s * 1.33, 1.14);
+      /* the tail: lamp guards and the rear grab handles */
+      K.rod(T.steel, [[-3.42, s * 1.10, 1.06], [-3.466, s * 1.10, 1.06], [-3.466, s * 1.30, 1.06], [-3.42, s * 1.30, 1.06]], 0.012, 5);
+      K.rod(T.steel, [[-3.42, s * 1.10, 0.90], [-3.466, s * 1.10, 0.90], [-3.466, s * 1.30, 0.90], [-3.42, s * 1.30, 0.90]], 0.012, 5);
+      K.rod(T.steel, [[-3.42, s * 0.30, 0.92], [-3.466, s * 0.30, 0.92], [-3.466, s * 0.30, 1.04], [-3.42, s * 0.30, 1.04]], 0.012, 5);
+    }
+    /* tools on the deck edges: a pick and a shovel to port, a crowbar and
+       a sledge to starboard, each in its clamps (NOT CONFIRMED: placed by
+       the practice of US tracked carriers; no photograph here shows them) */
+    K.cyl(T.dark, 0.022, 0.92, 8, -0.80, 1.34, 1.175, "x");
+    K.bb(T.steel, -1.36, -1.24, 1.26, 1.42, 1.14, 1.21);
+    K.cyl(T.dark, 0.020, 0.80, 8, -2.30, 1.34, 1.175, "x");
+    K.bb(T.steel, -1.92, -1.66, 1.27, 1.41, 1.15, 1.19);
+    K.cyl(T.steel, 0.018, 1.10, 6, -0.90, -1.34, 1.17, "x");
+    K.cyl(T.dark, 0.022, 0.80, 8, -2.40, -1.34, 1.175, "x");
+    K.bb(T.steel, -2.92, -2.78, -1.42, -1.26, 1.13, 1.22);
+    for (k = 0; k < 3; k++) {
+      K.bb(T.dark, -0.55 - k * 0.90, -0.50 - k * 0.90, 1.24, 1.44, 1.10, 1.21);
+      K.bb(T.dark, -0.55 - k * 0.90, -0.50 - k * 0.90, -1.44, -1.24, 1.10, 1.21);
+    }
+    /* the roof: periscopes round the commander's hatch, its hinge, the
+       rolled camouflage net strapped across the roof's rear edge [F] */
+    for (i = 0; i < 4; i++) {
+      var pa = -0.8 + i * 0.55;
+      K.box(T.dark, 0.13, 0.11, 0.08, 1.45 + Math.cos(pa) * 0.40, 0.55 + Math.sin(pa) * 0.40, 2.44, 0, 0, pa);
+      K.box(T.glass, 0.02, 0.08, 0.05, 1.45 + Math.cos(pa) * 0.465, 0.55 + Math.sin(pa) * 0.465, 2.445, 0, 0, pa);
+    }
+    K.bb(T.steel, 1.10, 1.18, 0.35, 0.75, 2.40, 2.47);
+    K.cyl(T.skin, 0.07, 2.30, 12, 0.88, 0, 2.47, "y");
+    for (k = -1; k <= 1; k++) K.cyl(T.dark, 0.075, 0.05, 12, 0.88, k * 0.80, 2.47, "y");
+    /* the nose plate's bolted access panel */
+    var N0 = [2.75, 0.45], N1 = [3.40, 0.98];
+    K.onSlope(T.dark, N0, N1, 0.25, 0.27, 0.0, 0.012, -0.90, 0.90);
+    K.onSlope(T.dark, N0, N1, 0.85, 0.87, 0.0, 0.012, -0.90, 0.90);
+    for (k = 0; k < 8; k++) {
+      var yy = -0.84 + k * 0.24;
+      K.onSlope(T.steel, N0, N1, 0.30, 0.33, 0.0, 0.025, yy - 0.015, yy + 0.015);
+      K.onSlope(T.steel, N0, N1, 0.80, 0.83, 0.0, 0.025, yy - 0.015, yy + 0.015);
+    }
+    /* the towing pintle on the tail beam */
+    K.bb(T.steel, -3.48, -3.42, -0.10, 0.10, 0.66, 0.80);
+  }
+
   function buildM270(THREE, T, V) {
     var root = new THREE.Group(), K = new Baker(THREE), KT = new Baker(THREE);
     var s, i, x, k, DECK = 1.08, HW = 1.45;
@@ -659,9 +946,12 @@ var HeroUsMlrs = (function () {
        the cab's rear wall */
     var RX = -1.30, KE = new Baker(THREE), cells;
     KT.cyl(T.dark, 0.95, 0.10, 26, 0, 0, 0.05, "z");
-    cells = launcher(KT, KE, T, { hw: 1.22, x0: -2.08, x1: 1.92, z0: 0.20, z1: 1.38, pods: [0.585, -0.585],
-                                  kinds: [V.pods, V.pods], px: -1.90, pz: 0.20, boom270: true,
-                                  posts: [-0.585, 0, 0.585], seams: [0.25, 1.35, 2.55, 3.70] });
+    var MO = { hw: 1.22, x0: -2.08, x1: 1.92, z0: 0.20, z1: 1.38, pods: [0.585, -0.585],
+               kinds: [V.pods, V.pods], px: -1.90, pz: 0.20, boom270: true,
+               posts: [-0.585, 0, 0.585], seams: [0.25, 1.35, 2.55, 3.70], ribs: [0.95, 1.35, 2.78, 3.62] };
+    cells = launcher(KT, KE, T, MO);
+    moduleDetail(KE, T, MO);
+    m270Detail(K, T, HW);
     if (V.louvre) {
       /* the louvred panel low on the port side of the module, near its front [G19] */
       KE.bb(T.dark, 0.70, 1.55, 1.222, 1.236, 0.38, 0.92);
@@ -719,6 +1009,89 @@ var HeroUsMlrs = (function () {
       for (i = 0; i < 10; i++) { a = i * Math.PI / 5; W.box(T.wheel, 0.04, 0.03, 0.04, 0.20 * Math.cos(a), j * 0.205, 0.20 * Math.sin(a), 0, -a, 0); }
     }
     W.vc = null;
+  }
+
+  /* The HIMARS' own fittings [H14][H07][HS18][D]: the windscreens'
+     armoured frames, their bolts and wipers; the louvred grilles low on the
+     chamfered front corners; the door's hinges, grab handle and armoured
+     window frame; the mirrors on their arms; the lenses in the roof marker
+     lamps; the headlamp guards, tow shackles and step hangers on the bumper;
+     the mudflaps behind the front tyres; the roof grab rails; the tail
+     lamps' guards and the pintle; stowage behind the cab. */
+  function himarsDetail(K, T, CHW) {
+    var s, i, k;
+    for (s = -1; s <= 1; s += 2) {
+      var y0 = s * 0.10, y1 = s * 0.86;
+      K.onSlope(T.skin, G0, G1, 0.12, 0.18, 0.0, 0.07, y0, y1);
+      K.onSlope(T.skin, G0, G1, 0.76, 0.82, 0.0, 0.07, y0, y1);
+      K.onSlope(T.skin, G0, G1, 0.12, 0.82, 0.0, 0.07, y1 - s * 0.05, y1);
+      K.onSlope(T.skin, G0, G1, 0.12, 0.82, 0.0, 0.07, y0, y0 + s * 0.05);
+      for (k = 0; k < 5; k++) {
+        var yb = s * (0.16 + k * 0.165);
+        K.onSlope(T.steel, G0, G1, 0.140, 0.160, 0.07, 0.09, yb - 0.014, yb + 0.014);
+        K.onSlope(T.steel, G0, G1, 0.780, 0.800, 0.07, 0.09, yb - 0.014, yb + 0.014);
+      }
+      /* the wiper, parked along the bottom of the pane */
+      K.onSlope(T.steel, G0, G1, 0.20, 0.23, 0.04, 0.06, s * 0.20, s * 0.70);
+      /* the louvred grille on the chamfered corner panel [HS18] */
+      var a = Math.atan2(-0.13 * s, 0.26), nx = 0.13 / 0.29, ny = s * 0.26 / 0.29;
+      K.box(T.dark, 0.24, 0.02, 0.22, 3.17 + nx * 0.006, s * 1.105 + ny * 0.006, 1.48, 0, 0, a);
+      for (k = 0; k < 4; k++)
+        K.box(T.steel, 0.24, 0.025, 0.022, 3.17 + nx * 0.016, s * 1.105 + ny * 0.016, 1.40 + k * 0.055, 0, 0, a);
+      K.box(T.skin, 0.28, 0.03, 0.03, 3.17 + nx * 0.012, s * 1.105 + ny * 0.012, 1.605, 0, 0, a);
+      K.box(T.skin, 0.28, 0.03, 0.03, 3.17 + nx * 0.012, s * 1.105 + ny * 0.012, 1.355, 0, 0, a);
+      /* door: two hinges on the front edge, the long grab handle on the
+         rear edge, the armoured frame round the window [HS18] */
+      for (k = 0; k < 2; k++) K.cyl(T.steel, 0.03, 0.18, 8, 2.98, s * (CHW + 0.02), 1.55 + k * 0.80, "z");
+      K.rod(T.steel, [[2.14, s * CHW, 1.55], [2.14, s * (CHW + 0.07), 1.55], [2.14, s * (CHW + 0.07), 2.45], [2.14, s * CHW, 2.45]], 0.016, 6);
+      K.bb(T.skin, 2.53, 2.97, s * CHW, s * (CHW + 0.03), 2.31, 2.35);
+      K.bb(T.skin, 2.53, 2.97, s * CHW, s * (CHW + 0.03), 2.65, 2.69);
+      K.bb(T.skin, 2.53, 2.57, s * CHW, s * (CHW + 0.03), 2.31, 2.69);
+      K.bb(T.skin, 2.93, 2.97, s * CHW, s * (CHW + 0.03), 2.31, 2.69);
+      K.bb(T.steel, 2.30, 2.40, s * CHW, s * (CHW + 0.03), 2.00, 2.06);          /* door latch */
+      /* the mirror: an arm off the cab's front top corner, the head below it */
+      K.rod(T.steel, [[3.02, s * (CHW - 0.02), 2.84], [3.10, s * (CHW + 0.14), 2.86], [3.10, s * (CHW + 0.20), 2.74]], 0.018, 6);
+      K.bar(T.steel, [3.04, s * (CHW - 0.02), 2.44], [3.10, s * (CHW + 0.20), 2.52], 0.014, 6);
+      K.bb(T.dark, 3.07, 3.13, s * (CHW + 0.12), s * (CHW + 0.28), 2.46, 2.76);
+      K.bb(T.glass, 3.055, 3.07, s * (CHW + 0.14), s * (CHW + 0.26), 2.49, 2.73);
+      /* the cab front corner grab handle */
+      K.rod(T.steel, [[3.06, s * (CHW - 0.02), 1.70], [3.10, s * (CHW + 0.04), 1.70], [3.10, s * (CHW + 0.04), 2.30], [3.06, s * (CHW - 0.02), 2.30]], 0.014, 5);
+      /* roof grab rails on their posts */
+      K.bar(T.steel, [1.95, s * 1.02, 3.05], [2.95, s * 1.02, 3.05], 0.016, 6);
+      for (k = 0; k < 3; k++) K.bar(T.steel, [2.0 + k * 0.45, s * 1.02, 2.98], [2.0 + k * 0.45, s * 1.02, 3.05], 0.014, 5);
+      /* bumper: the headlamp guards, the tow shackles, the step hangers */
+      K.rod(T.steel, [[3.52, s * 0.52, 0.84], [3.56, s * 0.52, 1.03], [3.56, s * 0.98, 1.03], [3.52, s * 0.98, 0.84]], 0.014, 5);
+      K.bar(T.steel, [3.56, s * 0.74, 1.03], [3.54, s * 0.74, 0.84], 0.012, 5);
+      K.torus(T.steel, 0.055, 0.015, 3.49, s * 0.36, 0.76, Math.PI / 2, 0, 0, Math.PI);
+      K.bar(T.steel, [2.96, s * (CHW + 0.08), 0.60], [2.96, s * (CHW + 0.08), 1.20], 0.016, 5);
+      K.bar(T.steel, [3.34, s * (CHW + 0.08), 0.60], [3.34, s * (CHW + 0.08), 1.20], 0.016, 5);
+      /* the front mudguard's raked rear and front ends round the tyre [HS18] */
+      K.prism(T.skin, [[1.56, 0.98], [1.62, 0.96], [1.80, 1.20], [1.75, 1.25]], s * 0.72, s * 1.20);
+      K.prism(T.skin, [[2.95, 1.20], [3.02, 1.25], [3.16, 1.06], [3.10, 1.02]], s * 0.72, s * 1.20);
+      /* the mudflap behind the front tyre, ribbed */
+      K.bb(T.dark, 1.70, 1.73, s * 0.72, s * 1.18, 0.40, 1.20);
+      for (k = 0; k < 3; k++) K.bb(T.dark, 1.68, 1.70, s * 0.74, s * 1.16, 0.50 + k * 0.20, 0.53 + k * 0.20);
+      /* the tail: lamp guards, the rear tow eyes */
+      K.rod(T.steel, [[-3.45, s * 0.88, 1.20], [-3.48, s * 0.88, 1.20], [-3.48, s * 1.08, 1.20], [-3.45, s * 1.08, 1.20]], 0.012, 5);
+      K.torus(T.steel, 0.05, 0.014, -3.42, s * 0.55, 0.88, Math.PI / 2, 0, 0, Math.PI);
+    }
+    /* lenses in the five roof marker lamps (amber, drawn glass) */
+    for (i = 0; i < 5; i++) K.bb(T.glass, 3.08, 3.09, -0.70 + i * 0.35 - 0.04, -0.70 + i * 0.35 + 0.04, 2.96, 3.02);
+    /* the gunner's hatch hinge and two periscopes beside it */
+    K.bb(T.steel, 1.78, 1.86, 0.10, 0.50, 3.00, 3.07);
+    K.bb(T.dark, 2.48, 2.60, 0.62, 0.78, 2.98, 3.06);
+    K.bb(T.glass, 2.60, 2.61, 0.64, 0.76, 2.99, 3.05);
+    /* the towing pintle */
+    K.bb(T.steel, -3.50, -3.42, -0.10, 0.10, 0.88, 1.00);
+    /* stowage behind the cab (NOT CONFIRMED: a rolled tarpaulin on the
+       starboard locker and two water cans on the port box, as field
+       photographs of FMTV cabs commonly show) */
+    K.cyl(T.skin, 0.12, 0.56, 12, 1.33, -0.85, 2.67, "y");
+    for (k = -1; k <= 1; k += 2) K.cyl(T.dark, 0.125, 0.04, 12, 1.33, -0.85 + k * 0.18, 2.67, "y");
+    for (k = 0; k < 2; k++) {
+      K.bb(T.skin, 0.62 + k * 0.30, 0.86 + k * 0.30, 0.62, 0.78, 2.28, 2.72);
+      K.bb(T.steel, 0.70 + k * 0.30, 0.78 + k * 0.30, 0.66, 0.74, 2.72, 2.76);
+    }
   }
 
   function buildHimars(THREE, T, V) {
@@ -800,9 +1173,12 @@ var HeroUsMlrs = (function () {
        the boom mirrored with it (see the header) */
     var RX = -1.60, KE = new Baker(THREE), cells;
     KT.cyl(T.dark, 0.80, 0.10, 24, 0, 0, 0.05, "z");
-    cells = launcher(KT, KE, T, { hw: 1.07, x0: -1.79, x1: 1.80, z0: 0.20, z1: 1.38, pods: [0],
-                                  kinds: [V.pods], px: -1.60, pz: 0.20, boom142: true,
-                                  posts: [-0.60, 0.60], seams: [0.20, 1.00, 2.10, 3.25] });
+    var MO = { hw: 1.07, x0: -1.79, x1: 1.80, z0: 0.20, z1: 1.38, pods: [0],
+               kinds: [V.pods], px: -1.60, pz: 0.20, boom142: true,
+               posts: [-0.60, 0.60], seams: [0.20, 1.00, 2.10, 3.25], ribs: [2.45, 2.90, 3.35] };
+    cells = launcher(KT, KE, T, MO);
+    moduleDetail(KE, T, MO);
+    himarsDetail(K, T, CHW);
     K.flush(root);
     var G = new THREE.Group();
     G.position.set(RX, 0, DECK);
