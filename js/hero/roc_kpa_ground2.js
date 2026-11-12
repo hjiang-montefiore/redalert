@@ -99,6 +99,13 @@
      (B1-B3 are quarter views), the turret's size.
    NOT DRAWN: crews, antennas (D1's whip), the Sherman's .50 (not in S1/S2), tools, tow cables, the M41D's
      new engine (internal; its grille only).
+   DETAIL PASS (BA-64B only): block-tread tyres with rim rings, hub caps and nuts (and the spare's), the
+     pistol ports' rings and swung covers, door hinges, handles and edges, the running boards, the rear
+     mudguards' skirts, wire lamp guards with lenses, the chassis horns and tow hooks, rear towing eyes and
+     tail lamps, the left mirror (B2), the jack lever and the axe in their clips on the left (B2), the
+     bonnet's louvred intake and grab handle (B2), visor and roof-plate hinges, the silencer (B1), the
+     turret's bolt heads, cheek slits, top lip and spare drum, the waist weld; a detail paint texture
+     (seams, bolt rows, panels, streaks, grime, chips).  Sizes from B1/B2's proportions: NOT CONFIRMED.
    ENGINE (js/damage3d.js, not edited): roc_e50_mbt (mbt) and roc_e00_lighttank (lighttank) default to
      "rear" - both engines are at the rear; kpa_e50_recon (recon) defaults to "front" - the BA-64's engine
      is in the front.  All right.  roc_e00_spaag is listed "front" (held here).
@@ -163,6 +170,12 @@ var HeroRocKpaGround2 = (function () {
     var dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz), nx = -dz / l * th / 2, nz = dx / l * th / 2;
     hexa(bin, [[x0 - nx, y0, z0 - nz], [x1 - nx, y0, z1 - nz], [x1 - nx, y1, z1 - nz], [x0 - nx, y1, z0 - nz],
                [x0 + nx, y0, z0 + nz], [x1 + nx, y0, z1 + nz], [x1 + nx, y1, z1 + nz], [x0 + nx, y1, z0 + nz]]);
+  }
+  /* a square bar of half side h between two 3D points (the detail pass) */
+  function bar(bin, A, B, h) {
+    var ax = unit(sub(B, A)), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], u = unit(cross(ax, t)), v = cross(ax, u);
+    var c = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2], l = Math.sqrt(dot(sub(B, A), sub(B, A))) / 2;
+    slab(bin, c, ax, u, v, l, h, h);
   }
   function cyl(bin, A, B, r0, r1, seg, nocap) {
     var ax = unit(sub(B, A)), t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
@@ -244,6 +257,94 @@ var HeroRocKpaGround2 = (function () {
       t.anisotropy = 4;
     } catch (e) { t = null; }
     _tex[P.base] = t;
+    return t;
+  }
+  var __DTEX = {};
+  /* DETAIL PAINT (the detail pass): a 512 px tile over 2.94 m of surface (UVs 0.34 a metre, 174 px a
+     metre).  Over the base colour and its soft blots: plate seams with a lit edge, bolt rows along some
+     of them, access-panel outlines with corner screws, rain streaks, grime, dust, chipped paint and oil
+     spots.  Plain paint - no markings, numbers or camouflage. */
+  function detailTex(THREE, P) {
+    var key = "detail" + P.seed + P.base;
+    if (__DTEX[key] !== undefined) return __DTEX[key];
+    var t = null;
+    try {
+      var S = 512, cv = document.createElement("canvas"), q, R = rng(P.seed * 7 + 13), i, k, x, y, w, h, ox, oy, a, xs, n;
+      cv.width = cv.height = S; q = cv.getContext("2d");
+      q.fillStyle = P.base; q.fillRect(0, 0, S, S);
+      /* soft mottling in the base's own shades, drawn wrapped so the tile repeats without a seam */
+      for (k = 0; k < P.blots.length; k++) {
+        q.fillStyle = P.blots[k];
+        for (i = 0; i < 20; i++) {
+          x = R() * S; y = R() * S; w = 26 + R() * 90; h = 16 + R() * 60; a = R() * Math.PI;
+          q.globalAlpha = 0.22 + R() * 0.3;
+          for (ox = -S; ox <= S; ox += S) for (oy = -S; oy <= S; oy += S) {
+            if (x + ox < -w - 4 || x + ox > S + w + 4 || y + oy < -w - 4 || y + oy > S + w + 4) continue;
+            q.beginPath(); q.ellipse(x + ox, y + oy, w, h, a, 0, TAU); q.fill();
+          }
+        }
+      }
+      /* plate seams: four vertical butts across the tile, horizontal seams staggered between them */
+      xs = [];
+      for (i = 0; i < 4; i++) xs.push(Math.floor(i * 128 + 20 + R() * 80) + 0.5);
+      for (i = 0; i < 4; i++) {
+        q.globalAlpha = 1; q.strokeStyle = "rgba(14,15,10,0.42)"; q.lineWidth = 2;
+        q.beginPath(); q.moveTo(xs[i], 0); q.lineTo(xs[i], S); q.stroke();
+        q.strokeStyle = "rgba(255,250,225,0.12)"; q.lineWidth = 1;
+        q.beginPath(); q.moveTo(xs[i] + 2, 0); q.lineTo(xs[i] + 2, S); q.stroke();
+        y = Math.floor(60 + R() * 120) + 0.5;
+        for (k = 0; k < 2; k++) {
+          var xa = xs[i], xb = i < 3 ? xs[i + 1] : xs[0] + S;
+          q.strokeStyle = "rgba(14,15,10,0.38)"; q.lineWidth = 2;
+          q.beginPath(); q.moveTo(xa, y); q.lineTo(xb, y); q.stroke();
+          q.beginPath(); q.moveTo(xa - S, y); q.lineTo(xb - S, y); q.stroke();
+          q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1;
+          q.beginPath(); q.moveTo(xa, y + 2); q.lineTo(xb, y + 2); q.stroke();
+          /* a bolt row along every other seam */
+          if ((i + k) % 2 === 0) for (x = xa + 8; x < xb - 4; x += 15) {
+            q.fillStyle = "rgba(12,12,8,0.45)"; q.fillRect(x % S, y - 6, 3, 3);
+            q.fillStyle = "rgba(255,250,225,0.18)"; q.fillRect(x % S, y - 7, 2, 1);
+          }
+          y = (y + 200 + Math.floor(R() * 60)) % S;
+        }
+      }
+      /* access panels: outlined, a screw at each corner */
+      for (i = 0; i < 6; i++) {
+        x = Math.floor(R() * (S - 90)) + 10.5; y = Math.floor(R() * (S - 70)) + 10.5; w = 26 + Math.floor(R() * 60); h = 18 + Math.floor(R() * 44);
+        q.strokeStyle = "rgba(14,15,10,0.36)"; q.lineWidth = 1.5; q.strokeRect(x, y, w, h);
+        q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1; q.strokeRect(x + 1.5, y + 1.5, w, h);
+        q.fillStyle = "rgba(12,12,8,0.5)";
+        q.fillRect(x + 3, y + 3, 2, 2); q.fillRect(x + w - 5, y + 3, 2, 2); q.fillRect(x + 3, y + h - 5, 2, 2); q.fillRect(x + w - 5, y + h - 5, 2, 2);
+      }
+      q.globalAlpha = 1;
+      /* rain streaks down the plates (side faces carry v along z) */
+      for (i = 0; i < 260; i++) {
+        q.fillStyle = (i % 4) ? "rgba(18,16,10,0.08)" : "rgba(230,225,200,0.06)";
+        q.fillRect(R() * S, R() * S, 1 + R() * 2, 8 + R() * 54);
+      }
+      /* grime and dust patches */
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 3) ? "rgba(30,25,15,0.08)" : "rgba(150,135,100,0.08)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 8 + R() * 46, 4 + R() * 22, R() * Math.PI, 0, TAU); q.fill();
+      }
+      /* chipped paint and scratches */
+      for (i = 0; i < 180; i++) {
+        q.fillStyle = (i % 2) ? "rgba(205,200,175,0.22)" : "rgba(10,10,8,0.30)";
+        n = 1 + Math.floor(R() * 3); q.fillRect(R() * S, R() * S, n, n);
+      }
+      q.strokeStyle = "rgba(210,205,180,0.14)"; q.lineWidth = 1;
+      for (i = 0; i < 14; i++) { x = R() * S; y = R() * S; q.beginPath(); q.moveTo(x, y); q.lineTo(x + (R() - 0.5) * 40, y + (R() - 0.5) * 14); q.stroke(); }
+      /* oil and fuel spots */
+      for (i = 0; i < 8; i++) {
+        q.fillStyle = "rgba(12,10,6,0.16)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 5 + R() * 12, 4 + R() * 9, 0, 0, TAU); q.fill();
+      }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    __DTEX[key] = t;
     return t;
   }
   function materials(THREE, C, P) {
@@ -679,24 +780,155 @@ var HeroRocKpaGround2 = (function () {
     cyl(B.dark, [px + 0.10, py, 0.44], [px + 0.10 + d[0] * 0.40, py, 0.44 + d[2] * 0.40], 0.03, 0.03, 8);
     cyl(B.dark, [px + 0.10 + d[0] * 0.40, py, 0.44 + d[2] * 0.40], [px + 0.10 + d[0] * 0.62, py, 0.44 + d[2] * 0.62], 0.012, 0.012, 6);
   }
-  function baWheel(W) {
-    var TYRE = [0.12, 0.12, 0.11], RIM = rgb(BA.P.base, 0.7), HUB = [0.15, 0.15, 0.14], s, y;
-    for (s = -1; s <= 1; s += 2) {
-      y = s * BA.TY;
-      W.col = TYRE; cylY(W, 0, y - 0.09, y + 0.09, 0, BA.R, 20);
-      W.col = RIM; cylY(W, 0, y + s * 0.09, y + s * 0.10, 0, 0.22, 16);
-      W.col = HUB; cylY(W, 0, y + s * 0.10, y + s * 0.13, 0, 0.07, 10);
+  /* DETAIL PASS (B1-B3): the tyre with its block tread (two staggered rows of lugs across the crown,
+     B1's and B2's cross-country pattern), the pressed-steel disc with its rim ring, the hub cap and its
+     six wheel nuts. */
+  function baTyre(W, y, s, R) {
+    var TYRE = [0.12, 0.12, 0.11], RIM = rgb(BA.P.base, 0.7), HUB = [0.15, 0.15, 0.14], NUT = [0.20, 0.20, 0.19], i, a, c, sn, k;
+    W.col = TYRE; cylY(W, 0, y - 0.09, y + 0.09, 0, R - 0.012, 28);
+    cylY(W, 0, y + s * 0.09, y + s * 0.10, 0, R - 0.05, 24);
+    for (i = 0; i < 26; i++) for (k = -1; k <= 1; k += 2) {
+      a = (i + (k > 0 ? 0.5 : 0)) / 26 * TAU; c = Math.cos(a); sn = Math.sin(a);
+      slab(W, [c * (R - 0.016), y + k * 0.045, sn * (R - 0.016)], [-sn, 0, c], [0, 1, 0], [c, 0, sn], 0.026, 0.042, 0.016);
     }
+    W.col = RIM; cylY(W, 0, y + s * 0.09, y + s * 0.105, 0, 0.225, 20);
+    cylY(W, 0, y + s * 0.10, y + s * 0.118, 0, 0.19, 18);
+    W.col = HUB; cylY(W, 0, y + s * 0.11, y + s * 0.15, 0, 0.075, 12);
+    cylY(W, 0, y + s * 0.15, y + s * 0.165, 0, 0.045, 10);
+    W.col = NUT;
+    for (i = 0; i < 6; i++) { a = i / 6 * TAU; cylY(W, Math.cos(a) * 0.11, y + s * 0.11, y + s * 0.13, Math.sin(a) * 0.11, 0.014, 6); }
+  }
+  function baWheel(W) {
+    var s;
+    for (s = -1; s <= 1; s += 2) baTyre(W, s * BA.TY, s, BA.R);
+  }
+  /* DETAIL PASS: the fittings of B1 (right side) and B2 (left side) the first pass left out.  Sizes are
+     from those quarter views' proportions on the station table above (NOT CONFIRMED, as the rest). */
+  function upY(z) { return 0.80 - 0.625 * (z - BA.WZ); }        /* upper side plate, mid hull  */
+  function loY(z) { return 0.62 + 0.346 * (z - BA.BEL); }       /* lower side plate, mid hull  */
+  function baDetail(B, K) {
+    var s, i, y, z, x, a;
+    var WOOD = [0.42, 0.30, 0.17], STEEL = [0.30, 0.30, 0.29], TYRE = [0.12, 0.12, 0.11], LENS = [0.75, 0.72, 0.55];
+    for (s = -1; s <= 1; s += 2) {
+      /* the round pistol port on the upper plate (B1, B2): a raised ring round the existing port and its
+         round cover swung aside on a pivot */
+      y = upY(1.25) + 0.01;
+      cyl(B.paint, [0.10, s * (y - 0.02), 1.25], [0.10, s * (y + 0.025), 1.235], 0.10, 0.10, 16);
+      cyl(B.paint, [0.27, s * (upY(1.22) + 0.01), 1.22], [0.27, s * (upY(1.22) + 0.04), 1.21], 0.085, 0.085, 14);
+      cylY(B.dark, 0.20, s * (upY(1.27) - 0.01), s * (upY(1.27) + 0.05), 1.27, 0.014, 6);
+      /* the side doors on the lower plates: hinge knuckles at the front edge, the handle at the back */
+      for (i = 0; i < 2; i++) {
+        z = 0.66 + i * 0.26; y = loY(z);
+        cylZ(B.dark, 0.30, s * (y + 0.02), z - 0.05, z + 0.05, 0.022, 8);
+        box(B.paint, 0.24, 0.31, s * (y - 0.005), s * (y + 0.02), z - 0.03, z + 0.03);
+      }
+      z = 0.80; y = loY(z);
+      box(B.dark, -0.42, -0.40, s * (y + 0.005), s * (y + 0.04), z - 0.06, z + 0.06);
+      box(B.dark, -0.44, -0.38, s * (y + 0.035), s * (y + 0.045), z - 0.05, z + 0.05);
+      /* the door's outline: thin plate edges standing proud of the lower plate */
+      box(B.paint, -0.47, -0.45, s * (loY(0.80) - 0.01), s * (loY(0.80) + 0.012), 0.56, 1.00);
+      box(B.paint, 0.33, 0.35, s * (loY(0.80) - 0.01), s * (loY(0.80) + 0.012), 0.56, 1.00);
+      /* the running board between the wheels with its two brackets (B1) */
+      box(B.paint, -0.55, 0.55, s * 0.62, s * 0.86, 0.44, 0.465);
+      box(B.dark, -0.30, -0.26, s * 0.60, s * 0.84, 0.40, 0.44);
+      box(B.dark, 0.26, 0.30, s * 0.60, s * 0.84, 0.40, 0.44);
+      /* the deep rear mudguards' outer skirts and the front guards' outer lip (B1, B2) */
+      box(B.paint, -1.50, -0.60, s * 0.88, s * 0.90, 0.64, 0.84);
+      belt(B.paint, -0.60, 0.84, -0.50, 0.62, s * 0.88, s * 0.90, 0.02);
+      box(B.paint, 0.66, 1.45, s * 0.865, s * 0.885, 0.73, 0.80);
+      /* the headlamp wire guards: bars over the lamp's face and a hoop over its top (B1, B2) */
+      for (i = -1; i <= 1; i++) belt(B.dark, 1.34, 0.86, 1.36, 1.08, s * 0.74 + i * 0.045 - 0.006, s * 0.74 + i * 0.045 + 0.006, 0.012);
+      belt(B.dark, 1.22, 1.07, 1.36, 1.08, s * 0.74 - 0.10, s * 0.74 + 0.10, 0.012);
+      K.col = LENS; cylX(K, 1.335, 1.345, s * 0.74, 0.96, 0.06, 0.06, 12);
+      /* the chassis horns under the nose with the tow hooks (B2), the rear towing eyes */
+      box(B.dark, 1.50, 1.74, s * 0.34, s * 0.44, 0.40, 0.50);
+      cylY(B.dark, 1.75, s * 0.33, s * 0.45, 0.42, 0.035, 8);
+      box(B.dark, 1.74, 1.79, s * 0.37, s * 0.41, 0.36, 0.46);
+      box(B.dark, BA.REAR - 0.10, BA.REAR + 0.02, s * 0.30, s * 0.36, 0.50, 0.62);
+      cylY(B.dark, BA.REAR - 0.09, s * 0.28, s * 0.38, 0.56, 0.03, 8);
+      /* the rear lamp on the tail plate */
+      box(B.dark, BA.REAR - 0.04, BA.REAR + 0.005, s * 0.42, s * 0.50, 1.12, 1.18);
+      K.col = [0.55, 0.12, 0.10]; box(K, BA.REAR - 0.05, BA.REAR - 0.035, s * 0.43, s * 0.49, 1.13, 1.17);
+    }
+    /* the mirror on the left front mudguard (B2): stalk and glass */
+    cylZ(B.dark, 1.00, 0.84, 0.82, 1.24, 0.008, 6);
+    box(B.dark, 0.98, 1.00, 0.72, 0.88, 1.20, 1.40);
+    /* the long jack lever stowed in clips along the left upper side (B2), the axe at the rear (B2) */
+    K.col = STEEL;
+    cyl(K, [1.30, 0.66, 1.04], [-0.05, 0.84, 1.16], 0.017, 0.017, 8);
+    for (i = 0; i < 2; i++) { x = 1.0 - i * 0.75; box(B.dark, x - 0.03, x + 0.03, 0.64 + i * 0.12, 0.80 + i * 0.07, 1.03 + i * 0.07, 1.13 + i * 0.07); }
+    K.col = WOOD; cyl(K, [-0.62, 0.86, 0.90], [-1.38, 0.62, 1.32], 0.02, 0.02, 8);
+    K.col = STEEL; slab(K, [-1.36, 0.63, 1.33], unit([-0.6, -0.2, 0.34]), [0, 1, 0], unit([0.34, 0, 0.6]), 0.03, 0.01, 0.075);
+    box(B.dark, -0.72, -0.66, 0.80, 0.90, 0.88, 0.96);
+    box(B.dark, -1.24, -1.18, 0.64, 0.74, 1.20, 1.28);
+    /* the bonnet's raised louvred air intake and the grab handle ahead of it (B2) */
+    var bz = function (xx) { return 1.02 + (1.40 - xx) * 0.3077; };
+    hexa(B.paint, [[1.02, -0.05, bz(1.02) - 0.01], [1.30, -0.05, bz(1.30) - 0.01], [1.30, 0.32, bz(1.30) - 0.01], [1.02, 0.32, bz(1.02) - 0.01],
+                   [1.02, -0.05, bz(1.02) + 0.045], [1.30, -0.05, bz(1.30) + 0.025], [1.30, 0.32, bz(1.30) + 0.025], [1.02, 0.32, bz(1.02) + 0.045]]);
+    for (i = 0; i < 6; i++) { x = 1.05 + i * 0.042; box(B.dark, x, x + 0.018, -0.03, 0.30, bz(x) + 0.03, bz(x) + 0.045); }
+    for (s = -1; s <= 1; s += 2) cylZ(B.dark, 1.48, 0.10 + s * 0.08, bz(1.48) - 0.01, bz(1.48) + 0.06, 0.008, 6);
+    cylY(B.dark, 1.48, 0.02, 0.18, bz(1.48) + 0.06, 0.009, 6);
+    /* the visor's hinges along its top edge and the hinged roof plate's hinges (B1) */
+    for (s = -1; s <= 1; s += 2) {
+      cylY(B.dark, 0.73, s * 0.10, s * 0.18, 1.48, 0.018, 8);
+      cylY(B.dark, 0.48, s * 0.12, s * 0.20, 1.515, 0.016, 8);
+    }
+    /* the silencer behind the right front wheel and its tail pipe (B1) */
+    cyl(B.dark, [0.58, -0.70, 0.80], [0.42, -0.72, 0.52], 0.055, 0.055, 10);
+    cyl(B.dark, [0.42, -0.72, 0.52], [0.25, -0.70, 0.47], 0.03, 0.03, 8);
+    /* the spare wheel's tread, disc and nuts on the tail, and its clamp (B1, B2) */
+    K.col = TYRE;
+    for (i = 0; i < 26; i++) for (s = -1; s <= 1; s += 2) {
+      a = (i + (s > 0 ? 0.5 : 0)) / 26 * TAU;
+      slab(K, [BA.REAR - 0.12 + s * 0.045, Math.cos(a) * 0.366, 0.98 + Math.sin(a) * 0.366], [0, -Math.sin(a), Math.cos(a)], [1, 0, 0], [0, Math.cos(a), Math.sin(a)], 0.026, 0.042, 0.016);
+    }
+    K.col = STEEL;
+    for (i = 0; i < 6; i++) { a = i / 6 * TAU; cylX(K, BA.REAR - 0.235, BA.REAR - 0.22, Math.cos(a) * 0.11, 0.98 + Math.sin(a) * 0.11, 0.014, 0.014, 6); }
+    box(B.dark, BA.REAR - 0.22, BA.REAR - 0.02, -0.03, 0.03, 0.56, 0.62);
+    /* a weld bead along the waist, where the lower and upper plates meet, both sides */
+    for (s = -1; s <= 1; s += 2) box(B.dark, -0.90, 0.45, s * (BA.WH - 0.004), s * (BA.WH + 0.012), BA.WZ - 0.008, BA.WZ + 0.008);
+  }
+  /* DETAIL PASS on the turret: the bolt heads on its faces, vision slits on the front cheeks, the DT's
+     spare drum in its rack on the inside wall (B1-B3) */
+  function baTurretDetail(B) {
+    var i, a, b, c, l, k, H = 0.40, K = 0.74, f, p;
+    for (i = 0; i < BAT.length; i++) {
+      a = BAT[i]; b = BAT[(i + 1) % BAT.length];
+      c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; l = Math.sqrt(c[0] * c[0] + c[1] * c[1]);
+      var n = [c[0] / l, c[1] / l], tg = [b[0] - a[0], b[1] - a[1]], tl = Math.sqrt(tg[0] * tg[0] + tg[1] * tg[1]);
+      tg = [tg[0] / tl, tg[1] / tl];
+      for (k = 0; k < 2; k++) for (f = -1; f <= 1; f += 2) {
+        var zz = 0.10 + k * 0.22, sc = 1 - (1 - K) * zz / H;
+        p = [c[0] * sc + n[0] * 0.012 + tg[0] * f * 0.13 * sc, c[1] * sc + n[1] * 0.012 + tg[1] * f * 0.13 * sc];
+        box(B.paint, p[0] - 0.014, p[0] + 0.014, p[1] - 0.014, p[1] + 0.014, zz - 0.014, zz + 0.014);
+      }
+    }
+    for (f = -1; f <= 1; f += 2) {
+      a = BAT[f > 0 ? 1 : 7]; b = BAT[f > 0 ? 2 : 0];
+      c = [(a[0] + b[0]) / 2 * 0.93, (a[1] + b[1]) / 2 * 0.93];
+      box(B.dark, c[0] - 0.05, c[0] + 0.05, c[1] - 0.05, c[1] + 0.05, 0.22, 0.245);
+    }
+    /* the rolled lip round the open top */
+    for (i = 0; i < BAT.length; i++) {
+      a = BAT[i]; b = BAT[(i + 1) % BAT.length];
+      bar(B.paint, [a[0] * K, a[1] * K, H], [b[0] * K, b[1] * K, H], 0.016);
+    }
+    cylZ(B.dark, -0.20, 0.22, 0.12, 0.20, 0.11, 12);
+    box(B.dark, -0.30, -0.10, 0.20, 0.26, 0.08, 0.12);
   }
   function ba64(THREE, M, C) {
-    var T = materials(THREE, C, BA.P), g = new THREE.Group(), HB = bins(T), TB = bins(T), i, wg, W;
+    var T = materials(THREE, C, BA.P), g = new THREE.Group(), HB = bins(T), TB = bins(T), i, wg, W, dt = detailTex(THREE, BA.P);
+    if (dt) T.paint.map = dt;
+    HB.kit = new Bin(T.wheel, false, true);
     baHull(HB);
+    baDetail(HB, HB.kit);
     flush(THREE, g, HB);
     for (i = 0; i < BA.XA.length; i++) {
       W = new Bin(T.wheel, false, true); baWheel(W);
       wg = group(THREE, "roadwheel", BA.XA[i], 0, BA.R); flush(THREE, wg, { wheel: W }); g.add(wg);
     }
     baTurret(TB);
+    baTurretDetail(TB);
     wg = group(THREE, "turret", BA.TX, 0, BA.RZ); flush(THREE, wg, TB); g.add(wg);
     return g;
   }

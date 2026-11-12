@@ -46,6 +46,18 @@
      (11.1) with the after mast at -20.8 (20.6); the DASH pad -25.8..-38.4
      at the 01 level; mount 53 -39.3..-45.5; the stern -59.5.
 
+   DETAIL PASS (2026-11-12, review policy rule 10): the rebuild above dropped the deck-edge lifelines
+     amidships and the small fittings and went to near-flat paint.  Restored: lifelines (posts, top and
+     middle wires) along the whole deck edge, rails round the 01 roofs, the hangar top, the open bridge
+     and the mast platform, a toe rail and a dark waterway bow to stern, bitts and chocks along both
+     edges, the hawse pipes over the stowed anchors and the chain pipes, two rows of scuttles (forward
+     and aft), mushroom vents, raft canisters on the 01 and hangar roofs, life rings, ladders between
+     the levels and up the tripod, whips on the bridge wings and the hangar, searchlights, hatches, and
+     a black boot-topping band 0 - 0.45 m.  Paint: the hull canvas carries strakes, butts, frame lines,
+     rust runs and waterline grime; the plating weld seams, rust and grime; the deck grit and stains.
+     NOT CONFIRMED: the positions and counts of these fittings (FRAM practice, by eye off [R1]).
+     15 draw calls (btop and ring added).
+
    NOT CONFIRMED -- estimated, not measured:
      - every plan width (the references are side views): the hull's half
        beams are the published beam; the deckhouses' by eye;
@@ -96,6 +108,20 @@ var HeroGearingFram = (function () {
       for (i = 0; i < 4; i++) { var xx = i * w / 4 + (i % 2) * 22; g.beginPath(); g.moveTo(xx, 0); g.lineTo(xx, h); g.stroke(); }
       g.globalAlpha = 0.06;
       for (i = 0; i < 40; i++) { g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff"; g.fillRect(R() * w, R() * h, 2 + R() * 4, 16 + R() * 70); }
+      /* the detail pass: a riveted WWII hull shows its strakes and butts, frame lines through the paint,
+         rust runs from the scuttles and hawses, and grime and salt along the waterline (v = 0 is z = 0) */
+      g.globalAlpha = 0.16; g.lineWidth = 1.4;
+      for (i = 1; i < 6; i++) { g.beginPath(); g.moveTo(0, i * h / 6); g.lineTo(w, i * h / 6); g.stroke(); }
+      for (i = 0; i < 8; i++) { var bx = i * w / 8 + (i % 2) * 14; g.beginPath(); g.moveTo(bx, 0); g.lineTo(bx, h); g.stroke(); }
+      g.globalAlpha = 0.05; g.lineWidth = 1;
+      for (i = 0; i < 48; i++) { g.beginPath(); g.moveTo(i * w / 48, 0); g.lineTo(i * w / 48, h); g.stroke(); }
+      for (i = 0; i < 60; i++) {
+        var rx = R() * w, ry = R() * h * 0.8, rl = 10 + R() * 60;
+        g.globalAlpha = 0.06 + R() * 0.1; g.fillStyle = R() < 0.6 ? "#6b4632" : "#3e3a36"; g.fillRect(rx, ry, 1 + R() * 2, rl);
+      }
+      var gr = g.createLinearGradient ? g.createLinearGradient(0, h - 26, 0, h) : null;
+      if (gr) { gr.addColorStop(0, "rgba(46,48,40,0)"); gr.addColorStop(1, "rgba(46,48,40,0.3)"); g.globalAlpha = 1; g.fillStyle = gr; g.fillRect(0, h - 26, w, 26); }
+      for (i = 0; i < 260; i++) { g.globalAlpha = 0.05 + R() * 0.06; g.fillStyle = R() < 0.6 ? "#30363a" : "#e0e4e4"; g.fillRect(R() * w, R() * h, 1 + R() * 2, 1 + R() * 2); }
       g.globalAlpha = 1;
     });
   }
@@ -110,6 +136,13 @@ var HeroGearingFram = (function () {
       }
       g.globalAlpha = 0.06;
       for (i = 0; i < 26; i++) { g.fillStyle = R() < 0.5 ? "#ffffff" : "#000000"; g.fillRect(R() * w, R() * h, 12 + R() * 50, 8 + R() * 30); }
+      /* the detail pass: weld seams between the plate seams, rust runs, grime at the foot of every face */
+      g.globalAlpha = 0.07; g.lineWidth = 1;
+      for (i = 0; i < 8; i++) { g.beginPath(); g.moveTo(i * w / 8 + w / 16, 0); g.lineTo(i * w / 8 + w / 16, h); g.stroke(); }
+      for (i = 0; i < 40; i++) { g.globalAlpha = 0.06 + R() * 0.09; g.fillStyle = R() < 0.6 ? "#6b4632" : "#3e3a36"; g.fillRect(R() * w, R() * h, 1 + R() * 2, 8 + R() * 36); }
+      var gp = g.createLinearGradient ? g.createLinearGradient(0, h - 22, 0, h) : null;
+      if (gp) { gp.addColorStop(0, "rgba(46,48,40,0)"); gp.addColorStop(1, "rgba(46,48,40,0.22)"); g.globalAlpha = 1; g.fillStyle = gp; g.fillRect(0, h - 22, w, 22); }
+      for (i = 0; i < 160; i++) { g.globalAlpha = 0.05 + R() * 0.06; g.fillStyle = R() < 0.6 ? "#30363a" : "#e0e4e4"; g.fillRect(R() * w, R() * h, 1 + R() * 2, 1 + R() * 2); }
       g.globalAlpha = 1;
     });
   }
@@ -122,6 +155,9 @@ var HeroGearingFram = (function () {
       for (i = 0; i < 3; i++) { g.beginPath(); g.moveTo(i * w / 3 + 30, 0); g.lineTo(i * w / 3 + 30, h); g.stroke(); }
       g.globalAlpha = 0.08;
       for (i = 0; i < 30; i++) { g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff"; g.fillRect(R() * w, R() * h, 20 + R() * 60, 4 + R() * 16); }
+      /* the detail pass: non-skid grit, scuffed walkways, oil stains */
+      for (i = 0; i < 1400; i++) { g.globalAlpha = 0.1 + R() * 0.12; g.fillStyle = R() < 0.7 ? "#000000" : "#ffffff"; g.fillRect(R() * w, R() * h, 1, 1); }
+      for (i = 0; i < 14; i++) { g.globalAlpha = 0.05 + R() * 0.06; g.fillStyle = "#1e1a16"; g.fillRect(R() * w, R() * h, 6 + R() * 16, 6 + R() * 16); }
       g.globalAlpha = 1;
     });
   }
@@ -148,6 +184,8 @@ var HeroGearingFram = (function () {
     return {
       hull:  skin(P.hull, hullTex(THREE), 0.86),
       under: skin(0x4a1c16, hullTex(THREE), 0.9),
+      btop:  skin(0x16181a, hullTex(THREE), 0.9),      /* the boot-topping line */
+      ring:  metal(0xc8582e, 0.7, 0.04),               /* life rings */
       sup:   skin(P.sup, plateTex(THREE), 0.86),
       deck:  skin(P.deck, deckTex(THREE), 0.95),
       dark:  skin(0xffffff, grilleTex(THREE), 0.9),
@@ -342,7 +380,58 @@ var HeroGearingFram = (function () {
         strut(THREE, g, T.metal, px, py, z, px, py, z + hgt, 0.03, 3);
       }
       strut(THREE, g, T.metal, a[0], a[1], z + hgt, b[0], b[1], z + hgt, 0.022, 3);
+      strut(THREE, g, T.metal, a[0], a[1], z + hgt * 0.5, b[0], b[1], z + hgt * 0.5, 0.016, 3);
     }
+  }
+  /* ------------------------------------------- deck fittings (the detail pass, 2026-11-12)
+     The rebuild left these out; every photograph of a FRAM Gearing shows them (review policy rule 10). */
+  function bitts(THREE, g, T, x, y, z) {
+    box(THREE, g, 0.9, 0.34, 0.06, T.metal, x, y, z + 0.03);
+    [-0.25, 0.25].forEach(function (o) { cylZ(THREE, g, 0.13, 0.13, 0.5, 8, T.metal, x + o, y, z + 0.28); cylZ(THREE, g, 0.17, 0.17, 0.05, 8, T.metal, x + o, y, z + 0.55); });
+  }
+  function chock(THREE, g, T, x, y, z) {
+    box(THREE, g, 0.7, 0.16, 0.08, T.metal, x, y, z + 0.04);
+    [-0.25, 0.25].forEach(function (o) { box(THREE, g, 0.12, 0.16, 0.3, T.metal, x + o, y, z + 0.15); });
+    box(THREE, g, 0.62, 0.12, 0.06, T.metal, x, y, z + 0.33);
+  }
+  function hatch(THREE, g, T, x, y, z, lx, ly) {
+    box(THREE, g, lx, ly, 0.16, T.sup, x, y, z + 0.08);
+    box(THREE, g, lx - 0.12, ly - 0.12, 0.04, T.metal, x, y, z + 0.18);
+    cylZ(THREE, g, 0.035, 0.035, 0.1, 4, T.metal, x + lx * 0.2, y, z + 0.25);
+  }
+  function vent(THREE, g, T, x, y, z, r, h) {
+    cylZ(THREE, g, r * 0.6, r * 0.6, h, 8, T.sup, x, y, z + h / 2);
+    cylZ(THREE, g, r * 0.75, r, r * 0.45, 10, T.sup, x, y, z + h + r * 0.22);
+  }
+  function ladder(THREE, g, T, ax, ay, az, bx, by, bz, w, alongX) {
+    var ox = alongX ? w / 2 : 0, oy = alongX ? 0 : w / 2, n = Math.max(2, Math.round(Math.abs(bz - az) / 0.3)), k;
+    [-1, 1].forEach(function (q) { strut(THREE, g, T.metal, ax + q * ox, ay + q * oy, az, bx + q * ox, by + q * oy, bz, 0.025, 3); });
+    for (k = 1; k < n; k++) {
+      var t = k / n, cx = ax + (bx - ax) * t, cy = ay + (by - ay) * t, cz = az + (bz - az) * t;
+      strut(THREE, g, T.metal, cx - ox, cy - oy, cz, cx + ox, cy + oy, cz, 0.016, 3);
+    }
+  }
+  function raft(THREE, g, T, x, y, z) {
+    box(THREE, g, 1.1, 0.6, 0.12, T.metal, x, y, z + 0.06);
+    cylX(THREE, g, 0.34, 0.34, 1.25, 10, T.white, x, y, z + 0.48);
+    [-0.4, 0.4].forEach(function (o) { cylX(THREE, g, 0.36, 0.36, 0.06, 10, T.metal, x + o, y, z + 0.48); });
+  }
+  function lifeRing(THREE, g, T, x, y, z) {
+    var r = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.065, 4, 12), T.ring);
+    r.rotation.x = PI / 2; r.position.set(x, y, z); g.add(r);
+  }
+  function scuttle(THREE, g, T, x, y, z, s) {
+    var c = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.07, 8, 1, true), T.metal); c.position.set(x, y + s * 0.02, z); g.add(c);
+    var q = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.03, 8), T.glass); q.position.set(x, y + s * 0.04, z); g.add(q);
+  }
+  function whip(THREE, g, T, x, y, z, h, lean) {
+    cylZ(THREE, g, 0.07, 0.08, 0.3, 6, T.metal, x, y, z + 0.15);
+    strut(THREE, g, T.metal, x, y, z + 0.3, x + (lean || 0), y, z + h, 0.025, 3);
+  }
+  function searchlight(THREE, g, T, x, y, z) {
+    cylZ(THREE, g, 0.06, 0.06, 0.4, 5, T.metal, x, y, z + 0.2);
+    cylX(THREE, g, 0.26, 0.24, 0.5, 10, T.sup, x, y, z + 0.62);
+    cylX(THREE, g, 0.22, 0.22, 0.02, 10, T.glass, x + 0.26, y, z + 0.62);
   }
 
   /* ======================================================= LOFTED HULL
@@ -449,6 +538,7 @@ var HeroGearingFram = (function () {
           x = x0 + (x1 - x0) * i / n; y = s * edgeY(x); z = deckZ(x);
           strut(THREE, g, T.metal, x, y, z, x, y, z + hgt, 0.035, 3);
           if (prev) strut(THREE, g, T.metal, prev[0], prev[1], prev[2] + hgt, x, y, z + hgt, 0.024, 3);
+          if (prev) strut(THREE, g, T.metal, prev[0], prev[1], prev[2] + hgt * 0.5, x, y, z + hgt * 0.5, 0.016, 3);
           prev = [x, y, z];
         }
       }
@@ -529,8 +619,9 @@ var HeroGearingFram = (function () {
   function build(THREE, M, C) {
     var g = new THREE.Group(), T = sealMats(makeMats(THREE, C, GPAINT)), Hh = makeHull(HG), s, i, x;
     var Z1F = 7.6, Z1A = 6.8, ZPH = 12.1, PADZ = 6.6;
-    g.add(Hh.shellBand(THREE, T.under, -5, -0.25, 5));
-    g.add(Hh.shellBand(THREE, T.hull, -0.25, 7.0, 6));
+    g.add(Hh.shellBand(THREE, T.under, -5, -0.02, 5));
+    g.add(Hh.shellBand(THREE, T.btop, -0.02, 0.45, 1));                 /* the boot-topping line */
+    g.add(Hh.shellBand(THREE, T.hull, 0.45, 7.0, 6));
     Hh.transom(THREE, g, T.hull, T.under);
     g.add(Hh.deckSheet(THREE, T.deck, XS, XB));
 
@@ -657,6 +748,73 @@ var HeroGearingFram = (function () {
       box(THREE, g, 26.0, 0.08, 0.5, T.under, -6.0, s * (Hh.W(-6, -3.4) + 0.12), -3.4);
     }
 
+    /* ================= the detail pass (2026-11-12): fittings the rebuild left out [R1][R2] */
+    /* the toe rail on the deck edge and the dark waterway inside it, bow to stern */
+    (function () {
+      var xs2 = [], xq, sg, k;
+      for (xq = XS + 0.3; xq < XB - 1.2; xq += 1.5) xs2.push(xq);
+      for (sg = -1; sg <= 1; sg += 2) {
+        var pw = [], uw = [], pt = [], ut = [];
+        for (k = 0; k + 1 < xs2.length; k++) {
+          var xa = xs2[k], xb = xs2[k + 1], ha = Hh.halfTop(xa), hb = Hh.halfTop(xb), za = sheer(xa), zb = sheer(xb);
+          var A = [xa, sg * (ha - 0.45), za + 0.012], Bq = [xb, sg * (hb - 0.45), zb + 0.012], Cq = [xb, sg * (hb - 0.06), zb + 0.012], D = [xa, sg * (ha - 0.06), za + 0.012];
+          if (sg > 0) pw.push.apply(pw, A.concat(Cq, Bq, A, D, Cq)); else pw.push.apply(pw, A.concat(Bq, Cq, A, Cq, D));
+          var E = [xa, sg * (ha - 0.02), za - 0.02], F = [xb, sg * (hb - 0.02), zb - 0.02], G = [xb, sg * (hb - 0.02), zb + 0.14], H2 = [xa, sg * (ha - 0.02), za + 0.14];
+          var E2 = [xa, sg * (ha - 0.08), za - 0.02], F2 = [xb, sg * (hb - 0.08), zb - 0.02], G2 = [xb, sg * (hb - 0.08), zb + 0.14], H3 = [xa, sg * (ha - 0.08), za + 0.14];
+          pt.push.apply(pt, E.concat(F, G, E, G, H2, E2, G2, F2, E2, H3, G2, H2, G, G2, H2, G2, H3));
+          for (var u = 0; u < 6; u++) uw.push(0, 0);
+          for (u = 0; u < 18; u++) ut.push(xa / 8, u % 2);
+        }
+        g.add(new THREE.Mesh(geoOf(THREE, pw, uw), T.dark));
+        g.add(new THREE.Mesh(geoOf(THREE, pt, ut), T.hull));
+      }
+    })();
+    /* the lifelines amidships, past the deckhouses (the rebuild had the forecastle and fantail only) */
+    Hh.railRun(THREE, g, T, -26.0, 26.0, 2.4, 1.0);
+    /* rails round the 01 roofs, the bridge top and the hangar top */
+    roofRail(THREE, g, T, [[15.6, 4.35], [25.0, 4.35], [25.6, 2.4], [25.6, -2.4], [25.0, -4.35], [15.6, -4.35]], Z1F, 0.9);
+    roofRail(THREE, g, T, [[-13.9, 3.25], [15.4, 3.25]], Z1A, 0.9);
+    roofRail(THREE, g, T, [[-13.9, -3.25], [15.4, -3.25]], Z1A, 0.9);
+    roofRail(THREE, g, T, [[-14.3, 3.4], [-25.6, 3.4], [-25.6, -3.4], [-14.3, -3.4]], 11.1, 0.9);
+    roofRail(THREE, g, T, [[18.3, 2.25], [23.4, 2.25], [23.6, 0], [23.4, -2.25], [18.3, -2.25]], ZPH + 0.7, 0.6);
+    for (s = -1; s <= 1; s += 2) {
+      /* bitts and chocks along both deck edges */
+      [46.5, 30.5, 20.0, -20.0, -47.0, -56.0].forEach(function (xb) { bitts(THREE, g, T, xb, s * (Hh.edgeY(xb) - 0.75), sheer(xb)); });
+      [57.2, 44.0, 28.5, -27.5, -50.5, -58.4].forEach(function (xc) { chock(THREE, g, T, xc, s * (Hh.edgeY(xc) + 0.02), sheer(xc)); });
+      /* the hawse pipes above the stowed anchors, the chain pipes on the forecastle */
+      var xh = 54.3, zh = 5.05;
+      var hw2 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.12, 12), T.dark); hw2.position.set(xh, s * (Hh.W(xh, zh) + 0.03), zh); g.add(hw2);
+      cylZ(THREE, g, 0.24, 0.24, 0.2, 10, T.metal, 52.4, s * 1.2, Hh.deckZ(52.4) + 0.1);
+      /* scuttles: a row forward and a row aft, a metre under the deck edge */
+      for (x = 28.0; x < 49.0; x += 1.9) { var zs = sheer(x) - 1.0; scuttle(THREE, g, T, x, s * Hh.W(x, zs), zs, s); }
+      for (x = -52.0; x < -38.0; x += 1.9) { var zs2 = sheer(x) - 0.9; scuttle(THREE, g, T, x, s * Hh.W(x, zs2), zs2, s); }
+      /* vents on the 01 roof and the decks, raft canisters, life rings */
+      [12.6, -4.0, -12.8].forEach(function (xv) { vent(THREE, g, T, xv, s * 2.2, Z1A, 0.28, 0.6); });
+      vent(THREE, g, T, 31.0, s * 3.0, sheer(31.0), 0.3, 0.7);
+      vent(THREE, g, T, -48.5, s * 3.3, sheer(-48.5), 0.3, 0.6);
+      [-9.6, -3.6].forEach(function (xr) { raft(THREE, g, T, xr, s * 2.6, Z1A); });
+      [-17.0, -22.5].forEach(function (xr) { raft(THREE, g, T, xr, s * 2.5, 11.1); });
+      lifeRing(THREE, g, T, 14.2, s * 3.45, 5.6);
+      lifeRing(THREE, g, T, -24.5, s * 3.75, 9.0);
+      lifeRing(THREE, g, T, -37.5, s * 4.65, 5.5);
+      /* ladders: the main deck to the 01 level, the 01 level to the hangar top */
+      ladder(THREE, g, T, -10.5, s * 3.48, sheer(-10.5), -10.5, s * 3.48, Z1A, 0.5, true);
+      ladder(THREE, g, T, 24.0, s * 4.58, sheer(24.0), 24.0, s * 4.58, Z1F, 0.5, true);
+      ladder(THREE, g, T, -14.6, s * 2.6, Z1A, -14.25, s * 2.6, 11.1, 0.5);
+      /* whips on the bridge wings and the hangar's after corners; searchlights on the flag deck */
+      whip(THREE, g, T, 21.5, s * 4.1, ZPH - 1.1, 7.0, 0);
+      whip(THREE, g, T, -25.3, s * 3.3, 11.1, 6.0, -0.6);
+      searchlight(THREE, g, T, 16.8, s * 1.9, 10.4);
+    }
+    /* hatches on the forecastle, the 01 roof and the fantail */
+    hatch(THREE, g, T, 47.2, 1.6, sheer(47.2), 1.0, 1.0);
+    hatch(THREE, g, T, 29.2, 0, sheer(29.2), 1.2, 1.4);
+    hatch(THREE, g, T, 10.2, 0, Z1A, 1.0, 1.2);
+    hatch(THREE, g, T, -48.0, 0, sheer(-48.0), 1.2, 1.4);
+    hatch(THREE, g, T, -55.5, 1.6, sheer(-55.5), 0.9, 0.9);
+    /* the mast's ladder and the platform rail */
+    ladder(THREE, g, T, 13.7, 0, Z1A, 12.15, 0, 20.3, 0.42);
+    roofRail(THREE, g, T, [[MX - 0.7, 1.6], [MX + 1.9, 1.6], [MX + 1.9, -1.6], [MX - 0.7, -1.6]], 20.48, 0.6);
     /* team: small strips on roofs */
     box(THREE, g, 1.8, 1.0, 0.04, T.team, 20.0, 0, ZPH + 0.72);
     box(THREE, g, 3.0, 1.2, 0.04, T.team, -19.0, 0, 11.12);

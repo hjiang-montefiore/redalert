@@ -173,6 +173,34 @@
      - Z-9C: the radome's shape (P15's is longer than P16's: a short black
        cap is drawn), the hoist's dimensions, the sensor turret's size.
 
+   DETAIL PASS (J-35 and Z-20 only; the other rows here are untouched). The
+   fittings the first pass left out, each placed off the reference named:
+     J-35: the saw-toothed nozzle trailing edges, liners, flame-holder rings
+       and centre bodies (J, P8); the canopy sills; the intake lips; blade
+       aerials on the spine and belly and the anti-collision beacon; wingtip
+       navigation lights (J's plan draws a lamp at each tip); the stowed
+       arrester hook (P7 shows the J-35 taking a wire: its length and place
+       are NOT CONFIRMED); the EOTS window's frame; gear doors with
+       saw-toothed edges (J), oleos with bright pistons and torque links,
+       hubs, brakes, axles, the retraction jacks and the taxi lamps.
+     Z-20: the windscreen's posts, bows and wipers, frames round every
+       window (P13); door handles, the steps and the box under the cockpit
+       door; the chin windows (P13); the intake lips and particle-separator
+       screens; the exhaust lips; the nose sensor box (P13, P14); the aerial
+       post on the roof, the fairing on the boom's root and the blade under
+       it (P14), a roof and a belly blade; the drive-shaft cover; beacons and
+       stabilator-tip lights; the rotor head's root cuffs, elastomeric
+       bearings, dampers, pitch horns and links, the swashplate and its
+       servos (P13); the gear's oleos, hubs, brakes, axles and the tail-wheel
+       fork. Sizes of these small parts are read through P13/P14's
+       perspective, NOT measured.
+     Both: finish() paints seams with fastener rows, access panels, the
+       J-35's formation-light strips and saw-toothed door outlines (J), the
+       Z-20's door outlines, exhaust soot, rain and airflow streaks and
+       grime onto the skin sheet. Measured extents are unchanged.
+     J-35 2984 -> 6292 tris, 9 -> 14 draw calls; Z-20 3016 -> 8056 tris,
+     12 -> 15 draw calls.
+
    NODES: "gear" on every row; the helicopters also "rotor" (the main head,
    with "rotordisc" inside it) and "tailrotor" (Z-20: the h60_hawk_family.js
    mounts - the main head's local +Y up the mast, turning anti-clockwise from
@@ -476,6 +504,119 @@ var HeroPlaAirModern = (function () {
     L.leg.push(cyl(r * 0.55, r * 0.55, w + 0.02, 10, "y", x, y, zg + r));
   }
 
+  /* ======================================================= detail kit ==
+     Added in the detail pass, for j35() and z20() only (the other builds in
+     this file do not call it): the fittings and the finish the first pass
+     left out. Paint: finish() draws seams, access panels, fastener rows,
+     exhaust soot, rain and airflow streaks and grime onto a skin sheet. */
+  function seg2(g, a, b) { g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+  /* a row of fastener dots from a to b (canvas px), every st px */
+  function dots(g, a, b, st) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], L = Math.sqrt(dx * dx + dy * dy), n = Math.floor(L / st), i;
+    for (i = 0; i <= n; i++) g.fillRect(a[0] + dx * i / Math.max(n, 1) - 0.5, a[1] + dy * i / Math.max(n, 1) - 0.5, 1, 1);
+  }
+  /* o = { side: [[x0, x1, z]] lengthwise seams (both side bands),
+           sideV: [[x, z0, z1]] upright seams (both sides),
+           top / belly: [[x0, y0, x1, y1]] seams on the top / belly band,
+                        drawn at y and mirrored to -y,
+           box: [[band, x0, x1, a0, a1]] access panels (band 1 = both sides,
+                a = z there; band 0 / 3: a = y, mirrored),
+           soot: [[x0, x1, z0, z1]] exhaust stain on both sides, darkest at x0,
+           topSoot: [[x0, x1, y0, y1]] the same on the top band, mirrored,
+           grime: 0..1 } */
+  function finish(g, s, o, seed) {
+    var R = rngFor(seed || 4242), i, b, gr = o.grime === undefined ? 0.6 : o.grime;
+    /* weathering: faded and darker patches, then grime toward the lower sides and belly */
+    for (i = 0; i < 90; i++) {
+      g.fillStyle = (R() < 0.5 ? "rgba(255,255,255," : "rgba(18,20,16,") + (0.025 + R() * 0.035).toFixed(3) + ")";
+      g.fillRect(R() * s.W, R() * s.H, 10 + R() * 60, 6 + R() * 26);
+    }
+    for (b = 1; b <= 2; b++) {
+      var lg = g.createLinearGradient(0, s.band[b], 0, s.band[b] + s.SB);
+      lg.addColorStop(0, "rgba(255,255,255," + (0.05 * gr).toFixed(3) + ")");
+      lg.addColorStop(0.5, "rgba(0,0,0,0)");
+      lg.addColorStop(1, "rgba(34,30,24," + (0.20 * gr).toFixed(3) + ")");
+      g.fillStyle = lg; g.fillRect(0, s.band[b], s.W, s.SB);
+    }
+    g.fillStyle = "rgba(34,30,24," + (0.10 * gr).toFixed(3) + ")"; g.fillRect(0, s.band[3], s.W, s.TB);
+    /* streaks: rain down the sides, airflow aft on the top and belly */
+    for (i = 0; i < 160; i++) {
+      var sx = R() * s.W, sy = R() * s.H, bb = sy < s.TB || sy > s.band[3] ? 0 : 1;
+      g.fillStyle = "rgba(20,20,16," + (0.03 + R() * 0.04).toFixed(3) + ")";
+      if (bb) g.fillRect(sx, sy, 1 + R(), 8 + R() * 30); else g.fillRect(sx, sy, 12 + R() * 50, 1 + R());
+    }
+    function sides(fn) { for (b = 1; b <= 2; b++) fn(b); }
+    (o.soot || []).forEach(function (q) {
+      sides(function (b) {
+        var x0 = s.u(q[0]), x1 = s.u(q[1]), lg = g.createLinearGradient(x0, 0, x1, 0);
+        lg.addColorStop(0, "rgba(14,12,10,0.45)"); lg.addColorStop(1, "rgba(14,12,10,0)");
+        g.fillStyle = lg; g.fillRect(Math.min(x0, x1), s.vz(q[3], b), Math.abs(x1 - x0), s.vz(q[2], b) - s.vz(q[3], b));
+      });
+    });
+    (o.topSoot || []).forEach(function (q) {
+      [1, -1].forEach(function (m) {
+        var x0 = s.u(q[0]), x1 = s.u(q[1]), lg = g.createLinearGradient(x0, 0, x1, 0), a = s.vy(m * q[2], 0), c = s.vy(m * q[3], 0);
+        lg.addColorStop(0, "rgba(14,12,10,0.40)"); lg.addColorStop(1, "rgba(14,12,10,0)");
+        g.fillStyle = lg; g.fillRect(Math.min(x0, x1), Math.min(a, c), Math.abs(x1 - x0), Math.abs(c - a));
+      });
+    });
+    /* seams: a dark line with a light lip under it, fastener dots alongside */
+    function seam(a, c) {
+      g.strokeStyle = "rgba(0,0,0,0.30)"; seg2(g, a, c);
+      g.strokeStyle = "rgba(255,255,255,0.10)"; seg2(g, [a[0], a[1] + 1], [c[0], c[1] + 1]);
+      g.fillStyle = "rgba(0,0,0,0.20)"; dots(g, [a[0] + 2, a[1] + 2], [c[0] + 2, c[1] + 2], 4);
+    }
+    g.lineWidth = 1;
+    (o.side || []).forEach(function (q) { sides(function (b) { seam([s.u(q[0]), s.vz(q[2], b)], [s.u(q[1]), s.vz(q[2], b)]); }); });
+    (o.sideV || []).forEach(function (q) { sides(function (b) { seam([s.u(q[0]), s.vz(q[2], b)], [s.u(q[0]), s.vz(q[1], b)]); }); });
+    [["top", 0], ["belly", 3]].forEach(function (t) {
+      (o[t[0]] || []).forEach(function (q) {
+        [1, -1].forEach(function (m) { seam([s.u(q[0]), s.vy(m * q[1], t[1])], [s.u(q[2]), s.vy(m * q[3], t[1])]); });
+      });
+    });
+    (o.box || []).forEach(function (q) {
+      var bs = q[0] === 1 ? [1, 2] : [q[0]];
+      bs.forEach(function (b) {
+        var ms = b === 0 || b === 3 ? [1, -1] : [1];
+        ms.forEach(function (m) {
+          var u0 = s.u(q[1]), u1 = s.u(q[2]);
+          var v0 = b === 0 || b === 3 ? s.vy(m * q[3], b) : s.vz(q[3], b), v1 = b === 0 || b === 3 ? s.vy(m * q[4], b) : s.vz(q[4], b);
+          g.strokeStyle = "rgba(0,0,0,0.32)";
+          g.strokeRect(Math.min(u0, u1), Math.min(v0, v1), Math.abs(u1 - u0), Math.abs(v1 - v0));
+          g.fillStyle = "rgba(0,0,0,0.30)";
+          g.fillRect(Math.min(u0, u1) + 1, Math.min(v0, v1) + 1, 1, 1); g.fillRect(Math.max(u0, u1) - 2, Math.max(v0, v1) - 2, 1, 1);
+        });
+      });
+    });
+  }
+  /* a triangle seen from both faces */
+  function tri2(L, a, b, c) { L.push(tris([a, b, c, a, c, b])); }
+  /* a blade aerial standing on (x, y, z): height h (negative hangs down),
+     root chord c, raked aft, thickness t */
+  function bladeAnt(L, x, y, z, h, c, t) {
+    L.push(vplate([[x + c / 2, z], [x - c / 2, z], [x - c / 2 - Math.abs(h) * 0.45, z + h], [x - c / 2 - Math.abs(h) * 0.45 + c * 0.45, z + h]], y, t || 0.02));
+  }
+  /* a wheel hub on the outer face of a wheel (the y side sd), with bolts */
+  function hubFace(L, r, w, x, y, zc, sd) {
+    L.push(cyl(r * 0.62, r * 0.66, 0.03, 16, "y", x, y + sd * (w / 2 + 0.006), zc));
+    L.push(cyl(r * 0.20, r * 0.24, 0.05, 10, "y", x, y + sd * (w / 2 + 0.03), zc));
+    for (var i = 0; i < 6; i++) {
+      var a = i * PI / 3;
+      L.push(cyl(r * 0.04, r * 0.04, 0.03, 5, "y", x + Math.cos(a) * r * 0.38, y + sd * (w / 2 + 0.02), zc + Math.sin(a) * r * 0.38));
+    }
+  }
+  /* an oleo leg from the axle a up to the top t: a bright piston (metal) in
+     the lower third, the cylinder (leg) above, a torque link on side ty */
+  function oleo(Lm, Ll, a, t, r, tdx) {
+    var f = 0.38, m = [lerp(a[0], t[0], f), lerp(a[1], t[1], f), lerp(a[2], t[2], f)];
+    Lm.push(bar(a, m, r * 0.72, 10));
+    Ll.push(bar(m, t, r, 10));
+    Ll.push(cyl(r * 1.25, r * 1.25, r * 0.9, 10, "z", m[0], m[1], m[2]));
+    var k = [lerp(a[0], m[0], 0.5) + (tdx || r * 2.6), lerp(a[1], m[1], 0.5), lerp(a[2], m[2], 0.5)];
+    Ll.push(bar([a[0], a[1], a[2] + r], k, r * 0.30, 5));
+    Ll.push(bar(k, [m[0], m[1], m[2] + r], r * 0.30, 5));
+  }
+
   /* ============================================================ J-15 ==
      cfighter_c: the Su-33 of ru_su33.js, called as it is, with the J-15's
      differences: the PLAN's plain grey for the Russian Navy two-tone and
@@ -743,20 +884,124 @@ var HeroPlaAirModern = (function () {
   var J_TP = [[1.30, 14.10, 17.20], [2.60, 14.85, 16.95], [4.02, 15.60, 16.45]];
   function jwH(y) { return 0.20 - Math.max(0, y - 1.84) * Math.tan(3 * D2R); }
   function jwT(y) { return y <= 1.84 ? 0.22 : 0.22 - (y - 1.84) / 3.91 * 0.16; }
+  /* ---- J-35 detail pass: the fittings drawing J, P7 and P8 show that the
+     first pass left out ---- */
+  /* a geometry turned inside out (seen from within: a duct liner) */
+  function inv(geo) {
+    var g = flat(geo).clone(), p = g.attributes.position.array, i, t;
+    for (i = 0; i < p.length; i += 9) for (t = 0; t < 3; t++) { var a = p[i + 3 + t]; p[i + 3 + t] = p[i + 6 + t]; p[i + 6 + t] = a; }
+    g.deleteAttribute("normal"); if (g.attributes.uv) g.deleteAttribute("uv");
+    g.computeVertexNormals();
+    return g;
+  }
+  /* the nozzle's saw-toothed trailing edge (drawing J's plan and side draw
+     the teeth; P8 the two cans from behind), the liner, the flame holder
+     ring and the centre body */
+  function j35Nozzle(B, y, z) {
+    var n = 12, k, x0 = JX(16.30), x1 = JX(16.52);
+    for (k = 0; k < n; k++) {
+      var a0 = k * 2 * PI / n, a1 = (k + 1) * 2 * PI / n, am = (a0 + a1) / 2;
+      tri2(B.nozzle, [x0, y + Math.cos(a0) * 0.345, z + Math.sin(a0) * 0.345], [x0, y + Math.cos(a1) * 0.345, z + Math.sin(a1) * 0.345],
+           [x1, y + Math.cos(am) * 0.325, z + Math.sin(am) * 0.325]);
+    }
+    B.dark.push(inv(cyl(0.325, 0.325, 0.42, 16, "x", JX(16.12), y, z, true)));
+    B.metal.push(cyl(0.24, 0.24, 0.04, 16, "x", JX(16.11), y, z, true));
+    push(B.metal, lathe([[JX(16.0), 0.13], [JX(16.14), 0.10], [JX(16.27), 0.03]], y, z, 10));
+    for (k = 0; k < 4; k++) B.metal.push(box(0.03, 0.30, 0.025, JX(16.12), y, z, k * PI / 4, 0, 0));
+  }
+  function j35Detail(B, G) {
+    var crown = function (s) { return tab(J_BODY, s, 2); }, keel = function (s) { return tab(J_BODY, s, 3); };
+    [1, -1].forEach(function (sd) {
+      /* the canopy sill: the frame along each lower edge of the bubble (J, P7) */
+      for (var i = 0; i < J_CAN.length - 1; i++) {
+        var a = J_CAN[i], b = J_CAN[i + 1];
+        B.dark.push(bar([JX(a[0]), sd * a[1] * 0.98, tab(J_BODY, a[0], 2) - 0.12], [JX(b[0]), sd * b[1] * 0.98, tab(J_BODY, b[0], 2) - 0.12], 0.022, 5));
+      }
+      /* wingtip navigation lights (drawing J's plan: a lamp at each tip), port red */
+      var tz = jwH(5.75);
+      (sd > 0 ? B.lampR : B.lampG).push(sph(0.055, 8, 6, JX(11.95), sd * 5.70, tz, 1.6, 0.7, 0.7));
+      /* the intake lip: a bright edge round each mouth's upper and outer sides */
+      B.metal.push(bar([JX(4.95) - 0.16, sd * 0.90, 0.24], [JX(4.95) - 0.16, sd * 1.56, 0.24], 0.018, 5));
+      B.metal.push(bar([JX(4.95) - 0.16, sd * 1.56, 0.24], [JX(4.95) + 0.17, sd * 1.56, -0.72], 0.018, 5));
+      /* main-gear door, outer face, its fore and aft edges saw-toothed (J plan) */
+      G.skin.push(vplate([[JX(9.3), -0.76], [JX(10.7), -0.76], [JX(10.55), -1.02], [JX(10.7), -1.29], [JX(9.3), -1.29], [JX(9.45), -1.02]], sd * 1.07, 0.02));
+      /* the main leg's retraction jack, to the well's inboard edge */
+      G.leg.push(bar([JX(10.08), sd * 1.36, -1.25], [JX(10.5), sd * 0.95, -0.80], 0.035, 6));
+      /* the nose-gear doors either side of the leg, saw-toothed ends (J side) */
+      G.skin.push(vplate([[JX(2.75), -0.60], [JX(4.35), -0.70], [JX(4.20), -0.95], [JX(4.35), -1.20], [JX(2.75), -1.12], [JX(2.90), -0.86]], sd * 0.30, 0.02));
+      G.dark.push(vplate([[JX(2.80), -0.62], [JX(4.28), -0.71], [JX(4.28), -1.12], [JX(2.80), -1.06]], sd * 0.285, 0.01));
+    });
+    /* blade aerials on the spine and under the belly (drawing J's side) */
+    bladeAnt(B.skin, JX(6.3), 0, crown(6.3) - 0.02, 0.20, 0.30, 0.025);
+    bladeAnt(B.skin, JX(11.3), 0, crown(11.3) - 0.02, 0.14, 0.22, 0.02);
+    bladeAnt(B.skin, JX(6.0), 0, keel(6.0) + 0.02, -0.17, 0.26, 0.025);
+    bladeAnt(B.skin, JX(12.9), 0, keel(12.9) + 0.02, -0.12, 0.20, 0.02);
+    /* the anti-collision beacon on the spine, a white tail light */
+    B.lampR.push(sph(0.05, 8, 5, JX(8.8), 0, crown(8.8) + 0.01, 1.4, 1, 0.6));
+    B.metal.push(sph(0.04, 6, 4, JX(17.19), 0, -0.05, 1.4, 1, 0.8));
+    /* the arrester hook, stowed under the tail between the cans (P7: the
+       J-35 taking a wire) */
+    B.metal.push(bar([JX(13.9), 0, keel(13.9) - 0.03], [JX(15.55), 0, -0.56], 0.045, 8));
+    B.dark.push(box(0.22, 0.10, 0.07, JX(15.62), 0, -0.56));
+    /* the EOTS window's faceted frame (J side) */
+    B.dark.push(cyl(0.17, 0.17, 0.02, 7, "z", JX(1.95), 0, -0.56));
+    /* the nose gear's taxi lamps */
+    G.metal.push(sph(0.05, 8, 6, JX(3.28), 0.07, -1.20), sph(0.05, 8, 6, JX(3.28), -0.07, -1.20));
+  }
+  /* the J-35's finish: seams, the saw-toothed doors and access panels of
+     drawing J, the formation-light strips (drawing J's side: on the fin and
+     the body side), the rudders' hinge lines, grime */
+  function j35Paint(g, s) {
+    var te = function (y) { return tab(J_WING, y, 2); }, le = function (y) { return tab(J_WING, y, 1); };
+    finish(g, s, {
+      side: [[JX(1.3), JX(15.4), 0.52], [JX(5.0), JX(15.0), -0.45], [JX(2.4), JX(4.8), 0.15]],
+      sideV: [[JX(5.6), -0.60, 0.95], [JX(7.0), -0.70, 0.90], [JX(9.4), -0.75, 0.80], [JX(11.6), -0.72, 0.62], [JX(13.8), -0.70, 0.50]],
+      top: [[JX(le(1.84) + 0.45), 1.84, JX(le(5.6) + 0.30), 5.6], [JX(te(1.95) - 0.75), 1.95, JX(te(5.5) - 0.45), 5.5],
+            [JX(te(3.7) - 0.65), 3.7, JX(te(3.7)), 3.7], [JX(5.0), 0.42, JX(15.0), 0.36], [JX(8.2), 1.25, JX(12.4), 1.30]],
+      belly: [[JX(le(1.84) + 0.45), 1.84, JX(le(5.6) + 0.30), 5.6], [JX(te(1.95) - 0.75), 1.95, JX(te(5.5) - 0.45), 5.5],
+              [JX(3.0), 0.40, JX(8.0), 0.45]],
+      box: [[1, JX(2.6), JX(3.1), 0.05, -0.25], [1, JX(6.2), JX(7.0), 0.0, -0.35], [1, JX(11.0), JX(11.8), 0.45, 0.15],
+            [1, JX(8.6), JX(9.2), 0.40, 0.10], [0, JX(6.6), JX(7.2), 0.50, 0.80], [0, JX(9.5), JX(10.2), 0.60, 0.90],
+            [0, JX(12.8), JX(13.4), 0.50, 0.75], [3, JX(12.6), JX(13.3), 0.30, 0.60], [3, JX(5.4), JX(6.0), 0.20, 0.55]],
+      topSoot: [[JX(15.5), JX(17.2), 0.25, 1.30]], grime: 0.5
+    }, 35035);
+    var b, i;
+    g.lineWidth = 1; g.strokeStyle = "rgba(0,0,0,0.32)";
+    /* the saw-toothed panels behind the canopy on the spine (J plan) */
+    [1, -1].forEach(function (m) {
+      g.beginPath(); g.moveTo(s.u(JX(5.05)), s.vy(m * 0.05, 0));
+      for (i = 0; i <= 6; i++) g.lineTo(s.u(JX(i % 2 ? 5.25 : 5.05)), s.vy(m * (0.05 + i * 0.1), 0));
+      g.stroke();
+    });
+    for (b = 1; b <= 2; b++) {
+      /* rudder hinge lines on the fins */
+      g.beginPath(); g.moveTo(s.u(JX(14.55)), s.vz(0.75, b)); g.lineTo(s.u(JX(14.95)), s.vz(2.55, b)); g.stroke();
+      /* formation-light strips: on the fin and the body side (drawing J) */
+      g.strokeStyle = "rgba(196,204,118,0.85)"; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(s.u(JX(13.2)), s.vz(1.95, b)); g.lineTo(s.u(JX(13.8)), s.vz(1.45, b)); g.stroke();
+      g.beginPath(); g.moveTo(s.u(JX(7.6)), s.vz(0.25, b)); g.lineTo(s.u(JX(8.3)), s.vz(0.25, b)); g.stroke();
+      g.beginPath(); g.moveTo(s.u(JX(2.7)), s.vz(-0.05, b)); g.lineTo(s.u(JX(3.0)), s.vz(-0.05, b)); g.stroke();
+      g.strokeStyle = "rgba(0,0,0,0.32)"; g.lineWidth = 1;
+      /* the side weapon-bay doors' saw-toothed outlines (J side) */
+      g.beginPath(); g.moveTo(s.u(JX(7.4)), s.vz(-0.30, b));
+      [[7.6, -0.50], [7.4, -0.70], [9.6, -0.70], [9.8, -0.50], [9.6, -0.30]].forEach(function (q) { g.lineTo(s.u(JX(q[0])), s.vz(q[1], b)); });
+      g.closePath(); g.stroke();
+    }
+  }
   function j35(THREE, M, C) {
     V = THREE;
-    var sh = sheet(-8.9, 8.9, 6.0, J_GROUND, 3.0, 30);
-    var B = bins(["skin", "dark", "glass", "team", "nozzle", "radome"]);
-    var G = bins(["leg", "tyre", "dark"]);
+    var sh = sheet(-8.9, 8.9, 6.0, J_GROUND, 3.0, 56);
+    var B = bins(["skin", "dark", "glass", "team", "nozzle", "radome", "metal", "lampR", "lampG"]);
+    var G = bins(["leg", "tyre", "dark", "metal", "skin"]);
     var i;
     /* the fuselage: one loft, chined superellipses */
     push(B.skin, loft([[1.2, 0.495, 0.47, -0.39, -0.01]].concat(J_BODY.filter(function (r) { return r[0] > 1.2; })).map(function (r) {
       return sec(JX(r[0]), 0, r[4], r[1], r[2] - r[4], r[4] - r[3], 0.78, 0.72);
-    }), 20, null, 0.30));
+    }), 28, null, 0.30));
     /* the radome, lighter grey (J, P7), to the first joint at 1.2 m */
     push(B.radome, loft(J_BODY.filter(function (r) { return r[0] <= 1.2; }).concat([[1.2, 0.495, 0.47, -0.39, -0.01]]).map(function (r) {
       return sec(JX(r[0]), 0, r[4], r[1], r[2] - r[4], r[4] - r[3], 0.82, 0.78);
-    }), 20, 0.25, null));
+    }), 28, 0.25, null));
     /* the bubble canopy, one piece, its rear frame (J, P7) */
     push(B.glass, loft(J_CAN.map(function (r) {
       var zc = tab(J_BODY, r[0], 2) - 0.12;
@@ -791,6 +1036,7 @@ var HeroPlaAirModern = (function () {
       /* the engine nozzles: serrated cans, dark inside (J side and plan) */
       B.nozzle.push(cyl(0.40, 0.34, 0.95, 16, "x", JX(15.85), sd * 0.86, -0.30, true));
       B.dark.push(cyl(0.31, 0.31, 0.05, 14, "x", JX(16.15), sd * 0.86, -0.30));
+      j35Nozzle(B, sd * 0.86, -0.30);
       /* team colour: a modest strip on each upper outer wing */
       var y0 = 3.9, y1 = 4.6, z0 = jwH(y0) + jwT(y0) / 2 + 0.012, z1 = jwH(y1) + jwT(y1) / 2 + 0.012;
       var e0 = tab(J_WING, y0, 2) - 0.9, e1 = tab(J_WING, y1, 2) - 0.9;
@@ -800,17 +1046,22 @@ var HeroPlaAirModern = (function () {
     /* the flat tail between the nozzles, out to 17.25 m (J side and plan) */
     B.skin.push(plate([[JX(15.4), 0.45], [JX(17.25), 0.12], [JX(17.25), -0.12], [JX(15.4), -0.45]], -0.05, 0.08));
     /* gear: twin nose wheels on a long leg (P7), single mains */
-    [0.15, -0.15].forEach(function (y) { wheel(G, 0.26, 0.15, JX(3.5), y, J_GROUND, 14); });
-    G.leg.push(bar([JX(3.5), 0, J_GROUND + 0.26], [JX(3.35), 0, -0.72], 0.07, 8));
+    [0.15, -0.15].forEach(function (y) { wheel(G, 0.26, 0.15, JX(3.5), y, J_GROUND, 18); hubFace(G.metal, 0.26, 0.15, JX(3.5), y, J_GROUND + 0.26, y > 0 ? 1 : -1); });
+    oleo(G.metal, G.leg, [JX(3.5), 0, J_GROUND + 0.26], [JX(3.35), 0, -0.72], 0.07, 0.20);
     G.leg.push(bar([JX(3.5), 0, J_GROUND + 0.70], [JX(4.2), 0, -0.75], 0.035, 6));
+    G.metal.push(cyl(0.04, 0.04, 0.36, 8, "y", JX(3.5), 0, J_GROUND + 0.26));
     [1, -1].forEach(function (sd) {
-      wheel(G, 0.40, 0.26, JX(10.2), sd * 1.55, J_GROUND, 16);
-      G.leg.push(bar([JX(10.2), sd * 1.42, J_GROUND + 0.40], [JX(10.0), sd * 1.30, -0.70], 0.08, 8));
+      wheel(G, 0.40, 0.26, JX(10.2), sd * 1.55, J_GROUND, 20);
+      hubFace(G.metal, 0.40, 0.26, JX(10.2), sd * 1.55, J_GROUND + 0.40, sd);
+      G.dark.push(cyl(0.26, 0.26, 0.05, 14, "y", JX(10.2), sd * 1.40, J_GROUND + 0.40));     /* the brake */
+      oleo(G.metal, G.leg, [JX(10.2), sd * 1.42, J_GROUND + 0.40], [JX(10.0), sd * 1.30, -0.70], 0.08, -0.24);
       G.leg.push(bar([JX(10.2), sd * 1.42, J_GROUND + 0.75], [JX(9.3), sd * 1.20, -0.75], 0.04, 6));
       G.dark.push(box(1.4, 0.03, 0.55, JX(10.0), sd * 1.05, -1.02));
     });
+    j35Detail(B, G);
     var pal = { top: "#9da2a5", side: "#9da2a5", belly: "#a3a8ab" };
     var cv = paintSheet(sh, pal, [JX(1.2), JX(2.3), JX(5.0), JX(8.2), JX(10.4), JX(12.8), JX(14.6)], 35001, function (g, s) {
+      j35Paint(g, s);
       /* the bay doors' saw-toothed outlines under the body (J plan) */
       g.strokeStyle = "rgba(0,0,0,0.25)"; g.lineWidth = 1;
       [[8.4, 11.8, 0.25, 0.95], [8.4, 11.8, -0.95, -0.25]].forEach(function (d) {
@@ -819,12 +1070,14 @@ var HeroPlaAirModern = (function () {
     });
     var mats = makeMats(C, cv, pal.side, {
       nozzle: { color: 0x4d4a46, roughness: 0.5, metalness: 0.5 },
-      radome: { color: 0xb3b7b9, roughness: 0.6, metalness: 0.05 }
+      radome: { color: 0xb3b7b9, roughness: 0.6, metalness: 0.05 },
+      lampR:  { color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 },
+      lampG:  { color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }
     });
     var root = new V.Group();
     flush(root, B, mats, sh);
     var gear = new V.Group(); gear.name = "gear";
-    flush(gear, G, mats, null);
+    flush(gear, G, mats, sh);
     root.add(gear);
     return root;
   }
@@ -1076,14 +1329,124 @@ var HeroPlaAirModern = (function () {
     [-5.50, 1.35, 2.07, 0.50, 0.8], [-7.50, 1.62, 2.12, 0.37, 0.85], [-9.00, 1.82, 2.24, 0.29, 0.9],
     [-9.90, 1.97, 2.32, 0.24, 0.9]
   ];
+  /* ---- Z-20 detail pass: the fittings P13 and P14 show that the first pass
+     left out ---- */
+  /* a frame of round bars round a polygon of [x, z] points standing at y */
+  function frameXZ(L, pts, y, r) {
+    for (var i = 0; i < pts.length; i++) {
+      var a = pts[i], b = pts[(i + 1) % pts.length];
+      L.push(bar([a[0], y, a[1]], [b[0], y, b[1]], r, 4));
+    }
+  }
+  function z20Detail(B, G) {
+    var i;
+    /* the windscreen's frames: the centre post, the top and bottom bows, the
+       corner posts, and the two wipers (P13) */
+    var wf = [[5.14, 0.81, ZH(1.61)], [4.42, 0.99, ZH(2.13)], [4.42, -0.99, ZH(2.13)], [5.14, -0.81, ZH(1.61)]];
+    for (i = 0; i < 4; i++) B.dark.push(bar(wf[i], wf[(i + 1) % 4], 0.035, 5));
+    B.dark.push(bar([5.15, 0, ZH(1.61)], [4.43, 0, ZH(2.13)], 0.035, 5));
+    [1, -1].forEach(function (sd) {
+      B.dark.push(bar([5.06, sd * 0.42, ZH(1.70)], [4.80, sd * 0.30, ZH(1.98)], 0.013, 4));
+      var y = sd * 1.19;
+      /* the cockpit door window, the cabin door window and the cabin
+         windows: dark frames proud of the glass (P13) */
+      frameXZ(B.dark, [[4.6, ZH(1.15)], [3.35, ZH(1.15)], [3.35, ZH(2.02)], [4.25, ZH(2.10)], [4.75, ZH(1.70)]], y * 0.99, 0.025);
+      B.dark.push(bar([3.95, y * 0.995, ZH(1.15)], [3.95, y * 0.995, ZH(2.06)], 0.018, 4));
+      frameXZ(B.dark, [[3.00, ZH(1.30)], [2.20, ZH(1.30)], [2.20, ZH(1.95)], [3.00, ZH(1.95)]], y * 1.003, 0.025);
+      [[1.2, 0.5], [0.2, -0.5]].forEach(function (w) {
+        frameXZ(B.dark, [[w[0], ZH(1.40)], [w[1], ZH(1.40)], [w[1], ZH(1.95)], [w[0], ZH(1.95)]], y * 1.003, 0.022);
+      });
+      /* door handles, the cockpit door's hinge line, the steps under the
+         cockpit and cabin doors (P13: the box below the cockpit door) */
+      B.metal.push(box(0.16, 0.04, 0.04, 3.55, y * 1.02, ZH(1.05)), box(0.16, 0.04, 0.04, 1.55, y * 1.02, ZH(1.20)));
+      B.dark.push(box(0.32, 0.30, 0.26, 3.70, sd * 1.12, ZH(0.52)));
+      B.metal.push(box(0.50, 0.24, 0.03, 3.70, sd * 1.25, ZH(0.40)), box(0.55, 0.22, 0.03, 1.00, sd * 1.30, ZH(0.62)));
+      B.dark.push(bar([1.00, sd * 1.13, ZH(0.62)], [1.00, sd * 1.30, ZH(0.62)], 0.02, 4));
+      /* the chin windows on the lower nose (P13: the dark bulges either side) */
+      B.glass.push(sph(0.30, 12, 8, 4.98, sd * 0.78, ZH(1.18), 1.35, 0.30, 0.75));
+      /* the engine intake lip and the particle-separator screen (P13) */
+      B.metal.push(cyl(0.375, 0.375, 0.07, 16, "x", 1.04, sd * 0.78, ZH(2.55), true));
+      B.metal.push(sph(0.12, 10, 6, 1.06, sd * 0.78, ZH(2.55), 0.6, 1, 1));
+      /* the upturned exhaust's lip (P14) */
+      var lip = cyl(0.27, 0.28, 0.05, 14, "x", 0, 0, 0, true), th = Math.atan(0.6);
+      lip.rotateY(th); lip.translate(-3.44, sd * 0.78 * 1.15, ZH(2.92));
+      B.metal.push(lip);
+      /* nav lights at the stabilator tips: port red, starboard green */
+      (sd > 0 ? B.lampR : B.lampG).push(sph(0.05, 8, 6, -9.95, sd * 2.17, ZH(1.95)));
+    });
+    /* the nose sensor box under the nose (P13, P14), the aerial post on the
+       cabin roof and the blade aerials (P13: the post behind the
+       windscreen; P14: the fairing on the boom's root, the blade under it) */
+    B.dark.push(box(0.36, 0.30, 0.22, 5.30, 0, ZH(0.62)));
+    B.glass.push(sph(0.09, 8, 6, 5.45, 0, ZH(0.52)));
+    B.dark.push(bar([3.6, 0.55, ZH(2.22)], [3.5, 0.62, ZH(2.62)], 0.025, 5));
+    B.dark.push(sph(0.05, 6, 4, 3.5, 0.62, ZH(2.64)));
+    push(B.skin, loft([sec(-3.95, 0, ZH(2.12), 0.10, 0.04, 0.04), sec(-4.20, 0, ZH(2.40), 0.16, 0.30, 0.30, 0.8, 0.8),
+                       sec(-4.55, 0, ZH(2.40), 0.16, 0.30, 0.30, 0.8, 0.8), sec(-4.75, 0, ZH(2.12), 0.08, 0.04, 0.04)], 10, 0, 0));
+    bladeAnt(B.skin, -5.6, 0, ZH(1.40), -0.42, 0.28, 0.03);
+    bladeAnt(B.skin, 2.2, 0, ZH(2.36), 0.24, 0.30, 0.025);
+    bladeAnt(B.skin, -1.8, 0, ZH(0.56), -0.22, 0.26, 0.025);
+    /* the tail-rotor drive-shaft cover along the boom's top (P13, P14) */
+    push(B.skin, loft([sec(-4.8, 0, ZH(2.12), 0.10, 0.06, 0.06), sec(-5.5, 0, ZH(2.10), 0.12, 0.08, 0.06), sec(-8.8, 0, ZH(2.30), 0.10, 0.08, 0.06),
+                       sec(-9.0, 0, ZH(2.32), 0.06, 0.04, 0.04)], 8, 0, 0));
+    /* anti-collision beacons: on the engine deck aft and under the boom */
+    B.lampR.push(sph(0.06, 8, 5, -3.3, 0, ZH(2.72), 1, 1, 0.7), sph(0.06, 8, 5, -4.5, 0, ZH(1.20), 1, 1, 0.7));
+    /* the main gear: oleos, hubs and brakes, axles (P13: the long trailing
+       arm and the near-upright strut) */
+    var MX = 1.75, MY = 1.40;
+    [1, -1].forEach(function (sd) {
+      hubFace(G.leg, 0.32, 0.22, MX, sd * MY, ZH(0.32), sd);
+      G.dark.push(cyl(0.20, 0.20, 0.05, 12, "y", MX, sd * (MY - 0.13), ZH(0.32)));
+      G.leg.push(cyl(0.05, 0.05, 0.36, 8, "y", MX, sd * (MY - 0.08), ZH(0.32)));
+      oleo(G.leg, G.dark, [MX + 0.05, sd * (MY - 0.12), ZH(0.36)], [MX + 0.35, sd * 1.10, ZH(0.95)], 0.065, 0.16);
+      G.dark.push(box(0.30, 0.10, 0.16, MX + 0.38, sd * 1.10, ZH(0.98)), box(0.30, 0.10, 0.16, MX - 0.58, sd * 1.12, ZH(0.82)));
+    });
+    /* the tail wheel: its fork and hub, the oleo */
+    hubFace(G.leg, 0.20, 0.14, -8.65, 0.0, ZH(0.20), 1);
+    hubFace(G.leg, 0.20, 0.14, -8.65, 0.0, ZH(0.20), -1);
+    [1, -1].forEach(function (sd) { G.leg.push(bar([-8.65, sd * 0.10, ZH(0.20)], [-8.55, sd * 0.10, ZH(0.62)], 0.025, 5)); });
+    G.leg.push(box(0.10, 0.26, 0.06, -8.55, 0, ZH(0.64)));
+    oleo(G.leg, G.dark, [-8.55, 0, ZH(0.66)], [-8.40, 0, ZH(1.80)], 0.055, 0.15);
+  }
+  /* the rotor head's fittings, authored in the head's frame (model axes,
+     origin on the hub): per blade a root cuff, an elastomeric bearing, a
+     damper and the pitch horn with its link down to the swashplate; the
+     swashplate's rotating ring (P13: the head close up) */
+  function z20Head(hub, bl, k, a) {
+    var parts = [box(0.80, 0.24, 0.10, 1.10, 0.0, 0.0), sph(0.13, 10, 6, 0.48, 0, 0),
+                 bar([0.30, 0.20, 0.06], [0.95, 0.20, 0.02], 0.035, 6),
+                 box(0.18, 0.06, 0.05, 0.78, -0.16, -0.06), bar([0.80, -0.20, -0.08], [0.62, -0.20, -0.48], 0.022, 5)];
+    for (var i = 0; i < parts.length; i++) { parts[i].rotateZ(a); (i === 0 ? bl : hub).push(parts[i]); }
+  }
+  function z20Paint(g, s) {
+    finish(g, s, {
+      side: [[5.4, -9.8, ZH(0.62)], [4.8, -3.2, ZH(2.22)], [3.4, -2.6, ZH(1.10)], [-3.2, -9.6, ZH(2.06)], [-3.0, -9.0, ZH(1.30)],
+             [1.0, -2.8, ZH(2.45)]],
+      sideV: [[3.35, ZH(0.60), ZH(2.20)], [4.75, ZH(0.70), ZH(1.70)], [-2.40, ZH(0.62), ZH(2.20)], [-3.2, ZH(0.85), ZH(2.15)],
+              [-5.0, ZH(1.30), ZH(2.10)], [-6.8, ZH(1.50), ZH(2.12)], [-8.6, ZH(1.75), ZH(2.24)], [0.8, ZH(2.22), ZH(2.65)], [-1.2, ZH(2.22), ZH(2.65)]],
+      top: [[4.4, 0.60, -3.6, 0.60], [2.6, 0.30, -3.8, 0.30], [0.6, 0.0, 0.6, 1.0], [-2.2, 0.0, -2.2, 1.0], [-3.6, 0.0, -3.6, 0.6]],
+      belly: [[5.0, 0.55, -3.0, 0.55], [2.6, 0.0, 2.6, 1.0], [-1.0, 0.0, -1.0, 1.0]],
+      box: [[1, 2.30, 2.80, ZH(1.05), ZH(0.80)], [1, -0.80, -1.40, ZH(1.10), ZH(0.75)], [1, -3.6, -4.2, ZH(1.70), ZH(1.40)],
+            [1, 0.4, 1.0, ZH(2.55), ZH(2.32)], [1, -1.4, -2.0, ZH(2.55), ZH(2.32)], [1, 4.4, 4.0, ZH(0.95), ZH(0.72)],
+            [0, 0.5, -0.4, 0.20, 0.55], [0, -1.6, -2.4, 0.20, 0.55], [3, 1.6, 0.8, 0.30, 0.70]],
+      soot: [[-3.45, -6.5, ZH(2.10), ZH(2.95)]], topSoot: [[-3.45, -6.8, 0.45, 1.05]], grime: 0.7
+    }, 20202);
+    var b;
+    g.strokeStyle = "rgba(0,0,0,0.34)"; g.lineWidth = 1;
+    for (b = 1; b <= 2; b++) {
+      /* the sliding cabin door's outline and the cockpit door's (P13) */
+      g.strokeRect(s.u(3.10), s.vz(2.10, b), s.u(-0.65) - s.u(3.10), s.vz(ZH(0.66), b) - s.vz(2.10, b));
+      g.beginPath(); g.moveTo(s.u(4.70), s.vz(ZH(0.72), b)); g.lineTo(s.u(3.35), s.vz(ZH(0.72), b)); g.stroke();
+    }
+  }
   function z20(THREE, M, C) {
     V = THREE;
     var sh = sheet(-11.2, 6.2, 2.4, Z_GROUND, ZH(4.6), 48);
-    var B = bins(["skin", "dark", "metal", "glass", "team"]);
+    var B = bins(["skin", "dark", "metal", "glass", "team", "lampR", "lampG"]);
     var G = bins(["leg", "tyre", "dark"]);
     var k, i;
     var secs = Z_FUS.map(function (r) { return sec(r[0], 0, ZH((r[1] + r[2]) / 2), r[3], (r[2] - r[1]) / 2, (r[2] - r[1]) / 2, r[4], r[4]); });
-    push(B.skin, loft(secs, 24, 0.32, 0.12));
+    push(B.skin, loft(secs, 32, 0.32, 0.12));
     /* the chin bulge under the nose (P13 head-on) */
     B.skin.push(sph(0.55, 14, 8, 5.0, 0, ZH(0.92), 1.3, 1.05, 0.55));
     /* windscreen, the cockpit door windows and the cabin windows (P13, P14) */
@@ -1119,6 +1482,9 @@ var HeroPlaAirModern = (function () {
                        sec(0.8, 0, ZH(2.45), 0.92, 0.50, 0.25, 0.6, 1), sec(-2.0, 0, ZH(2.45), 0.90, 0.45, 0.25, 0.6, 1),
                        sec(-3.8, 0, ZH(2.25), 0.50, 0.15, 0.10, 0.8, 1)], 16, 0, 0));
     B.metal.push(cyl(0.16, 0.18, Z_HUB - 2.9, 12, "z", 0, 0, ZH((Z_HUB + 2.9) / 2)));
+    /* the swashplate's stationary ring and its servos (P13) */
+    B.metal.push(cyl(0.38, 0.38, 0.07, 20, "z", 0, 0, ZH(Z_HUB - 0.58)));
+    [0, 2.1, 4.2].forEach(function (a) { B.metal.push(bar([Math.cos(a) * 0.32, Math.sin(a) * 0.32, ZH(Z_HUB - 0.60)], [Math.cos(a) * 0.36, Math.sin(a) * 0.36, ZH(2.80)], 0.035, 6)); });
     /* the swept tail pylon (P13, P14) and the tail-rotor gearbox fairing */
     B.skin.push(sloft([foil([-8.80, 0, ZH(2.10)], [-10.25, 0, ZH(2.10)], 0.40, [0, 1, 0]),
                        foil([-9.90, 0, ZH(4.20)], [-10.75, 0, ZH(4.20)], 0.26, [0, 1, 0])]));
@@ -1126,16 +1492,17 @@ var HeroPlaAirModern = (function () {
     /* gear (fixed, as the S-70's): main legs from the cabin sides, the tail wheel under the boom */
     var MX = 1.75, MY = 1.40;
     [1, -1].forEach(function (sd) {
-      wheel(G, 0.32, 0.22, MX, sd * MY, Z_GROUND, 16);
-      G.leg.push(bar([MX, sd * (MY - 0.10), ZH(0.32)], [MX + 0.35, sd * 1.10, ZH(0.95)], 0.07, 8));
+      wheel(G, 0.32, 0.22, MX, sd * MY, Z_GROUND, 20);
       G.leg.push(bar([MX, sd * (MY - 0.10), ZH(0.32)], [MX - 0.55, sd * 1.12, ZH(0.80)], 0.05, 6));
     });
-    wheel(G, 0.20, 0.14, -8.65, 0, Z_GROUND, 12);
-    G.leg.push(bar([-8.65, 0, ZH(0.2)], [-8.40, 0, ZH(1.80)], 0.06, 8));
+    wheel(G, 0.20, 0.14, -8.65, 0, Z_GROUND, 14);
+    z20Detail(B, G);
     var g = new V.Group();
     var pal = { top: "#4d5148", side: "#4d5148", belly: "#52564d" };
-    var cv = paintSheet(sh, pal, [4.6, 3.1, 1.45, -0.9, -2.5, -4.0, -6.0, -8.0], 20020, null);
+    var cv = paintSheet(sh, pal, [4.6, 3.1, 1.45, -0.9, -2.5, -4.0, -6.0, -8.0], 20020, z20Paint);
     var mats = makeMats(C, cv, pal.side, {
+      lampR:  { color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 },
+      lampG:  { color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 },
       blade: { color: 0x2e3133, roughness: 0.8, metalness: 0.08 },
       disc:  { color: 0xd6dde3, roughness: 0.4, metalness: 0.08, transparent: true, opacity: 0.05, depthWrite: false }
     });
@@ -1165,7 +1532,10 @@ var HeroPlaAirModern = (function () {
       bg.rotateZ(a); bl.push(bg);
       var arm = [box(0.62, 0.20, 0.12, 0.55, 0, 0), cyl(0.07, 0.07, 0.30, 8, "z", 0.55, 0.16, -0.12)];
       for (i = 0; i < arm.length; i++) { arm[i].rotateZ(a); hub.push(arm[i]); }
+      z20Head(hub, bl, k, a);
     }
+    /* the swashplate's rotating ring, under the hub on the mast */
+    hub.push(cyl(0.40, 0.40, 0.06, 20, "z", 0, 0, -0.50), cyl(0.20, 0.24, 0.20, 12, "z", 0, 0, -0.30));
     flush(head, { metal: hub, blade: bl, disc: [place(new V.CircleGeometry(Z_R, 48), 0, 0, 0.04)] }, mats, null);
     head.children.forEach(function (m) { if (m.name === "disc") m.name = "rotordisc"; });
 

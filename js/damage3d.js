@@ -168,6 +168,7 @@ var Damage3D = (function () {
     nato_e60_tankdestroyer: "front", nato_e80_tankdestroyer: "front",  // M113A1 TOW, M901 ITV: the M113's
     nato_e90_tankdestroyer: "front",                                   //   engine front right
     roc_e80_tankdestroyer: "front", roc_e90_tankdestroyer: "front",   // M113A1 TOW, CM-25: the M113 hull
+    atgmv_g: "front", spaag_g: "front", lt_f: "front",              // Wiesel 1 / 2 and EBRC Jaguar: engine forward
     repair: "rear", mineclear: "rear",                                // BREM-1 on the T-72, Keiler on the M48: engine aft
     kpa_e00_ifv: "rear",                                               // M2010 on the BTR-80 hull: engine at the back
     lt_k: "front", spaag_c: "front",                                  // skirmish PT-85 and PGZ-09, as their era rows

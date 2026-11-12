@@ -171,9 +171,12 @@
      wheels are drawn as found in E1, just clear of the ground.
    AS DRAWN (dump.js L x W x H; tris; draw calls) against the published:
      EBR 6.20 x 2.46 x 2.45 m (turret roof 2.26, dome 2.43) / 6.15 x 2.42 x 2.24; 9056; 12.
-     AML 5.14 x 2.05 x 2.07 / 5.11 x 1.97 x 2.07; 4892; 10.
+     AML 5.14 x 2.05 x 2.07 / 5.11 x 1.97 x 2.07; 4892 (detail pass: 6948); 10.
      ERC 7.72 x 2.51 x 2.48 (sight 2.28, MG 2.48) / 7.7 x 2.50 x 2.25; 6780; 11.
-     VBL 3.82 x 2.28 (mirrors; body 2.02) x 2.14 (MG; roof 1.65, ring 1.71) / 3.80 x 2.02 x 1.70; 4720; 8.
+     VBL 3.82 x 2.28 (mirrors; body 2.02) x 2.14 (MG; roof 1.65, ring 1.71) / 3.80 x 2.02 x 1.70; 4720 (detail pass: 6312); 8.
+     DETAIL PASS (VBL and AML only): vlDetail / vlGunDetail / amDetail / amTurretDetail (the parts
+       are listed above dbar) and detailTex - the paint's seams, bolt rows, panels, streaks, grime and
+       chips over the same olive or three-tone - in place of the plain paint.
      AMX-10 RC 9.31 x 3.00 x 2.87 (sight head; roof 2.43) / 9.15 x 2.78 x 2.56; 7788; 11.
        RCR 9.31 x 3.12 (side slabs) x 2.87; 7920; 11.
      AMX-10P 6.10 (gun; hull 5.78) x 2.80 x 2.80 (lamp; roof 2.45) / 5.778 x 2.78 x 1.87 hull; 10832; 13.
@@ -235,6 +238,111 @@ var HeroFrArmour2 = (function () {
     } catch (e) { tx = null; }
     _camo[P.seed] = tx;
     return tx;
+  }
+  var __DTEX = {};
+  /* DETAIL PAINT (the detail pass): a 512 px tile over 2.94 m of surface (UVs 0.34 a metre, 174 px a
+     metre).  Over the base colour and its soft blots: plate seams with a lit edge, bolt rows along some
+     of them, access-panel outlines with corner screws, rain streaks, grime, dust, chipped paint and oil
+     spots.  Plain paint - no markings, numbers or camouflage. */
+  function detailTex(THREE, P) {
+    var key = "detail" + P.seed + P.base;
+    if (__DTEX[key] !== undefined) return __DTEX[key];
+    var t = null;
+    try {
+      var S = 512, cv = document.createElement("canvas"), q, R = rng(P.seed * 7 + 13), i, k, x, y, w, h, ox, oy, a, xs, n;
+      cv.width = cv.height = S; q = cv.getContext("2d");
+      q.fillStyle = P.base; q.fillRect(0, 0, S, S);
+      if (P.brown) {
+        /* the Centre-Europe three-tone, as camoTex draws it: brown and black blotches over the green */
+        var blob = function (col, cx, cy, rad) {
+          var kk, aa, rr, px, py, dx, dy;
+          q.fillStyle = col; q.beginPath();
+          for (kk = 0; kk <= 9; kk++) {
+            aa = kk / 9 * TAU; rr = rad * (0.65 + R() * 0.55);
+            px = cx + Math.cos(aa) * rr * 1.5; py = cy + Math.sin(aa) * rr * 0.8;
+            if (kk === 0) q.moveTo(px, py); else q.lineTo(px, py);
+          }
+          q.closePath();
+          for (dx = -S; dx <= S; dx += S) for (dy = -S; dy <= S; dy += S) { q.save(); q.translate(dx, dy); q.fill(); q.restore(); }
+        };
+        for (i = 0; i < 6; i++) blob(P.brown, R() * S, R() * S, 55 + R() * 45);
+        for (i = 0; i < 5; i++) blob(P.black, R() * S, R() * S, 35 + R() * 30);
+      } else {
+        /* soft mottling in the base's own shades, drawn wrapped so the tile repeats without a seam */
+        for (k = 0; k < P.blots.length; k++) {
+          q.fillStyle = P.blots[k];
+          for (i = 0; i < 20; i++) {
+            x = R() * S; y = R() * S; w = 26 + R() * 90; h = 16 + R() * 60; a = R() * Math.PI;
+            q.globalAlpha = 0.22 + R() * 0.3;
+            for (ox = -S; ox <= S; ox += S) for (oy = -S; oy <= S; oy += S) {
+              if (x + ox < -w - 4 || x + ox > S + w + 4 || y + oy < -w - 4 || y + oy > S + w + 4) continue;
+              q.beginPath(); q.ellipse(x + ox, y + oy, w, h, a, 0, TAU); q.fill();
+            }
+          }
+        }
+      }
+      /* plate seams: four vertical butts across the tile, horizontal seams staggered between them */
+      xs = [];
+      for (i = 0; i < 4; i++) xs.push(Math.floor(i * 128 + 20 + R() * 80) + 0.5);
+      for (i = 0; i < 4; i++) {
+        q.globalAlpha = 1; q.strokeStyle = "rgba(14,15,10,0.42)"; q.lineWidth = 2;
+        q.beginPath(); q.moveTo(xs[i], 0); q.lineTo(xs[i], S); q.stroke();
+        q.strokeStyle = "rgba(255,250,225,0.12)"; q.lineWidth = 1;
+        q.beginPath(); q.moveTo(xs[i] + 2, 0); q.lineTo(xs[i] + 2, S); q.stroke();
+        y = Math.floor(60 + R() * 120) + 0.5;
+        for (k = 0; k < 2; k++) {
+          var xa = xs[i], xb = i < 3 ? xs[i + 1] : xs[0] + S;
+          q.strokeStyle = "rgba(14,15,10,0.38)"; q.lineWidth = 2;
+          q.beginPath(); q.moveTo(xa, y); q.lineTo(xb, y); q.stroke();
+          q.beginPath(); q.moveTo(xa - S, y); q.lineTo(xb - S, y); q.stroke();
+          q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1;
+          q.beginPath(); q.moveTo(xa, y + 2); q.lineTo(xb, y + 2); q.stroke();
+          /* a bolt row along every other seam */
+          if ((i + k) % 2 === 0) for (x = xa + 8; x < xb - 4; x += 15) {
+            q.fillStyle = "rgba(12,12,8,0.45)"; q.fillRect(x % S, y - 6, 3, 3);
+            q.fillStyle = "rgba(255,250,225,0.18)"; q.fillRect(x % S, y - 7, 2, 1);
+          }
+          y = (y + 200 + Math.floor(R() * 60)) % S;
+        }
+      }
+      /* access panels: outlined, a screw at each corner */
+      for (i = 0; i < 6; i++) {
+        x = Math.floor(R() * (S - 90)) + 10.5; y = Math.floor(R() * (S - 70)) + 10.5; w = 26 + Math.floor(R() * 60); h = 18 + Math.floor(R() * 44);
+        q.strokeStyle = "rgba(14,15,10,0.36)"; q.lineWidth = 1.5; q.strokeRect(x, y, w, h);
+        q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1; q.strokeRect(x + 1.5, y + 1.5, w, h);
+        q.fillStyle = "rgba(12,12,8,0.5)";
+        q.fillRect(x + 3, y + 3, 2, 2); q.fillRect(x + w - 5, y + 3, 2, 2); q.fillRect(x + 3, y + h - 5, 2, 2); q.fillRect(x + w - 5, y + h - 5, 2, 2);
+      }
+      q.globalAlpha = 1;
+      /* rain streaks down the plates (side faces carry v along z) */
+      for (i = 0; i < 260; i++) {
+        q.fillStyle = (i % 4) ? "rgba(18,16,10,0.08)" : "rgba(230,225,200,0.06)";
+        q.fillRect(R() * S, R() * S, 1 + R() * 2, 8 + R() * 54);
+      }
+      /* grime and dust patches */
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 3) ? "rgba(30,25,15,0.08)" : "rgba(150,135,100,0.08)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 8 + R() * 46, 4 + R() * 22, R() * Math.PI, 0, TAU); q.fill();
+      }
+      /* chipped paint and scratches */
+      for (i = 0; i < 180; i++) {
+        q.fillStyle = (i % 2) ? "rgba(205,200,175,0.22)" : "rgba(10,10,8,0.30)";
+        n = 1 + Math.floor(R() * 3); q.fillRect(R() * S, R() * S, n, n);
+      }
+      q.strokeStyle = "rgba(210,205,180,0.14)"; q.lineWidth = 1;
+      for (i = 0; i < 14; i++) { x = R() * S; y = R() * S; q.beginPath(); q.moveTo(x, y); q.lineTo(x + (R() - 0.5) * 40, y + (R() - 0.5) * 14); q.stroke(); }
+      /* oil and fuel spots */
+      for (i = 0; i < 8; i++) {
+        q.fillStyle = "rgba(12,10,6,0.16)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 5 + R() * 12, 4 + R() * 9, 0, 0, TAU); q.fill();
+      }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    __DTEX[key] = t;
+    return t;
   }
   /* materials: HeroFrKit's (paint, dark, wheel, team), the paint re-mapped for the three-tone */
   function mats(THREE, C, scheme) {
@@ -1031,12 +1139,151 @@ var HeroFrArmour2 = (function () {
     for (s = -1; s <= 1; s += 2) for (i = 0; i < 2; i++) cyl(D, [x0 - 0.70 - i * 0.15, s * 0.68, 1.74], [x0 - 0.55 - i * 0.15, s * 0.80, 1.90], 0.05, 0.05, 10);
     box(B.team, x0 - 0.75, x0 - 0.60, -0.30, 0.10, A.ROOF, A.ROOF + 0.015);
   }
+  /* ---------------------------------------------------------------- DETAIL PASS (VBL, AML-90)
+     The fittings the first pass left out, from B1/B2 (VBL: the wire guards over the lamps, the
+     front shackles, the windscreen frames and wipers, the door's hinges and handles, the step
+     handles, the suspension arms under the body, the M2's grips and feed) and A1/A2 (AML: the
+     door's frame, hinges and handle, the stowage box's lid and latches, the fuel filler, the
+     grab handles, the lamp guards, the cupola's vision blocks, the muzzle brake's ports, the
+     aerial bases).  Sizes by proportion: NOT CONFIRMED. */
+  function dbar(bin, A, B, h) {
+    var d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]), ax = [d[0] / l, d[1] / l, d[2] / l];
+    var t = Math.abs(ax[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0], u = [ax[1] * t[2] - ax[2] * t[1], ax[2] * t[0] - ax[0] * t[2], ax[0] * t[1] - ax[1] * t[0]];
+    var ul = Math.sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]); u = [u[0] / ul, u[1] / ul, u[2] / ul];
+    var v = [ax[1] * u[2] - ax[2] * u[1], ax[2] * u[0] - ax[0] * u[2], ax[0] * u[1] - ax[1] * u[0]];
+    slab(bin, [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2], ax, u, v, l / 2, h, h);
+  }
+  /* a wire guard over a lamp facing +X: bars up its face and a hoop round it */
+  function guardX(B, x, y, z, r) {
+    var i;
+    for (i = -1; i <= 1; i++) box(B.dark, x + 0.004, x + 0.014, y + i * r * 0.6 - 0.006, y + i * r * 0.6 + 0.006, z - r * 1.15, z + r * 1.15);
+    box(B.dark, x - 0.08, x + 0.014, y - r * 1.2, y + r * 1.2, z + r * 1.15, z + r * 1.15 + 0.012);
+    box(B.dark, x - 0.08, x + 0.014, y - r * 1.2, y + r * 1.2, z - r * 1.15 - 0.012, z - r * 1.15);
+  }
+  /* a U grab handle standing off a side face y = ys (side s) */
+  function grabY(B, s, ys, x0, x1, z) {
+    box(B.dark, x0 - 0.012, x0 + 0.012, s > 0 ? ys : ys - 0.05, s > 0 ? ys + 0.05 : ys, z - 0.012, z + 0.012);
+    box(B.dark, x1 - 0.012, x1 + 0.012, s > 0 ? ys : ys - 0.05, s > 0 ? ys + 0.05 : ys, z - 0.012, z + 0.012);
+    box(B.dark, Math.min(x0, x1) - 0.012, Math.max(x0, x1) + 0.012, s > 0 ? ys + 0.038 : ys - 0.05, s > 0 ? ys + 0.05 : ys - 0.038, z - 0.012, z + 0.012);
+  }
+  function vlDetail(B) {
+    var D = B.dark, P = B.paint, s, i, V = VL, k;
+    var a = Math.atan2(V.ROOF - 1.37, 0.30 - 0.75), u = [Math.cos(a), 0, Math.sin(a)], w = [-Math.sin(a), 0, Math.cos(a)];
+    for (s = -1; s <= 1; s += 2) {
+      /* the windscreen's frame and wiper (B1, B2) */
+      var c = [0.533 + w[0] * 0.012, s * 0.42, 1.523 + w[2] * 0.012];
+      var at = function (du, dv) { return [c[0] + u[0] * du, c[1] + dv, c[2] + u[2] * du]; };
+      dbar(D, at(-0.23, -0.285), at(0.23, -0.285), 0.014); dbar(D, at(-0.23, 0.285), at(0.23, 0.285), 0.014);
+      dbar(D, at(-0.235, -0.285), at(-0.235, 0.285), 0.014); dbar(D, at(0.235, -0.285), at(0.235, 0.285), 0.014);
+      dbar(D, at(-0.20, -0.05), at(0.05, 0.18), 0.006);
+      /* the side window's frame */
+      box(D, -0.32, 0.27, s > 0 ? V.RW + 0.035 : -V.RW - 0.07, s > 0 ? V.RW + 0.07 : -V.RW - 0.035, 1.54, 1.57);
+      box(D, -0.32, 0.27, s > 0 ? V.RW + 0.035 : -V.RW - 0.07, s > 0 ? V.RW + 0.07 : -V.RW - 0.035, 1.28, 1.31);
+      /* the door: its front seam, hinges, handle and the step handle under it (B2) */
+      box(D, 0.32, 0.35, s * (V.HW - 0.01) - 0.01, s * (V.HW - 0.01) + 0.01, 0.55, 1.10);
+      for (k = 0; k < 2; k++) cylZ(D, 0.30, s * (V.HW + 0.02), 0.62 + k * 0.34, 0.72 + k * 0.34, 0.022, 8);
+      box(D, -0.32, -0.29, s > 0 ? V.HW : -V.HW - 0.05, s > 0 ? V.HW + 0.05 : -V.HW, 0.82, 1.00);
+      grabY(B, s, V.HW - 0.02, -0.25, 0.10, 0.50);
+      /* the wire guards over the headlamps and the side-lamp clusters (B1, B2) */
+      guardX(B, V.NOSE, s * 0.60, 1.00, 0.065);
+      guardX(B, V.NOSE, s * 0.815, 1.005, 0.09);
+      /* the shackles on the front (B2) */
+      box(D, V.NOSE - 0.06, V.NOSE + 0.01, s * 0.42 - 0.05, s * 0.42 + 0.05, 0.50, 0.60);
+      cylY(D, V.NOSE - 0.03, s * 0.42 - 0.045, s * 0.42 + 0.045, 0.47, 0.035, 8);
+      /* the suspension arms and dampers under the body at each wheel (B1, B2) */
+      for (k = 0; k < 2; k++) {
+        var xw = V.AX[k];
+        dbar(D, [xw + 0.14, s * 0.42, 0.40], [xw + 0.03, s * 0.72, 0.42], 0.025);
+        dbar(D, [xw - 0.14, s * 0.42, 0.40], [xw - 0.03, s * 0.72, 0.42], 0.025);
+        dbar(D, [xw + 0.12, s * 0.42, 0.60], [xw + 0.02, s * 0.70, 0.55], 0.022);
+        dbar(D, [xw - 0.12, s * 0.42, 0.60], [xw - 0.02, s * 0.70, 0.55], 0.022);
+        cyl(D, [xw + 0.05, s * 0.66, 0.45], [xw + 0.12, s * 0.52, 0.85], 0.03, 0.03, 8);
+      }
+      /* the aerial bases on the roof's rear corners */
+      cylZ(D, -0.80, s * 0.58, V.ROOF - 0.01, V.ROOF + 0.07, 0.035, 8);
+      /* bolt heads along the waist line */
+      for (i = 0; i < 12; i++) { var bx = -1.40 + i * 0.25; if (bx > 0.34 && bx < 0.74) continue; box(D, bx - 0.012, bx + 0.012, s > 0 ? V.HW - 0.005 : -V.HW - 0.012, s > 0 ? V.HW + 0.012 : -V.HW + 0.005, V.BELT - 0.03, V.BELT - 0.006); }
+    }
+    /* the hatch ring's hinge block and the rear towing pintle */
+    box(D, V.TX - 0.52, V.TX - 0.42, -0.12, 0.12, V.ROOF + 0.01, V.ROOF + 0.07);
+    box(D, V.REAR + 0.02, V.REAR + 0.12, -0.06, 0.06, 0.62, 0.70);
+    cylZ(D, V.REAR + 0.05, 0, 0.56, 0.72, 0.03, 8);
+  }
+  function vlGunDetail(B) {
+    var D = B.dark, V = VL, x0 = V.TX, z = V.TZ + 0.06;
+    /* the M2's spade grips and butterfly trigger, the charging handle, the feed tray and belt chute */
+    cylY(D, x0 + 0.13, -0.08, 0.08, z + 0.35, 0.012, 6);
+    box(D, x0 + 0.08, x0 + 0.15, -0.075, -0.055, z + 0.30, z + 0.40);
+    box(D, x0 + 0.08, x0 + 0.15, 0.055, 0.075, z + 0.30, z + 0.40);
+    box(D, x0 + 0.40, x0 + 0.48, -0.10, -0.07, z + 0.36, z + 0.38);
+    box(D, x0 + 0.30, x0 + 0.50, -0.05, 0.05, z + 0.40, z + 0.42);
+    dbar(D, [x0 + 0.40, 0.08, z + 0.36], [x0 + 0.42, 0.10, z + 0.25], 0.03);
+    /* the ring's roller blocks and the pintle's locking handle */
+    for (var i = 0; i < 6; i++) { var a = i / 6 * TAU; box(D, x0 + Math.cos(a) * 0.45 - 0.03, x0 + Math.cos(a) * 0.45 + 0.03, Math.sin(a) * 0.45 - 0.03, Math.sin(a) * 0.45 + 0.03, z + 0.05, z + 0.08); }
+    dbar(D, [x0 + 0.30, -0.04, z + 0.10], [x0 + 0.20, -0.14, z + 0.10], 0.012);
+  }
+  function amDetail(B) {
+    var D = B.dark, P = B.paint, s, i, A = AM, k;
+    for (s = -1; s <= 1; s += 2) {
+      var yo = s * A.HW, o = function (t) { return s > 0 ? [yo + t, yo + t + 0.015] : [yo - t - 0.015, yo - t]; }, q;
+      /* the door's frame, hinges at its front edge and the handle at its back (A2) */
+      q = o(0.03); box(P, -0.15, 0.55, q[0], q[1], 1.27, 1.30); box(P, -0.15, 0.55, q[0], q[1], 0.55, 0.58);
+      box(P, 0.52, 0.55, q[0], q[1], 0.55, 1.30); box(P, -0.15, -0.12, q[0], q[1], 0.55, 1.30);
+      for (k = 0; k < 2; k++) cylZ(D, 0.57, s * (A.HW + 0.035), 0.66 + k * 0.40, 0.78 + k * 0.40, 0.025, 8);
+      q = o(0.03); box(D, -0.10, -0.06, q[0], q[1] + (s > 0 ? 0.03 : 0), 0.85, 0.98);
+      /* the stowage box's lid, hinge and two latches (A2) */
+      q = o(0.10); box(D, -0.80, -0.30, q[0], q[1], 1.22, 1.24);
+      box(D, -0.70, -0.65, q[0], q[1], 1.05, 1.15); box(D, -0.45, -0.40, q[0], q[1], 1.05, 1.15);
+      /* the fuel filler below it (A2), grab handles on the upper sides */
+      cylY(D, -0.55, s * A.HW, s * (A.HW + 0.03), 0.57, 0.055, 12);
+      grabY(B, s, A.HW, 0.75, 1.00, 1.30);
+      grabY(B, s, A.HW, -1.40, -1.15, 1.30);
+      /* the lamp guards, the front towing hooks, the side lamps on the mudguards */
+      guardX(B, 1.45, s * 0.62, 1.22, 0.07);
+      box(D, A.NOSE - 0.25, A.NOSE - 0.13, s * 0.40 - 0.03, s * 0.40 + 0.03, 0.52, 0.64);
+      cylY(D, A.NOSE - 0.14, s * 0.40 - 0.04, s * 0.40 + 0.04, 0.54, 0.04, 8);
+      B.vc.col = [0.75, 0.42, 0.10]; box(B.vc, 1.70, 1.73, s * 0.90 - 0.03, s * 0.90 + 0.03, A.ZW + A.R + 0.10, A.ZW + A.R + 0.14);
+      /* bolt heads along the chine */
+      for (i = 0; i < 14; i++) { var bx = -1.85 + i * 0.26; box(D, bx - 0.012, bx + 0.012, s > 0 ? A.HW - 0.005 : -A.HW - 0.012, s > 0 ? A.HW + 0.012 : -A.HW + 0.005, A.CH - 0.012, A.CH + 0.012); }
+      /* lifting eyes on the deck */
+      box(D, 1.10, 1.16, s * 0.60 - 0.012, s * 0.60 + 0.012, A.DECK - 0.02, A.DECK + 0.05);
+      box(D, -1.90, -1.84, s * 0.60 - 0.012, s * 0.60 + 0.012, A.DECK - 0.10, A.DECK - 0.03);
+    }
+    /* the rear towing pintle, the engine grille's slats */
+    box(D, A.REAR + 0.0, A.REAR + 0.10, -0.06, 0.06, 0.72, 0.80);
+    cylZ(D, A.REAR + 0.05, 0, 0.66, 0.82, 0.03, 8);
+    for (i = 0; i < 8; i++) box(D, -1.93 + i * 0.09, -1.90 + i * 0.09, -0.50, 0.50, A.DECK - 0.04, A.DECK - 0.025);
+  }
+  function amTurretDetail(B) {
+    var D = B.dark, P = B.paint, A = AM, x0 = A.TX, i, s, a;
+    /* the cupola's vision blocks, its hatch and hinge (A1, A2) */
+    B.vc.col = GLASS;
+    for (i = 0; i < 6; i++) {
+      a = i / 6 * TAU;
+      box(B.vc, x0 - 0.20 + Math.cos(a) * 0.25 - 0.035, x0 - 0.20 + Math.cos(a) * 0.25 + 0.035, 0.32 + Math.sin(a) * 0.25 - 0.035, 0.32 + Math.sin(a) * 0.25 + 0.035, A.ROOF + 0.03, A.ROOF + 0.07);
+    }
+    cylZ(P, x0 - 0.20, 0.32, A.ROOF + 0.08, A.ROOF + 0.11, 0.20, 14);
+    cylY(D, x0 - 0.40, 0.20, 0.44, A.ROOF + 0.10, 0.02, 8);
+    /* the muzzle brake's ports, the mantlet's bolt ring */
+    for (s = -1; s <= 1; s += 2) box(D, A.MUZ - 0.15, A.MUZ - 0.05, s > 0 ? 0.06 : -0.085, s > 0 ? 0.085 : -0.06, A.GZ - 0.04, A.GZ + 0.04);
+    for (i = 0; i < 8; i++) { a = i / 8 * TAU; cylX(D, x0 + 0.94, x0 + 0.96, Math.cos(a) * 0.16, A.GZ + Math.sin(a) * 0.16, 0.018, 0.018, 6); }
+    /* the aerial bases at the rear of the roof, lifting eyes on its corners, the gunner's sight shutter */
+    cylZ(D, x0 - 0.85, -0.35, A.ROOF - 0.02, A.ROOF + 0.10, 0.035, 8);
+    cylZ(D, x0 - 0.85, 0.05, A.ROOF - 0.02, A.ROOF + 0.10, 0.035, 8);
+    for (s = -1; s <= 1; s += 2) { box(D, x0 + 0.45, x0 + 0.51, s * 0.50 - 0.012, s * 0.50 + 0.012, A.ROOF - 0.01, A.ROOF + 0.05); box(D, x0 - 0.75, x0 - 0.69, s * 0.48 - 0.012, s * 0.48 + 0.012, A.ROOF - 0.01, A.ROOF + 0.05); }
+    box(D, x0 + 0.40, x0 + 0.44, -0.38, -0.20, 2.04, 2.07);
+    /* bolt heads round the turret's foot */
+    for (i = 0; i < 10; i++) { var bx = x0 - 0.85 + i * 0.16; for (s = -1; s <= 1; s += 2) box(D, bx - 0.012, bx + 0.012, s * 0.79 - 0.012, s * 0.79 + 0.012, A.DECK + 0.05, A.DECK + 0.075); }
+  }
   function buildAML(THREE, C) {
-    var T = mats(THREE, C, "olive"), g = new THREE.Group(), HB = bins(T), TB = bins(T);
+    var T = mats(THREE, C, "olive"), g = new THREE.Group(), HB = bins(T), TB = bins(T), dt = detailTex(THREE, OLIVE);
+    if (dt) T.paint.map = dt;
     amHull(HB);
+    amDetail(HB);
     K.flush(THREE, g, HB);
     axles(THREE, g, T, AM.AX, AM.ZW, AM.TY, AM.R, AM.TW, 1.1, 18);
     amTurret(TB);
+    amTurretDetail(TB);
     turretGroup(THREE, g, TB, AM.TX, 0, AM.DECK);
     return g;
   }
@@ -1278,11 +1525,14 @@ var HeroFrArmour2 = (function () {
     box(P, x0 + 0.30, x0 + 0.55, 0.08, 0.30, z + 0.20, z + 0.36);
   }
   function buildVBL(THREE, C) {
-    var T = mats(THREE, C, "ce3"), g = new THREE.Group(), HB = bins(T), TB = bins(T);
+    var T = mats(THREE, C, "ce3"), g = new THREE.Group(), HB = bins(T), TB = bins(T), dt = detailTex(THREE, CE3);
+    if (dt) T.paint.map = dt;
     vlHull(HB);
+    vlDetail(HB);
     K.flush(THREE, g, HB);
     axles(THREE, g, T, VL.AX, VL.ZW, VL.TY, VL.R, VL.TW, 0.9, 18);
     vlGun(TB);
+    vlGunDetail(TB);
     turretGroup(THREE, g, TB, VL.TX, 0, VL.TZ);
     return g;
   }

@@ -190,6 +190,11 @@
      fra_e00_sam  9.27 x 3.14 x 3.88 m (3.14 over the mirrors, the cab 2.30 m), 6784, 13; the pack
                   erect 8.28 m high.
      len = the measured X extent.
+   DETAIL PASS (gbr_e50_sam and gbr_e60_sam only; every export and the kit's existing functions
+     unchanged, the kit gains detailTex): Bloodhound 2444 -> 5576 triangles, Rapier towed 4068 ->
+     5544, draw calls unchanged (12, 12); sizes unchanged.  The parts are listed above each module's
+     detail functions; both now take the kit's detailTex (seams, bolt rows, panels, streaks, grime,
+     chips) in place of paintTex.  Sizes by proportion: NOT CONFIRMED.
    Model space: +X front (the drawbar of a trailer), +Y left, +Z up, metres, ground at z = 0.
    ASCII only. */
 
@@ -502,6 +507,95 @@ var HeroEuSamKit = (function () {
     _tex[P.key] = t;
     return t;
   }
+  var __DTEX = {};
+  /* DETAIL PAINT (the detail pass): a 512 px tile over 2.94 m of surface (UVs 0.34 a metre, 174 px a
+     metre).  Over the base colour and its soft blots: plate seams with a lit edge, bolt rows along some
+     of them, access-panel outlines with corner screws, rain streaks, grime, dust, chipped paint and oil
+     spots.  Plain paint - no markings, numbers or camouflage. */
+  function detailTex(THREE, P0) {
+    var P = { base: P0.base, seed: P0.seed, blots: P0.blots.map(function (b) { return typeof b === "string" ? b : b[0]; }) };
+    var key = "detail" + P.seed + P.base;
+    if (__DTEX[key] !== undefined) return __DTEX[key];
+    var t = null;
+    try {
+      var S = 512, cv = document.createElement("canvas"), q, R = rng(P.seed * 7 + 13), i, k, x, y, w, h, ox, oy, a, xs, n;
+      cv.width = cv.height = S; q = cv.getContext("2d");
+      q.fillStyle = P.base; q.fillRect(0, 0, S, S);
+      /* soft mottling in the base's own shades, drawn wrapped so the tile repeats without a seam */
+      for (k = 0; k < P.blots.length; k++) {
+        q.fillStyle = P.blots[k];
+        for (i = 0; i < 20; i++) {
+          x = R() * S; y = R() * S; w = 26 + R() * 90; h = 16 + R() * 60; a = R() * Math.PI;
+          q.globalAlpha = 0.22 + R() * 0.3;
+          for (ox = -S; ox <= S; ox += S) for (oy = -S; oy <= S; oy += S) {
+            if (x + ox < -w - 4 || x + ox > S + w + 4 || y + oy < -w - 4 || y + oy > S + w + 4) continue;
+            q.beginPath(); q.ellipse(x + ox, y + oy, w, h, a, 0, TAU); q.fill();
+          }
+        }
+      }
+      /* plate seams: four vertical butts across the tile, horizontal seams staggered between them */
+      xs = [];
+      for (i = 0; i < 4; i++) xs.push(Math.floor(i * 128 + 20 + R() * 80) + 0.5);
+      for (i = 0; i < 4; i++) {
+        q.globalAlpha = 1; q.strokeStyle = "rgba(14,15,10,0.42)"; q.lineWidth = 2;
+        q.beginPath(); q.moveTo(xs[i], 0); q.lineTo(xs[i], S); q.stroke();
+        q.strokeStyle = "rgba(255,250,225,0.12)"; q.lineWidth = 1;
+        q.beginPath(); q.moveTo(xs[i] + 2, 0); q.lineTo(xs[i] + 2, S); q.stroke();
+        y = Math.floor(60 + R() * 120) + 0.5;
+        for (k = 0; k < 2; k++) {
+          var xa = xs[i], xb = i < 3 ? xs[i + 1] : xs[0] + S;
+          q.strokeStyle = "rgba(14,15,10,0.38)"; q.lineWidth = 2;
+          q.beginPath(); q.moveTo(xa, y); q.lineTo(xb, y); q.stroke();
+          q.beginPath(); q.moveTo(xa - S, y); q.lineTo(xb - S, y); q.stroke();
+          q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1;
+          q.beginPath(); q.moveTo(xa, y + 2); q.lineTo(xb, y + 2); q.stroke();
+          /* a bolt row along every other seam */
+          if ((i + k) % 2 === 0) for (x = xa + 8; x < xb - 4; x += 15) {
+            q.fillStyle = "rgba(12,12,8,0.45)"; q.fillRect(x % S, y - 6, 3, 3);
+            q.fillStyle = "rgba(255,250,225,0.18)"; q.fillRect(x % S, y - 7, 2, 1);
+          }
+          y = (y + 200 + Math.floor(R() * 60)) % S;
+        }
+      }
+      /* access panels: outlined, a screw at each corner */
+      for (i = 0; i < 6; i++) {
+        x = Math.floor(R() * (S - 90)) + 10.5; y = Math.floor(R() * (S - 70)) + 10.5; w = 26 + Math.floor(R() * 60); h = 18 + Math.floor(R() * 44);
+        q.strokeStyle = "rgba(14,15,10,0.36)"; q.lineWidth = 1.5; q.strokeRect(x, y, w, h);
+        q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1; q.strokeRect(x + 1.5, y + 1.5, w, h);
+        q.fillStyle = "rgba(12,12,8,0.5)";
+        q.fillRect(x + 3, y + 3, 2, 2); q.fillRect(x + w - 5, y + 3, 2, 2); q.fillRect(x + 3, y + h - 5, 2, 2); q.fillRect(x + w - 5, y + h - 5, 2, 2);
+      }
+      q.globalAlpha = 1;
+      /* rain streaks down the plates (side faces carry v along z) */
+      for (i = 0; i < 260; i++) {
+        q.fillStyle = (i % 4) ? "rgba(18,16,10,0.08)" : "rgba(230,225,200,0.06)";
+        q.fillRect(R() * S, R() * S, 1 + R() * 2, 8 + R() * 54);
+      }
+      /* grime and dust patches */
+      for (i = 0; i < 70; i++) {
+        q.fillStyle = (i % 3) ? "rgba(30,25,15,0.08)" : "rgba(150,135,100,0.08)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 8 + R() * 46, 4 + R() * 22, R() * Math.PI, 0, TAU); q.fill();
+      }
+      /* chipped paint and scratches */
+      for (i = 0; i < 180; i++) {
+        q.fillStyle = (i % 2) ? "rgba(205,200,175,0.22)" : "rgba(10,10,8,0.30)";
+        n = 1 + Math.floor(R() * 3); q.fillRect(R() * S, R() * S, n, n);
+      }
+      q.strokeStyle = "rgba(210,205,180,0.14)"; q.lineWidth = 1;
+      for (i = 0; i < 14; i++) { x = R() * S; y = R() * S; q.beginPath(); q.moveTo(x, y); q.lineTo(x + (R() - 0.5) * 40, y + (R() - 0.5) * 14); q.stroke(); }
+      /* oil and fuel spots */
+      for (i = 0; i < 8; i++) {
+        q.fillStyle = "rgba(12,10,6,0.16)";
+        q.beginPath(); q.ellipse(R() * S, R() * S, 5 + R() * 12, 4 + R() * 9, 0, 0, TAU); q.fill();
+      }
+      t = new THREE.CanvasTexture(cv);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = 4;
+    } catch (e) { t = null; }
+    __DTEX[key] = t;
+    return t;
+  }
   /* paint (textured), dark (metal), rub (tyres), glass, team (C.team exactly) and any extras */
   function materials(THREE, C, P, extra) {
     var T = {}, tx = paintTex(THREE, P), k;
@@ -571,7 +665,7 @@ var HeroEuSamKit = (function () {
     solid: solid, hexa: hexa, box: box, bar: bar, cyl: cyl, cylX: cylX, cylY: cylY, cylZ: cylZ,
     lathe: lathe, gear: gear, loft: loft, profY: profY, fin: fin,
     trackPath: trackPath, belt: belt, materials: materials, bins: bins, wheelBins: wheelBins, flush: flush, group: group,
-    tyre: tyre, shadows: shadows
+    tyre: tyre, shadows: shadows, detailTex: detailTex
   };
 })();
 
@@ -676,6 +770,8 @@ var HeroBloodhound = (function () {
     missile({ mis: new K.XF(B.mis, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [TAIL, 0, AX]), nose: new K.XF(B.nose, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [TAIL, 0, AX]),
               jet: new K.XF(B.jet, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [TAIL, 0, AX]), boo: new K.XF(B.boo, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [TAIL, 0, AX]),
               red: new K.XF(B.red, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [TAIL, 0, AX]), dark: new K.XF(B.dark, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [TAIL, 0, AX]) });
+    missileDetail({ dark: new K.XF(B.dark, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [TAIL, 0, AX]) });
+    podDetail(B);
     return [[TAIL + LM, 0, AX, TAIL]];
   }
   /* the fixed base: pedestal and four outriggers with screw jacks and pads (B3, B5) */
@@ -695,18 +791,102 @@ var HeroBloodhound = (function () {
     /* the cable box on the pedestal side */
     K.box(B.paint, -0.30, 0.30, 0.55, 0.75, 0.30, 0.80);
   }
+  /* ---------------------------------------------------------------- DETAIL PASS
+     From B5 (Neatishead, the round on its launcher) and B1/B2/B6: the dashed panel rings and the side
+     seams on the body, the ramjets' panel bands and nozzle rings, the boosters' bands and forward
+     lugs; on the launcher the handwheels and hydraulic pipes on the head, the access panels and their
+     latches, the outriggers' braces, the jacks' cranks, the cable box's conduit to the ground, the
+     beam's lightening holes.  Sizes by proportion: NOT CONFIRMED. */
+  function dashRing(bin, x, r, n, half) {
+    for (var i = 0; i < n; i++) K.box(new K.XF(bin, K.roll(i / n * TAU), [0, 0, 0]), x - 0.012, x + 0.012, -half, half, r - 0.004, r + 0.006);
+  }
+  function missileDetail(B) {
+    var k, R, to;
+    [1.20, 3.60, 4.70, 5.45].forEach(function (x) { dashRing(B.dark, x, RB, 18, 0.03); });
+    for (k = -1; k <= 1; k += 2) {
+      K.box(B.dark, 0.30, 2.05, k * RB - 0.005, k * RB + 0.005, -0.006, 0.006);
+      K.box(B.dark, 3.35, 5.80, k * RB - 0.005, k * RB + 0.005, -0.006, 0.006);
+      var z = k * RJ.off;
+      K.cyl(B.dark, [1.20, 0, z], [1.23, 0, z], RJ.r * 0.91 + 0.004, RJ.r * 0.91 + 0.004, 14, true, true);
+      K.cyl(B.dark, [2.30, 0, z], [2.33, 0, z], RJ.r * 0.97 + 0.004, RJ.r * 0.97 + 0.004, 14, true, true);
+      K.cyl(B.dark, [RJ.x0 - 0.10, 0, z], [RJ.x0, 0, z], RJ.r * 0.80, RJ.r * 0.86, 14, true, true);
+    }
+    for (k = 0; k < 4; k++) {
+      R = K.roll(Math.PI / 4 + k * Math.PI / 2);
+      to = K.apply(R, [0, 0, 0], [0, 0, BO.off]);
+      K.cyl(new K.XF(B.dark, R, to), [0.60, 0, 0], [0.63, 0, 0], BO.r + 0.004, BO.r + 0.004, 12, true, true);
+      K.cyl(new K.XF(B.dark, R, to), [1.60, 0, 0], [1.63, 0, 0], BO.r + 0.004, BO.r + 0.004, 12, true, true);
+      K.box(new K.XF(B.dark, R, [0, 0, 0]), 2.05, 2.25, -0.04, 0.04, RB - 0.01, BO.off - BO.r + 0.01);
+    }
+  }
+  function handwheel(bin, x, y, z, r) {
+    var i, a0, a1;
+    for (i = 0; i < 10; i++) {
+      a0 = i / 10 * TAU; a1 = (i + 1) / 10 * TAU;
+      K.bar(bin, [x + Math.cos(a0) * r, y, z + Math.sin(a0) * r], [x + Math.cos(a1) * r, y, z + Math.sin(a1) * r], 0.02);
+    }
+    for (i = 0; i < 3; i++) { a0 = i / 3 * TAU; K.bar(bin, [x, y, z], [x + Math.cos(a0) * r, y, z + Math.sin(a0) * r], 0.014); }
+    K.cylY(bin, x, y - 0.03, y + 0.03, z, 0.03, 8);
+  }
+  function headDetail(B) {
+    var s;
+    for (s = -1; s <= 1; s += 2) {
+      handwheel(B.dark, -0.15, s * 0.53, 0.28, 0.12);
+      /* access panels with their latches on the housing's sides */
+      K.box(B.dark, -0.70, -0.10, s > 0 ? 0.48 : -0.49, s > 0 ? 0.49 : -0.48, 0.13, 0.14);
+      K.box(B.dark, -0.70, -0.10, s > 0 ? 0.48 : -0.49, s > 0 ? 0.49 : -0.48, 0.39, 0.40);
+      K.box(B.dark, 0.10, 0.13, s > 0 ? 0.48 : -0.495, s > 0 ? 0.495 : -0.48, 0.20, 0.30);
+    }
+    /* the hydraulic pipes from the ram round the housing's right side to the back */
+    K.bar(B.dark, [0.50, -0.10, 0.44], [0.50, -0.50, 0.30], 0.025);
+    K.bar(B.dark, [0.50, -0.50, 0.30], [-0.70, -0.50, 0.30], 0.025);
+    K.bar(B.dark, [0.50, -0.14, 0.40], [0.50, -0.50, 0.24], 0.025);
+    K.bar(B.dark, [0.50, -0.50, 0.24], [-0.70, -0.50, 0.24], 0.025);
+    /* a grab rail on the top box, the ring's bolt circle */
+    K.bar(B.dark, [-0.55, 0.30, 0.60], [0.20, 0.30, 0.60], 0.02);
+    K.bar(B.dark, [-0.55, 0.30, 0.55], [-0.55, 0.30, 0.60], 0.02);
+    K.bar(B.dark, [0.20, 0.30, 0.55], [0.20, 0.30, 0.60], 0.02);
+    for (s = 0; s < 16; s++) { var a = s / 16 * TAU; K.cylZ(B.dark, Math.cos(a) * 0.66, Math.sin(a) * 0.66, 0.10, 0.12, 0.022, 6); }
+  }
+  function baseDetail(B) {
+    var k, a, i;
+    for (k = 0; k < 4; k++) {
+      a = k * Math.PI / 2;
+      var X = new K.XF(B.paint, K.yaw(a), [0, 0, 0]), D = new K.XF(B.dark, K.yaw(a), [0, 0, 0]);
+      /* the brace from the pedestal's top to the outrigger, the jack's crank and its knob */
+      K.bar(X, [0.55, 0, ZR - 0.30], [1.25, 0, 0.42], 0.07);
+      K.bar(D, [1.62, 0, 0.58], [1.62, 0.22, 0.58], 0.025);
+      K.cylZ(D, 1.62, 0.22, 0.58, 0.70, 0.02, 6);
+      /* the outrigger's stiffening ribs and the pad's gusset */
+      for (i = 0; i < 3; i++) K.box(D, 0.80 + i * 0.30, 0.82 + i * 0.30, -0.135, 0.135, 0.18, 0.40);
+    }
+    /* the pedestal's access door, its louvres, the cable box's conduit to the ground */
+    K.box(B.dark, -0.66, -0.655, -0.30, 0.30, 0.30, 0.85);
+    for (i = 0; i < 5; i++) K.box(B.dark, 0.65, 0.665, -0.35, 0.35, 0.45 + i * 0.08, 0.47 + i * 0.08);
+    K.cylZ(B.dark, 0.20, 0.70, 0.0, 0.30, 0.04, 8);
+    K.cylZ(B.dark, -0.20, 0.70, 0.0, 0.30, 0.04, 8);
+    K.box(B.dark, -0.32, 0.32, 0.75, 0.76, 0.75, 0.77);
+  }
+  function podDetail(B) {
+    var i, s;
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 5; i++) K.cylY(B.dark, 0.30 + i * 0.45, s * 0.16, s * 0.165, 0.085, 0.05, 10);
+    K.box(B.dark, 2.40, 2.60, -0.14, 0.14, 0.17, 0.20);
+  }
   function build(THREE, M, C) {
     var T = K.materials(THREE, C, PAINT, {
       mis: [0xdcdcd4, 0.55, 0.08], nose: [0x2a2622, 0.5, 0.1], jet: [0xa3a7aa, 0.32, 0.75],
       boo: [0xc8c8c0, 0.6, 0.1], red: [0xa8322a, 0.6, 0.05] });
+    var dt = K.detailTex(THREE, PAINT);
+    if (dt) T.paint.map = dt;
     var g = K.group(THREE, "gbr_e50_sam"), B, tg, pg, cells;
     B = K.bins(T, ["paint", "dark"]);
     base(B);
+    baseDetail(B);
     var bg = K.group(THREE, null, OFF, 0, 0);
     K.flush(THREE, bg, B); g.add(bg);
     tg = K.group(THREE, "turret", OFF, 0, ZR);
     B = K.bins(T, ["paint", "dark", "team"]);
-    head(B); K.flush(THREE, tg, B);
+    head(B); headDetail(B); K.flush(THREE, tg, B);
     pg = K.group(THREE, "podelev", TRX, 0, TRZ);
     B = K.bins(T, ["paint", "dark", "mis", "nose", "jet", "boo", "red"]);
     cells = pod(B); K.flush(THREE, pg, B);
@@ -803,25 +983,103 @@ var HeroRapierTowed = (function () {
     }
     return cells;
   }
+  /* ---------------------------------------------------------------- DETAIL PASS
+     From R2-R4: the curved mudguards, the amber and red lamps with the reflector, the jacks' crank
+     handles, the drawbar's handbrake lever, the safety chain and the coiled electrical cable, the
+     drum's seams, panel latches and lifting handles, the head's ribs and grab handles, the launch
+     arms' braces and the rounds' umbilical blocks.  Sizes by proportion: NOT CONFIRMED. */
+  function chassisDetail(B) {
+    var s, i, a0, a1;
+    for (s = -1; s <= 1; s += 2) {
+      var ya = s > 0 ? YT - 0.14 : -YT - 0.14, yb = s > 0 ? YT + 0.14 : -YT + 0.14;
+      /* the mudguard's curved front and back, down to the axle line (R3, R4) */
+      for (i = 0; i < 4; i++) {
+        a0 = (0.08 + i * 0.105) * Math.PI; a1 = (0.08 + (i + 1) * 0.105) * Math.PI;
+        K.bar(B.paint, [AXL + Math.cos(a0) * 0.43, (ya + yb) / 2, RT + Math.sin(a0) * 0.31], [AXL + Math.cos(a1) * 0.43, (ya + yb) / 2, RT + Math.sin(a1) * 0.31], 0.03);
+      }
+      /* the lamp cluster: amber, red and the reflector (R4) */
+      K.cylX(B.red, -1.22, -1.20, s * 0.40 + (s > 0 ? -0.05 : 0.05), 0.65, 0.03, 8);
+      K.box(B.dark, -1.215, -1.20, s * 0.40 + 0.045 * s - 0.02, s * 0.40 + 0.045 * s + 0.02, 0.62, 0.68);
+      /* the frame's side rail bolts */
+      for (i = 0; i < 6; i++) K.box(B.dark, -1.05 + i * 0.32, -1.03 + i * 0.32, s > 0 ? 0.50 : -0.512, s > 0 ? 0.512 : -0.50, 0.47, 0.49);
+    }
+    /* the handbrake lever and its quadrant on the drawbar, the safety chain, the coiled cable (R4) */
+    K.box(B.dark, 1.40, 1.50, 0.20, 0.26, 0.52, 0.60);
+    K.bar(B.dark, [1.45, 0.23, 0.58], [1.30, 0.23, 0.92], 0.025);
+    for (i = 0; i < 6; i++) K.box(B.dark, 2.40 + i * 0.07, 2.45 + i * 0.07, 0.07, 0.10, 0.36 - (i % 2) * 0.02, 0.40 - (i % 2) * 0.02);
+    for (i = 0; i < 12; i++) {
+      a0 = i / 12 * TAU; a1 = (i + 1) / 12 * TAU;
+      K.bar(B.dark, [2.05 + Math.cos(a0) * 0.16, -0.18, 0.40 + Math.sin(a0) * 0.10], [2.05 + Math.cos(a1) * 0.16, -0.18, 0.40 + Math.sin(a1) * 0.10], 0.018);
+    }
+    K.bar(B.dark, [2.20, -0.18, 0.40], [2.90, -0.05, 0.46], 0.018);
+    /* the drum's vertical seams, the panels' latches, two lifting handles */
+    for (i = 0; i < 8; i++) {
+      var a = (i + 0.5) / 8 * TAU;
+      K.box(new K.XF(B.dark, K.yaw(a), [0, 0, 0]), 0.495, 0.51, -0.008, 0.008, 0.58, ZH - 0.04);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      K.box(B.dark, -0.05, 0.05, s > 0 ? 0.56 : -0.575, s > 0 ? 0.575 : -0.56, 0.78, 0.84);
+      K.bar(B.dark, [0.30, s * 0.40, 1.02], [0.30, s * 0.40, 1.08], 0.02);
+      K.bar(B.dark, [-0.30, s * 0.40, 1.02], [-0.30, s * 0.40, 1.08], 0.02);
+      K.bar(B.dark, [-0.30, s * 0.43, 1.08], [0.30, s * 0.43, 1.08], 0.02);
+    }
+  }
+  function jackDetail(B, down) {
+    var i, s, x, y;
+    for (i = 0; i < JK.length; i++) for (s = -1; s <= 1; s += 2) {
+      x = JK[i][0]; y = s * JK[i][1];
+      K.bar(B.dark, [x, y, 0.68], [x + 0.14, y, 0.68], 0.022);
+      K.cylZ(B.dark, x + 0.14, y, 0.68, 0.78, 0.018, 6);
+      K.cylZ(B.dark, x, y, 0.66, 0.70, 0.035, 8);
+    }
+  }
+  function headDetail(B) {
+    var i;
+    /* the head's horizontal ribs and its grab handles */
+    K.cylZ(B.dark, 0, 0, 0.80, 0.82, 0.485, 24);
+    K.cylZ(B.dark, 0, 0, 0.95, 0.97, 0.485, 24);
+    for (i = 0; i < 4; i++) {
+      var X = new K.XF(B.dark, K.yaw(i / 4 * TAU + Math.PI / 4), [0, 0, 0]);
+      K.bar(X, [0.48, -0.10, 0.70], [0.53, -0.10, 0.70], 0.02); K.bar(X, [0.48, 0.10, 0.70], [0.53, 0.10, 0.70], 0.02);
+      K.bar(X, [0.53, -0.10, 0.70], [0.53, 0.10, 0.70], 0.02);
+    }
+    /* the housing's bolted access covers */
+    K.box(B.dark, 0.40, 0.41, -0.25, 0.25, 0.36, 0.38); K.box(B.dark, 0.40, 0.41, -0.25, 0.25, 0.57, 0.59);
+  }
+  function podDetail(B) {
+    var s, i, y, z, Rm = K.pitch(REST);
+    for (s = -1; s <= 1; s += 2) {
+      /* the arm's diagonal brace between the two beams, the umbilical block at each round's tail */
+      K.bar(B.paint, K.apply(Rm, [0, 0, 0], [-0.40, s * POS[0][0], POS[0][1] - 0.10]), K.apply(Rm, [0, 0, 0], [0.30, s * POS[1][0], POS[1][1] - 0.10]), 0.04);
+      for (i = 0; i < POS.length; i++) {
+        y = s * POS[i][0]; z = POS[i][1];
+        var c = K.apply(Rm, [0, 0, 0], [-0.62, y, z - 0.08]);
+        K.box(B.dark, c[0] - 0.06, c[0] + 0.06, y - 0.03, y + 0.03, c[2] - 0.04, c[2] + 0.04);
+      }
+    }
+  }
   function build(THREE, M, C) {
     var T = K.materials(THREE, C, PAINT, { rnd: [0x4f5434, 0.62, 0.1], red: [0x8a2a22, 0.5, 0.1] });
+    var dt = K.detailTex(THREE, PAINT);
+    if (dt) T.paint.map = dt;
     var g = K.group(THREE, "gbr_e60_sam"), B, tg, pg, wg, dp, tp, s;
     B = K.bins(T, ["paint", "dark", "team", "red"]);
     chassis(B);
+    chassisDetail(B);
     var hg = K.group(THREE, null); K.flush(THREE, hg, B); g.add(hg);
     dp = K.group(THREE, "deploypose"); dp.visible = false;
-    B = K.bins(T, ["paint", "dark"]); jacks(B, true); K.flush(THREE, dp, B); g.add(dp);
+    B = K.bins(T, ["paint", "dark"]); jacks(B, true); jackDetail(B, true); K.flush(THREE, dp, B); g.add(dp);
     tp = K.group(THREE, "travelpose");
-    B = K.bins(T, ["paint", "dark"]); jacks(B, false); K.flush(THREE, tp, B); g.add(tp);
+    B = K.bins(T, ["paint", "dark"]); jacks(B, false); jackDetail(B, false); K.flush(THREE, tp, B); g.add(tp);
     wg = K.group(THREE, "roadwheel", AXL, 0, RT);
     B = K.wheelBins(T);
     for (s = -1; s <= 1; s += 2) K.tyre(B, s * YT, RT, WT, s, 0.22);
     K.flush(THREE, wg, B); g.add(wg);
     tg = K.group(THREE, "turret", 0, 0, ZH);
-    B = K.bins(T, ["paint", "dark"]); head(B); K.flush(THREE, tg, B);
+    B = K.bins(T, ["paint", "dark"]); head(B); headDetail(B); K.flush(THREE, tg, B);
     pg = K.group(THREE, "podelev", 0.05, 0, TRZ);
     B = K.bins(T, ["paint", "dark", "rnd"]);
-    var cells = pod(B); K.flush(THREE, pg, B);
+    var cells = pod(B); podDetail(B); K.flush(THREE, pg, B);
     pg.userData.el = EL; pg.userData.cells = cells;
     tg.add(pg); g.add(tg);
     K.shadows(g);

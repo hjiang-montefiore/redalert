@@ -89,6 +89,10 @@
    Materials: PAINT (canvas, plain), DARK, RUB, GLASS, TEAM (exactly C.team: thin strips on the cab roof,
      the body and the turret), WHEEL (vertex colours), LAMP/AMBER/TAIL, MSL, NOSE.  Nodes: "turret",
      "podelev", "roadwheel" (one per axle).
+   DETAIL PASS: the Antelope rows (antelopeDetail, antelopeTurretDetail, hubNuts: 4608 -> 7632 triangles,
+     16 draw calls kept) and the M1167's ITAS turret (6660 -> 7388, 15); the paint canvas gains plate
+     seams, bolt rows, panel outlines, chips and grime.  lst_r is HeroLCU1610 called as it is (its rails,
+     bollards and fittings are that module's) and is not changed here.  Sizes NOT CONFIRMED (proportions).
    Model space: +X nose, +Y left (port), +Z up, metres, ground at z = 0.  ASCII only.  */
 
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -245,6 +249,24 @@ var HeroRocRetry = (function () {
         q.fillRect(R() * S, R() * S, 1 + R() * 3, 8 + R() * 36);
       }
       for (i = 0; i < 40; i++) { q.fillStyle = "rgba(10,10,8,0.15)"; q.fillRect(R() * S, R() * S, 2, 2); }
+      /* DETAIL PASS: plate seams with a lit edge about a metre apart, bolt rows on some, access-panel
+         outlines with corner screws, chipped paint and grime (tile-relative: pm pixels a metre) */
+      var nx = Math.max(1, Math.round(tile / 1.1)), sx;
+      for (i = 0; i < nx; i++) {
+        sx = Math.floor((i + 0.3 + R() * 0.4) * S / nx) + 0.5;
+        q.strokeStyle = "rgba(14,15,10,0.36)"; q.lineWidth = 1.5; q.beginPath(); q.moveTo(sx, 0); q.lineTo(sx, S); q.stroke();
+        q.strokeStyle = "rgba(255,250,225,0.10)"; q.lineWidth = 1; q.beginPath(); q.moveTo(sx + 1.5, 0); q.lineTo(sx + 1.5, S); q.stroke();
+        y = Math.floor(R() * S) + 0.5;
+        q.strokeStyle = "rgba(14,15,10,0.32)"; q.lineWidth = 1.5; q.beginPath(); q.moveTo(sx, y); q.lineTo(sx + S / nx, y); q.stroke();
+        if (i % 2 === 0) for (x = sx + 5; x < sx + S / nx - 3; x += Math.max(6, pm * 0.09)) { q.fillStyle = "rgba(12,12,8,0.42)"; q.fillRect(x, y - 4, 2, 2); }
+      }
+      for (i = 0; i < 3; i++) {
+        x = Math.floor(R() * S * 0.8) + 0.5; y = Math.floor(R() * S * 0.8) + 0.5; w = pm * (0.25 + R() * 0.35);
+        q.strokeStyle = "rgba(14,15,10,0.30)"; q.lineWidth = 1; q.strokeRect(x, y, w, w * (0.5 + R() * 0.5));
+        q.fillStyle = "rgba(12,12,8,0.45)"; q.fillRect(x + 2, y + 2, 2, 2); q.fillRect(x + w - 4, y + 2, 2, 2);
+      }
+      for (i = 0; i < 90; i++) { q.fillStyle = (i % 2) ? "rgba(205,200,175,0.20)" : "rgba(10,10,8,0.25)"; q.fillRect(R() * S, R() * S, 1 + R() * 2, 1 + R() * 2); }
+      for (i = 0; i < 30; i++) { q.fillStyle = "rgba(30,25,15,0.08)"; q.beginPath(); q.ellipse(R() * S, R() * S, 6 + R() * 24, 3 + R() * 12, R() * 3, 0, TAU); q.fill(); }
     } catch (e) { cv = null; }
     _cv[key] = cv;
     return cv;
@@ -402,6 +424,83 @@ var HeroRocRetry = (function () {
       slab(MB.msl, [xn - 0.50, y + cy * (r + 0.08), z + cz * (r + 0.08)], [1, 0, 0], [0, cy, cz], [0, -cz, cy], 0.09, 0.08, 0.006);
     }
   }
+  /* DETAIL PASS (A1-A4): the fittings the first pass left out - wipers, grille slats, the bumper's
+     lamps and tow hooks, door handles and hinges, the roof's rain gutter, the nose-corner mirrors, the
+     exhaust, the body's panel frames, locker doors and handles, the jacks' screws and pads, the rear
+     bumper and lamp guards; the hub nuts on every wheel.  Sizes by proportion: NOT CONFIRMED. */
+  function antelopeDetail(B, kind) {
+    var s, i, hw = AN.HW, roof = kind === "old" ? 2.15 : 2.20;
+    var x0 = kind === "old" ? 2.31 : 2.37, z0 = kind === "old" ? 2.08 : 2.02, x1 = 2.505, z1 = 1.48;
+    var L = Math.sqrt((x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0)), u = [(x1 - x0) / L, 0, (z1 - z0) / L], n = [-u[2], 0, u[0]];
+    for (s = -1; s <= 1; s += 2) {
+      /* the wipers parked along the windscreen's foot, the arm and blade (A3) */
+      var cx = x1 - u[0] * 0.10 + n[0] * 0.03, cz = z1 + 0.06 + n[2] * 0.03;
+      slab(B.dark, [cx, s * 0.30, cz], [0, 1, 0], u, n, 0.30, 0.008, 0.008);
+      slab(B.dark, [cx - u[0] * 0.03, s * 0.55, cz - u[2] * 0.03], u, [0, 1, 0], n, 0.06, 0.008, 0.008);
+      /* door handle, two hinges at the door's front edge, a grab handle by the door (A3) */
+      box(B.dark, 1.62, 1.72, s > 0 ? hw : -hw - 0.02, s > 0 ? hw + 0.02 : -hw, 1.33, 1.36);
+      for (i = 0; i < 2; i++) box(B.dark, 2.24, 2.30, s > 0 ? hw - 0.005 : -hw - 0.015, s > 0 ? hw + 0.015 : -hw + 0.005, 1.00 + i * 0.55, 1.10 + i * 0.55);
+      cylZ(B.dark, 0.66, s * (hw + 0.04), 1.20, 1.75, 0.012, 6);
+      /* the rain gutter along the roof edge */
+      box(B.dark, AN.XC0, 2.30, s > 0 ? hw - 0.03 : -hw - 0.005, s > 0 ? hw + 0.005 : -hw + 0.03, roof - 0.08, roof - 0.06);
+      /* the small mirror on the cab's nose corner (A3) */
+      cylZ(B.dark, 2.50, s * (hw - 0.08), 1.42, 1.58, 0.01, 6);
+      box(B.dark, 2.48, 2.52, s * (hw - 0.08) - 0.07, s * (hw - 0.08) + 0.07, 1.56, 1.66);
+      /* the bumper's lamps and tow hooks (A3) */
+      box(B.amber, 2.705, 2.72, s * 0.80 - 0.07, s * 0.80 + 0.07, 0.42, 0.50);
+      box(B.dark, 2.64, 2.70, s * 0.35 - 0.03, s * 0.35 + 0.03, 0.30, 0.38);
+      cylY(B.dark, 2.68, s * 0.35 - 0.035, s * 0.35 + 0.035, 0.31, 0.03, 8);
+      /* the body's frame rails round its side, the locker doors with handles, rivets along the top */
+      box(B.dark, AN.BX1 + 0.02, AN.BX0 - 0.02, s > 0 ? hw : -hw - 0.012, s > 0 ? hw + 0.012 : -hw, AN.BZ0, AN.BZ0 + 0.03);
+      [[-1.90, -1.35], [-0.92, -0.18]].forEach(function (d) {
+        box(B.dark, d[0], d[0] + 0.02, s > 0 ? hw : -hw - 0.008, s > 0 ? hw + 0.008 : -hw, 1.05, 1.45);
+        box(B.dark, d[1] - 0.02, d[1], s > 0 ? hw : -hw - 0.008, s > 0 ? hw + 0.008 : -hw, 1.05, 1.45);
+        box(B.dark, (d[0] + d[1]) / 2 - 0.05, (d[0] + d[1]) / 2 + 0.05, s > 0 ? hw : -hw - 0.03, s > 0 ? hw + 0.03 : -hw, 1.24, 1.27);
+      });
+      for (i = 0; i < 16; i++) { var rx = AN.BX1 + 0.10 + i * 0.195; box(B.dark, rx - 0.01, rx + 0.01, s > 0 ? hw : -hw - 0.01, s > 0 ? hw + 0.01 : -hw, AN.BZ1 - 0.07, AN.BZ1 - 0.05); }
+      /* the jacks' screws and feet (A3 shows them down) */
+      [0.38, -2.62].forEach(function (xj) {
+        cylZ(B.dark, xj, s * (AN.HW + 0.02), 1.48, 1.60, 0.03, 8);
+        box(B.dark, xj - 0.03, xj + 0.03, s * (AN.HW + 0.02) - 0.10, s * (AN.HW + 0.02) + 0.10, 1.58, 1.61);
+        box(B.dark, xj - 0.07, xj + 0.07, s > 0 ? AN.HW + 0.07 : -AN.HW - 0.075, s > 0 ? AN.HW + 0.075 : -AN.HW - 0.07, 0.60, 1.30);
+      });
+      /* the rear lamp's guard, the rear bumper's ends */
+      box(B.dark, AN.BX1 - 0.02, AN.BX1, s * 0.82 - 0.10, s * 0.82 + 0.10, 1.16, 1.18);
+      box(B.dark, AN.BX1 - 0.02, AN.BX1, s * 0.82 - 0.10, s * 0.82 + 0.10, 1.02, 1.04);
+    }
+    /* the grille's slats over the black band (A3) */
+    for (i = 0; i < 4; i++) box(B.paint, 2.655, 2.672, -0.52, 0.52, 1.03 + i * 0.065, 1.05 + i * 0.065);
+    /* the exhaust under the cab on the right, its tail pipe */
+    cylX(B.dark, 0.70, 1.30, -0.62, 0.48, 0.07, 0.07, 10);
+    cyl(B.dark, [0.70, -0.62, 0.48], [0.55, -0.80, 0.42], 0.035, 0.035, 8);
+    /* the rear under-run bar, the fuel tank's straps */
+    box(B.dark, AN.BX1 - 0.02, AN.BX1 + 0.08, -0.85, 0.85, 0.50, 0.58);
+    for (i = 0; i < 2; i++) box(B.dark, -0.05 + i * 0.30, -0.02 + i * 0.30, -0.88, -0.52, 0.44, 0.80);
+  }
+  function antelopeTurretDetail(TB) {
+    var s, i;
+    /* the housing's access panels: hinges and latches; the sensor box's window; an aerial base (A3) */
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 2; i++) box(TB.dark, -0.30 + i * 0.50, -0.20 + i * 0.50, s > 0 ? 0.45 : -0.465, s > 0 ? 0.465 : -0.45, 0.62, 0.66);
+      box(TB.dark, -0.03, 0.03, s > 0 ? 0.45 : -0.47, s > 0 ? 0.47 : -0.45, 0.30, 0.44);
+      box(TB.dark, -0.30, 0.22, s > 0 ? 0.27 : -0.28, s > 0 ? 0.28 : -0.27, 0.85, 0.87);
+      box(TB.dark, -0.30, 0.22, s > 0 ? 0.27 : -0.28, s > 0 ? 0.28 : -0.27, 1.30, 1.32);
+    }
+    boxP(TB.dark, [0.29, 0, 1.66], 0.30, 0.012, 0.15, 0.06);
+    cylZ(TB.dark, -0.42, 0.38, 0.70, 0.82, 0.03, 8);
+    for (i = 0; i < 12; i++) { var a = i / 12 * TAU; cylZ(TB.dark, Math.cos(a) * 0.40, Math.sin(a) * 0.40, 0.05, 0.065, 0.018, 6); }
+  }
+  /* the hub nuts and the disc's holes on a single or the outer dual tyre (A3) */
+  function hubNuts(W, ty, r, w, dual) {
+    var s, k, y;
+    for (s = -1; s <= 1; s += 2) {
+      y = s * (ty + (dual ? (w * 0.5 + 0.015) : 0)) + s * (w / 2 + 0.03);
+      W.col = [0.19, 0.19, 0.18];
+      for (k = 0; k < 6; k++) { var a = k / 6 * TAU; cylY(W, Math.cos(a) * r * 0.30, y, y + s * 0.02, Math.sin(a) * r * 0.30, 0.016, 6); }
+      W.col = [0.09, 0.09, 0.09];
+      for (k = 0; k < 5; k++) { var b = (k + 0.5) / 5 * TAU; cylY(W, Math.cos(b) * r * 0.42, y - s * 0.004, y + s * 0.004, Math.sin(b) * r * 0.42, 0.03, 8); }
+    }
+  }
   function antelope(THREE, M, C, kind) {
     var T = materials(THREE, C, "rocp"), g = group(THREE, kind === "old" ? "roc_e00_spaag" : "spaag_r"), B = bins(T), s;
     T.lamp = new THREE.MeshStandardMaterial({ color: 0xcfc9ac, roughness: 0.3, metalness: 0.1, emissive: 0x2a2814, emissiveIntensity: 0.7 });
@@ -410,10 +509,11 @@ var HeroRocRetry = (function () {
     B.lamp = new Bin(T.lamp, false); B.amber = new Bin(T.amber, false); B.lampR = new Bin(T.lampR, false);
     cab(B, kind);
     antelopeTruck(B);
+    antelopeDetail(B, kind);
     var hg = group(THREE, "hull"); flush(THREE, hg, B); g.add(hg);
     wheelGroups(THREE, g, T, [
-      [AN.AXF, AN.R, function (W) { tyrePair(W, PAINTS.rocp.base, 0.80, AN.R, 0.22, false); }],
-      [AN.AXR, AN.R, function (W) { tyrePair(W, PAINTS.rocp.base, 0.72, AN.R, 0.21, true); }]]);
+      [AN.AXF, AN.R, function (W) { tyrePair(W, PAINTS.rocp.base, 0.80, AN.R, 0.22, false); hubNuts(W, 0.80, AN.R, 0.22, false); }],
+      [AN.AXR, AN.R, function (W) { tyrePair(W, PAINTS.rocp.base, 0.72, AN.R, 0.21, true); hubNuts(W, 0.72, AN.R, 0.21, true); }]]);
     /* "turret": the square base housing on the box roof, the upright head, the drum of the elevation
        trunnion across its front, the angled sensor box on top (A1-A4) */
     var tg = group(THREE, "turret", AN.TX, 0, AN.BZ1), TB = bins(T);
@@ -426,6 +526,7 @@ var HeroRocRetry = (function () {
     boxP(TB.paint, [0.02, 0, 1.64], 0.30, 0.30, 0.22, 0.13);
     box(TB.dark, 0.30, 0.34, -0.15, 0.15, 1.58, 1.74);
     box(TB.team, -0.48, -0.40, -0.25, 0.25, 0.70, 0.712);
+    antelopeTurretDetail(TB);
     flush(THREE, tg, TB);
     /* "podelev": the arms from the drum, a launch rail over each round, the four rounds */
     T.msl = paintMat(THREE, "msl");
@@ -493,6 +594,25 @@ var HeroRocRetry = (function () {
     box(B.dark, -0.20, 0.10, -0.08, 0.08, 0.92, 0.97);
     box(B.dark, -0.30, -0.05, -0.14, 0.14, 0.46, 0.58);
     box(B.team, -0.40, 0.00, -0.60, -0.56, 0.38, 0.39);
+    /* DETAIL PASS (I1): the tube's clamp bands and its rear cap, the TAS's carrying handles and lens
+       hood, bolt heads along the shield's plates, the grab handles on the rear wall.  NOT CONFIRMED
+       sizes (proportions of I1). */
+    [-0.30, 0.05].forEach(function (x) { cylX(B.dark, x, x + 0.04, 0.18, 0.50, 0.132, 0.132, 16); });
+    [0.55, 0.90].forEach(function (x) { cylX(B.dark, x, x + 0.03, 0.18, 0.50, 0.087, 0.087, 14); });
+    cylX(B.dark, -0.49, -0.46, 0.18, 0.50, 0.11, 0.11, 14);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, -0.20, 0.12, s > 0 ? 0.15 : -0.17, s > 0 ? 0.17 : -0.15, 0.93, 0.95);
+      box(B.dark, -0.20, -0.18, s > 0 ? 0.15 : -0.17, s > 0 ? 0.17 : -0.15, 0.88, 0.95);
+      box(B.dark, 0.10, 0.12, s > 0 ? 0.15 : -0.17, s > 0 ? 0.17 : -0.15, 0.88, 0.95);
+      for (i = 0; i < 7; i++) box(B.dark, -0.40 + i * 0.13, -0.38 + i * 0.13, s > 0 ? 0.60 : -0.61, s > 0 ? 0.61 : -0.60, 0.30, 0.32);
+    }
+    box(B.dark, 0.25, 0.33, -0.10, 0.06, 0.88, 0.90);
+    for (i = 0; i < 9; i++) box(B.dark, 0.48, 0.49, -0.52 + i * 0.13 - 0.01, -0.52 + i * 0.13 + 0.01, 0.30, 0.32);
+    for (s = -1; s <= 1; s += 2) {
+      box(B.dark, -0.52, -0.48, s * 0.30 - 0.012, s * 0.30 + 0.012, 0.12, 0.16);
+      box(B.dark, -0.52, -0.48, s * 0.30 - 0.012, s * 0.30 + 0.012, 0.04, 0.08);
+      box(B.dark, -0.53, -0.51, s * 0.30 - 0.012, s * 0.30 + 0.012, 0.04, 0.16);
+    }
     flush(THREE, tg, B);
     return g;
   }

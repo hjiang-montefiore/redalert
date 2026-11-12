@@ -10,7 +10,7 @@
    Kept: the global, build(), the key, the "turret" group (the main gun), the
    light PLAN grey, the hull's double band (grey topsides, red bottom).  New:
    every station and height, the shape of the ship, one mesh per material
-   (14 draw calls) and a hidden "helipad" node on the middle of the pad.
+   (14 draw calls; 15 since the detail pass) and a hidden "helipad" node on the middle of the pad.
 
    PUBLISHED FIGURES (en.wikipedia "Type 052C destroyer", raw wikitext read
    2026-11-12, citing Jane's Fighting Ships 2009-10): length 155 m, beam
@@ -79,6 +79,13 @@
    No pennant numbers, names, flags or stars.  The team colour is three
    small strips on roofs.
 
+   DETAIL PASS (2026-11): the waist rails, the boats in their bays with
+   davits, raft canisters, bollards and fairleads, hatches, vents, scuttles,
+   the anchors, whips, ladders, doors, louvres, the deck-edge gutter (not round
+   the pad, whose safety nets are left off: drawn outboard they let the deck
+   park stand a wheel on them), the boot-topping, a flared hull (fl 1.6) and weathered
+   textures.  15 draw calls.  The fittings are typical, NOT CONFIRMED.
+
    MODEL SPACE: +X bow, +Y port, +Z up, metres, WATERLINE z = 0.  The main
    gun is the group named "turret" (origin on its ring at the deck, gun
    along +X); the rest is baked one mesh per material.  A hidden "helipad"
@@ -118,6 +125,18 @@ var HeroPlaE00Destroyer = (function () {
       for (i = 0; i < 4; i++) { var xx = i * w / 4 + (i % 2) * 22; g.beginPath(); g.moveTo(xx, 0); g.lineTo(xx, h); g.stroke(); }
       g.globalAlpha = 0.06;
       for (i = 0; i < 40; i++) { g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff"; g.fillRect(R() * w, R() * h, 2 + R() * 4, 16 + R() * 70); }
+      /* weathering: rust runs from the scuttles and drains, salt bloom,
+         a few patched plates in a fresher grey */
+      for (i = 0; i < 34; i++) {
+        var rx = R() * w, ry = R() * h * 0.7, rl = 20 + R() * 90;
+        var gr = g.createLinearGradient(0, ry, 0, ry + rl);
+        gr.addColorStop(0, "rgba(70,40,24,0.30)"); gr.addColorStop(1, "rgba(70,40,24,0)");
+        g.fillStyle = gr; g.globalAlpha = 1; g.fillRect(rx, ry, 1.5 + R() * 2.5, rl);
+      }
+      g.globalAlpha = 0.07; g.fillStyle = "#ffffff";
+      for (i = 0; i < 10; i++) g.fillRect(R() * w, R() * h, 30 + R() * 60, 10 + R() * 26);
+      g.globalAlpha = 0.05; g.fillStyle = "#000000";
+      for (i = 0; i < 12; i++) g.fillRect(R() * w, R() * h, 40 + R() * 80, 4 + R() * 10);
       g.globalAlpha = 1;
     });
   }
@@ -132,6 +151,13 @@ var HeroPlaE00Destroyer = (function () {
       }
       g.globalAlpha = 0.06;
       for (i = 0; i < 26; i++) { g.fillStyle = R() < 0.5 ? "#ffffff" : "#000000"; g.fillRect(R() * w, R() * h, 12 + R() * 50, 8 + R() * 30); }
+      /* weathering: soot and rust runs down the bulkheads */
+      for (i = 0; i < 16; i++) {
+        var rx = R() * w, ry = R() * h * 0.6, rl = 20 + R() * 70;
+        var gr = g.createLinearGradient(0, ry, 0, ry + rl);
+        gr.addColorStop(0, "rgba(60,44,30,0.22)"); gr.addColorStop(1, "rgba(60,44,30,0)");
+        g.fillStyle = gr; g.globalAlpha = 1; g.fillRect(rx, ry, 1.5 + R() * 2, rl);
+      }
       g.globalAlpha = 1;
     });
   }
@@ -170,6 +196,7 @@ var HeroPlaE00Destroyer = (function () {
     return {
       hull:  skin(P.hull, hullTex(THREE), 0.86),
       under: skin(0x4a1c16, hullTex(THREE), 0.9),
+      boot:  skin(0x16181a, hullTex(THREE), 0.9),
       sup:   skin(P.sup, plateTex(THREE), 0.86),
       deck:  skin(P.deck, deckTex(THREE), 0.95),
       dark:  skin(0xffffff, grilleTex(THREE), 0.9),
@@ -532,7 +559,7 @@ var HeroPlaE00Destroyer = (function () {
      draught the published 6 m. */
   var XPAD = -61.5, PADZ = 5.4;
   var H52C = {
-    XS0: -77.5, XS1: 77.5, XWL: 65.5, XST: -76.6, step: 2.0, fl: 1.0, extra: [XPAD - 0.3, XPAD, 19.7, 28.7],
+    XS0: -77.5, XS1: 77.5, XWL: 65.5, XST: -76.6, step: 2.0, fl: 1.6, extra: [XPAD - 0.3, XPAD, 19.7, 28.7],
     deckZ: function (x) {
       if (x < XPAD - 0.3) return PADZ;
       if (x < XPAD) return PADZ + 2.7 * (x - XPAD + 0.3) / 0.3;
@@ -557,12 +584,139 @@ var HeroPlaE00Destroyer = (function () {
     ]
   };
 
+  /* posts every step and two wires along a polyline at height z.  Each
+     post and wire is one flat ribbon (two triangles, the metal is double
+     sided) standing in the rail's own plane, merged with the rest */
+  function railLine(THREE, g, T, pts, z, hgt, step) {
+    var P = [], i, k;
+    function rib(ax, ay, az, bx, by, bz, ux, uy, uz) {
+      P.push(ax - ux, ay - uy, az - uz, bx - ux, by - uy, bz - uz, bx + ux, by + uy, bz + uz,
+             ax - ux, ay - uy, az - uz, bx + ux, by + uy, bz + uz, ax + ux, ay + uy, az + uz);
+    }
+    for (i = 0; i < pts.length - 1; i++) {
+      var a = pts[i], b = pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(L / (step || 2.4)));
+      if (L < 1e-3) continue;
+      var tx = (b[0] - a[0]) / L, ty = (b[1] - a[1]) / L;
+      for (k = 0; k <= n; k++) {
+        if (i > 0 && k === 0) continue;
+        var px = a[0] + (b[0] - a[0]) * k / n, py = a[1] + (b[1] - a[1]) * k / n;
+        rib(px, py, z, px, py, z + hgt, tx * 0.04, ty * 0.04, 0);
+      }
+      rib(a[0], a[1], z + hgt, b[0], b[1], z + hgt, 0, 0, 0.03);
+      rib(a[0], a[1], z + hgt * 0.5, b[0], b[1], z + hgt * 0.5, 0, 0, 0.022);
+    }
+    if (!P.length) return;
+    var uv = []; for (i = 0; i < P.length / 3; i++) uv.push(0, 0);
+    g.add(new THREE.Mesh(geoOf(THREE, P, uv), T.metal));
+  }
+  /* a box lying along (ax, ay)-(bx, by) */
+  function boxAlong(THREE, g, m, ax, ay, bx, by, w, th, z) {
+    var L = Math.hypot(bx - ax, by - ay);
+    if (L < 0.05) return null;
+    var b = box(THREE, g, L, w, th, m, (ax + bx) / 2, (ay + by) / 2, z);
+    b.rotation.z = Math.atan2(by - ay, bx - ax); return b;
+  }
+  /* one quad facing (nx, ny): a scuttle, a port, a door */
+  function pane(THREE, g, m, x, y, z, w, h, nx, ny) {
+    var pg = new THREE.PlaneGeometry(w, h); pg.rotateX(PI / 2); pg.rotateZ(Math.atan2(nx, -ny));
+    var q = new THREE.Mesh(pg, m); q.position.set(x, y, z); g.add(q); return q;
+  }
+  /* a life-raft canister on its cradle, axis along the edge */
+  function raft(THREE, g, T, x, y, z, ang) {
+    var c = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 1.3, 6, 1), T.white);
+    c.rotation.z = ang + PI / 2; c.position.set(x, y, z + 0.38); g.add(c);
+    var b = box(THREE, g, 1.0, 0.5, 0.06, T.metal, x, y, z + 0.03); b.rotation.z = ang;
+  }
+
+
+  /* ============================================================ FITTINGS
+     The detail pass (2026-11).  What [P1]-[P4] show round her decks and
+     the old file's 474 meshes partly drew: the rails along the waist, the
+     boats in their bays with davits, raft canisters along the 01 level,
+     bollards and fairleads, hatches, scuttles in the forward hull, the
+     anchor in its recess, whips, ladders and the deck-edge gutter.  Sizes typical, NOT CONFIRMED one by one. */
+  function fittings(THREE, g, T, Hh, DK) {
+    var s, i, k, x, y, z;
+    for (s = -1; s <= 1; s += 2) {
+      /* the waist rail, deckhouse to hangar */
+      var rp = [];
+      for (x = XPAD + 0.4; x <= 19.4; x += 3.0) rp.push([x, s * Hh.edgeY(x)]);
+      railLine(THREE, g, T, rp, DK, 1.0, 2.6);
+      /* the deck-edge gutter: a dark strip down the sheer line */
+      var gp = [];
+      for (x = XPAD + 0.5; x <= 76.0; x += 4.0) gp.push(x);      /* not round the pad */
+      for (i = 0; i < gp.length - 1; i++) {
+        var xa = gp[i], xb = gp[i + 1];
+        if (Math.abs(Hh.deckZ(xa) - Hh.deckZ(xb)) > 0.3) continue;    /* not across the pad's step */
+        boxAlong(THREE, g, T.dark, xa, s * (Hh.halfTop(xa) + 0.02), xb, s * (Hh.halfTop(xb) + 0.02), 0.05, 0.12, (Hh.deckZ(xa) + Hh.deckZ(xb)) / 2 - 0.12);
+      }
+      /* the anchor in its recess [P1][P3] */
+      var aw = Hh.W(67.4, 5.6);
+      box(THREE, g, 0.5, 0.3, 2.2, T.metal, 67.4, s * (aw + 0.12), 5.4);
+      box(THREE, g, 1.8, 0.35, 0.45, T.metal, 67.4, s * (aw + 0.14), 4.3);
+      /* scuttles in the forward hull (two rows) */
+      for (x = 34; x < 60; x += 2.2) {
+        [3.6, 5.6].forEach(function (zz, r) {
+          var wy = Hh.W(x + r, zz); if (wy > 1) pane(THREE, g, T.glass, x + r, s * (wy + 0.04), zz, 0.36, 0.36, 0, s);
+        });
+      }
+      for (x = -40; x < 10; x += 4.4) { var wy2 = Hh.W(x, 5.0); pane(THREE, g, T.glass, x, s * (wy2 + 0.04), 5.0, 0.36, 0.36, 0, s); }
+      /* bollards (pairs) and fairleads: forecastle and waist (none on the pad) */
+      [[60.0, 1], [48.0, 1], [12.0, 0], [-40.0, 0]].forEach(function (q) {
+        var bx = q[0], bz = Hh.deckZ(bx), by = s * (Hh.edgeY(bx) - (q[1] ? 1.0 : 0.45));
+        cylZ(THREE, g, 0.2, 0.22, 0.55, 8, T.metal, bx, by, bz + 0.27); cylZ(THREE, g, 0.2, 0.22, 0.55, 8, T.metal, bx + 0.7, by, bz + 0.27);
+        box(THREE, g, 1.2, 0.5, 0.08, T.metal, bx + 0.35, by, bz + 0.04);
+        box(THREE, g, 0.8, 0.25, 0.35, T.metal, bx + 0.35, s * (Hh.edgeY(bx) - 0.05), bz + 0.17);
+      });
+      /* the boats: a RHIB each side on the 01 roof abaft the funnel, in
+         chocks under a pair of davit arms [P2][P3] (position NOT CONFIRMED) */
+      var bxc = -20.0, bzc = 10.2 + 0.75, byc = s * 5.4;
+      var hullB = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 6.0, 8, 1), T.white);
+      hullB.rotation.z = PI / 2; hullB.scale.set(1, 1, 0.8); hullB.position.set(bxc, byc, bzc); g.add(hullB);
+      box(THREE, g, 6.0, 1.1, 0.5, T.gun, bxc - 0.2, byc, bzc - 0.35);
+      box(THREE, g, 1.4, 0.9, 0.7, T.white, bxc + 0.4, byc, bzc + 0.6);
+      for (k = -1; k <= 1; k += 2) {
+        box(THREE, g, 0.3, 1.4, 0.4, T.metal, bxc + k * 2.0, byc, 10.4);
+        strut(THREE, g, T.metal, bxc + k * 2.4, s * 7.1, 10.2, bxc + k * 2.4, s * 7.1, 13.4, 0.1, 4);
+        strut(THREE, g, T.metal, bxc + k * 2.4, s * 7.1, 13.4, bxc + k * 2.4, s * 5.6, 13.7, 0.08, 4);
+        strut(THREE, g, T.metal, bxc + k * 2.4, s * 5.6, 13.7, bxc + k * 2.4, s * 5.6, 11.6, 0.015, 3);
+      }
+      /* raft canisters along the 01 roof edges and the hangar's sides */
+      for (x = -32.0; x < -6; x += 2.0) if (Math.abs(x + 20) > 4.5) raft(THREE, g, T, x, s * 7.0, 10.2, 0);
+      for (x = -58.5; x < -48; x += 2.2) raft(THREE, g, T, x, s * 6.7, 11.6, 0);
+      /* louvres in the casing's sides and the hangar's */
+      box(THREE, g, 2.2, 0.06, 0.7, T.dark, -10.0, s * 7.88, 9.3);
+      box(THREE, g, 2.2, 0.06, 0.7, T.dark, -47.6, s * 8.22, 10.6);
+      /* doors in the bridge block and the deckhouse */
+      pane(THREE, g, T.dark, 5.0, s * 7.82, DK + 1.1, 0.9, 1.9, 0, s);
+      pane(THREE, g, T.dark, 22.0, s * 6.82, DK + 1.1, 0.9, 1.9, 0, s);
+      /* the ladder from the waist to the 01 roof */
+      for (k = -1; k <= 1; k += 2) strut(THREE, g, T.metal, -35.4, s * 5.0 + k * 0.3, DK, -34.4, s * 5.0 + k * 0.3, 10.2, 0.03, 3);
+      for (k = 1; k < 7; k++) box(THREE, g, 0.05, 0.6, 0.04, T.metal, -35.4 + k / 7, s * 5.0, DK + k * 0.3);
+      /* whips: bridge roof wings and the hangar's after corners */
+      strut(THREE, g, T.metal, -2.0, s * 5.8, 18.5, -2.4, s * 6.6, 25.0, 0.04, 3);
+      strut(THREE, g, T.metal, -60.8, s * 7.0, 11.6, -61.2, s * 7.6, 18.6, 0.04, 3);
+      strut(THREE, g, T.metal, -46.8, s * 7.0, 11.6, -46.8, s * 7.4, 17.0, 0.04, 3);
+    }
+    /* hatches and a vent pair on the forecastle; the jack staff's base */
+    [[54.0, 0], [36.0, -3.8], [36.0, 3.8]].forEach(function (q) {
+      var hz = Hh.deckZ(q[0]); box(THREE, g, 1.2, 1.0, 0.1, T.sup, q[0], q[1], hz + 0.05);
+    });
+    for (s = -1; s <= 1; s += 2) {
+      cylZ(THREE, g, 0.22, 0.22, 0.9, 8, T.sup, 52.0, s * 2.8, Hh.deckZ(52) + 0.45);
+      cylZ(THREE, g, 0.3, 0.3, 0.1, 8, T.sup, 52.0, s * 2.8, Hh.deckZ(52) + 0.92);
+    }
+    /* the windlasses' chain run to the hawse pipes */
+    for (s = -1; s <= 1; s += 2) boxAlong(THREE, g, T.dark, 58.0, s * 1.4, 66.0, s * 2.6, 0.35, 0.06, Hh.deckZ(62) + 0.03);
+  }
+
   /* ================================================================ BUILD */
   function build(THREE, M, C) {
     var g = new THREE.Group(), T = sealMats(makeMats(THREE, C)), Hh = makeHull(H52C), s, i, k, x;
     var DK = 8.1;
     g.add(Hh.shellBand(THREE, T.under, -7, -0.3, 5));
-    g.add(Hh.shellBand(THREE, T.hull, -0.3, 11.0, 7));
+    g.add(Hh.shellBand(THREE, T.boot, -0.3, 0.6, 1));
+    g.add(Hh.shellBand(THREE, T.hull, 0.6, 11.0, 7));
     Hh.transom(THREE, g, T.hull, T.under);
     g.add(Hh.deckSheet(THREE, T.deck, H52C.XS0, H52C.XS1));
 
@@ -687,6 +841,8 @@ var HeroPlaE00Destroyer = (function () {
       box(THREE, g, 3.0, 0.26, 3.2, T.metal, -70.0, s * 3.2, -3.0);
       box(THREE, g, 34.0, 0.08, 0.6, T.under, -10.0, s * (Hh.W(-10, -4.6) + 0.15), -4.6);
     }
+
+    fittings(THREE, g, T, Hh, DK);
 
     /* team: small strips on up-facing roofs */
     box(THREE, g, 2.4, 1.0, 0.04, T.team, -12.0, 0, 17.02);

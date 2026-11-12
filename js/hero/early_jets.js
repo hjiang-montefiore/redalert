@@ -654,8 +654,16 @@ var HeroOuragan = (function () {
        8 cm).
      - the jet nozzle radius (0.40 m) and the ventral fairing below it (B).
      - tyre sizes (nose 0.50 m, mains 0.66 m) from F, in fuselage depths.
-   Not drawn: aerials, pitot probes under the intake (C shows two), the
-   ranging radar, the 30 mm DEFA ports, rocket pack, airbrakes.
+   DETAIL PASS: added the two pitot probes under the intake (C), the DEFA
+   ports and the louvred vents on the nose sides (B), the canopy sill rails
+   and the windscreen's centre frame (B), a spine and a belly blade aerial
+   and a whip aft, a beacon and wingtip nav lights, the jet pipe's liner and
+   lip ring, a fuel vent, hub faces with bolts, brakes, the main legs'
+   torque links and the nose leg's mudguard and taxi lamp (B, D); seams with
+   rivet rows, access panels, the belly airbrake outlines and oil streaks
+   on the skin. The aerials' places and the small parts' sizes are NOT
+   confirmed. 3978 -> 6026 tris, 8 -> 11 draw calls; extents unchanged.
+   Not drawn: the ranging radar, rocket pack.
    ======================================================================== */
 
 var HeroSuperMystere = (function () {
@@ -712,6 +720,32 @@ var HeroSuperMystere = (function () {
             var Yb = function (yy) { return M.bandY[b] + M.Y(s * yy); };
             g.beginPath(); g.moveTo(M.X(wTE(1.3) + 0.55), Yb(1.3)); g.lineTo(M.X(wTE(3.2) + 0.50), Yb(3.2)); g.stroke();
             g.beginPath(); g.moveTo(M.X(wTE(3.3) + 0.45), Yb(3.3)); g.lineTo(M.X(wTE(5.0) + 0.40), Yb(5.0)); g.stroke();
+          }
+          /* the detail pass: lengthwise seams with rivet rows on the sides, the
+             spine and the belly, access panels and the belly airbrakes'
+             outlines, oil streaks aft of the wing root (B: a riveted
+             natural-metal skin) */
+          function seam(x0, y0, x1, y1) {
+            g.strokeStyle = "rgba(0,0,0,0.24)"; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+            g.fillStyle = "rgba(40,44,48,0.35)";
+            var L = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)), n = Math.floor(L / 4), j;
+            for (j = 0; j <= n; j++) g.fillRect(x0 + (x1 - x0) * j / Math.max(n, 1) + 1.5, y0 + (y1 - y0) * j / Math.max(n, 1) + 1.5, 1, 1);
+          }
+          [[6.6, -6.4, 0.55], [6.6, -6.4, -0.25], [5.0, -6.0, -0.80], [3.0, -6.6, 1.05]].forEach(function (q) {
+            for (b = 1; b <= 2; b++) seam(M.X(q[1]), M.Z(q[2], b), M.X(q[0]), M.Z(q[2], b));
+          });
+          [6.2, 5.3, 4.0, 2.9, 1.8, 0.6, -0.7, -1.9, -3.1, -4.3, -5.4].forEach(function (x) {
+            for (b = 0; b < 4; b++) seam(M.X(x) + 2, M.bandY[b], M.X(x) + 2, M.bandY[b] + (b === 0 || b === 3 ? M.TOPH : M.SIDEH));
+          });
+          for (b = 0; b <= 3; b += 3) for (s = -1; s <= 1; s += 2) seam(M.X(-6.4), M.bandY[b] + M.Y(s * 0.45), M.X(6.0), M.bandY[b] + M.Y(s * 0.45));
+          g.strokeStyle = "rgba(0,0,0,0.30)";
+          [[1, 4.6, 4.0, 0.40, 0.05], [1, 1.4, 0.7, 0.70, 0.30], [1, -2.2, -2.9, 0.45, 0.05], [1, 3.2, 2.6, -0.30, -0.65]].forEach(function (q) {
+            for (b = 1; b <= 2; b++) g.strokeRect(M.X(q[2]), M.Z(q[3], b), M.X(q[1]) - M.X(q[2]), M.Z(q[4], b) - M.Z(q[3], b));
+          });
+          for (s = -1; s <= 1; s += 2) g.strokeRect(M.X(-1.6), M.bandY[3] + M.Y(s > 0 ? 0.70 : -0.25), M.X(-0.5) - M.X(-1.6), 0.45 * 26);
+          for (b = 1; b <= 2; b++) for (s = 0; s < 10; s++) {
+            g.fillStyle = "rgba(30,28,24,0.10)";
+            g.fillRect(M.X(-1.6 - s * 0.3), M.Z(-0.55, b), 30 + s * 6, 1.5);
           }
         }) });
   }
@@ -791,11 +825,52 @@ var HeroSuperMystere = (function () {
     S.team.push(K.solid(K.foil([sx(213.5) + 0.02, 0, fz(49.5)], [sx(196.5) - 0.02, 0, fz(49.5)], 0.075, [0, 1, 0]),
                         K.foil([sx(205) + 0.02, 0, fz(46.4)], [sx(193.5) - 0.02, 0, fz(46.4)], 0.07, [0, 1, 0])));
 
+    /* ---- the detail pass: fittings B, C and D show that the first pass
+       left out (see "Detail pass" in the header) */
+    var at = function (x) { return K.secAt(body, x); };
+    S.lampR = []; S.lampG = [];
+    /* the canopy's sill rails and the windscreen's centre frame (B) */
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < CAN.length - 1; i++) S.dark.push(K.bar([sx(CAN[i][0]), s * CAN[i][2] * 1.02, SILL + 0.01], [sx(CAN[i + 1][0]), s * CAN[i + 1][2] * 1.02, SILL + 0.01], 0.02, 5));
+    }
+    S.dark.push(K.bar([sx(404) - 0.02, 0, SILL + 0.02], [sx(397), 0, sz(81.5) + 0.02], 0.02, 5));
+    /* the two pitot probes under the intake (C) */
+    for (s = -1; s <= 1; s += 2) {
+      var pb = K.secAt(body, lip.x - 0.70), pz0 = pb.zc - pb.h * 0.97 - 0.01;
+      S.metal.push(K.bar([lip.x - 0.75, s * 0.28, pz0 - 0.03], [lip.x - 0.06, s * 0.28, pz0 - 0.03], 0.016, 5));
+      S.metal.push(K.bar([lip.x - 0.70, s * 0.28, pz0 - 0.03], [lip.x - 0.64, s * 0.28, pz0 + 0.06], 0.02, 5));
+    }
+    /* the 30 mm DEFA ports low on the nose sides and their louvred vents (B) */
+    for (s = -1; s <= 1; s += 2) {
+      var gs = at(5.2), gy = gs.w * 0.86, gz = gs.zc - gs.h * 0.50;
+      S.dark.push(K.box(0.30, 0.10, 0.09, 5.30, s * gy, gz));
+      for (i = 0; i < 5; i++) S.dark.push(K.box(0.03, 0.04, 0.12, 4.20 - i * 0.07, s * at(4.1).w * 0.98, at(4.1).zc - at(4.1).h * 0.30));
+      /* nav lights at the wingtips, port red */
+      (s > 0 ? S.lampR : S.lampG).push(K.cyl(0.035, 0.04, 0.14, 8, "x", wLE(WTIP) - 0.30, s * (WTIP - 0.07), wZ(WTIP)));
+    }
+    /* aerials: a blade on the spine behind the canopy fairing, one under the
+       belly, a whip aft (B: the spine aerials) */
+    var sp = at(1.6), bp = at(-1.0);
+    S.skin.push(K.solid([[1.75, -0.012, sp.zc + sp.h - 0.02], [1.45, -0.012, sp.zc + sp.h - 0.02], [1.32, -0.012, sp.zc + sp.h + 0.22], [1.45, -0.012, sp.zc + sp.h + 0.22]],
+                        [[1.75, 0.012, sp.zc + sp.h - 0.02], [1.45, 0.012, sp.zc + sp.h - 0.02], [1.32, 0.012, sp.zc + sp.h + 0.22], [1.45, 0.012, sp.zc + sp.h + 0.22]]));
+    S.skin.push(K.solid([[-0.8, -0.012, bp.zc - bp.h + 0.02], [-1.1, -0.012, bp.zc - bp.h + 0.02], [-1.22, -0.012, bp.zc - bp.h - 0.18], [-1.1, -0.012, bp.zc - bp.h - 0.18]],
+                        [[-0.8, 0.012, bp.zc - bp.h + 0.02], [-1.1, 0.012, bp.zc - bp.h + 0.02], [-1.22, 0.012, bp.zc - bp.h - 0.18], [-1.1, 0.012, bp.zc - bp.h - 0.18]]));
+    var wp = at(-3.0);
+    S.dark.push(K.bar([-3.0, 0, wp.zc + wp.h - 0.02], [-3.25, 0, wp.zc + wp.h + 0.55], 0.010, 4));
+    S.lampR.push(K.cyl(0.05, 0.05, 0.05, 8, "z", -0.3, 0, at(-0.3).zc + at(-0.3).h + 0.01));
+    /* the jet pipe's inner liner and the nozzle's lip ring (A, B) */
+    S.metal.push(K.cyl(0.41, 0.41, 0.05, 26, "x", JX + 0.01, 0, JZ));
+    S.dark.push(K.cyl(0.36, 0.36, 0.30, 20, "x", JX + 0.18, 0, JZ));
+    /* the tail cone's fuel vent and the fin's rudder hinge fairing */
+    S.metal.push(K.bar([JX - 0.05, 0, JZ + 0.46], [JX - 0.30, 0, JZ + 0.42], 0.025, 5));
+
     K.mesh(g, S.skin, T.skin, "skin", SK.projUV);
     K.mesh(g, S.dark, T.dark, "dark");
     K.mesh(g, S.metal, T.metal, "metal");
     K.mesh(g, S.glass, T.glass, "glass");
     K.mesh(g, S.team, T.team, "team");
+    K.mesh(g, S.lampR, new V.MeshStandardMaterial({ color: 0xc8261e, roughness: 0.3, metalness: 0.1, emissive: 0x8a1410, emissiveIntensity: 0.6 }), "lamp_red");
+    K.mesh(g, S.lampG, new V.MeshStandardMaterial({ color: 0x1fa64a, roughness: 0.3, metalness: 0.1, emissive: 0x0e6a2c, emissiveIntensity: 0.6 }), "lamp_green");
 
     /* ---- gear (stations and track: see NOT CONFIRMED; legs and doors B, D) */
     var gr = new V.Group(); gr.name = "gear"; g.add(gr);
@@ -817,6 +892,25 @@ var HeroSuperMystere = (function () {
       G.door.push(K.solid([[MX + 0.42, s * (LY + 0.12), wb - 0.02], [MX - 0.40, s * (LY + 0.12), wb - 0.02], [MX - 0.30, s * (LY + 0.12), MZC + 0.30], [MX + 0.34, s * (LY + 0.12), MZC + 0.30]],
                           [[MX + 0.42, s * (LY + 0.14), wb - 0.02], [MX - 0.40, s * (LY + 0.14), wb - 0.02], [MX - 0.30, s * (LY + 0.14), MZC + 0.30], [MX + 0.34, s * (LY + 0.14), MZC + 0.30]]));
     }
+    /* the detail pass: hub faces and bolts, brakes, the main legs' torque
+       links, the nose leg's taxi lamp and its mudguard (B, D) */
+    function hubs(x, y, z, r, w) {
+      for (var q = -1; q <= 1; q += 2) {
+        G.metal.push(K.cyl(r * 0.62, r * 0.66, 0.025, 16, "y", x, y + q * (w / 2 + 0.006), z));
+        for (var k = 0; k < 6; k++) G.dark.push(K.cyl(0.012, 0.012, 0.03, 5, "y", x + Math.cos(k * Math.PI / 3) * r * 0.40, y + q * (w / 2 + 0.018), z + Math.sin(k * Math.PI / 3) * r * 0.40));
+      }
+    }
+    G.dark = [];
+    hubs(NX, 0, NZC, NR, 0.16);
+    G.door.push(K.box(0.42, 0.24, 0.02, NX, 0, NZC + NR + 0.06));
+    G.metal.push(K.box(0.06, 0.10, 0.08, NX + 0.10, 0, NZC + 0.55));
+    for (s = -1; s <= 1; s += 2) {
+      hubs(MX, s * MY, MZC, MR, 0.22);
+      G.dark.push(K.cyl(MR * 0.55, MR * 0.55, 0.05, 12, "y", MX, s * (MY - 0.135), MZC));
+      var lb = [MX + 0.03, s * LY, MZC + 0.32], lk = [MX + 0.20, s * LY, MZC + 0.20];
+      G.metal.push(K.bar([MX + 0.01, s * LY, MZC + 0.10], lk, 0.018, 5), K.bar(lk, lb, 0.018, 5));
+    }
+    K.mesh(gr, G.dark, T.dark, "gear_dark");
     K.mesh(gr, G.metal, T.metal, "gear_metal");
     K.mesh(gr, G.tyre, T.tyre, "gear_tyres");
     K.mesh(gr, G.door, T.door, "gear_doors");

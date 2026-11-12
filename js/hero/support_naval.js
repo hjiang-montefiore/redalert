@@ -223,6 +223,11 @@
    (keel at 10.5 m, two shafts, two rudders; no bulb is drawn - none is
    visible); the house windows are a pattern, not a count.  The funnel's
    blue and gold bands are a marking and are left off.
+   DETAIL PASS (2026-11): rows of scuttles, the deck-edge gutter, bitts and
+   fairleads, hatches, mushroom vents, whips, anchors in their hawses, the
+   Safeguard's H-bitt, the oiler's cargo piping, manifolds, tank hatches,
+   P/V vent posts and walkway, and weathered hull and plate textures.
+   Fittings typical, NOT CONFIRMED one by one.
 ======================================================================== */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -260,6 +265,18 @@ var HeroSupportNaval = (function () {
         g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff";
         g.fillRect(R() * w, R() * h, 2 + R() * 5, 18 + R() * 80);
       }
+      /* weathering (the detail pass): rust runs from scuttles, hawses and
+         drains, salt bloom, patched plates in a fresher grey */
+      for (i = 0; i < 40; i++) {
+        var rx = R() * w, ry = R() * h * 0.7, rl = 20 + R() * 90;
+        var gr = g.createLinearGradient(0, ry, 0, ry + rl);
+        gr.addColorStop(0, "rgba(84,46,24,0.32)"); gr.addColorStop(1, "rgba(84,46,24,0)");
+        g.globalAlpha = 1; g.fillStyle = gr; g.fillRect(rx, ry, 1.5 + R() * 2.5, rl);
+      }
+      g.globalAlpha = 0.07; g.fillStyle = "#ffffff";
+      for (i = 0; i < 10; i++) g.fillRect(R() * w, R() * h, 30 + R() * 60, 10 + R() * 26);
+      g.globalAlpha = 0.05; g.fillStyle = "#000000";
+      for (i = 0; i < 12; i++) g.fillRect(R() * w, R() * h, 40 + R() * 80, 4 + R() * 10);
       g.globalAlpha = 1;
     });
   }
@@ -276,6 +293,13 @@ var HeroSupportNaval = (function () {
       for (i = 0; i < 26; i++) {
         g.fillStyle = R() < 0.5 ? "#ffffff" : "#000000";
         g.fillRect(R() * w, R() * h, 12 + R() * 50, 8 + R() * 30);
+      }
+      /* soot and rust runs down the bulkheads */
+      for (i = 0; i < 16; i++) {
+        var rx = R() * w, ry = R() * h * 0.6, rl = 20 + R() * 70;
+        var gr = g.createLinearGradient(0, ry, 0, ry + rl);
+        gr.addColorStop(0, "rgba(64,44,30,0.24)"); gr.addColorStop(1, "rgba(64,44,30,0)");
+        g.globalAlpha = 1; g.fillStyle = gr; g.fillRect(rx, ry, 1.5 + R() * 2, rl);
       }
       g.globalAlpha = 1;
     });
@@ -800,6 +824,71 @@ var HeroSupportNaval = (function () {
     }
   }
 
+
+  /* ============================================================ FITTINGS
+     The detail pass (2026-11): what every photograph of these ships shows
+     and the first pass left out -- rows of scuttles, the deck-edge gutter,
+     bitts and fairleads, hatches, mushroom vents, whips, the anchors in
+     their hawses, and on the oiler the cargo piping, its manifolds and the
+     tank hatches.  Sizes and spacings typical, NOT CONFIRMED one by one. */
+  function pane(THREE, g, m, x, y, z, w, hh, nx, ny) {
+    var pg = new THREE.PlaneGeometry(w, hh); pg.rotateX(PI / 2); pg.rotateZ(Math.atan2(nx, -ny));
+    var q = new THREE.Mesh(pg, m); q.position.set(x, y, z); g.add(q); return q;
+  }
+  function boxAlong(THREE, g, m, ax, ay, bx, by, w, th, z) {
+    var L = Math.hypot(bx - ax, by - ay);
+    if (L < 0.05) return null;
+    var b = box(THREE, g, L, w, th, m, (ax + bx) / 2, (ay + by) / 2, z);
+    b.rotation.z = Math.atan2(by - ay, bx - ax); return b;
+  }
+  /* o: scut [[d0, d1, z, step]], bitts [d], hatch [[d, y, lx, ly]], vent [[d, y]],
+     whip [[d, y, z, len]], anchor [d, z] (or null), gutter [d0, d1] */
+  function extras(THREE, g, T, h, o) {
+    var X = h.X, s, d;
+    for (s = -1; s <= 1; s += 2) {
+      (o.scut || []).forEach(function (r) {
+        for (d = r[0]; d <= r[1]; d += r[3]) {
+          var x = X(d), wy = h.W(x, r[2]);
+          if (wy > 0.5) pane(THREE, g, T.glass, x, s * (wy + 0.03), r[2], 0.34, 0.34, 0, s);
+        }
+      });
+      (o.bitts || []).forEach(function (bd) {
+        var x = X(bd), z = h.deckZ(x), y = s * (h.edgeY(x) - 0.7);
+        cylZ(THREE, g, 0.2, 0.22, 0.55, 8, T.metal, x - 0.35, y, z + 0.27);
+        cylZ(THREE, g, 0.2, 0.22, 0.55, 8, T.metal, x + 0.35, y, z + 0.27);
+        box(THREE, g, 1.2, 0.5, 0.06, T.metal, x, y, z + 0.03);
+        box(THREE, g, 0.9, 0.22, 0.4, T.metal, x, s * (h.edgeY(x) + 0.02), z + 0.2);
+      });
+      if (o.anchor) {
+        var ax = X(o.anchor[0]), az = o.anchor[1], aw = h.W(ax, az);
+        cylZ(THREE, g, 0.45, 0.55, 0.3, 10, T.dark, ax, s * (aw + 0.04), az).rotation.x = s * PI / 2;
+        box(THREE, g, 0.32, 0.22, 1.3, T.gun, ax + 0.05, s * (aw + 0.12), az - 0.75);
+        box(THREE, g, 1.2, 0.3, 0.3, T.gun, ax + 0.05, s * (aw + 0.14), az - 1.4);
+      }
+      if (o.gutter) for (d = o.gutter[0]; d < o.gutter[1] - 0.01; d += 3.0) {
+        var e = Math.min(o.gutter[1], d + 3.0), xa = X(d), xb = X(e);
+        if (Math.abs(h.deckZ(xa) - h.deckZ(xb)) > 0.3) continue;      /* not across a break in the deck */
+        boxAlong(THREE, g, T.dark, xa, s * (h.halfB(xa) + 0.02), xb, s * (h.halfB(xb) + 0.02), 0.05, 0.12, (h.deckZ(xa) + h.deckZ(xb)) / 2 - 0.1);
+      }
+    }
+    (o.hatch || []).forEach(function (q) {
+      var x = X(q[0]), z = h.deckZ(x);
+      box(THREE, g, q[2], q[3], 0.32, T.sup, x, q[1], z + 0.16);
+      box(THREE, g, q[2] - 0.2, q[3] - 0.2, 0.06, T.deck, x, q[1], z + 0.34);
+      for (var k = -1; k <= 1; k += 2) box(THREE, g, 0.12, q[3] - 0.3, 0.05, T.metal, x + k * (q[2] / 2 - 0.25), q[1], z + 0.38);
+    });
+    (o.vent || []).forEach(function (q) {
+      var x = X(q[0]), z = h.deckZ(x);
+      cylZ(THREE, g, 0.16, 0.16, 0.8, 8, T.sup, x, q[1], z + 0.4);
+      cylZ(THREE, g, 0.34, 0.26, 0.22, 8, T.sup, x, q[1], z + 0.88);
+    });
+    (o.whip || []).forEach(function (q) {
+      var x = X(q[0]);
+      cylZ(THREE, g, 0.09, 0.12, 0.4, 6, T.metal, x, q[1], q[2] + 0.2);
+      strut(THREE, g, T.metal, x, q[1], q[2] + 0.4, x + 0.3, q[1] + (q[1] > 0 ? 0.25 : -0.25), q[2] + q[3], 0.035, 3);
+    });
+  }
+
   /* ====================================================== AVENGER (MCM) */
   var AV_L = 68.3;
   var AV_STA = [
@@ -921,6 +1010,10 @@ var HeroSupportNaval = (function () {
     for (s = -1; s <= 1; s += 2) box(THREE, g, 9.0, 0.25, 0.9, T.under, X(58), s * 1.9, -3.3);
     screws(THREE, g, T, X(61.6), 1.9, -3.1, X(64.2), 6.0, 1.0, 2.0);
 
+    extras(THREE, g, T, h, { scut: [[16, 52, 2.3, 2.6], [17.3, 51, 1.3, 5.2]], bitts: [29.0, 56.5, 64.0],
+      hatch: [[56.8, 3.2, 1.4, 1.2], [56.8, -3.2, 1.4, 1.2], [12.0, 2.6, 1.0, 1.0]], vent: [[13.6, -2.8], [11.0, -3.6]],
+      whip: [[47.5, 4.4, R01, 6.0], [47.5, -4.4, R01, 6.0], [31.5, 4.0, R02, 5.0], [31.5, -4.0, R02, 5.0]],
+      anchor: [3.9, 3.5], gutter: [1.0, 67.5] });
     /* team strips */
     box(THREE, g, 2.4, 1.2, 0.04, T.team, X(28.0), 0, R02 + 0.03);
     box(THREE, g, 2.2, 1.1, 0.04, T.team, X(44.0), 0, R01 + 0.03);
@@ -1037,6 +1130,10 @@ var HeroSupportNaval = (function () {
     /* underwater: two shafts, screws and rudders */
     screws(THREE, g, T, X(58.6), 2.0, -3.0, X(61.6), 7.0, 1.1, 2.2);
 
+    extras(THREE, g, T, h, { scut: [[8, 14, 4.2, 1.8], [16, 56, 3.4, 2.4], [17, 55, 2.0, 4.8]], bitts: [12.0, 58.5, 63.0],
+      hatch: [[3.0, 0, 1.0, 1.0]], vent: [[58.5, 3.6], [58.5, -3.6], [8.0, -1.4]],
+      whip: [[46.0, 4.8, R01, 6.0], [46.0, -4.8, R01, 6.0], [30.0, 3.4, RBR, 5.0]],
+      anchor: [4.8, 4.6], gutter: [1.0, 64.0] });
     /* team strips */
     box(THREE, g, 2.2, 1.2, 0.04, T.team, X(23.5), 0, RBR + 0.12);
     box(THREE, g, 2.0, 1.1, 0.04, T.team, X(43.0), 0, R02 + 0.03);
@@ -1172,6 +1269,13 @@ var HeroSupportNaval = (function () {
     for (s = -1; s <= 1; s += 2) box(THREE, g, 10.0, 0.25, 0.8, T.under, X(66), s * 2.2, -3.9);
     screws(THREE, g, T, X(69.8), 2.4, -3.2, X(72.8), 7.0, 1.3, 2.4);
 
+    extras(THREE, g, T, h, { scut: [[7, 26, 4.6, 2.2], [28, 58, 3.4, 2.4], [29, 57, 2.0, 4.8]], bitts: [12.0, 24.0, 62.0, 70.0, 75.5],
+      hatch: [[67.5, 0, 3.2, 3.0], [61.5, 3.6, 1.2, 1.2]], vent: [[63.0, -5.0], [74.0, 4.6], [74.0, -4.6]],
+      whip: [[46.0, 5.4, R02, 6.0], [46.0, -5.4, R02, 6.0], [34.0, 4.8, R03, 5.0], [34.0, -4.8, R03, 5.0]],
+      anchor: null, gutter: [1.0, 77.0] });
+    /* the H-bitt at the after end of the towing deck */
+    box(THREE, g, 0.6, 3.2, 0.6, T.metal, X(73.0), 0, h.deckZ(X(73.0)) + 1.2);
+    for (s = -1; s <= 1; s += 2) cylZ(THREE, g, 0.32, 0.36, 1.6, 10, T.metal, X(73.0), s * 1.4, h.deckZ(X(73.0)) + 0.8);
     /* team strips */
     box(THREE, g, 2.6, 1.3, 0.04, T.team, X(43.6), 2.2, R03 + 0.12);
     box(THREE, g, 2.4, 1.2, 0.04, T.team, X(70.0), 0, 4.08);
@@ -1303,6 +1407,39 @@ var HeroSupportNaval = (function () {
     /* underwater: two shafts, screws, rudders [published two shafts] */
     screws(THREE, g, T, X(195), 5.0, -7.0, X(199.5), 16.0, 3.0, 6.0);
 
+    extras(THREE, g, T, h, { scut: [[6, 17, 7.4, 2.0], [170, 200, 5.2, 2.6]], bitts: [9.0, 30.0, 55.0, 80.0, 105.0, 120.0, 172.0, 190.0, 202.0],
+      hatch: [], vent: [], whip: [[164.0, 12.6, RA, 7.0], [164.0, -12.6, RA, 7.0], [150.0, 11.6, RB, 6.0], [150.0, -11.6, RB, 6.0]],
+      anchor: null, gutter: [1.0, 121.0] });
+    /* the cargo deck [K1][K4]: four fuel lines and a water line along the
+       deck from the forward tanks to the house, risers up every kingpost
+       to its hoses, a manifold athwart each station, the tank hatches
+       (expansion trunks) in two rows, P/V vent posts, and the walkway
+       over the pipes */
+    var PY = [-2.6, -1.9, 1.9, 2.6, 3.4];
+    PY.forEach(function (py, n) {
+      var x0 = X(121.0), x1 = X(28.0), zz = 8.95 + (n === 4 ? 0.1 : 0);
+      cylX(THREE, g, n === 4 ? 0.16 : 0.22, n === 4 ? 0.16 : 0.22, x1 - x0, 8, T.gun, (x0 + x1) / 2, py, zz);
+    });
+    for (x = X(118); x < X(30); x += 6.0) for (s = -1; s <= 1; s += 2) box(THREE, g, 0.2, 0.6, 0.45, T.metal, x, s * 2.25, 8.75);
+    HK_POSTS.forEach(function (pd) {
+      var kx = X(pd);
+      box(THREE, g, 0.8, 22.0, 0.5, T.gun, kx + 2.2, 0, 9.1);
+      for (s = -1; s <= 1; s += 2) {
+        cylZ(THREE, g, 0.3, 0.3, 2.0, 8, T.gun, kx + 2.2, s * 6.5, 9.9);
+        cylX(THREE, g, 0.4, 0.4, 0.5, 8, T.metal, kx + 2.2, s * 10.6, 9.4);
+        box(THREE, g, 2.4, 1.4, 1.0, T.sup, kx + 2.0, s * 12.4, 9.0);
+      }
+    });
+    for (k = 0; k < 15; k++) {
+      x = X(34 + k * 5.9);
+      for (s = -1; s <= 1; s += 2) {
+        if (HK_POSTS.some(function (pd) { return Math.abs(X(pd) - x) < 3.2; })) continue;
+        cylZ(THREE, g, 0.55, 0.55, 0.5, 8, T.sup, x, s * 6.0, 8.85);
+        if (k % 3 === 0) { cylZ(THREE, g, 0.12, 0.12, 3.2, 6, T.gun, x + 1.2, s * 4.3, 10.2); cylZ(THREE, g, 0.22, 0.22, 0.4, 6, T.gun, x + 1.2, s * 4.3, 11.8); }
+      }
+    }
+    box(THREE, g, X(28.0) - X(121.0), 1.1, 0.08, T.deck, (X(28.0) + X(121.0)) / 2, 0, 9.55);
+    for (x = X(120); x < X(29); x += 4.5) for (s = -1; s <= 1; s += 2) strut(THREE, g, T.metal, x, s * 0.5, 8.6, x, s * 0.5, 9.5, 0.04, 3);
     /* team strips */
     box(THREE, g, 6.0, 3.0, 0.06, T.team, X(140), 0, RC + 0.05);
     box(THREE, g, 6.0, 3.0, 0.06, T.team, X(195), 0, 8.54);

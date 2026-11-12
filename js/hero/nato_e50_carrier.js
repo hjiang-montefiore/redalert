@@ -72,6 +72,16 @@
    No hull numbers, names or flags (the 1955 ship had "59" on deck and
    island: left off).  The team colour is three small strips.
 
+   DETAIL PASS (2026-11): catwalks with rails, rafts and lowered whips round
+   the deck, the deck-edge gutter, the gallery deck's ports and frames, rows
+   of scuttles, the anchors in their hawses, the forecastle's windlasses,
+   bollards and rail, the fantail, sponson rails and lockers, the island's
+   roof rails, ports, doors, louvres, wings, ladder, searchlights and whips,
+   the boot-topping, a flared hull (fl 1.7), a weathered hull texture, and
+   deck paint that is not a number (the white round-down, five wires and the
+   barricade recess, lowered blast deflectors, fuel stations, tie-downs).
+   13 draw calls.  The fittings' sizes are typical, NOT CONFIRMED.
+
    MODEL SPACE: +X bow, +Y port, +Z up, metres, WATERLINE z = 0, flight deck
    at z = 21.5.  The forward starboard 5 in mount is the group named
    "turret"; everything else is baked one mesh per material.  The kit is
@@ -110,6 +120,18 @@ var HeroForrestal = (function () {
       for (i = 0; i < 4; i++) { var xx = i * w / 4 + (i % 2) * 22; g.beginPath(); g.moveTo(xx, 0); g.lineTo(xx, h); g.stroke(); }
       g.globalAlpha = 0.06;
       for (i = 0; i < 40; i++) { g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff"; g.fillRect(R() * w, R() * h, 2 + R() * 4, 16 + R() * 70); }
+      /* weathering: rust runs from the scuttles and drains, salt bloom,
+         a few patched plates in a fresher grey */
+      for (i = 0; i < 34; i++) {
+        var rx = R() * w, ry = R() * h * 0.7, rl = 20 + R() * 90;
+        var gr = g.createLinearGradient(0, ry, 0, ry + rl);
+        gr.addColorStop(0, "rgba(70,40,24,0.30)"); gr.addColorStop(1, "rgba(70,40,24,0)");
+        g.fillStyle = gr; g.globalAlpha = 1; g.fillRect(rx, ry, 1.5 + R() * 2.5, rl);
+      }
+      g.globalAlpha = 0.07; g.fillStyle = "#ffffff";
+      for (i = 0; i < 10; i++) g.fillRect(R() * w, R() * h, 30 + R() * 60, 10 + R() * 26);
+      g.globalAlpha = 0.05; g.fillStyle = "#000000";
+      for (i = 0; i < 12; i++) g.fillRect(R() * w, R() * h, 40 + R() * 80, 4 + R() * 10);
       g.globalAlpha = 1;
     });
   }
@@ -136,6 +158,17 @@ var HeroForrestal = (function () {
       for (i = 0; i < 3; i++) { g.beginPath(); g.moveTo(i * w / 3 + 30, 0); g.lineTo(i * w / 3 + 30, h); g.stroke(); }
       g.globalAlpha = 0.08;
       for (i = 0; i < 30; i++) { g.fillStyle = R() < 0.6 ? "#000000" : "#ffffff"; g.fillRect(R() * w, R() * h, 20 + R() * 60, 4 + R() * 16); }
+      /* the tie-down pad-eyes, a grid about 1.6 m square (8 m tile / 5),
+         and the tyre streaks and oil of the deck park */
+      g.globalAlpha = 0.32; g.fillStyle = "#000000";
+      var tx, ty;
+      for (tx = 0; tx < 5; tx++) for (ty = 0; ty < 5; ty++) {
+        g.beginPath(); g.arc(25 + tx * w / 5, 25 + ty * h / 5, 2.4, 0, PI * 2); g.fill();
+      }
+      g.globalAlpha = 0.07;
+      for (i = 0; i < 14; i++) { g.fillRect(R() * w, R() * h, 70 + R() * 120, 1.5 + R() * 2); }
+      g.globalAlpha = 0.10;
+      for (i = 0; i < 8; i++) { g.beginPath(); g.ellipse(R() * w, R() * h, 4 + R() * 10, 3 + R() * 6, R() * 3, 0, PI * 2); g.fill(); }
       g.globalAlpha = 1;
     });
   }
@@ -162,6 +195,7 @@ var HeroForrestal = (function () {
     return {
       hull:  skin(P.hull, hullTex(THREE), 0.86),
       under: skin(0x4a1c16, hullTex(THREE), 0.9),
+      boot:  skin(0x16181a, hullTex(THREE), 0.9),
       sup:   skin(P.sup, plateTex(THREE), 0.86),
       deck:  skin(P.deck, deckTex(THREE), 0.95),
       dark:  skin(0xffffff, grilleTex(THREE), 0.9),
@@ -513,7 +547,7 @@ var HeroForrestal = (function () {
   }
 
   var HF = {
-    XS0: -152.0, XS1: 158.0, XWL: 150.5, XST: -150.5, step: 4.0, fl: 1.0, stemP: 0.75, extra: [128, 130],
+    XS0: -152.0, XS1: 158.0, XWL: 150.5, XST: -150.5, step: 4.0, fl: 1.7, stemP: 0.75, extra: [128, 130],
     deckZ: function (x) { return x < 128 ? HULLTOP : x < 130 ? HULLTOP - 6.5 * (x - 128) / 2 : HULLTOP - 6.5; },
     STA: [
       [-152.0, 14.0, 11.0, -2.0, 2.4],
@@ -539,10 +573,261 @@ var HeroForrestal = (function () {
     b.rotation.z = Math.atan2(dy, dx); return b;
   }
 
+
+  /* ============================================================ FITTINGS
+     The detail pass (2026-11).  The profile and plan fix where the parts
+     stand; these small fittings are what every photograph of the class
+     shows round her edges and on her island ([F1] shows the catwalks as a
+     light band round the deck, the white stern and the wires; [F2] the
+     gallery's ports, the island's platforms and rails, the boat booms).
+     Sizes are typical US carrier practice, NOT CONFIRMED one by one.
+     Nothing stands above the flight deck's surface inside its outline but
+     the island and flush paint (4 cm), so the deck park is unchanged. */
+
+  /* posts every step and two wires along a polyline at height z.  Each
+     post and wire is one flat ribbon (two triangles, the metal is double
+     sided) standing in the rail's own plane, merged with the rest */
+  function railLine(THREE, g, T, pts, z, hgt, step) {
+    var P = [], i, k;
+    function rib(ax, ay, az, bx, by, bz, ux, uy, uz) {
+      P.push(ax - ux, ay - uy, az - uz, bx - ux, by - uy, bz - uz, bx + ux, by + uy, bz + uz,
+             ax - ux, ay - uy, az - uz, bx + ux, by + uy, bz + uz, ax + ux, ay + uy, az + uz);
+    }
+    for (i = 0; i < pts.length - 1; i++) {
+      var a = pts[i], b = pts[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(L / (step || 2.4)));
+      if (L < 1e-3) continue;
+      var tx = (b[0] - a[0]) / L, ty = (b[1] - a[1]) / L;
+      for (k = 0; k <= n; k++) {
+        if (i > 0 && k === 0) continue;
+        var px = a[0] + (b[0] - a[0]) * k / n, py = a[1] + (b[1] - a[1]) * k / n;
+        rib(px, py, z, px, py, z + hgt, tx * 0.04, ty * 0.04, 0);
+      }
+      rib(a[0], a[1], z + hgt, b[0], b[1], z + hgt, 0, 0, 0.03);
+      rib(a[0], a[1], z + hgt * 0.5, b[0], b[1], z + hgt * 0.5, 0, 0, 0.022);
+    }
+    if (!P.length) return;
+    var uv = []; for (i = 0; i < P.length / 3; i++) uv.push(0, 0);
+    g.add(new THREE.Mesh(geoOf(THREE, P, uv), T.metal));
+  }
+  /* a box lying along (ax, ay)-(bx, by) */
+  function boxAlong(THREE, g, m, ax, ay, bx, by, w, th, z) {
+    var L = Math.hypot(bx - ax, by - ay);
+    if (L < 0.05) return null;
+    var b = box(THREE, g, L, w, th, m, (ax + bx) / 2, (ay + by) / 2, z);
+    b.rotation.z = Math.atan2(by - ay, bx - ax); return b;
+  }
+  /* one quad facing (nx, ny): a scuttle, a port, a door */
+  function pane(THREE, g, m, x, y, z, w, h, nx, ny) {
+    var pg = new THREE.PlaneGeometry(w, h); pg.rotateX(PI / 2); pg.rotateZ(Math.atan2(nx, -ny));
+    var q = new THREE.Mesh(pg, m); q.position.set(x, y, z); g.add(q); return q;
+  }
+  /* a life-raft canister on its cradle, axis along the edge */
+  function raft(THREE, g, T, x, y, z, ang) {
+    var c = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 1.3, 6, 1), T.white);
+    c.rotation.z = ang + PI / 2; c.position.set(x, y, z + 0.38); g.add(c);
+    var b = box(THREE, g, 1.0, 0.5, 0.06, T.metal, x, y, z + 0.03); b.rotation.z = ang;
+  }
+
+  function fittings(THREE, g, T, Hh, YO, YI, YC) {
+    var s, i, k, x, y;
+    /* --- catwalks round the flight deck: a grating 1.6 m wide 1.6 m down,
+       its outer rail (posts and two wires) and its brackets, broken where
+       a lift, the island, a 5 in sponson or the bow and stern stand.  The
+       whip aerials are lowered outboard, as they are for flight work. */
+    var CZ = FD - 1.6, CW = 1.6;
+    var GAP = [[-97.6, -78.0, -1], [-53.2, -33.6, -1], [20.2, 39.8, -1], [-22.0, 15.6, -1], [34.4, 54.0, 1],
+               [65.0, 99.0, 1], [-143.5, -115.5, 1], [-153.5, -117.5, -1], [67.5, 94.5, -1]];
+    function open(x0, y0) {
+      for (var q = 0; q < GAP.length; q++) if (x0 > GAP[q][0] && x0 < GAP[q][1] && (y0 > 0) === (GAP[q][2] > 0)) return false;
+      return true;
+    }
+    var D = polyCCW(DECK), whip = 0;
+    for (i = 0; i < D.length; i++) {
+      var a = D[i], b = D[(i + 1) % D.length], ex = b[0] - a[0], ey = b[1] - a[1], L = Math.hypot(ex, ey);
+      if (L < 6 || Math.abs(ex) < 1e-3 && Math.abs(a[0]) > 160) continue;     /* bow and stern ends */
+      var nx = ey / L, ny = -ex / L, n = Math.max(1, Math.round(L / 2.4)), run = [];
+      for (k = 0; k <= n + 1; k++) {
+        var f = k / n, px = a[0] + ex * f, py = a[1] + ey * f, ok = k <= n && open(px, py);
+        if (ok) run.push([px, py]);
+        if ((!ok || k === n) && run.length > 1) {
+          var p0 = run[0], p1 = run[run.length - 1], o = CW / 2 + 0.05;
+          boxAlong(THREE, g, T.deck, p0[0] + nx * o, p0[1] + ny * o, p1[0] + nx * o, p1[1] + ny * o, CW, 0.12, CZ);
+          boxAlong(THREE, g, T.sup, p0[0] + nx * (CW + 0.05), p0[1] + ny * (CW + 0.05), p1[0] + nx * (CW + 0.05), p1[1] + ny * (CW + 0.05), 0.08, 0.35, CZ - 0.12);
+          railLine(THREE, g, T, run.map(function (p) { return [p[0] + nx * (CW + 0.02), p[1] + ny * (CW + 0.02)]; }), CZ + 0.06, 1.0, 3.0);
+          for (var q = 0; q < run.length; q += 4)
+            strut(THREE, g, T.metal, run[q][0] + nx * CW, run[q][1] + ny * CW, CZ - 0.08, run[q][0] - nx * 0.4, run[q][1] - ny * 0.4, CZ - 2.2, 0.06, 3);
+          /* rafts on the catwalk every 12 m, a whip aerial every fourth run */
+          for (q = 2; q < run.length - 1; q += 6) raft(THREE, g, T, run[q][0] + nx * 1.1, run[q][1] + ny * 1.1, CZ + 0.06, Math.atan2(ey, ex));
+          if ((whip++ % 3) === 0) {
+            var wq = run[Math.floor(run.length / 2)];
+            cylZ(THREE, g, 0.12, 0.16, 0.5, 6, T.metal, wq[0] + nx * CW, wq[1] + ny * CW, CZ + 0.3);
+            strut(THREE, g, T.metal, wq[0] + nx * CW, wq[1] + ny * CW, CZ + 0.5, wq[0] + nx * (CW + 6.0), wq[1] + ny * (CW + 6.0), CZ + 0.8, 0.05, 3);
+          }
+        }
+        if (!ok) run = [];
+      }
+      /* the deck-edge gutter: a dark lip on the slab's edge */
+      if (L > 6) boxAlong(THREE, g, T.dark, a[0] + nx * 0.03, a[1] + ny * 0.03, b[0] + nx * 0.03, b[1] + ny * 0.03, 0.06, 0.22, FD - 0.12);
+    }
+
+    /* --- the gallery deck under the overhangs: its ports (a row of
+       small lights) and the frames under the slab, port and starboard */
+    for (x = -86; x < 54; x += 3.2) {
+      pane(THREE, g, T.glass, x, 42.45, HULLTOP - 1.1, 0.9, 0.55, 0, 1);
+      if (Math.round(x) % 2 === 0) box(THREE, g, 0.18, 22.0, 0.35, T.sup, x + 1.6, 31.4, HULLTOP - 0.17);
+    }
+    for (x = -101; x < 39; x += 3.2) {
+      if (x > -97.6 && x < -78 || x > -53.2 && x < -33.6 || x > 20.2 && x < 39.8) continue;
+      pane(THREE, g, T.glass, x, -32.85, HULLTOP - 1.0, 0.9, 0.55, 0, -1);
+    }
+    for (x = -100; x < 38; x += 6.4) box(THREE, g, 0.18, 12.8, 0.35, T.sup, x, -26.4, HULLTOP - 0.17);
+    /* the gallery's after diagonal and forward face, ports */
+    for (k = 1; k < 7; k++) {
+      x = -118.0 + 29.4 * k / 7; y = 26.4 + 16.0 * k / 7;
+      var dn = Math.hypot(16.0, 29.4); pane(THREE, g, T.glass, x - 0.3, y + 0.5, HULLTOP - 1.1, 0.9, 0.55, -16.0 / dn, 29.4 / dn);
+    }
+
+    /* --- the hull: two rows of scuttles fore and aft of the hangar, the
+       hangar's side doors, the anchors in their hawses (two at the bow,
+       one aft, port), the forecastle's windlasses, bollards and fairleads */
+    for (s = -1; s <= 1; s += 2) {
+      for (x = -140; x < 140; x += 3.0) {
+        var hang = x > -110 && x < 100;
+        if (hang && x % 9 !== 1) continue;
+        var zz = hang ? 15.6 : (x > 0 ? 11.0 : 13.0);
+        var wy = Hh.W(x, zz); if (!(wy > 1)) continue;
+        pane(THREE, g, T.glass, x, s * (wy + 0.04), zz, 0.42, 0.42, 0, s);
+        if (!hang) { wy = Hh.W(x, zz - 2.6); if (wy > 1) pane(THREE, g, T.glass, x + 1.5, s * (wy + 0.04), zz - 2.6, 0.42, 0.42, 0, s); }
+      }
+      /* the bow anchor: the hawse's lip and the stock-less anchor in it */
+      var ax = 141.0, az = 9.0, aw = Hh.W(ax, az);
+      cylZ(THREE, g, 1.0, 1.2, 0.6, 10, T.dark, ax, s * (aw + 0.05), az).rotation.x = s * PI / 2;
+      box(THREE, g, 0.7, 0.35, 2.8, T.metal, ax - 0.2, s * (aw + 0.2), az - 1.6);
+      box(THREE, g, 2.6, 0.45, 0.6, T.metal, ax - 0.2, s * (aw + 0.25), az - 3.0);
+      /* the forecastle under the open bow (z 13.5): windlass, chain pipe,
+       stoppers, bollards and fairleads */
+      var fz = HULLTOP - 6.5;
+      cylX(THREE, g, 0.9, 0.9, 2.2, 10, T.metal, 136.0, s * 4.0, fz + 1.0);
+      box(THREE, g, 2.4, 1.8, 0.7, T.sup, 136.0, s * 4.0, fz + 0.35);
+      boxAlong(THREE, g, T.dark, 137.2, s * 4.0, 146.5, s * Math.max(1.5, Hh.W(146.5, fz) - 1.2), 0.5, 0.18, fz + 0.09);
+      cylZ(THREE, g, 0.45, 0.45, 0.5, 8, T.dark, 147.0, s * Math.max(1.5, Hh.W(147, fz) - 1.0), fz + 0.25);
+      [133, 144, 150].forEach(function (bx) {
+        var by = s * Math.max(1.2, Hh.W(bx, fz) - 1.4);
+        cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, bx, by, fz + 0.4); cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, bx + 1.0, by, fz + 0.4);
+        cylZ(THREE, g, 0.38, 0.38, 0.08, 8, T.metal, bx, by, fz + 0.84); cylZ(THREE, g, 0.38, 0.38, 0.08, 8, T.metal, bx + 1.0, by, fz + 0.84);
+      });
+      /* the forecastle's bulwark rail */
+      var rp = [];
+      for (x = 131; x <= 155; x += 3) rp.push([x, s * Math.max(0.4, Hh.W(x, fz) - 0.2)]);
+      railLine(THREE, g, T, rp, fz, 1.0, 2.2);
+      /* boat booms, folded along the hull side under the gallery */
+      boxAlong(THREE, g, T.metal, -30.0, s * (Hh.W(-30, 12.0) + 0.3), -10.0, s * (Hh.W(-10, 12.0) + 0.3), 0.3, 0.3, 12.0);
+    }
+    /* the stern anchor in its hawse on the port quarter */
+    var sw = Hh.W(-140.0, 7.0);
+    cylZ(THREE, g, 0.8, 1.0, 0.5, 10, T.dark, -140.0, sw + 0.05, 7.0).rotation.x = PI / 2;
+    box(THREE, g, 0.6, 0.3, 2.2, T.metal, -140.2, sw + 0.18, 5.8);
+    /* the fantail under the round-down: its rail, chocks and bollards */
+    var tz = HULLTOP - 1.6, tp = [];
+    for (y = -12.5; y <= 12.5; y += 2.5) tp.push([-152.2, y]);
+    railLine(THREE, g, T, tp, tz - 3.6, 1.0, 2.4);
+    box(THREE, g, 1.6, 26.0, 0.12, T.deck, -152.9, 0, tz - 3.6);
+    for (s = -1; s <= 1; s += 2) {
+      cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, -150.6, s * 8.0, tz - 3.2);
+      cylZ(THREE, g, 0.28, 0.3, 0.8, 8, T.metal, -150.6, s * 9.0, tz - 3.2);
+    }
+
+    /* --- the 5 in sponsons: an outer rail, a ready-use locker, rafts */
+    var ZS = 15.5;
+    [[71.5, 23.8], [92.7, 23.8], [74.0, -24.0], [88.0, -24.0], [-122.0, 30.0], [-137.0, 30.0], [-124.0, -16.0], [-147.0, -16.0]].forEach(function (q) {
+      var sg = q[1] > 0 ? 1 : -1, yout = q[1] + sg * 4.0, yin = sg * Math.max(0.5, (Hh.W(q[0], ZS) || 6) - 1.0);
+      railLine(THREE, g, T, [[q[0] - 6, yin + sg * 0.1], [q[0] - 5, yout - sg * 0.15], [q[0] + 5, yout - sg * 0.15], [q[0] + 6, yin + sg * 0.1]], ZS, 1.0, 2.2);
+      box(THREE, g, 1.6, 1.0, 1.3, T.sup, q[0] - 3.8, yin + sg * 1.0, ZS + 0.65);
+      raft(THREE, g, T, q[0] + 3.6, yout - sg * 0.9, ZS, 0);
+    });
+
+    /* --- deck markings that are not numbers [F1]: the white round-down
+       across the stern, the arresting wires across the landing area (five
+       pendants and the barricade's recess), the jet-blast deflectors
+       (lowered, flush) behind the four catapults, the fuel stations at
+       the edges */
+    var ZM = FD + 0.035, ta = Math.tan(ANG), ay0 = 8.0;
+    stripe(THREE, g, T.white, -161.6, -12.6, -161.6, 26.8, 2.2, ZM);
+    for (y = -11; y < 26; y += 4) stripe(THREE, g, T.dark, -159.6, y, -159.6, y + 2, 1.4, ZM);
+    [-128, -121, -114, -107, -100].forEach(function (wx) {
+      var yc = ay0 + (wx + 160) * ta;
+      var sa = Math.sin(ANG) * 11.0, ca = Math.cos(ANG) * 11.0;
+      stripe(THREE, g, T.dark, wx + sa, yc - ca, wx - sa, yc + ca, 0.14, ZM);
+      for (s = -1; s <= 1; s += 2) box(THREE, g, 0.8, 1.2, 0.04, T.dark, wx - s * sa * 1.05, yc + s * ca * 1.05, ZM).rotation.z = ANG;
+    });
+    stripe(THREE, g, T.dark, -86 + Math.sin(ANG) * 11, ay0 + 74 * ta - Math.cos(ANG) * 11, -86 - Math.sin(ANG) * 11, ay0 + 74 * ta + Math.cos(ANG) * 11, 0.5, ZM);
+    [12.7, -11.8].forEach(function (cy) { box(THREE, g, 2.6, 7.0, 0.04, T.dark, 56.2, cy, ZM); });
+    [4.0, 9.0].forEach(function (o) { box(THREE, g, 2.6, 7.0, 0.04, T.dark, -13.0, ay0 + o + 147 * ta, ZM).rotation.z = ANG; });
+    [[-60, 42.2], [0, 42.2], [-75, -32.4], [-5, -19.5], [110, 17.6], [120, -17.4]].forEach(function (q) {
+      box(THREE, g, 2.0, 1.2, 0.04, T.dark, q[0], q[1], ZM);
+    });
+
+    /* --- the island: rails round every roof, doors and ports on its
+       faces, louvres, the bridge wings and the platform outboard, a ladder
+       up its after end, searchlights, whips at its corners, stub
+       exhausts on the funnel cap, signal halyards from the yard */
+    var tiers = [[-21.5, 15.1, YO, YI, FD + 9.0], [-15.0, 13.0, YO + 0.8, YI - 0.8, FD + 12.0], [-4.0, 11.0, YO + 1.4, YI - 1.4, FD + 14.7]];
+    tiers.forEach(function (t, n) {
+      var i0 = 0.35;
+      var pts = [[t[0] + i0, t[2] + i0], [t[1] - i0, t[2] + i0], [t[1] - i0, t[3] - i0], [t[0] + i0, t[3] - i0]];
+      if (n === 0) pts = [[-15.0, t[3] - i0], [t[0] + i0, t[3] - i0], [t[0] + i0, t[2] + i0], [t[1] - i0, t[2] + i0], [t[1] - i0, t[3] - i0], [13.0, t[3] - i0]];
+      else pts.push(pts[0]);
+      railLine(THREE, g, T, pts, t[4], 1.0, 2.0);
+    });
+    /* ports along both faces of the block, doors at its foot */
+    for (x = -20; x < 14; x += 2.2) {
+      pane(THREE, g, T.glass, x, YI + 0.03, FD + 6.6, 0.5, 0.5, 0, 1);
+      pane(THREE, g, T.glass, x, YO - 0.03, FD + 6.6, 0.5, 0.5, 0, -1);
+      if (x > -14) pane(THREE, g, T.glass, x + 1.1, YI - 0.8 + 0.03, FD + 9.8, 0.5, 0.5, 0, 1);
+    }
+    [-18.0, -6.0, 8.0].forEach(function (dx) { box(THREE, g, 1.0, 0.1, 2.0, T.dark, dx, YI + 0.12, FD + 1.0); });
+    box(THREE, g, 0.1, 1.0, 2.0, T.dark, 15.15, YC, FD + 1.0);
+    box(THREE, g, 0.1, 1.0, 2.0, T.dark, -21.55, YC + 2, FD + 1.0);
+    [[-12, YI], [2, YI], [-12, YO], [4, YO]].forEach(function (q) {
+      box(THREE, g, 3.0, 0.08, 1.6, T.dark, q[0], q[1] + (q[1] === YI ? 0.04 : -0.04), FD + 3.6);
+    });
+    /* bridge wings over the side (outboard only: nothing overhangs the deck) */
+    plate(THREE, g, T.deck, polyCCW([[8.0, YO + 0.8], [13.0, YO + 0.8], [13.0, YO - 2.0], [8.0, YO - 2.0]]), FD + 9.0, 0.25, T.sup);
+    railLine(THREE, g, T, [[8.0, YO - 0.0], [8.0, YO - 1.9], [12.9, YO - 1.9], [12.9, YO + 0.8]], FD + 9.0, 1.0, 1.6);
+    plate(THREE, g, T.deck, polyCCW([[-19.0, YO + 0.2], [-8.0, YO + 0.2], [-8.0, YO - 2.4], [-19.0, YO - 2.4]]), FD + 4.6, 0.25, T.sup);
+    railLine(THREE, g, T, [[-19.0, YO], [-19.0, YO - 2.3], [-8.0, YO - 2.3], [-8.0, YO]], FD + 4.6, 1.0, 1.8);
+    for (k = 0; k < 3; k++) strut(THREE, g, T.metal, -18.0 + k * 4.5, YO, FD + 2.6, -18.0 + k * 4.5, YO - 2.2, FD + 4.4, 0.08, 3);
+    /* the ladder up the island's after face to the first roof */
+    for (s = -1; s <= 1; s += 2) box(THREE, g, 0.06, 0.06, 9.0, T.metal, -21.62, YC - 3 + s * 0.25, FD + 4.5);
+    for (k = 1; k < 30; k++) box(THREE, g, 0.05, 0.5, 0.04, T.metal, -21.62, YC - 3, FD + k * 0.3);
+    /* searchlights and whips on the top tier, a lattice yard on the funnel */
+    for (s = -1; s <= 1; s += 2) {
+      cylZ(THREE, g, 0.25, 0.25, 0.5, 8, T.metal, 9.0, YC + s * 4.4, FD + 14.95);
+      cylX(THREE, g, 0.42, 0.42, 0.7, 10, T.gun, 9.3, YC + s * 4.4, FD + 15.5);
+      strut(THREE, g, T.metal, 10.6, YC + s * 4.9, FD + 14.7, 10.6, YC + s * 5.6, FD + 22.0, 0.05, 3);
+      strut(THREE, g, T.metal, -14.5, YC + s * 5.2, FD + 12.0, -14.5, YC + s * 6.2, FD + 18.0, 0.05, 3);
+      strut(THREE, g, T.metal, -1.0, YC + s * 6, FD + 29.0, -1.0, YC + s * 2.6, FD + 14.8, 0.015, 3);
+    }
+    for (k = 0; k < 4; k++) cylZ(THREE, g, 0.5, 0.5, 1.4, 8, T.dark, -14.6 + k * 2.4, YC + (k % 2 ? 1.0 : -1.0), FD + 21.2);
+    var fp = chamf(-16.8, -6.6, 3.5, 1.4, 1.0).map(function (p) { return [p[0], p[1] + YC]; });
+    fp.push(fp[0]);
+    railLine(THREE, g, T, fp, FD + 20.6, 0.9, 2.0);
+    /* louvres on the funnel's sides */
+    var flo = chamf(-16.0, -5.0, 4.4, 1.5, 1.0).map(function (p) { return [p[0], p[1] + YC]; });
+    var fhi = chamf(-16.6, -6.4, 3.6, 1.4, 1.0).map(function (p) { return [p[0], p[1] + YC]; });
+    facePatch(THREE, g, T.dark, flo, FD + 11.95, fhi, FD + 19.8, 0, 0.15, 0.85, FD + 14.0, FD + 16.0, 0.04);
+    facePatch(THREE, g, T.dark, flo, FD + 11.95, fhi, FD + 19.8, 4, 0.15, 0.85, FD + 14.0, FD + 16.0, 0.04);
+    /* the masthead light and the ECM whip */
+    strut(THREE, g, T.metal, -1.0, YC, FD + 33.0, -1.0, YC, FD + 37.0, 0.06, 3);
+    sphere(THREE, g, 0.3, T.white, -1.0, YC, FD + 33.2, 8, 6);
+  }
+
   function build(THREE, M, C) {
     var g = new THREE.Group(), T = sealMats(makeMats(THREE, C, FPAINT)), Hh = makeHull(HF), s, i, k, x;
     g.add(Hh.shellBand(THREE, T.under, -12, -0.4, 5));
-    g.add(Hh.shellBand(THREE, T.hull, -0.4, HULLTOP + 1, 6));
+    /* the boot-topping, 1.4 m of black from just under the waterline */
+    g.add(Hh.shellBand(THREE, T.boot, -0.4, 1.0, 1));
+    g.add(Hh.shellBand(THREE, T.hull, 1.0, HULLTOP + 1, 6));
     Hh.transom(THREE, g, T.hull, T.under);
     g.add(Hh.deckSheet(THREE, T.deck, HF.XS0, HF.XS1));
 
@@ -645,6 +930,8 @@ var HeroForrestal = (function () {
       }
     }
     for (s = -1; s <= 1; s += 2) box(THREE, g, 7.0, 0.85, 8.0, T.metal, -148.0, s * 7.6, -5.5);
+
+    fittings(THREE, g, T, Hh, YO, YI, YC);
 
     /* team: strips on the island's roofs */
     box(THREE, g, 3.0, 2.0, 0.05, T.team, 5.0, YC, FD + 14.73);
