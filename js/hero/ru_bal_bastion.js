@@ -616,7 +616,28 @@ var HeroBalBastion = (function () {
       for (i = 0; i < 5; i++) side(B.dark, s, -5.0 + i * 1.6, -4.98 + i * 1.6, ZB + 0.1, ZS - 0.05, BW, 0.012);
       side(B.dark, s, BX0 + 0.05, XM0 - 0.05, ZS - 0.03, ZS - 0.01, BW, 0.012);
       xs = [[XM0, AXL[1] + 0.82], [AXL[1] - 0.82, AXL[2] + 0.82], [AXL[2] - 0.82, AXL[3] + 0.82], [AXL[3] - 0.82, BX0]];
-      for (i = 0; i < xs.length; i++) box(B.paint, xs[i][1], xs[i][0], s * BW - (s < 0 ? 0 : 0.06), s * BW + (s < 0 ? 0.06 : 0), 0.98, ZB + 0.01);
+      /* REWORKED (visual review, mod18 cached in the scratchpad as q_rvveh_ref/bas_mod18.jpg): the skirts come down to
+         about the hub line between the wheels, and each tyre runs in its own round arch with a raised lip; the side
+         carries a horizontal stiffening rib a third of the way up and a rubber flap behind each axle pair.  The skirt depth
+         (0.80 m) and the lip radius are read off that one 3/4 photograph: NOT CONFIRMED to better than 0.1 m. */
+      for (i = 0; i < xs.length; i++) box(B.paint, xs[i][1], xs[i][0], s * BW - (s < 0 ? 0 : 0.06), s * BW + (s < 0 ? 0.06 : 0), 0.80, ZB + 0.01);
+      for (i = 0; i < AXL.length; i++) {
+        var k, a0, a1, r0 = RT + 0.07, r1 = RT + 0.15, yo = s * (BW + 0.03), yi = s * (BW - 0.05);
+        for (k = 0; k < 10; k++) {
+          a0 = Math.PI * (0.06 + k * 0.088); a1 = a0 + Math.PI * 0.088;
+          hexa(B.paint, [[AXL[i] + Math.cos(a0) * r0, yi, RT + Math.sin(a0) * r0], [AXL[i] + Math.cos(a1) * r0, yi, RT + Math.sin(a1) * r0],
+                         [AXL[i] + Math.cos(a1) * r1, yi, RT + Math.sin(a1) * r1], [AXL[i] + Math.cos(a0) * r1, yi, RT + Math.sin(a0) * r1],
+                         [AXL[i] + Math.cos(a0) * r0, yo, RT + Math.sin(a0) * r0], [AXL[i] + Math.cos(a1) * r0, yo, RT + Math.sin(a1) * r0],
+                         [AXL[i] + Math.cos(a1) * r1, yo, RT + Math.sin(a1) * r1], [AXL[i] + Math.cos(a0) * r1, yo, RT + Math.sin(a0) * r1]]);
+        }
+      }
+      for (i = 1; i < AXL.length; i += 2) box(B.dark, AXL[i] - RT - 0.20, AXL[i] - RT - 0.16, s * (TY - 0.20), s * (TY + 0.24), 0.30, 0.95);
+      side(B.paint, s, BX0 + 0.05, XM0 - 0.05, 1.78, 1.84, BW, 0.03);
+      /* lockers low on the body between the pairs, their latches */
+      for (i = 0; i < 2; i++) {
+        side(B.paint, s, -1.20 + i * 1.05, -0.25 + i * 1.05, 0.90, 1.70, BW + 0.005, 0.02);
+        side(B.dark, s, -0.80 + i * 1.05, -0.65 + i * 1.05, 1.40, 1.45, BW + 0.005, 0.035);
+      }
       box(B.glass, BX0 - 0.03, BX0, s * 1.25 - 0.10, s * 1.25 + 0.10, 1.40, 1.55);       /* tail lamps */
     }
     /* the rear wall's frame */
