@@ -52,7 +52,7 @@ window.addEventListener("load", function () {
 var CELLS = { nato_e80_mlrs: 12, nato_e90_mlrs: 12, mlrs_n: 12, nato_e90_tel: 2, nato_e00_mlrs: 6, nato_e00_tel: 1, tel_n: 2 };
 /* deu_e90_mlrs (MARS) and fra_e90 / fra_e00_mlrs (LRM, LRU) are the same M270
    (js/hero/deu_us_pattern.js, js/hero/fr_armour2.js), firing the M26 / GMLRS */
-var ORDS = { nato_e80_mlrs: "m26", nato_e90_mlrs: "m26", deu_e90_mlrs: "m26", fra_e90_mlrs: "m26", fra_e00_mlrs: "gmlrs", gbr_e80_mlrs: "m26", gbr_e90_mlrs: "m26", gbr_e00_mlrs: "gmlrs", mlrs_f: "gmlrs", mlrs_n: "gmlrs", nato_e90_tel: "atacms",
+var ORDS = { nato_e80_mlrs: "m26", nato_e90_mlrs: "m26", deu_e90_mlrs: "m26", fra_e90_mlrs: "m26", fra_e00_mlrs: "gmlrs", gbr_e80_mlrs: "m26", gbr_e90_mlrs: "m26", gbr_e00_mlrs: "gmlrs", mlrs_f: "gmlrs", mlrs_g: "gmlrs", mlrs_b: "gmlrs", mlrs_n: "gmlrs", nato_e90_tel: "atacms",
              nato_e00_mlrs: "gmlrs", nato_e00_tel: "atacms", tel_n: "prsm",
              /* Trident II D5: the Ohio and the Vanguard (js/hero/us_ohio_ssbn.js);
                 not in CELLS - a boat has no pod to lay - and checked in play by
