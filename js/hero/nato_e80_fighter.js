@@ -33,6 +33,44 @@
        17.84  engine nozzle exit
        19.00  tail boom aft end
        19.42  stabilator trailing edge - the aft-most point on the aircraft
+
+   ---- 2026-11-12 rebuild to the current standard (draw calls, re-measure) ----
+   References (Wikimedia Commons / Wikipedia; cached in the agent scratchpad
+   q_f15f86_ref):
+     [P1] "McDonnell Douglas F-15 Eagle 3-view.svg" (2000 px render): plan,
+          head-on, and a TWO-SEAT side view. Plan nose py 14, stabilator
+          TE py 1127, span px 12..774. Scaled on the published length
+          (57.08 px/m) the plan of this model lies on it - radome, intakes,
+          wing, stabilators, booms, Sparrows - except that [P1]'s span comes
+          out 13.28 m: its span/length ratio is 1.8 per cent above the
+          published one, so the length scale is kept. Its side view is
+          stylised (fin tip chord about 0.6 m) and of a two-seater; not used
+          for the fin.
+     [P2] "F-15C Eagle 57th Wg 65th Aggressor Squadron AW 080010 - Nellis
+          AFB NV - 2007.jpg" (800 px): a side-on profile print of a
+          single-seat F-15C, nose px 50, stabilator tip px 747 = 35.87 px/m.
+          Canopy, radome, spine and intake line lie on this model. The fin
+          did not: it is re-drawn off [P2] (see FIN). Its markings, codes
+          and camouflage are NOT drawn.
+     [W]  en.wikipedia "McDonnell Douglas F-15 Eagle", F-15C specification:
+          length 63 ft 9 in (19.43 m), span 42 ft 10 in (13.05 m), height
+          18 ft 6 in (5.63 m), wing area 608 sq ft.
+   As drawn: 19.52 x 13.19 x 5.42 m (L x W x H; the length includes the
+   0.09 m the boom tips stand behind the stabilator line in the dump, the
+   span the nav lenses). Published 19.43 x 13.05 x 5.63. Height is NOT
+   fitted: fin top 3.54 m above the datum (3.50 on [P2] including the tip
+   fairing), gear as the first build drew it; the 0.21 m short is in the
+   main oleo / tyre stance, which no fetched reference shows side-on.
+   NOT CONFIRMED: the gear leg lengths and the ground line; the receptacle
+   station (aar_recept, port wing root at s 7.95, from the type's known
+   layout, not measured); the F-15E items (CFTs, LANTIRN, Mk 82 rows) as
+   the first build had them; the fin area check (5.9 m2 a fin as drawn
+   against a remembered 125 sq ft for the pair).
+   Kept API: UNIT_MODELS "nato_e80_fighter" (F-15C) and "nato_e90_cas"
+   (F-15E, build(..., isE = true)), len 19.43, the "gear" group. Added:
+   an Object3D "aar_recept" (render3d.js aarPoints) on both.
+   Draw calls: every mesh merged per material (mergePerMaterial), the gear
+   kept as its own merged group; F-15C 16 (was 235), F-15E 13.
 */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
@@ -210,7 +248,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       panel.map = c;
     }
 
-    return {
+    var T = {
       skin: skin,
       panel: panel,
       metal: new THREE.MeshStandardMaterial({
@@ -221,8 +259,6 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
         color: 0x5d5751, roughness: 0.52, metalness: 0.58 }),
       dark: new THREE.MeshStandardMaterial({
         color: 0x15181a, roughness: 0.95, metalness: 0.05 }),
-      rubber: new THREE.MeshStandardMaterial({
-        color: 0x17181a, roughness: 0.95, metalness: 0.04 }),
       duct: new THREE.MeshStandardMaterial({
         color: 0xb9bec2, roughness: 0.62, metalness: 0.36 }),
       /* Canopy tint. Measured off the render twice: at 0x9fb2b6 the canopy
@@ -237,6 +273,11 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
         transparent: true, opacity: 0.86,
         clearcoat: 0.70, clearcoatRoughness: 0.06, side: THREE.DoubleSide }),
     };
+    /* The tyres were a separate "rubber" tier at 0x17181a, 2/255 off the
+       dark tier and at the same roughness: one draw call each in the body
+       and in the gear for no visible difference. They now share "dark". */
+    T.rubber = T.dark;
+    return T;
   }
 
   /* ------------------------------------------------------------- helpers */
@@ -445,28 +486,36 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
     /* The cue that matters most: two big fins standing 3.1 m apart on the
        outboard engine decks, not a pair leaning together over the spine.
        Squared tips with the ECM fairing projecting forward at the top. */
+    /* Re-measured 2026-11-12 off the side-on profile [P2] (35.87 px/m from
+       the published length): LE 36 deg (66 px over 90 rows), TE raked 6 deg,
+       root LE s 15.30 at the deck, tip LE 17.54, tip TE 18.48, root TE
+       18.20. The first build had the fin 0.4 m too far forward at the root
+       and 0.6 m too long aft (tip chord 1.90 m against 0.94 m); as drawn
+       now one fin is 5.9 m2, against 8.9 m2 before. */
     var FIN = [
-      [ X(14.90), 0.42],   /* root leading edge  */
-      [ X(17.15), 3.47],   /* tip leading edge   */
-      [ X(19.05), 3.47],   /* tip trailing edge  */
-      [ X(18.85), 0.42],   /* root trailing edge */
+      [ X(15.30), 0.42],   /* root leading edge  */
+      [ X(17.54), 3.47],   /* tip leading edge   */
+      [ X(18.48), 3.47],   /* tip trailing edge  */
+      [ X(18.20), 0.42],   /* root trailing edge */
     ];
     for (sgn = -1; sgn <= 1; sgn += 2) {
       m = new THREE.Mesh(M.slab(THREE, FIN, 0.15, "xz"), T.panel);
       m.position.y = sgn > 0 ? 1.63 : -1.48;
       g.add(m);
       var fy = sgn * 1.555;
-      /* forward tip fairing (ALQ-135 antenna) and the aft tip pod */
-      g.add(box(THREE, T.panel, 0.72, 0.19, 0.30, X(16.85), fy, 3.30));
-      g.add(box(THREE, T.panel, 0.52, 0.17, 0.26, X(19.28), fy, 3.28));
+      /* forward tip fairing (ALQ-135 antenna), projecting ahead of the tip
+         LE, [P2] px 657..683. The first build also had an aft tip pod
+         behind the TE; [P2] and [P1] show none, so it is gone. */
+      g.add(box(THREE, T.panel, 0.72, 0.19, 0.30, X(17.28), fy, 3.30));
       /* tip cap */
-      g.add(box(THREE, T.panel, 1.95, 0.20, 0.09, X(18.10), fy, 3.49));
+      g.add(box(THREE, T.panel, 1.10, 0.20, 0.09, X(17.98), fy, 3.49));
       /* fin root fairing running forward along the deck */
-      g.add(box(THREE, T.panel, 1.60, 0.26, 0.24, X(14.40), fy, 0.44));
-      /* rudder hinge line, a shallow step down the trailing edge */
-      g.add(box(THREE, T.panel, 0.10, 0.17, 2.90, X(18.62), fy, 1.90));
-      /* team band across the fin - squadron marking, reads at map zoom */
-      g.add(box(THREE, team, 1.72, 0.34, 0.62, X(17.90), fy, 2.86));
+      g.add(box(THREE, T.panel, 1.60, 0.26, 0.24, X(14.75), fy, 0.44));
+      /* rudder hinge line, a shallow step ahead of the trailing edge */
+      g.add(box(THREE, T.panel, 0.10, 0.17, 2.90, X(17.92), fy, 1.90));
+      /* team band across the fin - squadron marking, reads at map zoom;
+         kept inside the fin outline between z 2.55 and 3.17 */
+      g.add(box(THREE, team, 1.00, 0.34, 0.62, X(17.90), fy, 2.86));
     }
 
     /* --------------------------------------------------------- nozzles */
@@ -777,7 +826,7 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
       m.position.set(X(14.10), -6.34, WZ); g.add(m);
       for (sgn = -1; sgn <= 1; sgn += 2) {
         m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), wht);
-        m.position.set(X(19.20), sgn * 1.555, 3.36); g.add(m);
+        m.position.set(X(18.50), sgn * 1.555, 3.36); g.add(m);
       }
     }
 
@@ -798,12 +847,23 @@ if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
        top surfaces are where ownership actually has to read */
     g.add(box(THREE, team, 1.20, 0.50, 0.06, X(10.60), 0, 0.765));
 
-    return isE ? mergePerMaterial(THREE, g) : g;
+    var out = mergePerMaterial(THREE, g);
+    /* Refuelling attach point read by render3d.js aarPoints(): the F-15's
+       boom receptacle is in the upper surface of the PORT wing root, at the
+       leading edge just outboard of the intake roof (both variants). */
+    var rec = new THREE.Object3D();
+    rec.name = "aar_recept";
+    rec.position.set(X(RECEPT[0]), RECEPT[1], RECEPT[2]);
+    out.add(rec);
+    return out;
   }
 
-  /* Bake every mesh into one geometry per material (the F-15E variant draws
-     in a dozen calls instead of hundreds). The "gear" group is kept as a
-     group, merged per material inside, so the renderer can still stow it. */
+  /* receptacle: [station s, y (port +), z] */
+  var RECEPT = [7.95, 1.22, 0.62];
+
+  /* Bake every mesh into one geometry per material: both variants draw in
+     16 calls or fewer instead of 235. The "gear" group is kept as a group,
+     merged per material inside, so the renderer can still stow it. */
   function mergeGroup(THREE, root, outParent, skipGear) {
     var buckets = [], gearGroup = null;
     root.updateMatrixWorld(true);
