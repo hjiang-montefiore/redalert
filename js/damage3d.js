@@ -177,6 +177,7 @@ var Damage3D = (function () {
     roc_e00_spaag: "front", spaag_r: "front", atgmv_r: "front",        // Antelope and TOW on the HMMWV
     roc_e80_spaag: "front",                                            // Chaparral on the M730 (M548 family)
     roc_e50_spaag: "front",                                            // M16 half-track
+    atgmv_c: "front",                                                  // AFT-10 on the ZBD-04A: engine front right
     spaag_g: "front", atgmv_g: "front",                                // Wiesel 1 and 2: engine front right
     pact_e00_spaag: "front",                                           // Pantsir-S1 on the KAMAZ-6560 truck
     pact_e60_strela10: "front",                                        // Strela-10: the MT-LB engine sits behind the cab
