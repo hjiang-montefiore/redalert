@@ -16,9 +16,35 @@
      fra_e60_destroyer  Suffren DDG         suffren()      Suffren class, no Exocet           157.6 x 17.6 x 50.4
      fra_e60_cruiser    Colbert CL          colbert("e60") Colbert as converted, no MM38      180.5 x 21.0 x 52.2
      fra_e60_sub        Daphne SSK          daphne()       Daphne class                        57.75 x 7.2 x 13.5
-     fra_e60_ssbn       Le Redoutable SSBN  redoutable()   Redoutable class                   128.1 x 11.2 x 22.4
+     fra_e60_ssbn       Le Redoutable SSBN  redoutable()   Redoutable class                   128.2 x 11.2 x 22.8
      fra_e60_carrier    Clemenceau CV       clemenceau("e60") Clemenceau as completed         265.0 x 52.6 x 67.3
    (W includes boats on davits and gun sponsons; H runs keel to masthead.)
+   REWORK ROUND 2026-11-12 (the owner's visual review): Daphne and Narval re-lofted -- the measured
+   profile rows resampled every 0.8 m and faired (rows unchanged), 32-point sections, a casing with
+   upright sides on the hull's back, weld seams, limber rows both sides, a squarer sail with its fore
+   top rounded [D1][N1]; Arromanches given wedge gun sponsons with sloped undersides, the bridge's
+   rounded front and compass platform, island windows, doors and raft racks, hull ports, davits, the
+   open quarterdeck, arrester wires, barrier, centreline and catwalk gratings [A1][A3].  Plan widths of
+   the casing and of the sponsons NOT CONFIRMED.
+   REWORK 2 (same day, the Redoutable, "a plain tube"): re-lofted on a new submarine kit (gridSkin,
+   subSpec, secPts, subHull2, seam2, sail2, foil, screw2, tubeHatch, roundHatch, panelOn; exported as
+   HeroFrSubKit for fr_navy_late.js's Amethyste): each section a round pressure hull with the casing
+   standing on its back - sloped sides from the knuckle ("foot") line the profile [P1] draws up to
+   rounded shoulders and a flat top - as two smooth skins meeting at a crisp knuckle; the missile
+   hump so drawn d 22 - 110 [P1][P2][P3]; the casing a paler weathered black (#3a3e41) than the
+   hull, as [P2] shows it; plain painted steel (no anechoic tiles: the 1971 boat, [P2][P3]); weld
+   seams every 4.2 m; the sixteen tube hatches re-placed off the cutaway [P4] (d 59.5 - 80.3, all
+   abaft the sail - the old ones ran on under it) with coamings, lids, hinges and lugs; the crown
+   walkway; three escape trunks [P4] and the loading hatch; two rows of free-flood holes along the
+   hump and a row on the bow casing; the bow torpedo shutters; the sail lofted (half-round front,
+   straight sides, tapered tail, rounded top edge) with its window row, bridge cockpit, rails, masts
+   and tapered planes; tapered rudders with their fillets and hinge gaps [P1], tapered stern planes,
+   a seven-bladed skewed screw.  5084 -> 18704 tris, 6 -> 7 draw calls; 128.2 x 11.2 x 22.8 m.
+   NOT CONFIRMED (rework 2): the casing top's half width (3.0 m) and its shoulder radius (no end
+   view: [P2]'s three-quarter view by eye); the walking ridge's 0.2 m off the hump; the sail planes'
+   span (tips 4.4 m off the centreline, by ratio to the hull in [P2]); the hatch diameter (1.84 m
+   lid); the free-flood holes' rows, the shutters' places (the cutaway's tubes only), the screw's
+   seven blades (the profile shows two).
    EXPORTED for the French late-period file: HeroClemenceau.build(THREE, M, C, variant) and
    HeroColbert.build(THREE, M, C, variant); both carry .len and .variants.  Clemenceau variants: "e60"
    (eight 100 mm on four sponsons), or an object { guns: [[d, side], ...] } listing the 100 mm mounts
@@ -144,7 +170,7 @@
      (21.5); Colbert 180.5 x 19.7 (19.7 wl); Suffren 157.6 x 15.5 (15.54); Riviere 98.0 x 11.5 (11.5);
      Arromanches 212 x 24.4 hull / 24.5 deck (24.4 / 24.5); Clemenceau 265 x 52.6 over the sponsons
      and mounts, 51.2 flight deck (51.2); Narval 78.4 x 7.8; Daphne 57.75 x 6.76 (+ planes 7.2);
-     Redoutable 128 x 10.6 (+ planes 11.2).  Keels: the published draughts where the hull shows none
+     Redoutable 128 x 10.6 (+ stern planes 11.2; 128.2 over the screw cone, rework 2).  Keels: the published draughts where the hull shows none
      (Le Corse 3.4 of 4.3, Surcouf 4.8 of 5.4, Suffren 5.0 of 7.4 and Riviere 3.8 of 4.3: the published
      figures are to the sonar dome / screws, not drawn); the submarines at their published draughts.
 
@@ -468,6 +494,9 @@ var HeroFrNavyEarly = (function () {
      the submarines black (sampled off [D1] / [P2] #24272a) */
   var GREY = { hull: 0x9a9fa1, sup: 0xa2a6a7, deck: 0x5b5f61, boot: 0x7b3a2e, btop: 0x1e2123, light: 0xc4c6c2 };
   var SUBP = { hull: 0x2a2d30, sup: 0x2a2d30, deck: 0x303336, boot: 0x2a2d30, btop: 0x2a2d30, metal: 0x3d4246, light: 0x4a4f53 };
+  /* the reworked boats (Redoutable, Amethyste): the casing skin weathered paler than the hull, as the
+     hump reads in [P2] and the Amethyste's casing in its photograph (#3a3e41 drawn) */
+  var SUBP2 = { hull: 0x2a2d30, sup: 0x2c2f32, deck: 0x3a3e41, boot: 0x2a2d30, btop: 0x2a2d30, metal: 0x474c50, light: 0x4a4f53 };
 
   /* ------------------------------------------------------------ the surface-ship hull
      H.st: stations [d, zd, hd, hw, T] - d metres forward of the after end, deck height, half-breadth at the
@@ -1295,7 +1324,10 @@ var HeroFrNavyEarly = (function () {
       /* 40 mm Bofors on deck-edge sponsons [A1][A3] */
       [30, 60, 120, 150, 178].forEach(function (d) {
         var yh = H.hD(d);
-        box(B.sup, X(d) - 2.0, X(d) + 2.0, s > 0 ? yh - 0.4 : -yh - 2.2, s > 0 ? yh + 2.2 : -yh + 0.4, 9.6, 10.2);
+        /* the sponson a wedge with its underside sloping back to the hull [A1] (rework 2026-11-12) */
+        hexa(B.sup, [[X(d) - 2.6, s * (yh - 0.4), 6.6], [X(d) + 2.6, s * (yh - 0.4), 6.6], [X(d) + 2.0, s * (yh + 2.2), 9.6], [X(d) - 2.0, s * (yh + 2.2), 9.6],
+                     [X(d) - 2.6, s * (yh - 0.4), 10.2], [X(d) + 2.6, s * (yh - 0.4), 10.2], [X(d) + 2.0, s * (yh + 2.2), 10.2], [X(d) - 2.0, s * (yh + 2.2), 10.2]]);
+        box(B.metal, X(d) - 1.6, X(d) + 1.6, s > 0 ? yh + 2.15 : -yh - 2.3, s > 0 ? yh + 2.3 : -yh - 2.15, 10.2, 11.0);
         railLine(B, [[X(d) - 1.9, s * (yh + 2.2), 10.2], [X(d) + 1.9, s * (yh + 2.2), 10.2]], 0.9);
         gunLight(B, X(d) - 0.6, s * (yh + 1.0), 10.2, s * PI / 2); gunLight(B, X(d) + 0.8, s * (yh + 1.0), 10.2, s * PI / 2);
       });
@@ -1303,6 +1335,13 @@ var HeroFrNavyEarly = (function () {
     flightDeck(B, X, ARRO_DECK, 10.95, ZF);
     liftMark(B.dark, X(48), X(62), -5.2, 5.2, ZF); liftMark(B.dark, X(150), X(164), -5.2, 5.2, ZF);
     seam(B.dark, X(170), 6.0, X(208), 4.0, ZF, 0.25);
+    /* rework 2026-11-12: the arrester wires and the barrier across the
+       after deck, the dashed centreline, and the catwalk grating along both
+       deck edges one level down [A1][A3] (marks 2 cm proud, as before) */
+    for (i = 0; i < 8; i++) seam(B.dark, X(22 + i * 6.5), -10.5, X(22 + i * 6.5), 10.5, ZF, 0.12);
+    seam(B.dark, X(108), -11.0, X(108), 11.0, ZF, 0.3);
+    for (i = 0; i < 18; i++) seam(B.light, X(8 + i * 11), 0, X(13 + i * 11), 0, ZF, 0.3);
+    for (s = -1; s <= 1; s += 2) box(B.metal, X(6), X(194), s > 0 ? 12.25 : -13.35, s > 0 ? 13.35 : -12.25, 10.15, 10.25);
     for (i = 0; i + 1 < ARRO_DECK.length; i++) {
       var a = ARRO_DECK[i], b = ARRO_DECK[i + 1];
       if (a[1] < -12 && b[1] < -12) continue;
@@ -1322,6 +1361,30 @@ var HeroFrNavyEarly = (function () {
     pole(B, X(88.0), yI, 36.0, 42.7, 0.14, 0.05); yard(B, X(88.0), 37.5, 3.2, yI);
     platform(B, X(88.0), yI, 33.0, 1.4); bedstead(B, X(88.0), yI, 33.5, 4.5, 2.2, 0, 6, 3);
     pole(B, X(68.5), yI, 17.5, 28.0, 0.14, 0.06); yard(B, X(68.5), 25.0, 2.0, yI);
+    /* rework 2026-11-12 [A1][A3]: the bridge's rounded front, the compass
+       platform over it, the island's tiers of windows and doors, the raft
+       racks on its outboard face and round the funnel, the hull's rows of
+       ports and the boats' davits, the open quarterdeck under the round-down */
+    cylZ(B.sup, X(96.0), yI, 17.5, 21.4, 1.98, 16);
+    windowsX(B, X(98.0) - 0.05, yI - 1.2, yI + 1.2, 20.4, 21.1, 4);
+    house(B.sup, X(89.5), X(97.4), 1.7, 21.5, 22.8, 0.05, 0.4, 0.1, yI);
+    roofRail(B, X(89.5), X(97.0), 1.6, 22.8, "", yI);
+    [yI - 2.24, yI + 2.24].forEach(function (yy) {
+      windowsY(B, yy, X(67), X(81), 15.6, 16.2, 10);
+      doors(B, yy, [X(70), X(77), X(90)], ZF);
+    });
+    for (i = 0; i < 2; i++) rafts(B, X(67.5), 9, yI - 2.55, 12.6 + i * 1.5, 1.45);
+    rafts(B, X(70.5), 4, yI + 2.55, 17.6, 1.4);
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 22; i++) {
+        var px = X(24 + i * 7.6), py = s * (H.hD(24 + i * 7.6) + 0.04);
+        if (i % 4 !== 1) box(B.dark, px - 0.5, px + 0.5, py - 0.05, py + 0.05, 8.6, 9.4);
+      }
+      [83.5, 92.5, 101.5].forEach(function (d) {
+        bar(B.metal, [X(d), s * (H.hD(d) - 0.2), 9.6], [X(d), s * (H.hD(d) + 0.9), 10.4], 0.08);
+      });
+      box(B.dark, X(6.4), X(10.0), s * 4.0, s * 8.4, 9.2, 10.9);
+    }
     director(B, X(91.0), yI, 21.5, 0.9);
     pole(B, X(120.0), -12.6, ZF, 18.0, 0.08);
     box(B.team, X(84), X(94), yI - 0.5, yI + 0.5, 21.5, 21.56);
@@ -1367,8 +1430,292 @@ var HeroFrNavyEarly = (function () {
     }
     loft(bin, [r0, r1]);
   }
+  /* ---- rework 2026-11-12 (visual review: the Daphne and Narval read as
+     plain faceted tubes): the profile resampled every ~0.8 m and smoothed so
+     the hull runs fair between the measured rows (the rows themselves are
+     unchanged); a casing with near-vertical sides on the hull's back; weld
+     seams round the pressure hull; a squarer sail section */
+  function fairP(P, step) {
+    var out = [], d, k, j, d0 = P[0][0], d1 = P[P.length - 1][0];
+    function at(dd) {
+      for (j = 1; j < P.length; j++) if (dd <= P[j][0]) break;
+      var a = P[Math.min(j, P.length - 1) - 1], b = P[Math.min(j, P.length - 1)], f = (dd - a[0]) / ((b[0] - a[0]) || 1);
+      return [dd, lerp(a[1], b[1], f), lerp(a[2], b[2], f), lerp(a[3], b[3], f)];
+    }
+    for (d = d0; d < d1 - 1e-6; d += step) out.push(at(d));
+    out.push(P[P.length - 1].slice());
+    for (k = 0; k < 3; k++) out = out.map(function (q, i) {
+      if (i === 0 || i === out.length - 1) return q;
+      var a = out[i - 1], b = out[i + 1];
+      return [q[0], (a[1] + 2 * q[1] + b[1]) / 4, (a[2] + 2 * q[2] + b[2]) / 4, (a[3] + 2 * q[3] + b[3]) / 4];
+    });
+    return out;
+  }
+  /* a casing d0..d1: top zt, half width cw, its ends drawn in over taper m */
+  function casing(bin, X, d0, d1, zt, cw, taper, hgt) {
+    var rings = [], n = 10, i;
+    for (i = 0; i <= n; i++) {
+      var d = d0 + (d1 - d0) * i / n, f = Math.min(1, (d - d0) / taper, (d1 - d) / taper);
+      var w = cw * (0.3 + 0.7 * Math.sqrt(Math.max(0, f))), h = hgt / 2;
+      rings.push(sring(X(d), w, h, 0, zt - h, 0.35, 16));
+    }
+    loft(bin, rings);
+  }
+  /* weld seams: thin bands round the hull every pitch metres d0..d1 */
+  function seams(bin, X, P, e, d0, d1, pitch) {
+    var d;
+    for (d = d0; d <= d1; d += pitch) {
+      var q = fairP(P, 0.8).reduce(function (a, b) { return Math.abs(b[0] - d) < Math.abs(a[0] - d) ? b : a; });
+      var zc = (q[1] + q[2]) / 2, h = (q[1] - q[2]) / 2 + 0.03, w = q[3] + 0.03;
+      loft(bin, [sring(X(d - 0.07), w, h, 0, zc, e, 28), sring(X(d + 0.07), w, h, 0, zc, e, 28)], true);
+    }
+  }
+  /* a sail of squarer plan (exponent e), its top front rounded off */
+  function sailSq(bin, xc, z0, z1, a, b, rk, e) {
+    var R = [], i, k, n = 24, lv = [[0, 1, 1], [0.86, 1, 1], [0.95, 0.97, 0.985], [1.0, 0.9, 0.96]];
+    for (k = 0; k < lv.length; k++) {
+      var z = z0 + (z1 - z0) * lv[k][0], r = [];
+      for (i = 0; i < n; i++) {
+        var t = i / n * TAU, c = Math.cos(t), s = Math.sin(t);
+        var ex = a * Math.sign(c) * Math.pow(Math.abs(c), c > 0 ? 0.55 : e) * (c > 0 ? lv[k][1] : 1);
+        var y = b * lv[k][2] * Math.sign(s) * Math.pow(Math.abs(s), e) * (c > 0 ? 1 : (1 + c * 0.3));
+        r.push([xc + ex - (rk || 0) * lv[k][0], y, z]);
+      }
+      R.push(r);
+    }
+    loft(bin, R);
+  }
   function periscopes(B, x, z, list) { list.forEach(function (p) { cylZ(B.metal, x + p[0], p[1] || 0, z, z + p[2], p[3] || 0.12, 8); }); }
   function cleat(B, x, y, z) { box(B.metal, x - 0.25, x + 0.25, y - 0.06, y + 0.06, z, z + 0.12); }
+
+  /* ================================================== submarine kit, rework 2 (2026-11-12)
+     The owner's review found the Redoutable (and the Amethyste, js/hero/fr_navy_late.js, which calls
+     this kit as HeroFrSubKit) plain tubes.  A profile drawing gives three lines along a boat: the top
+     of the casing, the keel, and the knuckle where the casing's flat side meets the round pressure
+     hull (the "foot" line every French profile here draws).  So a section is a pressure hull (a
+     circle where the casing stands on it, an ellipse through the measured top and keel elsewhere)
+     with the casing on its back: sloped sides from the foot up to a rounded shoulder and a flat top.
+     Outside the foot line's run the casing is a low walking ridge (cmin high).  The hull and the
+     casing are two smooth skins (vertex normals averaged) meeting at a crisp knuckle.
+     Everything here works in model x (the caller converts its stations). */
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  /* piecewise-linear row lookup on [x, a, b, c...] rows sorted on x */
+  function rowAt(P, x) {
+    var i, n = P.length;
+    if (x <= P[0][0]) return P[0].slice();
+    for (i = 1; i < n; i++) if (x <= P[i][0]) {
+      var a = P[i - 1], b = P[i], f = (x - a[0]) / ((b[0] - a[0]) || 1);
+      return a.map(function (v, k) { return k ? lerp(v, b[k], f) : x; });
+    }
+    return P[n - 1].slice();
+  }
+  /* a smooth skin over a grid G[i][j] (rings i, open in j): each face turned away from the ring's axis
+     point A[i], vertex normals the area-weighted mean of the faces round them */
+  function gridSkin(bin, G, A) {
+    var m = G.length, n = G[0].length, i, j, N = [], T = [];
+    for (i = 0; i < m; i++) { N.push([]); for (j = 0; j < n; j++) N[i].push([0, 0, 0]); }
+    function face(t, ax) {
+      var a = G[t[0][0]][t[0][1]], b = G[t[1][0]][t[1][1]], c = G[t[2][0]][t[2][1]];
+      var f = cross(sub(b, a), sub(c, a));
+      if (dot(f, f) < 1e-12) return;
+      var mid = [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3];
+      if (dot(f, sub(mid, ax)) < 0) { t = [t[0], t[2], t[1]]; f = [-f[0], -f[1], -f[2]]; }
+      t.forEach(function (p) { var v = N[p[0]][p[1]]; v[0] += f[0]; v[1] += f[1]; v[2] += f[2]; });
+      T.push(t);
+    }
+    for (i = 0; i + 1 < m; i++) {
+      var ax = [(A[i][0] + A[i + 1][0]) / 2, (A[i][1] + A[i + 1][1]) / 2, (A[i][2] + A[i + 1][2]) / 2];
+      for (j = 0; j + 1 < n; j++) {
+        face([[i, j], [i + 1, j], [i + 1, j + 1]], ax);
+        face([[i, j], [i + 1, j + 1], [i, j + 1]], ax);
+      }
+    }
+    T.forEach(function (t) {
+      bin.tri(G[t[0][0]][t[0][1]], G[t[1][0]][t[1][1]], G[t[2][0]][t[2][1]],
+              unit(N[t[0][0]][t[0][1]]), unit(N[t[1][0]][t[1][1]]), unit(N[t[2][0]][t[2][1]]));
+    });
+  }
+  /* a closed ring fanned flat from its centroid, the face toward +x (dir 1) or -x (dir -1) */
+  function fanCap(bin, R, dir) {
+    var c = [0, 0, 0], i, n = R.length;
+    R.forEach(function (p) { c[0] += p[0] / n; c[1] += p[1] / n; c[2] += p[2] / n; });
+    for (i = 0; i < n; i++) {
+      var a = R[i], b = R[(i + 1) % n], f = cross(sub(a, c), sub(b, c));
+      if (dot(f, f) < 1e-12) continue;
+      if (f[0] * dir < 0) bin.tri(c, b, a); else bin.tri(c, a, b);
+    }
+  }
+  var KNA = 16, KNS = 3, KNR = 3, KNT = 3;
+  /* the section spec from a faired profile.  o: P [[x, top, keel, halfwidth]], foot [[x, z]] (the
+     knuckle line, x ascending), c0 / c1 the casing's ends (it fades out over 2.5 m), WT the casing
+     top's largest half width, wk (its half width as a share of the foot's), cmin (the walking ridge) */
+  function subSpec(o) {
+    var f0 = o.foot[0][0], f1 = o.foot[o.foot.length - 1][0];
+    return function (x) {
+      var r = rowAt(o.P, x), top = r[1], kz = r[2], w = Math.max(0.04, r[3]);
+      var fade = clamp(Math.min(x - o.c0, o.c1 - x) / 2.5, 0, 1), inZ = x >= f0 && x <= f1;
+      var hullTop = top - o.cmin * fade;
+      if (inZ && kz + 2 * w < hullTop) hullTop = kz + 2 * w;
+      var hh = Math.max(0.04, (hullTop - kz) / 2), zc = kz + hh;
+      var zf = hullTop - 0.08 * fade;
+      if (inZ) zf = Math.min(tbl(o.foot, x), zf);
+      return { x: x, zc: zc, hh: hh, w: w, zt: top, zf: zf, WT: o.WT, wk: o.wk || 0.75 };
+    };
+  }
+  /* the port half of a section: arc keel -> foot (KNA + 1 points), casing foot -> top centre */
+  function secPts(q) {
+    var arc = [], cas = [], i, aF = Math.asin(clamp((q.zf - q.zc) / q.hh, -1, 1));
+    for (i = 0; i <= KNA; i++) {
+      var a = -PI / 2 + (aF + PI / 2) * i / KNA;
+      arc.push([q.w * Math.cos(a), q.zc + q.hh * Math.sin(a)]);
+    }
+    var F = arc[KNA], wt = Math.min(q.WT, q.wk * F[0]);
+    var rs = Math.max(0, Math.min(0.45, (q.zt - q.zf) * 0.35, wt * 0.4));
+    var S1 = [wt, q.zt - rs], cx = wt - rs, cz = q.zt - rs;
+    cas.push(F);
+    for (i = 1; i <= KNS; i++) cas.push([lerp(F[0], S1[0], i / KNS), lerp(F[1], S1[1], i / KNS)]);
+    for (i = 1; i <= KNR; i++) { var b = PI / 2 * i / KNR; cas.push([cx + rs * Math.cos(b), cz + rs * Math.sin(b)]); }
+    for (i = 1; i <= KNT; i++) cas.push([lerp(cx, 0, i / KNT), q.zt]);
+    q.aF = aF; q.yF = F[0]; q.wt = wt; q.rs = rs; q.S1 = S1;
+    return { arc: arc, cas: cas };
+  }
+  /* the hull through stations xs (ascending) of spec Sf, into bin (the casing into binC if given);
+     the ends fanned shut */
+  function subHull2(bin, xs, Sf, binC) {
+    var AR = [], CA = [], AX = [], i;
+    xs.forEach(function (x) {
+      var q = Sf(x), s = secPts(q), a = [], c = [];
+      for (i = KNA; i > 0; i--) a.push([x, -s.arc[i][0], s.arc[i][1]]);
+      for (i = 0; i <= KNA; i++) a.push([x, s.arc[i][0], s.arc[i][1]]);
+      for (i = 0; i < s.cas.length; i++) c.push([x, s.cas[i][0], s.cas[i][1]]);
+      for (i = s.cas.length - 2; i >= 0; i--) c.push([x, -s.cas[i][0], s.cas[i][1]]);
+      AR.push(a); CA.push(c); AX.push([x, 0, q.zc]);
+    });
+    gridSkin(bin, AR, AX); gridSkin(binC || bin, CA, AX);
+    fanCap(bin, AR[0].concat(CA[0].slice(1, CA[0].length - 1)), -1);
+    var L = xs.length - 1;
+    fanCap(bin, AR[L].concat(CA[L].slice(1, CA[L].length - 1)), 1);
+  }
+  /* stations from x0 to x1, the spacing step(x) (finer where the lines change), and the listed x */
+  function stations(x0, x1, step, extra) {
+    var xs = [], x = x0;
+    while (x < x1 - 1e-6) { xs.push(x); x += step(x); }
+    xs.push(x1);
+    (extra || []).forEach(function (e) { if (e > x0 && e < x1) xs.push(e); });
+    xs.sort(function (a, b) { return a - b; });
+    return xs.filter(function (v, k) { return k === 0 || v - xs[k - 1] > 0.12; });
+  }
+  /* a point on the hull (arc angle a, port) and its normal, in the section plane: [y, z, ny, nz] */
+  function arcPt(q, a) {
+    var n = unit([0, Math.cos(a) / q.w, Math.sin(a) / q.hh]);
+    return [q.w * Math.cos(a), q.zc + q.hh * Math.sin(a), n[1], n[2]];
+  }
+  function arcAtZ(q, z) { return arcPt(q, Math.asin(clamp((z - q.zc) / q.hh, -1, 1))); }
+  /* a point on the casing's sloped side, u 0 (foot) .. 1 (shoulder) */
+  function slopePt(q, u) {
+    var y = lerp(q.yF, q.S1[0], u), z = lerp(q.zf, q.S1[1], u), t = unit([0, q.S1[0] - q.yF, q.S1[1] - q.zf]);
+    return [y, z, t[2], -t[1]];
+  }
+  /* a flat panel standing 2 cm proud of the surface at x, section point p = [y, z, ny, nz] (port),
+     half length hx along x, half height hv up the surface; side +1 port, -1 starboard */
+  function panelOn(bin, x, p, hx, hv, side) {
+    var ny = p[2] * side, nz = p[3], y = p[0] * side + ny * 0.02, z = p[1] + nz * 0.02;
+    var vy = -nz, vz = ny;                                /* up the surface in the section plane */
+    if (vz < 0) { vy = -vy; vz = -vz; }
+    var A = [x - hx, y - vy * hv, z - vz * hv], Bq = [x + hx, y - vy * hv, z - vz * hv],
+        Cq = [x + hx, y + vy * hv, z + vz * hv], D = [x - hx, y + vy * hv, z + vz * hv], n = [0, ny, nz];
+    var f = cross(sub(Bq, A), sub(Cq, A));
+    if (dot(f, n) < 0) { bin.tri(A, Cq, Bq, n, n, n); bin.tri(A, D, Cq, n, n, n); }
+    else { bin.tri(A, Bq, Cq, n, n, n); bin.tri(A, Cq, D, n, n, n); }
+  }
+  /* weld seams: a band 0.12 m wide standing 3 cm proud round the pressure hull's arc at x */
+  function seam2(bin, Sf, x) {
+    var R = [], AX = [], k, i;
+    for (k = -1; k <= 1; k += 2) {
+      var q = Sf(x + k * 0.06), s = secPts(q), r = [];
+      for (i = KNA; i >= -KNA; i--) {
+        var a = -PI / 2 + (q.aF + PI / 2) * Math.abs(i) / KNA, p = arcPt(q, a), sg = i < 0 ? -1 : 1;
+        r.push([x + k * 0.06, sg * (p[0] + p[2] * 0.03), p[1] + p[3] * 0.03]);
+      }
+      R.push(r); AX.push([x + k * 0.06, 0, q.zc]);
+    }
+    gridSkin(bin, R, AX);
+  }
+  /* a sail lofted through horizontal sections: the fore end x1 a half-round of radius hw, the sides
+     straight, the after end tapered to a rounded tail of half width hw * ta at x0; foot z0, top z1,
+     the top edge rounded (radius rt); the after edge comes forward by ra at the top, the fore edge
+     aft by rf */
+  function sailPlan(x0, x1, hw, ta, z) {
+    var P = [], i, r2 = hw * ta, xt = x0 + (x1 - x0) * 0.42, k;
+    for (i = 0; i <= 6; i++) { var a = PI / 2 * i / 6; P.push([x1 - hw + hw * Math.cos(a), hw * Math.sin(a), z]); }
+    for (i = 1; i <= 4; i++) { k = i / 4; P.push([lerp(x1 - hw, xt, k), hw, z]); }
+    for (i = 1; i <= 4; i++) { k = i / 4; P.push([lerp(xt, x0 + r2, k), lerp(hw, r2, (1 - Math.cos(PI * k)) / 2), z]); }
+    for (i = 1; i <= 4; i++) { var b = PI / 2 + PI / 2 * i / 4; P.push([x0 + r2 + r2 * Math.cos(b), r2 * Math.sin(b), z]); }
+    var S = P.slice(1, P.length - 1).reverse().map(function (p) { return [p[0], -p[1], z]; });
+    return P.concat(S);
+  }
+  function sail2(bin, x0, x1, z0, z1, hw, ta, rt, ra, rf) {
+    var G = [], A = [], i, lv = [0, 0.35, 0.7, 1.0], k;
+    for (i = 0; i < lv.length; i++) {
+      var z = lerp(z0, z1 - rt, lv[i]), f = (z - z0) / (z1 - z0);
+      G.push(sailPlan(x0 + ra * f, x1 - rf * f, hw, ta, z)); A.push([(x0 + x1) / 2, 0, z]);
+    }
+    for (k = 1; k <= 3; k++) {
+      var b = PI / 2 * k / 3, ins = rt * (1 - Math.cos(b)), zz = z1 - rt + rt * Math.sin(b);
+      G.push(sailPlan(x0 + ra + ins, x1 - rf - ins, hw - ins, ta, zz)); A.push([(x0 + x1) / 2, 0, z1 - rt]);
+    }
+    G = G.map(function (r) { return r.concat([r[0]]); });
+    gridSkin(bin, G, A);
+    var top = G[G.length - 1].slice(0, G[0].length - 1), c = [(x0 + x1) / 2, 0, z1];
+    for (i = 0; i < top.length; i++) {
+      var p = top[i], q = top[(i + 1) % top.length];
+      var f2 = cross(sub(p, c), sub(q, c));
+      if (dot(f2, f2) < 1e-12) continue;
+      if (f2[2] < 0) bin.tri(c, q, p); else bin.tri(c, p, q);
+    }
+  }
+  /* a tapered foil: root chord ra0..ra1 at span s0, tip chord rb0..rb1 at s1, root thickness t (tip
+     0.6 t); vertical (span along z at y = h) or horizontal (span along y at z = h) */
+  function foil(bin, ra0, ra1, rb0, rb1, s0, s1, t, vert, h) {
+    var C = [0, 0.12, 0.35, 0.7, 1], TH = [0, 0.9, 1, 0.62, 0.12];
+    function ring(x0, x1, s, tk) {
+      var R = [], i;
+      for (i = 0; i < C.length; i++) R.push([lerp(x1, x0, C[i]), TH[i] * tk / 2]);
+      for (i = C.length - 2; i > 0; i--) R.push([lerp(x1, x0, C[i]), -TH[i] * tk / 2]);
+      return R.map(function (p) { return vert ? [p[0], h + p[1], s] : [p[0], s, h + p[1]]; });
+    }
+    loft(bin, [ring(ra0, ra1, s0, t), ring(lerp(ra0, rb0, 0.5), lerp(ra1, rb1, 0.5), (s0 + s1) / 2, t * 0.82), ring(rb0, rb1, s1, t * 0.6)]);
+  }
+  /* a screw: hub and cone along x at (y, z), nb skewed blades of radius r (kc scales the cone aft) */
+  function screw2(bin, x, y, z, r, nb, hub, kc) {
+    var hr = hub || r * 0.2, i, k, c0 = kc === undefined ? 1 : kc;
+    cyl(bin, [x - 0.9 * c0, y, z], [x + 0.5, y, z], hr * 0.85, hr, 14);
+    cyl(bin, [x - 1.6 * c0, y, z], [x - 0.9 * c0, y, z], 0.05, hr * 0.85, 14, true);
+    for (i = 0; i < nb; i++) {
+      var a0 = i / nb * TAU, R = [];
+      for (k = 0; k <= 4; k++) {
+        var rr = hr * 0.9 + (r - hr * 0.9) * k / 4, sk = a0 + 0.45 * Math.pow(k / 4, 1.5), ch = r * 0.32 * (1 - 0.55 * Math.pow(k / 4, 2)), th = 0.07 * (1 - 0.6 * k / 4);
+        var c = Math.cos(sk), s = Math.sin(sk), c1 = Math.cos(sk - 0.16), s1 = Math.sin(sk - 0.16), c2 = Math.cos(sk + 0.16), s2 = Math.sin(sk + 0.16);
+        R.push([[x - ch * 0.5, y + c1 * rr, z + s1 * rr], [x - th, y + c * rr - s * th, z + s * rr + c * th],
+                [x + ch * 0.5, y + c2 * rr, z + s2 * rr], [x + th, y + c * rr + s * th, z + s * rr - c * th]]);
+      }
+      loft(bin, R);
+    }
+  }
+  /* a missile-tube hatch shut on a flat casing top: the coaming ring, the lid, its hinge and lug */
+  function tubeHatch(B, x, y, z, r, side) {
+    cylZ(B.metal, x, y, z - 0.06, z + 0.05, r + 0.13, 16);
+    cylZ(B.hull, x, y, z + 0.05, z + 0.13, r, 16);
+    cylZ(B.dark, x, y, z + 0.13, z + 0.14, r * 0.55, 12);
+    box(B.metal, x - 0.45, x + 0.45, y + side * (r - 0.05) - 0.1, y + side * (r - 0.05) + 0.1, z + 0.05, z + 0.25);
+    box(B.metal, x - 0.12, x + 0.12, y - side * (r + 0.02) - 0.08, y - side * (r + 0.02) + 0.08, z + 0.05, z + 0.18);
+  }
+  /* a flush escape or access hatch: ring and lid */
+  function roundHatch(B, x, y, z, r) {
+    cylZ(B.metal, x, y, z - 0.04, z + 0.04, r + 0.1, 14);
+    cylZ(B.hull, x, y, z + 0.04, z + 0.09, r, 14);
+    box(B.metal, x - 0.08, x + 0.08, y - r - 0.12, y - r + 0.05, z + 0.04, z + 0.16);
+  }
 
   /* ================================================== Daphne [D1][D2]
      d = (px - 55) / 17.5 off [D1] (stern 55, bow 1068 = 57.75 m); surfaced trim: the casing 1.0 m over
@@ -1378,12 +1725,20 @@ var HeroFrNavyEarly = (function () {
     [57.4, -0.3, -2.8, 0.9], [57.75, -1.0, -2.2, 0.2]] };
   function daphne(THREE, M, C) {
     var g = new THREE.Group(), T = materials(THREE, C, SUBP), B = bins(T), L = DAPH.L, X = function (d) { return d - L / 2; }, s, i;
-    subBody(B.hull, X, DAPH.P, 0.82, 22);
-    /* the flat casing d 3 - 55.5 */
-    box(B.deck, X(3.5), X(55.0), -0.75, 0.75, 0.85, 1.05);
-    for (i = 0; i < 30; i++) box(B.dark, X(5 + i * 1.65), X(5.5 + i * 1.65), -0.78, -0.72, 0.6, 0.85);
-    /* the sail d 22.45 - 31.45 to 5.9 [D1] */
-    sail(B.sup, X(27.0), 0.9, 5.9, 4.5, 0.95, 0.3);
+    subBody(B.hull, X, fairP(DAPH.P, 0.8), 0.82, 32);
+    seams(B.metal, X, DAPH.P, 0.82, 8.0, 50.0, 4.2);
+    /* the casing d 3 - 55.5: vertical sides, the flat walking top [D1] */
+    casing(B.hull, X, 3.0, 55.5, 1.05, 1.05, 5.0, 1.3);
+    box(B.deck, X(3.5), X(55.0), -0.75, 0.75, 1.02, 1.08);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 30; i++) box(B.dark, X(5 + i * 1.65), X(5.5 + i * 1.65), s * 1.0 - 0.05, s * 1.0 + 0.05, 0.4, 0.7);
+    /* the sail d 22.45 - 31.45 to 5.9 [D1]: near-rectangular, vertical
+       after edge, the fore top rounded; its window rows and the rails on
+       the casing abaft it */
+    sailSq(B.sup, X(27.0), 0.9, 5.9, 4.5, 0.95, 0.0, 0.45);
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 3; i++) box(B.dark, X(29.8 + i * 0.5), X(30.1 + i * 0.5), s * 0.93 - 0.04, s * 0.93 + 0.04, 5.0, 5.35);
+      railLine(B, [[X(13.0), s * 0.7, 1.08], [X(22.0), s * 0.7, 1.08]], 0.9);
+    }
     box(B.dark, X(29.6), X(31.0), -0.6, 0.6, 5.6, 5.92);
     periscopes(B, X(26.0), 5.9, [[0, 0, 2.4, 0.11], [-1.2, 0, 1.8, 0.1], [-2.4, 0, 1.4, 0.18], [1.2, 0, 1.0, 0.09]]);
     whip(B, X(24.0), 0, 5.9, 2.2);
@@ -1409,13 +1764,17 @@ var HeroFrNavyEarly = (function () {
     [55, 1.3, -5.2, 3.9], [68, 1.3, -4.9, 3.4], [74, 1.2, -4.0, 2.4], [77, 1.0, -2.6, 1.2], [78.4, 0.8, -1.4, 0.3]] };
   function narval(THREE, M, C) {
     var g = new THREE.Group(), T = materials(THREE, C, SUBP), B = bins(T), L = NARV.L, X = function (d) { return d - L / 2; }, s, i;
-    subBody(B.hull, X, NARV.P, 0.85, 22);
-    box(B.deck, X(3.0), X(76.0), -1.5, 1.5, 1.2, 1.45);
-    for (i = 0; i < 40; i++) box(B.dark, X(4 + i * 1.8), X(4.6 + i * 1.8), -1.53, -1.47, 0.95, 1.2);
+    subBody(B.hull, X, fairP(NARV.P, 0.8), 0.85, 32);
+    seams(B.metal, X, NARV.P, 0.85, 8.0, 72.0, 4.5);
+    /* the casing with its vertical sides along the whole back [N1] (rework 2026-11-12) */
+    casing(B.hull, X, 2.5, 76.5, 1.45, 1.6, 6.0, 1.6);
+    box(B.deck, X(3.0), X(76.0), -1.3, 1.3, 1.42, 1.48);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 40; i++) box(B.dark, X(4 + i * 1.8), X(4.6 + i * 1.8), s * 1.55 - 0.05, s * 1.55 + 0.05, 0.75, 1.1);
     /* the bow buoyancy knob over the stem [N1] */
     ellipsoid(B.hull, [X(76.0), 0, 1.3], 2.4, 1.3, 1.1, 5, 14, -0.3, PI / 2);
     /* sail d 34.5 - 45.1 to 6.9, streamlined [N1][N3] */
-    sail(B.sup, X(39.8), 1.3, 6.9, 5.3, 1.25, 0.8);
+    sailSq(B.sup, X(39.8), 1.3, 6.9, 5.3, 1.25, 0.6, 0.6);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 4; i++) box(B.dark, X(42.4 + i * 0.55), X(42.7 + i * 0.55), s * 1.12 - 0.04, s * 1.12 + 0.04, 6.0, 6.35);
     periscopes(B, X(39.5), 6.9, [[0, 0, 2.6, 0.12], [-1.4, 0, 2.0, 0.11], [-2.8, 0, 1.6, 0.2]]);
     whip(B, X(37.0), 0, 6.9, 2.5);
     plane(B.hull, X(66.0), X(67.8), 0.2, 3.9, 0.08);
@@ -1431,42 +1790,91 @@ var HeroFrNavyEarly = (function () {
     return g;
   }
 
-  /* ================================================== Le Redoutable [P1][P2][P3]
+  /* ================================================== Le Redoutable [P1][P2][P3][P4]
      d = (px - 10) / 11.62 off the profile [P1] (screw tip 10, bow 1497 = 128 m); z = (216 - py) / 11.62
-     less the published 10 m draught: the missile-deck hump stands 2.5 m over the water, as [P2] shows */
+     less the published 10 m draught: the missile-deck hump stands 2.5 m over the water, as [P2] shows.
+     REWORK 2 (2026-11-12): re-lofted on the kit above.  REDO.P (top, keel, half width) is unchanged;
+     REDO.FOOT is new: the knuckle line [P1] draws along the hump's foot, read by a pixel scan every
+     50 px - py 108 at px 300 (d 25), 113-114 from px 350 to 1100 (d 29.3 - 93.8), rising forward
+     through py 108 / 103 / 98 at px 1150 / 1200 / 1250 to meet the top at px ~1290 (d 110); aft it
+     starts at px ~265 (d 22), where the hump runs out on the pressure hull's circle (zbot + 2 hw).
+     The sixteen tubes off the cutaway [P4] (its 20 m bar 218 px; screw px 62, bow px 1475): eight
+     pairs at px 703 - 965, d 58.0 - 81.8, pitch 2.97 m, all abaft the sail (the old model's hatches
+     ran on under the sail); its "S" escape trunks at d 37.6, 53.9 and 111.5. */
   var REDO = { L: 128.0, P: [[0.3, -4.4, -5.5, 0.4], [1.7, -4.3, -5.6, 0.75], [4.3, -3.7, -6.3, 1.3], [8.0, -2.4, -7.6, 2.6],
     [13.8, -1.5, -8.1, 3.3], [20.7, -0.8, -9.0, 4.1], [25.0, -0.1, -9.3, 4.6], [29.3, 0.76, -9.5, 5.1], [33.6, 1.27, -9.66, 5.3],
     [37.9, 1.79, -9.74, 5.3], [42.2, 2.13, -9.9, 5.3], [47.5, 2.48, -10.0, 5.3], [93.0, 2.48, -10.0, 5.3], [98.1, 1.7, -10.0, 5.3],
     [102.4, 1.19, -9.9, 5.3], [106.7, 0.67, -9.8, 5.2], [111.0, 0.16, -9.7, 4.9], [115.3, -0.19, -9.6, 4.7], [119.6, -0.53, -9.4, 4.4],
-    [123.9, -0.88, -9.2, 4.1], [126.5, -0.96, -9.1, 3.7], [127.4, -1.48, -9.05, 3.0], [127.8, -2.0, -8.5, 2.2], [128.0, -3.6, -7.0, 0.9]] };
+    [123.9, -0.88, -9.2, 4.1], [126.5, -0.96, -9.1, 3.7], [127.4, -1.48, -9.05, 3.0], [127.8, -2.0, -8.5, 2.2], [128.0, -3.6, -7.0, 0.9]],
+    FOOT: [[22.0, -0.60], [25.0, -0.79], [29.3, -1.15], [33.6, -1.22], [93.8, -1.22], [98.1, -0.71], [102.4, -0.27], [106.7, 0.15], [110.0, 0.22]] };
   function redoutable(THREE, M, C) {
-    var g = new THREE.Group(), T = materials(THREE, C, SUBP), B = bins(T), L = REDO.L, X = function (d) { return d - L / 2; }, s, i;
-    subBody(B.hull, X, REDO.P, 0.78, 32);
-    /* the missile deck: a flat walking strip on the hump, sixteen hatches in two rows of eight [P2][P3] */
-    box(B.deck, X(44.0), X(95.0), -1.9, 1.9, 2.36, 2.5);
-    for (i = 0; i < 8; i++) for (s = -1; s <= 1; s += 2) {
-      var xh = X(48.5 + i * 5.2);
-      cylZ(B.metal, xh, s * 1.25, 2.44, 2.54, 1.08, 16);
-      cylZ(B.hull, xh, s * 1.25, 2.5, 2.58, 0.96, 16);
-      box(B.metal, xh - 0.15, xh + 0.15, s * 1.25 - 0.9, s * 1.25 + 0.9, 2.58, 2.62);
+    var g = new THREE.Group(), T = materials(THREE, C, SUBP2), B = bins(T), L = REDO.L, X = function (d) { return d - L / 2; }, s, i, d;
+    var SP = subSpec({ P: fairP(REDO.P, 0.8).map(function (r) { return [X(r[0]), r[1], r[2], r[3]]; }),
+                       foot: REDO.FOOT.map(function (r) { return [X(r[0]), r[1]]; }), c0: X(5.0), c1: X(127.0), WT: 3.0, wk: 0.75, cmin: 0.2 });
+    function Q(dd) { var q = SP(X(dd)); secPts(q); return q; }
+    var xs = stations(X(0.3), X(128.0), function (x) { var dd = x + L / 2; return dd < 9 || dd > 123 ? 0.5 : dd > 50 && dd < 92 ? 2.4 : 1.2; },
+                      [X(22.0), X(47.5), X(93.0), X(110.0)]);
+    subHull2(B.hull, xs, SP, B.deck);
+    /* weld seams round the pressure hull, every 4.2 m [P3] */
+    for (d = 9.0; d < 125; d += 4.2) seam2(B.metal, SP, X(d));
+    /* the sixteen tube hatches, two rows of eight, d 59.5 - 80.3 [P2][P3][P4]; a non-slip walk on
+       the hump's crown between them */
+    for (i = 0; i < 8; i++) for (s = -1; s <= 1; s += 2) tubeHatch(B, X(59.5 + i * 2.97), s * 1.45, 2.48, 0.92, s);
+    for (d = 24.0; d < 82; d += 2.0) { var qw = Q(d + 0.9); box(B.deck, X(d), X(d + 1.8), -0.32, 0.32, qw.zt - 0.02, qw.zt + 0.03); }
+    /* escape trunks [P4], the torpedo-loading hatch forward, the hatch abaft the hump */
+    [37.6, 53.9, 111.5, 15.0].forEach(function (dd) { roundHatch(B, X(dd), 0, Q(dd).zt, 0.48); });
+    hatch(B, X(118.0), 0, Q(118.0).zt - 0.02, 2.4, 0.9);
+    /* free-flood holes: two rows along the hump's flank d 26 - 95, a row low on the bow casing [P3] */
+    for (d = 26.0; d < 95.5; d += 1.5) {
+      var qh = Q(d);
+      if (qh.zt - qh.zf < 1.2) continue;
+      for (s = -1; s <= 1; s += 2) { panelOn(B.dark, X(d), slopePt(qh, 0.18), 0.28, 0.1, s); panelOn(B.dark, X(d + 0.75), slopePt(qh, 0.4), 0.28, 0.1, s); }
     }
-    /* free-flood slots along the hump sides [P3] */
-    for (i = 0; i < 34; i++) for (s = -1; s <= 1; s += 2) box(B.dark, X(40 + i * 1.6), X(40.6 + i * 1.6), s * 4.95 - 0.05, s * 4.95 + 0.05, 0.6, 0.9);
-    /* the sail d 82.3 - 95.8 to 8.33 with its planes at 6.5 [P1][P3] */
-    sail(B.sup, X(89.05), 2.3, 8.33, 6.75, 1.5, 0.4);
-    plane(B.hull, X(88.0), X(91.0), 6.4, 5.6, 0.12);
+    for (d = 99.0; d < 124.5; d += 1.3) {
+      var qb = Q(d);
+      for (s = -1; s <= 1; s += 2) panelOn(B.dark, X(d), arcAtZ(qb, qb.zf - 0.3), 0.3, 0.09, s);
+    }
+    /* the torpedo-tube shutters, two a side in the bow [P4] */
+    for (s = -1; s <= 1; s += 2) [-4.6, -6.0].forEach(function (zz) { panelOn(B.dark, X(123.6), arcAtZ(Q(123.6), zz), 0.9, 0.42, s); });
+    /* retractable cleats, the capstan, the small fairing on the bow casing d 112.7 [P1] */
+    [13.5, 18.0, 115.5, 121.0].forEach(function (dd) { for (s = -1; s <= 1; s += 2) cleat(B, X(dd), s * 0.45, Q(dd).zt); });
+    cylZ(B.metal, X(119.8), 0, Q(119.8).zt, Q(119.8).zt + 0.3, 0.28, 12);
+    house(B.hull, X(112.2), X(113.3), 0.18, Q(112.7).zt - 0.1, 1.45, 0.02, 0.3, 0.2);
+    /* the sail d 82.3 - 95.8 to 8.33 [P1]: a half-round front, straight sides, the tail tapered, the top
+       edge rounded [P2][P3]; the bridge cockpit and its windows forward at the top, the planes on its
+       forward half at 5.9 [P2] (span off [P2]: tips 0.83 of the hull's breadth apart) */
+    sail2(B.sup, X(82.3), X(95.8), 1.7, 8.33, 1.5, 0.3, 0.35, 0.6, 0.0);
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 4; i++) box(B.glass, X(92.3 + i * 0.5), X(92.65 + i * 0.5), s > 0 ? 1.495 : -1.515, s > 0 ? 1.515 : -1.495, 7.5, 7.85);
+      box(B.dark, X(88.0), X(94.3), s > 0 ? 1.495 : -1.51, s > 0 ? 1.51 : -1.495, 7.18, 7.22);
+      foil(B.sup, X(90.0), X(93.3), X(90.5), X(92.5), s * 1.42, s * 4.4, 0.34, false, 5.9);
+      for (i = 0; i < 6; i++) box(B.metal, X(84.0) - 0.04, X(84.0) + 0.04, s > 0 ? 1.0 : -1.06, s > 0 ? 1.06 : -1.0, 2.9 + i * 0.75, 2.95 + i * 0.75);
+    }
+    box(B.dark, X(93.4), X(95.0), -0.9, 0.9, 8.08, 8.36);
+    box(B.glass, X(94.9), X(95.05), -0.75, 0.75, 8.36, 8.6);
+    railLine(B, [[X(93.2), -1.0, 8.33], [X(93.2), 1.0, 8.33]], 0.9);
     periscopes(B, X(88.5), 8.33, [[0, 0, 3.0, 0.14], [-1.5, 0, 2.6, 0.13], [-3.0, 0, 2.0, 0.22], [1.4, 0, 1.6, 0.1]]);
-    box(B.dark, X(93.6), X(95.2), -0.9, 0.9, 7.9, 8.35);
-    /* the small fairing on the bow casing d 112.7 [P1] */
-    house(B.hull, X(112.2), X(113.3), 0.18, 0.1, 1.45, 0.02, 0.3, 0.2);
-    /* tail: the tall upper rudder d 5.0 - 10.3 to 1.9, the lower rudder to -11.1, stern planes, one screw */
-    fin(B.hull, [[X(5.0), -3.0], [X(10.3), -2.6], [X(10.3), 1.88], [X(5.4), 1.88]], -0.2, 0.2);
-    fin(B.hull, [[X(5.0), -6.5], [X(10.3), -7.2], [X(10.3), -11.1], [X(5.4), -11.1]], -0.2, 0.2);
-    plane(B.hull, X(5.0), X(10.0), -5.0, 5.6, 0.15);
-    screw(B.metal, X(0.5), 0, -4.95, 2.4, 7);
-    hatch(B, X(105.0), 0, 0.9, 1.0, 0.8);
-    for (s = -1; s <= 1; s += 2) cleat(B, X(118.0), s * 1.0, -0.3);
-    box(B.team, X(85.0), X(93.0), -0.4, 0.4, 8.33, 8.38);
+    box(B.sup, X(84.2), X(85.4), -0.35, 0.35, 8.3, 9.5);
+    whip(B, X(86.0), 0.4, 8.33, 3.4);
+    for (i = 0; i < 4; i++) box(B.dark, X(83.6 + i * 2.2), X(83.6 + i * 2.2 + 1.5), -0.5, 0.5, 8.32, 8.35);
+    /* tail [P1]: the upper rudder d 5.0 - 10.3 to 1.9 with the fillet running forward on to the hull
+       (to d 12.9), the lower to -11.1, each with its hinge gap (the light slot [P1] draws at d 7.3 -
+       7.75); the stern planes on the shaft line; one seven-bladed screw [P3] */
+    foil(B.hull, X(5.0), X(10.3), X(5.0), X(9.9), -3.0, 1.88, 0.55, true, 0);
+    foil(B.hull, X(10.0), X(12.9), X(9.9), X(10.3), -2.4, 0.2, 0.5, true, 0);
+    foil(B.hull, X(5.0), X(10.3), X(5.0), X(10.3), -6.5, -11.1, 0.55, true, 0);
+    foil(B.hull, X(10.0), X(12.9), X(10.0), X(10.3), -7.3, -9.4, 0.5, true, 0);
+    box(B.dark, X(7.3), X(7.7), -0.22, 0.22, -2.4, 1.7);
+    box(B.dark, X(7.3), X(7.7), -0.22, 0.22, -10.9, -7.0);
+    box(B.hull, X(4.9), X(10.4), -0.32, 0.32, 1.78, 1.95);
+    for (s = -1; s <= 1; s += 2) {
+      foil(B.hull, X(3.2), X(8.6), X(3.9), X(6.9), s * 1.0, s * 5.6, 0.45, false, -4.95);
+      box(B.dark, X(4.6), X(4.75), s > 0 ? 1.6 : -5.5, s > 0 ? 5.5 : -1.6, -5.2, -4.7);
+    }
+    screw2(B.metal, X(1.4), 0, -4.95, 2.4, 7, 0.5);
+    /* team: the sail top and the hump abaft the tubes */
+    box(B.team, X(85.0), X(88.0), -0.4, 0.4, 8.33, 8.38);
+    box(B.team, X(30.0), X(33.0), -0.4, 0.4, Q(31.5).zt + 0.01, Q(31.5).zt + 0.06);
     flush(THREE, g, B);
     return g;
   }
@@ -1474,7 +1882,12 @@ var HeroFrNavyEarly = (function () {
   return {
     riviere: riviere, t47: t47, leCorse: leCorse, suffren: suffren, deGrasse: deGrasse, colbert: colbert,
     clemenceau: clemenceau, arromanches: arromanches, daphne: daphne, narval: narval, redoutable: redoutable,
-    CLEM_VARIANTS: CLEM_VARIANTS, COLB_VARIANTS: COLB_VARIANTS
+    CLEM_VARIANTS: CLEM_VARIANTS, COLB_VARIANTS: COLB_VARIANTS,
+    subKit: { materials: materials, bins: bins, flush: flush, SUBP: SUBP, SUBP2: SUBP2, fairP: fairP, rowAt: rowAt, subSpec: subSpec,
+              secPts: secPts, subHull2: subHull2, stations: stations, seam2: seam2, arcAtZ: arcAtZ, slopePt: slopePt,
+              panelOn: panelOn, sail2: sail2, foil: foil, screw2: screw2, tubeHatch: tubeHatch, roundHatch: roundHatch,
+              hatch: hatch, cleat: cleat, bollard: bollard, whip: whip, periscopes: periscopes, railLine: railLine,
+              box: box, cylZ: cylZ, cyl: cyl, house: house, ellipsoid: ellipsoid }
   };
 })();
 
@@ -1482,6 +1895,9 @@ var HeroFrNavyEarly = (function () {
    variant) - variant "e60" / "e80" (Colbert) or "e60" / an object { guns: [[d, side], ...] } (Clemenceau) */
 var HeroClemenceau = { build: function (THREE, M, C, v) { return HeroFrNavyEarly.clemenceau(THREE, M, C, v); }, len: 265.0, variants: HeroFrNavyEarly.CLEM_VARIANTS };
 var HeroColbert = { build: function (THREE, M, C, v) { return HeroFrNavyEarly.colbert(THREE, M, C, v); }, len: 180.5, variants: HeroFrNavyEarly.COLB_VARIANTS };
+/* the submarine kit of the 2026-11-12 rework (the lofted pressure hull and casing, sail, foils, screw,
+   hatches, surface panels; materials, bins and flush), for js/hero/fr_navy_late.js's Amethyste */
+var HeroFrSubKit = HeroFrNavyEarly.subKit;
 
 UNIT_MODELS["fra_e50_corvette"]  = { len: 99.8,  build: function (THREE, M, C) { return HeroFrNavyEarly.leCorse(THREE, M, C); } };
 UNIT_MODELS["fra_e50_destroyer"] = { len: 128.6, build: function (THREE, M, C) { return HeroFrNavyEarly.t47(THREE, M, C); } };

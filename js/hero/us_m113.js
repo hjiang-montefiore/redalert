@@ -883,6 +883,12 @@ var HeroM113 = (function () {
         E.userData.cells = cells;
         E.userData.el = EL;
         tg.add(E);
+        /* the draw-call budget: the head's one sight window (a 0.26 x 0.20 m pane) with its dark
+           metal, one vertex-coloured material keeping both colours (Armour3D.tint) */
+        if (typeof Armour3D !== "undefined" && Armour3D.tint && Armour3D.pack) {
+          Armour3D.tint(THREE, E, [[T.dark], [T.glass]]);
+          Armour3D.pack(THREE, E);
+        }
       }
       g.add(tg);
     }

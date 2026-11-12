@@ -1640,7 +1640,9 @@ var HeroMiscBorrowed = (function () {
     /* the body: the long equipment sides with their lockers, the ladders, the deck between them [DF1][DF2] */
     var segs = [], xa = b.x0;
     for (s = -1; s <= 1; s += 2) {
-      box(B.paint, b.x0, b.x1, s > 0 ? V.W - 0.55 : -V.W, s > 0 ? V.W : -V.W + 0.55, b.foot + 0.25, b.top);
+      /* (visual review: the sides now come down to the foot of the body between the arches, as [DF1][DF2] show
+         them, so the round's cradle no longer shows through under them) */
+      box(B.paint, b.x0, b.x1, s > 0 ? V.W - 0.55 : -V.W, s > 0 ? V.W : -V.W + 0.55, b.foot - 0.08, b.top);
       for (k = 0; k < V.AX.length; k++) if (V.AX[k] < V.cab.x0) box(B.dark, V.AX[k] - 0.72, V.AX[k] + 0.72, s > 0 ? V.W - 0.56 : -V.W - 0.01, s > 0 ? V.W + 0.01 : -V.W + 0.56, b.foot - 0.10, b.foot + 0.26);
       var nx = Math.floor((b.x1 - b.x0 - 0.4) / 1.25);
       for (k = 0; k < nx; k++) {
@@ -1678,7 +1680,10 @@ var HeroMiscBorrowed = (function () {
       box(NB.team, 5.0, 6.0, -0.22, 0.22, R.r - 0.03, R.r + 0.005);
     }
     /* the cradle beam under the round, down to the hinge (in the round's frame) */
-    box(NB.dark, 0.0, R.L * 0.8, -0.35, 0.35, -rr - 0.25, -rr - 0.02);
+    /* (visual review: the beam hung 0.25 m under the canister and, with the DF-21D's canister lying low between
+       the body sides, showed as a dark bar slanting through the wheel gaps; it now sits in the canister's
+       saddle, as [DF1] shows nothing below the body) */
+    box(NB.dark, 0.0, R.L * 0.8, -0.35, 0.35, -rr - 0.08, -rr + 0.14);
     for (s = -1; s <= 1; s += 2) bar(NB.paint, [-xt, s * 0.45, -axz], [1.0, s * 0.35, -rr - 0.12], 0.08, 6);
     cylY(NB.dark, -xt, -0.45, 0.45, -axz, 0.11, 12);
     flush(THREE, RG, NB);
@@ -1817,20 +1822,37 @@ var HeroMiscBorrowed = (function () {
   function buildNmesis(THREE, M, C) {
     var T = mats(THREE, C, PAL.usmc, { can: function (TT) { var m = new TT.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0.15 }); var t = paintTex(TT, PAL.can); if (t) m.map = t; else m.color.set(PAL.can.base); return m; } });
     var B = bins(T, 0.4), g = new THREE.Group(), s, k, AX = [1.85, -1.75], RT = 0.55, W = 1.25;
-    /* the bonnet: the sloped top, the grille with the louvres, the lamp clusters, the brush bar [N1][N2] */
-    prismY(B.paint, [[1.05, 0.70], [3.05, 0.70], [3.12, 0.95], [3.05, 1.42], [2.70, 1.62], [1.05, 1.72]], -0.95, 0.95);
+    /* REWORKED (visual review): the bonnet was a low sloped slab with plates for wings.  [N1] shows the JLTV's
+       front as it is: a TALL blunt bonnet, its top only a little lower than the box behind it and rounded over
+       at the front into a near-upright face carrying the two big dark grille panels; the WINGS are separate deep
+       pods standing out over each front tyre, flat-topped, the lamp cluster in their front face, the tyre sunk
+       into the arch beneath them; the steel brush bar low across the front on two arms; the step below the
+       arch.  Heights off [N1] against the 1.10 m tyre: bonnet top 1.78 at the rear, 1.70 at the front edge,
+       wing tops 1.48 (NOT CONFIRMED to better than 0.05 m: a low 3/4 view). */
+    function bon(x, zt, hw, zb, rr) { return [[x, -hw, zb], [x, hw, zb], [x, hw, zt - rr], [x, hw - rr, zt], [x, -hw + rr, zt], [x, -hw, zt - rr]]; }
+    loftN(B.paint, [bon(1.05, 1.80, 0.92, 0.80, 0.10), bon(2.60, 1.74, 0.92, 0.80, 0.12),
+                    bon(2.95, 1.62, 0.88, 0.82, 0.14), bon(3.08, 1.42, 0.84, 0.84, 0.10)]);
     for (s = -1; s <= 1; s += 2) {
-      prismY(B.paint, [[1.10, 0.95], [2.95, 0.95], [3.02, 1.10], [2.90, 1.45], [1.10, 1.55]], s > 0 ? 0.95 : -W, s > 0 ? W : -0.95);
-      headlamp(B.lamp, B.dark, 3.06, s * 0.70, 1.20, 0.08, 1);
-      cyl(B.red, [3.04, s * 0.92, 1.20], [3.07, s * 0.92, 1.20], 0.04, 0.04, 8);
+      var yi = s * 0.90, yo = s * (W + 0.02);
+      /* the wing pod over the front tyre, and the arch flare under its outer edge */
+      prismY(B.paint, [[1.05, 1.18], [1.20, 1.48], [2.95, 1.50], [3.10, 1.38], [3.10, 1.18]], Math.min(yi, yo), Math.max(yi, yo));
+      mudguard(B.paint, AX[0], s, 0.92, W + 0.04, RT, RT + 0.10, 0.15, PI - 0.15);
+      box(B.dark, 1.05, 1.25, Math.min(yi, yo), Math.max(yi, yo), 0.78, 1.18);
+      headlamp(B.lamp, B.dark, 3.11, s * 1.02, 1.34, 0.085, 1);
+      cyl(B.red, [3.10, s * 1.18, 1.25], [3.13, s * 1.18, 1.25], 0.035, 0.035, 8);
+      box(B.dark, 2.95, 3.11, s * 0.92 - 0.05, s * 0.92 + 0.05, 1.20, 1.46);
+      /* the two grille panels, side by side in the bonnet face, and their louvre bars */
+      box(B.dark, 3.06, 3.10, s * 0.45 - 0.33, s * 0.45 + 0.33, 0.95, 1.38);
+      for (k = 0; k < 6; k++) box(B.paint, 3.09, 3.115, s * 0.45 - 0.31, s * 0.45 + 0.31, 0.99 + k * 0.065, 1.01 + k * 0.065);
       towHook(B.dark, 3.15, s * 0.45, 0.85, 1);
-      mudguard(B.paint, AX[0], s, 0.80, W + 0.05, RT, RT + 0.12, 0.30, PI - 0.25);
       mudguard(B.paint, AX[1], s, 0.80, W + 0.05, RT, RT + 0.12, 0.25, PI - 0.30);
+      /* the boarding step behind the front arch, the mirror arm on the box's front corner */
+      box(B.dark, 0.95, 1.20, s * (W - 0.30), s * (W + 0.03), 0.62, 0.66);
     }
-    for (k = 0; k < 6; k++) box(B.dark, 3.06, 3.09, -0.45, 0.45, 1.00 + k * 0.06, 1.03 + k * 0.06);
-    bar(B.dark, [3.30, -0.85, 0.80], [3.30, 0.85, 0.80], 0.06, 8);
+    box(B.dark, 3.06, 3.10, -0.10, 0.10, 0.95, 1.38);
+    bar(B.dark, [3.30, -0.95, 0.80], [3.30, 0.95, 0.80], 0.06, 10);
     for (s = -1; s <= 1; s += 2) bar(B.dark, [3.10, s * 0.75, 0.80], [3.30, s * 0.75, 0.80], 0.05, 6);
-    box(B.dark, 2.10, 2.70, -0.60, 0.60, 1.62, 1.68);
+    box(B.dark, 1.90, 2.60, -0.55, 0.55, 1.77, 1.80);
     /* where the cab would be: the electronics box, its hatch, the mast with its sensors, whips [N1] */
     box(B.paint, 0.20, 1.10, -0.70, 0.70, 0.95, 2.05);
     box(B.dark, 0.25, 1.05, -0.72, 0.72, 1.85, 1.90);
@@ -1856,9 +1878,16 @@ var HeroMiscBorrowed = (function () {
     var E = podGroup(THREE, g, hx, hz, 30, [[CL + 0.02, CW, CH * 0.55, -0.05], [CL + 0.02, -CW, CH * 0.55, -0.05]]), EB = bins(T, 0.4);
     for (s = -1; s <= 1; s += 2) {
       var y0 = s * 0.03, y1 = s * (CW * 2 - 0.02);
-      prismX(EB.can, [[Math.min(y0, y1), 0.08], [Math.max(y0, y1), 0.08], [Math.max(y0, y1), CH], [Math.min(y0, y1), CH]], -0.05, CL);
+      /* REWORKED: each canister in its own section as [N1] shows it - the top's outer edge chamfered, a rib along
+         the foot of the side, the end face in its frame */
+      var ya = Math.min(y0, y1), yb = Math.max(y0, y1), ch = 0.16;
+      prismX(EB.can, s > 0 ? [[ya, 0.08], [yb, 0.08], [yb, CH - ch], [yb - ch, CH], [ya, CH]]
+                           : [[ya, 0.08], [yb, 0.08], [yb, CH], [ya + ch, CH], [ya, CH - ch]], -0.05, CL);
+      box(EB.can, 0.10, CL - 0.10, s > 0 ? yb : ya - 0.04, s > 0 ? yb + 0.04 : ya, 0.10, 0.20);
+      for (k = 0; k < 3; k++) box(EB.dark, 0.25 + k * 1.30, 0.75 + k * 1.30, s > 0 ? yb : ya - 0.012, s > 0 ? yb + 0.012 : ya, 0.30, 0.62);
       for (k = 0; k < 4; k++) box(EB.dark, 0.4 + k * 1.15, 0.48 + k * 1.15, Math.min(y0, y1) - 0.015, Math.max(y0, y1) + 0.015, 0.07, CH + 0.015);
-      box(EB.dark, CL - 0.01, CL + 0.02, Math.min(y0, y1) + 0.06, Math.max(y0, y1) - 0.06, 0.15, CH - 0.07);
+      box(EB.dark, CL - 0.01, CL + 0.02, ya + 0.06, yb - 0.06, 0.15, CH - 0.20);
+      box(EB.can, CL - 0.02, CL + 0.04, ya, yb, 0.08, 0.14);
     }
     box(EB.dark, -0.10, CL - 0.3, -1.0, 1.0, 0.0, 0.08);
     cylY(EB.dark, 0, -0.9, 0.9, 0, 0.09, 10);

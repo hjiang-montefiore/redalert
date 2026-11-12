@@ -405,6 +405,40 @@ var HeroTransall = null, HeroNoratlas = null;
     return g;
   }
   function wheelG(r, w, x, y, z, seg) { var g = new V.CylinderGeometry(r, r, w, seg || 18); g.translate(x, y, z); return g; }
+  /* (review rework 2026-11-12) fittings laid on the skin: a ribbon along a
+     polyline (outward normal per point or one for all; panel seams, hinge
+     lines, door outlines) and a small vertex-coloured lamp (us_ef111a.js kit) */
+  function ribbon(pts, nrm, w, lift) {
+    var pos = [], A = [], B = [], i, n = pts.length;
+    function nz(a) { var m = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
+    for (i = 0; i < n; i++) {
+      var p = pts[i], nn = nz(nrm[0].length ? nrm[i] : nrm), a = pts[Math.min(i + 1, n - 1)], b = pts[Math.max(i - 1, 0)];
+      var t = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+      var sx = nz([t[1] * nn[2] - t[2] * nn[1], t[2] * nn[0] - t[0] * nn[2], t[0] * nn[1] - t[1] * nn[0]]);
+      var c = [p[0] + nn[0] * lift, p[1] + nn[1] * lift, p[2] + nn[2] * lift];
+      A.push([c[0] + sx[0] * w / 2, c[1] + sx[1] * w / 2, c[2] + sx[2] * w / 2]);
+      B.push([c[0] - sx[0] * w / 2, c[1] - sx[1] * w / 2, c[2] - sx[2] * w / 2]);
+    }
+    for (i = 0; i + 1 < n; i++) [A[i], B[i], B[i + 1], A[i], B[i + 1], A[i + 1]].forEach(function (q) { pos.push(q[0], q[1], q[2]); });
+    var g = new V.BufferGeometry();
+    g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    g.computeVertexNormals();
+    return g;
+  }
+  function lampG(p, r, hex) {
+    var g = new V.OctahedronGeometry(r, 0).toNonIndexed(), n = g.attributes.position.count, col = [], i;
+    for (i = 0; i < n; i++) col.push(((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255);
+    g.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    g.translate(p[0], p[1], p[2]);
+    return g;
+  }
+  /* a round window pane of radius r at p, facing along n (unit, in the y-z plane or x) */
+  function paneG(p, r, nrm, seg) {
+    var g = new V.CircleGeometry(r, seg || 10);
+    var q = new V.Quaternion().setFromUnitVectors(new V.Vector3(0, 0, 1), new V.Vector3(nrm[0], nrm[1], nrm[2]));
+    g.applyQuaternion(q); g.translate(p[0], p[1], p[2]);
+    return g;
+  }
 
   /* ------------------------------------------------------------ paint --
      The sheet layout of us_c130_hercules.js: four plan views at 20 px a
@@ -530,19 +564,24 @@ var HeroTransall = null, HeroNoratlas = null;
     m.glass = new V.MeshStandardMaterial({ color: 0x24333b, roughness: 0.12, metalness: 0.45,
                                            transparent: true, opacity: 0.86, side: V.DoubleSide });
     m.tyre = new V.MeshStandardMaterial({ color: 0x131414, roughness: 0.95, metalness: 0.02 });
+    m.seam = new V.MeshStandardMaterial({ color: 0x3c4246, roughness: 0.85, metalness: 0.05, side: V.DoubleSide });
+    m.lamp = new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.0,
+                                          emissive: 0x333333, emissiveIntensity: 0.6 });
     return m;
   }
   function merge(list) {
-    var pos = [], nor = [], i, j;
+    var pos = [], nor = [], col = [], i, j, allCol = true;
+    for (i = 0; i < list.length; i++) if (!list[i].attributes.color) allCol = false;
     for (i = 0; i < list.length; i++) {
       var g = list[i].index ? list[i].toNonIndexed() : list[i];
       if (!g.attributes.normal) g.computeVertexNormals();
       var p = g.attributes.position.array, n = g.attributes.normal.array;
-      for (j = 0; j < p.length; j++) { pos.push(p[j]); nor.push(n[j]); }
+      for (j = 0; j < p.length; j++) { pos.push(p[j]); nor.push(n[j]); if (allCol) col.push(g.attributes.color.array[j]); }
     }
     var out = new V.BufferGeometry();
     out.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
     out.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    if (allCol) out.setAttribute("color", new V.Float32BufferAttribute(col, 3));
     out.setAttribute("uv", new V.Float32BufferAttribute(new Float32Array(pos.length / 3 * 2), 2));
     return out;
   }
@@ -563,7 +602,7 @@ var HeroTransall = null, HeroNoratlas = null;
   function finish(C, P, tex) {
     var mats = makeMats(C, P, tex);
     var root = new V.Group();
-    emit(root, K, mats, ["skin", "dome", "team", "metal", "ink", "blade", "glass", "blur"]);
+    emit(root, K, mats, ["skin", "dome", "team", "metal", "ink", "blade", "glass", "seam", "lamp", "blur"]);
     var gear = new V.Group();
     gear.name = "gear";
     emit(gear, G, mats, ["metal", "tyre"]);
@@ -1272,6 +1311,123 @@ var HeroTransall = null, HeroNoratlas = null;
         G.metal.push(wheelG(0.14, 0.26, xn, s * 0.24, Z(rn), 8));
       }
     }
+    /* ======== (review rework 2026-11-12) ========
+       The visual review found the Noratlas the plainest transport of the
+       roster: the pod a bare barrel standing apart from the wing, the cowls
+       plain, nothing on the skin. Added against the Gatow side view (N:
+       "Nord Noratlas at Gatow side view.JPG") and the BA 128 head-on (N:
+       "N2501_BA128.JPG"), both in q_noratlas_ref: the wing-root fairing
+       that carries the pod's crown up into the shoulder wing (Gatow: no
+       gap between the pod and the wing, the crown sweeping up under it);
+       the framed nose glazing with the second side panes (BA 128: the
+       glazing wraps round the upper nose in framed panes); the round cabin
+       windows (both, nine a side as the first build's paint had them) as
+       glass; the paratroop doors and the clamshell hinge outlined; the cowl
+       lip, the cowl-flap ring, the exhaust stubs and the scoop on each
+       radial (Gatow); the flap / aileron hinge lines and the rudder hinges;
+       nav lamps, a beacon, the pitot and the blade aerial; gear doors and
+       torque links. The pod, wing, booms and fins keep the first build's
+       measured stations. NOT CONFIRMED: the fairing's exact outline (drawn
+       from the two photographs, no drawing shows it), the number of
+       glazing frames, the exhaust stub positions. */
+    function hoopTop(d, y0, y1, n, lift) {
+      var pts = [], nr = [], k, r = sec(d);
+      for (k = 0; k <= n; k++) {
+        var y = y0 + (y1 - y0) * k / n, h = hullTopH(d, y);
+        pts.push([X(d), y, Z(h)]); nr.push([0, y, h - r[3]]);
+      }
+      return ribbon(pts, nr, 0.05, lift);
+    }
+    function sideLine(pts2, sg, w) {     /* pts2 [[d, h]...] on the pod side */
+      var pts = [], k, j, out = [];
+      for (k = 1; k < pts2.length; k++) for (j = 0; j <= 3; j++) {
+        if (k > 1 && j === 0) continue;
+        var d = pts2[k - 1][0] + (pts2[k][0] - pts2[k - 1][0]) * j / 3, h = pts2[k - 1][1] + (pts2[k][1] - pts2[k - 1][1]) * j / 3;
+        pts.push([X(d), sg * (hullY(d, h) + 0.012), Z(h)]);
+      }
+      return ribbon(pts, [0, sg, 0], w || 0.045, 0.004);
+    }
+    function addFairing() {
+      var FR = [[5.5, 0.20, 3.84], [6.2, 0.80, 4.06], [7.0, 1.15, 4.22], [8.6, 1.25, 4.28], [10.0, 1.20, 4.26], [11.0, 0.95, 4.12], [12.0, 0.40, 3.92], [12.4, 0.10, 3.86]];
+      var rings = FR.map(function (q) { return ringSE(X(q[0]), 0, q[1], Z(q[2]), Z(3.55), Z(3.62), 0.70, 1.0, 20); });
+      var sh = new Shell();
+      sh.loft(rings, null, "skin", "skin");
+      sh.emit();
+    }
+    function addFittings() {
+      var sg, k, d;
+      /* the nose glazing's frames, a second side pane each side */
+      [0.55, 0.95, 1.02].forEach(function (dd) { put("seam", hoopTop(dd, -1.02, 1.02, 12, 0.035)); });
+      for (sg = -1; sg <= 1; sg += 2) {
+        var fl = [];
+        for (k = 0; k <= 4; k++) { d = 0.5 + 0.55 * k / 4; fl.push([X(d), sg * 0.575, Z(hullTopH(d, 0.575)) + 0.035]); }
+        put("seam", ribbon(fl, [0, sg * 0.4, 1], 0.05, 0));
+        var sh = new Shell(), grid = [], i, j;
+        for (i = 0; i <= 2; i++) {
+          var dd = 1.62 + 0.45 * i / 2, row = [];
+          for (j = 0; j <= 2; j++) { var h = 3.15 + 0.38 * j / 2; row.push([X(dd), sg * (hullY(dd, h) + 0.03), Z(h)]); }
+          grid.push(row);
+        }
+        sh.sheet(grid, "glass", [X(1.85), 0, Z(2.5)]);
+        sh.emit();
+        put("seam", sideLine([[1.02, 3.08], [1.58, 3.08], [1.58, 3.58], [1.02, 3.58], [1.02, 3.08]], sg, 0.04));
+        put("seam", sideLine([[1.58, 3.08], [2.10, 3.12], [2.10, 3.56], [1.58, 3.58]], sg, 0.04));
+        /* round cabin windows as glass, on the first build's stations */
+        [4.1, 4.75, 5.4, 6.05, 6.7, 7.35, 8.0, 8.65, 9.3].forEach(function (dd) {
+          put("glass", paneG([X(dd), sg * (hullY(dd, 2.75) + 0.014), Z(2.75)], 0.15, [0, sg, 0], 10));
+        });
+        /* the paratroop doors fore and aft, the clamshell hinge line */
+        put("seam", sideLine([[2.6, 1.15], [3.3, 1.15], [3.3, 3.0], [2.6, 3.0], [2.6, 1.15]], sg));
+        put("seam", sideLine([[10.0, 1.15], [10.7, 1.15], [10.7, 3.0], [10.0, 3.0], [10.0, 1.15]], sg));
+        put("seam", sideLine([[12.6, 1.05], [12.6, 3.75]], sg, 0.06));
+        /* pitot on the nose flank */
+        put("metal", rod([X(1.4), sg * (hullY(1.4, 2.4) + 0.02), Z(2.4)], [X(0.7), sg * (hullY(1.4, 2.4) + 0.06), Z(2.4)], 0.02, 6));
+        /* the radial: cowl lip, cowl-flap ring, exhaust stubs both sides, the scoop on top */
+        var yc = sg * BOOM, zh = Z(HUB);
+        pod(X(DP + 0.10), yc, zh, [[0, 0.70], [0.05, 0.79], [0.16, 0.80]], 20, false, false, "metal");
+        pod(X(DP + 1.32), yc, zh, [[0, 0.785], [0.10, 0.775]], 20, false, false, "seam");
+        for (k = -1; k <= 1; k += 2) {
+          put("ink", rod([X(DP + 1.45), yc + k * 0.70, zh - 0.18], [X(DP + 2.05), yc + k * 0.60, zh - 0.26], 0.07, 8));
+        }
+        put("metal", boxG(0.9, 0.30, 0.16, X(DP + 0.95), yc, zh + 0.80));
+        put("ink", boxG(0.03, 0.24, 0.11, X(DP + 0.50), yc, zh + 0.80));
+        /* wing hinge lines (flaps 0.74 chord, ailerons outboard), lamps */
+        var hp = [], fp = [];
+        for (k = 0; k <= 8; k++) {
+          var y = 1.6 + (15.4 - 1.6) * k / 8, le = wLE(y), c = wTE(y) - le, o = wH(y);
+          hp.push([X(le + 0.74 * c), sg * y, Z(o) + 0.012 + wTC(y) * c * foilT(0.74)]);
+          fp.push([X(le + 0.16 * c), sg * y, Z(o) + 0.012 + wTC(y) * c * foilT(0.16)]);
+        }
+        put("seam", ribbon(hp, [0, 0, 1], 0.06, 0.006));
+        put("seam", ribbon(fp, [0, 0, 1], 0.05, 0.006));
+        [6.2, 10.6].forEach(function (yb) {
+          var le = wLE(yb), c = wTE(yb) - le;
+          put("seam", ribbon([[X(le + 0.74 * c), sg * yb, Z(wH(yb)) + 0.06], [X(le + c), sg * yb, Z(wH(yb)) + 0.03]], [0, 0, 1], 0.05, 0.006));
+        });
+        put("lamp", lampG([X(wLE(WTIP) + 0.4), sg * (WTIP - 0.10), Z(wH(WTIP))], 0.08, sg > 0 ? 0xe02218 : 0x18c04a));
+        /* rudder hinge lines, both faces of both fins */
+        for (k = -1; k <= 1; k += 2) {
+          var rp = [];
+          for (var hh = 4.4; hh <= FINTOP - 0.4; hh += 0.4) { var fle = finLE(hh), fc = finTE(hh) - fle; rp.push([X(fle + 0.68 * fc), yc + k * (0.12 * fc * foilT(0.68) + 0.006), Z(hh)]); }
+          put("seam", ribbon(rp, [0, k, 0], 0.05, 0.003));
+        }
+        put("lamp", lampG([X(21.80), yc, Z(4.7)], 0.06, 0xf4f1e0));
+      }
+      /* beacon and the blade aerial on the crown, the aerial mast on the nose */
+      put("lamp", lampG([X(12.8), 0, Z(3.80)], 0.10, 0xe02218));
+      put("ink", boxG(0.36, 0.05, 0.32, X(3.2), 0, Z(3.85) + 0.15));
+      put("metal", rod([X(2.4), 0, Z(3.84)], [X(2.55), 0, Z(4.35)], 0.025, 6));
+    }
+    function addGearFittings() {
+      for (var sg = -1; sg <= 1; sg += 2) {
+        var x = X(8.1), y = sg * BOOM;
+        G.metal.push(rod([x + 0.05, y - sg * 0.24, Z(0.85)], [x + 0.22, y - sg * 0.21, Z(1.35)], 0.13, 8));      /* oleo sleeve */
+        G.metal.push(rod([x - 0.05, y - sg * 0.30, Z(0.80)], [x - 0.18, y - sg * 0.27, Z(1.20)], 0.03, 4));      /* torque link */
+        G.metal.push(boxG(1.7, 0.04, 0.7, X(8.4), y + sg * 0.50, Z(HUB - 0.95)));                              /* bay doors */
+        G.metal.push(boxG(1.7, 0.04, 0.7, X(8.4), y - sg * 0.50, Z(HUB - 0.95)));
+        G.metal.push(boxG(0.9, 0.04, 0.45, X(2.2), sg * 0.30, Z(1.05)));                                       /* nose doors */
+      }
+    }
     var _tex = {};
     function paintSheet(v, P) {
       var pt = new Painter(9103 + v.id.charCodeAt(0) * 7 + v.id.charCodeAt(1) * 13, P);
@@ -1317,6 +1473,9 @@ var HeroTransall = null, HeroNoratlas = null;
       addBooms();
       addTail();
       addGear();
+      addFairing();
+      addFittings();
+      addGearFittings();
       return finish(C, P, sheet(v, P));
     }
     return { build: build, variants: VARIANTS, lenOf: function () { return 21.93; } };   /* measured X extent: nose to the rudder trailing edge */

@@ -719,11 +719,18 @@ var HeroPaladin = (function () {
     return g;
   }
 
-  return { build: build, variants: VARIANTS };
+  /* the draw-call budget: the "barrel" node is the modeller's (render3d runs the whole turret back
+     on recoil), so its meshes join the turret's - built apart for js/hero/deu_us_pattern.js, which
+     swaps the M109A3G's tube in it first */
+  function pack(THREE, g) {
+    return typeof Armour3D !== "undefined" && Armour3D.pack ? Armour3D.pack(THREE, g, { barrel: 1 }) : g;
+  }
+
+  return { build: build, variants: VARIANTS, pack: pack };
 })();
 
-UNIT_MODELS["nato_e60_spg"] = { len: 6.62, build: function (THREE, M, C) { return HeroPaladin.build(THREE, M, C, "e60"); } };
-UNIT_MODELS["nato_e80_spg"] = { len: 9.12, build: function (THREE, M, C) { return HeroPaladin.build(THREE, M, C, "e80"); } };
-UNIT_MODELS["nato_e90_spg"] = { len: 9.52, build: function (THREE, M, C) { return HeroPaladin.build(THREE, M, C, "e90"); } };
-UNIT_MODELS["nato_e00_spg"] = { len: 9.52, build: function (THREE, M, C) { return HeroPaladin.build(THREE, M, C, "e00"); } };
-UNIT_MODELS["spg_n"] = { len: 9.52, build: function (THREE, M, C) { return HeroPaladin.build(THREE, M, C, "e20"); } };
+UNIT_MODELS["nato_e60_spg"] = { len: 6.62, build: function (THREE, M, C) { return HeroPaladin.pack(THREE, HeroPaladin.build(THREE, M, C, "e60")); } };
+UNIT_MODELS["nato_e80_spg"] = { len: 9.12, build: function (THREE, M, C) { return HeroPaladin.pack(THREE, HeroPaladin.build(THREE, M, C, "e80")); } };
+UNIT_MODELS["nato_e90_spg"] = { len: 9.52, build: function (THREE, M, C) { return HeroPaladin.pack(THREE, HeroPaladin.build(THREE, M, C, "e90")); } };
+UNIT_MODELS["nato_e00_spg"] = { len: 9.52, build: function (THREE, M, C) { return HeroPaladin.pack(THREE, HeroPaladin.build(THREE, M, C, "e00")); } };
+UNIT_MODELS["spg_n"] = { len: 9.52, build: function (THREE, M, C) { return HeroPaladin.pack(THREE, HeroPaladin.build(THREE, M, C, "e20")); } };

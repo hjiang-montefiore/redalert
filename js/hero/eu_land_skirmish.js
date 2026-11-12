@@ -751,15 +751,15 @@ var HeroEuLandSkirmish = (function () {
       towHook(B, J.X1 - 0.30, s * 0.60, 0.95, 1);
       towHook(B, J.X0, s * 0.70, 0.95, -1);
       marker(B, J.X0, s * 1.25, 1.60, -1);
-      tools(B, -3.20, J.HW, 1.85, s);
-      sideHandles(B, [-2.0, 1.2], s * J.HW, 1.95, s);
+      tools(B, -3.20, J.HW + 0.04, 1.49, s);
+      sideHandles(B, [-2.0, 1.2], s * 1.36, 1.93, s);
       mudguard(B, J.AX[0], J.RT, J.TW + 0.10, s * J.YT, J.RT, s);
       bag(TB, -1.60, -1.25, s > 0 ? 0.10 : -0.90, s > 0 ? 0.90 : -0.10, 0.10, 0.55);
     }
     periscopes(B, 1.85, 0.65, J.ROOF - 0.08, 0.30, 3, -0.6, 0.6);
-    hatch(TB, -0.55, -0.55, 0.78, 0.28);
-    periscopes(TB, -0.55, -0.55, 0.78, 0.36, 4, -1.0, 1.0);
-    aerial(TB, -1.10, 0.85, 0.78, 2.0);
+    hatch(TB, -0.55, -0.55, 0.82, 0.28);
+    periscopes(TB, -0.55, -0.55, 0.82, 0.36, 4, -1.0, 1.0);
+    aerial(TB, -1.10, 0.85, 0.82, 2.0);
     aerial(B, -3.30, -1.20, J.ROOF, 1.8);
   }
   function archerDetail(B) {
@@ -891,51 +891,90 @@ var HeroEuLandSkirmish = (function () {
   var JG = { X0: -3.55, X1: 3.55, AX: [2.55, 0.50, -1.15], RT: 0.66, TW: 0.48, YT: 1.20,
              BELLY: 0.70, SIDE: 1.70, ROOF: 2.08, HW: 1.49, LW: 1.25, TX: -0.10 };
   function ebrcJaguar(THREE, M, C, key) {
-    var T = materials(THREE, C, key), g = new THREE.Group(), B = bins(T), J = JG, s;
+    var T = materials(THREE, C, key), g = new THREE.Group(), B = bins(T), J = JG, s, i;
     g.name = "eu_ebrc_jaguar";
-    /* the hull: belly, the lower nose plate up to the wedge, the long glacis back to the roof,
-       vertical rear [JG1][JG2] */
-    prismY(B.paint, [[J.X0, 0.85], [J.X0 + 0.15, J.BELLY], [J.X1 - 0.75, J.BELLY], [J.X1, 1.15], [J.X1, 1.28],
-                     [1.95, J.ROOF], [J.X0, J.ROOF]], -J.LW, J.LW);
+    /* REWORKED (visual review, 2026-11): the hull was one slab prism with a wedge cut on it; it
+       is now two lofted bodies off [JG1][JG2] at 81.7 px a metre, as the photographs show it:
+       - the lower hull BETWEEN the wheel rows, 1.84 m wide, its belly a shallow V (the
+         mine-protected floor, [JG2] under the nose) and the lower nose plate raked up to the
+         lamp line;
+       - the upper body OVER the wheels, the full 2.98 m, its sides upright to the chine at
+         1.66 m and then leaning in to the roof edge (the faceted upper side, [JG1]), the long
+         glacis from 2.20 m forward down to the nose, its corners taken in so the nose narrows
+         ([JG2] head on);
+       - the arches: the upper body stops 0.62 m off the ground only BETWEEN the wheels (side
+         panels between axles 1-2 and behind axle 3, [JG1]), so each tyre sits in its own arch.
+       NOT CONFIRMED: the belly V depth (read off one 3/4 view); the chine height to +-0.05 m. */
+    var LOWH = [[0.50, 0.58], [0.92, 0.80], [0.92, 1.34]];
+    loftN(B.paint, [ring(J.X0, LOWH), ring(2.60, LOWH),
+                    ring(3.30, [[0.62, 0.98], [0.92, 1.08], [0.92, 1.34]]),
+                    ring(3.52, [[0.62, 1.12], [0.84, 1.16], [0.84, 1.34]])]);
+    function up(x, zt, hw, zb, ti) { return ring(x, [[hw - 0.06, zb], [hw, zb + 0.10], [hw, Math.min(1.66, zt - 0.22)], [hw - ti, zt]]); }
+    loftN(B.paint, [up(J.X0, 2.02, J.HW - 0.02, 1.30, 0.19), up(J.X0 + 0.08, 2.08, J.HW, 1.30, 0.20),
+                    up(2.20, 2.08, J.HW, 1.30, 0.20), up(2.90, 1.78, 1.46, 1.24, 0.22),
+                    up(3.40, 1.52, 1.30, 1.20, 0.18), up(3.55, 1.42, 1.15, 1.20, 0.12)]);
     for (s = -1; s <= 1; s += 2) {
-      /* the upper sides over the wheels, stepped out above 1.70 m less, and the lower sides */
-      prismY(B.paint, [[J.X0, 1.05], [J.X1 - 0.35, 1.05], [J.X1 - 0.05, 1.28], [1.95, J.ROOF], [J.X0, J.ROOF]],
-             s > 0 ? J.LW : -J.HW, s > 0 ? J.HW : -J.LW);
-      box(B.dark, J.X0 + 0.05, J.X1 - 0.40, s > 0 ? J.HW : -J.HW - 0.015, s > 0 ? J.HW + 0.015 : -J.HW, J.SIDE - 0.02, J.SIDE + 0.02);
-      /* the stowage boxes between the wheels [JG1] */
-      box(B.paint, -0.35, 1.70, s > 0 ? J.HW : -J.HW - 0.05, s > 0 ? J.HW + 0.05 : -J.HW, 1.15, 1.60);
-      box(B.dark, 0.65, 0.67, s > 0 ? J.HW + 0.05 : -J.HW - 0.055, s > 0 ? J.HW + 0.055 : -J.HW - 0.05, 1.18, 1.57);
-      /* the lamps in the wedge's upper face [JG2] */
-      box(B.dark, J.X1 - 0.35, J.X1 - 0.10, s * 1.05 - 0.15, s * 1.05 + 0.15, 1.30, 1.42);
+      var yo = s > 0 ? J.HW : -J.HW, yi = s > 0 ? 0.90 : -0.90;
+      /* the side panels that close the body down between the arches [JG1] */
+      prismY(B.paint, [[1.26, 0.86], [1.84, 0.86], [1.84, 1.34], [1.26, 1.34]], Math.min(yi, yo), Math.max(yi, yo));
+      prismY(B.paint, [[J.X0, 0.80], [-1.86, 0.80], [-1.86, 1.34], [J.X0, 1.34]], Math.min(yi, yo * 0.99), Math.max(yi, yo * 0.99));
+      /* the chine line and the wheel-arch lips */
+      box(B.dark, J.X0 + 0.05, 2.25, s > 0 ? J.HW : -J.HW - 0.02, s > 0 ? J.HW + 0.02 : -J.HW, 1.645, 1.675);
+      for (i = 0; i < 3; i++) box(B.dark, J.AX[i] - 0.72, J.AX[i] + 0.72, s > 0 ? J.HW - 0.30 : -J.HW - 0.01, s > 0 ? J.HW + 0.01 : -J.HW + 0.30, 1.27, 1.31);
+      /* the bolted add-on panels on the upper side, three a side, and their seams [JG1] */
+      for (i = 0; i < 3; i++) {
+        var px0 = -3.25 + i * 1.75;
+        box(B.paint, px0, px0 + 1.55, s > 0 ? J.HW : -J.HW - 0.04, s > 0 ? J.HW + 0.04 : -J.HW, 1.36, 1.62);
+        box(B.dark, px0 + 1.55, px0 + 1.58, s > 0 ? J.HW : -J.HW - 0.045, s > 0 ? J.HW + 0.045 : -J.HW, 1.34, 1.64);
+      }
+      /* the stowage box between axles 1 and 2 [JG1], its lid seam */
+      box(B.paint, 1.30, 1.80, s > 0 ? J.HW - 0.01 : -J.HW - 0.07, s > 0 ? J.HW + 0.07 : -J.HW + 0.01, 0.92, 1.28);
+      box(B.dark, 1.30, 1.80, s > 0 ? J.HW + 0.07 : -J.HW - 0.075, s > 0 ? J.HW + 0.075 : -J.HW - 0.07, 1.20, 1.215);
+      /* the lamps set into the glacis' outer corners [JG2], the rear lamps */
+      box(B.dark, 3.18, 3.42, s * 1.02 - 0.15, s * 1.02 + 0.15, 1.42, 1.58);
+      box(B.glass, 3.40, 3.43, s * 1.02 - 0.11, s * 1.02 + 0.11, 1.44, 1.54);
       box(B.dark, J.X0 - 0.02, J.X0 + 0.01, s * 1.10 - 0.08, s * 1.10 + 0.08, 1.75, 1.90);
     }
-    /* the driver's hatch on the glacis top, the rear door */
-    box(B.paint, 1.60, 2.10, 0.35, 0.95, J.ROOF - 0.12, J.ROOF + 0.02);
+    /* the driver's hatch and its periscope hood on the glacis top, the rear door and steps */
+    box(B.paint, 1.70, 2.20, 0.35, 0.95, J.ROOF - 0.04, J.ROOF + 0.04);
     box(B.dark, J.X0 - 0.02, J.X0, -0.50, 0.50, 0.95, 1.90);
+    box(B.dark, J.X0 - 0.12, J.X0, -0.45, 0.45, 0.62, 0.66);
     box(B.team, J.X0 - 0.03, J.X0 - 0.02, -1.15, -0.75, 1.95, 2.02);
     wheelGroups(THREE, T, g, J.AX, J.RT, function (W) { tyrePair(T, W, J.RT, J.TW, J.YT, 0.40, true); });
-    /* the turret (origin on the ring): a flat box with chamfered front corners, the cannon in
-       its mantlet, the MMP box on the right side, the sight heads [JG1][JG2] */
+    /* the turret (origin on the ring).  REWORKED off [JG1]: it reaches from 1.6 m behind the
+       ring to over the glacis; the roof runs flat to just ahead of the ring and then the whole
+       front rakes down to the mantlet; the sides stand upright to a chine and lean in above
+       it; the bustle overhangs the hull roof behind. */
     var TB = bins(T);
-    loftN(TB.paint, [
-      ring(-1.25, [[1.05, 0.0], [1.10, 0.45], [1.00, 0.78]]),
-      ring(1.40, [[1.05, 0.0], [1.10, 0.45], [1.00, 0.78]]),
-      ring(2.05, [[0.60, 0.05], [0.65, 0.40], [0.55, 0.62]])]);
-    box(TB.paint, 1.95, 2.30, -0.28, 0.28, 0.15, 0.50);
-    tube(TB.dark, 2.30, 4.25, 0, 0.32, 0.07, 0.06, 12);
+    function tr(x, hw, zc, zt, ti) { return ring(x, [[hw - 0.05, 0.0], [hw, zc], [hw - ti, zt]]); }
+    loftN(TB.paint, [tr(-1.60, 1.00, 0.42, 0.80, 0.14), tr(0.25, 1.10, 0.45, 0.84, 0.14),
+                     tr(1.40, 1.02, 0.38, 0.60, 0.17), tr(2.20, 0.70, 0.22, 0.38, 0.14)]);
+    /* the bustle rack behind, on the turret's rear face */
+    box(TB.dark, -1.95, -1.62, -0.85, 0.85, 0.30, 0.33);
+    for (i = 0; i < 5; i++) bar(TB.dark, [-1.93, -0.84 + i * 0.42, 0.32], [-1.93, -0.84 + i * 0.42, 0.62], 0.015);
+    bar(TB.dark, [-1.93, -0.84, 0.62], [-1.93, 0.84, 0.62], 0.015);
+    bag(TB, -1.92, -1.64, -0.75, 0.15, 0.33, 0.58);
+    /* the mantlet and the 40 mm CTA: the thick thermal sleeve, then the bare barrel */
+    box(TB.paint, 2.05, 2.40, -0.30, 0.30, 0.10, 0.44);
+    tube(TB.dark, 2.40, 3.25, 0, 0.27, 0.095, 0.085, 14);
+    tube(TB.dark, 3.25, 4.18, 0, 0.27, 0.058, 0.055, 12);
+    tube(TB.dark, 4.18, 4.25, 0, 0.27, 0.075, 0.075, 12);
     /* the MMP launcher box on the right of the turret, sloped up at its front [JG1] */
-    prismY(TB.paint, [[-0.80, 0.55], [0.60, 0.55], [0.85, 0.85], [0.70, 1.00], [-0.80, 1.00]], -1.30, -1.02);
+    prismY(TB.paint, [[-0.80, 0.50], [0.60, 0.50], [0.90, 0.80], [0.70, 0.98], [-0.80, 0.98]], -1.30, -1.02);
+    box(TB.dark, 0.66, 0.94, -1.28, -1.04, 0.72, 0.92);
+    cylX(TB.dark, 0.84, 0.92, -1.16, 0.82, 0.08, 12);
     /* the commander's panoramic sight (left rear) and the gunner's sight (front right) */
-    cylZ(TB.dark, -0.55, 0.55, 0.78, 0.90, 0.08, 8);
-    box(TB.paint, -0.75, -0.35, 0.35, 0.75, 0.90, 1.10);
-    box(TB.glass, -0.35, -0.33, 0.42, 0.68, 0.94, 1.06);
-    box(TB.paint, 0.60, 1.05, -0.80, -0.40, 0.78, 1.00);
-    box(TB.glass, 1.05, 1.07, -0.75, -0.45, 0.82, 0.96);
+    cylZ(TB.dark, -0.55, 0.55, 0.82, 0.94, 0.08, 8);
+    box(TB.paint, -0.75, -0.35, 0.35, 0.75, 0.94, 1.14);
+    box(TB.glass, -0.35, -0.33, 0.42, 0.68, 0.98, 1.10);
+    box(TB.paint, 0.60, 1.05, -0.80, -0.40, 0.70, 0.94);
+    box(TB.glass, 1.05, 1.07, -0.75, -0.45, 0.74, 0.90);
     /* the small RWS on the roof [JG1], smoke dischargers on the front corners */
-    cylZ(TB.paint, -0.10, -0.20, 0.78, 0.86, 0.18, 10);
-    box(TB.dark, -0.25, 0.10, -0.32, -0.08, 0.86, 1.02);
-    for (s = -1; s <= 1; s += 2) cyl(TB.dark, [1.50, s * 0.95, 0.55], [1.75, s * 1.02, 0.65], 0.05, 0.05, 8);
-    box(TB.team, -1.20, -0.80, -0.50, 0.50, 0.78, 0.79);
+    cylZ(TB.paint, -0.10, -0.20, 0.82, 0.90, 0.18, 10);
+    box(TB.dark, -0.25, 0.10, -0.32, -0.08, 0.90, 1.06);
+    tube(TB.dark, 0.10, 0.55, -0.20, 0.98, 0.02, 0.02, 6);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 3; i++) cyl(TB.dark, [1.30 - i * 0.14, s * 0.98, 0.46], [1.46 - i * 0.14, s * 1.06, 0.56], 0.045, 0.045, 8);
+    box(TB.team, -1.40, -0.90, -0.50, 0.50, 0.81, 0.83);
     jaguarDetail(B, TB);
     flush(THREE, g, B);
     g.add(grp(THREE, "turret", TB, J.TX, 0, J.ROOF));

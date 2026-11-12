@@ -1481,6 +1481,12 @@ var HeroMamba = (function () {
     K.flush(THREE, tur, AB);
     g.add(tur);
     g.name = "gbr_e00_radarv";
+    /* the draw-call budget: the array's face and its dark frame as one vertex-coloured material that
+       keeps both colours (Armour3D.tint) */
+    if (typeof Armour3D !== "undefined" && Armour3D.tint && Armour3D.pack) {
+      Armour3D.tint(THREE, tur, [[T.face], [T.dark]]);
+      Armour3D.pack(THREE, g);
+    }
     return g;
   }
   return { build: build };

@@ -99,11 +99,23 @@
    ru_tu160.js's 1980s row and ru_tu16.js draw it), and pact_e00 carries the Russian star on the fin
    and on both upper outer wings as D shows.
 
+   REVIEW REWORK (2026-11-12). The visual review found the side view a plain tube with a flat box
+   glued on: the intakes were an eight-sided constant section from the mouth to 29.4 m, the nozzles
+   two open cylinders, nothing on the skin. On the same A stations: the trunks are superellipse
+   lofts with radiused corners (D), rounding aft into the engine bay; the mouth is RAKED, the top
+   lip 0.9 m ahead of the bottom one (C, by eye: NOT CONFIRMED), with a lip, the dark duct, the
+   splitter plate in the body gap (A plan) and the six auxiliary inlet doors on each trunk flank
+   (C); the nozzles are lofted shrouds with burnt petals, their joints and the dark throat (C); and
+   the skin carries frame seams, the slat / flap / glove-flap / tailplane / rudder hinge lines, the
+   gear-fairing seam, wingtip nav lamps, beacons, the tail light, AoA vanes, pitots and four blade
+   aerials. The national stars B and D show are no longer painted (plain paint, AGENT_POLICY 6);
+   star() is kept for the record. Draw calls 8 -> 11.
+
    NOT CONFIRMED (estimated, not measured or published)
      - fuselage and intake HALF-HEIGHTS above and below the mid line where A's side silhouette is
        hidden by the intakes (12.4-29 m): the body is drawn 2.1 to 4.75 m, the intake boxes 2.05
-       to 4.35 m (D shows them nearly body-height); the intake lips are drawn square to the axis,
-       their rake and the wedge ramp inside are not drawn.
+       to 4.35 m (D shows them nearly body-height); the intake lips are raked 0.9 m (by eye off C),
+       the wedge ramp inside is not drawn.
      - wheel sizes: about 1.0 m main and nose tyres (scaled off C and D by eye; A draws them
        smaller). The glove and wing thickness (t/c 0.06 to 0.08). The fin's thickness.
      - the Soviet-pattern border on the e90 fin star (B is too small to show the border).
@@ -111,7 +123,7 @@
    Not drawn: Kh-22 / Kh-32 missiles and their pylons, the MBD3 racks, the refuelling probe (removed
    under SALT; ru/en.wikipedia), bort numbers, guards badges, the 1990s shark mouths.
 
-   Markings beyond the star: none. Team colour (C.team): a small strip on each upper outer wing
+   Markings: none (see REVIEW REWORK). Team colour (C.team): a small strip on each upper outer wing
    near the tip. Model space +X nose, +Y port, +Z up, metres; z = 0 the ground (tyre bottoms).
    ============================================================================================ */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
@@ -219,6 +231,21 @@ var HeroTu22M3 = (function () {
     out.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
     out.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
     out.setAttribute("uv", new V.Float32BufferAttribute(new Float32Array(pos.length / 3 * 2), 2));
+    return out;
+  }
+
+  function mergeC(list) {               /* merge keeping the vertex colours (the lamps) */
+    var pos = [], nor = [], col = [], i, j;
+    for (i = 0; i < list.length; i++) {
+      var g = list[i];
+      var p = g.attributes.position.array, n = g.attributes.normal ? g.attributes.normal.array : null, c = g.attributes.color.array;
+      if (!n) { g.computeVertexNormals(); n = g.attributes.normal.array; }
+      for (j = 0; j < p.length; j++) { pos.push(p[j]); nor.push(n[j]); col.push(c[j]); }
+    }
+    var out = new V.BufferGeometry();
+    out.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    out.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    out.setAttribute("color", new V.Float32BufferAttribute(col, 3));
     return out;
   }
 
@@ -377,13 +404,8 @@ var HeroTu22M3 = (function () {
       g.fillStyle = "rgba(60,58,52," + (0.02 + R() * 0.04).toFixed(3) + ")";
       g.fillRect(R() * TWPX, R() * TH, 8 + R() * 40, 2 + R() * 6);
     }
-    /* the national star high on the fin, both sides (B) */
-    for (var bb = 1; bb <= 2; bb++) star(g, kind, pxD(38.6), BY[bb] + pxZ(8.35), 0.7 * PXM, 0.7 * PZM);
-    /* today's row: stars on the upper outer wings (D) */
-    if (kind === "russian") [1, -1].forEach(function (sd) {
-      var y = wy(14.0), dc = lerp(pl(OWING, 14.0, 1), pl(OWING, 14.0, 2), 0.5);
-      star(g, "russian", pxD(dc), pxY(sd * y), 0.9 * PXM, 0.9 * PYM, PI);
-    });
+    /* (review rework 2026-11-12) the national stars are no longer painted: plain paint, AGENT_POLICY 6
+       (star() and starPath() are kept, unused) */
     _cv[kind] = cv;
     return cv;
   }
@@ -434,6 +456,12 @@ var HeroTu22M3 = (function () {
     m.leg = new V.MeshStandardMaterial({ color: 0x8f969c, roughness: 0.45, metalness: 0.55 });
     m.tyre = new V.MeshStandardMaterial({ color: 0x151617, roughness: 0.95, metalness: 0.02 });
     m.white = new V.MeshStandardMaterial({ color: 0xcfd2d4, roughness: 0.55, metalness: 0.08, side: V.DoubleSide });
+    /* (review rework) the open lofts (trunks, nozzle shrouds) are drawn from either face */
+    m.skin.side = m.metal.side = m.ink.side = V.DoubleSide;
+    m.burnt = new V.MeshStandardMaterial({ color: 0x5f5850, roughness: 0.52, metalness: 0.58, side: V.DoubleSide });
+    m.seam = new V.MeshStandardMaterial({ color: 0x7c838d, roughness: 0.85, metalness: 0.05, side: V.DoubleSide });
+    m.lamp = new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.0,
+                                          emissive: 0x333333, emissiveIntensity: 0.6 });
     return m;
   }
 
@@ -466,22 +494,45 @@ var HeroTu22M3 = (function () {
     /* the blade aerial on the spine at 9.1 m (A side) */
     K.metal.push(box(0.35, 0.05, 0.3, X(9.1), 0, 4.75));
   }
+  /* superellipse ring about (yc, zc): half-width w, half-height h, power e */
+  function seRing(x, yc, zc, w, h, e, n) {
+    var r = [], j;
+    for (j = 0; j < n; j++) {
+      var t = j / n * 2 * PI;
+      r.push([x, yc + w * sgnp(Math.cos(t), 2 / e), zc + h * sgnp(Math.sin(t), 2 / e)]);
+    }
+    return r;
+  }
+  /* (review rework 2026-11-12) the intake trunks were an eight-sided box of constant section from the
+     mouth to 29.4 m. Now a superellipse loft on the same INT stations (inner and outer y, bottom and top
+     z), the corners radiused as D shows them, the trunk rounding aft into the engine bay; the mouth
+     RAKED, the top lip 0.9 m ahead of the bottom one (C: the lip line leans back from the top),
+     a lip, the dark duct, the splitter plate standing off the body in the gap (A plan) and the
+     auxiliary inlet doors on the trunk flank (C: the six small doors at 22-23 m, drawn as dark panels). */
   function addIntakes(K) {
+    var ST = [12.4, 12.9, 13.4, 14.2, 15.0, 17, 19, 21, 23, 25, 27.0, 27.9, 28.8, 29.4];
     [1, -1].forEach(function (sd) {
-      var rings = INT.map(function (q) {
-        var r = [], yi = q[1], yo = q[2], zb = q[3], zt = q[4], c = 0.12;
-        [[yo - c, zt], [yo, zt - c], [yo, zb + c], [yo - c, zb], [yi + c, zb], [yi, zb + c], [yi, zt - c], [yi + c, zt]]
-          .forEach(function (p) { r.push([X(q[0]), sd * p[0], p[1]]); });
-        return r;
-      });
-      K.skin.push(loft(rings));
-      /* the dark mouth, inset from the lip (D), and the compressor face far down the duct */
-      var q = INT[0];
-      K.ink.push(box(0.04, q[2] - q[1] - 0.14, q[4] - q[3] - 0.14, X(q[0]) + 0.015, sd * (q[1] + q[2]) / 2, (q[3] + q[4]) / 2));
-      /* the splitter gap between body and intake for the first metre (A plan): a dark slot */
-      K.ink.push(box(1.0, 0.2, 1.9, X(12.95), sd * 1.18, 3.2));
-      /* a boundary-layer plate joining the intake top to the body behind the gap */
-      K.skin.push(box(15.4, 0.3, 0.06, X(21.6), sd * 1.2, 4.28));
+      function ring(d, inset, n) {
+        var yi = pl(INT, d, 1), yo = pl(INT, d, 2), zb = pl(INT, d, 3), zt = pl(INT, d, 4);
+        var e = d < 26 ? 5.0 : lerp(5.0, 3.0, (d - 26) / 3.4);
+        return seRing(X(d), sd * (yi + yo) / 2, (zb + zt) / 2, (yo - yi) / 2 - inset, (zt - zb) / 2 - inset, e, n);
+      }
+      function raked(r, dd) {
+        return r.map(function (p) { var t = clamp((4.30 - p[2]) / 2.25, 0, 1); return [p[0] - dd * t, p[1], p[2]]; });
+      }
+      var rings = ST.map(function (d) { var r = ring(d, 0, 28); return d === 12.4 ? raked(r, 0.9) : (d === 12.9 ? raked(r, 0.45) : r); });
+      K.skin.push(loft(rings, true));
+      var lip = raked(ring(12.5, 0.10, 28), 0.9), deep = ring(15.0, 0.16, 28);
+      K.metal.push(loft([rings[0], lip], true));
+      K.ink.push(loft([lip, deep]));
+      /* the splitter: a plate standing in the gap between body and trunk for the first 1.6 m */
+      K.skin.push(box(1.6, 0.06, 2.1, X(13.2), sd * 1.22, 3.18));
+      K.ink.push(box(1.1, 0.04, 1.7, X(13.1), sd * 1.16, 3.18));
+      /* the boundary-layer plate joining the trunk top to the body further aft */
+      K.skin.push(box(14.2, 0.30, 0.06, X(22.2), sd * 1.22, 4.28));
+      /* the auxiliary (blow-in) doors on the trunk flank (C) */
+      for (var a = 0; a < 3; a++) for (var b2 = 0; b2 < 2; b2++)
+        K.ink.push(box(0.30, 0.03, 0.22, X(22.6 + a * 0.40), sd * (pl(INT, 22.6, 2) + 0.005), 4.02 - b2 * 0.30));
     });
   }
   function addWings(K) {
@@ -520,10 +571,26 @@ var HeroTu22M3 = (function () {
       })));
     });
     /* twin nozzles side by side (A plan and side, C) */
+    /* (review rework) each nozzle lofted: the shroud out of the body, the burnt petals with their joints,
+       the lip and the dark throat (C shows the two big round nozzles almost touching) */
     [1, -1].forEach(function (sd) {
-      K.metal.push(cylX(0.66, 0.7, 1.2, X(39.95), sd * 0.86, 3.32, 18, true));
-      K.metal.push(cylX(0.68, 0.68, 0.06, X(40.52), sd * 0.86, 3.32, 18, true));
-      K.ink.push(cylX(0.62, 0.62, 0.04, X(40.4), sd * 0.86, 3.32, 18));
+      var yc = sd * 0.86, zc = 3.32, n = 24;
+      function cr(d, r, wav) {
+        var q = [], j;
+        for (j = 0; j < n; j++) { var a = j / n * 2 * PI, rr = r * (wav && (j & 1) ? 0.98 : 1); q.push([X(d), yc + rr * Math.cos(a), zc + rr * Math.sin(a)]); }
+        return q;
+      }
+      var r0 = cr(39.4, 0.70), r1 = cr(40.0, 0.71), r2 = cr(40.5, 0.69, true), r3 = cr(40.9, 0.64, true);
+      K.metal.push(loft([r0, r1, r2], true));
+      K.burnt.push(loft([r2, r3], true));
+      var inner = cr(40.88, 0.58), deep = cr(40.0, 0.50);
+      K.burnt.push(loft([r3, inner], true));
+      K.ink.push(loft([inner, deep]));
+      for (var k = 0; k < 12; k++) {
+        var a2 = k / 12 * 2 * PI;
+        K.ink.push(rod([X(40.5), yc + 0.695 * Math.cos(a2), zc + 0.695 * Math.sin(a2)],
+                       [X(40.88), yc + 0.645 * Math.cos(a2), zc + 0.645 * Math.sin(a2)], 0.014, 4));
+      }
     });
     /* the tail gun mount under the fin trailing edge, its barrel at 4.74 m to 41.7 m, and the radar
        fairing above at 5.65 m (A side, C, ru.wiki) */
@@ -562,19 +629,88 @@ var HeroTu22M3 = (function () {
     });
   }
 
+  /* ---------------- (review rework) fittings: seams, hinge lines, lamps, aerials ---------------- */
+  function ribbon(pts, nrm, w, lift) {
+    var pos = [], A = [], B = [], i, n = pts.length;
+    function nz(a) { var m = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
+    for (i = 0; i < n; i++) {
+      var p = pts[i], nn = nz(nrm[0].length ? nrm[i] : nrm), a = pts[Math.min(i + 1, n - 1)], b = pts[Math.max(i - 1, 0)];
+      var t = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+      var sx = nz([t[1] * nn[2] - t[2] * nn[1], t[2] * nn[0] - t[0] * nn[2], t[0] * nn[1] - t[1] * nn[0]]);
+      var c = [p[0] + nn[0] * lift, p[1] + nn[1] * lift, p[2] + nn[2] * lift];
+      A.push([c[0] + sx[0] * w / 2, c[1] + sx[1] * w / 2, c[2] + sx[2] * w / 2]);
+      B.push([c[0] - sx[0] * w / 2, c[1] - sx[1] * w / 2, c[2] - sx[2] * w / 2]);
+    }
+    for (i = 0; i + 1 < n; i++) [A[i], B[i], B[i + 1], A[i], B[i + 1], A[i + 1]].forEach(function (q) { pos.push(q[0], q[1], q[2]); });
+    var g = new V.BufferGeometry();
+    g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    g.computeVertexNormals();
+    return g;
+  }
+  function lamp(p, r, hex) {
+    var g = new V.OctahedronGeometry(r, 0).toNonIndexed(), n = g.attributes.position.count, col = [], i;
+    for (i = 0; i < n; i++) col.push(((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255);
+    g.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    g.translate(p[0], p[1], p[2]);
+    return g;
+  }
+  function addDetails(K) {
+    var N = 24, i;
+    /* frame seams round the body (top half and sides), on the paint sheet's frame stations */
+    [3.25, 5.5, 11.4, 14.2, 18.0, 22.0, 26.0, 29.6, 33.0, 36.5].forEach(function (d) {
+      var pts = [], nr = [];
+      for (i = 0; i <= N; i++) {
+        var t = -0.35 + (PI + 0.7) * i / N, p = fusPt(d, t), zc = (pl(FUS, d, 2) + pl(FUS, d, 3)) / 2;
+        pts.push(p); nr.push([0, p[1], p[2] - zc]);
+      }
+      K.seam.push(ribbon(pts, nr, 0.05, 0.012));
+    });
+    [1, -1].forEach(function (sd) {
+      /* outer-wing slat and flap hinge lines, the glove flap line (as the paint sheet draws them) */
+      [0.12, 0.72].forEach(function (f) {
+        var pts = OWING.slice(0, 4).map(function (w) { var c = w[2] - w[1]; return [X(w[1] + f * c), sd * wy(w[0]), WZ - 0.02 + yt(f, w[3]) * c + 0.01]; });
+        K.seam.push(ribbon(pts, [0, 0, 1], 0.07, 0.01));
+      });
+      var gp = GLOVE.map(function (w) { var c = w[2] - w[1], f = 1 - 1.4 / c; return [X(w[1] + f * c), sd * w[0], WZ + yt(f, w[3] / c) * c + 0.01]; });
+      K.seam.push(ribbon(gp, [0, 0, 1], 0.07, 0.01));
+      /* tailplane hinge */
+      var tp = TP.slice(0, 5).map(function (t) { var c = t[2] - t[1]; return [X(t[1] + 0.7 * c), sd * t[0], tpz(t[0]) + yt(0.7, t[3]) * c + 0.01]; });
+      K.seam.push(ribbon(tp, [0, 0, 1], 0.06, 0.01));
+      /* rudder hinge, both faces of the fin */
+      var rp = FIN.slice(2, 9).map(function (q) { var c = q[2] - q[1], f = 1 - 1.6 / c; return [X(q[1] + f * c), sd * (yt(f, q[3] / c) * c + 0.01), q[0]]; });
+      K.seam.push(ribbon(rp, [0, sd, 0], 0.06, 0.005));
+      /* wingtip lamps (port red, starboard green), the AoA vane and pitot on the nose flanks */
+      K.lamp.push(lamp([X(30.0), sd * wy(16.9), WZ], 0.10, sd > 0 ? 0xe02218 : 0x18c04a));
+      K.metal.push(box(0.35, 0.05, 0.16, X(4.6), sd * (fusY(4.6, 3.2) + 0.02), 3.2));
+      K.metal.push(rod([X(3.6), sd * (fusY(3.6, 2.95) + 0.02), 2.95], [X(2.9), sd * (fusY(3.6, 2.95) + 0.05), 2.95], 0.025, 6));
+      /* the main-gear fairing seams along the body side (C) */
+      K.seam.push(ribbon([[X(23.8), sd * (fusY(24, 2.3) + 0.01), 2.3], [X(29.0), sd * (fusY(29, 2.3) + 0.01), 2.3]], [0, sd, 0], 0.05, 0.01));
+    });
+    /* anti-collision beacons spine and belly, the tail-cone light */
+    K.lamp.push(lamp([X(14.0), 0, 4.70], 0.12, 0xe02218));
+    K.lamp.push(lamp([X(20.0), 0, 2.03], 0.12, 0xe02218));
+    K.lamp.push(lamp([X(41.4), 0, 5.66], 0.07, 0xf4f1e0));
+    /* blade aerials on the spine and belly */
+    [[12.0, 1], [17.0, 1], [8.0, -1], [16.0, -1]].forEach(function (q) {
+      var z = q[1] > 0 ? fusTopZ(q[0], 0) : pl(FUS, q[0], 3);
+      K.ink.push(box(0.45, 0.05, 0.36, X(q[0]), 0, z + q[1] * 0.16));
+    });
+  }
+
   function build(THREE, M, C, kind) {
     V = THREE;
     kind = kind === "russian" ? "russian" : "soviet";
-    var K = { skin: [], team: [], metal: [], ink: [], glass: [] }, G = { leg: [], tyre: [], white: [] };
+    var K = { skin: [], team: [], metal: [], burnt: [], ink: [], glass: [], seam: [], lamp: [] }, G = { leg: [], tyre: [], white: [] };
     addBody(K);
     addIntakes(K);
     addWings(K);
     addTail(K);
+    addDetails(K);
     addGear(G);
     var mats = makeMats(C, kind), root = new V.Group();
-    ["skin", "team", "metal", "ink", "glass"].forEach(function (key) {
+    ["skin", "team", "metal", "burnt", "ink", "glass", "seam", "lamp"].forEach(function (key) {
       if (!K[key].length) return;
-      var geo = merge(K[key]);
+      var geo = key === "lamp" ? mergeC(K[key]) : merge(K[key]);
       if (key === "skin") projUV(geo);
       root.add(new V.Mesh(geo, mats[key]));
     });

@@ -17,6 +17,12 @@
    plan view and no body plan: every breadth below the published beam is
    NOT CONFIRMED and is listed as such in each block.
 
+   REWORK ROUND 2026-11-12 (the owner's visual review): both boats given the
+   deck fittings the [HB] profiles leave out (fittings() below: rubbing
+   strake, guard rails, bollards, fairleads, anchors, hatches, vents, raft
+   canisters, roof rail, searchlight).  Profiles unchanged; places of the
+   fittings NOT CONFIRMED.
+
    STILL HELD (no usable drawing or photograph, see the foot):
      kpa_e80_corvette     Soho-class catamaran frigate
      kpa_e00_sub          Sinpo / Gorae-class SSB (and Sinpo-C / Hero Kim Kun Ok)
@@ -368,6 +374,78 @@ var HeroKpaShips2 = (function () {
     box(B.team, d0 + XO, d1 + XO, -hw, hw, z - 0.02, z);
   }
 
+  /* ---------------------------------------------------------- deck fittings
+     Rework round 2026-11-12 (visual review: both boats read as a bare hull
+     with blocks on it).  What every photograph of a P-6 type hull shows and
+     the [HB] profiles leave out (rule 10): the rubbing strake along the
+     deck edge, guard rails (stanchions with two wires) along the open deck
+     edges, bollard pairs and fairleads, the anchor in its pocket at the bow,
+     deck hatches and mushroom vents, the boat's life-raft canisters, the
+     searchlight and the wheelhouse roof rail.  o: rails [[d0, d1], ...],
+     boll [d...], hatch [[d, y, l, w]...], vents [[d, y]...], rafts [d, y, z],
+     roof [x0, x1, hw, z] (model x) */
+  function fittings(B, H, XO, o) {
+    var s, d, i;
+    function X(dd) { return dd + XO; }
+    function yE(dd) { return Math.max(0.05, tbl(HB, dd)); }
+    for (s = -1; s <= 1; s += 2) {
+      for (d = 0.2; d < 25.4; d += 0.8) {
+        var d2 = Math.min(25.6, d + 0.8);
+        cyl(B.dark, [X(d), s * (yE(d) + 0.04), H.zD(d) - 0.14], [X(d2), s * (yE(d2) + 0.04), H.zD(d2) - 0.14], 0.055, 0.055, 4);
+      }
+      (o.rails || []).forEach(function (r) {
+        var n = Math.max(2, Math.round((r[1] - r[0]) / 1.2)), prev = null, k;
+        for (k = 0; k <= n; k++) {
+          var dd = r[0] + (r[1] - r[0]) * k / n, y = s * (yE(dd) - 0.1), z = H.zD(dd);
+          cyl(B.metal, [X(dd), y, z], [X(dd), y, z + 0.9], 0.022, 0.022, 4);
+          if (prev) {
+            cyl(B.metal, [prev[0], prev[1], prev[2] + 0.9], [X(dd), y, z + 0.9], 0.014, 0.014, 3);
+            cyl(B.metal, [prev[0], prev[1], prev[2] + 0.45], [X(dd), y, z + 0.45], 0.012, 0.012, 3);
+          }
+          prev = [X(dd), y, z];
+        }
+      });
+      (o.boll || []).forEach(function (dd) {
+        var y = s * (yE(dd) - 0.45), z = H.zD(dd);
+        cylZ(B.metal, X(dd) - 0.16, y, z - 0.02, z + 0.3, 0.07, 8);
+        cylZ(B.metal, X(dd) + 0.16, y, z - 0.02, z + 0.3, 0.07, 8);
+        box(B.metal, X(dd) - 0.26, X(dd) + 0.26, y - 0.09, y + 0.09, z - 0.02, z + 0.04);
+        box(B.metal, X(dd) - 0.15, X(dd) + 0.15, s * (yE(dd) - 0.12) - 0.06, s * (yE(dd) - 0.12) + 0.06, z, z + 0.14);
+      });
+      /* the anchor in its pocket under the deck edge, port and starboard */
+      var da = 23.0, ya = s * (yE(da) * 0.93 + 0.02), za = H.zD(da) - 0.55;
+      box(B.dark, X(da) - 0.32, X(da) + 0.32, ya - 0.03, ya + 0.03, za - 0.3, za + 0.3);
+      box(B.metal, X(da) - 0.2, X(da) + 0.2, ya + s * 0.03 - 0.03, ya + s * 0.03 + 0.03, za - 0.25, za + 0.15);
+    }
+    (o.hatch || []).forEach(function (h) {
+      var z = H.zD(h[0]) + 0.08;
+      box(B.sup, X(h[0]) - h[2] / 2, X(h[0]) + h[2] / 2, h[1] - h[3] / 2, h[1] + h[3] / 2, z - 0.06, z + 0.06);
+      box(B.dark, X(h[0]) - h[2] / 2 + 0.06, X(h[0]) + h[2] / 2 - 0.06, h[1] - h[3] / 2 + 0.06, h[1] + h[3] / 2 - 0.06, z + 0.06, z + 0.075);
+    });
+    (o.vents || []).forEach(function (v) {
+      var z = H.zD(v[0]);
+      cylZ(B.sup, X(v[0]), v[1], z, z + 0.42, 0.09, 8);
+      ellipsoid(B.sup, [X(v[0]), v[1], z + 0.42], 0.17, 0.17, 0.08, 3, 8, 0, PI / 2);
+    });
+    if (o.rafts) for (i = 0; i < 2; i++) {
+      var R = o.rafts;
+      cyl(B.metal, [X(R[0]) - 0.45 + i * 0.95, R[1] - 0.25, R[2] + 0.02], [X(R[0]) - 0.45 + i * 0.95, R[1] + 0.25, R[2] + 0.02], 0.03, 0.03, 4);
+      cyl(B.sup, [X(R[0]) - 0.75 + i * 0.95, R[1], R[2] + 0.27], [X(R[0]) - 0.15 + i * 0.95, R[1], R[2] + 0.27], 0.24, 0.24, 10);
+    }
+    if (o.roof) {
+      var q = o.roof, k;
+      for (s = -1; s <= 1; s += 2) {
+        for (k = 0; k <= 4; k++) cyl(B.metal, [lerp(q[0], q[1], k / 4), s * q[2], q[3]], [lerp(q[0], q[1], k / 4), s * q[2], q[3] + 0.6], 0.018, 0.018, 3);
+        cyl(B.metal, [q[0], s * q[2], q[3] + 0.6], [q[1], s * q[2], q[3] + 0.6], 0.014, 0.014, 3);
+      }
+      cyl(B.metal, [q[0], -q[2], q[3] + 0.6], [q[0], q[2], q[3] + 0.6], 0.014, 0.014, 3);
+      /* searchlight on the roof's fore end */
+      cylZ(B.metal, q[1] - 0.35, 0.9, q[3], q[3] + 0.3, 0.05, 6);
+      cyl(B.sup, [q[1] - 0.5, 0.9, q[3] + 0.42], [q[1] - 0.1, 0.9, q[3] + 0.42], 0.16, 0.18, 10);
+      cyl(B.glass, [q[1] - 0.1, 0.9, q[3] + 0.42], [q[1] - 0.08, 0.9, q[3] + 0.42], 0.15, 0.15, 10);
+    }
+  }
+
   /* ======================================================================
      CHAHO-CLASS FIRE-SUPPORT PATROL BOAT -- boat_k
      A P-6 hull with a BM-21-type 122 mm rocket pack on a frame amidships and
@@ -489,6 +567,9 @@ var HeroKpaShips2 = (function () {
       cylZ(B.metal, X(23.56), -0.5, zD(23.56) - 0.03, zD(23.56) + 0.14, 0.07, 6);
       cylZ(B.metal, X(24.15), 0, zD(24.15) - 0.03, zD(24.15) + 0.14, 0.07, 6);
 
+      fittings(B, H, XO, { rails: [[0.4, 4.6], [5.0, 11.0], [16.6, 25.0]], boll: [1.3, 17.6, 24.7],
+        hatch: [[2.2, 1.6, 0.6, 0.5], [17.0, 0, 0.8, 0.8], [22.6, 0, 0.6, 0.6]], vents: [[15.0, 2.0], [15.0, -2.0], [5.4, 1.9]],
+        rafts: [X(12.6) - XO, -0.95, 3.71], roof: [X(11.2), X(14.0), 1.45, 3.71] });
       /* team: two strips on the deck */
       teamStrip(B, H, XO, 21.2, 22.2, 0.6);
       for (s = -1; s <= 1; s += 2) box(B.team, X(1.6), X(2.6), s * 1.45, s * 1.85, zD(1.6) + 0.05, zD(1.6) + 0.07);  /* beside the wedge */
@@ -636,6 +717,9 @@ var HeroKpaShips2 = (function () {
         }
       })();
 
+      fittings(B, H, XO, { rails: [[0.4, 4.2], [5.8, 10.8], [16.2, 19.2]], boll: [1.3, 16.6, 25.0],
+        hatch: [[3.0, 1.2, 0.6, 0.5], [9.0, -1.4, 0.7, 0.6]], vents: [[16.4, 2.0], [16.4, -2.0], [6.2, 1.9]],
+        rafts: [X(11.9) - XO, -0.9, 3.28], roof: [X(11.8), X(15.2), 1.45, 3.28] });
       /* team: two strips on the deck */
       teamStrip(B, H, XO, 1.4, 2.4, 0.6);
       box(B.team, X(21.0), X(22.6), -0.4, 0.4, 2.42, 2.45);    /* on the trunk roof */

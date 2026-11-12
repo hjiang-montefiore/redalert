@@ -514,7 +514,9 @@ var HeroUsSamSite = (function () {
   }
 
   function buildPatriot(THREE, C, key) {
-    var u = UNIT_MODELS[key].build(THREE, {}, C), T = patMats(THREE, u, C);
+    /* the raw build: the unit row packs its meshes for the draw-call budget (HeroUsPatriot.pack) */
+    var R = typeof HeroUsPatriot !== "undefined" && HeroUsPatriot.rows ? HeroUsPatriot.rows[key] : null;
+    var u = R ? HeroUsPatriot.build(THREE, C, R) : UNIT_MODELS[key].build(THREE, {}, C), T = patMats(THREE, u, C);
     var root = new THREE.Group(); root.name = "us_sam_site_patriot_" + key;
     var K = new Baker(THREE), i, j, s;
     var tur = null, stat = [], S = patSite();

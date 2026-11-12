@@ -102,10 +102,34 @@
        (70,85,100) -> #3c4855, pale green below, sampled only in shade
        (42,50,30), drawn #56663e; white nose cone, pale fin cap. One
        photograph; the exact line of the demarcation is read from it.
-   Markings: red stars with a white edge on both faces of the fin and under
-   each outer wing panel, so that they show on the outer face of a folded
-   panel (A, F). No bort number, ensign, Guards badge, warning triangle or
-   text.
+   Markings: none (AGENT_POLICY 6, plain paint). The red stars A, F show on
+   the fin and under each outer panel were drawn until 2026-11-12 and are
+   gone; no bort number, ensign, Guards badge, warning triangle or text.
+
+   ---- 2026-11-12 review rework (geometry and fittings) ----
+   The visual review found it crude: "slab-sided body, plank wing, no
+   fittings". Against the drawing and photographs A - H (and two fetched
+   again for this pass, the drawing "Yakolev Yak-38M.png" and B, both in the
+   agent scratchpad rw_air2/ref_yak38), on the standard of
+   js/hero/nato_e80_fighter.js:
+     - body: the drawing's BODY stations unchanged, now run through a
+       Catmull-Rom spline (tabR) at 0.1 - 0.4 m steps instead of lofting
+       straight between 25 stations, so the nose ogive, canopy cheeks,
+       intake shoulder and tail cone taper are curves;
+     - wing, tailplane, fin and dorsal fillet: true NACA thickness on cosine
+       spacing (18 corners) instead of a 10-corner polygon, the wing 6 per
+       cent at the root to 4 at the tip (tip figure NOT CONFIRMED), more
+       span stations; the fold hinge moves 0.01 m (the 4.47 m folded
+       width is kept);
+     - fittings (stations from the photographs, NOT measured): frame and
+       longeron seams, flap / aileron / elevator / rudder hinge lines, the
+       fold joint, the lift-engine door's eight louvre slats, the auxiliary
+       intake doors, the cruise-engine bay doors, intake splitter plates,
+       blade aerials, beacons, nose and tail lamps, static dischargers;
+     - paint: more panelling, fastener rows, soot behind the nozzles and
+       under the lift-engine louvres; the stars removed.
+   Every name is kept: the "wingfold" groups, "gear", the mesh names; new
+   meshes "seams", "lamps_red", "lamps_green". len 16.37 kept.
    Gear: it RETRACTS (ru.wikipedia), so its group is named "gear".
    Stores: the rows name 2 x R-60 (R-60M) and a GSh-23L pod: an R-60 on
    each outer pylon, one UPK-23-250 on the starboard inner pylon, the port
@@ -168,7 +192,7 @@ var HeroYak38 = (function () {
   var WFOLD = 102;
   function wLE(y) { return LE0 + y; }
   function wH(y) { return Z(WH0) - Math.max(0, y - YS) * Math.tan(10 * D2R); }
-  function wT(y) { return Math.max(0.05, 0.06 * (TE - wLE(y))); }      /* 6 % section (P-53s-6 root) */
+  function wT(y) { return Math.max(0.035, (0.060 - 0.020 * Math.min(y / TIPY, 1)) * (TE - wLE(y))); }   /* 6 % root (P-53s-6) to 4 % tip: NOT CONFIRMED at the tip */
   /* tailplane: low, fixed, 50 deg LE, 3.6 m span (drawing plan) */
   var TPY0 = 0.40, TPY1 = 1.80, TPH = 1.02;
   function tLE(y) { return 13.60 + (y - 0.45) * (1.40 / 1.35); }
@@ -193,25 +217,69 @@ var HeroYak38 = (function () {
   };
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  /* (2026-11-12 rework) Catmull-Rom through a station table: the columns
+     after the first at station s (the nato_e80_fighter.js tab()) */
+  function crr(p0, p1, p2, p3, t) {
+    return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+  }
+  function tabR(rows, s) {
+    var n = rows.length, i = 0, k, out = [];
+    if (s <= rows[0][0]) return rows[0].slice(1);
+    if (s >= rows[n - 1][0]) return rows[n - 1].slice(1);
+    while (rows[i + 1][0] < s) i++;
+    var a = rows[Math.max(i - 1, 0)], b = rows[i], c = rows[i + 1], d = rows[Math.min(i + 2, n - 1)];
+    var t = (s - b[0]) / (c[0] - b[0]);
+    for (k = 1; k < b.length; k++) out.push(crr(a[k], b[k], c[k], d[k], t));
+    return out;
+  }
+  /* the body surface at station s, angle a (0 = port side, PI/2 = crown), lifted by lift */
+  function bodyAt(s, a, lift) {
+    var r = tabR(BODY, s), zc = Z((r[1] + r[2]) / 2), h = (r[1] - r[2]) / 2, c = Math.cos(a), sn = Math.sin(a);
+    var e = sn >= 0 ? r[3] : r[4];
+    var y = r[0] * sgn(c) * Math.pow(Math.abs(c), e), z = zc + h * sgn(sn) * Math.pow(Math.abs(sn), e);
+    var L = Math.sqrt(y * y + (z - zc) * (z - zc)) || 1, k = lift || 0;
+    return [X(s), y + k * y / L, z + k * (z - zc) / L];
+  }
+  /* ribbon(): a strip along a polyline lying on the skin (the outward normal
+     at each point given), for panel seams and hinge lines; bladeA(): a
+     tapered blade aerial (the nato_e80_fighter.js detail kit) */
+  function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function vnorm(a) { var m = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
+  function ribbon(pts, nrm, w, lift) {
+    var out = [], A = [], B = [], i, n = pts.length, l = lift === undefined ? 0.010 : lift;
+    for (i = 0; i < n; i++) {
+      var p = pts[i], nn = vnorm(typeof nrm === "function" ? nrm(p, i) : nrm);
+      var t = vsub(pts[Math.min(i + 1, n - 1)], pts[Math.max(i - 1, 0)]), sd = vnorm(vcross(t, nn));
+      var c = [p[0] + nn[0] * l, p[1] + nn[1] * l, p[2] + nn[2] * l];
+      A.push([c[0] + sd[0] * w / 2, c[1] + sd[1] * w / 2, c[2] + sd[2] * w / 2]);
+      B.push([c[0] - sd[0] * w / 2, c[1] - sd[1] * w / 2, c[2] - sd[2] * w / 2]);
+    }
+    for (i = 0; i + 1 < n; i++) out.push(A[i], B[i], B[i + 1], A[i], B[i + 1], A[i + 1], A[i], B[i + 1], B[i], A[i], A[i + 1], B[i + 1]);
+    return tris(out);
+  }
+  function seamHoop(s, a0, a1, w) {
+    var pts = [], i, n = 18;
+    for (i = 0; i <= n; i++) pts.push(bodyAt(s, a0 + (a1 - a0) * i / n, 0));
+    var r = tabR(BODY, s), zc = Z((r[1] + r[2]) / 2);
+    return ribbon(pts, function (p) { return [0, p[1], p[2] - zc]; }, w || 0.03, 0.008);
+  }
+  function seamRun(ss, a, w) {
+    var pts = ss.map(function (q) { return bodyAt(q, a, 0); });
+    return ribbon(pts, function (p, i) { var r = tabR(BODY, ss[i]), zc = Z((r[1] + r[2]) / 2); return [0, p[1], p[2] - zc]; }, w || 0.03, 0.008);
+  }
+  function bladeA(p, up, h, c0, c1, th, rake) {
+    var t = th / 2, out = [];
+    var a0 = [p[0] + c0 / 2, p[1] + t, p[2]], a1 = [p[0] - c0 / 2, p[1] + t, p[2]], a2 = [p[0] - c0 / 2, p[1] - t, p[2]], a3 = [p[0] + c0 / 2, p[1] - t, p[2]];
+    var zt = p[2] + up * h, xr = -rake;
+    var b0 = [p[0] + c1 / 2 + xr, p[1] + t, zt], b1 = [p[0] - c1 / 2 + xr, p[1] + t, zt], b2 = [p[0] - c1 / 2 + xr, p[1] - t, zt], b3 = [p[0] + c1 / 2 + xr, p[1] - t, zt];
+    out.push(a0, a1, b1, a0, b1, b0, a3, b3, b2, a3, b2, a2, a0, b0, b3, a0, b3, a3, a1, a2, b2, a1, b2, b1, b0, b1, b2, b0, b2, b3);
+    return tris(out);
+  }
   function pxX(x) { return clamp((x - XMIN) * PXM, 1, TW - 1); }
   function pxS(s) { return pxX(X(s)); }
   function pxY(y) { return (YMAX - y) * PXM; }
   function pxZ(z) { return (ZTOP - z) * PXM; }
-
-  /* the Soviet star: red with a white edge */
-  function star(g, cx, cy, r, a0) {
-    function path(k) {
-      g.beginPath();
-      for (var i = 0; i < 10; i++) {
-        var a = a0 + i * PI / 5, q = (i & 1) ? 0.40 : 1;
-        var x = cx + Math.cos(a) * q * r * k, y = cy + Math.sin(a) * q * r * k;
-        if (i) g.lineTo(x, y); else g.moveTo(x, y);
-      }
-      g.closePath();
-    }
-    g.fillStyle = "#d6d8d4"; path(1.18); g.fill();
-    g.fillStyle = "#a8261e"; path(1.0); g.fill();
-  }
 
   /* the 38M's demarcation on the fuselage side (G): the h of the line at s */
   function demH(s) {
@@ -310,12 +378,26 @@ var HeroYak38 = (function () {
       g.fillStyle = "rgba(200,205,210," + (0.03 + R() * 0.04).toFixed(3) + ")";
       g.fillRect(R() * TW, R() * TH, 6 + R() * 30, 2 + R() * 5);
     }
-    /* stars: both faces of the fin (A, B, E, G); under each outer panel, which is its
-       outer face when folded (A, F) */
-    star(g, pxS(14.55), B_PORT + pxZ(Z(2.30)), 0.34 * PXM, -PI / 2);     /* a point up */
-    star(g, pxS(14.55), B_STBD + pxZ(Z(2.30)), 0.34 * PXM, -PI / 2);
-    star(g, pxS(9.95), B_BEL + pxY(2.80), 0.30 * PXM, 0);                 /* a point forward */
-    star(g, pxS(9.95), B_BEL + pxY(-2.80), 0.30 * PXM, 0);
+    /* (2026-11-12 review) no stars: the national markings A, B, E, F, G show
+       on the fin and under the outer panels are not drawn (AGENT_POLICY 6) */
+    /* more panelling: longeron seams on the sides, the gun-bay and avionics
+       doors forward, fastener rows along the frames, exhaust soot aft of the
+       nozzles and the lift-engine louvres' soot on the belly */
+    g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+    for (b = 0; b < 3; b++) {
+      var ob2 = SIDES[b];
+      g.beginPath(); g.moveTo(pxS(4.6), ob2 + pxZ(Z(1.42))); g.lineTo(pxS(14.6), ob2 + pxZ(Z(1.36))); g.stroke();
+      g.beginPath(); g.moveTo(pxS(1.0), ob2 + pxZ(Z(0.30))); g.lineTo(pxS(12.6), ob2 + pxZ(Z(0.40))); g.stroke();
+      g.strokeRect(pxS(2.4), ob2 + pxZ(Z(0.80)), pxS(1.6) - pxS(2.4), pxZ(Z(0.40)) - pxZ(Z(0.80)));
+      g.strokeRect(pxS(12.9), ob2 + pxZ(Z(1.30)), pxS(11.9) - pxS(12.9), pxZ(Z(0.80)) - pxZ(Z(1.30)));
+      g.fillStyle = "rgba(0,0,0,0.16)";
+      for (i = 0; i < FR.length; i++) for (k = 0; k < 14; k++) g.fillRect(pxS(FR[i]) + 2, ob2 + pxZ(Z(0.1 + k * 0.12)), 1.2, 1.2);
+      var sg = g.createLinearGradient(pxS(12.3), 0, pxS(14.8), 0);
+      sg.addColorStop(0, "rgba(20,18,16,0.45)"); sg.addColorStop(1, "rgba(20,18,16,0)");
+      g.fillStyle = sg; g.fillRect(pxS(14.8), ob2 + pxZ(Z(0.75)), pxS(12.3) - pxS(14.8), pxZ(Z(0.0)) - pxZ(Z(0.75)));
+    }
+    g.fillStyle = "rgba(20,18,16,0.25)";
+    g.fillRect(pxS(6.6), B_BEL + pxY(0.5), pxS(4.6) - pxS(6.6), pxY(-0.5) - pxY(0.5));
     _cv[key] = cv;
     return cv;
   }
@@ -375,6 +457,9 @@ var HeroYak38 = (function () {
     m.nozzle = new V.MeshStandardMaterial({ color: 0x5e5850, roughness: 0.45, metalness: 0.60 });
     m.glass = new V.MeshStandardMaterial({ color: 0x24363d, roughness: 0.10, metalness: 0.35 });
     m.pale  = new V.MeshStandardMaterial({ color: 0xbfc4c3, roughness: 0.55, metalness: 0.15 });
+    m.seam  = new V.MeshStandardMaterial({ color: 0x1c222c, roughness: 0.85, metalness: 0.05, side: V.DoubleSide });
+    m.lampR = new V.MeshStandardMaterial({ color: 0xd8261c, roughness: 0.3, metalness: 0.0, emissive: 0x801410, emissiveIntensity: 0.6 });
+    m.lampG = new V.MeshStandardMaterial({ color: 0x1fb04a, roughness: 0.3, metalness: 0.0, emissive: 0x0c6a2a, emissiveIntensity: 0.6 });
     var tc = (C && C.team !== undefined) ? C.team : "#c0392b";
     m.team  = new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
                                            emissive: new V.Color(tc), emissiveIntensity: 0.10 });
@@ -468,12 +553,17 @@ var HeroYak38 = (function () {
   }
   /* aerofoil section along le -> te, thickness t along nrm */
   function foil(le, te, t, nrm) {
+    /* (2026-11-12 rework) a NACA 00xx thickness on cosine spacing, 18
+       corners, in place of the 10-corner polygon: t the full thickness */
     function p(f, k) {
       return [le[0] + (te[0] - le[0]) * f + nrm[0] * k, le[1] + (te[1] - le[1]) * f + nrm[1] * k,
               le[2] + (te[2] - le[2]) * f + nrm[2] * k];
     }
-    return [p(0, 0), p(0.06, t * 0.36), p(0.18, t / 2), p(0.45, t * 0.48), p(0.75, t * 0.30), p(1, 0),
-            p(0.75, -t * 0.30), p(0.45, -t * 0.48), p(0.18, -t / 2), p(0.06, -t * 0.36)];
+    function th(f) { return t / 0.20 * (0.2969 * Math.sqrt(f) - 0.1260 * f - 0.3516 * f * f + 0.2843 * f * f * f - 0.1036 * f * f * f * f) * 0.5; }
+    var out = [], j, f, M = 9;
+    for (j = 0; j <= M; j++) { f = (1 - Math.cos(PI * j / M)) / 2; out.push(p(f, j === M ? 0 : th(f))); }
+    for (j = M - 1; j >= 1; j--) { f = (1 - Math.cos(PI * j / M)) / 2; out.push(p(f, -th(f))); }
+    return out;
   }
   /* superellipse sections, lofted nose to tail (decreasing x): faces outward */
   function sec(x, yc, zc, w, hu, hl, eu, el, rake) {
@@ -565,15 +655,23 @@ var HeroYak38 = (function () {
     var T = makeMats(C, key);
     var g = new V.Group();
     g.name = "yak38";
-    var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], nozzle: [] };
+    var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], nozzle: [], seam: [], lampR: [], lampG: [] };
     var G = { metal: [], tyre: [] };
     var FW = { "-1": [], "1": [] };
     var s, i, y, r;
 
     /* ---- fuselage (one skin: the nose cone is painted), the nose boom */
-    var bs = [];
-    for (i = 0; i < BODY.length; i++) {
-      r = BODY[i];
+    /* (2026-11-12 rework) the drawing's stations run through a Catmull-Rom
+       spline at 0.15 - 0.4 m steps (ru_riga / nato_e80_fighter kit), so the
+       nose ogive, the canopy cheeks, the shoulder over the intakes and the
+       taper of the tail cone are curves, not a stack of cones */
+    var bs = [], BSS = [];
+    for (s = 0; s < 1.0; s += 0.1) BSS.push(s);
+    for (s = 1.0; s < 4.6; s += 0.25) BSS.push(s);
+    for (s = 4.6; s < 15.3; s += 0.4) BSS.push(s);
+    BSS.push(15.4, 15.55);
+    for (i = 0; i < BSS.length; i++) {
+      r = [BSS[i]].concat(tabR(BODY, BSS[i]));
       bs.push(sec(X(r[0]), 0, Z((r[2] + r[3]) / 2), r[1], (r[2] - r[3]) / 2, (r[2] - r[3]) / 2, r[4], r[5]));
     }
     push(K.skin, loft(bs, 36, 0, 0));
@@ -641,7 +739,7 @@ var HeroYak38 = (function () {
 
     /* ---- wing: the fixed inner wing in the static skin, the outer panel in its fold group */
     function wsec(yy, sd) { return foil([X(wLE(yy)), sd * yy, wH(yy)], [X(TE), sd * yy, wH(yy)], wT(yy), [0, 0, 1]); }
-    var WIN = [YR, YS, 1.30, 1.70, YH], WOUT = [YH, 2.60, 3.05, 3.43];
+    var WIN = [YR, YS, 1.10, 1.40, 1.75, YH], WOUT = [YH, 2.40, 2.75, 3.10, 3.43];
     for (s = -1; s <= 1; s += 2) {
       var wi = [], wo = [];
       for (i = 0; i < WIN.length; i++) wi.push(wsec(WIN[i], s));
@@ -683,7 +781,7 @@ var HeroYak38 = (function () {
     /* ---- tailplane: low, fixed (ru.wikipedia), with its elevators painted */
     for (s = -1; s <= 1; s += 2) {
       var tp = [];
-      var TY = [TPY0, 0.45, 1.10, TPY1];
+      var TY = [TPY0, 0.45, 0.80, 1.15, 1.50, TPY1];
       for (i = 0; i < TY.length; i++) {
         var yy = TY[i], th = 0.13 - (yy - 0.4) * 0.055;
         tp.push(foil([X(tLE(yy)), s * yy, Z(TPH)], [X(tTE(yy)), s * yy, Z(TPH)], th, [0, 0, 1]));
@@ -699,6 +797,57 @@ var HeroYak38 = (function () {
                        foil([X(11.90), 0, Z(1.80)], [X(13.6), 0, Z(1.80)], 0.26, [0, 1, 0]),
                        foil([X(12.85), 0, Z(1.96)], [X(13.6), 0, Z(1.96)], 0.21, [0, 1, 0])]));
 
+    /* ---- (2026-11-12 rework) fittings the photographs show (A - H), laid
+       on the skin; stations read off the photographs, NOT measured:
+       frame seams round the fuselage, the longeron seams, the flap,
+       aileron, elevator and rudder hinge lines, the fold joint on both
+       faces, the lift-engine door's louvre slats, the auxiliary intake doors
+       on the hump, the cruise-engine bay doors, blade aerials on the spine
+       and the belly, the beacons, the wingtip and tail lamps, the
+       intakes' boundary-layer splitter plates, static dischargers */
+    [0.90, 2.00, 4.60, 7.20, 8.40, 10.70, 12.00, 13.40, 14.60].forEach(function (sf) { K.seam.push(seamHoop(sf, -PI * 0.42, PI * 1.42, 0.028)); });
+    var LS = []; for (s = 4.7; s <= 14.6; s += 0.7) LS.push(s);
+    [0.55, PI - 0.55, -0.35, PI + 0.35].forEach(function (aa) { K.seam.push(seamRun(LS, aa, 0.028)); });
+    for (s = -1; s <= 1; s += 2) {
+      var fl = [], al = [], fu = [], i2;
+      for (i2 = 0; i2 <= 5; i2++) {
+        var yf = 0.95 + (YH - 1.0) * i2 / 5;
+        fl.push([X(TE - 0.55), s * yf, wH(yf) + wT(yf) * 0.12 + 0.006]);
+        fu.push([X(TE - 0.55), s * yf, wH(yf) - wT(yf) * 0.12 - 0.006]);
+      }
+      K.seam.push(ribbon(fl, [0, 0, 1], 0.03, 0.004), ribbon(fu, [0, 0, -1], 0.03, 0.004));
+      for (i2 = 0; i2 <= 4; i2++) { var ya = YH + 0.08 + (3.25 - YH - 0.08) * i2 / 4; al.push([X(TE - 0.42), s * ya, wH(ya) + wT(ya) * 0.12 + 0.006]); }
+      FW[s].push(ribbon(al, [0, 0, 1], 0.03, 0.004));
+      /* the fold joint across the chord, upper face (the hinge line) */
+      var fj = [];
+      for (i2 = 0; i2 <= 6; i2++) { var u = i2 / 6; fj.push([X(wLE(YH) + u * (TE - wLE(YH))), s * YH, wH(YH) + wT(YH) * 0.5 * Math.sin(PI * Math.min(u * 1.3, 1)) + 0.005]); }
+      K.seam.push(ribbon(fj, [0, 0, 1], 0.04, 0.004));
+      /* the elevator hinge */
+      K.seam.push(ribbon([[X(tTE(0.55) - 0.40), s * 0.55, Z(TPH) + 0.035], [X(tTE(1.70) - 0.30), s * 1.70, Z(TPH) + 0.02]], [0, 0, 1], 0.03, 0.004));
+      /* the rudder hinge, both faces */
+      K.seam.push(ribbon([[X(15.00), s * 0.06, Z(1.60)], [X(15.06), s * 0.035, Z(3.05)]], [0, s, 0], 0.03, 0.004));
+      /* the intakes' splitter plate standing off the fuselage, ahead of the mouth */
+      K.metal.push(box(0.70, 0.02, 0.62, X(3.70), s * 0.47, Z(0.70)));
+      /* the cruise engine's bay doors on the lower side, the static dischargers */
+      K.seam.push(ribbon([[X(7.6), s * 0.955, Z(0.25)], [X(10.3), s * 0.92, Z(0.25)], [X(10.3), s * 0.92, Z(0.95)], [X(7.6), s * 0.955, Z(0.95)], [X(7.6), s * 0.955, Z(0.25)]], [0, s, 0], 0.03, 0.012));
+      [2.9, 3.3].forEach(function (yd) { FW[s].push(bar([X(TE - 0.02), s * yd, wH(yd)], [X(TE + 0.14), s * yd, wH(yd)], 0.007, 3)); });
+      K.dark.push(bar([X(15.62), s * 1.75, Z(TPH)], [X(15.78), s * 1.75, Z(TPH)], 0.007, 3));
+      /* the auxiliary intake doors on the hump either side of the lift-engine door (D, G) */
+      K.dark.push(box(0.50, 0.12, 0.02, X(4.20), s * 0.52, Z(1.56)));
+    }
+    /* the lift-engine door's louvre slats (D, G): eight transverse slats on the shut door */
+    for (i = 0; i < 8; i++) K.dark.push(box(0.05, 0.56, 0.03, X(4.95 + i * 0.27), 0, Z(1.68) + 0.025 - i * 0.002));
+    /* blade aerials: the spine behind the hump, under the belly (A, B) */
+    K.dark.push(bladeA([X(11.0), 0, Z(1.76)], 1, 0.22, 0.30, 0.12, 0.025, 0.08));
+    K.dark.push(bladeA([X(3.9), 0, Z(0.0)], -1, 0.20, 0.26, 0.12, 0.025, 0.06));
+    K.dark.push(bladeA([X(12.4), 0, Z(0.2)], -1, 0.18, 0.24, 0.10, 0.025, 0.06));
+    /* beacons on the spine and belly, the white tail lamp, nav lamps on the fixed wing's RCS fairings */
+    K.lampR.push(place(new V.SphereGeometry(0.06, 10, 6), X(8.6), 0, Z(1.70)));
+    K.lampR.push(place(new V.SphereGeometry(0.06, 10, 6), X(9.2), 0, Z(-0.01)));
+    K.pale.push(place(new V.SphereGeometry(0.04, 8, 6), X(15.72), 0, Z(1.17)));
+    K.lampR.push(place(new V.SphereGeometry(0.045, 8, 6), X(3.0), 0.46, Z(0.55)));
+    K.lampG.push(place(new V.SphereGeometry(0.045, 8, 6), X(3.0), -0.46, Z(0.55)));
+
     mesh(g, K.skin, T.skin, "skin", true);
     mesh(g, K.dark, T.dark, "dark");
     mesh(g, K.metal, T.metal, "metal");
@@ -706,6 +855,9 @@ var HeroYak38 = (function () {
     mesh(g, K.glass, T.glass, "glass");
     mesh(g, K.team, T.team, "team");
     mesh(g, K.pale, T.pale, "stores");
+    mesh(g, K.seam, T.seam, "seams");
+    mesh(g, K.lampR, T.lampR, "lamps_red");
+    mesh(g, K.lampG, T.lampG, "lamps_green");
 
     /* ---- the fold groups: the outer panels up through 102 deg about the joint on the upper skin */
     for (s = -1; s <= 1; s += 2) foldGroup(g, FW[s], T.skin, "skin_wingfold", s * YH, wH(YH) + wT(YH) * 0.5, s * WFOLD * D2R);

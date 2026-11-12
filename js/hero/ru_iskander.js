@@ -55,7 +55,7 @@
    S-400 hero treats the 2009-10 parade camouflage.  NOT drawn: the parade stripes and star, the white squares and tactical
    numbers, the loader crane (a separate TZM), the cab interior, the antenna above 2 m (it runs out of every frame).
    Nodes: eight "roadwheel" groups, "podelev", "travelpose", "deploypose"; NOTHING named "turret" (turret:false).
-   Budget: 11,660 triangles in travel pose, 12,196 deployed; 15 draw calls in travel, 16 deployed; 6 materials (paint with
+   Budget: 15,580 triangles in travel pose (11,660 before the 2026-11 visual-review pass), about 16,100 deployed; 15 draw calls in travel, 16 deployed; 6 materials (paint with
    its canvas texture, dark, glass, tyre with vertex colours, missile paint, C.team on two small strips on the cab roof).
    Model space: +X nose, +Y left, +Z up, metres, tyres on z = 0.  ASCII only.  */
 
@@ -398,11 +398,16 @@ var HeroIskander = (function () {
     for (j = 0; j < N; j++) { k = (j + 1) % N; F.push([m * N, k, j], [m * N + 1, (m - 1) * N + j, (m - 1) * N + k]); }
     solid(bin, V, F, true);
     for (k = -1; k <= 1; k += 2) {
-      cyl(rim, [0, k * 0.27, 0], [0, k * 0.21, 0], 0.34, 0.30, 18, true, false);   /* the wheel dish, its rim proud of the sidewall */
-      cylY(rim, 0, k * 0.21, k * 0.33, 0, 0.14, 10);                               /* the hub */
-      for (i = 0; i < 4; i++) {
-        a = i / 4 * TAU + 0.4;
-        box(rim, 0.22 * Math.cos(a) - 0.025, 0.22 * Math.cos(a) + 0.025, k * 0.27 - 0.02, k * 0.27 + 0.02, 0.22 * Math.sin(a) - 0.025, 0.22 * Math.sin(a) + 0.025);
+      /* REWORKED (visual review): the dish used to sit inside the tyre's own side face (|y| 0.21-0.27 behind the cap at
+         0.29), so every wheel read as a black disc; it now stands just proud of it, as ra/rb and the 2011 parade side show
+         the big green wheel and its dark hub, with the rim ring, the eight wheel nuts and the central tyre-inflation hub */
+      cyl(rim, [0, k * 0.305, 0], [0, k * 0.26, 0], 0.40, 0.36, 22, true, false);   /* the wheel rim ring */
+      cyl(rim, [0, k * 0.30, 0], [0, k * 0.27, 0], 0.33, 0.33, 22, false, false);   /* the dished disc */
+      cylY(rim, 0, k * 0.27, k * 0.37, 0, 0.15, 12);                               /* the hub */
+      cylY(rim, 0, k * 0.36, k * 0.40, 0, 0.07, 8);                                /* the CTIS rotary joint */
+      for (i = 0; i < 8; i++) {
+        a = i / 8 * TAU + 0.4;
+        box(rim, 0.20 * Math.cos(a) - 0.022, 0.20 * Math.cos(a) + 0.022, k * 0.31 - 0.015, k * 0.31 + 0.015, 0.20 * Math.sin(a) - 0.022, 0.20 * Math.sin(a) + 0.022);
       }
     }
   }
@@ -461,6 +466,19 @@ var HeroIskander = (function () {
         hipStrip(B.dark, s, x, x + 0.025, 0.03, 0.97, 0, 0.012);
       }
       side(B.paint, s, X0 + 0.15, XB - 0.10, 2.22, 2.27, HW, 0.03);
+      /* REWORKED (visual review): the locker doors that plate every bay of the wall in two rows (the 2011 parade side, re;
+         rb): each a raised panel between the seams, an upper row 2.30-2.76 m and a lower row 1.62-2.18 m, a recessed
+         T-handle on each, two-bar latches on the upper row; the lower row is left open over the jack housings */
+      for (i = 0; i < 7; i++) {
+        x = -5.75 + i * 1.10;
+        side(B.paint, s, x + 0.06, x + 1.05, 2.31, 2.75, HW, 0.022);
+        side(B.dark, s, x + 0.44, x + 0.66, 2.50, 2.53, HW, 0.034);
+        side(B.dark, s, x + 0.20, x + 0.32, 2.62, 2.66, HW, 0.032);
+        side(B.dark, s, x + 0.79, x + 0.91, 2.62, 2.66, HW, 0.032);
+        if (i === 2 || i === 5) continue;
+        side(B.paint, s, x + 0.06, x + 1.05, 1.64, 2.17, HW, 0.022);
+        side(B.dark, s, x + 0.50, x + 0.61, 1.88, 1.94, HW, 0.034);
+      }
       side(B.paint, s, X0 + 0.08, XC, ZB + 0.06, ZB + 0.14, HW, 0.03);             /* the bottom rail */
       side(B.paint, s, X0 + 0.08, XB, ZW - 0.04, ZW + 0.02, HW, 0.025);              /* the rail at the hip's foot */
       /* compartment doors with their handles: two low in the wall over each axle gap (rc -05 shows them open) */

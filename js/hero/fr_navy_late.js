@@ -48,6 +48,27 @@
    P400 54.8 x 8 x 2.54; Flamant 54 x 10 x 2.2; Confiance 60.8 x 9.55 x
    3.2; the POM's 80 m is the row's own figure (no page found).
 
+   REWORK ROUND 2026-11-12 (the owner's visual review): the Charles de
+   Gaulle's flight deck no longer floats over a bare hull -- an overhang
+   band and soffit run round it back to the flared hull, deepest under the
+   angled deck's sponson [G2][G3], with bays in its face; the island's
+   tiers carry window and door rows and deck galleries [G1][G2]; the
+   lattice mast now stands on the island's platform (it had been drawn on
+   the centreline).  Soffit slope and bay places NOT CONFIRMED.
+   REWORK 2 (same day): the Amethyste (fra_e00_sub) re-lofted on the
+   submarine kit of js/hero/fr_navy_early.js (HeroFrSubKit, called, not
+   copied): the round pressure hull with the casing on its back from the
+   knuckle line [R2] draws, the side panel's upright ends, the paler
+   casing skin, weld seams, a free-flood row, the bow shutters, casing
+   hatches, cleats, capstan and track, the lofted sail with its window
+   ring, bridge recess and masts, tapered planes, rudders with hinge gaps
+   and a skewed five-bladed screw (details at buildAmethyste2).  9668 ->
+   10814 tris, 4 -> 7 draw calls; 73.52 x 8.0 x 16.8 m (masts raised).
+   The Rubis (fra_e90_sub) and the other boats keep buildSub, unchanged.
+   LOAD ORDER (rework 2): the Amethyste needs js/hero/fr_navy_early.js
+   loaded first (it is, in index.html and cmp.html); without it the
+   earlier buildSub model is drawn.
+
    NOT CONFIRMED (every ship): the plan widths of the superstructure
    blocks (the references are side views; walls are drawn flush with the
    hull or set in, leaning in on the stealthy ships as the 3/4 views show);
@@ -837,6 +858,40 @@ var HeroFrNavyLate = (function () {
      the angled deck's sponson out to port from abreast the island to the
      quarter, read off the 3/4 views [G2][G3]; the angled deck's axis at
      8.3 deg (published figure, painted into the deck texture). */
+  /* the flight deck's overhang (rework round 2026-11-12): a band under
+     the deck edge and the soffit that slopes from it back to the flared
+     hull side, all round the plan poly (CCW) [G2][G3] */
+  function overhang(THREE, g, m, Hh, poly, zTop, band, slope, zMin, step) {
+    var pos = [], uv = [], i, j, n = poly.length, zb = zTop - band;
+    function push(A, B, Cc, ox, oy, oz) {
+      var ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = Cc[0] - A[0], vy = Cc[1] - A[1], vz = Cc[2] - A[2];
+      var cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+      if (cx * cx + cy * cy + cz * cz < 1e-8) return;
+      var v = (cx * ox + cy * oy + cz * oz) >= 0 ? [A, B, Cc] : [A, Cc, B];
+      v.forEach(function (P) { pos.push(P[0], P[1], P[2]); uv.push((P[0] + P[1]) / 12, P[2] / 8); });
+    }
+    function inner(P) {
+      var s = P[1] < 0 ? -1 : 1, d = Math.abs(P[1]) - Hh.W(P[0], zb);
+      if (d <= 0.05) return null;
+      var zq = Math.max(zMin, zb - slope * d);
+      return [P[0], s * Math.min(Math.abs(P[1]) - 0.05, Hh.W(P[0], zq)), zq];
+    }
+    for (i = 0; i < n; i++) {
+      var a = poly[i], b = poly[(i + 1) % n], ex = b[0] - a[0], ey = b[1] - a[1], L = Math.hypot(ex, ey);
+      if (L < 0.01) continue;
+      var nx = ey / L, ny = -ex / L, ns = Math.max(1, Math.ceil(L / (step || 4)));
+      for (j = 0; j < ns; j++) {
+        var P0 = [a[0] + ex * j / ns, a[1] + ey * j / ns], P1 = [a[0] + ex * (j + 1) / ns, a[1] + ey * (j + 1) / ns];
+        var A0 = [P0[0], P0[1], zTop], A1 = [P1[0], P1[1], zTop], B0 = [P0[0], P0[1], zb], B1 = [P1[0], P1[1], zb];
+        push(A0, A1, B1, nx, ny, 0); push(A0, B1, B0, nx, ny, 0);
+        var Q0 = inner(P0), Q1 = inner(P1);
+        if (Q0 && Q1) { push(B0, B1, Q1, nx * 0.4, ny * 0.4, -1); push(B0, Q1, Q0, nx * 0.4, ny * 0.4, -1); }
+        else if (Q0) push(B0, B1, Q0, nx * 0.4, ny * 0.4, -1);
+        else if (Q1) push(B0, B1, Q1, nx * 0.4, ny * 0.4, -1);
+      }
+    }
+    var mm = new THREE.Mesh(geoOf(THREE, pos, uv), m); g.add(mm); return mm;
+  }
   var CDG_FD = 15.6, CDG_FB = 13.4;
   var CDG_DECK = [
     [130.2, 11.5], [118.0, 15.0], [96.0, 17.5], [74.0, 19.0], [58.0, 26.0], [44.0, 36.5],
@@ -887,6 +942,15 @@ var HeroFrNavyLate = (function () {
       for (k = 0; k < pa.count; k++) uv.push((pa.getX(k) + 135) / 270, (pa.getY(k) + 42) / 84);
       top.geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     })();
+    /* the overhang: band and soffit back to the hull, the angled deck's
+       sponson to port the deepest [G2][G3] (rework 2026-11-12: the slab
+       deck used to float over a bare hull) */
+    overhang(THREE, g, T.hull, Hh, polyCCW(CDG_DECK), CDG_FB, 1.4, 0.55, 5.5, 4.0);
+    /* boat and gallery bays in the port sponson's face, the starboard
+       sponsons' openings [G3] */
+    [[-100, 26.0], [-78, 29.0], [-56, 32.3], [-34, 35.4], [-12, 38.7], [14, 39.95]].forEach(function (q, k) {
+      box(THREE, g, 7.0, 0.14, 1.0, T.dark, q[0], q[1] + 0.1, CDG_FB - 0.75);
+    });
     /* the gallery's dark band under the deck edge [G1] */
     for (s = -1; s <= 1; s += 2) for (i = -127; i < 100; i += 22.5) box(THREE, g, 22.1, 0.1, 1.1, T.dark, i + 11.25, s * (Hh.W(i + 11.25, CDG_FB) + 0.06), CDG_FB - 0.9);
     /* the lifts' openings in the starboard side and the lift plates [G1] */
@@ -903,10 +967,27 @@ var HeroFrNavyLate = (function () {
       facePatch(THREE, g, T.dark, upB.lo, upB.z0, upB.hi, upB.z1, k, 0.12, 0.9, 30.6, 31.3, 0.06);
       facePatch(THREE, g, T.dark, lowB.lo, lowB.z0, lowB.hi, lowB.z1, k, 0.1, 0.9, 21.8, 22.6, 0.06);
     });
+    /* window and door rows on the island's decks [G1][G2] (rework
+       2026-11-12: the tiers were blank) */
+    [0, 4].forEach(function (k) {
+      [[0.06, 0.12], [0.18, 0.22], [0.3, 0.36], [0.46, 0.5], [0.62, 0.68], [0.78, 0.82]].forEach(function (w) {
+        facePatch(THREE, g, T.dark, lowB.lo, lowB.z0, lowB.hi, lowB.z1, k, w[0], w[1], 16.0, 18.4, 0.06);
+      });
+      for (var wi = 0; wi < 9; wi++) facePatch(THREE, g, T.glass, lowB.lo, lowB.z0, lowB.hi, lowB.z1, k, 0.08 + wi * 0.095, 0.13 + wi * 0.095, 19.4, 20.4, 0.06);
+      for (wi = 0; wi < 7; wi++) facePatch(THREE, g, T.glass, upB.lo, upB.z0, upB.hi, upB.z1, k, 0.1 + wi * 0.115, 0.17 + wi * 0.115, 26.0, 27.0, 0.06);
+      for (wi = 0; wi < 7; wi++) facePatch(THREE, g, T.glass, upB.lo, upB.z0, upB.hi, upB.z1, k, 0.1 + wi * 0.115, 0.17 + wi * 0.115, 28.4, 29.4, 0.06);
+    });
+    [2, 6].forEach(function (k) { facePatch(THREE, g, T.glass, lowB.lo, lowB.z0, lowB.hi, lowB.z1, k, 0.1, 0.9, 19.4, 20.4, 0.06); });
+    glazeFront(THREE, g, T, lowB, 22.9, 23.8);
+    /* the deck-level galleries round the island's tiers */
+    box(THREE, g, 52.0, 12.8, 0.25, T.sup, 28.7, YC, 24.5);
     box(THREE, g, 36.0, 11.6, 0.3, T.sup, 27.7, YC, 33.75);                       /* the catwalk deck round the upper tier */
     block(THREE, g, T.sup, 26.7, 33.6, 2.4, 33.6, 49.9, { yc: YC, cfa: 0.6, cff: 0.6 });
     box(THREE, g, 25.3, 9.0, 1.9, T.sup, 26.75, YC, 50.75);                       /* the platform */
-    lattice(THREE, g, T, 26.0, 51.7, 69.3, 1.6, 0.4);
+    /* the lattice mast on the island's platform (it was drawn on the
+       centreline, clear of the island: fixed 2026-11-12) */
+    var lm = new THREE.Group(); lm.position.y = YC; g.add(lm);
+    lattice(THREE, lm, T, 26.0, 51.7, 69.3, 1.6, 0.4);
     box(THREE, g, 0.15, 6.0, 0.15, T.metal, 26.0, YC + 0, 60.0);
     radome(THREE, g, T, 2.2, 35.3, YC, 51.7, 0.4);
     radome(THREE, g, T, 2.5, 18.3, YC + 2.0, 33.6, 1.2);
@@ -1230,7 +1311,98 @@ var HeroFrNavyLate = (function () {
   var buildSuffren = subOf("suffren", D_SUFFREN);
   var buildTriomphant = subOf("triomphant", D_TRIOMPHANT);
   var buildRubis = subOf("rubis", D_RUBIS(false));
-  var buildAmethyste = subOf("amethyste", D_RUBIS(true));
+  /* --------------------------------- AMETHYSTE, REWORK 2026-11-12 [R2][R3]
+     The owner's review found the Amethyste a plain tube.  Re-lofted on
+     the submarine kit of js/hero/fr_navy_early.js (HeroFrSubKit: a round
+     pressure hull with the casing standing on its back, sloped sides from
+     a knuckle to a flat top with rounded shoulders, two smooth skins).
+     [R2]'s rows are kept (D_RUBIS(true) above).  New off [R2], by a pixel
+     scan: the casing's side panel, the knuckle at row 422-423 (z -0.76)
+     from px 500 to 1410, dipping to rows 425 / 427.5 at px 400 / 380 and
+     424.5 at 1420; the panel's ends upright at px 373 (X -21.1) and 1430
+     (X 33.3).  [R3] "amethyste.jpg" (the boat alongside, from the port
+     bow): the casing's flat top about two thirds of the beam (half width
+     2.5 drawn), its shoulders rounded, the sail's rounded front, the sail
+     planes high on its forward half, the window ring at the sail top, the
+     plain black steel (no tiles seen: steel finish), hatches and cleats
+     on the casing by the sail.  NOT CONFIRMED: the casing's top width and
+     the slope of its sides (no end view); the free-flood row low on the
+     casing's side (not resolved in [R3]); the torpedo shutters' places;
+     every section below the knuckle (the circle of the published beam).
+     Falls back to the earlier builder if fr_navy_early.js is not loaded. */
+  function buildAmethyste2(THREE, M, C) {
+    var K = HeroFrSubKit, D = D_RUBIS(true), s, i, x;
+    function X(p) { return (p - D.p0) / D.k + D.X0; }
+    function Z(p) { return (D.keel - p) / D.k - D.T; }
+    var rows = D.rows.map(function (r) {
+      var top = Z(r[1]), kz = Z(r[2]);
+      return [X(r[0]), top, kz, Math.min(D.B, (top - kz) / 2 * 1.02)];
+    });
+    var foot = [[X(373), Z(428)], [X(380), Z(427.5)], [X(400), Z(425.5)], [X(500), Z(422.5)], [X(1410), Z(422.5)], [X(1420), Z(424.5)], [X(1430), Z(425)]];
+    var SP = K.subSpec({ P: K.fairP(rows, 0.6), foot: foot, c0: -31.5, c1: 35.4, WT: 2.5, wk: 0.75, cmin: 0.2 });
+    function Q(xx) { var q = SP(xx); K.secPts(q); return q; }
+    var g = new THREE.Group(), T = K.materials(THREE, C, K.SUBP2), B = K.bins(T);
+    var X0 = rows[0][0], X1 = rows[rows.length - 1][0];
+    var xs = K.stations(X0, X1, function (xx) { return xx < -28 || xx > 31 ? 0.45 : 1.3; },
+                        [X(373) - 0.3, X(373) + 0.05, X(1430) - 0.05, X(1430) + 0.3]);
+    K.subHull2(B.hull, xs, SP, B.deck);
+    /* weld seams round the pressure hull, every 3.6 m */
+    for (x = -30.0; x < 34; x += 3.6) K.seam2(B.metal, SP, x);
+    /* the free-flood row low along the casing's side panel (NOT CONFIRMED) */
+    for (x = -19.5; x < 32.5; x += 1.25) {
+      var qh = Q(x);
+      for (s = -1; s <= 1; s += 2) K.panelOn(B.dark, x, K.slopePt(qh, 0.22), 0.25, 0.08, s);
+    }
+    /* the torpedo-tube shutters, two a side in the blunt bow */
+    for (s = -1; s <= 1; s += 2) [-1.8, -3.4].forEach(function (zz) { K.panelOn(B.dark, 35.0, K.arcAtZ(Q(35.0), zz), 0.7, 0.36, s); });
+    /* the casing's fittings [R3]: hatches fore and aft of the sail, the
+       weapons-loading hatch forward, retractable cleats, the capstan, the
+       safety track along the crown, the small post forward [R2] */
+    [-14.0, 7.5, 24.5].forEach(function (xx) { K.roundHatch(B, xx, 0, Q(xx).zt, 0.42); });
+    K.hatch(B, 29.0, 0, Q(29.0).zt - 0.02, 2.2, 0.8);
+    [-24.0, -18.5, 8.6, 26.5, 32.0].forEach(function (xx) { for (s = -1; s <= 1; s += 2) K.cleat(B, xx, s * 0.7, Q(xx).zt); });
+    K.cylZ(B.metal, 31.0, 0, Q(31.0).zt, Q(31.0).zt + 0.28, 0.25, 12);
+    K.cylZ(B.sup, X(1338), 0, Q(X(1338)).zt, Q(X(1338)).zt + 0.35, 0.12, 8);
+    for (x = -27.0; x < 33.5; x += 1.6) { var qw = Q(x + 0.7); if (x > 9.5 && x < 21.5) continue; K.box(B.deck, x, x + 1.4, -0.12, 0.12, qw.zt - 0.02, qw.zt + 0.03); }
+    /* the sail [R2]: foot X(976..1194), top 7.76 at X(1000..1186), the
+       after edge raked, the front near upright and half-round [R3]; the
+       window ring under its top, the bridge recess, the masts housed */
+    var sx0 = X(980), sx1 = X(1192), szt = Z(257), shw = 1.4;
+    K.sail2(B.sup, sx0, sx1, 1.5, szt, shw, 0.35, 0.3, X(1000) - X(980), X(1192) - X(1186));
+    for (s = -1; s <= 1; s += 2) {
+      for (i = 0; i < 4; i++) K.box(B.glass, 18.6 + i * 0.5, 18.95 + i * 0.5, s > 0 ? shw - 0.005 : -shw - 0.015, s > 0 ? shw + 0.015 : -shw + 0.005, szt - 0.75, szt - 0.45);
+      K.box(B.dark, 13.0, 20.3, s > 0 ? shw - 0.005 : -shw - 0.012, s > 0 ? shw + 0.012 : -shw + 0.005, szt - 0.95, szt - 0.9);
+      /* the sail planes at row 302 [R2], X(1128..1180), 2.2 m out [R3] */
+      K.foil(B.sup, X(1128), X(1180), X(1128) + 0.5, X(1180) - 0.6, s * (shw - 0.05), s * (shw + 2.2), 0.3, false, Z(302));
+      for (i = 0; i < 6; i++) K.box(B.metal, sx0 + 0.9 - 0.04, sx0 + 0.9 + 0.04, s > 0 ? 0.95 : -1.01, s > 0 ? 1.01 : -0.95, 2.4 + i * 0.75, 2.45 + i * 0.75);
+    }
+    K.box(B.dark, 19.0, 20.5, -0.8, 0.8, szt - 0.28, szt + 0.01);
+    K.periscopes(B, 16.8, szt, [[0, 0, 1.4, 0.15], [-1.3, 0, 1.0, 0.13], [-2.6, 0, 0.7, 0.22]]);
+    K.whip(B, 14.0, 0.3, szt, 2.4);
+    for (i = 0; i < 3; i++) K.box(B.dark, 11.6 + i * 2.1, 12.9 + i * 2.1, -0.45, 0.45, szt - 0.01, szt + 0.02);
+    /* the cruciform stern [R2]: rudders rows 380..420 and 500..536 over
+       X(120..185), the stern planes on the shaft row 459 (4.0 m out, NOT
+       CONFIRMED), the hinge gaps; the five-bladed screw at X(76) */
+    var ra = X(120), rb = X(185), zs = Z(459);
+    K.foil(B.hull, ra, rb, ra + 0.2, rb - 1.0, Z(420) - 0.6, Z(380), 0.42, true, 0);
+    K.foil(B.hull, ra, rb, ra + 0.2, rb - 1.0, Z(500) + 0.6, Z(536), 0.42, true, 0);
+    K.box(B.dark, ra + 1.0, ra + 1.25, -0.17, 0.17, Z(420) - 0.3, Z(380) - 0.1);
+    K.box(B.dark, ra + 1.0, ra + 1.25, -0.17, 0.17, Z(536) + 0.1, Z(500) + 0.3);
+    for (s = -1; s <= 1; s += 2) {
+      K.foil(B.hull, ra, rb, ra + 0.2, rb - 1.2, s * 0.5, s * 4.0, 0.36, false, zs);
+      K.box(B.dark, ra + 1.0, ra + 1.2, s > 0 ? 1.0 : -3.9, s > 0 ? 3.9 : -1.0, zs - 0.15, zs + 0.15);
+    }
+    K.screw2(B.metal, X(76), 0, zs, D.screw[2] / D.k, 5, 0.4, 0.22);
+    /* team: the sail top and the casing abaft it */
+    K.box(B.team, 13.5, 16.0, -0.4, 0.4, szt + 0.0, szt + 0.04);
+    x = sx0 - 6; K.box(B.team, x - 1.2, x + 1.2, -0.4, 0.4, Q(x).zt + 0.01, Q(x).zt + 0.05);
+    K.flush(THREE, g, B);
+    return g;
+  }
+  var buildAmethyste = function (THREE, M, C) {
+    if (typeof HeroFrSubKit !== "undefined" && HeroFrSubKit) return buildAmethyste2(THREE, M, C);
+    return subOf("amethyste", D_RUBIS(true))(THREE, M, C);
+  };
 
   /* ===================================== PATROUILLEUR OUTRE-MER (POM) [P1]
      [P1] "POM ANG - Arrivee de l'Auguste Benebig a Port Vila 3 (cropped)"

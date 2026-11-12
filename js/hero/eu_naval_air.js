@@ -1382,6 +1382,10 @@ var HeroEuNavalAir = (function () {
     B.glass.push(K.box(0.03, 0.14, 0.12, 5.34, 0, Z(0.36)));
     addParts(V, K, g, B, T);
     g.name = "nh90_nfh";
+    /* the draw-call budget (16 a vehicle): the main rotor head's links share the hub's material and
+       turn with it, so the hub draws them (Armour3D.join; "hub_links" stays, empty) - 17 -> 16 */
+    var hub = g.getObjectByName("hub"), links = g.getObjectByName("hub_links");
+    if (typeof Armour3D !== "undefined" && Armour3D.join && hub && links && hub.parent === links.parent) Armour3D.join(V, hub, [links]);
     return g;
   }
 

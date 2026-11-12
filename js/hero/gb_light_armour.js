@@ -1231,11 +1231,11 @@ var HeroWarrior = (function () {
     }
   }
   function build(THREE, C, fit) {
-    var T = K.materials(THREE, C, GRN), g = new THREE.Group(), HB = K.bins(T), TB = K.bins(T), RB = K.bins(T), i, wg, WB, tg;
+    var T = K.materials(THREE, C, GRN), g = new THREE.Group(), HB = K.bins(T), TB = K.bins(T), i, wg, WB, tg;
     hull(HB, fit);
+    /* the tracks in the hull's own bins: one mesh a material (the draw-call budget) */
+    K.addTracks(HB, G);
     K.flush(THREE, g, HB);
-    K.addTracks(RB, G);
-    K.flush(THREE, g, RB);
     for (i = 0; i < G.XW.length; i++) {
       WB = new K.Bin(T.wheel, false, true);
       K.addRoadWheel(WB, G, GRN.base);

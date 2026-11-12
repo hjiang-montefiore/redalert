@@ -57,7 +57,8 @@
         reaching past the tail cone [3V];
     11. bicycle gear: two four-wheel trucks under the fuselage and the
         outrigger legs under the tip pods [E1][E2][MO];
-    12. overall natural metal with a red star on each side of the fin
+    12. overall natural metal (the red fin star the photographs show is NOT
+        drawn: plain paint, AGENT_POLICY 6, 2026-11-12 review)
         [P66][P82].
    Changed from the earlier model, after the references:
      - span 53.14 m (the 3M wing), not the M-4's 50.5 m;
@@ -378,11 +379,8 @@ var HeroMya3MS2 = (function () {
       });
       emit(THREE, g, gridGeo(THREE, sr, true, true), T.skin);
     }
-    /* the red star, white-bordered, on each side of the fin [P66][P82] */
-    var fz = 6.4, a = FIN[3], b = FIN[4], t = (fz - a[0]) / (b[0] - a[0]);
-    var dl = a[1] + (b[1] - a[1]) * t, dt = a[2] + (b[2] - a[2]) * t, tc = a[3] + (b[3] - a[3]) * t, c = dt - dl;
-    var hy = naca(0.5, tc) * c + 0.015;
-    for (s = -1; s <= 1; s += 2) star(THREE, g, T, dl + 0.5 * c, s * hy, fz, 1.0, s);
+    /* (2026-11-12 review: the white-bordered red star [P66][P82] show on the
+       fin is no longer drawn - AGENT_POLICY 6, plain paint) */
     /* the tail-gunner's glazed station (the guns went with the conversion) */
     for (s = -1; s <= 1; s += 2) {
       var ta = s > 0 ? 0.04 * Math.PI : Math.PI - 0.04 * Math.PI - 0.30 * Math.PI;
@@ -390,21 +388,6 @@ var HeroMya3MS2 = (function () {
     }
     g.add(new THREE.Mesh(fusPatch(THREE, 47.0, 47.75, 0, Math.PI * 2, 0.015, 2, 16), T.metal));
   }
-  function star(THREE, g, T, dC, yS, zC, r, side) {
-    [[r, "white"], [r * 0.78, "red"]].forEach(function (lay, li) {
-      var pos = [X(dC), yS + side * 0.012 * (li + 1), zC], idx = [], k, rr;
-      for (k = 0; k < 10; k++) {
-        rr = (k & 1) ? lay[0] * 0.4 : lay[0];
-        var a = Math.PI / 2 + k * Math.PI / 5;
-        pos.push(X(dC) - rr * Math.cos(a), yS + side * 0.012 * (li + 1), zC + rr * Math.sin(a));
-      }
-      for (k = 0; k < 10; k++) idx.push(0, 1 + k, 1 + (k + 1) % 10);
-      var m = new THREE.Mesh(geoFrom(THREE, pos, idx), T[lay[1]]);
-      m.geometry.computeVertexNormals();
-      g.add(m);
-    });
-  }
-
   /* ---------------------------------------------------------- wings */
   function wingAt(y) {
     var i, a, b, t;
@@ -573,8 +556,6 @@ var HeroMya3MS2 = (function () {
       frame: new THREE.MeshStandardMaterial({ color: 0x6d7478, roughness: 0.5, metalness: 0.5, side: THREE.DoubleSide }),
       ink: new THREE.MeshStandardMaterial({ color: 0x08090a, roughness: 0.95, metalness: 0.03, side: THREE.DoubleSide }),
       tyre: new THREE.MeshStandardMaterial({ color: 0x0b0c0d, roughness: 0.95, metalness: 0.04 }),
-      red: new THREE.MeshStandardMaterial({ color: 0xb8141b, roughness: 0.7, metalness: 0.02, side: THREE.DoubleSide }),
-      white: new THREE.MeshStandardMaterial({ color: 0xdcddd8, roughness: 0.6, metalness: 0.05, side: THREE.DoubleSide }),
       glass: new THREE.MeshPhysicalMaterial({ color: 0x223139, roughness: 0.12, metalness: 0.30, clearcoat: 0.35,
         transparent: true, opacity: 0.86, side: THREE.DoubleSide })
     };

@@ -1449,6 +1449,51 @@ var HeroGBNavyLate = (function () {
     ringLoft(THREE, g, T.deck, xs, rings, true, 0.12);
     return fd + L * Math.tan(A) / 2;
   }
+  /* the flight deck's overhang (rework round 2026-11-12): the outer band
+     under the deck edge (zTop down by band) and the soffit that slopes
+     from it back to the hull side, all round the plan poly (CCW), so the
+     deck no longer floats over a bare hull [V4][Z2].  slope: metres of
+     drop per metre inboard; zMin: the lowest the soffit may come. */
+  function overhang(THREE, g, m, Hh, poly, zTop, band, slope, zMin, step) {
+    var pos = [], uv = [], i, j, n = poly.length, zb = zTop - band;
+    function push(A, B, Cc, ox, oy, oz) {
+      var ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = Cc[0] - A[0], vy = Cc[1] - A[1], vz = Cc[2] - A[2];
+      var cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+      if (cx * cx + cy * cy + cz * cz < 1e-8) return;
+      var v = (cx * ox + cy * oy + cz * oz) >= 0 ? [A, B, Cc] : [A, Cc, B];
+      v.forEach(function (P) { pos.push(P[0], P[1], P[2]); uv.push((P[0] + P[1]) / 12, P[2] / 8); });
+    }
+    function inner(P) {
+      var s = P[1] < 0 ? -1 : 1, d = Math.abs(P[1]) - Hh.W(P[0], zb);
+      if (d <= 0.05) return null;
+      var zq = Math.max(zMin, zb - slope * d);
+      return [P[0], s * Math.min(Math.abs(P[1]) - 0.05, Hh.W(P[0], zq)), zq];
+    }
+    for (i = 0; i < n; i++) {
+      var a = poly[i], b = poly[(i + 1) % n], ex = b[0] - a[0], ey = b[1] - a[1], L = Math.hypot(ex, ey);
+      if (L < 0.01) continue;
+      var nx = ey / L, ny = -ex / L, ns = Math.max(1, Math.ceil(L / (step || 4)));
+      for (j = 0; j < ns; j++) {
+        var P0 = [a[0] + ex * j / ns, a[1] + ey * j / ns], P1 = [a[0] + ex * (j + 1) / ns, a[1] + ey * (j + 1) / ns];
+        var A0 = [P0[0], P0[1], zTop], A1 = [P1[0], P1[1], zTop], B0 = [P0[0], P0[1], zb], B1 = [P1[0], P1[1], zb];
+        push(A0, A1, B1, nx, ny, 0); push(A0, B1, B0, nx, ny, 0);
+        var Q0 = inner(P0), Q1 = inner(P1);
+        if (Q0 && Q1) { push(B0, B1, Q1, nx * 0.4, ny * 0.4, -1); push(B0, Q1, Q0, nx * 0.4, ny * 0.4, -1); }
+        else if (Q0) push(B0, B1, Q0, nx * 0.4, ny * 0.4, -1);
+        else if (Q1) push(B0, B1, Q1, nx * 0.4, ny * 0.4, -1);
+      }
+    }
+    var mm = new THREE.Mesh(geoOf(THREE, pos, uv), m); g.add(mm); return mm;
+  }
+  /* an elliptical funnel X x0..x1, half width hw, from z0 to z1, its top
+     drawn in by k, with a black cap (the Invincibles' funnels [V4]) */
+  function ellFunnel(THREE, g, T, x0, x1, hw, z0, z1, k, cap) {
+    var r = hw, sx = (x1 - x0) / 2 / hw, xc = (x0 + x1) / 2;
+    var f = cylZ(THREE, g, r * k, r, z1 - z0, 24, T.sup, xc, 0, (z0 + z1) / 2); f.scale.x = sx;
+    var c = cylZ(THREE, g, r * k * 0.97, r * k, cap, 24, T.under, xc, 0, z1 + cap / 2 - 0.02); c.scale.x = sx;
+    var l = cylZ(THREE, g, r * k * 1.03, r * k * 1.03, 0.35, 24, T.metal, xc, 0, z1 - 0.3); l.scale.x = sx;
+    return f;
+  }
   function deckLines(THREE, g, T, x0, x1, y, z) {
     box(THREE, g, x1 - x0, 0.3, 0.008, T.white, (x0 + x1) / 2, y, z + 0.004);
   }
@@ -1479,7 +1524,17 @@ var HeroGBNavyLate = (function () {
      sisters from their 1980s-90s refits); V.ciws: none in 1980, three
      Goalkeeper on the 1990s ship (en.wikipedia; [V1] shows the bow
      mount; the two after places NOT CONFIRMED); Sea Dart on the
-     forecastle in both (removed in the late 1990s). */
+     forecastle in both (removed in the late 1990s).
+     REWORK 2026-11-12 (visual review: the island read as four slab
+     towers): the funnels are now ELLIPTICAL with black caps and the main
+     mast tower black above its gallery, as [V4] shows; the base is two
+     decks, the bridge block three stepped tiers with galleries; the 1022
+     moved to the foremast over the bridge and the 992 to the main mast
+     ([V4]: the planar array stands forward, the small reflector on the
+     black-topped tower; the earlier build had them swapped); the deck
+     edge gets its overhang band and soffit with the gallery openings and
+     the hull side its boat-bay openings ([V4]).  Stations and heights
+     are those measured above; plan widths of the tiers NOT CONFIRMED. */
   var INV = { FD: 15.0 };
   function buildInvincible(THREE, M, C, V) {
     var g = new THREE.Group(), T = sealMats(makeMats(THREE, C)), s, i, FD = INV.FD;
@@ -1498,27 +1553,68 @@ var HeroGBNavyLate = (function () {
     for (i = 0; i < 5; i++) padMarks(THREE, g, T, -88 + i * 26, FD, 0.1, 3.0);
     lift(THREE, g, T, 50.0, 6.0, 16.0, 9.5, FD);
     lift(THREE, g, T, -62.0, 6.0, 16.0, 9.5, FD);
-    /* the island along the starboard edge */
+    /* the overhang under the deck edge, galleries and openings in it [V4] */
+    overhang(THREE, g, T.hull, Hh, poly, FD - 1.0, 2.2, 0.8, FD - 7.0, 4.0);
+    for (i = 0; i < 9; i++) {
+      var ox = -92 + i * 19.5;
+      box(THREE, g, 4.2 + (i % 3) * 1.5, 0.12, 1.4, T.dark, ox, 18.06, FD - 2.1);
+      if (ox < 45) box(THREE, g, 4.2 + ((i + 1) % 3) * 1.5, 0.12, 1.4, T.dark, ox + 6, -16.56, FD - 2.1);
+    }
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 7; i++) {
+      var hx = -80 + i * 24 + (s > 0 ? 6 : 0), hy = s * (Hh.W(hx, FD - 6.5) + 0.05);
+      box(THREE, g, 3.4, 0.14, 1.6, T.dark, hx, hy, FD - 6.5);
+      box(THREE, g, 3.8, 0.5, 0.12, T.metal, hx, hy + s * 0.2, FD - 7.4);
+    }
+    /* the island along the starboard edge [V3][V4]: a two-deck base the
+       length of the island, the bridge block stepped in three tiers with a
+       gallery at each, the foremast with the 1022 over it, the two
+       ELLIPTICAL funnels with black caps, the main mast tower between them
+       black above its gallery and carrying the 992; a radome aft */
     var YC = -13.2, ig = new THREE.Group(); ig.position.y = YC; g.add(ig);
-    var IB = FD + 9.0, base = blk(THREE, ig, T.sup, -40.0, 47.8, 3.3, FD, IB, 0.3, 0.8);
-    function iblk(x0, x1, hw, z0, z1, m) { return blk(THREE, ig, m || T.sup, x0, x1, hw, z0, z1, 0.3, 0.6); }
+    var IB = FD + 9.0, base = blk(THREE, ig, T.sup, -40.0, 47.8, 3.3, FD, FD + 4.6, 0.12, 0.8);
+    var base2 = blk(THREE, ig, T.sup, -38.5, 46.6, 3.18, FD + 4.55, IB, 0.25, 0.7);
+    function iblk(x0, x1, hw, z0, z1, m, ins) { return blk(THREE, ig, m || T.sup, x0, x1, hw, z0, z1, ins === undefined ? 0.3 : ins, 0.6); }
     doors(THREE, ig, T, base, 4, [[0.1, 0.14], [0.4, 0.44], [0.7, 0.74]], FD + 0.2, FD + 3.0);
-    var br = iblk(27.5, 47.8, 3.0, IB - 0.05, FD + 25.9);
+    doors(THREE, ig, T, base, 0, [[0.2, 0.24], [0.55, 0.59], [0.8, 0.83]], FD + 0.2, FD + 3.0);
+    [0, 4].forEach(function (k) {
+      doors(THREE, ig, T, base2, k, [[0.06, 0.1], [0.16, 0.19], [0.3, 0.33], [0.62, 0.65], [0.86, 0.9]], FD + 6.0, FD + 7.4);
+    });
+    roofRail(THREE, ig, T, [[-38.3, -3.1], [46.4, -3.1], [46.4, 3.1], [-38.3, 3.1]], IB, 1.0);
+    var b1 = iblk(29.0, 47.4, 3.0, IB - 0.05, FD + 16.0, null, 0.15);
+    var b2 = iblk(30.5, 47.8, 3.25, FD + 15.95, FD + 21.0, null, 0.1);
+    var br = iblk(28.0, 46.6, 3.0, FD + 20.95, FD + 25.9, null, 0.35);
+    [0, 4].forEach(function (k) { doors(THREE, ig, T, b1, k, [[0.1, 0.2], [0.35, 0.45], [0.6, 0.7], [0.8, 0.88]], FD + 12.0, FD + 13.4); });
+    [0, 2, 4].forEach(function (k) { facePatch(THREE, ig, T.glass, b2.lo, b2.z0, b2.hi, b2.z1, k, 0.08, 0.92, FD + 18.2, FD + 19.6, 0.06); });
     [1, 2, 3].forEach(function (k) { facePatch(THREE, ig, T.glass, br.lo, br.z0, br.hi, br.z1, k, 0.04, 0.96, FD + 23.4, FD + 24.9, 0.08); });
-    iblk(12.6, 24.9, 2.8, IB - 0.05, FD + 31.6);
-    iblk(13.4, 24.1, 2.2, FD + 31.55, FD + 32.6, T.dark);
-    iblk(-22.5, -10.3, 2.8, IB - 0.05, FD + 29.4);
-    iblk(-21.7, -11.1, 2.2, FD + 29.35, FD + 30.4, T.dark);
-    tower(THREE, ig, T.sup, -2.2, 5.2, 2.6, IB - 0.05, -0.2, 3.2, 1.0, FD + 40.7);
+    facePatch(THREE, ig, T.glass, br.lo, br.z0, br.hi, br.z1, 0, 0.6, 0.97, FD + 23.4, FD + 24.9, 0.08);
+    facePatch(THREE, ig, T.glass, br.lo, br.z0, br.hi, br.z1, 4, 0.03, 0.4, FD + 23.4, FD + 24.9, 0.08);
+    roofRail(THREE, ig, T, [[30.6, -3.35], [47.6, -3.35], [47.6, 3.35], [30.6, 3.35]], FD + 21.0, 1.0);
+    roofRail(THREE, ig, T, [[28.4, -2.75], [46.2, -2.75], [46.2, 2.75], [28.4, 2.75]], FD + 25.9, 0.9);
+    ellFunnel(THREE, ig, T, 12.6, 24.9, 2.8, IB - 0.05, FD + 31.55, 0.94, 1.05);
+    ellFunnel(THREE, ig, T, -22.5, -10.3, 2.8, IB - 0.05, FD + 29.35, 0.94, 1.05);
+    [[18.75, 2.8], [-16.4, 2.8]].forEach(function (f) {
+      for (s = -1; s <= 1; s += 2) box(THREE, ig, 3.2, 0.12, 2.2, T.dark, f[0], s * (f[1] * 0.97 + 0.02), FD + 22.0);
+    });
+    tower(THREE, ig, T.sup, -2.2, 5.2, 2.6, IB - 0.05, -0.9, 3.9, 1.75, FD + 31.0);
+    box(THREE, ig, 6.4, 4.6, 0.3, T.metal, 1.5, 0, FD + 31.1);
+    roofRail(THREE, ig, T, [[-1.6, -2.3], [4.6, -2.3], [4.6, 2.3], [-1.6, 2.3]], FD + 31.25, 0.9);
+    tower(THREE, ig, T.under, -0.9, 3.9, 1.75, FD + 31.2, -0.2, 3.2, 1.0, FD + 40.7);
+    box(THREE, ig, 4.2, 3.6, 0.3, T.metal, 1.5, 0, FD + 36.0);
     strut(THREE, g, T.metal, 1.5, YC, FD + 40.7, 1.5, YC, FD + 49.0, 0.12, 5);
-    box(THREE, g, 2.6, 2.6, 0.4, T.sup, 1.5, YC, FD + 40.9);
-    radar(THREE, g, T, "1022", 1.5, YC, FD + 43.4);
-    yard(THREE, ig, T, 1.5, FD + 36.0, 4.0);
-    strut(THREE, g, T.dark, 30.4, YC, FD + 25.9, 30.4, YC, FD + 34.0, 0.4, 6);
-    radar(THREE, g, T, "992", 30.4, YC, FD + 35.2);
+    box(THREE, g, 2.6, 2.6, 0.4, T.under, 1.5, YC, FD + 40.9);
+    radar(THREE, g, T, "992", 1.5, YC, FD + 42.4);
+    yard(THREE, ig, T, 1.5, FD + 38.0, 4.0);
+    /* the foremast on the bridge roof: a plated stub and pole, the 1022 */
+    tower(THREE, ig, T.sup, 31.5, 35.5, 1.4, FD + 25.85, 32.6, 34.4, 0.7, FD + 31.0);
+    strut(THREE, g, T.metal, 33.5, YC, FD + 31.0, 33.5, YC, FD + 38.5, 0.14, 5);
+    radar(THREE, g, T, "1022", 33.5, YC, FD + 34.6);
+    yard(THREE, ig, T, 33.5, FD + 36.6, 3.4);
     radome(THREE, g, T, 40.0, YC, FD + 25.9, FD + 28.0, 1.6);
-    radome(THREE, g, T, -36.4, YC, IB, FD + 21.7, 2.4);
-    for (i = 0; i < 6; i++) strut(THREE, g, T.metal, -30 + i * 12, YC - 2.5, IB, -30 + i * 12, YC - 2.5, FD + 19.0, 0.05, 3);
+    radome(THREE, g, T, 8.2, YC + 2.2, FD + 31.2, FD + 32.6, 1.2);
+    radome(THREE, g, T, -5.2, YC - 2.2, FD + 31.2, FD + 32.6, 1.2);
+    var af = iblk(-39.0, -25.0, 2.9, IB - 0.05, FD + 15.0);
+    [0, 4].forEach(function (k) { doors(THREE, ig, T, af, k, [[0.15, 0.3], [0.6, 0.75]], FD + 11.0, FD + 12.4); });
+    radome(THREE, g, T, -36.4, YC, FD + 15.0, FD + 21.7, 2.4);
     /* Sea Dart on the forecastle, the CIWS */
     var sd = new THREE.Group(); sd.position.set(86.0, -6.0, FD - 2.6); seaDart(THREE, sd, T); g.add(sd);
     if (V.ciws === "goalkeeper") {
@@ -1557,7 +1653,14 @@ var HeroGBNavyLate = (function () {
      broadside was found), and so neither is any height here.  [Z3] (the
      ship at Rosyth, from the bow) shows the overhanging bow deck and
      the hull's flare.  The ski-jump's 12.5 deg is published; its length,
-     50 m, and the Phalanx places (three, published) are NOT CONFIRMED. */
+     50 m, and the Phalanx places (three, published) are NOT CONFIRMED.
+     REWORK 2026-11-12 (visual review: slab islands over a bare hull):
+     both islands faceted as [Z1][Z2] show them -- walls leaning in, a
+     wider bridge level with glazing all round and a gallery, a pyramid
+     tower; the flyco glazing standing out inboard on the after island and
+     its round black-topped exhaust ([Z1]); the deck overhang drawn as a
+     band and soffit back to the flared hull with its openings ([Z2]).
+     Same stations and heights as before; tier widths NOT CONFIRMED. */
   function buildQE(THREE, M, C) {
     var g = new THREE.Group(), T = sealMats(makeMats(THREE, C)), s, i, FD = 23.0;
     var H = hullDef(284.0, 26.0, 19.5, 11.0, 9.0, 2.0, function () { return FD - 1.0; }, { stern: 0.96, fl: 1.8, stemP: 0.5 });
@@ -1570,27 +1673,74 @@ var HeroGBNavyLate = (function () {
     for (i = 0; i < 6; i++) padMarks(THREE, g, T, -120 + i * 34, FD, 0.1, 4.0);
     lift(THREE, g, T, 14.0, -28.5, 20.0, 16.0, FD);
     lift(THREE, g, T, -59.0, -28.5, 20.0, 16.0, FD);
-    /* the two islands */
+    /* the overhang: a 3.5 m band under the deck edge and the soffit
+       sloping back to the flared hull [Z2][Z3]; the sponson openings and
+       galleries along it */
+    overhang(THREE, g, T.hull, Hh, poly, FD - 1.2, 3.5, 0.7, FD - 12.0, 4.0);
+    for (i = 0; i < 10; i++) {
+      var ox = -125 + i * 23;
+      box(THREE, g, 5.0 + (i % 3) * 2.0, 0.14, 1.8, T.dark, ox, 36.58, FD - 3.0);
+      if (ox > -50 && ox < 70) box(THREE, g, 4.0 + (i % 2) * 3.0, 0.14, 1.8, T.dark, ox + 9, -38.08, FD - 3.0);
+    }
+    box(THREE, g, 40.0, 0.14, 1.2, T.dark, -96.0, -34.58, FD - 2.8);
+    for (s = -1; s <= 1; s += 2) for (i = 0; i < 6; i++) {
+      var hx = -110 + i * 38 + (s > 0 ? 8 : 0), hy = s * (Hh.W(hx, FD - 10.5) + 0.05);
+      box(THREE, g, 6.0, 0.16, 2.6, T.dark, hx, hy, FD - 10.5);
+      box(THREE, g, 6.6, 0.6, 0.14, T.metal, hx, hy + s * 0.25, FD - 12.0);
+    }
+    /* the two islands [Z1][Z2], both faceted: a base whose walls lean in,
+       a wider bridge level with raked glazing all round and a gallery, a
+       pyramid tower above.  Forward island: the navigating bridge and the
+       S1850M; after island: the flyco glazing looking inboard over the
+       deck, the Artisan's mast and the round exhaust at its after end */
     var YC = -33.0, ig = new THREE.Group(); ig.position.y = YC; g.add(ig);
-    function iblk(x0, x1, hw, z0, z1, m, ins) { return blk(THREE, ig, m || T.sup, x0, x1, hw, z0, z1, ins === undefined ? 0.6 : ins, 1.4); }
-    var f1 = iblk(31.0, 71.0, 5.0, FD, FD + 16.0);
+    function fr(x0, x1, hw, z0, xa, xb, hwa, z1, cf, m) {
+      var lo = chamf(x0, x1, hw, cf, cf), hi = chamf(xa, xb, hwa, cf * 0.8, cf * 0.8);
+      frustum(THREE, ig, m || T.sup, lo, z0, hi, z1); return { lo: lo, hi: hi, z0: z0, z1: z1 };
+    }
+    var f1 = fr(31.0, 71.0, 5.0, FD, 33.0, 68.0, 4.2, FD + 12.0, 1.6);
     doors(THREE, ig, T, f1, 4, [[0.1, 0.16], [0.5, 0.56]], FD + 0.2, FD + 4.0);
-    var f2 = iblk(40.0, 66.0, 4.2, FD + 15.9, FD + 24.0);
-    [1, 2, 3].forEach(function (k) { facePatch(THREE, ig, T.glass, f2.lo, f2.z0, f2.hi, f2.z1, k, 0.04, 0.96, FD + 21.0, FD + 23.0, 0.08); });
-    tower(THREE, ig, T.sup, 46.0, 58.0, 3.0, FD + 23.95, 49.0, 55.0, 1.4, FD + 30.0);
+    [0, 4].forEach(function (k) { doors(THREE, ig, T, f1, k, [[0.25, 0.3], [0.7, 0.74]], FD + 7.0, FD + 8.4); });
+    var f2 = fr(37.0, 68.5, 4.5, FD + 11.95, 36.0, 69.8, 5.4, FD + 16.5, 1.4);
+    [0, 1, 2, 3, 4].forEach(function (k) { facePatch(THREE, ig, T.glass, f2.lo, f2.z0, f2.hi, f2.z1, k, 0.05, 0.95, FD + 13.4, FD + 15.8, 0.08); });
+    var f3 = fr(36.0, 69.8, 5.4, FD + 16.45, 39.5, 66.0, 4.3, FD + 18.0, 1.4);
+    roofRail(THREE, ig, T, [[36.4, -5.5], [69.4, -5.5], [69.4, 5.5], [36.4, 5.5]], FD + 16.5, 1.0);
+    var f4 = fr(41.0, 64.0, 4.0, FD + 17.95, 43.5, 60.0, 3.3, FD + 24.0, 1.0);
+    [0, 4].forEach(function (k) { doors(THREE, ig, T, f4, k, [[0.15, 0.22], [0.6, 0.67]], FD + 19.5, FD + 21.0); });
+    fr(45.0, 59.0, 3.2, FD + 23.95, 49.0, 55.0, 1.4, FD + 30.0, 0.8);
+    box(THREE, ig, 3.0, 2.2, 0.3, T.metal, 52.0, 0, FD + 30.1);
     radar(THREE, g, T, "s1850", 52.0, YC, FD + 32.2);
     strut(THREE, g, T.metal, 44.0, YC, FD + 24.0, 44.0, YC, FD + 36.0, 0.1, 5);
-    var a1 = iblk(-47.0, -6.7, 5.0, FD, FD + 20.0);
+    yard(THREE, ig, T, 44.0, FD + 33.0, 3.0);
+    fr(60.5, 65.5, 1.6, FD + 23.95, 61.0, 64.5, 1.2, FD + 27.0, 0.4, T.sup);
+    box(THREE, ig, 3.2, 2.0, 0.3, T.under, 62.8, 0, FD + 27.1);
+    var a1 = fr(-47.0, -6.7, 5.0, FD, -45.0, -9.0, 4.2, FD + 15.0, 1.6);
     doors(THREE, ig, T, a1, 4, [[0.2, 0.26], [0.6, 0.66]], FD + 0.2, FD + 4.0);
-    var a2 = iblk(-42.0, -12.0, 4.2, FD + 19.9, FD + 28.0);
-    [5, 6, 7, 1, 2, 3].forEach(function (k) { facePatch(THREE, ig, T.glass, a2.lo, a2.z0, a2.hi, a2.z1, k, 0.04, 0.96, FD + 25.0, FD + 27.0, 0.08); });
-    tower(THREE, ig, T.sup, -32.0, -22.0, 2.6, FD + 27.95, -29.0, -25.0, 1.2, FD + 44.0);
+    [0, 4].forEach(function (k) { doors(THREE, ig, T, a1, k, [[0.3, 0.34], [0.75, 0.79]], FD + 8.0, FD + 9.4); });
+    var a2 = fr(-44.0, -10.0, 4.4, FD + 14.95, -45.0, -9.0, 5.0, FD + 20.0, 1.4);
+    [0, 2, 6].forEach(function (k) { facePatch(THREE, ig, T.glass, a2.lo, a2.z0, a2.hi, a2.z1, k, 0.05, 0.95, FD + 16.4, FD + 19.2, 0.08); });
+    roofRail(THREE, ig, T, [[-44.6, -5.1], [-9.4, -5.1], [-9.4, 5.1], [-44.6, 5.1]], FD + 20.0, 1.0);
+    var a3 = fr(-42.0, -12.0, 4.2, FD + 19.95, -40.0, -14.0, 3.6, FD + 25.0, 1.2);
+    /* the flyco: a glazed box standing out over the deck (port, +Y) */
+    var fl = fr(-36.0, -20.0, 1.8, FD + 22.0, -36.5, -19.5, 2.1, FD + 27.6, 0.6);
+    ig.children[ig.children.length - 1].position.y = 5.0;
+    [[4, 6.9], [2, 0], [6, 0]].forEach(function (q) {
+      var p = facePatch(THREE, ig, T.glass, fl.lo, fl.z0, fl.hi, fl.z1, q[0], 0.05, 0.95, FD + 23.2, FD + 27.0, 0.08); p.position.y = 5.0;
+    });
+    box(THREE, ig, 17.0, 3.0, 0.4, T.sup, -28.0, 3.6, FD + 22.0);
+    [0, 2, 4].forEach(function (k) { facePatch(THREE, ig, T.glass, a3.lo, a3.z0, a3.hi, a3.z1, k, 0.06, 0.94, FD + 22.6, FD + 24.2, 0.08); });
+    fr(-34.0, -20.0, 3.0, FD + 24.95, -30.0, -24.0, 1.3, FD + 44.0, 0.6);
+    box(THREE, ig, 6.0, 4.0, 0.3, T.metal, -27.0, 0, FD + 36.0);
     radar(THREE, g, T, "997", -27.0, YC, FD + 46.5);
     strut(THREE, g, T.metal, -24.0, YC, FD + 44.0, -24.0, YC, FD + 50.0, 0.1, 5);
     yard(THREE, ig, T, -27.0, FD + 40.0, 4.0);
-    radome(THREE, g, T, -38.0, YC + 2.5, FD + 28.0, FD + 29.6, 1.3);
-    radome(THREE, g, T, -16.0, YC - 2.5, FD + 28.0, FD + 29.6, 1.3);
-    radome(THREE, g, T, 62.0, YC, FD + 24.0, FD + 25.6, 1.3);
+    /* the after exhaust: a round uptake with a black top [Z1] */
+    cylZ(THREE, ig, 2.2, 2.5, 7.0, 18, T.sup, -42.5, -0.6, FD + 28.4);
+    cylZ(THREE, ig, 2.15, 2.2, 1.0, 18, T.under, -42.5, -0.6, FD + 32.4);
+    radome(THREE, g, T, -38.0, YC + 2.5, FD + 25.0, FD + 26.6, 1.3);
+    radome(THREE, g, T, -16.0, YC - 2.5, FD + 25.0, FD + 26.6, 1.3);
+    radome(THREE, g, T, 62.0, YC + 2.2, FD + 18.0, FD + 19.6, 1.3);
+    radome(THREE, g, T, 38.0, YC - 2.2, FD + 18.0, FD + 19.6, 1.3);
     /* Phalanx: three, on sponsons under the deck edge */
     [[128.0, -16.0, 0.0], [-138.0, 30.0, 2.6], [-138.0, -30.0, -2.6]].forEach(function (p) {
       box(THREE, g, 5.0, 5.0, 0.5, T.sup, p[0], p[1], FD - 3.5);

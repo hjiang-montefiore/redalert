@@ -71,839 +71,924 @@
    an Object3D "aar_recept" (render3d.js aarPoints) on both.
    Draw calls: every mesh merged per material (mergePerMaterial), the gear
    kept as its own merged group; F-15C 16 (was 235), F-15E 13.
+   ---- 2026-11-12 review rework (geometry, against [P1] and [P2]) ----
+   The visual review found the draw-call rebuild still crude at the side
+   view and the game camera: a round-cornered tube body, the intakes four
+   flat plates round an open box, the wing a 0.18 m plank under a 0.42 m
+   glove block, plank stabilators and fins, box gear lying on its side,
+   and two 1.5 m team squares on the wings. Rebuilt on the us_ef111a.js
+   kit, every station of the first build kept:
+     - body: a superellipse loft on the same w / h / zc table, flat on top
+       over the speed-brake deck and flat under the keel;
+     - intake trunks: one loft a side, the near-square raked mouth with
+       radiused corners ([P1] head-on), a lip, the dark duct, the ramp panel
+       in the top of the mouth, the splitter and its gap, the bleed louvre;
+       squareness falling aft into the round engine bay (outer edge y 2.01
+       at s 13 as measured before);
+     - wing, stabilators and fins: aerofoil lofts on the same outlines
+       (wing 6.6 -> 3.0 per cent thick, 1 deg anhedral; the stabilator's
+       leading-edge snag; the fin with its ECM tip fairing and root fillet);
+     - nozzles with lip, petals and dark throat; booms lofted;
+     - stores re-lofted with cruciform fins; gear legs with oleos, braces,
+       doors and the wheels stood upright (the first build's wheels lay
+       flat, so its ground was the tyre flank): ground z -2.08, height as
+       drawn 5.6 m against the published 5.63 (leg length still NOT
+       CONFIRMED, see above);
+     - fittings: seams, hinge lines, the speed-brake outline, gun port and
+       fairing, pitots, AoA vanes, blade aerials, lamps, the hook;
+     - paint: a grey-scale panel-line / rivet / walkway / soot sheet over
+       the skin grey; team colour now a band on each fin, the wingtips and
+       a spine strip (small strips, AGENT_POLICY 6), not the wing squares.
+   aar_recept and the "gear" group are kept; len 19.43 kept.
 */
 if (typeof UNIT_MODELS === "undefined") { var UNIT_MODELS = {}; }
 
 (function () {
   "use strict";
-
+  var V = null;
   var NOSE = 9.72;                  /* x of the radome tip */
   function X(s) { return NOSE - s; }
+  var D2R = Math.PI / 180;
+  function sgp(v, e) { return v < 0 ? -Math.pow(-v, e) : Math.pow(v, e); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function cr(p0, p1, p2, p3, t) {
+    return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
+                  (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+  }
+  function tab(rows, s) {
+    var n = rows.length, i = 0, k, out = [];
+    if (s <= rows[0][0]) return rows[0].slice(1);
+    if (s >= rows[n - 1][0]) return rows[n - 1].slice(1);
+    while (rows[i + 1][0] < s) i++;
+    var a = rows[Math.max(i - 1, 0)], b = rows[i], c = rows[i + 1], d = rows[Math.min(i + 2, n - 1)];
+    var t = (s - b[0]) / (c[0] - b[0]);
+    for (k = 1; k < b.length; k++) out.push(cr(a[k], b[k], c[k], d[k], t));
+    return out;
+  }
+  /* ------------------------------------------------------------ shells --
+     (us_e2_hawkeye.js) every skin a ring loft, each triangle wound away
+     from the inside of its ring pair, the normals smoothed. */
+  var K = null, G = null;
+  function put(key, g) { (K[key] || (K[key] = [])).push(g); }
+  function gput(key, g) { (G[key] || (G[key] = [])).push(g); }
+  function Shell() { this.P = []; this.T = []; }
+  Shell.prototype.vert = function (p) { this.P.push(p); return this.P.length - 1; };
+  Shell.prototype.tri = function (a, b, c, cat, od) {
+    var P = this.P, pa = P[a], pb = P[b], pc = P[c];
+    var ux = pb[0] - pa[0], uy = pb[1] - pa[1], uz = pb[2] - pa[2];
+    var vx = pc[0] - pa[0], vy = pc[1] - pa[1], vz = pc[2] - pa[2];
+    var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    if (nx * od[0] + ny * od[1] + nz * od[2] < 0) { var t = b; b = c; c = t; }
+    this.T.push([a, b, c, cat]);
+  };
+  Shell.prototype.fan = function (ring, c, ref, cat) {
+    var n = ring.length, ic = this.vert(c), ids = [], i;
+    var od = [c[0] - ref[0], c[1] - ref[1], c[2] - ref[2]];
+    for (i = 0; i < n; i++) ids.push(this.vert(ring[i]));
+    for (i = 0; i < n; i++) this.tri(ic, ids[i], ids[(i + 1) % n], cat, od);
+  };
+  Shell.prototype.loft = function (rings, catOf, capA, capB) {
+    var R = rings.length, n = rings[0].length, r, i, j, idx = [], cent = [];
+    for (r = 0; r < R; r++) {
+      var row = [], cx = 0, cy = 0, cz = 0;
+      for (i = 0; i < n; i++) { var p = rings[r][i]; row.push(this.vert(p)); cx += p[0]; cy += p[1]; cz += p[2]; }
+      idx.push(row); cent.push([cx / n, cy / n, cz / n]);
+    }
+    for (r = 0; r + 1 < R; r++) {
+      var mc = [(cent[r][0] + cent[r + 1][0]) / 2, (cent[r][1] + cent[r + 1][1]) / 2, (cent[r][2] + cent[r + 1][2]) / 2];
+      for (i = 0; i < n; i++) {
+        j = (i + 1) % n;
+        var A = rings[r][i], B = rings[r][j], C = rings[r + 1][j], D = rings[r + 1][i];
+        var od = [(A[0] + B[0] + C[0] + D[0]) / 4 - mc[0], (A[1] + B[1] + C[1] + D[1]) / 4 - mc[1],
+                  (A[2] + B[2] + C[2] + D[2]) / 4 - mc[2]];
+        var cat = catOf(i, r);
+        this.tri(idx[r][i], idx[r][j], idx[r + 1][j], cat, od);
+        this.tri(idx[r][i], idx[r + 1][j], idx[r + 1][i], cat, od);
+      }
+    }
+    if (capA) this.fan(rings[0], cent[0], cent[1], capA);
+    if (capB) this.fan(rings[R - 1], cent[R - 1], cent[R - 2], capB);
+  };
+  Shell.prototype.emit = function (into) {
+    var P = this.P, Tr = this.T, N = [], i, k;
+    for (i = 0; i < P.length; i++) N.push([0, 0, 0]);
+    for (k = 0; k < Tr.length; k++) {
+      var t = Tr[k], pa = P[t[0]], pb = P[t[1]], pc = P[t[2]];
+      var ux = pb[0] - pa[0], uy = pb[1] - pa[1], uz = pb[2] - pa[2];
+      var vx = pc[0] - pa[0], vy = pc[1] - pa[1], vz = pc[2] - pa[2];
+      var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      for (i = 0; i < 3; i++) { var q = N[t[i]]; q[0] += nx; q[1] += ny; q[2] += nz; }
+    }
+    for (i = 0; i < N.length; i++) {
+      var m = Math.sqrt(N[i][0] * N[i][0] + N[i][1] * N[i][1] + N[i][2] * N[i][2]) || 1;
+      N[i][0] /= m; N[i][1] /= m; N[i][2] /= m;
+    }
+    var by = {};
+    for (k = 0; k < Tr.length; k++) {
+      var cat = Tr[k][3];
+      if (!by[cat]) by[cat] = { pos: [], nor: [] };
+      for (i = 0; i < 3; i++) {
+        var p = P[Tr[k][i]], nn = N[Tr[k][i]];
+        by[cat].pos.push(p[0], p[1], p[2]); by[cat].nor.push(nn[0], nn[1], nn[2]);
+      }
+    }
+    for (var key in by) {
+      var g = new V.BufferGeometry();
+      g.setAttribute("position", new V.Float32BufferAttribute(by[key].pos, 3));
+      g.setAttribute("normal", new V.Float32BufferAttribute(by[key].nor, 3));
+      if (into) (into[key] || (into[key] = [])).push(g); else put(key, g);
+    }
+  };
+  function loftTo(rings, cat, capA, capB, into) {
+    var sh = new Shell();
+    sh.loft(rings, function () { return cat; }, capA ? cat : null, capB ? cat : null);
+    sh.emit(into);
+  }
+  /* a superellipse ring at x about (yc, zw): half-width w, top zt, bottom zb */
+  function ringSE(x, yc, w, zt, zb, zw, eU, eL, n) {
+    var out = [], j;
+    for (j = 0; j < n; j++) {
+      var t = j / n * Math.PI * 2, c = Math.cos(t), s = Math.sin(t), e = s >= 0 ? 2 / eU : 2 / eL;
+      out.push([x, yc + w * sgp(c, e), s >= 0 ? zw + (zt - zw) * sgp(s, e) : zw + (zw - zb) * sgp(s, e)]);
+    }
+    return out;
+  }
+  /* aerofoil rings: frame "w" a section across the span at y = a, chord
+     plane z = o; frame "f" a section up a fin at z = a, on y = o. s the
+     leading edge's station, c the chord, t the thickness ratio */
+  var FK = 9;
+  function foilTh(t, c, u) {
+    return t * c * (1.4845 * Math.sqrt(u) - 0.63 * u - 1.758 * u * u + 1.4215 * u * u * u - 0.518 * u * u * u * u);
+  }
+  function foilRing(sec, frame) {
+    var up = [], lo = [], j, u, th, ring = [];
+    for (j = 0; j <= FK; j++) {
+      u = (1 - Math.cos(Math.PI * j / FK)) / 2;
+      th = foilTh(sec.t, sec.c, u);
+      if (frame === "w") { up.push([X(sec.s + u * sec.c), sec.a, sec.o + th]); lo.push([X(sec.s + u * sec.c), sec.a, sec.o - th]); }
+      else { up.push([X(sec.s + u * sec.c), sec.o + th, sec.a]); lo.push([X(sec.s + u * sec.c), sec.o - th, sec.a]); }
+    }
+    for (j = 0; j <= FK; j++) ring.push(up[j]);
+    for (j = FK - 1; j >= 1; j--) ring.push(lo[j]);
+    return ring;
+  }
+  function foilLoft(secs, frame, cat) {
+    loftTo(secs.map(function (q) { return foilRing(q, frame); }), cat, true, true);
+  }
+  function rod(a, b, r, seg, r2) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
+    var g = new V.CylinderGeometry(r2 === undefined ? r : r2, r, L, seg || 8);
+    var q = new V.Quaternion().setFromUnitVectors(new V.Vector3(0, 1, 0), new V.Vector3(dx / L, dy / L, dz / L));
+    var m = new V.Matrix4().makeRotationFromQuaternion(q);
+    m.setPosition((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+    g.applyMatrix4(m); return g;
+  }
+  function boxG(sx, sy, sz, x, y, z) { var g = new V.BoxGeometry(sx, sy, sz); g.translate(x, y, z); return g; }
+  function wheelG(r, w, x, y, z, seg) { var g = new V.CylinderGeometry(r, r, w, seg || 20); g.translate(x, y, z); return g; }
+  var DX_ = null, LAY = null;
+  function merge(list) {
+    var pos = [], nor = [], col = [], i, j, anyCol = false;
+    for (i = 0; i < list.length; i++) if (list[i].attributes.color) anyCol = true;
+    for (i = 0; i < list.length; i++) {
+      var g = list[i].index ? list[i].toNonIndexed() : list[i];
+      if (!g.attributes.normal) g.computeVertexNormals();
+      var p = g.attributes.position.array, n = g.attributes.normal.array, c = g.attributes.color ? g.attributes.color.array : null;
+      for (j = 0; j < p.length; j++) { pos.push(p[j]); nor.push(n[j]); if (anyCol) col.push(c ? c[j] : 1); }
+    }
+    var out = new V.BufferGeometry();
+    out.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+    out.setAttribute("normal", new V.Float32BufferAttribute(nor, 3));
+    if (anyCol) out.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+    return out;
+  }
+  function emit(parent, lists, M2, order) {
+    order.forEach(function (key) {
+      if (!lists[key] || !lists[key].length) return;
+      var geo = merge(lists[key]);
+      if (M2[key].map && LAY) DX_.projUV(geo, LAY);
+      parent.add(new V.Mesh(geo, M2[key]));
+    });
+  }
+  /* ========================================================= detail kit ==
+     (the redo) Fittings laid on the skin, and a projected paint sheet.
+     ribbon()  a strip along a polyline lying on the skin (outward normal at
+               each point given), lifted a little: panel seams, hinge lines,
+               walkway edges, de-icer boots;
+     blade()   a tapered blade aerial or a fence standing on the skin;
+     lamp()    a small eight-faced lamp in a vertex colour (one material);
+     sheet()   a grey-scale canvas laid over the coloured skins by projected
+               UVs (plan views from above and below, the two sides): panel
+               lines, rivet rows, walkways, exhaust soot and weathering. The
+               skins keep their colour; the sheet only darkens it. */
+  function DK(V) {
+    function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function vnorm(a) { var m = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
+    function geo(pos, col) {
+      var g = new V.BufferGeometry();
+      g.setAttribute("position", new V.Float32BufferAttribute(pos, 3));
+      if (col) g.setAttribute("color", new V.Float32BufferAttribute(col, 3));
+      g.computeVertexNormals();
+      return g;
+    }
+    function quad(pos, a, b, c, d, n) {
+      var u = vsub(b, a), v = vsub(c, a), f = vcross(u, v);
+      if (n && f[0] * n[0] + f[1] * n[1] + f[2] * n[2] < 0) { var t = b; b = d; d = t; }
+      pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2],
+               a[0], a[1], a[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+    }
+    /* pts: [[x,y,z]...]; nrm: the outward normal at each point, or a
+       function (p) -> normal; w the width, lift the height off the skin */
+    function ribbon(pts, nrm, w, lift) {
+      var pos = [], A = [], B = [], i, n = pts.length;
+      if (n < 2) return null;
+      for (i = 0; i < n; i++) {
+        var p = pts[i], nn = vnorm(typeof nrm === "function" ? nrm(p) : (nrm[0].length ? nrm[i] : nrm));
+        var t = vsub(pts[Math.min(i + 1, n - 1)], pts[Math.max(i - 1, 0)]);
+        var s = vnorm(vcross(t, nn)), l = lift === undefined ? 0.012 : lift;
+        var c = [p[0] + nn[0] * l, p[1] + nn[1] * l, p[2] + nn[2] * l];
+        A.push([c[0] + s[0] * w / 2, c[1] + s[1] * w / 2, c[2] + s[2] * w / 2]);
+        B.push([c[0] - s[0] * w / 2, c[1] - s[1] * w / 2, c[2] - s[2] * w / 2]);
+        A[i].n = nn;
+      }
+      for (i = 0; i + 1 < n; i++) quad(pos, A[i], B[i], B[i + 1], A[i + 1], A[i].n);
+      return geo(pos);
+    }
+    /* a blade from base point p, standing along up, chord along fwd (the
+       leading edge forward); h tall, chord c0 at the root, c1 at the tip,
+       th thick, the tip set back by rake */
+    function blade(p, up, fwd, h, c0, c1, th, rake) {
+      up = vnorm(up); fwd = vnorm(fwd);
+      var sd = vnorm(vcross(up, fwd)), pos = [];
+      function P(f, u, s) {
+        return [p[0] + fwd[0] * f + up[0] * u + sd[0] * s, p[1] + fwd[1] * f + up[1] * u + sd[1] * s,
+                p[2] + fwd[2] * f + up[2] * u + sd[2] * s];
+      }
+      var r = rake || 0, t = th / 2;
+      var a0 = P(c0 / 2, 0, t), a1 = P(-c0 / 2, 0, t), a2 = P(-c0 / 2, 0, -t), a3 = P(c0 / 2, 0, -t);
+      var b0 = P(c1 / 2 - r, h, t), b1 = P(-c1 / 2 - r, h, t), b2 = P(-c1 / 2 - r, h, -t), b3 = P(c1 / 2 - r, h, -t);
+      quad(pos, a0, a1, b1, b0, sd); quad(pos, a3, a2, b2, b3, [-sd[0], -sd[1], -sd[2]]);
+      quad(pos, a0, b0, b3, a3, fwd); quad(pos, a1, a2, b2, b1, [-fwd[0], -fwd[1], -fwd[2]]);
+      quad(pos, b0, b1, b2, b3, up);
+      return geo(pos);
+    }
+    /* an eight-faced lamp of radius r at p, in colour hex (vertex colour) */
+    function lamp(p, r, hex) {
+      var c = [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
+      var pos = [], col = [], i, j;
+      var X = [[r, 0, 0], [-r, 0, 0]], Y = [[0, r, 0], [0, -r, 0]], Z = [[0, 0, r], [0, 0, -r]];
+      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++) for (var k = 0; k < 2; k++) {
+        var a = X[i], b = Y[j], d = Z[k];
+        pos.push(p[0] + a[0], p[1] + a[1], p[2] + a[2], p[0] + b[0], p[1] + b[1], p[2] + b[2],
+                 p[0] + d[0], p[1] + d[1], p[2] + d[2]);
+        col.push(c[0], c[1], c[2], c[0], c[1], c[2], c[0], c[1], c[2]);
+      }
+      return geo(pos, col);
+    }
+    /* a closed loop of points around a body: f(angle) -> [x,y,z]; the
+       normal is taken radially from the axis point ax(angle) */
+    function hoop(f, a0, a1, n, ax, w, lift) {
+      var pts = [], nr = [], i;
+      for (i = 0; i <= n; i++) {
+        var a = a0 + (a1 - a0) * i / n, p = f(a), c = ax(a);
+        pts.push(p); nr.push([0, p[1] - c[1], p[2] - c[2]]);
+      }
+      return ribbon(pts, nr, w, lift);
+    }
 
-  /* ------------------------------------------------------------- palette */
-  /* Taken from the PAINT table at the top of js/air3d_era.js: this airframe
-     is spec'd camo:"twotone", the modern US grey-on-grey. Do not invent. */
-  var SKIN_C = 0x768086, SKIN_R = 0.86, SKIN_M = 0.07;
-  var TONE_HI = "#8b959b", TONE_LO = "#5f6a72";
-
-  /* ------------------------------------------------------------- texture */
-  /* One 1024x512 sheet does the work of several thousand triangles: base
-     camouflage mottle, panel seams, rivet rows down the frames, access
-     hatches, exhaust soot and belly grime. The lofted bodies carry
-     cylindrical UVs (u aft->nose, v around) so the sheet wraps once; u = 0
-     is the TAIL, and v = 0.75 is the belly, which is where the dirt goes. */
-  var texCache = null;
-
-  function rngFor(seed) {
-    var s = seed >>> 0 || 1;
-    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    /* ------------------------------------------------ the paint sheet --
+       Four bands on a 1024 x 2048 sheet: from above (x, y), the port side
+       (x, z), the starboard side (x, z), from below (x, y). */
+    function layout(xmin, xmax, ymax, zmin, zmax) {
+      var TW = 1024, TH = 2048, PX = (TW - 4) / (xmax - xmin);
+      var PY = Math.min(PX * 1.6, 620 / (2 * ymax)), PZ = Math.min(PX * 1.6, 300 / (zmax - zmin));
+      var TOPH = Math.ceil(2 * ymax * PY) + 2, SIDEH = Math.ceil((zmax - zmin) * PZ) + 2;
+      var B_PORT = TOPH + 4, B_STBD = B_PORT + SIDEH + 4, B_BOT = B_STBD + SIDEH + 4;
+      return { TW: TW, TH: TH, PX: PX, PY: PY, PZ: PZ, XMIN: xmin, YMAX: ymax, ZMAX: zmax,
+               TOPH: TOPH, SIDEH: SIDEH, B_PORT: B_PORT, B_STBD: B_STBD, B_BOT: B_BOT };
+    }
+    function cl(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    function projUV(geo2, L) {
+      var p = geo2.attributes.position.array, uv = new Float32Array(p.length / 3 * 2), t, k;
+      for (t = 0; t + 8 < p.length; t += 9) {
+        var ux = p[t + 3] - p[t], uy = p[t + 4] - p[t + 1], uz = p[t + 5] - p[t + 2];
+        var vx = p[t + 6] - p[t], vy = p[t + 7] - p[t + 1], vz = p[t + 8] - p[t + 2];
+        var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+        nx /= nl; ny /= nl; nz /= nl;
+        var endOn = Math.abs(nx) > 0.85;
+        var band = endOn ? (nz < -0.3 ? 3 : 0) : (nz > 0.45 ? 0 : nz < -0.45 ? 3 : (ny >= 0 ? 1 : 2));
+        for (k = 0; k < 3; k++) {
+          var x = p[t + 3 * k], y = p[t + 3 * k + 1], z = p[t + 3 * k + 2], U, R;
+          U = cl((x - L.XMIN) * L.PX, 1, L.TW - 1);
+          if (band === 0) R = cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else if (band === 3) R = L.B_BOT + cl((L.YMAX - y) * L.PY, 1, L.TOPH - 1);
+          else R = (band === 2 ? L.B_STBD : L.B_PORT) + cl((L.ZMAX - z) * L.PZ, 1, L.SIDEH - 1);
+          uv[(t / 3 + k) * 2] = U / L.TW;
+          uv[(t / 3 + k) * 2 + 1] = 1 - R / L.TH;
+        }
+      }
+      geo2.setAttribute("uv", new V.BufferAttribute(uv, 2));
+      return geo2;
+    }
+    function rng(seed) {
+      var s = seed >>> 0 || 1;
+      return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    }
+    /* spec: { frames: [[x, half-width], ...] lines round the body;
+               top: [[[x,y],...], ...] polylines seen from above (mirrored
+                    to starboard if spec.mirror);
+               bot: the same from below; side: [[[x,z],...]] both sides;
+               rivets: polylines (above) dotted;
+               walk: [[[x,y],...]] walkway outlines (above);
+               soot: [[x, y, z, length, width]] streaks running aft;
+               grime: count of weathering blots; seam: line darkness 0-1 } */
+    function sheet(L, spec, seed) {
+      var cv = document.createElement("canvas");
+      cv.width = L.TW; cv.height = L.TH;
+      var g = cv.getContext("2d"), R = rng(seed || 7), i, j, sd;
+      function U(x) { return (x - L.XMIN) * L.PX; }
+      function RT(y) { return (L.YMAX - y) * L.PY; }
+      function RB(y) { return L.B_BOT + (L.YMAX - y) * L.PY; }
+      function RS(z, s) { return (s ? L.B_STBD : L.B_PORT) + (L.ZMAX - z) * L.PZ; }
+      g.fillStyle = "#f2f2f2"; g.fillRect(0, 0, L.TW, L.TH);
+      for (i = 0; i < (spec.grime || 140); i++) {          /* weathering */
+        g.fillStyle = R() < 0.6 ? "rgba(40,40,40," + (0.03 + R() * 0.04) + ")" : "rgba(255,255,255,0.05)";
+        g.beginPath(); g.ellipse(R() * L.TW, R() * L.TH, 4 + R() * 26, 2 + R() * 9, 0, 0, Math.PI * 2); g.fill();
+      }
+      var sa = spec.seam === undefined ? 0.55 : spec.seam;
+      var LINE = "rgba(30,32,34," + sa + ")", FAINT = "rgba(30,32,34," + (sa * 0.45) + ")";
+      function path(pts, map, col, lw, dash) {
+        g.strokeStyle = col || LINE; g.lineWidth = lw || 1.2;
+        if (g.setLineDash) g.setLineDash(dash || []);
+        g.beginPath();
+        for (var k = 0; k < pts.length; k++) {
+          var q = map(pts[k]);
+          if (k) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]);
+        }
+        g.stroke();
+        if (g.setLineDash) g.setLineDash([]);
+      }
+      var mirror = spec.mirror !== false;
+      function both(list, fT, col, lw, dash) {
+        for (j = 0; j < (list || []).length; j++) {
+          path(list[j], fT(1), col, lw, dash);
+          if (mirror) path(list[j], fT(-1), col, lw, dash);
+        }
+      }
+      both(spec.top, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; });
+      both(spec.bot, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; });
+      both(spec.rivets, function (m) { return function (q) { return [U(q[0]), RT(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      both(spec.rivetsB, function (m) { return function (q) { return [U(q[0]), RB(m * q[1])]; }; }, FAINT, 1, [1, 3]);
+      for (j = 0; j < (spec.side || []).length; j++) {
+        for (sd = 0; sd < 2; sd++) {
+          path(spec.side[j], (function (s) { return function (q) { return [U(q[0]), RS(q[1], s)]; }; })(sd));
+        }
+      }
+      for (j = 0; j < (spec.frames || []).length; j++) {
+        var f = spec.frames[j], x = U(f[0]);
+        g.strokeStyle = LINE; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x, RT(f[1])); g.lineTo(x, RT(-f[1])); g.stroke();
+        g.beginPath(); g.moveTo(x, RB(f[1])); g.lineTo(x, RB(-f[1])); g.stroke();
+        for (sd = 0; sd < 2; sd++) {
+          g.beginPath(); g.moveTo(x, RS(L.ZMAX, sd)); g.lineTo(x, RS(L.ZMAX - L.SIDEH / L.PZ, sd)); g.stroke();
+        }
+      }
+      for (j = 0; j < (spec.walk || []).length; j++) {     /* walkways: a darker, non-slip band */
+        for (sd = 1; sd >= (mirror ? -1 : 1); sd -= 2) {
+          var w = spec.walk[j];
+          g.fillStyle = "rgba(20,22,24,0.16)";
+          g.beginPath();
+          for (i = 0; i < w.length; i++) { if (i) g.lineTo(U(w[i][0]), RT(sd * w[i][1])); else g.moveTo(U(w[i][0]), RT(sd * w[i][1])); }
+          g.closePath(); g.fill();
+        }
+      }
+      for (j = 0; j < (spec.soot || []).length; j++) {     /* exhaust soot, fading aft */
+        var s = spec.soot[j], x0 = U(s[0]), x1 = U(s[0] - s[3]), hw = s[4] * L.PY;
+        var grd = g.createLinearGradient(x0, 0, x1, 0);
+        grd.addColorStop(0, "rgba(25,22,20,0.55)"); grd.addColorStop(1, "rgba(25,22,20,0)");
+        g.fillStyle = grd;
+        g.fillRect(x1, RT(s[1]) - hw, x0 - x1, 2 * hw);
+        g.fillRect(x1, RB(s[1]) - hw, x0 - x1, 2 * hw);
+        for (sd = 0; sd < 2; sd++) g.fillRect(x1, RS(s[2], sd) - s[4] * L.PZ, x0 - x1, 2 * s[4] * L.PZ);
+      }
+      var tex = new V.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = V.ClampToEdgeWrapping;
+      tex.anisotropy = 4;
+      return tex;
+    }
+    return { ribbon: ribbon, blade: blade, lamp: lamp, hoop: hoop, layout: layout, projUV: projUV,
+             sheet: sheet, geo: geo, quad: quad };
   }
 
-  function makeSkinTexture(THREE) {
-    var W = 1024, H = 512;
-    var cv = document.createElement("canvas");
-    cv.width = W; cv.height = H;
-    var g = cv.getContext("2d");
-    var R = rngFor(0x15EA61E);
-
-    /* canvas row for a given v (uv.y), remembering the default flipY */
-    function CY(v) { return (1 - v) * H; }
-
-    g.fillStyle = "#768086"; g.fillRect(0, 0, W, H);
-
-    /* two-tone compass-grey mottle */
-    var b, tone;
-    for (b = 0; b < 30; b++) {
-      tone = (b & 1) ? TONE_HI : TONE_LO;
-      g.globalAlpha = 0.42;
-      g.fillStyle = tone;
-      g.beginPath();
-      g.ellipse(R() * W, R() * H, 50 + R() * 140, 26 + R() * 74, R() * 3.14, 0, 6.29);
-      g.fill();
-    }
-    g.globalAlpha = 1;
-
-    /* the upper surfaces are a shade darker than the flanks, the belly a
-       shade lighter - the standard Mod Eagle wrap */
-    var top = g.createLinearGradient(0, CY(0.36), 0, CY(0.14));
-    top.addColorStop(0, "rgba(60,68,74,0.00)");
-    top.addColorStop(1, "rgba(60,68,74,0.28)");
-    g.fillStyle = top; g.fillRect(0, CY(0.36), W, CY(0.14) - CY(0.36));
-    var bel = g.createLinearGradient(0, CY(0.62), 0, CY(0.88));
-    bel.addColorStop(0, "rgba(196,203,208,0.00)");
-    bel.addColorStop(1, "rgba(196,203,208,0.26)");
-    g.fillStyle = bel; g.fillRect(0, CY(0.62), W, CY(0.88) - CY(0.62));
-
-    /* panel seams: frames across, stringers along */
-    var x, y, i, n;
-    g.strokeStyle = "rgba(0,0,0,0.32)"; g.lineWidth = 1.7;
-    x = 0;
-    while (x < W) {
-      x += 22 + R() * 62;
-      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-    }
-    y = 0;
-    while (y < H) {
-      y += 30 + R() * 70;
-      g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke();
-    }
-    g.strokeStyle = "rgba(0,0,0,0.17)"; g.lineWidth = 1;
-    for (i = 0; i < 70; i++) {
-      var qx = R() * W, qy = R() * H, ql = 34 + R() * 170;
-      g.beginPath();
-      if (R() < 0.55) { g.moveTo(qx, qy); g.lineTo(qx + ql, qy); }
-      else { g.moveTo(qx, qy); g.lineTo(qx, qy + ql * 0.55); }
-      g.stroke();
-    }
-
-    /* rivet rows following the frames */
-    g.fillStyle = "rgba(0,0,0,0.24)";
-    for (i = 0; i < 46; i++) {
-      var ry = R() * H, rx = R() * W * 0.75;
-      n = 18 + (R() * 46) | 0;
-      for (var j = 0; j < n; j++) g.fillRect(rx + j * 6.5, ry, 1.5, 1.5);
-    }
-    /* a few vertical rivet lines too, around the frames */
-    for (i = 0; i < 16; i++) {
-      var vx = R() * W, vy = R() * H * 0.7;
-      n = 14 + (R() * 26) | 0;
-      for (j = 0; j < n; j++) g.fillRect(vx, vy + j * 6.5, 1.5, 1.5);
-    }
-
-    /* access hatches and inspection panels */
-    g.strokeStyle = "rgba(0,0,0,0.38)"; g.lineWidth = 1.3;
-    for (i = 0; i < 26; i++) {
-      var hx = R() * W, hy = R() * H, hw = 13 + R() * 40, hh = 10 + R() * 26;
-      g.strokeRect(hx, hy, hw, hh);
-      g.globalAlpha = 0.09; g.fillStyle = "#000"; g.fillRect(hx, hy, hw, hh);
-      g.globalAlpha = 1;
-    }
-
-    /* exhaust soot: u = 0 is the tail, so the burn lives on the left edge */
-    var soot = g.createLinearGradient(0, 0, W * 0.34, 0);
-    soot.addColorStop(0, "rgba(18,16,15,0.46)");
-    soot.addColorStop(1, "rgba(18,16,15,0.00)");
-    g.fillStyle = soot; g.fillRect(0, 0, W * 0.34, H);
-
-    /* belly grime, heaviest low down and streaking aft from the vents */
-    var grime = g.createLinearGradient(0, CY(0.60), 0, CY(0.80));
-    grime.addColorStop(0, "rgba(34,31,28,0.00)");
-    grime.addColorStop(1, "rgba(34,31,28,0.30)");
-    g.fillStyle = grime; g.fillRect(0, CY(0.60), W, CY(0.80) - CY(0.60));
-    g.fillStyle = "rgba(30,27,24,0.16)";
-    for (i = 0; i < 60; i++) {
-      var sx = R() * W, sy = CY(0.52 + R() * 0.42);
-      g.fillRect(sx - 40 - R() * 130, sy, 44 + R() * 140, 2 + R() * 5);
-    }
-    /* gun-gas staining, forward starboard wing root */
-    g.fillStyle = "rgba(26,24,22,0.22)";
-    for (i = 0; i < 14; i++)
-      g.fillRect(W * 0.42 - R() * 150, CY(0.42) + R() * 26, 60 + R() * 130, 3 + R() * 4);
-
-    /* walkway lines along the wing root and a warning stripe */
-    g.strokeStyle = "rgba(24,24,24,0.42)"; g.lineWidth = 3;
-    g.setLineDash([10, 8]);
-    g.beginPath(); g.moveTo(W * 0.16, CY(0.30)); g.lineTo(W * 0.66, CY(0.30)); g.stroke();
-    g.beginPath(); g.moveTo(W * 0.16, CY(0.70)); g.lineTo(W * 0.66, CY(0.70)); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = "rgba(178,42,32,0.50)";
-    g.fillRect(W * 0.40, CY(0.35), 52, 4);
-    g.fillRect(W * 0.24, CY(0.66), 44, 4);
-
-    var t = new THREE.CanvasTexture(cv);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
-    t.anisotropy = 8;
-    return t;
+  /* ============================================================ helpers */
+  /* a flat plate cut to a polygon in the (x, z) plane, standing at y0, th thick */
+  function plateXZ(poly, y0, th) {
+    var sh = new V.Shape(), i;
+    sh.moveTo(poly[0][0], poly[0][1]);
+    for (i = 1; i < poly.length; i++) sh.lineTo(poly[i][0], poly[i][1]);
+    var g = new V.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false });
+    g.rotateX(Math.PI / 2);                 /* shape (x, z), depth -> -y */
+    g.translate(0, y0 + th / 2, 0);
+    return g;
+  }
+  /* a round body of revolution along x: rows [s, r], centre (yc, zc) */
+  function tube(rows, yc, zc, n, cat, into) {
+    loftTo(rows.map(function (q) { return ringSE(X(q[0]), yc, Math.max(q[1], 0.004), zc + Math.max(q[1], 0.004), zc - Math.max(q[1], 0.004), zc, 2, 2, n); }),
+           cat, true, true, into);
   }
 
-  function skinTex(THREE) {
-    if (texCache === null) {
-      try { texCache = makeSkinTexture(THREE); } catch (e) { texCache = false; }
+  /* ============================================================ the body ==
+     Rows: s, half-width, top, bottom, the widest line, squareness above and
+     below (2 round, higher flatter). The first build's BODY table (its w, h,
+     zc) is kept station for station: here it is a superellipse loft instead
+     of the round-cornered tube, so the forward fuselage keeps the ogive
+     radome and the slab-sided cockpit section of [P2], and the centre body
+     between the trunks goes flat on top (the speed-brake deck) and flat
+     underneath (the keel the Sparrows hang off). */
+  var BODY = [
+    [0.00, 0.015, -0.345, -0.375, -0.36, 2.0, 2.0],
+    [0.40, 0.130, -0.220, -0.460, -0.34, 2.0, 2.0],
+    [0.90, 0.250, -0.070, -0.550, -0.31, 2.0, 2.0],
+    [1.50, 0.380, 0.090, -0.630, -0.27, 2.0, 2.1],
+    [2.10, 0.480, 0.240, -0.680, -0.22, 2.0, 2.2],
+    [2.75, 0.560, 0.390, -0.710, -0.16, 2.1, 2.4],
+    [3.50, 0.610, 0.530, -0.730, -0.10, 2.2, 2.7],
+    [4.60, 0.635, 0.660, -0.760, -0.05, 2.4, 3.0],
+    [5.80, 0.640, 0.740, -0.780, -0.02, 2.6, 3.2],
+    [7.00, 0.655, 0.790, -0.790, 0.00, 2.9, 3.4],
+    [8.60, 0.750, 0.780, -0.820, -0.02, 3.2, 3.6],
+    [10.4, 0.880, 0.740, -0.840, -0.05, 3.6, 3.8],
+    [12.4, 0.960, 0.680, -0.840, -0.08, 3.8, 3.8],
+    [14.4, 1.000, 0.620, -0.820, -0.10, 3.8, 3.8],
+    [16.2, 0.980, 0.530, -0.790, -0.13, 3.6, 3.6],
+    [17.6, 0.900, 0.350, -0.730, -0.19, 3.4, 3.4],
+    [18.4, 0.800, 0.030, -0.570, -0.27, 3.4, 3.4],
+    [19.05, 0.660, -0.160, -0.460, -0.31, 3.4, 3.4]
+  ];
+  var BST = [0, 0.15, 0.4, 0.7, 1.1, 1.5, 2.1, 2.75, 3.5, 4.2, 4.6, 5.2, 5.8, 6.4, 7.0, 7.8, 8.6, 9.5, 10.4,
+             11.4, 12.4, 13.4, 14.4, 15.3, 16.2, 17.0, 17.6, 18.0, 18.4, 18.8, 19.05];
+  var BN = 28;
+  function bodyPt(s, a, push) {
+    var r = tab(BODY, s);
+    var c = Math.cos(a), sn = Math.sin(a), e = sn >= 0 ? 2 / r[4] : 2 / r[5];
+    var y = r[0] * sgp(c, e), z = sn >= 0 ? r[3] + (r[1] - r[3]) * sgp(sn, e) : r[3] + (r[3] - r[2]) * sgp(sn, e);
+    if (push) { var dz = z - r[3], L = Math.sqrt(y * y + dz * dz) || 1; y += push * y / L; z += push * dz / L; }
+    return [X(s), y, z];
+  }
+  function addBody() {
+    var rings = [], rad = [], r, i;
+    for (r = 0; r < BST.length; r++) {
+      var ring = [];
+      for (i = 0; i < BN; i++) ring.push(bodyPt(BST[r], i / BN * Math.PI * 2, 0));
+      if (BST[r] <= 2.75) rad.push(ring);
+      if (BST[r] >= 2.75) rings.push(ring);
     }
-    return texCache || null;
+    loftTo(rad, "radome", true, false);
+    loftTo(rings, "skin", false, true);
   }
 
-  /* ------------------------------------------------------------ materials */
-  /* Exactly three tiers. SKIN carries the sheet; METAL is bare fittings and
-     rubber; GLASS is the canopy. Nothing else. */
-  function makeMats(THREE) {
-    var t = skinTex(THREE);
-    var skin = new THREE.MeshStandardMaterial({
-      color: t ? 0xffffff : SKIN_C, roughness: SKIN_R, metalness: SKIN_M,
-      side: THREE.DoubleSide });
-    if (t) skin.map = t;
-
-    /* Extruded panels carry UVs in model METRES, so the sheet has to be
-       scaled down or a 13 m wing tiles it thirteen times and reads as
-       corduroy. One repeat covers roughly nine metres. */
-    var panel = new THREE.MeshStandardMaterial({
-      color: t ? 0xffffff : SKIN_C, roughness: SKIN_R, metalness: SKIN_M,
-      side: THREE.DoubleSide });
-    if (t) {
-      var c = t.clone(); c.needsUpdate = true;
-      c.wrapS = c.wrapT = THREE.RepeatWrapping;
-      c.repeat.set(1 / 9, 1 / 9);
-      c.offset.set(0.31, 0.44);
-      panel.map = c;
+  /* ======================================================= intake trunks ==
+     The first build's four flat plates round an open box become one loft
+     each side: the rectangular cheek intake with radiused corners [P1 head-
+     on: the mouths are near-square with round corners], squareness falling
+     aft as the trunk turns into the round engine bay [NAC table kept: outer
+     edge y 2.01 at s 13]. The mouth is raked, top lip at s 5.55 and bottom
+     lip at 5.95 [first build, P2]. Rows: s, half-width, top, bottom, e. */
+  var TRK = [
+    [5.55, 0.400, 0.50, -0.80, 6.0],
+    [6.40, 0.410, 0.53, -0.84, 5.6],
+    [7.60, 0.420, 0.555, -0.87, 5.0],
+    [9.00, 0.440, 0.565, -0.88, 4.4],
+    [10.2, 0.560, 0.575, -0.88, 4.0],
+    [11.6, 0.720, 0.585, -0.88, 3.6],
+    [13.0, 0.790, 0.585, -0.88, 3.2],
+    [14.6, 0.800, 0.580, -0.87, 2.8],
+    [16.2, 0.780, 0.550, -0.85, 2.5],
+    [17.2, 0.680, 0.480, -0.78, 2.2],
+    [17.85, 0.580, 0.410, -0.71, 2.0]
+  ];
+  var TYC = 1.21;
+  function trunkRing(s, sd, n, inset) {
+    var q = tab(TRK, s), k = inset || 0;
+    return ringSE(X(s), sd * TYC, q[0] - k, q[1] - k, q[2] + k, (q[1] + q[2]) / 2, q[3], q[3], n);
+  }
+  function rake(ring, top, bot) {      /* the raked mouth: lower lip 0.40 m aft of the upper */
+    return ring.map(function (p) { var t = clamp((top - p[2]) / (top - bot), 0, 1); return [p[0] - 0.40 * t, p[1], p[2]]; });
+  }
+  function addTrunks() {
+    var sd, r;
+    var ST = [5.55, 6.0, 6.4, 7.0, 7.6, 8.3, 9.0, 9.6, 10.2, 10.9, 11.6, 12.3, 13.0, 13.8, 14.6, 15.4, 16.2, 16.7, 17.2, 17.55, 17.85];
+    for (sd = -1; sd <= 1; sd += 2) {
+      var rings = [];
+      for (r = 0; r < ST.length; r++) {
+        var rg = trunkRing(ST[r], sd, 24, 0);
+        if (ST[r] < 6.0) rg = rake(rg, 0.50, -0.80);
+        rings.push(rg);
+      }
+      loftTo(rings, "skin", false, false);
+      /* the lip: a thin inner wall, then the dark duct running in to the fan */
+      var lip = rake(trunkRing(5.62, sd, 24, 0.07), 0.43, -0.73);
+      loftTo([rings[0], lip], "metal", false, false);
+      var deep = trunkRing(7.4, sd, 24, 0.10);
+      loftTo([lip, deep], "ink", false, true);
+      /* the variable ramp: the hinged first panel hanging in the top of the mouth */
+      put("metal", plateXZ([[X(5.62), 0.42], [X(6.9), 0.36], [X(6.9), 0.16], [X(5.70), 0.30]], sd * TYC - 0.33, 0.66));
+      /* the boundary-layer splitter standing off the fuselage, its gap */
+      put("skin", plateXZ([[X(5.40), 0.44], [X(5.90), -0.62], [X(9.6), -0.72], [X(9.6), 0.50]], sd * 0.76, 0.05));
+      put("ink", plateXZ([[X(5.75), 0.38], [X(6.10), -0.56], [X(8.6), -0.62], [X(8.6), 0.42]], sd * 0.73, 0.04));
+      /* bleed-air louvre on the outer face of the trunk */
+      put("ink", plateXZ([[X(7.0), 0.22], [X(8.3), 0.22], [X(8.3), -0.02], [X(7.0), -0.02]], sd * (TYC + 0.43), 0.02));
     }
+  }
 
-    var T = {
-      skin: skin,
-      panel: panel,
-      metal: new THREE.MeshStandardMaterial({
-        color: 0x8d9399, roughness: 0.55, metalness: 0.50 }),
-      steel: new THREE.MeshStandardMaterial({
-        color: 0x6f757a, roughness: 0.48, metalness: 0.60 }),
-      burnt: new THREE.MeshStandardMaterial({
-        color: 0x5d5751, roughness: 0.52, metalness: 0.58 }),
-      dark: new THREE.MeshStandardMaterial({
-        color: 0x15181a, roughness: 0.95, metalness: 0.05 }),
-      duct: new THREE.MeshStandardMaterial({
-        color: 0xb9bec2, roughness: 0.62, metalness: 0.36 }),
-      /* Canopy tint. Measured off the render twice: at 0x9fb2b6 the canopy
-         came out (145,157,162) against skin at (169,176,177) - a 14 per cent
-         separation, which reads as a metal blister, not glass. The tone
-         mapping lifts everything, the material is double-sided so the far
-         pane is shaded too, and a clearcoat that strong puts a white lobe
-         over the whole bubble. Hence a much darker tint, the top of the
-         allowed opacity band, and a calmer clearcoat. */
-      glass: new THREE.MeshPhysicalMaterial({
-        color: 0x101c22, roughness: 0.09, metalness: 0.05,
-        transparent: true, opacity: 0.86,
-        clearcoat: 0.70, clearcoatRoughness: 0.06, side: THREE.DoubleSide }),
+  /* tail booms: the outboard structure that runs aft past the nozzles and
+     carries the fins and the stabilator pivots (first build's BOOM table) */
+  var BOOM = [[14.2, 0.42, 0.45, -0.55, 3.4], [16.5, 0.38, 0.40, -0.52, 3.0], [17.8, 0.34, 0.30, -0.46, 2.6],
+              [18.6, 0.28, 0.18, -0.38, 2.3], [19.05, 0.15, 0.03, -0.27, 2.0]];
+  function addBooms() {
+    for (var sd = -1; sd <= 1; sd += 2) {
+      var rings = [14.2, 15.0, 15.8, 16.5, 17.2, 17.8, 18.3, 18.6, 18.9, 19.05].map(function (s) {
+        var q = tab(BOOM, s);
+        return ringSE(X(s), sd * 1.66, q[0], q[1], q[2], (q[1] + q[2]) / 2, q[3], q[3], 18);
+      });
+      loftTo(rings, "skin", false, true);
+    }
+  }
+
+  /* =========================================================== canopy ==
+     Bubble canopy set far forward, the windscreen meeting the radome base
+     [P2]. Rows: s, half-width, sill z, top z (the first build's CANOPY). */
+  function canRows(isE) {
+    var C = [[3.05, 0.09, 0.53, 0.60], [3.70, 0.31, 0.56, 0.97], [4.40, 0.45, 0.62, 1.17],
+             [5.15, 0.50, 0.68, 1.27], [5.90, 0.48, 0.72, 1.25], [6.60, 0.36, 0.76, 1.12]];
+    if (isE) C = [[3.05, 0.09, 0.53, 0.60], [3.70, 0.31, 0.56, 0.97], [4.40, 0.45, 0.62, 1.17],
+                  [5.15, 0.50, 0.68, 1.27], [5.90, 0.48, 0.72, 1.25], [6.60, 0.46, 0.75, 1.23],
+                  [7.25, 0.43, 0.77, 1.18], [7.85, 0.30, 0.78, 1.04]];
+    return C;
+  }
+  function addCanopy(isE) {
+    var CAN = canRows(isE), D = DX_;
+    var rings = CAN.map(function (q) { return ringSE(X(q[0]), 0, q[1], q[3], q[2], q[2], 2.3, 2.0, 24).slice(0, 13); });
+    loftTo(rings, "glass", false, false);
+    /* the canopy's metal tail fairing back into the spine */
+    var last = CAN[CAN.length - 1], s0 = last[0];
+    var SP = [[s0 - 0.05, last[1] + 0.01, last[3] + 0.005], [s0 + 0.7, last[1] * 0.80, last[3] - 0.17],
+              [s0 + 1.4, last[1] * 0.55, last[3] - 0.30], [s0 + 2.0, 0.10, last[2] + 0.03]];
+    loftTo(SP.map(function (q) { return ringSE(X(q[0]), 0, q[1], q[2], last[2] - 0.05, last[2] - 0.05, 2.3, 2.0, 24).slice(0, 13); }),
+           "skin", false, true);
+    /* frames: windscreen bow, the canopy arch(es), the sills */
+    var bows = isE ? [3.72, 6.35, 7.30] : [3.72, 6.30];
+    bows.forEach(function (sb) {
+      var q = tab(CAN.map(function (c) { return [c[0], c[1], c[2], c[3]]; }), sb);
+      put("frame", D.hoop(function (a) { return [X(sb), q[0] * sgp(Math.cos(a), 2 / 2.3) * 1.02, q[1] + (q[2] - q[1]) * sgp(Math.sin(a), 2 / 2.3) * 1.015]; },
+                          0, Math.PI, 14, function () { return [X(sb), 0, q[1]]; }, 0.07, 0.0));
+    });
+    for (var sd = -1; sd <= 1; sd += 2) {
+      var sl = [];
+      for (var k = 0; k <= 8; k++) {
+        var s2 = 3.3 + (last[0] - 3.4) * k / 8, q3 = tab(CAN, s2);
+        sl.push([X(s2), sd * (q3[0] + 0.005), q3[1] + 0.02]);
+      }
+      put("frame", D.ribbon(sl, [0, sd, 0.3], 0.06, 0));
+    }
+    /* seats and the coaming seen through the glass */
+    put("ink", boxG(0.44, 0.60, 0.16, X(4.20), 0, 0.68));
+    put("ink", boxG(0.34, 0.44, 0.50, X(5.62), 0, 0.90));
+    if (isE) put("ink", boxG(0.34, 0.42, 0.50, X(7.05), 0, 0.94));
+    put("metal", boxG(0.06, 0.30, 0.26, X(4.05), 0, 0.84));      /* HUD */
+  }
+
+  /* ============================================================ wings ==
+     Leading edge straight at 45 deg from the root, trailing edge nearly
+     square, the raked-off tip [P1 plan, first build's WING outline]. Now an
+     aerofoil loft, 6.6 per cent thick at the root and 3 at the tip with the
+     1 deg anhedral, in place of the 0.18 m plank and the 0.42 m glove block. */
+  var WZ = 0.40;
+  function wingSec(y) {
+    var le = 8.12 + (y - 0.9) * (13.93 - 8.12) / (6.45 - 0.9), te;
+    if (y <= 5.68) te = lerp(14.88, 15.52, (y - 0.9) / (5.68 - 0.9));
+    else te = lerp(15.52, 14.50, (y - 5.68) / (6.50 - 5.68));
+    if (y > 6.45) le = lerp(13.93, 14.45, (y - 6.45) / 0.05);
+    var t = (y - 0.9) / 5.6;
+    return { a: y, s: le, c: Math.max(te - le, 0.06), t: lerp(0.066, 0.030, t), o: WZ - (y - 0.9) * 0.0175 };
+  }
+  function stabSec(y) {
+    var le, te;
+    if (y <= 2.58) le = lerp(15.52, 16.73, (y - 1.3) / 1.28);
+    else if (y <= 4.10) le = lerp(16.55, 18.30, (y - 2.62) / 1.48);
+    else le = lerp(18.30, 18.56, (y - 4.10) / 0.18);
+    if (y <= 3.80) te = lerp(18.84, 19.42, (y - 1.3) / 2.5);
+    else te = lerp(19.42, 18.60, (y - 3.80) / 0.48);
+    return { a: y, s: le, c: Math.max(te - le, 0.05), t: 0.045, o: -0.29 };
+  }
+  /* the fin re-measured off [P2] in the first rebuild: root LE s 15.30,
+     tip LE 17.54, tip TE 18.48, root TE 18.20, root z 0.42, tip 3.47 */
+  var FY = 1.555;
+  function finSec(z) {
+    var t = (z - 0.42) / (3.47 - 0.42);
+    return { a: z, s: lerp(15.30, 17.54, t), c: lerp(2.90, 0.94, t), t: lerp(0.05, 0.04, t), o: 0 };
+  }
+  function addFlying() {
+    var sd;
+    for (sd = -1; sd <= 1; sd += 2) {
+      var ys = [0.9, 1.8, 2.8, 3.8, 4.8, 5.68, 6.05], yt = [6.05, 6.30, 6.48];
+      foilLoft(ys.map(function (y) { var q = wingSec(y); q.a *= sd; return q; }), "w", "skin");
+      foilLoft(yt.map(function (y) { var q = wingSec(y); q.a *= sd; return q; }), "w", "team");
+      foilLoft([1.3, 1.9, 2.58].map(function (y) { var q = stabSec(y); q.a *= sd; return q; }), "w", "skin");
+      foilLoft([2.62, 3.2, 3.8, 4.1, 4.26].map(function (y) { var q = stabSec(y); q.a *= sd; return q; }), "w", "skin");
+      /* fins: the lofted aerofoil on the boom, the ECM fairing projecting
+         ahead of the tip [P2], a tip cap, the root fillet along the deck */
+      var fins = [0.42, 1.2, 2.0, 2.8, 3.47].map(function (z) { var q = finSec(z); q.o = sd * FY; return q; });
+      foilLoft(fins, "f", "skin");
+      tube([[16.92, 0.01], [17.10, 0.08], [17.35, 0.11], [17.75, 0.11], [18.0, 0.07]], sd * FY, 3.30, 12, "radome");
+      tube([[17.50, 0.01], [17.62, 0.05], [18.40, 0.05], [18.52, 0.02]], sd * FY, 3.49, 10, "metal");
+      loftTo([0, 0.3, 0.7, 1.0].map(function (t) {
+        var s0 = 13.9 + t * 1.8, h = Math.sin(Math.PI * Math.min(t * 1.2, 1)) * 0.10 + 0.02;
+        return ringSE(X(s0), sd * FY, 0.06 + h * 0.8, 0.44 + h, 0.30, 0.36, 2, 2, 12);
+      }), "skin", true, true);
+      /* the stabilator pivot fairing where it leaves the boom */
+      loftTo([0, 0.3, 0.7, 1.0].map(function (t) {
+        var s0 = 16.4 + t * 1.8, h = Math.sin(Math.PI * t) * 0.12 + 0.03;
+        return ringSE(X(s0), sd * 1.44, 0.08 + h, -0.18 + h * 0.6, -0.40 - h * 0.4, -0.29, 2, 2, 12);
+      }), "skin", true, true);
+    }
+  }
+
+  /* ========================================================= nozzles ==
+     Two F100 convergent-divergent nozzles, the petals bare and burnt, the
+     dark throat (the first build's cans re-lofted with a lip). */
+  function addNozzles() {
+    var sd, k, j;
+    for (sd = -1; sd <= 1; sd += 2) {
+      var yc = sd * TYC, zc = -0.15, rings = [];
+      [[17.80, 0.56], [17.95, 0.53], [18.30, 0.50], [18.68, 0.46]].forEach(function (q, ri) {
+        var ring = [];
+        for (j = 0; j < 28; j++) {
+          var a = j / 28 * Math.PI * 2, r = q[1] * (ri >= 2 ? (j % 2 ? 0.985 : 1.0) : 1.0);
+          ring.push([X(q[0]), yc + r * Math.cos(a), zc + r * Math.sin(a)]);
+        }
+        rings.push(ring);
+      });
+      loftTo(rings.slice(0, 2), "burnt", false, false);
+      loftTo(rings.slice(1), "steel", false, false);
+      var inner = rings[3].map(function (p) { return [p[0] + 0.02, yc + (p[1] - yc) * 0.9, zc + (p[2] - zc) * 0.9]; });
+      var deep = rings[3].map(function (p) { return [p[0] + 0.6, yc + (p[1] - yc) * 0.78, zc + (p[2] - zc) * 0.78]; });
+      loftTo([rings[3], inner], "steel", false, false);
+      loftTo([inner, deep], "ink", false, true);
+      for (k = 0; k < 14; k++) {
+        var a2 = k / 14 * Math.PI * 2;
+        put("ink", rod([X(18.0), yc + 0.525 * Math.cos(a2), zc + 0.525 * Math.sin(a2)],
+                       [X(18.66), yc + 0.465 * Math.cos(a2), zc + 0.465 * Math.sin(a2)], 0.012, 4));
+      }
+    }
+  }
+
+  /* =========================================================== stores ==
+     The first build's fit: C - four fuselage-corner AIM-7s, a 610 gal bag on
+     each wing pylon with an AIM-9 on each shoulder rail, the 600 gal
+     centreline tank; E - the conformal tanks with three Mk 82s along each,
+     the LANTIRN pods under the intakes, the same wing pylons. */
+  function missile(s0, len, r, y, z, fin) {
+    tube([[s0, 0.01], [s0 + len * 0.06, r * 0.7], [s0 + len * 0.14, r], [s0 + len * 0.97, r], [s0 + len, r * 0.7]], y, z, 8, "metal");
+    put("ink", rod([X(s0 + len * 0.002), y, z], [X(s0 + len * 0.10), y, z], r * 0.72, 8, 0.005));
+    for (var k = 0; k < 4; k++) {
+      var a = Math.PI / 4 + k * Math.PI / 2, up = [0, Math.cos(a), Math.sin(a)];
+      var base = [X(s0 + len * 0.90), y + up[1] * r, z + up[2] * r];
+      put("steel", DX_.blade(base, up, [1, 0, 0], fin, len * 0.12, len * 0.06, 0.02, len * 0.03));
+      var b2 = [X(s0 + len * 0.30), y + up[1] * r, z + up[2] * r];
+      put("steel", DX_.blade(b2, up, [1, 0, 0], fin * 0.7, len * 0.08, len * 0.05, 0.02, 0));
+    }
+  }
+  function tank(rows, y, z, finR) {
+    tube(rows, y, z, 12, "skin");
+    var s1 = rows[rows.length - 2][0];
+    for (var k = 0; k < (finR ? 3 : 0); k++) {
+      var a = -Math.PI / 2 + k * 2 * Math.PI / 3, up = [0, Math.cos(a), Math.sin(a)];
+      put("skin", DX_.blade([X(s1 - 0.2), y + up[1] * finR, z + up[2] * finR], up, [1, 0, 0], 0.26, 0.70, 0.40, 0.03, 0.25));
+    }
+  }
+  function addStores(isE) {
+    var sd, b;
+    for (sd = -1; sd <= 1; sd += 2) {
+      if (!isE) {
+        missile(8.27, 3.66, 0.10, sd * 1.82, -0.74, 0.30);
+        missile(8.87, 3.66, 0.10, sd * 1.30, -0.98, 0.30);
+      }
+      /* wing pylon, the bag, the launcher rail and two Sidewinders */
+      put("skin", plateXZ([[X(10.3), 0.32], [X(12.6), 0.32], [X(12.3), -0.30], [X(10.7), -0.30]], sd * 2.90, 0.12));
+      tank([[8.30, 0.02], [8.85, 0.24], [9.70, 0.33], [12.2, 0.33], [13.1, 0.26], [13.85, 0.06]], sd * 2.90, -0.62, 0.20);
+      put("steel", boxG(1.80, 0.98, 0.08, X(11.2), sd * 2.90, -0.20));
+      missile(9.66, 2.87, 0.064, sd * 2.90 + 0.46, -0.32, 0.22);
+      missile(9.66, 2.87, 0.064, sd * 2.90 - 0.46, -0.32, 0.22);
+    }
+    if (!isE) {
+      tank([[7.30, 0.02], [7.80, 0.28], [8.60, 0.42], [11.2, 0.44], [12.3, 0.36], [12.9, 0.10]], 0, -1.25, 0.30);
+      put("skin", plateXZ([[X(9.2), -0.80], [X(10.4), -0.80], [X(10.2), -0.88], [X(9.4), -0.88]], 0, 0.16));
+    }
+    if (isE) {
+      for (sd = -1; sd <= 1; sd += 2) {
+        /* conformal tanks hugging the trunk under the wing root */
+        loftTo([[7.40, 0.07, 0.08], [7.90, 0.20, 0.26], [8.60, 0.27, 0.31], [11.2, 0.28, 0.31], [13.8, 0.26, 0.29], [14.55, 0.10, 0.12]].map(function (q) {
+          return ringSE(X(q[0]), sd * 1.86, q[1], -0.28 + q[2], -0.30 - q[2], -0.30, 2.6, 2.6, 18);
+        }), "skin", true, true);
+        for (b = 0; b < 3; b++) {
+          tube([[8.4 + b * 2.3, 0.01], [8.6 + b * 2.3, 0.10], [9.0 + b * 2.3, 0.136], [10.0 + b * 2.3, 0.136], [10.45 + b * 2.3, 0.085], [10.61 + b * 2.3, 0.04]],
+               sd * 2.03, -0.76, 8, "metal");
+          put("steel", boxG(0.30, 0.04, 0.12, X(9.4 + b * 2.3), sd * 2.03, -0.62));
+          for (var k = 0; k < 4; k++) {
+            var a = Math.PI / 4 + k * Math.PI / 2, up = [0, Math.cos(a), Math.sin(a)];
+            put("steel", DX_.blade([X(10.45 + b * 2.3), sd * 2.03 + up[1] * 0.08, -0.76 + up[2] * 0.08], up, [1, 0, 0], 0.16, 0.36, 0.30, 0.015, 0.03));
+          }
+        }
+        /* LANTIRN: the nav pod to port, the targeting pod to starboard */
+        var pl = sd > 0 ? 1.99 : 2.50, pd = sd > 0 ? 0.150 : 0.190;
+        tube([[6.35, 0.02], [6.53, pd * 0.78], [6.90, pd], [6.35 + pl - 0.5, pd], [6.35 + pl - 0.12, pd * 0.8], [6.35 + pl, pd * 0.45]],
+             sd * 1.16, -1.12, 14, "metal");
+        put("ink", rod([X(6.33), sd * 1.16, -1.12], [X(6.45), sd * 1.16, -1.12], pd * 0.72, 10));
+        put("steel", boxG(0.70, 0.07, 0.22, X(7.30), sd * 1.16, -0.97));
+      }
+    }
+  }
+
+  /* ============================================================== gear ==
+     The first build's legs (nose at s 5.90, mains at s 10.80 on a 2.75 m
+     track) with the wheels now stood upright (the first build had them
+     lying on their sides about the vertical, so its ground line was the
+     tyre's flank). Ground at tyre bottom, z -2.08. */
+  var GROUND = -2.08;
+  function addGear() {
+    var sd, nr = 0.30, nz = GROUND + nr, mr = 0.44, mz = GROUND + mr;
+    gput("steel", rod([X(5.85), 0, -0.76], [X(5.90), 0, nz], 0.075, 8, 0.09));
+    gput("metal", rod([X(5.85), 0, -0.90], [X(5.87), 0, -1.30], 0.11, 8));
+    gput("steel", rod([X(6.70), 0, -0.80], [X(5.90), 0, nz + 0.40], 0.04, 6));
+    gput("rubber", wheelG(nr, 0.18, X(5.90), 0, nz, 22));
+    gput("metal", wheelG(0.15, 0.20, X(5.90), 0, nz, 12));
+    for (sd = -1; sd <= 1; sd += 2) {
+      gput("skin", boxG(1.30, 0.04, 0.62, X(5.30), sd * 0.20, -1.10));
+      gput("steel", rod([X(10.80), sd * 1.30, -0.86], [X(10.80), sd * 1.375, mz], 0.095, 8, 0.12));
+      gput("metal", rod([X(10.80), sd * 1.31, -1.00], [X(10.80), sd * 1.34, -1.36], 0.14, 8));
+      gput("steel", rod([X(10.0), sd * 1.05, -0.86], [X(10.75), sd * 1.33, mz + 0.30], 0.045, 6));
+      gput("rubber", wheelG(mr, 0.26, X(10.80), sd * 1.48, mz, 28));
+      gput("metal", wheelG(0.22, 0.28, X(10.80), sd * 1.48, mz, 14));
+      gput("skin", boxG(1.60, 0.04, 0.80, X(10.60), sd * 1.02, -1.26));
+    }
+  }
+
+  /* =========================================================== details ==
+     Panel seams, the speed-brake outline on the spine, hinge lines, gun
+     port, lamps, aerials, AoA vanes and the short flank pitots (no nose
+     boom on a production Eagle - the first build's note), the hook. */
+  function bodyHoop(s, a0, a1) {
+    var r = tab(BODY, s);
+    return DX_.hoop(function (a) { return bodyPt(s, a, 0); }, a0, a1, 24, function () { return [X(s), 0, r[3]]; }, 0.035, 0.010);
+  }
+  function wLine(secOf, y0, y1, u0, u1, sg) {
+    var pts = [], i;
+    for (i = 0; i <= 6; i++) {
+      var q = secOf(Math.abs(y0 + (y1 - y0) * i / 6)), u = u0 + (u1 - u0) * i / 6;
+      pts.push([X(q.s + u * q.c), y0 + (y1 - y0) * i / 6, q.o + sg * foilTh(q.t, q.c, u)]);
+    }
+    return DX_.ribbon(pts, [0, 0, sg], 0.04, 0.01);
+  }
+  function addDetails(isE) {
+    var sd, i, D = DX_;
+    [2.75, 3.6, 7.0, 8.6].forEach(function (s) { put("seam", bodyHoop(s, -0.25, Math.PI + 0.25)); });
+    for (sd = -1; sd <= 1; sd += 2) {
+      put("seam", wLine(wingSec, sd * 2.1, sd * 5.5, 0.80, 0.80, 1));     /* flap and aileron hinge */
+      put("seam", wLine(wingSec, sd * 1.6, sd * 5.9, 0.16, 0.16, 1));     /* front spar */
+      put("seam", wLine(stabSec, sd * 1.5, sd * 3.7, 0.35, 0.35, 1));
+      var rp = [];                                                       /* rudder hinge both faces */
+      for (i = 0; i <= 5; i++) { var z = 1.0 + 2.2 * i / 5, f = finSec(z); rp.push([X(f.s + 0.72 * f.c), sd * FY + (foilTh(f.t, f.c, 0.72) + 0.005), z]); }
+      put("seam", D.ribbon(rp, [0, 1, 0], 0.04, 0.004));
+      var rq = rp.map(function (p) { return [p[0], p[1] - 2 * (foilTh(0.045, 1.5, 0.72) + 0.005), p[2]]; });
+      put("seam", D.ribbon(rq, [0, -1, 0], 0.04, 0.004));
+      /* AoA vanes, pitots */
+      put("metal", boxG(0.26, 0.05, 0.12, X(2.30), sd * 0.50, -0.20));
+      put("steel", rod([X(1.10), sd * 0.33, -0.36], [X(1.56), sd * 0.36, -0.36], 0.022, 6, 0.03));
+      /* trunk-top panel lines and the outer cheek seams */
+      put("seam", D.ribbon([[X(6.2), sd * (TYC + 0.40), 0.34], [X(13.5), sd * (TYC + 0.79), 0.34]], [0, sd, 0], 0.035, 0.012));
+      put("seam", D.ribbon([[X(6.2), sd * (TYC + 0.40), -0.55], [X(13.5), sd * (TYC + 0.79), -0.60]], [0, sd, 0], 0.035, 0.012));
+      [6.9, 9.0, 11.6].forEach(function (s) {
+        var q = tab(TRK, s);
+        put("seam", D.ribbon([[X(s), sd * (TYC + q[0] + 0.005), q[1] - 0.05], [X(s), sd * (TYC + q[0] + 0.005), q[2] + 0.06]], [0, sd, 0], 0.035, 0.008));
+      });
+      /* lamps: wingtip nav lights (port red, starboard green), fin tips */
+      put("lamp", D.lamp([X(14.12), sd * 6.47, wingSec(6.4).o], 0.07, sd > 0 ? 0xe02218 : 0x18c04a));
+      put("lamp", D.lamp([X(18.50), sd * FY, 3.36], 0.06, 0xf4f1e0));
+    }
+    /* the speed brake outline on the spine behind the canopy */
+    var b0 = isE ? 7.95 : 7.60, b1 = isE ? 10.0 : 9.90, bz = function (s) { return tab(BODY, s)[1] + 0.012; };
+    var ol = [[b0, 0.58], [b1, 0.66], [b1, -0.66], [b0, -0.58], [b0, 0.58]], pts = [], k;
+    for (k = 1; k < ol.length; k++) for (i = 0; i <= 4; i++) {
+      var ss = lerp(ol[k - 1][0], ol[k][0], i / 4), yy = lerp(ol[k - 1][1], ol[k][1], i / 4);
+      pts.push([X(ss), yy, bz(ss) - 0.02 * Math.abs(yy)]);
+    }
+    put("seam", D.ribbon(pts, [0, 0, 1], 0.045, 0.004));
+    /* the M61 port in the starboard wing root and its fairing */
+    loftTo([[8.0, 0.10], [8.3, 0.17], [9.6, 0.20], [10.4, 0.10]].map(function (q) {
+      return ringSE(X(q[0]), -1.16, q[1] * 1.4, WZ + 0.30 + q[1] * 0.5, WZ + 0.18, WZ + 0.22, 2, 2, 12);
+    }), "skin", true, true);
+    put("ink", rod([X(7.98), -1.16, WZ + 0.30], [X(8.12), -1.16, WZ + 0.30], 0.06, 8));
+    put("lamp", D.lamp(bodyPt(11.0, Math.PI / 2, 0.03), 0.07, 0xe02218));
+    put("lamp", D.lamp(bodyPt(9.5, -Math.PI / 2, 0.03), 0.07, 0xe02218));
+    /* blade aerials: spine and belly */
+    [[10.6, 1], [12.6, 1], [4.6, -1], [5.6, -1], [14.0, -1]].forEach(function (q) {
+      var p = bodyPt(q[0], q[1] * Math.PI / 2, 0);
+      put("ink", D.blade(p, [0, 0, q[1]], [1, 0, 0], 0.28, 0.30, 0.12, 0.03, 0.10));
+    });
+    /* the receptacle door in the port wing root, the arrestor hook */
+    put("ink", boxG(0.50, 0.32, 0.02, X(RECEPT[0]), RECEPT[1], RECEPT[2] - 0.005));
+    put("metal", rod([X(16.4), 0, -0.68], [X(17.8), 0, -0.62], 0.06, 6));
+  }
+
+  /* ============================================================= paint ==
+     The grey-scale sheet (us_e2_hawkeye.js / us_ef111a.js kit) over the one
+     skin grey: panel lines, rivet rows, the walkways either side of the
+     spine, soot behind the nozzles, weathering. */
+  var _sheet = null;
+  function paintSheet() {
+    if (_sheet !== null) return _sheet;
+    try {
+      function wl(secOf, u, y0, y1) {
+        var out = [], k;
+        for (k = 0; k <= 5; k++) { var y = y0 + (y1 - y0) * k / 5, q = secOf(y); out.push([X(q.s + u * q.c), y]); }
+        return out;
+      }
+      var top = [wl(wingSec, 0.16, 1.6, 6.0), wl(wingSec, 0.45, 1.6, 6.0), wl(wingSec, 0.80, 2.1, 5.5),
+                 wl(stabSec, 0.35, 1.4, 3.8), [[X(11.4), 2.6], [X(15.1), 2.6]], [[X(10.2), 4.2], [X(15.3), 4.2]]];
+      var bot = [wl(wingSec, 0.30, 1.6, 6.0), wl(wingSec, 0.70, 1.6, 6.0), [[X(6.0), 0.5], [X(16.0), 0.5]]];
+      var riv = [wl(wingSec, 0.30, 1.6, 6.0), wl(wingSec, 0.62, 1.6, 6.0), [[X(9.0), 1.30], [X(16.5), 1.40]]];
+      var fr = [];
+      [1.5, 2.75, 3.6, 7.0, 8.0, 9.0, 10.1, 11.2, 12.4, 13.6, 14.8, 16.0, 17.0].forEach(function (s) {
+        fr.push([X(s), s < 7 ? tab(BODY, s)[0] : 2.0]);
+      });
+      var side = [[[X(2.9), 0.15], [X(5.5), 0.30]], [[X(9.5), 0.10], [X(17.6), 0.10]], [[X(9.5), -0.45], [X(17.6), -0.45]]];
+      _sheet = DX_.sheet(LAY, {
+        frames: fr, top: top, bot: bot, rivets: riv, side: side, seam: 0.50, grime: 200,
+        walk: [[[X(8.6), 0.30], [X(15.8), 0.30], [X(15.8), 0.70], [X(8.6), 0.70]]],
+        soot: [[X(18.5), 1.21, -0.15, 2.6, 0.55]]
+      }, 1543);
+    } catch (e) { _sheet = false; }
+    return _sheet;
+  }
+
+  function mats(C, tex, isE) {
+    var tc = (C && C.team !== undefined) ? C.team : "#3f7fd0";
+    var m = {
+      /* the twotone (FS 36176 / 36320) grey of the PAINT table, or for the E
+         Gunship Gray FS 36118 */
+      skin: new V.MeshStandardMaterial({ color: isE ? 0x5a6064 : 0x7b858b, roughness: 0.82, metalness: 0.08, side: V.DoubleSide }),
+      radome: new V.MeshStandardMaterial({ color: isE ? 0x50565a : 0x8a9196, roughness: 0.62, metalness: 0.05, side: V.DoubleSide }),
+      metal: new V.MeshStandardMaterial({ color: 0x8d9399, roughness: 0.52, metalness: 0.50, side: V.DoubleSide }),
+      steel: new V.MeshStandardMaterial({ color: 0x6f757a, roughness: 0.48, metalness: 0.60, side: V.DoubleSide }),
+      burnt: new V.MeshStandardMaterial({ color: 0x5d5751, roughness: 0.52, metalness: 0.58, side: V.DoubleSide }),
+      ink: new V.MeshStandardMaterial({ color: 0x15181a, roughness: 0.95, metalness: 0.05, side: V.DoubleSide }),
+      rubber: new V.MeshStandardMaterial({ color: 0x17181a, roughness: 0.95, metalness: 0.04 }),
+      glass: new V.MeshStandardMaterial({ color: 0x1d2e33, roughness: 0.10, metalness: 0.35, side: V.DoubleSide }),
+      frame: new V.MeshStandardMaterial({ color: 0x5a6166, roughness: 0.6, metalness: 0.3, side: V.DoubleSide }),
+      seam: new V.MeshStandardMaterial({ color: isE ? 0x3a3f42 : 0x535a5e, roughness: 0.85, metalness: 0.05, side: V.DoubleSide }),
+      lamp: new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.3, metalness: 0.0,
+                                         emissive: 0x333333, emissiveIntensity: 0.6 }),
+      team: new V.MeshStandardMaterial({ color: new V.Color(tc), roughness: 0.58, metalness: 0.15,
+                                         emissive: new V.Color(tc), emissiveIntensity: 0.10, side: V.DoubleSide })
     };
-    /* The tyres were a separate "rubber" tier at 0x17181a, 2/255 off the
-       dark tier and at the same roughness: one draw call each in the body
-       and in the gear for no visible difference. They now share "dark". */
-    T.rubber = T.dark;
-    return T;
-  }
-
-  /* ------------------------------------------------------------- helpers */
-  /* Station tables are written nose-first because that is how the drawing
-     reads; loft() wants increasing x, so hand it the reverse. */
-  function loftStations(THREE, M, rows, segs, yc) {
-    var secs = [], i, r;
-    for (i = rows.length - 1; i >= 0; i--) {
-      r = rows[i];
-      secs.push({ x: X(r[0]), w: r[1], h: r[2], zc: r[3], sq: r[4] });
-    }
-    var geo = M.loft(THREE, secs, segs);
-    if (yc) geo.translate(0, yc, 0);
-    return geo;
-  }
-
-  function box(THREE, mat, sx, sy, sz, px, py, pz) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
-    m.position.set(px, py, pz);
+    if (tex) m.skin.map = tex;
     return m;
   }
 
-  /* ============================================================== BUILD */
-  function build(THREE, M, C, isE) {
-    var g = new THREE.Group();
-    var T = makeMats(THREE);
-    /* F-15E variant: Gunship Gray, FS 36118, the only scheme the production
-       Strike Eagle has worn. The skin is a texture painted at SKIN_C, so this
-       colour is a multiplier (0.77) that darkens it to about 0x50565a. */
-    if (isE) T.skin.color.setHex(0xc4c4c4), T.panel.color.setHex(0xc4c4c4);
-    /* the LANTIRN pods are lofted in T.metal; that material is single sided and
-       the loft winds them inside out, so it is drawn double sided in this variant */
-    if (isE) T.metal.side = THREE.DoubleSide;
-    /* The first render came back with no team colour visible at all: the
-       renderer's ACES curve plus the warm key light drained a mid blue to
-       grey, exactly as the house style warns. So the flash keeps C.team's
-       HUE but is pushed in saturation and given a little emissive of its
-       own, and the flashes themselves are cut larger and stood proud of
-       the skin rather than flush with it. */
-    var tc = new THREE.Color((C && C.team) || 0x3f7fd0);
-    var THS = { h: 0, s: 0, l: 0 };
-    tc.getHSL(THS);
-    tc.setHSL(THS.h, Math.min(1, THS.s * 1.5 + 0.18),
-              Math.min(0.60, Math.max(0.40, THS.l)));
-    var team = new THREE.MeshStandardMaterial({
-      color: tc, roughness: 0.52, metalness: 0.20,
-      emissive: tc, emissiveIntensity: 0.12 });
-    var s, i, sgn, m;
-
-    /* ------------------------------------------------------- fuselage */
-    /* Slim ogival radome, a cockpit section barely wider than the radome
-       base, then a long broadening into the flat aft engine structure that
-       finishes as the flat "beaver tail" plate between the nozzles.
-       sq falls from 1.10 (round nose) to 0.42 (square aft deck). */
-    var BODY = [
-      /*  s      w      h      zc     sq  */
-      [ 0.00, 0.015, 0.015, -0.36, 1.10],
-      [ 0.40, 0.130, 0.120, -0.34, 1.10],
-      [ 0.90, 0.250, 0.240, -0.31, 1.08],
-      [ 1.50, 0.380, 0.360, -0.27, 1.06],
-      [ 2.10, 0.480, 0.460, -0.22, 1.04],
-      [ 2.75, 0.560, 0.550, -0.16, 1.00],
-      [ 3.50, 0.610, 0.630, -0.10, 0.96],
-      [ 4.60, 0.635, 0.710, -0.05, 0.90],
-      [ 5.80, 0.640, 0.760, -0.02, 0.86],
-      [ 7.00, 0.655, 0.790,  0.00, 0.82],
-      [ 8.60, 0.750, 0.800, -0.02, 0.76],
-      [10.40, 0.880, 0.790, -0.05, 0.70],
-      [12.40, 0.960, 0.760, -0.08, 0.64],
-      [14.40, 1.000, 0.720, -0.10, 0.58],
-      [16.20, 0.980, 0.660, -0.13, 0.54],
-      [17.60, 0.900, 0.540, -0.19, 0.50],
-      [18.40, 0.800, 0.300, -0.27, 0.46],
-      [19.05, 0.660, 0.150, -0.31, 0.42],
-    ];
-    g.add(new THREE.Mesh(loftStations(THREE, M, BODY, 32), T.skin));
-
-    /* --------------------------------------- engine nacelles / decks */
-    /* Rectangular where they leave the intake, round by the time they
-       reach the nozzle: sq walks 0.40 -> 1.00. Outer edge lands on
-       y = 2.01, which is what the drawing measures. */
-    var NAC = [
-      [ 9.00, 0.40, 0.68, -0.12, 0.40],
-      [10.20, 0.56, 0.70, -0.13, 0.48],
-      [11.60, 0.72, 0.72, -0.14, 0.56],
-      [13.00, 0.79, 0.73, -0.15, 0.64],
-      [14.60, 0.80, 0.73, -0.15, 0.72],
-      [16.20, 0.78, 0.70, -0.15, 0.82],
-      [17.20, 0.68, 0.63, -0.15, 0.92],
-      [17.85, 0.58, 0.56, -0.15, 1.00],
-    ];
-    /* tail booms: the outboard structure that runs aft PAST the nozzles
-       and carries both the fin and the stabilator pivot. */
-    var BOOM = [
-      [14.20, 0.42, 0.50, -0.05, 0.60],
-      [16.50, 0.38, 0.46, -0.06, 0.60],
-      [17.80, 0.34, 0.38, -0.08, 0.62],
-      [18.60, 0.28, 0.28, -0.10, 0.66],
-      [19.05, 0.17, 0.15, -0.12, 0.70],
-    ];
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      g.add(new THREE.Mesh(loftStations(THREE, M, NAC, 24, sgn * 1.21), T.skin));
-      g.add(new THREE.Mesh(loftStations(THREE, M, BOOM, 18, sgn * 1.66), T.skin));
-    }
-
-    /* ------------------------------------- rectangular cheek intakes */
-    /* Built as a four-walled open duct rather than a solid block, so the
-       mouth really is a mouth: you can see the ramp wedge inside it. The
-       top lip leads the bottom lip by 0.40 m, which is the rake that
-       makes an Eagle inlet read as an Eagle inlet. */
-    var iOut = [[X(5.55), 0.50], [X(5.95), -0.70], [X(9.40), -0.80], [X(9.40), 0.56]];
-    var iIn  = [[X(5.82), 0.50], [X(6.17), -0.70], [X(9.40), -0.80], [X(9.40), 0.56]];
-    var iTop = [[X(5.55), 0.00], [X(5.55), 0.80], [X(9.40), 0.80], [X(9.40), 0.00]];
-    var iBot = [[X(5.95), 0.00], [X(5.95), 0.80], [X(9.40), 0.80], [X(9.40), 0.00]];
-    /* the variable ramp: a wedge hanging from the duct roof */
-    var iRamp = [[X(5.70), 0.40], [X(5.70), 0.28], [X(8.30), -0.06], [X(8.30), 0.34]];
-    /* boundary-layer splitter, standing off the fuselage flank */
-    var iSplit = [[X(5.40), 0.44], [X(5.90), -0.62], [X(9.60), -0.72], [X(9.60), 0.50]];
-
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      var yOut = sgn > 0 ? 1.56 : -1.46;     /* outer wall, 0.10 thick */
-      var yIn  = sgn > 0 ? 0.86 : -0.76;     /* inner wall */
-      m = new THREE.Mesh(M.slab(THREE, iOut, 0.10, "xz"), T.panel);
-      m.position.y = yOut; g.add(m);
-      m = new THREE.Mesh(M.slab(THREE, iIn, 0.10, "xz"), T.panel);
-      m.position.y = yIn; g.add(m);
-      /* roof and floor: flat plates spanning the duct */
-      m = new THREE.Mesh(M.slab(THREE, iTop, 0.10), T.panel);
-      m.position.set(0, sgn > 0 ? 0.76 : -1.56, 0.46); g.add(m);
-      m = new THREE.Mesh(M.slab(THREE, iBot, 0.10), T.panel);
-      m.position.set(0, sgn > 0 ? 0.76 : -1.56, -0.86); g.add(m);
-      /* ramp wedge inside the mouth */
-      m = new THREE.Mesh(M.slab(THREE, iRamp, 0.66, "xz"), T.duct);
-      m.position.y = sgn > 0 ? 1.49 : -0.83; g.add(m);
-      /* duct throat, so the mouth reads dark rather than see-through */
-      g.add(box(THREE, T.dark, 0.30, 0.66, 1.16, X(9.20), sgn * 1.16, -0.16));
-      /* ramp hinge lines across the intake roof - the "variable" part */
-      g.add(box(THREE, T.steel, 0.09, 0.74, 0.07, X(6.75), sgn * 1.16, 0.585));
-      g.add(box(THREE, T.steel, 0.09, 0.74, 0.07, X(7.75), sgn * 1.16, 0.585));
-      /* splitter plate */
-      m = new THREE.Mesh(M.slab(THREE, iSplit, 0.07, "xz"), T.panel);
-      m.position.y = sgn > 0 ? 0.74 : -0.67; g.add(m);
-      /* boundary-layer bleed louvre on the outer face */
-      g.add(box(THREE, T.dark, 1.30, 0.05, 0.30, X(7.60), sgn * 1.575, 0.10));
-    }
-
-    /* ------------------------------------------------------------ wing */
-    /* Leading edge a straight 46 deg from the root; trailing edge almost
-       lateral; the outboard trailing corner sliced away by the rake that
-       gives the Eagle its sharp, cropped tip. Root chord on the
-       centreline is 7.58 m - 39% of the aircraft. */
-    var WING = [
-      [ X(8.12), 0.90],   /* leading edge where it leaves the fuselage  */
-      [ X(13.93), 6.45],  /* leading edge, near the tip                 */
-      [ X(14.48), 6.50],  /* blunt tip                                  */
-      [ X(15.52), 5.68],  /* rake corner                                */
-      [ X(14.88), 0.90],  /* trailing edge at the fuselage              */
-    ];
-    /* the thick root glove - the wing is 6.6% thick at the root and 3% at
-       the tip, and a constant slab cannot say that on its own */
-    var GLOVE = [
-      [ X(8.12), 0.90], [ X(10.50), 3.20], [ X(13.10), 3.20], [ X(14.88), 0.90],
-    ];
-    var WZ = 0.40;
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      var wp = [], gp = [];
-      for (i = 0; i < WING.length; i++) wp.push([WING[i][0], sgn * WING[i][1]]);
-      for (i = 0; i < GLOVE.length; i++) gp.push([GLOVE[i][0], sgn * GLOVE[i][1]]);
-      m = new THREE.Mesh(M.slab(THREE, wp, 0.18), T.panel);
-      m.position.z = WZ - 0.09; g.add(m);
-      m = new THREE.Mesh(M.slab(THREE, gp, 0.42), T.panel);
-      m.position.z = WZ - 0.21; g.add(m);
-      /* flap and aileron hinge fairings under the trailing edge */
-      g.add(box(THREE, T.panel, 0.34, 1.30, 0.13, X(14.60), sgn * 1.90, WZ - 0.14));
-      g.add(box(THREE, T.panel, 0.30, 1.10, 0.12, X(14.90), sgn * 3.60, WZ - 0.13));
-    }
-    /* M61 gun fairing, starboard wing root, with the muzzle port */
-    g.add(box(THREE, T.panel, 2.00, 0.46, 0.26, X(9.00), -1.16, WZ + 0.32));
-    m = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.24, 10), T.dark);
-    m.rotation.z = Math.PI / 2;
-    m.position.set(X(8.05), -1.16, WZ + 0.32);
-    g.add(m);
-
-    /* ----------------------------------------------------- stabilators */
-    /* All-moving slabs mounted low and far outboard, with the snag in the
-       leading edge at 60% span and the raked-off tip. */
-    var STAB = [
-      [ X(15.52), 1.30],
-      [ X(16.73), 2.58],
-      [ X(16.55), 2.62],   /* the snag: outer panel steps forward */
-      [ X(18.30), 4.10],
-      [ X(18.56), 4.28],
-      [ X(19.42), 3.80],
-      [ X(18.84), 1.30],
-    ];
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      var sp = [];
-      for (i = 0; i < STAB.length; i++) sp.push([STAB[i][0], sgn * STAB[i][1]]);
-      m = new THREE.Mesh(M.slab(THREE, sp, 0.17), T.panel);
-      m.position.z = -0.29; g.add(m);
-      /* pivot fairing where the stabilator enters the boom */
-      g.add(box(THREE, T.panel, 1.90, 0.30, 0.34, X(17.30), sgn * 1.42, -0.20));
-    }
-
-    /* ------------------------------------------------------------ fins */
-    /* The cue that matters most: two big fins standing 3.1 m apart on the
-       outboard engine decks, not a pair leaning together over the spine.
-       Squared tips with the ECM fairing projecting forward at the top. */
-    /* Re-measured 2026-11-12 off the side-on profile [P2] (35.87 px/m from
-       the published length): LE 36 deg (66 px over 90 rows), TE raked 6 deg,
-       root LE s 15.30 at the deck, tip LE 17.54, tip TE 18.48, root TE
-       18.20. The first build had the fin 0.4 m too far forward at the root
-       and 0.6 m too long aft (tip chord 1.90 m against 0.94 m); as drawn
-       now one fin is 5.9 m2, against 8.9 m2 before. */
-    var FIN = [
-      [ X(15.30), 0.42],   /* root leading edge  */
-      [ X(17.54), 3.47],   /* tip leading edge   */
-      [ X(18.48), 3.47],   /* tip trailing edge  */
-      [ X(18.20), 0.42],   /* root trailing edge */
-    ];
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      m = new THREE.Mesh(M.slab(THREE, FIN, 0.15, "xz"), T.panel);
-      m.position.y = sgn > 0 ? 1.63 : -1.48;
-      g.add(m);
-      var fy = sgn * 1.555;
-      /* forward tip fairing (ALQ-135 antenna), projecting ahead of the tip
-         LE, [P2] px 657..683. The first build also had an aft tip pod
-         behind the TE; [P2] and [P1] show none, so it is gone. */
-      g.add(box(THREE, T.panel, 0.72, 0.19, 0.30, X(17.28), fy, 3.30));
-      /* tip cap */
-      g.add(box(THREE, T.panel, 1.10, 0.20, 0.09, X(17.98), fy, 3.49));
-      /* fin root fairing running forward along the deck */
-      g.add(box(THREE, T.panel, 1.60, 0.26, 0.24, X(14.75), fy, 0.44));
-      /* rudder hinge line, a shallow step ahead of the trailing edge */
-      g.add(box(THREE, T.panel, 0.10, 0.17, 2.90, X(17.92), fy, 1.90));
-      /* team band across the fin - squadron marking, reads at map zoom;
-         kept inside the fin outline between z 2.55 and 3.17 */
-      g.add(box(THREE, team, 1.00, 0.34, 0.62, X(17.90), fy, 2.86));
-    }
-
-    /* --------------------------------------------------------- nozzles */
-    /* Convergent-divergent cans with the petals bare, which on a hard-worked
-       Eagle are the most heat-stained thing on the aircraft. */
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      var ny = sgn * 1.21;
-      var can = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.53, 0.45, 0.80, 16, 1, true), T.burnt);
-      can.rotation.z = Math.PI / 2;
-      can.position.set(X(17.46), ny, -0.15);
-      g.add(can);
-      /* petal ribs */
-      for (i = 0; i < 14; i++) {
-        var a = i / 14 * Math.PI * 2;
-        var rib = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.045, 0.13), T.steel);
-        rib.position.set(X(17.46), ny + Math.cos(a) * 0.50, -0.15 + Math.sin(a) * 0.50);
-        rib.rotation.x = -a;
-        g.add(rib);
-      }
-      /* the hot dark throat */
-      var thr = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.42, 0.30, 0.55, 14, 1, true), T.dark);
-      thr.rotation.z = Math.PI / 2;
-      thr.position.set(X(17.70), ny, -0.15);
-      g.add(thr);
-      g.add(box(THREE, T.dark, 0.05, 0.62, 0.62, X(17.98), ny, -0.15));
-    }
-
-    /* ------------------------------------------------------ dorsal brake */
-    /* The Eagle's speedbrake is enormous and sits on the spine directly
-       behind the canopy. Closed at cruise, but the panel still reads. */
-    /* the two-seat canopy of the F-15E runs back to 7.85, so its brake starts
-       behind it, a little shorter */
-    var brake = isE
-      ? [[X(7.95), 0.62], [X(7.95), -0.62], [X(10.00), -0.70], [X(10.00), 0.70]]
-      : [[X(7.60), 0.62], [X(7.60), -0.62], [X(9.90), -0.70], [X(9.90), 0.70]];
-    m = new THREE.Mesh(M.slab(THREE, brake, 0.07), T.panel);
-    m.position.z = 0.775; g.add(m);
-
-    /* ---------------------------------------------------------- canopy */
-    /* Bubble canopy set far forward: the windscreen base is at station
-       2.95, right where the radome ends, which is the single most
-       recognisable thing about the aircraft from the side. */
-    var CANOPY = [
-      [ 3.05, 0.08, 0.05, 0.60],
-      [ 3.70, 0.31, 0.26, 0.71],
-      [ 4.40, 0.45, 0.38, 0.79],
-      [ 5.15, 0.50, 0.44, 0.83],
-      [ 5.90, 0.48, 0.42, 0.83],
-      [ 6.60, 0.36, 0.31, 0.81],
-    ];
-    if (isE) {
-      /* two-seat canopy: the same windscreen, the bubble carried back over the
-         weapon systems officer's seat, ending about 1.3 m further aft */
-      CANOPY.push([ 7.25, 0.43, 0.36, 0.82 ], [ 7.85, 0.30, 0.24, 0.80 ]);
-      CANOPY.splice(5, 1, [ 6.60, 0.46, 0.40, 0.83 ]);
-    }
-    g.add(new THREE.Mesh(loftStations(THREE, M, CANOPY, 24), T.glass));
-    /* the metal fairing that carries the canopy back into the spine */
-    var SPINE = isE ? [
-      [ 7.70, 0.30, 0.22, 0.79],
-      [ 8.10, 0.22, 0.15, 0.77],
-      [ 8.50, 0.12, 0.07, 0.76],
-    ] : [
-      [ 6.45, 0.37, 0.32, 0.81],
-      [ 7.10, 0.32, 0.25, 0.79],
-      [ 7.80, 0.22, 0.15, 0.77],
-      [ 8.40, 0.12, 0.07, 0.76],
-    ];
-    g.add(new THREE.Mesh(loftStations(THREE, M, SPINE, 16), T.skin));
-    /* windscreen bow, canopy sills, and the frame arch at the aft end */
-    g.add(box(THREE, T.steel, 0.10, 0.66, 0.46, X(4.28), 0, 0.80));
-    for (sgn = -1; sgn <= 1; sgn += 2)
-      g.add(box(THREE, T.steel, isE ? 4.30 : 3.10, 0.07, 0.09, X(isE ? 5.50 : 5.30), sgn * 0.47, 0.64));
-    g.add(box(THREE, T.panel, 0.16, 0.64, 0.46, X(isE ? 7.35 : 6.62), 0, 0.79));
-    if (isE) {
-      /* mid frame between the two seats, and the rear cockpit */
-      g.add(box(THREE, T.steel, 0.10, 0.60, 0.40, X(6.35), 0, 0.82));
-      g.add(box(THREE, T.dark, 0.40, 0.56, 0.20, X(6.45), 0, 0.68));
-      g.add(box(THREE, T.dark, 0.34, 0.42, 0.50, X(7.05), 0, 0.68));
-      g.add(box(THREE, T.dark, 0.22, 0.38, 0.22, X(6.80), 0, 0.93));
-    }
-    /* cockpit: coaming, HUD, seat - visible through the glass, nothing more */
-    g.add(box(THREE, T.dark, 0.44, 0.60, 0.20, X(4.72), 0, 0.66));
-    g.add(box(THREE, T.steel, 0.07, 0.36, 0.30, X(4.55), 0, 0.88));
-    g.add(box(THREE, T.dark, 0.34, 0.44, 0.52, X(5.62), 0, 0.66));
-    g.add(box(THREE, T.dark, 0.22, 0.40, 0.24, X(5.35), 0, 0.92));
-
-    /* ----------------------------------------------------------- stores */
-    /* Classic air-superiority fit: four fuselage-corner Sparrows, a pair of
-       Sidewinders on each wing pylon, and the centreline bag. */
-    function missile(len, dia, px, py, pz, finSpan) {
-      var grp = new THREE.Group();
-      var bod = new THREE.Mesh(
-        new THREE.CylinderGeometry(dia * 0.5, dia * 0.5, len * 0.84, 10), T.metal);
-      bod.rotation.z = Math.PI / 2;
-      grp.add(bod);
-      var nz = new THREE.Mesh(new THREE.ConeGeometry(dia * 0.5, len * 0.18, 10), T.dark);
-      nz.rotation.z = -Math.PI / 2;
-      nz.position.x = len * 0.51;
-      grp.add(nz);
-      for (var k = 0; k < 4; k++) {
-        var an = k / 4 * Math.PI * 2 + Math.PI / 4;
-        var f = new THREE.Mesh(
-          new THREE.BoxGeometry(len * 0.16, 0.035, finSpan), T.steel);
-        f.position.set(-len * 0.38, Math.cos(an) * finSpan * 0.55,
-                       Math.sin(an) * finSpan * 0.55);
-        f.rotation.x = -an;
-        grp.add(f);
-        var w = new THREE.Mesh(
-          new THREE.BoxGeometry(len * 0.13, 0.030, finSpan * 0.80), T.steel);
-        w.position.set(len * 0.22, Math.cos(an) * finSpan * 0.45,
-                       Math.sin(an) * finSpan * 0.45);
-        w.rotation.x = -an;
-        grp.add(w);
-      }
-      grp.position.set(px, py, pz);
-      return grp;
-    }
-
-    /* 610 gallon wing bag - 5.55 m long on a 0.66 m barrel */
-    var WTANK = [
-      [ 8.30, 0.05, 0.05, -0.62, 1.0],
-      [ 8.85, 0.26, 0.26, -0.62, 1.0],
-      [ 9.70, 0.33, 0.33, -0.62, 1.0],
-      [12.20, 0.33, 0.33, -0.62, 1.0],
-      [13.10, 0.26, 0.26, -0.63, 1.0],
-      [13.85, 0.09, 0.09, -0.64, 1.0],
-    ];
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      /* fuselage-corner AIM-7, tucked into the lower corner of the trunk */
-      if (!isE) {
-        g.add(missile(3.66, 0.20, X(10.10), sgn * 1.82, -0.74, 0.62));
-        g.add(missile(3.66, 0.20, X(10.70), sgn * 1.30, -0.94, 0.62));
-      }
-      /* Wing pylon. Both reference photographs show the same fit: a 610
-         gallon bag on the pylon and a Sidewinder on each shoulder rail
-         beside it, which is also what gives the Eagle its loaded, heavy
-         look from three-quarters below. */
-      g.add(box(THREE, T.panel, 2.40, 0.18, 0.62, X(11.40), sgn * 2.90, 0.02));
-      g.add(new THREE.Mesh(loftStations(THREE, M, WTANK, 18, sgn * 2.90), T.skin));
-      for (i = 0; i < 4; i++) {
-        var wa = i / 4 * Math.PI * 2 + Math.PI / 4;
-        var wf = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.05, 0.56), T.panel);
-        wf.position.set(X(13.05), sgn * 2.90 + Math.cos(wa) * 0.30,
-                        -0.62 + Math.sin(wa) * 0.30);
-        wf.rotation.x = -wa;
-        g.add(wf);
-      }
-      g.add(box(THREE, T.steel, 1.80, 0.98, 0.10, X(11.20), sgn * 2.90, -0.18));
-      g.add(missile(2.87, 0.17, X(11.10), sgn * 2.90 + 0.46, -0.30, 0.44));
-      g.add(missile(2.87, 0.17, X(11.10), sgn * 2.90 - 0.46, -0.30, 0.44));
-    }
-    /* centreline 600 gallon tank */
-    var TANK = [
-      [ 7.30, 0.06, 0.06, -1.25, 1.0],
-      [ 7.80, 0.28, 0.28, -1.25, 1.0],
-      [ 8.60, 0.42, 0.42, -1.25, 1.0],
-      [11.20, 0.44, 0.44, -1.25, 1.0],
-      [12.30, 0.36, 0.36, -1.26, 1.0],
-      [12.90, 0.16, 0.16, -1.27, 1.0],
-    ];
-    if (!isE) g.add(new THREE.Mesh(loftStations(THREE, M, TANK, 18), T.skin));
-    for (i = 0; !isE && i < 4; i++) {
-      var ta = i / 4 * Math.PI * 2 + Math.PI / 4;
-      var tf = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.05, 0.52), T.panel);
-      tf.position.set(X(12.30), Math.cos(ta) * 0.36, -1.26 + Math.sin(ta) * 0.36);
-      tf.rotation.x = -ta;
-      g.add(tf);
-    }
-    if (!isE) g.add(box(THREE, T.panel, 1.20, 0.20, 0.34, X(9.80), 0, -0.98));
-
-    /* ------------------------------------------- F-15E: CFTs, bombs, pods */
-    if (isE) {
-      /* Conformal fuel tanks on the intake trunks, under the wing roots.
-         Length ~7.2 m, outboard face carries the tangential stores. */
-      var CFT = [
-        [ 7.40, 0.07, 0.08, -0.24, 0.8],
-        [ 7.90, 0.19, 0.24, -0.28, 0.7],
-        [ 8.60, 0.27, 0.30, -0.30, 0.6],
-        [11.20, 0.28, 0.30, -0.30, 0.6],
-        [13.80, 0.26, 0.28, -0.29, 0.6],
-        [14.55, 0.12, 0.14, -0.27, 0.7],
-      ];
-      /* Mk 82 500 lb bombs: 2.21 m x 0.273 m, hung tangentially in a row
-         along the lower outer edge of each tank (3 per side shown) */
-      var BOMB = [
-        [ 0.00, 0.012, 0.012, 0.0, 1.0],
-        [ 0.20, 0.100, 0.100, 0.0, 1.0],
-        [ 0.60, 0.136, 0.136, 0.0, 1.0],
-        [ 1.60, 0.136, 0.136, 0.0, 1.0],
-        [ 2.05, 0.085, 0.085, 0.0, 1.0],
-        [ 2.21, 0.045, 0.045, 0.0, 1.0],
-      ];
-      var bs, bgeo, lantirn;
-      for (sgn = -1; sgn <= 1; sgn += 2) {
-        g.add(new THREE.Mesh(loftStations(THREE, M, CFT, 16, sgn * 1.86), T.skin));
-        for (bs = 0; bs < 3; bs++) {
-          /* BOMB rows are measured from the nose of the bomb: a station of
-             2.21 m is the tail. loftStations flips them aft of NOSE. */
-          bgeo = loftStations(THREE, M, BOMB, 12, sgn * 2.03);
-          m = new THREE.Mesh(bgeo, T.panel);
-          m.position.set(-(8.4 + bs * 2.3) + 1.10 + NOSE - NOSE, 0, -0.76);
-          g.add(m);
-          g.add(box(THREE, T.steel, 0.30, 0.04, 0.12, X(8.4 + bs * 2.3), sgn * 2.03, -0.62));
-        }
-        /* LANTIRN under the intake floor: AN/AAQ-13 navigation pod
-           1.99 m x 0.30 m to port, AN/AAQ-14 targeting pod 2.50 m x
-           0.38 m to starboard (sides after the usual Strike Eagle fit; not
-           confirmed against a drawing) */
-        var pl = sgn > 0 ? 1.99 : 2.50, pd = sgn > 0 ? 0.150 : 0.190;
-        var POD = [
-          [ 0.00, 0.020, 0.020, 0.0, 1.0],
-          [ 0.18, pd * 0.78, pd * 0.78, 0.0, 1.0],
-          [ 0.55, pd, pd, 0.0, 1.0],
-          [ pl - 0.50, pd, pd, 0.0, 1.0],
-          [ pl - 0.12, pd * 0.80, pd * 0.80, 0.0, 1.0],
-          [ pl, pd * 0.45, pd * 0.45, 0.0, 1.0],
-        ];
-        m = new THREE.Mesh(loftStations(THREE, M, POD, 14, sgn * 1.16), T.metal);
-        m.position.set(-(6.35) - 0.0, 0, -1.12);
-        g.add(m);
-        g.add(box(THREE, T.dark, 0.10, pd * 1.5, pd * 1.5, X(6.35 + 0.06), sgn * 1.16, -1.12));
-        g.add(box(THREE, T.steel, 0.70, 0.07, 0.22, X(7.30), sgn * 1.16, -0.97));
-      }
-    }
-
-    /* ------------------------------------------------------------- gear */
-    /* Named so render3d.js can stow it in cruise and drop it on the apron. */
-    var gear = new THREE.Group();
-    gear.name = "gear";
-    g.add(gear);
-
-    function leg(px, py, topZ, hubZ, tyreR, tyreW, strutR) {
-      var h = topZ - hubZ;
-      var st = new THREE.Mesh(
-        new THREE.CylinderGeometry(strutR, strutR * 1.25, h, 8), T.steel);
-      st.position.set(px, py, hubZ + h * 0.5);
-      gear.add(st);
-      var ol = new THREE.Mesh(
-        new THREE.CylinderGeometry(strutR * 1.5, strutR * 1.5, h * 0.34, 8), T.metal);
-      ol.position.set(px, py, topZ - h * 0.20);
-      gear.add(ol);
-      var wh = new THREE.Mesh(
-        new THREE.CylinderGeometry(tyreR, tyreR, tyreW, 16), T.rubber);
-      wh.rotation.x = Math.PI / 2;
-      wh.position.set(px, py, hubZ);
-      gear.add(wh);
-      var hub = new THREE.Mesh(
-        new THREE.CylinderGeometry(tyreR * 0.52, tyreR * 0.52, tyreW * 1.12, 12), T.metal);
-      hub.rotation.x = Math.PI / 2;
-      hub.position.set(px, py, hubZ);
-      gear.add(hub);
-    }
-    /* nose leg under the intake lips, mains at 2.75 m track under the wing */
-    leg(X(5.90), 0, -0.72, -1.78, 0.30, 0.17, 0.075);
-    gear.add(box(THREE, T.panel, 1.30, 0.09, 0.72, X(5.30), 0.16, -1.10));
-    leg(X(10.80),  1.375, -0.84, -1.64, 0.44, 0.24, 0.095);
-    leg(X(10.80), -1.375, -0.84, -1.64, 0.44, 0.24, 0.095);
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      gear.add(box(THREE, T.panel, 1.60, 0.08, 0.86, X(10.60), sgn * 1.02, -1.24));
-      /* retraction jack, which is what makes a leg look engineered */
-      var jk = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.92, 6), T.metal);
-      jk.rotation.y = 0.55;
-      jk.position.set(X(10.30), sgn * 1.375, -1.18);
-      gear.add(jk);
-    }
-
-    /* ------------------------------------------------- probes and lights */
-    /* A production Eagle carries NO nose boom. The first build had one and
-       it turned the radome into a needle - the aircraft read as a MiG-21 in
-       the side view. Short flank pitot probes instead. */
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      var pit = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.024, 0.030, 0.46, 6), T.steel);
-      pit.rotation.z = Math.PI / 2;
-      pit.position.set(X(1.34), sgn * 0.33, -0.36);
-      g.add(pit);
-    }
-    /* angle-of-attack vanes on the radome flanks */
-    for (sgn = -1; sgn <= 1; sgn += 2)
-      g.add(box(THREE, T.steel, 0.26, 0.05, 0.13, X(2.30), sgn * 0.50, -0.20));
-    /* blade antennas above the spine and under the forward fuselage */
-    g.add(box(THREE, T.dark, 0.30, 0.05, 0.30, X(9.60), 0, 0.86));
-    g.add(box(THREE, T.dark, 0.34, 0.05, 0.34, X(4.60), 0, -0.86));
-    g.add(box(THREE, T.dark, 0.30, 0.05, 0.30, X(5.60), 0, -0.88));
-    /* arrestor hook fairing on the keel between the nozzles */
-    g.add(box(THREE, T.metal, 1.40, 0.16, 0.16, X(17.10), 0, -0.52));
-
-    /* Navigation lenses. A nav light IS a coloured glass lens, so these are
-       clones of the GLASS tier with an emissive added, not a fourth tier. */
-    function lens(col, emi, ei) {
-      var lm = T.glass.clone();
-      lm.color = new THREE.Color(col);
-      lm.emissive = new THREE.Color(emi);
-      lm.emissiveIntensity = ei;
-      lm.opacity = 0.88;
-      return lm;
-    }
-    var red = lens(0xd8382a, 0x8c1a10, 0.9);
-    var grn = lens(0x36d059, 0x11761f, 0.9);
-    var wht = lens(0xe6ecef, 0x9aa4a8, 0.7);
-    if (!isE) {
-      m = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 6), red);
-      m.position.set(X(14.10), 6.34, WZ); g.add(m);
-      m = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 6), grn);
-      m.position.set(X(14.10), -6.34, WZ); g.add(m);
-      for (sgn = -1; sgn <= 1; sgn += 2) {
-        m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), wht);
-        m.position.set(X(18.50), sgn * 1.555, 3.36); g.add(m);
-      }
-    }
-
-    /* ------------------------------------------------------- team flashes */
-    /* The fin bands above are the primary mark; these put ownership on the
-       wing uppers too, so it reads from directly overhead on a busy map. */
-    for (sgn = -1; sgn <= 1; sgn += 2) {
-      /* wing upper flash, standing 50 mm proud so it survives at map zoom */
-      g.add(box(THREE, team, 1.45, 1.70, 0.06, X(12.40), sgn * 4.05, WZ + 0.185));
-      /* and one underneath, for when the aircraft banks away from you */
-      g.add(box(THREE, team, 1.25, 1.45, 0.06, X(12.40), sgn * 4.05, WZ - 0.185));
-      /* a chevron on the flat outer cheek of each intake trunk */
-      g.add(box(THREE, team, 0.90, 0.09, 0.36, X(8.80), sgn * 1.605, 0.14));
-    }
-    /* nose flash under the radome */
-    g.add(box(THREE, team, 1.10, 0.40, 0.06, X(2.50), 0, -0.72));
-    /* spine flash - in an RTS the aircraft is mostly seen from above, so the
-       top surfaces are where ownership actually has to read */
-    g.add(box(THREE, team, 1.20, 0.50, 0.06, X(10.60), 0, 0.765));
-
-    var out = mergePerMaterial(THREE, g);
-    /* Refuelling attach point read by render3d.js aarPoints(): the F-15's
-       boom receptacle is in the upper surface of the PORT wing root, at the
-       leading edge just outboard of the intake roof (both variants). */
-    var rec = new THREE.Object3D();
-    rec.name = "aar_recept";
-    rec.position.set(X(RECEPT[0]), RECEPT[1], RECEPT[2]);
-    out.add(rec);
-    return out;
-  }
-
-  /* receptacle: [station s, y (port +), z] */
+  /* receptacle: [station s, y (port +), z] - kept from the first build */
   var RECEPT = [7.95, 1.22, 0.62];
 
-  /* Bake every mesh into one geometry per material: both variants draw in
-     16 calls or fewer instead of 235. The "gear" group is kept as a group,
-     merged per material inside, so the renderer can still stow it. */
-  function mergeGroup(THREE, root, outParent, skipGear) {
-    var buckets = [], gearGroup = null;
-    root.updateMatrixWorld(true);
-    root.traverse(function (o) {
-      if (o.isMesh && o.geometry) {
-        var p = o.parent, inGear = false;
-        while (p) { if (p.name === "gear") inGear = true; p = p.parent; }
-        if (inGear !== !!skipGear) return;
-        var b = null, k;
-        for (k = 0; k < buckets.length; k++) if (buckets[k].mat === o.material) b = buckets[k];
-        if (!b) { b = { mat: o.material, list: [] }; buckets.push(b); }
-        b.list.push(o);
+  function build(THREE, Mlib, C, isE) {
+    V = THREE; K = {}; G = {};
+    DX_ = DK(V);
+    addBody(); addTrunks(); addBooms(); addCanopy(isE); addFlying(); addNozzles(); addStores(isE); addGear(); addDetails(isE);
+    /* team colour: a band across each fin, the wingtips, a strip on the spine */
+    for (var sd = -1; sd <= 1; sd += 2) {
+      /* a horizontal band across both faces of the fin, z 2.6 - 3.1 */
+      for (var fc = -1; fc <= 1; fc += 2) {
+        var band = [], f = finSec(2.85);
+        for (var i = 0; i <= 6; i++) { var u = 0.06 + 0.88 * i / 6; band.push([X(f.s + u * f.c), sd * FY + fc * (foilTh(f.t, f.c, u) + 0.004), 2.85]); }
+        put("team", DX_.ribbon(band, [0, fc, 0], 0.50, 0.004));
       }
-    });
-    buckets.forEach(function (b) {
-      var pos = [], nor = [], uv = [], i, j;
-      b.list.forEach(function (o) {
-        var geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
-        geo.applyMatrix4(o.matrixWorld);
-        var P = geo.attributes.position.array, N = geo.attributes.normal ? geo.attributes.normal.array : null;
-        var U = geo.attributes.uv ? geo.attributes.uv.array : null;
-        for (i = 0; i < P.length; i++) { pos.push(P[i]); nor.push(N ? N[i] : 0); }
-        for (j = 0; j < P.length / 3 * 2; j++) uv.push(U ? U[j] : 0);
-      });
-      var mg = new THREE.BufferGeometry();
-      mg.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-      mg.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-      mg.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-      outParent.add(new THREE.Mesh(mg, b.mat));
-    });
-  }
+    }
+    var sp = bodyPt(11.4, Math.PI / 2, 0.01);
+    put("team", boxG(1.0, 0.40, 0.02, sp[0], 0, sp[2]));
 
-  function mergePerMaterial(THREE, g) {
-    var out = new THREE.Group();
-    mergeGroup(THREE, g, out, false);
-    var gear = new THREE.Group();
-    gear.name = "gear";
-    mergeGroup(THREE, g, gear, true);
-    out.add(gear);
-    return out;
+    LAY = DX_.layout(X(19.6), X(-0.1), 6.6, GROUND, 3.6);
+    var T = mats(C, paintSheet(), isE);
+    var g = new V.Group();
+    emit(g, K, T, ["skin", "radome", "team", "seam", "frame", "glass", "metal", "steel", "burnt", "ink", "lamp"]);
+    var gear = new V.Group(); gear.name = "gear";
+    emit(gear, G, T, ["skin", "steel", "metal", "rubber"]);
+    g.add(gear);
+    var rec = new V.Object3D();
+    rec.name = "aar_recept";
+    rec.position.set(X(RECEPT[0]), RECEPT[1], RECEPT[2]);
+    g.add(rec);
+    return g;
   }
 
   UNIT_MODELS["nato_e80_fighter"] = { len: 19.43, build: function (THREE, M, C) { return build(THREE, M, C, false); } };

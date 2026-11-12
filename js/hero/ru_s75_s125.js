@@ -897,7 +897,7 @@ var HeroS75S125 = (function () {
     var wt = 0;
     trv.traverse(function (o) { if (o._tris) wt += o._tris; });
     root._tris = { deploy: tri(base) + tri(tur) + tri(bm), travel: tri(tb) + tri(tt) + wt };
-    return root;
+    return budget(THREE, root);
   }
 
   /* ---------------- the S-125 5P73 ---------------- */
@@ -1118,7 +1118,13 @@ var HeroS75S125 = (function () {
     var wt = 0;
     trv.traverse(function (o) { if (o._tris) wt += o._tris; });
     root._tris = { deploy: tri(base) + tri(tur) + tri(rl), travel: tri(tb) + tri(tt) + wt };
-    return root;
+    return budget(THREE, root);
+  }
+
+  /* the draw-call budget: the travel pose's "launcher" group is the modeller's (named so the
+     renderer never trains it), so its meshes join the pose's own of the same material */
+  function budget(THREE, root) {
+    return typeof Armour3D !== "undefined" && Armour3D.pack ? Armour3D.pack(THREE, root, { launcher: 1 }) : root;
   }
 
   return { sm63: buildSM63, p73: buildP73 };

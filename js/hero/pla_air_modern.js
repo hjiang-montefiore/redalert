@@ -206,7 +206,7 @@
    petal seams, canopy sills, the L-shaped air-data probes and AoA vanes, intake-trunk position
    lamps (placement NOT CONFIRMED), intake lips, blade aerials, beacons, the tail lamp, oleos, hubs,
    brakes, axles and the nose leg's taxi lamps. H-6N: wingtip lamps, beacons, the tail lamp, blade
-   aerials and the long wire, cockpit window frames, intake lips, spinner cones, nozzle liners and
+   aerials (the long wire was removed 2026-11-12: no photograph shows it), cockpit window frames, intake lips, spinner cones, nozzle liners and
    turbine cones, oleos, hubs and the bogie's brake rods, the probe's tip ring. YY-20: wingtip lamps,
    beacons, the tail lamp, blade aerials, the satcom fairing, flight-deck window frames, paratroop
    door seams, flap-track fairings, intake lips, nozzle liners, reverser seams, oleos and hubs, the
@@ -1198,13 +1198,15 @@ var HeroPlaAirModern = (function () {
     B.lampG.push(sph(0.07, 8, 6, HX((wt[1] + wt[2]) / 2), -wt[0] + 0.06, hwH(wt[0]), 1.6, 0.6, 0.7));
     B.metal.push(sph(0.05, 8, 5, HX(33.9), 0, -0.16, 1.3, 0.8, 1.0));
     B.lampR.push(sph(0.08, 8, 5, HX(12.0), 0, 1.21, 1.4, 1, 0.6), sph(0.08, 8, 5, HX(14.0), 0, -1.21, 1.4, 1, 0.6));
-    /* blade aerials along the spine and under the belly, the long-wire
-       aerial from the cockpit hump to the fin */
+    /* blade aerials along the spine and under the belly. (2026-11-12 review:
+       the long-wire aerial from the cockpit hump to the fin was taken out -
+       neither P9 nor "PLA H-6N 55334 2024-11-29.jpg", both side-on against
+       clear sky, shows any wire between the cockpit and the fin; it read as
+       a stray line) */
     bladeAnt(B.skin, HX(8.0), 0, 1.19, 0.32, 0.45, 0.03);
     bladeAnt(B.skin, HX(22.0), 0, 1.18, 0.26, 0.38, 0.03);
     bladeAnt(B.skin, HX(7.0), 0, -1.19, -0.30, 0.42, 0.03);
     bladeAnt(B.skin, HX(24.0), 0, -1.10, -0.26, 0.36, 0.03);
-    B.dark.push(bar([HX(6.0), 0, 1.18], [HX(30.0), 0, 3.30], 0.008, 3));
     /* the cockpit windows' frames */
     [1, -1].forEach(function (sd) {
       B.dark.push(bar([HX(2.95), sd * 0.56, 1.08], [HX(3.9), sd * 0.75, 1.29], 0.022, 4), bar([HX(3.9), sd * 0.75, 1.29], [HX(4.6), sd * 0.79, 1.29], 0.022, 4));
