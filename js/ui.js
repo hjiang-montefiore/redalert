@@ -4112,6 +4112,10 @@ var UI = (function () {
     for (const b of p.buildings)
       if (!b.dead && b.def.superweapon && b.swCharge >= 1)
         add(90, "silo", b.def.superweapon.label + " READY", b.x, b.y, b);
+    /* ...and an Ohio holding the army's nuclear charge (js/subnuke.js) */
+    if (typeof SubNuke !== "undefined")
+      for (const u of p.units)
+        if (SubNuke.ready(u)) { add(90, "silo", SubNuke.sw().label + " READY", u.x, u.y, u); break; }
 
     /* base under attack */
     for (const b of p.buildings) {
@@ -4227,6 +4231,12 @@ var UI = (function () {
     const box = document.getElementById("swbar");
     if (!box) return;
     const mine = G.human.buildings.filter(b => !b.dead && b.def.superweapon && b.buildProgress >= 1);
+    /* our Ohios, each a launch point for the army's one nuclear charge
+       (js/subnuke.js, the owner's rule). Never an enemy's: the silo is on the
+       map and its clock is public, a boomer's whole worth is that nobody
+       knows she is there. */
+    if (typeof SubNuke !== "undefined")
+      for (const u of G.human.units) if (SubNuke.holds(u)) mine.push(u);
     const theirs = [];
     for (const p of G.players) {
       if (p === G.human || p.defeated || G.allied(G.human, p)) continue;
@@ -4243,10 +4253,10 @@ var UI = (function () {
       for (const b of silos) {
         const foe = b.owner !== G.human;
         const el = document.createElement("div");
-        el.className = "sw" + (b.def.superweapon.nuke ? " nuke" : "") + (foe ? " foe" : "");
+        el.className = "sw" + (G.swOf(b).nuke ? " nuke" : "") + (foe ? " foe" : "");
         el.innerHTML = '<div class="swfill"></div><div class="swtx"></div>';
         if (!foe) el.addEventListener("click", () => {
-          if (b.dead || b.swCharge < 1) { Sfx.announce("silo_not_ready", G.human); G.alert("SILO NOT READY", "bad"); return; }
+          if (b.dead || b.swCharge < 1) { Sfx.announce("silo_not_ready", G.human); G.alert(b.kind === "unit" ? "TRIDENT NOT READY" : "SILO NOT READY", "bad"); return; }
           input.launching = b;
           input.placing = null;
           setSell(false); setRepair(false);
@@ -4266,17 +4276,20 @@ var UI = (function () {
       const ready = pct >= 1;
       el.classList.toggle("ready", ready);
       el.classList.toggle("armed", input.launching === b);
-      const secs = Math.ceil((1 - pct) * b.def.superweapon.charge);
-      const kind = b.def.superweapon.nuke ? "NUCLEAR" : "BALLISTIC";
+      const bsw = G.swOf(b) || {};
+      const secs = Math.ceil((1 - pct) * bsw.charge);
+      const kind = bsw.nuke ? "NUCLEAR" : "BALLISTIC";
+      /* an Ohio's entry says so; its clock is the army's one charge, so with
+         a silo standing the two entries run the same */
       el.querySelector(".swtx").textContent = el._foe
         ? ("ENEMY " + kind + " \u00b7 " + (ready ? "ARMED" : U.mmss(secs)))
-        : (kind + " \u00b7 " + (ready ? "READY" : U.mmss(secs)));
+        : ((bsw.sub ? "SSBN " : "") + kind + " \u00b7 " + (ready ? "READY" : U.mmss(secs)));
       /* One warning per silo as the enemy clock runs down, so a player who is
          not watching the sidebar still gets the chance to do something about
          it. Thirty seconds is about one more production cycle. */
       if (el._foe && !ready && secs <= 30 && !b._warn30) {
         b._warn30 = true;
-        Sfx.announce(b.def.superweapon.nuke ? "enemy_nuke_30" : "enemy_missile_30", G.human, secs);
+        Sfx.announce(bsw.nuke ? "enemy_nuke_30" : "enemy_missile_30", G.human, secs);
         G.alert("ENEMY " + kind + " READY IN " + U.mmss(secs), "bad");
         if (typeof Threat !== "undefined" && Threat.fire)
           Threat.fire(2, "ENEMY " + kind + " ALMOST READY", U.mmss(secs) + " REMAINING");

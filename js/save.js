@@ -84,6 +84,10 @@ var SaveGame = (function () {
            come back from a reload with the full two minutes. */
         rigBk: p.rigBank ? [+p.rigBank.left.toFixed(2), +p.rigBank.at.toFixed(2)] : undefined,
         pArm: p.prodArmed ? 1 : undefined,
+        /* the army's nuclear charge as its Ohios hold it (js/subnuke.js);
+           a silo's own swCharge travels with the silo */
+        sNk: p.subNuke ? +p.subNuke.toFixed(4) : undefined,
+        sNkB: p.subNukeBySub ? 1 : undefined,
         /* fuel bought and still on the road, and the market pressure behind
            its price (player.js fuelMarketState). Dropped, a reload would lose
            barrels already paid for and reset the price to a quiet market. */
@@ -433,6 +437,7 @@ var SaveGame = (function () {
       p.rigWarned = !!sp.rigW;
       p.rigBank = Array.isArray(sp.rigBk) ? { left: sp.rigBk[0], at: sp.rigBk[1] } : null;
       p.prodArmed = !!sp.pArm;
+      p.subNuke = sp.sNk || 0; p.subNukeBySub = !!sp.sNkB; p.subNukeWarned = p.subNuke >= 1;
       /* an older save has no key: nothing on the road, a quiet market */
       if (p.restoreFuelMarket) p.restoreFuelMarket(sp.fm);
       p.stats = sp.stats || p.stats;

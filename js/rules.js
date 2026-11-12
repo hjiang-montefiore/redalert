@@ -3842,13 +3842,19 @@ Object.assign(UNITS, {
     cost:6200, oil:140, time:70, hp:2600, armor:"heavy", speed:2.0, turn:0.5, sight:6, r:26, mass:0,
     layer:"sub", weapons:["torp_mk48"], prereq:["navalyard","lab","radar"], tech:3,
     nuclear:true, quiet:0.22, sonar:10.0, radarQ:5, ssbn:true,
+    /* and ONE nuclear Trident, on the army's one nuclear charge shared with
+       its Strategic Silo - the owner's rule, js/subnuke.js */
+    subNuke:true,
     desc:"Ballistic missile submarine. It does not fight surface groups and it does not " +
          "want to be seen - its entire purpose is to remain undetected while holding a " +
          "strategic weapon at readiness. Twenty-four launch tubes, twenty of them loaded " +
          "with Trident II D5 since New START, and the quietest hull the US ever built. " +
          "Released, the missiles go about twenty seconds apart; none of them reloads at " +
          "sea, so an empty boat goes home to a naval yard, where its tubes are filled " +
-         "three times as fast as a surface ship's." },
+         "three times as fast as a surface ship's. One more Trident carries a nuclear " +
+         "warhead: it fires from the launch bar like the Strategic Silo, on the same " +
+         "single charge the army's silo holds - a hidden launch point, not a second " +
+         "nuke - and without a silo the boat charges it herself, and loses it if sunk." },
   /* from:"e00" and not "e60". K-535 Yuriy Dolgorukiy commissioned 10 January
      2013; the 955A this row is named for is Knyaz Vladimir of 12 June 2020;
      and the Bulava it fires was not accepted into service until 2018, after a

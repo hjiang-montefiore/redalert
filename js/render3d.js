@@ -3799,10 +3799,12 @@ var Render3D = (function () {
          through the sea, which is the opposite of what a cold launch looks
          like. orient() only ever writes scale and opacity on these two meshes,
          never .visible, so toggling it here does not fight the animator. */
+      /* p.unlit: out of the water and hanging nose-up before the first
+         stage lights (combat.js coldStep, HANG) - still no flame */
       if (p._m3 && p.subLaunch !== undefined) {
         const fl = p._m3.getObjectByName("flame"), co = p._m3.getObjectByName("core");
-        if (fl) fl.visible = !p.wet;
-        if (co) co.visible = !p.wet;
+        if (fl) fl.visible = !p.wet && !p.unlit;
+        if (co) co.visible = !p.wet && !p.unlit;
         if (p.wet) {
           /* the disturbance the missile drags up with it */
           if (!p._bubT || p._bubT <= 0) {
@@ -3822,11 +3824,21 @@ var Render3D = (function () {
         if (fl2) fl2.visible = true;
         if (co2) co2.visible = true;
       }
+      /* ---- the D5's aerospike telescopes out of the nose cap ----
+         FX3D builds it stowed (scale.x ~0); it runs out over 0.4 s from a
+         quarter-second after the first stage lights ("deploys shortly after
+         first-stage ignition", en.wikipedia UGM-133 Trident II). A round with
+         no cold launch lights as it leaves, so its clock starts at once. */
+      const spk = p._m3 && p._m3.userData.spike;
+      if (spk) {
+        if (p._ign === undefined && !(p.subLaunch !== undefined && (p.wet || p.unlit))) p._ign = G.time;
+        spk.scale.x = p._ign === undefined ? 0.02 : Math.max(0.02, Math.min(1, (G.time - p._ign - 0.25) / 0.4));
+      }
 
       /* trails: rocket smoke above water, bubble wake below it */
       p._smokeT -= dt;
       if (p._smokeT <= 0) {
-        if (p.type === "missile" && !(p.subLaunch !== undefined && p.wet)) {
+        if (p.type === "missile" && !(p.subLaunch !== undefined && (p.wet || p.unlit))) {
           p._smokeT = 0.035;
           const puff = new THREE.Mesh(new THREE.SphereGeometry(0.7, 6, 5),
             fxMaterial(0xb9bec4, 0.5));
@@ -4526,7 +4538,7 @@ var Render3D = (function () {
     }
     /* strategic strike reticle: show the actual lethal radius on the ground */
     if (input.launching && !input.launching.dead) {
-      const sw = input.launching.def.superweapon;
+      const sw = G.swOf ? G.swOf(input.launching) : input.launching.def.superweapon;   // a silo's, or an Ohio's (js/subnuke.js)
       const wp = unproject(input.mx, input.my);
       const nuke = !!sw.nuke;
       const col = nuke ? "255,90,60" : "255,190,70";

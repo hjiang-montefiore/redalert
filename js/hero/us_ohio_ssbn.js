@@ -706,7 +706,23 @@ var HeroOhioSSBN = (function () {
 /* len is the measured X extent (screw hub tip to bow): render3d scales a submarine by it. */
 UNIT_MODELS["ssbn_n"] = {
   len: 170.83,
-  build: function (THREE, M, C) { return HeroOhioSSBN.build(THREE, M, C, false); }
+  build: function (THREE, M, C) { return HeroOhioSSBN.build(THREE, M, C, false); },
+  /* the round its Tridents are drawn as (js/fx3d.js ORD.trident2), keyed by
+     the weapon the row declares; generations.js gives the row its own copy,
+     slbm_n__ssbn_n, which render3d's ordFor() reads back to slbm_n */
+  ord: { slbm_n: "trident2" }
+};
+/* HMS Vanguard fires the same missile - Trident II D5 from the common pool,
+   only the warhead British (rules.js, the note after slbm_c) - so its round
+   is the same trident2. A named round is keyed by the row's own id, and
+   ssbn_b had no model entry of its own: render3d's modelKeyFor() drew it on
+   its first ssbn peer that has one, which is this one. It is registered on
+   that same entry here so it can name its round; what is drawn is unchanged.
+   Not the Vanguard's own hull - that model is still to be built. */
+UNIT_MODELS["ssbn_b"] = {
+  len: 170.83,
+  build: function (THREE, M, C) { return HeroOhioSSBN.build(THREE, M, C, false); },
+  ord: { slbm_b: "trident2" }
 };
 UNIT_MODELS["ssgn_n"] = {
   len: 170.83,

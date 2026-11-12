@@ -2714,10 +2714,31 @@ var Game = (function () {
     return !!(G.radarCovers && (G.radarCovers(p, b.x, b.y) || G.radarCovers(p, wx, wy)));
   };
 
+  /* The strategic weapon an entity fires: a silo's own, or - for the
+     Ohio, which shares her army's one nuclear charge with its silo (owner's
+     rule, js/subnuke.js) - the silo's nuclear weapon relabelled. */
+  G.swOf = function (e) {
+    if (!e || !e.def) return null;
+    if (e.def.superweapon) return e.def.superweapon;
+    return typeof SubNuke !== "undefined" && SubNuke.holds(e) ? SubNuke.sw() : null;
+  };
   G.launchSuperweapon = function (b, wx, wy) {
-    const sw = b.def.superweapon;
-    if (!sw || b.swCharge < 1) return false;
-    b.swCharge = 0;
+    /* an Ohio (js/subnuke.js): the same launch, from where she lies,
+       submerged, spending the army's one charge - the silo's if a silo
+       holds it. Everything below - the voices, both sides' alert, the
+       banner, the deferred strike and the fallout - is the silo's. */
+    const sub = !b.def.superweapon && typeof SubNuke !== "undefined" && SubNuke.holds(b);
+    const sw = sub ? SubNuke.sw() : b.def.superweapon;
+    if (!sw) return false;
+    if (sub) {
+      if (!SubNuke.ready(b)) return false;
+      SubNuke.spend(G, b);
+    } else {
+      if (b.swCharge < 1) return false;
+      b.swCharge = 0;
+      /* the boats' share of it follows at once (rule 1) */
+      if (sw.nuke && typeof SubNuke !== "undefined") SubNuke.sync(G, b.owner);
+    }
     if (b.owner === G.human) Sfx.announce(sw.nuke ? "nuke_launched" : "missile_launched", b.owner);
     else if (!G.allied(G.human, b.owner) && G.launchSeen(G.human, b, wx, wy))
       Sfx.announce(sw.nuke ? "nuke_detected" : "missile_detected", G.human);
@@ -2745,7 +2766,8 @@ var Game = (function () {
        is 2D-only and `turrettoss` is 3D-only, so neither would show for half
        the players. Effects carry no z, so height is baked into y the way
        combat.js already does it at :474 with `y: p.y - p.z`. */
-    (function () {
+    if (sub) SubNuke.showLaunch(G, b, wx, wy);
+    else (function () {
       const cx = b.x, cy = b.y - 6;
       const eff = (typeof Combat !== "undefined" && Combat.addEffect)
         ? Combat.addEffect : null;
@@ -4511,6 +4533,8 @@ var Game = (function () {
       p.updateQueues(dt); p.updateEraAdvance(dt); p.updateFuelPurchase(dt);
     }
     for (const e of G.entities) e.update(dt);
+    /* the Ohio's share of the army's nuclear charge (js/subnuke.js) */
+    if (typeof SubNuke !== "undefined") SubNuke.update(G, dt);
     if (typeof Mines !== "undefined") Mines.update(G, dt);
     if (typeof SonarNet !== "undefined") SonarNet.update(G, dt);
     Combat.update(G, dt);

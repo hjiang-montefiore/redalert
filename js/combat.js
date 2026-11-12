@@ -510,6 +510,8 @@ var Combat = (function () {
     for (let i = projectiles.length - 1; i >= 0; i--) {
       const p = projectiles[i];
       p.age += dt;
+      /* shown, not fired (showRound): nothing below may touch it */
+      if (p.show) { if (!showStep(p, dt)) projectiles.splice(i, 1); continue; }
 
       /* ---- EMCON: the set this surface-to-air round flies on goes dark ----
          A round the shooter's own set has to guide (game.js G.ownRadarMount -
@@ -764,42 +766,15 @@ var Combat = (function () {
          missile breaks the surface already burning - and the R-11FM fired
          from the surface off an elevator in the fin. Only a weapon that
          declares coldLaunch gets this. */
-      if (p.subLaunch !== undefined) {
-        const L = p.subLaunch;                 // seconds elapsed in the phase
-        p.subLaunch = L + dt;
-        const WET = 1.05, AIR = 0.85;          // coast to the surface, then climb
-        if (L < WET) {
-          /* the coast. Decelerating, because the gas charge is spent and the
-             missile is carrying its own way up through the water. */
-          const f = L / WET;
-          p.z = p.zLaunch * (1 - f * (2 - f));
-          p.wet = true;
-        } else if (L < WET + AIR) {
-          if (p.wet) {
-            /* THE BREACH. The one moment the player should catch. */
-            p.wet = false;
-            effects.push({ t: "boom", x: p.x, y: p.y, r: 9, life: 0.75, max: 0.75,
-                           water: true });
-            if (typeof Sfx !== "undefined" && Sfx.play) Sfx.play("water", p.x, p.y);
-          }
-          p.z = (L - WET) / AIR * 26;
-        } else {
-          /* hand back to the flight model. The profile below computes z from
-             done, which is ~0 here, so without a decaying carry the round
-             would snap from 26 back to the deck. zBoost is that carry. */
-          p.zBoost = 26; p.zBoostT = 1.6;
-          p.subLaunch = undefined;
-        }
-        if (p.subLaunch !== undefined) {
-          /* p.age is incremented at the top of this loop, so the round still
-             ages out normally; everything else - homing, the flight profile,
-             the trail, arrival - is simply not reached while it is climbing
-             vertically over the boat. The three defence layers above run as
-             usual and correctly decline to engage: they gate on RANGE TO GO,
-             which is still the full distance to the target, so a round cannot
-             use the phase to slip past an interceptor. */
-          continue;
-        }
+      if (p.subLaunch !== undefined && coldStep(p, dt)) {
+        /* p.age is incremented at the top of this loop, so the round still
+           ages out normally; everything else - homing, the flight profile,
+           the trail, arrival - is simply not reached while it is climbing
+           vertically over the boat. The three defence layers above run as
+           usual and correctly decline to engage: they gate on RANGE TO GO,
+           which is still the full distance to the target, so a round cannot
+           use the phase to slip past an interceptor. */
+        continue;
       }
       if (p.type === "arc" || p.type === "bomb") {
         const t = U.clamp(p.age / p.eta, 0, 1);
@@ -949,6 +924,98 @@ var Combat = (function () {
     if (w.warhead === "cannon") return 0.35;        // laser ranging first, radar second
     if (w.warhead === "heat") return 0.30;
     return 0.10;                                    // small arms
+  }
+
+  /* ---- the cold launch itself (see COLD LAUNCH in update) ----
+     Drives z while the round is over the boat; true while the phase runs.
+     Four beats, after the en.wikipedia "Trident (missile)" account (the gas
+     charge throws it clear; "when the sensors detect downward acceleration
+     after being blown out of the water, the first-stage motor ignites"):
+       WET   the coast up through the water, unlit, decelerating;
+       HANG  it has broken the surface in its spray and hangs there, nose up
+             and still unlit, its way all but spent: p.unlit, and the breach
+             splash. z eases to a stop rather than falling back, so the
+             renderer, which points a round along its last frame's motion,
+             keeps it pointing at the sky;
+       AIR   the first stage lights (a burst of exhaust at the water) and it
+             climbs straight up;
+       then the flight model takes it, with zBoost bleeding off the climb
+             as it pitches over towards the target.
+     The hang is the one beat added since the phase was written (owner,
+     2026-11-12: "hangs nose-up for a moment, then ignites"). */
+  const COLD_WET = 1.05, COLD_HANG = 0.4, COLD_AIR = 0.85, COLD_UP = 26, COLD_POP = 3;
+  function coldStep(p, dt) {
+    const L = p.subLaunch;                   // seconds elapsed in the phase
+    p.subLaunch = L + dt;
+    if (L < COLD_WET) {
+      /* the coast. Decelerating, because the gas charge is spent and the
+         missile is carrying its own way up through the water. */
+      const f = L / COLD_WET;
+      p.z = p.zLaunch * (1 - f * (2 - f));
+      p.wet = true;
+      return true;
+    }
+    if (L < COLD_WET + COLD_HANG) {
+      if (p.wet) {
+        /* THE BREACH. The one moment the player should catch. */
+        p.wet = false; p.unlit = true;
+        effects.push({ t: "boom", x: p.x, y: p.y, r: 9, life: 0.75, max: 0.75, water: true });
+        if (typeof Sfx !== "undefined" && Sfx.play) Sfx.play("water", p.x, p.y);
+      }
+      const f = (L - COLD_WET) / COLD_HANG;
+      p.z = COLD_POP * f * (2 - f);            // out of the sea, slowing to a stop
+      return true;
+    }
+    if (L < COLD_WET + COLD_HANG + COLD_AIR) {
+      if (p.unlit) {
+        /* first-stage ignition, just clear of the water: the exhaust
+           hitting the sea under it */
+        p.unlit = false;
+        effects.push({ t: "boom", x: p.x, y: p.y - COLD_POP, r: 7, life: 0.9, max: 0.9 });
+      }
+      p.z = COLD_POP + (L - COLD_WET - COLD_HANG) / COLD_AIR * (COLD_UP - COLD_POP);
+      return true;
+    }
+    /* hand back to the flight model. The profile computes z from done,
+       which is ~0 here, so without a decaying carry the round would snap
+       from 26 back to the deck. zBoost is that carry. */
+    p.zBoost = COLD_UP; p.zBoostT = 1.6;
+    p.unlit = false;
+    p.subLaunch = undefined;
+    return false;
+  }
+
+  /* ---- a round to look at and nothing else ----
+     For a launch whose damage is dealt somewhere else - the Ohio's nuclear
+     Trident (js/subnuke.js), whose warhead is game.js launchSuperweapon's
+     deferred areaStrike exactly as a silo's is. It is ejected, breaks the
+     surface and lights like any cold-launched round (coldStep), climbs on
+     towards the target, and is gone `life` seconds later, high over the
+     battle: no defence layer sees it, it reaches nothing and detonates
+     nowhere, so the strike stays as unanswerable as the silo's. `w` is the
+     shooter's own conventional round (so render3d draws it as that row's
+     named round). */
+  function showRound(game, shooter, w, tx, ty, life) {
+    const p = {
+      w, shooter, owner: shooter.owner, dmg: 0, show: life || 5,
+      x: shooter.x, y: shooter.y, z: -7, hit: false, target: null,
+      tx, ty, tz: 0, speed: w.speed || 16, type: "missile", dead: false, age: 0,
+      x0: shooter.x, y0: shooter.y, eta: 1,
+      subLaunch: 0, zLaunch: -7, wet: true, zBoost: 0, zBoostT: 0,
+    };
+    projectiles.push(p);
+    return p;
+  }
+  /* the shown round's whole flight: the cold launch, then up and away */
+  function showStep(p, dt) {
+    if (p.age >= p.show) return false;
+    if (p.subLaunch !== undefined && coldStep(p, dt)) return true;
+    const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+    const k = p.speed * dt * 0.6;
+    p.x += dx / d * k; p.y += dy / d * k;
+    p.z += 70 * dt;                          // steep: a strategic round is going a long way
+    effects.push({ t: "trail", x: p.x, y: p.y - p.z, life: 0.5, max: 0.5 });
+    return true;
   }
 
   function detonate(game, p) {
@@ -1489,7 +1556,7 @@ var Combat = (function () {
   function addEffect(fx) { effects.push(fx); }
 
   return {
-    reset, fire, update, applyDamage, kill, addEffect,
+    reset, fire, update, applyDamage, kill, addEffect, showRound,
     resolveArmor, impactArc, armorAt, penOf,
     get projectiles() { return projectiles; },
     get effects() { return effects; },
