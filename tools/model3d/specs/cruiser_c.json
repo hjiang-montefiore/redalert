@@ -1,0 +1,53 @@
+{
+  "key": "cruiser_c",
+  "team": "pla",
+  "name": "Type 055 large destroyer (Renhai class), drawn as Nanchang (101)",
+  "category": "ship",
+  "published": { "len": 180, "beam": 20, "draught": 6.6, "source": "en.wikipedia 'Type 055 destroyer'" },
+  "len": 180,
+  "nodes": ["turret", "helipad"],
+  "references": [
+    {
+      "name": "[A1] Anshan (DDG-103) 2023-06-05, port broadside, level",
+      "image": "ref/cruiser_c/PLANS_Anshan__DDG-103__20230605.jpg",
+      "source": "Wikimedia Commons 'PLANS Anshan (DDG-103) 20230605.jpg' (Japan MoD), 1600 x 449",
+      "view": "side",
+      "flip": true,
+      "px_per_m": 8.47,
+      "anchor_px": [48, 379],
+      "anchor_m": [90, 0],
+      "mask": "bg",
+      "mask_opts": { "tolerance": 26, "edge_px": 10, "fill": true, "open_px": 1 },
+      "window_m": [-92, 1.5, 92, 44],
+      "align_m": 1.0,
+      "exact": true,
+      "note": "A long-lens level broadside: bow x 48, stern x 1576 (180.4 m at 8.47 px/m), waterline rows 376-382. Taken from port, so flipped to the standard starboard profile. The window starts 1.5 m above the waterline to keep the sea and the bow wave out; the photograph is soft, so whip aerials and the ensign staff are lost or thickened. The model may slide 1 m to take up the waterline band."
+    },
+    {
+      "name": "[A2] Anshan and helicopters 2024-10-15, port bow",
+      "image": "ref/cruiser_c/PLANS_Anshan__DDG-103__and_helicopters_20241015.jpg",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer only (not an orthographic view): the tower rising out of the forward block, the block's sloping front and chamfered corners."
+    },
+    {
+      "name": "[A3] Wuxi (DDG-104) 2023-08-28, from above",
+      "image": "ref/cruiser_c/PLANS_Wuxi__DDG-104__20230828.jpg",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer only: the forecastle cell field, the hangar roof, the pad."
+    }
+  ],
+  "must_show": [
+    "one enclosed integrated mast: a faceted tower with four flat array faces, rising from the forward superstructure block",
+    "long forecastle: 130 mm gun, then the 64-cell VLS field, then the 11-barrel CIWS before the bridge",
+    "clean slab-sided hull and superstructure with one continuous knuckle; sides flared out below it, sloped in above",
+    "single funnel block amidships with the 48-cell aft VLS field behind it",
+    "hangar aft with the 24-cell HHQ-10 box on its roof, flight deck to the transom",
+    "raked stem with bulwark; transom stern"
+  ],
+  "not_confirmed": [
+    "underwater hull form (no reference)",
+    "exact cell-hatch layout of the two VLS fields"
+  ]
+}

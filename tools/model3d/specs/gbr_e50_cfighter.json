@@ -1,0 +1,91 @@
+{
+  "key": "gbr_e50_cfighter",
+  "team": "gbr",
+  "name": "Hawker Sea Hawk FGA.6",
+  "category": "air",
+  "published": { "len": 12.09, "span": 11.89, "height": 2.64, "source": "en.wikipedia 'Hawker Sea Hawk', FGA 6 specification: 39 ft 8 in, 39 ft 0 in, 8 ft 8 in" },
+  "len": 12.23,
+  "nodes": ["gear"],
+  "engine": {
+    "row": "js/eras.js gbr_e50_cfighter: cat aircraft, layer air, jet, carrierCapable, no radar; js/aar_specs.js: null (no tanker gear)",
+    "current_nodes": "tools/model3d/dump.js on the tree before this change: one engine node, the group 'gear' (hidden in flight). No 'wingfold' groups.",
+    "wingfold": "none, and none is added: tools/jsc/wingfold_check.js rule 2 holds that only the types in its own table carry fold groups; the Sea Hawk is not in it. Only the fold joint is drawn (a seam at y = 1.55 m).",
+    "attitude": "The airframe is built in the drawing's datum and stood 3.98 deg nose-up on its wheels, as the drawing's own two wheel contacts put it (see [D1] side). The previous model did the same (4.4 deg)."
+  },
+  "references": [
+    {
+      "name": "[D1] Sea Hawk 3-view, side (turned to the ground attitude)",
+      "image": "ref/gbr_e50_cfighter/seahawk_side_ground.png",
+      "source": "Wikimedia Commons 'Hawker Sea Hawk 3-view line drawing.svg', 1920 px render; side view cut out and turned by ref/gbr_e50_cfighter/prep_refs.py",
+      "view": "side",
+      "flip": true,
+      "px_per_m": 104.0,
+      "anchor_px": [579, 438],
+      "anchor_m": [0.779, 0],
+      "mask": "dark",
+      "mask_opts": { "threshold": 128, "fill": true },
+      "ignore_m": [[4.35, -0.1, 5.25, 0.9], [0.2, -0.1, 1.4, 0.4]],
+      "exact": true,
+      "note": "ONE scale for the whole sheet: 104.0 px/m, the published span 11.89 m over the plan's 1236.5 px (rows 399-1635, the same in the head-on view). Check on the second dimension: nose (col 38) to the hook's tip (col 1310) is 1272 px = 12.23 m in the datum, 12.21 m on the wheels, +1.0 per cent on the published 12.09 m (to the rudder's trailing edge it is 11.80 m, so the published length is taken to include the hook). The drawing shows the wheels as two faint rings with a ground stroke under each: nose contact (162, 407), main contact (579, 378), i.e. the datum stands 3.98 deg nose-up; the picture is turned by that about the main contact so that it can be laid on the model as it stands. The rings are too faint for the mask, so the two ignore boxes leave the model's undercarriage out. Datum to model: xd = (660 - col) / 104, zd = (407 - row) / 104, then X = 0.779 + (xd - 0.779) cos a - (zd - 0.279) sin a, Z = (xd - 0.779) sin a + (zd - 0.279) cos a."
+    },
+    {
+      "name": "[D1] Sea Hawk 3-view, plan",
+      "image": "ref/gbr_e50_cfighter/seahawk_3v_white.png",
+      "source": "the same sheet, laid on white by prep_refs.py",
+      "view": "top",
+      "crop": [0, 380, 1330, 1653],
+      "rotate": 180,
+      "px_per_m": 104.0,
+      "anchor_px": [660, 1017],
+      "anchor_m": [-0.079, 0],
+      "mask": "dark",
+      "mask_opts": { "threshold": 128, "fill": true },
+      "exact": true,
+      "note": "Nose left in the sheet, port wing down: rotate 180. Centre line row 1017; col 660 on the fuselage axis is model x = -0.079 once the airframe stands on its wheels. The plan is drawn in the datum; on the wheels it is foreshortened by cos 3.98 deg (0.24 per cent, 3 cm over the length), which is inside the line width. The pitot on the port tip and the hook are in the mask."
+    },
+    {
+      "name": "[D1] Sea Hawk 3-view, head-on",
+      "image": "ref/gbr_e50_cfighter/seahawk_3v_white.png",
+      "view": "front",
+      "crop": [1330, 380, 1920, 1653],
+      "rotate": 270,
+      "px_per_m": 104.0,
+      "anchor_px": [1488, 1017],
+      "anchor_m": [0, 1.19],
+      "mask": "dark",
+      "mask_opts": { "threshold": 110, "fill": true },
+      "window_m": [-6.2, 0.45, 6.2, 3.3],
+      "exact": false,
+      "note": "Advisory. Drawn gear-up in the datum and with the folded wings and the drop tanks ghosted in; the model stands 3.98 deg nose-up, so the fin and tailplane sit about 0.4 m lower against the fuselage than drawn. Used for the wing's dihedral (5.0 deg on the chord plane, measured rows 420-850), the root fairing's depth, the intake mouths and the tailplane's height."
+    },
+    {
+      "name": "[P1] WV828 and 034 in a hangar, wings folded",
+      "image": "ref/gbr_e50_cfighter/seahawk_wv828.jpg",
+      "source": "Wikimedia Commons 'Hawker Sea Hawk FGA.6 WV828 AWk Hurn 15.07.67 edited-3.jpg', 960 px",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the nose-up sit on a long nose leg, the nose leg's fork and the single main wheels, the bubble canopy, the wing-root intake mouths, the dark upper coat carried down the fuselage side. Its roundels, codes and serials are NOT to be drawn."
+    }
+  ],
+  "must_show": [
+    "wing-root intakes: a triangular mouth in the leading edge of each thick root fairing, tall against the fuselage (y 0.75 m) and closing to a point at y 1.5 m; no nose intake - a plain rounded nose",
+    "bifurcated jet pipe: one round exhaust each side at the wing root's trailing edge (x about -0.75 m, y 0.84 m), with a pointed fairing running aft of it along the fuselage side; NO nozzle in the tail",
+    "straight tapered wing set at mid-height: unswept, leading edge raked back about 4 deg and trailing edge forward about 7 deg, rounded tips, 5 deg dihedral, span 11.89 m",
+    "tailplane set part-way up the fin (1.0 m above the fuselage axis), unswept, with a bullet fairing running forward of the fin's leading edge at the junction",
+    "tall rounded fin with a curved dorsal fillet, the rudder running down to the tail cone",
+    "bubble canopy well forward over the nose (glazing from 8 to 23 per cent of the length, cols 139-330 of 38-1310), framed windscreen, a solid fairing behind the hood",
+    "circular fuselage, deepest and widest at the wing, tapering to a slim tail cone",
+    "tricycle undercarriage: a long single-wheel nose leg and one wheel on each main leg under the root fairings, the airframe sitting about 4 deg nose-up",
+    "sting arrestor hook lying under the tail cone, its beak projecting aft of the rudder",
+    "four cannon troughs under the nose (two each side), a pitot on the port wing tip, a mast and a whip aerial on the spine",
+    "plain paint: Extra Dark Sea Grey above, Sky below; the wing-fold joint as a seam just outboard of the intakes (y 1.55 m)"
+  ],
+  "not_confirmed": [
+    "which side of each main leg its wheel sits; the legs, braces and doors are schematic. The track is NOT in this list: it is 2.33 m (wheels at y +-1.16 m), from the three wheels ghosted in the head-on view (sheet columns 1345-1445, mains centred on rows 896 and 1138); no published track was found to set against it",
+    "the height of the grey / Sky demarcation on the fuselage side (drawn 30 deg below the widest line, held at z 1.25 m in the datum forward of the nose cap)",
+    "wing incidence and twist (drawn at zero in the datum), the aerofoil sections (NACA 00xx thickness forms at the drawing's measured depth)",
+    "the cross-section of the fuselage aft of the wing (width from the plan, depth from the side, ellipses between)",
+    "the inside of the intakes and jet pipes",
+    "height: 2.73 m as drawn on the drawing's wheels against the published 2.64 m (the published figure's attitude and oleo compression are not stated)"
+  ]
+}
