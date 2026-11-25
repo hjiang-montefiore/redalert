@@ -95,3 +95,14 @@ Rules of thumb
 - Run `python3 tools/model3d/outline.py DUMP.json specs/<key>.json --out DIR`
   and LOOK at the overlay before trusting the number: a wrong origin or scale
   shows at once as a uniform offset or a uniform blue/red rim.
+
+## limits (per-model exceptions)
+
+A gate threshold can be overridden for one model when the rule's assumption does not hold for it,
+for example the plan-fill ceiling on a catamaran that really is rectangular. Each override needs a
+reason, and the gate prints it as an OVERRIDE line so a reviewer sees it:
+
+    "limits": { "plan_fill_max": { "value": 0.95, "reason": "why this model is an exception" } }
+
+The name must be a key of the LIMITS table in gate.py. Never use an override to pass a model whose
+shape is wrong; that is what the rule is for.

@@ -55,7 +55,15 @@ OPAQUE_MIN = 0.99                              # a material at or above this opa
 MARKING_WORDS = r"insignia|roundel|star|marking|flag|numeral|pennant|tailcode|serial|emblem|decal|logo"
 
 
+SPEC_LIMITS = {}   # per-model exceptions from the spec's "limits" block, set in main()
+
+
 def lim(name, cat):
+    """A limit from the table, unless the spec overrides it. An override must give a reason
+    ({"limits": {"plan_fill_max": {"value": 0.95, "reason": "..."}}}); the gate prints it."""
+    o = SPEC_LIMITS.get(name)
+    if o is not None:
+        return o["value"]
     return LIMITS[name][CATS.index(cat)]
 
 
@@ -228,6 +236,13 @@ def main(argv):
     times = {}
     spec_path = o["spec"] or os.path.join(HERE, "specs", key + ".json")
     spec = json.load(open(spec_path)) if os.path.exists(spec_path) else None
+    for _n, _o in ((spec or {}).get("limits") or {}).items():
+        if _n not in LIMITS:
+            sys.exit("gate: spec limit %r is not a gate rule (rules: %s)" % (_n, ", ".join(sorted(LIMITS))))
+        if not (isinstance(_o, dict) and "value" in _o and str(_o.get("reason", "")).strip()):
+            sys.exit("gate: spec limit %r needs {\"value\": ..., \"reason\": \"...\"}" % _n)
+        SPEC_LIMITS[_n] = _o
+        print("OVERRIDE  %-32s %s (table: %s) - %s" % (_n, _o["value"], LIMITS[_n], _o["reason"]))
     if o["spec"] and spec is None:
         print("gate: spec %s not found" % o["spec"]); return 2
     team = o["team"] or (spec or {}).get("team") or "nato"
