@@ -1,0 +1,343 @@
+{
+  "key": "corvette_r",
+  "team": "roc",
+  "name": "Tuo Chiang-class corvette (skirmish row; same hull as roc_e00_corvette, PGG-618)",
+  "category": "ship",
+  "published": {
+    "len": 60.4,
+    "beam": 14.0,
+    "draught": 2.3,
+    "source": "en.wikipedia 'Tuo Chiang-class corvette' (length on cushion 60.4 m, beam 14 m, draught 2.3 m); zh.wikipedia gives the same for the prototype"
+  },
+  "len": 60.4,
+  "nodes": [
+    "turret",
+    "helipad"
+  ],
+  "references": [
+    {
+      "name": "[N2] PGG-618 firing HF-3, port broadside at sea (hand-traced outline, forward 32 m)",
+      "traced_from": "ref/roc_e00_corvette/hf3_firing_port_broadside.jpg",
+      "px_per_m": 30,
+      "source": "Wikimedia Commons 'Tuo Chiang (PGG-618) HF-3 live firing' (ROC Navy; the zh.wikipedia Tuo Chiang-class article's file, name in Chinese), 1280 x 852 thumb",
+      "view": "side",
+      "outline_m": [
+        [
+          -1.49,
+          0.0
+        ],
+        [
+          26.96,
+          0.0
+        ],
+        [
+          28.79,
+          1.69
+        ],
+        [
+          29.64,
+          2.82
+        ],
+        [
+          30.13,
+          4.08
+        ],
+        [
+          30.2,
+          5.21
+        ],
+        [
+          23.16,
+          5.56
+        ],
+        [
+          16.96,
+          5.92
+        ],
+        [
+          16.75,
+          6.06
+        ],
+        [
+          16.61,
+          7.46
+        ],
+        [
+          16.33,
+          7.61
+        ],
+        [
+          14.0,
+          8.1
+        ],
+        [
+          13.3,
+          8.03
+        ],
+        [
+          13.23,
+          6.06
+        ],
+        [
+          12.59,
+          5.99
+        ],
+        [
+          12.38,
+          7.46
+        ],
+        [
+          12.38,
+          8.1
+        ],
+        [
+          12.17,
+          8.59
+        ],
+        [
+          11.75,
+          8.73
+        ],
+        [
+          11.54,
+          8.66
+        ],
+        [
+          11.05,
+          10.28
+        ],
+        [
+          10.55,
+          11.62
+        ],
+        [
+          10.06,
+          11.06
+        ],
+        [
+          9.5,
+          11.06
+        ],
+        [
+          9.07,
+          12.96
+        ],
+        [
+          9.21,
+          13.66
+        ],
+        [
+          8.65,
+          14.23
+        ],
+        [
+          8.09,
+          13.66
+        ],
+        [
+          8.23,
+          12.96
+        ],
+        [
+          7.88,
+          11.06
+        ],
+        [
+          7.1,
+          11.06
+        ],
+        [
+          5.55,
+          14.3
+        ],
+        [
+          4.99,
+          15.56
+        ],
+        [
+          6.26,
+          15.56
+        ],
+        [
+          6.26,
+          15.85
+        ],
+        [
+          4.99,
+          15.85
+        ],
+        [
+          4.64,
+          15.92
+        ],
+        [
+          4.71,
+          17.11
+        ],
+        [
+          4.99,
+          17.11
+        ],
+        [
+          4.99,
+          17.54
+        ],
+        [
+          3.65,
+          17.54
+        ],
+        [
+          3.65,
+          17.11
+        ],
+        [
+          3.72,
+          15.92
+        ],
+        [
+          2.88,
+          15.85
+        ],
+        [
+          2.88,
+          15.56
+        ],
+        [
+          3.58,
+          15.49
+        ],
+        [
+          3.58,
+          11.2
+        ],
+        [
+          3.37,
+          11.06
+        ],
+        [
+          2.95,
+          11.13
+        ],
+        [
+          2.52,
+          10.92
+        ],
+        [
+          2.38,
+          10.49
+        ],
+        [
+          2.38,
+          9.65
+        ],
+        [
+          -1.49,
+          9.65
+        ]
+      ],
+      "window_m": [
+        -1.4,
+        0.5,
+        30.6,
+        19.0
+      ],
+      "ignore_m": [
+        [
+          16.8,
+          6.4,
+          21.6,
+          8.8
+        ],
+        [
+          -1.4,
+          11.2,
+          3.0,
+          19.0
+        ],
+        [
+          8.0,
+          11.3,
+          12.4,
+          19.0
+        ]
+      ],
+      "align_m": 0.3,
+      "exact": true,
+      "note": "px_per_m 30 is only the raster the traced polygon is compared on; the PHOTOGRAPH is 14.2 px/m. A long-lens, sea-level port broadside (bow to the left, so the traced points are mirrored to the standard starboard profile). Scale 14.2 px/m: prow x 250, gun ring x 460, bridge foot x 500; the same gun and bridge-foot stations come out of the aerial [A1] scaled on the published 60.4 m (15.2 px/m there), which is the cross-check - the stern itself is behind the missile's smoke from x 700 on, so the outline stops at X -1.5 m and the window is the forward 32 m only. Waterline row 646. The outline was traced by hand on a 6x grid (silhouette points every facet corner); error about 1 px = 0.07 m at corners, 0.15 m on the soft mast head. Ignored: the 76 mm barrel (elevated about 14 deg in the photo, at rest in the model), the whip aerials and flag hoists above the bridge roof either side of the mast."
+    },
+    {
+      "name": "[N2p] the photograph [N2] was traced from",
+      "image": "ref/roc_e00_corvette/hf3_firing_port_broadside.jpg",
+      "source": "as [N2]",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the picture behind the traced outline (port side, bow left; ship between x 250 and about 1108, waterline row 646)."
+    },
+    {
+      "name": "[A1] PGG-618 from the air, starboard quarter above",
+      "image": "ref/roc_e00_corvette/pgg618_from_above.jpg",
+      "source": "Wikimedia Commons (zh.wikipedia Tuo Chiang-class article: PGG-618 seen from above), ROC Navy",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer and for stations aft of the smoke in [N2]: prow x 175, stern x 1095 (15.2 px/m on 60.4 m, about 23 deg above the horizon): gun x 400 (p 14.8 m aft of the prow), bridge foot x 455 (18.4), launcher well x 640-835 (30.6-43.4), Phalanx x 855 (44.7), step down to the flight deck x 893 (47.2), the pointed foredeck plan, the rails round the flight deck. The camouflage chevrons and the number are NOT part of the spec."
+    },
+    {
+      "name": "[B1] PGG-618 under way, starboard bow",
+      "image": "ref/roc_e00_corvette/pgg618_bow_quarter.jpg",
+      "source": "Wikimedia Commons (PGG-618 under way, bow quarter), ROC Navy",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the two wave-piercing demihull stems low at the water (near blade tip x 1138, prow centre x 1026, 54 deg off the beam: the tip is about 0.4 m abaft the prow) with the dark tunnel between, the raised centre bow under the prow with the anchor on it, the hull sides flaring out to a chine and leaning in above it, the faceted bridge with its window band, the four-sided mast, the director ball on its post, the dome aft of the bridge, the faceted 76 mm shield, the big louvred shutters in the side."
+    },
+    {
+      "name": "[M1] 1/72 exhibition model of PGG-618, from above the starboard side",
+      "image": "ref/roc_e00_corvette/pgg618_model_1_72.jpg",
+      "source": "Wikimedia Commons 'ROCN PGG-618 model at RF5 20171022.jpg'",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer: the open launcher well with its canister banks, fore to aft ribbed racks, plain boxes, ribbed racks, plain boxes (x 650-700, 700-760, 765-830, 835-865), the two dark roofed bays in the far wall abreast the plain boxes, the Phalanx on its own block abaft the well, the flight deck with its landing square, the two shutters in the side, the waterjet housings at the transoms."
+    },
+    {
+      "name": "[B2] PGG-619 (the longer production ship) leaving Keelung",
+      "image": "ref/roc_e00_corvette/pgg619_leaving_port.jpg",
+      "source": "Wikimedia Commons (PGG-619 leaving port)",
+      "view": "quarter",
+      "exact": false,
+      "note": "A DIFFERENT, 65 m ship: used only for how the foredeck falls away to the sides and the prow, and the stem blades. Not a dimension source."
+    }
+  ],
+  "must_show": [
+    "catamaran: two slender wave-piercing demihulls about 3.3 m wide at the waterline, centred y +-5.2 (10.4 m apart), open tunnel between them from the transoms (X -29.55) forward, tunnel roof 2.6 m up (seen from ahead and astern)",
+    "knife stems: each demihull ends forward in a thin blade lying at the waterline (top about 0.5-0.7 m) whose tip is within about 1 m of the prow, X +29.5 at y +-4.8 [B1: tip 0.4 m abaft the prow by the bow-quarter geometry, +-0.7]; above the blade the stem rakes back and the hull proper meets the water near X +27 [N2]",
+    "raised centre bow: the bridging deck runs forward into a blunt prow at X +30.2, 5.2 m above the water, with a V underside (keel 2.8 m up at X +29.6, 1.5-1.7 m at X +24..+28.8) falling back into the wet deck by X +17; an anchor on its stem at X +29.5, about 3 m up",
+    "bluff bow shell [B1][B2]: forward of the bridge the chine (2.6 m up, lifting to 2.8 m at X +27.5 and 4.5 m at the prow) stays WIDER than the deck edge - half breadth 5.4 at X +24, 4.95 at +26, 4.7 at +27 (deck edge 4.8 / 3.95 / 3.45 there), then closes to 2.9 at +29 and 1.2 at the prow; each demihull's outer side runs up into that chine as one shell as far as X +27, where the stem rakes down to the blade (measured on [B1]: far-side outline about 37 px = 1.5-2 m outside the deck-edge corner; +-0.7 m)",
+    "hull sides flare out from the waterline (half breadth 6.85) to a chine 2.6 m up (7.0, the full 14.0 m beam), then lean in to 6.45 at the 6.9 m facet line and 5.9 at the block top 9.65 m, X -17.0 .. +12.6: no vertical slab side",
+    "faceted bridge right across the hull, X +3.4 .. +12.6: raked front (foot X +12.6 at 6.0 m, 0.35 m back per m up), window band 10.05-10.75 m under the roof at 11.1 m",
+    "enclosed four-sided mast on the bridge roof: foot X +3.6 .. +7.1, raked leading edge, vertical after edge at X +3.6, yard 15.56-15.85 m reaching X +2.9 .. +6.3, radar bar at 17.1-17.5 m, pole to 18.2 m at X +2.95",
+    "director ball (grey, r 0.6) on a conical post on the bridge roof at X +8.7, top 14.2 m; one white radome abaft the bridge at X +2.6..+3.0, port side, centre 10.5 m; a grey sensor ball each side at the bridge foot, X +11.9, y +-4.3, centre 8.2 m",
+    "76 mm gun in a faceted stealth shield on the foredeck: ring centre X +15.4, shield X +13.25 .. +16.75, top 8.1 m; in the 'turret' group",
+    "open launcher well amidships, X -13.2 .. -0.4, 10.5 m wide, holding 16 box launchers in four transverse banks of 2 x 2 firing athwartships; fore to aft: ribbed racks (HF-3), plain boxes (HF-2), ribbed racks, plain boxes [M1][A1]",
+    "Phalanx CIWS (white radome over the mount, top about 13.0 m) at X -14.7 on its own block X -17.0 .. -13.2 whose top (8.55 m) is 1.1 m below the well walls' top (9.65 m), a low bulwark round the mount",
+    "flight deck aft, 4.0 m up, full width, X -30.2 .. -17.0, rails round it, a landing square X -27.6 .. -19.6 by y +-3.9 with a dashed line ATHWARTSHIPS at X -23; hidden 'helipad' node at (-23.6, 0, 4.0)",
+    "two flush roller shutters in each side below the well: X -4.3 .. -1.4 and X -10.3 .. -7.4, z 3.45 .. 6.8, hull grey a step darker with a thin dark outline; a small plain flush hatch X -15.2 .. -13.5, z 3.3 .. 5.0",
+    "waterjet outlets: two housings in each demihull's transom (X -29.55 .. -30.1, y = +-5.2 +-0.72, centre 0.4 m up)",
+    "plain light grey over a darker grey lower hull (to the chine at 2.6 m), black boot line 0-0.3 m: no chevron camouflage, no number"
+  ],
+  "not_confirmed": [
+    "everything aft of X -1.5 in the side view is hidden by smoke in [N2]: stations there are from the oblique aerial [A1] and the model photo [M1] (about +-0.7 m)",
+    "no orthographic PLAN exists on Commons / Wikipedia: half-breadths are from [A1] and [B1] and the published 14.0 m beam; the top view is not gated",
+    "underwater form of the demihulls and the tunnel roof height (wet deck drawn 2.6 m up); the published 2.3 m draught is taken as the keel",
+    "stem blade: tip station from ONE oblique photograph [B1] (prow x 1026, tip x 1138, 18.2 px/m along and 25.1 px/m across at 54 deg off the beam, blade taken 4.77 m off the centre line): X +29.5 +-0.7. The traced lower edge of [N2] between X +27 and +30 is sea and spray, not hull",
+    "the centre bow's keel line abaft the anchor",
+    "the banks' stations inside the well (+-1 m; the plain-box banks are drawn at X -4.1 and -10.0, the shutters they exhaust through at -2.85 and -8.85: the well may begin about 1 m further forward than drawn), the canisters' elevation, and which of ribbed / plain is HF-2 or HF-3",
+    "the flight deck height (4.0 m, from [M1] ratios) and the number of waterjets per hull (two drawn)",
+    "the Phalanx block's step (1.1 m, from the [B1] stern crop at about 25 px/m)",
+    "positions and counts of small fittings (rails, bitts, hatches, rafts, vents)"
+  ],
+  "limits": {
+    "plan_fill_max": {
+      "value": 0.95,
+      "reason": "wave-piercing catamaran: full-width rectangle for its after two thirds, and the bluff bow shell measured on [B1] is wider than the deck edge to X +27; the 0.93 ceiling is meant for box monohulls (reviewed 2026-11 pilot, round 2)"
+    }
+  }
+}
