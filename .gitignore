@@ -4,3 +4,5 @@ node_modules/
 __pycache__/
 # reference photos and drawings are fetched per machine (third-party images; see specs/README.md)
 tools/model3d/specs/ref/
+gate_out/
+_pilot_chk.html
