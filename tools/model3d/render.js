@@ -17,11 +17,33 @@
      --extra FILE.js   a model file not in index.html yet (repeatable); loaded
                        after the index model scripts of the working tree (and
                        of --root; never of --before)
-     --views LIST      side,top,front,game (default all four, in that order)
+     --views LIST      comma list of views, in order (default side,top,front,game).
+                       Named: side top front game rear under quarter rquarter;
+                       free: az:A/el:E (degrees, see "The views" below), e.g.
+                       --views side,game,az:200/el:20
+     --view A,E        one more free view, azimuth A elevation E (repeatable).
+                       Without --views, only the --view views are drawn.
      --size WxH        one panel, default 900x520
      --gear up|down|asbuilt   hide / show nodes named "gear" (default asbuilt)
-     --ground Z|none   ground plane height in model metres (default: 0 for a
-                       ship, else the lower of 0 and the model's lowest point)
+     --ground Z|none|per   ground plane height in model metres. Default: 0 for
+                       a ship; else the lower of 0 and the model's lowest
+                       point, and in compare mode "per": EACH side stands on
+                       its own ground at its own lowest point (labelled), so
+                       an old model built below z 0 does not make the new one
+                       look as if it floats. Never drawn in a view from below.
+     --focus x0,y0,z0,x1,y1,z1   frame every view on this box (model metres):
+                       a zoom on one part, at any view; the game view's as-played
+                       inset is still the whole model
+     --pitch DEG       stand the model DEG nose up about its Y axis (as a reference's pitch_deg)
+     --hide A,B        hide the nodes with these names (as a reference's "hide")
+     --raw --scale S --centre H,V
+                       no sheet: one bare panel per view, OUT_<view>.png, model
+                       alone on a transparent background at S px/m with the view
+                       point (H, V) - the view's own axes, metres - in the panel's
+                       middle (what overlay.py lays over a photograph)
+     --as KEY          the unit-table key for category and as-played size, for
+                       a model registered under another key (a wrapper);
+                       without it a key that CONTAINS a unit key finds it
      --keep-open MS    debugging: leave the page up
    output
      OUT.png   the sheet.   OUT.json   per-view numbers (see README / below)
@@ -40,14 +62,29 @@
    and the SIDE and FRONT views bring the sun round to 45 deg off the
    viewer's left shoulder, or the face being inspected would be in shadow.
 
-   The views (model space +X nose, +Y left, +Z up), all orthographic:
-     side   from starboard, nose to the right
-     top    from above, nose to the right, port side up
-     front  from dead ahead
-     game   azimuth 35 deg off the bow to port, elevation 49.3 deg (the RTS
-            camera's pitch, 0.86 rad). The game camera is a 40 deg
-            perspective lens a few hundred metres away, which over one unit
-            is orthographic to within a per cent.
+   The views (model space +X nose, +Y left, +Z up), all orthographic. A view
+   is an azimuth A, measured from the bow round toward PORT (0 = dead ahead,
+   90 = port beam, 180 = dead astern, 270 or -90 = starboard beam), and an
+   elevation E above the horizon (90 = straight down, -90 = straight up).
+     side     A -90, E 0     from starboard, nose to the right
+     top      A -90, E 90    from above, nose to the right, port side up
+     front    A 0,   E 0     from dead ahead
+     rear     A 180, E 0     from dead astern (port on the left)
+     under    A -90, E -90   from below, nose to the right, STARBOARD up
+     quarter  A -45, E 12    starboard bow quarter from eye height
+     rquarter A -135, E 15   starboard stern quarter
+     game     A 35,  E 49.3  the RTS camera's pitch (0.86 rad) off the port
+              bow. The game camera is a 40 deg perspective lens a few
+              hundred metres away, which over one unit is orthographic to
+              within a per cent.
+     az:A/el:E   any other. Screen right is the horizontal direction 90 deg
+              clockwise of the line of sight seen from above.
+   Views from below the horizon (E < 0) leave the ground out, and from below
+   -20 deg the sun is turned to shine from underneath (an inspection light:
+   the game never lights a belly like that).
+   The model's own root transform is kept: the stand-up turn is put on a
+   group around it (the game's render3d getModel sets rotation.x on the root
+   itself, so a root rotation is lost there; OUT.json says when there is one).
    The game panel carries an inset, "as played": the model at the pixel size
    it has on a 1080-line screen at the game's opening zoom (cam.dist 430),
    magnified x3 with no smoothing. Its numbers are the honest ones for "can
@@ -76,13 +113,21 @@ const MIME = { ".js": "application/javascript", ".html": "text/html", ".png": "i
                ".json": "application/json", ".css": "text/css", ".svg": "image/svg+xml" };
 
 function parseArgs(argv) {
-  const o = { extra: [], views: ["side", "top", "front", "game"], size: [900, 520], gear: "asbuilt", ground: null, pos: [] };
+  const o = { extra: [], views: null, view: [], size: [900, 520], gear: "asbuilt", ground: null, pos: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--root") o.root = argv[++i];
     else if (a === "--before") o.before = argv[++i];
     else if (a === "--extra") o.extra.push(path.resolve(argv[++i]));
     else if (a === "--views") o.views = argv[++i].split(",").filter(Boolean);
+    else if (a === "--view") o.view.push(argv[++i]);
+    else if (a === "--as") o.as = argv[++i];
+    else if (a === "--focus") o.focus = argv[++i].split(",").map(Number);
+    else if (a === "--pitch") o.pitch = +argv[++i];
+    else if (a === "--hide") o.hide = argv[++i].split(",").filter(Boolean);
+    else if (a === "--raw") o.raw = true;
+    else if (a === "--scale") o.scale = +argv[++i];
+    else if (a === "--centre" || a === "--center") o.centre = argv[++i].split(",").map(Number);
     else if (a === "--size") o.size = argv[++i].split("x").map(Number);
     else if (a === "--gear") o.gear = argv[++i];
     else if (a === "--ground") o.ground = argv[++i];
@@ -90,10 +135,49 @@ function parseArgs(argv) {
     else if (a === "-h" || a === "--help") o.help = true;
     else o.pos.push(a);
   }
+  if (!o.views) o.views = o.view.length ? [] : ["side", "top", "front", "game"];
+  o.view.forEach(v => { const m = String(v).split(","); o.views.push("az:" + m[0] + "/el:" + (m[1] == null ? 0 : m[1])); });
   return o;
 }
+
+/* a view token -> { n (name), label, az, el, r, u, t } (model-space screen right, up, toward the viewer) */
+const NAMED = {
+  side:     { az: -90,  el: 0,    label: "SIDE - from starboard, nose right",
+              r: [1, 0, 0], u: [0, 0, 1], t: [0, -1, 0] },
+  top:      { az: -90,  el: 90,   label: "TOP - nose right, port up",
+              r: [1, 0, 0], u: [0, 1, 0], t: [0, 0, 1] },
+  front:    { az: 0,    el: 0,    label: "FRONT - from dead ahead",
+              r: [0, 1, 0], u: [0, 0, 1], t: [1, 0, 0] },
+  rear:     { az: 180,  el: 0,    label: "REAR - from dead astern, port left",
+              r: [0, -1, 0], u: [0, 0, 1], t: [-1, 0, 0] },
+  under:    { az: -90,  el: -90,  label: "UNDER - from below, nose right, starboard up",
+              r: [1, 0, 0], u: [0, -1, 0], t: [0, 0, -1] },
+  quarter:  { az: -45,  el: 12,   label: "QUARTER - starboard bow, az -45 el 12" },
+  rquarter: { az: -135, el: 15,   label: "REAR QUARTER - starboard stern, az -135 el 15" },
+  game:     { az: 35,   el: 49.3, label: "GAME CAMERA (35 az, 49.3 el)" },
+};
+function viewSpec(tok) {
+  let v;
+  if (NAMED[tok]) v = Object.assign({ n: tok }, NAMED[tok]);
+  else {
+    const m = String(tok).match(/^az:?(-?[\d.]+)[\/,_]el:?(-?[\d.]+)$/i);
+    if (!m) throw new Error("unknown view '" + tok + "' (named: " + Object.keys(NAMED).join(" ") + "; or az:A/el:E)");
+    const az = +m[1], el = +m[2];
+    v = { n: "az" + az + "_el" + el, az, el, label: "AZ " + az + " / EL " + el + " (az from the bow toward port)" };
+  }
+  if (!v.t) {
+    const a = v.az * Math.PI / 180, e = v.el * Math.PI / 180;
+    const t = [Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e)];
+    const r = [-Math.sin(a), Math.cos(a), 0];
+    const u = [t[1] * r[2] - t[2] * r[1], t[2] * r[0] - t[0] * r[2], t[0] * r[1] - t[1] * r[0]];
+    const cl = (x) => Math.abs(x) < 1e-12 ? 0 : x;
+    v.t = t.map(cl); v.r = r.map(cl); v.u = u.map(cl);
+  }
+  return v;
+}
 const USAGE = "usage: node tools/model3d/render.js KEY TEAM OUT.png [--root DIR] [--before DIR] [--extra FILE]... " +
-              "[--views side,top,front,game] [--size 900x520] [--gear up|down|asbuilt] [--ground Z|none]";
+              "[--views side,top,front,game,rear,under,quarter,rquarter,az:A/el:E] [--view A,E]... [--size 900x520] " +
+              "[--gear up|down|asbuilt] [--ground Z|none|per] [--as UNITKEY]";
 
 function scriptsOf(root) {
   let html;
@@ -136,9 +220,22 @@ function pageMain() {
     const t0 = performance.now();
     model = entry.build(THREE, typeof Models3D !== "undefined" ? Models3D : undefined, { team: teamHex });
     info.buildMs = Math.round(performance.now() - t0);
+    if (!model || !model.isObject3D) throw new Error(P.key + ".build returned " + model + ", not an Object3D");
+    {
+      const r = model.rotation, p = model.position, s = model.scale;
+      if (Math.abs(r.x) + Math.abs(r.y) + Math.abs(r.z) > 1e-6 || Math.abs(p.x) + Math.abs(p.y) + Math.abs(p.z) > 1e-6 ||
+          Math.abs(s.x - 1) + Math.abs(s.y - 1) + Math.abs(s.z - 1) > 1e-6)
+        info.rootTransform = { rotation: [r.x, r.y, r.z], position: [p.x, p.y, p.z], scale: [s.x, s.y, s.z],
+          note: "kept here; the game's render3d getModel overwrites the root's rotation.x" };
+    }
     info.teamHex = teamHex; info.len = entry.len || null;
     if (P.gear === "up" || P.gear === "down")
       model.traverse(o => { if (o.name === "gear") o.visible = P.gear === "down"; });
+    if (P.hide && P.hide.length) model.traverse(o => { if (P.hide.indexOf(o.name) >= 0) o.visible = false; });
+    if (P.pitch) {
+      /* nose up by P.pitch degrees about the model's Y axis through the origin (model space z-up) */
+      const g = new THREE.Group(); g.rotation.y = -P.pitch * Math.PI / 180; g.add(model); model = g;
+    }
     /* render3d prepModel, verbatim */
     model.traverse(o => {
       if (!o.isMesh) return;
@@ -158,7 +255,7 @@ function pageMain() {
     let meshes = 0, mats = new Set(), texs = new Set();
     /* and its extent on each view's screen axes, so a panel is framed on
        what the view shows, not on the corners of the box */
-    const VB = ["side", "top", "front", "game"].map(n => ({ n, B: basis(n), r: [Infinity, -Infinity], u: [Infinity, -Infinity] }));
+    const VB = P.views.map(vs => ({ n: vs.n, B: vs, r: [Infinity, -Infinity], u: [Infinity, -Infinity] }));
     model.traverseVisible(o => {
       if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
       meshes++;
@@ -176,7 +273,14 @@ function pageMain() {
     if (box.isEmpty()) throw new Error(P.key + " built no visible geometry");
     info.bbox = { min: box.min.toArray(), max: box.max.toArray() };
     info.meshes = meshes; info.materials = mats.size; info.textures = texs.size;
-    const def = typeof UNITS !== "undefined" ? UNITS[P.key] : null;
+    /* the unit row: --as, the key itself, or the longest unit key the key contains (a wrapper) */
+    let ukey = P.as || P.key, def = typeof UNITS !== "undefined" ? UNITS[ukey] : null;
+    if (!def && typeof UNITS !== "undefined" && !P.as) {
+      let best = null;
+      for (const k in UNITS) if (k.length > 3 && P.key.indexOf(k) >= 0 && (!best || k.length > best.length)) best = k;
+      if (best) { ukey = best; def = UNITS[best]; }
+    }
+    info.unitKey = def ? ukey : null;
     info.cat = def ? def.cat : null; info.layer = def ? def.layer : null;
     /* how long it is on screen in the game: render3d getModel's targetLen
        (world units) through a 40 deg lens at cam.dist, on 1080 lines */
@@ -235,8 +339,10 @@ function pageMain() {
     hemi = new THREE.HemisphereLight(0x93a8c0, 0x2c332b, 0.5);
     scene.add(hemi);
     wrap = new THREE.Group();
-    model.rotation.x = -Math.PI / 2;
-    wrap.add(model); scene.add(wrap);
+    /* the stand-up turn goes on a group of its own: the model's root keeps its own transform */
+    const turn = new THREE.Group();
+    turn.rotation.x = -Math.PI / 2;
+    turn.add(model); wrap.add(turn); scene.add(wrap);
     /* neutral ground: a slab whose top is the ground plane, so the level
        views show it as a band under the model */
     const R = frame.radius;
@@ -289,14 +395,9 @@ function pageMain() {
   }
 
   function basis(view) {
-    if (view === "side") return { r: [1, 0, 0], u: [0, 0, 1], t: [0, -1, 0] };
-    if (view === "top") return { r: [1, 0, 0], u: [0, 1, 0], t: [0, 0, 1] };
-    if (view === "front") return { r: [0, 1, 0], u: [0, 0, 1], t: [1, 0, 0] };
-    const a = 35 * Math.PI / 180, e = 49.3 * Math.PI / 180;
-    const t = [Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e)];
-    const rl = Math.hypot(t[1], t[0]), r = [-t[1] / rl, t[0] / rl, 0];
-    const u = [t[1] * r[2] - t[2] * r[1], t[2] * r[0] - t[0] * r[2], t[0] * r[1] - t[1] * r[0]];
-    return { r, u, t };
+    const v = P.views.filter(x => x.n === view)[0];
+    if (!v) throw new Error("view " + view + " was not set up");
+    return v;
   }
   /* the sun, in model space, for a view: elevation as the game's (asin 0.774);
      azimuth relative to the camera as documented at the top of render.js */
@@ -305,10 +406,13 @@ function pageMain() {
     let camAz, rel;
     if (view === "game") { camAz = 35 * Math.PI / 180; rel = 107 * Math.PI / 180; }
     else if (view === "top") { camAz = -Math.PI / 4; rel = 107 * Math.PI / 180; }
+    else if (Math.abs(B.t[2]) > 0.999) { camAz = B.az * Math.PI / 180; rel = 45 * Math.PI / 180; }
     else { camAz = Math.atan2(B.t[1], B.t[0]); rel = 45 * Math.PI / 180; }
     /* "rel round from the camera, to the viewer's left": for a viewer looking along -t, left is -r */
     const az = camAz - rel;
-    return [ce * Math.cos(az), ce * Math.sin(az), Math.sin(el)];
+    /* from well below: an inspection light from underneath */
+    const up = (B.el != null && B.el < -20) ? -1 : 1;
+    return [ce * Math.cos(az), ce * Math.sin(az), up * Math.sin(el)];
   }
   function extentAlong(box, d) {
     let lo = Infinity, hi = -Infinity;
@@ -327,7 +431,8 @@ function pageMain() {
     const cam = new THREE.OrthographicCamera(-halfW - sh, halfW - sh, halfH, -halfH, 0.1, R * 12);
     /* centre the frame box in the panel */
     const er = frame.ext[view].r, eu = frame.ext[view].u;
-    const cr = (er[0] + er[1]) / 2, cu = (eu[0] + eu[1]) / 2, ct = c[0] * B.t[0] + c[1] * B.t[1] + c[2] * B.t[2];
+    const fc = frame.centre && frame.centre[view];
+    const cr = fc ? fc[0] : (er[0] + er[1]) / 2, cu = fc ? fc[1] : (eu[0] + eu[1]) / 2, ct = c[0] * B.t[0] + c[1] * B.t[1] + c[2] * B.t[2];
     const centre = [B.r[0] * cr + B.u[0] * cu + B.t[0] * ct, B.r[1] * cr + B.u[1] * cu + B.t[1] * ct, B.r[2] * cr + B.u[2] * cu + B.t[2] * ct];
     const eye = [centre[0] + B.t[0] * R * 5, centre[1] + B.t[1] * R * 5, centre[2] + B.t[2] * R * 5];
     cam.position.copy(M2T(eye)); cam.up.copy(M2T(B.u)); cam.lookAt(M2T(centre)); cam.updateMatrixWorld(true);
@@ -341,7 +446,7 @@ function pageMain() {
     renderer.setSize(W, H, false);
     const gl = renderer.getContext();
     /* A: the picture - ground, shadows, a neutral backdrop */
-    if (ground) ground.visible = true;
+    if (ground) ground.visible = !(B.el != null && B.el < 0);
     scene.background = new THREE.Color(0xb9c0c6);
     renderer.shadowMap.autoUpdate = true; renderer.shadowMap.needsUpdate = true;
     renderer.render(scene, cam);
@@ -362,20 +467,33 @@ function pageMain() {
     const calls = renderer.info.render.calls, tris = renderer.info.render.triangles;
     const b = new Uint8Array(W * H * 4);
     gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, b);
+    let urlB = null;
+    if (frame.raw) {
+      const c3 = document.createElement("canvas"); c3.width = W; c3.height = H;
+      c3.getContext("2d").drawImage(cv, 0, 0);
+      urlB = c3.toDataURL("image/png");
+    }
     const m = measure(a, b, W, H, Math.max(4, Math.round(W * H * 0.00003)));
     m.px_per_m = +pxPerM.toFixed(3); m.draw_calls = calls; m.triangles = tris;
-    return { url, m };
+    return { url, urlB, m };
   }
 
   window.__render = function (opts) {
     /* opts: { views, W, H, box:{min,max} (framing, shared in compare mode), ground } */
     const box = opts.box, c = [(box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2, (box.min[2] + box.max[2]) / 2];
     const radius = 0.5 * Math.hypot(box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]);
-    const frame = { box, c, radius, ground: opts.ground, ext: opts.ext };
+    const frame = { box, c, radius, ground: opts.ground, ext: opts.ext, raw: !!opts.raw, centre: opts.centre || null };
+    ground = null;
     setup(frame);
     const res = { views: {}, images: {} };
     for (const view of opts.views) {
       const er = opts.ext[view].r, eu = opts.ext[view].u;
+      if (opts.raw) {
+        /* a bare panel at a given scale and centre, model alone on a clear background: for overlay.py */
+        const s = shoot(view, opts.W, opts.H, frame, opts.scale, false);
+        res.views[view] = s.m; res.images[view] = s.urlB;
+        continue;
+      }
       if (view !== "game") {
         const pxPerM = Math.min(opts.W * 0.90 / (er[1] - er[0]), opts.H * 0.84 / (eu[1] - eu[0]));
         const s = shoot(view, opts.W, opts.H, frame, pxPerM, true);
@@ -486,8 +604,9 @@ async function main() {
   if (o.help || o.pos.length < 3) { console.log(USAGE); process.exit(o.help ? 0 : 2); }
   const [key, team, outPng] = o.pos;
   if (!/\.png$/i.test(outPng)) throw new Error("OUT must end in .png (got " + outPng + ")");
-  const bad = o.views.filter(v => ["side", "top", "front", "game"].indexOf(v) < 0);
-  if (bad.length) throw new Error("unknown view " + bad.join(","));
+  const VS = o.views.map(viewSpec);
+  { const seen = {}; VS.forEach(v => { if (seen[v.n]) throw new Error("view " + v.n + " twice"); seen[v.n] = 1; }); }
+  o.views = VS.map(v => v.n);
   const repo = path.resolve(__dirname, "..", "..");
   const T0 = Date.now();
   /* the sides: one (plain) or two (compare) */
@@ -499,7 +618,8 @@ async function main() {
   for (const s of sides) {
     mounts[s.id] = { dir: s.dir };
     const scripts = scriptsOf(s.dir).map(p => "/" + s.id + "/" + p).concat(s.extra.map((f, i) => "/x/" + i + ".js"));
-    pages["/page_" + s.id] = pageHtml({ key, team, label: s.dir, gear: o.gear }, scripts);
+    pages["/page_" + s.id] = pageHtml({ key, team, label: s.dir, gear: o.gear, views: VS, as: o.as || null,
+                                        pitch: o.pitch || 0, hide: o.hide || [] }, scripts);
   }
   pages["/blank"] = "<!doctype html><html><body><script>window.__errs=[];window.__P={};(" + pageMain.toString() + ")();</script></body></html>";
   const srv = await serve(mounts, pages);
@@ -526,29 +646,79 @@ async function main() {
       box.min[i] = Math.min(box.min[i], s.info.bbox.min[i]); box.max[i] = Math.max(box.max[i], s.info.bbox.max[i]);
     }
     const ext = {};
-    for (const v of ["side", "top", "front", "game"]) {
+    for (const v of o.views) {
       ext[v] = { r: [Infinity, -Infinity], u: [Infinity, -Infinity] };
       for (const s of sides) for (const ax of ["r", "u"]) {
         ext[v][ax][0] = Math.min(ext[v][ax][0], s.info.ext[v][ax][0]); ext[v][ax][1] = Math.max(ext[v][ax][1], s.info.ext[v][ax][1]);
       }
     }
+    if (o.focus) {
+      /* frame every view on this box (model metres) instead of the whole model; camera and light keep the model's */
+      const f = o.focus;
+      if (f.length !== 6 || f.some(x => !isFinite(x))) throw new Error("--focus takes x0,y0,z0,x1,y1,z1");
+      VS.forEach(v => {
+        const e = { r: [Infinity, -Infinity], u: [Infinity, -Infinity] };
+        for (let i = 0; i < 8; i++) {
+          const p = [i & 1 ? f[3] : f[0], i & 2 ? f[4] : f[1], i & 4 ? f[5] : f[2]];
+          const a = p[0] * v.r[0] + p[1] * v.r[1] + p[2] * v.r[2], b = p[0] * v.u[0] + p[1] * v.u[1] + p[2] * v.u[2];
+          e.r[0] = Math.min(e.r[0], a); e.r[1] = Math.max(e.r[1], a); e.u[0] = Math.min(e.u[0], b); e.u[1] = Math.max(e.u[1], b);
+        }
+        ext[v.n] = e;
+      });
+    }
     const after = sides[sides.length - 1];
-    let ground;
+    let ground, perSide = false;
+    const naval = after.info.cat === "naval";
     if (o.ground === "none") ground = null;
-    else if (o.ground != null) ground = +o.ground;
-    else ground = after.info.cat === "naval" ? 0 : Math.min(0, box.min[2]);
-    /* a ship's underwater hull is under the ground slab: frame the level views from just below the waterline */
-    if (ground != null) for (const v of ["side", "front"]) if (ground > ext[v].u[0]) ext[v].u[0] = ground - (ext[v].u[1] - ground) * 0.10;
+    else if (o.ground === "per" || (o.ground == null && sides.length === 2 && !naval)) {
+      perSide = true;
+      for (const s of sides) s.ground = s.info.bbox.min[2];
+      ground = Math.min.apply(null, sides.map(s => s.ground));
+    }
+    else if (o.ground != null) { ground = +o.ground; if (!isFinite(ground)) throw new Error("--ground takes a number, none or per"); }
+    else ground = naval ? 0 : Math.min(0, box.min[2]);
+    if (!perSide) for (const s of sides) s.ground = ground;
+    /* a ship's underwater hull is under the ground slab: frame the near-level views from just below the
+       waterline (views from below the horizon draw no ground and keep the whole hull) */
+    const gtop = perSide ? Math.max.apply(null, sides.map(s => s.ground)) : ground;
+    if (gtop != null && !o.focus) VS.forEach(v => {
+      if (v.el < 0 || v.el > 30 || v.n === "game") return;
+      /* the lowest the ground line can stand on this view's screen-up axis, under the model's footprint */
+      const e = ext[v.n], uz = v.u[2];
+      if (uz < 0.5) return;
+      let gu = Infinity;
+      for (const x of [box.min[0], box.max[0]]) for (const y of [box.min[1], box.max[1]]) gu = Math.min(gu, gtop * uz + x * v.u[0] + y * v.u[1]);
+      if (gu > e.u[0]) e.u[0] = gu - (e.u[1] - gu) * 0.10;
+    });
     const playPx = after.info.play ? after.info.play.px_at_430 : null;
     const [W, H] = o.size;
+    if (o.raw) {
+      /* bare panels: OUT_<view>.png, transparent where there is no model, at --scale px/m with view
+         point --centre h,v (the view's own axes, metres) in the panel's middle */
+      if (!(o.scale > 0) || !o.centre || o.centre.length !== 2) throw new Error("--raw needs --scale PX_PER_M and --centre H,V");
+      if (sides.length !== 1) throw new Error("--raw draws one model: no --before");
+      const centre = {}; o.views.forEach(v => { centre[v] = o.centre; });
+      const s = sides[0];
+      s.res = await s.page.evaluate((a) => window.__render(a), { views: o.views, W, H, box, ext, ground: null, raw: true, scale: o.scale, centre });
+      const files = {};
+      for (const v of o.views) {
+        const f = outPng.replace(/\.png$/i, "_" + v + ".png");
+        fs.writeFileSync(f, Buffer.from(s.res.images[v].split(",")[1], "base64"));
+        files[v] = path.resolve(f);
+      }
+      fs.writeFileSync(outPng.replace(/\.png$/i, ".json"), JSON.stringify({ key, team, raw: true, panel: [W, H], px_per_m: o.scale,
+        centre_m: o.centre, pitch_deg: o.pitch || 0, hide: o.hide || [], gear: o.gear, files, bbox: s.info.bbox,
+        root_transform: s.info.rootTransform || null, tool: "render.js" }, null, 1));
+      console.log("[render] raw " + o.views.join(",") + " -> " + Object.values(files).join(" ") + " (" + (Date.now() - T0) + " ms)");
+      return;
+    }
     for (const s of sides) {
       const t = Date.now();
-      s.res = await s.page.evaluate((a) => window.__render(a), { views: o.views, W, H, box, ext, ground, playPx });
+      s.res = await s.page.evaluate((a) => window.__render(a), { views: o.views, W, H, box, ext, ground: s.ground, playPx });
       s.renderMs = Date.now() - t;
     }
     /* compose */
-    const VT = { side: "SIDE - from starboard, nose right", top: "TOP - nose right, port up", front: "FRONT - from dead ahead",
-                 game: "GAME CAMERA (35 az, 49.3 el)" };
+    const VT = {}; VS.forEach(v => { VT[v.n] = v.label; });
     const cap = (m) => "detail: sobel " + m.sobel_mean.toFixed(2) + "  edges " + (m.edge_share * 100).toFixed(1) + "%  regions " + m.regions +
       "  (" + m.model_px + " px)";
     const cells = [], cmp = sides.length === 2;
@@ -557,6 +727,7 @@ async function main() {
       sides.forEach((s, c) => {
         const m = s.res.views[v];
         let caption = cap(m), warn = false;
+        if (perSide && r === 0) caption = "ground " + s.ground.toFixed(2) + " (own low pt) | " + caption.replace("detail: ", "");
         if (cmp && c === 1) {
           const b = sides[0].res.views[v], k = b.sobel_mean > 0 ? m.sobel_mean / b.sobel_mean : null;
           ratios[v] = { sobel: k == null ? null : +k.toFixed(3), regions: b.regions ? +(m.regions / b.regions).toFixed(3) : null };
@@ -578,6 +749,9 @@ async function main() {
       if (a && b) ratios.play = { sobel: b.sobel_mean > 0 ? +(a.sobel_mean / b.sobel_mean).toFixed(3) : null, regions: b.regions ? +(a.regions / b.regions).toFixed(3) : null };
     }
     const head = sides.map(s => (s.label ? (s.label + "       ").slice(0, 7) + " " : "") + s.dir + (s.extra.length ? " + " + s.extra.map(f => path.basename(f)).join(",") : "") +
+      (s.ground != null ? "   ground z " + s.ground.toFixed(2) + (perSide ? " (own lowest point)" : "") : "") +
+      (s.info.bbox.min[2] > 0.02 && !naval ? "   LOWEST POINT z +" + s.info.bbox.min[2].toFixed(2) + ": stands above z 0" : "") +
+      (s.info.rootTransform ? "   ROOT TRANSFORM kept (the game overwrites rotation.x)" : "") +
       "   " + s.res.triangles + " tris, " + s.res.draw_calls + " draw calls, " + s.info.materials + " materials, " + s.info.textures + " textures, " +
       (s.info.bbox.max[0] - s.info.bbox.min[0]).toFixed(2) + " x " + (s.info.bbox.max[1] - s.info.bbox.min[1]).toFixed(2) + " x " +
       (s.info.bbox.max[2] - s.info.bbox.min[2]).toFixed(2) + " m");
@@ -587,11 +761,14 @@ async function main() {
                     head, cells, W, H, cols: cmp ? 2 : Math.min(2, o.views.length), rows: cmp ? o.views.length : Math.ceil(o.views.length / 2) };
     const dataUrl = await compPage.evaluate((S) => window.__compose(S), sheet);
     fs.writeFileSync(outPng, Buffer.from(dataUrl.split(",")[1], "base64"));
-    const strip = (s) => ({ root: s.dir, extra: s.extra, len: s.info.len, cat: s.info.cat, bbox: s.info.bbox, team: s.info.teamHex,
+    const strip = (s) => ({ root: s.dir, extra: s.extra, len: s.info.len, cat: s.info.cat, unit_key: s.info.unitKey, ground: s.ground,
+      root_transform: s.info.rootTransform || null, bbox: s.info.bbox, team: s.info.teamHex,
       triangles: s.res.triangles, draw_calls: s.res.draw_calls, meshes: s.info.meshes, materials: s.info.materials, textures: s.info.textures,
       play: s.info.play, views: s.res.views, build_ms: s.info.buildMs, load_ms: s.loadMs, render_ms: s.renderMs, gl: s.res.gl,
       page_errors: s.info.errors || [], console_errors: s.console });
-    const json = { key, team, png: path.resolve(outPng), panel: [W, H], views: o.views, ground, tool: "render.js" };
+    const json = { key, team, png: path.resolve(outPng), panel: [W, H], views: o.views,
+                   view_specs: VS.map(v => ({ n: v.n, az: v.az, el: v.el, r: v.r, u: v.u, t: v.t })),
+                   ground, ground_per_side: perSide, tool: "render.js" };
     if (cmp) { json.before = strip(sides[0]); json.after = strip(sides[1]); json.ratio = ratios; }
     else Object.assign(json, strip(after));
     json.total_ms = Date.now() - T0;

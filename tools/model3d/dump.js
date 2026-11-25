@@ -45,6 +45,10 @@
                 the optional colour is the mean of the triangle's vertex colours
      nodes      named objects and their world positions - the engine animates
                 turret, roadwheel, rotor, rotordisc, tailrotor, gear, ...
+     meshes     [{ path, t0, t1 }]: tris[t0..t1) came from the mesh at path
+                (names of the root's descendants joined by "/", an unnamed
+                object by its type) - so a tool can hide the "gear" group or
+                find a named part's triangles
      stats      counts, the visible bbox, the Box3.setFromObject extent the
                 engine scales by, NaN and degenerate triangles
    ========================================================================== */
@@ -700,7 +704,7 @@ function __m3dBuild(kind, key, team) {
 
   var vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
   var mW = new THREE.Matrix4(), mI = new THREE.Matrix4();
-  var heavy = [];
+  var heavy = [], meshRanges = [];
 
   function emitMesh(o, visible) {
     var g = o.geometry;
@@ -769,6 +773,7 @@ function __m3dBuild(kind, key, team) {
       }
     }
     heavy.push([tris.length - before, pathOf(o)]);
+    if (tris.length > before) meshRanges.push({ path: pathOf(o), t0: before, t1: tris.length });
   }
 
   (function walk(o, visible) {
@@ -850,7 +855,7 @@ function __m3dBuild(kind, key, team) {
   stats.notes = notes;
 
   return { kind: kind, key: key, team: team, teamHex: teamHex, entry: entry, stats: stats,
-           mats: mats, nodes: nodes, tris: tris, issues: issues, notes: notes };
+           mats: mats, nodes: nodes, tris: tris, meshes: meshRanges, issues: issues, notes: notes };
 }
 
 function __m3dDump(kind, key, team, out) {
@@ -861,7 +866,8 @@ function __m3dDump(kind, key, team, out) {
     ',"teamColor":' + JSON.stringify(R.teamHex) + ',"len":' + JSON.stringify(R.entry.len || null) +
     ',"root":' + JSON.stringify(__m3d.root) + ',"extra":' + JSON.stringify(__m3d.extra) +
     ',\n"stats":' + JSON.stringify(stats) + ',\n"materials":' + JSON.stringify(R.mats) +
-    ',\n"nodes":' + JSON.stringify(R.nodes.slice(0, 2000)) + ',\n"tris":[\n');
+    ',\n"nodes":' + JSON.stringify(R.nodes.slice(0, 2000)) +
+    ',\n"meshes":' + JSON.stringify(R.meshes) + ',\n"tris":[\n');
   var CH = 2000, tris = R.tris;
   for (var i = 0; i < tris.length; i += CH)
     parts.push(tris.slice(i, i + CH).map(function (r) { return JSON.stringify(r); }).join(",\n") + (i + CH < tris.length ? ",\n" : ""));
