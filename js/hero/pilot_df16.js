@@ -296,7 +296,9 @@ var HeroPilotDf16 = (function () {
       K.box(pg, mx - 0.03, mx + 0.03, my - 0.10, my + 0.10, 2.22, 2.46);
       K.box(K.pen("metal", "chrome"), mx - 0.034, mx - 0.03, my - 0.09, my + 0.09, 2.55, 2.95);
     });
-    K.disc(pg, [7.44, -(HW + 0.12), 3.02], [1, 0, 0], 0.13, 10);                                          /* the round spot mirror, starboard (T1) */
+    /* the round spot mirror, starboard (T1), on an arm from the frame tube (it stood 5 cm clear of anything) */
+    K.tube(pd, [7.36, -(HW + 0.30), 3.02], [7.415, -(HW + 0.12), 3.02], 0.014, 0.014, 4, false);
+    K.disc(pg, [7.415, -(HW + 0.12), 3.02], [1, 0, 0], 0.13, 10);
     /* the quarter windows round the corners and the windscreen's two panes (T1) */
     [1, 3].forEach(function (f) { CB.panel(pd, f, 0.10, 0.90, 2.20, 2.97, 0.008); CB.panel(gl, f, 0.16, 0.84, 2.25, 2.93, 0.016); });
     CB.panel(pd, 2, 0.02, 0.98, 2.19, 2.99, 0.008);
