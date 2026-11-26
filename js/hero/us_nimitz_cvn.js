@@ -109,6 +109,16 @@
    exhaust streaks up the catapults, oil stains over the parking areas and
    a darker tie-down grid. NOT CONFIRMED: the scorch and stain layout.
 
+   GATE FIXES (2026-11-26): the seven deck-edge whips stood in the air
+   (up to 2.8 m clear): each now stands on a hinged foot at the end of an
+   outrigger from the catwalk, with a stay to the gallery face (the one on
+   lift 2 moved to x -5). Safety nets now hang from the catwalk's outer
+   edge to a frame tube; raft racks have hangers; platform rails have
+   stanchions. Hidden coplanar layers are no longer drawn:
+   the hull loft's top under the flight deck, the deck's underside over
+   the hull (only the overhang is kept), the caps of the island's ledges,
+   bands and stacked tiers. Spec: tools/model3d/specs/nato_e00_carrier.json.
+
    Model space: +X bow, +Y port, +Z up. Real metres, waterline z = 0,
    keel z = -11.3, flight deck z = 19.4. render3d.js scales by the X extent,
    which is the 332.8 m flight deck: nothing sticks out past either end.
@@ -303,8 +313,11 @@ var HeroNimitzCVN = (function () {
     return place(THREE, g, x, y, z);
   }
 
-  /* a closed frustum on a convex plan, top scaled about the centroid      */
-  function frustum(THREE, pts, zb, zt, sBot, sTop) {
+  /* a closed frustum on a convex plan, top scaled about the centroid.
+     caps: 1 the top, 2 the bottom, 3 both (default); a block that stands
+     on a deck or on the tier under it drops its hidden bottom (2026-11-26) */
+  function frustum(THREE, pts, zb, zt, sBot, sTop, caps) {
+    if (caps === undefined) caps = 3;
     pts = ccw(pts);
     var n = pts.length, cx = 0, cy = 0, i;
     for (i = 0; i < n; i++) { cx += pts[i][0]; cy += pts[i][1]; }
@@ -329,10 +342,12 @@ var HeroNimitzCVN = (function () {
       tri(b0, t1, t0, [u0, zb * K], [u1, zt * K], [u0, zt * K]);
     }
     for (i = 1; i < n - 1; i++) {
-      tri([T[0][0], T[0][1], zt], [T[i][0], T[i][1], zt], [T[i + 1][0], T[i + 1][1], zt],
-          [T[0][0] * K, T[0][1] * K], [T[i][0] * K, T[i][1] * K], [T[i + 1][0] * K, T[i + 1][1] * K]);
-      tri([B[0][0], B[0][1], zb], [B[i + 1][0], B[i + 1][1], zb], [B[i][0], B[i][1], zb],
-          [B[0][0] * K, B[0][1] * K], [B[i + 1][0] * K, B[i + 1][1] * K], [B[i][0] * K, B[i][1] * K]);
+      if (caps & 1)
+        tri([T[0][0], T[0][1], zt], [T[i][0], T[i][1], zt], [T[i + 1][0], T[i + 1][1], zt],
+            [T[0][0] * K, T[0][1] * K], [T[i][0] * K, T[i][1] * K], [T[i + 1][0] * K, T[i + 1][1] * K]);
+      if (caps & 2)
+        tri([B[0][0], B[0][1], zb], [B[i + 1][0], B[i + 1][1], zb], [B[i][0], B[i][1], zb],
+            [B[0][0] * K, B[0][1] * K], [B[i + 1][0] * K, B[i + 1][1] * K], [B[i][0] * K, B[i][1] * K]);
     }
     var g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -349,6 +364,40 @@ var HeroNimitzCVN = (function () {
     return a < 0 ? pts.slice().reverse() : pts;
   }
   function plate(THREE, pts, z0, z1) { return frustum(THREE, pts, z0, z1, 1, 1); }
+  /* a band proud of a block's face: the outer wall scaled sB at zb and sT at
+     zt about the plan's centroid, and the two rims back to the plating (at
+     scale sI, default 1); the inner wall and the caps lie inside the block */
+  function band(THREE, pts, zb, zt, sB, sT, sI) {
+    if (sI === undefined) sI = 1;
+    pts = ccw(pts);
+    var n = pts.length, cx = 0, cy = 0, i, K = 1 / 16, per = 0, pos = [], uv = [];
+    for (i = 0; i < n; i++) { cx += pts[i][0]; cy += pts[i][1]; }
+    cx /= n; cy /= n;
+    function at(q, sc, z) { return [cx + (q[0] - cx) * sc, cy + (q[1] - cy) * sc, z]; }
+    function tri(a, b, c, ua, ub, uc) {
+      pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
+      uv.push(ua[0], ua[1], ub[0], ub[1], uc[0], uc[1]);
+    }
+    for (i = 0; i < n; i++) {
+      var j = (i + 1) % n;
+      var b0 = at(pts[i], sB, zb), b1 = at(pts[j], sB, zb), t0 = at(pts[i], sT, zt), t1 = at(pts[j], sT, zt);
+      var ib0 = at(pts[i], sI, zb), ib1 = at(pts[j], sI, zb), it0 = at(pts[i], sI, zt), it1 = at(pts[j], sI, zt);
+      var L = Math.sqrt((b1[0] - b0[0]) * (b1[0] - b0[0]) + (b1[1] - b0[1]) * (b1[1] - b0[1]));
+      var u0 = per * K, u1 = (per + L) * K; per += L;
+      tri(b0, b1, t1, [u0, zb * K], [u1, zb * K], [u1, zt * K]);
+      tri(b0, t1, t0, [u0, zb * K], [u1, zt * K], [u0, zt * K]);
+      /* the top rim, facing up, and the bottom rim, facing down          */
+      tri(t0, t1, it1, [u0, 0], [u1, 0], [u1, 0.02]);
+      tri(t0, it1, it0, [u0, 0], [u1, 0.02], [u0, 0.02]);
+      tri(b0, ib1, b1, [u0, 0], [u1, 0.02], [u1, 0]);
+      tri(b0, ib0, ib1, [u0, 0], [u0, 0.02], [u1, 0.02]);
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    g.computeVertexNormals();
+    return g;
+  }
   function scalePts(pts, s) {
     var cx = 0, cy = 0, i, n = pts.length, out = [];
     for (i = 0; i < n; i++) { cx += pts[i][0]; cy += pts[i][1]; }
@@ -836,8 +885,34 @@ var HeroNimitzCVN = (function () {
       faces.push({ p: [a, b, c], k: [ka, kb, kc], n: [cxp, cyp, czp], u: [cxp / ar, cyp / ar, czp / ar] });
     }
     function K(ii, jj) { return ii * nR + (jj % nR); }
+    /* the loft's top, the two spans of each ring at FD_BOT (j 0 and nR-1),
+       lies exactly under the flight deck's plate: it is left out, and the
+       deck's underside is cut away over LID, an outline just inside it
+       (and inside the deck's own edge, lift notches included), so neither
+       hidden layer is drawn (2026-11-26)                                   */
+    var LID = [], lidS = [];
+    function lidY(x, side, y) {
+      return Math.min(y, deckHalf(x, side), deckHalf(x - 0.3, side), deckHalf(x + 0.3, side)) - 0.3;
+    }
+    for (i = 0; i < st.length; i++) {
+      var yp = lidY(st[i], 1, rings[i][1][0]), ys = lidY(st[i], -1, -rings[i][nR - 1][0]);
+      if (yp < 0.05 && ys < 0.05) { LID.push([st[i], 0]); continue; }
+      LID.push([st[i], Math.max(yp, 0.05)]);
+      lidS.push([st[i], -Math.max(ys, 0.05)]);
+    }
+    LID = LID.concat(lidS.reverse());
+    /* drop points that lie on the line through their neighbours (within
+       5 cm): the underside's triangulation would leave slivers on them    */
+    for (var pass = 0, gone = 1; gone && pass < 50; pass++) {
+      gone = 0;
+      for (i = 0; i < LID.length && LID.length > 3; i++) {
+        var pa = LID[(i + LID.length - 1) % LID.length], pb = LID[i], pc = LID[(i + 1) % LID.length];
+        var ex = pc[0] - pa[0], ey = pc[1] - pa[1], el = Math.sqrt(ex * ex + ey * ey) || 1;
+        if (Math.abs((pb[0] - pa[0]) * ey - (pb[1] - pa[1]) * ex) / el < 0.05) { LID.splice(i, 1); gone = 1; i--; }
+      }
+    }
     for (i = 0; i < st.length - 1; i++) {
-      for (j = 0; j < nR; j++) {
+      for (j = 1; j < nR - 1; j++) {
         tri(V(i, j), V(i + 1, j), V(i, j + 1), K(i, j), K(i + 1, j), K(i, j + 1));
         tri(V(i, j + 1), V(i + 1, j), V(i + 1, j + 1), K(i, j + 1), K(i + 1, j), K(i + 1, j + 1));
       }
@@ -872,7 +947,7 @@ var HeroNimitzCVN = (function () {
       g.setAttribute("uv", new THREE.Float32BufferAttribute(o.uv, 2));
       return g;
     }
-    return { top: geo(OUT.top), bot: geo(OUT.bot), LEV: LEV, KZ: KZ };
+    return { top: geo(OUT.top), bot: geo(OUT.bot), LEV: LEV, KZ: KZ, LID: LID };
   }
 
   /* ========================================================== weapons
@@ -949,12 +1024,19 @@ var HeroNimitzCVN = (function () {
         B[pp[0]].add(pp[1]);
       });
     }
+    /* a guard rail round a platform whose deck is about 1 m under z: the
+       top rail on stanchions about 5.6 m apart down into the deck (the
+       rails had no stanchions and stood in the air, 2026-11-26)           */
     function ringRail(pts, z) {
       for (var k = 0; k < pts.length; k++) {
         var p0 = pts[k], p1 = pts[(k + 1) % pts.length];
-        var ddx = p1[0] - p0[0], ddy = p1[1] - p0[1];
-        B.M.add(box(THREE, Math.sqrt(ddx * ddx + ddy * ddy), 0.08, 0.08,
-                    (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5, z, 0, 0, Math.atan2(ddy, ddx)));
+        var ddx = p1[0] - p0[0], ddy = p1[1] - p0[1], LL = Math.sqrt(ddx * ddx + ddy * ddy), aa = Math.atan2(ddy, ddx);
+        B.M.add(box(THREE, LL, 0.08, 0.08, (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5, z, 0, 0, aa));
+        var np = Math.max(1, Math.round(LL / 5.6));
+        for (var q = 0; q < np; q++) {
+          var f = q / np;
+          B.M.add(box(THREE, 0.07, 0.07, 1.1, p0[0] + ddx * f, p0[1] + ddy * f, z - 0.53));
+        }
       }
     }
 
@@ -971,7 +1053,42 @@ var HeroNimitzCVN = (function () {
     shp.closePath();
     var dg = new THREE.ExtrudeGeometry(shp, { depth: FD_TH, bevelEnabled: false, curveSegments: 1 });
     dg.translate(0, 0, FD_BOT);
-    Batch.addGroups(dg, [B.D, B.S]);
+    /* the top cap and the edge; the extrusion's bottom cap is replaced by
+       the underside OUTSIDE the hull's top (hg.LID): the overhang that
+       shows from the sea, the rest lies on the hull and is never seen     */
+    (function () {
+      var g = dg.toNonIndexed(), Pq = g.getAttribute("position"), Nq = g.getAttribute("normal"), Uq = g.getAttribute("uv");
+      var gr0 = g.groups.length ? g.groups : [{ start: 0, count: Pq.count, materialIndex: 0 }];
+      gr0.forEach(function (gr) {
+        var Bt = gr.materialIndex ? B.S : B.D;
+        for (var v = gr.start; v < gr.start + gr.count; v += 3) {
+          if (!gr.materialIndex && Nq.getZ(v) < 0) continue;
+          for (var w = v; w < v + 3; w++) {
+            Bt.p.push(Pq.getX(w), Pq.getY(w), Pq.getZ(w));
+            Bt.n.push(Nq.getX(w), Nq.getY(w), Nq.getZ(w));
+            Bt.u.push(Uq.getX(w), Uq.getY(w));
+          }
+        }
+      });
+      var us = new THREE.Shape();
+      us.moveTo(DECK[0][0], DECK[0][1]);
+      for (var q = 1; q < DECK.length; q++) us.lineTo(DECK[q][0], DECK[q][1]);
+      us.closePath();
+      var hole = new THREE.Path();
+      hole.moveTo(hg.LID[0][0], hg.LID[0][1]);
+      for (q = 1; q < hg.LID.length; q++) hole.lineTo(hg.LID[q][0], hg.LID[q][1]);
+      hole.closePath();
+      us.holes.push(hole);
+      var ug = new THREE.ShapeGeometry(us, 1).toNonIndexed();
+      var Pu = ug.getAttribute("position"), Uu = ug.getAttribute("uv");
+      for (var t = 0; t < Pu.count; t += 3) {
+        [t, t + 2, t + 1].forEach(function (w) {
+          B.D.p.push(Pu.getX(w), Pu.getY(w), FD_BOT);
+          B.D.n.push(0, 0, -1);
+          B.D.u.push(Uu.getX(w), Uu.getY(w));
+        });
+      }
+    })();
     LIFTS.forEach(function (L) {
       var ya = Math.min(L.y0, L.y1), yb = Math.max(L.y0, L.y1);
       var ls = new THREE.Shape();
@@ -1028,6 +1145,13 @@ var HeroNimitzCVN = (function () {
         B.S.add(quadG([xa, yf, z1], [xb, yf, z1], [xb, yb, z1], [xa, yb, z1], 0, 0, -1));
         B.S.add(quadG([xa, yf, z0], [xa, yb, z0], [xa, yb, z1], [xa, yf, z1], 1, 0, 0));
         B.S.add(quadG([xb, yf, z0], [xb, yb, z0], [xb, yb, z1], [xb, yf, z1], -1, 0, 0));
+        /* the loft's top and the deck's underside are not drawn over the
+           hull (hullGeo): a dark ceiling inside the hull, 8 m past each
+           end of the pocket and 12 m inboard (as far as a view from 30 deg
+           below runs before it reaches the deck), closes the view up
+           through the pocket's head (2026-11-26)                          */
+        B.K.add(quadG([xa - 8.0, sg * (HB - 12.0), FD_BOT - 0.02], [xb + 8.0, sg * (HB - 12.0), FD_BOT - 0.02],
+                      [xb + 8.0, sg * (HB + 8.0), FD_BOT - 0.02], [xa - 8.0, sg * (HB + 8.0), FD_BOT - 0.02], 0, 0, -1));
         /* a rail across the opening and the gear stowed inside it         */
         B.M.add(box(THREE, xb - xa, 0.08, 0.08, (xa + xb) * 0.5, yf + sg * 0.05, z0 + 1.0));
         B.M.add(box(THREE, (xb - xa) * 0.5, 1.2, 1.4, (xa + xb) * 0.5, yb + sg * 0.7, z0 + 0.7));
@@ -1084,13 +1208,15 @@ var HeroNimitzCVN = (function () {
       if (Math.abs(ox) > 0.75 || reach > LOA * 0.5 - 0.1) continue;
       /* none along the island's foot                                       */
       var mx = (a[0] + b[0]) * 0.5, my = (a[1] + b[1]) * 0.5;
-      B.S.add(box(THREE, L2, 1.5, 0.25, mx + ox * 0.9, my + oy * 0.9, FD_TOP - 1.45, 0, 0, ang));
+      B.S.add(box(THREE, L2, 1.6, 0.25, mx + ox * 0.75, my + oy * 0.75, FD_TOP - 1.45, 0, 0, ang));
       var net = new THREE.BoxGeometry(L2 - 0.4, 2.0, 0.08);
       net.rotateX(0.21);
       net.rotateZ(ang - PI);
-      net.translate(mx + ox * 2.45, my + oy * 2.45, FD_TOP - 0.62);
+      /* the net's inboard edge on the catwalk's outer edge, rising
+         outboard to its frame tube (both stood clear, 2026-11-26)          */
+      net.translate(mx + ox * 2.45, my + oy * 2.45, FD_TOP - 1.15);
       B.K.add(net);
-      B.M.add(box(THREE, L2, 0.08, 0.08, mx + ox * 1.6, my + oy * 1.6, FD_TOP - 0.25, 0, 0, ang));
+      B.M.add(box(THREE, L2 - 0.4, 0.1, 0.1, mx + ox * 3.43, my + oy * 3.43, FD_TOP - 0.92, 0, 0, ang));
     }
 
     /* life-raft canister racks along the gallery                           */
@@ -1104,9 +1230,12 @@ var HeroNimitzCVN = (function () {
         var rx = a3[0] + ex * f + (ey / LE) * 0.5, ry = a3[1] + ey * f - (ex / LE) * 0.5;
         if (rx > ISL_X0 - 10 && rx < ISL_X1 + 2 && ry < 0) continue;
         B.S.add(box(THREE, 3.5, 2.3, 0.15, rx - (ey / LE) * 0.5, ry + (ex / LE) * 0.5, FD_TOP - 2.65, 0, 0, ea));
+        /* the rack's two hangers up to the catwalk over it                  */
+        for (var h3 = -1; h3 <= 1; h3 += 2)
+          B.M.add(box(THREE, 0.12, 0.12, 1.3, rx + (ex / LE) * h3 * 1.6 + (ey / LE) * 0.4, ry + (ey / LE) * h3 * 1.6 - (ex / LE) * 0.4, FD_TOP - 2.0));
         for (var d3 = -1; d3 <= 1; d3++) {
           var can = new THREE.CylinderGeometry(0.5, 0.5, 1.15, 5);
-          can.translate(d3 * 1.1, 0, 0.5);
+          can.translate(d3 * 1.1, 0, 0.4);
           B.W.add(place(THREE, can, rx, ry, FD_TOP - 2.6, 0, 0, ea));
         }
       }
@@ -1120,7 +1249,7 @@ var HeroNimitzCVN = (function () {
     B.K.add(box(THREE, 0.3, 24.0, 5.6, HX0 - 0.1, -1.0, 9.0));
     B.M.add(box(THREE, 0.25, 24.0, 0.2, HX0 - 0.35, -1.0, 11.8));
     /* fantail rails and the boat boom stowed along the transom             */
-    for (j = 0; j < 9; j++) B.M.add(box(THREE, 0.12, 0.12, 2.0, HX0 - 0.4, -12.0 + j * 2.75, 7.6));
+    for (j = 0; j < 9; j++) B.M.add(box(THREE, 0.12, 0.12, 2.0, HX0 - 0.3, -12.0 + j * 2.75, 7.6));
 
     /* anchors and hawse pipes, one each bow                                */
     for (s = -1; s <= 1; s += 2) {
@@ -1200,7 +1329,7 @@ var HeroNimitzCVN = (function () {
       emit(mk95Parts(THREE), 74.0, 35.0, ZS, PI * 0.35);
     }
     /* port after: under the angled deck's edge, forward of lift 4          */
-    sponson([[-124.0, 37.2], [-104.0, 37.2], [-106.0, 45.0], [-122.0, 45.0]], ZS, 6.0, 1);
+    sponson([[-124.0, 36.0], [-104.0, 36.0], [-106.0, 45.0], [-122.0, 45.0]], ZS, 6.0, 1);
     if (late) {
       /* Reagan 2004 (San Diego and Magellan, both from the PORT quarter):
          a box launcher low on this sponson and a white-domed mount on a
@@ -1249,14 +1378,40 @@ var HeroNimitzCVN = (function () {
     B.M.add(box(THREE, 0.3, 6.6, 0.3, -87.4, 39.4, FD_TOP + 1.8));
     B.S.add(plate(THREE, [[-128.0, 38.2], [-120.0, 38.2], [-120.0, 42.0], [-128.0, 42.0]], FD_TOP - 1.4, FD_TOP - 1.0));
     /* whips along the starboard deck edge, and the tall one at x 72 the
-       1986 broadside shows forward of lift 1                               */
-    B.M.add(strut(THREE, 72.0, -37.6, FD_TOP - 1.0, 72.0, -37.6, FD_TOP + 13.0, 0.18, 5, 0.08));
-    [-130, -20, 45].forEach(function (wx) {
-      B.M.add(strut(THREE, wx, -37.9, FD_TOP - 1.0, wx, -38.8, FD_TOP + 6.5, 0.07, 4));
-    });
-    [-60, 0, 40].forEach(function (wx) {
-      B.M.add(strut(THREE, wx, 41.0, FD_TOP - 1.0, wx, 42.0, FD_TOP + 6.0, 0.07, 4));
-    });
+       1986 broadside shows forward of lift 1. Each stands on a hinged foot
+       at the end of an outrigger run out from the catwalk under the deck
+       edge, clear of the safety nets, so it can be lowered outboard: they
+       stood in the air before (2026-11-26). The one at x -20 stood on
+       lift 2 and is moved to x -5, between lifts 2 and 1 and clear of the
+       raft rack at x -2.7..0.8 there (NOT CONFIRMED).                     */
+    function edgeAt(x, side) {
+      var best = null, k;
+      for (k = 0; k < DECK.length; k++) {
+        var a = DECK[k], b = DECK[(k + 1) % DECK.length];
+        if (side * a[1] <= 0 || side * b[1] <= 0 || inNotch(a, b)) continue;
+        var lo = Math.min(a[0], b[0]), hi = Math.max(a[0], b[0]);
+        if (x < lo || x > hi || hi - lo < 1e-6) continue;
+        var y = a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]);
+        if (best && side * y <= side * best.y) continue;
+        var ddx = b[0] - a[0], ddy = b[1] - a[1], LL = Math.sqrt(ddx * ddx + ddy * ddy);
+        best = { y: y, ox: ddy / LL, oy: -ddx / LL };
+      }
+      return best;
+    }
+    function whip(x, side, h, r0, r1) {
+      var E = edgeAt(x, side), zc = FD_TOP - 1.45;
+      function P(o, z) { return [x + E.ox * o, E.y + E.oy * o, z]; }
+      var a0 = P(0.6, zc), a1 = P(4.4, zc), f = P(4.0, zc), t = P(4.7, FD_TOP + h);
+      /* the outrigger, its diagonal stay to the gallery's face, the foot  */
+      B.S.add(box(THREE, 3.8, 0.5, 0.3, (a0[0] + a1[0]) * 0.5, (a0[1] + a1[1]) * 0.5, zc, 0, 0, Math.atan2(E.oy, E.ox)));
+      var s0 = P(-1.5, zc - 2.2), s1 = P(3.8, zc - 0.05);
+      B.M.add(strut(THREE, s0[0], s0[1], s0[2], s1[0], s1[1], s1[2], 0.08, 4));
+      B.S.add(box(THREE, 0.7, 0.7, 0.9, f[0], f[1], zc + 0.55, 0, 0, Math.atan2(E.oy, E.ox)));
+      B.M.add(strut(THREE, f[0], f[1], zc + 0.6, t[0], t[1], t[2], r0, 5, r1));
+    }
+    whip(72.0, -1, 13.0, 0.18, 0.08);
+    [-130, -5, 45].forEach(function (wx) { whip(wx, -1, 6.5, 0.07, 0.07); });
+    [-60, 0, 40].forEach(function (wx) { whip(wx, 1, 6.0, 0.07, 0.07); });
     /* team flashes on the bow and the round-down                           */
     B.T.add(box(THREE, 2.0, 20.0, 0.2, 165.2, -0.5, FD_TOP + 0.1));
     B.T.add(box(THREE, 2.0, 18.0, 0.2, -165.0, -2.5, FD_TOP + 0.1));
@@ -1268,7 +1423,10 @@ var HeroNimitzCVN = (function () {
       var base = [[ISL_X1, ISL_YO], [ISL_X1, ISL_YI - 1.5], [ISL_X1 - 1.5, ISL_YI],
                   [ISL_X0 + 1.0, ISL_YI], [ISL_X0, ISL_YI - 1.0], [ISL_X0, ISL_YO]];
       var Z0 = FD_TOP;
-      B.S.add(frustum(THREE, base, Z0, Z0 + top, 1.0, 0.99));
+      B.S.add(frustum(THREE, base, Z0, Z0 + top, 1.0, 0.99, 1));
+      /* the block's plating scale at height z (it tapers 1.0 -> 0.99), less
+         a hair so a band's rims run into the plating                       */
+      function bs(z) { return 1.0 - 0.01 * (z - Z0) / top - 0.003; }
       /* the flight-deck control windows low on the inboard face, and the
          doors along the foot                                               */
       B.G.add(box(THREE, 9.0, 0.3, 1.0, -52.0, ISL_YI + 0.1, Z0 + 2.9));
@@ -1281,8 +1439,8 @@ var HeroNimitzCVN = (function () {
       for (var lv = 1; lv <= lvN; lv++) {
         var zl = Z0 + lv * 2.6;
         if (zl > Z0 + top - 0.4) break;
-        B.S.add(frustum(THREE, base, zl - 0.02, zl + 0.16, 1.016, 1.016));
-        B.K.add(frustum(THREE, base, zl - 0.16, zl - 0.02, 1.006, 1.006));
+        B.S.add(band(THREE, base, zl - 0.02, zl + 0.16, 1.016, 1.016, bs(zl)));
+        B.K.add(band(THREE, base, zl - 0.16, zl - 0.02, 1.006, 1.006, bs(zl)));
         for (var px = ISL_X0 + 2.2; px < ISL_X1 - 2.0; px += 2.6) {
           if (lv === 1 && px > -56 && px < -47) continue;
           B.G.add(box(THREE, 0.55, 0.12, 0.55, px, ISL_YO - 0.03, zl - 1.2));
@@ -1298,17 +1456,19 @@ var HeroNimitzCVN = (function () {
       for (s = -1; s <= 1; s += 2) B.M.add(box(THREE, 0.08, 0.08, top, ISL_X0 - 0.12, ISL_YI - 1.6 + s * 0.3, Z0 + top * 0.5));
       [[ISL_YC - 2.8], [ISL_YC + 2.4]].forEach(function (q) {
         B.K.add(box(THREE, 0.12, 1.8, 1.4, ISL_X1 + 0.05, q[0], Z0 + 3.6));
-        for (var vl = 0; vl < 5; vl++) B.S.add(box(THREE, 0.16, 1.8, 0.07, ISL_X1 + 0.1, q[0], Z0 + 3.0 + vl * 0.28));
+        for (var vl = 0; vl < 5; vl++) B.S.add(box(THREE, 0.16, 1.8, 0.07, ISL_X1 + 0.05, q[0], Z0 + 3.0 + vl * 0.28));
       });
       /* team band at the head of the block                                 */
-      B.T.add(frustum(THREE, base, Z0 + top - 1.3, Z0 + top - 0.2, 1.012, 1.008));
+      B.T.add(band(THREE, base, Z0 + top - 1.3, Z0 + top - 0.2, 1.012, 1.008, bs(Z0 + top - 0.2)));
       return base;
     }
     /* a glazed tier: a plate block with a window band round its forward
        end and sides, and the visor over it                                 */
     function tier(x0, x1, yo, yi, z0, z1, glassAft) {
       var pl = [[x1, yo], [x1, yi + 0.8], [x1 - 0.8, yi], [x0, yi], [x0, yo]];
-      B.S.add(frustum(THREE, pl, z0, z1, 1.0, 0.985));
+      /* no top: the visor covers it (its bottom stays: the first tiers
+         stand proud of the block under them)                               */
+      B.S.add(frustum(THREE, pl, z0, z1, 1.0, 0.985, 2));
       var zg = z0 + (z1 - z0) * 0.40, hg2 = (z1 - z0) * 0.38;
       B.G.add(box(THREE, 0.25, yi - yo - 0.6, hg2, x1 + 0.08, (yo + yi) * 0.5, zg + hg2 * 0.5));
       B.G.add(box(THREE, (x1 - x0) * 0.7, 0.25, hg2, x1 - (x1 - x0) * 0.36, yi + 0.06, zg + hg2 * 0.5));
@@ -1326,7 +1486,7 @@ var HeroNimitzCVN = (function () {
         B.S.add(box(THREE, 0.14, 0.32, hg2, mxx, yi + 0.08, zg + hg2 * 0.5));
         B.S.add(box(THREE, 0.14, 0.32, hg2, mxx, yo - 0.08, zg + hg2 * 0.5));
       }
-      B.S.add(frustum(THREE, pl, zg - 0.12, zg + 0.02, 1.02, 1.02));
+      B.S.add(band(THREE, pl, zg - 0.12, zg + 0.02, 1.02, 1.02, 1.0 - 0.015 * (zg + 0.02 - z0) / (z1 - z0) - 0.003));
     }
     /* the SPS-48 planar array: a frequency-scanned face leaning back, the
        serpentine feed along its top                                        */
@@ -1390,12 +1550,12 @@ var HeroNimitzCVN = (function () {
       /* pri-fly at the after end, glazed aft and to port over the landing
          area, and the plated house forward of it                            */
       tier(-67.0, -56.0, -37.2, -28.6, Z1 + 5.6, Z1 + 7.9, true);
-      B.S.add(frustum(THREE, rect(-56.0, -44.0, -37.0, -29.0), Z1 + 5.6, Z1 + 7.5, 1.0, 0.97));
+      B.S.add(frustum(THREE, rect(-56.0, -44.0, -37.0, -29.0), Z1 + 5.6, Z1 + 7.5, 1.0, 0.97, 1));
       var Z4 = Z1 + 7.9;
       B.S.add(plate(THREE, rect(-67.5, -43.0, -37.6, -28.2), Z4 - 0.1, Z4 + 0.25));
       ringRail(rect(-67.3, -43.2, -37.4, -28.4), Z4 + 1.2);
       /* the radar platform forward and the SPS-48 on it                     */
-      B.S.add(frustum(THREE, rect(-50.0, -43.5, -36.0, -30.2), Z4 + 0.25, Z4 + 0.8, 1.0, 0.96));
+      B.S.add(frustum(THREE, rect(-50.0, -43.5, -36.0, -30.2), Z4 + 0.25, Z4 + 0.8, 1.0, 0.96, 1));
       sps48(-47.0, -33.0, Z4 + 0.8 - 1.2, -0.35, 4.8);
       /* the pole mast: a tapered tube from the roof, two yards, platforms,
          the TACAN and the whip at the head (masthead 47 m above the deck) */
@@ -1425,7 +1585,7 @@ var HeroNimitzCVN = (function () {
       /* the lattice radar mast abaft the island, on the deck edge: a low
          house at its foot, 13 m of tower and the SPS-49 reflector on top,
          its middle 17 m above the deck (TR 1986, x -79)                    */
-      B.S.add(frustum(THREE, rect(-81.6, -76.6, -38.0, -32.6), Z0, Z0 + 3.2, 1.0, 0.98));
+      B.S.add(frustum(THREE, rect(-81.6, -76.6, -38.0, -32.6), Z0, Z0 + 3.2, 1.0, 0.98, 1));
       lattice(-79.2, -35.2, Z0 + 3.2, Z0 + 15.8, 3.2, 1.4, 5);
       B.S.add(plate(THREE, rect(-80.5, -77.9, -36.5, -33.9), Z0 + 15.8, Z0 + 16.2));
       sps49(-79.2, -35.2, Z0 + 16.2, PI * 0.82);
@@ -1470,7 +1630,7 @@ var HeroNimitzCVN = (function () {
       B.S.add(plate(THREE, rect(-67.0, -43.0, -37.8, -28.0), Z4 - 0.1, Z4 + 0.25));
       ringRail(rect(-66.8, -43.2, -37.6, -28.2), Z4 + 1.2);
       /* the SPS-48E on its pedestal forward                                */
-      B.S.add(frustum(THREE, rect(-48.0, -43.5, -35.4, -30.6), Z4 + 0.25, Z4 + 2.4, 1.0, 0.9));
+      B.S.add(frustum(THREE, rect(-48.0, -43.5, -35.4, -30.6), Z4 + 0.25, Z4 + 2.4, 1.0, 0.9, 1));
       sps48(-45.8, -33.0, Z4 + 2.4, -0.3, 5.0);
       /* the tower mast: a tapered square shaft, three yards with walkways
          and the platforms the Magellan view shows, the topmast above       */
@@ -1506,12 +1666,12 @@ var HeroNimitzCVN = (function () {
         B.S.add(cylZ(THREE, 1.0, 1.2, 0.9, 8, d[0], d[1], Z1 + 5.9));
         B.W.add(sphere(THREE, d[2], 12, 7, d[0], d[1], Z1 + 5.9 + 0.9 + d[2] * 0.75));
       });
-      [[-70.0, -38.6, 1.3, Z1 + 3.0], [-62.0, -39.6, 1.3, Z1 + 5.9], [-68.4, -27.2, 1.2, Z4 + 0.25]].forEach(function (d) {
-        B.S.add(box(THREE, 2.6, 2.6, 0.35, d[0], d[1], d[3] + 0.17));
+      [[-70.0, -38.6, 1.3, Z1 + 3.0], [-62.0, -39.6, 1.3, Z1 + 5.9], [-67.6, -27.2, 1.2, Z4 + 0.25]].forEach(function (d) {
+        B.S.add(box(THREE, 2.6, 2.6, 0.35, d[0], d[1], d[3] + 0.15));
         B.W.add(sphere(THREE, d[2], 10, 6, d[0], d[1], d[3] + 0.35 + d[2] * 0.8));
       });
       /* the low annex abaft the island at deck level                        */
-      B.S.add(frustum(THREE, rect(-78.0, -71.0, -37.8, -31.5), Z0, Z0 + 5.5, 1.0, 0.98));
+      B.S.add(frustum(THREE, rect(-78.0, -71.0, -37.8, -31.5), Z0, Z0 + 5.5, 1.0, 0.98, 1));
     }
 
     /* ------------------------------------------------ out as one mesh each */
