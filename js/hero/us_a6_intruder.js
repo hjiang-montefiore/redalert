@@ -75,6 +75,20 @@
    the stowed launch bar and the taxi lamp. All placed from photographs,
    NOT measured.
 
+   2026-11-26 BATCH-5 PASS (all five rows): the store noses are fans from
+   their tip (the collapsed first ring gave 80 - 392 zero-area triangles a
+   row); the rear-view mirrors are seated on the windscreen bow (they stood
+   0.11 m above the glass); the crew's 0.5 m boxes, which pushed through the
+   canopy, are helmets and shoulders under the glass; the main leg and brace
+   tops are let into the wing's underside (0.2 m short of it before) and the
+   tailplane roots into the tail cone (0.065 m off it); the Mk 82s hang on
+   the MER as it is (two tandem triples: two shoulder stations and one on
+   the bottom; four on the centreline rack) instead of stacked three deep;
+   the dark non-skid wing-root walkways and the spine bay doors are painted;
+   and the 1990s greys (nato_e90_*), which read near-white, are re-authored
+   with HeroKit.authorFor to show as a sunlit FS 36320 / 36375 pair
+   (#a3abb0 / #c4c9cc). The gull grey rows keep their colours.
+
    The Intruder fin carries a team band; the Prowler's fin pod a team ring.
    The team material is exactly C.team.
 
@@ -152,11 +166,11 @@ var HeroA6 = (function () {
   var AIRFRAME = {
     a6:   { dS: 0,
             fin: { sLe0: 13.0, h0: 2.6, sLe1: 14.9, h1: 4.93, sTe1: 16.5, sTe0: 16.6, hTop: 4.93, tc: 0.085 },
-            stab: { y0: 0.55, y1: 3.10, le0: 13.77, le1: 15.70, te0: 15.96, te1: 16.50, h: 2.50 },
+            stab: { y0: 0.32, y1: 3.10, le0: 13.77, le1: 15.70, te0: 15.96, te1: 16.50, h: 2.50 },
             gear: { ns: 2.30, ms: 7.60 }, fold: { y: 3.69, deg: 147 }, tram: false },
     ea6b: { dS: 1.29,
             fin: { sLe0: 12.97, h0: 2.6, sLe1: 13.70, h1: 4.20, sTe1: 16.5, sTe0: 16.6, hTop: 4.20, tc: 0.085 },
-            stab: { y0: 0.55, y1: 3.10, le0: 13.77, le1: 15.70, te0: 15.96, te1: 16.50, h: 2.50 },
+            stab: { y0: 0.32, y1: 3.10, le0: 13.77, le1: 15.70, te0: 15.96, te1: 16.50, h: 2.50 },
             gear: { ns: 2.30, ms: 7.60 }, fold: { y: 3.69, deg: 147 }, tram: false }
   };
 
@@ -167,11 +181,11 @@ var HeroA6 = (function () {
       loads: [["ctr", "mer4"], ["inb", "mer6"], ["out", "mer6"]] },
     nato_e80_cstrike: { af: "a6", top: "#8d949a", belly: "#d8d9d6", tram: true,
       loads: [["ctr", "gbu12"], ["inb", "mer6"], ["out", "gbu12"]] },
-    nato_e90_cstrike: { af: "a6", top: "#6d757b", belly: "#9aa1a6", tram: true,
+    nato_e90_cstrike: { af: "a6", top: "#62696d", belly: "#80868a", tram: true,
       loads: [["ctr", "gbu12"], ["inb", ["harpoon", "slam"]], ["out", "gbu12"]] },
     nato_e60_ewair:   { af: "ea6b", top: "#9aa0a4", belly: "#dcdcd8", tram: false,
       loads: [["ctr", "alq99"], ["inb", "alq99"], ["out", "alq99"]] },
-    nato_e90_ewair:   { af: "ea6b", top: "#6d757b", belly: "#9aa1a6", tram: false,
+    nato_e90_ewair:   { af: "ea6b", top: "#62696d", belly: "#80868a", tram: false,
       loads: [["ctr", "alq99"], ["inb", "alq99"], ["out", "harm"]] }
   };
   var STA = { ctr: { y: 0, top: 1.92, sc: 7.4 }, inb: { y: 2.4, top: 2.40, sc: 7.8 }, out: { y: 3.45, top: 2.40, sc: 8.25 } };
@@ -305,8 +319,25 @@ var HeroA6 = (function () {
     return g;
   }
   /* body of revolution along X, centre s = sc (A-6 frame), nose forward */
+  /* (2026-11-26) a body whose first ring is a point: the nose is a fan from
+     that point instead of a collapsed ring (which gave 2n zero-area
+     triangles a store: the cap and the first quad row) */
+  function apexed(tip, rings) {
+    var g = bridge(rings, false, true), p = Array.prototype.slice.call(g.attributes.position.array),
+        ix = Array.prototype.slice.call(g.index.array), N = rings[0].length, base = p.length / 3, k, t;
+    p.push(tip[0], tip[1], tip[2]);
+    /* wound as bridge() winds a first-ring cap; orient() then turns the
+       whole body outward at once */
+    for (k = 0; k < N; k++) ix.push(base, k, (k + 1) % N);
+    var out = new V.BufferGeometry();
+    out.setAttribute("position", new V.Float32BufferAttribute(p, 3));
+    out.setIndex(ix);
+    out.computeVertexNormals();
+    void t;
+    return orient(out);
+  }
   function rev(sc, y0, hc, Ln, D, nf, np, tf, N) {
-    var rings = [], k, a, M = 9, n = N || 8;
+    var rings = [], k, a, M = 9, n = N || 8, tip = null;
     for (k = 0; k < M; k++) {
       var u = k / (M - 1), r;
       if (u < nf) r = Math.pow(Math.sin(u / nf * Math.PI / 2), np);
@@ -314,12 +345,13 @@ var HeroA6 = (function () {
       else r = 1;
       r *= D / 2;
       var x = X(sc - Ln / 2 + u * Ln), ring = [];
+      if (k === 0 && r < 1e-4) { tip = [x, y0, Z(hc)]; continue; }
       for (a = 0; a < n; a++) {
         ring.push([x, y0 + r * Math.cos(a / n * Math.PI * 2), Z(hc) + r * Math.sin(a / n * Math.PI * 2)]);
       }
       rings.push(ring);
     }
-    return closed(rings);
+    return tip ? apexed(tip, rings) : closed(rings);
   }
 
   /* ============================================================ airframe = */
@@ -366,11 +398,19 @@ var HeroA6 = (function () {
       for (k = 1; k < P.length; k++) K.ink.push(rod(P[k - 1], P[k], 0.026, 5));
     });
     /* the crew: heads and shoulders under the glass */
+    /* (2026-11-26) each crew member's helmet sits 0.16 m under the glass
+       above it and the shoulders under that: the 0.5 m boxes that stood
+       for them pushed through the canopy's sides and crown */
     var rows = ea ? [2.75, 4.30] : [3.00];
     rows.forEach(function (s) {
       var c = canAt(s);
-      [0.40, -0.40].forEach(function (y) {
-        K.ink.push(boxG(0.50, 0.42, 0.50, X(s), y, Z(c[2] + 0.18)));
+      [0.38, -0.38].forEach(function (y) {
+        var gz = c[2] + (c[3] - c[2]) * Math.pow(Math.sin(Math.acos(Math.min(0.99, Math.abs(y) / c[1]))), 0.8);
+        var hz = gz - 0.17;
+        var hel = new V.SphereGeometry(0.135, 10, 7);
+        hel.translate(X(s), y, Z(hz));
+        K.metal.push(hel);
+        K.ink.push(boxG(0.36, 0.40, Math.max(0.10, hz - 0.13 - c[2] + 0.12), X(s + 0.06), y, Z((hz - 0.13 + c[2] - 0.12) / 2)));
       });
     });
     /* the refuelling probe stands ahead of the windscreen on the nose */
@@ -496,7 +536,11 @@ var HeroA6 = (function () {
     for (s = -1; s <= 1; s += 2) {
       for (i = 1; i < CAN.length - 2; i++)
         K.ink.push(rod([X(CAN[i][0]), s * (CAN[i][1] + 0.012), Z(CAN[i][2] + 0.01)], [X(CAN[i + 1][0]), s * (CAN[i + 1][1] + 0.012), Z(CAN[i + 1][2] + 0.01)], 0.016, 4));
-      K.metal.push(boxG(0.03, 0.10, 0.05, X(2.12), s * 0.55, Z(3.74)));
+      /* the rear-view mirror on the windscreen bow, seated on the frame
+         (it stood 0.11 m above the glass until 2026-11-26) */
+      var cb = canAt(2.10), ym = 0.50, gm = cb[2] + (cb[3] - cb[2]) * Math.pow(Math.sin(Math.acos(ym / cb[1])), 0.8);
+      K.metal.push(boxG(0.03, 0.10, 0.05, X(2.12), s * ym, Z(gm + 0.045)));
+      K.metal.push(rod([X(2.11), s * ym, Z(gm - 0.01)], [X(2.11), s * ym, Z(gm + 0.03)], 0.012, 4));
       K.metal.push(boxG(0.70, 0.03, 1.02, X(4.70), s * 1.105, Z(2.62)));          /* splitter lips */
       var tc = new V.CylinderGeometry(0.03, 0.15, 0.30, 12);
       tc.rotateZ(Math.PI / 2); tc.translate(X(10.40), s * 0.80, Z(1.90));
@@ -532,14 +576,18 @@ var HeroA6 = (function () {
     var y = STA[st].y * side, top = STA[st].top, sc = STA[st].sc, p = 0.18, hc, i, j;
     if (st === "ctr" && side < 0) return;
     if (kind === "mer6" || kind === "mer4") {
-      var by = top - p - 0.13;
+      /* (2026-11-26) the multiple ejector rack as it is: a long beam with
+         two tandem groups, each two shoulder stations and (MER, six) one
+         on the bottom; the first build stacked the bombs three deep under a
+         short rack, each row standing clear of the one above */
+      var by = top - p - 0.13, D82 = 0.274;
       K.metal.push(boxG(0.16, 0.12, p + 0.02, X(sc), y, Z(top - p / 2)));
-      K.metal.push(boxG(1.9, 0.44, 0.26, X(sc), y, Z(by)));
-      var rows = kind === "mer6" ? 3 : 2;
-      for (i = 0; i < rows; i++) {
-        for (j = -1; j <= 1; j += 2) {
-          addBomb(K, sc + (i === 1 ? 0.0 : 0.0), y + j * 0.17, by - 0.26 - i * 0.28, 2.20, 0.274, "mk82");
-        }
+      K.metal.push(boxG(0.30, 0.12, p + 0.02, X(sc + 1.0), y, Z(top - p / 2)));
+      K.metal.push(boxG(3.70, 0.44, 0.26, X(sc), y, Z(by)));
+      for (i = -1; i <= 1; i += 2) {
+        var sg2 = sc + i * 1.20;
+        for (j = -1; j <= 1; j += 2) addBomb(K, sg2, y + j * 0.30, by - 0.11, 2.20, D82, "mk82");
+        if (kind === "mer6") addBomb(K, sg2, y, by - 0.13 - D82 / 2 + 0.006, 2.20, D82, "mk82");
       }
       return;
     }
@@ -588,8 +636,10 @@ var HeroA6 = (function () {
     /* main gear: stub leg, brace, a single wide wheel each side on a short fairing */
     [tr, -tr].forEach(function (y) {
       var sg = y > 0 ? 1 : -1;
-      G.metal.push(rod([X(ms - 0.15), y * 0.82, Z(2.12)], [X(ms), y, Z(mr)], 0.09, 8));
-      G.metal.push(rod([X(ms - 1.2), y * 0.72, Z(2.0)], [X(ms - 0.05), y * 0.98, Z(0.8)], 0.045, 6));
+      /* (2026-11-26) the leg and brace tops are let into the wing's
+         underside (2.27 m up there); they stopped 0.2 m short of it */
+      G.metal.push(rod([X(ms - 0.15), y * 0.82, Z(2.32)], [X(ms), y, Z(mr)], 0.09, 8));
+      G.metal.push(rod([X(ms - 1.2), y * 0.72, Z(2.30)], [X(ms - 0.05), y * 0.98, Z(0.8)], 0.045, 6));
       G.metal.push(boxG(1.05, 0.10, 0.74, X(ms - 0.1), sg * (Math.abs(y) - 0.20), Z(1.05)));
       G.tyre.push(wheelG(mr, 0.30, X(ms), y, Z(mr), 20));
       G.metal.push(wheelG(mr * 0.55, 0.34, X(ms), y, Z(mr), 12));
@@ -600,7 +650,7 @@ var HeroA6 = (function () {
       G.metal.push(rod([X(ms) + 0.24, ly, Z(mr + 0.50)], [X(ms) + 0.08, ly * 0.97, Z(mr + 0.74)], 0.02, 4));
       var col = new V.CylinderGeometry(0.12, 0.12, 0.07, 12); col.rotateX(Math.PI / 2);
       col.translate(X(ms - 0.07), y * 0.92, Z(mr + 0.95)); G.metal.push(col);
-      G.tyre.push(rod([X(ms - 0.20), y * 0.84, Z(2.05)], [X(ms) - 0.04, y * 0.985, Z(mr + 0.20)], 0.011, 4));
+      G.tyre.push(rod([X(ms - 0.20), y * 0.84, Z(2.28)], [X(ms) - 0.04, y * 0.985, Z(mr + 0.20)], 0.011, 4));
       G.tyre.push(wheelG(0.13, 0.36, X(ms), y, Z(mr), 10));
       for (k = 0; k < 6; k++) G.metal.push(wheelG(0.016, 0.37, X(ms) + Math.cos(k * Math.PI / 3) * 0.18, y, Z(mr) + Math.sin(k * Math.PI / 3) * 0.18, 5));
     });
@@ -694,6 +744,21 @@ var HeroA6 = (function () {
           g.strokeRect(tU(X((lin(LE, yy) + lin(TE, yy)) / 2)), tY(sg * yy, b) - 4, 0.45 * TPX, 8);
         }
         if (b === 0) { g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(tU(X(7.4)), tY(sg * 2.6, 0) - 3, 6, 6); }
+      }
+      /* (2026-11-26) the dark non-skid walkways on the inner wing tops
+         beside the fuselage, with their light edge lines, and the hinged
+         access doors of the avionics bays on the spine behind the canopy
+         (A-6E and EA-6B deck photographs from above). Sizes NOT measured. */
+      if (!under) for (sg = -1; sg <= 1; sg += 2) {
+        var w0 = 1.30, w1 = 2.55, a0 = lin(LE, w0) + 0.55, a1 = lin(LE, w1) + 0.45, c0 = a0 + 1.9, c1 = a1 + 1.5;
+        g.fillStyle = "rgba(34,36,38,0.62)";
+        g.beginPath(); g.moveTo(tU(X(a0)), tY(sg * w0, 0)); g.lineTo(tU(X(c0)), tY(sg * w0, 0));
+        g.lineTo(tU(X(c1)), tY(sg * w1, 0)); g.lineTo(tU(X(a1)), tY(sg * w1, 0)); g.closePath(); g.fill();
+        g.strokeStyle = "rgba(235,235,230,0.55)"; g.lineWidth = 1.5; g.stroke();
+        for (i = 0; i < 3; i++) {
+          g.strokeStyle = "rgba(0,0,0,0.30)"; g.lineWidth = 1;
+          g.strokeRect(tU(X(6.0 + i * 1.1)), tY(sg * 0.62, 0) - 5, 0.8 * TPX, 10);
+        }
       }
       seam(tU(X(2.0)), tY(0, 0), tU(X(16.3)), tY(0, 0));
       seam(tU(X(1.0)), tY(0, 3), tU(X(16.3)), tY(0, 3));
