@@ -8,7 +8,8 @@
                                              glacis (ports covered, no trim vane), the driver's
                                              thermal viewer, the ISU with the eye-safe laser
                                              rangefinder and the missile countermeasure device;
-                                             NATO three-colour as Bosnia 1996 shows it
+                                             plain NATO green (Q2 wears the three-colour; the
+                                             plain-paint policy drops the camouflage)
      nato_e00_ifv   M2A3 Bradley (2000)      the A3: the IBAS sight head and the commander's
                                              independent viewer; desert tan with the reactive tiles
                                              (armour_specs "era", camo "desert"; R1)
@@ -71,22 +72,39 @@
     11. M2: firing ports and bracket rows, the trim vane on the nose - P1, en.wikipedia
     12. A2/A3: applique panels with lifting loops - D1, Q1; e00: the tile grid - R1
    Paint (sampled, then taken to about 0.8 of level for the ACES pass): M2 forest green P1
-   #68706b (overcast, blue-cast) drawn #4c5442; NATO three-colour green / brown / black drawn
-   #47512f / #4c4230 / #252522 (Q2 is too dark to sample: the CARC chips); tan Q1 #958c7d, R1
+   #68706b (overcast, blue-cast) drawn #4c5442; ODS plain CARC green #47512f (no camouflage,
+   policy; Q2 is too dark to sample); tan Q1 #958c7d, R1
    #9d8467 (dust) drawn #988560 (e00, dusty) and #9b8b66 (present). No numbers, bumper codes,
    flags or unit marks (P1 carries a pennant, Q1 a sign; not drawn).
    NOT CONFIRMED, drawn as stated: the turret ring's side offset (no top view here: drawn 0.25 m
    to the right so the turret and its TOW box sit centred over the roof as the head-on views
    show); the missile countermeasure device's place on the ODS turret (drawn on the roof over the
    gun); the M2 firing-port stations (drawn at x -1.05 and -2.05); the return rollers (hidden by
-   the skirt, three drawn); hatch outlines on the roof; the trim vane's exact shape on the nose.
-   Triangles 16,280 (M2) / 15,812 (ODS) / 17,108 (A3 with tiles) / 16,176 (present, TOW raised);
-   14 draw calls (hull 4, turret 4, six wheels); 5 materials. X extent 6.58 m (M2, the trim vane
+   the skirt, three drawn); hatch outlines on the roof; the trim vane's exact shape on the nose;
+   the e00 row's turret tiles (two on each front cheek, a 0.27 m strip low on the turret sides):
+   no M2A3-with-tiles photograph could be fetched to check them; the M2's bolt rows (P1 too far
+   off; drawn as joint columns only); the engine access plate's exact outline.
+   BATCH 5 (2026-11, after review): floating parts seated (coaxial into the mantlet, the M2's
+   foremost upper bracket dropped where the side wall turns into glacis, tiles, headlamps,
+   pintles, return rollers and sprocket / idler axles touch what carries them); road wheels in
+   hull colour (linear vertex colour) with near-black tyres as D1 draws them; the ODS's
+   camouflage removed (plain paint). The raised TOW launcher (ifv_n) follows Q1 and R2 (Combined
+   Resolve XIII, 253 px a metre off the hubs): rolled 90 deg outboard so the tubes sit side by
+   side, level to 3 deg nose down, belly at z 2.85, top with the lid hump about 3.25, carried by
+   two posts and a spring strut under its front 40 per cent from a bracket on the turret side,
+   the rear free. Bolt heads only on the side armour, glacis applique and turret sides (a second
+   paint material, ARMOUR, whose 3.24 m tile puts bolt-column pairs on the 0.81 m panel joints
+   and rows along the plate edges, Q1); roofs, belly, ramp, TOW box and tiles stay plain. The
+   two lifting loops at the turret's front top (Q1), the tow shackles in the nose eyes (Q1), the
+   engine access plate seam and handles on the right front roof (Q1). Spec:
+   tools/model3d/specs/ifv_n.json.
+   Triangles 17,000 (M2) / 16,556 (ODS) / 18,044 (A3 with tiles) / 16,972 (present, TOW raised);
+   16 draw calls (hull 5, turret 5, six wheels); 6 materials. X extent 6.58 m (M2, the trim vane
    on the nose; published 6.45 m: the hull is D1's, scaled to the A2's 6.55 m) and 6.54 m (the
    others; published 6.55 m); W 3.29 / 3.33 / 3.55 / 3.33 m (published 3.20, 3.28, 3.61 with tiles).
    Model space +X bow, +Y left (port), +Z up, metres, tracks on z = 0. Nodes: "turret" (ring
    centre on the roof, gun along +X) and six "roadwheel" groups (axle on local Y, both sides in
-   one mesh). Materials: PAINT (canvas texture, metre UVs), DARK, GLASS, WHEEL (vertex colours),
+   one mesh). Materials: PAINT (canvas texture, metre UVs), ARMOUR (the same coat with bolt rows), DARK, GLASS, WHEEL (vertex colours),
    and the team colour exactly as handed in (C.team) on two roof strips and the gunner's hatch.
    ASCII only: a stray byte in a hex literal has broken this project before.  */
 
@@ -99,13 +117,13 @@ var HeroBradley = (function () {
   /* mark: 0 the M2, 1 the A2 ODS, 2 the A3 */
   var VARIANTS = {
     M2:  { mark: 0, w: 1.60, vane: true, mcd: false, brat: false, towUp: false,
-           paint: { base: "#4c5442", lo: "#3f4636", hi: "#5a624d", dust: "rgba(70,60,40,0.06)", seed: 1985, us: 0.30 } },
+           paint: { base: "#4c5442", lo: "#3f4636", hi: "#5a624d", dust: "rgba(70,60,40,0.06)", seed: 1985, us: 0.30, bolts: 2 } },
     A2:  { mark: 1, w: 1.64, vane: false, mcd: true, brat: false, towUp: false,
-           paint: { base: "#47512f", lo: "#3d4629", hi: "#535d3a", camo: ["#4c4230", "#252522"], dust: "rgba(70,60,40,0.07)", seed: 1996, us: 0.30 } },
+           paint: { base: "#47512f", lo: "#3d4629", hi: "#535d3a", dust: "rgba(70,60,40,0.07)", seed: 1996, us: 0.30, bolts: true } },
     A3:  { mark: 2, w: 1.64, vane: false, mcd: false, brat: true, towUp: false,
-           paint: { base: "#988560", lo: "#8a7854", hi: "#a6936c", dust: "rgba(120,100,70,0.10)", seed: 2004, us: 0.30 } },
+           paint: { base: "#988560", lo: "#8a7854", hi: "#a6936c", dust: "rgba(120,100,70,0.10)", seed: 2004, us: 0.30, bolts: true } },
     A3N: { mark: 2, w: 1.64, vane: false, mcd: false, brat: false, towUp: true,
-           paint: { base: "#9b8b66", lo: "#8e7e5b", hi: "#a89773", dust: "rgba(90,80,60,0.07)", seed: 2020, us: 0.30 } }
+           paint: { base: "#9b8b66", lo: "#8e7e5b", hi: "#a89773", dust: "rgba(90,80,60,0.07)", seed: 2020, us: 0.30, bolts: true } }
   };
 
   /* running gear (D1, 131 px a metre): six 0.60 m wheels, the wide gap behind the third */
@@ -125,6 +143,9 @@ var HeroBradley = (function () {
   function Bin(mat, uv, vc, us) { this.mat = mat; this.P = []; this.N = []; this.U = uv ? [] : null; this.C = vc ? [] : null; this.col = [1, 1, 1]; this.us = us || 0.34; }
   Bin.prototype.tri = function (a, b, c, na, nb, nc) {
     var f = unit(cross(sub(b, a), sub(c, a))), v = [a, b, c], n = [na || f, nb || f, nc || f];
+    /* while the armour flag is on, side and sloped faces go to the bolted-armour bin (not the
+       flat roofs, nor faces looking straight fore or aft) */
+    if (this.to && Math.abs(f[2]) < 0.95 && Math.abs(f[0]) < 0.9) { this.to.tri(a, b, c, na, nb, nc); return; }
     var i, q, ax = Math.abs(f[0]), ay = Math.abs(f[1]), az = Math.abs(f[2]), k = this.us;
     for (i = 0; i < 3; i++) {
       q = v[i];
@@ -138,6 +159,7 @@ var HeroBradley = (function () {
       }
     }
   };
+  function armour(B, on) { B.paint.to = on ? B.armour : null; }
   function solid(bin, V, F, Nv) {
     var vol = 0, i, f, a, b, c;
     for (i = 0; i < F.length; i++) { f = F[i]; vol += dot(V[f[0]], cross(V[f[1]], V[f[2]])); }
@@ -187,6 +209,24 @@ var HeroBradley = (function () {
       for (i = 0; i < seg; i++) { j = (i + 1) % seg; F.push([base, rA + j, rA + i], [base + 1, rB + i, rB + j]); }
     }
     solid(bin, V, F, N);
+  }
+  /* a square bar from A to B (in an x-z plane), half sizes hy across, hw in the plane */
+  function strut(bin, A, B, hy, hw) {
+    var d = sub(B, A), l = Math.sqrt(dot(d, d)), u = unit(d);
+    slab(bin, [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2], u, [0, 1, 0], unit([-u[2], 0, u[0]]), l / 2, hy, hw);
+  }
+  /* a grab handle standing on a flat at z: two posts and the bar, along x (ax 0) or y (ax 1) */
+  function handle(bin, ax, a0, a1, c, z, h) {
+    var t = 0.012;
+    if (ax === 0) {
+      box(bin, a0, a0 + 2 * t, c - t, c + t, z - 0.01, z + h);
+      box(bin, a1 - 2 * t, a1, c - t, c + t, z - 0.01, z + h);
+      box(bin, a0, a1, c - t, c + t, z + h - 2 * t, z + h);
+    } else {
+      box(bin, c - t, c + t, a0, a0 + 2 * t, z - 0.01, z + h);
+      box(bin, c - t, c + t, a1 - 2 * t, a1, z - 0.01, z + h);
+      box(bin, c - t, c + t, a0, a1, z + h - 2 * t, z + h);
+    }
   }
   function cylY(bin, x, y0, y1, z, r, seg) { cyl(bin, [x, y0, z], [x, y1, z], r, r, seg); }
   function cylZ(bin, x, y, z0, z1, r, seg) { cyl(bin, [x, y, z0], [x, y, z1], r, r, seg); }
@@ -260,8 +300,8 @@ var HeroBradley = (function () {
   /* one tile is 1 / P.us metres. Base coat, the period camouflage (NATO three-colour on the
      1990s row: hard-edged brown and black over green), plate seams with bolt rows (the
      applique hull is covered in bolt heads, D1, Q1), dust low down, rain streaks */
-  function paintTex(THREE, P) {
-    return canvasTex(THREE, "bradley" + P.base + P.seed, 512, function (q, S) {
+  function paintTex(THREE, P, bolted) {
+    return canvasTex(THREE, "bradley" + P.base + P.seed + (bolted ? "A" : ""), 512, function (q, S) {
       var R = rng(P.seed), i, k, x, y, w;
       q.fillStyle = P.base; q.fillRect(0, 0, S, S);
       for (i = 0; i < 22; i++) { q.globalAlpha = 0.12 + R() * 0.14; patch(q, S, R, R() * S, R() * S, 30 + R() * 70, 20 + R() * 50, i % 2 ? P.lo : P.hi); }
@@ -284,12 +324,41 @@ var HeroBradley = (function () {
         q.fillRect(R() * S, R() * S, 3 + R() * 40, 2 + R() * 26);
       }
       for (i = 0; i < 26; i++) { q.fillStyle = P.dust; q.fillRect(R() * S, R() * S, 2 + R() * 4, 30 + R() * 90); }
+      if (bolted) boltRows(q, S, P);
     });
+  }
+  /* the side armour's bolt heads, on the ARMOUR tile only (3.24 m = four 0.81 m side panels, so
+     u 0.139 + k / 4 falls on the panel joints PJ; v is z / 3.24 on the sides): a pair of
+     columns 0.06 m either side of each joint and, on the applique rows, pairs of rows 0.25 m
+     apart along the plate edges (Q1: bolt rows on the side applique and the glacis; D1) */
+  function boltRows(q, S, P) {
+    /* Q1: the upper applique plates carry a close grid (five rows, z 1.20..1.76), the skirt
+       plates a row near their top and bottom edges */
+    var R = rng(P.seed + 7), k, j, x, y, ZR = [0.80, 1.00, 1.20, 1.34, 1.48, 1.62, 1.76], ppm = S / 3.24;
+    function bolt(x, y) {
+      x = ((Math.round(x) % S) + S) % S; y = ((Math.round(y) % S) + S) % S;
+      /* Q1's square bolt heads are about 4.5 cm across: 7 px on this tile */
+      q.fillStyle = "rgba(14,14,10,0.55)"; q.fillRect(x - 3, y - 3, 7, 7);
+      q.fillStyle = "rgba(245,240,220,0.24)"; q.fillRect(x - 3, y - 4, 7, 1);
+    }
+    for (k = 0; k < 4; k++) {
+      x = (0.139 + k / 4) * S;
+      for (j = 0; j < 22; j++) { y = (0.72 + j * 0.155) * ppm; bolt(x - 0.06 * ppm, S - y); bolt(x + 0.06 * ppm, S - y); }
+    }
+    if (P.bolts !== 2) {
+      for (k = 0; k < ZR.length; k++) for (x = 0; x < S; x += 0.135 * ppm) {
+        if (R() < 0.08) continue;
+        bolt(x, S - ZR[k] * ppm);
+      }
+    }
   }
   function materials(THREE, C, V) {
     var T = {}, tx = paintTex(THREE, V.paint);
     T.paint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.05 });
     if (tx) T.paint.map = tx; else T.paint.color.set(V.paint.base);
+    T.armour = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.05 });
+    tx = paintTex(THREE, V.paint, true);
+    if (tx) T.armour.map = tx; else T.armour.color.set(V.paint.base);
     T.dark = new THREE.MeshStandardMaterial({ color: 0x25272a, roughness: 0.78, metalness: 0.3 });
     T.glass = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.14, metalness: 0.35 });
     T.wheel = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.05, vertexColors: THREE.VertexColors !== undefined ? THREE.VertexColors : true });
@@ -297,7 +366,7 @@ var HeroBradley = (function () {
     return T;
   }
   function bins(T, V) {
-    return { paint: new Bin(T.paint, true, false, V.paint.us), dark: new Bin(T.dark, false),
+    return { paint: new Bin(T.paint, true, false, V.paint.us), armour: new Bin(T.armour, true, false, 1 / 3.24), dark: new Bin(T.dark, false),
              glass: new Bin(T.glass, false), team: new Bin(T.team, false) };
   }
   function flush(THREE, group, B) {
@@ -315,6 +384,21 @@ var HeroBradley = (function () {
   }
   /* turn everything added to the bins since MARK about the Y axis through (px, pz) by ang
      (positive lifts +X up): the raised TOW launcher */
+  /* roll everything added since MARK by 90 deg about the X axis (its top turns outboard, +Y),
+     moving the section centre (yc, zc) to (Y, Z), then pitch it by ang about (px, Z) */
+  function rollRaise(B, M, yc, zc, Y, Z, px, ang) {
+    var k, b, i, y, z, x, c = Math.cos(ang), sn = Math.sin(ang);
+    for (k in B) {
+      b = B[k];
+      for (i = M[k]; i < b.P.length; i += 3) {
+        y = b.P[i + 1] - yc; z = b.P[i + 2] - zc;
+        b.P[i + 1] = Y + z; b.P[i + 2] = Z - y;
+        y = b.N[i + 1]; z = b.N[i + 2];
+        b.N[i + 1] = z; b.N[i + 2] = -y;
+      }
+    }
+    pitchSince(B, M, px, Z, ang);
+  }
   function markBins(B) { var m = {}, k; for (k in B) m[k] = B[k].P.length; return m; }
   function pitchSince(B, M, px, pz, ang) {
     var k, b, i, c = Math.cos(ang), s = Math.sin(ang), x, z;
@@ -362,7 +446,7 @@ var HeroBradley = (function () {
   function addHull(B, V) {
     var R = [], i, k, s, x, y, z, w, n, ws;
     for (i = 0; i < UXS.length; i++) R.push(upperRing(V, UXS[i]));
-    loftN(B.paint, R);
+    armour(B, true); loftN(B.paint, R); armour(B, false);
     R = [];
     for (i = 0; i < LXS.length; i++) R.push(lowerRing(LXS[i]));
     loftN(B.paint, R);
@@ -376,7 +460,7 @@ var HeroBradley = (function () {
         var yo = s * wSide(V, x), yi = s * (wSide(V, x) - 0.035);
         R.push([[x, yi, z], [x, yo, z], [x, yo, 1.05], [x, yi, 1.05]]);
       }
-      loftN(B.paint, R);
+      armour(B, true); loftN(B.paint, R); armour(B, false);
       /* panel joints down the skirt and side (D1: six side panels, Q1) */
       var PJ = [-1.98, -1.17, -0.36, 0.45, 1.26, 2.07];
       for (k = 0; k < PJ.length; k++) box(B.dark, PJ[k] - 0.012, PJ[k] + 0.012, s > 0 ? ws - 0.004 : -ws - 0.006, s > 0 ? ws + 0.006 : -ws + 0.004, 0.73, zKnee(PJ[k]) - 0.02);
@@ -403,7 +487,7 @@ var HeroBradley = (function () {
         for (k = 0; k < 11; k++) {
           x = -2.55 + k * 0.48;
           box(B.dark, x - 0.04, x + 0.04, s > 0 ? ws : -ws - 0.03, s > 0 ? ws + 0.03 : -ws, 1.16, 1.24);
-          box(B.dark, x - 0.04, x + 0.04, s > 0 ? ws : -ws - 0.03, s > 0 ? ws + 0.03 : -ws, 1.58, 1.64);
+          if (zKnee(x) >= 1.66) box(B.dark, x - 0.04, x + 0.04, s > 0 ? ws : -ws - 0.03, s > 0 ? ws + 0.03 : -ws, 1.58, 1.64);
         }
       }
       if (V.brat) {
@@ -433,13 +517,15 @@ var HeroBradley = (function () {
     for (k = 0; k < 10; k++) slab(B.paint, shp(0.48 + k * 0.111, 0.024), [1, 0, 0], sp, sh, 0.02, 0.10, 0.012);
     if (V.mark >= 1) {
       /* applique plates on the glacis (D1, Q1) */
+      armour(B, true);
       slab(B.paint, glacisPt(2.55, 0.62, 0.03), GDIR, [0, 1, 0], GN, 0.62, 0.66, 0.03);
       slab(B.paint, glacisPt(2.95, -0.70, 0.03), GDIR, [0, 1, 0], GN, 0.22, 0.62, 0.03);
+      armour(B, false);
     }
     if (V.brat) {
       for (k = 0; k < 3; k++) for (i = 0; i < 6; i++) {
         if (i < 3 && k === 0) continue;
-        slab(B.paint, glacisPt(2.20 + k * 0.32, -1.25 + i * 0.47, 0.10), GDIR, [0, 1, 0], GN, 0.15, 0.22, 0.07);
+        slab(B.paint, glacisPt(2.20 + k * 0.32, -1.25 + i * 0.47, 0.065), GDIR, [0, 1, 0], GN, 0.15, 0.22, 0.07);
       }
     }
     /* nose: headlamp pairs in guards at the corners (P1, Q1), tow eyes, the M2's folded trim
@@ -448,14 +534,18 @@ var HeroBradley = (function () {
       y = s * (V.w - 0.25); z = 1.22;
       box(B.dark, 3.02, 3.16, y - 0.16, y + 0.16, z - 0.02, z + 0.04);
       for (k = 0; k < 2; k++) {
-        cylX(B.dark, 3.04, 3.17, y + (k ? 0.08 : -0.08), z + 0.12, 0.062, 0.066, 12);
-        cylX(B.glass, 3.17, 3.18, y + (k ? 0.08 : -0.08), z + 0.12, 0.055, 0.055, 12);
+        cylX(B.dark, 3.04, 3.17, y + (k ? 0.08 : -0.08), z + 0.10, 0.062, 0.066, 12);
+        cylX(B.glass, 3.17, 3.18, y + (k ? 0.08 : -0.08), z + 0.10, 0.055, 0.055, 12);
       }
       belt(B.dark, 3.02, z, 3.02, z + 0.24, y - 0.19, y - 0.17, 0.02);
       belt(B.dark, 3.02, z, 3.02, z + 0.24, y + 0.17, y + 0.19, 0.02);
       belt(B.dark, 3.02, z + 0.23, 3.20, z + 0.21, y - 0.19, y + 0.19, 0.02);
       cylY(B.dark, 3.22, s * 0.55 - 0.07, s * 0.55 + 0.07, 0.84, 0.07, 10);
       box(B.dark, 3.08, 3.20, s * 0.55 - 0.05, s * 0.55 + 0.05, 0.78, 0.90);
+      /* the big tow shackle hanging in each nose eye (Q1) */
+      for (k = -1; k <= 1; k += 2) cyl(B.dark, [3.215, s * 0.55 + k * 0.085, 0.86], [3.235, s * 0.55 + k * 0.085, 0.63], 0.022, 0.022, 8);
+      cylY(B.dark, 3.235, s * 0.55 - 0.107, s * 0.55 + 0.107, 0.62, 0.03, 10);
+      cylY(B.dark, 3.215, s * 0.55 - 0.11, s * 0.55 + 0.11, 0.86, 0.018, 8);
     }
     if (V.vane) {
       box(B.paint, 3.26, 3.30, -1.32, 1.32, 0.95, 1.18);
@@ -465,6 +555,13 @@ var HeroBradley = (function () {
       box(B.paint, 3.24, 3.29, -1.20, 1.20, 0.95, 1.14);
     }
 
+    /* the engine access plate on the right front of the roof, between the turret and the glacis
+       knee: its seam and lifting handles (Q1 shows the plate edges and handles ahead of the turret) */
+    box(B.dark, 0.66, 1.58, -1.31, -1.29, 1.95, 1.956);
+    box(B.dark, 0.66, 1.58, -0.31, -0.29, 1.95, 1.956);
+    box(B.dark, 0.66, 0.68, -1.31, -0.29, 1.95, 1.956);
+    box(B.dark, 1.56, 1.58, -1.31, -0.29, 1.95, 1.956);
+    for (k = 0; k < 2; k++) handle(B.dark, 1, -0.98 + k * 0.50, -0.86 + k * 0.50, 1.12, 1.95, 0.04);
     /* roof: the raised rear cargo hatch (D1), the team strips beside it, aerial bases */
     var cr = [[-2.10, 1.94], [-2.18, 2.09], [-2.72, 2.09], [-2.80, 1.94]];
     R = [];
@@ -489,7 +586,7 @@ var HeroBradley = (function () {
       box(B.dark, -3.235, -3.20, s * 1.25 - 0.08, s * 1.25 + 0.08, 1.60, 1.72);
       box(B.glass, -3.245, -3.235, s * 1.25 - 0.06, s * 1.25 + 0.06, 1.62, 1.70);
       box(B.dark, -3.19, -3.10, s * 1.10 - 0.05, s * 1.10 + 0.05, 1.05, 1.30);
-      cylX(B.dark, -3.20, -3.10, s * 1.10, 1.00, 0.04, 0.04, 8);
+      cylX(B.dark, -3.20, -3.10, s * 1.10, 1.03, 0.04, 0.04, 8);
     }
   }
 
@@ -548,16 +645,22 @@ var HeroBradley = (function () {
     cylY(B.paint, IDL.x, y + s * 0.13, y + s * 0.16, IDL.z, IDL.r - 0.05, 16);
     for (k = 0; k < 6; k++) { t = k / 6 * TAU; cylY(B.dark, IDL.x + Math.cos(t) * 0.14, y + s * 0.155, y + s * 0.165, IDL.z + Math.sin(t) * 0.14, 0.055, 8); }
     cylY(B.dark, IDL.x, y + s * 0.16, y + s * 0.19, IDL.z, 0.06, 10);
-    for (k = 0; k < XR.length; k++) cylY(B.dark, XR[k], y - 0.09, y + 0.09, ZR, RR, 10);
+    for (k = 0; k < XR.length; k++) cylY(B.dark, XR[k], y - 0.09, y + 0.09, ZR, RR + 0.015, 10);
+    /* the final-drive and idler axles out of the hull into the hubs */
+    cylY(B.dark, SPR.x, s * 0.94, y, SPR.z, 0.09, 10);
+    cylY(B.dark, IDL.x, s * 0.94, y, IDL.z, 0.08, 10);
     /* torsion-bar arms between the wheels and the hull */
     for (k = 0; k < XW.length; k++) slab(B.dark, [XW[k] - 0.18, s * (TY - 0.31), ZW + 0.12], unit([1, 0, -0.45]), [0, 1, 0], unit([0.45, 0, 1]), 0.20, 0.035, 0.04);
   }
 
   /* road wheel (D1, P2, Q1): twin dished aluminium discs on rubber tyres, a hub cap with its nuts */
-  var TYRE = [0.13, 0.135, 0.125], NUT = [0.17, 0.18, 0.16];
+  /* vertex colours are linear: the hub paint is the hull's sRGB coat taken to linear, so the
+     discs match the hull instead of reading near-white; the tyres near black as D1 draws them */
+  var TYRE = [0.035, 0.036, 0.034], NUT = [0.05, 0.052, 0.048];
+  function lin(h) { return Math.pow(parseInt(h, 16) / 255, 2.2); }
   function addWheel(W, V) {
-    var s, y, i, a, c = V.paint.base, rr = parseInt(c.substr(1, 2), 16) / 255, gg = parseInt(c.substr(3, 2), 16) / 255, bb = parseInt(c.substr(5, 2), 16) / 255;
-    var BODY = [rr * 1.05, gg * 1.05, bb * 1.05];
+    var s, y, i, a, c = V.paint.base;
+    var BODY = [lin(c.substr(1, 2)), lin(c.substr(3, 2)), lin(c.substr(5, 2))];
     for (s = -1; s <= 1; s += 2) {
       y = s * TY;
       W.col = TYRE;
@@ -565,7 +668,7 @@ var HeroBradley = (function () {
       cylY(W, 0, y + 0.07, y + 0.25, 0, RW, 20);
       W.col = BODY;
       cylY(W, 0, y - 0.07, y + 0.07, 0, RW - 0.06, 16);
-      cyl(W, [0, y + s * 0.25, 0], [0, y + s * 0.27, 0], RW - 0.05, 0.15, 18);
+      cyl(W, [0, y + s * 0.25, 0], [0, y + s * 0.27, 0], RW - 0.085, 0.15, 18);
       cylY(W, 0, y + s * 0.255, y + s * 0.272, 0, 0.21, 18);
       cylY(W, 0, y + s * 0.27, y + s * 0.30, 0, 0.10, 12);
       W.col = NUT;
@@ -587,11 +690,12 @@ var HeroBradley = (function () {
   function addTow(B, V) {
     /* the twin TOW launcher on the turret's LEFT side (P2, D1, Q1, R2): a box 1.2 m long, its
        armoured front doors closed when stowed, open on the two tubes when raised */
-    var y0 = 1.00, y1 = 1.55, x0 = -1.42, x1 = -0.10, z0 = 0.12, z1 = 0.74, k, s, M = markBins(B);
+    var y0 = 0.97, y1 = 1.35, x0 = -1.42, x1 = -0.10, z0 = 0.12, z1 = 0.74, k, s, M = markBins(B);
     box(B.paint, x0, x1, y0, y1, z0, z1);
     box(B.dark, x0 + 0.10, x1 - 0.10, y1, y1 + 0.006, z0 + 0.05, z0 + 0.07);
     box(B.dark, x0 + 0.10, x1 - 0.10, y1, y1 + 0.006, z1 - 0.07, z1 - 0.05);
     box(B.paint, x0 + 0.20, x0 + 0.60, y0 + 0.06, y1 - 0.06, z1, z1 + 0.025);
+    if (!V.towUp) box(B.dark, x0 - 0.04, x0 + 0.10, y0 - 0.03, y0 + 0.05, z0 + 0.02, z0 + 0.18);   /* rear hinge block (stowed; R2: raised, the rear is free) */
     if (V.towUp) {
       for (k = 0; k < 2; k++) {
         cylX(B.dark, x1, x1 + 0.02, (y0 + y1) / 2, z0 + 0.14 + k * 0.26, 0.10, 0.10, 14);
@@ -599,23 +703,28 @@ var HeroBradley = (function () {
       }
       box(B.paint, x1, x1 + 0.03, y0 - 0.02, y0 + 0.02, z0, z1);
       box(B.paint, x1, x1 + 0.03, y1 - 0.02, y1 + 0.02, z0, z1);
-      /* raised (Q1, R2): the box swings up on its arm until it stands clear over the turret
-         roof, a little nose up */
-      pitchSince(B, M, x0, z0, 0.12);
-      for (k in B) for (s = M[k] + 2; s < B[k].P.length; s += 3) B[k].P[s] += 0.64;
-      slab(B.dark, [x0 + 0.30, y0 + 0.12, 0.50], unit([0.25, 0, 1]), [0, 1, 0], unit([-1, 0, 0.25]), 0.30, 0.05, 0.05);
-      slab(B.dark, [x0 + 0.95, y0 + 0.12, 0.62], unit([0.6, 0, 1]), [0, 1, 0], unit([-1, 0, 0.6]), 0.22, 0.04, 0.04);
+      /* raised (Q1, R2): the box rolls 90 deg outboard about its long axis, so the two tubes
+         that are stacked when stowed sit side by side, and rises clear over the turret roof,
+         level to 3 deg nose down; R2 (253 px a metre) puts its belly at z 2.85 and its top with
+         the lid hump at about 3.25 (turret frame: 0.90 and 1.30) */
+      rollRaise(B, M, (y0 + y1) / 2, (z0 + z1) / 2, 1.11, 0.90 + (y1 - y0) / 2, (x0 + x1) / 2, -0.03);
+      box(B.paint, x0 + 0.35, x0 + 0.95, 1.11 - 0.22, 1.11 + 0.22, 0.90 + (y1 - y0) - 0.005, 0.90 + (y1 - y0) + 0.03);   /* lid hump (R2) */
+      /* R2: the support stands under the FRONT 40 per cent only, the rear is cantilevered: a
+         bracket on the turret side, two posts and the spring strut between them up into the belly */
+      box(B.dark, -0.66, -0.10, 0.95, 1.07, 0.04, 0.30);
+      strut(B.dark, [-0.60, 1.01, 0.26], [-0.60, 1.01, 0.93], 0.04, 0.035);
+      strut(B.dark, [-0.16, 1.01, 0.26], [-0.16, 1.01, 0.93], 0.04, 0.035);
+      cyl(B.dark, [-0.38, 1.01, 0.26], [-0.38, 1.01, 0.93], 0.05, 0.05, 10);
     } else {
       box(B.dark, x1, x1 + 0.012, y0 + 0.03, y1 - 0.03, z0 + 0.03, z1 - 0.03);
       box(B.paint, x1 + 0.012, x1 + 0.03, y0 + 0.05, y1 - 0.05, z0 + 0.05, z1 - 0.05);
-      for (s = 0; s < 2; s++) box(B.dark, x1 + 0.03, x1 + 0.045, y0 + 0.08 + s * 0.28, y0 + 0.12 + s * 0.28, (z0 + z1) / 2 - 0.03, (z0 + z1) / 2 + 0.03);
+      for (s = 0; s < 2; s++) box(B.dark, x1 + 0.03, x1 + 0.045, y0 + 0.08 + s * 0.20, y0 + 0.12 + s * 0.20, (z0 + z1) / 2 - 0.03, (z0 + z1) / 2 + 0.03);
     }
-    box(B.dark, x0 - 0.04, x0 + 0.10, y0 - 0.06, y0 + 0.02, z0 + 0.02, z0 + 0.18);
   }
   function addTurret(V, B) {
     var R = [], i, s, k, a, x, y;
     for (i = 0; i < TPL.length; i++) R.push(ringAt(TPL[i].H, TPL[i].z));
-    loftN(B.paint, R);
+    armour(B, true); loftN(B.paint, R); armour(B, false);
     /* the mantlet and the M242 25 mm: sleeve, barrel, the thinner muzzle section and its flash
        hider reaching 2.79 m ahead of the ring (D1); the M240C coaxial on the right */
     box(B.paint, 0.80, 1.06, -0.26, 0.26, 0.24, 0.66);
@@ -626,7 +735,7 @@ var HeroBradley = (function () {
     cylX(B.dark, 2.02, 2.46, 0, GZ, 0.031, 0.031, 10);
     cylX(B.dark, 2.46, 2.79, 0, GZ, 0.037, 0.037, 10);
     cylX(B.dark, 2.70, 2.79, 0, GZ, 0.045, 0.045, 10);
-    cylX(B.dark, 1.14, 1.40, -0.18, GZ - 0.06, 0.022, 0.02, 6);
+    cylX(B.dark, 1.00, 1.40, -0.18, GZ - 0.06, 0.022, 0.02, 6);
     /* M257 smoke launchers: a four-tube cluster on each front corner (D1, Q1) */
     for (s = -1; s <= 1; s += 2) {
       y = s * 0.84;
@@ -645,7 +754,7 @@ var HeroBradley = (function () {
     box(B.paint, ib ? 0.06 : 0.12, ib ? 0.58 : 0.52, 0.14, 0.50, 0.86, ib ? 1.10 : 1.07);
     box(B.glass, ib ? 0.58 : 0.52, ib ? 0.595 : 0.535, 0.18, 0.30, 0.92, 1.02);
     box(B.glass, ib ? 0.58 : 0.52, ib ? 0.595 : 0.535, 0.34, 0.46, 0.92, 1.02);
-    box(B.dark, ib ? 0.585 : 0.525, ib ? 0.60 : 0.54, 0.16, 0.48, 1.03, 1.05);
+    box(B.dark, ib ? 0.575 : 0.515, ib ? 0.60 : 0.54, 0.16, 0.48, 1.03, 1.05);
     if (V.mark === 1) { box(B.paint, 0.20, 0.50, 0.03, 0.14, 0.88, 1.02); box(B.glass, 0.50, 0.51, 0.05, 0.12, 0.92, 0.98); }
     if (ib) {
       for (s = 0; s < 2; s++) box(B.paint, 0.56, 0.62, s ? 0.32 : 0.12, s ? 0.52 : 0.32, 1.06, 1.09);
@@ -677,6 +786,23 @@ var HeroBradley = (function () {
       box(B.glass, -0.40, -0.385, -0.64, -0.50, 1.08, 1.24);
       box(B.dark, -0.90, -0.86, -0.86, -0.46, 1.04, 1.26);
     }
+    /* reactive tiles on the turret too (R1: the lower front cheeks either side of the mantlet and
+       the turret sides, the left side only ahead of the TOW box) */
+    if (V.brat) {
+      var tu = unit([-0.12, 0, 0.30]), tn = unit([0.30, 0, 0.12]);
+      for (s = -1; s <= 1; s += 2) for (k = 0; k < 2; k++)
+        slab(B.paint, [0.94 + tn[0] * 0.045, s * (0.40 + k * 0.20), 0.13 + tn[2] * 0.045], tu, [0, 1, 0], tn, 0.15, 0.092, 0.045);
+      for (k = 0; k < 4; k++) {
+        x = -0.80 + k * 0.37;
+        box(B.paint, x, x + 0.35, -1.10, -0.975, 0.0, 0.27);
+        box(B.dark, x + 0.03, x + 0.32, -1.105, -1.10, 0.03, 0.05);
+      }
+      for (k = 0; k < 2; k++) {
+        x = -0.04 + k * 0.37;
+        box(B.paint, x, x + 0.35, 0.975, 1.10, 0.0, 0.27);
+        box(B.dark, x + 0.03, x + 0.32, 1.10, 1.105, 0.03, 0.05);
+      }
+    }
     /* the bustle rack at the turret rear (P2, D1) with its stowage */
     box(B.dark, -1.14, -0.80, -0.92, 0.88, 0.08, 0.11);
     for (s = -1; s <= 1; s += 2) {
@@ -687,6 +813,16 @@ var HeroBradley = (function () {
     box(B.dark, -1.15, -1.11, -0.88, 0.88, 0.27, 0.29);
     cylY(B.paint, -0.98, -0.80, 0.20, 0.25, 0.14, 12);
     box(B.paint, -1.08, -0.82, 0.24, 0.82, 0.11, 0.38);
+    /* tie-down straps over the kit in the rack, as the field photographs show it (P2, R2, R5):
+       two across the box, two round the roll */
+    for (k = 0; k < 2; k++) {
+      x = -1.02 + k * 0.13;
+      box(B.dark, x, x + 0.035, 0.23, 0.83, 0.375, 0.39);
+      cylY(B.dark, -0.98, -0.62 + k * 0.50, -0.585 + k * 0.50, 0.25, 0.148, 12);
+    }
+    /* the two small lifting loops at the turret's front top edge (Q1), right of the sight head */
+    handle(B.dark, 1, -0.24, -0.14, 0.60, 0.74, 0.05);
+    handle(B.dark, 1, -0.66, -0.56, 0.56, 0.74, 0.05);
     /* two whip aerials at the turret rear (P1, D1) */
     for (s = -1; s <= 1; s += 2) {
       cylZ(B.dark, -0.72, s * 0.55, 0.74, 0.86, 0.045, 8);
