@@ -1,0 +1,319 @@
+{
+ "key": "roc_e80_cas",
+ "team": "nato",
+ "name": "AIDC AT-3A/B Tzu Chung",
+ "category": "air",
+ "published": {
+  "len": 12.9,
+  "span": 10.46,
+  "height": 4.36,
+  "source": "en.wikipedia 'AIDC AT-3' specification: length 12.9 m with the pitot, span 10.46 m, height 4.36 m"
+ },
+ "len": 12.87,
+ "nodes": [
+  "gear"
+ ],
+ "references": [
+  {
+   "name": "[D3] AIDC AT-3 three-view, side",
+   "image": "ref/roc_e80_cas/at3_3v.png",
+   "source": "Wikimedia Commons 'AIDC AT-3.svg', 1400 px render",
+   "view": "side",
+   "crop": [
+    478,
+    430,
+    1400,
+    760
+   ],
+   "flip": true,
+   "px_per_m": 70.8,
+   "origin_px": [
+    900,
+    615
+   ],
+   "mask": "dark",
+   "mask_opts": {
+    "threshold": 128,
+    "fill": true,
+    "close_px": 2
+   },
+   "exact": true,
+   "note": "Port side, nose left, so flipped. Scaled on the published 12.9 m over the probe tip (px 485) to the rudder (px 1398), 913 px = 70.8 px/m. Model x = 0 at px 900, z = 0 at py 615 (the nacelle axis); js/hero/roc_air.js's AT3 tables are in these pixels. Gear down, as the model. The window leaves out the gear and the ground line below z -0.95 (the drawing's ground line and the gear legs close the fill under the belly; the ventral fairing's outline is open there, so it is not filled either); the box x 4.5..6.2, z 1.8..2.8 is left out, where another view's line enters the crop.",
+   "window_m": [
+    -7.3,
+    -0.95,
+    6.2,
+    2.8
+   ],
+   "ignore_m": [
+    [
+     4.5,
+     1.8,
+     6.2,
+     2.8
+    ]
+   ]
+  },
+  {
+   "name": "[D3] AIDC AT-3 three-view, plan",
+   "image": "ref/roc_e80_cas/at3_3v.png",
+   "source": "Wikimedia Commons 'AIDC AT-3.svg', 1400 px render",
+   "view": "top",
+   "crop": [
+    0,
+    20,
+    915,
+    775
+   ],
+   "px_per_m": 69.3,
+   "anchor_px": [
+    905,
+    397
+   ],
+   "anchor_m": [
+    5.862,
+    0
+   ],
+   "mask": "dark",
+   "mask_opts": {
+    "threshold": 128,
+    "fill": true,
+    "close_px": 2
+   },
+   "exact": true,
+   "note": "Nose right. The plan is drawn 1.8 per cent short of the side fore and aft (69.56 px/m) against 69.0 px/m across (tip to tip 722 px = 10.46 m); 69.3 is the mean, so expect up to 4 cm at the nose and tail and at the tips. The nose tip (col 905) is put on the model's probe tip, x 5.862. Only the port half is compared (window y >= -0.1): the drawing's two halves differ by up to 0.2 m at the starboard wing and the tables were read off the port half; the box x 1.0..6.2, y 1.25..5.5 is left out, where the head-on view's wing overlaps the plan's crop.",
+   "window_m": [
+    -7.4,
+    -0.1,
+    6.2,
+    5.4
+   ],
+   "ignore_m": [
+    [
+     1.0,
+     1.25,
+     6.2,
+     5.5
+    ]
+   ]
+  },
+  {
+   "name": "[D3] AIDC AT-3 three-view, head-on",
+   "image": "ref/roc_e80_cas/at3_3v.png",
+   "source": "Wikimedia Commons 'AIDC AT-3.svg', 1400 px render",
+   "view": "front",
+   "crop": [
+    580,
+    0,
+    1320,
+    300
+   ],
+   "px_per_m": 69.8,
+   "anchor_px": [
+    950,
+    293
+   ],
+   "anchor_m": [
+    0,
+    -1.836
+   ],
+   "mask": "dark",
+   "mask_opts": {
+    "threshold": 128,
+    "fill": true,
+    "close_px": 2
+   },
+   "exact": false,
+   "note": "Advisory. Scaled on the span (730 px = 10.46 m), centre col 950, hung from its ground line (py 293) on the model's ground. Its fin stands 4.2 m over that ground against the side view's 4.39 m, so the head-on's gear or ground line differs from the side's: used for spanwise stations only (the pylons at 2.08 and 3.44 m out, the main track)."
+  },
+  {
+   "name": "[P3] ROCAF AT-3 0832 at Hsinchu, 2015",
+   "image": "ref/roc_e80_cas/at3_0832.jpg",
+   "source": "Wikimedia Commons 'ROCAF AIDC AT-3 0832 Display at Hsinchu Air Force Base 20151121a.jpg'",
+   "view": "quarter",
+   "exact": false,
+   "note": "Starboard front quarter, gear down: the nacelles' D intakes, the stepped canopy, the bare underwing pylons, the ventral fairing under the front cockpit, the low tailplane on the body's top at the fin root. Its red, white and blue Thunder Tiger display bands, roundel and numbers are markings and are not drawn; the white ground is kept."
+  }
+ ],
+ "must_show": [
+  "two engine nacelles hugging the fuselage sides from x -0.07 to -5.7, each with a D-shaped intake at x -0.07, outer edge y +-1.10",
+  "the long stepped tandem canopy from x 3.4 to -1.6, its top at z 0.86 at x 0.56, with three frames at x 2.52, 0.88 and -0.82",
+  "the straight tapered low wing, tips at y +-5.19, LE swept 11.8 deg, TE 5 deg forward, chord plane z -0.38",
+  "four bare underwing pylons hanging 0.14 m under the wing at y +-2.08 and +-3.44, from 25 per cent chord, 0.9 m long",
+  "the low tailplane on the body's top at the fin root, z 0.56, x -5.2 to -6.7, span +-2.0 m",
+  "the swept fin, top at z 2.56 at x -6.2 to -6.8",
+  "the pitot probe ahead of the radome, x 5.2 to 5.86 at z -0.73",
+  "the ventral fairing under the front cockpit, x 4.5 to 3.6, its bottom at z -1.10",
+  "tricycle gear: nose wheel at x 3.50, mains at x -1.85 (D3 px 1031), track 3.87 m"
+ ],
+ "landmarks": [
+  {
+   "name": "nose wheel centre",
+   "ref": 0,
+   "at_px": [
+    652,
+    728
+   ],
+   "model_at": {
+    "material": "#1c1d1e",
+    "in_m": [
+     2.9,
+     -0.5,
+     -2.0,
+     4.1,
+     0.5,
+     -1.0
+    ]
+   },
+   "note": "D3 side: nose wheel at px 652, radius 17 px over the ground line py 745"
+  },
+  {
+   "name": "port main wheel centre",
+   "ref": 0,
+   "at_px": [
+    1031,
+    720
+   ],
+   "model_at": {
+    "material": "#1c1d1e",
+    "in_m": [
+     -2.7,
+     1.0,
+     -2.0,
+     -1.5,
+     3.0,
+     -1.0
+    ]
+   },
+   "note": "D3 side: the main tyre spans px 1010-1052 behind the leg fairing (rows py 722, 730), centre 1031; its bottom at py 740, so 720 with the 21 px radius"
+  },
+  {
+   "name": "canopy top",
+   "ref": 0,
+   "at_px": [
+    860,
+    554
+   ],
+   "model_at": {
+    "material": "#24343b",
+    "edge": "upper"
+   },
+   "note": "D3 side: the hood's highest point at px 860, py 554"
+  },
+  {
+   "name": "fin top",
+   "ref": 0,
+   "at_px": [
+    1360,
+    434
+   ],
+   "model_at": {
+    "in_m": [
+     -7.2,
+     -0.3,
+     1.5,
+     -5.8,
+     0.3,
+     3.0
+    ],
+    "edge": "upper"
+   },
+   "note": "D3 side: the fin tip's flat top at py 434, read at px 1360"
+  },
+  {
+   "name": "port wing tip leading edge",
+   "ref": 1,
+   "at_px": [
+    384,
+    39
+   ],
+   "model_at": {
+    "in_m": [
+     -3.0,
+     5.15,
+     -1.0,
+     1.0,
+     5.3,
+     0.0
+    ],
+    "whole": true,
+    "point": [
+     "max",
+     "max"
+    ]
+   },
+   "note": "D3 plan: the tip row py 39, its LE at col 384"
+  },
+  {
+   "name": "outer port pylon, spanwise",
+   "ref": 2,
+   "expect_m": [
+    null,
+    3.44,
+    null
+   ],
+   "model_at": {
+    "in_m": [
+     -3.0,
+     3.3,
+     -0.8,
+     1.5,
+     3.6,
+     -0.36
+    ],
+    "whole": true
+   },
+   "note": "D3 head-on: the outer pylon at col 1189, (1189 - 950) / 69.8 = 3.42 m; the starboard one at col 710 gives 3.44"
+  },
+  {
+   "name": "inner port pylon, spanwise",
+   "ref": 2,
+   "expect_m": [
+    null,
+    2.08,
+    null
+   ],
+   "model_at": {
+    "in_m": [
+     -2.5,
+     1.95,
+     -0.8,
+     1.5,
+     2.2,
+     -0.36
+    ],
+    "whole": true
+   },
+   "note": "D3 head-on: the inner pylons at cols 805 and 1095, 2.08 m out"
+  },
+  {
+   "name": "tailplane height",
+   "ref": 0,
+   "expect_m": [
+    null,
+    null,
+    0.565
+   ],
+   "model_at": {
+    "in_m": [
+     -7.0,
+     1.0,
+     0.2,
+     -4.8,
+     2.5,
+     1.0
+    ]
+   },
+   "note": "D3 side: the tailplane's section at px 1260-1357 lies at py 572-578, mid 575 = z 0.565; D3 head-on agrees (67 px over the wing's line, as 642 - 575 in the side)"
+  }
+ ],
+ "not_confirmed": [
+  "the AT-3A/B attack aircraft's service paint: every photograph fetched is a display or trainer aircraft (white ground kept)",
+  "the dihedral: D3 head-on reads 0.5 deg port and 2.1 deg starboard; the mean 1.3 deg is drawn",
+  "the main track 3.87 m (D3 head-on, one leg drawn)",
+  "the pylons' chord (0.9 m) and thickness (8 cm), and their fore-and-aft station (from 25 per cent chord): D3 head-on and P3 show only where they hang and how deep",
+  "no stores: no reference shows one fitted, so the pylons are bare; the gun pod and the wingtip launch rails are not drawn",
+  "the ventral fairing's width (0.24 m)",
+  "panel-seam ring positions (nacelles px 1100 / 1180, tail cone px 1320 / 1350) read off D3's side; the ribbon widths"
+ ]
+}
