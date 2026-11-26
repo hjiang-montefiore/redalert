@@ -1,0 +1,254 @@
+{
+  "key": "nato_e80_battleship",
+  "team": "nato",
+  "name": "Iowa-class battleship after the 1982 reactivation (USS New Jersey, BB-62)",
+  "category": "ship",
+  "published": {
+    "len": 270.4,
+    "beam": 32.97,
+    "draught": 11.0,
+    "source": "en.wikipedia 'Iowa-class battleship': 887 ft 3 in overall, 108 ft 2 in beam, about 36 ft draught"
+  },
+  "len": 270.4,
+  "nodes": [
+    "turret"
+  ],
+  "references": [
+    {
+      "name": "[D1] Iowa class drawing, profile (1945 fit)",
+      "image": "ref/nato_e80_battleship/iowa_classe_battleships_drawing.jpg",
+      "source": "Wikimedia Commons 'Iowa classe battleships drawing.jpg' (profile and plan at one scale), 1600 x 589",
+      "view": "side",
+      "crop": [
+        0,
+        0,
+        1600,
+        320
+      ],
+      "px_per_m": 5.73,
+      "anchor_px": [
+        797.7,
+        294
+      ],
+      "anchor_m": [
+        0,
+        0
+      ],
+      "mask": "dark",
+      "mask_opts": {
+        "threshold": 215,
+        "fill": true,
+        "close_px": 2
+      },
+      "window_m": [
+        -136,
+        0.4,
+        136,
+        9.6
+      ],
+      "ignore_m": [
+        [
+          -136,
+          0,
+          -121,
+          20
+        ]
+      ],
+      "align_m": 0.6,
+      "exact": true,
+      "note": "Scaled on the published 270.4 m: stern col 23, stem head col 1572 (1549 px, 5.73 px/m). Waterline taken at row 294 (the drawn hull bottom amidships; it rises to row 290 at the bow, about 0.7 m, read as the drawing's trim or line weight). Only the hull and the 01 level (z 0.4..9.6) are compared: everything above is the 1945 fit (40 mm, ten 5-inch, the pole masts), which the 1980s ship does not carry. The stern crane (1945) is left out. One pixel is 0.17 m."
+    },
+    {
+      "name": "[D2] Iowa class drawing, plan (1945 fit)",
+      "image": "ref/nato_e80_battleship/iowa_classe_battleships_drawing.jpg",
+      "source": "same sheet as [D1]",
+      "view": "top",
+      "crop": [
+        0,
+        330,
+        1600,
+        589
+      ],
+      "px_per_m": 5.736,
+      "anchor_px": [
+        800.5,
+        466.5
+      ],
+      "anchor_m": [
+        0,
+        0
+      ],
+      "mask": "dark",
+      "mask_opts": {
+        "threshold": 160,
+        "fill": true,
+        "close_px": 2
+      },
+      "align_m": 0.6,
+      "exact": false,
+      "note": "Along the length 1551 px for 270.4 m (5.736 px/m), but across it the deck reads 200 px, 34.9 m against the published 32.97 m beam: 6 per cent wide (line weight and the 40 mm tub sponsons amidships), so it is kept for the plan taper and the stations only, not gated."
+    },
+    {
+      "name": "[P1] Missouri (BB-63) in dry dock, stern view (1980s)",
+      "image": "ref/nato_e80_battleship/missouri_stern_dry_dock.jpg",
+      "source": "DPLA / US Navy 'A stern view of the battleship USS MISSOURI (BB-63) as it lies in dry dock during a yard period'",
+      "view": "quarter",
+      "exact": false,
+      "note": "For the reviewer only: the knuckle round the stern, the two skegs, the twin rudders and the four screws."
+    }
+  ],
+  "must_show": [
+    "long fine hull 270.4 m, the deck plan at full beam from about x -40 to x 0 and narrowing to about 2 m at the stem x 135.2 (D2); the sheer rising from 7 m at x 55 to 13.2 m at the stem, the bulwark to about 14.1 m at x 134 (D1)",
+    "convex clipper stem raked about 6.7 m from the waterline to the deck (x 128.5..135.2) and the round cruiser stern at x -135.2 with its knuckle about 2.4 m under the deck edge (D1, P1)",
+    "three triple 16-inch turrets: No. 1 at x 57.0 (roof 11.3), No. 2 superfiring at x 36.4 (roof 14.3), No. 3 aft at x -65.3 facing aft (roof 11.7) (D1)",
+    "the tower foremast x -6.6..10.3 to 29.3 m, the upper tower to the director platform at 36.2 m and the Mk 38 director at x 7.6 with its Mk 13 antenna to about 41.4 m; the armoured conning tower ahead of it at x 24.6 (D1)",
+    "two stacks with black caps: the forward one at x -2.7 hard against the tower (cap 31 m), the after one at x -28.8 (cap about 29.7 m) (D1)",
+    "the 1980s fit: three twin 5-inch mounts a side (x 8.9, -0.6, -11.5), eight Mk 143 armored box launchers (x -17.4 on the 02 level, x -41.5 on the 01 level), four quad Harpoon canisters at x -36.2 and -39.4 beside the after stack, four Phalanx (x -2.2 on sponsons at 19.4 m, x -24.0) (1980s photographs, per the model's header)",
+    "the black lattice foremast over the tower top x -1.4..4.0, the SPS-49 at its head about 44 m and the pole topmast to 55 m (1980s photographs)",
+    "no crane on the fantail; the grey painted fantail with the white landing spot x -128..-73 (1983 overhead), teak deck elsewhere from x -134.6 to the stem"
+  ],
+  "landmarks": [
+    {
+      "name": "No. 1 turret roof",
+      "ref": 0,
+      "expect_m": [
+        57.0,
+        11.34
+      ],
+      "tol_m": 0.25,
+      "model_at": {
+        "material": "#737b82",
+        "in_m": [
+          50,
+          3.8,
+          9.5,
+          64,
+          5.9,
+          12.4
+        ],
+        "edge": "upper"
+      },
+      "note": "D1 col 1124, top row 229 (one pixel 0.17 m, so 0.25 m tolerance). The box keeps to the roof's port edge: No. 2's barrels overhang No. 1's roof at y 0 and +-3.05"
+    },
+    {
+      "name": "No. 2 turret roof",
+      "ref": 0,
+      "expect_m": [
+        36.4,
+        14.31
+      ],
+      "tol_m": 0.25,
+      "model_at": {
+        "material": "#737b82",
+        "in_m": [
+          29,
+          -6,
+          12.5,
+          44,
+          6,
+          16
+        ],
+        "edge": "upper"
+      },
+      "note": "D1 col 1006, top row 212"
+    },
+    {
+      "name": "No. 3 turret roof",
+      "ref": 0,
+      "expect_m": [
+        -65.3,
+        11.69
+      ],
+      "tol_m": 0.25,
+      "model_at": {
+        "material": "#737b82",
+        "in_m": [
+          -73,
+          -6,
+          9.5,
+          -58,
+          6,
+          13
+        ],
+        "edge": "upper"
+      },
+      "note": "D1 col 424, top row 227"
+    },
+    {
+      "name": "stem head bulwark",
+      "ref": 0,
+      "expect_m": [
+        134.0,
+        14.14
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "material": "#737b82",
+        "in_m": [
+          131,
+          -4,
+          12,
+          135.5,
+          4,
+          16
+        ],
+        "edge": "upper"
+      },
+      "note": "D1 col 1566, top row 213; the drawn bottom rises 0.7 m toward the bow, hence 0.3 m"
+    },
+    {
+      "name": "Mk 38 director top (fwd), Mk 13 antenna",
+      "ref": 0,
+      "expect_m": [
+        null,
+        41.36
+      ],
+      "tol_m": 0.25,
+      "model_at": {
+        "in_m": [
+          5.0,
+          -3,
+          37,
+          10.5,
+          3,
+          44
+        ],
+        "point": [
+          "mid",
+          "max"
+        ]
+      },
+      "note": "D1 col 841, top row 57"
+    },
+    {
+      "name": "length",
+      "ref": 0,
+      "expect_m": [
+        135.2,
+        null
+      ],
+      "tol_m": 0.3,
+      "model_at": {
+        "in_m": [
+          120,
+          -5,
+          0,
+          140,
+          5,
+          16
+        ],
+        "point": [
+          "max",
+          null
+        ]
+      },
+      "note": "D1 stem head col 1572"
+    }
+  ],
+  "not_confirmed": [
+    "everything above the 01 level is checked against no 1980s drawing: the only scaled drawing is the 1945 fit, and the 1980s photographs (port broadside 1983, overheads) could not be fetched for this spec (Commons API rate-limited, 2026-11-26); stations of the box launchers, Harpoons and Phalanx come from the model's earlier reading of them",
+    "the Mk 13 antenna's shape and its post: drawn as an upright curved strip 2.3 m across, its top matched to D1",
+    "the underwater body: skegs, screws and rudders from P1's proportions only; the outer shafts lie inside the hull's bilge (the gate's 0.5 m standing-off parts at x -96..-70)",
+    "the waterline: D1's drawn bottom rises 0.7 m toward the bow; the model is level"
+  ]
+}

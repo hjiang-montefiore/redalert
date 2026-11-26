@@ -445,12 +445,24 @@ var HeroIowaBB = (function () {
     var g = geo.index ? geo.toNonIndexed() : geo;
     if (!g.getAttribute("normal")) g.computeVertexNormals();
     var P = g.getAttribute("position"), N = g.getAttribute("normal"), U = g.getAttribute("uv");
-    for (var i = 0; i < P.count; i++)
-      this.vert(P.getX(i), P.getY(i), P.getZ(i), N.getX(i), N.getY(i), N.getZ(i),
-                U ? U.getX(i) : 0, U ? U.getY(i) : 0);
+    for (var i = 0; i + 2 < P.count; i += 3) {
+      /* a triangle with no area (a hull level collapsed onto the keel at the
+         counter, a cone's tip) draws nothing: leave it out               */
+      if (Batch.area2(P.getX(i), P.getY(i), P.getZ(i), P.getX(i + 1), P.getY(i + 1), P.getZ(i + 1),
+                      P.getX(i + 2), P.getY(i + 2), P.getZ(i + 2)) < 1e-5) continue;
+      for (var k = i; k < i + 3; k++)
+        this.vert(P.getX(k), P.getY(k), P.getZ(k), N.getX(k), N.getY(k), N.getZ(k),
+                  U ? U.getX(k) : 0, U ? U.getY(k) : 0);
+    }
     return this;
   };
+  Batch.area2 = function (ax, ay, az, bx, by, bz, qx, qy, qz) {
+    var ux = bx - ax, uy = by - ay, uz = bz - az, vx = qx - ax, vy = qy - ay, vz = qz - az;
+    var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    return Math.sqrt(nx * nx + ny * ny + nz * nz);
+  };
   Batch.prototype.tri = function (a, b, c) {
+    if (Batch.area2(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]) < 1e-5) return;
     var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
     var vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
     var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
@@ -942,7 +954,7 @@ var HeroIowaBB = (function () {
     /* the stem bulwark and its platform, and the deck-edge rails */
     for (s = -1; s <= 1; s += 2) {
       var bp = [], xx;
-      for (xx = 126.0; xx <= 134.6; xx += 2.15) bp.push([xx, s * (hullHW(xx) - 0.1)]);
+      for (xx = 126.0; xx <= 134.65; xx += 2.15) bp.push([xx, s * (hullHW(xx) - 0.1)]);
       for (i = 0; i < bp.length - 1; i++) {
         var za = deckZ(bp[i][0]), zb = deckZ(bp[i + 1][0]);
         var Lb = Math.sqrt((bp[i + 1][0] - bp[i][0]) * (bp[i + 1][0] - bp[i][0]) + (bp[i + 1][1] - bp[i][1]) * (bp[i + 1][1] - bp[i][1]));
@@ -1182,10 +1194,22 @@ var HeroIowaBB = (function () {
         bar("sup", -0.4, -5.3, 1.75, -0.4, 5.3, 1.75, 0.34);
         for (var e = -1; e <= 1; e += 2) bx("sup", 0.8, 0.5, 0.9, -0.4, e * 5.3, 1.75);
         /* the Mk 13 "orange peel" on top */
-        bx("metal", 0.25, 0.25, 0.7, 0.4, 0, 3.1);
+        bx("metal", 0.25, 0.25, 1.45, 0.4, 0, 3.5);
+        /* an upright strip of a cylinder, 2.3 m across, concave forward,
+           its middle on the post; its top at 41.3 m on the tower (drawing
+           41.4). It was a flat strip standing 2.3 m clear of everything  */
         var g = new THREE.CylinderGeometry(2.1, 2.1, 1.0, 14, 1, true, -0.55, 1.1);
-        g.translate(-1.6, 0, 3.75);
-        cur.dark.add(g);
+        g.rotateX(PI / 2); g.rotateZ(-PI / 2);
+        g.translate(2.5, 0, 4.5);
+        cur.sup.add(g);
+        /* its concave face too: the strip is one sheet, seen from both sides */
+        var gb = g.clone(), ix = gb.index.array, q;
+        for (q = 0; q < ix.length; q += 3) { var t0 = ix[q]; ix[q] = ix[q + 1]; ix[q + 1] = t0; }
+        gb.computeVertexNormals();
+        cur.sup.add(gb);
+        /* the feed horn at the reflector's focus, on its strut off the post */
+        bar("metal", 0.4, 0, 4.15, 1.45, 0, 4.45, 0.05);
+        bx("dark", 0.32, 0.36, 0.32, 1.5, 0, 4.47);
       });
     }
     mk38(7.6, 36.25, 0);
@@ -1410,7 +1434,7 @@ var HeroIowaBB = (function () {
         bar("dark", -1.4, s * 7.2, 40.8, -1.4, s * 7.2, 42.3, 0.035);
         bar("dark", -1.4, s * 4.8, 40.8, -1.4, s * 4.8, 39.4, 0.03);
       }
-      bar("dark", -2.4, -5.4, 37.4, -2.4, 5.4, 37.4, 0.08);
+      bar("dark", -2.9, -5.4, 37.4, -2.9, 5.4, 37.4, 0.08);
       /* the SPS-49: a curved grid on its pedestal */
       cz("dark", 0.4, 0.5, 0.8, 10, -0.75, 0, 43.5);
       stamp(-0.75, 0, 44.3, PI * 0.18, function () {
@@ -1432,7 +1456,7 @@ var HeroIowaBB = (function () {
       bar("dark", 0.4, -2.6, 50.6, 0.4, 2.6, 50.6, 0.05);
       cz("dark", 0.55, 0.55, 0.9, 12, 0.4, 0, 52.2);
       /* the SPS-67 and the ECM houses on the tower's sides */
-      bx("dark", 0.6, 2.4, 0.5, 1.4, 0, 41.8);
+      bx("dark", 0.6, 2.4, 0.5, 1.15, 0, 41.8);
       });
       for (s = -1; s <= 1; s += 2) {
         bx("sup", 1.4, 1.2, 1.8, 5.0, s * 6.1, 24.4);
@@ -1466,7 +1490,7 @@ var HeroIowaBB = (function () {
         bar("metal", 2.0, s * 5.8, 40.4, 2.0, s * 5.8, 39.2, 0.03);
       }
       /* the surface search reflector at the head */
-      bx("dark", 0.4, 3.2, 0.9, 2.6, 0, 48.4);
+      bx("dark", 0.4, 3.2, 0.9, 2.2, 0, 48.4);
       cz("dark", 0.35, 0.35, 0.8, 8, 2.0, 0, 43.15);
       });
       /* the mainmast: a pole at the after stack's after side, ECM boxes */
@@ -1526,6 +1550,10 @@ var HeroIowaBB = (function () {
     }
     /* bitts, fairleads and the ensign staff on the fantail edge */
     function bitts(x, y) {
+      /* on the deck, a metre and a half inboard of its edge (some of the
+         stations stood outboard of the fine ends and hung in the air)    */
+      var ym = Math.min(hullHW(x - 0.7), hullHW(x + 0.7)) - 1.5;
+      if (Math.abs(y) > ym) y = (y < 0 ? -1 : 1) * ym;
       var z0 = topZ(x, y) - 0.02;
       cz("metal", 0.22, 0.24, 0.6, 6, x - 0.48, y, z0);
       cz("metal", 0.22, 0.24, 0.6, 6, x + 0.48, y, z0);
