@@ -37,6 +37,17 @@
      house, [K1]), Lung Chiang 50.1 x 7.43, Chin Chiang 61.4 x 9.62 (the rubbing strakes stand 0.05 m
      proud of the published beam), Hai Lung 13.32 high (the housed mast tops 0.12 m over the fin).
 
+   FIX ROUND (2026-11-26, the gate's floating-part scan): every fitting seated on what carries it -- the Hai
+     Ou's front windows laid on the raked house face, the 20 mm shield on the mount's back, the searchlight on
+     the roof; the Lung Chiang's yards on the lattice's forward face with the pole standing on the lower one,
+     the whips moved onto the roofs, side windows set into the leaning sides; the Chin Chiang's scuttles and
+     ladder on the narrower middle block, bridge windows on the raked face, the upper boxes stacked square on
+     the lower ones and the racks on legs, life rings on the side; the submarines' rungs, sail windows and
+     side lights on the sail/fin as it tapers (finHW), the bow planes, cleats, slats and the walkway team strip
+     on the surfaces under them, the Hai Lung's starboard slots inside the hull (the old box was outside).  The
+     submarine tables are read as smooth monotone cubics (stbl) by the hulls and every fitting on them, lofted
+     on stations fine where the body curves and coarse along the parallel middle (zoneStations), with finer
+     rings; the plating texture carries on under the water.
    REFERENCES (Wikimedia Commons, fetched one at a time through thumb.php into the scratchpad
    q_rocships2_ref; d = metres forward of the transom / after end throughout):
      [H1] "Hai Ou Class missile boat.jpg": three Hai Ou boats moored, the nearest from the starboard
@@ -395,7 +406,7 @@ var HeroRocShips2 = (function () {
       hull: mk(P.hull, P.rough || 0.8, 0.08, plate),
       band: mk(P.band === undefined ? P.hull : P.band, P.rough || 0.8, 0.08, plate),
       deck: mk(P.deck, 0.92, 0.04, deckT),
-      boot: mk(P.boot, 0.86, 0.04),
+      boot: mk(P.boot, 0.86, 0.04, P.bootPlate ? plate : null),   /* the submarines: plating carried below the water */
       dark: mk(P.dark || 0x23282b, 0.75, 0.3),
       metal: mk(P.metal || 0x50575c, 0.5, 0.55),
       glass: mk(0x141c22, 0.15, 0.4),
@@ -696,7 +707,7 @@ var HeroRocShips2 = (function () {
     var ce = Math.cos(el), se = Math.sin(el);
     obox(B.metal, P(0.1, 0, 0.95), [f * ce, 0, se], [0, f, 0], [-f * se, 0, ce], -0.5, 0.45, -0.12, 0.12, -0.12, 0.14);
     cyl(B.metal, P(0.5 * ce, 0, 0.95 + 0.5 * se), P(1.9 * ce, 0, 0.95 + 1.9 * se), 0.04, 0.035, 6);
-    obox(B.hull, P(0, 0, 0.75), [f, 0, 0], [0, f, 0], [0, 0, 1], -0.55, -0.45, -0.5, 0.5, 0.1, 0.75);   /* shield */
+    obox(B.hull, P(0, 0, 0.75), [f, 0, 0], [0, f, 0], [0, 0, 1], -0.55, -0.33, -0.5, 0.5, 0.1, 0.75);   /* shield, on the mount's back */
   }
   /* smooth gun cupola (OTO Melara 76 mm on Lung Chiang [L1]; 40 mm on Chin Chiang [C1]) built round the
      origin: radius r, height h, barrel length bl at elevation el; fwd = +X */
@@ -728,7 +739,15 @@ var HeroRocShips2 = (function () {
     /* wheelhouse forward of the mast [H1]: d 10.6 - 14.6, roof 2.45 m over the deck, raked front, side
        windows; its front screen and windows */
     house(B.hull, HO, 10.6, 14.6, 1.55, zD, 4.2, 0.12, 0.45, 0.05);
-    for (k = -1; k <= 1; k++) box(B.glass, X(14.42) - 0.05, X(14.42) + 0.03, k * 0.5 - 0.2, k * 0.5 + 0.2, 3.45, 3.85);
+    /* the three front windows lie ON the raked face (foot d 14.6, roof edge d 14.15), a hair proud of it */
+    (function () {
+      var zf0 = zD(14.6) - 0.05, xf0 = X(14.6), uf = unit([-0.45, 0, 4.2 - zf0]), nf = unit([4.2 - zf0, 0, 0.45]);
+      var tz = (3.65 - zf0) / (4.2 - zf0), Pw = [xf0 - 0.45 * tz, 0, 3.65];
+      for (k = -1; k <= 1; k++) {
+        obox(B.dark, [Pw[0], k * 0.5, Pw[2]], uf, [0, 1, 0], nf, -0.23, 0.23, -0.22, 0.22, -0.02, 0.015);   /* the frame */
+        obox(B.glass, [Pw[0], k * 0.5, Pw[2]], uf, [0, 1, 0], nf, -0.2, 0.2, -0.2, 0.2, -0.02, 0.025);
+      }
+    })();
     for (s = -1; s <= 1; s += 2) {
       for (k = 0; k < 3; k++) box(B.glass, X(11.4 + k * 0.95) - 0.3, X(11.4 + k * 0.95) + 0.3, s * 1.49 - 0.03, s * 1.49 + 0.03, 3.4, 3.8);
       box(B.dark, X(10.9), X(11.55), s * 1.5 - 0.03, s * 1.5 + 0.03, zD(11) + 0.1, 3.1);
@@ -775,7 +794,7 @@ var HeroRocShips2 = (function () {
     ladder(B.metal, [xm - 0.62, 0, 4.28], [xm - 0.36, 0, 7.15], 0.35);
     ladder(B.metal, [X(10.5), -0.9, zD(10.5)], [X(10.5), -0.9, 4.25], 0.4);
     raft(B, X(13.0), 0.7, 4.28, false, 0.24); raft(B, X(13.0), -0.7, 4.28, false, 0.24);
-    searchlight(B, X(13.95), 0, 4.28, 1);
+    searchlight(B, X(13.95), 0, 4.2, 1);
     for (s = -1; s <= 1; s += 2) {
       whip(B, X(10.9), s * 1.2, 4.28, 4.4, -0.3);
       lifeRing(B.ring, X(14.05), s * 1.42, 3.0, s, 0.3);
@@ -792,6 +811,12 @@ var HeroRocShips2 = (function () {
     hatch(B, X(8.0), 0, zD(8.0), 0.8, 0.8);
     hatch(B, X(18.0), 0, zD(18.0), 0.6, 0.6, true);
     hatch(B, X(0.6) + 0.35, 0, zD(0.6), 0.6, 0.9);
+    /* the two white lockers on the quarters just inside the transom rail, dark-lidded [H1] (the stern of the
+       nearest boat: two light boxes either side of the centre line abaft the launchers) */
+    for (s = -1; s <= 1; s += 2) {
+      box(B.white, X(0.2), X(0.58), s * 1.45, s * 2.1, zD(0.4) - 0.02, zD(0.4) + 0.5);
+      box(B.dark, X(0.22), X(0.56), s * 1.47, s * 2.08, zD(0.4) + 0.5, zD(0.4) + 0.55);
+    }
     /* team: two strips on the house roof and across the launcher backs */
     box(B.team, X(12.0), X(13.2), -0.6, 0.6, 4.28, 4.3);
     box(B.team, X(7.0), X(7.6), -2.0, 2.0, zD(7.3) + 0.01, zD(7.3) + 0.03);
@@ -907,12 +932,20 @@ var HeroRocShips2 = (function () {
     house(B.hull, LC, 25.5, 33.6, HW, zD, 5.95, 0.08, 0.35, 0);
     house(B.hull, LC, 27.5, 33.2, HW - 0.15, 5.9, 6.65, 0.02, 0.2, 0);
     box(B.deck, X(27.7), X(32.8), -HW + 0.3, HW - 0.3, 6.6, 6.68);
-    for (k = -2; k <= 2; k++) box(B.glass, X(33.42) - 0.04, X(33.42) + 0.06, k * 0.95 - 0.38, k * 0.95 + 0.38, 4.95, 5.55);
+    for (k = -2; k <= 2; k++) {
+      box(B.dark, X(33.42) - 0.04, X(33.42) + 0.045, k * 0.95 - 0.44, k * 0.95 + 0.44, 4.88, 5.62);   /* the frames */
+      box(B.glass, X(33.42) - 0.04, X(33.42) + 0.06, k * 0.95 - 0.38, k * 0.95 + 0.38, 4.95, 5.55);
+    }
     for (s = -1; s <= 1; s += 2) {
-      for (k = 0; k < 4; k++) box(B.glass, X(26.6 + k * 1.6) - 0.35, X(26.6 + k * 1.6) + 0.35, s * HW - 0.03, s * HW + 0.03, 4.75, 5.3);
-      box(B.dark, X(16.2), X(17.0), s * HW - 0.03, s * HW + 0.03, zD(16.5) + 0.15, 4.4);
-      box(B.dark, X(22.4), X(23.2), s * HW - 0.03, s * HW + 0.03, zD(23) + 0.15, 4.5);
-      for (k = 0; k < 3; k++) box(B.glass, X(18.6 + k * 1.2) - 0.25, X(18.6 + k * 1.2) + 0.25, s * HW - 0.03, s * HW + 0.03, 4.1, 4.5);
+      /* windows and doors set into the sides, which lean in a little toward the roof */
+      var yw = s * (HW - 0.05);
+      for (k = 0; k < 4; k++) {
+        box(B.dark, X(26.6 + k * 1.6) - 0.41, X(26.6 + k * 1.6) + 0.41, yw - 0.035, yw + 0.035, 4.69, 5.36);
+        box(B.glass, X(26.6 + k * 1.6) - 0.35, X(26.6 + k * 1.6) + 0.35, yw - 0.04, yw + 0.04, 4.75, 5.3);
+      }
+      box(B.dark, X(16.2), X(17.0), yw - 0.04, yw + 0.04, zD(16.5) + 0.15, 4.4);
+      box(B.dark, X(22.4), X(23.2), yw - 0.04, yw + 0.04, zD(23) + 0.15, 4.5);
+      for (k = 0; k < 3; k++) box(B.glass, X(18.6 + k * 1.2) - 0.25, X(18.6 + k * 1.2) + 0.25, yw - 0.04, yw + 0.04, 4.1, 4.5);
     }
     /* the uptake abaft the bridge (d 25.8, to 8.4 m) [L1] */
     cyl(B.hull, [X(25.9), 0.9, 5.5], [X(25.9), 0.9, 8.4], 0.42, 0.38, 12);
@@ -922,13 +955,15 @@ var HeroRocShips2 = (function () {
     var xm = X(23.7);
     lattice(B.light, xm, 0, 5.55, 12.4, 1.3, 1.25, 0.55, 0.5, 5, 0.06);
     box(B.deck, xm - 0.75, xm + 0.75, -0.75, 0.75, 12.4, 12.5);
-    box(B.metal, xm - 0.05, xm + 0.05, -2.2, 2.2, 11.5, 11.58);
-    box(B.metal, xm - 0.05, xm + 0.05, -1.4, 1.4, 9.4, 9.48);
+    /* the yards on the lattice's forward face, where they cross its legs; the pole stands on the lower yard */
+    function lcLeg(z) { return lerp(1.3, 0.55, (z - 5.55) / (12.4 - 5.55)); }
+    box(B.metal, xm + lcLeg(11.54) - 0.05, xm + lcLeg(11.54) + 0.05, -2.2, 2.2, 11.5, 11.58);
+    box(B.metal, xm + lcLeg(9.44) - 0.05, xm + lcLeg(9.44) + 0.05, -1.4, 1.4, 9.4, 9.48);
     cylZ(B.light, xm, 0, 12.5, 13.1, 0.55, 14);
     cylZ(B.light, xm, 0, 13.1, 14.2, 0.8, 18);
     ellipsoid(B.light, [xm, 0, 14.2], 0.8, 0.8, 0.8, 5, 18, 0, PI / 2);
-    cyl(B.metal, [xm + 1.2, 0, 9.4], [xm + 1.2, 0, 15.7], 0.06, 0.04, 6);
-    box(B.metal, xm + 1.15, xm + 1.25, -0.6, 0.6, 14.9, 14.96);
+    cyl(B.metal, [xm + lcLeg(9.44) + 0.05, 0, 9.4], [xm + 1.0, 0, 15.7], 0.06, 0.04, 6);
+    box(B.metal, xm + 0.95, xm + 1.05, -0.6, 0.6, 14.9, 14.96);
     /* the tripod and the search radar's flat array aft of the mast [L1] (d 19.8, array 9.3 - 10.0 m) */
     var xt = X(19.8);
     for (s = -1; s <= 1; s += 2) cyl(B.light, [xt - 0.9, s * 0.9, 5.55], [xt, s * 0.12, 8.8], 0.06, 0.05, 5);
@@ -962,7 +997,7 @@ var HeroRocShips2 = (function () {
       lifeRing(B.ring, X(17.6), s * 2.75, 3.7, s, 0.32);
       lifeRing(B.ring, X(31.9), s * 2.75, 4.25, s, 0.32);
       raft(B, X(21.8), s * 1.55, 5.55, false, 0.3);
-      whip(B, X(16.4), s * 2.4, 5.55, 7.0, -1.6);
+      whip(B, X(17.3), s * 2.4, 5.55, 7.0, -1.6);            /* on the roof, just forward of the sloped after end */
       searchlight(B, X(32.4), s * 2.0, 6.65, 1);
       vent(B.hull, X(34.8), s * 2.1, zD(34.8), 0.2, 0.5);
       vent(B.hull, X(13.6), s * 2.75, zD(13.6), 0.18, 0.45);
@@ -977,7 +1012,7 @@ var HeroRocShips2 = (function () {
     hatch(B, X(42.6), 0, zD(42.6), 0.75, 0.75, true);
     hatch(B, X(35.6), 0, zD(35.6), 1.0, 1.2);
     hatch(B, X(13.5), 0, zD(13.5), 0.9, 0.9);
-    whip(B, X(33.2), 1.4, 6.65, 3.2, 0);
+    whip(B, X(32.7), 1.4, 6.65, 3.2, 0);
     cyl(B.metal, [X(49.7), 0, zD(49.7)], [X(49.7), 0, zD(49.7) + 1.6], 0.03, 0.02, 4);
     /* underwater: the PSMM's three shafts are NOT CONFIRMED by a photograph; two rudders and two screws
        drawn plainly as a small boat's */
@@ -1017,12 +1052,19 @@ var HeroRocShips2 = (function () {
     box(B.hull, X(26.0), X(33.7), -2.6, 2.6, 10.6, 10.75);
     for (s = -1; s <= 1; s += 2) {
       for (k = 0; k < 4; k++) box(B.dark, X(27.0 + k * 1.6) - 0.5, X(27.0 + k * 1.6) + 0.5, s * (HW - 0.3) - 0.03, s * (HW - 0.3) + 0.03, 8.6, 10.2);   /* louvres */
-      for (k = 0; k < 5; k++) box(B.glass, X(40.6 + k * 1.1) - 0.35, X(40.6 + k * 1.1) + 0.35, s * HW - 0.03, s * HW + 0.03, 6.9, 7.5);
+      var yw = s * (HW - 0.05);
+      for (k = 0; k < 5; k++) box(B.glass, X(40.6 + k * 1.1) - 0.35, X(40.6 + k * 1.1) + 0.35, yw - 0.04, yw + 0.04, 6.9, 7.5);
       box(B.dark, X(18.5), X(19.4), s * HW - 0.03, s * HW + 0.03, zD(19) + 0.2, 5.1);
       box(B.dark, X(36.0), X(36.9), s * HW - 0.03, s * HW + 0.03, zD(36) + 0.2, 5.3);
-      for (k = 0; k < 6; k++) box(B.dark, X(21 + k * 3.8) - 0.25, X(21 + k * 3.8) + 0.25, s * HW - 0.03, s * HW + 0.03, 4.4, 4.9);
+      for (k = 0; k < 6; k++) {                    /* scuttles: on the narrower middle block where they fall on it */
+        var dk = 21 + k * 3.8, yk = (dk > 26.6 && dk < 33.2) ? HW - 0.3 : HW;
+        box(B.dark, X(dk) - 0.25, X(dk) + 0.25, s * yk - 0.03, s * yk + 0.03, 4.4, 4.9);
+      }
     }
-    obox(B.glass, [X(46.75), 0, 7.4], unit([0.6, 0, 1]), [0, 1, 0], unit([1, 0, -0.6]), -0.3, 0.3, -2.8, 2.8, -0.03, 0.03);
+    (function () {                     /* the bridge windows ON the raked face: foot d 47.1, roof edge d 46.2 at 8.1 m */
+      var z0 = zD(47.1) - 0.05, x0 = X(47.1), t = (7.4 - z0) / (8.1 - z0), uu = unit([-0.9, 0, 8.1 - z0]), nn = unit([8.1 - z0, 0, 0.9]);
+      obox(B.glass, [x0 - 0.9 * t, 0, 7.4], uu, [0, 1, 0], nn, -0.3, 0.3, -2.8, 2.8, -0.02, 0.03);
+    })();
     /* the two small radomes on posts over the bridge [C1][C2] */
     [[39.6, 1.0], [42.2, -1.0]].forEach(function (p) {
       cylZ(B.light, X(p[0]), p[1], 8.1, 9.6, 0.18, 8);
@@ -1041,9 +1083,13 @@ var HeroRocShips2 = (function () {
     for (s = -1; s <= 1; s += 2) {
       for (k = 0; k < 2; k++) {
         boxLauncher(B, B.light, [X(10.2), s * (1.2 + k * 1.15), zD(10.2) + 0.8], 5.0, 0.5, 0.95, 0.6, 0);
-        boxLauncher(B, B.light, [X(10.2) - 0.55, s * (1.2 + k * 1.15), zD(10.2) + 0.8 + 1.05], 5.0, 0.5, 0.95, 0.6, 0);
+        boxLauncher(B, B.light, [X(10.2) - Math.sin(0.6) * 0.98, s * (1.2 + k * 1.15), zD(10.2) + 0.8 + Math.cos(0.6) * 0.98], 5.0, 0.5, 0.95, 0.6, 0);   /* stacked on the lower box */
       }
       box(B.metal, X(10.6), X(13.2), s * 1.1 - 0.06, s * 3.6, zD(11), zD(11) + 0.9);
+      for (k = 0; k < 2; k++) [0.15, 1.6].forEach(function (a) {        /* the rack legs under the lower boxes */
+        var yl = s * (1.2 + k * 1.15), xl = X(10.2) + a * Math.cos(0.6), zl = zD(10.2) + 0.8 + a * Math.sin(0.6);
+        for (var q = -1; q <= 1; q += 2) cylZ(B.metal, xl, yl + q * 0.35, zD(10.2) - 0.02, zl + 0.05, 0.06, 6);
+      });
     }
     box(B.hull, X(5.0), X(7.0), -1.0, 1.0, zD(6), zD(6) + 1.1);
     rails(B, CC, 0.3, 15.5, 0.12, 0.95);
@@ -1059,9 +1105,9 @@ var HeroRocShips2 = (function () {
     ladder(B.metal, [X(15.6), 2.4, zD(15.6)], [X(15.85), 2.4, 7.9], 0.45);
     ladder(B.metal, [X(25.9), -2.0, 7.9], [X(26.05), -2.0, 10.6], 0.45);
     for (s = -1; s <= 1; s += 2) {
-      ladder(B.metal, [X(32.4), s * 3.62, zD(32.4)], [X(32.4), s * 3.62, 8.1], 0.45, true);
-      lifeRing(B.ring, X(17.4), s * 3.62, 5.6, s, 0.34);
-      lifeRing(B.ring, X(44.2), s * 3.62, 5.8, s, 0.34);
+      ladder(B.metal, [X(32.4), s * (HW - 0.27), zD(32.4)], [X(32.4), s * (HW - 0.27), 8.1], 0.45, true);
+      lifeRing(B.ring, X(17.4), s * 3.5, 5.6, s, 0.34);
+      lifeRing(B.ring, X(44.2), s * 3.5, 5.8, s, 0.34);
       raft(B, X(18.6), s * 2.4, 7.9, false, 0.32);
       raft(B, X(22.4), s * 2.4, 7.9, false, 0.32);
       whip(B, X(16.4), s * 3.0, 7.9, 6.0, -1.2);
@@ -1308,6 +1354,62 @@ var HeroRocShips2 = (function () {
     var rings = levels.map(function (lv) { return finPlan(lv[0], lv[1], lv[2], lv[3], n).map(function (p) { return [p[0], p[1], lv[4]]; }); });
     loft(bin, rings);
   }
+  /* the fin's half-width at model x and height z (the levels as handed to finLoft, linear between them), and
+     its nose circle there: for fittings that must sit ON the fin's side */
+  function finLevel(levels, z) {
+    var i = 0;
+    while (i + 2 < levels.length && z > levels[i + 1][4]) i++;
+    var a = levels[i], b = levels[i + 1], t = clamp((z - a[4]) / ((b[4] - a[4]) || 1), 0, 1);
+    return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t), lerp(a[3], b[3], t), z];
+  }
+  function finHW(levels, x, z, n) {
+    var lv = finLevel(levels, z), P = finPlan(lv[0], lv[1], lv[2], lv[3], n), i, best = 0;
+    for (i = 0; i < P.length; i++) {
+      var a = P[i], b = P[(i + 1) % P.length];
+      if (a[1] < 0 && b[1] < 0) continue;
+      var lo = Math.min(a[0], b[0]), hi = Math.max(a[0], b[0]);
+      if (x < lo || x > hi || hi - lo < 1e-6) continue;
+      var y = lerp(a[1], b[1], (x - a[0]) / (b[0] - a[0]));
+      if (y > best) best = y;
+    }
+    return best;
+  }
+  /* a smooth station table: monotone cubic (Fritsch-Carlson) through the same points, so a hull lofted on
+     dense stations carries real curvature between the breaks and keeps no kink at them, without overshoot
+     (flats stay flat, maxima stay where the table has them) */
+  var STBL = [];
+  function stbl(T, d) {
+    var e = null, i, n = T.length;
+    for (i = 0; i < STBL.length; i++) if (STBL[i][0] === T) { e = STBL[i][1]; break; }
+    if (!e) {
+      var dl = [], m = [];
+      for (i = 0; i + 1 < n; i++) dl.push((T[i + 1][1] - T[i][1]) / ((T[i + 1][0] - T[i][0]) || 1));
+      m.push(dl[0]);
+      for (i = 1; i + 1 < n; i++) m.push(dl[i - 1] * dl[i] <= 0 ? 0 : (dl[i - 1] + dl[i]) / 2);
+      m.push(dl[n - 2]);
+      for (i = 0; i + 1 < n; i++) {
+        if (dl[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+        var a = m[i] / dl[i], b = m[i + 1] / dl[i], h = a * a + b * b;
+        if (h > 9) { var t3 = 3 / Math.sqrt(h); m[i] = t3 * a * dl[i]; m[i + 1] = t3 * b * dl[i]; }
+      }
+      e = m; STBL.push([T, m]);
+    }
+    if (d <= T[0][0]) return T[0][1];
+    if (d >= T[n - 1][0]) return T[n - 1][1];
+    for (i = 0; d > T[i + 1][0]; i++) {}
+    var hh = T[i + 1][0] - T[i][0], t = (d - T[i][0]) / hh, t2 = t * t, t3c = t2 * t;
+    return (2 * t3c - 3 * t2 + 1) * T[i][1] + (t3c - 2 * t2 + t) * hh * e[i] + (-2 * t3c + 3 * t2) * T[i + 1][1] + (t3c - t2) * hh * e[i + 1];
+  }
+  /* stations at a step that follows the curvature: [d0, d1, step] zones (fine where the body curves, coarse
+     on the parallel middle body), plus the given extras */
+  function zoneStations(zones, extra) {
+    var xs = (extra || []).slice(), i;
+    zones.forEach(function (z) { for (var d = z[0]; d < z[1] - 1e-6; d += z[2]) xs.push(d); xs.push(z[1]); });
+    xs.sort(function (a, b) { return a - b; });
+    var out = [];
+    for (i = 0; i < xs.length; i++) if (!out.length || xs[i] - out[out.length - 1] > 0.05) out.push(xs[i]);
+    return out;
+  }
   /* a screw: hub on the X axis at (x, y, z), nb blades of radius r */
   function screw(bin, x, y, z, r, nb, ph) {
     cyl(bin, [x - 0.35, y, z], [x + 0.35, y, z], r * 0.18, r * 0.22, 10);
@@ -1346,18 +1448,20 @@ var HeroRocShips2 = (function () {
   var G_CZ = [[0, 1.3], [6, 1.8], [14, 2.4], [22, 2.6], [84, 2.6], [90, 2.5], [93.6, 2.2]];
   var G_CW = [[0, 0.25], [6, 0.9], [14, 1.5], [22, 1.8], [80, 1.8], [88, 1.6], [92, 1.1], [93.6, 0.45]];
   function buildHaiShih(THREE, M, C) {
-    var T = materials(THREE, C, { hull: 0x1d1f21, deck: 0x2b2e30, boot: 0x4e2420, light: 0x24272a, dark: 0x0b0c0d, metal: 0x3a3632, rough: 0.7 });
+    var T = materials(THREE, C, { hull: 0x1d1f21, deck: 0x2b2e30, boot: 0x4e2420, light: 0x24272a, dark: 0x0b0c0d, metal: 0x3a3632, rough: 0.7, bootPlate: true });
     var g = new THREE.Group(), B = bins(T), s, k, X = GX;
-    var ds = [0, 0.8, 2, 4, 6, 9, 12, 16, 20, 25, 30, 38, 50, 62, 72, 78, 82, 85, 87.5, 89.5, 91, 92.2, 93.0, 93.6];
+    /* stations: fine where the run and the bow curve, coarse along the parallel middle body; the tables are read
+       smooth (stbl), and every fitting reads the same profile */
+    var ds = zoneStations([[0, 30, 1.5], [30, 72, 7], [72, 88, 1.6], [88, 93.6, 0.7]], [0.8]);
     /* the hull: pressure hull and saddle tanks as one rounded section, keel 4.3 m under the water [S1][S3] */
     bodyLoft(B, X, ds.map(function (d) {
-      var kz = tbl(G_KZ, d), tz = tbl(G_TZ, d), zc = lerp(kz, tz, 0.48);
-      return { d: d, hw: tbl(G_HB, d), zc: zc, up: tz - zc, dn: zc - kz };
-    }), 20, 2.3, B.hull, B.boot);
+      var kz = stbl(G_KZ, d), tz = stbl(G_TZ, d), zc = lerp(kz, tz, 0.48);
+      return { d: d, hw: stbl(G_HB, d), zc: zc, up: tz - zc, dn: zc - kz };
+    }), 40, 2.3, B.hull, B.boot);
     /* the free-flooding casing: flat deck 2.6 m over the water, sides falling to the hull [S1][S2] */
     (function () {
       var rings = ds.map(function (d) {
-        var cz = tbl(G_CZ, d), cw = tbl(G_CW, d), zb = tbl(G_TZ, d) - 0.6;
+        var cz = stbl(G_CZ, d), cw = stbl(G_CW, d), zb = stbl(G_TZ, d) - 0.6;
         return [[X(d), -cw * 1.12, zb], [X(d), cw * 1.12, zb], [X(d), cw, cz], [X(d), -cw, cz]];
       }), i;
       for (i = 0; i + 1 < rings.length; i++) {
@@ -1372,13 +1476,14 @@ var HeroRocShips2 = (function () {
       /* the limber holes: a row low on the casing side [S3] */
       for (s = -1; s <= 1; s += 2) for (var d = 10; d < 88; d += 1.3) {
         if (d > 49.5 && d < 64.5) continue;
-        var cw = tbl(G_CW, d) * 1.06, zh = tbl(G_TZ, d) + 0.05;
+        var cw = stbl(G_CW, d) * 1.06, zh = stbl(G_TZ, d) + 0.05;
         box(B.dark, X(d) - 0.35, X(d) + 0.35, s * cw - 0.03, s * cw + 0.03, zh, zh + 0.32);
       }
     })();
     /* the sail [S1][S2][S3]: base d 51.4 - 63.1, top d 52.9 - 62.5 at 9.5 m, round nose, tapering tail,
        flat sides; the bridge cockpit at the forward top */
-    finLoft(B.light, [[51.4, 63.1, 1.5, 0.5, 2.4], [52.0, 62.85, 1.48, 0.48, 6.0], [52.9, 62.5, 1.4, 0.42, 9.5]].map(function (l) { return [X(l[0]), X(l[1]), l[2], l[3], l[4]]; }), 8);
+    var SL = [[51.4, 63.1, 1.5, 0.5, 2.4], [52.0, 62.85, 1.48, 0.48, 6.0], [52.9, 62.5, 1.4, 0.42, 9.5]].map(function (l) { return [X(l[0]), X(l[1]), l[2], l[3], l[4]]; });
+    finLoft(B.light, SL, 14);
     box(B.dark, X(59.6), X(61.9), -0.85, 0.85, 9.42, 9.52);
     cyl(B.metal, [X(58.0), 0, 9.5], [X(58.0), 0, 12.6], 0.05, 0.03, 5);           /* the whip [S2] */
     cyl(B.metal, [X(58.0), 0, 10.1], [X(56.6), -0.6, 10.1], 0.03, 0.03, 4);
@@ -1388,7 +1493,7 @@ var HeroRocShips2 = (function () {
       cyl(B.metal, [X(r[0]), s * 1.55, 3.4], [X(r[1]), s * 1.55, 3.4], 0.02, 0.02, 4);
     });
     /* the folding bow planes against the casing side, high forward [S3] */
-    for (s = -1; s <= 1; s += 2) obox(B.light, [X(86.0), s * (tbl(G_CW, 86) * 1.12 + 0.02), 1.0], [1, 0, 0], [0, s, 0], [0, 0, 1], -1.2, 1.2, 0, 0.12, 0, 1.3);
+    for (s = -1; s <= 1; s += 2) obox(B.light, [X(86.0), s * (stbl(G_CW, 86) * 1.12 - 0.1), 1.0], [1, 0, 0], [0, s, 0], [0, 0, 1], -1.2, 1.2, 0, 0.24, 0, 1.3);
     /* the BQR-2 chin dome under the bow [S3] */
     ellipsoid(B.boot, [X(86.2), 0, -4.25], 2.3, 1.05, 0.85, 4, 14);
     /* the stern [S3]: two shafts on struts, two screws, the stern planes abaft them, the rudder */
@@ -1404,28 +1509,34 @@ var HeroRocShips2 = (function () {
        navigation lights, the stern light, and the after rails carried round to the stern */
     for (var dl = 8; dl < 90; dl += 0.75) {
       if (dl > 51 && dl < 63.4) continue;
-      var cwl = tbl(G_CW, dl), czl = tbl(G_CZ, dl);
-      box(B.dark, X(dl) - 0.02, X(dl) + 0.02, -cwl + 0.08, cwl - 0.08, czl, czl + 0.012);
+      var cwl = stbl(G_CW, dl), czl = stbl(G_CZ, dl);
+      box(B.dark, X(dl) - 0.02, X(dl) + 0.02, -cwl + 0.08, cwl - 0.08, czl - 0.01, czl + 0.012);
     }
-    for (s = -1; s <= 1; s += 2) cyl(B.dark, [X(8), s * 0.6, tbl(G_CZ, 8) + 0.012], [X(90), s * 0.6, tbl(G_CZ, 90) + 0.012], 0.02, 0.02, 3);
+    for (s = -1; s <= 1; s += 2) cyl(B.dark, [X(8), s * 0.6, stbl(G_CZ, 8) + 0.012], [X(90), s * 0.6, stbl(G_CZ, 90) + 0.012], 0.02, 0.02, 3);
     [[83.5, 1.1, 0.9, false], [76.0, 0.75, 0.75, true], [66.2, 0.75, 0.75, true], [47.5, 0.75, 0.75, true], [37.0, 1.1, 0.9, false], [24.0, 0.75, 0.75, true]].forEach(function (h) {
-      hatch(B, X(h[0]), 0, tbl(G_CZ, h[0]), h[1], h[2], h[3]);
+      hatch(B, X(h[0]), 0, stbl(G_CZ, h[0]), h[1], h[2], h[3]);
     });
     for (s = -1; s <= 1; s += 2) [88.5, 72.0, 34.0, 14.0].forEach(function (d) {
-      var cz = tbl(G_CZ, d), yc = s * (tbl(G_CW, d) - 0.3);
+      var cz = stbl(G_CZ, d), yc = s * (stbl(G_CW, d) - 0.3);
       box(B.metal, X(d) - 0.25, X(d) + 0.25, yc - 0.05, yc + 0.05, cz, cz + 0.08);
       for (var q = -1; q <= 1; q += 2) box(B.metal, X(d) + q * 0.2 - 0.04, X(d) + q * 0.2 + 0.04, yc - 0.04, yc + 0.04, cz, cz + 0.2);
     });
-    cylZ(B.metal, X(90.0), 0, tbl(G_CZ, 90) - 0.02, tbl(G_CZ, 90) + 0.3, 0.28, 12);
-    sailWindows(B, X(63.1) - 1.5, 1.5, 8.85, 5, 1.6);
+    cylZ(B.metal, X(90.0), 0, stbl(G_CZ, 90) - 0.02, stbl(G_CZ, 90) + 0.3, 0.28, 12);
+    (function () { var lv = finLevel(SL, 8.85); sailWindows(B, lv[1] - lv[2], lv[2], 8.85, 5, 1.6); })();
     mastTops(B, X(57.0), 9.5, [[1.6, 0, 0.6, 0.17], [0.4, 0, 0.45, 0.2], [-1.0, 0.25, 0.35, 0.14], [-2.2, -0.2, 0.3, 0.22]]);
     for (s = -1; s <= 1; s += 2) {
-      for (k = 0; k < 9; k++) box(B.metal, X(55.4) - 0.2, X(55.4) + 0.2, s * 1.47 - 0.02, s * 1.47 + 0.05 * s, 2.9 + k * 0.7, 2.94 + k * 0.7);
-      box(B.light, X(62.0), X(62.5), s * 1.35 - 0.06, s * 1.35 + 0.06, 8.9, 9.15);         /* side lights */
-      railLine(B.metal, [[X(30), s * 1.55, 2.6], [X(15), s * 1.4, tbl(G_CZ, 15)], [X(8), s * 1.0, tbl(G_CZ, 8)]], 0.8, 2.0);
-      railLine(B.metal, [[X(82), s * 1.55, 2.6], [X(88), s * 1.3, tbl(G_CZ, 88)]], 0.8, 2.0);
+      for (k = 0; k < 9; k++) {                 /* the rungs, on the sail's side as it tapers aft */
+        var zr2 = 2.9 + k * 0.7, yr2 = finHW(SL, X(55.4), zr2 + 0.02, 14);
+        box(B.metal, X(55.4) - 0.2, X(55.4) + 0.2, s > 0 ? yr2 - 0.03 : -yr2 - 0.06, s > 0 ? yr2 + 0.06 : -yr2 + 0.03, zr2, zr2 + 0.04);
+      }
+      (function () {                             /* side lights, on the nose's flank */
+        var ya = finHW(SL, X(61.9), 9.0, 14) - 0.05, yb = finHW(SL, X(61.4), 9.0, 14) + 0.06;
+        box(B.light, X(61.4), X(61.9), s > 0 ? ya : -yb, s > 0 ? yb : -ya, 8.9, 9.15);
+      })();
+      railLine(B.metal, [[X(30), s * 1.55, 2.6], [X(15), s * 1.4, stbl(G_CZ, 15)], [X(8), s * 1.0, stbl(G_CZ, 8)]], 0.8, 2.0);
+      railLine(B.metal, [[X(82), s * 1.55, 2.6], [X(88), s * 1.3, stbl(G_CZ, 88)]], 0.8, 2.0);
     }
-    cylZ(B.light, X(3.0), 0, tbl(G_CZ, 3.0) - 0.05, tbl(G_CZ, 3.0) + 0.5, 0.06, 6);
+    cylZ(B.light, X(3.0), 0, stbl(G_CZ, 3.0) - 0.05, stbl(G_CZ, 3.0) + 0.5, 0.06, 6);
     /* team: two strips on the casing deck fore and aft of the sail */
     box(B.team, X(68.0), X(70.0), -0.7, 0.7, 2.6, 2.63);
     box(B.team, X(44.0), X(46.0), -0.7, 0.7, 2.6, 2.63);
@@ -1440,15 +1551,16 @@ var HeroRocShips2 = (function () {
   var Z_R = [[0.6, 0.35], [1.6, 0.65], [4, 1.45], [9, 2.6], [15, 3.5], [22, 4.0], [28, 4.2], [50, 4.2], [56, 4.05], [60, 3.7], [63, 3.0], [65.2, 2.0], [66.4, 1.0], [66.9, 0.15]];
   var ZC = -2.5;
   function buildHaiLung(THREE, M, C) {
-    var T = materials(THREE, C, { hull: 0x232629, deck: 0x2c3033, boot: 0x232629, light: 0x2a2d30, dark: 0x0c0d0e, metal: 0x6e6450, rough: 0.72 });
+    var T = materials(THREE, C, { hull: 0x232629, deck: 0x2c3033, boot: 0x232629, light: 0x2a2d30, dark: 0x0c0d0e, metal: 0x6e6450, rough: 0.72, bootPlate: true });
     var g = new THREE.Group(), B = bins(T), s, k, X = ZX;
-    var ds = [0.6, 1.0, 1.6, 2.6, 4, 6, 9, 12, 15, 18, 22, 28, 35, 42, 50, 56, 60, 62, 63.6, 64.8, 65.6, 66.2, 66.6, 66.9];
+    /* the teardrop read smooth (stbl): stations fine where it curves, coarse along the parallel middle body */
+    var ds = zoneStations([[0.6, 4, 0.5], [4, 28, 0.6], [28, 50, 5.5], [50, 64, 0.6], [64, 66.9, 0.35]]);
     /* the teardrop body: 8.4 m beam, axis 2.5 m under the water, surfaced crown 1.7 m over it [Z1][Z2] */
-    bodyLoft(B, X, ds.map(function (d) { var r = tbl(Z_R, d); return { d: d, hw: r, zc: ZC, up: r, dn: r }; }), 22, 2.0, B.hull, B.boot);
+    bodyLoft(B, X, ds.map(function (d) { var r = stbl(Z_R, d); return { d: d, hw: r, zc: ZC, up: r, dn: r }; }), 36, 2.0, B.hull, B.boot);
     /* the narrow flat walkway on the crown d 34 - 61 [Z3][Z4] */
     (function () {
-      var rings = [34, 40, 50, 56, 60, 61].map(function (d) {
-        var r = tbl(Z_R, d), zt = ZC + Math.sqrt(Math.max(0, r * r - 0.81)) + 0.1;
+      var rings = zoneStations([[34, 61, 1.5]]).map(function (d) {
+        var r = stbl(Z_R, d), zt = ZC + Math.sqrt(Math.max(0, r * r - 0.81)) + 0.1;
         return [[X(d), -0.95, zt - 0.3], [X(d), 0.95, zt - 0.3], [X(d), 0.9, zt], [X(d), -0.9, zt]];
       });
       loft(B.deck, rings);
@@ -1456,11 +1568,12 @@ var HeroRocShips2 = (function () {
     /* slots: a row along the upper hull either side, d 24 - 60 [Z3][Z4] */
     for (s = -1; s <= 1; s += 2) for (var d = 24; d < 60; d += 1.6) {
       if (d > 34.5 && d < 47.5) continue;
-      var r = tbl(Z_R, d), zz = 0.4, yy = Math.sqrt(Math.max(0, r * r - (zz - ZC) * (zz - ZC)));
-      box(B.dark, X(d) - 0.4, X(d) + 0.4, s * yy - 0.06, s * yy + 0.04 * s, zz, zz + 0.12);
+      var r = stbl(Z_R, d), zz = 0.4, yy = Math.sqrt(Math.max(0, r * r - (zz - ZC) * (zz - ZC)));
+      box(B.dark, X(d) - 0.4, X(d) + 0.4, s > 0 ? yy - 0.1 : -yy - 0.03, s > 0 ? yy + 0.03 : -yy + 0.1, zz, zz + 0.12);
     }
     /* the fin [Z1][Z2][Z3]: base d 35.6 - 47.2, top d 37.0 - 46.5 at 6.5 m, round nose, tapering tail */
-    finLoft(B.light, [[35.6, 47.2, 1.2, 0.35, 1.2], [36.3, 46.9, 1.2, 0.33, 4.0], [37.0, 46.5, 1.15, 0.3, 6.5]].map(function (l) { return [X(l[0]), X(l[1]), l[2], l[3], l[4]]; }), 8);
+    var FL = [[35.6, 47.2, 1.2, 0.35, 1.2], [36.3, 46.9, 1.2, 0.33, 4.0], [37.0, 46.5, 1.15, 0.3, 6.5]].map(function (l) { return [X(l[0]), X(l[1]), l[2], l[3], l[4]]; });
+    finLoft(B.light, FL, 14);
     box(B.dark, X(42.0), X(45.3), -0.45, 0.45, 6.45, 6.55);
     /* the fin planes, high on the fin near its leading edge, 7.6 m span [Z1][Z2] */
     for (s = -1; s <= 1; s += 2) plate(B.light, X(43.9), X(46.2), X(44.2), X(45.8), [0, s * 1.0, 4.5], [0, s * 3.8, 4.5], 0.3);
@@ -1475,25 +1588,28 @@ var HeroRocShips2 = (function () {
        three retractable cleats a side (housed masts drawn just proud of the fin top, as [Z1] shows) */
     for (var dw = 34.5; dw < 61; dw += 0.6) {
       if (dw > 35.2 && dw < 47.6) continue;
-      var rw = tbl(Z_R, dw), zw = ZC + Math.sqrt(Math.max(0, rw * rw - 0.81)) + 0.1;
-      box(B.dark, X(dw) - 0.02, X(dw) + 0.02, -0.85, 0.85, zw, zw + 0.01);
+      var rw = stbl(Z_R, dw), zw = ZC + Math.sqrt(Math.max(0, rw * rw - 0.81)) + 0.1;
+      box(B.dark, X(dw) - 0.02, X(dw) + 0.02, -0.85, 0.85, zw - 0.01, zw + 0.01);
     }
     [[57.0, 0.8, 0.8, true], [51.0, 0.75, 0.75, true], [33.0, 0.8, 0.8, true], [25.0, 1.0, 0.75, false]].forEach(function (h) {
-      var rh = tbl(Z_R, h[0]), zh = ZC + Math.sqrt(Math.max(0, rh * rh - 0.36)) + (h[0] > 34 && h[0] < 61 ? 0.1 : 0);
+      var rh = stbl(Z_R, h[0]), onW = h[0] > 34 && h[0] < 61, zh = ZC + Math.sqrt(Math.max(0, rh * rh - (onW ? 0.81 : 0.36))) + (onW ? 0.1 : 0);
       hatch(B, X(h[0]), 0, zh, h[1], h[2], h[3]);
     });
-    sailWindows(B, X(46.5) - 1.15, 1.15, 5.95, 5, 1.6);
+    (function () { var lv = finLevel(FL, 5.95); sailWindows(B, lv[1] - lv[2], lv[2], 5.95, 5, 1.6); })();
     mastTops(B, X(42.0), 6.5, [[1.9, 0, 0.12, 0.16], [0.8, 0, 0.1, 0.2], [-0.4, 0.2, 0.08, 0.14], [-1.6, -0.2, 0.08, 0.2], [-2.9, 0, 0.06, 0.18]]);
     for (s = -1; s <= 1; s += 2) {
-      for (k = 0; k < 7; k++) box(B.metal, X(38.4) - 0.18, X(38.4) + 0.18, s * 1.16 - 0.02, s * 1.16 + 0.05 * s, 1.6 + k * 0.65, 1.64 + k * 0.65);
+      for (k = 0; k < 7; k++) {                 /* the rungs, on the fin's side as it tapers aft */
+        var zr3 = 1.6 + k * 0.65, yr3 = finHW(FL, X(38.4), zr3 + 0.02, 14);
+        box(B.metal, X(38.4) - 0.18, X(38.4) + 0.18, s > 0 ? yr3 - 0.03 : -yr3 - 0.06, s > 0 ? yr3 + 0.06 : -yr3 + 0.03, zr3, zr3 + 0.04);
+      }
       box(B.light, X(45.6), X(46.0), s * 0.95 - 0.06, s * 0.95 + 0.06, 5.9, 6.1);
       [52.0, 44.0, 30.0].forEach(function (d) {
-        var r = tbl(Z_R, d), zc2 = 0.75, yy = Math.sqrt(Math.max(0, r * r - (zc2 - ZC) * (zc2 - ZC)));
+        var r = stbl(Z_R, d), zc2 = 0.75, yy = Math.sqrt(Math.max(0, r * r - (zc2 - ZC) * (zc2 - ZC)));
         box(B.metal, X(d) - 0.2, X(d) + 0.2, s * (yy - 0.08) - 0.05, s * (yy - 0.08) + 0.05, zc2, zc2 + 0.12);
       });
     }
     box(B.team, X(38.5), X(40.5), -0.5, 0.5, 6.5, 6.53);
-    box(B.team, X(52.0), X(54.0), -0.5, 0.5, ZC + 4.2 + 0.08, ZC + 4.2 + 0.1);
+    (function () { var zt = ZC + Math.sqrt(4.2 * 4.2 - 0.81) + 0.1; box(B.team, X(52.0), X(54.0), -0.5, 0.5, zt - 0.005, zt + 0.02); })();
     flush(THREE, g, B);
     return g;
   }
