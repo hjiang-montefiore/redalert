@@ -1,0 +1,24 @@
+{
+  "key": "fra_e00_sub",
+  "team": "fra",
+  "category": "ship",
+  "name": "Rubis-class SSN after the Amethyste refit",
+  "published": {"len": 73.6, "beam": 7.6, "draught": 6.4, "source": "en.wikipedia 'Rubis-class submarine': 73.6 m after the Amethyste refit, 7.6 m beam, 6.4 m draught (js/hero/fr_navy_late.js D_RUBIS)"},
+  "len": 73.52,
+  "nodes": [],
+  "references": [],
+  "must_show": [
+    "hull lofted on [R2] (the Amethyste drawing, rows in D_RUBIS(true)): screw X -36.8 to the lengthened rounded bow X +36.8",
+    "the shaft fairing carrying the five-bladed screw at X(76), as on the Rubis (fixed 2026-11-26: the screw stood 1.26 m off the hull)",
+    "the sail X(980..1192), top z 7.76, rounded front, window ring under the top from X 17.8, ladder rungs on its straight side",
+    "the sail planes high on its forward half, X(1128..1180), 2.2 m out",
+    "the cruciform stern on the shaft row, the casing fittings: hatches X -14 / 7.5 / 24.5, loading hatch X 29, capstan X 31, cleat pairs set in where the casing narrows, the safety track on the crown skipping each fitting",
+    "plain black steel, no tiles, no markings; team colour only on the sail top and a strip abaft it"
+  ],
+  "landmarks": [],
+  "not_confirmed": [
+    "no reference image is stored for this row: the [R2] drawing and [R3] photo were read in the 2026-11-12 rework (header comment above buildAmethyste2) and are not in tools/model3d/specs/ref/; this spec checks the floating-part, budget and contract rules only, with no outline or landmark",
+    "the casing's top width and side slope (no end view); the free-flood row; the torpedo shutters' places; every section below the knuckle",
+    "the shaft fairing shape is the Rubis's [R1] one, taken the same for the refitted boat"
+  ]
+}

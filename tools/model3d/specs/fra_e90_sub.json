@@ -1,0 +1,224 @@
+{
+ "key": "fra_e90_sub",
+ "team": "fra",
+ "category": "ship",
+ "name": "Rubis-class SSN as built (Rubis, S601)",
+ "published": {
+  "len": 72.1,
+  "beam": 7.6,
+  "draught": 6.4,
+  "source": "en.wikipedia 'Rubis-class submarine' (raw wikitext read 2026-11-12, js/hero/fr_navy_late.js header): 72.1 m (73.6 after the Amethyste refit) x 7.6 m, draught 6.4 m"
+ },
+ "len": 72.18,
+ "nodes": [],
+ "references": [
+  {
+   "name": "[R1] Rubis class submarine.svg, starboard profile, as built",
+   "image": "ref/fra_e90_sub/rubis_class_submarine.png",
+   "source": "Wikimedia Commons 'Rubis class submarine.svg' (en.wikipedia), rendered 1600 px",
+   "view": "side",
+   "px_per_m": 19.88,
+   "anchor_px": [
+    68,
+    532
+   ],
+   "anchor_m": [
+    -36.05,
+    -6.4
+   ],
+   "mask": "alpha",
+   "ignore_m": [
+    [
+     11.0,
+     7.5,
+     18.0,
+     10.5
+    ]
+   ],
+   "exact": true,
+   "note": "Screw x 68 to bow x 1501 = the published 72.1 m (19.88 px/m); keel row 532, the waterline the published 6.4 m draught above it: X = (px - 68) / 19.88 - 36.05, Z = (532 - py) / 19.88 - 6.4. Column scan: casing top row 371 (1.70) amidships, keel 532/533; the knuckle (the panel line) rows 422.5 - 428 px 373 .. 1430 (the same in [R2], the Amethyste drawing, but for the bow); the sail px 976 .. 1194, top row 257 (7.43); the rudders px 120 .. 185 rows 380 .. 536; the screw px 76 (rows 428 .. 492). Ignored: the periscopes the model has raised (housed in the drawing)."
+  }
+ ],
+ "must_show": [
+  "hull 72.0 m (screw X -36.0 to the rounded bow X +36.0), 7.6 m beam, casing top 1.7 m amidships, keel -6.4",
+  "the casing on the hull's back from the knuckle line (z -0.76, X -21.1 .. 33.3, ends upright) to a flat top about 5 m wide, sloped sides; a row of free-flood holes low on it X -19.5 .. 31",
+  "sail X 9.8 .. 20.5, top 7.43 m: raked after edge (X 10.3 at z 4), front near upright and half-round (X 20.4 at z 4), top edge rounded; the window row under the top X 17.3 .. 18.65, the seam and the bridge recess, the sail planes on its forward half (X 17.8 .. 20.4 at z 4.69, 2.2 m out), ladder rungs on the side",
+  "the rounded bow of the boat as built (not the Amethyste's blunt sonar bow), torpedo shutters X 33.8",
+  "cruciform stern X -33.4 .. -30.2: upper rudder to 1.25, lower to -6.6, stern planes 4.0 m out on the shaft line z -2.8, hinge slots; the shaft fairing aft to the five-bladed screw at X -35.65",
+  "weld seams round the pressure hull every 3.6 m; hatches X -14, 7, 23.5 and the loading hatch X 28; cleats; capstan X 30; the safety track; plain black painted steel (no tiles); no numbers or markings; team colour only as small strips"
+ ],
+ "landmarks": [
+  {
+   "name": "sail top at x 14.4",
+   "ref": 0,
+   "expect_m": [
+    14.4,
+    7.43
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     5,
+     -3,
+     1.0,
+     25,
+     3,
+     9
+    ]
+   },
+   "note": "[R1] row 257"
+  },
+  {
+   "name": "sail after edge at z 4",
+   "ref": 0,
+   "expect_m": [
+    10.28,
+    4.0
+   ],
+   "model_at": {
+    "cross": 4.0,
+    "from_h": 5.0,
+    "to_h": 15.0,
+    "in_m": [
+     5,
+     -3,
+     1.0,
+     25,
+     3,
+     9
+    ]
+   },
+   "note": "[R1] row 325"
+  },
+  {
+   "name": "sail front at z 4",
+   "ref": 0,
+   "expect_m": [
+    20.39,
+    4.0
+   ],
+   "model_at": {
+    "cross": 4.0,
+    "from_h": 25.0,
+    "to_h": 15.0,
+    "in_m": [
+     5,
+     -3,
+     1.0,
+     25,
+     3,
+     9
+    ]
+   },
+   "note": "[R1] row 325"
+  },
+  {
+   "name": "casing top amidships",
+   "ref": 0,
+   "expect_m": [
+    0.0,
+    1.7
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -4,
+     -3,
+     -7,
+     4,
+     3,
+     4
+    ]
+   },
+   "note": "[R1] row 371"
+  },
+  {
+   "name": "keel amidships",
+   "ref": 0,
+   "expect_m": [
+    0.0,
+    -6.35
+   ],
+   "model_at": {
+    "edge": "lower",
+    "in_m": [
+     -4,
+     -4,
+     -8,
+     4,
+     4,
+     0
+    ]
+   },
+   "note": "[R1] row 531"
+  },
+  {
+   "name": "upper rudder top",
+   "ref": 0,
+   "expect_m": [
+    -32.5,
+    1.25
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -34,
+     -1,
+     -1,
+     -30,
+     1,
+     3
+    ]
+   },
+   "note": "[R1] row 380"
+  },
+  {
+   "name": "lower rudder bottom",
+   "ref": 0,
+   "expect_m": [
+    -32.5,
+    -6.6
+   ],
+   "model_at": {
+    "edge": "lower",
+    "in_m": [
+     -34,
+     -1,
+     -8,
+     -30,
+     1,
+     -4
+    ]
+   },
+   "note": "[R1] row 536"
+  },
+  {
+   "name": "bow tip",
+   "ref": 0,
+   "expect_m": [
+    36.03,
+    null
+   ],
+   "model_at": {
+    "in_m": [
+     30,
+     -4,
+     -7,
+     37,
+     4,
+     3
+    ],
+    "point": [
+     "max",
+     null
+    ]
+   },
+   "note": "[R1] px 1501"
+  }
+ ],
+ "not_confirmed": [
+  "every section below the knuckle (the circle of the published beam), the casing top's width and the slope of its sides: no end view",
+  "the sail planes' span (2.2 m), the stern planes' span (4.0 m), the screw's five blades (the drawing shows two)",
+  "the free-flood row and the shutters' places; the hatches' places (the profile shows none)"
+ ]
+}

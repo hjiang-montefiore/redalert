@@ -1,0 +1,208 @@
+{
+ "key": "fra_e80_sub",
+ "team": "fra",
+ "category": "ship",
+ "name": "Agosta-class SSK (Agosta, S620; Ouessant photographed)",
+ "published": {
+  "len": 67.0,
+  "beam": 6.0,
+  "source": "en.wikipedia 'Agosta-class submarine' raw wikitext read 2026-11-26: length 67 m (France, Spain), beam 6 m; no draught given"
+ },
+ "len": 67.0,
+ "nodes": [],
+ "references": [
+  {
+   "name": "[G1] Ouessant (S623) surfaced off Brest, 2005, port broadside",
+   "image": "ref/fra_e80_sub/ouessant.jpg",
+   "source": "Wikimedia Commons 'OuessantBrest2005.jpg', 750 px",
+   "view": "quarter",
+   "flip": true,
+   "px_per_m": 10.37,
+   "anchor_px": [
+    382.5,
+    312
+   ],
+   "anchor_m": [
+    0.0,
+    0.0
+   ],
+   "exact": false,
+   "overlay": {
+    "view": "side",
+    "px_per_m": 10.37,
+    "anchor_px": [
+     382.5,
+     312
+    ],
+    "anchor_m": [
+     0.0,
+     0.0
+    ],
+    "flip": true
+   },
+   "note": "Port broadside, bow LEFT (flipped). Bow x 35, upper rudder's after edge x 730: 695 px = the published 67 m, 10.37 px/m; her waterline row 312: X = (382.5 - px) / 10.37, Z = (312 - py) / 10.37. A photograph at a distance, nearly level: the casing 2.1 m out of the water, the sail X 6.5 .. 16.6 to 10.9, two masts raised, the dark opening at the sail's forward foot (px 214 .. 225, rows 255 .. 287), the pale line along the casing's side 0.9 m up, the upper rudder standing clear abaft the casing (X -30.5 .. -33.5). Kept as \"quarter\" (no outline is taken: the background mask picks up the shore and the sky) with an overlay block, so overlay.py lays the render on it; the landmarks below are read off it (view side). In the overlay the casing abaft X -17 lies lower than the model's by up to 0.8 m, in spray and broken water: not used."
+  },
+  {
+   "name": "[G2] Agosta (S620) alongside at Rouen, 1994, starboard",
+   "image": "ref/fra_e80_sub/agosta.jpg",
+   "source": "Wikimedia Commons 'AgostaRouen1994.jpg', 750 px",
+   "view": "quarter",
+   "exact": false,
+   "note": "For the reviewer: the boat herself from the starboard bow quarter: the same sail with its seam round it about 4 m up, the flat casing, the bow plane low on the bow, the matt black steel."
+  }
+ ],
+ "must_show": [
+  "hull 67 m (bow X +33.5 to the upper rudder's after edge X -33.5; the screw just beyond), beam 6 m, the casing's flat deck 2.1 m out of the water from X -15 to 27, falling to the bow and the stern",
+  "the casing on the hull's back, its sides sloping down to the water, the pale strake along them 0.9 m up X -14 .. 25 [G1]; a row of limber holes low on them",
+  "the tall sail X 6.4 .. 16.8, top 10.9 m, front and back near upright, the top edges rounded; the seam round it at 4.0 m [G1][G2]; the dark opening at its forward foot X 14.6 .. 15.5, z 2.4 .. 5.5 [G1]; the bridge windows and recess at the top front X 14.3 .. 16.0; the periscope standard and masts raised X 12.6 .. 14.0 [G1]; ladder rungs",
+  "the bow planes low on the bow X 29.3 .. 31.3 at z 0.6, 2.2 m out [G2]",
+  "cruciform stern: the upper rudder X -33.5 .. -29.4 at its root standing clear of the water to 2.1 m, its leading edge meeting the water at X -29.9 [G1], the lower rudder and stern planes (3.6 m out) under water, hinge slots; the five-bladed screw on its shaft fairing at X -33.85",
+  "weld seams round the pressure hull every 4 m; hatches X -12, 3.5, 21 and the loading hatch X 26; cleats; capstan X 28; the safety track; bow shutters X 32; plain matt black steel, no numbers or markings; team colour only as small strips"
+ ],
+ "landmarks": [
+  {
+   "name": "sail top at x 11",
+   "ref": 0,
+   "expect_m": [
+    11.0,
+    10.9
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     3,
+     -3,
+     1.0,
+     20,
+     3,
+     12
+    ]
+   },
+   "note": "[G1] the sail's top (row 199)",
+   "tol_m": 0.2,
+   "view": "side"
+  },
+  {
+   "name": "sail front at z 6",
+   "ref": 0,
+   "expect_m": [
+    16.6,
+    6.0
+   ],
+   "model_at": {
+    "cross": 6.0,
+    "from_h": 22.0,
+    "to_h": 10.0,
+    "in_m": [
+     3,
+     -3,
+     1.0,
+     20,
+     3,
+     12
+    ]
+   },
+   "note": "[G1] px 210 at row 250",
+   "tol_m": 0.25,
+   "view": "side"
+  },
+  {
+   "name": "sail back at z 6",
+   "ref": 0,
+   "expect_m": [
+    6.6,
+    6.0
+   ],
+   "model_at": {
+    "cross": 6.0,
+    "from_h": 0.0,
+    "to_h": 10.0,
+    "in_m": [
+     3,
+     -3,
+     1.0,
+     20,
+     3,
+     12
+    ]
+   },
+   "note": "[G1] px 314 at row 250",
+   "tol_m": 0.25,
+   "view": "side"
+  },
+  {
+   "name": "casing deck at x 0",
+   "ref": 0,
+   "expect_m": [
+    0.0,
+    2.1
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -3,
+     -3,
+     -6,
+     3,
+     3,
+     4
+    ]
+   },
+   "note": "[G1] row 290",
+   "tol_m": 0.2,
+   "view": "side"
+  },
+  {
+   "name": "upper rudder top",
+   "ref": 0,
+   "expect_m": [
+    -32.0,
+    2.1
+   ],
+   "model_at": {
+    "edge": "upper",
+    "in_m": [
+     -34,
+     -1,
+     -1,
+     -30,
+     1,
+     3
+    ]
+   },
+   "note": "[G1] row 290 at px 714",
+   "tol_m": 0.2,
+   "view": "side"
+  },
+  {
+   "name": "upper rudder leading edge at the water",
+   "ref": 0,
+   "expect_m": [
+    -29.9,
+    0.0
+   ],
+   "model_at": {
+    "cross": 0.0,
+    "from_h": -28.5,
+    "to_h": -34.0,
+    "in_m": [
+     -35,
+     -1,
+     -0.6,
+     -28.5,
+     1,
+     3
+    ]
+   },
+   "note": "[G1] the leading edge meets the water at px 693 (review 1)",
+   "tol_m": 0.25,
+   "view": "side"
+  }
+ ],
+ "not_confirmed": [
+  "everything under the water: the keel at -4.8 (published beam plus the casing), the lower rudder, the stern planes' span, the screw (here aft of the cruciform), the torpedo shutters' places",
+  "the knuckle (drawn at z 0.0) and the casing deck's width (3.4 m): no end view",
+  "the sail's width (2.8 m), its plan; the window places",
+  "the limber row's places; the hatches' places"
+ ]
+}
