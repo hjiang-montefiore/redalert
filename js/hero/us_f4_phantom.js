@@ -227,7 +227,7 @@ var HeroF4 = (function () {
        behind the mouth */
     for (b = 1; b <= 2; b++) {
       var ss = g.createLinearGradient(pxX(3.3), 0, pxX(1.2), 0);
-      ss.addColorStop(0, "rgba(18,16,14,0.40)"); ss.addColorStop(1, "rgba(18,16,14,0)");
+      ss.addColorStop(0, "rgba(18,16,14,0)"); ss.addColorStop(0.143, "rgba(18,16,14,0.40)"); ss.addColorStop(1, "rgba(18,16,14,0)");   /* fades in over 0.3 m */
       g.fillStyle = ss; g.fillRect(pxX(1.2), sideZ(0.40, b), pxX(3.3) - pxX(1.2), sideZ(-0.75, b) - sideZ(0.40, b));
     }
   }
@@ -665,7 +665,7 @@ var HeroF4 = (function () {
   function buildAirframe(THREE, C, F) {
     V = THREE;
     var T = makeMats(C, F.scheme);
-    var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], fin: [], radome: [] };
+    var K = { skin: [], dark: [], metal: [], glass: [], team: [], pale: [], fin: [], radome: [], form: [] };
     var G = { metal: [], tyre: [], dark: [] };
     var g = new V.Group(), s, i, j;
     g.name = F.node;
@@ -916,10 +916,10 @@ var HeroF4 = (function () {
        and the fin): pale electroluminescent panels, in the stores' pale grey
        (no draw call to spare on the F-4F ICE) */
     if (F.long) for (s = -1; s <= 1; s += 2) {
-      K.pale.push(box(0.55, 0.03, 0.10, 5.6, s * 0.69, 0.0));
-      K.pale.push(box(0.55, 0.03, 0.10, 0.5, s * 1.645, 0.0));
-      K.pale.push(box(0.55, 0.03, 0.10, -5.8, s * 1.225, -0.05));
-      K.pale.push(box(0.55, 0.02, 0.10, -6.9, s * 0.07, 2.0));
+      K.form.push(box(0.55, 0.03, 0.10, 5.6, s * 0.69, 0.0));
+      K.form.push(box(0.55, 0.03, 0.10, 0.5, s * 1.645, 0.0));
+      K.form.push(box(0.55, 0.03, 0.10, -5.8, s * 1.225, -0.05));
+      K.form.push(box(0.55, 0.02, 0.10, -6.9, s * 0.07, 2.0));
     }
     /* the dorsal air-refuelling receptacle door behind the rear cockpit of
        the USAF F-4C/E/G and the F-4F (the Navy F-4B took fuel by probe) */
@@ -942,7 +942,26 @@ var HeroF4 = (function () {
     mesh(g, K.glass, T.glass, "glass");
     mesh(g, K.team, T.team, "team");
     mesh(g, K.fin, T.white, "fin");
-    mesh(g, K.pale, T.pale, "stores");
+    /* the stores and the formation lights share one mesh (no draw call to
+       spare on the F-4F ICE): per-vertex colour, pale grey stores and the
+       lights' pale yellow-green (#c9d6a4); vertex colours are linear */
+    (function () {
+      var all = K.pale.concat(K.form);
+      if (!all.length) return;
+      function lin(h) { return [(h >> 16) & 255, (h >> 8) & 255, h & 255].map(function (c) {
+        c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); }
+      var geo = merge(all), n = geo.attributes.position.count, col = new Float32Array(n * 3), q, v = 0;
+      /* the lights authored to SHOW as #c9d6a4 on a sunlit side face */
+      var fh = (typeof HeroKit !== "undefined" && HeroKit.authorFor) ? HeroKit.authorFor(0xc9d6a4, "side") : 0xc9d6a4;
+      var cs = lin(0xb4babd), cf = lin(fh);
+      for (q = 0; q < all.length; q++) {
+        var cnt = flat(all[q]).attributes.position.count, c = q < K.pale.length ? cs : cf;
+        for (var r = 0; r < cnt; r++, v++) { col[v * 3] = c[0]; col[v * 3 + 1] = c[1]; col[v * 3 + 2] = c[2]; }
+      }
+      geo.setAttribute("color", new V.BufferAttribute(col, 3));
+      var sm = new V.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.55, metalness: 0.15 });
+      var m = new V.Mesh(geo, sm); m.name = "stores"; g.add(m);
+    })();
     if (K.radome.length) mesh(g, K.radome, new V.MeshStandardMaterial({ color: F.radome, roughness: 0.7, metalness: 0.05 }), "radome");
     /* the outer panels: one "wingfold" group each, origin on the hinge (the
        upper skin at the break), one skin mesh (its UVs put the underside in
