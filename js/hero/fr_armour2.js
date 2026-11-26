@@ -2037,12 +2037,11 @@ UNIT_MODELS["fra_e00_lighttank"] = { len: 9.31, build: HeroFrArmour2.rcr };
 UNIT_MODELS["fra_e90_spaag"] = { len: 6.94, build: HeroRoland.build };
 /* fra_e90_mlrs (LRM) and fra_e00_mlrs (LRU): the M270, HeroUsMlrs (us_m270_himars.js), added to
    the module's own row table as deu_us_pattern.js adds the MARS: the 1991 M270 with two
-   six-rocket pods.  Paint: the module's NATO three-colour (green, brown, black), the nearest of
-   its paints to the French Centre-Europe three-tone of 1990-2020 (NOT CONFIRMED on an LRM / LRU: the
-   one LRU photograph fetched, L1 of 14 July 2021, shows the new plain earth-brown of 2021 on);
-   the module cannot be handed a new paint without editing it.  ord: the round each weapon is drawn as. */
-HeroUsMlrs.rows.fra_e90_mlrs = { veh: "m270", paint: "nato3", pods: "rocket", turret: true, louvre: false, ord: { w_e90_fra_mlrs: "m26" } };
-HeroUsMlrs.rows.fra_e00_mlrs = { veh: "m270", paint: "nato3", pods: "rocket", turret: true, louvre: false, ord: { w_e00_fra_mlrs: "gmlrs" } };
+   six-rocket pods.  Paint: the module's plain French army green "frvert" (the plain-paint policy:
+   one coat, no camouflage; the shade NOT CONFIRMED; the one LRU photograph fetched, L1 of 14 July
+   2021, shows the plain earth-brown of 2021, after this row's era).  ord: the round each weapon is drawn as. */
+HeroUsMlrs.rows.fra_e90_mlrs = { veh: "m270", paint: "frvert", pods: "rocket", turret: true, louvre: false, ord: { w_e90_fra_mlrs: "m26" } };
+HeroUsMlrs.rows.fra_e00_mlrs = { veh: "m270", paint: "frvert", pods: "rocket", turret: true, louvre: false, ord: { w_e00_fra_mlrs: "gmlrs" } };
 UNIT_MODELS["fra_e90_mlrs"] = { len: 7.00, ord: HeroUsMlrs.rows.fra_e90_mlrs.ord,
                                 build: function (THREE, M, C) { return HeroUsMlrs.build("fra_e90_mlrs", THREE, M, C); } };
 UNIT_MODELS["fra_e00_mlrs"] = { len: 7.00, ord: HeroUsMlrs.rows.fra_e00_mlrs.ord,
